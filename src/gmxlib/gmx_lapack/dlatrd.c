@@ -24,7 +24,7 @@ F77_FUNC(dlatrd,DLATRD)(char *  uplo,
   minusone=-1.0;
   zero=0.0;
 
-  if(n<=0)
+  if(*n<=0)
     return;
 
   if(ch=='U') {

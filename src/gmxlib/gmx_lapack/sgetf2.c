@@ -1,3 +1,6 @@
+#include <math.h>
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 
@@ -26,7 +29,7 @@ F77_FUNC(sgetf2,SGETF2)(int *m,
     t2 = 1;
     jp = j - 1 + F77_FUNC(isamax,ISAMAX)(&t1,&(a[(j-1)*(*lda)+(j-1)]),&t2);
     ipiv[j-1] = jp;
-    if(a[(j-1)*(*lda)+(jp-1)] != 0.0) {
+    if( fabs(a[(j-1)*(*lda)+(jp-1)])>GMX_FLOAT_MIN ) {
       if(jp != j)
 	F77_FUNC(sswap,SSWAP)(n,&(a[ j-1 ]),lda,&(a[ jp-1 ]),lda);
       

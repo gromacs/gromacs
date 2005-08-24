@@ -1,19 +1,21 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
 void
 F77_FUNC(slasq3,SLASQ3)(int *i0, 
-	int *n0, 
-	float *z__, 
-	int *pp, 
-	float *dmin__, 
-	float *sigma,
-	float *desig,
-	float *qmax, 
-	int *nfail, 
-	int *iter, 
-	int *ndiv, 
+                        int *n0, 
+                        float *z__, 
+                        int *pp, 
+                        float *dmin__, 
+                        float *sigma,
+                        float *desig,
+                        float *qmax, 
+                        int *nfail, 
+                        int *iter, 
+                        int *ndiv, 
 	int *ieee)
 {
 
@@ -35,7 +37,7 @@ F77_FUNC(slasq3,SLASQ3)(int *i0,
     --z__;
 
     n0in = *n0;
-    eps = LAPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
     tol = eps * 100.;
     d__1 = tol;
     tol2 = d__1 * d__1;
@@ -178,17 +180,10 @@ L70:
 	    ttype += -12;
 	}
 	goto L70;
-    } else if (*dmin__ != *dmin__) {
-
-	if (tau == 0.) {
-	    goto L80;
-	} else {
-	    tau = 0.;
-	    goto L70;
-	}
-    } else {
-
-	goto L80;
+    }
+    else {
+        
+        goto L80;
     }
 
 L80:

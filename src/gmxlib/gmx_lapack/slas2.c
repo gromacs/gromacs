@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 
 void
@@ -17,9 +19,9 @@ F77_FUNC(slas2,SLAS2)(float *f,
   fhmin = (fa<ha) ? fa : ha;
   fhmax = (fa>ha) ? fa : ha;
   
-  if(fhmin==0.0) {
+  if(fabs(fhmin)<GMX_FLOAT_MIN) {
     *ssmin = 0.0;
-    if(fhmax==0.0) 
+    if(fabs(fhmax)<GMX_FLOAT_MIN) 
       *ssmax = ga;
     else {
       tmax = (fhmax>ga) ? fhmax : ga;
@@ -39,7 +41,7 @@ F77_FUNC(slas2,SLAS2)(float *f,
       *ssmax = fhmax / c;
     } else {
       au = fhmax / ga;
-      if(au==0.0) {
+      if(fabs(au)<GMX_FLOAT_MIN) {
 	*ssmin = (fhmin*fhmax)/ga;
 	*ssmax = ga;
       } else {

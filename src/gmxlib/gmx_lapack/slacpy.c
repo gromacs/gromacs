@@ -1,5 +1,4 @@
 #include<ctype.h>
-
 #include "gmx_lapack.h"
 
 /* LAPACK */

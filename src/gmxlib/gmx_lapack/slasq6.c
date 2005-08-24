@@ -2,6 +2,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void 
 F77_FUNC(slasq6,SLASQ6)(int *i0, 
@@ -22,8 +23,7 @@ F77_FUNC(slasq6,SLASQ6)(int *i0,
     float d__;
     int j4, j4p2;
     float emin, temp;
-    const float safemin = 
-      (1.0+LAPACK_EPS_FLOAT)/LAPACK_MAX_FLOAT/LAPACK_EPS_FLOAT;
+    const float safemin = GMX_FLOAT_MIN*(1.0+GMX_FLOAT_EPS);
 
     --z__;
 
@@ -40,7 +40,7 @@ F77_FUNC(slasq6,SLASQ6)(int *i0,
 	i__1 = 4*(*n0 - 3);
 	for (j4 = *i0*4; j4 <= i__1; j4 += 4) {
 	    z__[j4 - 2] = d__ + z__[j4 - 1];
-	    if (z__[j4 - 2] == 0.) {
+	    if (fabs(z__[j4 - 2])<GMX_FLOAT_MIN) {
 		z__[j4] = 0.;
 		d__ = z__[j4 + 1];
 		*dmin__ = d__;
@@ -64,7 +64,7 @@ F77_FUNC(slasq6,SLASQ6)(int *i0,
 	i__1 = 4*(*n0 - 3);
 	for (j4 = *i0 << 2; j4 <= i__1; j4 += 4) {
 	    z__[j4 - 3] = d__ + z__[j4];
-	    if (z__[j4 - 3] == 0.) {
+	    if (fabs(z__[j4 - 3])<GMX_FLOAT_MIN) {
 		z__[j4 - 1] = 0.;
 		d__ = z__[j4 + 2];
 		*dmin__ = d__;
@@ -90,7 +90,7 @@ F77_FUNC(slasq6,SLASQ6)(int *i0,
     j4 = 4*(*n0 - 2) - *pp;
     j4p2 = j4 + (*pp << 1) - 1;
     z__[j4 - 2] = *dnm2 + z__[j4p2];
-    if (z__[j4 - 2] == 0.) {
+    if (fabs(z__[j4 - 2])<GMX_FLOAT_MIN) {
 	z__[j4] = 0.;
 	*dnm1 = z__[j4p2 + 2];
 	*dmin__ = *dnm1;
@@ -111,7 +111,7 @@ F77_FUNC(slasq6,SLASQ6)(int *i0,
     j4 += 4;
     j4p2 = j4 + (*pp << 1) - 1;
     z__[j4 - 2] = *dnm1 + z__[j4p2];
-    if (z__[j4 - 2] == 0.) {
+    if (fabs(z__[j4 - 2])<GMX_FLOAT_MIN) {
 	z__[j4] = 0.;
 	*dn = z__[j4p2 + 2];
 	*dmin__ = *dn;

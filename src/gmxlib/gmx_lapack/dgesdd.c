@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
@@ -146,14 +148,22 @@ F77_FUNC(dgesdd,DGESDD)(char *jobz,
 	}
 	work[1] = (double) maxwrk;
     }
+
+    
+    if( lquery != 0)
+    {
+        return;
+    }
+    
+
     if (*m == 0 || *n == 0) {
 	if (*lwork >= 1) {
 	    work[1] = 1.;
 	}
 	return;
     }
-    eps = LAPACK_EPS_DOUBLE;
-    minval = (1.0 + eps)/LAPACK_MAX_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
+    minval = GMX_DOUBLE_MIN;
     safemin = minval / eps;
     smlnum = sqrt(safemin) / eps;
 

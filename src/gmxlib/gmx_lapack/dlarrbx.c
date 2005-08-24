@@ -1,4 +1,7 @@
 #include <math.h>
+
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
@@ -46,7 +49,7 @@ F77_FUNC(dlarrbx,DLARRBX)(int *n,
     --d__;
 
     *info = 0;
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
     i__1 = *n << 1;
     for (i__ = 1; i__ <= i__1; ++i__) {
 	iwork[i__] = 0;
@@ -111,7 +114,7 @@ L40:
 			    ++cnt;
 			}
 			tmp = lld[j] / dplus;
-			if (tmp == 0.) {
+			if (fabs(tmp)<GMX_DOUBLE_MIN) {
 			    s = lld[j] - left;
 			} else {
 			    s = s * tmp - left;
@@ -158,7 +161,7 @@ L60:
 			++cnt;
 		    }
 		    tmp = lld[j] / dplus;
-		    if (tmp == 0.) {
+		    if (fabs(tmp)<GMX_DOUBLE_MIN) {
 			s = lld[j] - right;
 		    } else {
 			s = s * tmp - right;
@@ -274,7 +277,7 @@ L80:
 		    ++cnt;
 		}
 		tmp = lld[j] / dplus;
-		if (tmp == 0.) {
+		if (fabs(tmp)<GMX_DOUBLE_MIN) {
 		    s = lld[j] - mid;
 		} else {
 		    s = s * tmp - mid;

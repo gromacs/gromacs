@@ -3,50 +3,79 @@
 
 void
 F77_FUNC(sorgl2,SORGL2)(int *m,
-	int *n,
-	int *k,
-	float *a,
-	int *lda,
-	float *tau,
-	float *work,
-	int *info)
+                        int *n, 
+                        int *k, 
+                        float *a, 
+                        int *lda, 
+                        float *tau, 
+                        float *work, 
+                        int *info)
 {
-  int i,j,l;
-  int i1,i2,i3;
-  float d1;
+    int a_dim1, a_offset, i__1, i__2;
+    float r__1;
 
-  if(*m<=0)
+    int i__, j, l;
+
+    a_dim1 = *lda;
+    a_offset = 1 + a_dim1;
+    a -= a_offset;
+    --tau;
+    --work;
+
+    i__ = (*m > 1) ? *m : 1;
+    
+    *info = 0;
+    if (*m < 0) {
+	*info = -1;
+    } else if (*n < *m) {
+	*info = -2;
+    } else if (*k < 0 || *k > *m) {
+	*info = -3;
+    } else if (*lda < i__) {
+	*info = -5;
+    }
+    if (*info != 0) {
+	return;
+    }
+    if (*m <= 0) {
+	return;
+    }
+
+    if (*k < *m) {
+	i__1 = *n;
+	for (j = 1; j <= i__1; ++j) {
+	    i__2 = *m;
+	    for (l = *k + 1; l <= i__2; ++l) {
+		a[l + j * a_dim1] = 0.0;
+	    }
+	    if (j > *k && j <= *m) {
+		a[j + j * a_dim1] = 1.0;
+	    }
+	}
+    }
+
+    for (i__ = *k; i__ >= 1; --i__) {
+	if (i__ < *n) {
+	    if (i__ < *m) {
+		a[i__ + i__ * a_dim1] = 1.0;
+		i__1 = *m - i__;
+		i__2 = *n - i__ + 1;
+		F77_FUNC(slarf,SLARF)("R", &i__1, &i__2, &a[i__ + i__ * a_dim1], lda, 
+               &tau[i__], &a[i__ + 1 + i__ * a_dim1], lda, &work[1]);
+	    }
+	    i__1 = *n - i__;
+	    r__1 = -tau[i__];
+	    F77_FUNC(sscal,SSCAL)(&i__1, &r__1, &a[i__ + (i__ + 1) * a_dim1], lda);
+	}
+	a[i__ + i__ * a_dim1] = 1.0 - tau[i__];
+	i__1 = i__ - 1;
+	for (l = 1; l <= i__1; ++l) {
+	    a[i__ + l * a_dim1] = 0.0;
+	}
+    }
     return;
 
-  *info = 0;
-
-  if(*k < *m) {
-    for(j=0;j<*n;j++) {
-      for(l=*k;l<*m;l++)
-	a[j*(*lda)+l] = 0.0;
-      if(j>=*k && j<*m)
-	a[j*(*lda)+j] = 1.0;
-    }
-  }
-
-  for(i=*k-1;i>=0;i--) {
-    if(i<(*n-1)) {
-      if(i<(*m-1)) {
-	a[i*(*lda)+i] = 1.0;
-	i1 = *m - i - 1;
-	i2 = *n - i ;
-	i3 = 1;
-	F77_FUNC(slarf,SLARF)("R",&i1,&i2,&(a[i*(*lda)+i]),lda,&(tau[i]),
-	       &(a[i*(*lda)+i+1]),lda,work);
-      }
-      i1 = *n - i - 1;
-      d1 = -tau[i];
-      F77_FUNC(sscal,SSCAL)(&i1,&d1,&(a[(i+1)*(*lda)+i]),lda);
-    }
-    a[i*(*lda)+i] = 1.0 - tau[i];
-
-    for(l=0;l<(i-1);l++)
-      a[l*(*lda)+i] = 0.0;
-  }
-  return;
 }
+
+
+

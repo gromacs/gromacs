@@ -2,6 +2,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
 F77_FUNC(slartg,SLARTG)(float *f,
@@ -14,19 +15,19 @@ F77_FUNC(slartg,SLARTG)(float *f,
   float f1,g1,f1a,g1a,scale;
   int i,n,count;
 
-  eps = LAPACK_EPS_FLOAT;
-  minval = (1.0 + eps)/LAPACK_MAX_FLOAT;
-  safemin = minval / eps;
+  eps = GMX_FLOAT_EPS;
+  minval = GMX_FLOAT_MIN;
+  safemin = minval*(1.0+eps);
   n = 0.5*log( safemin/eps ) / log(2);
   safemin2 = pow(2,n);
 
   safemx2 = 1.0 / safemin2;
 
-  if(*g==0.0) {
+  if(fabs(*g)<GMX_FLOAT_MIN) {
     *cs = 1.0;
     *sn = 0.0;
     *r = *f;
-  } else if (*f==0.0) {
+  } else if (fabs(*f)<GMX_FLOAT_MIN) {
     *cs = 0.0;
     *sn = 1.0;
     *r = *g;

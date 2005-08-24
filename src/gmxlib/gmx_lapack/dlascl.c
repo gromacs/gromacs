@@ -1,20 +1,22 @@
 #include <ctype.h>
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
 
 void
 F77_FUNC(dlascl,DLASCL)(char *type,
-	int *kl,
-	int *ku,
-	double *cfrom,
-	double *cto,
-	int *m,
-	int *n,
-	double *a,
-	int *lda,
-	int *info)
+                        int *kl,
+                        int *ku,
+                        double *cfrom,
+                        double *cto,
+                        int *m,
+                        int *n,
+                        double *a,
+                        int *lda,
+                        int *info)
 {
   char ch=toupper(*type);
   int i,j,k,l,k1,k2,k3,k4;
@@ -25,8 +27,8 @@ F77_FUNC(dlascl,DLASCL)(char *type,
   if(*n<=0 || *m<=0)
     return;
 
-  minval = (1.0 + LAPACK_EPS_DOUBLE)/LAPACK_MAX_DOUBLE;
-  smlnum = minval / LAPACK_EPS_DOUBLE;
+  minval = GMX_DOUBLE_MIN;
+  smlnum = minval / GMX_DOUBLE_EPS;
   bignum = 1.0 / smlnum;
 
   cfromc = *cfrom;
@@ -37,7 +39,7 @@ F77_FUNC(dlascl,DLASCL)(char *type,
     cfrom1 = cfromc * smlnum;
     cto1   = ctoc / bignum;
 
-    if(fabs(cfrom1)>fabs(ctoc) && ctoc!=0.0) {
+    if(fabs(cfrom1)>fabs(ctoc) && fabs(ctoc)>GMX_DOUBLE_MIN) {
       mul = smlnum;
       done = 0;
       cfromc = cfrom1;

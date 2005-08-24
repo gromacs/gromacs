@@ -4,6 +4,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
 F77_FUNC(sbdsdc,SBDSDC)(char *uplo, 
@@ -54,13 +55,12 @@ F77_FUNC(sbdsdc,SBDSDC)(char *uplo,
     --work;
     --iwork;
 
-
-    smlsiz = DBDSDC_SMALLSIZE;
-    *info = 0;
-
     k = iu = z__ = ic = is = ivt = difl = difr = perm = 0;
     poles = givnum = givptr = givcol = 0;
     
+    smlsiz = DBDSDC_SMALLSIZE;
+    *info = 0;
+
     iuplo = (*uplo=='U' || *uplo=='u') ? 1 : 2;
 
     switch(*compq) {
@@ -149,13 +149,13 @@ F77_FUNC(sbdsdc,SBDSDC)(char *uplo,
     }
 
     orgnrm = F77_FUNC(slanst,SLANST)("M", n, &d__[1], &e[1]);
-    if (orgnrm == 0.) {
+    if ( fabs(orgnrm)<GMX_FLOAT_MIN) {
 	return;
     }
     F77_FUNC(slascl,SLASCL)("G", &c_0, &c_0, &orgnrm, &one, n, &c_1, &d__[1], n, &ierr);
     F77_FUNC(slascl,SLASCL)("G", &c_0, &c_0, &orgnrm, &one, &nm1, &c_1, &e[1], &nm1, &ierr);
 
-    eps = LAPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
 
     mlvl = (int) (log((float) (*n) / (float) (smlsiz + 1)) / 
 	    log(2.)) + 1;

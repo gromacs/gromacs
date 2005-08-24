@@ -2,6 +2,8 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
+
 void 
 F77_FUNC(slasd4,SLASD4)(int *n, 
 	int *i__, 
@@ -55,7 +57,7 @@ F77_FUNC(slasd4,SLASD4)(int *n,
 	return;
     }
 
-    eps = LAPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
     rhoinv = 1. / *rho;
 
     if (*i__ == *n) {
@@ -157,7 +159,7 @@ F77_FUNC(slasd4,SLASD4)(int *n,
 	if (c__ < 0.) {
 	    c__ = fabs(c__);
 	}
-	if (c__ == 0.) {
+	if ( fabs(c__)<GMX_FLOAT_MIN) {
 	    eta = *rho - *sigma * *sigma;
 	} else if (a >= 0.) {
 	    eta = (a + sqrt(fabs(a * a - b * 4. * c__))) / (c__  * 2.);
@@ -408,8 +410,8 @@ F77_FUNC(slasd4,SLASD4)(int *n,
 	    }
 	    a = (dtipsq + dtisq) * w - dtipsq * dtisq * dw;
 	    b = dtipsq * dtisq * w;
-	    if (c__ == 0.) {
-		if (a == 0.) {
+	    if ( fabs(c__)<GMX_FLOAT_MIN) {
+		if ( fabs(a)<GMX_FLOAT_MIN) {
 		    if (orgati) {
 			a = z__[*i__] * z__[*i__] + dtipsq * dtipsq * (dpsi + 
 				dphi);
@@ -568,8 +570,8 @@ F77_FUNC(slasd4,SLASD4)(int *n,
 		}
 		a = (dtipsq + dtisq) * w - dtipsq * dtisq * dw;
 		b = dtipsq * dtisq * w;
-		if (c__ == 0.) {
-		    if (a == 0.) {
+		if (fabs(c__)<GMX_FLOAT_MIN) {
+		    if (fabs(a)<GMX_FLOAT_MIN) {
 			if (! swtch) {
 			    if (orgati) {
 				a = z__[*i__] * z__[*i__] + dtipsq * dtipsq * 

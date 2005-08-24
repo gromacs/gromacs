@@ -1,14 +1,16 @@
+#include <math.h>
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
-F77_FUNC(strtri,STRTRI)(char *uplo, 
-	char *diag,
-	int *n, 
-	float *a,
-	int *lda, 
+F77_FUNC(strtri,STRTRI)(char *uplo,
+	char *diag, 
+	int *n,
+	float *a, 
+	int *lda,
 	int *info)
 {
     int a_dim1, a_offset, i__1, i__3, i__4, i__5;
@@ -39,7 +41,7 @@ F77_FUNC(strtri,STRTRI)(char *uplo,
     if (nounit) {
 	i__1 = *n;
 	for (*info = 1; *info <= i__1; ++(*info)) {
-	    if (a[*info + *info * a_dim1] == 0.) {
+	    if (fabs(a[*info + *info * a_dim1])<GMX_FLOAT_MIN) {
 		return;
 	    }
 	}

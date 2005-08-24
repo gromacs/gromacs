@@ -3,6 +3,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
 F77_FUNC(dstein,DSTEIN)(int *n, 
@@ -91,7 +92,7 @@ F77_FUNC(dstein,DSTEIN)(int *n,
 	return;
     }
 
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
 
     for (i__ = 1; i__ <= 4; ++i__) {
 	iseed[i__ - 1] = 1;

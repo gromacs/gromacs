@@ -1,8 +1,8 @@
 #include "gmx_lapack.h"
 
-#define DORGLQ_BLOCKSIZE    32
-#define DORGLQ_MINBLOCKSIZE 2
-#define DORGLQ_CROSSOVER    128
+#define SORGLQ_BLOCKSIZE    32
+#define SORGLQ_MINBLOCKSIZE 2
+#define SORGLQ_CROSSOVER    128
 
 
 void 
@@ -31,7 +31,7 @@ F77_FUNC(sorglq,SORGLQ)(int *m,
 
     *info = 0;
     ki = 0;
-    nb = DORGLQ_BLOCKSIZE;
+    nb = SORGLQ_BLOCKSIZE;
     lwkopt = (*m) * nb;
     work[1] = (float) lwkopt;
     lquery = *lwork == -1;
@@ -63,7 +63,7 @@ F77_FUNC(sorglq,SORGLQ)(int *m,
     iws = *m;
     if (nb > 1 && nb < *k) {
 
-	nx = DORGLQ_CROSSOVER;
+	nx = SORGLQ_CROSSOVER;
 	if (nx < *k) {
 
 	    ldwork = *m;
@@ -71,7 +71,7 @@ F77_FUNC(sorglq,SORGLQ)(int *m,
 	    if (*lwork < iws) {
 
 		nb = *lwork / ldwork;
-		nbmin = DORGLQ_MINBLOCKSIZE;
+		nbmin = SORGLQ_MINBLOCKSIZE;
 	    }
 	}
     }

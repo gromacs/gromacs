@@ -1,19 +1,20 @@
 #include <math.h>
+#include <types/simple.h>
 #include "gmx_lapack.h"
 
 void
 F77_FUNC(dlassq,DLASSQ)(int *n,
-	double *x,
-	int *incx,
-	double *scale,
-	double *sumsq)
+                        double *x,
+                        int *incx,
+                        double *scale,
+                        double *sumsq)
 {
   int ix;
   double absxi,t;
 
   if(*n>0) {
     for(ix=0;ix<=(*n-1)*(*incx);ix+=*incx) {
-      if(x[ix]!=0.0) {
+      if(fabs(x[ix])>GMX_DOUBLE_MIN) {
 	absxi = fabs(x[ix]);
 	if(*scale<absxi) {
 	  t = *scale/absxi;

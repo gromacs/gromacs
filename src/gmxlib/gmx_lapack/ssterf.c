@@ -2,6 +2,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
 F77_FUNC(ssterf,SSTERF)(int *n, 
@@ -31,8 +32,7 @@ F77_FUNC(ssterf,SSTERF)(int *n,
     int c__0 = 0;
     int c__1 = 1;
     float c_b32 = 1.;
-    const float safmin = 
-      (1.0+LAPACK_EPS_FLOAT)/LAPACK_MAX_FLOAT/LAPACK_EPS_FLOAT;
+    const float safmin = GMX_FLOAT_MIN*(1.0+GMX_FLOAT_EPS);
 
     --e;
     --d__;
@@ -48,7 +48,7 @@ F77_FUNC(ssterf,SSTERF)(int *n,
 	return;
     }
 
-    eps = LAPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
     d__1 = eps;
     eps2 = d__1 * d__1;
     safmax = 1. / safmin;
@@ -184,7 +184,7 @@ L70:
 	    alpha = d__[i__];
 	    gamma = c__ * (alpha - sigma) - s * oldgam;
 	    d__[i__ + 1] = oldgam + (alpha - gamma);
-	    if (c__ != 0.) {
+	    if (fabs(c__)>GMX_FLOAT_MIN) {
 		p = gamma * gamma / c__;
 	    } else {
 		p = oldc * bb;
@@ -266,7 +266,7 @@ L120:
 	    alpha = d__[i__ + 1];
 	    gamma = c__ * (alpha - sigma) - s * oldgam;
 	    d__[i__] = oldgam + (alpha - gamma);
-	    if (c__ != 0.) {
+	    if (fabs(c__)>GMX_FLOAT_MIN) {
 		p = gamma * gamma / c__;
 	    } else {
 		p = oldc * bb;
@@ -305,7 +305,7 @@ L150:
     }
     i__1 = *n - 1;
     for (i__ = 1; i__ <= i__1; ++i__) {
-	if (e[i__] != 0.) {
+	if (fabs(e[i__])>GMX_FLOAT_MIN) {
 	    ++(*info);
 	}
     }

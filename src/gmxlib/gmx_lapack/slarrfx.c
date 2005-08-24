@@ -1,4 +1,7 @@
 #include <math.h>
+
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
@@ -34,7 +37,7 @@ F77_FUNC(slarrfx,SLARRFX)(int *n,
     --l;
     --d__;
     *info = 0;
-    eps = LAPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
     *sigma = w[*ifirst];
     delta = eps * 2.;
 

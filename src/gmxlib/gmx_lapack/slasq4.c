@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 
 void 
@@ -36,14 +38,17 @@ F77_FUNC(slasq4,SLASQ4)(int *i0,
     nn = (*n0 << 2) + *pp;
     if (*n0in == *n0) {
 
-	if (*dmin__ == *dn || *dmin__ == *dn1) {
+	if ( fabs(*dmin__ - *dn)<GMX_FLOAT_EPS*fabs(*dmin__ + *dn) ||
+         fabs(*dmin__ - *dn1)<GMX_FLOAT_EPS*fabs(*dmin__ + *dn1)) {
 
 	    b1 = sqrt(z__[nn - 3]) * sqrt(z__[nn - 5]);
 	    b2 = sqrt(z__[nn - 7]) * sqrt(z__[nn - 9]);
 	    a2 = z__[nn - 7] + z__[nn - 5];
 
-	    if (*dmin__ == *dn && *dmin1 == *dn1) {
-		gap2 = *dmin2 - a2 - *dmin2 * .25;
+        if ( fabs(*dmin__ - *dn)<GMX_FLOAT_EPS*fabs(*dmin__ + *dn) &&
+             fabs(*dmin1 - *dn1)<GMX_FLOAT_EPS*fabs(*dmin1 + *dn1)) {
+
+            gap2 = *dmin2 - a2 - *dmin2 * .25;
 		if (gap2 > 0. && gap2 > b2) {
 		    gap1 = a2 - *dn - b2 / gap2 * b2;
 		} else {
@@ -71,7 +76,7 @@ F77_FUNC(slasq4,SLASQ4)(int *i0,
 
 		*ttype = -4;
 		s = *dmin__ * .25;
-		if (*dmin__ == *dn) {
+		if (fabs(*dmin__ - *dn)<GMX_FLOAT_EPS*fabs(*dmin__ + *dn)) {
 		    gam = *dn;
 		    a2 = 0.;
 		    if (z__[nn - 5] > z__[nn - 7]) {
@@ -98,7 +103,7 @@ F77_FUNC(slasq4,SLASQ4)(int *i0,
 		a2 += b2;
 		i__1 = (*i0 << 2) - 1 + *pp;
 		for (i4 = np; i4 >= i__1; i4 += -4) {
-		    if (b2 == 0.) {
+		    if (fabs(b2)<GMX_FLOAT_MIN) {
 			goto L20;
 		    }
 		    b1 = b2;
@@ -119,7 +124,7 @@ L20:
 		    s = gam * (1. - sqrt(a2)) / (a2 + 1.);
 		}
 	    }
-	} else if (*dmin__ == *dn2) {
+	} else if (fabs(*dmin__ - *dn2)<GMX_FLOAT_EPS*fabs(*dmin__ + *dn2)) {
 
 	    *ttype = -5;
 	    s = *dmin__ * .25;
@@ -139,7 +144,7 @@ L20:
 		a2 += b2;
 		i__1 = (*i0 << 2) - 1 + *pp;
 		for (i4 = nn - 17; i4 >= i__1; i4 += -4) {
-		    if (b2 == 0.) {
+		    if (fabs(b2)<GMX_FLOAT_MIN) {
 			goto L40;
 		    }
 		    b1 = b2;
@@ -174,8 +179,8 @@ L40:
 
     } else if (*n0in == *n0 + 1) {
 
-	if (*dmin1 == *dn1 && *dmin2 == *dn2) {
-
+        if ( fabs(*dmin1 - *dn1)<GMX_FLOAT_EPS*fabs(*dmin1 + *dn1) &&
+             fabs(*dmin2 - *dn2)<GMX_FLOAT_EPS*fabs(*dmin2 + *dn2)) {
 
 	    *ttype = -7;
 	    s = *dmin1 * .333;
@@ -184,7 +189,7 @@ L40:
 	    }
 	    b1 = z__[nn - 5] / z__[nn - 7];
 	    b2 = b1;
-	    if (b2 == 0.) {
+	    if (fabs(b2)<GMX_FLOAT_MIN) {
 		goto L60;
 	    }
 	    i__1 = (*i0 << 2) - 1 + *pp;
@@ -215,7 +220,7 @@ L60:
 	} else {
 
 	    s = *dmin1 * .25;
-	    if (*dmin1 == *dn1) {
+	    if (fabs(*dmin1 - *dn1)<GMX_FLOAT_EPS*fabs(*dmin1 + *dn1)) {
 		s = *dmin1 * .5;
 	    }
 	    *ttype = -9;
@@ -223,7 +228,8 @@ L60:
 
     } else if (*n0in == *n0 + 2) {
 
-	if (*dmin2 == *dn2 && z__[nn - 5] * 2. < z__[nn - 7]) {
+	if (fabs(*dmin2 - *dn2)<GMX_FLOAT_EPS*fabs(*dmin2 + *dn2) &&
+        z__[nn - 5] * 2. < z__[nn - 7]) {
 	    *ttype = -10;
 	    s = *dmin2 * .333;
 	    if (z__[nn - 5] > z__[nn - 7]) {
@@ -231,7 +237,7 @@ L60:
 	    }
 	    b1 = z__[nn - 5] / z__[nn - 7];
 	    b2 = b1;
-	    if (b2 == 0.) {
+	    if (fabs(b2)<GMX_FLOAT_MIN) {
 		goto L80;
 	    }
 	    i__1 = (*i0 << 2) - 1 + *pp;

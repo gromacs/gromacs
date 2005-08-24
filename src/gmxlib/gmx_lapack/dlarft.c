@@ -1,3 +1,6 @@
+#include <math.h>
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 
@@ -37,7 +40,7 @@ F77_FUNC(dlarft,DLARFT)(char *direct,
     if (*direct=='F' || *direct=='f') {
 	i__1 = *k;
 	for (i__ = 1; i__ <= i__1; ++i__) {
-	    if (tau[i__] == 0.) {
+	    if (fabs(tau[i__])<GMX_DOUBLE_MIN) {
 
 		i__2 = i__;
 		for (j = 1; j <= i__2; ++j) {
@@ -75,7 +78,7 @@ F77_FUNC(dlarft,DLARFT)(char *direct,
 	}
     } else {
 	for (i__ = *k; i__ >= 1; --i__) {
-	    if (tau[i__] == 0.) {
+	    if (fabs(tau[i__])<GMX_DOUBLE_MIN) {
 
 		i__1 = *k;
 		for (j = i__; j <= i__1; ++j) {

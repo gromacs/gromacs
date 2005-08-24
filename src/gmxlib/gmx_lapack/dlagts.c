@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
@@ -42,8 +44,8 @@ F77_FUNC(dlagts,DLAGTS)(int *job,
     if (*n == 0) {
 	return;
     }
-    eps = LAPACK_EPS_DOUBLE;
-    minval = (1.0 + eps)/LAPACK_MAX_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
+    minval = GMX_DOUBLE_MIN;
     sfmin = minval / eps;
 
     bignum = 1. / sfmin;
@@ -69,13 +71,13 @@ F77_FUNC(dlagts,DLAGTS)(int *job,
 	      *tol = (d__4>d__5) ? d__4 : d__5;
 	    }
 	    *tol *= eps;
-	    if (*tol == 0.) {
+	    if (fabs(*tol)<GMX_DOUBLE_MIN) {
 		*tol = eps;
 	    }
 	}
     }
 
-    if (fabs(*job) == 1) {
+    if (fabs(fabs(*job)-1.0)<GMX_DOUBLE_MIN) {
 	i__1 = *n;
 	for (k = 2; k <= i__1; ++k) {
 	    if (in[k - 1] == 0) {
@@ -99,7 +101,7 @@ F77_FUNC(dlagts,DLAGTS)(int *job,
 		absak = fabs(ak);
 		if (absak < 1.) {
 		    if (absak < sfmin) {
-			if (absak == 0. || fabs(temp) * sfmin > absak) {
+			if (fabs(absak)<GMX_DOUBLE_MIN || fabs(temp) * sfmin > absak) {
 			    *info = k;
 			    return;
 			} else {
@@ -131,7 +133,7 @@ L40:
 		absak = fabs(ak);
 		if (absak < 1.) {
 		    if (absak < sfmin) {
-			if (absak == 0. || fabs(temp) * sfmin > absak) {
+			if (fabs(absak)<GMX_DOUBLE_MIN || fabs(temp) * sfmin > absak) {
 			    ak += pert;
 			    pert *= 2;
 			    goto L40;
@@ -164,7 +166,7 @@ L40:
 		absak = fabs(ak);
 		if (absak < 1.) {
 		    if (absak < sfmin) {
-			if (absak == 0. || fabs(temp) * sfmin > absak) {
+			if (fabs(absak)<GMX_DOUBLE_MIN || fabs(temp) * sfmin > absak) {
 			    *info = k;
 			    return;
 			} else {
@@ -198,7 +200,7 @@ L70:
 		absak = fabs(ak);
 		if (absak < 1.) {
 		    if (absak < sfmin) {
-			if (absak == 0. || fabs(temp) * sfmin > absak) {
+			if (fabs(absak)<GMX_DOUBLE_MIN || fabs(temp) * sfmin > absak) {
 			    ak += pert;
 			    pert *= 2;
 			    goto L70;

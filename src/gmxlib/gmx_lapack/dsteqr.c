@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
@@ -81,11 +83,11 @@ F77_FUNC(dsteqr,DSTEQR)(char *    compz,
 	return;
     }
 
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
     d__1 = eps;
     eps2 = d__1 * d__1;
-    minval = (1.0 + LAPACK_EPS_DOUBLE)/LAPACK_MAX_DOUBLE;
-    safmin = minval / LAPACK_EPS_DOUBLE;
+    minval = GMX_DOUBLE_MIN;
+    safmin = minval*(1.0+GMX_DOUBLE_EPS);
 
     safmax = 1. / safmin;
     ssfmax = sqrt(safmax) / 3.;
@@ -112,7 +114,7 @@ L10:
 	i__1 = nm1;
 	for (m = l1; m <= i__1; ++m) {
 	    tst = fabs(e[m]);
-	    if (tst == 0.) {
+	    if (fabs(tst)<GMX_DOUBLE_MIN) {
 		goto L30;
 	    }
 	    if (tst <= sqrt(fabs(d__[m])) * sqrt(fabs(d__[m + 1])) * eps) {
@@ -136,7 +138,7 @@ L30:
     i__1 = lend - l + 1;
     anorm = F77_FUNC(dlanst,DLANST)("I", &i__1, &d__[l], &e[l]);
     iscale = 0;
-    if (anorm == 0.) {
+    if (fabs(anorm)<GMX_DOUBLE_MIN) {
 	goto L10;
     }
     if (anorm > ssfmax) {
@@ -384,7 +386,7 @@ L140:
     }
     i__1 = *n - 1;
     for (i__ = 1; i__ <= i__1; ++i__) {
-	if (e[i__] != 0.) {
+	if (fabs(e[i__])>GMX_DOUBLE_MIN) {
 	    ++(*info);
 	}
     }

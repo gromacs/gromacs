@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
@@ -115,7 +117,7 @@ F77_FUNC(slasd7,SLASD7)(int *icompq,
 	vl[i__] = vlw[idxi];
     }
 
-    eps = LAPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
 
     d__1 = fabs(*alpha);
     d__2 = fabs(*beta);

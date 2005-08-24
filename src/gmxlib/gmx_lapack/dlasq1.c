@@ -3,6 +3,8 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
+
 void
 F77_FUNC(dlasq1,DLASQ1)(int *n,
 	double *d,
@@ -16,9 +18,9 @@ F77_FUNC(dlasq1,DLASQ1)(int *n,
   double dtemp,scale;
   double eps;
 
-  eps = LAPACK_EPS_DOUBLE;
-  minval = (1.0 + LAPACK_EPS_DOUBLE)/LAPACK_MAX_DOUBLE;
-  safemin = minval / LAPACK_EPS_DOUBLE;
+  eps = GMX_DOUBLE_EPS;
+  minval = GMX_DOUBLE_MIN;
+  safemin = minval*(1.0+GMX_DOUBLE_EPS);
   *info = 0;
 
   if(*n<0) {
@@ -34,7 +36,7 @@ F77_FUNC(dlasq1,DLASQ1)(int *n,
   }
   d[*n-1] = fabs(d[*n-1]);
   
-  if(sigmx==0) {
+  if(fabs(sigmx)<GMX_DOUBLE_MIN) {
     F77_FUNC(dlasrt,DLASRT)("D",n,d,&iinfo);
     return;
   }

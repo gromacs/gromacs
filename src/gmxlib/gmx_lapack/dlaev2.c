@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 
 
@@ -66,7 +68,7 @@ F77_FUNC(dlaev2,DLAEV2)(double *   a,
 	*sn1 = 1. / sqrt(ct * ct + 1.);
 	*cs1 = ct * *sn1;
     } else {
-	if (ab == 0.) {
+	if (fabs(ab)<GMX_DOUBLE_MIN) {
 	    *cs1 = 1.;
 	    *sn1 = 0.;
 	} else {

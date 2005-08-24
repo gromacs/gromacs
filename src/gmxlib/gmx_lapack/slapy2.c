@@ -1,6 +1,8 @@
 #include <math.h>
 #include "gmx_lapack.h"
 
+#include <types/simple.h>
+
 float
 F77_FUNC(slapy2,SLAPY2)(float * x, float * y)
 {
@@ -18,7 +20,7 @@ F77_FUNC(slapy2,SLAPY2)(float * x, float * y)
     z = xabs;
   }
 
-  if(z==0) 
+  if( fabs(z)<GMX_FLOAT_MIN) 
     return w;
   else {
     z = z/w;

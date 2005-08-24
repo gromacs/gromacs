@@ -1,7 +1,9 @@
+#include <math.h>
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
 F77_FUNC(dtrtri,DTRTRI)(char *uplo,
@@ -39,7 +41,7 @@ F77_FUNC(dtrtri,DTRTRI)(char *uplo,
     if (nounit) {
 	i__1 = *n;
 	for (*info = 1; *info <= i__1; ++(*info)) {
-	    if (a[*info + *info * a_dim1] == 0.) {
+	    if (fabs(a[*info + *info * a_dim1])<GMX_DOUBLE_MIN) {
 		return;
 	    }
 	}

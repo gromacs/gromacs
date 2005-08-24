@@ -1,3 +1,6 @@
+#include <math.h>
+
+#include <types/simple.h>
 #include "gmx_lapack.h"
 
 void 
@@ -39,7 +42,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = 1; j <= i__1; ++j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__2 = *n;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    temp = a[j + 1 + i__ * a_dim1];
@@ -54,7 +57,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = *m - 1; j >= 1; --j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__1 = *n;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    temp = a[j + 1 + i__ * a_dim1];
@@ -72,7 +75,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = 2; j <= i__1; ++j) {
 		    ctemp = c__[j - 1];
 		    stemp = s[j - 1];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__2 = *n;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    temp = a[j + i__ * a_dim1];
@@ -87,7 +90,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = *m; j >= 2; --j) {
 		    ctemp = c__[j - 1];
 		    stemp = s[j - 1];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__1 = *n;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    temp = a[j + i__ * a_dim1];
@@ -105,7 +108,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = 1; j <= i__1; ++j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__2 = *n;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    temp = a[j + i__ * a_dim1];
@@ -120,7 +123,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = *m - 1; j >= 1; --j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__1 = *n;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    temp = a[j + i__ * a_dim1];
@@ -141,7 +144,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = 1; j <= i__1; ++j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__2 = *m;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    temp = a[i__ + (j + 1) * a_dim1];
@@ -156,7 +159,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = *n - 1; j >= 1; --j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__1 = *m;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    temp = a[i__ + (j + 1) * a_dim1];
@@ -174,7 +177,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = 2; j <= i__1; ++j) {
 		    ctemp = c__[j - 1];
 		    stemp = s[j - 1];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__2 = *m;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    temp = a[i__ + j * a_dim1];
@@ -189,7 +192,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = *n; j >= 2; --j) {
 		    ctemp = c__[j - 1];
 		    stemp = s[j - 1];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__1 = *m;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    temp = a[i__ + j * a_dim1];
@@ -207,7 +210,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = 1; j <= i__1; ++j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__2 = *m;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    temp = a[i__ + j * a_dim1];
@@ -222,7 +225,7 @@ F77_FUNC(dlasr,DLASR)(char *side,
 		for (j = *n - 1; j >= 1; --j) {
 		    ctemp = c__[j];
 		    stemp = s[j];
-		    if (ctemp != 1. || stemp != 0.) {
+		    if (fabs(ctemp-1.0)>GMX_DOUBLE_EPS || fabs(stemp)>GMX_DOUBLE_MIN) {
 			i__1 = *m;
 			for (i__ = 1; i__ <= i__1; ++i__) {
 			    temp = a[i__ + j * a_dim1];

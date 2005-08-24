@@ -34,7 +34,7 @@ F77_FUNC(slasd8,SLASD8)(int *icompq,
     /* avoid warnings on high gcc optimization levels */
     difrj = dsigjp = 0;
 
-    --d__;
+     --d__;
     --z__;
     --vf;
     --vl;

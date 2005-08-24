@@ -1,24 +1,26 @@
 #include <math.h>
+#include <types/simple.h>
+
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
-
-void 
+void
 F77_FUNC(sgesdd,SGESDD)(char *jobz, 
-	int *m, 
-	int *n, 
-	float *a, 
-	int *lda, 
-	float *s,
-	float *u, 
-	int *ldu, 
-	float *vt, 
-	int *ldvt, 
-	float *work,
-	int *lwork, 
-	int *iwork, 
-	int *info)
+                        int *m, 
+                        int *n, 
+                        float *a, 
+                        int *lda, 
+                        float *s,
+                        float *u, 
+                        int *ldu, 
+                        float *vt, 
+                        int *ldvt, 
+                        float *work,
+                        int *lwork, 
+                        int *iwork, 
+                        int *info)
 {
     int a_dim1, a_offset, u_dim1, u_offset, vt_dim1, vt_offset, i__1, i__2;
 
@@ -146,14 +148,20 @@ F77_FUNC(sgesdd,SGESDD)(char *jobz,
 	}
 	work[1] = (float) maxwrk;
     }
+    
+    if( lquery != 0)
+    {
+        return;
+    }
+    
     if (*m == 0 || *n == 0) {
 	if (*lwork >= 1) {
 	    work[1] = 1.;
 	}
 	return;
     }
-    eps = LAPACK_EPS_FLOAT;
-    minval = (1.0 + eps)/LAPACK_MAX_FLOAT;
+    eps = GMX_FLOAT_EPS;
+    minval = GMX_FLOAT_MIN;
     safemin = minval / eps;
     smlnum = sqrt(safemin) / eps;
 

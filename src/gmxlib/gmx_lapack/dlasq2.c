@@ -2,9 +2,12 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
-void F77_FUNC(dlasq2,DLASQ2)(int *n, 
-	     double *z__, 
-	     int *info)
+#include <types/simple.h>
+
+void 
+F77_FUNC(dlasq2,DLASQ2)(int *n, 
+                        double *z__, 
+                        int *info)
 {
     int i__1, i__2, i__3;
     double d__1, d__2;
@@ -34,9 +37,9 @@ void F77_FUNC(dlasq2,DLASQ2)(int *n,
     --z__;
 
     *info = 0;
-    eps = LAPACK_EPS_DOUBLE;
-    minval = (1.0 + eps)/LAPACK_MAX_DOUBLE;
-    safmin = minval / eps;
+    eps = GMX_DOUBLE_EPS;
+    minval = GMX_DOUBLE_MIN;
+    safmin = minval*(1.0+eps);
 
     tol = eps * 100.;
 
@@ -116,7 +119,7 @@ void F77_FUNC(dlasq2,DLASQ2)(int *n,
     qmax = (d__1>d__2) ? d__1 : d__2;
     zmax = (qmax>zmax) ? qmax : zmax;
 
-    if (e == 0.) {
+    if (fabs(e)<GMX_DOUBLE_MIN) {
 	i__1 = *n;
 	for (k = 2; k <= i__1; ++k) {
 	    z__[k] = z__[(k << 1) - 1];
@@ -128,7 +131,7 @@ void F77_FUNC(dlasq2,DLASQ2)(int *n,
 
     trace = d__ + e;
 
-    if (trace == 0.) {
+    if (fabs(trace)<GMX_DOUBLE_MIN) {
 	z__[(*n << 1) - 1] = 0.;
 	return;
     }
@@ -141,13 +144,13 @@ void F77_FUNC(dlasq2,DLASQ2)(int *n,
     if(neginf>=0.0)
       ieee = 0;
     negzro = one/(neginf+one);
-    if(negzro!=0)
+    if(fabs(negzro)>GMX_DOUBLE_MIN)
       ieee = 0;
     neginf = one/negzro;
     if(neginf>=0)
       ieee = 0;
     newzro = negzro + zero;
-    if(newzro!=zero)
+    if(fabs(newzro-zero)>GMX_DOUBLE_MIN)
       ieee = 0;
     posinf = one /newzro;
     if(posinf<=one)

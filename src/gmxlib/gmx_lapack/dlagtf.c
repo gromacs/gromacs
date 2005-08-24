@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
@@ -39,13 +41,13 @@ F77_FUNC(dlagtf,DLAGTF)(int *n,
     a[1] -= *lambda;
     in[*n] = 0;
     if (*n == 1) {
-	if (a[1] == 0.) {
+	if (fabs(a[1])<GMX_DOUBLE_MIN) {
 	    in[1] = 1;
 	}
 	return;
     }
 
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
 
     tl = (*tol>eps) ? *tol : eps;
     scale1 = fabs(a[1]) + fabs(b[1]);
@@ -56,12 +58,12 @@ F77_FUNC(dlagtf,DLAGTF)(int *n,
 	if (k < *n - 1) {
 	    scale2 += fabs(b[k + 1]);
 	}
-	if (a[k] == 0.) {
+	if (fabs(a[k])<GMX_DOUBLE_MIN) {
 	    piv1 = 0.;
 	} else {
 	    piv1 = fabs(a[k]) / scale1;
 	}
-	if (c__[k] == 0.) {
+	if (fabs(c__[k])<GMX_DOUBLE_MIN) {
 	    in[k] = 0;
 	    piv2 = 0.;
 	    scale1 = scale2;

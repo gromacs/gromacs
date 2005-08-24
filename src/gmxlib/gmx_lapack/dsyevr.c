@@ -176,9 +176,9 @@ F77_FUNC(dsyevr,DSYEVR)(char *jobz, char *range, char *uplo, int *n,
 	}
 	return;
     }
-    minval = (1.0 + LAPACK_EPS_DOUBLE)/LAPACK_MAX_DOUBLE;
-    safmin = minval / LAPACK_EPS_DOUBLE;
-    eps = LAPACK_EPS_DOUBLE;
+    minval = GMX_DOUBLE_MIN;
+    safmin = minval*(1.0+GMX_DOUBLE_EPS);
+    eps = GMX_DOUBLE_EPS;
 
     smlnum = safmin / eps;
     bignum = 1. / smlnum;

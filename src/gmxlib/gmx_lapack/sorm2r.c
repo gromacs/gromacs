@@ -30,8 +30,6 @@ F77_FUNC(sorm2r,SORM2R)(char *side,
     c_offset = 1 + c_dim1;
     c__ -= c_offset;
     --work;
-
-
     *info = 0;
     left = (*side=='L' || *side=='l');
     notran = (*trans=='N' || *trans=='n');

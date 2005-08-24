@@ -1,5 +1,8 @@
 #include <math.h>
 #include <ctype.h>
+
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
@@ -72,7 +75,7 @@ F77_FUNC(dlarrex,DLARREX)(char *range,
     
 
     *m = 0;
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
 
     *nsplit = 1;
     i__1 = *n - 1;
@@ -180,8 +183,7 @@ L60:
 	}
 	for (i__ = in; i__ >= 1; --i__) {
 	    tmp = sgndef * work[i__];
-	    if (tmp < 0. || work[(in << 1) + i__] == 0. || ! (tmp > 0. || tmp 
-		    < 1.)) {
+	    if (tmp < 0. || fabs(work[(in << 1) + i__])<GMX_DOUBLE_MIN || ! (tmp > 0. || tmp < 1.)) {
 		delta *= 2.;
 		goto L60;
 	    }
@@ -236,8 +238,7 @@ L100:
 
 	for (i__ = in; i__ >= 1; --i__) {
 	    tmp = sgndef * work[i__];
-	    if (tmp < 0. || work[(in << 1) + i__] == 0. || ! (tmp > 0. || tmp 
-		    < 1.)) {
+	    if (tmp < 0. || fabs(work[(in << 1) + i__])<GMX_DOUBLE_MIN || ! (tmp > 0. || tmp < 1.)) {
 		delta *= 2.;
 		goto L100;
 	    }

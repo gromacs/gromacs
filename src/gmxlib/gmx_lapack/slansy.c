@@ -15,7 +15,7 @@ F77_FUNC(slansy,SLANSY)(char *norm, char *uplo, int *n, float *a, int
     /* Local variables */
     int i__, j;
     float sum, absa, scale;
-    float value = 0.0; 
+    float value =0.0;
 
     a_dim1 = *lda;
     a_offset = 1 + a_dim1;

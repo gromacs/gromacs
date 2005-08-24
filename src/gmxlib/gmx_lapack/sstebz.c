@@ -2,25 +2,27 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
+
 void
 F77_FUNC(sstebz,SSTEBZ)(char *range, 
-	char *order,
-	int *n,
-	float *vl, 
-	float *vu, 
-	int *il,
-	int *iu,
-	float *abstol, 
-	float *d__,
-	float *e,
-	int *m, 
-	int *nsplit, 
-	float *w,
-	int *iblock,
-	int *isplit,
-	float *work, 
-	int *iwork, 
-	int *info)
+                        char *order,
+                        int *n,
+                        float *vl, 
+                        float *vu, 
+                        int *il,
+                        int *iu,
+                        float *abstol, 
+                        float *d__,
+                        float *e,
+                        int *m, 
+                        int *nsplit, 
+                        float *w,
+                        int *iblock,
+                        int *isplit,
+                        float *work, 
+                        int *iwork, 
+                        int *info)
 {
     int i__1, i__2, i__3;
     float d__1, d__2, d__3, d__4, d__5;
@@ -53,8 +55,7 @@ F77_FUNC(sstebz,SSTEBZ)(char *range,
     int ncnvrg;
     float pivmin;
     int toofew;
-    const float safemn =
-      (1.0+LAPACK_EPS_FLOAT)/LAPACK_MAX_FLOAT/LAPACK_EPS_FLOAT;
+    const float safemn = GMX_FLOAT_MIN*(1.0+GMX_FLOAT_EPS);
 
     --iwork;
     --work;
@@ -118,7 +119,7 @@ F77_FUNC(sstebz,SSTEBZ)(char *range,
 	irange = 1;
     }
 
-    ulp = 2*LAPACK_EPS_FLOAT;
+    ulp = 2*GMX_FLOAT_EPS;
     rtoli = ulp * 2.;
     nb = DSTEBZ_BLOCKSIZE;
     if (nb <= 1) {
@@ -230,6 +231,7 @@ F77_FUNC(sstebz,SSTEBZ)(char *range,
 	    return;
 	}
     } else {
+
 
       /* avoid warnings for high gcc optimization */
       wlu = wul = 1.0;

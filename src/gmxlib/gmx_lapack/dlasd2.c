@@ -3,30 +3,32 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
-void F77_FUNC(dlasd2,DLASD2)(int *nl, 
-	     int *nr, 
-	     int *sqre, 
-	     int *k, 
-	     double *d__, 
-	     double *z__, 
-	     double *alpha, 
-	     double *beta, 
-	     double *u, 
-	     int *ldu, 
-	     double *vt, 
-	     int *ldvt, 
-	     double *dsigma, 
-	     double *u2, 
-	     int *ldu2, 
-	     double *vt2, 
-	     int *ldvt2, 
-	     int *idxp, 
-	     int *idx, 
-	     int *idxc, 
-	     int *idxq, 
-	     int *coltyp, 
-	     int *info)
+void 
+F77_FUNC(dlasd2,DLASD2)(int *nl, 
+                        int *nr, 
+                        int *sqre, 
+                        int *k, 
+                        double *d__, 
+                        double *z__, 
+                        double *alpha, 
+                        double *beta, 
+                        double *u, 
+                        int *ldu, 
+                        double *vt, 
+                        int *ldvt, 
+                        double *dsigma, 
+                        double *u2, 
+                        int *ldu2, 
+                        double *vt2, 
+                        int *ldvt2, 
+                        int *idxp, 
+                        int *idx, 
+                        int *idxc, 
+                        int *idxq, 
+                        int *coltyp, 
+                        int *info)
 {
     int u_dim1, u_offset, u2_dim1, u2_offset, vt_dim1, vt_offset;
     int vt2_dim1, vt2_offset, i__1;
@@ -120,7 +122,7 @@ void F77_FUNC(dlasd2,DLASD2)(int *nl,
 	coltyp[i__] = idxc[idxi];
     }
 
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
     d__1 = fabs(*alpha), d__2 = fabs(*beta);
     tol = (d__1 > d__2) ? d__1 : d__2;
     d__2 = fabs(d__[n]);

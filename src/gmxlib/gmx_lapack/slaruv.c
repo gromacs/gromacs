@@ -55,12 +55,12 @@ F77_FUNC(slaruv,SLARUV)(int *iseed, int *n, float *x)
     --iseed;
     --x;
 
+    it1 = it2 = it3 = it4 = 0;
+
     i1 = iseed[1];
     i2 = iseed[2];
     i3 = iseed[3];
     i4 = iseed[4];
-
-    it1 = it2 = it3 = it4 = 0;
 
     i__1 = (*n<128) ? *n : 128;
     for (i__ = 1; i__ <= i__1; ++i__) {

@@ -1,128 +1,196 @@
 #include <ctype.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 
-void
-F77_FUNC(slasdq,SLASDQ)(char *uplo, 
-	int *sqre, 
-	int *n, 
-	int *ncvt,
-	int *nru, 
-	int *ncc,
-	float *d, 
-	float *e, 
-	float *vt, 
-	int *ldvt, 
-	float *u, 
-	int *ldu, 
-	float *c, 
-	int *ldc, 
-	float *work, 
-	int *info)
+
+void 
+F77_FUNC(slasdq,SLASDQ)(char *uplo,
+                        int *sqre,
+                        int *n,
+                        int *ncvt,
+                        int *nru,
+                        int *ncc,
+                        float *d__,
+                        float *e, 
+                        float *vt, 
+                        int *ldvt, 
+                        float *u,
+                        int *ldu, 
+                        float *c__,
+                        int *ldc,
+                        float *work, 
+                        int *info)
 {
-  char xuplo=toupper(*uplo);
+    char xuplo=toupper(*uplo);
+    int c_dim1, c_offset, u_dim1, u_offset, vt_dim1, vt_offset, i__1, 
+	    i__2;
+    int c__1 = 1;
+    int itmp1,itmp2;
+    int i__, j;
+    float r__, cs, sn;
+    int np1, isub;
+    float smin;
+    int sqre1;
+    int iuplo;
+    int rotate;
 
-  int i,j,i1;
-  float r, cs, sn;
-  int np1, isub;
-  float smin;
-  int sqre1 = *sqre;
-  int n1 = *n;
-  int rotate = (*ncvt>0 || *nru>0 || *ncc>0);
+    --d__;
+    --e;
+    vt_dim1 = *ldvt;
+    vt_offset = 1 + vt_dim1;
+    vt -= vt_offset;
+    u_dim1 = *ldu;
+    u_offset = 1 + u_dim1;
+    u -= u_offset;
+    c_dim1 = *ldc;
+    c_offset = 1 + c_dim1;
+    c__ -= c_offset;
+    --work;
 
-  np1 = n1 + 1;
-  *info = 0;
+    *info = 0;
+    iuplo = 0;
+    if (xuplo == 'U') {
+	iuplo = 1;
+    }
+    if (xuplo == 'L') {
+	iuplo = 2;
+    }
+    
+    itmp1 = (*n > 1) ? *n : 1;
+    itmp2 = (*nru > 1) ? *nru : 1;
+    if (iuplo == 0) {
+	*info = -1;
+    } else if (*sqre < 0 || *sqre > 1) {
+	*info = -2;
+    } else if (*n < 0) {
+	*info = -3;
+    } else if (*ncvt < 0) {
+	*info = -4;
+    } else if (*nru < 0) {
+	*info = -5;
+    } else if (*ncc < 0) {
+	*info = -6;
+    } else if ( (*ncvt == 0 && *ldvt < 1) || (*ncvt > 0 && *ldvt < itmp1)) {
+	*info = -10;
+    } else if (*ldu < itmp2) {
+	*info = -12;
+    } else if ((*ncc == 0 && *ldc < 1) || (*ncc > 0 && *ldc < itmp1)) {
+	*info = -14;
+    }
+    if (*info != 0) {
+	return;
+    }
+    if (*n == 0) {
+	return;
+    }
 
-  if (*n == 0) 
-    return;
+    rotate = *ncvt > 0 || *nru > 0 || *ncc > 0;
+    np1 = *n + 1;
+    sqre1 = *sqre;
 
-    if (xuplo == 'U' && sqre1 == 1) {
-	for (i=0; i<n1-1; i++) {
-	    F77_FUNC(slartg,SLARTG)(d+i,e+i,&cs,&sn,&r);
-	    d[i] = r;
-	    e[i] = sn * d[i + 1];
-	    d[i+1] = cs * d[i + 1];
+    if (iuplo == 1 && sqre1 == 1) {
+	i__1 = *n - 1;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    F77_FUNC(slartg,SLARTG)(&d__[i__], &e[i__], &cs, &sn, &r__);
+	    d__[i__] = r__;
+	    e[i__] = sn * d__[i__ + 1];
+	    d__[i__ + 1] = cs * d__[i__ + 1];
 	    if (rotate) {
-		work[i] = cs;
-		work[n1 + i] = sn;
+		work[i__] = cs;
+		work[*n + i__] = sn;
 	    }
 	}
-	F77_FUNC(slartg,SLARTG)(d+n1-1,e+n1-1,&cs,&sn,&r);
-	d[n1-1] = r;
-	e[n1-1] = 0.0;
+	F77_FUNC(slartg,SLARTG)(&d__[*n], &e[*n], &cs, &sn, &r__);
+	d__[*n] = r__;
+	e[*n] = 0.f;
 	if (rotate) {
-	    work[n1-1] = cs;
-	    work[2*n1-1] = sn;
+	    work[*n] = cs;
+	    work[*n + *n] = sn;
 	}
-	xuplo='L';
+	iuplo = 2;
 	sqre1 = 0;
 
 	if (*ncvt > 0) {
-	    F77_FUNC(slasr,SLASR)("L", "V", "F", &np1, ncvt, work, work+np1-1,vt,ldvt);
+	    F77_FUNC(slasr,SLASR)("L", "V", "F", &np1, ncvt, &work[1], &work[np1], &vt[
+		    vt_offset], ldvt);
 	}
     }
-
-    if (xuplo=='L') {
-	for (i=0;i<(n1-1);i++) {
-	    F77_FUNC(slartg,SLARTG)(d+i, e+i, &cs, &sn, &r);
-	    d[i] = r;
-	    e[i] = sn * d[i + 1];
-	    d[i + 1] = cs * d[i + 1];
+    if (iuplo == 2) {
+	i__1 = *n - 1;
+	for (i__ = 1; i__ <= i__1; ++i__) {
+	    F77_FUNC(slartg,SLARTG)(&d__[i__], &e[i__], &cs, &sn, &r__);
+	    d__[i__] = r__;
+	    e[i__] = sn * d__[i__ + 1];
+	    d__[i__ + 1] = cs * d__[i__ + 1];
 	    if (rotate) {
-		work[i] = cs;
-		work[n1 + i] = sn;
+		work[i__] = cs;
+		work[*n + i__] = sn;
 	    }
 	}
 
 	if (sqre1 == 1) {
-	    F77_FUNC(slartg,SLARTG)(d+n1-1, e+n1-1, &cs, &sn, &r);
-	    d[n1-1] = r;
+	    F77_FUNC(slartg,SLARTG)(&d__[*n], &e[*n], &cs, &sn, &r__);
+	    d__[*n] = r__;
 	    if (rotate) {
-		work[n1 - 1] = cs;
-		work[2*n1 - 1] = sn;
+		work[*n] = cs;
+		work[*n + *n] = sn;
 	    }
 	}
-
 	if (*nru > 0) {
-	  if (sqre1 == 0) 
-	    F77_FUNC(slasr,SLASR)("R","V","F",nru,n,work,work+np1-1,u,ldu);
-	  else 
-	    F77_FUNC(slasr,SLASR)("R","V","F",nru,&np1,work,work+np1-1,u,ldu);
-      	}
-	if (*ncc > 0) {
-	    if (sqre1 == 0) 
-	      F77_FUNC(slasr,SLASR)("L","V","F",n, ncc, work, work+np1-1,c,ldc);
-	    else 
-		F77_FUNC(slasr,SLASR)("L","V","F",&np1, ncc, work, work+np1-1,c,ldc);
-	}
-    }
-
-    F77_FUNC(sbdsqr,SBDSQR)("U", n, ncvt, nru, ncc, d,e,vt,ldvt,u,ldu,c,ldc,work,info);
-
-    for (i=0;i<n1;i++) {
-
-	isub = i;
-	smin = d[i];
-	for (j=i+1;j<n1;j++) {
-	    if (d[j] < smin) {
-		isub = j;
-		smin = d[j];
+	    if (sqre1 == 0) {
+		F77_FUNC(slasr,SLASR)("R", "V", "F", nru, n, &work[1], &work[np1], &u[
+			u_offset], ldu);
+	    } else {
+		F77_FUNC(slasr,SLASR)("R", "V", "F", nru, &np1, &work[1], &work[np1], &u[
+			u_offset], ldu);
 	    }
 	}
-	if (isub != i) {
-	    d[isub] = d[i];
-	    d[i] = smin;
-	    if (*ncvt > 0) 
-	      F77_FUNC(sswap,SSWAP)(ncvt, vt+isub,ldvt,vt+i,ldvt);
-	    if (*nru > 0) {
-	      i1 = 1;
-	      F77_FUNC(sswap,SSWAP)(nru, u+(isub*(*ldu)),&i1,u+i*(*ldu),&i1);
-	    } 
-	    if (*ncc > 0) 
-	      F77_FUNC(sswap,SSWAP)(ncc,c+isub,ldc,c+i,ldc);
-	    
+	if (*ncc > 0) {
+	    if (sqre1 == 0) {
+		F77_FUNC(slasr,SLASR)("L", "V", "F", n, ncc, &work[1], &work[np1], &c__[
+			c_offset], ldc);
+	    } else {
+		F77_FUNC(slasr,SLASR)("L", "V", "F", &np1, ncc, &work[1], &work[np1], &c__[
+			c_offset], ldc);
+	    }
 	}
     }
-    return ;
+
+    F77_FUNC(sbdsqr,SBDSQR)("U", n, ncvt, nru, ncc, &d__[1], &e[1], &vt[vt_offset], ldvt, &u[
+	    u_offset], ldu, &c__[c_offset], ldc, &work[1], info);
+
+    i__1 = *n;
+    for (i__ = 1; i__ <= i__1; ++i__) {
+
+	isub = i__;
+	smin = d__[i__];
+	i__2 = *n;
+	for (j = i__ + 1; j <= i__2; ++j) {
+	    if (d__[j] < smin) {
+		isub = j;
+		smin = d__[j];
+	    }
+	}
+	if (isub != i__) {
+	    d__[isub] = d__[i__];
+	    d__[i__] = smin;
+	    if (*ncvt > 0) {
+		F77_FUNC(sswap,SSWAP)(ncvt, &vt[isub + vt_dim1], ldvt, &vt[i__ + vt_dim1], 
+			ldvt);
+	    }
+	    if (*nru > 0) {
+		F77_FUNC(sswap,SSWAP)(nru, &u[isub * u_dim1 + 1], &c__1, &u[i__ * u_dim1 + 1]
+			, &c__1);
+	    }
+	    if (*ncc > 0) {
+		F77_FUNC(sswap,SSWAP)(ncc, &c__[isub + c_dim1], ldc, &c__[i__ + c_dim1], ldc)
+			;
+	    }
+	}
+    }
+
+    return;
 }
+
 

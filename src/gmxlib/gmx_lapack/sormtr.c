@@ -54,7 +54,6 @@ F77_FUNC(sormtr,SORMTR)(char *side,
     lwkopt = nw * nb;
     work[1] = (float) lwkopt;
     
-
     if (*info != 0) {
 	i__2 = -(*info);
 	return;

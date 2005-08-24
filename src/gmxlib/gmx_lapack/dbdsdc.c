@@ -4,6 +4,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
 F77_FUNC(dbdsdc,DBDSDC)(char *uplo, 
@@ -148,13 +149,13 @@ F77_FUNC(dbdsdc,DBDSDC)(char *uplo,
     }
 
     orgnrm = F77_FUNC(dlanst,DLANST)("M", n, &d__[1], &e[1]);
-    if (orgnrm == 0.) {
+    if ( fabs(orgnrm)<GMX_DOUBLE_MIN) {
 	return;
     }
     F77_FUNC(dlascl,DLASCL)("G", &c_0, &c_0, &orgnrm, &one, n, &c_1, &d__[1], n, &ierr);
     F77_FUNC(dlascl,DLASCL)("G", &c_0, &c_0, &orgnrm, &one, &nm1, &c_1, &e[1], &nm1, &ierr);
 
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
 
     mlvl = (int) (log((double) (*n) / (double) (smlsiz + 1)) / 
 	    log(2.)) + 1;

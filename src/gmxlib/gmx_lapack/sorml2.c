@@ -3,17 +3,17 @@
 
 void
 F77_FUNC(sorml2,SORML2)(char *side,
-	char *trans,
-	int *m,
-	int *n,
-	int *k,
-	float *a,
-	int *lda,
-	float *tau,
-	float *c,
-	int *ldc,
-	float *work,
-	int *info)
+                        char *trans,
+                        int *m,
+                        int *n,
+                        int *k,
+                        float *a,
+                        int *lda,
+                        float *tau,
+                        float *c,
+                        int *ldc,
+                        float *work,
+                        int *info)
 {
   char xside=toupper(*side);
   char xtrans=toupper(*trans);
@@ -27,20 +27,20 @@ F77_FUNC(sorml2,SORML2)(char *side,
 
   if((xside=='L' && xtrans=='N') || (xside!='L' && xtrans!='N')) {
     i1 = 0;
-    i2 = *k-1;
+    i2 = *k;
     i3 = 1;
   } else {
     i1 = *k-1;
-    i2 = 0;
+    i2 = -1;
     i3 = -1;
   }
   
   if(xside=='L') {
     ni = *n;
-    jc = 1;
+    jc = 0;
   } else {
     mi = *m;
-    ic = 1;
+    ic = 0;
   }
 
   for(i=i1;i!=i2;i+=i3) {

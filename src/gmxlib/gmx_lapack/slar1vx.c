@@ -1,4 +1,7 @@
 #include <math.h>
+
+#include <types/simple.h>
+
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
@@ -42,7 +45,7 @@ void F77_FUNC(slar1vx,SLAR1VX)(int *n,
     --d__;
 
     /* Function Body */
-    eps = LAPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
     if (*r__ == 0) {
 
 	r1 = *b1;
@@ -103,7 +106,7 @@ L60:
 	for (i__ = j + 1; i__ <= i__1; ++i__) {
 	    dplus = d__[i__] + s;
 	    work[i__] = ld[i__] / dplus;
-	    if (work[i__] == 0.) {
+	    if (fabs(work[i__])<GMX_FLOAT_MIN) {
 		work[inds + i__] = lld[i__];
 	    } else {
 		work[inds + i__] = s * work[i__] * l[i__];
@@ -136,7 +139,7 @@ L90:
 	    dminus = lld[i__] + work[indp + i__];
 	    tmp = d__[i__] / dminus;
 	    work[indumn + i__] = l[i__] * tmp;
-	    if (tmp == 0.) {
+	    if (fabs(tmp)<GMX_FLOAT_MIN) {
 		work[indp + i__ - 1] = d__[i__] - *sigma;
 	    } else {
 		work[indp + i__ - 1] = work[indp + i__] * tmp - *sigma;
@@ -145,14 +148,14 @@ L90:
     }
 
     *mingma = work[inds + r1 - 1] + work[indp + r1 - 1];
-    if (*mingma == 0.) {
+    if (fabs(*mingma)<GMX_FLOAT_MIN) {
 	*mingma = eps * work[inds + r1 - 1];
     }
     *r__ = r1;
     i__1 = r2 - 1;
     for (i__ = r1; i__ <= i__1; ++i__) {
 	tmp = work[inds + i__] + work[indp + i__];
-	if (tmp == 0.) {
+	if (fabs(tmp)<GMX_FLOAT_MIN) {
 	    tmp = eps * work[inds + i__];
 	}
 	if (fabs(tmp) < fabs(*mingma)) {
@@ -207,7 +210,7 @@ L140:
     } else {
 	i__1 = *b1;
 	for (i__ = *r__ - 1; i__ >= i__1; --i__) {
-	    if (z__[i__ + 1] == 0.) {
+	    if (fabs(z__[i__ + 1])<GMX_FLOAT_MIN) {
 		z__[i__] = -(ld[i__ + 1] / ld[i__]) * z__[i__ + 2];
 	    } else {
 		z__[i__] = -(work[i__] * z__[i__ + 1]);
@@ -221,7 +224,7 @@ L140:
 L170:
 	i__1 = *bn - 1;
 	for (i__ = *r__; i__ <= i__1; ++i__) {
-	    if (z__[i__] == 0.) {
+	    if (fabs(z__[i__])<GMX_FLOAT_MIN) {
 		z__[i__ + 1] = -(ld[i__ - 1] / ld[i__]) * z__[i__ - 1];
 	    } else {
 		z__[i__ + 1] = -(work[indumn + i__] * z__[i__]);

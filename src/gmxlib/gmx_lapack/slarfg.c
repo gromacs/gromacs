@@ -1,4 +1,6 @@
 #include <math.h>
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
@@ -6,10 +8,10 @@
 
 void
 F77_FUNC(slarfg,SLARFG)(int   *n,
-       float *alpha,
-       float *x,
-       int    *incx,
-       float *tau)
+                        float *alpha,
+                        float *x,
+                        int    *incx,
+                        float *tau)
 {
   float xnorm,t;
   int    ti1,knt,j;
@@ -24,7 +26,7 @@ F77_FUNC(slarfg,SLARFG)(int   *n,
 
   xnorm = F77_FUNC(snrm2,SNRM2)(&ti1,x,incx);
 
-  if(xnorm==0) {
+  if(fabs(xnorm)<GMX_FLOAT_MIN) {
     *tau = 0.0;
   } else {
 
@@ -35,9 +37,9 @@ F77_FUNC(slarfg,SLARFG)(int   *n,
     else
       beta = -t;
 
-    minval = (1.0 + LAPACK_EPS_FLOAT)/LAPACK_MAX_FLOAT;
+    minval = GMX_FLOAT_MIN;
     
-    safmin = minval / LAPACK_EPS_FLOAT;
+    safmin = minval*(1.0+GMX_FLOAT_EPS) / GMX_FLOAT_EPS;
 
         
     if(fabs(beta)<safmin) {

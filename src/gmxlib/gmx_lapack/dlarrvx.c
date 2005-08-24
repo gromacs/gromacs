@@ -1,5 +1,7 @@
 #include <math.h>
 
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
@@ -86,7 +88,7 @@ F77_FUNC(dlarrvx,DLARRVX)(int *n,
     iindc2 = *n * 3;
     iindwk = (*n << 2) + 1;
 
-    eps = LAPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
 
     i__1 = *n << 1;
     for (i__ = 1; i__ <= i__1; ++i__) {

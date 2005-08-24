@@ -25,8 +25,8 @@ F77_FUNC(sorgqr,SORGQR)(int *m,
     --tau;
     --work;
 
-    *info = 0;
     ki = 0;
+    *info = 0;
     nb = DORGQR_BLOCKSIZE;
     lwkopt = (*n) * nb;
     work[1] = (float) lwkopt;

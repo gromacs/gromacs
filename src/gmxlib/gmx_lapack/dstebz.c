@@ -2,25 +2,27 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
+
 void
 F77_FUNC(dstebz,DSTEBZ)(char *range, 
-	char *order,
-	int *n,
-	double *vl, 
-	double *vu, 
-	int *il,
-	int *iu,
-	double *abstol, 
-	double *d__,
-	double *e,
-	int *m, 
-	int *nsplit, 
-	double *w,
-	int *iblock,
-	int *isplit,
-	double *work, 
-	int *iwork, 
-	int *info)
+                        char *order,
+                        int *n,
+                        double *vl, 
+                        double *vu, 
+                        int *il,
+                        int *iu,
+                        double *abstol, 
+                        double *d__,
+                        double *e,
+                        int *m, 
+                        int *nsplit, 
+                        double *w,
+                        int *iblock,
+                        int *isplit,
+                        double *work, 
+                        int *iwork, 
+                        int *info)
 {
     int i__1, i__2, i__3;
     double d__1, d__2, d__3, d__4, d__5;
@@ -53,8 +55,7 @@ F77_FUNC(dstebz,DSTEBZ)(char *range,
     int ncnvrg;
     double pivmin;
     int toofew;
-    const double safemn =
-      (1.0+LAPACK_EPS_DOUBLE)/LAPACK_MAX_DOUBLE/LAPACK_EPS_DOUBLE;
+    const double safemn = GMX_DOUBLE_MIN*(1.0+GMX_DOUBLE_EPS);
 
     --iwork;
     --work;
@@ -118,7 +119,7 @@ F77_FUNC(dstebz,DSTEBZ)(char *range,
 	irange = 1;
     }
 
-    ulp = 2*LAPACK_EPS_DOUBLE;
+    ulp = 2*GMX_DOUBLE_EPS;
     rtoli = ulp * 2.;
     nb = DSTEBZ_BLOCKSIZE;
     if (nb <= 1) {

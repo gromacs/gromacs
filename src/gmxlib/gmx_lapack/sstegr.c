@@ -3,6 +3,7 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void
 F77_FUNC(sstegr,SSTEGR)(char *jobz, 
@@ -122,9 +123,9 @@ F77_FUNC(sstegr,SSTEGR)(char *jobz,
 	return;
     }
 
-    minval = (1.0 + LAPACK_EPS_FLOAT)/LAPACK_MAX_FLOAT;
-    safmin = minval / LAPACK_EPS_FLOAT;
-    eps = LAPACK_EPS_FLOAT;
+    minval = GMX_FLOAT_MIN;
+    safmin = minval*(1.0+GMX_FLOAT_EPS);
+    eps = GMX_FLOAT_EPS;
     smlnum = safmin / eps;
     bignum = 1. / smlnum;
     rmin = sqrt(smlnum);
@@ -137,7 +138,7 @@ F77_FUNC(sstegr,SSTEGR)(char *jobz,
     } else if (tnrm > rmax) {
 	scale = rmax / tnrm;
     }
-    if (scale != 1.) {
+    if ( fabs(scale-1.0)>GMX_FLOAT_EPS) {
 	F77_FUNC(sscal,SSCAL)(n, &scale, &d__[1], &c__1);
 	i__1 = *n - 1;
 	F77_FUNC(sscal,SSCAL)(&i__1, &scale, &e[1], &c__1);
@@ -177,9 +178,9 @@ F77_FUNC(sstegr,SSTEGR)(char *jobz,
     for (j = 1; j <= i__1; ++j) {
 	itmp = iwork[iindbl + j - 1];
 	w[j] += e[iwork[iinspl + itmp - 1]];
-    }
+    } 
 
-    if (scale != 1.) {
+    if (fabs(scale-1.0)>GMX_FLOAT_EPS) {
 	d__1 = 1. / scale;
 	F77_FUNC(sscal,SSCAL)(m, &d__1, &w[1], &c__1);
     }

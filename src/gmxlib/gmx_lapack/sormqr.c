@@ -50,11 +50,11 @@ F77_FUNC(sormqr,SORMQR)(char *side,
 	nw = *m;
     }
 
-    ic = jc = 0;
-    nb = DORMQR_BLOCKSIZE;
-    lwkopt = nw * nb;
-    work[1] = (float) lwkopt;
-    
+     ic = jc = 0;
+     nb = DORMQR_BLOCKSIZE;
+     lwkopt = nw * nb;
+     work[1] = (float) lwkopt;
+
     if (*info != 0) {
 	i__1 = -(*info);
 	return;

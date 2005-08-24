@@ -1,4 +1,8 @@
 #include <ctype.h>
+#include <math.h>
+
+#include <types/simple.h>
+
 #include "gmx_blas.h"
 #include "gmx_lapack.h"
 
@@ -29,7 +33,7 @@ F77_FUNC(ssytd2,SSYTD2)(char *    uplo,
       ti1 = 1;
       F77_FUNC(slarfg,SLARFG)(&i,&(a[i*(*lda)+(i-1)]),&(a[i*(*lda)+0]),&ti1,&taui);
       e[i-1] = a[i*(*lda) + (i-1)];
-      if(taui!=0.0) {
+      if(fabs(taui)>GMX_FLOAT_MIN) {
 	a[i*(*lda)+(i-1)] = 1.0;
       
 	ti1 = 1;
@@ -63,7 +67,7 @@ F77_FUNC(ssytd2,SSYTD2)(char *    uplo,
 
       e[i-1] = a[(i-1)*(*lda) + (i)];
 
-      if(taui!=0.0) {
+      if(fabs(taui)>GMX_FLOAT_MIN) {
 	a[(i-1)*(*lda)+(i)] = 1.0;
       
 	ti1 = *n - i;

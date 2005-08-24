@@ -1,13 +1,16 @@
 #include "gmx_lapack.h"
 
+
 /* LAPACK */
+
+
 void
 F77_FUNC(dlamrg,DLAMRG)(int *n1,
-	int *n2,
-	double *a,
-	int *dtrd1,
-	int *dtrd2,
-	int *index)
+                        int *n2,
+                        double *a,
+                        int *dtrd1,
+                        int *dtrd2,
+                        int *index)
 {
   int n1sv = *n1;
   int n2sv = *n2;

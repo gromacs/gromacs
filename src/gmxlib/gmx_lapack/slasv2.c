@@ -2,17 +2,18 @@
 #include "gmx_lapack.h"
 #include "lapack_limits.h"
 
+#include <types/simple.h>
 
 void 
 F77_FUNC(slasv2,SLASV2)(float *f, 
-	float *g, 
-	float *h__, 
-	float *ssmin, 
-	float *ssmax, 
-	float *snr, 
-	float *csr, 
-	float *snl, 
-	float *csl)
+                        float *g, 
+                        float *h__, 
+                        float *ssmin, 
+                        float *ssmax, 
+                        float *snr, 
+                        float *csr, 
+                        float *snl, 
+                        float *csl)
 {
     float d__1;
 
@@ -43,7 +44,7 @@ F77_FUNC(slasv2,SLASV2)(float *f,
     }
     gt = *g;
     ga = fabs(gt);
-    if (ga == 0.) {
+    if (fabs(ga)<GMX_FLOAT_MIN) {
 
 	*ssmin = ha;
 	*ssmax = fa;
@@ -55,7 +56,7 @@ F77_FUNC(slasv2,SLASV2)(float *f,
 	gasmal = 1;
 	if (ga > fa) {
 	    pmax = 2;
-	    if (fa / ga < LAPACK_EPS_FLOAT) {
+	    if (fa / ga < GMX_FLOAT_EPS) {
 
 		gasmal = 0;
 		*ssmax = ga;
@@ -73,7 +74,7 @@ F77_FUNC(slasv2,SLASV2)(float *f,
 	if (gasmal) {
 
 	    d__ = fa - ha;
-	    if (d__ == fa) {
+	    if ( fabs( fa - d__ )<GMX_FLOAT_EPS*fabs( fa + d__ )) {
 		l = 1.;
 	    } else {
 		l = d__ / fa;
@@ -86,7 +87,7 @@ F77_FUNC(slasv2,SLASV2)(float *f,
 	    tt = t * t;
 	    s = sqrt(tt + mm);
 
-	    if (l == 0.) {
+	    if ( fabs(l)<GMX_FLOAT_MIN) {
 		r__ = fabs(m);
 	    } else {
 		r__ = sqrt(l * l + mm);
@@ -95,9 +96,9 @@ F77_FUNC(slasv2,SLASV2)(float *f,
 
 	    *ssmin = ha / a;
 	    *ssmax = fa * a;
-	    if (mm == 0.) {
+	    if ( fabs(mm)<GMX_FLOAT_MIN) {
 
-		if (l == 0.) {
+		if (fabs(l)<GMX_FLOAT_MIN) {
 		    t = ( (ft>0) ? 2.0 : -2.0) * ( (gt>0) ? 1.0 : -1.0);
 		} else {
 		    t = gt / ( (ft>0) ? d__ : d__) + m / t;
@@ -125,17 +126,17 @@ F77_FUNC(slasv2,SLASV2)(float *f,
     }
 
     if (pmax == 1) {
-	tsign = ( (*csr>0) ? 1.0 : -1.0) * ( (*csl>0) ? 1.0 : -1.0) * ( (f>0) ? 1.0 : -1.0);
+	tsign = ( (*csr>0) ? 1.0 : -1.0) * ( (*csl>0) ? 1.0 : -1.0) * ( (*f>0) ? 1.0 : -1.0);
     }
     if (pmax == 2) {
-	tsign = ( (*snr>0) ? 1.0 : -1.0) * ( (*csl>0) ? 1.0 : -1.0) * ( (g>0) ? 1.0 : -1.0);
+	tsign = ( (*snr>0) ? 1.0 : -1.0) * ( (*csl>0) ? 1.0 : -1.0) * ( (*g>0) ? 1.0 : -1.0);
     }
     if (pmax == 3) {
-	tsign = ( (*snr>0) ? 1.0 : -1.0) * ( (*snl>0) ? 1.0 : -1.0) * ( (h__>0) ? 1.0 : -1.0);
+	tsign = ( (*snr>0) ? 1.0 : -1.0) * ( (*snl>0) ? 1.0 : -1.0) * ( (*h__>0) ? 1.0 : -1.0);
     }
     if(tsign<0)
       *ssmax *= -1.0;
-    d__1 = tsign * ( (f>0) ? 1.0 : -1.0) * ( (h__>0) ? 1.0 : -1.0);
+    d__1 = tsign * ( (*f>0) ? 1.0 : -1.0) * ( (*h__>0) ? 1.0 : -1.0);
     if(d__1<0)
       *ssmin *= -1.0;
     return;
