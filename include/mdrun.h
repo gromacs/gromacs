@@ -206,8 +206,9 @@ extern void finish_run(FILE *log,t_commrec *cr,char *confout, t_nsborder *nsb,
 		       double nodetime,double realtime,int step,
 		       bool bWriteStat);
 
-extern void calc_dispcorr(FILE *log,int eDispCorr,t_forcerec *fr,int natoms,
-			  matrix box,tensor pres,tensor virial,real ener[]);
+extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
+			  int natoms,matrix box,real lambda,
+			  tensor pres,tensor virial,real ener[]);
      
 
 typedef enum

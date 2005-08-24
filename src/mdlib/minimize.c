@@ -364,6 +364,10 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
 
+  /* Calculate long range corrections to pressure and energy */
+  calc_dispcorr(log,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
+		pres,vir,ener);
+
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
   where();
@@ -975,7 +979,11 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   if (bVsites)
     spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
-  
+
+  /* Calculate long range corrections to pressure and energy */
+  calc_dispcorr(log,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
+		pres,vir,ener);
+
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
   where();
@@ -1622,6 +1630,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (bVsites) 
       spread_vsite_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
 		     &top->idef,fr,graph,state->box,vsitecomm,cr);
+
+    /* Calculate long range corrections to pressure and energy */
+    calc_dispcorr(log,inputrec,fr,count,mdatoms->nr,state->box,state->lambda,
+		  pres,vir,ener);
     
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(inputrec->opts),grps,ener); 
@@ -2189,8 +2201,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	bStateChanged = FALSE;
 
 	/* Calculate long range corrections to pressure and energy */
-	calc_dispcorr(fplog,inputrec->eDispCorr,
-		      fr,mdatoms->nr,rerun_fr.box,pres,vir,ener);
+	calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,lambda,
+		      pres,vir,ener);
 	
 	/* Sum the potential energy terms from group contributions  */
 	sum_epot(&(inputrec->opts),grps,ener);

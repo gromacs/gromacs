@@ -829,20 +829,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     ener[F_TEMP]=sum_ekin(bRerunMD,&(inputrec->opts),grps,ekin,
 			  &(ener[F_DVDLKIN]));
     ener[F_EKIN]=trace(ekin);
-    ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
-    
-    /* Check for excessively large energies */
-    if (bIonize) {
-#ifdef GMX_DOUBLE
-      real etot_max = 1e200;
-#else
-      real etot_max = 1e30;
-#endif
-      if (fabs(ener[F_ETOT]) > etot_max) {
-	fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
-	break;
-      }
-    }
       
     /* Calculate Temperature coupling parameters lambda and adjust
      * target temp when doing simulated annealing
@@ -865,8 +851,23 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       set_avcsixtwelve(log,fr,mdatoms,&top->atoms.excl);
     
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(log,inputrec->eDispCorr,
-		  fr,mdatoms->nr,lastbox,pres,total_vir,ener);
+    calc_dispcorr(log,inputrec,fr,step,mdatoms->nr,lastbox,state->lambda,
+		  pres,total_vir,ener);
+
+    ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
+    
+    /* Check for excessively large energies */
+    if (bIonize) {
+#ifdef GMX_DOUBLE
+      real etot_max = 1e200;
+#else
+      real etot_max = 1e30;
+#endif
+      if (fabs(ener[F_ETOT]) > etot_max) {
+	fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+	break;
+      }
+    }
 
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (!bShell_FlexCon || bConverged))
