@@ -109,131 +109,142 @@ static void reallocate_nblist(t_nblist *nl)
   srenew(nl->jindex, nl->maxnri+2);
 }
 
+/* ivdw/icoul are used to determine the type of interaction, so we
+ * can set an innerloop index here. The obvious choice for this would have
+ * been the vdwtype/coultype values in the forcerecord, but unfortunately 
+ * those types are braindead - for instance both Buckingham and normal 
+ * Lennard-Jones use the same value (evdwCUT), and a separate boolean variable
+ * to determine which interaction is used. There is further no special value
+ * for 'no interaction'. For backward compatibility with old TPR files we won't
+ * change this in the 3.x series, so when calling this routine you should use:
+ *
+ * icoul=0 no coulomb interaction
+ * icoul=1 cutoff standard coulomb
+ * icoul=2 reaction-field coulomb
+ * icoul=3 tabulated coulomb
+ *
+ * ivdw=0 no vdw interaction
+ * ivdw=1 standard L-J interaction
+ * ivdw=2 Buckingham
+ * ivdw=3 tabulated vdw.
+ *
+ * Kind of ugly, but it works.
+ */
 static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
-			int maxsr,int maxlr,int solvent,int il_code)
+                        int maxsr,int maxlr,
+                        int ivdw, int icoul, 
+                        bool bfree, int solvent, int nltype)
 {
-  t_nblist *nl;
-  int      homenr;
-  int      i;
-  
-  if (debug)
-    fprintf(debug,"Initiating neighbourlist type %d for %s interactions,\nwith %d SR, %d LR atoms.\n",
-	    il_code,ENLISTTYPE(solvent),maxsr,maxlr);
-  for(i=0; (i<2); i++) {
-    nl     = (i == 0) ? nl_sr : nl_lr;
-    homenr = (i == 0) ? maxsr : maxlr;
+    t_nblist *nl;
+    int      homenr;
+    int      i,nn;
     
-    nl->il_code = il_code;
-    /* maxnri is influenced by the number of shifts (maximum is 8)
-     * and the number of energy groups.
-     * If it is not enough, nl memory will be reallocated during the run.
-     * 4 seems to be a reasonable factor, which only causes reallocation
-     * during runs with tiny and many energygroups.
-     */
-    nl->maxnri      = homenr*4;
-    nl->maxnrj      = 0;
-    nl->maxlen      = 0;
-    nl->nri         = 0;
-    nl->nrj         = 0;
-    nl->iinr        = NULL;
-    nl->gid         = NULL;
-    nl->shift       = NULL;
-    nl->jindex      = NULL;
-    nl->solvent_opt = solvent;
-    reallocate_nblist(nl);
-    nl->jindex[0] = 0;
-    nl->jindex[1] = 0;
-    nl->gid[0] = -1;
-#ifdef GMX_THREADS
-    nl->counter = 0;
-    snew(nl->mtx,1);
-    pthread_mutex_init(nl->mtx,NULL);
-#endif
-  }
-}
-
-static unsigned int 
-nbf_index(t_forcerec *      fr, 
-          bool              bvdw, 
-          bool              bcoul, 
-          bool              bFree,
-          int               solvent,
-          int               nltype)
-{
-  /* Table or not is selected from the forcerec, as is bham or RF */
-  
-  /* solopt is 0 for none, 1 for general M:N solvent, 2 for water
-   * and 3 for water-water loops.
-   */
-  int inloop[20] =
+    int inloop[20] =
     { 
-      eNR_NBKERNEL_NONE,
-      eNR_NBKERNEL010,
-      eNR_NBKERNEL020,
-      eNR_NBKERNEL030,
-      eNR_NBKERNEL100,
-      eNR_NBKERNEL110,
-      eNR_NBKERNEL120,
-      eNR_NBKERNEL130,
-      eNR_NBKERNEL200,
-      eNR_NBKERNEL210,
-      eNR_NBKERNEL220,
-      eNR_NBKERNEL230,
-      eNR_NBKERNEL300,
-      eNR_NBKERNEL310,
-      eNR_NBKERNEL320,
-      eNR_NBKERNEL330,
-      eNR_NBKERNEL400,
-      eNR_NBKERNEL410,
-      eNR_NBKERNEL_NONE,
-      eNR_NBKERNEL430
+        eNR_NBKERNEL_NONE,
+        eNR_NBKERNEL010,
+        eNR_NBKERNEL020,
+        eNR_NBKERNEL030,
+        eNR_NBKERNEL100,
+        eNR_NBKERNEL110,
+        eNR_NBKERNEL120,
+        eNR_NBKERNEL130,
+        eNR_NBKERNEL200,
+        eNR_NBKERNEL210,
+        eNR_NBKERNEL220,
+        eNR_NBKERNEL230,
+        eNR_NBKERNEL300,
+        eNR_NBKERNEL310,
+        eNR_NBKERNEL320,
+        eNR_NBKERNEL330,
+        eNR_NBKERNEL400,
+        eNR_NBKERNEL410,
+        eNR_NBKERNEL_NONE,
+        eNR_NBKERNEL430
     };
   
-  unsigned int nn,icoul,ivdw;
-  
-  if(!bcoul) 
-    icoul = 0;
-  else if(fr->bcoultab)
-    icoul = 3;
-  else if(EEL_RF(fr->eeltype))
-    icoul = 2;
-  else 
-    icoul = 1;
-  
-  if(!bvdw)
-    ivdw = 0;
-  else if(fr->bvdwtab)
-    ivdw = 3;
-  else if(fr->bBHAM)
-    ivdw = 2;
-  else 
-    ivdw = 1;
-  
-  nn = inloop[4*icoul + ivdw];
-  
-  /* solvent loops follow directly after the corresponding
-   * ordinary loops, in the order:
-   *
-   * SPC, SPC-SPC, TIP4p, TIP4p-TIP4p
-   *   
-   */
-  if(solvent == esolSPC)
-  {
-      if(nltype == enlistWATER)
-          nn += 1;
-      else if (nltype == enlistWATERWATER)
-          nn += 2;
-  } 
-  else if(solvent == esolTIP4P)
-  {
-      if(nltype == enlistWATER)
-          nn += 3;
-      else if (nltype == enlistWATERWATER)
-          nn += 4;      
-  }
-  
-  return nn;
+    for(i=0; (i<2); i++)
+    {
+        nl     = (i == 0) ? nl_sr : nl_lr;
+        homenr = (i == 0) ? maxsr : maxlr;
+        
+        /* Set coul/vdw in neighborlist, and for the normal loops we determine
+         * an index of which one to call.
+         * If the index is -1 we use generic loops, or free energy loops (both slower).
+         */
+        nl->ivdw  = ivdw;
+        nl->icoul = icoul;
+    
+        if(bfree)
+        {
+            nl->il_code = -1;
+        }
+        else
+        {
+            /* Ewald uses the standard tabulated loops */
+            if(icoul==4)
+            {
+                icoul==3;
+            }
+            nn = inloop[4*icoul*ivdw];
+            
+            /* solvent loops follow directly after the corresponding
+            * ordinary loops, in the order:
+            *
+            * SPC, SPC-SPC, TIP4p, TIP4p-TIP4p
+            *   
+            */
+            if(solvent == esolSPC)
+            {
+                if(nltype == enlistWATER)
+                    nn += 1;
+                else if (nltype == enlistWATERWATER)
+                    nn += 2;
+            } 
+            else if(solvent == esolTIP4P)
+            {
+                if(nltype == enlistWATER)
+                    nn += 3;
+                else if (nltype == enlistWATERWATER)
+                    nn += 4;      
+            }
+            
+            nl->il_code = nn;
+        }
+
+        if (debug)
+            fprintf(debug,"Initiating neighbourlist type %d for %s interactions,\nwith %d SR, %d LR atoms.\n",
+                    nl->il_code,ENLISTTYPE(solvent),maxsr,maxlr);
+        
+        /* maxnri is influenced by the number of shifts (maximum is 8)
+         * and the number of energy groups.
+         * If it is not enough, nl memory will be reallocated during the run.
+         * 4 seems to be a reasonable factor, which only causes reallocation
+         * during runs with tiny and many energygroups.
+         */
+        nl->maxnri      = homenr*4;
+        nl->maxnrj      = 0;
+        nl->maxlen      = 0;
+        nl->nri         = 0;
+        nl->nrj         = 0;
+        nl->iinr        = NULL;
+        nl->gid         = NULL;
+        nl->shift       = NULL;
+        nl->jindex      = NULL;
+        nl->solvent_opt = solvent;
+        reallocate_nblist(nl);
+        nl->jindex[0] = 0;
+        nl->jindex[1] = 0;
+        nl->gid[0] = -1;
+#ifdef GMX_THREADS
+        nl->counter = 0;
+        snew(nl->mtx,1);
+        pthread_mutex_init(nl->mtx,NULL);
+#endif
+    }
 }
+
+
 
 static int correct_box_elem(tensor box,int v,int d)
 {
@@ -305,6 +316,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
     * cache trashing.
     */
    int maxsr,maxsr_wat,maxlr,maxlr_wat;
+   int icoul, ivdw;
    int solvent;
    int i;
    t_nblists *nbl;
@@ -326,32 +338,64 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    }  
 
    solvent = fr->solvent_opt;
+
+   /* Determine the values for icoul/ivdw. */
+   if(fr->bcoultab)
+   {
+       if(fr->bEwald)
+           icoul = 4;
+       else
+           icoul = 3;
+   }
+   else if(EEL_RF(fr->eeltype))
+   {
+       icoul = 2;
+   }
+   else 
+   {
+       icoul = 1;
+   }
    
-   for(i=0; i<fr->nnblists; i++) {
-     nbl = &(fr->nblists[i]);
-     init_nblist(&nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
-		 maxsr,maxlr,enlistATOM,nbf_index(fr,TRUE, TRUE, FALSE,solvent,enlistATOM));
-     init_nblist(&nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
-		 maxsr,maxlr,enlistATOM,nbf_index(fr,TRUE, FALSE,FALSE,solvent,enlistATOM));
-     init_nblist(&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
-		 maxsr,maxlr,enlistATOM,nbf_index(fr,FALSE,TRUE, FALSE,solvent,enlistATOM));
-     init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
-		 maxsr_wat,maxlr_wat,enlistWATER,nbf_index(fr,TRUE, TRUE, FALSE,solvent,enlistWATER));
-     init_nblist(&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
-		 maxsr_wat,maxlr_wat,enlistWATER,nbf_index(fr,FALSE,TRUE, FALSE,solvent,enlistWATER));
-     init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
-		 maxsr_wat,maxlr_wat,enlistWATERWATER,nbf_index(fr,TRUE, TRUE, FALSE,solvent,enlistWATERWATER));
-     init_nblist(&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
-		 maxsr_wat,maxlr_wat,enlistWATERWATER,nbf_index(fr,FALSE,TRUE, FALSE,solvent,enlistWATERWATER));
-     
-     if (fr->efep != efepNO) {
-       init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
-		   maxsr,maxlr,enlistATOM,nbf_index(fr,TRUE, TRUE, TRUE,solvent,enlistATOM));
-       init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
-		   maxsr,maxlr,enlistATOM,nbf_index(fr,TRUE, FALSE,TRUE,solvent,enlistATOM));
-       init_nblist(&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
-		   maxsr,maxlr,enlistATOM,nbf_index(fr,FALSE,TRUE, TRUE,solvent,enlistATOM));
-     }  
+   if(fr->bvdwtab)
+   {
+       ivdw = 3;
+   }
+   else if(fr->bBHAM)
+   {
+       ivdw = 2;
+   }
+   else 
+   {
+       ivdw = 1;
+   }
+   
+   for(i=0; i<fr->nnblists; i++) 
+   {
+       nbl = &(fr->nblists[i]);
+       init_nblist(&nbl->nlist_sr[eNL_VDWQQ],&nbl->nlist_lr[eNL_VDWQQ],
+                   maxsr,maxlr,ivdw,icoul,FALSE,solvent,enlistATOM);
+       init_nblist(&nbl->nlist_sr[eNL_VDW],&nbl->nlist_lr[eNL_VDW],
+                   maxsr,maxlr,ivdw,0,FALSE,solvent,enlistATOM);
+       init_nblist(&nbl->nlist_sr[eNL_QQ],&nbl->nlist_lr[eNL_QQ],
+                   maxsr,maxlr,0,icoul,FALSE,solvent,enlistATOM);
+       init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATER],&nbl->nlist_lr[eNL_VDWQQ_WATER],
+                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,solvent,enlistWATER);
+       init_nblist(&nbl->nlist_sr[eNL_QQ_WATER],&nbl->nlist_lr[eNL_QQ_WATER],
+                   maxsr_wat,maxlr_wat,0,icoul, FALSE,solvent,enlistWATER);
+       init_nblist(&nbl->nlist_sr[eNL_VDWQQ_WATERWATER],&nbl->nlist_lr[eNL_VDWQQ_WATERWATER],
+                   maxsr_wat,maxlr_wat,ivdw,icoul, FALSE,solvent,enlistWATERWATER);
+       init_nblist(&nbl->nlist_sr[eNL_QQ_WATERWATER],&nbl->nlist_lr[eNL_QQ_WATERWATER],
+                   maxsr_wat,maxlr_wat,0,icoul, FALSE,solvent,enlistWATERWATER);
+       
+       if (fr->efep != efepNO) 
+       {
+           init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
+                       maxsr,maxlr,ivdw,icoul, TRUE,solvent,enlistATOM);
+           init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
+                       maxsr,maxlr,ivdw,0,TRUE,solvent,enlistATOM);
+           init_nblist(&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
+                       maxsr,maxlr,0,icoul, TRUE,solvent,enlistATOM);
+       }  
    }
 }
 
@@ -1782,7 +1826,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   bool     bGrid;
   char     *ptr;
   bool     *i_egp_flags;
-
+  int      start,end;
+  
   /* Set some local variables */
   bGrid=fr->bGrid;
   ngid=top->atoms.grps[egcENER].nr;
@@ -1901,11 +1946,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
     /* Don't know why this all is... (DvdS 3/99) */
 #ifndef SEGV
-    int start = 0;
-    int end   = cgs->nr;
+    start = 0;
+    end   = cgs->nr;
 #else
-    int start = fr->cg0;
-    int end   = (cgs->nr+1)/2;
+    start = fr->cg0;
+    end   = (cgs->nr+1)/2;
 #endif
 
     if (fr->bDomDecomp)
