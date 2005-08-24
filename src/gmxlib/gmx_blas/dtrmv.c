@@ -1,35 +1,43 @@
+#include <math.h>
+
+#include <types/simple.h>
 #include "gmx_blas.h"
 
 void 
 F77_FUNC(dtrmv,DTRMV)(char *uplo, 
-                      char *trans,
-                      char *diag, 
-                      int *n, 
-                      double *a, 
-                      int *lda, 
-                      double *x, 
-                      int *incx)
+       char *trans,
+       char *diag, 
+       int *n__, 
+       double *a, 
+       int *lda__, 
+       double *x, 
+       int *incx__)
 {
     int a_dim1, a_offset, i__1, i__2;
 
     int i__, j, ix, jx, kx, info;
     double temp;
     int nounit;
-    a_dim1 = *lda;
+    
+    int n = *n__;
+    int lda = *lda__;
+    int incx = *incx__;
+    
+    a_dim1 = lda;
     a_offset = 1 + a_dim1;
     a -= a_offset;
     --x;
 
     info = 0;
 
-    if (*n == 0) {
+    if (n == 0) {
 	return;
     }
 
     nounit = (*diag=='n' || *diag=='N');
 
-    if (*incx <= 0) {
-	kx = 1 - (*n - 1) * *incx;
+    if (incx <= 0) {
+	kx = 1 - (n - 1) * incx;
     } else {
 	kx = 1;
     }
@@ -37,10 +45,10 @@ F77_FUNC(dtrmv,DTRMV)(char *uplo,
     if (*trans=='N' || *trans=='n') {
 
 	if (*uplo=='U' || *uplo=='u') {
-	    if (*incx == 1) {
-		i__1 = *n;
+	    if (incx == 1) {
+		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
-		    if (x[j] != 0.) {
+		    if (fabs(x[j])>GMX_DOUBLE_MIN) {
 			temp = x[j];
 			i__2 = j - 1;
 			for (i__ = 1; i__ <= i__2; ++i__) {
@@ -53,30 +61,30 @@ F77_FUNC(dtrmv,DTRMV)(char *uplo,
 		}
 	    } else {
 		jx = kx;
-		i__1 = *n;
+		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
-		    if (x[jx] != 0.) {
+		    if (fabs(x[jx])>GMX_DOUBLE_MIN) {
 			temp = x[jx];
 			ix = kx;
 			i__2 = j - 1;
 			for (i__ = 1; i__ <= i__2; ++i__) {
 			    x[ix] += temp * a[i__ + j * a_dim1];
-			    ix += *incx;
+			    ix += incx;
 			}
 			if (nounit) {
 			    x[jx] *= a[j + j * a_dim1];
 			}
 		    }
-		    jx += *incx;
+		    jx += incx;
 		}
 	    }
 	} else {
-	    if (*incx == 1) {
-		for (j = *n; j >= 1; --j) {
-		    if (x[j] != 0.) {
+	    if (incx == 1) {
+		for (j = n; j >= 1; --j) {
+		    if (fabs(x[j])>GMX_DOUBLE_MIN) {
 			temp = x[j];
 			i__1 = j + 1;
-			for (i__ = *n; i__ >= i__1; --i__) {
+			for (i__ = n; i__ >= i__1; --i__) {
 			    x[i__] += temp * a[i__ + j * a_dim1];
 			}
 			if (nounit) {
@@ -85,30 +93,30 @@ F77_FUNC(dtrmv,DTRMV)(char *uplo,
 		    }
 		}
 	    } else {
-		kx += (*n - 1) * *incx;
+		kx += (n - 1) * incx;
 		jx = kx;
-		for (j = *n; j >= 1; --j) {
-		    if (x[jx] != 0.) {
+		for (j = n; j >= 1; --j) {
+		    if (fabs(x[jx])>GMX_DOUBLE_MIN) {
 			temp = x[jx];
 			ix = kx;
 			i__1 = j + 1;
-			for (i__ = *n; i__ >= i__1; --i__) {
+			for (i__ = n; i__ >= i__1; --i__) {
 			    x[ix] += temp * a[i__ + j * a_dim1];
-			    ix -= *incx;
+			    ix -= incx;
 			}
 			if (nounit) {
 			    x[jx] *= a[j + j * a_dim1];
 			}
 		    }
-		    jx -= *incx;
+		    jx -= incx;
 		}
 	    }
 	}
     } else {
 
 	if (*uplo=='U' || *uplo=='u') {
-	    if (*incx == 1) {
-		for (j = *n; j >= 1; --j) {
+	    if (incx == 1) {
+		for (j = n; j >= 1; --j) {
 		    temp = x[j];
 		    if (nounit) {
 			temp *= a[j + j * a_dim1];
@@ -119,30 +127,30 @@ F77_FUNC(dtrmv,DTRMV)(char *uplo,
 		    x[j] = temp;
 		}
 	    } else {
-		jx = kx + (*n - 1) * *incx;
-		for (j = *n; j >= 1; --j) {
+		jx = kx + (n - 1) * incx;
+		for (j = n; j >= 1; --j) {
 		    temp = x[jx];
 		    ix = jx;
 		    if (nounit) {
 			temp *= a[j + j * a_dim1];
 		    }
 		    for (i__ = j - 1; i__ >= 1; --i__) {
-			ix -= *incx;
+			ix -= incx;
 			temp += a[i__ + j * a_dim1] * x[ix];
 		    }
 		    x[jx] = temp;
-		    jx -= *incx;
+		    jx -= incx;
 		}
 	    }
 	} else {
-	    if (*incx == 1) {
-		i__1 = *n;
+	    if (incx == 1) {
+		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
 		    temp = x[j];
 		    if (nounit) {
 			temp *= a[j + j * a_dim1];
 		    }
-		    i__2 = *n;
+		    i__2 = n;
 		    for (i__ = j + 1; i__ <= i__2; ++i__) {
 			temp += a[i__ + j * a_dim1] * x[i__];
 		    }
@@ -150,20 +158,20 @@ F77_FUNC(dtrmv,DTRMV)(char *uplo,
 		}
 	    } else {
 		jx = kx;
-		i__1 = *n;
+		i__1 = n;
 		for (j = 1; j <= i__1; ++j) {
 		    temp = x[jx];
 		    ix = jx;
 		    if (nounit) {
 			temp *= a[j + j * a_dim1];
 		    }
-		    i__2 = *n;
+		    i__2 = n;
 		    for (i__ = j + 1; i__ <= i__2; ++i__) {
-			ix += *incx;
+			ix += incx;
 			temp += a[i__ + j * a_dim1] * x[ix];
 		    }
 		    x[jx] = temp;
-		    jx += *incx;
+		    jx += incx;
 		}
 	    }
 	}

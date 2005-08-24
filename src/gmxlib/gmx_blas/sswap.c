@@ -1,20 +1,24 @@
 #include "gmx_blas.h"
 
 void
-F77_FUNC(sswap,SSWAP)(int *n,
+F77_FUNC(sswap,SSWAP)(int *n__,
                       float *dx,
-                      int *incx,
+                      int *incx__,
                       float *dy,
-                      int *incy)
+                      int *incy__)
 {
   int i,ix,iy;
   float d1,d2,d3;
 
-  if(*n<=0)
+  int n = *n__;
+  int incx = *incx__;
+  int incy = *incy__;
+  
+  if(n<=0)
     return;
 
-  if(*incx==1 && *incy==1) {
-    for(i=0;i<(*n-3);i+=3) {
+  if(incx==1 && incy==1) {
+    for(i=0;i<(n-3);i+=3) {
       d1      = dx[i];
       d2      = dx[i+1];
       d3      = dx[i+2];
@@ -26,7 +30,7 @@ F77_FUNC(sswap,SSWAP)(int *n,
       dy[i+2] = d3;
     }
     /* continue with last i value */
-    for(;i<*n;i++) {
+    for(;i<n;i++) {
       d1      = dx[i];
       dx[i]   = dy[i];
       dy[i]   = d1;
@@ -35,12 +39,12 @@ F77_FUNC(sswap,SSWAP)(int *n,
   } else {
     ix = 0;
     iy = 0;
-    if(*incx<0)
-      ix = *incx * (1 - *n);
-    if(*incy<0)
-      iy = *incy * (1 - *n);
+    if(incx<0)
+      ix = incx * (1 - n);
+    if(incy<0)
+      iy = incy * (1 - n);
 
-    for(i=0;i<*n;i++,ix+=*incx,iy+=*incy) {
+    for(i=0;i<n;i++,ix+=incx,iy+=incy) {
       d1     = dx[ix];
       dx[ix] = dy[iy];
       dy[iy] = d1;

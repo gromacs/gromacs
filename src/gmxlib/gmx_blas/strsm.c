@@ -1,4 +1,7 @@
 #include <ctype.h>
+#include <math.h>
+
+#include <types/simple.h>
 #include "gmx_blas.h"
 
 void
@@ -6,13 +9,13 @@ F77_FUNC(strsm,STRSM)(char * side,
                       char * uplo,
                       char * transa,
                       char * diag,
-                      int *  m,
-                      int *  n,
-                      float *alpha,
+                      int *  m__,
+                      int *  n__,
+                      float *alpha__,
                       float *a,
-                      int *  lda,
+                      int *  lda__,
                       float *b,
-                      int *  ldb)
+                      int *  ldb__)
 {
   char xside  = toupper(*side);
   char xuplo  = toupper(*uplo);
@@ -21,14 +24,20 @@ F77_FUNC(strsm,STRSM)(char * side,
   int i,j,k;
   float temp;
 
-  if(*n<=0)
+  int m = *m__;
+  int n = *n__;
+  int lda = *lda__;
+  int ldb = *ldb__;
+  float alpha = *alpha__;
+  
+  if(n<=0)
     return;
 
   
-  if(*alpha==0) { 
-    for(j=0;j<*n;j++)
-      for(i=0;i<*m;i++)
-	b[j*(*ldb)+i] = 0.0;
+  if(fabs(alpha)<GMX_FLOAT_MIN) { 
+    for(j=0;j<n;j++)
+      for(i=0;i<m;i++)
+	b[j*(ldb)+i] = 0.0;
     return;
   }
 
@@ -38,32 +47,32 @@ F77_FUNC(strsm,STRSM)(char * side,
       /* No transpose */
       if(xuplo=='U') {
 	/* upper */
-	for(j=0;j<*n;j++) {
-	  if(*alpha!=1.0) {
-	    for(i=0;i<*m;i++)
-	      b[j*(*ldb)+i] *= *alpha;
+	for(j=0;j<n;j++) {
+	  if(fabs(alpha-1.0)>GMX_FLOAT_EPS) {
+	    for(i=0;i<m;i++)
+	      b[j*(ldb)+i] *= alpha;
 	  }
-	  for(k=*m-1;k>=0;k--) {
-	    if(b[j*(*ldb)+k]!=0.0) {
+	  for(k=m-1;k>=0;k--) {
+	    if( fabs(b[j*(ldb)+k])>GMX_FLOAT_MIN) {
 	      if(xdiag=='N')
-		b[j*(*ldb)+k] /= a[k*(*lda)+k];
+		b[j*(ldb)+k] /= a[k*(lda)+k];
 	      for(i=0;i<k;i++)
-		b[j*(*ldb)+i] -= b[j*(*ldb)+k]*a[k*(*lda)+i];
+		b[j*(ldb)+i] -= b[j*(ldb)+k]*a[k*(lda)+i];
 	    }
 	  }
 	}
       } else {
 	/* lower */
-	for(j=0;j<*n;j++) {
-	  if(*alpha!=1.0)
-	    for(i=0;i<*m;i++)
-	      b[j*(*ldb)+i] *= *alpha;
-	  for(k=0;k<*m;k++) {
-	    if(b[j*(*ldb)+k]!=0.0) {
+	for(j=0;j<n;j++) {
+	  if(fabs(alpha-1.0)>GMX_FLOAT_EPS)
+	    for(i=0;i<m;i++)
+	      b[j*(ldb)+i] *= alpha;
+	  for(k=0;k<m;k++) {
+	    if( fabs(b[j*(ldb)+k])>GMX_FLOAT_MIN) {
 	      if(xdiag=='N')
-		b[j*(*ldb)+k] /= a[k*(*lda)+k];
-	      for(i=k+1;i<*m;i++)
-		b[j*(*ldb)+i] -= b[j*(*ldb)+k]*a[k*(*lda)+i];
+		b[j*(ldb)+k] /= a[k*(lda)+k];
+	      for(i=k+1;i<m;i++)
+		b[j*(ldb)+i] -= b[j*(ldb)+k]*a[k*(lda)+i];
 	    }
 	  }
 	}
@@ -72,26 +81,26 @@ F77_FUNC(strsm,STRSM)(char * side,
       /* Transpose */
       if(xuplo=='U') {
 	/* upper */
-	for(j=0;j<*n;j++) {
-	  for(i=0;i<*m;i++) {
-	    temp = *alpha * b[j*(*ldb)+i];
+	for(j=0;j<n;j++) {
+	  for(i=0;i<m;i++) {
+	    temp = alpha * b[j*(ldb)+i];
 	    for(k=0;k<i;k++)
-	      temp -= a[i*(*lda)+k] * b[j*(*ldb)+k];
+	      temp -= a[i*(lda)+k] * b[j*(ldb)+k];
 	    if(xdiag=='N')
-		temp /= a[i*(*lda)+i];
-	    b[j*(*ldb)+i] = temp;
+		temp /= a[i*(lda)+i];
+	    b[j*(ldb)+i] = temp;
 	  }
 	}
       } else {
 	/* lower */
-	for(j=0;j<*n;j++) {
-	  for(i=*m-1;i>=0;i--) {
-	    temp = *alpha * b[j*(*ldb)+i];
-	    for(k=i+1;k<*m;k++)
-	      temp -= a[i*(*lda)+k] * b[j*(*ldb)+k];
+	for(j=0;j<n;j++) {
+	  for(i=m-1;i>=0;i--) {
+	    temp = alpha * b[j*(ldb)+i];
+	    for(k=i+1;k<m;k++)
+	      temp -= a[i*(lda)+k] * b[j*(ldb)+k];
 	    if(xdiag=='N')
-		temp /= a[i*(*lda)+i];
-	    b[j*(*ldb)+i] = temp;
+		temp /= a[i*(lda)+i];
+	    b[j*(ldb)+i] = temp;
 	  }
 	}
       }
@@ -102,38 +111,38 @@ F77_FUNC(strsm,STRSM)(char * side,
       /* No transpose */
       if(xuplo=='U') {
 	/* upper */
-	for(j=0;j<*n;j++) {
-	  if(*alpha!=1.0)
-	    for(i=0;i<*m;i++)
-	      b[j*(*ldb)+i] *= *alpha;
+	for(j=0;j<n;j++) {
+	  if(fabs(alpha-1.0)>GMX_FLOAT_EPS)
+	    for(i=0;i<m;i++)
+	      b[j*(ldb)+i] *= alpha;
 	  for(k=0;k<j;k++) {
-	    if(a[j*(*lda)+k]!=0.0) {
-	      for(i=0;i<*m;i++)
-		b[j*(*ldb)+i] -= a[j*(*lda)+k]*b[k*(*ldb)+i];
+	    if( fabs(a[j*(lda)+k])>GMX_FLOAT_MIN) {
+	      for(i=0;i<m;i++)
+		b[j*(ldb)+i] -= a[j*(lda)+k]*b[k*(ldb)+i];
 	    }
 	  }
 	  if(xdiag=='N') {
-	    temp = 1.0/a[j*(*lda)+j];
-	    for(i=0;i<*m;i++)
-	      b[j*(*ldb)+i] *= temp;
+	    temp = 1.0/a[j*(lda)+j];
+	    for(i=0;i<m;i++)
+	      b[j*(ldb)+i] *= temp;
 	  }
 	}
       } else {
 	/* lower */
-	for(j=*n-1;j>=0;j--) {
-	  if(*alpha!=1.0)
-	    for(i=0;i<*m;i++)
-	      b[j*(*ldb)+i] *= *alpha;
-	  for(k=j+1;k<*n;k++) {
-	    if(a[j*(*lda)+k]!=0.0) {
-	      for(i=0;i<*m;i++)
-		b[j*(*ldb)+i] -= a[j*(*lda)+k]*b[k*(*ldb)+i];
+	for(j=n-1;j>=0;j--) {
+	  if(fabs(alpha-1.0)>GMX_FLOAT_EPS)
+	    for(i=0;i<m;i++)
+	      b[j*(ldb)+i] *= alpha;
+	  for(k=j+1;k<n;k++) {
+	    if( fabs(a[j*(lda)+k])>GMX_FLOAT_MIN ) {
+	      for(i=0;i<m;i++)
+		b[j*(ldb)+i] -= a[j*(lda)+k]*b[k*(ldb)+i];
 	    }
 	  }
 	  if(xdiag=='N') {
-	    temp = 1.0/a[j*(*lda)+j];
-	    for(i=0;i<*m;i++)
-	      b[j*(*ldb)+i] *= temp;
+	    temp = 1.0/a[j*(lda)+j];
+	    for(i=0;i<m;i++)
+	      b[j*(ldb)+i] *= temp;
 	  }
 	}
       }
@@ -141,41 +150,41 @@ F77_FUNC(strsm,STRSM)(char * side,
       /* Transpose */
       if(xuplo=='U') {
 	/* upper */
-	for(k=*n-1;k>=0;k--) {
+	for(k=n-1;k>=0;k--) {
 	  if(xdiag=='N') {
-	    temp = 1.0/a[k*(*lda)+k];
-	    for(i=0;i<*m;i++)
-	      b[k*(*ldb)+i] *= temp;
+	    temp = 1.0/a[k*(lda)+k];
+	    for(i=0;i<m;i++)
+	      b[k*(ldb)+i] *= temp;
 	  }
 	  for(j=0;j<k;j++) {
-	    if(a[k*(*lda)+j]!=0.0) {
-	      temp = a[k*(*lda)+j];
-	      for(i=0;i<*m;i++)
-		b[j*(*ldb)+i] -= temp * b[k*(*ldb)+i];
+	    if( fabs(a[k*(lda)+j])>GMX_FLOAT_MIN) {
+	      temp = a[k*(lda)+j];
+	      for(i=0;i<m;i++)
+		b[j*(ldb)+i] -= temp * b[k*(ldb)+i];
 	    }
 	  }
-	  if(*alpha!=1.0)
-	    for(i=0;i<*m;i++)
-	      b[k*(*ldb)+i] *= *alpha;
+	  if(fabs(alpha-1.0)>GMX_FLOAT_EPS)
+	    for(i=0;i<m;i++)
+	      b[k*(ldb)+i] *= alpha;
 	}
       } else {
 	/* lower */
-	for(k=0;k<*n;k++) {
+	for(k=0;k<n;k++) {
 	  if(xdiag=='N') {
-	    temp = 1.0/a[k*(*lda)+k];
-	    for(i=0;i<*m;i++)
-	      b[k*(*ldb)+i] *= temp;
+	    temp = 1.0/a[k*(lda)+k];
+	    for(i=0;i<m;i++)
+	      b[k*(ldb)+i] *= temp;
 	  }
-	  for(j=k+1;j<*n;j++) {
-	    if(a[k*(*lda)+j]!=0.0) {
-	      temp = a[k*(*lda)+j];
-	      for(i=0;i<*m;i++)
-		b[j*(*ldb)+i] -= temp * b[k*(*ldb)+i];
+	  for(j=k+1;j<n;j++) {
+	    if( fabs(a[k*(lda)+j])>GMX_FLOAT_MIN) {
+	      temp = a[k*(lda)+j];
+	      for(i=0;i<m;i++)
+		b[j*(ldb)+i] -= temp * b[k*(ldb)+i];
 	    }
 	  }
-	  if(*alpha!=1.0)
-	    for(i=0;i<*m;i++)
-	      b[k*(*ldb)+i] *= *alpha;
+	  if(fabs(alpha-1.0)>GMX_FLOAT_EPS)
+	    for(i=0;i<m;i++)
+	      b[k*(ldb)+i] *= alpha;
 	}
       }      
     }
