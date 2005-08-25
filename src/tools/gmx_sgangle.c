@@ -93,7 +93,7 @@ static void calculate_normal(atom_id index[],rvec x[],rvec result,rvec center)
 }
 
 /* calculate the angle and distance between the two groups */
-static void calc_angle(matrix box,rvec x[], atom_id index1[], 
+static void calc_angle(matrix *box,rvec x[], atom_id index1[], 
 		       atom_id index2[], int gnx1, int gnx2,
 		       real *angle,      real *distance, 
 		       real *distance1,  real *distance2)
@@ -108,7 +108,11 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
     center1,center2,  	/* center of triangle of points given to define plane,*/
                       	/* or center of vector if a vector is given */
     h1,h2,h3,h4,h5;  	/* temp. vectors */
-  
+  t_pbc pbc;
+
+  if (box)
+    set_pbc(&pbc,*box);
+
   switch(gnx1)
     {
     case 3:           /* group 1 defines plane */
@@ -133,18 +137,34 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
       rvec_add(x[index2[0]],x[index2[1]],h2);
       svmul(0.5,h2,center2);  /* center is geometric mean */
       break;
+    case 0:
+      normal2[XX] = 0;
+      normal2[YY] = 0;
+      normal2[ZZ] = 1;
+      center2[XX] = 0;
+      center2[YY] = 0;
+      center2[ZZ] = 0;
+      break;
     default:         /* group 2 does none of the above */
       gmx_fatal(FARGS,"Something wrong with contents of index file.\n");
     }
   
   *angle = cos_angle(normal1,normal2);
 
-  rvec_sub(center1,center2,h3); 
+  if (box)
+    pbc_dx(&pbc,center1,center2,h3);
+  else
+    rvec_sub(center1,center2,h3); 
   *distance = norm(h3);
 
   if (gnx1 == 3 && gnx2 == 2) {
-    rvec_sub(center1,x[index2[0]],h4);
-    rvec_sub(center1,x[index2[1]],h5);
+    if (box) {
+      pbc_dx(&pbc,center1,x[index2[0]],h4);
+      pbc_dx(&pbc,center1,x[index2[1]],h5);
+    } else {
+      rvec_sub(center1,x[index2[0]],h4);
+      rvec_sub(center1,x[index2[1]],h5);
+    }
     *distance1 = norm(h4);
     *distance2 = norm(h5);
   }
@@ -157,21 +177,20 @@ static void calc_angle(matrix box,rvec x[], atom_id index1[],
   else {
     *distance1 = 0; *distance2 = 0;
   } 
-
 }
 
-void sgangle_plot(char *fn,char *afile,char *bfile, 
-		  char *cfile, char *dfile,
+void sgangle_plot(char *fn,char *afile,char *dfile, 
+		  char *d1file, char *d2file,
 		  atom_id index1[], int gnx1, char *grpn1,
 		  atom_id index2[], int gnx2, char *grpn2,
-		  t_topology *top)
+		  t_topology *top,bool bPBC)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
-    *sg_distance,        /* xvgr file with distances */
-    *sg_distance1,       /* xvgr file with distance between plane and atom */
-    *sg_distance2;       /* xvgr file with distance between plane and atom2 */
-  real         
+    *sg_distance = NULL, /* xvgr file with distances */
+    *sg_distance1 = NULL,/* xvgr file with distance between plane and atom */
+    *sg_distance2 = NULL;/* xvgr file with distance between plane and atom2 */
+  real
     t,                   /* time */
     angle,               /* cosine of angle between two groups */
     distance,            /* distance between two groups. */
@@ -188,14 +207,20 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
   sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ");
 
-  sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
-  sg_distance = xvgropen(bfile,buf,"Time (ps)","Distance (nm)");
+  if (dfile) {
+    sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
+    sg_distance = xvgropen(dfile,buf,"Time (ps)","Distance (nm)");
+  }
 
-  sprintf(buf,"Distance between plane and first atom of vector");
-  sg_distance1 = xvgropen(cfile,buf,"Time (ps)","Distance (nm)");
+  if (d1file) {
+    sprintf(buf,"Distance between plane and first atom of vector");
+    sg_distance1 = xvgropen(d1file,buf,"Time (ps)","Distance (nm)");
+  }
 
-  sprintf(buf,"Distance between plane and second atom of vector");
-  sg_distance2 = xvgropen(dfile,buf,"Time (ps","Distance (nm)");
+  if (d2file) {
+    sprintf(buf,"Distance between plane and second atom of vector");
+    sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)");
+  }
 
   do 
     {
@@ -203,22 +228,28 @@ void sgangle_plot(char *fn,char *afile,char *bfile,
 
       rm_pbc(&(top->idef),natoms,box,x0,x0);
       
-      calc_angle(box,x0,index1,index2,gnx1,gnx2,&angle,
+      calc_angle(bPBC ? &box : NULL,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
       
       fprintf(sg_angle,"%12g  %12g  %12g\n",t,angle,acos(angle)*180.0/M_PI);
-      fprintf(sg_distance,"%12g  %12g\n",t,distance);
-      fprintf(sg_distance1,"%12g  %12g\n",t,distance1);
-      fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
+      if (dfile)
+	fprintf(sg_distance,"%12g  %12g\n",t,distance);
+      if (d1file)
+	fprintf(sg_distance1,"%12g  %12g\n",t,distance1);
+      if (d2file)
+	fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
 
     } while (read_next_x(status,&t,natoms,x0,box));
   
   fprintf(stderr,"\n");
   close_trj(status);
   fclose(sg_angle);
-  fclose(sg_distance);
-  fclose(sg_distance1);
-  fclose(sg_distance2);
+  if (dfile)
+    fclose(sg_distance);
+  if (d1file)
+    fclose(sg_distance1);
+  if (d2file)
+    fclose(sg_distance2);
 
   sfree(x0);
 }
@@ -306,17 +337,17 @@ static void calc_angle_single(matrix *box,
 }
  
  
-void sgangle_plot_single(char *fn,char *afile,char *bfile, 
-			 char *cfile, char *dfile,
+void sgangle_plot_single(char *fn,char *afile,char *dfile, 
+			 char *d1file, char *d2file,
 			 atom_id index1[], int gnx1, char *grpn1,
 			 atom_id index2[], int gnx2, char *grpn2,
 			 t_topology *top,bool bPBC)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
-    *sg_distance,        /* xvgr file with distances */
-    *sg_distance1,       /* xvgr file with distance between plane and atom */
-    *sg_distance2;       /* xvgr file with distance between plane and atom2 */
+    *sg_distance = NULL, /* xvgr file with distances */
+    *sg_distance1 = NULL,/* xvgr file with distance between plane and atom */
+    *sg_distance2 = NULL;/* xvgr file with distance between plane and atom2 */
   real         
     t,                   /* time */
     angle,               /* cosine of angle between two groups */
@@ -336,14 +367,20 @@ void sgangle_plot_single(char *fn,char *afile,char *bfile,
   sprintf(buf,"Angle between %s and %s",grpn1,grpn2);
   sg_angle = xvgropen(afile,buf,"Time (ps)","Cos(angle) ");
   
-  sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
-  sg_distance = xvgropen(bfile,buf,"Time (ps)","Distance (nm)");
+  if (dfile) {
+    sprintf(buf,"Distance between %s and %s",grpn1,grpn2);
+    sg_distance = xvgropen(dfile,buf,"Time (ps)","Distance (nm)");
+  }
   
-  sprintf(buf,"Distance between plane and first atom of vector");
-  sg_distance1 = xvgropen(cfile,buf,"Time (ps)","Distance (nm)");
+  if (d1file) {
+    sprintf(buf,"Distance between plane and first atom of vector");
+    sg_distance1 = xvgropen(d1file,buf,"Time (ps)","Distance (nm)");
+  }
   
-  sprintf(buf,"Distance between plane and second atom of vector");
-  sg_distance2 = xvgropen(dfile,buf,"Time (ps","Distance (nm)");
+  if (d2file) {
+    sprintf(buf,"Distance between plane and second atom of vector");
+    sg_distance2 = xvgropen(d2file,buf,"Time (ps","Distance (nm)");
+  }
   
   snew(xzero,natoms);
 
@@ -362,18 +399,24 @@ void sgangle_plot_single(char *fn,char *afile,char *bfile,
 		      &distance,&distance1,&distance2);
     
     fprintf(sg_angle,"%12g  %12g  %12g\n",t,angle,acos(angle)*180.0/M_PI);
-    fprintf(sg_distance,"%12g  %12g\n",t,distance);
-    fprintf(sg_distance1,"%12g  %12g\n",t,distance1);
-    fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
+    if (dfile)
+      fprintf(sg_distance,"%12g  %12g\n",t,distance);
+    if (d1file)
+      fprintf(sg_distance1,"%12g  %12g\n",t,distance1);
+    if (d2file)
+      fprintf(sg_distance2,"%12g  %12g\n",t,distance1);
     
   } while (read_next_x(status,&t,natoms,x0,box));
   
   fprintf(stderr,"\n");
   close_trj(status);
   fclose(sg_angle);
-  fclose(sg_distance);
-  fclose(sg_distance1);
-  fclose(sg_distance2);
+  if (dfile)
+    fclose(sg_distance);
+  if (d1file)
+    fclose(sg_distance1);
+  if (d2file)
+    fclose(sg_distance2);
   
   sfree(x0);
 }
@@ -402,16 +445,19 @@ int gmx_sgangle(int argc,char *argv[])
     "-od2: For two planes this option has no meaning."
   };
 
+  char	    *fna, *fnd, *fnd1, *fnd2;		
   char      *grpname[2];          		/* name of the two groups */
   int       gnx[2];               		/* size of the two groups */
   t_topology *top;                		/* topology 		*/ 
   atom_id   *index[2];            		
-  static bool bPBC=FALSE,bOne = TRUE;
+  static bool bPBC=FALSE,bOne = FALSE, bZ=FALSE;
   t_pargs pa[] = {
     { "-pbc", FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions" },
     { "-one", FALSE, etBOOL, {&bOne},
-      "Only one group compute angle between vector at time zero and t" }
+      "Only one group compute angle between vector at time zero and time t"},
+    { "-z", FALSE, etBOOL, {&bZ},
+        "Use the Z-axis as reference" }
   };
 #define NPA asize(pa)
 
@@ -420,9 +466,9 @@ int gmx_sgangle(int argc,char *argv[])
     { efNDX, NULL, NULL,  ffREAD },    		/* index file 		*/
     { efTPX, NULL, NULL,  ffREAD },    		/* topology file 	*/
     { efXVG,"-oa","sg_angle",ffWRITE },		/* xvgr output file 	*/
-    { efXVG, "-od","sg_dist",ffWRITE }, 	/* xvgr output file 	*/
-    { efXVG, "-od1", "sg_dist1",ffWRITE }, 	/* xvgr output file 	*/
-    { efXVG, "-od2", "sg_dist2",ffWRITE } 	/* xvgr output file 	*/
+    { efXVG, "-od","sg_dist",ffOPTWR }, 	/* xvgr output file 	*/
+    { efXVG, "-od1", "sg_dist1",ffOPTWR }, 	/* xvgr output file 	*/
+    { efXVG, "-od2", "sg_dist2",ffOPTWR } 	/* xvgr output file 	*/
   };
 
 #define NFILE asize(fnm)
@@ -434,50 +480,41 @@ int gmx_sgangle(int argc,char *argv[])
 
   top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
 
+  fna = opt2fn("-oa",NFILE,fnm);
+  fnd = opt2fn_null("-od",NFILE,fnm);
+  fnd1 = opt2fn_null("-od1",NFILE,fnm);
+  fnd2 = opt2fn_null("-od2",NFILE,fnm);
+  
   /* read index file. */
   if(bOne) {
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,gnx,index,grpname); 
     print_types(index[0],gnx[0],grpname[0],    
  		index[0],gnx[0],grpname[0],top); 
 
-    sgangle_plot_single(ftp2fn(efTRX,NFILE,fnm), 
-			opt2fn("-oa",NFILE,fnm), /* make plot */
-			opt2fn("-od",NFILE,fnm),
-			opt2fn("-od1",NFILE,fnm),
-			opt2fn("-od2",NFILE,fnm),
+    sgangle_plot_single(ftp2fn(efTRX,NFILE,fnm), fna, fnd, fnd1, fnd2,
 			index[0],gnx[0],grpname[0],
 			index[0],gnx[0],grpname[0],
 			top,bPBC);
   }  else {
-    rd_index(ftp2fn(efNDX,NFILE,fnm),2,gnx,index,grpname); 
-
-    print_types(index[0],gnx[0],grpname[0],      
+    rd_index(ftp2fn(efNDX,NFILE,fnm),bZ ? 1 : 2,gnx,index,grpname);
+    if (!bZ)
+      print_types(index[0],gnx[0],grpname[0],
 		index[1],gnx[1],grpname[1],top); 
-
-    sgangle_plot(ftp2fn(efTRX,NFILE,fnm), 
-		 opt2fn("-oa",NFILE,fnm), /* make plot */
-		 opt2fn("-od",NFILE,fnm),
-		 opt2fn("-od1",NFILE,fnm),
-		 opt2fn("-od2",NFILE,fnm),
+    else {
+      gnx[1] = 0;
+      grpname[1] = "Z-axis";
+    }  
+    sgangle_plot(ftp2fn(efTRX,NFILE,fnm), fna, fnd, fnd1, fnd2,
 		 index[0],gnx[0],grpname[0],
 		 index[1],gnx[1],grpname[1],
-		 top);
+		 top,bPBC);
   }
 
-  do_view(opt2fn("-oa",NFILE,fnm),"-nxy");     /* view xvgr file */
-  do_view(opt2fn("-od",NFILE,fnm),"-nxy");     /* view xvgr file */
-  do_view(opt2fn("-od1",NFILE,fnm),"-nxy");
-  do_view(opt2fn("-od2",NFILE,fnm),"-nxy");
+  do_view(fna,"-nxy");     /* view xvgr file */
+  do_view(fnd,"-nxy");     /* view xvgr file */
+  do_view(fnd1,"-nxy");     /* view xvgr file */
+  do_view(fnd2,"-nxy");     /* view xvgr file */
 
   thanx(stderr);
   return 0;
 }
-
-
-
-
-
-
-
-
-
