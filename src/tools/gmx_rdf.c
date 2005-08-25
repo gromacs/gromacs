@@ -166,7 +166,11 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   char       **grpname;
   int        *isize,isize_cm=0,nrdf=0,max_i;
   atom_id    **index,*index_cm=NULL;
-  unsigned long int *sum;
+#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
+  long long int *sum;
+#else
+  double     *sum;
+#endif
   real       t,rmax2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,xcom,dx,*x_i1,xi;
