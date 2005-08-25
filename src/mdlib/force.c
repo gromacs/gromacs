@@ -974,7 +974,7 @@ void init_forcerec(FILE *fp,
    * A little unnecessary to make both vdw and coul tables sometimes,
    * but what the heck... */
 
-  bTab = fr->bcoultab || fr->bvdwtab || (fr->efep != efepNO);
+  bTab = fr->bcoultab || fr->bvdwtab;
   bSep14tab = ((top->idef.il[F_LJ14].multinr[cr->nnodes-1] > 0) &&
 	       (!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT));
   
@@ -1008,17 +1008,7 @@ void init_forcerec(FILE *fp,
 
   if (bTab) {
     rtab = fr->rlistlong + ir->tabext;
-    if (fr->rlistlong == 0 && fr->efep != efepNO && rtab < 5) {
-      rtab = 5;
-      if (fp)
-	fprintf(fp,
-		"\nWARNING: Increasing the free energy table length from\n"
-		"         table extension = %f nm to %g nm,\n"
-		"         you can set the table extension in the mdp file\n\n",
-		ir->tabext,rtab);
-    }
     /* make tables for ordinary interactions */
-    
     if (bNormalnblists) {
       make_nbf_tables(fp,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
       if (!bSep14tab)
