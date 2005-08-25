@@ -147,7 +147,7 @@ void low_ana_dih_trans(bool bTrans, char *fn_trans,
   char title[256];
   int  i,j,k,Dih,ntrans;
   int  cur_bin,new_bin;
-  real ttime,tt,mind, maxd, prev;
+  real ttime,tt;
   real *rot_occ[NROT] ; 
   int  (*calc_bin)(real,int,real);  
   
@@ -659,7 +659,7 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
 		  real *dih[])
 {
   t_topology *top;
-  int        ftp,i,angind,status,natoms,nat,total,teller;
+  int        ftp,i,angind,status,natoms,total,teller;
   int        nangles,nat_trj,n_alloc;
   real       t,fraction,pifac,aa,angle;
   real       *angles[2];

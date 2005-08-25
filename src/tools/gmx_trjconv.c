@@ -573,7 +573,7 @@ int gmx_trjconv(int argc,char *argv[])
   char         *grpnm;
   int          *frindex,nrfri;
   char         *frname;
-  int          ifit,irms,my_clust;
+  int          ifit,irms,my_clust=-1;
   atom_id      *ind_fit,*ind_rms;
   char         *gn_fit,*gn_rms;
   t_cluster_ndx *clust=NULL;

@@ -243,7 +243,7 @@ static void dump_dump(FILE *log,int ndr,t_dr_stats drs[])
 {
   static char *core[] = { "All restraints", "Core restraints" };
   static char *tp[]   = { "linear", "third power", "sixth power" };
-  real viol_tot,viol_max,viol;
+  real viol_tot,viol_max,viol=0;
   bool bCore;
   int  nviol,nrestr;
   int  i,kkk;
@@ -464,7 +464,7 @@ int gmx_disre(int argc,char *argv[])
       "Number of large violations that are stored in the log file every step" }
   };
   
-  FILE        *out,*aver,*numv,*maxxv,*xvg=NULL;
+  FILE        *out=NULL,*aver=NULL,*numv=NULL,*maxxv=NULL,*xvg=NULL;
   t_tpxheader header;
   t_inputrec  ir;
   t_topology  top;
@@ -476,7 +476,7 @@ int gmx_disre(int argc,char *argv[])
   t_nsborder  *nsb;
   t_commrec   *cr;
   t_graph     *g;
-  int         status,ntopatoms,natoms,i,j,step,kkk,m;
+  int         status,ntopatoms,natoms,i,j,step,kkk;
   real        t,lambda;
   rvec        *x,*f,*xav=NULL;
   matrix      box;
@@ -485,7 +485,7 @@ int gmx_disre(int argc,char *argv[])
   atom_id     *index=NULL,*ind_fit=NULL;
   char        *grpname;
   t_cluster_ndx *clust=NULL;
-  t_dr_result dr,*dr_clust;
+  t_dr_result dr,*dr_clust=NULL;
   char        **leg;
   real        *vvindex=NULL,*w_rls=NULL;
   t_mdatoms   *mdatoms;

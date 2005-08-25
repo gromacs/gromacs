@@ -140,6 +140,8 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   snew(t_y,nindex);
   for(i=0; (i<nindex); i++) 
     t_y[i] = i+1;
+  max_clust_size = 1;
+  max_clust_ind  = -1;
   do {
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
       if (bPBC)

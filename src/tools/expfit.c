@@ -224,7 +224,7 @@ static void vac_2_parm(real x,real a[],real *y,real dyda[])
    *
    */
    
-  double v,det,omega,omega2,invom,em,ec,es;
+  double v,det,omega,omega2,em,ec,es;
   
   v   = x/(2*a[1]);
   det = 1 - a[2];

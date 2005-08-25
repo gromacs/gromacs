@@ -494,7 +494,7 @@ void do_start_end(int nres,t_bb bb[],rvec x[],int *nbb,atom_id bbindex[],
 		  int *nca,atom_id caindex[],
 		  bool bRange,int rStart,int rEnd)
 {
-  int    i,j,hstart,hend;
+  int    i,j,hstart=0,hend=0;
 
   if (bRange) {
     for(i=0; (i<nres); i++) {

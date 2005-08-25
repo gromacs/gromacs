@@ -468,7 +468,7 @@ static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
 {
   FILE *out;
   real *c1=NULL,*sig=NULL,*fitparm;
-  real dt=0,tendfit,tbeginfit,integral;
+  real dt=0,tendfit,tbeginfit;
   int  i,efitfn,nparm;
   
   out = ffopen(fn,"w");

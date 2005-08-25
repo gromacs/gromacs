@@ -1970,7 +1970,7 @@ int gmx_hbond(int argc,char *argv[])
 	merge_hb(hb,bTwo);
     }
   }
-  if (!bHBmap || hb->nrhb > 0) {
+  if (hb->nrhb > 0) {
     char **leg;
     aver_nhb  = 0;    
     aver_dist = 0;
@@ -2037,61 +2037,61 @@ int gmx_hbond(int argc,char *argv[])
     }
     printf("Average number of hbonds per timeframe %.3f out of %g possible\n",
 	   aver_nhb,max_nhb);
-  }
-  if (hb->bHBmap && hb->nrhb > 0) {
-    if (opt2bSet("-ac",NFILE,fnm))
-      do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
-	      bMerge,fit_start,temp);
-    
-    if (opt2bSet("-life",NFILE,fnm))
-      do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge);
-    
-    if (opt2bSet("-hbm",NFILE,fnm)) {
-      t_matrix mat;
-      int id,ia,hh,x,y;
+    if (hb->bHBmap) {
+      if (opt2bSet("-ac",NFILE,fnm))
+	do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
+		bMerge,fit_start,temp);
       
-      mat.nx=nframes;
-      mat.ny=hb->nrhb;
-      snew(mat.matrix,mat.nx);
-      for(x=0; (x<mat.nx); x++) {
-	snew(mat.matrix[x],mat.ny);
-	y=0;
-	for(id=0; (id<hb->d.nrd); id++) 
-	  for(ia=0; (ia<hb->a.nra); ia++) 
-	    for(hh=0; (hh<hb->maxhydro); hh++)
-	      if (hb->hbmap[id][ia] && ISHB(hb->hbmap[id][ia]->history[hh])) {
-		range_check(y,0,mat.ny);
-		mat.matrix[x][y++] = is_hb(hb->hbmap[id][ia]->h[hh],x);
-	      }
-	      
+      if (opt2bSet("-life",NFILE,fnm))
+	do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge);
+      
+      if (opt2bSet("-hbm",NFILE,fnm)) {
+	t_matrix mat;
+	int id,ia,hh,x,y;
+	
+	mat.nx=nframes;
+	mat.ny=hb->nrhb;
+	snew(mat.matrix,mat.nx);
+	for(x=0; (x<mat.nx); x++) {
+	  snew(mat.matrix[x],mat.ny);
+	  y=0;
+	  for(id=0; (id<hb->d.nrd); id++) 
+	    for(ia=0; (ia<hb->a.nra); ia++) 
+	      for(hh=0; (hh<hb->maxhydro); hh++)
+		if (hb->hbmap[id][ia] && ISHB(hb->hbmap[id][ia]->history[hh])) {
+		  range_check(y,0,mat.ny);
+		  mat.matrix[x][y++] = is_hb(hb->hbmap[id][ia]->h[hh],x);
+		}
+	  
+	}
+	mat.axis_x=hb->time;
+	snew(mat.axis_y,mat.ny);
+	for(j=0; j<mat.ny; j++)
+	  mat.axis_y[j]=j;
+	sprintf(mat.title,"Hydrogen Bond Existence Map");
+	sprintf(mat.legend,"Hydrogen Bonds");
+	sprintf(mat.label_x,"Time (ps)");
+	sprintf(mat.label_y,"Hydrogen Bond Index");
+	mat.bDiscrete=TRUE;
+	if (bInsert)
+	  mat.nmap=HB_NR;
+	else
+	  mat.nmap=2;
+	snew(mat.map,mat.nmap);
+	for(i=0; i<mat.nmap; i++) {
+	  mat.map[i].code.c1=hbmap[i];
+	  mat.map[i].desc=hbdesc[i];
+	  mat.map[i].rgb=hbrgb[i];
+	}
+	fp = opt2FILE("-hbm",NFILE,fnm,"w");
+	write_xpm_m(fp, mat);
+	fclose(fp);
+	for(x=0; x<mat.nx; x++)
+	  sfree(mat.matrix[x]);
+	sfree(mat.axis_y);
+	sfree(mat.matrix);
+	sfree(mat.map);
       }
-      mat.axis_x=hb->time;
-      snew(mat.axis_y,mat.ny);
-      for(j=0; j<mat.ny; j++)
-	mat.axis_y[j]=j;
-      sprintf(mat.title,"Hydrogen Bond Existence Map");
-      sprintf(mat.legend,"Hydrogen Bonds");
-      sprintf(mat.label_x,"Time (ps)");
-      sprintf(mat.label_y,"Hydrogen Bond Index");
-      mat.bDiscrete=TRUE;
-      if (bInsert)
-	mat.nmap=HB_NR;
-      else
-	mat.nmap=2;
-      snew(mat.map,mat.nmap);
-      for(i=0; i<mat.nmap; i++) {
-	mat.map[i].code.c1=hbmap[i];
-	mat.map[i].desc=hbdesc[i];
-	mat.map[i].rgb=hbrgb[i];
-      }
-      fp = opt2FILE("-hbm",NFILE,fnm,"w");
-      write_xpm_m(fp, mat);
-      fclose(fp);
-      for(x=0; x<mat.nx; x++)
-	sfree(mat.matrix[x]);
-      sfree(mat.axis_y);
-      sfree(mat.matrix);
-      sfree(mat.map);
     }
   }    
     

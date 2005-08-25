@@ -503,6 +503,10 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
 	M[index] = map[0][i];
     }
   }
+  else {
+    MM = NULL;
+    Minf = NOTSET;
+  }
   pick_minima(logf,ibox,neig,len,W);
   if (gmax <= 0)
     gmax = Winf;

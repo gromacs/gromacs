@@ -265,6 +265,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     cr->nthreads = 1;
     
     ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
+    printf("Neighborsearching with a cut-off of %g\n",rlong);
     init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);
     fr->cg0 = 0;
     fr->hcg = top->blocks[ebCGS].nr;
@@ -283,6 +284,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 
   /* Init things dependent on parameters */  
   ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
+  printf("Neighborsearching with a cut-off of %g\n",rlong);
   init_forcerec(debug,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);
 		
   /* Calculate new stuff dependent on coords and box */

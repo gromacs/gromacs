@@ -131,7 +131,7 @@ static void do_ac_core(int nframes,int nout,
 		       unsigned long mode)
 {
   int     j,k,j3,jk3,m,n;
-  real ccc,c0,cth;
+  real    ccc,cth;
   rvec    xj,xk,rr;
 
   if (nrestart < 1) {
@@ -349,7 +349,7 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
   real *cfour;
   char    buf[32];
   real    fac;
-  int     i,j,m,m1;
+  int     j,m,m1;
   
   snew(cfour,nfour);
   
@@ -715,7 +715,6 @@ void low_do_autocorr(char *fn,char *title,
 }
 
 static char *Leg[]   = { NULL, "0", "1", "2", "3", NULL };
-static char *Nparm[] = { NULL, "1", "2", NULL };
 
 t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 {
@@ -768,8 +767,6 @@ t_pargs *add_acf_pargs(int *npargs,t_pargs *pa)
 void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 		 real dt,unsigned long mode,bool bAver)
 {
-  int i;
-
   if (!bACFinit) {
     printf("ACF data structures have not been initialised. Call add_acf_pargs\n");
   }

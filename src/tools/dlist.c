@@ -50,8 +50,7 @@ t_dlist *mk_dlist(FILE *log,
 {
   int     ires,i,j,k,ii;
   t_dihatms atm,prev;
-  int     nl=0,nc[edMax],ndih;
-  bool    bDih;
+  int     nl=0,nc[edMax];
   char    *thisres;
   t_dlist *dl;
  
@@ -65,7 +64,7 @@ t_dlist *mk_dlist(FILE *log,
     ires=atoms->atom[i].resnr;
     
     /* Initiate all atom numbers to -1 */
-    atm.minC=atm.H=atm.N=atm.C=atm.O=-1;
+    atm.minC=atm.H=atm.N=atm.C=atm.O=atm.minO=-1;
     for(j=0; (j<MAXCHI+3); j++)
       atm.Cn[j]=-1;
       
