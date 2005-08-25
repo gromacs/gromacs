@@ -250,7 +250,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
             /* Only spend time on B state if it is non-zero */
             if( (qqB != 0) || (c6B != 0) || (c12B != 0) ) 
             {
-                rB             = pow(alpha*sigma6a*lam2+r6,1.0/6.0);
+                rB             = pow(alpha*sigma6b*L1sq+r6,1.0/6.0);
                 rinvB          = 1.0/rB;
                 rinv4B         = rinvB*rinvB;
                 rinv4B         = rinv4B*rinv4B;
@@ -340,10 +340,8 @@ gmx_nb_free_energy_kernel(int                  icoul,
             if(icoul==5) {
 	      /* Soft-core Ewald interactions are special:
 	       * For the direct space interactions we effectively want the
-	       * normal coulomb interaction (added above when icoul==5), but 
-	       * need to subtract the part added in reciprocal space, corresponding
-	       * to the difference between the table interactions and normal
-	       * coulomb, both calculated for r=r (not rA or rB). Here we go...
+	       * normal coulomb interaction (added above when icoul==5),
+	       * but need to subtract the part added in reciprocal space.
 	       */
 	      if (r != 0) {
 		VV    = erf(ewc*r)*rinv;
