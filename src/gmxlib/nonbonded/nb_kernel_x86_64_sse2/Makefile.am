@@ -54,5 +54,5 @@ libnb_kernel_x86_64_sse2_la_SOURCES = \
 	nb_kernel400_x86_64_sse2.s	nb_kernel400_x86_64_sse2.h	\
 	nb_kernel410_x86_64_sse2.s	nb_kernel410_x86_64_sse2.h	\
 	nb_kernel430_x86_64_sse2.s	nb_kernel430_x86_64_sse2.h	\
-	nb_kernel_x86_64_sse2_test_asm.s	nb_kernel_x86_64_sse2_test_asm.h	\
+	nb_kernel_x86_64_sse2_test.s	nb_kernel_x86_64_sse2_test.h	\
 	nb_kernel_x86_64_sse2.c		nb_kernel_x86_64_sse2.h
