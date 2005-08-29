@@ -493,7 +493,7 @@ static bool do_binread(void *item,int nitem,int eio,
 #ifdef HAVE_FSEEKO
     fseeko(curfio->fp,(off_t)(size*nitem),SEEK_CUR);
 #else
-    fseek(curfio->fp,(off_t)(size*nitem),SEEK_CUR);
+    fseek(curfio->fp,(size*nitem),SEEK_CUR);
 #endif    
     rsize = nitem;
   }
@@ -853,7 +853,7 @@ off_t fio_ftell(int fio)
     return 0;
 }
 
-void fio_seek(int fio,off_t fpos)
+void fio_seek(int fio, off_t fpos)
 {
   fio_check(fio);
   if (FIO[fio].fp)

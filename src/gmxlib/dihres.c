@@ -114,13 +114,15 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
     kfac  = ip[type].dihres.kfac*fc; 
     power = ip[type].dihres.power;
     label = ip[type].dihres.label;
-    if (debug)
-      fprintf(debug,"dihres[%d]: %d %d %d %d : phi=%f, dphi=%f, kfac=%f, power=%d, label=%d\n",
-	      k++,ai,aj,ak,al,phi,dphi,kfac,power,label);
     
     phi = dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
-		    &cos_phi,&sign,&t1,&t2,&t3);	   /* 84 flops */
+                    &cos_phi,&sign,&t1,&t2,&t3);	  
+    /* 84 flops */
     
+    if (debug)
+        fprintf(debug,"dihres[%d]: %d %d %d %d : phi=%f, dphi=%f, kfac=%f, power=%d, label=%d\n",
+                k++,ai,aj,ak,al,phi,dphi,kfac,power,label);
+
     /* phi can jump if phi0 is close to Pi/-Pi, which will cause huge
      * force changes if we just apply a normal harmonic.
      * Instead, we first calculate phi-phi0 and take it modulo (-Pi,Pi).

@@ -21,7 +21,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real                 facel,
                           real                 krf,
                           real                 crf,
-			  real                 ewc,
+                          real                 ewc,
                           real *               Vc,
                           int *                typeA,
                           int *                typeB,
@@ -335,25 +335,29 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 /* Buckingham vdw free energy not supported */
             }
 
-	    Fscal = 0;
+            Fscal = 0;
             
-            if(icoul==5) {
-	      /* Soft-core Ewald interactions are special:
-	       * For the direct space interactions we effectively want the
-	       * normal coulomb interaction (added above when icoul==5),
-	       * but need to subtract the part added in reciprocal space.
-	       */
-	      if (r != 0) {
-		VV    = erf(ewc*r)*rinv;
-		FF    = rinv*rinv*(VV - 2.0*ewc*isp*exp(-ewc*ewc*rsq));
-	      } else {
-		VV    = ewc*2.0/sqrt(M_PI);
-		FF    = 0;
-	      }
-	      vctot  -= (lambda*qqB + L1*qqA)*VV;
-	      Fscal  -= (lambda*qqB + L1*qqA)*FF;
-	      dvdl   -= (qqB - qqA)*VV;
-	    }
+            if(icoul==5)
+            {
+                /* Soft-core Ewald interactions are special:
+                 * For the direct space interactions we effectively want the
+                 * normal coulomb interaction (added above when icoul==5),
+                 * but need to subtract the part added in reciprocal space.
+                 */
+                if (r != 0) 
+                {
+                    VV    = erf(ewc*r)*rinv;
+                    FF    = rinv*rinv*(VV - 2.0*ewc*isp*exp(-ewc*ewc*rsq));
+                }
+                else 
+                {
+                    VV    = ewc*2.0/sqrt(M_PI);
+                    FF    = 0;
+                }
+                vctot  -= (lambda*qqB + L1*qqA)*VV;
+                Fscal  -= (lambda*qqB + L1*qqA)*FF;
+                dvdl   -= (qqB - qqA)*VV;
+            }
 	    
             /* Assemble A and B states */
             vctot         += lambda*VcoulB + L1*VcoulA;
@@ -362,7 +366,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
             Fscal         += (L1*FscalA*rinv4A + lambda*FscalB*rinv4B)*r4;
             dvdl          += (VcoulB + VvdwB) - (VcoulA + VvdwA);
             dvdl          += 1.0/3.0*alpha*lambda*L1
-	      *(FscalB*sigma6b*rinv4B - FscalA*sigma6a*rinv4A);
+                *(FscalB*sigma6b*rinv4B - FscalA*sigma6a*rinv4A);
                 
             tx             = Fscal*dx;     
             ty             = Fscal*dy;     

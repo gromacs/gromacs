@@ -353,7 +353,10 @@ mknb_initialize_data(void)
 		mknb_assign("krf",        "*p_krf");
 		mknb_assign("crf",        "*p_crf");
 		mknb_assign("tabscale",   "*p_tabscale");
-		/* mknb_assign("gbtabscale", "*p_gbtabscale");*/
+		if(mknb_func.coul==MKNB_COUL_GB)
+    	{
+			mknb_assign("gbtabscale", "*p_gbtabscale");
+		}
 	}	   
 
 	/* assign the charge combinations for OO,OH and HH, 

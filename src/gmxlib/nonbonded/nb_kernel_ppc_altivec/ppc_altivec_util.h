@@ -34,6 +34,12 @@
  */
 #include<stdio.h>
 
+/* altivec.h must be included on vanilla gcc-4.0,
+ * but not on Apple gcc or the IBM compilers.
+ */
+#ifdef HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
 
 /** Write contents of a SIMD FP variable on standard out.
  *
@@ -3170,13 +3176,22 @@ do_4_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
 	int idx1,idx2,idx3,idx4;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
 
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
@@ -3226,15 +3241,24 @@ static inline void do_4_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
 	int idx1,idx2,idx3,idx4;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3287,14 +3311,23 @@ static inline void do_4_ljtable_lj(float *VFtab,
 
 	int    idx1,idx2,idx3,idx4;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3361,14 +3394,23 @@ static inline void do_4_ljctable_lj(float *VFtab,
 
 	int    idx1,idx2,idx3,idx4;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
 
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
@@ -3440,15 +3482,24 @@ do_4_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd3,tabr3,tabc3,tabd4,tabr4,tabc4;
 	int idx1,idx2,idx3,idx4;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3522,13 +3573,22 @@ do_3_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
 	int idx1,idx2,idx3;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3577,14 +3637,23 @@ do_3_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
 	int idx1,idx2,idx3;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3637,13 +3706,22 @@ do_3_ljtable_lj(float *VFtab,
 	vector float tabd1,tabd2,tabd3;
 	vector float tabr1,tabr2,tabr3;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3709,14 +3787,23 @@ do_3_ljctable_lj(float *VFtab,
 	vector float tabd1,tabd2,tabd3;
 	vector float tabr1,tabr2,tabr3;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3788,14 +3875,23 @@ do_3_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd3,tabr3,tabc3;
 	int idx1,idx2,idx3;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-  
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3866,12 +3962,21 @@ do_2_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2;
 	int idx1,idx2;
 
-	vidx     = vec_cts(rtab,0); 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
+    vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3918,13 +4023,22 @@ do_2_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2;
 	int idx1,idx2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -3978,12 +4092,21 @@ do_2_ljtable_lj(float *VFtab,
 	vector float tabd1,tabd2;
 	vector float tabr1,tabr2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4048,13 +4171,22 @@ do_2_ljctable_lj(float *VFtab,
 	vector float tabd1,tabd2;
 	vector float tabr1,tabr2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4123,13 +4255,22 @@ do_2_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
 	int idx1,idx2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-  
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4197,11 +4338,20 @@ do_1_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1;
 	int idx1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4246,12 +4396,21 @@ static inline void do_1_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1;
 	int idx1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4302,11 +4461,20 @@ do_1_ljtable_lj(float *VFtab,
 	vector float tabd1;
 	vector float tabr1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4368,12 +4536,21 @@ do_1_ljctable_lj(float *VFtab,
 	vector float tabd1;
 	vector float tabr1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4440,12 +4617,21 @@ do_1_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd1,tabr1,tabc1;
 	int idx1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-  
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4507,14 +4693,23 @@ do_vonly_4_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
 	int idx1,idx2,idx3,idx4;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4559,15 +4754,24 @@ do_vonly_4_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3,tab4;
 	int idx1,idx2,idx3,idx4;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4613,14 +4817,23 @@ do_vonly_4_ljtable_lj(float *VFtab,
 
 	int    idx1,idx2,idx3,idx4;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4678,15 +4891,24 @@ do_vonly_4_ljctable_lj(float *VFtab,
 
 	int    idx1,idx2,idx3,idx4;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4744,15 +4966,24 @@ do_vonly_4_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd3,tabr3,tabc3,tabd4,tabr4,tabc4;
 	int idx1,idx2,idx3,idx4;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-	idx4     = *(((int *)&vidx)+3);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+	idx4     = conv.i[3];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4816,13 +5047,22 @@ do_vonly_3_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
 	int idx1,idx2,idx3;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4866,14 +5106,23 @@ static inline void do_vonly_3_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2,tab3;
 	int idx1,idx2,idx3;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -4919,12 +5168,21 @@ do_vonly_3_ljtable_lj(float *VFtab,
 	vector float tabd1,tabd2,tabd3;
 	vector float tabr1,tabr2,tabr3;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    }  conv;
+        
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
 
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
@@ -4980,14 +5238,23 @@ do_vonly_3_ljctable_lj(float *VFtab,
 	vector float tabd1,tabd2,tabd3;
 	vector float tabr1,tabr2,tabr3;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5046,14 +5313,23 @@ do_vonly_3_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd3,tabr3,tabc3;
 	int idx1,idx2,idx3;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-	idx3     = *(((int *)&vidx)+2);
-  
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+	idx3     = conv.i[2];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5115,12 +5391,21 @@ do_vonly_2_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2;
 	int idx1,idx2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5162,13 +5447,22 @@ do_vonly_2_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1,tab2;
 	int idx1,idx2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5214,12 +5508,21 @@ do_vonly_2_ljtable_lj(float *VFtab,
 	vector float tabd1,tabd2;
 	vector float tabr1,tabr2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5274,13 +5577,22 @@ do_vonly_2_ljctable_lj(float *VFtab,
 	vector float tabd1,tabd2;
 	vector float tabr1,tabr2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5336,13 +5648,22 @@ do_vonly_2_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd1,tabr1,tabc1,tabd2,tabr2,tabc2;
 	int idx1,idx2;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-	idx2     = *(((int *)&vidx)+1);
-  
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+	idx2     = conv.i[1];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5401,11 +5722,20 @@ do_vonly_1_ctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1;
 	int idx1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5448,12 +5778,21 @@ do_vonly_1_ljctable_coul(float *VFtab,
 	vector float Y,F,G,H,eps,eps2,tab1;
 	int idx1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5496,11 +5835,20 @@ do_vonly_1_ljtable_lj(float *VFtab,
 	vector float tabd1;
 	vector float tabr1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_sl(vidx,vec_splat_u32(3));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5551,12 +5899,21 @@ do_vonly_1_ljctable_lj(float *VFtab,
 	vector float tabd1;
 	vector float tabr1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 
@@ -5610,12 +5967,21 @@ do_vonly_1_ljctable_coul_and_lj(float *VFtab,
 	vector float tabd1,tabr1,tabc1;
 	int idx1;
 
+    /* necessary to avoid aliasing optimization problems */
+    union
+    {
+        vector signed int   v;
+        int                 i[4];
+    } conv;
+	
 	vidx     = vec_cts(rtab,0); 
 	vidx     = vec_add(vidx,vec_sl(vidx,vec_splat_u32(1))); /* multiply by 3 */
 	vidx     = vec_sl(vidx,vec_splat_u32(2));
 
-	idx1     = *((int *)&vidx);
-  
+    conv.v   = vidx;
+    
+	idx1     = conv.i[0];
+    
 	eps      = vec_sub(rtab,vec_floor(rtab));
 	eps2     = vec_madd(eps,eps,vec_zero());
 

@@ -62,7 +62,7 @@ static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
 static const char   *Sugars[]     = { "A", "T", "G", "C", "U" };
 #define  NDNA asize(Sugars)
 
-static bool yn(bool bASK)
+static bool gmx_ask_yesno(bool bASK)
 {
   char c;
 
@@ -214,7 +214,7 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
       if (bASK) {
 	printf("split %s into atoms (y/n) ? ",restp[i]);
 	fflush(stdout);
-	if (yn(bASK)) {
+	if (gmx_ask_yesno(bASK)) {
 	  natp=0;
 	  for(k=0; (k<naid); k++) {
 	    aname=*atoms->atomname[aid[k]];
@@ -340,7 +340,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
   if (bASK) {
     for(i=0; (i<NCH); i++) {
       printf("Split %12s into %5d residues (y/n) ? ",ch_name[i],npres);
-      if (yn(bASK)) {
+      if (gmx_ask_yesno(bASK)) {
 	int resnr;
 	nra = 0;
 	for(n=0;((atoms->atom[n].resnr<npres) && (n<atoms->nr));) {
@@ -364,7 +364,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
       } 
     }
     printf("Make group with sidechain and C=O swapped (y/n) ? ");
-    if (yn(bASK)) {
+    if (gmx_ask_yesno(bASK)) {
       /* Make swap sidechain C=O index */
       int resnr,hold;
       nra = 0;

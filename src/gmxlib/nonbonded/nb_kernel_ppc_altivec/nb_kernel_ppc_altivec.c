@@ -20,6 +20,10 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_ALTIVEC_H
+#include <altivec.h>
+#endif
+
 /* Must come directly after config.h */
 #include <gmx_thread.h>
 
