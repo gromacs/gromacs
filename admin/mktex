@@ -12,7 +12,7 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 3.1
+set VER		= 3.3
 set TEXIDX	= proglist.tex
 
 set GENERAL 	= "getting_started:Getting_Started flow:Flow_Chart files:File_Formats mdp_opt:mdp_options"

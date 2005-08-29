@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_cluster</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -19,7 +19,7 @@ Distances between structures can be determined from a trajectory
 or read from an XPM matrix file with the <tt>-dm</tt> option.
 RMS deviation after fitting or RMS deviation of atom-pair distances
 can be used to define the distance between structures.<p>
-full linkage: add a structure to a cluster when its distance to any
+single linkage: add a structure to a cluster when its distance to any
 element of the cluster is less than <tt>cutoff</tt>.<p>
 Jarvis Patrick: add a structure to a cluster when this structure
 and a structure in the cluster have each other as neighbors and
@@ -34,7 +34,7 @@ largest number of neighbors with all its neighbors as cluster
 and eleminate it from the pool of clusters. Repeat for remaining
 structures in pool.<p>
 When the clustering algorithm assigns each structure to exactly one
-cluster (full linkage, Jarvis Patrick and gromos) and a trajectory
+cluster (single linkage, Jarvis Patrick and gromos) and a trajectory
 file is supplied, the structure with
 the smallest average distance to the others or the average structure
 or all structures for each cluster will be written to a trajectory
@@ -42,7 +42,10 @@ file. When writing all structures, separate numbered files are made
 for each cluster.<p>Two output files are always written:<br>
 <tt>-o</tt> writes the RMSD values in the upper left half of the matrix
 and a graphical depiction of the clusters in the lower right half
-(depends on <tt>-max</tt> and <tt>-keepfree</tt>).<br>
+When <tt>-minstruct</tt> = 1 the graphical depiction is black
+when two structures are in the same cluster.
+When <tt>-minstruct</tt> &gt; 1 different colors will be used for each
+cluster.<br>
 <tt>-g</tt> writes information on the options used and a detailed list
 of all clusters and their members.<p>
 Additionally, a number of optional output files can be written:<br>
@@ -83,14 +86,14 @@ for a selected set of clusters (with option <tt>-wcl</tt>, depends on
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt>, <tt>s</tt>, <tt>m</tt> or <tt>h</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]dista</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use RMSD of distances instead of RMS deviation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>40</tt> </TD><TD> Discretize RMSD matrix in # levels </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-keepfree</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-4</tt> </TD><TD> if &gt;0 # levels not to use when coloring clusters; if &lt;0 nlevels/-keepfree+1 levels will not be used </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-cutoff</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.1</tt> </TD><TD> RMSD cut-off (nm) for two structures to be neighbor </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use least squares fitting before RMSD calculation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Maximum level in RMSD matrix </TD></TD>

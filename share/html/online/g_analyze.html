@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_analyze</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -51,13 +51,14 @@ error^2 = Sum (B_i - &lt;B&gt;)^2 / (m*(m-1)).
 These errors are plotted as a function of the block size.
 Also an analytical block average curve is plotted, assuming
 that the autocorrelation is a sum of two exponentials.
-The analytical curve for the block average BA is:<br>
-BA(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +<br>
-                        (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),<br>where T is the total time.
-a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block
-average.
+The analytical curve for the block average is:<br>
+f(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +<br>
+                       (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),<br>where T is the total time.
+a, tau1 and tau2 are obtained by fitting f^2(t) to error^2.
 When the actual block average is very close to the analytical curve,
-the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).<p>
+the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).
+The complete derivation is given in
+B. Hess, J. Chem. Phys. 116:209-217, 2002.<p>
 Option <tt>-filter</tt> prints the RMS high-frequency fluctuation
 of each set and over all sets with respect to a filtered average.
 The filter is proportional to cos(pi t/len) where t goes from -len/2
@@ -85,8 +86,9 @@ zero or negative value are ignored.
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]time</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Expect a time in the input </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First time to read from set </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last time to read from set </TD></TD>
@@ -94,6 +96,9 @@ zero or negative value are ignored.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]d</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use the derivative </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.1</tt> </TD><TD> Binwidth for the distribution </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-errbar</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Error bars for -av: <tt>none</tt>, <tt>stddev</tt>, <tt>error</tt> or <tt>90</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]integrate</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Integrate data function(s) numerically using trapezium rule </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-aver_start</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Start averaging the integral from here </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xydy</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interpret second data set as error in the y values for integrating </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-filter</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Print the high-frequency fluctuation after filtering with a cosine filter of length # </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]power</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Fit data to: b t^a </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]subav</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Subtract the average before autocorrelating </TD></TD>

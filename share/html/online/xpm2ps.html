@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>xpm2ps</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -25,6 +25,12 @@ default to those for the x-axis. Font names have a defaulting hierarchy:
 titlefont -&gt; legendfont; titlefont -&gt; (xfont -&gt; yfont -&gt; ytickfont)
 -&gt; xtickfont, e.g. setting titlefont sets all fonts, setting xfont
 sets yfont, ytickfont and xtickfont.<p>
+When no <tt><a href="m2p.html">m2p</a></tt> file is supplied, many setting are set by
+command line options. The most important option is <tt>-size</tt>
+which sets the size of the whole matrix in postscript units.
+This option can be overridden with the <tt>-bx</tt> and <tt>-by</tt>
+options (and the corresponding parameters in the <tt><a href="m2p.html">m2p</a></tt> file),
+which set the size of a single matrix element.<p>
 With <tt>-f2</tt> a 2nd matrix file can be supplied, both matrix
 files will be read simultaneously and the upper left half of the
 first one (<tt>-f</tt>) is plotted together with the lower right
@@ -69,8 +75,9 @@ the <tt>-<a href="xpm.html">xpm</a></tt> option.
 <TR><TD ALIGN=RIGHT> <b><tt>-legend</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>both</tt> </TD><TD> Show legend: <tt>both</tt>, <tt>first</tt>, <tt>second</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-diag</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>first</tt> </TD><TD> Diagonal: <tt>first</tt>, <tt>second</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-combine</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>halves</tt> </TD><TD> Combine two matrices: <tt>halves</tt>, <tt>add</tt>, <tt>sub</tt>, <tt>mult</tt> or <tt>div</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-bx</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Box x-size (also y-size when -by is not set) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-by</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Box y-size </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-size</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   400</tt> </TD><TD> Horizontal size of the matrix in ps units </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bx</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Element x-size, overrides -size (also y-size when -by is not set) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-by</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Element y-size </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rainbow</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Rainbow colors, convert white to: <tt>no</tt>, <tt>blue</tt> or <tt>red</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-gradient</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Re-scale colormap to a smooth gradient from white {1,1,1} to {r,g,b} </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> only write out every nr-th row and column </TD></TD>

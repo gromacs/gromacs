@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>editconf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -45,9 +45,11 @@ can be selected for calculating the size and the geometric center,
 otherwise the whole system is used.
 <p>
 <tt>-rotate</tt> rotates the coordinates and velocities.
+<p>
 <tt>-princ</tt> aligns the principal axes of the system along the
 coordinate axes, this may allow you to decrease the box volume,
-but beware that molecules can rotate significantly in a nanosecond.<p>
+but beware that molecules can rotate significantly in a nanosecond.
+<p>
 Scaling is applied before any of the other operations are
 performed. Boxes can be scaled to give a certain density (option
 <tt>-density</tt>). A special feature of the scaling option, when the
@@ -58,9 +60,6 @@ Groups are selected after all operations have been applied.<p>
 Periodicity can be removed in a crude manner.
 It is important that the box sizes at the bottom of your input file
 are correct when the periodicity is to be removed.
-<p>
-The program can optionally rotate the solute molecule to align the
-molecule along its principal axes (<tt>-rotate</tt>)
 <p>
 When writing <tt>.<a href="pdb.html">pdb</a></tt> files, B-factors can be
 added with the <tt>-bf</tt> option. B-factors are read
@@ -73,7 +72,7 @@ be added instead of B-factors. <tt>-legend</tt> will produce
 a row of CA atoms with B-factors ranging from the minimum to the
 maximum value found, effectively making a legend for viewing.
 <p>
-With the option -mead a special <a href="pdb.html">pdb</a> file for the MEAD electrostatics
+With the option -mead a special <a href="pdb.html">pdb</a> (pqr) file for the MEAD electrostatics
 program (Poisson-Boltzmann solver) can be made. A further prerequisite
 is that the input file is a run input file.
 The B-factor field is then filled with the Van der Waals radius
@@ -86,7 +85,7 @@ Finally with option <tt>-label</tt> editconf can add a chain identifier
 to a <a href="pdb.html">pdb</a> file, which can be useful for analysis with e.g. rasmol.<p>
 To convert a truncated octrahedron file produced by a package which uses
 a cubic box with the corners cut off (such as Gromos) use:<br>
-<tt>editconf -f &lt;in&gt; -rotate 0 -45 -35.264 -bt o -box &lt;veclen&gt; -o &lt;out&gt;</tt><br>
+<tt>editconf -f &lt;in&gt; -rotate 0 45 35.264 -bt o -box &lt;veclen&gt; -o &lt;out&gt;</tt><br>
 where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <P>
 <H3>Files</H3>
@@ -94,7 +93,8 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">     out.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">     out.gro</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mead</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pqr.html">    mead.pqr</a></tt> </TD><TD> Output, Opt. </TD><TD> Coordinate file for MEAD </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-bf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">   bfact.dat</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic data file </TD></TR>
 </TABLE>
 <P>
@@ -118,9 +118,10 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <TR><TD ALIGN=RIGHT> <b><tt>-density</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  1000</tt> </TD><TD> Density (g/l) of the output box achieved by scaling </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]vol</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Compute and print volume of the box </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Remove the periodicity (make molecule whole again) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]mead</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Store the charge of the atom in the occupancy field and the radius of the atom in the B-factor field </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]grasp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-rvdw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.12</tt> </TD><TD> Default Van der Waals radius if one can not be found in the database </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rvdw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.12</tt> </TD><TD> Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sig56</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Use rmin/2 (minimum in the Van der Waals potential) rather than sigma/2  </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vdwread</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Read the Van der Waals radii from the file vdwradii.<a href="dat.html">dat</a> rather than computing the radii based on the force field </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]atom</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Force B-factor attachment per atom </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]legend</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Make B-factor legend </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-label</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>A</tt> </TD><TD> Add chain label for all residues </TD></TD>

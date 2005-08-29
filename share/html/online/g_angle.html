@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_angle</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -25,7 +25,9 @@ probably only fun for a selected few.<p>
 With option -oc a dihedral correlation function is calculated.<p>
 It should be noted that the indexfile should contain
 atom-triples for angles or atom-quadruplets for dihedrals.
-If this is not the case, the program will crash.
+If this is not the case, the program will crash.<p>
+With option <tt>-or</tt> a trajectory file is dumped containing cos andsin of selected dihedral angles which subsequently can be used as
+input for a PCA analysis using <tt><a href="g_covar.html">g_covar</a></tt>.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -39,6 +41,7 @@ If this is not the case, the program will crash.
 <TR><TD ALIGN=RIGHT> <b><tt>-ot</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">dihtrans.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-oh</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> trhisto.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-oc</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> dihcorr.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-or</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="trr.html">    traj.trr</a></tt> </TD><TD> Output, Opt. </TD><TD> Trajectory in portable xdr format </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
@@ -46,10 +49,11 @@ If this is not the case, the program will crash.
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-type</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>angle</tt> </TD><TD> Type of angle to analyse: <tt>angle</tt>, <tt>dihedral</tt>, <tt>improper</tt> or <tt>ryckaert-bellemans</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]all</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Plot all angles separately in the averages file, in the order of appearance in the index file. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-binwidth</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     1</tt> </TD><TD> binwidth (degrees) for calculating the distribution </TD></TD>

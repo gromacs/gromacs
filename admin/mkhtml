@@ -12,7 +12,7 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 3.2
+set VER		= 3.3
 set MANDIR	= online
 set HTML	= $cwd/html
 set HTMLOL	= $HTML/$MANDIR
@@ -51,13 +51,13 @@ cat > $HTMLIDX << EOD
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280>
 <br><br>
 <h2>
-GROMACS 3.2<br>
+GROMACS 3.3<br>
 Online Reference</h2>
 </td>
 </TABLE></TD>
 <td ALIGN=RIGHT VALIGN=BOTTOM WIDTH="*" NOSAVE>
-<B>VERSION 3.2<br>
-Sun 25 Jan 2004</B></td>
+<B>VERSION 3.3<br>
+Sun 28 Aug 2005</B></td>
 </tr>
 </table>
 

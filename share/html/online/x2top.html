@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>x2top</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -23,7 +23,18 @@ When <tt>-param</tt> is set, equilibrium distances and angles
 and force constants will be printed in the topology for all
 interactions. The equilibrium distances and angles are taken
 from the input coordinates, the force constant are set with
-command line options.
+command line options.The force fields supported currently are:<p>
+G43a1  GROMOS96 43a1 Forcefield (official distribution)<p>
+oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)<p>
+G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)<p>
+gmx    Gromacs Forcefield (a modified GROMOS87, see manual)<p>
+G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)<p>
+The corresponding data files can be found in the library directory
+with names like ffXXXX.YYY. Check chapter 5 of the manual for more
+information about file formats. By default the forcefield selection
+is interactive, but you can use the <tt>-ff</tt> option to specify
+one of the short names above on the command line instead. In that
+case <a href="pdb2gmx.html">pdb2gmx</a> just looks for the corresponding file.<p>
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -39,7 +50,7 @@ command line options.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   1.1</tt> </TD><TD> Scaling factor for bonds with unknown atom types relative to atom type O </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>G43a1</tt> </TD><TD> Select the force field for your simulation: <tt>G43a1</tt>, <tt>oplsaa</tt>, <tt>gmx</tt>, <tt>G43a2</tt> or <tt>G43b1</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>select</tt> </TD><TD> Select the force field for your simulation. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nexcl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of exclusions </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]H14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use 3rd neighbour interactions for hydrogen atoms </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]alldih</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Generate all proper dihedrals </TD></TD>

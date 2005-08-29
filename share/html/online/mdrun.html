@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdrun</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -57,19 +57,35 @@ The <tt>.<a href="edi.html">edi</a></tt> file can be produced using options in t
 menu of the WHAT IF program. mdrun produces a <tt>.<a href="edo.html">edo</a></tt> file that
 contains projections of positions, velocities and forces onto selected
 eigenvectors.<p>
-The -table option can be used to pass mdrun a formatted table with
-user-defined potential functions. The file is read from either the
-current directory or from the GMXLIB directory. A number of preformatted
-tables are presented in the GMXLIB dir, for 6-8, 6-9, 6-10, 6-11, 6-12
-Lennard Jones potentials with normal Coulomb.<p>
+When user-defined potential functions have been selected in the
+<tt>.<a href="mdp.html">mdp</a></tt> file the <tt>-table</tt> option is used to pass mdrun
+a formatted table with potential functions. The file is read from
+either the current directory or from the GMXLIB directory.
+A number of preformatted tables are presented in the GMXLIB dir,
+for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard Jones potentials with
+normal Coulomb.
+When pair interactions are present a seperate table for pair interaction
+functions is read using the <tt>-tablep</tt> option.<p>
 The options <tt>-pi</tt>, <tt>-po</tt>, <tt>-pd</tt>, <tt>-pn</tt> are used
 for potential of mean force calculations and umbrella sampling.
 See manual.<p>
+With <tt>-multi</tt> multiple systems are simulated in parallel.
+As many (single node) input files are required as the number of nodes.
+The node number is appended to the run input and each output filename,
+for instance topol.<a href="tpr.html">tpr</a> becomes topol0.<a href="tpr.html">tpr</a>, topol1.<a href="tpr.html">tpr</a> etc.
+The main use of this option is for NMR refinement: when distance
+or orientation restraints are present these can be ensemble averaged
+over all the systems.<p>
+With <tt>-replex</tt> replica exchange is attempted every given number
+of steps. This option implies <tt>-multi</tt>, see above.
+All run input files should use a different coupling temperature,
+the order of the files is not important. The random seed is set with
+<tt>-reseed</tt>. The velocities are scaled and neighbor searching
+is performed after every exchange.<p>
 Finally some experimental algorithms can be tested when the
 appropriate options have been given. Currently under
-investigation are: polarizibility, glass simulations, 
-Free energy perturbation, X-Ray bombardments
-and parallel independent simulations.<p>
+investigation are: polarizibility, glass simulations
+and X-Ray bombardments.<p>
 When mdrun receives a TERM signal, it will set nsteps to the current
 step plus one. When mdrun receives a USR1 signal, it will set nsteps
 to the next multiple of nstxout after the current step.
@@ -90,11 +106,13 @@ the mdrun process that is the parent of the others.
 <TR><TD ALIGN=RIGHT> <b><tt>-dgdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dgdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-field</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   field.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tablep</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  tablep.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     tpi.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">     sam.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-j</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">    wham.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-jo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">     bam.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-jo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">     bam.gct</a></tt> </TD><TD> Output, Opt. </TD><TD> General coupling stuff </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     gct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-devout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">deviatie.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-runav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> runaver.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
@@ -112,11 +130,15 @@ the mdrun process that is the parent of the others.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-deffnm</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Set the default filename for all file options </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-np</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of nodes, must be the same as used for <a href="grompp.html">grompp</a> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nt</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of threads to start on each node </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Be loud and noisy </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Write a compact log file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sepdvdl</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Write separate V and dVdl terms for each interaction type and node to the log file(s) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]multi</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do multiple simulations in parallel (only with -np &gt; 1) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-replex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt replica exchange every # steps </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-reseed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Seed for replica exchange, -1 is generate a seed </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]glas</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do glass simulation with special long range corrections </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
 </TABLE>

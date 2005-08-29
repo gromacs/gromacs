@@ -9,22 +9,28 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>trjconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 trjconv can convert trajectory files in many ways:<br>
 <b>1.</b> from one format to another<br>
-<b>2.</b> select a subset of atoms<br>
-<b>3.</b> remove periodicity from molecules<br>
+<b>2.</b> select a subset of atoms<br><b>3.</b> remove periodicity from molecules<br>
 <b>4.</b> keep multimeric molecules together<br>
 <b>5.</b> center atoms in the box<br>
 <b>6.</b> fit atoms to reference structure<br>
 <b>7.</b> reduce the number of frames<br>
 <b>8.</b> change the timestamps of the frames 
-(<tt>-t0</tt> and <tt>-timestep</tt>)
-<p>
+(<tt>-t0</tt> and <tt>-timestep</tt>)<br>
+<b>9.</b> cut the trajectory in small subtrajectories according
+to information in an index file. This allows subsequent analysis of
+the subtrajectories that could, for example be the result of a
+cluster analysis. Use option <tt>-sub</tt>.
+This assumes that the entries in the index file are frame numbers and
+dumps each group in the index file to a separate trajectory file.<br>
+<b>10.</b> select frames within a certain range of a quantity given
+in an <tt>.<a href="xvg.html">xvg</a></tt> file.<p>
 The program <tt><a href="trjcat.html">trjcat</a></tt> can concatenate multiple trajectory files.
 <p>
 Currently seven formats are supported for input and output:
@@ -95,9 +101,15 @@ identical results for rectangular boxes.
 <tt>tric</tt> is the triclinic unit cell.
 <tt>compact</tt> puts all atoms at the closest distance from the center
 of the box. This can be useful for visualizing e.g. truncated
-octahedrons.<p>
+octahedrons. The center for options <tt>tric</tt> and <tt>compact</tt>
+is <tt>tric</tt> (see below), unless the option <tt>-center</tt>
+is set differently.<p>
 Option <tt>-center</tt> centers the system in the box. The user can
 select the group which is used to determine the geometrical center.
+The center options are:
+<tt>tric</tt>: half of the sum of the box vectors,
+<tt>rect</tt>: half of the box diagonal,
+<tt>zero</tt>: zero.
 Use option <tt>-pbc whole</tt> in addition to <tt>-center</tt> when you
 want all molecules in the box after the centering.<p>
 With <tt>-dt</tt> it is possible to reduce the number of 
@@ -113,7 +125,11 @@ during disk I/O (one more disk full), or when two contiguous
 trajectories must be concatenated without have double frames.<p>
 <tt><a href="trjcat.html">trjcat</a></tt> is more suitable for concatenating trajectory files.<p>
 Option <tt>-dump</tt> can be used to extract a frame at or near
-one specific time from your trajectory.
+one specific time from your trajectory.<p>
+Option <tt>-drop</tt> reads an <tt>.<a href="xvg.html">xvg</a></tt> file with times and values.
+When options <tt>-dropunder</tt> and/or <tt>-dropover</tt> are set,
+frames with a value below and above the value of the respective options
+will not be written.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -123,6 +139,8 @@ one specific time from your trajectory.
 <TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-fr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  frames.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-sub</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html"> cluster.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-drop</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    drop.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
@@ -130,10 +148,11 @@ one specific time from your trajectory.
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt>, <tt>s</tt>, <tt>m</tt> or <tt>h</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write every nr-th frame </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only write frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dump</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Dump frame nearest specified time (ps) </TD></TD>
@@ -141,7 +160,7 @@ one specific time from your trajectory.
 <TR><TD ALIGN=RIGHT> <b><tt>-timestep</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Change time step between input frames (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-pbc</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> PBC treatment (see help text for full description): <tt>none</tt>, <tt>whole</tt>, <tt>inbox</tt>, <tt>nojump</tt>, <tt>cluster</tt> or <tt>com</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ur</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>rect</tt> </TD><TD> Unit-cell representation: <tt>rect</tt>, <tt>tric</tt> or <tt>compact</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]center</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Center atoms in box </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-center</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>no</tt> </TD><TD> Center atoms in box: <tt>no</tt>, <tt>tric</tt>, <tt>rect</tt> or <tt>zero</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Size for new cubic box (default: read from input) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-shift</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> All coordinates will be shifted by framenr*shift </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fit</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit molecule to ref structure in the structure file: <tt>none</tt>, <tt>rot+trans</tt>, <tt>translation</tt> or <tt>progressive</tt> </TD></TD>
@@ -154,6 +173,8 @@ one specific time from your trajectory.
 <TR><TD ALIGN=RIGHT> <b><tt>-split</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Start writing new file when t MOD split = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]sep</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Write each frame to a separate .<a href="gro.html">gro</a>, .<a href="g96.html">g96</a> or .<a href="pdb.html">pdb</a> file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use 'TER' in <a href="pdb.html">pdb</a> file as end of frame in stead of default 'ENDMDL' </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dropunder</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Drop all frames below this value </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dropover</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Drop all frames above this value </TD></TD>
 </TABLE>
 <P>
 <hr>

@@ -1,6 +1,6 @@
 #!/bin/csh -f
 
-# NB: Put the finished completions in the gromacs-3.1/scripts directory.
+# NB: Put the finished completions in the gromacs-x.y.z/scripts directory.
 
 if ( $#argv < 1 ) then
   echo "Error: provide the binary directory as first argument."

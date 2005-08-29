@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_hbond</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -61,6 +61,10 @@ into hydrogen bonds. Ordering is identical to that in <tt>-hbn</tt>
 index file.<br>
 <tt>-dan</tt>: write out the number of donors and acceptors analyzed for
 each timeframe. This is especially usefull when using <tt>-shell</tt>.
+<p>
+Note: options <tt>-ac</tt>, <tt>-life</tt>, <tt>-hbn</tt> and <tt>-hbm</tt>
+require an amount of memory proportional to the total numbers of donors
+times the total number of acceptors in the selected group(s).
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -77,7 +81,9 @@ each timeframe. This is especially usefull when using <tt>-shell</tt>.
 <TR><TD ALIGN=RIGHT> <b><tt>-hx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> hbhelix.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-hbn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   hbond.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-hbm</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">   hbmap.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-don</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   donor.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dan</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   danum.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-life</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  hblife.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
@@ -85,9 +91,10 @@ each timeframe. This is especially usefull when using <tt>-shell</tt>.
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ins</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Analyze solvent insertion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-a</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    30</tt> </TD><TD> Cutoff angle (degrees, Donor - Hydrogen - Acceptor) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.35</tt> </TD><TD> Cutoff radius (nm, X - Acceptor, see next option) </TD></TD>
@@ -97,9 +104,18 @@ each timeframe. This is especially usefull when using <tt>-shell</tt>.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]nitacc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Regard nitrogen atoms as acceptors </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]contact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do not look for hydrogen bonds, but merely for contacts within the cut-off distance </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> when &gt; 0, only calculate hydrogen bonds within # nm shell around one particle </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]dump</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Dump all hydrogen bond ACFs (maximum 1000) in a single <a href="xvg.html">xvg</a> file for debugging </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitstart</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     1</tt> </TD><TD> Time from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dump</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Dump the first N hydrogen bond ACFs in a single <a href="xvg.html">xvg</a> file for debugging </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-max_hb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> H-bonds between the same donor and accepter, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Normalize ACF </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is till the end </TD></TD>
 </TABLE>
 <P>
 <hr>

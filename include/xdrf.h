@@ -54,26 +54,44 @@
 #include <rpc/xdr.h>
 #endif
 
-extern int xdropen(XDR *xdrs, const char *filename, const char *type);
+int 
+xdropen(XDR *xdrs, const char *filename, const char *type);
 
-extern int xdrclose(XDR *xdrs);
 
-extern int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
+int 
+xdrclose(XDR *xdrs);
+
+
 /* Read or write reduced precision *float* coordinates */
+int 
+xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision);
 
-extern int xdr_real(XDR *xdrs,real *r); 
+
 /* Read or write a *real* value (stored as float) */
+int 
+xdr_real(XDR *xdrs,real *r); 
 
-extern int xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
+
 /* Read or write reduced precision *real* coordinates */
+int 
+xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
-extern int xdr_seek_time(real time, int fp, int natoms);
 
-extern int xdr_seek_frame(int frame, int fp, int natoms);
+int 
+xtc_seek_time(real time, int fp, int natoms);
 
-extern float xdr_get_last_frame_time(int fp, int natoms);
 
-extern unsigned long xdr_get_last_frame_number(int fp, int natoms);
+int 
+xtc_seek_frame(int frame, int fp, int natoms);
+
+
+float 
+xtc_get_last_frame_time(int fp, int natoms);
+
+
+int 
+xtc_get_last_frame_number(int fp, int natoms);
+
 #endif
 
 

@@ -9,8 +9,8 @@
 <TD WIDTH=116>
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>tpbconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.2.0<br>
-Sun 25 Jan 2004</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -20,8 +20,9 @@ a full disk, or by making a continuation run input file.
 Note that a frame with coordinates and velocities is needed,
 which means that when you never write velocities, you can not use
 tpbconv and you have to start the run again from the beginning.
-When pressure and/or temperature coupling is used an energy file
-can be supplied to get an exact continuation of the original run.<p>
+When pressure and/or Nose-Hoover temperature coupling is used
+an energy file can be supplied to get an exact continuation
+of the original run.<p>
 <b>2nd.</b> by creating a tpx file for a subset of your original
 tpx file, which is useful when you want to remove the solvent from
 your tpx file, or when you want to make e.g. a pure Ca tpx file.
