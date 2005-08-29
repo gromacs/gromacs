@@ -86,3 +86,10 @@ int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
   return xdr3dfcoord(xdrs,(float *)fp,size,(float *)precision);
 #endif
 }
+
+
+
+
+
+
+

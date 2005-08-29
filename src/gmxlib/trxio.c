@@ -20,7 +20,7 @@
  * 
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code for
+ * bugs must be traceable. We will be happy to consider code forxd
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
@@ -60,15 +60,17 @@ static int __frame=NOTSET;
 #define SKIP 10
 #define INITCOUNT __frame=-1
 
+
 /* frames for read_first/next_x */
 static t_trxframe *xframe=NULL;
 static int nxframe=0;
+
 
 int nframes_read(void)
 {
   return __frame;
 }
-  
+
 static void printcount_(char *l,real t)
 {
   if (__frame % SKIP == 0 || __frame < SKIP)
@@ -624,12 +626,12 @@ bool read_next_frame(int status,t_trxframe *fr)
       /* DvdS 2005-05-31: this has been fixed along with the increased
        * accuracy of the control over -b and -e options.
        */
-      if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
-	if (xdr_seek_time(rTimeValue(TBEGIN),status,fr->natoms)) {
-	  gmx_fatal(FARGS,"Specified frame doesn't exist or file not seekable");
-	}
-	INITCOUNT;
-      }
+        if (bTimeSet(TBEGIN) && (fr->time < rTimeValue(TBEGIN))) {
+            if (xtc_seek_time(rTimeValue(TBEGIN),status,fr->natoms)) {
+                gmx_fatal(FARGS,"Specified frame doesn't exist or file not seekable");
+            }
+            INITCOUNT;
+        }
       bRet = read_next_xtc(status,fr->natoms,&fr->step,&fr->time,fr->box,
 			   fr->x,&fr->prec,&bOK);
       fr->bPrec = bRet;
