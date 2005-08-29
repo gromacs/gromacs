@@ -481,7 +481,7 @@ int main(int argc,char *argv[])
       naccr+=10;
       srenew(accr,naccr);
       for(i=naccr-10; i<naccr; i++)
-	snew(accr[i],atoms->nres);
+	snew(accr[i],atoms->nres+10);
     }
     rm_pbc(&(top.idef),natoms,box,x,x);
 #ifndef MY_DSSP
