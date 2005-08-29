@@ -254,7 +254,7 @@ int main(int argc,char *argv[])
 	   &edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)
-    gmx_finalize(cr);
+    gmx_finalize(mcr ? mcr : cr);
 
   if (MASTER(cr)) {
     thanx(stderr);
