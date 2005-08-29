@@ -104,7 +104,8 @@ esac
 ### Altivec on powerpc (motorola)
 AC_ARG_ENABLE(ppc_altivec,
  [  --disable-ppc-altivec         don't build Altivec loops on PowerPC],,enable_ppc_altivec=undef)
-#We will probably see ppc970 boxes from ibm with altivec support soon, so make it possible to override...
+# Power3/4/5 running AIX does not support altivec. We identify this with vendor=IBM.
+# IBM powerpc 970 boxes run linux, and have vendor=unknown.
 if test "$enable_ppc_altivec" = "undef"; then
   case "${host_cpu}-${host_vendor}" in
     ppc*-ibm* | powerpc*-ibm*) enable_ppc_altivec=no ;;
@@ -687,7 +688,8 @@ choke_me
       AC_MSG_RESULT([no])
       AC_MSG_WARN([no altivec support found - On recent PowerPC CPUs]
 [you can get a huge performance gain by using an altivec-enabled compiler.]
-[Download the latest devtools from Apple, or gcc-3.3 from ftp.gnu.org])
+[On OS X, you need GCC>=3.3, or the IBM compilers. If you are using standard]
+[GCC, you need at least version 4.0])
       enable_ppc_altivec=no])
   fi  
 fi

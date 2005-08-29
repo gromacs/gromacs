@@ -712,7 +712,7 @@ case "${host_cpu}-${host_os}" in
     esac
     ;;
 
-  powerpc*-darwin*)
+  powerpc*-darwin* | powerpc*-linux* )
     # Check for IBM compilers on OS X     
     if $CC 2>&1 | grep 'IBM' > /dev/null 2>&1; then
        xCFLAGS="-O4 -Q=500 -qaltivec"
@@ -876,10 +876,6 @@ esac
 
 # use default flags for gcc/g77 on all systems
 if test $ac_cv_prog_gcc = yes; then
-  # gcc can add debug info even when optimizing, and
-  # it does not reduce performance - what a deal!
-  # but it does increase the filesize enormously
-  # ACX_CHECK_CC_FLAGS(-g,g,xCFLAGS="$xCFLAGS -g")
   ACX_CHECK_CC_FLAGS(-O3,o3,xCFLAGS="$xCFLAGS -O3")
   xCFLAGS="$xCFLAGS -fomit-frame-pointer -finline-functions -Wall -Wno-unused"
   # For alpha axp assembly we need the preprocessor to tell elf from ecoff.
@@ -915,9 +911,17 @@ if test "$GCC" = "yes"; then
         # don't use the separate apple cpp on OS X
         ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
         if test "$enable_ppc_altivec" = "yes"; then
-          # And try to add -fvec or -faltivec to get altivec extensions!
-          ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
-          ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
+            # Apple (darwin) uses a hacked version of gcc with special flags 
+            case "${host_os}" in
+            darwin*)       	            	
+                ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
+                ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
+                ;;
+            *)
+                ACX_CHECK_CC_FLAGS(-maltivec,xCFLAGS="$xCFLAGS -maltivec")
+                AC_CHECK_HEADERS([altivec.h])
+                ;;
+            esac 
         fi
         # -funroll-all-loops exposes a bug in altivec-enabled gcc-2.95.3
         # on powerpc, so we only enable it on other platforms or gcc3.    
@@ -932,7 +936,7 @@ if test "$GCC" = "yes"; then
           ACX_CHECK_CC_FLAGS(-fno-schedule-insns,fno_schedule_insns,xCFLAGS="$xCFLAGS -fno-schedule-insns")
         fi
 	ACX_CHECK_CC_FLAGS(-mcpu=7450,m_cpu_7450,CPU_FLAGS="-mcpu=7450")
-	ACX_CHECK_CC_FLAGS(-mtune=G5,m_tune_G5,CPU_FLAGS="$CPU_FLAGS -mtune=G5")
+	ACX_CHECK_CC_FLAGS(-mtune=970,m_tune_970,CPU_FLAGS="$CPU_FLAGS -mtune=970")
 	if test -z "$CPU_FLAGS"; then
   	  ACX_CHECK_CC_FLAGS(-mcpu=powerpc,m_cpu_powerpc,CPU_FLAGS="-mcpu=powerpc")
         fi	
