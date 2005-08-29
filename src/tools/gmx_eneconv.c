@@ -454,7 +454,10 @@ int gmx_eneconv(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_BE_NICE ,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
-  tadjust=0;
+  tadjust  = 0;
+  nremax   = 0;
+  nset     = 0;
+  timestep = 0.0;
   snew(fnms,argc);
   nfile=0;
   laststep=startstep=0;

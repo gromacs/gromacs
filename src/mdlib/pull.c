@@ -223,6 +223,8 @@ static void do_constraint(t_pull *pull, rvec *x, tensor vir,
   snew(rinew,pull->ngrp);
   snew(direction,pull->ngrp);
 
+  ref = 0;
+  
   /* copy the current unconstraint positions for use in iterations. We 
      iterate until rinew[i] and rjnew[j] obey the constraints. Then
      rinew - pull.x_unc[i] is the correction dr to group i */

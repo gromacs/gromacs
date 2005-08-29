@@ -237,6 +237,9 @@ void disco_slave(t_commrec *cr,FILE *fp)
   rvec      boxsize;
   rvec      *x,*xref,*xcenter;
   
+  /* make compiler happy */
+  xcenter = NULL;
+  
   debug_gmx();
   c = recv_init(fp,cr,&seed,&natom,&nres,&xref,&xcenter,&bKeep);
   c->nstprint = 0;

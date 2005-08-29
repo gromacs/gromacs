@@ -288,6 +288,8 @@ static void calc_all_pos(t_atoms *pdba, rvec x[], int nab[], t_hack *ab[])
   rvec xa[4];     /* control atoms for calc_h_pos */
   rvec xh[MAXH]; /* hydrogen positions from calc_h_pos */
   
+  jj = 0;
+  
   for(i=0; i < pdba->nr; i++) {
     rnr   = pdba->atom[i].resnr;
     for(j=0; j < nab[i]; j+=ab[i][j].nr) {

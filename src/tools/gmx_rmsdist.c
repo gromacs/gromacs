@@ -589,6 +589,9 @@ int gmx_rmsdist (int argc,char *argv[])
   bNMR6 = opt2bSet("-nmr6",NFILE,fnm);
   bNMR  = bNMR3 || bNMR6 || bNOE;
 
+  max1_3 = 0;
+  max1_6 = 0;
+
   /* check input */
   if (bNOE && scalemax < 0) {
     scalemax=0.6;
@@ -656,10 +659,9 @@ int gmx_rmsdist (int argc,char *argv[])
   calc_rms(isize,teller,dtot,dtot2,mean,&meanmax,rms,&rmsmax,rmsc,&rmscmax);
   fprintf(stderr,"rmsmax = %g, rmscmax = %g\n",rmsmax,rmscmax);
   
-  if (bNMR) {
-    max1_3=0;
-    max1_6=0;
-    calc_nmr(isize,teller,dtot1_3,dtot1_6,&max1_3,&max1_6);
+  if (bNMR) 
+  {
+      calc_nmr(isize,teller,dtot1_3,dtot1_6,&max1_3,&max1_6);
   }
   
   if (scalemax > -1.0) {

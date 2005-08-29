@@ -173,7 +173,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
          */
         nl->ivdw  = ivdw;
         nl->icoul = icoul;
-	nl->free_energy = bfree;
+        nl->free_energy = bfree;
     
         if(bfree)
         {
@@ -181,6 +181,13 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         }
         else
         {
+   
+            /* Ewald uses the standard tabulated loops */
+            if(icoul==5)
+            {
+                icoul==3;
+            }
+            
             nn = inloop[4*icoul + ivdw];
             
             /* solvent loops follow directly after the corresponding
@@ -337,7 +344,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    /* Determine the values for icoul/ivdw. */
    if(fr->bcoultab)
    {
-     icoul = 3;
+       icoul = 3;
    }
    else if(EEL_RF(fr->eeltype))
    {
@@ -381,8 +388,8 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        
        if (fr->efep != efepNO) 
        {
-	 if(fr->bEwald)
-	   icoul = 5;
+           if(fr->bEwald)
+               icoul = 5;
            init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
                        maxsr,maxlr,ivdw,icoul, TRUE,solvent,enlistATOM);
            init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],

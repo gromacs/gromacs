@@ -321,6 +321,8 @@ static char **read_topol(char        *infile,
   nb_funct = F_LJ;
   *reppow  = 12.0;              /* Default value for repulsion power     */
   
+  comb     = 0;
+  
   snew(batype,1);
   init_bond_atomtype(batype);
   /* parse the actual file */

@@ -507,7 +507,7 @@ static void do_dip(char *fn,      char *topf,
   FILE       *outdd,*outmtot,*outaver,*outeps,*caver=NULL;
   FILE       *dip3d=NULL,*adip=NULL;
   rvec       *x,*dipole=NULL,mu_t,quad,*dipsp=NULL;
-  t_gkrbin   *gkrbin;
+  t_gkrbin   *gkrbin = NULL;
   t_enxframe *fr;
   int        nframes=1000,fmu=0,nre,timecheck=0,ncolour=0;
   int        i,j,k,m,natom=0,nmol,status,teller,tel3;

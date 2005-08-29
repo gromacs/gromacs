@@ -89,6 +89,7 @@ void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
   if (! *nslices)
     *nslices = (int)(box[axis][axis] * 10); /* default value */
 
+
   switch(axis)
   {
   case 0:
@@ -101,7 +102,9 @@ void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
     normal[0] = 0; normal[1] = 0; normal[2] = 1;
     break;
   default:
-    gmx_fatal(FARGS,"No valid value for -axis-. Exiting.\n");
+      gmx_fatal(FARGS,"No valid value for -axis-. Exiting.\n");
+      /* make compiler happy */
+      normal[0] = 1; normal[1] = 0; normal[2] = 0;
   }
 
   clear_rvec(dipole);

@@ -655,10 +655,12 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 
   set_table_type(tabsel,fr,b14only);
   snew(td,etiNR);
-  table.r     = rtab;
-  table.scale = 0;
-  nx0         = 10;
-  nx          = 0;
+  table.r         = rtab;
+  table.scale     = 0;
+  table.n         = 0;
+  table.scale_exp = 0;
+  nx0             = 10;
+  nx              = 0;
   
   /* Check whether we have to read or generate */
   bReadTab = FALSE;

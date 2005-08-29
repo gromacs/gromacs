@@ -2056,6 +2056,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   /* Maybe this should be an mdp parameter */
   const real drrel = 0.05;
 
+  x_init[XX] = x_init[YY] = x_init[ZZ] = 0;
+  
   if (PAR(cr))
     gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
 
@@ -2164,9 +2166,9 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
       bNS = (step % inputrec->nstlist == 0);
       if (bNS) {
 	/* Randomize the coordinates for the last atom */
-	x_init[XX] = gmx_rng_uniform_real(tpi_rand)*state->box[XX][XX];
-	x_init[YY] = gmx_rng_uniform_real(tpi_rand)*state->box[YY][YY];
-	x_init[ZZ] = gmx_rng_uniform_real(tpi_rand)*state->box[ZZ][ZZ];
+          x_init[XX] = gmx_rng_uniform_real(tpi_rand)*state->box[XX][XX];
+          x_init[YY] = gmx_rng_uniform_real(tpi_rand)*state->box[YY][YY];
+          x_init[ZZ] = gmx_rng_uniform_real(tpi_rand)*state->box[ZZ][ZZ];
 	copy_rvec(x_init,*x_tp);
       } else {
 	/* Generate coordinates within |dx|=drmax of x_init */
