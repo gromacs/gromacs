@@ -694,6 +694,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     float inv_precision;
     int errval = 1;
 
+    bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
+    prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
+    
     /* find out if xdrs is opened for reading or for writing */
     xdrid = 0;
     while (xdridptr[xdrid] != xdrs) {

@@ -218,7 +218,8 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 	      real lambda,t_graph *graph,
 	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 	      t_forcerec *fr,rvec mu_tot,
-	      bool bGatherOnly,real t,FILE *field)
+	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn)
+
 {
   static rvec box_size;
   static real dvdl_lr = 0;
@@ -328,7 +329,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly);
+	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
@@ -780,7 +781,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
 	     real *lambda,real *lam0,
 	     t_nrnb *mynrnb,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,
-	     char **xtc_traj,int *fp_ene,
+	     char **xtc_traj, int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
 	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,

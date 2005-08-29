@@ -1164,7 +1164,8 @@ void force(FILE       *fplog,   int        step,
 	   t_block    *excl,    
 	   bool       bNBFonly, bool bDoForces,
 	   rvec       mu_tot[],
-	   bool       bGatherOnly)
+	   bool       bGatherOnly,
+	   t_edsamyn *edyn)
 {
   int     i,nit;
   bool    bDoEpot,bSepDVDL;
@@ -1303,4 +1304,5 @@ void force(FILE       *fplog,   int        step,
 
   if (debug) 
     pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
+  do_flood(fplog,cr,x,f,edyn,step);
 }

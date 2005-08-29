@@ -190,7 +190,8 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     bool bVerbose,real lambda,t_graph *graph,
 		     bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 		     t_forcerec *fr, rvec mu_tot,
-		     bool bGatherOnly,real t,FILE *field);
+		     bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn);
+
 extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 		     
 extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],

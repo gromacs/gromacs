@@ -37,11 +37,12 @@
 #include <config.h>
 #endif
 
+
 typedef struct {
-  bool 		bEdsam;		/* Do ED sampling?			*/
-  char          *edinam; 	/* name of ED sampling input file       */
-  char          *edonam;        /*                     output           */
-} t_edsamyn;
+  rvec *x;
+  rvec *transvec;
+  rvec *forces_cartesian;
+} t_edlocals;
 
 typedef struct {
   int 		neig;		/* nr of eigenvectors            	*/
@@ -69,14 +70,34 @@ typedef struct {
   int           *anrs;          /* Index numbers                        */
   rvec          *x;             /* Positions                            */
   matrix        box;            /* Box lenghts                          */
+  real 	        *sqrtm;	        /* masses used for mass-weighting of analysis, only used in sav*/
 } t_edx;
 
+typedef struct { 
+  real deltaF0;
+  bool bHarmonic;
+  real tau;
+  real deltaF;
+  real Efl;
+  real kT; 
+  real Vfl;
+  real dt;
+  real constEfl;
+  real alpha2; 
+  int flood_id;
+  t_edlocals loc;
+  t_eigvec      vecs;          /* use flooding for these               */
+} t_edflood;
 
-typedef struct {
+typedef struct t_ed_local* p_ed_local; 
+/* handle for structure of local variables cannot be accessed outside edsam.c */
+
+struct _t_edpar {
   int 		nini;		/* Total Nr of atoms    		*/
-  int           npro;           /* Nr of protein atoms                  */
   int           ned;            /* Nr of atoms in essdyn                */
-  bool          selmas;         /* true if trans fit with cm            */
+  bool          fitmas;         /* true if trans fit with cm            */
+  bool          pcamas;
+  int           presteps;       /* number of steps to run without any perturbations ... just monitoring */
   int           outfrq;         /* freq (in steps) of writing output    */
   int           logfrq;         /* freq (in steps) of writing to log    */
   int           maxedsteps;     /* max nr of steps per cycle            */
@@ -92,6 +113,19 @@ typedef struct {
   real          tmass;          /* total mass                           */
   int           nfit;           /* Number of atoms to use for rot fit   */
   int           *fitnrs;        /* index nrs of atoms to use for rot fit*/
+  bool          bNeedDoEdsam;    /* if any of the options mon,linfix,..,radcon is used (i.e. anything apart from flood) */
+  t_edflood     flood;          /* parameters especially for flooding */
   FILE          *edo;           /* output file                          */
-} t_edpar;
+  p_ed_local  local;          /* handle to local buffer */
+  rvec        *x_unc;
+  struct _t_edpar       *next_edi;
+};
 
+typedef struct _t_edpar t_edpar;
+
+typedef struct {
+  bool 		bEdsam;		/* Do ED sampling?			*/
+  char          *edinam; 	/* name of ED sampling input file       */
+  char          *edonam;        /*                     output           */
+  t_edpar       *edpar;
+} t_edsamyn;

@@ -153,7 +153,8 @@ extern void force(FILE         *fplog,
 		  bool         bNBonly,
 		  bool         bDoForces,
 		  rvec         mu_tot[2],
-		  bool         bGatherOnly);
+		  bool         bGatherOnly,
+		  t_edsamyn      *edyn);
 /* Call all the force routines */
 
 

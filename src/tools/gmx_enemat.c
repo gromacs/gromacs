@@ -148,7 +148,8 @@ int gmx_enemat(int argc,char *argv[])
   bool       bCutmax,bCutmin;
   real       **eneset,*time=NULL;
   int        *set,i,j,k,prevk,m=0,n,nre,nset,nenergy;
-  char       **enm,**groups;
+  char       **enm = NULL;
+  char       **groups = NULL;
   char       groupname[255],fn[255];
   int        ngroups;
   t_rgb      rlo,rhi,rmid;
@@ -159,7 +160,7 @@ int gmx_enemat(int argc,char *argv[])
   char       **ereflines,**erefres=NULL;
   real       *eref=NULL,*edif=NULL;
   int        neref=0;
-  
+
   t_filenm   fnm[] = {
     { efENX, "-f", NULL, ffOPTRD },
     { efDAT, "-groups", "groups.dat", ffREAD },

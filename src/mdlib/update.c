@@ -611,9 +611,8 @@ void update(int          natoms,  /* number of atoms in simulation */
 	    tensor       pres)
 {
   static bool      bFirst=TRUE;
-  static rvec      *xprime,*x_unc=NULL;
+  static rvec      *xprime=NULL;
   static int       ngtc,ngacc;
-  static t_edpar   edpar;
   static bool      bHaveConstr,bExtended;
   double           dt;
   real             dt_1;
@@ -625,14 +624,12 @@ void update(int          natoms,  /* number of atoms in simulation */
   if(bFirst) {
     bHaveConstr = init_constraints(stdlog,top,inputrec,md,start,homenr,
                                    inputrec->eI!=eiSteep,cr);
-    bHaveConstr = bHaveConstr || pulldata->bPull || edyn->bEdsam;
+    bHaveConstr = bHaveConstr || pulldata->bPull;
     bExtended   = (inputrec->etc==etcNOSEHOOVER) || (inputrec->epc==epcPARRINELLORAHMAN);
 
-    if(edyn->bEdsam) {
-      init_edsam(stdlog,top,md,start,homenr,cr,state->x,state->box,
-                 edyn,&edpar);
-      snew(x_unc,homenr);
-    }
+    /* if edyn->bEdsam == FALSE --- this has no effect */
+    bHaveConstr = bHaveConstr || ed_constraints(edyn);  
+    do_first_edsam(stdlog,top,md,start,homenr,cr,state->x,state->box,edyn,bHaveConstr);
 
     /* Initiate random number generator for stochastic and brownian dynamic integrators */
     if(inputrec->eI==eiSD || inputrec->eI==eiBD) 
@@ -655,7 +652,6 @@ void update(int          natoms,  /* number of atoms in simulation */
 
   dt   = inputrec->delta_t;
   dt_1 = 1.0/dt;
-
   if (bDoUpdate) {
     clear_mat(M);
 
@@ -701,12 +697,8 @@ void update(int          natoms,  /* number of atoms in simulation */
                    state->x,xprime,state->v,vold,force,state->sd_X,
                    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
                    sd_gaussrand,TRUE);
+      prepare_edsam(step,start,homenr,cr,xprime,edyn);
       if (bHaveConstr) {
-	if (edyn->bEdsam) {
-	  /* Copy the unconstrained coordinates */
-	  for(n=start; n<start+homenr; n++)
-	    copy_rvec(xprime[n],x_unc[n-start]);
-	}
         /* Constrain the coordinates xprime */
         constrain(stdlog,top,inputrec,step,md,start,homenr,state->x,xprime,NULL,
                   state->box,state->lambda,dvdlambda,&vir_con,nrnb,TRUE);
@@ -761,12 +753,10 @@ void update(int          natoms,  /* number of atoms in simulation */
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
+  if (inputrec->eI!=eiSD)
+    prepare_edsam(step,start,homenr,cr,xprime,edyn);
+  
   if (bHaveConstr) {
-    if (edyn->bEdsam && (inputrec->eI != eiSD)) {
-      /* Copy Unconstrained X to temp array */
-      for(n=start; n<start+homenr; n++)
-	copy_rvec(xprime[n],x_unc[n-start]);
-    }
     /* Constrain the coordinates xprime */
     constrain(stdlog,top,inputrec,step,md,start,homenr,state->x,xprime,NULL,
               state->box,state->lambda,dvdlambda,
@@ -778,7 +768,8 @@ void update(int          natoms,  /* number of atoms in simulation */
     dump_it_all(stdlog,"After Shake",
 		natoms,state->x,xprime,state->v,vold,force);
 
-    /* Note that the reported ED and pull forces can be off
+    /* Apply Essential Dynamics constraints when required.
+     * Note that the reported ED and pull forces can be off
      * with SD and BD with high friction, as the forces
      * are no longer proportional to positional differences.
      */
@@ -786,7 +777,7 @@ void update(int          natoms,  /* number of atoms in simulation */
     /* Apply Essential Dynamics constraints when required. */
     if (edyn->bEdsam)
       do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
-               x_unc,force,state->box,edyn,&edpar,bDoUpdate);
+               force,state->box,edyn,bDoUpdate);
 
     /* apply pull constraints when required. Act on xprime, the SHAKED
        coordinates. Don't do anything to f */
@@ -819,7 +810,11 @@ void update(int          natoms,  /* number of atoms in simulation */
       if (debug)
 	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     }
-  }
+  }  else if (edyn->bEdsam) {     
+      /* no constraints but still edsam - yes, that can happen */
+    do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
+ 	     force,state->box,edyn,bDoUpdate);
+  };  
 
   /* We must always unshift here, also if we did not shake
    * x was shifted in do_force */

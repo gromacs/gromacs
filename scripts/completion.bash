@@ -1026,9 +1026,10 @@ shopt -s extglob
 _make_edi_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -v -s -n -tar -ori -o -h -nice -mon -linfix -linacc -radfix -radacc -radcon -outfrq -logfrq -slope -maxedsteps -linstep -accdir -radstep' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -eig -s -n -tar -ori -o -h -nice -noxvgr -mon -linfix -linacc -radfix -radacc -radcon -flood -outfrq -logfrq -slope -maxedsteps -deltaF0 -deltaF -tau -eqsteps -Eflnull -T -alpha -linstep -accdir -radstep -restrain -hesse -harmonic' -- $c)); return 0; fi
 case "$p" in
--v) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-eig) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -tar) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;

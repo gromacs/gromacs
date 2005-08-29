@@ -679,7 +679,7 @@ static void do_dip(char *fn,      char *topf,
 
   if (bGkr) {
     /* Use 0.7 iso 0.5 to account for pressure scaling */
-    //  rcut   = 0.7*sqrt(max_cutoff2(box));
+    /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
     rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
 
     gkrbin = mk_gkrbin(rcut); 

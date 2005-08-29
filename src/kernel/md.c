@@ -334,6 +334,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   matrix      boxcopy,lastbox;
   /* End of XMDRUN stuff */
 
+
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
@@ -350,6 +351,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
+  /* init edsam, no effect if edyn->bEdsam==FALSE */
+  init_edsam(stdlog,top,inputrec,mdatoms,START(nsb),HOMENR(nsb),cr,edyn);
+    
   /* Check for full periodicity calculations */
   bFullPBC = (inputrec->ePBC == epbcFULL);  
   
@@ -611,7 +615,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       do_force(log,cr,mcr,inputrec,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
-	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field);
+	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
     }
    
     if (bTCR)
@@ -988,6 +992,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       fclose(fp_field);
   }
   debug_gmx();
+  
+  /* clean up edsam stuff, no effect if edyn->bEdsam == FALSE */
+  finish_edsam(stdlog,top,inputrec,mdatoms,START(nsb),HOMENR(nsb),cr,edyn);
 
   if (bShell_FlexCon) {
     fprintf(log,"Fraction of iterations that converged:           %.2f %%\n",

@@ -1,4 +1,4 @@
-/*
+ /*
  * $Id$
  * 
  *                This source code is part of
@@ -41,45 +41,30 @@
 #include <config.h>
 #endif
 
-extern void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn, t_commrec *cr);
-extern void init_edsam(FILE *log,t_topology *top,
-		       t_mdatoms *md,int start,int homenr, t_commrec *cr,
-		       rvec x[],matrix box, 
-		       t_edsamyn *edyn,t_edpar *edi);
-extern void read_edi(t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms);
-extern int  read_edint(FILE *file);
-extern int  read_edint2(FILE *file);
-extern real read_edreal(FILE *file);
-extern void read_edx(FILE *file,int number,int *anrs,rvec *x);
-extern void read_edvecs(FILE *in,int nr,t_edvecs *vecs);
-extern void read_edvec(FILE *in,int nr,t_eigvec *tvec);
-extern void scan_edvec(FILE *in,int nr,rvec *vec);
-extern real fitit(int nr, rvec *x,t_edpar *edi,rvec *transvec,
-		       matrix rmat);
-extern void do_edfit(int natoms,rvec *xp,rvec *x,matrix R); 
-extern void put_in_origin(int nr,rvec *x,int nmass,int *masnrs,
-			       real *mass,real tmass);
-extern void project(rvec *x,t_edpar *edi,char *mode);
-extern void do_project(rvec *x, t_eigvec *vec, t_edpar *edi,char *mode);
-extern void projectx(t_edpar *edi,rvec *x,t_eigvec *vec);
-extern real do_projectx(t_edpar *edi,rvec *x,rvec *vec);
-extern real calc_radius(t_eigvec *vec);
+/* this function has to be called before the (LINCS, SHAKE, etc. ) constraints are applied */
+extern void prepare_edsam(int step, int start, int homenr, t_commrec *cr, rvec x[],t_edsamyn *edyn);
+
+/* this function implements the edsam, constraints and the .edo monitoring functionality */
 extern void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
 		     t_mdatoms *md,int start,int homenr, t_commrec *cr,
-                     rvec x[],rvec xold[],rvec x_unc[],rvec f[],matrix box,
-                     t_edsamyn *edyn,t_edpar *edi,bool bHave_force);
-extern void rmfit(int ned,rvec *x,rvec *transvec,matrix rotmat);
-extern void rotate_vec(int nr,rvec *x,matrix rotmat);
-extern void ed_cons(rvec *x,t_edpar *edi,int step);
-extern void do_linfix(rvec *x,t_edpar *edi,int step);
-extern void do_linacc(rvec *x,t_edpar *edi);
-extern void do_radfix(rvec *x,t_edpar *edi,int step);
-extern void do_radacc(rvec *x,t_edpar *edi);
-extern void do_radcon(rvec *x,t_edpar *edi);
-extern void write_edo(t_edpar *edi,int step,real rmsd);
-extern void write_proj(FILE *out,t_edpar *edi,char *mode);
-extern void do_write_proj(FILE *out,t_eigvec *vec,char *mode);
-extern void write_edidx(FILE *out,t_edpar *edi);
+                     rvec x[],rvec xold[],rvec f[],matrix box,
+                     t_edsamyn *edyn,bool bHave_force);
+
+extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], t_edsamyn *edyn, int step);
+extern void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn, t_commrec *cr);
+extern int ed_constraints(t_edsamyn *edyn); //returns if any constraints are switched on
+extern void init_edsam(FILE *log,t_topology *top,t_inputrec *ir,
+		       t_mdatoms *md,int start,int homenr, t_commrec *cr,
+		       t_edsamyn *edyn);
+
+extern void do_first_edsam(FILE *log,t_topology *top,
+		t_mdatoms *md,int start,int homenr,t_commrec *cr,
+			   rvec x[],matrix box, t_edsamyn *edyn,bool bHaveConstr);
+
+extern void finish_edsam(FILE *log,t_topology *top,t_inputrec *ir,
+		t_mdatoms *md,int start,int homenr,t_commrec *cr,
+			 t_edsamyn *edyn);
+
 #endif	/* _edsam_h */
 
 
