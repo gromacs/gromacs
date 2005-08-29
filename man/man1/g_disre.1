@@ -1,7 +1,7 @@
-.TH g_disre 1 "Sun 25 Jan 2004"
+.TH g_disre 1 "Mon 29 Aug 2005"
 .SH NAME
 g_disre
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_disre\fP
 .BI "-s" " topol.tpr "
@@ -14,12 +14,14 @@ g_disre
 .BI "-l" " disres.log "
 .BI "-n" " viol.ndx "
 .BI "-q" " viol.pdb "
+.BI "-c" " clust.ndx "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-ntop" " int "
 .SH DESCRIPTION
 g_disre computes violations of distance restraints.
@@ -42,6 +44,15 @@ When the optional
 .B -q
 flag is given a pdb file coloured by the
 amount of average violations.
+
+
+When the 
+.B -c
+option is given, an index file will be read
+containing the frames in your trajectory corresponding to the clusters
+(defined in another manner) that you want to analyze. For these clusters
+the program will compute average violations using the thisd power
+averaging algorithm and print them in the log file.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
@@ -83,6 +94,10 @@ amount of average violations.
 .B Output, Opt.
  Protein data bank file 
 
+.BI "-c" " clust.ndx" 
+.B Input, Opt.
+ Index file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
@@ -90,17 +105,20 @@ amount of average violations.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-ntop"  " int" " 0" 
  Number of large violations that are stored in the log file every step

@@ -1,7 +1,7 @@
-.TH gmxcheck 1 "Sun 25 Jan 2004"
+.TH gmxcheck 1 "Mon 29 Aug 2005"
 .SH NAME
 gmxcheck
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3gmxcheck\fP
 .BI "-f" " traj.xtc "
@@ -11,6 +11,7 @@ gmxcheck
 .BI "-c" " topol.tpr "
 .BI "-e" " ener.edr "
 .BI "-e2" " ener2.edr "
+.BI "-n" " index.ndx "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-vdwfac" " real "
@@ -51,7 +52,18 @@ no problem). If velocities are present, an estimated temperature
 will be calculated from them.
 
 
-The program will compare run input (
+If an index file is given it's contents will be sumamrized.
+
+
+If both a trajectory and a tpr file are given (with 
+.B -s1
+)
+the program will check whether the bond lengths defined in the tpr
+file are indeed correct in the trajectory. If not you may have
+non-matching files due to e.g. deshuffling or due to problems with
+virtual sites. With these flags, gmxcheck provides a quick check for such problems.
+
+The program can compare run two input (
 .B .tpr
 , 
 .B .tpb
@@ -99,6 +111,10 @@ option).
 .B Input, Opt.
  Generic energy: edr ene 
 
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
@@ -115,7 +131,7 @@ option).
 .BI "-bonhi"  " real" "    0.7" 
  Max. fract. of sum of VdW radii for bonded atoms
 
-.BI "-tol"  " real" "      0" 
+.BI "-tol"  " real" "  0.001" 
  Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)
 
 .BI "-lastener"  " string" " " 

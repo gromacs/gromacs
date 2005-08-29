@@ -1,7 +1,7 @@
-.TH g_rms 1 "Sun 25 Jan 2004"
+.TH g_rms 1 "Mon 29 Aug 2005"
 .SH NAME
 g_rms
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_rms\fP
 .BI "-s" " topol.tpr "
@@ -22,6 +22,7 @@ g_rms
 .BI "-dt" " time "
 .BI "-tu" " enum "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-what" " enum "
 .BI "-[no]pbc" ""
 .BI "-fit" " enum "
@@ -34,6 +35,7 @@ g_rms
 .BI "-bmax" " real "
 .BI "-bmin" " real "
 .BI "-nlevels" " int "
+.BI "-ng" " int "
 .SH DESCRIPTION
 g_rms compares two structures by computing the root mean square
 deviation (RMSD), the size-independent 'rho' similarity parameter
@@ -162,13 +164,13 @@ comparison group are considered.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-tu"  " enum" " ps" 
@@ -192,6 +194,9 @@ or
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-what"  " enum" " rmsd" 
  Structural difference measure: 
@@ -240,4 +245,7 @@ or
 
 .BI "-nlevels"  " int" " 80" 
  Number of levels in the matrices
+
+.BI "-ng"  " int" " 1" 
+ Number of groups to compute RMS between
 

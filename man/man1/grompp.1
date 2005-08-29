@@ -1,7 +1,7 @@
-.TH grompp 1 "Sun 25 Jan 2004"
+.TH grompp 1 "Mon 29 Aug 2005"
 .SH NAME
 grompp
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3grompp\fP
 .BI "-f" " grompp.mdp "
@@ -23,7 +23,7 @@ grompp
 .BI "-np" " int "
 .BI "-[no]shuffle" ""
 .BI "-[no]sort" ""
-.BI "-[no]rmdumbds" ""
+.BI "-[no]rmvsbds" ""
 .BI "-load" " string "
 .BI "-maxwarn" " int "
 .BI "-[no]check14" ""
@@ -105,9 +105,9 @@ file. An energy file can be supplied with
 
 .B -e
 to have exact restarts when using pressure and/or
-temperature coupling. For an exact restart do not forget to turn off
-velocity generation and turn on unconstrained starting when constraints
-are present in the system.
+Nose-Hoover temperature coupling. For an exact restart do not forget
+to turn off velocity generation and turn on unconstrained starting
+when constraints are present in the system.
 If you want to continue a crashed run, it is
 easier to use 
 .B tpbconv
@@ -155,14 +155,14 @@ using less or something like that).
 
 
 By default all bonded interactions which have constant energy due to
-dummy atom constructions will be removed. If this constant energy is
+virtual site constructions will be removed. If this constant energy is
 not zero, this will result in a shift in the total energy. All bonded
 interactions can be kept by turning off 
-.B -rmdumbds
+.B -rmvsbds
 . Additionally,
 all constraints for distances which will be constant anyway because
-of dummy atom constructions will be removed. If any constraints remain
-which involve dummy atoms, a fatal error will result.
+of virtual site constructions will be removed. If any constraints remain
+which involve virtual sites, a fatal error will result.
 
 To verify your run input file, please make notice of all warnings
 on the screen, and correct where necessary. Do also look at the contents
@@ -251,8 +251,8 @@ program.
 .BI "-[no]sort"  "    no"
  Sort molecules according to X coordinate
 
-.BI "-[no]rmdumbds"  "   yes"
- Remove constant bonded interactions with dummies
+.BI "-[no]rmvsbds"  "   yes"
+ Remove constant bonded interactions with virtual sites
 
 .BI "-load"  " string" " " 
  Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node

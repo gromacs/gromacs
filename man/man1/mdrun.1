@@ -1,7 +1,7 @@
-.TH mdrun 1 "Sun 25 Jan 2004"
+.TH mdrun 1 "Mon 29 Aug 2005"
 .SH NAME
 mdrun
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3mdrun\fP
 .BI "-s" " topol.tpr "
@@ -13,7 +13,9 @@ mdrun
 .BI "-dgdl" " dgdl.xvg "
 .BI "-field" " field.xvg "
 .BI "-table" " table.xvg "
+.BI "-tablep" " tablep.xvg "
 .BI "-rerun" " rerun.xtc "
+.BI "-tpi" " tpi.xvg "
 .BI "-ei" " sam.edi "
 .BI "-eo" " sam.edo "
 .BI "-j" " wham.gct "
@@ -30,11 +32,15 @@ mdrun
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-deffnm" " string "
+.BI "-[no]xvgr" ""
 .BI "-np" " int "
 .BI "-nt" " int "
 .BI "-[no]v" ""
 .BI "-[no]compact" ""
+.BI "-[no]sepdvdl" ""
 .BI "-[no]multi" ""
+.BI "-replex" " int "
+.BI "-reseed" " int "
 .BI "-[no]glas" ""
 .BI "-[no]ionize" ""
 .SH DESCRIPTION
@@ -125,11 +131,21 @@ contains projections of positions, velocities and forces onto selected
 eigenvectors.
 
 
-The -table option can be used to pass mdrun a formatted table with
-user-defined potential functions. The file is read from either the
-current directory or from the GMXLIB directory. A number of preformatted
-tables are presented in the GMXLIB dir, for 6-8, 6-9, 6-10, 6-11, 6-12
-Lennard Jones potentials with normal Coulomb.
+When user-defined potential functions have been selected in the
+
+.B .mdp
+file the 
+.B -table
+option is used to pass mdrun
+a formatted table with potential functions. The file is read from
+either the current directory or from the GMXLIB directory.
+A number of preformatted tables are presented in the GMXLIB dir,
+for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard Jones potentials with
+normal Coulomb.
+When pair interactions are present a seperate table for pair interaction
+functions is read using the 
+.B -tablep
+option.
 
 
 The options 
@@ -145,11 +161,35 @@ for potential of mean force calculations and umbrella sampling.
 See manual.
 
 
+With 
+.B -multi
+multiple systems are simulated in parallel.
+As many (single node) input files are required as the number of nodes.
+The node number is appended to the run input and each output filename,
+for instance topol.tpr becomes topol0.tpr, topol1.tpr etc.
+The main use of this option is for NMR refinement: when distance
+or orientation restraints are present these can be ensemble averaged
+over all the systems.
+
+
+With 
+.B -replex
+replica exchange is attempted every given number
+of steps. This option implies 
+.B -multi
+, see above.
+All run input files should use a different coupling temperature,
+the order of the files is not important. The random seed is set with
+
+.B -reseed
+. The velocities are scaled and neighbor searching
+is performed after every exchange.
+
+
 Finally some experimental algorithms can be tested when the
 appropriate options have been given. Currently under
-investigation are: polarizibility, glass simulations, 
-Free energy perturbation, X-Ray bombardments
-and parallel independent simulations.
+investigation are: polarizibility, glass simulations
+and X-Ray bombardments.
 
 
 When mdrun receives a TERM signal, it will set nsteps to the current
@@ -196,9 +236,17 @@ the mdrun process that is the parent of the others.
 .B Input, Opt.
  xvgr/xmgr file 
 
+.BI "-tablep" " tablep.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
+
 .BI "-rerun" " rerun.xtc" 
 .B Input, Opt.
  Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-tpi" " tpi.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
 
 .BI "-ei" " sam.edi" 
 .B Input, Opt.
@@ -213,7 +261,7 @@ the mdrun process that is the parent of the others.
  General coupling stuff 
 
 .BI "-jo" " bam.gct" 
-.B Input, Opt.
+.B Output, Opt.
  General coupling stuff 
 
 .BI "-ffout" " gct.xvg" 
@@ -262,6 +310,9 @@ the mdrun process that is the parent of the others.
 .BI "-deffnm"  " string" " " 
  Set the default filename for all file options
 
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
 .BI "-np"  " int" " 1" 
  Number of nodes, must be the same as used for grompp
 
@@ -274,8 +325,17 @@ the mdrun process that is the parent of the others.
 .BI "-[no]compact"  "   yes"
  Write a compact log file
 
+.BI "-[no]sepdvdl"  "    no"
+ Write separate V and dVdl terms for each interaction type and node to the log file(s)
+
 .BI "-[no]multi"  "    no"
  Do multiple simulations in parallel (only with -np  1)
+
+.BI "-replex"  " int" " 0" 
+ Attempt replica exchange every  steps
+
+.BI "-reseed"  " int" " -1" 
+ Seed for replica exchange, -1 is generate a seed
 
 .BI "-[no]glas"  "    no"
  Do glass simulation with special long range corrections

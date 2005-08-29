@@ -1,7 +1,7 @@
-.TH g_msd 1 "Sun 25 Jan 2004"
+.TH g_msd 1 "Mon 29 Aug 2005"
 .SH NAME
 g_msd
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_msd\fP
 .BI "-f" " traj.xtc "
@@ -16,6 +16,7 @@ g_msd
 .BI "-dt" " time "
 .BI "-tu" " enum "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-type" " enum "
 .BI "-lateral" " enum "
 .BI "-ngroup" " int "
@@ -27,6 +28,10 @@ g_msd
 g_msd computes the mean square displacement (MSD) of atoms from
 their initial positions. This provides an easy way to compute
 the diffusion constant using the Einstein relation.
+The time between additional starting points for the MSD calculation
+is set with 
+.B -trestart
+.
 The diffusion constant is calculated by least squares fitting a
 straight line through the MSD from 
 .B -beginfit
@@ -80,13 +85,13 @@ the most useful number.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-tu"  " enum" " ps" 
@@ -110,6 +115,9 @@ or
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-type"  " enum" " no" 
  Compute diffusion coefficient in one direction: 
@@ -139,12 +147,12 @@ or
 .BI "-[no]mw"  "   yes"
  Mass weighted MSD
 
-.BI "-trestart"  " time" "      0" 
+.BI "-trestart"  " time" "     10" 
  Time between restarting points in trajectory (ps)
 
-.BI "-beginfit"  " time" "      0" 
- Start time for fitting the MSD (ps)
+.BI "-beginfit"  " time" "     -1" 
+ Start time for fitting the MSD (ps), -1 is 10%
 
 .BI "-endfit"  " time" "     -1" 
- End time for fitting the MSD (ps), -1 is till end
+ End time for fitting the MSD (ps), -1 is 90%
 

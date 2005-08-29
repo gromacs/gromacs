@@ -1,7 +1,7 @@
-.TH g_rdf 1 "Sun 25 Jan 2004"
+.TH g_rdf 1 "Mon 29 Aug 2005"
 .SH NAME
 g_rdf
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_rdf\fP
 .BI "-f" " traj.xtc "
@@ -17,9 +17,13 @@ g_rdf
 .BI "-e" " time "
 .BI "-dt" " time "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-bin" " real "
 .BI "-[no]com" ""
+.BI "-[no]pbc" ""
+.BI "-[no]xy" ""
 .BI "-cut" " real "
+.BI "-ng" " int "
 .BI "-fade" " real "
 .BI "-nlevel" " int "
 .BI "-startq" " real "
@@ -35,6 +39,10 @@ a scattering experiment.
 g_rdf calculates radial distribution functions in different ways.
 The normal method is around a (set of) particle(s), the other method
 is around the center of mass of a set of particles.
+With both methods rdf's can also be calculated around axes parallel
+to the z-axis with option 
+.B -xy
+.
 
 
 If a run input file is supplied (
@@ -98,26 +106,38 @@ be computed (option
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
 
-.BI "-bin"  " real" "  0.001" 
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
+.BI "-bin"  " real" "  0.002" 
  Binwidth (nm)
 
 .BI "-[no]com"  "    no"
  RDF with respect to the center of mass of first group
 
+.BI "-[no]pbc"  "   yes"
+ Use periodic boundary conditions for computing distances
+
+.BI "-[no]xy"  "    no"
+ Use only the x and y components of the distance
+
 .BI "-cut"  " real" "      0" 
  Shortest distance (nm) to be considered
+
+.BI "-ng"  " int" " 1" 
+ Number of secondary groups to compute RDFs around a central group
 
 .BI "-fade"  " real" "      0" 
  From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)2 to make it go to 1 smoothly. If fade is 0.0 nothing is done.

@@ -22,6 +22,7 @@ man_MANS =	\
 	g_bond.1     	g_dyndom.1 	g_nmeig.1    	g_sorient.1    	\
 	make_ndx.1   	xrama.1 	g_bundle.1   	g_enemat.1	\
 	g_nmens.1    	g_tcaf.1       	mdrun.1		g_chi.1		\
-	g_energy.1	g_order.1    	g_traj.1       	mk_angndx.1
+	g_energy.1	g_order.1    	g_traj.1       	mk_angndx.1	\
+	g_densmap.1	g_sham.1	make_edi.1
 
 EXTRA_DIST = ${man_MANS}

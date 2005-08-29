@@ -1,15 +1,17 @@
-.TH trjcat 1 "Sun 25 Jan 2004"
+.TH trjcat 1 "Mon 29 Aug 2005"
 .SH NAME
 trjcat
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3trjcat\fP
 .BI "-f" " traj.xtc "
 .BI "-o" " trajout.xtc "
 .BI "-n" " index.ndx "
+.BI "-demux" " remd.xvg "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-tu" " enum "
+.BI "-[no]xvgr" ""
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
@@ -40,18 +42,40 @@ input files. In that case that particular file will be appended to
 which implies you do not need to store double the amount of data.
 Obviously the file to append to has to be the one with lowest starting
 time since one can only append at the end of a file.
+
+
+If the 
+.B -demux
+option is given, the N trajectories that are
+read, are written in another order as specified in the xvg file.The xvg file should contain something like:
+
+
+0  0  1  2  3  4  5
+
+2  1  0  2  3  5  4
+
+Where the first number is the time, and subsequent numbers point to
+trajectory indices.
+The frames corresponding to the numbers present at the first line
+are collected into the output trajectory. If the number of frames in
+the trajectory does not match that in the xvg file then the program
+tries to be smart. Beware.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input, Mult.
  Generic trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-o" " trajout.xtc" 
-.B Output
+.B Output, Mult.
  Generic trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
  Index file 
+
+.BI "-demux" " remd.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
 
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
@@ -78,6 +102,9 @@ time since one can only append at the end of a file.
 or 
 .B h
 
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-b"  " time" "     -1" 
  First time to use (ps)

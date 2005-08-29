@@ -1,7 +1,7 @@
-.TH g_cluster 1 "Sun 25 Jan 2004"
+.TH g_cluster 1 "Mon 29 Aug 2005"
 .SH NAME
 g_cluster
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_cluster\fP
 .BI "-f" " traj.xtc "
@@ -24,9 +24,9 @@ g_cluster
 .BI "-dt" " time "
 .BI "-tu" " enum "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-[no]dista" ""
 .BI "-nlevels" " int "
-.BI "-keepfree" " int "
 .BI "-cutoff" " real "
 .BI "-[no]fit" ""
 .BI "-max" " real "
@@ -53,7 +53,7 @@ RMS deviation after fitting or RMS deviation of atom-pair distances
 can be used to define the distance between structures.
 
 
-full linkage: add a structure to a cluster when its distance to any
+single linkage: add a structure to a cluster when its distance to any
 element of the cluster is less than 
 .B cutoff
 .
@@ -92,7 +92,7 @@ structures in pool.
 
 
 When the clustering algorithm assigns each structure to exactly one
-cluster (full linkage, Jarvis Patrick and gromos) and a trajectory
+cluster (single linkage, Jarvis Patrick and gromos) and a trajectory
 file is supplied, the structure with
 the smallest average distance to the others or the average structure
 or all structures for each cluster will be written to a trajectory
@@ -105,11 +105,14 @@ Two output files are always written:
 .B -o
 writes the RMSD values in the upper left half of the matrix
 and a graphical depiction of the clusters in the lower right half
-(depends on 
-.B -max
-and 
-.B -keepfree
-).
+When 
+.B -minstruct
+= 1 the graphical depiction is black
+when two structures are in the same cluster.
+When 
+.B -minstruct
+ 1 different colors will be used for each
+cluster.
 
 
 .B -g
@@ -221,13 +224,13 @@ and
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-tu"  " enum" " ps" 
@@ -252,14 +255,14 @@ or
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
 
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
 .BI "-[no]dista"  "    no"
  Use RMSD of distances instead of RMS deviation
 
 .BI "-nlevels"  " int" " 40" 
  Discretize RMSD matrix in  levels
-
-.BI "-keepfree"  " int" " -4" 
- if 0  levels not to use when coloring clusters; if 0 nlevels/-keepfree+1 levels will not be used
 
 .BI "-cutoff"  " real" "    0.1" 
  RMSD cut-off (nm) for two structures to be neighbor

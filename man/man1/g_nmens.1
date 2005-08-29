@@ -1,7 +1,7 @@
-.TH g_nmens 1 "Sun 25 Jan 2004"
+.TH g_nmens 1 "Mon 29 Aug 2005"
 .SH NAME
 g_nmens
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_nmens\fP
 .BI "-v" " eigenvec.trr "
@@ -11,6 +11,7 @@ g_nmens
 .BI "-o" " ensemble.xtc "
 .BI "-[no]h" ""
 .BI "-nice" " int "
+.BI "-[no]xvgr" ""
 .BI "-temp" " real "
 .BI "-seed" " int "
 .BI "-num" " int "
@@ -55,6 +56,9 @@ normal modes are the translational and rotational degrees of freedom.
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-temp"  " real" "    300" 
  Temperature in Kelvin

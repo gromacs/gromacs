@@ -1,7 +1,7 @@
-.TH g_lie 1 "Sun 25 Jan 2004"
+.TH g_lie 1 "Mon 29 Aug 2005"
 .SH NAME
 g_lie
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_lie\fP
 .BI "-f" " ener.edr "
@@ -12,6 +12,7 @@ g_lie
 .BI "-e" " time "
 .BI "-dt" " time "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-Elj" " real "
 .BI "-Eqq" " real "
 .BI "-Clj" " real "
@@ -37,17 +38,20 @@ Coul (A-B) LJ-SR (A-B) etc.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-Elj"  " real" "      0" 
  Lennard-Jones interaction between ligand and solvent

@@ -1,7 +1,7 @@
-.TH trjconv 1 "Sun 25 Jan 2004"
+.TH trjconv 1 "Mon 29 Aug 2005"
 .SH NAME
 trjconv
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3trjconv\fP
 .BI "-f" " traj.xtc "
@@ -9,12 +9,15 @@ trjconv
 .BI "-s" " topol.tpr "
 .BI "-n" " index.ndx "
 .BI "-fr" " frames.ndx "
+.BI "-sub" " cluster.ndx "
+.BI "-drop" " drop.xvg "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-tu" " enum "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-skip" " int "
 .BI "-dt" " time "
 .BI "-dump" " time "
@@ -22,7 +25,7 @@ trjconv
 .BI "-timestep" " time "
 .BI "-pbc" " enum "
 .BI "-ur" " enum "
-.BI "-[no]center" ""
+.BI "-center" " enum "
 .BI "-box" " vector "
 .BI "-shift" " vector "
 .BI "-fit" " enum "
@@ -35,6 +38,8 @@ trjconv
 .BI "-split" " time "
 .BI "-[no]sep" ""
 .BI "-[no]ter" ""
+.BI "-dropunder" " real "
+.BI "-dropover" " real "
 .SH DESCRIPTION
 trjconv can convert trajectory files in many ways:
 
@@ -45,7 +50,6 @@ from one format to another
 
 .B 2.
 select a subset of atoms
-
 
 .B 3.
 remove periodicity from molecules
@@ -75,6 +79,23 @@ and
 .B -timestep
 )
 
+
+.B 9.
+cut the trajectory in small subtrajectories according
+to information in an index file. This allows subsequent analysis of
+the subtrajectories that could, for example be the result of a
+cluster analysis. Use option 
+.B -sub
+.
+This assumes that the entries in the index file are frame numbers and
+dumps each group in the index file to a separate trajectory file.
+
+
+.B 10.
+select frames within a certain range of a quantity given
+in an 
+.B .xvg
+file.
 
 
 The program 
@@ -255,13 +276,33 @@ is the triclinic unit cell.
 .B compact
 puts all atoms at the closest distance from the center
 of the box. This can be useful for visualizing e.g. truncated
-octahedrons.
+octahedrons. The center for options 
+.B tric
+and 
+.B compact
+
+is 
+.B tric
+(see below), unless the option 
+.B -center
+
+is set differently.
 
 
 Option 
 .B -center
 centers the system in the box. The user can
 select the group which is used to determine the geometrical center.
+The center options are:
+
+.B tric
+: half of the sum of the box vectors,
+
+.B rect
+: half of the box diagonal,
+
+.B zero
+: zero.
 Use option 
 .B -pbc whole
 in addition to 
@@ -304,6 +345,20 @@ Option
 .B -dump
 can be used to extract a frame at or near
 one specific time from your trajectory.
+
+
+Option 
+.B -drop
+reads an 
+.B .xvg
+file with times and values.
+When options 
+.B -dropunder
+and/or 
+.B -dropover
+are set,
+frames with a value below and above the value of the respective options
+will not be written.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -325,6 +380,14 @@ one specific time from your trajectory.
 .B Input, Opt.
  Index file 
 
+.BI "-sub" " cluster.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-drop" " drop.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
@@ -332,10 +395,10 @@ one specific time from your trajectory.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
 .BI "-tu"  " enum" " ps" 
@@ -359,6 +422,9 @@ or
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-skip"  " int" " 1" 
  Only write every nr-th frame
@@ -399,8 +465,16 @@ or
 .B compact
 
 
-.BI "-[no]center"  "    no"
- Center atoms in box
+.BI "-center"  " enum" " no" 
+ Center atoms in box: 
+.B no
+, 
+.B tric
+, 
+.B rect
+or 
+.B zero
+
 
 .BI "-box"  " vector" " 0 0 0" 
  Size for new cubic box (default: read from input)
@@ -445,4 +519,10 @@ or
 
 .BI "-[no]ter"  "    no"
  Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'
+
+.BI "-dropunder"  " real" "      0" 
+ Drop all frames below this value
+
+.BI "-dropover"  " real" "      0" 
+ Drop all frames above this value
 

@@ -1,7 +1,7 @@
-.TH ffscan 1 "Sun 25 Jan 2004"
+.TH ffscan 1 "Mon 29 Aug 2005"
 .SH NAME
 ffscan
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3ffscan\fP
 .BI "-s" " topol.tpr "
@@ -14,6 +14,7 @@ ffscan
 .BI "-o" " junk.trr "
 .BI "-[no]h" ""
 .BI "-nice" " int "
+.BI "-[no]xvgr" ""
 .BI "-tol" " real "
 .BI "-fmax" " real "
 .BI "-[no]comb" ""
@@ -82,6 +83,9 @@ be used rather than a grid scan.
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-tol"  " real" "    0.1" 
  Energy tolerance (kJ/mol) (zero means everything is printed)

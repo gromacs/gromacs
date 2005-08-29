@@ -1,7 +1,7 @@
-.TH xpm2ps 1 "Sun 25 Jan 2004"
+.TH xpm2ps 1 "Mon 29 Aug 2005"
 .SH NAME
 xpm2ps
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3xpm2ps\fP
 .BI "-f" " root.xpm "
@@ -19,6 +19,7 @@ xpm2ps
 .BI "-legend" " enum "
 .BI "-diag" " enum "
 .BI "-combine" " enum "
+.BI "-size" " real "
 .BI "-bx" " real "
 .BI "-by" " real "
 .BI "-rainbow" " enum "
@@ -44,6 +45,24 @@ default to those for the x-axis. Font names have a defaulting hierarchy:
 titlefont - legendfont; titlefont - (xfont - yfont - ytickfont)
 - xtickfont, e.g. setting titlefont sets all fonts, setting xfont
 sets yfont, ytickfont and xtickfont.
+
+
+When no 
+.B m2p
+file is supplied, many setting are set by
+command line options. The most important option is 
+.B -size
+
+which sets the size of the whole matrix in postscript units.
+This option can be overridden with the 
+.B -bx
+and 
+.B -by
+
+options (and the corresponding parameters in the 
+.B m2p
+file),
+which set the size of a single matrix element.
 
 
 With 
@@ -183,11 +202,14 @@ or
 .B div
 
 
+.BI "-size"  " real" "    400" 
+ Horizontal size of the matrix in ps units
+
 .BI "-bx"  " real" "      0" 
- Box x-size (also y-size when -by is not set)
+ Element x-size, overrides -size (also y-size when -by is not set)
 
 .BI "-by"  " real" "      0" 
- Box y-size
+ Element y-size
 
 .BI "-rainbow"  " enum" " no" 
  Rainbow colors, convert white to: 

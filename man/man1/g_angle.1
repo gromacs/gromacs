@@ -1,7 +1,7 @@
-.TH g_angle 1 "Sun 25 Jan 2004"
+.TH g_angle 1 "Mon 29 Aug 2005"
 .SH NAME
 g_angle
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_angle\fP
 .BI "-f" " traj.xtc "
@@ -13,12 +13,14 @@ g_angle
 .BI "-ot" " dihtrans.xvg "
 .BI "-oh" " trhisto.xvg "
 .BI "-oc" " dihcorr.xvg "
+.BI "-or" " traj.trr "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-type" " enum "
 .BI "-[no]all" ""
 .BI "-binwidth" " real "
@@ -50,6 +52,14 @@ With option -oc a dihedral correlation function is calculated.
 It should be noted that the indexfile should contain
 atom-triples for angles or atom-quadruplets for dihedrals.
 If this is not the case, the program will crash.
+
+
+With option 
+.B -or
+a trajectory file is dumped containing cos andsin of selected dihedral angles which subsequently can be used as
+input for a PCA analysis using 
+.B g_covar
+.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -87,6 +97,10 @@ If this is not the case, the program will crash.
 .B Output, Opt.
  xvgr/xmgr file 
 
+.BI "-or" " traj.trr" 
+.B Output, Opt.
+ Trajectory in portable xdr format 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
@@ -94,17 +108,20 @@ If this is not the case, the program will crash.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-type"  " enum" " angle" 
  Type of angle to analyse: 

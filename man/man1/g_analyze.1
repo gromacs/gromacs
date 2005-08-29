@@ -1,7 +1,7 @@
-.TH g_analyze 1 "Sun 25 Jan 2004"
+.TH g_analyze 1 "Mon 29 Aug 2005"
 .SH NAME
 g_analyze
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_analyze\fP
 .BI "-f" " graph.xvg "
@@ -15,6 +15,7 @@ g_analyze
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-[no]time" ""
 .BI "-b" " real "
 .BI "-e" " real "
@@ -22,6 +23,9 @@ g_analyze
 .BI "-[no]d" ""
 .BI "-bw" " real "
 .BI "-errbar" " enum "
+.BI "-[no]integrate" ""
+.BI "-aver_start" " real "
+.BI "-[no]xydy" ""
 .BI "-filter" " real "
 .BI "-[no]power" ""
 .BI "-[no]subav" ""
@@ -113,16 +117,17 @@ error2 = Sum (B_i - B)2 / (m*(m-1)).
 These errors are plotted as a function of the block size.
 Also an analytical block average curve is plotted, assuming
 that the autocorrelation is a sum of two exponentials.
-The analytical curve for the block average BA is:
+The analytical curve for the block average is:
 
-BA(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +
+f(t) = sigma sqrt(2/T (  a   (tau1 ((exp(-t/tau1) - 1) tau1/t + 1)) +
 
-                        (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),
+                       (1-a) (tau2 ((exp(-t/tau2) - 1) tau2/t + 1)))),
 where T is the total time.
-a, tau1 and tau2 are obtained by fitting BA(t) to the calculated block
-average.
+a, tau1 and tau2 are obtained by fitting f2(t) to error2.
 When the actual block average is very close to the analytical curve,
 the error is sigma*sqrt(2/T (a tau1 + (1-a) tau2)).
+The complete derivation is given in
+B. Hess, J. Chem. Phys. 116:209-217, 2002.
 
 
 Option 
@@ -179,11 +184,14 @@ zero or negative value are ignored.
 .BI "-[no]h"  "    no"
  Print help info and quit
 
-.BI "-nice"  " int" " 19" 
+.BI "-nice"  " int" " 0" 
  Set the nicelevel
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-[no]time"  "   yes"
  Expect a time in the input
@@ -213,6 +221,15 @@ zero or negative value are ignored.
 or 
 .B 90
 
+
+.BI "-[no]integrate"  "    no"
+ Integrate data function(s) numerically using trapezium rule
+
+.BI "-aver_start"  " real" "      0" 
+ Start averaging the integral from here
+
+.BI "-[no]xydy"  "    no"
+ Interpret second data set as error in the y values for integrating
 
 .BI "-filter"  " real" "      0" 
  Print the high-frequency fluctuation after filtering with a cosine filter of length 

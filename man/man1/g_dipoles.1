@@ -1,7 +1,7 @@
-.TH g_dipoles 1 "Sun 25 Jan 2004"
+.TH g_dipoles 1 "Mon 29 Aug 2005"
 .SH NAME
 g_dipoles
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_dipoles\fP
 .BI "-enx" " ener.edr "
@@ -14,19 +14,27 @@ g_dipoles
 .BI "-d" " dipdist.xvg "
 .BI "-c" " dipcorr.xvg "
 .BI "-g" " gkr.xvg "
+.BI "-adip" " adip.xvg "
+.BI "-dip3d" " dip3d.xvg "
+.BI "-cos" " cosaver.xvg "
 .BI "-q" " quadrupole.xvg "
+.BI "-slab" " slab.xvg "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-b" " time "
 .BI "-e" " time "
 .BI "-dt" " time "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-mu" " real "
 .BI "-mumax" " real "
 .BI "-epsilonRF" " real "
 .BI "-skip" " int "
 .BI "-temp" " real "
 .BI "-[no]avercorr" ""
+.BI "-[no]pairs" ""
+.BI "-axis" " string "
+.BI "-sl" " int "
 .BI "-gkratom" " int "
 .BI "-acflen" " int "
 .BI "-[no]normalize" ""
@@ -128,7 +136,23 @@ distribution function a maximum of 5.0 will be used.
 .B Output, Opt.
  xvgr/xmgr file 
 
+.BI "-adip" " adip.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-dip3d" " dip3d.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-cos" " cosaver.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
 .BI "-q" " quadrupole.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-slab" " slab.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
@@ -139,17 +163,20 @@ distribution function a maximum of 5.0 will be used.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-mu"  " real" "     -1" 
  dipole of a single molecule (in Debye)
@@ -168,6 +195,15 @@ distribution function a maximum of 5.0 will be used.
 
 .BI "-[no]avercorr"  "    no"
  calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule
+
+.BI "-[no]pairs"  "   yes"
+ Calculate |cos theta| between all pairs of molecules. May be slow
+
+.BI "-axis"  " string" " Z" 
+ Take the normal on the computational box in direction X, Y or Z.
+
+.BI "-sl"  " int" " 10" 
+ Divide the box in nr slices.
 
 .BI "-gkratom"  " int" " 0" 
  Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors

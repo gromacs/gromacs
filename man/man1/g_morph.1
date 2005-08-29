@@ -1,7 +1,7 @@
-.TH g_morph 1 "Sun 25 Jan 2004"
+.TH g_morph 1 "Mon 29 Aug 2005"
 .SH NAME
 g_morph
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_morph\fP
 .BI "-f1" " conf1.gro "
@@ -12,6 +12,7 @@ g_morph
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-ninterm" " int "
 .BI "-first" " real "
 .BI "-last" " real "
@@ -65,6 +66,9 @@ read to select what group RMS is computed from.
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-ninterm"  " int" " 11" 
  Number of intermediates

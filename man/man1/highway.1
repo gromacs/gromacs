@@ -1,27 +1,20 @@
-.TH highway 1 "Sun 25 Jan 2004"
+.TH highway 1 "Mon 29 Aug 2005"
 .SH NAME
 highway
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3highway\fP
 .BI "-f" " highway.dat "
-.BI "-a" " auto.dat "
 .BI "-[no]h" ""
 .BI "-nice" " int "
-.BI "-b" " time "
-.BI "-e" " time "
-.BI "-dt" " time "
 .SH DESCRIPTION
 highway is the gromacs highway simulator. It is an X-windows
-gadget that shows a (periodic) autobahn with a user defined
+gadget that shows a (periodic) Autobahn with a user defined
 number of cars. Fog can be turned on or off to increase the
-number of crashes. Nice for a background CPU-eater
+number of crashes. Nice for a background CPU-eater. A sample
+input file is in $GMXDATA/top/highway.dat
 .SH FILES
 .BI "-f" " highway.dat" 
-.B Input
- Generic data file 
-
-.BI "-a" " auto.dat" 
 .B Input
  Generic data file 
 
@@ -31,13 +24,4 @@ number of crashes. Nice for a background CPU-eater
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
-
-.BI "-b"  " time" "     -1" 
- First frame (ps) to read from trajectory
-
-.BI "-e"  " time" "     -1" 
- Last frame (ps) to read from trajectory
-
-.BI "-dt"  " time" "     -1" 
- Only use frame when t MOD dt = first time (ps)
 

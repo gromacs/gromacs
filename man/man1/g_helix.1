@@ -1,7 +1,7 @@
-.TH g_helix 1 "Sun 25 Jan 2004"
+.TH g_helix 1 "Mon 29 Aug 2005"
 .SH NAME
 g_helix
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_helix\fP
 .BI "-s" " topol.tpr "
@@ -20,6 +20,7 @@ g_helix
 .BI "-[no]q" ""
 .BI "-[no]F" ""
 .BI "-[no]db" ""
+.BI "-prop" " enum "
 .BI "-[no]ev" ""
 .BI "-ahxstart" " int "
 .BI "-ahxend" " int "
@@ -121,13 +122,13 @@ Ellipticity at 222 nm according to
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
@@ -144,6 +145,39 @@ Ellipticity at 222 nm according to
 
 .BI "-[no]db"  "    no"
  Print debug info
+
+.BI "-prop"  " enum" " RAD" 
+ Select property to weight eigenvectors with. WARNING experimental stuff: 
+.B RAD
+, 
+.B TWIST
+, 
+.B RISE
+, 
+.B LEN
+, 
+.B NHX
+, 
+.B DIP
+, 
+.B RMS
+, 
+.B CPHI
+, 
+.B RMSA
+, 
+.B PHI
+, 
+.B PSI
+, 
+.B HB3
+, 
+.B HB4
+, 
+.B HB5
+or 
+.B CD222
+
 
 .BI "-[no]ev"  "    no"
  Write a new 'trajectory' file for ED

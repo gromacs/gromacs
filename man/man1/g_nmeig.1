@@ -1,15 +1,17 @@
-.TH g_nmeig 1 "Sun 25 Jan 2004"
+.TH g_nmeig 1 "Mon 29 Aug 2005"
 .SH NAME
 g_nmeig
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_nmeig\fP
 .BI "-f" " hessian.mtx "
 .BI "-s" " topol.tpr "
-.BI "-o" " eigenval.xvg "
+.BI "-of" " eigenfreq.xvg "
+.BI "-ol" " eigenval.xvg "
 .BI "-v" " eigenvec.trr "
 .BI "-[no]h" ""
 .BI "-nice" " int "
+.BI "-[no]xvgr" ""
 .BI "-[no]m" ""
 .BI "-first" " int "
 .BI "-last" " int "
@@ -29,7 +31,10 @@ The eigenvectors can be analyzed with
 An ensemble of structures can be generated from the eigenvectors with
 
 .B g_nmens
-.
+. When mass weighting is used, the generated eigenvectors
+will be scaled back to plain cartesian coordinates before generating the
+output - in this case they will no longer be exactly orthogonal in the
+standard cartesian norm (But in the mass weighted norm they would be).
 .SH FILES
 .BI "-f" " hessian.mtx" 
 .B Input
@@ -39,7 +44,11 @@ An ensemble of structures can be generated from the eigenvectors with
 .B Input
  Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
 
-.BI "-o" " eigenval.xvg" 
+.BI "-of" " eigenfreq.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-ol" " eigenval.xvg" 
 .B Output
  xvgr/xmgr file 
 
@@ -54,12 +63,15 @@ An ensemble of structures can be generated from the eigenvectors with
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
 .BI "-[no]m"  "   yes"
  Divide elements of Hessian by product of sqrt(mass) of involved atoms prior to diagonalization. This should be used for 'Normal Modes' analysis
 
 .BI "-first"  " int" " 1" 
  First eigenvector to write away
 
-.BI "-last"  " int" " 100" 
+.BI "-last"  " int" " 50" 
  Last eigenvector to write away
 

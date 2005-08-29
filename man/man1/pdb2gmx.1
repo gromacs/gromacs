@@ -1,7 +1,7 @@
-.TH pdb2gmx 1 "Sun 25 Jan 2004"
+.TH pdb2gmx 1 "Mon 29 Aug 2005"
 .SH NAME
 pdb2gmx
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3pdb2gmx\fP
 .BI "-f" " eiwit.pdb "
@@ -27,8 +27,9 @@ pdb2gmx
 .BI "-[no]una" ""
 .BI "-[no]ignh" ""
 .BI "-[no]missing" ""
+.BI "-[no]v" ""
 .BI "-posrefc" " real "
-.BI "-dummy" " enum "
+.BI "-vsite" " enum "
 .BI "-[no]heavyh" ""
 .BI "-[no]deuterate" ""
 .SH DESCRIPTION
@@ -39,27 +40,38 @@ These files can subsequently be processed to generate a run input file.
 
 
 
-The force fields supported currently are:
-
-
-G43a1  GROMOS96 43a1 Forcefield (official distribution)
+The force fields in the distribution are currently:
 
 
 oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)
 
+G43b1  GROMOS96 43b1 Vacuum Forcefield 
 
-G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)
+G43a1  GROMOS96 43a1 Forcefield 
 
+G43a2  GROMOS96 43a2 Forcefield (improved alkane dihedrals)
+
+G45a3  GROMOS96 45a3 Forcefield 
+
+G53a5  GROMOS96 53a5 Forcefield 
+
+G53a6  GROMOS96 53a6 Forcefield 
 
 gmx    Gromacs Forcefield (a modified GROMOS87, see manual)
 
+encads Encad all-atom force field, using scaled-down vacuum charges
 
-G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)
+encadv Encad all-atom force field, using full solvent charges
 
 
 The corresponding data files can be found in the library directory
 with names like ffXXXX.YYY. Check chapter 5 of the manual for more
-information about file formats.
+information about file formats. By default the forcefield selection
+is interactive, but you can use the 
+.B -ff
+option to specify
+one of the short names above on the command line instead. In that
+case pdb2gmx just looks for the corresponding file.
 
 
 Note that a pdb file is nothing more than a file format, and it
@@ -90,8 +102,8 @@ respectively.
 Option 
 .B -merge
 will ask if you want to merge consecutive chains
-into one molecule, this can be useful for connecting chains with a
-disulfide brigde.
+into one molecule definition, this can be useful for connecting chains
+with a disulfide brigde or intermolecular distance restraints.
 
 
 pdb2gmx will also check the occupancy field of the pdb file.
@@ -128,16 +140,16 @@ option when you want to convert a multichain pdb file.
 
 
 The option 
-.B -dummy
+.B -vsite
 removes hydrogen and fast improper dihedral
 motions. Angular and out-of-plane motions can be removed by changing
-hydrogens into dummy atoms and fixing angles, which fixes their
+hydrogens into virtual sites and fixing angles, which fixes their
 position relative to neighboring atoms. Additionally, all atoms in the
 aromatic rings of the standard amino acids (i.e. PHE, TRP, TYR and HIS)
-can be converted into dummy atoms, elminating the fast improper dihedral
+can be converted into virtual sites, elminating the fast improper dihedral
 fluctuations in these rings. Note that in this case all other hydrogen
-atoms are also converted to dummy atoms. The mass of all atoms that are
-converted into dummy atoms, is added to the heavy atoms.
+atoms are also converted to virtual sites. The mass of all atoms that are
+converted into virtual sites, is added to the heavy atoms.
 
 
 Also slowing down of dihedral motion can be done with 
@@ -180,10 +192,10 @@ The increase in mass of the hydrogens is subtracted from the bonded
  Set the nicelevel
 
 .BI "-[no]merge"  "    no"
- Merge multiple chains into one molecule
+ Merge chains into one molecule definition
 
-.BI "-ff"  " string" " G43a1" 
- Select the force field, supported are: G43a1, oplsaa, gmx, G43a2, G43b1. Run pdb2gmx -h for more information.
+.BI "-ff"  " string" " select" 
+ Force field, interactive by default. Use -h for information.
 
 .BI "-water"  " enum" " spc" 
  Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P: 
@@ -194,8 +206,10 @@ The increase in mass of the hydrogens is subtracted from the bonded
 .B tip3p
 , 
 .B tip4p
-or 
+, 
 .B tip5p
+or 
+.B f3c
 
 
 .BI "-[no]inter"  "    no"
@@ -234,11 +248,14 @@ or
 .BI "-[no]missing"  "    no"
  Continue when atoms are missing, dangerous
 
+.BI "-[no]v"  "    no"
+ Be slightly more verbose in messages
+
 .BI "-posrefc"  " real" "   1000" 
  Force constant for position restraints
 
-.BI "-dummy"  " enum" " none" 
- Convert atoms to dummy atoms: 
+.BI "-vsite"  " enum" " none" 
+ Convert atoms to virtual sites: 
 .B none
 , 
 .B hydrogens

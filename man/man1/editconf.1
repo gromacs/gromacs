@@ -1,12 +1,13 @@
-.TH editconf 1 "Sun 25 Jan 2004"
+.TH editconf 1 "Mon 29 Aug 2005"
 .SH NAME
 editconf
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3editconf\fP
 .BI "-f" " conf.gro "
 .BI "-n" " index.ndx "
 .BI "-o" " out.gro "
+.BI "-mead" " mead.pqr "
 .BI "-bf" " bfact.dat "
 .BI "-[no]h" ""
 .BI "-nice" " int "
@@ -25,9 +26,10 @@ editconf
 .BI "-density" " real "
 .BI "-[no]vol" ""
 .BI "-[no]pbc" ""
-.BI "-[no]mead" ""
 .BI "-[no]grasp" ""
 .BI "-rvdw" " real "
+.BI "-sig56" " real "
+.BI "-[no]vdwread" ""
 .BI "-[no]atom" ""
 .BI "-[no]legend" ""
 .BI "-label" " string "
@@ -128,10 +130,14 @@ otherwise the whole system is used.
 .B -rotate
 rotates the coordinates and velocities.
 
+
+
+
 .B -princ
 aligns the principal axes of the system along the
 coordinate axes, this may allow you to decrease the box volume,
 but beware that molecules can rotate significantly in a nanosecond.
+
 
 
 Scaling is applied before any of the other operations are
@@ -150,13 +156,6 @@ Groups are selected after all operations have been applied.
 Periodicity can be removed in a crude manner.
 It is important that the box sizes at the bottom of your input file
 are correct when the periodicity is to be removed.
-
-
-
-The program can optionally rotate the solute molecule to align the
-molecule along its principal axes (
-.B -rotate
-)
 
 
 
@@ -181,7 +180,7 @@ maximum value found, effectively making a legend for viewing.
 
 
 
-With the option -mead a special pdb file for the MEAD electrostatics
+With the option -mead a special pdb (pqr) file for the MEAD electrostatics
 program (Poisson-Boltzmann solver) can be made. A further prerequisite
 is that the input file is a run input file.
 The B-factor field is then filled with the Van der Waals radius
@@ -204,7 +203,7 @@ To convert a truncated octrahedron file produced by a package which uses
 a cubic box with the corners cut off (such as Gromos) use:
 
 
-.B editconf -f in -rotate 0 -45 -35.264 -bt o -box veclen -o out
+.B editconf -f in -rotate 0 45 35.264 -bt o -box veclen -o out
 
 
 where 
@@ -220,8 +219,12 @@ is the size of the cubic box times sqrt(3)/2.
  Index file 
 
 .BI "-o" " out.gro" 
-.B Output
+.B Output, Opt.
  Generic structure: gro g96 pdb xml 
+
+.BI "-mead" " mead.pqr" 
+.B Output, Opt.
+ Coordinate file for MEAD 
 
 .BI "-bf" " bfact.dat" 
 .B Input, Opt.
@@ -287,14 +290,17 @@ or
 .BI "-[no]pbc"  "    no"
  Remove the periodicity (make molecule whole again)
 
-.BI "-[no]mead"  "    no"
- Store the charge of the atom in the occupancy field and the radius of the atom in the B-factor field
-
 .BI "-[no]grasp"  "    no"
  Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field
 
 .BI "-rvdw"  " real" "   0.12" 
- Default Van der Waals radius if one can not be found in the database
+ Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file
+
+.BI "-sig56"  " real" "      0" 
+ Use rmin/2 (minimum in the Van der Waals potential) rather than sigma/2 
+
+.BI "-[no]vdwread"  "    no"
+ Read the Van der Waals radii from the file vdwradii.dat rather than computing the radii based on the force field
 
 .BI "-[no]atom"  "    no"
  Force B-factor attachment per atom

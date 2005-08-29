@@ -1,7 +1,7 @@
-.TH g_density 1 "Sun 25 Jan 2004"
+.TH g_density 1 "Mon 29 Aug 2005"
 .SH NAME
 g_density
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_density\fP
 .BI "-f" " traj.xtc "
@@ -15,11 +15,15 @@ g_density
 .BI "-e" " time "
 .BI "-dt" " time "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-d" " string "
 .BI "-sl" " int "
 .BI "-[no]number" ""
 .BI "-[no]ed" ""
 .BI "-[no]count" ""
+.BI "-ng" " int "
+.BI "-[no]symm" ""
+.BI "-[no]center" ""
 .SH DESCRIPTION
 Compute partial densities across the box, using an index file. Densities
 in kg/m3, number densities or electron densities can be
@@ -67,17 +71,20 @@ partial charge.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-d"  " string" " Z" 
  Take the normal on the membrane in direction X, Y or Z.
@@ -93,6 +100,15 @@ partial charge.
 
 .BI "-[no]count"  "    no"
  Only count atoms in slices, no densities. Hydrogens are not counted
+
+.BI "-ng"  " int" " 0" 
+ Number of groups to compute densities of
+
+.BI "-[no]symm"  "    no"
+ Symmetrize the density along the axis, with respect to the center. Useful for bilayers.
+
+.BI "-[no]center"  "    no"
+ Shift the center of mass along the axis to zero. This means if your axis is Z and your box is bX, bY, bZ, the center of mass will be at bX/2, bY/2, 0.
 
 \- When calculating electron densities, atomnames are used instead of types. This is bad.
 

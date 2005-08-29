@@ -1,7 +1,7 @@
-.TH g_clustsize 1 "Sun 25 Jan 2004"
+.TH g_clustsize 1 "Mon 29 Aug 2005"
 .SH NAME
 g_clustsize
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_clustsize\fP
 .BI "-f" " traj.xtc "
@@ -13,6 +13,8 @@ g_clustsize
 .BI "-mc" " maxclust.xvg "
 .BI "-ac" " avclust.xvg "
 .BI "-hc" " histo-clust.xvg "
+.BI "-temp" " temp.xvg "
+.BI "-mcn" " maxclust.ndx "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-b" " time "
@@ -20,10 +22,13 @@ g_clustsize
 .BI "-dt" " time "
 .BI "-tu" " enum "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-cut" " real "
 .BI "-[no]mol" ""
+.BI "-[no]pbc" ""
 .BI "-nskip" " int "
 .BI "-nlevels" " int "
+.BI "-ndf" " int "
 .BI "-rgblo" " vector "
 .BI "-rgbhi" " vector "
 .SH DESCRIPTION
@@ -38,6 +43,21 @@ option is given clusters will be made out of
 molecules rather than atoms, which allows clustering of large molecules.
 In this case an index file would still contain atom numbers
 or your calculcation will die with a SEGV.
+
+
+When velocities are present in your trajectory, the temperature of
+the largest cluster will be printed in a separate xvg file assuming
+that the particles are free to move. If you are using constraints,
+please correct the temperature. For instance water simulated with SHAKE
+or SETTLE will yield a temperature that is 1.5 times too low. You can
+compensate for this with the -ndf option. Remember to take the removal
+of center of mass motion into account.
+
+
+The 
+.B -mc
+option will produce an index file containing the
+atom numbers of the largest cluster.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
@@ -75,6 +95,14 @@ or your calculcation will die with a SEGV.
 .B Output
  xvgr/xmgr file 
 
+.BI "-temp" " temp.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-mcn" " maxclust.ndx" 
+.B Output, Opt.
+ Index file 
+
 .SH OTHER OPTIONS
 .BI "-[no]h"  "    no"
  Print help info and quit
@@ -82,13 +110,13 @@ or your calculcation will die with a SEGV.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-tu"  " enum" " ps" 
@@ -113,17 +141,26 @@ or
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
 
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
 .BI "-cut"  " real" "   0.35" 
  Largest distance (nm) to be considered in a cluster
 
 .BI "-[no]mol"  "    no"
  Cluster molecules rather than atoms (needs tpr file)
 
+.BI "-[no]pbc"  "   yes"
+ Use periodic boundary conditions
+
 .BI "-nskip"  " int" " 0" 
  Number of frames to skip between writing
 
 .BI "-nlevels"  " int" " 20" 
  Number of levels of grey in xpm output
+
+.BI "-ndf"  " int" " -1" 
+ Number of degrees of freedom of the entire system for temperature calculation. If not set the number of atoms times three is used.
 
 .BI "-rgblo"  " vector" " 1 1 0" 
  RGB values for the color of the lowest occupied cluster size

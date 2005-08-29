@@ -1,7 +1,7 @@
-.TH g_enemat 1 "Sun 25 Jan 2004"
+.TH g_enemat 1 "Mon 29 Aug 2005"
 .SH NAME
 g_enemat
-.B VERSION 3.2.0
+.B VERSION 3.3_beta_20050823
 .SH SYNOPSIS
 \f3g_enemat\fP
 .BI "-f" " ener.edr "
@@ -15,6 +15,7 @@ g_enemat
 .BI "-e" " time "
 .BI "-dt" " time "
 .BI "-[no]w" ""
+.BI "-[no]xvgr" ""
 .BI "-[no]sum" ""
 .BI "-skip" " int "
 .BI "-[no]mean" ""
@@ -25,8 +26,10 @@ g_enemat
 .BI "-[no]coulr" ""
 .BI "-[no]coul14" ""
 .BI "-[no]lj" ""
+.BI "-[no]lj" ""
 .BI "-[no]lj14" ""
-.BI "-[no]bham" ""
+.BI "-[no]bhamsr" ""
+.BI "-[no]bhamlr" ""
 .BI "-[no]free" ""
 .BI "-temp" " real "
 .SH DESCRIPTION
@@ -126,17 +129,20 @@ in the comparison.
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" "      0" 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" "      0" 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "     -1" 
+.BI "-dt"  " time" "      0" 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-[no]w"  "    no"
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-[no]sum"  "    no"
  Sum the energy terms selected rather than display them all
@@ -168,11 +174,17 @@ in the comparison.
 .BI "-[no]lj"  "   yes"
  extract Lennard-Jones SR energies
 
+.BI "-[no]lj"  "    no"
+ extract Lennard-Jones LR energies
+
 .BI "-[no]lj14"  "    no"
  extract Lennard-Jones 1-4 energies
 
-.BI "-[no]bham"  "    no"
- extract Buckingham energies
+.BI "-[no]bhamsr"  "    no"
+ extract Buckingham SR energies
+
+.BI "-[no]bhamlr"  "    no"
+ extract Buckingham LR energies
 
 .BI "-[no]free"  "   yes"
  calculate free energy
