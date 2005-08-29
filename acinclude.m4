@@ -2206,11 +2206,11 @@ AC_CACHE_CHECK([if $compiler supports -c -o file.$ac_objext],
      fi
    fi
    chmod u+w .
-   $rm conftest* out/*
+   $rm -r conftest* out/*
    rmdir out
    cd ..
    rmdir conftest
-   $rm conftest*
+   $rm -r conftest*
 ])
 ])# AC_LIBTOOL_PROG_CC_C_O
 
