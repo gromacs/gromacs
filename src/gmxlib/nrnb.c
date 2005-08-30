@@ -188,10 +188,10 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "GB Coulomb + VdW(T) NF",         49 }, /* nb_kernel430nf */
     { "Free energy innerloop",         150 }, /* free energy, estimate */  
     { "Outer nonbonded loop",           10 },
-    { "1,4 nonbonded interactions",    43  },
-    { "Calc Weights",                  36  },
-    { "Spread Q",                      6   },
-    { "Spread Q Bspline",              2   }, 
+    { "1,4 nonbonded interactions",     90 },
+    { "Calc Weights",                   36 },
+    { "Spread Q",                        6 },
+    { "Spread Q Bspline",                2 }, 
     { "Gather F",                      23  },
     { "Gather F Bspline",              12  }, 
     { "3D-FFT",                        8   },
