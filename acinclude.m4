@@ -852,6 +852,9 @@ case "${host_cpu}-${host_os}" in
     if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
       ac_cv_prog_gcc="no"	
       case "${host_cpu}" in
+        x86_64)
+          xCFLAGS="-O3 -tpp7 -axW -ip"
+          ;;
 	i686)
 	  xCFLAGS="-O3 -tpp6 -axK -ip" 
  	  ;;
