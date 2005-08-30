@@ -12,7 +12,7 @@
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
  * Copyright (c) 2001-2004, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
-
+ *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -507,6 +507,16 @@ t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr,
   return li;
 }
 
+/* Yes. I _am_ awfully ashamed of introducing a static variable after preaching
+ * that we should get rid of them. Do as I say, not as I do!
+ *
+ * In defense, this is a hack just before the 3.3 release. The proper solution
+ * is to introduce an abstract constraint object where it is stored. /EL 20050830
+ */
+static int lincs_warncount = 0;
+
+#define LINCS_MAXWARN 10000
+
 static void lincs_warning(rvec *x,rvec *xprime,t_pbc *pbc,
 			  int ncons,int *bla,real *bllen,real wangle)
 {
@@ -541,7 +551,18 @@ static void lincs_warning(rvec *x,rvec *xprime,t_pbc *pbc,
 	      i+1,j+1,RAD2DEG*acos(cosine),d0,d1,bllen[b]);
       fprintf(stderr,buf);
       fprintf(stdlog,buf);
+      lincs_warncount++;
     }
+  }
+  if(lincs_warncount > LINCS_MAXWARN)
+  {
+      gmx_fatal(FARGS,
+                "Too many LINCS warnings (%d) - aborting to avoid logfile runaway.\n"
+                "This normally happens when your system is not sufficiently equilibrated,"
+                "or if you are changing lambda too fast in free energy simulations.\n"
+                "If you know what you are doing you can adjust the lincs warning threshold\n"
+                "in your mdp file, but normally it is better to fix the problem.\n",
+                lincs_warncount);
   }
 }
 
