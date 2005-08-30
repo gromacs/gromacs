@@ -195,18 +195,15 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     
     iter = 1;
 	do {
-        if(sizeof(real)==sizeof(double))
-	    {
-            F77_FUNC(dsaupd,DSAUPD)(&ido, "I", &n, "SA", &neig, (double *)&abstol, 
-                                    (double *)resid, &ncv, (double *)v, &n, iparam, ipntr, 
-                                    (double *)workd, iwork, (double *)workl, &lworkl, &info);
-	    }
-        else
-	    {
-            F77_FUNC(ssaupd,SSAUPD)(&ido, "I", &n, "SA", &neig, (float *)&abstol, 
-                                    (float *)resid, &ncv, (float *)v, &n, iparam, ipntr, 
-                                    (float *)workd, iwork, (float *)workl, &lworkl, &info);
-	    }
+#ifdef GMX_DOUBLE
+            F77_FUNC(dsaupd,DSAUPD)(&ido, "I", &n, "SA", &neig, &abstol, 
+                                    resid, &ncv, v, &n, iparam, ipntr, 
+                                    workd, iwork, workl, &lworkl, &info);
+#else
+            F77_FUNC(ssaupd,SSAUPD)(&ido, "I", &n, "SA", &neig, &abstol, 
+                                    resid, &ncv, v, &n, iparam, ipntr, 
+                                    workd, iwork, workl, &lworkl, &info);
+#endif
         if(ido==-1 || ido==1)
             gmx_sparsematrix_vector_multiply(A,workd+ipntr[0]-1, workd+ipntr[1]-1);
         
@@ -230,20 +227,17 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
 	/* Extract eigenvalues and vectors from data */
     fprintf(stderr,"Calculating eigenvalues and eigenvectors...\n");
     
-	if(sizeof(real)==sizeof(double)) 
-    {
-	    F77_FUNC(dseupd,DSEUPD)(&dovec, "A", select, (double *)eigenvalues, (double *)eigenvectors, 
-                                &n, NULL, "I", &n, "SA", &neig, (double *)&abstol, 
-                                (double *)resid, &ncv, (double *)v, &n, iparam, ipntr, 
-                                (double *)workd, (double *)workl, &lworkl, &info);
-    }
-	else
-    {
-	    F77_FUNC(sseupd,SSEUPD)(&dovec, "A", select, (float *)eigenvalues, (float *)eigenvectors, 
-                                &n, NULL, "I", &n, "SA", &neig, (float *)&abstol, 
-                                (float *)resid, &ncv, (float *)v, &n, iparam, ipntr, 
-                                (float *)workd, (float *)workl, &lworkl, &info);
-    }
+#ifdef GMX_DOUBLE
+    F77_FUNC(dseupd,DSEUPD)(&dovec, "A", select, eigenvalues, eigenvectors, 
+			    &n, NULL, "I", &n, "SA", &neig, &abstol, 
+			    resid, &ncv, v, &n, iparam, ipntr, 
+			    workd, workl, &lworkl, &info);
+#else
+    F77_FUNC(sseupd,SSEUPD)(&dovec, "A", select, eigenvalues, eigenvectors, 
+			    &n, NULL, "I", &n, "SA", &neig, &abstol, 
+			    resid, &ncv, v, &n, iparam, ipntr, 
+			    workd, workl, &lworkl, &info);
+#endif
 	
     sfree(v);
     sfree(resid);
@@ -251,3 +245,5 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     sfree(workl);  
     sfree(select);    
 }
+
+
