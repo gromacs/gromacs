@@ -52,7 +52,11 @@ extern void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
 
 extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], t_edsamyn *edyn, int step);
 extern void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn, t_commrec *cr);
-extern int ed_constraints(t_edsamyn *edyn); //returns if any constraints are switched on
+
+/* return value is 1 if constraints are switched on, 0 otherwise */
+int 
+ed_constraints(t_edsamyn *edyn);
+
 extern void init_edsam(FILE *log,t_topology *top,t_inputrec *ir,
 		       t_mdatoms *md,int start,int homenr, t_commrec *cr,
 		       t_edsamyn *edyn);
