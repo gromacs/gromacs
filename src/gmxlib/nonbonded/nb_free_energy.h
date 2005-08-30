@@ -33,6 +33,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real                 lambda,
                           real *               dvdlambda,
                           real                 alpha,
+			  int                  lam_power,
                           real                 def_sigma6,
                           int *                outeriter,
                           int *                inneriter);

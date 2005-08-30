@@ -411,6 +411,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PS("free_energy",EFEPTYPE(ir->efep));
     PR("init_lambda",ir->init_lambda);
     PR("sc_alpha",ir->sc_alpha);
+    PI("sc_power",ir->sc_power);
     PR("sc_sigma",ir->sc_sigma);
     PR("delta_lambda",ir->delta_lambda);
     

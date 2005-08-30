@@ -394,6 +394,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol);
   cmp_real(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol);
   cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol);
+  cpm_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
   cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol);
   cmp_real(fp,"inputrec->dr_fc",-1,ir1->dr_fc,ir2->dr_fc,ftol);
   cmp_int(fp,"inputrec->eDisreWeighting",-1,ir1->eDisreWeighting,ir2->eDisreWeighting);

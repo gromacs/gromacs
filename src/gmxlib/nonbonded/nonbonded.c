@@ -413,6 +413,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                                           lambda,
                                           dvdlambda,
                                           fr->sc_alpha,
+					  fr->sc_power,
                                           fr->sc_sigma6,
                                           &outeriter,
                                           &inneriter);
@@ -478,7 +479,6 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 			&outeriter,
 			&inneriter,
 			NULL);
-	  printf("tabscale=%g\n",nblists->tab.scale);
 	}
 	
 	/* Update flop accounting */
@@ -690,6 +690,7 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                                           lambda,
                                           dvdlambda,
                                           fr->sc_alpha,
+					  fr->sc_power,
                                           fr->sc_sigma6,
                                           &outeriter,
                                           &inneriter);

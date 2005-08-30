@@ -72,6 +72,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                           real                 lambda,
                           real *               dvdlambda,
                           real                 alpha,
+			  int                  lam_power,
                           real                 def_sigma6,
                           int *                outeriter,
                           int *                inneriter)
@@ -91,7 +92,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
     real          ix,iy,iz,fix,fiy,fiz;
     real          dx,dy,dz,rsq,r4,r6,rinv;
     real          c6A,c12A,c6B,c12B;
-    real          dvdl,L1,L1sq,lam2;
+    real          dvdl,L1,alfA,alfB,dalfA,dalfB;
     real          sigma6a,sigma6b;
     real          rA,rinvA,rinv4A,rB,rinvB,rinv4B;
     int           do_coultab,do_vdwtab,do_tab,tab_elemsize;
@@ -107,8 +108,11 @@ gmx_nb_free_energy_kernel(int                  icoul,
    
     dvdl = 0;
     L1   = 1.0 - lambda;
-    lam2 = lambda*lambda;
-    L1sq = L1*L1;
+
+    alfA  = alpha*(lam_power==2 ? lambda*lambda : lambda);
+    alfB  = alpha*(lam_power==2 ? L1*L1 : L1);
+    dalfA = alpha*lam_power/6.0*(lam_power==2 ? lambda : 1); 
+    dalfB = alpha*lam_power/6.0*(lam_power==2 ? L1 : 1); 
 
     /* Ewald table is special (icoul==5) */
     
@@ -196,7 +200,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
             /* Only spend time on A state if it is non-zero */
             if( (qqA != 0) || (c6A != 0) || (c12A != 0) ) 
             {
-                rA             = pow(alpha*sigma6a*lam2+r6,1.0/6.0);
+                rA             = pow(alfA*sigma6a+r6,1.0/6.0);
                 rinvA          = 1.0/rA;
                 rinv4A         = rinvA*rinvA;
                 rinv4A         = rinv4A*rinv4A;
@@ -289,7 +293,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
             /* Only spend time on B state if it is non-zero */
             if( (qqB != 0) || (c6B != 0) || (c12B != 0) ) 
             {
-                rB             = pow(alpha*sigma6b*L1sq+r6,1.0/6.0);
+                rB             = pow(alfB*sigma6b+r6,1.0/6.0);
                 rinvB          = 1.0/rB;
                 rinv4B         = rinvB*rinvB;
                 rinv4B         = rinv4B*rinv4B;
@@ -404,8 +408,8 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 
             Fscal         += (L1*FscalA*rinv4A + lambda*FscalB*rinv4B)*r4;
             dvdl          += (VcoulB + VvdwB) - (VcoulA + VvdwA);
-            dvdl          += 1.0/3.0*alpha*lambda*L1
-                *(FscalB*sigma6b*rinv4B - FscalA*sigma6a*rinv4A);
+            dvdl          += lambda*dalfB*FscalB*sigma6b*rinv4B
+	                       - L1*dalfA*FscalA*sigma6a*rinv4A;
                 
             tx             = Fscal*dx;     
             ty             = Fscal*dy;     

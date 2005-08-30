@@ -116,6 +116,7 @@ typedef struct {
   /* Free energy ? */
   int  efep;
   real sc_alpha;
+  int  sc_power;
   real sc_sigma6;
   bool bSepDVDL;
 

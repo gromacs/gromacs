@@ -46,7 +46,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
-<li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_sigma)
+<li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_power, sc_sigma)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#user"><b>User defined thingies</b></A> (user1_grps, user2_grps, userint1, userint2, userint3, userint4, userreal1, userreal2, userreal3, userreal4)
@@ -956,6 +956,9 @@ potentials are used for the LJ and Coulomb interactions.</dd>
 <dt><h4>sc_alpha: (0)</h4></dt>
 <dd>the soft-core parameter, a value of 0 results in linear interpolation of
 the LJ and Coulomb interactions</dd>
+<dt><h4>sc_power: (1)</h4></dt>
+<dd>the power for lambda in the soft-core function,
+only the values 1 and 2 are supported</dd>
 <dt><h4>sc_sigma: (0.3) [nm]</h4></dt>
 <dd>the soft-core sigma for particles which have a C6 or C12 parameter equal
 to zero</dd>
@@ -1144,6 +1147,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#vdw">rvdw_switch</A><br>
 <A HREF="#vdw">rvdw</A><br>
 <A HREF="#free">sc_alpha</A><br>
+<A HREF="#free">sc_power</A><br>
 <A HREF="#free">sc_sigma</A><br>
 <A HREF="#bond2">shake_tol</A><br>
 <A HREF="#table">table-extension</A><br>
