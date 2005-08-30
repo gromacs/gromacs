@@ -66,10 +66,25 @@ static const char *tabnm[etabNR] = {
 };
 
 /* This flag tells whether this is a Coulomb type funtion */
-bool bCoulomb[etabNR] = { FALSE, FALSE, FALSE, FALSE, TRUE,
-			  TRUE,  TRUE, TRUE, FALSE, FALSE, TRUE, 
-              FALSE, FALSE, TRUE,
-			  FALSE, FALSE }; 
+bool bCoulomb[etabNR] = { 
+    FALSE,   /* LJ6        */
+    FALSE,   /* LJ12       */
+    FALSE,   /* LJ6Shift   */
+    FALSE,   /* LJ12Shift  */
+    TRUE,    /* Shift      */
+    TRUE,    /* RF         */
+    TRUE,    /* Coul       */
+    TRUE,    /* Ewald      */
+    TRUE,    /* Ewald-User */
+    FALSE,   /* LJ6Switch  */
+    FALSE,   /* LJ12Switch */  
+    TRUE,    /* CoulSwitch */
+    FALSE,   /* LJ6-Encad  */
+    FALSE,   /* LJ12-Encad */ 
+    TRUE,    /* Coul Encad */
+    FALSE,   /* Expmin     */
+    FALSE    /* User  (?)  */
+}; 
 
 /* Index in the table that says which function to use */
 enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
@@ -331,6 +346,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 #ifdef DEBUG_SWITCH
   fp=xvgropen("switch.xvg","switch","r","s");
 #endif
+  
   for(i=td->nx0; (i<td->nx); i++) {
     r     = td->x[i];
     r2    = r*r;
@@ -400,7 +416,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     case etabLJ12Switch:
     case etabLJ12Shift:
       /* Repulsion */
-      if (r < rc) {      
+      if (r < rc) {                
 	Vtab  = r12;
 	Ftab  = 12.0*Vtab/r;
 	Vtab2 = 13.0*Ftab/r;
@@ -713,10 +729,9 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 		"Tabscale = %g points/nm\n",
 		tabsel[k]==etabEwaldUser ? "Modified" : "Generated",
 		td[k].nx,b14only?"1-4 ":"",tabnm[tabsel[k]],td[k].tabscale);
-
     }
     copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].v2,table.tab,-1);
-  
+    
     if (bDebugMode() && bVerbose) {
       if (b14only)
 	fp=xvgropen(fns14[k],fns14[k],"r","V");
