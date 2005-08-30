@@ -154,7 +154,7 @@ MKNB_FLAGS = $(DOUBLEFLAG) $(THREADFLAG) $(SQRTFLAG) \
 # we use as a dummy dependency.
 #
 kernel-stamp:			mknb Makefile
-				$(RM) kernel-stamp
+				rm -f kernel-stamp
 				./mknb $(MKNB_FLAGS)
 
 $(KERNEL_SOURCES): kernel-stamp

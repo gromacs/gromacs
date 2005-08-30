@@ -328,7 +328,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
         if (nlist->nri > 0) 
         {
 	nrnb_ind = nlist->il_code;
-	
+
             if(nrnb_ind==eNR_NBKERNEL_FREE_ENERGY)
             {
                 /* generic free energy */
@@ -352,32 +352,31 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
             else
             {
                 /* normal kernels, not free energy */
-	      if (!bDoForces)
-		nrnb_ind += eNR_NBKERNEL_NR/2;
-
-	tabletype = nb_kernel_table[nrnb_ind];
-	
-	if(tabletype == TABLE_COMBINED)
+                if (!bDoForces)
+                    nrnb_ind += eNR_NBKERNEL_NR/2;
+                
+                tabletype = nb_kernel_table[nrnb_ind];
+                
+                if(tabletype == TABLE_COMBINED)
                 {
                     tabledata = nblists->tab.tab;
                 }
-	else if(tabletype == TABLE_COUL)
+                else if(tabletype == TABLE_COUL)
                 {
                     tabledata = nblists->coultab;
                 }
-	else if(tabletype == TABLE_VDW)
+                else if(tabletype == TABLE_VDW)
                 {
                     tabledata = nblists->vdwtab;
                 }
-	else
+                else
                 {
-	  tabledata = NULL;
+                    tabledata = NULL;
                 }
             }
             
             nlist->count = 0;
-	
-	/* Is this a free energy loop? */
+            
             if(nlist->free_energy)
             {
                 if(nlist->ivdw==2)
@@ -402,7 +401,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
                                           fr->epsfac,
                                           fr->k_rf,
                                           fr->c_rf,
-					  fr->ewaldcoeff,
+                                          fr->ewaldcoeff,
                                           egcoul,
                                           mdatoms->typeA,
                                           mdatoms->typeB,
@@ -479,6 +478,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 			&outeriter,
 			&inneriter,
 			NULL);
+	  printf("tabscale=%g\n",nblists->tab.scale);
 	}
 	
 	/* Update flop accounting */

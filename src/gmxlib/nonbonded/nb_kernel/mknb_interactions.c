@@ -218,7 +218,7 @@ mknb_coul_gb(char *rsq, char *rinv)
   
 /* MKNB_VDW INTERACTIONS */
 int
-mknb_vdw_lj()
+mknb_vdw_lj(char *rsq, char *rinv)
 {
   mknb_comment("Lennard-Jones interaction");
 
