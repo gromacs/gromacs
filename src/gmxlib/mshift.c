@@ -100,7 +100,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
     tp=ftype[ia[0]];
     np=interaction_function[tp].nratoms;
     
-    if ((ia[1] < natoms) && (interaction_function[tp].flags & IF_GRAPH)) {
+    if (ia[1] < natoms) {
       if (ia[np] >= natoms)
 	gmx_fatal(FARGS,"Molecule in topology has atom numbers below and "
 		    "above natoms (%d).\n"
@@ -219,10 +219,8 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
   g->end=0;
 
   snew(nbond,natoms);
-  for(i=0; (i<F_NRE); i++) {
-    if (interaction_function[i].flags & IF_GRAPH)
-      calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
-  }
+  for(i=0; (i<F_NRE); i++)
+    calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
   
   nnb=0;
   for(i=g->start; (i<=g->end); i++)

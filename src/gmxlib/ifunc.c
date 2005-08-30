@@ -48,9 +48,6 @@
 #define  def_bonded(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND,                        (ind),(func)}
 
-#define def_bondedg(str,lstr,nra,nrpa,nrpb,ind,func)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH,             (ind),(func)}
-   
 #define   def_angle(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_ATYPE,(ind),(func)}
    
@@ -64,7 +61,7 @@
    {str,lstr,(nra),(nrpa),     0,IF_VSITE | IF_GRAPH,       -1, unimplemented}
    
 #define     def_shk(str,lstr,nra,nrpa,nrpb)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_GRAPH,  -1, unimplemented}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT,             -1, unimplemented}
 
 #define   def_shkcb(str,lstr,nra,nrpa,nrpb)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_GRAPH | IF_CHEMBOND,-1, unimplemented}
@@ -83,7 +80,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bond   ("MORSE",    "Morse",           2, 3, 0,  eNR_MORSE,  morse_bonds   ),
   def_bond   ("CUBICBONDS","Cubic Bonds",    2, 3, 0,  eNR_CUBICBONDS, cubic_bonds),
   def_bondnb ("CONNBONDS","Connect Bonds",   2, 0, 0,  0,      unimplemented     ),
-  def_bondedg("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds         ),
+  def_bonded ("HARMONIC", "Harmonic Pot.",   2, 2, 2,  eNR_BONDS,  bonds         ),
   def_bondnb ("FENEBONDS", "FENE Bonds",     2, 2, 0,  eNR_FENEBONDS, FENE_bonds  ),
   def_angle  ("ANGLES",   "Angle",           3, 2, 2,  eNR_ANGLES, angles        ),
   def_angle  ("G96ANGLES","G96Angle",        3, 2, 2,  eNR_ANGLES, g96angles     ),
@@ -96,7 +93,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded ("FOURDIHS", "Fourier Dih.",    4, 4, 4,  eNR_FOURDIH, rbdihs       ),
   def_bonded ("IDIHS",    "Improper Dih.",   4, 2, 2,  eNR_IMPROPER,idihs        ),
   def_bonded ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_PROPER, pdihs         ),
-  def_bondedg("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
+  def_bonded ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
   def_nofc   ("COUL14",   "Coulomb-14"                                           ),
   def_nb     ("LJ_SR",    "LJ (SR)",         2, 2                                ),
   def_nb     ("BHAM",     "Buck.ham (SR)",   2, 3                                ),
@@ -111,13 +108,13 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded ("WATERPOL", "Water Pol.",      5, 6, 0,  eNR_WPOL,   water_pol     ),
   def_bonded ("THOLE",    "Thole Pol.",      4, 3, 0,  eNR_THOLE,  thole_pol     ),
   def_bonded ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, posres        ),
-  def_bondedg("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres     ),
+  def_bonded ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres     ),
   def_nofc   ("DRVIOL",   "D. R. Viol. (nm)"                                     ),    
-  def_bondedg("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires        ),
+  def_bonded ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires        ),
   def_nofc   ("ORDEV",    "Ori. R. RMSD"                                         ),  
-  def_bondedg("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),
-  def_bondedg("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz       ),
-  def_bondedg("DIHRES",   "Dih. Rest.",      4, 5, 0,  eNR_DIHRES, ta_dihres     ),
+  def_bonded ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),
+  def_bonded ("ANGRESZ",  "Angle Rest. Z",   2, 3, 3,  eNR_ANGRESZ,angresz       ),
+  def_bonded ("DIHRES",   "Dih. Rest.",      4, 5, 0,  eNR_DIHRES, ta_dihres     ),
   def_nofc   ("DIHVIOL",  "Dih. Rest. viol."                                     ),    
   def_shkcb  ("CONSTR",   "Constraint",      2, 1, 1                             ),
   def_shk    ("CONSTRNC", "Constr. No Conn.",2, 1, 1                             ),
