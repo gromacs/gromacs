@@ -979,9 +979,9 @@ _nb_kernel331_x86_64_sse2:
     shl   r12d, 2
 
     ;# multiply by 3
-   	lea   r8d, [r8d + r8d*2]
-   	lea   r10d, [r10d + r10d*2]
-   	lea   r12d, [r12d + r12d*2]
+   	lea   r8, [r8 + r8*2]
+   	lea   r10, [r10 + r10*2]
+   	lea   r12, [r12 + r12*2]
 
     mov  rsi, [rbp + nb331_VFtab]
 

@@ -260,10 +260,10 @@ _nb_kernel010_x86_64_sse:
     
 	add qword ptr [rsp + nb010_innerjjnr],  16 ;# advance pointer (unrolled 4) 
 
-	lea   r8d, [rax + rax*2]     ;# replace jnr with j3 
-	lea   r9d, [rbx + rbx*2]	
-	lea   r10d, [rcx + rcx*2]    
-	lea   r11d, [rdx + rdx*2]	
+	lea   r8, [rax + rax*2]     ;# replace jnr with j3 
+	lea   r9, [rbx + rbx*2]	
+	lea   r10, [rcx + rcx*2]    
+	lea   r11, [rdx + rdx*2]	
 
 	mov rdi, [rbp + nb010_pos]
 	;# load coordinates
