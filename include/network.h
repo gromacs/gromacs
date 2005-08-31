@@ -129,6 +129,11 @@ extern void gmx_rxs(int chan,void *buf,int bufsize);
       * available after gmx_rxs() returns.
       */
 
+
+/* Check for pending messages */
+int 
+gmx_rx_probe(int nodeid);
+
 extern int gmx_setup(int *argc,char **argv,int *nnodes);
 /* Initializes the parallel communication, return the ID of the node */
 

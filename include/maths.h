@@ -42,6 +42,7 @@
 #endif
 
 #include <math.h>
+#include "types/simple.h"
 #include "typedefs.h"
 
 #ifndef M_PI

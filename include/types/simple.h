@@ -104,6 +104,8 @@ typedef double   	real;
 #endif
 #define GMX_MPI_REAL    MPI_DOUBLE
 #define GMX_REAL_EPS    GMX_DOUBLE_EPS
+#define GMX_REAL_MIN    GMX_DOUBLE_MIN
+#define GMX_REAL_MAX    GMX_DOUBLE_MAX
 #else
 #ifndef HAVE_REAL
 typedef float           real;
@@ -111,6 +113,8 @@ typedef float           real;
 #endif
 #define GMX_MPI_REAL    MPI_FLOAT
 #define GMX_REAL_EPS    GMX_FLOAT_EPS
+#define GMX_REAL_MIN    GMX_FLOAT_MIN
+#define GMX_REAL_MAX    GMX_FLOAT_MAX
 #endif
 
 #ifndef VECTORIZATION_BUFLENGTH
