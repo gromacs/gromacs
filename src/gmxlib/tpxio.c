@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 37;
+static const int tpx_version = 38;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -383,6 +383,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_real(ir->sc_alpha);
     else
       ir->sc_alpha = 0;
+    if (file_version >= 38)
+      do_int(ir->sc_power);
+    else
+      ir->sc_power = 2;
     if (file_version >= 15)
       do_real(ir->sc_sigma);
     else

@@ -577,6 +577,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("init-lambda",	ir->init_lambda,0.0);
   RTYPE ("delta-lambda",ir->delta_lambda,0.0);
   RTYPE ("sc-alpha",ir->sc_alpha,0.0);
+  ITYPE ("sc-power",ir->sc_power,1);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
 
   /* Non-equilibrium MD stuff */  
