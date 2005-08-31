@@ -701,9 +701,9 @@ static inline real _divide(real a,real b,char *file,int line)
 
 static inline int _mod(int a,int b,char *file,int line)
 {
-    if (gmx_within_tol(b,0.0,GMX_REAL_MIN)) 
-        gmx_fatal(FARGS,"Modulo zero, file %s, line %d",file,line);
-    return a % b;
+  if(b==0)
+    gmx_fatal(FARGS,"Modulo zero, file %s, line %d",file,line);
+  return a % b;
 }
 
 #define divide(a,b) _divide((a),(b),__FILE__,__LINE__)
