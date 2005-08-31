@@ -1544,7 +1544,7 @@ to the Hamiltonian using Lagrange multipliers $\lambda$:
 \subsection{\normindex{Soft-core interactions}}
 \begin{figure}
 \centerline{\includegraphics[height=6cm]{plots/softcore}}
-\caption{Soft-core interactions at $\LAM=0.5$, with
+\caption{Soft-core interactions at $\LAM=0.5$, with $p=2$ and
 $C_6^A=C_{12}^A=C_6^B=C_{12}^B=1$.}
 \label{fig:softcore}
 \end{figure}
@@ -1557,16 +1557,16 @@ soft-core potentials. In {\gromacs} the soft-core potential $V_{sc}$ is:
 V_{sc}(r) = \LL V^A(r_A) + \LAM V^B(r_B)
 \eeq
 \beq
-r_A = \left(\alpha \sigma_A^6 \LAM^2 + r^6 \right)^\frac{1}{6}
+r_A = \left(\alpha \sigma_A^6 \LAM^p + r^6 \right)^\frac{1}{6}
 \eeq
 \beq
-r_B = \left(\alpha \sigma_B^6 \LL^2 + r^6 \right)^\frac{1}{6}
+r_B = \left(\alpha \sigma_B^6 \LL^p + r^6 \right)^\frac{1}{6}
 \eeq
 where $V^A$ and $V^B$ are the normal ``hard core'' Van der Waals or
 electrostatic potentials in state A ($\LAM=0$) and state B ($\LAM=1$)
-respectively, $\alpha$ is the soft-core parameter, which mainly controls the
-height of the potential around $r=0$, $\sigma$ is the radius of the
-interaction, which is $(C_{12}/C_6)^{1/6}$ or a predefined value when
+respectively, $\alpha$ is the soft-core parameter, $p$ is the soft-core
+$\LAM$ power, $\sigma$ is the radius of the interaction,
+which is $(C_{12}/C_6)^{1/6}$ or a predefined value when
 $C_6$ or $C_{12}$ is zero.
 For intermediate $\LAM$, $r_A$ and $r_B$ alter the interactions very little
 when $r > \alpha^{1/6} \sigma$ and they quickly switch the soft-core
@@ -1580,12 +1580,27 @@ F_{sc}(r) = -\frac{\partial V_{sc}(r)}{\partial r} =
 \eeq
 where $F^A$ and $F^B$ are the 'hard core' forces.
 The contribution to the derivative of the free energy is:
-\beq
-\dvdl{V_{sc}(r)} =
--V^A(r_A) + V^B(r_B) +
-\frac{1}{3} \alpha \LAM \LL 
-\left( -F^A(r_A) \sigma_A^6 r_A^{-5} + F^B(r_B) \sigma_B^6 r_B^{-5} \right)
-\eeq
+\bea
+\dvdl{V_{sc}(r)} & = &
+-V^A(r_A) + V^B(r_B) + \nonumber \\
+ & &
+\alpha \frac{p}{6} \left( - \LL \LAM^{p-1} F^A(r_A) \sigma_A^6 r_A^{-5} 
+                          + \LAM \LL^{p-1} F^B(r_B) \sigma_B^6 r_B^{-5} \right)
+\eea
+
+The original Gromos Lennard-Jones soft-core function~\cite{Beutler94}
+uses $p$=2, but $p$=1 gives a smoother $\partial H/\partial\LAM$ curve.
+When the changes between the two states involve both the disappearing
+and appearing of atoms, it is important that the overlapping of atoms
+happens around $\LAM$=0.5. This can usually be achieved with
+$\alpha$$\approx$0.7 for $p$=1 and $\alpha$$\approx$1.5 for $p$=2.
+Another issue which should be considered is the soft-core effect of hydrogens
+without Lennard-Jones interaction. Their soft-core $\sigma$ is
+set with {\tt sc-sigma} in the {\tt .mdp} file. These hydrogens
+produce peaks in $\partial H/\partial\LAM$ at $\LAM$ is 0 and/or 1 for $p$=1
+and close to 0 and/or 1 with $p$=2. Lowering {\tt sc-sigma} will decrease
+this effect, but it will also increase the interactions with hydrogens
+relative to the other interactions in the soft-core state.
 
 \section{Methods}
 \subsection{Exclusions and 1-4 Interactions.}
