@@ -189,7 +189,7 @@ _nb_kernel232_x86_64_sse2:
 	push rbp
 	mov  rbp, rsp
 	push rbx
-	femms
+	emms
 
         push r12
         push r13
@@ -2161,7 +2161,7 @@ _nb_kernel232_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 1624
-	femms
+	emms
 
 
         pop r15
@@ -2276,7 +2276,7 @@ _nb_kernel232nf_x86_64_sse2:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -3610,7 +3610,7 @@ _nb_kernel232nf_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 872
-	femms
+	emms
 
 
         pop r15

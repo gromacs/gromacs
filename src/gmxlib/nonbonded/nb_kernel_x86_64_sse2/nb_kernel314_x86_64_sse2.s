@@ -206,7 +206,7 @@ _nb_kernel314_x86_64_sse2:
 	push rbp
 	mov  rbp, rsp
 	push rbx	
-	femms
+	emms
 
         push r12
         push r13
@@ -2773,7 +2773,7 @@ _nb_kernel314_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 1880
-	femms
+	emms
 
 
         pop r15
@@ -2894,7 +2894,7 @@ _nb_kernel314nf_x86_64_sse2:
 	push rbp
 	mov  rbp, rsp
 	push rbx
-	femms
+	emms
 
         push r12
         push r13
@@ -4679,7 +4679,7 @@ _nb_kernel314nf_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 968
-	femms
+	emms
 
 
         pop r15

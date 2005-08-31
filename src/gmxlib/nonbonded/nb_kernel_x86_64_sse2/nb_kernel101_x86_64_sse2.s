@@ -135,7 +135,7 @@ _nb_kernel101_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -965,7 +965,7 @@ _nb_kernel101_x86_64_sse2:
         jmp   .nb101_threadloop
 .nb101_end:
 	add rsp, 696
-	femms
+	emms
 
 	mov eax, [rsp + nb101_nouter]
 	mov ebx, [rsp + nb101_ninner]
@@ -1053,7 +1053,7 @@ _nb_kernel101nf_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -1610,7 +1610,7 @@ _nb_kernel101nf_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 360
-	femms
+	emms
 
 
         pop r15

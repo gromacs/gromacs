@@ -158,7 +158,7 @@ _nb_kernel333_x86_64_sse2:
 	push rbp
 	mov  rbp, rsp
 	push rbx
-	femms
+	emms
 
         push r12
         push r13
@@ -1612,7 +1612,7 @@ _nb_kernel333_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 1048
-	femms
+	emms
 
 
         pop r15
@@ -1708,7 +1708,7 @@ _nb_kernel333nf_x86_64_sse2:
 	push rbp
 	mov  rbp, rsp
 	push rbx
-	femms
+	emms
 
         push r12
         push r13
@@ -2779,7 +2779,7 @@ _nb_kernel333nf_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 536
-	femms
+	emms
 
 
         pop r15

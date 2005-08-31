@@ -122,7 +122,7 @@ _nb_kernel010_x86_64_sse:
 	push r14
 	push r15
 	
-	femms
+	emms
 
         sub rsp, 392            ; # local variable stack space (n*16+8)                                                         
 	;# zero 32-bit iteration counters
@@ -733,7 +733,7 @@ _nb_kernel010_x86_64_sse:
         jmp   .nb010_threadloop
 .nb010_end:
 	
-	femms
+	emms
 
 	mov eax, [rsp + nb010_nouter]
 	mov ebx, [rsp + nb010_ninner]
@@ -825,7 +825,7 @@ _nb_kernel010nf_x86_64_sse:
 	push rbx
 
         sub rsp, 264		; # local variable stack space (n*16+8)                                                         
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -1289,7 +1289,7 @@ _nb_kernel010nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 264
-	femms
+	emms
 	
 	pop rbx
 	pop	rbp

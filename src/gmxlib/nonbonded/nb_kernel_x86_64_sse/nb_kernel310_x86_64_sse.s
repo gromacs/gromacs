@@ -124,7 +124,7 @@ _nb_kernel310_x86_64_sse:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -412,8 +412,8 @@ _nb_kernel310_x86_64_sse:
 
 	mov rsi, [rbp + nb310_vdwparam]
 	movlps xmm7, [rsi + r8*4]
-	movlps xmm8, [rsi + r9*4]
-	movhps xmm7, [rsi + r10*4]
+	movlps xmm8, [rsi + r10*4]
+	movhps xmm7, [rsi + r9*4]
 	movhps xmm8, [rsi + r11*4]
 
 	movaps xmm12, xmm7
@@ -1014,7 +1014,7 @@ _nb_kernel310_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 472
-	femms
+	emms
 
 
         pop r15
@@ -1098,7 +1098,7 @@ _nb_kernel310nf_x86_64_sse:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -1789,7 +1789,7 @@ _nb_kernel310nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 312
-	femms
+	emms
 
 
         pop r15

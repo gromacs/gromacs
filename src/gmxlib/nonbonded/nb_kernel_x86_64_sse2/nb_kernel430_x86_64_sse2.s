@@ -127,7 +127,7 @@ _nb_kernel430_x86_64_sse2:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -937,7 +937,7 @@ _nb_kernel430_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 536
-	femms
+	emms
 
 
         pop r15
@@ -1024,7 +1024,7 @@ _nb_kernel430nf_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -1647,7 +1647,7 @@ _nb_kernel430nf_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 392
-	femms
+	emms
 
 
         pop r15

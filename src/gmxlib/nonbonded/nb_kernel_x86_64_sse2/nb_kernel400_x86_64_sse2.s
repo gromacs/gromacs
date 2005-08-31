@@ -119,7 +119,7 @@ _nb_kernel400_x86_64_sse2:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -705,7 +705,7 @@ _nb_kernel400_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 440
-	femms
+	emms
 
 
         pop r15
@@ -786,7 +786,7 @@ _nb_kernel400nf_x86_64_sse2:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -1218,7 +1218,7 @@ _nb_kernel400nf_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 296
-	femms
+	emms
 
 
         pop r15

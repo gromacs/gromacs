@@ -150,7 +150,7 @@ _nb_kernel231_x86_64_sse:
         mov  rbp, rsp
         push rbx
 
-        femms
+        emms
 
         push r12
         push r13
@@ -1227,7 +1227,7 @@ _nb_kernel231_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 920
-	femms
+	emms
 
 
         pop r15
@@ -1323,7 +1323,7 @@ _nb_kernel231nf_x86_64_sse:
         mov  rbp, rsp
         push rbx
 	
-        femms
+        emms
 
         push r12
         push r13
@@ -2059,7 +2059,7 @@ _nb_kernel231nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 552
-	femms
+	emms
 
 
         pop r15

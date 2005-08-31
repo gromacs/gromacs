@@ -123,7 +123,7 @@ _nb_kernel230_x86_64_sse:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -327,8 +327,8 @@ _nb_kernel230_x86_64_sse:
 	subps xmm5, [rsp + nb230_iz]
 
 	movss xmm6, [rsi + r12*4]
-	movss xmm4, [rsi + r13*4]
-	movss xmm3, [rsi + r14*4]
+	movss xmm3, [rsi + r13*4]
+	movss xmm4, [rsi + r14*4]
 	movss xmm0, [rsi + r15*4]
 
 	;# store dr
@@ -1112,7 +1112,7 @@ _nb_kernel230_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 456
-	femms
+	emms
 
 
         pop r15
@@ -1197,7 +1197,7 @@ _nb_kernel230nf_x86_64_sse:
 	mov  rbp, rsp
 	push rbx
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -1965,7 +1965,7 @@ _nb_kernel230nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 328
-	femms
+	emms
 
 
         pop r15

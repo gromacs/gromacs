@@ -114,7 +114,7 @@ _nb_kernel010_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -560,7 +560,7 @@ _nb_kernel010_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 392
-	femms
+	emms
 
 
         pop r15
@@ -639,7 +639,7 @@ _nb_kernel010nf_x86_64_sse2:
 	mov  rbp, rsp
 	push rbx
 
-	femms
+	emms
 
         push r12
         push r13
@@ -998,7 +998,7 @@ _nb_kernel010nf_x86_64_sse2:
 	mov [rdx], ebx
 
 	add rsp, 248
-	femms
+	emms
 
 
         pop r15

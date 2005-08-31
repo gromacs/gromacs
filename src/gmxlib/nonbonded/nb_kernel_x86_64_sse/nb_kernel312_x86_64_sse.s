@@ -196,7 +196,7 @@ _nb_kernel312_x86_64_sse:
 	push r14
 	push r15
 
-	femms
+	emms
 	sub rsp, 1624		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -2214,7 +2214,7 @@ _nb_kernel312_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 1624
-	femms
+	emms
 
 	pop r15
 	pop r14
@@ -2326,7 +2326,7 @@ _nb_kernel312nf_x86_64_sse:
 	mov  rbp, rsp
 	push rbx
 
-	femms
+	emms
 	sub rsp, 840		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -3688,7 +3688,7 @@ _nb_kernel312nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 840
-	femms
+	emms
 
 	pop rbx
 	pop	rbp

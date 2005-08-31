@@ -210,7 +210,7 @@ _nb_kernel234_x86_64_sse:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -2064,7 +2064,7 @@ _nb_kernel234_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 1912
-	femms
+	emms
 
 
         pop r15
@@ -2187,7 +2187,7 @@ _nb_kernel234nf_x86_64_sse:
 	mov  rbp, rsp
 	push rbx
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -3249,7 +3249,7 @@ _nb_kernel234nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 1000
-	femms
+	emms
 
 
         pop r15

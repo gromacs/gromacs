@@ -141,7 +141,7 @@ _nb_kernel203_x86_64_sse:
 	mov  rbp, rsp
 	push rbx
 
-	femms
+	emms
 
         push r12
         push r13
@@ -955,7 +955,7 @@ _nb_kernel203_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 808
-	femms
+	emms
 
 
         pop r15
@@ -1047,7 +1047,7 @@ _nb_kernel203nf_x86_64_sse:
 	mov  rbp, rsp
 	push rbx
 
-	femms
+	emms
 
         push r12
         push r13
@@ -1539,7 +1539,7 @@ _nb_kernel203nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 440
-	femms
+	emms
 
 
         pop r15

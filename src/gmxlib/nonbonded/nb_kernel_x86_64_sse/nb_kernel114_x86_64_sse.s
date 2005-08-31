@@ -215,7 +215,7 @@ _nb_kernel114_x86_64_sse:
         push r15
 
 	sub rsp, 1880
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -1770,7 +1770,7 @@ _nb_kernel114_x86_64_sse:
 .nb114_end:
 
 
-	femms
+	emms
 
 	mov eax, [rsp + nb114_nouter]
 	mov ebx, [rsp + nb114_ninner]
@@ -1908,7 +1908,7 @@ _nb_kernel114nf_x86_64_sse:
         push r15
 
 	sub rsp, 968
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -2678,7 +2678,7 @@ _nb_kernel114nf_x86_64_sse:
 .nb114nf_end:
 
 
-	femms
+	emms
 
 	mov eax, [rsp + nb114nf_nouter]
 	mov ebx, [rsp + nb114nf_ninner]

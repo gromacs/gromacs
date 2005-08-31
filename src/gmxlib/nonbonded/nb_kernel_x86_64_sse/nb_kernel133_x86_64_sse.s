@@ -160,7 +160,7 @@ _nb_kernel133_x86_64_sse:
         push rbx
 	
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -1308,7 +1308,7 @@ _nb_kernel133_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 1080
-	femms
+	emms
 
 
         pop r15
@@ -1413,7 +1413,7 @@ _nb_kernel133nf_x86_64_sse:
 	push rbx
 
 	
-	femms
+	emms
 
         push r12
         push r13
@@ -2137,7 +2137,7 @@ _nb_kernel133nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 600
-	femms
+	emms
 
 
         pop r15

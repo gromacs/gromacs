@@ -194,7 +194,7 @@ _nb_kernel202_x86_64_sse:
 	
 	
 	sub rsp, 1544		;# local variable stack space (n*16+8)
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -1559,7 +1559,7 @@ _nb_kernel202_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 1544
-	femms
+	emms
 
 
 	pop r15
@@ -1672,7 +1672,7 @@ _nb_kernel202nf_x86_64_sse:
 	mov  rbp, rsp
 	push rbx
 
-	femms
+	emms
 	sub rsp, 808		;# local variable stack space (n*16+8)
 
 	;# zero 32-bit iteration counters
@@ -2396,7 +2396,7 @@ _nb_kernel202nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 808
-	femms
+	emms
 
 	pop rbx
 	pop	rbp

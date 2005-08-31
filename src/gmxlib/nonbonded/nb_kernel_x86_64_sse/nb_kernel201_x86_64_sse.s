@@ -153,7 +153,7 @@ _nb_kernel201_x86_64_sse:
         push r15
 
 	sub rsp, 808		;# local variable stack space (n*16+8)
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -961,7 +961,7 @@ _nb_kernel201_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 808
-	femms
+	emms
 
 
         pop r15
@@ -1056,7 +1056,7 @@ _nb_kernel201nf_x86_64_sse:
         push r15
 
 	sub rsp, 440		;# local variable stack space (n*16+8)
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -1551,7 +1551,7 @@ _nb_kernel201nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 440
-	femms
+	emms
 
 
         pop r15

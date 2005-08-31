@@ -147,7 +147,7 @@ _nb_kernel111_x86_64_sse:
 	push r15
 	
 	sub rsp, 792
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -1005,7 +1005,7 @@ _nb_kernel111_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 792
-	femms
+	emms
 
 	pop r15
 	pop r14
@@ -1093,7 +1093,7 @@ _nb_kernel111nf_x86_64_sse:
 	push rbx
 
 	sub rsp, 424
-	femms
+	emms
 
 	;# zero 32-bit iteration counters
 	mov eax, 0
@@ -1646,7 +1646,7 @@ _nb_kernel111nf_x86_64_sse:
 	mov [rdx], ebx
 
 	add rsp, 424
-	femms
+	emms
 	pop rbx
 	pop	rbp
 	ret
