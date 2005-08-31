@@ -115,12 +115,13 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,int natoms)
     
     if (ia[1] < natoms) {
       if (ia[np] >= natoms)
-	gmx_fatal(FARGS,"Molecule in topology has atom numbers below and "
-		    "above natoms (%d).\n"
-		    "You are probably trying to use a trajectory which does "
-		    "not match the first %d atoms of the run input file.\n"
-		    "You can make a matching run input file with tpbconv.",
-		    natoms,natoms);
+	gmx_fatal(FARGS,
+		  "Molecule in topology has atom numbers below and "
+		  "above natoms (%d).\n"
+		  "You are probably trying to use a trajectory which does "
+		  "not match the first %d atoms of the run input file.\n"
+		  "You can make a matching run input file with tpbconv.",
+		  natoms,natoms);
       if (tp == F_SETTLE) {
 	/* Bond all the atoms in the settle */
 	add_gbond(g,ia[1],ia[1]+1);
@@ -182,8 +183,8 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
       iaa          = ia[1];
       if (iaa<natoms) {
 	nbond[iaa]   += 2;
-	nbond[iaa+1] += 2;
-	nbond[iaa+2] += 2;
+	nbond[iaa+1] += 1;
+	nbond[iaa+2] += 1;
 	g->start      = min(g->start,iaa);
 	g->end        = max(g->end,iaa+2);
       }
