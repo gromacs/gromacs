@@ -113,6 +113,22 @@ gmx_within_tol(double   f1,
 
 
 
+/** 
+ * Check if a number is smaller than some preset safe minimum
+ * value, currently defined as GMX_REAL_MIN/GMX_REAL_EPS.
+ *
+ * If a number is smaller than this value we risk numerical overflow
+ * if any number larger than 1.0/GMX_REAL_EPS is divided by it.
+ *
+ * \return 1  if 'almost' numerically zero, 0 otherwise.
+ */
+int
+gmx_numzero(double a)
+{
+  return gmx_within_tol(a,0.0,GMX_REAL_MIN/GMX_REAL_EPS);
+}
+
+
 #ifdef CPLUSPLUS
 }
 #endif
