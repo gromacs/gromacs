@@ -98,17 +98,17 @@ _nb_kernel200_ia32_sse2:
 .equiv          nb200_two,              208
 .equiv          nb200_krf,              224
 .equiv          nb200_crf,              240
-.equiv          nb200_is3,              256
-.equiv          nb200_ii3,              260
-.equiv          nb200_innerjjnr,        264
-.equiv          nb200_innerk,           268
-.equiv          nb200_n,                272
-.equiv          nb200_nn1,              276
-.equiv          nb200_nri,              280
-.equiv          nb200_facel,            288   ;# uses 8 bytes
-.equiv          nb200_nouter,           296
-.equiv          nb200_ninner,           300
-.equiv          nb200_salign,           304
+.equiv          nb200_facel,            256 ;# uses 8 bytes
+.equiv          nb200_is3,              264
+.equiv          nb200_ii3,              268
+.equiv          nb200_innerjjnr,        272
+.equiv          nb200_innerk,           276
+.equiv          nb200_n,                280
+.equiv          nb200_nn1,              284
+.equiv          nb200_nri,              288
+.equiv          nb200_nouter,           292
+.equiv          nb200_ninner,           296
+.equiv          nb200_salign,           300
 	push ebp
 	mov ebp,esp	
     	push eax
@@ -117,7 +117,7 @@ _nb_kernel200_ia32_sse2:
     	push edx
 	push esi
 	push edi
-	sub esp,  284		;# local stack space 
+	sub esp,  304		;# local stack space 
 	mov  eax, esp
 	and  eax, 0xf
 	sub esp, eax
@@ -603,7 +603,7 @@ _nb_kernel200_ia32_sse2:
 
 	mov eax, [esp + nb200_salign]
 	add esp, eax
-	add esp,  284
+	add esp,  304
 	pop edi
 	pop esi
     pop edx

@@ -103,15 +103,15 @@ _nb_kernel210_ia32_sse2:
 .equiv          nb210_two,              288
 .equiv          nb210_krf,              304
 .equiv          nb210_crf,              320
-.equiv          nb210_is3,              336
-.equiv          nb210_ii3,              340
-.equiv          nb210_ntia,             344
-.equiv          nb210_innerjjnr,        348
-.equiv          nb210_innerk,           352
-.equiv          nb210_n,                356
-.equiv          nb210_nn1,              360
-.equiv          nb210_nri,              364
-.equiv          nb210_facel,            368   ;# uses 8 bytes
+.equiv          nb210_facel,            336 ;# uses 8 bytes
+.equiv          nb210_is3,              344
+.equiv          nb210_ii3,              348
+.equiv          nb210_ntia,             352
+.equiv          nb210_innerjjnr,        356
+.equiv          nb210_innerk,           360
+.equiv          nb210_n,                364
+.equiv          nb210_nn1,              368
+.equiv          nb210_nri,              372
 .equiv          nb210_ntype,            376
 .equiv          nb210_nouter,           380
 .equiv          nb210_ninner,           384
@@ -124,7 +124,7 @@ _nb_kernel210_ia32_sse2:
     	push edx
 	push esi
 	push edi
-	sub esp,  368		;# local stack space 
+	sub esp,  392		;# local stack space 
 	mov  eax, esp
 	and  eax, 0xf
 	sub esp, eax
@@ -703,7 +703,7 @@ _nb_kernel210_ia32_sse2:
 
 	mov eax, [esp + nb210_salign]
 	add esp, eax
-	add esp,  368
+	add esp,  392
 	pop edi
 	pop esi
     	pop edx

@@ -103,19 +103,20 @@ _nb_kernel110_ia32_sse2:
 .equiv          nb110_fiz,              240
 .equiv          nb110_half,             256
 .equiv          nb110_three,            272
-.equiv          nb110_is3,              288
-.equiv          nb110_ii3,              292
-.equiv          nb110_ntia,             296
-.equiv          nb110_innerjjnr,        300
-.equiv          nb110_innerk,           304
-.equiv          nb110_n,                308
-.equiv          nb110_nn1,              312
-.equiv          nb110_nri,              316
-.equiv          nb110_facel,            320   ;# uses 8 bytes
-.equiv          nb110_ntype,            328
-.equiv          nb110_nouter,           332
-.equiv          nb110_ninner,           336
-.equiv          nb110_salign,           340
+.equiv          nb110_facel,            288
+.equiv          nb110_is3,              304
+.equiv          nb110_ii3,              308
+.equiv          nb110_ntia,             312
+.equiv          nb110_innerjjnr,        316
+.equiv          nb110_innerk,           320
+.equiv          nb110_n,                324
+.equiv          nb110_nn1,              328
+.equiv          nb110_nri,              332
+.equiv          nb110_ntype,            336
+.equiv          nb110_nouter,           340
+.equiv          nb110_ninner,           344
+.equiv          nb110_salign,           348
+	
 	push ebp
 	mov ebp,esp	
     	push eax
@@ -124,7 +125,7 @@ _nb_kernel110_ia32_sse2:
     	push edx
 	push esi
 	push edi
-	sub esp,  320		;# local stack space 
+	sub esp,  352		;# local stack space 
 	mov  eax, esp
 	and  eax, 0xf
 	sub esp, eax
@@ -681,7 +682,7 @@ _nb_kernel110_ia32_sse2:
 
 	mov eax, [esp + nb110_salign]
 	add esp, eax
-	add esp,  320
+	add esp,  352
 	pop edi
 	pop esi
     	pop edx
