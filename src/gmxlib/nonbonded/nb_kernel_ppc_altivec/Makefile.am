@@ -55,4 +55,6 @@ libnb_kernel_ppc_altivec_la_SOURCES = \
 	nb_kernel410_ppc_altivec.c nb_kernel410_ppc_altivec.h	\
 	nb_kernel430_ppc_altivec.c nb_kernel430_ppc_altivec.h	\
 	ppc_altivec_util.h					\
-	nb_kernel_ppc_altivec.c	   nb_kernel_ppc_altivec.h
+	nb_kernel_ppc_altivec.c	   nb_kernel_ppc_altivec.h	\
+	nb_kernel_ppc_altivec_test.c  				\
+	nb_kernel_ppc_altivec_test.h

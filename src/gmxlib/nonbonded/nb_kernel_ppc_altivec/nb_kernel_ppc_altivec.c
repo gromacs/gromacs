@@ -20,18 +20,13 @@
 #include <config.h>
 #endif
 
-#ifdef HAVE_ALTIVEC_H
-#include <altivec.h>
-#endif
-
-/* Must come directly after config.h */
-#include <gmx_thread.h>
 
 #include <types/nrnb.h>
+#include "types/simple.h"
 
 #include "../nb_kerneltype.h"
-
 #include "nb_kernel_ppc_altivec.h"
+#include "nb_kernel_ppc_altivec_test.h"
 
 /* Include altivec kernel headers in local directory */
 #include "nb_kernel010_ppc_altivec.h"
@@ -161,17 +156,13 @@ kernellist_ppc_altivec[eNR_NBKERNEL_NR] =
     nb_kernel430_ppc_altivec
 };
 
-#ifdef GMX_THREADS
-static gmx_thread_mutex_t 
-nb_kernel_ppc_altivec_test_mutex = GMX_THREAD_MUTEX_INITIALIZER;
-#endif
 
-/*! Posix long jump label */
 static jmp_buf         
 nb_kernel_ppc_altivec_testprog;
 
+
 /*! Result of Altivec test */
-static bool      
+static bool
 nb_kernel_ppc_altivec_present;
 
 
@@ -184,56 +175,12 @@ nb_kernel_ppc_altivec_sigill_handler(int n)
 
 
 
-
-/*! \brief Issue Altivec instructions - can cause SIGILL!
-*
-*  Utility function for nb_kernel_ppc_altivec_test.
-*  This code issues a couple of altivec instructions; if Altivec
-*  support is not present it will generate an illegal instruction
-*  signal which we should capture in nb_kernel_ppc_altivec_sigill_handler().
-*
-*  Since we need to do something Altivec-related in it anyway, we try to 
-*  set the vector unit to non-java mode which is slightly faster.
-* 
-*  \warning     This HAS to be a separate function, since any function
-*               with Altivec instructions in it will cause stack-related
-*               Altivec instructions to be issued, even if we never
-*               access the "real" Altivec instructions.
-*
-*  \threadsafe  No. The code itself is clean, but on many operating 
-*               systems the signal handling does not work for threads.
-*              
-*/ 
-static void
-nb_kernel_ppc_altivec_issue_instructions(void)
-{
-    vector unsigned short vsr1,vsr2;
-    vector unsigned int tmp1,tmp2;
-    
-    vsr1=vec_mfvscr();
-    tmp1=vec_splat_u32(1);
-    tmp2=vec_splat_u32(8);
-    tmp1=vec_sl(tmp1,tmp2);
-    vsr2=(vector unsigned short)vec_sl(tmp1,tmp2);
-    vsr1=vec_or(vsr1,vsr2);
-    vec_mtvscr(vsr1);
-}
-
-
-
 /* Return 0 if Altivec support is present, or
  *  non-zero upon error.
  */
 int 
 nb_kernel_ppc_altivec_test(FILE * log)
 {
-    /* 
-     * This should NOT be called from threads, 
-     * but just in case you still try to do it...
-     */
-#ifdef GMX_THREADS
-    gmx_thread_mutex_lock(&nb_kernel_ppc_altivec_test_mutex);
-#endif
     
     if(log)
         fprintf(log,"Testing Altivec/VMX support...");
@@ -257,9 +204,6 @@ nb_kernel_ppc_altivec_test(FILE * log)
         fprintf(log," %spresent.\n", 
                 nb_kernel_ppc_altivec_present ? "":"not ");
     
-#ifdef GMX_THREADS
-    gmx_thread_mutex_unlock(&nb_kernel_ppc_altivec_test_mutex);
-#endif
     
     return ((nb_kernel_ppc_altivec_present) ? 0 : -1);
 }

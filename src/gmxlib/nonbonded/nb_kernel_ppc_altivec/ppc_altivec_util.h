@@ -4457,9 +4457,9 @@ do_1_ljtable_lj(float *VFtab,
 {
 	vector signed int vidx;
 	vector float Y,F,G,H,eps,eps2;
-	int    idx1;
 	vector float tabd1;
 	vector float tabr1;
+	int    idx1;
 
     /* necessary to avoid aliasing optimization problems */
     union
