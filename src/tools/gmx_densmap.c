@@ -70,10 +70,12 @@ int gmx_densmap(int argc,char *argv[])
     "and can be converted to postscript with xpm2ps.",
     "[PAR]",
     "The default analysis is a 2-D number-density map for a selected",
-    "group of atoms in the x-z plane. The grid spacing is set with the option",
-    "[TT]-bin[tt]. When [TT]-nx[tt] or [TT]-nz[tt] is non-zero, the grid",
-    "size is set by this option. Box size fluctuations are properly taken",
-    "into account.",
+    "group of atoms in the x-z plane.",
+    "The averaging direction can be changed with the option [TT]-aver[tt].",
+    "The grid spacing is set with the option [TT]-bin[tt].",
+    "When [TT]-n1[tt] or [TT]-n2[tt] is non-zero, the grid",
+    "size is set by this option.",
+    "Box size fluctuations are properly taken into account.",
     "[PAR]",
     "When options [TT]-amax[tt] and [TT]-rmax[tt] are set, an axial-radial",
     "number-density map is made. Three groups should be supplied, the centers",
@@ -84,29 +86,41 @@ int gmx_densmap(int argc,char *argv[])
     "The radial direction goes from 0 to rmax or from -rmax to +rmax",
     "when the [TT]-mirror[tt] option has been set.",
     "[PAR]",
+    "The normalization of the output is set with the [TT]-unit[tt] option.",
+    "The default produces a true number density. Unit [TT]nm-2[tt] leaves out",
+    "the normalization for the averaging or the angular direction.",
+    "Option [TT]count[tt] produces the count for each grid cell.",
     "When you do not want the scale in the output to go",
     "from zero to the maximum density, you can set the maximum",
     "with the option [TT]-dmax[tt]."
   };
-  static int nx=0,nz=0;
-  static real bin=0.02,dmax=0,amax=0,rmax=0;
+  static int n1=0,n2=0;
+  static real bin=0.02,dmin=0,dmax=0,amax=0,rmax=0;
   static bool bMirror=FALSE;
+  static char *eaver[]={ NULL, "z", "y", "x", NULL };
+  static char *eunit[]={ NULL, "nm-3", "nm-2", "count", NULL };
 
   t_pargs pa[] = {
     { "-bin", FALSE, etREAL, {&bin},
-      "Grid size" },
-    { "-nx", FALSE, etINT, {&nx},
-      "Number of grid cells in x direction" },
-    { "-nz", FALSE, etINT, {&nz},
-      "Number of grid cells in z direction" },
+      "Grid size (nm)" },
+    { "-aver", FALSE, etENUM, {eaver},
+      "The direction to average over" },
+    { "-n1", FALSE, etINT, {&n1},
+      "Number of grid cells in the first direction" },
+    { "-n2", FALSE, etINT, {&n2},
+      "Number of grid cells in the second direction" },
     { "-amax", FALSE, etREAL, {&amax},
       "Maximum axial distance from the center"},
     { "-rmax", FALSE, etREAL, {&rmax},
       "Maximum radial distance" },
     { "-mirror", FALSE, etBOOL, {&bMirror},
       "Add the mirror image below the axial axis" },
+    { "-unit", FALSE, etENUM, {eunit},
+      "Unit for the output" },
+    { "-dmin", FALSE, etREAL, {&dmin},
+      "Minimum density in output"},
     { "-dmax", FALSE, etREAL, {&dmax},
-      "Maximum density (0 means calculate it)"},
+      "Maximum density in output (0 means calculate it)"},
   };
   bool       bRadial;
   FILE       *fp;
@@ -116,14 +130,15 @@ int gmx_densmap(int argc,char *argv[])
   matrix     box;
   real       t,m,mtot;
   t_pbc      pbc;
-  int        natoms;
-  char       **grpname,title[256],buf[STRLEN];
-  int        i,j,k,l,ngrps,anagrp,*gnx=NULL,nindex,nradial=0,nfr;
+  int        c1=0,c2=0,natoms;
+  char       **grpname,title[256],buf[STRLEN],*unit;
+  int        i,j,k,l,ngrps,anagrp,*gnx=NULL,nindex,nradial=0,nfr,nmpower;
   atom_id    **ind=NULL,*index;
-  real       **grid,maxgrid,mx,mz,boxx,boxz,*tickx,*tickz,invcellvol;
+  real       **grid,maxgrid,m1,m2,box1,box2,*tickx,*tickz,invcellvol;
   real       invspa=0,invspz=0,axial,r,vol_old,vol;
   int        nlev=51;
   t_rgb rlo={1,1,1}, rhi={0,0,0};
+  char *label[]={ "x (nm)", "y (nm)", "z (nm)" };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,       ffREAD }, 
     { efTPS, NULL,   NULL,       ffOPTRD }, 
@@ -145,6 +160,17 @@ int gmx_densmap(int argc,char *argv[])
       gmx_fatal(FARGS,"Both amax and rmax should be larger than zero");
   }
 
+  if (strcmp(eunit[0],"nm-3") == 0) {
+    nmpower = -3;
+    unit = "(nm^-3)";
+  } else if (strcmp(eunit[0],"nm-2") == 0) {
+    nmpower = -2;
+    unit = "(nm^-2)";
+  } else {
+    nmpower = 0;
+    unit = "count";
+  }
+  
   if (ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm))
     read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,bRadial);
   if (!bRadial) {
@@ -167,49 +193,59 @@ int gmx_densmap(int argc,char *argv[])
       gmx_fatal(FARGS,"No run input file was supplied (option -s), this is required for the center of mass calculation");
   }
   
+  switch (eaver[0][0]) {
+  case 'x': c1 = YY; c2 = ZZ; break;
+  case 'y': c1 = XX; c2 = ZZ; break;
+  case 'z': c1 = XX; c2 = YY; break;
+  }
+
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
 
   if (!bRadial) {
-    if (nx == 0)
-      nx = (int)(box[XX][XX]/bin + 0.5);
-    if (nz == 0)
-      nz = (int)(box[ZZ][ZZ]/bin + 0.5);
+    if (n1 == 0)
+      n1 = (int)(box[c1][c1]/bin + 0.5);
+    if (n2 == 0)
+      n2 = (int)(box[c2][c2]/bin + 0.5);
   } else {
-    nx = (int)(2*amax/bin + 0.5);
+    n1 = (int)(2*amax/bin + 0.5);
     nradial = (int)(rmax/bin + 0.5);
-    invspa = nx/(2*amax);
+    invspa = n1/(2*amax);
     invspz = nradial/rmax;
     if (bMirror)
-      nz = 2*nradial;
+      n2 = 2*nradial;
     else
-      nz = nradial;
+      n2 = nradial;
   }
   
-  snew(grid,nx);
-  for(i=0; i<nx; i++)
-    snew(grid[i],nz);
+  snew(grid,n1);
+  for(i=0; i<n1; i++)
+    snew(grid[i],n2);
 
-  boxx = 0;
-  boxz = 0;
+  box1 = 0;
+  box2 = 0;
   nfr = 0;
   do {
     if (!bRadial) {
-      boxx += box[XX][XX];
-      boxz += box[ZZ][ZZ];
-      invcellvol = nx*nz/det(box);
+      box1 += box[c1][c1];
+      box2 += box[c2][c2];
+      invcellvol = n1*n2;
+      if (nmpower == -3)
+	invcellvol /= det(box);
+      else if (nmpower == -2)
+	invcellvol /= box[c1][c1]*box[c2][c2];
       for(i=0; i<nindex; i++) {
 	j = index[i];
-	mx = x[j][XX]/box[XX][XX];
-	if (mx >= 1)
-	  mx -= 1;
-	if (mx < 0)
-	  mx += 1;
-	mz = x[j][ZZ]/box[ZZ][ZZ];
-	if (mz >= 1)
-	  mz -= 1;
-	if (mz < 0)
-	  mz += 1;
-	grid[(int)(mx*nx)][(int)(mz*nz)] += invcellvol;
+	m1 = x[j][c1]/box[c1][c1];
+	if (m1 >= 1)
+	  m1 -= 1;
+	if (m1 < 0)
+	  m1 += 1;
+	m2 = x[j][c2]/box[c2][c2];
+	if (m2 >= 1)
+	  m2 -= 1;
+	if (m2 < 0)
+	  m2 += 1;
+	grid[(int)(m1*n1)][(int)(m2*n2)] += invcellvol;
       }
     } else {
       set_pbc(&pbc,box);
@@ -254,18 +290,22 @@ int gmx_densmap(int argc,char *argv[])
   /* normalize gridpoints */
   maxgrid = 0;
   if (!bRadial) {
-    for (i=0; i<nx; i++) {
-      for (j=0; j<nz; j++) {
+    for (i=0; i<n1; i++) {
+      for (j=0; j<n2; j++) {
 	grid[i][j] /= nfr;
 	if (grid[i][j] > maxgrid)
 	  maxgrid = grid[i][j];
       }
     }
   } else {
-    for (i=0; i<nx; i++) {
+    for (i=0; i<n1; i++) {
       vol_old = 0;
       for (j=0; j<nradial; j++) {
-	vol = M_PI*(j+1)*(j+1)/(invspz*invspz*invspa);
+	switch (nmpower) {
+	case -3: vol = M_PI*(j+1)*(j+1)/(invspz*invspz*invspa); break;
+	case -2: vol =            (j+1)/(invspz*invspa);        break;
+	default: vol =             j+1;                         break;
+	}
 	if (bMirror)
 	  k = j + nradial;
 	else
@@ -279,37 +319,37 @@ int gmx_densmap(int argc,char *argv[])
       }
     }
   }
-  fprintf(stdout,"\n  The maximum density is %f nm^-3\n",maxgrid);
+  fprintf(stdout,"\n  The maximum density is %f %s\n",maxgrid,unit);
   if (dmax > 0)
     maxgrid = dmax;
 
-  snew(tickx,nx+1);
-  snew(tickz,nz+1);
+  snew(tickx,n1+1);
+  snew(tickz,n2+1);
   if (!bRadial) {
     /* normalize box-axes */
-    boxx /= nfr;
-    boxz /= nfr;
-    for (i=0; i<=nx; i++)
-      tickx[i] = i*boxx/nx;
-    for (i=0; i<=nz; i++)
-      tickz[i] = i*boxz/nz;
+    box1 /= nfr;
+    box2 /= nfr;
+    for (i=0; i<=n1; i++)
+      tickx[i] = i*box1/n1;
+    for (i=0; i<=n2; i++)
+      tickz[i] = i*box2/n2;
   } else {
-    for (i=0; i<=nx; i++)
+    for (i=0; i<=n1; i++)
       tickx[i] = i/invspa - amax;
     if (bMirror) {
-      for (i=0; i<=nz; i++)
+      for (i=0; i<=n2; i++)
 	tickz[i] = i/invspz - rmax;
     } else {
-      for (i=0; i<=nz; i++)
+      for (i=0; i<=n2; i++)
 	tickz[i] = i/invspz;
     }
   }
   
   sprintf(buf,"%s number density map",grpname[anagrp]);
   fp = ffopen(ftp2fn(efXPM,NFILE,fnm),"w");
-  write_xpm(fp,MAT_SPATIAL_X | MAT_SPATIAL_Y,buf,"(nm^-3)",
-	    bRadial ? "axial (nm)" : "x (nm)",bRadial ? "r (nm)" : "z (nm)",
-	    nx,nz,tickx,tickz,grid,0,maxgrid,rlo,rhi,&nlev);     
+  write_xpm(fp,MAT_SPATIAL_X | MAT_SPATIAL_Y,buf,unit,
+	    bRadial ? "axial (nm)" : label[c1],bRadial ? "r (nm)" : label[c2],
+	    n1,n2,tickx,tickz,grid,dmin,maxgrid,rlo,rhi,&nlev);     
   ffclose(fp);
   
   thanx(stderr);
