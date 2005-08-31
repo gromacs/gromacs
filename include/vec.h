@@ -620,8 +620,9 @@ static inline void msmul(matrix m1,real r1,matrix dest)
 
 static inline void m_inv_lowerleft0(matrix src,matrix dest)
 {
-  if ((src[XX][XX]==0.0) || (src[YY][YY]==0.0) || (src[ZZ][ZZ]==0.0))
-    gmx_fatal(FARGS,"Can not invert matrix, determinant is zero");
+    double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
+    if(gmx_within_tol(tmp,0.0,100*GMX_REAL_MIN));
+       gmx_fatal(FARGS,"Can not invert matrix, determinant is zero");
 
   dest[XX][XX] = 1/src[XX][XX];
   dest[YY][YY] = 1/src[YY][YY];
@@ -693,16 +694,16 @@ static inline real trace(matrix m)
 
 static inline real _divide(real a,real b,char *file,int line)
 {
-  if (b == 0.0) 
-    gmx_fatal(FARGS,"Dividing by zero, file %s, line %d",file,line);
-  return a/b;
+    if (gmx_within_tol(b,0.0,GMX_REAL_MIN)) 
+        gmx_fatal(FARGS,"Dividing by zero, file %s, line %d",file,line);
+    return a/b;
 }
 
 static inline int _mod(int a,int b,char *file,int line)
 {
-  if (b == 0.0)
-    gmx_fatal(FARGS,"Modulo zero, file %s, line %d",file,line);
-  return a % b;
+    if (gmx_within_tol(b,0.0,GMX_REAL_MIN)) 
+        gmx_fatal(FARGS,"Modulo zero, file %s, line %d",file,line);
+    return a % b;
 }
 
 #define divide(a,b) _divide((a),(b),__FILE__,__LINE__)

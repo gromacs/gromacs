@@ -37,7 +37,7 @@
 #include <config.h>
 #endif
 
-
+#include "maths.h"
 #include "macros.h"
 #include "statutil.h"
 #include "pdbio.h"
@@ -100,7 +100,7 @@ void rand_coords(int natom,rvec x[],rvec xref[],real weight[],
   int i;
   
   for(i=0; (i<natom); i++) {
-    if (weight[i] == 0) 
+    if (gmx_within_tol(weight[i],0.0,GMX_REAL_MIN)) 
       copy_rvec(xref[i],x[i]);
     else {
       rand_coord(x[i],seed,box);

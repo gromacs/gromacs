@@ -207,7 +207,7 @@ setup_kernels(FILE *log)
         if(log)
             fprintf(log,
                     "Found environment variable NOASSEMBLYLOOPS.\n"
-                    "Disabling all SSE/SSE2/3DNow/Altivec/ia64 asm support.\n");
+                    "Disabling all SSE/SSE2/3DNow/Altivec/ia64 asm support.\n\n");
         return;
     }
     

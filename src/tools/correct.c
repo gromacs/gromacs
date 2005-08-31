@@ -38,6 +38,7 @@
 #endif
 
 #include <math.h>
+#include "maths.h"
 #include "vec.h"
 #include "typedefs.h"
 #include "macros.h"
@@ -169,8 +170,8 @@ bool mirror_xx(int n1,int n2,int n3,int n4,rvec x[],bool bViol[],real xi)
   nsq = iprod(n,n);
   
   /* Check for x[n1], x[n2], x[n3] on a line, if so come back next iteration */
-  if (nsq == 0.0)
-    return FALSE;
+  if (gmx_within_tol(nsq,0.0,GMX_REAL_MIN))
+      return FALSE;
     
   /* Find the point in which the vector parallel to n thru x[n4]
    * intersects with the plane:

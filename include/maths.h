@@ -70,6 +70,48 @@ extern  real            sign(real x,real y);
 extern  real            gmx_erf(real x);
 extern  real            gmx_erfc(real x);
 
+/*! \brief Check if two numbers are within a tolerance
+ *
+ *  This routine checks if the relative difference between two numbers is
+ *  approximately within the given tolerance, defined as
+ *  fabs(f1-f2)<=tolerance*fabs(f1+f2+1.0).
+ *
+ *  This expression is somewhat based on trial-and-error; the fabs() term on
+ *  the right hand side avoids a division (important if f1==f2==0), and adding
+ *  1.0 is necessary when comparing a single number vs. 0.0. 
+ *
+ *  To check if two floating-point numbers are almost identical, use this routine 
+ *  with the tolerance GMX_REAL_EPS, or GMX_DOUBLE_EPS if the check should be
+ *  done in double regardless of Gromacs precision.
+ *  
+ *  To check if two algorithms produce similar results you will normally need
+ *  to relax the tolerance significantly since many operations (e.g. summation)
+ *  accumulate floating point errors.
+ *
+ *  \param f1  First number to compare
+ *  \param f2  Second number to compare
+ *  \param tol Tolerance to use
+ *
+ *  \return 1 if the relative difference is within tolerance, 0 if not.
+ */
+static int
+gmx_within_tol(double   f1,
+               double   f2,
+               double   tol)
+{
+    /* The or-equal is important - otherwise we return false if f1==f2==0 */
+    if( fabs(f1-f2) <= tol*fabs(f1+f2+1.0) )
+    {
+        return 1;
+    }
+    else
+    {
+        return 0;
+    }
+}
+
+
+
 #ifdef CPLUSPLUS
 }
 #endif

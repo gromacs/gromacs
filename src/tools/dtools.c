@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include "maths.h"
 #include "smalloc.h"
 #include "strdb.h"
 #include "futil.h"
@@ -330,24 +331,26 @@ void add_dist(t_correct *c,int ai,int aj,real lb,real ideal,real ub,real w[])
 {
   int n = c->ndist;
   
-  if ((w[ai] != 0) || (w[aj] != 0)) {
-    if (n == c->maxdist) {
-      c->maxdist += 100;
-      srenew(c->d,c->maxdist);
+    if( !gmx_within_tol(w[ai],0.0,GMX_REAL_MIN) ||  !gmx_within_tol(w[aj],0.0,GMX_REAL_MIN) ) 
+    {
+        if (n == c->maxdist) 
+        {
+            c->maxdist += 100;
+            srenew(c->d,c->maxdist);
+        }
+        c->d[n].ai = ai;
+        c->d[n].aj = aj;
+        if (ideal > 0)
+            c->d[n].cons_type = edcBOND;
+        else if (gmx_within_tol(ideal,0.0,GMX_REAL_MIN))
+            c->d[n].cons_type = edcNONBOND;
+        else
+            c->d[n].cons_type = edcDISRE;
+        c->d[n].lb = lb;
+        c->d[n].ub = ub;
+        c->d[n].wi = w[ai]/(w[ai]+w[aj]);
+        c->ndist++;
     }
-    c->d[n].ai = ai;
-    c->d[n].aj = aj;
-    if (ideal > 0)
-      c->d[n].cons_type = edcBOND;
-    else if (ideal == 0.0)
-      c->d[n].cons_type = edcNONBOND;
-    else
-      c->d[n].cons_type = edcDISRE;
-    c->d[n].lb = lb;
-    c->d[n].ub = ub;
-    c->d[n].wi = w[ai]/(w[ai]+w[aj]);
-    c->ndist++;
-  }
 }
 
 void read_dist(FILE *log,char *fn,int natom,t_correct *c)
@@ -409,10 +412,12 @@ void check_dist(FILE *log,t_correct *c)
   real tol=0.001;
   
   fprintf(log,"Checking distances for internal consistency\n");
-  for(i=0; (i<c->ndist); i++) {
-    if ((c->d[i].ub != 0) && ((c->d[i].ub - c->d[i].lb) < tol)) {
-      pr_dist(log,TRUE,c,i);
-    }
+  for(i=0; (i<c->ndist); i++) 
+  {
+      if ( !gmx_within_tol(c->d[i].ub,0.0,GMX_REAL_MIN) && ((c->d[i].ub - c->d[i].lb) < tol)) 
+      {
+          pr_dist(log,TRUE,c,i);
+      }
   }
 }
 
