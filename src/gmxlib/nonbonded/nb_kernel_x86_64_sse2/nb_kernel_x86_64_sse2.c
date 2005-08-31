@@ -91,7 +91,7 @@
 
 #include "../nb_kerneltype.h"
 #include "nb_kernel_x86_64_sse2.h"
-#include "nb_kernel_x86_64_sse2_test_asm.h"
+#include "nb_kernel_x86_64_sse2_test.h"
 
 
 static nb_kernel_t *
