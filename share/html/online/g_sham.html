@@ -1,0 +1,89 @@
+<HTML>
+<HEAD>
+<TITLE>g_sham</TITLE>
+<LINK rel=stylesheet href="style.css" type="text/css">
+<BODY text="#000000" bgcolor="#FFFFFF" link="#0000FF" vlink="#990000" alink="#FF0000">
+<TABLE WIDTH="98%" NOBORDER >
+<TR><TD WIDTH=400>
+<TABLE WIDTH=400 NOBORDER>
+<TD WIDTH=116>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sham</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
+Mon 29 Aug 2005</B></td></tr></TABLE>
+<HR>
+<H3>Description</H3>
+<p>
+g_sham reads a number of <a href="xvg.html">xvg</a> files and analyzes data sets.
+A line in the input file may start with a time
+(see option <tt>-time</tt>) and any number of y values may follow.
+Multiple sets can also be
+read when they are seperated by & (option <tt>-n</tt>),
+in this case only one y value is read from each line.
+All lines starting with # and @ are skipped.
+<p>
+Option <tt>-ge</tt> can be used to supply a file with free energies
+when the ensemble is not a Boltzmann ensemble, but has been biased
+by this free energy.
+<p>
+With option <tt>-dim</tt> dimensions can be gives for distances.
+When a distance is 2- or 3-dimensional, the circumference or surface
+sampled by two particles increases with increasing distance.
+Depending on what one would like to show, one can choose to correct
+the free-energy for this volume effect.
+The probability is normalized by r and r^2 for a dimension of 2 and 3
+respectively.
+Note that for angles between vectors the inner-product or cosine
+is the natural quantity to use, as it will produce bins of the same
+volume.
+<P>
+<H3>Files</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   graph.xvg</a></tt> </TD><TD> Input </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ge</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   gibbs.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ene</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   esham.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    ener.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-histo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   edist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-bin</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  bindex.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ls</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">   gibbs.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-lsh</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">enthalpy.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-lss</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html"> entropy.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-map</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">     map.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-ls3</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdb.html">  gibbs3.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Protein data bank file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-mdata</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> mapdata.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html"> shamlog.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
+</TABLE>
+<P>
+<H3>Other options</H3>
+<TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
+<TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]time</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Expect a time in the input </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First time to read from set </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last time to read from set </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ttol</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Tolerance on time in appropriate units (usually ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Read # sets seperated by & </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]d</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use the derivative </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.1</tt> </TD><TD> Binwidth for the distribution </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sham</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Turn off energy weighting even if energies are given </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tsham</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Temperature for single histogram analysis </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Minimum probability. Anything lower than this will be set to zero </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dim</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>1 1 1</tt> </TD><TD> Dimensions for distances, used for volume correction (max 3 values, dimensions &gt; 3 will get the same value as the last) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ngrid</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>32 32 32</tt> </TD><TD> Number of bins for energy landscapes (max 3 values, dimensions &gt; 3 will get the same value as the last) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xmin</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Minimum for the axes in energy landscape (see above for &gt; 3 dimensions) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-xmax</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>1 1 1</tt> </TD><TD> Maximum for the axes in energy landscape (see above for &gt; 3 dimensions) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-gmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum level in output, 0 is calculate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>25</tt> </TD><TD> Number of levels for energy landscape from single histogram analysis </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-mname</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Legend label for the custom landscape </TD></TD>
+</TABLE>
+<P>
+<hr>
+<div ALIGN=RIGHT>
+<font size="-1"><a href="http://www.gromacs.org">http://www.gromacs.org</a></font><br>
+<font size="-1"><a href="mailto:gromacs@gromacs.org">gromacs@gromacs.org</a></font><br>
+</div>
+</BODY>
