@@ -50,13 +50,13 @@ C_KERNEL_SOURCES = \
 	nb_kernel332_c.c nb_kernel333_c.c nb_kernel334_c.c nb_kernel400_c.c \
 	nb_kernel410_c.c nb_kernel420_c.c nb_kernel430_c.c
 
+
+
 if GMX_FORTRAN
   KERNEL_SOURCES = $(FORTRAN_KERNEL_SOURCES) nb_kernel_f77sync.c
 else
   KERNEL_SOURCES = $(C_KERNEL_SOURCES)
 endif
-
-
 
 
 libnb_kernel_la_SOURCES = \
@@ -81,6 +81,7 @@ libnb_kernel_la_SOURCES = \
 	$(KERNEL_SOURCES)
 
 
+EXTRA_libnb_kernel_la_SOURCES = nb_kernel_f77sync.c
 
 # mknb is special - we cant use a noinst_PROGRAMS target, since it might have 
 # to be compiled with a non-MPI compiler whose files can be executed by make:
@@ -109,16 +110,16 @@ mknb_metacode.o:	mknb_metacode.c
 			$(BUILD_COMPILE) -c -o $@ $<
 mknb_declarations.o:	mknb_declarations.c
 			$(BUILD_COMPILE) -c -o $@ $<
-mknb_outerloop.o:	mknb_outerloop.c
+mknb_outercop.o:	mknb_outerloop.c
 			$(BUILD_COMPILE) -c -o $@ $<
-mknb_innerloop.o:	mknb_innerloop.c
+mknb_innercop.o:	mknb_innerloop.c
 			$(BUILD_COMPILE) -c -o $@ $<
 mknb_interactions.o:	mknb_interactions.c
 			$(BUILD_COMPILE) -c -o $@ $<
 
 MKNB_OBJ = \
 	mknb.o mknb_metacode.o mknb_common.o mknb_declarations.o \
-	mknb_outerloop.o mknb_innerloop.o mknb_interactions.o
+	mknb_outercop.o mknb_innerloop.o mknb_interactions.o
 
 mknb:			$(MKNB_OBJ)
 			$(BUILD_COMPILE) -o $@ $(MKNB_OBJ)
@@ -157,8 +158,9 @@ kernel-stamp:			mknb Makefile
 				rm -f kernel-stamp
 				./mknb $(MKNB_FLAGS)
 
+
 $(KERNEL_SOURCES): kernel-stamp
 
 
-CLEANFILES     = *.la *~ \\\#* mknb nb_kernel*_f.f nb_kernel*_c.c log kernel-stamp 
+CLEANFILES     = *.la *~ \\\#* mknb nb_kernel*_f.f nb_kernel*_c.c cg kernel-stamp 
 
