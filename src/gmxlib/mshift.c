@@ -60,36 +60,49 @@
  *      G R A P H   G E N E R A T I O N    C O D E
  *
  ************************************************************/
- 
-static void add_gbond(t_graph *g,t_iatom ia[],int np)
-{
-  int     j,k,l;
-  atom_id aa,inda;
 
-  for(j=0; (j<np); j++) {
-    aa=ia[j];
-    inda=aa-g->start;
-    for(k=0; (k<np); k++)
-      if (j != k) {
-	for(l=0; (l<g->nedge[inda]); l++)
-	  if (g->edge[inda][l] == ia[k])
-	    break;
-	if (l == g->nedge[inda]) {
-	  if (g->nedge[inda] == g->maxedge)
-	    gmx_fatal(FARGS,"More than %d graph edges per atom (atom %d)\n",
-			g->maxedge,aa+1);
-	  g->edge[inda][g->nedge[inda]++]=ia[k];
-	}
-      }
+static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
+{
+  int     i,j,k;
+  atom_id inda0,inda1,indb,indc;
+  bool    bFound;
+
+  inda0 = a0 - g->start;
+  inda1 = a1 - g->start;
+  bFound = FALSE;
+  /* Search for a direct edga between a0 and a1.
+   * All egdes are bidirectional, so we only need to search one way.
+   */
+  for(i=0; (i<g->nedge[inda0] && !bFound); i++)
+    bFound = (g->edge[inda0][i] == a1);
+  /* Search for connections via two or three edges. */
+  for(i=0; (i<g->nedge[inda0] && !bFound); i++) {
+    indb = g->edge[inda0][i] - g->start;
+    for(j=0; (j<g->nedge[indb] && !bFound); j++) {
+      bFound = (g->edge[indb][j] == a1);
+      indc =  g->edge[indb][j] - g->start;
+      for(k=0; (k<g->nedge[indc] && !bFound); k++)
+	bFound = (g->edge[indc][k] == a1);
+    }
+  }
+
+  if (!bFound) {
+    if (g->nedge[inda0] == g->maxedge)
+      gmx_fatal(FARGS,"More than %d graph edges per atom (atom %d)\n",
+		g->maxedge,a0+1);
+    g->edge[inda0][g->nedge[inda0]++] = a1;
+    if (g->nedge[inda1] == g->maxedge)
+      gmx_fatal(FARGS,"More than %d graph edges per atom (atom %d)\n",
+		g->maxedge,a1+1);
+    g->edge[inda1][g->nedge[inda1]++] = a0;
   }
 }
 
-static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
-		      int natoms,bool bAll)
+static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,int natoms)
 {
-  t_iatom *ia,waterh[3],*iap;
+  t_iatom *ia;
   t_iatom tp;
-  int     i,j,np,nbonded;
+  int     i,j,np;
   int     end;
 
   end=il->nr;
@@ -97,8 +110,8 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 
   i = 0;
   while (i < end) {
-    tp=ftype[ia[0]];
-    np=interaction_function[tp].nratoms;
+    tp = ftype[ia[0]];
+    np = interaction_function[tp].nratoms;
     
     if (ia[1] < natoms) {
       if (ia[np] >= natoms)
@@ -110,28 +123,11 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 		    natoms,natoms);
       if (tp == F_SETTLE) {
 	/* Bond all the atoms in the settle */
-	nbonded = 3;
-	waterh[0] = ia[1];
-	waterh[1] = ia[1]+1;
-	waterh[2] = ia[1]+2;
-	iap = waterh;
+	add_gbond(g,ia[1],ia[1]+1);
+	add_gbond(g,ia[1],ia[1]+2);
       } else {
-	if (interaction_function[tp].flags & IF_VSITE)
-	  /* Bond a virtual site only to the first constructing atom */
-	  nbonded = 2;
-	else
-	  nbonded = np;
-	iap = &(ia[1]);
-      }
-      if (bAll)
-	add_gbond(g,iap,nbonded);
-      else {
-	/* Check whether all atoms are bonded now! */
-	for(j=0; j<nbonded; j++)
-	  if (g->nedge[iap[j]-g->start] == 0)
-	    break;
-	if (j < nbonded)
-	  add_gbond(g,iap,nbonded);
+	for(j=1; j<np; j++)
+	  add_gbond(g,ia[j],ia[j+1]);
       }
     }
     ia+=np+1;
@@ -172,7 +168,7 @@ void p_graph(FILE *log,char *title,t_graph *g)
 static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 		     short nbond[],int natoms)
 {
-  int     k,nratoms,nbonded,tp,end,j;
+  int     k,nratoms,tp,end,j;
   t_iatom *ia,iaa;
 
   end=il->nr;
@@ -185,24 +181,19 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
     if (tp == F_SETTLE) {
       iaa          = ia[1];
       if (iaa<natoms) {
-	nbond[iaa]   = 2;
-	nbond[iaa+1] = 2;
-	nbond[iaa+2] = 2;
-	g->start     = min(g->start,iaa);
-	g->end       = max(g->end,iaa+2);
+	nbond[iaa]   += 2;
+	nbond[iaa+1] += 2;
+	nbond[iaa+2] += 2;
+	g->start      = min(g->start,iaa);
+	g->end        = max(g->end,iaa+2);
       }
     } else {
-      if (interaction_function[tp].flags & IF_VSITE)
-	/* Bond a virtual site only to the first constructing atom */
-	nbonded = 2;
-      else
-	nbonded = nratoms;
-      for(k=0; (k<nbonded); k++) {
+      for(k=0; (k<nratoms); k++) {
 	iaa=ia[k+1];
 	if (iaa<natoms) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
-	  if (interaction_function[tp].flags & IF_GRAPH)
+	  if (interaction_function[tp].flags & IF_CHEMBOND)
 	    nbond[iaa]++;
 	}
       }
@@ -230,7 +221,7 @@ static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
   
   sfree(nbond);
   
-  g->maxedge=nnb+6;
+  g->maxedge = nnb + 4;
 }
 
 t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
@@ -267,22 +258,22 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
        * graph.
        */
       for(i=0; (i<F_NRE); i++)
-	if (interaction_function[i].flags & IF_GRAPH)
-	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms,TRUE);
+	if (interaction_function[i].flags & IF_CHEMBOND)
+	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms);
       /* Then add all the other interactions in fixed lists, but first
        * check to see what's there already.
        */
       for(i=0; (i<F_NRE); i++) {
-	if (!(interaction_function[i].flags & IF_GRAPH)) {
-	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms,FALSE);
+	if (!(interaction_function[i].flags & IF_CHEMBOND)) {
+	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms);
 	}
       }
     }
     else {
       /* This is a special thing used in grompp to generate shake-blocks */
-      mk_igraph(g,idef->functype,&(idef->il[F_SHAKE]),natoms,TRUE);
+      mk_igraph(g,idef->functype,&(idef->il[F_SHAKE]),natoms);
       if (bSettle)
-	mk_igraph(g,idef->functype,&(idef->il[F_SETTLE]),natoms,TRUE);
+	mk_igraph(g,idef->functype,&(idef->il[F_SETTLE]),natoms);
     }
     g->nbound=0;
     for(i=0; (i<g->nnodes); i++)

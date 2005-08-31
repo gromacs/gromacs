@@ -52,19 +52,19 @@
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_ATYPE,(ind),(func)}
    
 #define    def_bond(str,lstr,nra,nrpa,nrpb,ind,func)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH | IF_CHEMBOND | IF_BTYPE,(ind),(func)}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CHEMBOND | IF_BTYPE,(ind),(func)}
 
 #define  def_bondnb(str,lstr,nra,nrpa,nrpb,ind,func)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_GRAPH | IF_CHEMBOND,(ind),(func)}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CHEMBOND,(ind),(func)}
 
 #define   def_vsite(str,lstr,nra,nrpa)\
-   {str,lstr,(nra),(nrpa),     0,IF_VSITE | IF_GRAPH,       -1, unimplemented}
+   {str,lstr,(nra),(nrpa),     0,IF_VSITE,                  -1, unimplemented}
    
 #define     def_shk(str,lstr,nra,nrpa,nrpb)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT,             -1, unimplemented}
 
 #define   def_shkcb(str,lstr,nra,nrpa,nrpb)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_GRAPH | IF_CHEMBOND,-1, unimplemented}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT | IF_CHEMBOND,-1, unimplemented}
    
 #define      def_nb(str,lstr,nra, nrp)\
    {str,lstr,(nra), (nrp),     0,IF_NULL,                    -1,unimplemented}
