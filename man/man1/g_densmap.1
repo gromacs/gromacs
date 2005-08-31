@@ -1,0 +1,126 @@
+.TH g_densmap 1 "Mon 29 Aug 2005"
+.SH NAME
+g_densmap
+.B VERSION 3.3_beta_20050823
+.SH SYNOPSIS
+\f3g_densmap\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " densmap.xpm "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-bin" " real "
+.BI "-nx" " int "
+.BI "-nz" " int "
+.BI "-amax" " real "
+.BI "-rmax" " real "
+.BI "-[no]mirror" ""
+.BI "-dmax" " real "
+.SH DESCRIPTION
+g_densmap computes 2D number-density maps.
+It can make planar and axial-radial density maps.
+The output 
+.B .xpm
+file can be visualized with for instance xv
+and can be converted to postscript with xpm2ps.
+
+
+
+The default analysis is a 2-D number-density map for a selected
+group of atoms in the x-z plane. The grid spacing is set with the option
+
+.B -bin
+. When 
+.B -nx
+or 
+.B -nz
+is non-zero, the grid
+size is set by this option. Box size fluctuations are properly taken
+into account.
+
+
+
+When options 
+.B -amax
+and 
+.B -rmax
+are set, an axial-radial
+number-density map is made. Three groups should be supplied, the centers
+of mass of the first two groups define the axis, the third defines the
+analysis group. The axial direction goes from -amax to +amax, where
+the center is defined as the midpoint between the centers of mass and
+the positive direction goes from the first to the second center of mass.
+The radial direction goes from 0 to rmax or from -rmax to +rmax
+when the 
+.B -mirror
+option has been set.
+
+
+
+When you do not want the scale in the output to go
+from zero to the maximum density, you can set the maximum
+with the option 
+.B -dmax
+.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " densmap.xpm" 
+.B Output
+ X PixMap compatible matrix file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" "      0" 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" "      0" 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" "      0" 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-bin"  " real" "   0.02" 
+ Grid size
+
+.BI "-nx"  " int" " 0" 
+ Number of grid cells in x direction
+
+.BI "-nz"  " int" " 0" 
+ Number of grid cells in z direction
+
+.BI "-amax"  " real" "      0" 
+ Maximum axial distance from the center
+
+.BI "-rmax"  " real" "      0" 
+ Maximum radial distance
+
+.BI "-[no]mirror"  "    no"
+ Add the mirror image below the axial axis
+
+.BI "-dmax"  " real" "      0" 
+ Maximum density (0 means calculate it)
+

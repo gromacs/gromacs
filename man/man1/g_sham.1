@@ -1,0 +1,192 @@
+.TH g_sham 1 "Mon 29 Aug 2005"
+.SH NAME
+g_sham
+.B VERSION 3.3_beta_20050823
+.SH SYNOPSIS
+\f3g_sham\fP
+.BI "-f" " graph.xvg "
+.BI "-ge" " gibbs.xvg "
+.BI "-ene" " esham.xvg "
+.BI "-dist" " ener.xvg "
+.BI "-histo" " edist.xvg "
+.BI "-bin" " bindex.ndx "
+.BI "-ls" " gibbs.xpm "
+.BI "-lsh" " enthalpy.xpm "
+.BI "-lss" " entropy.xpm "
+.BI "-map" " map.xpm "
+.BI "-ls3" " gibbs3.pdb "
+.BI "-mdata" " mapdata.xvg "
+.BI "-g" " shamlog.log "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-[no]w" ""
+.BI "-[no]xvgr" ""
+.BI "-[no]time" ""
+.BI "-b" " real "
+.BI "-e" " real "
+.BI "-ttol" " real "
+.BI "-n" " int "
+.BI "-[no]d" ""
+.BI "-bw" " real "
+.BI "-[no]sham" ""
+.BI "-tsham" " real "
+.BI "-pmin" " real "
+.BI "-dim" " vector "
+.BI "-ngrid" " vector "
+.BI "-xmin" " vector "
+.BI "-xmax" " vector "
+.BI "-gmax" " real "
+.BI "-nlevels" " int "
+.BI "-mname" " string "
+.SH DESCRIPTION
+g_sham reads a number of xvg files and analyzes data sets.
+A line in the input file may start with a time
+(see option 
+.B -time
+) and any number of y values may follow.
+Multiple sets can also be
+read when they are seperated by & (option 
+.B -n
+),
+in this case only one y value is read from each line.
+All lines starting with  and @ are skipped.
+
+
+
+Option 
+.B -ge
+can be used to supply a file with free energies
+when the ensemble is not a Boltzmann ensemble, but has been biased
+by this free energy.
+
+
+
+With option 
+.B -dim
+dimensions can be gives for distances.
+When a distance is 2- or 3-dimensional, the circumference or surface
+sampled by two particles increases with increasing distance.
+Depending on what one would like to show, one can choose to correct
+the free-energy for this volume effect.
+The probability is normalized by r and r2 for a dimension of 2 and 3
+respectively.
+Note that for angles between vectors the inner-product or cosine
+is the natural quantity to use, as it will produce bins of the same
+volume.
+.SH FILES
+.BI "-f" " graph.xvg" 
+.B Input
+ xvgr/xmgr file 
+
+.BI "-ge" " gibbs.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
+
+.BI "-ene" " esham.xvg" 
+.B Input, Opt.
+ xvgr/xmgr file 
+
+.BI "-dist" " ener.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-histo" " edist.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-bin" " bindex.ndx" 
+.B Output, Opt.
+ Index file 
+
+.BI "-ls" " gibbs.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-lsh" " enthalpy.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-lss" " entropy.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-map" " map.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-ls3" " gibbs3.pdb" 
+.B Output, Opt.
+ Protein data bank file 
+
+.BI "-mdata" " mapdata.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-g" " shamlog.log" 
+.B Output, Opt.
+ Log file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "    no"
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-[no]w"  "    no"
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "   yes"
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
+.BI "-[no]time"  "   yes"
+ Expect a time in the input
+
+.BI "-b"  " real" "     -1" 
+ First time to read from set
+
+.BI "-e"  " real" "     -1" 
+ Last time to read from set
+
+.BI "-ttol"  " real" "      0" 
+ Tolerance on time in appropriate units (usually ps)
+
+.BI "-n"  " int" " 1" 
+ Read  sets seperated by &
+
+.BI "-[no]d"  "    no"
+ Use the derivative
+
+.BI "-bw"  " real" "    0.1" 
+ Binwidth for the distribution
+
+.BI "-[no]sham"  "   yes"
+ Turn off energy weighting even if energies are given
+
+.BI "-tsham"  " real" " 298.15" 
+ Temperature for single histogram analysis
+
+.BI "-pmin"  " real" "      0" 
+ Minimum probability. Anything lower than this will be set to zero
+
+.BI "-dim"  " vector" " 1 1 1" 
+ Dimensions for distances, used for volume correction (max 3 values, dimensions  3 will get the same value as the last)
+
+.BI "-ngrid"  " vector" " 32 32 32" 
+ Number of bins for energy landscapes (max 3 values, dimensions  3 will get the same value as the last)
+
+.BI "-xmin"  " vector" " 0 0 0" 
+ Minimum for the axes in energy landscape (see above for  3 dimensions)
+
+.BI "-xmax"  " vector" " 1 1 1" 
+ Maximum for the axes in energy landscape (see above for  3 dimensions)
+
+.BI "-gmax"  " real" "      0" 
+ Maximum level in output, 0 is calculate
+
+.BI "-nlevels"  " int" " 25" 
+ Number of levels for energy landscape from single histogram analysis
+
+.BI "-mname"  " string" " " 
+ Legend label for the custom landscape
+
