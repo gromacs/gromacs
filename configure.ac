@@ -3,12 +3,12 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3_beta_20050830, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3_beta_20050831, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.3_beta_20050830)
+AM_INIT_AUTOMAKE(gromacs, 3.3_beta_20050831)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
@@ -208,8 +208,8 @@ case "${host_cpu}-${host_os}" in
     f77_names="fort f77 g77"
     ;;
   *) 
-    cc_names="cc xlc icc gcc"
-    f77_names="f77 xlf ifort xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
+    cc_names="xlc icc cc gcc"
+    f77_names="xlf ifort f77 xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
 # the (non-mpi) c compiler, which is also used for programs executed during build stage
@@ -323,43 +323,11 @@ else
 fi
 
 #####
-# IBM provides a MASS library with vectorized and optimized math stuff,
-# and an xlopt library which partly overlaps this. They must come before
-# libm in the link list, thus the test goes after that for libm!
-if test "${host_vendor}" = "ibm"; then
-  AC_CHECK_LIB(xlopt,main)
-  AC_CHECK_LIB(mass,main)  
-  vectmass=no
-  case "$gmxcpu" in
-    power4*)
-	# first check for a power4 lib, then power3, power2.
-      AC_SEARCH_LIBS(vsrsqrt,massvp4 massvp3 massvp2 massv,[vectmass=yes]) ;;
-    power3*)
-      AC_SEARCH_LIBS(vsrsqrt,massvp3 massvp2 massv,[vectmass=yes]) ;;
-    power2*)
-      AC_SEARCH_LIBS(vsrsqrt,massvp2 massv,[vectmass=yes]) ;;
-    *)
-      AC_CHECK_LIB(massv,vsrsqrt,[vectmass=yes LIBS="$LIBS -lmassv"]) ;;
-  esac
-  if test "$vectmass" = "yes"; then
-    AC_DEFINE(HAVE_LIBMASSV_ANY,,[Use vectorized routines in the IBM MASS library])
-    if test "$enable_vectorized_recip" = "not_selected"; then
-      AC_MSG_NOTICE([vector MASS lib present - vectorizing 1/x inner loops])
-      enable_vectorized_recip="yes"
-    fi
-    if test "$enable_vectorized_sqrt" = "not_selected"; then
-      AC_MSG_NOTICE([vector MASS lib present - vectorizing 1/sqrt inner loops])
-      enable_vectorized_sqrt="yes"
-    fi    
-  else
-    echo "******************************************************************************"
-    echo "*Didn't find the IBM MASS library. It's not necessary, but can provide 20%   *"
-    echo "*performance improvement by loop vectorization. Add the library search path  *"
-    echo "*with -L in the LDFLAGS variable. If you cannot find MASS, download it from  *"
-    echo "*http://www.research.ibm.com/mass                                            *"
-    echo "******************************************************************************"
-  fi
-fi 
+# Disable MASS support for now.
+#####
+
+
+
 
 if test "$with_fftw" = "yes"; then
   if test "$enable_float" = "yes"; then
@@ -435,6 +403,8 @@ AC_FUNC_VPRINTF
 AM_WITH_DMALLOC
 AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
+# check for bool (must come late, since CFLAGS/includes might affect it)
+AC_CHECK_TYPES([bool])
 
 #####
 # Look for X
@@ -676,6 +646,17 @@ if test "$enable_ppc_altivec" = "yes"; then
     AC_MSG_WARN([PowerPC Altivec loops can only be used in single precision - disabling])
     enable_ppc_altivec=no
   else 
+    # On FSF (vanilla) GCC we must include altivec.h, and on apple we 
+    # should NOT do it after using -faltivec. Go figure...
+    case "${host_os}" in
+    darwin*)                            
+        # do nothing on Apple systems
+       ;;
+    *)
+        AC_CHECK_HEADERS([altivec.h])
+       ;;
+    esac
+
     AC_MSG_CHECKING([whether the compiler supports altivec extensions])
     AC_TRY_COMPILE([],[
 #ifndef __VEC__

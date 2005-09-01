@@ -654,13 +654,18 @@ case "${host_cpu}-${host_os}" in
     # but I have not yet had time to test all the other benchmarks
     # on both optimization levels. Might need further tweaking.
 
+    # The Intel compilers are _really_ chatty when it comes to
+    # warnings, and also echo a lot of incomprehensible internal
+    # stuff (not gromacs-related) when we are using ia64 assembly.
+    # For this reason we disable warnings...
+
    if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
-     xCFLAGS="-O2"
+     xCFLAGS="-O3 -w"
      xASFLAGS=$xCFLAGS
      ac_cv_prog_gcc="no"	
    fi  
    if $F77 -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
-     xFFLAGS="-O2 -w90 -w95"
+     xFFLAGS="-O3 -w90 -w95 -w"
      ac_cv_prog_g77="no"
    fi  
    # PORTME 2. Check for intel compilers when we get our hands on one!
@@ -715,10 +720,10 @@ case "${host_cpu}-${host_os}" in
   powerpc*-darwin* | powerpc*-linux* )
     # Check for IBM compilers on OS X     
     if $CC 2>&1 | grep 'IBM' > /dev/null 2>&1; then
-       xCFLAGS="-O4 -Q=500 -qaltivec"
+       xCFLAGS="-O4 -Q=500 -qaltivec -qnoipa"
     fi
     if $F77 -V 2>&1 | grep 'IBM' > /dev/null 2>&1; then
-      xFFLAGS="-O4 -Q=500"
+      xFFLAGS="-O4 -Q=500 -qnoipa"
     fi
     ;;
 
@@ -849,17 +854,22 @@ case "${host_cpu}-${host_os}" in
     fi
 
     # Intel compilers
+    # The Intel compilers are _really_ chatty when it comes to
+    # warnings, and also echo a lot of incomprehensible internal
+    # stuff (not gromacs-related) when we are using assembly.
+    # For this reason we disable warnings...
+
     if $CC -V 2>&1 | grep 'Intel' > /dev/null 2>&1; then
       ac_cv_prog_gcc="no"	
       case "${host_cpu}" in
         x86_64)
-          xCFLAGS="-O3 -tpp7 -axW -ip"
+          xCFLAGS="-O3 -tpp7 -axW -ip -w"
           ;;
 	i686)
-	  xCFLAGS="-O3 -tpp6 -axK -ip" 
+	  xCFLAGS="-O3 -tpp6 -axK -ip -w" 
  	  ;;
 	ia64)
-	  xCFLAGS="-O3 -ip" 
+	  xCFLAGS="-O3 -ip -w" 
  	  ;;
       esac
       xASFLAGS="$xCFLAGS"
@@ -917,12 +927,14 @@ if test "$GCC" = "yes"; then
             # Apple (darwin) uses a hacked version of gcc with special flags 
             case "${host_os}" in
             darwin*)       	            	
-                ACX_CHECK_CC_FLAGS(-fvec,fvec,xCFLAGS="$xCFLAGS -fvec",
-                ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec"))
+                ACX_CHECK_CC_FLAGS(-faltivec,faltivec,xCFLAGS="$xCFLAGS -faltivec")
                 ;;
             *)
-                ACX_CHECK_CC_FLAGS(-maltivec,xCFLAGS="$xCFLAGS -maltivec")
-                AC_CHECK_HEADERS([altivec.h])
+                # Need to update CPPFLAGS too, since we later call 
+                # AC_CHECK_HEADER for altivec.h, and then autoconf complains
+                # if it cannot process it with the preprocessor.
+                ACX_CHECK_CC_FLAGS(-maltivec,maltivec,xCFLAGS="$xCFLAGS -maltivec" CPPFLAGS="$CPPFLAGS -maltivec")
+                ACX_CHECK_CC_FLAGS(-mabi=altivec,mabialtivec,xCFLAGS="$xCFLAGS -mabi=altivec" CPPFLAGS="$CPPFLAGS -mabi=altivec")
                 ;;
             esac 
         fi
