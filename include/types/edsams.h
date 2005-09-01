@@ -33,6 +33,9 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _TYPES_EDSAMS_H_
+#define _TYPES_EDSAMS_H_
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -129,3 +132,8 @@ typedef struct {
   char          *edonam;        /*                     output           */
   t_edpar       *edpar;
 } t_edsamyn;
+
+
+#endif
+
+
