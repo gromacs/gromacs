@@ -43,6 +43,8 @@
 #include "smalloc.h"
 #include "network.h"
 #include "copyrite.h"
+#include "statutil.h"
+
 #ifdef GMX_MPI
 #include <mpi.h>
 #endif
