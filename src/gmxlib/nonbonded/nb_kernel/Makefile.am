@@ -3,17 +3,6 @@ AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 noinst_LTLIBRARIES = libnb_kernel.la
 
-#
-# We cannot use the standard "built sources" directive,
-# since the make_nb_kernels program needs to be compiled with a non-mpi
-# compiler in some cases. Supercomputer centers often prevent
-# initializing MPI libraries on frontend nodes, and we need
-# to run the small program to create all the sources.
-
-
-# We define objects and sources separately instead of using a common object
-# name (e.g. nb_kernel010.lo) to avoid dependency mistakes if there are
-# old C kernels around when we compile with Fortran or vice versa.
 
 FORTRAN_KERNEL_OBJS = \
 	nb_kernel010_f.lo nb_kernel020_f.lo nb_kernel030_f.lo nb_kernel100_f.lo \
@@ -98,11 +87,17 @@ C_KERNEL_SOURCES = \
 
 
 if GMX_FORTRAN
-  KERNEL_OBJS = $(FORTRAN_KERNEL_OBJS) nb_kernel_f77sync.lo
+  KERNEL_OBJS   = $(FORTRAN_KERNEL_OBJS) nb_kernel_f77sync.lo
 else
-  KERNEL_OBJS = $(C_KERNEL_OBJS)
+  KERNEL_OBJS   = $(C_KERNEL_OBJS)
 endif
 
+#
+# This is a virtual target for all the kernels, to ensure it is only run
+# by one CPU even if you run make in parallel.
+# The mknb program will generate the kernel-stamp file when done.
+#
+BUILT_SOURCES = kernel-stamp
 
 libnb_kernel_la_LIBADD = $(KERNEL_OBJS)
 libnb_kernel_la_DEPENDENCIES = $(KERNEL_OBJS)
@@ -207,17 +202,13 @@ MKNB_FLAGS = $(DOUBLEFLAG) $(THREADFLAG) $(SQRTFLAG) \
 # The kernels should only be built once, instead of once per
 # source file when using parallel builds (make -j N). To solve this
 # the mknb program writes out a stamp file after the kernels, which
-# we use as a dummy dependency.
+# we use as a dummy/virtual target.
 #
-kernel-stamp:			mknb Makefile
-				rm -f kernel-stamp
-				./mknb $(MKNB_FLAGS)
+kernel-stamp:	mknb
+		rm -f kernel-stamp
+		./mknb $(MKNB_FLAGS)
 
-#
-# The sources depend on the innerloop generator being run
-#
-$(FORTRAN_KERNEL_SOURCES):	kernel-stamp
-$(C_KERNEL_SOURCES):		kernel-stamp
+
 
 CLEANFILES     = *.la *~ \\\#* mknb nb_kernel*_f.f nb_kernel*_c.c cg kernel-stamp 
 

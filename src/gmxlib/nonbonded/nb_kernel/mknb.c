@@ -363,6 +363,10 @@ main(int argc,char *argv[])
 
 	/* Touch a stamp-file to show that kernels have been updated */
 	fp = fopen("kernel-stamp","w");
+	/* Just write something so the file is not empty, otherwise the
+     * time-stamping will not work e.g. on AFS.
+     */
+	fprintf(fp,"kernel-stamp\n");
 	fclose(fp);
 	
 	return 0;
