@@ -58,6 +58,7 @@
 #include "edsam.h"
 
 
+
 #define EPS  1.0e-9
 
 /*************************** FLOODING ************************************
@@ -250,57 +251,67 @@ void rad_project(t_edpar *edi,rvec *x,t_eigvec *vec);
  void write_edidx(FILE *out,t_edpar *edi);
 
 
-#define new_struct(type) (struct type *) save_malloc(#type,__FILE__,__LINE__,sizeof(struct type))
-#define pre_def(fname) typedef struct t_ ## fname * p_ ## fname; void free_t_ ## fname(struct t_ ## fname*)
-#define inc_def(fname) p_ ## fname fname
-#define get_local(ptr,fname,bFirst) ptr->fname ? bFirst=FALSE,ptr->fname : (bFirst=TRUE,ptr->fname = new_struct(t_ ## fname))
+
 
 /* definition of local_buffer structure, 
-   for every function using internal buffers (former static variables) 
-   we have to define with 
-      pre_def(fname) and inc_def(fname) 
-   an appropriate entry in the table t_ed_local
    the actual structure of the local_buffer of that respective function is defined directly in the function 
 */
 
-void foo() {}; /* this is for emacs, automatic identation */
-
-pre_def(fitit);
-pre_def(do_edfit);
-pre_def(remove_pbc_effect);
-pre_def(do_edsam);
-pre_def(do_radcon);
 
 struct t_ed_local {
-    inc_def(fitit);
-    inc_def(do_edfit);
-    inc_def(remove_pbc_effect);
-    inc_def(do_edsam);
-    inc_def(do_radcon);
-};
-
-p_ed_local init_local() {
-   struct t_ed_local *local;
-   local = new_struct(t_ed_local);
-   local->fitit=NULL;
-   local->do_edfit=NULL;
-   local->remove_pbc_effect=NULL;
-   local->do_edsam=NULL;
-   local->do_radcon=NULL;
-   return local;
+    struct t_fitit *                fitit;
+    struct t_do_edfit *             do_edfit;
+    struct t_remove_pbc_effect *    remove_pbc_effect;
+    struct t_do_edsam *             do_edsam;
+    struct t_do_radcon *            do_radcon;
 };
 
 
 
-#define free_loc(fname) if (local->fname) free_t_ ## fname(local->fname)
+static void 
+free_t_fitit(struct t_fitit *);
+
+static void 
+free_t_do_edfit(struct t_do_edfit *);
+
+static void 
+free_t_remove_pbc_effect(struct t_remove_pbc_effect *);
+
+static void 
+free_t_do_edsam(struct t_do_edsam *);
+
+static void
+free_t_do_radcon(struct t_do_radcon *);
+
+
+
+
+struct t_ed_local *
+init_local(void) 
+{
+    struct t_ed_local *local; 
+
+    snew(local,1); 
+    local->fitit=NULL;
+    local->do_edfit=NULL;
+    local->remove_pbc_effect=NULL;
+    local->do_edsam=NULL;
+    local->do_radcon=NULL;
+
+    return local;
+}
+
+
+
 void free_local(struct t_ed_local *local) {
-   free_loc(fitit);
-   free_loc(do_edfit);
-   free_loc(remove_pbc_effect);
-   free_loc(do_edsam);
-   free_loc(do_radcon);
-   sfree(local);
-}; 
+    free_t_fitit(local->fitit);
+    free_t_do_edfit(local->do_edfit);
+    free_t_remove_pbc_effect(local->remove_pbc_effect);
+    free_t_do_edsam(local->do_edsam);
+    free_t_do_radcon(local->do_radcon);
+    sfree(local);
+}
+
 
 static inline void rvecsub(int dim,rvec *a, rvec *b, rvec *c) {
   /* c=a-b; */
@@ -336,7 +347,8 @@ static inline void rvecsmul(int dim, real s, rvec *a) {
 
 static inline void rvec_to_one(int dim, rvec *a) {
   rvecsmul(dim,1.0/rvecnorm(dim,a),a);
-};
+}
+
 
 static inline void rveccopy(int dim, rvec *a, rvec *b) {
   /*b=a;*/
@@ -533,7 +545,7 @@ void flood_blowup(t_edpar *edi, rvec *forces_cart) {
 #else
 }
 #endif
-};
+}
 
 
 void update_adaption(t_edpar *edi) {
@@ -549,7 +561,7 @@ void update_adaption(t_edpar *edi) {
     
     edi->flood.deltaF=(1-edi->flood.dt/edi->flood.tau)*edi->flood.deltaF+edi->flood.dt/edi->flood.tau*edi->flood.Vfl;
   };
-};
+}
 
 
 void do_single_flood(FILE *log,rvec x_orig[],rvec force[], t_edpar *edi, int step, int nr) {
@@ -704,7 +716,9 @@ void get_flood_enx_names(t_edpar *edi, char** names, int *nnames)  /* get header
   };
   *nnames=count-1;
     
-};
+}
+
+
 void get_flood_energies(t_edpar *edi, real Vfl[],int nnames) {
 /*fl has to be big enough to capture nnames-many entries*/
   t_edpar *actual;
@@ -720,7 +734,7 @@ void get_flood_energies(t_edpar *edi, real Vfl[],int nnames) {
   if (nnames!=count-1) 
     gmx_fatal(FARGS,"Number of energies is not consistent with t_edi structure");
     
-};
+}
 
 
 /************* END of FLOODING IMPLEMENTATION **************************/
@@ -1053,7 +1067,7 @@ int read_edi(FILE* in, t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms, int edi_nr)
 void check(char *line, char *label) {
   if (!strstr(line,label)) 
         gmx_fatal(FARGS,"Could not find input parameter %s at expected position in edsam input-file (.edi)\nline read instead is %s",label,line);
-};
+}
 
 int read_checked_edint(FILE *file,char *label) {
   char line[STRLEN+1];
@@ -1215,7 +1229,7 @@ void free_t_fitit(struct t_fitit *p) {
   sfree(p->xdum1);
   sfree(p->xdum2);
   sfree(p);
-};
+}
 	  
 void fitit(int nr, rvec *x,t_edpar *edi,rvec *transvec,matrix rmat)
 {
@@ -1224,7 +1238,18 @@ void fitit(int nr, rvec *x,t_edpar *edi,rvec *transvec,matrix rmat)
   int i,j,k;
   bool bFirst;
   struct t_fitit *loc;
-  loc=get_local(edi->local,fitit,bFirst);
+  
+  if(edi->local->fitit != NULL)
+  {
+      bFirst = FALSE;
+      loc    = edi->local->fitit;
+  }
+  else
+  {
+      bFirst = TRUE;
+      snew(edi->local->fitit,1);
+  }
+  loc = edi->local->fitit;
 
   if (bFirst) {
     snew(loc->xdum1,nr);
@@ -1293,7 +1318,7 @@ void free_t_do_edfit(struct t_do_edfit *p) {
   sfree(p->omega);
   sfree(p->om);
   sfree(p);
-};
+}
     
 
 void do_edfit(int natoms,rvec *xp,rvec *x,matrix R,t_edpar *edi)
@@ -1310,7 +1335,19 @@ void do_edfit(int natoms,rvec *xp,rvec *x,matrix R,t_edpar *edi)
 
   struct t_do_edfit *loc;
   bool bFirst;
-  loc = get_local(edi->local, do_edfit, bFirst);
+  
+  if(edi->local->do_edfit != NULL)
+  {
+      bFirst = FALSE;
+      loc    = edi->local->do_edfit;
+  }
+  else
+  {
+      bFirst = TRUE;
+      snew(edi->local->do_edfit,1);
+  }
+  loc = edi->local->do_edfit;
+
   if (bFirst) {
     snew(loc->omega,2*DIM);
     snew(loc->om,2*DIM);
@@ -1531,7 +1568,7 @@ void correct_vel(int nr,  rvec* vel, rvec *v1, rvec *v2, real fact, rvec* vcorr)
             s=vcorr[i][m]=fact*v2[i][m]-fact*v1[i][m];
             vel[i][m]+=s;
         };
-};
+}
 
 void correct_force(int nr, rvec* force, rvec *v1, rvec *v2, real fact, t_topology *top) {
     int i,m;
@@ -1541,13 +1578,18 @@ void correct_force(int nr, rvec* force, rvec *v1, rvec *v2, real fact, t_topolog
             mas=top->atoms.atom[i].m;
             force[i][m]+=(fact*v2[i][m]-fact*v1[i][m])*mas;
         }
-};
+}
 
 struct t_remove_pbc_effect {
     t_pbc pbc;
 };
 
-void free_t_remove_pbc_effect(struct t_remove_pbc_effect *p) {};  /* there is nothing like free_pbc necessary (->pbc.h) */
+void free_t_remove_pbc_effect(struct t_remove_pbc_effect *p) 
+{
+    /* there is nothing like free_pbc necessary (->pbc.h) */
+    return;
+} 
+
 
 void remove_pbc_effect(int ned,rvec *transvec_compact, matrix box,t_edpar *edi) {
     
@@ -1555,7 +1597,18 @@ void remove_pbc_effect(int ned,rvec *transvec_compact, matrix box,t_edpar *edi) 
     rvec null;
     int i;
     struct t_remove_pbc_effect* loc;
-    loc = get_local(edi->local, remove_pbc_effect, bFirst);
+    
+    if(edi->local->remove_pbc_effect != NULL)
+    {
+        bFirst = FALSE;
+        loc    = edi->local->remove_pbc_effect;
+    }
+    else
+    {
+        bFirst = TRUE;
+        snew(edi->local->remove_pbc_effect,1);
+    }
+    loc = edi->local->remove_pbc_effect;
     
     if (bFirst)
         set_pbc(&(loc->pbc),box);
@@ -1563,7 +1616,7 @@ void remove_pbc_effect(int ned,rvec *transvec_compact, matrix box,t_edpar *edi) 
         null[i]=0.0;
     for (i=0;i<ned;i++)
         pbc_dx(&(loc->pbc),null,transvec_compact[i],transvec_compact[i]);
-};
+}
 
 void prepare_edsam(int step, int start, int homenr, t_commrec *cr, rvec x[],t_edsamyn *edyn) {
     /* this is to produce the old x_unc, which is no longer provided by update() */
@@ -1575,7 +1628,7 @@ void prepare_edsam(int step, int start, int homenr, t_commrec *cr, rvec x[],t_ed
     if (edyn->edpar->x_unc)
         for(n=0; n<edyn->edpar->ned; n++)
             copy_rvec(x[n],edyn->edpar->x_unc[n]);
-};
+}
 
 struct t_do_edsam {
     rvec *transvec;
@@ -1602,7 +1655,7 @@ void free_t_do_edsam(struct t_do_edsam *p) {
     sfree(p->vdum2);
     sfree(p->x);
     sfree(p);
-};
+}
 
 
 void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
@@ -1630,7 +1683,19 @@ void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
     edi=edyn->edpar;  
     if (!edi->bNeedDoEdsam) return;
     ned=edi->ned;
-    loc=get_local(edi->local,do_edsam,bFirst);
+    
+    if(edi->local->do_edsam != NULL)
+    {
+        bFirst = FALSE;
+        loc    = edi->local->do_edsam;
+    }
+    else
+    {
+        bFirst = TRUE;
+        snew(edi->local->do_edsam,1);
+    }
+    loc = edi->local->do_edsam;
+    
     /* initialise radacc radius for slope criterion */
     if (bFirst) {
         loc->oldrad=calc_radius(&edi->vecs.radacc);
@@ -1806,12 +1871,12 @@ void transfit(int ned, rvec *x, rvec *transvec) {
     /* add the translation vector (this vector has only equal elements)*/
     for(i=0;(i<ned);i++)
         rvec_inc(x[i],transvec[0]);
-};
+}
 
 void rmfit(int ned,rvec *x,rvec *transvec,matrix rotmat) {
     rmrotfit(ned,x,rotmat);
     rmtransfit(ned,x,transvec);
-};
+}
 
 void rotate_vec(int nr,rvec *x,matrix rotmat)
 {
@@ -1972,7 +2037,7 @@ struct t_do_radcon {
 void free_t_do_radcon(struct t_do_radcon *p) {
   sfree(p->proj);
   sfree(p);
-};
+}
 
 void do_radcon(rvec *x,t_edpar *edi)
 {
@@ -1981,7 +2046,17 @@ void do_radcon(rvec *x,t_edpar *edi)
   struct t_do_radcon *loc;
   bool bFirst;
 
-  loc = get_local(edi->local, do_radcon, bFirst);
+  if(edi->local->do_radcon != NULL)
+  {
+      bFirst = FALSE;
+      loc    = edi->local->do_radcon;
+  }
+  else
+  {
+      bFirst = TRUE;
+      snew(edi->local->do_radcon,1);
+  }
+  loc = edi->local->do_radcon;
 
   if (edi->vecs.radcon.neig == 0) return;
   if (bFirst)
@@ -2095,7 +2170,7 @@ extern int ed_constraints(t_edsamyn *edyn){
     return edi->vecs.linfix.neig || edi->vecs.linacc.neig || edi->vecs.radfix.neig ||  edi->vecs.radacc.neig ||  edi->vecs.radcon.neig;
   } 
   return 0;
-};
+}
 
 
 
@@ -2116,7 +2191,7 @@ void free_t_edvec(t_eigvec *vecs) {
       sfree(vecs->vec[i]);
     sfree(vecs->vec);
   }
-};
+}
 
 void free_t_edx(t_edx *edx) {
   if (edx->nr>0) {
@@ -2125,20 +2200,22 @@ void free_t_edx(t_edx *edx) {
     if (edx->sqrtm)
       sfree(edx->sqrtm);
   };
-};
+}
 
 void free_t_edlocals(t_edlocals *p) {
   sfree(p->x);  /* is called only when flooding is used */
   sfree(p->transvec);
   sfree(p->forces_cartesian);
-};
+}
+
 
 void free_t_edflood(t_edflood *p) {
   if (p->vecs.neig >0) {
     free_t_edlocals(&(p->loc));
     free_t_edvec(&(p->vecs));
   }
-};
+}
+
 
 void free_single_edpar(t_edpar *edi) {
   if (edi->x_unc) 
@@ -2160,7 +2237,7 @@ void free_single_edpar(t_edpar *edi) {
   fclose(edi->edo);
   free_local(edi->local);
   sfree(edi);
-};
+}
 
 void finish_edsam(FILE *log,t_topology *top,t_inputrec *ir,
 		t_mdatoms *md,int start,int homenr,t_commrec *cr,
@@ -2178,4 +2255,5 @@ void finish_edsam(FILE *log,t_topology *top,t_inputrec *ir,
     cur=next;
   };
   fprintf(stderr,"finished finish edsam\n");
-};
+}
+
