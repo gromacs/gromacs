@@ -12,9 +12,9 @@ F77_FUNC(dgebd2,DGEBD2)(int *m,
 	double *work,
 	int *info)
 {
-
-  *info = 0;
   int i,i1,i2,i3;
+    
+    *info = 0;
 
   if(*m>=*n) {
     /* reduce to upper bidiag. form */

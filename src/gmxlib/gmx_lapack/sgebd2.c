@@ -13,8 +13,9 @@ F77_FUNC(sgebd2,SGEBD2)(int *m,
 	int *info)
 {
 
-  *info = 0;
   int i,i1,i2,i3;
+
+    *info = 0;
 
   if(*m>=*n) {
     /* reduce to upper bidiag. form */
