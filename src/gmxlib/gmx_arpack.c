@@ -37,6 +37,7 @@
 #include <math.h>
 #include <string.h>
 
+#include "types/simple.h"
 #include "gmx_lapack.h"
 #include "gmx_blas.h"
 
@@ -47,13 +48,6 @@
 #endif
 
 
-
-
-/* Selected double precision arpack routines.
- * Single precision can be found further down in this file.
- */
-#define ARPACK_MAX_DOUBLE   1.7976931348623157e+308
-#define ARPACK_EPS_DOUBLE   1.11022302E-16
 
 static void 
 F77_FUNC(dstqrb,DSTQRB)(int *      n, 
@@ -102,12 +96,12 @@ F77_FUNC(dstqrb,DSTQRB)(int *      n,
 	return;
     }
 
-    eps = ARPACK_EPS_DOUBLE;
+    eps = GMX_DOUBLE_EPS;
 
     d__1 = eps;
     eps2 = d__1 * d__1;
-    minval = (1.0 + ARPACK_EPS_DOUBLE)/ARPACK_MAX_DOUBLE;
-    safmin = minval / ARPACK_EPS_DOUBLE;
+    minval = GMX_DOUBLE_MIN;
+    safmin = minval / GMX_DOUBLE_EPS;
     safmax = 1. / safmin;
     ssfmax = sqrt(safmax) / 3.;
     ssfmin = sqrt(safmin) / eps2;
@@ -649,7 +643,7 @@ F77_FUNC(dsapps,DSAPPS)(int *     n,
     q_offset = 1 + q_dim1;
     q -= q_offset;
 
-    epsmch = ARPACK_EPS_DOUBLE;
+    epsmch = GMX_DOUBLE_EPS;
     itop = 1;
 
 
@@ -1219,7 +1213,7 @@ F77_FUNC(dsconv,DSCONV)(int *     n,
     --bounds;
     --ritz;
 
-    eps23 = ARPACK_EPS_DOUBLE;
+    eps23 = GMX_DOUBLE_EPS;
     eps23 = pow(eps23, c_b3);
 
     *nconv = 0;
@@ -1325,8 +1319,8 @@ F77_FUNC(dsaitr,DSAITR)(int *     ido,
     h__ -= h_offset;
     --ipntr;
     --iwork;
-    minval = (1.0 + ARPACK_EPS_DOUBLE)/ARPACK_MAX_DOUBLE;
-    safmin = minval / ARPACK_EPS_DOUBLE;
+    minval = GMX_DOUBLE_MIN;
+    safmin = minval / GMX_DOUBLE_EPS;
 
     if (*ido == 0) {
 	*info = 0;
@@ -1643,7 +1637,7 @@ F77_FUNC(dsaup2,DSAUP2)(int *     ido,
     q -= q_offset;
     --ipntr;
     --iwork;
-    eps23 = ARPACK_EPS_DOUBLE;
+    eps23 = GMX_DOUBLE_EPS;
     eps23 = pow(eps23, c_b3);
 
     if (*ido == 0) {
@@ -2022,7 +2016,7 @@ F77_FUNC(dsaupd,DSAUPD)(int *     ido,
 	    iwork[12] = 1;
 	}
 	if (*tol <= 0.) {
-	  *tol = ARPACK_EPS_DOUBLE;
+	  *tol = GMX_DOUBLE_EPS;
 	}
 
 	iwork[15] = *ncv - *nev;
@@ -2227,7 +2221,7 @@ F77_FUNC(dseupd,DSEUPD)(int *     rvec,
     ibd = irz + *ncv;
 
 
-    eps23 = ARPACK_EPS_DOUBLE;
+    eps23 = GMX_DOUBLE_EPS;
     eps23 = pow(eps23, c_b21);
 
     rnorm = workl[ih];
@@ -2512,8 +2506,6 @@ L9000:
 
 /* Selected single precision arpack routines */
 
-#define ARPACK_MAX_FLOAT    1.7976931348623157e+308
-#define ARPACK_EPS_FLOAT    1.11022302E-16
 
 static void 
 F77_FUNC(sstqrb,SSTQRB)(int *      n, 
@@ -2562,12 +2554,12 @@ F77_FUNC(sstqrb,SSTQRB)(int *      n,
 	return;
     }
 
-    eps = ARPACK_EPS_FLOAT;
+    eps = GMX_FLOAT_EPS;
 
     d__1 = eps;
     eps2 = d__1 * d__1;
-    minval = (1.0 + ARPACK_EPS_FLOAT)/ARPACK_MAX_FLOAT;
-    safmin = minval / ARPACK_EPS_FLOAT;
+    minval = GMX_FLOAT_MIN;
+    safmin = minval / GMX_FLOAT_EPS;
     safmax = 1. / safmin;
     ssfmax = sqrt(safmax) / 3.;
     ssfmin = sqrt(safmin) / eps2;
@@ -3109,7 +3101,7 @@ F77_FUNC(ssapps,SSAPPS)(int *     n,
     q_offset = 1 + q_dim1;
     q -= q_offset;
 
-    epsmch = ARPACK_EPS_FLOAT;
+    epsmch = GMX_FLOAT_EPS;
     itop = 1;
 
 
@@ -3679,7 +3671,7 @@ F77_FUNC(ssconv,SSCONV)(int *     n,
     --bounds;
     --ritz;
 
-    eps23 = ARPACK_EPS_FLOAT;
+    eps23 = GMX_FLOAT_EPS;
     eps23 = pow(eps23, c_b3);
 
     *nconv = 0;
@@ -3785,8 +3777,8 @@ F77_FUNC(ssaitr,SSAITR)(int *     ido,
     h__ -= h_offset;
     --ipntr;
     --iwork;
-    minval = (1.0 + ARPACK_EPS_FLOAT)/ARPACK_MAX_FLOAT;
-    safmin = minval / ARPACK_EPS_FLOAT;
+    minval = GMX_FLOAT_MIN;
+    safmin = minval / GMX_FLOAT_EPS;
 
     if (*ido == 0) {
 	*info = 0;
@@ -4103,7 +4095,7 @@ F77_FUNC(ssaup2,SSAUP2)(int *     ido,
     q -= q_offset;
     --ipntr;
     --iwork;
-    eps23 = ARPACK_EPS_FLOAT;
+    eps23 = GMX_FLOAT_EPS;
     eps23 = pow(eps23, c_b3);
 
     if (*ido == 0) {
@@ -4483,7 +4475,7 @@ F77_FUNC(ssaupd,SSAUPD)(int *     ido,
 	    iwork[12] = 1;
 	}
 	if (*tol <= 0.) {
-	  *tol = ARPACK_EPS_FLOAT;
+	  *tol = GMX_FLOAT_EPS;
 	}
 
 	iwork[15] = *ncv - *nev;
@@ -4688,7 +4680,7 @@ F77_FUNC(sseupd,SSEUPD)(int *     rvec,
     ibd = irz + *ncv;
 
 
-    eps23 = ARPACK_EPS_FLOAT;
+    eps23 = GMX_FLOAT_EPS;
     eps23 = pow(eps23, c_b21);
 
     rnorm = workl[ih];

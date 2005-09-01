@@ -171,38 +171,21 @@ double gmx_erf(double x)
 {
   
 	erf_int32_t hx,ix,i;
-	double R,S,P,Q,s,y,z,r;
-	double test=0.987654321; /* Just a number */
-	int be_fword;
-	unsigned char itest = *((char *)&test);
-
-	/* Possible representations in IEEE double precision: 
-	 * (S=small endian, B=big endian)
-	 * 
-	 * Byte order, Word order, Hex
-	 *     S           S       b8 56 0e 3c dd 9a ef 3f    
-	 *     B           S       3c 0e 56 b8 3f ef 9a dd
-	 *     S           B       dd 9a ef 3f b8 56 0e 3c
-	 *     B           B       3f ef 9a dd 3c 0e 56 b8
-	 */ 
-	
-	if(itest==0xdd || itest==0x3f)
-	  be_fword=1;  /* Big endian word order */
-	else if(itest==0xb8 || itest==0x3c)
-	  be_fword=0;  /* Small endian word order */
-	else { /* Catch strange errors */
-	  printf("Error detecting floating-point word order in gmx_erf().\n");
-	  exit(0);
-	}
-	
-	/* Get the high (most significant) part of a double.
-         * We HAVE to use the constants 0/1 here, or the gcc
-	 * scheduler will get it wrong. (see comments in fdlibm)
-	 */
-	if(be_fword) 
-	  hx=*((int *)&x);
-	else 
-	  hx=*(1+(int *)&x);
+    double R,S,P,Q,s,y,z,r;
+    
+    union
+    {
+        double d;
+        int    i[2];
+    } conv;
+    
+    conv.d=x;
+    
+#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+    hx=conv.i[0];
+#else
+    hx=conv.i[1];
+#endif
 	
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {		/* erf(nan)=nan */
@@ -273,16 +256,16 @@ double gmx_erf(double x)
 	    S = S1 + s2*S2 + s4*S3 + s6*S4;
 	}
 
-	z  = x;
-	/* Set the low (least significant) part of a double.
-	 * We HAVE to use the constants 0/1 here, or the gcc
-	 * scheduler will get it wrong. (see comments in fdlibm)
-	 */
-	if(be_fword) 
-	  *(1+(int *)&z)=0;
-	else 
-	  *((int *)&z)=0;
-	
+conv.d = x;
+
+#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+conv.i[1] = 0;
+#else
+conv.i[0] = 0;
+#endif
+
+z = conv.d;
+
 	r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
 	if(hx>=0) return one-r/x; else return  r/x-one;
 }
@@ -292,38 +275,21 @@ double gmx_erfc(double x)
 {
 	erf_int32_t hx,ix;
 	double R,S,P,Q,s,y,z,r;
-	double test=0.987654321; /* Just a number */
-	int be_fword;
-	unsigned char itest = *((char *)&test);
-
-	/* Possible representations in IEEE double precision: 
-	 * (S=small endian, B=big endian)
-	 * 
-	 * Byte order, Word order, Hex
-	 *     S           S       b8 56 0e 3c dd 9a ef 3f    
-	 *     B           S       3c 0e 56 b8 3f ef 9a dd
-	 *     S           B       dd 9a ef 3f b8 56 0e 3c
-	 *     B           B       3f ef 9a dd 3c 0e 56 b8
-	 */ 
-	
-	if(itest==0xdd || itest==0x3f)
-	  be_fword=1;  /* Big endian word order */
-	else if(itest==0xb8 || itest==0x3c)
-	  be_fword=0;  /* Small endian word order */
-	else { /* Catch strange errors */
-	  printf("Error detecting floating-point word order in gmx_erf().\n");
-	  exit(0);
-	}
-	
-	/* Get the high (most significant) part of a double.
-         * We HAVE to use the constants 0/1 here, or the gcc
-	 * scheduler will get it wrong. (see comments in fdlibm)
-	 */
-	if(be_fword) 
-	  hx=*((int *)&x);
-	else 
-	  hx=*(1+(int *)&x);
-
+    
+    union
+    {
+        double d;
+        int    i[2];
+    } conv;
+    
+    conv.d = x;
+    
+#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+    hx=conv.i[0];
+#else
+    hx=conv.i[1];
+#endif
+    
 	ix = hx&0x7fffffff;
 	if(ix>=0x7ff00000) {			/* erfc(nan)=nan */
 						/* erfc(+-inf)=0,2 */
@@ -398,20 +364,21 @@ double gmx_erfc(double x)
 		R = R1 + s2*R2 + s4*R3 + s6*rb[6];
 		S = S1 + s2*S2 + s4*S3 + s6*S4;
 	    }
-	    z  = x;
-	
-	    /* Set the low (least significant) part of a double.
-	     * We HAVE to use the constants 0/1 here, or the gcc
-	     * scheduler will get it wrong. (see comments in fdlibm)
-	     */
-	    if(be_fword) 
-	      *(1+(int *)&z)=0;
-	    else 
-	      *((int *)&z)=0;
 
-	    r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
-	    if(hx>0) return r/x; else return two-r/x;
-	} else {
+        conv.d = x;
+
+#ifdef IEEE754_BIG_ENDIAN_WORD_ORDER  
+        conv.i[1] = 0;
+#else
+        conv.i[0] = 0;
+#endif
+
+        z = conv.d;
+
+        r  =  exp(-z*z-0.5625)*exp((z-x)*(z+x)+R/S);
+
+        if(hx>0) return r/x; else return two-r/x;
+	    } else {
 	    if(hx>0) return tiny*tiny; else return two-tiny;
 	}
 }
