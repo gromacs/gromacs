@@ -697,6 +697,7 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
   const char *tab_default = "gmx_table.xvg";
   char buf[STRLEN];
   int i,j;
+  void *      p_tmp;
 
   if (tabfn == NULL)
     tabfn = tab_default;
@@ -710,8 +711,28 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
   /* Copy the contents of the table to separate coulomb and LJ tables too,
    * to improve cache performance.
    */
-  snew(nbl->coultab,4*(nbl->tab.n+1));
-  snew(nbl->vdwtab,8*(nbl->tab.n+1));  
+
+  /* For performance reasons we want
+   * the table data to be aligned to 16-byte. This is accomplished
+   * by allocating 16 bytes extra to a temporary pointer, and then
+   * calculating an aligned pointer. This new pointer must not be
+   * used in a free() call, but thankfully we're sloppy enough not
+   * to do this...
+   */
+  
+  /* 8 fp entries per vdw table point, n+1 points, and 16 bytes extra to align it. */
+  p_tmp = malloc(8*(nbl->tab.n+1)*sizeof(real)+16);
+  
+  /* align it - size_t has the same same as a pointer */
+  nbl->vdwtab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
+
+  /* 4 fp entries per coul table point, n+1 points, and 16 bytes extra to align it. */
+  p_tmp = malloc(4*(nbl->tab.n+1)*sizeof(real)+16);
+  
+  /* align it - size_t has the same same as a pointer */
+  nbl->coultab = (real *) (((size_t) p_tmp + 16) & (~((size_t) 15)));  
+
+  
   for(i=0; i<=nbl->tab.n; i++) {
     for(j=0; j<4; j++)
       nbl->coultab[4*i+j] = nbl->tab.tab[12*i+j];
