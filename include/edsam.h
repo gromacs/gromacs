@@ -41,6 +41,8 @@
 #include <config.h>
 #endif
 
+#include "types/edsams.h"
+
 /* this function has to be called before the (LINCS, SHAKE, etc. ) constraints are applied */
 extern void prepare_edsam(int step, int start, int homenr, t_commrec *cr, rvec x[],t_edsamyn *edyn);
 
