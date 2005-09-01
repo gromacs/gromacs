@@ -110,16 +110,16 @@ mknb_metacode.o:	mknb_metacode.c
 			$(BUILD_COMPILE) -c -o $@ $<
 mknb_declarations.o:	mknb_declarations.c
 			$(BUILD_COMPILE) -c -o $@ $<
-mknb_outercop.o:	mknb_outerloop.c
+mknb_outerloop.o:	mknb_outerloop.c
 			$(BUILD_COMPILE) -c -o $@ $<
-mknb_innercop.o:	mknb_innerloop.c
+mknb_innerloop.o:	mknb_innerloop.c
 			$(BUILD_COMPILE) -c -o $@ $<
 mknb_interactions.o:	mknb_interactions.c
 			$(BUILD_COMPILE) -c -o $@ $<
 
 MKNB_OBJ = \
 	mknb.o mknb_metacode.o mknb_common.o mknb_declarations.o \
-	mknb_outercop.o mknb_innerloop.o mknb_interactions.o
+	mknb_outerloop.o mknb_innerloop.o mknb_interactions.o
 
 mknb:			$(MKNB_OBJ)
 			$(BUILD_COMPILE) -o $@ $(MKNB_OBJ)
