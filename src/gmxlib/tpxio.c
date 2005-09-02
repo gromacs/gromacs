@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 38;
+static const int tpx_version = 39;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -567,7 +567,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       ndo_real(ir->et[j].phi,ir->et[j].n,bDum);
     }
     /* QMMM stuff */
-    if(file_version>=38){
+    if(file_version>=39){
       do_int(ir->bQMMM);
       do_int(ir->QMMMscheme);
       do_real(ir->scalefactor);
