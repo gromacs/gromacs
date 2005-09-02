@@ -573,12 +573,12 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   /* protect the audience from suggestive discussions */
   char *lines = "-------------------------------------------------------";
   
+  cool_quote(tmpbuf,1023,&cqnum);
   sprintf(buf,"%s\nProgram %s, %s\n"
 	  "Source code file: %s, line: %d\n\n"
 	  "%s:\n%s\n%s\n\n%s\n",
 	  lines,ShortProgram(),GromacsVersion(),file,line,
-	  gmx_strerror(key),msg ? msg : warn_buf,lines,
-  	  cool_quote(tmpbuf,1023,&cqnum));
+	  gmx_strerror(key),msg ? msg : warn_buf,lines,tmpbuf);
   
   gmx_error_handler(buf);
 }

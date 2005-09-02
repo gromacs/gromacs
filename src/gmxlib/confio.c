@@ -930,7 +930,8 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
   char resnm[6],nm[6],format[100];
   int  ai,i,resnr,l,vpr;
 
-  fprintf (out,"%s\n",(title && title[0])?title:bromacs(format,99));
+  bromacs(format,99);
+  fprintf (out,"%s\n",(title && title[0])?title:format);
   fprintf (out,"%5d\n",nx);
   /* build format string for printing, 
      something like "%8.3f" for x and "%8.4f" for v */

@@ -248,7 +248,8 @@ void print_top_comment(FILE *out,char *filename,char *title,bool bITP)
   
   nice_header(out,filename);
   fprintf(out,";\tThis is your %stopology file\n",bITP ? "include " : "");
-  fprintf(out,";\t%s\n",title[0]?title:cool_quote(tmp,255,NULL));
+  cool_quote(tmp,255,NULL);
+  fprintf(out,";\t%s\n",title[0]?title:tmp);
   fprintf(out,";\n");
 }
 
