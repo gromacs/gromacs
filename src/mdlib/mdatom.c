@@ -77,6 +77,12 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   snew(md->cU1,md->nr);
   snew(md->cU2,md->nr);
   
+  /* QMMM additions */
+  snew(md->cQMMM,md->nr);
+  snew(md->nucnum,md->nr);
+  atomic_number(md->nr,atoms->atomtype,md->nucnum);
+  snew(md->bQM,md->nr);
+
   md->nPerturbed=0;
   md->bMassPerturbed=FALSE;
   md->bChargePerturbed=FALSE;
@@ -141,6 +147,12 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 
     md->cU1[i]      	= atoms->atom[i].grpnr[egcUser1];
     md->cU2[i]      	= atoms->atom[i].grpnr[egcUser2];
+    md->cQMMM[i]        = atoms->atom[i].grpnr[egcQMMM];
+    if ((md->cQMMM[i])<(atoms->grps[egcQMMM].nr-1)){
+      md->bQM[i]          = TRUE;
+    } else {
+      md->bQM[i] = FALSE;
+    }
   }
   md->tmass  = tm;
 
@@ -176,6 +188,7 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
 
     atoms->atom[i].grpnr[egcUser1]  = md->cU1[i];
     atoms->atom[i].grpnr[egcUser2]  = md->cU2[i];
+    atoms->atom[i].grpnr[egcQMMM]   = md->cQMMM[i];
 
   }
   if (bFree) {
@@ -199,6 +212,7 @@ void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
     
     sfree(md->cU1);
     sfree(md->cU2);
+    sfree(md->cQMMM);
   }
 }
 

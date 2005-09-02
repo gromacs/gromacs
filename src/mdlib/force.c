@@ -64,6 +64,7 @@
 #include "ewald.h"
 #include "pme.h"
 #include "mdrun.h"
+#include "qmmm.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -130,7 +131,12 @@ static real *mk_nbfp(const t_idef *idef,bool bBHAM)
  *
  * TIP3p is identical to SPC for these purposes, so we call it
  * SPC in the arrays (Apologies to Bill Jorgensen ;-)
+ * 
+ * NOTE: QM particle should not
+ * become an optimized solvent. Not even if there is only one charge
+ * group in the Qm 
  */
+
 static void
 check_solvent(FILE *                fp,
               const t_topology *    top,
@@ -157,7 +163,8 @@ check_solvent(FILE *                fp,
     int               nexcl;
     int               tjA;
     int               bestsol;
-    
+    bool              qm;
+
     /* We use a list with parameters for each solvent type. 
      * Every time we discover a new molecule that fulfills the basic 
      * conditions for a solvent we compare with the previous entries
@@ -252,6 +259,20 @@ check_solvent(FILE *                fp,
             continue;
         }
 
+        /* Check if we are doing QM on this group */
+        qm = FALSE; 
+
+        for(j=j0 ; j<j1 && !qm; j++)
+        {
+            qm = md->bQM[mols->a[j]];
+        }
+        
+        /* Cannot use solvent optimization with QM */
+        if(qm)
+        {
+            continue;
+        }
+        
         /* It has 3 or 4 atoms in a single chargegroup. Next we check if
          * all intra-molecular interactions are excluded. 
          */

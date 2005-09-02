@@ -153,7 +153,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
 	     (i == F_SHAKE) || (i == F_SETTLE))
       bEner[i] = FALSE;
     else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_ETOT) ||
-	     (i == F_EKIN) || (i == F_TEMP) || (i == F_PRES))
+	     (i == F_EKIN) || (i == F_TEMP) || (i == F_PRES)  || (i==F_EQM))
       bEner[i] = TRUE;
     else if (i == F_DISPCORR)
       bEner[i] = (ir->eDispCorr != edispcNO);

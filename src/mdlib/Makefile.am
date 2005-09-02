@@ -24,13 +24,20 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	splittop.c	tables.c	tgroup.c	\
 	update.c	vcm.c		vsite.c	\
 	wnblist.c	splittop.h	wnblist.h	\
-	pull_internal.h	csettle.c       clincs.c
+	pull_internal.h	csettle.c       clincs.c	\
+	qmmm.c		
+
+
+EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
+	qm_gaussian.c	qm_mopac.c	qm_gamess.c
+
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
 EXTRA_PROGRAMS = compnl
 compnl_SOURCES = compnl.c
 compnl_LDADD   = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
+
 
 # link the mpi library to non-mpi names if the latter are not present
 install-exec-hook:

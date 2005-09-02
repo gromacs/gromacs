@@ -325,6 +325,10 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     }
   }
 
+  /* update QMMMrec, if necessary */
+  if(fr->bQMMM)
+    update_QMMMrec(cr,fr,x,mdatoms,box,top);
+  
   /* Compute the forces */    
   force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
