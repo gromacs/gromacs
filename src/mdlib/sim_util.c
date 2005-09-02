@@ -65,6 +65,7 @@
 #include "calcmu.h"
 #include "constr.h"
 #include "xvgr.h"
+#include "qmmm.h"
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 

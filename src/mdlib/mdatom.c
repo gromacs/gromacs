@@ -41,6 +41,7 @@
 #include "mdatoms.h"
 #include "smalloc.h"
 #include "main.h"
+#include "qmmm.h"
 
 #define ALMOST_ZERO 1e-30
 
