@@ -12,4 +12,5 @@ includetypes_HEADERS = \
 	group.h     	ishift.h    	nbslist.h  	\
 	topology.h	fcdata.h  	filenm.h  	idef.h 		\
 	matrix.h    	nrnb.h     	trx.h		state.h		\
-	pbc.h
+	pbc.h		qmmmrec.h
+

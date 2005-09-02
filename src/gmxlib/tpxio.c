@@ -566,8 +566,45 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       ndo_real(ir->et[j].a,  ir->et[j].n,bDum);
       ndo_real(ir->et[j].phi,ir->et[j].n,bDum);
     }
+    /* QMMM stuff */
+    if(file_version>=38){
+      do_int(ir->bQMMM);
+      do_int(ir->QMMMscheme);
+      do_real(ir->scalefactor);
+      do_int(ir->opts.ngQM);
+      if (bRead) {
+        snew(ir->opts.QMmethod,    ir->opts.ngQM);
+        snew(ir->opts.QMbasis,     ir->opts.ngQM);
+        snew(ir->opts.QMcharge,    ir->opts.ngQM);
+        snew(ir->opts.QMmult,      ir->opts.ngQM);
+        snew(ir->opts.bSH,         ir->opts.ngQM);
+        snew(ir->opts.CASorbitals, ir->opts.ngQM);
+        snew(ir->opts.CASelectrons,ir->opts.ngQM);
+        snew(ir->opts.SAon,        ir->opts.ngQM);
+        snew(ir->opts.SAoff,       ir->opts.ngQM);
+        snew(ir->opts.SAsteps,     ir->opts.ngQM);
+        snew(ir->opts.bOPT,        ir->opts.ngQM);
+        snew(ir->opts.bTS,         ir->opts.ngQM);
+      }
+      if (ir->opts.ngQM > 0) {
+        ndo_int(ir->opts.QMmethod,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.QMbasis,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.QMcharge,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.QMmult,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.bSH,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.CASorbitals,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.CASelectrons,ir->opts.ngQM,bDum);
+        ndo_real(ir->opts.SAon,ir->opts.ngQM,bDum);
+        ndo_real(ir->opts.SAoff,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.SAsteps,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.bOPT,ir->opts.ngQM,bDum);
+        ndo_int(ir->opts.bTS,ir->opts.ngQM,bDum);
+      }
+      /* end of QMMM stuff */
+    }
   }
 }
+
 
 static void do_harm(t_iparams *iparams,bool bRead)
 {

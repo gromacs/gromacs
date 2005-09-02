@@ -3,12 +3,12 @@
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is generated from Makefile.am by automake.
 
-if !GMX_SYSTEM_BLAS
+if !GMX_EXTERNAL_BLAS
   BLAS_DIR       = gmx_blas
   BLAS_LIBOBJS   = gmx_blas/libblas.la       
 endif
 
-if !GMX_SYSTEM_LAPACK
+if !GMX_EXTERNAL_LAPACK
   LAPACK_DIR     = gmx_lapack
   LAPACK_LIBOBJS = gmx_lapack/liblapack.la
 endif

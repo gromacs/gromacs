@@ -71,9 +71,13 @@
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
-  orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],deform[STRLEN];
+  orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],deform[STRLEN],
+  QMMM[STRLEN];
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
+static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
+  bSH[STRLEN],CASorbitals[STRLEN], CASelectrons[STRLEN],SAon[STRLEN],
+  SAoff[STRLEN],SAsteps[STRLEN],bTS[STRLEN],bOPT[STRLEN]; 
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
@@ -499,6 +503,35 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Random seed for Andersen thermostat");
   ITYPE ("andersen_seed", ir->andersen_seed, 815131);
 
+  /* QMMM */
+  CCTYPE ("OPTIONS FOR QMMM calculations");
+  EETYPE("QMMM", ir->bQMMM, yesno_names, nerror, TRUE);
+  CTYPE ("Groups treated Quantum Mechanically");
+  STYPE ("QMMM-grps",  QMMM,          NULL);
+  CTYPE ("QM method");
+  STYPE("QMmethod",     QMmethod, NULL);
+  CTYPE ("QMMM scheme");
+  EETYPE("QMMMscheme",  ir->QMMMscheme,    eQMMMscheme_names, nerror, TRUE);
+  CTYPE ("QM basisset");
+  STYPE("QMbasis",      QMbasis, NULL);
+  CTYPE ("QM charge");
+  STYPE ("QMcharge",    QMcharge,NULL);
+  CTYPE ("QM multiplicity");
+  STYPE ("QMmult",      QMmult,NULL);
+  CTYPE ("Surface Hopping");
+  STYPE ("SH",          bSH, NULL);
+  CTYPE ("CAS space options");
+  STYPE ("CASorbitals",      CASorbitals,   NULL);
+  STYPE ("CASelectrons",     CASelectrons,  NULL);
+  STYPE ("SAon", SAon, NULL);
+  STYPE ("SAoff",SAoff,NULL);
+  STYPE ("SAsteps",  SAsteps, NULL);
+  CTYPE ("Scale factor for MM charges");
+  RTYPE ("MMChargeScaleFactor", ir->scalefactor, 1.0);
+  CTYPE ("Optimization of QM subsystem");
+  STYPE ("bOPT",          bOPT, NULL);
+  STYPE ("bTS",          bTS, NULL);
+
   /* Simulated annealing */
   CCTYPE("SIMULATED ANNEALING");
   CTYPE ("Type of annealing for each temperature group (no/single/periodic)");
@@ -720,6 +753,22 @@ void get_ir(char *mdparin,char *mdparout,
   sfree(dumstr[0]);
   sfree(dumstr[1]);
 }
+
+static int search_QMstring(char *s,int ng,const char *gn[])
+{
+  /* same as normal search_string, but this one searches QM strings */
+  int i;
+
+  for(i=0; (i<ng); i++)
+    if (strcasecmp(s,gn[i]) == 0)
+      return i;
+
+  gmx_fatal(FARGS,"this QM method or basisset (%s) is not implemented\n!",s);
+
+  return -1;
+
+} /* search_QMstring */
+
 
 static int search_string(char *s,int ng,char *gn[])
 {
@@ -1032,6 +1081,9 @@ void do_index(char *ndx,
   int     i,j,k,restnm;
   real    SAtime;
   bool    bExcl,bTable,bSetTCpar,bAnneal;
+  int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
+    nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
+
 
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -1271,6 +1323,76 @@ void do_index(char *ndx,
   nofg = str_nelem(orirefitgrp,MAXPTR,ptr1);
   do_numbering(atoms,nofg,ptr1,grps,gnames,egcORFIT,
 	       restnm,forward,FALSE,bVerbose);
+
+  /* QMMM input processing */
+  nQMg          = str_nelem(QMMM,MAXPTR,ptr1);
+  nQMmethod     = str_nelem(QMmethod,MAXPTR,ptr2);
+  nQMbasis      = str_nelem(QMbasis,MAXPTR,ptr3);
+  if((nQMmethod != nQMg)||(nQMbasis != nQMg)){
+    gmx_fatal(FARGS,"Invalid QMMM input: %d groups %d basissets"
+	      " and %d methods\n",nQMg,nQMbasis,nQMmethod);
+  }
+  /* group rest, if any, is always MM! */
+  do_numbering(atoms,nQMg,ptr1,grps,gnames,egcQMMM,
+               restnm,forward,FALSE,bVerbose);
+  nr = nQMg; /*atoms->grps[egcQMMM].nr;*/
+  ir->opts.ngQM = nQMg;
+  snew(ir->opts.QMmethod,nr);
+  snew(ir->opts.QMbasis,nr);
+  for(i=0;i<nr;i++){
+    /* input consists of strings: RHF CASSCF PM3 .. These need to be
+     * converted to the corresponding enum in names.c
+     */
+    ir->opts.QMmethod[i] = search_QMstring(ptr2[i],eQMmethodNR,
+                                           eQMmethod_names);
+    ir->opts.QMbasis[i]  = search_QMstring(ptr3[i],eQMbasisNR,
+                                           eQMbasis_names);
+
+  }
+  nQMmult   = str_nelem(QMmult,MAXPTR,ptr1);
+  nQMcharge = str_nelem(QMcharge,MAXPTR,ptr2);
+  nbSH      = str_nelem(bSH,MAXPTR,ptr3);
+  snew(ir->opts.QMmult,nr);
+  snew(ir->opts.QMcharge,nr);
+  snew(ir->opts.bSH,nr);
+
+  for(i=0;i<nr;i++){
+    ir->opts.QMmult[i]   = atoi(ptr1[i]);
+    ir->opts.QMcharge[i] = atoi(ptr2[i]);
+    ir->opts.bSH[i]      = (strncasecmp(ptr3[i],"Y",1)==0);
+  }
+
+  nCASelec  = str_nelem(CASelectrons,MAXPTR,ptr1);
+  nCASorb   = str_nelem(CASorbitals,MAXPTR,ptr2);
+  snew(ir->opts.CASelectrons,nr);
+  snew(ir->opts.CASorbitals,nr);
+  for(i=0;i<nr;i++){
+    ir->opts.CASelectrons[i]= atoi(ptr1[i]);
+    ir->opts.CASorbitals[i] = atoi(ptr2[i]);
+  }
+  /* special optimization options */
+
+  nbOPT = str_nelem(bOPT,MAXPTR,ptr1);
+  nbTS = str_nelem(bTS,MAXPTR,ptr2);
+  snew(ir->opts.bOPT,nr);
+  snew(ir->opts.bTS,nr);
+  for(i=0;i<nr;i++){
+    ir->opts.bOPT[i] = (strncasecmp(ptr1[i],"Y",1)==0);
+    ir->opts.bTS[i]  = (strncasecmp(ptr2[i],"Y",1)==0);
+  }
+  nSAon     = str_nelem(SAon,MAXPTR,ptr1);
+  nSAoff    = str_nelem(SAoff,MAXPTR,ptr2);
+  nSAsteps  = str_nelem(SAsteps,MAXPTR,ptr3);
+  snew(ir->opts.SAon,nr);
+  snew(ir->opts.SAoff,nr);
+  snew(ir->opts.SAsteps,nr);
+
+  for(i=0;i<nr;i++){
+    ir->opts.SAon[i]    = atof(ptr1[i]);
+    ir->opts.SAoff[i]   = atof(ptr2[i]);
+    ir->opts.SAsteps[i] = atoi(ptr3[i]);
+  }
+  /* end of QMMM input */
 
   if (bVerbose)
     for(i=0; (i<egcNR); i++) {

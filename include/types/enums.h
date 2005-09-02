@@ -157,3 +157,20 @@ enum {
   eisNO, eisLCPO, eisNR 
 };
 
+enum {
+  eQMmethodAM1, eQMmethodPM3, eQMmethodRHF, 
+  eQMmethodUHF, eQMmethodB3LYP, eQMmethodMP2, eQMmethodCASSCF,
+  eQMmethodDIRECT, eQMmethodNR
+};
+
+enum {
+  eQMbasisSTO3G, eQMbasisSTO3G2, eQMbasis321G, 
+  eQMbasis321Gp, eQMbasis321dGp, eQMbasis621G,
+  eQMbasis631G, eQMbasis631Gp, eQMbasis631dGp, 
+  eQMbasis6311G, eQMbasisNR
+};
+
+enum {
+  eQMMMschemenormal,eQMMMschemeoniom,eQMMMschemeNR
+};
+

@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#include "qmmmrec.h"
+
 enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
        eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
        eNL_VDWQQ_WATER, eNL_QQ_WATER, 
@@ -196,6 +198,15 @@ typedef struct {
    * should be calculated.
    */
   bool bTPI;
+
+  /* QMMM stuff */
+  bool         bQMMM;
+  t_QMMMrec    *qr;
+
+  /* QM-MM neighborlists */
+  t_nblist QMMMlist_sr;
+  t_nblist QMMMlist_lr; /* not needed, one QMMM list suffices */
+ 
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

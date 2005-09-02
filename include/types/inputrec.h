@@ -69,6 +69,21 @@ typedef struct {
   rvec    *acc;		         /* Acceleration per group		    */
   ivec    *nFreeze;	         /* Freeze the group in each direction ?    */
   int     *egp_flags;            /* Exclusions/tables of energy group pairs */
+
+  /* QMMM stuff */
+  int     ngQM;         /* nr of QM groups                              */
+  int     *QMmethod;    /* Level of theory in the QM calculation        */
+  int     *QMbasis;     /* Basisset in the QM calculation               */
+  int     *QMcharge;    /* Total charge in the QM region                */
+  int     *QMmult;      /* Spin multiplicicty in the QM region          */
+  bool    *bSH;         /* surface hopping (diabatic hop only)          */
+  int     *CASorbitals; /* number of orbiatls in the active space       */
+  int     *CASelectrons;/* number of electrons in the active space      */
+  real    *SAon;        /* at which gap (A.U.) the SA is switched on    */
+  real    *SAoff;
+  int     *SAsteps;     /* in how many steps SA goes from 1-1 to 0.5-0.5*/
+  bool    *bOPT;
+  bool    *bTS;
 } t_grpopts;
 
 
@@ -176,6 +191,10 @@ typedef struct {
   t_grpopts opts;	/* Group options				*/
   t_cosines ex[DIM];	/* Electric field stuff	(spatial part)		*/
   t_cosines et[DIM];	/* Electric field stuff	(time part)		*/
+  bool bQMMM;           /* QM/MM calculation                            */ 
+  int  QMconstraints;   /* constraints on QM bonds                      */
+  int  QMMMscheme;      /* Scheme: ONIOM or normal                      */
+  real scalefactor;     /* factor for scaling the MM charges in QM calc.*/
 } t_inputrec;
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)

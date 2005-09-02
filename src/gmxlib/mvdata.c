@@ -126,7 +126,7 @@ static void ld_grps(int src,t_grps grps[])
 
 static void ld_atoms(int src,t_symtab *symtab,t_atoms *atoms)
 {
-  int atomnr;
+  int atomnr,dummy;
 
   blockrx(src,atoms->nr);
   snew(atoms->atom,atoms->nr);
@@ -136,6 +136,8 @@ static void ld_atoms(int src,t_symtab *symtab,t_atoms *atoms)
     gmx_incons("Number of atoms to send around does not match");
   atoms->nres=ld_strings(src,symtab,&atoms->resname);
   atoms->ngrpname=ld_strings(src,symtab,&atoms->grpname);
+  /* QMMM requires atomtypes to be known on all nodes as well */
+  dummy = ld_strings(src,symtab,&atoms->atomtype);
   ld_grps(src,atoms->grps);
   ld_block(src,&atoms->excl);
 }
@@ -194,6 +196,29 @@ static void ld_grpopts(int src,t_grpopts *g)
   nblockrx(src,g->ngacc,g->acc);
   nblockrx(src,g->ngfrz,g->nFreeze);
   nblockrx(src,g->ngener*g->ngener,g->egp_flags);
+  /* QMMM stuff, see inputrec */
+  blockrx(src,g->ngQM);
+  snew(g->QMmethod,g->ngQM);
+  nblockrx(src,g->ngQM,g->QMmethod);
+  snew(g->QMbasis,g->ngQM);
+  nblockrx(src,g->ngQM,g->QMbasis);
+  snew(g->QMcharge,g->ngQM);
+  nblockrx(src,g->ngQM,g->QMcharge);
+  snew(g->QMmult,g->ngQM);
+  nblockrx(src,g->ngQM,g->QMmult);
+  snew(g->bSH,g->ngQM);
+  nblockrx(src,g->ngQM,g->bSH);
+  snew(g->CASorbitals,g->ngQM);
+  nblockrx(src,g->ngQM,g->CASorbitals);
+  snew(g->CASelectrons,g->ngQM);
+  nblockrx(src,g->ngQM,g->CASelectrons);
+  snew(g->SAon,g->ngQM);
+  nblockrx(src,g->ngQM,g->SAon);
+  snew(g->SAoff,g->ngQM);
+  nblockrx(src,g->ngQM,g->SAoff);
+  snew(g->SAsteps,g->ngQM);
+  nblockrx(src,g->ngQM,g->SAsteps);
+  /* end of QMMM stuff */
   snew(g->annealing,g->ngtc);
   snew(g->anneal_npoints,g->ngtc);
   snew(g->anneal_time,g->ngtc);
@@ -284,6 +309,19 @@ static void mv_grpopts(int dest,t_grpopts *g)
       nblocktx(dest,n,g->anneal_temp[i]);
     }
   }
+  /* QMMM stuff, see inputrec.h */
+  blocktx(dest,g->ngQM);
+  nblocktx(dest,g->ngQM,g->QMmethod);
+  nblocktx(dest,g->ngQM,g->QMbasis);
+  nblocktx(dest,g->ngQM,g->QMcharge);
+  nblocktx(dest,g->ngQM,g->QMmult);
+  nblocktx(dest,g->ngQM,g->bSH);
+  nblocktx(dest,g->ngQM,g->CASorbitals);
+  nblocktx(dest,g->ngQM,g->CASelectrons);
+  nblocktx(dest,g->ngQM,g->SAon);
+  nblocktx(dest,g->ngQM,g->SAoff);
+  nblocktx(dest,g->ngQM,g->SAsteps);
+  /* end of QMMM stuff */
 }
 
 static void mv_cosines(int dest,t_cosines *cs)
@@ -387,6 +425,9 @@ static void mv_atoms(int dest,t_symtab *symtab,t_atoms *atoms)
   mv_strings(dest,symtab,atoms->nr,atoms->atomname);
   mv_strings(dest,symtab,atoms->nres,atoms->resname);
   mv_strings(dest,symtab,atoms->ngrpname,atoms->grpname);
+  /* QMMM requires atomtypes to be know on all nodes */
+  mv_strings(dest,symtab,atoms->nr,atoms->atomtype);
+
   mv_grps(dest,atoms->grps);
   mv_block(dest,&atoms->excl);
 }

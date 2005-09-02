@@ -75,6 +75,7 @@ pme.h \
 pppm.h \
 princ.h \
 pull.h \
+qmmm.h \
 random.h \
 rbin.h \
 rdgroup.h \

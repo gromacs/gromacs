@@ -130,7 +130,7 @@ const char *ecomb_names[eCOMB_NR+1] = {
 
 const char *gtypes[egcNR+1] = {
   "T-Coupling", "Energy Mon.", "Acceleration", "Freeze",
-  "User1", "User2", "VCM", "XTC", "Or. Res. Fit", NULL
+  "User1", "User2", "VCM", "XTC", "Or. Res. Fit", "QMMM", NULL
 };
 
 const char *efep_names[efepNR+1] = {
@@ -164,3 +164,23 @@ const char *egb_names[egbNR+1] = {
 const char *eis_names[eisNR+1] = {
   "No", "LCPO", NULL
 };
+
+const char *eQMmethod_names[eQMmethodNR+1] = {
+  "AM1", "PM3", "RHF",
+  "UHF", "DFT", "B3LYP", "MP2", "CASSCF",
+  "DIRECT", NULL
+};
+
+const char *eQMbasis_names[eQMbasisNR+1] = {
+  "STO3G", "STO-3G", "3-21G",
+  "3-21G*", "3-21+G*", "6-21G",
+  "6-31G", "6-31G*", "6-31+G*",
+  "6-311G", NULL
+};
+
+const char *eQMMMscheme_names[eQMMMschemeNR+1] = {
+  "normal", "ONIOM", NULL
+};
+
+
+

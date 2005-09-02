@@ -1130,6 +1130,10 @@ int main (int argc, char *argv[])
   if (debug)
     pr_symtab(debug,0,"After close",&sys->symtab);
 
+  /* make exclusions between QM atoms */
+  if(ir->bQMMM)
+    generate_qmexcl(sys,ir);
+
   if (ftp2bSet(efTRN,NFILE,fnm)) {
     if (bVerbose)
       fprintf(stderr,"getting data from old trajectory ...\n");

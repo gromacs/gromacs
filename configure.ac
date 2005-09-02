@@ -178,15 +178,39 @@ fi
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
 ###
-AC_ARG_WITH(system_blas,
- [  --with-system-blas      use system BLAS (add to LIBS) instead of built-in],, with_system_blas=no)
-AM_CONDITIONAL([GMX_SYSTEM_BLAS], [test "with_system_blas" = "yes"])
+AC_ARG_WITH(external_blas,
+ [  --with-external-blas    use system BLAS (add to LIBS) instead of built-in],, with_external_blas=no)
+AM_CONDITIONAL([GMX_EXTERNAL_BLAS], [test "with_external_blas" = "yes"])
 
 
-AC_ARG_WITH(system_lapack,
- [  --with-system-lapack    use system LAPACK (add to LIBS) instead of built-in],, with_system_lapack=no)
-AM_CONDITIONAL([GMX_SYSTEM_LAPACK], [test "with_system_lapack" = "yes"])
+AC_ARG_WITH(external_lapack,
+ [  --with-external-lapack  use system LAPACK (add to LIBS) instead of built-in],, with_external_lapack=no)
+AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "with_external_lapack" = "yes"])
 
+
+AC_ARG_WITH(qmmm_gaussian,
+ [  --with-qmmm-gaussian    use modified Gaussian0x for QM-MM (see website)],,with_qmmm_gaussian=no)
+if test "$with_qmmm_gaussian" = "yes"; then
+  AC_DEFINE(GMX_QMMM_GAUSSIAN,,[Use (hacked) Gaussian0x for QM-MM calculations])
+  MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gaussian.lo"
+fi
+
+
+AC_ARG_WITH(qmmm_gamess,
+ [  --with-qmmm-gamess      use modified Gamess-UK for QM-MM (see website)],,with_qmmm_gamess=no)
+if test "$with_qmmm_gamess" = "yes"; then
+  AC_DEFINE(GMX_QMMM_GAMESS,,[Use (hacked) Gamess-UK for QM-MM calculations])
+  MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gamess.lo"
+fi
+
+
+AC_ARG_WITH(qmmm_mopac,
+ [  --with-qmmm-mopac       use modified Mopac 7 for QM-MM (see website)],,with_qmmm_mopac=no)
+if test "$with_qmmm_mopac" = "yes"; then
+  AC_DEFINE(GMX_QMMM_MOPAC,,[Use (hacked) Mopac 7 for QM-MM calculations])
+  MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_mopac.lo"
+fi
+   
 
 ############################################################
 # Add some debug info: Who is building, and on what machine?

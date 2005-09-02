@@ -68,6 +68,8 @@
 #include "pme.h"
 #include "mdatoms.h"
 #include "repl_ex.h"
+#include "qmmm.h"
+
 #ifdef USE_MPE
 #include "mpe.h"
 #include "mpelogging.h"
@@ -201,6 +203,11 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   init_forcerec(stdlog,fr,inputrec,top,cr,mdatoms,nsb,state->box,FALSE,
 		opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),FALSE);
   fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
+
+  /* Initialize QM-MM */
+  if(fr->bQMMM){
+    init_QMMMrec(cr,mdatoms,state->box,top,inputrec,fr);
+  }
     
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
