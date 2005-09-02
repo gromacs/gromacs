@@ -171,8 +171,9 @@ file.
 \end{description}
 
 \section{Environment Variables}
-{\gromacs} programs may be influenced by the use of environment 
-variables. First of all, the variables set in the \normindex{GMXRC} file
+{\gromacs} programs may be influenced by the use of 
+\normindex{environment variables}. 
+First of all, the variables set in the \normindex{GMXRC} file
 are essential for running and compiling {\gromacs}. Other variables are:
 \begin{enumerate}
 \item   {\tt DUMP\_NL}, dump neighbor list. 
@@ -180,8 +181,8 @@ are essential for running and compiling {\gromacs}. Other variables are:
         neighbor list is printed in the log file (may be many megabytes).
         Mainly for debugging purposes, but may also be handy for
         porting to other platforms.
-\item   {\tt IAMCOOL}, if this is explicitly set to NO your
-        {\gromacs} life will be dull and boring. (i.e., no cool quotes).
+\item   {\tt GMX_NO_QUOTES}, if this is explicitly set, no cool quotes
+        will be printed at the end of a program
 \item   {\tt WHERE}, when set print debugging info on line numbers.
 \item   {\tt LOG\_BUFS}, the size of the buffer for file I/O. When set
         to 0, all file I/O will be unbuffered and therefore very slow.
