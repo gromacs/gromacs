@@ -70,4 +70,8 @@ extern char **do_top(bool         bVerbose,
 		     int          *nsim,
 		     t_simsystem  **sims);
 
+void 
+generate_qmexcl(t_topology *sys,t_inputrec *ir);
+
+
 #endif	/* _topio_h */
