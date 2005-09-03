@@ -237,10 +237,10 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	  }
 	}
       }
-      fprintf(fp,"%10.3e  %10d\n",fr.time,nclust);
+      fprintf(fp,"%14.6e  %10d\n",fr.time,nclust);
       if (nav > 0)
-	fprintf(gp,"%10.3e  %10.3f\n",fr.time,cav/nav);
-      fprintf(hp, "%10.3e  %10d\n",fr.time,max_clust_size);
+	fprintf(gp,"%14.6e  %10.3f\n",fr.time,cav/nav);
+      fprintf(hp, "%14.6e  %10d\n",fr.time,max_clust_size);
     }
     /* Analyse velocities, if present */
     if (fr.bV) {
@@ -254,7 +254,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	    ekin += 0.5*top.atoms.atom[ai].m*iprod(v[ai],v[ai]);
 	  }
 	temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
-	fprintf(tp,"%10.3f  %10.3f\n",fr.time,temp);
+	fprintf(tp,"%14.6f  %10.3f\n",fr.time,temp);
       }
     }
     nframe++;
