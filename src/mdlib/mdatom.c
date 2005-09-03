@@ -161,6 +161,9 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   if (bFree) {  
     sfree(atoms->atom);
     atoms->atom=NULL;
+    atoms->nr=0;
+    atoms->nres=0;
+    atoms->ngrpname=0;
   }
   
   if (bPert && fp)
