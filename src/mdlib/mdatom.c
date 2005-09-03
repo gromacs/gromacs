@@ -81,7 +81,8 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   /* QMMM additions */
   snew(md->cQMMM,md->nr);
   snew(md->nucnum,md->nr);
-  atomic_number(md->nr,atoms->atomtype,md->nucnum);
+  /* This routine currently only works for ffG43a2 */
+  /*  atomic_number(md->nr,atoms->atomtype,md->nucnum); */
   snew(md->bQM,md->nr);
 
   md->nPerturbed=0;

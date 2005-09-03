@@ -3,12 +3,12 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3_beta_20050831, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3_rc1, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.3_beta_20050831)
+AM_INIT_AUTOMAKE(gromacs, 3.3_rc1)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
@@ -232,8 +232,8 @@ case "${host_cpu}-${host_os}" in
     f77_names="fort f77 g77"
     ;;
   *) 
-    cc_names="xlc icc cc gcc"
-    f77_names="xlf ifort f77 xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
+    cc_names="cc icc xlc gcc"
+    f77_names="f77 ifort xlf xlf77 cf77 fl32 g77 fort77 f90 xlf90 pgf77 cf77 fort fort77 pgf90"
     ;;
 esac
 # the (non-mpi) c compiler, which is also used for programs executed during build stage

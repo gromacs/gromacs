@@ -12,8 +12,7 @@ static char *SRCID_QMMM_h = "$Id$";
 #include "network.h"
 #include "tgroup.h"
 
-void
-atomic_number(int nr, char ***atomtype, int *nucnum);
+extern void atomic_number(int nr, char ***atomtype, int *nucnum);
 
 extern t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */

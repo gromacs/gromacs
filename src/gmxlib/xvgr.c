@@ -70,7 +70,8 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *ya
   if (bPrintXvgrCodes()) {
     fprintf(xvgr,"# This file was created by %s\n",Program());
     fprintf(xvgr,"# which is part of G R O M A C S:\n");
-    fprintf(xvgr,"# %s\n",bromacs(pukestr,99));
+    bromacs(pukestr,99);
+    fprintf(xvgr,"# %s\n",pukestr);
     time(&t);
     fprintf(xvgr,"# All this happened at: %s",ctime(&t));
     fprintf(xvgr,"#\n");

@@ -105,23 +105,11 @@ void pr_difftime(FILE *out,double dt)
 
 bool be_cool(void)
 {
-  int cool=-1;
-  char *envptr;
-
   /* Yes, it is bad to check the environment variable every call,
    * but we dont call this routine often, and it avoids using 
    * a mutex for locking the variable...
    */
-  if (cool == -1) {
-    envptr=getenv("IAMCOOL");
-
-    if ((envptr!=NULL) && (!strcmp(envptr,"no") || !strcmp(envptr,"NO")))
-      cool=0;
-    else
-      cool=1;
-  }
-
-  return cool;
+  return (getenv("GMX_NO_QUOTES") == NULL);
 }
 
 void space(FILE *out, int n)
@@ -152,17 +140,15 @@ static void ster_print(FILE *out,const char *s)
 }
 
 
-static char *pukeit(char *db,char *defstring, char *retstring, 
-		    int retsize, int *cqnum)
+static void pukeit(char *db,char *defstring, char *retstring, 
+		   int retsize, int *cqnum)
 {
   FILE *fp;
   char **help;
   int  i,nhlp;
   int  seed;
  
-  if (!be_cool())
-    return defstring;
-  else if ((fp = low_libopen(db,FALSE)) != NULL) {
+  if (be_cool() && ((fp = low_libopen(db,FALSE)) != NULL)) {
     nhlp=fget_lines(fp,&help);
     fclose(fp);
     seed=time(NULL);
@@ -174,48 +160,45 @@ static char *pukeit(char *db,char *defstring, char *retstring,
     for(i=0; (i<nhlp); i++)
       sfree(help[i]);
     sfree(help);
-    return retstring;
   }
-  else
-    return defstring;
+  else 
+    strncpy(retstring,defstring,min(retsize,strlen(defstring)+1));
 }
 
-
-char *bromacs(char *retstring, int retsize)
+void bromacs(char *retstring, int retsize)
 {
   int dum;
 
-  return pukeit("bromacs.dat",
-                "Groningen Machine for Chemical Simulation",
-		retstring,retsize,&dum);
+  pukeit("bromacs.dat",
+	 "Groningen Machine for Chemical Simulation",
+	 retstring,retsize,&dum);
 }
 
-
-char *cool_quote(char *retstring, int retsize, int *cqnum)
+void cool_quote(char *retstring, int retsize, int *cqnum)
 {
-  char tmpstr[1024];
+  char *tmpstr;
   char *s,*ptr;
   int tmpcq,*p;
   
-  if(cqnum!=NULL)
-    p=cqnum;
+  if (cqnum!=NULL)
+    p = cqnum;
   else
-    p=&tmpcq;
+    p = &tmpcq;
   
   /* protect audience from explicit lyrics */
+  snew(tmpstr,retsize+1);
   pukeit("gurgle.dat","Thanx for Using GROMACS - Have a Nice Day",
-	 tmpstr,1024,p);
+	 tmpstr,retsize-2,p);
 
-  if (be_cool() && ((ptr=strchr(tmpstr,'_')) != NULL)) {
+  if ((ptr = strchr(tmpstr,'_')) != NULL) {
     *ptr='\0';
     ptr++;
     sprintf(retstring,"\"%s\" %s",tmpstr,ptr);
   }
   else {
-    strncpy(retstring,tmpstr,1023);
+    strcpy(retstring,tmpstr);
   }
-    
-  return retstring;
+  sfree(tmpstr);
 }
 
 void CopyRight(FILE *out,char *szProgram)
@@ -227,9 +210,6 @@ void CopyRight(FILE *out,char *szProgram)
 #define NGPL (int)asize(GPLText)
 
   char buf[256],tmpstr[1024];
-  
-  char *ptr;
-  
   int i;
 
   set_program_name(szProgram);
@@ -237,8 +217,8 @@ void CopyRight(FILE *out,char *szProgram)
   ster_print(out,"G  R  O  M  A  C  S");
   fprintf(out,"\n");
   
-  ptr=bromacs(tmpstr,1023);
-  sp_print(out,ptr); 
+  bromacs(tmpstr,1023);
+  sp_print(out,tmpstr); 
   fprintf(out,"\n");
 
   ster_print(out,GromacsVersion());
@@ -268,23 +248,16 @@ void CopyRight(FILE *out,char *szProgram)
 
 void thanx(FILE *fp)
 {
-  char tmpbuf[1024];
-  char *cq,*c;
-  int cqnum;
+  char cq[1024];
+  int  cqnum;
 
   /* protect the audience from suggestive discussions */
-  cq=cool_quote(tmpbuf,1023,&cqnum);
+  cool_quote(cq,1023,&cqnum);
   
-  if (be_cool()) {
-    snew(c,strlen(cq)+20);
-
-    sprintf(c,"gcq#%d: %s\n",cqnum,cq);
-
-    fprintf(fp,"\n%s\n",c);
-    sfree(c);
-  }
+  if (be_cool()) 
+    fprintf(fp,"\ngcq#%d: %s\n\n",cqnum,cq);
   else
-    fprintf(fp,"\n%s\n",cq);
+    fprintf(fp,"\n%s\n\n",cq);
 }
 
 typedef struct {

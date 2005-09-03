@@ -365,7 +365,8 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   /* Creates a simple window */
   w0=DisplayWidth(x11->disp,x11->screen)-132;
   h0=DisplayHeight(x11->disp,x11->screen)-140;
-  InitWin(gmx->wd,0,0,w0,h0,3,bromacs(quote,255));
+  bromacs(quote,255);
+  InitWin(gmx->wd,0,0,w0,h0,3,quote);
   gmx->wd->self=XCreateSimpleWindow(x11->disp,x11->root,
 				    gmx->wd->x, gmx->wd->y,
 				    gmx->wd->width,gmx->wd->height,

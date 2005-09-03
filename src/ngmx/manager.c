@@ -208,8 +208,9 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
     gmx_fatal(FARGS,"Topology %s (%d atoms) and trajectory %s (%d atoms) "
 		"do not match",status,man->top.atoms.nr,
 		trajectory,man->natom);
-  
-  sprintf(buf,"%s: %s",*man->top.name,cool_quote(quote,255,NULL));
+ 
+  cool_quote(quote,255,NULL);
+  sprintf(buf,"%s: %s",*man->top.name,quote);
   man->title.text = strdup(buf);
   man->view       = init_view(man->box);
   at        = &(man->top.atoms);

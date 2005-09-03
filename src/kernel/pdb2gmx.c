@@ -1171,7 +1171,8 @@ int main(int argc, char *argv[])
 	sprintf(fn,"chain.pdb");
       else
 	sprintf(fn,"chain_%c.pdb",cc->chain);
-      write_sto_conf(fn,cool_quote(quote,255,NULL),pdba,x,NULL,box);
+      cool_quote(quote,255,NULL);
+      write_sto_conf(fn,quote,pdba,x,NULL,box);
     }
   }
   

@@ -75,12 +75,12 @@ void CopyRight(FILE *out,char *szProgram);
  * is necessary to make the routines threadsafe and avoid allocating
  * a new string each time. The retstring pointer will be the return value.
  */
-extern char *bromacs(char *retstring, int retsize);
-
+extern void bromacs(char *retstring, int retsize);
+  
 /* For cool_quote, the number of the quote used will be returned in cqnum 
- * if it is non-NULL
+ * if it is non-NULL. 
  */
-extern char *cool_quote(char *retstring, int retsize, int *cqnum);
+extern void cool_quote(char *retstring, int retsize, int *cqnum);
 
 extern int be_cool(void);
 /* Return TRUE when the user is COOL, FALSE otherwise */

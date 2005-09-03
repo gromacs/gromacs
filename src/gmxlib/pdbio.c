@@ -98,7 +98,8 @@ void write_pdbfile_indexed(FILE *out,char *title,
   real alpha,beta,gamma;
   bool bOccup;
 
-  fprintf(out,"TITLE     %s\n",(title && title[0])?title:bromacs(pukestring,99));
+  bromacs(pukestring,99);
+  fprintf(out,"TITLE     %s\n",(title && title[0])?title:pukestring);
   if (bWideFormat) {
     fprintf(out,"REMARK    This file does not adhere to the PDB standard\n");
     fprintf(out,"REMARK    As a result of, some programs may not like it\n");
