@@ -133,6 +133,8 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       bEner[i] = !bBHAM;
     else if (i == F_BHAM)
       bEner[i] = bBHAM;
+    else if (i == F_EQM)
+      bEner[i] = ir->bQMMM;
     else if (i == F_COUL_LR)
       bEner[i] = (ir->rcoulomb > ir->rlist);
     else if (i == F_LJ_LR)
