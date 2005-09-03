@@ -602,10 +602,10 @@ static real do_1_thole(const rvec xi,const rvec xj,rvec fi,rvec fj,
   v0     = qq*ONE_4PI_EPS0*r12_1;       /*  2 */
   ebar   = exp(-r12bar);                /*  5 */
   v1     = (1-(1+0.5*r12bar)*ebar);     /*  4 */
-  fscal  = ((v0*r12_1)*v1 - v0*afac*ebar*(0.5*r12bar+0.5))*r12_1; /* 9 */
+  fscal  = ((v0*r12_1)*v1 - v0*0.5*afac*ebar*(r12bar+1))*r12_1; /* 9 */
   if (debug)
-    fprintf(debug,"THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f\n",v0,v1,1/r12_1,r12bar,fscal);
-    
+    fprintf(debug,"THOLE: v0 = %.3f v1 = %.3f r12= % .3f r12bar = %.3f fscal = %.3f  ebar = %.3f\n",v0,v1,1/r12_1,r12bar,fscal,ebar);
+  
   for(m=0; (m<DIM); m++) {
     fff    = fscal*r12[m];
     fi[m] += fff;
