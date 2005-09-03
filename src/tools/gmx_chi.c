@@ -361,7 +361,8 @@ static void histogramming(FILE *log,int nbin, int naa,char **aa,
 {
   /* also gets 3J couplings and order parameters S2 */ 
   t_karplus kkkphi[] = {
-    { "J_NHa",     6.51, -1.76,  1.6, -M_PI/3,   0.0,  0.0 },
+    { "J_NHa1",    6.51, -1.76,  1.6, -M_PI/3,   0.0,  0.0 },
+    { "J_NHa2",    6.51, -1.76,  1.6,  M_PI/3,   0.0,  0.0 },
     { "J_HaC'",    4.0,   1.1,   0.1,  0.0,      0.0,  0.0 },
     { "J_NHCb",    4.7,  -1.5,  -0.2,  M_PI/3,   0.0,  0.0 },
     { "J_Ci-1Hai", 4.5,  -1.3,  -1.2,  2*M_PI/3, 0.0,  0.0 }
