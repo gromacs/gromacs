@@ -158,13 +158,8 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
   }
   md->tmass  = tm;
 
-  if (bFree) {  
-    sfree(atoms->atom);
-    atoms->atom=NULL;
-    atoms->nr=0;
-    atoms->nres=0;
-    atoms->ngrpname=0;
-  }
+  if (bFree)   
+    free_t_atoms(atoms);
   
   if (bPert && fp)
     fprintf(fp,"There are %d atoms for free energy perturbation\n",
