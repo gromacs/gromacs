@@ -887,7 +887,9 @@ static void do_block(t_block *block,bool bRead)
 }
 
 static void do_atom(t_atom *atom,int ngrp,bool bRead, int file_version)
-{
+{ 
+  int i,myngrp;
+  
   do_real (atom->m);
   do_real (atom->q);
   do_real (atom->mB);
@@ -896,29 +898,42 @@ static void do_atom(t_atom *atom,int ngrp,bool bRead, int file_version)
   do_ushort(atom->typeB);
   do_int (atom->ptype);
   do_int (atom->resnr);
-  if (file_version < 23) {
-    ngrp = 8;
-    atom->grpnr[8] = 0;
-  }
-  do_nuchar(atom->grpnr,ngrp);
+  if (file_version < 23) 
+    myngrp = 8;
+  else if (file_version < 39) 
+    myngrp = 9;
+  else
+    myngrp = ngrp;
+  
+  do_nuchar(atom->grpnr,myngrp);
+  for(i=myngrp; (i<ngrp); i++)
+    atom->grpnr[i] = 0;
+  
 }
 
 static void do_grps(int ngrp,t_grps grps[],bool bRead, int file_version)
 {
-  int i,j;
+  int i,j,myngrp;
   bool bDum=TRUE;
   
-  if (file_version < 23) {
-    ngrp = 8;
-    grps[8].nr = 1;
-    snew(grps[8].nm_ind,1);
-  }
+  if (file_version < 23) 
+    myngrp = 8;
+  else if (file_version < 39) 
+    myngrp = 9;
+  else
+    myngrp = ngrp;
 
   for(j=0; (j<ngrp); j++) {
-    do_int (grps[j].nr);
-    if (bRead)
+    if (j<myngrp) {
+      do_int (grps[j].nr);
+      if (bRead)
+	snew(grps[j].nm_ind,grps[j].nr);
+      ndo_int(grps[j].nm_ind,grps[j].nr,bDum);
+    }
+    else {
+      grps[j].nr = 1;
       snew(grps[j].nm_ind,grps[j].nr);
-    ndo_int(grps[j].nm_ind,grps[j].nr,bDum);
+    }
   }
 }
 
