@@ -75,6 +75,8 @@ extern char *Program(void);
 /* Return the name of the program */
 extern char *ShortProgram(void);
 /* Id. without leading directory */
+extern char *command_line(void);
+/* Return the command line for this program */
 extern void set_program_name(char *argvzero);
 /* set the program name to the provided string, but note
  * that it must be a real file - we determine the library

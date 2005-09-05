@@ -77,6 +77,7 @@ static char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
 static bool  bView         = FALSE;
 static bool  bXvgrCodes    = TRUE;
 static char  *program      = NULL;
+static char  *cmdline      = NULL;
 
 char *ShortProgram(void)
 {
@@ -96,6 +97,14 @@ char *Program(void)
 {
   if (program)
     return program;
+  else
+    return "GROMACS";
+}
+
+char *command_line(void)
+{
+  if (cmdline)
+    return cmdline;
   else
     return "GROMACS";
 }
@@ -520,14 +529,16 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 #define NPCA_PA asize(pca_pa)
   FILE *fp;  
   bool bPrint,bExit,bXvgr;
-  int  i,j,k,npall,max_pa;
+  int  i,j,k,npall,max_pa,cmdlength;
   char *ptr,*newdesc;
   char *envstr;
 
 #define FF(arg) ((Flags & arg)==arg)
 
+  cmdlength = strlen(argv[0]);
   /* Check for double arguments */
   for (i=1; (i<*argc); i++) {
+    cmdlength += strlen(argv[i]);
     if (argv[i] && (strlen(argv[i]) > 1) && (!isdigit(argv[i][1]))) {
       for (j=i+1; (j<*argc); j++) {
 	if ( (argv[i][0]=='-') && (argv[j][0]=='-') && 
@@ -542,6 +553,13 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   }
   debug_gmx();
 
+  /* Fill the cmdline string */
+  snew(cmdline,cmdlength+*argc+1);
+  for (i=0; (i<*argc); i++) {
+    strcat(cmdline,argv[i]);
+    strcat(cmdline," ");
+  }
+  
   /* Handle the flags argument, which is a bit field 
    * The FF macro returns whether or not the bit is set
    */

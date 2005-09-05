@@ -63,18 +63,16 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *ya
 {
   FILE *xvgr;
   char pukestr[100];
-  
   time_t t;
   
   xvgr=(FILE *)ffopen(fn,"w");
   if (bPrintXvgrCodes()) {
-    fprintf(xvgr,"# This file was created by %s\n",Program());
-    fprintf(xvgr,"# which is part of G R O M A C S:\n");
-    bromacs(pukestr,99);
-    fprintf(xvgr,"# %s\n",pukestr);
     time(&t);
-    fprintf(xvgr,"# All this happened at: %s",ctime(&t));
-    fprintf(xvgr,"#\n");
+    fprintf(xvgr,"# This file was created %s",ctime(&t));
+    fprintf(xvgr,"# by the following command:\n# %s\n#\n",command_line());
+    fprintf(xvgr,"# %s is part of G R O M A C S:\n#\n",Program());
+    bromacs(pukestr,99);
+    fprintf(xvgr,"# %s\n#\n",pukestr);
     fprintf(xvgr,"@    title \"%s\"\n",title);
     fprintf(xvgr,"@    xaxis  label \"%s\"\n",xaxis);
     fprintf(xvgr,"@    yaxis  label \"%s\"\n",yaxis);
