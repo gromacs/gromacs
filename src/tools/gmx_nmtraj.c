@@ -194,6 +194,15 @@ int gmx_nmtraj(int argc,char *argv[])
       omega = sqrt(out_eigval*1.0E21/(AVOGADRO*AMU));
       
       /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
+      * The velocity is thus:
+      * 
+      * v = A*omega*cos(omega*t)*eigenvec.
+      *
+      * And the average kinetic energy the integral of mass*v*v/2 over a
+      * period:
+      *
+      * (1/4)*mass*A*omega*eigenvec
+      *
       * For t =2*pi*n, all energy will be kinetic, and v=A*omega*eigenvec.
       * The kinetic energy will be sum(0.5*mass*v*v) if we temporarily set A to 1.
       */
@@ -204,7 +213,7 @@ int gmx_nmtraj(int argc,char *argv[])
           for(d=0;d<DIM;d++)
           {
               vel   = omega*out_eigvec[i][d];
-              Ekin += 0.5*m*vel*vel;
+              Ekin += 0.25*m*vel*vel;
           }
       }
       /* Convert Ekin from amu*(nm/s)^2 to J.
