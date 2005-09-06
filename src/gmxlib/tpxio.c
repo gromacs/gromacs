@@ -194,6 +194,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
 	    file_version,tpx_version);
   }
 
+  if (bRead)
+    init_inputrec(ir);
+
   if (file_version >= 1) {  
     /* Basic inputrec stuff */  
     do_int(ir->eI); 
@@ -1279,7 +1282,6 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
 	  pr_inputrec(debug,0,"inputrec",ir);
       }
       else {
-	init_inputrec(&dum_ir);
 	do_inputrec  (&dum_ir,bRead,file_version);
 	if (bRead && debug) 
 	  pr_inputrec(debug,0,"inputrec",&dum_ir);

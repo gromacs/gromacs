@@ -100,6 +100,22 @@ void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNu
     }
 }
 
+void pr_bvec(FILE *fp,int indent,const char *title,bool vec[],int n, bool bShowNumbers)
+{
+  int i;
+
+  if (available(fp,vec,title))
+    {
+      indent=pr_title_n(fp,indent,title,n);
+      for (i=0; i<n; i++)
+        {
+          (void) pr_indent(fp,indent);
+          (void) fprintf(fp,"%s[%d]=%s\n",title,bShowNumbers?i:-1,
+			 BOOL(vec[i]));
+        }
+    }
+}
+
 void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, bool bShowNumbers)
 {
   int i,j;
@@ -225,6 +241,47 @@ void pr_energies(FILE *fp,int indent,const char *title,t_energy *e,int n)
   }
 }
 
+static void pr_int(FILE *fp,int indent,const char *title,int i)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"%-20s = %d\n",title,i);
+}
+
+static void pr_real(FILE *fp,int indent,const char *title,real r)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"%-20s = %g\n",title,r);
+}
+
+static void pr_str(FILE *fp,int indent,const char *title,const char *s)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"%-20s = %s\n",title,s);
+}
+
+void pr_qm_opts(FILE *fp,int indent,const char *title,t_grpopts *opts)
+{
+  int i,m,j;
+
+  fprintf(fp,"%s:\n",title);
+  
+  pr_int(fp,indent,"ngQM",opts->ngQM);
+  if (opts->ngQM > 0) {
+    pr_ivec(fp,indent,"QMmethod",opts->QMmethod,opts->ngQM,FALSE);
+    pr_ivec(fp,indent,"QMbasis",opts->QMbasis,opts->ngQM,FALSE);
+    pr_ivec(fp,indent,"QMcharge",opts->QMcharge,opts->ngQM,FALSE);
+    pr_ivec(fp,indent,"QMmult",opts->QMmult,opts->ngQM,FALSE);
+    pr_bvec(fp,indent,"bSH",opts->bSH,opts->ngQM,FALSE);
+    pr_ivec(fp,indent,"CASorbitals",opts->CASorbitals,opts->ngQM,FALSE);
+    pr_ivec(fp,indent,"CASelectrons",opts->CASelectrons,opts->ngQM,FALSE);
+    pr_rvec(fp,indent,"SAon",opts->SAon,opts->ngQM,FALSE);
+    pr_rvec(fp,indent,"SAon",opts->SAon,opts->ngQM,FALSE);
+    pr_ivec(fp,indent,"SAsteps",opts->SAsteps,opts->ngQM,FALSE);
+    pr_bvec(fp,indent,"bOPT",opts->bOPT,opts->ngQM,FALSE);
+    pr_bvec(fp,indent,"bTS",opts->bTS,opts->ngQM,FALSE);
+  }
+}
+
 void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts)
 {
   int i,m,j;
@@ -318,24 +375,6 @@ static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos)
       fprintf(fp," %e",cos->phi[j]);
     fprintf(fp,"\n");
   }
-}
-
-static void pr_int(FILE *fp,int indent,const char *title,int i)
-{
-  pr_indent(fp,indent);
-  fprintf(fp,"%-20s = %d\n",title,i);
-}
-
-static void pr_real(FILE *fp,int indent,const char *title,real r)
-{
-  pr_indent(fp,indent);
-  fprintf(fp,"%-20s = %g\n",title,r);
-}
-
-static void pr_str(FILE *fp,int indent,const char *title,const char *s)
-{
-  pr_indent(fp,indent);
-  fprintf(fp,"%-20s = %s\n",title,s);
 }
 
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
@@ -452,9 +491,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PR("userreal2",ir->userreal2);
     PR("userreal3",ir->userreal3);
     PR("userreal4",ir->userreal4);
-#undef PS
-#undef PR
-#undef PI
     pr_grp_opts(fp,indent,"grpopts",&(ir->opts));
     pr_cosine(fp,indent,"efield-x",&(ir->ex[XX]));
     pr_cosine(fp,indent,"efield-xt",&(ir->et[XX]));
@@ -462,6 +498,14 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     pr_cosine(fp,indent,"efield-yt",&(ir->et[YY]));
     pr_cosine(fp,indent,"efield-z",&(ir->ex[ZZ]));
     pr_cosine(fp,indent,"efield-zt",&(ir->et[ZZ]));
+    PS("bQMMM",BOOL(ir->bQMMM));
+    PI("QMconstraints",ir->QMconstraints);
+    PI("QMMMscheme",ir->QMMMscheme);
+    PR("scalefactor",ir->scalefactor);
+    pr_qm_opts(fp,indent,"qm_opts",&(ir->opts));
+#undef PS
+#undef PR
+#undef PI
   }
 }
 

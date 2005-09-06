@@ -156,11 +156,24 @@ void done_inputrec(t_inputrec *ir)
     if (ir->et[m].a)   sfree(ir->et[m].a);
     if (ir->et[m].phi) sfree(ir->et[m].phi);
   }
-  if (ir->opts.nrdf)    sfree(ir->opts.nrdf);
-  if (ir->opts.ref_t)   sfree(ir->opts.ref_t);
-  if (ir->opts.tau_t)   sfree(ir->opts.tau_t);
-  if (ir->opts.acc)     sfree(ir->opts.acc);
-  if (ir->opts.nFreeze) sfree(ir->opts.nFreeze);
+
+  sfree(ir->opts.nrdf);
+  sfree(ir->opts.ref_t);
+  sfree(ir->opts.tau_t);
+  sfree(ir->opts.acc);
+  sfree(ir->opts.nFreeze);
+  sfree(ir->opts.QMmethod);
+  sfree(ir->opts.QMbasis);
+  sfree(ir->opts.QMcharge);
+  sfree(ir->opts.QMmult);
+  sfree(ir->opts.bSH);
+  sfree(ir->opts.CASorbitals);
+  sfree(ir->opts.CASelectrons);
+  sfree(ir->opts.SAon);
+  sfree(ir->opts.SAoff);
+  sfree(ir->opts.SAsteps);
+  sfree(ir->opts.bOPT);
+  sfree(ir->opts.bTS);
 }
 
 void init_gtc_state(t_state *state,int ngtc)
