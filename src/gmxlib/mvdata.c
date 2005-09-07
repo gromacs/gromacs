@@ -196,6 +196,21 @@ static void ld_grpopts(int src,t_grpopts *g)
   nblockrx(src,g->ngacc,g->acc);
   nblockrx(src,g->ngfrz,g->nFreeze);
   nblockrx(src,g->ngener*g->ngener,g->egp_flags);
+  snew(g->annealing,g->ngtc);
+  snew(g->anneal_npoints,g->ngtc);
+  snew(g->anneal_time,g->ngtc);
+  snew(g->anneal_temp,g->ngtc);
+  nblockrx(src,g->ngtc,g->annealing);
+  nblockrx(src,g->ngtc,g->anneal_npoints);
+  for(i=0;(i<g->ngtc); i++) {
+    n = g->anneal_npoints[i];
+    if (n > 0) {
+      snew(g->anneal_time[i],n);
+      snew(g->anneal_temp[i],n);
+      nblockrx(src,n,g->anneal_time[i]);
+      nblockrx(src,n,g->anneal_temp[i]);
+    }
+  }
   /* QMMM stuff, see inputrec */
   blockrx(src,g->ngQM);
   snew(g->QMmethod,g->ngQM);
@@ -219,21 +234,6 @@ static void ld_grpopts(int src,t_grpopts *g)
   snew(g->SAsteps,g->ngQM);
   nblockrx(src,g->ngQM,g->SAsteps);
   /* end of QMMM stuff */
-  snew(g->annealing,g->ngtc);
-  snew(g->anneal_npoints,g->ngtc);
-  snew(g->anneal_time,g->ngtc);
-  snew(g->anneal_temp,g->ngtc);
-  nblockrx(src,g->ngtc,g->annealing);
-  nblockrx(src,g->ngtc,g->anneal_npoints);
-  for(i=0;(i<g->ngtc); i++) {
-    n = g->anneal_npoints[i];
-    if (n > 0) {
-      snew(g->anneal_time[i],n);
-      snew(g->anneal_temp[i],n);
-      nblockrx(src,n,g->anneal_time[i]);
-      nblockrx(src,n,g->anneal_temp[i]);
-    }
-  }
 }
 
 static void ld_cosines(int src,t_cosines *cs)
