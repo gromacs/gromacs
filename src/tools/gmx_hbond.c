@@ -648,6 +648,9 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
 	  gx = grididx[XX];
 	  gy = grididx[YY];
 	  gz = grididx[ZZ];
+	  range_check(gx,0,ngrid[XX]);
+	  range_check(gy,0,ngrid[YY]);
+	  range_check(gz,0,ngrid[ZZ]);
 	  DBB(gx);
 	  DBB(gy);
 	  DBB(gz);
@@ -1772,8 +1775,8 @@ int gmx_hbond(int argc,char *argv[])
   grid  = init_grid(bBox, box, rcut, ngrid);
   nabin = acut/abin;
   nrbin = rcut/rbin;
-  snew(adist,nabin);
-  snew(rdist,nrbin);
+  snew(adist,nabin+1);
+  snew(rdist,nrbin+1);
   
   do {
     bTric = bBox && TRICLINIC(box);
