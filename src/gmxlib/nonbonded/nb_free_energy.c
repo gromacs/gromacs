@@ -100,6 +100,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
     real          Y,F,G,H,Fp,Geps,Heps2,eps,eps2,VV,FF;
     double        isp=0.564189583547756;
 
+
     /* fix compiler warnings */
     nj1 = 0;
     n1  = 0;
@@ -121,14 +122,8 @@ gmx_nb_free_energy_kernel(int                  icoul,
     
     do_tab = do_coultab || do_vdwtab;
     
-    tab_elemsize = 0;
-    
-    if(do_coultab)
-        tab_elemsize += 4;
-    
-    if(do_vdwtab)
-        tab_elemsize += 8;
-    
+    /* we always use the combined table here */
+    tab_elemsize = 12;
     
     for(n=0; (n<nri); n++)
     {
@@ -255,10 +250,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 else if(ivdw==3)
                 {
                     /* Table LJ */
-                    if(do_coultab)
-                        nnn = n1+4;
-                    else
-                        nnn = n1;
+		    nnn = n1+4;
                     
                     /* dispersion */
                     Y          = VFtab[nnn];
@@ -280,7 +272,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                     VV         = Y+eps*Fp;
                     FF         = Fp+Geps+2.0*Heps2;
                     VvdwA     += c12A*VV;
-                    FscalA    -= c12A*tabscale*FF*rinvA;                    
+                    FscalA    -= c12A*tabscale*FF*rinvA;
                 }           
                 /* Buckingham vdw free energy not supported */
             }
@@ -348,10 +340,7 @@ gmx_nb_free_energy_kernel(int                  icoul,
                 else if(ivdw==3)
                 {
                     /* Table LJ */
-                    if(do_coultab)
-                        nnn = n1+4;
-                    else
-                        nnn = n1;
+                    nnn = n1+4;
                     
                     /* dispersion */
                     Y          = VFtab[nnn];
