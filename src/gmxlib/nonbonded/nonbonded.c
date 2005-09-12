@@ -331,23 +331,8 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 
             if(nrnb_ind==eNR_NBKERNEL_FREE_ENERGY)
             {
-                /* generic free energy */
-                if(fr->bvdwtab && fr->bcoultab)
-                {
-                    tabledata = nblists->tab.tab;
-                }
-                else if(fr->bvdwtab)
-                {
-                    tabledata = nblists->vdwtab;
-                }
-                else if(fr->bcoultab)
-                {
-                    tabledata = nblists->coultab;
-                }
-                else
-                {
-                    tabledata = NULL;
-                }                
+                /* generic free energy, use combined table */
+  	        tabledata = nblists->tab.tab;
             }
             else
             {
