@@ -223,7 +223,8 @@ typedef enum
   LIST_LOAD	=0100
 } t_listitem;
 
-extern void check_nnodes_top(char *fn,t_topology *top,int nnodes);
+extern int check_nnodes_top(char *fn,t_topology *top,int nnodes, 
+                             int nkx, int nky, bool bDoPME);
 /* Verify whether this tpr file is for nnodes nodes, and quit if not */
 
 extern void init_single(FILE *log,

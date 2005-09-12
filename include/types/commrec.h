@@ -37,10 +37,17 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_MPI
+#include <mpi.h>
+#endif
+
 typedef struct {
-  int nodeid,nnodes;
+  int nodeid,nnodes,npmenodes;
   int left,right;
   int threadid,nthreads;
+#ifdef GMX_MPI
+  MPI_Comm mpi_comm_mygroup;
+#endif
 } t_commrec;
 
 #define MASTERNODE(cr)     ((cr)->nodeid == 0)
@@ -49,3 +56,17 @@ typedef struct {
 #define NODEPAR(cr)        ((cr)->nnodes > 1)
 #define THREADPAR(cr)      ((cr)->nthreads > 1)
 #define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr))
+
+/*
+ * with the help of this macro + enum we are able to find out 
+ * what type of pme work the local node has to do 
+ *
+ * pmeduty = 0 if node does pp only
+ *         = 1 if node does pme only
+ *         = 2 if ALL nodes do both (no PME/PP node splitting)
+ */ 
+#define pmeduty(cr)        ((!cr->npmenodes)? 2:(cr->nodeid >= cr->nnodes-cr->npmenodes))
+
+enum {
+  epmePPONLY, epmePMEONLY, epmePMEANDPP
+};

@@ -47,6 +47,7 @@
 
 #ifdef GMX_MPI
 #include <mpi.h>
+#include "mpelogging.h"
 #endif
 
 #ifdef GMX_MPI
@@ -211,6 +212,98 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   (void) MPI_Comm_rank( MPI_COMM_WORLD, &mpi_my_rank );
   (void) MPI_Get_processor_name( mpi_hostname, &resultlen );
 
+
+#ifdef USE_MPE
+  /* MPE logging routines */
+  /* get event IDs from MPE: */  
+  ev_pme_start               = MPE_Log_get_event_number( );
+  ev_pme_finish              = MPE_Log_get_event_number( );
+  ev_spread_on_grid_start    = MPE_Log_get_event_number( );
+  ev_spread_on_grid_finish   = MPE_Log_get_event_number( );
+  ev_sum_qgrid_start         = MPE_Log_get_event_number( );
+  ev_sum_qgrid_finish        = MPE_Log_get_event_number( );
+  ev_gmxfft3d_start          = MPE_Log_get_event_number( );
+  ev_gmxfft3d_finish         = MPE_Log_get_event_number( );
+  ev_solve_pme_start         = MPE_Log_get_event_number( );
+  ev_solve_pme_finish        = MPE_Log_get_event_number( );
+  ev_gather_f_bsplines_start = MPE_Log_get_event_number( );
+  ev_gather_f_bsplines_finish= MPE_Log_get_event_number( );
+  ev_timestep1               = MPE_Log_get_event_number( );
+  ev_timestep2               = MPE_Log_get_event_number( );
+  ev_force_start             = MPE_Log_get_event_number( );
+  ev_force_finish            = MPE_Log_get_event_number( );
+  ev_do_fnbf_start           = MPE_Log_get_event_number( );
+  ev_do_fnbf_finish          = MPE_Log_get_event_number( );
+  ev_reduce_start            = MPE_Log_get_event_number( );
+  ev_reduce_finish           = MPE_Log_get_event_number( );
+  ev_rscatter_start          = MPE_Log_get_event_number( );
+  ev_rscatter_finish         = MPE_Log_get_event_number( );
+  ev_alltoall_start          = MPE_Log_get_event_number( );
+  ev_alltoall_finish         = MPE_Log_get_event_number( );
+  ev_ns_start                = MPE_Log_get_event_number( );
+  ev_ns_finish               = MPE_Log_get_event_number( );
+  ev_calc_bonds_start        = MPE_Log_get_event_number( );
+  ev_calc_bonds_finish       = MPE_Log_get_event_number( );
+  ev_pmeredist_start         = MPE_Log_get_event_number( );
+  ev_pmeredist_finish        = MPE_Log_get_event_number( );
+  ev_init_pme_start          = MPE_Log_get_event_number( );      
+  ev_init_pme_finish         = MPE_Log_get_event_number( );
+  ev_global_stat_start       = MPE_Log_get_event_number( );
+  ev_global_stat_finish      = MPE_Log_get_event_number( );
+  ev_shift_start             = MPE_Log_get_event_number( );
+  ev_shift_finish            = MPE_Log_get_event_number( );
+  ev_send_coordinates_start  = MPE_Log_get_event_number( );
+  ev_send_coordinates_finish = MPE_Log_get_event_number( );
+  ev_update_fr_start         = MPE_Log_get_event_number( );
+  ev_update_fr_finish        = MPE_Log_get_event_number( );
+  ev_clear_rvecs_start       = MPE_Log_get_event_number( );
+  ev_clear_rvecs_finish      = MPE_Log_get_event_number( ); 
+  ev_update_start            = MPE_Log_get_event_number( ); 
+  ev_update_finish           = MPE_Log_get_event_number( ); 
+  ev_output_start            = MPE_Log_get_event_number( ); 
+  ev_output_finish           = MPE_Log_get_event_number( ); 
+  ev_sum_lrforces_start      = MPE_Log_get_event_number( ); 
+  ev_sum_lrforces_finish     = MPE_Log_get_event_number( ); 
+  ev_virial_start            = MPE_Log_get_event_number( );
+  ev_virial_finish           = MPE_Log_get_event_number( );
+  ev_sort_start              = MPE_Log_get_event_number( );
+  ev_sort_finish             = MPE_Log_get_event_number( );
+  ev_sum_qgrid_start         = MPE_Log_get_event_number( );
+  ev_sum_qgrid_finish        = MPE_Log_get_event_number( );
+  /* describe events: */
+  if ( mpi_my_rank == 0 ) 
+  {
+    MPE_Describe_state(ev_pme_start,               ev_pme_finish,               "doing PME",       "grey" );
+    MPE_Describe_state(ev_spread_on_grid_start,    ev_spread_on_grid_finish,    "spread",          "dark orange" );   
+    MPE_Describe_state(ev_sum_qgrid_start,         ev_sum_qgrid_finish,         "sum qgrid",       "slate blue");
+    MPE_Describe_state(ev_gmxfft3d_start,          ev_gmxfft3d_finish,          "fft3d",           "snow2" );   
+    MPE_Describe_state(ev_solve_pme_start,         ev_solve_pme_finish,         "solve PME",       "indian red" );   
+    MPE_Describe_state(ev_gather_f_bsplines_start, ev_gather_f_bsplines_finish, "bsplines",        "light sea green" );   
+    MPE_Describe_state(ev_timestep1,               ev_timestep2,                "timestep START",  "magenta" );
+    MPE_Describe_state(ev_force_start,             ev_force_finish,             "force",           "cornflower blue" );
+    MPE_Describe_state(ev_do_fnbf_start,           ev_do_fnbf_finish,           "do_fnbf",         "navy" );
+    MPE_Describe_state(ev_reduce_start,            ev_reduce_finish,            "reduce",          "cyan1" );
+    MPE_Describe_state(ev_rscatter_start,          ev_rscatter_finish,          "rscatter",        "cyan3" );
+    MPE_Describe_state(ev_alltoall_start,          ev_alltoall_finish,          "alltoall",        "LightCyan4" );
+    MPE_Describe_state(ev_ns_start,                ev_ns_finish,                "neighbor search", "tomato" );
+    MPE_Describe_state(ev_calc_bonds_start,        ev_calc_bonds_finish,        "bonded forces",   "slate blue" );
+    MPE_Describe_state(ev_pmeredist_start,         ev_pmeredist_finish,         "pmeredist",       "thistle" );
+    MPE_Describe_state(ev_init_pme_start,          ev_init_pme_finish,          "init PME",        "snow4");
+    MPE_Describe_state(ev_global_stat_start,       ev_global_stat_finish,       "global stat",     "firebrick3");
+    MPE_Describe_state(ev_shift_start,             ev_shift_finish,             "shift",           "orange");
+    MPE_Describe_state(ev_send_coordinates_start,  ev_send_coordinates_finish,  "send_coordinates","blue");
+    MPE_Describe_state(ev_update_fr_start,         ev_update_fr_finish,         "update forcerec", "goldenrod");
+    MPE_Describe_state(ev_clear_rvecs_start,       ev_clear_rvecs_finish,       "clear rvecs",     "bisque");
+    MPE_Describe_state(ev_update_start,            ev_update_finish,            "update",          "cornsilk");
+    MPE_Describe_state(ev_output_start,            ev_output_finish,            "output",          "black");
+    MPE_Describe_state(ev_sum_lrforces_start,      ev_sum_lrforces_finish,      "sum_LRforces",    "lime green");
+    MPE_Describe_state(ev_virial_start,            ev_virial_finish,            "calc_virial",     "thistle4");
+    MPE_Describe_state(ev_sort_start,              ev_sort_finish,              "sort pme atoms",  "brown");
+    MPE_Describe_state(ev_sum_qgrid_start,         ev_sum_qgrid_finish,         "sum charge grid", "medium orchid");
+    }
+  MPE_Init_log();
+#endif
+  
   fprintf(stderr,"NNODES=%d, MYRANK=%d, HOSTNAME=%s\n",
 	  mpi_num_nodes,mpi_my_rank,mpi_hostname);
   
@@ -358,7 +451,7 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-  /*#define TEST_MPI_SUM*/
+#define TEST_MPI_SUM
 #ifdef TEST_MPI_SUM
   static double *buf;
   static int nalloc=0;
@@ -368,7 +461,7 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
     nalloc = nr;
     srenew(buf,nalloc);
   }
-  MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+  MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mygroup);
   for(i=0; i<nr; i++)
     r[i] = buf[i];
 #else
@@ -384,7 +477,7 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 
   for(i=0; (i<nr); i++)
     buf[cur][i]=r[i];
-  for(j=0; (j<cr->nnodes-1); j++) {
+  for(j=0; (j<(cr->nnodes-cr->npmenodes-1)); j++) {
     gmx_tx(cr->left,buf[cur],bufs);
     gmx_rx(cr->right,buf[next],bufs);
     gmx_tx_wait(cr->left);
@@ -417,7 +510,7 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 
   for(i=0; (i<nr); i++)
     buf[cur][i]=r[i];
-  for(j=0; (j<cr->nnodes-1); j++) {
+  for(j=0; (j<(cr->nnodes-cr->npmenodes-1)); j++) {
     gmx_tx(cr->left,buf[cur],bufs);
     gmx_rx(cr->right,buf[next],bufs);
     gmx_wait(cr->left,cr->right);
@@ -448,7 +541,7 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 
   for(i=0; (i<nr); i++)
     buf[cur][i]=r[i];
-  for(j=0; (j<cr->nnodes-1); j++) {
+  for(j=0; (j<(cr->nnodes-cr->npmenodes-1)); j++) {
     gmx_tx(cr->left,buf[cur],bufs);
     gmx_rx(cr->right,buf[next],bufs);
     gmx_wait(cr->left,cr->right);

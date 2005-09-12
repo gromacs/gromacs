@@ -60,11 +60,11 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
 {
   int    i,j,j0=137,j1=391;
   int    cur,nsum;
-#define next ((cur+1) % nsb->nnodes)
-#define prev ((cur-1+nsb->nnodes) % nsb->nnodes)
+#define next ((cur+1) % (nsb->nnodes-nsb->npmenodes))
+#define prev ((cur-1+(nsb->nnodes-nsb->npmenodes)) % (nsb->nnodes-nsb->npmenodes))
 
   if (bSum)
-    cur=(nsb->nodeid+nsb->shift) % nsb->nnodes;
+    cur=(nsb->nodeid+nsb->shift) % (nsb->nnodes-nsb->npmenodes);
   else
     cur=nsb->nodeid;
 
@@ -149,9 +149,10 @@ void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[])
 {
   int i,start,nr;
   int cur=cr->nodeid;
-#define next ((cur+1) % cr->nnodes)
+
+#define next ((cur+1) % (cr->nnodes-cr->npmenodes))
   
-  for(i=0; (i<cr->nnodes-1); i++) {
+  for(i=0; (i<(cr->nnodes-cr->npmenodes)-1); i++) {
     start = (cur == 0) ? 0 : nload[cur-1];
     nr    = nload[cur] - start;
     gmx_tx(cr->left, cg_cm[start], nr*sizeof(cg_cm[0]));
@@ -167,7 +168,7 @@ void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[])
     gmx_tx_wait(cr->left);
     gmx_rx_wait(cr->right);
     
-    cur=next;
+    cur=next;    
   }
 #undef next
 }

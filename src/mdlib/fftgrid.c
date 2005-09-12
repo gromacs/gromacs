@@ -61,12 +61,12 @@ static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 #endif
 
 t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
-		      bool bOptFFT)
+		      bool bOptFFT, t_commrec *cr)
 {
 /* parallel runs with non-parallel ffts haven't been tested yet */
     int       flags;
   t_fftgrid *grid;
-  
+
   snew(grid,1);
   grid->nx   = nx;
   grid->ny   = ny;
@@ -101,9 +101,9 @@ t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
   if (bParallel) {
 #ifdef GMX_MPI
     grid->plan_mpi_fw = 
-	rfftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_REAL_TO_COMPLEX,flags);
+	rfftw3d_mpi_create_plan(cr->mpi_comm_mygroup,nx,ny,nz,FFTW_REAL_TO_COMPLEX,flags);
     grid->plan_mpi_bw =
-	rfftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_COMPLEX_TO_REAL,flags);
+	rfftw3d_mpi_create_plan(cr->mpi_comm_mygroup,nx,ny,nz,FFTW_COMPLEX_TO_REAL,flags);
     
     rfftwnd_mpi_local_sizes(grid->plan_mpi_fw,
 			   &(grid->pfft.local_nx),

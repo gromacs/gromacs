@@ -34,6 +34,8 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
+#include "mpelogging.h"
+
 #ifndef _vec_h
 #define _vec_h
 
@@ -399,14 +401,21 @@ static inline void clear_ivec(ivec a)
 
 static inline void clear_rvecs(int n,rvec v[])
 {
+/*  memset(v[0],0,DIM*n*sizeof(v[0][0])); */
   int i;
-  
+
+  GMX_MPE_LOG(ev_clear_rvecs_start);
+    
   for(i=0; (i<n); i++) 
     clear_rvec(v[i]);
+    
+  GMX_MPE_LOG(ev_clear_rvecs_finish);  
 }
 
 static inline void clear_mat(matrix a)
 {
+/*  memset(a[0],0,DIM*DIM*sizeof(a[0][0])); */
+  
   const real nul=0.0;
   
   a[XX][XX]=a[XX][YY]=a[XX][ZZ]=nul;

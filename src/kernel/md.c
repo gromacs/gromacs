@@ -69,14 +69,16 @@
 #include "mdatoms.h"
 #include "repl_ex.h"
 #include "qmmm.h"
-
-#ifdef USE_MPE
-#include "mpe.h"
 #include "mpelogging.h"
+
+#ifdef GMX_MPI
+#include <mpi.h>
 #endif
 
-
-volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
+/* The following two variables and the signal_handler function
+ * is used from pme.c as well 
+ */
+extern bool bGotTermSignal, bGotUsr1Signal;
 
 static RETSIGTYPE signal_handler(int n)
 {
@@ -117,7 +119,12 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   t_comm_vsites vsitecomm;
   int        i,m;
   char       *gro;
-  
+
+#ifdef GMX_MPI
+  /* Communicator needed for PME/PP node division */
+  MPI_Comm   mpi_comm_pporpme;
+#endif
+
   /* Initiate everything (snew sets to zero!) */
   snew(ener,F_NRE);
   snew(fcd,1);
@@ -138,7 +145,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (MASTER(cr)) 
       distribute_parts(cr->left,cr->right,cr->nodeid,cr->nnodes,inputrec,
 		       ftp2fn(efTPX,nfile,fnm),nDlb);
-    
+
     /* Every node (including the master) reads the data from the ring */
     init_parts(stdlog,cr,
 	       inputrec,top,state,&mdatoms,nsb,
@@ -153,6 +160,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Is not read from TPR yet, so we allocate space here */
     snew(state->sd_X,nsb->natoms);
   }
+  cr->npmenodes = nsb->npmenodes;
   snew(buf,nsb->natoms);
   snew(f,nsb->natoms);
   snew(vt,nsb->natoms);
@@ -160,7 +168,58 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   if (bVerbose && MASTER(cr))
     fprintf(stderr,"Loaded with Money\n\n");
-  
+
+#ifdef GMX_MPI
+  /* If necessary split communicator and adapt ring topology */ 
+  if (pmeduty(cr)==epmePPONLY || pmeduty(cr)==epmePMEONLY)
+  {
+    /* Split communicator */
+#define split
+#ifdef split
+    MPI_Comm_split(MPI_COMM_WORLD,pmeduty(cr),cr->nodeid,&mpi_comm_pporpme);
+    cr->mpi_comm_mygroup = mpi_comm_pporpme;
+#else
+    /* splitting a communicator sometimes results in a hang on 
+     * MPI_Finalize if MPE logging is used. In some of the cases
+     * this workaround helps: 
+     */
+    MPI_Group  world_group, ppgroup, pmegroup;
+    MPI_Comm   comm_pp, comm_pme;
+    int  ranks[MAXNODES];
+
+    for (i=0; i<cr->nnodes-cr->npmenodes; i++)
+      ranks[i]=i;
+    /* Make a group that consists of all processors: */
+    MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+    /* exclude the PP nodes and form the pmegroup: */
+    MPI_Group_excl(world_group, cr->nnodes-cr->npmenodes, ranks, &pmegroup);
+    /* create a communicator for the pmegroup: */
+    MPI_Comm_create(MPI_COMM_WORLD, pmegroup, &comm_pme);
+    if (pmeduty(cr) == epmePMEONLY)
+    {
+      fprintf(stderr,"node %d has comm_pme as cr->mpi_comm_mygroup\n",cr->nodeid);
+      cr->mpi_comm_mygroup = comm_pme;
+    }
+    else 
+    {
+      fprintf(stderr,"node %d has MPI_COMM_NULL as cr->mpi_comm_mygroup\n",cr->nodeid);
+      cr->mpi_comm_mygroup = MPI_COMM_NULL;
+    }
+#endif
+    /* Change topology to one ring for PP and another for PME nodes */ 
+    if (cr->nodeid==0)
+      cr->left=cr->nnodes-cr->npmenodes-1; 
+    else if (cr->nodeid==cr->nnodes-cr->npmenodes-1)
+      cr->right=0;
+    else if (cr->nodeid==cr->nnodes-cr->npmenodes)
+      cr->left=cr->nnodes-1;
+    else if (cr->nodeid==cr->nnodes-1)
+      cr->right=cr->nnodes-cr->npmenodes;
+  }
+  else  /* PME is done on all nodes */
+    cr->mpi_comm_mygroup = MPI_COMM_WORLD; 
+#endif /* GMX_MPI */
+
   /* Index numbers for parallellism... */
   nsb->nodeid      = cr->nodeid;
   top->idef.nodeid = cr->nodeid;
@@ -173,12 +232,12 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Periodicity stuff */  
   if (inputrec->ePBC == epbcXYZ) {
     graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-    if (debug)
-      p_graph(debug,"Initial graph",graph);
+  if (debug) 
+    p_graph(debug,"Initial graph",graph);
   }
   else
     graph = NULL;
-    
+  
   /* Distance Restraints */
   init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
 	      top->idef.iparams,inputrec,mcr,fcd);
@@ -212,25 +271,56 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),inputrec);
+
+  /* Initiate PME if necessary */
+  /* either on all nodes (if epmePMEANDPP is TRUE) 
+   * or on dedicated PME nodes (if epmePMEONLY is TRUE) */
   if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER))
-    (void) init_pme(stdlog,cr,inputrec->nkx,inputrec->nky,inputrec->nkz,
-		    inputrec->pme_order,
-		    /*HOMENR(nsb),*/nsb->natoms,
-		    mdatoms->bChargePerturbed,
-		    inputrec->bOptFFT,inputrec->ewald_geometry);
+  {
+    if (pmeduty(cr)==epmePMEONLY || pmeduty(cr)==epmePMEANDPP)
+    { 
+      GMX_MPE_LOG(ev_init_pme_start);
+      
+      (void) init_pme(stdlog,cr,inputrec->nkx,inputrec->nky,inputrec->nkz,
+	   	     inputrec->pme_order,
+		     /*HOMENR(nsb),*/nsb->natoms,
+		     mdatoms->bChargePerturbed,
+		     inputrec->bOptFFT,inputrec->ewald_geometry);
+
+      GMX_MPE_LOG(ev_init_pme_finish);
+    }
+  }
+    
+  /* Turn on signal handling on all nodes */
+  /*
+   * (A user signal from the PME nodes (if any)
+   * is transported to the PP nodes via the tag of the 
+   * energy message in do_pmeonly => receive_lrforces) */
+  signal(SIGTERM,signal_handler);
+  signal(SIGUSR1,signal_handler);
   
   /* Now do whatever the user wants us to do (how flexible...) */
   switch (inputrec->eI) {
   case eiMD:
   case eiSD:
   case eiBD:
-    start_t=do_md(stdlog,cr,mcr,nfile,fnm,
-		  bVerbose,bCompact,bVsites,
-		  bParVsites ? &vsitecomm : NULL,
-		  nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
-		  mdatoms,nsb,nrnb,graph,edyn,fr,
-		  repl_ex_nst,repl_ex_seed,
-		  Flags);
+    if (pmeduty(cr) != epmePMEONLY) 
+    {
+      start_t=do_md(stdlog,cr,mcr,nfile,fnm,
+		    bVerbose,bCompact,bVsites,
+		    bParVsites ? &vsitecomm : NULL,
+		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
+		    mdatoms,nsb,nrnb,graph,edyn,fr,
+		    repl_ex_nst,repl_ex_seed,
+		    Flags);
+    } 
+#ifdef GMX_MPI
+    else /* pmeduty(cr) == epmePMEONLY */
+    {
+      /* do PME: */
+      do_pmeonly(stdlog,inputrec,cr,state->box,nsb,&nrnb[nsb->nodeid],fr->ewaldcoeff,state->lambda,FALSE);
+    }
+#endif    
     break;
   case eiCG:
     start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,nsb,
@@ -268,8 +358,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   default:
     gmx_fatal(FARGS,"Invalid integrator (%d)...\n",inputrec->eI);
   }
-  
-    /* Some timing stats */  
+ 
+  /* Some timing stats */  
   if (MASTER(cr)) {
     realtime=difftime(time(NULL),start_t);
     if ((nodetime=node_time()) == 0)
@@ -278,9 +368,11 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   else 
     realtime=0;
     
-  /* Convert back the atoms */
-  md2atoms(mdatoms,&(top->atoms),TRUE);
-  
+  if (pmeduty(cr) != epmePMEONLY)
+  {
+    /* Convert back the atoms */
+    md2atoms(mdatoms,&(top->atoms),TRUE);
+  }
   /* Finish up, write some stuff
    * if rerunMD, don't write last frame again 
    */
@@ -340,7 +432,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   /* End of XMDRUN stuff */
-
+  
+#ifdef GMX_MPI
+#ifdef PRT_TIME
+  double      zeit0, zeit1, zeitc=0.0;
+#endif
+  int         j, elements;
+  real        boxbuf[DIM*DIM];
+#endif
 
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
@@ -415,8 +514,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   debug_gmx();
 	
   if (PAR(cr)) 
+  {
+    GMX_MPE_LOG(ev_global_stat_start);
+       
     global_stat(log,cr,ener,force_vir,shake_vir,
 		&(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
+
+    GMX_MPE_LOG(ev_global_stat_finish);
+  }
   debug_gmx();
   
   /* Calculate the initial half step temperature */
@@ -482,16 +587,22 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bExchanged = FALSE;
   step = inputrec->init_step;
   step_rel = 0;
-#ifdef USE_MPE
-  MPE_Start_log( );
+#ifdef GMX_MPI
+#ifdef PRT_TIME
+  zeit0 = MPI_Wtime( );
 #endif
+#endif
+
   while ((!bRerunMD && (step_rel <= inputrec->nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
-    
-#ifdef USE_MPE
-    /* MPI_Barrier( MPI_COMM_WORLD ); */
-    MPE_Log_event( ev_timestep1, 0, "time step starts" );
+
+#ifdef PRT_TIME
+    if (MASTER(cr)) 
+      fprintf(stderr,"===--- time step %d ---===\n",step_rel);
 #endif
+
+    GMX_MPE_LOG(ev_timestep1);
+
     if (bRerunMD) {
       if (rerun_fr.bStep) {
 	step = rerun_fr.step;
@@ -599,7 +710,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	exit(0);
       }
     }
-    
+
+    GMX_MPE_LOG(ev_timestep2);
+
     if (bShell_FlexCon) {
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,mcr,bVerbose,bFFscan ? step+1 : step,
@@ -624,11 +737,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
     }
-   
+
+    GMX_BARRIER(cr->mpi_comm_mygroup);
+
     if (bTCR)
       mu_aver=calc_mu_aver(cr,nsb,state->x,mdatoms->chargeA,mu_tot,top,mdatoms,
 			   gnx,grpindex);
-    
     if (bGlas)
       do_glas(log,START(nsb),HOMENR(nsb),state->x,f,
 	      fr,mdatoms,top->idef.atnr,inputrec,ener);
@@ -638,7 +752,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       fprintf(log,"Done init_coupling\n"); 
       fflush(log);
     }
-    
+
     /* Now we have the energies and forces corresponding to the 
      * coordinates at time t. We must output all of this before
      * the update.
@@ -647,11 +761,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (bVsites) 
       spread_vsite_f(log,state->x,f,&mynrnb,&top->idef,
 		     fr,graph,state->box,vsitecomm,cr);
-      
+
+    GMX_MPE_LOG(ev_virial_start);
     /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
     calc_virial(log,START(nsb),HOMENR(nsb),state->x,f,
 		force_vir,fr->vir_el_recip,graph,state->box,&mynrnb,fr);
+    GMX_MPE_LOG(ev_virial_finish);
+
     /* Spread the LR force on virtual sites to the other particles... 
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
@@ -659,8 +776,12 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (bVsites && fr->bEwald) 
       spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
 		     fr,graph,state->box,vsitecomm,cr);
-    
+
+    GMX_MPE_LOG(ev_sum_lrforces_start);
     sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+    GMX_MPE_LOG(ev_sum_lrforces_finish);
+
+    GMX_MPE_LOG(ev_output_start);
 
     xx = (do_per_step(step,inputrec->nstxout) || bLastStep) ? state->x : NULL;
     vv = (do_per_step(step,inputrec->nstvout) || bLastStep) ? state->v : NULL;
@@ -682,6 +803,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       }
       debug_gmx();
     }
+    GMX_MPE_LOG(ev_output_finish);
+
     clear_mat(shake_vir);
     
     /* Afm and Umbrella type pulling happens before the update, 
@@ -692,7 +815,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       pull(&pulldata,state->x,f,force_vir,state->box,
 	   top,inputrec->delta_t,step,t,
 	   mdatoms,START(nsb),HOMENR(nsb),cr); 
-    
+
     if (bFFscan)
       clear_rvecs(nsb->natoms,buf);
 
@@ -702,7 +825,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * the same timestep above. Make a copy in a separate array.
      */
     copy_mat(state->box,lastbox);
+ 
     
+    GMX_MPE_LOG(ev_update_start);
     /* This is also parallellized, but check code in update.c */
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,state->lambda,&ener[F_DVDL], */
     bOK = TRUE;
@@ -716,6 +841,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       if ((inputrec->ePBC == epbcXYZ) && (graph->nnodes > 0))
 	unshift_self(graph,state->box,state->x);
     }
+
+    GMX_BARRIER(cr->mpi_comm_mygroup);
+    GMX_MPE_LOG(ev_update_finish);
+
     if (!bOK && !bFFscan)
       gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
 
@@ -725,6 +854,26 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed
      */
+
+#ifdef GMX_MPI     
+    /* in case of node splitting, the PP node with the highest node ID sends
+     * the new box to the PME nodes */
+    if ( DYNAMIC_BOX(*inputrec) && 
+        (cr->npmenodes)        && 
+	(cr->nodeid == cr->nnodes-cr->npmenodes-1) ) 
+    {   
+      elements=0;
+      for (i=0; i<DIM; i++)
+        for (j=0; j<DIM; j++)
+          {
+	    boxbuf[elements]=state->box[i][j];
+	    elements++;
+	  }
+      /* send box buffer */
+      MPI_Send(&boxbuf,DIM*DIM,GMX_MPI_REAL,cr->nnodes-cr->npmenodes,0,MPI_COMM_WORLD);	
+    }
+/*    fprintf(stderr,"Node %d, box[0][0], %20.15f\n", cr->nodeid, state->box[0][0]); */
+#endif
 
     /* Non-equilibrium MD: this is parallellized, but only does communication
      * when there really is NEMD.
@@ -745,7 +894,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      * the new box too. Still, won't this be offset by one timestep in the
      * energy file? / EL 20040121
      */ 
-    
+
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM && !bFFscan && !bRerunMD)
@@ -774,20 +923,23 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
        */
+      GMX_MPE_LOG(ev_global_stat_start);
       global_stat(log,cr,ener,force_vir,shake_vir,
 		  &(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
+      GMX_MPE_LOG(ev_global_stat_finish);
+
       /* Correct for double counting energies, should be moved to 
        * global_stat 
        */
       if (fr->bTwinRange && !bNS) 
 	for(i=0; (i<grps->estat.nn); i++) {
-	  grps->estat.ee[egCOULLR][i] /= cr->nnodes;
-	  grps->estat.ee[egLJLR][i]   /= cr->nnodes;
+	  grps->estat.ee[egCOULLR][i] /= (cr->nnodes-cr->npmenodes);
+	  grps->estat.ee[egLJLR][i]   /= (cr->nnodes-cr->npmenodes);
 	}
     }
     else
       cp_nrnb(&(nrnb[0]),&mynrnb);
-    
+      
     /* This is just for testing. Nothing is actually done to Ekin
      * since that would require extra communication.
      */
@@ -826,7 +978,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       check_cm_grp(log,vcm);
       */
     }
-        
+    
     /* Add force and shake contribution to the virial */
     m_add(force_vir,shake_vir,total_vir);
 
@@ -840,7 +992,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     ener[F_TEMP]=sum_ekin(bRerunMD,&(inputrec->opts),grps,ekin,
 			  &(ener[F_DVDLKIN]));
     ener[F_EKIN]=trace(ekin);
-      
+
     /* Calculate Temperature coupling parameters lambda and adjust
      * target temp when doing simulated annealing
      */
@@ -860,7 +1012,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Calculate long range corrections to pressure and energy */
     if (bTCR || bFFscan)
       set_avcsixtwelve(log,fr,mdatoms,&top->atoms.excl);
-    
+      
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,inputrec,fr,step,mdatoms->nr,lastbox,state->lambda,
 		  pres,total_vir,ener);
@@ -948,6 +1100,26 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       /* read next frame from input trajectory */
       bNotLastFrame = read_next_frame(status,&rerun_fr);
 
+#ifdef GMX_MPI        
+    MPI_Barrier(MPI_COMM_WORLD); /* 100 */
+#ifdef PRT_TIME
+    if ( MASTER(cr) && !bLastStep)
+    {     
+      zeit1 = MPI_Wtime( ) - zeit0;
+      fprintf(stderr,"Time step %d took %f seconds",step_rel,zeit1);	   
+      if (step_rel>0) 
+      {
+        zeitc += zeit1;
+        fprintf(stderr,", average %f\n\n",zeitc/step_rel);	   
+      }   
+      else
+        fprintf(stderr,"\n\n");
+	
+      zeit0 = MPI_Wtime( );
+    }
+#endif
+#endif
+
     if (!bRerunMD || !rerun_fr.bStep) {
       /* increase the MD step number */
       step++;
@@ -955,25 +1127,22 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
   }
   /* End of main MD loop */
-#ifdef USE_MPE
-  MPE_Stop_log( );
-#endif
   debug_gmx();
 
   /* Dump the NODE time to the log file on each node */
-  if (PAR(cr)) {
+  if (PAR(cr) && (pmeduty(cr) != epmePMEONLY)) {
     double *ct,ctmax,ctsum;
     
-    snew(ct,cr->nnodes);
+    snew(ct,(cr->nnodes-cr->npmenodes));
     ct[cr->nodeid] = node_time();
-    gmx_sumd(cr->nnodes,ct,cr);
+    gmx_sumd((cr->nnodes-cr->npmenodes),ct,cr);
     ctmax = ct[0];
     ctsum = ct[0];
     for(i=1; (i<cr->nodeid); i++) {
       ctmax = max(ctmax,ct[i]);
       ctsum += ct[i];
     }
-    ctsum /= cr->nnodes;
+    ctsum /= (cr->nnodes-cr->npmenodes);
     fprintf(log,"\nTotal NODE time on node %d: %g\n",cr->nodeid,ct[cr->nodeid]);
     fprintf(log,"Average NODE time: %g\n",ctsum);
     fprintf(log,"Load imbalance reduced performance to %3d%% of max\n",

@@ -67,6 +67,13 @@ extern real do_pme(FILE *log,       bool bVerbose,
 extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
 		      int pme_order,bool bForward);
 
+extern void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
+                         int pme_order, bool bForward);
+
+/* the sum_qgrid routine with domain decomposition (dd) yields better 
+ * performance in parallel runs
+ */	       
+
 extern t_fftgrid *init_pme(FILE *log,t_commrec *cr,
 			   int nkx,int nky,int nkz,int pme_order,int homenr,
 			   bool bFreeEnergy,bool bOptFFT,int ewald_geometry);
@@ -74,10 +81,44 @@ extern t_fftgrid *init_pme(FILE *log,t_commrec *cr,
 /* Routine for spreading something on a grid. Can be misused for non-PME
  * related things. init_pme must be called before this guy.
  */
-extern void spread_on_grid(FILE *logfile,   
+typedef struct {
+  int atom,index;
+} t_pmeatom;
+
+extern void spread_on_grid(FILE *logfile,   t_commrec *cr,
 			   t_fftgrid *grid, int homenr,
 			   int pme_order,   rvec x[],
 			   real charge[],   matrix box,      
 			   bool bGatherOnly,bool bHaveSplines);
+		
+/*
+ * the following three routines are for PME/PP node splitting:
+ */
 
+extern void send_coordinates(t_nsborder *nsb, rvec x[], 
+                             real chargeA[],  real chargeB[], 
+			     bool bLastTime, bool bFreeEnergy,
+			     t_commrec *cr);
+
+/* send the particle coordinates (and charges) from the PP to the PME nodes,
+ * so that they can do a PME step */
+
+extern void receive_lrforces(t_commrec *cr, t_nsborder *nsb, 
+                      rvec f[]     , matrix vir, 
+		      real *energy,  int step);
+
+/* PP nodes receive the long range forces from the PME nodes */
+
+
+extern void do_pmeonly(FILE *logfile, 
+                       t_inputrec *ir,    t_commrec *cr,
+	  	       matrix box, 
+		       t_nsborder *nsb,   t_nrnb *mynrnb,
+		                          real ewaldcoeff,
+		       real lambda,
+		       bool bGatherOnly   );
+
+/* Called on the nodes that do PME exclusively (as slaves) 
+ */
+		   
 #endif

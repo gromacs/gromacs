@@ -87,7 +87,7 @@ typedef struct {
 } t_fftgrid;
 
 extern t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,
-			     int nz,bool bOptFFT);
+			     int nz,bool bOptFFT, t_commrec *cr);
 /* Create an FFT grid (1 Dimensional), to be indexed by the INDEX macro 
  * Setup FFTW plans and extract local sizes for the grid.
  * If the file pointer is given, information is printed to it.

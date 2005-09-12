@@ -66,6 +66,11 @@
 #include "constr.h"
 #include "xvgr.h"
 #include "qmmm.h"
+#include "mpelogging.h"
+
+#ifdef GMX_MPI
+#include "mpi.h"
+#endif
 
 #define difftime(end,start) ((double)(end)-(double)(start))
 
@@ -229,6 +234,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   static real mu[2*DIM]; 
   rvec   mu_tot_AB[2];
   bool   bCalcCGCM;
+  real e_temp;
   
   start  = START(nsb);
   homenr = HOMENR(nsb);
@@ -265,15 +271,35 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   }
   else if (bCalcCGCM)
     calc_cgcm(fplog,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
- 
-  if (bCalcCGCM) {
+
+   if (bCalcCGCM) {
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
     if (PAR(cr))
       move_cgcm(fplog,cr,fr->cg_cm,nsb->workload);
     if (debug)
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
   }
-  
+
+#ifdef GMX_MPI
+  /* send particle coordinates and charges to the pme nodes if necessary */
+  if (pmeduty(cr)==epmePPONLY)
+  { 
+    GMX_MPE_LOG(ev_send_coordinates_start);
+    
+    GMX_MPE_LOG(ev_shift_start);
+    shift_self(graph,box,x);
+    GMX_MPE_LOG(ev_shift_finish);
+
+    send_coordinates(nsb,x,mdatoms->chargeA,mdatoms->chargeB,step >= inputrec->nsteps,inputrec->efep!=efepNO,cr); 
+
+    GMX_MPE_LOG(ev_shift_start);
+    unshift_self(graph,box,x);
+    GMX_MPE_LOG(ev_shift_finish);
+    
+    GMX_MPE_LOG(ev_send_coordinates_finish);
+  }
+#endif /* GMX_MPI */
+
   /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
     move_x(fplog,cr->left,cr->right,x,nsb,nrnb);
@@ -287,14 +313,14 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   else
     for(j=0; j<DIM; j++)
       mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
-  
+
   /* Reset energies */
   reset_energies(&(inputrec->opts),grps,fr,bNS,ener);    
   if (bNS) {
     if (fr->ePBC == epbcXYZ && bStateChanged)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(fplog,graph,box,x);
-	       
+
     /* Reset long range forces if necessary */
     if (fr->bTwinRange) {
       clear_rvecs(nsb->natoms,fr->f_twin);
@@ -308,11 +334,15 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
        cr,nrnb,nsb,step,lambda,&dvdl_lr,bCalcCGCM,bDoForces);
   }
+
   if (bDoForces) {
-    /* Reset PME/Ewald forces if necessary */
+      /* Reset PME/Ewald forces if necessary */
     if (EEL_FULL(fr->eeltype)) 
+    {
+      GMX_BARRIER(cr->mpi_comm_mygroup);
       clear_rvecs(homenr,fr->f_el_recip+start);
-    
+      GMX_BARRIER(cr->mpi_comm_mygroup);
+    }
     /* Copy long range forces into normal buffers */
     if (fr->bTwinRange) {
       for(i=0; i<nsb->natoms; i++)
@@ -321,9 +351,10 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 	copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
     } 
     else {
-      clear_rvecs(nsb->natoms,f);
+      clear_rvecs(nsb->natoms,f);      
       clear_rvecs(SHIFTS,fr->fshift);
     }
+      GMX_BARRIER(cr->mpi_comm_mygroup);
   }
 
   /* update QMMMrec, if necessary */
@@ -335,6 +366,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
+  GMX_BARRIER(cr->mpi_comm_mygroup);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
@@ -355,8 +387,19 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
      */
     
     /* Communicate the forces */
-    if (PAR(cr))
+    if (PAR(cr)) {
       move_f(fplog,cr->left,cr->right,f,buf,nsb,nrnb);
+      /* In case of node-splitting, the PP nodes receive the long-range 
+       * forces, virial and energy from the PME nodes here 
+       */    
+#ifdef GMX_MPI       
+      if (pmeduty(cr)==epmePPONLY) 
+      {
+        receive_lrforces(cr,nsb,fr->f_el_recip,fr->vir_el_recip,&e_temp,step);
+        ener[F_COUL_RECIP] += e_temp;
+      }
+#endif
+    }
   }
 }
 
@@ -759,6 +802,54 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   int    i,j;
   t_nrnb ntot;
   real   runtime;
+#ifdef GMX_MPI
+  int    sender, firstpmenode, lastpmenode;
+  double nrnb_buf[4];
+  MPI_Status *status=NULL;
+#endif
+
+#ifdef GMX_MPI
+  /* In case of PME/PP node splitting, the master node needs the 
+   * nrnb information from the PME nodes here */
+  if (cr->npmenodes)
+  {
+    if (pmeduty(cr) == epmePMEONLY)
+    /* I am PME node and need to send my nrnb data to the master 
+     * We only need to send 4 nrnb data items: 
+     * eNR_SPREADQBSP,
+     * eNR_SOLVEPME,
+     * eNR_FFT,
+     * eNR_GATHERFBSP 
+     * since these are the only ones incremented on the PME nodes.
+     */ 
+    {
+      /* fill send buffer */
+      nrnb_buf[0] = nrnb[cr->nodeid].n[eNR_SPREADQBSP];
+      nrnb_buf[1] = nrnb[cr->nodeid].n[eNR_SOLVEPME  ];
+      nrnb_buf[2] = nrnb[cr->nodeid].n[eNR_FFT       ];
+      nrnb_buf[3] = nrnb[cr->nodeid].n[eNR_GATHERFBSP];
+
+      if (MPI_Send(&nrnb_buf, 4, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD) != 0)
+        gmx_comm("MPI_Send failed in finish_run\n");
+    }
+    if (MASTER(cr))
+    /* The master receives the data: */
+    {
+      firstpmenode = cr->nnodes - cr->npmenodes;
+      lastpmenode  = cr->nnodes - 1;
+      for (sender = firstpmenode; sender <= lastpmenode; sender++)
+      {
+	if (MPI_Recv(&nrnb_buf, 4, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD, status) != 0)
+	  gmx_comm("MPI_Recv failed in finish_run\n");
+	nrnb[sender].n[eNR_SPREADQBSP] += nrnb_buf[0];
+        nrnb[sender].n[eNR_SOLVEPME  ] += nrnb_buf[1];
+        nrnb[sender].n[eNR_FFT       ] += nrnb_buf[2];
+        nrnb[sender].n[eNR_GATHERFBSP] += nrnb_buf[3];
+      }
+    }
+  } /* End of PME/PP node splitting stuff */
+#endif
+    
   for(i=0; (i<eNRNB); i++)
     ntot.n[i]=0;
   for(i=0; (i<nsb->nnodes); i++)
@@ -769,16 +860,16 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     runtime=inputrec->nsteps*inputrec->delta_t;
     if (MASTER(cr)) {
       fprintf(stderr,"\n\n");
-      print_perf(stderr,nodetime,realtime,runtime,&ntot,nsb->nnodes);
+      print_perf(stderr,nodetime,realtime,runtime,&ntot,nsb->nnodes-nsb->npmenodes);
     }
     else
       print_nrnb(fplog,&(nrnb[nsb->nodeid]));
   }
 
   if (MASTER(cr)) {
-    print_perf(fplog,nodetime,realtime,runtime,&ntot,nsb->nnodes);
-    if (nsb->nnodes > 1)
-      pr_load(fplog,nsb->nnodes,nrnb);
+    print_perf(fplog,nodetime,realtime,runtime,&ntot,nsb->nnodes-nsb->npmenodes);
+    if ((nsb->nnodes-nsb->npmenodes) > 1)
+      pr_load(fplog,nsb->nnodes-nsb->npmenodes,nrnb);
   }
 }
 

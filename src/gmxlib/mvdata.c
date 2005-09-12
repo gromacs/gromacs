@@ -54,6 +54,7 @@
 static void ld_nsb(int src,t_nsborder *nsb)
 {
   blockrx(src,nsb->nnodes);
+  blockrx(src,nsb->npmenodes);
   blockrx(src,nsb->shift);
   blockrx(src,nsb->bshift);
   blockrx(src,nsb->nstDlb);
@@ -63,6 +64,8 @@ static void ld_nsb(int src,t_nsborder *nsb)
   nblockrx(src,MAXNODES,nsb->index);
   nblockrx(src,MAXNODES,nsb->cgload);
   nblockrx(src,MAXNODES,nsb->workload);
+  nblockrx(src,MAXNODES,nsb->pmehomenr);
+  nblockrx(src,MAXNODES,nsb->pmeindex);
 }
 
 static char **ld_string(int src,t_symtab *symtab)
@@ -348,6 +351,7 @@ static void mv_inputrec(int dest,t_inputrec *inputrec)
 static void mv_nsb(int dest,t_nsborder *nsb)
 {
   blocktx(dest,nsb->nnodes);
+  blocktx(dest,nsb->npmenodes);
   blocktx(dest,nsb->shift);
   blocktx(dest,nsb->bshift);
   blocktx(dest,nsb->nstDlb);
@@ -357,6 +361,8 @@ static void mv_nsb(int dest,t_nsborder *nsb)
   nblocktx(dest,MAXNODES,nsb->index);
   nblocktx(dest,MAXNODES,nsb->cgload);
   nblocktx(dest,MAXNODES,nsb->workload);
+  nblocktx(dest,MAXNODES,nsb->pmehomenr);
+  nblocktx(dest,MAXNODES,nsb->pmeindex);
 }
 
 static void mv_string(int dest,t_symtab *symtab,char **s)

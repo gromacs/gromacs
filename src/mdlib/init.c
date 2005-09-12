@@ -57,18 +57,56 @@
 #define NOT_FINISHED(l1,l2) \
   printf("not finished yet: lines %d .. %d in %s\n",l1,l2,__FILE__)
 
-void check_nnodes_top(char *fn,t_topology *top,int nnodes)
+int check_nnodes_top(char *fn,t_topology *top,int nnodes, int nkx, int nky, bool bDoPME)
 {
   int i,np=0;
-
+  int npmenodes=0,npme=0;
+  
   for(i=MAXNODES-1; (i>0) && (top->blocks[ebCGS].multinr[i] == 0); i--)
     ;
   np = i+1;
-  
-  if (np != nnodes)
+
+  if (!bDoPME)  /* we do not have to do PME */
+  {
+    if (np != nnodes)
     gmx_fatal(FARGS,"run input file %s was made for %d nodes,\n"
 		"             while %s expected it to be for %d nodes.",
 		fn,np,ShortProgram(),nnodes);
+  }
+  else /* we have to do PME and possibly node-splitting */
+  {
+    npmenodes=nnodes-np;
+    if (npmenodes) {
+      if (np==1)
+        gmx_fatal(FARGS,"run input file %s was made for 1 node, while PME/PP node\n"
+  		        "splitting needs an input file that was made for at least 2 nodes.",
+		  fn,np);
+      else if (npmenodes > np)
+        gmx_fatal(FARGS,"run input file %s was made for %d nodes,\n"
+		        "while the parallel environment was set up for %d nodes.\n"
+		        "%s cannot handle more PME nodes than PP nodes. Use\n"
+		        "less total nodes or set up your input file for more nodes.",
+		  fn,np,nnodes,ShortProgram());
+      else if (npmenodes < 0)
+        gmx_fatal(FARGS,"run input file %s was made for %d nodes,\n"
+		        "while the parallel environment was set up for only %d nodes.\n",
+		  fn,np,nnodes);
+		  
+      fprintf(stderr,"Splitting up %d nodes into %d PP and %d PME nodes.\n", 
+                      nnodes, np, npmenodes);
+
+      }		
+    if (npmenodes)
+      npme = npmenodes;
+    else 
+      npme = np;
+      
+    if ((nkx % npme) || (nky % npme))
+      gmx_fatal(FARGS,"nkx=%d or nky=%d is not a multiple of number of nodes that do PME (npme=%d)\n"
+                      "Set up your parallel environment accordingly or rerun grompp with -npme %d option\n",
+		      nkx,nky,npme,npme);
+  } 
+  return npmenodes;
 }
 
 static char *int_title(char *title,int nodeid,char buf[], int size)
@@ -111,7 +149,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
   real        t;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-  check_nnodes_top(tpxfile,top,1);
+  check_nnodes_top(tpxfile,top,1,1,1,FALSE);
 
   *mdatoms=atoms2md(log,&top->atoms,inputrec->opts.nFreeze,
 		    inputrec->eI,inputrec->delta_t,
@@ -119,7 +157,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
 		    inputrec->efep!=efepNO,FALSE);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
-  calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0);
+  calc_nsb(log,&(top->blocks[ebCGS]),1,0,nsb,0);
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
@@ -132,11 +170,12 @@ void distribute_parts(int left,int right,int nodeid,int nnodes,
   t_topology  top;
   t_nsborder  nsb;
   t_state     state;
+  int         npmenodes=0;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,&state,NULL,&top);
-  check_nnodes_top(tpxfile,&top,nnodes);
+  npmenodes=check_nnodes_top(tpxfile,&top,nnodes,inputrec->nkx,inputrec->nky,inputrec->coulombtype==eelPME);
   
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,&nsb,nstDlb);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,npmenodes,&nsb,nstDlb);
   mv_data(left,right,inputrec,&nsb,&top,&state);
   done_top(&top);
   done_state(&state);

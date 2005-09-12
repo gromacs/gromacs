@@ -44,7 +44,7 @@
 extern void calc_nsbshift(FILE *fp,t_nsborder *nsb);
 /* Calculates the shift and bshift variables */
 
-extern void calc_nsb(FILE *fp,t_block *cgs,int nprocs,
+extern void calc_nsb(FILE *fp,t_block *cgs,int nprocs,int npmenodes,
 		     t_nsborder *nsb,int nstDlb);
 /* Calculate which blocks of charge groups should be calculated,
  * depending on processor number.

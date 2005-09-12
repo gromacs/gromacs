@@ -713,7 +713,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
       copy_rvec(x[index[i]],xndx[i]);
       
     /* put local atoms on grid. */
-    spread_on_grid(stdout,fftgrid,isize,pme_order,xndx,fj,box,FALSE,TRUE);
+    spread_on_grid(stdout,NULL,fftgrid,isize,pme_order,xndx,fj,box,FALSE,TRUE);
 
     /* FFT the density */
     gmxfft3D(fftgrid,FFTW_FORWARD,NULL);  

@@ -65,6 +65,7 @@
 #include "pme.h"
 #include "mdrun.h"
 #include "qmmm.h"
+#include "mpelogging.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -558,6 +559,8 @@ void set_chargesum(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
 
 void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 {
+  GMX_MPE_LOG(ev_update_fr_start);
+
   if (fr->epsilon_r != 0)
     fr->epsfac = ONE_4PI_EPS0/fr->epsilon_r;
   else
@@ -568,6 +571,8 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
     calc_rffac(log,fr->eeltype,fr->epsilon_r,fr->epsilon_rf,
 	       fr->rcoulomb,fr->temp,fr->zsquare,box,
 	       &fr->kappa,&fr->k_rf,&fr->c_rf);
+
+  GMX_MPE_LOG(ev_update_fr_finish);
 }
 
 void set_avcsixtwelve(FILE *log,t_forcerec *fr,
@@ -1152,7 +1157,9 @@ void ns(FILE *fp,
   static int  nDNL;
   char   *ptr;
   int    nsearch;
-  
+
+  GMX_MPE_LOG(ev_ns_start);
+
   if (bFirst) {
     ptr=getenv("DUMPNL");
     if (ptr) {
@@ -1191,6 +1198,8 @@ void ns(FILE *fp,
   */
   if (nDNL > 0)
     dump_nblist(fp,fr,nDNL);
+
+  GMX_MPE_LOG(ev_ns_finish);
 }
 
 void force(FILE       *fplog,   int        step,
@@ -1215,7 +1224,15 @@ void force(FILE       *fplog,   int        step,
   rvec    box_size;
   real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
   t_pbc   pbc;
+#ifdef GMX_MPI
+  double  t0=0.0, t1, t2, t3; /* time measurement for coarse load balancing */
+#endif
+  static double  t_fnbf=0.0, t_wait=0.0;
+  static int     timesteps=0;
+  
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
+  
+  GMX_MPE_LOG(ev_force_start);
 
   /* Reset box */
   for(i=0; (i<DIM); i++)
@@ -1234,13 +1251,33 @@ void force(FILE       *fplog,   int        step,
 	    step,cr->nodeid);
   
   /* Call the short range functions all in one go. */
+  GMX_MPE_LOG(ev_do_fnbf_start);
+
   dvdlambda = 0;
+
+#ifdef GMX_MPI
+#define TAKETIME ((cr->npmenodes) && (timesteps < 12))
+  if (TAKETIME)
+  {
+    MPI_Barrier(cr->mpi_comm_mygroup);
+    t0=MPI_Wtime();
+  }
+#endif
+
   where();
   do_nonbonded(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
 	  lambda,&dvdlambda,FALSE,-1,-1,bDoForces);
   where();
+
+#ifdef GMX_MPI
+  if (TAKETIME)
+  {
+    t1=MPI_Wtime();
+    t_fnbf += t1-t0;
+  }
+#endif
 
   epot[F_DVDL] += dvdlambda;
   Vsr = 0;
@@ -1252,6 +1289,8 @@ void force(FILE       *fplog,   int        step,
   PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
   debug_gmx();
 
+  GMX_MPE_LOG(ev_do_fnbf_finish);
+  
   if (debug) 
     pr_rvecs(debug,0,"fshift after SR",fr->fshift,SHIFTS);
   
@@ -1273,6 +1312,7 @@ void force(FILE       *fplog,   int        step,
       set_pbc_ss(&pbc,box);
     debug_gmx();
   }
+
   where();
   if (EEL_FULL(fr->eeltype)) {
     dvdlambda = 0;
@@ -1283,10 +1323,20 @@ void force(FILE       *fplog,   int        step,
       break;
     case eelPME:
     case eelPMEUSER:
-      Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
-		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
-		   md->bChargePerturbed,lambda,&dvdlambda,bGatherOnly);
-      PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
+      if (pmeduty(cr)==epmePMEANDPP)
+      {
+        Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
+  		     box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
+  		     md->bChargePerturbed,lambda,&dvdlambda,bGatherOnly);
+        PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
+      } 
+      else 
+      {
+        /* Energies and virial are obtained later from the PME nodes */
+	/* but values have to be zeroed out here */
+        Vlr=0.0;
+	clear_mat(fr->vir_el_recip);	
+      }
       break;
     case eelEWALD:
       Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
@@ -1338,14 +1388,34 @@ void force(FILE       *fplog,   int        step,
   debug_gmx();
   
   if (!bNBFonly) {
+    GMX_MPE_LOG(ev_calc_bonds_start);
     calc_bonds(fplog,cr,mcr,
 	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
+    GMX_MPE_LOG(ev_calc_bonds_finish);
   }
+
+#ifdef GMX_MPI
+  if (TAKETIME)
+  {
+    t2=MPI_Wtime();
+    MPI_Barrier(cr->mpi_comm_mygroup);
+    t3=MPI_Wtime();
+    t_wait += t3-t2;
+    if (timesteps == 11)
+    {
+      fprintf(stderr,"* PP load balancing info: node %d, step %d, rel wait time=%3.0f%% , load string value: %7.2f\n", 
+            cr->nodeid, timesteps, 100*t_wait/(t_wait+t_fnbf), (t_fnbf+t_wait)/t_fnbf);
+    }	  
+    timesteps++;
+  }
+#endif
 
   if (debug) 
     pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
   do_flood(fplog,cr,x,f,edyn,step);
+
+  GMX_MPE_LOG(ev_force_finish);
 }

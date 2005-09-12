@@ -84,9 +84,9 @@ void global_stat(FILE *log,
   }
   else
     reset_bin(rb);
-  
+
   /* Reset nrnb stuff */
-  for(j=0; (j<cr->nnodes); j++)
+  for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
     init_nrnb(&(nrnb[j]));
   cp_nrnb(&(nrnb[cr->nodeid]),mynrnb);
   
@@ -100,7 +100,7 @@ void global_stat(FILE *log,
   where();
   isv = add_binr(log,rb,DIM*DIM,svir[0]);
   where();
-  for(j=0; (j<cr->nnodes); j++)
+  for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
     in[j] = add_bind(log,rb,eNRNB,nrnb[j].n);
   where();
   for(j=0; (j<opts->ngtc); j++) 
@@ -135,7 +135,7 @@ void global_stat(FILE *log,
   extract_binr(rb,ie  ,F_NRE,ener);
   extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
-  for(j=0; (j<cr->nnodes); j++)
+  for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
     extract_bind(rb,in[j],eNRNB,nrnb[j].n);
   for(j=0; (j<opts->ngtc); j++) 
     extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekinh[0]);
@@ -160,7 +160,8 @@ void global_stat(FILE *log,
   where();
 
   /* Small hack for temp only */
-  ener[F_TEMP]/=cr->nnodes;
+  ener[F_TEMP]/=(cr->nnodes-cr->npmenodes);
+  
 }
 
 int do_per_step(int step,int nstep)
@@ -171,7 +172,7 @@ int do_per_step(int step,int nstep)
     return 0;
 }
 
-static void moveit(FILE *log,
+static void moveit(t_commrec *cr, FILE *log,
 		   int left,int right,char *s,rvec xx[],t_nsborder *nsb)
 {
   rvec  *temp;
@@ -190,14 +191,14 @@ static void moveit(FILE *log,
   for(i=0; (i<homenr); i++)
     copy_rvec(xx[start+i],temp[i]);
 
-  move_rvecs(log,FALSE,FALSE,left,right,xx,NULL,nsb->nnodes-1,nsb,NULL);
-  
+  move_rvecs(log,FALSE,FALSE,left,right,xx,NULL,(nsb->nnodes-nsb->npmenodes)-1,nsb,NULL);
+
   for(i=0; (i<homenr); i++) {
     bP=0;
     for(m=0; (m<DIM); m++)
       if (xx[start+i][m] != temp[i][m])
 	bP=1;
-    if (bP)
+    if (bP) 
       fprintf(log,"%s[%5d] before: (%8.3f,%8.3f,%8.3f)"
 	      " After: (%8.3f,%8.3f,%8.3f)\n",
 	      s,start+i,temp[i][XX],temp[i][YY],temp[i][ZZ],
@@ -219,9 +220,9 @@ int write_traj(FILE *log,t_commrec *cr,
 #endif
     fp = open_trn(traj,"w");
   }
-  
-#define MX(xvf) moveit(log,cr->left,cr->right,#xvf,xvf,nsb)
-  if (cr->nnodes > 1) {
+
+#define MX(xvf) moveit(cr,log,cr->left,cr->right,#xvf,xvf,nsb)
+  if ((cr->nnodes-cr->npmenodes) > 1) {
     MX(xx);
     MX(vv);
     MX(ff);
@@ -263,7 +264,7 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
     bFirst=FALSE;
   }
   
-  if (cr->nnodes > 1) {
+  if ((cr->nnodes-cr->npmenodes) > 1) {
     MX(xx);
   }
   

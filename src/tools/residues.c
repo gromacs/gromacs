@@ -269,16 +269,16 @@ int set_virtual (t_cdatom cda[],int N,real margin,t_dist *d,int natoms)
      Adam Kirrander 990211                        */
   
   int ndist=0,i,j;
-  real CONST=0.0,Ki,tmp,len,lb,ub;
+  real CONSTX=0.0,Ki,tmp,len,lb,ub;
   
   /* Calculate the constant part */
   for (i=1 ; i<N ; i++ ) {
     for (j=0 ; j<i ; j++) {
       tmp = d_len(d,natoms,cda[i].anr,cda[j].anr);
-      CONST += tmp*tmp;
+      CONSTX += tmp*tmp;
     }
   }
-  CONST = CONST/N;
+  CONSTX = CONSTX/N;
   
   /* Calculate and set distances */
   for (i=0 ; i<N ; i++ ) {
@@ -288,7 +288,7 @@ int set_virtual (t_cdatom cda[],int N,real margin,t_dist *d,int natoms)
       tmp = d_len(d,natoms,cda[i].anr,cda[j].anr); 
       Ki += tmp*tmp;
     }
-    len = sqrt(64.0+((Ki-CONST)/N));              /*Pythagoras*/
+    len = sqrt(64.0+((Ki-CONSTX)/N));              /*Pythagoras*/
     lb  = (1.0-margin)*len;
     ub  = (1.0+margin)*len; 
     set_dist(d,natoms,cda[i].anr,cda[N].anr,lb,ub,len); 

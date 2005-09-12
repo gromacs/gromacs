@@ -896,7 +896,7 @@ int main (int argc, char *argv[])
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
   static bool bRmVSBds=TRUE,bSort=FALSE,bCheckPairs=FALSE;
-  static int  i,nnodes=1,maxwarn=10;
+  static int  i,nnodes=1,npmenodes=0,maxwarn=10;
   static real fr_time=-1;
   static char *cap=NULL;
   t_pargs pa[] = {
@@ -906,6 +906,8 @@ int main (int argc, char *argv[])
       "Take frame at or first after this time." },
     { "-np",      FALSE, etINT,  {&nnodes},
       "Generate statusfile for # nodes" },
+    { "-npme",    FALSE, etINT,  {&npmenodes},
+      "Do PME/PP node division and use npme PME nodes. Requires (npme <= np/2) and (np > 2)" },
     { "-shuffle", FALSE, etBOOL, {&bShuffle},
       "Shuffle molecules over nodes" },
     { "-sort",    FALSE, etBOOL, {&bSort},
@@ -913,7 +915,7 @@ int main (int argc, char *argv[])
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
       "Remove constant bonded interactions with virtual sites" },
     { "-load",    FALSE, etSTR,  {&cap},
-      "Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node" },
+      "Releative load capacity of each PP node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
       "Number of warnings after which input processing stops" },
     { "-check14", FALSE, etBOOL, {&bCheckPairs},
@@ -953,6 +955,33 @@ int main (int argc, char *argv[])
   set_warning_line(mdparin,-1);    
   get_ir(mdparin,opt2fn("-po",NFILE,fnm),ir,opts,&nerror);
   
+  /*  PME/PP node division 
+   *
+   *  If PME is used with multiple nodes, then some of the nodes may 
+   *  be split off for PME calculation only. Rest of nodes are PP nodes then   
+   */
+  npmenodes = abs(npmenodes);
+  if (npmenodes) {
+    if (ir->coulombtype != eelPME) {
+      warning("Setting -npme only works with coulombtype=PME. Not doing node division");
+      npmenodes=0;
+    }
+    else {
+      if (nnodes < 3) {
+        npmenodes=0;
+        warning("PME/PP node division requires a minimum of 3 total nodes. "
+	        "Not doing node division.");
+      } 
+      else if (npmenodes*2 > nnodes) {
+        npmenodes = nnodes/2;
+        warning("No more than half of the nodes can serve as PME nodes");
+      }
+    }
+  }
+  if (npmenodes)
+    printf("Splitting up %d nodes into %d PME and %d PP nodes\n",
+            nnodes,npmenodes,nnodes-npmenodes);	
+      
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
   check_ir(ir,opts,&nerror);
@@ -969,7 +998,7 @@ int main (int argc, char *argv[])
   }
   if (bSort && !bShuffle) 
     warning("Can not do sorting without shuffling. Sorting turned off.");
-    
+
   bNeedVel = (ir->eI == eiMD || ir->eI == eiSD);
   bGenVel  = (bNeedVel && opts->bGenVel);
 
@@ -985,7 +1014,7 @@ int main (int argc, char *argv[])
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 		     opts,ir,bGenVel,bVerbose,bSort,&state,
 		     &atype,sys,&msys,plist,&comb,&reppow,
-		     bShuffle ? nnodes : 1,
+		     bShuffle ? (nnodes-npmenodes) : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,
 		     bCheckPairs,&nerror);
   
@@ -1145,7 +1174,8 @@ int main (int argc, char *argv[])
       (ir->coulombtype == eelPMEUSER)|| (ir->coulombtype == eelEWALD)) {
     /* Calculate the optimal grid dimensions */
     max_spacing = calc_grid(state.box,opts->fourierspacing,
-			    &(ir->nkx),&(ir->nky),&(ir->nkz),nnodes);
+			    &(ir->nkx),&(ir->nky),&(ir->nkz),npmenodes? npmenodes:nnodes);
+
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
       set_warning_line(mdparin,-1);
       sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
@@ -1154,8 +1184,8 @@ int main (int argc, char *argv[])
   }
   
   /* This is also necessary for setting the multinr arrays */
-  capacity = mk_capacity(cap,nnodes);
-  split_top(bVerbose,nnodes,sys,capacity);
+  capacity = mk_capacity(cap,nnodes-npmenodes);
+  split_top(bVerbose,nnodes-npmenodes,sys,capacity);
   sfree(capacity);
   
   if (bVerbose) 

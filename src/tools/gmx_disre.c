@@ -443,7 +443,7 @@ int gmx_disre(int argc,char *argv[])
     "g_disre computes violations of distance restraints.",
     "If necessary all protons can be added to a protein molecule ",
     "using the protonate program.[PAR]",
-    "The program allways",
+    "The program always",
     "computes the instantaneous violations rather than time-averaged,",
     "because this analysis is done from a trajectory file afterwards",
     "it does not make sense to use time averaging. However,",
@@ -533,7 +533,7 @@ int gmx_disre(int argc,char *argv[])
     if (top.atoms.pdbinfo == NULL)
       snew(top.atoms.pdbinfo,ntopatoms);
   } 
-  check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1);
+  check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1,0,0,FALSE);
 
   if (ir.ePBC == epbcXYZ) {
     g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);
@@ -598,7 +598,7 @@ int gmx_disre(int argc,char *argv[])
 		     eiMD,0,0,NULL,FALSE,FALSE);  
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec\n");
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),1,nsb,0);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),1,0,nsb,0);
   init_forcerec(stdlog,fr,&ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,NULL,FALSE);
   init_nrnb(&nrnb);
   j=0;

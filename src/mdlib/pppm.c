@@ -549,7 +549,10 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
       pr_scalar_gk("optimghat.xvg",nx,ny,nz,box_diag,ghat);
   }
   /* Now setup the FFT things */
-  grid = mk_fftgrid(log,PAR(cr),nx,ny,nz,ir->bOptFFT);
+#ifdef GMX_MPI
+  cr->mpi_comm_mygroup=MPI_COMM_WORLD;
+#endif
+  grid = mk_fftgrid(log,PAR(cr),nx,ny,nz,ir->bOptFFT,cr);
 }
 
 real do_pppm(FILE *log,       bool bVerbose,

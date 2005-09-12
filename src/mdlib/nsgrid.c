@@ -398,7 +398,7 @@ void mv_grid(t_commrec *cr,bool bDD,int cg_index[],
   int i,start,nr;
   int cur=cr->nodeid;
   int *ci;
-#define next ((cur+1) % cr->nnodes)
+#define next ((cur+1) % (cr->nnodes-cr->npmenodes))
 
   ci=grid->cell_index;
   for(i=0; (i<cr->nnodes-1); i++) {
