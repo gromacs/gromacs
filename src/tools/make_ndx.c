@@ -125,7 +125,7 @@ static int and_groups(atom_id nr1,atom_id *at1,atom_id nr2,atom_id *at2,
 
 static bool isalnum_star(char c)
 {
-  return (isalnum(c) || (c=='*'));
+  return (isalnum(c) || (c=='_') || (c=='*'));
 }
 
 static int parse_names(char **string,int *n_names,char **names)
