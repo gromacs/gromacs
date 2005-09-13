@@ -109,8 +109,8 @@ static void rvec2sprvec(rvec dipcart,rvec dipsp)
 }
 
 
-void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
-	    atom_id mindex[],atom_id ma[],rvec x[],rvec mu[],
+void do_gkr(t_gkrbin *gb,int ngrp,int molindex[],
+	    int mindex[],atom_id ma[],rvec x[],rvec mu[],
 	    matrix box,t_atom *atom,int nAtom)
 {
   static rvec *xcm=NULL;
@@ -124,7 +124,7 @@ void do_gkr(t_gkrbin *gb,int ngrp,atom_id grpindex[],
     
   for(i=0; (i<ngrp); i++) {
     /* Calculate center of mass of molecule */
-    gi = grpindex ? grpindex[i] : i;
+    gi = molindex[i];
     j0 = mindex[gi];
     
     if (nAtom > 0)
@@ -453,16 +453,17 @@ static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
   axis[ZZ] = ddc3/n;
 }
 
-static void do_dip(char *fn,      char *topf,
+static void do_dip(t_topology *top,real volume,
+		   char *fn,
 		   char *out_mtot,char *out_eps,char *out_aver, 
-		   char *dipdist, bool bAverCorr,
+		   char *dipdist,
 		   char *cosaver, char *fndip3d,
 		   char *fnadip,  bool bPairs,
-		   bool bCorr,    char *corf,
+		   char *corrtype,char *corf,
 		   bool bGkr,     char *gkrfn,
 		   bool bQuad,    char *quadfn,
 		   bool bMU,      char *mufn,
-		   int gnx,       atom_id grpindex[],
+		   int gnx,       int  molindex[],
 		   real mu_max,   real mu_aver,
 		   real epsilonRF,real temp,
 		   int gkatom,    int skip,
@@ -511,13 +512,13 @@ static void do_dip(char *fn,      char *topf,
   t_enxframe *fr;
   int        nframes=1000,fmu=0,nre,timecheck=0,ncolour=0;
   int        i,j,k,m,natom=0,nmol,status,teller,tel3;
-  int        *dipole_bin,ndipbin,ibin,iVol,natoms,step,idim=-1;
+  int        *dipole_bin,ndipbin,ibin,iVol,step,idim=-1;
   unsigned long mode;
   char       **enm=NULL,buf[STRLEN];
-  real       rcut=0,t,t0,t1,dt,volume,lambda,dd,rms_cos;
+  real       rcut=0,t,t0,t1,dt,lambda,dd,rms_cos;
   rvec       dipaxis;
   matrix     box;
-  bool       bCont;
+  bool       bCorr,bTotal,bCont;
   double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
   double     M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
@@ -525,19 +526,11 @@ static void do_dip(char *fn,      char *topf,
   ivec       iMu;
   real       **muall=NULL;
   rvec       *slab_dipoles=NULL;
-  t_topology *top;
   t_atom     *atom=NULL;
   t_block    *mols=NULL;
 
-  snew(top,1);
-  read_tpx(topf,&step,&t,&lambda,NULL,box,
-	   &natoms,NULL,NULL,NULL,top);
-  volume   = det(box);
   vol_aver = 0.0;
-  
-  if (!grpindex)
-    gnx = top->blocks[ebMOLS].nr;
-    
+      
   iVol=-1;
   if (bMU) {
     fmu = open_enx(mufn,"r");
@@ -564,8 +557,10 @@ static void do_dip(char *fn,      char *topf,
     printf("Using Volume from topology: %g nm^3\n",volume);
 
   /* Correlation stuff */ 
+  bCorr  = (corrtype[0] != 'n');
+  bTotal = (corrtype[0] == 't');
   if (bCorr) {
-    if (bAverCorr) {
+    if (bTotal) {
       snew(muall,1);
       snew(muall[0],nframes*DIM);
     }
@@ -691,7 +686,7 @@ static void do_dip(char *fn,      char *topf,
   do {
     if (bCorr && (teller >= nframes)) {
       nframes += 1000;
-      if (bAverCorr) {
+      if (bTotal) {
 	srenew(muall[0],nframes*DIM);
       }
       else {
@@ -716,20 +711,25 @@ static void do_dip(char *fn,      char *topf,
       init_lsq(&muframelsq);
       /* Begin loop of all molecules in frame */
       for(i=0; (i<gnx); i++) {
-	int gi = grpindex ? grpindex[i] : i;
-	mol_dip(mols->index[gi],mols->index[gi+1],mols->a,x,atom,dipole[i]);
+	atom_id *index;
+	int gi,ind0,ind1;
+
+	index = mols->a;
+	ind0  = mols->index[molindex[i]];
+	ind1  = mols->index[molindex[i]+1];
+	
+	mol_dip(ind0,ind1,index,x,atom,dipole[i]);
 	add_lsq(&mulsq,0,norm(dipole[i]));
 	add_lsq(&muframelsq,0,norm(dipole[i]));
 	if (bSlab) 
-	  update_slab_dipoles(mols->index[gi],mols->index[gi+1],mols->a,x,
+	  update_slab_dipoles(ind0,ind1,index,x,
 			      dipole[i],idim,nslices,slab_dipoles,box);
 	if (bQuad) {
-	  mol_quad(mols->index[gi],mols->index[gi+1],
-		   mols->a,x,atom,quad);
+	  mol_quad(ind0,ind1,index,x,atom,quad);
 	  for(m=0; (m<DIM); m++)
 	    add_lsq(&Qlsq[m],0,quad[m]);
 	}
-	if (bCorr && !bAverCorr) {
+	if (bCorr && !bTotal) {
 	  tel3=DIM*teller;
 	  muall[i][tel3+XX] = dipole[i][XX];
 	  muall[i][tel3+YY] = dipole[i][YY];
@@ -779,13 +779,13 @@ static void do_dip(char *fn,      char *topf,
           if (dip3d)
             fprintf(dip3d,"set arrow %d from %f, %f, %f to %f, %f, %f lt %d  # %d %d\n", 
                     i+1,
-		    x[mols->index[gi]][XX],
-		    x[mols->index[gi]][YY],
-		    x[mols->index[gi]][ZZ],
-		    x[mols->index[gi]][XX]+dipole[i][XX]/25, 
-                    x[mols->index[gi]][YY]+dipole[i][YY]/25, 
-                    x[mols->index[gi]][ZZ]+dipole[i][ZZ]/25, 
-                    ncolour, mols->index[gi], gi);
+		    x[index[ind0]][XX],
+		    x[index[ind0]][YY],
+		    x[index[ind0]][ZZ],
+		    x[index[ind0]][XX]+dipole[i][XX]/25, 
+                    x[index[ind0]][YY]+dipole[i][YY]/25, 
+                    x[index[ind0]][ZZ]+dipole[i][ZZ]/25, 
+                    ncolour, index[ind0], i);
 	}
       } /* End loop of all molecules in frame */
       
@@ -817,11 +817,11 @@ static void do_dip(char *fn,      char *topf,
     }
     
     if (bGkr) {
-      do_gkr(gkrbin,gnx,grpindex,mols->index,mols->a,x,dipole,box,
+      do_gkr(gkrbin,gnx,molindex,mols->index,mols->a,x,dipole,box,
 	     atom,gkatom);
     }
     
-    if (bAverCorr) {
+    if (bTotal) {
       tel3 = DIM*teller;
       muall[0][tel3+XX] = M_av[XX];
       muall[0][tel3+YY] = M_av[YY];
@@ -943,12 +943,12 @@ static void do_dip(char *fn,      char *topf,
       
       mode = eacVector;
 
-      if (bAverCorr)
+      if (bTotal)
 	do_autocorr(corf,"Autocorrelation Function of Total Dipole",
 		    teller,1,muall,dt,mode,TRUE);
       else
 	do_autocorr(corf,"Dipole Autocorrelation Function",
-		    teller,gnx,muall,dt,mode,TRUE);
+		    teller,gnx,muall,dt,mode,strcmp(corrtype,"molsep"));
     }
   }
   if (!bMU) {
@@ -1000,6 +1000,30 @@ static void do_dip(char *fn,      char *topf,
     done_gkrbin(&gkrbin);
 }
 
+void atom2molindex(int *n,int *index,t_block *mols)
+{
+  int nmol,i,j,m;
+
+  nmol = 0;
+  i=0;
+  while (i < *n) {
+    m=0;
+    while(m < mols->nr && index[i] != mols->a[mols->index[m]])
+      m++;
+    if (m == mols->nr)
+      gmx_fatal(FARGS,"index[%d]=%d does not correspond to the first atom of a molecule",i+1,index[i]+1);
+    for(j=mols->index[m]; j<mols->index[m+1]; j++) {
+      if (i >= *n || index[i] != mols->a[j])
+	gmx_fatal(FARGS,"The index group is not a set of whole molecules");
+      i++;
+    }
+    /* Modify the index in place */
+    index[nmol++] = m;
+  }
+  printf("There are %d molecules in the selection\n",nmol);
+
+  *n = nmol;
+}
 int gmx_dipoles(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -1013,12 +1037,13 @@ int gmx_dipoles(int argc,char *argv[])
     "The file dipdist.xvg contains the distribution of dipole moments during",
     "the simulation",
     "The mu_max is used as the highest value in the distribution graph.[PAR]",
-    "Furthermore the dipole autocorrelation function will be computed, when",
-    "option -c is used. It can be averaged over all molecules, ",
-    "or (with option -avercorr) it can be computed as the autocorrelation",
-    "of the total dipole moment of the simulation box.[PAR]",
-    "At the moment the dielectric constant is calculated only correct if",
-    "a rectangular or cubic simulation box is used.[PAR]",
+    "Furthermore the dipole autocorrelation function will be computed when",
+    "option -corr is used. The output file name is given with the [TT]-c[tt]",
+    "option.",
+    "The correlation functions can be averaged over all molecules",
+    "([TT]mol[tt]), plotted per molecule seperately ([TT]molsep[tt])",
+    "or it can be computed over the total dipole moment of the simulation box",
+    "([TT]total[tt]).[PAR]",
     "Option [TT]-g[tt] produces a plot of the distance dependent Kirkwood",
     "G-factor, as well as the average cosine of the angle between the dipoles",
     "as a function of the distance. The plot also includes gOO and hOO",
@@ -1027,8 +1052,7 @@ int gmx_dipoles(int argc,char *argv[])
     "the dipoles divided by the distance to the third power.[PAR]",
     "[PAR]",
     "EXAMPLES[PAR]",
-    "g_dipoles -P1 -n mols -o dip_sqr -mu 2.273 -mumax 5.0",
-    "-nofft[PAR]",
+    "g_dipoles -corr mol -P1 -o dip_sqr -mu 2.273 -mumax 5.0 -nofft[PAR]",
     "This will calculate the autocorrelation function of the molecular",
     "dipoles using a first order Legendre polynomial of the angle of the",
     "dipole vector and itself a time t later. For this calculation 1001",
@@ -1039,8 +1063,9 @@ int gmx_dipoles(int argc,char *argv[])
   };
   static real mu_max=5, mu_aver=-1;
   static real epsilonRF=0.0, temp=300;
-  static bool bAverCorr=FALSE,bPairs=TRUE;
-  static char *axtitle="Z"; 
+  static bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE;
+  static char *corrtype[]={NULL, "none", "mol", "molsep", "total", NULL};
+  static char *axtitle="Z";
   static int  nslices = 10;      /* nr of slices defined       */
   static int  skip=0,nFA=0;
   t_pargs pa[] = {
@@ -1053,9 +1078,9 @@ int gmx_dipoles(int argc,char *argv[])
     { "-skip",     FALSE, etINT, {&skip},
       "Skip steps in the output (but not in the computations)" },
     { "-temp",     FALSE, etREAL, {&temp},
-      "average temperature of the simulation (needed for dielectric constant calculation)" },
-    { "-avercorr", FALSE, etBOOL, {&bAverCorr},
-      "calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule" },
+      "Average temperature of the simulation (needed for dielectric constant calculation)" },
+    { "-corr",     FALSE, etENUM, {corrtype},
+      "Correlation function to calculate" },
     { "-pairs",    FALSE, etBOOL, {&bPairs},
       "Calculate |cos theta| between all pairs of molecules. May be slow" },
     { "-axis",     FALSE, etSTR, {&axtitle}, 
@@ -1089,6 +1114,10 @@ int gmx_dipoles(int argc,char *argv[])
 #define NFILE asize(fnm)
   int     npargs;
   t_pargs *ppa;
+  t_topology *top;
+  int     step,natoms;
+  real    t,lambda;
+  matrix  box;
   
   CopyRight(stderr,argv[0]);
   npargs = asize(pa);
@@ -1120,20 +1149,21 @@ int gmx_dipoles(int argc,char *argv[])
       printf("WARNING: Can not calculate Gk and gk, since you did\n"
 	     "         not enter a valid dipole for the molecules\n");
   }
+
+  snew(top,1);
+  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
+	   &natoms,NULL,NULL,NULL,top);
   
-  if (ftp2bSet(efNDX,NFILE,fnm))
-    rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&grpindex,&grpname);
-  else {
-    gnx=1;
-    grpindex=NULL;
-  }
-  bCorr   = (bAverCorr || opt2bSet("-c",NFILE,fnm));
-  do_dip(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
+  get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
+	    1,&gnx,&grpindex,&grpname);
+  atom2molindex(&gnx,grpindex,&(top->blocks[ebMOLS]));
+
+  do_dip(top,det(box),ftp2fn(efTRX,NFILE,fnm),
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
-	 bAverCorr,opt2fn_null("-cos",NFILE,fnm),
+	 opt2fn_null("-cos",NFILE,fnm),
 	 opt2fn_null("-dip3d",NFILE,fnm),opt2fn_null("-adip",NFILE,fnm),
-	 bPairs,bCorr,
+	 bPairs,corrtype[0],
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bQuad,   opt2fn("-q",NFILE,fnm),
