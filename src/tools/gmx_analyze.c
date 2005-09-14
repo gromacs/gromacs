@@ -133,12 +133,16 @@ void histogram(char *distfile,real binwidth,int n, int nset, real **val)
 {
   FILE *fp;
   int  i,s;
-  real min,max;
+  double min,max;
   int  nbin;
-  real *histo;
+#if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
+  long long int *histo;
+#else
+  double        *histo;
+#endif
 
-  min=val[0][0];
-  max=val[0][0];
+  min = val[0][0];
+  max = val[0][0];
   for(s=0; s<nset; s++)
     for(i=0; i<n; i++)
       if (val[s][i] < min)
@@ -146,20 +150,21 @@ void histogram(char *distfile,real binwidth,int n, int nset, real **val)
       else if (val[s][i] > max)
 	max = val[s][i];
   
-  if (-min > max)
-    max = -min;
-  nbin = (int)(max/binwidth)+1;
-  fprintf(stderr,"Making distributions with %d bins\n",2*nbin+1);
-  snew(histo,2*nbin+1);
+  min = binwidth*floor(min/binwidth);
+  max = binwidth*ceil(max/binwidth);
+
+  nbin = (int)((max - min)/binwidth + 0.5) + 1;
+  fprintf(stderr,"Making distributions with %d bins\n",nbin);
+  snew(histo,nbin);
   fp = xvgropen(distfile,"Distribution","","");
   for(s=0; s<nset; s++) {
-    for(i=0; i<2*nbin+1; i++)
+    for(i=0; i<nbin; i++)
       histo[i] = 0;
     for(i=0; i<n; i++)
-      histo[nbin+(int)(floor(val[s][i]/binwidth+0.5))]++;
-    for(i=0; i<2*nbin+1; i++)
-      fprintf(fp," %g  %g\n",(i-nbin)*binwidth,(real)histo[i]/(n*binwidth));
-    if (s<nset-1)
+      histo[(int)((val[s][i] - min)/binwidth + 0.5)]++;
+    for(i=0; i<nbin; i++)
+      fprintf(fp," %g  %g\n",min+i*binwidth,(double)histo[i]/(n*binwidth));
+    if (s < nset-1)
       fprintf(fp,"&\n");
   }
   fclose(fp);
