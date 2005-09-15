@@ -8,7 +8,7 @@
 /* define BARRIERS if you want to have extra MPI_Barriers
  * in the code which might help analyzing the MPE logfiles 
  */
-#define BARRIERS
+/* #define BARRIERS */
 #ifdef BARRIERS
 #define GMX_BARRIER(communicator) MPI_Barrier(communicator)
 #else
