@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 39;
+static const int tpx_version = 40;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -569,6 +569,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       ndo_real(ir->et[j].a,  ir->et[j].n,bDum);
       ndo_real(ir->et[j].phi,ir->et[j].n,bDum);
     }
+    
     /* QMMM stuff */
     if(file_version>=39){
       do_int(ir->bQMMM);
@@ -604,7 +605,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
         ndo_int(ir->opts.bTS,ir->opts.ngQM,bDum);
       }
       /* end of QMMM stuff */
-    }
+    }    
   }
 }
 
@@ -1011,10 +1012,22 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
       snew(atomtypes->radius,j);
       snew(atomtypes->vol,j);
       snew(atomtypes->surftens,j);
+      if(file_version >= 40)
+      {
+          snew(atomtypes->atomnumber,j);
+      }
     }
     ndo_real(atomtypes->radius,j,bDum);
     ndo_real(atomtypes->vol,j,bDum);
     ndo_real(atomtypes->surftens,j,bDum);
+    if(file_version >= 40)
+    {
+        ndo_int(atomtypes->atomnumber,j,bDum);
+    }
+    else
+    {
+        atomtypes->atomnumber = NULL;
+    }
   } else {
     /* File versions prior to 26 cannot do GBSA, 
      * so they dont use this structure 
@@ -1023,6 +1036,7 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
     atomtypes->radius = NULL;
     atomtypes->vol = NULL;
     atomtypes->surftens = NULL;
+    atomtypes->atomnumber = NULL;
   }  
 }
 

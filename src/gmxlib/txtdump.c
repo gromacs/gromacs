@@ -944,13 +944,16 @@ void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes,
 		  bool bShowNumbers)
 {
   int i;
-  if (available(fp,atomtypes,title)) {
-      indent=pr_title(fp,indent,title);
-      for(i=0;i<atomtypes->nr;i++) {
-	pr_indent(fp,indent);
-	fprintf(fp,"atomtype[%3d]={radius=%12.5e, volume=%12.5e, surftens=%12.5e)}\n",
-		bShowNumbers?i:-1,atomtypes->radius[i],atomtypes->vol[i],atomtypes->surftens[i]);
-      }
+  if (available(fp,atomtypes,title)) 
+  {
+    indent=pr_title(fp,indent,title);
+    for(i=0;i<atomtypes->nr;i++) {
+      pr_indent(fp,indent);
+	  fprintf(fp,
+              "atomtype[%3d]={radius=%12.5e, volume=%12.5e, surftens=%12.5e, atomnumber=%4d)}\n",
+              bShowNumbers?i:-1,atomtypes->radius[i],atomtypes->vol[i],
+              atomtypes->surftens[i],atomtypes->atomnumber[i]);
+    }
   }
 }
 

@@ -593,24 +593,37 @@ static int search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
 
   nn    = *n;
   nrfp  = NRFP(ftype);
-  if (debug)
-    fprintf(debug,"%s, %d: nrfp = %d\n",__FILE__,__LINE__,nrfp);
-  for(i=0; (i<nn); i++) {
-    if (typelist[i] == thistype) /* This type number has already been added */
+
+  for(i=0; (i<nn); i++) 
+  {
+    if (typelist[i] == thistype)
+    {
+      /* This type number has already been added */
       break;
-    /* If not, check if the parameters are identical */
+    }
+
+    /* Otherwise, check if the parameters are identical to any previously added type */
+    
     found=1;
-    for(j=0;j<at->nr && found;j++) {
+    for(j=0;j<at->nr && found;j++) 
+    {
       /* Check nonbonded parameters */
       for(k=0;k<nrfp && found;k++) 
-	found=(param[at->nr*typelist[i]+j].c[k]==param[at->nr*thistype+j].c[k]);
+      {
+        found=(param[at->nr*typelist[i]+j].c[k]==param[at->nr*thistype+j].c[k]);
+      }
+
       /* Check radius, volume, surftens */
-      found = found && ((at->radius[typelist[i]] == at->radius[thistype]) &&
-			(at->vol[typelist[i]] == at->vol[thistype]) &&
-			(at->surftens[typelist[i]] == at->surftens[thistype]));
+      found = found && 
+          ((at->radius[typelist[i]] == at->radius[thistype]) &&
+           (at->vol[typelist[i]] == at->vol[thistype]) &&
+           (at->surftens[typelist[i]] == at->surftens[thistype]) &&	
+           (at->atomnumber[typelist[i]] ==	at->atomnumber[thistype]));
     }
-    if (found) 
+    if (found)
+    {
       break;
+    }
   }
   
   if (i == nn) {
@@ -629,11 +642,14 @@ static int search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
 static int renum_atype(t_params plist[],t_topology *top,
 		       t_atomtype *at,bool bVerbose)
 {
-
   int      i,j,k,l,mi,mj,nat,nrfp,ftype;
   t_param  *nbsnew;
   int      *typelist;
-
+  real     *new_radius;
+  real     *new_vol;
+  real     *new_surftens;
+  int      *new_atomnumber;
+  
   snew(typelist,at->nr);
 
   if (bVerbose)
@@ -647,6 +663,8 @@ static int renum_atype(t_params plist[],t_topology *top,
    * With Generalized-Born electrostatics, or implicit solvent
    * we also check that the atomtype radius, effective_volume
    * and surface tension match.
+   *
+   * With QM/MM we also check that the atom numbers match
    */
   
   /* Get nonbonded interaction type */
@@ -668,7 +686,12 @@ static int renum_atype(t_params plist[],t_topology *top,
       search_atomtypes(at,&nat,typelist,top->atoms.atom[i].typeB,
 		       plist[ftype].param,ftype);
   }
-  
+
+  snew(new_radius,nat);
+  snew(new_vol,nat);
+  snew(new_surftens,nat);
+  snew(new_atomnumber,nat);  
+
   /* We now have a list of unique atomtypes in typelist */
 
   if (debug)
@@ -680,16 +703,21 @@ static int renum_atype(t_params plist[],t_topology *top,
 
   nrfp  = NRFP(ftype);
   
-  for(i=k=0; (i<nat); i++) {
+  for(i=k=0; (i<nat); i++)
+  {
     mi=typelist[i];
-    for(j=0; (j<nat); j++,k++) {
+    for(j=0; (j<nat); j++,k++) 
+    {
       mj=typelist[j];
       for(l=0; (l<nrfp); l++)
-	nbsnew[k].c[l]=plist[ftype].param[at->nr*mi+mj].c[l];
-    }
-    at->radius[i] = at->radius[mi];
-    at->vol[i] = at->vol[mi];
-    at->surftens[i] = at->surftens[mi];
+      {
+        nbsnew[k].c[l]=plist[ftype].param[at->nr*mi+mj].c[l];
+      }
+    }  
+    new_radius[i]     = at->radius[mi];
+    new_vol[i]        = at->vol[mi];
+    new_surftens[i]   = at->surftens[mi];
+    new_atomnumber[i] = at->atomnumber[mi];
   }
   
   for(i=0; (i<nat*nat); i++) {
@@ -697,10 +725,17 @@ static int renum_atype(t_params plist[],t_topology *top,
       plist[ftype].param[i].c[l]=nbsnew[i].c[l];
   }
   plist[ftype].nr=i;
-  srenew(at->radius,nat);
-  srenew(at->vol,nat);
-  srenew(at->surftens,nat);
-
+  
+  sfree(at->radius);
+  sfree(at->vol);
+  sfree(at->surftens);
+  sfree(at->atomnumber);
+  
+  at->radius     = new_radius;
+  at->vol        = new_vol;
+  at->surftens   = new_surftens;
+  at->atomnumber = new_atomnumber;
+  
   at->nr=nat;
 
   sfree(nbsnew);
@@ -876,6 +911,7 @@ int main (int argc, char *argv[])
   int          nerror;
   bool         bNeedVel,bGenVel;
   bool         have_radius,have_vol,have_surftens;
+  bool         have_atomnumber;
   
   t_filenm fnm[] = {
     { efMDP, NULL,  NULL,        ffOPTRD },
@@ -1028,6 +1064,23 @@ int main (int argc, char *argv[])
 		" for atomtype surface tension.");
     nerror++;
   }
+  
+  /* If we are doing QM/MM, check that we got the atom numbers */
+  have_atomnumber = TRUE;
+  for (i=0;i<atype.nr;i++) {
+    have_atomnumber = have_atomnumber && (atype.atomnumber[i]>=0);
+  }
+  if (!have_atomnumber && ir->bQMMM)
+  {
+    fprintf(stderr,"\n"
+            "It appears as if you are trying to run a QM/MM calculation, but the force\n"
+            "field you are using does not contain atom numbers fields. This is an\n"
+            "optional field (introduced in Gromacs 3.3) for general runs, but mandatory\n"
+            "for QM/MM. The good news is that it is easy to add - put the atom number as\n"
+            "an integer just before the mass column in ffXXXnb.itp.\n"
+            "NB: United atoms have the same atom numbers as normal ones.\n\n"); 
+    nerror++;
+  }
 
   if (nerror) {
     print_warn_num();
@@ -1070,11 +1123,14 @@ int main (int argc, char *argv[])
   snew(sys->atomtypes.radius,atype.nr);
   snew(sys->atomtypes.vol,atype.nr);
   snew(sys->atomtypes.surftens,atype.nr);
+  snew(sys->atomtypes.atomnumber,atype.nr);
+
 
   for(i=0;i<atype.nr;i++) {
     sys->atomtypes.radius[i]=atype.radius[i];
     sys->atomtypes.vol[i]=atype.vol[i];
     sys->atomtypes.surftens[i]=atype.surftens[i];
+    sys->atomtypes.atomnumber[i] = atype.atomnumber[i];
   }
 
   if (debug)
@@ -1163,7 +1219,6 @@ int main (int argc, char *argv[])
 
   state.lambda = ir->init_lambda;
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),0,ir->init_t,ir,&state,sys);
-  
   print_warn_num();
   
   thanx(stderr);

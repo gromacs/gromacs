@@ -1086,6 +1086,21 @@ void init_forcerec(FILE *fp,
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
     fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,ir->tabext,TRUE);
 
+  /* QM/MM initialization if requested
+   */
+  if (ir->bQMMM)
+  {
+    fprintf(stderr,"QM/MM calculation requested.\n");
+  }
+
+  fr->bQMMM      = ir->bQMMM;   
+  fr->qr         = mk_QMMMrec();
+  
+  /* the solvent optimizer is called after the QM is initialized,
+   * because we don't want to have the QM subsystemto become an
+   * optimized solvent
+   */
+
   check_solvent(fp,top,fr,mdatoms,nsb);
 
   
@@ -1228,6 +1243,11 @@ void force(FILE       *fplog,   int        step,
     for(i=0; (i<fr->nmol); i++)
       fr->mol_epot[i]=0.0;
   debug_gmx();
+
+  /* do QMMM first if requested */
+  if(fr->bQMMM){
+    epot[F_EQM] = calculate_QMMM(cr,x,f,fr,md);
+  }
 
   if (bSepDVDL)
     fprintf(fplog,"Step %d: non-bonded V and dVdl for node %d:\n",

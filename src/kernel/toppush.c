@@ -126,7 +126,8 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
   }
 }
 
-void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,int nb_funct,
+void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
+	      char *line,int nb_funct,
 	      t_nbparam ***nbparam,t_nbparam ***pair)
 {
   typedef struct {
@@ -148,78 +149,217 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
   double c[MAXFORCEPARAM];
   double radius,vol,surftens;
   char   tmpfield[12][100]; /* Max 12 fields of width 100 */
-  char  errbuf[256];
+  char   errbuf[256];
+  int    atomnr;
+  bool   have_atomic_number;
+  bool   have_bonded_type;
   
   /* First assign input line to temporary array */
   nfields=sscanf(line,"%s%s%s%s%s%s%s%s%s%s%s%s",
  		 tmpfield[0],tmpfield[1],tmpfield[2],tmpfield[3],tmpfield[4],tmpfield[5],
 		 tmpfield[6],tmpfield[7],tmpfield[8],tmpfield[9],tmpfield[10],tmpfield[11]);
+
+  /* Comments on optional fields in the atomtypes section:
+   *
+   * The force field format is getting a bit old. For OPLS-AA we needed
+   * to add a special bonded atomtype, and for Gerrit Groenhofs QM/MM stuff
+   * we also needed the atomic numbers.
+   * To avoid making all old or user-generated force fields unusable we
+   * have introduced both these quantities as optional columns, and do some
+   * acrobatics to check whether they are present or not.
+   * This will all look much nicer when we switch to XML... sigh.
+   *
+   * Field 0 (mandatory) is the nonbonded type name. (string)
+   * Field 1 (optional)  is the bonded type (string)
+   * Field 2 (optional)  is the atomic number (int)
+   * Field 3 (mandatory) is the mass (numerical)
+   * Field 4 (mandatory) is the charge (numerical)
+   * Field 5 (mandatory) is the particle type (single character)
+   * This is followed by a number of nonbonded parameters.
+   * 
+   * The safest way to identify the format is the particle type field.
+   *
+   * So, here is what we do:
+   *
+   * A. Read in the first six fields as strings
+   * B. If field 3 (starting from 0) is a single char, we have neither
+   *    bonded_type or atomic numbers.
+   * C. If field 5 is a single char we have both.
+   * D. If field 4 is a single char we check field 1. If this begins with
+   *    an alphabetical character we have bonded types, otherwise atomic numbers.
+   */  
+  
+  if(nfields<6)
+  {
+      too_few();
+      return;
+  }
+  
+  if( (strlen(tmpfield[5])==1) && isalpha(tmpfield[5][0]) )
+  {
+      have_bonded_type   = TRUE;
+      have_atomic_number = TRUE;
+  }
+  else if( (strlen(tmpfield[3])==1) && isalpha(tmpfield[3][0]) )
+  {
+      have_bonded_type   = FALSE;
+      have_atomic_number = FALSE;
+  }
+  else
+  {
+      have_bonded_type   = ( isalpha(tmpfield[1][0]) != 0 );
+      have_atomic_number = !have_bonded_type; 
+  }
+  
+  /* optional fields */
+  surftens = -1;
+  vol      =  0;
+  radius   =  0;
+  atomnr   = -1;
   
   switch (nb_funct) {
+      
   case F_LJ:
     nfp0 = 2;
-    /* If the 5th field is a particletype, then there is a bond_atomtype 
-     *iin field 2, otherwise not (set it identical to atomtype then) */
-    if(nfields>=7 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) {
-      nread = sscanf (line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf",
-		      type,btype,&m,&q,ptype,&c[0],&c[1],&radius,&vol,&surftens);
-      if(nread<10)
-	surftens = -1;
-      if(nread<9)
-	vol = 0;
-      if(nread<8)
-	radius = 0;
+
+    if( have_atomic_number )
+    {
+        if ( have_bonded_type )
+        {
+            nread = sscanf(line,"%s%s%d%lf%lf%s%lf%lf%lf%lf%lf",
+                           type,btype,&atomnr,&m,&q,ptype,&c[0],&c[1],
+                           &radius,&vol,&surftens);
+            if(nread < 8)
+            {
+                too_few();
+                return;
+            }            
+        }
+        else
+        {
+            /* have_atomic_number && !have_bonded_type */
+            nread = sscanf(line,"%s%d%lf%lf%s%lf%lf%lf%lf%lf",
+                           type,&atomnr,&m,&q,ptype,&c[0],&c[1],
+                           &radius,&vol,&surftens);
+            if(nread < 7)
+            {
+                too_few();
+                return;
+            }            
+        }
     }
-    else if (nfields>=6) {
-      nread = sscanf (line,"%s%lf%lf%s%lf%lf%lf%lf%lf",
-		      type,&m,&q,ptype,&c[0],&c[1],&radius,&vol,&surftens);
-      if(nread<9)
-	surftens = -1;
-      if(nread<8)
-	vol = 0;
-      if(nread<7)
-	radius = 0;
-      strcpy(btype,type);
+    else
+    {
+        if ( have_bonded_type )
+        {
+            /* !have_atomic_number && have_bonded_type */
+            nread = sscanf(line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf",
+                           type,btype,&m,&q,ptype,&c[0],&c[1],
+                           &radius,&vol,&surftens);
+            if(nread < 7)
+            {
+                too_few();
+                return;
+            }            
+        }
+        else
+        {
+            /* !have_atomic_number && !have_bonded_type */
+            nread = sscanf(line,"%s%lf%lf%s%lf%lf%lf%lf%lf",
+                           type,&m,&q,ptype,&c[0],&c[1],
+                           &radius,&vol,&surftens);
+            if(nread < 6)
+            {
+                too_few();
+                return;
+            }            
+        }    
+    }
+    
+    if( !have_bonded_type )
+    {
+        strcpy(btype,type);
+    }
 
-    } else {
-      too_few();
-      return;
-    } 
+    if( !have_atomic_number )
+    {
+        atomnr = -1;
+    }
+        
     break;
-
+      
   case F_BHAM:
     nfp0 = 3;
-    /* If the 5th field is a particletype and we have 8 fields in total there
-     * is a bond_atomtype in field 2, otherwise not (set it identical to atomtype then) */
-    if(nfields>=8 && strlen(tmpfield[4])==1 && isalpha(tmpfield[4][0])) {
-      nread = sscanf (line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
-		      type,btype,&m,&q,ptype,&c[0],&c[1],&c[2],&radius,&vol,&surftens);
-      if(nread<11)
-	surftens = -1;
-      if(nread<10)
-	vol = 0;
-      if(nread<9)
-	radius = 0;
-    }
-    else if (nfields>=7) {
-      nread = sscanf (line,"%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
-		      type,&m,&q,ptype,&c[0],&c[1],&c[2],&radius,&vol,&surftens);
-      strcpy(btype,type);
-      if(nread<10)
-	surftens = -1;
-      if(nread<9)
-	vol = 0;
-      if(nread<8)
-	radius = 0;
-    } else {
-      too_few();
-      return;
-    }
-    break;
 
-  default:
-    gmx_fatal(FARGS,"Invalid function type %d in push_at %s %d",nb_funct,
-		__FILE__,__LINE__);
+      if( have_atomic_number )
+      {
+          if ( have_bonded_type )
+          {
+              nread = sscanf(line,"%s%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf",
+                             type,btype,&atomnr,&m,&q,ptype,&c[0],&c[1],&c[2],
+                             &radius,&vol,&surftens);
+              if(nread < 9)
+              {
+                  too_few();
+                  return;
+              }            
+          }
+          else
+          {
+              /* have_atomic_number && !have_bonded_type */
+              nread = sscanf(line,"%s%d%lf%lf%s%lf%lf%lf%lf%lf%lf",
+                             type,&atomnr,&m,&q,ptype,&c[0],&c[1],&c[2],
+                             &radius,&vol,&surftens);
+              if(nread < 8)
+              {
+                  too_few();
+                  return;
+              }            
+          }
+      }
+      else
+      {
+          if ( have_bonded_type )
+          {
+              /* !have_atomic_number && have_bonded_type */
+              nread = sscanf(line,"%s%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
+                             type,btype,&m,&q,ptype,&c[0],&c[1],&c[2],
+                             &radius,&vol,&surftens);
+              if(nread < 8)
+              {
+                  too_few();
+                  return;
+              }            
+          }
+          else
+          {
+              /* !have_atomic_number && !have_bonded_type */
+              nread = sscanf(line,"%s%lf%lf%s%lf%lf%lf%lf%lf%lf",
+                             type,&m,&q,ptype,&c[0],&c[1],&c[2],
+                             &radius,&vol,&surftens);
+              if(nread < 7)
+              {
+                  too_few();
+                  return;
+              }            
+          }        
+      }
+          
+      if( !have_bonded_type )
+      {
+          strcpy(btype,type);
+      }
+          
+      if( !have_atomic_number )
+      {
+          atomnr = -1;
+      }
+          
+      break;
+
+      default:
+          gmx_fatal(FARGS,"Invalid function type %d in push_at %s %d",nb_funct,
+                    __FILE__,__LINE__);
   }
   for(j=nfp0; (j<MAXFORCEPARAM); j++)
     c[j]=0.0;
@@ -269,6 +409,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
     srenew(at->radius,nr+1);
     srenew(at->vol,nr+1);
     srenew(at->surftens,nr+1);
+    srenew(at->atomnumber,nr+1);
     at->nr++;
     /* Add space in the non-bonded parameters matrix */
     srenew(*nbparam,at->nr);
@@ -293,6 +434,7 @@ void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,char *line,
   at->radius[nr] = radius;
   at->vol[nr] = vol;
   at->surftens[nr] = surftens;
+  at->atomnumber[nr] = atomnr;
 
   for (i=0; (i<MAXFORCEPARAM); i++)
     at->nb[nr].c[i] = c[i];
