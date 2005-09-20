@@ -784,7 +784,6 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
 	a1 = sys->idef.il[i].iatoms[j+1];
 	a2 = sys->idef.il[i].iatoms[j+2];
 	if((bQMMM[a1] && !bQMMM[a2])||(!bQMMM[a1] && bQMMM[a2])){
-	  fprintf(stderr,"bingo! atoms %d and %d\n",a1,a2);
 	  if(link_nr>=link_max){
 	    link_max += 10;
 	    srenew(link_arr,link_max);

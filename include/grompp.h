@@ -94,6 +94,7 @@ typedef struct {
   real          *radius;        /* Radius for GBSA stuff                */
   real          *vol;           /* Effective volume for GBSA            */
   real          *surftens;      /* Surface tension with water, for GBSA */
+  int           *atomnumber;    /* Atomic number, used for QM/MM        */
 } t_atomtype;
 
 typedef struct {

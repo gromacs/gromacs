@@ -219,80 +219,7 @@ void init_QMroutine(t_commrec *cr, t_QMrec *qm, t_MMrec *mm)
         gmx_fatal(FARGS,"Ab-initio calculation only supported with Gamess or Gaussian.");   
 #endif
     }
-}
-
-void atomic_number(int nr, char ***atomtype, int *nucnum)
-{
-  /* retrievs the atomic numbers of the atoms and puts them in the
-   * array nucnum. On exit atomic_number returns the sum of the atomic
-   * numbers. Caution: this function oly works for the ffG43
-   * forcefield. Each forcefield requires its own atomic_number
-   * function.....  Maybe later the .atp file will also contain teh
-   * atomic numbner, but this requires some thought, as it would make
-   * this version of Gromacs incompatible with previous versions
-   * 1-1-2002 */
-  
-  int 
-    i;
-  
-  for (i=0;i<nr;i++){
-    if(!strcmp((*(atomtype[i])),"O"))      
-      nucnum[i]=8;
-    else if(!strcmp((*(atomtype[i])),"OM"))
-      nucnum[i]=8;
-    else if(!strcmp((*(atomtype[i])),"OA"))
-      nucnum[i]=8;
-    else if(!strcmp((*(atomtype[i])),"OW"))
-      nucnum[i]=8;      
-    else if(!strcmp((*(atomtype[i])),"N"))
-      nucnum[i]=7;
-    else if(!strcmp((*(atomtype[i])),"NT"))
-      nucnum[i]=7;    
-    else if(!strcmp((*(atomtype[i])),"NL"))
-      nucnum[i]=7;    /* and so on..... still needs to be completed! */
-    else if(!strcmp((*(atomtype[i])),"NR"))
-      nucnum[i]=7;
-    else if(!strcmp((*(atomtype[i])),"NZ"))
-      nucnum[i]=7;    
-    else if(!strcmp((*(atomtype[i])),"NE"))
-      nucnum[i]=7;
-    else if(!strcmp((*(atomtype[i])),"C"))
-      nucnum[i]=6;
-    else if(!strcmp((*(atomtype[i])),"CH1"))
-      nucnum[i]=6;
-    else if(!strcmp((*(atomtype[i])),"CH2"))
-      nucnum[i]=6;
-    else if(!strcmp((*(atomtype[i])),"CH3"))
-      nucnum[i]=6;
-    else if(!strcmp((*(atomtype[i])),"CR1"))
-      nucnum[i]=6;
-    else if(!strcmp((*(atomtype[i])),"HC"))
-      nucnum[i]=1;
-    else if(!strcmp((*(atomtype[i])),"H"))
-      nucnum[i]=1;
-    else if(!strcmp((*(atomtype[i])),"HW"))
-      nucnum[i]=1;
-    else if(!strcmp((*(atomtype[i])),"S"))
-      nucnum[i]=16;
-    else if(!strcmp((*(atomtype[i])),"CU1+"))
-      nucnum[i]=7;    
-    else if(!strcmp((*(atomtype[i])),"NA+"))
-      nucnum[i]=11;
-    else if(!strcmp((*(atomtype[i])),"LA"))
-      nucnum[i]=1; 
-    else if(!strcmp((*(atomtype[i])),"P"))
-      nucnum[i]=15;
-    else if(!strcmp((*(atomtype[i])),"CL"))
-          nucnum[i]=17;
-    else if(!strcmp((*(atomtype[i])),"CL-"))
-          nucnum[i]=17;
-    else if(!strcmp((*(atomtype[i])),"OP"))
-                    nucnum[i]=8;
-    else
-      gmx_fatal(FARGS,"atomtype %s does not exist in ffG43a2!\n",
-		  ((*(atomtype[i])))); 
-  }
-} /* atomic_number */ 
+} /* init_QMroutine */
 
 void update_QMMM_coord(rvec x[],t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 {
@@ -393,8 +320,8 @@ void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray,
 
   snew(qm->atomicnumberQM,nr);
   for (i=0;i<qm->nrQMatoms;i++){
-    qm->nelectrons       += md->nucnum[qm->indexQM[i]];  
-    qm->atomicnumberQM[i] = md->nucnum[qm->indexQM[i]]; 
+    qm->nelectrons       += md->atomnumber[qm->indexQM[i]];  
+    qm->atomicnumberQM[i] = md->atomnumber[qm->indexQM[i]]; 
   }
   qm->QMcharge       = ir->opts.QMcharge[grpnr];
   qm->multiplicity   = ir->opts.QMmult[grpnr];
@@ -527,6 +454,11 @@ void init_QMMMrec(t_commrec *cr,
 
   c6au  = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,6)); 
   c12au = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,12)); 
+
+  /* fill the nucnum array in the t_mdatoms struct: */
+  for(i=0;i<md->nr;i++){
+    md->atomnumber[i] = top->atomtypes.atomnumber[md->typeA[i]];
+  }
 
   /* Make a local copy of the QMMMrec */
   qr = fr->qr;

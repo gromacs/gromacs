@@ -141,6 +141,7 @@ grompp|makes a run input file
 mdrun|finds a potential energy minimum
 mdrun|calculates the Hessian
 g_nmeig|diagonalizes the Hessian 
+g_nmtraj|generate oscillating trajectory of an eigenmode
 g_anaeig|analyzes the normal modes
 g_nmens|generates an ensemble of structures from the normal modes
 END

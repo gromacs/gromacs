@@ -1,7 +1,6 @@
 #ifndef _QMMM_h
 #define _QMMM_h
 
-static char *SRCID_QMMM_h = "$Id$";
 
 #ifdef HAVE_IDENT
 #ident	"@(#) QMMM.h 1 28/2/01"
@@ -12,7 +11,6 @@ static char *SRCID_QMMM_h = "$Id$";
 #include "network.h"
 #include "tgroup.h"
 
-extern void atomic_number(int nr, char ***atomtype, int *nucnum);
 
 extern t_QMMMrec *mk_QMMMrec(void);
 /* allocates memory for QMMMrec */
