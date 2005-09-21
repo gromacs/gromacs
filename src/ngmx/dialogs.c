@@ -101,8 +101,10 @@ void show_mb(t_gmx *gmx,int mb)
 
 static void hide_mb(t_gmx *gmx)
 {
-  if (gmx->which_mb > 0 && gmx->which_mb < emNR)
+  if (gmx->which_mb >= 0 && gmx->which_mb < emNR) {
     HideDlg(gmx->mboxes[gmx->which_mb]);
+    gmx->which_mb = -1;
+  }
 }
 
 static void MBCallback(t_x11 *x11,int dlg_mess,int item_id,
@@ -136,8 +138,8 @@ static void QuitCB(t_x11 *x11,int dlg_mess,int item_id,
   t_gmx  *gmx;
   gmx=(t_gmx *)data;
 
+  hide_mb(gmx);
   if (dlg_mess==DLG_EXIT) {
-    hide_mb(gmx);
     if (strcasecmp("yes",set)==0) 
       write_gmx(x11,gmx,IDTERM);
   }
@@ -400,6 +402,7 @@ void init_dlgs(t_x11 *x11,t_gmx *gmx)
   snew(gmx->mboxes,emNR);
   for(i=0; (i<emNR); i++)
     gmx->mboxes[i]=mi[i].mmb(x11,gmx);
+  gmx->which_mb = -1;
 }
 
 void done_dlgs(t_gmx *gmx)
