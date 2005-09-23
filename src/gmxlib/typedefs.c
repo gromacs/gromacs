@@ -77,15 +77,26 @@ void init_atom(t_atoms *at)
   }
 }
 
+void init_atomtypes(t_atomtypes *at)
+{
+  int i;
+  
+  at->nr = 0;
+  at->radius = NULL;
+  at->vol = NULL;
+  at->atomnumber = NULL;
+}
+
 void init_top (t_topology *top)
 {
   int i;
   
   top->name = NULL;
-  open_symtab(&top->symtab);
   init_atom (&(top->atoms));
+  init_atomtypes(&(top->atomtypes));
   for (i=0; (i<ebNR); i++)
     init_block(&(top->blocks[i]));
+  open_symtab(&top->symtab);
 }
 
 void init_inputrec(t_inputrec *ir)
