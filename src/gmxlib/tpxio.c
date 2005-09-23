@@ -1008,14 +1008,11 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
   if (file_version > 25) {
     do_int(atomtypes->nr);
     j=atomtypes->nr;
-    if(bRead) {
+    if (bRead) {
       snew(atomtypes->radius,j);
       snew(atomtypes->vol,j);
       snew(atomtypes->surftens,j);
-      if(file_version >= 40)
-      {
-          snew(atomtypes->atomnumber,j);
-      }
+      snew(atomtypes->atomnumber,j);
     }
     ndo_real(atomtypes->radius,j,bDum);
     ndo_real(atomtypes->vol,j,bDum);
@@ -1023,10 +1020,6 @@ static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
     if(file_version >= 40)
     {
         ndo_int(atomtypes->atomnumber,j,bDum);
-    }
-    else
-    {
-        atomtypes->atomnumber = NULL;
     }
   } else {
     /* File versions prior to 26 cannot do GBSA, 
@@ -1098,6 +1091,8 @@ static void do_top(t_topology *top,bool bRead, int file_version)
 {
   int  i;
   
+  if (bRead)
+    init_top(top);
   do_symtab(&(top->symtab),bRead);
   if (bRead && debug) 
     pr_symtab(debug,0,"symtab",&top->symtab);
