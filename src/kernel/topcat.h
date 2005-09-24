@@ -40,8 +40,7 @@
 #include "typedefs.h"
 
 extern void topcat(t_molinfo *dest,int nsrc,t_molinfo src[],
-		   int ntab,int *tab,int Nsim,t_simsystem Sims[],
-		   bool bEnsemble);
+		   int Nsim,t_simsystem Sims[],bool bEnsemble);
 /* If ntab > 0, then molecules will be shuffled over nodes
  * according to tab. If bEnsemble then distance restraints will
  * be added together for ensemble averiging.
@@ -49,10 +48,4 @@ extern void topcat(t_molinfo *dest,int nsrc,t_molinfo src[],
 
 extern void mi2top(t_topology *dest,t_molinfo *src);
 
-extern int *mk_shuffle_tab(int nmol,t_molinfo mol[],int nnodes,int *ntab,
-			   int Nsim,t_simsystem Sims[],bool bVerbose);
-/* Make an array tab (return value) of length *ntab
- * which holds the molecule types
- * which must consecutively be added to the topology
- */
 #endif	/* _topcat_h */

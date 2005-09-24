@@ -77,7 +77,8 @@ static int list_comp(const void *a,const void *b)
   return (*((int *)a) - *((int *)b));
 }
 
-real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
+real calc_grid(FILE *fp,matrix box,real gr_sp,
+	       int *nx,int *ny,int *nz,int nnodes)
 {
   int  d,n[DIM];
   int  i,nmin[DIM];
@@ -109,7 +110,7 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
   make_list(0);
 
   if ((*nx<=0) || (*ny<=0) || (*nz<=0))
-    fprintf(stderr,"Calculating fourier grid dimensions for%s%s%s\n",
+    fprintf(fp,"Calculating fourier grid dimensions for%s%s%s\n",
 	    *nx > 0 ? "":" X",*ny > 0 ? "":" Y",*nz > 0 ? "":" Z");
 
   qsort(list,n_list,sizeof(list[0]),list_comp);
@@ -139,7 +140,7 @@ real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
   *nx = n[XX];
   *ny = n[YY];
   *nz = n[ZZ];
-  fprintf(stderr,"Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
+  fprintf(fp,"Using a fourier grid of %dx%dx%d, spacing %.3f %.3f %.3f\n",
 	  *nx,*ny,*nz,spacing[XX],spacing[YY],spacing[ZZ]);
 
   return max_spacing;

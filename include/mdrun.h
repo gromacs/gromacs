@@ -223,9 +223,8 @@ typedef enum
   LIST_LOAD	=0100
 } t_listitem;
 
-extern int check_nnodes_top(char *fn,t_topology *top,int nnodes, 
-                             int nkx, int nky, bool bDoPME);
-/* Verify whether this tpr file is for nnodes nodes, and quit if not */
+extern void check_nnodes_top(char *fn,t_topology *top);
+/* Reset the tpr file to work with one node if necessary */
 
 extern void init_single(FILE *log,
                         t_inputrec *inputrec, char *tpbfile, t_topology *top,
@@ -237,29 +236,10 @@ extern void init_single(FILE *log,
       * coordinates and velocities from the file specified in tpbfile
       */
 
-extern void distribute_parts(int left,int right,int pid,int nprocs,
-                             t_inputrec *inputrec,char *tpbfile,int nstDlb);
-     /*
-      * Reads the parameters, topology, coordinates and velocities for the
-      * multi processor version of the program from the file specified in
-      * inputrec->files[STATUS_NM]. This file should also contain a so called
-      * split descriptor which describes how to distribute particles over
-      * the system. It then selects for all subsystems the appropriate data
-      * and sends this to the processor using the left and right channels.
-      * At last it sends its own subsystem down the ring where it is buffered.
-      * Its own buffers for reading the data from the file are freed, and it
-      * is now possible to reload this processor from the ring by using the
-      * init_parts() routine.
-      * The routine also creates a renum array which can be used for writing
-      * out the x,v and f for analysis purpose.
-      */
-
-extern void init_parts(FILE *log,t_commrec *cr,
-		       t_inputrec *inputrec,t_topology *top,
-		       t_state *state,t_mdatoms **mdatoms,
-		       t_nsborder *nsb,int list,
-		       bool *bParallelVsites,
-		       t_comm_vsites *vsitecomm);
+extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
+			  t_inputrec *inputrec,t_topology *top,
+			  t_state *state,t_mdatoms **mdatoms,
+			  int list);
      /*
       * Loads the data for a simulation from the ring. Parameters, topology
       * coordinates, velocities, and masses are initialised equal to using
@@ -277,6 +257,14 @@ extern void init_parts(FILE *log,t_commrec *cr,
       * all interactions.
       */
 
+/* Routines from redist.c */
+extern void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
+			       t_commrec *cr,t_topology *top,t_nsborder *nsb);
+/* Split the system over N processors for the first time. */
+
+extern void split_system_again();
+/* Id. for subsequent calls (not implemented yet!) */
+      
 extern void start_time(void);
 /* Start timing routines */
 

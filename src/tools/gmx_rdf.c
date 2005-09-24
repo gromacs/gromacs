@@ -681,7 +681,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   
   /* This bit is dimensionless */
   nx = ny = nz = 0;
-  max_spacing = calc_grid(box,grid,&nx,&ny,&nz,1);	
+  max_spacing = calc_grid(stdout,box,grid,&nx,&ny,&nz,1);	
   pme_order   = max(4,1+(0.2/grid));
   npixel      = max(nx,ny);
   data        = init_xdata(nx,ny);

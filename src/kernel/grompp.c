@@ -75,178 +75,6 @@
 #include "add_par.h"
 #include "enxio.h"
 
-static void write_deshufndx(char *ndx,int *forward,t_atoms *atoms)
-{
-  FILE *out;
-  int  *backward;
-  int  i,j,natoms;
-  bool bXTC;
-
-  natoms = atoms->nr;
-
-  /* Now make an inverse shuffle index:
-   * this transforms the new order into the original one...
-   * DvdS 07/05/03, fixed long standing +1 bug.
-   */
-  snew(backward,natoms);
-  for(i=0; (i<natoms); i++)
-    backward[forward[i]] = i+1;
-    
-  /* Make an index file for deshuffling the atoms */
-  out=ffopen(ndx,"w");
-  fprintf(out,"[ DeShuffle ]\n");
-  bXTC = FALSE;
-  j = 0;
-  for(i=0; (i<natoms); i++) {
-    fprintf(out,"  %d",backward[i]);
-    j++;
-    if (j % 10 == 0)
-      fprintf(out,"\n");
-    bXTC = bXTC || (atoms->atom[i].grpnr[egcXTC] > 0);
-  }
-  if (j % 10)
-    fprintf(out,"\n");
-  if (bXTC) {
-    fprintf(out,"[ DeShuffle_xtc ]\n");
-    j = 0;
-    for(i=0; (i<natoms); i++)
-      if (atoms->atom[backward[i]].grpnr[egcXTC] == 0) {
-	fprintf(out,"  %d",backward[i]);
-	j++;
-	if (j % 10 == 0)
-	  fprintf(out,"\n");
-      }
-    if (j % 10)
-      fprintf(out,"\n");
-  }
-  ffclose(out);
-  
-  sfree(backward);
-}
-
-static int *shuffle_xv(bool bSort,bool bVerbose,
-		       int ntab,int *tab,int nmol,t_molinfo *mol,
-		       int natoms,rvec *x,rvec *v,
-		       int Nsim,t_simsystem Sims[])
-{
-  rvec *xbuf,*vbuf;
-  int  *nindex,**index,xind,*done,*forward;
-  int  i,j,j0,k,n,mi,nnat;
-
-  fprintf(stderr,"Entering shuffle_xv\n");
-  /* Determine order in old x array! 
-   * the index array holds for each molecule type
-   * a pointer to the position at which the coordinates start
-   */
-  snew(index,nmol);
-  snew(nindex,nmol);
-  snew(done,nmol);
-  
-  /* Compute the number of copies for each molecule type */
-  for(i=0; (i<Nsim); i++) {
-    mi=Sims[i].whichmol;
-    nindex[mi]+=Sims[i].nrcopies;
-  }
-  /* Allocate space */
-  for(i=0; (i<nmol); i++) {
-    snew(index[i],nindex[i]);
-    nindex[i]=0;
-  }
-  xind=0;
-  for(i=0; (i<Nsim); i++) {
-    /* Mol-index */
-    mi=Sims[i].whichmol;
-    
-    /* Current number of molecules processed for this mol-type */
-    k=nindex[mi];
-    
-    /* Number of atoms in this mol-type */
-    nnat = mol[mi].atoms.nr;
-    
-    for(j=0; (j<Sims[i].nrcopies); j++,k++) {
-      index[mi][k]=xind;
-      xind += nnat;
-    }
-    nindex[mi]=k;
-  }
-  if (xind != natoms)
-    gmx_incons("Shuffling error");
-  
-  /* Buffers for x and v */  
-  snew(xbuf,natoms);
-  snew(vbuf,natoms);
-  
-  /* Sort the coordinates if necessary */
-  if (bSort) {
-    for(i=0; (i<nmol); i++) {
-      if (bVerbose)
-	fprintf(stderr,"Sorting coordinates for %5d copies of molecule %s\n",
-		nindex[i],*mol[i].name);
-      nnat = mol[i].atoms.nr;
-      /* Copy molecules into buffer arrays */
-      for(j=n=0; (j<nindex[i]); j++) {
-	for(k=0; (k<nnat); k++,n++) {
-	  copy_rvec(x[index[i][j]+k],xbuf[n]);
-	  copy_rvec(v[index[i][j]+k],vbuf[n]);
-	}
-      }
-      /* Sort the coords */
-      sortwater(0,j,nnat,xbuf,vbuf);
-      /* Copy molecules back from buffer arrays */
-      for(j=n=0; (j<nindex[i]); j++) {
-	for(k=0; (k<nnat); k++,n++) {
-	  copy_rvec(xbuf[n],x[index[i][j]+k]);
-	  copy_rvec(vbuf[n],v[index[i][j]+k]);
-	}
-      }
-    }
-  }
-  
-  /* Make a forward shuffle array, i.e. the old numbers of
-   * the current order: this makes a shuffled order from the
-   * original.
-   * Simultaneously copy the coordinates..
-   */
-  snew(forward,natoms);
-  for(i=k=0; (i<ntab); i++) {
-    /* Get the molecule type */
-    mi   = tab[i];
-    
-    /* Determine number of atoms in thsi mol-type */
-    nnat = mol[mi].atoms.nr;
-    
-    /* Find the starting index in the x & v arrays */
-    j0   = index[mi][done[mi]];
-    
-    /* Copy the coordinates */
-    for(j=j0; (j<j0+nnat); j++,k++) {
-      copy_rvec(x[j],xbuf[k]);
-      copy_rvec(v[j],vbuf[k]);
-      /* Store the old index of the new one */
-      forward[k]=j;
-    }
-    /* Increment the number of molecules processed for this type */
-    done[mi]++;
-  }
-
-  /* Now copy the buffers back to the original x and v */
-  for(i=0; (i<natoms); i++) {
-    copy_rvec(xbuf[i],x[i]);
-    copy_rvec(vbuf[i],v[i]);
-  }
-  
-  /* Delete buffers */
-  sfree(xbuf);
-  sfree(vbuf);
-  
-  for(i=0; (i<nmol); i++)
-    sfree(index[i]);
-  sfree(index);
-  sfree(done);
-  
-  return forward;
-}
-
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
   int  i,n;
@@ -260,8 +88,7 @@ static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
   return n;
 }
 
-static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
-			    int *forward)
+static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2)
 {
   int i,nmismatch,idx;
 #define MAXMISMATCH 20
@@ -271,10 +98,7 @@ static int check_atom_names(char *fn1, char *fn2, t_atoms *at1, t_atoms *at2,
   
   nmismatch=0;
   for(i=0; i < at1->nr; i++) {
-    if(forward)
-      idx=forward[i];
-    else
-      idx=i;
+    idx=i;
     if (strcmp( *(at1->atomname[i]) , *(at2->atomname[idx]) ) != 0) {
       if (nmismatch < MAXMISMATCH)
 	fprintf(stderr,
@@ -357,19 +181,16 @@ static void check_vel(t_atoms *atoms,rvec v[])
 
 static int *new_status(char *topfile,char *topppfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
-		       bool bGenVel,bool bVerbose,
-		       bool bSort,t_state *state,
+		       bool bGenVel,bool bVerbose,t_state *state,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],int *comb,real *reppow,
-		       int nnodes,bool bEnsemble,bool bMorse,
+		       bool bEnsemble,bool bMorse,
 		       bool bCheckPairs,int *nerror)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
   t_atoms     *confat;
-  int         *forward=NULL;
   int         i,nrmols,Nsim,nmismatch;
-  int         ntab,*tab;
   char        buf[STRLEN];
 
   init_top(sys);
@@ -382,18 +203,6 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   if (bCheckPairs)
     check_pairs(nrmols,molinfo,atype->nr,atype->nb);
   
-  ntab = 0;
-  tab  = NULL;
-  if (nnodes > 1) {
-    tab=mk_shuffle_tab(nrmols,molinfo,nnodes,&ntab,Nsim,Sims,bVerbose);
-    if (debug) {
-      for(i=0; (i<ntab); i++)
-	fprintf(debug,"Mol[%5d] = %s\n",i,*molinfo[tab[i]].name);
-      fflush(debug);
-    }
-    fprintf(stderr,"Made a shuffling table with %d entries [molecules]\n",
-	    ntab);
-  }
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
 
@@ -413,7 +222,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
       fprintf(stderr,"removed %d dihedral restraints\n",i);
   }
   
-  topcat(msys,nrmols,molinfo,ntab,tab,Nsim,Sims,bEnsemble);
+  topcat(msys,nrmols,molinfo,Nsim,Sims,bEnsemble);
   
   /* Copy structures from msys to sys */
   mi2top(sys,msys);
@@ -434,15 +243,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     init_state(state,state->natoms,0);
     read_stx_conf(confin,opts->title,confat,state->x,state->v,state->box);
 
-    if (ntab > 0) {
-      if (bVerbose)
-	fprintf(stderr,"Shuffling coordinates...\n");
-      forward=shuffle_xv(bSort,bVerbose,
-			 ntab,tab,nrmols,molinfo,
-			 state->natoms,state->x,state->v,Nsim,Sims);
-    }
-    
-    nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat,forward);
+    nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat);
     free_t_atoms(confat);
     sfree(confat);
     
@@ -478,8 +279,6 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     done_mi(&(molinfo[i]));
   sfree(molinfo);
   sfree(Sims);
-  
-  return forward;
 }
 
 static void cont_status(char *slog,char *ener,
@@ -533,7 +332,7 @@ static void cont_status(char *slog,char *ener,
   }
 }
 
-static void read_posres(t_params *pr, char *fn, int offset,int *forward)
+static void read_posres(t_params *pr, char *fn, int offset)
 {
   bool   bFirst = TRUE;
   rvec   *x,*v;
@@ -552,37 +351,27 @@ static void read_posres(t_params *pr, char *fn, int offset,int *forward)
   for(i=0; (i<pr->nr); i++) {
     ai=pr->param[i].AI;
     if (ai >= natoms)
-      gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than natoms (%d)\n",
-		  ai+1,natoms);
+      gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than number of atoms in the system (%d).\n",ai+1,natoms);
     for(j=0; (j<DIM); j++)
       pr->param[i].c[offset + j] = x[ai][j];
-    /* Fix for shuffling! */
-    if (forward && (ai != forward[ai])) {
-      pr->param[i].AI = forward[ai];
-      if (bFirst) {
-	fprintf(stderr,"WARNING shuffling position restraints. Please scheck your results.\n");
-	bFirst = FALSE;
-      }
-    }
   }
-  /*pr->nrfp+=DIM;*/
   
   free_t_atoms(&dumat);
   sfree(x);
   sfree(v);
 }
 
-static void gen_posres(t_params *pr, char *fnA,char *fnB,int *forward)
+static void gen_posres(t_params *pr, char *fnA,char *fnB)
 {
   int i,j;
 
-  read_posres(pr,fnA,2*DIM,forward);
+  read_posres(pr,fnA,2*DIM);
   if (strcmp(fnA,fnB) == 0) {
     for(i=0; (i<pr->nr); i++)
       for(j=0; (j<DIM); j++)
 	pr->param[i].c[3*DIM + j] = pr->param[i].c[2*DIM + j];
   } else {
-    read_posres(pr,fnB,3*DIM,forward);
+    read_posres(pr,fnB,3*DIM);
   }
 }
 
@@ -758,47 +547,6 @@ int count_constraints(t_params plist[])
   return count;
 }
 
-static real *mk_capacity(char *str,int nnodes)
-{
-  char   f0[256],f1[256];
-  double d,tcap=0;
-  int    i;
-  real   *capacity;
-  
-  snew(capacity,nnodes);
-  if (str) {
-    f0[0] = '\0';
-    for(i=0; (i<nnodes); i++) {
-      strcpy(f1,f0);
-      strcat(f1,"%lf");
-      if (sscanf(str,f1,&d) != 1)
-	gmx_fatal(FARGS,"Not enough elements for -load parameter (I need %d)",
-		    nnodes);
-      capacity[i] = d;
-      tcap += d;
-      strcat(f0,"%*s");
-    }
-  }
-  /* Normalize input */
-  if (tcap == 0) {
-    for(i=0; (i<nnodes); i++) {
-      capacity[i] = 1.0/nnodes;
-      tcap += capacity[i];
-    }
-  }
-  else {
-    for(i=0; (i<nnodes); i++) 
-      capacity[i] /= tcap;
-    tcap = 0;
-    for(i=0; (i<nnodes); i++) 
-      tcap += capacity[i];
-  }
-  /* Take care that the sum of capacities is 1.0 */
-  capacity[nnodes-1] = 1.0 - (tcap - capacity[nnodes-1]);
-  
-  return capacity;
-}
-
 int main (int argc, char *argv[])
 {
   static char *desc[] = {
@@ -857,22 +605,6 @@ int main (int argc, char *argv[])
     "If you want to continue a crashed run, it is",
     "easier to use [TT]tpbconv[tt].[PAR]",
 
-    "When preparing an input file for parallel [TT]mdrun[tt] it may",
-    "be advantageous to partition the simulation system over the",
-    "nodes in a way in which each node has a similar amount of",
-    "work. The -shuffle option does just that. For a single protein",
-    "in water this does not make a difference, however for a system where",
-    "you have many copies of different molecules  (e.g. liquid mixture",
-    "or membrane/water system) the option is definitely a must.",
-    "The output trajectories will also be shuffled. [TT]grompp[tt] writes",
-    "an index file (option [TT]-deshuf[tt]) which can be used with",
-    "[TT]trjconv[tt] to deshuffle the trajectories.[PAR]",
-    
-    "A further optimization for parallel systems is the [TT]-sort[tt]",
-    "option which sorts molecules according to coordinates. This must",
-    "always be used in conjunction with [TT]-shuffle[tt], however",
-    "sorting also works when you have only one molecule type.[PAR]", 
-        
     "Using the [TT]-morse[tt] option grompp can convert the harmonic bonds",
     "in your topology to morse potentials. This makes it possible to break",
     "bonds. For this option to work you need an extra file in your $GMXLIB",
@@ -903,10 +635,9 @@ int main (int argc, char *argv[])
   t_atomtype   atype;
   t_inputrec   *ir;
   int          natoms,nvsite,nc,comb;
-  int          *forward=NULL;
   t_params     *plist;
   t_state      state;
-  real         max_spacing,*capacity,reppow;
+  real         max_spacing,reppow;
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror;
   bool         bNeedVel,bGenVel;
@@ -920,7 +651,6 @@ int main (int argc, char *argv[])
     { efSTX, "-r",  NULL,        ffOPTRD },
     { efSTX, "-rb", NULL,        ffOPTRD },
     { efNDX, NULL,  NULL,        ffOPTRD },
-    { efNDX, "-deshuf", "deshuf",ffOPTWR },
     { efTOP, NULL,  NULL,        ffREAD  },
     { efTOP, "-pp", "processed", ffOPTWR },
     { efTPX, "-o",  NULL,        ffWRITE },
@@ -930,28 +660,17 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
-  static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
-  static bool bRmVSBds=TRUE,bSort=FALSE,bCheckPairs=FALSE;
-  static int  i,nnodes=1,npmenodes=0,maxwarn=10;
+  static bool bVerbose=TRUE,bRenum=TRUE;
+  static bool bRmVSBds=TRUE,bCheckPairs=FALSE;
+  static int  i,maxwarn=10;
   static real fr_time=-1;
-  static char *cap=NULL;
   t_pargs pa[] = {
     { "-v",       FALSE, etBOOL, {&bVerbose},
       "Be loud and noisy" },
     { "-time",    FALSE, etREAL, {&fr_time},
       "Take frame at or first after this time." },
-    { "-np",      FALSE, etINT,  {&nnodes},
-      "Generate statusfile for # nodes" },
-    { "-npme",    FALSE, etINT,  {&npmenodes},
-      "Do PME/PP node division and use npme PME nodes. Requires (npme <= np/2) and (np > 2)" },
-    { "-shuffle", FALSE, etBOOL, {&bShuffle},
-      "Shuffle molecules over nodes" },
-    { "-sort",    FALSE, etBOOL, {&bSort},
-      "Sort molecules according to X coordinate" },
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
       "Remove constant bonded interactions with virtual sites" },
-    { "-load",    FALSE, etSTR,  {&cap},
-      "Releative load capacity of each PP node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
       "Number of warnings after which input processing stops" },
     { "-check14", FALSE, etBOOL, {&bCheckPairs},
@@ -972,18 +691,6 @@ int main (int argc, char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
   
-  if ((nnodes > 0) && (nnodes <= MAXNODES))
-    printf("creating statusfile for %d node%s...\n",
-	   nnodes,nnodes==1?"":"s");
-  else 
-    gmx_fatal(FARGS,"invalid number of nodes %d\n",nnodes);
-  
-  /*if (bShuffle && (opt2bSet("-r",NFILE,fnm) || opt2bSet("-rb",NFILE,fnm))) {
-    fprintf(stderr,"Can not shuffle and do position restraints, "
-	    "turning off shuffle\n");
-    bShuffle=FALSE;
-    }*/
-	       
   init_warning(maxwarn);
   
   /* PARAMETER file processing */
@@ -991,33 +698,6 @@ int main (int argc, char *argv[])
   set_warning_line(mdparin,-1);    
   get_ir(mdparin,opt2fn("-po",NFILE,fnm),ir,opts,&nerror);
   
-  /*  PME/PP node division 
-   *
-   *  If PME is used with multiple nodes, then some of the nodes may 
-   *  be split off for PME calculation only. Rest of nodes are PP nodes then   
-   */
-  npmenodes = abs(npmenodes);
-  if (npmenodes) {
-    if (ir->coulombtype != eelPME) {
-      warning("Setting -npme only works with coulombtype=PME. Not doing node division");
-      npmenodes=0;
-    }
-    else {
-      if (nnodes < 3) {
-        npmenodes=0;
-        warning("PME/PP node division requires a minimum of 3 total nodes. "
-	        "Not doing node division.");
-      } 
-      else if (npmenodes*2 > nnodes) {
-        npmenodes = nnodes/2;
-        warning("No more than half of the nodes can serve as PME nodes");
-      }
-    }
-  }
-  if (npmenodes)
-    printf("Splitting up %d nodes into %d PME and %d PP nodes\n",
-            nnodes,npmenodes,nnodes-npmenodes);	
-      
   if (bVerbose) 
     fprintf(stderr,"checking input for internal consistency...\n");
   check_ir(ir,opts,&nerror);
@@ -1026,14 +706,6 @@ int main (int argc, char *argv[])
     ir->ld_seed = make_seed();
     fprintf(stderr,"Setting the LD random seed to %d\n",ir->ld_seed);
   }
-
-  if (bShuffle && (opts->eDisre==edrEnsemble)) {
-    fprintf(stderr,"Can not shuffle and do ensemble averaging, "
-	    "turning off shuffle\n");
-    bShuffle=FALSE;
-  }
-  if (bSort && !bShuffle) 
-    warning("Can not do sorting without shuffling. Sorting turned off.");
 
   bNeedVel = (ir->eI == eiMD || ir->eI == eiSD);
   bGenVel  = (bNeedVel && opts->bGenVel);
@@ -1047,12 +719,11 @@ int main (int argc, char *argv[])
   strcpy(fn,ftp2fn(efTOP,NFILE,fnm));
   if (!fexist(fn)) 
     gmx_fatal(FARGS,"%s does not exist",fn);
-  forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-		     opts,ir,bGenVel,bVerbose,bSort,&state,
-		     &atype,sys,&msys,plist,&comb,&reppow,
-		     bShuffle ? (nnodes-npmenodes) : 1,
-		     (opts->eDisre==edrEnsemble),opts->bMorse,
-		     bCheckPairs,&nerror);
+  new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
+	     opts,ir,bGenVel,bVerbose,&state,
+	     &atype,sys,&msys,plist,&comb,&reppow,
+	     (opts->eDisre==edrEnsemble),opts->bMorse,
+	     bCheckPairs,&nerror);
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
@@ -1134,7 +805,7 @@ int main (int argc, char *argv[])
 	fprintf(stderr," and %s\n",fnB);
       }
     }
-    gen_posres(&(msys.plist[F_POSRES]),fn,fnB,forward);
+    gen_posres(&(msys.plist[F_POSRES]),fn,fnB);
   }
   
   /* set parameters for virtual site construction */
@@ -1188,7 +859,8 @@ int main (int argc, char *argv[])
   check_warning_error(FARGS);
 
   /* Now build the shakeblocks from the shakes */
-  gen_sblocks(bVerbose,sys->atoms.nr,&(sys->idef),
+  reset_multinr(sys);
+  gen_sblocks(stdout,sys->atoms.nr,&(sys->idef),
 	      &(sys->blocks[ebSBLOCKS]),FALSE);
   if (debug)
     pr_symtab(debug,0,"After gen_sblocks",&sys->symtab);
@@ -1197,7 +869,7 @@ int main (int argc, char *argv[])
     fprintf(stderr,"initialising group options...\n");
   do_index(ftp2fn_null(efNDX,NFILE,fnm),
 	   &sys->symtab,&(sys->atoms),bVerbose,ir,&sys->idef,
-	   forward,bGenVel ? state.v : NULL);
+	   bGenVel ? state.v : NULL);
 
   /* Init the temperature coupling state */
   init_gtc_state(&state,ir->opts.ngtc);
@@ -1208,8 +880,6 @@ int main (int argc, char *argv[])
   
   if (debug)
     pr_symtab(debug,0,"After index",&sys->symtab);
-  if (forward)
-    write_deshufndx(opt2fn("-deshuf",NFILE,fnm),forward,&(sys->atoms));
   triple_check(mdparin,ir,sys,&nerror);
   close_symtab(&sys->symtab);
   if (debug)
@@ -1229,20 +899,15 @@ int main (int argc, char *argv[])
   if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) || 
       (ir->coulombtype == eelPMEUSER)|| (ir->coulombtype == eelEWALD)) {
     /* Calculate the optimal grid dimensions */
-    max_spacing = calc_grid(state.box,opts->fourierspacing,
-			    &(ir->nkx),&(ir->nky),&(ir->nkz),npmenodes? npmenodes:nnodes);
-
+    max_spacing = calc_grid(stdout,state.box,opts->fourierspacing,
+			    &(ir->nkx),&(ir->nky),&(ir->nkz),1);
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
       set_warning_line(mdparin,-1);
       sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
       warning(NULL);
     }
   }
-  
-  /* This is also necessary for setting the multinr arrays */
-  capacity = mk_capacity(cap,nnodes-npmenodes);
-  split_top(bVerbose,nnodes-npmenodes,sys,capacity);
-  sfree(capacity);
+  /*  reset_multinr(sys); */
   
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");

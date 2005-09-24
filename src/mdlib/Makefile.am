@@ -21,16 +21,15 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	pull.c 		pullinit.c	\
 	pullio.c	pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
-	splittop.c	tables.c	tgroup.c	\
+	tables.c	tgroup.c	\
 	update.c	vcm.c		vsite.c	\
-	wnblist.c	splittop.h	wnblist.h	\
+	wnblist.c	wnblist.h	\
 	pull_internal.h	csettle.c       clincs.c	\
 	qmmm.c		
 
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
 	qm_gaussian.c	qm_mopac.c	qm_gamess.c
-
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 

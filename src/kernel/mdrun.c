@@ -172,17 +172,17 @@ int main(int argc,char *argv[])
   static bool bIonize      = FALSE;
   
   static int  nDLB=0; 
-  static int  nnodes=1;
+  static int  npme=0;
   static int  repl_ex_nst=0;
   static int  repl_ex_seed=-1;
   static int  nstepout=10;
   static int  nthreads=1;
 
   static t_pargs pa[] = {
-    { "-np",      FALSE, etINT, {&nnodes},
-      "Number of nodes, must be the same as used for grompp" },
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start on each node" },
+    { "-npme",    FALSE, etINT, {&npme},
+      "Number of nodes/threads to be used for the PME algorithm. If -1 determine automatically." },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -216,13 +216,10 @@ int main(int argc,char *argv[])
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   bVerbose = bVerbose && MASTER(cr);
+  cr->npmenodes = npme;
     
-#ifndef GMX_MPI
-  if (nnodes > 1) 
-    gmx_fatal(FARGS,"GROMACS compiled without MPI support - can't do parallel runs");
-#endif
 #ifndef GMX_THREADS
-  if(nthreads > 1)
+  if (nthreads > 1)
     gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif
 

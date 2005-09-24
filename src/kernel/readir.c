@@ -786,7 +786,7 @@ static int search_string(char *s,int ng,char *gn[])
 static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 			 t_block *block,char *gnames[],
 			 int gtype,int restnm,
-			 int *forward,bool bOneGroup,bool bVerbose)
+			 bool bOneGroup,bool bVerbose)
 {
   unsigned short *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
@@ -850,14 +850,9 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
     }
     groups->nr++;
   }
-  if (forward != NULL) {
-    for(j=0; (j<atoms->nr); j++) 
-      atoms->atom[j].grpnr[gtype]=cbuf[forward[j]];
-  }
-  else {
-    for(j=0; (j<atoms->nr); j++) 
-      atoms->atom[j].grpnr[gtype]=cbuf[j];
-  }
+  for(j=0; (j<atoms->nr); j++) 
+    atoms->atom[j].grpnr[gtype]=cbuf[j];
+  
   sfree(cbuf);
 }
 
@@ -1071,7 +1066,7 @@ static bool do_egp_flag(t_inputrec *ir,t_atoms *atoms,char **gnames,
 void do_index(char *ndx,
 	      t_symtab   *symtab,
 	      t_atoms    *atoms,bool bVerbose,
-	      t_inputrec *ir,t_idef *idef,int *forward,rvec *v)
+	      t_inputrec *ir,t_idef *idef,rvec *v)
 {
   t_block *grps;
   char    warnbuf[STRLEN],**gnames;
@@ -1093,8 +1088,6 @@ void do_index(char *ndx,
     snew(grps->index,1);
     snew(gnames,1);
     analyse(atoms,grps,&gnames,FALSE,TRUE);
-    /* Do not shuffle the index when it is based on atoms */
-    forward = NULL;
   } else
     grps = init_index(ndx,&gnames);
   
@@ -1122,7 +1115,7 @@ void do_index(char *ndx,
   if (ir->eI != eiMD)
     ir->etc = etcNO;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
-	       restnm,forward,FALSE,bVerbose);
+	       restnm,FALSE,bVerbose);
   nr=atoms->grps[egcTC].nr;
   ir->opts.ngtc=nr;
   snew(ir->opts.nrdf,nr);
@@ -1249,7 +1242,7 @@ void do_index(char *ndx,
     gmx_fatal(FARGS,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
   do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,
-	       restnm,forward,FALSE,bVerbose);  nr=atoms->grps[egcACC].nr;
+	       restnm,FALSE,bVerbose);  nr=atoms->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
   ir->opts.ngacc=nr;
   
@@ -1266,7 +1259,7 @@ void do_index(char *ndx,
     gmx_fatal(FARGS,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
   do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,
-	       restnm,forward,FALSE,bVerbose);
+	       restnm,FALSE,bVerbose);
   nr=atoms->grps[egcFREEZE].nr;
   ir->opts.ngfrz=nr;
   snew(ir->opts.nFreeze,nr);
@@ -1287,11 +1280,11 @@ void do_index(char *ndx,
   
   nenergy=str_nelem(energy,MAXPTR,ptr1);
   do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,
-	       restnm,forward,FALSE,bVerbose);
+	       restnm,FALSE,bVerbose);
   ir->opts.ngener=atoms->grps[egcENER].nr;
   nuser=str_nelem(vcm,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,
-	       restnm,forward,FALSE,bVerbose);
+	       restnm,FALSE,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode);
@@ -1313,16 +1306,16 @@ void do_index(char *ndx,
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,
-	       restnm,forward,FALSE,bVerbose);
+	       restnm,FALSE,bVerbose);
   nuser=str_nelem(user2,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,
-	       restnm,forward,FALSE,bVerbose);
+	       restnm,FALSE,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,
-	       restnm,forward,TRUE,bVerbose);
+	       restnm,TRUE,bVerbose);
   nofg = str_nelem(orirefitgrp,MAXPTR,ptr1);
   do_numbering(atoms,nofg,ptr1,grps,gnames,egcORFIT,
-	       restnm,forward,FALSE,bVerbose);
+	       restnm,FALSE,bVerbose);
 
   /* QMMM input processing */
   nQMg          = str_nelem(QMMM,MAXPTR,ptr1);
@@ -1334,7 +1327,7 @@ void do_index(char *ndx,
   }
   /* group rest, if any, is always MM! */
   do_numbering(atoms,nQMg,ptr1,grps,gnames,egcQMMM,
-               restnm,forward,FALSE,bVerbose);
+               restnm,FALSE,bVerbose);
   nr = nQMg; /*atoms->grps[egcQMMM].nr;*/
   ir->opts.ngQM = nQMg;
   snew(ir->opts.QMmethod,nr);

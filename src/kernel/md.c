@@ -139,23 +139,27 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Getting Loaded...\n");
 
   if (PAR(cr)) {
-    /* The master thread on the master node reads from disk, then passes everything
-     * around the ring, and finally frees the stuff
+    /* The master thread on the master node reads from disk, 
+     * then dsitributes everything to the other processors.
      */
-    if (MASTER(cr)) 
-      distribute_parts(cr->left,cr->right,cr->nodeid,cr->nnodes,inputrec,
-		       ftp2fn(efTPX,nfile,fnm),nDlb);
-
-    /* Every node (including the master) reads the data from the ring */
-    init_parts(stdlog,cr,
-	       inputrec,top,state,&mdatoms,nsb,
-	       MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0,
-	       &bParVsites,&vsitecomm);
-  } else {
-    /* Read it up... */
-    init_single(stdlog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state,&mdatoms,nsb);
+    init_parallel(stdlog,ftp2fn(efTPX,nfile,fnm),cr,
+		  inputrec,top,state,&mdatoms,
+		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
+    split_system_first(stdlog,inputrec,state,cr,top,nsb);
+    
+    /* This code has to be made aware of splitting the machine */
+    bParVsites=setup_parallel_vsites(&(top->idef),cr,nsb,&vsitecomm);
+  }
+  else {
+    /* Read a file for a single processor */
+    init_single(stdlog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state,
+		&mdatoms,nsb);
     bParVsites=FALSE;
   }
+  
+  if (bVerbose && MASTER(cr))
+    fprintf(stderr,"Loaded with Money\n\n");
+  
   if (inputrec->eI == eiSD) {
     /* Is not read from TPR yet, so we allocate space here */
     snew(state->sd_X,nsb->natoms);
@@ -165,9 +169,6 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   snew(f,nsb->natoms);
   snew(vt,nsb->natoms);
   snew(vold,nsb->natoms);
-
-  if (bVerbose && MASTER(cr))
-    fprintf(stderr,"Loaded with Money\n\n");
 
 #ifdef GMX_MPI
   /* If necessary split communicator and adapt ring topology */ 
@@ -626,8 +627,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       else
 	state->lambda = lam0 + step*inputrec->delta_lambda;
     }
-    if (MASTER(cr) && do_log && !bFFscan)
-      print_ebin_header(log,step,t,state->lambda);
+    /*if (MASTER(cr) && do_log && !bFFscan)
+      print_ebin_header(log,step,t,state->lambda);*/
 
     if (bSimAnn) 
       update_annealing_target_temp(&(inputrec->opts),t);
@@ -1075,6 +1076,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       do_dr  = do_per_step(step,inputrec->nstdisreout) || bLastStep;
       do_or  = do_per_step(step,inputrec->nstorireout) || bLastStep;
       do_dihr= do_per_step(step,inputrec->nstdihreout) || bLastStep;
+      if (do_log && !bFFscan)
+	print_ebin_header(log,step,t,state->lambda);
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,
 		 step,step_rel,t,
 		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(inputrec->opts));

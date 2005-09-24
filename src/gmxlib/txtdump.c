@@ -1008,3 +1008,24 @@ char *atomname(t_atoms *a,int i)
   
   return strdup(buf);
 }
+
+void pr_commrec(FILE *fp,int indent,t_commrec *cr)
+{
+  pr_indent(fp,indent);
+  fprintf(fp,"commrec:\n");
+  indent+=2;
+  pr_indent(fp,indent);
+  fprintf(fp,"nodeid    = %d\n",cr->nodeid);
+  pr_indent(fp,indent);
+  fprintf(fp,"nnodes    = %d\n",cr->nnodes);
+  pr_indent(fp,indent);
+  fprintf(fp,"npmenodes = %d\n",cr->npmenodes);
+  pr_indent(fp,indent);
+  fprintf(fp,"left      = %d\n",cr->left);
+  pr_indent(fp,indent);
+  fprintf(fp,"right     = %d\n",cr->right);
+  pr_indent(fp,indent);
+  fprintf(fp,"threadid  = %d\n",cr->threadid);
+  pr_indent(fp,indent);
+  fprintf(fp,"nthreads  = %d\n",cr->nthreads);
+}

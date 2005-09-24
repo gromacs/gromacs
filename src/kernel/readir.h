@@ -95,7 +95,7 @@ extern void get_ir(char *mdparin,char *mdparout,
 extern void do_index(char *ndx,
 		     t_symtab   *symtab,
 		     t_atoms    *atoms,bool bVerbose,
-		     t_inputrec *ir,t_idef *idef,int *forward,
+		     t_inputrec *ir,t_idef *idef,
 		     rvec *v);
 /* Read the index file and assign grp numbers to atoms.
  * If v is not NULL, the velocities will be scaled to the correct number

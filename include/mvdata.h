@@ -44,10 +44,10 @@
 #include "typedefs.h"
 #include "nsb.h"
 
-extern void ld_data(int left,int right,t_inputrec *inputrec,t_nsborder *nsb,
+extern void ld_data(int left,int right,t_inputrec *inputrec,
 		    t_topology *top,t_state *state);
 
-extern void mv_data(int left,int right,t_inputrec *inputrec,t_nsborder *nsb,
+extern void mv_data(int left,int right,t_inputrec *inputrec,
 		    t_topology *top,t_state *state);
 
 extern void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[]);

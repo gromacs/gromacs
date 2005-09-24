@@ -90,5 +90,6 @@ extern void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh);
       * the text should be indented. Title is used to print a header text.
       */
 
+extern void pr_commrec(FILE *fp,int indent,t_commrec *cr);
 
 #endif	/* _txtdump_h */

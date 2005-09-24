@@ -51,23 +51,6 @@
 #include "tgroup.h"
 #include "block_tx.h"
 
-static void ld_nsb(int src,t_nsborder *nsb)
-{
-  blockrx(src,nsb->nnodes);
-  blockrx(src,nsb->npmenodes);
-  blockrx(src,nsb->shift);
-  blockrx(src,nsb->bshift);
-  blockrx(src,nsb->nstDlb);
-  blockrx(src,nsb->cgtotal);
-  blockrx(src,nsb->natoms);
-  nblockrx(src,MAXNODES,nsb->homenr);
-  nblockrx(src,MAXNODES,nsb->index);
-  nblockrx(src,MAXNODES,nsb->cgload);
-  nblockrx(src,MAXNODES,nsb->workload);
-  nblockrx(src,MAXNODES,nsb->pmehomenr);
-  nblockrx(src,MAXNODES,nsb->pmeindex);
-}
-
 static char **ld_string(int src,t_symtab *symtab)
 {
   int name;
@@ -262,15 +245,13 @@ static void ld_inputrec(int src,t_inputrec *inputrec)
   }
 }
 
-void ld_data(int left,int right,t_inputrec *inputrec,t_nsborder *nsb,
+void ld_data(int left,int right,t_inputrec *inputrec,
 	     t_topology *top,t_state *state)
 {
   int i;
   
   ld_inputrec(left,inputrec);
   if (debug) fprintf(stdlog,"after ld_inputrec");
-  ld_nsb(left,nsb);
-  if (debug) fprintf(stdlog,"after ld_nsb");
   ld_symtab(left,&top->symtab);
   if (debug) fprintf(stdlog,"after ld_symtab");
   top->name=ld_string(left,&top->symtab);
@@ -346,23 +327,6 @@ static void mv_inputrec(int dest,t_inputrec *inputrec)
     mv_cosines(dest,&(inputrec->ex[i]));
     mv_cosines(dest,&(inputrec->et[i]));
   }
-}
-
-static void mv_nsb(int dest,t_nsborder *nsb)
-{
-  blocktx(dest,nsb->nnodes);
-  blocktx(dest,nsb->npmenodes);
-  blocktx(dest,nsb->shift);
-  blocktx(dest,nsb->bshift);
-  blocktx(dest,nsb->nstDlb);
-  blocktx(dest,nsb->cgtotal);
-  blocktx(dest,nsb->natoms);
-  nblocktx(dest,MAXNODES,nsb->homenr);
-  nblocktx(dest,MAXNODES,nsb->index);
-  nblocktx(dest,MAXNODES,nsb->cgload);
-  nblocktx(dest,MAXNODES,nsb->workload);
-  nblocktx(dest,MAXNODES,nsb->pmehomenr);
-  nblocktx(dest,MAXNODES,nsb->pmeindex);
 }
 
 static void mv_string(int dest,t_symtab *symtab,char **s)
@@ -469,13 +433,12 @@ static void mv_idef(int dest,t_idef *idef)
     mv_ilist(dest,&idef->il[i]);
 }
 
-void mv_data(int left,int right,t_inputrec *inputrec,t_nsborder *nsb,
+void mv_data(int left,int right,t_inputrec *inputrec,
              t_topology *top,t_state *state)
 {
   int i;
   
   mv_inputrec(right,inputrec);
-  mv_nsb(right,nsb);
   mv_symtab(right,&top->symtab);
   mv_string(right,&top->symtab,top->name);
   mv_atoms(right,&top->symtab,&top->atoms);

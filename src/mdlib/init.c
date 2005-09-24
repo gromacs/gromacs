@@ -51,93 +51,52 @@
 #include "mdatoms.h"
 #include "mdrun.h"
 #include "statutil.h"
+#include "names.h"
+#include "calcgrid.h"
 
 #define BUFSIZE	256
 
 #define NOT_FINISHED(l1,l2) \
   printf("not finished yet: lines %d .. %d in %s\n",l1,l2,__FILE__)
 
-int check_nnodes_top(char *fn,t_topology *top,int nnodes, int nkx, int nky, bool bDoPME)
+void check_nnodes_top(char *fn,t_topology *top)
 {
-  int i,np=0;
-  int npmenodes=0,npme=0;
+  int i,j;
+  bool bOld=FALSE;
   
-  for(i=MAXNODES-1; (i>0) && (top->blocks[ebCGS].multinr[i] == 0); i--)
-    ;
-  np = i+1;
-
-  if (!bDoPME)  /* we do not have to do PME */
-  {
-    if (np != nnodes)
-    gmx_fatal(FARGS,"run input file %s was made for %d nodes,\n"
-		"             while %s expected it to be for %d nodes.",
-		fn,np,ShortProgram(),nnodes);
+  /* This routine resets old parallel topologies to single processor
+   * topologies.
+   */
+  
+  for(i=0; (i<ebNR); i++) {
+    top->blocks[i].multinr[0] = top->blocks[i].nr;
+    for(j=1; (j<MAXNODES); j++) {
+      bOld = bOld || (top->blocks[i].multinr[j] != 0);
+      top->blocks[i].multinr[j] = 0;
+    }
   }
-  else /* we have to do PME and possibly node-splitting */
-  {
-    npmenodes=nnodes-np;
-    if (npmenodes) {
-      if (np==1)
-        gmx_fatal(FARGS,"run input file %s was made for 1 node, while PME/PP node\n"
-  		        "splitting needs an input file that was made for at least 2 nodes.",
-		  fn,np);
-      else if (npmenodes > np)
-        gmx_fatal(FARGS,"run input file %s was made for %d nodes,\n"
-		        "while the parallel environment was set up for %d nodes.\n"
-		        "%s cannot handle more PME nodes than PP nodes. Use\n"
-		        "less total nodes or set up your input file for more nodes.",
-		  fn,np,nnodes,ShortProgram());
-      else if (npmenodes < 0)
-        gmx_fatal(FARGS,"run input file %s was made for %d nodes,\n"
-		        "while the parallel environment was set up for only %d nodes.\n",
-		  fn,np,nnodes);
-		  
-      fprintf(stderr,"Splitting up %d nodes into %d PP and %d PME nodes.\n", 
-                      nnodes, np, npmenodes);
-
-      }		
-    if (npmenodes)
-      npme = npmenodes;
-    else 
-      npme = np;
-      
-    if ((nkx % npme) || (nky % npme))
-      gmx_fatal(FARGS,"nkx=%d or nky=%d is not a multiple of number of nodes that do PME (npme=%d)\n"
-                      "Set up your parallel environment accordingly or rerun grompp with -npme %d option\n",
-		      nkx,nky,npme,npme);
+  for(i=0; (i<F_NRE); i++) {
+    top->idef.il[i].multinr[0] = top->idef.il[i].nr;
+    for(j=1; (j<MAXNODES); j++) {
+      bOld = bOld || (top->idef.il[i].multinr[j] != 0);
+      top->idef.il[i].multinr[j] = 0;
+    }
   } 
-  return npmenodes;
+  if (bOld) {
+    fprintf((stdlog != NULL) ? stdlog : stderr,
+	    "WARNING:\n"
+	    "You are using an old multiprocessor tpr file (%s).\n"
+	    "It has been converted back to a single processor topology file\n"
+	    "before further processing. In case of problems please make\n"
+	    "a new tpr file.\n");
+  }
 }
 
 static char *int_title(char *title,int nodeid,char buf[], int size)
 {
   snprintf(buf,size-1,"%s (%d)",title,nodeid);
-  return buf;
-}
-
-static void rm_idef(t_idef *idef)
-{
-  int i;
   
-  sfree(idef->functype);
-  sfree(idef->iparams);
-  for(i=0; (i<F_NRE); i++)
-    sfree(idef->il[i].iatoms);
-}
-
-static void rm_block(t_block *block)
-{
-  sfree(block->index);
-  sfree(block->a);
-}
-
-static void rm_atoms(t_atoms *atoms)
-{
-  sfree(atoms->atom);
-  sfree(atoms->atomname);
-  sfree(atoms->resname);
-  sfree(atoms->grpname);
-  rm_block(&atoms->excl);
+  return buf;
 }
 
 void init_single(FILE *log,t_inputrec *inputrec,
@@ -149,7 +108,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
   real        t;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-  check_nnodes_top(tpxfile,top,1,1,1,FALSE);
+  check_nnodes_top(tpxfile,top);
 
   *mdatoms=atoms2md(log,&top->atoms,inputrec->opts.nFreeze,
 		    inputrec->eI,inputrec->delta_t,
@@ -161,46 +120,44 @@ void init_single(FILE *log,t_inputrec *inputrec,
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
-void distribute_parts(int left,int right,int nodeid,int nnodes,
-		      t_inputrec *inputrec,
-		      char *tpxfile,int nstDlb)
+static void distribute_parallel(int left,int right,char *tpxfile)
 {
   int         step;
   real        t;
+  t_inputrec  inputrec;
   t_topology  top;
-  t_nsborder  nsb;
   t_state     state;
   int         npmenodes=0;
   
-  read_tpx_state(tpxfile,&step,&t,inputrec,&state,NULL,&top);
-  npmenodes=check_nnodes_top(tpxfile,&top,nnodes,inputrec->nkx,inputrec->nky,inputrec->coulombtype==eelPME);
-  
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,npmenodes,&nsb,nstDlb);
-  mv_data(left,right,inputrec,&nsb,&top,&state);
+  init_inputrec(&inputrec);
+  read_tpx_state(tpxfile,&step,&t,&inputrec,&state,NULL,&top);
+  check_nnodes_top(tpxfile,&top);
+  mv_data(left,right,&inputrec,&top,&state);
   done_top(&top);
   done_state(&state);
+  done_inputrec(&inputrec);
 }
 
-void init_parts(FILE *log,t_commrec *cr,
-		t_inputrec *inputrec,t_topology *top,
-		t_state *state,t_mdatoms **mdatoms,
-		t_nsborder *nsb,int list, bool *bParallelVsites,
-		t_comm_vsites *vsitecomm)
+void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
+		   t_inputrec *inputrec,t_topology *top,
+		   t_state *state,t_mdatoms **mdatoms,
+		   int list)
 {
   char buf[256];
   
-  ld_data(cr->left,cr->right,inputrec,nsb,top,state);
+  if (MASTER(cr)) 
+    distribute_parallel(cr->left,cr->right,tpxfile);
+    
+    /* Read the actual data */
+  ld_data(cr->left,cr->right,inputrec,top,state);
   if (cr->nodeid != 0)
-    mv_data(cr->left,cr->right,inputrec,nsb,top,state);
+    mv_data(cr->left,cr->right,inputrec,top,state);
 
   /* Make sure the random seeds are different on each node */
   inputrec->ld_seed += cr->nodeid;
-
-  mdsplit_top(log,top,cr,nsb,bParallelVsites,vsitecomm);
-
+  
+  /* Printing */
   if (list) {
-    if (list&LIST_SCALARS) 
-      print_nsb(log,"Listing Scalars",nsb);
     if (list&LIST_INPUTREC)
       pr_inputrec(log,0,"parameters of the run",inputrec);
     if (list&LIST_X)
@@ -208,9 +165,9 @@ void init_parts(FILE *log,t_commrec *cr,
     if (list&LIST_V)
       pr_rvecs(log,0,"boxv",state->boxv,DIM);
     if (list&LIST_X)
-      pr_rvecs(log,0,int_title("x",0,buf,255),state->x,nsb->natoms);
+      pr_rvecs(log,0,int_title("x",0,buf,255),state->x,top->atoms.nr);
     if (list&LIST_V)
-      pr_rvecs(log,0,int_title("v",0,buf,255),state->v,nsb->natoms);
+      pr_rvecs(log,0,int_title("v",0,buf,255),state->v,top->atoms.nr);
     if (list&LIST_TOP)
       pr_top(log,0,int_title("topology",cr->nodeid,buf,255),top,TRUE);
     fflush(log);

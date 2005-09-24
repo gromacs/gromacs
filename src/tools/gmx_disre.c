@@ -533,7 +533,7 @@ int gmx_disre(int argc,char *argv[])
     if (top.atoms.pdbinfo == NULL)
       snew(top.atoms.pdbinfo,ntopatoms);
   } 
-  check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top,1,0,0,FALSE);
+  check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top);
 
   if (ir.ePBC == epbcXYZ) {
     g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);

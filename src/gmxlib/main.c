@@ -340,7 +340,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
    * This is useless for newer MPI versions.
    */
   for(i=0; (argv[i] != NULL); i++) {
-    if (strcmp(argv[i],"-np")==0)
+    if (strcmp(argv[i],"-np")==0) 
       if (argv[i+1]!=NULL)
 	cr->nnodes=atoi(argv[i+1]);
   }

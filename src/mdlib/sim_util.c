@@ -121,12 +121,6 @@ time_t print_date_and_time(FILE *fplog,int nodeid,char *title)
   return now;
 }
 
-static void pr_commrec(FILE *fplog,t_commrec *cr)
-{
-  fprintf(fplog,"commrec: nodeid=%d, nnodes=%d, left=%d, right=%d, threadid=%d, nthreads=%d\n",
-	  cr->nodeid,cr->nnodes,cr->left,cr->right,cr->threadid,cr->nthreads);
-}
-
 static void sum_forces(int start,int end,rvec f[],rvec flr[])
 {
   int i;
