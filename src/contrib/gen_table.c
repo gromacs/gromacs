@@ -9,7 +9,7 @@
 #include "statutil.h"
 #include "ewald.h"
 
-enum { mGuillot, mN61, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mNR };
+enum { mGuillot, mN61, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
 
 static double erf2(double x)
 {
@@ -171,6 +171,88 @@ void lo_do_guillot_maple(double r,double xi,double xir,
   *vr2  = 1.0/sqrt(M_PI)/(xir*xir)*exp(-r*r/(xir*xir)/4.0)+4.0/sqrt(M_PI)*exp(-r*r/(xir*xir)/4.0)/(r*r)+4.0*erfc(r/xir/2.0)/(r*r*r)*xir;
 }
 
+/* Guillot2001 diffuse charge - diffuse charge interaction
+   MuPAD
+   Uqdqd := erf(r/(2*xi))/r;
+   dUqdqd := diff(Uqdqd,r);
+   d2Uqdqd := diff(dUqdqd,r);
+   simplify(%);
+   generate::C(d2Uqdqd); 
+*/
+void lo_do_GG_qd_qd(double r,double xi,double xir,
+		    double *vc,double *vc2,
+		    double *vd,double *vd2,
+		    double *vr,double *vr2)
+{
+  double sqpi   = sqrt(M_PI);
+
+  *vc = erf((r*(1.0/2.0))/xi)/r;
+  *vc2 = 2.0*pow(r, -3.0)*erf((r*(1.0/2.0))/xi) - (1.0/2.0)*pow(M_PI, -1.0/2.0)*pow(xi, -3.0)*exp((-1.0/4.0)*(r*r)*pow(xi, -2.0)) - (2.0*pow(M_PI, -1.0/2.0)*pow(r, -2.0)*exp((-1.0/4.0)*(r*r)*pow(xi, -2.0)))/xi ;
+  *vd   = 0.0;
+  *vd2  = 0.0;
+  *vr   = 0.0;
+  *vr2  = 0.0;
+}
+
+/* Guillot2001 diffuse charge - charge interaction
+   MuPAD
+   Uqdqd := erf(r/(sqrt(2)*xi))/r;
+   dUqdqd := diff(Uqdqd,r);
+   d2Uqdqd := diff(dUqdqd,r);
+   simplify(%);
+   generate::C(Uqdqd);
+   generate::C(d2Uqdqd);
+*/
+void lo_do_GG_qd_q(double r,double xi,double xir,
+		   double *vc,double *vc2,
+		   double *vd,double *vd2,
+		   double *vr,double *vr2)
+{
+  double sqpi   = sqrt(M_PI);
+
+  *vc = erf(((1.0/2.0)*pow(2.0, 1.0/2.0)*r)/xi)/r ;
+  *vc2 = 2.0*pow(r, -3.0)*erf(((1.0/2.0)*pow(2.0, 1.0/2.0)*r)/xi) - pow(2.0, 1.0/2.0)*pow(M_PI, -1.0/2.0)*pow(xi, -3.0)*exp((-1.0/2.0)*(r*r)*pow(xi, -2.0)) - (2.0*pow(2.0, 1.0/2.0)*pow(M_PI, -1.0/2.0)*pow(r, -2.0)*exp((-1.0/2.0)*(r*r)*pow(xi, -2.0)))/xi ;
+
+  *vd   = 0.0;
+  *vd2  = 0.0;
+  *vr   = 0.0;
+  *vr2  = 0.0;
+}
+
+/* Guillot2001 charge - charge interaction (normal coulomb), 
+   repulsion and dispersion
+   MuPAD  
+   Uqq := 1/r;
+   dUqq := diff(Uqq,r);
+   d2Uqq := diff(dUqq,r);
+   
+   Ud := -1/r^6;
+   dUd := diff(Ud,r);
+   d2Ud := diff(dUd,r);
+   
+   z     := r/(2*xir);
+   Ur    := erfc(z)/z;
+   dUr   := diff(Ur,r);
+   d2Ur  := diff(dUr,r);
+   simplify(%);
+   generate::C(Ur);
+   generate::C(d2Ur);
+*/
+void lo_do_GG_q_q(double r,double xi,double xir,
+		  double *vc,double *vc2,
+		  double *vd,double *vd2,
+		  double *vr,double *vr2)
+{
+  double sqpi   = sqrt(M_PI);
+
+  *vc   = 1.0/r;
+  *vc2  = 2.0/(r*r*r);
+  *vd   = -1.0/(r*r*r*r*r*r);
+  *vd2  = -42.0/(r*r*r*r*r*r*r*r);
+  *vr   = (2.0*xir*erfc((r*(1.0/2.0))/xir))/r;
+  *vr2  = 4.0*pow(M_PI, -1.0/2.0)*pow(r, -2.0)*exp((-1.0/4.0)*(r*r)*pow(xir, -2.0)) + pow(M_PI, -1.0/2.0)*pow(xir, -2.0)*exp((-1.0/4.0)*(r*r)*pow(xir, -2.0)) + 4.0*pow(r, -3.0)*xir*erfc((r*(1.0/2.0))/xir);
+}
+
 static void do_guillot(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
@@ -237,6 +319,77 @@ static void do_guillot_maple(FILE *fp,int eel,double resolution,double rc,double
   }
 } 
 
+static void do_GG_q_q(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+{
+  int    i,i0,imax;
+  double r,vc,vc2,vd,vd2,vr,vr2;
+
+  imax = 3/resolution;
+  for(i=0; (i<=imax); i++) {
+    r     = i*resolution;
+    /* Avoid very large numbers */
+    if (r < 0.04) {
+      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+    }
+    else
+      if (eel == eelPME) {
+	fprintf(fp, "Not implemented\n");
+      } else if (eel == eelCUT) { 
+	lo_do_GG_q_q(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      }
+    fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
+	    r,vc,vc2,vd,vd2,vr,vr2);
+  }
+} 
+
+static void do_GG_qd_q(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+{
+  int    i,i0,imax;
+  //  double xi     = 0.15;
+  double r,vc,vc2,vd,vd2,vr,vr2;
+
+  imax = 3/resolution;
+  for(i=0; (i<=imax); i++) {
+    r     = i*resolution;
+    /* Avoid very large numbers */
+    if (r < 0.04) {
+      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+    }
+    else
+      if (eel == eelPME) {
+	fprintf(fp, "Not implemented\n");
+      } else if (eel == eelCUT) { 
+	lo_do_GG_qd_q(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      }
+    fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
+	    r,vc,vc2,vd,vd2,vr,vr2);
+  }
+} 
+
+static void do_GG_qd_qd(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+{
+  int    i,i0,imax;
+  //  double xi     = 0.15;
+  double r,vc,vc2,vd,vd2,vr,vr2;
+
+  imax = 3/resolution;
+  for(i=0; (i<=imax); i++) {
+    r     = i*resolution;
+    /* Avoid very large numbers */
+    if (r < 0.04) {
+      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+    }
+    else
+      if (eel == eelPME) {
+	fprintf(fp, "Not implemented\n");
+      } else if (eel == eelCUT) { 
+	lo_do_GG_qd_qd(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      }
+    fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
+	    r,vc,vc2,vd,vd2,vr,vr2);
+  }
+} 
+
 static void do_maaren(FILE *fp,int eel,double resolution,int npow)
 {
   int    i,i0,imax;
@@ -268,7 +421,7 @@ int main(int argc,char *argv[])
     "potentials."
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
-  static char *model[]   = { NULL, "guillot", "n61", "ljc", "maaren", "guillot_maple", "hard_wall", NULL };
+  static char *model[]   = { NULL, "guillot", "n61", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL };
   static real resolution = 0.001,delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
   static int  npow       = 12;
   t_pargs pa[] = {
@@ -325,6 +478,12 @@ int main(int argc,char *argv[])
     m = mGuillot_Maple;
   else if (strcmp(model[0],"hard_wall") == 0) 
     m = mHard_Wall;
+  else if (strcmp(model[0],"gg_qd_q") == 0) 
+    m = mGG_qd_q;
+  else if (strcmp(model[0],"gg_qd_qd") == 0) 
+    m = mGG_qd_qd;
+  else if (strcmp(model[0],"gg_q_q") == 0) 
+    m = mGG_q_q;
   else 
     gmx_fatal(FARGS,"Invalid argument %s for option -m",opt[0]);
     
@@ -336,6 +495,20 @@ int main(int argc,char *argv[])
   case mGuillot_Maple:
     fprintf(fp, "#\n# Table Guillot_Maple: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
     do_guillot_maple(fp,eel,resolution,rc,rtol,xi,xir);
+    break;
+  case mGG_q_q:
+    fprintf(fp, "#\n# Table GG_q_q: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
+    do_GG_q_q(fp,eel,resolution,rc,rtol,xi,xir);
+    break;
+  case mGG_qd_q:
+    fprintf(stdout, "case mGG_qd_q");
+    fprintf(fp, "#\n# Table GG_qd_q: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
+    do_GG_qd_q(fp,eel,resolution,rc,rtol,xi,xir);
+    break;
+  case mGG_qd_qd:
+    fprintf(stdout, "case mGG_qd_qd");
+    fprintf(fp, "#\n# Table GG_qd_qd: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
+    do_GG_qd_qd(fp,eel,resolution,rc,rtol,xi,xir);
     break;
   case mMaaren:
     do_maaren(fp,eel,resolution,npow);
