@@ -27,6 +27,7 @@ ewald.h \
 ewald_util.h \
 fatal.h \
 ffscanf.h \
+fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
