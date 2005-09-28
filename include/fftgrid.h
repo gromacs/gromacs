@@ -43,54 +43,46 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-#include "fftw_wrapper.h"
 #include "gmxcomplex.h"
 #include "network.h"
+#include "gmx_fft.h"
+
+#ifdef GMX_MPI
+#include "gmx_parallel_3dfft.h"
+#endif
 
 /* Use FFTW */
-
-#ifndef GMX_WITHOUT_FFTW
-typedef t_complex t_fft_c;
-typedef real      t_fft_r;
-#else /* NO FFTW PRESENT! */
-typedef struct {
-  real re, im;
-} t_fft_c;
-typedef real t_fft_r;
-typedef enum {
-  FFTW_FORWARD = -1, FFTW_BACKWARD = 1
-} fftw_direction;
-#endif
 
 #define INDEX(i,j,k)             ((i)*la12+(j)*la2+(k))      
 
 typedef struct {
   int local_nx,local_x_start,local_ny_after_transpose;
-  int local_y_start_after_transpose,total_local_size;
+  int local_y_start_after_transpose;
 } t_parfft;
 
 typedef struct {
-    t_fft_r *ptr;
-    t_fft_r *localptr;
-    t_fft_r *workspace;    
-    int      nx,ny,nz,la2r,la2c,la12r,la12c;
-  int      nptr,nxyz;
-#ifndef GMX_WITHOUT_FFTW
-    rfftwnd_plan     plan_fw;
-    rfftwnd_plan     plan_bw;
+    real *                 ptr;
+    real *                 localptr;
+    real *                 workspace;    
+    int                    nx,ny,nz,la2r,la2c,la12r,la12c;
+    int                    nptr,nxyz;
+    gmx_fft_t              fft_setup;
 #ifdef GMX_MPI
-    rfftwnd_mpi_plan plan_mpi_fw;
-    rfftwnd_mpi_plan plan_mpi_bw;
-    t_parfft         pfft;
-#endif
+    gmx_parallel_3dfft_t   mpi_fft_setup;
+    t_parfft               pfft;
 #endif
 } t_fftgrid;
 
-extern t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,
-			     int nz,bool bOptFFT);
+extern t_fftgrid *mk_fftgrid(FILE *       fp,
+                             int          nx,
+                             int          ny,
+                             int          nz,
+                             t_commrec *  cr);
+
 /* Create an FFT grid (1 Dimensional), to be indexed by the INDEX macro 
- * Setup FFTW plans and extract local sizes for the grid.
+ * Setup FFT plans and extract local sizes for the grid.
  * If the file pointer is given, information is printed to it.
+ * If cr is non-NULL and cr->nnodes>1, a parallel grid and FFT will be created.
  */
 
 extern void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid);
@@ -110,7 +102,7 @@ extern void clear_fftgrid(t_fftgrid *grid);
 
 extern void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
 			   int *nx2,int *ny2,int *nz2,
-			   int *la2, int *la12,bool bReal, t_fft_r **ptr);
+			   int *la2, int *la12,bool bReal, real **ptr);
 
 /* Get the values for the constants into local copies */
 
