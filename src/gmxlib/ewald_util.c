@@ -47,7 +47,6 @@
 #include "txtdump.h"
 #include "futil.h"
 #include "names.h"
-#include "fftgrid.h"
 #include "writeps.h"
 #include "macros.h"
 
