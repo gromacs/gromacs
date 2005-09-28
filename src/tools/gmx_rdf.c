@@ -33,6 +33,7 @@
  * And Hey:
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -533,7 +534,7 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
 		       t_xdata data[])
 {
   int     nx,ny,nz,nx2,ny2,nz2,la2,la12;
-  t_fft_c *ptr,*p0;
+  t_complex *ptr,*p0;
   int     i,j,k,maxkx,maxky,maxkz,n,ind,ix,iy;
   real    k1,kxy2,kz2,k2,z,kxy,kxy_max,cos_theta2,ttt,factor;
   rvec    lll,kk;
@@ -542,7 +543,7 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
     k_max   = nbin/factor;
     kxy_max = k_max/sqrt(3);*/
   unpack_fftgrid(fftgrid,&nx,&ny,&nz,&nx2,&ny2,&nz2,
-		 &la2,&la12,FALSE,(t_fft_r **)&ptr);
+		 &la2,&la12,FALSE,(real **)&ptr);
   /* This bit copied from pme.c */
   maxkx = (nx+1)/2;
   maxky = (ny+1)/2;
@@ -716,7 +717,7 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
     spread_on_grid(stdout,fftgrid,isize,pme_order,xndx,fj,box,FALSE,TRUE);
 
     /* FFT the density */
-    gmxfft3D(fftgrid,FFTW_FORWARD,NULL);  
+    gmxfft3D(fftgrid,GMX_FFT_REAL_TO_COMPLEX,NULL);  
     
     /* Extract the Sq function and sum it into the average array */
     extract_sq(fftgrid,nbin,k_max,lambda,count,box_size,npixel,map,data);

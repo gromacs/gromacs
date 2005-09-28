@@ -1252,7 +1252,6 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	    ht[j] = 0;
 	    gt[j] = 0;
 	  }
-	  /*correl_fftw(correl,ht,gt,dght);*/
 	  cross_corr(n2,ht,gt,dght);
 	  
 	  for(j=0; (j<nn); j++) {

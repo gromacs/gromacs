@@ -55,7 +55,6 @@
 #include "tpxio.h"
 #include "index.h"
 #include "smalloc.h"
-#include "fftgrid.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "shift_util.h"
