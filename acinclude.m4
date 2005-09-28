@@ -1,11 +1,11 @@
-# ACX_CHECK_FFTW()
+# ACX_CHECK_FFTW2()
 # ----------------
-# This macro checks for fftw header files and libraries,
+# This macro checks for fftw-2.x header files and libraries,
 # including the possible prefixing with s or d to determine precision.
-# Arg 1 is the fftw header/library name to check for, without 
+# Arg 1 is the fftw header/library name to check for, without
 # prefix or anything else (e.g. rfftw_mpi for real MPI transforms)
 # Arg 2 is the size of the real variable used.
-AC_DEFUN([ACX_CHECK_FFTW],
+AC_DEFUN(ACX_CHECK_FFTW2,
 [
 if test -z "$ac_fftw_firstname"; then
 
@@ -21,12 +21,12 @@ fi
 xfftwname=${fftwcheckprefix}$1
 
 ok="no"
-# check header doesn't work, since we must use mpicc to get includes, 
+# check header doesn't work, since we must use mpicc to get includes,
 # we cant trust cpp.
 AC_MSG_CHECKING([for $xfftwname.h])
 AC_TRY_COMPILE([#include <$xfftwname.h>],,
 [
-fftwname=$xfftwname 
+fftwname=$xfftwname
 AC_MSG_RESULT(yes)
 ],
 AC_MSG_RESULT(no))
@@ -34,9 +34,9 @@ AC_MSG_RESULT(no))
 # fftwname was set if we found a header
 
 if test -n "$fftwname"; then
-# we cannot run the code since an MPI program might not be allowed 
+# we cannot run the code since an MPI program might not be allowed
 # on a login node of a supercomputer
-AC_TRY_COMPILE([#include <$fftwname.h>], 
+AC_TRY_COMPILE([#include <$fftwname.h>],
 [int _array_ [1 - 2 * !((sizeof(fftw_real)) == $sizeof_real)]; ],
 [
 ok=yes
@@ -50,13 +50,13 @@ if test "$ok" != "yes"; then
 [
 AC_MSG_RESULT(no)
 AC_MSG_ERROR([Cannot find any $prec precision $xfftwname.h or $1.h]
-[Do you have $prec precision FFTW installed? If you are using packages,]
+[Do you have $prec precision FFTW-2.x installed? If you are using packages,]
 [note that you also need fftw-devel to compile GROMACS. You can find the ]
 [software at www.fftw.org, and detailed instructions at www.gromacs.org.]
-[If you compiled FFTW yourself:                                        ]
-[Note that the default FFTW setup is double precision. Change the FFTW]
+[If you compiled FFTW-2.x yourself:                                    ]
+[Note that the default FFTW-2.x setup is double precision. Change the FFTW]
 [configuration to single with --enable-float. If you want MPI support,]
-[use --enable-mpi. It is a good idea to install both single & double.] 
+[use --enable-mpi. It is a good idea to install both single & double.]
 [If your sysadm doesn't want to install it you can do it to a location]
 [in your home directory and provide the correct paths in the CPPFLAGS]
 [and LDFLAGS environment variables before running configure.]
@@ -72,13 +72,13 @@ fftwname=$1
 ],
 [
 AC_MSG_ERROR([Cannot find any $prec precision $xfftwname.h or $1.h]
-[Do you have $prec precision FFTW installed? If you are using packages,]
+[Do you have $prec precision FFTW-2.x installed? If you are using packages,]
 [note that you also need fftw-devel to compile GROMACS. You can find the ]
 [software at www.fftw.org, and detailed instructions at www.gromacs.org.]
-[If you compiled FFTW yourself:                                       ]
-[Note that the default FFTW setup is double precision. Change the FFTW]
+[If you compiled FFTW-2.x yourself:                                   ]
+[Note that the default FFTW-2.x setup is double precision. Change the FFTW]
 [configuration to single with --enable-float. If you want MPI support,]
-[use --enable-mpi. It is a good idea to install both single & double.] 
+[use --enable-mpi. It is a good idea to install both single & double.]
 [If your sysadm doesn't want to install it you can do it to a location]
 [in your home directory and provide the correct paths in the CPPFLAGS]
 [and LDFLAGS environment variables before running configure.]
@@ -104,7 +104,7 @@ AC_TRY_LINK_FUNC([main],,,
 AC_MSG_ERROR([Can't find a library to match the $fftwname header]))],
 [
 AC_MSG_RESULT(no)
-AC_MSG_ERROR([Cant find $fftwname.h header. Make sure all your 
+AC_MSG_ERROR([Cant find $fftwname.h header. Make sure all your
 fftw prefixes match - we already use $ac_fftw_firstname.h])
 ])
 
