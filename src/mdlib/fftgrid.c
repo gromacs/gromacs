@@ -38,126 +38,140 @@
 #include <config.h>
 #endif
 
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "typedefs.h"
 #include "futil.h"
 #include "smalloc.h"
 #include "futil.h"
 #include "network.h"
 #include "fftgrid.h"
+#include "gmx_fft.h"
+#include "gmx_parallel_3dfft.h"
 
-
-#define FFT_WORKSPACE
 
 #ifdef GMX_MPI
 static void print_parfft(FILE *fp,char *title,t_parfft *pfft)
 {
   fprintf(fp,"PARALLEL FFT DATA:\n"
 	  "   local_nx:                 %3d  local_x_start:                 %3d\n"
-	  "   local_ny_after_transpose: %3d  local_y_start_after_transpose  %3d\n"
-	  "   total_local_size:         %3d\n",
+	  "   local_ny_after_transpose: %3d  local_y_start_after_transpose  %3d\n",
 	  pfft->local_nx,pfft->local_x_start,pfft->local_ny_after_transpose,
-	  pfft->local_y_start_after_transpose,pfft->total_local_size);
+	  pfft->local_y_start_after_transpose);
 }
 #endif
 
-t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,int nz,
-		      bool bOptFFT)
+
+void *
+gmx_alloc_aligned(size_t size)
+{
+    void *p0,*p;
+    
+    p0 = malloc(size+32);
+    
+    if(p0 == NULL)
+    {
+        gmx_fatal(FARGS,"Failed to allocated %Zu bytes of aligned memory.",size+32);
+    }
+    
+    p = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
+    
+    /* Yeah, yeah, we cannot free this pointer, but who cares... */
+    return p;
+}
+
+t_fftgrid *mk_fftgrid(FILE *       fp,
+                      int          nx,
+                      int          ny,
+                      int          nz,
+                      t_commrec *  cr)
 {
 /* parallel runs with non-parallel ffts haven't been tested yet */
-    int       flags;
-  t_fftgrid *grid;
+  int           flags;
+  int           localsize;
+  t_fftgrid *   grid;
   
   snew(grid,1);
   grid->nx   = nx;
   grid->ny   = ny;
   grid->nz   = nz;
   grid->nxyz = nx*ny*nz;
-#ifdef FFT_WORKSPACE
-  if(bParallel)
-    grid->la2r = (nz/2+1)*2;
+  
+  if(cr && PAR(cr))
+  {
+      grid->la2r = (nz/2+1)*2;
+  }
   else
-    grid->la2r = nz;
-#else
-  grid->la2r=(nz/2+1)*2;
-#endif
+  {
+      grid->la2r = nz;  
+  }
   
   grid->la2c = (nz/2+1);    
+
   grid->la12r = ny*grid->la2r;
-  if(bParallel)
-    grid->la12c = nx*grid->la2c;
+  
+  if(cr && PAR(cr))
+  {
+      grid->la12c = nx*grid->la2c;
+  }
   else
+  {
     grid->la12c = ny*grid->la2c;
+  }
+  
   grid->nptr = nx*ny*grid->la2c*2;
 
-#ifndef GMX_WITHOUT_FFTW  
-  if (fp)
-    fprintf(fp,"Using the FFTW library (Fastest Fourier Transform in the West)\n");
-
-  if(bOptFFT)
-      flags=FFTW_MEASURE;
-  else
-      flags=FFTW_ESTIMATE;
-
-  if (bParallel) {
+  if (cr && PAR(cr)) 
+  {
 #ifdef GMX_MPI
-    grid->plan_mpi_fw = 
-	rfftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_REAL_TO_COMPLEX,flags);
-    grid->plan_mpi_bw =
-	rfftw3d_mpi_create_plan(MPI_COMM_WORLD,nx,ny,nz,FFTW_COMPLEX_TO_REAL,flags);
-    
-    rfftwnd_mpi_local_sizes(grid->plan_mpi_fw,
-			   &(grid->pfft.local_nx),
-			   &(grid->pfft.local_x_start),
-			   &(grid->pfft.local_ny_after_transpose),
-			   &(grid->pfft.local_y_start_after_transpose),
-			   &(grid->pfft.total_local_size));
+      gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,MPI_COMM_WORLD);
+          
+      gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
+                                &(grid->pfft.local_x_start),                                
+                                &(grid->pfft.local_nx),
+                                &(grid->pfft.local_y_start_after_transpose),
+                                &(grid->pfft.local_ny_after_transpose));
 #else
     gmx_fatal(FARGS,"Parallel FFT supported with MPI only!");
 #endif
   }
-  else {
-#ifdef FFT_WORKSPACE
-    flags|=FFTW_OUT_OF_PLACE; 
-#else
-    flags|=FFTW_IN_PLACE;
-#endif
-    grid->plan_fw = rfftw3d_create_plan(grid->nx,grid->ny,grid->nz,
-					FFTW_REAL_TO_COMPLEX,flags);
-    grid->plan_bw = rfftw3d_create_plan(grid->nx,grid->ny,grid->nz,
-					FFTW_COMPLEX_TO_REAL,flags);
+  else 
+  {
+      gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz);
   }
-  snew(grid->ptr,grid->nptr);
+  grid->ptr = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
+  
   grid->localptr=NULL;
 #ifdef GMX_MPI
-  if (bParallel && fp) {
+  if (cr && PAR(cr) && fp) 
+  {
     print_parfft(fp,"Plan", &grid->pfft);
   }
-  if(bParallel) {
+  if(cr && PAR(cr))
+  {
+      int localsize;
       grid->localptr=grid->ptr+grid->la12r*grid->pfft.local_x_start;
-#ifdef FFT_WORKSPACE
-      snew(grid->workspace,grid->pfft.total_local_size);
-#endif
-  } else
-      snew(grid->workspace,grid->nptr);  
+      localsize = grid->la12c*2*grid->pfft.local_ny_after_transpose;
+      grid->workspace = gmx_alloc_aligned(localsize*sizeof(*(grid->workspace)));
+  }
+  else
+  {
+      grid->workspace = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
+  }
 #else /* no MPI */
-#ifdef FFT_WORKSPACE
-  snew(grid->workspace,grid->nptr);
+  grid->workspace = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
 #endif
-#endif
-#ifndef FFT_WORKSPACE
-  grid->workspace=NULL;
-#endif
-#else /* no fftw */
-  snew(grid->ptr,grid->nptr);
-#endif /* without_fftw conditional */  
+
   return grid;
 }
 
-void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
+void 
+pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
 {
   int     i,j,k,l,ntot=0;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
-  t_fft_r *ptr;
+  real *  ptr;
 
   /* Unpack structure */
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
@@ -167,7 +181,7 @@ void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
       for(k=0; (k<nz); k++,l++)
 	if (ptr[l] != 0) {
 	  fprintf(fp,"%-12s  %5d  %5d  %5d  %12.5e\n",title,i,j,k,ptr[l]);
-	  ntot ++;
+	  ntot++;
 	}
   fprintf(fp,"%d non zero elements in %s\n",ntot,title);
 }
@@ -189,51 +203,44 @@ void done_fftgrid(t_fftgrid *grid)
 
 void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 {
-#ifdef GMX_WITHOUT_FFTW
-  gmx_fatal(FARGS,"gmxfft3D called, but GROMACS was compiled without FFTW!\n");
-#else /* have fftw */
-  if (cr && PAR(cr) && grid->localptr) {
-#ifdef GMX_MPI
-    if (dir == FFTW_FORWARD)
-      rfftwnd_mpi(grid->plan_mpi_fw,1,grid->localptr,
-		  grid->workspace,FFTW_TRANSPOSED_ORDER);
-    else if (dir == FFTW_BACKWARD)
-      rfftwnd_mpi(grid->plan_mpi_bw,1,grid->localptr,
-		    grid->workspace,FFTW_TRANSPOSED_ORDER);
-    else
-      gmx_fatal(FARGS,"Invalid direction for FFT: %d",dir);
-#endif
-  }
-  else {
-    t_fft_r *tmp;
+  void *tmp;
     
-#ifdef FFT_WORKSPACE
-    tmp=grid->workspace;
-#else
-    tmp=NULL;
-#endif
-    if (dir == FFTW_FORWARD)
-	  rfftwnd_one_real_to_complex(grid->plan_fw,grid->ptr,
-				      (fftw_complex *)tmp);
-    else if (dir == FFTW_BACKWARD)
-	  rfftwnd_one_complex_to_real(grid->plan_bw,(fftw_complex *)grid->ptr,
-				      tmp);
+  if (cr && PAR(cr) && grid->localptr) 
+  {
+#ifdef GMX_MPI
+    if( dir == GMX_FFT_REAL_TO_COMPLEX || dir == GMX_FFT_COMPLEX_TO_REAL )
+    {
+      gmx_parallel_3dfft(grid->mpi_fft_setup,dir,grid->localptr,grid->localptr);
+    }
     else
-      gmx_fatal(FARGS,"Invalid direction for FFT: %d",dir);
-#ifdef FFT_WORKSPACE
-      tmp=grid->ptr;
-      grid->ptr=grid->workspace;
-      grid->workspace=tmp;
+    {
+        gmx_fatal(FARGS,"Invalid direction for FFT: %d",dir);
+    }
+#else
+    gmx_fatal(FARGS,"Parallel FFT supported with MPI only!");   
 #endif
   }
-#endif
+  else
+  {
+    if( dir == GMX_FFT_REAL_TO_COMPLEX || dir == GMX_FFT_COMPLEX_TO_REAL)
+    {
+        gmx_fft_3d_real(grid->fft_setup,dir,grid->ptr,grid->workspace);
+        tmp = grid->ptr;
+        grid->ptr = grid->workspace;
+        grid->workspace = tmp;        
+    }
+    else
+    {
+      gmx_fatal(FARGS,"Invalid direction for FFT: %d",dir);
+    }
+  }
 }
 
 void clear_fftgrid(t_fftgrid *grid)
 {
     /* clears the whole grid */
   int      i,ngrid;
-  t_fft_r *ptr;
+  real *   ptr;
   
   ngrid = grid->nptr;
   ptr   = grid->ptr;
@@ -245,7 +252,7 @@ void clear_fftgrid(t_fftgrid *grid)
 
 void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
 		    int *nx2,int *ny2,int *nz2,
-		    int *la2,int *la12,bool bReal,t_fft_r **ptr)
+		    int *la2,int *la12,bool bReal,real **ptr)
 {
   *nx  = grid->nx;
   *ny  = grid->ny;

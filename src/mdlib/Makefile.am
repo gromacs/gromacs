@@ -13,11 +13,11 @@ lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\
 	coupling.c	ebin.c		\
-	edsam.c		ewald.c         fftgrid.c	\
+	edsam.c		ewald.c         \
 	force.c  	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
 	ns.c		nsb.c		nsgrid.c	\
-	pme.c		pppm.c		\
+	pme.c		pppm.c		fftgrid.c	\
 	pull.c 		pullinit.c	\
 	pullio.c	pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
@@ -25,11 +25,14 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	update.c	vcm.c		vsite.c	\
 	wnblist.c	splittop.h	wnblist.h	\
 	pull_internal.h	csettle.c       clincs.c	\
-	qmmm.c		
+	qmmm.c		gmx_fft.c	gmx_parallel_3dfft.c
 
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
-	qm_gaussian.c	qm_mopac.c	qm_gamess.c
+	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
+	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
+	gmx_fft_mkl.c	
+
 
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
