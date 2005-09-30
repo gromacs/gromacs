@@ -23,6 +23,9 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+
+#ifdef GMX_MPI
+ 
 #include <mpi.h>
 
 
@@ -411,4 +414,6 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup)
     
     return 0;
 }
+
+#endif /* GMX_MPI */
 

@@ -369,7 +369,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
     /********************************/
     /* Loop with several MPI_Reduce */
     /********************************/
-    MPI_Barrier( MPI_COMM_WORLD );
+
 #ifdef USE_MPE
     MPE_Log_event( ev_reduce_start, 0, "" );
 #endif
@@ -381,7 +381,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
 #ifdef USE_MPE
     MPE_Log_event(ev_reduce_finish, 0, "" );
 #endif
-    MPI_Barrier( MPI_COMM_WORLD );
+
 /*#define ALL_REDUCE */
 #ifdef ALL_REDUCE
       MPI_Allreduce(grid->ptr, grid->ptr,grid->nptr,      
@@ -392,7 +392,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
 #endif
 #define EXCHANGE_GRID_BOUNDARY1
 #ifdef EXCHANGE_GRID_BOUNDARY1
-    MPI_Barrier( MPI_COMM_WORLD );
+
     ny=grid->ny;
     la2r=grid->la2r;
 /* Send left Boundary */
@@ -435,7 +435,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
 #endif
 #define EXCHANGE_GRID_BOUNDARY2
 #ifdef EXCHANGE_GRID_BOUNDARY2
-    MPI_Barrier( MPI_COMM_WORLD );
+
     ny=grid->ny;
     la2r=grid->la2r;
 
@@ -1110,9 +1110,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
       pme_calc_pidx(cr,HOMENR(nsb),box,x+START(nsb),ir->nkx,nnx,pidx,gidx);
       where();
 
-#ifdef GMX_MPI
-      MPI_Barrier( MPI_COMM_WORLD );
-#endif
       pmeredist(cr, TRUE, HOMENR(nsb), x+START(nsb), homecharge, gidx, 
 		&my_homenr, x_tmp, q_tmp);
       where();
@@ -1140,9 +1137,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
       
       /* sum contributions to local grid from other nodes */
       if (bPar) {
-#ifdef GMX_MPI
-        MPI_Barrier( MPI_COMM_WORLD );
-#endif
+
 	sum_qgrid(cr,nsb,grid,ir->pme_order,TRUE);
 	where();
       }
@@ -1153,9 +1148,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
       where();
 
       /* do 3d-fft */ 
-#ifdef GMX_MPI
-      MPI_Barrier( MPI_COMM_WORLD );
-#endif
 #ifdef USE_MPE
       MPE_Log_event( ev_gmxfft3d_start, 0, "" );
 #endif
@@ -1167,9 +1159,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
 
       /* solve in k-space for our local cells */
       vol = det(box);
-#ifdef GMX_MPI
-      MPI_Barrier( MPI_COMM_WORLD );
-#endif
 #ifdef USE_MPE
       MPE_Log_event( ev_solve_pme_start, 0, "" );
 #endif
@@ -1182,9 +1171,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
       inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
 
       /* do 3d-invfft */
-#ifdef GMX_MPI
-      MPI_Barrier( MPI_COMM_WORLD );
-#endif
 #ifdef USE_MPE
       MPE_Log_event( ev_gmxfft3d_start, 0, "" );
 #endif
@@ -1197,9 +1183,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
       
       /* distribute local grid to all nodes */
       if (bPar) {
-#ifdef GMX_MPI
-        MPI_Barrier( MPI_COMM_WORLD );
-#endif
 	sum_qgrid(cr,nsb,grid,ir->pme_order,FALSE);
       }
       where();
@@ -1216,9 +1199,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
       where();
     }
     /* interpolate forces for our local atoms */
-#ifdef GMX_MPI
-    MPI_Barrier( MPI_COMM_WORLD );
-#endif
 #ifdef USE_MPE
     MPE_Log_event( ev_gather_f_bsplines_start, 0, "" );
 #endif
@@ -1241,9 +1221,6 @@ real do_pme(FILE *logfile,   bool bVerbose,
 #endif
     
     if (bPar) {
-#ifdef GMX_MPI
-      MPI_Barrier( MPI_COMM_WORLD );
-#endif
       pmeredist(cr, FALSE,HOMENR(nsb), f+START(nsb), homecharge, gidx, 
 		&my_homenr, f_tmp, q_tmp);
     }

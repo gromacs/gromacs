@@ -809,7 +809,7 @@ gmx_fft_1d(gmx_fft_t                  fft,
     if( status != 0 )
     {
         gmx_fatal(FARGS,"Error executing Intel MKL FFT.");
-        status = GMX_EFAILURE;
+        status = -1;
     }
 
     return status;
@@ -859,7 +859,7 @@ gmx_fft_1d_real(gmx_fft_t                  fft,
     if( status != 0 )
     {
         gmx_fatal(FARGS,"Error executing Intel MKL FFT.");
-        status = GMX_EFAILURE;
+        status = -1;
     }
     
     return status;
@@ -908,7 +908,7 @@ gmx_fft_2d(gmx_fft_t                  fft,
     if( status != 0 )
     {
         gmx_fatal(FARGS,"Error executing Intel MKL FFT.");
-        status = GMX_EFAILURE;
+        status = -1;
     }
     
     return status;
@@ -979,7 +979,7 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
     if( status != 0 )
     {
         gmx_fatal(FARGS,"Error executing Intel MKL FFT.");
-        status = GMX_EFAILURE;
+        status = -1;
     }
     
     return status;
@@ -1028,7 +1028,7 @@ gmx_fft_3d(gmx_fft_t                  fft,
     if( status != 0 )
     {
         gmx_fatal(FARGS,"Error executing Intel MKL FFT.");
-        status = GMX_EFAILURE;
+        status = -1;
     }
     
     return status;
@@ -1131,7 +1131,7 @@ gmx_fft_3d_real(gmx_fft_t                  fft,
     if( status != 0 )
     {
         gmx_fatal(FARGS,"Error executing Intel MKL FFT.");
-        status = GMX_EFAILURE;
+        status = -1;
     }
     
     return status;
