@@ -263,10 +263,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
-    if (ir->rcoulomb_switch > ir->rcoulomb-0.0999) { 
-      sprintf(warn_buf,"rcoulomb should be 0.1 to 0.3 nm larger than rcoulomb_switch to account for diffusion and the size of charge groups"); 
-      warning(NULL);
-    }
   } else if (EEL_RF(ir->coulombtype)) {
     sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
@@ -290,21 +286,18 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
-    if (ir->rvdw_switch > ir->rvdw-0.0999) { 
-      sprintf(warn_buf,"rvdw should be 0.1 to 0.3 nm larger than rvdw_switch to account for diffusion and the size of charge groups"); 
-      warning(NULL);
-    }
   } else {
     sprintf(err_buf,"With vdwtype = %s,rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
-  if((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) ||
-     (ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT)) 
-    if((ir->rlist == ir->rcoulomb) || (ir->rlist == ir->rvdw)) {
-      sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb/rvdw.");
-      warning(NULL);
-    }
-
+  if ((((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH))
+       && (ir->rlist == ir->rcoulomb)) ||
+      (((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT))
+       && (ir->rlist == ir->rvdw))) {
+    sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb/rvdw.");
+    warning(NULL);
+  }
+  
   if(ir->eI == eiLBFGS && (ir->coulombtype==eelCUT || ir->vdwtype==evdwCUT)) {
     sprintf(warn_buf,"For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
     warning(NULL);
