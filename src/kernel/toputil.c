@@ -127,15 +127,15 @@ void pr_alloc (int extra, t_params *pr)
 
 void init_atomtype (t_atomtype *at)
 {
-  at->nr   = 0;
-  at->atom     = NULL;
-  at->atomname = NULL;
-  at->nb       = NULL;
+  at->nr           = 0;
+  at->atom         = NULL;
+  at->atomname     = NULL;
+  at->nb           = NULL;
   at->bondatomtype = NULL;
-  at->radius   = NULL;
-  at->vol      = NULL;
-  at->surftens = NULL;
-  
+  at->radius       = NULL;
+  at->vol          = NULL;
+  at->surftens     = NULL;
+  at->atomnumber   = NULL;
 }
 
 void init_bond_atomtype (t_bond_atomtype *bat)
