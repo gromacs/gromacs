@@ -5,7 +5,7 @@
 # Arg 1 is the fftw header/library name to check for, without
 # prefix or anything else (e.g. rfftw_mpi for real MPI transforms)
 # Arg 2 is the size of the real variable used.
-AC_DEFUN(ACX_CHECK_FFTW2,
+AC_DEFUN([ACX_CHECK_FFTW2],
 [
 if test -z "$ac_fftw_firstname"; then
 
