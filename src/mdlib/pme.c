@@ -815,45 +815,93 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
 		   int nz,rvec fractx[],ivec idx[],real charge[],int nr)
 {
   /* construct splines for local atoms */
-  int  i,j,k,l;
-  real dr,div,rcons;
-  real *data,*ddata,*xptr;
-
+  int  i,k,l;
+  real drXX,drYY,drZZ;
+  real div,rcons;
+  real *dataXX,*dataYY,*dataZZ;
+  real *ddataXX,*ddataYY,*ddataZZ;
+  real tmpX,tmpY,tmpZ,lastX,lastY,lastZ;
+  
   for(i=0; (i<nr); i++) {
     if (charge[i] != 0.0) {
-      xptr = fractx[i];
-      for(j=0; (j<DIM); j++) {
-	dr  = xptr[j];
-	
+
+	drXX = fractx[i][XX];
+	drYY = fractx[i][YY];
+	drZZ = fractx[i][ZZ];
+
 	/* dr is relative offset from lower cell limit */
-	data=&(theta[j][i*order]);
-	data[order-1]=0;
-	data[1]=dr;
-	data[0]=1-dr;
+	dataXX=theta[XX]+i*order;
+	dataYY=theta[YY]+i*order;
+	dataZZ=theta[ZZ]+i*order;
+
+	dataXX[order-1]=0;
+	dataYY[order-1]=0;
+	dataZZ[order-1]=0;
+	dataXX[1]=drXX;
+	dataYY[1]=drYY;
+	dataZZ[1]=drZZ;
+	dataXX[0]=1-drXX;
+	dataYY[0]=1-drYY;
+	dataZZ[0]=1-drZZ;
 		
-	for(k=3; (k<order); k++) {
+	for(k=3; (k<order); k++) 
+        {
 	  div=1.0/(k-1.0);    
-	  data[k-1]=div*dr*data[k-2];
+	  dataXX[k-1]=div*drXX*dataXX[k-2];
+	  dataYY[k-1]=div*drYY*dataYY[k-2];
+	  dataZZ[k-1]=div*drZZ*dataZZ[k-2];
+
 	  for(l=1; (l<(k-1)); l++)
-	    data[k-l-1]=div*((dr+l)*data[k-l-2]+(k-l-dr)*
-			     data[k-l-1]);
-	  data[0]=div*(1-dr)*data[0];
+          {
+	    dataXX[k-l-1]=div*((drXX+l)*dataXX[k-l-2]+(k-l-drXX)*dataXX[k-l-1]);
+	    dataYY[k-l-1]=div*((drYY+l)*dataYY[k-l-2]+(k-l-drYY)*dataYY[k-l-1]);
+	    dataZZ[k-l-1]=div*((drZZ+l)*dataZZ[k-l-2]+(k-l-drZZ)*dataZZ[k-l-1]);
+          } 
+	  dataXX[0]=div*(1-drXX)*dataXX[0];
+	  dataYY[0]=div*(1-drYY)*dataYY[0];
+	  dataZZ[0]=div*(1-drZZ)*dataZZ[0];
 	}
 	/* differentiate */
-	ddata    = &(dtheta[j][i*order]);
-	ddata[0] = -data[0];
+	ddataXX  = dtheta[XX]+i*order;
+	ddataYY  = dtheta[YY]+i*order;
+	ddataZZ  = dtheta[ZZ]+i*order;
+
+	lastX = dataXX[0];
+	lastY = dataYY[0];
+	lastZ = dataZZ[0];
+	ddataXX[0] = -lastX;
+	ddataYY[0] = -lastY;
+	ddataZZ[0] = -lastZ;
+
 	for(k=1; (k<order); k++)
-	  ddata[k]=data[k-1]-data[k];
-		
+        {
+	  tmpX = dataXX[k];
+	  tmpY = dataYY[k];
+	  tmpZ = dataZZ[k];
+	  ddataXX[k] = lastX - tmpX;
+	  ddataYY[k] = lastY - tmpY;
+	  ddataZZ[k] = lastZ - tmpZ;
+	  lastX = tmpX;
+	  lastY = tmpY;
+	  lastZ = tmpZ;
+	}
+	
 	div=1.0/(order-1);
-	data[order-1]=div*dr*data[order-2];
+	dataXX[order-1]=div*drXX*dataXX[order-2];
+	dataYY[order-1]=div*drYY*dataYY[order-2];
+	dataZZ[order-1]=div*drZZ*dataZZ[order-2];
 	for(l=1; (l<(order-1)); l++)
-	  data[order-l-1]=div*((dr+l)*data[order-l-2]+
-			       (order-l-dr)*data[order-l-1]);
-	data[0]=div*(1-dr)*data[0]; 
+        {
+	  dataXX[order-l-1]=div*((drXX+l)*dataXX[order-l-2]+(order-l-drXX)*dataXX[order-l-1]);
+	  dataYY[order-l-1]=div*((drYY+l)*dataYY[order-l-2]+(order-l-drYY)*dataYY[order-l-1]);
+	  dataZZ[order-l-1]=div*((drZZ+l)*dataZZ[order-l-2]+(order-l-drZZ)*dataZZ[order-l-1]);
+	}
+	dataXX[0]=div*(1-drXX)*dataXX[0]; 
+	dataYY[0]=div*(1-drYY)*dataYY[0]; 
+	dataZZ[0]=div*(1-drZZ)*dataZZ[0]; 
       }
     }
-  }
+  
 }
 
     
@@ -864,7 +912,7 @@ void make_dft_mod(real *mod,real *data,int ndata)
     
   for(i=0;i<ndata;i++) {
     sc=ss=0;
-    for(j=0;j<ndata;j++) {
+    for(j=0;j<ndata;j++) { 
       arg=(2.0*M_PI*i*j)/ndata;
       sc+=data[j]*cos(arg);
       ss+=data[j]*sin(arg);
