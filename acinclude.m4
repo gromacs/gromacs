@@ -524,7 +524,9 @@ case "${host_cpu}-${host_os}" in
   # we need to fool the combination of m4, sh and awk - thus the seemingly unnecessary n
   if test -f /usr/sbin/lsdev && test -f /usr/sbin/lsattr; then
     IBM_CPU_ID=`/usr/sbin/lsdev -C -c processor -S available | head -1 | awk '{ n=1; print $n }'`
-    if /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER4 >/dev/null 2>&1; then
+    if /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER5 >/dev/null 2>&1; then
+      gmxcpu=power5
+    elif /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER4 >/dev/null 2>&1; then
       gmxcpu=power4
     elif /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER3 >/dev/null 2>&1; then
       gmxcpu=power3
@@ -673,7 +675,14 @@ case "${host_cpu}-${host_os}" in
   *-aix*)
     # dont use inter-procedure analysis for the innerloops - they take
     # forever to compile with it, and it doesnt help at all.
+
+    # use 8 segments (max 2Gb) instead of 1 (max 256Meg) by default.
+    xLDFLAGS="$xLDFLAGS -bmaxdata:0x80000000"
     case "${gmxcpu}" in
+      power5*)
+        xCFLAGS="-O3 -qarch=pwr5 -qtune=pwr5 -qmaxmem=16384"
+        xFFLAGS="-O3 -Q -qarch=pwr5 -qtune=pwr5 -qmaxmem=16384 -qhot -qnoipa"
+        ;;
       power4*)
 	xCFLAGS="-O3 -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384"
 	xFFLAGS="-O3 -Q -qarch=pwr4 -qtune=pwr4 -qmaxmem=16384 -qhot -qnoipa"
