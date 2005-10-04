@@ -770,7 +770,7 @@ int gmx_sham(int argc,char *argv[])
     et_val=read_xvg_time(fn_ge ? fn_ge : fn_ene,bHaveT,
 			 opt2parg_bSet("-b",npargs,pa),tb-ttol,
 			 opt2parg_bSet("-e",npargs,pa),te+ttol,
-			 nsets_in,&e_nset,&e_n,&e_dt,&e_t);
+			 1,&e_nset,&e_n,&e_dt,&e_t);
     if (fn_ge) {
       if (e_nset != 1)
 	gmx_fatal(FARGS,"Can only handle one free energy component in %s",
