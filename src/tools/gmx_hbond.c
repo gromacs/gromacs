@@ -1,6 +1,7 @@
 /*
  * $Id$
  * 
+ * 
  *                This source code is part of
  * 
  *                 G   R   O   M   A   C   S
@@ -166,9 +167,6 @@ static void mk_hbmap(t_hbdata *hb,bool bTwo,bool bInsert)
 {
   int  i,j;
 
-  printf("Going to allocate %d kb of memory,  and that's only the beginning\n",
-	 (int)((hb->d.nrd*hb->a.nra*sizeof(hb->hbmap[0][0]))/1024.0));
-  
   snew(hb->hbmap,hb->d.nrd);
   for(i=0; (i<hb->d.nrd); i++) {
     snew(hb->hbmap[i],hb->a.nra);
@@ -196,7 +194,7 @@ static void add_frames(t_hbdata *hb,int nframes)
 #define OFFSET(frame) (frame / 32)
 #define MASK(frame)   (1 << (frame % 32))
 
-static void set_hb(unsigned int hbexist[],unsigned int frame,bool bValue)
+static void _set_hb(unsigned int hbexist[],unsigned int frame,bool bValue)
 {
   if (bValue)
     hbexist[OFFSET(frame)] |= MASK(frame);
@@ -209,14 +207,31 @@ static bool is_hb(unsigned int hbexist[],int frame)
   return ((hbexist[OFFSET(frame)] & MASK(frame)) != 0) ? 1 : 0;
 }
 
-static void add_ff(t_hbond *hb,int frame,int maxhydro,int wlen,int ihb,
-		   int k)
+static void set_hb(t_hbdata *hb,int id,int ih, int ia,int frame,int ihb)
 {
-  int i,j,n;
+  unsigned int *ghptr;
   
-  if (!hb->h[0]) { 
+  if (ihb == hbHB)
+    ghptr = hb->hbmap[id][ia]->h[ih];
+  else if (ihb == hbDist)
+    ghptr = hb->hbmap[id][ia]->g[ih];
+  else
+    gmx_fatal(FARGS,"Incomprehensible iValue %d in set_hb",ihb);
+    
+  _set_hb(ghptr,frame-hb->hbmap[id][ia]->n0,TRUE);
+}
+
+static void add_ff(t_hbdata *hbd,int id,int h,int ia,int frame,int ihb)
+{
+  int     i,j,n;
+  t_hbond *hb      = hbd->hbmap[id][ia];
+  int     maxhydro = hbd->d.nhydro[id];
+  int     wlen     = hbd->wordlen;
+  int     delta    = 32*wlen;
+  
+  if (!hb->h[0]) {
     hb->n0        = frame;
-    hb->maxframes = 1024;
+    hb->maxframes = delta;
     for(i=0; (i<maxhydro); i++) {
       snew(hb->h[i],hb->maxframes/wlen);
       snew(hb->g[i],hb->maxframes/wlen);
@@ -224,8 +239,11 @@ static void add_ff(t_hbond *hb,int frame,int maxhydro,int wlen,int ihb,
   }
   else {
     hb->nframes = frame-hb->n0;
-    if (hb->nframes >= hb->maxframes-wlen) {
-      n = hb->nframes + 1024;
+    /* We need a while loop here because hbonds may be returning
+     * after a long time.
+     */
+    while (hb->nframes >= hb->maxframes) {
+      n = hb->maxframes + delta;
       for(i=0; (i<maxhydro); i++) {
 	srenew(hb->h[i],n/wlen);
 	srenew(hb->g[i],n/wlen);
@@ -237,13 +255,9 @@ static void add_ff(t_hbond *hb,int frame,int maxhydro,int wlen,int ihb,
       hb->maxframes = n;
     }
   }
-  if (frame >= 0) {
-    if (ihb == hbHB)
-      set_hb(hb->h[k],frame-hb->n0,TRUE);
-    else if (ihb == hbDist)
-      set_hb(hb->g[k],frame-hb->n0,TRUE);
-  }
-  hb->nframes++;
+  if (frame >= 0)
+    set_hb(hbd,id,h,ia,frame,ihb);
+  /*hb->nframes++;*/
 }
 
 static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
@@ -281,7 +295,7 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
 	snew(hb->hbmap[id][ia]->h,hb->maxhydro);
 	snew(hb->hbmap[id][ia]->g,hb->maxhydro);
       }
-      add_ff(hb->hbmap[id][ia],frame,hb->maxhydro,hb->wordlen,ihb,k);
+      add_ff(hb,id,k,ia,frame,ihb);
     }
     
     /* Strange construction with frame >=0 is a relic from old code
@@ -891,8 +905,8 @@ static void do_merge(t_hbdata *hb,int ntmp,
   }
   /* Copy temp array to target array */
   for(m=0; (m<nnframes); m++) {
-    set_hb(hb0->h[0],m,htmp[m]);
-    set_hb(hb0->g[0],m,gtmp[m]);
+    _set_hb(hb0->h[0],m,htmp[m]);
+    _set_hb(hb0->g[0],m,gtmp[m]);
   }
   /* Set scalar variables */
   hb0->n0        = nn0;
@@ -951,6 +965,61 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
   sfree(htmp);
 }
 
+static void do_nhb_dist(char *fn,t_hbdata *hb,int nframes) 
+{
+  FILE *fp;
+#define MAXHH 4
+  int  i,j,k,a,n,n0,nh,n_bound[MAXHH],nbtot;
+  char *leg[MAXHH+1] = { "0", "1", "2", "3", "Total" };
+  h_id nhb;
+  
+  fp = xvgropen(fn,"Number of HB per hydrogen","Time (ps)","N");
+  xvgr_legend(fp,asize(leg),leg);
+  /* Loop over frames */
+  for(n=0; (n<nframes); n++) {
+    /* Set array to 0 */
+    for(k=0; (k<MAXHH); k++)
+      n_bound[k] = 0;
+    /* Loop over possible donors */
+    for(i=0; (i<hb->d.nrd); i++) {
+      nh = hb->d.nhydro[i];
+      /* Set # HBs for each H to 0 */
+      for(j=0; (j<nh); j++)
+	nhb[j] = 0;
+      /* Loop over possible acceptors */
+      for(k=0; (k<hb->a.nra); k++) {
+	/* First check whether this HB ever existed */
+	if (hb->hbmap[i][k]) {
+	  n0 = hb->hbmap[i][k]->n0;
+	  for(j=0; (j<nh); j++)
+	    if (ISHB(hb->hbmap[i][k]->history[j]) && 
+		(n >= n0) && 
+		(n <= n0+hb->hbmap[i][k]->nframes))
+	      if (is_hb(hb->hbmap[i][k]->h[j],n-n0)) {
+		nhb[j]++;
+		if (debug) 
+		  fprintf(debug,"NHBDIST: d = %d h = %d a = %d\n",
+			  hb->d.don[i],hb->d.hydro[i][j],
+			  hb->a.acc[k]);
+	      }
+	}
+      }
+      /* Check which of the H have how many HBs */
+      for(j=0; (j<nh); j++)
+	for(k=0; (k<MAXHH); k++)
+	  if (nhb[j] == k)
+	    n_bound[k]++;
+    }
+    fprintf(fp,"%12.5e",hb->time[n]);
+    nbtot = 0;
+    for(k=0; (k<MAXHH); k++) {
+      fprintf(fp,"  %8d",n_bound[k]);
+      nbtot += n_bound[k]*k;
+    }
+    fprintf(fp,"  %8d\n",nbtot);
+  }
+}
+
 static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
 {
   FILE *fp;
@@ -999,9 +1068,9 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
 	      else {
 		histo[j-j0]++;
 	      }
-	    ohb = ihb;
+	      ohb = ihb;
 	    }
-	}
+	  }
 	  ndump++;
 	}
       }
@@ -1252,6 +1321,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	    ht[j] = 0;
 	    gt[j] = 0;
 	  }
+	  /*correl_fftw(correl,ht,gt,dght);*/
 	  cross_corr(n2,ht,gt,dght);
 	  
 	  for(j=0; (j<nn); j++) {
@@ -1334,12 +1404,14 @@ static void init_hbframe(t_hbdata *hb,int nframes,real t)
   hb->ndist[nframes]  = 0;
   for (i=0; (i<max_hx); i++)
     hb->nhx[nframes][i]=0;
+  /* Loop invalidated */
   if (hb->bHBmap && 0)
     for (i=0; (i<hb->d.nrd); i++)
       for (j=0; (j<hb->a.nra); j++)
 	for (m=0; (m<hb->maxhydro); m++)
 	  if (hb->hbmap[i][j] && hb->hbmap[i][j]->h[m])
-	    set_hb(hb->hbmap[i][j]->h[m],nframes-hb->hbmap[i][j]->n0,HB_NO);
+	    set_hb(hb,i,m,j,nframes,HB_NO);
+  /*set_hb(hb->hbmap[i][j]->h[m],nframes-hb->hbmap[i][j]->n0,HB_NO);*/
 }
 
 static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
@@ -1509,7 +1581,9 @@ int gmx_hbond(int argc,char *argv[])
     "into hydrogen bonds. Ordering is identical to that in [TT]-hbn[tt]",
     "index file.[BR]",
     "[TT]-dan[tt]: write out the number of donors and acceptors analyzed for",
-    "each timeframe. This is especially usefull when using [TT]-shell[tt].",
+    "each timeframe. This is especially usefull when using [TT]-shell[tt].[BR]",
+    "[TT]-nhbdist[tt]: compute the number of HBonds per hydrogen in order to",
+    "compare results to Raman Spectroscopy.",
     "[PAR]",
     "Note: options [TT]-ac[tt], [TT]-life[tt], [TT]-hbn[tt] and [TT]-hbm[tt]",
     "require an amount of memory proportional to the total numbers of donors",
@@ -1569,7 +1643,9 @@ int gmx_hbond(int argc,char *argv[])
     { efXPM, "-hbm", "hbmap",  ffOPTWR },
     { efXVG, "-don", "donor",  ffOPTWR },
     { efXVG, "-dan", "danum",  ffOPTWR },
-    { efXVG, "-life","hblife", ffOPTWR }
+    { efXVG, "-life","hblife", ffOPTWR },
+    { efXVG, "-nhbdist", "nhbdist",ffOPTWR }
+    
   };
 #define NFILE asize(fnm)
   
@@ -1626,7 +1702,10 @@ int gmx_hbond(int argc,char *argv[])
   bHBmap = (opt2bSet("-ac",NFILE,fnm) ||
 	    opt2bSet("-life",NFILE,fnm) ||
 	    opt2bSet("-hbn",NFILE,fnm) || 
-	    opt2bSet("-hbm",NFILE,fnm));
+	    opt2bSet("-hbm",NFILE,fnm) ||
+	    opt2bSet("-nhbdist",NFILE,fnm));
+  if (opt2bSet("-nhbdist",NFILE,fnm))
+    bMerge = FALSE;
   hb = mk_hbdata(bHBmap,opt2bSet("-dan",NFILE,fnm),bMerge);
   
   /* get topology */
@@ -2045,6 +2124,9 @@ int gmx_hbond(int argc,char *argv[])
 	 
   /* Do Autocorrelation etc. */
   if (hb->bHBmap) {
+    if (opt2bSet("-nhbdist",NFILE,fnm)) 
+      do_nhb_dist(opt2fn("-nhbdist",NFILE,fnm),hb,nframes);
+    
     if (opt2bSet("-ac",NFILE,fnm))
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
 	      bMerge,fit_start,temp);
@@ -2059,17 +2141,21 @@ int gmx_hbond(int argc,char *argv[])
       mat.nx=nframes;
       mat.ny=hb->nrhb;
       snew(mat.matrix,mat.nx);
-      for(x=0; (x<mat.nx); x++) {
+      for(x=0; (x<mat.nx); x++) 
 	snew(mat.matrix[x],mat.ny);
-	y=0;
-	for(id=0; (id<hb->d.nrd); id++) 
-	  for(ia=0; (ia<hb->a.nra); ia++) 
-	    for(hh=0; (hh<hb->maxhydro); hh++)
-	      if (hb->hbmap[id][ia] && ISHB(hb->hbmap[id][ia]->history[hh])) {
+      y=0;
+      for(id=0; (id<hb->d.nrd); id++) 
+	for(ia=0; (ia<hb->a.nra); ia++) 
+	  for(hh=0; (hh<hb->maxhydro); hh++) {
+	    if (hb->hbmap[id][ia] && ISHB(hb->hbmap[id][ia]->history[hh])) {
+	      for(x=0; (x<hb->hbmap[id][ia]->nframes); x++) {
+		int nn0 = hb->hbmap[id][ia]->n0;
 		range_check(y,0,mat.ny);
-		mat.matrix[x][y++] = is_hb(hb->hbmap[id][ia]->h[hh],x);
+		mat.matrix[x+nn0][y] = is_hb(hb->hbmap[id][ia]->h[hh],x);
 	      }
-      }
+	      y++;
+	    }
+	  }
       mat.axis_x=hb->time;
       snew(mat.axis_y,mat.ny);
       for(j=0; j<mat.ny; j++)
