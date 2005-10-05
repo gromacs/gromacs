@@ -1014,17 +1014,18 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
 	     real phi,real lambda,real *V,real *F)
 {
   real v,dvdl,mdphi,v1,sdphi,ddphi;
-  real L1   = 1.0-lambda;
-  real ph0  = DEG2RAD*(L1*phiA+lambda*phiB);
+  real L1   = 1.0 - lambda;
+  real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+  real dph0 = (phiB - phiA)*DEG2RAD;
   real cp   = L1*cpA + lambda*cpB;
   
-  mdphi =  mult*phi-ph0;
+  mdphi =  mult*phi - ph0;
   sdphi = sin(mdphi);
   ddphi = -cp*mult*sdphi;
-  v1    = 1.0+cos(mdphi);
+  v1    = 1.0 + cos(mdphi);
   v     = cp*v1;
   
-  dvdl  = (cpB-cpA)*v1 - cp*(phiA-phiB)*sdphi;
+  dvdl  = (cpB - cpA)*v1 + cp*dph0*sdphi;
   
   *V = v;
   *F = ddphi;
@@ -1040,8 +1041,9 @@ static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
       * and a different treatment of mult/phi0       */
 {
   real v,dvdl,mdphi,v1,sdphi,ddphi;
-  real L1   = 1.0-lambda;
-  real ph0  = DEG2RAD*(L1*phiA+lambda*phiB);
+  real L1   = 1.0 - lambda;
+  real ph0  = (L1*phiA + lambda*phiB)*DEG2RAD;
+  real dph0 = (phiB - phiA)*DEG2RAD;
   real cp   = L1*cpA + lambda*cpB;
   
   mdphi = mult*(phi-ph0);
@@ -1050,7 +1052,7 @@ static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
   v1    = 1.0-cos(mdphi);
   v     = cp*v1;
   
-  dvdl  = (cpB-cpA)*v1 - cp*(phiA-phiB)*sdphi;
+  dvdl  = (cpB-cpA)*v1 + cp*dph0*sdphi;
   
   *V = v;
   *F = ddphi;
@@ -1114,7 +1116,7 @@ real idihs(int nbonds,
 {
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
-  real phi,phi0,cos_phi,ddphi,sign,vtot;
+  real phi,phi0,dphi0,cos_phi,ddphi,sign,vtot;
   rvec r_ij,r_kj,r_kl,m,n;
   real L1,kk,dp,dp2,kA,kB,pA,pB,dvdl;
 
@@ -1144,15 +1146,16 @@ real idihs(int nbonds,
     pA = forceparams[type].harmonic.rA;
     pB = forceparams[type].harmonic.rB;
 
-    kk   = L1*kA+lambda*kB;
-    phi0 = (L1*pA+lambda*pB)*DEG2RAD;
-    
+    kk    = L1*kA + lambda*kB;
+    phi0  = (L1*pA + lambda*pB)*DEG2RAD;
+    dphi0 = (pB - pA)*DEG2RAD;
+
     /* dp = (phi-phi0), modulo (-pi,pi) */
     dp = phi-phi0;  
     /* dp cannot be outside (-2*pi,2*pi) */
-    if (dp>=M_PI)
+    if (dp >= M_PI)
       dp -= 2*M_PI;
-    else if(dp<-M_PI)
+    else if(dp < -M_PI)
       dp += 2*M_PI;
     
     dp2 = dp*dp;
@@ -1160,7 +1163,7 @@ real idihs(int nbonds,
     vtot += 0.5*kk*dp2;
     ddphi = -kk*dp;
     
-    dvdl += 0.5*(kB-kA)*dp2 + (pA-pB)*kk*dp;
+    dvdl += 0.5*(kB - kA)*dp2 - kk*dphi0*dp;
 
     do_dih_fup(ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
 	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
