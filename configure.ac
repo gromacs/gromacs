@@ -3,18 +3,18 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3_rc3, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.3_rc3)
+AM_INIT_AUTOMAKE(gromacs, 3.3)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="3:0:0"
+SHARED_VERSION_INFO="4:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 

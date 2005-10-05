@@ -13,7 +13,7 @@ Copyright: GPL
 Group: Applications/Science
 Prefix: /usr/local
 Buildroot: %{_topdir}/buildroot
-Requires: fftw-lammpi >= 2.1.3 , lam, gromacs = %{version}-%{release}
+Requires: fftw3 >= 3.0.1 , lam, gromacs = %{version}-%{release}
 Source: ftp://ftp.gromacs.org/pub/gromacs/source/gromacs-%{version}.tar.gz
 URL: http://www.gromacs.org
 Packager: Erik Lindahl <lindahl@gromacs.org>
@@ -31,7 +31,7 @@ and data files are located in the gromacs (non-mpi) package.
 Summary: Header files and static libs for parallel GROMACS
 Group: Applications/Science
 Prefix: %{prefix}
-Requires: fftw-lammpi >= 2.1.3, fftw-lammpi-devel >= 2.1.3, lam, gromacs = %{version}-%{release}, gromacs-devel = %{version}-%{release}, gromacs-mpi = %{version}-%{release}
+Requires: fftw3 >= 3.0.1, fftw3-devel >= 3.0.1, lam, gromacs = %{version}-%{release}, gromacs-devel = %{version}-%{release}, gromacs-mpi = %{version}-%{release}
 %description devel
 This package contains the static libraries for
 the parallel GROMACS development. You will only need

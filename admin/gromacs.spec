@@ -14,7 +14,7 @@ Copyright: GPL
 Group: Applications/Science
 Prefix: /usr/local
 Buildroot: %{_topdir}/buildroot
-Requires: fftw >= 2.1.3 
+Requires: fftw3 >= 3.0.1
 Source: ftp://ftp.gromacs.org/pub/gromacs/source/gromacs-%{version}.tar.gz
 URL: http://www.gromacs.org
 Packager: Erik Lindahl <lindahl@gromacs.org>
@@ -40,7 +40,7 @@ gromacs-lammpi.
 Summary: Header files and static libraries for GROMACS
 Group: Applications/Science
 Prefix: %{prefix}
-Requires: fftw-devel >= 2.1.3, gromacs = %{version}-%{release}
+Requires: fftw3-devel >= 3.0.1, gromacs = %{version}-%{release}
 %description devel
 This package contains header files, static libraries,
 and a program example for the GROMACS molecular
