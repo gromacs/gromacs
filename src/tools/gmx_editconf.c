@@ -376,9 +376,10 @@ int gmx_editconf(int argc, char *argv[])
     "[TT]-angles[tt]. Both [TT]-box[tt] and [TT]-d[tt]",
     "will center the system in the box.",
     "[PAR]",
-    "Option [TT]-bt[tt] determines the box type: [TT]tric[tt] is a",
-    "triclinic box, [TT]cubic[tt] is a cubic box, [TT]dodecahedron[tt] is",
-    "a rhombic dodecahedron and [TT]octahedron[tt] is a truncated octahedron.",
+    "Option [TT]-bt[tt] determines the box type: [TT]triclinic[tt] is a",
+    "triclinic box, [TT]cubic[tt] is a rectangular box with all sides equal", 
+    "[TT]dodecahedron[tt] represents a rhombic dodecahedron and "
+    "[TT]octahedron[tt] is a truncated octahedron.",
     "The last two are special cases of a triclinic box.",
     "The length of the three box vectors of the truncated octahedron is the",
     "shortest distance between two opposite hexagons.",
@@ -387,10 +388,12 @@ int gmx_editconf(int argc, char *argv[])
     "[PAR]",
     "Option [TT]-box[tt] requires only",
     "one value for a cubic box, dodecahedron and a truncated octahedron.",
-    "With [TT]-d[tt] and [TT]tric[tt] the size of the system in the x, y",
+    "[PAR]",
+    "With [TT]-d[tt] and a [TT]triclinic[tt] box the size of the system in the x, y",
     "and z directions is used. With [TT]-d[tt] and [TT]cubic[tt],",
-    "[TT]dodecahedron[tt] or [TT]octahedron[tt] the diameter of the system",
-    "is used, which is the largest distance between two atoms.",
+    "[TT]dodecahedron[tt] or [TT]octahedron[tt] boxes, the dimensions are set",
+    "to the diameter of the system (largest distance between atoms) plus twice",
+    "the specified distance.",
     "[PAR]",
     "Option [TT]-angles[tt] is only meaningful with option [TT]-box[tt] and",
     "a triclinic box and can not be used with option [TT]-d[tt].",
@@ -454,7 +457,7 @@ int gmx_editconf(int argc, char *argv[])
   static rvec scale={1,1,1},newbox={0,0,0},newang={90,90,90};
   static real rho=1000.0,rvdw=0.12;
   static rvec center={0,0,0},translation={0,0,0},rotangles={0,0,0};
-  static char *btype[]={ NULL, "tric", "cubic", "dodecahedron", "octahedron", NULL },*label="A";
+  static char *btype[]={ NULL, "triclinic", "cubic", "dodecahedron", "octahedron", NULL },*label="A";
   static rvec visbox={0,0,0};
   t_pargs pa[] = {
     { "-ndef",   FALSE, etBOOL, {&bNDEF}, 
@@ -765,8 +768,6 @@ int gmx_editconf(int argc, char *argv[])
 	box[ZZ][ZZ] = sqrt(sqr(newbox[ZZ])
 			   -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
       }
-      if (bDist && TRICLINIC(box))
-	fprintf(stderr,"WARNING: the box is triclinic, the minimum distance between the solute and the box might be less than %f\nYou can check this with g_mindist -pi\n",dist);
       break;
     case 'c':
     case 'd':
@@ -825,6 +826,23 @@ int gmx_editconf(int argc, char *argv[])
   if (check_box(box))
     printf("\nWARNING: %s\n",check_box(box));
 
+  if (bDist && btype[0][0]=='t')
+  {
+      if(TRICLINIC(box))
+      {
+          printf("\nWARNING: Your box is triclinic with non-orthogonal axes. In this case, the\n"
+                 "distance from the solute to a box surface along the corresponding normal\n"
+                 "vector might be somewhat smaller than your specified value %f.\n"
+                 "You can check the actual value with g_mindist -pi\n",dist);
+      }
+      else
+      {
+          printf("\nWARNING: No boxtype specified - distance condition applied in each dimension.\n"
+                 "If the molecule rotates the actual distance will be smaller. You might want\n"
+                 "to use a cubic box instead, or why not try a dodecahedron today?\n");
+      }
+  }  
+  
   if (bIndex) {
     fprintf(stderr,"\nSelect a group for output:\n");
     get_index(&atoms,opt2fn_null("-n",NFILE,fnm),
