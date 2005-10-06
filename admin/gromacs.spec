@@ -3,6 +3,7 @@
 # If you have mpi installed, you can create an mpi mdrun executable
 # and libs with the gromacs-mpi spec file!
 
+
 #
 # Main package - only dynamic libs, and no header files
 #
@@ -12,7 +13,6 @@ Version: 3.3
 Release: 1
 Copyright: GPL
 Group: Applications/Science
-Prefix: /usr/local
 Buildroot: %{_topdir}/buildroot
 Requires: fftw3 >= 3.0.1
 Source: ftp://ftp.gromacs.org/pub/gromacs/source/gromacs-%{version}.tar.gz
@@ -27,11 +27,7 @@ performance means it is used also in several other field
 like polymer chemistry and solid state physics. This
 version has the dynamic libs and executables; to hack new
 utility programs you also need the headers and static
-libs in gromacs-dev. Linux kernel 2.4 or later is STRONGLY
-recommended on Pentium III and later processors since
-GROMACS then can use assembly loops with SSE instructions.
-You can also perform parallel simulations if you install
-gromacs-lammpi.
+libs in gromacs-dev. 
 
 #
 # The header files and static libraries go into gromacs-devel...
@@ -39,7 +35,6 @@ gromacs-lammpi.
 %package devel
 Summary: Header files and static libraries for GROMACS
 Group: Applications/Science
-Prefix: %{prefix}
 Requires: fftw3-devel >= 3.0.1, gromacs = %{version}-%{release}
 %description devel
 This package contains header files, static libraries,
@@ -51,15 +46,9 @@ own analysis programs.
 %setup
 
 %build
-# Use the standard /usr/local setup on linux, even if that's slightly
-# different from the normal gromacs directory standard. Don't use
-# the automatic gromacs architecture exec-prefix.
-# Since 'gromacs' isnt present in the prefix it will be added to datadir
-# and includedir.
-# (This way the package won't interfere with a manual gromacs installation)
-# dont use motif since it is not standard on linux.
-./configure --enable-shared --prefix=%{prefix} --exec-prefix=%{prefix} --without-motif-libraries
-make 
+%configure 	--enable-shared \
+	   	--without-motif-libraries 
+make %{?_smp_mflags}
 
 %install
 make DESTDIR=${RPM_BUILD_ROOT} install
@@ -84,32 +73,18 @@ PATH="/sbin:$PATH" ldconfig
 
 %files
 %defattr(-,root,root)
-%{prefix}/bin/*
-%{prefix}/share/gromacs/top/*
-%{prefix}/share/gromacs/tutor/*
-%docdir %{prefix}/share/gromacs/html
-%{prefix}/share/gromacs/html/
-%{prefix}/man/*
-%{prefix}/lib/libgmx.so.3.0.0
-%{prefix}/lib/libgmx.so.3
-%{prefix}/lib/libmd.so.3.0.0
-%{prefix}/lib/libmd.so.3
-%{prefix}/lib/libgmxana.so.3.0.0
-%{prefix}/lib/libgmxana.so.3
+%{_bindir}/*
+%{_libdir}/*.so.*
+%{_mandir}/*
+%{_datadir}/html/*
+%{_datadir}/top/*
+%{_datadir}/tutor/*
+%{_datadir}/template/*
+
 %files devel
 %defattr(-,root,root)
-%{prefix}/share/gromacs/template/*
-%{prefix}/lib/libgmx.so
-%{prefix}/lib/libgmx.a
-%{prefix}/lib/libgmx.la
-%{prefix}/lib/libmd.so
-%{prefix}/lib/libmd.a
-%{prefix}/lib/libmd.la
-%{prefix}/lib/libgmxana.so
-%{prefix}/lib/libgmxana.a
-%{prefix}/lib/libgmxana.la
-%{prefix}/include/gromacs/*
-
-
-
+%exclude %{_libdir}/*.la
+%{_includedir}/*
+%{_libdir}/*.a
+%{_libdir}/*.so
 

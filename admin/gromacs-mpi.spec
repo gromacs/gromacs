@@ -43,8 +43,14 @@ you probably want the full source anyway...
 
 %build
 # Call it mdrun_mpi
-./configure --enable-shared --enable-mpi --prefix=%{prefix} --exec-prefix=%{prefix} --program-suffix=_mpi --without-motif-libraries
-make mdrun
+./configure     --prefix=%{prefix} \
+                --enable-shared \
+                --without-motif-libraries
+		--enable-shared \
+                --without-motif-libraries \
+		--enable-mpi \
+		--program-suffix=_mpi
+make %{?_smp_mflags} mdrun
 
 %install
 make DESTDIR=${RPM_BUILD_ROOT} install-mdrun
@@ -57,26 +63,17 @@ rm -rf ${RPM_BUILD_ROOT}
 %postun
 
 
-%files 
+%files
 %defattr(-,root,root)
-%{prefix}/bin/mdrun_mpi
-%{prefix}/lib/libgmx_mpi.so.3.0.0
-%{prefix}/lib/libgmx_mpi.so.3
-%{prefix}/lib/libmd_mpi.so.3.0.0
-%{prefix}/lib/libmd_mpi.so.3
-%{prefix}/lib/libgmxana_mpi.so.3.0.0
-%{prefix}/lib/libgmxana_mpi.so.3
+%{_bindir}/mdrun_mpi
+%{_libdir}/*_mpi.so.*
+
+
 %files devel
 %defattr(-,root,root)
-%{prefix}/lib/libgmx_mpi.so
-%{prefix}/lib/libgmx_mpi.a
-%{prefix}/lib/libgmx_mpi.la
-%{prefix}/lib/libmd_mpi.so
-%{prefix}/lib/libmd_mpi.a
-%{prefix}/lib/libmd_mpi.la
-%{prefix}/lib/libgmxana_mpi.so
-%{prefix}/lib/libgmxana_mpi.a
-%{prefix}/lib/libgmxana_mpi.la
+%exclude %{_libdir}/*.la
+%{_libdir}/*_mpi.a
+%{_libdir}/*_mpi.so
 
 
 
