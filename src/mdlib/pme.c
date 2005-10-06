@@ -474,7 +474,11 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
   real     valx,valxy,qn;
   real     *thx,*thy,*thz;
   int localsize, bndsize;
-
+  real thx0,thx1,thx2,thx3;
+  real thy0,thy1,thy2,thy3;
+  real thz0,thz1,thz2,thz3;
+  int     pidx;
+  
   if (!bPar) {
     clear_fftgrid(grid); 
 #if (defined GMX_MPI)
@@ -517,9 +521,111 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
       range_check(zidx,0,nz);
 #endif
       i0      = ii0+xidx; /* Pointer arithmetic */
-      norder  = n*order;
-      norder1 = norder+order;
+      norder  = n*4;
+      norder1 = norder+4;
+
+      i = ii0[xidx];
+      j = jj0[yidx];
+      k = kk0[zidx];
       
+      if(order == 4 && i<nx-3 && j<ny-3 && k<nz-3)
+      {
+          thx0 = thx[norder];
+          thx1 = thx[norder+1];
+          thx2 = thx[norder+2];
+          thx3 = thx[norder+3];
+          thy0 = thy[norder];
+          thy1 = thy[norder+1];
+          thy2 = thy[norder+2];
+          thy3 = thy[norder+3];
+          thz0 = thz[norder];
+          thz1 = thz[norder+1];
+          thz2 = thz[norder+2];
+          thz3 = thz[norder+3];
+
+          pidx = INDEX(i,j,k);
+          ptr[pidx]   += qn*thx0*thy0*thz0;
+          ptr[pidx+1] += qn*thx0*thy0*thz1;
+          ptr[pidx+2] += qn*thx0*thy0*thz2;
+          ptr[pidx+3] += qn*thx0*thy0*thz3;
+          pidx = INDEX(i,j+1,k);
+          ptr[pidx]   += qn*thx0*thy1*thz0;
+          ptr[pidx+1] += qn*thx0*thy1*thz1;
+          ptr[pidx+2] += qn*thx0*thy1*thz2;
+          ptr[pidx+3] += qn*thx0*thy1*thz3;
+          pidx = INDEX(i,j+2,k);
+          ptr[pidx]   += qn*thx0*thy2*thz0;
+          ptr[pidx+1] += qn*thx0*thy2*thz1;
+          ptr[pidx+2] += qn*thx0*thy2*thz2;
+          ptr[pidx+3] += qn*thx0*thy2*thz3;
+          pidx = INDEX(i,j+3,k);
+          ptr[pidx]   += qn*thx0*thy3*thz0;
+          ptr[pidx+1] += qn*thx0*thy3*thz1;
+          ptr[pidx+2] += qn*thx0*thy3*thz2;
+          ptr[pidx+3] += qn*thx0*thy3*thz3;
+          pidx = INDEX(i+1,j,k);
+          ptr[pidx]   += qn*thx1*thy0*thz0;
+          ptr[pidx+1] += qn*thx1*thy0*thz1;
+          ptr[pidx+2] += qn*thx1*thy0*thz2;
+          ptr[pidx+3] += qn*thx1*thy0*thz3;
+          pidx = INDEX(i+1,j+1,k);
+          ptr[pidx]   += qn*thx1*thy1*thz0;
+          ptr[pidx+1] += qn*thx1*thy1*thz1;
+          ptr[pidx+2] += qn*thx1*thy1*thz2;
+          ptr[pidx+3] += qn*thx1*thy1*thz3;
+          pidx = INDEX(i+1,j+2,k);
+          ptr[pidx]   += qn*thx1*thy2*thz0;
+          ptr[pidx+1] += qn*thx1*thy2*thz1;
+          ptr[pidx+2] += qn*thx1*thy2*thz2;
+          ptr[pidx+3] += qn*thx1*thy2*thz3;
+          pidx = INDEX(i+1,j+3,k);
+          ptr[pidx]   += qn*thx1*thy3*thz0;
+          ptr[pidx+1] += qn*thx1*thy3*thz1;
+          ptr[pidx+2] += qn*thx1*thy3*thz2;
+          ptr[pidx+3] += qn*thx1*thy3*thz3;
+          pidx = INDEX(i+2,j,k);
+          ptr[pidx]   += qn*thx2*thy0*thz0;
+          ptr[pidx+1] += qn*thx2*thy0*thz1;
+          ptr[pidx+2] += qn*thx2*thy0*thz2;
+          ptr[pidx+3] += qn*thx2*thy0*thz3;
+          pidx = INDEX(i+2,j+1,k);
+          ptr[pidx]   += qn*thx2*thy1*thz0;
+          ptr[pidx+1] += qn*thx2*thy1*thz1;
+          ptr[pidx+2] += qn*thx2*thy1*thz2;
+          ptr[pidx+3] += qn*thx2*thy1*thz3;
+          pidx = INDEX(i+2,j+2,k);
+          ptr[pidx]   += qn*thx2*thy2*thz0;
+          ptr[pidx+1] += qn*thx2*thy2*thz1;
+          ptr[pidx+2] += qn*thx2*thy2*thz2;
+          ptr[pidx+3] += qn*thx2*thy2*thz3;
+          pidx = INDEX(i+2,j+3,k);
+          ptr[pidx]   += qn*thx2*thy3*thz0;
+          ptr[pidx+1] += qn*thx2*thy3*thz1;
+          ptr[pidx+2] += qn*thx2*thy3*thz2;
+          ptr[pidx+3] += qn*thx2*thy3*thz3;
+          pidx = INDEX(i+3,j,k);
+          ptr[pidx]   += qn*thx3*thy0*thz0;
+          ptr[pidx+1] += qn*thx3*thy0*thz1;
+          ptr[pidx+2] += qn*thx3*thy0*thz2;
+          ptr[pidx+3] += qn*thx3*thy0*thz3;
+          pidx = INDEX(i+3,j+1,k);
+          ptr[pidx]   += qn*thx3*thy1*thz0;
+          ptr[pidx+1] += qn*thx3*thy1*thz1;
+          ptr[pidx+2] += qn*thx3*thy1*thz2;
+          ptr[pidx+3] += qn*thx3*thy1*thz3;
+          pidx = INDEX(i+3,j+2,k);
+          ptr[pidx]   += qn*thx3*thy2*thz0;
+          ptr[pidx+1] += qn*thx3*thy2*thz1;
+          ptr[pidx+2] += qn*thx3*thy2*thz2;
+          ptr[pidx+3] += qn*thx3*thy2*thz3;
+          pidx = INDEX(i+3,j+3,k);
+          ptr[pidx]   += qn*thx3*thy3*thz0;
+          ptr[pidx+1] += qn*thx3*thy3*thz1;
+          ptr[pidx+2] += qn*thx3*thy3*thz2;
+          ptr[pidx+3] += qn*thx3*thy3*thz3;
+      }
+    else
+    {
       for(ithx=norder; (ithx<norder1); ithx++,i0++) {
 	i    = *i0;
 	j0   = jj0+yidx; /* Pointer arithmetic */
@@ -530,7 +636,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 	  k0    = kk0+zidx; /* Pointer arithmetic */
 	  valxy = valx*thy[ithy];
 	  ind0  = INDEX(i,j,0);
-	  
+
 	  for(ithz=norder; (ithz<norder1); ithz++,k0++) {
 	    k = *k0;
 #ifdef DEBUG
@@ -542,6 +648,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 	    ptr[ind0+k] += valxy*thz[ithz];
 	  }
 	}
+      }
       }
     }
   }
@@ -823,6 +930,7 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
   real tmpX,tmpY,tmpZ,lastX,lastY,lastZ;
   
   for(i=0; (i<nr); i++) {
+
     if (charge[i] != 0.0) {
 
 	drXX = fractx[i][XX];
@@ -830,77 +938,69 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
 	drZZ = fractx[i][ZZ];
 
 	/* dr is relative offset from lower cell limit */
-	dataXX=theta[XX]+i*order;
-	dataYY=theta[YY]+i*order;
-	dataZZ=theta[ZZ]+i*order;
+	dataXX=theta[XX]+i*4;
+	dataYY=theta[YY]+i*4;
+	dataZZ=theta[ZZ]+i*4;
 
-	dataXX[order-1]=0;
-	dataYY[order-1]=0;
-	dataZZ[order-1]=0;
+	dataXX[3]=0;
+	dataYY[3]=0;
+	dataZZ[3]=0;
 	dataXX[1]=drXX;
 	dataYY[1]=drYY;
 	dataZZ[1]=drZZ;
-	dataXX[0]=1-drXX;
-	dataYY[0]=1-drYY;
-	dataZZ[0]=1-drZZ;
-		
-	for(k=3; (k<order); k++) 
-        {
-	  div=1.0/(k-1.0);    
-	  dataXX[k-1]=div*drXX*dataXX[k-2];
-	  dataYY[k-1]=div*drYY*dataYY[k-2];
-	  dataZZ[k-1]=div*drZZ*dataZZ[k-2];
+	dataXX[0]=1.0-drXX;
+	dataYY[0]=1.0-drYY;
+	dataZZ[0]=1.0-drZZ;
 
-	  for(l=1; (l<(k-1)); l++)
-          {
-	    dataXX[k-l-1]=div*((drXX+l)*dataXX[k-l-2]+(k-l-drXX)*dataXX[k-l-1]);
-	    dataYY[k-l-1]=div*((drYY+l)*dataYY[k-l-2]+(k-l-drYY)*dataYY[k-l-1]);
-	    dataZZ[k-l-1]=div*((drZZ+l)*dataZZ[k-l-2]+(k-l-drZZ)*dataZZ[k-l-1]);
-          } 
-	  dataXX[0]=div*(1-drXX)*dataXX[0];
-	  dataYY[0]=div*(1-drYY)*dataYY[0];
-	  dataZZ[0]=div*(1-drZZ)*dataZZ[0];
-	}
+    dataXX[2]=0.5*drXX*dataXX[1];
+    dataYY[2]=0.5*drYY*dataYY[1];
+    dataZZ[2]=0.5*drZZ*dataZZ[1];
+    
+    dataXX[1]=0.5*((drXX+1.0)*dataXX[0]+(2.0-drXX)*dataXX[1]);
+    dataYY[1]=0.5*((drYY+1.0)*dataYY[0]+(2.0-drYY)*dataYY[1]);
+    dataZZ[1]=0.5*((drZZ+1.0)*dataZZ[0]+(2.0-drZZ)*dataZZ[1]);
+        
+    dataXX[0]=0.5*(1.0-drXX)*dataXX[0];
+    dataYY[0]=0.5*(1.0-drYY)*dataYY[0];
+    dataZZ[0]=0.5*(1.0-drZZ)*dataZZ[0];
+    
 	/* differentiate */
-	ddataXX  = dtheta[XX]+i*order;
-	ddataYY  = dtheta[YY]+i*order;
-	ddataZZ  = dtheta[ZZ]+i*order;
+	ddataXX  = dtheta[XX]+i*4;
+	ddataYY  = dtheta[YY]+i*4;
+	ddataZZ  = dtheta[ZZ]+i*4;
+    
+	ddataXX[0] = -dataXX[0];
+	ddataYY[0] = -dataYY[0];
+	ddataZZ[0] = -dataZZ[0];
+	ddataXX[1] = dataXX[0]-dataXX[1];
+	ddataYY[1] = dataYY[0]-dataYY[1];
+	ddataZZ[1] = dataZZ[0]-dataZZ[1];
+	ddataXX[2] = dataXX[1]-dataXX[2];
+	ddataYY[2] = dataYY[1]-dataYY[2];
+	ddataZZ[2] = dataZZ[1]-dataZZ[2];
+	ddataXX[3] = dataXX[2]-dataXX[3];
+	ddataYY[3] = dataYY[2]-dataYY[3];
+	ddataZZ[3] = dataZZ[2]-dataZZ[3];
+    
+	div=1.0/3.0;
+	dataXX[3]=div*drXX*dataXX[2];
+	dataYY[3]=div*drYY*dataYY[2];
+	dataZZ[3]=div*drZZ*dataZZ[2];
 
-	lastX = dataXX[0];
-	lastY = dataYY[0];
-	lastZ = dataZZ[0];
-	ddataXX[0] = -lastX;
-	ddataYY[0] = -lastY;
-	ddataZZ[0] = -lastZ;
+    dataXX[2]=div*((drXX+1.0)*dataXX[1]+(3.0-drXX)*dataXX[2]);
+    dataYY[2]=div*((drYY+1.0)*dataYY[1]+(3.0-drYY)*dataYY[2]);
+    dataZZ[2]=div*((drZZ+1.0)*dataZZ[1]+(3.0-drZZ)*dataZZ[2]);
+    
+    dataXX[1]=div*((drXX+2.0)*dataXX[0]+(2.0-drXX)*dataXX[1]);
+    dataYY[1]=div*((drYY+2.0)*dataYY[0]+(2.0-drYY)*dataYY[1]);
+    dataZZ[1]=div*((drZZ+2.0)*dataZZ[0]+(2.0-drZZ)*dataZZ[1]);
+    
+	dataXX[0]=div*(1.0-drXX)*dataXX[0]; 
+	dataYY[0]=div*(1.0-drYY)*dataYY[0]; 
+	dataZZ[0]=div*(1.0-drZZ)*dataZZ[0]; 
 
-	for(k=1; (k<order); k++)
-        {
-	  tmpX = dataXX[k];
-	  tmpY = dataYY[k];
-	  tmpZ = dataZZ[k];
-	  ddataXX[k] = lastX - tmpX;
-	  ddataYY[k] = lastY - tmpY;
-	  ddataZZ[k] = lastZ - tmpZ;
-	  lastX = tmpX;
-	  lastY = tmpY;
-	  lastZ = tmpZ;
-	}
-	
-	div=1.0/(order-1);
-	dataXX[order-1]=div*drXX*dataXX[order-2];
-	dataYY[order-1]=div*drYY*dataYY[order-2];
-	dataZZ[order-1]=div*drZZ*dataZZ[order-2];
-	for(l=1; (l<(order-1)); l++)
-        {
-	  dataXX[order-l-1]=div*((drXX+l)*dataXX[order-l-2]+(order-l-drXX)*dataXX[order-l-1]);
-	  dataYY[order-l-1]=div*((drYY+l)*dataYY[order-l-2]+(order-l-drYY)*dataYY[order-l-1]);
-	  dataZZ[order-l-1]=div*((drZZ+l)*dataZZ[order-l-2]+(order-l-drZZ)*dataZZ[order-l-1]);
-	}
-	dataXX[0]=div*(1-drXX)*dataXX[0]; 
-	dataYY[0]=div*(1-drYY)*dataYY[0]; 
-	dataZZ[0]=div*(1-drZZ)*dataZZ[0]; 
-      }
     }
+  }
   
 }
 
