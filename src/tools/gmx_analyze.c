@@ -469,31 +469,23 @@ static void filter(real flen,int n,int nset,real **val,real dt)
   sfree(filt);
 }
 
-static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
+static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val)
 {
-  FILE *out;
   real *c1=NULL,*sig=NULL,*fitparm;
   real dt=0,tendfit,tbeginfit;
   int  i,efitfn,nparm;
   
-  out = ffopen(fn,"w");
   efitfn = get_acffitfn();
   nparm  = nfp_ffn[efitfn];
   fprintf(out,"Will fit to the following function:\n");
   fprintf(out,"%s\n",longs_ffn[efitfn]);
-  switch (nx) {
-  case 1:
-    c1 = val[0];
-    snew(sig,ny);
-    fprintf(out,"Using only column as y values\n");
-    break;
-  case 2:
-    c1  = val[0];
-    sig = val[1];
+  c1 = val[n];
+  if (bYdy) {
+    c1  = val[n];
+    sig = val[n+1];
     fprintf(out,"Using two columns as y and sigma values\n");
-    break;
-  default:
-    gmx_fatal(FARGS,"Dont know what to do with %d columns of data",nx);
+  } else {
+    snew(sig,ny);
   }
   tbeginfit = x0 ? x0[0]    : 0;
   tendfit   = x0 ? x0[ny-1] : (ny-1)*dt;
@@ -549,7 +541,6 @@ static void do_fit(char *fn,int nx,int ny,real *x0,real **val)
   else {
     fprintf(out,"No solution was found\n");
   }
-  fclose(out);
 }
 
 int gmx_analyze(int argc,char *argv[])
@@ -577,7 +568,7 @@ int gmx_analyze(int argc,char *argv[])
     
     "Option [TT]-cc[tt] plots the resemblance of set i with a cosine of",
     "i/2 periods. The formula is:[BR]"
-    "2 (int0-T y(t) cos(pi t/i) dt)^2 / int0-T y(t) y(t) dt[BR]",
+    "2 (int0-T y(t) cos(i pi t) dt)^2 / int0-T y(t) y(t) dt[BR]",
     "This is useful for principal components obtained from covariance",
     "analysis, since the principal components of random diffusion are",
     "pure cosines.[PAR]",
@@ -678,7 +669,7 @@ int gmx_analyze(int argc,char *argv[])
   };
 #define NPA asize(pa)
 
-  FILE     *out;
+  FILE     *out,*out_fit;
   int      n,nlast,s,nset,i,j=0;
   real     **val,*t,dt,tot,error;
   double   *av,*sig,cum1,cum2,cum3,cum4,db;
@@ -748,8 +739,16 @@ int gmx_analyze(int argc,char *argv[])
   }
 
   
-  if (fitfile)
-    do_fit(fitfile,nset,n,t,val);
+  if (fitfile) {
+    out_fit = ffopen(fitfile,"w");
+    if (bXYdy && nset>=2) {
+      do_fit(out_fit,0,TRUE,n,t,val);
+    } else {
+      for(s=0; s<nset; s++)
+	do_fit(out_fit,s,FALSE,n,t,val);
+    }
+    fclose(out_fit);
+  }
 
   printf("                                      std. dev.    relative deviation of\n");
   printf("                       standard       ---------   cumulants from those of\n");
