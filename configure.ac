@@ -790,6 +790,24 @@ esac
 
 
 
+#If the prefix doesn't contain "gromacs" or "gmx" and the datadir
+#wasn't explicitly specified we add gromacs to the end of datadir:
+if test "$datadir" = "\${prefix}/share" -a -z "`echo ${prefix} | grep gromacs`"; then
+  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
+    datadir="\${prefix}/share/gromacs"
+  fi
+fi
+AC_SUBST(datadir)
+
+#If the prefix doesn't contain "gromacs" or "gmx" and the includedir
+#wasn't explicitly specified we add gromacs to the end of includedir:
+if test "$includedir" = "\${prefix}/include" -a -z "`echo ${prefix} | grep gromacs`"; then
+  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
+    includedir="\${prefix}/include/gromacs"
+  fi
+fi
+AC_SUBST(includedir)
+
 
 
 
