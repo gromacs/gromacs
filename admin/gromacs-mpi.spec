@@ -11,7 +11,6 @@ Version: 3.3
 Release: 1
 Copyright: GPL
 Group: Applications/Science
-Prefix: /usr/local
 Buildroot: %{_topdir}/buildroot
 Requires: fftw3 >= 3.0.1 , lam, gromacs = %{version}-%{release}
 Source: ftp://ftp.gromacs.org/pub/gromacs/source/gromacs-%{version}.tar.gz
@@ -30,7 +29,6 @@ and data files are located in the gromacs (non-mpi) package.
 %package devel
 Summary: Header files and static libs for parallel GROMACS
 Group: Applications/Science
-Prefix: %{prefix}
 Requires: fftw3 >= 3.0.1, fftw3-devel >= 3.0.1, lam, gromacs = %{version}-%{release}, gromacs-devel = %{version}-%{release}, gromacs-mpi = %{version}-%{release}
 %description devel
 This package contains the static libraries for
@@ -43,10 +41,7 @@ you probably want the full source anyway...
 
 %build
 # Call it mdrun_mpi
-./configure     --prefix=%{prefix} \
-                --enable-shared \
-                --without-motif-libraries
-		--enable-shared \
+./configure     --enable-shared \
                 --without-motif-libraries \
 		--enable-mpi \
 		--program-suffix=_mpi
