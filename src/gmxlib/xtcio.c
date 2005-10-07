@@ -138,24 +138,24 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
   
 #ifdef GMX_DOUBLE
   /* allocate temp. single-precision array */
-  snew(ftmp,natoms*DIM);
+  snew(ftmp,(*natoms)*DIM);
   
   /* Copy data to temp. array if writing */
   if(!bRead)
   {
-      for(i=0; (i<natoms); i++)
+      for(i=0; (i<*natoms); i++)
       {
           ftmp[DIM*i+XX]=x[i][XX];      
           ftmp[DIM*i+YY]=x[i][YY];      
           ftmp[DIM*i+ZZ]=x[i][ZZ];      
       }
   }
-  result=XTC_CHECK("x",xdr3dfcoord(xdrs,ftmp,natoms,prec));
+  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,prec));
   
   /* Copy from temp. array if reading */
   if(bRead)
   {
-      for(i=0; (i<natoms); i++)
+      for(i=0; (i<*natoms); i++)
       {
           x[i][XX] = ftmp[DIM*i+XX];      
           x[i][YY] = ftmp[DIM*i+YY];      
