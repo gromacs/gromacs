@@ -1148,8 +1148,10 @@ static const int header_size = 16;
 static int 
 xtc_get_next_frame_number(int fp,int natoms)
 {
+    off_t off;
     int inp;  
 
+    off = ftello(xdrfiles[fp+1]);
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
@@ -1158,11 +1160,13 @@ xtc_get_next_frame_number(int fp,int natoms)
             {
                 if(xdr_int(xdridptr[fp+1],&inp))
                 {
+		  fseeko(xdrfiles[fp+1],off,SEEK_SET);
                     return inp;
                 }
             }
         }
     }
+    fseeko(xdrfiles[fp+1],off,SEEK_SET);
     return -1;
 }
 
@@ -1170,10 +1174,12 @@ xtc_get_next_frame_number(int fp,int natoms)
 static float 
 xtc_get_next_frame_time(int fp,int natoms, bool * bOK)
 {
+    off_t off;
     int inp;  
     float time;
     *bOK = 0;
     
+    off = ftello(xdrfiles[fp+1]);
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
@@ -1183,11 +1189,13 @@ xtc_get_next_frame_time(int fp,int natoms, bool * bOK)
                 if(xdr_int(xdridptr[fp+1],&inp) && xdr_float(xdridptr[fp+1],&time))
                 {
                     *bOK = 1;
+		    fseeko(xdrfiles[fp+1],off,SEEK_SET);
                     return time;
                 }
             }
         }
     }
+    fseeko(xdrfiles[fp+1],off,SEEK_SET);
     return -1;
 }
 
@@ -1195,9 +1203,12 @@ xtc_get_next_frame_time(int fp,int natoms, bool * bOK)
 static float 
 xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
 {
+    off_t off;
     int inp;  
     float time;
     *bOK = 0;
+
+    off = ftello(xdrfiles[fp+1]);
     
     while(xdr_int(xdridptr[fp+1],&inp))
     {
@@ -1208,6 +1219,7 @@ xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
                 if(xdr_int(xdridptr[fp+1],&inp) && xdr_float(xdridptr[fp+1],&time))
                 {
                     *bOK = 1;
+		    fseeko(xdrfiles[fp+1],off,SEEK_SET);
                     return time;
                 }
             }
@@ -1222,6 +1234,7 @@ xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
 #endif
         }
     }
+    fseeko(xdrfiles[fp+1],off,SEEK_SET);
     return -1;
 }
 
@@ -1229,10 +1242,13 @@ xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
 static int 
 xtc_get_current_frame_number(int fp,int natoms, bool * bOK)
 {
+    off_t off;
     int inp;  
     float time;
     *bOK = 0;
     
+    off = ftello(xdrfiles[fp+1]);
+
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
@@ -1242,6 +1258,7 @@ xtc_get_current_frame_number(int fp,int natoms, bool * bOK)
                 if(xdr_int(xdridptr[fp+1],&inp))
                 {
                     *bOK = 1;
+		    fseeko(xdrfiles[fp+1],off,SEEK_SET);
                     return inp;
                 }
             }
@@ -1256,6 +1273,7 @@ xtc_get_current_frame_number(int fp,int natoms, bool * bOK)
 #endif
         }
     }
+    fseeko(xdrfiles[fp+1],off,SEEK_SET);
     return -1;
 }
 
@@ -1317,7 +1335,7 @@ xtc_estimate_dt(int fp, int natoms, bool * bOK)
     off   = ftell(xdrfiles[fp+1]);
 #endif
 
-    tinit = xtc_get_next_frame_time(fp,natoms,bOK);
+    tinit = xtc_get_current_frame_time(fp,natoms,bOK);
     
     *bOK = 1;
     
@@ -1488,6 +1506,7 @@ xtc_seek_time(real time, int fp, int natoms)
     
     while(1)
     {
+	dt = xtc_estimate_dt(fp,natoms,&bOK);
         t = xtc_get_next_frame_time(fp,natoms,&bOK);
         if(!bOK)
         {
