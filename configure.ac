@@ -3,18 +3,18 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3.99_20050909, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.3.99_20050909)
+AM_INIT_AUTOMAKE(gromacs, 3.3)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="3:0:0"
+SHARED_VERSION_INFO="4:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
 
@@ -166,14 +166,13 @@ AC_ARG_ENABLE(all-static,
 # Dont add the -all-static flag until after the compiler test.
 
 
+# FFT libraries - only use one...
+AC_ARG_WITH(fft,
+            [AC_HELP_STRING([--with-fft=@<:@fftw3/fftw2/mkl(>=6.0)/fftpack@:>@],
+                            [FFT library to use. fftw3 is default, fftpack built in.])],,
+                             with_fft=fftw3)
 
-### Compile without FFTW - disabling it means you can't use PME or PPPM!
-### N.B.: This is only intended as a last resort, or for tests - don't use it!
-AC_ARG_WITH(fftw,
- [  --without-fftw          if you turn this off you cannot use PME/PPPM],, with_fftw=yes)
-if test "$with_fftw" = "no"; then
-  AC_DEFINE(GMX_WITHOUT_FFTW,,[Disable all FFTW (and thus PME/PPPM) support])
-fi
+
 
 
 ### Use external BLAS/LAPACK libraries if the user wants to.
@@ -351,37 +350,84 @@ fi
 #####
 
 
-
-
-if test "$with_fftw" = "yes"; then
+case "$with_fft" in
+fftw2)
   if test "$enable_float" = "yes"; then
     sizeof_real=4
-  else 
+  else
     sizeof_real=8
   fi
-
-  ACX_CHECK_FFTW(fftw,$sizeof_real)
-  ACX_CHECK_FFTW(rfftw,$sizeof_real)
-
-  if test "$enable_mpi" = "yes"; then
-    ACX_CHECK_FFTW(fftw_mpi,$sizeof_real)
-    ACX_CHECK_FFTW(rfftw_mpi,$sizeof_real)
-  fi
+  ACX_CHECK_FFTW2(fftw,$sizeof_real)
+  ACX_CHECK_FFTW2(rfftw,$sizeof_real)
 
   case ${ac_fftw_savedprefix} in
-   d) AC_DEFINE(FFTW_NAME_DFFTW,,[Use the d prefix on fftw includes]) ;;
-   s) AC_DEFINE(FFTW_NAME_SFFTW,,[Use the s prefix on fftw includes]) ;;
-   *) AC_DEFINE(FFTW_NAME_FFTW,,[Dont use any prefix on fftw includes]) ;;
+   d) AC_DEFINE(FFTW2_NAME_DFFTW,,[Use the d prefix on fftw2 includes]) ;;
+   s) AC_DEFINE(FFTW2_NAME_SFFTW,,[Use the s prefix on fftw2 includes]) ;;
+   *) AC_DEFINE(FFTW2_NAME_FFTW,,[Dont use any prefix on fftw2 includes]) ;;
   esac
+
+  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_fftw2.lo"
+
+  ;; #  end of fftw2 check
+
+fftw3) # Much simpler check than fftw2
+# Check for header <fftw3.h> AC_CHECK_HEADERS doesnt work, since we must
+# use mpicc to get includes - cpp isnt always the same compiler.
+AC_MSG_CHECKING([for fftw3.h])
+AC_TRY_COMPILE([#include<fftw3.h>],,[
+# ok, look for library file too
+AC_MSG_RESULT(yes)
+if test "$enable_float" = "yes"; then
+  AC_CHECK_LIB([fftw3f],main,,AC_MSG_ERROR([Cannot find fftw3f library]))
 else
-  echo "*******************************************************************"
-  echo "*             WARNING! You have disabled FFTW support!            *"
-  echo "* You will not be able to use PME (Particle Mesh Ewald) summation *"
-  echo "* in your simulations. Unless you are absolutely sure you won't   *"
-  echo "* ever need this we suggest you install FFTW instead of compiling *"
-  echo "* a version of GROMACS that will be crippled!                     *"
-  echo "*******************************************************************"
-fi # end of fftw check
+  AC_CHECK_LIB([fftw3],main,,AC_MSG_ERROR([Cannot find fftw3 library]))
+fi
+  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_fftw3.lo"
+],[
+# not ok, echo a warning
+AC_MSG_ERROR(
+[Cannot find the default external FFT library (fftw3).
+Other alternatives are 'fftw2', or 'mkl' for Intel MKL.
+You are STRONGLY recommended to use one of these - fftw is free.
+
+Use CPPFLAGS and LDFLAGS if the library is installed in a 
+non-standard location. (see FAQ at http://www.gromacs.org)
+                                                          
+If you dont care about performance you can also specify 'fftpack'
+to use a slower set of FFTs built into Gromacs. 
+(Just install FFTW3 unless you really know what you are doing).
+])
+])
+  ;;
+
+mkl*)
+###########
+# Intel Math Kernel Library version 6 and later.
+##########
+AC_MSG_CHECKING([for mkl_dfti.h])
+AC_TRY_COMPILE([#include<mkl_dfti.h>],,AC_MSG_RESULT(yes),AC_MSG_ERROR([Cannot find mkl_dfti.h header from Intel Math Kernel Library>=6.0.]\
+))
+## Check for library
+#  AC_CHECK_LIB([guide],main,,AC_MSG_ERROR([Cannot find libguide (Intel MKL)]))
+  AC_CHECK_LIB([mkl],DftiComputeForward,,
+    AC_MSG_ERROR([Cannot find Intel Math Kernel Library >= 6.0]))
+
+  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_mkl.lo"
+  ;;
+
+fftpack | no)
+  AC_MSG_WARN([The built-in FFTPACK routines are slow.
+Are you sure you don't want to use FFTW? It is free and much faster...])
+  MDLIB_LIBOBJS="$MDLIB_LIBOBJS gmx_fft_fftpack.lo"
+  ;;
+*)
+  AC_MSG_ERROR([Unknown FFT library])
+  ;;
+esac
+
+
+
+
 
 ######
 # check for xtc headers
@@ -743,6 +789,24 @@ esac
 
 
 
+
+#If the prefix doesn't contain "gromacs" or "gmx" and the datadir
+#wasn't explicitly specified we add gromacs to the end of datadir:
+if test "$datadir" = "\${prefix}/share" -a -z "`echo ${prefix} | grep gromacs`"; then
+  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
+    datadir="\${prefix}/share/gromacs"
+  fi
+fi
+AC_SUBST(datadir)
+
+#If the prefix doesn't contain "gromacs" or "gmx" and the includedir
+#wasn't explicitly specified we add gromacs to the end of includedir:
+if test "$includedir" = "\${prefix}/include" -a -z "`echo ${prefix} | grep gromacs`"; then
+  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
+    includedir="\${prefix}/include/gromacs"
+  fi
+fi
+AC_SUBST(includedir)
 
 
 
