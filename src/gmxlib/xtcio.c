@@ -124,7 +124,8 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
 {
   int i,j,result;
 #ifdef GMX_DOUBLE
-    float *ftmp;
+  float *ftmp;
+  float fprec;
 #endif
     
   /* box */
@@ -149,8 +150,9 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
           ftmp[DIM*i+YY]=x[i][YY];      
           ftmp[DIM*i+ZZ]=x[i][ZZ];      
       }
+      fprec = *prec;
   }
-  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,prec));
+  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec));
   
   /* Copy from temp. array if reading */
   if(bRead)
@@ -161,6 +163,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
           x[i][YY] = ftmp[DIM*i+YY];      
           x[i][ZZ] = ftmp[DIM*i+ZZ];      
       }
+      *prec = fprec;
   }  
 #else
     result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec)); 
