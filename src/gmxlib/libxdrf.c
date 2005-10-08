@@ -47,6 +47,17 @@
 
 
 
+#ifdef HAVE_FSEEKO
+#define gmx_fseek(A,B,C) fseeko(A,B,C)
+#define gmx_ftell(A) ftello(A)
+#define gmx_off_t off_t
+#else
+#define gmx_fseek(A,B,C) fseek(A,B,C)
+#define gmx_ftell(A) ftell(A)
+#define gmx_off_t int
+#endif
+
+
 #define MAXID 256
 static FILE *xdrfiles[MAXID];
 static XDR *xdridptr[MAXID];
@@ -1148,8 +1159,10 @@ static const int header_size = 16;
 static int 
 xtc_get_next_frame_number(int fp,int natoms)
 {
+    gmx_off_t off;
     int inp;  
 
+    off = gmx_ftell(xdrfiles[fp+1]);
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
@@ -1158,10 +1171,16 @@ xtc_get_next_frame_number(int fp,int natoms)
             {
                 if(xdr_int(xdridptr[fp+1],&inp))
                 {
-                    return inp;
+		  if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+		    return -1;
+		  }
+		  return inp;
                 }
             }
         }
+    }
+    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+      return -1;
     }
     return -1;
 }
@@ -1170,10 +1189,14 @@ xtc_get_next_frame_number(int fp,int natoms)
 static float 
 xtc_get_next_frame_time(int fp,int natoms, bool * bOK)
 {
+    gmx_off_t off;
     int inp;  
     float time;
     *bOK = 0;
     
+    if((off = gmx_ftell(xdrfiles[fp+1])) < 0){
+      return -1;
+    }
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
@@ -1183,10 +1206,17 @@ xtc_get_next_frame_time(int fp,int natoms, bool * bOK)
                 if(xdr_int(xdridptr[fp+1],&inp) && xdr_float(xdridptr[fp+1],&time))
                 {
                     *bOK = 1;
+		    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+		      *bOK = 0;
+		      return -1;
+		    }
                     return time;
                 }
             }
         }
+    }
+    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+      return -1;
     }
     return -1;
 }
@@ -1195,9 +1225,15 @@ xtc_get_next_frame_time(int fp,int natoms, bool * bOK)
 static float 
 xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
 {
+    gmx_off_t off;
     int inp;  
     float time;
     *bOK = 0;
+
+    if((off = gmx_ftell(xdrfiles[fp+1])) < 0){
+      return -1;
+    }
+
     
     while(xdr_int(xdridptr[fp+1],&inp))
     {
@@ -1208,6 +1244,10 @@ xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
                 if(xdr_int(xdridptr[fp+1],&inp) && xdr_float(xdridptr[fp+1],&time))
                 {
                     *bOK = 1;
+		    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+		      *bOK = 0;
+		      return -1;
+		    }
                     return time;
                 }
             }
@@ -1215,12 +1255,13 @@ xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
         else
         {
             /*Go back.*/
-#ifdef HAVE_FSEEKO
-            fseeko(xdrfiles[fp+1],-8,SEEK_CUR);
-#else
-            fseek(xdrfiles[fp+1],-8,SEEK_CUR);
-#endif
+	  if(gmx_fseek(xdrfiles[fp+1],-8,SEEK_CUR)){
+	    return -1;
+	  }
         }
+    }
+    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+      return -1;
     }
     return -1;
 }
@@ -1229,10 +1270,16 @@ xtc_get_current_frame_time(int fp,int natoms, bool * bOK)
 static int 
 xtc_get_current_frame_number(int fp,int natoms, bool * bOK)
 {
+    gmx_off_t off;
     int inp;  
     float time;
     *bOK = 0;
     
+    if((off = gmx_ftell(xdrfiles[fp+1])) < 0){
+      return -1;
+    }
+
+
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
@@ -1242,82 +1289,64 @@ xtc_get_current_frame_number(int fp,int natoms, bool * bOK)
                 if(xdr_int(xdridptr[fp+1],&inp))
                 {
                     *bOK = 1;
+		    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+		      return -1;
+		    }
                     return inp;
                 }
             }
         }
         else
         {
-            /*Go back.*/
-#ifdef HAVE_FSEEKO
-            fseeko(xdrfiles[fp+1],-8,SEEK_CUR);
-#else
-            fseek(xdrfiles[fp+1],-8,SEEK_CUR);
-#endif
+	  /*Go back.*/
+	  if(gmx_fseek(xdrfiles[fp+1],-8,SEEK_CUR)){
+	    return -1;
+	  }
         }
+    }
+    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+      return -1;
     }
     return -1;
 }
 
 
-#ifdef HAVE_FSEEKO
-static off_t 
-xtc_get_next_frame_start(int fp, int natoms)
+static gmx_off_t xtc_get_next_frame_start(int fp, int natoms)
 {
     int inp;
+    int res;
   
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
         {
-            if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms)
+	  if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms)
             {
-                return ftello(xdrfiles[fp+1])-sizeof(int)*2;
+	      if((res = gmx_ftell(xdrfiles[fp+1])) >= 0){
+		return res - sizeof(int)*2;
+	      }else{
+		return res;
+	      }
             }
         }
     }
     return -1;
 }
-#else
-static int
-xtc_get_next_frame_start(int fp, int natoms)
-{
-    int inp;
-    
-    while(xdr_int(xdridptr[fp+1],&inp))
-    {
-        if(inp == XTC_MAGIC)
-        {
-            if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms)
-            {
-                return ftell(xdrfiles[fp+1])-sizeof(int)*2;
-            }
-        }
-    }
-    return -1;
-}
-#endif
 
 
 
 static float 
 xtc_estimate_dt(int fp, int natoms, bool * bOK)
 {
-    float  res;
-    float  tinit;
-#ifdef HAVE_FSEEKO
-    off_t off;
-#else
-    int   off;
-#endif
-    
-#ifdef HAVE_FSEEKO
-    off   = ftello(xdrfiles[fp+1]);
-#else
-    off   = ftell(xdrfiles[fp+1]);
-#endif
-
-    tinit = xtc_get_next_frame_time(fp,natoms,bOK);
+  float  res;
+  float  tinit;
+  gmx_off_t off;
+  
+  if((off   = gmx_ftell(xdrfiles[fp+1])) < 0){
+    return -1;
+  }
+  
+    tinit = xtc_get_current_frame_time(fp,natoms,bOK);
     
     *bOK = 1;
     
@@ -1334,11 +1363,10 @@ xtc_estimate_dt(int fp, int natoms, bool * bOK)
     }
     
     res -= tinit;
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],off,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],off,SEEK_SET);
-#endif
+    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+      *bOK = 0;
+      return -1;
+    }
     return res;
 }
 
@@ -1346,47 +1374,36 @@ xtc_estimate_dt(int fp, int natoms, bool * bOK)
 int 
 xtc_seek_frame(int frame, int fp, int natoms)
 {
-#ifdef HAVE_FSEEKO
-    off_t low = 0;
-    off_t high,pos;
-#else
-    int   low = 0;
-    int   high,pos;
-#endif
+    gmx_off_t low = 0;
+    gmx_off_t high,pos;
 
     
     /* round to 4 bytes */
     int fr;
-    off_t  offset;
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],0,SEEK_END);
-#else
-    fseek(xdrfiles[fp+1],0,SEEK_END);
-#endif
+    gmx_off_t  offset;
+    if(gmx_fseek(xdrfiles[fp+1],0,SEEK_END)){
+      return -1;
+    }
 
-    /* round to 4 bytes  */
-#ifdef HAVE_FSEEKO
-    high = ftello(xdrfiles[fp+1]);
-#else
-    high = ftell(xdrfiles[fp+1]);
-#endif
+    if((high = gmx_ftell(xdrfiles[fp+1])) < 0){
+      return -1;
+    }
     
+    /* round to 4 bytes  */
     high /= sizeof(int);
     high *= sizeof(int);
     offset = ((high/2)/sizeof(int))*sizeof(int);
     
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],offset,SEEK_SET);
-#endif
+    if(gmx_fseek(xdrfiles[fp+1],offset,SEEK_SET)){
+      return -1;
+    }
     
     while(1)
     {
         fr = xtc_get_next_frame_number(fp,natoms);
         if(fr < 0)
         {
-            return fr;
+            return -1;
         }
         if(fr != frame && abs(low-high) > header_size)
         {
@@ -1401,11 +1418,9 @@ xtc_seek_frame(int frame, int fp, int natoms)
             /* round to 4 bytes */
             offset = (((high+low)/2)/4)*4;
             
-#ifdef HAVE_FSEEKO
-            fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-#else
-            fseek(xdrfiles[fp+1],offset,SEEK_SET);
-#endif
+            if(gmx_fseek(xdrfiles[fp+1],offset,SEEK_SET)){
+	      return -1;
+	    }
         }
         else
         {
@@ -1417,24 +1432,18 @@ xtc_seek_frame(int frame, int fp, int natoms)
         offset = low;
     }
     
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],offset,SEEK_SET);
-#endif
+    if(gmx_fseek(xdrfiles[fp+1],offset,SEEK_SET)){
+      return -1;
+    }
 
-    pos = xtc_get_next_frame_start(fp,natoms);
+    if((pos = xtc_get_next_frame_start(fp,natoms))< 0){
     /* we probably hit an end of file */
-    if(pos < 0)
-    {
-        return pos;
+      return -1;
     }
     
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],pos,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],pos,SEEK_SET);
-#endif
+    if(gmx_fseek(xdrfiles[fp+1],pos,SEEK_SET)){
+      return -1;
+    }
     
     return 0;
 }
@@ -1447,37 +1456,26 @@ xtc_seek_time(real time, int fp, int natoms)
     float t;
     float dt;
     bool bOK;
-#ifdef HAVE_FSEEKO
-    off_t low = 0;
-    off_t high,offset,pos;
-#else
-    int   low = 0;
-    int   high,offset,pos;
-#endif
+    gmx_off_t low = 0;
+    gmx_off_t high,offset,pos;
+    int res;
 
   
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],0,SEEK_END);
-#else
-    fseek(xdrfiles[fp+1],0,SEEK_END);
-#endif
+    if(gmx_fseek(xdrfiles[fp+1],0,SEEK_END)){
+      return -1;
+    }
     
+    if((high = gmx_ftell(xdrfiles[fp+1])) < 0){
+      return -1;
+    }
     /* round to int  */
-#ifdef HAVE_FSEEKO
-    high = ftello(xdrfiles[fp+1]);
-#else
-    high = ftell(xdrfiles[fp+1]);
-#endif
-    
     high /= sizeof(int);
     high *= sizeof(int);
     offset = ((high/2)/sizeof(int))*sizeof(int);
 
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],offset,SEEK_SET);
-#endif
+    if(gmx_fseek(xdrfiles[fp+1],offset,SEEK_SET)){
+      return -1;	
+   }
 
     dt = xtc_estimate_dt(fp,natoms,&bOK);
     
@@ -1488,11 +1486,17 @@ xtc_seek_time(real time, int fp, int natoms)
     
     while(1)
     {
+	dt = xtc_estimate_dt(fp,natoms,&bOK);
+        if(!bOK)
+        {
+            return -1;
+        }
         t = xtc_get_next_frame_time(fp,natoms,&bOK);
         if(!bOK)
         {
             return -1;
         }
+
 
         if((t < time || t-time >= dt)  && abs(low-high) > header_size)
         {
@@ -1520,11 +1524,9 @@ xtc_seek_time(real time, int fp, int natoms)
             }
             /* round to 4 bytes and subtract header*/
             offset = (((high+low)/2)/sizeof(int))*sizeof(int);
-#ifdef HAVE_FSEEKO
-            fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-#else
-            fseek(xdrfiles[fp+1],offset,SEEK_SET);
-#endif
+            if(gmx_fseek(xdrfiles[fp+1],offset,SEEK_SET)){
+	      return -1;
+	    }
         }
         else
         {
@@ -1552,94 +1554,78 @@ xtc_seek_time(real time, int fp, int natoms)
         offset = low;
     }
     
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],offset,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],offset,SEEK_SET);
-#endif
+    gmx_fseek(xdrfiles[fp+1],offset,SEEK_SET);
 
-    pos = xtc_get_next_frame_start(fp,natoms);
-
-    if(pos < 0)
-    {
-        return pos;
+    if((pos = xtc_get_next_frame_start(fp,natoms)) < 0){
+      return -1;
     }
     
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],pos,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],pos,SEEK_SET);
-#endif
-  
+    if(gmx_fseek(xdrfiles[fp+1],pos,SEEK_SET)){
+      return -1;
+    }
     return 0;
 }
 
 float 
-xtc_get_last_frame_time(int fp, int natoms)
+xtc_get_last_frame_time(int fp, int natoms, bool * bOK)
 {
-    bool   bOK;
     float  time;
-#ifdef HAVE_FSEEKO
-    off_t  off;
-#else
-    int    off;
-#endif
+    gmx_off_t  off;
+    int res;
+    *bOK = 1;
+    off = gmx_ftell(xdrfiles[fp+1]);  
+    if(off < 0){
+      *bOK = 0;
+      return -1;
+    }
+    
+    if(res = gmx_fseek(xdrfiles[fp+1],-4,SEEK_END)){
+      *bOK = 0;
+      return -1;
+    }
 
-#ifdef HAVE_FSEEKO
-    off = ftello(xdrfiles[fp+1]);
-#else
-    off = ftell(xdrfiles[fp+1]);
-#endif
-
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],-4,SEEK_END);
-#else
-    fseek(xdrfiles[fp+1],-4,SEEK_END);
-#endif
-
-    time = xtc_get_current_frame_time(fp, natoms, &bOK);
-
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],off,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],off,SEEK_SET);
-#endif
-
+    time = xtc_get_current_frame_time(fp, natoms, bOK);
+    if(!(*bOK)){
+      return -1;
+    }
+    
+    if(res = gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+      *bOK = 0;
+      return -1;
+    }
     return time;
 }
 
 
 int
-xtc_get_last_frame_number(int fp, int natoms)
+xtc_get_last_frame_number(int fp, int natoms, bool * bOK)
 {
-    bool   bOK;
     int    frame;
-#ifdef HAVE_FSEEKO
-    off_t  off;
-#else
-    int    off;
-#endif
+    gmx_off_t  off;
+    int res;
+    *bOK = 1;
     
-#ifdef HAVE_FSEEKO
-    off = ftello(xdrfiles[fp+1]);
-#else
-    off = ftell(xdrfiles[fp+1]);
-#endif
+    if((off = gmx_ftell(xdrfiles[fp+1])) < 0){
+      *bOK = 0;
+      return -1;
+    }
 
     
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],-4,SEEK_END);
-#else
-    fseek(xdrfiles[fp+1],-4,SEEK_END);
-#endif
+    if(gmx_fseek(xdrfiles[fp+1],-4,SEEK_END)){
+      *bOK = 0;
+      return -1;
+    }
 
-    frame = xtc_get_current_frame_number(fp, natoms, &bOK);
+    frame = xtc_get_current_frame_number(fp, natoms, bOK);
+    if(!bOK){
+      return -1;
+    }
 
-#ifdef HAVE_FSEEKO
-    fseeko(xdrfiles[fp+1],off,SEEK_SET);
-#else
-    fseek(xdrfiles[fp+1],off,SEEK_SET);
-#endif
+
+    if(gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+      *bOK = 0;
+      return -1;
+    }    
 
     return frame;
 }
