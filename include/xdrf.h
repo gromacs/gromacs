@@ -86,11 +86,11 @@ xtc_seek_frame(int frame, int fp, int natoms);
 
 
 float 
-xtc_get_last_frame_time(int fp, int natoms);
+xtc_get_last_frame_time(int fp, int natoms, bool * bOK);
 
 
 int 
-xtc_get_last_frame_number(int fp, int natoms);
+xtc_get_last_frame_number(int fp, int natoms, bool * bOK);
 
 #endif
 
