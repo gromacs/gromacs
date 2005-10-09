@@ -827,7 +827,7 @@ int main (int argc, char *argv[])
     "only the atom types are used for generating interaction parameters.[PAR]",
 
     "grompp calls the c-preprocessor to resolve includes, macros ",
-    "etcetera. To specify a macro-preprocessor other than /lib/cpp ",
+    "etcetera. To specify a macro-preprocessor other than /usr/bin/cpp ",
     "(such as m4)",
     "you can put a line in your parameter file specifying the path",
     "to that cpp. Specifying [TT]-pp[tt] will get the pre-processed",
