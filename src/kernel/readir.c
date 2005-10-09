@@ -356,7 +356,8 @@ void get_ir(char *mdparin,char *mdparout,
 
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   STYPE ("title",	opts->title,	NULL);
-  STYPE ("cpp",		opts->cpp,	"/usr/bin/cpp");
+  CTYPE ("Preprocessor - specify a full path if necessary.");
+  STYPE ("cpp",		opts->cpp,	"cpp");
   STYPE ("include",	opts->include,	NULL);
   STYPE ("define",	opts->define,	NULL);
     

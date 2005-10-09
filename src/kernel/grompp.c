@@ -826,11 +826,11 @@ int main (int argc, char *argv[])
     "Note that the atom names are irrelevant for the simulation as",
     "only the atom types are used for generating interaction parameters.[PAR]",
 
-    "grompp calls the c-preprocessor to resolve includes, macros ",
-    "etcetera. To specify a macro-preprocessor other than /usr/bin/cpp ",
-    "(such as m4)",
+    "grompp calls a preprocessor to resolve includes, macros ",
+    "etcetera. By default we use the cpp in your path. To specify a "
+    "different macro-preprocessor (e.g. m4) or alternative location",
     "you can put a line in your parameter file specifying the path",
-    "to that cpp. Specifying [TT]-pp[tt] will get the pre-processed",
+    "to that program. Specifying [TT]-pp[tt] will get the pre-processed",
     "topology file written out.[PAR]",
     
     "If your system does not have a c-preprocessor, you can still",
