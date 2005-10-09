@@ -1,7 +1,7 @@
 
 ; VARIOUS PREPROCESSING OPTIONS = 
 title                    = Yo
-cpp                      = /lib/cpp
+cpp                      = /usr/bin/cpp
 include                  = -I../top
 define                   = 
 
