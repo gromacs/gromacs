@@ -169,7 +169,7 @@ set  ans = $<
 echo generating energy minimisation parameter file...
 cat > em.mdp << _EOF_
 title               =  ${MOL}
-cpp                 =  /lib/cpp
+cpp                 =  /usr/bin/cpp
 define              =  -DFLEX_SPC
 constraints         =  none
 integrator          =  steep
@@ -281,7 +281,7 @@ echo "generating parameter file..."
 cat > pr.mdp << _EOF_
 title               =  ${MOL} position restraining
 warnings            =  10
-cpp                 =  /lib/cpp
+cpp                 =  /usr/bin/cpp
 define              =  -DPOSRES
 constraints         =  all-bonds
 integrator          =  md
@@ -386,7 +386,7 @@ set  ans = $<
 echo "generating parameter file..."
 cat > md.mdp << _EOF_
 title               =  ${MOL} MD
-cpp                 =  /lib/cpp
+cpp                 =  /usr/bin/cpp
 constraints         =  all-bonds
 integrator          =  md
 dt                  =  0.002	; ps !

@@ -3,7 +3,7 @@
 ;	Wed Nov  3 17:12:44 1993
 ;	Input file
 ;
-cpp                 =  /lib/cpp
+cpp                 =  /usr/bin/cpp
 define              =  -DFLEX_SPC
 constraints         =  none
 integrator          =  steep

@@ -4,7 +4,7 @@
 ;	Input file
 ;
 title               =  Yo
-cpp                 =  /lib/cpp
+cpp                 =  /usr/bin/cpp
 define              =  -DPOSRES
 constraints         =  all-bonds
 integrator          =  md
