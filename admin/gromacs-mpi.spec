@@ -41,10 +41,10 @@ you probably want the full source anyway...
 
 %build
 # Call it mdrun_mpi
-./configure     --enable-shared \
-                --without-motif-libraries \
-		--enable-mpi \
-		--program-suffix=_mpi
+%configure     --enable-shared \
+               --without-motif-libraries \
+	       --enable-mpi \
+	       --program-suffix=_mpi
 make %{?_smp_mflags} mdrun
 
 %install

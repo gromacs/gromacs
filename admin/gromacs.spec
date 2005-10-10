@@ -57,13 +57,7 @@ make DESTDIR=${RPM_BUILD_ROOT} install
 rm -rf ${RPM_BUILD_ROOT}
 
 %post
-#
-# Add our (final) library directory to /etc/ld.so.conf if it is not already there
-#
-if test -z `grep ${RPM_INSTALL_PREFIX}/lib  /etc/ld.so.conf`; then
-     cat >> /etc/ld.so.conf < ${RPM_INSTALL_PREFIX}/lib
-fi
-# run ldconfig to update the runtime linker database with the new libraries
+# add libraries to system database
 # (make sure /sbin is in the $PATH)
 PATH="/sbin:$PATH" ldconfig
 
