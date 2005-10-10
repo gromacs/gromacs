@@ -1579,7 +1579,7 @@ xtc_get_last_frame_time(int fp, int natoms, bool * bOK)
       return -1;
     }
     
-    if(res = gmx_fseek(xdrfiles[fp+1],-4,SEEK_END)){
+    if( (res = gmx_fseek(xdrfiles[fp+1],-4,SEEK_END)) != 0){
       *bOK = 0;
       return -1;
     }
@@ -1589,10 +1589,10 @@ xtc_get_last_frame_time(int fp, int natoms, bool * bOK)
       return -1;
     }
     
-    if(res = gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)){
+    if( (res = gmx_fseek(xdrfiles[fp+1],off,SEEK_SET)) != 0){
       *bOK = 0;
       return -1;
-    }
+    } 
     return time;
 }
 
