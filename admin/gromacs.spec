@@ -70,15 +70,15 @@ PATH="/sbin:$PATH" ldconfig
 %{_bindir}/*
 %{_libdir}/*.so.*
 %{_mandir}/*
-%{_datadir}/html/*
-%{_datadir}/top/*
-%{_datadir}/tutor/*
-%{_datadir}/template/*
+%{_pkgdatadir}/html/*
+%{_pkgdatadir}/top/*
+%{_pkgdatadir}/tutor/*
+%{_pkgdatadir}/template/*
 
 %files devel
 %defattr(-,root,root)
 %exclude %{_libdir}/*.la
-%{_includedir}/*
+%{_pkgincludedir}/*
 %{_libdir}/*.a
 %{_libdir}/*.so
 
