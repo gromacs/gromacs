@@ -70,15 +70,15 @@ PATH="/sbin:$PATH" ldconfig
 %{_bindir}/*
 %{_libdir}/*.so.*
 %{_mandir}/*
-%{_pkgdatadir}/html/*
-%{_pkgdatadir}/top/*
-%{_pkgdatadir}/tutor/*
-%{_pkgdatadir}/template/*
+%{_datadir}/gromacs/html/*
+%{_datadir}/gromacs/top/*
+%{_datadir}/gromacs/tutor/*
+%{_datadir}/gromacs/template/*
 
 %files devel
 %defattr(-,root,root)
 %exclude %{_libdir}/*.la
-%{_pkgincludedir}/*
+%{_includedir}/gromacs/*
 %{_libdir}/*.a
 %{_libdir}/*.so
 
