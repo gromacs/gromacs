@@ -2,7 +2,7 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-topoldir = ${datadir}/top
+topoldir = ${pkgdatadir}/top
 
 topol_DATA = \
 	ffgmx.itp	ffgmxnb.itp	ffgmxbon.itp	\

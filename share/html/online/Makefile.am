@@ -2,7 +2,7 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-onlinedir = ${datadir}/html/online
+onlinedir = ${pkgdatadir}/html/online
 
 online_DATA = \
   dat.html           g_disre.html      g_sorient.html        ndx.html        \

@@ -5,7 +5,7 @@
 
 SUBDIRS = . types
 
-include_HEADERS = \
+pkginclude_HEADERS = \
 3dview.h \
 assert.h \
 atomprop.h \
