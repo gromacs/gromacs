@@ -587,7 +587,7 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
     "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
     "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf",
   };
-  int      i,ft,ftype,nn,nrfp,nral;
+  int      i,ft,ftype,nn,nrfp,nrfpA,nrfpB,nral;
   char     f1[STRLEN];
   char     alc[MAXATOMLIST+1][20];
   double   c[MAXFORCEPARAM];
@@ -632,13 +632,27 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
   
   ftype = ifunc_index(d,ft);
   nrfp  = NRFP(ftype);
+  nrfpA = interaction_function[(ftype)].nrfpA;
+  nrfpB = interaction_function[(ftype)].nrfpB;
+ 
   strcpy(f1,formnl[nral]);
   strcat(f1,formlf[nrfp-1]);
-  if ((nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11])) 
-      != nrfp) {
-    for( ; (nn<nrfp); nn++)
-      c[nn] = 0.0;
+  
+  /* Check number of parameters given */
+  nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11]);
+  
+  /* If only the A parameters were specified, copy them to the B state too */
+  if(nn == nrfpA && nrfpB != 0 )
+  {
+	for( nn == nrfpA ; nn< nrfp ; nn++)
+		c[nn] = c[nn-nrfpA];
   }
+
+  if(nn != nrfp)
+  {
+    gmx_fatal(FARGS,"Found %d force parameters for interaction, expected %d or %d.",nn,nrfpA,nrfp);
+  }
+  
   for(i=0; (i<4); i++) {
     if(!strcmp(alc[i],"X"))
       p.a[i]=-1;
@@ -1064,7 +1078,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s%*s"
   };
   const char *ccformat="%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-  int      nr,i,j,nrfp,nrfpA,nral,nread,ftype;
+  int      nr,i,j,nrfp,nrfpA,nrfpB,nral,nread,ftype;
   char     format[STRLEN];
   /* One force parameter more, so we can check if we read too many */
   double   cc[MAXFORCEPARAM+1];
@@ -1144,6 +1158,9 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   bDef    = TRUE;
   
   nrfp  = NRFP(ftype);
+  nrfpA=interaction_function[ftype].nrfpA;
+  nrfpB=interaction_function[ftype].nrfpB;
+  
   if (nread > nral) {  
     strcpy(format,asformat[nral-1]);
     strcat(format,ccformat);
@@ -1151,24 +1168,42 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5],
 		   &cc[6],&cc[7],&cc[8],&cc[9],&cc[10],&cc[11],&cc[12]);
 
-    if (nread > nrfp) {
-      warning_error("Too many parameters");
-      nread = nrfp;
-    }
-    
+	if (nread == nrfpA && nrfpB != 0)
+	{
+       /* If only the A parameters were specified, copy them to the B state too */
+	  for( nread == nrfpA ; nread< nrfp ; nread++)
+	  {
+	  	cc[nread] = cc[nread-nrfpA];
+	  }	
+	}
+	
+	/* If nread was 0 or EOF, no parameters were read => use defaults.
+	 * If nread was nrfpA we copied above so nread=nrfp.
+	 * If nread was nrfp we are cool.
+	 * Anything else is an error!
+	 */	
+	if (nread != 0 && nread != EOF && nread != nrfp)
+	{
+	     gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d.",
+			nread,nrfpA,nrfp);	
+	}
+	  
     for(j=0; (j<nread); j++)
       param.c[j]=cc[j];
       
     /* Check whether we have to use the defaults */
     if (nread == nrfp)
       bDef = FALSE;
-  } else
+  } 
+  else
+  {
     nread = 0;
+  }
+   	
   /* nread now holds the number of force parameters read! */
   
   if (bDef) {
     /* Use defaults */
-    nrfpA=interaction_function[ftype].nrfpA;
 
     if (nread > 0 && nread < nrfpA) {
       /* Issue an error, do not use defaults */
