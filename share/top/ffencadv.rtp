@@ -1623,7 +1623,6 @@
    CA      CB     CG     CD		
    CB      CG     CD      N		
  [ impropers ]
-    -C     CA      N      H      improper_X_X_N_X    
      N      C     CA     HA      improper_X_X_C_X
      N      C     CA     CB      improper_N_A_C1_C
     CA     CG     CB    HB1      improper_X_X_C_X	
