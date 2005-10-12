@@ -10,7 +10,7 @@ extern void correl(real data1[],real data2[],int n,real ans[]);
 
 typedef struct {
   int n;
-  gmx_fft_t  fft_setup;;
+  gmx_fft_t  fft_setup;
   real *buf1,*buf2,*abuf;
 } correl_t;
 

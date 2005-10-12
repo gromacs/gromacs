@@ -931,7 +931,7 @@ if test "$GCC" = "yes"; then
     # don't check f77 separately - we assume f77 and gcc are similar	  
     powerpc*)
         # don't use the separate apple cpp on OS X
-        ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
+#        ACX_CHECK_CC_FLAGS(-no-cpp-precomp,no_cpp_precomp,xCFLAGS="$xCFLAGS -no-cpp-precomp")
         if test "$enable_ppc_altivec" = "yes"; then
             # Apple (darwin) uses a hacked version of gcc with special flags 
             case "${host_os}" in

@@ -91,7 +91,7 @@ enum gmx_fft_direction
     GMX_FFT_FORWARD,         /*!< Forward complex-to-complex transform  */
     GMX_FFT_BACKWARD,        /*!< Backward complex-to-complex transform */
     GMX_FFT_REAL_TO_COMPLEX, /*!< Real-to-complex valued fft            */
-    GMX_FFT_COMPLEX_TO_REAL, /*!< Complex-to-real valued fft            */
+    GMX_FFT_COMPLEX_TO_REAL  /*!< Complex-to-real valued fft            */
 };
 
 
