@@ -11,7 +11,7 @@ Summary: Molecular dynamics package (non-parallel version)
 Name: gromacs
 Version: 3.3
 Release: 1
-Copyright: GPL
+License: GPL
 Group: Applications/Science
 Buildroot: %{_topdir}/buildroot
 Requires: fftw3 >= 3.0.1
