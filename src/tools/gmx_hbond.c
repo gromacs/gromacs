@@ -63,6 +63,7 @@ typedef int t_hx[max_hx];
 #define NRHXTYPES max_hx
 char *hxtypenames[NRHXTYPES]=
 {"n-n","n-n+1","n-n+2","n-n+3","n-n+4","n-n+5","n-n>6"};
+#define MAXHH 4
 
 enum { gr0,  gr1,    grI,  grNR };
 enum { hbNo, hbDist, hbHB, hbNR }; 
@@ -128,6 +129,7 @@ typedef struct {
   int      *dptr;              /* Map atom number to donor index     */
   int      *nhydro;            /* Number of hydrogens for each donor */
   h_id     *hydro;             /* The atom numbers of the hydrogens  */
+  h_id     *nhbonds;           /* The number of HBs per H at current */
 } t_donors;
 
 typedef struct {
@@ -136,6 +138,7 @@ typedef struct {
   /* The following arrays are nframes long */
   int         nframes,max_frames,maxhydro;
   int         *nhb,*ndist;
+  h_id        *n_bound;
   real        *time;
   t_icell     *danr;
   t_hx        *nhx;
@@ -184,6 +187,7 @@ static void add_frames(t_hbdata *hb,int nframes)
     srenew(hb->time,hb->max_frames);
     srenew(hb->nhb,hb->max_frames);
     srenew(hb->ndist,hb->max_frames);
+    srenew(hb->n_bound,hb->max_frames);
     srenew(hb->nhx,hb->max_frames);
     if (hb->bDAnr)
       srenew(hb->danr,hb->max_frames);
@@ -260,6 +264,20 @@ static void add_ff(t_hbdata *hbd,int id,int h,int ia,int frame,int ihb)
   /*hb->nframes++;*/
 }
 
+static void inc_nhbonds(t_donors *ddd,int d, int h)
+{
+  int j;
+  int dptr = ddd->dptr[d];
+  
+  for(j=0; (j<ddd->nhydro[dptr]); j++)
+    if (ddd->hydro[dptr][j] == h) {
+      ddd->nhbonds[dptr][j]++;
+      break;
+    }
+  if (j == ddd->nhydro[dptr])
+    gmx_fatal(FARGS,"No such hydrogen %d on donor %d\n",h+1,d+1);
+}
+
 static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
 		      int frame,bool bInsert,bool bMerge,int ihb)
 { 
@@ -328,6 +346,9 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
       }
     }
   }
+  /* Increment number if HBonds per H */
+  if (ihb == hbHB) 
+    inc_nhbonds(&(hb->d),d,h);
 }
 
 static bool in_list(atom_id selection,int isize,atom_id *index)
@@ -454,6 +475,7 @@ static void add_dh(t_donors *ddd,int id,int ih,int grp)
       srenew(ddd->don,ddd->max_nrd);
       srenew(ddd->nhydro,ddd->max_nrd);
       srenew(ddd->hydro,ddd->max_nrd);
+      srenew(ddd->nhbonds,ddd->max_nrd);
       srenew(ddd->grp,ddd->max_nrd);
     }
     ddd->don[ddd->nrd] = id;
@@ -570,6 +592,15 @@ static t_gridcell ***init_grid(bool bBox,rvec box[],real rcut,ivec ngrid)
   return grid;
 }
 
+static void reset_nhbonds(t_donors *ddd)
+{
+  int i,j;
+  
+  for(i=0; (i<ddd->nrd); i++) 
+    for(j=0; (j<MAXHH); j++)
+      ddd->nhbonds[i][j] = 0;
+}
+
 static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
 		       bool bBox, matrix box, rvec hbox,
 		       real rcut, real rshell,
@@ -596,7 +627,9 @@ static void build_grid(t_hbdata *hb,rvec x[], rvec xshell,
     if (bBox) {
       invdelta[m]=ngrid[m]/box[m][m];
       if (1/invdelta[m] < rcut)
-	gmx_fatal(FARGS,"box shrank too much to keep using this grid\n");
+	gmx_fatal(FARGS,"Your computational box has shrunk too much.\n"
+		  "%s can not handle this situation, sorry.\n",
+		  ShortProgram());
     } else
       invdelta[m]=0;
   }
@@ -965,59 +998,27 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
   sfree(htmp);
 }
 
-static void do_nhb_dist(char *fn,t_hbdata *hb,int nframes) 
+static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t) 
 {
-  FILE *fp;
-#define MAXHH 4
-  int  i,j,k,a,n,n0,nh,n_bound[MAXHH],nbtot;
-  char *leg[MAXHH+1] = { "0", "1", "2", "3", "Total" };
+  int  i,j,k,n_bound[MAXHH],nbtot;
   h_id nhb;
+
   
-  fp = xvgropen(fn,"Number of HB per hydrogen","Time (ps)","N");
-  xvgr_legend(fp,asize(leg),leg);
-  /* Loop over frames */
-  for(n=0; (n<nframes); n++) {
-    /* Set array to 0 */
-    for(k=0; (k<MAXHH); k++)
-      n_bound[k] = 0;
-    /* Loop over possible donors */
-    for(i=0; (i<hb->d.nrd); i++) {
-      nh = hb->d.nhydro[i];
-      /* Set # HBs for each H to 0 */
-      for(j=0; (j<nh); j++)
-	nhb[j] = 0;
-      /* Loop over possible acceptors */
-      for(k=0; (k<hb->a.nra); k++) {
-	/* First check whether this HB ever existed */
-	if (hb->hbmap[i][k]) {
-	  n0 = hb->hbmap[i][k]->n0;
-	  for(j=0; (j<nh); j++)
-	    if (ISHB(hb->hbmap[i][k]->history[j]) && 
-		(n >= n0) && 
-		(n <= n0+hb->hbmap[i][k]->nframes))
-	      if (is_hb(hb->hbmap[i][k]->h[j],n-n0)) {
-		nhb[j]++;
-		if (debug) 
-		  fprintf(debug,"NHBDIST: d = %d h = %d a = %d\n",
-			  hb->d.don[i],hb->d.hydro[i][j],
-			  hb->a.acc[k]);
-	      }
-	}
-      }
-      /* Check which of the H have how many HBs */
-      for(j=0; (j<nh); j++)
-	for(k=0; (k<MAXHH); k++)
-	  if (nhb[j] == k)
-	    n_bound[k]++;
-    }
-    fprintf(fp,"%12.5e",hb->time[n]);
-    nbtot = 0;
-    for(k=0; (k<MAXHH); k++) {
-      fprintf(fp,"  %8d",n_bound[k]);
-      nbtot += n_bound[k]*k;
-    }
-    fprintf(fp,"  %8d\n",nbtot);
+  /* Set array to 0 */
+  for(k=0; (k<MAXHH); k++)
+    n_bound[k] = 0;
+  /* Loop over possible donors */
+  for(i=0; (i<hb->d.nrd); i++) {
+    for(j=0; (j<hb->d.nhydro[i]); j++)
+      n_bound[hb->d.nhbonds[i][j]]++;
+  }      
+  fprintf(fp,"%12.5e",t);
+  nbtot = 0;
+  for(k=0; (k<MAXHH); k++) {
+    fprintf(fp,"  %8d",n_bound[k]);
+    nbtot += n_bound[k]*k;
   }
+  fprintf(fp,"  %8d\n",nbtot);
 }
 
 static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
@@ -1674,7 +1675,7 @@ int gmx_hbond(int argc,char *argv[])
   int        grp,nabin,nrbin,bin,resdist,ihb;
   char       **leg;
   t_hbdata   *hb;
-  FILE       *fp,*fpins=NULL,*fplog;
+  FILE       *fp,*fpins=NULL,*fplog,*fpnhb=NULL;
   t_gridcell ***grid;
   t_ncell    *icell,*jcell,*kcell;
   ivec       ngrid;
@@ -1702,10 +1703,15 @@ int gmx_hbond(int argc,char *argv[])
   bHBmap = (opt2bSet("-ac",NFILE,fnm) ||
 	    opt2bSet("-life",NFILE,fnm) ||
 	    opt2bSet("-hbn",NFILE,fnm) || 
-	    opt2bSet("-hbm",NFILE,fnm) ||
-	    opt2bSet("-nhbdist",NFILE,fnm));
-  if (opt2bSet("-nhbdist",NFILE,fnm))
-    bMerge = FALSE;
+	    opt2bSet("-hbm",NFILE,fnm));
+  
+  if (opt2bSet("-nhbdist",NFILE,fnm)) {
+    char *leg[MAXHH+1] = { "0", "1", "2", "3", "Total" };
+    fpnhb = xvgropen(opt2fn("-nhbdist",NFILE,fnm),
+		     "Number of HB per hydrogen","Time (ps)","N");
+    xvgr_legend(fpnhb,asize(leg),leg);
+  }
+  
   hb = mk_hbdata(bHBmap,opt2bSet("-dan",NFILE,fnm),bMerge);
   
   /* get topology */
@@ -1860,6 +1866,9 @@ int gmx_hbond(int argc,char *argv[])
   do {
     bTric = bBox && TRICLINIC(box);
     build_grid(hb,x,x[shatom], bBox,box,hbox, rcut, rshell, ngrid,grid);
+    
+    reset_nhbonds(&(hb->d));
+
     if (debug && bDebug)
       dump_grid(debug, ngrid, grid);
     
@@ -2021,6 +2030,9 @@ int gmx_hbond(int argc,char *argv[])
 	  } /* for grp */
 	} /* for xi,yi,zi */
     analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t);
+    if (fpnhb)
+      do_nhb_dist(fpnhb,hb,t);
+    
     nframes++;
   } while (read_next_x(status,&t,natoms,x,box));
   
@@ -2029,7 +2041,9 @@ int gmx_hbond(int argc,char *argv[])
   close_trj(status);
   if (bInsert)
     fclose(fpins);
-
+  if (fpnhb)
+    fclose(fpnhb);
+    
   /* Compute maximum possible number of different hbonds */
   if (maxnhb > 0)
     max_nhb = maxnhb;
@@ -2124,9 +2138,6 @@ int gmx_hbond(int argc,char *argv[])
 	 
   /* Do Autocorrelation etc. */
   if (hb->bHBmap) {
-    if (opt2bSet("-nhbdist",NFILE,fnm)) 
-      do_nhb_dist(opt2fn("-nhbdist",NFILE,fnm),hb,nframes);
-    
     if (opt2bSet("-ac",NFILE,fnm))
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
 	      bMerge,fit_start,temp);
