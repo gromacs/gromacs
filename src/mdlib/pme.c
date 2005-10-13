@@ -521,8 +521,8 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
       range_check(zidx,0,nz);
 #endif
       i0      = ii0+xidx; /* Pointer arithmetic */
-      norder  = n*4;
-      norder1 = norder+4;
+      norder  = n*order;
+      norder1 = norder+order;
 
       i = ii0[xidx];
       j = jj0[yidx];
@@ -922,86 +922,136 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
 		   int nz,rvec fractx[],ivec idx[],real charge[],int nr)
 {
   /* construct splines for local atoms */
-  int  i,k,l;
+  int  i,j,k,l;
   real drXX,drYY,drZZ;
-  real div,rcons;
+  real dr,div,rcons;
   real *dataXX,*dataYY,*dataZZ;
   real *ddataXX,*ddataYY,*ddataZZ;
   real tmpX,tmpY,tmpZ,lastX,lastY,lastZ;
-  
-  for(i=0; (i<nr); i++) {
+  real *data,*ddata,*xptr;
 
-    if (charge[i] != 0.0) {
+  if( order == 4)
+  {
+    for(i=0; (i<nr); i++)
+	{
 
-	drXX = fractx[i][XX];
-	drYY = fractx[i][YY];
-	drZZ = fractx[i][ZZ];
+      if (charge[i] != 0.0) 
+	  {
 
-	/* dr is relative offset from lower cell limit */
-	dataXX=theta[XX]+i*4;
-	dataYY=theta[YY]+i*4;
-	dataZZ=theta[ZZ]+i*4;
+	    drXX = fractx[i][XX];
+	    drYY = fractx[i][YY];
+	    drZZ = fractx[i][ZZ];
 
-	dataXX[3]=0;
-	dataYY[3]=0;
-	dataZZ[3]=0;
-	dataXX[1]=drXX;
-	dataYY[1]=drYY;
-	dataZZ[1]=drZZ;
-	dataXX[0]=1.0-drXX;
-	dataYY[0]=1.0-drYY;
-	dataZZ[0]=1.0-drZZ;
+  	    /* dr is relative offset from lower cell limit */
+	    dataXX=theta[XX]+i*4;
+	    dataYY=theta[YY]+i*4;
+	    dataZZ=theta[ZZ]+i*4;
 
-    dataXX[2]=0.5*drXX*dataXX[1];
-    dataYY[2]=0.5*drYY*dataYY[1];
-    dataZZ[2]=0.5*drZZ*dataZZ[1];
+	    dataXX[3]=0;
+	    dataYY[3]=0;
+	    dataZZ[3]=0;
+	    dataXX[1]=drXX;
+	    dataYY[1]=drYY;
+	    dataZZ[1]=drZZ;
+	    dataXX[0]=1.0-drXX;
+	    dataYY[0]=1.0-drYY;
+	    dataZZ[0]=1.0-drZZ;
+
+        dataXX[2]=0.5*drXX*dataXX[1];
+        dataYY[2]=0.5*drYY*dataYY[1];
+        dataZZ[2]=0.5*drZZ*dataZZ[1];
     
-    dataXX[1]=0.5*((drXX+1.0)*dataXX[0]+(2.0-drXX)*dataXX[1]);
-    dataYY[1]=0.5*((drYY+1.0)*dataYY[0]+(2.0-drYY)*dataYY[1]);
-    dataZZ[1]=0.5*((drZZ+1.0)*dataZZ[0]+(2.0-drZZ)*dataZZ[1]);
+        dataXX[1]=0.5*((drXX+1.0)*dataXX[0]+(2.0-drXX)*dataXX[1]);
+        dataYY[1]=0.5*((drYY+1.0)*dataYY[0]+(2.0-drYY)*dataYY[1]);
+        dataZZ[1]=0.5*((drZZ+1.0)*dataZZ[0]+(2.0-drZZ)*dataZZ[1]);
         
-    dataXX[0]=0.5*(1.0-drXX)*dataXX[0];
-    dataYY[0]=0.5*(1.0-drYY)*dataYY[0];
-    dataZZ[0]=0.5*(1.0-drZZ)*dataZZ[0];
+        dataXX[0]=0.5*(1.0-drXX)*dataXX[0];
+        dataYY[0]=0.5*(1.0-drYY)*dataYY[0];
+        dataZZ[0]=0.5*(1.0-drZZ)*dataZZ[0];
     
-	/* differentiate */
-	ddataXX  = dtheta[XX]+i*4;
-	ddataYY  = dtheta[YY]+i*4;
-	ddataZZ  = dtheta[ZZ]+i*4;
+	    /* differentiate */
+	    ddataXX  = dtheta[XX]+i*4;
+	    ddataYY  = dtheta[YY]+i*4;
+	    ddataZZ  = dtheta[ZZ]+i*4;
     
-	ddataXX[0] = -dataXX[0];
-	ddataYY[0] = -dataYY[0];
-	ddataZZ[0] = -dataZZ[0];
-	ddataXX[1] = dataXX[0]-dataXX[1];
-	ddataYY[1] = dataYY[0]-dataYY[1];
-	ddataZZ[1] = dataZZ[0]-dataZZ[1];
-	ddataXX[2] = dataXX[1]-dataXX[2];
-	ddataYY[2] = dataYY[1]-dataYY[2];
-	ddataZZ[2] = dataZZ[1]-dataZZ[2];
-	ddataXX[3] = dataXX[2]-dataXX[3];
-	ddataYY[3] = dataYY[2]-dataYY[3];
-	ddataZZ[3] = dataZZ[2]-dataZZ[3];
+	    ddataXX[0] = -dataXX[0];
+	    ddataYY[0] = -dataYY[0];
+	    ddataZZ[0] = -dataZZ[0];
+	    ddataXX[1] = dataXX[0]-dataXX[1];
+	    ddataYY[1] = dataYY[0]-dataYY[1];
+	    ddataZZ[1] = dataZZ[0]-dataZZ[1];
+	    ddataXX[2] = dataXX[1]-dataXX[2];
+	    ddataYY[2] = dataYY[1]-dataYY[2];
+	    ddataZZ[2] = dataZZ[1]-dataZZ[2];
+	    ddataXX[3] = dataXX[2]-dataXX[3];
+	    ddataYY[3] = dataYY[2]-dataYY[3];
+	    ddataZZ[3] = dataZZ[2]-dataZZ[3];
     
-	div=1.0/3.0;
-	dataXX[3]=div*drXX*dataXX[2];
-	dataYY[3]=div*drYY*dataYY[2];
-	dataZZ[3]=div*drZZ*dataZZ[2];
+	    div=1.0/3.0;
+	    dataXX[3]=div*drXX*dataXX[2];
+	    dataYY[3]=div*drYY*dataYY[2];
+	    dataZZ[3]=div*drZZ*dataZZ[2];
 
-    dataXX[2]=div*((drXX+1.0)*dataXX[1]+(3.0-drXX)*dataXX[2]);
-    dataYY[2]=div*((drYY+1.0)*dataYY[1]+(3.0-drYY)*dataYY[2]);
-    dataZZ[2]=div*((drZZ+1.0)*dataZZ[1]+(3.0-drZZ)*dataZZ[2]);
+        dataXX[2]=div*((drXX+1.0)*dataXX[1]+(3.0-drXX)*dataXX[2]);
+        dataYY[2]=div*((drYY+1.0)*dataYY[1]+(3.0-drYY)*dataYY[2]);
+        dataZZ[2]=div*((drZZ+1.0)*dataZZ[1]+(3.0-drZZ)*dataZZ[2]);
     
-    dataXX[1]=div*((drXX+2.0)*dataXX[0]+(2.0-drXX)*dataXX[1]);
-    dataYY[1]=div*((drYY+2.0)*dataYY[0]+(2.0-drYY)*dataYY[1]);
-    dataZZ[1]=div*((drZZ+2.0)*dataZZ[0]+(2.0-drZZ)*dataZZ[1]);
+        dataXX[1]=div*((drXX+2.0)*dataXX[0]+(2.0-drXX)*dataXX[1]);
+        dataYY[1]=div*((drYY+2.0)*dataYY[0]+(2.0-drYY)*dataYY[1]);
+        dataZZ[1]=div*((drZZ+2.0)*dataZZ[0]+(2.0-drZZ)*dataZZ[1]);
     
-	dataXX[0]=div*(1.0-drXX)*dataXX[0]; 
-	dataYY[0]=div*(1.0-drYY)*dataYY[0]; 
-	dataZZ[0]=div*(1.0-drZZ)*dataZZ[0]; 
-
+	    dataXX[0]=div*(1.0-drXX)*dataXX[0]; 
+	    dataYY[0]=div*(1.0-drYY)*dataYY[0]; 
+	    dataZZ[0]=div*(1.0-drZZ)*dataZZ[0]; 
+      } 
     }
   }
-  
+  else
+  {
+    /* general case, order != 4 */
+    for(i=0; (i<nr); i++) 
+	{
+      if (charge[i] != 0.0) 
+	  {
+        xptr = fractx[i];
+        for(j=0; (j<DIM); j++) 
+	    {
+	      dr  = xptr[j];
+	
+	      /* dr is relative offset from lower cell limit */
+	      data=&(theta[j][i*order]);
+	      data[order-1]=0;
+	      data[1]=dr;
+	      data[0]=1-dr;
+		
+	      for(k=3; (k<order); k++) 
+		  {
+	        div=1.0/(k-1.0);    
+	        data[k-1]=div*dr*data[k-2];
+	        for(l=1; (l<(k-1)); l++)
+	        {
+			  data[k-l-1]=div*((dr+l)*data[k-l-2]+(k-l-dr)*data[k-l-1]);
+		    }
+  	        data[0]=div*(1-dr)*data[0];
+	      }
+	      /* differentiate */
+	      ddata    = &(dtheta[j][i*order]);
+	      ddata[0] = -data[0];
+	      for(k=1; (k<order); k++)
+          {
+	        ddata[k]=data[k-1]-data[k];
+		  }
+	      div=1.0/(order-1);
+	      data[order-1]=div*dr*data[order-2];
+	      for(l=1; (l<(order-1)); l++)
+	      {
+            data[order-l-1]=div*((dr+l)*data[order-l-2]+(order-l-dr)*data[order-l-1]);
+          }
+	      data[0]=div*(1-dr)*data[0]; 
+        }
+	  }
+    }
+  }  
 }
 
     
