@@ -912,7 +912,8 @@ void zero_lines(int nmat, t_matrix *mat, t_matrix *mat2)
 }
 
 void write_combined_matrix(int ecombine, char *fn,
-			   int nmat, t_matrix *mat1, t_matrix *mat2)
+			   int nmat, t_matrix *mat1, t_matrix *mat2,
+			   real *cmin,real *cmax)
 {
   int i, j, k, nlevels;
   t_mapping *map=NULL;
@@ -943,10 +944,15 @@ void write_combined_matrix(int ecombine, char *fn,
 	rlo = min(rlo, rmat1[i][j]);
 	rhi = max(rhi, rmat1[i][j]);
       }
-    nlevels = mat1[k].nmap+mat2[k].nmap;
+    if (cmin)
+      rlo = *cmin;
+    if (cmax)
+      rhi = *cmax;
+    nlevels = max(mat1[k].nmap,mat2[k].nmap);
     if (rhi==rlo)
       fprintf(stderr,
 	      "combination results in uniform matrix (%g), no output\n",rhi);
+    /*
     else if (rlo>=0 || rhi<=0)
       write_xpm(out, mat1[k].flags, mat1[k].title, mat1[k].legend, 
 		mat1[k].label_x, mat1[k].label_y,
@@ -958,6 +964,12 @@ void write_combined_matrix(int ecombine, char *fn,
 		 mat1[k].label_x, mat1[k].label_y,
 		 mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
 		 rmat1, rlo, 0, rhi, red, white, blue, &nlevels);
+    */
+    else
+      write_xpm(out, mat1[k].flags, mat1[k].title, mat1[k].legend, 
+		mat1[k].label_x, mat1[k].label_y,
+		mat1[k].nx, mat1[k].ny, mat1[k].axis_x, mat1[k].axis_y, 
+		rmat1, rlo, rhi, white, black, &nlevels);	
   }
   fclose(out);
 }
@@ -1089,13 +1101,16 @@ int gmx_xpm2ps(int argc,char *argv[])
     "half of the second one ([TT]-f2[tt]). The diagonal will contain",
     "values from the matrix file selected with [TT]-diag[tt].",
     "Plotting of the diagonal values can be suppressed altogether by",
-    "setting [TT]-diag[tt] to [TT]none[tt]. With ",
-    "[TT]-combine[tt] an alternative operation can be selected to combine",
-    "the matrices. In this case, a new color map will be generated with",
-    "a red gradient for negative numbers and a blue for positive.[PAR]",
+    "setting [TT]-diag[tt] to [TT]none[tt].",
+    "In this case, a new color map will be generated with",
+    "a red gradient for negative numbers and a blue for positive.",
     "If the color coding and legend labels of both matrices are identical,",
     "only one legend will be displayed, else two separate legends are",
-    "displayed.[PAR]",
+    "displayed.",
+    "With [TT]-combine[tt] an alternative operation can be selected",
+    "to combine the matrices. The output range is automatically set",
+    "to the actual range of the combined matrix. This can be overridden",
+    "with [TT]-cmin[tt] and [TT]-cmax[tt].[PAR]",
     "[TT]-title[tt] can be set to [TT]none[tt] to suppress the title, or to",
     "[TT]ylabel[tt] to show the title in the Y-label position (alongside",
     "the Y-axis).[PAR]",
@@ -1110,7 +1125,7 @@ int gmx_xpm2ps(int argc,char *argv[])
   t_matrix *mat=NULL,*mat2=NULL;
   bool      bTitle,bTitleOnce,bDiag,bFirstDiag,bGrad;
   static bool bFrame=TRUE,bZeroLine=FALSE,bYonce=FALSE,bAdd=FALSE;
-  static real size=400,boxx=0,boxy=0;
+  static real size=400,boxx=0,boxy=0,cmin=0,cmax=0;
   static rvec grad={0,0,0};
   enum                    { etSel, etTop, etOnce, etYlabel, etNone, etNR };
   static char *title[]   = { NULL, "top", "once", "ylabel", "none", NULL };
@@ -1131,7 +1146,6 @@ int gmx_xpm2ps(int argc,char *argv[])
     { "-yonce",   FALSE, etBOOL, {&bYonce}, "Show y-label only once" },
     { "-legend",  FALSE, etENUM, {legend},  "Show legend" },
     { "-diag",    FALSE, etENUM, {diag},    "Diagonal" },
-    { "-combine", FALSE, etENUM, {combine}, "Combine two matrices" },
     { "-size",    FALSE, etREAL, {&size},
       "Horizontal size of the matrix in ps units" },
     { "-bx",      FALSE, etREAL, {&boxx},
@@ -1146,8 +1160,12 @@ int gmx_xpm2ps(int argc,char *argv[])
     { "-zeroline",FALSE, etBOOL, {&bZeroLine},
       "insert line in xpm matrix where axis label is zero"},
     { "-legoffset", FALSE, etINT, {&mapoffset},
-      "Skip first N colors from xpm file for the legend" }
+      "Skip first N colors from xpm file for the legend" },
+    { "-combine", FALSE, etENUM, {combine}, "Combine two matrices" },
+    { "-cmin",    FALSE, etREAL, {&cmin}, "Minimum for combination output" },
+    { "-cmax",    FALSE, etREAL, {&cmax}, "Maximum for combination output" }
   };
+#define NPA asize(pa)
   t_filenm  fnm[] = {
     { efXPM, "-f",  NULL,      ffREAD },
     { efXPM, "-f2", "root2",   ffOPTRD },
@@ -1160,7 +1178,7 @@ int gmx_xpm2ps(int argc,char *argv[])
   
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW,
-		    NFILE,fnm,asize(pa),pa,
+		    NFILE,fnm,NPA,pa,
 		    asize(desc),desc,0,NULL);
 
   etitle   = nenum(title);
@@ -1168,7 +1186,7 @@ int gmx_xpm2ps(int argc,char *argv[])
   ediag    = nenum(diag);
   erainbow = nenum(rainbow);
   ecombine = nenum(combine);
-  bGrad    = opt2parg_bSet("-gradient",asize(pa),pa);
+  bGrad    = opt2parg_bSet("-gradient",NPA,pa);
   for(i=0; i<DIM; i++)
     if (grad[i] < 0 || grad[i] > 1)
       gmx_fatal(FARGS, "RGB value %g out of range (0.0-1.0)", grad[i]);
@@ -1239,7 +1257,9 @@ int gmx_xpm2ps(int argc,char *argv[])
     elegend = elFirst;
   
   if (ecombine && ecombine!=ecHalves)
-    write_combined_matrix(ecombine, xpmfile, nmat, mat, mat2);
+    write_combined_matrix(ecombine, xpmfile, nmat, mat, mat2,
+			  opt2parg_bSet("-cmin",NPA,pa) ? &cmin : NULL,
+			  opt2parg_bSet("-cmax",NPA,pa) ? &cmax : NULL);
   else
     do_mat(nmat,mat,mat2,bFrame,bZeroLine,bDiag,bFirstDiag,
 	   bTitle,bTitleOnce,bYonce,
