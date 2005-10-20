@@ -264,9 +264,11 @@ static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
 
 static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
 		    char *xpm3,char *xpm4,char *pdb,char *logf,
-		    int n,int neig,real **eig,bool bGE,real **enerT,
+		    int n,int neig,real **eig,
+		    bool bGE,int nenerT,real **enerT,
 		    int nmap,real *mapindex,real **map,
-		    real Tref,real gmax,int nlevels,real pmin,
+		    real Tref,
+		    real gmax,real *emin,real *emax,int nlevels,real pmin,
 		    char *mname,bool bSham,int *idim,int *ibox,
 		    bool bXmin,real *xmin,bool bXmax,real *xmax)
 {
@@ -328,7 +330,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   /* Do the binning */ 
   bref = 1/(BOLTZ*Tref);
   snew(bE,n);
-  if (enerT) {
+  if (bGE || nenerT==2) {
     Emin = 1e8;
     for(j=0; (j<n); j++) {
       if (bGE)
@@ -524,7 +526,8 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     fclose(fp);
     fp = fopen(xpm2,"w");
     write_xpm(fp,flags,"Enthalpy Landscape","H (kJ/mol)","PC1","PC2",
-	      ibox[0],ibox[1],axis_x,axis_y,EE,Emin,Einf,rlo,rhi,&nlevels);
+	      ibox[0],ibox[1],axis_x,axis_y,EE,
+	      emin ? *emin : Emin,emax ? *emax : Einf,rlo,rhi,&nlevels);
     fclose(fp);
     fp = fopen(xpm3,"w");
     write_xpm(fp,flags,"Entropy Landscape","TDS (kJ/mol)","PC1","PC2",
@@ -651,6 +654,7 @@ static void ehisto(char *fh,int n,real **enerT)
 int gmx_sham(int argc,char *argv[])
 {
   static char *desc[] = {
+    "g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.",
     "g_sham reads a number of xvg files and analyzes data sets.",
     "A line in the input file may start with a time",
     "(see option [TT]-time[tt]) and any number of y values may follow.",
@@ -663,6 +667,9 @@ int gmx_sham(int argc,char *argv[])
     "when the ensemble is not a Boltzmann ensemble, but has been biased",
     "by this free energy.",
     "[PAR]",
+    "Option [TT]-ene[tt] can be used to supply a file with energies",
+    "for making enthalpy and entropy plots.",
+    "[PAR]",
     "With option [TT]-dim[tt] dimensions can be gives for distances.",
     "When a distance is 2- or 3-dimensional, the circumference or surface",
     "sampled by two particles increases with increasing distance.",
@@ -670,6 +677,8 @@ int gmx_sham(int argc,char *argv[])
     "the free-energy for this volume effect.",
     "The probability is normalized by r and r^2 for a dimension of 2 and 3",
     "respectively.",
+    "A value of -1 is used to indicate an angle in degrees between two",
+    "vectors: a sin(angle) normalization will be applied.",
     "Note that for angles between vectors the inner-product or cosine",
     "is the natural quantity to use, as it will produce bins of the same",
     "volume."
@@ -678,7 +687,7 @@ int gmx_sham(int argc,char *argv[])
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bShamEner=TRUE,bSham=TRUE; 
-  static real Tref=298.15,pmin=0,ttol=0,gmax=0;
+  static real Tref=298.15,pmin=0,ttol=0,gmax=0,emin=0,emax=0;
   static rvec nrdim = {1,1,1};
   static rvec nrbox = {32,32,32};
   static rvec xmin  = {0,0,0}, xmax={1,1,1};
@@ -714,9 +723,13 @@ int gmx_sham(int argc,char *argv[])
     { "-xmax",    FALSE, etRVEC, {xmax},
       "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
     { "-gmax",    FALSE, etREAL, {&gmax},
-      "Maximum level in output, 0 is calculate" },
+      "Maximum free energy in output, default is calculate" },
+    { "-emin",    FALSE, etREAL, {&emin},
+      "Minimum enthalpy in output, default is calculate" },
+    { "-emax",    FALSE, etREAL, {&emax},
+      "Maximum enthalpy in output, default is calculate" },
     { "-nlevels", FALSE, etINT,  {&nlevels},
-      "Number of levels for energy landscape from single histogram analysis" },
+      "Number of levels for energy landscape" },
     { "-mname",   FALSE, etSTR,  {&mname},
       "Legend label for the custom landscape" },
   };
@@ -776,8 +789,8 @@ int gmx_sham(int argc,char *argv[])
 	gmx_fatal(FARGS,"Can only handle one free energy component in %s",
 		fn_ge);
     } else {
-      if (e_nset != 2)
-	gmx_fatal(FARGS,"Can only handle one energy component and one T in %s",
+      if (e_nset!=1 && e_nset!=2)
+	gmx_fatal(FARGS,"Can only handle one energy component or one energy and one T in %s",
 		  fn_ene);
     }
     if (e_n != n)
@@ -821,8 +834,11 @@ int gmx_sham(int argc,char *argv[])
 	  opt2fn("-ls",NFILE,fnm),opt2fn("-lsh",NFILE,fnm),
 	  opt2fn("-lss",NFILE,fnm),opt2fn("-map",NFILE,fnm),
 	  opt2fn("-ls3",NFILE,fnm),opt2fn("-g",NFILE,fnm),
-	  n,nset,val,fn_ge!=NULL,et_val,d_n,d_t,dt_val,Tref,
-	  gmax,nlevels,pmin,
+	  n,nset,val,fn_ge!=NULL,e_nset,et_val,d_n,d_t,dt_val,Tref,
+	  gmax,
+	  opt2parg_bSet("-emin",NPA,pa) ? &emin : NULL,
+	  opt2parg_bSet("-emax",NPA,pa) ? &emax : NULL,
+	  nlevels,pmin,
 	  mname,bSham,idim,ibox,
 	  opt2parg_bSet("-xmin",NPA,pa),rmin,
 	  opt2parg_bSet("-xmax",NPA,pa),rmax);
