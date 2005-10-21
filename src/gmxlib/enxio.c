@@ -193,7 +193,8 @@ static bool empty_file(char *fn)
   return bEmpty;
 }
 
-static int framenr;
+static int  framenr;
+static real frametime;
 
 int open_enx(char *fn,char *mode)
 {
@@ -250,7 +251,8 @@ int open_enx(char *fn,char *mode)
     fp = fio_open(fn,mode);
     
   framenr=0;
-    
+  frametime=0;
+
   return fp;
 }
 
@@ -271,17 +273,21 @@ bool do_enx(int fp,t_enxframe *fr)
 
   if (!do_eheader(fp,fr,&bOK)) {
     if (bRead) {
-	fprintf(stderr,"\rLast frame read %d                          ",framenr-1);
-	if (!bOK)
-	  fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
-		  framenr,fr->t);
+      fprintf(stderr,"\rLast frame read %d time %8.3f           ",
+	      framenr-1,frametime);
+      if (!bOK)
+	fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
+		framenr,fr->t);
     }
     return FALSE;
   }
   if (bRead) {
-    if ( ( framenr<10 ) || ( framenr%10 == 0) ) 
+    if ((framenr <   20 || framenr %   10 == 0) &&
+	(framenr <  200 || framenr %  100 == 0) &&
+	(framenr < 2000 || framenr % 1000 == 0))
       fprintf(stderr,"\rReading frame %6d time %8.3f           ",framenr,fr->t);
     framenr++;
+    frametime = fr->t;
   }
   /* Check sanity of this header */
   bSane = (fr->nre > 0 || fr->ndisre > 0);
