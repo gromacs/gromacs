@@ -57,7 +57,9 @@
 
 /* defines for frame counter output */
 static int __frame=NOTSET;
-#define SKIP 10
+#define SKIP1   10
+#define SKIP2  100
+#define SKIP3 1000
 #define INITCOUNT __frame=-1
 
 
@@ -73,7 +75,9 @@ int nframes_read(void)
 
 static void printcount_(char *l,real t)
 {
-  if (__frame % SKIP == 0 || __frame < SKIP)
+  if ((__frame < 2*SKIP1 || __frame % SKIP1 == 0) &&
+      (__frame < 2*SKIP2 || __frame % SKIP2 == 0) &&
+      (__frame < 2*SKIP3 || __frame % SKIP3 == 0))
     fprintf(stderr,"\r%-14s %6d time %8.3f   ",l,__frame,convert_time(t));
 }
 
