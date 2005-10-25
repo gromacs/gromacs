@@ -70,36 +70,8 @@
 #endif
 #define FLAGS (TRX_READ_X | TRX_READ_V | TRX_READ_F)
 
-static real get_timestep(char *fnm)
-{
-  /* read first two frames in trajectory 'fnm' to determine timestep */
-  
-  int        status;
-  real       t0, dt;
-  t_trxframe fr;
-  bool ok;
-  
-  dt = NOTSET;
-  
-  ok=read_first_frame(&status,fnm,&fr,FLAGS);
-  if(!ok || !fr.bTime)
-    fprintf(stderr,"\nWARNING: Couldn't read time from first frame.\n");
-  else {
-  t0=fr.time;
-    
-  ok=read_next_frame(status,&fr);
-  if(!ok || !fr.bTime) 
-      fprintf(stderr,"\nWARNING: Couldn't read time from second frame.\n");
-    else
-  dt=fr.time-t0;
-  }
-
-  close_trj(status);
-  
-  return dt;
-}
-
-static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
+static void scan_trj_files(char **fnms,int nfiles,
+			   real *readtime,real *timestep,atom_id imax)
 {
   /* Check start time of all files */
   int i,status,natoms=0;
@@ -113,7 +85,7 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
     if(!ok) 
       gmx_fatal(FARGS,"\nCouldn't read frame from file.");
     if(fr.bTime)
-    readtime[i]=fr.time;
+      readtime[i]=fr.time;
     else {
       readtime[i]=0;
       fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
@@ -133,6 +105,13 @@ static void scan_trj_files(char **fnms,int nfiles,real *readtime,atom_id imax)
 		      fr.natoms,imax);
       }
     }
+    ok=read_next_frame(status,&fr);
+    if(ok && fr.bTime) {
+      timestep[i] = fr.time - readtime[i];
+    } else {
+      timestep[i] = 0;
+    }
+    
     close_trj(status);
   }
   fprintf(stderr,"\n");
@@ -165,8 +144,8 @@ static void sort_files(char **fnms,real *settime,int nfile)
 }
 
 
-static void edit_files(char **fnms,int nfiles,real *readtime, real
-		       *settime, int *cont_type, bool bSetTime,bool bSort)
+static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
+		       real *settime, int *cont_type, bool bSetTime,bool bSort)
 {
     int i;
     bool ok;
@@ -240,13 +219,15 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real
     
     /* Write out the new order and start times */
     fprintf(stderr,"\nSummary of files and start times used:\n\n"
-	    "          File                Start time\n"
-	    "-----------------------------------------\n");
+	    "          File                Start time       Time step\n"
+	    "---------------------------------------------------------\n");
     for(i=0;i<nfiles;i++)
 	switch(cont_type[i]) {
 	case TIME_EXPLICIT:
-	  fprintf(stderr,"%25s   %10.3f %s",
-		  fnms[i],convert_time(settime[i]),time_unit());
+	  fprintf(stderr,"%25s   %10.3f %s   %10.3f %s",
+		  fnms[i],
+		  convert_time(settime[i]),time_unit(),
+		  convert_time(timestep[i]),time_unit());
 	  if ( i>0 && 
 	       cont_type[i-1]==TIME_EXPLICIT && settime[i]==settime[i-1] )
 	    fprintf(stderr," WARNING: same Start time as previous");
@@ -391,7 +372,7 @@ int gmx_trjcat(int argc,char *argv[])
   int         trxout=-1;
   bool        bNewFile,bIndex,bWrite;
   int         earliersteps,nfile_in,nfile_out,*cont_type,last_ok_step;
-  real        *readtime,*settime;
+  real        *readtime,*timest,*settime;
   real        first_time=0,lasttime=NOTSET,last_ok_t=-1,timestep;
   int         isize;
   atom_id     *index=NULL,imax;
@@ -457,13 +438,13 @@ int gmx_trjcat(int argc,char *argv[])
   if (bDeMux) 
     do_demux(nfile_in,fnms,nfile_out,fnms_out,n,val,t,dt_remd,isize,index);
   else {
-    timestep = get_timestep(fnms[0]);
     snew(readtime,nfile_in+1);
-    scan_trj_files(fnms,nfile_in,readtime,imax);
+    snew(timest,nfile_in+1);
+    scan_trj_files(fnms,nfile_in,readtime,timest,imax);
     
     snew(settime,nfile_in+1);
     snew(cont_type,nfile_in+1);
-    edit_files(fnms,nfile_in,readtime,settime,cont_type,bSetTime,bSort);
+    edit_files(fnms,nfile_in,readtime,timest,settime,cont_type,bSetTime,bSort);
   
     /* Check whether the output file is amongst the input files 
      * This has to be done after sorting etc.
@@ -494,8 +475,6 @@ int gmx_trjcat(int argc,char *argv[])
      */
     t_corr=0;
     
-    timestep=NOTSET;
-    
     if (n_append == -1)
       trxout = open_trx(out_file,"w");
     else {
@@ -508,16 +487,16 @@ int gmx_trjcat(int argc,char *argv[])
       lasttime = fr.time;
       bKeepLast = TRUE;
       trxout = open_trx(out_file,"a");
-    }    
+    }
     /* Lets stitch up some files */
+    timestep = timest[0];
     for(i=0; (i<nfile_in); i++) {
       /* Open next file */
       
       if (i != n_append) {
-	/* we might not be able to read a timestep from the first file,
-	   so until we get a timestep, it is NOTSET */
-	if ( timestep==NOTSET )
-	  timestep = get_timestep(fnms[i]);
+	/* if we don't have a timestep in the current file, use the old one */
+	if ( timest[i] != 0 )
+	  timestep = timest[i];
 	
 	read_first_frame(&status,fnms[i],&fr,FLAGS);
 	if(!fr.bTime) {
@@ -593,15 +572,13 @@ int gmx_trjcat(int argc,char *argv[])
 	/* set the next time from the last frame in previous file */
 	if(cont_type[i+1]==TIME_CONTINUE) {
 	  begin=frout.time;
-	  if (timestep!=NOTSET)
-	    begin += 0.5*timestep;
+	  begin += 0.5*timestep;
 	  settime[i+1]=frout.time;
 	  cont_type[i+1]=TIME_EXPLICIT;	  
 	}
 	else if(cont_type[i+1]==TIME_LAST)
 	  begin=frout.time;
-	if (timestep!=NOTSET)
-	  begin += 0.5*timestep;
+	begin += 0.5*timestep;
 	/* Or, if the time in the next part should be changed by the
 	 * same amount, start at half a timestep from the last time
 	 * so we dont repeat frames.
