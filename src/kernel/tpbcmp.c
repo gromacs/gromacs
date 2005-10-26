@@ -183,21 +183,46 @@ void cmp_iparm(FILE *fp,char *s,t_functype ft,
   }
 }
 
+void cmp_iparm_AB(FILE *fp,char *s,t_functype ft,t_iparams ip1,real ftol) 
+{
+  int nrfpA,nrfpB,i;
+  bool bDiff;
+  
+  nrfpA = interaction_function[ft].nrfpA;
+  if (ft == F_PDIHS)
+    nrfpB = 2;
+  else
+    nrfpB = interaction_function[ft].nrfpB;
+  bDiff=FALSE;
+  for(i=0; i<nrfpB && !bDiff; i++)
+    bDiff = !equal_real(ip1.generic.buf[i],ip1.generic.buf[nrfpA+i],ftol);
+  if (bDiff) {
+    fprintf(fp,"%s: ",s);
+    pr_iparams(fp,ft,&ip1);
+  }
+}
+
 static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol)
 {
   int i;
  
   fprintf(fp,"comparing idef\n");
-  cmp_int(fp,"idef->ntypes",-1,id1->ntypes,id2->ntypes);
-  cmp_int(fp,"idef->nodeid",   -1,id1->nodeid,id2->nodeid);
-  cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
-  for(i=0; (i<id1->ntypes); i++) {
-    cmp_int(fp,"idef->functype",i,(int)id1->functype[i],(int)id2->functype[i]);
-    cmp_iparm(fp,"idef->iparam",id1->functype[i],
-	      id1->iparams[i],id2->iparams[i],ftol);
+  if (id2) {
+    cmp_int(fp,"idef->ntypes",-1,id1->ntypes,id2->ntypes);
+    cmp_int(fp,"idef->nodeid",   -1,id1->nodeid,id2->nodeid);
+    cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
+    for(i=0; (i<id1->ntypes); i++) {
+      cmp_int(fp,"idef->functype",
+	      i,(int)id1->functype[i],(int)id2->functype[i]);
+      cmp_iparm(fp,"idef->iparam",id1->functype[i],
+		id1->iparams[i],id2->iparams[i],ftol);
+    }
+    for(i=0; (i<F_NRE); i++)
+      cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]));
+  } else {
+    for(i=0; (i<id1->ntypes); i++)
+      cmp_iparm_AB(fp,"idef->iparam",id1->functype[i],id1->iparams[i],ftol);
   }
-  for(i=0; (i<F_NRE); i++)
-    cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]));
 }
 
 static void cmp_block(FILE *fp,t_block *b1,t_block *b2,const char *s)
@@ -219,18 +244,24 @@ static void cmp_atom(FILE *fp,int index,t_atom *a1,t_atom *a2,real ftol)
 {
   int  i;
   char buf[256];
-  
-  cmp_us(fp,"atom.type",index,a1->type,a2->type);
-  cmp_us(fp,"atom.ptype",index,a1->ptype,a2->ptype);
-  cmp_int(fp,"atom.resnr",index,a1->resnr,a2->resnr);
-  cmp_real(fp,"atom.m",index,a1->m,a2->m,ftol);
-  cmp_real(fp,"atom.q",index,a1->q,a2->q,ftol);
-  cmp_us(fp,"atom.typeB",index,a1->typeB,a2->typeB);
-  cmp_real(fp,"atom.mB",index,a1->mB,a2->mB,ftol);
-  cmp_real(fp,"atom.qB",index,a1->qB,a2->qB,ftol);
-  for(i=0; (i<egcNR); i++) {
-    sprintf(buf,"atom.grpnr(%d)",i);
-    cmp_uc(fp,buf,index,a1->grpnr[i],a2->grpnr[i]);
+
+  if (a2) {
+    cmp_us(fp,"atom.type",index,a1->type,a2->type);
+    cmp_us(fp,"atom.ptype",index,a1->ptype,a2->ptype);
+    cmp_int(fp,"atom.resnr",index,a1->resnr,a2->resnr);
+    cmp_real(fp,"atom.m",index,a1->m,a2->m,ftol);
+    cmp_real(fp,"atom.q",index,a1->q,a2->q,ftol);
+    cmp_us(fp,"atom.typeB",index,a1->typeB,a2->typeB);
+    cmp_real(fp,"atom.mB",index,a1->mB,a2->mB,ftol);
+    cmp_real(fp,"atom.qB",index,a1->qB,a2->qB,ftol);
+    for(i=0; (i<egcNR); i++) {
+      sprintf(buf,"atom.grpnr(%d)",i);
+      cmp_uc(fp,buf,index,a1->grpnr[i],a2->grpnr[i]);
+    }
+  } else {
+    cmp_us(fp,"atom.type",index,a1->type,a1->typeB);
+    cmp_real(fp,"atom.m",index,a1->m,a1->mB,ftol);
+    cmp_real(fp,"atom.q",index,a1->q,a1->qB,ftol);
   }
 }
 
@@ -239,10 +270,15 @@ static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2,real ftol)
   int i;
   
   fprintf(fp,"comparing atoms\n");
-  cmp_int(fp,"atoms->nr",-1,a1->nr,a2->nr);
-  for(i=0; (i<a1->nr); i++)
-    cmp_atom(fp,i,&(a1->atom[i]),&(a2->atom[i]),ftol);
-  cmp_block(fp,&a1->excl,&a2->excl,"excl");
+  if (a2) {
+    cmp_int(fp,"atoms->nr",-1,a1->nr,a2->nr);
+    for(i=0; (i<a1->nr); i++)
+      cmp_atom(fp,i,&(a1->atom[i]),&(a2->atom[i]),ftol);
+    cmp_block(fp,&a1->excl,&a2->excl,"excl");
+  } else {
+    for(i=0; (i<a1->nr); i++)
+      cmp_atom(fp,i,&(a1->atom[i]),NULL,ftol);
+  }
 }
 
 static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol)
@@ -250,10 +286,15 @@ static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol)
   int i;
   
   fprintf(fp,"comparing top\n");
-  cmp_idef(fp,&(t1->idef),&(t2->idef),ftol);
-  cmp_atoms(fp,&(t1->atoms),&(t2->atoms),ftol);
-  for(i=0; (i<ebNR); i++)
-    cmp_block(fp,&t1->blocks[i],&t2->blocks[i],EBLOCKS(i));
+  if (t2) {
+    cmp_idef(fp,&(t1->idef),&(t2->idef),ftol);
+    cmp_atoms(fp,&(t1->atoms),&(t2->atoms),ftol);
+    for(i=0; (i<ebNR); i++)
+      cmp_block(fp,&t1->blocks[i],&t2->blocks[i],EBLOCKS(i));
+  } else {
+    cmp_idef(fp,&(t1->idef),NULL,ftol);
+    cmp_atoms(fp,&(t1->atoms),NULL,ftol);
+  }
 }
 
 static void cmp_rvecs(FILE *fp,char *title,int n,rvec x1[],rvec x2[],real ftol)
@@ -473,12 +514,19 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
 
   ff[0]=fn1;
   ff[1]=fn2;
-  for(i=0; (i<2); i++) {
+  for(i=0; i<(fn2 ? 2 : 1); i++) {
     read_tpx_state(ff[i],&step,&t,&(ir[i]),&state[i],NULL,&(top[i]));
   }
-  cmp_inputrec(stdout,&ir[0],&ir[1],ftol);
-  cmp_top(stdout,&top[0],&top[1],ftol);
-  comp_state(&state[0],&state[1],ftol);
+  if (fn2) {
+    cmp_inputrec(stdout,&ir[0],&ir[1],ftol);
+    cmp_top(stdout,&top[0],&top[1],ftol);
+    comp_state(&state[0],&state[1],ftol);
+  } else {
+    if (ir[0].efep == efepNO)
+      fprintf(stdout,"inputrec->efep = %s\n",efep_names[ir[0].efep]);
+    else
+      cmp_top(stdout,&top[0],NULL,ftol);
+  }
 }
 
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)

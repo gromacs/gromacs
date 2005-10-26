@@ -491,7 +491,9 @@ int main(int argc,char *argv[])
     "[TT].tpa[tt]) files",
     "when both [TT]-s1[tt] and [TT]-s2[tt] are supplied.",
     "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
-    "option), or a pair of energy files (using the [TT]-e2[tt] option)."
+    "option), or a pair of energy files (using the [TT]-e2[tt] option).[PAR]",
+    "For free energy simulations the A and B state topology from one",
+    "run input file can be compared with options [TT]-s1[tt] and [TT]-ab[tt]."
   };
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffOPTRD },
@@ -510,6 +512,7 @@ int main(int argc,char *argv[])
   static real bon_lo=0.4;
   static real bon_hi=0.7;
   static real ftol=0.001;
+  static bool bCompAB=FALSE;
   static char *lastener=NULL;
   static t_pargs pa[] = {
     { "-vdwfac", FALSE, etREAL, {&vdw_fac},
@@ -518,8 +521,10 @@ int main(int argc,char *argv[])
       "Min. fract. of sum of VdW radii for bonded atoms" },
     { "-bonhi",  FALSE, etREAL, {&bon_hi},
       "Max. fract. of sum of VdW radii for bonded atoms" },
-    { "-tol",    FALSE, etREAL, {&ftol},
+     { "-tol",    FALSE, etREAL, {&ftol},
       "Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)" },
+    { "-ab",     FALSE, etBOOL, {&bCompAB},
+      "Compare the A and B topology from one file" }, 
     { "-lastener",FALSE, etSTR,  {&lastener},
       "Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure." }
   };
@@ -539,7 +544,7 @@ int main(int argc,char *argv[])
   
   fn1 = opt2fn_null("-s1",NFILE,fnm);
   fn2 = opt2fn_null("-s2",NFILE,fnm);
-  if (fn1 && fn2)
+  if ((fn1 && fn2) || bCompAB)
     comp_tpx(fn1,fn2,ftol);
   else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2))
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
