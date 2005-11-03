@@ -412,15 +412,17 @@ real **read_xvg_time(char *fn,
 	  a++;
 	  line += nchar;
 	}
-	if (bTimeInRange) {
+	if (line0[strlen(line0)-1] != '\n') {
+	  fprintf(stderr,"File %s does not end with a newline, ignoring the last line\n",fn);
+	} else if (bTimeInRange) {
 	  if (a == 0) {
 	    fprintf(stderr,"Ignoring invalid line in %s:\n%s",fn,line0);
 	  } else {
-	    n++;
 	    if (a != narg)
 	      fprintf(stderr,"Invalid line in %s:\n%s"
 		      "Using zeros for the last %d sets\n",
 		      fn,line0,narg-a);
+	    n++;
 	  }
 	}
 	if (a > 0)
