@@ -177,7 +177,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   real       *inv_segvol,invvol,invvol_sum,rho;
   bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box,box_pbc;
-  int        **npairs;
+  int        **npairs,*nself;
   atom_id    ix,jx,***pairs;
   t_topology top;
   t_block    *excl;
@@ -246,6 +246,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   snew(count,ng);
   snew(pairs,ng);
   snew(npairs,ng);
+  snew(nself,ng);
 
   snew(bExcl,natoms);
   max_i = 0;
@@ -274,9 +275,11 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	jx = index[g+1][j];
 	if (!bExcl[jx])
 	  pairs[g][i][k++]=jx;
-	else
+	else if (ix != jx)
 	  /* Check if we have exclusions other than self exclusions */
-	  bNonSelfExcl = bNonSelfExcl || (ix != jx);
+	  bNonSelfExcl = TRUE;
+	if (ix == jx)
+	  nself[g]++;
       }
       if (bNonSelfExcl) {
 	npairs[g][i]=k;
@@ -391,8 +394,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   snew(rdf,ng);
   for(g=0; g<ng; g++) {
     /* We have to normalize by dividing by the number of frames */
-    rho     = isize[g+1]*invvol;
-    normfac = 1.0/((rho*nframes)*isize[0]);
+    normfac = 1.0/(nframes*invvol*(isize[0]*isize[g+1] - nself[g]));
       
     /* Do the normalization */
     nrdf = max(nbin-1,1+(2*fade/binwidth));
