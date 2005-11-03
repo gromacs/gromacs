@@ -1706,9 +1706,9 @@ int gmx_hbond(int argc,char *argv[])
 	    opt2bSet("-hbm",NFILE,fnm));
   
   if (opt2bSet("-nhbdist",NFILE,fnm)) {
-    char *leg[MAXHH+1] = { "0", "1", "2", "3", "Total" };
+    char *leg[MAXHH+1] = { "0 HBs", "1 HB", "2 HBs", "3 HBs", "Total" };
     fpnhb = xvgropen(opt2fn("-nhbdist",NFILE,fnm),
-		     "Number of HB per hydrogen","Time (ps)","N");
+		     "Number of donor-H with N HBs","Time (ps)","N");
     xvgr_legend(fpnhb,asize(leg),leg);
   }
   
