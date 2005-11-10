@@ -52,6 +52,9 @@
 #include "fatal.h"
 
 
+static int
+bstate_copy_warning_issued = 0;
+
 void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 {
   int   i,j,k=-1,nf;
@@ -632,25 +635,15 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
   
   ftype = ifunc_index(d,ft);
   nrfp  = NRFP(ftype);
-  nrfpA = interaction_function[(ftype)].nrfpA;
-  nrfpB = interaction_function[(ftype)].nrfpB;
  
   strcpy(f1,formnl[nral]);
   strcat(f1,formlf[nrfp-1]);
   
   /* Check number of parameters given */
-  nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11]);
-  
-  /* If only the A parameters were specified, copy them to the B state too */
-  if(nn == nrfpA && nrfpB != 0 )
-  {
-	for( nn == nrfpA ; nn< nrfp ; nn++)
-		c[nn] = c[nn-nrfpA];
-  }
-
-  if(nn != nrfp)
-  {
-    gmx_fatal(FARGS,"Found %d force parameters for interaction, expected %d or %d.",nn,nrfpA,nrfp);
+  if ((nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11]))
+      != nrfp) {
+    for( ; (nn<nrfp); nn++)
+      c[nn] = 0.0;
   }
   
   for(i=0; (i<4); i++) {
@@ -1025,21 +1018,16 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
       bFound=(j==nral);
     }
   }
-  if (bFound) {
-    if (bB) {
-      if (nrfp+nrfpB > MAXFORCEPARAM)
-	gmx_incons("Too many force parameters");
-      for (j=0; (j < nrfpB); j++)
-	p->c[nrfp+j] = pi->c[j];
-    }
-    else
-      for (j=0; (j < nrfp); j++)
-	p->c[j] = pi->c[j];
+  if (bB) {
+    if (nrfp+nrfpB > MAXFORCEPARAM)
+      gmx_incons("Too many force parameters");
+    for (j=0; (j < nrfpB); j++)
+      p->c[nrfp+j] = bFound ? pi->c[j] : 0.0;
   }
-  else {
+  else
     for (j=0; (j < nrfp); j++)
-      p->c[j] = 0.0;
-  }
+      p->c[j] = bFound ? pi->c[j] : 0.0;
+
   return bFound;
 }
 
@@ -1119,11 +1107,10 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Check for double atoms and atoms out of bounds */
   for(i=0; (i<nral); i++) {
     if ( aa[i] < 1 || aa[i] > at->nr )
-      gmx_fatal(FARGS,
-		"[ file %s, line %d ]:\n"
-		"             Atom index (%d) in %s out of bounds (1-%d)",
-		get_warning_file(),get_warning_line(),
-		aa[i],dir2str(d),at->nr);
+      gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+		  "             Atom index (%d) in %s out of bounds (1-%d)",
+		  get_warning_file(),get_warning_line(),
+		  aa[i],dir2str(d),at->nr);
     for(j=i+1; (j<nral); j++)
       if (aa[i] == aa[j]) {
 	sprintf(errbuf,"Duplicate atom index (%d) in %s",aa[i],dir2str(d));
@@ -1170,10 +1157,18 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 
 	if (nread == nrfpA && nrfpB != 0)
 	{
-       /* If only the A parameters were specified, copy them to the B state too */
+      if( bstate_copy_warning_issued == 0)
+      {
+        fprintf(stderr,
+                "NOTE:\n  Some parameters specified explicitly in state A, but not B - copying A to B.\n\n");
+        bstate_copy_warning_issued = 1;
+      }
+       
+       
+      /* If only the A parameters were specified, copy them to the B state too */
 	  for( nread == nrfpA ; nread< nrfp ; nread++)
 	  {
-	  	cc[nread] = cc[nread-nrfpA];
+	    cc[nread] = cc[nread-nrfpA];
 	  }	
 	}
 	
@@ -1209,32 +1204,31 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       /* Issue an error, do not use defaults */
       sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",nrfpA);
       warning_error(errbuf);
-    } else if (nread == 0 || nread == EOF) {
-      if (!bFoundA) {
-	if (interaction_function[ftype].flags & IF_VSITE) {
-	  /* set them to NOTSET, will be calculated later */
-	  for(j=0; (j<MAXFORCEPARAM); j++)
-	    param.c[j] = NOTSET;
-	  if (bSwapParity)
-	    param.C1 = -1; /* flag to swap parity of vsite construction */
-	} else {
-	  sprintf(errbuf,"No default %s types, using zeroes",
-		  interaction_function[ftype].longname);
-	  warning(errbuf);
-	}
-      } else
-	if (bSwapParity)
-	  switch(ftype) {
-	  case F_VSITE3FAD:
-	    param.C0 = 360-param.C0;
-	    break;
-	  case F_VSITE3OUT:
-	    param.C2 = -param.C2;
-	    break;
-	  }
     } else {
-      /* This implies nread < nrfp, and so perturbed values have not
-       * been read */
+      if (nread == 0 || nread == EOF) {
+	if (!bFoundA) {
+	  if (interaction_function[ftype].flags & IF_VSITE) {
+	    /* set them to NOTSET, will be calculated later */
+	    for(j=0; (j<MAXFORCEPARAM); j++)
+	      param.c[j] = NOTSET;
+	    if (bSwapParity)
+	      param.C1 = -1; /* flag to swap parity of vsite construction */
+	  } else {
+	    sprintf(errbuf,"No default %s types, using zeroes",
+		    interaction_function[ftype].longname);
+	    warning(errbuf);
+	  }
+	} else
+	  if (bSwapParity)
+	    switch(ftype) {
+	    case F_VSITE3FAD:
+	      param.C0 = 360-param.C0;
+	      break;
+	    case F_VSITE3OUT:
+	      param.C2 = -param.C2;
+	      break;
+	    }
+      }
       if (!bFoundB) {
 	/* We only have to issue a warning if these atoms are perturbed! */
 	bPert = FALSE;
@@ -1251,7 +1245,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       }
     }
   }
-
+  
   if (ftype==F_PDIHS && param.c[2]!=param.c[5])
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		"             %s multiplicity can not be perturbed %f!=%f",
