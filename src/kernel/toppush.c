@@ -1018,21 +1018,16 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
       bFound=(j==nral);
     }
   }
-  if (bFound) {
-    if (bB) {
-      if (nrfp+nrfpB > MAXFORCEPARAM)
-	gmx_incons("Too many force parameters");
-      for (j=0; (j < nrfpB); j++)
-	p->c[nrfp+j] = pi->c[j];
-    }
-    else
-      for (j=0; (j < nrfp); j++)
-	p->c[j] = pi->c[j];
+  if (bB) {
+    if (nrfp+nrfpB > MAXFORCEPARAM)
+      gmx_incons("Too many force parameters");
+    for (j=0; (j < nrfpB); j++)
+      p->c[nrfp+j] = bFound ? pi->c[j] : 0.0;
   }
-  else {
+  else
     for (j=0; (j < nrfp); j++)
-      p->c[j] = 0.0;
-  }
+      p->c[j] = bFound ? pi->c[j] : 0.0;
+
   return bFound;
 }
 
@@ -1209,32 +1204,31 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       /* Issue an error, do not use defaults */
       sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",nrfpA);
       warning_error(errbuf);
-    } else if (nread == 0 || nread == EOF) {
-      if (!bFoundA) {
-	if (interaction_function[ftype].flags & IF_VSITE) {
-	  /* set them to NOTSET, will be calculated later */
-	  for(j=0; (j<MAXFORCEPARAM); j++)
-	    param.c[j] = NOTSET;
-	  if (bSwapParity)
-	    param.C1 = -1; /* flag to swap parity of vsite construction */
-	} else {
-	  sprintf(errbuf,"No default %s types, using zeroes",
-		  interaction_function[ftype].longname);
-	  warning(errbuf);
-	}
-      } else
-	if (bSwapParity)
-	  switch(ftype) {
-	  case F_VSITE3FAD:
-	    param.C0 = 360-param.C0;
-	    break;
-	  case F_VSITE3OUT:
-	    param.C2 = -param.C2;
-	    break;
-	  }
     } else {
-      /* This implies nread < nrfp, and so perturbed values have not
-       * been read */
+      if (nread == 0 || nread == EOF) {
+	if (!bFoundA) {
+	  if (interaction_function[ftype].flags & IF_VSITE) {
+	    /* set them to NOTSET, will be calculated later */
+	    for(j=0; (j<MAXFORCEPARAM); j++)
+	      param.c[j] = NOTSET;
+	    if (bSwapParity)
+	      param.C1 = -1; /* flag to swap parity of vsite construction */
+	  } else {
+	    sprintf(errbuf,"No default %s types, using zeroes",
+		    interaction_function[ftype].longname);
+	    warning(errbuf);
+	  }
+	} else
+	  if (bSwapParity)
+	    switch(ftype) {
+	    case F_VSITE3FAD:
+	      param.C0 = 360-param.C0;
+	      break;
+	    case F_VSITE3OUT:
+	      param.C2 = -param.C2;
+	      break;
+	    }
+      }
       if (!bFoundB) {
 	/* We only have to issue a warning if these atoms are perturbed! */
 	bPert = FALSE;
@@ -1251,7 +1245,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       }
     }
   }
-
+  
   if (ftype==F_PDIHS && param.c[2]!=param.c[5])
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		"             %s multiplicity can not be perturbed %f!=%f",
