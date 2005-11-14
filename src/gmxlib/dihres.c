@@ -138,15 +138,20 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
       else if(dp < -M_PI)
 	dp += 2*M_PI;
 
-      ddp = dp-dphi;      
-      vtot += 0.5*kfac*ddp*ddp;
-      if (phi < phi0)
-	ddphi = kfac*ddp;
+      if (dp > dphi)
+	ddp = dp-dphi;
+      else if (dp < -dphi)
+	ddp = dp+dphi;
       else
-	ddphi = -kfac*ddp;
-      
-      do_dih_fup(ai,aj,ak,al,(real)(-ddphi),r_ij,r_kj,r_kl,m,n,
-		 f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
+	ddp = 0;
+
+      if (ddp != 0.0) {
+	vtot += 0.5*kfac*ddp*ddp;
+	ddphi = kfac*ddp;
+	
+	do_dih_fup(ai,aj,ak,al,ddphi,r_ij,r_kj,r_kl,m,n,
+		   f,fshift,pbc,g,x,t1,t2,t3);		/* 112		*/
+      }
     }
   }
   return vtot;
