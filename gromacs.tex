@@ -52,20 +52,23 @@
 \pagestyle{empty}
 \begin{center}
 
-{
-\fontsize{64}{70} \selectfont 
-GROMACS\\
-USER \\
-MANUAL\\
-}
-\vspace{1cm}
-{\Large \em Groningen Machine for Chemical Simulations}
+\textcolor{blue}{\fontsize{84}{96} \selectfont GROMACS}
+\vspace{4mm}
 
-\vspace{0.75cm}
-\includegraphics[width=5in]{plots/fp-highres}
+\textcolor{blue}{\LARGE \em Groningen Machine for Chemical Simulations}
+\vspace{4mm}
 
-\vspace{0.25cm}
-{\fontsize{30}{36} \selectfont \bf Version \gmxver}
+\includegraphics[height=5in]{plots/peregrine}
+\vspace{4mm}
+
+\fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont ~USER MANUAL~}}
+\vspace{4mm}
+
+\textcolor{blue}{\fontsize{48}{56} \selectfont ~Version \gmxver~}
+
+
+%\vspace{0.25cm}
+%{\fontsize{30}{36} \selectfont \bf Version \gmxver}
 
 \end{center}
 \vfill
@@ -116,12 +119,12 @@ Department of Biophysical Chemistry, University of Groningen.
 Nijenborgh 4, 9747 AG Groningen, The Netherlands.\\
 \medskip
 
-\noindent \copyright\ 2001--2004:
+\noindent \copyright\ 2001--2005:
 The GROMACS development team.\\
 
 \vspace{5mm}
 
-\centerline{Check out \wwwpage for more information.}
+More information can be found on our website: {\wwwpage}.
 
 
 \newpage
@@ -158,23 +161,23 @@ please refer to it as:
 D. van der Spoel, E. Lindahl, B. Hess, A.~R. van Buuren, E. Apol, P.~J. Meulenhoff, D.~P. Tieleman, A.~L.~T.~M. Sij\-bers, K.~A. Feenstra, 
 R. van Drunen and H.~J.~C. Berendsen,
 \hspace{0.3em} {\em Gromacs {U}ser {M}anual version \gmxver},
-\hspace{0.3em} {\wwwpage} (2004)
+\hspace{0.3em} {\wwwpage} (2005)
 \end{quote}
-We humbly ask that you cite the {\gromacs}
-papers~\cite{Berendsen95a,Lindahl2001a} when you publish your
-results. Any future development depends on academic research grants,
-since the package is distributed as free software!
+However, we prefer that you cite (some of) the {\gromacs}
+papers~\cite{Bekker93a,Berendsen95a,Lindahl2001a,Spoel2005a} when you publish
+your results. Any future development depends on academic research
+grants, since the package is distributed as free software!
 
 \subsection*{Current development}
 Gromacs is a joint effort, with contributions from lots of developers around
 the world. The core development is currently taking place at
 \begin{itemize}
-\item Department of Cellular and molecular biology, Uppsala University, Sweden.\\ 
-(David van der Spoel and coworkers).
-\item Department of Structural Biology, Stanford University School of Medicine, USA \\
-(Erik Lindahl and coworkers).
-\item Department of Physics, Groningen University, The Netherlands\\
-(Berk Hess and coworkers)
+\item Department of Cellular and Molecular Biology, Uppsala University, Sweden.\\ 
+(David van der Spoel).
+\item Stockholm Bioinformatics Center, Stockholm University, Sweden \\
+(Erik Lindahl).
+\item Max Planck Institute for Polymer Research, Mainz, Germany\\
+(Berk Hess)
 \end{itemize}
 
 \subsection*{{\gromacs} is {\em Free Software}}
