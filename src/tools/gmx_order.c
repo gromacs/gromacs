@@ -53,6 +53,8 @@
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"
+#include "tpxio.h"
+#include "cmat.h"
 
 /****************************************************************************/
 /* This program calculates the order parameter per atom for an interface or */
@@ -61,8 +63,207 @@
 /* It is assumed that the order parameter with respect to a box-axis        */
 /* is calculated. In that case i = j = axis, and delta(ij) = 1.             */
 /*                                                                          */
-/* Peter Tieleman, April 1995                                               */
+/* Peter Tieleman,  April 1995                                              */
+/* P.J. van Maaren, November 2005     Added tetrahedral stuff               */
 /****************************************************************************/
+
+static void find_nearest_neighbours(t_topology top,int natoms, matrix box,
+				    rvec x[],int maxidx,atom_id index[], 
+				    real time,
+				    real *sgmean, real *skmean)
+{
+  FILE    *fpoutdist;
+  char    fnsgdist[32];
+  int     ix,jx,nsgbin, *sgbin;
+  int     i1,i2,i,ibin,j,k,l,n,*nn[4];
+  rvec    dx,dx1,dx2,rj,rk,urk,urj;
+  real    cost,cost2,*sgmol,*skmol,rmean,rmean2,r2,box2,*r_nn[4];
+  t_pbc   pbc;
+  t_mat   *dmat;
+  t_dist  *d;
+  int     m1,mm;
+  int    **nnb;
+  real   onethird=1.0/3.0;
+  
+  //  dmat = init_mat(maxidx, FALSE);
+
+  box2 = box[XX][XX] * box[XX][XX];
+  
+  for (i=0; (i<4); i++) {
+    snew(r_nn[i],natoms);
+    snew(nn[i],natoms);
+    
+    for (j=0; (j<natoms); j++) {
+      r_nn[i][j] = box2;
+    }
+  }
+  
+  snew(sgmol,maxidx);
+  snew(skmol,maxidx);
+
+  /* Must init pbc every step because of pressure coupling */
+  set_pbc(&pbc,box);
+  rm_pbc(&(top.idef),natoms,box,x,x);
+
+  nsgbin = 1 + 1/0.0005;
+  snew(sgbin,nsgbin);
+
+  *sgmean = 0.0;
+  *skmean = 0.0;
+  l=0;
+  for (i=0; (i<maxidx); i++) { /* loop over index file */
+    ix = index[i];
+    for (j=0; (j<maxidx); j++) {
+      if (i == j) continue;
+
+      jx = index[j];
+      
+      pbc_dx(&pbc,x[ix],x[jx],dx);
+      r2=iprod(dx,dx);
+
+      //      set_mat_entry(dmat,i,j,r2);
+
+      /* determine the nearest neighbours */
+      if (r2 < r_nn[0][i]) {
+	r_nn[3][i] = r_nn[2][i]; nn[3][i] = nn[2][i];
+	r_nn[2][i] = r_nn[1][i]; nn[2][i] = nn[1][i];
+	r_nn[1][i] = r_nn[0][i]; nn[1][i] = nn[0][i];
+	r_nn[0][i] = r2;         nn[0][i] = j; 
+      } else if (r2 < r_nn[1][i]) {
+	r_nn[3][i] = r_nn[2][i]; nn[3][i] = nn[2][i];
+	r_nn[2][i] = r_nn[1][i]; nn[2][i] = nn[1][i];
+	r_nn[1][i] = r2;         nn[1][i] = j;
+      } else if (r2 < r_nn[2][i]) {
+	r_nn[3][i] = r_nn[2][i]; nn[3][i] = nn[2][i];
+	r_nn[2][i] = r2;         nn[2][i] = j;
+      } else if (r2 < r_nn[3][i]) {
+	r_nn[3][i] = r2;         nn[3][i] = j;
+      }
+    }
+
+
+    /* calculate mean distance between nearest neighbours */
+    rmean = 0;
+    for (j=0; (j<4); j++) {
+      r_nn[j][i] = sqrt(r_nn[j][i]);
+      rmean += r_nn[j][i];
+    }
+    rmean /= 4;
+    
+    n = 0;
+    sgmol[i] = 0.0;
+    skmol[i] = 0.0;
+
+    /* Chau1998a eqn 3 */
+    /* angular part tetrahedrality order parameter per atom */
+    for (j=0; (j<3); j++) {
+      for (k=j+1; (k<4); k++) {
+	pbc_dx(&pbc,x[ix],x[index[nn[k][i]]],rk);
+	pbc_dx(&pbc,x[ix],x[index[nn[j][i]]],rj);
+
+	unitv(rk,urk);
+	unitv(rj,urj);
+	
+	cost = iprod(urk,urj) + onethird;
+	cost2 = cost * cost;
+
+	//	sgmol[i] += 3*cost2/32; 
+	sgmol[i] += cost2; 
+
+	/* determine distribution */
+	ibin = nsgbin * cost2;
+	if (ibin < nsgbin)
+	  sgbin[ibin]++;
+	// printf("%d %d %f %d %d\n", j, k, cost * cost, ibin, sgbin[ibin]);
+	l++;
+	n++;
+      }
+    }
+
+    /* normalize sgmol between 0.0 and 1.0 */
+    sgmol[i] = 3*sgmol[i]/32;
+    *sgmean += sgmol[i];
+
+    /* distance part tetrahedrality order parameter per atom */
+    rmean2 = 4 * 3 * rmean * rmean;
+    for (j=0; (j<4); j++) {
+      skmol[i] += (rmean - r_nn[j][i]) * (rmean - r_nn[j][i]) / rmean2;
+      //      printf("%d %f (%f %f %f %f) \n",
+      //     i, skmol[i], rmean, rmean2, r_nn[j][i], (rmean - r_nn[j][i]) );
+    }
+    
+    *skmean += skmol[i];
+  } /* loop over entries in index file */
+  
+  *sgmean /= maxidx;
+  *skmean /= maxidx;
+
+  sfree(sgbin);
+  sfree(sgmol);
+  sfree(skmol);
+  for (i=0; (i<4); i++) {
+    sfree(r_nn[i]);
+    sfree(nn[i]);
+  }
+}
+
+
+static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
+			    char *sgfn,char *skfn)
+{
+  FILE       *fpsg=NULL,*fpsk=NULL;
+  t_topology top;
+  char       title[STRLEN],fn[STRLEN],subtitle[STRLEN];
+  int        status;
+  int        natoms;
+  real       t;
+  rvec       *xtop,*x;
+  matrix     box;
+  real       sg,sk;
+  atom_id    **index;
+  char       **grpname;
+  int        i,*isize,ng,nframes;
+  
+  read_tps_conf(fnTPS,title,&top,&xtop,NULL,box,FALSE);
+
+  ng = 1;
+  /* get index groups */
+  printf("Select the group that contains the atoms you want to use for the tetrahedrality order parameter calculation:\n");
+  snew(grpname,ng);
+  snew(index,ng);
+  snew(isize,ng);
+  get_index(&top.atoms,fnNDX,ng,isize,index,grpname);
+
+  /* Analyze trajectory */
+  natoms=read_first_x(&status,fnTRX,&t,&x,box);
+  if ( natoms > top.atoms.nr )
+    gmx_fatal(FARGS,"Topology (%d atoms) does not match trajectory (%d atoms)",
+	      top.atoms.nr,natoms);
+  check_index(NULL,ng,index[0],NULL,natoms);
+
+  fpsg=xvgropen(sgfn,"S\\sg\\N Angle Order Parameter","Time (ps)","S\\sg\\N");
+  fpsk=xvgropen(skfn,"S\\sk\\N Distance Order Parameter","Time (ps)","S\\sk\\N");
+
+  /* loop over frames */
+  nframes = 0;
+  do {
+    find_nearest_neighbours(top,natoms,box,x,isize[0],index[0],t,
+			    &sg,&sk);
+    fprintf(fpsg,"%f %f\n", t, sg);
+    fprintf(fpsk,"%f %f\n", t, sk);
+    nframes++;
+  } while (read_next_x(status,&t,natoms,x,box));
+  close_trj(status);
+ 
+  sfree(grpname);
+  sfree(index);
+  sfree(isize);
+
+  fclose(fpsg);
+  fclose(fpsk);
+
+  exit(0);
+}
 
 
 /* Print name of first atom in all groups in index file */
@@ -321,7 +522,12 @@ int gmx_order(int argc,char *argv[])
     "order tensor component (specified by the -d option) is given and the",
     "order parameter per slice is calculated as well. If -szonly is not",
     "selected, all diagonal elements and the deuterium order parameter is",
-    "given."
+    "given.[PAR]"
+    "The tetrahedrality order parameters can be determined",
+    "around an atom. Both angle an distance order parameters are calculated. See",
+    "P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.",
+    "for more details.[BR]",
+    ""
   };
 
   static int  nslices = 1;                    /* nr of slices defined       */
@@ -359,15 +565,31 @@ int gmx_order(int argc,char *argv[])
     { efXVG,"-o","order", ffWRITE }, 	    /* xvgr output file 	  */
     { efXVG,"-od","deuter", ffWRITE },      /* xvgr output file           */
     { efXVG,"-os","sliced", ffWRITE },      /* xvgr output file           */
+    { efXVG,"-Sg","sg-ang", ffWRITE },      /* xvgr output file           */
+    { efXVG,"-Sk","sk-dist", ffWRITE },     /* xvgr output file           */
   };
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
-  
+  char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;
+
   CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
 
+  sgfnm = opt2fn("-Sg",NFILE,fnm);
+  skfnm = opt2fn("-Sk",NFILE,fnm);
+  ndxfnm = ftp2fn(efNDX,NFILE,fnm);
+  tpsfnm = ftp2fn(efTPX,NFILE,fnm);
+  trxfnm = ftp2fn(efTRX,NFILE,fnm);
+  
+  /* tetraheder order parameter */
+  if (skfnm || sgfnm) {
+    calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm);
+    return 0;
+  } 
+  
+  /* tail order parameter */
   /* Calculate axis */
   if (strcmp(normal_axis[0],"x") == 0) axis = XX;
   else if (strcmp(normal_axis[0],"y") == 0) axis = YY;
@@ -377,46 +599,46 @@ int gmx_order(int argc,char *argv[])
   switch (axis) {
   case 0:
     fprintf(stderr,"Taking x axis as normal to the membrane\n");
-    break;
-  case 1:
-    fprintf(stderr,"Taking y axis as normal to the membrane\n");
-    break;
-  case 2:
-    fprintf(stderr,"Taking z axis as normal to the membrane\n");
-    break;
-  }
-
-  if (nslices > 1) {
-    bSliced = TRUE;
-    fprintf(stderr,"Dividing box in %d slices.\n\n", nslices);
-  }
-
-  if (bSzonly)
-    fprintf(stderr,"Only calculating Sz\n");
-  if (bUnsat)
-    fprintf(stderr,"Taking carbons as unsaturated!\n");
-  
-  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
-  
-  block = init_index(ftp2fn(efNDX,NFILE,fnm),&grpname);
-  index = block->index;                       /* get indices from t_block block */
-  a = block->a;                               /* see block.h                    */
-  ngrps = block->nr;           
-
-  /* show atomtypes, to check if index file is correct */
-  print_types(index, a, ngrps, grpname, top);
-
-  calc_order(ftp2fn(efTRX,NFILE,fnm), index, a, &order, 
-	     &slOrder, &slWidth, nslices, bSliced, bUnsat,
-	     top, ngrps, axis); 
-
-  order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
-	     opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly);
-  
-  do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
-  do_view(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
-  do_view(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
-
-  thanx(stderr);
+      break;
+    case 1:
+      fprintf(stderr,"Taking y axis as normal to the membrane\n");
+      break;
+    case 2:
+      fprintf(stderr,"Taking z axis as normal to the membrane\n");
+      break;
+    }
+    
+    if (nslices > 1) {
+      bSliced = TRUE;
+      fprintf(stderr,"Dividing box in %d slices.\n\n", nslices);
+    }
+    
+    if (bSzonly)
+      fprintf(stderr,"Only calculating Sz\n");
+    if (bUnsat)
+      fprintf(stderr,"Taking carbons as unsaturated!\n");
+    
+    top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
+    
+    block = init_index(ftp2fn(efNDX,NFILE,fnm),&grpname);
+    index = block->index;                       /* get indices from t_block block */
+    a = block->a;                               /* see block.h                    */
+    ngrps = block->nr;           
+    
+    /* show atomtypes, to check if index file is correct */
+    print_types(index, a, ngrps, grpname, top);
+    
+    calc_order(ftp2fn(efTRX,NFILE,fnm), index, a, &order, 
+	       &slOrder, &slWidth, nslices, bSliced, bUnsat,
+	       top, ngrps, axis); 
+    
+    order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
+	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly);
+    
+    do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
+    do_view(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
+    do_view(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
+    
+    thanx(stderr);
   return 0;
 }
