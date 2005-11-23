@@ -598,16 +598,16 @@ static void tick_spacing(int n, real axis[], real offset, char axisnm,
   real space;
   bool bTryAgain,bFive;
   int  i,j,t,f=0,ten;
-#define NFACT 5
-  int major_fact[NFACT] = {1, 2, 2.5, 5, 7.5};
-  int minor_fact[NFACT] = {5, 4, 5,   5, 2.5};
+#define NFACT 4
+  real major_fact[NFACT] = {5, 4, 2, 1};
+  real minor_fact[NFACT] = {5, 4, 4, 5};
   
   /* start with interval between 10 matrix points: */
   space = max(10*axis[1]-axis[0], axis[min(10,n-1)]-axis[0]);
   /* get power of 10 */
   ten = (int)ceil(log(space)/log(10))-1;
   bTryAgain = TRUE;
-  for(t=ten-2; t<ten+3 && bTryAgain; t++) {
+  for(t=ten+2; t>ten-3 && bTryAgain; t--) {
     for(f=0; f<NFACT && bTryAgain; f++) {
       space = pow(10,t) * major_fact[f];
       /* count how many ticks we would get: */
