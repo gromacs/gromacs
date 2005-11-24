@@ -518,6 +518,9 @@ void check_index(char *gname,int n,atom_id index[],char *traj,int natoms)
       gmx_fatal(FARGS,"%s atom number (index[%d]=%d) is larger than the number of atoms in %s (%d)",
 		  gname ? gname : "Index",i+1, index[i]+1,
 		  traj ? traj : "the trajectory",natoms);
+    else if (index[i] < 0)
+      gmx_fatal(FARGS,"%s atom number (index[%d]=%d) is less than zero",
+		gname ? gname : "Index",i+1, index[i]+1);
 }
 
 t_block *init_index(char *gfile, char ***grpname)
@@ -585,6 +588,14 @@ t_block *init_index(char *gfile, char ***grpname)
   }
   ffclose(in);
 
+  for(i=0; (i<b->nr); i++) {
+    for(j=b->index[i]; (j<b->index[i+1]); j++) {
+      if (b->a[j] < 0) 
+	fprintf(stderr,"\nWARNING: negative index %d in group %s\n\n",
+		b->a[j],(*grpname)[i]);
+    }
+  }
+  
   return b;
 }
 
