@@ -83,6 +83,53 @@ typedef struct {
   float bBox;
 } t_fr_time;
 
+void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol)
+{
+  int i,j;
+  int nNul=0;
+  
+  for(i=0; (i<natoms); i++) {
+    for(j=0; (j<DIM); j++) {
+      if (fabs(x[i][j]) > fac*box[j][j])
+	printf("Warning at frame %d: coordinates for atom %d are large (%g)\n",
+	       frame,i,x[i][j]);
+    }
+    if ((fabs(x[j][XX]) < tol) && 
+	(fabs(x[j][YY]) < tol) && 
+	(fabs(x[j][ZZ]) < tol))
+      nNul++;
+  }
+  if (nNul > 0)
+    printf("Warning at frame %d: there are %d particles with all coordinates zero\n",
+	   frame,nNul);
+}
+
+void chk_vels(int frame,int natoms,rvec *v)
+{
+  int i,j;
+  
+  for(i=0; (i<natoms); i++) {
+    for(j=0; (j<DIM); j++) {
+      if (fabs(v[i][j]) > 500)
+	printf("Warning at frame %d. Velocities for atom %d are large (%g)\n",
+	       frame,i,v[i][j]);
+    }
+  }
+}
+
+void chk_forces(int frame,int natoms,rvec *f)
+{
+  int i,j;
+  
+  for(i=0; (i<natoms); i++) {
+    for(j=0; (j<DIM); j++) {
+      if (fabs(f[i][j]) > 10000)
+	printf("Warning at frame %d. Forces for atom %d are large (%g)\n",
+	       frame,i,f[i][j]);
+    }
+  }
+}
+
 void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
 {
   int  ftype,i,k,ai,aj,type;
@@ -206,7 +253,13 @@ void chk_trj(char *fn,char *tpr,real tol)
     natoms=new_natoms;
     if (tpr) 
       chk_bonds(&top,fr.x,fr.box,tol);
-    
+    if (fr.bX)
+      chk_coords(j,natoms,fr.x,fr.box,1e5,tol);
+    if (fr.bV)
+      chk_vels(j,natoms,fr.v);
+    if (fr.bF)
+      chk_forces(j,natoms,fr.f);
+      
     old_t2=old_t1;
     old_t1=fr.time;
     if (fpos && (j<10 || j%10==0))
