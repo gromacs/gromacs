@@ -55,7 +55,6 @@
 #include "tpxio.h"
 #include "index.h"
 #include "smalloc.h"
-#include "fftgrid.h"
 #include "calcgrid.h"
 #include "nrnb.h"
 #include "shift_util.h"
@@ -274,7 +273,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	    fprintf(fp,"%d\n",mols->a[j]+1);
 	}
 	else {
-	  fprintf(fp,"%d\n",index[i]);
+	  fprintf(fp,"%d\n",index[i]+1);
 	}
       }
     fclose(fp);
