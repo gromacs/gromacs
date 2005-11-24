@@ -273,7 +273,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	    fprintf(fp,"%d\n",mols->a[j]+1);
 	}
 	else {
-	  fprintf(fp,"%d\n",index[i]);
+	  fprintf(fp,"%d\n",index[i]+1);
 	}
       }
     fclose(fp);
