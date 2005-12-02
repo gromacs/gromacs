@@ -53,19 +53,20 @@ instructions on the website.
 
 \section{Single or Double precision}
 {\gromacs} can be compiled in either single\index{single
-precision|see{precision, single}}\index{precision, single}
-or \pawsindex{double}{precision}. The default choice is single
-precision, but it is easy to turn on double precision by selecting
-the {\tt --disable-float} option to the configuration script.
-Double precision will be 0 to 50\% slower than single precision depending
-on the architecture you are running on. Double precision will use somewhat more
-memory and run input, energy and full-precision trajectory files will be
-almost twice as large. Note that the assembly loops are only available in
-single precision; Although the Intel SSE2 instruction set (available
-on Pentium IV and later) supports double precision instructions the performance
-is much lower than single precision. It would also mean very much extra
-work for a feature that very few people use, so we will probably not 
-provide double precision assembly loops in the future either.
+precision|see{precision, single}}\index{precision, single} or
+\pawsindex{double}{precision}. The default choice is single precision,
+but it is easy to turn on double precision by selecting the {\tt
+--disable-float} option to the configuration script.  Double precision
+will be 0 to 50\% slower than single precision depending on the
+architecture you are running on. Double precision will use somewhat
+more memory and run input, energy and full-precision trajectory files
+will be almost twice as large.  Assembly loops are available in single
+and double precision on Pentium 4, Opteron and Itanium processors.  On
+PowerPC processors containing the Altivec unit only single precision
+is possible. On older Athlon and Pentium 3 processors only the single
+precision code is available, due to hardware limitations. All other
+processors use either C or Fortran code for the compute intensive
+inner loops.
 
 The energies in single precision are accurate up to the last decimal,
 the last one or two decimals of the forces are non-significant.
@@ -203,6 +204,8 @@ are essential for running and compiling {\gromacs}. Other variables are:
         as the {\gromacs} tool (which might not be what you want).
         Be careful not to use a command which blocks the terminal
         (e.g. {\tt vi}), since multiple instances might be run.
+\item   {\tt GMXTIMEUNIT} the time unit used in output files, can be
+        anything in fs, ps, ns, us, ms, s, m or h.
 \end{enumerate}
 
 Some other environment variables are specific to one program, such as
