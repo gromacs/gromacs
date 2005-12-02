@@ -250,18 +250,24 @@ static void set_default_time_unit(char *select)
   i=1;
   while(timestr[i] && strcmp(timestr[i], select)!=0)
     i++;
-  if (strcmp(timestr[i], select)==0) {
-    timestr[0] = timestr[i];
-    timefactors[0] = timefactors[i];
-    xvgrtimestr[0] = xvgrtimestr[i];
-    for(j=i; j>1; j--) {
-      timestr[j]=timestr[j-1];
-      timefactors[j]=timefactors[j-1];
-      xvgrtimestr[j]=xvgrtimestr[j-1];
+  if (timestr[i] == NULL) {
+    fprintf(stderr,"Don't understand a timeunit %s, using ps instead\n",select);
+    set_default_time_unit("ps");
+  }
+  else {
+    if (strcmp(timestr[i], select)==0) {
+      timestr[0] = timestr[i];
+      timefactors[0] = timefactors[i];
+      xvgrtimestr[0] = xvgrtimestr[i];
+      for(j=i; j>1; j--) {
+	timestr[j]=timestr[j-1];
+	timefactors[j]=timefactors[j-1];
+	xvgrtimestr[j]=xvgrtimestr[j-1];
+      }
+      timestr[1]=timestr[0];
+      timefactors[1]=timefactors[0];
+      xvgrtimestr[1]=xvgrtimestr[0];
     }
-    timestr[1]=timestr[0];
-    timefactors[1]=timefactors[0];
-    xvgrtimestr[1]=xvgrtimestr[0];
   }
 }
 
