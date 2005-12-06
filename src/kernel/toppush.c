@@ -1142,9 +1142,9 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     bFoundA = default_nb_params(ftype,bondtype,at,&param,FALSE,bGenPairs);
     bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
   }
-  bDef    = TRUE;
   
-  nrfp  = NRFP(ftype);
+  nrfp = NRFP(ftype);
+  bDef = (nrfp > 0);
   nrfpA=interaction_function[ftype].nrfpA;
   nrfpB=interaction_function[ftype].nrfpB;
   
