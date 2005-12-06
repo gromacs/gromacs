@@ -158,7 +158,7 @@ int gmx_rmsf(int argc,char *argv[])
   static char *desc[] = {
     "g_rmsf computes the root mean square fluctuation (RMSF, i.e. standard ",
     "deviation) of atomic positions ",
-    "after first fitting to a reference frame.[PAR]",
+    "after (optionally) fitting to a reference frame.[PAR]",
     "With option [TT]-oq[tt] the RMSF values are converted to B-factor",
     "values, which are written to a pdb file with the coordinates, of the",
     "structure file, or of a pdb file when [TT]-q[tt] is specified.",
@@ -180,12 +180,14 @@ int gmx_rmsf(int argc,char *argv[])
     "This shows the directions in which the atoms fluctuate the most and",
     "the least."
   };
-  static bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE;
+  static bool bRes=FALSE,bAniso=FALSE,bdevX=FALSE,bFit=TRUE;
   t_pargs pargs[] = { 
     { "-res", FALSE, etBOOL, {&bRes},
       "Calculate averages for each residue" },
     { "-aniso",FALSE, etBOOL, {&bAniso},
-      "Compute anisotropic termperature factors" }
+      "Compute anisotropic termperature factors" },
+    { "-fit", FALSE, etBOOL, {&bFit},
+      "Do a least squares superposition before computing RMSF. Without this you must make sure that the reference structure and the trajectory match." }
   };
   int          step,nre,natom,natoms,i,g,m,teller=0;
   real         t,lambda,*w_rls,*w_rms;
@@ -235,7 +237,7 @@ int gmx_rmsf(int argc,char *argv[])
     { efLOG, "-dir", "rmsf",  ffOPTWR }
   };
 #define NFILE asize(fnm)
-
+ 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE ,
 		    NFILE,fnm,asize(pargs),pargs,asize(desc),desc,0,NULL);
@@ -282,22 +284,25 @@ int gmx_rmsf(int argc,char *argv[])
     copy_mat(box,pdbbox);
   }
   
-  sub_xcm(xref,isize,index,top.atoms.atom,xcm,FALSE);
-
+  if (bFit)
+    sub_xcm(xref,isize,index,top.atoms.atom,xcm,FALSE);
+  
   natom = read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
     
   /* Now read the trj again to compute fluctuations */
   teller = 0;
   do {
-    /* Remove periodic boundary */
-    rm_pbc(&(top.idef),natom,box,x,x);
-    
-    /* Set center of mass to zero */
-    sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
-    
-    /* Fit to reference structure */
-    do_fit(natom,w_rls,xref,x);
- 
+    if (bFit) {
+      /* Remove periodic boundary */
+      rm_pbc(&(top.idef),natom,box,x,x);
+      
+      /* Set center of mass to zero */
+      sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);
+      
+      /* Fit to reference structure */
+      do_fit(natom,w_rls,xref,x);
+    }
+     
     /* Calculate Anisotropic U Tensor */  
     for(i=0; i<isize; i++) {
       aid = index[i];
