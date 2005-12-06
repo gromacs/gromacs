@@ -1,11 +1,11 @@
-# ACX_CHECK_FFTW()
+# ACX_CHECK_FFTW2()
 # ----------------
 # This macro checks for fftw header files and libraries,
 # including the possible prefixing with s or d to determine precision.
 # Arg 1 is the fftw header/library name to check for, without 
 # prefix or anything else (e.g. rfftw_mpi for real MPI transforms)
 # Arg 2 is the size of the real variable used.
-AC_DEFUN([ACX_CHECK_FFTW],
+AC_DEFUN([ACX_CHECK_FFTW2],
 [
 if test -z "$ac_fftw_firstname"; then
 
@@ -50,11 +50,11 @@ if test "$ok" != "yes"; then
 [
 AC_MSG_RESULT(no)
 AC_MSG_ERROR([Cannot find any $prec precision $xfftwname.h or $1.h]
-[Do you have $prec precision FFTW installed? If you are using packages,]
+[Do you have $prec precision FFTW2 installed? If you are using packages,]
 [note that you also need fftw-devel to compile GROMACS. You can find the ]
 [software at www.fftw.org, and detailed instructions at www.gromacs.org.]
-[If you compiled FFTW yourself:                                        ]
-[Note that the default FFTW setup is double precision. Change the FFTW]
+[If you compiled FFTW2 yourself:                                        ]
+[Note that the default FFTW2 setup is double precision. Change the FFTW]
 [configuration to single with --enable-float. If you want MPI support,]
 [use --enable-mpi. It is a good idea to install both single & double.] 
 [If your sysadm doesn't want to install it you can do it to a location]
@@ -72,11 +72,11 @@ fftwname=$1
 ],
 [
 AC_MSG_ERROR([Cannot find any $prec precision $xfftwname.h or $1.h]
-[Do you have $prec precision FFTW installed? If you are using packages,]
+[Do you have $prec precision FFTW2 installed? If you are using packages,]
 [note that you also need fftw-devel to compile GROMACS. You can find the ]
 [software at www.fftw.org, and detailed instructions at www.gromacs.org.]
-[If you compiled FFTW yourself:                                       ]
-[Note that the default FFTW setup is double precision. Change the FFTW]
+[If you compiled FFTW2 yourself:                                       ]
+[Note that the default FFTW2 setup is double precision. Change the FFTW]
 [configuration to single with --enable-float. If you want MPI support,]
 [use --enable-mpi. It is a good idea to install both single & double.] 
 [If your sysadm doesn't want to install it you can do it to a location]
