@@ -697,27 +697,6 @@ void update(int          natoms,  /* number of atoms in simulation */
                    state->x,xprime,state->v,vold,force,state->sd_X,
                    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
                    sd_gaussrand,TRUE);
-      prepare_edsam(step,start,homenr,cr,xprime,edyn);
-      if (bHaveConstr) {
-        /* Constrain the coordinates xprime */
-        constrain(stdlog,top,inputrec,step,md,start,homenr,state->x,xprime,NULL,
-                  state->box,state->lambda,dvdlambda,&vir_con,nrnb,TRUE);
-
-	/* A correction factor eph is needed for the SD constraint force */
-	/* Here we can, unfortunately, not have proper corrections
-	 * for different friction constants, so we use the first one.
-	 */
-	for(i=0; i<DIM; i++)
-	  for(m=0; m<DIM; m++)
-	    vir_part[i][m] += sdc[0].eph*vir_con[i][m];
-      }
-      do_update_sd(start,homenr,
-                   inputrec->opts.acc,inputrec->opts.nFreeze,
-                   md->invmass,md->ptype,
-                   md->cFREEZE,md->cACC,md->cTC,
-                   state->x,xprime,state->v,vold,force,state->sd_X,
-                   inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                   sd_gaussrand,FALSE);
     } else if (inputrec->eI == eiBD) {
       do_update_bd(start,homenr,dt,
                    inputrec->opts.nFreeze,md->invmass,md->ptype,
@@ -730,8 +709,7 @@ void update(int          natoms,  /* number of atoms in simulation */
       gmx_fatal(FARGS,"Don't know how to update coordinates");
     }
     where();
-    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE,
-	     inputrec->eI==eiSD ? 2*homenr : homenr);
+    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
     dump_it_all(stdlog,"After update",
 		natoms,state->x,xprime,state->v,vold,force);
   } else {
@@ -753,16 +731,23 @@ void update(int          natoms,  /* number of atoms in simulation */
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
-  if (inputrec->eI!=eiSD)
-    prepare_edsam(step,start,homenr,cr,xprime,edyn);
+  prepare_edsam(step,start,homenr,cr,xprime,edyn);
   
   if (bHaveConstr) {
     /* Constrain the coordinates xprime */
     constrain(stdlog,top,inputrec,step,md,start,homenr,state->x,xprime,NULL,
-              state->box,state->lambda,dvdlambda,
-	      (inputrec->eI==eiSD) ? NULL : &vir_con,nrnb,TRUE);
-    if (inputrec->eI != eiSD)
+              state->box,state->lambda,dvdlambda,&vir_con,nrnb,TRUE);
+    if (inputrec->eI == eiSD) {
+      /* A correction factor eph is needed for the SD constraint force */
+      /* Here we can, unfortunately, not have proper corrections
+       * for different friction constants, so we use the first one.
+       */
+      for(i=0; i<DIM; i++)
+	for(m=0; m<DIM; m++)
+	  vir_part[i][m] += sdc[0].eph*vir_con[i][m];
+    } else {
       m_add(vir_part,vir_con,vir_part);
+    }
     where();
 
     dump_it_all(stdlog,"After Shake",
@@ -815,11 +800,29 @@ void update(int          natoms,  /* number of atoms in simulation */
     do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
  	     force,state->box,edyn,bDoUpdate);
   };  
-
-  /* We must always unshift here, also if we did not shake
-   * x was shifted in do_force */
+  
   where();
   if (bDoUpdate) {
+    if (inputrec->eI == eiSD) {
+      /* The second part of the SD integration */
+      do_update_sd(start,homenr,
+		   inputrec->opts.acc,inputrec->opts.nFreeze,
+		   md->invmass,md->ptype,
+		   md->cFREEZE,md->cACC,md->cTC,
+		   state->x,xprime,state->v,vold,force,state->sd_X,
+		   inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+		   sd_gaussrand,FALSE);
+      inc_nrnb(nrnb, eNR_UPDATE, homenr);
+      
+      if (bHaveConstr) {
+	/* Constrain the coordinates xprime */
+	constrain(stdlog,top,inputrec,step,md,start,homenr,state->x,xprime,NULL,
+		  state->box,state->lambda,dvdlambda,NULL,nrnb,TRUE);
+      }
+    }
+    
+    /* We must always unshift here, also if we did not shake
+     * x was shifted in do_force */
     if ((inputrec->ePBC == epbcXYZ) && (graph->nnodes > 0)) {
       unshift_x(graph,state->box,state->x,xprime);
       if (TRICLINIC(state->box))
