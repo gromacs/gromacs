@@ -1022,7 +1022,7 @@ int gmx_cluster(int argc,char *argv[])
   int      isize=0,ifsize=0,iosize=0;
   atom_id  *index=NULL, *fitidx, *outidx;
   char     *grpname;
-  real     rmsd,**d1,**d2,*time,*mass=NULL;
+  real     rmsd,**d1,**d2,*time,time_invfac,*mass=NULL;
   char     buf[STRLEN],buf1[80],title[STRLEN];
   bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj,bWriteDist;
 
@@ -1120,8 +1120,8 @@ int gmx_cluster(int argc,char *argv[])
     trx_out_fn = NULL;
   if (bReadMat && time_factor()!=1) {
     fprintf(stderr,
-	    "\nWarning: will not change times when reading matrix file\n");
-    default_time();
+	    "\nWarning: assuming the time unit in %s is %s\n",
+	    opt2fn("-dm",NFILE,fnm),time_unit());
   }
   if (trx_out_fn && !bReadTraj)
     fprintf(stderr,"\nWarning: "
@@ -1254,6 +1254,9 @@ int gmx_cluster(int argc,char *argv[])
     nf = readmat[0].nx;
     sfree(time);
     time = readmat[0].axis_x;
+    time_invfac = time_invfactor();
+    for(i=0; i<nf; i++)
+      time[i] *= time_invfac;
 
     rms = init_mat(readmat[0].nx,method == m_diagonalize);
     convert_mat(&(readmat[0]),rms);

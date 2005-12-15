@@ -190,7 +190,7 @@ static void edit_files(char **fnms,int nfiles,real *readtime, real *timestep,
 		    settime[i]=FLT_MAX;			  
 		  }
 		  else {
-		    settime[i]=strtod(inputstring,&chptr)/time_factor();
+		    settime[i]=strtod(inputstring,&chptr)*time_invfactor();
 		    if(chptr==inputstring) {
 		      fprintf(stderr,"'%s' not recognized as a floating point number, 'c' or 'l'. "
 			      "Try again: ",inputstring);

@@ -167,14 +167,14 @@ extern char *xvgr_tlabel(void);
 extern real time_factor(void);
 /* return time conversion factor from ps (i.e. 1e-3 for ps->ns) */
 
+extern real time_invfactor(void);
+/* return inverse time conversion factor from ps (i.e. 1e3 for ps->ns) */
+
 extern real convert_time(real time);
 /* return converted time */
 
 extern void convert_times(int n, real *time);
 /* convert array of times */
-
-extern void default_time(void);
-/* set time conversion to default (i.e. ps) */
 
 /* For trxframe.flags, used in trxframe read routines.
  * When a READ flag is set, the field will be read when present,
