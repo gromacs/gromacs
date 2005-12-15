@@ -67,13 +67,13 @@
  ******************************************************************/
 
 static real timefactor     = NOTSET;
+static real timeinvfac     = NOTSET;
 static char *timelabel     = NULL;
-static char *timestr[]     = { NULL, "fs", "ps", "ns", "us", "ms", "s",   
-			       "m", "h", NULL };
-static real timefactors[]  = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 
-			       (1.0/60.0)*1e-12, (1.0/3600.0)*1e-12, 0 };
+static char *timestr[]     = { NULL, "fs", "ps", "ns", "us", "ms", "s", NULL };
+static real timefactors[]  = { 0,    1e3,  1,    1e-3, 1e-6, 1e-9, 1e-12, 0 };
+static real timeinvfacs[]  = { 0,   1e-3,  1,     1e3,  1e6,  1e9,  1e12, 0 };
 static char *xvgrtimestr[] = { NULL, "fs", "ps", "ns", "\\8m\\4s", "ms", "s",
-			       "m", "h", NULL };
+			       NULL };
 static bool  bView         = FALSE;
 static bool  bXvgrCodes    = TRUE;
 static char  *program      = NULL;
@@ -206,8 +206,10 @@ char *xvgr_tlabel(void)
 
 static void init_time_factor()
 {
-  if (timefactor == NOTSET) 
+  if (timefactor == NOTSET) {
     timefactor = timefactors[nenum(timestr)];
+    timeinvfac = timeinvfacs[nenum(timestr)];
+  }
 }
 
 real time_factor(void)
@@ -215,6 +217,13 @@ real time_factor(void)
   init_time_factor();
   
   return timefactor;
+}
+
+real time_invfactor(void)
+{
+  init_time_factor();
+  
+  return timeinvfac;
 }
 
 real convert_time(real time)
@@ -250,24 +259,21 @@ static void set_default_time_unit(char *select)
   i=1;
   while(timestr[i] && strcmp(timestr[i], select)!=0)
     i++;
-  if (timestr[i] == NULL) {
-    fprintf(stderr,"Don't understand a timeunit %s, using ps instead\n",select);
-    set_default_time_unit("ps");
-  }
-  else {
-    if (strcmp(timestr[i], select)==0) {
-      timestr[0] = timestr[i];
-      timefactors[0] = timefactors[i];
-      xvgrtimestr[0] = xvgrtimestr[i];
-      for(j=i; j>1; j--) {
-	timestr[j]=timestr[j-1];
-	timefactors[j]=timefactors[j-1];
-	xvgrtimestr[j]=xvgrtimestr[j-1];
-      }
-      timestr[1]=timestr[0];
-      timefactors[1]=timefactors[0];
-      xvgrtimestr[1]=xvgrtimestr[0];
+  if (strcmp(timestr[i], select)==0) {
+    timestr[0] = timestr[i];
+    timefactors[0] = timefactors[i];
+    timeinvfacs[0] = timeinvfacs[i];
+    xvgrtimestr[0] = xvgrtimestr[i];
+    for(j=i; j>1; j--) {
+      timestr[j]=timestr[j-1];
+      timefactors[j]=timefactors[j-1];
+      timeinvfacs[j]=timeinvfacs[j-1];
+      xvgrtimestr[j]=xvgrtimestr[j-1];
     }
+    timestr[1]=timestr[0];
+    timefactors[1]=timefactors[0];
+    timeinvfacs[1]=timeinvfacs[0];
+    xvgrtimestr[1]=xvgrtimestr[0];
   }
 }
 
@@ -779,7 +785,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   init_time_factor();
   for(i=0; i<npall; i++) {
     if ((all_pa[i].type == etTIME) && (*all_pa[i].u.r >= 0)) {
-      *all_pa[i].u.r /= timefactor;
+      *all_pa[i].u.r *= timeinvfac;
     }
   }
   
