@@ -93,7 +93,7 @@ static void calculate_normal(atom_id index[],rvec x[],rvec result,rvec center)
 }
 
 /* calculate the angle and distance between the two groups */
-static void calc_angle(matrix *box,rvec x[], atom_id index1[], 
+static void calc_angle(matrix box,rvec x[], atom_id index1[], 
 		       atom_id index2[], int gnx1, int gnx2,
 		       real *angle,      real *distance, 
 		       real *distance1,  real *distance2)
@@ -111,7 +111,7 @@ static void calc_angle(matrix *box,rvec x[], atom_id index1[],
   t_pbc pbc;
 
   if (box)
-    set_pbc(&pbc,*box);
+    set_pbc(&pbc,box);
 
   switch(gnx1)
     {
@@ -228,7 +228,7 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
 
       rm_pbc(&(top->idef),natoms,box,x0,x0);
       
-      calc_angle(bPBC ? &box : NULL,x0,index1,index2,gnx1,gnx2,&angle,
+      calc_angle(bPBC ? box : NULL,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
       
       fprintf(sg_angle,"%12g  %12g  %12g\n",t,angle,acos(angle)*180.0/M_PI);
@@ -254,7 +254,7 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
   sfree(x0);
 }
 
-static void calc_angle_single(matrix *box,
+static void calc_angle_single(matrix box,
 			      rvec xzero[],
 			      rvec x[], 
 			      atom_id index1[],
@@ -280,7 +280,7 @@ static void calc_angle_single(matrix *box,
   rvec  h1,h2,h3,h4,h5;  	/* temp. vectors */ 
   
   if (box)
-    set_pbc(&pbc,*box);
+    set_pbc(&pbc,box);
 
   switch(gnx1) {
   case 3:           /* group 1 defines plane */
@@ -310,14 +310,14 @@ static void calc_angle_single(matrix *box,
   
   *angle = cos_angle(normal1,normal2);
 
-  if (*box)
+  if (box)
     pbc_dx(&pbc,center1,center2,h3);
   else
     rvec_sub(center1,center2,h3); 
   *distance = norm(h3);
   
   if (gnx1 == 3 && gnx2 == 2) {
-    if (*box) {
+    if (box) {
       pbc_dx(&pbc,center1,x[index2[0]],h4);
       pbc_dx(&pbc,center1,x[index2[1]],h5);
     } else {
@@ -394,7 +394,7 @@ void sgangle_plot_single(char *fn,char *afile,char *dfile,
     }
     
     
-    calc_angle_single(bPBC ? &box : NULL,
+    calc_angle_single(bPBC ? box : NULL,
 		      xzero,x0,index1,index2,gnx1,gnx2,&angle,
 		      &distance,&distance1,&distance2);
     
