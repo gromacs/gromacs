@@ -148,8 +148,17 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_parallel(stdlog,ftp2fn(efTPX,nfile,fnm),cr,
 		  inputrec,top,state,&mdatoms,
 		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
-    if (ddxyz[XX]==1 && ddxyz[YY]==1 && ddxyz[ZZ]==1)
+    if (ddxyz[XX]==1 && ddxyz[YY]==1 && ddxyz[ZZ]==1) {
       split_system_first(stdlog,inputrec,state,cr,top,nsb);
+    } else {
+      /* Set natoms to the total number of atoms in the system
+       * to have large enough arrays.
+       * This should be optimized !!!
+       */
+      nsb->natoms = top->atoms.nr;
+      nsb->index[cr->nodeid] = 0;
+      nsb->homenr[cr->nodeid] = 0;
+    }
     
     /* This code has to be made aware of splitting the machine */
     bParVsites=setup_parallel_vsites(&(top->idef),cr,nsb,&vsitecomm);
