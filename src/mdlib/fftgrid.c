@@ -45,6 +45,7 @@
 #include "network.h"
 #include "fftgrid.h"
 
+#define GMX_WITHOUT_FFTW
 
 #define FFT_WORKSPACE
 

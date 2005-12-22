@@ -67,6 +67,7 @@ static void init_range_check()
 void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
 	       real rlistlong,int ncg)
 {
+  static int nr_alloc=0;
   int     m;
   ivec    cx;
 
@@ -81,10 +82,15 @@ void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
   grid->maxcells= 2*grid->ncells;
   grid->delta	= delta;
   grid->gmax    = 0;
-  snew(grid->cell_index,grid->nr+1);
-  snew(grid->a,grid->nr+1);
-  snew(grid->index,grid->maxcells);
-  snew(grid->nra,grid->maxcells);
+  if (grid->nr > nr_alloc) {
+    nr_alloc = over_alloc(grid->nr)+1;
+    srenew(grid->cell_index,nr_alloc);
+    srenew(grid->a,nr_alloc);
+  }
+  if (grid->index == NULL)
+    snew(grid->index,grid->maxcells);
+  if (grid->nra == NULL)
+    snew(grid->nra,grid->maxcells);
   
   fprintf(log,"Grid: %d x %d x %d cells\n",
 	  grid->nrx,grid->nry,grid->nrz);

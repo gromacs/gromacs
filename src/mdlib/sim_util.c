@@ -67,6 +67,7 @@
 #include "xvgr.h"
 #include "qmmm.h"
 #include "mpelogging.h"
+#include "domdec.h"
 
 #ifdef GMX_MPI
 #include "mpi.h"
@@ -218,8 +219,8 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 	      real lambda,t_graph *graph,
 	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 	      t_forcerec *fr,rvec mu_tot,
-	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn)
-
+	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn,
+	      bool bReInit)
 {
   static rvec box_size;
   static real dvdl_lr = 0;
@@ -268,7 +269,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 
    if (bCalcCGCM) {
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
-    if (PAR(cr))
+    if (PAR(cr) && cr->dd==NULL)
       move_cgcm(fplog,cr,fr->cg_cm,nsb->workload);
     if (debug)
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
@@ -280,23 +281,30 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   { 
     GMX_MPE_LOG(ev_send_coordinates_start);
     
-    GMX_MPE_LOG(ev_shift_start);
-    shift_self(graph,box,x);
-    GMX_MPE_LOG(ev_shift_finish);
+    if (graph) {
+      GMX_MPE_LOG(ev_shift_start);
+      shift_self(graph,box,x);
+      GMX_MPE_LOG(ev_shift_finish);
+    }
 
     send_coordinates(nsb,x,mdatoms->chargeA,mdatoms->chargeB,step >= inputrec->nsteps,inputrec->efep!=efepNO,cr); 
 
-    GMX_MPE_LOG(ev_shift_start);
-    unshift_self(graph,box,x);
-    GMX_MPE_LOG(ev_shift_finish);
-    
+    if (graph) {
+      GMX_MPE_LOG(ev_shift_start);
+      unshift_self(graph,box,x);
+      GMX_MPE_LOG(ev_shift_finish);
+    }    
+
     GMX_MPE_LOG(ev_send_coordinates_finish);
   }
 #endif /* GMX_MPI */
 
   /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
-    move_x(fplog,cr->left,cr->right,x,nsb,nrnb);
+    if (cr->dd)
+      dd_move_x(cr->dd,x);
+    else
+      move_x(fplog,cr->left,cr->right,x,nsb,nrnb);
     gmx_sum(2*DIM,mu,cr);
   }
   for(i=0; i<2; i++)
@@ -326,7 +334,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     dvdl_lr = 0; 
 
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,nsb,step,lambda,&dvdl_lr,bCalcCGCM,bDoForces);
+       cr,nrnb,nsb,step,lambda,&dvdl_lr,bCalcCGCM,bDoForces,bReInit);
   }
 
   if (bDoForces) {
@@ -354,13 +362,15 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   /* update QMMMrec, if necessary */
   if(fr->bQMMM)
     update_QMMMrec(cr,fr,x,mdatoms,box,top);
-  
+
   /* Compute the forces */    
   force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
+	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn,bReInit);
   GMX_BARRIER(cr->mpi_comm_mygroup);
+    fprintf(stderr,"%d here2\n",cr->nodeid);
+  MPI_Barrier(MPI_COMM_WORLD);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
@@ -382,7 +392,10 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     
     /* Communicate the forces */
     if (PAR(cr)) {
-      move_f(fplog,cr->left,cr->right,f,buf,nsb,nrnb);
+      if (cr->dd)
+	dd_move_f(cr->dd,f,buf);
+      else
+	move_f(fplog,cr->left,cr->right,f,buf,nsb,nrnb);
       /* In case of node-splitting, the PP nodes receive the long-range 
        * forces, virial and energy from the PME nodes here 
        */    

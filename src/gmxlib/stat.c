@@ -222,7 +222,7 @@ int write_traj(FILE *log,t_commrec *cr,
   }
 
 #define MX(xvf) moveit(cr,log,cr->left,cr->right,#xvf,xvf,nsb)
-  if ((cr->nnodes-cr->npmenodes) > 1) {
+  if ((cr->nnodes-cr->npmenodes) > 1 && cr->dd==NULL) {
     MX(xx);
     MX(vv);
     MX(ff);

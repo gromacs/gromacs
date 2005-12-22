@@ -120,10 +120,11 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 			  real lambda,real *dvdlambda,tensor *vir,
 			  t_nrnb *nrnb,bool bCoordinates,bool bInit)
 {
+  static bool      bFirst=TRUE;
   static int       nblocks=0;
   static int       *sblock=NULL;
-  static int       nsettle,settle_type;
-  static int       *owptr;
+  static int       nsettle,nsettle_alloc=0,settle_type;
+  static int       *owptr=NULL;
   static t_lincsdata *lincsd=NULL;
   static bool      bDumpOnError = TRUE;
   
@@ -142,16 +143,21 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   bOK = TRUE;
   if (bInit) {
     /* Output variables, initiate them right away */
-    
-    if ((ir->etc==etcBERENDSEN) || (ir->epc==epcBERENDSEN))
-      please_cite(log,"Berendsen84a");
-    
-    bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
+
+    if (bFirst) {
+      if ((ir->etc==etcBERENDSEN) || (ir->epc==epcBERENDSEN))
+	please_cite(log,"Berendsen84a");
+      
+      bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
+    }
     
     /* Put the oxygen atoms in the owptr array */
     nsettle=idef->il[F_SETTLE].nr/2;
     if (nsettle > 0) {
-      snew(owptr,nsettle);
+      if (nsettle > nsettle_alloc) {
+	nsettle_alloc = over_alloc(nsettle);
+	srenew(owptr,nsettle_alloc);
+      }
       settle_type=idef->il[F_SETTLE].iatoms[0];
       for (j=0; (j<idef->il[F_SETTLE].nr); j+=2) {
 	if (idef->il[F_SETTLE].iatoms[j] != settle_type)
@@ -166,11 +172,16 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
        *  sfree(idef->il[F_SETTLE].iatoms);
        */
       
-      please_cite(log,"Miyamoto92a");
+      if (bFirst)
+	please_cite(log,"Miyamoto92a");
     }
     
     ncons=idef->il[F_SHAKE].nr/3;
     if (ncons > 0) {
+      if (!bFirst)
+	gmx_fatal(FARGS,
+		  "Constraint reinitialization only implemented for settle");
+
       bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
       nblocks=blocks->multinr[idef->nodeid] - bstart;
       if (debug) 
@@ -245,15 +256,20 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     
     if (idef->il[F_SHAKE].nr) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
-	please_cite(stdlog,"Hess97a");
+	if (bFirst)
+	  please_cite(stdlog,"Hess97a");
 	lincsd = init_lincs(stdlog,&top->idef,start,homenr,
 			    EI_DYNAMICS(ir->eI));
 	set_lincs_matrix(lincsd,md->invmass);
 	lincsd->matlam = lambda;
       } 
-      else
-	please_cite(stdlog,"Ryckaert77a");
+      else {
+	if (bFirst)
+	  please_cite(stdlog,"Ryckaert77a");
+      }
     }
+    
+    bFirst = FALSE;
   } 
   else {
     /* !bInit */

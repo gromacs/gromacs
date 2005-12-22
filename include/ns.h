@@ -86,7 +86,8 @@ extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     t_topology *top,t_groups *grps,
 			     t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
 			     t_mdatoms *md,real lambda,real *dvdlambda,
-			     bool bFillGrid,bool bDoForces);
+			     bool bFillGrid,bool bDoForces,
+			     bool bReInit);
  
 
 #endif	/* _ns_h */

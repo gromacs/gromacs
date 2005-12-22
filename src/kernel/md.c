@@ -70,6 +70,9 @@
 #include "repl_ex.h"
 #include "qmmm.h"
 #include "mpelogging.h"
+#include "domdec.h"
+
+#include "constr.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -96,7 +99,7 @@ static RETSIGTYPE signal_handler(int n)
 
 void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
-	      int nDlb,int nstepout,
+	      ivec ddxyz,int nDlb,int nstepout,
 	      t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 	      unsigned long Flags)
 {
@@ -145,7 +148,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_parallel(stdlog,ftp2fn(efTPX,nfile,fnm),cr,
 		  inputrec,top,state,&mdatoms,
 		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
-    split_system_first(stdlog,inputrec,state,cr,top,nsb);
+    if (ddxyz[XX]==1 && ddxyz[YY]==1 && ddxyz[ZZ]==1)
+      split_system_first(stdlog,inputrec,state,cr,top,nsb);
     
     /* This code has to be made aware of splitting the machine */
     bParVsites=setup_parallel_vsites(&(top->idef),cr,nsb,&vsitecomm);
@@ -308,8 +312,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (pmeduty(cr) != epmePMEONLY) 
     {
       start_t=do_md(stdlog,cr,mcr,nfile,fnm,
-		    bVerbose,bCompact,bVsites,
-		    bParVsites ? &vsitecomm : NULL,
+		    bVerbose,bCompact,
+		    ddxyz,bVsites,bParVsites ? &vsitecomm : NULL,
 		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
 		    mdatoms,nsb,nrnb,graph,edyn,fr,
 		    repl_ex_nst,repl_ex_seed,
@@ -387,10 +391,11 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
 time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
-	     bool bVsites, t_comm_vsites *vsitecomm,
-	     int stepout,t_inputrec *inputrec,t_groups *grps,t_topology *top,
+	     ivec ddxyz,bool bVsites, t_comm_vsites *vsitecomm,
+	     int stepout,t_inputrec *inputrec,t_groups *grps,
+	     t_topology *top_global,
 	     real ener[],t_fcdata *fcd,
-	     t_state *state,rvec vold[],rvec vt[],rvec f[],
+	     t_state *state_global,rvec vold[],rvec vt[],rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
@@ -403,7 +408,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
-	     bFullPBC,bForceUpdate=FALSE;
+	     bFullPBC,bForceUpdate=FALSE,bReInit;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -416,6 +421,9 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   gmx_repl_ex_t *repl_ex=NULL;
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
+
+  t_topology *top;
+  t_state    *state=NULL;
  
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
@@ -453,10 +461,54 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN) == MD_FFSCAN;
   
   /* Initial values */
-  init_md(cr,inputrec,state->box,&t,&t0,&state->lambda,&lam0,&mynrnb,top,
+  init_md(cr,inputrec,state_global->box,&t,&t0,&state_global->lambda,&lam0,
+	  &mynrnb,top_global,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
+
+  if (PAR(cr) &&
+      (ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
+    t_block  *cgs=&(top_global->blocks[ebCGS]);
+
+    set_over_alloc(TRUE);
+
+    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,cgs->index[cgs->nr],
+				       top_global->atoms.nr,state_global->box);
+
+    if (DDMASTER(cr->dd)) {
+      snew(state,1);
+      *state = *state_global;
+      /* Allocate (too much) new space for the local x and v */
+      snew(state->x,state_global->natoms);
+      for(i=0; i<state->natoms; i++)
+	copy_rvec(state_global->x[i],state->x[i]);
+      if (state_global->v) {
+	snew(state->v,state_global->natoms);
+	for(i=0; i<state->natoms; i++)
+	  copy_rvec(state_global->v[i],state->v[i]);
+      }
+      /* What about f ? */
+    } else {
+      state = state_global;
+    }
+
+    setup_dd_grid(stdlog,state->box,cr->dd);
+
+    get_cg_distribution(stdlog,cr->dd,state->box,&top_global->blocks[ebCGS],
+			state_global->x);
+    fr->cg0 = 0;
+    fr->hcg = dd_ncg_tot(cr->dd);
+    snew(top,1);
+    make_local_top(stdlog,cr->dd,top_global,top,nsb);
+
+    dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
+			state_global,state);
+    dd_move_x(cr->dd,state->x);
+  } else {
+    top = top_global;
+    state = state_global;
+  }
 
   /* init edsam, no effect if edyn->bEdsam==FALSE */
   init_edsam(stdlog,top,inputrec,mdatoms,START(nsb),HOMENR(nsb),cr,edyn);
@@ -503,7 +555,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     do_shakefirst(log,ener,inputrec,nsb,mdatoms,state,vold,buf,f,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
-    
+
   /* Compute initial EKin for all.. */
   if (grps->cosacc.cos_accel == 0)
     calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(inputrec->opts),
@@ -513,8 +565,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		      state->box,state->x,state->v,&(inputrec->opts),
 		      mdatoms,grps,&mynrnb,state->lambda);
   debug_gmx();
-	
-  if (PAR(cr)) 
+
+ if (PAR(cr)) 
   {
     GMX_MPE_LOG(ev_global_stat_start);
        
@@ -529,7 +581,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   temp0 = sum_ekin(TRUE,&(inputrec->opts),grps,ekin,NULL);
 
   debug_gmx();
-  
+   
   /* Initiate data for the special cases */
   if (bFFscan) {
     snew(xcopy,nsb->natoms);
@@ -629,6 +681,38 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     }
     /*if (MASTER(cr) && do_log && !bFFscan)
       print_ebin_header(log,step,t,state->lambda);*/
+    
+    bReInit = FALSE;
+    if (PAR(cr) && cr->dd && 
+	(step % (inputrec->nstlist*100) == 0) && !bFirstStep) {
+      /* Repartition the domain decomposition */
+      dd_collect_state(cr->dd,&top_global->blocks[ebCGS],state,state_global);
+      
+      get_cg_distribution(stdlog,cr->dd,state->box,&top_global->blocks[ebCGS],
+			  state_global->x);
+      make_local_top(stdlog,cr->dd,top_global,top,nsb);
+      
+      /* Temporary hacks !!! */
+      srenew(fr->solvent_type,top->blocks[ebCGS].nr);
+      for(i=1; i<top->blocks[ebCGS].nr; i++)
+	fr->solvent_type[i] = fr->solvent_type[0];
+      srenew(fr->cg_cm,top->blocks[ebCGS].nr);
+      fr->cg0 = 0;
+      fr->hcg = dd_ncg_tot(cr->dd);
+
+      dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
+			  state_global,state);
+      
+      dd_move_x(cr->dd,state->x);
+
+      /* Does not work with shells or flexible constraints yet */
+      bReInit = TRUE;
+
+      /* This should also go via a bReInit construction */
+      init_constraints(stdlog,top,inputrec,mdatoms,
+		       START(nsb),HOMENR(nsb),
+		       inputrec->eI!=eiSteep,cr);
+    }
 
     if (bSimAnn) 
       update_annealing_target_temp(&(inputrec->opts),t);
@@ -736,7 +820,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       do_force(log,cr,mcr,inputrec,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
-	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
+	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn,bReInit);
     }
 
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -788,10 +872,21 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     vv = (do_per_step(step,inputrec->nstvout) || bLastStep) ? state->v : NULL;
     ff = (do_per_step(step,inputrec->nstfout)) ? f : NULL;
 
+    if (PAR(cr) && cr->dd) {
+      if (xx) {
+	xx = state_global->x;
+	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->x,xx);
+      }
+      if (vv) {
+	vv = state_global->v;
+	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->v,vv);
+      }
+      /* Need to fix f */
+    }
     fp_trn = write_traj(log,cr,traj,nsb,step,t,state->lambda,
 			nrnb,nsb->natoms,xx,vv,ff,state->box);
     debug_gmx();
-    
+  
     /* don't write xtc and last structure for rerunMD */
     if (!bRerunMD && !bFFscan) {
       if (do_per_step(step,inputrec->nstxtcout))
@@ -800,7 +895,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       if (bLastStep && MASTER(cr)) {
 	fprintf(stderr,"Writing final coordinates.\n");
 	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		       *top->name, &(top->atoms),state->x,state->v,state->box);
+		       *top->name, &(top->atoms),
+		       state_global->x,state_global->v,state->box);
       }
       debug_gmx();
     }
@@ -967,7 +1063,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       terminate = 0;
     }
       
-    /* Do center of mass motion removal */
+     /* Do center of mass motion removal */
     if (bStopCM && !bFFscan && !bRerunMD) {
       check_cm_grp(log,vcm);
       do_stopcm_grp(log,START(nsb),HOMENR(nsb),state->x,state->v,vcm);

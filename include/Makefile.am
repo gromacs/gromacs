@@ -19,6 +19,7 @@ constr.h \
 copyrite.h \
 dihre.h \
 disre.h \
+domdec.h \
 do_fit.h \
 ebin.h \
 edsam.h \

@@ -125,7 +125,8 @@ extern void ns(FILE       *fplog,
 	       real       lambda,
 	       real       *dvdlambda,
 	       bool       bFillGrid,
-	       bool       bDoForces);
+	       bool       bDoForces,
+	       bool       bReInit);
 /* Call the neighborsearcher */
 
 extern void force(FILE         *fplog,  
@@ -154,7 +155,8 @@ extern void force(FILE         *fplog,
 		  bool         bDoForces,
 		  rvec         mu_tot[2],
 		  bool         bGatherOnly,
-		  t_edsamyn      *edyn);
+		  t_edsamyn      *edyn,
+		  bool         bReInit);
 /* Call all the force routines */
 
 

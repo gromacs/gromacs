@@ -416,7 +416,7 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
   fprintf(log,"Calculating centre of geometry for charge groups %d to %d\n",
 	  cg0,cg1);
 #endif
-  cga     = cgs->a;
+  //cga     = cgs->a;
   cgindex = cgs->index;
   
   /* Compute the center of geometry for all charge groups */
@@ -425,7 +425,8 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
     k1      = cgindex[icg+1];
     nrcg    = k1-k0;
     if (nrcg == 1) {
-      ai = cga[k0];
+      //ai = cga[k0];
+      ai = k0;
       copy_rvec(pos[ai],cg_cm[icg]);
     }
     else {
@@ -433,7 +434,8 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
       
       clear_rvec(cg);
       for(k=k0; (k<k1); k++)  {
-	ai     = cga[k];
+	//ai     = cga[k];
+	ai = k;
 	for(d=0; (d<DIM); d++)
 	  cg[d] += pos[ai][d];
       }
@@ -457,7 +459,7 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
 #ifdef DEBUG
   fprintf(log,"Putting cgs %d to %d in box\n",cg0,cg1);
 #endif
-  cga     = cgs->a;
+  //cga     = cgs->a;
   cgindex = cgs->index;
 
   bTric = TRICLINIC(box);
@@ -471,7 +473,8 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
     
     clear_rvec(cg);
     for(k=k0; (k<k1); k++)  {
-      ai     = cga[k];
+      //      ai     = cga[k];
+      ai = k;
       for(d=0; d<DIM; d++)
 	cg[d] += inv_ncg*pos[ai][d];
     }
@@ -482,14 +485,16 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
 	  for(e=d; e>=0; e--) {
 	    cg[e] += box[d][e];
 	    for(k=k0; (k<k1); k++) 
-	      pos[cga[k]][e] += box[d][e];
+	      //pos[cga[k]][e] += box[d][e];
+	      pos[k][e] += box[d][e];
 	  }
 	}
 	while(cg[d] >= box[d][d]) {
 	  for(e=d; e>=0; e--) {
 	    cg[e] -= box[d][e];
 	    for(k=k0; (k<k1); k++) 
-	      pos[cga[k]][e] -= box[d][e];
+	      //pos[cga[k]][e] -= box[d][e];
+	      pos[k][e] -= box[d][e];
 	  }
 	}
 	cg_cm[icg][d] = cg[d];
@@ -499,12 +504,14 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
 	while(cg[d] < 0) {
 	  cg[d] += box[d][d];
 	  for(k=k0; (k<k1); k++) 
-	    pos[cga[k]][d] += box[d][d];
+	    //pos[cga[k]][d] += box[d][d];
+	    pos[k][d] += box[d][d];
 	}
 	while(cg[d] >= box[d][d]) {
 	  cg[d] -= box[d][d];
 	  for(k=k0; (k<k1); k++) 
-	    pos[cga[k]][d] -= box[d][d];
+	    //pos[cga[k]][d] -= box[d][d];
+	    pos[k][d] -= box[d][d];
 	}
 	cg_cm[icg][d] = cg[d];
       }

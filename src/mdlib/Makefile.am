@@ -12,7 +12,7 @@ lib_LTLIBRARIES = libmd@LIBSUFFIX@.la
 
 libmd@LIBSUFFIX@_la_SOURCES = \
 	calcmu.c	calcvir.c	constr.c	\
-	coupling.c	ebin.c		\
+	coupling.c	domdec.c	ebin.c		\
 	edsam.c		ewald.c         fftgrid.c	\
 	force.c  	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\

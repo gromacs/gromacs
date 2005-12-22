@@ -1166,7 +1166,8 @@ void ns(FILE *fp,
 	real       lambda,
 	real       *dvdlambda,
 	bool       bFillGrid,
-	bool       bDoForces)
+	bool       bDoForces,
+	bool       bReInit)
 {
   static bool bFirst=TRUE;
   static int  nDNL;
@@ -1202,7 +1203,7 @@ void ns(FILE *fp,
   fr->hcg=nsb->workload[cr->nodeid];
 
   nsearch = search_neighbours(fp,fr,x,box,top,grps,cr,nsb,nrnb,md,
-			      lambda,dvdlambda,bFillGrid,bDoForces);
+			      lambda,dvdlambda,bFillGrid,bDoForces,bReInit);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -1232,7 +1233,8 @@ void force(FILE       *fplog,   int        step,
 	   bool       bNBFonly, bool bDoForces,
 	   rvec       mu_tot[],
 	   bool       bGatherOnly,
-	   t_edsamyn *edyn)
+	   t_edsamyn *edyn,
+	   bool       bReInit)
 {
   int     i,nit;
   bool    bDoEpot,bSepDVDL;

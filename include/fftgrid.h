@@ -49,6 +49,8 @@
 
 /* Use FFTW */
 
+#define GMX_WITHOUT_FFTW
+
 #ifndef GMX_WITHOUT_FFTW
 typedef t_complex t_fft_c;
 typedef real      t_fft_r;
@@ -75,6 +77,7 @@ typedef struct {
     t_fft_r *workspace;    
     int      nx,ny,nz,la2r,la2c,la12r,la12c;
   int      nptr,nxyz;
+  /*
 #ifndef GMX_WITHOUT_FFTW
     rfftwnd_plan     plan_fw;
     rfftwnd_plan     plan_bw;
@@ -84,6 +87,7 @@ typedef struct {
     t_parfft         pfft;
 #endif
 #endif
+  */
 } t_fftgrid;
 
 extern t_fftgrid *mk_fftgrid(FILE *fp,bool bParallel,int nx,int ny,

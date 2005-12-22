@@ -178,7 +178,11 @@ int main(int argc,char *argv[])
   static int  nstepout=10;
   static int  nthreads=1;
 
+  static rvec rddxyz={1,1,1};
+
   static t_pargs pa[] = {
+    { "-dd",      FALSE, etRVEC,{&rddxyz},
+      "Domain decomposition grid, 1 is particle dec." },
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start on each node" },
     { "-npme",    FALSE, etINT, {&npme},
@@ -204,7 +208,8 @@ int main(int argc,char *argv[])
   };
   t_edsamyn edyn;
   unsigned long Flags;
-
+  ivec     ddxyz;
+  
   cr = init_par(&argc,&argv);
   edyn.bEdsam=FALSE;
 
@@ -247,7 +252,11 @@ int main(int argc,char *argv[])
   Flags = Flags | (bMultiSim ? MD_MULTISIM : 0);
   Flags = Flags | (bGlas     ? MD_GLAS     : 0);
 
-  mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,nDLB,nstepout,
+  ddxyz[XX] = (int)(rddxyz[XX] + 0.5);
+  ddxyz[YY] = (int)(rddxyz[YY] + 0.5);
+  ddxyz[ZZ] = (int)(rddxyz[ZZ] + 0.5);
+
+  mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,ddxyz,nDLB,nstepout,
 	   &edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)

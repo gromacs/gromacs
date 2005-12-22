@@ -67,8 +67,9 @@
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
 		    int nfile,t_filenm fnm[],
-		    bool bVerbose,bool bCompact,bool bVsites,
-		    t_comm_vsites *vsitecomm,int stepout,
+		    bool bVerbose,bool bCompact,
+		    ivec ddxyz,
+		    bool bVsites,t_comm_vsites *vsitecomm,int stepout,
 		    t_inputrec *inputrec,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
@@ -190,7 +191,8 @@ extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
 		     bool bVerbose,real lambda,t_graph *graph,
 		     bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 		     t_forcerec *fr, rvec mu_tot,
-		     bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn);
+		     bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn,
+		     bool bReInit);
 
 extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
 		     
@@ -292,7 +294,7 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   
 extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
-		     int nDlb,int nstepout,
+		     ivec ddxyz,int nDlb,int nstepout,
 		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
