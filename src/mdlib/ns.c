@@ -613,6 +613,13 @@ put_in_list(bool              bHaveVdW[],
   int       iwater,jwater;
   t_nblist  *nlist;
 
+  /*
+  fprintf(stderr,"i %d j",icg);
+  for(i=0; i<nj; i++)
+    fprintf(stderr," %d",jjcg[i]);
+  fprintf(stderr,"\n");
+  */
+  
 #ifdef SORTNLIST
   /* Quicksort the charge groups in the neighbourlist to obtain
    * better caching properties. We do this only for the short range, 
@@ -1629,7 +1636,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 
   debug_gmx();
 
-  bDomDec = (cr->dd != NULL);
+  bDomDec = (cr->nnodes > 1);
 
   if (bDomDec) {
     cg0 = 0;
@@ -1647,12 +1654,12 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 
   /* Loop over charge groups */
   for(iicg=cg0; (iicg < cg1); iicg++) {
-      icg      = cg_index[iicg];
+    icg      = cg_index[iicg];
     /* Consistency check */
     if (icg != iicg)
       gmx_fatal(FARGS,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
 		  __LINE__);
-    //for(icg=cg0; (icg < cg1); icg++) {
+
     if(bMakeQMMMnblist)
     { 
         /* Skip this charge group if it is not a QM atom while making a
@@ -1698,7 +1705,6 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
         setexcl(cgs->index[icg],cgs->index[icg+1],&top->atoms.excl,TRUE,bexcl);
 
 	if (bDomDec) {
-	  /* We should make this more efficient !!! */
 	  jcg0 = dd_cg_j0(cr->dd,icg);
 	  jcg1 = dd_cg_j1(cr->dd,icg);
 	  min_icg = 0;
@@ -1792,10 +1798,6 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 		    /* Find the offset in the cg list */
 		    cgj0 = gridind[cj];
 		    
-		    /* Check if all j's are out of range so we
-		     * can skip the whole cell.
-		     * Should save some time, especially with DD.
-		     */
 		    if (grida[cgj0] >= min_icg &&
 			(grida[cgj0] >= jcg1 || grida[cgj0+nrj-1] < jcg0))
 		      continue;
@@ -1957,12 +1959,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     static   bool        bFirst=TRUE;
     static   t_grid      *grid=NULL;
     static   t_excl      *bexcl=NULL;
-    static   bool        *bHaveVdW=NULL;
+    static   bool        *bHaveVdW;
     static   t_ns_buf    **ns_buf=NULL;
     static   int         *cg_index=NULL,*slab_index=NULL;
     static   bool        *bExcludeAlleg=NULL;
-    static   int         nra_alloc=0,cg_alloc=0;
-
+  
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
   int      i,j,m,ngid;
@@ -1980,6 +1981,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   bGrid=fr->bGrid;
   ngid=top->atoms.grps[egcENER].nr;
   
+  /* Temporary fix for domain decomposition !!! */
+  if (grid) {
+    grid->nr  = cgs->nr;
+  }
+
   for(m=0; (m<DIM); m++)
     box_size[m]=box[m][m];
   
@@ -1995,7 +2001,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   }
 
   /* First time initiation of arrays etc. */  
-  if (bFirst || bReInit) {
+  if (bFirst) {
     int icg,nr_in_cg,maxcg;
     
     /* Compute largest charge groups size (# atoms) */
@@ -2013,16 +2019,13 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       gmx_fatal(FARGS,"Max #atoms in a charge group: %d > %d\n",
 		  nr_in_cg,maxcg);
       
-    if (cgs->nra > nra_alloc) {
-      nra_alloc = over_alloc(cgs->nra);
-      srenew(bexcl,nra_alloc);
-    }
-    
-    if (cgs->nr > cg_alloc) {
-      /* Check for charge groups with all energy groups excluded */
-      cg_alloc = over_alloc(cgs->nr);
-      srenew(bExcludeAlleg,cg_alloc);
-    }
+    /* Temporary hacks !!! */
+    //snew(bexcl,cgs->nra);
+    snew(bexcl,2*cgs->nra);
+
+    /* Check for charge groups with all energy groups excluded */
+    //snew(bExcludeAlleg,cgs->nr);
+    snew(bExcludeAlleg,2*cgs->nr);
     for(i=0;i<cgs->nr;i++) {
       allexcl=TRUE;
       /* Make ptr to the excl list for the 1st atoms energy group */
@@ -2038,6 +2041,10 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       bExcludeAlleg[i]=allexcl;
     }
     
+    /* Temporary hack !!! */
+    for(i=cgs->nr;i<2*cgs->nr;i++)
+      bExcludeAlleg[i] = TRUE;
+
     debug_gmx();
 
     if ((ptr=getenv("NLIST")) != NULL) {
@@ -2062,31 +2069,32 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 		"from charge group index %d to %d on node %d\n",
 		fr->cg0,fr->cg0+fr->hcg,cr->nodeid);
     }
-    /* Do we need cg_index? !!! */
+    /* Temporary hack !!! */
+    /*
     snew(cg_index,cgs->nr+1);
     for(i=0; (i<=cgs->nr);  i++)
       cg_index[i] = i;
+    */
+    snew(cg_index,2*cgs->nr+1);
+    for(i=0; (i<=2*cgs->nr);  i++)
+      cg_index[i] = i;
 
     if (bGrid) {
-      if (grid == NULL)
-	snew(grid,1);
-      /* ndelta=1 is probably better, but we should do benchmarks */
-      init_grid(log,grid,1 + 0*fr->ndelta,box,fr->rlistlong,cgs->nr);
+      snew(grid,1);
+      init_grid(log,grid,1+0*fr->ndelta,box,fr->rlistlong,cgs->nr);
     }
     
-    if (bHaveVdW == NULL) {
-      /* Create array that determines whether or not atoms have VdW */
-      snew(bHaveVdW,fr->ntype);
-      for(i=0; (i<fr->ntype); i++) {
-	for(j=0; (j<fr->ntype); j++) {
-	  bHaveVdW[i] = (bHaveVdW[i] || 
-			 (fr->bBHAM ? 
-			  ((BHAMA(fr->nbfp,fr->ntype,i,j) != 0) ||
-			   (BHAMB(fr->nbfp,fr->ntype,i,j) != 0) ||
-			   (BHAMC(fr->nbfp,fr->ntype,i,j) != 0)) :
-			  ((C6(fr->nbfp,fr->ntype,i,j) != 0) ||
-			   (C12(fr->nbfp,fr->ntype,i,j) != 0))));
-	}
+    /* Create array that determines whether or not atoms have VdW */
+    snew(bHaveVdW,fr->ntype);
+    for(i=0; (i<fr->ntype); i++) {
+      for(j=0; (j<fr->ntype); j++) {
+	bHaveVdW[i] = (bHaveVdW[i] || 
+		      (fr->bBHAM ? 
+		       ((BHAMA(fr->nbfp,fr->ntype,i,j) != 0) ||
+			(BHAMB(fr->nbfp,fr->ntype,i,j) != 0) ||
+			(BHAMC(fr->nbfp,fr->ntype,i,j) != 0)) :
+		       ((C6(fr->nbfp,fr->ntype,i,j) != 0) ||
+			(C12(fr->nbfp,fr->ntype,i,j) != 0))));
       }
     }
     if (debug) 
@@ -2120,15 +2128,14 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       i = dd_ncg_tot(cr->dd);
       fill_grid(log,fr->bDomDecomp,cg_index,
 		grid,box,i,0,i,fr->cg_cm);
-    } else {
-      fill_grid(log,fr->bDomDecomp,cg_index,
-		grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
-      debug_gmx();
+    } else
+    fill_grid(log,fr->bDomDecomp,cg_index,
+	      grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
+    debug_gmx();
 
-      if (PAR(cr))
-	mv_grid(cr,fr->bDomDecomp,cg_index,grid,nsb->workload);
-      debug_gmx();
-    }
+    if (PAR(cr) && !bDomDec)
+      mv_grid(cr,fr->bDomDecomp,cg_index,grid,nsb->workload);
+    debug_gmx();
       
     calc_elemnr(log,fr->bDomDecomp,cg_index,grid,start,end,cgs->nr);
     calc_ptrs(grid);
