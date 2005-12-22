@@ -605,7 +605,7 @@ static void dd_update_ns_border(gmx_domdec_t *dd,t_nsborder *nsb)
 {
   nsb->nodeid    = 0 /* dd->nodeid */;
   nsb->cgtotal   = dd_ncg_tot(dd);
-  nsb->natoms    = dd->gl.nat[dd->nodeid];
+  //nsb->natoms    = dd->gl.nat[dd->nodeid];
   nsb->index[nsb->nodeid]  = 0;
   nsb->homenr[nsb->nodeid] = dd->at_index[0];
   nsb->cgload[nsb->nodeid] = dd->icelljcg1[0];
