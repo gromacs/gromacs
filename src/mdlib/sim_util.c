@@ -369,8 +369,6 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn,bReInit);
   GMX_BARRIER(cr->mpi_comm_mygroup);
-    fprintf(stderr,"%d here2\n",cr->nodeid);
-  MPI_Barrier(MPI_COMM_WORLD);
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
