@@ -484,7 +484,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
   static int localsize;
   static int maxproc;
 
-#if (defined GMX_MPI && ! defined WITHOUT_FFTW)
+#if (defined GMX_MPI && ! defined GMX_WITHOUT_FFTW)
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
