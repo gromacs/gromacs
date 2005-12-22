@@ -43,6 +43,21 @@
 #include "vec.h"
 #include <string.h>
 
+static bool bOverAlloc=FALSE;
+
+void set_over_alloc(bool set)
+{
+  bOverAlloc = set;
+}
+
+int over_alloc(int n)
+{
+  if (bOverAlloc)
+    return 1.1*n + 10;
+  else
+    return n;
+}
+
 void init_block(t_block *block)
 {
   int i;
