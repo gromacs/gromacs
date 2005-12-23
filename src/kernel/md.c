@@ -694,8 +694,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* We will implement dynamic repartitioning.
      * For now it is fixed to nstlist*20.
      * This should work fine for SPC water at 300K,
-     * where the maximum displacement in 0.1 ps is 0.25 nm.
-      * So you would need a cell size of at least: cut-off + 2*0.25 nm.
+     * where the maximum displacement in 0.2 ps is 0.25 nm.
+     * So you would need a cell size of at least: cut-off + 2*0.25 nm.
      */
     bReInit = FALSE;
     if (PAR(cr) && cr->dd && 
