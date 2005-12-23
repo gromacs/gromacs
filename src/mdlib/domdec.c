@@ -331,10 +331,10 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
   }
   dd->gl.index[dd->gl.nnodes] = k1;
 
-  fprintf(stderr,"Charge group disribution:");
+  fprintf(fplog,"Charge group distribution:");
   for(i=0; i<dd->gl.nnodes; i++)
-    fprintf(stderr," %d",dd->gl.ncg[i]);
-  fprintf(stderr,"\n");
+    fprintf(fplog," %d",dd->gl.ncg[i]);
+  fprintf(fplog,"\n");
 }
 
 void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
@@ -458,7 +458,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 
   copy_ivec(nc,dd->gl.nc);
   dd->nodeid    = cr->nodeid;
-  dd->gl.nnodes = cr->nnodes;
+  dd->gl.nnodes = cr->nnodes - cr->npmenodes;
 #ifdef GMX_MPI
   dd->gl.all    = MPI_COMM_WORLD;
 #endif
