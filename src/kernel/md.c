@@ -691,9 +691,15 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /*if (MASTER(cr) && do_log && !bFFscan)
       print_ebin_header(log,step,t,state->lambda);*/
     
+    /* We will implement dynamic repartitioning.
+     * For now it is fixed to nstlist*20.
+     * This should work fine for SPC water at 300K,
+     * where the maximum displacement in 0.1 ps is 0.25 nm.
+      * So you would need a cell size of at least: cut-off + 2*0.25 nm.
+     */
     bReInit = FALSE;
     if (PAR(cr) && cr->dd && 
-	(step % (inputrec->nstlist*100) == 0) && !bFirstStep) {
+	(step % (inputrec->nstlist*20) == 0) && !bFirstStep) {
       /* Repartition the domain decomposition */
       dd_collect_state(cr->dd,&top_global->blocks[ebCGS],state,state_global);
       
