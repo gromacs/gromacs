@@ -43,6 +43,7 @@
 #include "typedefs.h"
 #include "fatal.h"
 #include "vec.h"
+#include "string2.h"
 #include "smalloc.h"
 #include "enxio.h"
 #include "statutil.h"
@@ -99,6 +100,78 @@ static int *select_it(int nre,char *nm[],int *nset)
       set[(*nset)++]=i;
  
   sfree(bE);
+  
+  return set;
+}
+
+int strcount(char *s1,char *s2)
+{
+  int n=0;
+  while (s1 && s2 && (s1[n] == s2[n]))
+    n++;
+  return n;
+}
+
+static int *select_by_name(int nre,char *nm[],int *nset)
+{
+  bool *bE;
+  int  n,k,kk,j,i,nsame,nind,nlen;
+  int  *set;
+  bool bVerbose = TRUE;
+  char *ptr,buf[STRLEN];
+    
+  if ((getenv("VERBOSE")) != NULL)
+    bVerbose = FALSE;
+  
+  fprintf(stderr,"\n  Select the terms you want from the following list\n");
+  fprintf(stderr,"-----------------------------------------------------\n");
+
+  if ( bVerbose ) {
+    nlen = 0;
+    for(i=0; (i<nre); i++)
+      nlen = max(nlen,strlen(nm[i]));
+    kk = max(1,80/(nlen+2));
+    sprintf(buf,"%%-%ds ",nlen);
+    for(k=0; (k<nre); ) {
+      for(j=0; (j<kk) && (k<nre); j++,k++) {
+	/* Insert dashes in all the names */
+	while ((ptr = strchr(nm[k],' ')) != NULL)
+	  *ptr='-';
+	
+	fprintf(stderr,buf,nm[k]);
+      }
+      fprintf(stderr,"\n");
+    }
+    fprintf(stderr,"\n");
+  }
+
+  snew(bE,nre);
+  do {
+    ptr = fgets2(buf,STRLEN-1,stdin);
+    if (ptr) {
+      nsame = 0;
+      nind  = -1;
+      for(n=0; (n<nre); n++) {
+	k = strcount(nm[n],ptr);
+	if (k > nsame) {
+	  nind  = n;
+ 	  nsame = k;
+	}
+      }
+      if (nsame > 0)
+	bE[nind] = TRUE;
+    }
+  } while (ptr && (strlen(ptr) > 0));
+
+  snew(set,nre);
+  for(i=(*nset)=0; (i<nre); i++)
+    if (bE[i])
+      set[(*nset)++]=i;
+ 
+  sfree(bE);
+  
+  if (*nset == 0)
+    gmx_fatal(FARGS,"No energy terms selected");
   
   return set;
 }
@@ -834,7 +907,7 @@ int gmx_energy(int argc,char *argv[])
       }
     }
     else {
-      set=select_it(nre,enm,&nset);
+      set=select_by_name(nre,enm,&nset);
     }
     out=xvgropen(opt2fn("-o",NFILE,fnm),"Gromacs Energies","Time (ps)",
 		 "E (kJ mol\\S-1\\N)");
