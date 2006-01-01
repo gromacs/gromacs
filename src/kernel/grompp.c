@@ -355,6 +355,23 @@ static void check_vel(t_atoms *atoms,rvec v[])
   }
 }
 
+static int num_real_atoms(t_topology *sys)
+{
+  int i, nr, n;
+  t_atom* atoms;
+  atoms = sys->atoms.atom;
+  nr = sys->atoms.nr;
+  n = 0;
+  for (i = 0; i < nr; i++) {
+    if (atoms[i].ptype == eptAtom || atoms[i].ptype == eptNucleus) {
+      n++;
+    }
+  }
+  return n;
+}
+
+
+
 static int *new_status(char *topfile,char *topppfile,char *confin,
 		       t_gromppopts *opts,t_inputrec *ir,
 		       bool bGenVel,bool bVerbose,
@@ -469,7 +486,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
       opts->seed = make_seed();
       fprintf(stderr,"Setting gen_seed to %d\n",opts->seed);
     }
-    maxwell_speed(opts->tempi,sys->atoms.nr*DIM,
+    maxwell_speed(opts->tempi,num_real_atoms(sys)*DIM,
 		  opts->seed,&(sys->atoms),state->v);
     stop_cm(stdout,sys->atoms.nr,mass,state->x,state->v);
     sfree(mass);
