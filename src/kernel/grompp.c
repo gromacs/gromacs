@@ -179,13 +179,30 @@ static void check_vel(t_atoms *atoms,rvec v[])
   }
 }
 
-static int *new_status(char *topfile,char *topppfile,char *confin,
-		       t_gromppopts *opts,t_inputrec *ir,
-		       bool bGenVel,bool bVerbose,t_state *state,
-		       t_atomtype *atype,t_topology *sys,
-		       t_molinfo *msys,t_params plist[],int *comb,real *reppow,
-		       bool bEnsemble,bool bMorse,
-		       bool bCheckPairs,int *nerror)
+static int num_real_atoms(t_topology *sys)
+{
+  int i, nr, n;
+  t_atom* atoms;
+  atoms = sys->atoms.atom;
+  nr = sys->atoms.nr;
+  n = 0;
+  for (i = 0; i < nr; i++) {
+    if (atoms[i].ptype == eptAtom || atoms[i].ptype == eptNucleus) {
+      n++;
+    }
+  }
+  return n;
+}
+
+
+static void
+new_status(char *topfile,char *topppfile,char *confin,
+	   t_gromppopts *opts,t_inputrec *ir,
+	   bool bGenVel,bool bVerbose,t_state *state,
+	   t_atomtype *atype,t_topology *sys,
+	   t_molinfo *msys,t_params plist[],int *comb,real *reppow,
+	   bool bEnsemble,bool bMorse,
+	   bool bCheckPairs,int *nerror)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
@@ -270,7 +287,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
       opts->seed = make_seed();
       fprintf(stderr,"Setting gen_seed to %d\n",opts->seed);
     }
-    maxwell_speed(opts->tempi,sys->atoms.nr*DIM,
+    maxwell_speed(opts->tempi,num_real_atoms(sys)*DIM,
 		  opts->seed,&(sys->atoms),state->v);
     stop_cm(stdout,sys->atoms.nr,mass,state->x,state->v);
     sfree(mass);
@@ -279,6 +296,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     done_mi(&(molinfo[i]));
   sfree(molinfo);
   sfree(Sims);
+
 }
 
 static void cont_status(char *slog,char *ener,
@@ -574,15 +592,10 @@ int main (int argc, char *argv[])
     "Note that the atom names are irrelevant for the simulation as",
     "only the atom types are used for generating interaction parameters.[PAR]",
 
-<<<<<<< grompp.c
-    "grompp calls the c-preprocessor to resolve includes, macros ",
-    "etcetera. To specify a macro-preprocessor other than /usr/bin/cpp ",
-    "(such as m4)",
-=======
     "grompp calls a preprocessor to resolve includes, macros ",
     "etcetera. By default we use the cpp in your path. To specify a "
     "different macro-preprocessor (e.g. m4) or alternative location",
->>>>>>> 1.128.2.3
+
     "you can put a line in your parameter file specifying the path",
     "to that program. Specifying [TT]-pp[tt] will get the pre-processed",
     "topology file written out.[PAR]",
