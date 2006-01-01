@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include "fftw_wrapper.h"
+#include "gmx_fft.h"
 #include "smalloc.h"
 #include "correl.h"
 
@@ -165,44 +165,3 @@ void complex_mult(int n,real buf1[],real buf2[],real ans[])
     ans[n/2] = (buf1[n/2]*buf2[n/2])*no2_1;
   ans[0] = buf1[0]*buf2[0]*no2_1;
 }
-#define GMX_WITHOUT_FFTW
-#ifndef GMX_WITHOUT_FFTW
-void correl_fftw(correl_t *c,real data1[],real data2[],real ans[])
-{
-  bool bACF;
-
-  bACF = (data2 == data1);
-  rfftw_one(c->p_fw,data1,c->buf1);
-  if (!bACF)
-    rfftw_one(c->p_fw,data2,c->buf2);
-    
-  complex_mult(c->n,c->buf1,bACF ? c->buf1 : c->buf2,c->abuf);
-
-  rfftw_one(c->p_bw,c->abuf,ans);
-}
-
-correl_t *init_correl(int n)
-{
-  correl_t *ct;
-  
-  snew(ct,1);
-  ct->n    = n;
-  ct->p_fw = rfftw_create_plan(n,FFTW_REAL_TO_COMPLEX,FFTW_ESTIMATE);
-  ct->p_bw = rfftw_create_plan(n,FFTW_COMPLEX_TO_REAL,FFTW_ESTIMATE);
-  snew(ct->buf1,n);
-  snew(ct->buf2,n);
-  snew(ct->abuf,n);
-  
-  return ct;
-}
-
-void done_correl(correl_t *c)
-{
-  sfree(c->buf1);
-  sfree(c->buf2);
-  sfree(c->abuf);
-  rfftwnd_destroy_plan(&c->p_fw);
-  rfftwnd_destroy_plan(&c->p_bw);
-  c->n=0;
-}
-#endif

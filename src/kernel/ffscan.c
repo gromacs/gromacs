@@ -115,7 +115,9 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
   unsigned  long Flags = 0;
   t_edsamyn edyn;
-  
+
+  ivec ddxyz = { 1,1,1 };
+
   cr = init_par(&argc,&argv);
   
   ff.bVerbose = ff.bVerbose && MASTER(cr);
@@ -144,7 +146,7 @@ int main(int argc,char *argv[])
   
   Flags = (Flags | MD_FFSCAN);
 
-  mdrunner(cr,NULL,NFILE,fnm,ff.bVerbose,FALSE,0,1,&edyn,Flags,0,0);
+  mdrunner(cr,NULL,NFILE,fnm,ff.bVerbose,FALSE,ddxyz,0,1,&edyn,Flags,0,0);
   if (gmx_parallel_env)
     gmx_finalize(cr);
 

@@ -2,23 +2,17 @@
 #define _correl_h
 
 #include "typedefs.h"
+#include "gmx_fft.h"
 
-extern void four1(real data[],int nn,int isign);
-extern void correl(real data1[],real data2[],int n,real ans[]);
-
-#ifndef GMX_WITHOUT_FFTW
-#include "fftw_wrapper.h"
 
 typedef struct {
   int n;
-  rfftw_plan p_fw,p_bw;
+  gmx_fft_t  fft_setup;
   real *buf1,*buf2,*abuf;
 } correl_t;
 
-
-extern void correl_fftw(correl_t *c,real data1[],real data2[],real ans[]);
 extern correl_t *init_correl(int n);
 extern void done_correl(correl_t *c);
-#endif
+
 
 #endif

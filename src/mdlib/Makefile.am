@@ -25,11 +25,14 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	update.c	vcm.c		vsite.c	\
 	wnblist.c	wnblist.h	\
 	pull_internal.h	csettle.c       clincs.c	\
-	qmmm.c		
+	qmmm.c		gmx_parallel_3dfft.c
 
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
-	qm_gaussian.c	qm_mopac.c	qm_gamess.c
+	qm_gaussian.c	qm_mopac.c	qm_gamess.c		\
+	gmx_fft_fftw2.c	gmx_fft_fftw3.c	gmx_fft_fftpack.c	\
+	gmx_fft_mkl.c
+
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 

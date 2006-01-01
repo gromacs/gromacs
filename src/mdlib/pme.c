@@ -120,7 +120,7 @@ void pr_grid_dist(FILE *fp,char *title,t_fftgrid *grid)
 {
   int     i,j,k,l,ntoti,ntot=0;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
-  t_fft_r *ptr;
+  real *  ptr;
 
   /* Unpack structure */
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
@@ -178,7 +178,7 @@ void calc_idx(t_fftgrid *grid,int natoms,matrix recipbox,
   real *xptr,*fptr,tx,ty,tz;
   real rxx,ryx,ryy,rzx,rzy,rzz;
   int  nx,ny,nz,nx2,ny2,nz2,la12,la2;
-  t_fft_r *ptr;
+  real *ptr;
 
 #if (defined __GNUC__ && (defined i386 || defined __386__) && !defined GMX_DOUBLE && defined GMX_X86TRUNC)
   int x86_cw,x86_cwsave;
@@ -385,7 +385,7 @@ void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
                   int pme_order, bool bForward)
 {
   static bool bFirst=TRUE;
-  static t_fft_r *tmp;
+  static real *tmp;
   int i;
   static int localsize;
   static int maxproc;
@@ -399,7 +399,7 @@ void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
 
   GMX_MPE_LOG(ev_sum_qgrid_start);
   
-#if (defined GMX_MPI && !defined GMX_WITHOUT_FFTW)
+#ifdef GMX_MPI
   if(bFirst) {
     bFirst=FALSE;
     localsize=grid->la12r*grid->pfft.local_nx;
@@ -479,12 +479,12 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
                int pme_order, bool bForward)
 {
   static bool bFirst=TRUE;
-  static t_fft_r *tmp;
+  static real *tmp;
   int i;
   static int localsize;
   static int maxproc;
 
-#if (defined GMX_MPI && ! defined GMX_WITHOUT_FFTW)
+#ifdef GMX_MPI
   if(bFirst) {
     localsize=grid->la12r*grid->pfft.local_nx;
     if(!grid->workspace)
@@ -511,7 +511,7 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
     GMX_MPE_LOG(ev_reduce_finish);
 
     if(cr->nodeid<maxproc)
-      memcpy(grid->ptr+cr->nodeid*localsize,tmp,localsize*sizeof(t_fft_r));
+      memcpy(grid->ptr+cr->nodeid*localsize,tmp,localsize*sizeof(real));
   }
   else { /* distribute local grid to all processors */
     for(i=0;i<maxproc;i++)
@@ -530,7 +530,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
 		       t_pmeatom pmeatom[])
 {
   /* spread charges from home atoms to local grid */
-  t_fft_r *ptr;
+  real     *ptr;
   int      i,nn,n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
   int      nx,ny,nz,nx2,ny2,nz2,la2,la12;
   int      norder,*idxptr,index_x,index_xy,index_xyz;
@@ -550,7 +550,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
   
   if (!bPar) {
     clear_fftgrid(grid); 
-#if (defined GMX_MPI && !defined GMX_WITHOUT_FFTW)
+#ifdef GMX_MPI
   } else {
     localsize = grid->la12r*grid->pfft.local_nx;
     ptr = grid->localptr;
@@ -616,7 +616,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
 	       matrix vir,t_commrec *cr)
 {
   /* do recip sum over local cells in grid */
-  t_fft_c *ptr,*p0;
+  t_complex *ptr,*p0;
   int     nx,ny,nz,nx2,ny2,nz2,la2,la12;
   int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz,kystart=0,kyend=0;
   real    m2,mx,my,mz;
@@ -630,7 +630,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
   real    rxx,ryx,ryy,rzx,rzy,rzz;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,
-		 &nx2,&ny2,&nz2,&la2,&la12,FALSE,(t_fft_r **)&ptr);
+		 &nx2,&ny2,&nz2,&la2,&la12,FALSE,(real **)&ptr);
    
   rxx = recipbox[XX][XX];
   ryx = recipbox[YY][XX];
@@ -644,7 +644,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
   maxkz = nz/2+1;
     
   if (bPar) { /* transpose X & Y and only sum local cells */
-#if (defined GMX_MPI && !defined GMX_WITHOUT_FFTW)
+#ifdef GMX_MPI
     kystart = grid->pfft.local_y_start_after_transpose;
     kyend   = kystart+grid->pfft.local_ny_after_transpose;
     if (debug)
@@ -740,7 +740,7 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
   /* sum forces for local particles */  
   int     nn,n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
   int     nx,ny,nz,nx2,ny2,nz2,la2,la12,index_x,index_xy;
-  t_fft_r *ptr;
+  real *  ptr;
   real    tx,ty,dx,dy,qn;
   real    fx,fy,fz,fnx,fny,fnz,gval,tgz,dgz;
   real    gval1,gval2,gval3,gval4;
@@ -973,9 +973,6 @@ t_fftgrid *init_pme(FILE *log,t_commrec *cr,
   else
     npme = cr->nnodes;
  
-#ifdef GMX_WITHOUT_FFTW
-  gmx_fatal(FARGS,"PME used, but GROMACS was compiled without FFTW support!\n");
-#endif
   fprintf(log,"Will do PME sum in reciprocal space.\n");
   please_cite(log,"Essman95a");
 
@@ -1017,9 +1014,9 @@ t_fftgrid *init_pme(FILE *log,t_commrec *cr,
   for(i=0; (i<5*nkz); i++)
     nnz[i] = i % nkz;
 
-  gridA = mk_fftgrid(log,bPar,nkx,nky,nkz,bOptFFT,cr);
+  gridA = mk_fftgrid(log,nkx,nky,nkz,cr);
   if (bFreeEnergy)
-    gridB = mk_fftgrid(log,bPar,nkx,nky,nkz,bOptFFT,cr);
+    gridB = mk_fftgrid(log,nkx,nky,nkz,cr);
 
   make_bspline_moduli(bsp_mod,nkx,nky,nkz,pme_order);   
 
@@ -1034,7 +1031,7 @@ void spread_on_grid(FILE *logfile,    t_commrec *cr,
 /*		    t_pmeatom pmeatom[]) */
 { 
   int nx,ny,nz,nx2,ny2,nz2,la2,la12;
-  t_fft_r *ptr;
+  real *ptr;
   
   /* Unpack structure */
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
@@ -1267,7 +1264,7 @@ void do_pmeonly(FILE *logfile,
   int  firstindex, lastindex;
   int  nx,ny,nz,nx2,ny2,nz2,la12,la2;
   int  i,j,q,ntot,npme;
-  t_fft_r  *ptr;
+  real *ptr;
   t_fftgrid  *grid;
   int  *pidx=NULL;
   int  *gidx=NULL; /* Grid index of particle, used for PME redist */
@@ -1427,7 +1424,7 @@ void do_pmeonly(FILE *logfile,
 
         /* do 3d-fft */ 
         GMX_MPE_LOG(ev_gmxfft3d_start);
-        gmxfft3D(grid,FFTW_FORWARD,cr);
+        gmxfft3D(grid,GMX_FFT_REAL_TO_COMPLEX,cr);
         GMX_MPE_LOG(ev_gmxfft3d_finish);
 
         /* solve in k-space for our local cells */
@@ -1443,7 +1440,7 @@ void do_pmeonly(FILE *logfile,
 
         /* do 3d-invfft */
         GMX_MPE_LOG(ev_gmxfft3d_start);
-        gmxfft3D(grid,FFTW_BACKWARD,cr);
+        gmxfft3D(grid,GMX_FFT_COMPLEX_TO_REAL,cr);
         GMX_MPE_LOG(ev_gmxfft3d_finish);
 
         /* distribute local grid to all nodes */
@@ -1658,7 +1655,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   int     q,i,j,ntot,npme;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
   t_fftgrid *grid=NULL;
-  t_fft_r *ptr;
+  real *ptr;
   real    *homecharge=NULL,vol,energy;
   matrix  vir_AB[2];
   static bool bFirst=TRUE;
@@ -1767,7 +1764,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
       /* do 3d-fft */ 
       GMX_BARRIER(MPI_COMM_WORLD);
       GMX_MPE_LOG(ev_gmxfft3d_start);
-      gmxfft3D(grid,FFTW_FORWARD,cr);
+      gmxfft3D(grid,GMX_FFT_REAL_TO_COMPLEX,cr);
       GMX_MPE_LOG(ev_gmxfft3d_finish);
 
       where();
@@ -1786,7 +1783,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
       GMX_BARRIER(MPI_COMM_WORLD);
       GMX_MPE_LOG(ev_gmxfft3d_start);
       where();
-      gmxfft3D(grid,FFTW_BACKWARD,cr);
+      gmxfft3D(grid,GMX_FFT_COMPLEX_TO_REAL,cr);
       where();
       GMX_MPE_LOG(ev_gmxfft3d_finish);
       

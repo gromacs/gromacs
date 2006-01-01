@@ -29,7 +29,6 @@ ewald_util.h \
 fatal.h \
 ffscanf.h \
 fftgrid.h \
-fftw_wrapper.h \
 filenm.h \
 force.h \
 futil.h \
@@ -39,8 +38,10 @@ gmx_arpack.h \
 gmx_blas.h \
 gmxcomplex.h \
 gmxfio.h \
+gmx_fft.h \
 gmx_lapack.h \
 gmx_random.h \
+gmx_parallel_3dfft.h \
 gmx_system_xdr.h \
 gmx_thread.h \
 grompp.h \

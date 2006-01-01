@@ -169,7 +169,7 @@ void spread_q(FILE *log,bool bVerbose,
   int    jx,jy,jz,jcx,jcy,jcz;
   int    nxyz;
   int    nx,ny,nz,nx2,ny2,nz2,la2,la12;
-  t_fft_r *ptr;
+  real *ptr;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
   
@@ -234,7 +234,7 @@ void spread_q(FILE *log,bool bVerbose,
 real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
 		  int la2,int la12,
 		  real c1x,real c1y,real c1z,real c2x,real c2y,real c2z,
-		  real qi,rvec f,t_fft_r ptr[])
+		  real qi,rvec f,real ptr[])
 {
   real pi,fX,fY,fZ,weight;
   int  jxyz,m,jcx,jcy,jcz;
@@ -297,7 +297,7 @@ static real gather_f(FILE *log,bool bVerbose,
   int    ixw[7],iyw[7],izw[7];
   int    ll;
   int    nx,ny,nz,nx2,ny2,nz2,la2,la12;
-  t_fft_r *ptr;
+  real *ptr;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
   
@@ -370,12 +370,12 @@ void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
   int      i,j,k,index;
   real     gk;
   int      nx,ny,nz,nx2,ny2,nz2,la2,la12;
-  t_fft_c  *ptr;
+  t_complex  *ptr;
   int      *nTest;
   int jstart,jend;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,
-		 &la2,&la12,FALSE,(t_fft_r **)&ptr);
+		 &la2,&la12,FALSE,(real **)&ptr);
   snew(nTest,grid->nptr);
   
   if(PAR(cr)) {
@@ -442,7 +442,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
   /*  if (bVerbose) 
       print_fftgrid(fp,"Q-Real",grid,grid->nxyz,"qreal.pdb",box,TRUE);*/
   
-  gmxfft3D(grid,FFTW_FORWARD,cr);
+  gmxfft3D(grid,GMX_FFT_REAL_TO_COMPLEX,cr);
   
   /*  if (bVerbose) {
       print_fftgrid(fp,"Q-k",grid,1.0,"qk-re.pdb",box,TRUE);
@@ -456,7 +456,7 @@ void solve_pppm(FILE *fp,t_commrec *cr,
       print_fftgrid(fp,"Convolution",grid,1.0,
       "convolute.pdb",box,TRUE);*/
   
-  gmxfft3D(grid,FFTW_BACKWARD,cr);
+  gmxfft3D(grid,GMX_FFT_COMPLEX_TO_REAL,cr);
   
   /*  if (bVerbose) 
       print_fftgrid(fp,"Potential",grid,1.0,"pot.pdb",box,TRUE);*/
@@ -552,7 +552,7 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
 #ifdef GMX_MPI
   cr->mpi_comm_mygroup=MPI_COMM_WORLD;
 #endif
-  grid = mk_fftgrid(log,PAR(cr),nx,ny,nz,ir->bOptFFT,cr);
+  grid = mk_fftgrid(log,nx,ny,nz,cr);
 }
 
 real do_pppm(FILE *log,       bool bVerbose,

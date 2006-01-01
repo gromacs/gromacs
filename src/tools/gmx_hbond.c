@@ -1239,10 +1239,6 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   unsigned int **h,**g;
   int   nh,nhbonds,nhydro,ngh;
   t_hbond *hbh;
-#define WITHOUT_FFTW
-#ifndef WITHOUT_FFTW
-  correl_t *correl;
-#endif
 
   /* build hbexist matrix in reals for autocorr */
   /* Allocate memory for computing ACF (rhbex) and aggregating the ACF (ct) */
@@ -1263,9 +1259,6 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   snew(h,hb->maxhydro);
   snew(g,hb->maxhydro);
 
-#ifndef WITHOUT_FFTW
-  correl = init_correl(n2);
-#endif
   
   /* Dump hbonds for debugging */
   dump_ac(hb,bMerge,nDump);
@@ -1321,7 +1314,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	    ht[j] = 0;
 	    gt[j] = 0;
 	  }
-	  /*correl_fftw(correl,ht,gt,dght);*/
+
 	  cross_corr(n2,ht,gt,dght);
 	  
 	  for(j=0; (j<nn); j++) {
@@ -1390,9 +1383,6 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   sfree(kt);
   sfree(h);
   sfree(g);
-#ifndef WITHOUT_FFTW
-  /*done_correl(correl);*/
-#endif
 }
 
 static void init_hbframe(t_hbdata *hb,int nframes,real t)
