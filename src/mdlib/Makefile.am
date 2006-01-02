@@ -25,7 +25,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	update.c	vcm.c		vsite.c	\
 	wnblist.c	wnblist.h	\
 	pull_internal.h	csettle.c       clincs.c	\
-	qmmm.c		gmx_parallel_3dfft.c
+	qmmm.c		gmx_fft.c 	gmx_parallel_3dfft.c
 
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
