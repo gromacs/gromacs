@@ -43,9 +43,7 @@
 
 #include <stdio.h>
 #include "typedefs.h"
-/*#include "gmxcomplex.h"
-#include "fftgrid.h"
-*/
+
 /* Ewald related stuff */
 extern real calc_ewaldcoeff(real rc,real dtol);
 /* Determines the Ewald parameter, both for Ewald and PME */
