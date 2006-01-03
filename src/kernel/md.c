@@ -120,7 +120,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   time_t     start_t=0;
   bool       bVsites,bParVsites;
   t_comm_vsites vsitecomm;
-  int        i,m;
+  int        i,m,status;
   char       *gro;
 
 #ifdef GMX_MPI
@@ -283,9 +283,13 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   }
     
   /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM)
-    init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),inputrec);
-
+  if (fr->eeltype == eelPPPM) {
+    status = gmx_pppm_init(stdlog,cr,nsb,FALSE,TRUE,state->box,
+			   getenv("GMXGHAT"),inputrec);
+    if (status != 0)
+      gmx_fatal(FARGS,"Error %d initializing PPPM",status);
+  }
+  
   /* Initiate PME if necessary */
   /* either on all nodes (if epmePMEANDPP is TRUE) 
    * or on dedicated PME nodes (if epmePMEONLY is TRUE) */
@@ -295,13 +299,13 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     { 
       GMX_MPE_LOG(ev_init_pme_start);
       
-      (void) init_pme(stdlog,cr,inputrec->nkx,inputrec->nky,inputrec->nkz,
-	   	     inputrec->pme_order,
-		     /*HOMENR(nsb),*/nsb->natoms,
-		     mdatoms->bChargePerturbed,
-		     inputrec->bOptFFT,inputrec->ewald_geometry);
-
+      status = gmx_pme_init(stdlog,&fr->pmedata,cr,inputrec,
+			    /*HOMENR(nsb),*/nsb->natoms,
+			    mdatoms->bChargePerturbed,bVerbose);
+      
       GMX_MPE_LOG(ev_init_pme_finish);
+      if (status != 0)
+	gmx_fatal(FARGS,"Error %d initializing PME",status);
     }
   }
     
@@ -332,7 +336,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     else /* pmeduty(cr) == epmePMEONLY */
     {
       /* do PME: */
-      do_pmeonly(stdlog,inputrec,cr,state->box,nsb,&nrnb[nsb->nodeid],fr->ewaldcoeff,state->lambda,FALSE);
+      gmx_pmeonly(stdlog,fr->pmedata,cr,state->box,nsb,&nrnb[nsb->nodeid],
+		  fr->ewaldcoeff,state->lambda,FALSE);
     }
 #endif    
     break;

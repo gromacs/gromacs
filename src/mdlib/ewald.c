@@ -44,18 +44,12 @@
 #include "gmxcomplex.h"
 #include "smalloc.h"
 #include "futil.h"
-#include "ewald_util.h"
-#include "shift_util.h"
 #include "fftgrid.h"
 #include "fatal.h"
 #include "physics.h"
-#include "ewald.h"
+#include "coulomb.h"
 
 #define TOL 2e-5
-
-
-
-  
 
 /* the other routines are in complex.h */
 static t_complex conjmul(t_complex a,t_complex b)

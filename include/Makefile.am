@@ -17,6 +17,7 @@ calcmu.h \
 confio.h \
 constr.h \
 copyrite.h \
+coulomb.h \
 dihre.h \
 disre.h \
 domdec.h \
@@ -24,8 +25,6 @@ do_fit.h \
 ebin.h \
 edsam.h \
 enxio.h \
-ewald.h \
-ewald_util.h \
 fatal.h \
 ffscanf.h \
 fftgrid.h \
@@ -86,7 +85,6 @@ readinp.h \
 reorder.h \
 rmpbc.h \
 shift.h \
-shift_util.h \
 smalloc.h \
 sortwater.h \
 sparsematrix.h \

@@ -43,11 +43,27 @@
 #include "futil.h"
 #include "vec.h"
 #include "physics.h"
-#include "shift_util.h"
+#include "coulomb.h"
 #include "fftgrid.h"
 #include "xvgr.h"
 
+static void calc_k(rvec lll,int ix,int iy,int iz,int nx,int ny,int nz,rvec k)
+{
+#define IDX(i,n,x)  (i<=n/2) ? (i*x) : ((i-n)*x)
+  k[XX] = IDX(ix,nx,lll[XX]);
+  k[YY] = IDX(iy,ny,lll[YY]);
+  k[ZZ] = IDX(iz,nz,lll[ZZ]);
+#undef IDX
+}
+
 void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)
+/* Symmetrize the Ghat function. It is assumed that the 
+ * first octant of the Ghat function is either read or generated
+ * (all k-vectors from 0..nx/2 0..ny/2 0..nz/2).
+ * Since Gk depends on the absolute value of k only, 
+ * symmetry operations may shorten the time to generate it.
+ */
+ 
 {
   int  i,j,k;
   int  iip,jjp,kkp;

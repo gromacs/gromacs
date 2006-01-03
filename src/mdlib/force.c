@@ -44,6 +44,7 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "macros.h"
+#include "physics.h"
 #include "force.h"
 #include "nonbonded.h"
 #include "invblock.h"
@@ -58,10 +59,8 @@
 #include "bondf.h"
 #include "mshift.h"
 #include "txtdump.h"
-#include "ewald_util.h"
-#include "shift_util.h"
+#include "coulomb.h"
 #include "pppm.h"
-#include "ewald.h"
 #include "pme.h"
 #include "mdrun.h"
 #include "qmmm.h"
@@ -299,7 +298,7 @@ check_solvent(FILE *                fp,
                
                 /* There cannot be any exclusions to other molecules! */
                 if ((ak < j0) || (ak >= j1)) 
-                    gmx_fatal(FARGS,"Exclusion outside molecule? ak = %d, j0 = %d, j1 = 5d, mol is %d",ak,j0,j1,i);
+                    gmx_fatal(FARGS,"Exclusion outside molecule? ak = %d, j0 = %d, j1 = %5d, mol is %d",ak,j0,j1,i);
 
                 /* Indices are relative to the first atom in the molecule */
                 excluded[ak-j0] = TRUE;
@@ -1236,7 +1235,7 @@ void force(FILE       *fplog,   int        step,
 	   t_edsamyn *edyn,
 	   bool       bReInit)
 {
-  int     i,nit;
+  int     i,nit,status;
   bool    bDoEpot,bSepDVDL;
   rvec    box_size;
   real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
@@ -1340,20 +1339,20 @@ void force(FILE       *fplog,   int        step,
     dvdlambda = 0;
     switch (fr->eeltype) {
     case eelPPPM:
-      Vlr = do_pppm(fplog,FALSE,x,fr->f_el_recip,md->chargeA,
-		    box_size,fr->phi,cr,nsb,nrnb,ir->pme_order);
+      status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_el_recip,
+			   md->chargeA,
+			   box_size,fr->phi,cr,nsb,nrnb,ir->pme_order,&Vlr);
       break;
     case eelPME:
     case eelPMEUSER:
-      if (pmeduty(cr)==epmePMEANDPP)
-      {
-        Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
-  		     box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
-  		     md->bChargePerturbed,lambda,&dvdlambda,bGatherOnly);
+      if (pmeduty(cr)==epmePMEANDPP) {
+        status = gmx_pme_do(fplog,fr->pmedata,x,fr->f_el_recip,
+			    md->chargeA,md->chargeB,
+			    box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
+			    &Vlr,lambda,&dvdlambda,bGatherOnly);
         PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
       } 
-      else 
-      {
+      else {
         /* Energies and virial are obtained later from the PME nodes */
 	/* but values have to be zeroed out here */
         Vlr=0.0;
@@ -1371,6 +1370,10 @@ void force(FILE       *fplog,   int        step,
       gmx_fatal(FARGS,"No such electrostatics method implemented %s",
 		eel_names[fr->eeltype]);
     }
+    if (status != 0)
+      gmx_fatal(FARGS,"Error %d in long range electrostatics routine %s",
+		status,EELTYPE(fr->eeltype));
+		
     epot[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
       dvdlambda = 0;

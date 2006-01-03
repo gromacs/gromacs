@@ -47,7 +47,7 @@
 #include "xvgr.h"
 #include "vec.h"
 #include "maths.h"
-#include "shift_util.h"
+#include "coulomb.h"
 #include "physics.h"
 #include "statutil.h"
 #include "tpxio.h"

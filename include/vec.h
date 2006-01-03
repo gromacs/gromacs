@@ -696,6 +696,13 @@ static inline void unitv_no_table(const rvec src,rvec dest)
   dest[ZZ]=linv*src[ZZ];
 }
 
+static void calc_lll(rvec box,rvec lll)
+{
+  lll[XX] = 2.0*M_PI/box[XX];
+  lll[YY] = 2.0*M_PI/box[YY];
+  lll[ZZ] = 2.0*M_PI/box[ZZ];
+}
+
 static inline real trace(matrix m)
 {
   return (m[XX][XX]+m[YY][YY]+m[ZZ][ZZ]);

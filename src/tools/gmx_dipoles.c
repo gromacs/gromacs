@@ -521,7 +521,8 @@ static void do_dip(t_topology *top,real volume,
   bool       bCorr,bTotal,bCont;
   double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
-  double     M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
+  double     M[3],M2[3],M4[3],Gk=0,g_k=0;
+  t_lsq      Mx,My,Mz,Msq,Vol;
   t_lsq      *Qlsq,mulsq,muframelsq;
   ivec       iMu;
   real       **muall=NULL;
@@ -668,10 +669,10 @@ static void do_dip(t_topology *top,real volume,
   snew(dipole_bin, ndipbin);
   epsilon    = 0.0;
   mu_ave     = 0.0;
-  M_XX=M_XX2 = 0.0;
-  M_YY=M_YY2 = 0.0;
-  M_ZZ=M_ZZ2 = 0.0;
-
+  for(m=0; (m<DIM); m++) {
+    M[m] = M2[m] = M4[m] = 0.0;
+  }
+  
   if (bGkr) {
     /* Use 0.7 iso 0.5 to account for pressure scaling */
     /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
@@ -836,20 +837,18 @@ static void do_dip(t_topology *top,real volume,
 	      t,M_av[XX],M_av[YY],M_av[ZZ],
 	      sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
 
-    M_XX  += M_av[XX];
-    M_XX2 += M_av2[XX];
-    M_YY  += M_av[YY];
-    M_YY2 += M_av2[YY];
-    M_ZZ  += M_av[ZZ];
-    M_ZZ2 += M_av2[ZZ];
-
+    for(m=0; (m<DIM); m++) {
+      M[m]  += M_av[m];
+      M2[m] += M_av2[m];
+      M4[m] += sqr(M_av2[m]);
+    }
     /* Increment loop counter */
     teller++;
     
     /* Calculate for output the running averages */
     invtel  = 1.0/teller;
-    M2_ave  = (M_XX2+M_YY2+M_ZZ2)*invtel;
-    M_ave2  = invtel*(invtel*(M_XX*M_XX + M_YY*M_YY + M_ZZ*M_ZZ));
+    M2_ave  = (M2[XX]+M2[YY]+M2[ZZ])*invtel;
+    M_ave2  = invtel*(invtel*(M[XX]*M[XX] + M[YY]*M[YY] + M[ZZ]*M[ZZ]));
     M_diff  = M2_ave - M_ave2;
 
     /* Compute volume from box in traj, else we use the one from above */
@@ -969,18 +968,20 @@ static void do_dip(t_topology *top,real volume,
     printf("\n");
   }
   printf("The following averages for the complete trajectory have been calculated:\n\n");
-  printf(" Total < M_x > = %g Debye\n", M_XX/teller);
-  printf(" Total < M_y > = %g Debye\n", M_YY/teller);
-  printf(" Total < M_z > = %g Debye\n\n", M_ZZ/teller);
+  printf(" Total < M_x > = %g Debye\n", M[XX]/teller);
+  printf(" Total < M_y > = %g Debye\n", M[YY]/teller);
+  printf(" Total < M_z > = %g Debye\n\n", M[ZZ]/teller);
 
-  printf(" Total < M_x^2 > = %g Debye^2\n", M_XX2/teller);
-  printf(" Total < M_y^2 > = %g Debye^2\n", M_YY2/teller);
-  printf(" Total < M_z^2 > = %g Debye^2\n\n", M_ZZ2/teller);
+  printf(" Total < M_x^2 > = %g Debye^2\n", M2[XX]/teller);
+  printf(" Total < M_y^2 > = %g Debye^2\n", M2[YY]/teller);
+  printf(" Total < M_z^2 > = %g Debye^2\n\n", M2[ZZ]/teller);
 
   printf(" Total < |M|^2 > = %g Debye^2\n", M2_ave);
   printf(" Total < |M| >^2 = %g Debye^2\n\n", M_ave2);
 
   printf(" < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
+  
+  /* sigmaM2 = sqrt( */
   if (!bMU || (mu_aver != -1)) {
     printf("Finite system Kirkwood g factor G_k = %g\n", Gk);
     printf("Infinite system Kirkwood g factor g_k = %g\n\n", g_k);

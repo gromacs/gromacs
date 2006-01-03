@@ -56,8 +56,7 @@
 #include "fftgrid.h"
 #include "calcgrid.h"
 #include "nrnb.h"
-#include "shift_util.h"
-#include "pme.h"
+#include "coulomb.h"
 #include "gstat.h"
 #include "matio.h"
 
@@ -594,196 +593,6 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
   }
 }
 
-typedef struct {
-  char *name;
-  int  nelec;
-} t_element;
-
-static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
-		  char *fnXPM,real grid,real lambda,real distance,
-		  int npixel,int nlevel)
-{
-  FILE       *fp;
-  t_element  elem[] = { { "H", 1 }, { "C", 6 }, { "N", 7 }, { "O", 8 }, { "F", 9 }, { "S", 16 } };
-#define NELEM asize(elem)
-  int        status;
-  char       title[STRLEN],*aname;
-  int        natoms,i,j,k,nbin,j0,j1,n,nframes,pme_order;
-  real       *count,**map;
-  char       *grpname;
-  int        isize;
-  atom_id    *index;
-  real       I0,C,t,k_max,factor,yfactor,segvol;
-  rvec       *x,*xndx,box_size,kk,lll;
-  real       fj0,*fj,max_spacing,r,lambda_1;
-  bool       *bExcl;
-  matrix     box;
-  int        nx,ny,nz,nelectron;
-  atom_id    ix,jx,**pairs;
-  splinevec  *theta;
-  t_topology top;
-  t_fftgrid  *fftgrid;
-  t_nrnb     nrnb;
-  t_xdata    *data;
-    
-  /*  bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE); */
-
-  fprintf(stderr,"\nSelect group for structure factor computation:\n");
-  get_index(&top.atoms,fnNDX,1,&isize,&index,&grpname);
-  natoms=read_first_x(&status,fnTRX,&t,&x,box);
-  if (isize < top.atoms.nr)
-    snew(xndx,isize);
-  else
-    xndx = x;
-  fprintf(stderr,"\n");
-  
-  init_nrnb(&nrnb);
-    
-  if ( !natoms )
-    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
-  /* check with topology */
-  if ( natoms > top.atoms.nr ) 
-    gmx_fatal(FARGS,"Trajectory (%d atoms) does not match topology (%d atoms)",
-		natoms,top.atoms.nr);
-	
-  /* Atomic scattering factors */
-  snew(fj,isize);
-  I0 = 0;
-  nelectron = 0;
-  for(i=0; (i<isize); i++) {
-    aname = *(top.atoms.atomname[index[i]]);
-    fj0 = 1;
-    if (top.atoms.atom[i].ptype == eptAtom) {
-      for(j=0; (j<NELEM); j++)
-	if (aname[0] == elem[j].name[0]) {
-	  fj0 = elem[j].nelec;
-	  break;
-	}
-      if (j == NELEM)
-	fprintf(stderr,"Warning: don't know number of electrons for atom %s\n",aname);
-    }
-    /* Correct for partial charge */
-    fj[i] = fj0 - top.atoms.atom[index[i]].q;
-    
-    nelectron += fj[i];
-    
-    I0 += sqr(fj[i]);
-  }
-  if (debug) {
-    /* Dump scattering factors */
-    for(i=0; (i<isize); i++)
-      fprintf(debug,"Atom %3s-%5d q = %10.4f  f = %10.4f\n",
-	      *(top.atoms.atomname[index[i]]),index[i],
-	      top.atoms.atom[index[i]].q,fj[i]);
-  }
-
-  /* Constant for scattering */
-  C = sqr(1.0/(ELECTRONMASS_keV*KILO*ELECTRONVOLT*1e7*distance));
-  fprintf(stderr,"C is %g\n",C);
-  
-  /* This bit is dimensionless */
-  nx = ny = nz = 0;
-  max_spacing = calc_grid(stdout,box,grid,&nx,&ny,&nz,1);	
-  pme_order   = max(4,1+(0.2/grid));
-  npixel      = max(nx,ny);
-  data        = init_xdata(nx,ny);
-  
-  fprintf(stderr,"Largest grid spacing: %g nm, pme_order %d, %dx%d pixel on image\n",
-	  max_spacing,pme_order,npixel,npixel);
-  fftgrid = init_pme(stdout,NULL,nx,ny,nz,pme_order,isize,FALSE,FALSE,eewg3D);
-    
-  /* Determine largest k vector length. */
-  k_max = 1+sqrt(sqr(1+nx/2)+sqr(1+ny/2)+sqr(1+nz/2));
-
-  /* this is the S(q) array */
-  nbin = npixel;
-  snew(count,nbin+1);
-  snew(map,npixel);
-  for(i=0; (i<npixel); i++)
-    snew(map[i],npixel);
-  
-  nframes = 0;
-  do {
-    /* Put the atoms with scattering factor on a grid. Misuses
-     * an old routine from the PPPM code.
-     */
-    for(j=0; (j<DIM); j++)
-      box_size[j] = box[j][j];
-    
-    /* Scale coordinates to the wavelength */
-    for(i=0; (i<isize); i++)
-      copy_rvec(x[index[i]],xndx[i]);
-      
-    /* put local atoms on grid. */
-    spread_on_grid(stdout,NULL,fftgrid,isize,pme_order,xndx,fj,box,FALSE,TRUE);
-
-    /* FFT the density */
-    gmxfft3D(fftgrid,GMX_FFT_REAL_TO_COMPLEX,NULL);  
-    
-    /* Extract the Sq function and sum it into the average array */
-    extract_sq(fftgrid,nbin,k_max,lambda,count,box_size,npixel,map,data);
-    
-    nframes++;
-  } while (read_next_x(status,&t,natoms,x,box));
-  fprintf(stderr,"\n");
-  
-  close_trj(status);
-  
-  sfree(x);
-
-  /* Normalize it ?? */  
-  factor  = k_max/(nbin);
-  yfactor = (1.0/nframes)/*(1.0/fftgrid->nxyz)*/;
-  fp=xvgropen(fnSQ,"Structure Factor","q (1/nm)","S(q)");
-  fprintf(fp,"@ subtitle \"Lambda = %g nm. Grid spacing = %g nm\"\n",
-	  lambda,grid);
-  factor *= lambda;
-  for(i=0; i<nbin; i++) {
-    r      = (i+0.5)*factor*2*M_PI;
-    segvol = 4*M_PI*sqr(r)*factor;
-    fprintf(fp,"%10g %10g\n",r,count[i]*yfactor/segvol);
-  }
-  ffclose(fp);
-  
-  do_view(fnSQ,NULL);
-
-  if (fnXPM) {
-    t_rgb rhi = { 0,0,0 }, rlo = { 1,1,1 };
-    real *tx,*ty,hi,inv_nframes;
-    
-    hi = 0;
-    inv_nframes = 1.0/nframes;
-    snew(tx,npixel);
-    snew(ty,npixel);
-    for(i=0; (i<npixel); i++) {
-      tx[i] = i-npixel/2;
-      ty[i] = i-npixel/2;
-
-      for(j=0; (j<npixel); j++) { 
-	map[i][j] *= inv_nframes;
-	hi         = max(hi,map[i][j]);
-      }
-    }
-      
-    fp = ffopen(fnXPM,"w");
-    write_xpm(fp,0,"Diffraction Image","Intensity","kx","ky",
-	      nbin,nbin,tx,ty,map,0,hi,rlo,rhi,&nlevel);
-    fclose(fp);
-    sfree(tx);
-    sfree(ty);
-
-    /* qsort(data,nx*ny,sizeof(data[0]),comp_xdata);    
-       fp = ffopen("test.xvg","w");
-       for(i=0; (i<nx*ny); i++) {
-       if (data[i].ndata != 0) {
-       fprintf(fp,"%10.3f  %10.3f\n",data[i].kkk,data[i].intensity/data[i].ndata);
-       }
-       }
-       fclose(fp);
-    */
-  }
-}
-
 t_complex *** rc_tensor_allocation(int x, int y, int z)
 {
   t_complex ***t;
@@ -1232,10 +1041,7 @@ int gmx_rdf(int argc,char *argv[])
   if  (bSQ) 
    do_scattering_intensity(fnTPS,fnNDX,opt2fn("-sq",NFILE,fnm),ftp2fn(efTRX,NFILE,fnm),
 		           start_q, end_q, energy, ngroups  );
-/* old structure factor code */
-/*    do_sq(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),opt2fn("-sq",NFILE,fnm),
-	  ftp2fn(efXPM,NFILE,fnm),grid,lambda,distance,npixel,nlevel);
-*/
+
   if (bRDF) 
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
 	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),

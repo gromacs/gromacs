@@ -70,11 +70,9 @@
 #include "gmxcomplex.h"
 #include "smalloc.h"
 #include "futil.h"
-#include "shift_util.h"
-#include "ewald_util.h"
+#include "coulomb.h"
 #include "fftgrid.h"
 #include "fatal.h"
-#include "ewald.h"
 #include "pme.h"
 #include "network.h"
 #include "physics.h"
@@ -100,11 +98,31 @@
 MPI_Datatype  rvec_mpi;
 #endif
 
-/* Global variables */
+/* Internal datastructures */
+typedef struct {
+  int atom,index;
+} t_pmeatom;
 
-static bool bPar;               /* parallel? */
-static int leftbnd, rightbnd;   /* size of left and right boundary */
-static int my_homenr;
+typedef struct gmx_pme {
+  bool bPar;               /* Run in parallel? */
+  bool bFEP;               /* Compute Free energy contribution */
+  bool bVerbose;           /* Should we be talkative? */
+  bool bDynamicBox;        /* Whether the box changes during the simulation */
+  int leftbnd, rightbnd;   /* Size of left and right boundary */
+  int my_homenr;
+  int nkx,nky,nkz;         /* Grid dimensions */
+  int pme_order;
+  real epsilon_r;           
+  t_fftgrid *gridA,*gridB;
+  int  *nnx,*nny,*nnz;
+  ivec *idx;
+  rvec *fractx;            /* Fractional coordinate relative to the
+			    * lower cell boundary 
+			    */
+  matrix    recipbox;
+  splinevec theta,dtheta,bsp_mod;
+  t_pmeatom *pmeatom;
+} t_gmx_pme;
 
 /* The following stuff is needed for signal handling on the PME nodes. 
  * signal_handler needs to be defined in md.c, the bGot..Signal variables
@@ -115,8 +133,7 @@ volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE;
 
 /* #define SORTPME */
 
-
-void pr_grid_dist(FILE *fp,char *title,t_fftgrid *grid)
+static void pr_grid_dist(FILE *fp,char *title,t_fftgrid *grid)
 {
   int     i,j,k,l,ntoti,ntot=0;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
@@ -140,7 +157,7 @@ void pr_grid_dist(FILE *fp,char *title,t_fftgrid *grid)
 }
 /* test */
 
-void calc_recipbox(matrix box,matrix recipbox)
+static void calc_recipbox(matrix box,matrix recipbox)
 {
   /* Save some time by assuming upper right part is zero */
 
@@ -166,12 +183,7 @@ static int comp_pmeatom(const void *a,const void *b)
   return pa->index-pb->index;
 }
 
-void calc_idx(t_fftgrid *grid,int natoms,matrix recipbox,
-	      rvec x[],rvec fractx[],ivec idx[],
-	      //int nx,int ny,int nz,
-	      //int nx2,int ny2,int nz2,
-	      int nnx[],int nny[],int nnz[],
-	      t_pmeatom pmeatom[])
+static void calc_idx(gmx_pme_t pme,rvec x[])
 {
   int  i;
   int  *idxptr,tix,tiy,tiz;
@@ -190,19 +202,19 @@ void calc_idx(t_fftgrid *grid,int natoms,matrix recipbox,
 #endif
  
   /* Unpack structure */
-  unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
+  unpack_fftgrid(pme->gridA,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
   
-  rxx = recipbox[XX][XX];
-  ryx = recipbox[YY][XX];
-  ryy = recipbox[YY][YY];
-  rzx = recipbox[ZZ][XX];
-  rzy = recipbox[ZZ][YY];
-  rzz = recipbox[ZZ][ZZ];
+  rxx = pme->recipbox[XX][XX];
+  ryx = pme->recipbox[YY][XX];
+  ryy = pme->recipbox[YY][YY];
+  rzx = pme->recipbox[ZZ][XX];
+  rzy = pme->recipbox[ZZ][YY];
+  rzz = pme->recipbox[ZZ][ZZ];
 
-  for(i=0; (i<natoms); i++) {
+  for(i=0; (i<pme->my_homenr); i++) {
     xptr   = x[i];
-    idxptr = idx[i];
-    fptr   = fractx[i];
+    idxptr = pme->idx[i];
+    fptr   = pme->fractx[i];
     
     /* Fractional coordinates along box vectors */
     tx = nx2 + nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
@@ -223,13 +235,13 @@ void calc_idx(t_fftgrid *grid,int natoms,matrix recipbox,
     fptr[YY] = ty - tiy;
     fptr[ZZ] = tz - tiz;   
     
-    idxptr[XX] = nnx[tix];
-    idxptr[YY] = nny[tiy];
-    idxptr[ZZ] = nnz[tiz];
+    idxptr[XX] = pme->nnx[tix];
+    idxptr[YY] = pme->nny[tiy];
+    idxptr[ZZ] = pme->nnz[tiz];
 
 #ifdef SORTPME    
-    pmeatom[i].atom  = i;
-    pmeatom[i].index = INDEX(idxptr[XX],idxptr[YY],idxptr[ZZ]);
+    pme->pmeatom[i].atom  = i;
+    pme->pmeatom[i].index = INDEX(idxptr[XX],idxptr[YY],idxptr[ZZ]);
 #endif
     
 #ifdef DEBUG
@@ -244,14 +256,14 @@ void calc_idx(t_fftgrid *grid,int natoms,matrix recipbox,
 
 #ifdef SORTPME
   GMX_MPE_LOG(ev_sort_start);
-  qsort(pmeatom,natoms,sizeof(pmeatom[0]),comp_pmeatom);
+  qsort(pme->pmeatom,pme->my_homenr,sizeof(pmeatom[0]),comp_pmeatom);
   GMX_MPE_LOG(ev_sort_finish);
 #endif
 }
 
-void pme_calc_pidx(t_commrec *cr,
-		   int natoms,matrix box, rvec x[],int nx, int nnx[],
-                   int *pidx, int *gidx)
+static void pme_calc_pidx(t_commrec *cr,
+			  int natoms,matrix box, rvec x[],int nx, int nnx[],
+			  int *pidx, int *gidx)
 {
   int  i,j,jj;
   int nx2;
@@ -292,9 +304,9 @@ void pme_calc_pidx(t_commrec *cr,
   }
 }
 
-void pmeredist(t_commrec *cr, bool forw,
-	       int n, rvec *x_f, real *charge, int *idxa,
-               int *total, rvec *pme_x, real *pme_q)
+static void pmeredist(t_commrec *cr, bool forw,
+		      int n, rvec *x_f, real *charge, int *idxa,
+		      int *total, rvec *pme_x, real *pme_q)
 /* Redistribute particle data for PME calculation */
 /* domain decomposition by x coordinate           */
 {
@@ -381,8 +393,8 @@ void pmeredist(t_commrec *cr, bool forw,
 #endif 
 }
 
-void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
-                  int pme_order, bool bForward)
+static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
+			     int direction)
 {
   static bool bFirst=TRUE;
   static real *tmp;
@@ -415,13 +427,14 @@ void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
      * this is bad since its not guaranteed by fftw, but works for now...
      * This will be fixed in the next release.
      */
-  if(grid->workspace)
+  if (grid->workspace)
     tmp=grid->workspace;
-  if(bForward) { /* sum contributions to local grid */
+  if (direction  == GMX_SUM_QGRID_FORWARD) { 
+    /* sum contributions to local grid */
     ny=grid->ny;
     la2r=grid->la2r;
 /* Send left Boundary */
-    bndsize = leftbnd*ny*la2r;
+    bndsize = pme->leftbnd*ny*la2r;
     from = grid->ptr + (cr->left   - nodeshift + 1)*localsize - bndsize;
     to   = grid->ptr + (cr->nodeid - nodeshift + 1)*localsize - bndsize;
     MPI_Sendrecv(from,bndsize,mpi_type,
@@ -435,7 +448,7 @@ void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
     GMX_MPE_LOG(ev_test_finish);
 
 /* Send right boundary */
-    bndsize = rightbnd*ny*la2r;
+    bndsize = pme->rightbnd*ny*la2r;
     from = grid->ptr + (cr->right  - nodeshift)*localsize;
     to   = grid->ptr + (cr->nodeid - nodeshift)*localsize;
     MPI_Sendrecv(from,bndsize,mpi_type,
@@ -448,12 +461,13 @@ void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
     }
     GMX_MPE_LOG(ev_test_finish);
   }
-  else { /* distribute local grid to all processors */
+  else if (direction  == GMX_SUM_QGRID_BACKWARD) { 
+    /* distribute local grid to all processors */
     ny=grid->ny;
     la2r=grid->la2r;
 
 /* Send left Boundary */
-    bndsize = rightbnd*ny*la2r;
+    bndsize = pme->rightbnd*ny*la2r;
     from = grid->ptr + (cr->nodeid - nodeshift)*localsize;
     to   = grid->ptr + (cr->right  - nodeshift)*localsize;
     MPI_Sendrecv(from,bndsize,mpi_type,
@@ -461,7 +475,7 @@ void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
                to,bndsize,mpi_type,cr->right,cr->right,
                MPI_COMM_WORLD,&stat);
 /* Send right boundary */
-    bndsize = leftbnd*ny*la2r;
+    bndsize = pme->leftbnd*ny*la2r;
     from = grid->ptr + (cr->nodeid - nodeshift + 1)*localsize - bndsize;
     to   = grid->ptr + (cr->left   - nodeshift + 1)*localsize - bndsize;
     MPI_Sendrecv(from,bndsize,mpi_type,
@@ -469,14 +483,16 @@ void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
                to,bndsize,mpi_type,cr->left,cr->left,
                MPI_COMM_WORLD,&stat);
   }
+  else
+    gmx_fatal(FARGS,"Invalid direction %d for summing qgrid",direction);
+    
 #else
   gmx_fatal(FARGS,"Parallel grid summation requires MPI and FFTW.\n");    
 #endif
   GMX_MPE_LOG(ev_sum_qgrid_finish);
 }
 
-void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
-               int pme_order, bool bForward)
+void gmx_sum_qgrid(gmx_pme_t gmx,t_commrec *cr,t_fftgrid *grid,int direction)
 {
   static bool bFirst=TRUE;
   static real *tmp;
@@ -497,9 +513,10 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
      * This will be fixed in the next release.
      */
   bFirst=FALSE;
-  if(grid->workspace)
+  if (grid->workspace)
     tmp=grid->workspace;
-  if(bForward) { /* sum contributions to local grid */
+  if (direction == GMX_SUM_QGRID_FORWARD) { 
+    /* sum contributions to local grid */
 
     GMX_BARRIER(cr->mpi_comm_mygroup);
     GMX_MPE_LOG(ev_reduce_start);
@@ -513,21 +530,23 @@ void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
     if(cr->nodeid<maxproc)
       memcpy(grid->ptr+cr->nodeid*localsize,tmp,localsize*sizeof(real));
   }
-  else { /* distribute local grid to all processors */
+  else if (direction == GMX_SUM_QGRID_BACKWARD) { 
+    /* distribute local grid to all processors */
     for(i=0;i<maxproc;i++)
       MPI_Bcast(grid->ptr+i*localsize, /* ptr arithm     */
 		localsize,       
 		GMX_MPI_REAL,i,cr->mpi_comm_mygroup);
   }
+  else
+    gmx_fatal(FARGS,"Invalid direction %d for summing qgrid",direction);
+    
 #else
   gmx_fatal(FARGS,"Parallel grid summation requires MPI and FFTW.\n");    
 #endif
 }
 
-void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
-		       splinevec theta,int nr,int order,
-		       int nnx[],int nny[],int nnz[], t_commrec *cr,
-		       t_pmeatom pmeatom[])
+static void spread_q_bsplines(gmx_pme_t pme,t_fftgrid *grid,real charge[],
+			      int nr,int order,t_commrec *cr)
 {
   /* spread charges from home atoms to local grid */
   real     *ptr;
@@ -548,7 +567,7 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
       nodeshift = cr->nnodes-cr->npmenodes;
   }
   
-  if (!bPar) {
+  if (!pme->bPar) {
     clear_fftgrid(grid); 
 #ifdef GMX_MPI
   } else {
@@ -557,30 +576,30 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
     for (i=0; (i<localsize); i++)
       ptr[i] = 0;
 /* clear left boundary area */
-    bndsize = leftbnd*grid->la12r;
+    bndsize = pme->leftbnd*grid->la12r;
     ptr = grid->ptr + (cr->left - nodeshift + 1)*localsize - bndsize;
     for (i=0; (i<bndsize); i++)
       ptr[i] = 0;
 /* clear right boundary area */
-    bndsize = rightbnd*grid->la12r;
+    bndsize = pme->rightbnd*grid->la12r;
     ptr = grid->ptr + (cr->right - nodeshift)*localsize;
     for (i=0; (i<bndsize); i++)
       ptr[i] = 0;
 #endif
   }
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
-  ii0   = nnx+nx2+1-order/2;
-  jj0   = nny+ny2+1-order/2;
-  kk0   = nnz+nz2+1-order/2;
+  ii0   = pme->nnx+nx2+1-order/2;
+  jj0   = pme->nny+ny2+1-order/2;
+  kk0   = pme->nnz+nz2+1-order/2;
   
   for(nn=0; (nn<nr); nn++) {
 #ifdef SORTPME
-    n = pmeatom[nn].atom;
+    n = pme->pmeatom[nn].atom;
 #else
     n = nn;
 #endif
     qn     = charge[n];
-    idxptr = idx[n];
+    idxptr = pme->idx[n];
     
     if (qn != 0) {
       norder  = n*order;
@@ -589,9 +608,9 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
       i0  = ii0 + idxptr[XX]; 
       j0  = jj0 + idxptr[YY];
       k0  = kk0 + idxptr[ZZ];
-      thx = theta[XX] + norder;
-      thy = theta[YY] + norder;
-      thz = theta[ZZ] + norder;
+      thx = pme->theta[XX] + norder;
+      thy = pme->theta[YY] + norder;
+      thz = pme->theta[ZZ] + norder;
       
       for(ithx=0; (ithx<order); ithx++) {
 	index_x = la12*i0[ithx];
@@ -611,9 +630,8 @@ void spread_q_bsplines(t_fftgrid *grid,ivec idx[],real charge[],
   }
 }
 
-real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
-	       splinevec bsp_mod,matrix recipbox,
-	       matrix vir,t_commrec *cr)
+real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
+	       real ewaldcoeff,real vol,matrix vir,t_commrec *cr)
 {
   /* do recip sum over local cells in grid */
   t_complex *ptr,*p0;
@@ -632,18 +650,19 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
   unpack_fftgrid(grid,&nx,&ny,&nz,
 		 &nx2,&ny2,&nz2,&la2,&la12,FALSE,(real **)&ptr);
    
-  rxx = recipbox[XX][XX];
-  ryx = recipbox[YY][XX];
-  ryy = recipbox[YY][YY];
-  rzx = recipbox[ZZ][XX];
-  rzy = recipbox[ZZ][YY];
-  rzz = recipbox[ZZ][ZZ];
+  rxx = pme->recipbox[XX][XX];
+  ryx = pme->recipbox[YY][XX];
+  ryy = pme->recipbox[YY][YY];
+  rzx = pme->recipbox[ZZ][XX];
+  rzy = pme->recipbox[ZZ][YY];
+  rzz = pme->recipbox[ZZ][ZZ];
  
   maxkx = (nx+1)/2;
   maxky = (ny+1)/2;
   maxkz = nz/2+1;
     
-  if (bPar) { /* transpose X & Y and only sum local cells */
+  if (pme->bPar) { 
+    /* transpose X & Y and only sum local cells */
 #ifdef GMX_MPI
     kystart = grid->pfft.local_y_start_after_transpose;
     kyend   = kystart+grid->pfft.local_ny_after_transpose;
@@ -664,7 +683,7 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
       my = ky;
     else
       my = (ky-ny);
-    by = M_PI*vol*bsp_mod[YY][ky];
+    by = M_PI*vol*pme->bsp_mod[YY][ky];
     
     for(kx=0; (kx<nx); kx++) {    
       if(kx < maxkx)
@@ -675,9 +694,9 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
       mhx = mx * rxx;
       mhy = mx * ryx + my * ryy;
 
-      bx = bsp_mod[XX][kx];
+      bx = pme->bsp_mod[XX][kx];
       
-      if (bPar)
+      if (pme->bPar)
 	p0 = ptr + INDEX(ky,kx,0); /* Pointer Arithmetic */
       else
 	p0 = ptr + INDEX(kx,ky,0); /* Pointer Arithmetic */
@@ -692,8 +711,8 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
 	mhz = mx * rzx + my * rzy + mz * rzz;
 
 	m2      = mhx*mhx+mhy*mhy+mhz*mhz;
-	denom   = m2*bx*by*bsp_mod[ZZ][kz];
-	eterm   = ONE_4PI_EPS0*exp(-factor*m2)/(epsilon_r*denom);
+	denom   = m2*bx*by*pme->bsp_mod[ZZ][kz];
+	eterm   = ONE_4PI_EPS0*exp(-factor*m2)/(pme->epsilon_r*denom);
 	p0->re  = d1*eterm;
 	p0->im  = d2*eterm;
 	
@@ -731,11 +750,8 @@ real solve_pme(t_fftgrid *grid,real ewaldcoeff,real vol,real epsilon_r,
   return(0.5*energy);
 }
 
-void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
-		       ivec idx[],rvec f[],real *charge,real scale,
-		       splinevec theta,splinevec dtheta,
-		       int nr,int order,int nnx[],int nny[],int nnz[],
-		       t_pmeatom pmeatom[])
+void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
+		       rvec f[],real *charge,real scale)
 {
   /* sum forces for local particles */  
   int     nn,n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
@@ -748,29 +764,30 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
   real    *thx,*thy,*thz,*dthx,*dthy,*dthz;
   int     sn,norder,*idxptr,ind0;
   real    rxx,ryx,ryy,rzx,rzy,rzz;
+  int     order;
   
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
- 
-  thx  = theta[XX];
-  thy  = theta[YY];
-  thz  = theta[ZZ];
-  dthx = dtheta[XX];
-  dthy = dtheta[YY];
-  dthz = dtheta[ZZ];
-  ii0  = nnx+nx2+1-order/2;
-  jj0  = nny+ny2+1-order/2;
-  kk0  = nnz+nz2+1-order/2;
+  order = pme->pme_order;
+  thx   = pme->theta[XX];
+  thy   = pme->theta[YY];
+  thz   = pme->theta[ZZ];
+  dthx  = pme->dtheta[XX];
+  dthy  = pme->dtheta[YY];
+  dthz  = pme->dtheta[ZZ];
+  ii0   = pme->nnx+nx2+1-order/2;
+  jj0   = pme->nny+ny2+1-order/2;
+  kk0   = pme->nnz+nz2+1-order/2;
   
-  rxx = recipbox[XX][XX];
-  ryx = recipbox[YY][XX];
-  ryy = recipbox[YY][YY];
-  rzx = recipbox[ZZ][XX];
-  rzy = recipbox[ZZ][YY];
-  rzz = recipbox[ZZ][ZZ];
+  rxx   = pme->recipbox[XX][XX];
+  ryx   = pme->recipbox[YY][XX];
+  ryy   = pme->recipbox[YY][YY];
+  rzx   = pme->recipbox[ZZ][XX];
+  rzy   = pme->recipbox[ZZ][YY];
+  rzz   = pme->recipbox[ZZ][ZZ];
 
-  for(nn=0; (nn<nr); nn++) {
+  for(nn=0; (nn<pme->my_homenr); nn++) {
 #ifdef SORTPME
-    n = pmeatom[nn].atom;
+    n = pme->pmeatom[nn].atom;
 #else
     n = nn;
 #endif
@@ -783,19 +800,19 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
       fnx    = f[n][XX];
       fny    = f[n][YY];
       fnz    = f[n][ZZ];
-      idxptr = idx[n];
+      idxptr = pme->idx[n];
       norder = n*order;
       
       /* Pointer arithmetic alert, next nine statements */
       i0   = ii0 + idxptr[XX]; 
       j0   = jj0 + idxptr[YY];
       k0   = kk0 + idxptr[ZZ];
-      thx  = theta[XX] + norder;
-      thy  = theta[YY] + norder;
-      thz  = theta[ZZ] + norder;
-      dthx = dtheta[XX] + norder;
-      dthy = dtheta[YY] + norder;
-      dthz = dtheta[ZZ] + norder;
+      thx  = pme->theta[XX] + norder;
+      thy  = pme->theta[YY] + norder;
+      thz  = pme->theta[ZZ] + norder;
+      dthx = pme->dtheta[XX] + norder;
+      dthy = pme->dtheta[YY] + norder;
+      dthz = pme->dtheta[ZZ] + norder;
       
       for(ithx=0; (ithx<order); ithx++) {
 	index_x = la12*i0[ithx];
@@ -948,26 +965,36 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-/* Global variables! Yucky... */
-static    t_fftgrid *gridA=NULL,*gridB=NULL;
-static    int  *nnx,*nny,*nnz;
-static    ivec *idx=NULL;
-static    rvec *fractx; /* Fractional coordinate relative to the
-			 * lower cell boundary 
-			 */
-static    matrix    recipbox;
-static    splinevec theta;
-static    splinevec dtheta;
-static    splinevec bsp_mod;
-static    t_pmeatom *pmeatom;
-
-t_fftgrid *init_pme(FILE *log,t_commrec *cr,
-		    int nkx,int nky,int nkz,int pme_order,int homenr,
-		    bool bFreeEnergy,bool bOptFFT,int ewald_geometry)
+int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
 {
+  fprintf(log,"Destroying PME data structures.\n");
+  sfree((*pmedata)->nnx);
+  sfree((*pmedata)->nny);
+  sfree((*pmedata)->nnz);
+  sfree((*pmedata)->idx);
+  sfree((*pmedata)->fractx);
+  sfree((*pmedata)->pmeatom);
+  done_fftgrid((*pmedata)->gridA);
+  if((*pmedata)->gridB)
+    done_fftgrid((*pmedata)->gridB);
+    
+  sfree(*pmedata);
+  *pmedata = NULL;
+  
+  return 0;
+}
+
+int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
+		 t_inputrec *ir,int homenr,bool bFreeEnergy,
+		 bool bVerbose)
+{
+  gmx_pme_t pme=NULL;
+  
   int i,npme; /* how many nodes participate in PME? */
 
-
+  fprintf(log,"Creating PME data structures.\n");
+  snew(pme,1);
+  
   if (cr->npmenodes)
     npme = cr->npmenodes;
   else
@@ -976,59 +1003,70 @@ t_fftgrid *init_pme(FILE *log,t_commrec *cr,
   fprintf(log,"Will do PME sum in reciprocal space.\n");
   please_cite(log,"Essman95a");
 
-  if(ewald_geometry==eewg3DC) {
+  if (ir->ewald_geometry == eewg3DC) {
     fprintf(log,"Using the Ewald3DC correction for systems with a slab geometry.\n");
     please_cite(log,"In-Chul99a");
   }
 
-  bPar = cr && (npme>1); /* bPar is a global variable! */
-  if (bPar) {
-    leftbnd  = pme_order/2 - 1;
-    rightbnd = pme_order - leftbnd - 1;
+  pme->bFEP = ((ir->efep != efepNO) && bFreeEnergy);
+  pme->nkx  = ir->nkx;
+  pme->nky  = ir->nky;
+  pme->nkz  = ir->nkz;
+  pme->bPar = cr && (npme>1); 
+  pme->pme_order   = ir->pme_order;
+  pme->epsilon_r   = ir->epsilon_r;
+  pme->bDynamicBox = DYNAMIC_BOX(*ir);
+  
+  if (pme->bPar) {
+    pme->leftbnd  = ir->pme_order/2 - 1;
+    pme->rightbnd = ir->pme_order - pme->leftbnd - 1;
 
-    fprintf(log,"Parallelized PME sum used. nkx=%d, npme=%d\n",nkx,npme);
-    if ((nkx % npme) != 0)
+    fprintf(log,"Parallelized PME sum used. nkx=%d, npme=%d\n",ir->nkx,npme);
+    if ((ir->nkx % npme) != 0)
       fprintf(log,"Warning: For load balance, "
 	      "fourier_nx should be divisible by the number of PME nodes\n");
   } 
  
   /* allocate space for things */
-  snew(bsp_mod[XX],nkx);
-  snew(bsp_mod[YY],nky);
-  snew(bsp_mod[ZZ],nkz);
+  snew(pme->bsp_mod[XX],ir->nkx);
+  snew(pme->bsp_mod[YY],ir->nky);
+  snew(pme->bsp_mod[ZZ],ir->nkz);
   for(i=0;i<DIM;i++) {
-    snew(theta[i],pme_order*homenr); 
-    snew(dtheta[i],pme_order*homenr);
+    snew(pme->theta[i],ir->pme_order*homenr); 
+    snew(pme->dtheta[i],ir->pme_order*homenr);
   }
-  snew(fractx,homenr); 
-  snew(pmeatom,homenr);
+  snew(pme->fractx,homenr); 
+  snew(pme->pmeatom,homenr);
   
-  snew(idx,homenr);
-  snew(nnx,5*nkx);
-  snew(nny,5*nky);
-  snew(nnz,5*nkz);
-  for(i=0; (i<5*nkx); i++)
-    nnx[i] = i % nkx;
-  for(i=0; (i<5*nky); i++)
-    nny[i] = i % nky;
-  for(i=0; (i<5*nkz); i++)
-    nnz[i] = i % nkz;
+  snew(pme->idx,homenr);
+  snew(pme->nnx,5*ir->nkx);
+  snew(pme->nny,5*ir->nky);
+  snew(pme->nnz,5*ir->nkz);
+  for(i=0; (i<5*ir->nkx); i++)
+    pme->nnx[i] = i % ir->nkx;
+  for(i=0; (i<5*ir->nky); i++)
+    pme->nny[i] = i % ir->nky;
+  for(i=0; (i<5*ir->nkz); i++)
+    pme->nnz[i] = i % ir->nkz;
 
-  gridA = mk_fftgrid(log,nkx,nky,nkz,cr);
+  pme->gridA = mk_fftgrid(log,ir->nkx,ir->nky,ir->nkz,cr);
   if (bFreeEnergy)
-    gridB = mk_fftgrid(log,nkx,nky,nkz,cr);
+    pme->gridB = mk_fftgrid(log,ir->nkx,ir->nky,ir->nkz,cr);
+  else
+    pme->gridB = NULL;
+    
+  make_bspline_moduli(pme->bsp_mod,ir->nkx,ir->nky,ir->nkz,ir->pme_order);   
 
-  make_bspline_moduli(bsp_mod,nkx,nky,nkz,pme_order);   
-
-  return gridA;
+  *pmedata = pme;
+  
+  return 0;
 }
 
-void spread_on_grid(FILE *logfile,    t_commrec *cr, 
-		    t_fftgrid *grid,  int homenr,
-		    int pme_order,    rvec x[],
-		    real charge[],    matrix box,
-		    bool bGatherOnly, bool bHaveSplines)
-/*		    t_pmeatom pmeatom[]) */
+static void spread_on_grid(FILE *logfile,    gmx_pme_t pme,
+			   t_fftgrid *grid,  t_commrec *cr,    
+			   rvec x[],
+			   real charge[],    matrix box,
+			   bool bGatherOnly, bool bHaveSplines)
 { 
   int nx,ny,nz,nx2,ny2,nz2,la2,la12;
   real *ptr;
@@ -1038,22 +1076,20 @@ void spread_on_grid(FILE *logfile,    t_commrec *cr,
   
   if (!bHaveSplines)
     /* Inverse box */
-    calc_recipbox(box,recipbox); 
+    calc_recipbox(box,pme->recipbox); 
   
   if (!bGatherOnly) {
     if (!bHaveSplines) {
       /* Compute fftgrid index for all atoms, with help of some extra variables */
-//      calc_idx(grid,homenr,recipbox,x,fractx,idx,nx,ny,nz,nx2,ny2,nz2,
-      calc_idx(grid,homenr,recipbox,x,fractx,idx,
-	       nnx,nny,nnz,pmeatom);
+      calc_idx(pme,x);
       
       /* make local bsplines  */
-      make_bsplines(theta,dtheta,pme_order,nx,ny,nz,fractx,idx,charge,homenr);
+      make_bsplines(pme->theta,pme->dtheta,pme->pme_order,nx,ny,nz,
+		    pme->fractx,pme->idx,charge,pme->my_homenr);
     }    
 
     /* put local atoms on grid. */
-    spread_q_bsplines(grid,idx,charge,theta,homenr,pme_order,nnx,nny,nnz,cr,
-		      pmeatom);
+    spread_q_bsplines(pme,grid,charge,pme->my_homenr,pme->pme_order,cr);
 /*    pr_grid_dist(logfile,"spread",grid); */
   }
 }
@@ -1062,10 +1098,10 @@ void spread_on_grid(FILE *logfile,    t_commrec *cr,
 #ifdef GMX_MPI  
 /*************/
 /* The following three routines are for split-off pme nodes */
-void send_coordinates(t_nsborder *nsb, rvec x[], 
-                      real chargeA[],  real chargeB[], 
-                      bool bLastTime,  bool bFreeEnergy, 
-		      t_commrec *cr)
+void gmx_pme_send_x(t_nsborder *nsb, rvec x[], 
+		    real chargeA[],  real chargeB[], 
+		    bool bLastTime,  bool bFreeEnergy, 
+		    t_commrec *cr)
 {
   int receiver, i;
   int firstpmenode=nsb->nnodes-nsb->npmenodes;
@@ -1126,10 +1162,9 @@ void send_coordinates(t_nsborder *nsb, rvec x[],
   MPI_Waitall(nsend, req, stat);
 }
 
-
-void receive_lrforces(t_commrec *cr, t_nsborder *nsb, 
-                      rvec f[]     , matrix vir, 
-		      real *energy, int step)
+void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb, 
+		       rvec f[]     , matrix vir, 
+		       real *energy, int step)
 {
   int  i,j,sender,elements;
   static int  firstpmenode, lastpmenode;
@@ -1248,14 +1283,12 @@ void receive_lrforces(t_commrec *cr, t_nsborder *nsb,
 }
 
 
-void do_pmeonly(FILE *logfile, 
-                t_inputrec *ir,  t_commrec *cr,
-		matrix box, 
+int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
+		t_commrec *cr,   matrix box, 
 		t_nsborder *nsb, t_nrnb *mynrnb,
-		                 real ewaldcoeff,
-		real lambda,
+		real ewaldcoeff, real lambda,
 		bool bGatherOnly)
-		
+     
 {
   MPI_Status  status;
   rvec  *xpme,*fpme;
@@ -1276,7 +1309,7 @@ void do_pmeonly(FILE *logfile,
   real  energy_AB[2] = {0,0};
   matrix  vir,vir_AB[2];
   real  vbuf[DIM*DIM];
-  bool  bFreeEnergy, bFirst=TRUE;
+  bool  bFirst=TRUE;
   real  vol,energy;
   real  *dvdlambda=0;
   int messages; /* count the Isends or Ireceives */    
@@ -1288,8 +1321,6 @@ void do_pmeonly(FILE *logfile,
   bool bNS;
   unsigned long int step=0, timesteps=0;
 
-  bFreeEnergy = (ir->efep != efepNO);
- 
 #define ME (nsb->nodeid) 
 
   /* Allocate space for the request handles, a lonely PME node may
@@ -1300,7 +1331,7 @@ void do_pmeonly(FILE *logfile,
   snew(xpme,PMEHOMENR(nsb));
   snew(fpme,PMEHOMENR(nsb));
   snew(chargeA,PMEHOMENR(nsb));
-  if (bFreeEnergy)
+  if (pme->bFEP)
     snew(chargeB,PMEHOMENR(nsb));
   snew(f_tmp,nsb->natoms);
   if (cr->npmenodes > 1) {
@@ -1344,7 +1375,7 @@ void do_pmeonly(FILE *logfile,
           MPI_Recv(&chargeA[firstindex-nsb->pmeindex[ME]],
 	           (lastindex-firstindex+1),GMX_MPI_REAL,sender,
                    MPI_ANY_TAG,MPI_COMM_WORLD,&status);
-          if (bFreeEnergy)
+          if (pme->bFEP)
             MPI_Recv(&chargeB[firstindex-nsb->pmeindex[ME]],
 	             (lastindex-firstindex+1),GMX_MPI_REAL,sender,
                      MPI_ANY_TAG,MPI_COMM_WORLD,&status);		      
@@ -1364,20 +1395,20 @@ void do_pmeonly(FILE *logfile,
     if (stat[0].MPI_TAG == 1) bDone=TRUE;
      
 
-    for(q=0; q<(bFreeEnergy ? 2 : 1); q++) /* loop over q */
+    for(q=0; q<(pme->bFEP ? 2 : 1); q++) /* loop over q */
     {
       if (q == 0) {
-        grid = gridA;
+        grid = pme->gridA;
 	chargepme = chargeA;
       } else {
-        grid = gridB;
+        grid = pme->gridB;
         chargepme = chargeB;
       }
 
       /* Unpack structure */
       unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     
-      my_homenr=nsb->natoms;
+      pme->my_homenr = nsb->natoms;
 
 #ifdef PRT_FORCE_X
       if (count==0) {
@@ -1397,16 +1428,16 @@ void do_pmeonly(FILE *logfile,
  *                cr->nodeid,PMEHOMENR(nsb),xpme[0][0],ir->nkx);
  */
         GMX_MPE_LOG(ev_pmeredist_start);
-        pme_calc_pidx(cr,PMEHOMENR(nsb),box,xpme,ir->nkx,nnx,pidx,gidx);
+        pme_calc_pidx(cr,PMEHOMENR(nsb),box,xpme,pme->nkx,pme->nnx,pidx,gidx);
         pmeredist(cr,TRUE,PMEHOMENR(nsb), xpme, chargepme, gidx, 
-                  &my_homenr, x_tmp, q_tmp);
+                  &pme->my_homenr, x_tmp, q_tmp);
         GMX_MPE_LOG(ev_pmeredist_finish);
       }
       /* fprintf(logfile,"Node= %6d, pme local particles=%6d\n", cr->nodeid,my_homenr); */
 
       /* Spread the charges on a grid */
       GMX_MPE_LOG(ev_spread_on_grid_start);
-      spread_on_grid(logfile,cr,grid,my_homenr,ir->pme_order,
+      spread_on_grid(logfile,pme,grid,cr,
   		     x_tmp,q_tmp,box,bGatherOnly,
 		     q==0 ? FALSE : TRUE); 
       GMX_MPE_LOG(ev_spread_on_grid_finish);
@@ -1414,11 +1445,11 @@ void do_pmeonly(FILE *logfile,
       if (!bGatherOnly) 
       {
         inc_nrnb(mynrnb,eNR_SPREADQBSP,
-	         ir->pme_order*ir->pme_order*ir->pme_order*my_homenr);
+	         pme->pme_order*pme->pme_order*pme->pme_order*pme->my_homenr);
       
         /* sum contributions to local grid from other nodes */
         if (cr->npmenodes > 1) 
- 	  sum_qgrid_dd(cr,nsb,grid,ir->pme_order,TRUE);
+ 	  gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_FORWARD);
         if (debug)
 	  pr_fftgrid(debug,"qgrid",grid);
 
@@ -1432,8 +1463,7 @@ void do_pmeonly(FILE *logfile,
         GMX_MPE_LOG(ev_solve_pme_start);
 /*      energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,
 	  		       vir_AB[q],cr); */			       
-        energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,ir->epsilon_r,
-			       bsp_mod,recipbox,vir_AB[q],cr);
+        energy_AB[q]=solve_pme(pme,grid,ewaldcoeff,vol,vir_AB[q],cr);
         GMX_MPE_LOG(ev_solve_pme_finish);
 
         inc_nrnb(mynrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
@@ -1445,7 +1475,7 @@ void do_pmeonly(FILE *logfile,
 
         /* distribute local grid to all nodes */
         if (cr->npmenodes > 1) 
-	  sum_qgrid_dd(cr,nsb,grid,ir->pme_order,FALSE); 
+	  gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_BACKWARD); 
         if (debug)
 	  pr_fftgrid(debug,"potential",grid);
 	
@@ -1456,11 +1486,8 @@ void do_pmeonly(FILE *logfile,
     
       /* interpolate forces for our local atoms */
       GMX_MPE_LOG(ev_gather_f_bsplines_start);
-      gather_f_bsplines(grid,recipbox,idx,f_tmp,q_tmp,
-  		        bFreeEnergy ? (q==0 ? 1.0-lambda : lambda) : 1.0,
-		        theta,dtheta,my_homenr,ir->pme_order,
-		        nnx,nny,nnz,
-	                pmeatom);
+      gather_f_bsplines(pme,grid,f_tmp,q_tmp,
+  		        pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
       GMX_MPE_LOG(ev_gather_f_bsplines_finish);
 
       /* redistribute forces */
@@ -1468,7 +1495,7 @@ void do_pmeonly(FILE *logfile,
       {
         GMX_MPE_LOG(ev_pmeredist_start);
         pmeredist(cr,FALSE,PMEHOMENR(nsb), fpme, chargepme, gidx, 
-                  &my_homenr, f_tmp, q_tmp);
+                  &pme->my_homenr, f_tmp, q_tmp);
         GMX_MPE_LOG(ev_pmeredist_finish);
       }
 
@@ -1485,11 +1512,11 @@ void do_pmeonly(FILE *logfile,
 #endif
   
       inc_nrnb(mynrnb,eNR_GATHERFBSP,
-  	       ir->pme_order*ir->pme_order*ir->pme_order*my_homenr);
+  	       pme->pme_order*pme->pme_order*pme->pme_order*pme->my_homenr);
     } /* of q-loop */
 
 
-    if (!bFreeEnergy) 
+    if (!pme->bFEP) 
     {
       energy = energy_AB[0];
       copy_mat(vir_AB[0],vir);
@@ -1598,13 +1625,13 @@ void do_pmeonly(FILE *logfile,
      * zero out f_tmp vector, since gather_f_bsplines
      * only subsequently adds to f_tmp:
      */
-    clear_rvecs(my_homenr,f_tmp);
+    clear_rvecs(pme->my_homenr,f_tmp);
     /* zero out fpme vector */
     clear_rvecs(PMEHOMENR(nsb),fpme);
     
     /* In case of dynamic pressure coupling, here the box for the
      * next time step is received: */
-    if (DYNAMIC_BOX(*ir))
+    if (pme->bDynamicBox)
     {
       /* receive buffer with box data from last PP node */
       sender = nsb->nnodes-nsb->npmenodes-1;
@@ -1630,9 +1657,10 @@ void do_pmeonly(FILE *logfile,
   } /***** end of quasi-loop */
   while (!bDone);
 
-//  fprintf(stderr,"=== node %d received TAG=1 message!\n", ME);
+  /*  fprintf(stderr,"=== node %d received TAG=1 message!\n", ME); */
      
 #undef ME
+  return 0;
 }
 
 /******************/
@@ -1640,23 +1668,21 @@ void do_pmeonly(FILE *logfile,
 /******************/
 
 
-real do_pme(FILE *logfile,   bool bVerbose,
-	    t_inputrec *ir,  rvec x[],
-	    rvec f[],
-	    real *chargeA,   real *chargeB,
-	    matrix box,	     t_commrec *cr,
-	    t_nsborder *nsb, t_nrnb *nrnb,    
-	    matrix vir,      real ewaldcoeff,
-	    bool bFreeEnergy,
-	    real lambda,     real *dvdlambda,
-	    bool bGatherOnly)
+int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
+	       rvec x[],        rvec f[],
+	       real *chargeA,   real *chargeB,
+	       matrix box,	t_commrec *cr,
+	       t_nsborder *nsb, t_nrnb *nrnb,    
+	       matrix vir,      real ewaldcoeff,
+	       real *energy,    real lambda, 
+	       real *dvdlambda, bool bGatherOnly)
 { 
   static  real energy_AB[2] = {0,0};
   int     q,i,j,ntot,npme;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
   t_fftgrid *grid=NULL;
   real *ptr;
-  real    *homecharge=NULL,vol,energy;
+  real    *homecharge=NULL,vol;
   matrix  vir_AB[2];
   static bool bFirst=TRUE;
   static int *pidx;
@@ -1671,7 +1697,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
   
   if(bFirst) {
 #if defined GMX_MPI
-    if (bPar) {
+    if (pme->bPar) {
       snew(gidx,nsb->natoms);
       snew(x_tmp,nsb->natoms);
       snew(f_tmp,nsb->natoms);
@@ -1689,12 +1715,12 @@ real do_pme(FILE *logfile,   bool bVerbose,
     where();
     bFirst=FALSE;
   }
-  for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
+  for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
     if (q == 0) {
-      grid = gridA;
+      grid = pme->gridA;
       homecharge = chargeA+START(nsb);
     } else {
-      grid = gridB;
+      grid = pme->gridB;
       homecharge = chargeB+START(nsb);
     }
     /* Unpack structure */
@@ -1708,7 +1734,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
     unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     where();
 
-    my_homenr=nsb->natoms;
+    pme->my_homenr = nsb->natoms;
 
 #ifdef PRT_FORCE_X
     if (count==0)
@@ -1718,41 +1744,42 @@ real do_pme(FILE *logfile,   bool bVerbose,
       }
 #endif
 
-    if (!bPar) {
+    if (!pme->bPar) {
       x_tmp=x;
       f_tmp=f;
       q_tmp=homecharge;
     } else {
-      pme_calc_pidx(cr,HOMENR(nsb),box,x+START(nsb),ir->nkx,nnx,pidx,gidx);
+      pme_calc_pidx(cr,HOMENR(nsb),box,x+START(nsb),
+		    pme->nkx,pme->nnx,pidx,gidx);
       where();
 
       GMX_BARRIER(MPI_COMM_WORLD);
       pmeredist(cr, TRUE, HOMENR(nsb), x+START(nsb), homecharge, gidx, 
-		&my_homenr, x_tmp, q_tmp);
+		&pme->my_homenr, x_tmp, q_tmp);
       where();
     }
     where();
     if (debug)
       fprintf(debug,"Node= %6d, pme local particles=%6d\n",
-	      cr->nodeid,my_homenr);
+	      cr->nodeid,pme->my_homenr);
 
     /* Spread the charges on a grid */
     GMX_MPE_LOG(ev_spread_on_grid_start);
 
     /* Spread the charges on a grid */
-    spread_on_grid(logfile,cr,grid,my_homenr,ir->pme_order,
+    spread_on_grid(logfile,pme,grid,cr,
 		   x_tmp,q_tmp,box,bGatherOnly,
 		   q==0 ? FALSE : TRUE);
     GMX_MPE_LOG(ev_spread_on_grid_finish);
 
     if (!bGatherOnly) {
       inc_nrnb(nrnb,eNR_SPREADQBSP,
-	       ir->pme_order*ir->pme_order*ir->pme_order*my_homenr);
+	       pme->pme_order*pme->pme_order*pme->pme_order*pme->my_homenr);
       
       /* sum contributions to local grid from other nodes */
-      if (bPar) {
+      if (pme->bPar) {
         GMX_BARRIER(MPI_COMM_WORLD);
-	sum_qgrid_dd(cr,nsb,grid,ir->pme_order,TRUE);
+	gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_FORWARD);
 	where();
       }
 #ifdef DEBUG
@@ -1773,8 +1800,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
       vol = det(box);
       GMX_BARRIER(MPI_COMM_WORLD);
       GMX_MPE_LOG(ev_solve_pme_start);
-      energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,ir->epsilon_r,
-			     bsp_mod,recipbox,vir_AB[q],cr);
+      energy_AB[q]=solve_pme(pme,grid,ewaldcoeff,vol,vir_AB[q],cr);
       where();
       GMX_MPE_LOG(ev_solve_pme_finish);
       inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
@@ -1788,9 +1814,9 @@ real do_pme(FILE *logfile,   bool bVerbose,
       GMX_MPE_LOG(ev_gmxfft3d_finish);
       
       /* distribute local grid to all nodes */
-      if (bPar) {
+      if (pme->bPar) {
         GMX_BARRIER(MPI_COMM_WORLD);
-	sum_qgrid_dd(cr,nsb,grid,ir->pme_order,FALSE);
+	gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_BACKWARD);
       }
       where();
 #ifdef DEBUG
@@ -1800,7 +1826,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
 
       ntot  = grid->nxyz;  
       npme  = ntot*log((real)ntot)/log(2.0);
-      if (bPar)
+      if (pme->bPar)
 	npme /= (cr->nnodes - cr->npmenodes);
       inc_nrnb(nrnb,eNR_FFT,2*npme);
       where();
@@ -1809,26 +1835,24 @@ real do_pme(FILE *logfile,   bool bVerbose,
     GMX_BARRIER(MPI_COMM_WORLD);
     GMX_MPE_LOG(ev_gather_f_bsplines_start);
     
-    if (bPar) {
-      for(i=0; (i<my_homenr); i++) {
+    if (pme->bPar) {
+      for(i=0; (i<pme->my_homenr); i++) {
 	f_tmp[i][XX]=0;
 	f_tmp[i][YY]=0;
 	f_tmp[i][ZZ]=0;
       }
     }
     where();
-    gather_f_bsplines(grid,recipbox,idx,f_tmp,q_tmp,
-		      bFreeEnergy ? (q==0 ? 1.0-lambda : lambda) : 1.0,
-		      theta,dtheta,my_homenr,ir->pme_order,
-		      nnx,nny,nnz,pmeatom);
+    gather_f_bsplines(pme,grid,f_tmp,q_tmp,
+		      pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
     where();
     
     GMX_MPE_LOG(ev_gather_f_bsplines_finish);
     
-    if (bPar) {
+    if (pme->bPar) {
       GMX_BARRIER(MPI_COMM_WORLD);
       pmeredist(cr, FALSE,HOMENR(nsb), f+START(nsb), homecharge, gidx, 
-		&my_homenr, f_tmp, q_tmp);
+		&pme->my_homenr, f_tmp, q_tmp);
     }
     where();
     
@@ -1847,22 +1871,21 @@ real do_pme(FILE *logfile,   bool bVerbose,
 #endif
     count++;
     inc_nrnb(nrnb,eNR_GATHERFBSP,
-	     ir->pme_order*ir->pme_order*ir->pme_order*my_homenr);
+	     pme->pme_order*pme->pme_order*pme->pme_order*pme->my_homenr);
   } /* of q-loop */
   
-  if (!bFreeEnergy) {
-    energy = energy_AB[0];
+  if (!pme->bFEP) {
+    *energy = energy_AB[0];
     copy_mat(vir_AB[0],vir);
   } else {
-    energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+    *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
     *dvdlambda += energy_AB[1] - energy_AB[0];
     for(i=0; i<DIM; i++)
       for(j=0; j<DIM; j++)
 	vir[i][j] = (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
   }
-  /* fprintf(logfile,"PME mesh energy: %g\n",energy);*/
   if (debug)
-    fprintf(debug,"PME mesh energy: %g\n",energy);
+    fprintf(debug,"PME mesh energy: %g\n",*energy);
 
-  return energy;
+  return 0;
 }

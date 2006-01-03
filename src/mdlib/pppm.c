@@ -49,7 +49,7 @@
 #include "network.h"
 #include "nrnb.h"
 #include "pppm.h"
-#include "shift_util.h"
+#include "coulomb.h"
 #include "mdrun.h"
 #include "fftgrid.h"
 #include "pme.h"
@@ -59,15 +59,15 @@
 #define llim2 (-3)
 #define ulim2  (3)
 
-void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
+static void calc_invh(rvec box,int nx,int ny,int nz,rvec invh)
 {
   invh[XX] = nx/box[XX];
   invh[YY] = ny/box[YY];
   invh[ZZ] = nz/box[ZZ];
 }
 
-void calc_weights(int iatom,int nx,int ny,int nz,
-		  rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
+static void calc_weights(int iatom,int nx,int ny,int nz,
+			 rvec x,rvec box,rvec invh,ivec ixyz,real WXYZ[])
 {
   const  real half=0.5;
   tensor wxyz;
@@ -151,10 +151,10 @@ static void calc_nxyz(int nx,int ny,int nz,
     (*nnz)[i] = i % nz;
 }
 	
-void spread_q(FILE *log,bool bVerbose,
-	      int start,int nr,
-	      rvec x[],real charge[],rvec box,
-	      t_fftgrid *grid,t_nrnb *nrnb)
+static void spread_q(FILE *log,bool bVerbose,
+		     int start,int nr,
+		     rvec x[],real charge[],rvec box,
+		     t_fftgrid *grid,t_nrnb *nrnb)
 {
   static bool bFirst = TRUE;
   static int  *nnx,*nny,*nnz;
@@ -231,8 +231,8 @@ void spread_q(FILE *log,bool bVerbose,
   inc_nrnb(nrnb,eNR_WEIGHTS,3*nr);
 }
 
-real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
-		  int la2,int la12,
+static real gather_inner(int JCXYZ[],real WXYZ[],int ixw[],int iyw[],int izw[],
+			 int la2,int la12,
 		  real c1x,real c1y,real c1z,real c2x,real c2y,real c2z,
 		  real qi,rvec f,real ptr[])
 {
@@ -364,8 +364,8 @@ static real gather_f(FILE *log,bool bVerbose,
   return energy*0.5;
 }
 
-void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
-		 t_commrec *cr)
+static void convolution(FILE *fp,bool bVerbose,t_fftgrid *grid,real ***ghat,
+			t_commrec *cr)
 {
   int      i,j,k,index;
   real     gk;
@@ -472,8 +472,10 @@ static rvec      beta;
 static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
-void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
-	       bool bVerbose,bool bOld,matrix box,char *ghatfn,t_inputrec *ir)
+int gmx_pppm_init(FILE *log,      t_commrec *cr,
+		  t_nsborder *nsb,bool bVerbose,
+		  bool bOld,      matrix box,
+		  char *ghatfn,   t_inputrec *ir)
 {
   int   nx,ny,nz,m,porder;
   ivec  grids;
@@ -553,16 +555,18 @@ void init_pppm(FILE *log,t_commrec *cr,t_nsborder *nsb,
   cr->mpi_comm_mygroup=MPI_COMM_WORLD;
 #endif
   grid = mk_fftgrid(log,nx,ny,nz,cr);
+  
+  return 0;
 }
 
-real do_pppm(FILE *log,       bool bVerbose,
-	     rvec x[],        rvec f[],
-	     real charge[],   rvec box,
-	     real phi[],      t_commrec *cr,
-	     t_nsborder *nsb, t_nrnb *nrnb,
-	     int pme_order)
+int gmx_pppm_do(FILE *log,       gmx_pme_t pme,
+		bool bVerbose,
+		rvec x[],        rvec f[],
+		real charge[],   rvec box,
+		real phi[],      t_commrec *cr,
+		t_nsborder *nsb, t_nrnb *nrnb,
+		int pme_order,   real *energy)
 {
-  real    ener;
   int     start,nr;
   
   start = START(nsb);
@@ -576,37 +580,37 @@ real do_pppm(FILE *log,       bool bVerbose,
   
   /* In the parallel code we have to sum the grids from neighbouring nodes */
   if (PAR(cr))
-    sum_qgrid(cr,nsb,grid,pme_order,TRUE);
+    gmx_sum_qgrid(pme,cr,grid,GMX_SUM_QGRID_FORWARD);
   
   /* Second step: solving the poisson equation in Fourier space */
   solve_pppm(log,cr,grid,ghat,box,bVerbose,nrnb);
   
   /* In the parallel code we have to sum once again... */
   if (PAR(cr))
-    sum_qgrid(cr,nsb,grid,pme_order,FALSE);
+    gmx_sum_qgrid(pme,cr,grid,GMX_SUM_QGRID_BACKWARD);
   
   /* Third and last step: gather the forces, energies and potential
    * from the grid.
    */
-  ener=gather_f(log,bVerbose,start,nr,x,f,charge,box,phi,grid,beta,nrnb);
+  *energy = gather_f(log,bVerbose,start,nr,x,f,charge,box,
+		     phi,grid,beta,nrnb);
   
-  return ener;
+  return 0;
 }
 
-real do_opt_pppm(FILE *log,       bool bVerbose,
-		 t_inputrec *ir,  int natoms,
-		 rvec x[],        rvec f[],
-		 real charge[],   rvec box,
-		 real phi[],      t_commrec *cr,
-		 t_nrnb *nrnb,    rvec beta,
-		 t_fftgrid *grid, bool bOld)
+static int gmx_pppm_opt_do(FILE *log,       gmx_pme_t pme,
+			   t_inputrec *ir,  bool bVerbose,
+			   int natoms,
+			   rvec x[],        rvec f[],
+			   real charge[],   rvec box,
+			   real phi[],      t_commrec *cr,
+			   t_nrnb *nrnb,    rvec beta,
+			   t_fftgrid *grid, bool bOld,
+			   real *energy)
 {
   real      ***ghat;
   int       nx,ny,nz;
-  real      ener;
   
-  ener = 0.0;
-    
   fprintf(log,"Generating Ghat function\n");
   nx     = ir->nkx;
   ny     = ir->nky;
@@ -630,10 +634,10 @@ real do_opt_pppm(FILE *log,       bool bVerbose,
   /* Third and last step: gather the forces, energies and potential
    * from the grid.
    */
-  ener=gather_f(log,bVerbose,0,natoms,x,f,charge,box,phi,grid,beta,nrnb);
+  *energy = gather_f(log,bVerbose,0,natoms,x,f,charge,box,phi,grid,beta,nrnb);
 
   free_rgrid(ghat,nx,ny);
     
-  return ener;
+  return 0;
 }
 

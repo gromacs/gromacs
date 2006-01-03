@@ -34,18 +34,32 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _ewald_util_h
-#define _ewald_util_h
+#ifndef _coulomb_h
+#define _coulomb_h
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <math.h>
+#include <stdio.h>
 #include "typedefs.h"
-#include "gmxcomplex.h"
+/*#include "gmxcomplex.h"
+#include "fftgrid.h"
+*/
+/* Ewald related stuff */
+extern real calc_ewaldcoeff(real rc,real dtol);
+/* Determines the Ewald parameter, both for Ewald and PME */
 
-
+extern real do_ewald(FILE *log,       bool bVerbose,
+		     t_inputrec *ir,
+		     rvec x[],        rvec f[],
+		     real chargeA[],  real chargeB[],
+                     rvec box,
+		     t_commrec *cr,  t_nsborder *nsb,
+		     matrix lrvir,   real ewaldcoeff,
+		     real lambda,    real *dvdlambda);
+/* Do an Ewald calculation for the long range electrostatics. */
+ 
 extern real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,
 			       t_commrec *cr,t_forcerec *fr,
 			       real *chargeA,real *chargeB,
@@ -58,6 +72,24 @@ extern real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,
  * 1-4 interactions, surface dipole term and charge terms
  */
 
-extern real calc_ewaldcoeff(real rc,real dtol);
-/* Determines the Ewald parameter, both for Ewald and PME */
+/* Routines to set global constants for speeding up the calculation
+ * of potentials and forces.
+ */
+extern void set_shift_consts(FILE *log,real r1,real rc,rvec box,
+			     t_forcerec *fr);
+
+extern real shift_LRcorrection(FILE *fp,t_nsborder *nsb,
+			       t_commrec *cr,t_forcerec *fr,
+			       real charge[],t_block *excl,rvec x[],
+			       bool bOld,matrix box,matrix lrvir);
+/* Calculate the self energy and forces
+ * when using long range electrostatics methods.
+ * Part of this is a constant, it is computed only once and stored in
+ * a local variable. The remainder is computed every step.
+ * PBC is taken into account. (Erik L.) 
+ */
+
+ 
 #endif
+
+

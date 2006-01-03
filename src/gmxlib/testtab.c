@@ -38,7 +38,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "force.h"
-#include "shift_util.h"
+#include "coulomb.h"
 
 int main(int argc,char *argv[])
 {

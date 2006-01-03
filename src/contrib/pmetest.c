@@ -50,7 +50,7 @@
 #include "fatal.h"
 #include "vec.h"
 #include "mdatoms.h"
-#include "ewald_util.h"
+#include "coulomb.h"
 #include "nsb.h"
 #include "rmpbc.h"
 #include "pme.h"

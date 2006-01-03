@@ -158,8 +158,9 @@ typedef struct {
   rvec *fshift_twin;
 
   /* Long-range forces and virial for PPPM/PME/Ewald */
-  rvec *f_el_recip;
-  tensor vir_el_recip;
+  gmx_pme_t pmedata;
+  rvec      *f_el_recip;
+  tensor    vir_el_recip;
 
   /* PME/Ewald stuff */
   bool bEwald;

@@ -287,7 +287,8 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
       GMX_MPE_LOG(ev_shift_finish);
     }
 
-    send_coordinates(nsb,x,mdatoms->chargeA,mdatoms->chargeB,step >= inputrec->nsteps,inputrec->efep!=efepNO,cr); 
+    gmx_pme_send_x(nsb,x,mdatoms->chargeA,mdatoms->chargeB,
+		   step >= inputrec->nsteps,inputrec->efep!=efepNO,cr); 
 
     if (graph) {
       GMX_MPE_LOG(ev_shift_start);
@@ -400,7 +401,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 #ifdef GMX_MPI       
       if (pmeduty(cr)==epmePPONLY) 
       {
-        receive_lrforces(cr,nsb,fr->f_el_recip,fr->vir_el_recip,&e_temp,step);
+        gmx_pme_receive_f(cr,nsb,fr->f_el_recip,fr->vir_el_recip,&e_temp,step);
         ener[F_COUL_RECIP] += e_temp;
       }
 #endif

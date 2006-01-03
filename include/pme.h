@@ -48,77 +48,56 @@
 
 typedef real *splinevec[DIM];
 
-extern real do_pme(FILE *log,       bool bVerbose,
-		   t_inputrec *ir,
-		   rvec x[],        rvec f[],
-		   real chargeA[],  real chargeB[],
-		   matrix box,      t_commrec *cr,
-		   t_nsborder *nsb, t_nrnb *nrnb,
-		   matrix lrvir,    real ewaldcoeff,
-		   bool bFreeEnergy,
-		   real lambda,     real *dvdlambda,
-		   bool bGatherOnly);
-    
+enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
+
+extern int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
+			t_inputrec *ir,int homenr,bool bFreeEnergy,
+			bool bVerbose);
+			
+extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
+/* Initialize and destroy the pme data structures resepectively.
+ * Return value 0 indicates all well, non zero is an error code.
+ */
+
+extern int gmx_pme_do(FILE *log,       gmx_pme_t pme,
+		      rvec x[],        rvec f[],
+		      real chargeA[],  real chargeB[],
+		      matrix box,      t_commrec *cr,
+		      t_nsborder *nsb, t_nrnb *nrnb,
+		      matrix lrvir,    real ewaldcoeff,
+		      real *energy,    real lambda,    
+		      real *dvdlambda, bool bGatherOnly);
 /* Do a PME calculation for the long range electrostatics. 
- * If bGatherOnly is set, the energy from the last computation will be used, and 
- * the forces will be interpolated at the new positions. No new solving is done then.
+ * If bGatherOnly is set, the energy from the last computation will be used, 
+ * and the forces will be interpolated at the new positions. No new solving 
+ * is done then.
+ * Return value 0 indicates all well, non zero is an error code.
  */
 
-extern void sum_qgrid(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
-		      int pme_order,bool bForward);
-
-extern void sum_qgrid_dd(t_commrec *cr,t_nsborder *nsb,t_fftgrid *grid,
-                         int pme_order, bool bForward);
-
-/* the sum_qgrid routine with domain decomposition (dd) yields better 
- * performance in parallel runs
- */	       
-
-extern t_fftgrid *init_pme(FILE *log,t_commrec *cr,
-			   int nkx,int nky,int nkz,int pme_order,int homenr,
-			   bool bFreeEnergy,bool bOptFFT,int ewald_geometry);
-
-/* Routine for spreading something on a grid. Can be misused for non-PME
- * related things. init_pme must be called before this guy.
- */
-typedef struct {
-  int atom,index;
-} t_pmeatom;
-
-extern void spread_on_grid(FILE *logfile,   t_commrec *cr,
-			   t_fftgrid *grid, int homenr,
-			   int pme_order,   rvec x[],
-			   real charge[],   matrix box,      
-			   bool bGatherOnly,bool bHaveSplines);
-		
-/*
- * the following three routines are for PME/PP node splitting:
+extern int gmx_pmeonly(FILE *logfile,     gmx_pme_t pme,
+                       t_commrec *cr,     matrix box,   
+		       t_nsborder *nsb,   t_nrnb *mynrnb,
+		       real ewaldcoeff,   real lambda,
+		       bool bGatherOnly);
+/* Called on the nodes that do PME exclusively (as slaves) 
  */
 
-extern void send_coordinates(t_nsborder *nsb, rvec x[], 
-                             real chargeA[],  real chargeB[], 
-			     bool bLastTime, bool bFreeEnergy,
-			     t_commrec *cr);
+extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
+			  int direction);
 
+/* The following two routines are for PME/PP node splitting: */
+extern void gmx_pme_send_x(t_nsborder *nsb, rvec x[], 
+			   real chargeA[],  real chargeB[], 
+			   bool bLastTime, bool bFreeEnergy,
+			   t_commrec *cr);
 /* send the particle coordinates (and charges) from the PP to the PME nodes,
  * so that they can do a PME step */
 
-extern void receive_lrforces(t_commrec *cr, t_nsborder *nsb, 
-                      rvec f[]     , matrix vir, 
-		      real *energy,  int step);
-
+extern void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb, 
+			      rvec f[]     , matrix vir, 
+			      real *energy,  int step);
 /* PP nodes receive the long range forces from the PME nodes */
 
 
-extern void do_pmeonly(FILE *logfile, 
-                       t_inputrec *ir,    t_commrec *cr,
-	  	       matrix box, 
-		       t_nsborder *nsb,   t_nrnb *mynrnb,
-		                          real ewaldcoeff,
-		       real lambda,
-		       bool bGatherOnly   );
-
-/* Called on the nodes that do PME exclusively (as slaves) 
- */
 		   
 #endif

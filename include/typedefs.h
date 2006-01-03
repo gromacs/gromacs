@@ -51,6 +51,7 @@ extern "C" {
 #include <sys/types.h>
 #include <sysstuff.h>
 #include <types/simple.h>
+#include <types/gmx_ext_types.h>
 #include <types/enums.h>
 #include <types/block.h>
 #include <types/symtab.h>

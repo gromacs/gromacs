@@ -18,7 +18,8 @@ EXTRA_PROGRAMS 	=  	sigeps 		copyrgt 	mkyaw 	\
 			mkice 		total 		hexamer \
 			optwat 		addquote 	do_shift \
 			g_anavel 	my_dssp 	anaf 	\
-			ehole 		pmetest 	gen_table
+			ehole 		pmetest 	gen_table\
+			remd_kinetics
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
@@ -29,6 +30,8 @@ total_SOURCES		= total.f
 ehole_SOURCES		= ehole.c ehdata.c ehanal.c
 
 pmetest_SOURCES   	= pmetest.c
+
+remd_kinetics_SOURCES	= remd_kinetics.c
 
 CLEANFILES   = 	*~ \\\#*
 

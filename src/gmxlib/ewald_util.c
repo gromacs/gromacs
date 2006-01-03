@@ -41,7 +41,7 @@
 #include <math.h>
 #include "typedefs.h"
 #include "vec.h"
-#include "ewald_util.h"
+#include "coulomb.h"
 #include "smalloc.h"
 #include "physics.h"
 #include "txtdump.h"
