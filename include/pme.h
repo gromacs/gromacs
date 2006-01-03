@@ -48,9 +48,6 @@
 
 typedef real *splinevec[DIM];
 
-/* Abstract types that are defined only in the routine that use them. */
-typedef struct gmx_pme *gmx_pme_t;
-
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
 extern int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,

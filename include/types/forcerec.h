@@ -45,6 +45,9 @@ enum { eNL_VDWQQ, eNL_VDW, eNL_QQ,
        eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER, 
        eNL_NR };
 
+/* Abstract type for PME that is defined only in the routine that use them. */
+typedef struct gmx_pme *gmx_pme_t;
+
 typedef struct {
   real r;         /* range of the table */
   int  n;         /* n+1 is the number of points */

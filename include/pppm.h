@@ -45,7 +45,6 @@
 #include "typedefs.h"
 #include "gmxcomplex.h"
 #include "fftgrid.h"
-#include "pme.h"
 
 extern int gmx_pppm_init(FILE *log,      t_commrec *cr,
 			 t_nsborder *nsb,bool bVerbose,
