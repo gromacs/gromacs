@@ -50,31 +50,32 @@
 
 void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
 	     bool bFreeEnergy,
-	     rvec mu,rvec mu_B)
+	     dvec mu,dvec mu_B)
 {
   int i,start,end,m;
-  /* temporary double prec. to maintain precision */
-  dvec tmpmu;
   
   start = START(nsb);
   end   = start + HOMENR(nsb);  
-
-  clear_dvec(tmpmu);
+  
+  clear_dvec(mu);
   for(i=start; (i<end); i++)
     for(m=0; (m<DIM); m++)
-      tmpmu[m] += q[i]*x[i][m];
+      mu[m] += q[i]*x[i][m];
   
   for(m=0; (m<DIM); m++)
-    mu[m] = tmpmu[m] * ENM2DEBYE;
+    mu[m] *= ENM2DEBYE;
   
   if (bFreeEnergy) {
-    clear_dvec(tmpmu);
+    clear_dvec(mu_B);
     for(i=start; (i<end); i++)
       for(m=0; (m<DIM); m++)
-	tmpmu[m] += qB[i]*x[i][m];
+	mu_B[m] += qB[i]*x[i][m];
+    
+    for(m=0; (m<DIM); m++)
+      mu_B[m] *= ENM2DEBYE;
+  } else {
+    copy_dvec(mu,mu_B);
   }
-  for(m=0; (m<DIM); m++)
-    mu_B[m] = tmpmu[m] * ENM2DEBYE;
 }
 
 bool read_mu(FILE *fp,rvec mu,real *vol)

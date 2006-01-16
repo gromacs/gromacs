@@ -46,7 +46,7 @@
 
 extern void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
 		    bool bFreeEnergy,
-		    rvec mu,rvec mu_B);
+		    dvec mu,dvec mu_B);
 
 extern bool read_mu(FILE *fp,rvec mu,real *vol);
 /* Return true on succes */

@@ -226,7 +226,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   static real dvdl_lr = 0;
   int    cg0,cg1,i,j;
   int    start,homenr;
-  static real mu[2*DIM]; 
+  static double mu[2*DIM]; 
   rvec   mu_tot_AB[2];
   bool   bFillGrid,bCalcCGCM;
   real e_temp;
@@ -310,7 +310,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     } else {
       move_x(fplog,cr->left,cr->right,x,nsb,nrnb);
     }
-    gmx_sum(2*DIM,mu,cr);
+    gmx_sumd(2*DIM,mu,cr);
   }
   for(i=0; i<2; i++)
     for(j=0;j<DIM;j++)
