@@ -228,7 +228,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   int    start,homenr;
   static real mu[2*DIM]; 
   rvec   mu_tot_AB[2];
-  bool   bCalcCGCM;
+  bool   bFillGrid,bCalcCGCM;
   real e_temp;
   
   start  = START(nsb);
@@ -236,7 +236,8 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   cg0    = CG0(nsb);
   cg1    = CG1(nsb);
 
-  bCalcCGCM = (bNS && bStateChanged);
+  bFillGrid = (bNS && bStateChanged);
+  bCalcCGCM = (bFillGrid && !(PAR(cr) && cr->dd));
 
   if (bStateChanged) {
     update_forcerec(fplog,fr,box);
@@ -247,7 +248,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->bChargePerturbed,
 	    mu,mu+DIM);
   }
-
+  
   if (fr->ePBC != epbcNONE) { 
     /* Compute shift vectors every step,
      * because of pressure coupling or box deformation!
@@ -263,11 +264,11 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
       unshift_self(graph,box,x);
     }
-  }
+  } 
   else if (bCalcCGCM)
     calc_cgcm(fplog,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
-
-   if (bCalcCGCM) {
+  
+  if (bCalcCGCM) {
     inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
     if (PAR(cr) && cr->dd==NULL)
       move_cgcm(fplog,cr,fr->cg_cm,nsb->workload);
@@ -302,10 +303,13 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
 
   /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
-    if (cr->dd)
-      dd_move_x(cr->dd,x);
-    else
+    if (cr->dd) {
+      /* On neighborsearch x has already been moved after repartitioning. */
+      if (!bNS)
+	dd_move_x(cr->dd,&(top->blocks[ebCGS]),x,buf);
+    } else {
       move_x(fplog,cr->left,cr->right,x,nsb,nrnb);
+    }
     gmx_sum(2*DIM,mu,cr);
   }
   for(i=0; i<2; i++)
@@ -335,7 +339,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     dvdl_lr = 0; 
 
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,nsb,step,lambda,&dvdl_lr,bCalcCGCM,bDoForces,bReInit);
+       cr,nrnb,nsb,step,lambda,&dvdl_lr,bFillGrid,bDoForces,bReInit);
   }
 
   if (bDoForces) {
@@ -392,7 +396,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     /* Communicate the forces */
     if (PAR(cr)) {
       if (cr->dd)
-	dd_move_f(cr->dd,f,buf);
+	dd_move_f(cr->dd,&top->blocks[ebCGS],f,buf);
       else
 	move_f(fplog,cr->left,cr->right,f,buf,nsb,nrnb);
       /* In case of node-splitting, the PP nodes receive the long-range 

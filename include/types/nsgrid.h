@@ -50,5 +50,6 @@ typedef struct {
 			/* array can be found by calling xyz2ci	*/
   int    *nra;		/* The number of entries in a cell	*/
   int    *a;		/* The grid of cgs			*/
+  int    nr_alloc;      /* Allocation size of cell_index and a  */
 } t_grid;
 

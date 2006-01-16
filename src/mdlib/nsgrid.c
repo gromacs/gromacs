@@ -67,12 +67,11 @@ static void init_range_check()
 void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
 	       real rlistlong,int ncg)
 {
-  static int nr_alloc=0;
   int     m;
   ivec    cx;
-
-  for(m=0; (m<DIM); m++) 
-    cx[m]=(delta*box[m][m])/rlistlong; 
+  
+  for(m=0; (m<DIM); m++)
+    cx[m]=(delta*box[m][m])/rlistlong;
 
   grid->nr      = ncg;
   grid->nrx     = cx[XX];
@@ -82,16 +81,12 @@ void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
   grid->maxcells= 2*grid->ncells;
   grid->delta	= delta;
   grid->gmax    = 0;
-  if (grid->nr > nr_alloc) {
-    nr_alloc = over_alloc(grid->nr)+1;
-    srenew(grid->cell_index,nr_alloc);
-    srenew(grid->a,nr_alloc);
-  }
-  if (grid->index == NULL)
-    snew(grid->index,grid->maxcells);
-  if (grid->nra == NULL)
-    snew(grid->nra,grid->maxcells);
-  
+  grid->nr_alloc= over_alloc(grid->nr)+1;
+  snew(grid->cell_index,grid->nr_alloc);
+  snew(grid->a,grid->nr_alloc);
+  snew(grid->index,grid->maxcells);
+  snew(grid->nra,grid->maxcells);
+
   fprintf(log,"Grid: %d x %d x %d cells\n",
 	  grid->nrx,grid->nry,grid->nrz);
     
@@ -141,9 +136,8 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
   *z  = ci;
 }
 
-void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong)
+void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong,int ncg)
 {
-  int    *nra=grid->nra;
   int    i,k,ncells;
   ivec   cx;
 
@@ -153,14 +147,16 @@ void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong)
   for(k=0; (k<DIM); k++)
     cx[k]=(grid->delta*box[k][k])/rlistlong;
 
+  if (grid->nrx != cx[XX] || grid->nry != cx[YY] || grid->nrz != cx[ZZ])
+    fprintf(log,"Grid: %d x %d x %d cells\n",
+	    grid->nrx,grid->nry,grid->nrz);
+
   grid->nrx    = cx[XX];
   grid->nry    = cx[YY];
   grid->nrz    = cx[ZZ];
   ncells       = cx[XX]*cx[YY]*cx[ZZ];
 
   if (grid->ncells != ncells) {
-    fprintf(log,"Grid: %d x %d x %d cells\n",
-	    grid->nrx,grid->nry,grid->nrz);
     if (ncells > grid->maxcells) { 
       srenew(grid->nra,ncells);
       srenew(grid->index,ncells);
@@ -172,11 +168,17 @@ void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong)
       grid->maxcells = ncells;
     }
     grid->ncells = ncells;
-    nra = grid->nra;
+  }
+
+  grid->nr = ncg;
+  if (grid->nr > grid->nr_alloc) {
+    grid->nr_alloc = over_alloc(grid->nr)+1;
+    srenew(grid->cell_index,grid->nr_alloc);
+    srenew(grid->a,grid->nr_alloc);
   }
   
   for(i=0; (i<ncells); i++)
-    nra[i]=0;
+    grid->nra[i]=0;
 }
 
 static void calc_bor(FILE *log,bool bDD,

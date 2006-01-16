@@ -148,6 +148,10 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_parallel(stdlog,ftp2fn(efTPX,nfile,fnm),cr,
 		  inputrec,top,state,&mdatoms,
 		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
+    /* It seems that nsb->nnodes is never set !!! 
+     * So we (temporarily) fix it here.
+     */
+    nsb->nnodes = cr->nnodes;
     if (ddxyz[XX]==1 && ddxyz[YY]==1 && ddxyz[ZZ]==1) {
       split_system_first(stdlog,inputrec,state,cr,top,nsb);
     } else {
@@ -511,14 +515,29 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
     get_cg_distribution(stdlog,cr->dd,state->box,&top_global->blocks[ebCGS],
 			state_global->x);
+
+    dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
+			state_global,state);
+    
+    dd_calc_cgcm_home(cr->dd,&top_global->blocks[ebCGS],state->x,fr->cg_cm);
+
+    setup_dd_communication(stdlog,cr->dd,&top_global->blocks[ebCGS],
+			   fr->cg_cm,state->box,fr->rlistlong);
+
     fr->cg0 = 0;
     fr->hcg = dd_ncg_tot(cr->dd);
     snew(top,1);
     make_local_top(stdlog,cr->dd,top_global,top,nsb);
 
-    dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
-			state_global,state);
-    dd_move_x(cr->dd,state->x);
+    dd_move_x(cr->dd,&top->blocks[ebCGS],state->x,buf);
+    
+    /* All charge groups have been put in the box in get_cg_distribution.
+     * cg_cm for the home charge groups has already been calculated.
+     */
+    calc_cgcm(stdlog,cr->dd->comm1[0].ncg,cr->dd->ncg_tot,&top->blocks[ebCGS],
+	      state->x,fr->cg_cm);
+    if (debug)
+      pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
   } else {
     top = top_global;
     state = state_global;
@@ -704,34 +723,48 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      */
     bReInit = FALSE;
     if (PAR(cr) && cr->dd && 
-	(step % (inputrec->nstlist*20) == 0) && !bFirstStep) {
+	(step % inputrec->nstlist == 0) && !bFirstStep) {
       /* Repartition the domain decomposition */
+      /*
       dd_collect_state(cr->dd,&top_global->blocks[ebCGS],state,state_global);
       
       get_cg_distribution(stdlog,cr->dd,state->box,&top_global->blocks[ebCGS],
 			  state_global->x);
-      make_local_top(stdlog,cr->dd,top_global,top,nsb);
-      
-      /* Temporary hacks !!! */
-      srenew(fr->solvent_type,top->blocks[ebCGS].nr);
-      for(i=1; i<top->blocks[ebCGS].nr; i++)
-	fr->solvent_type[i] = fr->solvent_type[0];
-      srenew(fr->cg_cm,top->blocks[ebCGS].nr);
-      fr->cg0 = 0;
-      fr->hcg = dd_ncg_tot(cr->dd);
 
       dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
 			  state_global,state);
-      
-      dd_move_x(cr->dd,state->x);
+      */
+      dd_redistribute_cg(stdlog,cr->dd,&top->blocks[ebCGS],state,fr->cg_cm);
 
+      setup_dd_communication(stdlog,cr->dd,&top_global->blocks[ebCGS],
+			     fr->cg_cm,state->box,fr->rlistlong);
+
+      make_local_top(stdlog,cr->dd,top_global,top,nsb);
+
+      dd_move_x(cr->dd,&top->blocks[ebCGS],state->x,buf);
+
+      /* Temporary hacks !!! */
+      //srenew(fr->solvent_type,top->blocks[ebCGS].nr);
+      for(i=1; i<top->blocks[ebCGS].nr; i++)
+	fr->solvent_type[i] = fr->solvent_type[0];
+      //srenew(fr->cg_cm,top->blocks[ebCGS].nr);
+      fr->cg0 = 0;
+      fr->hcg = dd_ncg_tot(cr->dd);
+      
       /* Does not work with shells or flexible constraints yet */
       bReInit = TRUE;
 
-      /* This should also go via a bReInit construction */
       init_constraints(stdlog,top,inputrec,mdatoms,
 		       START(nsb),HOMENR(nsb),
 		       inputrec->eI!=eiSteep,cr);
+      
+      /* Calculate the centers of mass of the communicated charge groups.
+       * The home charge groups have been done in dd_redistribute_cg.
+       */
+      calc_cgcm(stdlog,cr->dd->comm1[0].ncg,cr->dd->ncg_tot,
+		&top->blocks[ebCGS],state->x,fr->cg_cm);
+      if (debug)
+	pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
     }
 
     if (bSimAnn) 

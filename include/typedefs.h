@@ -78,10 +78,10 @@ extern "C" {
 #include <types/matrix.h>
 #include <types/edsams.h>
 
-  void set_over_alloc(bool set);
+extern void set_over_alloc(bool set);
   /* Turns over allocation on or off, default is off */
   
-  int over_alloc(int n);
+extern int over_alloc(int n);
   /* Returns n when over allocation is off.
    * Returns 1.1*n + 10 when over allocation in on.
    * This is to avoid frequent reallocation

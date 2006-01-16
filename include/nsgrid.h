@@ -48,7 +48,7 @@ extern void init_grid(FILE *log,t_grid *grid,
 
 extern void done_grid(t_grid *grid);
 
-extern void grid_first(FILE *log,t_grid *grid,matrix box,real rlong);
+extern void grid_first(FILE *log,t_grid *grid,matrix box,real rlong,int ncg);
 
 extern void fill_grid(FILE *log,bool bDD,int cg_index[],
 		      t_grid *grid,matrix box,
