@@ -96,14 +96,11 @@ typedef struct {
   /* Global atom number to local atom number, -1 if not local */
   int  *ga2la;
 
-  /* The following arrays will have size gl.ncell */
+  /* The following arrays will have size ncell */
   /* Nodes we need to send coordinates to and receive forces from */
   gmx_domdec_comm_t comm0[DD_MAXCELL];
   /* Nodes we need to receive coordinates from and send forces to */
   gmx_domdec_comm_t comm1[DD_MAXCELL];
-
-  /* Index into the coordinates on this node */
-  int  at_index[DD_MAXCELL];
 
   /* For neighborsearching */
   int  ncg_tot;
@@ -111,12 +108,14 @@ typedef struct {
   gmx_domdec_ns_t icell[DD_MAXICELL];
 
   /* Communication buffers */
-  rvec *buf_x;
-  int  nalloc_x;
-  rvec *buf_v;
-  int  nalloc_v;
-  rvec *buf_sdx;
-  int  nalloc_sdx;
+  int  *buf_i1;
+  int  nalloc_i1;
+  int  *buf_i2;
+  int  nalloc_i2;
+  rvec *buf_vs;
+  int  nalloc_vs;
+  rvec *buf_vr;
+  int  nalloc_vr;
 } gmx_domdec_t;
 
 typedef struct {

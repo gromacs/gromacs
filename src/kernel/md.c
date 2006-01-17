@@ -536,8 +536,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
      */
     calc_cgcm(stdlog,cr->dd->comm1[0].ncg,cr->dd->ncg_tot,&top->blocks[ebCGS],
 	      state->x,fr->cg_cm);
-    if (debug)
-      pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
+    /* Count of dd_calc_cgcm_home and calc_cgcm */
+    inc_nrnb(nrnb,eNR_CGCM,top->blocks[ebCGS].nra);
   } else {
     top = top_global;
     state = state_global;
@@ -734,7 +734,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
 			  state_global,state);
       */
-      dd_redistribute_cg(stdlog,cr->dd,&top->blocks[ebCGS],state,fr->cg_cm);
+      dd_redistribute_cg(stdlog,cr->dd,&top->blocks[ebCGS],state,fr->cg_cm,
+			 nrnb);
 
       setup_dd_communication(stdlog,cr->dd,&top_global->blocks[ebCGS],
 			     fr->cg_cm,state->box,fr->rlistlong);
@@ -763,8 +764,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        */
       calc_cgcm(stdlog,cr->dd->comm1[0].ncg,cr->dd->ncg_tot,
 		&top->blocks[ebCGS],state->x,fr->cg_cm);
-      if (debug)
-	pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
+      m = 0;
+      for(i=1; i<cr->dd->ncell; i++)
+	m += cr->dd->comm1[0].nat;
+      inc_nrnb(nrnb,eNR_CGCM,m);
     }
 
     if (bSimAnn) 

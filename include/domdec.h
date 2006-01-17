@@ -40,7 +40,8 @@ extern void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
 
 extern void dd_redistribute_cg(FILE *fplog,
 			       gmx_domdec_t *dd,t_block *cgs,
-			       t_state *state,rvec cg_cm[]);
+			       t_state *state,rvec cg_cm[],
+			       t_nrnb *nrnb);
 
 extern void dd_calc_cgcm_home(gmx_domdec_t *dd,t_block *cgs,
 			      rvec x[],rvec cg_cm[]);
