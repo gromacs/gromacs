@@ -200,7 +200,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "NS-Pairs",                      21  },
     { "Reset In Box",                  9   },
     { "Shift-X",                       6   },
-    { "CG-CoM",                        29  },
+    { "CG-CoM",                        3   },
     { "Sum Forces",                    1   },
     { "Bonds",                         43  },
     { "G96Bonds",                      40  },

@@ -265,11 +265,12 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
       unshift_self(graph,box,x);
     }
   } 
-  else if (bCalcCGCM)
+  else if (bCalcCGCM) {
     calc_cgcm(fplog,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
+    inc_nrnb(nrnb,eNR_CGCM,homenr);
+  }
   
   if (bCalcCGCM) {
-    inc_nrnb(nrnb,eNR_CGCM,cg1-cg0);
     if (PAR(cr) && cr->dd==NULL)
       move_cgcm(fplog,cr,fr->cg_cm,nsb->workload);
     if (debug)
