@@ -2077,8 +2077,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
     if (bGrid && bFirst) {
       snew(grid,1);
-      /* ndelta=1 is probably better, but we should do benchmarks */
-      init_grid(log,grid,1 + 0*fr->ndelta,box,fr->rlistlong,cgs->nr);
+      init_grid(log,grid,fr->ndelta,box,fr->rlistlong,cgs->nr);
     }
     
     if (bHaveVdW == NULL) {
