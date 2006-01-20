@@ -44,22 +44,31 @@
 #include "typedefs.h"
 #include "nsb.h"
 
-extern void ld_data(int left,int right,t_inputrec *inputrec,
+extern void ld_data(const t_commrec *cr,int left,int right,
+		    t_inputrec *inputrec,
 		    t_topology *top,t_state *state);
 
-extern void mv_data(int left,int right,t_inputrec *inputrec,
+extern void mv_data(const t_commrec *cr,int left,int right,
+		    t_inputrec *inputrec,
 		    t_topology *top,t_state *state);
 
-extern void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[]);
+extern void ld_state(const t_commrec *cr,int src,
+		     t_state *state);
+
+extern void mv_state(const t_commrec *cr,int dest,
+		     t_state *state);
+
+extern void move_cgcm(FILE *log,const t_commrec *cr,
+		      rvec cg_cm[],int nload[]);
 		     
-extern void move_rvecs(FILE *log,bool bForward,bool bSum,
+extern void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 		       int left,int right,rvec vecs[],rvec buf[],
 		       int shift,t_nsborder *nsb,t_nrnb *nrnb);
 
-extern void move_x(FILE *log,
+extern void move_x(FILE *log,const t_commrec *cr,
 		   int left,int right,rvec x[],t_nsborder *nsb,t_nrnb *nrnb);
 		    
-extern void move_f(FILE *log,
+extern void move_f(FILE *log,const t_commrec *cr,
 		   int left,int right,rvec f[],rvec fadd[],
 		   t_nsborder *nsb,t_nrnb *nrnb);
 		    

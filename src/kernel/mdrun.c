@@ -109,14 +109,15 @@ int main(int argc,char *argv[])
     "for potential of mean force calculations and umbrella sampling.",
     "See manual.[PAR]",
     "With [TT]-multi[tt] multiple systems are simulated in parallel.",
-    "As many (single node) input files are required as the number of nodes.",
-    "The node number is appended to the run input and each output filename,",
+    "As many input files are required as the number of systems.",
+    "The system number is appended to the run input and each output filename,",
     "for instance topol.tpr becomes topol0.tpr, topol1.tpr etc.",
-    "The main use of this option is for NMR refinement: when distance",
+    "One use of this option is for NMR refinement: when distance",
     "or orientation restraints are present these can be ensemble averaged",
     "over all the systems.[PAR]",
     "With [TT]-replex[tt] replica exchange is attempted every given number",
-    "of steps. This option implies [TT]-multi[tt], see above.",
+    "of steps. The number of replicas is set with the [TT]-multi[tt] option,",
+    "see above.",
     "All run input files should use a different coupling temperature,",
     "the order of the files is not important. The random seed is set with",
     "[TT]-reseed[tt]. The velocities are scaled and neighbor searching",
@@ -133,7 +134,7 @@ int main(int argc,char *argv[])
     "is sufficient, this signal should not be sent to mpirun or",
     "the mdrun process that is the parent of the others."
   };
-  t_commrec    *cr,*mcr;
+  t_commrec    *cr;
   static t_filenm fnm[] = {
     { efTPX, NULL,      NULL,       ffREAD },
     { efTRN, "-o",      NULL,       ffWRITE },
@@ -167,12 +168,12 @@ int main(int argc,char *argv[])
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
   static bool bSepDVDL     = FALSE;
-  static bool bMultiSim    = FALSE;
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
   
   static int  nDLB=0; 
   static int  npme=0;
+  static int  nmultisim=0;
   static int  repl_ex_nst=0;
   static int  repl_ex_seed=-1;
   static int  nstepout=10;
@@ -193,8 +194,8 @@ int main(int argc,char *argv[])
       "Write a compact log file" },
     { "-sepdvdl", FALSE, etBOOL,{&bSepDVDL},
       "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
-    { "-multi",   FALSE, etBOOL,{&bMultiSim}, 
-      "Do multiple simulations in parallel (only with -np > 1)" },
+    { "-multi",   FALSE, etINT,{&nmultisim}, 
+      "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
       "Attempt replica exchange every # steps" },
     { "-reseed",  FALSE, etINT, {&repl_ex_seed}, 
@@ -230,12 +231,10 @@ int main(int argc,char *argv[])
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
 
-  if (repl_ex_nst > 0 || opt2bSet("-tpi",NFILE,fnm))
-    bMultiSim = TRUE;
-  if (bMultiSim && PAR(cr))
-    mcr = init_multisystem(cr,NFILE,fnm,!opt2bSet("-tpi",NFILE,fnm));
-  else
-    mcr = NULL;
+  if (opt2bSet("-tpi",NFILE,fnm))
+    nmultisim = cr->nnodes;
+  if (nmultisim > 1 && PAR(cr))
+    init_multisystem(cr,nmultisim,NFILE,fnm,!opt2bSet("-tpi",NFILE,fnm));
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
@@ -249,20 +248,19 @@ int main(int argc,char *argv[])
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepDVDL  ? MD_SEPDVDL  : 0);
   Flags = Flags | (bIonize   ? MD_IONIZE   : 0);
-  Flags = Flags | (bMultiSim ? MD_MULTISIM : 0);
   Flags = Flags | (bGlas     ? MD_GLAS     : 0);
 
   ddxyz[XX] = (int)(rddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(rddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(rddxyz[ZZ] + 0.5);
 
-  mdrunner(cr,mcr,NFILE,fnm,bVerbose,bCompact,ddxyz,nDLB,nstepout,
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,ddxyz,nDLB,nstepout,
 	   &edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)
-    gmx_finalize(mcr ? mcr : cr);
+    gmx_finalize(cr);
 
-  if (MASTER(cr)) {
+  if (MULTIMASTER(cr)) {
     thanx(stderr);
   }
   

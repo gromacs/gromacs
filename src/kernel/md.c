@@ -97,7 +97,7 @@ static RETSIGTYPE signal_handler(int n)
 
 
 
-void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
+void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
 	      ivec ddxyz,int nDlb,int nstepout,
 	      t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
@@ -194,7 +194,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* Split communicator */
 #define split
 #ifdef split
-    MPI_Comm_split(MPI_COMM_WORLD,pmeduty(cr),cr->nodeid,&mpi_comm_pporpme);
+    MPI_Comm_split(cr->mpi_comm_mysim,pmeduty(cr),cr->nodeid,
+		   &mpi_comm_pporpme);
     cr->mpi_comm_mygroup = mpi_comm_pporpme;
 #else
     /* splitting a communicator sometimes results in a hang on 
@@ -208,11 +209,11 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     for (i=0; i<cr->nnodes-cr->npmenodes; i++)
       ranks[i]=i;
     /* Make a group that consists of all processors: */
-    MPI_Comm_group(MPI_COMM_WORLD, &world_group);
+    MPI_Comm_group(cr->mpi_comm_mysim, &world_group);
     /* exclude the PP nodes and form the pmegroup: */
     MPI_Group_excl(world_group, cr->nnodes-cr->npmenodes, ranks, &pmegroup);
     /* create a communicator for the pmegroup: */
-    MPI_Comm_create(MPI_COMM_WORLD, pmegroup, &comm_pme);
+    MPI_Comm_create(cr->mpi_comm_mysim, pmegroup, &comm_pme);
     if (pmeduty(cr) == epmePMEONLY)
     {
       fprintf(stderr,"node %d has comm_pme as cr->mpi_comm_mygroup\n",cr->nodeid);
@@ -235,7 +236,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       cr->right=cr->nnodes-cr->npmenodes;
   }
   else  /* PME is done on all nodes */
-    cr->mpi_comm_mygroup = MPI_COMM_WORLD; 
+    cr->mpi_comm_mygroup = cr->mpi_comm_mysim; 
 #endif /* GMX_MPI */
 
   /* Index numbers for parallellism... */
@@ -258,11 +259,11 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   
   /* Distance Restraints */
   init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
-	      top->idef.iparams,inputrec,mcr,fcd);
+	      top->idef.iparams,inputrec,cr->ms,fcd);
 
   /* Orientation restraints */
   init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-	      top->idef.iparams,state->x,mdatoms,inputrec,mcr,
+	      top->idef.iparams,state->x,mdatoms,inputrec,cr->ms,
 	      &(fcd->orires));
 
   /* Dihedral Restraints */
@@ -328,7 +329,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   case eiBD:
     if (pmeduty(cr) != epmePMEONLY) 
     {
-      start_t=do_md(stdlog,cr,mcr,nfile,fnm,
+      start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,
 		    ddxyz,bVsites,bParVsites ? &vsitecomm : NULL,
 		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
@@ -350,21 +351,21 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		  state,f,buf,mdatoms,ener,fcd,
 		  nrnb,bVerbose,bVsites,
 		  bParVsites ? &vsitecomm : NULL,
-		  cr,mcr,graph,fr);
+		  cr,graph,fr);
     break;
   case eiLBFGS:
     start_t=do_lbfgs(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		     state,f,buf,mdatoms,ener,fcd,
 		     nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
-		     cr,mcr,graph,fr);
+		     cr,graph,fr);
     break;
   case eiSteep:
     start_t=do_steep(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		     state,f,buf,mdatoms,ener,fcd,
 		     nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
-		     cr,mcr,graph,fr);
+		     cr,graph,fr);
     break;
   case eiNM:
     start_t=do_nm(stdlog,cr,nfile,fnm,
@@ -376,7 +377,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     start_t=do_tpi(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		   state,f,buf,mdatoms,ener,fcd,
 		   nrnb,bVerbose,
-		   cr,mcr,graph,fr);
+		   cr,graph,fr);
     break;
   default:
     gmx_fatal(FARGS,"Invalid integrator (%d)...\n",inputrec->eI);
@@ -407,7 +408,7 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
 }
 
-time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
+time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     ivec ddxyz,bool bVsites, t_comm_vsites *vsitecomm,
 	     int stepout,t_inputrec *inputrec,t_groups *grps,
@@ -580,8 +581,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,inputrec->opts.nFreeze,
 	    state->box,START(nsb),HOMENR(nsb),cr);
   
-  if (repl_ex_nst > 0)
-    repl_ex = init_replica_exchange(log,mcr,state,inputrec,
+  if (repl_ex_nst > 0 && MASTER(cr))
+    repl_ex = init_replica_exchange(log,cr->ms,state_global,inputrec,
 				    repl_ex_nst,repl_ex_seed);
   
   if (!inputrec->bUncStart && !bRerunMD) 
@@ -856,7 +857,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
     if (bShell_FlexCon) {
       /* Now is the time to relax the shells */
-      count=relax_shells(log,cr,mcr,bVerbose,bFFscan ? step+1 : step,
+      count=relax_shells(log,cr,bVerbose,bFFscan ? step+1 : step,
 			 inputrec,bNS,bStopCM,top,ener,fcd,
 			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
 			 grps,
@@ -873,7 +874,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(log,cr,mcr,inputrec,nsb,step,&mynrnb,top,grps,
+      do_force(log,cr,inputrec,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn,bReInit);
@@ -1023,7 +1024,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	    elements++;
 	  }
       /* send box buffer */
-      MPI_Send(&boxbuf,DIM*DIM,GMX_MPI_REAL,cr->nnodes-cr->npmenodes,0,MPI_COMM_WORLD);	
+      MPI_Send(&boxbuf,DIM*DIM,GMX_MPI_REAL,cr->nnodes-cr->npmenodes,0,
+	       cr->mpi_comm_mysim);	
     }
 /*    fprintf(stderr,"Node %d, box[0][0], %20.15f\n", cr->nodeid, state->box[0][0]); */
 #endif
@@ -1208,7 +1210,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       do_coupling(log,nfile,fnm,tcr,t,step,ener,fr,
 		  inputrec,MASTER(cr),
 		  mdatoms,&(top->idef),mu_aver,
-		  top->blocks[ebMOLS].nr,(mcr!=NULL) ? mcr : cr,
+		  top->blocks[ebMOLS].nr,cr,
 		  state->box,total_vir,pres,
 		  mu_tot,state->x,f,bConverged);
       debug_gmx();
@@ -1244,10 +1246,19 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       print_time(stderr,start_t,step,inputrec);
     }
 
+    /* Replica exchange */
     bExchanged = FALSE;
     if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 	do_per_step(step,repl_ex_nst))
-      bExchanged = replica_exchange(log,mcr,repl_ex,state,ener[F_EPOT],step,t);
+      bExchanged = replica_exchange(log,cr,repl_ex,state_global,ener[F_EPOT],
+				    nsb,&(top_global->blocks[ebCGS]),state,
+				    step,t);
+    if (bExchanged && PAR(cr)) {
+      if (DOMAINDECOMP(cr))
+	gmx_fatal(FARGS,"Redistribution after replica exchange not implemented for DD");
+      else
+	pd_distribute_state(cr,state);
+    }
     
     bFirstStep = FALSE;
 
@@ -1255,8 +1266,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       /* read next frame from input trajectory */
       bNotLastFrame = read_next_frame(status,&rerun_fr);
 
-#ifdef GMX_MPI        
-    MPI_Barrier(MPI_COMM_WORLD); /* 100 */
 #ifdef PRT_TIME
     if ( MASTER(cr) && !bLastStep)
     {     
@@ -1272,7 +1281,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	
       zeit0 = MPI_Wtime( );
     }
-#endif
 #endif
 
     if (!bRerunMD || !rerun_fr.bStep) {
@@ -1334,8 +1342,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	    tcount/(step_rel+1));
   }
 
-  if (repl_ex_nst > 0)
+  if (repl_ex_nst > 0 && MASTER(cr))
     print_replica_exchange_statistics(log,repl_ex);
-  
+    
   return start_t;
 }

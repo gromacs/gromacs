@@ -51,7 +51,7 @@ extern "C" {
 #include "nrnb.h"
 #include "pbc.h"
 
-extern void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
+extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		       const t_idef *idef,
                        rvec x[],rvec f[],t_forcerec *fr,
 		       const t_pbc *pbc,const t_graph *g,

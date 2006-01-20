@@ -172,39 +172,14 @@ int do_per_step(int step,int nstep)
     return 0;
 }
 
-static void moveit(t_commrec *cr, FILE *log,
+static void moveit(t_commrec *cr,
 		   int left,int right,char *s,rvec xx[],t_nsborder *nsb)
 {
-  rvec  *temp;
-  int   i,m,bP,start,homenr;
-    
   if (!xx) 
     return;
 
-  start=nsb->index[nsb->nodeid];
-  homenr=nsb->homenr[nsb->nodeid];
-#ifdef DEBUG
-  fprintf(log,"Moving %s for trajectory file, start=%d, homenr=%d\n",
-	  s,start,homenr);
-#endif
-  snew(temp,homenr);
-  for(i=0; (i<homenr); i++)
-    copy_rvec(xx[start+i],temp[i]);
-
-  move_rvecs(log,FALSE,FALSE,left,right,xx,NULL,(nsb->nnodes-nsb->npmenodes)-1,nsb,NULL);
-
-  for(i=0; (i<homenr); i++) {
-    bP=0;
-    for(m=0; (m<DIM); m++)
-      if (xx[start+i][m] != temp[i][m])
-	bP=1;
-    if (bP) 
-      fprintf(log,"%s[%5d] before: (%8.3f,%8.3f,%8.3f)"
-	      " After: (%8.3f,%8.3f,%8.3f)\n",
-	      s,start+i,temp[i][XX],temp[i][YY],temp[i][ZZ],
-	      xx[start+i][XX],xx[start+i][YY],xx[start+i][ZZ]);
-  }
-  sfree(temp);
+  move_rvecs(cr,FALSE,FALSE,left,right,
+	     xx,NULL,(nsb->nnodes-nsb->npmenodes)-1,nsb,NULL);
 }
 
 int write_traj(FILE *log,t_commrec *cr,
@@ -221,7 +196,7 @@ int write_traj(FILE *log,t_commrec *cr,
     fp = open_trn(traj,"w");
   }
 
-#define MX(xvf) moveit(cr,log,cr->left,cr->right,#xvf,xvf,nsb)
+#define MX(xvf) moveit(cr,cr->left,cr->right,#xvf,xvf,nsb)
   if ((cr->nnodes-cr->npmenodes) > 1 && cr->dd==NULL) {
     MX(xx);
     MX(vv);

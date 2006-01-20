@@ -54,7 +54,7 @@
 #include "block_tx.h"
 #include "nrnb.h"
 
-void move_rvecs(FILE *log,bool bForward,bool bSum,
+void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 		int left,int right,rvec vecs[],rvec buf[],
 		int shift,t_nsborder *nsb,t_nrnb *nrnb)
 {
@@ -86,10 +86,12 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
     /* Forward pulse around the ring, to increasing NODE number */
     if (bForward) {
       if (bSum)
-	gmx_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+	gmx_tx_rx_real(cr,
+		       right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
 		       left,buf [nsb->index[prev]],nsb->homenr[prev]*DIM);
       else
-	gmx_tx_rx_real(right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+	gmx_tx_rx_real(cr,
+		       right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
 		       left, vecs[nsb->index[prev]],nsb->homenr[prev]*DIM);
       /* Wait for communication to end */
       gmx_wait(right,left);
@@ -98,10 +100,12 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
     /* Backward pulse around the ring, to decreasing NODE number */
     else {
       if (bSum)
-	gmx_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+	gmx_tx_rx_real(cr,
+		       left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
 		       right,buf [nsb->index[next]],nsb->homenr[next]*DIM);
       else
-	gmx_tx_rx_real(left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
+	gmx_tx_rx_real(cr,
+		       left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
 		       right,vecs[nsb->index[next]],nsb->homenr[next]*DIM);
       /* Wait for communication to end */
       gmx_wait(left,right);
@@ -125,27 +129,27 @@ void move_rvecs(FILE *log,bool bForward,bool bSum,
 #undef prev
 }
 
-void move_x(FILE *log,
+void move_x(FILE *log,const t_commrec *cr,
 	    int left,int right,rvec x[],t_nsborder *nsb,
 	    t_nrnb *nrnb)
 {
-  move_rvecs(log,FALSE,FALSE,left,right,x,NULL,nsb->shift,nsb,nrnb);
-  move_rvecs(log,TRUE, FALSE,left,right,x,NULL,nsb->bshift,nsb,nrnb);
+  move_rvecs(cr,FALSE,FALSE,left,right,x,NULL,nsb->shift,nsb,nrnb);
+  move_rvecs(cr,TRUE, FALSE,left,right,x,NULL,nsb->bshift,nsb,nrnb);
 
   where();
 }
 
-void move_f(FILE *log,
+void move_f(FILE *log,const t_commrec *cr,
 	    int left,int right,rvec f[],rvec fadd[],
 	    t_nsborder *nsb,t_nrnb *nrnb)
 {
-  move_rvecs(log,TRUE, TRUE,left,right,f,fadd,nsb->shift,nsb,nrnb);
-  move_rvecs(log,FALSE,TRUE,left,right,f,fadd,nsb->bshift,nsb,nrnb);
+  move_rvecs(cr,TRUE, TRUE,left,right,f,fadd,nsb->shift,nsb,nrnb);
+  move_rvecs(cr,FALSE,TRUE,left,right,f,fadd,nsb->bshift,nsb,nrnb);
 
   where();
 }
 
-void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[])
+void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[],int nload[])
 {
   int i,start,nr;
   int cur=cr->nodeid;
@@ -155,19 +159,24 @@ void move_cgcm(FILE *log,t_commrec *cr,rvec cg_cm[],int nload[])
   for(i=0; (i<(cr->nnodes-cr->npmenodes)-1); i++) {
     start = (cur == 0) ? 0 : nload[cur-1];
     nr    = nload[cur] - start;
-    gmx_tx(cr->left, cg_cm[start], nr*sizeof(cg_cm[0]));
+
+    gmx_tx(cr,cr->left, cg_cm[start], nr*sizeof(cg_cm[0]));
 #ifdef DEBUG
     fprintf(log,"move_cgcm: TX start=%d, nr=%d\n",start,nr);
 #endif    
     start = (next == 0) ? 0 : nload[next-1];
     nr    = nload[next] - start;
-    gmx_rx(cr->right,cg_cm[start], nr*sizeof(cg_cm[0]));
+
+    gmx_rx(cr,cr->right,cg_cm[start], nr*sizeof(cg_cm[0]));
 #ifdef DEBUG
     fprintf(log,"move_cgcm: RX start=%d, nr=%d\n",start,nr);
 #endif    
     gmx_tx_wait(cr->left);
     gmx_rx_wait(cr->right);
-    
+
+    if (debug)
+      fprintf(debug,"cgcm[0][XX] %f\n",cg_cm[0][XX]);
+
     cur=next;    
   }
 #undef next

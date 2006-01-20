@@ -88,7 +88,8 @@ void check_nnodes_top(char *fn,t_topology *top)
 	    "You are using an old multiprocessor tpr file (%s).\n"
 	    "It has been converted back to a single processor topology file\n"
 	    "before further processing. In case of problems please make\n"
-	    "a new tpr file.\n");
+	    "a new tpr file.\n",
+	    fn);
   }
 }
 
@@ -120,7 +121,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
-static void distribute_parallel(int left,int right,char *tpxfile)
+static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile)
 {
   int         step;
   real        t;
@@ -132,7 +133,7 @@ static void distribute_parallel(int left,int right,char *tpxfile)
   init_inputrec(&inputrec);
   read_tpx_state(tpxfile,&step,&t,&inputrec,&state,NULL,&top);
   check_nnodes_top(tpxfile,&top);
-  mv_data(left,right,&inputrec,&top,&state);
+  mv_data(cr,left,right,&inputrec,&top,&state);
   done_top(&top);
   done_state(&state);
   done_inputrec(&inputrec);
@@ -146,12 +147,12 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   char buf[256];
   
   if (MASTER(cr)) 
-    distribute_parallel(cr->left,cr->right,tpxfile);
+    distribute_parallel(cr,cr->left,cr->right,tpxfile);
     
     /* Read the actual data */
-  ld_data(cr->left,cr->right,inputrec,top,state);
+  ld_data(cr,cr->left,cr->right,inputrec,top,state);
   if (cr->nodeid != 0)
-    mv_data(cr->left,cr->right,inputrec,top,state);
+    mv_data(cr,cr->left,cr->right,inputrec,top,state);
 
   /* Make sure the random seeds are different on each node */
   inputrec->ld_seed += cr->nodeid;

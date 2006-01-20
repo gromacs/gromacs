@@ -50,12 +50,12 @@ extern "C" {
 
 void init_disres(FILE *fplog,int nbonds,const t_iatom *forceatoms,
 		 const t_iparams *ip,const t_inputrec *ir,
-		 const t_commrec *mcr,t_fcdata *fcd);
+		 const gmx_multisim_t *ms,t_fcdata *fcd);
 /* Initiate *fcd data, must be called once, nbonds is the number 
  * of iatoms in the ilist of the idef struct
  */
 
-extern void calc_disres_R_6(const t_commrec *mcr,
+extern void calc_disres_R_6(const gmx_multisim_t *ms,
 			    int nfa,const t_iatom *fa,const t_iparams ip[],
 			    const rvec *x,const t_pbc *pbc,t_fcdata *fcd);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs

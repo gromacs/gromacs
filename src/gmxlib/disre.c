@@ -54,7 +54,7 @@
 
 void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
 		 const t_iparams ip[],
-		 const t_inputrec *ir,const t_commrec *mcr,t_fcdata *fcd)
+		 const t_inputrec *ir,const gmx_multisim_t *ms,t_fcdata *fcd)
 {
   int          fa;
   t_disresdata *dd;
@@ -87,7 +87,7 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
    */
   snew(dd->Rt_6,2*dd->nr);
   dd->Rav_6 = &(dd->Rt_6[dd->nr]);
-  if (mcr)
+  if (ms)
     snew(dd->Rtl_6,dd->nr);
   else
     dd->Rtl_6 = dd->Rt_6;
@@ -95,15 +95,15 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
   if (dd->npr > 0) {
     fprintf(fplog,"There are %d distance restraints involving %d atom pairs\n",
 	    dd->nr,dd->npr);
-    if (mcr)
-      check_multi_int(fplog,mcr,fcd->disres.nr,
+    if (ms)
+      check_multi_int(fplog,ms,fcd->disres.nr,
 		      "the number of distance restraints");
     please_cite(fplog,"Tropp80a");
     please_cite(fplog,"Torda89a");
   }
 }
 
-void calc_disres_R_6(const t_commrec *mcr,
+void calc_disres_R_6(const gmx_multisim_t *ms,
 		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 		     const rvec x[],const t_pbc *pbc,t_fcdata *fcd)
 {
@@ -132,8 +132,8 @@ void calc_disres_R_6(const t_commrec *mcr,
   cf1 = dd->exp_min_t_tau;
   cf2 = 1.0/(1.0 - dd->exp_min_t_tau);
   
-  if (mcr)
-    invn = 1.0/mcr->nnodes;
+  if (ms)
+    invn = 1.0/ms->nsim;
 
   /* 'loop' over all atom pairs (pair_nr=fa/3) involved in restraints, *
    * the total number of atoms pairs is nfa/3                          */
@@ -169,7 +169,7 @@ void calc_disres_R_6(const t_commrec *mcr,
 
       fa += 3;
     }
-    if (mcr) {
+    if (ms) {
       Rtl_6[res]  = Rt_6[res];
       Rt_6[res]  *= invn;
       Rav_6[res] *= invn;
@@ -177,8 +177,8 @@ void calc_disres_R_6(const t_commrec *mcr,
     res++;
   }
   
-  if ((mcr) && PAR(mcr))
-    gmx_sum(2*dd->nr,Rt_6,mcr);
+  if (ms)
+    gmx_sum_sim(2*dd->nr,Rt_6,ms);
 }
 
 real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],

@@ -281,7 +281,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
 	    lambda,dvdlambda,NULL,nrnb,FALSE); 
 }
 
-int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
+int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],t_fcdata *fcd,
 		 t_state *state,rvec vold[],rvec vt[],rvec f[],
@@ -380,7 +380,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
   if (debug) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(log,cr,mcr,inputrec,nsb,mdstep,nrnb,top,grps,
+  do_force(log,cr,inputrec,nsb,mdstep,nrnb,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   state->lambda,graph,
 	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL,FALSE);
@@ -471,7 +471,7 @@ int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
       pr_rvecs(debug,0,"RELAX: pos[Try]  ",pos[Try] + start,homenr);
     }
     /* Try the new positions */
-    do_force(log,cr,mcr,inputrec,nsb,1,nrnb,
+    do_force(log,cr,inputrec,nsb,1,nrnb,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     state->lambda,graph,

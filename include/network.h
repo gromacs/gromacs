@@ -83,7 +83,7 @@
  * For sequential processing dummies are in src/gmxlib/libnet.c
  *
  ******************************************************/
-extern void gmx_tx(int chan,void *buf,int bufsize);
+extern void gmx_tx(const t_commrec *cr,int chan,void *buf,int bufsize);
      /*
       * Asynchronously sends bufsize bytes from the buffer pointed to by buf 
       * over the communication channel, identified by chan. The buffer becomes 
@@ -97,7 +97,7 @@ extern void gmx_tx_wait(int chan);
       * the sending process.
       */
 
-extern void gmx_txs(int chan,void *buf,int bufsize);
+extern void gmx_txs(const t_commrec *cr,int chan,void *buf,int bufsize);
      /*
       * Synchronously sends bufsize bytes from the buffer pointed to by buf to
       * the processor/process identified by chan. This is implemented by a call
@@ -106,7 +106,7 @@ extern void gmx_txs(int chan,void *buf,int bufsize);
       * gmx_txs() returns.
       */
 
-extern void gmx_rx(int chan,void *buf,int bufsize);
+extern void gmx_rx(const t_commrec *cr,int chan,void *buf,int bufsize);
      /*
       * Asynchronously receives bufsize bytes in the buffer pointed to by buf 
       * from communication channel identified by chan. The buffer becomes 
@@ -120,7 +120,7 @@ extern void gmx_rx_wait(int chan);
       * available to the receiving process.
       */
 
-extern void gmx_rxs(int chan,void *buf,int bufsize);
+extern void gmx_rxs(const t_commrec *cr,int chan,void *buf,int bufsize);
      /*
       * Synchronously receives bufsize bytes from the buffer pointed to by 
       * buf over the communication channel identified by chan. This is 
@@ -140,8 +140,8 @@ extern int gmx_setup(int *argc,char **argv,int *nnodes);
 extern int gmx_node_num(void);
 /* return the number of nodes in the ring */
 
-extern int gmx_node_id(void);
-/* return the identification ID of the node */
+extern int gmx_node_rank(void);
+/* return the rank of the node */
 
 extern bool gmx_mpi_initialized(void);
 /* return TRUE when MPI_Init has been called.
@@ -149,7 +149,8 @@ extern bool gmx_mpi_initialized(void);
  * when GROMACS was compiled without MPI support.
  */
       
-extern void gmx_left_right(int nnodes,int nodeid,int *left,int *right);
+extern void gmx_left_right(int nnodes,int nodeid,
+			   int *left,int *right);
 /* Get left and right proc id. */
 
 extern void gmx_stat(FILE *fp,char *msg);
@@ -158,18 +159,21 @@ extern void gmx_stat(FILE *fp,char *msg);
 extern void gmx_reset_idle(void);
 /* Reset the idle count */
 
-extern void gmx_tx_rx(int send_nodeid,void *send_buf,int send_bufsize,
+extern void gmx_tx_rx(const t_commrec *cr,
+		      int send_nodeid,void *send_buf,int send_bufsize,
 		      int rec_nodeid,void *rec_buf,int rec_bufsize);
 /* Communicate simultaneously left and right */
 		      
-extern void gmx_tx_rx_real(int send_nodeid,real *send_buf,int send_bufsize,
+extern void gmx_tx_rx_real(const t_commrec *cr,
+			   int send_nodeid,real *send_buf,int send_bufsize,
 			   int rec_nodeid,real *rec_buf,int rec_bufsize);
 /* Communicate simultaneously left and right, reals only */
 
 extern void gmx_wait(int send,int receive);
 /* Wait for communication to finish */
 
-extern void gmx_sync_ring(int nodeid,int nnodes,int left,int right);
+extern void gmx_sync_ring(const t_commrec *cr,
+			  int nodeid,int nnodes,int left,int right);
 /* Synchronise the ring... */
 
 extern void gmx_sumi(int nr,int r[],const t_commrec *cr);
@@ -181,16 +185,27 @@ extern void gmx_sumf(int nr,float r[],const t_commrec *cr);
 extern void gmx_sumd(int nr,double r[],const t_commrec *cr);
 /* Calculate the global sum of an array of doubles */
 
+extern void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms);
+/* Calculate the sum over the simulations of an array of ints */
+
+extern void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms);
+/* Calculate the sum over the simulations of an array of floats */
+
+extern void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms);
+/* Calculate the sum over the simulations of an array of doubles */
+
 extern void gmx_abort(int nodeid,int nnodes,int errorno);
 /* Abort the parallel run */
 
-extern void gmx_finalize(t_commrec *cr);
+extern void gmx_finalize(const t_commrec *cr);
 /* Finish the parallel run in an ordered manner */
 
 #ifdef GMX_DOUBLE
-#define gmx_sum gmx_sumd
+#define gmx_sum     gmx_sumd
+#define gmx_sum_sim gmx_sumd_sim
 #else
-#define gmx_sum gmx_sumf
+#define gmx_sum     gmx_sumf
+#define gmx_sum_sim gmx_sumf_sim
 #endif
 
 #ifdef DEBUG_GMX

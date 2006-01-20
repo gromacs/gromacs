@@ -56,19 +56,18 @@ extern void open_log(char *fn,const t_commrec *cr);
  * communicated around the ring.
  */
 
-extern void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name);
+extern void check_multi_int(FILE *log,const gmx_multisim_t *ms,
+			    int val,char *name);
 /* Check if val is the same on all processors for a mdrun -multi run
  * The string name is used to print to the log file and in a fatal error
  * if the val's don't match.
  */
 
-extern t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[],
-				   bool bParFn);
-/* Returns copy of the cr commrec to be used for simulating a system
- * of cr->nnodes linked subsystems,
- * cr is modified to be non-parallel:
- *   cr->nnodes = 1;
- *   cr->nodeid = 0;
+extern void init_multisystem(t_commrec *cr,int nsim,int nfile,t_filenm fnm[],
+			     bool bParFn);
+/* Splits the communication into nsim seperate simulations
+ * and creates a communication structure between the master
+ * these simulations.
  * If bParFn is set, the nodeid is appended to the tpx and each output file.
  */
 

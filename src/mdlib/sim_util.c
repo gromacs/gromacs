@@ -211,7 +211,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 	    Ext[XX]/FIELDFAC,Ext[YY]/FIELDFAC,Ext[ZZ]/FIELDFAC);
 }
 
-void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
+void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,t_nsborder *nsb,
 	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
@@ -237,7 +237,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   cg1    = CG1(nsb);
 
   bFillGrid = (bNS && bStateChanged);
-  bCalcCGCM = (bFillGrid && !(PAR(cr) && cr->dd));
+  bCalcCGCM = (bFillGrid && !DOMAINDECOMP(cr));
 
   if (bStateChanged) {
     update_forcerec(fplog,fr,box);
@@ -271,8 +271,9 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   }
   
   if (bCalcCGCM) {
-    if (PAR(cr) && cr->dd==NULL)
+    if (PAR(cr) && !DOMAINDECOMP(cr)) {
       move_cgcm(fplog,cr,fr->cg_cm,nsb->workload);
+    }
     if (debug)
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
   }
@@ -309,7 +310,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
       if (!bNS)
 	dd_move_x(cr->dd,&(top->blocks[ebCGS]),x,buf);
     } else {
-      move_x(fplog,cr->left,cr->right,x,nsb,nrnb);
+      move_x(fplog,cr,cr->left,cr->right,x,nsb,nrnb);
     }
     gmx_sumd(2*DIM,mu,cr);
   }
@@ -370,7 +371,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
     update_QMMMrec(cr,fr,x,mdatoms,box,top);
 
   /* Compute the forces */    
-  force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,mcr,nrnb,grps,mdatoms,
+  force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn,bReInit);
@@ -399,7 +400,7 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
       if (cr->dd)
 	dd_move_f(cr->dd,&top->blocks[ebCGS],f,buf);
       else
-	move_f(fplog,cr->left,cr->right,f,buf,nsb,nrnb);
+	move_f(fplog,cr,cr->left,cr->right,f,buf,nsb,nrnb);
       /* In case of node-splitting, the PP nodes receive the long-range 
        * forces, virial and energy from the PME nodes here 
        */    
@@ -840,7 +841,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       nrnb_buf[2] = nrnb[cr->nodeid].n[eNR_FFT       ];
       nrnb_buf[3] = nrnb[cr->nodeid].n[eNR_GATHERFBSP];
 
-      if (MPI_Send(&nrnb_buf, 4, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD) != 0)
+      if (MPI_Send(&nrnb_buf, 4, MPI_DOUBLE, 0, 0, cr->mpi_comm_mysim) != 0)
         gmx_comm("MPI_Send failed in finish_run\n");
     }
     if (MASTER(cr))
@@ -850,7 +851,8 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       lastpmenode  = cr->nnodes - 1;
       for (sender = firstpmenode; sender <= lastpmenode; sender++)
       {
-	if (MPI_Recv(&nrnb_buf, 4, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD, status) != 0)
+	if (MPI_Recv(&nrnb_buf, 4, MPI_DOUBLE, sender, 0,
+		     cr->mpi_comm_mysim, status) != 0)
 	  gmx_comm("MPI_Recv failed in finish_run\n");
 	nrnb[sender].n[eNR_SPREADQBSP] += nrnb_buf[0];
         nrnb[sender].n[eNR_SOLVEPME  ] += nrnb_buf[1];

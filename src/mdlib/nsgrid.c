@@ -412,11 +412,11 @@ void mv_grid(t_commrec *cr,bool bDD,int cg_index[],
   for(i=0; (i<cr->nnodes-1); i++) {
     start=(cur == 0) ? 0 : cgload[cur-1];
     nr=cgload[cur]-start;
-    gmx_tx(cr->left,&(ci[start]),nr*sizeof(*ci));
+    gmx_tx(cr,cr->left,&(ci[start]),nr*sizeof(*ci));
     
     start=(next == 0) ? 0 : cgload[next-1];
     nr=cgload[next]-start;
-    gmx_rx(cr->right,&(ci[start]),nr*sizeof(*ci));
+    gmx_rx(cr,cr->right,&(ci[start]),nr*sizeof(*ci));
     
     gmx_tx_wait(cr->left);
     gmx_rx_wait(cr->right);

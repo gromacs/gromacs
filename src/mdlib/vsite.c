@@ -88,11 +88,11 @@ static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
   
   /* send them off, and recieve from the right */
   if(vsitecomm->nprevconstr>0 || vsitecomm->nprevvsite>0)
-    gmx_tx(cr->left,prevbuf,
+    gmx_tx(cr,cr->left,prevbuf,
 	   sizeof(rvec)*(vsitecomm->nprevconstr+vsitecomm->nprevvsite));
   
   if(vsitecomm->nnextconstr>0 || vsitecomm->nnextvsite>0)
-    gmx_rx(cr->right,nextbuf,
+    gmx_rx(cr,cr->right,nextbuf,
 	   sizeof(rvec)*(vsitecomm->nnextconstr+vsitecomm->nnextvsite));
   
   if(vsitecomm->nprevconstr>0 || vsitecomm->nprevvsite>0)
@@ -135,10 +135,10 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
   
   /* send them off, and recieve from the right */
   if(vsitecomm->nnextvsite>0)
-    gmx_tx(cr->right,nextbuf,sendsize);
+    gmx_tx(cr,cr->right,nextbuf,sendsize);
   
   if(vsitecomm->nprevvsite>0)
-    gmx_rx(cr->left,prevbuf,recvsize);
+    gmx_rx(cr,cr->left,prevbuf,recvsize);
   
   if(vsitecomm->nnextvsite>0)
     gmx_tx_wait(cr->right);
@@ -167,11 +167,11 @@ static void move_vsite_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 
   /* off they go! - but only if there is something to send! */
   if(vsitecomm->nprevvsite>0)
-    gmx_tx(cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevvsite);
+    gmx_tx(cr,cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevvsite);
 
   /* Get our share from the right, if there is anything to have */
   if(vsitecomm->nnextvsite>0)
-    gmx_rx(cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextvsite);
+    gmx_rx(cr,cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextvsite);
   
   if(vsitecomm->nprevvsite>0)
     gmx_tx_wait(cr->left);
@@ -205,10 +205,10 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
   
   /* send them off, and recieve from the right */
   if(vsitecomm->nnextconstr>0)
-    gmx_tx(cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextconstr);
+    gmx_tx(cr,cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextconstr);
   
   if(vsitecomm->nprevconstr>0)
-    gmx_rx(cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevconstr);
+    gmx_rx(cr,cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevconstr);
   
   if(vsitecomm->nnextconstr>0)
     gmx_tx_wait(cr->right);

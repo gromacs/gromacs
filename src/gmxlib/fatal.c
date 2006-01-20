@@ -164,14 +164,15 @@ static void quit_gmx(const char *msg)
   
   if (gmx_parallel_env) {
     int  nnodes;
-    int  nodeid;
+    int  noderank;
     
-    nnodes = gmx_node_num();
-    nodeid    = gmx_node_id();
+    nnodes   = gmx_node_num();
+    noderank = gmx_node_rank();
     
     if (nnodes > 1) 
-      fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",nodeid);
-    gmx_abort(nodeid,nnodes,-1);
+      fprintf(stderr,"Error on node %d, will try to stop all the nodes\n",
+	      noderank);
+    gmx_abort(noderank,nnodes,-1);
   } else {
     if (debug)
       fflush(debug);

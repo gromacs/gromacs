@@ -68,7 +68,7 @@ static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
   }
 }
 
-void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
+void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_idef *idef,
 		rvec x[],rvec f[],
 		t_forcerec *fr,const t_pbc *pbc,const t_graph *g,
@@ -88,7 +88,7 @@ void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
     pbc_null = NULL;
 
   if (bSepDVDL)
-    fprintf(fplog,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
+    fprintf(fplog,"Step %d: bonded V and dVdl for this node\n",step);
 
 #ifdef DEBUG
   if (g)
@@ -97,12 +97,12 @@ void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
   
   /* Do pre force calculation stuff which might require communication */
   if (idef->il[F_ORIRES].nr)
-    epot[F_ORIRESDEV] = calc_orires_dev(mcr,idef->il[F_ORIRES].nr,
+    epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
 					idef->il[F_ORIRES].iatoms,
 					idef->iparams,md,(const rvec*)x,
 					pbc_null,fcd);
   if (idef->il[F_DISRES].nr)
-    calc_disres_R_6(mcr,idef->il[F_DISRES].nr,
+    calc_disres_R_6(ms,idef->il[F_DISRES].nr,
 		    idef->il[F_DISRES].iatoms,
 		    idef->iparams,(const rvec*)x,pbc_null,fcd);
   

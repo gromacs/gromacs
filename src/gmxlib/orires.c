@@ -51,7 +51,7 @@
 void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
 		 const t_iparams ip[],
 		 rvec xref[],const t_mdatoms *md,const t_inputrec *ir,
-		 const t_commrec *mcr,t_oriresdata *od)
+		 const gmx_multisim_t *ms,t_oriresdata *od)
 {
   int  i,j,d,ex,nr,*nr_ex;
   real mtot;
@@ -89,7 +89,7 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
    * are indentical and the pointers can point to the same memory.
    */
   snew(od->Dinsl,od->nr);
-  if (mcr)
+  if (ms)
     snew(od->Dins,od->nr);
   else
     od->Dins = od->Dinsl;
@@ -98,7 +98,7 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
   else
     snew(od->Dtav,od->nr);
   snew(od->oinsl,od->nr);
-  if (mcr)
+  if (ms)
     snew(od->oins,od->nr);
   else
     od->oins = od->oinsl;
@@ -134,7 +134,7 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
   for(i=0; i<md->nr; i++) {
     if (md->cORF[i] == 0) {
       od->mref[j] = md->massT[i];
-      if (mcr==NULL || MASTER(mcr)) {
+      if (ms==NULL || MASTERSIM(ms)) {
 	copy_rvec(xref[i],od->xref[j]);
 	for(d=0; d<DIM; d++)
 	  com[d] += od->mref[j]*xref[i][d];
@@ -145,7 +145,7 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
   }
   od->invmref = 1.0/mtot;
   svmul(od->invmref,com,com);
-  if (mcr==NULL || MASTER(mcr))
+  if (ms==NULL || MASTERSIM(ms))
     for(j=0; j<od->nref; j++)
       rvec_dec(od->xref[j],com);
   
@@ -158,16 +158,16 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
   fprintf(fplog,"  the fit group consists of %d atoms and has total mass %g\n",
 	  od->nref,mtot);
   
-  if (mcr) {
-    fprintf(fplog,"  the orientation restraints are ensemble averaged over %d systems\n",mcr->nnodes);
+  if (ms) {
+    fprintf(fplog,"  the orientation restraints are ensemble averaged over %d systems\n",ms->nsim);
 
-    check_multi_int(fplog,mcr,od->nr,
+    check_multi_int(fplog,ms,od->nr,
 		    "the number of orientation restraints");
-    check_multi_int(fplog,mcr,od->nref,
+    check_multi_int(fplog,ms,od->nref,
 		    "the number of fit atoms for orientation restraining");
-    check_multi_int(fplog,mcr,ir->nsteps,"nsteps");
+    check_multi_int(fplog,ms,ir->nsteps,"nsteps");
     /* Copy the reference coordinates from the master to the other nodes */
-    gmx_sum(DIM*od->nref,od->xref[0],mcr);
+    gmx_sum_sim(DIM*od->nref,od->xref[0],ms);
   }
 
   please_cite(fplog,"Hess2003");
@@ -236,7 +236,7 @@ void print_orires_log(FILE *log,t_oriresdata *od)
   }
 }
 
-real calc_orires_dev(const t_commrec *mcr,
+real calc_orires_dev(const gmx_multisim_t *ms,
 		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 		     const t_mdatoms *md,const rvec x[],const t_pbc *pbc,
 		     t_fcdata *fcd)
@@ -269,8 +269,8 @@ real calc_orires_dev(const t_commrec *mcr,
   
   od->exp_min_t_tau *= edt;
 
-  if (mcr)
-    invn = 1.0/mcr->nnodes;
+  if (ms)
+    invn = 1.0/ms->nsim;
   else
     invn = 1.0;
 
@@ -310,15 +310,15 @@ real calc_orires_dev(const t_commrec *mcr,
     Dinsl[d][3] = pfac*(2*r[1]*r[1] + r[0]*r[0] - r2);
     Dinsl[d][4] = pfac*(2*r[1]*r[2]);
 
-    if (mcr)
+    if (ms)
       for(i=0; i<5; i++)
 	Dins[d][i] = Dinsl[d][i]*invn;
     
     d++;
   }
   
-  if (mcr)
-    gmx_sum(5*od->nr,Dins[0],mcr);
+  if (ms)
+    gmx_sum_sim(5*od->nr,Dins[0],ms);
   
   /* Correction factor to correct for the lack of history for short times */
   corrfac = 1.0/(1.0-od->exp_min_t_tau);
@@ -394,7 +394,7 @@ real calc_orires_dev(const t_commrec *mcr,
       od->oins[d] = two_thr*(S[ex][0][0]*Dins[d][0] + S[ex][0][1]*Dins[d][1] +
 			     S[ex][0][2]*Dins[d][2] + S[ex][1][1]*Dins[d][3] +
 			     S[ex][1][2]*Dins[d][4]);
-    if (mcr)
+    if (ms)
       /* When ensemble averaging is used recalculate the local orientation
        * for output to the energy file.
        */

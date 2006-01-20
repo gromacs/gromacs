@@ -76,17 +76,17 @@ typedef struct {
 } gmx_domdec_ns_t;
 
 typedef struct {
-  ivec nc;
-  int  nnodes;
+  int nodeid;
+  int nnodes;
+  int masterrank;
 #ifdef GMX_MPI
   MPI_Comm all;
 #endif
 
   /* The communication setup, identical for each cell */
+  ivec nc;
   int  ncell;
   ivec shift[DD_MAXCELL];
-
-  int  nodeid;
 
   /* Only available on the master node */
   gmx_domdec_master_t ma;
@@ -119,13 +119,29 @@ typedef struct {
 } gmx_domdec_t;
 
 typedef struct {
+  int nsim;
+  int sim;
+#ifdef GMX_MPI
+  MPI_Group mpi_group_masters;
+  MPI_Comm mpi_comm_masters;
+#endif
+} gmx_multisim_t;
+
+typedef struct {
+  /* The nodids in one sim are numbered sequentially from 0.
+   * All communication within some simulation should happen
+   * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
+   */
   int nodeid,nnodes,npmenodes;
   int left,right;
   int threadid,nthreads;
 #ifdef GMX_MPI
+  MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
 #endif
   gmx_domdec_t *dd;
+
+  gmx_multisim_t *ms;
 } t_commrec;
 
 #define MASTERNODE(cr)     ((cr)->nodeid == 0)
@@ -134,6 +150,22 @@ typedef struct {
 #define NODEPAR(cr)        ((cr)->nnodes > 1)
 #define THREADPAR(cr)      ((cr)->nthreads > 1)
 #define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr))
+#define RANK(cr,nodeid)    (nodeid)
+#define MASTERRANK(cr)     (0)
+
+#define DOMAINDECOMP(cr)   ((cr)->dd != NULL)
+
+#define DDMASTER(dd)       ((dd)->nodeid == 0)
+#define DDRANK(dd,nodeid)  (nodeid)
+#define DDMASTERRANK(dd)   (0)
+
+#define MULTISIM(cr)       ((cr)->ms)
+#define MSRANK(ms,nodeid)  (nodeid)
+#define MASTERSIM(ms)      ((ms)->sim == 0)
+
+/* Parallel and/or multi simulation */
+#define MULTIMASTER(cr)    ((cr)->nodeid == 0)
+#define MULTIPAR(cr)       (PAR(cr) || MULTISIM(cr))
 
 /*
  * with the help of this macro + enum we are able to find out 
@@ -148,6 +180,3 @@ typedef struct {
 enum {
   epmePPONLY, epmePMEONLY, epmePMEANDPP
 };
-
-#define DDMASTERNODE     0
-#define DDMASTER(dd)     ((dd)->nodeid == DDMASTERNODE)

@@ -552,7 +552,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
   }
   /* Now setup the FFT things */
 #ifdef GMX_MPI
-  cr->mpi_comm_mygroup=MPI_COMM_WORLD;
+  cr->mpi_comm_mygroup=cr->mpi_comm_mysim;
 #endif
   grid = mk_fftgrid(log,nx,ny,nz,cr);
   

@@ -107,14 +107,14 @@ void dd_move_x(gmx_domdec_t *dd,t_block *cgs,rvec x[],rvec buf[])
       gmx_fatal(FARGS,"Internal error k (%d) != nat (%d)",k,cc->nat);
 #ifdef GMX_MPI
     if (MPI_Isend(buf[0],cc->nat*sizeof(rvec),MPI_BYTE,
-		  cc->cell,c,dd->all,&reqs[c-1]) != 0)
+		  DDRANK(dd,cc->cell),c,dd->all,&reqs[c-1]) != 0)
       gmx_fatal(FARGS,"MPI_Send failed from %d to %d",
 		dd->nodeid,cc->cell);
 #endif
 #ifdef GMX_MPI
     if (MPI_Irecv(x[at_index],
 		  dd->comm1[c].nat*sizeof(rvec),MPI_BYTE,
-		  dd->comm1[c].cell,c,dd->all,&reqr[c-1]) != 0)
+		  DDRANK(dd,dd->comm1[c].cell),c,dd->all,&reqr[c-1]) != 0)
       gmx_fatal(FARGS,"MPI_Irecv failed from %d to %d",
 		dd->comm1[c].cell,dd->nodeid);
 
@@ -145,7 +145,7 @@ void dd_move_f(gmx_domdec_t *dd,t_block *cgs,rvec f[],rvec buf[])
   for(c=1; c<dd->ncell; c++) {
     if (MPI_Isend(f[at_index],
 		  dd->comm1[c].nat*sizeof(rvec),MPI_BYTE,
-		  dd->comm1[c].cell,c,dd->all,&reqs[c-1]) != 0)
+		  DDRANK(dd,dd->comm1[c].cell),c,dd->all,&reqs[c-1]) != 0)
       gmx_fatal(FARGS,"MPI_Isend failed from %d to %d",
 		dd->nodeid,dd->comm1[c].cell);
 
@@ -153,7 +153,7 @@ void dd_move_f(gmx_domdec_t *dd,t_block *cgs,rvec f[],rvec buf[])
 
     cc = &dd->comm0[c];
     if (MPI_Recv(buf[0],cc->nat*sizeof(rvec),MPI_BYTE,
-		 cc->cell,c,dd->all,MPI_STATUS_IGNORE) != 0)
+		 DDRANK(dd,cc->cell),c,dd->all,MPI_STATUS_IGNORE) != 0)
       gmx_fatal(FARGS,"MPI_Irecv failed from %d to %d",
 		cc->cell,dd->nodeid);
     
@@ -185,7 +185,7 @@ static void dd_collect_cg(gmx_domdec_t *dd)
 #ifdef GMX_MPI
   MPI_Gather(buf2,2*sizeof(int),MPI_BYTE,
 	     dd->ma.ibuf,2*sizeof(int),MPI_BYTE,
-	     DDMASTERNODE,dd->all);
+	     DDMASTERRANK(dd),dd->all);
 #endif
   
   if (DDMASTER(dd)) {
@@ -213,7 +213,7 @@ static void dd_collect_cg(gmx_domdec_t *dd)
 #ifdef GMX_MPI
   MPI_Gatherv(cc->index_gl,cc->ncg*sizeof(int),MPI_BYTE,
 	      dd->ma.cg,dd->ma.ibuf,dd->ma.ibuf+dd->nnodes,MPI_BYTE,
-	      DDMASTERNODE,dd->all);
+	      DDMASTERRANK(dd),dd->all);
 #endif
 
   dd->bMasterHasAllCG = TRUE;
@@ -232,28 +232,25 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
 
   if (!DDMASTER(dd)) {
 #ifdef GMX_MPI
-    if (MPI_Send(lv,dd->comm1[0].nat*sizeof(rvec),MPI_BYTE,DDMASTERNODE,
-		 dd->nodeid,dd->all) != 0)
-      gmx_fatal(FARGS,"MPI_Send from %d to %d failed",
-		dd->nodeid,DDMASTERNODE);
+    MPI_Send(lv,dd->comm1[0].nat*sizeof(rvec),MPI_BYTE,DDMASTERRANK(dd),
+	     dd->nodeid,dd->all);
 #endif
   } else {
     /* Copy the master coordinates to the global array */
-    n = DDMASTERNODE;
+    n = 0;
     a = 0;
     for(i=dd->ma.index[n]; i<dd->ma.index[n+1]; i++)
 	for(c=cgs->index[dd->ma.cg[i]]; c<cgs->index[dd->ma.cg[i]+1]; c++)
 	  copy_rvec(lv[a++],v[c]);
 
     /* Use the unused part of lv as a temporary buffer */
-    buf = lv + dd->ma.nat[DDMASTERNODE];
+    buf = lv + dd->ma.nat[n];
 
     for(n=0; n<dd->nnodes; n++) {
-      if (n != DDMASTERNODE) {
+      if (n != dd->nodeid) {
 #ifdef GMX_MPI
-	if (MPI_Recv(buf,dd->ma.nat[n]*sizeof(rvec),MPI_BYTE,n,
-		     MPI_ANY_TAG,dd->all,MPI_STATUS_IGNORE) != 0)
-	  gmx_fatal(FARGS,"MPI_Recv from %d to %d failed",DDMASTERNODE);
+	MPI_Recv(buf,dd->ma.nat[n]*sizeof(rvec),MPI_BYTE,DDRANK(dd,n),
+		 n,dd->all,MPI_STATUS_IGNORE);
 #endif
 	a = 0;
 	for(i=dd->ma.index[n]; i<dd->ma.index[n+1]; i++)
@@ -280,7 +277,7 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
 
   if (DDMASTER(dd)) {
     for(n=0; n<dd->nnodes; n++) {
-      if (n != DDMASTERNODE) {
+      if (n != dd->nodeid) {
 	/* Use lv as a temporary buffer */
 	a = 0;
 	for(i=dd->ma.index[n]; i<dd->ma.index[n+1]; i++)
@@ -289,20 +286,19 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
 	if (a != dd->ma.nat[n])
 	  gmx_fatal(FARGS,"Internal error a (%d) != nat (%d)",a,dd->ma.nat[n]);
 #ifdef GMX_MPI
-	if (MPI_Send(lv,dd->ma.nat[n]*sizeof(rvec),MPI_BYTE,
-		     n,n,dd->all) != 0)
-	  gmx_fatal(FARGS,"MPI_Send from %d to %d failed",DDMASTERNODE);
+	MPI_Send(lv,dd->ma.nat[n]*sizeof(rvec),MPI_BYTE,
+		 DDRANK(dd,n),n,dd->all);
 #endif
       }
     }
-    n = DDMASTERNODE;
+    n = 0;
     a = 0;
     for(i=dd->ma.index[n]; i<dd->ma.index[n+1]; i++)
       for(c=cgs->index[dd->ma.cg[i]]; c<cgs->index[dd->ma.cg[i]+1]; c++)
 	copy_rvec(v[c],lv[a++]);
   } else {
 #ifdef GMX_MPI
-    MPI_Recv(lv,dd->comm1[0].nat*sizeof(rvec),MPI_BYTE,DDMASTERNODE,
+    MPI_Recv(lv,dd->comm1[0].nat*sizeof(rvec),MPI_BYTE,DDMASTERRANK(dd),
 	     MPI_ANY_TAG,dd->all,MPI_STATUS_IGNORE);
 #endif
   }
@@ -426,7 +422,7 @@ void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
 #ifdef GMX_MPI
   MPI_Scatter(dd->ma.ibuf,2*sizeof(int),MPI_BYTE,
 	      buf2,2*sizeof(int),MPI_BYTE,
-	      DDMASTERNODE,dd->all);
+	      DDMASTERRANK(dd),dd->all);
 #endif
   cc = &dd->comm1[0];
   cc->ncg = buf2[0];
@@ -444,7 +440,7 @@ void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
 #ifdef GMX_MPI
   MPI_Scatterv(dd->ma.cg,dd->ma.ibuf,dd->ma.ibuf+dd->nnodes,MPI_BYTE,
 	       cc->index_gl,cc->ncg*sizeof(int),MPI_BYTE,
-	       DDMASTERNODE,dd->all);
+	       DDMASTERRANK(dd),dd->all);
 #endif
   if (debug) {
     fprintf(debug,"Home charge groups:\n");
@@ -718,9 +714,9 @@ void dd_redistribute_cg(FILE *fplog,
       sbuf[c*2+1] = nat[c];
 #ifdef GMX_MPI
       MPI_Isend(sbuf+c*2,2*sizeof(int),MPI_BYTE,
-		dest[c],c,dd->all,&mpi_req[nreq++]);
+		DDRANK(dd,dest[c]),c,dd->all,&mpi_req[nreq++]);
       MPI_Irecv(rbuf+c*2,2*sizeof(int),MPI_BYTE,
-		src[c],c,dd->all,&mpi_req[nreq++]);
+		DDRANK(dd,src[c]),c,dd->all,&mpi_req[nreq++]);
 #endif
       /* Make index into communication buffers,
        * but without the charge groups that stay on this node.
@@ -789,7 +785,7 @@ void dd_redistribute_cg(FILE *fplog,
     if (c != local && nat[c] > 0) {
 #ifdef GMX_MPI
       MPI_Isend(dd->buf_vs+buf_vs_ind[c],nvec*nat[c]*sizeof(rvec),MPI_BYTE,
-		dest[c],c,dd->all,&mpi_req[nreq++]);
+		DDRANK(dd,dest[c]),c,dd->all,&mpi_req[nreq++]);
 #endif
     }
   }
@@ -798,7 +794,7 @@ void dd_redistribute_cg(FILE *fplog,
     if (c != local && nat_r[c] > 0) {
 #ifdef GMX_MPI
       MPI_Recv(dd->buf_vr,nvec*nat_r[c]*sizeof(rvec),MPI_BYTE,
-	       src[c],c,dd->all,MPI_STATUS_IGNORE);
+	       DDRANK(dd,src[c]),c,dd->all,MPI_STATUS_IGNORE);
 #endif
       memcpy(state->x+local_pos,dd->buf_vr,nat_r[c]*sizeof(rvec));
       buf_pos_r = nat_r[c];
@@ -834,11 +830,11 @@ void dd_redistribute_cg(FILE *fplog,
 #ifdef GMX_MPI
       if (ncg[c])
 	MPI_Isend(buf_cg+buf_cg_ind[c],ncg[c]*sizeof(int),MPI_BYTE,
-		  dest[c],c,dd->all,&mpi_req[nreq++]);
+		  DDRANK(dd,dest[c]),c,dd->all,&mpi_req[nreq++]);
       if (ncg_r[c])
 	/* Receive the cg's in place */
 	MPI_Irecv(cc->index_gl+local_pos,ncg_r[c]*sizeof(int),MPI_BYTE,
-		  src[c],c,dd->all,&mpi_req[nreq++]);
+		  DDRANK(dd,src[c]),c,dd->all,&mpi_req[nreq++]);
 #endif
       local_pos += ncg_r[c];
     }
@@ -1012,7 +1008,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
   dd->nnodes = cr->nnodes - cr->npmenodes;
   dd->nodeid = cr->nodeid;
 #ifdef GMX_MPI
-  dd->all    = MPI_COMM_WORLD;
+  dd->all    = cr->mpi_comm_mygroup;
 #endif
   if (DDMASTER(dd)) {
     snew(dd->ma.ncg,dd->nnodes);
@@ -1104,9 +1100,9 @@ void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *cgs,
     buf_cs[c*2+1] = cc->nat;
 #ifdef GMX_MPI
     MPI_Isend(buf_cs+c*2,2*sizeof(int),MPI_BYTE,
-	      cc->cell,c,dd->all,&mpi_req[nreq++]);
+	      DDRANK(dd,cc->cell),c,dd->all,&mpi_req[nreq++]);
     MPI_Irecv(buf_cr+c*2,2*sizeof(int),MPI_BYTE,
-	      dd->comm1[c].cell,c,dd->all,&mpi_req[nreq++]);
+	      DDRANK(dd,dd->comm1[c].cell),c,dd->all,&mpi_req[nreq++]);
 #endif
   }
 
@@ -1124,7 +1120,7 @@ void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *cgs,
 #ifdef GMX_MPI
     if (cc->ncg > 0)
       MPI_Isend(cc->index_gl,cc->ncg*sizeof(int),MPI_BYTE,
-		cc->cell,c,dd->all,&mpi_req[nreq++]);
+		DDRANK(dd,cc->cell),c,dd->all,&mpi_req[nreq++]);
 #endif
     /* Receive the number of charge groups and atoms to communicate */
     cc = &dd->comm1[c];
@@ -1139,7 +1135,7 @@ void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *cgs,
 #ifdef GMX_MPI
     if (cc->ncg > 0)
       MPI_Irecv(cc->index_gl,cc->ncg*sizeof(int),MPI_BYTE,
-		cc->cell,c,dd->all,&mpi_req[nreq++]);
+		DDRANK(dd,cc->cell),c,dd->all,&mpi_req[nreq++]);
 #endif
   }
   if (debug)

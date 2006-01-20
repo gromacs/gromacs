@@ -37,14 +37,16 @@
 #include <config.h>
 #endif
 
-extern void _blocktx(int dest,int nelem,int size,void *data);
-extern void _blockrx(int src,int nelem,int size,void *data);
+extern void _blocktx(const t_commrec *cr,int dest,
+		     int nelem,int size,void *data);
+extern void _blockrx(const t_commrec *cr,int src,
+		     int nelem,int size,void *data);
 
-#define blocktx(dest,dta)	_blocktx((dest),1,sizeof(dta),&(dta))
-#define blockrx(src,dta)	_blockrx((src),1,sizeof(dta),&(dta))
-#define nblocktx(dest,n,dta)	_blocktx((dest),1,(n)*(sizeof(*dta)),dta)
-#define nblockrx(src,n,dta)	_blockrx((src),1,(n)*(sizeof(*dta)),(dta))
+#define blocktx(cr,dest,dta)	_blocktx((cr),(dest),1,sizeof(dta),&(dta))
+#define blockrx(cr,src,dta)	_blockrx((cr),(src),1,sizeof(dta),&(dta))
+#define nblocktx(cr,dest,n,dta)	_blocktx((cr),(dest),1,(n)*(sizeof(*dta)),dta)
+#define nblockrx(cr,src,n,dta)	_blockrx((cr),(src),1,(n)*(sizeof(*dta)),(dta))
 
-extern void mv_block(int dest,t_block *block);
-extern void ld_block(int src,t_block *block);
+extern void mv_block(const t_commrec *cr,int dest,t_block *block);
+extern void ld_block(const t_commrec *cr,int src,t_block *block);
 /* Send and receive an t_block type */

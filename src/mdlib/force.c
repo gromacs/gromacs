@@ -1220,7 +1220,7 @@ void ns(FILE *fp,
 void force(FILE       *fplog,   int        step,
 	   t_forcerec *fr,      t_inputrec *ir,
 	   t_idef     *idef,    t_nsborder *nsb,
-	   t_commrec  *cr,      t_commrec *mcr,
+	   t_commrec  *cr,
 	   t_nrnb     *nrnb,
 	   t_groups   *grps,    t_mdatoms  *md,
 	   int        ngener,   t_grpopts  *opts,
@@ -1414,7 +1414,7 @@ void force(FILE       *fplog,   int        step,
   
   if (!bNBFonly) {
     GMX_MPE_LOG(ev_calc_bonds_start);
-    calc_bonds(fplog,cr,mcr,
+    calc_bonds(fplog,cr->ms,
 	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    

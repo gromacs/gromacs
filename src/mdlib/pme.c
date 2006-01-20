@@ -440,7 +440,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
     MPI_Sendrecv(from,bndsize,mpi_type,
                cr->left,cr->nodeid,
                tmp,bndsize,mpi_type,cr->right,cr->right,
-               MPI_COMM_WORLD,&stat);
+               cr->mpi_comm_mysim,&stat);
     GMX_MPE_LOG(ev_test_start); 
     for(i=0; (i<bndsize); i++) {
       to[i] += tmp[i];
@@ -454,7 +454,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
     MPI_Sendrecv(from,bndsize,mpi_type,
                cr->right,cr->nodeid,
                tmp,bndsize,mpi_type,cr->left,cr->left,
-               MPI_COMM_WORLD,&stat); 
+               cr->mpi_comm_mysim,&stat); 
     GMX_MPE_LOG(ev_test_start);
     for(i=0; (i<bndsize); i++) {
       to[i] += tmp[i];
@@ -473,7 +473,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
     MPI_Sendrecv(from,bndsize,mpi_type,
                cr->left,cr->nodeid,
                to,bndsize,mpi_type,cr->right,cr->right,
-               MPI_COMM_WORLD,&stat);
+               cr->mpi_comm_mysim,&stat);
 /* Send right boundary */
     bndsize = pme->leftbnd*ny*la2r;
     from = grid->ptr + (cr->nodeid - nodeshift + 1)*localsize - bndsize;
@@ -481,7 +481,7 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
     MPI_Sendrecv(from,bndsize,mpi_type,
                cr->right,cr->nodeid,
                to,bndsize,mpi_type,cr->left,cr->left,
-               MPI_COMM_WORLD,&stat);
+               cr->mpi_comm_mysim,&stat);
   }
   else
     gmx_fatal(FARGS,"Invalid direction %d for summing qgrid",direction);
@@ -1142,7 +1142,7 @@ void gmx_pme_send_x(t_nsborder *nsb, rvec x[],
  *            nsb->nodeid,receiver,firstindex,lastindex,x[firstindex][0],x[firstindex][1],x[firstindex][2]);
  */
       if (MPI_Isend(&x[firstindex][0],(lastindex-firstindex+1)*DIM,
-                    GMX_MPI_REAL,receiver,bLastTime,MPI_COMM_WORLD,&req[nsend]) !=0 )
+                    GMX_MPI_REAL,receiver,bLastTime,cr->mpi_comm_mysim,&req[nsend]) !=0 )
         gmx_comm("MPI_Isend failed in send_coordinates");
       nsend++;
       
@@ -1150,10 +1150,10 @@ void gmx_pme_send_x(t_nsborder *nsb, rvec x[],
                    * (this can be done using blocking sends) */
       {
         MPI_Send(&chargeA[firstindex],(lastindex-firstindex+1),
-	         GMX_MPI_REAL,receiver,bLastTime,MPI_COMM_WORLD);
+	         GMX_MPI_REAL,receiver,bLastTime,cr->mpi_comm_mysim);
         if (bFreeEnergy) 
           MPI_Send(&chargeB[firstindex],(lastindex-firstindex+1),
-	           GMX_MPI_REAL,receiver,bLastTime,MPI_COMM_WORLD);
+	           GMX_MPI_REAL,receiver,bLastTime,cr->mpi_comm_mysim);
       }
     }
   }
@@ -1207,7 +1207,7 @@ void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
   if (TAKETIME)
   {
     t0=MPI_Wtime();
-    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Barrier(cr->mpi_comm_mysim);
     t1=MPI_Wtime();
     t_receive_f += t1-t0;
     tstep_sum   += t3;
@@ -1228,7 +1228,7 @@ void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
     if (lastindex >= firstindex)
     {
       if (MPI_Irecv(f_rec[firstindex-START(nsb)],(lastindex-firstindex+1)*DIM,
-                    GMX_MPI_REAL,sender,0,MPI_COMM_WORLD,&req[nrecv]) != 0)
+                    GMX_MPI_REAL,sender,0,cr->mpi_comm_mysim,&req[nrecv]) != 0)
         gmx_comm("MPI_Irecv failed in receive_lrforces");
       nrecv++;
 /*      fprintf(stderr,"   RECEIVE F: Node %d from node %d (Indices %d to %d) - %12.4e %12.4e %12.4e\n",
@@ -1252,14 +1252,14 @@ void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
      * (The tag of the energy message is used to transport a
      * TERM/USR1 signal if necessary)
      */
-    MPI_Recv(energy,1,GMX_MPI_REAL,sender,MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+    MPI_Recv(energy,1,GMX_MPI_REAL,sender,MPI_ANY_TAG,cr->mpi_comm_mysim,&status);
     if (status.MPI_TAG == 1)
       bGotTermSignal=TRUE;
     else if (status.MPI_TAG == 2)
       bGotUsr1Signal=TRUE;
 	                
     /* receive virial buffer */
-    MPI_Recv(&vbuf,DIM*DIM,GMX_MPI_REAL,sender,2,MPI_COMM_WORLD,&status);
+    MPI_Recv(&vbuf,DIM*DIM,GMX_MPI_REAL,sender,2,cr->mpi_comm_mysim,&status);
 
     /* add receive buffer to vir variable */
     elements=0;
@@ -1366,7 +1366,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
       {
         if (MPI_Irecv(&xpme[firstindex-nsb->pmeindex[ME]][0],
 	              (lastindex-firstindex+1)*DIM,GMX_MPI_REAL,sender,
-                      MPI_ANY_TAG,MPI_COMM_WORLD,&req[messages]) != 0)
+                      MPI_ANY_TAG,cr->mpi_comm_mysim,&req[messages]) != 0)
           gmx_comm("MPI_Irecv failed in do_pmeonly");
         messages++;
 		       
@@ -1374,11 +1374,11 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
 	{
           MPI_Recv(&chargeA[firstindex-nsb->pmeindex[ME]],
 	           (lastindex-firstindex+1),GMX_MPI_REAL,sender,
-                   MPI_ANY_TAG,MPI_COMM_WORLD,&status);
+                   MPI_ANY_TAG,cr->mpi_comm_mysim,&status);
           if (pme->bFEP)
             MPI_Recv(&chargeB[firstindex-nsb->pmeindex[ME]],
 	             (lastindex-firstindex+1),GMX_MPI_REAL,sender,
-                     MPI_ANY_TAG,MPI_COMM_WORLD,&status);		      
+                     MPI_ANY_TAG,cr->mpi_comm_mysim,&status);		      
         }
 /*        fprintf(stderr, "    RECEIVE: Node %d from node %d (Indices %d to %d) - %f %f %f\n",
  *                ME,sender,firstindex,lastindex,xpme[firstindex-nsb->pmeindex[ME]][0],
@@ -1544,7 +1544,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
     if TAKETIME
     {
       t0=MPI_Wtime();
-      MPI_Barrier(MPI_COMM_WORLD);
+      MPI_Barrier(cr->mpi_comm_mysim);
       t1=MPI_Wtime();
       t_send_f += t1-t0;
       tstep_sum   += t3;
@@ -1573,7 +1573,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
  */
 	if (MPI_Isend(&fpme[firstindex-nsb->pmeindex[ME]][0],
 	              (lastindex-firstindex+1)*DIM,GMX_MPI_REAL,
-		      receiver,0,MPI_COMM_WORLD,&req[messages]) != 0)
+		      receiver,0,cr->mpi_comm_mysim,&req[messages]) != 0)
 	  gmx_comm("MPI_Isend failed in do_pmeonly");
         messages++;
       }
@@ -1604,7 +1604,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
     else
       tag = 0;
  
-    MPI_Send(&energy,1,GMX_MPI_REAL,receiver,tag,MPI_COMM_WORLD); 
+    MPI_Send(&energy,1,GMX_MPI_REAL,receiver,tag,cr->mpi_comm_mysim); 
 
     /* for virial first fill send buffer with matrix values */
     elements=0;
@@ -1616,7 +1616,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
 	}
 	
     /* send virial buffer */
-    MPI_Send(&vbuf,elements,GMX_MPI_REAL,receiver,2,MPI_COMM_WORLD);	
+    MPI_Send(&vbuf,elements,GMX_MPI_REAL,receiver,2,cr->mpi_comm_mysim);	
 
     count++;
 
@@ -1638,7 +1638,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
       /* I receive in case I am the first PME node */
       receiver = sender+1;
       if (nsb->nodeid == receiver)
-        MPI_Recv(&vbuf,DIM*DIM,GMX_MPI_REAL,sender,0,MPI_COMM_WORLD,&status);
+        MPI_Recv(&vbuf,DIM*DIM,GMX_MPI_REAL,sender,0,cr->mpi_comm_mysim,&status);
       /* Broadcast box to all other nodes in the PME group */
       /* attention: receiver has rank=0 in PME group mpi_comm_mygroup! */
       MPI_Bcast(&vbuf, DIM*DIM, GMX_MPI_REAL, 0, cr->mpi_comm_mygroup);
@@ -1653,7 +1653,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
     }
     /* Keep track of time step */
     step++;
-    MPI_Barrier(MPI_COMM_WORLD); /* 100 */
+    MPI_Barrier(cr->mpi_comm_mysim); /* 100 */
   } /***** end of quasi-loop */
   while (!bDone);
 
@@ -1753,7 +1753,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
 		    pme->nkx,pme->nnx,pidx,gidx);
       where();
 
-      GMX_BARRIER(MPI_COMM_WORLD);
+      GMX_BARRIER(cr->mpi_comm_mysim);
       pmeredist(cr, TRUE, HOMENR(nsb), x+START(nsb), homecharge, gidx, 
 		&pme->my_homenr, x_tmp, q_tmp);
       where();
@@ -1778,7 +1778,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       
       /* sum contributions to local grid from other nodes */
       if (pme->bPar) {
-        GMX_BARRIER(MPI_COMM_WORLD);
+        GMX_BARRIER(cr->mpi_comm_mysim);
 	gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_FORWARD);
 	where();
       }
@@ -1789,7 +1789,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       where();
 
       /* do 3d-fft */ 
-      GMX_BARRIER(MPI_COMM_WORLD);
+      GMX_BARRIER(cr->mpi_comm_mysim);
       GMX_MPE_LOG(ev_gmxfft3d_start);
       gmxfft3D(grid,GMX_FFT_REAL_TO_COMPLEX,cr);
       GMX_MPE_LOG(ev_gmxfft3d_finish);
@@ -1798,7 +1798,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
 
       /* solve in k-space for our local cells */
       vol = det(box);
-      GMX_BARRIER(MPI_COMM_WORLD);
+      GMX_BARRIER(cr->mpi_comm_mysim);
       GMX_MPE_LOG(ev_solve_pme_start);
       energy_AB[q]=solve_pme(pme,grid,ewaldcoeff,vol,vir_AB[q],cr);
       where();
@@ -1806,7 +1806,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       inc_nrnb(nrnb,eNR_SOLVEPME,nx*ny*nz*0.5);
 
       /* do 3d-invfft */
-      GMX_BARRIER(MPI_COMM_WORLD);
+      GMX_BARRIER(cr->mpi_comm_mysim);
       GMX_MPE_LOG(ev_gmxfft3d_start);
       where();
       gmxfft3D(grid,GMX_FFT_COMPLEX_TO_REAL,cr);
@@ -1815,7 +1815,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       
       /* distribute local grid to all nodes */
       if (pme->bPar) {
-        GMX_BARRIER(MPI_COMM_WORLD);
+        GMX_BARRIER(cr->mpi_comm_mysim);
 	gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_BACKWARD);
       }
       where();
@@ -1832,7 +1832,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       where();
     }
     /* interpolate forces for our local atoms */
-    GMX_BARRIER(MPI_COMM_WORLD);
+    GMX_BARRIER(cr->mpi_comm_mysim);
     GMX_MPE_LOG(ev_gather_f_bsplines_start);
     
     if (pme->bPar) {
@@ -1850,7 +1850,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     GMX_MPE_LOG(ev_gather_f_bsplines_finish);
     
     if (pme->bPar) {
-      GMX_BARRIER(MPI_COMM_WORLD);
+      GMX_BARRIER(cr->mpi_comm_mysim);
       pmeredist(cr, FALSE,HOMENR(nsb), f+START(nsb), homecharge, gidx, 
 		&pme->my_homenr, f_tmp, q_tmp);
     }

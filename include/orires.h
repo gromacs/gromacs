@@ -51,10 +51,10 @@ extern "C" {
 extern void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
 			const t_iparams ip[],
 			rvec x[],const t_mdatoms *md,const t_inputrec *ir,
-			const t_commrec *mcr,t_oriresdata *od);
+			const gmx_multisim_t *ms,t_oriresdata *od);
 /* Initializes all the orientation restraint stuff in *od */
 
-extern real calc_orires_dev(const t_commrec *mcr,
+extern real calc_orires_dev(const gmx_multisim_t *ms,
 			    int nfa,const t_iatom fa[],const t_iparams ip[],
 			    const t_mdatoms *md,const rvec x[],
 			    const t_pbc *pbc,t_fcdata *fcd);

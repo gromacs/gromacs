@@ -47,9 +47,11 @@
 #include "macros.h"
 #include "vec.h"
 #include "names.h"
+#include "mvdata.h"
+#include "domdec.h"
 
 gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
-				     const t_commrec *mcr,
+				     const gmx_multisim_t *ms,
 				     const t_state *state,
 				     const t_inputrec *ir,
 				     int nst,int init_seed)
@@ -65,8 +67,8 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
     please_cite(fplog,"Okabe2001a");
   }
 
-  if (mcr == NULL || mcr->nnodes == 1)
-    gmx_fatal(FARGS,"Nothing to exchange with only one replica");
+  if (ms == NULL || ms->nsim == 1)
+    gmx_fatal(FARGS,"Nothing to exchange with only one replica, maybe you forgot to set the -multi option of mdrun?");
 
   temp = ir->opts.ref_t[0];
   for(i=1; (i<ir->opts.ngtc); i++) {
@@ -76,27 +78,26 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
     }
   }
   
-  check_multi_int(fplog,mcr,state->natoms,"the number of atoms");
-  check_multi_int(fplog,mcr,ir->eI,"the integrator");
-  check_multi_int(fplog,mcr,ir->nsteps,"nsteps");
-  check_multi_int(fplog,mcr,ir->init_step,"init_step");
-  check_multi_int(fplog,mcr,ir->etc,"the temperature coupling");
-  check_multi_int(fplog,mcr,ir->opts.ngtc,
+  check_multi_int(fplog,ms,state->natoms,"the number of atoms");
+  check_multi_int(fplog,ms,ir->eI,"the integrator");
+  check_multi_int(fplog,ms,ir->nsteps,"nsteps");
+  check_multi_int(fplog,ms,ir->init_step,"init_step");
+  check_multi_int(fplog,ms,ir->etc,"the temperature coupling");
+  check_multi_int(fplog,ms,ir->opts.ngtc,
 		  "the number of temperature coupling groups");
-  check_multi_int(fplog,mcr,ir->epc,"the pressure coupling");
-  
+  check_multi_int(fplog,ms,ir->epc,"the pressure coupling");
 
   snew(re,1);
 
-  re->repl     = mcr->nodeid;
-  re->nrepl    = mcr->nnodes;
+  re->repl     = ms->sim;
+  re->nrepl    = ms->nsim;
   re->bNPT     = (ir->epc != epcNO);
   
   fprintf(fplog,"Repl  There are %d replicas:\n",re->nrepl);
 
   snew(re->temp,re->nrepl);
   re->temp[re->repl] = temp;
-  gmx_sum(re->nrepl,re->temp,mcr);
+  gmx_sum_sim(re->nrepl,re->temp,ms);
   if (re->bNPT) {
     snew(re->pres,re->nrepl);
     if (ir->epct == epctSURFACETENSION) {
@@ -112,7 +113,7 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
       pres /= j;
     }
     re->pres[re->repl] = pres;
-    gmx_sum(re->nrepl,re->pres,mcr);  }
+    gmx_sum_sim(re->nrepl,re->pres,ms);  }
   snew(re->ind,re->nrepl);
   /* Make an index for increasing temperature order */
   for(i=0; i<re->nrepl; i++)
@@ -145,11 +146,11 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   
   re->nst = nst;
   if (init_seed == -1) {
-    if (MASTER(mcr))
+    if (MASTERSIM(ms))
       re->seed = make_seed();
     else
       re->seed = 0;
-    gmx_sumi(1,&(re->seed),mcr);
+    gmx_sumi_sim(1,&(re->seed),ms);
   } else {
     re->seed = init_seed;
   }
@@ -166,56 +167,74 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   return re;
 }
 
-static void exchange_reals(const t_commrec *mcr,int a,int b,real *v,int n)
+static void exchange_reals(const gmx_multisim_t *ms,int b,real *v,int n)
 {
   real *buf;
   int  i;
-  
+
   if (v) {
-    if (mcr->nodeid == a) {
-      snew(buf,n);
-      gmx_rxs(b,buf,n*sizeof(real));
-      gmx_txs(b,v,n*sizeof(real));
-      for(i=0; i<n; i++)
-	v[i] = buf[i];
-      sfree(buf);
-    } else if (mcr->nodeid == b) {
-      gmx_txs(a,v,n*sizeof(real));
-      gmx_rxs(a,v,n*sizeof(real));
+    snew(buf,n);
+#ifdef GMX_MPI
+    /*
+    MPI_Sendrecv(v,  n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
+		 buf,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
+		 ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+    */
+    {
+      MPI_Request mpi_req;
+
+      MPI_Isend(v,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
+		ms->mpi_comm_masters,&mpi_req);
+      MPI_Recv(buf,n*sizeof(real),MPI_BYTE,MSRANK(ms,b),0,
+	       ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+      MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
     }
+#endif
+    for(i=0; i<n; i++)
+      v[i] = buf[i];
+    sfree(buf);
   }
 }
 
-static void exchange_rvecs(const t_commrec *mcr,int a,int b,rvec *v,int n)
+static void exchange_rvecs(const gmx_multisim_t *ms,int b,rvec *v,int n)
 {
   rvec *buf;
   int  i;
   
   if (v) {
-    if (mcr->nodeid == a) {
-      snew(buf,n);
-      gmx_rxs(b,buf[0],n*sizeof(rvec));
-      gmx_txs(b,v[0],n*sizeof(rvec));
-      for(i=0; i<n; i++)
-	copy_rvec(buf[i],v[i]);
-      sfree(buf);
-    } else if (mcr->nodeid == b) {
-      gmx_txs(a,v[0],n*sizeof(rvec));
-      gmx_rxs(a,v[0],n*sizeof(rvec));
+    snew(buf,n);
+#ifdef GMX_MPI
+    /*
+    MPI_Sendrecv(v[0],  n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
+		 buf[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
+		 ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+    */
+    {
+      MPI_Request mpi_req;
+
+      MPI_Isend(v[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
+		ms->mpi_comm_masters,&mpi_req);
+      MPI_Recv(buf[0],n*sizeof(rvec),MPI_BYTE,MSRANK(ms,b),0,
+	       ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+      MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
     }
+#endif
+    for(i=0; i<n; i++)
+      copy_rvec(buf[i],v[i]);
+    sfree(buf);
   }
 }
 
-static void exchange_state(const t_commrec *mcr,int a,int b,t_state *state)
+static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
 {
   /* When t_state changes, this code should be updated. */
-  exchange_rvecs(mcr,a,b,state->box,DIM);
-  exchange_rvecs(mcr,a,b,state->boxv,DIM);
-  exchange_rvecs(mcr,a,b,state->pcoupl_mu,DIM);
-  exchange_reals(mcr,a,b,state->nosehoover_xi,state->ngtc);
-  exchange_rvecs(mcr,a,b,state->x,state->natoms);
-  exchange_rvecs(mcr,a,b,state->v,state->natoms);
-  exchange_rvecs(mcr,a,b,state->sd_X,state->natoms);
+  exchange_rvecs(ms,b,state->box,DIM);
+  exchange_rvecs(ms,b,state->boxv,DIM);
+  exchange_rvecs(ms,b,state->pcoupl_mu,DIM);
+  exchange_reals(ms,b,state->nosehoover_xi,state->ngtc);
+  exchange_rvecs(ms,b,state->x,state->natoms);
+  exchange_rvecs(ms,b,state->v,state->natoms);
+  exchange_rvecs(ms,b,state->sd_X,state->natoms);
 }
 
 static void scale_velocities(t_state *state,real fac)
@@ -225,6 +244,74 @@ static void scale_velocities(t_state *state,real fac)
   if (state->v)
     for(i=0; i<state->natoms; i++)
       svmul(fac,state->v[i],state->v[i]);
+}
+
+static void broadcast_reals(const t_commrec *cr,int n,real *v)
+{
+#ifdef GMX_MPI
+  if (v)
+    MPI_Bcast(v,n*sizeof(real),MPI_BYTE,MASTERRANK(cr),
+	      cr->mpi_comm_mysim);
+#endif
+}
+
+static void broadcast_rvecs(const t_commrec *cr,int n,rvec *v)
+{
+#ifdef GMX_MPI
+  if (v)
+    MPI_Bcast(v[0],n*sizeof(rvec),MPI_BYTE,MASTERRANK(cr),
+	      cr->mpi_comm_mysim);
+#endif
+}
+
+static void broadcast_matrix(const t_commrec *cr,matrix m)
+{
+#ifdef GMX_MPI
+  MPI_Bcast(m[0],sizeof(matrix),MPI_BYTE,MASTERRANK(cr),
+	    cr->mpi_comm_mysim);
+#endif
+}
+
+static void pd_collect_state(const t_commrec *cr,t_nsborder *nsb,
+			     t_state *state)
+{
+  int shift;
+  
+  if (debug)
+    fprintf(debug,"Collecting state before exchange\n");
+  
+  shift = nsb->nnodes - nsb->npmenodes - 1;
+  move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,
+	     state->x,NULL,shift,nsb,NULL);
+  if (state->v)
+    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,
+	       state->v,NULL,shift,nsb,NULL);
+  if (state->sd_X)
+    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,
+	       state->sd_X,NULL,shift,nsb,NULL);
+}
+
+void pd_distribute_state(const t_commrec *cr,t_state *state)
+{
+  /* This code does seem to distribute the state,
+     but also seems to cause memory problems,
+     as after move_cgcm the cg's on the non-master nodes are corrupted
+  if (MASTER(cr))
+    mv_state(cr,cr->right,state);
+  else
+    ld_state(cr,cr->left,state);
+  if (cr->nodeid != cr->nnodes-1)
+    mv_state(cr,cr->right,state);
+  */
+
+  /* All array dimensions are already known on all nodes */
+  broadcast_matrix(cr,state->box);
+  broadcast_matrix(cr,state->box);
+  broadcast_matrix(cr,state->pcoupl_mu);
+  broadcast_reals(cr,state->ngtc,state->nosehoover_xi);
+  broadcast_rvecs(cr,state->natoms,state->x);
+  broadcast_rvecs(cr,state->natoms,state->v);
+  broadcast_rvecs(cr,state->natoms,state->sd_X);
 }
 
 static void print_ind(FILE *fplog,char *leg,int n,int *ind,bool *bEx)
@@ -266,25 +353,28 @@ static void print_count(FILE *fplog,char *leg,int n,int *count)
   fprintf(fplog,"\n");
 }
 
-bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
-		      t_state *state,real epot,int step,real time)
+static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
+				gmx_repl_ex_t *re,real epot,real vol,
+				int step,real time)
 {
   int  m,i,a,b;
   real *Epot,*prob,ediff,delta,dpV,*Vol,betaA,betaB;
-  bool *bEx,bExchanged,bPrint;
+  bool *bEx,bPrint;
+  int  exchange;
 
   fprintf(fplog,"Replica exchange at step %d time %g\n",step,time);
+  
   snew(Epot,re->nrepl);
   snew(Vol,re->nrepl);
   Epot[re->repl] = epot;
-  Vol[re->repl]  = det(state->box);
-  gmx_sum(re->nrepl,Epot,mcr);
-  gmx_sum(re->nrepl,Vol,mcr);
+  Vol[re->repl]  = vol;
+  gmx_sum_sim(re->nrepl,Epot,ms);
+  gmx_sum_sim(re->nrepl,Vol,ms);
 
   snew(bEx,re->nrepl);
   snew(prob,re->nrepl);
 
-  bExchanged = FALSE;
+  exchange = -1;
   m = (step / re->nst) % 2;
   for(i=1; i<re->nrepl; i++) {
     a = re->ind[i-1];
@@ -320,13 +410,10 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
       }
       re->prob_sum[i] += prob[i];    
       if (bEx[i]) {
-	exchange_state(mcr,a,b,state);
 	if (a == re->repl) {
-	  scale_velocities(state,sqrt(re->temp[a]/re->temp[b]));
-	  bExchanged = TRUE;
+	  exchange = b;
 	} else if (b == re->repl) {
-	  scale_velocities(state,sqrt(re->temp[b]/re->temp[a]));
-	  bExchanged = TRUE;
+	  exchange = a;
 	}
 	re->nexchange[i]++;
       }
@@ -346,6 +433,58 @@ bool replica_exchange(FILE *fplog,const t_commrec *mcr,gmx_repl_ex_t *re,
   
   re->nattempt[m]++;
 
+  return exchange;
+}
+
+static void write_debug_x(t_state *state)
+{
+  int i;
+
+  if (debug) {
+    for(i=0; i<state->natoms; i+=10)
+      fprintf(debug,"dx %5d %10.5f %10.5f %10.5f\n",i,state->x[i][XX],state->x[i][YY],state->x[i][ZZ]);
+  }
+}
+
+bool replica_exchange(FILE *fplog,const t_commrec *cr,gmx_repl_ex_t *re,
+		      t_state *state,real epot,t_nsborder *nsb,
+		      t_block *cgs,t_state *state_local,
+		      int step,real time)
+{
+  gmx_multisim_t *ms;
+  int  exchange=-1,shift;
+  bool bExchanged;
+
+  ms = cr->ms;
+
+  if (MASTER(cr)) {
+    exchange = get_replica_exchange(fplog,ms,re,epot,det(state->box),
+				    step,time);
+    bExchanged = (exchange >= 0);
+  }
+      
+  if (PAR(cr)) {
+#ifdef GMX_MPI
+    MPI_Bcast(&bExchanged,sizeof(bool),MPI_BYTE,MASTERRANK(cr),
+	      cr->mpi_comm_mysim);
+#endif
+  }
+  
+  if (bExchanged) {
+    if (PAR(cr)) {
+      if (DOMAINDECOMP(cr))
+	dd_collect_state(cr->dd,cgs,state_local,state);
+      else
+	pd_collect_state(cr,nsb,state);
+    }
+    if (MASTER(cr)) {
+      if (debug)
+	fprintf(debug,"Exchanging %d with %d\n",ms->sim,exchange);
+      exchange_state(ms,exchange,state);
+      scale_velocities(state,sqrt(re->temp[ms->sim]/re->temp[exchange]));
+    }
+  }
+  
   return bExchanged;
 }
 

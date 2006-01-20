@@ -56,7 +56,6 @@
 #include "vsite.h"
 #include "pull.h"
 
-#define MD_MULTISIM  (1<<0)
 #define MD_GLAS      (1<<1)
 #define MD_POLARISE  (1<<2)
 #define MD_IONIZE    (1<<3)
@@ -65,7 +64,7 @@
 #define MD_SEPDVDL   (1<<7)
 
 /* ROUTINES from md.c */
-extern time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,
+extern time_t do_md(FILE *log,t_commrec *cr,
 		    int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,
 		    ivec ddxyz,
@@ -87,7 +86,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
-		       t_commrec *cr,t_commrec *mcr,
+		       t_commrec *cr,
 		       t_graph *graph,t_forcerec *fr);
 /* Do steepest descents EM or something like that! */
 
@@ -97,7 +96,7 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		    bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
-		    t_commrec *cr,t_commrec *mcr,
+		    t_commrec *cr,
 		    t_graph *graph,t_forcerec *fr);
 /* Do conjugate gradients EM! */
 
@@ -107,7 +106,7 @@ extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       real ener[],t_fcdata *fcd,t_nrnb nrnb[],
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
-		       t_commrec *cr,t_commrec *mcr,
+		       t_commrec *cr,
 		       t_graph *graph,t_forcerec *fr);
 /* Do conjugate gradients EM! */
 
@@ -129,7 +128,7 @@ extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[],
 		     t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
 		     real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
 		     bool bVerbose,
-		     t_commrec *cr,t_commrec *mcr,t_graph *graph,
+		     t_commrec *cr,t_graph *graph,
 		     t_forcerec *fr);
 /* Do test particle insertion */
 
@@ -183,7 +182,7 @@ extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
-extern void do_force(FILE *log,t_commrec *cr,t_commrec *mcr,
+extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,t_nsborder *nsb,
 		     int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
@@ -292,7 +291,7 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
  * based on their coordinates in the "dimension" direction.
  */
 				   
-extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
+extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
 		     ivec ddxyz,int nDlb,int nstepout,
 		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,

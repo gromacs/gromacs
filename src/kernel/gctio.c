@@ -75,32 +75,32 @@ static int Name2eo(char *s)
 
 static const char *NoYes[] = { "No", "Yes" };
 	
-static void send_tcr(int dest,t_coupl_rec *tcr)
+static void send_tcr(t_commrec *cr,int dest,t_coupl_rec *tcr)
 {
-  nblocktx(dest,eoObsNR,tcr->ref_value);
-  blocktx(dest,tcr->nLJ);
-  nblocktx(dest,tcr->nLJ,tcr->tcLJ);
-  blocktx(dest,tcr->nBU);
-  nblocktx(dest,tcr->nBU,tcr->tcBU);
-  blocktx(dest,tcr->nQ);
-  nblocktx(dest,tcr->nQ,tcr->tcQ);
+  nblocktx(cr,dest,eoObsNR,tcr->ref_value);
+  blocktx(cr,dest,tcr->nLJ);
+  nblocktx(cr,dest,tcr->nLJ,tcr->tcLJ);
+  blocktx(cr,dest,tcr->nBU);
+  nblocktx(cr,dest,tcr->nBU,tcr->tcBU);
+  blocktx(cr,dest,tcr->nQ);
+  nblocktx(cr,dest,tcr->nQ,tcr->tcQ);
 }
 
-static void rec_tcr(int src,t_coupl_rec *tcr)
+static void rec_tcr(t_commrec *cr,int src,t_coupl_rec *tcr)
 {
-  nblockrx(src,eoObsNR,tcr->ref_value);
+  nblockrx(cr,src,eoObsNR,tcr->ref_value);
   
-  blockrx(src,tcr->nLJ);
+  blockrx(cr,src,tcr->nLJ);
   snew(tcr->tcLJ,tcr->nLJ);
-  nblockrx(src,tcr->nLJ,tcr->tcLJ);
+  nblockrx(cr,src,tcr->nLJ,tcr->tcLJ);
   
-  blockrx(src,tcr->nBU);
+  blockrx(cr,src,tcr->nBU);
   snew(tcr->tcBU,tcr->nBU);
-  nblockrx(src,tcr->nBU,tcr->tcBU);
+  nblockrx(cr,src,tcr->nBU,tcr->tcBU);
   
-  blockrx(src,tcr->nQ);
+  blockrx(cr,src,tcr->nQ);
   snew(tcr->tcQ,tcr->nQ);
-  nblockrx(src,tcr->nQ,tcr->tcQ);
+  nblockrx(cr,src,tcr->nQ,tcr->tcQ);
 }
 
 void comm_tcr(FILE *log,t_commrec *cr,t_coupl_rec **tcr)
@@ -108,13 +108,13 @@ void comm_tcr(FILE *log,t_commrec *cr,t_coupl_rec **tcr)
   t_coupl_rec shit;
 
   if (MASTER(cr)) { 
-    send_tcr(cr->left,*tcr);
-    rec_tcr(cr->right,&shit);
+    send_tcr(cr,cr->left,*tcr);
+    rec_tcr(cr,cr->right,&shit);
   }
   else {
     snew(*tcr,1);
-    rec_tcr(cr->right,*tcr);
-    send_tcr(cr->left,*tcr);
+    rec_tcr(cr,cr->right,*tcr);
+    send_tcr(cr,cr->left,*tcr);
   }
 } 
 

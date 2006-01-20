@@ -64,7 +64,8 @@
 FILE *stdlog=NULL;
 int  gmx_parallel_env=0;
 
-static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
+static int get_nodeid(FILE *log,t_commrec *cr,
+		      int left,int right,int *nodeid,int *nnodes)
      /*
       * The ring of nodes is only defined by the interconnection
       * via the supplied communication channels (left and right). Thus
@@ -92,8 +93,8 @@ static int get_nodeid(FILE *log,int left,int right,int *nodeid,int *nnodes)
 #ifdef DEBUGPAR
     fprintf(log,"Sending: %d\n",send_nodeid);
 #endif
-    gmx_tx(left,&send_nodeid,sizeof(send_nodeid));
-    gmx_rx(right,&receive_nodeid,sizeof(receive_nodeid));
+    gmx_tx(cr,left,&send_nodeid,sizeof(send_nodeid));
+    gmx_rx(cr,right,&receive_nodeid,sizeof(receive_nodeid));
     gmx_tx_wait(left);
     gmx_rx_wait(right);
 #ifdef DEBUGPAR
@@ -144,37 +145,43 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
   buf[strlen(base) - strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
 
   /* Add node info */
-  if (PAR(cr)) 
+  if (MULTISIM(cr)) {
+    sprintf(buf+strlen(buf),"%d",cr->ms->sim);
+  } else if (PAR(cr)) {
     sprintf(buf+strlen(buf),"%d",cr->nodeid);
+  }
   strcat(buf,".");
   
   /* Add extension again */
   strcat(buf,(ftp == efTPX) ? "tpr" : (ftp == efENX) ? "edr" : ftp2ext(ftp));
 }
 
-void check_multi_int(FILE *log,const t_commrec *mcr,int val,char *name)
+void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,char *name)
 {
   int  *ibuf,p;
   bool bCompatible;
 
   fprintf(log,"Multi-checking %s ... ",name);
   
-  snew(ibuf,mcr->nnodes);
-  ibuf[mcr->nodeid] = val;
-  if((mcr) && PAR(mcr))
-    gmx_sumi(mcr->nnodes,ibuf,mcr);
+  if (ms == NULL)
+    gmx_fatal(FARGS,
+	      "check_multi_int called with a NULL communication pointer");
+
+  snew(ibuf,ms->nsim);
+  ibuf[ms->sim] = val;
+  gmx_sumi_sim(ms->nsim,ibuf,ms);
   
   bCompatible = TRUE;
-  for(p=1; p<mcr->nnodes; p++)
+  for(p=1; p<ms->nsim; p++)
     bCompatible = bCompatible && (ibuf[p-1] == ibuf[p]);
   
   if (bCompatible) 
     fprintf(log,"OK\n");
   else {
     fprintf(log,"\n%s is not equal for all subsystems\n",name);
-    for(p=0; p<mcr->nnodes; p++)
+    for(p=0; p<ms->nsim; p++)
       fprintf(log,"  subsystem %d: %d\n",p,ibuf[p]);
-    gmx_fatal(FARGS,"The %d subsystems are not compatible\n",mcr->nnodes);
+    gmx_fatal(FARGS,"The %d subsystems are not compatible\n",ms->nsim);
   }
   
   sfree(ibuf);
@@ -192,25 +199,25 @@ void open_log(char *lognm,const t_commrec *cr)
   if (cr->nnodes > 1) {
     if (MASTER(cr)) {
       len = strlen(lognm)+1;
-      gmx_txs(cr->right,&len,sizeof(len));
-      gmx_rxs(cr->left,&testlen,sizeof(testlen));
+      gmx_txs(cr,cr->right,&len,sizeof(len));
+      gmx_rxs(cr,cr->left,&testlen,sizeof(testlen));
       
       debug_gmx();
       
-      gmx_txs(cr->right,lognm,len);
-      gmx_rxs(cr->left,lognm,len);
+      gmx_txs(cr,cr->right,lognm,len);
+      gmx_rxs(cr,cr->left,lognm,len);
       if (len != testlen)
 	gmx_comm("Communication error on NODE 0!");
       
     }
     else {
-      gmx_rxs(cr->left,&len,sizeof(len));
+      gmx_rxs(cr,cr->left,&len,sizeof(len));
       debug_gmx();
       
-      gmx_txs(cr->right,&len,sizeof(len));
+      gmx_txs(cr,cr->right,&len,sizeof(len));
       snew(lognm,len+8);
-      gmx_rxs(cr->left,lognm,len);
-      gmx_txs(cr->right,lognm,len);
+      gmx_rxs(cr,cr->left,lognm,len);
+      gmx_txs(cr,cr->right,lognm,len);
     }
   }
   
@@ -268,21 +275,21 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
   for(i=0; (i<*argc); i++) {
     if (MASTER(cr)) {
       len = strlen((*argv)[i])+1;
-      gmx_txs(cr->right,&len,sizeof(len));
-      gmx_rxs(cr->left,&len,sizeof(len));
-      gmx_txs(cr->right,(*argv)[i],len);
+      gmx_txs(cr,cr->right,&len,sizeof(len));
+      gmx_rxs(cr,cr->left,&len,sizeof(len));
+      gmx_txs(cr,cr->right,(*argv)[i],len);
       snew(buf,len);
-      gmx_rxs(cr->left,buf,len);
+      gmx_rxs(cr,cr->left,buf,len);
       if (strcmp(buf,(*argv)[i]) != 0)
 	gmx_fatal(FARGS,"Communicating argv[%d]=%s\n",i,(*argv)[i]);
       sfree(buf);
     }
     else {
-      gmx_rxs(cr->left,&len,sizeof(len));
-      gmx_txs(cr->right,&len,sizeof(len));
+      gmx_rxs(cr,cr->left,&len,sizeof(len));
+      gmx_txs(cr,cr->right,&len,sizeof(len));
       snew(argv_tmp[i],len);
-      gmx_rxs(cr->left,argv_tmp[i],len);
-      gmx_txs(cr->right,argv_tmp[i],len);
+      gmx_rxs(cr,cr->left,argv_tmp[i],len);
+      gmx_txs(cr,cr->right,argv_tmp[i],len);
     }
   }
   if (!MASTER(cr)) {
@@ -291,22 +298,59 @@ static void comm_args(const t_commrec *cr,int *argc,char ***argv)
   }
   debug_gmx();
 }
-
-t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[],bool bParFn)
+void init_multisystem(t_commrec *cr,int nsim,
+		      int nfile,t_filenm fnm[],bool bParFn)
 {
-  t_commrec *mcr;
-  int  i,ftp;
+  gmx_multisim_t *ms;
+  int  nnodes,nnodpersim,sim,i,ftp;
   char buf[256];
-  
-  snew(mcr,1);
+#ifdef GMX_MPI
+  MPI_Group mpi_group_world;
+#endif  
+  int *rank;
 
-  mcr->nodeid = cr->nodeid;
-  mcr->nnodes = cr->nnodes;
-  mcr->left   = cr->left;
-  mcr->right  = cr->right;
-  cr->nodeid  = 0;
-  cr->nnodes  = 1;
-  
+  nnodes  = cr->nnodes;
+  if (nnodes % nsim != 0)
+    gmx_fatal(FARGS,"The number of nodes (%d) is not a multiple of the number of simulations (%d)",nnodes,nsim);
+
+  nnodpersim = nnodes/nsim;
+  sim = cr->nodeid/nnodpersim;
+
+  if (debug)
+    fprintf(debug,"We have %d simulations, %d nodes per simulation, local simulation is %d\n",nsim,nnodpersim,sim);
+
+  snew(ms,1);
+  cr->ms = ms;
+  ms->nsim = nsim;
+  ms->sim  = sim;
+#ifdef GMX_MPI
+  /* Create a communicator for the master nodes */
+  snew(rank,ms->nsim);
+  for(i=0; i<ms->nsim; i++)
+    rank[i] = i*nnodpersim;
+  MPI_Comm_group(MPI_COMM_WORLD,&mpi_group_world);
+  MPI_Group_incl(mpi_group_world,nsim,rank,&ms->mpi_group_masters);
+  sfree(rank);
+  MPI_Comm_create(MPI_COMM_WORLD,ms->mpi_group_masters,
+		  &ms->mpi_comm_masters);
+#endif
+
+  /* Reduce the intra-simulation communication */
+  cr->nodeid = cr->nodeid % nnodpersim;
+  cr->nnodes = nnodpersim;
+  if (PAR(cr)) {
+    gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
+#ifdef GMX_MPI
+    MPI_Comm_split(MPI_COMM_WORLD,sim,cr->nodeid,&cr->mpi_comm_mysim);
+#endif
+  }
+
+  fprintf(stdlog,"This is simulation %d",cr->ms->sim);
+  if (PAR(cr))
+    fprintf(stdlog,", local number of nodes %d, local nodeid %d",
+	    cr->nnodes,cr->nodeid);
+  fprintf(stdlog,"\n\n");
+
   if (bParFn) {
     /* Patch output and tpx file names (except log which has been done already)
      */
@@ -316,14 +360,12 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[],bool bParFn)
        */
       if ((is_output(&fnm[i]) || fnm[i].ftp == efTPX) && fnm[i].ftp != efLOG) {
 	ftp = fn2ftp(fnm[i].fns[0]);
-	par_fn(fnm[i].fns[0],ftp,mcr,buf,255);
+	par_fn(fnm[i].fns[0],ftp,cr,buf,255);
 	sfree(fnm[i].fns[0]);
 	fnm[i].fns[0] = strdup(buf);
       }
     }
   }
-
-  return mcr;
 }
 
 t_commrec *init_par(int *argc,char ***argv_ptr)
@@ -361,12 +403,15 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   cr->nnodes   = 1;
   gmx_parallel_env = 0; 
 #endif
-  
+
   if (!PAR(cr) && (cr->nodeid != 0))
     gmx_comm("(!PAR(cr) && (cr->nodeid != 0))");
   
   if (PAR(cr)) {
     gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
+#ifdef GMX_MPI
+    cr->mpi_comm_mysim = MPI_COMM_WORLD;
+#endif
 #ifdef DEBUGPAR
     fprintf(stderr,"Going to initialise network\n");
 #endif
@@ -376,7 +421,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     fprintf(stderr,"Initialised network\n");
     fprintf(stderr,"Getting new node id's\n");
 #endif
-    if (get_nodeid(stderr,cr->left,cr->right,&cr->nodeid,&cr->nnodes)==0)
+    if (get_nodeid(stderr,cr,cr->left,cr->right,&cr->nodeid,&cr->nnodes)==0)
       gmx_comm("could not get nodeid & nnodes from ring topology");
 #ifdef DEBUGPAR
     fprintf(stderr,"Got new node id's\n");
