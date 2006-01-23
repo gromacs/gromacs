@@ -621,11 +621,13 @@ void gmx_finalize(const t_commrec *cr)
   gmx_call("gmx_finalize");
 #else
 #ifdef MPICH_NAME
-  if (debug)
-    fprintf(debug,"In gmx_finalize. Will try to synchronize the ring\n");
-  gmx_sync_ring(cr,cr->nodeid,cr->nnodes,cr->left,cr->right);
-  if (debug)
-    fprintf(debug,"Succesfully did so! Exiting now.\n");
+  if (NODEPAR(cr)) {
+    if (debug)
+      fprintf(debug,"In gmx_finalize. Will try to synchronize the ring\n");
+    gmx_sync_ring(cr,cr->nodeid,cr->nnodes,cr->left,cr->right);
+    if (debug)
+      fprintf(debug,"Succesfully did so! Exiting now.\n");
+  }
   thanx(stdlog);
   exit(0);
 #else
