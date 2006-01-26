@@ -101,7 +101,9 @@ extern bool constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
  */
 
 extern int count_constraints(t_topology *top,t_commrec *cr);
-/* Returns the total number of constraints in the system */
+/* Returns the total number of constraints in the system,
+ * unless cr=NULL, then returns -1.
+ */
 
 extern int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 			    t_mdatoms *md,int start,int homenr,

@@ -351,8 +351,15 @@ int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 		      t_mdatoms *md,int start,int homenr,bool bOnlyCoords,
 		      t_commrec *cr)
 {
+  int count;
+
   low_constrain(log,top,ir,0,md,start,homenr,NULL,NULL,NULL,NULL,
 		0,NULL,NULL,NULL,bOnlyCoords,TRUE);
+
+  if (cr)
+    count = count_constraints(top,cr);
+  else
+    count = -1;
   
-  return count_constraints(top,cr);
+  return count;
 }
