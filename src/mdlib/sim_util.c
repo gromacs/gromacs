@@ -219,8 +219,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      real lambda,t_graph *graph,
 	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 	      t_forcerec *fr,rvec mu_tot,
-	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn,
-	      bool bReInit)
+	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn)
 {
   static rvec box_size;
   static real dvdl_lr = 0;
@@ -305,14 +304,18 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
-    if (cr->dd) {
+    if (DOMAINDECOMP(cr)) {
       /* On neighborsearch x has already been moved after repartitioning. */
       if (!bNS)
-	dd_move_x(cr->dd,&(top->blocks[ebCGS]),x,buf);
+	dd_move_x(cr->dd,x,buf);
     } else {
       move_x(fplog,cr,cr->left,cr->right,x,nsb,nrnb);
     }
-    gmx_sumd(2*DIM,mu,cr);
+    /* Removed with DDas it hinders parallel performance,
+     * but in some cases we need it, so we should fix this !!!
+     */
+    if (!DOMAINDECOMP(cr))
+      gmx_sumd(2*DIM,mu,cr);
   }
   for(i=0; i<2; i++)
     for(j=0;j<DIM;j++)
@@ -341,7 +344,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     dvdl_lr = 0; 
 
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,nsb,step,lambda,&dvdl_lr,bFillGrid,bDoForces,bReInit);
+       cr,nrnb,nsb,step,lambda,&dvdl_lr,bFillGrid,bDoForces);
   }
 
   if (bDoForces) {
@@ -363,7 +366,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       clear_rvecs(nsb->natoms,f);      
       clear_rvecs(SHIFTS,fr->fshift);
     }
-      GMX_BARRIER(cr->mpi_comm_mygroup);
+    GMX_BARRIER(cr->mpi_comm_mygroup);
   }
 
   /* update QMMMrec, if necessary */
@@ -374,7 +377,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,nrnb,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->atoms.excl),
-	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn,bReInit);
+	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 	
   /* Take long range contribution to free energy into account */
@@ -398,7 +401,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* Communicate the forces */
     if (PAR(cr)) {
       if (cr->dd)
-	dd_move_f(cr->dd,&top->blocks[ebCGS],f,buf);
+	dd_move_f(cr->dd,f,buf);
       else
 	move_f(fplog,cr,cr->left,cr->right,f,buf,nsb,nrnb);
       /* In case of node-splitting, the PP nodes receive the long-range 

@@ -64,14 +64,22 @@ static void init_range_check()
 	  "energy seems reasonable before trying again.\n");
 }
 
-void init_grid(FILE *log,t_grid *grid,int delta,matrix box,
-	       real rlistlong,int ncg)
+void init_grid(FILE *log,t_grid *grid,int delta,ivec *dd_nc,
+	       matrix box,real rlistlong,int ncg)
 {
-  int     m;
+  int     d,m;
   ivec    cx;
   
-  for(m=0; (m<DIM); m++)
-    cx[m]=(delta*box[m][m])/rlistlong;
+  for(d=0; d<DIM; d++) {
+    cx[d] = (delta*box[d][d])/rlistlong;
+    if (dd_nc) {
+      /* Make the grid dimension a multiple of the DD grid dimension */
+      m = cx[d] % (*dd_nc)[d];
+      if (m > 0)
+	cx[d] += (*dd_nc)[d] - m;
+      //cx[d] = ((int)(cx[d]/(*dd_nc)[d] + 0.5))*(*dd_nc)[d];
+    }
+  }
 
   grid->nr      = ncg;
   grid->nrx     = cx[XX];
@@ -136,16 +144,25 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
   *z  = ci;
 }
 
-void grid_first(FILE *log,t_grid *grid,matrix box,real rlistlong,int ncg)
+void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,
+		matrix box,real rlistlong,int ncg)
 {
-  int    i,k,ncells;
+  int    i,k,m,ncells;
   ivec   cx;
 
   /* Must do this every step because other routines may override it. */
   init_range_check();
   
-  for(k=0; (k<DIM); k++)
+  for(k=0; (k<DIM); k++) {
     cx[k]=(grid->delta*box[k][k])/rlistlong;
+    if (dd_nc) {
+      /* Make the grid dimension a multiple of the DD grid dimension */
+      m = cx[k] % (*dd_nc)[k];
+      if (m > 0)
+	cx[k] += (*dd_nc)[k] - m;
+      //cx[k] = ((int)(cx[k]/(*dd_nc)[k] + 0.5))*(*dd_nc)[k];
+    }
+  }
 
   if (grid->nrx != cx[XX] || grid->nry != cx[YY] || grid->nrz != cx[ZZ])
     fprintf(log,"Grid: %d x %d x %d cells\n",
@@ -307,10 +324,12 @@ void fill_grid(FILE *log,bool bDD,int cg_index[],
   dz  = divide(nrz,box[ZZ][ZZ]);
 
   /* Assign cell indices to charge groups */
+  /* This could cost time and should not always start at 0 with DD
   for (i=0; (i<cg0); i++) {
     cell_index[i]=NO_CELL;
   }
-  
+  */
+
   if (debug)
     fprintf(debug,"Filling grid from %d to %d (total %d)\n",cg0,cg1,ncg);
 
@@ -339,9 +358,11 @@ void fill_grid(FILE *log,bool bDD,int cg_index[],
     cell_index[i] = ci;
   }
   debug_gmx();
+  /* This could cost time with DD
   for (; (i<ncg); i++) {
     cell_index[i]=NO_CELL;
   }
+  */
 }
 
 void check_grid(FILE *log,t_grid *grid)

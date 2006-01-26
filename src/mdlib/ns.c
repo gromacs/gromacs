@@ -1462,6 +1462,66 @@ static inline void get_dx(int Nx,real gridx,real grid_x,real rc2,real x,
   }
 }
 
+static inline void get_dx_dd(int Nx,real gridx,real grid_x,real rc2,real x,
+			     int ncpddc,int shift_min,int shift_max,
+			     int *g0,int *g1,real *dcx2)
+{
+  real dcx,tmp;
+  int  xgi,g_min,g_max,xgidiv;
+
+  xgi = (int)(Nx + x*grid_x) - Nx;
+
+  if (xgi < 0) {
+    g_min = 0;
+    g_max = shift_max*ncpddc - 1;
+    *g0   = 0;
+    *g1   = -1;
+  } else if (xgi >= Nx) {
+    g_min = Nx + shift_min*ncpddc;
+    g_max = Nx - 1;
+    *g0   = Nx;
+    *g1   = Nx - 1;
+  } else {
+    xgidiv = xgi/ncpddc;
+    g_min = (xgidiv + shift_min)*ncpddc;
+    g_max = (xgidiv + shift_max + 1)*ncpddc - 1;
+    g_min = max(g_min,0);
+    g_max = min(g_max,Nx-1);
+    if (shift_min > 0) {
+      *g0 = g_min;
+      *g1 = g_min - 1;
+    } else if (shift_max < 0) {
+      *g0 = g_max + 1;
+      *g1 = g_max;
+    } else {
+      *g0 = xgi;
+      *g1 = xgi;
+      dcx2[xgi] = 0;
+    }
+  }
+
+  while (*g0 > g_min) {
+    /* Check one grid cell down */
+    dcx = ((*g0 - 1) + 1)*gridx - x;
+    tmp = dcx*dcx;
+    if (tmp >= rc2)
+      break;
+    (*g0)--;
+    dcx2[*g0] = tmp;
+  }
+  
+  while (*g1 < g_max) {
+    /* Check one grid cell up */
+    dcx = (*g1 + 1)*gridx - x;
+    tmp = dcx*dcx;
+    if (tmp >= rc2)
+      break;
+    (*g1)++;
+    dcx2[*g1] = tmp;
+  }
+}
+
+
 #define sqr(x) ((x)*(x))
 #define calc_dx2(XI,YI,ZI,y) (sqr(XI-y[XX])+sqr(YI-y[YY])+sqr(ZI-y[ZZ]))
 #define calc_cyl_dx2(XI,YI,y) (sqr(XI-y[XX])+sqr(YI-y[YY]))
@@ -1529,8 +1589,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
-  ivec    sh0,sh1;
-  int     tx,ty,tz,dx,dy,dz,cj;
+  ivec    sh0,sh1,shp0,shp1;
+  int     d,tx,ty,tz,dx,dy,dz,cj;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
   int     zsh_ty,zsh_tx,ysh_tx;
 #endif
@@ -1546,6 +1606,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   real    r2,rs2,rvdw2,rcoul2,rm2,rl2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
   bool    *i_egp_flags;
   bool    bDomDec;
+  ivec    ncpddc;
+
+  bDomDec = DOMAINDECOMP(cr);
   
   cgsnr    = cgs->nr;
   rs2      = sqr(fr->rlist);
@@ -1630,13 +1693,16 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
 
   debug_gmx();
 
-  bDomDec = (cr->dd != NULL);
-
   if (bDomDec) {
+    ncpddc[XX] = Nx/cr->dd->nc[XX];
+    ncpddc[YY] = Ny/cr->dd->nc[YY];
+    ncpddc[ZZ] = Nz/cr->dd->nc[ZZ];
     cg0 = 0;
     cg1 = dd_nicg(cr->dd);
-    //    fprintf(stderr,"%d cg0 %d cg1 %d\n",cr->nodeid,cg0,cg1);
   } else {
+    ncpddc[XX] = Nx;
+    ncpddc[YY] = Ny;
+    ncpddc[ZZ] = Nz;
     if (fr->bTPI)
       /* We only want a list for the test particle */
       cg0 = cgsnr - 1;
@@ -1647,12 +1713,12 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   }
 
   /* Set the default shift range for without DD */
-  sh0[XX] = -1;
-  sh0[YY] = -1;
-  sh0[ZZ] = -1;
-  sh1[XX] = 1;
-  sh1[YY] = 1;
-  sh1[ZZ] = 1;
+  for(d=0; d<DIM; d++) {
+    sh0[d] = -1;
+    sh1[d] = 1;
+    shp0[d] = -1;
+    shp1[d] = 1;
+  }
 
   /* Loop over charge groups */
   for(iicg=cg0; (iicg < cg1); iicg++) {
@@ -1707,11 +1773,16 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
         setexcl(cgs->index[icg],cgs->index[icg+1],&top->atoms.excl,TRUE,bexcl);
 
 	if (bDomDec) {
-	  /* We should make this more efficient !!! */
+	  /* Get the j charge-group and dd cell shift ranges */
 	  dd_get_ns_ranges(cr->dd,icg,&jcg0,&jcg1,sh0,sh1);
+
+	  /* Compute the periodic shift ranges */
+	  for(d=0; d<DIM; d++) {
+	    shp0[d] = min(-sh1[d],0);
+	    shp1[d] = max(-sh0[d],0);
+	  }
+
 	  min_icg = 0;
-	  //if (icg == 0)
-	  //fprintf(stderr,"%d  %d jcg %d %d\n",cr->nodeid,icg,jcg0,jcg1);
 	} else {
 	  /* Compute the number of charge groups that fall within the control
 	   * of this one (icg)
@@ -1741,30 +1812,43 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
     fprintf(log,"icg=%5d, naaj=%5d\n",icg,naaj);
 #endif
     /* Loop over shift vectors in three dimensions */
-    for (tz=sh0[ZZ]; tz<=sh1[ZZ]; tz++) {
+    for (tz=shp0[ZZ]; tz<=shp1[ZZ]; tz++) {
       ZI = cgcm[icg][ZZ]+tz*box[ZZ][ZZ];
       /* Calculate range of cells in Z direction that have the shift tz */
+#define FAST_DD_NS
+#ifndef FAST_DD_NS
       get_dx(Nz,gridz,grid_z,rl2,ZI,&dz0,&dz1,dcz2);
+#else
+      get_dx_dd(Nz,gridz,grid_z,rl2,ZI,ncpddc[ZZ],sh0[ZZ],sh1[ZZ],&dz0,&dz1,dcz2);
+#endif
       if (dz0 > dz1)
 	continue;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
       for (ty=-1+zsh_ty*tz; ty<=1+zsh_ty*tz; ty++) {
 #else
-      for (ty=sh0[YY]; ty<=sh1[YY]; ty++) {
+      for (ty=shp0[YY]; ty<=shp1[YY]; ty++) {
 #endif 
 	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
+#ifndef FAST_DD_NS
 	get_dx(Ny,gridy,grid_y,rl2,YI,&dy0,&dy1,dcy2);
+#else
+	get_dx_dd(Ny,gridy,grid_y,rl2,YI,ncpddc[YY],sh0[YY],sh1[YY],&dy0,&dy1,dcy2);
+#endif
 	if (dy0 > dy1)
 	  continue;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
 	for (tx=-1+zsh_tx*tz+ysh_tx*ty; tx<=1+zsh_tx*tz+ysh_tx*ty; tx++) {
 #else
-        for (tx=sh0[XX]; tx<=sh1[XX]; tx++) {
+        for (tx=shp0[XX]; tx<=shp1[XX]; tx++) {
 #endif
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
+#ifndef FAST_DD_NS
 	  get_dx(Nx,gridx,grid_x,rl2,XI,&dx0,&dx1,dcx2);
+#else
+	  get_dx_dd(Nx,gridx,grid_x,rl2,XI,ncpddc[XX],sh0[XX],sh1[XX],&dx0,&dx1,dcx2);
+#endif
 	  if (dx0 > dx1)
 	    continue;
 	  /* Get shift vector */	  
@@ -1959,8 +2043,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       t_commrec *cr,t_nsborder *nsb,
                       t_nrnb *nrnb,t_mdatoms *md,
                       real lambda,real *dvdlambda,
-                      bool bFillGrid,bool bDoForces,
-		      bool bReInit)
+                      bool bFillGrid,bool bDoForces)
 {
     static   bool        bFirst=TRUE;
     static   t_grid      *grid=NULL;
@@ -1984,7 +2067,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   bool     bDomDec;
 
   /* Set some local variables */
-  bDomDec = (cr->dd != NULL);
+  bDomDec = DOMAINDECOMP(cr);
   bGrid=fr->bGrid;
   ngid=top->atoms.grps[egcENER].nr;
   
@@ -2003,7 +2086,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   }
 
   /* First time initiation of arrays etc. */  
-  if (bFirst || bReInit) {
+  if (bFirst || bDomDec) {
     int icg,nr_in_cg,maxcg;
     
     /* Compute largest charge groups size (# atoms) */
@@ -2077,7 +2160,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
     if (bGrid && bFirst) {
       snew(grid,1);
-      init_grid(log,grid,fr->ndelta,box,fr->rlistlong,cgs->nr);
+      init_grid(log,grid,fr->ndelta,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
+		box,fr->rlistlong,cgs->nr);
     }
     
     if (bHaveVdW == NULL) {
@@ -2106,7 +2190,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   reset_neighbor_list(fr,FALSE,-1,-1);
 
   if (bGrid && bFillGrid) {
-    grid_first(log,grid,box,fr->rlistlong,cgs->nr);
+    grid_first(log,grid,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
+	       box,fr->rlistlong,cgs->nr);
     debug_gmx();
 
     /* Don't know why this all is... (DvdS 3/99) */
@@ -2123,9 +2208,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     debug_gmx();
     
     if (bDomDec) {
-      i = dd_ncg_tot(cr->dd);
-      fill_grid(log,fr->bDomDecomp,cg_index,
-		grid,box,i,0,i,fr->cg_cm);
+      end = cgs->nr;
+      fill_grid(log,fr->bDomDecomp,cg_index,grid,box,end,0,end,fr->cg_cm);
     } else {
       fill_grid(log,fr->bDomDecomp,cg_index,
 		grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
@@ -2148,8 +2232,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   debug_gmx();
   
   /* Do the core! */
-  if (bGrid)
-  {
+  if (bGrid) {
       nsearch = ns5_core(log,cr,fr,cg_index,box,box_size,ngid,top,grps,
                          grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,
                          bHaveVdW,bDoForces,FALSE);
@@ -2163,13 +2246,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
        * fill a special QMMM neighbourlist that contains all neighbours
        * of the QM atoms. If bQMMM is true, this list will now be made: 
        */
-      if (fr->bQMMM && fr->qr->QMMMscheme!=eQMMMschemeoniom)
-      {
+    if (fr->bQMMM && fr->qr->QMMMscheme!=eQMMMschemeoniom) {
           nsearch += ns5_core(log,cr,fr,cg_index,box,box_size,ngid,top,grps,
                               grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,
                               bHaveVdW,bDoForces,TRUE);
-          
-      }
+    }
   }
   else 
   {

@@ -93,17 +93,21 @@ typedef struct {
   /* Switch that tells if the master has the charge group distribution */
   bool bMasterHasAllCG;
 
-  /* Global atom number to local atom number, -1 if not local */
-  int  *ga2la;
-
   /* The following arrays will have size ncell */
   /* Nodes we need to send coordinates to and receive forces from */
   gmx_domdec_comm_t comm0[DD_MAXCELL];
   /* Nodes we need to receive coordinates from and send forces to */
   gmx_domdec_comm_t comm1[DD_MAXCELL];
 
-  /* For neighborsearching */
+  /* Local charge group index */
   int  ncg_tot;
+  int  *cgindex;
+  int  cgindex_nalloc;
+
+  /* Global atom number to local atom number, -1 if not local */
+  int  *ga2la;
+
+  /* For neighborsearching */
   int  nicell;
   gmx_domdec_ns_t icell[DD_MAXICELL];
 
@@ -116,6 +120,12 @@ typedef struct {
   int  nalloc_vs;
   rvec *buf_vr;
   int  nalloc_vr;
+  
+  /* MPI requests for move_x */
+  int  nmpi_req;
+#ifdef GMX_MPI
+  MPI_Request mpi_req[(DD_MAXCELL-1)*2];
+#endif
 } gmx_domdec_t;
 
 typedef struct {

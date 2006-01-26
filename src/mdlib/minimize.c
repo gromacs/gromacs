@@ -244,8 +244,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
   do_force(log,cr,inputrec,nsb,
 	   count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL,
-	   FALSE);
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
      
   /* Spread the force on vsite particle to the other particles... */
   if(bVsites) 
@@ -358,8 +357,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,inputrec,nsb,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL,
-	   FALSE);
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
   where();
 
   /* Spread the force on vsite particle to the other particles... */
@@ -975,8 +973,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   do_force(log,cr,inputrec,nsb,0,&(nrnb[cr->nodeid]),
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
-	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL,
-	   FALSE);
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
   where();
   
   /* Spread the force on vsite particle to the other particles... */
@@ -1628,7 +1625,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
  	     lambda,graph,
 	     TRUE,inputrec->nstlist>0 || count==0,FALSE,TRUE,fr,mu_tot,
-	     FALSE,0.0,NULL,NULL,FALSE); 
+	     FALSE,0.0,NULL,NULL); 
     
     /* Spread the force on vsite particle to the other particles... */
     if (bVsites) 
@@ -1901,8 +1898,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     bNS=TRUE;
     do_force(log,cr,inputrec,nsb,0,&mynrnb,top,grps,
              state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
-             lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL,
-	     FALSE);
+             lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
     bNS=FALSE;
     
     /* Shift back the coordinates, since we're not calling update */
@@ -1950,8 +1946,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                      &mynrnb,top,grps,
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
-		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL,
-		     FALSE);
+		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
             if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
@@ -1966,8 +1961,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                      &mynrnb,top,grps,
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
-		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL,
-		     FALSE);
+		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
             if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
@@ -2206,7 +2200,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 		 step,&(nrnb[cr->nodeid]),top,grps,rerun_fr.box,state->x,f,
 		 buf,mdatoms,ener,fcd,bVerbose, 
 		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
-		 FALSE,t,NULL,NULL,FALSE); 
+		 FALSE,t,NULL,NULL); 
 	bStateChanged = FALSE;
 
 	/* Calculate long range corrections to pressure and energy */

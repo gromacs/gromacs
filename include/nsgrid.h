@@ -44,11 +44,12 @@
 #include "typedefs.h"
 
 extern void init_grid(FILE *log,t_grid *grid,
-		      int delta,matrix box,real rlong,int ncg);
+		      int delta,ivec *dd_nc,matrix box,real rlong,int ncg);
 
 extern void done_grid(t_grid *grid);
 
-extern void grid_first(FILE *log,t_grid *grid,matrix box,real rlong,int ncg);
+extern void grid_first(FILE *log,t_grid *grid,
+		       ivec *dd_nc,matrix box,real rlong,int ncg);
 
 extern void fill_grid(FILE *log,bool bDD,int cg_index[],
 		      t_grid *grid,matrix box,

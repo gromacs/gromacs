@@ -383,7 +383,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   do_force(log,cr,inputrec,nsb,mdstep,nrnb,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   state->lambda,graph,
-	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL,FALSE);
+	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
   sum_lrforces(force[Min],fr,start,homenr);
   copy_mat(fr->vir_el_recip,vir_el_recip[Min]);
 
@@ -475,7 +475,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     state->lambda,graph,
-	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL,FALSE);
+	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
     if (bVsites) 
       spread_vsite_f(log,pos[Try],force[Try],nrnb,&top->idef,
 		     fr,graph,state->box,vsitecomm,cr);

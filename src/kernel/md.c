@@ -72,8 +72,6 @@
 #include "mpelogging.h"
 #include "domdec.h"
 
-#include "constr.h"
-
 #ifdef GMX_MPI
 #include <mpi.h>
 #endif
@@ -118,7 +116,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   t_forcerec *fr;
   t_fcdata   *fcd;
   time_t     start_t=0;
-  bool       bVsites,bParVsites;
+  bool       bDomDec,bVsites,bParVsites;
   t_comm_vsites vsitecomm;
   int        i,m,status;
   char       *gro;
@@ -137,11 +135,15 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   snew(inputrec,1);
   snew(state,1);
   snew(nrnb,cr->nnodes);
-  
+
+
   if (bVerbose && MASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
 
+  bDomDec = FALSE;
   if (PAR(cr)) {
+    bDomDec = (ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1);
+    
     /* The master thread on the master node reads from disk, 
      * then dsitributes everything to the other processors.
      */
@@ -152,7 +154,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
      * So we (temporarily) fix it here.
      */
     nsb->nnodes = cr->nnodes;
-    if (ddxyz[XX]==1 && ddxyz[YY]==1 && ddxyz[ZZ]==1) {
+    if (!bDomDec) {
       split_system_first(stdlog,inputrec,state,cr,top,nsb);
     } else {
       /* Set natoms to the total number of atoms in the system
@@ -427,7 +429,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
-	     bFullPBC,bForceUpdate=FALSE,bReInit;
+	     bFullPBC,bForceUpdate=FALSE;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
@@ -499,46 +501,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       snew(state,1);
       *state = *state_global;
       /* Allocate (too much) new space for the local x and v */
-      snew(state->x,state_global->natoms);
-      for(i=0; i<state->natoms; i++)
-	copy_rvec(state_global->x[i],state->x[i]);
-      if (state_global->v) {
-	snew(state->v,state_global->natoms);
-	for(i=0; i<state->natoms; i++)
-	  copy_rvec(state_global->v[i],state->v[i]);
-      }
-      /* What about f ? */
+      snew(state->x,state->natoms);
+      if (state_global->v)
+	snew(state->v,state->natoms);
+      if (state_global->sd_X)
+	snew(state->sd_X,state->natoms);
     } else {
       state = state_global;
     }
 
     setup_dd_grid(stdlog,state->box,cr->dd);
 
-    get_cg_distribution(stdlog,cr->dd,state->box,&top_global->blocks[ebCGS],
-			state_global->x);
-
-    dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
-			state_global,state);
-    
-    dd_calc_cgcm_home(cr->dd,&top_global->blocks[ebCGS],state->x,fr->cg_cm);
-
-    setup_dd_communication(stdlog,cr->dd,&top_global->blocks[ebCGS],
-			   fr->cg_cm,state->box,fr->rlistlong);
-
-    fr->cg0 = 0;
-    fr->hcg = dd_ncg_tot(cr->dd);
     snew(top,1);
-    make_local_top(stdlog,cr->dd,top_global,top,nsb);
-
-    dd_move_x(cr->dd,&top->blocks[ebCGS],state->x,buf);
     
-    /* All charge groups have been put in the box in get_cg_distribution.
-     * cg_cm for the home charge groups has already been calculated.
-     */
-    calc_cgcm(stdlog,cr->dd->comm1[0].ncg,cr->dd->ncg_tot,&top->blocks[ebCGS],
-	      state->x,fr->cg_cm);
-    /* Count of dd_calc_cgcm_home and calc_cgcm */
-    inc_nrnb(nrnb,eNR_CGCM,top->blocks[ebCGS].nra);
+    dd_partition_system(stdlog,cr->dd,state_global,top_global,
+			state,buf,top,nsb,fr,
+			nrnb);
   } else {
     top = top_global;
     state = state_global;
@@ -716,59 +694,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /*if (MASTER(cr) && do_log && !bFFscan)
       print_ebin_header(log,step,t,state->lambda);*/
     
-    /* We will implement dynamic repartitioning.
-     * For now it is fixed to nstlist*20.
-     * This should work fine for SPC water at 300K,
-     * where the maximum displacement in 0.2 ps is 0.25 nm.
-     * So you would need a cell size of at least: cut-off + 2*0.25 nm.
-     */
-    bReInit = FALSE;
-    if (PAR(cr) && cr->dd && 
+    if (DOMAINDECOMP(cr) && 
 	(step % inputrec->nstlist == 0) && !bFirstStep) {
       /* Repartition the domain decomposition */
-      /*
-      dd_collect_state(cr->dd,&top_global->blocks[ebCGS],state,state_global);
-      
-      get_cg_distribution(stdlog,cr->dd,state->box,&top_global->blocks[ebCGS],
-			  state_global->x);
-
-      dd_distribute_state(cr->dd,&top_global->blocks[ebCGS],
-			  state_global,state);
-      */
-      dd_redistribute_cg(stdlog,cr->dd,&top->blocks[ebCGS],state,fr->cg_cm,
-			 nrnb);
-
-      setup_dd_communication(stdlog,cr->dd,&top_global->blocks[ebCGS],
-			     fr->cg_cm,state->box,fr->rlistlong);
-
-      make_local_top(stdlog,cr->dd,top_global,top,nsb);
-
-      dd_move_x(cr->dd,&top->blocks[ebCGS],state->x,buf);
-
-      /* Temporary hacks !!! */
-      //srenew(fr->solvent_type,top->blocks[ebCGS].nr);
-      for(i=1; i<top->blocks[ebCGS].nr; i++)
-	fr->solvent_type[i] = fr->solvent_type[0];
-      //srenew(fr->cg_cm,top->blocks[ebCGS].nr);
-      fr->cg0 = 0;
-      fr->hcg = dd_ncg_tot(cr->dd);
-      
-      /* Does not work with shells or flexible constraints yet */
-      bReInit = TRUE;
-
-      init_constraints(stdlog,top,inputrec,mdatoms,
-		       START(nsb),HOMENR(nsb),
-		       inputrec->eI!=eiSteep,cr);
-      
-      /* Calculate the centers of mass of the communicated charge groups.
-       * The home charge groups have been done in dd_redistribute_cg.
-       */
-      calc_cgcm(stdlog,cr->dd->comm1[0].ncg,cr->dd->ncg_tot,
-		&top->blocks[ebCGS],state->x,fr->cg_cm);
-      m = 0;
-      for(i=1; i<cr->dd->ncell; i++)
-	m += cr->dd->comm1[0].nat;
-      inc_nrnb(nrnb,eNR_CGCM,m);
+      dd_repartition_system(stdlog,cr->dd,top_global,mdatoms,inputrec,
+			    state,buf,top,nsb,fr,
+			    nrnb);
     }
 
     if (bSimAnn) 
@@ -877,7 +808,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(log,cr,inputrec,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
-	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn,bReInit);
+	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
     }
 
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -929,7 +860,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     vv = (do_per_step(step,inputrec->nstvout) || bLastStep) ? state->v : NULL;
     ff = (do_per_step(step,inputrec->nstfout)) ? f : NULL;
 
-    if (PAR(cr) && cr->dd) {
+    if (DOMAINDECOMP(cr)) {
       if (xx) {
 	xx = state_global->x;
 	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->x,xx);
@@ -1269,6 +1200,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 #ifdef PRT_TIME
     if ( MASTER(cr) && !bLastStep)
     {     
+      MPI_Barrier(MPI_COMM_WORLD);
+
       zeit1 = MPI_Wtime( ) - zeit0;
       fprintf(stderr,"Time step %d took %f seconds",step_rel,zeit1);	   
       if (step_rel>0) 
