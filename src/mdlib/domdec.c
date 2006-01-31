@@ -179,11 +179,11 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[])
   buf_pos = 0;
   nreq = 0;
   for(c=1; c<dd->ncell; c++) {
+    cc = &dd->comm1[c];
     MPI_Isend(f[at_index],
-	      dd->comm1[c].nat*sizeof(rvec),MPI_BYTE,
-	      DDRANK(dd,dd->comm1[c].cell),c,dd->all,&mpi_req[nreq++]);
-
-    at_index += dd->comm1[c].nat;
+	      cc->nat*sizeof(rvec),MPI_BYTE,
+	      DDRANK(dd,cc->cell),c,dd->all,&mpi_req[nreq++]);
+    at_index += cc->nat;
 
     cc = &dd->comm0[c];
     MPI_Irecv(buf[buf_pos],cc->nat*sizeof(rvec),MPI_BYTE,
@@ -1347,7 +1347,9 @@ static void make_local_ilist_onemoltype_onecg(gmx_domdec_t *dd,
 {
   int nral,nhome,i,j,n;
   t_iatom *ia,*lia;
-  
+  long long int maxlli;
+  int maxi;
+
   nral = NRAL(ftype);
 
   if (lil->iatoms == NULL)
@@ -1356,10 +1358,13 @@ static void make_local_ilist_onemoltype_onecg(gmx_domdec_t *dd,
 
   nhome = dd->comm1[0].nat;
 
+  maxlli = (long long int)il->nr*nhome/natoms_global;
+  maxi   = maxlli;
+
   n   = 0;
   ia  = il->iatoms;
   lia = lil->iatoms;
-  for(i=0; i<il->nr*nhome/natoms_global; i+=1+nral) {
+  for(i=0; i<maxi; i+=1+nral) {
     ia = il->iatoms + i;
     lia[0] = ia[0];
     lia[1] = ia[1];
