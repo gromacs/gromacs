@@ -445,6 +445,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   t_topology *top;
   t_state    *state=NULL;
+  rvec       *f_global=NULL;
  
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
@@ -506,6 +507,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	snew(state->v,state->natoms);
       if (state_global->sd_X)
 	snew(state->sd_X,state->natoms);
+      snew(f_global,state->natoms);
     } else {
       state = state_global;
     }
@@ -869,7 +871,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	vv = state_global->v;
 	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->v,vv);
       }
-      /* Need to fix f */
+      if (ff) {
+	ff = f_global;
+	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],f,ff);
+      }
     }
     fp_trn = write_traj(log,cr,traj,nsb,step,t,state->lambda,
 			nrnb,nsb->natoms,xx,vv,ff,state->box);
