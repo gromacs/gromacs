@@ -1519,7 +1519,7 @@ int gmx_hbond(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are",
-    "determined based on cutoffs for the angle Donor - Hydrogen - Acceptor",
+    "determined based on cutoffs for the angle Acceptor - Donor - Hydrogen",
     "(zero is extended) and the distance Hydrogen - Acceptor.",
     "OH and NH groups are regarded as donors, O is an acceptor always,",
     "N is an acceptor by default, but this can be switched using",
@@ -1590,7 +1590,7 @@ int gmx_hbond(int argc,char *argv[])
     { "-ins",  FALSE,  etBOOL, {&bInsert},
       "Analyze solvent insertion" },
     { "-a",    FALSE,  etREAL, {&acut},
-      "Cutoff angle (degrees, Donor - Hydrogen - Acceptor)" },
+      "Cutoff angle (degrees, Acceptor - Donor - Hydrogen)" },
     { "-r",    FALSE,  etREAL, {&rcut},
       "Cutoff radius (nm, X - Acceptor, see next option)" },
     { "-da",   FALSE,  etBOOL, {&bDA},
