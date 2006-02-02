@@ -400,7 +400,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     /* Communicate the forces */
     if (PAR(cr)) {
-      if (cr->dd)
+      if (DOMAINDECOMP(cr))
 	dd_move_f(cr->dd,f,buf);
       else
 	move_f(fplog,cr,cr->left,cr->right,f,buf,nsb,nrnb);
