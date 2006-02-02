@@ -137,12 +137,10 @@ void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
   int nmpi_req;
 #ifdef GMX_MPI
   MPI_Request mpi_req[(DD_MAXCELL-1)*2];
-#endif
   
   nmpi_req = 0;
   low_dd_move_x(dd,x,buf,&nmpi_req,mpi_req);
   
-#ifdef GMX_MPI
   MPI_Waitall(nmpi_req,mpi_req,MPI_STATUSES_IGNORE);
 #endif
 }
@@ -151,8 +149,10 @@ void dd_start_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
 {
   if (dd->nmpi_req > 0)
     gmx_fatal(FARGS,"dd_start_move_x called while there are %d outstanding MPI requests",dd->nmpi_req);
-  
+
+#ifdef GMX_MPI  
   low_dd_move_x(dd,x,buf,&dd->nmpi_req,dd->mpi_req);
+#endif
 }
 
 void dd_finish_move_x(gmx_domdec_t *dd)
