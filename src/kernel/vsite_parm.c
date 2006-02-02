@@ -523,7 +523,7 @@ static bool calc_vsite4fd_param(t_param *param,
   return bError;
 }
 
-int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
 		t_params plist[])
 {
   int i,j,ftype;
@@ -576,7 +576,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	  switch(ftype) {
 	  case F_VSITE3: 
 	    bERROR = 
-	      calc_vsite3_param(&atype, &(plist[ftype].param[i]), atoms,
+	      calc_vsite3_param(atype, &(plist[ftype].param[i]), atoms,
 				nrbond, bonds, nrang, angles);
 	    break;
 	  case F_VSITE3FD:
@@ -591,7 +591,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 	    break;
 	  case F_VSITE3OUT:
 	    bERROR = 
-	      calc_vsite3out_param(&atype, &(plist[ftype].param[i]), atoms,
+	      calc_vsite3out_param(atype, &(plist[ftype].param[i]), atoms,
 				   nrbond, bonds, nrang, angles);
 	    break;
 	  case F_VSITE4FD:

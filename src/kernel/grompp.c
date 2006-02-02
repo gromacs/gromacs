@@ -651,7 +651,7 @@ int main (int argc, char *argv[])
   t_gromppopts *opts;
   t_topology   *sys;
   t_molinfo    msys;
-  t_atomtype   atype;
+  t_atomtype   *atype;
   t_inputrec   *ir;
   int          natoms,nvsite,nc,comb;
   t_params     *plist;
@@ -732,6 +732,7 @@ int main (int argc, char *argv[])
   snew(plist,F_NRE);
   init_plist(plist);
   snew(sys,1);
+  snew(atype,1);
   if (debug)
     pr_symtab(debug,0,"Just opened",&sys->symtab);
     
@@ -740,7 +741,7 @@ int main (int argc, char *argv[])
     gmx_fatal(FARGS,"%s does not exist",fn);
   new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 	     opts,ir,bGenVel,bVerbose,&state,
-	     &atype,sys,&msys,plist,&comb,&reppow,
+	     atype,sys,&msys,plist,&comb,&reppow,
 	     (opts->eDisre==edrEnsemble),opts->bMorse,
 	     bCheckPairs,&nerror);
   
@@ -763,10 +764,10 @@ int main (int argc, char *argv[])
 
   /* If we are doing GBSA, check that we got the parameters we need */
   have_radius=have_vol=have_surftens=TRUE;
-  for(i=0;i<atype.nr;i++) {
-    have_radius=have_radius && (atype.radius[i]>0);
-    have_vol=have_vol && (atype.vol[i]>0);
-    have_surftens=have_surftens && (atype.surftens[i]>=0);
+  for(i=0;i<atype->nr;i++) {
+    have_radius=have_radius && (atype->radius[i]>0);
+    have_vol=have_vol && (atype->vol[i]>0);
+    have_surftens=have_surftens && (atype->surftens[i]>=0);
   }
   if(!have_radius && ir->coulombtype==eelGB) {
     fprintf(stderr,"Can't do GB electrostatics; the forcefield is missing values for\n"
@@ -786,8 +787,8 @@ int main (int argc, char *argv[])
   
   /* If we are doing QM/MM, check that we got the atom numbers */
   have_atomnumber = TRUE;
-  for (i=0;i<atype.nr;i++) {
-    have_atomnumber = have_atomnumber && (atype.atomnumber[i]>=0);
+  for (i=0;i<atype->nr;i++) {
+    have_atomnumber = have_atomnumber && (atype->atomnumber[i]>=0);
   }
   if (!have_atomnumber && ir->bQMMM)
   {
@@ -835,21 +836,21 @@ int main (int argc, char *argv[])
     clean_vsite_bondeds(msys.plist,sys->atoms.nr,bRmVSBds);
   
   if (bRenum) 
-    atype.nr=renum_atype(plist, sys, &atype, bVerbose);
+    atype->nr = renum_atype(plist, sys, atype, bVerbose);
   
   /* Copy the atomtype data to the topology atomtype list */
-  sys->atomtypes.nr=atype.nr;
-  snew(sys->atomtypes.radius,atype.nr);
-  snew(sys->atomtypes.vol,atype.nr);
-  snew(sys->atomtypes.surftens,atype.nr);
-  snew(sys->atomtypes.atomnumber,atype.nr);
+  sys->atomtypes.nr=atype->nr;
+  snew(sys->atomtypes.radius,atype->nr);
+  snew(sys->atomtypes.vol,atype->nr);
+  snew(sys->atomtypes.surftens,atype->nr);
+  snew(sys->atomtypes.atomnumber,atype->nr);
 
 
-  for(i=0;i<atype.nr;i++) {
-    sys->atomtypes.radius[i]=atype.radius[i];
-    sys->atomtypes.vol[i]=atype.vol[i];
-    sys->atomtypes.surftens[i]=atype.surftens[i];
-    sys->atomtypes.atomnumber[i] = atype.atomnumber[i];
+  for(i=0;i<atype->nr;i++) {
+    sys->atomtypes.radius[i]=atype->radius[i];
+    sys->atomtypes.vol[i]=atype->vol[i];
+    sys->atomtypes.surftens[i]=atype->surftens[i];
+    sys->atomtypes.atomnumber[i] = atype->atomnumber[i];
   }
 
   if (debug)
@@ -857,7 +858,7 @@ int main (int argc, char *argv[])
 
   if (bVerbose) 
     fprintf(stderr,"converting bonded parameters...\n");
-  convert_params(atype.nr, plist, msys.plist, comb, reppow, &sys->idef);
+  convert_params(atype->nr, plist, msys.plist, comb, reppow, &sys->idef);
   
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
