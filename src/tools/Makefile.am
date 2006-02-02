@@ -42,7 +42,7 @@ bin_PROGRAMS = \
 	genbox		genconf		genpr		g_nmtraj	\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
-	anadock		cdist		disco           make_edi	\
+	anadock		make_edi	\
 	g_analyze   	g_anaeig    	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
 	g_covar     	g_density   	g_densmap       g_dih       	\
@@ -58,9 +58,6 @@ bin_PROGRAMS = \
 	g_sorient   	g_tcaf      	g_traj      	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham
 
-
-cdist_SOURCES        =  cdist.c smooth.c bondlist.c residues.c cdist.h
-disco_SOURCES        =  disco.c correct.c discopar.c dtools.c disco.h
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
