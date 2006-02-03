@@ -51,17 +51,15 @@ extern void done_grid(t_grid *grid);
 extern void grid_first(FILE *log,t_grid *grid,
 		       ivec *dd_nc,matrix box,real rlong,int ncg);
 
-extern void fill_grid(FILE *log,bool bDD,int cg_index[],
+extern void fill_grid(FILE *log,
 		      t_grid *grid,matrix box,
 		      int ncg,int cg0,int cg1,rvec cg_cm[]);
 
-extern void calc_elemnr(FILE *log,bool bDD,int cg_index[],
-			t_grid *grid,int cg0,int cg1,int ncg);
+extern void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
 
 extern void calc_ptrs(t_grid *grid);
 
-extern void grid_last(FILE *log,bool bDD,int cg_index[],
-		      t_grid *grid,int cg0,int cg1,int ncg);
+extern void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
 
 extern int xyz2ci_(int nry,int nrz,int x,int y,int z);
 #define xyz2ci(nry,nrz,x,y,z) ((nry)*(nrz)*(x)+(nrz)*(y)+(z))
@@ -71,10 +69,9 @@ extern void ci2xyz(t_grid *grid,int i,int *x,int *y,int *z);
 
 extern void check_grid(FILE *log,t_grid *grid);
 
-extern void print_grid(FILE *log,t_grid *grid,bool bDD,int cg_index[]);
+extern void print_grid(FILE *log,t_grid *grid);
 
-extern void mv_grid(t_commrec *cr,bool bDD,int cg_index[],
-		    t_grid *grid,int cgload[]);
+extern void mv_grid(t_commrec *cr,t_grid *grid,int cgload[]);
 /* Move the grid over processors */
 
 #endif	/* ns_grid_h */

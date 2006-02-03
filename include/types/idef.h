@@ -72,6 +72,8 @@ enum {
   F_PIDIHS, 
   F_LJ14,
   F_COUL14,
+  F_LJC14_A,
+  F_LJC_PAIRS_A,
   F_LJ,
   F_BHAM,
   F_LJ_LR,

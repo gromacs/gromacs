@@ -147,17 +147,24 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->bham.c = old[2];
     break;
   case F_LJ14:
+  case F_LJC14_A:
     if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {
       new->lj14.c6A  = 4*old[1]*pow(old[0],6.0);
       new->lj14.c12A = 4*old[1]*pow(old[0],reppow);
-      new->lj14.c6B  = 4*old[3]*pow(old[2],6.0);
-      new->lj14.c12B = 4*old[3]*pow(old[2],reppow);
+      if (ftype == F_LJ14) {
+	new->lj14.c6B  = 4*old[3]*pow(old[2],6.0);
+	new->lj14.c12B = 4*old[3]*pow(old[2],reppow);
+      }
     } else {
       new->lj14.c6A  = old[0]; 
       new->lj14.c12A = old[1];
-      new->lj14.c6B  = old[2]; 
-      new->lj14.c12B = old[3];
+      if (ftype == F_LJ14) {
+	new->lj14.c6B  = old[2]; 
+	new->lj14.c12B = old[3];
+      }
     }
+    break;
+  case F_LJC_PAIRS_A:
     break;
   case F_LJ:
     if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {

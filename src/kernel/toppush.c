@@ -694,7 +694,7 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
   
   /* Get the force parameters */
   nrfp = NRFP(ftype);
-  if (ftype == F_LJ14) {
+  if (ftype == F_LJ14 || ftype == F_LJC14_A) {
     n = sscanf(pline,form4,&c[0],&c[1],&c[2],&c[3]);
     if (n < 2) {
       too_few();
@@ -1139,8 +1139,12 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE);
     bFoundB = default_params(ftype,bondtype,at,atype,&param,TRUE);
   } else {
-    bFoundA = default_nb_params(ftype,bondtype,at,&param,FALSE,bGenPairs);
-    bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
+    bFoundA = default_nb_params(ftype == F_LJC14_A ? F_LJ14 : ftype,
+				bondtype,at,&param,FALSE,bGenPairs);
+    if (ftype == F_LJC14_A)
+      bFoundB = TRUE;
+    else
+      bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
   }
   
   nrfp = NRFP(ftype);

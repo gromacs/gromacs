@@ -95,6 +95,8 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded ("PIDIHS",   "Improper Dih.",   4, 3, 3,  eNR_PROPER, pdihs         ),
   def_bonded ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
   def_nofc   ("COUL14",   "Coulomb-14"                                           ),
+  def_bonded ("LJC14_A",  "LJC-14 A",        2, 2, 0,  eNR_NB14,   unimplemented ),
+  def_bonded ("LJC_P_A",  "LJC Pairs A",     2, 0, 0,  eNR_NB14,   unimplemented ),
   def_nb     ("LJ_SR",    "LJ (SR)",         2, 2                                ),
   def_nb     ("BHAM",     "Buck.ham (SR)",   2, 3                                ),
   def_nofc   ("LJ_LR",    "LJ (LR)"                                              ),

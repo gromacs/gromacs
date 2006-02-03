@@ -56,7 +56,7 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                        rvec x[],rvec f[],t_forcerec *fr,
 		       const t_pbc *pbc,const t_graph *g,
                        real epot[],t_nrnb *nrnb,real lambda,
-		       const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		       const t_mdatoms *md,int ngrp,t_grp_ener *gener,
 		       t_fcdata *fcd,
 		       int step,bool bSepDVDL);
 /* 

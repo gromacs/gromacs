@@ -1573,7 +1573,7 @@ static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
   }
 }
 
-static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
+static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                     matrix box,rvec box_size,int ngid,
                     t_topology *top,t_groups *grps,
                     t_grid *grid,rvec x[],t_excl bexcl[],bool *bExcludeAlleg,
@@ -1598,7 +1598,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   int     Nx,Ny,Nz,shift=-1,j,nrj,nns,nn=-1;
   real    gridx,gridy,gridz,grid_x,grid_y,grid_z;
   real    margin_x,margin_y;
-  int     cg0,cg1,icg=-1,iicg,cgsnr,i0,nri,naaj,min_icg;
+  int     cg0,cg1,icg=-1,cgsnr,i0,nri,naaj,min_icg;
   int     jcg0,jcg1,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
   bool    rvdw_lt_rcoul,rcoul_lt_rvdw;
@@ -1721,13 +1721,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   }
 
   /* Loop over charge groups */
-  for(iicg=cg0; (iicg < cg1); iicg++) {
-      icg      = cg_index[iicg];
-    /* Consistency check */
-    if (icg != iicg)
-      gmx_fatal(FARGS,"icg = %d, iicg = %d, file %s, line %d",icg,iicg,__FILE__,
-		  __LINE__);
-    //for(icg=cg0; (icg < cg1); icg++) {
+  for(icg=cg0; (icg < cg1); icg++) {
     if(bMakeQMMMnblist)
     { 
         /* Skip this charge group if it is not a QM atom while making a
@@ -2014,29 +2008,6 @@ static int  rv_comp(const void *a,const void *b)
     return 1;
 }
 
-static void sort_charge_groups(t_commrec *cr,int cg_index[],int slab_index[],
-			       rvec cg_cm[],int Dimension)
-{
-  int i,nrcg,cgind;
-  
-  nrcg = slab_index[cr->nnodes];
-  sptr = cg_cm;
-  sdim = Dimension;
-  qsort(cg_index,nrcg,sizeof(cg_index[0]),rv_comp);
-  
-  if (debug) {
-    fprintf(debug,"Just sorted the cg_cm array on dimension %d\n",Dimension);
-    fprintf(debug,"Index:  Coordinates of cg_cm\n");
-    for(i=0; (i<nrcg); i++) {
-      cgind = cg_index[i];
-      fprintf(debug,"%8d%10.3f%10.3f%10.3f\n",cgind,
-	      cg_cm[cgind][XX],cg_cm[cgind][YY],cg_cm[cgind][ZZ]);
-    }
-  }
-  sptr = NULL;
-  sdim = -1;
-}
-
 int search_neighbours(FILE *log,t_forcerec *fr,
                       rvec x[],matrix box,
                       t_topology *top,t_groups *grps,
@@ -2050,7 +2021,6 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     static   t_excl      *bexcl=NULL;
     static   bool        *bHaveVdW=NULL;
     static   t_ns_buf    **ns_buf=NULL;
-    static   int         *cg_index=NULL,*slab_index=NULL;
     static   bool        *bExcludeAlleg=NULL;
     static   int         nra_alloc=0,cg_alloc=0;
 
@@ -2138,26 +2108,6 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 	      __FILE__,NLJ_INC);
     }
 
-    /* Check whether we have to do domain decomposition,
-     * if so set local variables for the charge group index and the
-     * slab index.
-     */
-    if (fr->bDomDecomp) {
-      snew(slab_index,cr->nnodes+1);
-      for(i=0; (i<=cr->nnodes); i++)
-	slab_index[i] = i*((real) cgs->nr/((real) cr->nnodes));
-      fr->cg0 = slab_index[cr->nodeid];
-      fr->hcg = slab_index[cr->nodeid+1] - fr->cg0;
-      if (debug)
-	fprintf(debug,"Will use DOMAIN DECOMPOSITION, "
-		"from charge group index %d to %d on node %d\n",
-		fr->cg0,fr->cg0+fr->hcg,cr->nodeid);
-    }
-    /* Do we need cg_index? !!! */
-    snew(cg_index,cgs->nr+1);
-    for(i=0; (i<=cgs->nr);  i++)
-      cg_index[i] = i;
-
     if (bGrid && bFirst) {
       snew(grid,1);
       init_grid(log,grid,fr->ndelta,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
@@ -2203,37 +2153,32 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     end   = (cgs->nr+1)/2;
 #endif
 
-    if (fr->bDomDecomp)
-      sort_charge_groups(cr,cg_index,slab_index,fr->cg_cm,fr->Dimension);
-    debug_gmx();
-    
     if (bDomDec) {
       end = cgs->nr;
-      fill_grid(log,fr->bDomDecomp,cg_index,grid,box,end,0,end,fr->cg_cm);
+      fill_grid(log,grid,box,end,0,end,fr->cg_cm);
     } else {
-      fill_grid(log,fr->bDomDecomp,cg_index,
-		grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
+      fill_grid(log,grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
       debug_gmx();
 
       if (PAR(cr))
-	mv_grid(cr,fr->bDomDecomp,cg_index,grid,nsb->workload);
+	mv_grid(cr,grid,nsb->workload);
       debug_gmx();
     }
       
-    calc_elemnr(log,fr->bDomDecomp,cg_index,grid,start,end,cgs->nr);
+    calc_elemnr(log,grid,start,end,cgs->nr);
     calc_ptrs(grid);
-    grid_last(log,fr->bDomDecomp,cg_index,grid,start,end,cgs->nr);
+    grid_last(log,grid,start,end,cgs->nr);
 
     if (debug) {
       check_grid(debug,grid);
-      print_grid(debug,grid,fr->bDomDecomp,cg_index);
+      print_grid(debug,grid);
     }
   }
   debug_gmx();
   
   /* Do the core! */
   if (bGrid) {
-      nsearch = ns5_core(log,cr,fr,cg_index,box,box_size,ngid,top,grps,
+      nsearch = ns5_core(log,cr,fr,box,box_size,ngid,top,grps,
                          grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,
                          bHaveVdW,bDoForces,FALSE);
       
@@ -2247,7 +2192,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
        * of the QM atoms. If bQMMM is true, this list will now be made: 
        */
     if (fr->bQMMM && fr->qr->QMMMscheme!=eQMMMschemeoniom) {
-          nsearch += ns5_core(log,cr,fr,cg_index,box,box_size,ngid,top,grps,
+          nsearch += ns5_core(log,cr,fr,box,box_size,ngid,top,grps,
                               grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,
                               bHaveVdW,bDoForces,TRUE);
     }

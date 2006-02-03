@@ -378,8 +378,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
   cmp_int(fp,"inputrec->nstlist",-1,ir1->nstlist,ir2->nstlist);
   cmp_int(fp,"inputrec->ndelta",-1,ir1->ndelta,ir2->ndelta);
-  cmp_int(fp,"inputrec->bDomDecomp",-1,ir1->bDomDecomp,ir2->bDomDecomp);
-  cmp_int(fp,"inputrec->decomp_dir",-1,ir1->decomp_dir,ir2->decomp_dir);
   cmp_int(fp,"inputrec->nstcomm",-1,ir1->nstcomm,ir2->nstcomm);
   cmp_int(fp,"inputrec->comm_mode",-1,ir1->comm_mode,ir2->comm_mode);
   cmp_int(fp,"inputrec->nstcheckpoint",-1,ir1->nstcheckpoint,ir2->nstcheckpoint);

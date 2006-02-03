@@ -853,10 +853,6 @@ void init_forcerec(FILE *fp,
 	      1/fr->ewaldcoeff);
   }
 
-  /* Domain decomposition parallellism... */
-  fr->bDomDecomp = ir->bDomDecomp;
-  fr->Dimension  = ir->decomp_dir;
-  
   /* Electrostatics */
   fr->epsilon_r  = ir->epsilon_r;
   fr->epsilon_rf = ir->epsilon_rf;
@@ -1022,7 +1018,9 @@ void init_forcerec(FILE *fp,
    * but what the heck... */
 
   bTab = fr->bcoultab || fr->bvdwtab;
-  bSep14tab = ((top->idef.il[F_LJ14].multinr[cr->nnodes-1] > 0) &&
+  bSep14tab = ((top->idef.il[F_LJ14].nr > 0 ||
+		top->idef.il[F_LJC14_A].nr > 0 ||
+		top->idef.il[F_LJC_PAIRS_A].nr > 0) &&
 	       (!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT));
   
   negptable = 0;
@@ -1414,7 +1412,7 @@ void force(FILE       *fplog,   int        step,
     GMX_MPE_LOG(ev_calc_bonds_start);
     calc_bonds(fplog,cr->ms,
 	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
-	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
+	       opts->ngener,&grps->estat,
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
     GMX_MPE_LOG(ev_calc_bonds_finish);

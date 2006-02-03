@@ -85,7 +85,16 @@ int ifunc_index(directive d,int type)
       gmx_fatal(FARGS,"Invalid angle type %d",type);
   case d_pairs:
   case d_pairtypes:
-    return F_LJ14;
+    if (type == 1 || (d == d_pairtypes && type == 2))
+      return F_LJ14;
+    else if (type == 2)
+      return F_LJC14_A;
+    else if (type == 3) {
+      if (d == d_pairtypes)
+	gmx_fatal(FARGS,"Can not have parameters for pair type %d",type);
+      return F_LJC_PAIRS_A;
+    } else
+      gmx_fatal(FARGS,"Invalid pair type %d",type);
   case d_dihedrals:
   case d_dihedraltypes:
     switch (type) {

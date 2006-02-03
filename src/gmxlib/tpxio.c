@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 40;
+static const int tpx_version = 41;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 40;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 7;
+static const int tpx_generation = 8;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -128,6 +128,8 @@ static const t_ftupd ftupd[] = {
   { 34, F_QUARTIC_ANGLES    },
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
+  { 41, F_LJC14_A           },
+  { 41, F_LJC_PAIRS_A       },
   { 32, F_BHAM_LR           },
   { 32, F_RF_EXCL           },
   { 32, F_COUL_RECIP        },
@@ -211,9 +213,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       ir->ePBC = epbcNONE;
     do_int(ir->ns_type); 
     do_int(ir->nstlist); 
-    do_int(ir->ndelta); 
-    do_int(ir->bDomDecomp);
-    do_int(ir->decomp_dir);
+    do_int(ir->ndelta);
+    if (file_version < 41) {
+      do_int(idum);
+      do_int(idum);
+    }
     do_int(ir->nstcomm); 
     if (file_version > 34)
       do_int(ir->comm_mode);
@@ -707,6 +711,12 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->lj14.c12A);
     do_real(iparams->lj14.c6B);
     do_real(iparams->lj14.c12B);
+    break;
+  case F_LJC14_A:
+    do_real(iparams->lj14.c6A);
+    do_real(iparams->lj14.c12A);
+    break;
+  case F_LJC_PAIRS_A:
     break;
   case F_PDIHS:
   case F_PIDIHS:

@@ -94,8 +94,6 @@ typedef struct {
   int  ns_type;		/* which ns method should we use?               */
   int  nstlist;		/* number of steps before pairlist is generated	*/
   int  ndelta;		/* number of cells per rlong			*/
-  bool bDomDecomp;      /* Should we do domain decomposition?           */
-  int  decomp_dir;      /* Direction of decomposition (may not be opt.) */
   int  nstcomm;		/* number of steps after which center of mass	*/
                         /* motion is removed				*/
   int  comm_mode;       /* Center of mass motion removal algorithm      */

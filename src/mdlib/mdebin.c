@@ -125,7 +125,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   bool     bBHAM,b14;
   
   bBHAM = (idef->functype[0] == F_BHAM);
-  b14   = (idef->il[F_LJ14].nr > 0);
+  b14   = (idef->il[F_LJ14].nr > 0 || idef->il[F_LJC14_A].nr > 0);
 
   for(i=0; i<F_NRE; i++) {
     bEner[i] = FALSE;
@@ -163,7 +163,9 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       bEner[i] = (idef->il[F_DISRES].nr > 0);
     else if (i == F_ORIRESDEV)
       bEner[i] = (idef->il[F_ORIRES].nr > 0);
-    else if (i == F_CONNBONDS)
+    else if (i == F_CONNBONDS || 
+	     i == F_LJC14_A ||
+	     i == F_LJC_PAIRS_A)
       bEner[i] = FALSE;
     else
       bEner[i] = (idef->il[i].nr > 0);

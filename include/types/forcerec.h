@@ -135,8 +135,7 @@ typedef struct {
    * It can be set to esolNO to disable all water optimization */
   int  solvent_opt;
   int  nWatMol;
-  int  Dimension;
-  bool bGrid,bDomDecomp;
+  bool bGrid;
   int  *solvent_type;
   rvec *cg_cm;
   rvec *shift_vec;

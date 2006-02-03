@@ -183,8 +183,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   CHECK((ir->coulombtype==eelEWALD || ir->coulombtype==eelPPPM)
 	&& (ir->efep!=efepNO));
   
-  sprintf(err_buf,"Domain decomposition can only be used with grid NS");
-  CHECK(ir->bDomDecomp && (ir->ns_type == ensSIMPLE));
   sprintf(err_buf,"Twin-range neighbour searching (NS) with simple NS"
 	  " algorithm not implemented");
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
@@ -427,7 +425,6 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("pbc",         ir->ePBC,       epbc_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
-  EETYPE("domain-decomposition",ir->bDomDecomp, yesno_names, nerror, TRUE);
   
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");

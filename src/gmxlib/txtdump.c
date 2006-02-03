@@ -392,8 +392,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PS("ns_type",ENS(ir->ns_type));
     PI("nstlist",ir->nstlist);
     PI("ndelta",ir->ndelta);
-    PS("bDomDecomp",BOOL(ir->bDomDecomp));
-    PI("decomp_dir",ir->decomp_dir);
     PI("nstcomm",ir->nstcomm);
     PS("comm_mode",ECOM(ir->comm_mode));
     PI("nstcheckpoint",ir->nstcheckpoint);
@@ -592,6 +590,13 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"c6A=%15.8e, c12A=%15.8e, c6B=%15.8e, c12B=%15.8e\n",
 	    iparams->lj14.c6A,iparams->lj14.c12A,
 	    iparams->lj14.c6B,iparams->lj14.c12B);
+    break;
+  case F_LJC14_A:
+    fprintf(fp,"c6=%15.8e, c12=%15.8e\n",
+	    iparams->lj14.c6A,iparams->lj14.c12A);
+    break;
+  case F_LJC_PAIRS_A:
+    fprintf(fp,"\n");
     break;
   case F_PDIHS:
   case F_ANGRES:

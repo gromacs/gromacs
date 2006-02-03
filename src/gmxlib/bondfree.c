@@ -74,7 +74,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		t_forcerec *fr,const t_pbc *pbc,const t_graph *g,
 		real epot[],t_nrnb *nrnb,
 		real lambda,
-		const t_mdatoms *md,int ngrp,real egnb[],real egcoul[],
+		const t_mdatoms *md,int ngrp,t_grp_ener *gener,
 		t_fcdata *fcd,
 		int step,bool bSepDVDL)
 {
@@ -114,7 +114,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	ind = interaction_function[ftype].nrnb_ind;
 	nat = interaction_function[ftype].nratoms+1;
 	dvdl = 0;
-	if (ftype != F_LJ14) {
+	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_A) {
 	  v = interaction_function[ftype].ifunc
 	    (nbonds,idef->il[ftype].iatoms,
 	     idef->iparams,
@@ -126,12 +126,12 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
 	  }
 	} else {
-	  v = do_nonbonded14(nbonds,idef->il[ftype].iatoms,
+	  v = do_nonbonded14(ftype,nbonds,idef->il[ftype].iatoms,
 			     idef->iparams,
 			     (const rvec*)x,f,fr->fshift,
 			     pbc_null,g,
 			     lambda,&dvdl,
-			     md,fr,ngrp,egnb,egcoul);
+			     md,fr,ngrp,gener);
 	  if (bSepDVDL) {
 	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,

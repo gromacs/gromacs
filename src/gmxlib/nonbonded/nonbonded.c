@@ -490,16 +490,17 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
 
 
 real 
-do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
+do_nonbonded14(int ftype,int nbonds,
+	       const t_iatom iatoms[],const t_iparams iparams[],
                const rvec x[],rvec f[],rvec fshift[],
                const t_pbc *pbc,const t_graph *g,
                real lambda,real *dvdlambda,
                const t_mdatoms *md,
-               const t_forcerec *fr,int ngrp,real egnb[],real egcoul[])
+               const t_forcerec *fr,int ngrp,t_grp_ener *gener)
 {
     static    bool bWarn=FALSE;
     bool      bFullPBC;
-    real      eps,r2,rtab2;
+    real      eps,r2,*tab,rtab2=0;
     rvec      dx,x14[2],f14[2];
     int       i,ai,aj,itype;
     int       typeA[2]={0,0},typeB[2]={0,1};
@@ -512,9 +513,11 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     int       nthreads = 1;
     int       count;
     real      krf,crf,tabscale;
-    real *    nbfp;
+    real      *nbfp=NULL;
+    real      *egnb=NULL,*egcoul=NULL;
     t_nblist  tmplist;
     int       icoul,ivdw;
+    bool      bFreeEnergy;
     
 #if GMX_THREADS
     pthread_mutex_t mtx;
@@ -526,10 +529,27 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
 #if GMX_THREADS
     pthread_mutex_initialize(&mtx);
 #endif
-    
+
+    switch (ftype) {
+    case F_LJ14:
+    case F_LJC14_A:
+      egnb   = gener->ee[egLJ14];
+      egcoul = gener->ee[egCOUL14];
+      break;
+    case F_LJC_PAIRS_A:
+      nbfp = fr->nbfp;
+      egnb   = gener->ee[egLJSR];
+      egcoul = gener->ee[egCOULSR];
+      break;
+    default:
+      gmx_fatal(FARGS,"Unknown function type %d in do_nonbonded14",
+		ftype);
+    }
+    tab = fr->tab14.tab;
+    rtab2 = sqr(fr->tab14.r);
+    tabscale = fr->tab14.scale;
     krf = fr->k_rf;
     crf = fr->c_rf;
-    tabscale = fr->tab14.scale;
     
     /* Determine the values for icoul/ivdw. */
     if (fr->bEwald) {
@@ -571,14 +591,31 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
     /* Reaction field stuff */  
     eps   = fr->epsfac*fr->fudgeQQ;
     
-    rtab2 = sqr(fr->tab14.r);
-    
+    bFreeEnergy = FALSE;
     for(i=0; (i<nbonds); ) 
     {
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-        
+        gid   = GID(md->cENER[ai],md->cENER[aj],ngrp);
+	
+	switch (ftype) {
+	case F_LJ14:
+	  bFreeEnergy =
+	    (fr->efep != efepNO &&
+	     (md->bPerturbed[ai] || md->bPerturbed[aj] ||
+	      iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
+	      iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
+	case F_LJC14_A:
+	  nbfp = (real *)&(iparams[itype].lj14.c6A);
+	  break;
+	case F_LJC_PAIRS_A:
+	  /* We could also consider doing these with the real atom numbers */
+	  typeA[0] = md->typeA[ai];
+	  typeA[1] = md->typeA[aj];
+	  break;
+	}
+
         if (!bFullPBC) 
         {
             /* This is a bonded interaction, atoms are in the same box */
@@ -613,7 +650,6 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
         {
             chargeA[0] = md->chargeA[ai];
             chargeA[1] = md->chargeA[aj];
-            gid  = GID(md->cENER[ai],md->cENER[aj],ngrp);
             copy_rvec(x[ai],x14[0]);
             copy_rvec(x[aj],x14[1]);
             clear_rvec(f14[0]);
@@ -623,15 +659,9 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                     md->cENER[ai],md->cENER[aj],ngrp,gid);
 #endif
             
-            outeriter = inneriter = count = 0;
-            nbfp = (real *)&(iparams[itype].lj14.c6A);
-
-            if (fr->efep != efepNO &&
-                (md->bPerturbed[ai] || md->bPerturbed[aj] ||
-                 iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
-                 iparams[itype].lj14.c12A != iparams[itype].lj14.c12B)) 
-            {
-                
+	    outeriter = inneriter = count = 0;
+	    if (bFreeEnergy)
+	      {
                 chargeB[0] = md->chargeB[ai];
                 chargeB[1] = md->chargeB[aj];
                 /* We pass &(iparams[itype].lj14.c6A) as LJ parameter matrix
@@ -671,7 +701,7 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                                           nbfp,
                                           egnb,
                                           tabscale,
-                                          fr->tab14.tab,
+                                          tab,
                                           lambda,
                                           dvdlambda,
                                           fr->sc_alpha,
@@ -704,7 +734,7 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                       nbfp,
                       egnb,
                       &tabscale,
-                      fr->tab14.tab,
+                      tab,
                       NULL,
                       NULL,
                       NULL,
