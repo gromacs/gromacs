@@ -412,20 +412,50 @@ Extra Lennard-Jones and electrostatic interactions between pairs
 of atoms in a molecule can be added in the {\tt [~pairs~]} section of
 a molecule definition. The parameters for these interactions can
 be set independently from the non-bonded interaction parameters.
-In the {\gromacs} and {\gromos} force fields pairs are only used
+In the {\gromos} force fields pairs are only used
 to modify the \normindex{1-4 interaction}s (interactions of atoms
 separated by three bonds). In these forcefields the 1-4 interactions
 are excluded from the non-bonded interactions (see \ssecref{excl}).
 
 The pair interaction parameters for the atom types
 in {\tt ff???nb.itp} are listed in the {\tt [~pairtypes~]} section.
-The {\gromacs} and {\gromos} force fields lists all these interactions 
+The {\gromos} force fields list all these interactions 
 explicitly, but this section might be empty for force fields like
 OPLS that calculate the 1-4 interactions by scaling.
 Pair parameters which are not present in the {\tt [~pairtypes~]} section
 are only generated when generate pairs is set to yes in the topology
 (see \ssecref{topfile}). When generate pairs is set to no, {\tt grompp}
 will give a warning for each pair type for which no parameters are given.
+
+The normal pair interactions, intended for 1-4 interactions,
+have function type 1. Function types 2 and 3 are intended
+for free-energy simulations. When determining hydration
+free-energies, the solute needs to be decoupled from the solvent.
+This can be done by adding a B-state topology (see \secref{fecalc})
+with all non-bonded parameters, i.e. charges and LJ parameters,
+of the solute set to zero. But the free-energy difference between the A and
+B state is not the total hydration free-energy, one has to
+add the free-energy for reintroducing the internal Coulomb and 
+interactions in the solute. This second step can be combined with
+the first step when the Coulomb and LJ interactions within
+the solute are not modified. For this purpose there is a pairs
+function type 2, which is identical to function type 1, except
+that the B-state parameters are always identical to the A-state
+parameters. For searching the parameters in the {\tt [~pairtypes~]} section
+no distinction is made between function type 1 and 2.
+Function type 3 is intended to replace the non-bonded interaction.
+It uses the unscaled charges and the non-bonded LJ parameters.
+Type 3 also only uses the A-state parameters. Note that
+one should add exclusions for all atom pairs participating in pair
+interactions type 3, otherwise such pairs will also end
+up in the normal neighborlists.
+
+All three pair types always use plain Coulomb interactions,
+even when Reaction-field, PME, Ewald or shifted Coulomb interactions
+are selected for the non-bonded interactions.
+Energies for types 1 and 2 are written to the energy and log file
+in seperate ``14'' LJ and Coulomb entries per energy group pair.
+Energies for type 3 are added to the LJ and Coulomb SR terms.
 
 \subsection{\normindex{Exclusions}}
 \label{subsec:excl}
@@ -841,9 +871,9 @@ type	&		      	      & at. & tp &					& 	\\
 		& {\tts constrainttypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts constraints})}		& 	\\
 		& {\tts pairtypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts pairs})}		& 	\\
 		& {\tts angletypes}	& \multicolumn{3}{l}{(see \tabref{topfile2}, directive {\tts angles})}		& 	\\
-proper dih.	& {\tts dihedraltypes}	& 2$^{(b)}$ & 1	& $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity & $\phi,k$ \\
-improper dih.	& {\tts dihedraltypes}	& 2$^{(c)}$ & 2	& $\xi_0$ (deg); $k_\xi$ (\kJmolrad{-2}) & all	\\
-RB dihedral	& {\tts dihedraltypes}	& 2$^{(b)}$ & 3	&  $C_0$, $C_1$, $C_2$, $C_3$, $C_4$, $C_5$ (\kJmol) 		& all	\\
+proper dih.	& {\tts dihedraltypes}	& 2/4$^{(b)}$ & 1	& $\phi_s$ (deg); $k_\phi$ (\kJmol); multiplicity & $\phi,k$ \\
+improper dih.	& {\tts dihedraltypes}	& 2/4$^{(c)}$ & 2	& $\xi_0$ (deg); $k_\xi$ (\kJmolrad{-2}) & all	\\
+RB dihedral	& {\tts dihedraltypes}	& 2/4$^{(b)}$ & 3	&  $C_0$, $C_1$, $C_2$, $C_3$, $C_4$, $C_5$ (\kJmol) 		& all	\\
 LJ 		& {\tts nonbond\_params}	& 2 & 1	& $V^{(a)}$; $W^{(a)}$ & \\
 Buckingham    	& {\tts nonbond\_params}	& 2 & 2	& $a$ (\kJmol); $b$ (nm$^{-1})$;  & \\
  & & & & $c_6$ (\kJmolnm{6}) & \\
@@ -851,8 +881,16 @@ Buckingham    	& {\tts nonbond\_params}	& 2 & 2	& $a$ (\kJmol); $b$ (nm$^{-1})$;
 \multicolumn{6}{c}{~} \\
 \multicolumn{6}{c}{\bf \large Molecule definition(s)} \\
 \dline
+{\em mandatory} & {\tts moleculetype}	& & & 	molecule name; &	\\
+		&			& & & 	exclude neighbors \# bonds away &	\\
+		&			& & & 	for non-bonded interactions & \\
+\hline
+{\em mandatory} & {\tts atoms}		& 1 & 	& atom type; residue number; 	& type	\\
+		&			&   &	& residue name; atom name; 	& 	\\
+		&			&   &	& charge group number; $q$ (e); $m$ (u) 	& $q,m$ \\
+\hline
 \multicolumn{6}{|c|}{} \\
-\multicolumn{6}{|c|}{one or more molecule definitions as described in
+\multicolumn{6}{|c|}{intramolecular interaction defintions as described in
 \tabref{topfile2} (next page)} \\
 \multicolumn{6}{|c|}{} \\
 \dline
@@ -869,8 +907,8 @@ Buckingham    	& {\tts nonbond\_params}	& 2 & 2	& $a$ (\kJmol); $b$ (nm$^{-1})$;
 \multicolumn{6}{l}{'F. E.' indicates which parameters can be interpolated
 during free energy calculations} \\
 \multicolumn{6}{l}{~$^{(a)}$ the combination rule determines the type of LJ parameters, see~\ssecref{nbpar}}\\
-\multicolumn{6}{l}{~$^{(b)}$ the inner two atoms in the dihedral} \\
-\multicolumn{6}{l}{~$^{(c)}$ the outer two atoms in the dihedral} \\
+\multicolumn{6}{l}{~$^{(b)}$ the inner two or all four atoms in the dihedral}\\
+\multicolumn{6}{l}{~$^{(c)}$ the outer two or all four atoms in the dihedral}\\
 \multicolumn{6}{l}{For free energy calculations, the parameters for topology 'B' ($\lambda = 1$) should be added} \\
 \multicolumn{6}{l}{on the same line, after the normal parameters,
 in the same order as the normal parameters.} \\
@@ -881,19 +919,11 @@ in the same order as the normal parameters.} \\
 \end{table}
 \begin{table}[p]
 \centerline{\small\begin{tabular}{|l|llllc|}
-\multicolumn{6}{c}{\bf \large Molecule definition} \\
+\multicolumn{6}{c}{\bf \large Intramolecular interaction definitions} \\
 \dline
 interaction 	& directive   	      & \#  & f. & parameters 				& F. E. \\
 type	&		      	      & at. & tp &					& 	\\
 \dline
-{\em mandatory} & {\tts moleculetype}	& & & 	molecule name; &	\\
-		&			& & & 	exclude neighbors \# bonds away &	\\
-		&			& & & 	for non-bonded interactions & \\
-\hline
-{\em mandatory} & {\tts atoms}		& 1 & 	& atom type; residue number; 	& type	\\
-		&			&   &	& residue name; atom name; 	& 	\\
-		&			&   &	& charge group number; $q$ (e); $m$ (u) 	& $q,m$ \\
-\hline
 bond		& {\tts bonds}$^{(b,c)}$	& 2 & 1	& $b_0$ (nm); $k_b$ (\kJmolnm{-2})	& all	\\
 G96 bond	& {\tts bonds}$^{(b,c)}$	& 2 & 2	& $b_0$ (nm); $k_b$ (\kJmolnm{-4})	& all	\\
 morse		& {\tts bonds}$^{(b,c)}$	& 2 & 3	& $b_0$ (nm); $D$ (\kJmol); $\beta$ (nm$^{-1}$) & \\
@@ -902,6 +932,8 @@ connection	& {\tts bonds}$^{(b)}$	& 2 & 5	& & \\
 harmonic pot.	& {\tts bonds}		& 2 & 6	& $b_0$ (nm); $k_b$ (\kJmolnm{-2})	& all	\\
 FENE bond	& {\tts bonds}		& 2 & 7	& $b_m$ (nm); $k_b$ (\kJmolnm{-2})	& 	\\
 LJ/Coul. 1-4	& {\tts pairs}		& 2 & 1	& $V^{(a)}$; $W^{(a)}$ & all \\
+LJ/C. 1-4 A	& {\tts pairs}		& 2 & 2	& $V^{(a)}$; $W^{(a)}$ &     \\
+LJ/C. pair A	& {\tts pairs}		& 2 & 3	&                      &     \\
 angle		& {\tts angles}$^{(c)}$	& 3 & 1	& $\theta_0$ (deg); $k_\theta$ (\kJmolrad{-2}) & all	\\
 G96 angle	& {\tts angles}$^{(c)}$	& 3 & 2	& $\theta_0$ (deg); $k_\theta$ (\kJmol) & all	\\
 quartic angle	& {\tts angles}$^{(c)}$	& 3 & 6	& \multicolumn{2}{l|}{$\theta_0$ (deg); $C_{i=0,1,2,3,4}$ (\kJmolrad{-i})}	\\
@@ -941,7 +973,7 @@ can be interpolated during free energy calculations}\\
 in the same order as the normal parameters.}
 \end{tabular}
 }
-\caption{The molecule definition.}
+\caption{Intramolecular interaction definitions.}
 \label{tab:topfile2}
 \end{table}
 
