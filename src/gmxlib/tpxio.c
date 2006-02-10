@@ -636,6 +636,11 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_ANGRES:
   case F_ANGRESZ:
     do_harm(iparams,bRead);
+    if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && bRead) {
+      /* Correct incorrect storage of parameters */
+      iparams->pdihs.phiB = iparams->pdihs.phiA;
+      iparams->pdihs.cpB  = iparams->pdihs.cpA;
+    }
     break;
   case F_FENEBONDS:
     do_real(iparams->fene.bm);
