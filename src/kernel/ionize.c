@@ -236,6 +236,13 @@ typedef struct {
 } t_cross_atom;
 
 /* BEGIN GLOBAL VARIABLES */
+
+/*
+  UGLY HACK
+  The 2 in this list doesn't really mean 2, but 2.5 keV as 
+  it's checked inside the code and added 0.5 when needed.
+*/
+
 static int   Energies[] = { 2, 6, 8, 10, 12, 15, 20 };
 static int   ionize_seed = 1993;
 #define NENER asize(Energies)
@@ -554,7 +561,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   static bool  bFirst = TRUE;
   static real  t0,imax,width,rho,nphot;
   static real  interval;
-  static int   dq_tot,nkd_tot,ephot,mode;
+  static int   dq_tot,nkd_tot,mode,ephot;
   static t_cross_atom *ca;
   static int   Eindex=-1;
   static gmx_rng_t gaussrand=NULL;
@@ -566,7 +573,8 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
   bool bIonize=FALSE,bKHole,bL,bDOIT;
   int  i,k,kk,m,nK,nL,dq,nkh,nkdecay;
   int  *nionize,*nkhole,*ndecay,nbuf[2];
-  
+
+
   if (bFirst) {
     /* Get parameters for gaussian photon pulse from inputrec */
     t0       = ir->userreal1;  /* Peak of the gaussian pulse            */
@@ -723,8 +731,10 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	
 	if (bL)
 	  E_lost = ephot-recoil[ca[i].z].E_L*(ca[i].n+1);
+	  if (ephot == 2) E_lost += 0.5; /* Real energy should be 2.5 KeV*/
 	else {
 	  E_lost = ephot-recoil[ca[i].z].E_K;
+	  if (ephot == 2) E_lost += 0.5; /* Real energy should be 2.5 KeV*/
 	  if ((ca[i].z > 2) && (nL > 0))
 	    bKHole = TRUE;
 	}
@@ -765,6 +775,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
 	}
 	theta      = DEG2RAD*rand_theta_incoh(Eindex,&ionize_seed);
 	Eelec      = (sqr(ephot)/512)*(1-cos(2*theta));
+	if (ephot == 2)  Eelec = (sqr(ephot+.5)/512)*(1-cos(2*theta)); /* Real energy should be 2.5 KeV*/
 	bIonize    = (Ebind <= Eelec);
 	bKHole     = bKHole && bIonize;
 	if (debug)
