@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 41;
+static const int tpx_version = 42;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 41;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 8;
+static const int tpx_generation = 9;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -637,8 +637,6 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_G96BONDS:
   case F_HARMONIC:
   case F_IDIHS:
-  case F_ANGRES:
-  case F_ANGRESZ:
     do_harm(iparams,bRead);
     break;
   case F_FENEBONDS:
@@ -720,11 +718,21 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_PDIHS:
   case F_PIDIHS:
+  case F_ANGRES:
+  case F_ANGRESZ:
     do_real(iparams->pdihs.phiA);
     do_real(iparams->pdihs.cpA);
-    do_real(iparams->pdihs.phiB);
-    do_real(iparams->pdihs.cpB);
-    do_int (iparams->pdihs.mult);
+    if ((ftype == F_ANGRES || ftype == F_ANGRESZ) && file_version < 42) {
+      /* Read the incorrectly stored multiplicity */
+      do_real(iparams->harmonic.rB);
+      do_real(iparams->harmonic.krB);
+      iparams->pdihs.phiB = iparams->pdihs.phiA;
+      iparams->pdihs.cpB  = iparams->pdihs.cpA;
+    } else {
+      do_real(iparams->pdihs.phiB);
+      do_real(iparams->pdihs.cpB);
+      do_int (iparams->pdihs.mult);
+    }
     break;
   case F_DISRES:
     do_int (iparams->disres.label);
