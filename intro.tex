@@ -68,8 +68,7 @@ the more severe the required approximations are. At a certain point
 approach must be augmented or replaced by {\em empirical} 
 parameterization of the model used. Where simulations based on physical 
 principles of atomic interactions still fail  due to the complexity of the 
-system (as is unfortunately 
-still the case for the prediction of protein folding; but: there is hope!) 
+system 
 molecular modeling is based entirely on a similarity analysis of known 
 structural and chemical data. The \normindex{QSAR} methods (Quantitative 
 Structure-Activity Relations) and many homology-based protein structure  
@@ -281,7 +280,8 @@ is still pretty big for large systems, and trouble is only expected
 for systems containing charged particles. But then truly bad things can
 happen, like accumulation of charges at the cutoff boundary or very
 wrong energies! For such systems you should consider using one of the
-implemented long-range electrostatic algorithms.
+implemented long-range electrostatic algorithms, such as 
+particle-mesh Ewald~\cite{Darden93,Essmann95}.
 
 \item[{\bf Boundary conditions are unnatural}]\mbox{}\\
 Since system size is small (even 10,000 particles is small), a cluster
@@ -300,9 +300,9 @@ to sometimes introduce extra ordering.
 
 \section{Energy Minimization and Search Methods}
 
-As mentioned in \secref{Compchem}, in many cases energy
-minimization is required. {\gromacs} provides a simple form of local
-energy minimization, the {\em steepest descent} method.
+As mentioned in \secref{Compchem}, in many cases energy minimization
+is required. {\gromacs} provides a number of methods for local energy
+minimization, as detailed in \secref{EM}.
 
 The potential energy function of a (macro)molecular system is a very
 complex landscape (or {\em hyper surface}) in a large number of
