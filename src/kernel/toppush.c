@@ -1250,7 +1250,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     }
   }
   
-  if (ftype==F_PDIHS && param.c[2]!=param.c[5])
+  if ((ftype==F_PDIHS || ftype==F_ANGRES || ftype==F_ANGRESZ)
+      && param.c[2]!=param.c[5])
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		"             %s multiplicity can not be perturbed %f!=%f",
 		get_warning_file(),get_warning_line(),
