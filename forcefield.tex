@@ -874,6 +874,7 @@ V_{dihr}(\phi') ~=~ \left\{
 \eeq
 where $\Delta\phi$ is a user defined angle and $k_{dihr}$ is the force 
 constant.
+} % Brace matches ifthenelse test for gmxlite
 
 \subsection{\swapindex{Distance}{restraint}s}
 \label{sec:disre}
@@ -1390,7 +1391,6 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 	averaged orientations are written to the energy file.
 	These can be analyzed using {\tt g\_energy}.
 \end{description}
-} % Brace matches ifthenelse test for gmxlite
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Polarization}
@@ -1671,6 +1671,7 @@ interaction (with a charge of -0.82) without the compensating charge
 of the protons and so induce a large dipole moment over the system.
 Therefore we have to keep groups of atoms with total charge
 0 together. These groups are called {\em charge groups}.
+} % Brace matches ifthenelse test for gmxlite
 
 \subsection{Treatment of cutoffs}
 \newcommand{\rs}{$r_{short}$}
@@ -2416,4 +2417,3 @@ See the \gromosv{96} manual~\cite{gromos96} for a complete description
 of the blocks. Note that all {\gromacs} programs can read compressed
 (.Z) or gzipped (.gz) files.
 
-} % Brace matches ifthenelse test for gmxlite

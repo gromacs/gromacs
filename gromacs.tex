@@ -98,10 +98,7 @@
 \rhead[\fancyplain{}{\em\leftmark}]{\fancyplain{}{\em\thepage}}
 \cfoot{}
 
-\ifthenelse{\equal{\gmxlite}{1}}
-{
-}
-{
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \begin{center}
 \phantom{ }
 \vspace{1cm}
@@ -236,7 +233,7 @@ available on our homepage, \wwwpage. Have fun.
 \include{implement}
 \include{averages}
 \include{progman}
-}
+} % Brace matches ifthenelse test for gmxlite
 %
 % The pdfdummy counter is a workaround to get correct
 % bookmarks for the index & bibliography in pdf files
