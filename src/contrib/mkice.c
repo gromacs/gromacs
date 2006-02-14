@@ -53,6 +53,7 @@
 #include "txtdump.h"
 #include "trnio.h"
 #include "symtab.h"
+#include "strdb.h"
 #include "atomprop.h"
 #include "confio.h"
 
@@ -139,6 +140,68 @@ void unitcell(rvec x[],rvec box,bool bYaw,real odist,real hdist)
       for(m=0; (m<DIM); m++) 
 	x[iout+3][m] = x[iout+4][m] = 
 	  (1-2*DCONS)*x[iout][m]+DCONS*(x[iout+1][m]+x[iout+2][m]);
+  }
+  
+  box[XX] = 2*cx;
+  box[YY] = 2*(cy2+cy);
+  box[ZZ] = 2*(1+cz);
+  for(i=0; (i<DIM); i++)
+    box[i] *= odist;
+    
+  printf("Unitcell:  %10.5f  %10.5f  %10.5f\n",box[XX],box[YY],box[ZZ]);
+  printf("Dipole:    %10.5f  %10.5f  %10.5f (e nm)\n",dip[XX],dip[YY],dip[ZZ]);
+}
+
+void random_h_coords(int natmol,int nmol,rvec x[],rvec box,
+		     bool bYaw,real odist,real hdist)
+{
+#define cx  0.81649658
+#define cy  0.47140452
+#define cy2 0.94280904
+#define cz  0.33333333
+  
+  rvec xx[24] = {
+    { 0,   0,         0 }, /* O1 */
+    { 0,   0,         1 }, /* H relative to Oxygen */
+    { cx, cy,       -cz },
+    { cx, cy,       -cz }, /* O2 */
+    { 0, 0,       -1    }, /* H relative to Oxygen */
+    { cx,-cy,       +cz },
+    { cx, cy+cy2,     0 }, /* O3 */
+    { -cx, cy,    -cz   }, /* H relative to Oxygen */
+    { 0,   -cy2,    -cz },
+    { 0,  2*cy+cy2, -cz }, /* O4 */
+    {-cx,-cy,       +cz }, /* H relative to Oxygen */
+    { 0 , cy2,      +cz },
+    { 0,   0,         1 }, /* O5 */
+    {-cx, cy,       +cz }, /* H relative to Oxygen */
+    { 0 , -cy2,     +cz },
+    { cx, cy,      1+cz }, /* O6 */
+    { -cx, -cy,     -cz }, /* H relative to Oxygen */
+    { 0,   cy2,     -cz },
+    { cx, cy+cy2,     1 }, /* O7 */
+    { 0,  0,       -1   }, /* H relative to Oxygen */
+    { cx, cy,       +cz },
+    { 0,  2*cy+cy2,1+cz }, /* O8 */
+    { 0,   0,         1 }, /* H relative to Oxygen */
+    { cx,   -cy,    -cz }
+  };
+  int  i,iin,iout,j,m;
+  rvec tmp,t2,dip;
+  
+  clear_rvec(dip);
+  for(i=0; (i<nmol); i++) {
+    iin = natmol*i;
+    iout = iin;
+    svmul(odist,x[iin],x[iout]);
+    svmul(-0.82,x[iout],t2);
+    rvec_inc(dip,t2);
+    for(j=1; (j<=2); j++) {
+      svmul(hdist,xx[3*(i % 8)+j],tmp);
+      rvec_add(x[iout],tmp,x[iout+j]);
+      svmul(0.41,x[iout+j],t2);
+      rvec_inc(dip,t2);
+    }
   }
   
   box[XX] = 2*cx;
@@ -297,6 +360,25 @@ static real calc_ener(real c6,real c12,rvec dx,tensor vir)
   return e;
 }
 
+static int read_rel_coords(char *fn,rvec **xx,int natmol)
+{
+  int    i,nline;
+  double x,y,z;
+  char   **strings=NULL;
+  
+  nline = get_file(fn,&strings);
+  printf("Read %d lines from %s\n",nline,fn);
+  snew(*xx,nline*natmol);
+  for(i=0; (i<nline); i++) {
+    if (sscanf(strings[i],"%lf%lf%lf",&x,&y,&z) != 3)
+      gmx_fatal(FARGS,"Not enough arguments on line %d of file %s (should be 3)",i,fn);
+    (*xx)[natmol*i][XX] = x;
+    (*xx)[natmol*i][YY] = y;
+    (*xx)[natmol*i][ZZ] = z;
+  }
+  return natmol*nline;
+}
+
 void virial(FILE *fp,bool bFull,int nmol,rvec x[],matrix box,real rcut,
 	    bool bYaw,real q[],bool bLJ)
 {
@@ -409,7 +491,12 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "mkice generates an ice crystal in the Ih crystal form which is the",
     "most stable form. The rectangular unitcell contains eight molecules",
-    "and all oxygens are tetrahedrally coordinated."
+    "and all oxygens are tetrahedrally coordinated.[PAR]",
+    "If an input file is given it is interpreted as a series of oxygen",
+    "coordinates the distance between which can be scaled by the odist flag.",
+    "The program then adds hydrogens to the oxygens in random orientation",
+    "but with proper OH distances and HOH angle. This feature allows to",
+    "build water clusters based on oxygen coordinates only."
   };
   static int nx=1,ny=1,nz=1;
   static bool bYaw=FALSE,bLJ=TRUE,bFull=TRUE,bSeries=FALSE;
@@ -428,7 +515,7 @@ int main(int argc,char *argv[])
     { "-odist", FALSE, etREAL, {&odist}, "Distance (nm) between oxygens" },
     { "-hdist", FALSE, etREAL, {&hdist}, "Bondlength (nm) for OH bond" },
     { "-diamond",FALSE,etBOOL, {&bDiamond}, "Make a diamond instead" },
-    { "-pbc",   FALSE, etBOOL, {&bPBC},  "Make a pariodic diamond" },
+    { "-pbc",   FALSE, etBOOL, {&bPBC},  "Make a periodic diamond" },
     { "-order", FALSE,etBOOL,  {&bOrdered}, "Make a proton-ordered ice lattice" },
     { "-series",FALSE, etBOOL, {&bSeries}, 
       "Do a series of virial calculations with different cut-off (from 0.3 up till the specified one)" }
@@ -436,6 +523,7 @@ int main(int argc,char *argv[])
   t_filenm fnm[] = {
     { efSTO, "-p", "ice", ffWRITE },
     { efSTO, "-c", NULL,  ffOPTRD },
+    { efDAT, "-f", NULL,  ffOPTRD },
     { efTRN, "-o", "ice", ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -464,17 +552,24 @@ int main(int argc,char *argv[])
     natmol = 1;
   else
     natmol = 3;
-  natom = natmol*8;
-  nmax = natom*nx*ny*nz;
-  snew(xx,nmax);
+    
+  if (opt2bSet("-f",NFILE,fnm)) {
+    natom = read_rel_coords(opt2fn("-f",NFILE,fnm),&xx,natmol);
+    nmax  = natom;
+  }
+  else {
+    natom = natmol*8;
+    nmax = natom*nx*ny*nz;
+    snew(xx,nmax);
+  }
   snew(pdba,1);
   init_t_atoms(pdba,nmax,TRUE);
   pdba->nr = nmax;
   open_symtab(&symtab);
   for(n=0; (n<nmax); n++) {
     pdba->pdbinfo[n].type   = epdbATOM;
-    pdba->pdbinfo[n].atomnr = n;
-    pdba->atom[n].resnr     = n/natmol;
+    pdba->pdbinfo[n].atomnr = 1+n;
+    pdba->atom[n].resnr     = 1+(n/natmol);
     pdba->atomname[n] = put_symtab(&symtab,
 				   bDiamond ? diamname[(n % natmol)] : watname[(n % natmol)]);
     if (bDiamond)
@@ -487,7 +582,10 @@ int main(int argc,char *argv[])
   
   /* Generate the unit cell */
   if (bDiamond)
-    unitcell_d(xx,box,odist);
+    unitcell_d(xx,box,odist); 
+  else if (opt2bSet("-f",NFILE,fnm)) {
+    random_h_coords(natmol,natom/natmol,xx,box,bYaw,odist,hdist);
+  }
   else
     unitcell(xx,box,bYaw,odist,hdist);
   if (debug) {
