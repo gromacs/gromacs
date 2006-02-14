@@ -39,7 +39,6 @@
 
 % If you set gmxlite to 1 a very much shortened version of the manual 
 % will be generated, which may be useful for teaching.
-
 \newcommand{\gmxlite}{0}
 
 \begin{document}
@@ -68,7 +67,7 @@
 
 \ifthenelse{\equal{\gmxlite}{1}}
 {
-\fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont {\em ~Lite~}}}
+\fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont User Manual {\em ~Lite~}}}
 }
 {
 \fcolorbox{blue}{blue}{\textcolor{white}{\fontsize{56}{64} \selectfont ~USER MANUAL~}}
@@ -84,7 +83,27 @@
 \end{center}
 \vfill
 
+\ifthenelse{\equal{\gmxlite}{1}} 
+{
+\newpage
+{\bf
+This text is a shortened version of the full GROMACS manual, written
+by David van der Spoel, Berk Hess, Erik Lindahl and others. Please
+find further information on our website {\wwwpage}.}
+
+\vspace{2cm}
+
+\noindent \copyright\ 1991--2000: 
+Department of Biophysical Chemistry, University of Groningen. 
+Nijenborgh 4, 9747 AG Groningen, The Netherlands.\\
+\medskip
+
+\noindent \copyright\ 2001--2006:
+The GROMACS development team.\\
+} 
+{ 
 \cleardoublepage
+} % Brace matches ifthenelse test for gmxlite
 %reset to normal margins
 \addtolength{\oddsidemargin}{5mm}
 
@@ -130,7 +149,7 @@ Department of Biophysical Chemistry, University of Groningen.
 Nijenborgh 4, 9747 AG Groningen, The Netherlands.\\
 \medskip
 
-\noindent \copyright\ 2001--2005:
+\noindent \copyright\ 2001--2006:
 The GROMACS development team.\\
 
 \vspace{5mm}
@@ -224,7 +243,9 @@ available on our homepage, \wwwpage. Have fun.
 \include{topology}
 \include{special}
 \include{programs}
+} % Brace matches ifthenelse test for gmxlite
 \include{analyse}
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 %
 %       A P P E N D I C E S
 %

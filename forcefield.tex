@@ -50,10 +50,12 @@ reasons; it is based on
 with a small modification concerning the interaction between
 water-oxygens and carbon atoms~\cite{Buuren93b,Mark94}, as well as 10
 extra atom types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 However, the user is free to make her own modifications (beware!).
 This will be explained in details in \chref{top}, which deals
 with the {\bf Topology}. The organization of the force field files
 is described in \secref{fforganization}.
+} % Brace matches ifthenelse test for gmxlite
 
 To accommodate the potential functions used
 in some popular force fields, {\gromacs} offers a choice of functions,
@@ -925,6 +927,7 @@ The forces are
 \end{array} \right.
 \eeq
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Time averaging}
 Distance restraints based on instantaneous distances can potentially reduce
 the fluctuations in a molecule significantly. This problem can be overcome by restraining
@@ -1126,11 +1129,13 @@ Some parameters for NMR refinement can be specified in the
         instantaneous distances of all atom pairs involved in
         distance restraints are written to the energy file.
 \end{description}
+} % Brace matches ifthenelse test for gmxlite
 
 \newcommand{\SSS}{{\mathbf S}}
 \newcommand{\DD}{{\mathbf D}}
 \newcommand{\RR}{{\mathbf R}}
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\swapindex{Orientation}{restraint}s}
 \label{sec:orire}
 This section describes how orientations between vectors,
@@ -1391,6 +1396,7 @@ force constants and averaging times and ensemble averaging see~\cite{Hess2003}.
 	averaged orientations are written to the energy file.
 	These can be analyzed using {\tt g\_energy}.
 \end{description}
+} % Brace matches ifthenelse test for gmxlite
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Polarization}
@@ -1671,9 +1677,8 @@ interaction (with a charge of -0.82) without the compensating charge
 of the protons and so induce a large dipole moment over the system.
 Therefore we have to keep groups of atoms with total charge
 0 together. These groups are called {\em charge groups}.
-} % Brace matches ifthenelse test for gmxlite
 
-\subsection{Treatment of cutoffs}
+\subsection{Treatment of Cutoffs}
 \newcommand{\rs}{$r_{short}$}
 \newcommand{\rl}{$r_{long}$}
 {\gromacs} is quite flexible in treating cutoffs, which implies
@@ -1684,10 +1689,9 @@ of interaction to use in each case, and which cutoffs should be
 used in the neighborsearching.
 
 For both Coulomb and van der Waals interactions there are interaction
-type selectors
-(termed {\tt vdwtype} and {\tt coulombtype}) and two parameters,
-for a total of six nonbonded interaction parameters. See \secref{mdpopt} for a complete
-description of these parameters.
+type selectors (termed {\tt vdwtype} and {\tt coulombtype}) and two
+parameters, for a total of six nonbonded interaction parameters. See
+\secref{mdpopt} for a complete description of these parameters.
 
 The neighbor searching (NS) can be performed using a single-range, or a twin-range 
 approach. Since the former is merely a special case of the latter we will 
@@ -1752,6 +1756,7 @@ non-bonded interactions.]{Parameters for the different functional
 forms of the non-bonded interactions.}
 \label{tab:funcparm}
 \end{table}
+} % Brace matches ifthenelse test for gmxlite
 
 
 \newcommand{\Fi}{\ve{F}_i'}
@@ -1764,6 +1769,7 @@ forms of the non-bonded interactions.}
 \newcommand{\rvjk}{\ve{r}_{jk}}
 \newcommand{\rvjl}{\ve{r}_{jl}}
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Virtual interaction-sites}
 \label{sec:virtual_sites}
 \index{virtual interaction-sites}
@@ -1998,10 +2004,12 @@ virtual site type that will be sufficient for a certain purpose.
 
 
 \end{itemize}
+} % Brace matches ifthenelse test for gmxlite
 
 \newcommand{\dr}{{\rm d}r}
 \newcommand{\avcsix}{\left< C_6 \right>}
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Dispersion correction}
 \index{dispersion correction}
 In this section we derive long range corrections due to the use of a
@@ -2126,8 +2134,9 @@ P_{lr}	~=~	-\frac{4}{3} \pi \avcsix \rho^2 r_c^{-3}
 \eeq
 For inhomogeneous systems \eqnref{pcorr} can be applied under the same
 restriction as holds for the energy (see \secref{ecorr}).
+} % Brace matches ifthenelse test for gmxlite
 
-
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{Long Range Electrostatics}
 \label{sec:lr_elstat}
 \subsection{\normindex{Ewald sum}mation}
@@ -2347,8 +2356,10 @@ improve the scaling in most cases.
 %$\hat{G}(k)$ function, if you pass the {\tt -ghat} option to {\tt
 %testlr}. Try it if you think the {\tt mk\_ghat} procedure is a waste
 %of time.
+} % Brace matches ifthenelse test for gmxlite
 
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{\swapindex{All-hydrogen}{force-field}}
 The {\gromacs} all-hydrogen force-field is almost identical to the normal
 {\gromacs} forcefield, since the extra hydrogens have no Lennard-Jones
@@ -2417,3 +2428,4 @@ See the \gromosv{96} manual~\cite{gromos96} for a complete description
 of the blocks. Note that all {\gromacs} programs can read compressed
 (.Z) or gzipped (.gz) files.
 
+} % Brace matches ifthenelse test for gmxlite

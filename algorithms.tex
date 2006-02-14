@@ -38,17 +38,20 @@
 \chapter{Algorithms}
 \label{ch:algorithms}
 \section{Introduction}
-In this chapter we first give describe two general concepts used in
+In this chapter we first give describe some general concepts used in
 {\gromacs}:  {\em periodic boundary conditions} (\secref{pbc})
 and the {\em group concept} (\secref{group}). The MD algorithm is
 described in \secref{MD}: first a global form of the algorithm is
 given, which is refined in subsequent subsections. The (simple) EM
 (Energy Minimization) algorithm is described in \secref{EM}. Some
 other algorithms for special purpose dynamics are described after
-this.  In the final \secref{par} of this chapter a few principles are
+this.  
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+In the final \secref{par} of this chapter a few principles are
 given on which parallelization of {\gromacs} is based. The
 parallelization is hardly visible for the user and is therefore not
 treated in detail.
+} % Brace matches ifthenelse test for gmxlite
 
 A few issues are of general interest. In all cases the {\em system}
 must be defined, consisting of molecules. Molecules again consist of
@@ -235,7 +238,7 @@ translation with the indexed vector (see \ssecref{forces}).
 Restriction (\ref{eqn:gridrc}) ensures that only 26 images need to be
 considered.
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
 \section{The group concept}
 \label{sec:group}
 In the {\gromacs} MD and analysis programs one uses {\em groups} of
@@ -308,7 +311,7 @@ atoms are saved to the XTC file.
 \end{description}
 The use of groups in analysis programs is described in
 \chref{analysis}.
-} % Brace matches ifthenelse test for gmxlite
+%} % Brace matches ifthenelse test for gmxlite
 
 \section{Molecular Dynamics}
 \label{sec:MD}
@@ -328,7 +331,7 @@ $\Downarrow$\\
 \rule{\textwidth}{1pt}\\
 {\bf 2. Compute forces} \\[1ex]
 The force on any atom  \\[1ex]
-$\ve{F}_i = - \frac{\partial V}{\partial \ve{r}_i}$ \\[1ex]
+$\ve{F}_i = - \displaystyle\frac{\partial V}{\partial \ve{r}_i}$ \\[1ex]
 is computed by calculating the force between non-bonded atom pairs: \\
 $\ve{F}_i = \sum_j \ve{F}_{ij}$ \\
 plus the forces due to bonded interactions (which may depend on 1, 2,
@@ -600,8 +603,10 @@ The virial ${\bf \Xi}$ tensor is defined as
 \label{eqn:Xi}
 \eeq
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 The {\gromacs} implementation of the virial computation is described
 in \secref{virial}.
+} % Brace matches ifthenelse test for gmxlite
 
 
 \subsection{Update configuration}
@@ -1121,10 +1126,12 @@ Verlet algorithm is equal to $(\ve{G}_i/m_i)(\Dt)^2$. Solving the
 Lagrange multipliers (and hence the displacements) requires the
 solution of a set of coupled equations of the second degree. These are
 solved iteratively by SHAKE.
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 For the special case of rigid water molecules, that often make up more
 than 80\% of the simulation system we have implemented the 
 \normindex{SETTLE}
 algorithm~\cite{Miyamoto92} (\secref{constraints}).
+} % Brace matches ifthenelse test for gmxlite
 
 
 
