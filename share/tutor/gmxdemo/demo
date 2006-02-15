@@ -280,7 +280,6 @@ set  ans = $<
 echo "generating parameter file..."
 cat > pr.mdp << _EOF_
 title               =  ${MOL} position restraining
-warnings            =  10
 cpp                 =  /usr/bin/cpp
 define              =  -DPOSRES
 constraints         =  all-bonds
