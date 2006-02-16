@@ -777,7 +777,7 @@ static int search_string(char *s,int ng,char *gn[])
 static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 			 t_block *block,char *gnames[],
 			 int gtype,int restnm,
-			 bool bOneGroup,bool bVerbose)
+			 bool bOneGroup,bool bGenRest,bool bVerbose)
 {
   unsigned short *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
@@ -828,6 +828,9 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   
   /* Now check whether we have done all atoms */
   if (ntot != atoms->nr) {
+    if (!bGenRest)
+      gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
+		atoms->nr-ntot,title);
     if (bVerbose)
       fprintf(stderr,"Making dummy/rest group for %s containing %d elements\n",
 	      title,atoms->nr-ntot);
@@ -1106,7 +1109,7 @@ void do_index(char *ndx,
   if (ir->eI != eiMD)
     ir->etc = etcNO;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
-	       restnm,FALSE,bVerbose);
+	       restnm,FALSE,FALSE,bVerbose);
   nr=atoms->grps[egcTC].nr;
   ir->opts.ngtc=nr;
   snew(ir->opts.nrdf,nr);
@@ -1233,7 +1236,8 @@ void do_index(char *ndx,
     gmx_fatal(FARGS,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
   do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,
-	       restnm,FALSE,bVerbose);  nr=atoms->grps[egcACC].nr;
+	       restnm,FALSE,TRUE,bVerbose);
+  nr=atoms->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
   ir->opts.ngacc=nr;
   
@@ -1250,7 +1254,7 @@ void do_index(char *ndx,
     gmx_fatal(FARGS,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
   do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,
-	       restnm,FALSE,bVerbose);
+	       restnm,FALSE,TRUE,bVerbose);
   nr=atoms->grps[egcFREEZE].nr;
   ir->opts.ngfrz=nr;
   snew(ir->opts.nFreeze,nr);
@@ -1271,11 +1275,11 @@ void do_index(char *ndx,
   
   nenergy=str_nelem(energy,MAXPTR,ptr1);
   do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,
-	       restnm,FALSE,bVerbose);
+	       restnm,FALSE,TRUE,bVerbose);
   ir->opts.ngener=atoms->grps[egcENER].nr;
   nuser=str_nelem(vcm,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,
-	       restnm,FALSE,bVerbose);
+	       restnm,FALSE,TRUE,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode);
@@ -1297,16 +1301,16 @@ void do_index(char *ndx,
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,
-	       restnm,FALSE,bVerbose);
+	       restnm,FALSE,TRUE,bVerbose);
   nuser=str_nelem(user2,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,
-	       restnm,FALSE,bVerbose);
+	       restnm,FALSE,TRUE,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,
-	       restnm,TRUE,bVerbose);
+	       restnm,TRUE,TRUE,bVerbose);
   nofg = str_nelem(orirefitgrp,MAXPTR,ptr1);
   do_numbering(atoms,nofg,ptr1,grps,gnames,egcORFIT,
-	       restnm,FALSE,bVerbose);
+	       restnm,FALSE,TRUE,bVerbose);
 
   /* QMMM input processing */
   nQMg          = str_nelem(QMMM,MAXPTR,ptr1);
@@ -1318,7 +1322,7 @@ void do_index(char *ndx,
   }
   /* group rest, if any, is always MM! */
   do_numbering(atoms,nQMg,ptr1,grps,gnames,egcQMMM,
-               restnm,FALSE,bVerbose);
+               restnm,FALSE,TRUE,bVerbose);
   nr = nQMg; /*atoms->grps[egcQMMM].nr;*/
   ir->opts.ngQM = nQMg;
   snew(ir->opts.QMmethod,nr);
