@@ -121,7 +121,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   /* SHAKE / LINCS */
-  sprintf(err_buf,"constraints with Conjugate Gradients not implemented");
+  sprintf(err_buf,"constraints with Conjugate Gradients not implemented. Specify -DFLEXIBLE on the defines line in your mdp file");
   CHECK((opts->nshake > 0) && (ir->eI == eiCG));
 
   if ( (opts->nshake > 0) && (opts->bMorse) ) {
