@@ -264,14 +264,12 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     cr->nnodes   = 1;
     cr->nthreads = 1;
     
-    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
+    /*    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
     printf("Neighborsearching with a cut-off of %g\n",rlong);
-    init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);
+    init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);*/
     fr->cg0 = 0;
     fr->hcg = top->blocks[ebCGS].nr;
     fr->nWatMol = 0;
-    if (debug)
-      pr_forcerec(debug,fr,cr);
     
     /* Prepare for neighboursearching */
     init_nrnb(&nrnb);
@@ -283,9 +281,11 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   }
 
   /* Init things dependent on parameters */  
-  ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
+  ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
   printf("Neighborsearching with a cut-off of %g\n",rlong);
-  init_forcerec(debug,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);
+  init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);
+  if (debug)
+    pr_forcerec(debug,fr,cr);
 		
   /* Calculate new stuff dependent on coords and box */
   for(m=0; (m<DIM); m++)
@@ -436,6 +436,8 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
   /* Search again, now with another cut-off */
   if (rshell > 0) {
     do_nsgrid(stdout,bVerbose,box,x_all,atoms_all,rshell);
+    nlist = &(fr->nblists[0].nlist_sr[eNL_VDW]);
+    fprintf(stderr,"nri = %d, nrj = %d\n",nlist->nri,nlist->nrj);
     nkeep = 0;
     snew(keep,natoms_solvt);
     for(i=0; i<nlist->nri; i++) {
