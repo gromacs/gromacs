@@ -142,7 +142,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
       warning("Turning off pressure coupling for vacuum system");
       ir->epc = epcNO;
     }
-    if (EEL_FULL(ir->coulom_type)) 
+    if (EEL_FULL(ir->coulombtype)) 
       warning("Do you REALLY want to use Ewald with a non-periodic system?");
     
     if (ir->ns_type != ensSIMPLE) {
