@@ -216,9 +216,9 @@ static void calc_bor(FILE *log,
   if (debug) {
     int m;
     
-    fprintf(log,"calc_bor: cg0=%d, cg1=%d, ncg=%d\n",cg0,cg1,ncg);
+    fprintf(debug,"calc_bor: cg0=%d, cg1=%d, ncg=%d\n",cg0,cg1,ncg);
     for(m=0; (m<2); m++)
-      fprintf(log,"CG0[%d]=%d, CG1[%d]=%d\n",m,CG0[m],m,CG1[m]);
+      fprintf(debug,"CG0[%d]=%d, CG1[%d]=%d\n",m,CG0[m],m,CG1[m]);
   }
 
 }
