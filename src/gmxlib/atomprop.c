@@ -117,10 +117,13 @@ static int get_prop_index(t_props *ap,t_aa_names *aan,
 	      ((mrlen == WILDPROT) && bProtWild) ||
 	      ((mrlen == WILDCARD) && !bProtein && !bProtWild)));
   
-  if (debug)
-    fprintf(debug,"search: %4s %4s match: %4s %4s\n",
-	    resnm,atomnm, ap->resnm[j],ap->atomnm[j]);
-  
+  if (debug) {
+    fprintf(debug,"searching residue: %4s atom: %4s\n",resnm,atomnm);
+    if (j == NOTFOUND)
+      fprintf(debug," not succesful\n");
+    else
+      fprintf(debug," match: %4s %4s\n",ap->resnm[j],ap->atomnm[j]);
+  }
   return j;
 }
 
