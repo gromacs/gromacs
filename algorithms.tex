@@ -1429,14 +1429,21 @@ $f=7.7$ kJ~mol$^{-1}$~nm$^{-1}$. A value for $\epsilon$ between 1 and
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{Conjugate Gradient}}
-Conjugate gradient is slower than steepest descent in the early stages of
-the minimization, but becomes more efficient closer to the energy minimum.
-The parameters and stop criterion are the same as for steepest descent.
-In {\gromacs} conjugate gradient can not be used with constraints,
-as this has not been implemented. This is not really a restriction,
-since the accuracy of conjugate gradient is only required for minimization
-prior to a normal mode analysis, which can not be performed with constraints.
-For most other purposes steepest descent is efficient enough.
+Conjugate gradient is slower than steepest descent in the early stages
+of the minimization, but becomes more efficient closer to the energy
+minimum.  The parameters and stop criterion are the same as for
+steepest descent.  In {\gromacs} conjugate gradient can not be used
+with constraints, including the SETTLE algorithm for
+water~\cite{Miyamoto92}, as this has not been implemented. If water is
+present it must be of a flexible model, which can be specified in the
+{\tt mdp} file by
+\begin{verbatim}
+define = -DFLEXIBLE
+\end{verbatim}
+This is not really a restriction, since the accuracy of conjugate
+gradient is only required for minimization prior to a normal mode
+analysis, which can not be performed with constraints.  For most other
+purposes steepest descent is efficient enough.
 
 \subsection{\normindex{L-BFGS}}
 The original BFGS algorithm works by successively creating better 
