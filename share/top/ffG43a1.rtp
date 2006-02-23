@@ -2397,7 +2397,7 @@
    N7    C8    gb_9    
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    N3
@@ -2456,7 +2456,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -2500,7 +2500,7 @@
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N9    C4     gd_6    
    C5    C6    N6   H61     gd_4    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ DGUA ]
  [ atoms ]
@@ -2557,7 +2557,7 @@
    N7    C8    gb_9    
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    N3
@@ -2626,7 +2626,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -2672,7 +2672,7 @@
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N9    C4     gd_6    
    N3    C2    N2   H21     gd_4    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ DCYT ]
  [ atoms ]
@@ -2720,7 +2720,7 @@
    N4   H42    gb_2    
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    O2
@@ -2769,7 +2769,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -2807,7 +2807,7 @@
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N1    C2     gd_6    
    N3    C4    N4   H41     gd_4    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ DTHY ]
  [ atoms ]
@@ -2855,7 +2855,7 @@
    C5   C5M    gb_26   
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    O2
@@ -2912,7 +2912,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -2950,7 +2950,7 @@
   C3*   C4*   O4*   C1*     gd_14   
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N1    C2     gd_6    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ ADE ]
  [ atoms ]
@@ -3007,7 +3007,7 @@
   O2*   H2*    gb_1    
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    N3
@@ -3069,7 +3069,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -3119,7 +3119,7 @@
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N9    C4     gd_6    
    C5    C6    N6   H61     gd_4    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ GUA ]
  [ atoms ]
@@ -3180,7 +3180,7 @@
   O2*   H2*    gb_1    
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    N3
@@ -3252,7 +3252,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -3304,7 +3304,7 @@
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N9    C4     gd_6    
    N3    C2    N2   H21     gd_4    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ CYT ]
  [ atoms ]
@@ -3356,7 +3356,7 @@
   O2*   H2*    gb_1    
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    O2
@@ -3408,7 +3408,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -3452,7 +3452,7 @@
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N1    C2     gd_6    
    N3    C4    N4   H41     gd_4    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ URA ]
  [ atoms ]
@@ -3502,7 +3502,7 @@
   O2*   H2*    gb_1    
   C2*   C3*    gb_25   
   C3*   O3*    gb_19   
-  O3*    +N    gb_27   
+  O3*    +P    gb_27   
  [ exclusions ]
 ;  ai    aj
   C1*    O2
@@ -3557,7 +3557,7 @@
   C4*   C3*   C2*     ga_7    
   C4*   C3*   O3*     ga_8    
   C2*   C3*   O3*     ga_8    
-  C3*   O3*    +N     ga_25   
+  C3*   O3*    +P     ga_25   
  [ impropers ]
 ;  ai    aj    ak    al   gromos type
   C4*   O4*   C5*   C3*     gi_2    
@@ -3600,7 +3600,7 @@
   C3*   C4*   O4*   C1*     gd_14   
   C4*   O4*   C1*   C2*     gd_14   
   O4*   C1*    N1    C2     gd_6    
-  C4*   C3*   O3*    +N     gd_14   
+  C4*   C3*   O3*    +P     gd_14   
 
 [ FMNO ]
  [ atoms ]
