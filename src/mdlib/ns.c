@@ -261,8 +261,8 @@ static int correct_box_elem(tensor box,int v,int d)
     rvec_dec(box[v],box[d]);
     shift--;
     pr_rvecs(stdlog,0,"new box",box,DIM);
-    if (shift < -maxshift)
-      gmx_fatal(FARGS,"Box was shifted at least %d times. Please see above.",
+    if (shift <= -maxshift)
+      gmx_fatal(FARGS,"Box was shifted at least %d times. Please see log-file.",
 		maxshift);
   } 
   while (-box[v][d] > BOX_MARGIN*box[d][d]) {
@@ -271,8 +271,8 @@ static int correct_box_elem(tensor box,int v,int d)
     rvec_inc(box[v],box[d]);
     shift++;
     pr_rvecs(stdlog,0,"new box",box,DIM);
-    if (shift > maxshift)
-      gmx_fatal(FARGS,"Box was shifted at least %d times. Please see above.",
+    if (shift >= maxshift)
+      gmx_fatal(FARGS,"Box was shifted at least %d times. Please see log-file.",
 		maxshift);
   }
 
