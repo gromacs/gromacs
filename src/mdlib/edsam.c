@@ -2162,12 +2162,15 @@ void write_edidx(FILE *out,t_edpar *edi)
   fprintf(out,"\n");
 }
 
-extern int ed_constraints(t_edsamyn *edyn){ 
-    /* returns if any constraints are switched on */
+extern int ed_constraints(t_edsamyn *edyn)
+{ 
+  /* returns if any constraints are switched on */
   t_edpar *edi;
-  if (edyn->edpar) {
+  if (edyn->bEdsam && edyn->edpar) {
     edi=edyn->edpar;
-    return edi->vecs.linfix.neig || edi->vecs.linacc.neig || edi->vecs.radfix.neig ||  edi->vecs.radacc.neig ||  edi->vecs.radcon.neig;
+    return (edi->vecs.linfix.neig || edi->vecs.linacc.neig || 
+	    edi->vecs.radfix.neig || edi->vecs.radacc.neig ||  
+	    edi->vecs.radcon.neig);
   } 
   return 0;
 }

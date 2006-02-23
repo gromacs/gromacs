@@ -207,12 +207,12 @@ int main(int argc,char *argv[])
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
-  t_edsamyn edyn;
+  t_edsamyn *edyn;
   unsigned long Flags;
   ivec     ddxyz;
   
   cr = init_par(&argc,&argv);
-  edyn.bEdsam=FALSE;
+  snew(edyn,1);
 
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
@@ -243,7 +243,7 @@ int main(int argc,char *argv[])
   }
   
   if (opt2bSet("-ei",NFILE,fnm)) 
-    ed_open(NFILE,fnm,&edyn,cr);
+    ed_open(NFILE,fnm,edyn,cr);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepDVDL  ? MD_SEPDVDL  : 0);
@@ -255,7 +255,7 @@ int main(int argc,char *argv[])
   ddxyz[ZZ] = (int)(rddxyz[ZZ] + 0.5);
 
   mdrunner(cr,NFILE,fnm,bVerbose,bCompact,ddxyz,nDLB,nstepout,
-	   &edyn,repl_ex_nst,repl_ex_seed,Flags);
+	   edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)
     gmx_finalize(cr);
