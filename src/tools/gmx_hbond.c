@@ -1464,20 +1464,20 @@ static void dump_hbmap(t_hbdata *hb,
     fprintf(fp,"[ %s ]",grpnames[grp]);
     for (i=0; i<isize[grp]; i++) {
       fprintf(fp,(i%15)?" ":"\n");
-      fprintf(fp,"%4u",index[grp][i]+1);
+      fprintf(fp," %4u",index[grp][i]+1);
     }
     fprintf(fp,"\n");
     fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp]);
     for (i=0; (i<hb->d.nrd); i++) {
       for(j=0; (j<hb->d.nhydro[i]); j++)
-	fprintf(fp,"%4u %4u",hb->d.don[i]+1,
+	fprintf(fp," %4u %4u",hb->d.don[i]+1,
 		hb->d.hydro[i][j]+1);
       fprintf(fp,"\n");
     }
     fprintf(fp,"[ acceptors_%s ]",grpnames[grp]);
     for (i=0; (i<hb->a.nra); i++) {
       fprintf(fp,(i%15)?" ":"\n");
-      fprintf(fp,"%4u",hb->a.acc[i]+1);
+      fprintf(fp," %4u",hb->a.acc[i]+1);
     }
     fprintf(fp,"\n");
   }
@@ -1497,7 +1497,7 @@ static void dump_hbmap(t_hbdata *hb,
 	  sprintf(ds,"%s",mkatomname(atoms,ddd));
 	  sprintf(hs,"%s",mkatomname(atoms,hhh));
 	  sprintf(as,"%s",mkatomname(atoms,aaa));
-	  fprintf(fp,"%6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
+	  fprintf(fp," %6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
 	  if (fplog) 
 	    fprintf(fplog,"%12s  %12s  %12s\n",ds,hs,as);
 	}
