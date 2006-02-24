@@ -758,7 +758,6 @@ real urey_bradley(int nbonds,
   real cos_theta,theta,dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
   ivec jt,dt_ij,dt_kj,dt_ik;
   
-  gmx_impl("Not implemented yet");
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
     type = forceatoms[i++];
