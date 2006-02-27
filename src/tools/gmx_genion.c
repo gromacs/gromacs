@@ -324,8 +324,9 @@ int gmx_genion(int argc, char *argv[])
     get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
     for(i=1; i<nwa; i++)
       if (index[i] != index[i-1]+1)
-	gmx_fatal(FARGS,"The solvent group is not continuous: index[%d]=%d, "
-		    "index[%d]=%d",i,index[i-1]+1,i+1,index[i]+1);
+	gmx_fatal(FARGS,"The solvent group %s is not continuous: "
+		  "index[%d]=%d, index[%d]=%d",
+		  grpname,i,index[i-1]+1,i+1,index[i]+1);
     nsa = 1;
     while ((nsa<nwa) &&
 	   (top->atoms.atom[index[nsa]].resnr ==
