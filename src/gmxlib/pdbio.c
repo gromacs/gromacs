@@ -54,7 +54,8 @@
 	
 static const char *pdbtp[epdbNR]={
   "ATOM  ","HETATM", "ANISOU", "CRYST1",
-  "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK" 
+  "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK",
+  "CONECT"
 };
 
 static bool bTER=FALSE;
@@ -394,6 +395,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   static t_symtab symtab;
   static bool bFirst=TRUE;
   bool bCOMPND;
+  bool bConnWarn = FALSE;
   char line[STRLEN+1];
   char sa[12],sb[12],sc[12];
   double fa,fb,fc,alpha,beta,gamma,cosa,cosb,cosg,sing;
@@ -515,6 +517,12 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
       break;
     case epdbENDMDL:
       bStop=TRUE;
+      break;
+    case epdbCONECT:
+      if (!bConnWarn) {
+	fprintf(stderr,"WARNING: all CONECT records are ignored\n");
+	bConnWarn = TRUE;
+      }
       break;
     default:
       break;
