@@ -52,9 +52,9 @@ static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f";
 /* Enumerated type for pdb records. The other entries are ignored
  * when reading a pdb file 
  */
-enum { epdbATOM, epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND, 
-       epdbMODEL, epdbENDMDL, epdbTER, epdbHEADER, epdbTITLE, epdbREMARK, 
-       epdbNR };
+enum { epdbATOM,   epdbHETATM, epdbANISOU, epdbCRYST1, epdbCOMPND, 
+       epdbMODEL,  epdbENDMDL, epdbTER,    epdbHEADER, epdbTITLE, epdbREMARK, 
+       epdbCONECT, epdbNR };
 
 /* Enumerated value for indexing an uij entry (anisotropic temperature factors) */
 enum { U11, U22, U33, U12, U13, U23 };
