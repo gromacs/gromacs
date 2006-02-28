@@ -1110,14 +1110,14 @@ void do_index(char *ndx,
 
   if (ir->eI != eiMD)
     ir->etc = etcNO;
+  bSetTCpar = ir->etc || ir->eI==eiSD || ir->eI==eiBD || ir->eI==eiTPI;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
-	       restnm,FALSE,FALSE,bVerbose);
+	       restnm,FALSE,!bSetTCpar,bVerbose);
   nr=atoms->grps[egcTC].nr;
   ir->opts.ngtc=nr;
   snew(ir->opts.nrdf,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);
-  bSetTCpar = ir->etc || ir->eI==eiSD || ir->eI==eiBD || ir->eI==eiTPI;
   if (ir->eI==eiBD && ir->bd_fric==0) {
     fprintf(stderr,"bd_fric=0, so tau_t will be used as the inverse friction constant(s)\n"); 
   }
