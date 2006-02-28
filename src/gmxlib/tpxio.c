@@ -1517,10 +1517,16 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,
     if (bMass) {
       ap = get_atomprop();
       for(i=0; (i<natoms); i++)
-	query_atomprop(ap,epropMass,
-		       *top->atoms.resname[top->atoms.atom[i].resnr],
-		       *top->atoms.atomname[i],
-		       &(top->atoms.atom[i].m));
+	if (!query_atomprop(ap,epropMass,
+			    *top->atoms.resname[top->atoms.atom[i].resnr],
+			    *top->atoms.atomname[i],
+			    &(top->atoms.atom[i].m))) {
+	  if (debug) 
+	    fprintf(debug,"Can not find mass for atom %s %d %s, setting to 1\n",
+		    *top->atoms.resname[top->atoms.atom[i].resnr],
+		    top->atoms.atom[i].resnr+1,
+		    *top->atoms.atomname[i]);
+	}
       done_atomprop(&ap);
     }
     top->idef.ntypes=-1;
