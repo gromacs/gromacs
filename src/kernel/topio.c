@@ -281,6 +281,7 @@ static char **read_topol(char        *infile,
 			 real        *fudgeQQ,
 			 int         *nsim,
 			 t_simsystem **sims,
+			 bool        bFEP,
 			 bool        bVerbose)
 {
   FILE       *in;
@@ -300,7 +301,7 @@ static char **read_topol(char        *infile,
   t_nbparam  **nbparam,**pair;
   t_block2   *block2;
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
-  bool       bReadDefaults,bReadMolType,bGenPairs;
+  bool       bReadDefaults,bReadMolType,bGenPairs,bWarn_copy_A_B;
   double     qt=0,qBt=0; /* total charge */
   t_bond_atomtype *batype;
   int        lastcg=-1;
@@ -323,6 +324,8 @@ static char **read_topol(char        *infile,
   
   comb     = 0;
   
+  bWarn_copy_A_B = bFEP;
+
   snew(batype,1);
   init_bond_atomtype(batype);
   /* parse the actual file */
@@ -499,7 +502,8 @@ static char **read_topol(char        *infile,
 	  break;
 	  
 	case d_pairs: 
-	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,bGenPairs);
+	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,
+		    bGenPairs,&bWarn_copy_A_B);
 	  break;
 	  
 	case d_vsites2:
@@ -519,7 +523,8 @@ static char **read_topol(char        *infile,
 	case d_polarization:
 	case d_water_polarization:
 	case d_thole_polarization:
-	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,bGenPairs);
+	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
+		    bGenPairs,&bWarn_copy_A_B);
 	  break;
 	case d_exclusions:
 	  if (!block2[nmol-1].nr)
@@ -620,7 +625,8 @@ char **do_top(bool         bVerbose,
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
 		   plist,combination_rule,repulsion_power,
-		   opts->nshake,&ir->fudgeQQ,nsim,sims,bVerbose);
+		   opts->nshake,&ir->fudgeQQ,nsim,sims,ir->efep!=efepNO,
+		   bVerbose);
   if ((*combination_rule != eCOMB_GEOMETRIC) && 
       (ir->vdwtype == evdwUSER)) {
     warning("Using sigma/epsilon based combination rules with"
