@@ -114,6 +114,15 @@ int gmx_rms (int argc,char *argv[])
     "the structures on top of each other: complete fit (rotation and",
     "translation), translation only, or no fitting at all.[PAR]",
     
+    "Option [TT]-mw[tt] controls whether mass weighting is done or not.",
+    "If you select the option (default) and ",
+    "supply a valid tpr file masses will be taken from there, ",
+    "otherwise the masses will be deduced from the atommass.dat file in",
+    "the GROMACS library directory. This is fine for proteins but not",
+    "necessarily for other molecules. A default mass of 12.011 amu (Carbon)",
+    "is assigned to unknown atoms. You can check whether this happend by",
+    "turning on the [TT]-debug[tt] flag and inspecting the log file.[PAR]",
+    
     "With [TT]-f2[tt], the 'other structures' are taken from a second",
     "trajectory, this generates a comparison matrix of one trajectory",
     "versus the other.[PAR]",
@@ -147,6 +156,7 @@ int gmx_rms (int argc,char *argv[])
   char *fitgraphlabel[efNR+1] = 
     { NULL, "lsq fit", "translational fit", "no fit" };
   static int nrms = 1;
+  static bool bMassWeighted = TRUE;
   t_pargs pa[] = {
     { "-what",  FALSE, etENUM, {what},  "Structural difference measure" },
     { "-pbc",   FALSE, etBOOL, {&bPBC}, "PBC check" },
@@ -167,6 +177,8 @@ int gmx_rms (int argc,char *argv[])
       "Maximum level in bond angle matrix" },
     { "-bmin",  FALSE, etREAL, {&bond_user_min},
       "Minimum level in bond angle matrix" },
+    { "-mw",    FALSE, etBOOL, {&bMassWeighted},
+      "Use mass weighting for superposition" },
     { "-nlevels",FALSE,etINT,  {&nlevels}, 
       "Number of levels in the matrices" },
     { "-ng",       FALSE, etINT, {&nrms},
@@ -192,7 +204,7 @@ int gmx_rms (int argc,char *argv[])
   rvec       *x,*xp,*xm=NULL,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,vec1,vec2;
   int        status;
   char       buf[256],buf2[256];
-  
+  void       *atomprop = NULL;
   int        ncons=0;
   FILE       *fp;
   real       rlstot=0,**rls,**rlsm=NULL,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
@@ -260,7 +272,7 @@ int gmx_rms (int argc,char *argv[])
 	    "  Writing out all frames.\n\n");
     freq2 = 1;
     }
-  
+      
   bPrev = (prev > 0);
   if (bPrev) {
     prev=abs(prev);
@@ -312,7 +324,10 @@ int gmx_rms (int argc,char *argv[])
     
     bMass = FALSE;
     for(i=0; i<ifit; i++) {
-      w_rls[ind_fit[i]]=top.atoms.atom[ind_fit[i]].m;
+      if (bMassWeighted)
+	w_rls[ind_fit[i]] = top.atoms.atom[ind_fit[i]].m;
+      else 
+	w_rls[ind_fit[i]] = 1;
       bMass = bMass || (top.atoms.atom[ind_fit[i]].m != 0);
     }
     if (!bMass) {
@@ -349,7 +364,10 @@ int gmx_rms (int argc,char *argv[])
   for(j=0; j<nrms; j++) {
     bMass = FALSE;
     for(i=0; i<irms[j]; i++) {
-      w_rms[ind_rms[j][i]]=top.atoms.atom[ind_rms[j][i]].m;
+      if (bMassWeighted)
+	w_rms[ind_rms[j][i]] = top.atoms.atom[ind_rms[j][i]].m;
+      else
+	w_rms[ind_rms[j][i]] = 1.0;
       bMass = bMass || (top.atoms.atom[ind_rms[j][i]].m != 0);
     }
     if (!bMass) {
