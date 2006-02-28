@@ -52,9 +52,6 @@
 #include "fatal.h"
 
 
-static int
-bstate_copy_warning_issued = 0;
-
 void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 {
   int   i,j,k=-1,nf;
@@ -1049,7 +1046,8 @@ void push_bondnow(t_params *bond, t_param *b)
 }
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
-	       t_atoms *at,t_atomtype *atype,char *line,bool bBonded,bool bGenPairs)
+	       t_atoms *at,t_atomtype *atype,char *line,
+	       bool bBonded,bool bGenPairs,bool *bWarn_copy_A_B)
 {
   const char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -1157,11 +1155,11 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 
 	if (nread == nrfpA && nrfpB != 0)
 	{
-      if( bstate_copy_warning_issued == 0)
+      if (*bWarn_copy_A_B)
       {
         fprintf(stderr,
                 "NOTE:\n  Some parameters specified explicitly in state A, but not B - copying A to B.\n\n");
-        bstate_copy_warning_issued = 1;
+        *bWarn_copy_A_B = FALSE;
       }
        
        
@@ -1246,7 +1244,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     }
   }
   
-  if (ftype==F_PDIHS && param.c[2]!=param.c[5])
+  if ((ftype==F_PDIHS || ftype==F_ANGRES || ftype==F_ANGRESZ)
+      && param.c[2]!=param.c[5])
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		"             %s multiplicity can not be perturbed %f!=%f",
 		get_warning_file(),get_warning_line(),
