@@ -168,10 +168,10 @@ int gmx_dist(int argc,char *argv[])
     
     if (!bCutoff) {
       /* write to output */
-      fprintf(fp,"%8.3f ",t);
+      fprintf(fp,"%12.7f ",t);
       for(g=0;(g<ngrps/2);g++) {
 	pbc_dx(&pbc,com[2*g],com[2*g+1],dx);
-	fprintf(fp,"%10.5f %10.5f %10.5f %10.5f",
+	fprintf(fp,"%12.7f %12.7f %12.7f %12.7f",
 		norm(dx),dx[XX],dx[YY],dx[ZZ]);
       }
       fprintf(fp,"\n");
