@@ -43,6 +43,7 @@
 #include "main.h"
 #include "statutil.h"
 #include "futil.h"
+#include "smalloc.h"
 #include "edsam.h"
 #include "mdrun.h"
 #include "xmdrun.h"
