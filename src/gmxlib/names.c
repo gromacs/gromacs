@@ -167,7 +167,7 @@ const char *eis_names[eisNR+1] = {
 
 const char *eQMmethod_names[eQMmethodNR+1] = {
   "AM1", "PM3", "RHF",
-  "UHF", "DFT", "B3LYP", "MP2", "CASSCF",
+  "UHF", "DFT", "B3LYP", "MP2", "CASSCF","B3LYPLAN",
   "DIRECT", NULL
 };
 

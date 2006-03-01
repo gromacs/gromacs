@@ -159,7 +159,7 @@ enum {
 
 enum {
   eQMmethodAM1, eQMmethodPM3, eQMmethodRHF, 
-  eQMmethodUHF, eQMmethodDFT, eQMmethodB3LYP, eQMmethodMP2, eQMmethodCASSCF,
+  eQMmethodUHF, eQMmethodDFT, eQMmethodB3LYP, eQMmethodMP2, eQMmethodCASSCF, eQMmethodB3LYPLAN,
   eQMmethodDIRECT, eQMmethodNR
 };
 
