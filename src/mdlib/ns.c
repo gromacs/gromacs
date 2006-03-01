@@ -217,7 +217,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
 
         if (debug)
             fprintf(debug,"Initiating neighbourlist type %d for %s interactions,\nwith %d SR, %d LR atoms.\n",
-                    nl->il_code,ENLISTTYPE(solvent),maxsr,maxlr);
+                    nl->il_code,ENLISTTYPE(nltype),maxsr,maxlr);
         
         /* maxnri is influenced by the number of shifts (maximum is 8)
          * and the number of energy groups.
