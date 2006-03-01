@@ -498,7 +498,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
       bIsEner = FALSE;
       for (kkk=0; (kkk <= F_ETOT); kkk++)
 	bIsEner = bIsEner || 
-	  (strcmp(interaction_function[kkk].longname,leg[i]) == 0);
+	  (strcasecmp(interaction_function[kkk].longname,leg[i]) == 0);
       if (bIsEner) {
 	pr_aver   = aver/nmol-ezero;
 	pr_stddev = stddev/nmol;
@@ -693,7 +693,7 @@ static void fec(char *ene2fn, char *runavgfn,
   sum=0;
   beta = 1.0/(BOLTZ*reftemp);
   for(i=0; i<nset; i++) {
-    if (strcmp(leg[i],enm[set[i]])!=0)
+    if (strcasecmp(leg[i],enm[set[i]])!=0)
       fprintf(stderr,"\nWARNING energy set name mismatch %s!=%s\n",
 	      leg[i],enm[set[i]]);
     for(j=0; j<nenergy; j++) {
@@ -896,7 +896,7 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	}
         if (i == nre) {
-	  if (strcmp(setnm[j],"Volume")==0) {
+	  if (strcasecmp(setnm[j],"Volume")==0) {
 	    printf("Enter the box volume (nm^3): ");
 	    scanf("%lf",&dbl);
 	    Vaver = dbl;
