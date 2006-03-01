@@ -1,47 +1,22 @@
-;#
-;# $Id$
-;#
-;# Gromacs 4.0                         Copyright (c) 1991-2003 
-;# David van der Spoel, Erik Lindahl
-;#
-;# This program is free software; you can redistribute it and/or
-;# modify it under the terms of the GNU General Public License
-;# as published by the Free Software Foundation; either version 2
-;# of the License, or (at your option) any later version.
-;#
-;# To help us fund GROMACS development, we humbly ask that you cite
-;# the research papers on the package. Check out http://www.gromacs.org
-;# 
-;# And Hey:
-;# Gnomes, ROck Monsters And Chili Sauce
-;#
+##
+## $Id$
+##
+## Gromacs 4.0                         Copyright (c) 1991-2003 
+## David van der Spoel, Erik Lindahl
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or (at your option) any later version.
+##
+## To help us fund GROMACS development, we humbly ask that you cite
+## the research papers on the package. Check out http://www.gromacs.org
+## 
+## And Hey:
+## Gnomes, ROck Monsters And Chili Sauce
+##
 
-;# These files require GNU binutils 2.10 or later, since we
-;# use intel syntax for portability, or a recent version 
-;# of NASM that understands Extended 3DNow and SSE2 instructions.
-;# (NASM is normally only used with MS Visual C++).
-;# Since NASM and gnu as disagree on some definitions and use 
-;# completely different preprocessing options I have to introduce a
-;# trick: NASM uses ';' for comments, while gnu as uses '#' on x86.
-;# Gnu as treats ';' as a line break, i.e. ignores it. This is the
-;# reason why all comments need both symbols...
-;# The source is written for GNU as, with intel syntax. When you use
-;# NASM we redefine a couple of things. The false if-statement around 
-;# the following code is seen by GNU as, but NASM doesn't see it, so 
-;# the code inside is read by NASM but not gcc.
 
-; .if 0    # block below only read by NASM
-%define .section	section
-%define .long		dd
-%define .align		align
-%define .globl		global
-;# NASM only wants 'dword', not 'dword ptr'.
-%define ptr
-.equiv          .equiv                  2
-   %1 equ %2
-%endmacro
-; .endif                   # End of NASM-specific block
-; .intel_syntax noprefix   # Line only read by gnu as
 
 
 
@@ -49,802 +24,803 @@
 
 .globl nb_kernel410_x86_64_sse2
 .globl _nb_kernel410_x86_64_sse2
-nb_kernel410_x86_64_sse2:	
-_nb_kernel410_x86_64_sse2:	
-;#	Room for return address and rbp (16 bytes)
-.equiv          nb410_fshift,           16
-.equiv          nb410_gid,              24
-.equiv          nb410_pos,              32
-.equiv          nb410_faction,          40
-.equiv          nb410_charge,           48
-.equiv          nb410_p_facel,          56
-.equiv          nb410_argkrf,           64
-.equiv          nb410_argcrf,           72
-.equiv          nb410_Vc,               80
-.equiv          nb410_type,             88
-.equiv          nb410_p_ntype,          96
-.equiv          nb410_vdwparam,         104
-.equiv          nb410_Vvdw,             112
-.equiv          nb410_p_tabscale,       120
-.equiv          nb410_VFtab,            128
-.equiv          nb410_invsqrta,         136
-.equiv          nb410_dvda,             144
-.equiv          nb410_p_gbtabscale,     152
-.equiv          nb410_GBtab,            160
-.equiv          nb410_p_nthreads,       168
-.equiv          nb410_count,            176
-.equiv          nb410_mtx,              184
-.equiv          nb410_outeriter,        192
-.equiv          nb410_inneriter,        200
-.equiv          nb410_work,             208
-	;# stack offsets for local variables  
-	;# bottom of stack is cache-aligned for sse2 use 
-.equiv          nb410_ix,               0
-.equiv          nb410_iy,               16
-.equiv          nb410_iz,               32
-.equiv          nb410_iq,               48
-.equiv          nb410_dx,               64
-.equiv          nb410_dy,               80
-.equiv          nb410_dz,               96
-.equiv          nb410_two,              112
-.equiv          nb410_six,              128
-.equiv          nb410_twelve,           144
-.equiv          nb410_gbtsc,            160
-.equiv          nb410_qq,               176
-.equiv          nb410_c6,               192
-.equiv          nb410_c12,              208
-.equiv          nb410_fscal,            224
-.equiv          nb410_vctot,            240
-.equiv          nb410_Vvdwtot,          256
-.equiv          nb410_fix,              272
-.equiv          nb410_fiy,              288
-.equiv          nb410_fiz,              304
-.equiv          nb410_half,             320
-.equiv          nb410_three,            336
-.equiv          nb410_r,                352
-.equiv          nb410_isai,             368
-.equiv          nb410_isaprod,          384
-.equiv          nb410_dvdasum,          400
-.equiv          nb410_gbscale,          416
-.equiv          nb410_nri,              432
-.equiv          nb410_iinr,             440
-.equiv          nb410_jindex,           448
-.equiv          nb410_jjnr,             456
-.equiv          nb410_shift,            464
-.equiv          nb410_shiftvec,         472
-.equiv          nb410_facel,            480
-.equiv          nb410_innerjjnr,        488
-.equiv          nb410_ii,               496
-.equiv          nb410_is3,              500
-.equiv          nb410_ii3,              504
-.equiv          nb410_ntia,             508
-.equiv          nb410_innerk,           512
-.equiv          nb410_n,                516
-.equiv          nb410_nn1,              520
-.equiv          nb410_ntype,            524
-.equiv          nb410_nouter,           528
-.equiv          nb410_ninner,           532
-	push rbp
-	mov  rbp, rsp
-	push rbx
-
-	
-	emms
-
-        push r12
-        push r13
-        push r14
-        push r15
-
-	sub rsp, 552		;# local variable stack space (n*16+8)
-
-	;# zero 32-bit iteration counters
-	mov eax, 0
-	mov [rsp + nb410_nouter], eax
-	mov [rsp + nb410_ninner], eax
-
-	mov edi, [rdi]
-	mov [rsp + nb410_nri], edi
-	mov [rsp + nb410_iinr], rsi
-	mov [rsp + nb410_jindex], rdx
-	mov [rsp + nb410_jjnr], rcx
-	mov [rsp + nb410_shift], r8
-	mov [rsp + nb410_shiftvec], r9
-	mov rdi, [rbp + nb410_p_ntype]
-	mov edi, [rdi]
-	mov [rsp + nb410_ntype], edi
-	mov rsi, [rbp + nb410_p_facel]
-	movsd xmm0, [rsi]
-	movsd [rsp + nb410_facel], xmm0
-
-	mov rbx, [rbp + nb410_p_gbtabscale]
-	movsd xmm4, [rbx]
-	shufpd xmm4, xmm4, 0
-	movapd [rsp + nb410_gbtsc],  xmm4
-
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double half IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [rsp + nb410_half], eax
-	mov [rsp + nb410_half + 4], ebx
-	movsd xmm1, [rsp + nb410_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# one
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# two
-	addpd  xmm3, xmm2	;# three
-	movapd xmm4, xmm3
-	addpd  xmm4, xmm4       ;# six
-	movapd xmm5, xmm4
-	addpd  xmm5, xmm5       ;# twelve
-	movapd [rsp + nb410_half], xmm1
-	movapd [rsp + nb410_two], xmm2
-	movapd [rsp + nb410_three], xmm3
-	movapd [rsp + nb410_six], xmm4
-	movapd [rsp + nb410_twelve], xmm5
-
-.nb410_threadloop:
-        mov   rsi, [rbp + nb410_count]          ;# pointer to sync counter
-        mov   eax, [rsi]
-.nb410_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [rsi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb410_spinlock
-
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [rsp + nb410_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [rsp + nb410_n], eax
-        mov [rsp + nb410_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb410_outerstart
-        jmp .nb410_end
-
-.nb410_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [rsp + nb410_nouter]
-	mov [rsp + nb410_nouter], ebx
-
-.nb410_outer:
-	mov   rax, [rsp + nb410_shift]      ;# rax = pointer into shift[] 
-	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
-	
-	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
-	mov   [rsp + nb410_is3],ebx    	;# store is3 
-
-	mov   rax, [rsp + nb410_shiftvec]   ;# rax = base of shiftvec[] 
-
-	movsd xmm0, [rax + rbx*8]
-	movsd xmm1, [rax + rbx*8 + 8]
-	movsd xmm2, [rax + rbx*8 + 16] 
-
-	mov   rcx, [rsp + nb410_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx+rsi*4]	    ;# ebx =ii 
-	mov   [rsp + nb410_ii], ebx
-
-	mov   rdx, [rbp + nb410_charge]
-	movsd xmm3, [rdx + rbx*8]	
-	mulsd xmm3, [rsp + nb410_facel]
-	shufpd xmm3, xmm3, 0
-
-	mov   rdx, [rbp + nb410_invsqrta]	;# load invsqrta[ii]
-	movsd xmm4, [rdx + rbx*8]
-	shufpd xmm4, xmm4, 0
-
-    	mov   rdx, [rbp + nb410_type] 
-    	mov   edx, [rdx + rbx*4]
-    	imul  edx, [rsp + nb410_ntype]
-    	shl   edx, 1
-    	mov   [rsp + nb410_ntia], edx
-	
-	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
-	mov   rax, [rbp + nb410_pos]    ;# rax = base of pos[]  
-
-	addsd xmm0, [rax + rbx*8]
-	addsd xmm1, [rax + rbx*8 + 8]
-	addsd xmm2, [rax + rbx*8 + 16]
-
-	movapd [rsp + nb410_iq], xmm3
-	movapd [rsp + nb410_isai], xmm4
-
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
-
-	movapd [rsp + nb410_ix], xmm0
-	movapd [rsp + nb410_iy], xmm1
-	movapd [rsp + nb410_iz], xmm2
-
-	mov   [rsp + nb410_ii3], ebx
-	
-	;# clear vctot and i forces 
-	xorpd xmm13, xmm13
-	movapd xmm12, xmm13
-	movapd [rsp + nb410_Vvdwtot], xmm13
-	movapd [rsp + nb410_dvdasum], xmm13
-	movapd xmm14, xmm13
-	movapd xmm15, xmm13
-	
-	mov   rax, [rsp + nb410_jindex]
-	mov   ecx, [rax + rsi*4]	     ;# jindex[n] 
-	mov   edx, [rax + rsi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
-
-	mov   rsi, [rbp + nb410_pos]
-	mov   rdi, [rbp + nb410_faction]	
-	mov   rax, [rsp + nb410_jjnr]
-	shl   ecx, 2
-	add   rax, rcx
-	mov   [rsp + nb410_innerjjnr], rax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [rsp + nb410_ninner]
-	mov   [rsp + nb410_ninner], ecx
-	add   edx, 0
-	mov   [rsp + nb410_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb410_unroll_loop
-	jmp   .nb410_checksingle
-.nb410_unroll_loop:	
-	;# twice unrolled innerloop here 
-	mov   rdx, [rsp + nb410_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   r14d, [rdx]	
-	mov   r15d, [rdx + 4]              
-	add qword ptr [rsp + nb410_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-	
-	mov rsi, [rbp + nb410_pos]       ;# base of pos[] 
-
-	lea   r10, [r14 + r14*2]     ;# replace jnr with j3 
-	lea   r11, [r15 + r15*2]	
-
-	;# move two coordinates to xmm4-xmm6	
-	movlpd xmm4, [rsi + r10*8]
-	movlpd xmm5, [rsi + r10*8 + 8]
-	movlpd xmm6, [rsi + r10*8 + 16]
-	movhpd xmm4, [rsi + r11*8]
-	movhpd xmm5, [rsi + r11*8 + 8]
-	movhpd xmm6, [rsi + r11*8 + 16]		
-	
-	;# calc dr 
-	subpd xmm4, [rsp + nb410_ix]
-	subpd xmm5, [rsp + nb410_iy]
-	subpd xmm6, [rsp + nb410_iz]
-
-	;# store dr 
-	movapd [rsp + nb410_dx], xmm4
-	movapd [rsp + nb410_dy], xmm5
-	movapd [rsp + nb410_dz], xmm6
-    
-	;# load isaj
-	mov rsi, [rbp + nb410_invsqrta]
-
-	;# square it 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm4, xmm5
-	addpd xmm4, xmm6
-	;# rsq in xmm4 
-
-	movlpd xmm3, [rsi + r14*8]
-	movhpd xmm3, [rsi + r15*8]
-
-	mov rdi, [rbp + nb410_type]
-	mov r8d, [rdi + r14*4]
-	mov r9d, [rdi + r15*4]
-
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
-
-	mulpd  xmm3, [rsp + nb410_isai]
-	movapd [rsp + nb410_isaprod], xmm3
-
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulpd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb410_three]
-	mulpd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410_half]
-	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulpd xmm1, xmm5	
-	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
-
-	movapd xmm6, xmm3
-	mulpd xmm6, [rsp + nb410_gbtsc]
-	movapd [rsp + nb410_gbscale], xmm6
-
-	movapd xmm5, xmm1	;# copy of lu 
-	mulpd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb410_three]
-	mulpd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410_half]
-	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulpd xmm2, xmm5	
-	mulpd xmm0, xmm2	;# xmm0=rinv 
-	
-    mulpd  xmm3, [rsp + nb410_iq]
-	mov rsi, [rbp + nb410_charge]    ;# base of charge[] 
-	movlpd xmm6, [rsi + r14*8]
-	movhpd xmm6, [rsi + r15*8]
-	mulpd  xmm6, xmm3
-	movapd [rsp + nb410_qq], xmm6	
-	
-	mulpd xmm4, xmm0	;# xmm4=r 
-	movapd [rsp + nb410_r], xmm4
-	mulpd xmm4, [rsp + nb410_gbscale]
-	mov edi, [rsp + nb410_ntia]
-
-	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
-	shl r8d, 1
-	shl r9d, 1
-	add r8d, edi
-	add r9d, edi
-
-	cvtpi2pd xmm5, mm6
-	subpd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	mov rdi, [rbp + nb410_vdwparam]
-	
-	pslld mm6, 2		;# idx *= 4 
-	
-	mov  rsi, [rbp + nb410_GBtab]
-	movd r12d, mm6
-	psrlq mm6, 32
-	movd r13d, mm6		;# indices in r12/r13
-
-	movlpd xmm6, [rdi + r8*8]	
-	movlpd xmm7, [rdi + r8*8 + 8]
-
-    movapd xmm9, xmm0 ;# rinv
-    mulpd  xmm9, xmm9 ;# rinvsq
-    movapd xmm10, xmm9 ;# rinvsq
-    mulpd  xmm10, xmm10 ;# rinv4
-    mulpd  xmm10, xmm9 ;# rinv6
-    movapd xmm11, xmm10 
-    mulpd  xmm11, xmm11 ;# rinv12
-
-
-	movhpd xmm6, [rdi + r9*8]	
-	movhpd xmm7, [rdi + r9*8 + 8]
-
-    ;# load table data
-	movapd xmm4, [rsi + r12*8]	;# Y1 F1 	
-	movapd xmm3, [rsi + r13*8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-    mulpd  xmm10, xmm6   ;# vvdw6=c6*rinv6
-	mulpd  xmm11, xmm7   ;# vvdw12=c12*rinv12     
-
-	movapd xmm9, xmm11
-	subpd  xmm11, xmm10	;# Vvdw=Vvdw12-Vvdw6
-
-    ;# add potential to vvdwtot 
-	addpd  xmm11, [rsp + nb410_Vvdwtot]
-    movapd [rsp + nb410_Vvdwtot], xmm11
-    
-	movapd xmm6, [rsi + r12*8 + 16]	;# G1 H1 	
-	movapd xmm3, [rsi + r13*8 + 16]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-
-	mulpd  xmm7, xmm1	;# xmm7=Heps
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm1	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm7, [rsp + nb410_two]	;# two*Heps2 
-	movapd xmm3, [rsp + nb410_qq]
-	addpd  xmm7, xmm6
-	addpd  xmm7, xmm5 ;# xmm7=FF 
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-	mulpd  xmm3, xmm7 ;# fijC=FF*qq 
-    
-   ;# LJ forces
-    mulpd  xmm10, [rsp + nb410_six]
-    mulpd  xmm9, [rsp + nb410_twelve]
-    subpd  xmm9, xmm10
-    mulpd  xmm9, xmm0 ;# (12*vnb12-6*vnb6)*rinv
-
-	mov rsi, [rbp + nb410_dvda]
-	
-	;# Calculate dVda
-	xorpd xmm7, xmm7
-	mulpd xmm3, [rsp + nb410_gbscale]
-	movapd xmm6, xmm3
-	mulpd  xmm6, [rsp + nb410_r]
-	addpd  xmm6, xmm5
-
-    ;# update vctot 
-	addpd  xmm12, xmm5
-
-	;# xmm6=(vcoul+fijC*r)
-	subpd  xmm7, xmm6
-	movapd xmm6, xmm7
-	
-	mov rdi, [rbp + nb410_faction]
-	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm2, [rdi + r10*8]
-	movlpd xmm4, [rdi + r10*8 + 8]
-	movlpd xmm5, [rdi + r10*8 + 16]
-
-	;# update dvdasum
-	addpd  xmm7, [rsp + nb410_dvdasum]
-	movapd [rsp + nb410_dvdasum], xmm7 
-
-	;# update j atoms dvdaj
-	movhlps xmm7, xmm6
-	addsd  xmm6, [rsi + r14*8]
-	addsd  xmm7, [rsi + r15*8]
-	movsd  [rsi + r14*8], xmm6
-	movsd  [rsi + r15*8], xmm7
-
-	movhpd xmm2, [rdi + r11*8]
-	movhpd xmm4, [rdi + r11*8 + 8]
-	movhpd xmm5, [rdi + r11*8 + 16]
-
-    subpd  xmm9, xmm3
-    mulpd  xmm9, xmm0 ;# fscal
-
-    movapd  xmm10, xmm9
-    movapd  xmm11, xmm9
-
-    mulpd   xmm9, [rsp + nb410_dx]
-    mulpd   xmm10, [rsp + nb410_dy]
-    mulpd   xmm11, [rsp + nb410_dz]
-    
-	addpd xmm2, xmm9
-	addpd xmm4, xmm10
-	addpd xmm5, xmm11
-
-	movlpd [rdi + r10*8], xmm2
-	movlpd [rdi + r10*8 + 8], xmm4
-	movlpd [rdi + r10*8 + 16], xmm5
-
-	;# accumulate i forces
-    addpd xmm13, xmm9
-    addpd xmm14, xmm10
-    addpd xmm15, xmm11
-
-	movhpd [rdi + r11*8], xmm2
-	movhpd [rdi + r11*8 + 8], xmm4
-	movhpd [rdi + r11*8 + 16], xmm5
-	
-	;# should we do one more iteration? 
-	sub dword ptr [rsp + nb410_innerk],  2
-	jl    .nb410_checksingle
-	jmp   .nb410_unroll_loop
-.nb410_checksingle:
-	mov   edx, [rsp + nb410_innerk]
-	and   edx, 1
-	jnz    .nb410_dosingle
-	jmp    .nb410_updateouterdata
-.nb410_dosingle:
-	mov rsi, [rbp + nb410_charge]
-	mov rdx, [rbp + nb410_invsqrta]
-	mov rdi, [rbp + nb410_pos]
-	mov   rcx, [rsp + nb410_innerjjnr]
-	mov   eax, [rcx]
-	
-	;# load isaj
-	mov rsi, [rbp + nb410_invsqrta]
-	movsd xmm2, [rsi + rax*8]
-	mulsd  xmm2, [rsp + nb410_isai]
-	movapd [rsp + nb410_isaprod], xmm2	
-	movapd xmm1, xmm2
-	mulsd xmm1, [rsp + nb410_gbtsc]
-	movapd [rsp + nb410_gbscale], xmm1
-
-    mulsd xmm2, [rsp + nb410_iq]
-	mov rsi, [rbp + nb410_charge]    ;# base of charge[] 
-	movsd xmm3, [rsi + rax*8]
-	mulsd  xmm3, xmm2
-	movapd [rsp + nb410_qq], xmm3	
-	
-	mov rsi, [rbp + nb410_type]
-	mov r8d, [rsi + rax*4]
-	mov rsi, [rbp + nb410_vdwparam]
-	shl r8d, 1
-	mov edi, [rsp + nb410_ntia]
-	add r8d, edi
-
-	movsd xmm4, [rsi + r8*8]	
-	movsd xmm6, [rsi + r8*8 + 8]
-	movapd [rsp + nb410_c6], xmm4
-	movapd [rsp + nb410_c12], xmm6
-	
-	mov rsi, [rbp + nb410_pos]       ;# base of pos[] 
-
-	lea   r10, [rax + rax*2]     ;# replace jnr with j3 
-
-	;# move two coordinates to xmm4-xmm6	
-	movsd xmm4, [rsi + r10*8]
-	movsd xmm5, [rsi + r10*8 + 8]
-	movsd xmm6, [rsi + r10*8 + 16]
-	
-	;# calc dr 
-	subsd xmm4, [rsp + nb410_ix]
-	subsd xmm5, [rsp + nb410_iy]
-	subsd xmm6, [rsp + nb410_iz]
-
-	;# store dr 
-	movapd [rsp + nb410_dx], xmm4
-	movapd [rsp + nb410_dy], xmm5
-	movapd [rsp + nb410_dz], xmm6
-    
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm4, xmm5
-	addsd xmm4, xmm6
-	;# rsq in xmm4 
-
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm2, xmm5	;# lu in low xmm2 
-
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulsd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb410_three]
-	mulsd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410_half]
-	subsd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulsd xmm1, xmm5	
-	mulsd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
-
-	movapd xmm5, xmm1	;# copy of lu 
-	mulsd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb410_three]
-	mulsd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410_half]
-	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulsd xmm2, xmm5	
-	mulsd xmm0, xmm2	;# xmm0=rinv 
-	
-	mulsd xmm4, xmm0	;# xmm4=r 
-	movapd [rsp + nb410_r], xmm4
-	mulsd xmm4, [rsp + nb410_gbscale]
-
-	cvttsd2si r12d, xmm4	;# mm6 = lu idx 
-	cvtsi2sd xmm5, r12d
-	subsd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl r12d, 2		;# idx *= 4 
-	
-	mov  rsi, [rbp + nb410_GBtab]
-
-    movapd xmm9, xmm0 ;# rinv
-    mulsd  xmm9, xmm9 ;# rinvsq
-    movapd xmm10, xmm9 ;# rinvsq
-    mulsd  xmm10, xmm10 ;# rinv4
-    mulsd  xmm10, xmm9 ;# rinv6
-    movapd xmm11, xmm10 
-    mulsd  xmm11, xmm11 ;# rinv12
-
-    ;# load table data
-	movapd xmm4, [rsi + r12*8]	;# Y1 F1 	
-    movhlps xmm5, xmm4
-
-    mulsd  xmm10, [rsp + nb410_c6]    ;# vvdw6=c6*rinv6
-	mulsd  xmm11, [rsp + nb410_c12]   ;# vvdw12=c12*rinv12     
-
-	movapd xmm9, xmm11
-	subsd  xmm11, xmm10	;# Vvdw=Vvdw12-Vvdw6
-
-    ;# add potential to vvdwtot 
-	addsd  xmm11, [rsp + nb410_Vvdwtot]
-    movsd [rsp + nb410_Vvdwtot], xmm11
-    
-	movapd xmm6, [rsi + r12*8 + 16]	;# G1 H1 	
-    movhlps xmm7, xmm6
-	;# coulomb table ready, in xmm4-xmm7  		
-
-	mulsd  xmm7, xmm1	;# xmm7=Heps
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm1	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm7, [rsp + nb410_two]	;# two*Heps2 
-	movapd xmm3, [rsp + nb410_qq]
-	addsd  xmm7, xmm6
-	addsd  xmm7, xmm5 ;# xmm7=FF 
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-	mulsd  xmm3, xmm7 ;# fijC=FF*qq 
-    
-   ;# LJ forces
-    mulsd  xmm10, [rsp + nb410_six]
-    mulsd  xmm9, [rsp + nb410_twelve]
-    subsd  xmm9, xmm10
-    mulsd  xmm9, xmm0 ;# (12*vnb12-6*vnb6)*rinv
-
-	mov rsi, [rbp + nb410_dvda]
-	
-	;# Calculate dVda
-	xorpd xmm7, xmm7
-	mulsd xmm3, [rsp + nb410_gbscale]
-	movapd xmm6, xmm3
-	mulsd  xmm6, [rsp + nb410_r]
-	addsd  xmm6, xmm5
-
-    ;# update vctot 
-	addsd  xmm12, xmm5
-
-	;# xmm6=(vcoul+fijC*r)
-	subsd  xmm7, xmm6
-	movapd xmm6, xmm7
-	
-	;# update dvdasum
-	addsd  xmm7, [rsp + nb410_dvdasum]
-	movsd [rsp + nb410_dvdasum], xmm7 
-
-	;# update j atoms dvdaj
-	movhlps xmm7, xmm6
-	addsd  xmm6, [rsi + rax*8]
-	addsd  xmm7, [rsi + rbx*8]
-	movsd  [rsi + rax*8], xmm6
-	movsd  [rsi + rbx*8], xmm7
-
-    subsd  xmm9, xmm3
-    mulsd  xmm9, xmm0 ;# fscal
-
-    movapd  xmm10, xmm9
-    movapd  xmm11, xmm9
-
-    mulsd   xmm9, [rsp + nb410_dx]
-    mulsd   xmm10, [rsp + nb410_dy]
-    mulsd   xmm11, [rsp + nb410_dz]
-    
-	;# accumulate i forces
-    addsd xmm13, xmm9
-    addsd xmm14, xmm10
-    addsd xmm15, xmm11
-
-	mov rdi, [rbp + nb410_faction]
-	;# the fj's - start by accumulating forces from memory 
-	addsd xmm9,  [rdi + r10*8]
-	addsd xmm10, [rdi + r10*8 + 8]
-	addsd xmm11, [rdi + r10*8 + 16]
-	movsd [rdi + r10*8], xmm9
-	movsd [rdi + r10*8 + 8], xmm10
-	movsd [rdi + r10*8 + 16], xmm11
-	
-.nb410_updateouterdata:
-	mov   ecx, [rsp + nb410_ii3]
-	mov   rdi, [rbp + nb410_faction]
-	mov   rsi, [rbp + nb410_fshift]
-	mov   edx, [rsp + nb410_is3]
-
-	;# accumulate i forces in xmm13, xmm14, xmm15
-	movhlps xmm3, xmm13
-	movhlps xmm4, xmm14
-	movhlps xmm5, xmm15
-	addsd  xmm13, xmm3
-	addsd  xmm14, xmm4
-	addsd  xmm15, xmm5 ;# sum is in low xmm13-xmm15
-
-	;# increment i force 
-	movsd  xmm3, [rdi + rcx*8]
-	movsd  xmm4, [rdi + rcx*8 + 8]
-	movsd  xmm5, [rdi + rcx*8 + 16]
-	subsd  xmm3, xmm13
-	subsd  xmm4, xmm14
-	subsd  xmm5, xmm15
-	movsd  [rdi + rcx*8],     xmm3
-	movsd  [rdi + rcx*8 + 8], xmm4
-	movsd  [rdi + rcx*8 + 16], xmm5
-
-	;# increment fshift force  
-	movsd  xmm3, [rsi + rdx*8]
-	movsd  xmm4, [rsi + rdx*8 + 8]
-	movsd  xmm5, [rsi + rdx*8 + 16]
-	subsd  xmm3, xmm13
-	subsd  xmm4, xmm14
-	subsd  xmm5, xmm15
-	movsd  [rsi + rdx*8],     xmm3
-	movsd  [rsi + rdx*8 + 8], xmm4
-	movsd  [rsi + rdx*8 + 16], xmm5
-
-	;# get n from stack
-	mov esi, [rsp + nb410_n]
-        ;# get group index for i particle 
-        mov   rdx, [rbp + nb410_gid]      	;# base of gid[]
-        mov   edx, [rdx + rsi*4]		;# ggid=gid[n]
-
-	;# accumulate total potential energy and update it 
-	movhlps xmm6, xmm12
-	addsd  xmm12, xmm6	;# low xmm12 has the sum now 
-
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb410_Vc]
-	addsd xmm12, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm12
-	
-	;# accumulate total lj energy and update it 
-	movapd xmm7, [rsp + nb410_Vvdwtot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-	
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb410_Vvdw]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-	;# accumulate dVda and update it 
-	movapd xmm7, [rsp + nb410_dvdasum]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-	
-	mov edx, [rsp + nb410_ii]
-	mov rax, [rbp + nb410_dvda]
-	addsd xmm7, [rax + rdx*8]
-	movsd [rax + rdx*8], xmm7
-	
-        ;# finish if last 
-        mov ecx, [rsp + nb410_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb410_outerend
-
-        ;# not last, iterate outer loop once more!  
-        mov [rsp + nb410_n], esi
-        jmp .nb410_outer
-.nb410_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [rsp + nb410_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb410_end
-        ;# non-zero, do one more workunit
-        jmp   .nb410_threadloop
-.nb410_end:
-	mov eax, [rsp + nb410_nouter]
-	mov ebx, [rsp + nb410_ninner]
-	mov rcx, [rbp + nb410_outeriter]
-	mov rdx, [rbp + nb410_inneriter]
-	mov [rcx], eax
-	mov [rdx], ebx
-
-	add rsp, 552
-	emms
-
-
-        pop r15
-        pop r14
-        pop r13
-        pop r12
-
-	pop rbx
-	pop	rbp
-	ret
+nb_kernel410_x86_64_sse2:       
+_nb_kernel410_x86_64_sse2:      
+##      Room for return address and rbp (16 bytes)
+.set nb410_fshift, 16
+.set nb410_gid, 24
+.set nb410_pos, 32
+.set nb410_faction, 40
+.set nb410_charge, 48
+.set nb410_p_facel, 56
+.set nb410_argkrf, 64
+.set nb410_argcrf, 72
+.set nb410_Vc, 80
+.set nb410_type, 88
+.set nb410_p_ntype, 96
+.set nb410_vdwparam, 104
+.set nb410_Vvdw, 112
+.set nb410_p_tabscale, 120
+.set nb410_VFtab, 128
+.set nb410_invsqrta, 136
+.set nb410_dvda, 144
+.set nb410_p_gbtabscale, 152
+.set nb410_GBtab, 160
+.set nb410_p_nthreads, 168
+.set nb410_count, 176
+.set nb410_mtx, 184
+.set nb410_outeriter, 192
+.set nb410_inneriter, 200
+.set nb410_work, 208
+        ## stack offsets for local variables  
+        ## bottom of stack is cache-aligned for sse2 use 
+.set nb410_ix, 0
+.set nb410_iy, 16
+.set nb410_iz, 32
+.set nb410_iq, 48
+.set nb410_dx, 64
+.set nb410_dy, 80
+.set nb410_dz, 96
+.set nb410_two, 112
+.set nb410_six, 128
+.set nb410_twelve, 144
+.set nb410_gbtsc, 160
+.set nb410_qq, 176
+.set nb410_c6, 192
+.set nb410_c12, 208
+.set nb410_fscal, 224
+.set nb410_vctot, 240
+.set nb410_Vvdwtot, 256
+.set nb410_fix, 272
+.set nb410_fiy, 288
+.set nb410_fiz, 304
+.set nb410_half, 320
+.set nb410_three, 336
+.set nb410_r, 352
+.set nb410_isai, 368
+.set nb410_isaprod, 384
+.set nb410_dvdasum, 400
+.set nb410_gbscale, 416
+.set nb410_nri, 432
+.set nb410_iinr, 440
+.set nb410_jindex, 448
+.set nb410_jjnr, 456
+.set nb410_shift, 464
+.set nb410_shiftvec, 472
+.set nb410_facel, 480
+.set nb410_innerjjnr, 488
+.set nb410_ii, 496
+.set nb410_is3, 500
+.set nb410_ii3, 504
+.set nb410_ntia, 508
+.set nb410_innerk, 512
+.set nb410_n, 516
+.set nb410_nn1, 520
+.set nb410_ntype, 524
+.set nb410_nouter, 528
+.set nb410_ninner, 532
+        push %rbp
+        movq %rsp,%rbp
+        push %rbx
+
+
+        emms
+
+        push %r12
+        push %r13
+        push %r14
+        push %r15
+
+        subq $552,%rsp          ## local variable stack space (n*16+8)
+
+        ## zero 32-bit iteration counters
+        movl $0,%eax
+        movl %eax,nb410_nouter(%rsp)
+        movl %eax,nb410_ninner(%rsp)
+
+        movl (%rdi),%edi
+        movl %edi,nb410_nri(%rsp)
+        movq %rsi,nb410_iinr(%rsp)
+        movq %rdx,nb410_jindex(%rsp)
+        movq %rcx,nb410_jjnr(%rsp)
+        movq %r8,nb410_shift(%rsp)
+        movq %r9,nb410_shiftvec(%rsp)
+        movq nb410_p_ntype(%rbp),%rdi
+        movl (%rdi),%edi
+        movl %edi,nb410_ntype(%rsp)
+        movq nb410_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd %xmm0,nb410_facel(%rsp)
+
+        movq nb410_p_gbtabscale(%rbp),%rbx
+        movsd (%rbx),%xmm4
+        shufpd $0,%xmm4,%xmm4
+        movapd %xmm4,nb410_gbtsc(%rsp)
+
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double half IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb410_half(%rsp)
+        movl %ebx,nb410_half+4(%rsp)
+        movsd nb410_half(%rsp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## one
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## two
+        addpd  %xmm2,%xmm3      ## three
+        movapd %xmm3,%xmm4
+        addpd  %xmm4,%xmm4      ## six
+        movapd %xmm4,%xmm5
+        addpd  %xmm5,%xmm5      ## twelve
+        movapd %xmm1,nb410_half(%rsp)
+        movapd %xmm2,nb410_two(%rsp)
+        movapd %xmm3,nb410_three(%rsp)
+        movapd %xmm4,nb410_six(%rsp)
+        movapd %xmm5,nb410_twelve(%rsp)
+
+_nb_kernel410_x86_64_sse2.nb410_threadloop: 
+        movq  nb410_count(%rbp),%rsi            ## pointer to sync counter
+        movl  (%rsi),%eax
+_nb_kernel410_x86_64_sse2.nb410_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel410_x86_64_sse2.nb410_spinlock
+
+        ## if(nn1>nri) nn1=nri
+        movl nb410_nri(%rsp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb410_n(%rsp)
+        movl %ebx,nb410_nn1(%rsp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel410_x86_64_sse2.nb410_outerstart
+        jmp _nb_kernel410_x86_64_sse2.nb410_end
+
+_nb_kernel410_x86_64_sse2.nb410_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb410_nouter(%rsp),%ebx
+        movl %ebx,nb410_nouter(%rsp)
+
+_nb_kernel410_x86_64_sse2.nb410_outer: 
+        movq  nb410_shift(%rsp),%rax        ## rax = pointer into shift[] 
+        movl  (%rax,%rsi,4),%ebx        ## rbx=shift[n] 
+
+        lea  (%rbx,%rbx,2),%rbx    ## rbx=3*is 
+        movl  %ebx,nb410_is3(%rsp)      ## store is3 
+
+        movq  nb410_shiftvec(%rsp),%rax     ## rax = base of shiftvec[] 
+
+        movsd (%rax,%rbx,8),%xmm0
+        movsd 8(%rax,%rbx,8),%xmm1
+        movsd 16(%rax,%rbx,8),%xmm2
+
+        movq  nb410_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]        
+        movl  (%rcx,%rsi,4),%ebx    ## ebx =ii 
+        movl  %ebx,nb410_ii(%rsp)
+
+        movq  nb410_charge(%rbp),%rdx
+        movsd (%rdx,%rbx,8),%xmm3
+        mulsd nb410_facel(%rsp),%xmm3
+        shufpd $0,%xmm3,%xmm3
+
+        movq  nb410_invsqrta(%rbp),%rdx         ## load invsqrta[ii]
+        movsd (%rdx,%rbx,8),%xmm4
+        shufpd $0,%xmm4,%xmm4
+
+        movq  nb410_type(%rbp),%rdx
+        movl  (%rdx,%rbx,4),%edx
+        imull nb410_ntype(%rsp),%edx
+        shll  %edx
+        movl  %edx,nb410_ntia(%rsp)
+
+        lea  (%rbx,%rbx,2),%rbx        ## rbx = 3*ii=ii3 
+        movq  nb410_pos(%rbp),%rax      ## rax = base of pos[]  
+
+        addsd (%rax,%rbx,8),%xmm0
+        addsd 8(%rax,%rbx,8),%xmm1
+        addsd 16(%rax,%rbx,8),%xmm2
+
+        movapd %xmm3,nb410_iq(%rsp)
+        movapd %xmm4,nb410_isai(%rsp)
+
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
+
+        movapd %xmm0,nb410_ix(%rsp)
+        movapd %xmm1,nb410_iy(%rsp)
+        movapd %xmm2,nb410_iz(%rsp)
+
+        movl  %ebx,nb410_ii3(%rsp)
+
+        ## clear vctot and i forces 
+        xorpd %xmm13,%xmm13
+        movapd %xmm13,%xmm12
+        movapd %xmm13,nb410_Vvdwtot(%rsp)
+        movapd %xmm13,nb410_dvdasum(%rsp)
+        movapd %xmm13,%xmm14
+        movapd %xmm13,%xmm15
+
+        movq  nb410_jindex(%rsp),%rax
+        movl  (%rax,%rsi,4),%ecx             ## jindex[n] 
+        movl  4(%rax,%rsi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
+
+        movq  nb410_pos(%rbp),%rsi
+        movq  nb410_faction(%rbp),%rdi
+        movq  nb410_jjnr(%rsp),%rax
+        shll  $2,%ecx
+        addq  %rcx,%rax
+        movq  %rax,nb410_innerjjnr(%rsp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb410_ninner(%rsp),%ecx
+        movl  %ecx,nb410_ninner(%rsp)
+        addl  $0,%edx
+        movl  %edx,nb410_innerk(%rsp)      ## number of innerloop atoms 
+        jge   _nb_kernel410_x86_64_sse2.nb410_unroll_loop
+        jmp   _nb_kernel410_x86_64_sse2.nb410_checksingle
+_nb_kernel410_x86_64_sse2.nb410_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movq  nb410_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%r14d
+        movl  4(%rdx),%r15d
+        addq $8,nb410_innerjjnr(%rsp)             ## advance pointer (unrolled 2) 
+
+        movq nb410_pos(%rbp),%rsi        ## base of pos[] 
+
+        lea  (%r14,%r14,2),%r10     ## replace jnr with j3 
+        lea  (%r15,%r15,2),%r11
+
+        ## move two coordinates to xmm4-xmm6    
+        movlpd (%rsi,%r10,8),%xmm4
+        movlpd 8(%rsi,%r10,8),%xmm5
+        movlpd 16(%rsi,%r10,8),%xmm6
+        movhpd (%rsi,%r11,8),%xmm4
+        movhpd 8(%rsi,%r11,8),%xmm5
+        movhpd 16(%rsi,%r11,8),%xmm6
+
+        ## calc dr 
+        subpd nb410_ix(%rsp),%xmm4
+        subpd nb410_iy(%rsp),%xmm5
+        subpd nb410_iz(%rsp),%xmm6
+
+        ## store dr 
+        movapd %xmm4,nb410_dx(%rsp)
+        movapd %xmm5,nb410_dy(%rsp)
+        movapd %xmm6,nb410_dz(%rsp)
+
+        ## load isaj
+        movq nb410_invsqrta(%rbp),%rsi
+
+        ## square it 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm4
+        addpd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        movlpd (%rsi,%r14,8),%xmm3
+        movhpd (%rsi,%r15,8),%xmm3
+
+        movq nb410_type(%rbp),%rdi
+        movl (%rdi,%r14,4),%r8d
+        movl (%rdi,%r15,4),%r9d
+
+        cvtpd2ps %xmm4,%xmm5
+        rsqrtps %xmm5,%xmm5
+        cvtps2pd %xmm5,%xmm2    ## lu in low xmm2 
+
+        mulpd  nb410_isai(%rsp),%xmm3
+        movapd %xmm3,nb410_isaprod(%rsp)
+
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulpd %xmm2,%xmm2       ## lu*lu 
+        movapd nb410_three(%rsp),%xmm1
+        mulpd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb410_half(%rsp),%xmm0
+        subpd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm1
+        mulpd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm3,%xmm6
+        mulpd nb410_gbtsc(%rsp),%xmm6
+        movapd %xmm6,nb410_gbscale(%rsp)
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulpd %xmm1,%xmm1       ## lu*lu 
+        movapd nb410_three(%rsp),%xmm2
+        mulpd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb410_half(%rsp),%xmm0
+        subpd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm2
+        mulpd %xmm2,%xmm0       ## xmm0=rinv 
+
+    mulpd  nb410_iq(%rsp),%xmm3
+        movq nb410_charge(%rbp),%rsi     ## base of charge[] 
+        movlpd (%rsi,%r14,8),%xmm6
+        movhpd (%rsi,%r15,8),%xmm6
+        mulpd  %xmm3,%xmm6
+        movapd %xmm6,nb410_qq(%rsp)
+
+        mulpd %xmm0,%xmm4       ## xmm4=r 
+        movapd %xmm4,nb410_r(%rsp)
+        mulpd nb410_gbscale(%rsp),%xmm4
+        movl nb410_ntia(%rsp),%edi
+
+        cvttpd2pi %xmm4,%mm6    ## mm6 = lu idx 
+        shll %r8d
+        shll %r9d
+        addl %edi,%r8d
+        addl %edi,%r9d
+
+        cvtpi2pd %mm6,%xmm5
+        subpd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+        movq nb410_vdwparam(%rbp),%rdi
+
+        pslld $2,%mm6           ## idx *= 4 
+
+        movq nb410_GBtab(%rbp),%rsi
+        movd %mm6,%r12d
+        psrlq $32,%mm6
+        movd %mm6,%r13d         ## indices in r12/r13
+
+        movlpd (%rdi,%r8,8),%xmm6
+        movlpd 8(%rdi,%r8,8),%xmm7
+
+    movapd %xmm0,%xmm9 ## rinv
+    mulpd  %xmm9,%xmm9 ## rinvsq
+    movapd %xmm9,%xmm10 ## rinvsq
+    mulpd  %xmm10,%xmm10 ## rinv4
+    mulpd  %xmm9,%xmm10 ## rinv6
+    movapd %xmm10,%xmm11
+    mulpd  %xmm11,%xmm11 ## rinv12
+
+
+        movhpd (%rdi,%r9,8),%xmm6
+        movhpd 8(%rdi,%r9,8),%xmm7
+
+    ## load table data
+        movapd (%rsi,%r12,8),%xmm4      ## Y1 F1        
+        movapd (%rsi,%r13,8),%xmm3      ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+    mulpd  %xmm6,%xmm10  ## vvdw6=c6*rinv6
+        mulpd  %xmm7,%xmm11  ## vvdw12=c12*rinv12     
+
+        movapd %xmm11,%xmm9
+        subpd  %xmm10,%xmm11    ## Vvdw=Vvdw12-Vvdw6
+
+    ## add potential to vvdwtot 
+        addpd  nb410_Vvdwtot(%rsp),%xmm11
+    movapd %xmm11,nb410_Vvdwtot(%rsp)
+
+        movapd 16(%rsi,%r12,8),%xmm6    ## G1 H1        
+        movapd 16(%rsi,%r13,8),%xmm3    ## G2 H2 
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## coulomb table ready, in xmm4-xmm7            
+
+        mulpd  %xmm1,%xmm7      ## xmm7=Heps
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm1,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulpd  nb410_two(%rsp),%xmm7    ## two*Heps2 
+        movapd nb410_qq(%rsp),%xmm3
+        addpd  %xmm6,%xmm7
+        addpd  %xmm5,%xmm7 ## xmm7=FF 
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+        mulpd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        mulpd  %xmm7,%xmm3 ## fijC=FF*qq 
+
+   ## LJ forces
+    mulpd  nb410_six(%rsp),%xmm10
+    mulpd  nb410_twelve(%rsp),%xmm9
+    subpd  %xmm10,%xmm9
+    mulpd  %xmm0,%xmm9 ## (12*vnb12-6*vnb6)*rinv
+
+        movq nb410_dvda(%rbp),%rsi
+
+        ## Calculate dVda
+        xorpd %xmm7,%xmm7
+        mulpd nb410_gbscale(%rsp),%xmm3
+        movapd %xmm3,%xmm6
+        mulpd  nb410_r(%rsp),%xmm6
+        addpd  %xmm5,%xmm6
+
+    ## update vctot 
+        addpd  %xmm5,%xmm12
+
+        ## xmm6=(vcoul+fijC*r)
+        subpd  %xmm6,%xmm7
+        movapd %xmm7,%xmm6
+
+        movq nb410_faction(%rbp),%rdi
+        ## the fj's - start by accumulating forces from memory 
+        movlpd (%rdi,%r10,8),%xmm2
+        movlpd 8(%rdi,%r10,8),%xmm4
+        movlpd 16(%rdi,%r10,8),%xmm5
+
+        ## update dvdasum
+        addpd  nb410_dvdasum(%rsp),%xmm7
+        movapd %xmm7,nb410_dvdasum(%rsp)
+
+        ## update j atoms dvdaj
+        movhlps %xmm6,%xmm7
+        addsd  (%rsi,%r14,8),%xmm6
+        addsd  (%rsi,%r15,8),%xmm7
+        movsd  %xmm6,(%rsi,%r14,8)
+        movsd  %xmm7,(%rsi,%r15,8)
+
+        movhpd (%rdi,%r11,8),%xmm2
+        movhpd 8(%rdi,%r11,8),%xmm4
+        movhpd 16(%rdi,%r11,8),%xmm5
+
+    subpd  %xmm3,%xmm9
+    mulpd  %xmm0,%xmm9 ## fscal
+
+    movapd  %xmm9,%xmm10
+    movapd  %xmm9,%xmm11
+
+    mulpd   nb410_dx(%rsp),%xmm9
+    mulpd   nb410_dy(%rsp),%xmm10
+    mulpd   nb410_dz(%rsp),%xmm11
+
+        addpd %xmm9,%xmm2
+        addpd %xmm10,%xmm4
+        addpd %xmm11,%xmm5
+
+        movlpd %xmm2,(%rdi,%r10,8)
+        movlpd %xmm4,8(%rdi,%r10,8)
+        movlpd %xmm5,16(%rdi,%r10,8)
+
+        ## accumulate i forces
+    addpd %xmm9,%xmm13
+    addpd %xmm10,%xmm14
+    addpd %xmm11,%xmm15
+
+        movhpd %xmm2,(%rdi,%r11,8)
+        movhpd %xmm4,8(%rdi,%r11,8)
+        movhpd %xmm5,16(%rdi,%r11,8)
+
+        ## should we do one more iteration? 
+        subl $2,nb410_innerk(%rsp)
+        jl    _nb_kernel410_x86_64_sse2.nb410_checksingle
+        jmp   _nb_kernel410_x86_64_sse2.nb410_unroll_loop
+_nb_kernel410_x86_64_sse2.nb410_checksingle: 
+        movl  nb410_innerk(%rsp),%edx
+        andl  $1,%edx
+        jnz    _nb_kernel410_x86_64_sse2.nb410_dosingle
+        jmp    _nb_kernel410_x86_64_sse2.nb410_updateouterdata
+_nb_kernel410_x86_64_sse2.nb410_dosingle: 
+        movq nb410_charge(%rbp),%rsi
+        movq nb410_invsqrta(%rbp),%rdx
+        movq nb410_pos(%rbp),%rdi
+        movq  nb410_innerjjnr(%rsp),%rcx
+        movl  (%rcx),%eax
+
+        ## load isaj
+        movq nb410_invsqrta(%rbp),%rsi
+        movsd (%rsi,%rax,8),%xmm2
+        mulsd  nb410_isai(%rsp),%xmm2
+        movapd %xmm2,nb410_isaprod(%rsp)
+        movapd %xmm2,%xmm1
+        mulsd nb410_gbtsc(%rsp),%xmm1
+        movapd %xmm1,nb410_gbscale(%rsp)
+
+    mulsd nb410_iq(%rsp),%xmm2
+        movq nb410_charge(%rbp),%rsi     ## base of charge[] 
+        movsd (%rsi,%rax,8),%xmm3
+        mulsd  %xmm2,%xmm3
+        movapd %xmm3,nb410_qq(%rsp)
+
+        movq nb410_type(%rbp),%rsi
+        movl (%rsi,%rax,4),%r8d
+        movq nb410_vdwparam(%rbp),%rsi
+        shll %r8d
+        movl nb410_ntia(%rsp),%edi
+        addl %edi,%r8d
+
+        movsd (%rsi,%r8,8),%xmm4
+        movsd 8(%rsi,%r8,8),%xmm6
+        movapd %xmm4,nb410_c6(%rsp)
+        movapd %xmm6,nb410_c12(%rsp)
+
+        movq nb410_pos(%rbp),%rsi        ## base of pos[] 
+
+        lea  (%rax,%rax,2),%r10     ## replace jnr with j3 
+
+        ## move two coordinates to xmm4-xmm6    
+        movsd (%rsi,%r10,8),%xmm4
+        movsd 8(%rsi,%r10,8),%xmm5
+        movsd 16(%rsi,%r10,8),%xmm6
+
+        ## calc dr 
+        subsd nb410_ix(%rsp),%xmm4
+        subsd nb410_iy(%rsp),%xmm5
+        subsd nb410_iz(%rsp),%xmm6
+
+        ## store dr 
+        movapd %xmm4,nb410_dx(%rsp)
+        movapd %xmm5,nb410_dy(%rsp)
+        movapd %xmm6,nb410_dz(%rsp)
+
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm4
+        addsd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtsd2ss %xmm4,%xmm5
+        rsqrtss %xmm5,%xmm5
+        cvtss2sd %xmm5,%xmm2    ## lu in low xmm2 
+
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulsd %xmm2,%xmm2       ## lu*lu 
+        movapd nb410_three(%rsp),%xmm1
+        mulsd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb410_half(%rsp),%xmm0
+        subsd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm1
+        mulsd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulsd %xmm1,%xmm1       ## lu*lu 
+        movapd nb410_three(%rsp),%xmm2
+        mulsd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb410_half(%rsp),%xmm0
+        subsd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm2
+        mulsd %xmm2,%xmm0       ## xmm0=rinv 
+
+        mulsd %xmm0,%xmm4       ## xmm4=r 
+        movapd %xmm4,nb410_r(%rsp)
+        mulsd nb410_gbscale(%rsp),%xmm4
+
+        cvttsd2si %xmm4,%r12d   ## mm6 = lu idx 
+        cvtsi2sd %r12d,%xmm5
+        subsd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%r12d           ## idx *= 4 
+
+        movq nb410_GBtab(%rbp),%rsi
+
+    movapd %xmm0,%xmm9 ## rinv
+    mulsd  %xmm9,%xmm9 ## rinvsq
+    movapd %xmm9,%xmm10 ## rinvsq
+    mulsd  %xmm10,%xmm10 ## rinv4
+    mulsd  %xmm9,%xmm10 ## rinv6
+    movapd %xmm10,%xmm11
+    mulsd  %xmm11,%xmm11 ## rinv12
+
+    ## load table data
+        movapd (%rsi,%r12,8),%xmm4      ## Y1 F1        
+    movhlps %xmm4,%xmm5
+
+    mulsd  nb410_c6(%rsp),%xmm10      ## vvdw6=c6*rinv6
+        mulsd  nb410_c12(%rsp),%xmm11     ## vvdw12=c12*rinv12     
+
+        movapd %xmm11,%xmm9
+        subsd  %xmm10,%xmm11    ## Vvdw=Vvdw12-Vvdw6
+
+    ## add potential to vvdwtot 
+        addsd  nb410_Vvdwtot(%rsp),%xmm11
+    movsd %xmm11,nb410_Vvdwtot(%rsp)
+
+        movapd 16(%rsi,%r12,8),%xmm6    ## G1 H1        
+    movhlps %xmm6,%xmm7
+        ## coulomb table ready, in xmm4-xmm7            
+
+        mulsd  %xmm1,%xmm7      ## xmm7=Heps
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm1,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulsd  nb410_two(%rsp),%xmm7    ## two*Heps2 
+        movapd nb410_qq(%rsp),%xmm3
+        addsd  %xmm6,%xmm7
+        addsd  %xmm5,%xmm7 ## xmm7=FF 
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+        mulsd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        mulsd  %xmm7,%xmm3 ## fijC=FF*qq 
+
+   ## LJ forces
+    mulsd  nb410_six(%rsp),%xmm10
+    mulsd  nb410_twelve(%rsp),%xmm9
+    subsd  %xmm10,%xmm9
+    mulsd  %xmm0,%xmm9 ## (12*vnb12-6*vnb6)*rinv
+
+        movq nb410_dvda(%rbp),%rsi
+
+        ## Calculate dVda
+        xorpd %xmm7,%xmm7
+        mulsd nb410_gbscale(%rsp),%xmm3
+        movapd %xmm3,%xmm6
+        mulsd  nb410_r(%rsp),%xmm6
+        addsd  %xmm5,%xmm6
+
+    ## update vctot 
+        addsd  %xmm5,%xmm12
+
+        ## xmm6=(vcoul+fijC*r)
+        subsd  %xmm6,%xmm7
+        movapd %xmm7,%xmm6
+
+        ## update dvdasum
+        addsd  nb410_dvdasum(%rsp),%xmm7
+        movsd %xmm7,nb410_dvdasum(%rsp)
+
+        ## update j atoms dvdaj
+        movhlps %xmm6,%xmm7
+        addsd  (%rsi,%rax,8),%xmm6
+        addsd  (%rsi,%rbx,8),%xmm7
+        movsd  %xmm6,(%rsi,%rax,8)
+        movsd  %xmm7,(%rsi,%rbx,8)
+
+    subsd  %xmm3,%xmm9
+    mulsd  %xmm0,%xmm9 ## fscal
+
+    movapd  %xmm9,%xmm10
+    movapd  %xmm9,%xmm11
+
+    mulsd   nb410_dx(%rsp),%xmm9
+    mulsd   nb410_dy(%rsp),%xmm10
+    mulsd   nb410_dz(%rsp),%xmm11
+
+        ## accumulate i forces
+    addsd %xmm9,%xmm13
+    addsd %xmm10,%xmm14
+    addsd %xmm11,%xmm15
+
+        movq nb410_faction(%rbp),%rdi
+        ## the fj's - start by accumulating forces from memory 
+        addsd (%rdi,%r10,8),%xmm9
+        addsd 8(%rdi,%r10,8),%xmm10
+        addsd 16(%rdi,%r10,8),%xmm11
+        movsd %xmm9,(%rdi,%r10,8)
+        movsd %xmm10,8(%rdi,%r10,8)
+        movsd %xmm11,16(%rdi,%r10,8)
+
+_nb_kernel410_x86_64_sse2.nb410_updateouterdata: 
+        movl  nb410_ii3(%rsp),%ecx
+        movq  nb410_faction(%rbp),%rdi
+        movq  nb410_fshift(%rbp),%rsi
+        movl  nb410_is3(%rsp),%edx
+
+        ## accumulate i forces in xmm13, xmm14, xmm15
+        movhlps %xmm13,%xmm3
+        movhlps %xmm14,%xmm4
+        movhlps %xmm15,%xmm5
+        addsd  %xmm3,%xmm13
+        addsd  %xmm4,%xmm14
+        addsd  %xmm5,%xmm15 ## sum is in low xmm13-xmm15
+
+        ## increment i force 
+        movsd  (%rdi,%rcx,8),%xmm3
+        movsd  8(%rdi,%rcx,8),%xmm4
+        movsd  16(%rdi,%rcx,8),%xmm5
+        subsd  %xmm13,%xmm3
+        subsd  %xmm14,%xmm4
+        subsd  %xmm15,%xmm5
+        movsd  %xmm3,(%rdi,%rcx,8)
+        movsd  %xmm4,8(%rdi,%rcx,8)
+        movsd  %xmm5,16(%rdi,%rcx,8)
+
+        ## increment fshift force  
+        movsd  (%rsi,%rdx,8),%xmm3
+        movsd  8(%rsi,%rdx,8),%xmm4
+        movsd  16(%rsi,%rdx,8),%xmm5
+        subsd  %xmm13,%xmm3
+        subsd  %xmm14,%xmm4
+        subsd  %xmm15,%xmm5
+        movsd  %xmm3,(%rsi,%rdx,8)
+        movsd  %xmm4,8(%rsi,%rdx,8)
+        movsd  %xmm5,16(%rsi,%rdx,8)
+
+        ## get n from stack
+        movl nb410_n(%rsp),%esi
+        ## get group index for i particle 
+        movq  nb410_gid(%rbp),%rdx              ## base of gid[]
+        movl  (%rdx,%rsi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total potential energy and update it 
+        movhlps %xmm12,%xmm6
+        addsd  %xmm6,%xmm12     ## low xmm12 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb410_Vc(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm12
+        ## move back to mem 
+        movsd %xmm12,(%rax,%rdx,8)
+
+        ## accumulate total lj energy and update it 
+        movapd nb410_Vvdwtot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb410_Vvdw(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## accumulate dVda and update it 
+        movapd nb410_dvdasum(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        movl nb410_ii(%rsp),%edx
+        movq nb410_dvda(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## finish if last 
+        movl nb410_nn1(%rsp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel410_x86_64_sse2.nb410_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb410_n(%rsp)
+        jmp _nb_kernel410_x86_64_sse2.nb410_outer
+_nb_kernel410_x86_64_sse2.nb410_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb410_nri(%rsp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel410_x86_64_sse2.nb410_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel410_x86_64_sse2.nb410_threadloop
+_nb_kernel410_x86_64_sse2.nb410_end: 
+        movl nb410_nouter(%rsp),%eax
+        movl nb410_ninner(%rsp),%ebx
+        movq nb410_outeriter(%rbp),%rcx
+        movq nb410_inneriter(%rbp),%rdx
+        movl %eax,(%rcx)
+        movl %ebx,(%rdx)
+
+        addq $552,%rsp
+        emms
+
+
+        pop %r15
+        pop %r14
+        pop %r13
+        pop %r12
+
+        pop %rbx
+        pop    %rbp
+        ret
 
 
 
@@ -856,632 +832,634 @@ _nb_kernel410_x86_64_sse2:
 
 .globl nb_kernel410nf_x86_64_sse2
 .globl _nb_kernel410nf_x86_64_sse2
-nb_kernel410nf_x86_64_sse2:	
-_nb_kernel410nf_x86_64_sse2:	
-;#	Room for return address and rbp (16 bytes)
-.equiv          nb410nf_fshift,         16
-.equiv          nb410nf_gid,            24
-.equiv          nb410nf_pos,            32
-.equiv          nb410nf_faction,        40
-.equiv          nb410nf_charge,         48
-.equiv          nb410nf_p_facel,        56
-.equiv          nb410nf_argkrf,         64
-.equiv          nb410nf_argcrf,         72
-.equiv          nb410nf_Vc,             80
-.equiv          nb410nf_type,           88
-.equiv          nb410nf_p_ntype,        96
-.equiv          nb410nf_vdwparam,       104
-.equiv          nb410nf_Vvdw,           112
-.equiv          nb410nf_p_tabscale,     120
-.equiv          nb410nf_VFtab,          128
-.equiv          nb410nf_invsqrta,       136
-.equiv          nb410nf_dvda,           144
-.equiv          nb410nf_p_gbtabscale,   152
-.equiv          nb410nf_GBtab,          160
-.equiv          nb410nf_p_nthreads,     168
-.equiv          nb410nf_count,          176
-.equiv          nb410nf_mtx,            184
-.equiv          nb410nf_outeriter,      192
-.equiv          nb410nf_inneriter,      200
-.equiv          nb410nf_work,           208
-	;# stack offsets for local variables  
-	;# bottom of stack is cache-aligned for sse2 use 
-.equiv          nb410nf_ix,             0
-.equiv          nb410nf_iy,             16
-.equiv          nb410nf_iz,             32
-.equiv          nb410nf_iq,             48
-.equiv          nb410nf_two,            64
-.equiv          nb410nf_gbtsc,          80
-.equiv          nb410nf_qq,             96
-.equiv          nb410nf_c6,             112
-.equiv          nb410nf_c12,            128
-.equiv          nb410nf_vctot,          144
-.equiv          nb410nf_Vvdwtot,        160
-.equiv          nb410nf_half,           176
-.equiv          nb410nf_three,          192
-.equiv          nb410nf_r,              208
-.equiv          nb410nf_isai,           224
-.equiv          nb410nf_isaprod,        240
-.equiv          nb410nf_gbscale,        256
-.equiv          nb410nf_nri,            272
-.equiv          nb410nf_iinr,           280
-.equiv          nb410nf_jindex,         288
-.equiv          nb410nf_jjnr,           296
-.equiv          nb410nf_shift,          304
-.equiv          nb410nf_shiftvec,       312
-.equiv          nb410nf_facel,          320
-.equiv          nb410nf_innerjjnr,      328
-.equiv          nb410nf_ii,             336
-.equiv          nb410nf_is3,            340
-.equiv          nb410nf_ii3,            344
-.equiv          nb410nf_ntia,           348
-.equiv          nb410nf_innerk,         352
-.equiv          nb410nf_n,              356
-.equiv          nb410nf_nn1,            360
-.equiv          nb410nf_ntype,          364
-.equiv          nb410nf_nouter,         368
-.equiv          nb410nf_ninner,         372
-	push rbp
-	mov  rbp, rsp
-	push rbx
-
-	
-	emms
-
-        push r12
-        push r13
-        push r14
-        push r15
-
-	sub rsp, 392		;# local variable stack space (n*16+8)
-
-	;# zero 32-bit iteration counters
-	mov eax, 0
-	mov [rsp + nb410nf_nouter], eax
-	mov [rsp + nb410nf_ninner], eax
-
-	mov edi, [rdi]
-	mov [rsp + nb410nf_nri], edi
-	mov [rsp + nb410nf_iinr], rsi
-	mov [rsp + nb410nf_jindex], rdx
-	mov [rsp + nb410nf_jjnr], rcx
-	mov [rsp + nb410nf_shift], r8
-	mov [rsp + nb410nf_shiftvec], r9
-	mov rdi, [rbp + nb410nf_p_ntype]
-	mov edi, [rdi]
-	mov [rsp + nb410nf_ntype], edi
-	mov rsi, [rbp + nb410nf_p_facel]
-	movsd xmm0, [rsi]
-	movsd [rsp + nb410nf_facel], xmm0
-
-	mov rbx, [rbp + nb410nf_p_gbtabscale]
-	movsd xmm4, [rbx]
-	shufpd xmm4, xmm4, 0
-	movapd [rsp + nb410nf_gbtsc],  xmm4
-
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double half IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [rsp + nb410nf_half], eax
-	mov [rsp + nb410nf_half + 4], ebx
-	movsd xmm1, [rsp + nb410nf_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# one
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# two
-	addpd  xmm3, xmm2	;# three
-	movapd [rsp + nb410nf_half], xmm1
-	movapd [rsp + nb410nf_two], xmm2
-	movapd [rsp + nb410nf_three], xmm3
-
-.nb410nf_threadloop:
-        mov   rsi, [rbp + nb410nf_count]          ;# pointer to sync counter
-        mov   eax, [rsi]
-.nb410nf_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [rsi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb410nf_spinlock
-
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [rsp + nb410nf_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [rsp + nb410nf_n], eax
-        mov [rsp + nb410nf_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb410nf_outerstart
-        jmp .nb410nf_end
-
-.nb410nf_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [rsp + nb410nf_nouter]
-	mov [rsp + nb410nf_nouter], ebx
-
-.nb410nf_outer:
-	mov   rax, [rsp + nb410nf_shift]      ;# rax = pointer into shift[] 
-	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
-	
-	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
-	mov   [rsp + nb410nf_is3],ebx    	;# store is3 
-
-	mov   rax, [rsp + nb410nf_shiftvec]   ;# rax = base of shiftvec[] 
-
-	movsd xmm0, [rax + rbx*8]
-	movsd xmm1, [rax + rbx*8 + 8]
-	movsd xmm2, [rax + rbx*8 + 16] 
-
-	mov   rcx, [rsp + nb410nf_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx+rsi*4]	    ;# ebx =ii 
-	mov   [rsp + nb410nf_ii], ebx
-
-	mov   rdx, [rbp + nb410nf_charge]
-	movsd xmm3, [rdx + rbx*8]	
-	mulsd xmm3, [rsp + nb410nf_facel]
-	shufpd xmm3, xmm3, 0
-
-	mov   rdx, [rbp + nb410nf_invsqrta]	;# load invsqrta[ii]
-	movsd xmm4, [rdx + rbx*8]
-	shufpd xmm4, xmm4, 0
-
-   	mov   rdx, [rbp + nb410nf_type] 
-   	mov   edx, [rdx + rbx*4]
-   	imul  edx, [rsp + nb410nf_ntype]
-   	shl   edx, 1
-    mov   [rsp + nb410nf_ntia], edx
-	
-	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
-	mov   rax, [rbp + nb410nf_pos]    ;# rax = base of pos[]  
-
-	addsd xmm0, [rax + rbx*8]
-	addsd xmm1, [rax + rbx*8 + 8]
-	addsd xmm2, [rax + rbx*8 + 16]
-
-	movapd [rsp + nb410nf_iq], xmm3
-	movapd [rsp + nb410nf_isai], xmm4
-
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
-
-	movapd [rsp + nb410nf_ix], xmm0
-	movapd [rsp + nb410nf_iy], xmm1
-	movapd [rsp + nb410nf_iz], xmm2
-
-	mov   [rsp + nb410nf_ii3], ebx
-	
-	;# clear vctot and Vvdwtot
-	xorpd xmm4, xmm4
-	movapd [rsp + nb410nf_vctot], xmm4
-	movapd [rsp + nb410nf_Vvdwtot], xmm4
-	
-	mov   rax, [rsp + nb410nf_jindex]
-	mov   ecx, [rax + rsi*4]	     ;# jindex[n] 
-	mov   edx, [rax + rsi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
-
-	mov   rsi, [rbp + nb410nf_pos]
-	mov   rdi, [rbp + nb410nf_faction]	
-	mov   rax, [rsp + nb410nf_jjnr]
-	shl   ecx, 2
-	add   rax, rcx
-	mov   [rsp + nb410nf_innerjjnr], rax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [rsp + nb410nf_ninner]
-	mov   [rsp + nb410nf_ninner], ecx
-	add   edx, 0
-	mov   [rsp + nb410nf_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb410nf_unroll_loop
-	jmp   .nb410nf_checksingle
-.nb410nf_unroll_loop:	
-	;# twice unrolled innerloop here 
-	mov   rdx, [rsp + nb410nf_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]	
-	mov   ebx, [rdx + 4]              
-	add qword ptr [rsp + nb410nf_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-
-	;# load isaj
-	mov rsi, [rbp + nb410nf_invsqrta]
-	movlpd xmm2, [rsi + rax*8]
-	movhpd xmm2, [rsi + rbx*8]
-	mulpd  xmm2, [rsp + nb410nf_isai]
-	movapd [rsp + nb410nf_isaprod], xmm2	
-	movapd xmm1, xmm2
-	mulpd xmm1, [rsp + nb410nf_gbtsc]
-	movapd [rsp + nb410nf_gbscale], xmm1
-	
-	mov rsi, [rbp + nb410nf_charge]    ;# base of charge[] 
-	movlpd xmm3, [rsi + rax*8]
-	movhpd xmm3, [rsi + rbx*8]
-
-	mulpd xmm2, [rsp + nb410nf_iq]
-	mulpd  xmm3, xmm2
-	movapd [rsp + nb410nf_qq], xmm3	
-	
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	movd  mm1, ebx
-	
-	mov rsi, [rbp + nb410nf_type]
-	mov eax, [rsi + rax*4]
-	mov ebx, [rsi + rbx*4]
-	mov rsi, [rbp + nb410nf_vdwparam]
-	shl eax, 1
-	shl ebx, 1
-	mov edi, [rsp + nb410nf_ntia]
-	add eax, edi
-	add ebx, edi
-
-	movlpd xmm6, [rsi + rax*8]	;# c6a
-	movlpd xmm7, [rsi + rbx*8]	;# c6b
-	movhpd xmm6, [rsi + rax*8 + 8]	;# c6a c12a 
-	movhpd xmm7, [rsi + rbx*8 + 8]	;# c6b c12b 
-
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movd  ebx, mm1
-	movapd [rsp + nb410nf_c6], xmm4
-	movapd [rsp + nb410nf_c12], xmm6
-	
-	mov rsi, [rbp + nb410nf_pos]       ;# base of pos[] 
-
-	movd  mm2, eax
-	movd  mm3, ebx
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	lea   rbx, [rbx + rbx*2]	
-
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	movhpd xmm0, [rsi + rbx*8]
-	movhpd xmm1, [rsi + rbx*8 + 8]
-	movhpd xmm2, [rsi + rbx*8 + 16]		
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb410nf_ix]
-	movapd xmm5, [rsp + nb410nf_iy]
-	movapd xmm6, [rsp + nb410nf_iz]
-
-	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
-
-	;# square dr 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm4, xmm5
-	addpd xmm4, xmm6
-	;# rsq in xmm4 
-
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
-
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulpd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb410nf_three]
-	mulpd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410nf_half]
-	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulpd xmm1, xmm5	
-	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
-
-	movapd xmm5, xmm1	;# copy of lu 
-	mulpd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb410nf_three]
-	mulpd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410nf_half]
-	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulpd xmm2, xmm5	
-	mulpd xmm0, xmm2	;# xmm0=rinv 
-	
-	mulpd xmm4, xmm0	;# xmm4=r 
-	movapd [rsp + nb410nf_r], xmm4
-	mulpd xmm4, [rsp + nb410nf_gbscale]
-
-	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
-	cvtpi2pd xmm5, mm6
-	subpd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
-	
-	movd mm0, eax	
-	movd mm1, ebx
-
-	mov  rsi, [rbp + nb410nf_GBtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6		;# indices in eax/ebx 
-
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	movapd xmm3, [rsi + rbx*8 + 16]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb410nf_qq]
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-
-	addpd  xmm5, [rsp + nb410nf_vctot]
-	movapd [rsp + nb410nf_vctot], xmm5 
-
-	;# L-J 
-	movapd xmm4, xmm0
-	mulpd  xmm4, xmm0	;# xmm4=rinvsq 
-
-	movapd xmm6, xmm4
-	mulpd  xmm6, xmm4
-	
-	mulpd  xmm6, xmm4	;# xmm6=rinvsix 
-	movapd xmm4, xmm6
-	mulpd  xmm4, xmm4	;# xmm4=rinvtwelve 
-	mulpd  xmm6, [rsp + nb410nf_c6]
-	mulpd  xmm4, [rsp + nb410nf_c12]
-	movapd xmm7, [rsp + nb410nf_Vvdwtot]
-	addpd  xmm7, xmm4
-	subpd  xmm7, xmm6
-	movapd [rsp + nb410nf_Vvdwtot], xmm7
-
-	;# should we do one more iteration? 
-	sub dword ptr [rsp + nb410nf_innerk],  2
-	jl    .nb410nf_checksingle
-	jmp   .nb410nf_unroll_loop
-.nb410nf_checksingle:
-	mov   edx, [rsp + nb410nf_innerk]
-	and   edx, 1
-	jnz    .nb410nf_dosingle
-	jmp    .nb410nf_updateouterdata
-.nb410nf_dosingle:
-	mov rsi, [rbp + nb410nf_charge]
-	mov rdx, [rbp + nb410nf_invsqrta]
-	mov rdi, [rbp + nb410nf_pos]
-	mov   rcx, [rsp + nb410nf_innerjjnr]
-	mov   eax, [rcx]
-	
-	xorpd  xmm6, xmm6
-	movapd xmm7, xmm6
-	movsd  xmm7, [rdx + rax*8]
-	movlpd xmm6, [rsi + rax*8]	;# xmm6(0) has the charge
-	mulsd  xmm7, [rsp + nb410nf_isai]
-	movapd [rsp + nb410nf_isaprod], xmm7
-	movapd xmm1, xmm7
-	mulpd xmm1, [rsp + nb410nf_gbtsc]
-	movapd [rsp + nb410nf_gbscale], xmm1
-	
-	mulsd  xmm7, [rsp + nb410nf_iq]
-	mulsd  xmm6, xmm7
-	movapd [rsp + nb410nf_qq], xmm6
-	
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	mov rsi, [rbp + nb410nf_type]
-	mov eax, [rsi + rax*4]
-	mov rsi, [rbp + nb410nf_vdwparam]
-	shl eax, 1
-	mov edi, [rsp + nb410nf_ntia]
-	add eax, edi
-
-	movlpd xmm6, [rsi + rax*8]	;# c6a
-	movhpd xmm6, [rsi + rax*8 + 8]	;# c6a c12a 
-
-	xorpd xmm7, xmm7
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movapd [rsp + nb410nf_c6], xmm4
-	movapd [rsp + nb410nf_c12], xmm6
-	
-	mov rsi, [rbp + nb410nf_pos]       ;# base of pos[]
-	
-	movd  mm2, eax
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-
-	;# move coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb410nf_ix]
-	movapd xmm5, [rsp + nb410nf_iy]
-	movapd xmm6, [rsp + nb410nf_iz]
-
-	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
-
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm4, xmm5
-	addsd xmm4, xmm6
-	;# rsq in xmm4 
-
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm2, xmm5	;# lu in low xmm2 
-
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulsd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb410nf_three]
-	mulsd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410nf_half]
-	subsd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulsd xmm1, xmm5	
-	mulsd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
-
-	movapd xmm5, xmm1	;# copy of lu 
-	mulsd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb410nf_three]
-	mulsd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb410nf_half]
-	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulsd xmm2, xmm5	
-	mulsd xmm0, xmm2	;# xmm0=rinv 
-	
-	mulsd xmm4, xmm0	;# xmm4=r 
-	movapd [rsp + nb410nf_r], xmm4
-	mulsd xmm4, [rsp + nb410nf_gbscale]
-
-	movd mm0, eax	
-	cvttsd2si eax, xmm4	;# mm6 = lu idx 
-	cvtsi2sd xmm5, eax
-	subsd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl eax, 2		;# idx *= 4 
-	
-	mov  rsi, [rbp + nb410nf_GBtab]
-
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb410nf_qq]
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-
-	addsd  xmm5, [rsp + nb410nf_vctot]
-	movsd [rsp + nb410nf_vctot], xmm5 
-
-	;# L-J 
-	movapd xmm4, xmm0
-	mulsd  xmm4, xmm0	;# xmm4=rinvsq 
-
-
-	movapd xmm6, xmm4
-	mulsd  xmm6, xmm4
-
-	mulsd  xmm6, xmm4	;# xmm6=rinvsix 
-	movapd xmm4, xmm6
-	mulsd  xmm4, xmm4	;# xmm4=rinvtwelve 
-	mulsd  xmm6, [rsp + nb410nf_c6]
-	mulsd  xmm4, [rsp + nb410nf_c12]
-	movapd xmm7, [rsp + nb410nf_Vvdwtot]
-	addsd  xmm7, xmm4
-	subsd  xmm7, xmm6
-	movlpd [rsp + nb410nf_Vvdwtot], xmm7
-
-.nb410nf_updateouterdata:
-	mov   ecx, [rsp + nb410nf_ii3]
-	mov   edx, [rsp + nb410nf_is3]
-
-	;# get n from stack
-	mov esi, [rsp + nb410nf_n]
-        ;# get group index for i particle 
-        mov   rdx, [rbp + nb410nf_gid]      	;# base of gid[]
-        mov   edx, [rdx + rsi*4]		;# ggid=gid[n]
-
-	;# accumulate total potential energy and update it 
-	movapd xmm7, [rsp + nb410nf_vctot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb410nf_Vc]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-	;# accumulate total lj energy and update it 
-	movapd xmm7, [rsp + nb410nf_Vvdwtot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-	
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb410nf_Vvdw]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-        ;# finish if last 
-        mov ecx, [rsp + nb410nf_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb410nf_outerend
-
-        ;# not last, iterate outer loop once more!  
-        mov [rsp + nb410nf_n], esi
-        jmp .nb410nf_outer
-.nb410nf_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [rsp + nb410nf_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb410nf_end
-        ;# non-zero, do one more workunit
-        jmp   .nb410nf_threadloop
-.nb410nf_end:
-	mov eax, [rsp + nb410nf_nouter]
-	mov ebx, [rsp + nb410nf_ninner]
-	mov rcx, [rbp + nb410nf_outeriter]
-	mov rdx, [rbp + nb410nf_inneriter]
-	mov [rcx], eax
-	mov [rdx], ebx
-
-	add rsp, 392
-	emms
-
-
-        pop r15
-        pop r14
-        pop r13
-        pop r12
-
-	pop rbx
-	pop	rbp
-	ret
+nb_kernel410nf_x86_64_sse2:     
+_nb_kernel410nf_x86_64_sse2:    
+##      Room for return address and rbp (16 bytes)
+.set nb410nf_fshift, 16
+.set nb410nf_gid, 24
+.set nb410nf_pos, 32
+.set nb410nf_faction, 40
+.set nb410nf_charge, 48
+.set nb410nf_p_facel, 56
+.set nb410nf_argkrf, 64
+.set nb410nf_argcrf, 72
+.set nb410nf_Vc, 80
+.set nb410nf_type, 88
+.set nb410nf_p_ntype, 96
+.set nb410nf_vdwparam, 104
+.set nb410nf_Vvdw, 112
+.set nb410nf_p_tabscale, 120
+.set nb410nf_VFtab, 128
+.set nb410nf_invsqrta, 136
+.set nb410nf_dvda, 144
+.set nb410nf_p_gbtabscale, 152
+.set nb410nf_GBtab, 160
+.set nb410nf_p_nthreads, 168
+.set nb410nf_count, 176
+.set nb410nf_mtx, 184
+.set nb410nf_outeriter, 192
+.set nb410nf_inneriter, 200
+.set nb410nf_work, 208
+        ## stack offsets for local variables  
+        ## bottom of stack is cache-aligned for sse2 use 
+.set nb410nf_ix, 0
+.set nb410nf_iy, 16
+.set nb410nf_iz, 32
+.set nb410nf_iq, 48
+.set nb410nf_two, 64
+.set nb410nf_gbtsc, 80
+.set nb410nf_qq, 96
+.set nb410nf_c6, 112
+.set nb410nf_c12, 128
+.set nb410nf_vctot, 144
+.set nb410nf_Vvdwtot, 160
+.set nb410nf_half, 176
+.set nb410nf_three, 192
+.set nb410nf_r, 208
+.set nb410nf_isai, 224
+.set nb410nf_isaprod, 240
+.set nb410nf_gbscale, 256
+.set nb410nf_nri, 272
+.set nb410nf_iinr, 280
+.set nb410nf_jindex, 288
+.set nb410nf_jjnr, 296
+.set nb410nf_shift, 304
+.set nb410nf_shiftvec, 312
+.set nb410nf_facel, 320
+.set nb410nf_innerjjnr, 328
+.set nb410nf_ii, 336
+.set nb410nf_is3, 340
+.set nb410nf_ii3, 344
+.set nb410nf_ntia, 348
+.set nb410nf_innerk, 352
+.set nb410nf_n, 356
+.set nb410nf_nn1, 360
+.set nb410nf_ntype, 364
+.set nb410nf_nouter, 368
+.set nb410nf_ninner, 372
+        push %rbp
+        movq %rsp,%rbp
+        push %rbx
+
+
+        emms
+
+        push %r12
+        push %r13
+        push %r14
+        push %r15
+
+        subq $392,%rsp          ## local variable stack space (n*16+8)
+
+        ## zero 32-bit iteration counters
+        movl $0,%eax
+        movl %eax,nb410nf_nouter(%rsp)
+        movl %eax,nb410nf_ninner(%rsp)
+
+        movl (%rdi),%edi
+        movl %edi,nb410nf_nri(%rsp)
+        movq %rsi,nb410nf_iinr(%rsp)
+        movq %rdx,nb410nf_jindex(%rsp)
+        movq %rcx,nb410nf_jjnr(%rsp)
+        movq %r8,nb410nf_shift(%rsp)
+        movq %r9,nb410nf_shiftvec(%rsp)
+        movq nb410nf_p_ntype(%rbp),%rdi
+        movl (%rdi),%edi
+        movl %edi,nb410nf_ntype(%rsp)
+        movq nb410nf_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd %xmm0,nb410nf_facel(%rsp)
+
+        movq nb410nf_p_gbtabscale(%rbp),%rbx
+        movsd (%rbx),%xmm4
+        shufpd $0,%xmm4,%xmm4
+        movapd %xmm4,nb410nf_gbtsc(%rsp)
+
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double half IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb410nf_half(%rsp)
+        movl %ebx,nb410nf_half+4(%rsp)
+        movsd nb410nf_half(%rsp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## one
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## two
+        addpd  %xmm2,%xmm3      ## three
+        movapd %xmm1,nb410nf_half(%rsp)
+        movapd %xmm2,nb410nf_two(%rsp)
+        movapd %xmm3,nb410nf_three(%rsp)
+
+_nb_kernel410nf_x86_64_sse2.nb410nf_threadloop: 
+        movq  nb410nf_count(%rbp),%rsi            ## pointer to sync counter
+        movl  (%rsi),%eax
+_nb_kernel410nf_x86_64_sse2.nb410nf_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel410nf_x86_64_sse2.nb410nf_spinlock
+
+        ## if(nn1>nri) nn1=nri
+        movl nb410nf_nri(%rsp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb410nf_n(%rsp)
+        movl %ebx,nb410nf_nn1(%rsp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel410nf_x86_64_sse2.nb410nf_outerstart
+        jmp _nb_kernel410nf_x86_64_sse2.nb410nf_end
+
+_nb_kernel410nf_x86_64_sse2.nb410nf_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb410nf_nouter(%rsp),%ebx
+        movl %ebx,nb410nf_nouter(%rsp)
+
+_nb_kernel410nf_x86_64_sse2.nb410nf_outer: 
+        movq  nb410nf_shift(%rsp),%rax        ## rax = pointer into shift[] 
+        movl  (%rax,%rsi,4),%ebx        ## rbx=shift[n] 
+
+        lea  (%rbx,%rbx,2),%rbx    ## rbx=3*is 
+        movl  %ebx,nb410nf_is3(%rsp)            ## store is3 
+
+        movq  nb410nf_shiftvec(%rsp),%rax     ## rax = base of shiftvec[] 
+
+        movsd (%rax,%rbx,8),%xmm0
+        movsd 8(%rax,%rbx,8),%xmm1
+        movsd 16(%rax,%rbx,8),%xmm2
+
+        movq  nb410nf_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]      
+        movl  (%rcx,%rsi,4),%ebx    ## ebx =ii 
+        movl  %ebx,nb410nf_ii(%rsp)
+
+        movq  nb410nf_charge(%rbp),%rdx
+        movsd (%rdx,%rbx,8),%xmm3
+        mulsd nb410nf_facel(%rsp),%xmm3
+        shufpd $0,%xmm3,%xmm3
+
+        movq  nb410nf_invsqrta(%rbp),%rdx       ## load invsqrta[ii]
+        movsd (%rdx,%rbx,8),%xmm4
+        shufpd $0,%xmm4,%xmm4
+
+        movq  nb410nf_type(%rbp),%rdx
+        movl  (%rdx,%rbx,4),%edx
+        imull nb410nf_ntype(%rsp),%edx
+        shll  %edx
+    movl  %edx,nb410nf_ntia(%rsp)
+
+        lea  (%rbx,%rbx,2),%rbx        ## rbx = 3*ii=ii3 
+        movq  nb410nf_pos(%rbp),%rax      ## rax = base of pos[]  
+
+        addsd (%rax,%rbx,8),%xmm0
+        addsd 8(%rax,%rbx,8),%xmm1
+        addsd 16(%rax,%rbx,8),%xmm2
+
+        movapd %xmm3,nb410nf_iq(%rsp)
+        movapd %xmm4,nb410nf_isai(%rsp)
+
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
+
+        movapd %xmm0,nb410nf_ix(%rsp)
+        movapd %xmm1,nb410nf_iy(%rsp)
+        movapd %xmm2,nb410nf_iz(%rsp)
+
+        movl  %ebx,nb410nf_ii3(%rsp)
+
+        ## clear vctot and Vvdwtot
+        xorpd %xmm4,%xmm4
+        movapd %xmm4,nb410nf_vctot(%rsp)
+        movapd %xmm4,nb410nf_Vvdwtot(%rsp)
+
+        movq  nb410nf_jindex(%rsp),%rax
+        movl  (%rax,%rsi,4),%ecx             ## jindex[n] 
+        movl  4(%rax,%rsi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
+
+        movq  nb410nf_pos(%rbp),%rsi
+        movq  nb410nf_faction(%rbp),%rdi
+        movq  nb410nf_jjnr(%rsp),%rax
+        shll  $2,%ecx
+        addq  %rcx,%rax
+        movq  %rax,nb410nf_innerjjnr(%rsp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb410nf_ninner(%rsp),%ecx
+        movl  %ecx,nb410nf_ninner(%rsp)
+        addl  $0,%edx
+        movl  %edx,nb410nf_innerk(%rsp)      ## number of innerloop atoms 
+        jge   _nb_kernel410nf_x86_64_sse2.nb410nf_unroll_loop
+        jmp   _nb_kernel410nf_x86_64_sse2.nb410nf_checksingle
+_nb_kernel410nf_x86_64_sse2.nb410nf_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movq  nb410nf_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%eax
+        movl  4(%rdx),%ebx
+        addq $8,nb410nf_innerjjnr(%rsp)             ## advance pointer (unrolled 2) 
+
+        ## load isaj
+        movq nb410nf_invsqrta(%rbp),%rsi
+        movlpd (%rsi,%rax,8),%xmm2
+        movhpd (%rsi,%rbx,8),%xmm2
+        mulpd  nb410nf_isai(%rsp),%xmm2
+        movapd %xmm2,nb410nf_isaprod(%rsp)
+        movapd %xmm2,%xmm1
+        mulpd nb410nf_gbtsc(%rsp),%xmm1
+        movapd %xmm1,nb410nf_gbscale(%rsp)
+
+        movq nb410nf_charge(%rbp),%rsi     ## base of charge[] 
+        movlpd (%rsi,%rax,8),%xmm3
+        movhpd (%rsi,%rbx,8),%xmm3
+
+        mulpd nb410nf_iq(%rsp),%xmm2
+        mulpd  %xmm2,%xmm3
+        movapd %xmm3,nb410nf_qq(%rsp)
+
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movd  %ebx,%mm1
+
+        movq nb410nf_type(%rbp),%rsi
+        movl (%rsi,%rax,4),%eax
+        movl (%rsi,%rbx,4),%ebx
+        movq nb410nf_vdwparam(%rbp),%rsi
+        shll %eax
+        shll %ebx
+        movl nb410nf_ntia(%rsp),%edi
+        addl %edi,%eax
+        addl %edi,%ebx
+
+        movlpd (%rsi,%rax,8),%xmm6      ## c6a
+        movlpd (%rsi,%rbx,8),%xmm7      ## c6b
+        movhpd 8(%rsi,%rax,8),%xmm6     ## c6a c12a 
+        movhpd 8(%rsi,%rbx,8),%xmm7     ## c6b c12b 
+
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
+
+        movd  %mm0,%eax
+        movd  %mm1,%ebx
+        movapd %xmm4,nb410nf_c6(%rsp)
+        movapd %xmm6,nb410nf_c12(%rsp)
+
+        movq nb410nf_pos(%rbp),%rsi        ## base of pos[] 
+
+        movd  %eax,%mm2
+        movd  %ebx,%mm3
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+        lea  (%rbx,%rbx,2),%rbx
+
+        ## move two coordinates to xmm0-xmm2    
+        movlpd (%rsi,%rax,8),%xmm0
+        movlpd 8(%rsi,%rax,8),%xmm1
+        movlpd 16(%rsi,%rax,8),%xmm2
+        movhpd (%rsi,%rbx,8),%xmm0
+        movhpd 8(%rsi,%rbx,8),%xmm1
+        movhpd 16(%rsi,%rbx,8),%xmm2
+
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb410nf_ix(%rsp),%xmm4
+        movapd nb410nf_iy(%rsp),%xmm5
+        movapd nb410nf_iz(%rsp),%xmm6
+
+        ## calc dr 
+        subpd %xmm0,%xmm4
+        subpd %xmm1,%xmm5
+        subpd %xmm2,%xmm6
+
+        ## square dr 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm4
+        addpd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtpd2ps %xmm4,%xmm5
+        rsqrtps %xmm5,%xmm5
+        cvtps2pd %xmm5,%xmm2    ## lu in low xmm2 
+
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulpd %xmm2,%xmm2       ## lu*lu 
+        movapd nb410nf_three(%rsp),%xmm1
+        mulpd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb410nf_half(%rsp),%xmm0
+        subpd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm1
+        mulpd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulpd %xmm1,%xmm1       ## lu*lu 
+        movapd nb410nf_three(%rsp),%xmm2
+        mulpd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb410nf_half(%rsp),%xmm0
+        subpd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm2
+        mulpd %xmm2,%xmm0       ## xmm0=rinv 
+
+        mulpd %xmm0,%xmm4       ## xmm4=r 
+        movapd %xmm4,nb410nf_r(%rsp)
+        mulpd nb410nf_gbscale(%rsp),%xmm4
+
+        cvttpd2pi %xmm4,%mm6    ## mm6 = lu idx 
+        cvtpi2pd %mm6,%xmm5
+        subpd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        pslld $2,%mm6           ## idx *= 4 
+
+        movd %eax,%mm0
+        movd %ebx,%mm1
+
+        movq nb410nf_GBtab(%rbp),%rsi
+        movd %mm6,%eax
+        psrlq $32,%mm6
+        movd %mm6,%ebx          ## indices in eax/ebx 
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        movapd (%rsi,%rbx,8),%xmm3      ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        movapd 16(%rsi,%rbx,8),%xmm3    ## G2 H2 
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb410nf_qq(%rsp),%xmm3
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+        mulpd  %xmm3,%xmm5 ## vcoul=qq*VV  
+
+        addpd  nb410nf_vctot(%rsp),%xmm5
+        movapd %xmm5,nb410nf_vctot(%rsp)
+
+        ## L-J 
+        movapd %xmm0,%xmm4
+        mulpd  %xmm0,%xmm4      ## xmm4=rinvsq 
+
+        movapd %xmm4,%xmm6
+        mulpd  %xmm4,%xmm6
+
+        mulpd  %xmm4,%xmm6      ## xmm6=rinvsix 
+        movapd %xmm6,%xmm4
+        mulpd  %xmm4,%xmm4      ## xmm4=rinvtwelve 
+        mulpd  nb410nf_c6(%rsp),%xmm6
+        mulpd  nb410nf_c12(%rsp),%xmm4
+        movapd nb410nf_Vvdwtot(%rsp),%xmm7
+        addpd  %xmm4,%xmm7
+        subpd  %xmm6,%xmm7
+        movapd %xmm7,nb410nf_Vvdwtot(%rsp)
+
+        ## should we do one more iteration? 
+        subl $2,nb410nf_innerk(%rsp)
+        jl    _nb_kernel410nf_x86_64_sse2.nb410nf_checksingle
+        jmp   _nb_kernel410nf_x86_64_sse2.nb410nf_unroll_loop
+_nb_kernel410nf_x86_64_sse2.nb410nf_checksingle: 
+        movl  nb410nf_innerk(%rsp),%edx
+        andl  $1,%edx
+        jnz    _nb_kernel410nf_x86_64_sse2.nb410nf_dosingle
+        jmp    _nb_kernel410nf_x86_64_sse2.nb410nf_updateouterdata
+_nb_kernel410nf_x86_64_sse2.nb410nf_dosingle: 
+        movq nb410nf_charge(%rbp),%rsi
+        movq nb410nf_invsqrta(%rbp),%rdx
+        movq nb410nf_pos(%rbp),%rdi
+        movq  nb410nf_innerjjnr(%rsp),%rcx
+        movl  (%rcx),%eax
+
+        xorpd  %xmm6,%xmm6
+        movapd %xmm6,%xmm7
+        movsd  (%rdx,%rax,8),%xmm7
+        movlpd (%rsi,%rax,8),%xmm6      ## xmm6(0) has the charge
+        mulsd  nb410nf_isai(%rsp),%xmm7
+        movapd %xmm7,nb410nf_isaprod(%rsp)
+        movapd %xmm7,%xmm1
+        mulpd nb410nf_gbtsc(%rsp),%xmm1
+        movapd %xmm1,nb410nf_gbscale(%rsp)
+
+        mulsd  nb410nf_iq(%rsp),%xmm7
+        mulsd  %xmm7,%xmm6
+        movapd %xmm6,nb410nf_qq(%rsp)
+
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movq nb410nf_type(%rbp),%rsi
+        movl (%rsi,%rax,4),%eax
+        movq nb410nf_vdwparam(%rbp),%rsi
+        shll %eax
+        movl nb410nf_ntia(%rsp),%edi
+        addl %edi,%eax
+
+        movlpd (%rsi,%rax,8),%xmm6      ## c6a
+        movhpd 8(%rsi,%rax,8),%xmm6     ## c6a c12a 
+
+        xorpd %xmm7,%xmm7
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
+
+        movd  %mm0,%eax
+        movapd %xmm4,nb410nf_c6(%rsp)
+        movapd %xmm6,nb410nf_c12(%rsp)
+
+        movq nb410nf_pos(%rbp),%rsi        ## base of pos[]
+
+        movd  %eax,%mm2
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+
+        ## move coordinates to xmm0-xmm2        
+        movlpd (%rsi,%rax,8),%xmm0
+        movlpd 8(%rsi,%rax,8),%xmm1
+        movlpd 16(%rsi,%rax,8),%xmm2
+
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb410nf_ix(%rsp),%xmm4
+        movapd nb410nf_iy(%rsp),%xmm5
+        movapd nb410nf_iz(%rsp),%xmm6
+
+        ## calc dr 
+        subsd %xmm0,%xmm4
+        subsd %xmm1,%xmm5
+        subsd %xmm2,%xmm6
+
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm4
+        addsd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtsd2ss %xmm4,%xmm5
+        rsqrtss %xmm5,%xmm5
+        cvtss2sd %xmm5,%xmm2    ## lu in low xmm2 
+
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulsd %xmm2,%xmm2       ## lu*lu 
+        movapd nb410nf_three(%rsp),%xmm1
+        mulsd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb410nf_half(%rsp),%xmm0
+        subsd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm1
+        mulsd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulsd %xmm1,%xmm1       ## lu*lu 
+        movapd nb410nf_three(%rsp),%xmm2
+        mulsd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb410nf_half(%rsp),%xmm0
+        subsd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm2
+        mulsd %xmm2,%xmm0       ## xmm0=rinv 
+
+        mulsd %xmm0,%xmm4       ## xmm4=r 
+        movapd %xmm4,nb410nf_r(%rsp)
+        mulsd nb410nf_gbscale(%rsp),%xmm4
+
+        movd %eax,%mm0
+        cvttsd2si %xmm4,%eax    ## mm6 = lu idx 
+        cvtsi2sd %eax,%xmm5
+        subsd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%eax            ## idx *= 4 
+
+        movq nb410nf_GBtab(%rbp),%rsi
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb410nf_qq(%rsp),%xmm3
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+        mulsd  %xmm3,%xmm5 ## vcoul=qq*VV  
+
+        addsd  nb410nf_vctot(%rsp),%xmm5
+        movsd %xmm5,nb410nf_vctot(%rsp)
+
+        ## L-J 
+        movapd %xmm0,%xmm4
+        mulsd  %xmm0,%xmm4      ## xmm4=rinvsq 
+
+
+        movapd %xmm4,%xmm6
+        mulsd  %xmm4,%xmm6
+
+        mulsd  %xmm4,%xmm6      ## xmm6=rinvsix 
+        movapd %xmm6,%xmm4
+        mulsd  %xmm4,%xmm4      ## xmm4=rinvtwelve 
+        mulsd  nb410nf_c6(%rsp),%xmm6
+        mulsd  nb410nf_c12(%rsp),%xmm4
+        movapd nb410nf_Vvdwtot(%rsp),%xmm7
+        addsd  %xmm4,%xmm7
+        subsd  %xmm6,%xmm7
+        movlpd %xmm7,nb410nf_Vvdwtot(%rsp)
+
+_nb_kernel410nf_x86_64_sse2.nb410nf_updateouterdata: 
+        movl  nb410nf_ii3(%rsp),%ecx
+        movl  nb410nf_is3(%rsp),%edx
+
+        ## get n from stack
+        movl nb410nf_n(%rsp),%esi
+        ## get group index for i particle 
+        movq  nb410nf_gid(%rbp),%rdx            ## base of gid[]
+        movl  (%rdx,%rsi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total potential energy and update it 
+        movapd nb410nf_vctot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb410nf_Vc(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## accumulate total lj energy and update it 
+        movapd nb410nf_Vvdwtot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb410nf_Vvdw(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## finish if last 
+        movl nb410nf_nn1(%rsp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel410nf_x86_64_sse2.nb410nf_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb410nf_n(%rsp)
+        jmp _nb_kernel410nf_x86_64_sse2.nb410nf_outer
+_nb_kernel410nf_x86_64_sse2.nb410nf_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb410nf_nri(%rsp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel410nf_x86_64_sse2.nb410nf_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel410nf_x86_64_sse2.nb410nf_threadloop
+_nb_kernel410nf_x86_64_sse2.nb410nf_end: 
+        movl nb410nf_nouter(%rsp),%eax
+        movl nb410nf_ninner(%rsp),%ebx
+        movq nb410nf_outeriter(%rbp),%rcx
+        movq nb410nf_inneriter(%rbp),%rdx
+        movl %eax,(%rcx)
+        movl %ebx,(%rdx)
+
+        addq $392,%rsp
+        emms
+
+
+        pop %r15
+        pop %r14
+        pop %r13
+        pop %r12
+
+        pop %rbx
+        pop    %rbp
+        ret
+
 
 

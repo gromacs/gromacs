@@ -1,978 +1,955 @@
-;#
-;# $Id$
-;#
-;# Gromacs 4.0                         Copyright (c) 1991-2003 
-;# David van der Spoel, Erik Lindahl
-;#
-;# This program is free software; you can redistribute it and/or
-;# modify it under the terms of the GNU General Public License
-;# as published by the Free Software Foundation; either version 2
-;# of the License, or (at your option) any later version.
-;#
-;# To help us fund GROMACS development, we humbly ask that you cite
-;# the research papers on the package. Check out http://www.gromacs.org
-;# 
-;# And Hey:
-;# Gnomes, ROck Monsters And Chili Sauce
-;#
+##
+## $Id$
+##
+## Gromacs 4.0                         Copyright (c) 1991-2003 
+## David van der Spoel, Erik Lindahl
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or (at your option) any later version.
+##
+## To help us fund GROMACS development, we humbly ask that you cite
+## the research papers on the package. Check out http://www.gromacs.org
+## 
+## And Hey:
+## Gnomes, ROck Monsters And Chili Sauce
+##
 
-;# These files require GNU binutils 2.10 or later, since we
-;# use intel syntax for portability, or a recent version 
-;# of NASM that understands Extended 3DNow and SSE2 instructions.
-;# (NASM is normally only used with MS Visual C++).
-;# Since NASM and gnu as disagree on some definitions and use 
-;# completely different preprocessing options I have to introduce a
-;# trick: NASM uses ';' for comments, while gnu as uses '#' on x86.
-;# Gnu as treats ';' as a line break, i.e. ignores it. This is the
-;# reason why all comments need both symbols...
-;# The source is written for GNU as, with intel syntax. When you use
-;# NASM we redefine a couple of things. The false if-statement around 
-;# the following code is seen by GNU as, but NASM doesn't see it, so 
-;# the code inside is read by NASM but not gcc.
-
-; .if 0    # block below only read by NASM
-%define .section	section
-%define .long		dd
-%define .align		align
-%define .globl		global
-;# NASM only wants 'dword', not 'dword ptr'.
-%define ptr
-%macro .equiv 2
-   %1 equ %2
-%endmacro
-; .endif                   # End of NASM-specific block
-; .intel_syntax noprefix   # Line only read by gnu as
 
 
 
 .globl nb_kernel110_ia32_3dnow
 .globl _nb_kernel110_ia32_3dnow
-nb_kernel110_ia32_3dnow:	
-_nb_kernel110_ia32_3dnow:	
-.equiv		nb110_p_nri,		8
-.equiv		nb110_iinr,		12
-.equiv		nb110_jindex,		16
-.equiv		nb110_jjnr,		20
-.equiv		nb110_shift,		24
-.equiv		nb110_shiftvec,		28
-.equiv		nb110_fshift,		32
-.equiv		nb110_gid,		36
-.equiv		nb110_pos,		40		
-.equiv		nb110_faction,		44
-.equiv		nb110_charge,		48
-.equiv		nb110_p_facel,		52
-.equiv		nb110_p_krf,		56	
-.equiv		nb110_p_crf,		60	
-.equiv		nb110_Vc,		64	
-.equiv		nb110_type,		68
-.equiv		nb110_p_ntype,		72
-.equiv		nb110_vdwparam,		76	
-.equiv		nb110_Vvdw,		80	
-.equiv		nb110_p_tabscale,	84	
-.equiv		nb110_VFtab,		88
-.equiv		nb110_invsqrta,		92	
-.equiv		nb110_dvda,		96
-.equiv          nb110_p_gbtabscale,     100
-.equiv          nb110_GBtab,            104
-.equiv          nb110_p_nthreads,       108
-.equiv          nb110_count,            112
-.equiv          nb110_mtx,              116
-.equiv          nb110_outeriter,        120
-.equiv          nb110_inneriter,        124
-.equiv          nb110_work,             128
-	;# stack offsets for local variables 
-.equiv		nb110_is3,		0
-.equiv		nb110_ii3,		4
-.equiv		nb110_ix,		8
-.equiv		nb110_iy,		12
-.equiv		nb110_iz,		16
-.equiv		nb110_iq,		20 
-.equiv		nb110_vctot,		28 
-.equiv		nb110_Vvdwtot,		36 
-.equiv		nb110_c6,		44 
-.equiv		nb110_c12,		52 
-.equiv		nb110_six,		60 
-.equiv		nb110_twelve,		68 
-.equiv		nb110_ntia,		76
-.equiv		nb110_innerjjnr,	80
-.equiv		nb110_innerk,		84		
-.equiv		nb110_fix,		88
-.equiv		nb110_fiy,		92
-.equiv		nb110_fiz,		96
-.equiv		nb110_dx1,		100
-.equiv		nb110_dy1,		104
-.equiv		nb110_dz1,		108
-.equiv		nb110_dx2,		112
-.equiv		nb110_dy2,		116
-.equiv		nb110_dz2,		120						
-.equiv          nb110_n,                124 ;# idx for outer loop
-.equiv          nb110_nn1,              128 ;# number of outer iterations
-.equiv          nb110_nri,              132
-.equiv          nb110_facel,            136
-.equiv          nb110_ntype,            140
-.equiv          nb110_nouter,           144
-.equiv          nb110_ninner,           148
+nb_kernel110_ia32_3dnow:        
+_nb_kernel110_ia32_3dnow:       
+.set nb110_p_nri, 8
+.set nb110_iinr, 12
+.set nb110_jindex, 16
+.set nb110_jjnr, 20
+.set nb110_shift, 24
+.set nb110_shiftvec, 28
+.set nb110_fshift, 32
+.set nb110_gid, 36
+.set nb110_pos, 40
+.set nb110_faction, 44
+.set nb110_charge, 48
+.set nb110_p_facel, 52
+.set nb110_p_krf, 56
+.set nb110_p_crf, 60
+.set nb110_Vc, 64
+.set nb110_type, 68
+.set nb110_p_ntype, 72
+.set nb110_vdwparam, 76
+.set nb110_Vvdw, 80
+.set nb110_p_tabscale, 84
+.set nb110_VFtab, 88
+.set nb110_invsqrta, 92
+.set nb110_dvda, 96
+.set nb110_p_gbtabscale, 100
+.set nb110_GBtab, 104
+.set nb110_p_nthreads, 108
+.set nb110_count, 112
+.set nb110_mtx, 116
+.set nb110_outeriter, 120
+.set nb110_inneriter, 124
+.set nb110_work, 128
+        ## stack offsets for local variables 
+.set nb110_is3, 0
+.set nb110_ii3, 4
+.set nb110_ix, 8
+.set nb110_iy, 12
+.set nb110_iz, 16
+.set nb110_iq, 20
+.set nb110_vctot, 28
+.set nb110_Vvdwtot, 36
+.set nb110_c6, 44
+.set nb110_c12, 52
+.set nb110_six, 60
+.set nb110_twelve, 68
+.set nb110_ntia, 76
+.set nb110_innerjjnr, 80
+.set nb110_innerk, 84
+.set nb110_fix, 88
+.set nb110_fiy, 92
+.set nb110_fiz, 96
+.set nb110_dx1, 100
+.set nb110_dy1, 104
+.set nb110_dz1, 108
+.set nb110_dx2, 112
+.set nb110_dy2, 116
+.set nb110_dz2, 120
+.set nb110_n, 124                           ## idx for outer loop
+.set nb110_nn1, 128                         ## number of outer iterations
+.set nb110_nri, 132
+.set nb110_facel, 136
+.set nb110_ntype, 140
+.set nb110_nouter, 144
+.set nb110_ninner, 148
 
-	push ebp
-	mov ebp,esp	
-    	push eax
-    	push ebx
-    	push ecx
-    	push edx
-	push esi
-	push edi
-	sub esp, 152		;# local stack space 
-	femms
-	;# move data to local stack  
-	mov ecx, [ebp + nb110_p_nri]
-	mov edx, [ebp + nb110_p_ntype]
-	mov esi, [ebp + nb110_p_facel]
-	mov ecx, [ecx]
-	mov edx, [edx]
-	mov esi, [esi]
-	mov [esp + nb110_nri], ecx
-	mov [esp + nb110_ntype], edx
-	mov [esp + nb110_facel], esi
+        pushl %ebp
+        movl %esp,%ebp
+        pushl %eax
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
+        pushl %esi
+        pushl %edi
+        subl $152,%esp          ## local stack space 
+        femms
+        ## move data to local stack  
+        movl nb110_p_nri(%ebp),%ecx
+        movl nb110_p_ntype(%ebp),%edx
+        movl nb110_p_facel(%ebp),%esi
+        movl (%ecx),%ecx
+        movl (%edx),%edx
+        movl (%esi),%esi
+        movl %ecx,nb110_nri(%esp)
+        movl %edx,nb110_ntype(%esp)
+        movl %esi,nb110_facel(%esp)
 
-	mov eax, 0x40c00000 ;# fp 6.0
-	mov ebx, 0x41400000 ;# fp 12.0
-	
-        mov [esp + nb110_six], eax
-        mov [esp + nb110_six + 4], eax
-        mov [esp + nb110_twelve], ebx
-        mov [esp + nb110_twelve +4], ebx
+        movl $0x40c00000,%eax ## fp 6.0
+        movl $0x41400000,%ebx ## fp 12.0
 
-	;# zero iteration counters
-	mov eax, 0
-	mov [esp + nb110_nouter], eax
-	mov [esp + nb110_ninner], eax
+        movl %eax,nb110_six(%esp)
+        movl %eax,nb110_six+4(%esp)
+        movl %ebx,nb110_twelve(%esp)
+        movl %ebx,nb110_twelve+4(%esp)
 
-.nb110_threadloop:
-        mov   esi, [ebp + nb110_count]          ;# pointer to sync counter
-        mov   eax, [esi]
-.nb110_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [esi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb110_spinlock
+        ## zero iteration counters
+        movl $0,%eax
+        movl %eax,nb110_nouter(%esp)
+        movl %eax,nb110_ninner(%esp)
 
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [esp + nb110_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [esp + nb110_n], eax
-        mov [esp + nb110_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
+_nb_kernel110_ia32_3dnow.nb110_threadloop: 
+        movl  nb110_count(%ebp),%esi            ## pointer to sync counter
+        movl  (%esi),%eax
+_nb_kernel110_ia32_3dnow.nb110_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel110_ia32_3dnow.nb110_spinlock
 
-        jg  .nb110_outerstart
-        jmp .nb110_end
+        ## if(nn1>nri) nn1=nri
+        movl nb110_nri(%esp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb110_n(%esp)
+        movl %ebx,nb110_nn1(%esp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
 
-.nb110_outerstart:	
-	;# ebx contains number of outer iterations
-	add ebx, [esp + nb110_nouter]
-        mov [esp + nb110_nouter], ebx
-	
-.nb110_outer:
-	mov   eax, [ebp + nb110_shift]      ;# eax = pointer into shift[] 
-	mov   ebx, [eax + esi*4]		;# ebx=shift[n] 
-	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
-	mov   [esp + nb110_is3],ebx    	;# store is3 
+        jg  _nb_kernel110_ia32_3dnow.nb110_outerstart
+        jmp _nb_kernel110_ia32_3dnow.nb110_end
 
-	mov   eax, [ebp + nb110_shiftvec]   ;# eax = base of shiftvec[] 
-	
-	movq  mm0, [eax + ebx*4]	;# move shX/shY to mm0 and shZ to mm1 
-	movd  mm1, [eax + ebx*4 + 8]
+_nb_kernel110_ia32_3dnow.nb110_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb110_nouter(%esp),%ebx
+        movl %ebx,nb110_nouter(%esp)
 
-	mov   ecx, [ebp + nb110_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx + esi*4]	    ;# ebx=ii 
+_nb_kernel110_ia32_3dnow.nb110_outer: 
+        movl  nb110_shift(%ebp),%eax        ## eax = pointer into shift[] 
+        movl  (%eax,%esi,4),%ebx                ## ebx=shift[n] 
 
-	mov   edx, [ebp + nb110_charge]
-	movd  mm2, [edx + ebx*4]    ;# mm2=charge[ii] 
-	pfmul mm2, [esp + nb110_facel]
-	punpckldq mm2,mm2	    ;# spread to both halves 
-	movq  [esp + nb110_iq], mm2	    ;# iq =facel*charge[ii] 
+        leal  (%ebx,%ebx,2),%ebx    ## ebx=3*is 
+        movl  %ebx,nb110_is3(%esp)      ## store is3 
 
-	mov   edx, [ebp + nb110_type] 	
-	mov   edx, [edx + ebx*4]	
-	imul  edx, [esp + nb110_ntype]
-	shl   edx, 1
-	mov   [esp + nb110_ntia], edx
+        movl  nb110_shiftvec(%ebp),%eax     ## eax = base of shiftvec[] 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
-	mov   eax, [ebp + nb110_pos]    ;# eax = base of pos[] 
-	
-	pfadd mm0, [eax + ebx*4]    ;# ix = shX + posX (and iy too) 
-	movd  mm3, [eax + ebx*4 + 8]    ;# cant use direct memory add for 4 bytes (iz) 
-	mov   [esp + nb110_ii3], ebx
-	pfadd mm1, mm3
-	movq  [esp + nb110_ix], mm0	
-	movd  [esp + nb110_iz], mm1	
-				
-	;# clear total potential and i forces 
-	pxor  mm7,mm7
-	movq  [esp + nb110_vctot],  mm7
-	movq  [esp + nb110_Vvdwtot], mm7
-	movq  [esp + nb110_fix],    mm7
-	movd  [esp + nb110_fiz],    mm7
+        movq  (%eax,%ebx,4),%mm0        ## move shX/shY to mm0 and shZ to mm1 
+        movd  8(%eax,%ebx,4),%mm1
 
-	mov   eax, [ebp + nb110_jindex]
-	mov   ecx, [eax + esi*4]	     ;# jindex[n] 
-	mov   edx, [eax + esi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
+        movl  nb110_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]        
+        movl  (%ecx,%esi,4),%ebx            ## ebx=ii 
 
-	mov   esi, [ebp + nb110_pos]
-	mov   edi, [ebp + nb110_faction]	
-	mov   eax, [ebp + nb110_jjnr]
-	shl   ecx, 2
-	add   eax, ecx
-	mov   [esp + nb110_innerjjnr], eax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [esp + nb110_ninner]
-	mov   [esp + nb110_ninner], ecx
-	mov   [esp + nb110_innerk], edx    ;# number of innerloop atoms 
-	add   edx, 0
-	jge   .nb110_unroll_loop
-	jmp   .nb110_finish_inner
-.nb110_unroll_loop:
-	;# paired innerloop starts here 
-	mov   ecx, [esp + nb110_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [ecx]	
-	mov   ebx, [ecx + 4]         ;# eax/ebx=jnr 
-	add dword ptr [esp + nb110_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-	prefetch [ecx + 16]	     ;# prefetch data - trial and error says 16 is best 
-	
-	mov ecx, [ebp + nb110_charge]    ;# base of charge[] 
-	movq mm5, [esp + nb110_iq]
-	movd mm3, [ecx + eax*4]	     ;# charge[jnr1] 
-    punpckldq mm3, [ecx + ebx*4]     ;# move charge 2 to high part of mm3 
-	pfmul mm3,mm5		     ;# mm3 now has qq for both particles 
+        movl  nb110_charge(%ebp),%edx
+        movd  (%edx,%ebx,4),%mm2    ## mm2=charge[ii] 
+        pfmul nb110_facel(%esp),%mm2
+        punpckldq %mm2,%mm2         ## spread to both halves 
+        movq  %mm2,nb110_iq(%esp)           ## iq =facel*charge[ii] 
 
-	mov ecx, [ebp + nb110_type]
-	mov edx, [ecx + eax*4]        	 ;# type [jnr1] 
-	mov ecx, [ecx + ebx*4]       ;# type [jnr2] 
+        movl  nb110_type(%ebp),%edx
+        movl  (%edx,%ebx,4),%edx
+        imull nb110_ntype(%esp),%edx
+        shll  %edx
+        movl  %edx,nb110_ntia(%esp)
 
-	mov esi, [ebp + nb110_vdwparam]		;# base of vdwparam  
-	shl edx, 1
-	shl ecx, 1
-	add edx, [esp + nb110_ntia]	     ;# tja = ntia + 2*type 
-	add ecx, [esp + nb110_ntia]
+        leal  (%ebx,%ebx,2),%ebx        ## ebx = 3*ii=ii3 
+        movl  nb110_pos(%ebp),%eax      ## eax = base of pos[] 
 
-	movq mm5, [esi + edx*4]		;# mm5 = 1st c6 / c12 		
-	movq mm7, [esi + ecx*4]		;# mm7 = 2nd c6 / c12 	
-	movq mm6,mm5			
-	punpckldq mm5,mm7		;# mm5 = 1st c6 / 2nd c6 
-	punpckhdq mm6,mm7		;# mm6 = 1st c12 / 2nd c12 
-	movq [esp + nb110_c6], mm5
-	movq [esp + nb110_c12], mm6
+        pfadd (%eax,%ebx,4),%mm0    ## ix = shX + posX (and iy too) 
+        movd  8(%eax,%ebx,4),%mm3       ## cant use direct memory add for 4 bytes (iz) 
+        movl  %ebx,nb110_ii3(%esp)
+        pfadd %mm3,%mm1
+        movq  %mm0,nb110_ix(%esp)
+        movd  %mm1,nb110_iz(%esp)
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]		
+        ## clear total potential and i forces 
+        pxor  %mm7,%mm7
+        movq  %mm7,nb110_vctot(%esp)
+        movq  %mm7,nb110_Vvdwtot(%esp)
+        movq  %mm7,nb110_fix(%esp)
+        movd  %mm7,nb110_fiz(%esp)
 
-	mov   esi, [ebp + nb110_pos]
+        movl  nb110_jindex(%ebp),%eax
+        movl  (%eax,%esi,4),%ecx             ## jindex[n] 
+        movl  4(%eax,%esi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
 
-	movq  mm0, [esp + nb110_ix]
-	movd  mm1, [esp + nb110_iz]	 	
-	movq  mm4, [esi + eax*4]     ;# fetch first j coordinates 
-	movd  mm5, [esi + eax*4 + 8]		
-	pfsubr mm4,mm0		     ;# dr = ir - jr  
-	pfsubr mm5,mm1
-	movq  [esp + nb110_dx1], mm4	     ;# store dr 
-	movd  [esp + nb110_dz1], mm5
-	pfmul mm4,mm4	             ;# square dx,dy,dz 		         
-	pfmul mm5,mm5		
-	pfacc mm4, mm5               ;# accumulate to get dx*dx+ dy*dy+ dz*dz 
-	pfacc mm4, mm5		     ;# first rsq in lower mm4 
+        movl  nb110_pos(%ebp),%esi
+        movl  nb110_faction(%ebp),%edi
+        movl  nb110_jjnr(%ebp),%eax
+        shll  $2,%ecx
+        addl  %ecx,%eax
+        movl  %eax,nb110_innerjjnr(%esp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb110_ninner(%esp),%ecx
+        movl  %ecx,nb110_ninner(%esp)
+        movl  %edx,nb110_innerk(%esp)      ## number of innerloop atoms 
+        addl  $0,%edx
+        jge   _nb_kernel110_ia32_3dnow.nb110_unroll_loop
+        jmp   _nb_kernel110_ia32_3dnow.nb110_finish_inner
+_nb_kernel110_ia32_3dnow.nb110_unroll_loop: 
+        ## paired innerloop starts here 
+        movl  nb110_innerjjnr(%esp),%ecx       ## pointer to jjnr[k] 
+        movl  (%ecx),%eax
+        movl  4(%ecx),%ebx           ## eax/ebx=jnr 
+        addl $8,nb110_innerjjnr(%esp)             ## advance pointer (unrolled 2) 
+        prefetch 16(%ecx)            ## prefetch data - trial and error says 16 is best 
 
-	movq  mm6, [esi + ebx*4]     ;# fetch second j coordinates  
-	movd  mm7, [esi + ebx*4 + 8]
-	
-	pfsubr mm6,mm0	             ;# dr = ir - jr  
-	pfsubr mm7,mm1
-	movq  [esp + nb110_dx2], mm6	     ;# store dr 
-	movd  [esp + nb110_dz2], mm7
-	pfmul mm6,mm6	             ;# square dx,dy,dz 
-	pfmul mm7,mm7
-	pfacc mm6, mm7		     ;# accumulate to get dx*dx+ dy*dy+ dz*dz 
-	pfacc mm6, mm7	             ;# second rsq in lower mm6 
+        movl nb110_charge(%ebp),%ecx     ## base of charge[] 
+        movq nb110_iq(%esp),%mm5
+        movd (%ecx,%eax,4),%mm3      ## charge[jnr1] 
+    punpckldq (%ecx,%ebx,4),%mm3     ## move charge 2 to high part of mm3 
+        pfmul %mm5,%mm3              ## mm3 now has qq for both particles 
 
-    pfrsqrt mm0, mm4	     ;# lookup inverse square root seed 
-    pfrsqrt mm1, mm6
- 
-	punpckldq mm0,mm1
-	punpckldq mm4,mm6        	;# now 4 has rsq and 0 the seed for both pairs 
-    movq mm2,mm0	        	;# amd 3dnow N-R iteration to get full precision 
-	pfmul mm0,mm0
-    pfrsqit1 mm0,mm4				
-    pfrcpit2 mm0,mm2	
-	movq mm1,mm0
-	pfmul mm0,mm0
-	;# mm0 now contains invsq, and mm1 invsqrt 
-	;# do potential and fscal 
-	movq mm4, mm0
-	pfmul mm4, mm0
-	pfmul mm4, mm0             	;# mm4=rinvsix 
-	movq  mm5, mm4	
-	pfmul mm5, mm5	            ;# mm5=rinvtwelve 
+        movl nb110_type(%ebp),%ecx
+        movl (%ecx,%eax,4),%edx          ## type [jnr1] 
+        movl (%ecx,%ebx,4),%ecx      ## type [jnr2] 
 
-	pfmul mm3, mm1		;# mm3 has vcoul for both interactions 
-	movq  mm7, mm3	    ;# use mm7 for sum to make fscal  
+        movl nb110_vdwparam(%ebp),%esi          ## base of vdwparam  
+        shll %edx
+        shll %ecx
+        addl nb110_ntia(%esp),%edx           ## tja = ntia + 2*type 
+        addl nb110_ntia(%esp),%ecx
 
-	pfmul mm5, [esp + nb110_c12]
-	pfmul mm4, [esp + nb110_c6]	
-	movq mm6, mm5	;# mm6 is Vvdw12-Vvdw6  
-	pfsub mm6, mm4
+        movq (%esi,%edx,4),%mm5         ## mm5 = 1st c6 / c12           
+        movq (%esi,%ecx,4),%mm7         ## mm7 = 2nd c6 / c12   
+        movq %mm5,%mm6
+        punpckldq %mm7,%mm5             ## mm5 = 1st c6 / 2nd c6 
+        punpckhdq %mm7,%mm6             ## mm6 = 1st c12 / 2nd c12 
+        movq %mm5,nb110_c6(%esp)
+        movq %mm6,nb110_c12(%esp)
 
-	pfmul mm4, [esp + nb110_six]
+        leal  (%eax,%eax,2),%eax     ## replace jnr with j3 
+        leal  (%ebx,%ebx,2),%ebx
 
-	pfmul mm5, [esp + nb110_twelve]
-	pfsub mm7,mm4
-	pfadd mm7, mm5
- 	pfmul mm0, mm7    ;# mm0 is total fscal now 	
+        movl  nb110_pos(%ebp),%esi
 
-	prefetchw [esp + nb110_dx1]	;# prefetch i forces to cache 
+        movq  nb110_ix(%esp),%mm0
+        movd  nb110_iz(%esp),%mm1
+        movq  (%esi,%eax,4),%mm4     ## fetch first j coordinates 
+        movd  8(%esi,%eax,4),%mm5
+        pfsubr %mm0,%mm4             ## dr = ir - jr  
+        pfsubr %mm1,%mm5
+        movq  %mm4,nb110_dx1(%esp)           ## store dr 
+        movd  %mm5,nb110_dz1(%esp)
+        pfmul %mm4,%mm4              ## square dx,dy,dz                          
+        pfmul %mm5,%mm5
+        pfacc %mm5,%mm4              ## accumulate to get dx*dx+ dy*dy+ dz*dz 
+        pfacc %mm5,%mm4              ## first rsq in lower mm4 
 
-	;# update vctot 
-	pfadd mm3, [esp + nb110_vctot]      ;# add the earlier value 
-	movq [esp + nb110_vctot], mm3       ;# store the sum       
+        movq  (%esi,%ebx,4),%mm6     ## fetch second j coordinates  
+        movd  8(%esi,%ebx,4),%mm7
 
-	;# spread fscalar to both positions 
-	movq mm1,mm0
-	punpckldq mm0,mm0
-	punpckhdq mm1,mm1
+        pfsubr %mm0,%mm6             ## dr = ir - jr  
+        pfsubr %mm1,%mm7
+        movq  %mm6,nb110_dx2(%esp)           ## store dr 
+        movd  %mm7,nb110_dz2(%esp)
+        pfmul %mm6,%mm6              ## square dx,dy,dz 
+        pfmul %mm7,%mm7
+        pfacc %mm7,%mm6              ## accumulate to get dx*dx+ dy*dy+ dz*dz 
+        pfacc %mm7,%mm6              ## second rsq in lower mm6 
 
-	;# calc vector force 
-	prefetchw [edi + eax*4]	;# prefetch the 1st faction to cache 
-	movq mm2,  [esp + nb110_dx1]	;# fetch dr 
-	movd mm3,  [esp + nb110_dz1]
+    pfrsqrt %mm4,%mm0        ## lookup inverse square root seed 
+    pfrsqrt %mm6,%mm1
 
-	;# update Vvdwtot 
-	pfadd mm6, [esp + nb110_Vvdwtot]      ;# add the earlier value 
-	movq [esp + nb110_Vvdwtot], mm6       ;# store the sum       
+        punpckldq %mm1,%mm0
+        punpckldq %mm6,%mm4             ## now 4 has rsq and 0 the seed for both pairs 
+    movq %mm0,%mm2                      ## amd 3dnow N-R iteration to get full precision 
+        pfmul %mm0,%mm0
+    pfrsqit1 %mm4,%mm0
+    pfrcpit2 %mm2,%mm0
+        movq %mm0,%mm1
+        pfmul %mm0,%mm0
+        ## mm0 now contains invsq, and mm1 invsqrt 
+        ## do potential and fscal 
+        movq %mm0,%mm4
+        pfmul %mm0,%mm4
+        pfmul %mm0,%mm4                 ## mm4=rinvsix 
+        movq  %mm4,%mm5
+        pfmul %mm5,%mm5             ## mm5=rinvtwelve 
 
-	prefetchw [edi + ebx*4]	;# prefetch the 2nd faction to cache 
-	pfmul mm2, mm0		;# mult by fs  
-	pfmul mm3, mm0
+        pfmul %mm1,%mm3         ## mm3 has vcoul for both interactions 
+        movq  %mm3,%mm7     ## use mm7 for sum to make fscal  
 
-	movq mm4,  [esp + nb110_dx2] 	;# fetch dr 
-	movd mm5,  [esp + nb110_dz2]
-	pfmul mm4, mm1   	;# mult by fs  
-	pfmul mm5, mm1
-	;# update i forces 
+        pfmul nb110_c12(%esp),%mm5
+        pfmul nb110_c6(%esp),%mm4
+        movq %mm5,%mm6  ## mm6 is Vvdw12-Vvdw6  
+        pfsub %mm4,%mm6
 
-	movq mm0,  [esp + nb110_fix]
-	movd mm1,  [esp + nb110_fiz]
-	pfadd mm0, mm2
-	pfadd mm1, mm3
+        pfmul nb110_six(%esp),%mm4
 
-	pfadd mm0, mm4
-	pfadd mm1, mm5
-	movq [esp + nb110_fix], mm0
-	movd [esp + nb110_fiz], mm1
-	;# update j forces 
+        pfmul nb110_twelve(%esp),%mm5
+        pfsub %mm4,%mm7
+        pfadd %mm5,%mm7
+        pfmul %mm7,%mm0   ## mm0 is total fscal now     
 
-	movq mm0,  [edi + eax*4]
-	movd mm1,  [edi + eax*4 + 8]
-	movq mm6,  [edi + ebx*4]
-	movd mm7,  [edi + ebx*4 + 8]
-	
-	pfsub mm0, mm2
-	pfsub mm1, mm3
-	pfsub mm6, mm4
-	pfsub mm7, mm5
-	
-	movq [edi + eax*4], mm0
-	movd [edi + eax*4 +8], mm1
-	movq [edi + ebx*4], mm6
-	movd [edi + ebx*4 + 8], mm7
-	
-	;# should we do one more iteration? 
-	sub dword ptr [esp + nb110_innerk],  2
-	jl    .nb110_finish_inner
-	jmp   .nb110_unroll_loop
-.nb110_finish_inner:	
-	and dword ptr [esp + nb110_innerk],  1
-	jnz  .nb110_single_inner
-	jmp  .nb110_updateouterdata		
-.nb110_single_inner:
-	;# a single j particle iteration here - compare with the unrolled code for comments 
-	mov   eax, [esp + nb110_innerjjnr]
-	mov   eax, [eax]	;# eax=jnr offset 
+        prefetchw nb110_dx1(%esp)       ## prefetch i forces to cache 
 
-	mov ecx, [ebp + nb110_charge]
-	movd mm5, [esp + nb110_iq]
-	movd mm3, [ecx + eax*4]
-	pfmul mm3, mm5	  	;# mm3=qq 
+        ## update vctot 
+        pfadd nb110_vctot(%esp),%mm3        ## add the earlier value 
+        movq %mm3,nb110_vctot(%esp)         ## store the sum       
 
-	mov esi, [ebp + nb110_vdwparam]
-	mov ecx, [ebp + nb110_type]
-	mov edx, [ecx + eax*4]        	 ;# type [jnr1] 
-	shl edx, 1
-	add edx, [esp + nb110_ntia]	     ;# tja = ntia + 2*type 
-	movd mm5, [esi + edx*4]		;# mm5 = 1st c6  		
-	movq [esp + nb110_c6], mm5
-	movd mm5, [esi + edx*4 + 4]	;# mm5 = 1st c12  		
-	movq [esp + nb110_c12], mm5
+        ## spread fscalar to both positions 
+        movq %mm0,%mm1
+        punpckldq %mm0,%mm0
+        punpckhdq %mm1,%mm1
 
+        ## calc vector force 
+        prefetchw (%edi,%eax,4) ## prefetch the 1st faction to cache 
+        movq nb110_dx1(%esp),%mm2       ## fetch dr 
+        movd nb110_dz1(%esp),%mm3
 
-	mov   esi, [ebp + nb110_pos]
-	lea   eax, [eax + eax*2]
+        ## update Vvdwtot 
+        pfadd nb110_Vvdwtot(%esp),%mm6        ## add the earlier value 
+        movq %mm6,nb110_Vvdwtot(%esp)         ## store the sum       
 
-	movq  mm0, [esp + nb110_ix]
-	movd  mm1, [esp + nb110_iz]
-	movq  mm4, [esi + eax*4]
-	movd  mm5, [esi + eax*4 + 8]
-	pfsubr mm4, mm0
-	pfsubr mm5, mm1
-	movq  [esp + nb110_dx1], mm4
-	pfmul mm4,mm4
-	movd  [esp + nb110_dz1], mm5	
-	pfmul mm5,mm5
-	pfacc mm4, mm5
-	pfacc mm4, mm5		;# mm0=rsq 
-	
-    pfrsqrt mm0,mm4
-    movq mm2,mm0
-    pfmul mm0,mm0
-    pfrsqit1 mm0,mm4				
-    pfrcpit2 mm0,mm2	;# mm1=invsqrt 
-	movq  mm1, mm0
-	pfmul mm0, mm0		;# mm0=invsq 
-	;# calculate potentials and scalar force 
-	movq mm4, mm0
-	pfmul mm4, mm0
-	pfmul mm4, mm0             	;# mm4=rinvsix 
-	movq  mm5, mm4	
-	pfmul mm5, mm5	            ;# mm5=rinvtwelve 
+        prefetchw (%edi,%ebx,4) ## prefetch the 2nd faction to cache 
+        pfmul %mm0,%mm2         ## mult by fs  
+        pfmul %mm0,%mm3
 
-	pfmul mm3, mm1		;# mm3 has vcoul for both interactions 
-	movq  mm7, mm3	    ;# use mm7 for sum to make fscal  
+        movq nb110_dx2(%esp),%mm4       ## fetch dr 
+        movd nb110_dz2(%esp),%mm5
+        pfmul %mm1,%mm4         ## mult by fs  
+        pfmul %mm1,%mm5
+        ## update i forces 
 
-	pfmul mm5, [esp + nb110_c12]
-	pfmul mm4, [esp + nb110_c6]	
-	movq mm6, mm5	;# mm6 is Vvdw12-Vvdw6  
-	pfsub mm6, mm4
+        movq nb110_fix(%esp),%mm0
+        movd nb110_fiz(%esp),%mm1
+        pfadd %mm2,%mm0
+        pfadd %mm3,%mm1
 
-	pfmul mm4, [esp + nb110_six]
+        pfadd %mm4,%mm0
+        pfadd %mm5,%mm1
+        movq %mm0,nb110_fix(%esp)
+        movd %mm1,nb110_fiz(%esp)
+        ## update j forces 
 
-	pfmul mm5, [esp + nb110_twelve]
-	pfsub mm7,mm4
-	pfadd mm7, mm5
- 	pfmul mm0, mm7    ;# mm0 is total fscal now 
+        movq (%edi,%eax,4),%mm0
+        movd 8(%edi,%eax,4),%mm1
+        movq (%edi,%ebx,4),%mm6
+        movd 8(%edi,%ebx,4),%mm7
 
-	;# update vctot 
-	pfadd mm3, [esp + nb110_vctot]
-	movq [esp + nb110_vctot], mm3
+        pfsub %mm2,%mm0
+        pfsub %mm3,%mm1
+        pfsub %mm4,%mm6
+        pfsub %mm5,%mm7
 
-	;# update Vvdwtot 
-	pfadd mm6, [esp + nb110_Vvdwtot]      ;# add the earlier value 
-	movq [esp + nb110_Vvdwtot], mm6       ;# store the sum       
+        movq %mm0,(%edi,%eax,4)
+        movd %mm1,8(%edi,%eax,4)
+        movq %mm6,(%edi,%ebx,4)
+        movd %mm7,8(%edi,%ebx,4)
 
-	;# spread fscalar to both positions 
-	punpckldq mm0,mm0
-	;# calc vectorial force 
-	prefetchw [edi + eax*4]	;# prefetch faction to cache  
-	movq mm2,  [esp + nb110_dx1]
-	movd mm3,  [esp + nb110_dz1]
+        ## should we do one more iteration? 
+        subl $2,nb110_innerk(%esp)
+        jl    _nb_kernel110_ia32_3dnow.nb110_finish_inner
+        jmp   _nb_kernel110_ia32_3dnow.nb110_unroll_loop
+_nb_kernel110_ia32_3dnow.nb110_finish_inner: 
+        andl $1,nb110_innerk(%esp)
+        jnz  _nb_kernel110_ia32_3dnow.nb110_single_inner
+        jmp  _nb_kernel110_ia32_3dnow.nb110_updateouterdata
+_nb_kernel110_ia32_3dnow.nb110_single_inner: 
+        ## a single j particle iteration here - compare with the unrolled code for comments 
+        movl  nb110_innerjjnr(%esp),%eax
+        movl  (%eax),%eax       ## eax=jnr offset 
+
+        movl nb110_charge(%ebp),%ecx
+        movd nb110_iq(%esp),%mm5
+        movd (%ecx,%eax,4),%mm3
+        pfmul %mm5,%mm3         ## mm3=qq 
+
+        movl nb110_vdwparam(%ebp),%esi
+        movl nb110_type(%ebp),%ecx
+        movl (%ecx,%eax,4),%edx          ## type [jnr1] 
+        shll %edx
+        addl nb110_ntia(%esp),%edx           ## tja = ntia + 2*type 
+        movd (%esi,%edx,4),%mm5         ## mm5 = 1st c6                 
+        movq %mm5,nb110_c6(%esp)
+        movd 4(%esi,%edx,4),%mm5        ## mm5 = 1st c12                
+        movq %mm5,nb110_c12(%esp)
 
 
-	pfmul mm2, mm0
-	pfmul mm3, mm0
+        movl  nb110_pos(%ebp),%esi
+        leal  (%eax,%eax,2),%eax
 
-	;# update i particle force 
-	movq mm0,  [esp + nb110_fix]
-	movd mm1,  [esp + nb110_fiz]
-	pfadd mm0, mm2
-	pfadd mm1, mm3
-	movq [esp + nb110_fix], mm0
-	movd [esp + nb110_fiz], mm1
-	;# update j particle force 
-	movq mm0,  [edi + eax*4]
-	movd mm1,  [edi + eax *4+ 8]
-	pfsub mm0, mm2
-	pfsub mm1, mm3
-	movq [edi + eax*4], mm0
-	movd [edi + eax*4 +8], mm1
-	;# done! 
-.nb110_updateouterdata:	
-	mov   ecx, [esp + nb110_ii3]
+        movq  nb110_ix(%esp),%mm0
+        movd  nb110_iz(%esp),%mm1
+        movq  (%esi,%eax,4),%mm4
+        movd  8(%esi,%eax,4),%mm5
+        pfsubr %mm0,%mm4
+        pfsubr %mm1,%mm5
+        movq  %mm4,nb110_dx1(%esp)
+        pfmul %mm4,%mm4
+        movd  %mm5,nb110_dz1(%esp)
+        pfmul %mm5,%mm5
+        pfacc %mm5,%mm4
+        pfacc %mm5,%mm4         ## mm0=rsq 
 
-	movq  mm6, [edi + ecx*4]       ;# increment i force 
-	movd  mm7, [edi + ecx*4 + 8]	
-	pfadd mm6, [esp + nb110_fix]
-	pfadd mm7, [esp + nb110_fiz]
-	movq  [edi + ecx*4],    mm6
-	movd  [edi + ecx*4 +8], mm7
+    pfrsqrt %mm4,%mm0
+    movq %mm0,%mm2
+    pfmul %mm0,%mm0
+    pfrsqit1 %mm4,%mm0
+    pfrcpit2 %mm2,%mm0  ## mm1=invsqrt 
+        movq  %mm0,%mm1
+        pfmul %mm0,%mm0         ## mm0=invsq 
+        ## calculate potentials and scalar force 
+        movq %mm0,%mm4
+        pfmul %mm0,%mm4
+        pfmul %mm0,%mm4                 ## mm4=rinvsix 
+        movq  %mm4,%mm5
+        pfmul %mm5,%mm5             ## mm5=rinvtwelve 
 
-	mov   ebx, [ebp + nb110_fshift]    ;# increment fshift force 
-	mov   edx, [esp + nb110_is3]
+        pfmul %mm1,%mm3         ## mm3 has vcoul for both interactions 
+        movq  %mm3,%mm7     ## use mm7 for sum to make fscal  
 
-	movq  mm6, [ebx + edx*4]	
-	movd  mm7, [ebx + edx*4 + 8]	
-	pfadd mm6, [esp + nb110_fix]
-	pfadd mm7, [esp + nb110_fiz]
-	movq  [ebx + edx*4],     mm6
-	movd  [ebx + edx*4 + 8], mm7
+        pfmul nb110_c12(%esp),%mm5
+        pfmul nb110_c6(%esp),%mm4
+        movq %mm5,%mm6  ## mm6 is Vvdw12-Vvdw6  
+        pfsub %mm4,%mm6
 
-	;# get n from stack
-	mov esi, [esp + nb110_n]
-        ;# get group index for i particle 
-        mov   edx, [ebp + nb110_gid]      	;# base of gid[]
-        mov   edx, [edx + esi*4]		;# ggid=gid[n]
+        pfmul nb110_six(%esp),%mm4
 
-	movq  mm7, [esp + nb110_vctot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
-	
-	mov   eax, [ebp + nb110_Vc]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment vc[gid] 
+        pfmul nb110_twelve(%esp),%mm5
+        pfsub %mm4,%mm7
+        pfadd %mm5,%mm7
+        pfmul %mm7,%mm0   ## mm0 is total fscal now 
 
-	movq  mm7, [esp + nb110_Vvdwtot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
-	
-	mov   eax, [ebp + nb110_Vvdw]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment Vvdw[gid] 
+        ## update vctot 
+        pfadd nb110_vctot(%esp),%mm3
+        movq %mm3,nb110_vctot(%esp)
 
-       ;# finish if last 
-        mov ecx, [esp + nb110_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb110_outerend
+        ## update Vvdwtot 
+        pfadd nb110_Vvdwtot(%esp),%mm6        ## add the earlier value 
+        movq %mm6,nb110_Vvdwtot(%esp)         ## store the sum       
 
-        ;# not last, iterate outer loop once more!  
-        mov [esp + nb110_n], esi
-        jmp .nb110_outer
-.nb110_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [esp + nb110_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb110_end
-        ;# non-zero, do one more workunit
-        jmp   .nb110_threadloop
-.nb110_end:
-	femms
+        ## spread fscalar to both positions 
+        punpckldq %mm0,%mm0
+        ## calc vectorial force 
+        prefetchw (%edi,%eax,4) ## prefetch faction to cache  
+        movq nb110_dx1(%esp),%mm2
+        movd nb110_dz1(%esp),%mm3
 
-	mov eax, [esp + nb110_nouter] 	
-	mov ebx, [esp + nb110_ninner]
-	mov ecx, [ebp + nb110_outeriter]
-	mov edx, [ebp + nb110_inneriter]
-	mov [ecx], eax
-	mov [edx], ebx
-	
-	add esp, 152
-	pop edi
-	pop esi
-    	pop edx
-    	pop ecx
-    	pop ebx
-    	pop eax
-	leave
-	ret
+
+        pfmul %mm0,%mm2
+        pfmul %mm0,%mm3
+
+        ## update i particle force 
+        movq nb110_fix(%esp),%mm0
+        movd nb110_fiz(%esp),%mm1
+        pfadd %mm2,%mm0
+        pfadd %mm3,%mm1
+        movq %mm0,nb110_fix(%esp)
+        movd %mm1,nb110_fiz(%esp)
+        ## update j particle force 
+        movq (%edi,%eax,4),%mm0
+        movd 8(%edi,%eax,4),%mm1
+        pfsub %mm2,%mm0
+        pfsub %mm3,%mm1
+        movq %mm0,(%edi,%eax,4)
+        movd %mm1,8(%edi,%eax,4)
+        ## done! 
+_nb_kernel110_ia32_3dnow.nb110_updateouterdata: 
+        movl  nb110_ii3(%esp),%ecx
+
+        movq  (%edi,%ecx,4),%mm6       ## increment i force 
+        movd  8(%edi,%ecx,4),%mm7
+        pfadd nb110_fix(%esp),%mm6
+        pfadd nb110_fiz(%esp),%mm7
+        movq  %mm6,(%edi,%ecx,4)
+        movd  %mm7,8(%edi,%ecx,4)
+
+        movl  nb110_fshift(%ebp),%ebx      ## increment fshift force 
+        movl  nb110_is3(%esp),%edx
+
+        movq  (%ebx,%edx,4),%mm6
+        movd  8(%ebx,%edx,4),%mm7
+        pfadd nb110_fix(%esp),%mm6
+        pfadd nb110_fiz(%esp),%mm7
+        movq  %mm6,(%ebx,%edx,4)
+        movd  %mm7,8(%ebx,%edx,4)
+
+        ## get n from stack
+        movl nb110_n(%esp),%esi
+        ## get group index for i particle 
+        movl  nb110_gid(%ebp),%edx              ## base of gid[]
+        movl  (%edx,%esi,4),%edx                ## ggid=gid[n]
+
+        movq  nb110_vctot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
+
+        movl  nb110_Vc(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment vc[gid] 
+
+        movq  nb110_Vvdwtot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
+
+        movl  nb110_Vvdw(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment Vvdw[gid] 
+
+       ## finish if last 
+        movl nb110_nn1(%esp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel110_ia32_3dnow.nb110_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb110_n(%esp)
+        jmp _nb_kernel110_ia32_3dnow.nb110_outer
+_nb_kernel110_ia32_3dnow.nb110_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb110_nri(%esp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel110_ia32_3dnow.nb110_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel110_ia32_3dnow.nb110_threadloop
+_nb_kernel110_ia32_3dnow.nb110_end: 
+        femms
+
+        movl nb110_nouter(%esp),%eax
+        movl nb110_ninner(%esp),%ebx
+        movl nb110_outeriter(%ebp),%ecx
+        movl nb110_inneriter(%ebp),%edx
+        movl %eax,(%ecx)
+        movl %ebx,(%edx)
+
+        addl $152,%esp
+        popl %edi
+        popl %esi
+        popl %edx
+        popl %ecx
+        popl %ebx
+        popl %eax
+        leave
+        ret
 
 
 
 
 .globl nb_kernel110nf_ia32_3dnow
 .globl _nb_kernel110nf_ia32_3dnow
-nb_kernel110nf_ia32_3dnow:	
-_nb_kernel110nf_ia32_3dnow:	
-.equiv		nb110nf_p_nri,		8
-.equiv		nb110nf_iinr,		12
-.equiv		nb110nf_jindex,		16
-.equiv		nb110nf_jjnr,		20
-.equiv		nb110nf_shift,		24
-.equiv		nb110nf_shiftvec,	28
-.equiv		nb110nf_fshift,		32
-.equiv		nb110nf_gid,		36
-.equiv		nb110nf_pos,		40		
-.equiv		nb110nf_faction,	44
-.equiv		nb110nf_charge,		48
-.equiv		nb110nf_p_facel,	52
-.equiv		nb110nf_p_krf,		56	
-.equiv		nb110nf_p_crf,		60	
-.equiv		nb110nf_Vc,		64	
-.equiv		nb110nf_type,		68
-.equiv		nb110nf_p_ntype,	72
-.equiv		nb110nf_vdwparam,	76	
-.equiv		nb110nf_Vvdw,		80	
-.equiv		nb110nf_p_tabscale,	84	
-.equiv		nb110nf_VFtab,		88
-.equiv		nb110nf_invsqrta,	92	
-.equiv		nb110nf_dvda,		96
-.equiv          nb110nf_p_gbtabscale,   100
-.equiv          nb110nf_GBtab,          104
-.equiv          nb110nf_p_nthreads,     108
-.equiv          nb110nf_count,          112
-.equiv          nb110nf_mtx,            116
-.equiv          nb110nf_outeriter,      120
-.equiv          nb110nf_inneriter,      124
-.equiv          nb110nf_work,           128
-	;# stack offsets for local variables 
-.equiv		nb110nf_is3,		0
-.equiv		nb110nf_ii3,		4
-.equiv		nb110nf_ix,		8
-.equiv		nb110nf_iy,		12
-.equiv		nb110nf_iz,		16
-.equiv		nb110nf_iq,		20 
-.equiv		nb110nf_vctot,		28 
-.equiv		nb110nf_Vvdwtot,	36 
-.equiv		nb110nf_c6,		44 
-.equiv		nb110nf_c12,		52
-.equiv		nb110nf_ntia,		60
-.equiv		nb110nf_innerjjnr,	64
-.equiv		nb110nf_innerk,		68					
-.equiv          nb110nf_n,              72 ;# idx for outer loop
-.equiv          nb110nf_nn1,            76 ;# number of outer iterations
-.equiv          nb110nf_nri,              80
-.equiv          nb110nf_facel,            84
-.equiv          nb110nf_ntype,            88
-.equiv          nb110nf_nouter,           92
-.equiv          nb110nf_ninner,           96
-	push ebp
-	mov ebp,esp
-	
-    	push eax
-    	push ebx
-    	push ecx
-    	push edx
-	push esi
-	push edi
-	sub esp, 100		;# local stack space 
-	femms
-	mov ecx, [ebp + nb110nf_p_nri]
-	mov edx, [ebp + nb110nf_p_ntype]
-	mov esi, [ebp + nb110nf_p_facel]
-	mov ecx, [ecx]
-	mov edx, [edx]
-	mov esi, [esi]
-	mov [esp + nb110nf_nri], ecx
-	mov [esp + nb110nf_ntype], edx
-	mov [esp + nb110nf_facel], esi
+nb_kernel110nf_ia32_3dnow:      
+_nb_kernel110nf_ia32_3dnow:     
+.set nb110nf_p_nri, 8
+.set nb110nf_iinr, 12
+.set nb110nf_jindex, 16
+.set nb110nf_jjnr, 20
+.set nb110nf_shift, 24
+.set nb110nf_shiftvec, 28
+.set nb110nf_fshift, 32
+.set nb110nf_gid, 36
+.set nb110nf_pos, 40
+.set nb110nf_faction, 44
+.set nb110nf_charge, 48
+.set nb110nf_p_facel, 52
+.set nb110nf_p_krf, 56
+.set nb110nf_p_crf, 60
+.set nb110nf_Vc, 64
+.set nb110nf_type, 68
+.set nb110nf_p_ntype, 72
+.set nb110nf_vdwparam, 76
+.set nb110nf_Vvdw, 80
+.set nb110nf_p_tabscale, 84
+.set nb110nf_VFtab, 88
+.set nb110nf_invsqrta, 92
+.set nb110nf_dvda, 96
+.set nb110nf_p_gbtabscale, 100
+.set nb110nf_GBtab, 104
+.set nb110nf_p_nthreads, 108
+.set nb110nf_count, 112
+.set nb110nf_mtx, 116
+.set nb110nf_outeriter, 120
+.set nb110nf_inneriter, 124
+.set nb110nf_work, 128
+        ## stack offsets for local variables 
+.set nb110nf_is3, 0
+.set nb110nf_ii3, 4
+.set nb110nf_ix, 8
+.set nb110nf_iy, 12
+.set nb110nf_iz, 16
+.set nb110nf_iq, 20
+.set nb110nf_vctot, 28
+.set nb110nf_Vvdwtot, 36
+.set nb110nf_c6, 44
+.set nb110nf_c12, 52
+.set nb110nf_ntia, 60
+.set nb110nf_innerjjnr, 64
+.set nb110nf_innerk, 68
+.set nb110nf_n, 72                         ## idx for outer loop
+.set nb110nf_nn1, 76                       ## number of outer iterations
+.set nb110nf_nri, 80
+.set nb110nf_facel, 84
+.set nb110nf_ntype, 88
+.set nb110nf_nouter, 92
+.set nb110nf_ninner, 96
+        pushl %ebp
+        movl %esp,%ebp
 
-	;# zero iteration counters
-	mov eax, 0
-	mov [esp + nb110nf_nouter], eax
-	mov [esp + nb110nf_ninner], eax
+        pushl %eax
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
+        pushl %esi
+        pushl %edi
+        subl $100,%esp          ## local stack space 
+        femms
+        movl nb110nf_p_nri(%ebp),%ecx
+        movl nb110nf_p_ntype(%ebp),%edx
+        movl nb110nf_p_facel(%ebp),%esi
+        movl (%ecx),%ecx
+        movl (%edx),%edx
+        movl (%esi),%esi
+        movl %ecx,nb110nf_nri(%esp)
+        movl %edx,nb110nf_ntype(%esp)
+        movl %esi,nb110nf_facel(%esp)
 
-.nb110nf_threadloop:
-        mov   esi, [ebp + nb110nf_count]          ;# pointer to sync counter
-        mov   eax, [esi]
-.nb110nf_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [esi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb110nf_spinlock
+        ## zero iteration counters
+        movl $0,%eax
+        movl %eax,nb110nf_nouter(%esp)
+        movl %eax,nb110nf_ninner(%esp)
 
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [esp + nb110nf_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [esp + nb110nf_n], eax
-        mov [esp + nb110nf_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb110nf_outerstart
-        jmp .nb110nf_end
+_nb_kernel110nf_ia32_3dnow.nb110nf_threadloop: 
+        movl  nb110nf_count(%ebp),%esi            ## pointer to sync counter
+        movl  (%esi),%eax
+_nb_kernel110nf_ia32_3dnow.nb110nf_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel110nf_ia32_3dnow.nb110nf_spinlock
 
-.nb110nf_outerstart:	
-	;# ebx contains number of outer iterations
-	add ebx, [esp + nb110nf_nouter]
-        mov [esp + nb110nf_nouter], ebx
-	
-.nb110nf_outer:
-	mov   eax, [ebp + nb110nf_shift]      ;# eax = pointer into shift[] 
-	mov   ebx, [eax + esi*4]		;# ebx=shift[n] 
-	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
-	mov   [esp + nb110nf_is3],ebx    	;# store is3 
+        ## if(nn1>nri) nn1=nri
+        movl nb110nf_nri(%esp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb110nf_n(%esp)
+        movl %ebx,nb110nf_nn1(%esp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel110nf_ia32_3dnow.nb110nf_outerstart
+        jmp _nb_kernel110nf_ia32_3dnow.nb110nf_end
 
-	mov   eax, [ebp + nb110nf_shiftvec]   ;# eax = base of shiftvec[] 
-	
-	movq  mm0, [eax + ebx*4]	;# move shX/shY to mm0 and shZ to mm1 
-	movd  mm1, [eax + ebx*4 + 8]
+_nb_kernel110nf_ia32_3dnow.nb110nf_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb110nf_nouter(%esp),%ebx
+        movl %ebx,nb110nf_nouter(%esp)
 
-	mov   ecx, [ebp + nb110nf_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx + esi*4]	    ;# ebx=ii 
+_nb_kernel110nf_ia32_3dnow.nb110nf_outer: 
+        movl  nb110nf_shift(%ebp),%eax        ## eax = pointer into shift[] 
+        movl  (%eax,%esi,4),%ebx                ## ebx=shift[n] 
 
-	mov   edx, [ebp + nb110nf_charge]
-	movd  mm2, [edx + ebx*4]    ;# mm2=charge[ii] 
-	pfmul mm2, [esp + nb110nf_facel]
-	punpckldq mm2,mm2	    ;# spread to both halves 
-	movq  [esp + nb110nf_iq], mm2	    ;# iq =facel*charge[ii] 
+        leal  (%ebx,%ebx,2),%ebx    ## ebx=3*is 
+        movl  %ebx,nb110nf_is3(%esp)            ## store is3 
 
-	mov   edx, [ebp + nb110nf_type] 	
-	mov   edx, [edx + ebx*4]	
-	imul  edx, [esp + nb110nf_ntype]
-	shl   edx, 1
-	mov   [esp + nb110nf_ntia], edx
+        movl  nb110nf_shiftvec(%ebp),%eax     ## eax = base of shiftvec[] 
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
-	mov   eax, [ebp + nb110nf_pos]    ;# eax = base of pos[] 
-	
-	pfadd mm0, [eax + ebx*4]    ;# ix = shX + posX (and iy too) 
-	movd  mm3, [eax + ebx*4 + 8]    ;# cant use direct memory add for 4 bytes (iz) 
-	mov   [esp + nb110nf_ii3], ebx
-	pfadd mm1, mm3
-	movq  [esp + nb110nf_ix], mm0	
-	movd  [esp + nb110nf_iz], mm1	
-				
-	;# clear total potential and i forces 
-	pxor  mm7,mm7
-	movq  [esp + nb110nf_vctot],  mm7
-	movq  [esp + nb110nf_Vvdwtot], mm7
+        movq  (%eax,%ebx,4),%mm0        ## move shX/shY to mm0 and shZ to mm1 
+        movd  8(%eax,%ebx,4),%mm1
 
-	mov   eax, [ebp + nb110nf_jindex]
-	mov   ecx, [eax + esi*4]	     ;# jindex[n] 
-	mov   edx, [eax + esi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
+        movl  nb110nf_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]      
+        movl  (%ecx,%esi,4),%ebx            ## ebx=ii 
 
-	mov   esi, [ebp + nb110nf_pos]
-	mov   eax, [ebp + nb110nf_jjnr]
-	shl   ecx, 2
-	add   eax, ecx
-	mov   [esp + nb110nf_innerjjnr], eax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [esp + nb110nf_ninner]
-	mov   [esp + nb110nf_ninner], ecx
-	mov   [esp + nb110nf_innerk], edx    ;# number of innerloop atoms 
-	add   edx, 0
-	jge   .nb110nf_unroll_loop
-	jmp   .nb110nf_finish_inner
-.nb110nf_unroll_loop:
-	;# paired innerloop starts here 
-	mov   ecx, [esp + nb110nf_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [ecx]	
-	mov   ebx, [ecx + 4]         ;# eax/ebx=jnr 
-	add dword ptr [esp + nb110nf_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-	prefetch [ecx + 16]	     ;# prefetch data - trial and error says 16 is best 
-	
-	mov ecx, [ebp + nb110nf_charge]    ;# base of charge[] 
-	movq mm5, [esp + nb110nf_iq]
-	movd mm3, [ecx + eax*4]	     ;# charge[jnr1] 
-        punpckldq mm3, [ecx + ebx*4]     ;# move charge 2 to high part of mm3 
-	pfmul mm3,mm5		     ;# mm3 now has qq for both particles 
+        movl  nb110nf_charge(%ebp),%edx
+        movd  (%edx,%ebx,4),%mm2    ## mm2=charge[ii] 
+        pfmul nb110nf_facel(%esp),%mm2
+        punpckldq %mm2,%mm2         ## spread to both halves 
+        movq  %mm2,nb110nf_iq(%esp)         ## iq =facel*charge[ii] 
 
-	mov ecx, [ebp + nb110nf_type]
-	mov edx, [ecx + eax*4]        	 ;# type [jnr1] 
-	mov ecx, [ecx + ebx*4]       ;# type [jnr2] 
+        movl  nb110nf_type(%ebp),%edx
+        movl  (%edx,%ebx,4),%edx
+        imull nb110nf_ntype(%esp),%edx
+        shll  %edx
+        movl  %edx,nb110nf_ntia(%esp)
 
-	mov esi, [ebp + nb110nf_vdwparam]		;# base of vdwparam  
-	shl edx, 1
-	shl ecx, 1
-	add edx, [esp + nb110nf_ntia]	     ;# tja = ntia + 2*type 
-	add ecx, [esp + nb110nf_ntia]
+        leal  (%ebx,%ebx,2),%ebx        ## ebx = 3*ii=ii3 
+        movl  nb110nf_pos(%ebp),%eax      ## eax = base of pos[] 
 
-	movq mm5, [esi + edx*4]		;# mm5 = 1st c6 / c12 		
-	movq mm7, [esi + ecx*4]		;# mm7 = 2nd c6 / c12 	
-	movq mm6,mm5			
-	punpckldq mm5,mm7		;# mm5 = 1st c6 / 2nd c6 
-	punpckhdq mm6,mm7		;# mm6 = 1st c12 / 2nd c12 
-	movq [esp + nb110nf_c6], mm5
-	movq [esp + nb110nf_c12], mm6
+        pfadd (%eax,%ebx,4),%mm0    ## ix = shX + posX (and iy too) 
+        movd  8(%eax,%ebx,4),%mm3       ## cant use direct memory add for 4 bytes (iz) 
+        movl  %ebx,nb110nf_ii3(%esp)
+        pfadd %mm3,%mm1
+        movq  %mm0,nb110nf_ix(%esp)
+        movd  %mm1,nb110nf_iz(%esp)
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]		
+        ## clear total potential and i forces 
+        pxor  %mm7,%mm7
+        movq  %mm7,nb110nf_vctot(%esp)
+        movq  %mm7,nb110nf_Vvdwtot(%esp)
 
-	mov   esi, [ebp + nb110nf_pos]
+        movl  nb110nf_jindex(%ebp),%eax
+        movl  (%eax,%esi,4),%ecx             ## jindex[n] 
+        movl  4(%eax,%esi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
 
-	movq  mm0, [esp + nb110nf_ix]
-	movd  mm1, [esp + nb110nf_iz]	 	
-	movq  mm4, [esi + eax*4]     ;# fetch first j coordinates 
-	movd  mm5, [esi + eax*4 + 8]		
-	pfsubr mm4,mm0		     ;# dr = ir - jr  
-	pfsubr mm5,mm1
-	pfmul mm4,mm4	             ;# square dx,dy,dz 		         
-	pfmul mm5,mm5		
-	pfacc mm4, mm5               ;# accumulate to get dx*dx+ dy*dy+ dz*dz 
-	pfacc mm4, mm5		     ;# first rsq in lower mm4 
+        movl  nb110nf_pos(%ebp),%esi
+        movl  nb110nf_jjnr(%ebp),%eax
+        shll  $2,%ecx
+        addl  %ecx,%eax
+        movl  %eax,nb110nf_innerjjnr(%esp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb110nf_ninner(%esp),%ecx
+        movl  %ecx,nb110nf_ninner(%esp)
+        movl  %edx,nb110nf_innerk(%esp)      ## number of innerloop atoms 
+        addl  $0,%edx
+        jge   _nb_kernel110nf_ia32_3dnow.nb110nf_unroll_loop
+        jmp   _nb_kernel110nf_ia32_3dnow.nb110nf_finish_inner
+_nb_kernel110nf_ia32_3dnow.nb110nf_unroll_loop: 
+        ## paired innerloop starts here 
+        movl  nb110nf_innerjjnr(%esp),%ecx       ## pointer to jjnr[k] 
+        movl  (%ecx),%eax
+        movl  4(%ecx),%ebx           ## eax/ebx=jnr 
+        addl $8,nb110nf_innerjjnr(%esp)             ## advance pointer (unrolled 2) 
+        prefetch 16(%ecx)            ## prefetch data - trial and error says 16 is best 
 
-	movq  mm6, [esi + ebx*4]     ;# fetch second j coordinates  
-	movd  mm7, [esi + ebx*4 + 8]
-	
-	pfsubr mm6,mm0	             ;# dr = ir - jr  
-	pfsubr mm7,mm1
-	pfmul mm6,mm6	             ;# square dx,dy,dz 
-	pfmul mm7,mm7
-	pfacc mm6, mm7		     ;# accumulate to get dx*dx+ dy*dy+ dz*dz 
-	pfacc mm6, mm7	             ;# second rsq in lower mm6 
+        movl nb110nf_charge(%ebp),%ecx     ## base of charge[] 
+        movq nb110nf_iq(%esp),%mm5
+        movd (%ecx,%eax,4),%mm3      ## charge[jnr1] 
+        punpckldq (%ecx,%ebx,4),%mm3     ## move charge 2 to high part of mm3 
+        pfmul %mm5,%mm3              ## mm3 now has qq for both particles 
 
-    pfrsqrt mm0, mm4	     ;# lookup inverse square root seed 
-    pfrsqrt mm1, mm6
- 
-	punpckldq mm0,mm1
-	punpckldq mm4,mm6        	;# now 4 has rsq and 0 the seed for both pairs 
-    movq mm2,mm0	        	;# amd 3dnow N-R iteration to get full precision 
-	pfmul mm0,mm0
-    pfrsqit1 mm0,mm4				
-    pfrcpit2 mm0,mm2	
-	movq mm1,mm0
-	pfmul mm0,mm0
-	;# mm0 now contains invsq, and mm1 invsqrt 
-	;# do potential and fscal 
-	movq mm4, mm0
-	pfmul mm4, mm0
-	pfmul mm4, mm0             	;# mm4=rinvsix 
-	movq  mm5, mm4	
-	pfmul mm5, mm5	            ;# mm5=rinvtwelve 
+        movl nb110nf_type(%ebp),%ecx
+        movl (%ecx,%eax,4),%edx          ## type [jnr1] 
+        movl (%ecx,%ebx,4),%ecx      ## type [jnr2] 
 
-	pfmul mm3, mm1		;# mm3 has vcoul for both interactions 
-	pfmul mm5, [esp + nb110nf_c12]
-	pfmul mm4, [esp + nb110nf_c6]	
-	movq mm6, mm5	;# mm6 is Vvdw12-Vvdw6  
-	pfsub mm6, mm4
-	;# update vctot 
-	pfadd mm3, [esp + nb110nf_vctot]      ;# add the earlier value 
-	movq [esp + nb110nf_vctot], mm3       ;# store the sum       
-	;# update Vvdwtot 
-	pfadd mm6, [esp + nb110nf_Vvdwtot]      ;# add the earlier value 
-	movq [esp + nb110nf_Vvdwtot], mm6       ;# store the sum       
-	
-	;# should we do one more iteration? 
-	sub dword ptr [esp + nb110nf_innerk],  2
-	jl    .nb110nf_finish_inner
-	jmp   .nb110nf_unroll_loop
-.nb110nf_finish_inner:	
-	and dword ptr [esp + nb110nf_innerk],  1
-	jnz  .nb110nf_single_inner
-	jmp  .nb110nf_updateouterdata		
-.nb110nf_single_inner:
-	;# a single j particle iteration here - compare with the unrolled code for comments 
-	mov   eax, [esp + nb110nf_innerjjnr]
-	mov   eax, [eax]	;# eax=jnr offset 
+        movl nb110nf_vdwparam(%ebp),%esi                ## base of vdwparam  
+        shll %edx
+        shll %ecx
+        addl nb110nf_ntia(%esp),%edx         ## tja = ntia + 2*type 
+        addl nb110nf_ntia(%esp),%ecx
 
-	mov ecx, [ebp + nb110nf_charge]
-	movd mm5, [esp + nb110nf_iq]
-	movd mm3, [ecx + eax*4]
-	pfmul mm3, mm5	  	;# mm3=qq 
+        movq (%esi,%edx,4),%mm5         ## mm5 = 1st c6 / c12           
+        movq (%esi,%ecx,4),%mm7         ## mm7 = 2nd c6 / c12   
+        movq %mm5,%mm6
+        punpckldq %mm7,%mm5             ## mm5 = 1st c6 / 2nd c6 
+        punpckhdq %mm7,%mm6             ## mm6 = 1st c12 / 2nd c12 
+        movq %mm5,nb110nf_c6(%esp)
+        movq %mm6,nb110nf_c12(%esp)
 
-	mov esi, [ebp + nb110nf_vdwparam]
-	mov ecx, [ebp + nb110nf_type]
-	mov edx, [ecx + eax*4]        	 ;# type [jnr1] 
-	shl edx, 1
-	add edx, [esp + nb110nf_ntia]	     ;# tja = ntia + 2*type 
-	movd mm5, [esi + edx*4]		;# mm5 = 1st c6  		
-	movq [esp + nb110nf_c6], mm5
-	movd mm5, [esi + edx*4 + 4]	;# mm5 = 1st c12  		
-	movq [esp + nb110nf_c12], mm5
+        leal  (%eax,%eax,2),%eax     ## replace jnr with j3 
+        leal  (%ebx,%ebx,2),%ebx
+
+        movl  nb110nf_pos(%ebp),%esi
+
+        movq  nb110nf_ix(%esp),%mm0
+        movd  nb110nf_iz(%esp),%mm1
+        movq  (%esi,%eax,4),%mm4     ## fetch first j coordinates 
+        movd  8(%esi,%eax,4),%mm5
+        pfsubr %mm0,%mm4             ## dr = ir - jr  
+        pfsubr %mm1,%mm5
+        pfmul %mm4,%mm4              ## square dx,dy,dz                          
+        pfmul %mm5,%mm5
+        pfacc %mm5,%mm4              ## accumulate to get dx*dx+ dy*dy+ dz*dz 
+        pfacc %mm5,%mm4              ## first rsq in lower mm4 
+
+        movq  (%esi,%ebx,4),%mm6     ## fetch second j coordinates  
+        movd  8(%esi,%ebx,4),%mm7
+
+        pfsubr %mm0,%mm6             ## dr = ir - jr  
+        pfsubr %mm1,%mm7
+        pfmul %mm6,%mm6              ## square dx,dy,dz 
+        pfmul %mm7,%mm7
+        pfacc %mm7,%mm6              ## accumulate to get dx*dx+ dy*dy+ dz*dz 
+        pfacc %mm7,%mm6              ## second rsq in lower mm6 
+
+    pfrsqrt %mm4,%mm0        ## lookup inverse square root seed 
+    pfrsqrt %mm6,%mm1
+
+        punpckldq %mm1,%mm0
+        punpckldq %mm6,%mm4             ## now 4 has rsq and 0 the seed for both pairs 
+    movq %mm0,%mm2                      ## amd 3dnow N-R iteration to get full precision 
+        pfmul %mm0,%mm0
+    pfrsqit1 %mm4,%mm0
+    pfrcpit2 %mm2,%mm0
+        movq %mm0,%mm1
+        pfmul %mm0,%mm0
+        ## mm0 now contains invsq, and mm1 invsqrt 
+        ## do potential and fscal 
+        movq %mm0,%mm4
+        pfmul %mm0,%mm4
+        pfmul %mm0,%mm4                 ## mm4=rinvsix 
+        movq  %mm4,%mm5
+        pfmul %mm5,%mm5             ## mm5=rinvtwelve 
+
+        pfmul %mm1,%mm3         ## mm3 has vcoul for both interactions 
+        pfmul nb110nf_c12(%esp),%mm5
+        pfmul nb110nf_c6(%esp),%mm4
+        movq %mm5,%mm6  ## mm6 is Vvdw12-Vvdw6  
+        pfsub %mm4,%mm6
+        ## update vctot 
+        pfadd nb110nf_vctot(%esp),%mm3        ## add the earlier value 
+        movq %mm3,nb110nf_vctot(%esp)         ## store the sum       
+        ## update Vvdwtot 
+        pfadd nb110nf_Vvdwtot(%esp),%mm6        ## add the earlier value 
+        movq %mm6,nb110nf_Vvdwtot(%esp)         ## store the sum       
+
+        ## should we do one more iteration? 
+        subl $2,nb110nf_innerk(%esp)
+        jl    _nb_kernel110nf_ia32_3dnow.nb110nf_finish_inner
+        jmp   _nb_kernel110nf_ia32_3dnow.nb110nf_unroll_loop
+_nb_kernel110nf_ia32_3dnow.nb110nf_finish_inner: 
+        andl $1,nb110nf_innerk(%esp)
+        jnz  _nb_kernel110nf_ia32_3dnow.nb110nf_single_inner
+        jmp  _nb_kernel110nf_ia32_3dnow.nb110nf_updateouterdata
+_nb_kernel110nf_ia32_3dnow.nb110nf_single_inner: 
+        ## a single j particle iteration here - compare with the unrolled code for comments 
+        movl  nb110nf_innerjjnr(%esp),%eax
+        movl  (%eax),%eax       ## eax=jnr offset 
+
+        movl nb110nf_charge(%ebp),%ecx
+        movd nb110nf_iq(%esp),%mm5
+        movd (%ecx,%eax,4),%mm3
+        pfmul %mm5,%mm3         ## mm3=qq 
+
+        movl nb110nf_vdwparam(%ebp),%esi
+        movl nb110nf_type(%ebp),%ecx
+        movl (%ecx,%eax,4),%edx          ## type [jnr1] 
+        shll %edx
+        addl nb110nf_ntia(%esp),%edx         ## tja = ntia + 2*type 
+        movd (%esi,%edx,4),%mm5         ## mm5 = 1st c6                 
+        movq %mm5,nb110nf_c6(%esp)
+        movd 4(%esi,%edx,4),%mm5        ## mm5 = 1st c12                
+        movq %mm5,nb110nf_c12(%esp)
 
 
-	mov   esi, [ebp + nb110nf_pos]
-	lea   eax, [eax + eax*2]
+        movl  nb110nf_pos(%ebp),%esi
+        leal  (%eax,%eax,2),%eax
 
-	movq  mm0, [esp + nb110nf_ix]
-	movd  mm1, [esp + nb110nf_iz]
-	movq  mm4, [esi + eax*4]
-	movd  mm5, [esi + eax*4 + 8]
-	pfsubr mm4, mm0
-	pfsubr mm5, mm1
-	pfmul mm4,mm4
-	pfmul mm5,mm5
-	pfacc mm4, mm5
-	pfacc mm4, mm5		;# mm0=rsq 
-	
-    	pfrsqrt mm0,mm4
-    	movq mm2,mm0
-    	pfmul mm0,mm0
-    	pfrsqit1 mm0,mm4				
-    	pfrcpit2 mm0,mm2	;# mm1=invsqrt 
-	movq  mm1, mm0
-	pfmul mm0, mm0		;# mm0=invsq 
-	;# calculate potentials and scalar force 
-	movq mm4, mm0
-	pfmul mm4, mm0
-	pfmul mm4, mm0             	;# mm4=rinvsix 
-	movq  mm5, mm4	
-	pfmul mm5, mm5	            ;# mm5=rinvtwelve 
+        movq  nb110nf_ix(%esp),%mm0
+        movd  nb110nf_iz(%esp),%mm1
+        movq  (%esi,%eax,4),%mm4
+        movd  8(%esi,%eax,4),%mm5
+        pfsubr %mm0,%mm4
+        pfsubr %mm1,%mm5
+        pfmul %mm4,%mm4
+        pfmul %mm5,%mm5
+        pfacc %mm5,%mm4
+        pfacc %mm5,%mm4         ## mm0=rsq 
 
-	pfmul mm3, mm1		;# mm3 has vcoul for both interactions 
-	pfmul mm5, [esp + nb110nf_c12]
-	pfmul mm4, [esp + nb110nf_c6]	
-	movq mm6, mm5	;# mm6 is Vvdw12-Vvdw6  
-	pfsub mm6, mm4
-	;# update vctot 
-	pfadd mm3, [esp + nb110nf_vctot]
-	movq [esp + nb110nf_vctot], mm3
-	;# update Vvdwtot 
-	pfadd mm6, [esp + nb110nf_Vvdwtot]      ;# add the earlier value 
-	movq [esp + nb110nf_Vvdwtot], mm6       ;# store the sum       
+        pfrsqrt %mm4,%mm0
+        movq %mm0,%mm2
+        pfmul %mm0,%mm0
+        pfrsqit1 %mm4,%mm0
+        pfrcpit2 %mm2,%mm0      ## mm1=invsqrt 
+        movq  %mm0,%mm1
+        pfmul %mm0,%mm0         ## mm0=invsq 
+        ## calculate potentials and scalar force 
+        movq %mm0,%mm4
+        pfmul %mm0,%mm4
+        pfmul %mm0,%mm4                 ## mm4=rinvsix 
+        movq  %mm4,%mm5
+        pfmul %mm5,%mm5             ## mm5=rinvtwelve 
 
-.nb110nf_updateouterdata:	
-	;# get n from stack
-	mov esi, [esp + nb110nf_n]
-        ;# get group index for i particle 
-        mov   edx, [ebp + nb110nf_gid]      	;# base of gid[]
-        mov   edx, [edx + esi*4]		;# ggid=gid[n]
+        pfmul %mm1,%mm3         ## mm3 has vcoul for both interactions 
+        pfmul nb110nf_c12(%esp),%mm5
+        pfmul nb110nf_c6(%esp),%mm4
+        movq %mm5,%mm6  ## mm6 is Vvdw12-Vvdw6  
+        pfsub %mm4,%mm6
+        ## update vctot 
+        pfadd nb110nf_vctot(%esp),%mm3
+        movq %mm3,nb110nf_vctot(%esp)
+        ## update Vvdwtot 
+        pfadd nb110nf_Vvdwtot(%esp),%mm6        ## add the earlier value 
+        movq %mm6,nb110nf_Vvdwtot(%esp)         ## store the sum       
 
-	movq  mm7, [esp + nb110nf_vctot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
-	
-	mov   eax, [ebp + nb110nf_Vc]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment vc[gid] 
+_nb_kernel110nf_ia32_3dnow.nb110nf_updateouterdata: 
+        ## get n from stack
+        movl nb110nf_n(%esp),%esi
+        ## get group index for i particle 
+        movl  nb110nf_gid(%ebp),%edx            ## base of gid[]
+        movl  (%edx,%esi,4),%edx                ## ggid=gid[n]
 
-	movq  mm7, [esp + nb110nf_Vvdwtot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
-	
-	mov   eax, [ebp + nb110nf_Vvdw]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment Vvdw[gid] 
+        movq  nb110nf_vctot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
 
-       	;# finish if last 
-        mov ecx, [esp + nb110nf_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb110nf_outerend
+        movl  nb110nf_Vc(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment vc[gid] 
 
-        ;# not last, iterate outer loop once more!  
-        mov [esp + nb110nf_n], esi
-        jmp .nb110nf_outer
-.nb110nf_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [esp + nb110nf_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb110nf_end
-        ;# non-zero, do one more workunit
-        jmp   .nb110nf_threadloop
-.nb110nf_end:
-	femms
+        movq  nb110nf_Vvdwtot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
 
-	mov eax, [esp + nb110nf_nouter] 	
-	mov ebx, [esp + nb110nf_ninner]
-	mov ecx, [ebp + nb110nf_outeriter]
-	mov edx, [ebp + nb110nf_inneriter]
-	mov [ecx], eax
-	mov [edx], ebx
+        movl  nb110nf_Vvdw(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment Vvdw[gid] 
 
-	add esp, 100
-	pop edi
-	pop esi
-    	pop edx
-    	pop ecx
-    	pop ebx
-    	pop eax
-	leave
-	ret
+        ## finish if last 
+        movl nb110nf_nn1(%esp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel110nf_ia32_3dnow.nb110nf_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb110nf_n(%esp)
+        jmp _nb_kernel110nf_ia32_3dnow.nb110nf_outer
+_nb_kernel110nf_ia32_3dnow.nb110nf_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb110nf_nri(%esp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel110nf_ia32_3dnow.nb110nf_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel110nf_ia32_3dnow.nb110nf_threadloop
+_nb_kernel110nf_ia32_3dnow.nb110nf_end: 
+        femms
+
+        movl nb110nf_nouter(%esp),%eax
+        movl nb110nf_ninner(%esp),%ebx
+        movl nb110nf_outeriter(%ebp),%ecx
+        movl nb110nf_inneriter(%ebp),%edx
+        movl %eax,(%ecx)
+        movl %ebx,(%edx)
+
+        addl $100,%esp
+        popl %edi
+        popl %esi
+        popl %edx
+        popl %ecx
+        popl %ebx
+        popl %eax
+        leave
+        ret
+

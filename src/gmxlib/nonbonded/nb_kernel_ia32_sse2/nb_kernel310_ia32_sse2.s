@@ -1,1421 +1,1394 @@
-;#
-;# $Id$
-;#
-;# Gromacs 4.0                         Copyright (c) 1991-2003 
-;# David van der Spoel, Erik Lindahl
-;#
-;# This program is free software; you can redistribute it and/or
-;# modify it under the terms of the GNU General Public License
-;# as published by the Free Software Foundation; either version 2
-;# of the License, or (at your option) any later version.
-;#
-;# To help us fund GROMACS development, we humbly ask that you cite
-;# the research papers on the package. Check out http://www.gromacs.org
-;# 
-;# And Hey:
-;# Gnomes, ROck Monsters And Chili Sauce
-;#
-
-;# These files require GNU binutils 2.10 or later, since we
-;# use intel syntax for portability, or a recent version 
-;# of NASM that understands Extended 3DNow and SSE2 instructions.
-;# (NASM is normally only used with MS Visual C++).
-;# Since NASM and gnu as disagree on some definitions and use 
-;# completely different preprocessing options I have to introduce a
-;# trick: NASM uses ';' for comments, while gnu as uses '#' on x86.
-;# Gnu as treats ';' as a line break, i.e. ignores it. This is the
-;# reason why all comments need both symbols...
-;# The source is written for GNU as, with intel syntax. When you use
-;# NASM we redefine a couple of things. The false if-statement around 
-;# the following code is seen by GNU as, but NASM doesn't see it, so 
-;# the code inside is read by NASM but not gcc.
-
-; .if 0    # block below only read by NASM
-%define .section	section
-%define .long		dd
-%define .align		align
-%define .globl		global
-;# NASM only wants 'dword', not 'dword ptr'.
-%define ptr
-.equiv          .equiv                  2
-   %1 equ %2
-%endmacro
-; .endif                   # End of NASM-specific block
-; .intel_syntax noprefix   # Line only read by gnu as
-
-
-
+##
+## $Id$
+##
+## Gromacs 4.0                         Copyright (c) 1991-2003 
+## David van der Spoel, Erik Lindahl
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or (at your option) any later version.
+##
+## To help us fund GROMACS development, we humbly ask that you cite
+## the research papers on the package. Check out http://www.gromacs.org
+## 
+## And Hey:
+## Gnomes, ROck Monsters And Chili Sauce
+##
 
 
 .globl nb_kernel310_ia32_sse2
 .globl _nb_kernel310_ia32_sse2
-nb_kernel310_ia32_sse2:	
-_nb_kernel310_ia32_sse2:	
-.equiv          nb310_p_nri,            8
-.equiv          nb310_iinr,             12
-.equiv          nb310_jindex,           16
-.equiv          nb310_jjnr,             20
-.equiv          nb310_shift,            24
-.equiv          nb310_shiftvec,         28
-.equiv          nb310_fshift,           32
-.equiv          nb310_gid,              36
-.equiv          nb310_pos,              40
-.equiv          nb310_faction,          44
-.equiv          nb310_charge,           48
-.equiv          nb310_p_facel,          52
-.equiv          nb310_argkrf,           56
-.equiv          nb310_argcrf,           60
-.equiv          nb310_Vc,               64
-.equiv          nb310_type,             68
-.equiv          nb310_p_ntype,          72
-.equiv          nb310_vdwparam,         76
-.equiv          nb310_Vvdw,             80
-.equiv          nb310_p_tabscale,       84
-.equiv          nb310_VFtab,            88
-.equiv          nb310_invsqrta,         92
-.equiv          nb310_dvda,             96
-.equiv          nb310_p_gbtabscale,     100
-.equiv          nb310_GBtab,            104
-.equiv          nb310_p_nthreads,       108
-.equiv          nb310_count,            112
-.equiv          nb310_mtx,              116
-.equiv          nb310_outeriter,        120
-.equiv          nb310_inneriter,        124
-.equiv          nb310_work,             128
-	;# stack offsets for local variables  
-	;# bottom of stack is cache-aligned for sse2 use 
-.equiv          nb310_ix,               0
-.equiv          nb310_iy,               16
-.equiv          nb310_iz,               32
-.equiv          nb310_iq,               48
-.equiv          nb310_dx,               64
-.equiv          nb310_dy,               80
-.equiv          nb310_dz,               96
-.equiv          nb310_two,              112
-.equiv          nb310_six,              128
-.equiv          nb310_twelve,           144
-.equiv          nb310_tsc,              160
-.equiv          nb310_qq,               176
-.equiv          nb310_c6,               192
-.equiv          nb310_c12,              208
-.equiv          nb310_fscal,            224
-.equiv          nb310_vctot,            240
-.equiv          nb310_Vvdwtot,          256
-.equiv          nb310_fix,              272
-.equiv          nb310_fiy,              288
-.equiv          nb310_fiz,              304
-.equiv          nb310_half,             320
-.equiv          nb310_three,            336
-.equiv          nb310_is3,              352
-.equiv          nb310_ii3,              356
-.equiv          nb310_ntia,             360
-.equiv          nb310_innerjjnr,        364
-.equiv          nb310_innerk,           368
-.equiv          nb310_n,                372
-.equiv          nb310_nn1,              376
-.equiv          nb310_nri,              380
-.equiv          nb310_facel,            384   ;# uses 8 bytes
-.equiv          nb310_ntype,            392
-.equiv          nb310_nouter,           396
-.equiv          nb310_ninner,           400
-.equiv          nb310_salign,           404
-	push ebp
-	mov ebp,esp	
-    	push eax
-    	push ebx
-    	push ecx
-    	push edx
-	push esi
-	push edi
-	sub esp, 408		;# local stack space 
-	mov  eax, esp
-	and  eax, 0xf
-	sub esp, eax
-	mov [esp + nb310_salign], eax
-
-	emms
-
-	;# Move args passed by reference to stack
-	mov ecx, [ebp + nb310_p_nri]
-	mov esi, [ebp + nb310_p_facel]
-	mov edi, [ebp + nb310_p_ntype]
-	mov ecx, [ecx]
-	movsd xmm7, [esi]
-	mov edi, [edi]
-	mov [esp + nb310_nri], ecx
-	movsd [esp + nb310_facel], xmm7
-	mov [esp + nb310_ntype], edi
-
-	;# zero iteration counters
-	mov eax, 0
-	mov [esp + nb310_nouter], eax
-	mov [esp + nb310_ninner], eax
-
-
-	mov eax, [ebp + nb310_p_tabscale]
-	movsd xmm5, [eax]
-	shufpd xmm5, xmm5, 0
-	movapd [esp + nb310_tsc], xmm5
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double 0.5 IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [esp + nb310_half], eax
-	mov [esp + nb310_half + 4], ebx
-	movsd xmm1, [esp + nb310_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# 1.0
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# 2.0
-	addpd  xmm3, xmm2	;# 3.0
-	movapd xmm4, xmm3
-	addpd  xmm4, xmm4       ;# 6.0
-	movapd xmm5, xmm4
-	addpd  xmm5, xmm5       ;# 12.0
-	movapd [esp + nb310_half], xmm1
-	movapd [esp + nb310_two], xmm2
-	movapd [esp + nb310_three], xmm3
-	movapd [esp + nb310_six], xmm4
-	movapd [esp + nb310_twelve], xmm5
-
-.nb310_threadloop:
-        mov   esi, [ebp + nb310_count]          ;# pointer to sync counter
-        mov   eax, [esi]
-.nb310_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [esi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb310_spinlock
-
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [esp + nb310_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [esp + nb310_n], eax
-        mov [esp + nb310_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb310_outerstart
-        jmp .nb310_end
-
-.nb310_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [esp + nb310_nouter]
-	mov [esp + nb310_nouter], ebx
-
-.nb310_outer:
-	mov   eax, [ebp + nb310_shift]      ;# eax = pointer into shift[] 
-	mov   ebx, [eax+esi*4]		;# ebx=shift[n] 
-	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
-	mov   [esp + nb310_is3],ebx    	;# store is3 
-
-	mov   eax, [ebp + nb310_shiftvec]   ;# eax = base of shiftvec[] 
-
-	movsd xmm0, [eax + ebx*8]
-	movsd xmm1, [eax + ebx*8 + 8]
-	movsd xmm2, [eax + ebx*8 + 16] 
-
-	mov   ecx, [ebp + nb310_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx+esi*4]	    ;# ebx =ii 
-
-	mov   edx, [ebp + nb310_charge]
-	movsd xmm3, [edx + ebx*8]	
-	mulsd xmm3, [esp + nb310_facel]
-	shufpd xmm3, xmm3, 0
-
-    	mov   edx, [ebp + nb310_type] 
-    	mov   edx, [edx + ebx*4]
-    	imul  edx, [esp + nb310_ntype]
-    	shl   edx, 1
-    	mov   [esp + nb310_ntia], edx
-		
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
-	mov   eax, [ebp + nb310_pos]    ;# eax = base of pos[]  
-
-	addsd xmm0, [eax + ebx*8]
-	addsd xmm1, [eax + ebx*8 + 8]
-	addsd xmm2, [eax + ebx*8 + 16]
-
-	movapd [esp + nb310_iq], xmm3
-	
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
-
-	movapd [esp + nb310_ix], xmm0
-	movapd [esp + nb310_iy], xmm1
-	movapd [esp + nb310_iz], xmm2
-
-	mov   [esp + nb310_ii3], ebx
-	
-	;# clear vctot and i forces 
-	xorpd xmm4, xmm4
-	movapd [esp + nb310_vctot], xmm4
-	movapd [esp + nb310_Vvdwtot], xmm4
-	movapd [esp + nb310_fix], xmm4
-	movapd [esp + nb310_fiy], xmm4
-	movapd [esp + nb310_fiz], xmm4
-	
-	mov   eax, [ebp + nb310_jindex]
-	mov   ecx, [eax + esi*4]	     ;# jindex[n] 
-	mov   edx, [eax + esi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
-
-	mov   esi, [ebp + nb310_pos]
-	mov   edi, [ebp + nb310_faction]	
-	mov   eax, [ebp + nb310_jjnr]
-	shl   ecx, 2
-	add   eax, ecx
-	mov   [esp + nb310_innerjjnr], eax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [esp + nb310_ninner]
-	mov   [esp + nb310_ninner], ecx
-	add   edx, 0
-	mov   [esp + nb310_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb310_unroll_loop
-	jmp   .nb310_checksingle
-.nb310_unroll_loop:	
-	;# twice unrolled innerloop here 
-	mov   edx, [esp + nb310_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [edx]	
-	mov   ebx, [edx + 4]              
-	add dword ptr [esp + nb310_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-
-	mov esi, [ebp + nb310_charge]    ;# base of charge[] 
-	movlpd xmm3, [esi + eax*8]
-	movhpd xmm3, [esi + ebx*8]
-
-	movapd xmm2, [esp + nb310_iq]
-	mulpd  xmm3, xmm2
-	movapd [esp + nb310_qq], xmm3	
-	
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	movd  mm1, ebx
-	
-	mov esi, [ebp + nb310_type]
-	mov eax, [esi + eax*4]
-	mov ebx, [esi + ebx*4]
-	mov esi, [ebp + nb310_vdwparam]
-	shl eax, 1
-	shl ebx, 1
-	mov edi, [esp + nb310_ntia]
-	add eax, edi
-	add ebx, edi
-
-	movlpd xmm6, [esi + eax*8]	;# c6a
-	movlpd xmm7, [esi + ebx*8]	;# c6b
-	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
-	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
-
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movd  ebx, mm1
-	movapd [esp + nb310_c6], xmm4
-	movapd [esp + nb310_c12], xmm6
-	
-	mov esi, [ebp + nb310_pos]       ;# base of pos[] 
-
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
-
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [esi + eax*8]
-	movlpd xmm1, [esi + eax*8 + 8]
-	movlpd xmm2, [esi + eax*8 + 16]
-	movhpd xmm0, [esi + ebx*8]
-	movhpd xmm1, [esi + ebx*8 + 8]
-	movhpd xmm2, [esi + ebx*8 + 16]		
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [esp + nb310_ix]
-	movapd xmm5, [esp + nb310_iy]
-	movapd xmm6, [esp + nb310_iz]
-
-	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
-
-	;# store dr 
-	movapd [esp + nb310_dx], xmm4
-	movapd [esp + nb310_dy], xmm5
-	movapd [esp + nb310_dz], xmm6
-	;# square it 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm4, xmm5
-	addpd xmm4, xmm6
-	;# rsq in xmm4 
-
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
-
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulpd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [esp + nb310_three]
-	mulpd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310_half]
-	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulpd xmm1, xmm5	
-	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
-
-	movapd xmm5, xmm1	;# copy of lu 
-	mulpd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [esp + nb310_three]
-	mulpd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310_half]
-	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulpd xmm2, xmm5	
-	mulpd xmm0, xmm2	;# xmm0=rinv 
-	
-	mulpd xmm4, xmm0	;# xmm4=r 
-	mulpd xmm4, [esp + nb310_tsc]
-
-	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
-	cvtpi2pd xmm5, mm6
-	subpd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
-	
-	movd mm0, eax	
-	movd mm1, ebx
-
-	mov  esi, [ebp + nb310_VFtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6		;# indices in eax/ebx 
-
-	movlpd xmm4, [esi + eax*8]	;# Y1	
-	movlpd xmm3, [esi + ebx*8]	;# Y2
-	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
-	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movlpd xmm6, [esi + eax*8 + 16]	;# G1
-	movlpd xmm3, [esi + ebx*8 + 16]	;# G2
-	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
-	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
-
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm7, [esp + nb310_two]	;# two*Heps2 
-	movapd xmm3, [esp + nb310_qq]
-	addpd  xmm7, xmm6
-	addpd  xmm7, xmm5 ;# xmm7=FF 
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-	mulpd  xmm3, xmm7 ;# fijC=FF*qq 
-	;# at this point mm5 contains vcoul and mm3 fijC 
-	
-	;# L-J 
-	movapd xmm4, xmm0
-	mulpd  xmm4, xmm0	;# xmm4=rinvsq 
-
-	;# increment vcoul - then we can get rid of mm5 
-	;# update vctot 
-	addpd  xmm5, [esp + nb310_vctot]
-
-	movapd xmm6, xmm4
-	mulpd  xmm6, xmm4
-
-	movapd [esp + nb310_vctot], xmm5 
-
-	mulpd  xmm6, xmm4	;# xmm6=rinvsix 
-	movapd xmm4, xmm6
-	mulpd  xmm4, xmm4	;# xmm4=rinvtwelve 
-	mulpd  xmm6, [esp + nb310_c6]
-	mulpd  xmm4, [esp + nb310_c12]
-	movapd xmm7, [esp + nb310_Vvdwtot]
-	addpd  xmm7, xmm4
-	mulpd  xmm4, [esp + nb310_twelve]
-	subpd  xmm7, xmm6
-	mulpd  xmm3, [esp + nb310_tsc]
-	mulpd  xmm6, [esp + nb310_six]
-	movapd [esp + nb310_Vvdwtot], xmm7
-	subpd  xmm4, xmm6
-	mulpd  xmm4, xmm0
-	subpd  xmm4, xmm3
-	mulpd  xmm4, xmm0
-
-	movapd xmm0, [esp + nb310_dx]
-	movapd xmm1, [esp + nb310_dy]
-	movapd xmm2, [esp + nb310_dz]
-
-	movd eax, mm0	
-	movd ebx, mm1
-
-	mov    edi, [ebp + nb310_faction]
-	mulpd  xmm0, xmm4
-	mulpd  xmm1, xmm4
-	mulpd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
-	;# now update f_i 
-	movapd xmm3, [esp + nb310_fix]
-	movapd xmm4, [esp + nb310_fiy]
-	movapd xmm5, [esp + nb310_fiz]
-	addpd  xmm3, xmm0
-	addpd  xmm4, xmm1
-	addpd  xmm5, xmm2
-	movapd [esp + nb310_fix], xmm3
-	movapd [esp + nb310_fiy], xmm4
-	movapd [esp + nb310_fiz], xmm5
-	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [edi + eax*8]
-	movlpd xmm4, [edi + eax*8 + 8]
-	movlpd xmm5, [edi + eax*8 + 16]
-	movhpd xmm3, [edi + ebx*8]
-	movhpd xmm4, [edi + ebx*8 + 8]
-	movhpd xmm5, [edi + ebx*8 + 16]
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-	movlpd [edi + eax*8], xmm3
-	movlpd [edi + eax*8 + 8], xmm4
-	movlpd [edi + eax*8 + 16], xmm5
-	movhpd [edi + ebx*8], xmm3
-	movhpd [edi + ebx*8 + 8], xmm4
-	movhpd [edi + ebx*8 + 16], xmm5
-		
-	;# should we do one more iteration? 
-	sub dword ptr [esp + nb310_innerk],  2
-	jl    .nb310_checksingle
-	jmp   .nb310_unroll_loop
-.nb310_checksingle:
-	mov   edx, [esp + nb310_innerk]
-	and   edx, 1
-	jnz    .nb310_dosingle
-	jmp    .nb310_updateouterdata
-.nb310_dosingle:
-	mov esi, [ebp + nb310_charge]
-	mov edi, [ebp + nb310_pos]
-	mov   ecx, [esp + nb310_innerjjnr]
-	mov   eax, [ecx]
-	
-	xorpd  xmm3, xmm3
-	movlpd xmm3, [esi + eax*8]
-	movapd xmm2, [esp + nb310_iq]
-	mulpd  xmm3, xmm2
-	movapd [esp + nb310_qq], xmm3	
-	
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	mov esi, [ebp + nb310_type]
-	mov eax, [esi + eax*4]
-	mov esi, [ebp + nb310_vdwparam]
-	shl eax, 1
-	mov edi, [esp + nb310_ntia]
-	add eax, edi
-
-	movlpd xmm6, [esi + eax*8]	;# c6a
-	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
-
-	xorpd xmm7, xmm7
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movapd [esp + nb310_c6], xmm4
-	movapd [esp + nb310_c12], xmm6
-	
-	mov esi, [ebp + nb310_pos]       ;# base of pos[] 
-
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-
-	;# move coordinates to xmm0-xmm2 	
-	movlpd xmm0, [esi + eax*8]
-	movlpd xmm1, [esi + eax*8 + 8]
-	movlpd xmm2, [esi + eax*8 + 16]
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [esp + nb310_ix]
-	movapd xmm5, [esp + nb310_iy]
-	movapd xmm6, [esp + nb310_iz]
-
-	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
-
-	;# store dr 
-	movapd [esp + nb310_dx], xmm4
-	movapd [esp + nb310_dy], xmm5
-	movapd [esp + nb310_dz], xmm6
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm4, xmm5
-	addsd xmm4, xmm6
-	;# rsq in xmm4 
-
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm2, xmm5	;# lu in low xmm2 
-
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulsd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [esp + nb310_three]
-	mulsd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310_half]
-	subsd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulsd xmm1, xmm5	
-	mulsd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
-
-	movapd xmm5, xmm1	;# copy of lu 
-	mulsd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [esp + nb310_three]
-	mulsd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310_half]
-	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulsd xmm2, xmm5	
-	mulsd xmm0, xmm2	;# xmm0=rinv 
-	
-	mulsd xmm4, xmm0	;# xmm4=r 
-	mulsd xmm4, [esp + nb310_tsc]
-
-	movd mm0, eax	
-	cvttsd2si eax, xmm4	;# mm6 = lu idx 
-	cvtsi2sd xmm5, eax
-	subsd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl eax, 2		;# idx *= 4 
-	
-	mov  esi, [ebp + nb310_VFtab]
-
-	movlpd xmm4, [esi + eax*8]	;# Y1 	
-	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1  
-
-	movlpd xmm6, [esi + eax*8 + 16]	;# G1	
-	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
-
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm7, [esp + nb310_two]	;# two*Heps2 
-	movapd xmm3, [esp + nb310_qq]
-	addsd  xmm7, xmm6
-	addsd  xmm7, xmm5 ;# xmm7=FF 
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-	mulsd  xmm3, xmm7 ;# fijC=FF*qq 
-	;# at this point mm5 contains vcoul and mm3 fijC 
-	
-	;# L-J 
-	movapd xmm4, xmm0
-	mulsd  xmm4, xmm0	;# xmm4=rinvsq 
-
-	;# increment vcoul - then we can get rid of mm5 
-	;# update vctot 
-	addsd  xmm5, [esp + nb310_vctot]
-
-	movapd xmm6, xmm4
-	mulsd  xmm6, xmm4
-
-	movlpd [esp + nb310_vctot], xmm5 
-
-	mulsd  xmm6, xmm4	;# xmm6=rinvsix 
-	movapd xmm4, xmm6
-	mulsd  xmm4, xmm4	;# xmm4=rinvtwelve 
-	mulsd  xmm6, [esp + nb310_c6]
-	mulsd  xmm4, [esp + nb310_c12]
-	movapd xmm7, [esp + nb310_Vvdwtot]
-	addsd  xmm7, xmm4
-	mulsd  xmm4, [esp + nb310_twelve]
-	subsd  xmm7, xmm6
-	mulsd  xmm3, [esp + nb310_tsc]
-	mulsd  xmm6, [esp + nb310_six]
-	movlpd [esp + nb310_Vvdwtot], xmm7
-	subsd  xmm4, xmm6
-	mulsd  xmm4, xmm0
-	subsd  xmm4, xmm3
-	mulsd  xmm4, xmm0
-
-	movapd xmm0, [esp + nb310_dx]
-	movapd xmm1, [esp + nb310_dy]
-	movapd xmm2, [esp + nb310_dz]
-
-	movd eax, mm0	
-
-	mov    edi, [ebp + nb310_faction]
-	mulsd  xmm0, xmm4
-	mulsd  xmm1, xmm4
-	mulsd  xmm2, xmm4
-	;# xmm0-xmm2 contains tx-tz (partial force) 
-	;# now update f_i 
-	movapd xmm3, [esp + nb310_fix]
-	movapd xmm4, [esp + nb310_fiy]
-	movapd xmm5, [esp + nb310_fiz]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
-	movlpd [esp + nb310_fix], xmm3
-	movlpd [esp + nb310_fiy], xmm4
-	movlpd [esp + nb310_fiz], xmm5
-	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [edi + eax*8]
-	movlpd xmm4, [edi + eax*8 + 8]
-	movlpd xmm5, [edi + eax*8 + 16]
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-	movlpd [edi + eax*8], xmm3
-	movlpd [edi + eax*8 + 8], xmm4
-	movlpd [edi + eax*8 + 16], xmm5
-		
-.nb310_updateouterdata:
-	mov   ecx, [esp + nb310_ii3]
-	mov   edi, [ebp + nb310_faction]
-	mov   esi, [ebp + nb310_fshift]
-	mov   edx, [esp + nb310_is3]
-
-	;# accumulate i forces in xmm0, xmm1, xmm2 
-	movapd xmm0, [esp + nb310_fix]
-	movapd xmm1, [esp + nb310_fiy]
-	movapd xmm2, [esp + nb310_fiz]
-
-	movhlps xmm3, xmm0
-	movhlps xmm4, xmm1
-	movhlps xmm5, xmm2
-	addsd  xmm0, xmm3
-	addsd  xmm1, xmm4
-	addsd  xmm2, xmm5 ;# sum is in low xmm0-xmm2 
-
-	;# increment i force 
-	movsd  xmm3, [edi + ecx*8]
-	movsd  xmm4, [edi + ecx*8 + 8]
-	movsd  xmm5, [edi + ecx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
-	movsd  [edi + ecx*8],     xmm3
-	movsd  [edi + ecx*8 + 8], xmm4
-	movsd  [edi + ecx*8 + 16], xmm5
-
-	;# increment fshift force  
-	movsd  xmm3, [esi + edx*8]
-	movsd  xmm4, [esi + edx*8 + 8]
-	movsd  xmm5, [esi + edx*8 + 16]
-	addsd  xmm3, xmm0
-	addsd  xmm4, xmm1
-	addsd  xmm5, xmm2
-	movsd  [esi + edx*8],     xmm3
-	movsd  [esi + edx*8 + 8], xmm4
-	movsd  [esi + edx*8 + 16], xmm5
-
-	;# get n from stack
-	mov esi, [esp + nb310_n]
-        ;# get group index for i particle 
-        mov   edx, [ebp + nb310_gid]      	;# base of gid[]
-        mov   edx, [edx + esi*4]		;# ggid=gid[n]
-
-	;# accumulate total potential energy and update it 
-	movapd xmm7, [esp + nb310_vctot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-
-	;# add earlier value from mem 
-	mov   eax, [ebp + nb310_Vc]
-	addsd xmm7, [eax + edx*8] 
-	;# move back to mem 
-	movsd [eax + edx*8], xmm7 
-	
-	;# accumulate total lj energy and update it 
-	movapd xmm7, [esp + nb310_Vvdwtot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-	
-	;# add earlier value from mem 
-	mov   eax, [ebp + nb310_Vvdw]
-	addsd xmm7, [eax + edx*8] 
-	;# move back to mem 
-	movsd [eax + edx*8], xmm7 
-	
-        ;# finish if last 
-        mov ecx, [esp + nb310_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb310_outerend
-
-        ;# not last, iterate outer loop once more!  
-        mov [esp + nb310_n], esi
-        jmp .nb310_outer
-.nb310_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [esp + nb310_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb310_end
-        ;# non-zero, do one more workunit
-        jmp   .nb310_threadloop
-.nb310_end:
-	emms
-
-	mov eax, [esp + nb310_nouter]
-	mov ebx, [esp + nb310_ninner]
-	mov ecx, [ebp + nb310_outeriter]
-	mov edx, [ebp + nb310_inneriter]
-	mov [ecx], eax
-	mov [edx], ebx
-
-	mov eax, [esp + nb310_salign]
-	add esp, eax
-	add esp, 408
-	pop edi
-	pop esi
-    	pop edx
-    	pop ecx
-    	pop ebx
-    	pop eax
-	leave
-	ret
+nb_kernel310_ia32_sse2: 
+_nb_kernel310_ia32_sse2:        
+.set nb310_p_nri, 8
+.set nb310_iinr, 12
+.set nb310_jindex, 16
+.set nb310_jjnr, 20
+.set nb310_shift, 24
+.set nb310_shiftvec, 28
+.set nb310_fshift, 32
+.set nb310_gid, 36
+.set nb310_pos, 40
+.set nb310_faction, 44
+.set nb310_charge, 48
+.set nb310_p_facel, 52
+.set nb310_argkrf, 56
+.set nb310_argcrf, 60
+.set nb310_Vc, 64
+.set nb310_type, 68
+.set nb310_p_ntype, 72
+.set nb310_vdwparam, 76
+.set nb310_Vvdw, 80
+.set nb310_p_tabscale, 84
+.set nb310_VFtab, 88
+.set nb310_invsqrta, 92
+.set nb310_dvda, 96
+.set nb310_p_gbtabscale, 100
+.set nb310_GBtab, 104
+.set nb310_p_nthreads, 108
+.set nb310_count, 112
+.set nb310_mtx, 116
+.set nb310_outeriter, 120
+.set nb310_inneriter, 124
+.set nb310_work, 128
+        ## stack offsets for local variables  
+        ## bottom of stack is cache-aligned for sse2 use 
+.set nb310_ix, 0
+.set nb310_iy, 16
+.set nb310_iz, 32
+.set nb310_iq, 48
+.set nb310_dx, 64
+.set nb310_dy, 80
+.set nb310_dz, 96
+.set nb310_two, 112
+.set nb310_six, 128
+.set nb310_twelve, 144
+.set nb310_tsc, 160
+.set nb310_qq, 176
+.set nb310_c6, 192
+.set nb310_c12, 208
+.set nb310_fscal, 224
+.set nb310_vctot, 240
+.set nb310_Vvdwtot, 256
+.set nb310_fix, 272
+.set nb310_fiy, 288
+.set nb310_fiz, 304
+.set nb310_half, 320
+.set nb310_three, 336
+.set nb310_is3, 352
+.set nb310_ii3, 356
+.set nb310_ntia, 360
+.set nb310_innerjjnr, 364
+.set nb310_innerk, 368
+.set nb310_n, 372
+.set nb310_nn1, 376
+.set nb310_nri, 380
+.set nb310_facel, 384                         ## uses 8 bytes
+.set nb310_ntype, 392
+.set nb310_nouter, 396
+.set nb310_ninner, 400
+.set nb310_salign, 404
+        pushl %ebp
+        movl %esp,%ebp
+        pushl %eax
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
+        pushl %esi
+        pushl %edi
+        subl $408,%esp          ## local stack space 
+        movl %esp,%eax
+        andl $0xf,%eax
+        subl %eax,%esp
+        movl %eax,nb310_salign(%esp)
+
+        emms
+
+        ## Move args passed by reference to stack
+        movl nb310_p_nri(%ebp),%ecx
+        movl nb310_p_facel(%ebp),%esi
+        movl nb310_p_ntype(%ebp),%edi
+        movl (%ecx),%ecx
+        movsd (%esi),%xmm7
+        movl (%edi),%edi
+        movl %ecx,nb310_nri(%esp)
+        movsd %xmm7,nb310_facel(%esp)
+        movl %edi,nb310_ntype(%esp)
+
+        ## zero iteration counters
+        movl $0,%eax
+        movl %eax,nb310_nouter(%esp)
+        movl %eax,nb310_ninner(%esp)
+
+
+        movl nb310_p_tabscale(%ebp),%eax
+        movsd (%eax),%xmm5
+        shufpd $0,%xmm5,%xmm5
+        movapd %xmm5,nb310_tsc(%esp)
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double 0.5 IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb310_half(%esp)
+        movl %ebx,nb310_half+4(%esp)
+        movsd nb310_half(%esp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## 1.0
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## 2.0
+        addpd  %xmm2,%xmm3      ## 3.0
+        movapd %xmm3,%xmm4
+        addpd  %xmm4,%xmm4      ## 6.0
+        movapd %xmm4,%xmm5
+        addpd  %xmm5,%xmm5      ## 12.0
+        movapd %xmm1,nb310_half(%esp)
+        movapd %xmm2,nb310_two(%esp)
+        movapd %xmm3,nb310_three(%esp)
+        movapd %xmm4,nb310_six(%esp)
+        movapd %xmm5,nb310_twelve(%esp)
+
+_nb_kernel310_ia32_sse2.nb310_threadloop: 
+        movl  nb310_count(%ebp),%esi            ## pointer to sync counter
+        movl  (%esi),%eax
+_nb_kernel310_ia32_sse2.nb310_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel310_ia32_sse2.nb310_spinlock
+
+        ## if(nn1>nri) nn1=nri
+        movl nb310_nri(%esp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb310_n(%esp)
+        movl %ebx,nb310_nn1(%esp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel310_ia32_sse2.nb310_outerstart
+        jmp _nb_kernel310_ia32_sse2.nb310_end
+
+_nb_kernel310_ia32_sse2.nb310_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb310_nouter(%esp),%ebx
+        movl %ebx,nb310_nouter(%esp)
+
+_nb_kernel310_ia32_sse2.nb310_outer: 
+        movl  nb310_shift(%ebp),%eax        ## eax = pointer into shift[] 
+        movl  (%eax,%esi,4),%ebx        ## ebx=shift[n] 
+
+        leal  (%ebx,%ebx,2),%ebx    ## ebx=3*is 
+        movl  %ebx,nb310_is3(%esp)      ## store is3 
+
+        movl  nb310_shiftvec(%ebp),%eax     ## eax = base of shiftvec[] 
+
+        movsd (%eax,%ebx,8),%xmm0
+        movsd 8(%eax,%ebx,8),%xmm1
+        movsd 16(%eax,%ebx,8),%xmm2
+
+        movl  nb310_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]        
+        movl  (%ecx,%esi,4),%ebx    ## ebx =ii 
+
+        movl  nb310_charge(%ebp),%edx
+        movsd (%edx,%ebx,8),%xmm3
+        mulsd nb310_facel(%esp),%xmm3
+        shufpd $0,%xmm3,%xmm3
+
+        movl  nb310_type(%ebp),%edx
+        movl  (%edx,%ebx,4),%edx
+        imull nb310_ntype(%esp),%edx
+        shll  %edx
+        movl  %edx,nb310_ntia(%esp)
+
+        leal  (%ebx,%ebx,2),%ebx        ## ebx = 3*ii=ii3 
+        movl  nb310_pos(%ebp),%eax      ## eax = base of pos[]  
+
+        addsd (%eax,%ebx,8),%xmm0
+        addsd 8(%eax,%ebx,8),%xmm1
+        addsd 16(%eax,%ebx,8),%xmm2
+
+        movapd %xmm3,nb310_iq(%esp)
+
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
+
+        movapd %xmm0,nb310_ix(%esp)
+        movapd %xmm1,nb310_iy(%esp)
+        movapd %xmm2,nb310_iz(%esp)
+
+        movl  %ebx,nb310_ii3(%esp)
+
+        ## clear vctot and i forces 
+        xorpd %xmm4,%xmm4
+        movapd %xmm4,nb310_vctot(%esp)
+        movapd %xmm4,nb310_Vvdwtot(%esp)
+        movapd %xmm4,nb310_fix(%esp)
+        movapd %xmm4,nb310_fiy(%esp)
+        movapd %xmm4,nb310_fiz(%esp)
+
+        movl  nb310_jindex(%ebp),%eax
+        movl  (%eax,%esi,4),%ecx             ## jindex[n] 
+        movl  4(%eax,%esi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
+
+        movl  nb310_pos(%ebp),%esi
+        movl  nb310_faction(%ebp),%edi
+        movl  nb310_jjnr(%ebp),%eax
+        shll  $2,%ecx
+        addl  %ecx,%eax
+        movl  %eax,nb310_innerjjnr(%esp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb310_ninner(%esp),%ecx
+        movl  %ecx,nb310_ninner(%esp)
+        addl  $0,%edx
+        movl  %edx,nb310_innerk(%esp)      ## number of innerloop atoms 
+        jge   _nb_kernel310_ia32_sse2.nb310_unroll_loop
+        jmp   _nb_kernel310_ia32_sse2.nb310_checksingle
+_nb_kernel310_ia32_sse2.nb310_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movl  nb310_innerjjnr(%esp),%edx       ## pointer to jjnr[k] 
+        movl  (%edx),%eax
+        movl  4(%edx),%ebx
+        addl $8,nb310_innerjjnr(%esp)             ## advance pointer (unrolled 2) 
+
+        movl nb310_charge(%ebp),%esi     ## base of charge[] 
+        movlpd (%esi,%eax,8),%xmm3
+        movhpd (%esi,%ebx,8),%xmm3
+
+        movapd nb310_iq(%esp),%xmm2
+        mulpd  %xmm2,%xmm3
+        movapd %xmm3,nb310_qq(%esp)
+
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movd  %ebx,%mm1
+
+        movl nb310_type(%ebp),%esi
+        movl (%esi,%eax,4),%eax
+        movl (%esi,%ebx,4),%ebx
+        movl nb310_vdwparam(%ebp),%esi
+        shll %eax
+        shll %ebx
+        movl nb310_ntia(%esp),%edi
+        addl %edi,%eax
+        addl %edi,%ebx
+
+        movlpd (%esi,%eax,8),%xmm6      ## c6a
+        movlpd (%esi,%ebx,8),%xmm7      ## c6b
+        movhpd 8(%esi,%eax,8),%xmm6     ## c6a c12a 
+        movhpd 8(%esi,%ebx,8),%xmm7     ## c6b c12b 
+
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
+
+        movd  %mm0,%eax
+        movd  %mm1,%ebx
+        movapd %xmm4,nb310_c6(%esp)
+        movapd %xmm6,nb310_c12(%esp)
+
+        movl nb310_pos(%ebp),%esi        ## base of pos[] 
+
+        leal  (%eax,%eax,2),%eax     ## replace jnr with j3 
+        leal  (%ebx,%ebx,2),%ebx
+
+        ## move two coordinates to xmm0-xmm2    
+        movlpd (%esi,%eax,8),%xmm0
+        movlpd 8(%esi,%eax,8),%xmm1
+        movlpd 16(%esi,%eax,8),%xmm2
+        movhpd (%esi,%ebx,8),%xmm0
+        movhpd 8(%esi,%ebx,8),%xmm1
+        movhpd 16(%esi,%ebx,8),%xmm2
+
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb310_ix(%esp),%xmm4
+        movapd nb310_iy(%esp),%xmm5
+        movapd nb310_iz(%esp),%xmm6
+
+        ## calc dr 
+        subpd %xmm0,%xmm4
+        subpd %xmm1,%xmm5
+        subpd %xmm2,%xmm6
+
+        ## store dr 
+        movapd %xmm4,nb310_dx(%esp)
+        movapd %xmm5,nb310_dy(%esp)
+        movapd %xmm6,nb310_dz(%esp)
+        ## square it 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm4
+        addpd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtpd2ps %xmm4,%xmm5
+        rsqrtps %xmm5,%xmm5
+        cvtps2pd %xmm5,%xmm2    ## lu in low xmm2 
+
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulpd %xmm2,%xmm2       ## lu*lu 
+        movapd nb310_three(%esp),%xmm1
+        mulpd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb310_half(%esp),%xmm0
+        subpd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm1
+        mulpd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulpd %xmm1,%xmm1       ## lu*lu 
+        movapd nb310_three(%esp),%xmm2
+        mulpd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb310_half(%esp),%xmm0
+        subpd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm2
+        mulpd %xmm2,%xmm0       ## xmm0=rinv 
+
+        mulpd %xmm0,%xmm4       ## xmm4=r 
+        mulpd nb310_tsc(%esp),%xmm4
+
+        cvttpd2pi %xmm4,%mm6    ## mm6 = lu idx 
+        cvtpi2pd %mm6,%xmm5
+        subpd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        pslld $2,%mm6           ## idx *= 4 
+
+        movd %eax,%mm0
+        movd %ebx,%mm1
+
+        movl nb310_VFtab(%ebp),%esi
+        movd %mm6,%eax
+        psrlq $32,%mm6
+        movd %mm6,%ebx          ## indices in eax/ebx 
+
+        movlpd (%esi,%eax,8),%xmm4      ## Y1   
+        movlpd (%esi,%ebx,8),%xmm3      ## Y2
+        movhpd 8(%esi,%eax,8),%xmm4     ## Y1 F1        
+        movhpd 8(%esi,%ebx,8),%xmm3     ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+        movlpd 16(%esi,%eax,8),%xmm6    ## G1
+        movlpd 16(%esi,%ebx,8),%xmm3    ## G2
+        movhpd 24(%esi,%eax,8),%xmm6    ## G1 H1        
+        movhpd 24(%esi,%ebx,8),%xmm3    ## G2 H2 
+
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulpd  nb310_two(%esp),%xmm7    ## two*Heps2 
+        movapd nb310_qq(%esp),%xmm3
+        addpd  %xmm6,%xmm7
+        addpd  %xmm5,%xmm7 ## xmm7=FF 
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+        mulpd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        mulpd  %xmm7,%xmm3 ## fijC=FF*qq 
+        ## at this point mm5 contains vcoul and mm3 fijC 
+
+        ## L-J 
+        movapd %xmm0,%xmm4
+        mulpd  %xmm0,%xmm4      ## xmm4=rinvsq 
+
+        ## increment vcoul - then we can get rid of mm5 
+        ## update vctot 
+        addpd  nb310_vctot(%esp),%xmm5
+
+        movapd %xmm4,%xmm6
+        mulpd  %xmm4,%xmm6
+
+        movapd %xmm5,nb310_vctot(%esp)
+
+        mulpd  %xmm4,%xmm6      ## xmm6=rinvsix 
+        movapd %xmm6,%xmm4
+        mulpd  %xmm4,%xmm4      ## xmm4=rinvtwelve 
+        mulpd  nb310_c6(%esp),%xmm6
+        mulpd  nb310_c12(%esp),%xmm4
+        movapd nb310_Vvdwtot(%esp),%xmm7
+        addpd  %xmm4,%xmm7
+        mulpd  nb310_twelve(%esp),%xmm4
+        subpd  %xmm6,%xmm7
+        mulpd  nb310_tsc(%esp),%xmm3
+        mulpd  nb310_six(%esp),%xmm6
+        movapd %xmm7,nb310_Vvdwtot(%esp)
+        subpd  %xmm6,%xmm4
+        mulpd  %xmm0,%xmm4
+        subpd  %xmm3,%xmm4
+        mulpd  %xmm0,%xmm4
+
+        movapd nb310_dx(%esp),%xmm0
+        movapd nb310_dy(%esp),%xmm1
+        movapd nb310_dz(%esp),%xmm2
+
+        movd %mm0,%eax
+        movd %mm1,%ebx
+
+        movl   nb310_faction(%ebp),%edi
+        mulpd  %xmm4,%xmm0
+        mulpd  %xmm4,%xmm1
+        mulpd  %xmm4,%xmm2
+        ## xmm0-xmm2 contains tx-tz (partial force) 
+        ## now update f_i 
+        movapd nb310_fix(%esp),%xmm3
+        movapd nb310_fiy(%esp),%xmm4
+        movapd nb310_fiz(%esp),%xmm5
+        addpd  %xmm0,%xmm3
+        addpd  %xmm1,%xmm4
+        addpd  %xmm2,%xmm5
+        movapd %xmm3,nb310_fix(%esp)
+        movapd %xmm4,nb310_fiy(%esp)
+        movapd %xmm5,nb310_fiz(%esp)
+        ## the fj's - start by accumulating forces from memory 
+        movlpd (%edi,%eax,8),%xmm3
+        movlpd 8(%edi,%eax,8),%xmm4
+        movlpd 16(%edi,%eax,8),%xmm5
+        movhpd (%edi,%ebx,8),%xmm3
+        movhpd 8(%edi,%ebx,8),%xmm4
+        movhpd 16(%edi,%ebx,8),%xmm5
+        subpd %xmm0,%xmm3
+        subpd %xmm1,%xmm4
+        subpd %xmm2,%xmm5
+        movlpd %xmm3,(%edi,%eax,8)
+        movlpd %xmm4,8(%edi,%eax,8)
+        movlpd %xmm5,16(%edi,%eax,8)
+        movhpd %xmm3,(%edi,%ebx,8)
+        movhpd %xmm4,8(%edi,%ebx,8)
+        movhpd %xmm5,16(%edi,%ebx,8)
+
+        ## should we do one more iteration? 
+        subl $2,nb310_innerk(%esp)
+        jl    _nb_kernel310_ia32_sse2.nb310_checksingle
+        jmp   _nb_kernel310_ia32_sse2.nb310_unroll_loop
+_nb_kernel310_ia32_sse2.nb310_checksingle: 
+        movl  nb310_innerk(%esp),%edx
+        andl  $1,%edx
+        jnz    _nb_kernel310_ia32_sse2.nb310_dosingle
+        jmp    _nb_kernel310_ia32_sse2.nb310_updateouterdata
+_nb_kernel310_ia32_sse2.nb310_dosingle: 
+        movl nb310_charge(%ebp),%esi
+        movl nb310_pos(%ebp),%edi
+        movl  nb310_innerjjnr(%esp),%ecx
+        movl  (%ecx),%eax
+
+        xorpd  %xmm3,%xmm3
+        movlpd (%esi,%eax,8),%xmm3
+        movapd nb310_iq(%esp),%xmm2
+        mulpd  %xmm2,%xmm3
+        movapd %xmm3,nb310_qq(%esp)
+
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movl nb310_type(%ebp),%esi
+        movl (%esi,%eax,4),%eax
+        movl nb310_vdwparam(%ebp),%esi
+        shll %eax
+        movl nb310_ntia(%esp),%edi
+        addl %edi,%eax
+
+        movlpd (%esi,%eax,8),%xmm6      ## c6a
+        movhpd 8(%esi,%eax,8),%xmm6     ## c6a c12a 
+
+        xorpd %xmm7,%xmm7
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
+
+        movd  %mm0,%eax
+        movapd %xmm4,nb310_c6(%esp)
+        movapd %xmm6,nb310_c12(%esp)
+
+        movl nb310_pos(%ebp),%esi        ## base of pos[] 
+
+        leal  (%eax,%eax,2),%eax     ## replace jnr with j3 
+
+        ## move coordinates to xmm0-xmm2        
+        movlpd (%esi,%eax,8),%xmm0
+        movlpd 8(%esi,%eax,8),%xmm1
+        movlpd 16(%esi,%eax,8),%xmm2
+
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb310_ix(%esp),%xmm4
+        movapd nb310_iy(%esp),%xmm5
+        movapd nb310_iz(%esp),%xmm6
+
+        ## calc dr 
+        subsd %xmm0,%xmm4
+        subsd %xmm1,%xmm5
+        subsd %xmm2,%xmm6
+
+        ## store dr 
+        movapd %xmm4,nb310_dx(%esp)
+        movapd %xmm5,nb310_dy(%esp)
+        movapd %xmm6,nb310_dz(%esp)
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm4
+        addsd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtsd2ss %xmm4,%xmm5
+        rsqrtss %xmm5,%xmm5
+        cvtss2sd %xmm5,%xmm2    ## lu in low xmm2 
+
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulsd %xmm2,%xmm2       ## lu*lu 
+        movapd nb310_three(%esp),%xmm1
+        mulsd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb310_half(%esp),%xmm0
+        subsd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm1
+        mulsd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulsd %xmm1,%xmm1       ## lu*lu 
+        movapd nb310_three(%esp),%xmm2
+        mulsd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb310_half(%esp),%xmm0
+        subsd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm2
+        mulsd %xmm2,%xmm0       ## xmm0=rinv 
+
+        mulsd %xmm0,%xmm4       ## xmm4=r 
+        mulsd nb310_tsc(%esp),%xmm4
+
+        movd %eax,%mm0
+        cvttsd2si %xmm4,%eax    ## mm6 = lu idx 
+        cvtsi2sd %eax,%xmm5
+        subsd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%eax            ## idx *= 4 
+
+        movl nb310_VFtab(%ebp),%esi
+
+        movlpd (%esi,%eax,8),%xmm4      ## Y1   
+        movhpd 8(%esi,%eax,8),%xmm4     ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1  
+
+        movlpd 16(%esi,%eax,8),%xmm6    ## G1   
+        movhpd 24(%esi,%eax,8),%xmm6    ## G1 H1        
+
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulsd  nb310_two(%esp),%xmm7    ## two*Heps2 
+        movapd nb310_qq(%esp),%xmm3
+        addsd  %xmm6,%xmm7
+        addsd  %xmm5,%xmm7 ## xmm7=FF 
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+        mulsd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        mulsd  %xmm7,%xmm3 ## fijC=FF*qq 
+        ## at this point mm5 contains vcoul and mm3 fijC 
+
+        ## L-J 
+        movapd %xmm0,%xmm4
+        mulsd  %xmm0,%xmm4      ## xmm4=rinvsq 
+
+        ## increment vcoul - then we can get rid of mm5 
+        ## update vctot 
+        addsd  nb310_vctot(%esp),%xmm5
+
+        movapd %xmm4,%xmm6
+        mulsd  %xmm4,%xmm6
+
+        movlpd %xmm5,nb310_vctot(%esp)
+
+        mulsd  %xmm4,%xmm6      ## xmm6=rinvsix 
+        movapd %xmm6,%xmm4
+        mulsd  %xmm4,%xmm4      ## xmm4=rinvtwelve 
+        mulsd  nb310_c6(%esp),%xmm6
+        mulsd  nb310_c12(%esp),%xmm4
+        movapd nb310_Vvdwtot(%esp),%xmm7
+        addsd  %xmm4,%xmm7
+        mulsd  nb310_twelve(%esp),%xmm4
+        subsd  %xmm6,%xmm7
+        mulsd  nb310_tsc(%esp),%xmm3
+        mulsd  nb310_six(%esp),%xmm6
+        movlpd %xmm7,nb310_Vvdwtot(%esp)
+        subsd  %xmm6,%xmm4
+        mulsd  %xmm0,%xmm4
+        subsd  %xmm3,%xmm4
+        mulsd  %xmm0,%xmm4
+
+        movapd nb310_dx(%esp),%xmm0
+        movapd nb310_dy(%esp),%xmm1
+        movapd nb310_dz(%esp),%xmm2
+
+        movd %mm0,%eax
+
+        movl   nb310_faction(%ebp),%edi
+        mulsd  %xmm4,%xmm0
+        mulsd  %xmm4,%xmm1
+        mulsd  %xmm4,%xmm2
+        ## xmm0-xmm2 contains tx-tz (partial force) 
+        ## now update f_i 
+        movapd nb310_fix(%esp),%xmm3
+        movapd nb310_fiy(%esp),%xmm4
+        movapd nb310_fiz(%esp),%xmm5
+        addsd  %xmm0,%xmm3
+        addsd  %xmm1,%xmm4
+        addsd  %xmm2,%xmm5
+        movlpd %xmm3,nb310_fix(%esp)
+        movlpd %xmm4,nb310_fiy(%esp)
+        movlpd %xmm5,nb310_fiz(%esp)
+        ## the fj's - start by accumulating forces from memory 
+        movlpd (%edi,%eax,8),%xmm3
+        movlpd 8(%edi,%eax,8),%xmm4
+        movlpd 16(%edi,%eax,8),%xmm5
+        subsd %xmm0,%xmm3
+        subsd %xmm1,%xmm4
+        subsd %xmm2,%xmm5
+        movlpd %xmm3,(%edi,%eax,8)
+        movlpd %xmm4,8(%edi,%eax,8)
+        movlpd %xmm5,16(%edi,%eax,8)
+
+_nb_kernel310_ia32_sse2.nb310_updateouterdata: 
+        movl  nb310_ii3(%esp),%ecx
+        movl  nb310_faction(%ebp),%edi
+        movl  nb310_fshift(%ebp),%esi
+        movl  nb310_is3(%esp),%edx
+
+        ## accumulate i forces in xmm0, xmm1, xmm2 
+        movapd nb310_fix(%esp),%xmm0
+        movapd nb310_fiy(%esp),%xmm1
+        movapd nb310_fiz(%esp),%xmm2
+
+        movhlps %xmm0,%xmm3
+        movhlps %xmm1,%xmm4
+        movhlps %xmm2,%xmm5
+        addsd  %xmm3,%xmm0
+        addsd  %xmm4,%xmm1
+        addsd  %xmm5,%xmm2 ## sum is in low xmm0-xmm2 
+
+        ## increment i force 
+        movsd  (%edi,%ecx,8),%xmm3
+        movsd  8(%edi,%ecx,8),%xmm4
+        movsd  16(%edi,%ecx,8),%xmm5
+        addsd  %xmm0,%xmm3
+        addsd  %xmm1,%xmm4
+        addsd  %xmm2,%xmm5
+        movsd  %xmm3,(%edi,%ecx,8)
+        movsd  %xmm4,8(%edi,%ecx,8)
+        movsd  %xmm5,16(%edi,%ecx,8)
+
+        ## increment fshift force  
+        movsd  (%esi,%edx,8),%xmm3
+        movsd  8(%esi,%edx,8),%xmm4
+        movsd  16(%esi,%edx,8),%xmm5
+        addsd  %xmm0,%xmm3
+        addsd  %xmm1,%xmm4
+        addsd  %xmm2,%xmm5
+        movsd  %xmm3,(%esi,%edx,8)
+        movsd  %xmm4,8(%esi,%edx,8)
+        movsd  %xmm5,16(%esi,%edx,8)
+
+        ## get n from stack
+        movl nb310_n(%esp),%esi
+        ## get group index for i particle 
+        movl  nb310_gid(%ebp),%edx              ## base of gid[]
+        movl  (%edx,%esi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total potential energy and update it 
+        movapd nb310_vctot(%esp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movl  nb310_Vc(%ebp),%eax
+        addsd (%eax,%edx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%eax,%edx,8)
+
+        ## accumulate total lj energy and update it 
+        movapd nb310_Vvdwtot(%esp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movl  nb310_Vvdw(%ebp),%eax
+        addsd (%eax,%edx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%eax,%edx,8)
+
+        ## finish if last 
+        movl nb310_nn1(%esp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel310_ia32_sse2.nb310_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb310_n(%esp)
+        jmp _nb_kernel310_ia32_sse2.nb310_outer
+_nb_kernel310_ia32_sse2.nb310_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb310_nri(%esp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel310_ia32_sse2.nb310_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel310_ia32_sse2.nb310_threadloop
+_nb_kernel310_ia32_sse2.nb310_end: 
+        emms
+
+        movl nb310_nouter(%esp),%eax
+        movl nb310_ninner(%esp),%ebx
+        movl nb310_outeriter(%ebp),%ecx
+        movl nb310_inneriter(%ebp),%edx
+        movl %eax,(%ecx)
+        movl %ebx,(%edx)
+
+        movl nb310_salign(%esp),%eax
+        addl %eax,%esp
+        addl $408,%esp
+        popl %edi
+        popl %esi
+        popl %edx
+        popl %ecx
+        popl %ebx
+        popl %eax
+        leave
+        ret
 
 
 
 
 .globl nb_kernel310nf_ia32_sse2
 .globl _nb_kernel310nf_ia32_sse2
-nb_kernel310nf_ia32_sse2:	
-_nb_kernel310nf_ia32_sse2:	
-.equiv          nb310nf_p_nri,          8
-.equiv          nb310nf_iinr,           12
-.equiv          nb310nf_jindex,         16
-.equiv          nb310nf_jjnr,           20
-.equiv          nb310nf_shift,          24
-.equiv          nb310nf_shiftvec,       28
-.equiv          nb310nf_fshift,         32
-.equiv          nb310nf_gid,            36
-.equiv          nb310nf_pos,            40
-.equiv          nb310nf_faction,        44
-.equiv          nb310nf_charge,         48
-.equiv          nb310nf_p_facel,        52
-.equiv          nb310nf_argkrf,         56
-.equiv          nb310nf_argcrf,         60
-.equiv          nb310nf_Vc,             64
-.equiv          nb310nf_type,           68
-.equiv          nb310nf_p_ntype,        72
-.equiv          nb310nf_vdwparam,       76
-.equiv          nb310nf_Vvdw,           80
-.equiv          nb310nf_p_tabscale,     84
-.equiv          nb310nf_VFtab,          88
-.equiv          nb310nf_invsqrta,       92
-.equiv          nb310nf_dvda,           96
-.equiv          nb310nf_p_gbtabscale,   100
-.equiv          nb310nf_GBtab,          104
-.equiv          nb310nf_p_nthreads,     108
-.equiv          nb310nf_count,          112
-.equiv          nb310nf_mtx,            116
-.equiv          nb310nf_outeriter,      120
-.equiv          nb310nf_inneriter,      124
-.equiv          nb310nf_work,           128
-	;# stack offsets for local variables  
-	;# bottom of stack is cache-aligned for sse use 
-.equiv          nb310nf_ix,             0
-.equiv          nb310nf_iy,             16
-.equiv          nb310nf_iz,             32
-.equiv          nb310nf_iq,             48
-.equiv          nb310nf_tsc,            64
-.equiv          nb310nf_qq,             80
-.equiv          nb310nf_c6,             96
-.equiv          nb310nf_c12,            112
-.equiv          nb310nf_vctot,          128
-.equiv          nb310nf_Vvdwtot,        144
-.equiv          nb310nf_half,           160
-.equiv          nb310nf_three,          176
-.equiv          nb310nf_is3,            192
-.equiv          nb310nf_ii3,            196
-.equiv          nb310nf_ntia,           200
-.equiv          nb310nf_innerjjnr,      204
-.equiv          nb310nf_innerk,         208
-.equiv          nb310nf_n,              212
-.equiv          nb310nf_nn1,            216
-.equiv          nb310nf_nri,            220
-.equiv          nb310nf_facel,          224   ;# uses 8 bytes
-.equiv          nb310nf_ntype,          232
-.equiv          nb310nf_nouter,         236
-.equiv          nb310nf_ninner,         240
-.equiv          nb310nf_salign,         244
-	push ebp
-	mov ebp,esp	
-    	push eax
-    	push ebx
-    	push ecx
-    	push edx
-	push esi
-	push edi
-	sub esp, 248		;# local stack space 
-	mov  eax, esp
-	and  eax, 0xf
-	sub esp, eax
-	mov [esp + nb310nf_salign], eax
+nb_kernel310nf_ia32_sse2:       
+_nb_kernel310nf_ia32_sse2:      
+.set nb310nf_p_nri, 8
+.set nb310nf_iinr, 12
+.set nb310nf_jindex, 16
+.set nb310nf_jjnr, 20
+.set nb310nf_shift, 24
+.set nb310nf_shiftvec, 28
+.set nb310nf_fshift, 32
+.set nb310nf_gid, 36
+.set nb310nf_pos, 40
+.set nb310nf_faction, 44
+.set nb310nf_charge, 48
+.set nb310nf_p_facel, 52
+.set nb310nf_argkrf, 56
+.set nb310nf_argcrf, 60
+.set nb310nf_Vc, 64
+.set nb310nf_type, 68
+.set nb310nf_p_ntype, 72
+.set nb310nf_vdwparam, 76
+.set nb310nf_Vvdw, 80
+.set nb310nf_p_tabscale, 84
+.set nb310nf_VFtab, 88
+.set nb310nf_invsqrta, 92
+.set nb310nf_dvda, 96
+.set nb310nf_p_gbtabscale, 100
+.set nb310nf_GBtab, 104
+.set nb310nf_p_nthreads, 108
+.set nb310nf_count, 112
+.set nb310nf_mtx, 116
+.set nb310nf_outeriter, 120
+.set nb310nf_inneriter, 124
+.set nb310nf_work, 128
+        ## stack offsets for local variables  
+        ## bottom of stack is cache-aligned for sse use 
+.set nb310nf_ix, 0
+.set nb310nf_iy, 16
+.set nb310nf_iz, 32
+.set nb310nf_iq, 48
+.set nb310nf_tsc, 64
+.set nb310nf_qq, 80
+.set nb310nf_c6, 96
+.set nb310nf_c12, 112
+.set nb310nf_vctot, 128
+.set nb310nf_Vvdwtot, 144
+.set nb310nf_half, 160
+.set nb310nf_three, 176
+.set nb310nf_is3, 192
+.set nb310nf_ii3, 196
+.set nb310nf_ntia, 200
+.set nb310nf_innerjjnr, 204
+.set nb310nf_innerk, 208
+.set nb310nf_n, 212
+.set nb310nf_nn1, 216
+.set nb310nf_nri, 220
+.set nb310nf_facel, 224                       ## uses 8 bytes
+.set nb310nf_ntype, 232
+.set nb310nf_nouter, 236
+.set nb310nf_ninner, 240
+.set nb310nf_salign, 244
+        pushl %ebp
+        movl %esp,%ebp
+        pushl %eax
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
+        pushl %esi
+        pushl %edi
+        subl $248,%esp          ## local stack space 
+        movl %esp,%eax
+        andl $0xf,%eax
+        subl %eax,%esp
+        movl %eax,nb310nf_salign(%esp)
 
-	emms
+        emms
 
-	;# Move args passed by reference to stack
-	mov ecx, [ebp + nb310nf_p_nri]
-	mov esi, [ebp + nb310nf_p_facel]
-	mov edi, [ebp + nb310nf_p_ntype]
-	mov ecx, [ecx]
-	movsd xmm7, [esi]
-	mov edi, [edi]
-	mov [esp + nb310nf_nri], ecx
-	movsd [esp + nb310nf_facel], xmm7
-	mov [esp + nb310nf_ntype], edi
+        ## Move args passed by reference to stack
+        movl nb310nf_p_nri(%ebp),%ecx
+        movl nb310nf_p_facel(%ebp),%esi
+        movl nb310nf_p_ntype(%ebp),%edi
+        movl (%ecx),%ecx
+        movsd (%esi),%xmm7
+        movl (%edi),%edi
+        movl %ecx,nb310nf_nri(%esp)
+        movsd %xmm7,nb310nf_facel(%esp)
+        movl %edi,nb310nf_ntype(%esp)
 
-	;# zero iteration counters
-	mov eax, 0
-	mov [esp + nb310nf_nouter], eax
-	mov [esp + nb310nf_ninner], eax
+        ## zero iteration counters
+        movl $0,%eax
+        movl %eax,nb310nf_nouter(%esp)
+        movl %eax,nb310nf_ninner(%esp)
 
 
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double 0.5 IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [esp + nb310nf_half], eax
-	mov [esp + nb310nf_half + 4], ebx
-	movsd xmm1, [esp + nb310nf_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# 1.0
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# 2.0
-	addpd  xmm3, xmm2	;# 3.0
-	movapd [esp + nb310nf_half], xmm1
-	movapd [esp + nb310nf_three], xmm3
-	mov eax, [ebp + nb310nf_p_tabscale]
-	movsd xmm5, [eax]
-	shufpd xmm5, xmm5, 0
-	movapd [esp + nb310nf_tsc], xmm5
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double 0.5 IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb310nf_half(%esp)
+        movl %ebx,nb310nf_half+4(%esp)
+        movsd nb310nf_half(%esp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## 1.0
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## 2.0
+        addpd  %xmm2,%xmm3      ## 3.0
+        movapd %xmm1,nb310nf_half(%esp)
+        movapd %xmm3,nb310nf_three(%esp)
+        movl nb310nf_p_tabscale(%ebp),%eax
+        movsd (%eax),%xmm5
+        shufpd $0,%xmm5,%xmm5
+        movapd %xmm5,nb310nf_tsc(%esp)
 
-.nb310nf_threadloop:
-        mov   esi, [ebp + nb310nf_count]        ;# pointer to sync counter
-        mov   eax, [esi]
-.nb310nf_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           	;# ebx=nn1=nn0+10
-        lock cmpxchg [esi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb310nf_spinlock
+_nb_kernel310nf_ia32_sse2.nb310nf_threadloop: 
+        movl  nb310nf_count(%ebp),%esi          ## pointer to sync counter
+        movl  (%esi),%eax
+_nb_kernel310nf_ia32_sse2.nb310nf_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                           ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel310nf_ia32_sse2.nb310nf_spinlock
 
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [esp + nb310nf_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [esp + nb310nf_n], eax
-        mov [esp + nb310nf_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb310nf_outerstart
-        jmp .nb310nf_end
+        ## if(nn1>nri) nn1=nri
+        movl nb310nf_nri(%esp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb310nf_n(%esp)
+        movl %ebx,nb310nf_nn1(%esp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel310nf_ia32_sse2.nb310nf_outerstart
+        jmp _nb_kernel310nf_ia32_sse2.nb310nf_end
 
-.nb310nf_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [esp + nb310nf_nouter]
-	mov [esp + nb310nf_nouter], ebx
+_nb_kernel310nf_ia32_sse2.nb310nf_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb310nf_nouter(%esp),%ebx
+        movl %ebx,nb310nf_nouter(%esp)
 
-.nb310nf_outer:
-	mov   eax, [ebp + nb310nf_shift]      ;# eax = pointer into shift[] 
-	mov   ebx, [eax+esi*4]		;# ebx=shift[n] 
-	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
+_nb_kernel310nf_ia32_sse2.nb310nf_outer: 
+        movl  nb310nf_shift(%ebp),%eax        ## eax = pointer into shift[] 
+        movl  (%eax,%esi,4),%ebx        ## ebx=shift[n] 
 
-	mov   eax, [ebp + nb310nf_shiftvec]   ;# eax = base of shiftvec[] 
+        leal  (%ebx,%ebx,2),%ebx    ## ebx=3*is 
 
-	movsd xmm0, [eax + ebx*8]
-	movsd xmm1, [eax + ebx*8 + 8]
-	movsd xmm2, [eax + ebx*8 + 16] 
+        movl  nb310nf_shiftvec(%ebp),%eax     ## eax = base of shiftvec[] 
 
-	mov   ecx, [ebp + nb310nf_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx+esi*4]	    ;# ebx =ii 
+        movsd (%eax,%ebx,8),%xmm0
+        movsd 8(%eax,%ebx,8),%xmm1
+        movsd 16(%eax,%ebx,8),%xmm2
 
-	mov   edx, [ebp + nb310nf_charge]
-	movsd xmm3, [edx + ebx*8]	
-	mulsd xmm3, [esp + nb310nf_facel]
-	shufpd xmm3, xmm3, 0
+        movl  nb310nf_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]      
+        movl  (%ecx,%esi,4),%ebx    ## ebx =ii 
 
-    	mov   edx, [ebp + nb310nf_type] 
-    	mov   edx, [edx + ebx*4]
-    	imul  edx, [esp + nb310nf_ntype]
-    	shl   edx, 1
-    	mov   [esp + nb310nf_ntia], edx
-		
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
-	mov   eax, [ebp + nb310nf_pos]    ;# eax = base of pos[]  
+        movl  nb310nf_charge(%ebp),%edx
+        movsd (%edx,%ebx,8),%xmm3
+        mulsd nb310nf_facel(%esp),%xmm3
+        shufpd $0,%xmm3,%xmm3
 
-	addsd xmm0, [eax + ebx*8]
-	addsd xmm1, [eax + ebx*8 + 8]
-	addsd xmm2, [eax + ebx*8 + 16]
+        movl  nb310nf_type(%ebp),%edx
+        movl  (%edx,%ebx,4),%edx
+        imull nb310nf_ntype(%esp),%edx
+        shll  %edx
+        movl  %edx,nb310nf_ntia(%esp)
 
-	movapd [esp + nb310nf_iq], xmm3
-	
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
+        leal  (%ebx,%ebx,2),%ebx        ## ebx = 3*ii=ii3 
+        movl  nb310nf_pos(%ebp),%eax      ## eax = base of pos[]  
 
-	movapd [esp + nb310nf_ix], xmm0
-	movapd [esp + nb310nf_iy], xmm1
-	movapd [esp + nb310nf_iz], xmm2
+        addsd (%eax,%ebx,8),%xmm0
+        addsd 8(%eax,%ebx,8),%xmm1
+        addsd 16(%eax,%ebx,8),%xmm2
 
-	mov   [esp + nb310nf_ii3], ebx
-	
-	;# clear vctot 
-	xorpd xmm4, xmm4
-	movapd [esp + nb310nf_vctot], xmm4
-	movapd [esp + nb310nf_Vvdwtot], xmm4
-	
-	mov   eax, [ebp + nb310nf_jindex]
-	mov   ecx, [eax+esi*4]	     		;# jindex[n] 
-	mov   edx, [eax + esi*4 + 4]	     	;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
+        movapd %xmm3,nb310nf_iq(%esp)
 
-	mov   esi, [ebp + nb310nf_pos]
-	mov   eax, [ebp + nb310nf_jjnr]
-	shl   ecx, 2
-	add   eax, ecx
-	mov   [esp + nb310nf_innerjjnr], eax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [esp + nb310nf_ninner]
-	mov   [esp + nb310nf_ninner], ecx
-	add   edx, 0
-	mov   [esp + nb310nf_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb310nf_unroll_loop
-	jmp   .nb310nf_checksingle
-.nb310nf_unroll_loop:	
-	;# twice unrolled innerloop here 
-	mov   edx, [esp + nb310nf_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [edx]	
-	mov   ebx, [edx + 4]              
-	add dword ptr [esp + nb310nf_innerjjnr],  8 ;# advance pointer (unrolled 2) 
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
 
-	mov esi, [ebp + nb310nf_charge]    ;# base of charge[] 
-	movlpd xmm3, [esi + eax*8]
-	movhpd xmm3, [esi + ebx*8]
+        movapd %xmm0,nb310nf_ix(%esp)
+        movapd %xmm1,nb310nf_iy(%esp)
+        movapd %xmm2,nb310nf_iz(%esp)
 
-	movapd xmm2, [esp + nb310nf_iq]
-	mulpd  xmm3, xmm2
-	movapd [esp + nb310nf_qq], xmm3	
-	
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	movd  mm1, ebx
-	
-	mov esi, [ebp + nb310nf_type]
-	mov eax, [esi + eax*4]
-	mov ebx, [esi + ebx*4]
-	mov esi, [ebp + nb310nf_vdwparam]
-	shl eax, 1
-	shl ebx, 1
-	mov edi, [esp + nb310nf_ntia]
-	add eax, edi
-	add ebx, edi
+        movl  %ebx,nb310nf_ii3(%esp)
 
-	movlpd xmm6, [esi + eax*8]	;# c6a
-	movlpd xmm7, [esi + ebx*8]	;# c6b
-	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
-	movhpd xmm7, [esi + ebx*8 + 8]	;# c6b c12b 
+        ## clear vctot 
+        xorpd %xmm4,%xmm4
+        movapd %xmm4,nb310nf_vctot(%esp)
+        movapd %xmm4,nb310nf_Vvdwtot(%esp)
 
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movd  ebx, mm1
-	movapd [esp + nb310nf_c6], xmm4
-	movapd [esp + nb310nf_c12], xmm6
-	
-	mov esi, [ebp + nb310nf_pos]       ;# base of pos[] 
+        movl  nb310nf_jindex(%ebp),%eax
+        movl  (%eax,%esi,4),%ecx                ## jindex[n] 
+        movl  4(%eax,%esi,4),%edx               ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
-	lea   ebx, [ebx + ebx*2]	
+        movl  nb310nf_pos(%ebp),%esi
+        movl  nb310nf_jjnr(%ebp),%eax
+        shll  $2,%ecx
+        addl  %ecx,%eax
+        movl  %eax,nb310nf_innerjjnr(%esp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb310nf_ninner(%esp),%ecx
+        movl  %ecx,nb310nf_ninner(%esp)
+        addl  $0,%edx
+        movl  %edx,nb310nf_innerk(%esp)      ## number of innerloop atoms 
+        jge   _nb_kernel310nf_ia32_sse2.nb310nf_unroll_loop
+        jmp   _nb_kernel310nf_ia32_sse2.nb310nf_checksingle
+_nb_kernel310nf_ia32_sse2.nb310nf_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movl  nb310nf_innerjjnr(%esp),%edx       ## pointer to jjnr[k] 
+        movl  (%edx),%eax
+        movl  4(%edx),%ebx
+        addl $8,nb310nf_innerjjnr(%esp)             ## advance pointer (unrolled 2) 
 
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [esi + eax*8]
-	movlpd xmm1, [esi + eax*8 + 8]
-	movlpd xmm2, [esi + eax*8 + 16]
-	movhpd xmm0, [esi + ebx*8]
-	movhpd xmm1, [esi + ebx*8 + 8]
-	movhpd xmm2, [esi + ebx*8 + 16]		
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [esp + nb310nf_ix]
-	movapd xmm5, [esp + nb310nf_iy]
-	movapd xmm6, [esp + nb310nf_iz]
+        movl nb310nf_charge(%ebp),%esi     ## base of charge[] 
+        movlpd (%esi,%eax,8),%xmm3
+        movhpd (%esi,%ebx,8),%xmm3
 
-	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
+        movapd nb310nf_iq(%esp),%xmm2
+        mulpd  %xmm2,%xmm3
+        movapd %xmm3,nb310nf_qq(%esp)
 
-	;# square it 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm4, xmm5
-	addpd xmm4, xmm6
-	;# rsq in xmm4 
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movd  %ebx,%mm1
 
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
+        movl nb310nf_type(%ebp),%esi
+        movl (%esi,%eax,4),%eax
+        movl (%esi,%ebx,4),%ebx
+        movl nb310nf_vdwparam(%ebp),%esi
+        shll %eax
+        shll %ebx
+        movl nb310nf_ntia(%esp),%edi
+        addl %edi,%eax
+        addl %edi,%ebx
 
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulpd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [esp + nb310nf_three]
-	mulpd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310nf_half]
-	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulpd xmm1, xmm5	
-	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+        movlpd (%esi,%eax,8),%xmm6      ## c6a
+        movlpd (%esi,%ebx,8),%xmm7      ## c6b
+        movhpd 8(%esi,%eax,8),%xmm6     ## c6a c12a 
+        movhpd 8(%esi,%ebx,8),%xmm7     ## c6b c12b 
 
-	movapd xmm5, xmm1	;# copy of lu 
-	mulpd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [esp + nb310nf_three]
-	mulpd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310nf_half]
-	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulpd xmm2, xmm5	
-	mulpd xmm0, xmm2	;# xmm0=rinv 
-	
-	mulpd xmm4, xmm0	;# xmm4=r 
-	mulpd xmm4, [esp + nb310nf_tsc]
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
 
-	cvttpd2pi mm6, xmm4	;# mm6 = lu idx 
-	cvtpi2pd xmm5, mm6
-	subpd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
-	
-	mov  esi, [ebp + nb310nf_VFtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6		;# indices in eax/ebx 
+        movd  %mm0,%eax
+        movd  %mm1,%ebx
+        movapd %xmm4,nb310nf_c6(%esp)
+        movapd %xmm6,nb310nf_c12(%esp)
 
-	movlpd xmm4, [esi + eax*8]	;# Y1	
-	movlpd xmm3, [esi + ebx*8]	;# Y2
-	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
-	movhpd xmm3, [esi + ebx*8 + 8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
+        movl nb310nf_pos(%ebp),%esi        ## base of pos[] 
 
-	movlpd xmm6, [esi + eax*8 + 16]	;# G1
-	movlpd xmm3, [esi + ebx*8 + 16]	;# G2
-	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
-	movhpd xmm3, [esi + ebx*8 + 24]	;# G2 H2 
+        leal  (%eax,%eax,2),%eax     ## replace jnr with j3 
+        leal  (%ebx,%ebx,2),%ebx
 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [esp + nb310nf_qq]
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-	;# at this point mm5 contains vcoul 
-	
-	;# L-J 
-	movapd xmm4, xmm0
-	mulpd  xmm4, xmm0	;# xmm4=rinvsq 
+        ## move two coordinates to xmm0-xmm2    
+        movlpd (%esi,%eax,8),%xmm0
+        movlpd 8(%esi,%eax,8),%xmm1
+        movlpd 16(%esi,%eax,8),%xmm2
+        movhpd (%esi,%ebx,8),%xmm0
+        movhpd 8(%esi,%ebx,8),%xmm1
+        movhpd 16(%esi,%ebx,8),%xmm2
 
-	;# increment vcoul - then we can get rid of mm5 
-	;# update vctot 
-	addpd  xmm5, [esp + nb310nf_vctot]
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb310nf_ix(%esp),%xmm4
+        movapd nb310nf_iy(%esp),%xmm5
+        movapd nb310nf_iz(%esp),%xmm6
 
-	movapd xmm6, xmm4
-	mulpd  xmm6, xmm4
+        ## calc dr 
+        subpd %xmm0,%xmm4
+        subpd %xmm1,%xmm5
+        subpd %xmm2,%xmm6
 
-	movapd [esp + nb310nf_vctot], xmm5 
+        ## square it 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm4
+        addpd %xmm6,%xmm4
+        ## rsq in xmm4 
 
-	mulpd  xmm6, xmm4	;# xmm6=rinvsix 
-	movapd xmm4, xmm6
-	mulpd  xmm4, xmm4	;# xmm4=rinvtwelve 
-	mulpd  xmm6, [esp + nb310nf_c6]
-	mulpd  xmm4, [esp + nb310nf_c12]
-	movapd xmm7, [esp + nb310nf_Vvdwtot]
-	addpd  xmm7, xmm4
-	subpd  xmm7, xmm6
-	movapd [esp + nb310nf_Vvdwtot], xmm7
-		
-	;# should we do one more iteration? 
-	sub dword ptr [esp + nb310nf_innerk],  2
-	jl    .nb310nf_checksingle
-	jmp   .nb310nf_unroll_loop
-.nb310nf_checksingle:
-	mov   edx, [esp + nb310nf_innerk]
-	and   edx, 1
-	jnz    .nb310nf_dosingle
-	jmp    .nb310nf_updateouterdata
-.nb310nf_dosingle:
-	mov esi, [ebp + nb310nf_charge]
-	mov edi, [ebp + nb310nf_pos]
-	mov   ecx, [esp + nb310nf_innerjjnr]
-	mov   eax, [ecx]
-	
-	xorpd  xmm3, xmm3
-	movlpd xmm3, [esi + eax*8]
-	movapd xmm2, [esp + nb310nf_iq]
-	mulpd  xmm3, xmm2
-	movapd [esp + nb310nf_qq], xmm3	
-	
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	mov esi, [ebp + nb310nf_type]
-	mov eax, [esi + eax*4]
-	mov esi, [ebp + nb310nf_vdwparam]
-	shl eax, 1
-	mov edi, [esp + nb310nf_ntia]
-	add eax, edi
+        cvtpd2ps %xmm4,%xmm5
+        rsqrtps %xmm5,%xmm5
+        cvtps2pd %xmm5,%xmm2    ## lu in low xmm2 
 
-	movlpd xmm6, [esi + eax*8]	;# c6a
-	movhpd xmm6, [esi + eax*8 + 8]	;# c6a c12a 
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulpd %xmm2,%xmm2       ## lu*lu 
+        movapd nb310nf_three(%esp),%xmm1
+        mulpd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb310nf_half(%esp),%xmm0
+        subpd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm1
+        mulpd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
 
-	xorpd xmm7, xmm7
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movapd [esp + nb310nf_c6], xmm4
-	movapd [esp + nb310nf_c12], xmm6
-	
-	mov esi, [ebp + nb310nf_pos]       ;# base of pos[] 
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulpd %xmm1,%xmm1       ## lu*lu 
+        movapd nb310nf_three(%esp),%xmm2
+        mulpd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb310nf_half(%esp),%xmm0
+        subpd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm2
+        mulpd %xmm2,%xmm0       ## xmm0=rinv 
 
-	lea   eax, [eax + eax*2]     ;# replace jnr with j3 
+        mulpd %xmm0,%xmm4       ## xmm4=r 
+        mulpd nb310nf_tsc(%esp),%xmm4
 
-	;# move coordinates to xmm0-xmm2 	
-	movlpd xmm0, [esi + eax*8]
-	movlpd xmm1, [esi + eax*8 + 8]
-	movlpd xmm2, [esi + eax*8 + 16]
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [esp + nb310nf_ix]
-	movapd xmm5, [esp + nb310nf_iy]
-	movapd xmm6, [esp + nb310nf_iz]
+        cvttpd2pi %xmm4,%mm6    ## mm6 = lu idx 
+        cvtpi2pd %mm6,%xmm5
+        subpd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
 
-	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
+        pslld $2,%mm6           ## idx *= 4 
 
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm4, xmm5
-	addsd xmm4, xmm6
-	;# rsq in xmm4 
+        movl nb310nf_VFtab(%ebp),%esi
+        movd %mm6,%eax
+        psrlq $32,%mm6
+        movd %mm6,%ebx          ## indices in eax/ebx 
 
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm2, xmm5	;# lu in low xmm2 
+        movlpd (%esi,%eax,8),%xmm4      ## Y1   
+        movlpd (%esi,%ebx,8),%xmm3      ## Y2
+        movhpd 8(%esi,%eax,8),%xmm4     ## Y1 F1        
+        movhpd 8(%esi,%ebx,8),%xmm3     ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
 
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulsd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [esp + nb310nf_three]
-	mulsd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310nf_half]
-	subsd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulsd xmm1, xmm5	
-	mulsd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+        movlpd 16(%esi,%eax,8),%xmm6    ## G1
+        movlpd 16(%esi,%ebx,8),%xmm3    ## G2
+        movhpd 24(%esi,%eax,8),%xmm6    ## G1 H1        
+        movhpd 24(%esi,%ebx,8),%xmm3    ## G2 H2 
 
-	movapd xmm5, xmm1	;# copy of lu 
-	mulsd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [esp + nb310nf_three]
-	mulsd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [esp + nb310nf_half]
-	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulsd xmm2, xmm5	
-	mulsd xmm0, xmm2	;# xmm0=rinv 
-	
-	mulsd xmm4, xmm0	;# xmm4=r 
-	mulsd xmm4, [esp + nb310nf_tsc]
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb310nf_qq(%esp),%xmm3
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+        mulpd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## at this point mm5 contains vcoul 
 
-	movd mm0, eax	
-	cvttsd2si eax, xmm4	;# mm6 = lu idx 
-	cvtsi2sd xmm5, eax
-	subsd xmm4, xmm5
-	movapd xmm1, xmm4	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl eax, 2		;# idx *= 4 
-	
-	mov  esi, [ebp + nb310nf_VFtab]
+        ## L-J 
+        movapd %xmm0,%xmm4
+        mulpd  %xmm0,%xmm4      ## xmm4=rinvsq 
 
-	movlpd xmm4, [esi + eax*8]	;# Y1 	
-	movhpd xmm4, [esi + eax*8 + 8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1  
+        ## increment vcoul - then we can get rid of mm5 
+        ## update vctot 
+        addpd  nb310nf_vctot(%esp),%xmm5
 
-	movlpd xmm6, [esi + eax*8 + 16]	;# G1	
-	movhpd xmm6, [esi + eax*8 + 24]	;# G1 H1 	
+        movapd %xmm4,%xmm6
+        mulpd  %xmm4,%xmm6
 
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [esp + nb310nf_qq]
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-	;# at this point mm5 contains vcoul 
-	
-	;# L-J 
-	movapd xmm4, xmm0
-	mulsd  xmm4, xmm0	;# xmm4=rinvsq 
+        movapd %xmm5,nb310nf_vctot(%esp)
 
-	;# increment vcoul - then we can get rid of mm5 
-	;# update vctot 
-	addsd  xmm5, [esp + nb310nf_vctot]
+        mulpd  %xmm4,%xmm6      ## xmm6=rinvsix 
+        movapd %xmm6,%xmm4
+        mulpd  %xmm4,%xmm4      ## xmm4=rinvtwelve 
+        mulpd  nb310nf_c6(%esp),%xmm6
+        mulpd  nb310nf_c12(%esp),%xmm4
+        movapd nb310nf_Vvdwtot(%esp),%xmm7
+        addpd  %xmm4,%xmm7
+        subpd  %xmm6,%xmm7
+        movapd %xmm7,nb310nf_Vvdwtot(%esp)
 
-	movapd xmm6, xmm4
-	mulsd  xmm6, xmm4
+        ## should we do one more iteration? 
+        subl $2,nb310nf_innerk(%esp)
+        jl    _nb_kernel310nf_ia32_sse2.nb310nf_checksingle
+        jmp   _nb_kernel310nf_ia32_sse2.nb310nf_unroll_loop
+_nb_kernel310nf_ia32_sse2.nb310nf_checksingle: 
+        movl  nb310nf_innerk(%esp),%edx
+        andl  $1,%edx
+        jnz    _nb_kernel310nf_ia32_sse2.nb310nf_dosingle
+        jmp    _nb_kernel310nf_ia32_sse2.nb310nf_updateouterdata
+_nb_kernel310nf_ia32_sse2.nb310nf_dosingle: 
+        movl nb310nf_charge(%ebp),%esi
+        movl nb310nf_pos(%ebp),%edi
+        movl  nb310nf_innerjjnr(%esp),%ecx
+        movl  (%ecx),%eax
 
-	movlpd [esp + nb310nf_vctot], xmm5 
+        xorpd  %xmm3,%xmm3
+        movlpd (%esi,%eax,8),%xmm3
+        movapd nb310nf_iq(%esp),%xmm2
+        mulpd  %xmm2,%xmm3
+        movapd %xmm3,nb310nf_qq(%esp)
 
-	mulsd  xmm6, xmm4	;# xmm6=rinvsix 
-	movapd xmm4, xmm6
-	mulsd  xmm4, xmm4	;# xmm4=rinvtwelve 
-	mulsd  xmm6, [esp + nb310nf_c6]
-	mulsd  xmm4, [esp + nb310nf_c12]
-	movapd xmm7, [esp + nb310nf_Vvdwtot]
-	addsd  xmm7, xmm4
-	subsd  xmm7, xmm6
-	movlpd [esp + nb310nf_Vvdwtot], xmm7
-		
-.nb310nf_updateouterdata:
-	;# get group index for i particle 
-	;# get n from stack
-	mov esi, [esp + nb310nf_n]
-        ;# get group index for i particle 
-        mov   edx, [ebp + nb310nf_gid]      	;# base of gid[]
-        mov   edx, [edx + esi*4]		;# ggid=gid[n]
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movl nb310nf_type(%ebp),%esi
+        movl (%esi,%eax,4),%eax
+        movl nb310nf_vdwparam(%ebp),%esi
+        shll %eax
+        movl nb310nf_ntia(%esp),%edi
+        addl %edi,%eax
 
-	;# accumulate total potential energy and update it 
-	movapd xmm7, [esp + nb310nf_vctot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
+        movlpd (%esi,%eax,8),%xmm6      ## c6a
+        movhpd 8(%esi,%eax,8),%xmm6     ## c6a c12a 
 
-	;# add earlier value from mem 
-	mov   eax, [ebp + nb310nf_Vc]
-	addsd xmm7, [eax + edx*8] 
-	;# move back to mem 
-	movsd [eax + edx*8], xmm7 
-	
-	;# accumulate total lj energy and update it 
-	movapd xmm7, [esp + nb310nf_Vvdwtot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-	
-	;# add earlier value from mem 
-	mov   eax, [ebp + nb310nf_Vvdw]
-	addsd xmm7, [eax + edx*8] 
-	;# move back to mem 
-	movsd [eax + edx*8], xmm7 
-	
-        ;# finish if last 
-        mov ecx, [esp + nb310nf_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb310nf_outerend
+        xorpd %xmm7,%xmm7
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
 
-        ;# not last, iterate outer loop once more!  
-        mov [esp + nb310nf_n], esi
-        jmp .nb310nf_outer
-.nb310nf_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [esp + nb310nf_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb310nf_end
-        ;# non-zero, do one more workunit
-        jmp   .nb310nf_threadloop
-.nb310nf_end:
-	emms
+        movd  %mm0,%eax
+        movapd %xmm4,nb310nf_c6(%esp)
+        movapd %xmm6,nb310nf_c12(%esp)
 
-	mov eax, [esp + nb310nf_nouter]
-	mov ebx, [esp + nb310nf_ninner]
-	mov ecx, [ebp + nb310nf_outeriter]
-	mov edx, [ebp + nb310nf_inneriter]
-	mov [ecx], eax
-	mov [edx], ebx
+        movl nb310nf_pos(%ebp),%esi        ## base of pos[] 
 
-	mov eax, [esp + nb310nf_salign]
-	add esp, eax
-	add esp, 248
-	pop edi
-	pop esi
-    	pop edx
-    	pop ecx
-    	pop ebx
-    	pop eax
-	leave
-	ret
+        leal  (%eax,%eax,2),%eax     ## replace jnr with j3 
+
+        ## move coordinates to xmm0-xmm2        
+        movlpd (%esi,%eax,8),%xmm0
+        movlpd 8(%esi,%eax,8),%xmm1
+        movlpd 16(%esi,%eax,8),%xmm2
+
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb310nf_ix(%esp),%xmm4
+        movapd nb310nf_iy(%esp),%xmm5
+        movapd nb310nf_iz(%esp),%xmm6
+
+        ## calc dr 
+        subsd %xmm0,%xmm4
+        subsd %xmm1,%xmm5
+        subsd %xmm2,%xmm6
+
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm4
+        addsd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtsd2ss %xmm4,%xmm5
+        rsqrtss %xmm5,%xmm5
+        cvtss2sd %xmm5,%xmm2    ## lu in low xmm2 
+
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulsd %xmm2,%xmm2       ## lu*lu 
+        movapd nb310nf_three(%esp),%xmm1
+        mulsd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb310nf_half(%esp),%xmm0
+        subsd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm1
+        mulsd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulsd %xmm1,%xmm1       ## lu*lu 
+        movapd nb310nf_three(%esp),%xmm2
+        mulsd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb310nf_half(%esp),%xmm0
+        subsd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm2
+        mulsd %xmm2,%xmm0       ## xmm0=rinv 
+
+        mulsd %xmm0,%xmm4       ## xmm4=r 
+        mulsd nb310nf_tsc(%esp),%xmm4
+
+        movd %eax,%mm0
+        cvttsd2si %xmm4,%eax    ## mm6 = lu idx 
+        cvtsi2sd %eax,%xmm5
+        subsd %xmm5,%xmm4
+        movapd %xmm4,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%eax            ## idx *= 4 
+
+        movl nb310nf_VFtab(%ebp),%esi
+
+        movlpd (%esi,%eax,8),%xmm4      ## Y1   
+        movhpd 8(%esi,%eax,8),%xmm4     ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1  
+
+        movlpd 16(%esi,%eax,8),%xmm6    ## G1   
+        movhpd 24(%esi,%eax,8),%xmm6    ## G1 H1        
+
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb310nf_qq(%esp),%xmm3
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+        mulsd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## at this point mm5 contains vcoul 
+
+        ## L-J 
+        movapd %xmm0,%xmm4
+        mulsd  %xmm0,%xmm4      ## xmm4=rinvsq 
+
+        ## increment vcoul - then we can get rid of mm5 
+        ## update vctot 
+        addsd  nb310nf_vctot(%esp),%xmm5
+
+        movapd %xmm4,%xmm6
+        mulsd  %xmm4,%xmm6
+
+        movlpd %xmm5,nb310nf_vctot(%esp)
+
+        mulsd  %xmm4,%xmm6      ## xmm6=rinvsix 
+        movapd %xmm6,%xmm4
+        mulsd  %xmm4,%xmm4      ## xmm4=rinvtwelve 
+        mulsd  nb310nf_c6(%esp),%xmm6
+        mulsd  nb310nf_c12(%esp),%xmm4
+        movapd nb310nf_Vvdwtot(%esp),%xmm7
+        addsd  %xmm4,%xmm7
+        subsd  %xmm6,%xmm7
+        movlpd %xmm7,nb310nf_Vvdwtot(%esp)
+
+_nb_kernel310nf_ia32_sse2.nb310nf_updateouterdata: 
+        ## get group index for i particle 
+        ## get n from stack
+        movl nb310nf_n(%esp),%esi
+        ## get group index for i particle 
+        movl  nb310nf_gid(%ebp),%edx            ## base of gid[]
+        movl  (%edx,%esi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total potential energy and update it 
+        movapd nb310nf_vctot(%esp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movl  nb310nf_Vc(%ebp),%eax
+        addsd (%eax,%edx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%eax,%edx,8)
+
+        ## accumulate total lj energy and update it 
+        movapd nb310nf_Vvdwtot(%esp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movl  nb310nf_Vvdw(%ebp),%eax
+        addsd (%eax,%edx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%eax,%edx,8)
+
+        ## finish if last 
+        movl nb310nf_nn1(%esp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel310nf_ia32_sse2.nb310nf_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb310nf_n(%esp)
+        jmp _nb_kernel310nf_ia32_sse2.nb310nf_outer
+_nb_kernel310nf_ia32_sse2.nb310nf_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb310nf_nri(%esp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel310nf_ia32_sse2.nb310nf_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel310nf_ia32_sse2.nb310nf_threadloop
+_nb_kernel310nf_ia32_sse2.nb310nf_end: 
+        emms
+
+        movl nb310nf_nouter(%esp),%eax
+        movl nb310nf_ninner(%esp),%ebx
+        movl nb310nf_outeriter(%ebp),%ecx
+        movl nb310nf_inneriter(%ebp),%edx
+        movl %eax,(%ecx)
+        movl %ebx,(%edx)
+
+        movl nb310nf_salign(%esp),%eax
+        addl %eax,%esp
+        addl $248,%esp
+        popl %edi
+        popl %esi
+        popl %edx
+        popl %ecx
+        popl %ebx
+        popl %eax
+        leave
+        ret
+
 
 

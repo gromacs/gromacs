@@ -1,4 +1,4 @@
-This directory contains AMD 3DNow! assembly implementations for some
+\This directory contains AMD 3DNow! assembly implementations for some
 of the most important Gromacs nonbonded functions.
 
 I no longer write new 3DNow loops for two reasons:
@@ -11,8 +11,17 @@ assembly (Portland and Microsoft don't support it), so they are
 coded entirely in assembly. This is slightly (10-15%) faster too.
 
 It is not as bad as it looks to edit them - search the net for a 
-tutorial on x86 assembly. The code is using the intel syntax instead
-of the old AT&T syntax employed in early versions of gcc.
+tutorial on x86 assembly. 
+
+Unfortunately we need to support BOTH AT&T as well as Intel syntax
+versions, because of braindead compilers and OS vendors. 
+For historical reasons (and sanity) I have done the editing in Intel
+syntax, which is stored in the *.intel_syntax.s files. These are
+then translated to AT&T syntax by the program intel2gas, and stored
+in the standard *.s files, which are used by default. 
+
+Currently, the only platform that absolutely NEEDS intel format is
+Windows using the NASM assembler.
 
 I've made pretty good use of registers, and frequently use them to
 save information needed several lines further down.
