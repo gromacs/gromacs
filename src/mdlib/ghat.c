@@ -45,6 +45,7 @@
 #include "physics.h"
 #include "shift_util.h"
 #include "xvgr.h"
+#include "fftgrid.h"
 
 void symmetrize_ghat(int nx,int ny,int nz,real ***ghat)
 {
