@@ -3,12 +3,12 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3.1_pre1, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.3)
+AM_INIT_AUTOMAKE(gromacs, 3.3.1_pre1)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
@@ -188,7 +188,7 @@ AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "with_external_lapack" = "yes"])
 
 
 AC_ARG_WITH(qmmm_gaussian,
- [  --with-qmmm-gaussian    use modified Gaussian0x for QM-MM (see website)],,with_qmmm_gaussian=no)
+ [  --without-qmmm-gaussian  Interface to mod. Gaussian0x for QM-MM (see website)],,with_qmmm_gaussian=yes)
 if test "$with_qmmm_gaussian" = "yes"; then
   AC_DEFINE(GMX_QMMM_GAUSSIAN,,[Use (hacked) Gaussian0x for QM-MM calculations])
   MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gaussian.lo"
@@ -576,31 +576,6 @@ fi
   fi
 
 # ok, cc understands assembly.
-# But does it understand the lock cmpxchg instruction (needed for atomicity on SMP)?
-  AC_MSG_CHECKING([whether as understands 'lock cmpxchg'])
-  if test "$enable_x86_64_sse" = "yes"; then
-    cat > conftest.s << EOF
-.intel_syntax noprefix 
-checkasm:
-        lock cmpxchg [[rsi]], ebx 
-        emms
-        ret
-EOF
-  else
-    cat > conftest.s << EOF
-.intel_syntax noprefix
-checkasm:
-        lock cmpxchg [[esi]], ebx
-        emms
-        ret
-EOF
-  fi
-    if AC_TRY_COMMAND($CC -c conftest.s); then
-      AC_MSG_RESULT([yes])
-    else
-      AC_MSG_RESULT([no]) 
-      AC_MSG_ERROR([Upgrade to binutils >= 2.12.1 (or disable assembly loops).])
-    fi
 #
 # If we are using double precision we need SSE2
   if test "$enable_float" = "no"; then
@@ -608,10 +583,9 @@ EOF
     if test "$enable_ia32_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports ia32 SSE2])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movupd xmm0,[[esp]]
+        movapd 32(%esi,%edx,8),%xmm4
         emms
         ret
 EOF
@@ -627,10 +601,9 @@ EOF
     if test "$enable_x86_64_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports X86_64 SSE2])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movupd xmm0,[[rsp]]
+	movapd 32(%rsi,%rdx,8),%xmm4
         emms
         ret
 EOF
@@ -647,10 +620,9 @@ EOF
     if test "$enable_ia32_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports ia32 SSE])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movups xmm0,[[esp]]
+	movaps 32(%esi,%edx,8),%xmm4
         emms
         ret
 EOF
@@ -666,10 +638,9 @@ EOF
     if test "$enable_x86_64_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports X86_64 SSE instructions])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movups xmm0,[[rsp]]
+        movaps 32(%rsi,%rdx,8),%xmm4
         emms
         ret
 EOF
@@ -684,10 +655,9 @@ EOF
     if test "$enable_ia32_3dnow" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports ia32 3DNow! instructions])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        pswapd mm0, mm0
+        pswapd %mm0, %mm0
         emms
         ret
 EOF
