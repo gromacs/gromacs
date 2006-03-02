@@ -1163,6 +1163,8 @@ xtc_get_next_frame_number(int fp,int natoms)
     int inp;  
 
     off = gmx_ftell(xdrfiles[fp+1]);
+    /* read one int just to make sure we dont read this frame but the next */
+    xdr_int(xdridptr[fp+1],&inp);
     while(xdr_int(xdridptr[fp+1],&inp))
     {
         if(inp == XTC_MAGIC)
@@ -1192,13 +1194,18 @@ xtc_get_next_frame_time(int fp,int natoms, bool * bOK)
     gmx_off_t off;
     int inp;  
     float time;
+    int off_next;
     *bOK = 0;
     
     if((off = gmx_ftell(xdrfiles[fp+1])) < 0){
       return -1;
     }
+    /* read one int just to make sure we dont read this frame but the next */
+    xdr_int(xdridptr[fp+1],&inp);
+    off_next = off;
     while(xdr_int(xdridptr[fp+1],&inp))
     {
+        off_next += sizeof(int);
         if(inp == XTC_MAGIC)
         {
             if(xdr_int(xdridptr[fp+1],&inp) && inp == natoms)
@@ -1459,6 +1466,7 @@ xtc_seek_time(real time, int fp, int natoms)
     gmx_off_t low = 0;
     gmx_off_t high,offset,pos;
     int res;
+    int dt_sign = 0;
 
   
     if(gmx_fseek(xdrfiles[fp+1],0,SEEK_END)){
@@ -1478,6 +1486,8 @@ xtc_seek_time(real time, int fp, int natoms)
    }
 
     dt = xtc_estimate_dt(fp,natoms,&bOK);
+      
+      
     
     if(!bOK)
     {
@@ -1490,17 +1500,37 @@ xtc_seek_time(real time, int fp, int natoms)
         if(!bOK)
         {
             return -1;
-        }
+        }else{
+	  if(dt > 0){
+	    if(dt_sign == -1){
+	      /* Found a place in the trajectory that has positive time step while
+		 other has negative time step */
+	      return -2;
+	    }
+	    dt_sign = 1;
+	  }else if(dt < 0){
+	    if(dt_sign == 1){
+	      /* Found a place in the trajectory that has positive time step while
+		 other has negative time step */
+	      return -2;
+	    }
+	    dt_sign = -1;
+	  }	  
+	}
         t = xtc_get_next_frame_time(fp,natoms,&bOK);
         if(!bOK)
         {
             return -1;
         }
 
-
-        if((t < time || t-time >= dt)  && abs(low-high) > header_size)
+	/* If we are before the target time and the time step is positive or 0, or we have
+	 after the target time and the time step is negative, or the difference between 
+	the current time and the target time is bigger than dt and above all the distance between high
+	and low is bigger than 1 frame, then do another step of binary search. Otherwise stop and check
+	if we reached the solution */
+        if((((t < time && dt_sign >= 0) || (t > time && dt_sign == -1)) || ((t-time) >= dt && dt_sign >= 0) || ((time-t) >= -dt && dt_sign < 0))  && (abs(low-high) > header_size))
         {
-            if(dt > 0)
+	  if(dt >= 0 && dt_sign != -1)
             {
                 if(t < time)
                 {
@@ -1510,18 +1540,21 @@ xtc_seek_time(real time, int fp, int natoms)
                 {
                     high = offset;      
                 }
-            }
-            else
+	    }
+	  else if(dt <= 0 && dt_sign == -1)
             {
-                if(t > time)
+	      if(t >= time)
                 {
-                    low = offset;      
+		  low = offset;      
                 }
-                else
+	      else
                 {
-                    high = offset;      
+		  high = offset;      
                 }
-            }
+	    }else{
+	      /* We should never reach here */
+	      return -1;
+	    }
             /* round to 4 bytes and subtract header*/
             offset = (((high+low)/2)/sizeof(int))*sizeof(int);
             if(gmx_fseek(xdrfiles[fp+1],offset,SEEK_SET)){
