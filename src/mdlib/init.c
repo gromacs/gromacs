@@ -85,7 +85,7 @@ void check_nnodes_top(char *fn,t_topology *top)
   if (bOld) {
     fprintf((stdlog != NULL) ? stdlog : stderr,
 	    "WARNING:\n"
-	    "You are using an old multiprocessor tpr file (%s).\n"
+	    "You are using an old multiprocessor tpr file.\n"
 	    "It has been converted back to a single processor topology file\n"
 	    "before further processing. In case of problems please make\n"
 	    "a new tpr file.\n",

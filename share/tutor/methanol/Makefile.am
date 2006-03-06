@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-methdir = ${datadir}/tutor/methanol
+methdir = ${pkgdatadir}/tutor/methanol
 
 meth_DATA = index.ndx  conf.gro  methanol.pdb  grompp.mdp  topol.top methanol.itp
 

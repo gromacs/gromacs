@@ -5,7 +5,7 @@
 
 SUBDIRS = nmr1 nmr2 speptide water gmxdemo  methanol mixed
 
-tutordir = ${datadir}/tutor
+tutordir = ${pkgdatadir}/tutor
 
 tutor_SCRIPTS = cleanit
 

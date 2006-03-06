@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-mixeddir = ${datadir}/tutor/mixed
+mixeddir = ${pkgdatadir}/tutor/mixed
 
 mixed_DATA = index.ndx  conf.gro  mixed.pdb  grompp.mdp  topol.top
 

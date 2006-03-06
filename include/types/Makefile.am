@@ -2,9 +2,9 @@
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
-includetypesdir = ${includedir}/types
+pkgincludetypesdir = ${pkgincludedir}/types
 
-includetypes_HEADERS = \
+pkgincludetypes_HEADERS = \
 	atoms.h    	edsams.h  	forcerec.h  	ifunc.h		\
 	mdatom.h  	nsborder.h 	simple.h	block.h    	\
 	energy.h  	graph.h     	inputrec.h  	nblist.h 	\

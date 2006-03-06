@@ -38,6 +38,8 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "smalloc.h"
@@ -120,7 +122,7 @@ void calc_nsb(FILE *fp,t_block *cgs,int nnodes,int npmenodes,t_nsborder *nsb,int
     {     
       for(i=nnodes-npmenodes; (i < nnodes-1); i++) 
       {
-        nsb->pmehomenr[i] = (int)round(nsb->natoms/npmenodes);
+        nsb->pmehomenr[i] = round(nsb->natoms/npmenodes);
         dummy += nsb->pmehomenr[i];
         nsb->pmeindex[i+1] = dummy;
       } 

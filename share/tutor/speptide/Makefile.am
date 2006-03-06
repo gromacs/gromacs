@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-speptidedir = ${datadir}/tutor/speptide
+speptidedir = ${pkgdatadir}/tutor/speptide
 
 speptide_DATA = em.mdp  full.mdp  pr.mdp  speptide.pdb
 

@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-waterdir = ${datadir}/tutor/water
+waterdir = ${pkgdatadir}/tutor/water
 
 water_DATA = index.ndx  conf.gro  spc216.pdb  grompp.mdp  topol.top
 

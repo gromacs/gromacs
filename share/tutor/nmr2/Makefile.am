@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-nmr2dir = ${datadir}/tutor/nmr2
+nmr2dir = ${pkgdatadir}/tutor/nmr2
 
 nmr2_DATA = conf.gro genconf.gcp grompp.mdp pep.pdb topol.top
 

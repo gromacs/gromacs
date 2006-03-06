@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-templatedir = ${datadir}/template
+templatedir = ${pkgdatadir}/template
 
 # we don't build this, it's meant for the user to play with.
 # Since a Makefile is used for the installation, we call the
