@@ -1,1278 +1,1252 @@
-;#
-;# $Id$
-;#
-;# Gromacs 4.0                         Copyright (c) 1991-2003 
-;# David van der Spoel, Erik Lindahl
-;#
-;# This program is free software; you can redistribute it and/or
-;# modify it under the terms of the GNU General Public License
-;# as published by the Free Software Foundation; either version 2
-;# of the License, or (at your option) any later version.
-;#
-;# To help us fund GROMACS development, we humbly ask that you cite
-;# the research papers on the package. Check out http://www.gromacs.org
-;# 
-;# And Hey:
-;# Gnomes, ROck Monsters And Chili Sauce
-;#
-
-;# These files require GNU binutils 2.10 or later, since we
-;# use intel syntax for portability, or a recent version 
-;# of NASM that understands Extended 3DNow and SSE2 instructions.
-;# (NASM is normally only used with MS Visual C++).
-;# Since NASM and gnu as disagree on some definitions and use 
-;# completely different preprocessing options I have to introduce a
-;# trick: NASM uses ';' for comments, while gnu as uses '#' on x86.
-;# Gnu as treats ';' as a line break, i.e. ignores it. This is the
-;# reason why all comments need both symbols...
-;# The source is written for GNU as, with intel syntax. When you use
-;# NASM we redefine a couple of things. The false if-statement around 
-;# the following code is seen by GNU as, but NASM doesn't see it, so 
-;# the code inside is read by NASM but not gcc.
-
-; .if 0    # block below only read by NASM
-%define .section	section
-%define .long		dd
-%define .align		align
-%define .globl		global
-;# NASM only wants 'dword', not 'dword ptr'.
-%define ptr
-%macro .equiv 2
-   %1 equ %2
-%endmacro
-; .endif                   # End of NASM-specific block
-; .intel_syntax noprefix   # Line only read by gnu as
+##
+## $Id$
+##
+## Gromacs 4.0                         Copyright (c) 1991-2003 
+## David van der Spoel, Erik Lindahl
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or (at your option) any later version.
+##
+## To help us fund GROMACS development, we humbly ask that you cite
+## the research papers on the package. Check out http://www.gromacs.org
+## 
+## And Hey:
+## Gnomes, ROck Monsters And Chili Sauce
+##
 
 
-
-	
 
 .globl nb_kernel112_ia32_3dnow
 .globl _nb_kernel112_ia32_3dnow
-nb_kernel112_ia32_3dnow:	
-_nb_kernel112_ia32_3dnow:	
-.equiv		nb112_p_nri,		8
-.equiv		nb112_iinr,		12
-.equiv		nb112_jindex,		16
-.equiv		nb112_jjnr,		20
-.equiv		nb112_shift,		24
-.equiv		nb112_shiftvec,		28
-.equiv		nb112_fshift,		32
-.equiv		nb112_gid,		36
-.equiv		nb112_pos,		40		
-.equiv		nb112_faction,		44
-.equiv		nb112_charge,		48
-.equiv		nb112_p_facel,		52
-.equiv		nb112_p_krf,		56	
-.equiv		nb112_p_crf,		60	
-.equiv		nb112_Vc,		64	
-.equiv		nb112_type,		68
-.equiv		nb112_p_ntype,		72
-.equiv		nb112_vdwparam,		76	
-.equiv		nb112_Vvdw,		80	
-.equiv		nb112_p_tabscale,	84	
-.equiv		nb112_VFtab,		88
-.equiv		nb112_invsqrta,		92	
-.equiv		nb112_dvda,		96
-.equiv          nb112_p_gbtabscale,     100
-.equiv          nb112_GBtab,            104
-.equiv          nb112_p_nthreads,       108
-.equiv          nb112_count,            112
-.equiv          nb112_mtx,              116
-.equiv          nb112_outeriter,        120
-.equiv          nb112_inneriter,        124
-.equiv          nb112_work,             128
-			;# stack offsets for local variables 
-.equiv		nb112_is3,		0
-.equiv		nb112_ii3,		4
-.equiv		nb112_ixO,		8
-.equiv		nb112_iyO,		12
-.equiv		nb112_izO,		16	
-.equiv		nb112_ixH,		20  
-.equiv		nb112_iyH,		28  
-.equiv		nb112_izH,		36  
-.equiv		nb112_qqOO,		44  
-.equiv		nb112_qqOH,		52  
-.equiv		nb112_qqHH,		60  
-.equiv		nb112_c6,		68  
-.equiv		nb112_c12,		76  
-.equiv		nb112_six,		84  
-.equiv		nb112_twelve,		92  
-.equiv		nb112_vctot,		100 
-.equiv		nb112_Vvdwtot,		108 
-.equiv		nb112_innerjjnr,	116
-.equiv		nb112_innerk,		120	
-.equiv		nb112_fixO,		124
-.equiv		nb112_fiyO,		128
-.equiv		nb112_fizO,		132
-.equiv		nb112_fixH,		136 
-.equiv		nb112_fiyH,		144 
-.equiv		nb112_fizH,		152 
-.equiv		nb112_dxO,		160
-.equiv		nb112_dyO,		164
-.equiv		nb112_dzO,		168
-.equiv		nb112_dxH,		172 
-.equiv		nb112_dyH,		180 
-.equiv		nb112_dzH,		188 
-.equiv          nb112_n,                196 ;# idx for outer loop
-.equiv          nb112_nn1,              200 ;# number of outer iterations
-.equiv          nb112_nri,              204
-.equiv          nb112_ntype,            208
-.equiv          nb112_nouter,           212
-.equiv          nb112_ninner,           216
-	push ebp
-	mov ebp,esp	
-    	push eax
-    	push ebx
-    	push ecx
-    	push edx
-	push esi
-	push edi
-	sub esp, 220		;# local stack space 
-	femms
-
-	mov ecx, [ebp + nb112_p_nri]
-	mov edx, [ebp + nb112_p_ntype]
-	mov esi, [ebp + nb112_p_facel]
-	mov ecx, [ecx]
-	mov edx, [edx]
-	mov [esp + nb112_nri], ecx
-	mov [esp + nb112_ntype], edx
-
-	;# zero iteration counters
-	mov eax, 0
-	mov [esp + nb112_nouter], eax
-	mov [esp + nb112_ninner], eax
-
-	;# assume we have at least one i particle - start directly 	
-
-	mov   ecx, [ebp + nb112_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx]	            ;# ebx=ii 
-
-	mov   edx, [ebp + nb112_charge]
-	movd  mm1, [esi]		    ;# mm1=facel 
-	movd  mm2, [edx + ebx*4]            ;# mm2=charge[ii0] (O) 
-	movd  mm3, [edx + ebx*4 + 4]        ;# mm2=charge[ii0+1] (H)  
-	movq  mm4, mm2	
-	pfmul mm4, mm1
-	movq  mm6, mm3
-	pfmul mm6, mm1
-	movq  mm5, mm4
-	pfmul mm4, mm2			;# mm4=qqOO*facel 
-	pfmul mm5, mm3			;# mm5=qqOH*facel 
-	pfmul mm6, mm3			;# mm6=qqHH*facel 
-	punpckldq mm5,mm5	    ;# spread to both halves 
-	punpckldq mm6,mm6	    ;# spread to both halves 
-	movq  [esp + nb112_qqOO], mm4
-	movq  [esp + nb112_qqOH], mm5
-	movq  [esp + nb112_qqHH], mm6
-	mov   edx, [ebp + nb112_type]
-	mov   ecx, [edx + ebx*4]
-	shl   ecx, 1
-	mov   edx, ecx
-	imul  ecx, [esp + nb112_ntype]
-	add   edx, ecx
-	mov   eax, [ebp + nb112_vdwparam]
-	movd  mm0, [eax + edx*4]          
-	movd  mm1, [eax + edx*4 + 4]
-	movq  [esp + nb112_c6], mm0
-	movq  [esp + nb112_c12], mm1
-	;# move data to local stack  
-	mov eax, 0x40c00000 ;# fp 6.0
-	mov ebx, 0x41400000 ;# fp 12.0
-		
-        mov [esp + nb112_six], eax
-        mov [esp + nb112_six + 4], eax
-        mov [esp + nb112_twelve], ebx
-        mov [esp + nb112_twelve +4], ebx
-
-.nb112_threadloop:
-        mov   esi, [ebp + nb112_count]          ;# pointer to sync counter
-        mov   eax, [esi]
-.nb112_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [esi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb112_spinlock
-
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [esp + nb112_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [esp + nb112_n], eax
-        mov [esp + nb112_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb112_outerstart
-        jmp .nb112_end
-
-.nb112_outerstart:	
-	;# ebx contains number of outer iterations
-	add ebx, [esp + nb112_nouter]
-        mov [esp + nb112_nouter], ebx
-	
-.nb112_outer:
-	mov   eax, [ebp + nb112_shift]      ;# eax = pointer into shift[] 
-	mov   ebx, [eax + esi*4]		;# ebx=shift[n] 
-	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
-	mov   [esp + nb112_is3],ebx    	;# store is3 
-
-	mov   eax, [ebp + nb112_shiftvec]   ;# eax = base of shiftvec[] 
-	
-	movq  mm5, [eax + ebx*4]	;# move shX/shY to mm5 and shZ to mm6. 
-	movd  mm6, [eax + ebx*4 + 8]
-	movq  mm0, mm5
-	movq  mm1, mm5
-	movq  mm2, mm6
-	punpckldq mm0,mm0	    ;# also expand shX,Y,Z in mm0--mm2. 
-	punpckhdq mm1,mm1
-	punpckldq mm2,mm2		
-	
-	mov   ecx, [ebp + nb112_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx + esi*4]	    ;# ebx=ii 
-
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
-	mov   eax, [ebp + nb112_pos]    ;# eax = base of pos[] 
-
-	pfadd mm5, [eax + ebx*4]    ;# ix = shX + posX (and iy too) 
-	movd  mm7, [eax + ebx*4 + 8]    ;# cant use direct memory add for 4 bytes (iz) 
-	mov   [esp + nb112_ii3], ebx	    ;# (use mm7 as temp. storage for iz.) 
-	pfadd mm6, mm7
-	movq  [esp + nb112_ixO], mm5	
-	movq  [esp + nb112_izO], mm6
-
-	movd  mm3, [eax + ebx*4 + 12]
-	movd  mm4, [eax + ebx*4 + 16]
-	movd  mm5, [eax + ebx*4 + 20]
-	punpckldq  mm3, [eax + ebx*4 + 24]
-	punpckldq  mm4, [eax + ebx*4 + 28]
-	punpckldq  mm5, [eax + ebx*4 + 32] ;# coords of H1 in low mm3-mm5, H2 in high 
-	
-	pfadd mm0, mm3
-	pfadd mm1, mm4
-	pfadd mm2, mm5		
-	movq [esp + nb112_ixH], mm0	
-	movq [esp + nb112_iyH], mm1	
-	movq [esp + nb112_izH], mm2	
-
-	;# clear vctot and i forces 
-	pxor  mm7,mm7
-	movq  [esp + nb112_vctot], mm7
-	movq  [esp + nb112_Vvdwtot], mm7
-	movq  [esp + nb112_fixO],  mm7
-	movq  [esp + nb112_fizO],  mm7
-	movq  [esp + nb112_fixH],  mm7
-	movq  [esp + nb112_fiyH],  mm7
-	movq  [esp + nb112_fizH],  mm7
-
-	mov   eax, [ebp + nb112_jindex]
-	mov   ecx, [eax + esi*4]	     ;# jindex[n] 
-	mov   edx, [eax + esi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
-	mov   [esp + nb112_innerk], edx    ;# number of innerloop atoms 
-	add   edx, [esp + nb112_ninner]
-	mov   [esp + nb112_ninner], edx
-
-	mov   esi, [ebp + nb112_pos]
-	mov   edi, [ebp + nb112_faction]	
-	mov   eax, [ebp + nb112_jjnr]
-	shl   ecx, 2
-	add   eax, ecx
-	mov   [esp + nb112_innerjjnr], eax     ;# pointer to jjnr[nj0] 
-.nb112_inner_loop:
-	;# a single j particle iteration here - compare with the unrolled code for comments. 
-	mov   eax, [esp + nb112_innerjjnr]
-	mov   eax, [eax]	;# eax=jnr offset 
-    	add dword ptr [esp + nb112_innerjjnr],  4 ;# advance pointer 
-
-	movd  mm6, [esp + nb112_qqOO]
-	movq  mm7, [esp + nb112_qqOH]
-
-	lea   eax, [eax + eax*2]
-	movq  mm0, [esi + eax*4]
-	movd  mm1, [esi + eax*4 + 8]
-	;# copy & expand to mm2-mm4 for the H interactions 
-	movq  mm2, mm0
-	movq  mm3, mm0
-	movq  mm4, mm1
-	punpckldq mm2,mm2
-	punpckhdq mm3,mm3
-	punpckldq mm4,mm4
-	
-	pfsubr mm0, [esp + nb112_ixO]
-	pfsubr mm1, [esp + nb112_izO]
-		
-	movq  [esp + nb112_dxO], mm0
-	pfmul mm0,mm0
-	movd  [esp + nb112_dzO], mm1	
-	pfmul mm1,mm1
-	pfacc mm0, mm0
-	pfadd mm0, mm1		;# mm0=rsqO 
-	
-	punpckldq mm2, mm2
-	punpckldq mm3, mm3
-	punpckldq mm4, mm4  ;# mm2-mm4 is jx-jz 
-	pfsubr mm2, [esp + nb112_ixH]
-	pfsubr mm3, [esp + nb112_iyH]
-	pfsubr mm4, [esp + nb112_izH] ;# mm2-mm4 is dxH-dzH 
-	
-	movq [esp + nb112_dxH], mm2
-	movq [esp + nb112_dyH], mm3
-	movq [esp + nb112_dzH], mm4
-	pfmul mm2,mm2
-	pfmul mm3,mm3
-	pfmul mm4,mm4
-
-	pfadd mm3,mm2
-	pfadd mm3,mm4		;# mm3=rsqH 
-
-    	pfrsqrt mm1,mm0
-
-    	movq mm2,mm1
-    	pfmul mm1,mm1
-    	pfrsqit1 mm1,mm0				
-    	pfrcpit2 mm1,mm2	;# mm1=invsqrt  
-	movq  mm4, mm1
-	pfmul mm4, mm4		;# mm4=invsq  
-
-	movq mm2, mm4
-	pfmul mm2, mm4
-	pfmul mm2, mm4
-	movq mm0, mm2
-	pfmul mm0,mm0
-	pfmul mm2, [esp + nb112_c6]
-	pfmul mm0, [esp + nb112_c12]
-	movq mm5, mm0
-	pfsub mm5, mm2		;# Vvdw 
-
-	pfmul mm2, [esp + nb112_six]
-	pfmul mm0, [esp + nb112_twelve]
-
-	pfsub mm0, mm2
-	
-	;# calculate potential and scalar force 
-	pfmul mm6, mm1		;# mm6=vcoul 
-	pfadd mm0, mm6
-	pfmul mm4, mm0		;# mm4=fscalar  
-
-	;# update nb potential 
-	pfadd mm5, [esp + nb112_Vvdwtot]
-	movq [esp + nb112_Vvdwtot], mm5
-
-	pfrsqrt mm5, mm3
-	pswapd mm3,mm3
-	pfrsqrt mm2, mm3
-	pswapd mm3,mm3
-	punpckldq mm5,mm2	;# seeds are in mm5 now, and rsq in mm3 
-
-	movq mm2, mm5
-	pfmul mm5,mm5
-    	pfrsqit1 mm5,mm3				
-    	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
-	movq mm3,mm5
-	pfmul mm3,mm3		;# mm3=invsq 
-	pfmul mm7, mm5		;# mm7=vcoul 
-	pfmul mm3, mm7		;# mm3=fscal for the two H's. 
-
-	;# update vctot 
-	pfadd mm7, mm6
-	pfadd mm7, [esp + nb112_vctot]
-	movq [esp + nb112_vctot], mm7
-	
-	;# spread oxygen fscalar to both positions 
-	punpckldq mm4,mm4
-	;# calc vectorial force for O 
-	movq mm0,  [esp + nb112_dxO]
-	movd mm1,  [esp + nb112_dzO]
-	pfmul mm0, mm4
-	pfmul mm1, mm4
-
-	;# calc vectorial force for H's 
-	movq mm5, [esp + nb112_dxH]
-	movq mm6, [esp + nb112_dyH]
-	movq mm7, [esp + nb112_dzH]
-	pfmul mm5, mm3
-	pfmul mm6, mm3
-	pfmul mm7, mm3
-	
-	;# update iO particle force 
-	movq mm2,  [esp + nb112_fixO]
-	movd mm3,  [esp + nb112_fizO]
-	pfadd mm2, mm0
-	pfadd mm3, mm1
-	movq [esp + nb112_fixO], mm2
-	movd [esp + nb112_fizO], mm3
-
-	;# update iH forces 
-	movq mm2, [esp + nb112_fixH]
-	movq mm3, [esp + nb112_fiyH]
-	movq mm4, [esp + nb112_fizH]
-	pfadd mm2, mm5
-	pfadd mm3, mm6
-	pfadd mm4, mm7
-	movq [esp + nb112_fixH], mm2
-	movq [esp + nb112_fiyH], mm3
-	movq [esp + nb112_fizH], mm4
-	
-	;# pack j forces from H in the same form as the oxygen force. 
-	pfacc mm5, mm6		;# mm5(l)=fjx(H1+ h2) mm5(h)=fjy(H1+ h2) 
-	pfacc mm7, mm7		;# mm7(l)=fjz(H1+ h2) 
-	
-	pfadd mm0, mm5		;# add up total force on j particle.  
-	pfadd mm1, mm7
-
-	;# update j particle force 
-	movq mm2,  [edi + eax*4]
-	movd mm3,  [edi + eax*4 + 8]
-	pfsub mm2, mm0
-	pfsub mm3, mm1
-	movq [edi + eax*4], mm2
-	movd [edi + eax*4 +8], mm3
-
-	;# interactions with j H1 
-	movq  mm0, [esi + eax*4 + 12]
-	movd  mm1, [esi + eax*4 + 20]
-	;# copy & expand to mm2-mm4 for the H interactions 
-	movq  mm2, mm0
-	movq  mm3, mm0
-	movq  mm4, mm1
-	punpckldq mm2,mm2
-	punpckhdq mm3,mm3
-	punpckldq mm4,mm4
-	
-	movd mm6, [esp + nb112_qqOH]
-	movq mm7, [esp + nb112_qqHH]
-	
-	pfsubr mm0, [esp + nb112_ixO]
-	pfsubr mm1, [esp + nb112_izO]
-		
-	movq  [esp + nb112_dxO], mm0
-	pfmul mm0,mm0
-	movd  [esp + nb112_dzO], mm1	
-	pfmul mm1,mm1
-	pfacc mm0, mm1
-	pfadd mm0, mm1		;# mm0=rsqO 
-	
-	punpckldq mm2, mm2
-	punpckldq mm3, mm3
-	punpckldq mm4, mm4  ;# mm2-mm4 is jx-jz 
-	pfsubr mm2, [esp + nb112_ixH]
-	pfsubr mm3, [esp + nb112_iyH]
-	pfsubr mm4, [esp + nb112_izH] ;# mm2-mm4 is dxH-dzH 
-	
-	movq [esp + nb112_dxH], mm2
-	movq [esp + nb112_dyH], mm3
-	movq [esp + nb112_dzH], mm4
-	pfmul mm2,mm2
-	pfmul mm3,mm3
-	pfmul mm4,mm4
-
-	pfadd mm3,mm2
-	pfadd mm3,mm4		;# mm3=rsqH 
-
-    	pfrsqrt mm1,mm0
-
-    	movq mm2,mm1
-    	pfmul mm1,mm1
-    	pfrsqit1 mm1,mm0				
-    	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
-	movq  mm4, mm1
-	pfmul mm4, mm4		;# mm4=invsq 
-	;# calculate potential and scalar force 
-	pfmul mm6, mm1		;# mm6=vcoul 
-	pfmul mm4, mm6		;# mm4=fscalar  
-
-	pfrsqrt mm5, mm3
-	pswapd mm3,mm3
-	pfrsqrt mm2, mm3
-	pswapd mm3,mm3
-	punpckldq mm5,mm2	;# seeds are in mm5 now, and rsq in mm3 
-
-	movq mm2, mm5
-	pfmul mm5,mm5
-    	pfrsqit1 mm5,mm3				
-    	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
-	movq mm3,mm5
-	pfmul mm3,mm3		;# mm3=invsq 
-	pfmul mm7, mm5		;# mm7=vcoul 
-	pfmul mm3, mm7		;# mm3=fscal for the two H's. 
-
-	;# update vctot 
-	pfadd mm7, mm6
-	pfadd mm7, [esp + nb112_vctot]
-	movq [esp + nb112_vctot], mm7
-	
-	;# spread oxygen fscalar to both positions 
-	punpckldq mm4,mm4
-	;# calc vectorial force for O 
-	movq mm0,  [esp + nb112_dxO]
-	movd mm1,  [esp + nb112_dzO]
-	pfmul mm0, mm4
-	pfmul mm1, mm4
-
-	;# calc vectorial force for H's 
-	movq mm5, [esp + nb112_dxH]
-	movq mm6, [esp + nb112_dyH]
-	movq mm7, [esp + nb112_dzH]
-	pfmul mm5, mm3
-	pfmul mm6, mm3
-	pfmul mm7, mm3
-	
-	;# update iO particle force 
-	movq mm2,  [esp + nb112_fixO]
-	movd mm3,  [esp + nb112_fizO]
-	pfadd mm2, mm0
-	pfadd mm3, mm1
-	movq [esp + nb112_fixO], mm2
-	movd [esp + nb112_fizO], mm3
-
-	;# update iH forces 
-	movq mm2, [esp + nb112_fixH]
-	movq mm3, [esp + nb112_fiyH]
-	movq mm4, [esp + nb112_fizH]
-	pfadd mm2, mm5
-	pfadd mm3, mm6
-	pfadd mm4, mm7
-	movq [esp + nb112_fixH], mm2
-	movq [esp + nb112_fiyH], mm3
-	movq [esp + nb112_fizH], mm4
-	
-	;# pack j forces from H in the same form as the oxygen force. 
-	pfacc mm5, mm6		;# mm5(l)=fjx(H1+ h2) mm5(h)=fjy(H1+ h2) 
-	pfacc mm7, mm7		;# mm7(l)=fjz(H1+ h2) 
-	
-	pfadd mm0, mm5		;# add up total force on j particle.  
-	pfadd mm1, mm7
-
-	;# update j particle force 
-	movq mm2,  [edi + eax*4 + 12]
-	movd mm3,  [edi + eax*4 + 20]
-	pfsub mm2, mm0
-	pfsub mm3, mm1
-	movq [edi + eax*4 + 12], mm2
-	movd [edi + eax*4 + 20], mm3
-
-	;# interactions with j H2 
-	movq  mm0, [esi + eax*4 + 24]
-	movd  mm1, [esi + eax*4 + 32]
-	;# copy & expand to mm2-mm4 for the H interactions 
-	movq  mm2, mm0
-	movq  mm3, mm0
-	movq  mm4, mm1
-	punpckldq mm2,mm2
-	punpckhdq mm3,mm3
-	punpckldq mm4,mm4
-
-	movd mm6, [esp + nb112_qqOH]
-	movq mm7, [esp + nb112_qqHH]
-
-	pfsubr mm0, [esp + nb112_ixO]
-	pfsubr mm1, [esp + nb112_izO]
-		
-	movq  [esp + nb112_dxO], mm0
-	pfmul mm0,mm0
-	movd  [esp + nb112_dzO], mm1	
-	pfmul mm1,mm1
-	pfacc mm0, mm1
-	pfadd mm0, mm1		;# mm0=rsqO 
-	
-	punpckldq mm2, mm2
-	punpckldq mm3, mm3
-	punpckldq mm4, mm4  ;# mm2-mm4 is jx-jz 
-	pfsubr mm2, [esp + nb112_ixH]
-	pfsubr mm3, [esp + nb112_iyH]
-	pfsubr mm4, [esp + nb112_izH] ;# mm2-mm4 is dxH-dzH 
-	
-	movq [esp + nb112_dxH], mm2
-	movq [esp + nb112_dyH], mm3
-	movq [esp + nb112_dzH], mm4
-	pfmul mm2,mm2
-	pfmul mm3,mm3
-	pfmul mm4,mm4
-
-	pfadd mm3,mm2
-	pfadd mm3,mm4		;# mm3=rsqH 
-
-    	pfrsqrt mm1,mm0
-
-    	movq mm2,mm1
-    	pfmul mm1,mm1
-    	pfrsqit1 mm1,mm0				
-    	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
-	movq  mm4, mm1
-	pfmul mm4, mm4		;# mm4=invsq 
-	;# calculate potential and scalar force 
-	pfmul mm6, mm1		;# mm6=vcoul 
-	pfmul mm4, mm6		;# mm4=fscalar  
-
-	pfrsqrt mm5, mm3
-	pswapd mm3,mm3
-	pfrsqrt mm2, mm3
-	pswapd mm3,mm3
-	punpckldq mm5,mm2	;# seeds are in mm5 now, and rsq in mm3. 
-
-	movq mm2, mm5
-	pfmul mm5,mm5
-    	pfrsqit1 mm5,mm3				
-    	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
-	movq mm3,mm5
-	pfmul mm3,mm3		;# mm3=invsq 
-	pfmul mm7, mm5		;# mm7=vcoul 
-	pfmul mm3, mm7		;# mm3=fscal for the two H's. 
-
-	;# update vctot 
-	pfadd mm7, mm6
-	pfadd mm7, [esp + nb112_vctot]
-	movq [esp + nb112_vctot], mm7
-	
-	;# spread oxygen fscalar to both positions 
-	punpckldq mm4,mm4
-	;# calc vectorial force for O 
-	movq mm0,  [esp + nb112_dxO]
-	movd mm1,  [esp + nb112_dzO]
-	pfmul mm0, mm4
-	pfmul mm1, mm4
-
-	;# calc vectorial force for H's 
-	movq mm5, [esp + nb112_dxH]
-	movq mm6, [esp + nb112_dyH]
-	movq mm7, [esp + nb112_dzH]
-	pfmul mm5, mm3
-	pfmul mm6, mm3
-	pfmul mm7, mm3
-	
-	;# update iO particle force 
-	movq mm2,  [esp + nb112_fixO]
-	movd mm3,  [esp + nb112_fizO]
-	pfadd mm2, mm0
-	pfadd mm3, mm1
-	movq [esp + nb112_fixO], mm2
-	movd [esp + nb112_fizO], mm3
-
-	;# update iH forces 
-	movq mm2, [esp + nb112_fixH]
-	movq mm3, [esp + nb112_fiyH]
-	movq mm4, [esp + nb112_fizH]
-	pfadd mm2, mm5
-	pfadd mm3, mm6
-	pfadd mm4, mm7
-	movq [esp + nb112_fixH], mm2
-	movq [esp + nb112_fiyH], mm3
-	movq [esp + nb112_fizH], mm4	
-
-	;# pack j forces from H in the same form as the oxygen force. 
-	pfacc mm5, mm6		;# mm5(l)=fjx(H1+ h2) mm5(h)=fjy(H1+ h2) 
-	pfacc mm7, mm7		;# mm7(l)=fjz(H1+ h2) 
-	
-	pfadd mm0, mm5		;# add up total force on j particle.  
-	pfadd mm1, mm7
-
-	;# update j particle force 
-	movq mm2,  [edi + eax*4 + 24]
-	movd mm3,  [edi + eax*4 + 32]
-	pfsub mm2, mm0
-	pfsub mm3, mm1
-	movq [edi + eax*4 + 24], mm2
-	movd [edi + eax*4 + 32], mm3
-	
-	;#  done  - one more? 
-	dec dword ptr [esp + nb112_innerk]
-	jz  .nb112_updateouterdata
-	jmp .nb112_inner_loop	
-.nb112_updateouterdata:	
-	mov   ecx, [esp + nb112_ii3]
-
-	movq  mm6, [edi + ecx*4]       ;# increment iO force  
-	movd  mm7, [edi + ecx*4 + 8]	
-	pfadd mm6, [esp + nb112_fixO]
-	pfadd mm7, [esp + nb112_fizO]
-	movq  [edi + ecx*4],    mm6
-	movd  [edi + ecx*4 +8], mm7
-
-	movq  mm0, [esp + nb112_fixH]
-	movq  mm3, [esp + nb112_fiyH]
-	movq  mm1, [esp + nb112_fizH]
-	movq  mm2, mm0
-	punpckldq mm0, mm3	;# mm0(l)=fxH1, mm0(h)=fyH1 
-	punpckhdq mm2, mm3	;# mm2(l)=fxH2, mm2(h)=fyH2 
-	movq mm3, mm1
-	pswapd mm3,mm3		
-	;# mm1 is fzH1 
-	;# mm3 is fzH2 
-
-	movq  mm6, [edi + ecx*4 + 12]       ;# increment iH1 force  
-	movd  mm7, [edi + ecx*4 + 20] 	
-	pfadd mm6, mm0
-	pfadd mm7, mm1
-	movq  [edi + ecx*4 + 12],  mm6
-	movd  [edi + ecx*4 + 20],  mm7
-	
-	movq  mm6, [edi + ecx*4 + 24]       ;# increment iH2 force 
-	movd  mm7, [edi + ecx*4 + 32] 	
-	pfadd mm6, mm2
-	pfadd mm7, mm3
-	movq  [edi + ecx*4 + 24],  mm6
-	movd  [edi + ecx*4 + 32],  mm7
-
-	
-	mov   ebx, [ebp + nb112_fshift]    ;# increment fshift force 
-	mov   edx, [esp + nb112_is3]
-
-	movq  mm6, [ebx + edx*4]	
-	movd  mm7, [ebx + edx*4 + 8]	
-	pfadd mm6, [esp + nb112_fixO]
-	pfadd mm7, [esp + nb112_fizO]
-	pfadd mm6, mm0
-	pfadd mm7, mm1
-	pfadd mm6, mm2
-	pfadd mm7, mm3
-	movq  [ebx + edx*4],     mm6
-	movd  [ebx + edx*4 + 8], mm7
-	
-	;# get n from stack
-	mov esi, [esp + nb112_n]
-        ;# get group index for i particle 
-        mov   edx, [ebp + nb112_gid]      	;# base of gid[]
-        mov   edx, [edx + esi*4]		;# ggid=gid[n]
-
-	movq  mm7, [esp + nb112_vctot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
-
-	mov   eax, [ebp + nb112_Vc]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment vc[gid] 
-
-	movq  mm7, [esp + nb112_Vvdwtot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
-
-	mov   eax, [ebp + nb112_Vvdw]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment Vvdwtot[gid] 
-       ;# finish if last 
-        mov ecx, [esp + nb112_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb112_outerend
-
-        ;# not last, iterate outer loop once more!  
-        mov [esp + nb112_n], esi
-        jmp .nb112_outer
-.nb112_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [esp + nb112_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb112_end
-        ;# non-zero, do one more workunit
-        jmp   .nb112_threadloop
-.nb112_end:
-	femms
-
-	mov eax, [esp + nb112_nouter] 	
-	mov ebx, [esp + nb112_ninner]
-	mov ecx, [ebp + nb112_outeriter]
-	mov edx, [ebp + nb112_inneriter]
-	mov [ecx], eax
-	mov [edx], ebx
-	
-	add esp, 220
-	pop edi
-	pop esi
-    	pop edx
-    	pop ecx
-    	pop ebx
-    	pop eax
-	leave
-	ret
+nb_kernel112_ia32_3dnow:        
+_nb_kernel112_ia32_3dnow:       
+.set nb112_p_nri, 8
+.set nb112_iinr, 12
+.set nb112_jindex, 16
+.set nb112_jjnr, 20
+.set nb112_shift, 24
+.set nb112_shiftvec, 28
+.set nb112_fshift, 32
+.set nb112_gid, 36
+.set nb112_pos, 40
+.set nb112_faction, 44
+.set nb112_charge, 48
+.set nb112_p_facel, 52
+.set nb112_p_krf, 56
+.set nb112_p_crf, 60
+.set nb112_Vc, 64
+.set nb112_type, 68
+.set nb112_p_ntype, 72
+.set nb112_vdwparam, 76
+.set nb112_Vvdw, 80
+.set nb112_p_tabscale, 84
+.set nb112_VFtab, 88
+.set nb112_invsqrta, 92
+.set nb112_dvda, 96
+.set nb112_p_gbtabscale, 100
+.set nb112_GBtab, 104
+.set nb112_p_nthreads, 108
+.set nb112_count, 112
+.set nb112_mtx, 116
+.set nb112_outeriter, 120
+.set nb112_inneriter, 124
+.set nb112_work, 128
+                        ## stack offsets for local variables 
+.set nb112_is3, 0
+.set nb112_ii3, 4
+.set nb112_ixO, 8
+.set nb112_iyO, 12
+.set nb112_izO, 16
+.set nb112_ixH, 20
+.set nb112_iyH, 28
+.set nb112_izH, 36
+.set nb112_qqOO, 44
+.set nb112_qqOH, 52
+.set nb112_qqHH, 60
+.set nb112_c6, 68
+.set nb112_c12, 76
+.set nb112_six, 84
+.set nb112_twelve, 92
+.set nb112_vctot, 100
+.set nb112_Vvdwtot, 108
+.set nb112_innerjjnr, 116
+.set nb112_innerk, 120
+.set nb112_fixO, 124
+.set nb112_fiyO, 128
+.set nb112_fizO, 132
+.set nb112_fixH, 136
+.set nb112_fiyH, 144
+.set nb112_fizH, 152
+.set nb112_dxO, 160
+.set nb112_dyO, 164
+.set nb112_dzO, 168
+.set nb112_dxH, 172
+.set nb112_dyH, 180
+.set nb112_dzH, 188
+.set nb112_n, 196                           ## idx for outer loop
+.set nb112_nn1, 200                         ## number of outer iterations
+.set nb112_nri, 204
+.set nb112_ntype, 208
+.set nb112_nouter, 212
+.set nb112_ninner, 216
+        pushl %ebp
+        movl %esp,%ebp
+        pushl %eax
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
+        pushl %esi
+        pushl %edi
+        subl $220,%esp          ## local stack space 
+        femms
+
+        movl nb112_p_nri(%ebp),%ecx
+        movl nb112_p_ntype(%ebp),%edx
+        movl nb112_p_facel(%ebp),%esi
+        movl (%ecx),%ecx
+        movl (%edx),%edx
+        movl %ecx,nb112_nri(%esp)
+        movl %edx,nb112_ntype(%esp)
+
+        ## zero iteration counters
+        movl $0,%eax
+        movl %eax,nb112_nouter(%esp)
+        movl %eax,nb112_ninner(%esp)
+
+        ## assume we have at least one i particle - start directly      
+
+        movl  nb112_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]        
+        movl  (%ecx),%ebx                   ## ebx=ii 
+
+        movl  nb112_charge(%ebp),%edx
+        movd  (%esi),%mm1                   ## mm1=facel 
+        movd  (%edx,%ebx,4),%mm2            ## mm2=charge[ii0] (O) 
+        movd  4(%edx,%ebx,4),%mm3           ## mm2=charge[ii0+1] (H)  
+        movq  %mm2,%mm4
+        pfmul %mm1,%mm4
+        movq  %mm3,%mm6
+        pfmul %mm1,%mm6
+        movq  %mm4,%mm5
+        pfmul %mm2,%mm4                 ## mm4=qqOO*facel 
+        pfmul %mm3,%mm5                 ## mm5=qqOH*facel 
+        pfmul %mm3,%mm6                 ## mm6=qqHH*facel 
+        punpckldq %mm5,%mm5         ## spread to both halves 
+        punpckldq %mm6,%mm6         ## spread to both halves 
+        movq  %mm4,nb112_qqOO(%esp)
+        movq  %mm5,nb112_qqOH(%esp)
+        movq  %mm6,nb112_qqHH(%esp)
+        movl  nb112_type(%ebp),%edx
+        movl  (%edx,%ebx,4),%ecx
+        shll  %ecx
+        movl  %ecx,%edx
+        imull nb112_ntype(%esp),%ecx
+        addl  %ecx,%edx
+        movl  nb112_vdwparam(%ebp),%eax
+        movd  (%eax,%edx,4),%mm0
+        movd  4(%eax,%edx,4),%mm1
+        movq  %mm0,nb112_c6(%esp)
+        movq  %mm1,nb112_c12(%esp)
+        ## move data to local stack  
+        movl $0x40c00000,%eax ## fp 6.0
+        movl $0x41400000,%ebx ## fp 12.0
+
+        movl %eax,nb112_six(%esp)
+        movl %eax,nb112_six+4(%esp)
+        movl %ebx,nb112_twelve(%esp)
+        movl %ebx,nb112_twelve+4(%esp)
+
+_nb_kernel112_ia32_3dnow.nb112_threadloop: 
+        movl  nb112_count(%ebp),%esi            ## pointer to sync counter
+        movl  (%esi),%eax
+_nb_kernel112_ia32_3dnow.nb112_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel112_ia32_3dnow.nb112_spinlock
+
+        ## if(nn1>nri) nn1=nri
+        movl nb112_nri(%esp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb112_n(%esp)
+        movl %ebx,nb112_nn1(%esp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel112_ia32_3dnow.nb112_outerstart
+        jmp _nb_kernel112_ia32_3dnow.nb112_end
+
+_nb_kernel112_ia32_3dnow.nb112_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb112_nouter(%esp),%ebx
+        movl %ebx,nb112_nouter(%esp)
+
+_nb_kernel112_ia32_3dnow.nb112_outer: 
+        movl  nb112_shift(%ebp),%eax        ## eax = pointer into shift[] 
+        movl  (%eax,%esi,4),%ebx                ## ebx=shift[n] 
+
+        leal  (%ebx,%ebx,2),%ebx    ## ebx=3*is 
+        movl  %ebx,nb112_is3(%esp)      ## store is3 
+
+        movl  nb112_shiftvec(%ebp),%eax     ## eax = base of shiftvec[] 
+
+        movq  (%eax,%ebx,4),%mm5        ## move shX/shY to mm5 and shZ to mm6. 
+        movd  8(%eax,%ebx,4),%mm6
+        movq  %mm5,%mm0
+        movq  %mm5,%mm1
+        movq  %mm6,%mm2
+        punpckldq %mm0,%mm0         ## also expand shX,Y,Z in mm0--mm2. 
+        punpckhdq %mm1,%mm1
+        punpckldq %mm2,%mm2
+
+        movl  nb112_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]        
+        movl  (%ecx,%esi,4),%ebx            ## ebx=ii 
+
+        leal  (%ebx,%ebx,2),%ebx        ## ebx = 3*ii=ii3 
+        movl  nb112_pos(%ebp),%eax      ## eax = base of pos[] 
+
+        pfadd (%eax,%ebx,4),%mm5    ## ix = shX + posX (and iy too) 
+        movd  8(%eax,%ebx,4),%mm7       ## cant use direct memory add for 4 bytes (iz) 
+        movl  %ebx,nb112_ii3(%esp)          ## (use mm7 as temp. storage for iz.) 
+        pfadd %mm7,%mm6
+        movq  %mm5,nb112_ixO(%esp)
+        movq  %mm6,nb112_izO(%esp)
+
+        movd  12(%eax,%ebx,4),%mm3
+        movd  16(%eax,%ebx,4),%mm4
+        movd  20(%eax,%ebx,4),%mm5
+        punpckldq  24(%eax,%ebx,4),%mm3
+        punpckldq  28(%eax,%ebx,4),%mm4
+        punpckldq  32(%eax,%ebx,4),%mm5    ## coords of H1 in low mm3-mm5, H2 in high 
+
+        pfadd %mm3,%mm0
+        pfadd %mm4,%mm1
+        pfadd %mm5,%mm2
+        movq %mm0,nb112_ixH(%esp)
+        movq %mm1,nb112_iyH(%esp)
+        movq %mm2,nb112_izH(%esp)
+
+        ## clear vctot and i forces 
+        pxor  %mm7,%mm7
+        movq  %mm7,nb112_vctot(%esp)
+        movq  %mm7,nb112_Vvdwtot(%esp)
+        movq  %mm7,nb112_fixO(%esp)
+        movq  %mm7,nb112_fizO(%esp)
+        movq  %mm7,nb112_fixH(%esp)
+        movq  %mm7,nb112_fiyH(%esp)
+        movq  %mm7,nb112_fizH(%esp)
+
+        movl  nb112_jindex(%ebp),%eax
+        movl  (%eax,%esi,4),%ecx             ## jindex[n] 
+        movl  4(%eax,%esi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
+        movl  %edx,nb112_innerk(%esp)      ## number of innerloop atoms 
+        addl  nb112_ninner(%esp),%edx
+        movl  %edx,nb112_ninner(%esp)
+
+        movl  nb112_pos(%ebp),%esi
+        movl  nb112_faction(%ebp),%edi
+        movl  nb112_jjnr(%ebp),%eax
+        shll  $2,%ecx
+        addl  %ecx,%eax
+        movl  %eax,nb112_innerjjnr(%esp)       ## pointer to jjnr[nj0] 
+_nb_kernel112_ia32_3dnow.nb112_inner_loop: 
+        ## a single j particle iteration here - compare with the unrolled code for comments. 
+        movl  nb112_innerjjnr(%esp),%eax
+        movl  (%eax),%eax       ## eax=jnr offset 
+        addl $4,nb112_innerjjnr(%esp)             ## advance pointer 
+
+        movd  nb112_qqOO(%esp),%mm6
+        movq  nb112_qqOH(%esp),%mm7
+
+        leal  (%eax,%eax,2),%eax
+        movq  (%esi,%eax,4),%mm0
+        movd  8(%esi,%eax,4),%mm1
+        ## copy & expand to mm2-mm4 for the H interactions 
+        movq  %mm0,%mm2
+        movq  %mm0,%mm3
+        movq  %mm1,%mm4
+        punpckldq %mm2,%mm2
+        punpckhdq %mm3,%mm3
+        punpckldq %mm4,%mm4
+
+        pfsubr nb112_ixO(%esp),%mm0
+        pfsubr nb112_izO(%esp),%mm1
+
+        movq  %mm0,nb112_dxO(%esp)
+        pfmul %mm0,%mm0
+        movd  %mm1,nb112_dzO(%esp)
+        pfmul %mm1,%mm1
+        pfacc %mm0,%mm0
+        pfadd %mm1,%mm0         ## mm0=rsqO 
+
+        punpckldq %mm2,%mm2
+        punpckldq %mm3,%mm3
+        punpckldq %mm4,%mm4 ## mm2-mm4 is jx-jz 
+        pfsubr nb112_ixH(%esp),%mm2
+        pfsubr nb112_iyH(%esp),%mm3
+        pfsubr nb112_izH(%esp),%mm4   ## mm2-mm4 is dxH-dzH 
+
+        movq %mm2,nb112_dxH(%esp)
+        movq %mm3,nb112_dyH(%esp)
+        movq %mm4,nb112_dzH(%esp)
+        pfmul %mm2,%mm2
+        pfmul %mm3,%mm3
+        pfmul %mm4,%mm4
+
+        pfadd %mm2,%mm3
+        pfadd %mm4,%mm3         ## mm3=rsqH 
+
+        pfrsqrt %mm0,%mm1
+
+        movq %mm1,%mm2
+        pfmul %mm1,%mm1
+        pfrsqit1 %mm0,%mm1
+        pfrcpit2 %mm2,%mm1      ## mm1=invsqrt  
+        movq  %mm1,%mm4
+        pfmul %mm4,%mm4         ## mm4=invsq  
+
+        movq %mm4,%mm2
+        pfmul %mm4,%mm2
+        pfmul %mm4,%mm2
+        movq %mm2,%mm0
+        pfmul %mm0,%mm0
+        pfmul nb112_c6(%esp),%mm2
+        pfmul nb112_c12(%esp),%mm0
+        movq %mm0,%mm5
+        pfsub %mm2,%mm5         ## Vvdw 
+
+        pfmul nb112_six(%esp),%mm2
+        pfmul nb112_twelve(%esp),%mm0
+
+        pfsub %mm2,%mm0
+
+        ## calculate potential and scalar force 
+        pfmul %mm1,%mm6         ## mm6=vcoul 
+        pfadd %mm6,%mm0
+        pfmul %mm0,%mm4         ## mm4=fscalar  
+
+        ## update nb potential 
+        pfadd nb112_Vvdwtot(%esp),%mm5
+        movq %mm5,nb112_Vvdwtot(%esp)
+
+        pfrsqrt %mm3,%mm5
+        pswapd %mm3,%mm3
+        pfrsqrt %mm3,%mm2
+        pswapd %mm3,%mm3
+        punpckldq %mm2,%mm5     ## seeds are in mm5 now, and rsq in mm3 
+
+        movq %mm5,%mm2
+        pfmul %mm5,%mm5
+        pfrsqit1 %mm3,%mm5
+        pfrcpit2 %mm2,%mm5      ## mm5=invsqrt 
+        movq %mm5,%mm3
+        pfmul %mm3,%mm3         ## mm3=invsq 
+        pfmul %mm5,%mm7         ## mm7=vcoul 
+        pfmul %mm7,%mm3         ## mm3=fscal for the two H's. 
+
+        ## update vctot 
+        pfadd %mm6,%mm7
+        pfadd nb112_vctot(%esp),%mm7
+        movq %mm7,nb112_vctot(%esp)
+
+        ## spread oxygen fscalar to both positions 
+        punpckldq %mm4,%mm4
+        ## calc vectorial force for O 
+        movq nb112_dxO(%esp),%mm0
+        movd nb112_dzO(%esp),%mm1
+        pfmul %mm4,%mm0
+        pfmul %mm4,%mm1
+
+        ## calc vectorial force for H's 
+        movq nb112_dxH(%esp),%mm5
+        movq nb112_dyH(%esp),%mm6
+        movq nb112_dzH(%esp),%mm7
+        pfmul %mm3,%mm5
+        pfmul %mm3,%mm6
+        pfmul %mm3,%mm7
+
+        ## update iO particle force 
+        movq nb112_fixO(%esp),%mm2
+        movd nb112_fizO(%esp),%mm3
+        pfadd %mm0,%mm2
+        pfadd %mm1,%mm3
+        movq %mm2,nb112_fixO(%esp)
+        movd %mm3,nb112_fizO(%esp)
+
+        ## update iH forces 
+        movq nb112_fixH(%esp),%mm2
+        movq nb112_fiyH(%esp),%mm3
+        movq nb112_fizH(%esp),%mm4
+        pfadd %mm5,%mm2
+        pfadd %mm6,%mm3
+        pfadd %mm7,%mm4
+        movq %mm2,nb112_fixH(%esp)
+        movq %mm3,nb112_fiyH(%esp)
+        movq %mm4,nb112_fizH(%esp)
+
+        ## pack j forces from H in the same form as the oxygen force. 
+        pfacc %mm6,%mm5         ## mm5(l)=fjx(H1+ h2) mm5(h)=fjy(H1+ h2) 
+        pfacc %mm7,%mm7         ## mm7(l)=fjz(H1+ h2) 
+
+        pfadd %mm5,%mm0         ## add up total force on j particle.  
+        pfadd %mm7,%mm1
+
+        ## update j particle force 
+        movq (%edi,%eax,4),%mm2
+        movd 8(%edi,%eax,4),%mm3
+        pfsub %mm0,%mm2
+        pfsub %mm1,%mm3
+        movq %mm2,(%edi,%eax,4)
+        movd %mm3,8(%edi,%eax,4)
+
+        ## interactions with j H1 
+        movq  12(%esi,%eax,4),%mm0
+        movd  20(%esi,%eax,4),%mm1
+        ## copy & expand to mm2-mm4 for the H interactions 
+        movq  %mm0,%mm2
+        movq  %mm0,%mm3
+        movq  %mm1,%mm4
+        punpckldq %mm2,%mm2
+        punpckhdq %mm3,%mm3
+        punpckldq %mm4,%mm4
+
+        movd nb112_qqOH(%esp),%mm6
+        movq nb112_qqHH(%esp),%mm7
+
+        pfsubr nb112_ixO(%esp),%mm0
+        pfsubr nb112_izO(%esp),%mm1
+
+        movq  %mm0,nb112_dxO(%esp)
+        pfmul %mm0,%mm0
+        movd  %mm1,nb112_dzO(%esp)
+        pfmul %mm1,%mm1
+        pfacc %mm1,%mm0
+        pfadd %mm1,%mm0         ## mm0=rsqO 
+
+        punpckldq %mm2,%mm2
+        punpckldq %mm3,%mm3
+        punpckldq %mm4,%mm4 ## mm2-mm4 is jx-jz 
+        pfsubr nb112_ixH(%esp),%mm2
+        pfsubr nb112_iyH(%esp),%mm3
+        pfsubr nb112_izH(%esp),%mm4   ## mm2-mm4 is dxH-dzH 
+
+        movq %mm2,nb112_dxH(%esp)
+        movq %mm3,nb112_dyH(%esp)
+        movq %mm4,nb112_dzH(%esp)
+        pfmul %mm2,%mm2
+        pfmul %mm3,%mm3
+        pfmul %mm4,%mm4
+
+        pfadd %mm2,%mm3
+        pfadd %mm4,%mm3         ## mm3=rsqH 
+
+        pfrsqrt %mm0,%mm1
+
+        movq %mm1,%mm2
+        pfmul %mm1,%mm1
+        pfrsqit1 %mm0,%mm1
+        pfrcpit2 %mm2,%mm1      ## mm1=invsqrt 
+        movq  %mm1,%mm4
+        pfmul %mm4,%mm4         ## mm4=invsq 
+        ## calculate potential and scalar force 
+        pfmul %mm1,%mm6         ## mm6=vcoul 
+        pfmul %mm6,%mm4         ## mm4=fscalar  
+
+        pfrsqrt %mm3,%mm5
+        pswapd %mm3,%mm3
+        pfrsqrt %mm3,%mm2
+        pswapd %mm3,%mm3
+        punpckldq %mm2,%mm5     ## seeds are in mm5 now, and rsq in mm3 
+
+        movq %mm5,%mm2
+        pfmul %mm5,%mm5
+        pfrsqit1 %mm3,%mm5
+        pfrcpit2 %mm2,%mm5      ## mm5=invsqrt 
+        movq %mm5,%mm3
+        pfmul %mm3,%mm3         ## mm3=invsq 
+        pfmul %mm5,%mm7         ## mm7=vcoul 
+        pfmul %mm7,%mm3         ## mm3=fscal for the two H's. 
+
+        ## update vctot 
+        pfadd %mm6,%mm7
+        pfadd nb112_vctot(%esp),%mm7
+        movq %mm7,nb112_vctot(%esp)
+
+        ## spread oxygen fscalar to both positions 
+        punpckldq %mm4,%mm4
+        ## calc vectorial force for O 
+        movq nb112_dxO(%esp),%mm0
+        movd nb112_dzO(%esp),%mm1
+        pfmul %mm4,%mm0
+        pfmul %mm4,%mm1
+
+        ## calc vectorial force for H's 
+        movq nb112_dxH(%esp),%mm5
+        movq nb112_dyH(%esp),%mm6
+        movq nb112_dzH(%esp),%mm7
+        pfmul %mm3,%mm5
+        pfmul %mm3,%mm6
+        pfmul %mm3,%mm7
+
+        ## update iO particle force 
+        movq nb112_fixO(%esp),%mm2
+        movd nb112_fizO(%esp),%mm3
+        pfadd %mm0,%mm2
+        pfadd %mm1,%mm3
+        movq %mm2,nb112_fixO(%esp)
+        movd %mm3,nb112_fizO(%esp)
+
+        ## update iH forces 
+        movq nb112_fixH(%esp),%mm2
+        movq nb112_fiyH(%esp),%mm3
+        movq nb112_fizH(%esp),%mm4
+        pfadd %mm5,%mm2
+        pfadd %mm6,%mm3
+        pfadd %mm7,%mm4
+        movq %mm2,nb112_fixH(%esp)
+        movq %mm3,nb112_fiyH(%esp)
+        movq %mm4,nb112_fizH(%esp)
+
+        ## pack j forces from H in the same form as the oxygen force. 
+        pfacc %mm6,%mm5         ## mm5(l)=fjx(H1+ h2) mm5(h)=fjy(H1+ h2) 
+        pfacc %mm7,%mm7         ## mm7(l)=fjz(H1+ h2) 
+
+        pfadd %mm5,%mm0         ## add up total force on j particle.  
+        pfadd %mm7,%mm1
+
+        ## update j particle force 
+        movq 12(%edi,%eax,4),%mm2
+        movd 20(%edi,%eax,4),%mm3
+        pfsub %mm0,%mm2
+        pfsub %mm1,%mm3
+        movq %mm2,12(%edi,%eax,4)
+        movd %mm3,20(%edi,%eax,4)
+
+        ## interactions with j H2 
+        movq  24(%esi,%eax,4),%mm0
+        movd  32(%esi,%eax,4),%mm1
+        ## copy & expand to mm2-mm4 for the H interactions 
+        movq  %mm0,%mm2
+        movq  %mm0,%mm3
+        movq  %mm1,%mm4
+        punpckldq %mm2,%mm2
+        punpckhdq %mm3,%mm3
+        punpckldq %mm4,%mm4
+
+        movd nb112_qqOH(%esp),%mm6
+        movq nb112_qqHH(%esp),%mm7
+
+        pfsubr nb112_ixO(%esp),%mm0
+        pfsubr nb112_izO(%esp),%mm1
+
+        movq  %mm0,nb112_dxO(%esp)
+        pfmul %mm0,%mm0
+        movd  %mm1,nb112_dzO(%esp)
+        pfmul %mm1,%mm1
+        pfacc %mm1,%mm0
+        pfadd %mm1,%mm0         ## mm0=rsqO 
+
+        punpckldq %mm2,%mm2
+        punpckldq %mm3,%mm3
+        punpckldq %mm4,%mm4 ## mm2-mm4 is jx-jz 
+        pfsubr nb112_ixH(%esp),%mm2
+        pfsubr nb112_iyH(%esp),%mm3
+        pfsubr nb112_izH(%esp),%mm4   ## mm2-mm4 is dxH-dzH 
+
+        movq %mm2,nb112_dxH(%esp)
+        movq %mm3,nb112_dyH(%esp)
+        movq %mm4,nb112_dzH(%esp)
+        pfmul %mm2,%mm2
+        pfmul %mm3,%mm3
+        pfmul %mm4,%mm4
+
+        pfadd %mm2,%mm3
+        pfadd %mm4,%mm3         ## mm3=rsqH 
+
+        pfrsqrt %mm0,%mm1
+
+        movq %mm1,%mm2
+        pfmul %mm1,%mm1
+        pfrsqit1 %mm0,%mm1
+        pfrcpit2 %mm2,%mm1      ## mm1=invsqrt 
+        movq  %mm1,%mm4
+        pfmul %mm4,%mm4         ## mm4=invsq 
+        ## calculate potential and scalar force 
+        pfmul %mm1,%mm6         ## mm6=vcoul 
+        pfmul %mm6,%mm4         ## mm4=fscalar  
+
+        pfrsqrt %mm3,%mm5
+        pswapd %mm3,%mm3
+        pfrsqrt %mm3,%mm2
+        pswapd %mm3,%mm3
+        punpckldq %mm2,%mm5     ## seeds are in mm5 now, and rsq in mm3. 
+
+        movq %mm5,%mm2
+        pfmul %mm5,%mm5
+        pfrsqit1 %mm3,%mm5
+        pfrcpit2 %mm2,%mm5      ## mm5=invsqrt 
+        movq %mm5,%mm3
+        pfmul %mm3,%mm3         ## mm3=invsq 
+        pfmul %mm5,%mm7         ## mm7=vcoul 
+        pfmul %mm7,%mm3         ## mm3=fscal for the two H's. 
+
+        ## update vctot 
+        pfadd %mm6,%mm7
+        pfadd nb112_vctot(%esp),%mm7
+        movq %mm7,nb112_vctot(%esp)
+
+        ## spread oxygen fscalar to both positions 
+        punpckldq %mm4,%mm4
+        ## calc vectorial force for O 
+        movq nb112_dxO(%esp),%mm0
+        movd nb112_dzO(%esp),%mm1
+        pfmul %mm4,%mm0
+        pfmul %mm4,%mm1
+
+        ## calc vectorial force for H's 
+        movq nb112_dxH(%esp),%mm5
+        movq nb112_dyH(%esp),%mm6
+        movq nb112_dzH(%esp),%mm7
+        pfmul %mm3,%mm5
+        pfmul %mm3,%mm6
+        pfmul %mm3,%mm7
+
+        ## update iO particle force 
+        movq nb112_fixO(%esp),%mm2
+        movd nb112_fizO(%esp),%mm3
+        pfadd %mm0,%mm2
+        pfadd %mm1,%mm3
+        movq %mm2,nb112_fixO(%esp)
+        movd %mm3,nb112_fizO(%esp)
+
+        ## update iH forces 
+        movq nb112_fixH(%esp),%mm2
+        movq nb112_fiyH(%esp),%mm3
+        movq nb112_fizH(%esp),%mm4
+        pfadd %mm5,%mm2
+        pfadd %mm6,%mm3
+        pfadd %mm7,%mm4
+        movq %mm2,nb112_fixH(%esp)
+        movq %mm3,nb112_fiyH(%esp)
+        movq %mm4,nb112_fizH(%esp)
+
+        ## pack j forces from H in the same form as the oxygen force. 
+        pfacc %mm6,%mm5         ## mm5(l)=fjx(H1+ h2) mm5(h)=fjy(H1+ h2) 
+        pfacc %mm7,%mm7         ## mm7(l)=fjz(H1+ h2) 
+
+        pfadd %mm5,%mm0         ## add up total force on j particle.  
+        pfadd %mm7,%mm1
+
+        ## update j particle force 
+        movq 24(%edi,%eax,4),%mm2
+        movd 32(%edi,%eax,4),%mm3
+        pfsub %mm0,%mm2
+        pfsub %mm1,%mm3
+        movq %mm2,24(%edi,%eax,4)
+        movd %mm3,32(%edi,%eax,4)
+
+        ##  done  - one more? 
+        decl nb112_innerk(%esp)
+        jz  _nb_kernel112_ia32_3dnow.nb112_updateouterdata
+        jmp _nb_kernel112_ia32_3dnow.nb112_inner_loop
+_nb_kernel112_ia32_3dnow.nb112_updateouterdata: 
+        movl  nb112_ii3(%esp),%ecx
+
+        movq  (%edi,%ecx,4),%mm6       ## increment iO force  
+        movd  8(%edi,%ecx,4),%mm7
+        pfadd nb112_fixO(%esp),%mm6
+        pfadd nb112_fizO(%esp),%mm7
+        movq  %mm6,(%edi,%ecx,4)
+        movd  %mm7,8(%edi,%ecx,4)
+
+        movq  nb112_fixH(%esp),%mm0
+        movq  nb112_fiyH(%esp),%mm3
+        movq  nb112_fizH(%esp),%mm1
+        movq  %mm0,%mm2
+        punpckldq %mm3,%mm0     ## mm0(l)=fxH1, mm0(h)=fyH1 
+        punpckhdq %mm3,%mm2     ## mm2(l)=fxH2, mm2(h)=fyH2 
+        movq %mm1,%mm3
+        pswapd %mm3,%mm3
+        ## mm1 is fzH1 
+        ## mm3 is fzH2 
+
+        movq  12(%edi,%ecx,4),%mm6          ## increment iH1 force  
+        movd  20(%edi,%ecx,4),%mm7
+        pfadd %mm0,%mm6
+        pfadd %mm1,%mm7
+        movq  %mm6,12(%edi,%ecx,4)
+        movd  %mm7,20(%edi,%ecx,4)
+
+        movq  24(%edi,%ecx,4),%mm6          ## increment iH2 force 
+        movd  32(%edi,%ecx,4),%mm7
+        pfadd %mm2,%mm6
+        pfadd %mm3,%mm7
+        movq  %mm6,24(%edi,%ecx,4)
+        movd  %mm7,32(%edi,%ecx,4)
+
+
+        movl  nb112_fshift(%ebp),%ebx      ## increment fshift force 
+        movl  nb112_is3(%esp),%edx
+
+        movq  (%ebx,%edx,4),%mm6
+        movd  8(%ebx,%edx,4),%mm7
+        pfadd nb112_fixO(%esp),%mm6
+        pfadd nb112_fizO(%esp),%mm7
+        pfadd %mm0,%mm6
+        pfadd %mm1,%mm7
+        pfadd %mm2,%mm6
+        pfadd %mm3,%mm7
+        movq  %mm6,(%ebx,%edx,4)
+        movd  %mm7,8(%ebx,%edx,4)
+
+        ## get n from stack
+        movl nb112_n(%esp),%esi
+        ## get group index for i particle 
+        movl  nb112_gid(%ebp),%edx              ## base of gid[]
+        movl  (%edx,%esi,4),%edx                ## ggid=gid[n]
+
+        movq  nb112_vctot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
+
+        movl  nb112_Vc(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment vc[gid] 
+
+        movq  nb112_Vvdwtot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
+
+        movl  nb112_Vvdw(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment Vvdwtot[gid] 
+       ## finish if last 
+        movl nb112_nn1(%esp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel112_ia32_3dnow.nb112_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb112_n(%esp)
+        jmp _nb_kernel112_ia32_3dnow.nb112_outer
+_nb_kernel112_ia32_3dnow.nb112_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb112_nri(%esp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel112_ia32_3dnow.nb112_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel112_ia32_3dnow.nb112_threadloop
+_nb_kernel112_ia32_3dnow.nb112_end: 
+        femms
+
+        movl nb112_nouter(%esp),%eax
+        movl nb112_ninner(%esp),%ebx
+        movl nb112_outeriter(%ebp),%ecx
+        movl nb112_inneriter(%ebp),%edx
+        movl %eax,(%ecx)
+        movl %ebx,(%edx)
+
+        addl $220,%esp
+        popl %edi
+        popl %esi
+        popl %edx
+        popl %ecx
+        popl %ebx
+        popl %eax
+        leave
+        ret
 
 
 .globl nb_kernel112nf_ia32_3dnow
 .globl _nb_kernel112nf_ia32_3dnow
-nb_kernel112nf_ia32_3dnow:	
-_nb_kernel112nf_ia32_3dnow:	
-.equiv		nb112nf_p_nri,		8
-.equiv		nb112nf_iinr,		12
-.equiv		nb112nf_jindex,		16
-.equiv		nb112nf_jjnr,		20
-.equiv		nb112nf_shift,		24
-.equiv		nb112nf_shiftvec,	28
-.equiv		nb112nf_fshift,		32
-.equiv		nb112nf_gid,		36
-.equiv		nb112nf_pos,		40		
-.equiv		nb112nf_faction,	44
-.equiv		nb112nf_charge,		48
-.equiv		nb112nf_p_facel,		52
-.equiv		nb112nf_p_krf,		56	
-.equiv		nb112nf_p_crf,		60	
-.equiv		nb112nf_Vc,		64	
-.equiv		nb112nf_type,		68
-.equiv		nb112nf_p_ntype,	72
-.equiv		nb112nf_vdwparam,	76	
-.equiv		nb112nf_Vvdw,		80	
-.equiv		nb112nf_p_tabscale,	84	
-.equiv		nb112nf_VFtab,		88
-.equiv		nb112nf_invsqrta,	92	
-.equiv		nb112nf_dvda,		96
-.equiv          nb112nf_p_gbtabscale,   100
-.equiv          nb112nf_GBtab,          104
-.equiv          nb112nf_p_nthreads,     108
-.equiv          nb112nf_count,          112
-.equiv          nb112nf_mtx,            116
-.equiv          nb112nf_outeriter,      120
-.equiv          nb112nf_inneriter,      124
-.equiv          nb112nf_work,           128
-			;# stack offsets for local variables 
-.equiv		nb112nf_is3,		0
-.equiv		nb112nf_ii3,		4
-.equiv		nb112nf_ixO,		8
-.equiv		nb112nf_iyO,		12
-.equiv		nb112nf_izO,		16	
-.equiv		nb112nf_ixH,		20  
-.equiv		nb112nf_iyH,		28  
-.equiv		nb112nf_izH,		36  
-.equiv		nb112nf_qqOO,		44  
-.equiv		nb112nf_qqOH,		52  
-.equiv		nb112nf_qqHH,		60  
-.equiv		nb112nf_c6,		68  
-.equiv		nb112nf_c12,		76 
-.equiv		nb112nf_vctot,		84 
-.equiv		nb112nf_Vvdwtot,	92 
-.equiv		nb112nf_innerjjnr,	100
-.equiv		nb112nf_innerk,		104
-.equiv          nb112nf_n,              108 ;# idx for outer loop
-.equiv          nb112nf_nn1,            112 ;# number of outer iterations
-.equiv          nb112nf_nri,            116
-.equiv          nb112nf_ntype,          120
-.equiv          nb112nf_nouter,         124
-.equiv          nb112nf_ninner,         128
-	push ebp
-	mov ebp,esp	
-    	push eax
-    	push ebx
-    	push ecx
-    	push edx
-	push esi
-	push edi
-	sub esp, 132		;# local stack space 
-	femms
-	mov ecx, [ebp + nb112nf_p_nri]
-	mov edx, [ebp + nb112nf_p_ntype]
-	mov esi, [ebp + nb112nf_p_facel]
-	mov ecx, [ecx]
-	mov edx, [edx]
-	mov [esp + nb112nf_nri], ecx
-	mov [esp + nb112nf_ntype], edx
+nb_kernel112nf_ia32_3dnow:      
+_nb_kernel112nf_ia32_3dnow:     
+.set nb112nf_p_nri, 8
+.set nb112nf_iinr, 12
+.set nb112nf_jindex, 16
+.set nb112nf_jjnr, 20
+.set nb112nf_shift, 24
+.set nb112nf_shiftvec, 28
+.set nb112nf_fshift, 32
+.set nb112nf_gid, 36
+.set nb112nf_pos, 40
+.set nb112nf_faction, 44
+.set nb112nf_charge, 48
+.set nb112nf_p_facel, 52
+.set nb112nf_p_krf, 56
+.set nb112nf_p_crf, 60
+.set nb112nf_Vc, 64
+.set nb112nf_type, 68
+.set nb112nf_p_ntype, 72
+.set nb112nf_vdwparam, 76
+.set nb112nf_Vvdw, 80
+.set nb112nf_p_tabscale, 84
+.set nb112nf_VFtab, 88
+.set nb112nf_invsqrta, 92
+.set nb112nf_dvda, 96
+.set nb112nf_p_gbtabscale, 100
+.set nb112nf_GBtab, 104
+.set nb112nf_p_nthreads, 108
+.set nb112nf_count, 112
+.set nb112nf_mtx, 116
+.set nb112nf_outeriter, 120
+.set nb112nf_inneriter, 124
+.set nb112nf_work, 128
+                        ## stack offsets for local variables 
+.set nb112nf_is3, 0
+.set nb112nf_ii3, 4
+.set nb112nf_ixO, 8
+.set nb112nf_iyO, 12
+.set nb112nf_izO, 16
+.set nb112nf_ixH, 20
+.set nb112nf_iyH, 28
+.set nb112nf_izH, 36
+.set nb112nf_qqOO, 44
+.set nb112nf_qqOH, 52
+.set nb112nf_qqHH, 60
+.set nb112nf_c6, 68
+.set nb112nf_c12, 76
+.set nb112nf_vctot, 84
+.set nb112nf_Vvdwtot, 92
+.set nb112nf_innerjjnr, 100
+.set nb112nf_innerk, 104
+.set nb112nf_n, 108                         ## idx for outer loop
+.set nb112nf_nn1, 112                       ## number of outer iterations
+.set nb112nf_nri, 116
+.set nb112nf_ntype, 120
+.set nb112nf_nouter, 124
+.set nb112nf_ninner, 128
+        pushl %ebp
+        movl %esp,%ebp
+        pushl %eax
+        pushl %ebx
+        pushl %ecx
+        pushl %edx
+        pushl %esi
+        pushl %edi
+        subl $132,%esp          ## local stack space 
+        femms
+        movl nb112nf_p_nri(%ebp),%ecx
+        movl nb112nf_p_ntype(%ebp),%edx
+        movl nb112nf_p_facel(%ebp),%esi
+        movl (%ecx),%ecx
+        movl (%edx),%edx
+        movl %ecx,nb112nf_nri(%esp)
+        movl %edx,nb112nf_ntype(%esp)
 
-	;# zero iteration counters
-	mov eax, 0
-	mov [esp + nb112nf_nouter], eax
-	mov [esp + nb112nf_ninner], eax
+        ## zero iteration counters
+        movl $0,%eax
+        movl %eax,nb112nf_nouter(%esp)
+        movl %eax,nb112nf_ninner(%esp)
 
-	;# assume we have at least one i particle - start directly 	
+        ## assume we have at least one i particle - start directly      
 
-	mov   ecx, [ebp + nb112nf_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx]	    ;# ebx=ii 
+        movl  nb112nf_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]      
+        movl  (%ecx),%ebx           ## ebx=ii 
 
-	mov   edx, [ebp + nb112nf_charge]
-	movd  mm1, [esi]		;# mm1=facel 
-	movd  mm2, [edx + ebx*4]    ;# mm2=charge[ii0] (O) 
-	movd  mm3, [edx + ebx*4 + 4]    ;# mm2=charge[ii0+1] (H)  
-	movq  mm4, mm2	
-	pfmul mm4, mm1
-	movq  mm6, mm3
-	pfmul mm6, mm1
-	movq  mm5, mm4
-	pfmul mm4, mm2			;# mm4=qqOO*facel 
-	pfmul mm5, mm3			;# mm5=qqOH*facel 
-	pfmul mm6, mm3			;# mm6=qqHH*facel 
-	punpckldq mm5,mm5	    ;# spread to both halves 
-	punpckldq mm6,mm6	    ;# spread to both halves 
-	movq  [esp + nb112nf_qqOO], mm4
-	movq  [esp + nb112nf_qqOH], mm5
-	movq  [esp + nb112nf_qqHH], mm6
-	mov   edx, [ebp + nb112nf_type]
-	mov   ecx, [edx + ebx*4]
-	shl   ecx, 1
-	mov   edx, ecx
-	imul  ecx, [esp + nb112nf_ntype]
-	add   edx, ecx
-	mov   eax, [ebp + nb112nf_vdwparam]
-	movd  mm0, [eax + edx*4]          
-	movd  mm1, [eax + edx*4 + 4]
-	movq  [esp + nb112nf_c6], mm0
-	movq  [esp + nb112nf_c12], mm1
-	
-.nb112nf_threadloop:
-        mov   esi, [ebp + nb112nf_count]          ;# pointer to sync counter
-        mov   eax, [esi]
-.nb112nf_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [esi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb112nf_spinlock
+        movl  nb112nf_charge(%ebp),%edx
+        movd  (%esi),%mm1               ## mm1=facel 
+        movd  (%edx,%ebx,4),%mm2    ## mm2=charge[ii0] (O) 
+        movd  4(%edx,%ebx,4),%mm3       ## mm2=charge[ii0+1] (H)  
+        movq  %mm2,%mm4
+        pfmul %mm1,%mm4
+        movq  %mm3,%mm6
+        pfmul %mm1,%mm6
+        movq  %mm4,%mm5
+        pfmul %mm2,%mm4                 ## mm4=qqOO*facel 
+        pfmul %mm3,%mm5                 ## mm5=qqOH*facel 
+        pfmul %mm3,%mm6                 ## mm6=qqHH*facel 
+        punpckldq %mm5,%mm5         ## spread to both halves 
+        punpckldq %mm6,%mm6         ## spread to both halves 
+        movq  %mm4,nb112nf_qqOO(%esp)
+        movq  %mm5,nb112nf_qqOH(%esp)
+        movq  %mm6,nb112nf_qqHH(%esp)
+        movl  nb112nf_type(%ebp),%edx
+        movl  (%edx,%ebx,4),%ecx
+        shll  %ecx
+        movl  %ecx,%edx
+        imull nb112nf_ntype(%esp),%ecx
+        addl  %ecx,%edx
+        movl  nb112nf_vdwparam(%ebp),%eax
+        movd  (%eax,%edx,4),%mm0
+        movd  4(%eax,%edx,4),%mm1
+        movq  %mm0,nb112nf_c6(%esp)
+        movq  %mm1,nb112nf_c12(%esp)
 
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [esp + nb112nf_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [esp + nb112nf_n], eax
-        mov [esp + nb112nf_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb112nf_outerstart
-        jmp .nb112nf_end
+_nb_kernel112nf_ia32_3dnow.nb112nf_threadloop: 
+        movl  nb112nf_count(%ebp),%esi            ## pointer to sync counter
+        movl  (%esi),%eax
+_nb_kernel112nf_ia32_3dnow.nb112nf_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel112nf_ia32_3dnow.nb112nf_spinlock
 
-.nb112nf_outerstart:	
-	;# ebx contains number of outer iterations
-	add ebx, [esp + nb112nf_nouter]
-        mov [esp + nb112nf_nouter], ebx
-	
-.nb112nf_outer:
-	mov   eax, [ebp + nb112nf_shift]      ;# eax = pointer into shift[] 
-	mov   ebx, [eax + esi*4]		;# ebx=shift[n] 
-	
-	lea   ebx, [ebx + ebx*2]    ;# ebx=3*is 
-	mov   [esp + nb112nf_is3],ebx    	;# store is3 
+        ## if(nn1>nri) nn1=nri
+        movl nb112nf_nri(%esp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb112nf_n(%esp)
+        movl %ebx,nb112nf_nn1(%esp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel112nf_ia32_3dnow.nb112nf_outerstart
+        jmp _nb_kernel112nf_ia32_3dnow.nb112nf_end
 
-	mov   eax, [ebp + nb112nf_shiftvec]   ;# eax = base of shiftvec[] 
-	
-	movq  mm5, [eax + ebx*4]	;# move shX/shY to mm5 and shZ to mm6. 
-	movd  mm6, [eax + ebx*4 + 8]
-	movq  mm0, mm5
-	movq  mm1, mm5
-	movq  mm2, mm6
-	punpckldq mm0,mm0	    ;# also expand shX,Y,Z in mm0--mm2. 
-	punpckhdq mm1,mm1
-	punpckldq mm2,mm2		
-	
-	mov   ecx, [ebp + nb112nf_iinr]       ;# ecx = pointer into iinr[] 	
-	mov   ebx, [ecx + esi*4]	    ;# ebx=ii 
+_nb_kernel112nf_ia32_3dnow.nb112nf_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb112nf_nouter(%esp),%ebx
+        movl %ebx,nb112nf_nouter(%esp)
 
-	lea   ebx, [ebx + ebx*2]	;# ebx = 3*ii=ii3 
-	mov   eax, [ebp + nb112nf_pos]    ;# eax = base of pos[] 
+_nb_kernel112nf_ia32_3dnow.nb112nf_outer: 
+        movl  nb112nf_shift(%ebp),%eax        ## eax = pointer into shift[] 
+        movl  (%eax,%esi,4),%ebx                ## ebx=shift[n] 
 
-	pfadd mm5, [eax + ebx*4]    ;# ix = shX + posX (and iy too) 
-	movd  mm7, [eax + ebx*4 + 8]    ;# cant use direct memory add for 4 bytes (iz) 
-	mov   [esp + nb112nf_ii3], ebx	    ;# (use mm7 as temp. storage for iz.) 
-	pfadd mm6, mm7
-	movq  [esp + nb112nf_ixO], mm5	
-	movq  [esp + nb112nf_izO], mm6
+        leal  (%ebx,%ebx,2),%ebx    ## ebx=3*is 
+        movl  %ebx,nb112nf_is3(%esp)            ## store is3 
 
-	movd  mm3, [eax + ebx*4 + 12]
-	movd  mm4, [eax + ebx*4 + 16]
-	movd  mm5, [eax + ebx*4 + 20]
-	punpckldq  mm3, [eax + ebx*4 + 24]
-	punpckldq  mm4, [eax + ebx*4 + 28]
-	punpckldq  mm5, [eax + ebx*4 + 32] ;# coords of H1 in low mm3-mm5, H2 in high 
-	
-	pfadd mm0, mm3
-	pfadd mm1, mm4
-	pfadd mm2, mm5		
-	movq [esp + nb112nf_ixH], mm0	
-	movq [esp + nb112nf_iyH], mm1	
-	movq [esp + nb112nf_izH], mm2	
+        movl  nb112nf_shiftvec(%ebp),%eax     ## eax = base of shiftvec[] 
 
-	;# clear vctot and i forces 
-	pxor  mm7,mm7
-	movq  [esp + nb112nf_vctot], mm7
-	movq  [esp + nb112nf_Vvdwtot], mm7
+        movq  (%eax,%ebx,4),%mm5        ## move shX/shY to mm5 and shZ to mm6. 
+        movd  8(%eax,%ebx,4),%mm6
+        movq  %mm5,%mm0
+        movq  %mm5,%mm1
+        movq  %mm6,%mm2
+        punpckldq %mm0,%mm0         ## also expand shX,Y,Z in mm0--mm2. 
+        punpckhdq %mm1,%mm1
+        punpckldq %mm2,%mm2
 
-	mov   eax, [ebp + nb112nf_jindex]
-	mov   ecx, [eax + esi*4]	     ;# jindex[n] 
-	mov   edx, [eax + esi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
-	mov   [esp + nb112nf_innerk], edx    ;# number of innerloop atoms 
-	add   edx, [esp + nb112nf_ninner]
-	mov   [esp + nb112nf_ninner], edx
+        movl  nb112nf_iinr(%ebp),%ecx         ## ecx = pointer into iinr[]      
+        movl  (%ecx,%esi,4),%ebx            ## ebx=ii 
 
-	mov   esi, [ebp + nb112nf_pos]
-	mov   eax, [ebp + nb112nf_jjnr]
-	shl   ecx, 2
-	add   eax, ecx
-	mov   [esp + nb112nf_innerjjnr], eax     ;# pointer to jjnr[nj0] 
-.nb112nf_inner_loop:
-	;# a single j particle iteration here - compare with the unrolled code for comments. 
-	mov   eax, [esp + nb112nf_innerjjnr]
-	mov   eax, [eax]	;# eax=jnr offset 
-    	add dword ptr [esp + nb112nf_innerjjnr],  4 ;# advance pointer 
+        leal  (%ebx,%ebx,2),%ebx        ## ebx = 3*ii=ii3 
+        movl  nb112nf_pos(%ebp),%eax      ## eax = base of pos[] 
 
-	movd  mm6, [esp + nb112nf_qqOO]
-	movq  mm7, [esp + nb112nf_qqOH]
+        pfadd (%eax,%ebx,4),%mm5    ## ix = shX + posX (and iy too) 
+        movd  8(%eax,%ebx,4),%mm7       ## cant use direct memory add for 4 bytes (iz) 
+        movl  %ebx,nb112nf_ii3(%esp)        ## (use mm7 as temp. storage for iz.) 
+        pfadd %mm7,%mm6
+        movq  %mm5,nb112nf_ixO(%esp)
+        movq  %mm6,nb112nf_izO(%esp)
 
-	lea   eax, [eax + eax*2]
-	movq  mm0, [esi + eax*4]
-	movd  mm1, [esi + eax*4 + 8]
-	;# copy & expand to mm2-mm4 for the H interactions 
-	movq  mm2, mm0
-	movq  mm3, mm0
-	movq  mm4, mm1
-	punpckldq mm2,mm2
-	punpckhdq mm3,mm3
-	punpckldq mm4,mm4
-	
-	pfsubr mm0, [esp + nb112nf_ixO]
-	pfsubr mm1, [esp + nb112nf_izO]
-		
-	pfmul mm0,mm0
-	pfmul mm1,mm1
-	pfacc mm0, mm0
-	pfadd mm0, mm1		;# mm0=rsqO 
-	
-	punpckldq mm2, mm2
-	punpckldq mm3, mm3
-	punpckldq mm4, mm4  ;# mm2-mm4 is jx-jz 
-	pfsubr mm2, [esp + nb112nf_ixH]
-	pfsubr mm3, [esp + nb112nf_iyH]
-	pfsubr mm4, [esp + nb112nf_izH] ;# mm2-mm4 is dxH-dzH 
-	
-	pfmul mm2,mm2
-	pfmul mm3,mm3
-	pfmul mm4,mm4
+        movd  12(%eax,%ebx,4),%mm3
+        movd  16(%eax,%ebx,4),%mm4
+        movd  20(%eax,%ebx,4),%mm5
+        punpckldq  24(%eax,%ebx,4),%mm3
+        punpckldq  28(%eax,%ebx,4),%mm4
+        punpckldq  32(%eax,%ebx,4),%mm5    ## coords of H1 in low mm3-mm5, H2 in high 
 
-	pfadd mm3,mm2
-	pfadd mm3,mm4		;# mm3=rsqH 
+        pfadd %mm3,%mm0
+        pfadd %mm4,%mm1
+        pfadd %mm5,%mm2
+        movq %mm0,nb112nf_ixH(%esp)
+        movq %mm1,nb112nf_iyH(%esp)
+        movq %mm2,nb112nf_izH(%esp)
 
-    	pfrsqrt mm1,mm0
+        ## clear vctot and i forces 
+        pxor  %mm7,%mm7
+        movq  %mm7,nb112nf_vctot(%esp)
+        movq  %mm7,nb112nf_Vvdwtot(%esp)
 
-    	movq mm2,mm1
-    	pfmul mm1,mm1
-    	pfrsqit1 mm1,mm0				
-    	pfrcpit2 mm1,mm2	;# mm1=invsqrt  
-	movq  mm4, mm1
-	pfmul mm4, mm4		;# mm4=invsq  
+        movl  nb112nf_jindex(%ebp),%eax
+        movl  (%eax,%esi,4),%ecx             ## jindex[n] 
+        movl  4(%eax,%esi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
+        movl  %edx,nb112nf_innerk(%esp)      ## number of innerloop atoms 
+        addl  nb112nf_ninner(%esp),%edx
+        movl  %edx,nb112nf_ninner(%esp)
 
-	movq mm2, mm4
-	pfmul mm2, mm4
-	pfmul mm2, mm4
-	movq mm0, mm2
-	pfmul mm0,mm0
-	pfmul mm2, [esp + nb112nf_c6]
-	pfmul mm0, [esp + nb112nf_c12]
-	movq mm5, mm0
-	pfsub mm5, mm2		;# Vvdw 
+        movl  nb112nf_pos(%ebp),%esi
+        movl  nb112nf_jjnr(%ebp),%eax
+        shll  $2,%ecx
+        addl  %ecx,%eax
+        movl  %eax,nb112nf_innerjjnr(%esp)       ## pointer to jjnr[nj0] 
+_nb_kernel112nf_ia32_3dnow.nb112nf_inner_loop: 
+        ## a single j particle iteration here - compare with the unrolled code for comments. 
+        movl  nb112nf_innerjjnr(%esp),%eax
+        movl  (%eax),%eax       ## eax=jnr offset 
+        addl $4,nb112nf_innerjjnr(%esp)             ## advance pointer 
 
-	;# calculate potential and scalar force 
-	pfmul mm6, mm1		;# mm6=vcoul 
-	;# update nb potential 
-	pfadd mm5, [esp + nb112nf_Vvdwtot]
-	movq [esp + nb112nf_Vvdwtot], mm5
+        movd  nb112nf_qqOO(%esp),%mm6
+        movq  nb112nf_qqOH(%esp),%mm7
 
-	pfrsqrt mm5, mm3
-	pswapd mm3,mm3
-	pfrsqrt mm2, mm3
-	pswapd mm3,mm3
-	punpckldq mm5,mm2	;# seeds are in mm5 now, and rsq in mm3 
+        leal  (%eax,%eax,2),%eax
+        movq  (%esi,%eax,4),%mm0
+        movd  8(%esi,%eax,4),%mm1
+        ## copy & expand to mm2-mm4 for the H interactions 
+        movq  %mm0,%mm2
+        movq  %mm0,%mm3
+        movq  %mm1,%mm4
+        punpckldq %mm2,%mm2
+        punpckhdq %mm3,%mm3
+        punpckldq %mm4,%mm4
 
-	movq mm2, mm5
-	pfmul mm5,mm5
-    	pfrsqit1 mm5,mm3				
-    	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
-	pfmul mm7, mm5		;# mm7=vcoul 
-	;# update vctot 
-	pfadd mm7, mm6
-	pfadd mm7, [esp + nb112nf_vctot]
-	movq [esp + nb112nf_vctot], mm7
-	
-	;# interactions with j H1 
-	movq  mm0, [esi + eax*4 + 12]
-	movd  mm1, [esi + eax*4 + 20]
-	;# copy & expand to mm2-mm4 for the H interactions 
-	movq  mm2, mm0
-	movq  mm3, mm0
-	movq  mm4, mm1
-	punpckldq mm2,mm2
-	punpckhdq mm3,mm3
-	punpckldq mm4,mm4
-	
-	movd mm6, [esp + nb112nf_qqOH]
-	movq mm7, [esp + nb112nf_qqHH]
-	
-	pfsubr mm0, [esp + nb112nf_ixO]
-	pfsubr mm1, [esp + nb112nf_izO]
-		
-	pfmul mm0,mm0
-	pfmul mm1,mm1
-	pfacc mm0, mm1
-	pfadd mm0, mm1		;# mm0=rsqO 
-	
-	punpckldq mm2, mm2
-	punpckldq mm3, mm3
-	punpckldq mm4, mm4  ;# mm2-mm4 is jx-jz 
-	pfsubr mm2, [esp + nb112nf_ixH]
-	pfsubr mm3, [esp + nb112nf_iyH]
-	pfsubr mm4, [esp + nb112nf_izH] ;# mm2-mm4 is dxH-dzH 
-	
-	pfmul mm2,mm2
-	pfmul mm3,mm3
-	pfmul mm4,mm4
+        pfsubr nb112nf_ixO(%esp),%mm0
+        pfsubr nb112nf_izO(%esp),%mm1
 
-	pfadd mm3,mm2
-	pfadd mm3,mm4		;# mm3=rsqH 
+        pfmul %mm0,%mm0
+        pfmul %mm1,%mm1
+        pfacc %mm0,%mm0
+        pfadd %mm1,%mm0         ## mm0=rsqO 
 
-    	pfrsqrt mm1,mm0
+        punpckldq %mm2,%mm2
+        punpckldq %mm3,%mm3
+        punpckldq %mm4,%mm4 ## mm2-mm4 is jx-jz 
+        pfsubr nb112nf_ixH(%esp),%mm2
+        pfsubr nb112nf_iyH(%esp),%mm3
+        pfsubr nb112nf_izH(%esp),%mm4   ## mm2-mm4 is dxH-dzH 
 
-    	movq mm2,mm1
-    	pfmul mm1,mm1
-    	pfrsqit1 mm1,mm0				
-    	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
-	;# calculate potential and scalar force 
-	pfmul mm6, mm1		;# mm6=vcoul 
+        pfmul %mm2,%mm2
+        pfmul %mm3,%mm3
+        pfmul %mm4,%mm4
 
-	pfrsqrt mm5, mm3
-	pswapd mm3,mm3
-	pfrsqrt mm2, mm3
-	pswapd mm3,mm3
-	punpckldq mm5,mm2	;# seeds are in mm5 now, and rsq in mm3 
+        pfadd %mm2,%mm3
+        pfadd %mm4,%mm3         ## mm3=rsqH 
 
-	movq mm2, mm5
-	pfmul mm5,mm5
-    	pfrsqit1 mm5,mm3				
-    	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
-	pfmul mm7, mm5		;# mm7=vcoul 
-	;# update vctot 
-	pfadd mm7, mm6
-	pfadd mm7, [esp + nb112nf_vctot]
-	movq [esp + nb112nf_vctot], mm7
-	
-	;# interactions with j H2 
-	movq  mm0, [esi + eax*4 + 24]
-	movd  mm1, [esi + eax*4 + 32]
-	;# copy & expand to mm2-mm4 for the H interactions 
-	movq  mm2, mm0
-	movq  mm3, mm0
-	movq  mm4, mm1
-	punpckldq mm2,mm2
-	punpckhdq mm3,mm3
-	punpckldq mm4,mm4
+        pfrsqrt %mm0,%mm1
 
-	movd mm6, [esp + nb112nf_qqOH]
-	movq mm7, [esp + nb112nf_qqHH]
+        movq %mm1,%mm2
+        pfmul %mm1,%mm1
+        pfrsqit1 %mm0,%mm1
+        pfrcpit2 %mm2,%mm1      ## mm1=invsqrt  
+        movq  %mm1,%mm4
+        pfmul %mm4,%mm4         ## mm4=invsq  
 
-	pfsubr mm0, [esp + nb112nf_ixO]
-	pfsubr mm1, [esp + nb112nf_izO]
-		
-	pfmul mm0,mm0
-	pfmul mm1,mm1
-	pfacc mm0, mm1
-	pfadd mm0, mm1		;# mm0=rsqO 
-	
-	punpckldq mm2, mm2
-	punpckldq mm3, mm3
-	punpckldq mm4, mm4  ;# mm2-mm4 is jx-jz 
-	pfsubr mm2, [esp + nb112nf_ixH]
-	pfsubr mm3, [esp + nb112nf_iyH]
-	pfsubr mm4, [esp + nb112nf_izH] ;# mm2-mm4 is dxH-dzH 
-	
-	pfmul mm2,mm2
-	pfmul mm3,mm3
-	pfmul mm4,mm4
+        movq %mm4,%mm2
+        pfmul %mm4,%mm2
+        pfmul %mm4,%mm2
+        movq %mm2,%mm0
+        pfmul %mm0,%mm0
+        pfmul nb112nf_c6(%esp),%mm2
+        pfmul nb112nf_c12(%esp),%mm0
+        movq %mm0,%mm5
+        pfsub %mm2,%mm5         ## Vvdw 
 
-	pfadd mm3,mm2
-	pfadd mm3,mm4		;# mm3=rsqH 
+        ## calculate potential and scalar force 
+        pfmul %mm1,%mm6         ## mm6=vcoul 
+        ## update nb potential 
+        pfadd nb112nf_Vvdwtot(%esp),%mm5
+        movq %mm5,nb112nf_Vvdwtot(%esp)
 
-    	pfrsqrt mm1,mm0
+        pfrsqrt %mm3,%mm5
+        pswapd %mm3,%mm3
+        pfrsqrt %mm3,%mm2
+        pswapd %mm3,%mm3
+        punpckldq %mm2,%mm5     ## seeds are in mm5 now, and rsq in mm3 
 
-    	movq mm2,mm1
-    	pfmul mm1,mm1
-    	pfrsqit1 mm1,mm0				
-    	pfrcpit2 mm1,mm2	;# mm1=invsqrt 
-	;# calculate potential and scalar force 
-	pfmul mm6, mm1		;# mm6=vcoul 
+        movq %mm5,%mm2
+        pfmul %mm5,%mm5
+        pfrsqit1 %mm3,%mm5
+        pfrcpit2 %mm2,%mm5      ## mm5=invsqrt 
+        pfmul %mm5,%mm7         ## mm7=vcoul 
+        ## update vctot 
+        pfadd %mm6,%mm7
+        pfadd nb112nf_vctot(%esp),%mm7
+        movq %mm7,nb112nf_vctot(%esp)
 
-	pfrsqrt mm5, mm3
-	pswapd mm3,mm3
-	pfrsqrt mm2, mm3
-	pswapd mm3,mm3
-	punpckldq mm5,mm2	;# seeds are in mm5 now, and rsq in mm3. 
+        ## interactions with j H1 
+        movq  12(%esi,%eax,4),%mm0
+        movd  20(%esi,%eax,4),%mm1
+        ## copy & expand to mm2-mm4 for the H interactions 
+        movq  %mm0,%mm2
+        movq  %mm0,%mm3
+        movq  %mm1,%mm4
+        punpckldq %mm2,%mm2
+        punpckhdq %mm3,%mm3
+        punpckldq %mm4,%mm4
 
-	movq mm2, mm5
-	pfmul mm5,mm5
-    	pfrsqit1 mm5,mm3				
-    	pfrcpit2 mm5,mm2	;# mm5=invsqrt 
-	pfmul mm7, mm5		;# mm7=vcoul 
+        movd nb112nf_qqOH(%esp),%mm6
+        movq nb112nf_qqHH(%esp),%mm7
 
-	;# update vctot 
-	pfadd mm7, mm6
-	pfadd mm7, [esp + nb112nf_vctot]
-	movq [esp + nb112nf_vctot], mm7
-		
-	;#  done  - one more? 
-	dec dword ptr [esp + nb112nf_innerk]
-	jz  .nb112nf_updateouterdata
-	jmp .nb112nf_inner_loop	
-.nb112nf_updateouterdata:	
-	;# get n from stack
-	mov esi, [esp + nb112nf_n]
-        ;# get group index for i particle 
-        mov   edx, [ebp + nb112nf_gid]      	;# base of gid[]
-        mov   edx, [edx + esi*4]		;# ggid=gid[n]
+        pfsubr nb112nf_ixO(%esp),%mm0
+        pfsubr nb112nf_izO(%esp),%mm1
 
-	movq  mm7, [esp + nb112nf_vctot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
+        pfmul %mm0,%mm0
+        pfmul %mm1,%mm1
+        pfacc %mm1,%mm0
+        pfadd %mm1,%mm0         ## mm0=rsqO 
 
-	mov   eax, [ebp + nb112nf_Vc]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment vc[gid] 
+        punpckldq %mm2,%mm2
+        punpckldq %mm3,%mm3
+        punpckldq %mm4,%mm4 ## mm2-mm4 is jx-jz 
+        pfsubr nb112nf_ixH(%esp),%mm2
+        pfsubr nb112nf_iyH(%esp),%mm3
+        pfsubr nb112nf_izH(%esp),%mm4   ## mm2-mm4 is dxH-dzH 
 
-	movq  mm7, [esp + nb112nf_Vvdwtot]     
-	pfacc mm7,mm7	          ;# get and sum the two parts of total potential 
+        pfmul %mm2,%mm2
+        pfmul %mm3,%mm3
+        pfmul %mm4,%mm4
 
-	mov   eax, [ebp + nb112nf_Vvdw]
-	movd  mm6, [eax + edx*4] 
-	pfadd mm6, mm7
-	movd  [eax + edx*4], mm6          ;# increment Vvdwtot[gid] 
-       	;# finish if last 
-        mov ecx, [esp + nb112nf_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb112nf_outerend
+        pfadd %mm2,%mm3
+        pfadd %mm4,%mm3         ## mm3=rsqH 
 
-        ;# not last, iterate outer loop once more!  
-        mov [esp + nb112nf_n], esi
-        jmp .nb112nf_outer
-.nb112nf_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [esp + nb112nf_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb112nf_end
-        ;# non-zero, do one more workunit
-        jmp   .nb112nf_threadloop
-.nb112nf_end:
-	femms
+        pfrsqrt %mm0,%mm1
 
-	mov eax, [esp + nb112nf_nouter] 	
-	mov ebx, [esp + nb112nf_ninner]
-	mov ecx, [ebp + nb112nf_outeriter]
-	mov edx, [ebp + nb112nf_inneriter]
-	mov [ecx], eax
-	mov [edx], ebx
-	
-	add esp, 132
-	pop edi
-	pop esi
-    	pop edx
-    	pop ecx
-    	pop ebx
-    	pop eax
-	leave
-	ret
+        movq %mm1,%mm2
+        pfmul %mm1,%mm1
+        pfrsqit1 %mm0,%mm1
+        pfrcpit2 %mm2,%mm1      ## mm1=invsqrt 
+        ## calculate potential and scalar force 
+        pfmul %mm1,%mm6         ## mm6=vcoul 
+
+        pfrsqrt %mm3,%mm5
+        pswapd %mm3,%mm3
+        pfrsqrt %mm3,%mm2
+        pswapd %mm3,%mm3
+        punpckldq %mm2,%mm5     ## seeds are in mm5 now, and rsq in mm3 
+
+        movq %mm5,%mm2
+        pfmul %mm5,%mm5
+        pfrsqit1 %mm3,%mm5
+        pfrcpit2 %mm2,%mm5      ## mm5=invsqrt 
+        pfmul %mm5,%mm7         ## mm7=vcoul 
+        ## update vctot 
+        pfadd %mm6,%mm7
+        pfadd nb112nf_vctot(%esp),%mm7
+        movq %mm7,nb112nf_vctot(%esp)
+
+        ## interactions with j H2 
+        movq  24(%esi,%eax,4),%mm0
+        movd  32(%esi,%eax,4),%mm1
+        ## copy & expand to mm2-mm4 for the H interactions 
+        movq  %mm0,%mm2
+        movq  %mm0,%mm3
+        movq  %mm1,%mm4
+        punpckldq %mm2,%mm2
+        punpckhdq %mm3,%mm3
+        punpckldq %mm4,%mm4
+
+        movd nb112nf_qqOH(%esp),%mm6
+        movq nb112nf_qqHH(%esp),%mm7
+
+        pfsubr nb112nf_ixO(%esp),%mm0
+        pfsubr nb112nf_izO(%esp),%mm1
+
+        pfmul %mm0,%mm0
+        pfmul %mm1,%mm1
+        pfacc %mm1,%mm0
+        pfadd %mm1,%mm0         ## mm0=rsqO 
+
+        punpckldq %mm2,%mm2
+        punpckldq %mm3,%mm3
+        punpckldq %mm4,%mm4 ## mm2-mm4 is jx-jz 
+        pfsubr nb112nf_ixH(%esp),%mm2
+        pfsubr nb112nf_iyH(%esp),%mm3
+        pfsubr nb112nf_izH(%esp),%mm4   ## mm2-mm4 is dxH-dzH 
+
+        pfmul %mm2,%mm2
+        pfmul %mm3,%mm3
+        pfmul %mm4,%mm4
+
+        pfadd %mm2,%mm3
+        pfadd %mm4,%mm3         ## mm3=rsqH 
+
+        pfrsqrt %mm0,%mm1
+
+        movq %mm1,%mm2
+        pfmul %mm1,%mm1
+        pfrsqit1 %mm0,%mm1
+        pfrcpit2 %mm2,%mm1      ## mm1=invsqrt 
+        ## calculate potential and scalar force 
+        pfmul %mm1,%mm6         ## mm6=vcoul 
+
+        pfrsqrt %mm3,%mm5
+        pswapd %mm3,%mm3
+        pfrsqrt %mm3,%mm2
+        pswapd %mm3,%mm3
+        punpckldq %mm2,%mm5     ## seeds are in mm5 now, and rsq in mm3. 
+
+        movq %mm5,%mm2
+        pfmul %mm5,%mm5
+        pfrsqit1 %mm3,%mm5
+        pfrcpit2 %mm2,%mm5      ## mm5=invsqrt 
+        pfmul %mm5,%mm7         ## mm7=vcoul 
+
+        ## update vctot 
+        pfadd %mm6,%mm7
+        pfadd nb112nf_vctot(%esp),%mm7
+        movq %mm7,nb112nf_vctot(%esp)
+
+        ##  done  - one more? 
+        decl nb112nf_innerk(%esp)
+        jz  _nb_kernel112nf_ia32_3dnow.nb112nf_updateouterdata
+        jmp _nb_kernel112nf_ia32_3dnow.nb112nf_inner_loop
+_nb_kernel112nf_ia32_3dnow.nb112nf_updateouterdata: 
+        ## get n from stack
+        movl nb112nf_n(%esp),%esi
+        ## get group index for i particle 
+        movl  nb112nf_gid(%ebp),%edx            ## base of gid[]
+        movl  (%edx,%esi,4),%edx                ## ggid=gid[n]
+
+        movq  nb112nf_vctot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
+
+        movl  nb112nf_Vc(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment vc[gid] 
+
+        movq  nb112nf_Vvdwtot(%esp),%mm7
+        pfacc %mm7,%mm7           ## get and sum the two parts of total potential 
+
+        movl  nb112nf_Vvdw(%ebp),%eax
+        movd  (%eax,%edx,4),%mm6
+        pfadd %mm7,%mm6
+        movd  %mm6,(%eax,%edx,4)          ## increment Vvdwtot[gid] 
+        ## finish if last 
+        movl nb112nf_nn1(%esp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel112nf_ia32_3dnow.nb112nf_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb112nf_n(%esp)
+        jmp _nb_kernel112nf_ia32_3dnow.nb112nf_outer
+_nb_kernel112nf_ia32_3dnow.nb112nf_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb112nf_nri(%esp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel112nf_ia32_3dnow.nb112nf_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel112nf_ia32_3dnow.nb112nf_threadloop
+_nb_kernel112nf_ia32_3dnow.nb112nf_end: 
+        femms
+
+        movl nb112nf_nouter(%esp),%eax
+        movl nb112nf_ninner(%esp),%ebx
+        movl nb112nf_outeriter(%ebp),%ecx
+        movl nb112nf_inneriter(%ebp),%edx
+        movl %eax,(%ecx)
+        movl %ebx,(%edx)
+
+        addl $132,%esp
+        popl %edi
+        popl %esi
+        popl %edx
+        popl %ecx
+        popl %ebx
+        popl %eax
+        leave
+        ret
+
 

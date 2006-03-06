@@ -1,1000 +1,978 @@
-;#
-;# $Id$
-;#
-;# Gromacs 4.0                         Copyright (c) 1991-2003 
-;# David van der Spoel, Erik Lindahl
-;#
-;# This program is free software; you can redistribute it and/or
-;# modify it under the terms of the GNU General Public License
-;# as published by the Free Software Foundation; either version 2
-;# of the License, or (at your option) any later version.
-;#
-;# To help us fund GROMACS development, we humbly ask that you cite
-;# the research papers on the package. Check out http://www.gromacs.org
-;# 
-;# And Hey:
-;# Gnomes, ROck Monsters And Chili Sauce
-;#
+##
+## $Id$
+##
+## Gromacs 4.0                         Copyright (c) 1991-2003 
+## David van der Spoel, Erik Lindahl
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or (at your option) any later version.
+##
+## To help us fund GROMACS development, we humbly ask that you cite
+## the research papers on the package. Check out http://www.gromacs.org
+## 
+## And Hey:
+## Gnomes, ROck Monsters And Chili Sauce
+##
 
-;# These files require GNU binutils 2.10 or later, since we
-;# use intel syntax for portability, or a recent version 
-;# of NASM that understands Extended 3DNow and SSE2 instructions.
-;# (NASM is normally only used with MS Visual C++).
-;# Since NASM and gnu as disagree on some definitions and use 
-;# completely different preprocessing options I have to introduce a
-;# trick: NASM uses ';' for comments, while gnu as uses '#' on x86.
-;# Gnu as treats ';' as a line break, i.e. ignores it. This is the
-;# reason why all comments need both symbols...
-;# The source is written for GNU as, with intel syntax. When you use
-;# NASM we redefine a couple of things. The false if-statement around 
-;# the following code is seen by GNU as, but NASM doesn't see it, so 
-;# the code inside is read by NASM but not gcc.
 
-; .if 0    # block below only read by NASM
-%define .section	section
-%define .long		dd
-%define .align		align
-%define .globl		global
-;# NASM only wants 'dword', not 'dword ptr'.
-%define ptr
-.equiv          .equiv                  2
-   %1 equ %2
-%endmacro
-; .endif                   # End of NASM-specific block
-; .intel_syntax noprefix   # Line only read by gnu as
 
 
 
 .globl nb_kernel200_x86_64_sse2
 .globl _nb_kernel200_x86_64_sse2
-nb_kernel200_x86_64_sse2:	
-_nb_kernel200_x86_64_sse2:	
-;#	Room for return address and rbp (16 bytes)
-.equiv          nb200_fshift,           16
-.equiv          nb200_gid,              24
-.equiv          nb200_pos,              32
-.equiv          nb200_faction,          40
-.equiv          nb200_charge,           48
-.equiv          nb200_p_facel,          56
-.equiv          nb200_argkrf,           64
-.equiv          nb200_argcrf,           72
-.equiv          nb200_Vc,               80
-.equiv          nb200_type,             88
-.equiv          nb200_p_ntype,          96
-.equiv          nb200_vdwparam,         104
-.equiv          nb200_Vvdw,             112
-.equiv          nb200_p_tabscale,       120
-.equiv          nb200_VFtab,            128
-.equiv          nb200_invsqrta,         136
-.equiv          nb200_dvda,             144
-.equiv          nb200_p_gbtabscale,     152
-.equiv          nb200_GBtab,            160
-.equiv          nb200_p_nthreads,       168
-.equiv          nb200_count,            176
-.equiv          nb200_mtx,              184
-.equiv          nb200_outeriter,        192
-.equiv          nb200_inneriter,        200
-.equiv          nb208_work,             200
-	;# stack offsets for local variables  
-	;# bottom of stack is cache-aligned for sse2 use 
-.equiv          nb200_ix,               0
-.equiv          nb200_iy,               16
-.equiv          nb200_iz,               32
-.equiv          nb200_iq,               48
-.equiv          nb200_dx,               64
-.equiv          nb200_dy,               80
-.equiv          nb200_dz,               96
-.equiv          nb200_vctot,            112
-.equiv          nb200_fix,              128
-.equiv          nb200_fiy,              144
-.equiv          nb200_fiz,              160
-.equiv          nb200_half,             176
-.equiv          nb200_three,            192
-.equiv          nb200_two,              208
-.equiv          nb200_krf,              224
-.equiv          nb200_crf,              240
-.equiv          nb200_is3,              256
-.equiv          nb200_ii3,              260
-.equiv          nb200_nri,              264
-.equiv          nb200_iinr,             272
-.equiv          nb200_jindex,           280
-.equiv          nb200_jjnr,             288
-.equiv          nb200_shift,            296
-.equiv          nb200_shiftvec,         304
-.equiv          nb200_facel,            312
-.equiv          nb200_innerjjnr,        320
-.equiv          nb200_innerk,           328
-.equiv          nb200_n,                332
-.equiv          nb200_nn1,              336
-.equiv          nb200_nouter,           340
-.equiv          nb200_ninner,           344
-	push rbp
-	mov  rbp, rsp
-	push rbx
-	emms
+nb_kernel200_x86_64_sse2:       
+_nb_kernel200_x86_64_sse2:      
+##      Room for return address and rbp (16 bytes)
+.set nb200_fshift, 16
+.set nb200_gid, 24
+.set nb200_pos, 32
+.set nb200_faction, 40
+.set nb200_charge, 48
+.set nb200_p_facel, 56
+.set nb200_argkrf, 64
+.set nb200_argcrf, 72
+.set nb200_Vc, 80
+.set nb200_type, 88
+.set nb200_p_ntype, 96
+.set nb200_vdwparam, 104
+.set nb200_Vvdw, 112
+.set nb200_p_tabscale, 120
+.set nb200_VFtab, 128
+.set nb200_invsqrta, 136
+.set nb200_dvda, 144
+.set nb200_p_gbtabscale, 152
+.set nb200_GBtab, 160
+.set nb200_p_nthreads, 168
+.set nb200_count, 176
+.set nb200_mtx, 184
+.set nb200_outeriter, 192
+.set nb200_inneriter, 200
+.set nb208_work, 200
+        ## stack offsets for local variables  
+        ## bottom of stack is cache-aligned for sse2 use 
+.set nb200_ix, 0
+.set nb200_iy, 16
+.set nb200_iz, 32
+.set nb200_iq, 48
+.set nb200_dx, 64
+.set nb200_dy, 80
+.set nb200_dz, 96
+.set nb200_vctot, 112
+.set nb200_fix, 128
+.set nb200_fiy, 144
+.set nb200_fiz, 160
+.set nb200_half, 176
+.set nb200_three, 192
+.set nb200_two, 208
+.set nb200_krf, 224
+.set nb200_crf, 240
+.set nb200_is3, 256
+.set nb200_ii3, 260
+.set nb200_nri, 264
+.set nb200_iinr, 272
+.set nb200_jindex, 280
+.set nb200_jjnr, 288
+.set nb200_shift, 296
+.set nb200_shiftvec, 304
+.set nb200_facel, 312
+.set nb200_innerjjnr, 320
+.set nb200_innerk, 328
+.set nb200_n, 332
+.set nb200_nn1, 336
+.set nb200_nouter, 340
+.set nb200_ninner, 344
+        push %rbp
+        movq %rsp,%rbp
+        push %rbx
+        emms
 
-        push r12
-        push r13
-        push r14
-        push r15
+        push %r12
+        push %r13
+        push %r14
+        push %r15
 
-	sub rsp, 360		;# local variable stack space (n*16+8)
+        subq $360,%rsp          ## local variable stack space (n*16+8)
 
-	;# zero 32-bit iteration counters
-	mov eax, 0
-	mov [rsp + nb200_nouter], eax
-	mov [rsp + nb200_ninner], eax
+        ## zero 32-bit iteration counters
+        movl $0,%eax
+        movl %eax,nb200_nouter(%rsp)
+        movl %eax,nb200_ninner(%rsp)
 
-	mov edi, [rdi]
-	mov [rsp + nb200_nri], edi
-	mov [rsp + nb200_iinr], rsi
-	mov [rsp + nb200_jindex], rdx
-	mov [rsp + nb200_jjnr], rcx
-	mov [rsp + nb200_shift], r8
-	mov [rsp + nb200_shiftvec], r9
-	mov rsi, [rbp + nb200_p_facel]
-	movsd xmm0, [rsi]
-	movsd [rsp + nb200_facel], xmm0
+        movl (%rdi),%edi
+        movl %edi,nb200_nri(%rsp)
+        movq %rsi,nb200_iinr(%rsp)
+        movq %rdx,nb200_jindex(%rsp)
+        movq %rcx,nb200_jjnr(%rsp)
+        movq %r8,nb200_shift(%rsp)
+        movq %r9,nb200_shiftvec(%rsp)
+        movq nb200_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd %xmm0,nb200_facel(%rsp)
 
-	mov rsi, [rbp + nb200_argkrf]
-	mov rdi, [rbp + nb200_argcrf]
-	movsd xmm1, [rsi]
-	movsd xmm2, [rdi]
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
-	movapd [rsp + nb200_krf], xmm1
-	movapd [rsp + nb200_crf], xmm2
+        movq nb200_argkrf(%rbp),%rsi
+        movq nb200_argcrf(%rbp),%rdi
+        movsd (%rsi),%xmm1
+        movsd (%rdi),%xmm2
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
+        movapd %xmm1,nb200_krf(%rsp)
+        movapd %xmm2,nb200_crf(%rsp)
 
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double half IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [rsp + nb200_half], eax
-	mov [rsp + nb200_half + 4], ebx
-	movsd xmm1, [rsp + nb200_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# one
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# two
-	addpd  xmm3, xmm2	;# three
-	movapd [rsp + nb200_half], xmm1
-	movapd [rsp + nb200_two], xmm2
-	movapd [rsp + nb200_three], xmm3
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double half IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb200_half(%rsp)
+        movl %ebx,nb200_half+4(%rsp)
+        movsd nb200_half(%rsp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## one
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## two
+        addpd  %xmm2,%xmm3      ## three
+        movapd %xmm1,nb200_half(%rsp)
+        movapd %xmm2,nb200_two(%rsp)
+        movapd %xmm3,nb200_three(%rsp)
 
-.nb200_threadloop:
-        mov   rsi, [rbp + nb200_count]          ;# pointer to sync counter
-        mov   eax, [rsi]
-.nb200_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [rsi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb200_spinlock
+_nb_kernel200_x86_64_sse2.nb200_threadloop: 
+        movq  nb200_count(%rbp),%rsi            ## pointer to sync counter
+        movl  (%rsi),%eax
+_nb_kernel200_x86_64_sse2.nb200_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel200_x86_64_sse2.nb200_spinlock
 
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [rsp + nb200_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [rsp + nb200_n], eax
-        mov [rsp + nb200_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb200_outerstart
-        jmp .nb200_end
+        ## if(nn1>nri) nn1=nri
+        movl nb200_nri(%rsp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb200_n(%rsp)
+        movl %ebx,nb200_nn1(%rsp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel200_x86_64_sse2.nb200_outerstart
+        jmp _nb_kernel200_x86_64_sse2.nb200_end
 
-.nb200_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [rsp + nb200_nouter]
-	mov [rsp + nb200_nouter], ebx
+_nb_kernel200_x86_64_sse2.nb200_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb200_nouter(%rsp),%ebx
+        movl %ebx,nb200_nouter(%rsp)
 
-.nb200_outer:
-	mov   rax, [rsp + nb200_shift]      ;# rax = pointer into shift[] 
-	mov   ebx, [rax + rsi*4]		;# rbx=shift[n] 
-	
-	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
-	mov   [rsp + nb200_is3],ebx    	;# store is3 
+_nb_kernel200_x86_64_sse2.nb200_outer: 
+        movq  nb200_shift(%rsp),%rax        ## rax = pointer into shift[] 
+        movl  (%rax,%rsi,4),%ebx                ## rbx=shift[n] 
 
-	mov   rax, [rsp + nb200_shiftvec]   ;# rax = base of shiftvec[] 
+        lea  (%rbx,%rbx,2),%rbx    ## rbx=3*is 
+        movl  %ebx,nb200_is3(%rsp)      ## store is3 
 
-	movsd xmm0, [rax + rbx*8]
-	movsd xmm1, [rax + rbx*8 + 8]
-	movsd xmm2, [rax + rbx*8 + 16] 
+        movq  nb200_shiftvec(%rsp),%rax     ## rax = base of shiftvec[] 
 
-	mov   rcx, [rsp + nb200_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx+rsi*4]	    ;# ebx =ii 
+        movsd (%rax,%rbx,8),%xmm0
+        movsd 8(%rax,%rbx,8),%xmm1
+        movsd 16(%rax,%rbx,8),%xmm2
 
-	mov   rdx, [rbp + nb200_charge]
-	movsd xmm3, [rdx + rbx*8]	
-	mulsd xmm3, [rsp + nb200_facel]
-	shufpd xmm3, xmm3, 0
-	
-	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
-	mov   rax, [rbp + nb200_pos]    ;# rax = base of pos[]  
+        movq  nb200_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]        
+        movl  (%rcx,%rsi,4),%ebx    ## ebx =ii 
 
-	addsd xmm0, [rax + rbx*8]
-	addsd xmm1, [rax + rbx*8 + 8]
-	addsd xmm2, [rax + rbx*8 + 16]
+        movq  nb200_charge(%rbp),%rdx
+        movsd (%rdx,%rbx,8),%xmm3
+        mulsd nb200_facel(%rsp),%xmm3
+        shufpd $0,%xmm3,%xmm3
 
-	movapd [rsp + nb200_iq], xmm3
-	
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
+        lea  (%rbx,%rbx,2),%rbx        ## rbx = 3*ii=ii3 
+        movq  nb200_pos(%rbp),%rax      ## rax = base of pos[]  
 
-	movapd [rsp + nb200_ix], xmm0
-	movapd [rsp + nb200_iy], xmm1
-	movapd [rsp + nb200_iz], xmm2
+        addsd (%rax,%rbx,8),%xmm0
+        addsd 8(%rax,%rbx,8),%xmm1
+        addsd 16(%rax,%rbx,8),%xmm2
 
-	mov   [rsp + nb200_ii3], ebx
-	
-	;# clear vctot (xmm12) and i forces (xmm13-xmm15)
-	xorpd xmm12, xmm12
-	movapd xmm13, xmm12
-	movapd xmm14, xmm12
-	movapd xmm15, xmm12
-		
-	mov   rax, [rsp + nb200_jindex]
-	mov   ecx, [rax + rsi*4]	     ;# jindex[n] 
-	mov   edx, [rax + rsi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
+        movapd %xmm3,nb200_iq(%rsp)
 
-	mov   rsi, [rbp + nb200_pos]
-	mov   rdi, [rbp + nb200_faction]	
-	mov   rax, [rsp + nb200_jjnr]
-	shl   ecx, 2
-	add   rax, rcx
-	mov   [rsp + nb200_innerjjnr], rax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [rsp + nb200_ninner]
-	mov   [rsp + nb200_ninner], ecx
-	add   edx, 0
-	mov   [rsp + nb200_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb200_unroll_loop
-	jmp   .nb200_checksingle
-.nb200_unroll_loop:
-	;# twice unrolled innerloop here 
-	mov   rdx, [rsp + nb200_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   r8d, [rdx]	
-	mov   r9d, [rdx + 4]              
-	add qword ptr [rsp + nb200_innerjjnr],  8	;# advance pointer (unrolled 2) 
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
 
-	lea   rax, [r8 + r8*2]     ;# replace jnr with j3 
-	lea   rbx, [r9 + r9*2]	
+        movapd %xmm0,nb200_ix(%rsp)
+        movapd %xmm1,nb200_iy(%rsp)
+        movapd %xmm2,nb200_iz(%rsp)
 
-	mov rsi, [rbp + nb200_pos]       ;# base of pos[] 
+        movl  %ebx,nb200_ii3(%rsp)
 
-	;# move two coordinates to xmm4-xmm6
-	movlpd xmm4, [rsi + rax*8]
-	movlpd xmm5, [rsi + rax*8 + 8]
-	movlpd xmm6, [rsi + rax*8 + 16]
-	movhpd xmm4, [rsi + rbx*8]
-	movhpd xmm5, [rsi + rbx*8 + 8]
-	movhpd xmm6, [rsi + rbx*8 + 16]		
+        ## clear vctot (xmm12) and i forces (xmm13-xmm15)
+        xorpd %xmm12,%xmm12
+        movapd %xmm12,%xmm13
+        movapd %xmm12,%xmm14
+        movapd %xmm12,%xmm15
 
-	;# calc dr 
-	subpd xmm4, [rsp + nb200_ix]
-	subpd xmm5, [rsp + nb200_iy]
-	subpd xmm6, [rsp + nb200_iz]
+        movq  nb200_jindex(%rsp),%rax
+        movl  (%rax,%rsi,4),%ecx             ## jindex[n] 
+        movl  4(%rax,%rsi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
 
-	;# store dr 
-	movapd xmm9, xmm4
-	movapd xmm10, xmm5
-	movapd xmm11, xmm6
+        movq  nb200_pos(%rbp),%rsi
+        movq  nb200_faction(%rbp),%rdi
+        movq  nb200_jjnr(%rsp),%rax
+        shll  $2,%ecx
+        addq  %rcx,%rax
+        movq  %rax,nb200_innerjjnr(%rsp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb200_ninner(%rsp),%ecx
+        movl  %ecx,nb200_ninner(%rsp)
+        addl  $0,%edx
+        movl  %edx,nb200_innerk(%rsp)      ## number of innerloop atoms 
+        jge   _nb_kernel200_x86_64_sse2.nb200_unroll_loop
+        jmp   _nb_kernel200_x86_64_sse2.nb200_checksingle
+_nb_kernel200_x86_64_sse2.nb200_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movq  nb200_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%r8d
+        movl  4(%rdx),%r9d
+        addq $8,nb200_innerjjnr(%rsp)                   ## advance pointer (unrolled 2) 
 
-	mov rsi, [rbp + nb200_charge]    ;# base of charge[] 
-	;# square it 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm4, xmm5
-	addpd xmm4, xmm6
-	;# rsq in xmm4 
+        lea  (%r8,%r8,2),%rax     ## replace jnr with j3 
+        lea  (%r9,%r9,2),%rbx
 
-	
-	movlpd xmm3, [rsi + r8*8]
+        movq nb200_pos(%rbp),%rsi        ## base of pos[] 
 
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
+        ## move two coordinates to xmm4-xmm6
+        movlpd (%rsi,%rax,8),%xmm4
+        movlpd 8(%rsi,%rax,8),%xmm5
+        movlpd 16(%rsi,%rax,8),%xmm6
+        movhpd (%rsi,%rbx,8),%xmm4
+        movhpd 8(%rsi,%rbx,8),%xmm5
+        movhpd 16(%rsi,%rbx,8),%xmm6
 
-	movhpd xmm3, [rsi + r9*8]
-	movapd xmm7, [rsp + nb200_krf]	
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulpd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb200_three]
-	mulpd xmm7, xmm4	;# krsq 
-	mulpd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200_half]
-	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulpd xmm1, xmm5	
-	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+        ## calc dr 
+        subpd nb200_ix(%rsp),%xmm4
+        subpd nb200_iy(%rsp),%xmm5
+        subpd nb200_iz(%rsp),%xmm6
 
-	mulpd xmm3, [rsp + nb200_iq]		;# qq 
-	movapd xmm5, xmm1	;# copy of lu 
-	mulpd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb200_three]
-	mulpd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200_half]
-	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulpd xmm2, xmm5	
-	mulpd xmm0, xmm2	;# xmm0=rinv 
-	movapd xmm4, xmm0
-	mulpd  xmm4, xmm4	;# xmm4=rinvsq 
-	movapd xmm6, xmm0
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	movapd xmm1, xmm4
-	subpd  xmm6, [rsp + nb200_crf]
-	mulpd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
-	
-	mov    rdi, [rbp + nb200_faction]
+        ## store dr 
+        movapd %xmm4,%xmm9
+        movapd %xmm5,%xmm10
+        movapd %xmm6,%xmm11
 
-	addpd  xmm7, xmm7
-
-	subpd  xmm0, xmm7
-	mulpd  xmm3, xmm0	
-	mulpd  xmm4, xmm3	;# xmm4=total fscal 
-
-    ;# increment vctot
-	addpd  xmm12, xmm6
-
-	mulpd  xmm9, xmm4
-	mulpd  xmm10, xmm4
-	mulpd  xmm11, xmm4
-
-	;# the fj's - start by accumulating forces from memory 
-	movlpd xmm3, [rdi + rax*8]
-	movlpd xmm4, [rdi + rax*8 + 8]
-	movlpd xmm5, [rdi + rax*8 + 16]
-	movhpd xmm3, [rdi + rbx*8]
-	movhpd xmm4, [rdi + rbx*8 + 8]
-	movhpd xmm5, [rdi + rbx*8 + 16]
-
-	;# now update f_i 
-	addpd  xmm13, xmm9
-	addpd  xmm14, xmm10
-	addpd  xmm15, xmm11
-
-	addpd xmm3, xmm9
-	addpd xmm4, xmm10
-	addpd xmm5, xmm11
-    
-	movlpd [rdi + rax*8], xmm3
-	movlpd [rdi + rax*8 + 8], xmm4
-	movlpd [rdi + rax*8 + 16], xmm5
-	movhpd [rdi + rbx*8], xmm3
-	movhpd [rdi + rbx*8 + 8], xmm4
-	movhpd [rdi + rbx*8 + 16], xmm5	
-
-	;# should we do one more iteration? 
-	sub dword ptr [rsp + nb200_innerk],  2
-	jl    .nb200_checksingle
-	jmp   .nb200_unroll_loop
-
-.nb200_checksingle:				
-	mov   edx, [rsp + nb200_innerk]
-	and   edx, 1
-	jnz    .nb200_dosingle
-	jmp    .nb200_updateouterdata
-.nb200_dosingle:			
-	mov rsi, [rbp + nb200_charge]
-	mov rdi, [rbp + nb200_pos]
-	mov   rcx, [rsp + nb200_innerjjnr]
-	mov   eax, [rcx]
-    
-	mov rsi, [rbp + nb200_charge]    ;# base of charge[] 
-	
-	movsd xmm3, [rsi + rax*8]
-	mulsd xmm3, [rsp + nb200_iq]		;# qq 
-
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-
-	mov rsi, [rbp + nb200_pos]       ;# base of pos[] 
-
-	;# move two coordinates to xmm4-xmm6
-	movsd xmm4, [rsi + rax*8]
-	movsd xmm5, [rsi + rax*8 + 8]
-	movsd xmm6, [rsi + rax*8 + 16]
-
-	;# calc dr 
-	subsd xmm4, [rsp + nb200_ix]
-	subsd xmm5, [rsp + nb200_iy]
-	subsd xmm6, [rsp + nb200_iz]
-
-	;# store dr 
-	movapd xmm9, xmm4
-	movapd xmm10, xmm5
-	movapd xmm11, xmm6
-
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm4, xmm5
-	addsd xmm4, xmm6
-	;# rsq in xmm4 
-
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm2, xmm5	;# lu in low xmm2 
-
-	movapd xmm7, [rsp + nb200_krf]	
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulsd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb200_three]
-	mulsd xmm7, xmm4	;# krsq 
-	mulsd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200_half]
-	subsd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulsd xmm1, xmm5	
-	mulsd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
-
-	movapd xmm5, xmm1	;# copy of lu 
-	mulsd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb200_three]
-	mulsd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200_half]
-	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulsd xmm2, xmm5	
-	mulsd xmm0, xmm2	;# xmm0=rinv 
-	movapd xmm4, xmm0
-	mulsd  xmm4, xmm4	;# xmm4=rinvsq 
-	movapd xmm6, xmm0
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	movapd xmm1, xmm4
-	subsd  xmm6, [rsp + nb200_crf]
-	mulsd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
-	
-	addsd  xmm7, xmm7
-
-	subsd  xmm0, xmm7
-	mulsd  xmm3, xmm0	
-	mulsd  xmm4, xmm3	;# xmm4=total fscal 
-
-    ;# increment vctot
-	addsd  xmm12, xmm6
-
-	mov    rdi, [rbp + nb200_faction]
-	mulsd  xmm9, xmm4
-	mulsd  xmm10, xmm4
-	mulsd  xmm11, xmm4
-	;# now update f_i 
-	addsd  xmm13, xmm9
-	addsd  xmm14, xmm10
-	addsd  xmm15, xmm11
-	;# the fj's - start by accumulating forces from memory 
-	addsd xmm9,  [rdi + rax*8]
-	addsd xmm10, [rdi + rax*8 + 8]
-	addsd xmm11, [rdi + rax*8 + 16]
-	movsd [rdi + rax*8], xmm9
-	movsd [rdi + rax*8 + 8], xmm10
-	movsd [rdi + rax*8 + 16], xmm11
-
-.nb200_updateouterdata:
-	mov   ecx, [rsp + nb200_ii3]
-	mov   rdi, [rbp + nb200_faction]
-	mov   rsi, [rbp + nb200_fshift]
-	mov   edx, [rsp + nb200_is3]
-
-	;# accumulate i forces in xmm13, xmm14, xmm15
-	movhlps xmm3, xmm13
-	movhlps xmm4, xmm14
-	movhlps xmm5, xmm15
-	addsd  xmm13, xmm3
-	addsd  xmm14, xmm4
-	addsd  xmm15, xmm5 ;# sum is in low xmm13-xmm15
-
-	;# increment i force 
-	movsd  xmm3, [rdi + rcx*8]
-	movsd  xmm4, [rdi + rcx*8 + 8]
-	movsd  xmm5, [rdi + rcx*8 + 16]
-	subsd  xmm3, xmm13
-	subsd  xmm4, xmm14
-	subsd  xmm5, xmm15
-	movsd  [rdi + rcx*8],     xmm3
-	movsd  [rdi + rcx*8 + 8], xmm4
-	movsd  [rdi + rcx*8 + 16], xmm5
-
-	;# increment fshift force  
-	movsd  xmm3, [rsi + rdx*8]
-	movsd  xmm4, [rsi + rdx*8 + 8]
-	movsd  xmm5, [rsi + rdx*8 + 16]
-	subsd  xmm3, xmm13
-	subsd  xmm4, xmm14
-	subsd  xmm5, xmm15
-	movsd  [rsi + rdx*8],     xmm3
-	movsd  [rsi + rdx*8 + 8], xmm4
-	movsd  [rsi + rdx*8 + 16], xmm5
-
-	;# get n from stack
-	mov esi, [rsp + nb200_n]
-        ;# get group index for i particle 
-        mov   rdx, [rbp + nb200_gid]      	;# base of gid[]
-        mov   edx, [rdx + rsi*4]		;# ggid=gid[n]
-
-	;# accumulate total coulomb energy and update it 
-	movhlps xmm6, xmm12
-	addsd  xmm12, xmm6	;# low xmm12 have the sum now 
-
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb200_Vc]
-	addsd xmm12, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm12
-	
-        ;# finish if last 
-        mov ecx, [rsp + nb200_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb200_outerend
-
-        ;# not last, iterate outer loop once more!  
-        mov [rsp + nb200_n], esi
-        jmp .nb200_outer
-.nb200_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [rsp + nb200_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb200_end
-        ;# non-zero, do one more workunit
-        jmp   .nb200_threadloop
-.nb200_end:
-	mov eax, [rsp + nb200_nouter]
-	mov ebx, [rsp + nb200_ninner]
-	mov rcx, [rbp + nb200_outeriter]
-	mov rdx, [rbp + nb200_inneriter]
-	mov [rcx], eax
-	mov [rdx], ebx
-
-	add rsp, 360
-	emms
+        movq nb200_charge(%rbp),%rsi     ## base of charge[] 
+        ## square it 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm4
+        addpd %xmm6,%xmm4
+        ## rsq in xmm4 
 
 
-        pop r15
-        pop r14
-        pop r13
-        pop r12
+        movlpd (%rsi,%r8,8),%xmm3
 
-	pop rbx
-	pop	rbp
-	ret
+        cvtpd2ps %xmm4,%xmm5
+        rsqrtps %xmm5,%xmm5
+        cvtps2pd %xmm5,%xmm2    ## lu in low xmm2 
+
+        movhpd (%rsi,%r9,8),%xmm3
+        movapd nb200_krf(%rsp),%xmm7
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulpd %xmm2,%xmm2       ## lu*lu 
+        movapd nb200_three(%rsp),%xmm1
+        mulpd %xmm4,%xmm7       ## krsq 
+        mulpd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb200_half(%rsp),%xmm0
+        subpd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm1
+        mulpd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        mulpd nb200_iq(%rsp),%xmm3              ## qq 
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulpd %xmm1,%xmm1       ## lu*lu 
+        movapd nb200_three(%rsp),%xmm2
+        mulpd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb200_half(%rsp),%xmm0
+        subpd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm2
+        mulpd %xmm2,%xmm0       ## xmm0=rinv 
+        movapd %xmm0,%xmm4
+        mulpd  %xmm4,%xmm4      ## xmm4=rinvsq 
+        movapd %xmm0,%xmm6
+        addpd  %xmm7,%xmm6      ## xmm6=rinv+ krsq 
+        movapd %xmm4,%xmm1
+        subpd  nb200_crf(%rsp),%xmm6
+        mulpd  %xmm3,%xmm6      ## xmm6=vcoul=qq*(rinv+ krsq) 
+
+        movq   nb200_faction(%rbp),%rdi
+
+        addpd  %xmm7,%xmm7
+
+        subpd  %xmm7,%xmm0
+        mulpd  %xmm0,%xmm3
+        mulpd  %xmm3,%xmm4      ## xmm4=total fscal 
+
+    ## increment vctot
+        addpd  %xmm6,%xmm12
+
+        mulpd  %xmm4,%xmm9
+        mulpd  %xmm4,%xmm10
+        mulpd  %xmm4,%xmm11
+
+        ## the fj's - start by accumulating forces from memory 
+        movlpd (%rdi,%rax,8),%xmm3
+        movlpd 8(%rdi,%rax,8),%xmm4
+        movlpd 16(%rdi,%rax,8),%xmm5
+        movhpd (%rdi,%rbx,8),%xmm3
+        movhpd 8(%rdi,%rbx,8),%xmm4
+        movhpd 16(%rdi,%rbx,8),%xmm5
+
+        ## now update f_i 
+        addpd  %xmm9,%xmm13
+        addpd  %xmm10,%xmm14
+        addpd  %xmm11,%xmm15
+
+        addpd %xmm9,%xmm3
+        addpd %xmm10,%xmm4
+        addpd %xmm11,%xmm5
+
+        movlpd %xmm3,(%rdi,%rax,8)
+        movlpd %xmm4,8(%rdi,%rax,8)
+        movlpd %xmm5,16(%rdi,%rax,8)
+        movhpd %xmm3,(%rdi,%rbx,8)
+        movhpd %xmm4,8(%rdi,%rbx,8)
+        movhpd %xmm5,16(%rdi,%rbx,8)
+
+        ## should we do one more iteration? 
+        subl $2,nb200_innerk(%rsp)
+        jl    _nb_kernel200_x86_64_sse2.nb200_checksingle
+        jmp   _nb_kernel200_x86_64_sse2.nb200_unroll_loop
+
+_nb_kernel200_x86_64_sse2.nb200_checksingle:    
+        movl  nb200_innerk(%rsp),%edx
+        andl  $1,%edx
+        jnz    _nb_kernel200_x86_64_sse2.nb200_dosingle
+        jmp    _nb_kernel200_x86_64_sse2.nb200_updateouterdata
+_nb_kernel200_x86_64_sse2.nb200_dosingle: 
+        movq nb200_charge(%rbp),%rsi
+        movq nb200_pos(%rbp),%rdi
+        movq  nb200_innerjjnr(%rsp),%rcx
+        movl  (%rcx),%eax
+
+        movq nb200_charge(%rbp),%rsi     ## base of charge[] 
+
+        movsd (%rsi,%rax,8),%xmm3
+        mulsd nb200_iq(%rsp),%xmm3              ## qq 
+
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+
+        movq nb200_pos(%rbp),%rsi        ## base of pos[] 
+
+        ## move two coordinates to xmm4-xmm6
+        movsd (%rsi,%rax,8),%xmm4
+        movsd 8(%rsi,%rax,8),%xmm5
+        movsd 16(%rsi,%rax,8),%xmm6
+
+        ## calc dr 
+        subsd nb200_ix(%rsp),%xmm4
+        subsd nb200_iy(%rsp),%xmm5
+        subsd nb200_iz(%rsp),%xmm6
+
+        ## store dr 
+        movapd %xmm4,%xmm9
+        movapd %xmm5,%xmm10
+        movapd %xmm6,%xmm11
+
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm4
+        addsd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtsd2ss %xmm4,%xmm5
+        rsqrtss %xmm5,%xmm5
+        cvtss2sd %xmm5,%xmm2    ## lu in low xmm2 
+
+        movapd nb200_krf(%rsp),%xmm7
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulsd %xmm2,%xmm2       ## lu*lu 
+        movapd nb200_three(%rsp),%xmm1
+        mulsd %xmm4,%xmm7       ## krsq 
+        mulsd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb200_half(%rsp),%xmm0
+        subsd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm1
+        mulsd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulsd %xmm1,%xmm1       ## lu*lu 
+        movapd nb200_three(%rsp),%xmm2
+        mulsd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb200_half(%rsp),%xmm0
+        subsd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm2
+        mulsd %xmm2,%xmm0       ## xmm0=rinv 
+        movapd %xmm0,%xmm4
+        mulsd  %xmm4,%xmm4      ## xmm4=rinvsq 
+        movapd %xmm0,%xmm6
+        addsd  %xmm7,%xmm6      ## xmm6=rinv+ krsq 
+        movapd %xmm4,%xmm1
+        subsd  nb200_crf(%rsp),%xmm6
+        mulsd  %xmm3,%xmm6      ## xmm6=vcoul=qq*(rinv+ krsq) 
+
+        addsd  %xmm7,%xmm7
+
+        subsd  %xmm7,%xmm0
+        mulsd  %xmm0,%xmm3
+        mulsd  %xmm3,%xmm4      ## xmm4=total fscal 
+
+    ## increment vctot
+        addsd  %xmm6,%xmm12
+
+        movq   nb200_faction(%rbp),%rdi
+        mulsd  %xmm4,%xmm9
+        mulsd  %xmm4,%xmm10
+        mulsd  %xmm4,%xmm11
+        ## now update f_i 
+        addsd  %xmm9,%xmm13
+        addsd  %xmm10,%xmm14
+        addsd  %xmm11,%xmm15
+        ## the fj's - start by accumulating forces from memory 
+        addsd (%rdi,%rax,8),%xmm9
+        addsd 8(%rdi,%rax,8),%xmm10
+        addsd 16(%rdi,%rax,8),%xmm11
+        movsd %xmm9,(%rdi,%rax,8)
+        movsd %xmm10,8(%rdi,%rax,8)
+        movsd %xmm11,16(%rdi,%rax,8)
+
+_nb_kernel200_x86_64_sse2.nb200_updateouterdata: 
+        movl  nb200_ii3(%rsp),%ecx
+        movq  nb200_faction(%rbp),%rdi
+        movq  nb200_fshift(%rbp),%rsi
+        movl  nb200_is3(%rsp),%edx
+
+        ## accumulate i forces in xmm13, xmm14, xmm15
+        movhlps %xmm13,%xmm3
+        movhlps %xmm14,%xmm4
+        movhlps %xmm15,%xmm5
+        addsd  %xmm3,%xmm13
+        addsd  %xmm4,%xmm14
+        addsd  %xmm5,%xmm15 ## sum is in low xmm13-xmm15
+
+        ## increment i force 
+        movsd  (%rdi,%rcx,8),%xmm3
+        movsd  8(%rdi,%rcx,8),%xmm4
+        movsd  16(%rdi,%rcx,8),%xmm5
+        subsd  %xmm13,%xmm3
+        subsd  %xmm14,%xmm4
+        subsd  %xmm15,%xmm5
+        movsd  %xmm3,(%rdi,%rcx,8)
+        movsd  %xmm4,8(%rdi,%rcx,8)
+        movsd  %xmm5,16(%rdi,%rcx,8)
+
+        ## increment fshift force  
+        movsd  (%rsi,%rdx,8),%xmm3
+        movsd  8(%rsi,%rdx,8),%xmm4
+        movsd  16(%rsi,%rdx,8),%xmm5
+        subsd  %xmm13,%xmm3
+        subsd  %xmm14,%xmm4
+        subsd  %xmm15,%xmm5
+        movsd  %xmm3,(%rsi,%rdx,8)
+        movsd  %xmm4,8(%rsi,%rdx,8)
+        movsd  %xmm5,16(%rsi,%rdx,8)
+
+        ## get n from stack
+        movl nb200_n(%rsp),%esi
+        ## get group index for i particle 
+        movq  nb200_gid(%rbp),%rdx              ## base of gid[]
+        movl  (%rdx,%rsi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total coulomb energy and update it 
+        movhlps %xmm12,%xmm6
+        addsd  %xmm6,%xmm12     ## low xmm12 have the sum now 
+
+        ## add earlier value from mem 
+        movq  nb200_Vc(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm12
+        ## move back to mem 
+        movsd %xmm12,(%rax,%rdx,8)
+
+        ## finish if last 
+        movl nb200_nn1(%rsp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel200_x86_64_sse2.nb200_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb200_n(%rsp)
+        jmp _nb_kernel200_x86_64_sse2.nb200_outer
+_nb_kernel200_x86_64_sse2.nb200_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb200_nri(%rsp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel200_x86_64_sse2.nb200_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel200_x86_64_sse2.nb200_threadloop
+_nb_kernel200_x86_64_sse2.nb200_end: 
+        movl nb200_nouter(%rsp),%eax
+        movl nb200_ninner(%rsp),%ebx
+        movq nb200_outeriter(%rbp),%rcx
+        movq nb200_inneriter(%rbp),%rdx
+        movl %eax,(%rcx)
+        movl %ebx,(%rdx)
+
+        addq $360,%rsp
+        emms
+
+
+        pop %r15
+        pop %r14
+        pop %r13
+        pop %r12
+
+        pop %rbx
+        pop    %rbp
+        ret
 
 
 
 
 .globl nb_kernel200nf_x86_64_sse2
 .globl _nb_kernel200nf_x86_64_sse2
-nb_kernel200nf_x86_64_sse2:	
-_nb_kernel200nf_x86_64_sse2:	
-;#	Room for return address and rbp (16 bytes)
-.equiv          nb200nf_fshift,         16
-.equiv          nb200nf_gid,            24
-.equiv          nb200nf_pos,            32
-.equiv          nb200nf_faction,        40
-.equiv          nb200nf_charge,         48
-.equiv          nb200nf_p_facel,        56
-.equiv          nb200nf_argkrf,         64
-.equiv          nb200nf_argcrf,         72
-.equiv          nb200nf_Vc,             80
-.equiv          nb200nf_type,           88
-.equiv          nb200nf_p_ntype,        96
-.equiv          nb200nf_vdwparam,       104
-.equiv          nb200nf_Vvdw,           112
-.equiv          nb200nf_p_tabscale,     120
-.equiv          nb200nf_VFtab,          128
-.equiv          nb200nf_invsqrta,       136
-.equiv          nb200nf_dvda,           144
-.equiv          nb200nf_p_gbtabscale,   152
-.equiv          nb200nf_GBtab,          160
-.equiv          nb200nf_p_nthreads,     168
-.equiv          nb200nf_count,          176
-.equiv          nb200nf_mtx,            184
-.equiv          nb200nf_outeriter,      192
-.equiv          nb200nf_inneriter,      200
-.equiv          nb208nf_work,           200
-	;# stack offsets for local variables  
-	;# bottom of stack is cache-aligned for sse use 
-.equiv          nb200nf_ix,             0
-.equiv          nb200nf_iy,             16
-.equiv          nb200nf_iz,             32
-.equiv          nb200nf_iq,             48
-.equiv          nb200nf_vctot,          64
-.equiv          nb200nf_half,           80
-.equiv          nb200nf_three,          96
-.equiv          nb200nf_krf,            112
-.equiv          nb200nf_crf,            128
-.equiv          nb200nf_is3,            144
-.equiv          nb200nf_ii3,            148
-.equiv          nb200nf_nri,            152
-.equiv          nb200nf_iinr,           160
-.equiv          nb200nf_jindex,         168
-.equiv          nb200nf_jjnr,           176
-.equiv          nb200nf_shift,          184
-.equiv          nb200nf_shiftvec,       192
-.equiv          nb200nf_facel,          200
-.equiv          nb200nf_innerjjnr,      208
-.equiv          nb200nf_innerk,         216
-.equiv          nb200nf_n,              220
-.equiv          nb200nf_nn1,            224
-.equiv          nb200nf_nouter,         228
-.equiv          nb200nf_ninner,         232
-	push rbp
-	mov  rbp, rsp
-	push rbx
-	emms
+nb_kernel200nf_x86_64_sse2:     
+_nb_kernel200nf_x86_64_sse2:    
+##      Room for return address and rbp (16 bytes)
+.set nb200nf_fshift, 16
+.set nb200nf_gid, 24
+.set nb200nf_pos, 32
+.set nb200nf_faction, 40
+.set nb200nf_charge, 48
+.set nb200nf_p_facel, 56
+.set nb200nf_argkrf, 64
+.set nb200nf_argcrf, 72
+.set nb200nf_Vc, 80
+.set nb200nf_type, 88
+.set nb200nf_p_ntype, 96
+.set nb200nf_vdwparam, 104
+.set nb200nf_Vvdw, 112
+.set nb200nf_p_tabscale, 120
+.set nb200nf_VFtab, 128
+.set nb200nf_invsqrta, 136
+.set nb200nf_dvda, 144
+.set nb200nf_p_gbtabscale, 152
+.set nb200nf_GBtab, 160
+.set nb200nf_p_nthreads, 168
+.set nb200nf_count, 176
+.set nb200nf_mtx, 184
+.set nb200nf_outeriter, 192
+.set nb200nf_inneriter, 200
+.set nb208nf_work, 200
+        ## stack offsets for local variables  
+        ## bottom of stack is cache-aligned for sse use 
+.set nb200nf_ix, 0
+.set nb200nf_iy, 16
+.set nb200nf_iz, 32
+.set nb200nf_iq, 48
+.set nb200nf_vctot, 64
+.set nb200nf_half, 80
+.set nb200nf_three, 96
+.set nb200nf_krf, 112
+.set nb200nf_crf, 128
+.set nb200nf_is3, 144
+.set nb200nf_ii3, 148
+.set nb200nf_nri, 152
+.set nb200nf_iinr, 160
+.set nb200nf_jindex, 168
+.set nb200nf_jjnr, 176
+.set nb200nf_shift, 184
+.set nb200nf_shiftvec, 192
+.set nb200nf_facel, 200
+.set nb200nf_innerjjnr, 208
+.set nb200nf_innerk, 216
+.set nb200nf_n, 220
+.set nb200nf_nn1, 224
+.set nb200nf_nouter, 228
+.set nb200nf_ninner, 232
+        push %rbp
+        movq %rsp,%rbp
+        push %rbx
+        emms
 
-        push r12
-        push r13
-        push r14
-        push r15
+        push %r12
+        push %r13
+        push %r14
+        push %r15
 
-	sub rsp, 248		;# local variable stack space (n*16+8)
+        subq $248,%rsp          ## local variable stack space (n*16+8)
 
-	;# zero 32-bit iteration counters
-	mov eax, 0
-	mov [rsp + nb200nf_nouter], eax
-	mov [rsp + nb200nf_ninner], eax
+        ## zero 32-bit iteration counters
+        movl $0,%eax
+        movl %eax,nb200nf_nouter(%rsp)
+        movl %eax,nb200nf_ninner(%rsp)
 
-	mov edi, [rdi]
-	mov [rsp + nb200nf_nri], edi
-	mov [rsp + nb200nf_iinr], rsi
-	mov [rsp + nb200nf_jindex], rdx
-	mov [rsp + nb200nf_jjnr], rcx
-	mov [rsp + nb200nf_shift], r8
-	mov [rsp + nb200nf_shiftvec], r9
-	mov rsi, [rbp + nb200nf_p_facel]
-	movsd xmm0, [rsi]
-	movsd [rsp + nb200nf_facel], xmm0
+        movl (%rdi),%edi
+        movl %edi,nb200nf_nri(%rsp)
+        movq %rsi,nb200nf_iinr(%rsp)
+        movq %rdx,nb200nf_jindex(%rsp)
+        movq %rcx,nb200nf_jjnr(%rsp)
+        movq %r8,nb200nf_shift(%rsp)
+        movq %r9,nb200nf_shiftvec(%rsp)
+        movq nb200nf_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd %xmm0,nb200nf_facel(%rsp)
 
-	mov rsi, [rbp + nb200nf_argkrf]
-	mov rdi, [rbp + nb200nf_argcrf]
-	movsd xmm1, [rsi]
-	movsd xmm2, [rdi]
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
-	movapd [rsp + nb200nf_krf], xmm1
-	movapd [rsp + nb200nf_crf], xmm2
+        movq nb200nf_argkrf(%rbp),%rsi
+        movq nb200nf_argcrf(%rbp),%rdi
+        movsd (%rsi),%xmm1
+        movsd (%rdi),%xmm2
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
+        movapd %xmm1,nb200nf_krf(%rsp)
+        movapd %xmm2,nb200nf_crf(%rsp)
 
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double half IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [rsp + nb200nf_half], eax
-	mov [rsp + nb200nf_half + 4], ebx
-	movsd xmm1, [rsp + nb200nf_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# one
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# two
-	addpd  xmm3, xmm2	;# three
-	movapd [rsp + nb200nf_half], xmm1
-	movapd [rsp + nb200nf_three], xmm3
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double half IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb200nf_half(%rsp)
+        movl %ebx,nb200nf_half+4(%rsp)
+        movsd nb200nf_half(%rsp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## one
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## two
+        addpd  %xmm2,%xmm3      ## three
+        movapd %xmm1,nb200nf_half(%rsp)
+        movapd %xmm3,nb200nf_three(%rsp)
 
-.nb200nf_threadloop:
-        mov   rsi, [rbp + nb200nf_count]        ;# pointer to sync counter
-        mov   eax, [rsi]
-.nb200nf_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           	;# ebx=nn1=nn0+10
-        lock cmpxchg [rsi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb200nf_spinlock
+_nb_kernel200nf_x86_64_sse2.nb200nf_threadloop: 
+        movq  nb200nf_count(%rbp),%rsi          ## pointer to sync counter
+        movl  (%rsi),%eax
+_nb_kernel200nf_x86_64_sse2.nb200nf_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                           ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel200nf_x86_64_sse2.nb200nf_spinlock
 
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [rsp + nb200nf_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [rsp + nb200nf_n], eax
-        mov [rsp + nb200nf_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb200nf_outerstart
-        jmp .nb200nf_end
+        ## if(nn1>nri) nn1=nri
+        movl nb200nf_nri(%rsp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb200nf_n(%rsp)
+        movl %ebx,nb200nf_nn1(%rsp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel200nf_x86_64_sse2.nb200nf_outerstart
+        jmp _nb_kernel200nf_x86_64_sse2.nb200nf_end
 
-.nb200nf_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [rsp + nb200nf_nouter]
-	mov [rsp + nb200nf_nouter], ebx
+_nb_kernel200nf_x86_64_sse2.nb200nf_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb200nf_nouter(%rsp),%ebx
+        movl %ebx,nb200nf_nouter(%rsp)
 
-.nb200nf_outer:
-	mov   rax, [rsp + nb200nf_shift]      ;# rax = pointer into shift[] 
-	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
-	
-	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
+_nb_kernel200nf_x86_64_sse2.nb200nf_outer: 
+        movq  nb200nf_shift(%rsp),%rax        ## rax = pointer into shift[] 
+        movl  (%rax,%rsi,4),%ebx        ## rbx=shift[n] 
 
-	mov   rax, [rsp + nb200nf_shiftvec]   ;# rax = base of shiftvec[] 
+        lea  (%rbx,%rbx,2),%rbx    ## rbx=3*is 
 
-	movsd xmm0, [rax + rbx*8]
-	movsd xmm1, [rax + rbx*8 + 8]
-	movsd xmm2, [rax + rbx*8 + 16] 
+        movq  nb200nf_shiftvec(%rsp),%rax     ## rax = base of shiftvec[] 
 
-	mov   rcx, [rsp + nb200nf_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx+rsi*4]	    ;# ebx =ii 
+        movsd (%rax,%rbx,8),%xmm0
+        movsd 8(%rax,%rbx,8),%xmm1
+        movsd 16(%rax,%rbx,8),%xmm2
 
-	mov   rdx, [rbp + nb200nf_charge]
-	movsd xmm3, [rdx + rbx*8]	
-	mulsd xmm3, [rsp + nb200nf_facel]
-	shufpd xmm3, xmm3, 0
-	
-	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
-	mov   rax, [rbp + nb200nf_pos]    ;# rax = base of pos[]  
+        movq  nb200nf_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]      
+        movl  (%rcx,%rsi,4),%ebx    ## ebx =ii 
 
-	addsd xmm0, [rax + rbx*8]
-	addsd xmm1, [rax + rbx*8 + 8]
-	addsd xmm2, [rax + rbx*8 + 16]
+        movq  nb200nf_charge(%rbp),%rdx
+        movsd (%rdx,%rbx,8),%xmm3
+        mulsd nb200nf_facel(%rsp),%xmm3
+        shufpd $0,%xmm3,%xmm3
 
-	movapd [rsp + nb200nf_iq], xmm3
-	
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
+        lea  (%rbx,%rbx,2),%rbx        ## rbx = 3*ii=ii3 
+        movq  nb200nf_pos(%rbp),%rax      ## rax = base of pos[]  
 
-	movapd [rsp + nb200nf_ix], xmm0
-	movapd [rsp + nb200nf_iy], xmm1
-	movapd [rsp + nb200nf_iz], xmm2
+        addsd (%rax,%rbx,8),%xmm0
+        addsd 8(%rax,%rbx,8),%xmm1
+        addsd 16(%rax,%rbx,8),%xmm2
 
-	mov   [rsp + nb200nf_ii3], ebx
-	
-	;# clear vctot 
-	xorpd xmm4, xmm4
-	movapd [rsp + nb200nf_vctot], xmm4
-	
-	mov   rax, [rsp + nb200nf_jindex]
-	mov   ecx, [rax + rsi*4]	     ;# jindex[n] 
-	mov   edx, [rax + rsi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
+        movapd %xmm3,nb200nf_iq(%rsp)
 
-	mov   rsi, [rbp + nb200nf_pos]
-	mov   rax, [rsp + nb200nf_jjnr]
-	shl   ecx, 2
-	add   rax, rcx
-	mov   [rsp + nb200nf_innerjjnr], rax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [rsp + nb200nf_ninner]
-	mov   [rsp + nb200nf_ninner], ecx
-	add   edx, 0
-	mov   [rsp + nb200nf_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb200nf_unroll_loop
-	jmp   .nb200nf_checksingle
-.nb200nf_unroll_loop:
-	;# twice unrolled innerloop here 
-	mov   rdx, [rsp + nb200nf_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]	
-	mov   ebx, [rdx + 4]              
-	add qword ptr [rsp + nb200nf_innerjjnr],  8	;# advance pointer (unrolled 2) 
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
 
-	mov rsi, [rbp + nb200nf_charge]    ;# base of charge[] 
-	
-	movlpd xmm3, [rsi + rax*8]
-	movhpd xmm3, [rsi + rbx*8]
+        movapd %xmm0,nb200nf_ix(%rsp)
+        movapd %xmm1,nb200nf_iy(%rsp)
+        movapd %xmm2,nb200nf_iz(%rsp)
 
-	movapd xmm5, [rsp + nb200nf_iq]
-	mulpd xmm3, xmm5		;# qq 
+        movl  %ebx,nb200nf_ii3(%rsp)
 
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	lea   rbx, [rbx + rbx*2]	
+        ## clear vctot 
+        xorpd %xmm4,%xmm4
+        movapd %xmm4,nb200nf_vctot(%rsp)
 
-	mov rsi, [rbp + nb200nf_pos]       ;# base of pos[] 
+        movq  nb200nf_jindex(%rsp),%rax
+        movl  (%rax,%rsi,4),%ecx             ## jindex[n] 
+        movl  4(%rax,%rsi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
 
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	movhpd xmm0, [rsi + rbx*8]
-	movhpd xmm1, [rsi + rbx*8 + 8]
-	movhpd xmm2, [rsi + rbx*8 + 16]		
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb200nf_ix]
-	movapd xmm5, [rsp + nb200nf_iy]
-	movapd xmm6, [rsp + nb200nf_iz]
+        movq  nb200nf_pos(%rbp),%rsi
+        movq  nb200nf_jjnr(%rsp),%rax
+        shll  $2,%ecx
+        addq  %rcx,%rax
+        movq  %rax,nb200nf_innerjjnr(%rsp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb200nf_ninner(%rsp),%ecx
+        movl  %ecx,nb200nf_ninner(%rsp)
+        addl  $0,%edx
+        movl  %edx,nb200nf_innerk(%rsp)      ## number of innerloop atoms 
+        jge   _nb_kernel200nf_x86_64_sse2.nb200nf_unroll_loop
+        jmp   _nb_kernel200nf_x86_64_sse2.nb200nf_checksingle
+_nb_kernel200nf_x86_64_sse2.nb200nf_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movq  nb200nf_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%eax
+        movl  4(%rdx),%ebx
+        addq $8,nb200nf_innerjjnr(%rsp)                 ## advance pointer (unrolled 2) 
 
-	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
+        movq nb200nf_charge(%rbp),%rsi     ## base of charge[] 
 
-	;# square it 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm4, xmm5
-	addpd xmm4, xmm6
-	;# rsq in xmm4 
+        movlpd (%rsi,%rax,8),%xmm3
+        movhpd (%rsi,%rbx,8),%xmm3
 
-	cvtpd2ps xmm5, xmm4	
-	rsqrtps xmm5, xmm5
-	cvtps2pd xmm2, xmm5	;# lu in low xmm2 
+        movapd nb200nf_iq(%rsp),%xmm5
+        mulpd %xmm5,%xmm3               ## qq 
 
-	movapd xmm7, [rsp + nb200nf_krf]	
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulpd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb200nf_three]
-	mulpd xmm7, xmm4	;# krsq 
-	mulpd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200nf_half]
-	subpd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulpd xmm1, xmm5	
-	mulpd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+        lea  (%rbx,%rbx,2),%rbx
 
-	movapd xmm5, xmm1	;# copy of lu 
-	mulpd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb200nf_three]
-	mulpd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200nf_half]
-	subpd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulpd xmm2, xmm5	
-	mulpd xmm0, xmm2	;# xmm0=rinv 
-	movapd xmm4, xmm0
-	mulpd  xmm4, xmm4	;# xmm4=rinvsq 
-	movapd xmm6, xmm0
-	addpd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	movapd xmm1, xmm4
-	subpd  xmm6, [rsp + nb200nf_crf]
-	mulpd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
-	addpd  xmm6, [rsp + nb200nf_vctot]
-	movapd [rsp + nb200nf_vctot], xmm6
+        movq nb200nf_pos(%rbp),%rsi        ## base of pos[] 
 
-	;# should we do one more iteration? 
-	sub dword ptr [rsp + nb200nf_innerk],  2
-	jl    .nb200nf_checksingle
-	jmp   .nb200nf_unroll_loop
+        ## move two coordinates to xmm0-xmm2    
+        movlpd (%rsi,%rax,8),%xmm0
+        movlpd 8(%rsi,%rax,8),%xmm1
+        movlpd 16(%rsi,%rax,8),%xmm2
+        movhpd (%rsi,%rbx,8),%xmm0
+        movhpd 8(%rsi,%rbx,8),%xmm1
+        movhpd 16(%rsi,%rbx,8),%xmm2
 
-.nb200nf_checksingle:				
-	mov   edx, [rsp + nb200nf_innerk]
-	and   edx, 1
-	jnz    .nb200nf_dosingle
-	jmp    .nb200nf_updateouterdata
-.nb200nf_dosingle:			
-	mov rsi, [rbp + nb200nf_charge]
-	mov rdi, [rbp + nb200nf_pos]
-	mov   rcx, [rsp + nb200nf_innerjjnr]
-	
-	xorpd xmm3, xmm3
-	mov   eax, [rcx]
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb200nf_ix(%rsp),%xmm4
+        movapd nb200nf_iy(%rsp),%xmm5
+        movapd nb200nf_iz(%rsp),%xmm6
 
-	movlpd xmm3, [rsi + rax*8]
-	movapd xmm5, [rsp + nb200nf_iq]
-	mulpd xmm3, xmm5		;# qq 
-	
-	mov rsi, [rbp + nb200nf_pos]       ;# base of pos[] 
+        ## calc dr 
+        subpd %xmm0,%xmm4
+        subpd %xmm1,%xmm5
+        subpd %xmm2,%xmm6
 
-	lea rax, [rax + rax*2]     ;# replace jnr with j3 
+        ## square it 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm4
+        addpd %xmm6,%xmm4
+        ## rsq in xmm4 
 
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	
-	;# move ix-iz to xmm4-xmm6 
-	movapd xmm4, [rsp + nb200nf_ix]
-	movapd xmm5, [rsp + nb200nf_iy]
-	movapd xmm6, [rsp + nb200nf_iz]
+        cvtpd2ps %xmm4,%xmm5
+        rsqrtps %xmm5,%xmm5
+        cvtps2pd %xmm5,%xmm2    ## lu in low xmm2 
 
-	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
+        movapd nb200nf_krf(%rsp),%xmm7
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulpd %xmm2,%xmm2       ## lu*lu 
+        movapd nb200nf_three(%rsp),%xmm1
+        mulpd %xmm4,%xmm7       ## krsq 
+        mulpd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb200nf_half(%rsp),%xmm0
+        subpd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm1
+        mulpd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
 
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm4, xmm5
-	addsd xmm4, xmm6
-	;# rsq in xmm4 
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulpd %xmm1,%xmm1       ## lu*lu 
+        movapd nb200nf_three(%rsp),%xmm2
+        mulpd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb200nf_half(%rsp),%xmm0
+        subpd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulpd %xmm5,%xmm2
+        mulpd %xmm2,%xmm0       ## xmm0=rinv 
+        movapd %xmm0,%xmm4
+        mulpd  %xmm4,%xmm4      ## xmm4=rinvsq 
+        movapd %xmm0,%xmm6
+        addpd  %xmm7,%xmm6      ## xmm6=rinv+ krsq 
+        movapd %xmm4,%xmm1
+        subpd  nb200nf_crf(%rsp),%xmm6
+        mulpd  %xmm3,%xmm6      ## xmm6=vcoul=qq*(rinv+ krsq) 
+        addpd  nb200nf_vctot(%rsp),%xmm6
+        movapd %xmm6,nb200nf_vctot(%rsp)
 
-	cvtsd2ss xmm5, xmm4	
-	rsqrtss xmm5, xmm5
-	cvtss2sd xmm2, xmm5	;# lu in low xmm2 
+        ## should we do one more iteration? 
+        subl $2,nb200nf_innerk(%rsp)
+        jl    _nb_kernel200nf_x86_64_sse2.nb200nf_checksingle
+        jmp   _nb_kernel200nf_x86_64_sse2.nb200nf_unroll_loop
 
-	movapd xmm7, [rsp + nb200nf_krf]	
-	;# lookup seed in xmm2 
-	movapd xmm5, xmm2	;# copy of lu 
-	mulsd xmm2, xmm2	;# lu*lu 
-	movapd xmm1, [rsp + nb200nf_three]
-	mulsd xmm7, xmm4	;# krsq 
-	mulsd xmm2, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200nf_half]
-	subsd xmm1, xmm2	;# 30-rsq*lu*lu 
-	mulsd xmm1, xmm5	
-	mulsd xmm1, xmm0	;# xmm0=iter1 of rinv (new lu) 
+_nb_kernel200nf_x86_64_sse2.nb200nf_checksingle: 
+        movl  nb200nf_innerk(%rsp),%edx
+        andl  $1,%edx
+        jnz    _nb_kernel200nf_x86_64_sse2.nb200nf_dosingle
+        jmp    _nb_kernel200nf_x86_64_sse2.nb200nf_updateouterdata
+_nb_kernel200nf_x86_64_sse2.nb200nf_dosingle: 
+        movq nb200nf_charge(%rbp),%rsi
+        movq nb200nf_pos(%rbp),%rdi
+        movq  nb200nf_innerjjnr(%rsp),%rcx
 
-	movapd xmm5, xmm1	;# copy of lu 
-	mulsd xmm1, xmm1	;# lu*lu 
-	movapd xmm2, [rsp + nb200nf_three]
-	mulsd xmm1, xmm4	;# rsq*lu*lu 			
-	movapd xmm0, [rsp + nb200nf_half]
-	subsd xmm2, xmm1	;# 30-rsq*lu*lu 
-	mulsd xmm2, xmm5	
-	mulsd xmm0, xmm2	;# xmm0=rinv 
-	movapd xmm4, xmm0
-	mulsd  xmm4, xmm4	;# xmm4=rinvsq 
-	movapd xmm6, xmm0
-	addsd  xmm6, xmm7	;# xmm6=rinv+ krsq 
-	movapd xmm1, xmm4
-	subsd  xmm6, [rsp + nb200nf_crf]
-	mulsd  xmm1, xmm4
-	mulsd  xmm1, xmm4	;# xmm1=rinvsix 
-	movapd xmm2, xmm1
-	mulsd  xmm2, xmm2	;# xmm2=rinvtwelve 
-	mulsd  xmm6, xmm3	;# xmm6=vcoul=qq*(rinv+ krsq) 
-	addsd  xmm6, [rsp + nb200nf_vctot]
-	movlpd [rsp + nb200nf_vctot], xmm6
+        xorpd %xmm3,%xmm3
+        movl  (%rcx),%eax
 
-.nb200nf_updateouterdata:
-	;# get n from stack
-	mov esi, [rsp + nb200nf_n]
-        ;# get group index for i particle 
-        mov   rdx, [rbp + nb200nf_gid]      	;# base of gid[]
-        mov   edx, [rdx + rsi*4]		;# ggid=gid[n]
+        movlpd (%rsi,%rax,8),%xmm3
+        movapd nb200nf_iq(%rsp),%xmm5
+        mulpd %xmm5,%xmm3               ## qq 
 
-	;# accumulate total potential energy and update it 
-	movapd xmm7, [rsp + nb200nf_vctot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-	
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb200nf_Vc]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-        ;# finish if last 
-        mov ecx, [rsp + nb200nf_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb200nf_outerend
+        movq nb200nf_pos(%rbp),%rsi        ## base of pos[] 
 
-        ;# not last, iterate outer loop once more!  
-        mov [rsp + nb200nf_n], esi
-        jmp .nb200nf_outer
-.nb200nf_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [rsp + nb200nf_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb200nf_end
-        ;# non-zero, do one more workunit
-        jmp   .nb200nf_threadloop
-.nb200nf_end:
-	mov eax, [rsp + nb200nf_nouter]
-	mov ebx, [rsp + nb200nf_ninner]
-	mov rcx, [rbp + nb200nf_outeriter]
-	mov rdx, [rbp + nb200nf_inneriter]
-	mov [rcx], eax
-	mov [rdx], ebx
+        lea (%rax,%rax,2),%rax    ## replace jnr with j3 
 
-	add rsp, 248
-	emms
+        ## move two coordinates to xmm0-xmm2    
+        movlpd (%rsi,%rax,8),%xmm0
+        movlpd 8(%rsi,%rax,8),%xmm1
+        movlpd 16(%rsi,%rax,8),%xmm2
+
+        ## move ix-iz to xmm4-xmm6 
+        movapd nb200nf_ix(%rsp),%xmm4
+        movapd nb200nf_iy(%rsp),%xmm5
+        movapd nb200nf_iz(%rsp),%xmm6
+
+        ## calc dr 
+        subsd %xmm0,%xmm4
+        subsd %xmm1,%xmm5
+        subsd %xmm2,%xmm6
+
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm4
+        addsd %xmm6,%xmm4
+        ## rsq in xmm4 
+
+        cvtsd2ss %xmm4,%xmm5
+        rsqrtss %xmm5,%xmm5
+        cvtss2sd %xmm5,%xmm2    ## lu in low xmm2 
+
+        movapd nb200nf_krf(%rsp),%xmm7
+        ## lookup seed in xmm2 
+        movapd %xmm2,%xmm5      ## copy of lu 
+        mulsd %xmm2,%xmm2       ## lu*lu 
+        movapd nb200nf_three(%rsp),%xmm1
+        mulsd %xmm4,%xmm7       ## krsq 
+        mulsd %xmm4,%xmm2       ## rsq*lu*lu                    
+        movapd nb200nf_half(%rsp),%xmm0
+        subsd %xmm2,%xmm1       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm1
+        mulsd %xmm0,%xmm1       ## xmm0=iter1 of rinv (new lu) 
+
+        movapd %xmm1,%xmm5      ## copy of lu 
+        mulsd %xmm1,%xmm1       ## lu*lu 
+        movapd nb200nf_three(%rsp),%xmm2
+        mulsd %xmm4,%xmm1       ## rsq*lu*lu                    
+        movapd nb200nf_half(%rsp),%xmm0
+        subsd %xmm1,%xmm2       ## 30-rsq*lu*lu 
+        mulsd %xmm5,%xmm2
+        mulsd %xmm2,%xmm0       ## xmm0=rinv 
+        movapd %xmm0,%xmm4
+        mulsd  %xmm4,%xmm4      ## xmm4=rinvsq 
+        movapd %xmm0,%xmm6
+        addsd  %xmm7,%xmm6      ## xmm6=rinv+ krsq 
+        movapd %xmm4,%xmm1
+        subsd  nb200nf_crf(%rsp),%xmm6
+        mulsd  %xmm4,%xmm1
+        mulsd  %xmm4,%xmm1      ## xmm1=rinvsix 
+        movapd %xmm1,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=rinvtwelve 
+        mulsd  %xmm3,%xmm6      ## xmm6=vcoul=qq*(rinv+ krsq) 
+        addsd  nb200nf_vctot(%rsp),%xmm6
+        movlpd %xmm6,nb200nf_vctot(%rsp)
+
+_nb_kernel200nf_x86_64_sse2.nb200nf_updateouterdata: 
+        ## get n from stack
+        movl nb200nf_n(%rsp),%esi
+        ## get group index for i particle 
+        movq  nb200nf_gid(%rbp),%rdx            ## base of gid[]
+        movl  (%rdx,%rsi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total potential energy and update it 
+        movapd nb200nf_vctot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb200nf_Vc(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## finish if last 
+        movl nb200nf_nn1(%rsp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel200nf_x86_64_sse2.nb200nf_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb200nf_n(%rsp)
+        jmp _nb_kernel200nf_x86_64_sse2.nb200nf_outer
+_nb_kernel200nf_x86_64_sse2.nb200nf_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb200nf_nri(%rsp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel200nf_x86_64_sse2.nb200nf_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel200nf_x86_64_sse2.nb200nf_threadloop
+_nb_kernel200nf_x86_64_sse2.nb200nf_end: 
+        movl nb200nf_nouter(%rsp),%eax
+        movl nb200nf_ninner(%rsp),%ebx
+        movq nb200nf_outeriter(%rbp),%rcx
+        movq nb200nf_inneriter(%rbp),%rdx
+        movl %eax,(%rcx)
+        movl %ebx,(%rdx)
+
+        addq $248,%rsp
+        emms
 
 
-        pop r15
-        pop r14
-        pop r13
-        pop r12
+        pop %r15
+        pop %r14
+        pop %r13
+        pop %r12
 
-	pop rbx
-	pop	rbp
-	ret
+        pop %rbx
+        pop    %rbp
+        ret
+
 
 
 

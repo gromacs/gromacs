@@ -1,47 +1,22 @@
-;#
-;# $Id$
-;#
-;# Gromacs 4.0                         Copyright (c) 1991-2003 
-;# David van der Spoel, Erik Lindahl
-;#
-;# This program is free software; you can redistribute it and/or
-;# modify it under the terms of the GNU General Public License
-;# as published by the Free Software Foundation; either version 2
-;# of the License, or (at your option) any later version.
-;#
-;# To help us fund GROMACS development, we humbly ask that you cite
-;# the research papers on the package. Check out http://www.gromacs.org
-;# 
-;# And Hey:
-;# Gnomes, ROck Monsters And Chili Sauce
-;#
+##
+## $Id$
+##
+## Gromacs 4.0                         Copyright (c) 1991-2003 
+## David van der Spoel, Erik Lindahl
+##
+## This program is free software; you can redistribute it and/or
+## modify it under the terms of the GNU General Public License
+## as published by the Free Software Foundation; either version 2
+## of the License, or (at your option) any later version.
+##
+## To help us fund GROMACS development, we humbly ask that you cite
+## the research papers on the package. Check out http://www.gromacs.org
+## 
+## And Hey:
+## Gnomes, ROck Monsters And Chili Sauce
+##
 
-;# These files require GNU binutils 2.10 or later, since we
-;# use intel syntax for portability, or a recent version 
-;# of NASM that understands Extended 3DNow and SSE2 instructions.
-;# (NASM is normally only used with MS Visual C++).
-;# Since NASM and gnu as disagree on some definitions and use 
-;# completely different preprocessing options I have to introduce a
-;# trick: NASM uses ';' for comments, while gnu as uses '#' on x86.
-;# Gnu as treats ';' as a line break, i.e. ignores it. This is the
-;# reason why all comments need both symbols...
-;# The source is written for GNU as, with intel syntax. When you use
-;# NASM we redefine a couple of things. The false if-statement around 
-;# the following code is seen by GNU as, but NASM doesn't see it, so 
-;# the code inside is read by NASM but not gcc.
 
-; .if 0    # block below only read by NASM
-%define .section	section
-%define .long		dd
-%define .align		align
-%define .globl		global
-;# NASM only wants 'dword', not 'dword ptr'.
-%define ptr
-.equiv          .equiv                  2
-   %1 equ %2
-%endmacro
-; .endif                   # End of NASM-specific block
-; .intel_syntax noprefix   # Line only read by gnu as
 
 
 
@@ -50,1581 +25,1582 @@
 
 .globl nb_kernel333_x86_64_sse2
 .globl _nb_kernel333_x86_64_sse2
-nb_kernel333_x86_64_sse2:	
-_nb_kernel333_x86_64_sse2:	
-;#	Room for return address and rbp (16 bytes)
-.equiv          nb333_fshift,           16
-.equiv          nb333_gid,              24
-.equiv          nb333_pos,              32
-.equiv          nb333_faction,          40
-.equiv          nb333_charge,           48
-.equiv          nb333_p_facel,          56
-.equiv          nb333_argkrf,           64
-.equiv          nb333_argcrf,           72
-.equiv          nb333_Vc,               80
-.equiv          nb333_type,             88
-.equiv          nb333_p_ntype,          96
-.equiv          nb333_vdwparam,         104
-.equiv          nb333_Vvdw,             112
-.equiv          nb333_p_tabscale,       120
-.equiv          nb333_VFtab,            128
-.equiv          nb333_invsqrta,         136
-.equiv          nb333_dvda,             144
-.equiv          nb333_p_gbtabscale,     152
-.equiv          nb333_GBtab,            160
-.equiv          nb333_p_nthreads,       168
-.equiv          nb333_count,            176
-.equiv          nb333_mtx,              184
-.equiv          nb333_outeriter,        192
-.equiv          nb333_inneriter,        200
-.equiv          nb333_work,             208
-	;# stack offsets for local variables 
-	;# bottom of stack is cache-aligned for sse2 use 
-.equiv          nb333_ixO,              0
-.equiv          nb333_iyO,              16
-.equiv          nb333_izO,              32
-.equiv          nb333_ixH1,             48
-.equiv          nb333_iyH1,             64
-.equiv          nb333_izH1,             80
-.equiv          nb333_ixH2,             96
-.equiv          nb333_iyH2,             112
-.equiv          nb333_izH2,             128
-.equiv          nb333_ixM,              144
-.equiv          nb333_iyM,              160
-.equiv          nb333_izM,              176
-.equiv          nb333_iqM,              192
-.equiv          nb333_iqH,              208
-.equiv          nb333_dxO,              224
-.equiv          nb333_dyO,              240
-.equiv          nb333_dzO,              256
-.equiv          nb333_dxH1,             272
-.equiv          nb333_dyH1,             288
-.equiv          nb333_dzH1,             304
-.equiv          nb333_dxH2,             320
-.equiv          nb333_dyH2,             336
-.equiv          nb333_dzH2,             352
-.equiv          nb333_dxM,              368
-.equiv          nb333_dyM,              384
-.equiv          nb333_dzM,              400
-.equiv          nb333_qqM,              416
-.equiv          nb333_qqH,              432
-.equiv          nb333_rinvO,            448
-.equiv          nb333_rinvH1,           464
-.equiv          nb333_rinvH2,           480
-.equiv          nb333_rinvM,            496
-.equiv          nb333_rO,               512
-.equiv          nb333_rH1,              528
-.equiv          nb333_rH2,              544
-.equiv          nb333_rM,               560
-.equiv          nb333_tsc,              576
-.equiv          nb333_two,              592
-.equiv          nb333_c6,               608
-.equiv          nb333_c12,              624
-.equiv          nb333_vctot,            640
-.equiv          nb333_Vvdwtot,          656
-.equiv          nb333_fixO,             672
-.equiv          nb333_fiyO,             688
-.equiv          nb333_fizO,             704
-.equiv          nb333_fixH1,            720
-.equiv          nb333_fiyH1,            736
-.equiv          nb333_fizH1,            752
-.equiv          nb333_fixH2,            768
-.equiv          nb333_fiyH2,            784
-.equiv          nb333_fizH2,            800
-.equiv          nb333_fixM,             816
-.equiv          nb333_fiyM,             832
-.equiv          nb333_fizM,             848
-.equiv          nb333_fjx,              864
-.equiv          nb333_fjy,              880
-.equiv          nb333_fjz,              896
-.equiv          nb333_half,             912
-.equiv          nb333_three,            928
-.equiv          nb333_is3,              944
-.equiv          nb333_ii3,              948
-.equiv          nb333_nri,              952
-.equiv          nb333_iinr,             960
-.equiv          nb333_jindex,           968
-.equiv          nb333_jjnr,             976
-.equiv          nb333_shift,            984
-.equiv          nb333_shiftvec,         992
-.equiv          nb333_facel,            1000
-.equiv          nb333_innerjjnr,        1008
-.equiv          nb333_ntia,             1016
-.equiv          nb333_innerk,           1020
-.equiv          nb333_n,                1024
-.equiv          nb333_nn1,              1028
-.equiv          nb333_nouter,           1032
-.equiv          nb333_ninner,           1036
-	push rbp
-	mov  rbp, rsp
-	push rbx
-	emms
-
-        push r12
-        push r13
-        push r14
-        push r15
-
-	sub rsp, 1048		;# local variable stack space (n*16+8)
-
-	;# zero 32-bit iteration counters
-	mov eax, 0
-	mov [rsp + nb333_nouter], eax
-	mov [rsp + nb333_ninner], eax
-
-	mov edi, [rdi]
-	mov [rsp + nb333_nri], edi
-	mov [rsp + nb333_iinr], rsi
-	mov [rsp + nb333_jindex], rdx
-	mov [rsp + nb333_jjnr], rcx
-	mov [rsp + nb333_shift], r8
-	mov [rsp + nb333_shiftvec], r9
-	mov rsi, [rbp + nb333_p_facel]
-	movsd xmm0, [rsi]
-	movsd [rsp + nb333_facel], xmm0
-
-	mov rax, [rbp + nb333_p_tabscale]
-	movsd xmm3, [rax]
-	shufpd xmm3, xmm3, 0
-	movapd [rsp + nb333_tsc], xmm3
-
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double half IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [rsp + nb333_half], eax
-	mov [rsp + nb333_half + 4], ebx
-	movsd xmm1, [rsp + nb333_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# one
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# two
-	addpd  xmm3, xmm2	;# three
-	movapd [rsp + nb333_half], xmm1
-	movapd [rsp + nb333_two], xmm2
-	movapd [rsp + nb333_three], xmm3
-
-	;# assume we have at least one i particle - start directly 
-	mov   rcx, [rsp + nb333_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx]	    ;# ebx =ii 
-
-	mov   rdx, [rbp + nb333_charge]
-	movsd xmm3, [rdx + rbx*8 + 8]	
-	movsd xmm4, [rdx + rbx*8 + 24]	
-	mov rsi, [rbp + nb333_p_facel]
-	movsd xmm0, [rsi]
-	movsd xmm5, [rsp + nb333_facel]
-	mulsd  xmm3, xmm5
-	mulsd  xmm4, xmm5
-
-	shufpd xmm3, xmm3, 0
-	shufpd xmm4, xmm4, 0
-	movapd [rsp + nb333_iqH], xmm3
-	movapd [rsp + nb333_iqM], xmm4
-	
-	mov   rdx, [rbp + nb333_type]
-	mov   ecx, [rdx + rbx*4]
-	shl   ecx, 1
-	mov rdi, [rbp + nb333_p_ntype]
-	imul  ecx, [rdi]      ;# rcx = ntia = 2*ntype*type[ii0] 
-	mov   [rsp + nb333_ntia], ecx		
-.nb333_threadloop:
-        mov   rsi, [rbp + nb333_count]          ;# pointer to sync counter
-        mov   eax, [rsi]
-.nb333_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [rsi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb333_spinlock
-
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [rsp + nb333_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [rsp + nb333_n], eax
-        mov [rsp + nb333_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb333_outerstart
-        jmp .nb333_end
-
-.nb333_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [rsp + nb333_nouter]
-	mov [rsp + nb333_nouter], ebx
-
-.nb333_outer:
-	mov   rax, [rsp + nb333_shift]      ;# rax = pointer into shift[] 
-	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
-	
-	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
-	mov   [rsp + nb333_is3],ebx    	;# store is3 
-
-	mov   rax, [rsp + nb333_shiftvec]   ;# rax = base of shiftvec[] 
-
-	movsd xmm0, [rax + rbx*8]
-	movsd xmm1, [rax + rbx*8 + 8]
-	movsd xmm2, [rax + rbx*8 + 16] 
-
-	mov   rcx, [rsp + nb333_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx+rsi*4]	    ;# ebx =ii 
-
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	movapd xmm6, xmm0
-	movapd xmm7, xmm1
-
-	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
-	mov   rax, [rbp + nb333_pos]    ;# rax = base of pos[]  
-	mov   [rsp + nb333_ii3], ebx
-
-	addsd xmm3, [rax + rbx*8] 	;# ox
-	addsd xmm4, [rax + rbx*8 + 8] 	;# oy
-	addsd xmm5, [rax + rbx*8 + 16]	;# oz	
-	addsd xmm6, [rax + rbx*8 + 24] 	;# h1x
-	addsd xmm7, [rax + rbx*8 + 32] 	;# h1y
-	shufpd xmm3, xmm3, 0
-	shufpd xmm4, xmm4, 0
-	shufpd xmm5, xmm5, 0
-	shufpd xmm6, xmm6, 0
-	shufpd xmm7, xmm7, 0
-	movapd [rsp + nb333_ixO], xmm3
-	movapd [rsp + nb333_iyO], xmm4
-	movapd [rsp + nb333_izO], xmm5
-	movapd [rsp + nb333_ixH1], xmm6
-	movapd [rsp + nb333_iyH1], xmm7
-
-	movsd xmm6, xmm2
-	movsd xmm3, xmm0
-	movsd xmm4, xmm1
-	movsd xmm5, xmm2
-	addsd xmm6, [rax + rbx*8 + 40] ;# h1z
-	addsd xmm0, [rax + rbx*8 + 48] ;# h2x
-	addsd xmm1, [rax + rbx*8 + 56] ;# h2y
-	addsd xmm2, [rax + rbx*8 + 64] ;# h2z
-	addsd xmm3, [rax + rbx*8 + 72] ;# mx
-	addsd xmm4, [rax + rbx*8 + 80] ;# my
-	addsd xmm5, [rax + rbx*8 + 88] ;# mz
-
-	shufpd xmm6, xmm6, 0
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
-	shufpd xmm3, xmm3, 0
-	shufpd xmm4, xmm4, 0
-	shufpd xmm5, xmm5, 0
-	movapd [rsp + nb333_izH1], xmm6
-	movapd [rsp + nb333_ixH2], xmm0
-	movapd [rsp + nb333_iyH2], xmm1
-	movapd [rsp + nb333_izH2], xmm2
-	movapd [rsp + nb333_ixM], xmm3
-	movapd [rsp + nb333_iyM], xmm4
-	movapd [rsp + nb333_izM], xmm5
-	
-	;# clear vctot and i forces 
-	xorpd xmm4, xmm4
-	movapd [rsp + nb333_vctot], xmm4
-	movapd [rsp + nb333_Vvdwtot], xmm4
-	movapd [rsp + nb333_fixO], xmm4
-	movapd [rsp + nb333_fiyO], xmm4
-	movapd [rsp + nb333_fizO], xmm4
-	movapd [rsp + nb333_fixH1], xmm4
-	movapd [rsp + nb333_fiyH1], xmm4
-	movapd [rsp + nb333_fizH1], xmm4
-	movapd [rsp + nb333_fixH2], xmm4
-	movapd [rsp + nb333_fiyH2], xmm4
-	movapd [rsp + nb333_fizH2], xmm4
-	movapd [rsp + nb333_fixM], xmm4
-	movapd [rsp + nb333_fiyM], xmm4
-	movapd [rsp + nb333_fizM], xmm4
-	
-	mov   rax, [rsp + nb333_jindex]
-	mov   ecx, [rax+rsi*4]	     ;# jindex[n] 
-	mov   edx, [rax + rsi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
-
-	mov   rsi, [rbp + nb333_pos]
-	mov   rdi, [rbp + nb333_faction]	
-	mov   rax, [rsp + nb333_jjnr]
-	shl   ecx, 2
-	add   rax, rcx
-	mov   [rsp + nb333_innerjjnr], rax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [rsp + nb333_ninner]
-	mov   [rsp + nb333_ninner], ecx
-	add   edx, 0
-	mov   [rsp + nb333_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb333_unroll_loop
-	jmp   .nb333_checksingle
-.nb333_unroll_loop:
-	;# twice unrolled innerloop here 
-	mov   rdx, [rsp + nb333_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]	
-	mov   ebx, [rdx + 4]
-	
-	add qword ptr [rsp + nb333_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-
-	mov rsi, [rbp + nb333_charge]    ;# base of charge[] 
-	
-	movlpd xmm3, [rsi + rax*8]
-	movhpd xmm3, [rsi + rbx*8]
-	movapd xmm4, xmm3	     
-	mulpd  xmm3, [rsp + nb333_iqM]
-	mulpd  xmm4, [rsp + nb333_iqH]
-	movapd  [rsp + nb333_qqM], xmm3
-	movapd  [rsp + nb333_qqH], xmm4	
-
-	mov rsi, [rbp + nb333_type]
-	mov r8d, [rsi + rax*4]
-	mov r9d, [rsi + rbx*4]
-	mov rsi, [rbp + nb333_vdwparam]
-	shl r8d, 1	
-	shl r9d, 1	
-	mov edi, [rsp + nb333_ntia]
-	add r8d, edi
-	add r9d, edi
-
-	movlpd xmm6, [rsi + r8*8]	;# c6a
-	movlpd xmm7, [rsi + r9*8]	;# c6b
-	movhpd xmm6, [rsi + r8*8 + 8]	;# c6a c12a 
-	movhpd xmm7, [rsi + r9*8 + 8]	;# c6b c12b 
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movapd [rsp + nb333_c6], xmm4
-	movapd [rsp + nb333_c12], xmm6
-
-	mov rsi, [rbp + nb333_pos]       ;# base of pos[] 
-
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	lea   rbx, [rbx + rbx*2]	
-
-	;# move j coordinates to local temp variables 
-    movlpd xmm0, [rsi + rax*8] 
-    movlpd xmm1, [rsi + rax*8 + 8] 
-    movlpd xmm2, [rsi + rax*8 + 16] 
-    movhpd xmm0, [rsi + rbx*8] 
-    movhpd xmm1, [rsi + rbx*8 + 8] 
-    movhpd xmm2, [rsi + rbx*8 + 16] 
-
-    ;# xmm0 = jx
-    ;# xmm1 = jy
-    ;# xmm2 = jz
-        
-    ;# O interaction
-    ;# copy to xmm3-xmm5
-    movapd xmm3, xmm0
-    movapd xmm4, xmm1
-    movapd xmm5, xmm2
-    
-    subpd xmm3, [rsp + nb333_ixO]
-    subpd xmm4, [rsp + nb333_iyO]
-    subpd xmm5, [rsp + nb333_izO]
-    
-    movapd [rsp + nb333_dxO], xmm3
-    movapd [rsp + nb333_dyO], xmm4
-    movapd [rsp + nb333_dzO], xmm5
-    
-	mulpd  xmm3, xmm3
-	mulpd  xmm4, xmm4
-	mulpd  xmm5, xmm5
-
-	addpd  xmm3, xmm4
-	addpd  xmm3, xmm5
-    ;# xmm3=rsq
-
-    cvtpd2ps xmm5, xmm3     
-    rsqrtps xmm5, xmm5
-    cvtps2pd xmm15, xmm5     ;# lu in low xmm2 
-
-    ;# lookup seed in xmm2 
-    movapd xmm5, xmm15       ;# copy of lu 
-    mulpd xmm15, xmm15        ;# lu*lu 
-    movapd xmm7, [rsp + nb333_three]
-    mulpd xmm15, xmm3        ;# rsq*lu*lu                    
-    movapd xmm6, [rsp + nb333_half]
-    subpd xmm7, xmm15        ;# 30-rsq*lu*lu 
-    mulpd xmm7, xmm5        
-    mulpd xmm7, xmm6        ;# xmm0=iter1 of rinv (new lu) 
-
-    movapd xmm5, xmm7       ;# copy of lu 
-    mulpd xmm7, xmm7        ;# lu*lu 
-    movapd xmm15, [rsp + nb333_three]
-    mulpd xmm7, xmm3        ;# rsq*lu*lu                    
-    movapd xmm6, [rsp + nb333_half]
-    subpd xmm15, xmm7        ;# 30-rsq*lu*lu 
-    mulpd xmm15, xmm5        
-    mulpd xmm15, xmm6        ;# xmm15=rinv
-        
-    mulpd xmm3, xmm15        ;# xmm3=r 
-
-    ;# xmm15=rinv
-    ;# xmm3=r
-
-    mulpd xmm3, [rsp + nb333_tsc] ;# rtab
-
-    ;# truncate and convert to integers
-    cvttpd2pi mm6, xmm3
-    
-    ;# convert back to float
-    cvtpi2pd  xmm4, mm6
-    
-    ;# multiply by 4
-    pslld   mm6, 2
-
-    ;# calculate eps
-    subpd     xmm3, xmm4    ;# xmm3=eps
-    
-    ;# move to integer registers
-    movd r10d, mm6
-    psrlq mm6, 32
-    movd r11d, mm6
-    
-    ;# multiply by 3
-    lea   r10, [r10 + r10*2]
-	lea   r11, [r11 + r11*2]
-
-    ;# xmm3=eps
-    ;# xmm15=rinv
-
-	mov rsi, [rbp + nb333_VFtab]
-    ;# indices in r10, r11. Load dispersion and repulsion tables in parallel.
-    movapd xmm4, [rsi + r10*8 + 32]     ;# Y1d F1d  
-    movapd xmm12, [rsi + r11*8 + 32]    ;# Y2d F2d 
-    movapd xmm8, [rsi + r10*8 + 64]     ;# Y1r F1r  
-    movapd xmm13, [rsi + r11*8 + 64]    ;# Y2r F2r 
-    movapd xmm5, xmm4
-    movapd xmm9, xmm8
-    unpcklpd xmm4, xmm12    ;# Y1d Y2d 
-    unpckhpd xmm5, xmm12    ;# F1d F2d 
-    unpcklpd xmm8, xmm13    ;# Y1r Y2r 
-    unpckhpd xmm9, xmm13    ;# F1r F2r 
-
-    movapd xmm6, [rsi + r10*8 + 48]     ;# G1d H1d  
-    movapd xmm12, [rsi + r11*8 + 48]    ;# G2d H2d 
-    movapd xmm10, [rsi + r10*8 + 80]    ;# G1r H1r      
-    movapd xmm13, [rsi + r11*8 + 80]    ;# G2r H2r 
-    movapd xmm7, xmm6
-    movapd xmm11, xmm10
-    unpcklpd xmm6, xmm12    ;# G1d G2d 
-    unpckhpd xmm7, xmm12    ;# H1d H2d 
-    unpcklpd xmm10, xmm13   ;# G1r G2r 
-    unpckhpd xmm11, xmm13   ;# H1r H2r 
-    ;# dispersion table in xmm4-xmm7, repulsion table in xmm8-xmm11
-    
-    mulpd  xmm7, xmm3    ;# Heps
-    mulpd  xmm11, xmm3 
-    mulpd  xmm6, xmm3   ;# Geps
-    mulpd  xmm10, xmm3 
-    mulpd  xmm7, xmm3   ;# Heps2
-    mulpd  xmm11, xmm3 
-    addpd  xmm5, xmm6  ;# F+Geps
-    addpd  xmm9, xmm10 
-    addpd  xmm5, xmm7   ;# F+Geps+Heps2 = Fp
-    addpd  xmm9, xmm11 
-    addpd  xmm7, xmm7    ;# 2*Heps2
-    addpd  xmm11, xmm11
-    addpd  xmm7, xmm6   ;# 2*Heps2+Geps
-    addpd  xmm11, xmm10
-    
-    addpd  xmm7, xmm5  ;# FF = Fp + 2*Heps2 + Geps
-    addpd  xmm11, xmm9
-    mulpd  xmm5, xmm3  ;# eps*Fp
-    mulpd  xmm9, xmm3
-    movapd xmm12, [rsp + nb333_c6]
-    movapd xmm13, [rsp + nb333_c12]
-    addpd  xmm5, xmm4 ;# VV
-    addpd  xmm9, xmm8
-
-    mulpd  xmm5, xmm12  ;# VV*c6 = vnb6
-    mulpd  xmm9, xmm13  ;# VV*c12 = vnb12
-    addpd  xmm5, xmm9
-    addpd  xmm5, [rsp + nb333_Vvdwtot]
-    movapd [rsp + nb333_Vvdwtot], xmm5
-        
-    mulpd  xmm7, xmm12   ;# FF*c6 = fnb6
-    mulpd  xmm11, xmm13   ;# FF*c12  = fnb12
-    addpd  xmm7, xmm11
-    
-    mulpd  xmm7, [rsp + nb333_tsc]
-    mulpd  xmm7, xmm15   ;# -fscal
-    xorpd  xmm9, xmm9
-    
-    subpd  xmm9, xmm7     ;# fscal
-    movapd xmm10, xmm9
-    movapd xmm11, xmm9
-
-    mulpd  xmm9,  [rsp + nb333_dxO] ;# fx/fy/fz
-    mulpd  xmm10, [rsp + nb333_dyO]
-    mulpd  xmm11, [rsp + nb333_dzO]
-
-    ;# save j force temporarily
-    movapd [rsp + nb333_fjx], xmm9
-    movapd [rsp + nb333_fjy], xmm10
-    movapd [rsp + nb333_fjz], xmm11
-    
-    ;# increment i O force
-    addpd xmm9, [rsp + nb333_fixO]
-    addpd xmm10, [rsp + nb333_fiyO]
-    addpd xmm11, [rsp + nb333_fizO]
-    movapd [rsp + nb333_fixO], xmm9
-    movapd [rsp + nb333_fiyO], xmm10
-    movapd [rsp + nb333_fizO], xmm11
-    ;# finished O LJ interaction.
-
-
-    ;# do H1, H2, and M interactions in parallel.
-    ;# xmm0-xmm2 still contain j coordinates.                
-    movapd xmm3, xmm0
-    movapd xmm4, xmm1
-    movapd xmm5, xmm2
-    movapd xmm6, xmm0
-    movapd xmm7, xmm1
-    movapd xmm8, xmm2
-    
-    subpd xmm0, [rsp + nb333_ixH1]
-    subpd xmm1, [rsp + nb333_iyH1]
-    subpd xmm2, [rsp + nb333_izH1]
-    subpd xmm3, [rsp + nb333_ixH2]
-    subpd xmm4, [rsp + nb333_iyH2]
-    subpd xmm5, [rsp + nb333_izH2]
-    subpd xmm6, [rsp + nb333_ixM]
-    subpd xmm7, [rsp + nb333_iyM]
-    subpd xmm8, [rsp + nb333_izM]
-    
-	movapd [rsp + nb333_dxH1], xmm0
-	movapd [rsp + nb333_dyH1], xmm1
-	movapd [rsp + nb333_dzH1], xmm2
-	mulpd  xmm0, xmm0
-	mulpd  xmm1, xmm1
-	mulpd  xmm2, xmm2
-	movapd [rsp + nb333_dxH2], xmm3
-	movapd [rsp + nb333_dyH2], xmm4
-	movapd [rsp + nb333_dzH2], xmm5
-	mulpd  xmm3, xmm3
-	mulpd  xmm4, xmm4
-	mulpd  xmm5, xmm5
-	movapd [rsp + nb333_dxM], xmm6
-	movapd [rsp + nb333_dyM], xmm7
-	movapd [rsp + nb333_dzM], xmm8
-	mulpd  xmm6, xmm6
-	mulpd  xmm7, xmm7
-	mulpd  xmm8, xmm8
-	addpd  xmm0, xmm1
-	addpd  xmm0, xmm2
-	addpd  xmm3, xmm4
-	addpd  xmm3, xmm5
-    addpd  xmm6, xmm7
-    addpd  xmm6, xmm8
-
-	;# start doing invsqrt for j atoms
-    cvtpd2ps xmm1, xmm0
-    cvtpd2ps xmm4, xmm3
-    cvtpd2ps xmm7, xmm6
-	rsqrtps xmm1, xmm1
-	rsqrtps xmm4, xmm4
-    rsqrtps xmm7, xmm7
-    cvtps2pd xmm1, xmm1
-    cvtps2pd xmm4, xmm4
-    cvtps2pd xmm7, xmm7
-	
-	movapd  xmm2, xmm1
-	movapd  xmm5, xmm4
-    movapd  xmm8, xmm7
-    
-	mulpd   xmm1, xmm1 ;# lu*lu
-	mulpd   xmm4, xmm4 ;# lu*lu
-    mulpd   xmm7, xmm7 ;# lu*lu
-		
-	movapd  xmm9, [rsp + nb333_three]
-	movapd  xmm10, xmm9
-    movapd  xmm11, xmm9
-
-	mulpd   xmm1, xmm0 ;# rsq*lu*lu
-	mulpd   xmm4, xmm3 ;# rsq*lu*lu 
-    mulpd   xmm7, xmm6 ;# rsq*lu*lu
-	
-	subpd   xmm9, xmm1
-	subpd   xmm10, xmm4
-    subpd   xmm11, xmm7 ;# 3-rsq*lu*lu
-
-	mulpd   xmm9, xmm2
-	mulpd   xmm10, xmm5
-    mulpd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
-
-	movapd  xmm15, [rsp + nb333_half]
-	mulpd   xmm9, xmm15  ;# first iteration for rinvH1
-	mulpd   xmm10, xmm15 ;# first iteration for rinvH2
-    mulpd   xmm11, xmm15 ;# first iteration for rinvM
-
-    ;# second iteration step    
-	movapd  xmm2, xmm9
-	movapd  xmm5, xmm10
-    movapd  xmm8, xmm11
-    
-	mulpd   xmm2, xmm2 ;# lu*lu
-	mulpd   xmm5, xmm5 ;# lu*lu
-    mulpd   xmm8, xmm8 ;# lu*lu
-		
-	movapd  xmm1, [rsp + nb333_three]
-	movapd  xmm4, xmm1
-    movapd  xmm7, xmm1
-
-	mulpd   xmm2, xmm0 ;# rsq*lu*lu
-	mulpd   xmm5, xmm3 ;# rsq*lu*lu 
-    mulpd   xmm8, xmm6 ;# rsq*lu*lu
-	
-	subpd   xmm1, xmm2
-	subpd   xmm4, xmm5
-    subpd   xmm7, xmm8 ;# 3-rsq*lu*lu
-
-	mulpd   xmm9, xmm1
-	mulpd   xmm10, xmm4
-    mulpd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
-
-	movapd  xmm15, [rsp + nb333_half]
-	mulpd   xmm9, xmm15  ;#  rinvH1
-	mulpd   xmm10, xmm15 ;#   rinvH2
-    mulpd   xmm11, xmm15 ;#   rinvM
-	
-	movapd  [rsp + nb333_rinvH1], xmm9
-	movapd  [rsp + nb333_rinvH2], xmm10
-	movapd  [rsp + nb333_rinvM], xmm11
-	
-	;# interactions 
-    ;# rsq in xmm0,xmm3,xmm6  
-    ;# rinv in xmm9, xmm10, xmm11
-
-    movapd xmm1, [rsp + nb333_tsc]
-    mulpd  xmm0, xmm9  ;# r
-    mulpd  xmm3, xmm10
-    mulpd  xmm6, xmm11
-    mulpd  xmm0, xmm1 ;# rtab
-    mulpd  xmm3, xmm1
-    mulpd  xmm6, xmm1
-    
-    ;# truncate and convert to integers
-    cvttpd2dq xmm1, xmm0
-    cvttpd2dq xmm4, xmm3
-    cvttpd2dq xmm7, xmm6        
-
-    ;# convert back to float
-    cvtdq2pd  xmm2, xmm1
-    cvtdq2pd  xmm5, xmm4
-    cvtdq2pd  xmm8, xmm7
-    
-    ;# multiply by 4
-    pslld   xmm1, 2
-    pslld   xmm4, 2
-    pslld   xmm7, 2
-    
-    ;# multiply by three (copy, mult. by two, add back)
-    movapd  xmm10, xmm1
-    movapd  xmm11, xmm4
-    movapd  xmm12, xmm7
-    pslld   xmm1, 1
-    pslld   xmm4, 1
-    pslld   xmm7, 1    
-    paddd   xmm1, xmm10
-    paddd   xmm4, xmm11
-    paddd   xmm7, xmm12    
-    
-    ;# move to integer registers
-    pshufd xmm13, xmm1, 1
-    pshufd xmm14, xmm4, 1
-    pshufd xmm15, xmm7, 1
-    movd    r8d, xmm1
-    movd    r10d, xmm4
-    movd    r12d, xmm7
-    movd    r9d, xmm13
-    movd    r11d, xmm14
-    movd    r13d, xmm15
-        
-    mov  rsi, [rbp + nb333_VFtab]
-
-    ;# calculate eps
-    subpd     xmm0, xmm2
-    subpd     xmm3, xmm5
-    subpd     xmm6, xmm8
-
-    movapd    xmm12, xmm0  ;# epsH1
-    movapd    xmm13, xmm3  ;# epsH2
-    movapd    xmm14, xmm6  ;# epsM
-
-    ;# Load LOTS of table data
-    movlpd xmm0,  [rsi + r8*8]
-    movlpd xmm1,  [rsi + r8*8 + 8]
-    movlpd xmm2,  [rsi + r8*8 + 16]
-    movlpd xmm3,  [rsi + r8*8 + 24]
-    movlpd xmm4,  [rsi + r10*8]
-    movlpd xmm5,  [rsi + r10*8 + 8]
-    movlpd xmm6,  [rsi + r10*8 + 16]
-    movlpd xmm7,  [rsi + r10*8 + 24]
-    movlpd xmm8,  [rsi + r12*8]
-    movlpd xmm9,  [rsi + r12*8 + 8]
-    movlpd xmm10, [rsi + r12*8 + 16]
-    movlpd xmm11, [rsi + r12*8 + 24]
-    movhpd xmm0,  [rsi + r9*8]
-    movhpd xmm1,  [rsi + r9*8 + 8]
-    movhpd xmm2,  [rsi + r9*8 + 16]
-    movhpd xmm3,  [rsi + r9*8 + 24]
-    movhpd xmm4,  [rsi + r11*8]
-    movhpd xmm5,  [rsi + r11*8 + 8]
-    movhpd xmm6,  [rsi + r11*8 + 16]
-    movhpd xmm7,  [rsi + r11*8 + 24]
-    movhpd xmm8,  [rsi + r13*8]
-    movhpd xmm9,  [rsi + r13*8 + 8]
-    movhpd xmm10, [rsi + r13*8 + 16]
-    movhpd xmm11, [rsi + r13*8 + 24]
-    ;# table data ready in xmm0-xmm3 , xmm4-xmm7 , and xmm8-xmm11
-    
-    mulpd  xmm3, xmm12   ;# Heps
-    mulpd  xmm7, xmm13
-    mulpd  xmm11, xmm14 
-    mulpd  xmm2, xmm12   ;# Geps
-    mulpd  xmm6, xmm13
-    mulpd  xmm10, xmm14 
-    mulpd  xmm3, xmm12   ;# Heps2
-    mulpd  xmm7, xmm13
-    mulpd  xmm11, xmm14 
-
-    addpd  xmm1, xmm2   ;# F+Geps
-    addpd  xmm5, xmm6
-    addpd  xmm9, xmm10 
-    addpd  xmm1, xmm3   ;# F+Geps+Heps2 = Fp
-    addpd  xmm5, xmm7
-    addpd  xmm9, xmm11 
-    addpd  xmm3, xmm3    ;# 2*Heps2
-    addpd  xmm7, xmm7
-    addpd  xmm11, xmm11
-    addpd  xmm3, xmm2    ;# 2*Heps2+Geps
-    addpd  xmm7, xmm6  
-    addpd  xmm11, xmm10
-    addpd  xmm3, xmm1   ;# FF = Fp + 2*Heps2 + Geps
-    addpd  xmm7, xmm5
-    addpd  xmm11, xmm9
-    mulpd  xmm1, xmm12   ;# eps*Fp
-    mulpd  xmm5, xmm13
-    mulpd  xmm9, xmm14
-    movapd xmm12, [rsp + nb333_qqH]
-    movapd xmm13, [rsp + nb333_qqM]
-    addpd  xmm1, xmm0     ;# VV
-    addpd  xmm5, xmm4
-    addpd  xmm9, xmm8
-    mulpd  xmm1, xmm12   ;# VV*qq = vcoul
-    mulpd  xmm5, xmm12
-    mulpd  xmm9, xmm13
-    mulpd  xmm3, xmm12    ;# FF*qq = fij
-    mulpd  xmm7, xmm12
-    mulpd  xmm11, xmm13
-    
-    ;# accumulate vctot
-    addpd  xmm1, [rsp + nb333_vctot]
-    addpd  xmm5, xmm9
-    addpd  xmm1, xmm5
-    movapd [rsp + nb333_vctot], xmm1
-    
-    movapd xmm10, [rsp + nb333_tsc]
-    mulpd  xmm3, xmm10  ;# fscal
-    mulpd  xmm7, xmm10
-    mulpd  xmm10, xmm11
-    
-    xorpd  xmm4, xmm4
-    xorpd  xmm8, xmm8
-    xorpd  xmm11, xmm11
-    
-    subpd  xmm4, xmm3
-    subpd  xmm8, xmm7
-    subpd  xmm11, xmm10
-
-    mulpd  xmm4, [rsp + nb333_rinvH1]
-    mulpd  xmm8, [rsp + nb333_rinvH2]
-    mulpd  xmm11, [rsp + nb333_rinvM]
-    
-    ;# move j forces to xmm0-xmm2
-    mov rdi, [rbp + nb333_faction]
-	movlpd xmm0, [rdi + rax*8]
-	movlpd xmm1, [rdi + rax*8 + 8]
-	movlpd xmm2, [rdi + rax*8 + 16]
-	movhpd xmm0, [rdi + rbx*8]
-	movhpd xmm1, [rdi + rbx*8 + 8]
-	movhpd xmm2, [rdi + rbx*8 + 16]
-
-    movapd xmm3, xmm4
-    movapd xmm5, xmm4
-    movapd xmm7, xmm8
-    movapd xmm9, xmm8
-    movapd xmm10, xmm11
-    movapd xmm12, xmm11
-
-    ;# add forces from O interaction
-    addpd xmm0, [rsp + nb333_fjx]
-    addpd xmm1, [rsp + nb333_fjy]
-    addpd xmm2, [rsp + nb333_fjz]
-
-	mulpd xmm3, [rsp + nb333_dxH1]
-	mulpd xmm4, [rsp + nb333_dyH1]
-	mulpd xmm5, [rsp + nb333_dzH1]
-	mulpd xmm7, [rsp + nb333_dxH2]
-	mulpd xmm8, [rsp + nb333_dyH2]
-	mulpd xmm9, [rsp + nb333_dzH2]
-	mulpd xmm10, [rsp + nb333_dxM]
-	mulpd xmm11, [rsp + nb333_dyM]
-	mulpd xmm12, [rsp + nb333_dzM]
-
-    addpd xmm0, xmm3
-    addpd xmm1, xmm4
-    addpd xmm2, xmm5
-    addpd xmm3, [rsp + nb333_fixH1]
-    addpd xmm4, [rsp + nb333_fiyH1]
-    addpd xmm5, [rsp + nb333_fizH1]
-
-    addpd xmm0, xmm7
-    addpd xmm1, xmm8
-    addpd xmm2, xmm9
-    addpd xmm7, [rsp + nb333_fixH2]
-    addpd xmm8, [rsp + nb333_fiyH2]
-    addpd xmm9, [rsp + nb333_fizH2]
-
-    addpd xmm0, xmm10
-    addpd xmm1, xmm11
-    addpd xmm2, xmm12
-    addpd xmm10, [rsp + nb333_fixM]
-    addpd xmm11, [rsp + nb333_fiyM]
-    addpd xmm12, [rsp + nb333_fizM]
-
-    movapd [rsp + nb333_fixH1], xmm3
-    movapd [rsp + nb333_fiyH1], xmm4
-    movapd [rsp + nb333_fizH1], xmm5
-    movapd [rsp + nb333_fixH2], xmm7
-    movapd [rsp + nb333_fiyH2], xmm8
-    movapd [rsp + nb333_fizH2], xmm9
-    movapd [rsp + nb333_fixM], xmm10
-    movapd [rsp + nb333_fiyM], xmm11
-    movapd [rsp + nb333_fizM], xmm12
-   
-    ;# store back j forces from xmm0-xmm2
-	movlpd [rdi + rax*8], xmm0
-	movlpd [rdi + rax*8 + 8], xmm1
-	movlpd [rdi + rax*8 + 16], xmm2
-	movhpd [rdi + rbx*8], xmm0
-	movhpd [rdi + rbx*8 + 8], xmm1
-	movhpd [rdi + rbx*8 + 16], xmm2
-
-	;# should we do one more iteration? 
-	sub dword ptr [rsp + nb333_innerk],  2
-	jl    .nb333_checksingle
-	jmp   .nb333_unroll_loop
-.nb333_checksingle:	
-	mov   edx, [rsp + nb333_innerk]
-	and   edx, 1
-	jnz   .nb333_dosingle
-	jmp   .nb333_updateouterdata
-.nb333_dosingle:
-	mov   rdx, [rsp + nb333_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]	
-	mov   ebx, [rdx + 4]
-	
-	add qword ptr [rsp + nb333_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-
-	mov rsi, [rbp + nb333_charge]    ;# base of charge[] 
-	
-	movsd xmm3, [rsi + rax*8]
-	movapd xmm4, xmm3	     
-	mulsd  xmm3, [rsp + nb333_iqM]
-	mulsd  xmm4, [rsp + nb333_iqH]
-	movapd  [rsp + nb333_qqM], xmm3
-	movapd  [rsp + nb333_qqH], xmm4	
-
-	mov rsi, [rbp + nb333_type]
-	mov r8d, [rsi + rax*4]
-	mov rsi, [rbp + nb333_vdwparam]
-	shl r8d, 1	
-	mov edi, [rsp + nb333_ntia]
-	add r8d, edi
-
-	movlpd xmm6, [rsi + r8*8]	;# c6a
-	movlpd xmm7, [rsi + r8*8 + 8]	;# c12a
-	
-	movapd [rsp + nb333_c6], xmm6
-	movapd [rsp + nb333_c12], xmm7
-
-	mov rsi, [rbp + nb333_pos]       ;# base of pos[] 
-
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-
-	;# move j coordinates to local temp variables 
-    movsd xmm0, [rsi + rax*8] 
-    movsd xmm1, [rsi + rax*8 + 8] 
-    movsd xmm2, [rsi + rax*8 + 16] 
-
-    ;# xmm0 = jx
-    ;# xmm1 = jy
-    ;# xmm2 = jz
-        
-    ;# O interaction
-    ;# copy to xmm3-xmm5
-    movapd xmm3, xmm0
-    movapd xmm4, xmm1
-    movapd xmm5, xmm2
-    
-    subsd xmm3, [rsp + nb333_ixO]
-    subsd xmm4, [rsp + nb333_iyO]
-    subsd xmm5, [rsp + nb333_izO]
-    
-    movapd [rsp + nb333_dxO], xmm3
-    movapd [rsp + nb333_dyO], xmm4
-    movapd [rsp + nb333_dzO], xmm5
-    
-	mulsd  xmm3, xmm3
-	mulsd  xmm4, xmm4
-	mulsd  xmm5, xmm5
-
-	addsd  xmm3, xmm4
-	addsd  xmm3, xmm5
-    ;# xmm3=rsq
-
-    cvtsd2ss xmm5, xmm3     
-    rsqrtss xmm5, xmm5
-    cvtss2sd xmm15, xmm5     ;# lu in low xmm2 
-
-    ;# lookup seed in xmm2 
-    movapd xmm5, xmm15       ;# copy of lu 
-    mulsd xmm15, xmm15        ;# lu*lu 
-    movapd xmm7, [rsp + nb333_three]
-    mulsd xmm15, xmm3        ;# rsq*lu*lu                    
-    movapd xmm6, [rsp + nb333_half]
-    subsd xmm7, xmm15        ;# 30-rsq*lu*lu 
-    mulsd xmm7, xmm5        
-    mulsd xmm7, xmm6        ;# xmm0=iter1 of rinv (new lu) 
-
-    movapd xmm5, xmm7       ;# copy of lu 
-    mulsd xmm7, xmm7        ;# lu*lu 
-    movapd xmm15, [rsp + nb333_three]
-    mulsd xmm7, xmm3        ;# rsq*lu*lu                    
-    movapd xmm6, [rsp + nb333_half]
-    subsd xmm15, xmm7        ;# 30-rsq*lu*lu 
-    mulsd xmm15, xmm5        
-    mulsd xmm15, xmm6        ;# xmm15=rinv
-        
-    mulsd xmm3, xmm15        ;# xmm3=r 
-
-    ;# xmm15=rinv
-    ;# xmm3=r
-
-    mulsd xmm3, [rsp + nb333_tsc] ;# rtab
-
-    ;# truncate and convert to integers
-    cvttsd2si r10d, xmm3
-    
-    ;# convert back to float
-    cvtsi2sd  xmm4, r10d
-    
-    ;# multiply by 4
-    shl    r10d, 2
-    
-    ;# calculate eps
-    subsd     xmm3, xmm4    ;# xmm3=eps
-    
-    ;# multiply by 3
-    lea   r10, [r10 + r10*2]
-
-    ;# xmm3=eps
-    ;# xmm15=rinv
-
-	mov rsi, [rbp + nb333_VFtab]
-    movsd  xmm4, [rsi + r10*8 + 32]
-    movsd  xmm5, [rsi + r10*8 + 40]
-    movsd  xmm6, [rsi + r10*8 + 48]
-    movsd  xmm7, [rsi + r10*8 + 56]
-    movsd  xmm8, [rsi + r10*8 + 64]
-    movsd  xmm9, [rsi + r10*8 + 72]
-    movsd  xmm10, [rsi + r10*8 + 80]
-    movsd  xmm11, [rsi + r10*8 + 88]
-    ;# dispersion table in xmm4-xmm7, repulsion table in xmm8-xmm11
-    
-    mulsd  xmm7, xmm3    ;# Heps
-    mulsd  xmm11, xmm3 
-    mulsd  xmm6, xmm3   ;# Geps
-    mulsd  xmm10, xmm3 
-    mulsd  xmm7, xmm3   ;# Heps2
-    mulsd  xmm11, xmm3 
-    addsd  xmm5, xmm6  ;# F+Geps
-    addsd  xmm9, xmm10 
-    addsd  xmm5, xmm7   ;# F+Geps+Heps2 = Fp
-    addsd  xmm9, xmm11 
-    addsd  xmm7, xmm7    ;# 2*Heps2
-    addsd  xmm11, xmm11
-    addsd  xmm7, xmm6   ;# 2*Heps2+Geps
-    addsd  xmm11, xmm10
-    
-    addsd  xmm7, xmm5  ;# FF = Fp + 2*Heps2 + Geps
-    addsd  xmm11, xmm9
-    mulsd  xmm5, xmm3  ;# eps*Fp
-    mulsd  xmm9, xmm3
-    movapd xmm12, [rsp + nb333_c6]
-    movapd xmm13, [rsp + nb333_c12]
-    addsd  xmm5, xmm4 ;# VV
-    addsd  xmm9, xmm8
-
-    mulsd  xmm5, xmm12  ;# VV*c6 = vnb6
-    mulsd  xmm9, xmm13  ;# VV*c12 = vnb12
-    addsd  xmm5, xmm9
-    addsd  xmm5, [rsp + nb333_Vvdwtot]
-    movsd [rsp + nb333_Vvdwtot], xmm5
-        
-    mulsd  xmm7, xmm12   ;# FF*c6 = fnb6
-    mulsd  xmm11, xmm13   ;# FF*c12  = fnb12
-    addsd  xmm7, xmm11
-    
-    mulsd  xmm7, [rsp + nb333_tsc]
-    mulsd  xmm7, xmm15   ;# -fscal
-    xorpd  xmm9, xmm9
-    
-    subsd  xmm9, xmm7     ;# fscal
-    movapd xmm10, xmm9
-    movapd xmm11, xmm9
-
-    mulsd  xmm9,  [rsp + nb333_dxO] ;# fx/fy/fz
-    mulsd  xmm10, [rsp + nb333_dyO]
-    mulsd  xmm11, [rsp + nb333_dzO]
-
-    ;# save j force temporarily
-    movapd [rsp + nb333_fjx], xmm9
-    movapd [rsp + nb333_fjy], xmm10
-    movapd [rsp + nb333_fjz], xmm11
-    
-    ;# increment i O force
-    addsd xmm9, [rsp + nb333_fixO]
-    addsd xmm10, [rsp + nb333_fiyO]
-    addsd xmm11, [rsp + nb333_fizO]
-    movsd [rsp + nb333_fixO], xmm9
-    movsd [rsp + nb333_fiyO], xmm10
-    movsd [rsp + nb333_fizO], xmm11
-    ;# finished O LJ interaction.
-
-
-    ;# do H1, H2, and M interactions in parallel.
-    ;# xmm0-xmm2 still contain j coordinates.                
-    movapd xmm3, xmm0
-    movapd xmm4, xmm1
-    movapd xmm5, xmm2
-    movapd xmm6, xmm0
-    movapd xmm7, xmm1
-    movapd xmm8, xmm2
-    
-    subsd xmm0, [rsp + nb333_ixH1]
-    subsd xmm1, [rsp + nb333_iyH1]
-    subsd xmm2, [rsp + nb333_izH1]
-    subsd xmm3, [rsp + nb333_ixH2]
-    subsd xmm4, [rsp + nb333_iyH2]
-    subsd xmm5, [rsp + nb333_izH2]
-    subsd xmm6, [rsp + nb333_ixM]
-    subsd xmm7, [rsp + nb333_iyM]
-    subsd xmm8, [rsp + nb333_izM]
-    
-	movapd [rsp + nb333_dxH1], xmm0
-	movapd [rsp + nb333_dyH1], xmm1
-	movapd [rsp + nb333_dzH1], xmm2
-	mulsd  xmm0, xmm0
-	mulsd  xmm1, xmm1
-	mulsd  xmm2, xmm2
-	movapd [rsp + nb333_dxH2], xmm3
-	movapd [rsp + nb333_dyH2], xmm4
-	movapd [rsp + nb333_dzH2], xmm5
-	mulsd  xmm3, xmm3
-	mulsd  xmm4, xmm4
-	mulsd  xmm5, xmm5
-	movapd [rsp + nb333_dxM], xmm6
-	movapd [rsp + nb333_dyM], xmm7
-	movapd [rsp + nb333_dzM], xmm8
-	mulsd  xmm6, xmm6
-	mulsd  xmm7, xmm7
-	mulsd  xmm8, xmm8
-	addsd  xmm0, xmm1
-	addsd  xmm0, xmm2
-	addsd  xmm3, xmm4
-	addsd  xmm3, xmm5
-    addsd  xmm6, xmm7
-    addsd  xmm6, xmm8
-
-	;# start doing invsqrt for j atoms
-    cvtsd2ss xmm1, xmm0
-    cvtsd2ss xmm4, xmm3
-    cvtsd2ss xmm7, xmm6
-	rsqrtss xmm1, xmm1
-	rsqrtss xmm4, xmm4
-    rsqrtss xmm7, xmm7
-    cvtss2sd xmm1, xmm1
-    cvtss2sd xmm4, xmm4
-    cvtss2sd xmm7, xmm7
-	
-	movapd  xmm2, xmm1
-	movapd  xmm5, xmm4
-    movapd  xmm8, xmm7
-    
-	mulsd   xmm1, xmm1 ;# lu*lu
-	mulsd   xmm4, xmm4 ;# lu*lu
-    mulsd   xmm7, xmm7 ;# lu*lu
-		
-	movapd  xmm9, [rsp + nb333_three]
-	movapd  xmm10, xmm9
-    movapd  xmm11, xmm9
-
-	mulsd   xmm1, xmm0 ;# rsq*lu*lu
-	mulsd   xmm4, xmm3 ;# rsq*lu*lu 
-    mulsd   xmm7, xmm6 ;# rsq*lu*lu
-	
-	subsd   xmm9, xmm1
-	subsd   xmm10, xmm4
-    subsd   xmm11, xmm7 ;# 3-rsq*lu*lu
-
-	mulsd   xmm9, xmm2
-	mulsd   xmm10, xmm5
-    mulsd   xmm11, xmm8 ;# lu*(3-rsq*lu*lu)
-
-	movapd  xmm15, [rsp + nb333_half]
-	mulsd   xmm9, xmm15  ;# first iteration for rinvH1
-	mulsd   xmm10, xmm15 ;# first iteration for rinvH2
-    mulsd   xmm11, xmm15 ;# first iteration for rinvM
-
-    ;# second iteration step    
-	movapd  xmm2, xmm9
-	movapd  xmm5, xmm10
-    movapd  xmm8, xmm11
-    
-	mulsd   xmm2, xmm2 ;# lu*lu
-	mulsd   xmm5, xmm5 ;# lu*lu
-    mulsd   xmm8, xmm8 ;# lu*lu
-		
-	movapd  xmm1, [rsp + nb333_three]
-	movapd  xmm4, xmm1
-    movapd  xmm7, xmm1
-
-	mulsd   xmm2, xmm0 ;# rsq*lu*lu
-	mulsd   xmm5, xmm3 ;# rsq*lu*lu 
-    mulsd   xmm8, xmm6 ;# rsq*lu*lu
-	
-	subsd   xmm1, xmm2
-	subsd   xmm4, xmm5
-    subsd   xmm7, xmm8 ;# 3-rsq*lu*lu
-
-	mulsd   xmm9, xmm1
-	mulsd   xmm10, xmm4
-    mulsd   xmm11, xmm7 ;# lu*(3-rsq*lu*lu)
-
-	movapd  xmm15, [rsp + nb333_half]
-	mulsd   xmm9, xmm15  ;#  rinvH1
-	mulsd   xmm10, xmm15 ;#   rinvH2
-    mulsd   xmm11, xmm15 ;#   rinvM
-	
-	movapd  [rsp + nb333_rinvH1], xmm9
-	movapd  [rsp + nb333_rinvH2], xmm10
-	movapd  [rsp + nb333_rinvM], xmm11
-	
-	;# interactions 
-    ;# rsq in xmm0,xmm3,xmm6  
-    ;# rinv in xmm9, xmm10, xmm11
-
-    movapd xmm1, [rsp + nb333_tsc]
-    mulsd  xmm0, xmm9  ;# r
-    mulsd  xmm3, xmm10
-    mulsd  xmm6, xmm11
-    mulsd  xmm0, xmm1 ;# rtab
-    mulsd  xmm3, xmm1
-    mulsd  xmm6, xmm1
-    
-    ;# truncate and convert to integers
-    cvttsd2si r8d, xmm0
-    cvttsd2si r10d, xmm3
-    cvttsd2si r12d, xmm6        
-
-    ;# convert back to float
-    cvtsi2sd  xmm2, r8d
-    cvtsi2sd  xmm5, r10d
-    cvtsi2sd  xmm8, r12d
-    
-    ;# multiply by 4
-    shl   r8d, 2
-    shl   r10d, 2
-    shl   r12d, 2
-    
-    mov  rsi, [rbp + nb333_VFtab]
-
-	lea   r8, [r8 + r8*2]
-    lea   r10, [r10 + r10*2]
-    lea   r12, [r12 + r12*2]
-            
-    ;# calculate eps
-    subsd     xmm0, xmm2
-    subsd     xmm3, xmm5
-    subsd     xmm6, xmm8
-
-    movapd    xmm12, xmm0  ;# epsH1
-    movapd    xmm13, xmm3  ;# epsH2
-    movapd    xmm14, xmm6  ;# epsM
-
-    ;# Load LOTS of table data
-    movsd xmm0,  [rsi + r8*8]
-    movsd xmm1,  [rsi + r8*8 + 8]
-    movsd xmm2,  [rsi + r8*8 + 16]
-    movsd xmm3,  [rsi + r8*8 + 24]
-    movsd xmm4,  [rsi + r10*8]
-    movsd xmm5,  [rsi + r10*8 + 8]
-    movsd xmm6,  [rsi + r10*8 + 16]
-    movsd xmm7,  [rsi + r10*8 + 24]
-    movsd xmm8,  [rsi + r12*8]
-    movsd xmm9,  [rsi + r12*8 + 8]
-    movsd xmm10, [rsi + r12*8 + 16]
-    movsd xmm11, [rsi + r12*8 + 24]
-    ;# table data ready in xmm0-xmm3 , xmm4-xmm7 , and xmm8-xmm11
-    
-    mulsd  xmm3, xmm12   ;# Heps
-    mulsd  xmm7, xmm13
-    mulsd  xmm11, xmm14 
-    mulsd  xmm2, xmm12   ;# Geps
-    mulsd  xmm6, xmm13
-    mulsd  xmm10, xmm14 
-    mulsd  xmm3, xmm12   ;# Heps2
-    mulsd  xmm7, xmm13
-    mulsd  xmm11, xmm14 
-
-    addsd  xmm1, xmm2   ;# F+Geps
-    addsd  xmm5, xmm6
-    addsd  xmm9, xmm10 
-    addsd  xmm1, xmm3   ;# F+Geps+Heps2 = Fp
-    addsd  xmm5, xmm7
-    addsd  xmm9, xmm11 
-    addsd  xmm3, xmm3    ;# 2*Heps2
-    addsd  xmm7, xmm7
-    addsd  xmm11, xmm11
-    addsd  xmm3, xmm2    ;# 2*Heps2+Geps
-    addsd  xmm7, xmm6  
-    addsd  xmm11, xmm10
-    addsd  xmm3, xmm1   ;# FF = Fp + 2*Heps2 + Geps
-    addsd  xmm7, xmm5
-    addsd  xmm11, xmm9
-    mulsd  xmm1, xmm12   ;# eps*Fp
-    mulsd  xmm5, xmm13
-    mulsd  xmm9, xmm14
-    movapd xmm12, [rsp + nb333_qqH]
-    movapd xmm13, [rsp + nb333_qqM]
-    addsd  xmm1, xmm0     ;# VV
-    addsd  xmm5, xmm4
-    addsd  xmm9, xmm8
-    mulsd  xmm1, xmm12   ;# VV*qq = vcoul
-    mulsd  xmm5, xmm12
-    mulsd  xmm9, xmm13
-    mulsd  xmm3, xmm12    ;# FF*qq = fij
-    mulsd  xmm7, xmm12
-    mulsd  xmm11, xmm13
-    
-    ;# accumulate vctot
-    addsd  xmm1, [rsp + nb333_vctot]
-    addsd  xmm5, xmm9
-    addsd  xmm1, xmm5
-    movsd [rsp + nb333_vctot], xmm1
-
-    movapd xmm10, [rsp + nb333_tsc]
-    mulsd  xmm3, xmm10  ;# fscal
-    mulsd  xmm7, xmm10
-    mulsd  xmm10, xmm11
-    
-    xorpd  xmm4, xmm4
-    xorpd  xmm8, xmm8
-    xorpd  xmm11, xmm11
-    
-    subsd  xmm4, xmm3
-    subsd  xmm8, xmm7
-    subsd  xmm11, xmm10
-
-    mulsd  xmm4, [rsp + nb333_rinvH1]
-    mulsd  xmm8, [rsp + nb333_rinvH2]
-    mulsd  xmm11, [rsp + nb333_rinvM]
-    
-    ;# move j forces to xmm0-xmm2
-    mov rdi, [rbp + nb333_faction]
-	movsd xmm0, [rdi + rax*8]
-	movsd xmm1, [rdi + rax*8 + 8]
-	movsd xmm2, [rdi + rax*8 + 16]
-
-    movapd xmm3, xmm4
-    movapd xmm5, xmm4
-    movapd xmm7, xmm8
-    movapd xmm9, xmm8
-    movapd xmm10, xmm11
-    movapd xmm12, xmm11
-
-    ;# add forces from O interaction
-    addsd xmm0, [rsp + nb333_fjx]
-    addsd xmm1, [rsp + nb333_fjy]
-    addsd xmm2, [rsp + nb333_fjz]
-
-	mulsd xmm3, [rsp + nb333_dxH1]
-	mulsd xmm4, [rsp + nb333_dyH1]
-	mulsd xmm5, [rsp + nb333_dzH1]
-	mulsd xmm7, [rsp + nb333_dxH2]
-	mulsd xmm8, [rsp + nb333_dyH2]
-	mulsd xmm9, [rsp + nb333_dzH2]
-	mulsd xmm10, [rsp + nb333_dxM]
-	mulsd xmm11, [rsp + nb333_dyM]
-	mulsd xmm12, [rsp + nb333_dzM]
-
-    addsd xmm0, xmm3
-    addsd xmm1, xmm4
-    addsd xmm2, xmm5
-    addsd xmm3, [rsp + nb333_fixH1]
-    addsd xmm4, [rsp + nb333_fiyH1]
-    addsd xmm5, [rsp + nb333_fizH1]
-
-    addsd xmm0, xmm7
-    addsd xmm1, xmm8
-    addsd xmm2, xmm9
-    addsd xmm7, [rsp + nb333_fixH2]
-    addsd xmm8, [rsp + nb333_fiyH2]
-    addsd xmm9, [rsp + nb333_fizH2]
-
-    addsd xmm0, xmm10
-    addsd xmm1, xmm11
-    addsd xmm2, xmm12
-    addsd xmm10, [rsp + nb333_fixM]
-    addsd xmm11, [rsp + nb333_fiyM]
-    addsd xmm12, [rsp + nb333_fizM]
-
-    movsd [rsp + nb333_fixH1], xmm3
-    movsd [rsp + nb333_fiyH1], xmm4
-    movsd [rsp + nb333_fizH1], xmm5
-    movsd [rsp + nb333_fixH2], xmm7
-    movsd [rsp + nb333_fiyH2], xmm8
-    movsd [rsp + nb333_fizH2], xmm9
-    movsd [rsp + nb333_fixM], xmm10
-    movsd [rsp + nb333_fiyM], xmm11
-    movsd [rsp + nb333_fizM], xmm12
-   
-    ;# store back j forces from xmm0-xmm2
-	movsd [rdi + rax*8], xmm0
-	movsd [rdi + rax*8 + 8], xmm1
-	movsd [rdi + rax*8 + 16], xmm2
-
-.nb333_updateouterdata:
-	mov   ecx, [rsp + nb333_ii3]
-	mov   rdi, [rbp + nb333_faction]
-	mov   rsi, [rbp + nb333_fshift]
-	mov   edx, [rsp + nb333_is3]
-
-	;# accumulate  Oi forces in xmm0, xmm1, xmm2 
-	movapd xmm0, [rsp + nb333_fixO]
-	movapd xmm1, [rsp + nb333_fiyO]
-	movapd xmm2, [rsp + nb333_fizO]
-
-	movhlps xmm3, xmm0
-	movhlps xmm4, xmm1
-	movhlps xmm5, xmm2
-	addsd  xmm0, xmm3
-	addsd  xmm1, xmm4
-	addsd  xmm2, xmm5 ;# sum is in low xmm0-xmm2 
-
-	movapd xmm3, xmm0	
-	movapd xmm4, xmm1	
-	movapd xmm5, xmm2	
-
-	;# increment i force 
-	movsd  xmm3, [rdi + rcx*8]
-	movsd  xmm4, [rdi + rcx*8 + 8]
-	movsd  xmm5, [rdi + rcx*8 + 16]
-	subsd  xmm3, xmm0
-	subsd  xmm4, xmm1
-	subsd  xmm5, xmm2
-	movsd  [rdi + rcx*8],     xmm3
-	movsd  [rdi + rcx*8 + 8], xmm4
-	movsd  [rdi + rcx*8 + 16], xmm5
-
-	;# accumulate force in xmm6/xmm7 for fshift 
-	movapd xmm6, xmm0
-	movsd xmm7, xmm2
-	unpcklpd xmm6, xmm1
-
-	;# accumulate H1i forces in xmm0, xmm1, xmm2 
-	movapd xmm0, [rsp + nb333_fixH1]
-	movapd xmm1, [rsp + nb333_fiyH1]
-	movapd xmm2, [rsp + nb333_fizH1]
-
-	movhlps xmm3, xmm0
-	movhlps xmm4, xmm1
-	movhlps xmm5, xmm2
-	addsd  xmm0, xmm3
-	addsd  xmm1, xmm4
-	addsd  xmm2, xmm5 ;# sum is in low xmm0-xmm2 
-
-	;# increment i force 
-	movsd  xmm3, [rdi + rcx*8 + 24]
-	movsd  xmm4, [rdi + rcx*8 + 32]
-	movsd  xmm5, [rdi + rcx*8 + 40]
-	subsd  xmm3, xmm0
-	subsd  xmm4, xmm1
-	subsd  xmm5, xmm2
-	movsd  [rdi + rcx*8 + 24], xmm3
-	movsd  [rdi + rcx*8 + 32], xmm4
-	movsd  [rdi + rcx*8 + 40], xmm5
-
-	;# accumulate force in xmm6/xmm7 for fshift 
-	addsd xmm7, xmm2
-	unpcklpd xmm0, xmm1
-	addpd xmm6, xmm0
-
-	;# accumulate H2i forces in xmm0, xmm1, xmm2 
-	movapd xmm0, [rsp + nb333_fixH2]
-	movapd xmm1, [rsp + nb333_fiyH2]
-	movapd xmm2, [rsp + nb333_fizH2]
-
-	movhlps xmm3, xmm0
-	movhlps xmm4, xmm1
-	movhlps xmm5, xmm2
-	addsd  xmm0, xmm3
-	addsd  xmm1, xmm4
-	addsd  xmm2, xmm5 ;# sum is in low xmm0-xmm2 
-
-	movapd xmm3, xmm0	
-	movapd xmm4, xmm1	
-	movapd xmm5, xmm2	
-
-	;# increment i force 
-	movsd  xmm3, [rdi + rcx*8 + 48]
-	movsd  xmm4, [rdi + rcx*8 + 56]
-	movsd  xmm5, [rdi + rcx*8 + 64]
-	subsd  xmm3, xmm0
-	subsd  xmm4, xmm1
-	subsd  xmm5, xmm2
-	movsd  [rdi + rcx*8 + 48], xmm3
-	movsd  [rdi + rcx*8 + 56], xmm4
-	movsd  [rdi + rcx*8 + 64], xmm5
-
-	;# accumulate force in xmm6/xmm7 for fshift 
-	addsd xmm7, xmm2
-	unpcklpd xmm0, xmm1
-	addpd xmm6, xmm0
-
-	;# accumulate Mi forces in xmm0, xmm1, xmm2 
-	movapd xmm0, [rsp + nb333_fixM]
-	movapd xmm1, [rsp + nb333_fiyM]
-	movapd xmm2, [rsp + nb333_fizM]
-
-	movhlps xmm3, xmm0
-	movhlps xmm4, xmm1
-	movhlps xmm5, xmm2
-	addsd  xmm0, xmm3
-	addsd  xmm1, xmm4
-	addsd  xmm2, xmm5 ;# sum is in low xmm0-xmm2 
-
-	movapd xmm3, xmm0	
-	movapd xmm4, xmm1	
-	movapd xmm5, xmm2	
-
-	;# increment i force 
-	movsd  xmm3, [rdi + rcx*8 + 72]
-	movsd  xmm4, [rdi + rcx*8 + 80]
-	movsd  xmm5, [rdi + rcx*8 + 88]
-	subsd  xmm3, xmm0
-	subsd  xmm4, xmm1
-	subsd  xmm5, xmm2
-	movsd  [rdi + rcx*8 + 72], xmm3
-	movsd  [rdi + rcx*8 + 80], xmm4
-	movsd  [rdi + rcx*8 + 88], xmm5
-
-	;# accumulate force in xmm6/xmm7 for fshift 
-	addsd xmm7, xmm2
-	unpcklpd xmm0, xmm1
-	addpd xmm6, xmm0
-
-	;# increment fshift force 
-	movlpd xmm3, [rsi + rdx*8]
-	movhpd xmm3, [rsi + rdx*8 + 8]
-	movsd  xmm4, [rsi + rdx*8 + 16]
-	subpd  xmm3, xmm6
-	subsd  xmm4, xmm7
-	movlpd [rsi + rdx*8],      xmm3
-	movhpd [rsi + rdx*8 + 8],  xmm3
-	movsd  [rsi + rdx*8 + 16], xmm4
-
-	;# get n from stack
-	mov esi, [rsp + nb333_n]
-        ;# get group index for i particle 
-        mov   rdx, [rbp + nb333_gid]      	;# base of gid[]
-        mov   edx, [rdx + rsi*4]		;# ggid=gid[n]
-
-	;# accumulate total potential energy and update it 
-	movapd xmm7, [rsp + nb333_vctot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-        
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb333_Vc]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-	;# accumulate total lj energy and update it 
-	movapd xmm7, [rsp + nb333_Vvdwtot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb333_Vvdw]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-        ;# finish if last 
-        mov ecx, [rsp + nb333_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb333_outerend
-
-        ;# not last, iterate outer loop once more!  
-        mov [rsp + nb333_n], esi
-        jmp .nb333_outer
-.nb333_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [rsp + nb333_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb333_end
-        ;# non-zero, do one more workunit
-        jmp   .nb333_threadloop
-.nb333_end:
-	mov eax, [rsp + nb333_nouter]
-	mov ebx, [rsp + nb333_ninner]
-	mov rcx, [rbp + nb333_outeriter]
-	mov rdx, [rbp + nb333_inneriter]
-	mov [rcx], eax
-	mov [rdx], ebx
-
-	add rsp, 1048
-	emms
-
-
-        pop r15
-        pop r14
-        pop r13
-        pop r12
-
-	pop rbx
-	pop	rbp
-	ret
-
-	
+nb_kernel333_x86_64_sse2:       
+_nb_kernel333_x86_64_sse2:      
+##      Room for return address and rbp (16 bytes)
+.set nb333_fshift, 16
+.set nb333_gid, 24
+.set nb333_pos, 32
+.set nb333_faction, 40
+.set nb333_charge, 48
+.set nb333_p_facel, 56
+.set nb333_argkrf, 64
+.set nb333_argcrf, 72
+.set nb333_Vc, 80
+.set nb333_type, 88
+.set nb333_p_ntype, 96
+.set nb333_vdwparam, 104
+.set nb333_Vvdw, 112
+.set nb333_p_tabscale, 120
+.set nb333_VFtab, 128
+.set nb333_invsqrta, 136
+.set nb333_dvda, 144
+.set nb333_p_gbtabscale, 152
+.set nb333_GBtab, 160
+.set nb333_p_nthreads, 168
+.set nb333_count, 176
+.set nb333_mtx, 184
+.set nb333_outeriter, 192
+.set nb333_inneriter, 200
+.set nb333_work, 208
+        ## stack offsets for local variables 
+        ## bottom of stack is cache-aligned for sse2 use 
+.set nb333_ixO, 0
+.set nb333_iyO, 16
+.set nb333_izO, 32
+.set nb333_ixH1, 48
+.set nb333_iyH1, 64
+.set nb333_izH1, 80
+.set nb333_ixH2, 96
+.set nb333_iyH2, 112
+.set nb333_izH2, 128
+.set nb333_ixM, 144
+.set nb333_iyM, 160
+.set nb333_izM, 176
+.set nb333_iqM, 192
+.set nb333_iqH, 208
+.set nb333_dxO, 224
+.set nb333_dyO, 240
+.set nb333_dzO, 256
+.set nb333_dxH1, 272
+.set nb333_dyH1, 288
+.set nb333_dzH1, 304
+.set nb333_dxH2, 320
+.set nb333_dyH2, 336
+.set nb333_dzH2, 352
+.set nb333_dxM, 368
+.set nb333_dyM, 384
+.set nb333_dzM, 400
+.set nb333_qqM, 416
+.set nb333_qqH, 432
+.set nb333_rinvO, 448
+.set nb333_rinvH1, 464
+.set nb333_rinvH2, 480
+.set nb333_rinvM, 496
+.set nb333_rO, 512
+.set nb333_rH1, 528
+.set nb333_rH2, 544
+.set nb333_rM, 560
+.set nb333_tsc, 576
+.set nb333_two, 592
+.set nb333_c6, 608
+.set nb333_c12, 624
+.set nb333_vctot, 640
+.set nb333_Vvdwtot, 656
+.set nb333_fixO, 672
+.set nb333_fiyO, 688
+.set nb333_fizO, 704
+.set nb333_fixH1, 720
+.set nb333_fiyH1, 736
+.set nb333_fizH1, 752
+.set nb333_fixH2, 768
+.set nb333_fiyH2, 784
+.set nb333_fizH2, 800
+.set nb333_fixM, 816
+.set nb333_fiyM, 832
+.set nb333_fizM, 848
+.set nb333_fjx, 864
+.set nb333_fjy, 880
+.set nb333_fjz, 896
+.set nb333_half, 912
+.set nb333_three, 928
+.set nb333_is3, 944
+.set nb333_ii3, 948
+.set nb333_nri, 952
+.set nb333_iinr, 960
+.set nb333_jindex, 968
+.set nb333_jjnr, 976
+.set nb333_shift, 984
+.set nb333_shiftvec, 992
+.set nb333_facel, 1000
+.set nb333_innerjjnr, 1008
+.set nb333_ntia, 1016
+.set nb333_innerk, 1020
+.set nb333_n, 1024
+.set nb333_nn1, 1028
+.set nb333_nouter, 1032
+.set nb333_ninner, 1036
+        push %rbp
+        movq %rsp,%rbp
+        push %rbx
+        emms
+
+        push %r12
+        push %r13
+        push %r14
+        push %r15
+
+        subq $1048,%rsp         ## local variable stack space (n*16+8)
+
+        ## zero 32-bit iteration counters
+        movl $0,%eax
+        movl %eax,nb333_nouter(%rsp)
+        movl %eax,nb333_ninner(%rsp)
+
+        movl (%rdi),%edi
+        movl %edi,nb333_nri(%rsp)
+        movq %rsi,nb333_iinr(%rsp)
+        movq %rdx,nb333_jindex(%rsp)
+        movq %rcx,nb333_jjnr(%rsp)
+        movq %r8,nb333_shift(%rsp)
+        movq %r9,nb333_shiftvec(%rsp)
+        movq nb333_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd %xmm0,nb333_facel(%rsp)
+
+        movq nb333_p_tabscale(%rbp),%rax
+        movsd (%rax),%xmm3
+        shufpd $0,%xmm3,%xmm3
+        movapd %xmm3,nb333_tsc(%rsp)
+
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double half IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb333_half(%rsp)
+        movl %ebx,nb333_half+4(%rsp)
+        movsd nb333_half(%rsp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## one
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## two
+        addpd  %xmm2,%xmm3      ## three
+        movapd %xmm1,nb333_half(%rsp)
+        movapd %xmm2,nb333_two(%rsp)
+        movapd %xmm3,nb333_three(%rsp)
+
+        ## assume we have at least one i particle - start directly 
+        movq  nb333_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]        
+        movl  (%rcx),%ebx           ## ebx =ii 
+
+        movq  nb333_charge(%rbp),%rdx
+        movsd 8(%rdx,%rbx,8),%xmm3
+        movsd 24(%rdx,%rbx,8),%xmm4
+        movq nb333_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd nb333_facel(%rsp),%xmm5
+        mulsd  %xmm5,%xmm3
+        mulsd  %xmm5,%xmm4
+
+        shufpd $0,%xmm3,%xmm3
+        shufpd $0,%xmm4,%xmm4
+        movapd %xmm3,nb333_iqH(%rsp)
+        movapd %xmm4,nb333_iqM(%rsp)
+
+        movq  nb333_type(%rbp),%rdx
+        movl  (%rdx,%rbx,4),%ecx
+        shll  %ecx
+        movq nb333_p_ntype(%rbp),%rdi
+        imull (%rdi),%ecx     ## rcx = ntia = 2*ntype*type[ii0] 
+        movl  %ecx,nb333_ntia(%rsp)
+_nb_kernel333_x86_64_sse2.nb333_threadloop: 
+        movq  nb333_count(%rbp),%rsi            ## pointer to sync counter
+        movl  (%rsi),%eax
+_nb_kernel333_x86_64_sse2.nb333_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel333_x86_64_sse2.nb333_spinlock
+
+        ## if(nn1>nri) nn1=nri
+        movl nb333_nri(%rsp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb333_n(%rsp)
+        movl %ebx,nb333_nn1(%rsp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel333_x86_64_sse2.nb333_outerstart
+        jmp _nb_kernel333_x86_64_sse2.nb333_end
+
+_nb_kernel333_x86_64_sse2.nb333_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb333_nouter(%rsp),%ebx
+        movl %ebx,nb333_nouter(%rsp)
+
+_nb_kernel333_x86_64_sse2.nb333_outer: 
+        movq  nb333_shift(%rsp),%rax        ## rax = pointer into shift[] 
+        movl  (%rax,%rsi,4),%ebx        ## rbx=shift[n] 
+
+        lea  (%rbx,%rbx,2),%rbx    ## rbx=3*is 
+        movl  %ebx,nb333_is3(%rsp)      ## store is3 
+
+        movq  nb333_shiftvec(%rsp),%rax     ## rax = base of shiftvec[] 
+
+        movsd (%rax,%rbx,8),%xmm0
+        movsd 8(%rax,%rbx,8),%xmm1
+        movsd 16(%rax,%rbx,8),%xmm2
+
+        movq  nb333_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]        
+        movl  (%rcx,%rsi,4),%ebx    ## ebx =ii 
+
+        movapd %xmm0,%xmm3
+        movapd %xmm1,%xmm4
+        movapd %xmm2,%xmm5
+        movapd %xmm0,%xmm6
+        movapd %xmm1,%xmm7
+
+        lea  (%rbx,%rbx,2),%rbx        ## rbx = 3*ii=ii3 
+        movq  nb333_pos(%rbp),%rax      ## rax = base of pos[]  
+        movl  %ebx,nb333_ii3(%rsp)
+
+        addsd (%rax,%rbx,8),%xmm3       ## ox
+        addsd 8(%rax,%rbx,8),%xmm4      ## oy
+        addsd 16(%rax,%rbx,8),%xmm5     ## oz   
+        addsd 24(%rax,%rbx,8),%xmm6     ## h1x
+        addsd 32(%rax,%rbx,8),%xmm7     ## h1y
+        shufpd $0,%xmm3,%xmm3
+        shufpd $0,%xmm4,%xmm4
+        shufpd $0,%xmm5,%xmm5
+        shufpd $0,%xmm6,%xmm6
+        shufpd $0,%xmm7,%xmm7
+        movapd %xmm3,nb333_ixO(%rsp)
+        movapd %xmm4,nb333_iyO(%rsp)
+        movapd %xmm5,nb333_izO(%rsp)
+        movapd %xmm6,nb333_ixH1(%rsp)
+        movapd %xmm7,nb333_iyH1(%rsp)
+
+        movsd %xmm2,%xmm6
+        movsd %xmm0,%xmm3
+        movsd %xmm1,%xmm4
+        movsd %xmm2,%xmm5
+        addsd 40(%rax,%rbx,8),%xmm6    ## h1z
+        addsd 48(%rax,%rbx,8),%xmm0    ## h2x
+        addsd 56(%rax,%rbx,8),%xmm1    ## h2y
+        addsd 64(%rax,%rbx,8),%xmm2    ## h2z
+        addsd 72(%rax,%rbx,8),%xmm3    ## mx
+        addsd 80(%rax,%rbx,8),%xmm4    ## my
+        addsd 88(%rax,%rbx,8),%xmm5    ## mz
+
+        shufpd $0,%xmm6,%xmm6
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
+        shufpd $0,%xmm3,%xmm3
+        shufpd $0,%xmm4,%xmm4
+        shufpd $0,%xmm5,%xmm5
+        movapd %xmm6,nb333_izH1(%rsp)
+        movapd %xmm0,nb333_ixH2(%rsp)
+        movapd %xmm1,nb333_iyH2(%rsp)
+        movapd %xmm2,nb333_izH2(%rsp)
+        movapd %xmm3,nb333_ixM(%rsp)
+        movapd %xmm4,nb333_iyM(%rsp)
+        movapd %xmm5,nb333_izM(%rsp)
+
+        ## clear vctot and i forces 
+        xorpd %xmm4,%xmm4
+        movapd %xmm4,nb333_vctot(%rsp)
+        movapd %xmm4,nb333_Vvdwtot(%rsp)
+        movapd %xmm4,nb333_fixO(%rsp)
+        movapd %xmm4,nb333_fiyO(%rsp)
+        movapd %xmm4,nb333_fizO(%rsp)
+        movapd %xmm4,nb333_fixH1(%rsp)
+        movapd %xmm4,nb333_fiyH1(%rsp)
+        movapd %xmm4,nb333_fizH1(%rsp)
+        movapd %xmm4,nb333_fixH2(%rsp)
+        movapd %xmm4,nb333_fiyH2(%rsp)
+        movapd %xmm4,nb333_fizH2(%rsp)
+        movapd %xmm4,nb333_fixM(%rsp)
+        movapd %xmm4,nb333_fiyM(%rsp)
+        movapd %xmm4,nb333_fizM(%rsp)
+
+        movq  nb333_jindex(%rsp),%rax
+        movl  (%rax,%rsi,4),%ecx     ## jindex[n] 
+        movl  4(%rax,%rsi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
+
+        movq  nb333_pos(%rbp),%rsi
+        movq  nb333_faction(%rbp),%rdi
+        movq  nb333_jjnr(%rsp),%rax
+        shll  $2,%ecx
+        addq  %rcx,%rax
+        movq  %rax,nb333_innerjjnr(%rsp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb333_ninner(%rsp),%ecx
+        movl  %ecx,nb333_ninner(%rsp)
+        addl  $0,%edx
+        movl  %edx,nb333_innerk(%rsp)      ## number of innerloop atoms 
+        jge   _nb_kernel333_x86_64_sse2.nb333_unroll_loop
+        jmp   _nb_kernel333_x86_64_sse2.nb333_checksingle
+_nb_kernel333_x86_64_sse2.nb333_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movq  nb333_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%eax
+        movl  4(%rdx),%ebx
+
+        addq $8,nb333_innerjjnr(%rsp)             ## advance pointer (unrolled 2) 
+
+        movq nb333_charge(%rbp),%rsi     ## base of charge[] 
+
+        movlpd (%rsi,%rax,8),%xmm3
+        movhpd (%rsi,%rbx,8),%xmm3
+        movapd %xmm3,%xmm4
+        mulpd  nb333_iqM(%rsp),%xmm3
+        mulpd  nb333_iqH(%rsp),%xmm4
+        movapd  %xmm3,nb333_qqM(%rsp)
+        movapd  %xmm4,nb333_qqH(%rsp)
+
+        movq nb333_type(%rbp),%rsi
+        movl (%rsi,%rax,4),%r8d
+        movl (%rsi,%rbx,4),%r9d
+        movq nb333_vdwparam(%rbp),%rsi
+        shll %r8d
+        shll %r9d
+        movl nb333_ntia(%rsp),%edi
+        addl %edi,%r8d
+        addl %edi,%r9d
+
+        movlpd (%rsi,%r8,8),%xmm6       ## c6a
+        movlpd (%rsi,%r9,8),%xmm7       ## c6b
+        movhpd 8(%rsi,%r8,8),%xmm6      ## c6a c12a 
+        movhpd 8(%rsi,%r9,8),%xmm7      ## c6b c12b 
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
+
+        movapd %xmm4,nb333_c6(%rsp)
+        movapd %xmm6,nb333_c12(%rsp)
+
+        movq nb333_pos(%rbp),%rsi        ## base of pos[] 
+
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+        lea  (%rbx,%rbx,2),%rbx
+
+        ## move j coordinates to local temp variables 
+    movlpd (%rsi,%rax,8),%xmm0
+    movlpd 8(%rsi,%rax,8),%xmm1
+    movlpd 16(%rsi,%rax,8),%xmm2
+    movhpd (%rsi,%rbx,8),%xmm0
+    movhpd 8(%rsi,%rbx,8),%xmm1
+    movhpd 16(%rsi,%rbx,8),%xmm2
+
+    ## xmm0 = jx
+    ## xmm1 = jy
+    ## xmm2 = jz
+
+    ## O interaction
+    ## copy to xmm3-xmm5
+    movapd %xmm0,%xmm3
+    movapd %xmm1,%xmm4
+    movapd %xmm2,%xmm5
+
+    subpd nb333_ixO(%rsp),%xmm3
+    subpd nb333_iyO(%rsp),%xmm4
+    subpd nb333_izO(%rsp),%xmm5
+
+    movapd %xmm3,nb333_dxO(%rsp)
+    movapd %xmm4,nb333_dyO(%rsp)
+    movapd %xmm5,nb333_dzO(%rsp)
+
+        mulpd  %xmm3,%xmm3
+        mulpd  %xmm4,%xmm4
+        mulpd  %xmm5,%xmm5
+
+        addpd  %xmm4,%xmm3
+        addpd  %xmm5,%xmm3
+    ## xmm3=rsq
+
+    cvtpd2ps %xmm3,%xmm5
+    rsqrtps %xmm5,%xmm5
+    cvtps2pd %xmm5,%xmm15    ## lu in low xmm2 
+
+    ## lookup seed in xmm2 
+    movapd %xmm15,%xmm5      ## copy of lu 
+    mulpd %xmm15,%xmm15       ## lu*lu 
+    movapd nb333_three(%rsp),%xmm7
+    mulpd %xmm3,%xmm15       ## rsq*lu*lu                    
+    movapd nb333_half(%rsp),%xmm6
+    subpd %xmm15,%xmm7       ## 30-rsq*lu*lu 
+    mulpd %xmm5,%xmm7
+    mulpd %xmm6,%xmm7       ## xmm0=iter1 of rinv (new lu) 
+
+    movapd %xmm7,%xmm5      ## copy of lu 
+    mulpd %xmm7,%xmm7       ## lu*lu 
+    movapd nb333_three(%rsp),%xmm15
+    mulpd %xmm3,%xmm7       ## rsq*lu*lu                    
+    movapd nb333_half(%rsp),%xmm6
+    subpd %xmm7,%xmm15       ## 30-rsq*lu*lu 
+    mulpd %xmm5,%xmm15
+    mulpd %xmm6,%xmm15       ## xmm15=rinv
+
+    mulpd %xmm15,%xmm3       ## xmm3=r 
+
+    ## xmm15=rinv
+    ## xmm3=r
+
+    mulpd nb333_tsc(%rsp),%xmm3   ## rtab
+
+    ## truncate and convert to integers
+    cvttpd2pi %xmm3,%mm6
+
+    ## convert back to float
+    cvtpi2pd  %mm6,%xmm4
+
+    ## multiply by 4
+    pslld   $2,%mm6
+
+    ## calculate eps
+    subpd     %xmm4,%xmm3   ## xmm3=eps
+
+    ## move to integer registers
+    movd %mm6,%r10d
+    psrlq $32,%mm6
+    movd %mm6,%r11d
+
+    ## multiply by 3
+    lea  (%r10,%r10,2),%r10
+        lea  (%r11,%r11,2),%r11
+
+    ## xmm3=eps
+    ## xmm15=rinv
+
+        movq nb333_VFtab(%rbp),%rsi
+    ## indices in r10, r11. Load dispersion and repulsion tables in parallel.
+    movapd 32(%rsi,%r10,8),%xmm4        ## Y1d F1d  
+    movapd 32(%rsi,%r11,8),%xmm12       ## Y2d F2d 
+    movapd 64(%rsi,%r10,8),%xmm8        ## Y1r F1r  
+    movapd 64(%rsi,%r11,8),%xmm13       ## Y2r F2r 
+    movapd %xmm4,%xmm5
+    movapd %xmm8,%xmm9
+    unpcklpd %xmm12,%xmm4   ## Y1d Y2d 
+    unpckhpd %xmm12,%xmm5   ## F1d F2d 
+    unpcklpd %xmm13,%xmm8   ## Y1r Y2r 
+    unpckhpd %xmm13,%xmm9   ## F1r F2r 
+
+    movapd 48(%rsi,%r10,8),%xmm6        ## G1d H1d  
+    movapd 48(%rsi,%r11,8),%xmm12       ## G2d H2d 
+    movapd 80(%rsi,%r10,8),%xmm10       ## G1r H1r      
+    movapd 80(%rsi,%r11,8),%xmm13       ## G2r H2r 
+    movapd %xmm6,%xmm7
+    movapd %xmm10,%xmm11
+    unpcklpd %xmm12,%xmm6   ## G1d G2d 
+    unpckhpd %xmm12,%xmm7   ## H1d H2d 
+    unpcklpd %xmm13,%xmm10  ## G1r G2r 
+    unpckhpd %xmm13,%xmm11  ## H1r H2r 
+    ## dispersion table in xmm4-xmm7, repulsion table in xmm8-xmm11
+
+    mulpd  %xmm3,%xmm7   ## Heps
+    mulpd  %xmm3,%xmm11
+    mulpd  %xmm3,%xmm6  ## Geps
+    mulpd  %xmm3,%xmm10
+    mulpd  %xmm3,%xmm7  ## Heps2
+    mulpd  %xmm3,%xmm11
+    addpd  %xmm6,%xmm5 ## F+Geps
+    addpd  %xmm10,%xmm9
+    addpd  %xmm7,%xmm5  ## F+Geps+Heps2 = Fp
+    addpd  %xmm11,%xmm9
+    addpd  %xmm7,%xmm7   ## 2*Heps2
+    addpd  %xmm11,%xmm11
+    addpd  %xmm6,%xmm7  ## 2*Heps2+Geps
+    addpd  %xmm10,%xmm11
+
+    addpd  %xmm5,%xmm7 ## FF = Fp + 2*Heps2 + Geps
+    addpd  %xmm9,%xmm11
+    mulpd  %xmm3,%xmm5 ## eps*Fp
+    mulpd  %xmm3,%xmm9
+    movapd nb333_c6(%rsp),%xmm12
+    movapd nb333_c12(%rsp),%xmm13
+    addpd  %xmm4,%xmm5 ## VV
+    addpd  %xmm8,%xmm9
+
+    mulpd  %xmm12,%xmm5 ## VV*c6 = vnb6
+    mulpd  %xmm13,%xmm9 ## VV*c12 = vnb12
+    addpd  %xmm9,%xmm5
+    addpd  nb333_Vvdwtot(%rsp),%xmm5
+    movapd %xmm5,nb333_Vvdwtot(%rsp)
+
+    mulpd  %xmm12,%xmm7  ## FF*c6 = fnb6
+    mulpd  %xmm13,%xmm11  ## FF*c12  = fnb12
+    addpd  %xmm11,%xmm7
+
+    mulpd  nb333_tsc(%rsp),%xmm7
+    mulpd  %xmm15,%xmm7  ## -fscal
+    xorpd  %xmm9,%xmm9
+
+    subpd  %xmm7,%xmm9    ## fscal
+    movapd %xmm9,%xmm10
+    movapd %xmm9,%xmm11
+
+    mulpd  nb333_dxO(%rsp),%xmm9    ## fx/fy/fz
+    mulpd  nb333_dyO(%rsp),%xmm10
+    mulpd  nb333_dzO(%rsp),%xmm11
+
+    ## save j force temporarily
+    movapd %xmm9,nb333_fjx(%rsp)
+    movapd %xmm10,nb333_fjy(%rsp)
+    movapd %xmm11,nb333_fjz(%rsp)
+
+    ## increment i O force
+    addpd nb333_fixO(%rsp),%xmm9
+    addpd nb333_fiyO(%rsp),%xmm10
+    addpd nb333_fizO(%rsp),%xmm11
+    movapd %xmm9,nb333_fixO(%rsp)
+    movapd %xmm10,nb333_fiyO(%rsp)
+    movapd %xmm11,nb333_fizO(%rsp)
+    ## finished O LJ interaction.
+
+
+    ## do H1, H2, and M interactions in parallel.
+    ## xmm0-xmm2 still contain j coordinates.                
+    movapd %xmm0,%xmm3
+    movapd %xmm1,%xmm4
+    movapd %xmm2,%xmm5
+    movapd %xmm0,%xmm6
+    movapd %xmm1,%xmm7
+    movapd %xmm2,%xmm8
+
+    subpd nb333_ixH1(%rsp),%xmm0
+    subpd nb333_iyH1(%rsp),%xmm1
+    subpd nb333_izH1(%rsp),%xmm2
+    subpd nb333_ixH2(%rsp),%xmm3
+    subpd nb333_iyH2(%rsp),%xmm4
+    subpd nb333_izH2(%rsp),%xmm5
+    subpd nb333_ixM(%rsp),%xmm6
+    subpd nb333_iyM(%rsp),%xmm7
+    subpd nb333_izM(%rsp),%xmm8
+
+        movapd %xmm0,nb333_dxH1(%rsp)
+        movapd %xmm1,nb333_dyH1(%rsp)
+        movapd %xmm2,nb333_dzH1(%rsp)
+        mulpd  %xmm0,%xmm0
+        mulpd  %xmm1,%xmm1
+        mulpd  %xmm2,%xmm2
+        movapd %xmm3,nb333_dxH2(%rsp)
+        movapd %xmm4,nb333_dyH2(%rsp)
+        movapd %xmm5,nb333_dzH2(%rsp)
+        mulpd  %xmm3,%xmm3
+        mulpd  %xmm4,%xmm4
+        mulpd  %xmm5,%xmm5
+        movapd %xmm6,nb333_dxM(%rsp)
+        movapd %xmm7,nb333_dyM(%rsp)
+        movapd %xmm8,nb333_dzM(%rsp)
+        mulpd  %xmm6,%xmm6
+        mulpd  %xmm7,%xmm7
+        mulpd  %xmm8,%xmm8
+        addpd  %xmm1,%xmm0
+        addpd  %xmm2,%xmm0
+        addpd  %xmm4,%xmm3
+        addpd  %xmm5,%xmm3
+    addpd  %xmm7,%xmm6
+    addpd  %xmm8,%xmm6
+
+        ## start doing invsqrt for j atoms
+    cvtpd2ps %xmm0,%xmm1
+    cvtpd2ps %xmm3,%xmm4
+    cvtpd2ps %xmm6,%xmm7
+        rsqrtps %xmm1,%xmm1
+        rsqrtps %xmm4,%xmm4
+    rsqrtps %xmm7,%xmm7
+    cvtps2pd %xmm1,%xmm1
+    cvtps2pd %xmm4,%xmm4
+    cvtps2pd %xmm7,%xmm7
+
+        movapd  %xmm1,%xmm2
+        movapd  %xmm4,%xmm5
+    movapd  %xmm7,%xmm8
+
+        mulpd   %xmm1,%xmm1 ## lu*lu
+        mulpd   %xmm4,%xmm4 ## lu*lu
+    mulpd   %xmm7,%xmm7 ## lu*lu
+
+        movapd  nb333_three(%rsp),%xmm9
+        movapd  %xmm9,%xmm10
+    movapd  %xmm9,%xmm11
+
+        mulpd   %xmm0,%xmm1 ## rsq*lu*lu
+        mulpd   %xmm3,%xmm4 ## rsq*lu*lu 
+    mulpd   %xmm6,%xmm7 ## rsq*lu*lu
+
+        subpd   %xmm1,%xmm9
+        subpd   %xmm4,%xmm10
+    subpd   %xmm7,%xmm11 ## 3-rsq*lu*lu
+
+        mulpd   %xmm2,%xmm9
+        mulpd   %xmm5,%xmm10
+    mulpd   %xmm8,%xmm11 ## lu*(3-rsq*lu*lu)
+
+        movapd  nb333_half(%rsp),%xmm15
+        mulpd   %xmm15,%xmm9 ## first iteration for rinvH1
+        mulpd   %xmm15,%xmm10 ## first iteration for rinvH2
+    mulpd   %xmm15,%xmm11 ## first iteration for rinvM
+
+    ## second iteration step    
+        movapd  %xmm9,%xmm2
+        movapd  %xmm10,%xmm5
+    movapd  %xmm11,%xmm8
+
+        mulpd   %xmm2,%xmm2 ## lu*lu
+        mulpd   %xmm5,%xmm5 ## lu*lu
+    mulpd   %xmm8,%xmm8 ## lu*lu
+
+        movapd  nb333_three(%rsp),%xmm1
+        movapd  %xmm1,%xmm4
+    movapd  %xmm1,%xmm7
+
+        mulpd   %xmm0,%xmm2 ## rsq*lu*lu
+        mulpd   %xmm3,%xmm5 ## rsq*lu*lu 
+    mulpd   %xmm6,%xmm8 ## rsq*lu*lu
+
+        subpd   %xmm2,%xmm1
+        subpd   %xmm5,%xmm4
+    subpd   %xmm8,%xmm7 ## 3-rsq*lu*lu
+
+        mulpd   %xmm1,%xmm9
+        mulpd   %xmm4,%xmm10
+    mulpd   %xmm7,%xmm11 ## lu*(3-rsq*lu*lu)
+
+        movapd  nb333_half(%rsp),%xmm15
+        mulpd   %xmm15,%xmm9 ##  rinvH1
+        mulpd   %xmm15,%xmm10 ##   rinvH2
+    mulpd   %xmm15,%xmm11 ##   rinvM
+
+        movapd  %xmm9,nb333_rinvH1(%rsp)
+        movapd  %xmm10,nb333_rinvH2(%rsp)
+        movapd  %xmm11,nb333_rinvM(%rsp)
+
+        ## interactions 
+    ## rsq in xmm0,xmm3,xmm6  
+    ## rinv in xmm9, xmm10, xmm11
+
+    movapd nb333_tsc(%rsp),%xmm1
+    mulpd  %xmm9,%xmm0 ## r
+    mulpd  %xmm10,%xmm3
+    mulpd  %xmm11,%xmm6
+    mulpd  %xmm1,%xmm0 ## rtab
+    mulpd  %xmm1,%xmm3
+    mulpd  %xmm1,%xmm6
+
+    ## truncate and convert to integers
+    cvttpd2dq %xmm0,%xmm1
+    cvttpd2dq %xmm3,%xmm4
+    cvttpd2dq %xmm6,%xmm7
+
+    ## convert back to float
+    cvtdq2pd  %xmm1,%xmm2
+    cvtdq2pd  %xmm4,%xmm5
+    cvtdq2pd  %xmm7,%xmm8
+
+    ## multiply by 4
+    pslld   $2,%xmm1
+    pslld   $2,%xmm4
+    pslld   $2,%xmm7
+
+    ## multiply by three (copy, mult. by two, add back)
+    movapd  %xmm1,%xmm10
+    movapd  %xmm4,%xmm11
+    movapd  %xmm7,%xmm12
+    pslld   $1,%xmm1
+    pslld   $1,%xmm4
+    pslld   $1,%xmm7
+    paddd   %xmm10,%xmm1
+    paddd   %xmm11,%xmm4
+    paddd   %xmm12,%xmm7
+
+    ## move to integer registers
+    pshufd $1,%xmm1,%xmm13
+    pshufd $1,%xmm4,%xmm14
+    pshufd $1,%xmm7,%xmm15
+    movd    %xmm1,%r8d
+    movd    %xmm4,%r10d
+    movd    %xmm7,%r12d
+    movd    %xmm13,%r9d
+    movd    %xmm14,%r11d
+    movd    %xmm15,%r13d
+
+    movq nb333_VFtab(%rbp),%rsi
+
+    ## calculate eps
+    subpd     %xmm2,%xmm0
+    subpd     %xmm5,%xmm3
+    subpd     %xmm8,%xmm6
+
+    movapd    %xmm0,%xmm12 ## epsH1
+    movapd    %xmm3,%xmm13 ## epsH2
+    movapd    %xmm6,%xmm14 ## epsM
+
+    ## Load LOTS of table data
+    movlpd (%rsi,%r8,8),%xmm0
+    movlpd 8(%rsi,%r8,8),%xmm1
+    movlpd 16(%rsi,%r8,8),%xmm2
+    movlpd 24(%rsi,%r8,8),%xmm3
+    movlpd (%rsi,%r10,8),%xmm4
+    movlpd 8(%rsi,%r10,8),%xmm5
+    movlpd 16(%rsi,%r10,8),%xmm6
+    movlpd 24(%rsi,%r10,8),%xmm7
+    movlpd (%rsi,%r12,8),%xmm8
+    movlpd 8(%rsi,%r12,8),%xmm9
+    movlpd 16(%rsi,%r12,8),%xmm10
+    movlpd 24(%rsi,%r12,8),%xmm11
+    movhpd (%rsi,%r9,8),%xmm0
+    movhpd 8(%rsi,%r9,8),%xmm1
+    movhpd 16(%rsi,%r9,8),%xmm2
+    movhpd 24(%rsi,%r9,8),%xmm3
+    movhpd (%rsi,%r11,8),%xmm4
+    movhpd 8(%rsi,%r11,8),%xmm5
+    movhpd 16(%rsi,%r11,8),%xmm6
+    movhpd 24(%rsi,%r11,8),%xmm7
+    movhpd (%rsi,%r13,8),%xmm8
+    movhpd 8(%rsi,%r13,8),%xmm9
+    movhpd 16(%rsi,%r13,8),%xmm10
+    movhpd 24(%rsi,%r13,8),%xmm11
+    ## table data ready in xmm0-xmm3 , xmm4-xmm7 , and xmm8-xmm11
+
+    mulpd  %xmm12,%xmm3  ## Heps
+    mulpd  %xmm13,%xmm7
+    mulpd  %xmm14,%xmm11
+    mulpd  %xmm12,%xmm2  ## Geps
+    mulpd  %xmm13,%xmm6
+    mulpd  %xmm14,%xmm10
+    mulpd  %xmm12,%xmm3  ## Heps2
+    mulpd  %xmm13,%xmm7
+    mulpd  %xmm14,%xmm11
+
+    addpd  %xmm2,%xmm1  ## F+Geps
+    addpd  %xmm6,%xmm5
+    addpd  %xmm10,%xmm9
+    addpd  %xmm3,%xmm1  ## F+Geps+Heps2 = Fp
+    addpd  %xmm7,%xmm5
+    addpd  %xmm11,%xmm9
+    addpd  %xmm3,%xmm3   ## 2*Heps2
+    addpd  %xmm7,%xmm7
+    addpd  %xmm11,%xmm11
+    addpd  %xmm2,%xmm3   ## 2*Heps2+Geps
+    addpd  %xmm6,%xmm7
+    addpd  %xmm10,%xmm11
+    addpd  %xmm1,%xmm3  ## FF = Fp + 2*Heps2 + Geps
+    addpd  %xmm5,%xmm7
+    addpd  %xmm9,%xmm11
+    mulpd  %xmm12,%xmm1  ## eps*Fp
+    mulpd  %xmm13,%xmm5
+    mulpd  %xmm14,%xmm9
+    movapd nb333_qqH(%rsp),%xmm12
+    movapd nb333_qqM(%rsp),%xmm13
+    addpd  %xmm0,%xmm1    ## VV
+    addpd  %xmm4,%xmm5
+    addpd  %xmm8,%xmm9
+    mulpd  %xmm12,%xmm1  ## VV*qq = vcoul
+    mulpd  %xmm12,%xmm5
+    mulpd  %xmm13,%xmm9
+    mulpd  %xmm12,%xmm3   ## FF*qq = fij
+    mulpd  %xmm12,%xmm7
+    mulpd  %xmm13,%xmm11
+
+    ## accumulate vctot
+    addpd  nb333_vctot(%rsp),%xmm1
+    addpd  %xmm9,%xmm5
+    addpd  %xmm5,%xmm1
+    movapd %xmm1,nb333_vctot(%rsp)
+
+    movapd nb333_tsc(%rsp),%xmm10
+    mulpd  %xmm10,%xmm3 ## fscal
+    mulpd  %xmm10,%xmm7
+    mulpd  %xmm11,%xmm10
+
+    xorpd  %xmm4,%xmm4
+    xorpd  %xmm8,%xmm8
+    xorpd  %xmm11,%xmm11
+
+    subpd  %xmm3,%xmm4
+    subpd  %xmm7,%xmm8
+    subpd  %xmm10,%xmm11
+
+    mulpd  nb333_rinvH1(%rsp),%xmm4
+    mulpd  nb333_rinvH2(%rsp),%xmm8
+    mulpd  nb333_rinvM(%rsp),%xmm11
+
+    ## move j forces to xmm0-xmm2
+    movq nb333_faction(%rbp),%rdi
+        movlpd (%rdi,%rax,8),%xmm0
+        movlpd 8(%rdi,%rax,8),%xmm1
+        movlpd 16(%rdi,%rax,8),%xmm2
+        movhpd (%rdi,%rbx,8),%xmm0
+        movhpd 8(%rdi,%rbx,8),%xmm1
+        movhpd 16(%rdi,%rbx,8),%xmm2
+
+    movapd %xmm4,%xmm3
+    movapd %xmm4,%xmm5
+    movapd %xmm8,%xmm7
+    movapd %xmm8,%xmm9
+    movapd %xmm11,%xmm10
+    movapd %xmm11,%xmm12
+
+    ## add forces from O interaction
+    addpd nb333_fjx(%rsp),%xmm0
+    addpd nb333_fjy(%rsp),%xmm1
+    addpd nb333_fjz(%rsp),%xmm2
+
+        mulpd nb333_dxH1(%rsp),%xmm3
+        mulpd nb333_dyH1(%rsp),%xmm4
+        mulpd nb333_dzH1(%rsp),%xmm5
+        mulpd nb333_dxH2(%rsp),%xmm7
+        mulpd nb333_dyH2(%rsp),%xmm8
+        mulpd nb333_dzH2(%rsp),%xmm9
+        mulpd nb333_dxM(%rsp),%xmm10
+        mulpd nb333_dyM(%rsp),%xmm11
+        mulpd nb333_dzM(%rsp),%xmm12
+
+    addpd %xmm3,%xmm0
+    addpd %xmm4,%xmm1
+    addpd %xmm5,%xmm2
+    addpd nb333_fixH1(%rsp),%xmm3
+    addpd nb333_fiyH1(%rsp),%xmm4
+    addpd nb333_fizH1(%rsp),%xmm5
+
+    addpd %xmm7,%xmm0
+    addpd %xmm8,%xmm1
+    addpd %xmm9,%xmm2
+    addpd nb333_fixH2(%rsp),%xmm7
+    addpd nb333_fiyH2(%rsp),%xmm8
+    addpd nb333_fizH2(%rsp),%xmm9
+
+    addpd %xmm10,%xmm0
+    addpd %xmm11,%xmm1
+    addpd %xmm12,%xmm2
+    addpd nb333_fixM(%rsp),%xmm10
+    addpd nb333_fiyM(%rsp),%xmm11
+    addpd nb333_fizM(%rsp),%xmm12
+
+    movapd %xmm3,nb333_fixH1(%rsp)
+    movapd %xmm4,nb333_fiyH1(%rsp)
+    movapd %xmm5,nb333_fizH1(%rsp)
+    movapd %xmm7,nb333_fixH2(%rsp)
+    movapd %xmm8,nb333_fiyH2(%rsp)
+    movapd %xmm9,nb333_fizH2(%rsp)
+    movapd %xmm10,nb333_fixM(%rsp)
+    movapd %xmm11,nb333_fiyM(%rsp)
+    movapd %xmm12,nb333_fizM(%rsp)
+
+    ## store back j forces from xmm0-xmm2
+        movlpd %xmm0,(%rdi,%rax,8)
+        movlpd %xmm1,8(%rdi,%rax,8)
+        movlpd %xmm2,16(%rdi,%rax,8)
+        movhpd %xmm0,(%rdi,%rbx,8)
+        movhpd %xmm1,8(%rdi,%rbx,8)
+        movhpd %xmm2,16(%rdi,%rbx,8)
+
+        ## should we do one more iteration? 
+        subl $2,nb333_innerk(%rsp)
+        jl    _nb_kernel333_x86_64_sse2.nb333_checksingle
+        jmp   _nb_kernel333_x86_64_sse2.nb333_unroll_loop
+_nb_kernel333_x86_64_sse2.nb333_checksingle: 
+        movl  nb333_innerk(%rsp),%edx
+        andl  $1,%edx
+        jnz   _nb_kernel333_x86_64_sse2.nb333_dosingle
+        jmp   _nb_kernel333_x86_64_sse2.nb333_updateouterdata
+_nb_kernel333_x86_64_sse2.nb333_dosingle: 
+        movq  nb333_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%eax
+        movl  4(%rdx),%ebx
+
+        addq $8,nb333_innerjjnr(%rsp)             ## advance pointer (unrolled 2) 
+
+        movq nb333_charge(%rbp),%rsi     ## base of charge[] 
+
+        movsd (%rsi,%rax,8),%xmm3
+        movapd %xmm3,%xmm4
+        mulsd  nb333_iqM(%rsp),%xmm3
+        mulsd  nb333_iqH(%rsp),%xmm4
+        movapd  %xmm3,nb333_qqM(%rsp)
+        movapd  %xmm4,nb333_qqH(%rsp)
+
+        movq nb333_type(%rbp),%rsi
+        movl (%rsi,%rax,4),%r8d
+        movq nb333_vdwparam(%rbp),%rsi
+        shll %r8d
+        movl nb333_ntia(%rsp),%edi
+        addl %edi,%r8d
+
+        movlpd (%rsi,%r8,8),%xmm6       ## c6a
+        movlpd 8(%rsi,%r8,8),%xmm7      ## c12a
+
+        movapd %xmm6,nb333_c6(%rsp)
+        movapd %xmm7,nb333_c12(%rsp)
+
+        movq nb333_pos(%rbp),%rsi        ## base of pos[] 
+
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+
+        ## move j coordinates to local temp variables 
+    movsd (%rsi,%rax,8),%xmm0
+    movsd 8(%rsi,%rax,8),%xmm1
+    movsd 16(%rsi,%rax,8),%xmm2
+
+    ## xmm0 = jx
+    ## xmm1 = jy
+    ## xmm2 = jz
+
+    ## O interaction
+    ## copy to xmm3-xmm5
+    movapd %xmm0,%xmm3
+    movapd %xmm1,%xmm4
+    movapd %xmm2,%xmm5
+
+    subsd nb333_ixO(%rsp),%xmm3
+    subsd nb333_iyO(%rsp),%xmm4
+    subsd nb333_izO(%rsp),%xmm5
+
+    movapd %xmm3,nb333_dxO(%rsp)
+    movapd %xmm4,nb333_dyO(%rsp)
+    movapd %xmm5,nb333_dzO(%rsp)
+
+        mulsd  %xmm3,%xmm3
+        mulsd  %xmm4,%xmm4
+        mulsd  %xmm5,%xmm5
+
+        addsd  %xmm4,%xmm3
+        addsd  %xmm5,%xmm3
+    ## xmm3=rsq
+
+    cvtsd2ss %xmm3,%xmm5
+    rsqrtss %xmm5,%xmm5
+    cvtss2sd %xmm5,%xmm15    ## lu in low xmm2 
+
+    ## lookup seed in xmm2 
+    movapd %xmm15,%xmm5      ## copy of lu 
+    mulsd %xmm15,%xmm15       ## lu*lu 
+    movapd nb333_three(%rsp),%xmm7
+    mulsd %xmm3,%xmm15       ## rsq*lu*lu                    
+    movapd nb333_half(%rsp),%xmm6
+    subsd %xmm15,%xmm7       ## 30-rsq*lu*lu 
+    mulsd %xmm5,%xmm7
+    mulsd %xmm6,%xmm7       ## xmm0=iter1 of rinv (new lu) 
+
+    movapd %xmm7,%xmm5      ## copy of lu 
+    mulsd %xmm7,%xmm7       ## lu*lu 
+    movapd nb333_three(%rsp),%xmm15
+    mulsd %xmm3,%xmm7       ## rsq*lu*lu                    
+    movapd nb333_half(%rsp),%xmm6
+    subsd %xmm7,%xmm15       ## 30-rsq*lu*lu 
+    mulsd %xmm5,%xmm15
+    mulsd %xmm6,%xmm15       ## xmm15=rinv
+
+    mulsd %xmm15,%xmm3       ## xmm3=r 
+
+    ## xmm15=rinv
+    ## xmm3=r
+
+    mulsd nb333_tsc(%rsp),%xmm3   ## rtab
+
+    ## truncate and convert to integers
+    cvttsd2si %xmm3,%r10d
+
+    ## convert back to float
+    cvtsi2sd  %r10d,%xmm4
+
+    ## multiply by 4
+    shll   $2,%r10d
+
+    ## calculate eps
+    subsd     %xmm4,%xmm3   ## xmm3=eps
+
+    ## multiply by 3
+    lea  (%r10,%r10,2),%r10
+
+    ## xmm3=eps
+    ## xmm15=rinv
+
+        movq nb333_VFtab(%rbp),%rsi
+    movsd  32(%rsi,%r10,8),%xmm4
+    movsd  40(%rsi,%r10,8),%xmm5
+    movsd  48(%rsi,%r10,8),%xmm6
+    movsd  56(%rsi,%r10,8),%xmm7
+    movsd  64(%rsi,%r10,8),%xmm8
+    movsd  72(%rsi,%r10,8),%xmm9
+    movsd  80(%rsi,%r10,8),%xmm10
+    movsd  88(%rsi,%r10,8),%xmm11
+    ## dispersion table in xmm4-xmm7, repulsion table in xmm8-xmm11
+
+    mulsd  %xmm3,%xmm7   ## Heps
+    mulsd  %xmm3,%xmm11
+    mulsd  %xmm3,%xmm6  ## Geps
+    mulsd  %xmm3,%xmm10
+    mulsd  %xmm3,%xmm7  ## Heps2
+    mulsd  %xmm3,%xmm11
+    addsd  %xmm6,%xmm5 ## F+Geps
+    addsd  %xmm10,%xmm9
+    addsd  %xmm7,%xmm5  ## F+Geps+Heps2 = Fp
+    addsd  %xmm11,%xmm9
+    addsd  %xmm7,%xmm7   ## 2*Heps2
+    addsd  %xmm11,%xmm11
+    addsd  %xmm6,%xmm7  ## 2*Heps2+Geps
+    addsd  %xmm10,%xmm11
+
+    addsd  %xmm5,%xmm7 ## FF = Fp + 2*Heps2 + Geps
+    addsd  %xmm9,%xmm11
+    mulsd  %xmm3,%xmm5 ## eps*Fp
+    mulsd  %xmm3,%xmm9
+    movapd nb333_c6(%rsp),%xmm12
+    movapd nb333_c12(%rsp),%xmm13
+    addsd  %xmm4,%xmm5 ## VV
+    addsd  %xmm8,%xmm9
+
+    mulsd  %xmm12,%xmm5 ## VV*c6 = vnb6
+    mulsd  %xmm13,%xmm9 ## VV*c12 = vnb12
+    addsd  %xmm9,%xmm5
+    addsd  nb333_Vvdwtot(%rsp),%xmm5
+    movsd %xmm5,nb333_Vvdwtot(%rsp)
+
+    mulsd  %xmm12,%xmm7  ## FF*c6 = fnb6
+    mulsd  %xmm13,%xmm11  ## FF*c12  = fnb12
+    addsd  %xmm11,%xmm7
+
+    mulsd  nb333_tsc(%rsp),%xmm7
+    mulsd  %xmm15,%xmm7  ## -fscal
+    xorpd  %xmm9,%xmm9
+
+    subsd  %xmm7,%xmm9    ## fscal
+    movapd %xmm9,%xmm10
+    movapd %xmm9,%xmm11
+
+    mulsd  nb333_dxO(%rsp),%xmm9    ## fx/fy/fz
+    mulsd  nb333_dyO(%rsp),%xmm10
+    mulsd  nb333_dzO(%rsp),%xmm11
+
+    ## save j force temporarily
+    movapd %xmm9,nb333_fjx(%rsp)
+    movapd %xmm10,nb333_fjy(%rsp)
+    movapd %xmm11,nb333_fjz(%rsp)
+
+    ## increment i O force
+    addsd nb333_fixO(%rsp),%xmm9
+    addsd nb333_fiyO(%rsp),%xmm10
+    addsd nb333_fizO(%rsp),%xmm11
+    movsd %xmm9,nb333_fixO(%rsp)
+    movsd %xmm10,nb333_fiyO(%rsp)
+    movsd %xmm11,nb333_fizO(%rsp)
+    ## finished O LJ interaction.
+
+
+    ## do H1, H2, and M interactions in parallel.
+    ## xmm0-xmm2 still contain j coordinates.                
+    movapd %xmm0,%xmm3
+    movapd %xmm1,%xmm4
+    movapd %xmm2,%xmm5
+    movapd %xmm0,%xmm6
+    movapd %xmm1,%xmm7
+    movapd %xmm2,%xmm8
+
+    subsd nb333_ixH1(%rsp),%xmm0
+    subsd nb333_iyH1(%rsp),%xmm1
+    subsd nb333_izH1(%rsp),%xmm2
+    subsd nb333_ixH2(%rsp),%xmm3
+    subsd nb333_iyH2(%rsp),%xmm4
+    subsd nb333_izH2(%rsp),%xmm5
+    subsd nb333_ixM(%rsp),%xmm6
+    subsd nb333_iyM(%rsp),%xmm7
+    subsd nb333_izM(%rsp),%xmm8
+
+        movapd %xmm0,nb333_dxH1(%rsp)
+        movapd %xmm1,nb333_dyH1(%rsp)
+        movapd %xmm2,nb333_dzH1(%rsp)
+        mulsd  %xmm0,%xmm0
+        mulsd  %xmm1,%xmm1
+        mulsd  %xmm2,%xmm2
+        movapd %xmm3,nb333_dxH2(%rsp)
+        movapd %xmm4,nb333_dyH2(%rsp)
+        movapd %xmm5,nb333_dzH2(%rsp)
+        mulsd  %xmm3,%xmm3
+        mulsd  %xmm4,%xmm4
+        mulsd  %xmm5,%xmm5
+        movapd %xmm6,nb333_dxM(%rsp)
+        movapd %xmm7,nb333_dyM(%rsp)
+        movapd %xmm8,nb333_dzM(%rsp)
+        mulsd  %xmm6,%xmm6
+        mulsd  %xmm7,%xmm7
+        mulsd  %xmm8,%xmm8
+        addsd  %xmm1,%xmm0
+        addsd  %xmm2,%xmm0
+        addsd  %xmm4,%xmm3
+        addsd  %xmm5,%xmm3
+    addsd  %xmm7,%xmm6
+    addsd  %xmm8,%xmm6
+
+        ## start doing invsqrt for j atoms
+    cvtsd2ss %xmm0,%xmm1
+    cvtsd2ss %xmm3,%xmm4
+    cvtsd2ss %xmm6,%xmm7
+        rsqrtss %xmm1,%xmm1
+        rsqrtss %xmm4,%xmm4
+    rsqrtss %xmm7,%xmm7
+    cvtss2sd %xmm1,%xmm1
+    cvtss2sd %xmm4,%xmm4
+    cvtss2sd %xmm7,%xmm7
+
+        movapd  %xmm1,%xmm2
+        movapd  %xmm4,%xmm5
+    movapd  %xmm7,%xmm8
+
+        mulsd   %xmm1,%xmm1 ## lu*lu
+        mulsd   %xmm4,%xmm4 ## lu*lu
+    mulsd   %xmm7,%xmm7 ## lu*lu
+
+        movapd  nb333_three(%rsp),%xmm9
+        movapd  %xmm9,%xmm10
+    movapd  %xmm9,%xmm11
+
+        mulsd   %xmm0,%xmm1 ## rsq*lu*lu
+        mulsd   %xmm3,%xmm4 ## rsq*lu*lu 
+    mulsd   %xmm6,%xmm7 ## rsq*lu*lu
+
+        subsd   %xmm1,%xmm9
+        subsd   %xmm4,%xmm10
+    subsd   %xmm7,%xmm11 ## 3-rsq*lu*lu
+
+        mulsd   %xmm2,%xmm9
+        mulsd   %xmm5,%xmm10
+    mulsd   %xmm8,%xmm11 ## lu*(3-rsq*lu*lu)
+
+        movapd  nb333_half(%rsp),%xmm15
+        mulsd   %xmm15,%xmm9 ## first iteration for rinvH1
+        mulsd   %xmm15,%xmm10 ## first iteration for rinvH2
+    mulsd   %xmm15,%xmm11 ## first iteration for rinvM
+
+    ## second iteration step    
+        movapd  %xmm9,%xmm2
+        movapd  %xmm10,%xmm5
+    movapd  %xmm11,%xmm8
+
+        mulsd   %xmm2,%xmm2 ## lu*lu
+        mulsd   %xmm5,%xmm5 ## lu*lu
+    mulsd   %xmm8,%xmm8 ## lu*lu
+
+        movapd  nb333_three(%rsp),%xmm1
+        movapd  %xmm1,%xmm4
+    movapd  %xmm1,%xmm7
+
+        mulsd   %xmm0,%xmm2 ## rsq*lu*lu
+        mulsd   %xmm3,%xmm5 ## rsq*lu*lu 
+    mulsd   %xmm6,%xmm8 ## rsq*lu*lu
+
+        subsd   %xmm2,%xmm1
+        subsd   %xmm5,%xmm4
+    subsd   %xmm8,%xmm7 ## 3-rsq*lu*lu
+
+        mulsd   %xmm1,%xmm9
+        mulsd   %xmm4,%xmm10
+    mulsd   %xmm7,%xmm11 ## lu*(3-rsq*lu*lu)
+
+        movapd  nb333_half(%rsp),%xmm15
+        mulsd   %xmm15,%xmm9 ##  rinvH1
+        mulsd   %xmm15,%xmm10 ##   rinvH2
+    mulsd   %xmm15,%xmm11 ##   rinvM
+
+        movapd  %xmm9,nb333_rinvH1(%rsp)
+        movapd  %xmm10,nb333_rinvH2(%rsp)
+        movapd  %xmm11,nb333_rinvM(%rsp)
+
+        ## interactions 
+    ## rsq in xmm0,xmm3,xmm6  
+    ## rinv in xmm9, xmm10, xmm11
+
+    movapd nb333_tsc(%rsp),%xmm1
+    mulsd  %xmm9,%xmm0 ## r
+    mulsd  %xmm10,%xmm3
+    mulsd  %xmm11,%xmm6
+    mulsd  %xmm1,%xmm0 ## rtab
+    mulsd  %xmm1,%xmm3
+    mulsd  %xmm1,%xmm6
+
+    ## truncate and convert to integers
+    cvttsd2si %xmm0,%r8d
+    cvttsd2si %xmm3,%r10d
+    cvttsd2si %xmm6,%r12d
+
+    ## convert back to float
+    cvtsi2sd  %r8d,%xmm2
+    cvtsi2sd  %r10d,%xmm5
+    cvtsi2sd  %r12d,%xmm8
+
+    ## multiply by 4
+    shll  $2,%r8d
+    shll  $2,%r10d
+    shll  $2,%r12d
+
+    movq nb333_VFtab(%rbp),%rsi
+
+        lea  (%r8,%r8,2),%r8
+    lea  (%r10,%r10,2),%r10
+    lea  (%r12,%r12,2),%r12
+
+    ## calculate eps
+    subsd     %xmm2,%xmm0
+    subsd     %xmm5,%xmm3
+    subsd     %xmm8,%xmm6
+
+    movapd    %xmm0,%xmm12 ## epsH1
+    movapd    %xmm3,%xmm13 ## epsH2
+    movapd    %xmm6,%xmm14 ## epsM
+
+    ## Load LOTS of table data
+    movsd (%rsi,%r8,8),%xmm0
+    movsd 8(%rsi,%r8,8),%xmm1
+    movsd 16(%rsi,%r8,8),%xmm2
+    movsd 24(%rsi,%r8,8),%xmm3
+    movsd (%rsi,%r10,8),%xmm4
+    movsd 8(%rsi,%r10,8),%xmm5
+    movsd 16(%rsi,%r10,8),%xmm6
+    movsd 24(%rsi,%r10,8),%xmm7
+    movsd (%rsi,%r12,8),%xmm8
+    movsd 8(%rsi,%r12,8),%xmm9
+    movsd 16(%rsi,%r12,8),%xmm10
+    movsd 24(%rsi,%r12,8),%xmm11
+    ## table data ready in xmm0-xmm3 , xmm4-xmm7 , and xmm8-xmm11
+
+    mulsd  %xmm12,%xmm3  ## Heps
+    mulsd  %xmm13,%xmm7
+    mulsd  %xmm14,%xmm11
+    mulsd  %xmm12,%xmm2  ## Geps
+    mulsd  %xmm13,%xmm6
+    mulsd  %xmm14,%xmm10
+    mulsd  %xmm12,%xmm3  ## Heps2
+    mulsd  %xmm13,%xmm7
+    mulsd  %xmm14,%xmm11
+
+    addsd  %xmm2,%xmm1  ## F+Geps
+    addsd  %xmm6,%xmm5
+    addsd  %xmm10,%xmm9
+    addsd  %xmm3,%xmm1  ## F+Geps+Heps2 = Fp
+    addsd  %xmm7,%xmm5
+    addsd  %xmm11,%xmm9
+    addsd  %xmm3,%xmm3   ## 2*Heps2
+    addsd  %xmm7,%xmm7
+    addsd  %xmm11,%xmm11
+    addsd  %xmm2,%xmm3   ## 2*Heps2+Geps
+    addsd  %xmm6,%xmm7
+    addsd  %xmm10,%xmm11
+    addsd  %xmm1,%xmm3  ## FF = Fp + 2*Heps2 + Geps
+    addsd  %xmm5,%xmm7
+    addsd  %xmm9,%xmm11
+    mulsd  %xmm12,%xmm1  ## eps*Fp
+    mulsd  %xmm13,%xmm5
+    mulsd  %xmm14,%xmm9
+    movapd nb333_qqH(%rsp),%xmm12
+    movapd nb333_qqM(%rsp),%xmm13
+    addsd  %xmm0,%xmm1    ## VV
+    addsd  %xmm4,%xmm5
+    addsd  %xmm8,%xmm9
+    mulsd  %xmm12,%xmm1  ## VV*qq = vcoul
+    mulsd  %xmm12,%xmm5
+    mulsd  %xmm13,%xmm9
+    mulsd  %xmm12,%xmm3   ## FF*qq = fij
+    mulsd  %xmm12,%xmm7
+    mulsd  %xmm13,%xmm11
+
+    ## accumulate vctot
+    addsd  nb333_vctot(%rsp),%xmm1
+    addsd  %xmm9,%xmm5
+    addsd  %xmm5,%xmm1
+    movsd %xmm1,nb333_vctot(%rsp)
+
+    movapd nb333_tsc(%rsp),%xmm10
+    mulsd  %xmm10,%xmm3 ## fscal
+    mulsd  %xmm10,%xmm7
+    mulsd  %xmm11,%xmm10
+
+    xorpd  %xmm4,%xmm4
+    xorpd  %xmm8,%xmm8
+    xorpd  %xmm11,%xmm11
+
+    subsd  %xmm3,%xmm4
+    subsd  %xmm7,%xmm8
+    subsd  %xmm10,%xmm11
+
+    mulsd  nb333_rinvH1(%rsp),%xmm4
+    mulsd  nb333_rinvH2(%rsp),%xmm8
+    mulsd  nb333_rinvM(%rsp),%xmm11
+
+    ## move j forces to xmm0-xmm2
+    movq nb333_faction(%rbp),%rdi
+        movsd (%rdi,%rax,8),%xmm0
+        movsd 8(%rdi,%rax,8),%xmm1
+        movsd 16(%rdi,%rax,8),%xmm2
+
+    movapd %xmm4,%xmm3
+    movapd %xmm4,%xmm5
+    movapd %xmm8,%xmm7
+    movapd %xmm8,%xmm9
+    movapd %xmm11,%xmm10
+    movapd %xmm11,%xmm12
+
+    ## add forces from O interaction
+    addsd nb333_fjx(%rsp),%xmm0
+    addsd nb333_fjy(%rsp),%xmm1
+    addsd nb333_fjz(%rsp),%xmm2
+
+        mulsd nb333_dxH1(%rsp),%xmm3
+        mulsd nb333_dyH1(%rsp),%xmm4
+        mulsd nb333_dzH1(%rsp),%xmm5
+        mulsd nb333_dxH2(%rsp),%xmm7
+        mulsd nb333_dyH2(%rsp),%xmm8
+        mulsd nb333_dzH2(%rsp),%xmm9
+        mulsd nb333_dxM(%rsp),%xmm10
+        mulsd nb333_dyM(%rsp),%xmm11
+        mulsd nb333_dzM(%rsp),%xmm12
+
+    addsd %xmm3,%xmm0
+    addsd %xmm4,%xmm1
+    addsd %xmm5,%xmm2
+    addsd nb333_fixH1(%rsp),%xmm3
+    addsd nb333_fiyH1(%rsp),%xmm4
+    addsd nb333_fizH1(%rsp),%xmm5
+
+    addsd %xmm7,%xmm0
+    addsd %xmm8,%xmm1
+    addsd %xmm9,%xmm2
+    addsd nb333_fixH2(%rsp),%xmm7
+    addsd nb333_fiyH2(%rsp),%xmm8
+    addsd nb333_fizH2(%rsp),%xmm9
+
+    addsd %xmm10,%xmm0
+    addsd %xmm11,%xmm1
+    addsd %xmm12,%xmm2
+    addsd nb333_fixM(%rsp),%xmm10
+    addsd nb333_fiyM(%rsp),%xmm11
+    addsd nb333_fizM(%rsp),%xmm12
+
+    movsd %xmm3,nb333_fixH1(%rsp)
+    movsd %xmm4,nb333_fiyH1(%rsp)
+    movsd %xmm5,nb333_fizH1(%rsp)
+    movsd %xmm7,nb333_fixH2(%rsp)
+    movsd %xmm8,nb333_fiyH2(%rsp)
+    movsd %xmm9,nb333_fizH2(%rsp)
+    movsd %xmm10,nb333_fixM(%rsp)
+    movsd %xmm11,nb333_fiyM(%rsp)
+    movsd %xmm12,nb333_fizM(%rsp)
+
+    ## store back j forces from xmm0-xmm2
+        movsd %xmm0,(%rdi,%rax,8)
+        movsd %xmm1,8(%rdi,%rax,8)
+        movsd %xmm2,16(%rdi,%rax,8)
+
+_nb_kernel333_x86_64_sse2.nb333_updateouterdata: 
+        movl  nb333_ii3(%rsp),%ecx
+        movq  nb333_faction(%rbp),%rdi
+        movq  nb333_fshift(%rbp),%rsi
+        movl  nb333_is3(%rsp),%edx
+
+        ## accumulate  Oi forces in xmm0, xmm1, xmm2 
+        movapd nb333_fixO(%rsp),%xmm0
+        movapd nb333_fiyO(%rsp),%xmm1
+        movapd nb333_fizO(%rsp),%xmm2
+
+        movhlps %xmm0,%xmm3
+        movhlps %xmm1,%xmm4
+        movhlps %xmm2,%xmm5
+        addsd  %xmm3,%xmm0
+        addsd  %xmm4,%xmm1
+        addsd  %xmm5,%xmm2 ## sum is in low xmm0-xmm2 
+
+        movapd %xmm0,%xmm3
+        movapd %xmm1,%xmm4
+        movapd %xmm2,%xmm5
+
+        ## increment i force 
+        movsd  (%rdi,%rcx,8),%xmm3
+        movsd  8(%rdi,%rcx,8),%xmm4
+        movsd  16(%rdi,%rcx,8),%xmm5
+        subsd  %xmm0,%xmm3
+        subsd  %xmm1,%xmm4
+        subsd  %xmm2,%xmm5
+        movsd  %xmm3,(%rdi,%rcx,8)
+        movsd  %xmm4,8(%rdi,%rcx,8)
+        movsd  %xmm5,16(%rdi,%rcx,8)
+
+        ## accumulate force in xmm6/xmm7 for fshift 
+        movapd %xmm0,%xmm6
+        movsd %xmm2,%xmm7
+        unpcklpd %xmm1,%xmm6
+
+        ## accumulate H1i forces in xmm0, xmm1, xmm2 
+        movapd nb333_fixH1(%rsp),%xmm0
+        movapd nb333_fiyH1(%rsp),%xmm1
+        movapd nb333_fizH1(%rsp),%xmm2
+
+        movhlps %xmm0,%xmm3
+        movhlps %xmm1,%xmm4
+        movhlps %xmm2,%xmm5
+        addsd  %xmm3,%xmm0
+        addsd  %xmm4,%xmm1
+        addsd  %xmm5,%xmm2 ## sum is in low xmm0-xmm2 
+
+        ## increment i force 
+        movsd  24(%rdi,%rcx,8),%xmm3
+        movsd  32(%rdi,%rcx,8),%xmm4
+        movsd  40(%rdi,%rcx,8),%xmm5
+        subsd  %xmm0,%xmm3
+        subsd  %xmm1,%xmm4
+        subsd  %xmm2,%xmm5
+        movsd  %xmm3,24(%rdi,%rcx,8)
+        movsd  %xmm4,32(%rdi,%rcx,8)
+        movsd  %xmm5,40(%rdi,%rcx,8)
+
+        ## accumulate force in xmm6/xmm7 for fshift 
+        addsd %xmm2,%xmm7
+        unpcklpd %xmm1,%xmm0
+        addpd %xmm0,%xmm6
+
+        ## accumulate H2i forces in xmm0, xmm1, xmm2 
+        movapd nb333_fixH2(%rsp),%xmm0
+        movapd nb333_fiyH2(%rsp),%xmm1
+        movapd nb333_fizH2(%rsp),%xmm2
+
+        movhlps %xmm0,%xmm3
+        movhlps %xmm1,%xmm4
+        movhlps %xmm2,%xmm5
+        addsd  %xmm3,%xmm0
+        addsd  %xmm4,%xmm1
+        addsd  %xmm5,%xmm2 ## sum is in low xmm0-xmm2 
+
+        movapd %xmm0,%xmm3
+        movapd %xmm1,%xmm4
+        movapd %xmm2,%xmm5
+
+        ## increment i force 
+        movsd  48(%rdi,%rcx,8),%xmm3
+        movsd  56(%rdi,%rcx,8),%xmm4
+        movsd  64(%rdi,%rcx,8),%xmm5
+        subsd  %xmm0,%xmm3
+        subsd  %xmm1,%xmm4
+        subsd  %xmm2,%xmm5
+        movsd  %xmm3,48(%rdi,%rcx,8)
+        movsd  %xmm4,56(%rdi,%rcx,8)
+        movsd  %xmm5,64(%rdi,%rcx,8)
+
+        ## accumulate force in xmm6/xmm7 for fshift 
+        addsd %xmm2,%xmm7
+        unpcklpd %xmm1,%xmm0
+        addpd %xmm0,%xmm6
+
+        ## accumulate Mi forces in xmm0, xmm1, xmm2 
+        movapd nb333_fixM(%rsp),%xmm0
+        movapd nb333_fiyM(%rsp),%xmm1
+        movapd nb333_fizM(%rsp),%xmm2
+
+        movhlps %xmm0,%xmm3
+        movhlps %xmm1,%xmm4
+        movhlps %xmm2,%xmm5
+        addsd  %xmm3,%xmm0
+        addsd  %xmm4,%xmm1
+        addsd  %xmm5,%xmm2 ## sum is in low xmm0-xmm2 
+
+        movapd %xmm0,%xmm3
+        movapd %xmm1,%xmm4
+        movapd %xmm2,%xmm5
+
+        ## increment i force 
+        movsd  72(%rdi,%rcx,8),%xmm3
+        movsd  80(%rdi,%rcx,8),%xmm4
+        movsd  88(%rdi,%rcx,8),%xmm5
+        subsd  %xmm0,%xmm3
+        subsd  %xmm1,%xmm4
+        subsd  %xmm2,%xmm5
+        movsd  %xmm3,72(%rdi,%rcx,8)
+        movsd  %xmm4,80(%rdi,%rcx,8)
+        movsd  %xmm5,88(%rdi,%rcx,8)
+
+        ## accumulate force in xmm6/xmm7 for fshift 
+        addsd %xmm2,%xmm7
+        unpcklpd %xmm1,%xmm0
+        addpd %xmm0,%xmm6
+
+        ## increment fshift force 
+        movlpd (%rsi,%rdx,8),%xmm3
+        movhpd 8(%rsi,%rdx,8),%xmm3
+        movsd  16(%rsi,%rdx,8),%xmm4
+        subpd  %xmm6,%xmm3
+        subsd  %xmm7,%xmm4
+        movlpd %xmm3,(%rsi,%rdx,8)
+        movhpd %xmm3,8(%rsi,%rdx,8)
+        movsd  %xmm4,16(%rsi,%rdx,8)
+
+        ## get n from stack
+        movl nb333_n(%rsp),%esi
+        ## get group index for i particle 
+        movq  nb333_gid(%rbp),%rdx              ## base of gid[]
+        movl  (%rdx,%rsi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total potential energy and update it 
+        movapd nb333_vctot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb333_Vc(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## accumulate total lj energy and update it 
+        movapd nb333_Vvdwtot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb333_Vvdw(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## finish if last 
+        movl nb333_nn1(%rsp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel333_x86_64_sse2.nb333_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb333_n(%rsp)
+        jmp _nb_kernel333_x86_64_sse2.nb333_outer
+_nb_kernel333_x86_64_sse2.nb333_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb333_nri(%rsp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel333_x86_64_sse2.nb333_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel333_x86_64_sse2.nb333_threadloop
+_nb_kernel333_x86_64_sse2.nb333_end: 
+        movl nb333_nouter(%rsp),%eax
+        movl nb333_ninner(%rsp),%ebx
+        movq nb333_outeriter(%rbp),%rcx
+        movq nb333_inneriter(%rbp),%rdx
+        movl %eax,(%rcx)
+        movl %ebx,(%rdx)
+
+        addq $1048,%rsp
+        emms
+
+
+        pop %r15
+        pop %r14
+        pop %r13
+        pop %r12
+
+        pop %rbx
+        pop    %rbp
+        ret
+
+
 
 
 
@@ -1632,1161 +1608,1163 @@ _nb_kernel333_x86_64_sse2:
 
 .globl nb_kernel333nf_x86_64_sse2
 .globl _nb_kernel333nf_x86_64_sse2
-nb_kernel333nf_x86_64_sse2:	
-_nb_kernel333nf_x86_64_sse2:	
-;#	Room for return address and rbp (16 bytes)
-.equiv          nb333nf_fshift,         16
-.equiv          nb333nf_gid,            24
-.equiv          nb333nf_pos,            32
-.equiv          nb333nf_faction,        40
-.equiv          nb333nf_charge,         48
-.equiv          nb333nf_p_facel,        56
-.equiv          nb333nf_argkrf,         64
-.equiv          nb333nf_argcrf,         72
-.equiv          nb333nf_Vc,             80
-.equiv          nb333nf_type,           88
-.equiv          nb333nf_p_ntype,        96
-.equiv          nb333nf_vdwparam,       104
-.equiv          nb333nf_Vvdw,           112
-.equiv          nb333nf_p_tabscale,     120
-.equiv          nb333nf_VFtab,          128
-.equiv          nb333nf_invsqrta,       136
-.equiv          nb333nf_dvda,           144
-.equiv          nb333nf_p_gbtabscale,   152
-.equiv          nb333nf_GBtab,          160
-.equiv          nb333nf_p_nthreads,     168
-.equiv          nb333nf_count,          176
-.equiv          nb333nf_mtx,            184
-.equiv          nb333nf_outeriter,      192
-.equiv          nb333nf_inneriter,      200
-.equiv          nb333nf_work,           208
-	;# stack offsets for local variables 
-	;# bottom of stack is cache-aligned for sse2 use 
-.equiv          nb333nf_ixO,            0
-.equiv          nb333nf_iyO,            16
-.equiv          nb333nf_izO,            32
-.equiv          nb333nf_ixH1,           48
-.equiv          nb333nf_iyH1,           64
-.equiv          nb333nf_izH1,           80
-.equiv          nb333nf_ixH2,           96
-.equiv          nb333nf_iyH2,           112
-.equiv          nb333nf_izH2,           128
-.equiv          nb333nf_ixM,            144
-.equiv          nb333nf_iyM,            160
-.equiv          nb333nf_izM,            176
-.equiv          nb333nf_iqM,            192
-.equiv          nb333nf_iqH,            208
-.equiv          nb333nf_qqM,            224
-.equiv          nb333nf_qqH,            240
-.equiv          nb333nf_rO,             256
-.equiv          nb333nf_rH1,            272
-.equiv          nb333nf_rH2,            288
-.equiv          nb333nf_rM,             304
-.equiv          nb333nf_tsc,            320
-.equiv          nb333nf_c6,             336
-.equiv          nb333nf_c12,            352
-.equiv          nb333nf_vctot,          368
-.equiv          nb333nf_Vvdwtot,        384
-.equiv          nb333nf_half,           400
-.equiv          nb333nf_three,          416
-.equiv          nb333nf_is3,            432
-.equiv          nb333nf_ii3,            436
-.equiv          nb333nf_nri,            440
-.equiv          nb333nf_iinr,           448
-.equiv          nb333nf_jindex,         456
-.equiv          nb333nf_jjnr,           464
-.equiv          nb333nf_shift,          472
-.equiv          nb333nf_shiftvec,       480
-.equiv          nb333nf_facel,          488
-.equiv          nb333nf_innerjjnr,      496
-.equiv          nb333nf_ntia,           504
-.equiv          nb333nf_innerk,         508
-.equiv          nb333nf_n,              512
-.equiv          nb333nf_nn1,            516
-.equiv          nb333nf_nouter,         520
-.equiv          nb333nf_ninner,         524
-	push rbp
-	mov  rbp, rsp
-	push rbx
-	emms
-
-        push r12
-        push r13
-        push r14
-        push r15
-
-	sub rsp, 536		;# local variable stack space (n*16+8)
-
-	;# zero 32-bit iteration counters
-	mov eax, 0
-	mov [rsp + nb333nf_nouter], eax
-	mov [rsp + nb333nf_ninner], eax
-
-	mov edi, [rdi]
-	mov [rsp + nb333nf_nri], edi
-	mov [rsp + nb333nf_iinr], rsi
-	mov [rsp + nb333nf_jindex], rdx
-	mov [rsp + nb333nf_jjnr], rcx
-	mov [rsp + nb333nf_shift], r8
-	mov [rsp + nb333nf_shiftvec], r9
-	mov rsi, [rbp + nb333nf_p_facel]
-	movsd xmm0, [rsi]
-	movsd [rsp + nb333nf_facel], xmm0
-
-	mov rax, [rbp + nb333nf_p_tabscale]
-	movsd xmm3, [rax]
-	shufpd xmm3, xmm3, 0
-	movapd [rsp + nb333nf_tsc], xmm3
-
-	;# create constant floating-point factors on stack
-	mov eax, 0x00000000     ;# lower half of double half IEEE (hex)
-	mov ebx, 0x3fe00000
-	mov [rsp + nb333nf_half], eax
-	mov [rsp + nb333nf_half + 4], ebx
-	movsd xmm1, [rsp + nb333nf_half]
-	shufpd xmm1, xmm1, 0    ;# splat to all elements
-	movapd xmm3, xmm1
-	addpd  xmm3, xmm3       ;# one
-	movapd xmm2, xmm3
-	addpd  xmm2, xmm2       ;# two
-	addpd  xmm3, xmm2	;# three
-	movapd [rsp + nb333nf_half], xmm1
-	movapd [rsp + nb333nf_three], xmm3
-	
-	;# assume we have at least one i particle - start directly 
-	mov   rcx, [rsp + nb333nf_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx]	    ;# ebx =ii 
-
-	mov   rdx, [rbp + nb333nf_charge]
-	movsd xmm3, [rdx + rbx*8 + 8]	
-	movsd xmm4, [rdx + rbx*8 + 24]	
-	mov rsi, [rbp + nb333nf_p_facel]
-	movsd xmm0, [rsi]
-	movsd xmm5, [rsp + nb333nf_facel]
-	mulsd  xmm3, xmm5
-	mulsd  xmm4, xmm5
-
-	shufpd xmm3, xmm3, 0
-	shufpd xmm4, xmm4, 0
-	movapd [rsp + nb333nf_iqH], xmm3
-	movapd [rsp + nb333nf_iqM], xmm4
-	
-	mov   rdx, [rbp + nb333nf_type]
-	mov   ecx, [rdx + rbx*4]
-	shl   ecx, 1
-	mov rdi, [rbp + nb333nf_p_ntype]
-	imul  ecx, [rdi]      ;# rcx = ntia = 2*ntype*type[ii0] 
-	mov   [rsp + nb333nf_ntia], ecx		
-.nb333nf_threadloop:
-        mov   rsi, [rbp + nb333nf_count]          ;# pointer to sync counter
-        mov   eax, [rsi]
-.nb333nf_spinlock:
-        mov   ebx, eax                          ;# ebx=*count=nn0
-        add   ebx, 1                           ;# ebx=nn1=nn0+10
-        lock cmpxchg [rsi], ebx                 ;# write nn1 to *counter,
-                                                ;# if it hasnt changed.
-                                                ;# or reread *counter to eax.
-        pause                                   ;# -> better p4 performance
-        jnz .nb333nf_spinlock
-
-        ;# if(nn1>nri) nn1=nri
-        mov ecx, [rsp + nb333nf_nri]
-        mov edx, ecx
-        sub ecx, ebx
-        cmovle ebx, edx                         ;# if(nn1>nri) nn1=nri
-        ;# Cleared the spinlock if we got here.
-        ;# eax contains nn0, ebx contains nn1.
-        mov [rsp + nb333nf_n], eax
-        mov [rsp + nb333nf_nn1], ebx
-        sub ebx, eax                            ;# calc number of outer lists
-	mov esi, eax				;# copy n to esi
-        jg  .nb333nf_outerstart
-        jmp .nb333nf_end
-
-.nb333nf_outerstart:
-	;# ebx contains number of outer iterations
-	add ebx, [rsp + nb333nf_nouter]
-	mov [rsp + nb333nf_nouter], ebx
-
-.nb333nf_outer:
-	mov   rax, [rsp + nb333nf_shift]      ;# rax = pointer into shift[] 
-	mov   ebx, [rax+rsi*4]		;# rbx=shift[n] 
-	
-	lea   rbx, [rbx + rbx*2]    ;# rbx=3*is 
-	mov   [rsp + nb333nf_is3],ebx    	;# store is3 
-
-	mov   rax, [rsp + nb333nf_shiftvec]   ;# rax = base of shiftvec[] 
-
-	movsd xmm0, [rax + rbx*8]
-	movsd xmm1, [rax + rbx*8 + 8]
-	movsd xmm2, [rax + rbx*8 + 16] 
-
-	mov   rcx, [rsp + nb333nf_iinr]       ;# rcx = pointer into iinr[] 	
-	mov   ebx, [rcx+rsi*4]	    ;# ebx =ii 
-
-	movapd xmm3, xmm0
-	movapd xmm4, xmm1
-	movapd xmm5, xmm2
-	movapd xmm6, xmm0
-	movapd xmm7, xmm1
-
-	lea   rbx, [rbx + rbx*2]	;# rbx = 3*ii=ii3 
-	mov   rax, [rbp + nb333nf_pos]    ;# rax = base of pos[]  
-	mov   [rsp + nb333nf_ii3], ebx
-
-	addsd xmm3, [rax + rbx*8] 	;# ox
-	addsd xmm4, [rax + rbx*8 + 8] 	;# oy
-	addsd xmm5, [rax + rbx*8 + 16]	;# oz	
-	addsd xmm6, [rax + rbx*8 + 24] 	;# h1x
-	addsd xmm7, [rax + rbx*8 + 32] 	;# h1y
-	shufpd xmm3, xmm3, 0
-	shufpd xmm4, xmm4, 0
-	shufpd xmm5, xmm5, 0
-	shufpd xmm6, xmm6, 0
-	shufpd xmm7, xmm7, 0
-	movapd [rsp + nb333nf_ixO], xmm3
-	movapd [rsp + nb333nf_iyO], xmm4
-	movapd [rsp + nb333nf_izO], xmm5
-	movapd [rsp + nb333nf_ixH1], xmm6
-	movapd [rsp + nb333nf_iyH1], xmm7
-
-	movsd xmm6, xmm2
-	movsd xmm3, xmm0
-	movsd xmm4, xmm1
-	movsd xmm5, xmm2
-	addsd xmm6, [rax + rbx*8 + 40] ;# h1z
-	addsd xmm0, [rax + rbx*8 + 48] ;# h2x
-	addsd xmm1, [rax + rbx*8 + 56] ;# h2y
-	addsd xmm2, [rax + rbx*8 + 64] ;# h2z
-	addsd xmm3, [rax + rbx*8 + 72] ;# mx
-	addsd xmm4, [rax + rbx*8 + 80] ;# my
-	addsd xmm5, [rax + rbx*8 + 88] ;# mz
-
-	shufpd xmm6, xmm6, 0
-	shufpd xmm0, xmm0, 0
-	shufpd xmm1, xmm1, 0
-	shufpd xmm2, xmm2, 0
-	shufpd xmm3, xmm3, 0
-	shufpd xmm4, xmm4, 0
-	shufpd xmm5, xmm5, 0
-	movapd [rsp + nb333nf_izH1], xmm6
-	movapd [rsp + nb333nf_ixH2], xmm0
-	movapd [rsp + nb333nf_iyH2], xmm1
-	movapd [rsp + nb333nf_izH2], xmm2
-	movapd [rsp + nb333nf_ixM], xmm3
-	movapd [rsp + nb333nf_iyM], xmm4
-	movapd [rsp + nb333nf_izM], xmm5
-	
-	;# clear vctot 
-	xorpd xmm4, xmm4
-	movapd [rsp + nb333nf_vctot], xmm4
-	movapd [rsp + nb333nf_Vvdwtot], xmm4
-	
-	mov   rax, [rsp + nb333nf_jindex]
-	mov   ecx, [rax+rsi*4]	     ;# jindex[n] 
-	mov   edx, [rax + rsi*4 + 4]	     ;# jindex[n+1] 
-	sub   edx, ecx               ;# number of innerloop atoms 
-
-	mov   rsi, [rbp + nb333nf_pos]
-	mov   rdi, [rbp + nb333nf_faction]	
-	mov   rax, [rsp + nb333nf_jjnr]
-	shl   ecx, 2
-	add   rax, rcx
-	mov   [rsp + nb333nf_innerjjnr], rax     ;# pointer to jjnr[nj0] 
-	mov   ecx, edx
-	sub   edx,  2
-	add   ecx, [rsp + nb333nf_ninner]
-	mov   [rsp + nb333nf_ninner], ecx
-	add   edx, 0
-	mov   [rsp + nb333nf_innerk], edx    ;# number of innerloop atoms 
-	jge   .nb333nf_unroll_loop
-	jmp   .nb333nf_checksingle
-.nb333nf_unroll_loop:
-	;# twice unrolled innerloop here 
-	mov   rdx, [rsp + nb333nf_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]	
-	mov   ebx, [rdx + 4]
-	
-	add qword ptr [rsp + nb333nf_innerjjnr],  8 ;# advance pointer (unrolled 2) 
-
-	mov rsi, [rbp + nb333nf_charge]    ;# base of charge[] 
-	
-	movlpd xmm3, [rsi + rax*8]
-	movhpd xmm3, [rsi + rbx*8]
-	movapd xmm4, xmm3	     
-	mulpd  xmm3, [rsp + nb333nf_iqM]
-	mulpd  xmm4, [rsp + nb333nf_iqH]
-	movapd  [rsp + nb333nf_qqM], xmm3
-	movapd  [rsp + nb333nf_qqH], xmm4	
-
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	movd  mm1, ebx
-	mov rsi, [rbp + nb333nf_type]
-	mov eax, [rsi + rax*4]
-	mov ebx, [rsi + rbx*4]
-	mov rsi, [rbp + nb333nf_vdwparam]
-	shl eax, 1	
-	shl ebx, 1	
-	mov edi, [rsp + nb333nf_ntia]
-	add eax, edi
-	add ebx, edi
-
-	movlpd xmm6, [rsi + rax*8]	;# c6a
-	movlpd xmm7, [rsi + rbx*8]	;# c6b
-	movhpd xmm6, [rsi + rax*8 + 8]	;# c6a c12a 
-	movhpd xmm7, [rsi + rbx*8 + 8]	;# c6b c12b 
-
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movd  ebx, mm1
-	movapd [rsp + nb333nf_c6], xmm4
-	movapd [rsp + nb333nf_c12], xmm6
-
-	mov rsi, [rbp + nb333nf_pos]       ;# base of pos[] 
-
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	lea   rbx, [rbx + rbx*2]	
-
-	;# move two coordinates to xmm0-xmm2 	
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-	movhpd xmm0, [rsi + rbx*8]
-	movhpd xmm1, [rsi + rbx*8 + 8]
-	movhpd xmm2, [rsi + rbx*8 + 16]		
-
-	;# move ixO-izO to xmm4-xmm6 
-	movapd xmm4, [rsp + nb333nf_ixO]
-	movapd xmm5, [rsp + nb333nf_iyO]
-	movapd xmm6, [rsp + nb333nf_izO]
-
-	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
-
-	;# square it 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm4, xmm5
-	addpd xmm4, xmm6
-	movapd xmm7, xmm4
-	;# rsqO in xmm7 
-
-	;# move ixH1-izH1 to xmm4-xmm6 
-	movapd xmm4, [rsp + nb333nf_ixH1]
-	movapd xmm5, [rsp + nb333nf_iyH1]
-	movapd xmm6, [rsp + nb333nf_izH1]
-
-	;# calc dr 
-	subpd xmm4, xmm0
-	subpd xmm5, xmm1
-	subpd xmm6, xmm2
-
-	;# square it 
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	mulpd xmm6,xmm6
-	addpd xmm6, xmm5
-	addpd xmm6, xmm4
-	;# rsqH1 in xmm6 
-
-	;# move ixH2-izH2 to xmm3-xmm5  
-	movapd xmm3, [rsp + nb333nf_ixH2]
-	movapd xmm4, [rsp + nb333nf_iyH2]
-	movapd xmm5, [rsp + nb333nf_izH2]
-
-	;# calc dr 
-	subpd xmm3, xmm0
-	subpd xmm4, xmm1
-	subpd xmm5, xmm2
-
-	;# square it 
-	mulpd xmm3,xmm3
-	mulpd xmm4,xmm4
-	mulpd xmm5,xmm5
-	addpd xmm5, xmm4
-	addpd xmm5, xmm3
-	;# move ixM-izM to xmm2-xmm4  
-	movapd xmm3, [rsp + nb333nf_iyM]
-	movapd xmm4, [rsp + nb333nf_izM]
-	subpd  xmm3, xmm1
-	subpd  xmm4, xmm2
-	movapd xmm2, [rsp + nb333nf_ixM]
-	subpd  xmm2, xmm0	
-
-	;# square it 
-	mulpd xmm2,xmm2
-	mulpd xmm3,xmm3
-	mulpd xmm4,xmm4
-	addpd xmm4, xmm3
-	addpd xmm4, xmm2	
-	;# rsqM in xmm4, rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 
-
-	;# rsqO - put seed in xmm2 
-	cvtpd2ps xmm2, xmm7	
-	rsqrtps xmm2, xmm2
-	cvtps2pd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulpd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulpd   xmm2, xmm7	;# rsq*lu*lu 
-	subpd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulpd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulpd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm7
-	movapd xmm3, xmm0
-	mulpd xmm0, xmm0	;# lu*lu 
-	mulpd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subpd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulpd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulpd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulpd   xmm7, xmm0
-	movapd  [rsp + nb333nf_rO], xmm7	;# r in xmm7 
-	
-	;# rsqH1 - seed in xmm2 
-	cvtpd2ps xmm2, xmm6	
-	rsqrtps xmm2, xmm2
-	cvtps2pd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulpd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulpd   xmm2, xmm6	;# rsq*lu*lu 
-	subpd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulpd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulpd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm6
-	movapd xmm3, xmm0
-	mulpd xmm0, xmm0	;# lu*lu 
-	mulpd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subpd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulpd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulpd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulpd  xmm6, xmm0
-	movapd [rsp + nb333nf_rH1], xmm6	;# rH1 
-	
-	;# rsqH2 - seed in xmm2 
-	cvtpd2ps xmm2, xmm5	
-	rsqrtps xmm2, xmm2
-	cvtps2pd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulpd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulpd   xmm2, xmm5	;# rsq*lu*lu 
-	subpd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulpd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulpd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm5
-	movapd xmm3, xmm0
-	mulpd xmm0, xmm0	;# lu*lu 
-	mulpd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subpd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulpd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulpd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulpd xmm5, xmm0
-	movapd [rsp + nb333nf_rH2], xmm5 ;# r 
-
-	;# rsqM - seed in xmm2 
-	cvtpd2ps xmm2, xmm4	
-	rsqrtps xmm2, xmm2
-	cvtps2pd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulpd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulpd   xmm2, xmm4	;# rsq*lu*lu 
-	subpd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulpd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulpd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm4
-	movapd xmm3, xmm0
-	mulpd xmm0, xmm0	;# lu*lu 
-	mulpd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subpd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulpd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulpd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulpd xmm4, xmm0
-	movapd [rsp + nb333nf_rM], xmm4 ;# r 
-
-	;# do O interactions 
-	;# rO is still in xmm7 
-	mulpd   xmm7, [rsp + nb333nf_tsc]
-	cvttpd2pi mm6, xmm7	;# mm6 = lu idx 
-	cvtpi2pd xmm6, mm6
-	subpd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
-	movd mm0, eax	
-	movd mm1, ebx
-	mov  rsi, [rbp + nb333nf_VFtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6		;# indices in eax/ebx 
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 
-	lea   rbx, [rbx + rbx*2]
-	
-	;# Dispersion 
-	movapd xmm4, [rsi + rax*8 + 32]	;# Y1 F1 	
-	movapd xmm3, [rsi + rbx*8 + 32]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rax*8 + 48]	;# G1 H1 	
-	movapd xmm3, [rsi + rbx*8 + 48]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb333nf_c6]
-	mulpd  xmm5, xmm4	 ;# Vvdw6 		
-	addpd  xmm5, [rsp + nb333nf_Vvdwtot]
-	movapd [rsp + nb333nf_Vvdwtot], xmm5
-	
-	;# Repulsion 
-	movapd xmm4, [rsi + rax*8 + 64]	;# Y1 F1 	
-	movapd xmm3, [rsi + rbx*8 + 64]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rax*8 + 80]	;# G1 H1 	
-	movapd xmm3, [rsi + rbx*8 + 80]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb333nf_c12]
-	mulpd  xmm5, xmm4 ;# Vvdw12 
-	addpd  xmm5, [rsp + nb333nf_Vvdwtot]
-	movapd [rsp + nb333nf_Vvdwtot], xmm5
-
-	;# Done with O interactions - now H1! 
-	movapd xmm7, [rsp + nb333nf_rH1]
-	mulpd xmm7, [rsp + nb333nf_tsc]
-	cvttpd2pi mm6, xmm7	;# mm6 = lu idx 
-	cvtpi2pd xmm6, mm6
-	subpd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
-	mov  rsi, [rbp + nb333nf_VFtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6		;# indices in eax/ebx 
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
-	lea   rbx, [rbx + rbx*2]
-	
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	movapd xmm3, [rsi + rbx*8 + 16]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb333nf_qqH]
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-    	;# increment vcoul 
-	xorpd  xmm4, xmm4
-    	addpd  xmm5, [rsp + nb333nf_vctot]
-    	movapd [rsp + nb333nf_vctot], xmm5 
-
-	;# H2 interactions 
-	movapd xmm7, [rsp + nb333nf_rH2]
-	mulpd   xmm7, [rsp + nb333nf_tsc]
-	cvttpd2pi mm6, xmm7	;# mm6 = lu idx 
-	cvtpi2pd xmm6, mm6
-	subpd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
-	mov  rsi, [rbp + nb333nf_VFtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6		;# indices in eax/ebx 
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
-	lea   rbx, [rbx + rbx*2]
-
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	movapd xmm3, [rsi + rbx*8 + 16]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb333nf_qqH]
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-    	;# increment vcoul 
-	xorpd  xmm4, xmm4
-    	addpd  xmm5, [rsp + nb333nf_vctot]
-    	movapd [rsp + nb333nf_vctot], xmm5 
-
-	;# M interactions 
-	movapd xmm7, [rsp + nb333nf_rM]
-	mulpd   xmm7, [rsp + nb333nf_tsc]
-	cvttpd2pi mm6, xmm7	;# mm6 = lu idx 
-	cvtpi2pd xmm6, mm6
-	subpd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	pslld mm6, 2		;# idx *= 4 
-	mov  rsi, [rbp + nb333nf_VFtab]
-	movd eax, mm6
-	psrlq mm6, 32
-	movd ebx, mm6		;# indices in eax/ebx 
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)
-	lea   rbx, [rbx + rbx*2]
-
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	movapd xmm3, [rsi + rbx*8]	;# Y2 F2 
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 Y2 
-	unpckhpd xmm5, xmm3	;# F1 F2 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	movapd xmm3, [rsi + rbx*8 + 16]	;# G2 H2 
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 G2 
-	unpckhpd xmm7, xmm3	;# H1 H2 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulpd  xmm6, xmm1	;# xmm6=Geps 
-	mulpd  xmm7, xmm2	;# xmm7=Heps2 
-	addpd  xmm5, xmm6
-	addpd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb333nf_qqM]
-	mulpd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addpd  xmm5, xmm4 ;# xmm5=VV 
-	mulpd  xmm5, xmm3 ;# vcoul=qq*VV  
-    	;# increment vcoul 
-	xorpd  xmm4, xmm4
-    	addpd  xmm5, [rsp + nb333nf_vctot]
-    	movapd [rsp + nb333nf_vctot], xmm5 
-
-	;# should we do one more iteration? 
-	sub dword ptr [rsp + nb333nf_innerk],  2
-	jl    .nb333nf_checksingle
-	jmp   .nb333nf_unroll_loop
-.nb333nf_checksingle:	
-	mov   edx, [rsp + nb333nf_innerk]
-	and   edx, 1
-	jnz   .nb333nf_dosingle
-	jmp   .nb333nf_updateouterdata
-.nb333nf_dosingle:
-	mov   rdx, [rsp + nb333nf_innerjjnr]     ;# pointer to jjnr[k] 
-	mov   eax, [rdx]
-
-	mov rsi, [rbp + nb333nf_charge]    ;# base of charge[] 
-	xorpd xmm3, xmm3	
-	movlpd xmm3, [rsi + rax*8]
-	movapd xmm4, xmm3	     
-	mulpd  xmm3, [rsp + nb333nf_iqM]
-	mulpd  xmm4, [rsp + nb333nf_iqH]
-
-	movd  mm0, eax		;# use mmx registers as temp storage 
-	movapd  [rsp + nb333nf_qqM], xmm3
-	movapd  [rsp + nb333nf_qqH], xmm4	
-	
-	mov rsi, [rbp + nb333nf_type]
-	mov eax, [rsi + rax*4]
-	mov rsi, [rbp + nb333nf_vdwparam]
-	shl eax, 1	
-	mov edi, [rsp + nb333nf_ntia]
-	add eax, edi
-
-	movlpd xmm6, [rsi + rax*8]	;# c6a
-	movhpd xmm6, [rsi + rax*8 + 8]	;# c6a c12a 
-
-	xorpd xmm7, xmm7
-	movapd xmm4, xmm6
-	unpcklpd xmm4, xmm7
-	unpckhpd xmm6, xmm7
-	
-	movd  eax, mm0
-	movapd [rsp + nb333nf_c6], xmm4
-	movapd [rsp + nb333nf_c12], xmm6
-	
-	mov rsi, [rbp + nb333nf_pos]       ;# base of pos[] 
-	lea   rax, [rax + rax*2]     ;# replace jnr with j3 
-	
-	;# move coords to xmm0-xmm2 
-	movlpd xmm0, [rsi + rax*8]
-	movlpd xmm1, [rsi + rax*8 + 8]
-	movlpd xmm2, [rsi + rax*8 + 16]
-
-	;# move ixO-izO to xmm4-xmm6 
-	movapd xmm4, [rsp + nb333nf_ixO]
-	movapd xmm5, [rsp + nb333nf_iyO]
-	movapd xmm6, [rsp + nb333nf_izO]
-
-	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
-
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm4, xmm5
-	addsd xmm4, xmm6
-	movapd xmm7, xmm4
-	;# rsqO in xmm7 
-
-	;# move ixH1-izH1 to xmm4-xmm6 
-	movapd xmm4, [rsp + nb333nf_ixH1]
-	movapd xmm5, [rsp + nb333nf_iyH1]
-	movapd xmm6, [rsp + nb333nf_izH1]
-
-	;# calc dr 
-	subsd xmm4, xmm0
-	subsd xmm5, xmm1
-	subsd xmm6, xmm2
-
-	;# square it 
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	mulsd xmm6,xmm6
-	addsd xmm6, xmm5
-	addsd xmm6, xmm4
-	;# rsqH1 in xmm6 
-
-	;# move ixH2-izH2 to xmm3-xmm5  
-	movapd xmm3, [rsp + nb333nf_ixH2]
-	movapd xmm4, [rsp + nb333nf_iyH2]
-	movapd xmm5, [rsp + nb333nf_izH2]
-
-	;# calc dr 
-	subsd xmm3, xmm0
-	subsd xmm4, xmm1
-	subsd xmm5, xmm2
-
-	;# square it 
-	mulsd xmm3,xmm3
-	mulsd xmm4,xmm4
-	mulsd xmm5,xmm5
-	addsd xmm5, xmm4
-	addsd xmm5, xmm3
-	;# move ixM-izM to xmm2-xmm4  
-	movapd xmm3, [rsp + nb333nf_iyM]
-	movapd xmm4, [rsp + nb333nf_izM]
-	subpd  xmm3, xmm1
-	subpd  xmm4, xmm2
-	movapd xmm2, [rsp + nb333nf_ixM]
-	subpd  xmm2, xmm0	
-
-	;# square it 
-	mulpd xmm2,xmm2
-	mulpd xmm3,xmm3
-	mulpd xmm4,xmm4
-	addpd xmm4, xmm3
-	addpd xmm4, xmm2	
-	;# rsqM in xmm4, rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 
-
-	;# start with rsqO - put seed in xmm2 
-	cvtsd2ss xmm2, xmm7	
-	rsqrtss xmm2, xmm2
-	cvtss2sd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulsd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulsd   xmm2, xmm7	;# rsq*lu*lu 
-	subsd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulsd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulsd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm7
-	movapd xmm3, xmm0
-	mulsd xmm0, xmm0	;# lu*lu 
-	mulsd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subsd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulsd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulsd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulsd   xmm7, xmm0
-	movapd  [rsp + nb333nf_rO], xmm7	;# r in xmm7 
-
-	;# rsqH1 - seed in xmm2 
-	cvtsd2ss xmm2, xmm6	
-	rsqrtss xmm2, xmm2
-	cvtss2sd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulsd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulsd   xmm2, xmm6	;# rsq*lu*lu 
-	subsd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulsd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulsd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm6
-	movapd xmm3, xmm0
-	mulsd xmm0, xmm0	;# lu*lu 
-	mulsd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subsd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulsd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulsd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulsd  xmm6, xmm0
-	movapd [rsp + nb333nf_rH1], xmm6	;# rH1 
-	
-	;# rsqH2 - seed in xmm2 
-	cvtsd2ss xmm2, xmm5	
-	rsqrtss xmm2, xmm2
-	cvtss2sd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulsd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulsd   xmm2, xmm5	;# rsq*lu*lu 
-	subsd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulsd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulsd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm5
-	movapd xmm3, xmm0
-	mulsd xmm0, xmm0	;# lu*lu 
-	mulsd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subsd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulsd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulsd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulsd xmm5, xmm0
-	movapd [rsp + nb333nf_rH2], xmm5 ;# r 
-
-	;# rsqM - seed in xmm2 
-	cvtsd2ss xmm2, xmm4	
-	rsqrtss xmm2, xmm2
-	cvtss2sd xmm2, xmm2
-
-	movapd  xmm3, xmm2
-	mulsd   xmm2, xmm2
-	movapd  xmm0, [rsp + nb333nf_three]
-	mulsd   xmm2, xmm4	;# rsq*lu*lu 
-	subsd   xmm0, xmm2	;# 30-rsq*lu*lu 
-	mulsd   xmm0, xmm3	;# lu*(3-rsq*lu*lu) 
-	mulsd   xmm0, [rsp + nb333nf_half] ;# iter1 ( new lu) 
-
-	movapd xmm2, xmm4
-	movapd xmm3, xmm0
-	mulsd xmm0, xmm0	;# lu*lu 
-	mulsd xmm2, xmm0	;# rsq*lu*lu 
-	movapd xmm0, [rsp + nb333nf_three]
-	subsd xmm0, xmm2	;# 3-rsq*lu*lu 
-	mulsd xmm0, xmm3	;# lu*(	3-rsq*lu*lu) 
-	mulsd xmm0, [rsp + nb333nf_half] ;# rinv 
-	mulsd xmm4, xmm0
-	movapd [rsp + nb333nf_rM], xmm4 ;# r 
-
-	;# do O interactions 
-	movd mm0, eax	
-	;# rO is still in xmm7 
-	mulsd   xmm7, [rsp + nb333nf_tsc]
-	cvttsd2si eax, xmm7	;# lu idx 
-	cvtsi2sd xmm6, eax
-	subsd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm7
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	 	
-	shl eax, 2		
-	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now) 	
-	
-	;# Dispersion 
-	movapd xmm4, [rsi + rax*8 + 32]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rax*8 + 48]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb333nf_c6]
-	mulsd  xmm5, xmm4	 ;# Vvdw6 
-	
-	addsd  xmm5, [rsp + nb333nf_Vvdwtot]
-	movsd [rsp + nb333nf_Vvdwtot], xmm5
-	
-	;# Repulsion 
-	movapd xmm4, [rsi + rax*8 + 64]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rax*8 + 80]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# Dispersion table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-
-	movapd xmm4, [rsp + nb333nf_c12]
-	mulsd  xmm5, xmm4 ;# Vvdw12 
-	addsd  xmm5, [rsp + nb333nf_Vvdwtot]
-	movsd [rsp + nb333nf_Vvdwtot], xmm5
-
-	;# Done with O interactions - now H1! 
-	movapd xmm7, [rsp + nb333nf_rH1]
-	mulpd xmm7, [rsp + nb333nf_tsc]
-	cvttsd2si eax, xmm7	;# mm6 = lu idx 
-	cvtsi2sd xmm6, eax
-	subpd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulpd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl eax, 2		;# idx *= 4 
-	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
-
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb333nf_qqH]
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-    	;# increment vcoul 
-	xorpd  xmm4, xmm4
-    	addsd  xmm5, [rsp + nb333nf_vctot]
-    	movlpd [rsp + nb333nf_vctot], xmm5 
-
-	;#  H2 interactions 
-	movapd xmm7, [rsp + nb333nf_rH2]
-	mulsd   xmm7, [rsp + nb333nf_tsc]
-	cvttsd2si eax, xmm7	;# mm6 = lu idx 
-	cvtsi2sd xmm6, eax
-	subsd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl eax, 2		;# idx *= 4 
-	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
-
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb333nf_qqH]
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-    	;# increment vcoul 
-	xorpd  xmm4, xmm4
-    	addsd  xmm5, [rsp + nb333nf_vctot]
-    	movlpd [rsp + nb333nf_vctot], xmm5 
-
-	;# M interactions 
-	movapd xmm7, [rsp + nb333nf_rM]
-	mulsd   xmm7, [rsp + nb333nf_tsc]
-	cvttsd2si eax, xmm7	;# mm6 = lu idx 
-	cvtsi2sd xmm6, eax
-	subsd xmm7, xmm6
-	movapd xmm1, xmm7	;# xmm1=eps 
-	movapd xmm2, xmm1	
-	mulsd  xmm2, xmm2	;# xmm2=eps2 
-	
-	shl eax, 2		;# idx *= 4 
-	mov  rsi, [rbp + nb333nf_VFtab]
-	lea   rax, [rax + rax*2] ;# idx *= 3 (total *=12 now)	
-
-	movapd xmm4, [rsi + rax*8]	;# Y1 F1 	
-	xorpd xmm3, xmm3
-	movapd xmm5, xmm4
-	unpcklpd xmm4, xmm3	;# Y1 
-	unpckhpd xmm5, xmm3	;# F1 
-
-	movapd xmm6, [rsi + rax*8 + 16]	;# G1 H1 	
-	xorpd xmm3, xmm3
-	movapd xmm7, xmm6
-	unpcklpd xmm6, xmm3	;# G1 
-	unpckhpd xmm7, xmm3	;# H1 
-	;# coulomb table ready, in xmm4-xmm7  		
-	mulsd  xmm6, xmm1	;# xmm6=Geps 
-	mulsd  xmm7, xmm2	;# xmm7=Heps2 
-	addsd  xmm5, xmm6
-	addsd  xmm5, xmm7	;# xmm5=Fp 	
-	movapd xmm3, [rsp + nb333nf_qqM]
-	mulsd  xmm5, xmm1 ;# xmm5=eps*Fp 
-	addsd  xmm5, xmm4 ;# xmm5=VV 
-	mulsd  xmm5, xmm3 ;# vcoul=qq*VV  
-    	;# increment vcoul 
-	xorpd  xmm4, xmm4
-    	addsd  xmm5, [rsp + nb333nf_vctot]
-    	movlpd [rsp + nb333nf_vctot], xmm5 
-
-.nb333nf_updateouterdata:
-	;# get n from stack
-	mov esi, [rsp + nb333nf_n]
-        ;# get group index for i particle 
-        mov   rdx, [rbp + nb333nf_gid]      	;# base of gid[]
-        mov   edx, [rdx + rsi*4]		;# ggid=gid[n]
-
-	;# accumulate total potential energy and update it 
-	movapd xmm7, [rsp + nb333nf_vctot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-        
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb333nf_Vc]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-	;# accumulate total lj energy and update it 
-	movapd xmm7, [rsp + nb333nf_Vvdwtot]
-	;# accumulate 
-	movhlps xmm6, xmm7
-	addsd  xmm7, xmm6	;# low xmm7 has the sum now 
-
-	;# add earlier value from mem 
-	mov   rax, [rbp + nb333nf_Vvdw]
-	addsd xmm7, [rax + rdx*8] 
-	;# move back to mem 
-	movsd [rax + rdx*8], xmm7 
-	
-        ;# finish if last 
-        mov ecx, [rsp + nb333nf_nn1]
-	;# esi already loaded with n
-	inc esi
-        sub ecx, esi
-        jecxz .nb333nf_outerend
-
-        ;# not last, iterate outer loop once more!  
-        mov [rsp + nb333nf_n], esi
-        jmp .nb333nf_outer
-.nb333nf_outerend:
-        ;# check if more outer neighborlists remain
-        mov   ecx, [rsp + nb333nf_nri]
-	;# esi already loaded with n above
-        sub   ecx, esi
-        jecxz .nb333nf_end
-        ;# non-zero, do one more workunit
-        jmp   .nb333nf_threadloop
-.nb333nf_end:
-	mov eax, [rsp + nb333nf_nouter]
-	mov ebx, [rsp + nb333nf_ninner]
-	mov rcx, [rbp + nb333nf_outeriter]
-	mov rdx, [rbp + nb333nf_inneriter]
-	mov [rcx], eax
-	mov [rdx], ebx
-
-	add rsp, 536
-	emms
-
-
-        pop r15
-        pop r14
-        pop r13
-        pop r12
-
-	pop rbx
-	pop	rbp
-	ret
+nb_kernel333nf_x86_64_sse2:     
+_nb_kernel333nf_x86_64_sse2:    
+##      Room for return address and rbp (16 bytes)
+.set nb333nf_fshift, 16
+.set nb333nf_gid, 24
+.set nb333nf_pos, 32
+.set nb333nf_faction, 40
+.set nb333nf_charge, 48
+.set nb333nf_p_facel, 56
+.set nb333nf_argkrf, 64
+.set nb333nf_argcrf, 72
+.set nb333nf_Vc, 80
+.set nb333nf_type, 88
+.set nb333nf_p_ntype, 96
+.set nb333nf_vdwparam, 104
+.set nb333nf_Vvdw, 112
+.set nb333nf_p_tabscale, 120
+.set nb333nf_VFtab, 128
+.set nb333nf_invsqrta, 136
+.set nb333nf_dvda, 144
+.set nb333nf_p_gbtabscale, 152
+.set nb333nf_GBtab, 160
+.set nb333nf_p_nthreads, 168
+.set nb333nf_count, 176
+.set nb333nf_mtx, 184
+.set nb333nf_outeriter, 192
+.set nb333nf_inneriter, 200
+.set nb333nf_work, 208
+        ## stack offsets for local variables 
+        ## bottom of stack is cache-aligned for sse2 use 
+.set nb333nf_ixO, 0
+.set nb333nf_iyO, 16
+.set nb333nf_izO, 32
+.set nb333nf_ixH1, 48
+.set nb333nf_iyH1, 64
+.set nb333nf_izH1, 80
+.set nb333nf_ixH2, 96
+.set nb333nf_iyH2, 112
+.set nb333nf_izH2, 128
+.set nb333nf_ixM, 144
+.set nb333nf_iyM, 160
+.set nb333nf_izM, 176
+.set nb333nf_iqM, 192
+.set nb333nf_iqH, 208
+.set nb333nf_qqM, 224
+.set nb333nf_qqH, 240
+.set nb333nf_rO, 256
+.set nb333nf_rH1, 272
+.set nb333nf_rH2, 288
+.set nb333nf_rM, 304
+.set nb333nf_tsc, 320
+.set nb333nf_c6, 336
+.set nb333nf_c12, 352
+.set nb333nf_vctot, 368
+.set nb333nf_Vvdwtot, 384
+.set nb333nf_half, 400
+.set nb333nf_three, 416
+.set nb333nf_is3, 432
+.set nb333nf_ii3, 436
+.set nb333nf_nri, 440
+.set nb333nf_iinr, 448
+.set nb333nf_jindex, 456
+.set nb333nf_jjnr, 464
+.set nb333nf_shift, 472
+.set nb333nf_shiftvec, 480
+.set nb333nf_facel, 488
+.set nb333nf_innerjjnr, 496
+.set nb333nf_ntia, 504
+.set nb333nf_innerk, 508
+.set nb333nf_n, 512
+.set nb333nf_nn1, 516
+.set nb333nf_nouter, 520
+.set nb333nf_ninner, 524
+        push %rbp
+        movq %rsp,%rbp
+        push %rbx
+        emms
+
+        push %r12
+        push %r13
+        push %r14
+        push %r15
+
+        subq $536,%rsp          ## local variable stack space (n*16+8)
+
+        ## zero 32-bit iteration counters
+        movl $0,%eax
+        movl %eax,nb333nf_nouter(%rsp)
+        movl %eax,nb333nf_ninner(%rsp)
+
+        movl (%rdi),%edi
+        movl %edi,nb333nf_nri(%rsp)
+        movq %rsi,nb333nf_iinr(%rsp)
+        movq %rdx,nb333nf_jindex(%rsp)
+        movq %rcx,nb333nf_jjnr(%rsp)
+        movq %r8,nb333nf_shift(%rsp)
+        movq %r9,nb333nf_shiftvec(%rsp)
+        movq nb333nf_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd %xmm0,nb333nf_facel(%rsp)
+
+        movq nb333nf_p_tabscale(%rbp),%rax
+        movsd (%rax),%xmm3
+        shufpd $0,%xmm3,%xmm3
+        movapd %xmm3,nb333nf_tsc(%rsp)
+
+        ## create constant floating-point factors on stack
+        movl $0x00000000,%eax   ## lower half of double half IEEE (hex)
+        movl $0x3fe00000,%ebx
+        movl %eax,nb333nf_half(%rsp)
+        movl %ebx,nb333nf_half+4(%rsp)
+        movsd nb333nf_half(%rsp),%xmm1
+        shufpd $0,%xmm1,%xmm1  ## splat to all elements
+        movapd %xmm1,%xmm3
+        addpd  %xmm3,%xmm3      ## one
+        movapd %xmm3,%xmm2
+        addpd  %xmm2,%xmm2      ## two
+        addpd  %xmm2,%xmm3      ## three
+        movapd %xmm1,nb333nf_half(%rsp)
+        movapd %xmm3,nb333nf_three(%rsp)
+
+        ## assume we have at least one i particle - start directly 
+        movq  nb333nf_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]      
+        movl  (%rcx),%ebx           ## ebx =ii 
+
+        movq  nb333nf_charge(%rbp),%rdx
+        movsd 8(%rdx,%rbx,8),%xmm3
+        movsd 24(%rdx,%rbx,8),%xmm4
+        movq nb333nf_p_facel(%rbp),%rsi
+        movsd (%rsi),%xmm0
+        movsd nb333nf_facel(%rsp),%xmm5
+        mulsd  %xmm5,%xmm3
+        mulsd  %xmm5,%xmm4
+
+        shufpd $0,%xmm3,%xmm3
+        shufpd $0,%xmm4,%xmm4
+        movapd %xmm3,nb333nf_iqH(%rsp)
+        movapd %xmm4,nb333nf_iqM(%rsp)
+
+        movq  nb333nf_type(%rbp),%rdx
+        movl  (%rdx,%rbx,4),%ecx
+        shll  %ecx
+        movq nb333nf_p_ntype(%rbp),%rdi
+        imull (%rdi),%ecx     ## rcx = ntia = 2*ntype*type[ii0] 
+        movl  %ecx,nb333nf_ntia(%rsp)
+_nb_kernel333nf_x86_64_sse2.nb333nf_threadloop: 
+        movq  nb333nf_count(%rbp),%rsi            ## pointer to sync counter
+        movl  (%rsi),%eax
+_nb_kernel333nf_x86_64_sse2.nb333nf_spinlock: 
+        movl  %eax,%ebx                         ## ebx=*count=nn0
+        addl  $1,%ebx                          ## ebx=nn1=nn0+10
+        lock 
+        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+                                                ## if it hasnt changed.
+                                                ## or reread *counter to eax.
+        pause                                   ## -> better p4 performance
+        jnz _nb_kernel333nf_x86_64_sse2.nb333nf_spinlock
+
+        ## if(nn1>nri) nn1=nri
+        movl nb333nf_nri(%rsp),%ecx
+        movl %ecx,%edx
+        subl %ebx,%ecx
+        cmovlel %edx,%ebx                       ## if(nn1>nri) nn1=nri
+        ## Cleared the spinlock if we got here.
+        ## eax contains nn0, ebx contains nn1.
+        movl %eax,nb333nf_n(%rsp)
+        movl %ebx,nb333nf_nn1(%rsp)
+        subl %eax,%ebx                          ## calc number of outer lists
+        movl %eax,%esi                          ## copy n to esi
+        jg  _nb_kernel333nf_x86_64_sse2.nb333nf_outerstart
+        jmp _nb_kernel333nf_x86_64_sse2.nb333nf_end
+
+_nb_kernel333nf_x86_64_sse2.nb333nf_outerstart: 
+        ## ebx contains number of outer iterations
+        addl nb333nf_nouter(%rsp),%ebx
+        movl %ebx,nb333nf_nouter(%rsp)
+
+_nb_kernel333nf_x86_64_sse2.nb333nf_outer: 
+        movq  nb333nf_shift(%rsp),%rax        ## rax = pointer into shift[] 
+        movl  (%rax,%rsi,4),%ebx        ## rbx=shift[n] 
+
+        lea  (%rbx,%rbx,2),%rbx    ## rbx=3*is 
+        movl  %ebx,nb333nf_is3(%rsp)            ## store is3 
+
+        movq  nb333nf_shiftvec(%rsp),%rax     ## rax = base of shiftvec[] 
+
+        movsd (%rax,%rbx,8),%xmm0
+        movsd 8(%rax,%rbx,8),%xmm1
+        movsd 16(%rax,%rbx,8),%xmm2
+
+        movq  nb333nf_iinr(%rsp),%rcx         ## rcx = pointer into iinr[]      
+        movl  (%rcx,%rsi,4),%ebx    ## ebx =ii 
+
+        movapd %xmm0,%xmm3
+        movapd %xmm1,%xmm4
+        movapd %xmm2,%xmm5
+        movapd %xmm0,%xmm6
+        movapd %xmm1,%xmm7
+
+        lea  (%rbx,%rbx,2),%rbx        ## rbx = 3*ii=ii3 
+        movq  nb333nf_pos(%rbp),%rax      ## rax = base of pos[]  
+        movl  %ebx,nb333nf_ii3(%rsp)
+
+        addsd (%rax,%rbx,8),%xmm3       ## ox
+        addsd 8(%rax,%rbx,8),%xmm4      ## oy
+        addsd 16(%rax,%rbx,8),%xmm5     ## oz   
+        addsd 24(%rax,%rbx,8),%xmm6     ## h1x
+        addsd 32(%rax,%rbx,8),%xmm7     ## h1y
+        shufpd $0,%xmm3,%xmm3
+        shufpd $0,%xmm4,%xmm4
+        shufpd $0,%xmm5,%xmm5
+        shufpd $0,%xmm6,%xmm6
+        shufpd $0,%xmm7,%xmm7
+        movapd %xmm3,nb333nf_ixO(%rsp)
+        movapd %xmm4,nb333nf_iyO(%rsp)
+        movapd %xmm5,nb333nf_izO(%rsp)
+        movapd %xmm6,nb333nf_ixH1(%rsp)
+        movapd %xmm7,nb333nf_iyH1(%rsp)
+
+        movsd %xmm2,%xmm6
+        movsd %xmm0,%xmm3
+        movsd %xmm1,%xmm4
+        movsd %xmm2,%xmm5
+        addsd 40(%rax,%rbx,8),%xmm6    ## h1z
+        addsd 48(%rax,%rbx,8),%xmm0    ## h2x
+        addsd 56(%rax,%rbx,8),%xmm1    ## h2y
+        addsd 64(%rax,%rbx,8),%xmm2    ## h2z
+        addsd 72(%rax,%rbx,8),%xmm3    ## mx
+        addsd 80(%rax,%rbx,8),%xmm4    ## my
+        addsd 88(%rax,%rbx,8),%xmm5    ## mz
+
+        shufpd $0,%xmm6,%xmm6
+        shufpd $0,%xmm0,%xmm0
+        shufpd $0,%xmm1,%xmm1
+        shufpd $0,%xmm2,%xmm2
+        shufpd $0,%xmm3,%xmm3
+        shufpd $0,%xmm4,%xmm4
+        shufpd $0,%xmm5,%xmm5
+        movapd %xmm6,nb333nf_izH1(%rsp)
+        movapd %xmm0,nb333nf_ixH2(%rsp)
+        movapd %xmm1,nb333nf_iyH2(%rsp)
+        movapd %xmm2,nb333nf_izH2(%rsp)
+        movapd %xmm3,nb333nf_ixM(%rsp)
+        movapd %xmm4,nb333nf_iyM(%rsp)
+        movapd %xmm5,nb333nf_izM(%rsp)
+
+        ## clear vctot 
+        xorpd %xmm4,%xmm4
+        movapd %xmm4,nb333nf_vctot(%rsp)
+        movapd %xmm4,nb333nf_Vvdwtot(%rsp)
+
+        movq  nb333nf_jindex(%rsp),%rax
+        movl  (%rax,%rsi,4),%ecx     ## jindex[n] 
+        movl  4(%rax,%rsi,4),%edx            ## jindex[n+1] 
+        subl  %ecx,%edx              ## number of innerloop atoms 
+
+        movq  nb333nf_pos(%rbp),%rsi
+        movq  nb333nf_faction(%rbp),%rdi
+        movq  nb333nf_jjnr(%rsp),%rax
+        shll  $2,%ecx
+        addq  %rcx,%rax
+        movq  %rax,nb333nf_innerjjnr(%rsp)       ## pointer to jjnr[nj0] 
+        movl  %edx,%ecx
+        subl  $2,%edx
+        addl  nb333nf_ninner(%rsp),%ecx
+        movl  %ecx,nb333nf_ninner(%rsp)
+        addl  $0,%edx
+        movl  %edx,nb333nf_innerk(%rsp)      ## number of innerloop atoms 
+        jge   _nb_kernel333nf_x86_64_sse2.nb333nf_unroll_loop
+        jmp   _nb_kernel333nf_x86_64_sse2.nb333nf_checksingle
+_nb_kernel333nf_x86_64_sse2.nb333nf_unroll_loop: 
+        ## twice unrolled innerloop here 
+        movq  nb333nf_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%eax
+        movl  4(%rdx),%ebx
+
+        addq $8,nb333nf_innerjjnr(%rsp)             ## advance pointer (unrolled 2) 
+
+        movq nb333nf_charge(%rbp),%rsi     ## base of charge[] 
+
+        movlpd (%rsi,%rax,8),%xmm3
+        movhpd (%rsi,%rbx,8),%xmm3
+        movapd %xmm3,%xmm4
+        mulpd  nb333nf_iqM(%rsp),%xmm3
+        mulpd  nb333nf_iqH(%rsp),%xmm4
+        movapd  %xmm3,nb333nf_qqM(%rsp)
+        movapd  %xmm4,nb333nf_qqH(%rsp)
+
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movd  %ebx,%mm1
+        movq nb333nf_type(%rbp),%rsi
+        movl (%rsi,%rax,4),%eax
+        movl (%rsi,%rbx,4),%ebx
+        movq nb333nf_vdwparam(%rbp),%rsi
+        shll %eax
+        shll %ebx
+        movl nb333nf_ntia(%rsp),%edi
+        addl %edi,%eax
+        addl %edi,%ebx
+
+        movlpd (%rsi,%rax,8),%xmm6      ## c6a
+        movlpd (%rsi,%rbx,8),%xmm7      ## c6b
+        movhpd 8(%rsi,%rax,8),%xmm6     ## c6a c12a 
+        movhpd 8(%rsi,%rbx,8),%xmm7     ## c6b c12b 
+
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
+
+        movd  %mm0,%eax
+        movd  %mm1,%ebx
+        movapd %xmm4,nb333nf_c6(%rsp)
+        movapd %xmm6,nb333nf_c12(%rsp)
+
+        movq nb333nf_pos(%rbp),%rsi        ## base of pos[] 
+
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+        lea  (%rbx,%rbx,2),%rbx
+
+        ## move two coordinates to xmm0-xmm2    
+        movlpd (%rsi,%rax,8),%xmm0
+        movlpd 8(%rsi,%rax,8),%xmm1
+        movlpd 16(%rsi,%rax,8),%xmm2
+        movhpd (%rsi,%rbx,8),%xmm0
+        movhpd 8(%rsi,%rbx,8),%xmm1
+        movhpd 16(%rsi,%rbx,8),%xmm2
+
+        ## move ixO-izO to xmm4-xmm6 
+        movapd nb333nf_ixO(%rsp),%xmm4
+        movapd nb333nf_iyO(%rsp),%xmm5
+        movapd nb333nf_izO(%rsp),%xmm6
+
+        ## calc dr 
+        subpd %xmm0,%xmm4
+        subpd %xmm1,%xmm5
+        subpd %xmm2,%xmm6
+
+        ## square it 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm4
+        addpd %xmm6,%xmm4
+        movapd %xmm4,%xmm7
+        ## rsqO in xmm7 
+
+        ## move ixH1-izH1 to xmm4-xmm6 
+        movapd nb333nf_ixH1(%rsp),%xmm4
+        movapd nb333nf_iyH1(%rsp),%xmm5
+        movapd nb333nf_izH1(%rsp),%xmm6
+
+        ## calc dr 
+        subpd %xmm0,%xmm4
+        subpd %xmm1,%xmm5
+        subpd %xmm2,%xmm6
+
+        ## square it 
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        mulpd %xmm6,%xmm6
+        addpd %xmm5,%xmm6
+        addpd %xmm4,%xmm6
+        ## rsqH1 in xmm6 
+
+        ## move ixH2-izH2 to xmm3-xmm5  
+        movapd nb333nf_ixH2(%rsp),%xmm3
+        movapd nb333nf_iyH2(%rsp),%xmm4
+        movapd nb333nf_izH2(%rsp),%xmm5
+
+        ## calc dr 
+        subpd %xmm0,%xmm3
+        subpd %xmm1,%xmm4
+        subpd %xmm2,%xmm5
+
+        ## square it 
+        mulpd %xmm3,%xmm3
+        mulpd %xmm4,%xmm4
+        mulpd %xmm5,%xmm5
+        addpd %xmm4,%xmm5
+        addpd %xmm3,%xmm5
+        ## move ixM-izM to xmm2-xmm4  
+        movapd nb333nf_iyM(%rsp),%xmm3
+        movapd nb333nf_izM(%rsp),%xmm4
+        subpd  %xmm1,%xmm3
+        subpd  %xmm2,%xmm4
+        movapd nb333nf_ixM(%rsp),%xmm2
+        subpd  %xmm0,%xmm2
+
+        ## square it 
+        mulpd %xmm2,%xmm2
+        mulpd %xmm3,%xmm3
+        mulpd %xmm4,%xmm4
+        addpd %xmm3,%xmm4
+        addpd %xmm2,%xmm4
+        ## rsqM in xmm4, rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 
+
+        ## rsqO - put seed in xmm2 
+        cvtpd2ps %xmm7,%xmm2
+        rsqrtps %xmm2,%xmm2
+        cvtps2pd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulpd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulpd   %xmm7,%xmm2     ## rsq*lu*lu 
+        subpd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulpd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulpd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm7,%xmm2
+        movapd %xmm0,%xmm3
+        mulpd %xmm0,%xmm0       ## lu*lu 
+        mulpd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subpd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulpd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulpd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulpd   %xmm0,%xmm7
+        movapd  %xmm7,nb333nf_rO(%rsp)          ## r in xmm7 
+
+        ## rsqH1 - seed in xmm2 
+        cvtpd2ps %xmm6,%xmm2
+        rsqrtps %xmm2,%xmm2
+        cvtps2pd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulpd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulpd   %xmm6,%xmm2     ## rsq*lu*lu 
+        subpd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulpd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulpd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm6,%xmm2
+        movapd %xmm0,%xmm3
+        mulpd %xmm0,%xmm0       ## lu*lu 
+        mulpd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subpd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulpd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulpd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulpd  %xmm0,%xmm6
+        movapd %xmm6,nb333nf_rH1(%rsp)          ## rH1 
+
+        ## rsqH2 - seed in xmm2 
+        cvtpd2ps %xmm5,%xmm2
+        rsqrtps %xmm2,%xmm2
+        cvtps2pd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulpd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulpd   %xmm5,%xmm2     ## rsq*lu*lu 
+        subpd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulpd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulpd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm5,%xmm2
+        movapd %xmm0,%xmm3
+        mulpd %xmm0,%xmm0       ## lu*lu 
+        mulpd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subpd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulpd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulpd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulpd %xmm0,%xmm5
+        movapd %xmm5,nb333nf_rH2(%rsp)   ## r 
+
+        ## rsqM - seed in xmm2 
+        cvtpd2ps %xmm4,%xmm2
+        rsqrtps %xmm2,%xmm2
+        cvtps2pd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulpd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulpd   %xmm4,%xmm2     ## rsq*lu*lu 
+        subpd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulpd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulpd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm4,%xmm2
+        movapd %xmm0,%xmm3
+        mulpd %xmm0,%xmm0       ## lu*lu 
+        mulpd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subpd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulpd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulpd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulpd %xmm0,%xmm4
+        movapd %xmm4,nb333nf_rM(%rsp)   ## r 
+
+        ## do O interactions 
+        ## rO is still in xmm7 
+        mulpd   nb333nf_tsc(%rsp),%xmm7
+        cvttpd2pi %xmm7,%mm6    ## mm6 = lu idx 
+        cvtpi2pd %mm6,%xmm6
+        subpd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        pslld $2,%mm6           ## idx *= 4 
+        movd %eax,%mm0
+        movd %ebx,%mm1
+        movq nb333nf_VFtab(%rbp),%rsi
+        movd %mm6,%eax
+        psrlq $32,%mm6
+        movd %mm6,%ebx          ## indices in eax/ebx 
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now) 
+        lea  (%rbx,%rbx,2),%rbx
+
+        ## Dispersion 
+        movapd 32(%rsi,%rax,8),%xmm4    ## Y1 F1        
+        movapd 32(%rsi,%rbx,8),%xmm3    ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+        movapd 48(%rsi,%rax,8),%xmm6    ## G1 H1        
+        movapd 48(%rsi,%rbx,8),%xmm3    ## G2 H2 
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## Dispersion table ready, in xmm4-xmm7                 
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+
+        movapd nb333nf_c6(%rsp),%xmm4
+        mulpd  %xmm4,%xmm5       ## Vvdw6               
+        addpd  nb333nf_Vvdwtot(%rsp),%xmm5
+        movapd %xmm5,nb333nf_Vvdwtot(%rsp)
+
+        ## Repulsion 
+        movapd 64(%rsi,%rax,8),%xmm4    ## Y1 F1        
+        movapd 64(%rsi,%rbx,8),%xmm3    ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+        movapd 80(%rsi,%rax,8),%xmm6    ## G1 H1        
+        movapd 80(%rsi,%rbx,8),%xmm3    ## G2 H2 
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## Dispersion table ready, in xmm4-xmm7                 
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+
+        movapd nb333nf_c12(%rsp),%xmm4
+        mulpd  %xmm4,%xmm5 ## Vvdw12 
+        addpd  nb333nf_Vvdwtot(%rsp),%xmm5
+        movapd %xmm5,nb333nf_Vvdwtot(%rsp)
+
+        ## Done with O interactions - now H1! 
+        movapd nb333nf_rH1(%rsp),%xmm7
+        mulpd nb333nf_tsc(%rsp),%xmm7
+        cvttpd2pi %xmm7,%mm6    ## mm6 = lu idx 
+        cvtpi2pd %mm6,%xmm6
+        subpd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        pslld $2,%mm6           ## idx *= 4 
+        movq nb333nf_VFtab(%rbp),%rsi
+        movd %mm6,%eax
+        psrlq $32,%mm6
+        movd %mm6,%ebx          ## indices in eax/ebx 
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now)   
+        lea  (%rbx,%rbx,2),%rbx
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        movapd (%rsi,%rbx,8),%xmm3      ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        movapd 16(%rsi,%rbx,8),%xmm3    ## G2 H2 
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb333nf_qqH(%rsp),%xmm3
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+        mulpd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## increment vcoul 
+        xorpd  %xmm4,%xmm4
+        addpd  nb333nf_vctot(%rsp),%xmm5
+        movapd %xmm5,nb333nf_vctot(%rsp)
+
+        ## H2 interactions 
+        movapd nb333nf_rH2(%rsp),%xmm7
+        mulpd   nb333nf_tsc(%rsp),%xmm7
+        cvttpd2pi %xmm7,%mm6    ## mm6 = lu idx 
+        cvtpi2pd %mm6,%xmm6
+        subpd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        pslld $2,%mm6           ## idx *= 4 
+        movq nb333nf_VFtab(%rbp),%rsi
+        movd %mm6,%eax
+        psrlq $32,%mm6
+        movd %mm6,%ebx          ## indices in eax/ebx 
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now)
+        lea  (%rbx,%rbx,2),%rbx
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        movapd (%rsi,%rbx,8),%xmm3      ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        movapd 16(%rsi,%rbx,8),%xmm3    ## G2 H2 
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb333nf_qqH(%rsp),%xmm3
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+        mulpd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## increment vcoul 
+        xorpd  %xmm4,%xmm4
+        addpd  nb333nf_vctot(%rsp),%xmm5
+        movapd %xmm5,nb333nf_vctot(%rsp)
+
+        ## M interactions 
+        movapd nb333nf_rM(%rsp),%xmm7
+        mulpd   nb333nf_tsc(%rsp),%xmm7
+        cvttpd2pi %xmm7,%mm6    ## mm6 = lu idx 
+        cvtpi2pd %mm6,%xmm6
+        subpd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        pslld $2,%mm6           ## idx *= 4 
+        movq nb333nf_VFtab(%rbp),%rsi
+        movd %mm6,%eax
+        psrlq $32,%mm6
+        movd %mm6,%ebx          ## indices in eax/ebx 
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now)
+        lea  (%rbx,%rbx,2),%rbx
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        movapd (%rsi,%rbx,8),%xmm3      ## Y2 F2 
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 Y2 
+        unpckhpd %xmm3,%xmm5    ## F1 F2 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        movapd 16(%rsi,%rbx,8),%xmm3    ## G2 H2 
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 G2 
+        unpckhpd %xmm3,%xmm7    ## H1 H2 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulpd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulpd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addpd  %xmm6,%xmm5
+        addpd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb333nf_qqM(%rsp),%xmm3
+        mulpd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addpd  %xmm4,%xmm5 ## xmm5=VV 
+        mulpd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## increment vcoul 
+        xorpd  %xmm4,%xmm4
+        addpd  nb333nf_vctot(%rsp),%xmm5
+        movapd %xmm5,nb333nf_vctot(%rsp)
+
+        ## should we do one more iteration? 
+        subl $2,nb333nf_innerk(%rsp)
+        jl    _nb_kernel333nf_x86_64_sse2.nb333nf_checksingle
+        jmp   _nb_kernel333nf_x86_64_sse2.nb333nf_unroll_loop
+_nb_kernel333nf_x86_64_sse2.nb333nf_checksingle: 
+        movl  nb333nf_innerk(%rsp),%edx
+        andl  $1,%edx
+        jnz   _nb_kernel333nf_x86_64_sse2.nb333nf_dosingle
+        jmp   _nb_kernel333nf_x86_64_sse2.nb333nf_updateouterdata
+_nb_kernel333nf_x86_64_sse2.nb333nf_dosingle: 
+        movq  nb333nf_innerjjnr(%rsp),%rdx       ## pointer to jjnr[k] 
+        movl  (%rdx),%eax
+
+        movq nb333nf_charge(%rbp),%rsi     ## base of charge[] 
+        xorpd %xmm3,%xmm3
+        movlpd (%rsi,%rax,8),%xmm3
+        movapd %xmm3,%xmm4
+        mulpd  nb333nf_iqM(%rsp),%xmm3
+        mulpd  nb333nf_iqH(%rsp),%xmm4
+
+        movd  %eax,%mm0         ## use mmx registers as temp storage 
+        movapd  %xmm3,nb333nf_qqM(%rsp)
+        movapd  %xmm4,nb333nf_qqH(%rsp)
+
+        movq nb333nf_type(%rbp),%rsi
+        movl (%rsi,%rax,4),%eax
+        movq nb333nf_vdwparam(%rbp),%rsi
+        shll %eax
+        movl nb333nf_ntia(%rsp),%edi
+        addl %edi,%eax
+
+        movlpd (%rsi,%rax,8),%xmm6      ## c6a
+        movhpd 8(%rsi,%rax,8),%xmm6     ## c6a c12a 
+
+        xorpd %xmm7,%xmm7
+        movapd %xmm6,%xmm4
+        unpcklpd %xmm7,%xmm4
+        unpckhpd %xmm7,%xmm6
+
+        movd  %mm0,%eax
+        movapd %xmm4,nb333nf_c6(%rsp)
+        movapd %xmm6,nb333nf_c12(%rsp)
+
+        movq nb333nf_pos(%rbp),%rsi        ## base of pos[] 
+        lea  (%rax,%rax,2),%rax     ## replace jnr with j3 
+
+        ## move coords to xmm0-xmm2 
+        movlpd (%rsi,%rax,8),%xmm0
+        movlpd 8(%rsi,%rax,8),%xmm1
+        movlpd 16(%rsi,%rax,8),%xmm2
+
+        ## move ixO-izO to xmm4-xmm6 
+        movapd nb333nf_ixO(%rsp),%xmm4
+        movapd nb333nf_iyO(%rsp),%xmm5
+        movapd nb333nf_izO(%rsp),%xmm6
+
+        ## calc dr 
+        subsd %xmm0,%xmm4
+        subsd %xmm1,%xmm5
+        subsd %xmm2,%xmm6
+
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm4
+        addsd %xmm6,%xmm4
+        movapd %xmm4,%xmm7
+        ## rsqO in xmm7 
+
+        ## move ixH1-izH1 to xmm4-xmm6 
+        movapd nb333nf_ixH1(%rsp),%xmm4
+        movapd nb333nf_iyH1(%rsp),%xmm5
+        movapd nb333nf_izH1(%rsp),%xmm6
+
+        ## calc dr 
+        subsd %xmm0,%xmm4
+        subsd %xmm1,%xmm5
+        subsd %xmm2,%xmm6
+
+        ## square it 
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        mulsd %xmm6,%xmm6
+        addsd %xmm5,%xmm6
+        addsd %xmm4,%xmm6
+        ## rsqH1 in xmm6 
+
+        ## move ixH2-izH2 to xmm3-xmm5  
+        movapd nb333nf_ixH2(%rsp),%xmm3
+        movapd nb333nf_iyH2(%rsp),%xmm4
+        movapd nb333nf_izH2(%rsp),%xmm5
+
+        ## calc dr 
+        subsd %xmm0,%xmm3
+        subsd %xmm1,%xmm4
+        subsd %xmm2,%xmm5
+
+        ## square it 
+        mulsd %xmm3,%xmm3
+        mulsd %xmm4,%xmm4
+        mulsd %xmm5,%xmm5
+        addsd %xmm4,%xmm5
+        addsd %xmm3,%xmm5
+        ## move ixM-izM to xmm2-xmm4  
+        movapd nb333nf_iyM(%rsp),%xmm3
+        movapd nb333nf_izM(%rsp),%xmm4
+        subpd  %xmm1,%xmm3
+        subpd  %xmm2,%xmm4
+        movapd nb333nf_ixM(%rsp),%xmm2
+        subpd  %xmm0,%xmm2
+
+        ## square it 
+        mulpd %xmm2,%xmm2
+        mulpd %xmm3,%xmm3
+        mulpd %xmm4,%xmm4
+        addpd %xmm3,%xmm4
+        addpd %xmm2,%xmm4
+        ## rsqM in xmm4, rsqH2 in xmm5, rsqH1 in xmm6, rsqO in xmm7 
+
+        ## start with rsqO - put seed in xmm2 
+        cvtsd2ss %xmm7,%xmm2
+        rsqrtss %xmm2,%xmm2
+        cvtss2sd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulsd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulsd   %xmm7,%xmm2     ## rsq*lu*lu 
+        subsd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulsd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulsd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm7,%xmm2
+        movapd %xmm0,%xmm3
+        mulsd %xmm0,%xmm0       ## lu*lu 
+        mulsd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subsd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulsd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulsd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulsd   %xmm0,%xmm7
+        movapd  %xmm7,nb333nf_rO(%rsp)          ## r in xmm7 
+
+        ## rsqH1 - seed in xmm2 
+        cvtsd2ss %xmm6,%xmm2
+        rsqrtss %xmm2,%xmm2
+        cvtss2sd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulsd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulsd   %xmm6,%xmm2     ## rsq*lu*lu 
+        subsd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulsd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulsd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm6,%xmm2
+        movapd %xmm0,%xmm3
+        mulsd %xmm0,%xmm0       ## lu*lu 
+        mulsd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subsd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulsd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulsd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulsd  %xmm0,%xmm6
+        movapd %xmm6,nb333nf_rH1(%rsp)          ## rH1 
+
+        ## rsqH2 - seed in xmm2 
+        cvtsd2ss %xmm5,%xmm2
+        rsqrtss %xmm2,%xmm2
+        cvtss2sd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulsd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulsd   %xmm5,%xmm2     ## rsq*lu*lu 
+        subsd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulsd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulsd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm5,%xmm2
+        movapd %xmm0,%xmm3
+        mulsd %xmm0,%xmm0       ## lu*lu 
+        mulsd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subsd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulsd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulsd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulsd %xmm0,%xmm5
+        movapd %xmm5,nb333nf_rH2(%rsp)   ## r 
+
+        ## rsqM - seed in xmm2 
+        cvtsd2ss %xmm4,%xmm2
+        rsqrtss %xmm2,%xmm2
+        cvtss2sd %xmm2,%xmm2
+
+        movapd  %xmm2,%xmm3
+        mulsd   %xmm2,%xmm2
+        movapd  nb333nf_three(%rsp),%xmm0
+        mulsd   %xmm4,%xmm2     ## rsq*lu*lu 
+        subsd   %xmm2,%xmm0     ## 30-rsq*lu*lu 
+        mulsd   %xmm3,%xmm0     ## lu*(3-rsq*lu*lu) 
+        mulsd   nb333nf_half(%rsp),%xmm0   ## iter1 ( new lu) 
+
+        movapd %xmm4,%xmm2
+        movapd %xmm0,%xmm3
+        mulsd %xmm0,%xmm0       ## lu*lu 
+        mulsd %xmm0,%xmm2       ## rsq*lu*lu 
+        movapd nb333nf_three(%rsp),%xmm0
+        subsd %xmm2,%xmm0       ## 3-rsq*lu*lu 
+        mulsd %xmm3,%xmm0       ## lu*( 3-rsq*lu*lu) 
+        mulsd nb333nf_half(%rsp),%xmm0   ## rinv 
+        mulsd %xmm0,%xmm4
+        movapd %xmm4,nb333nf_rM(%rsp)   ## r 
+
+        ## do O interactions 
+        movd %eax,%mm0
+        ## rO is still in xmm7 
+        mulsd   nb333nf_tsc(%rsp),%xmm7
+        cvttsd2si %xmm7,%eax    ## lu idx 
+        cvtsi2sd %eax,%xmm6
+        subsd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm7,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%eax
+        movq nb333nf_VFtab(%rbp),%rsi
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now)   
+
+        ## Dispersion 
+        movapd 32(%rsi,%rax,8),%xmm4    ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1 
+
+        movapd 48(%rsi,%rax,8),%xmm6    ## G1 H1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## Dispersion table ready, in xmm4-xmm7                 
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+
+        movapd nb333nf_c6(%rsp),%xmm4
+        mulsd  %xmm4,%xmm5       ## Vvdw6 
+
+        addsd  nb333nf_Vvdwtot(%rsp),%xmm5
+        movsd %xmm5,nb333nf_Vvdwtot(%rsp)
+
+        ## Repulsion 
+        movapd 64(%rsi,%rax,8),%xmm4    ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1 
+
+        movapd 80(%rsi,%rax,8),%xmm6    ## G1 H1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## Dispersion table ready, in xmm4-xmm7                 
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+
+        movapd nb333nf_c12(%rsp),%xmm4
+        mulsd  %xmm4,%xmm5 ## Vvdw12 
+        addsd  nb333nf_Vvdwtot(%rsp),%xmm5
+        movsd %xmm5,nb333nf_Vvdwtot(%rsp)
+
+        ## Done with O interactions - now H1! 
+        movapd nb333nf_rH1(%rsp),%xmm7
+        mulpd nb333nf_tsc(%rsp),%xmm7
+        cvttsd2si %xmm7,%eax    ## mm6 = lu idx 
+        cvtsi2sd %eax,%xmm6
+        subpd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulpd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%eax            ## idx *= 4 
+        movq nb333nf_VFtab(%rbp),%rsi
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now)   
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb333nf_qqH(%rsp),%xmm3
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+        mulsd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## increment vcoul 
+        xorpd  %xmm4,%xmm4
+        addsd  nb333nf_vctot(%rsp),%xmm5
+        movlpd %xmm5,nb333nf_vctot(%rsp)
+
+        ##  H2 interactions 
+        movapd nb333nf_rH2(%rsp),%xmm7
+        mulsd   nb333nf_tsc(%rsp),%xmm7
+        cvttsd2si %xmm7,%eax    ## mm6 = lu idx 
+        cvtsi2sd %eax,%xmm6
+        subsd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%eax            ## idx *= 4 
+        movq nb333nf_VFtab(%rbp),%rsi
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now)   
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb333nf_qqH(%rsp),%xmm3
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+        mulsd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## increment vcoul 
+        xorpd  %xmm4,%xmm4
+        addsd  nb333nf_vctot(%rsp),%xmm5
+        movlpd %xmm5,nb333nf_vctot(%rsp)
+
+        ## M interactions 
+        movapd nb333nf_rM(%rsp),%xmm7
+        mulsd   nb333nf_tsc(%rsp),%xmm7
+        cvttsd2si %xmm7,%eax    ## mm6 = lu idx 
+        cvtsi2sd %eax,%xmm6
+        subsd %xmm6,%xmm7
+        movapd %xmm7,%xmm1      ## xmm1=eps 
+        movapd %xmm1,%xmm2
+        mulsd  %xmm2,%xmm2      ## xmm2=eps2 
+
+        shll $2,%eax            ## idx *= 4 
+        movq nb333nf_VFtab(%rbp),%rsi
+        lea  (%rax,%rax,2),%rax ## idx *= 3 (total *=12 now)   
+
+        movapd (%rsi,%rax,8),%xmm4      ## Y1 F1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm4,%xmm5
+        unpcklpd %xmm3,%xmm4    ## Y1 
+        unpckhpd %xmm3,%xmm5    ## F1 
+
+        movapd 16(%rsi,%rax,8),%xmm6    ## G1 H1        
+        xorpd %xmm3,%xmm3
+        movapd %xmm6,%xmm7
+        unpcklpd %xmm3,%xmm6    ## G1 
+        unpckhpd %xmm3,%xmm7    ## H1 
+        ## coulomb table ready, in xmm4-xmm7            
+        mulsd  %xmm1,%xmm6      ## xmm6=Geps 
+        mulsd  %xmm2,%xmm7      ## xmm7=Heps2 
+        addsd  %xmm6,%xmm5
+        addsd  %xmm7,%xmm5      ## xmm5=Fp      
+        movapd nb333nf_qqM(%rsp),%xmm3
+        mulsd  %xmm1,%xmm5 ## xmm5=eps*Fp 
+        addsd  %xmm4,%xmm5 ## xmm5=VV 
+        mulsd  %xmm3,%xmm5 ## vcoul=qq*VV  
+        ## increment vcoul 
+        xorpd  %xmm4,%xmm4
+        addsd  nb333nf_vctot(%rsp),%xmm5
+        movlpd %xmm5,nb333nf_vctot(%rsp)
+
+_nb_kernel333nf_x86_64_sse2.nb333nf_updateouterdata: 
+        ## get n from stack
+        movl nb333nf_n(%rsp),%esi
+        ## get group index for i particle 
+        movq  nb333nf_gid(%rbp),%rdx            ## base of gid[]
+        movl  (%rdx,%rsi,4),%edx                ## ggid=gid[n]
+
+        ## accumulate total potential energy and update it 
+        movapd nb333nf_vctot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb333nf_Vc(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## accumulate total lj energy and update it 
+        movapd nb333nf_Vvdwtot(%rsp),%xmm7
+        ## accumulate 
+        movhlps %xmm7,%xmm6
+        addsd  %xmm6,%xmm7      ## low xmm7 has the sum now 
+
+        ## add earlier value from mem 
+        movq  nb333nf_Vvdw(%rbp),%rax
+        addsd (%rax,%rdx,8),%xmm7
+        ## move back to mem 
+        movsd %xmm7,(%rax,%rdx,8)
+
+        ## finish if last 
+        movl nb333nf_nn1(%rsp),%ecx
+        ## esi already loaded with n
+        incl %esi
+        subl %esi,%ecx
+        jecxz _nb_kernel333nf_x86_64_sse2.nb333nf_outerend
+
+        ## not last, iterate outer loop once more!  
+        movl %esi,nb333nf_n(%rsp)
+        jmp _nb_kernel333nf_x86_64_sse2.nb333nf_outer
+_nb_kernel333nf_x86_64_sse2.nb333nf_outerend: 
+        ## check if more outer neighborlists remain
+        movl  nb333nf_nri(%rsp),%ecx
+        ## esi already loaded with n above
+        subl  %esi,%ecx
+        jecxz _nb_kernel333nf_x86_64_sse2.nb333nf_end
+        ## non-zero, do one more workunit
+        jmp   _nb_kernel333nf_x86_64_sse2.nb333nf_threadloop
+_nb_kernel333nf_x86_64_sse2.nb333nf_end: 
+        movl nb333nf_nouter(%rsp),%eax
+        movl nb333nf_ninner(%rsp),%ebx
+        movq nb333nf_outeriter(%rbp),%rcx
+        movq nb333nf_inneriter(%rbp),%rdx
+        movl %eax,(%rcx)
+        movl %ebx,(%rdx)
+
+        addq $536,%rsp
+        emms
+
+
+        pop %r15
+        pop %r14
+        pop %r13
+        pop %r12
+
+        pop %rbx
+        pop    %rbp
+        ret
+
