@@ -3,12 +3,12 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3.99_development_20060101, gmx-users@gromacs.org)
+AC_INIT(gromacs, 3.3.99_development_20060306, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(gromacs, 3.3.99_development_20060101)
+AM_INIT_AUTOMAKE(tar-ustar)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
@@ -16,7 +16,6 @@ dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="4:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
-
 
 #######################################################################
 # Simple options and makefile variables
@@ -188,7 +187,7 @@ AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "with_external_lapack" = "yes"])
 
 
 AC_ARG_WITH(qmmm_gaussian,
- [  --with-qmmm-gaussian    use modified Gaussian0x for QM-MM (see website)],,with_qmmm_gaussian=no)
+ [  --without-qmmm-gaussian  Interface to mod. Gaussian0x for QM-MM (see website)],,with_qmmm_gaussian=yes)
 if test "$with_qmmm_gaussian" = "yes"; then
   AC_DEFINE(GMX_QMMM_GAUSSIAN,,[Use (hacked) Gaussian0x for QM-MM calculations])
   MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gaussian.lo"
@@ -357,6 +356,7 @@ fftw2)
   else
     sizeof_real=8
   fi
+
   ACX_CHECK_FFTW2(fftw,$sizeof_real)
   ACX_CHECK_FFTW2(rfftw,$sizeof_real)
 
@@ -576,31 +576,6 @@ fi
   fi
 
 # ok, cc understands assembly.
-# But does it understand the lock cmpxchg instruction (needed for atomicity on SMP)?
-  AC_MSG_CHECKING([whether as understands 'lock cmpxchg'])
-  if test "$enable_x86_64_sse" = "yes"; then
-    cat > conftest.s << EOF
-.intel_syntax noprefix 
-checkasm:
-        lock cmpxchg [[rsi]], ebx 
-        emms
-        ret
-EOF
-  else
-    cat > conftest.s << EOF
-.intel_syntax noprefix
-checkasm:
-        lock cmpxchg [[esi]], ebx
-        emms
-        ret
-EOF
-  fi
-    if AC_TRY_COMMAND($CC -c conftest.s); then
-      AC_MSG_RESULT([yes])
-    else
-      AC_MSG_RESULT([no]) 
-      AC_MSG_ERROR([Upgrade to binutils >= 2.12.1 (or disable assembly loops).])
-    fi
 #
 # If we are using double precision we need SSE2
   if test "$enable_float" = "no"; then
@@ -608,10 +583,9 @@ EOF
     if test "$enable_ia32_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports ia32 SSE2])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movupd xmm0,[[esp]]
+        movapd 32(%esi,%edx,8),%xmm4
         emms
         ret
 EOF
@@ -627,10 +601,9 @@ EOF
     if test "$enable_x86_64_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports X86_64 SSE2])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movupd xmm0,[[rsp]]
+	movapd 32(%rsi,%rdx,8),%xmm4
         emms
         ret
 EOF
@@ -647,10 +620,9 @@ EOF
     if test "$enable_ia32_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports ia32 SSE])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movups xmm0,[[esp]]
+	movaps 32(%esi,%edx,8),%xmm4
         emms
         ret
 EOF
@@ -666,10 +638,9 @@ EOF
     if test "$enable_x86_64_sse" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports X86_64 SSE instructions])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        movups xmm0,[[rsp]]
+        movaps 32(%rsi,%rdx,8),%xmm4
         emms
         ret
 EOF
@@ -684,10 +655,9 @@ EOF
     if test "$enable_ia32_3dnow" = "yes"; then
       AC_MSG_CHECKING([whether as fully supports ia32 3DNow! instructions])
 cat > conftest.s << EOF
-.intel_syntax noprefix 
 checkasm:
         emms
-        pswapd mm0, mm0
+        pswapd %mm0, %mm0
         emms
         ret
 EOF
@@ -785,28 +755,6 @@ AC_DEFINE(GMX_X86_MSVC_INLINE_ASM,,[Enable x86 MSVC inline assembly])],[AC_MSG_R
 esac
 
 
-
-
-
-
-
-#If the prefix doesn't contain "gromacs" or "gmx" and the datadir
-#wasn't explicitly specified we add gromacs to the end of datadir:
-if test "$datadir" = "\${prefix}/share" -a -z "`echo ${prefix} | grep gromacs`"; then
-  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
-    datadir="\${prefix}/share/gromacs"
-  fi
-fi
-AC_SUBST(datadir)
-
-#If the prefix doesn't contain "gromacs" or "gmx" and the includedir
-#wasn't explicitly specified we add gromacs to the end of includedir:
-if test "$includedir" = "\${prefix}/include" -a -z "`echo ${prefix} | grep gromacs`"; then
-  if test "${prefix}" != "NONE" -a -z "`echo ${prefix} | grep gromacs`" -a -z "`echo ${prefix} | grep gmx`"; then
-    includedir="\${prefix}/include/gromacs"
-  fi
-fi
-AC_SUBST(includedir)
 
 
 
