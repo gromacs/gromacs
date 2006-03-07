@@ -336,11 +336,11 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
             }
             else
             {
+	        tabletype = nb_kernel_table[nrnb_ind];
+	      
                 /* normal kernels, not free energy */
                 if (!bDoForces)
                     nrnb_ind += eNR_NBKERNEL_NR/2;
-                
-                tabletype = nb_kernel_table[nrnb_ind];
                 
                 if(tabletype == TABLE_COMBINED)
                 {
