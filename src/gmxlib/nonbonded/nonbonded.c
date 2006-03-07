@@ -336,11 +336,11 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
             }
             else
             {
+	        tabletype = nb_kernel_table[nrnb_ind];
+	      
                 /* normal kernels, not free energy */
                 if (!bDoForces)
                     nrnb_ind += eNR_NBKERNEL_NR/2;
-                
-                tabletype = nb_kernel_table[nrnb_ind];
                 
                 if(tabletype == TABLE_COMBINED)
                 {
@@ -526,7 +526,7 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
 #if GMX_THREADS
     pthread_mutex_initialize(&mtx);
 #endif
-    
+
     krf = fr->k_rf;
     crf = fr->c_rf;
     tabscale = fr->tab14.scale;
@@ -578,7 +578,7 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-        
+
         if (!bFullPBC) 
         {
             /* This is a bonded interaction, atoms are in the same box */
@@ -623,14 +623,14 @@ do_nonbonded14(int nbonds,const t_iatom iatoms[],const t_iparams iparams[],
                     md->cENER[ai],md->cENER[aj],ngrp,gid);
 #endif
             
-            outeriter = inneriter = count = 0;
+	    outeriter = inneriter = count = 0;
             nbfp = (real *)&(iparams[itype].lj14.c6A);
 
             if (fr->efep != efepNO &&
                 (md->bPerturbed[ai] || md->bPerturbed[aj] ||
                  iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
                  iparams[itype].lj14.c12A != iparams[itype].lj14.c12B)) 
-            {
+	      {
                 
                 chargeB[0] = md->chargeB[ai];
                 chargeB[1] = md->chargeB[aj];
