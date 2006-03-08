@@ -2211,10 +2211,11 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	
 	/* If the compiler doesn't optimize this check away
 	 * we catch the NAN energies.
+	 * With tables extreme negative energies might occur close to r=0.
 	 */
-	if (ener[F_EPOT] != ener[F_EPOT]) {
-	  fprintf(stderr,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
-	  fprintf(fplog,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
+	if (ener[F_EPOT] != ener[F_EPOT] || ener[F_EPOT]*beta < -50) {
+	  if (debug)
+	    fprintf(debug,"\n  time %.3f, step %d: non-finite energy %f, using exp(-bU)=0\n",t,step,ener[F_EPOT]);
 	  embU = 0;
 	} else {
 	  embU = exp(-beta*ener[F_EPOT]);
