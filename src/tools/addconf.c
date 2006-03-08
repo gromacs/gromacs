@@ -313,13 +313,13 @@ bool bXor(bool b1,bool b2)
 void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
 	      matrix box, bool bInsert,
 	      t_atoms *atoms_solvt,rvec *x_solvt,rvec *v_solvt,real *r_solvt,
-	      bool bVerbose,real rshell)
+	      bool bVerbose,real rshell,int max_sol)
 {
   t_nblist   *nlist;
   t_atoms    *atoms_all;
   real       max_vdw,*r_prot,*r_all,n2,r2,ib1,ib2;
   int        natoms_prot,natoms_solvt;
-  int        i,j,jj,m,j0,j1,jnr,inr,iprot,is1,is2;
+  int        i,j,jj,m,j0,j1,jjj,jnres,jnr,inr,iprot,is1,is2;
   int        prev,resnr,nresadd,d,k,ncells,maxincell;
   int        dx0,dx1,dy0,dy1,dz0,dz1;
   int        ntest,nremove,nkeep;
@@ -468,11 +468,28 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
       remove[i] = remove[i] || !keep[i];
     sfree(keep);
   }
-  /* count how many atoms will be added and make space */
-  j=0;
-  for (i=0; i<atoms_solvt->nr; i++)
-    if (!remove[i])
+  /* count how many atoms and residues will be added and make space */
+  j     = 0;
+  jnres = 0;
+  for (i=0; ((i<atoms_solvt->nr) && 
+	     ((max_sol == 0) || (jnres < max_sol))); i++) {
+    if (!remove[i]) {
       j++;
+      if ((i == 0) || 
+	  (atoms_solvt->atom[i].resnr != atoms_solvt->atom[i-1].resnr))
+	jnres++;
+    }
+  }
+  if (debug)
+    fprintf(debug,"Will add %d atoms in %d residues\n",j,jnres);
+  /* Flag the remaing solvent atoms to be removed */
+  jjj = atoms_solvt->atom[i-1].resnr;
+  for ( ; (i<atoms_solvt->nr); i++) 
+    if (atoms_solvt->atom[i].resnr > jjj)
+      remove[i] = TRUE;
+    else
+      j++;
+
   if (bSrenew) {
     srenew(atoms->resname,  atoms->nres+atoms_solvt->nres);
     srenew(atoms->atomname, atoms->nr+j);

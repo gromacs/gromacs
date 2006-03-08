@@ -321,7 +321,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
     onr=atoms->nr;
     
     add_conf(atoms,x,NULL,r,FALSE,box,TRUE,
-	     &atoms_insrt,x_n,NULL,r_insrt,FALSE,rshell);
+	     &atoms_insrt,x_n,NULL,r_insrt,FALSE,rshell,0);
     
     if (atoms->nr==(atoms_insrt.nr+onr)) {
       mol++;
@@ -344,7 +344,7 @@ char *insert_mols(char *mol_insrt,int nmol_insrt,int ntry,int seed,
 
 void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,matrix box,
 	      void *atomprop,real r_distance,int *atoms_added,
-	      int *residues_added,real rshell)
+	      int *residues_added,real rshell,int max_sol)
 {
   int     i,nmol;
   ivec    n_box;
@@ -418,7 +418,7 @@ void add_solv(char *fn,t_atoms *atoms,rvec **x,rvec **v,real **r,matrix box,
   onr=atoms->nr;
   onres=atoms->nres;
   add_conf(atoms,x,v,r,TRUE,box,FALSE,
-	   atoms_solvt,x_solvt,v_solvt,r_solvt,TRUE,rshell);
+	   atoms_solvt,x_solvt,v_solvt,r_solvt,TRUE,rshell,max_sol);
   *atoms_added=atoms->nr-onr;
   *residues_added=atoms->nres-onres;
   
@@ -656,6 +656,7 @@ int gmx_genbox(int argc,char *argv[])
   static real r_distance=0.105,r_shell=0;
   static rvec new_box={0.0,0.0,0.0};
   static bool bReadV=FALSE;
+  static int  max_sol = 0;
   t_pargs pa[] = {
     { "-box",    FALSE, etRVEC, {new_box},   
       "box size" },
@@ -669,6 +670,8 @@ int gmx_genbox(int argc,char *argv[])
       "default vdwaals distance"},
     { "-shell",  FALSE, etREAL, {&r_shell},
       "thickness of optional water layer around solute" },
+    { "-maxsol", FALSE, etINT,  {&max_sol},
+      "maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
     { "-vel",    FALSE, etBOOL, {&bReadV},
       "HIDDENkeep velocities from input solute and solvent" }
   };
@@ -735,7 +738,7 @@ int gmx_genbox(int argc,char *argv[])
   /* add solvent */
   if (bSol)
     add_solv(opt2fn("-cs",NFILE,fnm),&atoms,&x,v?&v:NULL,&r,box,
-	     atomprop,r_distance,&atoms_added,&residues_added,r_shell);
+	     atomprop,r_distance,&atoms_added,&residues_added,r_shell,max_sol);
 	     
   /* write new configuration 1 to file confout */
   confout = ftp2fn(efSTO,NFILE,fnm);
