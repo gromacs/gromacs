@@ -914,6 +914,9 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
   int      nrfp = interaction_function[ftype].nrfpA;
   int      nrfpB= interaction_function[ftype].nrfpB;
 
+  if ((!bB && nrfp == 0) || (bB && nrfpB == 0))
+    return TRUE;
+
   bFound=FALSE;
   if(bGenPairs) {
     /* First test the generated-pair position to save
@@ -976,6 +979,10 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
   int      nrfp = interaction_function[ftype].nrfpA;
   int      nrfpB= interaction_function[ftype].nrfpB;
   int     *batype=atype->bondatomtype;
+
+  if ((!bB && nrfp == 0) || (bB && nrfpB == 0))
+    return TRUE;
+
 
   /* We allow wildcards now. The first type (with or without wildcards) that
    * fits is used, so you should probably put the wildcarded bondtypes
@@ -1139,10 +1146,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   } else {
     bFoundA = default_nb_params(ftype == F_LJC14_A ? F_LJ14 : ftype,
 				bondtype,at,&param,FALSE,bGenPairs);
-    if (ftype == F_LJC14_A)
-      bFoundB = TRUE;
-    else
-      bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
+    bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
   }
   
   nrfp = NRFP(ftype);
