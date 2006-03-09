@@ -116,7 +116,6 @@ typedef int bool_t;
 #  error ERROR: No 32 bit wide integer type found!
 #endif
 
-
 enum xdr_op {
   XDR_ENCODE = 0,
   XDR_DECODE = 1,
@@ -148,10 +147,6 @@ struct XDR
     enum xdr_op x_op;		/* operation; fast additional param */
     struct xdr_ops
       {
-	bool_t (*x_getlong) (XDR *__xdrs, long *__lp);
-	/* get a long from underlying stream */
-	bool_t (*x_putlong) (XDR *__xdrs, long *__lp);
-	/* put a long to " */
 	bool_t (*x_getbytes) (XDR *__xdrs, char *__addr, unsigned int __len);
 	/* get some bytes from " */
 	bool_t (*x_putbytes) (XDR *__xdrs, char *__addr, unsigned int __len);
@@ -167,6 +162,10 @@ struct XDR
 	bool_t (*x_getint32) (XDR *__xdrs, xdr_int32_t *__ip);
 	/* get a int from underlying stream */
 	bool_t (*x_putint32) (XDR *__xdrs, xdr_int32_t *__ip);
+	/* put a int to " */
+	bool_t (*x_getuint32) (XDR *__xdrs, xdr_uint32_t *__ip);
+	/* get a unsigned int from underlying stream */
+	bool_t (*x_putuint32) (XDR *__xdrs, xdr_uint32_t *__ip);
 	/* put a int to " */
       }
      *x_ops;
@@ -205,11 +204,11 @@ typedef bool_t (*xdrproc_t) (XDR *, void *,...);
 #define xdr_putint32(xdrs, int32p)                      \
         (*(xdrs)->x_ops->x_putint32)(xdrs, int32p)
 
-#define xdr_getlong(xdrs, longp)			\
-	(*(xdrs)->x_ops->x_getlong)(xdrs, longp)
+#define xdr_getuint32(xdrs, uint32p)                      \
+        (*(xdrs)->x_ops->x_getuint32)(xdrs, uint32p)
 
-#define xdr_putlong(xdrs, longp)			\
-	(*(xdrs)->x_ops->x_putlong)(xdrs, longp)
+#define xdr_putuint32(xdrs, uint32p)                      \
+        (*(xdrs)->x_ops->x_putuint32)(xdrs, uint32p)
 
 #define xdr_getbytes(xdrs, addr, len)			\
 	(*(xdrs)->x_ops->x_getbytes)(xdrs, addr, len)
@@ -233,10 +232,10 @@ typedef bool_t (*xdrproc_t) (XDR *, void *,...);
 	} while (0)
 
 
-extern bool_t xdr_u_short (XDR *__xdrs, unsigned short *__usp);
 extern bool_t xdr_int (XDR *__xdrs, int *__ip);
-extern bool_t xdr_long (XDR *__xdrs, long *__lp); 
-extern bool_t xdr_u_long (XDR *__xdrs, unsigned long *__ulp); 
+extern bool_t xdr_u_int (XDR *__xdrs, unsigned int *__ip);
+extern bool_t xdr_short (XDR *__xdrs, short *__ip);
+extern bool_t xdr_u_short (XDR *__xdrs, unsigned short *__ip);
 extern bool_t xdr_bool (XDR *__xdrs, int *__bp);
 extern bool_t xdr_opaque (XDR *__xdrs, char *__cp, unsigned int __cnt);
 extern bool_t xdr_string (XDR *__xdrs, char **__cpp, unsigned int __maxsize);

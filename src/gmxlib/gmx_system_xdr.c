@@ -162,33 +162,25 @@ xdr_void (void)
 bool_t
 xdr_int (XDR *xdrs, int *ip)
 {
-
-#if INT_MAX < LONG_MAX
-  long l;
+  xdr_int32_t l;
 
   switch (xdrs->x_op)
-    {
+  {
     case XDR_ENCODE:
-      l = (long) *ip;
-      return xdr_putlong (xdrs, &l);
+      l = (xdr_int32_t) (*ip);
+      return xdr_putint32 (xdrs, &l);
 
     case XDR_DECODE:
-      if (!xdr_getlong (xdrs, &l))
-	{
-	  return FALSE;
-	}
+      if (!xdr_getint32 (xdrs, &l))
+	  {
+	    return FALSE;
+	  }
       *ip = (int) l;
+	  
     case XDR_FREE:
       return TRUE;
-    }
+  }
   return FALSE;
-#elif INT_MAX == LONG_MAX
-  return xdr_long (xdrs, (long *) ip);
-#elif INT_MAX == SHRT_MAX
-  return xdr_short (xdrs, (short *) ip);
-#else
-#error unexpected integer sizes in_xdr_int()
-#endif
 }
 
 
@@ -198,92 +190,28 @@ xdr_int (XDR *xdrs, int *ip)
 bool_t
 xdr_u_int (XDR *xdrs, unsigned int *up)
 {
-#if UINT_MAX < ULONG_MAX
-  unsigned long l;
+  xdr_uint32_t l;
 
   switch (xdrs->x_op)
-    {
+  {
     case XDR_ENCODE:
-      l = (unsigned long) * up;
-      return xdr_putlong (xdrs, (long *)&l);
+      l = (xdr_uint32_t) (*up);
+      return xdr_putuint32 (xdrs, &l);
 
     case XDR_DECODE:
-      if (!xdr_getlong (xdrs, (long *)&l))
-	{
-	  return FALSE;
-	}
+      if (!xdr_getuint32 (xdrs, &l))
+	  {
+	    return FALSE;
+	  }
       *up = (unsigned int) l;
+	  
     case XDR_FREE:
       return TRUE;
-    }
-  return FALSE;
-#elif UINT_MAX == ULONG_MAX
-  return xdr_u_long (xdrs, (unsigned long *) up);
-#elif UINT_MAX == USHRT_MAX
-  return xdr_short (xdrs, (short *) up);
-#else
-#error unexpected integer sizes in_xdr_u_int()
-#endif
-}
-
-
-/*
- * XDR long integers
- * The definition of xdr_long() is kept for backward
- * compatibility. Instead xdr_int() should be used.
- */
-bool_t
-xdr_long (XDR *xdrs, long *lp)
-{
-
-  if (xdrs->x_op == XDR_ENCODE
-      && (sizeof (xdr_int32_t) == sizeof (long)
-	  || (xdr_int32_t) *lp == *lp))
-    return xdr_putlong (xdrs, lp);
-
-  if (xdrs->x_op == XDR_DECODE)
-    return xdr_getlong (xdrs, lp);
-
-  if (xdrs->x_op == XDR_FREE)
-    return TRUE;
-
+  }
   return FALSE;
 }
 
 
-/*
- * XDR unsigned long integers
- * The definition of xdr_u_long() is kept for backward
- * compatibility. Instead xdr_u_int() should be used.
- */
-bool_t
-xdr_u_long (XDR *xdrs, unsigned long *ulp)
-{
-  switch (xdrs->x_op)
-    {
-    case XDR_DECODE:
-      {
-	long int tmp;
-
-	if (xdr_getlong (xdrs, &tmp) == FALSE)
-	  return FALSE;
-
-	*ulp = (xdr_uint32_t) tmp;
-	return TRUE;
-      }
-
-    case XDR_ENCODE:
-      if (sizeof (xdr_uint32_t) != sizeof (unsigned long)
-	  && (xdr_uint32_t) *ulp != *ulp)
-	return FALSE;
-
-      return xdr_putlong (xdrs, (long *) ulp);
-
-    case XDR_FREE:
-      return TRUE;
-    }
-  return FALSE;
-}
 
 
 /*
@@ -292,16 +220,16 @@ xdr_u_long (XDR *xdrs, unsigned long *ulp)
 bool_t
 xdr_short (XDR *xdrs, short *sp)
 {
-  long l;
+  xdr_int32_t l;
 
   switch (xdrs->x_op)
     {
     case XDR_ENCODE:
-      l = (long) *sp;
-      return xdr_putlong (xdrs, &l);
+      l = (xdr_int32_t) *sp;
+      return xdr_putint32 (xdrs, &l);
 
     case XDR_DECODE:
-      if (!xdr_getlong (xdrs, &l))
+      if (!xdr_getint32 (xdrs, &l))
 	{
 	  return FALSE;
 	}
@@ -321,20 +249,20 @@ xdr_short (XDR *xdrs, short *sp)
 bool_t
 xdr_u_short (XDR *xdrs, unsigned short *usp)
 {
-  unsigned long l;
+  xdr_uint32_t l;
 
   switch (xdrs->x_op)
     {
     case XDR_ENCODE:
-      l = (unsigned long) * usp;
-      return xdr_putlong (xdrs, (long*)&l);
+      l = (xdr_uint32_t) *usp;
+      return xdr_putuint32 (xdrs, &l);
 
     case XDR_DECODE:
-      if (!xdr_getlong (xdrs, (long*)&l))
+      if (!xdr_getuint32 (xdrs, &l))
 	{
 	  return FALSE;
 	}
-      *usp = (unsigned short) l;
+	  *usp = (unsigned short) l;
       return TRUE;
 
     case XDR_FREE:
@@ -384,18 +312,19 @@ xdr_u_char (XDR *xdrs, unsigned char *cp)
 bool_t
 xdr_bool (XDR *xdrs, int *bp)
 {
-#define XDR_FALSE	((long) 0)
-#define XDR_TRUE	((long) 1)
-  long lb;
+#define XDR_FALSE	((xdr_int32_t) 0)
+#define XDR_TRUE	((xdr_int32_t) 1)
+
+  xdr_int32_t lb;
 
   switch (xdrs->x_op)
     {
     case XDR_ENCODE:
       lb = *bp ? XDR_TRUE : XDR_FALSE;
-      return xdr_putlong (xdrs, &lb);
+      return xdr_putint32 (xdrs, &lb);
 
     case XDR_DECODE:
-      if (!xdr_getlong (xdrs, &lb))
+      if (!xdr_getint32 (xdrs, &lb))
 	{
 	  return FALSE;
 	}
@@ -478,8 +407,8 @@ xdr_string (xdrs, cpp, maxsize)
      unsigned int maxsize;
 {
   char *sp = *cpp;	/* sp is the actual string pointer */
-  unsigned int size;
-  unsigned int nodesize;
+  unsigned int size = 0;
+  unsigned int nodesize = 0;
 
   /*
    * first deal with the length since xdr strings are counted-strings
@@ -494,12 +423,13 @@ xdr_string (xdrs, cpp, maxsize)
       /* fall through... */
     case XDR_ENCODE:
       if (sp == NULL)
-	return FALSE;
+	    return FALSE;
       size = strlen (sp);
       break;
     case XDR_DECODE:
       break;
     }
+  
   if (!xdr_u_int (xdrs, &size))
     {
       return FALSE;
@@ -550,27 +480,22 @@ xdr_float(xdrs, fp)
      XDR *xdrs;
      float *fp;
 {
+	xdr_int32_t tmp;
+	
 	switch (xdrs->x_op) {
 
 	case XDR_ENCODE:
-		if (sizeof(float) == sizeof(long))
-			return (xdr_putlong(xdrs, (long *)fp));
-		else if (sizeof(float) == sizeof(int)) {
-			long tmp = *(int *)fp;
-			return (xdr_putlong(xdrs, &tmp));
-		}
+		tmp = *(xdr_int32_t *)fp;
+   	    return (xdr_putint32(xdrs, &tmp));
+
 		break;
 
 	case XDR_DECODE:
-		if (sizeof(float) == sizeof(long))
-			return (xdr_getlong(xdrs, (long *)fp));
-		else if (sizeof(float) == sizeof(int)) {
-			long tmp;
-			if (xdr_getlong(xdrs, &tmp)) {
-				*(int *)fp = tmp;
+			if (xdr_getint32(xdrs, &tmp)) {
+				*(xdr_int32_t *)fp = tmp;
 				return (TRUE);
 			}
-		}
+
 		break;
 
 	case XDR_FREE:
@@ -591,7 +516,9 @@ xdr_double(xdrs, dp)
    * to calculate it!
    */
   static int LSW=-1; /* Least significant fp word */
-  
+  int *ip;
+  xdr_int32_t tmp[2];
+
   if(LSW<0) {
     double x=0.987654321; /* Just a number */
 
@@ -623,35 +550,23 @@ xdr_double(xdrs, dp)
   switch (xdrs->x_op) {
     
   case XDR_ENCODE:
-    if (2*sizeof(long) == sizeof(double)) {
-      long *lp = (long *)dp;
-      return (xdr_putlong(xdrs, lp+!LSW) &&
-	      xdr_putlong(xdrs, lp+LSW));
-    } else if (2*sizeof(int) == sizeof(double)) {
-      int *ip = (int *)dp;
-      long tmp[2];
-      tmp[0] = ip[!LSW];
-      tmp[1] = ip[LSW];
-      return (xdr_putlong(xdrs, tmp) &&
-	      xdr_putlong(xdrs, tmp+1));
-    }
+    ip = (int *)dp;
+    tmp[0] = ip[!LSW];
+    tmp[1] = ip[LSW];
+    return (xdr_putint32(xdrs, tmp) &&
+ 	      xdr_putint32(xdrs, tmp+1));
+ 
     break;
     
   case XDR_DECODE:
-    if (2*sizeof(long) == sizeof(double)) {
-      long *lp = (long *)dp;
-      return (xdr_getlong(xdrs, lp+!LSW) &&
-	      xdr_getlong(xdrs, lp+LSW));
-    } else if (2*sizeof(int) == sizeof(double)) {
-      int *ip = (int *)dp;
-      long tmp[2];
-      if (xdr_getlong(xdrs, tmp+!LSW) &&
-	  xdr_getlong(xdrs, tmp+LSW)) {
+    ip = (int *)dp;
+    if (xdr_getint32(xdrs, tmp+!LSW) &&
+ 	  xdr_getint32(xdrs, tmp+LSW)) {
 	ip[0] = tmp[0];
 	ip[1] = tmp[1];
 	return (TRUE);
-      }
     }
+
     break;
     
   case XDR_FREE:
@@ -700,8 +615,6 @@ xdr_vector (xdrs, basep, nelem, elemsize, xdr_elem)
 
 
 
-static bool_t xdrstdio_getlong (XDR *, long *);
-static bool_t xdrstdio_putlong (XDR *, long *);
 static bool_t xdrstdio_getbytes (XDR *, char *, unsigned int);
 static bool_t xdrstdio_putbytes (XDR *, char *, unsigned int);
 static unsigned int xdrstdio_getpos (XDR *);
@@ -710,14 +623,14 @@ static xdr_int32_t *xdrstdio_inline (XDR *, int);
 static void xdrstdio_destroy (XDR *);
 static bool_t xdrstdio_getint32 (XDR *, xdr_int32_t *);
 static bool_t xdrstdio_putint32 (XDR *, xdr_int32_t *);
+static bool_t xdrstdio_getuint32 (XDR *, xdr_uint32_t *);
+static bool_t xdrstdio_putuint32 (XDR *, xdr_uint32_t *);
 
 /*
  * Ops vector for stdio type XDR
  */
 static const struct xdr_ops xdrstdio_ops =
 {
-  xdrstdio_getlong,		/* deserialize a long int */
-  xdrstdio_putlong,		/* serialize a long int */
   xdrstdio_getbytes,       	/* deserialize counted bytes */
   xdrstdio_putbytes,     	/* serialize counted bytes */
   xdrstdio_getpos,		/* get offset in the stream */
@@ -725,7 +638,9 @@ static const struct xdr_ops xdrstdio_ops =
   xdrstdio_inline,		/* prime stream for inline macros */
   xdrstdio_destroy,		/* destroy stream */
   xdrstdio_getint32,	/* deserialize a int */
-  xdrstdio_putint32		/* serialize a int */
+  xdrstdio_putint32,	/* serialize a int */
+  xdrstdio_getuint32,	/* deserialize a int */
+  xdrstdio_putuint32		/* serialize a int */
 };
 
 /*
@@ -756,26 +671,6 @@ xdrstdio_destroy (XDR *xdrs)
   /* xx should we close the file ?? */
 }
 
-static bool_t
-xdrstdio_getlong (XDR *xdrs, long *lp)
-{
-  xdr_int32_t mycopy;
-
-  if (fread ((char *) & mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
-    return FALSE;
-  *lp = (xdr_int32_t) xdr_ntohl (mycopy);
-  return TRUE;
-}
-
-static bool_t
-xdrstdio_putlong (XDR *xdrs, long *lp)
-{
-  long mycopy = xdr_htonl (*lp);
-  lp = &mycopy;
-  if (fwrite ((char *) lp, 4, 1, (FILE *) xdrs->x_private) != 1)
-    return FALSE;
-  return TRUE;
-}
 
 static bool_t
 xdrstdio_getbytes (XDR *xdrs, char *addr, unsigned int len)
@@ -804,7 +699,7 @@ xdrstdio_getpos (XDR *xdrs)
 static bool_t
 xdrstdio_setpos (XDR *xdrs, unsigned int pos)
 {
-  return fseek ((FILE *) xdrs->x_private, (long) pos, 0) < 0 ? FALSE : TRUE;
+  return fseek ((FILE *) xdrs->x_private, (xdr_int32_t) pos, 0) < 0 ? FALSE : TRUE;
 }
 
 static xdr_int32_t *
@@ -844,14 +739,26 @@ xdrstdio_putint32 (XDR *xdrs, xdr_int32_t *ip)
   return TRUE;
 }
 
+static bool_t
+xdrstdio_getuint32 (XDR *xdrs, xdr_uint32_t *ip)
+{
+	xdr_uint32_t mycopy;
+	
+	if (fread ((char *) &mycopy, 4, 1, (FILE *) xdrs->x_private) != 1)
+		return FALSE;
+	*ip = xdr_ntohl (mycopy);
+	return TRUE;
+}
 
-/* Unimplemented routines - check the sunrpc still in glibc source,
- * and copy them here if you need them. Make sure that long long and
- * similar datatypes are portable, though, and that they produce the
- * right size on the system you intend to use it on.
- *
- * xdr_hyper, xdr_u_hyper, xdr_longlong_t, xdr_u_longlong_t
- * xdr_enum, xdr_bytes, xdr_union, xdr_netobj, xdr_wrapstring,
- * xdr_array.  / Erik Lindahl 2002-03-25
- */
+static bool_t
+xdrstdio_putuint32 (XDR *xdrs, xdr_uint32_t *ip)
+{
+	xdr_uint32_t mycopy = xdr_htonl (*ip);
+	
+	ip = &mycopy;
+	if (fwrite ((char *) ip, 4, 1, (FILE *) xdrs->x_private) != 1)
+		return FALSE;
+	return TRUE;
+}
+
 
