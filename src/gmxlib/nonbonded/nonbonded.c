@@ -513,6 +513,7 @@ do_nonbonded14(int ftype,int nbonds,
     int       nthreads = 1;
     int       count;
     real      krf,crf,tabscale;
+    int       ntype;
     real      *nbfp=NULL;
     real      *egnb=NULL,*egcoul=NULL;
     t_nblist  tmplist;
@@ -533,11 +534,13 @@ do_nonbonded14(int ftype,int nbonds,
     switch (ftype) {
     case F_LJ14:
     case F_LJC14_A:
+      ntype = 1;
       eps = fr->epsfac*fr->fudgeQQ;
       egnb   = gener->ee[egLJ14];
       egcoul = gener->ee[egCOUL14];
       break;
     case F_LJC_PAIRS_A:
+      ntype = fr->ntype;
       nbfp = fr->nbfp;
       eps = fr->epsfac;
       egnb   = gener->ee[egLJSR];
@@ -696,7 +699,7 @@ do_nonbonded14(int ftype,int nbonds,
                                           egcoul,
                                           typeA,
                                           typeB,
-                                          i1,
+                                          ntype,
                                           nbfp,
                                           egnb,
                                           tabscale,
@@ -729,7 +732,7 @@ do_nonbonded14(int ftype,int nbonds,
                       &crf,
                       egcoul,
                       typeA,
-                      &i1,
+                      &ntype,
                       nbfp,
                       egnb,
                       &tabscale,
