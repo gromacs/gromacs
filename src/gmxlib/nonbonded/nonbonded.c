@@ -533,11 +533,13 @@ do_nonbonded14(int ftype,int nbonds,
     switch (ftype) {
     case F_LJ14:
     case F_LJC14_A:
+      eps = fr->epsfac*fr->fudgeQQ;
       egnb   = gener->ee[egLJ14];
       egcoul = gener->ee[egCOUL14];
       break;
     case F_LJC_PAIRS_A:
       nbfp = fr->nbfp;
+      eps = fr->epsfac;
       egnb   = gener->ee[egLJSR];
       egcoul = gener->ee[egCOULSR];
       break;
@@ -587,9 +589,6 @@ do_nonbonded14(int ftype,int nbonds,
      */
     
     bFullPBC = (fr->ePBC == epbcFULL);
-    
-    /* Reaction field stuff */  
-    eps   = fr->epsfac*fr->fudgeQQ;
     
     bFreeEnergy = FALSE;
     for(i=0; (i<nbonds); ) 
