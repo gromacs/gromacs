@@ -137,9 +137,17 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   if (re->bNPT) {
     fprintf(fplog,"\nRepl  p");
     for(i=0; i<re->nrepl; i++)
+    {
       fprintf(fplog," %5.2f",re->pres[re->ind[i]]);
-    if ((i > 0) && (re->pres[re->ind[i]] < re->pres[re->ind[i-1]]))
-      gmx_fatal(FARGS,"The reference pressure decreases with increasing temperature");
+    }
+
+    for(i=0; i<re->nrepl; i++)
+    {
+      if ((i > 0) && (re->pres[re->ind[i]] < re->pres[re->ind[i-1]]))
+      {
+        gmx_fatal(FARGS,"The reference pressure decreases with increasing temperature");
+      }
+    }
   }
   fprintf(fplog,"\nRepl  ");
   
