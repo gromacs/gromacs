@@ -200,7 +200,7 @@ The definition of the weighted center of mass is:
 \beq
 \ve{r}_{com} = \left. \sum_{i=1}^N w'_i \, m_i \, \ve{r}_i \right/ M
 \eeq
-From the centers of mass the AFM, constraint or umbrella force $\ve{F}_{\!com}$
+>From the centers of mass the AFM, constraint or umbrella force $\ve{F}_{\!com}$
 on each group can be calculated.
 The force on the center of mass of a group is redistributed to the atoms
 as follows:
@@ -862,7 +862,7 @@ to
 \beq
 y(x)~=~ y_i + \epsilon F_i + \epsilon^2 G_i + \epsilon^3 H_i
 \eeq
-From this we can calculate the derivative in order to determine the forces:
+>From this we can calculate the derivative in order to determine the forces:
 \beq
 \frac{{\rm d}y(x)}{{\rm d}x}~=~\frac{{\rm d}y(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x}~=~(F_i + 2\epsilon G_i + 3\epsilon^2 H_i)/h
 \eeq
@@ -944,5 +944,217 @@ always contain the 7 columns however, and meaningful data (i.e. not
 zeroes) must be entered in all columns.  A number of pre-built table
 files can be found in the GMXLIB directory, for 6-8, 6-9, 6-10, 6-11, 6-12
 Lennard Jones potentials combined with a normal Coulomb.
+
+\section{mixed Quantum-Classical simulation techniques}
+
+In a molecular mechanics (MM) forcefield, the influence of electrons
+is expressed by empirical parameters that are assigned on the basis of
+experimental data, or on the basis of results from high-level quantum
+chemistry calculations. These are valid for the ground state of a
+given covalent structure, and the MM approximation is usually
+sufficiently accurate for ground-state processes in which the overall
+connectivity between the atoms is the system remains
+unchanged. However, for processes in which the connectivity does
+change, such as chemical reactions, or processes that involve multiple
+electronic states, such as photochemical conversions, electrons can no
+longer be ignored, and a quantum mechanical description is required
+for at least those parts of the system in which the reaction takes
+place.
+
+One approach to the simulation of chemical reactions in solution, or
+in enzymes, is to use a combination of quantum mechanics (QM) adn
+molecular mechanics (MM). The reacting parts of the system are treated
+quantum mechanically, with the remainder being modelled using the
+forcefield. The current version of Gromacs provides interfaces to
+several popular Quantum Chemistry packages (Mopac\cite{mopac},
+Gamess-UK\cite{gamess-uk}, Gaussian\cite{g03} and CPMD\cite{cpmd}).
+
+
+Gromacs interactions between the two subsystems are
+either handled as described by Field {\it{et al.}}\cite{field90} or
+within the ONIOM approach by Morokuma and coworkers\cite{Maseras96,
+Svensson96}.
+
+\subsection{overview}
+
+Two approaches for describing the interactions between the QM and MM
+subsystems are supported in this version:
+
+\begin{enumerate}
+\item{\textbf{Electronic Embedding}} The electrostatic interactions
+between the electrons of the QM region and the MM atoms and between
+the QM nuclie and the MM atoms, are included in the Hamiltonian for
+the QM subsystem: \beq H^{QM/MM} =
+H^{QM}_e-\sum_i^n\sum_J^M\frac{e^2Q_J}{4\pi\epsilon_0r_{iJ}}+\sum_A^N\sum_J^M\frac{e^2Z_AQ_J}{e\pi\epsilon_0R_{AJ}},
+\eeq where $n$ and $N$ are the number of electrons and nuclei in the
+QM region, respectively, and $M$ is the number of charged MM
+atoms. The first term on the right hand side is the original
+electronic Hamiltonian of an isolated QM system. The first of the
+double sums us the total electrostatic interaction between the QM
+electrons and the MM atoms. The total electrostatic interaction of the
+QM nuclei with the MM atoms is given by the second double sum. Bonded
+interactions between QM and MM atoms are described at the MM level by
+the appropriate forcefield terms. Chemical bonds that connect the two
+subsystems are capped by a hydrogen atom to complete the valence of
+the QM region. The force on this atom, which is present in the QM
+region only, is distributed over the two atoms of the bond. The cap
+atom is usually referred to as a link atom.
+
+\item{\textbf{ONIOM}} In the ONIOM approach, the energy and gradients
+are first evaluated for the isolated QM subsystem at the desired level
+of {\it{ab initio}} theory. Subsequently, the energy and gradients of
+the total system, including the QM region, are computed using the
+molecular mechanics forcefield and added to the energy and gradients
+calculated for the isolated QM subsystem. Finally in order to correct
+for counting the interactions inside the QM region twice, a molecular
+mechanics calculation is performed on the isolated QM subsystem and
+the energy and gradients are subtracted. This leads to the following
+expression for the total QM/MM energy (and gradients likewise): \beq
+E_{tot} = E_{I}^{QM}
++E_{I+II}^{MM}-E_{I}^{MM}, \eeq where the
+subscripts I and II refer to the QM and MM subsystems,
+respectively. The superscripts indicate at what level of theory the
+energies are computed. The ONIOM scheme has the advantage has the
+advantage that it is not restricted to a two layer QM/MM description,
+but can easily handle more than two layers, with each layer described
+at a different level of theory.
+\end{enumerate}
+
+\subsection{usage}
+
+To make use of the QM/MM functionality in Gromacs, one needs to:
+
+\begin{enumerate}
+\item introduce link atoms at the QM/MM boundary, if needed;
+\item specify which atoms are to be treated at a QM level;
+\item specify the QM level, basisset, type of QM/MM interface and so on. 
+\end{enumerate}
+
+\subsubsection{Adding link atoms}
+
+At the bond that connects the QM and MM subsystems a link atoms is
+introduced.  In Gromacs the link atom has special atomtype, called
+LA. This atomtype is treated as a hydrogen atom in the QM calculation,
+and as a dummy atom in the forcefield calculation. The link atoms, if
+any, are part of the system, but have no interaction with any other
+atom, except that the QM force working on it is distributed over the
+two atoms of the bond. In the topology the link atom (LA), therefore,
+is defined as a dummy atom:
+
+\begin{verbatim}
+[ dummies2 ]
+LA QMatom MMatom 1 0.65
+\end{verbatim}
+See the dummy atoms section for more details on how dummies are
+treated. The link atom is replaced at every step of the simulation.
+
+In addition, the bond itself is replaced by a constraint:
+\begin{verbatim}
+[ constraints ] 
+QMatom MMatom 2 0.153
+\end{verbatim}
+
+Note that, because in our system the QM/MM bond is a carbon-carbon
+bond (0.153 nm), we use a constraint length of 0.153 nm, and dummy
+position of 0.65. The latter is the ratio between the ideal C-H
+bondlength and the ideal C-C bond length. With this ratio, the link
+atom is always 0.1 nm away from the QMatom, consistent with the
+carbon-hydrogen bondlength. If the QM and MM subsystems are connected
+by a different kind of bond, a different constraint and a different
+dummy position, appropriate for that bond type, are required.
+
+\subsubsection{specifying the QM atoms}
+
+Atoms that should be treated at a QM level of theory, including the
+link atoms, are added to the index file. In addition, the chemical
+bonds between the atoms in the QM region are to be defined as
+connect bonds (bond type 5)in the topology file:
+\begin{verbatim}
+[ bonds ]
+QMatom1 QMatom2 5
+QMatom2 QMatom3 5
+\end{verbatim}
+
+\subsubsection{specifying the QM/MM simulation parameters}
+
+In the mdp file, the following parameters control a QM/MM simulation.
+
+\begin{description}
+
+\item[\tt QMMM = no]\mbox{}\\ If this is set to {\tt yes}, a QM/MM
+simulation is requested. Several groups of atoms can be described at
+different QM levels separately. These are specified in the QMMM-grps
+field separated by spaces. The level of {\it{ab initio}} theory at which the
+groups are described is speficied by {\tt QMmethod} and {\tt QMbasis}
+Fields. Describing the groups at different levels of theory is only
+possible with the ONIOM QM/MM scheme, specified by {\tt QMMMscheme}.
+
+\item[\tt QMMM-grps =]\mbox{}\\groups to be descibed at the QM level
+
+\item[\tt QMMMscheme = normal]\mbox{}\\Options are {\tt normal} and
+{\tt ONIOM}. This selects the QM/MM interface. {\tt normal} implies
+that the QM subsystem is electronically embedded in the MM
+subsystem. There can only be one {\tt QMMM-grps} that is modelled at
+the {\tt QMmethod} and {\tt QMbasis} level of {\it{ ab initio}}
+theory. The rest of the system is described at the MM level. The QM
+and MM subsystems interact as follows: MM point charges are included
+in the QM one-electron hamiltonian and all Lennard-Jones interactions
+are described at the MM level. If {\tt ONIOM} is selected, the
+interaction between the subsystem is described using the ONIOM method
+by Morokuma and co-workers. There can be more than one QMMM-grps each
+modelled at a different level of QM theory (QMmethod and QMbasis).
+
+\item[\tt QMmethod = ]\mbox{}\\Method used to compute the energy
+and gradients on the QM atoms. Available methods are AM1, PM3, RHF,
+UHF, DFT, B3LYP, MP2, CASSCF, MMVB and CPMD. For CASSCF, the number of
+electrons and orbitals included in the active space is specified by
+{\tt CASelectrons} and {\tt CASorbitals}. For CPMD, the planewave
+cut-off is specified by the {\tt planewavecutoff} keyword.
+
+\item[\tt QMbasis = ]\mbox{}\\Gaussian basisset used to expand the
+electronic wavefuntion. Only gaussian bassisets are currently
+available, i.e. STO-3G, 3-21G, 3-21G*, 3-21+G*, 6-21G, 6-31G, 6-31G*,
+6-31+G*, and 6-311G. For CPMD, whcih uses plane wave expansion rather
+than atom-centered basisfunctions, the {\tt planewavecutoff} keyword
+controls the plane wave expansion.
+
+\item[\tt QMcharge = ]\mbox{}\\The total charge in {\it{e}} of the {\tt
+QMMM-grps}. In case there are more than one {\tt QMMM-grps}, the total
+charge of each ONIOM layer needs to be specified separately.
+
+\item[\tt QMmult = ]\mbox{}\\The multiplicity of the {\tt
+QMMM-grps}. In case there are more than one {\tt QMMM-grps}, the
+multiplicity of each ONIOM layer needs to be specified separately.
+
+\item[\tt CASorbitals = ]\mbox{}\\The number of orbitals to be
+included in the active space when doing a CASSCF computation.
+
+\item[\tt CASelectrons = ]\mbox{}\\The number of electrons to be
+included in the active space when doing a CASSCF computation.
+
+\item[\tt SH = no]\mbox{}\\If this is set to yes, a QM/MM MD
+simulation on the excited state-potential energy surface and enforce a
+diabatic hop to the ground-state when the system hits the conical
+intersection hyperline in the course the simulation. This option only
+works in combination with the CASSCF method.
+
+\subsection{Output}
+
+The energies and gradients computed in the QM calculation are added to
+those computed by gromacs. In the {\tt .edr} file there is a section
+for the total QM energy.
+
+\subsection{Future developments}
+
+Several features are currently under development that increase the
+accuracy of the QM/MM interface. One useful feature is the use of
+delocalized MM charges in the QM computations. The most important
+benefit of using such smeared-out charges is that the coulombic
+potential has a finite value at inter atomic distances. In the point
+charge representation, the partially charged MM atoms close to the QM
+region, tend to 'overpolarize' the QM system, which leads to artefacts
+in the calculation.
+
+What is needed as well is a transition state optimizer.
 
 
