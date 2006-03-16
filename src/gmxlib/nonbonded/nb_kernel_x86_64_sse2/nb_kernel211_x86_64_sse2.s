@@ -206,7 +206,7 @@ _nb_kernel211_x86_64_sse2.nb211_spinlock:
         movl  %eax,%ebx                         ## ebx=*count=nn0
         addl  $1,%ebx                          ## ebx=nn1=nn0+10
         lock 
-        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+        cmpxchgl %ebx,(%rsi)                    ## write nn1 to *counter,
                                                 ## if it hasnt changed.
                                                 ## or reread *counter to eax.
         pause                                   ## -> better p4 performance
@@ -1289,7 +1289,7 @@ _nb_kernel211nf_x86_64_sse2.nb211nf_spinlock:
         movl  %eax,%ebx                         ## ebx=*count=nn0
         addl  $1,%ebx                           ## ebx=nn1=nn0+10
         lock 
-        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+        cmpxchgl %ebx,(%rsi)                    ## write nn1 to *counter,
                                                 ## if it hasnt changed.
                                                 ## or reread *counter to eax.
         pause                                   ## -> better p4 performance
