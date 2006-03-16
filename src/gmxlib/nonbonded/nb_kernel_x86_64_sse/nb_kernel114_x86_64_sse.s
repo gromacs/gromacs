@@ -276,7 +276,7 @@ _nb_kernel114_x86_64_sse.nb114_spinlock:
         movl  %eax,%ebx                         ## ebx=*count=nn0
         addq  $1,%rbx                          ## rbx=nn1=nn0+10
         lock 
-        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+        cmpxchgl %ebx,(%rsi)                    ## write nn1 to *counter,
                                                 ## if it hasnt changed.
                                                 ## or reread *counter to eax.
         pause                                   ## -> better p4 performance
@@ -1963,7 +1963,7 @@ _nb_kernel114nf_x86_64_sse.nb114nf_spinlock:
         movl  %eax,%ebx                         ## ebx=*count=nn0
         addq  $1,%rbx                          ## rbx=nn1=nn0+10
         lock 
-        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+        cmpxchgl %ebx,(%rsi)                    ## write nn1 to *counter,
                                                 ## if it hasnt changed.
                                                 ## or reread *counter to eax.
         pause                                   ## -> better p4 performance

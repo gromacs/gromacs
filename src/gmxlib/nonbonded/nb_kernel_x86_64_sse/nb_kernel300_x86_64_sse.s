@@ -147,7 +147,7 @@ _nb_kernel300_x86_64_sse.nb300_spinlock:
         movl  %eax,%ebx                         ## ebx=*count=nn0
         addl  $1,%ebx                          ## ebx=nn1=nn0+10
         lock 
-        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+        cmpxchgl %ebx,(%rsi)                    ## write nn1 to *counter,
                                                 ## if it hasnt changed.
                                                 ## or reread *counter to eax.
         pause                                   ## -> better p4 performance
@@ -931,7 +931,7 @@ _nb_kernel300nf_x86_64_sse.nb300nf_spinlock:
         movl  %eax,%ebx                         ## ebx=*count=nn0
         addl  $1,%ebx                          ## ebx=nn1=nn0+10
         lock 
-        cmpxchgl %ebx,(%esi)                    ## write nn1 to *counter,
+        cmpxchgl %ebx,(%rsi)                    ## write nn1 to *counter,
                                                 ## if it hasnt changed.
                                                 ## or reread *counter to eax.
         pause                                   ## -> better p4 performance
