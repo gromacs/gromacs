@@ -55,6 +55,7 @@ matio.h \
 mdatoms.h \
 mdebin.h \
 mdrun.h \
+mpelogging.h \
 mshift.h \
 mtxio.h \
 mvdata.h \
