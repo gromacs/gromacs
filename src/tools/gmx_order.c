@@ -85,7 +85,7 @@ static void find_nearest_neighbours(t_topology top,int natoms, matrix box,
   int    **nnb;
   real   onethird=1.0/3.0;
   
-  //  dmat = init_mat(maxidx, FALSE);
+  /*  dmat = init_mat(maxidx, FALSE); */
 
   box2 = box[XX][XX] * box[XX][XX];
   
@@ -121,7 +121,7 @@ static void find_nearest_neighbours(t_topology top,int natoms, matrix box,
       pbc_dx(&pbc,x[ix],x[jx],dx);
       r2=iprod(dx,dx);
 
-      //      set_mat_entry(dmat,i,j,r2);
+      /* set_mat_entry(dmat,i,j,r2); */
 
       /* determine the nearest neighbours */
       if (r2 < r_nn[0][i]) {
@@ -167,14 +167,14 @@ static void find_nearest_neighbours(t_topology top,int natoms, matrix box,
 	cost = iprod(urk,urj) + onethird;
 	cost2 = cost * cost;
 
-	//	sgmol[i] += 3*cost2/32; 
-	sgmol[i] += cost2; 
+	/* sgmol[i] += 3*cost2/32; 
+	   sgmol[i] += cost2; */
 
 	/* determine distribution */
 	ibin = nsgbin * cost2;
 	if (ibin < nsgbin)
 	  sgbin[ibin]++;
-	// printf("%d %d %f %d %d\n", j, k, cost * cost, ibin, sgbin[ibin]);
+	/* printf("%d %d %f %d %d\n", j, k, cost * cost, ibin, sgbin[ibin]);*/
 	l++;
 	n++;
       }
@@ -188,8 +188,9 @@ static void find_nearest_neighbours(t_topology top,int natoms, matrix box,
     rmean2 = 4 * 3 * rmean * rmean;
     for (j=0; (j<4); j++) {
       skmol[i] += (rmean - r_nn[j][i]) * (rmean - r_nn[j][i]) / rmean2;
-      //      printf("%d %f (%f %f %f %f) \n",
-      //     i, skmol[i], rmean, rmean2, r_nn[j][i], (rmean - r_nn[j][i]) );
+      /*      printf("%d %f (%f %f %f %f) \n",
+	      i, skmol[i], rmean, rmean2, r_nn[j][i], (rmean - r_nn[j][i]) );
+      */
     }
     
     *skmean += skmol[i];
@@ -261,8 +262,6 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
 
   fclose(fpsg);
   fclose(fpsk);
-
-  exit(0);
 }
 
 
@@ -586,19 +585,21 @@ int gmx_order(int argc,char *argv[])
   /* tetraheder order parameter */
   if (skfnm || sgfnm) {
     calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm);
-    return 0;
+    /* view xvgr files */
+    do_view(opt2fn("-Sg",NFILE,fnm), NULL);
+    do_view(opt2fn("-Sk",NFILE,fnm), NULL);
   } 
-  
-  /* tail order parameter */
-  /* Calculate axis */
-  if (strcmp(normal_axis[0],"x") == 0) axis = XX;
-  else if (strcmp(normal_axis[0],"y") == 0) axis = YY;
-  else if (strcmp(normal_axis[0],"z") == 0) axis = ZZ;
-  else gmx_fatal(FARGS,"Invalid axis, use x, y or z");
-  
-  switch (axis) {
-  case 0:
-    fprintf(stderr,"Taking x axis as normal to the membrane\n");
+  else {  
+    /* tail order parameter */
+    /* Calculate axis */
+    if (strcmp(normal_axis[0],"x") == 0) axis = XX;
+    else if (strcmp(normal_axis[0],"y") == 0) axis = YY;
+    else if (strcmp(normal_axis[0],"z") == 0) axis = ZZ;
+    else gmx_fatal(FARGS,"Invalid axis, use x, y or z");
+    
+    switch (axis) {
+    case 0:
+      fprintf(stderr,"Taking x axis as normal to the membrane\n");
       break;
     case 1:
       fprintf(stderr,"Taking y axis as normal to the membrane\n");
@@ -638,7 +639,9 @@ int gmx_order(int argc,char *argv[])
     do_view(opt2fn("-o",NFILE,fnm), NULL);      /* view xvgr file */
     do_view(opt2fn("-os",NFILE,fnm), NULL);     /* view xvgr file */
     do_view(opt2fn("-od",NFILE,fnm), NULL);     /* view xvgr file */
-    
-    thanx(stderr);
+  }
+  
+  thanx(stderr);
+  
   return 0;
 }
