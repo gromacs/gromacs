@@ -107,7 +107,7 @@ int gmx_angle(int argc,char *argv[])
     "input for a PCA analysis using [TT]g_covar[tt]."
   };
   static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
-  static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE;
+  static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=FALSE;
   static real binwidth=1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},
@@ -116,6 +116,8 @@ int gmx_angle(int argc,char *argv[])
       "Plot all angles separately in the averages file, in the order of appearance in the index file." },
     { "-binwidth", FALSE, etREAL, {&binwidth},
       "binwidth (degrees) for calculating the distribution" },
+    { "-periodic", FALSE, etBOOL, {&bPBC},
+      "Print dihedral angles modulo 360 degrees" },
     { "-chandler", FALSE,  etBOOL, {&bChandler},
       "Use Chandler correlation function (N[trans] = 1, N[gauche] = 0) rather than cosine correlation function. Trans is defined as phi < -60 || phi > 60." },
     { "-avercorr", FALSE,  etBOOL, {&bAverCorr},
@@ -246,7 +248,12 @@ int gmx_angle(int argc,char *argv[])
       fprintf(out,"%10.5f  %8.3f",time[i],aver_angle[i]*RAD2DEG);
       if (bALL)
 	for(j=0; (j<nangles); j++)
-	  fprintf(out,"  %8.3f",dih[j][i]*RAD2DEG);
+	  if (bPBC) {
+	    real dd = dih[j][i];
+	    fprintf(out,"  %8.3f",atan2(cos(dd),sin(dd))*RAD2DEG);
+	  }
+	  else
+	    fprintf(out,"  %8.3f",dih[j][i]*RAD2DEG);
       fprintf(out,"\n");
     }	
     fclose(out);
