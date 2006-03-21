@@ -307,6 +307,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(warn_buf,"Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
     warning(NULL);
   }
+
+  /* FREE ENERGY */
+  if (ir->efep != efepNO) {
+    sprintf(err_buf,"The soft-core power is %d and can only be 1 or 2",
+	    ir->sc_power);
+    CHECK(ir->sc_alpha!=0 && ir->sc_power!=1 && ir->sc_power!=2);
+  }
 }
 
 static int str_nelem(char *str,int maxptr,char *ptr[])
@@ -603,7 +610,7 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("init-lambda",	ir->init_lambda,0.0);
   RTYPE ("delta-lambda",ir->delta_lambda,0.0);
   RTYPE ("sc-alpha",ir->sc_alpha,0.0);
-  ITYPE ("sc-power",ir->sc_power,1);
+  ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
 
   /* Non-equilibrium MD stuff */  
