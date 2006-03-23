@@ -801,7 +801,7 @@ t_complex *** rc_tensor_allocation(int x, int y, int z)
   for( j = 1 ; j < y ; j++) 
     t[0][j] = t[0][j-1] + z;
   for( i = 1 ; i < x ; i++) {
-    t[i] = t[i-1] + y;;
+    t[i] = t[i-1] + y;
     t[i][0] = t[i-1][0] + y*z;
     for( j = 1 ; j < y ; j++) 
       t[i][j] = t[i][j-1] + z;
