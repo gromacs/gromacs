@@ -748,11 +748,14 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
   if (fnm != NULL) {
     grps=init_index(fnm,gnames);
   }
-  else {
+  else if (atoms) {
     snew(grps,1);
     snew(grps->index,1);
     analyse(atoms,grps,gnames,FALSE,FALSE);
-  } 
+  }
+  else 
+    gmx_incons("You need to supply a valid atoms structure or a valid index file name");
+  
   rd_groups(grps,*gnames,grpnames,ngrps,isize,index,grpnr);
 }
 
