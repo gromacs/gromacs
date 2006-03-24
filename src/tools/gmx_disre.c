@@ -131,7 +131,7 @@ static void print5(FILE *fp)
   fprintf(fp,"\n");
 }
 
-static void check_viol(FILE *log,t_commrec *mcr,
+static void check_viol(FILE *log,t_commrec *cr,
 		       t_ilist *disres,t_iparams forceparams[],
 		       t_functype functype[],rvec x[],rvec f[],
 		       t_forcerec *fr,t_pbc *pbc,t_graph *g,t_dr_result dr[],
@@ -170,7 +170,7 @@ static void check_viol(FILE *log,t_commrec *mcr,
     } while (((i+n) < disres->nr) && 
 	     (forceparams[forceatoms[i+n]].disres.label == label));
     
-    calc_disres_R_6(mcr,n,&forceatoms[i],forceparams,
+    calc_disres_R_6(cr->ms,n,&forceatoms[i],forceparams,
 		    (const rvec*)x,pbc,fcd);
 
     if (fcd->disres.Rt_6[0] <= 0) 
@@ -594,8 +594,9 @@ int gmx_disre(int argc,char *argv[])
 	 atoms->nr*sizeof(atoms->atomname[0]));
   memcpy(atoms->resname,top.atoms.resname,
 	 atoms->nres*sizeof(atoms->resname[0]));
-  mdatoms = atoms2md(stdlog,&top.atoms,ir.opts.nFreeze,
-		     eiMD,0,0,NULL,FALSE,FALSE);  
+  snew(mdatoms,1);
+  atoms2md(stdlog,NULL,&top.atoms,ir.opts.nFreeze,
+	   eiMD,0,0,NULL,FALSE,0,NULL,mdatoms,TRUE);  
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec\n");
   calc_nsb(stdlog,&(top.blocks[ebCGS]),1,0,nsb,0);

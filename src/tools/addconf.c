@@ -237,7 +237,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 
     /* mdatoms structure */
     snew(nFreeze,2);
-    md = atoms2md(debug,atoms,nFreeze,eiMD,0,0,NULL,FALSE,FALSE);
+    snew(md,1);
+    atoms2md(debug,NULL,atoms,nFreeze,eiMD,0,0,NULL,FALSE,0,NULL,md,TRUE);
     sfree(nFreeze);
 
     /* nsborder struct */
