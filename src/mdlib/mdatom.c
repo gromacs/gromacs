@@ -45,49 +45,64 @@
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
-		    int eI,real delta_t,real fric,real tau_t[],
-		    bool bPert,bool bFree)
+void atoms2md(FILE *fp,t_commrec *cr,
+	      t_atoms *atoms,ivec nFreeze[],
+	      int eI,real delta_t,real fric,real tau_t[],
+	      bool bPert,int nindex,int *index,
+	      t_mdatoms *md,bool bFirst)
 {
   int       i,g;
   real      fac;
-  double    tm;
-  t_mdatoms *md;
-  
-  snew(md,1);
-  md->nr = atoms->nr;
-  snew(md->massA,md->nr);
-  snew(md->massB,md->nr);
-  snew(md->massT,md->nr);
-  snew(md->invmass,md->nr);
-  snew(md->chargeA,md->nr);
-  snew(md->chargeB,md->nr);
-  snew(md->resnr,md->nr);
-  snew(md->typeA,md->nr);
-  snew(md->typeB,md->nr);
-  snew(md->ptype,md->nr);
-  snew(md->cTC,md->nr);
-  snew(md->cENER,md->nr);
-  snew(md->cACC,md->nr);
-  snew(md->cFREEZE,md->nr);
-  snew(md->cXTC,md->nr);
-  snew(md->cVCM,md->nr);
-  snew(md->cORF,md->nr);
-  snew(md->bPerturbed,md->nr);
+  double    tm[2];
+  t_atom    *atom;
 
-  snew(md->cU1,md->nr);
-  snew(md->cU2,md->nr);
-  
-  /* QMMM additions */
-  snew(md->cQMMM,md->nr);
-  snew(md->atomnumber,md->nr);
-  snew(md->bQM,md->nr);
+  if (index == NULL) {
+    md->nr = atoms->nr;
+  } else {
+    md->nr = nindex;
+  }
+  if (md->nr > md->nalloc) {
+    md->nalloc = over_alloc(md->nr);
+
+    srenew(md->massA,md->nalloc);
+    srenew(md->massB,md->nalloc);
+    srenew(md->massT,md->nalloc);
+    srenew(md->invmass,md->nalloc);
+    srenew(md->chargeA,md->nalloc);
+    srenew(md->chargeB,md->nalloc);
+    srenew(md->resnr,md->nalloc);
+    srenew(md->typeA,md->nalloc);
+    srenew(md->typeB,md->nalloc);
+    srenew(md->ptype,md->nalloc);
+    srenew(md->cTC,md->nalloc);
+    srenew(md->cENER,md->nalloc);
+    srenew(md->cACC,md->nalloc);
+    srenew(md->cFREEZE,md->nalloc);
+    srenew(md->cXTC,md->nalloc);
+    srenew(md->cVCM,md->nalloc);
+    srenew(md->cORF,md->nalloc);
+    srenew(md->bPerturbed,md->nalloc);
+    
+    srenew(md->cU1,md->nalloc);
+    srenew(md->cU2,md->nalloc);
+
+    /* QMMM additions */
+    srenew(md->cQMMM,md->nalloc);
+    srenew(md->atomnumber,md->nalloc);
+    srenew(md->bQM,md->nalloc);
+  }
 
   md->nPerturbed=0;
   md->bMassPerturbed=FALSE;
   md->bChargePerturbed=FALSE;
-  tm=0.0;
+  tm[0] = 0.0;
+  tm[1] = 0.0;
   for(i=0; (i<md->nr); i++) {
+    if (index == NULL)
+      atom = &atoms->atom[i];
+    else
+      atom = &atoms->atom[index[i]];
+
     if (EI_ENERGY_MINIMIZATION(eI)) {
       md->massA[i]	= 1.0;
       md->massB[i]	= 1.0;
@@ -99,30 +114,33 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
 	md->massA[i]	= fric*delta_t;
 	md->massB[i]	= fric*delta_t;
       } else {
-	fac = delta_t/tau_t[atoms->atom[i].grpnr[egcTC]];
-	md->massA[i]	= atoms->atom[i].m*fac;
-	md->massB[i]	= atoms->atom[i].mB*fac;
+	fac = delta_t/tau_t[atom->grpnr[egcTC]];
+	md->massA[i]	= atom->m*fac;
+	md->massB[i]	= atom->mB*fac;
       }
     } else {
-      md->massA[i]	= atoms->atom[i].m;
-      md->massB[i]	= atoms->atom[i].mB;
+      md->massA[i]	= atom->m;
+      md->massB[i]	= atom->mB;
     }
     md->massT[i]	= md->massA[i];
-    md->chargeA[i]	= atoms->atom[i].q;
-    md->chargeB[i]	= atoms->atom[i].qB;
-    md->resnr[i]	= atoms->atom[i].resnr;
-    md->typeA[i]	= atoms->atom[i].type;
-    md->typeB[i]	= atoms->atom[i].typeB;
-    md->ptype[i]	= atoms->atom[i].ptype;
-    md->cTC[i]		= atoms->atom[i].grpnr[egcTC];
-    md->cENER[i]	= atoms->atom[i].grpnr[egcENER];
-    md->cACC[i]		= atoms->atom[i].grpnr[egcACC];
-    md->cFREEZE[i]	= atoms->atom[i].grpnr[egcFREEZE];
-    md->cXTC[i]      	= atoms->atom[i].grpnr[egcXTC];
-    md->cVCM[i]      	= atoms->atom[i].grpnr[egcVCM];
-    md->cORF[i]      	= atoms->atom[i].grpnr[egcORFIT];
+    md->chargeA[i]	= atom->q;
+    md->chargeB[i]	= atom->qB;
+    md->resnr[i]	= atom->resnr;
+    md->typeA[i]	= atom->type;
+    md->typeB[i]	= atom->typeB;
+    md->ptype[i]	= atom->ptype;
+    md->cTC[i]		= atom->grpnr[egcTC];
+    md->cENER[i]	= atom->grpnr[egcENER];
+    md->cACC[i]		= atom->grpnr[egcACC];
+    md->cFREEZE[i]	= atom->grpnr[egcFREEZE];
+    md->cXTC[i]      	= atom->grpnr[egcXTC];
+    md->cVCM[i]      	= atom->grpnr[egcVCM];
+    md->cORF[i]      	= atom->grpnr[egcORFIT];
     if (md->massA[i] != 0.0) {
-      tm               += md->massT[i];
+      if (bFirst) {
+	tm[0]          += md->massA[i];
+	tm[1]          += md->massB[i];
+      }
       g = md->cFREEZE[i];
       if (nFreeze[g][XX] && nFreeze[g][YY] && nFreeze[g][ZZ])
 	/* Set the mass of completely frozen particles to ALMOST_ZERO iso 0
@@ -138,33 +156,34 @@ t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
       md->bPerturbed[i] = PERTURBED(atoms->atom[i]);
       if (md->bPerturbed[i]) {
 	md->nPerturbed++;
-	if (atoms->atom[i].mB != atoms->atom[i].m)
+	if (atom->mB != atom->m)
 	  md->bMassPerturbed = TRUE;
-	if (atoms->atom[i].qB != atoms->atom[i].q)
+	if (atom->qB != atom->q)
 	  md->bChargePerturbed = TRUE;
       }
     }
 
-    md->cU1[i]      	= atoms->atom[i].grpnr[egcUser1];
-    md->cU2[i]      	= atoms->atom[i].grpnr[egcUser2];
-    md->cQMMM[i]        = atoms->atom[i].grpnr[egcQMMM];
+    md->cU1[i]      	= atom->grpnr[egcUser1];
+    md->cU2[i]      	= atom->grpnr[egcUser2];
+    md->cQMMM[i]        = atom->grpnr[egcQMMM];
     if ((md->cQMMM[i])<(atoms->grps[egcQMMM].nr-1)){
       md->bQM[i]          = TRUE;
     } else {
       md->bQM[i] = FALSE;
     }
   }
-  md->tmass  = tm;
+  if (bFirst) {
+    if (cr && DOMAINDECOMP(cr)) {
+      gmx_sumd(2,tm,cr);
+    }
+    md->tmassA = tm[0];
+    md->tmassB = tm[1];
 
-  if (bFree)   
-    free_t_atoms(atoms);
-  
-  if (bPert && fp)
-    fprintf(fp,"There are %d atoms for free energy perturbation\n",
-	    md->nPerturbed);
-  
-  return md;
-}    
+    if (bPert && fp)
+      fprintf(fp,"There are %d atoms for free energy perturbation\n",
+	      md->nPerturbed);
+  }
+}
 
 void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
 {
@@ -221,12 +240,15 @@ void update_mdatoms(t_mdatoms *md,real lambda, bool bFirst)
   
   end=md->nr;
 
-  for(i=0; (i<end); i++) {
-    if (md->bPerturbed[i] || bFirst) {
-      md->massT[i]=L1*md->massA[i]+lambda*md->massB[i];
-      if (md->invmass[i] > 1.1*ALMOST_ZERO)
-	md->invmass[i]=1.0/md->massT[i];
+  if (md->bMassPerturbed || bFirst) {
+    for(i=0; (i<end); i++) {
+      if (md->bPerturbed[i]) {
+	md->massT[i] = L1*md->massA[i] + lambda*md->massB[i];
+	if (md->invmass[i] > 1.1*ALMOST_ZERO)
+	  md->invmass[i] = 1.0/md->massT[i];
+      }
     }
+    md->tmass = L1*md->tmassA + lambda*md->tmassB;
   }
 }
 

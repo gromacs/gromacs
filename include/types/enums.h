@@ -40,7 +40,7 @@
 /* note: these enums should correspond to the names in gmxlib/names.c */
 
 enum {
-  ebCGS,ebMOLS,ebSBLOCKS,ebNR
+  ebCGS,ebMOLS,ebSBLOCKS,ebEXCLS,ebNR
 };
 
 enum {

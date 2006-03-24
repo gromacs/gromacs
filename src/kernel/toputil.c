@@ -163,6 +163,7 @@ void init_molinfo(t_molinfo *mol)
   init_plist(mol->plist);
   init_block(&mol->cgs);
   init_block(&mol->mols);
+  init_block(&mol->excls);
   init_atom(&mol->atoms);
 }
 

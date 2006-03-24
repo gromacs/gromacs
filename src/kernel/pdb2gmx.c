@@ -423,7 +423,6 @@ static void sort_pdbatoms(int nrtp,t_restp restp[],
   sfree(pdba->atomname);
   sfree(pdba->atom);
   sfree(pdba->pdbinfo);
-  done_block(&pdba->excl);
   sfree(pdba);
   sfree(*x);
   /* copy the sorted pdbnew back to pdba */

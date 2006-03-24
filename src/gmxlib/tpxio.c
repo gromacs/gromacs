@@ -1013,8 +1013,6 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab, int file_versio
   do_strstr(atoms->ngrpname,atoms->grpname,bRead,symtab);
   
   do_grps(egcNR,atoms->grps,bRead,file_version);
-  
-  do_block(&(atoms->excl),bRead);
 }
 
 static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
@@ -1120,7 +1118,10 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   do_atoms (&(top->atoms),bRead,&(top->symtab), file_version);
   if (bRead && debug) 
     pr_atoms(debug,0,"atoms",&top->atoms,TRUE);
-    
+
+  /* This used to be in the atoms struct */
+  do_block(&(top->blocks[ebEXCLS]),bRead);
+
   do_atomtypes (&(top->atomtypes),bRead,&(top->symtab), file_version);
   if (bRead && debug) 
     pr_atomtypes(debug,0,"atomtypes",&top->atomtypes,TRUE);
@@ -1129,9 +1130,11 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   do_idef  (&(top->idef),bRead,file_version);
     
   for(i=0; (i<ebNR); i++) {
-    do_block(&(top->blocks[i]),bRead);
-    if (bRead && debug)
-      pr_block(debug,0,EBLOCKS(i),&(top->blocks[i]),TRUE);
+    if (i != ebEXCLS) {
+      do_block(&(top->blocks[i]),bRead);
+      if (bRead && debug)
+	pr_block(debug,0,EBLOCKS(i),&(top->blocks[i]),TRUE);
+    }
   }
   if (bRead) {
     close_symtab(&(top->symtab));

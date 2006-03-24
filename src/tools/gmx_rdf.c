@@ -190,7 +190,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     mk_single_top(&top);
     if (bTop && !bCM)
       /* get exclusions from topology */
-      excl=&(top.atoms.excl);
+      excl=&(top.blocks[ebEXCLS]);
   }
   snew(grpname,ng+1);
   snew(isize,ng+1);

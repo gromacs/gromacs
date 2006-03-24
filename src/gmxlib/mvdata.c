@@ -125,7 +125,6 @@ static void ld_atoms(const t_commrec *cr,int src,t_symtab *symtab,t_atoms *atoms
   /* QMMM requires atomtypes to be known on all nodes as well */
   dummy = ld_strings(cr,src,symtab,&atoms->atomtype);
   ld_grps(cr,src,atoms->grps);
-  ld_block(cr,src,&atoms->excl);
 }
 
 void ld_state(const t_commrec *cr,int src,t_state *state)
@@ -399,7 +398,6 @@ static void mv_atoms(const t_commrec *cr,int dest,t_symtab *symtab,t_atoms *atom
   mv_strings(cr,dest,symtab,atoms->nr,atoms->atomtype);
 
   mv_grps(cr,dest,atoms->grps);
-  mv_block(cr,dest,&atoms->excl);
 }
 
 void mv_state(const t_commrec *cr,int dest,t_state *state)

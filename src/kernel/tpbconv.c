@@ -214,7 +214,6 @@ static void reduce_topology_x(int gnx,atom_id index[],
   
   for(i=0; (i<ebNR); i++)
     reduce_block(invindex,bKeep,&(top->blocks[i]),eblock_names[i],FALSE);
-  reduce_block(invindex,bKeep,&(top->atoms.excl),"EXCL",TRUE);
   reduce_rvec(gnx,index,x);
   reduce_rvec(gnx,index,v);
   reduce_atom(gnx,index,top->atoms.atom,top->atoms.atomname,

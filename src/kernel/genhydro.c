@@ -494,7 +494,6 @@ int add_h(t_atoms **pdbaptr, rvec *xptr[],
       sfree(pdba->atomname);
       sfree(pdba->atom);
       sfree(pdba->pdbinfo);
-      done_block(&(pdba->excl));
       sfree(pdba);
     }
     *pdbaptr=newpdba;

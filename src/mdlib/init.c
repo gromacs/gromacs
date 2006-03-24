@@ -111,10 +111,11 @@ void init_single(FILE *log,t_inputrec *inputrec,
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
   check_nnodes_top(tpxfile,top);
 
-  *mdatoms=atoms2md(log,&top->atoms,inputrec->opts.nFreeze,
-		    inputrec->eI,inputrec->delta_t,
-		    inputrec->bd_fric,inputrec->opts.tau_t,
-		    inputrec->efep!=efepNO,FALSE);
+  snew(*mdatoms,1);
+  atoms2md(log,NULL,&top->atoms,inputrec->opts.nFreeze,
+	   inputrec->eI,inputrec->delta_t,
+	   inputrec->bd_fric,inputrec->opts.tau_t,
+	   inputrec->efep!=efepNO,0,NULL,*mdatoms,TRUE);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
   calc_nsb(log,&(top->blocks[ebCGS]),1,0,nsb,0);
@@ -173,10 +174,11 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       pr_top(log,0,int_title("topology",cr->nodeid,buf,255),top,TRUE);
     fflush(log);
   }
-  *mdatoms=atoms2md(log,&(top->atoms),inputrec->opts.nFreeze,
-		    inputrec->eI,inputrec->delta_t,
-		    inputrec->bd_fric,inputrec->opts.tau_t,
-		    inputrec->efep!=efepNO,FALSE);
+  snew(*mdatoms,1);
+  atoms2md(log,cr,&(top->atoms),inputrec->opts.nFreeze,
+	   inputrec->eI,inputrec->delta_t,
+	   inputrec->bd_fric,inputrec->opts.tau_t,
+	   inputrec->efep!=efepNO,0,NULL,*mdatoms,TRUE);
 }
 
 

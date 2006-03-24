@@ -165,6 +165,7 @@ typedef struct
   int nr;
   int multinr[MAXNODES];
   t_iatom *iatoms;
+  int nalloc;
 } t_ilist;
 
 /*

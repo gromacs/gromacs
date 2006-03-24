@@ -496,7 +496,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     set_over_alloc(TRUE);
 
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,cgs->index[cgs->nr],
-				       top_global->atoms.nr,state_global->box);
+				       top_global->atoms.nr,state_global->box,
+				       &top_global->idef);
 
     if (DDMASTER(cr->dd)) {
       snew(state,1);
@@ -515,10 +516,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     setup_dd_grid(stdlog,state->box,cr->dd);
 
     snew(top,1);
-    
-    dd_partition_system(stdlog,cr->dd,state_global,top_global,
-			state,buf,top,nsb,fr,
-			nrnb);
+    top->idef = top_global->idef;
+    for(i=0; i<F_NRE; i++) {
+      top->idef.il[i].iatoms = NULL;
+      top->idef.il[i].nalloc = 0;
+    }
+    fr->solvent_type_global = fr->solvent_type;
+    fr->solvent_type        = NULL;
+
+    dd_partition_system(stdlog,cr->dd,TRUE,state_global,top_global,inputrec,
+			state,buf,mdatoms,top,nsb,fr,nrnb);
   } else {
     top = top_global;
     state = state_global;
@@ -565,9 +572,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     repl_ex = init_replica_exchange(log,cr->ms,state_global,inputrec,
 				    repl_ex_nst,repl_ex_seed);
   
-  if (!inputrec->bUncStart && !bRerunMD) 
+  if (!inputrec->bUncStart && !bRerunMD) {
     do_shakefirst(log,ener,inputrec,nsb,mdatoms,state,vold,buf,f,
 		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
+    if (DOMAINDECOMP(cr))
+      dd_move_x(cr->dd,state->x,buf);
+  }
   debug_gmx();
 
   /* Compute initial EKin for all.. */
@@ -699,9 +709,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (DOMAINDECOMP(cr) && 
 	(step % inputrec->nstlist == 0) && !bFirstStep) {
       /* Repartition the domain decomposition */
-      dd_repartition_system(stdlog,cr->dd,top_global,mdatoms,inputrec,
-			    state,buf,top,nsb,fr,
-			    nrnb);
+      dd_partition_system(stdlog,cr->dd,FALSE,NULL,top_global,inputrec,
+			  state,buf,mdatoms,top,nsb,fr,nrnb);
     }
 
     if (bSimAnn) 
@@ -1102,7 +1111,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Calculate long range corrections to pressure and energy */
     if (bTCR || bFFscan)
-      set_avcsixtwelve(log,fr,mdatoms,&top->atoms.excl);
+      set_avcsixtwelve(log,fr,mdatoms,&top->blocks[ebEXCLS]);
       
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,inputrec,fr,step,mdatoms->nr,lastbox,state->lambda,

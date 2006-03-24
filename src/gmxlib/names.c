@@ -44,7 +44,7 @@
 
 const char *eblock_names[ebNR+1]=
 {
-  "CGS","MOLS","SBLOCKS",NULL
+  "CGS","MOLS","SBLOCKS","EXCLS",NULL
 };
 
 const char *epbc_names[epbcNR+1]=

@@ -92,7 +92,6 @@ typedef struct {
 				/* use: (*(resname[i]))	       	*/
   int           ngrpname;        /* Number of groupnames                 */
   char          ***grpname;	/* Names of the groups		        */
-  t_block	excl;		/* Exclusions		       	*/
   t_grps        grps[egcNR];    /* Groups of things                     */
   t_pdbinfo     *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;

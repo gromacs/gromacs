@@ -941,7 +941,6 @@ void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms,
       pr_strings2(fp,indent,"type",atoms->atomtype,atoms->atomtypeB,atoms->nr,bShownumbers);
       pr_strings(fp,indent,"residue",atoms->resname,atoms->nres,bShownumbers);
       pr_strings(fp,indent,"grpname",atoms->grpname,atoms->ngrpname,bShownumbers);
-      pr_block(fp,indent,"excl",&atoms->excl,bShownumbers);
     }
 }
 

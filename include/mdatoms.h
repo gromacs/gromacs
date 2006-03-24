@@ -43,11 +43,14 @@
 
 #include "typedefs.h"
 
-extern t_mdatoms *atoms2md(FILE *fp,t_atoms *atoms,ivec nFreeze[],
-			   int eI,real delta_t,real fric,real tau_t[],
-			   bool bPert,bool bFree);
-/* This routine copies the atoms->atom struct into a t_mdatoms struct
- * and then frees the atoms->atom struct if bFree is set.
+extern void atoms2md(FILE *fp,t_commrec *cr,
+		     t_atoms *atoms,ivec nFreeze[],
+		     int eI,real delta_t,real fric,real tau_t[],
+		     bool bPert,
+		     int nindex,int *index,
+		     t_mdatoms *md,bool bFirst);
+/* This routine copies the atoms->atom struct into md.
+ * If index!=NULL only the indexed atoms are copied.
  */
 
 extern void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree);

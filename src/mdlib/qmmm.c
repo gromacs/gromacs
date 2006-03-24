@@ -242,7 +242,7 @@ void update_QMMM_coord(rvec x[],t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
   }
 } /* update_QMMM_coord */
 
-void punch_QMMM_excl(t_QMrec *qm,t_MMrec *mm,t_atoms *atoms)
+void punch_QMMM_excl(t_QMrec *qm,t_MMrec *mm,t_block *excls)
 {
   /* punch a file containing the bonded interactions of each QM
    * atom with MM atoms. These need to be excluded in the QM routines
@@ -260,11 +260,11 @@ void punch_QMMM_excl(t_QMrec *qm,t_MMrec *mm,t_atoms *atoms)
    */
   for(i=0;i<qm->nrQMatoms;i++){
     nrexcl = 0;
-    for(j=atoms->excl.index[qm->indexQM[i]];
-	j<atoms->excl.index[qm->indexQM[i]+1];
+    for(j=excls->index[qm->indexQM[i]];
+	j<excls->index[qm->indexQM[i]+1];
 	j++){
       for(k=0;k<mm->nrMMatoms;k++){
-	if(mm->indexMM[k]==atoms->excl.a[j]){/* the excluded MM atom */
+	if(mm->indexMM[k]==excls->a[j]){/* the excluded MM atom */
 	  if(nrexcl >= max){
 	    max += 1000;
 	    srenew(excluded,max);
@@ -919,7 +919,7 @@ void update_QMMMrec(t_commrec *cr,
 			md->typeA[mm->indexMM[i]],
 			md->typeA[mm->indexMM[i]])/c12au;
       }
-      punch_QMMM_excl(qr->qm[0],mm,&(top->atoms));
+      punch_QMMM_excl(qr->qm[0],mm,&(top->blocks[ebEXCLS]));
     }
     /* the next routine fills the coordinate fields in the QMMM rec of
      * both the qunatum atoms and the MM atoms, using the shifts

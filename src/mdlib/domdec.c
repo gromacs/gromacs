@@ -13,6 +13,7 @@
 #include "nrnb.h"
 #include "pbc.h"
 #include "constr.h"
+#include "mdatoms.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -20,13 +21,16 @@
 
 
 /* Code only works for one moleculetype consisting of one charge group */
-#define ONE_MOLTYPE_ONE_CG
+/* #define ONE_MOLTYPE_ONE_CG */
 
 #ifdef ONE_MOLTYPE_ONE_CG
 static int natoms_global;
+#endif
 
 
-#define CG_ALLOC_SIZE 1000
+#define CG_ALLOC_SIZE    1000
+#define EXCLS_ALLOC_SIZE  100
+#define IATOM_ALLOC_SIZE  100
 
 #define dd_c3n 8
 static const ivec dd_c3[dd_c3n] =
@@ -277,8 +281,8 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
     n = 0;
     a = 0;
     for(i=dd->ma.index[n]; i<dd->ma.index[n+1]; i++)
-	for(c=cgs->index[dd->ma.cg[i]]; c<cgs->index[dd->ma.cg[i]+1]; c++)
-	  copy_rvec(lv[a++],v[c]);
+      for(c=cgs->index[dd->ma.cg[i]]; c<cgs->index[dd->ma.cg[i]+1]; c++)
+	copy_rvec(lv[a++],v[c]);
 
     /* Use the unused part of lv as a temporary buffer */
     buf = lv + dd->ma.nat[n];
@@ -353,7 +357,7 @@ void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
 
 static void make_local_indices(gmx_domdec_t *dd,int *cgindex,bool bNonHome)
 {
-  int c0,c1,c,i,j,cg;
+  int c0,c1,c,i,ncg,nat,cg,a_gl;
   gmx_domdec_comm_t *cc;
 
   if (bNonHome) {
@@ -369,50 +373,55 @@ static void make_local_indices(gmx_domdec_t *dd,int *cgindex,bool bNonHome)
     dd->ncg_tot += dd->comm1[c].ncg;
   
   /* Make local charge group index */
-  if (dd->ncg_tot > dd->cgindex_nalloc) {
+  if (dd->ncg_tot+1 > dd->cgindex_nalloc) {
     dd->cgindex_nalloc = over_alloc(dd->ncg_tot) + 1;
     srenew(dd->cgindex,dd->cgindex_nalloc);
   }
 
   if (bNonHome) {
-    j = dd->comm1[0].ncg;
+    ncg = dd->comm1[0].ncg;
   } else {
-    j = 0;
-    dd->cgindex[j] = 0;
+    ncg = 0;
+    dd->cgindex[ncg] = 0;
+    dd->nat_tot = 0;
   }
+  nat = dd->nat_tot;
+
+  /* Count the total numbers of known atoms on this node for allocation */
+  for(c=c0; c<c1; c++)
+    dd->nat_tot += dd->comm1[c].nat;
+  if (dd->nat_tot > dd->gatindex_nalloc) {
+    dd->gatindex_nalloc = over_alloc(dd->nat_tot);
+    srenew(dd->gatindex,dd->gatindex_nalloc);
+  }
+
   for(c=c0; c<c1; c++) {
     cc = &dd->comm1[c];
     for(i=0; i<cc->ncg; i++) {
       cg = cc->index_gl[i];
-      dd->cgindex[j+1] = dd->cgindex[j] + cgindex[cg+1] - cgindex[cg];
+      dd->cgindex[ncg+1] = dd->cgindex[ncg] + cgindex[cg+1] - cgindex[cg];
       if (debug)
-	fprintf(debug," %d %d %d %d\n",j,cg,dd->cgindex[j],dd->cgindex[j+1]);
-#ifndef ONE_MOLTYPE_ONE_CG
+	fprintf(debug," %d %d %d %d\n",
+		ncg,cg,dd->cgindex[ncg],dd->cgindex[ncg+1]);
       for(a_gl=cgindex[cg]; a_gl<cgindex[cg+1]; a_gl++) {
-	dd->ga2la[a_gl] = a;
-	a++;
+	/* Make local to global atom index */
+	dd->gatindex[nat] = a_gl;
+	/* Make global to local atom index */
+	dd->ga2la[a_gl].cell = c;
+	dd->ga2la[a_gl].a    = nat;
+	nat++;
       }
-#endif
-      j++;
+      ncg++;
     }
   }
 }
 
 static void clear_local_indices(gmx_domdec_t *dd,int *cgindex)
 {
-  int c,i,cg,a_gl;
-  gmx_domdec_comm_t *cc;
+  int i;
 
-  for(c=0; c<dd->ncell; c++) {
-    cc = &dd->comm1[c];
-#ifndef ONE_MOLTYPE_ONE_CG  
-    for(i=0; i<cc->ncg; i++) {
-      cg = cc->index_gl[i];
-      for(a_gl=cgindex[cg]; a_gl<cgindex[cg+1]; a_gl++)
-	dd->ga2la[a_gl] = -1;
-    }
-#endif
-  }
+  for(i=0; i<dd->nat_tot; i++)
+    dd->ga2la[dd->gatindex[i]].cell = -1;
 }
 
 static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
@@ -1123,9 +1132,65 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   }
 }
 
+static low_make_at2iatoms(t_idef *idef,gmx_at2iatoms_t *ga2iatoms,bool bAssign)
+{
+  int ftype,nral,i,ind_at;
+  t_ilist *il;
+  t_iatom *ia;
+  atom_id a;
+  
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if (interaction_function[ftype].flags &
+	(IF_BOND | IF_CONSTRAINT | IF_VSITE)) {
+      nral = NRAL(ftype);
+      il = &idef->il[ftype];
+      ia  = il->iatoms;
+      if ((interaction_function[ftype].flags & IF_BOND) && nral > 2) {
+	/* Couple to the second atom in the interaction */
+	ind_at = 1;
+      } else {
+	/* Couple to the first atom in the interaction */
+	ind_at = 0;
+      }
+      for(i=0; i<il->nr; i+=1+nral) {
+	ia = il->iatoms + i;
+	a = ia[1+ind_at];
+	if (bAssign) {
+	  ga2iatoms[a].ftype [ga2iatoms[a].n] = ftype;
+	  ga2iatoms[a].iatoms[ga2iatoms[a].n] = ia;
+	}
+	ga2iatoms[a].n++;
+      }
+    }
+  }
+}
+
+static gmx_at2iatoms_t *make_at2iatoms(int natoms,t_idef *idef)
+{
+  int i;
+  gmx_at2iatoms_t *ga2iatoms;
+
+  snew(ga2iatoms,natoms);
+  
+  /* Count the interactions */
+  low_make_at2iatoms(idef,ga2iatoms,FALSE);
+
+  for(i=0; i<natoms; i++) {
+    snew(ga2iatoms[i].ftype, ga2iatoms[i].n);
+    snew(ga2iatoms[i].iatoms,ga2iatoms[i].n);
+    ga2iatoms[i].n = 0;
+  }
+
+  /* Store the interactions */
+  low_make_at2iatoms(idef,ga2iatoms,TRUE);
+
+  return ga2iatoms;
+}
+
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 					ivec nc,int ncg,int natoms,
-					matrix box)
+					matrix box,
+					t_idef *idef)
 {
   gmx_domdec_t *dd;
   int a;
@@ -1148,9 +1213,12 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     snew(dd->ma.ibuf,dd->nnodes*2);
   }
   dd->comm1[0].cell = dd->nodeid;
-  snew(dd->ga2la,natoms);
+
+  dd->ga2iatoms = make_at2iatoms(natoms,idef);
+  
+  snew(dd->ga2la,natoms*sizeof(gmx_ga2la_t));
   for(a=0; a<natoms; a++)
-    dd->ga2la[a] = -1;
+    dd->ga2la[a].cell = -1;
 
   return dd;
 }
@@ -1309,12 +1377,12 @@ static void make_local_ilist(gmx_domdec_t *dd,t_functype ftype,
   lia = lil->iatoms;
   for(i=0; i<il->nr; i+=1+nral) {
     ia = il->iatoms + i;
-    a = dd->ga2la[ia[1]];
+    a = dd->ga2la[ia[1]].a;
     if (a >= 0 && a < nhome) {
       lia[0] = ia[0];
       lia[1] = a;
       for(j=2; j<=nral; j++) {
-	a = dd->ga2la[ia[j]];
+	a = dd->ga2la[ia[j]].a;
 	if (a == -1)
 	  /* This interaction could be assigned to a different node
 	   * with the current setup (as long as the distance between
@@ -1341,6 +1409,104 @@ static void make_local_ilist(gmx_domdec_t *dd,t_functype ftype,
     fprintf(debug,"ftype %d nr %d of %d\n",ftype,lil->nr,il->nr);
 }
 
+static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
+{
+  int i,gat,j,ftype,nral,d,k,kc;
+  gmx_domdec_comm_t *cc;
+  gmx_at2iatoms_t *ga2ia;
+  t_iatom *iatoms,tiatoms[1+MAXATOMLIST],*liatoms;
+  bool bUse;
+  ivec shift_min;
+  gmx_ga2la_t *ga2la;
+  t_ilist *il;
+
+  /* Clear the counts */
+  for(ftype=0; ftype<F_NRE; ftype++)
+    idef->il[ftype].nr = 0;
+
+  for(i=0; i<dd->nat_tot; i++) {
+    /* Get the global atom number */
+    gat = dd->gatindex[i];
+    ga2ia = &dd->ga2iatoms[gat];
+    /* Check all interactions assigned to this atom */
+    for(j=0; j<ga2ia->n; j++) {
+      ftype  = ga2ia->ftype[j];
+      iatoms = ga2ia->iatoms[j];
+      nral = NRAL(ftype);
+      bUse = TRUE;
+      for(d=0; d<DIM; d++)
+	shift_min[d] = 1;
+      for(k=1; k<=nral && bUse; k++) {
+	ga2la = &dd->ga2la[iatoms[k]];
+	kc = ga2la->cell;
+	if (kc == -1) {
+	  /* We do not have this atom of this interaction locally */
+	  bUse = FALSE;
+	} else {
+	  tiatoms[k] = ga2la->a;
+	  for(d=0; d<DIM; d++)
+	    if (dd->shift[kc][d] < shift_min[d])
+	      shift_min[d] = dd->shift[kc][d];
+	}
+      }
+      if (bUse &&
+	  shift_min[XX]==0 && shift_min[YY]==0 && shift_min[ZZ]==0) {
+	/* Add this interaction to the local topology */
+	il = &idef->il[ftype];
+	if (il->nr >= il->nalloc) {
+	  il->nalloc += IATOM_ALLOC_SIZE*(1+nral);
+	  srenew(il->iatoms,il->nalloc*sizeof(t_iatom));
+	}
+	liatoms = il->iatoms + il->nr;
+	liatoms[0] = iatoms[0];
+	for(k=1; k<=nral; k++)
+	  liatoms[k] = tiatoms[k];
+	if (debug) {
+	  fprintf(debug,"ftype %d ip %d at",ftype,liatoms[0]);
+	  for(k=1; k<=nral; k++)
+	    fprintf(debug," %d (%d)",liatoms[k],iatoms[k]);
+	  fprintf(debug,"\n");
+	}
+	il->nr += 1+nral;
+      }
+    }
+  }
+}
+
+static void make_local_exclusions(gmx_domdec_t *dd,
+				  t_block *excls,t_block *lexcls)
+{
+  int n,la,a,i;
+  gmx_ga2la_t *ga2la;
+  
+  if (dd->nat_tot+1 > lexcls->nalloc_index) {
+    lexcls->nalloc_index = over_alloc(dd->nat_tot)+1;
+    srenew(lexcls->index,lexcls->nalloc_index);
+  }
+  
+  n = 0;
+  for(la=0; la<dd->nat_tot; la++) {
+    lexcls->index[la] = n;
+    a = dd->gatindex[la];
+    for(i=excls->index[a]; i<excls->index[a+1]; i++) {
+      ga2la = &dd->ga2la[excls->a[i]];
+      if (ga2la->cell != -1) {
+	if (n >= lexcls->nalloc_a) {
+	  lexcls->nalloc_a += EXCLS_ALLOC_SIZE;
+	  srenew(lexcls->a,lexcls->nalloc_a);
+	}
+	lexcls->a[n++] = ga2la->a;
+      }
+    }
+  }
+  lexcls->index[la] = n;
+  lexcls->nr = la;
+  lexcls->nra = n;
+  if (debug)
+    fprintf(debug,"We have %d exclusions\n",lexcls->nra);
+}
+
+#ifdef ONE_MOLTYPE_ONE_CG
 static void make_local_ilist_onemoltype_onecg(gmx_domdec_t *dd,
 					      t_functype ftype,
 					      t_ilist *il,t_ilist *lil)
@@ -1386,7 +1552,6 @@ static void make_local_ilist_onemoltype_onecg(gmx_domdec_t *dd,
   if (debug && il->nr)
     fprintf(debug,"ftype %d nr %d of %d\n",ftype,lil->nr,il->nr);
 }
-#endif
 
 static void make_local_idef(gmx_domdec_t *dd,t_idef *idef,t_idef *lidef)
 {
@@ -1397,14 +1562,12 @@ static void make_local_idef(gmx_domdec_t *dd,t_idef *idef,t_idef *lidef)
   lidef->atnr     = idef->atnr;
   lidef->functype = idef->functype;
   lidef->iparams  = idef->iparams;
-  
+
   for(f=0; f<F_NRE; f++)
-#ifndef ONE_MOLTYPE_ONE_CG
-    make_local_ilist(dd,f,&idef->il[f],&lidef->il[f]);
-#else
+    /* make_local_ilist(dd,f,&idef->il[f],&lidef->il[f]); */
     make_local_ilist_onemoltype_onecg(dd,f,&idef->il[f],&lidef->il[f]);
-#endif
 }
+#endif
 
 static void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 {
@@ -1420,9 +1583,7 @@ static void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
       lcgs->multinr[i] = dd->comm1[0].ncg;
   }
 
-  lcgs->nra = 0;
-  for(c=0; c<dd->ncell; c++)
-    lcgs->nra += dd->comm1[c].nat;
+  lcgs->nra = dd->nat_tot;
 }
 
 static void set_cg_boundaries(gmx_domdec_t *dd,t_block *lcgs)
@@ -1465,18 +1626,24 @@ static void make_local_top(FILE *fplog,gmx_domdec_t *dd,
   ltop->name  = top->name;
   make_local_cgs(dd,&ltop->blocks[ebCGS]);
 
+  make_local_exclusions(dd,&top->blocks[ebEXCLS],&ltop->blocks[ebEXCLS]);
+
 #ifdef ONE_MOLTYPE_ONE_CG
   natoms_global = top->blocks[ebCGS].nra;
-#endif
 
   make_local_idef(dd,&top->idef,&ltop->idef);
+#else
+  make_local_bondeds(dd,&ltop->idef);
+#endif
  
   ltop->atoms = top->atoms;
   ltop->atomtypes = top->atomtypes;
+  /*
   for(eb=0; eb<ebNR; eb++) {
     if (eb != ebCGS)
       ltop->blocks[eb] = top->blocks[eb];
   }
+  */
   ltop->symtab = top->symtab;
 
   set_cg_boundaries(dd,&ltop->blocks[ebCGS]);
@@ -1484,81 +1651,73 @@ static void make_local_top(FILE *fplog,gmx_domdec_t *dd,
   dd_update_ns_border(dd,nsb);
 }
 
+static void make_local_forcerec(gmx_domdec_t *dd,t_forcerec *fr)
+{
+  int c,cg,i;
+  gmx_domdec_comm_t *cc;
+
+  fr->cg0 = 0;
+  fr->hcg = dd_ncg_tot(dd);
+
+  if (fr->solvent_opt == esolNO) {
+    /* Since all entries are identical, we can use the global array */
+    fr->solvent_type = fr->solvent_type_global;
+  } else {
+    if (dd->ncg_tot > fr->solvent_type_nalloc) {
+      fr->solvent_type_nalloc = over_alloc(dd->ncg_tot);
+      srenew(fr->solvent_type,fr->solvent_type_nalloc);
+    }
+    cg = 0;
+    for(c=0; c<dd->ncell; c++) {
+      cc = &dd->comm1[c];
+      for(i=0; i<cc->ncg; i++)
+	fr->solvent_type[cg++] = fr->solvent_type_global[cc->index_gl[i]];
+    }
+  }
+}
+
 void dd_partition_system(FILE         *fplog,
 			 gmx_domdec_t *dd,
+			 bool         bMasterState,
 			 t_state      *state_global,
 			 t_topology   *top_global,
+			 t_inputrec   *ir,
 			 t_state      *state_local,
 			 rvec         *buf,
+			 t_mdatoms    *mdatoms,
 			 t_topology   *top_local,
 			 t_nsborder   *nsb,
 			 t_forcerec   *fr,
 			 t_nrnb       *nrnb)
 {
-  get_cg_distribution(fplog,dd,
-		      &top_global->blocks[ebCGS],
-		      state_global->box,state_global->x);
-  
-  dd_distribute_state(dd,&top_global->blocks[ebCGS],
-		      state_global,state_local);
-  
-  dd_calc_cgcm_home(dd,&top_global->blocks[ebCGS],
-		    state_local->x,fr->cg_cm);
+  if (bMasterState) {
+    get_cg_distribution(fplog,dd,
+			&top_global->blocks[ebCGS],
+			state_global->box,state_global->x);
+    
+    dd_distribute_state(dd,&top_global->blocks[ebCGS],
+			state_global,state_local);
+    
+    dd_calc_cgcm_home(dd,&top_global->blocks[ebCGS],
+		      state_local->x,fr->cg_cm);
+  } else {
+    dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
+		       state_local,fr->cg_cm,nrnb);
+  }
   
   setup_dd_communication(fplog,dd,&top_global->blocks[ebCGS],
 			 fr->cg_cm,state_local->box,fr->rlistlong);
   
   dd_start_move_x(dd,state_local->x,buf);
   
-  fr->cg0 = 0;
-  fr->hcg = dd_ncg_tot(dd);
-  make_local_top(fplog,dd,top_global,top_local,nsb);
-  
-  dd_finish_move_x(dd);
-  
-  /* All charge groups have been put in the box in get_cg_distribution.
-   * cg_cm for the home charge groups has already been calculated.
-   */
-  calc_cgcm(fplog,dd->comm1[0].ncg,dd->ncg_tot,
-	    &top_local->blocks[ebCGS],
-	    state_local->x,fr->cg_cm);
-  /* Count of dd_calc_cgcm_home and calc_cgcm */
-  inc_nrnb(nrnb,eNR_CGCM,top_local->blocks[ebCGS].nra);
-}
-
-void dd_repartition_system(FILE         *fplog,
-			   gmx_domdec_t *dd,
-			   t_topology   *top_global,
-			   t_mdatoms    *mdatoms,
-			   t_inputrec   *ir,
-			   t_state      *state,
-			   rvec         *buf,
-			   t_topology   *top_local,
-			   t_nsborder   *nsb,
-			   t_forcerec   *fr,
-			   t_nrnb       *nrnb)
-{
-  int i,m;
-
-  dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
-		     state,fr->cg_cm,
-		     nrnb);
-  
-  setup_dd_communication(fplog,dd,&top_global->blocks[ebCGS],
-			 fr->cg_cm,state->box,fr->rlistlong);
-  
-  dd_start_move_x(dd,state->x,buf);
+  atoms2md(fplog,NULL,&top_global->atoms,ir->opts.nFreeze,
+	   ir->eI,ir->delta_t,ir->bd_fric,ir->opts.tau_t,
+	   ir->efep!=efepNO,dd->nat_tot,dd->gatindex,mdatoms,FALSE);
   
   make_local_top(fplog,dd,top_global,top_local,nsb);
-  
-  /* Temporary hacks !!! */
-  //srenew(fr->solvent_type,top->blocks[ebCGS].nr);
-  for(i=1; i<top_local->blocks[ebCGS].nr; i++)
-    fr->solvent_type[i] = fr->solvent_type[0];
-  //srenew(fr->cg_cm,top->blocks[ebCGS].nr);
-  fr->cg0 = 0;
-  fr->hcg = dd_ncg_tot(dd);
-  
+
+  make_local_forcerec(dd,fr);
+
   /* Does not work with shells or flexible constraints yet */
   init_constraints(fplog,top_local,ir,mdatoms,
 		   START(nsb),HOMENR(nsb),
@@ -1570,9 +1729,7 @@ void dd_repartition_system(FILE         *fplog,
    * The home charge groups have been done in dd_redistribute_cg.
    */
   calc_cgcm(fplog,dd->comm1[0].ncg,dd->ncg_tot,
-	    &top_local->blocks[ebCGS],state->x,fr->cg_cm);
-  m = 0;
-  for(i=1; i<dd->ncell; i++)
-    m += dd->comm1[0].nat;
-  inc_nrnb(nrnb,eNR_CGCM,m);
+	    &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
+
+  inc_nrnb(nrnb,eNR_CGCM,dd->nat_tot-dd->comm1[0].nat);
 }

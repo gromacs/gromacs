@@ -53,5 +53,7 @@ typedef struct {
 				/* index[i] to index[i+1]-1. There will */
 				/* allways be an extra entry in index	*/
 				/* to terminate the table		*/
+  int nalloc_index;             /* The allocation size for index        */
+  int nalloc_a;                 /* The allocation size for a            */
 } t_block;
 

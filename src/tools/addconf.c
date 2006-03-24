@@ -147,7 +147,6 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,
   
   snew(ac,1);
   init_t_atoms(ac,natot,FALSE);
-  stupid_fill(&(ac->excl),natot,FALSE);
   
   snew(xc,natot);
   if (vp && vs) snew(vc,natot);
@@ -222,7 +221,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     init_top(top);
     stupid_fill(&(top->blocks[ebCGS]),natoms,FALSE);
     memcpy(&(top->atoms),atoms,sizeof(*atoms));
-    stupid_fill(&(top->atoms.excl),natoms,FALSE);
+    stupid_fill(&(top->blocks[ebEXCLS]),natoms,FALSE);
     top->atoms.grps[egcENER].nr = 1;
     
     /* Some nasty shortcuts */

@@ -626,7 +626,6 @@ void reset_multinr(t_topology *top)
   
   for(j=0; (j<F_NRE); j++)  
     def_mnr(top->idef.il[j].nr,top->idef.il[j].multinr);
-  def_mnr(top->atoms.excl.nr,top->atoms.excl.multinr);
   
   for (j=0; j<ebNR; j++) 
     def_mnr(top->blocks[j].nr,top->blocks[j].multinr);

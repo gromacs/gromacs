@@ -642,7 +642,7 @@ put_in_list(bool              bHaveVdW[],
   nicg   = index[icg+1]-i0;
   
   iwater = fr->solvent_type[icg];
-  
+
   bFreeEnergy = FALSE;
   if (md->nPerturbed) 
     {
@@ -1113,10 +1113,14 @@ static void setexcl(atom_id start,atom_id end,t_block *excl,bool b,
 {
   atom_id i,k;
   
+  int c;
+  c = 0;
+  
   if (b) {
     for(i=start; i<end; i++) {
       for(k=excl->index[i]; k<excl->index[i+1]; k++) {
 	SETEXCL(bexcl,i-start,excl->a[k]);
+	c++;
       }
     }
   }
@@ -1356,7 +1360,7 @@ static int ns_simple_core(t_forcerec *fr,
   t_ns_buf *nsbuf;
   /* atom_id  *i_atoms; */
   t_block  *cgs=&(top->blocks[ebCGS]);
-  t_block  *excl=&(top->atoms.excl);
+  t_block  *excl=&(top->blocks[ebEXCLS]);
   rvec     b_inv;
   int      m;
   bool     bBox,bTriclinic,*i_egp_flags;
@@ -1740,7 +1744,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
             continue;
 
         i_egp_flags = fr->egp_flags + ngid*gid[cgs->index[icg]];
-        setexcl(cgs->index[icg],cgs->index[icg+1],&top->atoms.excl,TRUE,bexcl);
+        setexcl(cgs->index[icg],cgs->index[icg+1],&top->blocks[ebEXCLS],TRUE,bexcl);
         
         /* Compute the number of charge groups that fall within the control
          * of this one (icg)
@@ -1770,7 +1774,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
          * a bitmask
          */    
         /* setexcl(nri,i_atoms,&top->atoms.excl,TRUE,bexcl); */
-        setexcl(cgs->index[icg],cgs->index[icg+1],&top->atoms.excl,TRUE,bexcl);
+        setexcl(cgs->index[icg],cgs->index[icg+1],&top->blocks[ebEXCLS],TRUE,bexcl);
 
 	if (bDomDec) {
 	  /* Get the j charge-group and dd cell shift ranges */
@@ -1973,7 +1977,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
       }
     }
     /* setexcl(nri,i_atoms,&top->atoms.excl,FALSE,bexcl); */
-    setexcl(cgs->index[icg],cgs->index[icg+1],&top->atoms.excl,FALSE,bexcl);
+    setexcl(cgs->index[icg],cgs->index[icg+1],&top->blocks[ebEXCLS],FALSE,bexcl);
   }
   /* Perform any left over force calculations */
   for (nn=0; (nn<ngid); nn++) {

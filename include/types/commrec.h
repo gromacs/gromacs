@@ -41,6 +41,8 @@
 #include <mpi.h>
 #endif
 
+#include "idef.h"
+
 #define DD_MAXCELL  8
 #define DD_MAXICELL 4
 
@@ -76,6 +78,17 @@ typedef struct {
 } gmx_domdec_ns_t;
 
 typedef struct {
+  int     n;        /* number of interactions */
+  int     *ftype;   /* the function types */
+  t_iatom **iatoms; /* the iatom pointers */
+} gmx_at2iatoms_t;
+
+typedef struct {
+  int     cell;
+  atom_id a;
+} gmx_ga2la_t;
+
+typedef struct {
   int nodeid;
   int nnodes;
   int masterrank;
@@ -93,6 +106,9 @@ typedef struct {
   /* Switch that tells if the master has the charge group distribution */
   bool bMasterHasAllCG;
 
+  /* Global atom number to interaction list */
+  gmx_at2iatoms_t *ga2iatoms;
+
   /* The following arrays will have size ncell */
   /* Nodes we need to send coordinates to and receive forces from */
   gmx_domdec_comm_t comm0[DD_MAXCELL];
@@ -104,8 +120,13 @@ typedef struct {
   int  *cgindex;
   int  cgindex_nalloc;
 
+  /* Index from the local atoms to the global atoms */
+  int  nat_tot;
+  int  *gatindex;
+  int  gatindex_nalloc;
+
   /* Global atom number to local atom number, -1 if not local */
-  int  *ga2la;
+  gmx_ga2la_t *ga2la;
 
   /* For neighborsearching */
   int  nicell;

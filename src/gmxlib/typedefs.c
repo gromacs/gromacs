@@ -74,8 +74,7 @@ void init_block(t_block *block)
 void init_atom(t_atoms *at)
 {
   int i;
-  
-  init_block(&(at->excl));
+
   at->nr       = 0;
   at->nres     = 0;
   at->ngrpname = 0;
@@ -154,7 +153,6 @@ void done_block(t_block *block)
 
 void done_atom (t_atoms *at)
 {
-  done_block(&(at->excl));
   at->nr       = 0;
   at->nres     = 0;
   sfree(at->atom);
@@ -259,7 +257,6 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
     snew(atoms->pdbinfo,natoms);
   else
     atoms->pdbinfo=NULL;
-  init_block(&atoms->excl);
 }
 
 void free_t_atoms(t_atoms *atoms)
@@ -278,6 +275,5 @@ void free_t_atoms(t_atoms *atoms)
     sfree(atoms->pdbinfo);
   atoms->nr=0; 
   atoms->nres=0;
-  done_block(&atoms->excl);
 }     
 

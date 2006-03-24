@@ -20,7 +20,8 @@ extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 					       ivec nc,int ncg,int natoms,
-					       matrix box);
+					       matrix box,
+					       t_idef *idef);
 
 extern void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd);
 
@@ -52,25 +53,20 @@ extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[]);
 
 extern void dd_partition_system(FILE         *fplog,
 				gmx_domdec_t *dd,
+				bool         bMasterState,
 				t_state      *state_global,
 				t_topology   *top_global,
+				t_inputrec   *ir,
 				t_state      *state_local,
 				rvec         *buf,
+				t_mdatoms    *mdatoms,
 				t_topology   *top_local,
 				t_nsborder   *nsb,
 				t_forcerec   *fr,
 				t_nrnb       *nrnb);
-
-extern void dd_repartition_system(FILE         *fplog,
-				  gmx_domdec_t *dd,
-				  t_topology   *top_global,
-				  t_mdatoms    *mdatoms,
-				  t_inputrec   *ir,
-				  t_state      *state_local,
-				  rvec         *buf,
-				  t_topology   *top_local,
-				  t_nsborder   *nsb,
-				  t_forcerec   *fr,
-				  t_nrnb       *nrnb);
+/* Partition the system over the nodes.
+ * If bMasterState==TRUE then state_global from the master node is used,
+ * else state_local is redistributed between the nodes.
+ */
 
 #endif	/* _domdec_h */

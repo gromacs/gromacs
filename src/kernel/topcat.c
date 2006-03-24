@@ -206,8 +206,6 @@ static void atomcat (t_atoms *dest, t_atoms *src, int copies)
 
   dest->nres += copies*src->nres;
   dest->nr += copies*src->nr;
-
-  blockcat(&(dest->excl),&(src->excl),copies,destnr,srcnr);
 }
 
 static void top1_cat(t_molinfo *dest,t_molinfo *src,
@@ -228,7 +226,8 @@ static void top1_cat(t_molinfo *dest,t_molinfo *src,
   
   blockcat(&(dest->cgs),&(src->cgs),nrcopies,destnr,srcnr);
   blockcat(&(dest->mols),&(src->mols),nrcopies,destnr,srcnr);
-  
+  blockcat(&(dest->excls),&(src->excls),nrcopies,destnr,srcnr);
+
   for (i=0; (i<F_NRE); i++) 
     bondcat(&dest->plist[i],&src->plist[i],
 	    nrcopies,destnr,srcnr,bEnsemble,*src->name,i);
@@ -252,6 +251,7 @@ void mi2top(t_topology *dest,t_molinfo *src)
   atomcat(&(dest->atoms),&(src->atoms),1);
   blockcat(&(dest->blocks[ebCGS]),&(src->cgs),1,0,src->atoms.nr);
   blockcat(&(dest->blocks[ebMOLS]),&(src->mols),1,0,src->atoms.nr);
+  blockcat(&(dest->blocks[ebEXCLS]),&(src->excls),1,0,src->atoms.nr);
   dest->name=src->name;
 }
 

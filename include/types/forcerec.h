@@ -136,7 +136,9 @@ typedef struct {
   int  solvent_opt;
   int  nWatMol;
   bool bGrid;
+  int  *solvent_type_global;
   int  *solvent_type;
+  int  solvent_type_nalloc;
   rvec *cg_cm;
   rvec *shift_vec;
 

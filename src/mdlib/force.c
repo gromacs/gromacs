@@ -186,7 +186,7 @@ check_solvent(FILE *                fp,
     
 
     cgs  = &(top->blocks[ebCGS]);
-    excl = &(top->atoms.excl);
+    excl = &(top->blocks[ebEXCLS]);
     mols = &(top->blocks[ebMOLS]);
     
     if (debug)
@@ -982,7 +982,7 @@ void init_forcerec(FILE *fp,
 	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
   if (ir->eDispCorr != edispcNO)
-    set_avcsixtwelve(fp,fr,mdatoms,&top->atoms.excl);
+    set_avcsixtwelve(fp,fr,mdatoms,&top->blocks[ebEXCLS]);
 
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,mdatoms);
