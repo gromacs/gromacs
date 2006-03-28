@@ -219,19 +219,21 @@ void diagonalize_orires_tensors(t_oriresdata *od)
 
 void print_orires_log(FILE *log,t_oriresdata *od)
 {
-  int           ex,i;
+  int  ex,i;
+  real *eig;      
 
   diagonalize_orires_tensors(od);
     
   for(ex=0; ex<od->nex; ex++) {
+    eig = od->eig + ex*12;
     fprintf(log,"  Orientation experiment %d:\n",ex+1);
-    fprintf(log,"    order parameter: %g\n",od->eig[0]);
+    fprintf(log,"    order parameter: %g\n",eig[0]);
     for(i=0; i<DIM; i++)
       fprintf(log,"    eig: %6.3f   %6.3f %6.3f %6.3f\n",
-	      (od->eig[0] != 0) ? od->eig[i]/od->eig[0] : od->eig[i],
-	      od->eig[DIM+i*DIM+XX],
-	      od->eig[DIM+i*DIM+YY],
-	      od->eig[DIM+i*DIM+ZZ]);
+	      (eig[0] != 0) ? eig[i]/eig[0] : eig[i],
+	      eig[DIM+i*DIM+XX],
+	      eig[DIM+i*DIM+YY],
+	      eig[DIM+i*DIM+ZZ]);
     fprintf(log,"\n");
   }
 }
