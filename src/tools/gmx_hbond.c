@@ -1634,7 +1634,6 @@ int gmx_hbond(int argc,char *argv[])
     { efTRX, "-f",   NULL,     ffREAD  },
     { efTPX, NULL,   NULL,     ffREAD  },
     { efNDX, NULL,   NULL,     ffOPTRD },
-    { efLOG, "-g",   "hbond",  ffOPTWR },
     { efNDX, "-sel", "select", ffOPTRD },
     { efXVG, "-num", "hbnum",  ffWRITE },
     { efXVG, "-ac",  "hbac",   ffOPTWR },
