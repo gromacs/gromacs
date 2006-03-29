@@ -274,7 +274,7 @@ extern void low_ana_dih_trans(bool bTrans, char *fn_trans,
 
 
 extern void read_ang_dih(char *trj_fn,char *tpb_fn,
-			 bool bAngles,bool bSaveAll,bool bRb,
+			 bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
 			 int maxangstat,int angstat[],
 			 int *nframes,real **time,
 			 int isize,atom_id index[],
@@ -289,6 +289,7 @@ extern void read_ang_dih(char *trj_fn,char *tpb_fn,
  * bAngles     do we have to read angles or dihedrals
  * bSaveAll    do we have to store all in the dih array
  * bRb         do we have Ryckaert-Bellemans dihedrals (trans = 0)
+ * bPBC        compute angles module 2 Pi
  * maxangstat  number of entries in distribution array
  * angstat     angle distribution
  * *nframes    number of frames read

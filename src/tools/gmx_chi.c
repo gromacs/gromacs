@@ -998,7 +998,7 @@ int gmx_chi(int argc,char *argv[])
   static real bfac_init=-1.0,bfac_max=0;
   static char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
-  static bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE;
+  static bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE,bPBC=TRUE;;
   static real core_frac=0.5 ;  
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, {&r0},
@@ -1013,6 +1013,8 @@ int gmx_chi(int argc,char *argv[])
       "Generate Phi/Psi and Chi1/Chi2 ramachandran plots" },
     { "-viol", FALSE, etBOOL, {&bViol},
       "Write a file that gives 0 or 1 for violated Ramachandran angles" },
+    { "-periodic", FALSE, etBOOL, {&bPBC},
+      "Print dihedral angles modulo 360 degrees" },
     { "-all",  FALSE, etBOOL, {&bAll},
       "Output separate files for every dihedral." },
     { "-rad",  FALSE, etBOOL, {&bRAD},
@@ -1143,7 +1145,7 @@ int gmx_chi(int argc,char *argv[])
     
   /* COMPUTE ALL DIHEDRALS! */
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efSTX,NFILE,fnm),
-	       FALSE,TRUE,FALSE,1,&idum,
+	       FALSE,TRUE,FALSE,bPBC,1,&idum,
 	       &nf,&time,isize,index,&trans_frac,&aver_angle,dih);
 
   dt=(time[nf-1]-time[0])/(nf-1); /* might want this for corr or n. transit*/ 

@@ -107,7 +107,7 @@ int gmx_angle(int argc,char *argv[])
     "input for a PCA analysis using [TT]g_covar[tt]."
   };
   static char *opt[] = { NULL, "angle", "dihedral", "improper", "ryckaert-bellemans", NULL };
-  static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=FALSE;
+  static bool bALL=FALSE,bChandler=FALSE,bAverCorr=FALSE,bPBC=TRUE;
   static real binwidth=1;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},
@@ -235,7 +235,7 @@ int gmx_angle(int argc,char *argv[])
 
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
 	       bALL || bCorr || bTrans || opt2bSet("-or",NFILE,fnm),
-	       bRb,maxangstat,angstat,
+	       bRb,bPBC,maxangstat,angstat,
 	       &nframes,&time,isize,index,&trans_frac,&aver_angle,dih);
   
   dt=(time[nframes-1]-time[0])/(nframes-1);
