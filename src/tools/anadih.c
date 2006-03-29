@@ -650,7 +650,7 @@ void normalize_histo(int npoints,int histo[],real dx,real normhisto[])
 }
 
 void read_ang_dih(char *trj_fn,char *stx_fn,
-		  bool bAngles,bool bSaveAll,bool bRb,
+		  bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
 		  int maxangstat,int angstat[],
 		  int *nframes,real **time,
 		  int isize,atom_id index[],
@@ -748,12 +748,20 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
         }
       
       /* Periodicity in dihedral space... */
-      if (teller > 1) {
+      if (bPBC) {
 	for(i=0; (i<nangles); i++) {
-	  while (angles[cur][i] <= angles[prev][i] - M_PI)
-	    angles[cur][i]+=2*M_PI;
-	  while (angles[cur][i] > angles[prev][i] + M_PI)
-	    angles[cur][i]-=2*M_PI;
+	  real dd = angles[cur][i];
+	  angles[cur][i] = atan2(sin(dd),cos(dd));
+	}
+      }
+      else {
+	if (teller > 1) {
+	  for(i=0; (i<nangles); i++) {
+	    while (angles[cur][i] <= angles[prev][i] - M_PI)
+	      angles[cur][i]+=2*M_PI;
+	    while (angles[cur][i] > angles[prev][i] + M_PI)
+	      angles[cur][i]-=2*M_PI;
+	  }
 	}
       }
     }
