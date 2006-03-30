@@ -1005,9 +1005,9 @@
  [ dihedrals ] ; override some with residue-specific ones
      N    CA    CB    CG    dih_LYS_chi1_N_C_C_C
     CG    CB    CA     C    dih_LYS_chi1_C_C_C_CO
-    CD    CE    NZ   HZ1    dih_LYSH_chi5_C_C_N_H
-    CD    CE    NZ   HZ2    dih_LYSH_chi5_C_C_N_H
-    CD    CE    NZ   HZ3    dih_LYSH_chi5_C_C_N_H
+    CD    CE    NZ   HZ1    dih_LYS_chi5_C_C_N_H
+    CD    CE    NZ   HZ2    dih_LYS_chi5_C_C_N_H
+    CD    CE    NZ   HZ3    dih_LYS_chi5_C_C_N_H
  [ impropers ]
     -C    CA     N     H    improper_Z_N_X_Y 
     CA    +N     C     O    improper_O_C_X_Y 
@@ -1022,11 +1022,11 @@
     CB    opls_136   -0.120     2
    HB1    opls_140    0.060     2
    HB2    opls_140    0.060     2
-    CG    opls_210    0.0975    3
+    CG    opls_210    0.048     3
    HG1    opls_140    0.060     3
    HG2    opls_140    0.060     3
-    SD    opls_202   -0.435     4
-    CE    opls_209    0.0375    5
+    SD    opls_202   -0.335     4
+    CE    opls_209   -0.013     5
    HE1    opls_140    0.060     5
    HE2    opls_140    0.060     5
    HE3    opls_140    0.060     5
@@ -1322,8 +1322,8 @@
      C     O
     -C     N
  [ dihedrals ] ; override some with residue-specific ones
-     N    CA    CB    CG    dih_GLU_chi1_N_C_C_C
-    CG    CB    CA     C    dih_GLU_chi1_C_C_C_CO
+     N    CA    CB    CG    dih_TRP_chi1_N_C_C_C
+    CG    CB    CA     C    dih_TRP_chi1_C_C_C_CO
  [ impropers ]
     -C    CA     N     H    improper_Z_N_X_Y  
     CA    +N     C     O    improper_O_C_X_Y  
