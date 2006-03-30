@@ -205,12 +205,6 @@ AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "$with_external_lapack" = "yes"])
 
 
 
-
-AC_ARG_WITH(external_lapack,
- [  --with-external-lapack  system LAPACK (add to LIBS) iso of built-in],, with_external_lapack=no)
-AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "$with_external_lapack" = "yes"])
-
-
 AC_ARG_WITH(qmmm_gaussian,
  [  --without-qmmm-gaussian  Interface to mod. Gaussian0x for QM-MM (see website)],,with_qmmm_gaussian=yes)
 if test "$with_qmmm_gaussian" = "yes"; then
