@@ -1,423 +1,306 @@
-# ACE/gr parameter file
+# Grace project file
 #
-#
-@page 5
-@page inout 5
+@version 50114
+@page size 792, 612
+@page scroll 5%
+@page inout 5%
 @link page off
-@with g0
+@map font 0 to "Times-Roman", "Times-Roman"
+@map font 1 to "Times-Italic", "Times-Italic"
+@map font 2 to "Times-Bold", "Times-Bold"
+@map font 3 to "Times-BoldItalic", "Times-BoldItalic"
+@map font 4 to "Helvetica", "Helvetica"
+@map font 5 to "Helvetica-Oblique", "Helvetica-Oblique"
+@map font 6 to "Helvetica-Bold", "Helvetica-Bold"
+@map font 7 to "Helvetica-BoldOblique", "Helvetica-BoldOblique"
+@map font 8 to "Courier", "Courier"
+@map font 9 to "Courier-Oblique", "Courier-Oblique"
+@map font 10 to "Courier-Bold", "Courier-Bold"
+@map font 11 to "Courier-BoldOblique", "Courier-BoldOblique"
+@map font 12 to "Symbol", "Symbol"
+@map font 13 to "ZapfDingbats", "ZapfDingbats"
+@map color 0 to (255, 255, 255), "white"
+@map color 1 to (0, 0, 0), "black"
+@map color 2 to (255, 0, 0), "red"
+@map color 3 to (0, 255, 0), "green"
+@map color 4 to (0, 0, 255), "blue"
+@map color 5 to (255, 255, 0), "yellow"
+@map color 6 to (188, 143, 143), "brown"
+@map color 7 to (220, 220, 220), "grey"
+@map color 8 to (148, 0, 211), "violet"
+@map color 9 to (0, 255, 255), "cyan"
+@map color 10 to (255, 0, 255), "magenta"
+@map color 11 to (255, 165, 0), "orange"
+@map color 12 to (114, 33, 188), "indigo"
+@map color 13 to (103, 7, 72), "maroon"
+@map color 14 to (64, 224, 208), "turquoise"
+@map color 15 to (0, 139, 0), "green4"
+@reference date 0
+@date wrap off
+@date wrap year 1950
+@default linewidth 1.0
+@default linestyle 1
+@default color 1
+@default pattern 1
+@default font 2
+@default char size 1.000000
+@default symbol size 1.000000
+@default sformat "%.8g"
+@background color 0
+@page background fill on
+@timestamp off
+@timestamp 0.03, 0.03
+@timestamp color 1
+@timestamp rot 0
+@timestamp font 0
+@timestamp char size 1.000000
+@timestamp def "Thu Mar 30 16:47:13 2006"
+@r0 off
+@link r0 to g0
+@r0 type above
+@r0 linestyle 1
+@r0 linewidth 1.0
+@r0 color 1
+@r0 line 0, 0, 0, 0
+@r1 off
+@link r1 to g0
+@r1 type above
+@r1 linestyle 1
+@r1 linewidth 1.0
+@r1 color 1
+@r1 line 0, 0, 0, 0
+@r2 off
+@link r2 to g0
+@r2 type above
+@r2 linestyle 1
+@r2 linewidth 1.0
+@r2 color 1
+@r2 line 0, 0, 0, 0
+@r3 off
+@link r3 to g0
+@r3 type above
+@r3 linestyle 1
+@r3 linewidth 1.0
+@r3 color 1
+@r3 line 0, 0, 0, 0
+@r4 off
+@link r4 to g0
+@r4 type above
+@r4 linestyle 1
+@r4 linewidth 1.0
+@r4 color 1
+@r4 line 0, 0, 0, 0
 @g0 on
-@g0 label off
 @g0 hidden false
-@g0 type xy
-@g0 autoscale type AUTO
+@g0 type XY
+@g0 stacked false
+@g0 bar hgap 0.000000
 @g0 fixedpoint off
 @g0 fixedpoint type 0
 @g0 fixedpoint xy 0.000000, 0.000000
 @g0 fixedpoint format general general
 @g0 fixedpoint prec 6, 6
-@    default linestyle 1
-@    default linewidth 1
-@    default color 1
-@    default char size 1.000000
-@    default font 2
-@    default font source 0
-@    default symbol size 1.000000
-@    world xmin 0.4
+@with g0
+@    world xmin 0.3
 @    world xmax 0.8
 @    world ymin -0.2
-@    world ymax 0.5
-@    view xmin 0.200000
-@    view xmax 0.850000
-@    view ymin 0.200000
-@    view ymax 0.850000
+@    world ymax 2
+@    stack world 0, 0, 0, 0
+@    znorm 1
+@    view xmin 0.150000
+@    view xmax 1.245134
+@    view ymin 0.150000
+@    view ymax 0.950000
 @    title ""
 @    title font 4
 @    title size 1.500000
 @    title color 1
-@    title linewidth 1
 @    subtitle ""
 @    subtitle font 4
 @    subtitle size 1.000000
 @    subtitle color 1
-@    subtitle linewidth 1
-@    s0 type xy
-@    s0 symbol 0
-@    s0 symbol size 1.000000
-@    s0 symbol fill 0
-@    s0 symbol center false
-@    s0 symbol char 0
-@    s0 skip 0
-@    s0 linestyle 1
-@    s0 linewidth 1
-@    s0 color 1
-@    s0 fill 0
-@    s0 fill with color
-@    s0 fill color 0
-@    s0 fill pattern 0
-@    s0 errorbar type BOTH
-@    s0 errorbar length 1.000000
-@    s0 errorbar linewidth 1
-@    s0 errorbar linestyle 1
-@    s0 errorbar riser on
-@    s0 errorbar riser linewidth 1
-@    s0 errorbar riser linestyle 1
-@    s0 xyz 0.000000, 0.000000
-@    s0 comment "f_lj.xvg"
-@    xaxis  tick on
-@    xaxis  tick major 0.1
-@    xaxis  tick minor 0.05
-@    xaxis  tick offsetx 0.000000
-@    xaxis  tick offsety 0.000000
-@    xaxis  tick alt off
-@    xaxis  tick min 0
-@    xaxis  tick max 1
+@    xaxes scale Normal
+@    yaxes scale Normal
+@    xaxes invert off
+@    yaxes invert off
+@    xaxis  on
+@    xaxis  type zero false
+@    xaxis  offset 0.000000 , 0.000000
+@    xaxis  bar off
+@    xaxis  bar color 1
+@    xaxis  bar linestyle 1
+@    xaxis  bar linewidth 1.0
 @    xaxis  label "r (nm)"
 @    xaxis  label layout para
 @    xaxis  label place auto
 @    xaxis  label char size 1.500000
 @    xaxis  label font 4
 @    xaxis  label color 1
-@    xaxis  label linewidth 1
+@    xaxis  label place normal
+@    xaxis  tick on
+@    xaxis  tick major 0.1
+@    xaxis  tick minor ticks 1
+@    xaxis  tick default 6
+@    xaxis  tick place rounded true
+@    xaxis  tick in
+@    xaxis  tick major size 1.000000
+@    xaxis  tick major color 1
+@    xaxis  tick major linewidth 1.0
+@    xaxis  tick major linestyle 1
+@    xaxis  tick major grid off
+@    xaxis  tick minor color 1
+@    xaxis  tick minor linewidth 1.0
+@    xaxis  tick minor linestyle 1
+@    xaxis  tick minor grid off
+@    xaxis  tick minor size 0.500000
 @    xaxis  ticklabel on
-@    xaxis  ticklabel type auto
-@    xaxis  ticklabel prec 1
 @    xaxis  ticklabel format decimal
-@    xaxis  ticklabel layout horizontal
+@    xaxis  ticklabel prec 1
+@    xaxis  ticklabel formula ""
+@    xaxis  ticklabel append ""
+@    xaxis  ticklabel prepend ""
+@    xaxis  ticklabel angle 0
 @    xaxis  ticklabel skip 0
 @    xaxis  ticklabel stagger 0
-@    xaxis  ticklabel op bottom
-@    xaxis  ticklabel sign normal
+@    xaxis  ticklabel place normal
+@    xaxis  ticklabel offset auto
+@    xaxis  ticklabel offset 0.000000 , 0.010000
 @    xaxis  ticklabel start type auto
 @    xaxis  ticklabel start 0.000000
 @    xaxis  ticklabel stop type auto
 @    xaxis  ticklabel stop 0.000000
-@    xaxis  ticklabel char size 1.480000
+@    xaxis  ticklabel char size 1.230000
 @    xaxis  ticklabel font 4
 @    xaxis  ticklabel color 1
-@    xaxis  ticklabel linewidth 1
-@    xaxis  tick major on
-@    xaxis  tick minor on
-@    xaxis  tick default 6
-@    xaxis  tick in
-@    xaxis  tick major color 1
-@    xaxis  tick major linewidth 1
-@    xaxis  tick major linestyle 1
-@    xaxis  tick minor color 1
-@    xaxis  tick minor linewidth 1
-@    xaxis  tick minor linestyle 1
-@    xaxis  tick log off
-@    xaxis  tick size 1.000000
-@    xaxis  tick minor size 0.500000
-@    xaxis  bar off
-@    xaxis  bar color 1
-@    xaxis  bar linestyle 1
-@    xaxis  bar linewidth 1
-@    xaxis  tick major grid off
-@    xaxis  tick minor grid off
-@    xaxis  tick op both
-@    xaxis  tick type auto
-@    xaxis  tick spec 0
-@    yaxis  tick on
-@    yaxis  tick major 0.2
-@    yaxis  tick minor 0.1
-@    yaxis  tick offsetx 0.000000
-@    yaxis  tick offsety 0.000000
-@    yaxis  tick alt off
-@    yaxis  tick min 0
-@    yaxis  tick max 1
-@    yaxis  label "V (kJ mole\S-1\N)"
+@    xaxis  tick place both
+@    xaxis  tick spec type none
+@    yaxis  on
+@    yaxis  type zero false
+@    yaxis  offset 0.000000 , 0.000000
+@    yaxis  bar off
+@    yaxis  bar color 1
+@    yaxis  bar linestyle 1
+@    yaxis  bar linewidth 1.0
+@    yaxis  label "V\sLJ\N (kJ mole\S-1\N)"
 @    yaxis  label layout para
 @    yaxis  label place auto
 @    yaxis  label char size 1.500000
 @    yaxis  label font 4
 @    yaxis  label color 1
-@    yaxis  label linewidth 1
+@    yaxis  label place normal
+@    yaxis  tick on
+@    yaxis  tick major 0.5
+@    yaxis  tick minor ticks 1
+@    yaxis  tick default 6
+@    yaxis  tick place rounded true
+@    yaxis  tick in
+@    yaxis  tick major size 1.000000
+@    yaxis  tick major color 1
+@    yaxis  tick major linewidth 1.0
+@    yaxis  tick major linestyle 1
+@    yaxis  tick major grid off
+@    yaxis  tick minor color 1
+@    yaxis  tick minor linewidth 1.0
+@    yaxis  tick minor linestyle 1
+@    yaxis  tick minor grid off
+@    yaxis  tick minor size 0.500000
 @    yaxis  ticklabel on
-@    yaxis  ticklabel type auto
-@    yaxis  ticklabel prec 1
 @    yaxis  ticklabel format decimal
-@    yaxis  ticklabel layout horizontal
+@    yaxis  ticklabel prec 1
+@    yaxis  ticklabel formula ""
+@    yaxis  ticklabel append ""
+@    yaxis  ticklabel prepend ""
+@    yaxis  ticklabel angle 0
 @    yaxis  ticklabel skip 0
 @    yaxis  ticklabel stagger 0
-@    yaxis  ticklabel op left
-@    yaxis  ticklabel sign normal
+@    yaxis  ticklabel place normal
+@    yaxis  ticklabel offset auto
+@    yaxis  ticklabel offset 0.000000 , 0.010000
 @    yaxis  ticklabel start type auto
 @    yaxis  ticklabel start 0.000000
 @    yaxis  ticklabel stop type auto
 @    yaxis  ticklabel stop 0.000000
-@    yaxis  ticklabel char size 1.520000
+@    yaxis  ticklabel char size 1.230000
 @    yaxis  ticklabel font 4
 @    yaxis  ticklabel color 1
-@    yaxis  ticklabel linewidth 1
-@    yaxis  tick major on
-@    yaxis  tick minor on
-@    yaxis  tick default 6
-@    yaxis  tick in
-@    yaxis  tick major color 1
-@    yaxis  tick major linewidth 1
-@    yaxis  tick major linestyle 1
-@    yaxis  tick minor color 1
-@    yaxis  tick minor linewidth 1
-@    yaxis  tick minor linestyle 1
-@    yaxis  tick log off
-@    yaxis  tick size 1.000000
-@    yaxis  tick minor size 0.500000
-@    yaxis  bar off
-@    yaxis  bar color 1
-@    yaxis  bar linestyle 1
-@    yaxis  bar linewidth 1
-@    yaxis  tick major grid off
-@    yaxis  tick minor grid off
-@    yaxis  tick op both
-@    yaxis  tick type auto
-@    yaxis  tick spec 0
-@    altxaxis  tick on
-@    altxaxis  tick major 0.5
-@    altxaxis  tick minor 0.25
-@    altxaxis  tick offsetx 0.000000
-@    altxaxis  tick offsety 0.000000
-@    altxaxis  tick alt off
-@    altxaxis  tick min 0
-@    altxaxis  tick max 1
-@    altxaxis  label ""
-@    altxaxis  label layout para
-@    altxaxis  label place auto
-@    altxaxis  label char size 1.000000
-@    altxaxis  label font 4
-@    altxaxis  label color 1
-@    altxaxis  label linewidth 1
-@    altxaxis  ticklabel off
-@    altxaxis  ticklabel type auto
-@    altxaxis  ticklabel prec 1
-@    altxaxis  ticklabel format decimal
-@    altxaxis  ticklabel layout horizontal
-@    altxaxis  ticklabel skip 0
-@    altxaxis  ticklabel stagger 0
-@    altxaxis  ticklabel op bottom
-@    altxaxis  ticklabel sign normal
-@    altxaxis  ticklabel start type auto
-@    altxaxis  ticklabel start 0.000000
-@    altxaxis  ticklabel stop type auto
-@    altxaxis  ticklabel stop 0.000000
-@    altxaxis  ticklabel char size 1.000000
-@    altxaxis  ticklabel font 4
-@    altxaxis  ticklabel color 1
-@    altxaxis  ticklabel linewidth 1
-@    altxaxis  tick major off
-@    altxaxis  tick minor on
-@    altxaxis  tick default 6
-@    altxaxis  tick in
-@    altxaxis  tick major color 1
-@    altxaxis  tick major linewidth 1
-@    altxaxis  tick major linestyle 1
-@    altxaxis  tick minor color 1
-@    altxaxis  tick minor linewidth 1
-@    altxaxis  tick minor linestyle 1
-@    altxaxis  tick log off
-@    altxaxis  tick size 1.000000
-@    altxaxis  tick minor size 0.500000
-@    altxaxis  bar off
-@    altxaxis  bar color 1
-@    altxaxis  bar linestyle 1
-@    altxaxis  bar linewidth 1
-@    altxaxis  tick major grid off
-@    altxaxis  tick minor grid off
-@    altxaxis  tick op both
-@    altxaxis  tick type auto
-@    altxaxis  tick spec 0
-@    altyaxis  tick on
-@    altyaxis  tick major 0.5
-@    altyaxis  tick minor 0.25
-@    altyaxis  tick offsetx 0.000000
-@    altyaxis  tick offsety 0.000000
-@    altyaxis  tick alt off
-@    altyaxis  tick min 0
-@    altyaxis  tick max 1
-@    altyaxis  label ""
-@    altyaxis  label layout para
-@    altyaxis  label place auto
-@    altyaxis  label char size 1.000000
-@    altyaxis  label font 4
-@    altyaxis  label color 1
-@    altyaxis  label linewidth 1
-@    altyaxis  ticklabel off
-@    altyaxis  ticklabel type auto
-@    altyaxis  ticklabel prec 1
-@    altyaxis  ticklabel format decimal
-@    altyaxis  ticklabel layout horizontal
-@    altyaxis  ticklabel skip 0
-@    altyaxis  ticklabel stagger 0
-@    altyaxis  ticklabel op left
-@    altyaxis  ticklabel sign normal
-@    altyaxis  ticklabel start type auto
-@    altyaxis  ticklabel start 0.000000
-@    altyaxis  ticklabel stop type auto
-@    altyaxis  ticklabel stop 0.000000
-@    altyaxis  ticklabel char size 1.000000
-@    altyaxis  ticklabel font 4
-@    altyaxis  ticklabel color 1
-@    altyaxis  ticklabel linewidth 1
-@    altyaxis  tick major off
-@    altyaxis  tick minor on
-@    altyaxis  tick default 6
-@    altyaxis  tick in
-@    altyaxis  tick major color 1
-@    altyaxis  tick major linewidth 1
-@    altyaxis  tick major linestyle 1
-@    altyaxis  tick minor color 1
-@    altyaxis  tick minor linewidth 1
-@    altyaxis  tick minor linestyle 1
-@    altyaxis  tick log off
-@    altyaxis  tick size 1.000000
-@    altyaxis  tick minor size 0.500000
-@    altyaxis  bar off
-@    altyaxis  bar color 1
-@    altyaxis  bar linestyle 1
-@    altyaxis  bar linewidth 1
-@    altyaxis  tick major grid off
-@    altyaxis  tick minor grid off
-@    altyaxis  tick op both
-@    altyaxis  tick type auto
-@    altyaxis  tick spec 0
-@    zeroxaxis  tick on
-@    zeroxaxis  tick major 0.1
-@    zeroxaxis  tick minor 0.05
-@    zeroxaxis  tick offsetx 0.000000
-@    zeroxaxis  tick offsety 0.000000
-@    zeroxaxis  tick alt off
-@    zeroxaxis  tick min 0
-@    zeroxaxis  tick max 1
-@    zeroxaxis  label ""
-@    zeroxaxis  label layout para
-@    zeroxaxis  label place auto
-@    zeroxaxis  label char size 1.000000
-@    zeroxaxis  label font 4
-@    zeroxaxis  label color 1
-@    zeroxaxis  label linewidth 1
-@    zeroxaxis  ticklabel off
-@    zeroxaxis  ticklabel type auto
-@    zeroxaxis  ticklabel prec 2
-@    zeroxaxis  ticklabel format decimal
-@    zeroxaxis  ticklabel layout horizontal
-@    zeroxaxis  ticklabel skip 0
-@    zeroxaxis  ticklabel stagger 0
-@    zeroxaxis  ticklabel op bottom
-@    zeroxaxis  ticklabel sign normal
-@    zeroxaxis  ticklabel start type auto
-@    zeroxaxis  ticklabel start 0.000000
-@    zeroxaxis  ticklabel stop type auto
-@    zeroxaxis  ticklabel stop 0.000000
-@    zeroxaxis  ticklabel char size 1.000000
-@    zeroxaxis  ticklabel font 4
-@    zeroxaxis  ticklabel color 1
-@    zeroxaxis  ticklabel linewidth 1
-@    zeroxaxis  tick major off
-@    zeroxaxis  tick minor on
-@    zeroxaxis  tick default 6
-@    zeroxaxis  tick in
-@    zeroxaxis  tick major color 1
-@    zeroxaxis  tick major linewidth 1
-@    zeroxaxis  tick major linestyle 1
-@    zeroxaxis  tick minor color 1
-@    zeroxaxis  tick minor linewidth 1
-@    zeroxaxis  tick minor linestyle 1
-@    zeroxaxis  tick log off
-@    zeroxaxis  tick size 1.000000
-@    zeroxaxis  tick minor size 0.500000
-@    zeroxaxis  bar off
-@    zeroxaxis  bar color 1
-@    zeroxaxis  bar linestyle 1
-@    zeroxaxis  bar linewidth 1
-@    zeroxaxis  tick major grid off
-@    zeroxaxis  tick minor grid off
-@    zeroxaxis  tick op both
-@    zeroxaxis  tick type auto
-@    zeroxaxis  tick spec 0
-@    zeroyaxis  tick on
-@    zeroyaxis  tick major 1
-@    zeroyaxis  tick minor 0.5
-@    zeroyaxis  tick offsetx 0.000000
-@    zeroyaxis  tick offsety 0.000000
-@    zeroyaxis  tick alt off
-@    zeroyaxis  tick min 0
-@    zeroyaxis  tick max 1
-@    zeroyaxis  label ""
-@    zeroyaxis  label layout para
-@    zeroyaxis  label place auto
-@    zeroyaxis  label char size 1.000000
-@    zeroyaxis  label font 4
-@    zeroyaxis  label color 1
-@    zeroyaxis  label linewidth 1
-@    zeroyaxis  ticklabel off
-@    zeroyaxis  ticklabel type auto
-@    zeroyaxis  ticklabel prec 1
-@    zeroyaxis  ticklabel format decimal
-@    zeroyaxis  ticklabel layout horizontal
-@    zeroyaxis  ticklabel skip 0
-@    zeroyaxis  ticklabel stagger 0
-@    zeroyaxis  ticklabel op left
-@    zeroyaxis  ticklabel sign normal
-@    zeroyaxis  ticklabel start type auto
-@    zeroyaxis  ticklabel start 0.000000
-@    zeroyaxis  ticklabel stop type auto
-@    zeroyaxis  ticklabel stop 0.000000
-@    zeroyaxis  ticklabel char size 1.000000
-@    zeroyaxis  ticklabel font 4
-@    zeroyaxis  ticklabel color 1
-@    zeroyaxis  ticklabel linewidth 1
-@    zeroyaxis  tick major off
-@    zeroyaxis  tick minor on
-@    zeroyaxis  tick default 6
-@    zeroyaxis  tick in
-@    zeroyaxis  tick major color 1
-@    zeroyaxis  tick major linewidth 1
-@    zeroyaxis  tick major linestyle 1
-@    zeroyaxis  tick minor color 1
-@    zeroyaxis  tick minor linewidth 1
-@    zeroyaxis  tick minor linestyle 1
-@    zeroyaxis  tick log off
-@    zeroyaxis  tick size 1.000000
-@    zeroyaxis  tick minor size 0.500000
-@    zeroyaxis  bar off
-@    zeroyaxis  bar color 1
-@    zeroyaxis  bar linestyle 1
-@    zeroyaxis  bar linewidth 1
-@    zeroyaxis  tick major grid off
-@    zeroyaxis  tick minor grid off
-@    zeroyaxis  tick op both
-@    zeroyaxis  tick type auto
-@    zeroyaxis  tick spec 0
+@    yaxis  tick place both
+@    yaxis  tick spec type none
+@    altxaxis  off
+@    altyaxis  off
 @    legend off
 @    legend loctype view
-@    legend layout 0
-@    legend vgap 2
-@    legend hgap 1
-@    legend length 4
-@    legend box off
-@    legend box fill off
-@    legend box fill with color
+@    legend 0.8, 0.8
+@    legend box color 1
+@    legend box pattern 0
+@    legend box linewidth 1.0
+@    legend box linestyle 1
 @    legend box fill color 0
 @    legend box fill pattern 1
-@    legend box color 1
-@    legend box linewidth 1
-@    legend box linestyle 1
-@    legend x1 0.8
-@    legend y1 0.8
 @    legend font 4
 @    legend char size 1.000000
-@    legend linestyle 1
-@    legend linewidth 1
 @    legend color 1
-@    frame on
+@    legend length 4
+@    legend vgap 2
+@    legend hgap 1
+@    legend invert false
 @    frame type 0
 @    frame linestyle 1
-@    frame linewidth 1
+@    frame linewidth 1.0
 @    frame color 1
-@    frame fill off
+@    frame pattern 1
 @    frame background color 0
-@WITH G0
-@G0 ON
-@TYPE xy
+@    frame background pattern 0
+@    s0 hidden false
+@    s0 type xy
+@    s0 symbol 0
+@    s0 symbol size 1.000000
+@    s0 symbol color 1
+@    s0 symbol pattern 1
+@    s0 symbol fill color 1
+@    s0 symbol fill pattern 0
+@    s0 symbol linewidth 1.0
+@    s0 symbol linestyle 1
+@    s0 symbol char 0
+@    s0 symbol char font 2
+@    s0 symbol skip 0
+@    s0 line type 1
+@    s0 line linestyle 1
+@    s0 line linewidth 2.0
+@    s0 line color 1
+@    s0 line pattern 1
+@    s0 baseline type 0
+@    s0 baseline off
+@    s0 dropline off
+@    s0 fill type 0
+@    s0 fill rule 0
+@    s0 fill color 0
+@    s0 fill pattern 1
+@    s0 avalue off
+@    s0 avalue type 2
+@    s0 avalue char size 1.000000
+@    s0 avalue font 2
+@    s0 avalue color 1
+@    s0 avalue rot 0
+@    s0 avalue format general
+@    s0 avalue prec 3
+@    s0 avalue prepend ""
+@    s0 avalue append ""
+@    s0 avalue offset 0.000000 , 0.000000
+@    s0 errorbar on
+@    s0 errorbar place both
+@    s0 errorbar color 1
+@    s0 errorbar pattern 1
+@    s0 errorbar size 1.000000
+@    s0 errorbar linewidth 1.0
+@    s0 errorbar linestyle 1
+@    s0 errorbar riser linewidth 1.0
+@    s0 errorbar riser linestyle 1
+@    s0 errorbar riser clip off
+@    s0 errorbar riser clip length 0.100000
+@    s0 comment "f_lj.xvg"
+@    s0 legend  ""
+@target G0.S0
+@type xy
 0.38 1.53945
 0.383663 1.30188
 0.387327 1.09591
