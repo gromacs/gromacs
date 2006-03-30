@@ -46,12 +46,13 @@ given, which is refined in subsequent subsections. The (simple) EM
 (Energy Minimization) algorithm is described in \secref{EM}. Some
 other algorithms for special purpose dynamics are described after
 this.  
-\ifthenelse{\equal{\gmxlite}{1}}{}{
-In the final \secref{par} of this chapter a few principles are
-given on which parallelization of {\gromacs} is based. The
-parallelization is hardly visible for the user and is therefore not
-treated in detail.
-} % Brace matches ifthenelse test for gmxlite
+
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
+%In the final \secref{par} of this chapter a few principles are
+%given on which parallelization of {\gromacs} is based. The
+%parallelization is hardly visible for the user and is therefore not
+%treated in detail.
+%} % Brace matches ifthenelse test for gmxlite
 
 A few issues are of general interest. In all cases the {\em system}
 must be defined, consisting of molecules. Molecules again consist of
@@ -287,7 +288,7 @@ that would lead to 256$\times$256 items! Better use this concept
 sparingly.
 
 All non-bonded interactions between pairs of energy monitor groups can
-be excluded\index{exclusions, energy monitor group} (see \secref{mdp_opt}).
+be excluded\index{exclusions, energy monitor group} (see \secref{mdpopt}).
 Pairs of particles from excluded pairs of energy monitor groups
 are not put into the pair list.
 This can result in a significant speedup
@@ -1709,6 +1710,10 @@ Thus for a probability of $e^{-2}\approx 0.135$
 one obtaines $\epsilon \approx 2/\sqrt{c\,N_{df}}$.
 With all bonds constrainted one has $N_{df} \approx 2\, N_{atoms}$
 and thus for $c$ = 2 one should choose $\epsilon$ as $1/\sqrt{N_{atoms}}$.
+However there is one problem when using pressure coupling. The density at
+higher temperatures will decrease, leading to higher energy\cite{Seibert2005a}
+and this should be taken into account. The {\gromacs} website features a so-called ``REMD'' - calculator, that lets you type in the temperature range and
+the number of atoms, and based on that proposes a set of temperatures.
 
 An extension to the REMD for the isobaric-isothermal ensemble was
 proposed by Okabe {\em et al.}~\cite{Okabe2001a}. In this work the

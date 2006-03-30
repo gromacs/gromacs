@@ -572,8 +572,7 @@ peptide dihedrals. The peptide dihedral cannot be changed without
 affecting the physical behavior of the protein. The improper dihedrals
 that preserve planarity, mostly deal with aromatic residues. Bonds,
 angles and dihedrals in these residues can also be replaced with
-somewhat elaborate virtual site constructions, as will be described in
-\secref{vsitearo}~\cite{feenstra01}.
+somewhat elaborate virtual site constructions.
 
 All modifications described in this section can be performed using the
 {\gromacs} topology building tool {\tt \normindex{pdb2gmx}}. Separate
@@ -945,7 +944,7 @@ zeroes) must be entered in all columns.  A number of pre-built table
 files can be found in the GMXLIB directory, for 6-8, 6-9, 6-10, 6-11, 6-12
 Lennard Jones potentials combined with a normal Coulomb.
 
-\section{mixed Quantum-Classical simulation techniques}
+\section{Mixed Quantum-Classical simulation techniques}
 
 In a molecular mechanics (MM) forcefield, the influence of electrons
 is expressed by empirical parameters that are assigned on the basis of
@@ -975,7 +974,7 @@ either handled as described by Field {\it{et al.}}\cite{field90} or
 within the ONIOM approach by Morokuma and coworkers\cite{Maseras96,
 Svensson96}.
 
-\subsection{overview}
+\subsection{Overview}
 
 Two approaches for describing the interactions between the QM and MM
 subsystems are supported in this version:
@@ -1020,7 +1019,7 @@ but can easily handle more than two layers, with each layer described
 at a different level of theory.
 \end{enumerate}
 
-\subsection{usage}
+\subsection{Usage}
 
 To make use of the QM/MM functionality in Gromacs, one needs to:
 
@@ -1042,13 +1041,15 @@ two atoms of the bond. In the topology the link atom (LA), therefore,
 is defined as a virtual site atom:\\
 
 \begin{tt}
-[ virtual\_sites2 ]
+[ virtual\_sites2 ]\\
 LA QMatom MMatom 1 0.65\\
 \end{tt}
+
 See the dummy atoms section for more details on how dummies are
 treated. The link atom is replaced at every step of the simulation.
 
 In addition, the bond itself is replaced by a constraint:
+
 \begin{tt}
 [ constraints ] \\
 QMatom MMatom 2 0.153\\
@@ -1063,19 +1064,20 @@ carbon-hydrogen bondlength. If the QM and MM subsystems are connected
 by a different kind of bond, a different constraint and a different
 dummy position, appropriate for that bond type, are required.
 
-\subsubsection{specifying the QM atoms}
+\subsubsection{Specifying the QM atoms}
 
 Atoms that should be treated at a QM level of theory, including the
 link atoms, are added to the index file. In addition, the chemical
 bonds between the atoms in the QM region are to be defined as
-connect bonds (bond type 5)in the topology file:\\
+connect bonds (bond type 5)in the topology file:
+
 \begin{tt}
 [ bonds ]\\
 QMatom1 QMatom2 5\\
 QMatom2 QMatom3 5\\
 \end{tt}
 
-\subsubsection{specifying the QM/MM simulation parameters}
+\subsubsection{Specifying the QM/MM simulation parameters}
 
 In the mdp file, the following parameters control a QM/MM simulation.
 

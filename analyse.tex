@@ -74,7 +74,7 @@ index file consisting of a series of {\em atom numbers} (as in the
 example of $g_{AB}$) use {\tt \normindex{make\_ndx}}. To generate an index file
 with angles or dihedrals, use {\tt \normindex{mk\_angndx}}. Of course you can also
 make them by hand. The general format is presented here:
-{\samepage
+
 \begin{tt}
 [ Oxygen ]\\
    1       4       7 \\
@@ -83,7 +83,7 @@ make them by hand. The general format is presented here:
 [ Hydrogen ]\\
    2       3       5       6\\
    8       9\\
-\end{tt}}
+\end{tt}
 
 First the group name is written between square brackets. The following
 atom numbers may be spread out over as many lines as you like. The
@@ -225,7 +225,7 @@ SPC-water~\cite{Berendsen81} is given in \figref{rdf}.
 
 \begin{figure}
 \centerline{
-{\includegraphics[width=7cm,angle=270]{plots/rdfO_O}}}
+{\includegraphics[width=8cm]{plots/rdfO_O}}}
 \caption{$g_{OO}(r)$ for Oxygen-Oxygen of SPC-water.}
 \label{fig:rdf}
 \end{figure}
@@ -408,7 +408,7 @@ An example of the mean square displacement of SPC-water is given in
 
 \begin{figure}
 \centerline{
-{\includegraphics[width=6.5cm,angle=270]{plots/msdwater}}}
+{\includegraphics[width=8cm]{plots/msdwater}}}
 \caption{Mean Square Displacement of SPC-water.}
 \label{fig:msdwater}
 \end{figure}
@@ -423,7 +423,7 @@ An example of the mean square displacement of SPC-water is given in
 To monitor specific {\em bonds} in your molecules during time, the program 
 {\tt \normindex{g\_bond}} calculates the distribution of the bond length in time. 
 The index file consists of pairs of atom numbers, for example\\
-{\samepage
+
 \begin{tt}
 [ bonds\_1 ]\\
  1     2\\
@@ -433,12 +433,12 @@ The index file consists of pairs of atom numbers, for example\\
 \begin{tt}
 [ bonds\_2 ]\\
 12    13\\
-\end{tt}}
+\end{tt}
 
 The program {\tt \normindex{g\_angle}} calculates the distribution of {\em angles} and 
 {\em dihedrals} in time. It also gives the average angle or dihedral. 
 The index file consists of triplets or quadruples of atom numbers:
-{\samepage
+
 \begin{tt}
 [ angles ]\\
  1     2     3\\
@@ -449,7 +449,7 @@ The index file consists of triplets or quadruples of atom numbers:
 [ dihedrals ]\\
  1     2     3     4\\
  2     3     5     5\\
-\end{tt}}
+\end{tt}
 
 For the dihedral angles you can use either the ``biochemical convention'' 
 ($\phi = 0 \equiv cis$) or ``polymer convention'' ($\phi = 0 \equiv trans$), 
@@ -484,7 +484,7 @@ calculates the distance $d$ between the center of the plane and the
 middle of this vector.  Depending on the input groups ({\ie} groups of
 2 or 3 atom numbers), the program decides what angles and distances to
 calculate. For example, the index-file could look like this:
-{\samepage
+
 \begin{tt}
 [ a\_plane ]\\
  1     2     3\\
@@ -492,7 +492,7 @@ calculate. For example, the index-file could look like this:
 \begin{tt}
 [ a\_vector ]\\
  3     4     5\\
-\end{tt}}
+\end{tt}
 } % Brace matches ifthenelse test for gmxlite
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Radius of gyration and distances
@@ -783,7 +783,9 @@ $\tau_{HB}$:
 Both the integral and the complete auto correlation function $C(\tau)$
 will be output, so that more sophisticated analysis ({\eg}\@ using
 multi-exponential fits) can be used to get better estimates for
-$\tau_{HB}$.
+$\tau_{HB}$. A more complicate analysis is given in ref.~\cite{Spoel2006b},
+one of the more fancy option is the Luzar and Chandler analysis
+of hydrogen bond kinetics~\cite{Luzar96b,Luzar2000a}. 
 \item
 An H-bond existence map can be generated of dimensions {\em
 \#~H-bonds}$\times${\em \#~frames}.
@@ -841,7 +843,7 @@ A typical output is given in \figref{rama}.
 
 \begin{figure}
 \centerline{
-{\includegraphics[width=9cm,angle=270]{plots/rama}}}
+{\includegraphics[width=8cm]{plots/rama}}}
 \caption{Ramachandran plot of a small protein.}
 \label{fig:rama}
 \end{figure}

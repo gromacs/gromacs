@@ -275,7 +275,7 @@ minor, but it does remove the noise caused by cutoff effects.
  
 There is {\em no} fundamental difference between a switch function
 (which multiplies the potential with a function) and a shift function
-(which adds a function to the force or potential). The switch
+(which adds a function to the force or potential)~\cite{Spoel2006a}. The switch
 function is a special case of the shift function, which we apply to
 the {\em force function} $F(r)$, related to the electrostatic or
 Van der Waals force acting on particle $i$ by particle $j$ as
@@ -357,7 +357,7 @@ The modified Coulomb potential function is
 see also \figref{shift}.
 
 \begin{figure}
-\centerline{\includegraphics[width=10cm]{plots/shiftf}}
+\centerline{\includegraphics[angle=270,width=10cm]{plots/shiftf}}
 \caption[The Coulomb Force, Shifted Force and Shift Function
 $S(r)$,.]{The Coulomb Force, Shifted Force and Shift Function $S(r)$,
 using r$_1$ = 2 and r$_c$ = 4.} 
@@ -397,7 +397,7 @@ The \swapindex{bond}{stretching} between two covalently bonded atoms
 $i$ and $j$ is represented by a harmonic potential
 
 \begin{figure}
-\centerline{\raisebox{-1.8cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[angle=270,width=7cm]{plots/f_bond}}
+\centerline{\raisebox{1.8cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f_bond}}
 \caption[Bond stretching.]{Principle of bond stretching (left), and the bond
 stretching potential (right).}
 \label{fig:bstretch1}
@@ -538,7 +538,7 @@ The bond \swapindex{angle}{vibration} between a triplet of atoms $i$ - $j$ - $k$
 is also represented by a harmonic potential on the angle $\tijk$
 
 \begin{figure}
-\centerline{\raisebox{-1.5cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[angle=270,width=7cm]{plots/f_angle}}
+\centerline{\raisebox{1.5cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f_angle}}
 \caption[Angle vibration.]{Principle of angle vibration (left) and the
 bond angle potential (right).}
 \label{fig:angle}
@@ -673,7 +673,7 @@ not taken into account, so it is best to define improper dihedrals
 to have a $\xi_0$ as far away from $\pm 180^\circ$ as you can manage.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/f_imps}}
+\centerline{\includegraphics[width=8cm]{plots/f_imps}}
 \caption{Improper dihedral potential.}
 \label{fig:imps}
 \end{figure}
@@ -695,7 +695,7 @@ planes, with {\bf zero} corresponding to the {\em cis} configuration
 ($i$ and $l$ on the same side).
 
 \begin{figure}
-\centerline{\raisebox{-1cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[angle=270,width=7cm]{plots/f_dih}}
+\centerline{\raisebox{1cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f_dih}}
 \caption[Proper dihedral angle.]{Principle of proper dihedral angle
 (left, in {\em trans} form) and the dihedral angle potential (right).} 
 \label{fig:pdihf}
@@ -732,7 +732,7 @@ $C_1$   & 12.16 & $C_3$   & -3.06   & $C_5$   & -31.5   \\
 \end{table}
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/f_rbs}}
+\centerline{\includegraphics[width=8cm]{plots/f_rbs}}
 \caption{Ryckaert-Bellemans dihedral potential.}
 \label{fig:rbdih}
 \end{figure}
@@ -804,7 +804,7 @@ V_{pr}(\ve{r}_i) = \halfje{1}k_{pr}|\rvi-\ve{R}_i|^2
 The potential is plotted in \figref{posres}.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/f_pr}}
+\centerline{\includegraphics[width=8cm]{plots/f_pr}}
 \caption{Position restraint potential.}
 \label{fig:posres}
 \end{figure}
@@ -868,7 +868,7 @@ where $\phi_0$ is the reference angle, the potential is defined as:
 \beq
 V_{dihr}(\phi') ~=~ \left\{
 \begin{array}{lcllll}
-\half k_{dihr}(\phi'-\Delta\phi)^2      
+\half k_{dihr}(\phi'-\phi_0-\Delta\phi)^2      
                 &\mbox{for}&     \phi' & >   & \Delta\phi       \\[1.5ex]
 0               &\mbox{for}&     \phi' & \le & \Delta\phi       \\[1.5ex]
 \end{array}\right.
@@ -2190,6 +2190,7 @@ Don't use Ewald unless you are absolutely sure this is what you want -
 for almost all cases the PME method below will perform much better.
 If you still want to employ classical Ewald summation enter this in
 your {\tt .mdp} file, if the side of your box is about $3$~nm:
+
 \begin{tt}
 coulombtype     = Ewald\\
 rvdw            = 0.9\\
@@ -2198,6 +2199,7 @@ rcoulomb        = 0.9\\
 fourierspacing  = 0.6\\
 ewald\_rtol      = 1e-5\\
 \end{tt}
+
 The {\tt fourierspacing} parameter times the box dimensions determines
 the highest magnitude of wave vectors $m_x,m_y,m_z$ to use in each
 direction. With a 3~nm cubic box this example would use $11$ wave vectors
@@ -2228,6 +2230,7 @@ overhead in setting up grids and transforms.
 \subsubsection{Using PME}
 To use Particle-mesh Ewald summation in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
+
 \begin{tt}
 coulombtype     = PME\\
 rvdw            = 0.9\\
@@ -2237,6 +2240,7 @@ fourierspacing  = 0.12\\
 pme\_order       = 4\\
 ewald\_rtol      = 1e-5\\
 \end{tt}
+
 In this case the {\tt fourierspacing} parameter determines the maximum
 spacing for the FFT grid and {\tt pme\_order} controls the
 interpolation order. Using 4th order (cubic) interpolation and this
@@ -2294,6 +2298,7 @@ pressure) but not necessarily the individual pressure components!
 \subsubsection{Using PPPM}
 To use the PPPM algorithm in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
+
 \begin{tt}
 coulombtype     = PPPM\\
 rlist           = 1.0\\
@@ -2302,6 +2307,7 @@ rcoulomb\_switch = 0.0\\
 rvdw            = 1.0\\
 fourierspacing  = 0.075\\
 \end{tt}
+
 For details on the switch parameters see the section on modified
 long-range interactions in this manual. When using PPPM we recommend
 to take at most 0.075 nm per gridpoint ({\eg} 20 gridpoints for 1.5

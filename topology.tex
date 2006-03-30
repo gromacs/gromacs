@@ -86,67 +86,40 @@ Particle        		& Symbol        \\
 
 \subsection{Atom types}
 \label{subsec:atomtype}
-{\gromacs} uses 47 different \swapindex{atom}{type}s, 
-as listed below, with their
-corresponding masses (in a.m.u.). This is the same listing as in the
-file {\tt ff???.atp} (.atp = {\bf a}tom {\bf t}ype {\bf p}arameter
-file), therefore in this file you can change and/or add an atom type.
-{\small
-\begin{tt}
-    O  15.99940 ;     carbonyl oxygen (C=O)\\
-   OM  15.99940 ;     carboxyl oxygen (CO-)\\
-   OA  15.99940 ;     hydroxyl oxygen (OH)\\
-   OW  15.99940 ;     water oxygen\\
-    N  14.00670 ;     peptide nitrogen (N or NH)\\
-   NT  14.00670 ;     terminal nitrogen (NH2)\\
-   NL  14.00670 ;     terminal nitrogen (NH3)\\
-  NR5  14.00670 ;     aromatic N (5-ring,2 bonds)\\
- NR5*  14.00670 ;     aromatic N (5-ring,3 bonds)\\
-   NP  14.00670 ;     porphyrin nitrogen\\
-    C  12.01100 ;     bare carbon (peptide,C=O,C-N)\\
-  CH1  13.01900 ;     aliphatic CH-group\\
-  CH2  14.02700 ;     aliphatic CH2-group\\
-  CH3  15.03500 ;     aliphatic CH3-group\\
- CR51  13.01900 ;     aromatic CH-group (5-ring), united\\
- CR61  13.01900 ;     aromatic CH-group (6-ring), united\\
-   CB  12.01100 ;     bare carbon (5-,6-ring)\\
-    H   1.00800 ;     hydrogen bonded to nitrogen\\
-   HO   1.00800 ;     hydroxyl hydrogen\\
-   HW   1.00800 ;     water hydrogen\\
-   HS   1.00800 ;     hydrogen bonded to sulfur\\
-    S  32.06000 ;     sulfur\\
-   FE  55.84700 ;     iron\\
-   ZN  65.37000 ;     zinc\\
-   NZ  14.00670 ;     arg NH (NH2)\\
-   NE  14.00670 ;     arg NE (NH)\\
-    P  30.97380 ;     phosphor\\
-   OS  15.99940 ;     sugar or ester oxygen\\
-  CS1  13.01900 ;     sugar CH-group\\
-  NR6  14.00670 ;     aromatic N (6-ring,2 bonds)\\
- NR6*  14.00670 ;     aromatic N (6-ring,3 bonds)\\
-  CS2  14.02700 ;     sugar CH2-group\\
-   SI  28.08000 ;     silicon\\
-   NA  22.98980 ;     sodium (1+)\\
-   CL  35.45300 ;     chlorine (1-)\\
-   CA  40.08000 ;     calcium (2+)\\
-   MG  24.30500 ;     magnesium (2+)\\
-    F  18.99840 ;     fluorine (cov. bound)\\
-  CP2  14.02700 ;     aliphatic CH2-group using Ryckaert-Bell.\\
-  CP3  15.03500 ;     aliphatic CH3-group using Ryckaert-Bell.\\
-  CR5  12.01100 ;     aromatic CH-group (5-ring)+H\\
-  CR6  12.01100 ;     aromatic C- bonded to H (6-ring)+H\\
-  HCR   1.00800 ;     H attached to aromatic C (5 or 6 ri\\
- OWT3  15.99940 ;     TIP3P water oxygen\\
-   SD  32.06000 ;     DMSO Sulphur\\
-   OD  15.99940 ;     DMSO Oxygen\\
-   CD  15.03500 ;     DMSO Carbon\\
-\end{tt}}
+Depending on the force field {\gromacs} uses different
+\swapindex{atom}{type}s, a sample from the deprecated ``gromacs''
+force field is listed below, with their corresponding masses (in
+a.m.u.). This is the same listing as in the file {\tt ff???.atp} (.atp
+= {\bf a}tom {\bf t}ype {\bf p}arameter file), therefore in this file
+you can change and/or add an atom type.
+
+\begin{tabular}{lll}
+    O  &15.99940 &;     carbonyl oxygen (C=O)\\
+   OM  &15.99940 &;     carboxyl oxygen (CO-)\\
+   OA  &15.99940 &;     hydroxyl oxygen (OH)\\
+   OW  &15.99940 &;     water oxygen\\
+    N  &14.00670 &;     peptide nitrogen (N or NH)\\
+   NT  &14.00670 &;     terminal nitrogen (NH2)\\
+   NL  &14.00670 &;     terminal nitrogen (NH3)\\
+  NR5  &14.00670 &;     aromatic N (5-ring,2 bonds)\\
+ NR5*  &14.00670 &;     aromatic N (5-ring,3 bonds)\\
+   NP  &14.00670 &;     porphyrin nitrogen\\
+    C  &12.01100 &;     bare carbon (peptide,C=O,C-N)\\
+  CH1  &13.01900 &;     aliphatic CH-group\\
+  CH2  &14.02700 &;     aliphatic CH2-group\\
+  CH3  &15.03500 &;     aliphatic CH3-group\\
+\end{tabular}
+
 Atomic detail is used except for hydrogen atoms bound to (aliphatic)
 carbon atoms, which are treated as {\em \swapindex{united}{atom}s}. No
-special \normindex{hydrogen-bond} term is included.
+special \normindex{hydrogen-bond} term is included. Note that other force field
+like OPLS/AA and Amber99 use all atoms.
 
-The last 10 atom types are extra atom types with respect to the \gromosv{87}
-force field~\cite{biomos}: 
+For backward compatibility we retain here some reference to parameters
+present in the ``gromacs'' force field. The last 10 atom types were
+not part of the original \gromosv{87} force field~\cite{biomos} and
+when you use them you can refer to one or more of the following
+papers:
 \begin{itemize}
 \item F was taken from ref.~\cite{Buuren93a}, 
 \item CP2 and CP3 from ref.~\cite{Buuren93b} and references cited therein, 
@@ -154,8 +127,8 @@ force field~\cite{biomos}:
 \item OWT3 from ref.~\cite{Jorgensen83}
 \item SD, OD and CD from ref.~\cite{Liu95}
 \end{itemize}
-{\bf Therefore, if you use the {\gromacs} force field as it is, be
-sure to include these references in your publications.}
+{\bf Note that we recommend against using these parameters in new projects
+since they are not well-tested.}
 
 {\bf Note:} {\gromacs} makes use of the atom types as a name, {\em
 not} as a number (as {\eg} in {\gromos}).
@@ -783,8 +756,8 @@ information for the {\tt pdb2gmx} program on how to connect new atoms
 to existing ones, which atoms should be removed or changed and which
 bonded interactions should be added. The format of the is as follows
 (this is an example from the {\tt ffgmx-c.tdb}):
-%
-{\small\begin{tt}
+
+\begin{tt}
 [ None ]\\
 \end{tt}\\
 \begin{tt}
@@ -807,7 +780,6 @@ O\\
 [ impropers ]\\
 C       O1      O2      CA\\
 \end{tt}
-}
 
 The file is organized in blocks, each with a header specifying the
 name of the block. These blocks correspond to different types of
@@ -1064,7 +1036,8 @@ Description of the file layout:
 \end{itemize}
 
 Here is an example of a topology file, {\tt urea.top}:
-{\small\begin{tt}
+
+\begin{tt}
 ;\\
 ;       Example topology file\\
 ;\\
@@ -1164,7 +1137,7 @@ Urea in Water\\
 ;molecule name   nr.\\
 Urea             1\\
 SOL              1000\\
-\end{tt}}
+\end{tt}
 
 Here follows the explanatory text.
 
@@ -1257,7 +1230,8 @@ molecules. The molecule type SOL is defined in the {\tt spc.itp} file.
 If you construct a topology file you will use frequently (like a water
 molecule, {\tt spc.itp}) it is better to make a {\tt molecule.itp}
 file, which only lists the information of the molecule: 
-{\small\begin{tt}
+
+\begin{tt}
 [ moleculetype ]\\
 ; name  nrexcl\\
 Urea       3\\
@@ -1309,10 +1283,11 @@ Urea       3\\
     6     7     8     1     2 0.000000e+00 1.673600e+02 \\
     1     3     6     2     2 0.000000e+00 1.673600e+02 \\
 \end{tt}
-}
+
 This results in a very short {\tt *.top} file as described in the
 previous section, but this time you only need to include files:
-{\small\begin{tt}
+
+\begin{tt}
 ; The force field files to be included\\
 \#include "ffgmx.itp"\\
   \\      
@@ -1331,7 +1306,7 @@ Urea in Water\\
 ;molecule name  number\\
 Urea              1\\
 SOL               1000\\
-\end{tt}}
+\end{tt}
 
 \subsection{Ifdef option}
 \label{subsec:ifdef}
@@ -1405,7 +1380,8 @@ The $\lambda$-dependence of the interactions is described
 in section \secref{feia}.
 Below is an example of a topology which changes from 200 propanols to
 200 pentanes using the \gromosv{96} force field.
-{\small\begin{tt}
+
+\begin{tt}
 ; Include forcefield parameters\\
 \#include "ffG43a1.itp"\\
 \end{tt}\\
@@ -1459,7 +1435,8 @@ Propanol to Pentane\\
 [ molecules ]\\
 ; Compound        \#mols\\
 PropPent            200\\
-\end{tt}}
+\end{tt}
+
 Atoms that are not perturbed, {\tt PC2} and {\tt PC3}, do not need B parameter
 specifications, the B parameters will be copied from the A parameters.
 Bonded interactions between atoms that are not perturbed do not need B
@@ -1478,11 +1455,12 @@ Note that this topology uses the \gromosv{96} force field, in which the bonded
 interactions are not determined by the atom types. The bonded interaction
 strings are converted by the C-preprocessor. The force field parameter
 files contain lines like:
-{\small\begin{tt}
+
+\begin{tt}
 \#define gb\_26       0.1530  7.1500e+06\\
 \\
 \#define gd\_17     0.000       5.86          3\\
-\end{tt}}
+\end{tt}
 
 \subsection{\swapindex{Constraint}{force}}
 \label{subsec:constraintforce}
@@ -1497,7 +1475,8 @@ Below is an example for calculating the constraint force at 0.7 nanometer
 between two methanes in water, by combining the two methanes into one molecule.
 The added constraint is of function type 2, which means that it is not
 used for generating exclusions (see~\ssecref{excl}).
-{\small\begin{tt}
+
+\begin{tt}
 ; Include forcefield parameters\\
 \#include "ffG43a1.itp"\\
 \end{tt}\\
@@ -1529,13 +1508,14 @@ Methanes in Water\\
 ; Compound        \#mols\\
 Methanes              1\\
 SOL                2002\\
-\end{tt}}
+\end{tt}
 
 \subsection{Coordinate file}
 \label{subsec:grofile}
 Files with the {\tt .gro} file extension contain a molecular structure in 
 \gromos{87} format. A sample piece is included below:
-{\small\begin{tt}
+
+\begin{tt}
 MD of 2 waters, reformat step, PA aug-91\\
     6\\
     1WATER  OW1    1   0.126   1.624   1.679  0.1227 -0.0580  0.0434\\
@@ -1545,7 +1525,8 @@ MD of 2 waters, reformat step, PA aug-91\\
     2WATER  HW2    5   1.337   0.002   0.680 -1.0641 -1.1349  0.0257\\
     2WATER  HW3    6   1.326   0.120   0.568  1.9427 -0.8216 -0.0244\\
    1.82060   1.82060   1.82060\\
-\end{tt}}
+\end{tt}
+
 This format is fixed, {\ie} all columns are in a fixed position. If you
 want to read such a file in your own program without using the
 {\gromacs} libraries you can use the following formats:
@@ -1553,6 +1534,7 @@ want to read such a file in your own program without using the
 {\bf C-format:} \verb'"%5i%5s%5s%5i%8.3f%8.3f%8.3f%8.4f%8.4f%8.4f"'
 
 Or to be more precise, with title {\em etc.} it looks like this:
+
 \begin{tt}
   "%s\n", Title\\
   "%5d\n", natoms\\
@@ -1579,6 +1561,7 @@ tensor, not a vector.
 \label{subsec:fffiles}
 {\gromacs} {\gmxver} includes five forcefields.
 They are listed the file {\tt FF.dat}:
+
 \begin{tt}
 5\\
 ffgmx   Gromacs Forcefield (see manual)\\
@@ -1587,6 +1570,7 @@ ffG43a1 GROMOS96 43a1 Forcefield (official distribution)\\
 ffG43b1 GROMOS96 43b1 Vacuum Forcefield (official distribution)\\
 ffG43a2 GROMOS96 43a2 Forcefield (development) (improved ...)\\
 \end{tt}
+
 All files for each force field have names beginning with the {\tt ff???}
 string in the {\tt FF.dat} file.
 A force field is included at the beginning of a topology file with an
@@ -1595,6 +1579,7 @@ This statement includes the force-field file,
 which in turn may include other forcefield files. A the five force fields
 are organized in the same way. As an example we show the {\tt ffgmx.itp}
 force-field file:
+
 \begin{tt}
 \#define \_FF\_GROMACS\\
 \#define \_FF\_GROMACS1\\
@@ -1607,6 +1592,7 @@ force-field file:
 \#include "ffgmxnb.itp"\\
 \#include "ffgmxbon.itp"\\
 \end{tt}
+
 The first {\tt \#define} can be used in topologies to parse data which is
 specific for all {\gromacs} force-fields, the second {\tt \#define} to parse
 data which is specific for this force field. The {\tt defaults} section is
