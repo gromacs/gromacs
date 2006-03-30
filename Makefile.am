@@ -7,12 +7,7 @@
 # automake. Presently, this means automake version 1.4f. In Groningen, you
 # can find that under ~lindahl/gnu/bin , or download a copy from www.gromacs.org
 
-#
-# Automake 1.9 or later is required to support generation of ustar format
-# tar files, which is necessary for filenames longer than 99 characters.
-# You can still use older automake versions to build gromacs, but you _might_
-# not be able to create tarballs with "make dist". If so, try "make dist-zip"! 
-AUTOMAKE_OPTIONS = foreign tar-ustar
+AUTOMAKE_OPTIONS = foreign
 
 SUBDIRS = include src admin scripts share man
 
