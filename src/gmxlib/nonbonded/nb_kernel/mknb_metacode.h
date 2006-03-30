@@ -297,13 +297,13 @@ mknb_declare_const_int     (char *     name,
  *  Arbitrary variable declaration where you provide your own type.
  *  Note that you will have to take care of C/Fortran differences
  *  manually. In the generated code it will appear as 
- *  "typename name;" in C, and without the semicolon in Fortran.
+ *  "type_name name;" in C, and without the semicolon in Fortran.
  *
- *  \param typename  Name of the variable type
+ *  \param type_name  Name of the variable type
  *  \param name      Name of the variable
  */
 void
-mknb_declare_other          (char *     typename,
+mknb_declare_other          (char *     type_name,
 							 char *     name);
 
 
