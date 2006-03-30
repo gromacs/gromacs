@@ -94,25 +94,25 @@ mknb_comment(char *s)
 void
 mknb_declare_real(char *name)
 {
-  char typename[255];
+  char type_name[255];
 
   if(mknb_fortran) 
-    sprintf(typename, "%-13s", mknb_double ? "real*8" : "real*4");
+    sprintf(type_name, "%-13s", mknb_double ? "real*8" : "real*4");
   else
-    sprintf(typename, "%-13s", mknb_double ? "double" : "float");
+    sprintf(type_name, "%-13s", mknb_double ? "double" : "float");
 
-  mknb_code("%s %s%s",typename,name, mknb_fortran ? "" : ";");
+  mknb_code("%s %s%s",type_name,name, mknb_fortran ? "" : ";");
 }
 
 /* Declare a single-precision floating point var. */
 void
 mknb_declare_real4(char *name)
 {
-  char typename[255];
+  char type_name[255];
 
-  sprintf(typename, "%-13s", mknb_fortran ? "real*4" : "float");
+  sprintf(type_name, "%-13s", mknb_fortran ? "real*4" : "float");
 
-  mknb_code("%s %s%s", typename ,name, mknb_fortran ? "" : ";");
+  mknb_code("%s %s%s", type_name ,name, mknb_fortran ? "" : ";");
 }
 
 
@@ -120,16 +120,16 @@ mknb_declare_real4(char *name)
 void
 mknb_declare_const_real(char *name, double value)
 {
-  char typename[255];
+  char type_name[255];
 
   if(mknb_fortran) {
-    sprintf(typename, "%-13s", mknb_double ? "real*8" : "real*4");
-    mknb_code("%s %s",typename,name);
+    sprintf(type_name, "%-13s", mknb_double ? "real*8" : "real*4");
+    mknb_code("%s %s",type_name,name);
     mknb_code("    parameter (%s = %f)",name,value);
   } else {
-    sprintf(typename, "%-13s",
+    sprintf(type_name, "%-13s",
 	    mknb_double ? "const double" : "const float");
-    mknb_code("%s %s = %.16f;",typename,name,value);
+    mknb_code("%s %s = %.16f;",type_name,name,value);
   }
 }
 
@@ -137,11 +137,11 @@ mknb_declare_const_real(char *name, double value)
 void
 mknb_declare_int(char *name)
 {
-  char typename[255];
+  char type_name[255];
 
-  sprintf(typename, "%-13s", mknb_fortran ? "integer*4" : "int"); 
+  sprintf(type_name, "%-13s", mknb_fortran ? "integer*4" : "int"); 
 
-  mknb_code("%s %s%s", typename ,name, mknb_fortran ? "" : ";");
+  mknb_code("%s %s%s", type_name ,name, mknb_fortran ? "" : ";");
 }
 
 
@@ -149,35 +149,35 @@ mknb_declare_int(char *name)
 void
 mknb_declare_const_int(char *name, int value)
 {
-  char typename[255];
+  char type_name[255];
 
-  sprintf(typename, "%-13s", mknb_fortran ? "integer*4" : "const int");
+  sprintf(type_name, "%-13s", mknb_fortran ? "integer*4" : "const int");
 
   if(mknb_fortran) {
-    mknb_code("%s %s", typename ,name);
+    mknb_code("%s %s", type_name ,name);
     mknb_code("    parameter (%s = %d)",name,value);
   } else
-    mknb_code("%s %s = %d;", typename ,name, value);
+    mknb_code("%s %s = %d;", type_name ,name, value);
 }
 
 /* 4-byte Integer (same size as single precision fp) */
 void
 mknb_declare_int4(char *name)
 {
-  char typename[255];
+  char type_name[255];
 
-  sprintf(typename, "%-13s", mknb_fortran ? "integer*4" : "int"); 
+  sprintf(type_name, "%-13s", mknb_fortran ? "integer*4" : "int"); 
 
-  mknb_code("%s %s%s", typename ,name, mknb_fortran ? "" : ";");
+  mknb_code("%s %s%s", type_name ,name, mknb_fortran ? "" : ";");
 }
 
 
 /* Arbitrary declaration */
 void
-mknb_declare_other(char *typename,char *name)
+mknb_declare_other(char *type_name,char *name)
 {
   char tmp[255];
-  sprintf(tmp,"%-13s", typename);
+  sprintf(tmp,"%-13s", type_name);
 
   mknb_code("%s %s%s", tmp, name, mknb_fortran ? "" : ";");
 }

@@ -299,12 +299,12 @@ main(int argc,char *argv[])
 	/* Coulomb interaction alteratives */
 	for(mknb_func.coul=MKNB_COUL_NO;
 		mknb_func.coul<MKNB_COUL_NR;
-		mknb_func.coul++) {
+		mknb_func.coul = (enum mknb_coul)(mknb_func.coul + 1)) {
 
 		/* VdW interaction alternatives */
 		for(mknb_func.vdw=MKNB_VDW_NO;
 			mknb_func.vdw<MKNB_VDW_NR;
-			mknb_func.vdw++) {
+			mknb_func.vdw = (enum mknb_vdw)(mknb_func.vdw + 1)) {
 
 			/* Skip the case when we dont have any interaction at all */
 			if(mknb_func.coul==MKNB_COUL_NO && mknb_func.vdw==MKNB_VDW_NO)
@@ -313,7 +313,7 @@ main(int argc,char *argv[])
 			/* Water optimization alternatives */
 			for(mknb_func.water=MKNB_WATER_NO;
 				mknb_func.water<MKNB_WATER_NR;
-				mknb_func.water++) {
+				mknb_func.water = (enum mknb_water)(mknb_func.water + 1)) {
 
 				/* Water optimization is useless without coulomb */
 				if(mknb_func.coul==MKNB_COUL_NO && 
