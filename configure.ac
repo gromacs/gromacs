@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 3.3.99_development_20060306, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 3.3.99_development_20060330, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -177,13 +177,31 @@ AC_ARG_WITH(fft,
 ### Use external BLAS/LAPACK libraries if the user wants to.
 ###
 AC_ARG_WITH(external_blas,
- [  --with-external-blas    use system BLAS (add to LIBS) instead of built-in],, with_external_blas=no)
-AM_CONDITIONAL([GMX_EXTERNAL_BLAS], [test "with_external_blas" = "yes"])
+            [AC_HELP_STRING([--with-external-blas],
+                            [Use system BLAS library (add to LIBS). Automatic on OS X.])],,
+[
+# default action - check if we are on OS X
+case "${host_vendor}-${host_os}" in
+  apple-darwin*) with_external_blas="yes" ; extra_LDFLAGS="-framework Accelerate" ;;
+  *)             with_external_blas="no"  ;;
+esac
+])
+AM_CONDITIONAL([GMX_EXTERNAL_BLAS], [test "$with_external_blas" = "yes"])
 
 
 AC_ARG_WITH(external_lapack,
- [  --with-external-lapack  use system LAPACK (add to LIBS) instead of built-in],, with_external_lapack=no)
-AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "with_external_lapack" = "yes"])
+            [AC_HELP_STRING([--with-external-lapack],
+                            [Use system LAPACK library (add to LIBS). Automatic on OS X.])],,
+[
+# default action - check if we are on OS X
+case "${host_vendor}-${host_os}" in
+  apple-darwin*) with_external_lapack="yes" ; extra_LDFLAGS="-framework Accelerate" ;;
+  *)             with_external_lapack="no"  ;;
+esac
+])
+AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "$with_external_lapack" = "yes"])
+
+
 
 
 AC_ARG_WITH(qmmm_gaussian,
@@ -290,6 +308,7 @@ else
 fi
 
 
+
 AC_PROG_CPP
 
 if test "$enable_cpu_optimization" = "yes"; then
@@ -356,7 +375,6 @@ fftw2)
   else
     sizeof_real=8
   fi
-
   ACX_CHECK_FFTW2(fftw,$sizeof_real)
   ACX_CHECK_FFTW2(rfftw,$sizeof_real)
 
@@ -520,6 +538,9 @@ case "${host_cpu}-${host_os}" in
 esac
 
 
+# add the Accelerate framework if enabled above.
+# LDFLAGS might have been set in the CPU optimization, so we cant assign it directly before that.
+LDFLAGS="$LDFLAGS $extra_LDFLAGS"
 
 
 
