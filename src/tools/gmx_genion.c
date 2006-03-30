@@ -393,18 +393,21 @@ int gmx_genion(int argc, char *argv[])
     vol = det(box);
     if (conc > 0) {
       nsalt = gmx_nint(conc*vol*AVOGADRO/1e24);
-      p_num = nsalt*n_q;
-      n_num = nsalt*p_q;
+      p_num = abs(nsalt*n_q);
+      n_num = abs(nsalt*p_q);
       if (bNeutral) {
-	int qdelta = (p_num*p_q + n_num*n_q - iqtot);
-	if (qdelta < 0) {
-	  p_num  += -qdelta/p_q;
-	  qdelta = (p_num*p_q + n_num*n_q - iqtot);
-	}
-	if (qdelta > 0) {
-	  n_num  += -qdelta/n_q;
-	  qdelta = (p_num*p_q + n_num*n_q - iqtot);
-	} 
+	int qdelta = 0;
+	do {
+	  qdelta = (p_num*p_q + n_num*n_q + iqtot);
+	  if (qdelta < 0) {
+	    p_num  += abs(qdelta/p_q);
+	    qdelta = (p_num*p_q + n_num*n_q + iqtot);
+	  }
+	  if (qdelta > 0) {
+	    n_num  += abs(qdelta/n_q);
+	    qdelta = (p_num*p_q + n_num*n_q + iqtot);
+	  } 
+	} while (qdelta != 0);
       }
     }
   }
