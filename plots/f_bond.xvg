@@ -54,7 +54,7 @@
 @timestamp rot 0
 @timestamp font 0
 @timestamp char size 1.000000
-@timestamp def "Thu Mar 30 16:31:05 2006"
+@timestamp def "Thu Mar 30 17:22:04 2006"
 @r0 off
 @link r0 to g0
 @r0 type above
@@ -107,7 +107,7 @@
 @    world ymax 200
 @    stack world 0, 0, 0, 0
 @    znorm 1
-@    view xmin 0.150000
+@    view xmin 0.160000
 @    view xmax 1.245134
 @    view ymin 0.150000
 @    view ymax 0.950000
