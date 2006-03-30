@@ -42,10 +42,7 @@ Then the different analysis tools are presented.
 
 \section{Groups in Analysis.}
 \label{sec:groups}
-\begin{verbatim}
-make_ndx
-mk_angndx
-\end{verbatim}
+{\tt make\_ndx, mk\_angndx}\\
 In \chref{algorithms} it was explained how {\em groups of
 atoms} can be used in the MD-program.  In most analysis programs groups
 of atoms are needed to work on. Most programs can generate several default
@@ -78,13 +75,15 @@ example of $g_{AB}$) use {\tt \normindex{make\_ndx}}. To generate an index file
 with angles or dihedrals, use {\tt \normindex{mk\_angndx}}. Of course you can also
 make them by hand. The general format is presented here:
 {\samepage
-\begin{verbatim}
-[ Oxygen ]
-   1       4       7 
-[ Hydrogen ]
-   2       3       5       6
-   8       9
-\end{verbatim}}
+\begin{tt}
+[ Oxygen ]\\
+   1       4       7 \\
+\end{tt}
+\begin{tt}
+[ Hydrogen ]\\
+   2       3       5       6\\
+   8       9\\
+\end{tt}}
 
 First the group name is written between square brackets. The following
 atom numbers may be spread out over as many lines as you like. The
@@ -145,10 +144,7 @@ in the {\tt \normindex{aminoacids.dat}} file.
 
 \section{Looking at your trajectory}
 \label{sec:lookwhostalking}
-\begin{verbatim}
-ngmx
-\end{verbatim}
-
+{\tt ngmx}\\
 \begin{figure}
 \centerline{
 {\includegraphics[width=8cm,angle=90]{plots/ngmxdump}}}
@@ -171,10 +167,7 @@ homepage {\wwwpage} for updated links.
 
 \section{General properties}
 \label{sec:genprop}
-\begin{verbatim}
-g_energy
-g_traj
-\end{verbatim}
+{\tt g\_energy, g\_traj}\\
 To analyze some or all {\em energies} and other properties, such as
 {\em total pressure}, {\em pressure tensor}, {\em density}, {\em
 box-volume} and {\em box-sizes}, use the program {\tt \normindex{g\_energy}}.  A
@@ -195,9 +188,7 @@ recommended to remove the center-of-mass velocity every step (see
 
 \section{Radial distribution functions}
 \label{sec:rdf}
-\begin{verbatim}
-g_rdf
-\end{verbatim}
+{\tt g\_rdf}\\
 The {\em radial distribution function} (rdf) or pair correlation
 function $g_{AB}(r)$ between particles of type $A$ and $B$ is defined
 in the following way:
@@ -393,6 +384,7 @@ but this is not very accurate~\cite{Hess2002a}
 
 \section{Mean Square Displacement}
 \label{sec:msd}
+{\tt g\_msd}\\
 To determine the self \swapindex{diffusion}{coefficient} $D_A$ of
 particles $A$ one can use the \normindex{Einstein
 relation}~\cite{Allen87} \
@@ -427,37 +419,37 @@ An example of the mean square displacement of SPC-water is given in
 % 
 \section{Bonds, angles and dihedrals}
 \label{sec:bad}
-\begin{verbatim}
-g_bond
-g_angle
-g_sgangle
-\end{verbatim}
+{\tt g\_bond, g\_angle, g\_sgangle}\\
 To monitor specific {\em bonds} in your molecules during time, the program 
 {\tt \normindex{g\_bond}} calculates the distribution of the bond length in time. 
-The index file consists of pairs of atom numbers, for example
+The index file consists of pairs of atom numbers, for example\\
 {\samepage
-\begin{verbatim}
-[ bonds_1 ]
- 1     2
- 3     4
- 9    10
-[ bonds_2 ]
-12    13
-\end{verbatim}}
+\begin{tt}
+[ bonds\_1 ]\\
+ 1     2\\
+ 3     4\\
+ 9    10\\
+\end{tt}
+\begin{tt}
+[ bonds\_2 ]\\
+12    13\\
+\end{tt}}
 
 The program {\tt \normindex{g\_angle}} calculates the distribution of {\em angles} and 
 {\em dihedrals} in time. It also gives the average angle or dihedral. 
 The index file consists of triplets or quadruples of atom numbers:
 {\samepage
-\begin{verbatim}
-[ angles ]
- 1     2     3
- 2     3     4
- 3     4     5
-[ dihedrals ]
- 1     2     3     4
- 2     3     5     5
-\end{verbatim}}
+\begin{tt}
+[ angles ]\\
+ 1     2     3\\
+ 2     3     4\\
+ 3     4     5\\
+\end{tt}
+\begin{tt}
+[ dihedrals ]\\
+ 1     2     3     4\\
+ 2     3     5     5\\
+\end{tt}}
 
 For the dihedral angles you can use either the ``biochemical convention'' 
 ($\phi = 0 \equiv cis$) or ``polymer convention'' ($\phi = 0 \equiv trans$), 
@@ -493,25 +485,21 @@ middle of this vector.  Depending on the input groups ({\ie} groups of
 2 or 3 atom numbers), the program decides what angles and distances to
 calculate. For example, the index-file could look like this:
 {\samepage
-\begin{verbatim}
-[ a_plane ]
- 1     2     3
-[ a_vector ]
- 3     4     5
-\end{verbatim}}
+\begin{tt}
+[ a\_plane ]\\
+ 1     2     3\\
+\end{tt}
+\begin{tt}
+[ a\_vector ]\\
+ 3     4     5\\
+\end{tt}}
 } % Brace matches ifthenelse test for gmxlite
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Radius of gyration and distances
 
 \section{Radius of gyration and distances}
 \label{sec:rg}
-\begin{verbatim}
-g_gyrate
-g_sgangle
-g_mindist
-g_mdmat
-xpm2ps
-\end{verbatim}
+{\tt g\_gyrate, g\_sgangle, g\_mindist, g\_mdmat, xpm2ps}\\
 To have a rough measure for the compactness of a structure, you can calculate 
 the {\em radius of gyration} with the program {\tt \normindex{g\_gyrate}} as follows:
 \beq
@@ -563,10 +551,7 @@ in the structure, and {\eg} forming of salt bridges.
 
 \section{Root mean square deviations in structure}
 \label{sec:rmsd}
-\begin{verbatim}
-g_rms
-g_rmsdist
-\end{verbatim}
+{\tt g\_rms, g\_rmsdist}\\
 The {\em root mean square deviation} ($RMSD$) of certain atoms in a molecule
 with respect to a reference structure can be calculated with the program 
 {\tt \normindex{g\_rms}} by least-square fitting the structure to the reference structure
@@ -730,9 +715,7 @@ The cosine content can be calculated with {\tt \normindex{g\_analyze}}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
 
 \section{Hydrogen bonds}
-\begin{verbatim}
-g_hbond
-\end{verbatim}
+{\tt g\_hbond}\\
 The program {\tt \normindex{g\_hbond}} analyses the {\em hydrogen bonds} (H-bonds)
 between all possible donors D and acceptors A. To determine if an
 H-bond exists, a geometrical criterion is used, see also
@@ -823,12 +806,7 @@ indicated as such in the existence map.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Protein related items 
 
 \section{Protein related items}
-\begin{verbatim}
-do_dssp
-g_rama
-xrama
-wheel
-\end{verbatim}
+{\tt do\_dssp, g\_rama, xrama, wheel}\\
 To analyze structural changes of a protein, you can calculate the radius of 
 gyration or the minimum residue distances during time 
 (see \secref{rg}), or calculate the RMSD (\secref{rmsd}).
@@ -887,13 +865,7 @@ plotted in \figref{wheel}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Membrane Related Items
 
 \section{Interface related items}
-\begin{verbatim}
-g_order
-g_density
-g_potential
-g_coord
-\end{verbatim}
-
+{\tt g\_order, g\_density, g\_potential, g\_coord}\\
 When simulating molecules with long carbon tails, it can be
 interesting to calculate their average orientation. There are several
 flavors of order parameters, most of which are related. The program
@@ -954,10 +926,7 @@ atoms across the interface.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Chemical shifts
 
 \section{Chemical shifts}
-\begin{verbatim}
-total
-do_shift
-\end{verbatim}
+{\tt total, do\_shift}\\
 You can compute the NMR chemical shifts of protons with the program
 {\tt \normindex{do\_shift}}. This is just an {\gromacs} interface to
 the public domain program {\tt total}~\cite{Williamson93a}. For

@@ -38,7 +38,9 @@ TEXFILES = $(foreach FILE,$(TEXFS), $(FILE).tex)
 # ps is made as a dependency to booklet.ps, 
 # pdf as a dependency to booklet.pdf,
 # and letter.ps as a dependency to letterbooklet.ps
-all:		booklet.ps letterbooklet.ps booklet.pdf	
+all:		plots	pdf
+
+#booklet.ps letterbooklet.ps 
 
 ps:		gromacs.ps
 
@@ -58,6 +60,8 @@ booklet.ps:	gromacs.ps
 
 letterbooklet.ps: letter.ps
 		psbook $^ | psnup -pletter -2 | pstops -pletter "2:0,1U(1w,1h)" > $@
+plots:
+		(cd plots; make pdf; cd ..)
 
 # Texexec 2.1 (comes with debian) works to create pdf booklets,
 # but not the 1.2 version that comes with redhat. In the latter
@@ -147,7 +151,7 @@ ifeq ($(GMXDATA),)
 		  @echo "(Source the GMXRC script in your installation)" 
 		  @exit 1; 
 endif
-		./mkmdp $(GMXDATA)/html
+		./mkmdp $(GMXDATA)/gromacs/html
 
 proglist.tex:	./mk_proglist programs.txt
 # If you dont have programs.txt from the gromacs source, just touch it

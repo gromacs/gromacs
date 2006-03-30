@@ -205,34 +205,34 @@ must be accumulated and sent back (right) to the home
 processor. Finally the update of the velocity and coordinates is done
 on the home processor.
 
-The {\tt communicate\_r} routine is given below in the full C-code:
+The {\tt communicate\_r} routine is given below in the full C-code:\\
 \begin{footnotesize}
-\begin{verbatim}
-void communicate_r(int nprocs,int pid,rvec vecs[],int start[],int homenr[])
-/* 
- * nprocs = number of processors
- * pid    = processor id (0..nprocs-1)
- * vecs   = vectors
- * start  = starting index in vecs for each processor
- * homenr = number of home particles for each processor
- */
-{
-  int i;        /* processor counter */
-  int shift;    /* the amount of processors to communicate with */
-  int cur;      /* current processor to send data from */
-  int next;     /* next processor on a ring (using modulo) */
-
-  cur   = pid;
-  shift = nprocs/2;
-
-  for (i=0; (i<shift); i++) {
-    next=(cur+1) % nprocs;      
-    send   (left,  vecs[start[cur]],  homenr[cur]);
-    receive(right, vecs[start[next]], homenr[next]);
-    cur=next;
-  }
-}
-\end{verbatim}
+\begin{tt}
+void communicate\_r(int nprocs,int pid,rvec vecs[],int start[],int homenr[])\\
+/* \\
+ * nprocs = number of processors\\
+ * pid    = processor id (0..nprocs-1)\\
+ * vecs   = vectors\\
+ * start  = starting index in vecs for each processor\\
+ * homenr = number of home particles for each processor\\
+ */\\
+{\\
+  int i;        /* processor counter */\\
+  int shift;    /* the amount of processors to communicate with */\\
+  int cur;      /* current processor to send data from */\\
+  int next;     /* next processor on a ring (using modulo) */\\
+\\
+  cur   = pid;\\
+  shift = nprocs/2;\\
+\\
+  for (i=0; (i<shift); i++) {\\
+    next=(cur+1) \% nprocs;     \\ 
+    send   (left,  vecs[start[cur]],  homenr[cur]);\\
+    receive(right, vecs[start[next]], homenr[next]);\\
+    cur=next;\\
+  }\\
+}\\
+\end{tt}
 
 \end{footnotesize}
 

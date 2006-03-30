@@ -287,7 +287,7 @@ that would lead to 256$\times$256 items! Better use this concept
 sparingly.
 
 All non-bonded interactions between pairs of energy monitor groups can
-be excluded\index{exclusions, energy monitor group} (see \secref{mdpopt}).
+be excluded\index{exclusions, energy monitor group} (see \secref{mdp_opt}).
 Pairs of particles from excluded pairs of energy monitor groups
 are not put into the pair list.
 This can result in a significant speedup
@@ -506,7 +506,9 @@ algorithm when there are more than a few hundred particles.  The
 grid search is equally fast for rectangular and triclinic boxes.  Thus
 for most protein and peptide simulations the rhombic dodecahedron will
 be the preferred box shape.
+} % Brace matches ifthenelse test for gmxlite
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Charge groups}
 Where applicable, neighbor searching is carried out on the basis of
 {\em charge groups}. A \swapindex{charge}{group} is a small set of
@@ -1437,14 +1439,14 @@ with constraints, including the SETTLE algorithm for
 water~\cite{Miyamoto92}, as this has not been implemented. If water is
 present it must be of a flexible model, which can be specified in the
 {\tt mdp} file by
-\begin{verbatim}
-define = -DFLEXIBLE
-\end{verbatim}
+{\tt define = -DFLEXIBLE}\\
 This is not really a restriction, since the accuracy of conjugate
 gradient is only required for minimization prior to a normal mode
 analysis, which can not be performed with constraints.  For most other
 purposes steepest descent is efficient enough.
+} % Brace matches ifthenelse test for gmxlite
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{L-BFGS}}
 The original BFGS algorithm works by successively creating better 
 approximations of the inverse Hessian matrix, and moving the system to the 
@@ -1750,7 +1752,8 @@ All available constraint types are described in the appropriate chapter
 of the WHAT IF \cite{Whatif} manual.
 } % Brace matches ifthenelse test for gmxlite
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
-\input{gmxpar}
-} % Brace matches ifthenelse test for gmxlite
+% This stuff is quite outdated now.
+%\ifthenelse{\equal{\gmxlite}{1}}{}{
+%\input{gmxpar}
+%} % Brace matches ifthenelse test for gmxlite
 

@@ -104,7 +104,7 @@ The parameters $C^{(12)}_{ij}$ and $C^{(6)}_{ij}$  depend on pairs of
 LJ-parameters.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/f_lj}}
+\centerline{\includegraphics[width=8cm]{plots/f_lj}}
 \caption {The Lennard-Jones interaction.}
 \label{fig:lj}
 \end{figure}
@@ -150,7 +150,7 @@ V_{bh}(\rij) = A_{ij} \exp(-B_{ij} \rij) -
                         \frac{C_{ij}}{\rij^6}
 \eeq
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=8cm]{plots/f_bham}}
+\centerline{\includegraphics[width=8cm]{plots/f_bham}}
 \caption {The Buckingham interaction.}
 \label{fig:bham}
 \end{figure}
@@ -357,7 +357,7 @@ The modified Coulomb potential function is
 see also \figref{shift}.
 
 \begin{figure}
-\centerline{\includegraphics[angle=270,width=10cm]{plots/shiftf}}
+\centerline{\includegraphics[width=10cm]{plots/shiftf}}
 \caption[The Coulomb Force, Shifted Force and Shift Function
 $S(r)$,.]{The Coulomb Force, Shifted Force and Shift Function $S(r)$,
 using r$_1$ = 2 and r$_c$ = 4.} 
@@ -1060,15 +1060,18 @@ pairs that contribute to the NOE signal.
 
 A list of distance restrains based on NOE data can be added to a molecule
 definition in your topology file, like in the following example:
-\begin{verbatim}
-[ distance_restraints ]
-; ai   aj    type  index  type'   low    up1    up2    fac
-10     16     1      0      1     0.0    0.3    0.4    1.0 
-10     28     1      1      1     0.0    0.3    0.4    1.0 
-10     46     1      1      1     0.0    0.3    0.4    1.0 
-16     22     1      2      1     0.0    0.3    0.4    2.5 
-16     34     1      3      1     0.0    0.5    0.6    1.0 
-\end{verbatim}
+
+\begin{tabular}{ccccccccc}
+\multicolumn{9}{l}{[ distance\_restraints ]}\\
+; ai & aj  &  type & index & type' &  low &   up1 &    up2  &  fac\\
+10  &   16  &    1  &     0  &     1  &    0.0  &   0.3  &   0.4  &   1.0\\
+10  &   28  &    1  &     1  &     1  &    0.0  &   0.3  &   0.4  &   1.0\\
+10  &   46  &    1  &     1  &     1  &    0.0  &   0.3  &   0.4  &   1.0\\
+16  &   22  &    1  &     2  &     1  &    0.0  &   0.3  &   0.4  &   2.5\\
+16  &   34  &    1  &     3  &     1  &    0.0  &   0.5  &   0.6  &   1.0\\
+\end{tabular}
+
+
 In this example a number of features can be found.  In columns {\tt
 ai} and {\tt aj} you find the atom numbers of the particles to be
 restrained. The {\tt type} column should always be 1.  As explained in
@@ -1337,16 +1340,18 @@ Orientation restraints can be added to a molecule definition in
 the topology in the section {\tt [ orientation\_restraints ]}.
 Here we give an example section containing five N-H residual dipolar
 coupling restraints:
-\begin{verbatim}
-[ orientation_restraints ]
-; ai   aj type exp. label alpha   const.    obs.  weight 
-;                                Hz nm^3      Hz  1/Hz^2
-  31   32    1    1     3     3    6.083   -6.73     1.0
-  43   44    1    1     4     3    6.083   -7.87     1.0
-  55   56    1    1     5     3    6.083   -7.13     1.0
-  65   66    1    1     6     3    6.083   -2.57     1.0
-  73   74    1    1     7     3    6.083   -2.10     1.0
-\end{verbatim}
+
+\begin{tabular}{ccccccccc}
+\multicolumn{9}{l}{[ orientation\_restraints ]}\\
+; ai &  aj& type& exp.& label &alpha &  const. &   obs.&  weight \\
+;    &    &     &     &       &      & Hz nm$^3$&      Hz & 1/Hz$^2$\\
+  31 &  32  &   1  &   1  &    3  &    3  &   6.083  &  -6.73  &    1.0\\
+  43 &  44  &   1  &   1  &    4  &    3  &   6.083  &  -7.87  &    1.0\\
+  55 &  56  &   1  &   1  &    5  &    3  &   6.083  &  -7.13  &    1.0\\
+  65 &  66  &   1  &   1  &    6  &    3  &   6.083  &  -2.57  &    1.0\\
+  73 &  74  &   1  &   1  &    7  &    3  &   6.083  &  -2.10  &    1.0\\
+\end{tabular}
+
 The unit of the observable is Hz, but one can choose any other unit.
 In columns {\tt
 ai} and {\tt aj} you find the atom numbers of the particles to be
@@ -2185,14 +2190,14 @@ Don't use Ewald unless you are absolutely sure this is what you want -
 for almost all cases the PME method below will perform much better.
 If you still want to employ classical Ewald summation enter this in
 your {\tt .mdp} file, if the side of your box is about $3$~nm:
-\begin{verbatim}
-coulombtype     = Ewald
-rvdw            = 0.9
-rlist           = 0.9
-rcoulomb        = 0.9
-fourierspacing  = 0.6
-ewald_rtol      = 1e-5
-\end{verbatim}
+\begin{tt}
+coulombtype     = Ewald\\
+rvdw            = 0.9\\
+rlist           = 0.9\\
+rcoulomb        = 0.9\\
+fourierspacing  = 0.6\\
+ewald\_rtol      = 1e-5\\
+\end{tt}
 The {\tt fourierspacing} parameter times the box dimensions determines
 the highest magnitude of wave vectors $m_x,m_y,m_z$ to use in each
 direction. With a 3~nm cubic box this example would use $11$ wave vectors
@@ -2223,15 +2228,15 @@ overhead in setting up grids and transforms.
 \subsubsection{Using PME}
 To use Particle-mesh Ewald summation in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
-\begin{verbatim}
-coulombtype     = PME
-rvdw            = 0.9
-rlist           = 0.9
-rcoulomb        = 0.9
-fourierspacing  = 0.12
-pme_order       = 4
-ewald_rtol      = 1e-5
-\end{verbatim}
+\begin{tt}
+coulombtype     = PME\\
+rvdw            = 0.9\\
+rlist           = 0.9\\
+rcoulomb        = 0.9\\
+fourierspacing  = 0.12\\
+pme\_order       = 4\\
+ewald\_rtol      = 1e-5\\
+\end{tt}
 In this case the {\tt fourierspacing} parameter determines the maximum
 spacing for the FFT grid and {\tt pme\_order} controls the
 interpolation order. Using 4th order (cubic) interpolation and this
@@ -2289,14 +2294,14 @@ pressure) but not necessarily the individual pressure components!
 \subsubsection{Using PPPM}
 To use the PPPM algorithm in {\gromacs}, specify the
 following lines in your {\tt .mdp} file:
-\begin{verbatim}
-coulombtype     = PPPM
-rlist           = 1.0
-rcoulomb        = 0.85
-rcoulomb_switch = 0.0
-rvdw            = 1.0
-fourierspacing  = 0.075
-\end{verbatim}
+\begin{tt}
+coulombtype     = PPPM\\
+rlist           = 1.0\\
+rcoulomb        = 0.85\\
+rcoulomb\_switch = 0.0\\
+rvdw            = 1.0\\
+fourierspacing  = 0.075\\
+\end{tt}
 For details on the switch parameters see the section on modified
 long-range interactions in this manual. When using PPPM we recommend
 to take at most 0.075 nm per gridpoint ({\eg} 20 gridpoints for 1.5
@@ -2323,9 +2328,9 @@ by performing some calculations at the start of the run. This is not
 done per default since it takes a couple of minutes, but for large
 runs it will save time. Turn it on by specifying
 
-\begin{verbatim}
-optimize_fft      = yes
-\end{verbatim}
+\begin{tt}
+optimize\_fft      = yes\\
+\end{tt}
 in your {\tt .mdp} file.
 
 When running in parallel the grid must be communicated several times
@@ -2343,12 +2348,12 @@ improve the scaling in most cases.
 %{\tt\normindex{testlr}} in the {\tt src/gmxlib} dir. This program computes
 %forces and potentials using PPPM and an Ewald implementation and gives the
 %absolute and RMS errors in both:
-%\begin{verbatim}
-%ERROR ANALYSIS
-%Error:         Max Abs         RMS            
-%Force            1.132       0.251
-%Potential        0.113       0.035
-%\end{verbatim}
+%\begin{tt}
+%ERROR ANALYSIS\\
+%Error:         Max Abs         RMS\\
+%Force            1.132       0.251\\
+%Potential        0.113       0.035\\
+%\end{tt}
 %{\bf Note:} these numbers were generated using a grid spacing of
 %0.058 nm and $r_c$ = 1.0 nm.
 %
@@ -2413,16 +2418,18 @@ The file is fixed format; all floats are written as 15.9 (files can get huge).
 {\gromacs} supports the following data blocks in the given order:
 \begin{itemize}
 \item Header block:
-\begin{verbatim}
-TITLE (mandatory)
-\end{verbatim}
+\begin{tt}
+TITLE (mandatory)\\
+\end{tt}
+
 \item Frame blocks:
-\begin{verbatim}
-TIMESTEP (optional)
-POSITION/POSITIONRED (mandatory)
-VELOCITY/VELOCITYRED (optional)
-BOX (optional)
-\end{verbatim}
+\begin{tt}
+TIMESTEP (optional)\\
+POSITION/POSITIONRED (mandatory)\\
+VELOCITY/VELOCITYRED (optional)\\
+BOX (optional)\\
+\end{tt}
+
 \end{itemize}
 See the \gromosv{96} manual~\cite{gromos96} for a complete description
 of the blocks. Note that all {\gromacs} programs can read compressed

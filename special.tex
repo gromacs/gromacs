@@ -915,14 +915,14 @@ and the charges are read from the topology. Also note that combination
 rules are only supported for Lennard Jones and Buckingham, and that
 your tables should match the parameters in the binary topology.
 
-When you add the following lines in your {\tt .mdp} file:
-\begin{verbatim}
-rlist           = 1.0
-coulombtype     = User
-rcoulomb        = 1.0
-vdwtype         = User
-rvdw            = 1.0
-\end{verbatim}
+When you add the following lines in your {\tt .mdp} file:\\
+\begin{tt}
+rlist           = 1.0\\
+coulombtype     = User\\
+rcoulomb        = 1.0\\
+vdwtype         = User\\
+rvdw            = 1.0\\
+\end{tt}
 the MD program will read a single file (the name can be changed with
 option {\tt -table}) with seven columns of table lookup data in the
 order: $x$, $f(x)$, $f''(x)$, $g(x)$, $g''(x)$, $h(x)$, $h''(x)$.
@@ -1039,20 +1039,20 @@ and as a dummy atom in the forcefield calculation. The link atoms, if
 any, are part of the system, but have no interaction with any other
 atom, except that the QM force working on it is distributed over the
 two atoms of the bond. In the topology the link atom (LA), therefore,
-is defined as a dummy atom:
+is defined as a virtual site atom:\\
 
-\begin{verbatim}
-[ dummies2 ]
-LA QMatom MMatom 1 0.65
-\end{verbatim}
+\begin{tt}
+[ virtual\_sites2 ]
+LA QMatom MMatom 1 0.65\\
+\end{tt}
 See the dummy atoms section for more details on how dummies are
 treated. The link atom is replaced at every step of the simulation.
 
 In addition, the bond itself is replaced by a constraint:
-\begin{verbatim}
-[ constraints ] 
-QMatom MMatom 2 0.153
-\end{verbatim}
+\begin{tt}
+[ constraints ] \\
+QMatom MMatom 2 0.153\\
+\end{tt}
 
 Note that, because in our system the QM/MM bond is a carbon-carbon
 bond (0.153 nm), we use a constraint length of 0.153 nm, and dummy
@@ -1068,12 +1068,12 @@ dummy position, appropriate for that bond type, are required.
 Atoms that should be treated at a QM level of theory, including the
 link atoms, are added to the index file. In addition, the chemical
 bonds between the atoms in the QM region are to be defined as
-connect bonds (bond type 5)in the topology file:
-\begin{verbatim}
-[ bonds ]
-QMatom1 QMatom2 5
-QMatom2 QMatom3 5
-\end{verbatim}
+connect bonds (bond type 5)in the topology file:\\
+\begin{tt}
+[ bonds ]\\
+QMatom1 QMatom2 5\\
+QMatom2 QMatom3 5\\
+\end{tt}
 
 \subsubsection{specifying the QM/MM simulation parameters}
 
@@ -1137,6 +1137,8 @@ simulation on the excited state-potential energy surface and enforce a
 diabatic hop to the ground-state when the system hits the conical
 intersection hyperline in the course the simulation. This option only
 works in combination with the CASSCF method.
+
+\end{description}
 
 \subsection{Output}
 
