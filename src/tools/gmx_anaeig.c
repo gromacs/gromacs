@@ -776,7 +776,7 @@ int gmx_anaeig(int argc,char *argv[])
   char       *OverlapFile,*InpMatFile;
   bool       bFit1,bFit2,bM,bIndex,bTPS,bTop,bVec2,bProj;
   bool       bFirstToLast,bFirstLastSet,bTraj,bCompare,bPDB3D;
-  real       *eigval1,*eigval2;
+  real       *eigval1=NULL,*eigval2=NULL;
   int        neig1,neig2;
   double     **xvgdata;
   
