@@ -265,13 +265,17 @@ placed solvent molecules giving unreasonable kicks to protein atoms,
 although the same effect can also be obtained by putting a restraining
 potential on the atoms that must be protected. The freeze option can
 be used, if desired, on just one or two coordinates of an atom,
-thereby freezing the atoms in a plane or on a line.
-When an atom is partially frozen, constraints will still be able to move it,
-even in a frozen direction. A fully frozen atom can not be moved by
-constraints.
-Frozen coordinates are unaffected by pressure scaling, in some cases this
-can produce unwanted results.
-Many freeze groups can be defined.
+thereby freezing the atoms in a plane or on a line.  When an atom is
+partially frozen, constraints will still be able to move it, even in a
+frozen direction. A fully frozen atom can not be moved by constraints.
+Many freeze groups can be defined.  Frozen coordinates are unaffected
+by pressure scaling, in some cases this can produce unwanted results,
+in particular when constraints are used as well (in this case you will
+get very large pressures).  Because of this it is recommended to not
+combine freeze groups with constraints and pressure coupling. For the
+sake of equilibration it could suffice to start with freezing in a
+constant volume simulation, and afterwards use position restraints in
+conjunction with constant pressure.
 
 \item[Accelerate group]
 On each atom in an '\swapindex{accelerate}{group}' an acceleration
