@@ -91,7 +91,7 @@ void calc_bonds(FILE *fplog,const t_commrec *cr,const t_commrec *mcr,
     fprintf(fplog,"Step %d: bonded V and dVdl for node %d:\n",step,cr->nodeid);
 
 #ifdef DEBUG
-  if (g)
+  if (g && debug)
     p_graph(debug,"Bondage is fun",g);
 #endif
   
@@ -1168,8 +1168,9 @@ real idihs(int nbonds,
 	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
     /* 217 TOTAL	*/
 #ifdef DEBUG
-    fprintf("idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
-	    ai,aj,ak,al,cos_phi,phi);
+    if (debug)
+      fprintf(debug,"idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
+	      ai,aj,ak,al,cos_phi,phi);
 #endif
   }
   
