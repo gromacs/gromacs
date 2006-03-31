@@ -397,7 +397,7 @@ The \swapindex{bond}{stretching} between two covalently bonded atoms
 $i$ and $j$ is represented by a harmonic potential
 
 \begin{figure}
-\centerline{\raisebox{1.8cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f_bond}}
+\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/bstretch}}\includegraphics[width=7cm]{plots/f_bond}}
 \caption[Bond stretching.]{Principle of bond stretching (left), and the bond
 stretching potential (right).}
 \label{fig:bstretch1}
@@ -538,7 +538,7 @@ The bond \swapindex{angle}{vibration} between a triplet of atoms $i$ - $j$ - $k$
 is also represented by a harmonic potential on the angle $\tijk$
 
 \begin{figure}
-\centerline{\raisebox{1.5cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f_angle}}
+\centerline{\raisebox{4cm}{\includegraphics[angle=270,width=5cm]{plots/angle}}\includegraphics[width=7cm]{plots/f_angle}}
 \caption[Angle vibration.]{Principle of angle vibration (left) and the
 bond angle potential (right).}
 \label{fig:angle}
@@ -562,6 +562,8 @@ The force equations are given by the chain rule:
 \eeq
 The numbering $i,j,k$ is in sequence of covalently bonded atoms. Atom
 $j$ is in the middle; atoms $i$  and $k$ are at the ends (see \figref{angle}).
+{\bf Note} that in the input in topology files, angles are given in degrees and
+force constants in kJ/mol/rad$^2$.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{Cosine based angle potential}
@@ -585,6 +587,8 @@ k^{\theta} \sin^2(\tijk^0) = k^{\theta,harm}
 In the \gromosv{96} manual there is a much more complicated conversion formula
 which is temperature dependent. The formulas are equivalent at 0 K
 and the differences at 300 K are on the order of 0.1 to 0.2\%.
+{\bf Note} that in the input in topology files, angles are given in degrees and
+force constants in kJ/mol.
 
 \subsection{Urey-Bradley potential}
 \label{sec:urey-bradley}
@@ -671,6 +675,8 @@ This is also a harmonic potential; it is plotted in
 \figref{imps}. Note that, since it is harmonic, periodicity is
 not taken into account, so it is best to define improper dihedrals
 to have a $\xi_0$ as far away from $\pm 180^\circ$ as you can manage.
+{\bf Note} that in the input in topology files, angles are given in degrees and
+force constants in kJ/mol/rad$^2$.
 
 \begin{figure}
 \centerline{\includegraphics[width=8cm]{plots/f_imps}}
@@ -695,7 +701,7 @@ planes, with {\bf zero} corresponding to the {\em cis} configuration
 ($i$ and $l$ on the same side).
 
 \begin{figure}
-\centerline{\raisebox{1cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f_dih}}
+\centerline{\raisebox{4.5cm}{\includegraphics[angle=270,width=5cm]{plots/dih}}\includegraphics[width=7cm]{plots/f_dih}}
 \caption[Proper dihedral angle.]{Principle of proper dihedral angle
 (left, in {\em trans} form) and the dihedral angle potential (right).} 
 \label{fig:pdihf}
@@ -876,6 +882,8 @@ V_{dihr}(\phi') ~=~ \left\{
 \eeq
 where $\Delta\phi$ is a user defined angle and $k_{dihr}$ is the force 
 constant.
+{\bf Note} that in the input in topology files, angles are given in degrees and
+force constants in kJ/mol/rad$^2$.
 } % Brace matches ifthenelse test for gmxlite
 
 \subsection{\swapindex{Distance}{restraint}s}
