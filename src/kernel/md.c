@@ -67,8 +67,10 @@
 #include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
+#include "rmpbc.h"
 #include "repl_ex.h"
 #include "qmmm.h"
+
 
 #ifdef USE_MPE
 #include "mpe.h"
@@ -208,7 +210,13 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   if(fr->bQMMM){
     init_QMMMrec(cr,mdatoms,state->box,top,inputrec,fr);
   }
-    
+   
+  /* Make molecules whole at start of run */
+  if (fr->ePBC != epbcNONE)
+  {
+    rm_pbc(&top->idef,nsb->natoms,state->box,state->x,state->x);
+  }
+  
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),inputrec);
@@ -292,6 +300,16 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
 }
 
+static void printx(char *head,rvec *x)
+{
+	int i;
+	
+	printf("-%s\n",head);
+	for(i=0;i<19;i++)
+		printf("%8.5g  %8.5g  %8.5g\n",x[i][0],x[i][1],x[i][2]);
+	printf("#\n");
+}
+
 time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     bool bVsites, t_comm_vsites *vsitecomm,
@@ -341,7 +359,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   matrix      boxcopy,lastbox;
   /* End of XMDRUN stuff */
 
-
+  printx("start",state->x);
+  
   /* Turn on signal handling */
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
@@ -386,10 +405,16 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   if (MASTER(cr) && bTCR)
     fprintf(stderr,"Will do General Coupling Theory!\n");
 
+  printx("b4 pbc1st",state->x);
+
   /* Remove periodicity */  
   if (fr->ePBC != epbcNONE)
-    do_pbc_first(log,state->box,fr,graph,state->x);
+  {
+	  do_pbc_first(log,state->box,fr,graph,state->x);
+  }
   debug_gmx();
+
+  printx("after pbc1st",state->x);
 
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,inputrec->opts.nFreeze,
@@ -433,7 +458,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       copy_rvec(state->v[ii],vcopy[ii]);
     }
     copy_mat(state->box,boxcopy);
-  } 
+  }  
+  
   /* Write start time and temperature */
   start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
   
@@ -559,21 +585,25 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       }
       copy_mat(boxcopy,state->box);
     }
-    
+	printx("xxx vsites",state->x);
+
     if (bVsites) {
-      if (graph) {
-	/* Following is necessary because the graph may get out of sync
-	 * with the coordinates if we only have every N'th coordinate set
-	 */
-	if (bRerunMD || bExchanged)
-	  mk_mshift(log,graph,state->box,state->x);
-	shift_self(graph,state->box,state->x);
-      }
-      construct_vsites(log,state->x,&mynrnb,inputrec->delta_t,state->v,
-			&top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
-      
-      if (graph)
-	unshift_self(graph,state->box,state->x);
+		if (graph) {
+			/* Following is necessary because the graph may get out of sync
+ 			 * with the coordinates if we only have every N'th coordinate set
+ 			 */
+			if (bRerunMD || bExchanged)
+				mk_mshift(log,graph,state->box,state->x);
+			shift_self(graph,state->box,state->x);
+		}
+		printx("b4 vsites",state->x);
+		
+		construct_vsites(log,state->x,&mynrnb,inputrec->delta_t,state->v,
+						 &top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
+		printx("after vsites",state->x);
+		
+		if (graph)
+			unshift_self(graph,state->box,state->x);
     }
      
     debug_gmx();
@@ -619,12 +649,16 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
+		
+		printx("before do_force",state->x);
+		
       do_force(log,cr,mcr,inputrec,nsb,step,&mynrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
     }
    
+	
     if (bTCR)
       mu_aver=calc_mu_aver(cr,nsb,state->x,mdatoms->chargeA,mu_tot,top,mdatoms,
 			   gnx,grpindex);
