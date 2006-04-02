@@ -472,11 +472,12 @@ static void write_ttyman(FILE *out,
     fprintf(out,"%s\n%s\n",GromacsVersion(),mydate(buf,255));
   }
   if (nldesc > 0) {
-    fprintf(out,"DESCRIPTION:\n\n");
+    fprintf(out,"DESCRIPTION\n-----------\n");
     print_tty_formatted(out,nldesc,desc,0);
   }
   if (nbug > 0) {
     fprintf(out,"\n");
+    fprintf(out,"KNOWN BUGS\n----------\n");
     for(i=0; i<nbug; i++) {
       snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");

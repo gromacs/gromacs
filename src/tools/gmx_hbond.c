@@ -213,7 +213,7 @@ static bool is_hb(unsigned int hbexist[],int frame)
 
 static void set_hb(t_hbdata *hb,int id,int ih, int ia,int frame,int ihb)
 {
-  unsigned int *ghptr;
+  unsigned int *ghptr=NULL;
   
   if (ihb == hbHB)
     ghptr = hb->hbmap[id][ia]->h[ih];
@@ -1547,10 +1547,10 @@ int gmx_hbond(int argc,char *argv[])
     "bonds between atoms within the shell distance from the one atom are",
     "considered.[PAR]"
     
-    "It is also possible to analyse specific hydrogen bonds with",
+    /*    "It is also possible to analyse specific hydrogen bonds with",
     "[TT]-sel[tt]. This index file must contain a group of atom triplets",
     "Donor Hydrogen Acceptor, in the following way:[PAR]",
-    
+    */
     "[TT]",
     "[ selected ][BR]",
     "     20    21    24[BR]",
@@ -1629,12 +1629,14 @@ int gmx_hbond(int argc,char *argv[])
     { "-merge", FALSE, etBOOL, {&bMerge},
       "H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF." }
   };
-
+  static char *bugs[] = {
+    "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."
+  };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,     ffREAD  },
     { efTPX, NULL,   NULL,     ffREAD  },
     { efNDX, NULL,   NULL,     ffOPTRD },
-    { efNDX, "-sel", "select", ffOPTRD },
+    /*    { efNDX, "-sel", "select", ffOPTRD },*/
     { efXVG, "-num", "hbnum",  ffWRITE },
     { efXVG, "-ac",  "hbac",   ffOPTWR },
     { efXVG, "-dist","hbdist", ffOPTWR },
@@ -1686,7 +1688,7 @@ int gmx_hbond(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
   
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,npargs,
-		    ppa,asize(desc),desc,0,NULL);
+		    ppa,asize(desc),desc,asize(bugs),bugs);
 
   /* process input */
   bSelected = opt2bSet("-sel",NFILE,fnm);
