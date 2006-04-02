@@ -253,8 +253,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   /* Periodicity stuff */  
   if (inputrec->ePBC == epbcXYZ) {
     graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-  if (debug) 
-    p_graph(debug,"Initial graph",graph);
+    if (debug) 
+      p_graph(debug,"Initial graph",graph);
   }
   else
     graph = NULL;
@@ -289,6 +289,11 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     init_QMMMrec(cr,mdatoms,state->box,top,inputrec,fr);
   }
     
+  /* Make molecules whole at start of run */
+  if (fr->ePBC != epbcNONE)  {
+    do_pbc_first(stdlog,state->box,fr,graph,state->x);
+  }
+  
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM) {
     status = gmx_pppm_init(stdlog,cr,nsb,FALSE,TRUE,state->box,
@@ -558,11 +563,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bTCR = ftp2bSet(efGCT,nfile,fnm);
   if (MASTER(cr) && bTCR)
     fprintf(stderr,"Will do General Coupling Theory!\n");
-
-  /* Remove periodicity */  
-  if (fr->ePBC != epbcNONE)
-    do_pbc_first(log,state->box,fr,graph,state->x);
-  debug_gmx();
 
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,inputrec->opts.nFreeze,
