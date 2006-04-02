@@ -145,42 +145,56 @@ atom_id *make_chi_ind(int nl,t_dlist dl[],int *ndih)
   snew(id,nl*edMax*4); 
   
   n=0;
-  for(i=0; (i<nl); i++) { /* Phi */
-    dl[i].j0[edPhi] = n/4;
-    if (dl[i].atm.H == -1)
-      id[n++]=dl[i].atm.minC;
-    else
-      id[n++]=dl[i].atm.H;
-    id[n++]=dl[i].atm.N;
-    id[n++]=dl[i].atm.Cn[1];
-    id[n++]=dl[i].atm.C;
+  for(i=0; (i<nl); i++) 
+  {
+	  /* Phi, fake the first one */
+	  dl[i].j0[edPhi] = n/4;
+	  if(dl[i].atm.minC >= 0)
+		  id[n++]=dl[i].atm.minC;
+	  else
+		  id[n++]=dl[i].atm.H;
+	  id[n++]=dl[i].atm.N;
+	  id[n++]=dl[i].atm.Cn[1];
+	  id[n++]=dl[i].atm.C;
   }
-  for(i=0; (i<nl); i++) { /* Psi */
-    dl[i].j0[edPsi] = n/4;
-    id[n++]=dl[i].atm.N;
-    id[n++]=dl[i].atm.Cn[1];
-    id[n++]=dl[i].atm.C;
-    id[n++]=dl[i].atm.O;
+  for(i=0; (i<nl); i++) 
+  { 
+	  /* Psi, fake the last one */
+	  dl[i].j0[edPsi] = n/4;
+	  id[n++]=dl[i].atm.N;
+	  id[n++]=dl[i].atm.Cn[1];
+	  id[n++]=dl[i].atm.C;
+	  if ( i< (nl-1) )
+		  id[n++]=dl[i+1].atm.N;
+	  else
+		  id[n++]=dl[i].atm.O;  
   }
-  for(i=0; (i<nl); i++) { /* Omega */
-    if (has_dihedral(edOmega,&(dl[i]))) {
-      dl[i].j0[edOmega] = n/4;
-      id[n++]=dl[i].atm.minO;
-      id[n++]=dl[i].atm.minC;
-      id[n++]=dl[i].atm.N;
-      id[n++]=dl[i].atm.Cn[1];
-    }
+  for(i=0; (i<nl); i++) 
+  {
+	  /* Omega */
+	  if (has_dihedral(edOmega,&(dl[i])))
+	  {
+		  dl[i].j0[edOmega] = n/4;
+		  id[n++]=dl[i].atm.minO;
+		  id[n++]=dl[i].atm.minC;
+		  id[n++]=dl[i].atm.N;
+		  id[n++]=dl[i].atm.H;
+	  }
   }
-  for(Xi=0; (Xi<MAXCHI); Xi++) { /* Chi# */
-    for(i=0; (i<nl); i++) {
-      if (dl[i].atm.Cn[Xi+3] != -1) {
-	dl[i].j0[edChi1+Xi] = n/4;
-	id[n++]=dl[i].atm.Cn[Xi];
-	id[n++]=dl[i].atm.Cn[Xi+1];
-	id[n++]=dl[i].atm.Cn[Xi+2];
-	id[n++]=dl[i].atm.Cn[Xi+3];
-      }
-    }
+  for(Xi=0; (Xi<MAXCHI); Xi++)
+  { 
+	  /* Chi# */
+	  for(i=0; (i<nl); i++) 
+	  {
+		  if (dl[i].atm.Cn[Xi+3] != -1) 
+		  {
+			  dl[i].j0[edChi1+Xi] = n/4;
+			  id[n++]=dl[i].atm.Cn[Xi];
+			  id[n++]=dl[i].atm.Cn[Xi+1];
+			  id[n++]=dl[i].atm.Cn[Xi+2];
+			  id[n++]=dl[i].atm.Cn[Xi+3];
+		  }
+	  }
   }
   *ndih=n/4;
   
@@ -328,24 +342,40 @@ static int reset_em_all(int nlist,t_dlist dlist[],int nf,
   j=0;
   /* Phi */
   for(i=0; (i<nlist); i++)
-    if (dlist[i].atm.H == -1)
-      reset_one(dih[j++],nf,0);
-    else
-      reset_one(dih[j++],nf,M_PI);
+  {
+	  if (dlist[i].atm.minC == -1)
+	  {  
+		  reset_one(dih[j++],nf,M_PI);
+	  }
+	  else
+      {
+		  reset_one(dih[j++],nf,0);
+	  }
+  }
   /* Psi */
-  for(i=0; (i<nlist); i++)
-    reset_one(dih[j++],nf,M_PI);
+  for(i=0; (i<nlist-1); i++)
+  {
+	  reset_one(dih[j++],nf,0);		  
+  }	  
+  /* last Psi is faked from O */
+  reset_one(dih[j++],nf,M_PI);		  
+  
   /* Omega */
   for(i=0; (i<nlist); i++)
-    if (has_dihedral(edOmega,&dlist[i]))
-      reset_one(dih[j++],nf,0);
+	  if (has_dihedral(edOmega,&dlist[i]))
+		  reset_one(dih[j++],nf,0);
   /* Chi 1 thru maxchi */
   for(Xi=0; (Xi<maxchi); Xi++)
-    for(i=0; (i<nlist); i++)
-      if (dlist[i].atm.Cn[Xi+3] != -1) {
-	reset_one(dih[j],nf,0);
-	j++;
-      }
+  {
+	  for(i=0; (i<nlist); i++)
+	  {
+		  if (dlist[i].atm.Cn[Xi+3] != -1) 
+		  {
+			  reset_one(dih[j],nf,0);
+			  j++;
+		  }
+	  }
+  }
   fprintf(stderr,"j after resetting (nr. active dihedrals) = %d\n",j);
   return j ; 
 }
@@ -1136,23 +1166,25 @@ int gmx_chi(int argc,char *argv[])
   if (nlist == 0) 
     gmx_fatal(FARGS,"No dihedrals in your structure!\n");
   
-  /* Make a linear index for reading all */
+  /* Make a linear index for reading all. */
   index=make_chi_ind(nlist,dlist,&ndih);
   isize=4*ndih;
   fprintf(stderr,"%d dihedrals found\n", ndih);
 
   snew(dih,ndih);
-    
+
   /* COMPUTE ALL DIHEDRALS! */
   read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efSTX,NFILE,fnm),
 	       FALSE,TRUE,FALSE,bPBC,1,&idum,
 	       &nf,&time,isize,index,&trans_frac,&aver_angle,dih);
-
+  
   dt=(time[nf-1]-time[0])/(nf-1); /* might want this for corr or n. transit*/ 
-  if (bCorr) {
-    if (nf < 2)
-      gmx_fatal(FARGS,"Need at least 2 frames for correlation");
-    
+  if (bCorr) 
+  {
+	  if (nf < 2)
+	  {
+		  gmx_fatal(FARGS,"Need at least 2 frames for correlation");
+	  }
   }
 
   /* put angles in -M_PI to M_PI ! and correct phase factor for phi and psi 

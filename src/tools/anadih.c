@@ -599,6 +599,7 @@ static void calc_dihs(FILE *log,matrix box,
 		  x_s[index[ix+3]],NULL,
 		  r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);
+	  
     ang[i]=aaa;  /* not taking into account ryckaert bellemans yet */
   }
 }
@@ -667,8 +668,7 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   rvec       *x,*x_s;
   int        cur=0;
 #define prev (1-cur)
-
-
+  
   /* Read topology */    
   ftp     = fn2ftp(stx_fn);
   if ((ftp == efTPR) || (ftp == efTPB) || (ftp == efTPA)) { 
@@ -727,10 +727,13 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
       rm_pbc(&(top->idef),nat_trj,box,x,x_s);
     
     if (bAngles)
-      calc_angles(stdout,box,isize,index,angles[cur],x_s);
-    else {
+    {
+	  calc_angles(stdout,box,isize,index,angles[cur],x_s);
+	}
+    else 
+	{
       calc_dihs(stdout,box,isize,index,angles[cur],x_s);
-
+			
       /* Trans fraction */
       fraction = calc_fraction(angles[cur], nangles);
       (*trans_frac)[teller] = fraction;
