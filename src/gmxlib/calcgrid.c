@@ -37,6 +37,8 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include "typedefs.h"
 #include "smalloc.h"
 #include "fatal.h"
@@ -80,16 +82,37 @@ static int list_comp(const void *a,const void *b)
 real calc_grid(matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes)
 {
   int  d,n[DIM];
-  int  i,nmin[DIM];
+  int  i,j,nmin[DIM];
   rvec box_size,spacing;
   real max_spacing;
+  real tmp[3];
   
   if (gr_sp <= 0)
     gmx_fatal(FARGS,"invalid fourier grid spacing: %g",gr_sp);
-  
-  for(d=0; d<DIM; d++)
-    box_size[d] = box[d][d];
 
+  /* New grid calculation setup:
+   *
+   * To maintain similar accuracy for triclinic PME grids as for rectangular
+   * ones, the max grid spacing should set along the box vectors rather than
+   * cartesian X/Y/Z directions. This will lead to slightly larger grids, but
+   * it is much better than having to go to pme_order=6.
+   *
+   * Thus, instead of just extracting the diagonal elements to box_size[d], we
+   * now calculate the cartesian length of the vectors.
+   *
+   * /Erik Lindahl, 20060402.
+   */
+  for(d=0; d<DIM; d++)
+  {
+	  box_size[d] = 0;
+	  for(i=0;i<DIM;i++)
+	  {
+		  box_size[d] += box[d][i]*box[d][i];
+	  }
+	  box_size[d] = sqrt(box_size[d]);
+  }
+  
+  
   n[XX] = *nx;
   n[YY] = *ny;
   n[ZZ] = *nz;
