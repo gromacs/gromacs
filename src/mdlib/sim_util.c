@@ -801,10 +801,17 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
   calc_shifts(box,fr->shift_vec);
   if (graph) {
     mk_mshift(fplog,graph,box,x);
-    if (getenv ("NOPBC") == NULL)
-      shift_self(graph,box,x);
-    else
-      fprintf(fplog,"Not doing first shift_self\n");
+    if (debug)
+      p_graph(debug,"do_pbc_first 1",graph);
+    shift_self(graph,box,x);
+    /* By doing an extra mk_mshift the molecules that are broken
+     * because they were e.g. imported from another software
+     * will be made whole again. Such are the healing capabilities
+     * of GROMACS.
+     */
+    mk_mshift(fplog,graph,box,x);
+    if (debug)
+      p_graph(debug,"do_pbc_first 2",graph);
   }
   fprintf(fplog,"Done rmpbc\n");
 }
