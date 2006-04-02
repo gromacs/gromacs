@@ -712,6 +712,27 @@ can be plotted and analyzed with {\tt \normindex{g\_anaeig}}.
 The cosine content can be calculated with {\tt \normindex{g\_analyze}}.
 } % Brace matches ifthenelse test for gmxlite
 
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+\section{Dihedral principal component analysis}
+{\tt g\_angle, g\_covar, g\_anaeig}\\
+Principal component analysis can be performed in dihedral
+space~\cite{Mu2005a} using {\gromacs}. You start by defining the
+dihedral angles of your interest in an index file, either using
+{\tt mk\_angndx} or otherwise. Then you use the {\tt g\_angle} program
+with the -or flag to produce a new trr file containing the cosine and
+sine of each dihedral angle in two coordinates respectively. That is,
+in the trr file you will have a series of numbers corresponding to:
+cos($\phi_1$), sin($\phi_1$), cos($\phi_2$), sin($\phi_2$), ...,
+cos($\phi_n$), sin($\phi_n$), the array is padded with zeros if
+necessary.  Then you can use this trr file as input for the {\tt
+  g\_covar} program and perform principal component analysis as
+usual. For this to work you will need to generate a reference file
+(tpr, gro, pdb etc.) containing the same number of ``atoms'' as the
+new trr file, that is for $n$ dihedrals you need 2$n$/3 atoms (rounded
+up if not an integer number). Analysis of the results is done using
+{\tt g\_anaeig}.
+}
+ 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Hydrogen bonds
 
 \section{Hydrogen bonds}
