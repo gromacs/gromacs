@@ -212,10 +212,8 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   }
    
   /* Make molecules whole at start of run */
-  if (fr->ePBC != epbcNONE)
-  {
+  if (fr->ePBC != epbcNONE)  {
     do_pbc_first(stdlog,state->box,fr,graph,state->x);
-    /*rm_pbc(&top->idef,nsb->natoms,state->box,state->x,state->x);*/
   }
   
   /* Initiate PPPM if necessary */
@@ -393,14 +391,6 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bTCR = ftp2bSet(efGCT,nfile,fnm);
   if (MASTER(cr) && bTCR)
     fprintf(stderr,"Will do General Coupling Theory!\n");
-
-  /* Remove periodicity */  
-  /*if (fr->ePBC != epbcNONE)
-  {
-	  do_pbc_first(log,state->box,fr,graph,state->x);
-  }
-  debug_gmx();
-  */
 
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,inputrec->opts.nFreeze,
