@@ -334,9 +334,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(vir);
   clear_mat(pres);
   
-  if (fr->ePBC != epbcNONE)
-    /* Remove periodicity */
-    do_pbc_first(log,state->box,fr,graph,state->x);
+  /* Remove periodicity */
+  /*  if (fr->ePBC != epbcNONE)
+      do_pbc_first(log,state->box,fr,graph,state->x);*/
   
   /* Max number of steps */
   number_steps=inputrec->nsteps;
@@ -943,9 +943,9 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(vir);
   clear_mat(pres);
   
-  if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
-    do_pbc_first(log,state->box,fr,graph,state->x);
+  /*  if (fr->ePBC != epbcNONE)
+      do_pbc_first(log,state->box,fr,graph,state->x);*/
   
   /* Max number of steps */
   number_steps=inputrec->nsteps;
@@ -1549,9 +1549,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(vir); 
   clear_mat(pres); 
 
-  if (fr->ePBC != epbcNONE)
     /* Remove periodicity */
-    do_pbc_first(log,state->box,fr,graph,state->x);
+  /*  if (fr->ePBC != epbcNONE)
+      do_pbc_first(log,state->box,fr,graph,state->x);*/
 
   /* Initiate constraint stuff */
   bConstrain=init_constraints(stdlog,top,inputrec,mdatoms,
@@ -1875,8 +1875,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     init_nrnb(&mynrnb);
     
     /* Remove periodicity */
-    if (fr->ePBC != epbcNONE)
-        do_pbc_first(log,state->box,fr,graph,state->x);
+    /*    if (fr->ePBC != epbcNONE)
+	  do_pbc_first(log,state->box,fr,graph,state->x);*/
     
     fp_ene=-1;
     mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr);
@@ -2153,9 +2153,9 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     for(i=0; i<ngid; i++)
       sum_UgembU[i] = 0;
 
-    if (fr->ePBC != epbcNONE)
-      /* Remove periodicity */
-      do_pbc_first(fplog,state->box,fr,graph,state->x);
+    /* Remove periodicity */
+    /* if (fr->ePBC != epbcNONE)
+       do_pbc_first(fplog,state->box,fr,graph,state->x);*/
 
     /* Copy the coordinates from the input trajectory */
     for(i=0; i<rerun_fr.natoms; i++)
