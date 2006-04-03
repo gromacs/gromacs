@@ -607,13 +607,48 @@ static void cmp_energies(FILE *fp,int step1,int step2,int nre,
   }
 }
 
+static void cmp_disres(t_enxframe *fr1,t_enxframe *fr2,real ftol)
+{
+  int i;
+  char bav[64],bt[64];
+    
+  cmp_int(stdout,"ndisre",-1,fr1->ndisre,fr2->ndisre);
+  if ((fr1->ndisre == fr2->ndisre) && (fr1->ndisre > 0)) {
+    sprintf(bav,"step %d: disre rav",fr1->step);
+    sprintf(bt, "step %d: disre  rt",fr1->step);
+    for(i=0; (i<fr1->ndisre); i++) {
+      cmp_real(stdout,bav,i,fr1->rav[i],fr2->rav[i],ftol);
+      cmp_real(stdout,bt,i,fr1->rt[i],fr2->rt[i],ftol);
+    }
+  }
+}
+
+static void cmp_eblocks(t_enxframe *fr1,t_enxframe *fr2,real ftol)
+{
+  int i,j;
+  char buf[64];
+    
+  cmp_int(stdout,"nblock",-1,fr1->nblock,fr2->nblock);  
+  if ((fr1->nblock == fr2->nblock) && (fr1->nblock > 0)) {
+    for(j=0; (j<fr1->nblock); j++) {
+      sprintf(buf,"step %d: block[%d]",fr1->step,j);
+      cmp_int(stdout,buf,-1,fr1->nr[j],fr2->nr[j]);
+      if ((fr1->nr[j] == fr2->nr[j]) && (fr1->nr[j] > 0)) {
+	for(i=0; (i<fr1->nr[j]); i++) {
+	  cmp_real(stdout,buf,i,fr1->block[i][j],fr2->block[i][j],ftol);
+	}
+      }
+    }
+  }
+}
+
 void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
 {
   int        in1,in2,nre,nre1,nre2,block;
   int        i,maxener;
   char       **enm1=NULL,**enm2=NULL,buf[256];
   t_enxframe *fr1,*fr2;
-  bool       b1,b2,bNotCmp,bWarn=FALSE;
+  bool       b1,b2;
   
   fprintf(stdout,"comparing energy file %s and %s\n\n",fn1,fn2);
 
@@ -651,42 +686,14 @@ void comp_enx(char *fn1,char *fn2,real ftol,char *lastener)
     else if (!b1 && !b2)
       fprintf(stdout,"\nFiles read succesfully\n");
     else {
-      bNotCmp = fr1->ndisre>0 || fr2->ndisre>0;
       cmp_real(stdout,"t",-1,fr1->t,fr2->t,ftol);
       cmp_int(stdout,"step",-1,fr1->step,fr2->step);
       cmp_int(stdout,"nre",-1,fr1->nre,fr2->nre);
-      cmp_int(stdout,"ndisre",-1,fr1->ndisre,fr2->ndisre);
-      cmp_int(stdout,"nblock",-1,fr1->nblock,fr2->nblock);
-      if (fr1->nblock == fr2->nblock)
-	for(block=0; block<fr1->nblock; block++) {
-	  sprintf(buf,"nr[%2d]",block);
-	  cmp_int(stdout,buf,-1,fr1->nr[block],fr2->nr[block]);
-	  bNotCmp = bNotCmp || fr1->nr[block]>0 || fr2->nr[block]>0;
-	}
-      
-      if (fr1->nre != nre) {
-	fprintf(stdout,
-		"file %s internally inconsistent: nre changed from %d to %d\n",
-		fn1,nre,fr1->nre);
-	break;
-      }
-      if (fr2->nre != nre) {
-	fprintf(stdout,
-		"file %s internally inconsistent: nre changed from %d to %d\n",
-		fn2,nre,fr2->nre);
-	break;
-      }
-      if (bNotCmp && !bWarn) {
-	fprintf(stdout,"\nWARNING: will not compare distance restraint and block data\n");
-	bWarn = TRUE;
-      }
-
-      if (nre < maxener)
-	maxener = nre;
-      cmp_energies(stdout,fr1->step,fr1->step,nre,fr1->ener,fr2->ener,
-		   enm1,enm2,ftol,maxener);
-      /*if ((ndr1 == ndr2) && (ndr1 > 0))
-	cmp_disres(stdout,step1,step2,ndr1,dr1,dr2);*/
+      if ((fr1->nre == nre) && (fr2->nre == nre))
+	cmp_energies(stdout,fr1->step,fr1->step,nre,fr1->ener,fr2->ener,
+		     enm1,enm2,ftol,maxener);
+      cmp_disres(fr1,fr2,ftol);
+      cmp_eblocks(fr1,fr2,ftol);
     }
   } while (b1 && b2);
     
