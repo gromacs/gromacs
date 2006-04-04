@@ -270,6 +270,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK(ir->rlist > ir->rcoulomb);
   }
 
+  if (EEL_FULL(ir->coulombtype)) {
+    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be equal to rlist",eel_names[ir->coulombtype]);
+    CHECK(ir->rcoulomb != ir->rlist);
+  }
+
   if ((ir->coulombtype == eelPME) ||
       (ir->coulombtype == eelPMEUSER)) {
     if ((ir->pme_order < 4) || ((ir->pme_order % 2) == 1)) {
