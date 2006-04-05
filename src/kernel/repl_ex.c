@@ -161,6 +161,7 @@ gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
   } else {
     re->seed = init_seed;
   }
+  fprintf(fplog,"\nRepl  exchange interval: %d\n",re->nst);
   fprintf(fplog,"\nRepl  random seed: %d\n",re->seed);
 
   re->nattempt[0] = 0;
