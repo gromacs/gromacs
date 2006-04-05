@@ -612,6 +612,7 @@ void update(int          natoms,  /* number of atoms in simulation */
 {
   static bool      bFirst=TRUE;
   static rvec      *xprime=NULL;
+  static int       xprime_nalloc=0;
   static int       ngtc,ngacc;
   static bool      bHaveConstr,bExtended;
   double           dt;
@@ -622,8 +623,12 @@ void update(int          natoms,  /* number of atoms in simulation */
   static gmx_rng_t sd_gaussrand=NULL;
   
   if(bFirst) {
+    if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
+      please_cite(stdlog,"Berendsen84a");
+
     bHaveConstr = init_constraints(stdlog,top,inputrec,md,start,homenr,
-                                   inputrec->eI!=eiSteep,cr);
+                                   inputrec->eI!=eiSteep,
+				   cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
     bHaveConstr = bHaveConstr || pulldata->bPull;
     bExtended   = (inputrec->etc==etcNOSEHOOVER) || (inputrec->epc==epcPARRINELLORAHMAN);
 
@@ -636,7 +641,8 @@ void update(int          natoms,  /* number of atoms in simulation */
       sd_gaussrand = gmx_rng_init(inputrec->ld_seed);
     
     /* Allocate memory for xold and for xprime. */
-    snew(xprime,natoms);
+    xprime_nalloc = natoms;
+    snew(xprime,xprime_nalloc);
     /* Copy the pointer to the external acceleration in the opts */
     ngacc=inputrec->opts.ngacc;    
     ngtc=inputrec->opts.ngtc;    
@@ -734,8 +740,13 @@ void update(int          natoms,  /* number of atoms in simulation */
   prepare_edsam(step,start,homenr,cr,xprime,edyn);
   
   if (bHaveConstr) {
+    if (DOMAINDECOMP(cr) && cr->dd->nat_tot_con > xprime_nalloc) {
+      xprime_nalloc = over_alloc(cr->dd->nat_tot_con);
+      srenew(xprime,xprime_nalloc);
+    }
     /* Constrain the coordinates xprime */
-    constrain(stdlog,top,inputrec,step,md,start,homenr,state->x,xprime,NULL,
+    constrain(stdlog,top,inputrec,cr->dd,step,md,
+	      start,homenr,state->x,xprime,NULL,
               state->box,state->lambda,dvdlambda,&vir_con,nrnb,TRUE);
     if (inputrec->eI == eiSD) {
       /* A correction factor eph is needed for the SD constraint force */
@@ -816,7 +827,8 @@ void update(int          natoms,  /* number of atoms in simulation */
       
       if (bHaveConstr) {
 	/* Constrain the coordinates xprime */
-	constrain(stdlog,top,inputrec,step,md,start,homenr,state->x,xprime,NULL,
+	constrain(stdlog,top,inputrec,cr->dd,step,md,
+		  start,homenr,state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,NULL,nrnb,TRUE);
       }
     }

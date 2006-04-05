@@ -47,6 +47,7 @@
 #include "smalloc.h"
 #include "mdrun.h"
 #include "nrnb.h"
+#include "domdec.h"
 
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 		      t_lincsdata *lincsd,real *invmass,
@@ -145,6 +146,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 
 static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
 		     t_lincsdata *lincsd,real *invmass,
+		     gmx_domdec_t *dd,
 		     int nit,int nrec,
 		     real wangle,int *warn,
 		     bool bCalcVir,tensor rmdr)
@@ -156,6 +158,7 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
   int     ncons,*bla,*blnr,*blbnb;
   rvec    *r;
   real    *blc,*blcc,*bllen,*blm,*rhs1,*rhs2,*sol,*lambda,*swap;
+  int     *nlocat;
 
   ncons  = lincsd->nc;
   bla    = lincsd->bla;
@@ -170,6 +173,11 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
   rhs2   = lincsd->tmp2;
   sol    = lincsd->tmp3;
   lambda = lincsd->lambda;
+
+  if (dd && dd->constraints)
+    nlocat = dd->constraints->con_nlocat;
+  else
+    nlocat = NULL;
 
   *warn = 0;
 
@@ -272,7 +280,10 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
   wfac = wfac*wfac;
 
   for(it=0; it<nit; it++) {
-  
+    if (dd && dd->constraints)
+      /* Communicate the corrected non-local coordinates */
+      dd_move_x_constraints(dd,xp);
+
     for(b=0;b<ncons;b++) {
       len = bllen[b];
       if (pbc) {
@@ -282,8 +293,10 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
       }
       u1 = len*len;
       u0 = 2*u1 - norm2(dx);
-      if (u0 < wfac*u1) *warn = b;	
-      if (u0 < 0) u0 = 0;
+      if (u0 < wfac*u1 && (nlocat==NULL || nlocat[b]))
+	*warn = b;
+      if (u0 < 0)
+	u0 = 0;
       mvb = blc[b]*(len - u0*invsqrt(u0));
       rhs1[b] = mvb;
       sol[b]  = mvb;
@@ -329,6 +342,12 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
       xp[j][2] = v2;
     } /* 17 ncons flops */
   } /* nit*ncons*(35+9*nrec) flops */
+
+  if (nlocat) {
+    /* Only account for local atoms */
+    for(b=0; b<ncons; b++)
+      lambda[b] *= 0.5*nlocat[b];
+  }
 
   if (bCalcVir) {
     /* Constraint virial */
@@ -383,128 +402,226 @@ void set_lincs_matrix(t_lincsdata *li,real *invmass)
   }
 }
 
+t_block make_at2con(int start,int natoms,
+		    t_idef *idef,bool bDynamics,
+		    int *nconstraints,int *nflexiblecons)
+{
+  int *count,ncon,con,nflexcon,i,a;
+  t_iatom *ia;
+  t_block at2con;
+  bool bFlexCon;
+  
+  snew(count,natoms);
+  ncon = idef->il[F_CONSTR].nr/3;
+  ia   = idef->il[F_CONSTR].iatoms;
+  nflexcon = 0;
+  for(con=0; con<ncon; con++) {
+    bFlexCon = (idef->iparams[ia[0]].constr.dA == 0 &&
+		idef->iparams[ia[0]].constr.dB == 0);
+    if (bFlexCon)
+      nflexcon++;
+    if (bDynamics || !bFlexCon) {
+      for(i=1; i<3; i++) {
+	a = ia[i] - start;
+	count[a]++;
+      }
+    }
+    ia += 3;
+  }
+  *nconstraints = ncon;
+  if (!bDynamics)
+    *nconstraints -= nflexcon;
+  *nflexiblecons = nflexcon;
+
+  snew(at2con.index,natoms+1);
+  at2con.index[0] = 0;
+  for(a=0; a<natoms; a++) {
+    at2con.index[a+1] = at2con.index[a] + count[a];
+    count[a] = 0;
+  }
+  snew(at2con.a,at2con.index[natoms]);
+
+  ia   = idef->il[F_CONSTR].iatoms;
+  for(con=0; con<ncon; con++) {
+    bFlexCon = (idef->iparams[ia[0]].constr.dA == 0 &&
+		idef->iparams[ia[0]].constr.dB == 0);
+    if (bDynamics || !bFlexCon) {
+      for(i=1; i<3; i++) {
+	a = ia[i] - start;
+	at2con.a[at2con.index[a]+count[a]++] = con;
+      }
+    }
+    ia += 3;
+  }
+  
+  sfree(count);
+
+  return at2con;
+}
+
 static int int_comp(const void *a,const void *b)
 {
   return (*(int *)a) - (*(int *)b);
 }
 
-t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr,
-			bool bDynamics)
+#define CONCON_ALLOC_SIZE 1000
+
+void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
+		bool bDynamics,gmx_domdec_t *dd,
+		t_lincsdata *li)
 {
+  gmx_domdec_constraints_t *dc;
+  t_block     at2con;
   t_iatom     *iatom;
-  int         i,j,k;
-  int         type,a1,a2;
+  int         i,k,ncc_alloc,ni,con,cong,nconnect;
+  int         type,ag1,ag2,a1,a2;
   real        lenA=0,lenB;
-  int         **at_c,*at_cn;
-  t_lincsdata *li;
-  
-  snew(li,1);
+  bool        bLocal;
+
   li->nc = 0;
-  li->nzerolen = 0;
   li->ncc = 0;
   
-  if (idef->il[F_SHAKE].nr > 0) {
-    /* Make atom-constraint connection list for temporary use */
-    snew(at_c,homenr);
-    snew(at_cn,homenr);
-
-    iatom=idef->il[F_SHAKE].iatoms;
-
-    /* Make a list of constraint connections */
-    for(i=0; i<idef->il[F_SHAKE].nr; i+=3) {
-      type = iatom[i];
-      a1   = iatom[i+1];
-      a2   = iatom[i+2];
-      lenA = idef->iparams[type].shake.dA;
-      lenB = idef->iparams[type].shake.dB;
-      /* Skip the flexible constraints when not doing dynamics */
-      if (bDynamics || lenA!=0 || lenB!=0) {
-	if (at_cn[a1-start] % 4 == 0)
-	  srenew(at_c[a1-start],at_cn[a1-start]+4);
-	at_c[a1-start][at_cn[a1-start]] = li->nc;
-	at_cn[a1-start]++;
-	if (at_cn[a2-start] % 4 == 0)
-	  srenew(at_c[a2-start],at_cn[a2-start]+4);
-	at_c[a2-start][at_cn[a2-start]] = li->nc;
-	at_cn[a2-start]++;
-	li->nc++;
-      }
+  if (idef->il[F_CONSTR].nr > 0 || (dd && dd->constraints)) {
+    if (dd == NULL) {
+      dc = NULL;
+      /* Make atom-constraint connection list for temporary use */
+      at2con = make_at2con(start,homenr,idef,bDynamics,&li->nc,&li->nflexcon);
+    } else {
+      dc = dd->constraints;
+      at2con = dc->at2con;
+      li->nc = dc->ncon;
+      li->nflexcon = dc->nflexcon_global;
     }
     
-    snew(li->bllen0,li->nc);
-    snew(li->ddist,li->nc);
-    snew(li->bla,2*li->nc);
-
-    j = 0;
-    for(i=0; i<idef->il[F_SHAKE].nr; i+=3) {
-      type = iatom[i];
-      a1   = iatom[i+1];
-      a2   = iatom[i+2];
-      lenA = idef->iparams[type].shake.dA;
-      lenB = idef->iparams[type].shake.dB;
-      if (lenA == 0 && lenB == 0)
-	li->nzerolen++;
-      /* Skip the flexible constraints when not doing dynamics */
-      if (bDynamics || lenA!=0 || lenB!=0) {
-	li->bllen0[j] = lenA;
-	li->ddist[j]  = lenB - lenA;
-	li->bla[2*j]   = a1;
-	li->bla[2*j+1] = a2;
-	/* Count the constraint connections */
-	li->ncc += at_cn[a1-start] + at_cn[a2-start] - 2;
-	j++;
-      }
-    }      
+    if (li->nc > li->nc_alloc) {
+      li->nc_alloc = over_alloc(li->nc);
+      srenew(li->bllen0,li->nc_alloc);
+      srenew(li->ddist,li->nc_alloc);
+      srenew(li->bla,2*li->nc_alloc);
+      srenew(li->blc,li->nc_alloc);
+      srenew(li->blnr,li->nc_alloc+1);
+      srenew(li->bllen,li->nc_alloc);
+      srenew(li->tmpv,li->nc_alloc);
+      srenew(li->tmp1,li->nc_alloc);
+      srenew(li->tmp2,li->nc_alloc);
+      srenew(li->tmp3,li->nc_alloc);
+      srenew(li->lambda,li->nc_alloc);
+    }
     
-    snew(li->blc,li->nc);
-    snew(li->blnr,li->nc+1);
-    snew(li->blbnb,li->ncc);
-    snew(li->blcc,li->ncc);
-    snew(li->bllen,li->nc);
-    snew(li->tmpv,li->nc);
-    snew(li->tmpncc,li->ncc);
-    snew(li->tmp1,li->nc);
-    snew(li->tmp2,li->nc);
-    snew(li->tmp3,li->nc);
-    snew(li->lambda,li->nc);
-   
-    /* Make constraint-neighbor list */
+    if (dc == NULL)
+      iatom = idef->il[F_CONSTR].iatoms;
+    else
+      iatom = dc->iatoms;
+
+    ncc_alloc = li->ncc_alloc;
     li->blnr[0] = 0;
-    for(j=0; j<li->nc; j++) {
-      a1 = li->bla[2*j];
-      a2 = li->bla[2*j+1];
-      /* Set the length to the topology A length */
-      li->bllen[j] = li->bllen0[j];
-      /* Construct the constraint connection matrix blbnb */
-      li->blnr[j+1] = li->blnr[j];
-      for(k=0; k<at_cn[a1-start]; k++)
-	if (at_c[a1-start][k] != j)
-	  li->blbnb[(li->blnr[j+1])++] = at_c[a1-start][k];
-      for(k=0; k<at_cn[a2-start]; k++)
-	if (at_c[a2-start][k] != j)
-	  li->blbnb[(li->blnr[j+1])++] = at_c[a2-start][k];
-      /* Order the blbnb matrix to optimize memory access */
-      qsort(&(li->blbnb[li->blnr[j]]),li->blnr[j+1]-li->blnr[j],
-            sizeof(li->blbnb[0]),int_comp);
+
+    if (dc == NULL) {
+      ni = idef->il[F_CONSTR].nr/3;
+    } else {
+      ni = dc->ncon;
+    }
+    con = 0;
+    nconnect = 0;
+    li->blnr[con] = nconnect;
+    for(i=0; i<ni; i++) {
+      bLocal = TRUE;
+      if (dc == NULL) {
+	cong = i;
+      } else {
+	cong = dc->con[i];
+      }
+      type = iatom[3*cong];
+      ag1  = iatom[3*cong+1];
+      ag2  = iatom[3*cong+2];
+      if (dc == NULL) {
+	a1 = ag1;
+	a2 = ag2;
+      } else {
+	/* Find the global atom indices */
+	if (dd->ga2la[ag1].cell == 0) {
+	  a1 = dd->ga2la[ag1].a;
+	} else {
+	  a1 = dc->ga2la[ag1];
+	  bLocal = FALSE;
+	}
+	if (dd->ga2la[ag2].cell == 0) {
+	  a2 = dd->ga2la[ag2].a;
+	} else {
+	  a2 = dc->ga2la[ag2];
+	  bLocal = FALSE;
+	}
+      }
+      lenA = idef->iparams[type].constr.dA;
+      lenB = idef->iparams[type].constr.dB;
+      /* Skip the flexible constraints when not doing dynamics */
+      if (bDynamics || lenA!=0 || lenB!=0) {
+	li->bllen0[con]  = lenA;
+	li->ddist[con]   = lenB - lenA;
+	/* Set the length to the topology A length */
+	li->bllen[con]   = li->bllen0[con];
+	li->bla[2*con]   = a1;
+	li->bla[2*con+1] = a2;
+	/* Construct the constraint connection matrix blbnb */
+	for(k=at2con.index[ag1-start]; k<at2con.index[ag1-start+1]; k++) {
+	  if (at2con.a[k] != cong &&
+	      (bLocal || at2con.a[k] != -1)) {
+	    if (nconnect >= ncc_alloc) {
+	      ncc_alloc += CONCON_ALLOC_SIZE;
+	      srenew(li->blbnb,ncc_alloc);
+	    }
+	    if (dc == NULL)
+	      li->blbnb[nconnect++] = at2con.a[k];
+	    else
+	      li->blbnb[nconnect++] = dc->gc2lc[at2con.a[k]];
+	  }
+	}
+	for(k=at2con.index[ag2-start]; k<at2con.index[ag2-start+1]; k++) {
+	  if (at2con.a[k] != cong &&
+	      (bLocal || dc->gc2lc[at2con.a[k]] != -1)) {
+	    if (nconnect >= ncc_alloc) {
+	      ncc_alloc += CONCON_ALLOC_SIZE;
+	      srenew(li->blbnb,ncc_alloc);
+	    }
+	    if (dc == NULL)
+	      li->blbnb[nconnect++] = at2con.a[k];
+	    else
+	      li->blbnb[nconnect++] = dc->gc2lc[at2con.a[k]];
+	  }
+	}
+	li->blnr[con+1] = nconnect;
+	if (dc == NULL) {
+	  /* Order the blbnb matrix to optimize memory access */
+	  qsort(&(li->blbnb[li->blnr[con]]),li->blnr[con+1]-li->blnr[con],
+		sizeof(li->blbnb[0]),int_comp);
+	}
+	/* Increase the constraint count */
+	con++;
+      }
+    }
+    if (con != li->nc)
+      gmx_fatal(FARGS,"Internal error in init_lincs, old (%d) and new (%d) constraint count don't match\n",li->nc,con);
+    li->ncc = li->blnr[con];
+
+    if (ncc_alloc > li->ncc_alloc) {
+      li->ncc_alloc = ncc_alloc;
+      srenew(li->blcc,li->ncc_alloc);
+      srenew(li->tmpncc,li->ncc_alloc);
     }
 
-    sfree(at_cn);
-    for(i=0; i<homenr; i++)
-      sfree(at_c[i]);
-    sfree(at_c);
-    
-    fprintf(log,"\nInitializing LINear Constraint Solver\n");
-    fprintf(log,"  number of constraints is %d\n",li->nc);
-    if (li->nc > 0)
-      fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n",
-	    (real)(li->ncc)/li->nc);
-    if (li->nzerolen)
-      fprintf(log,"  found %d constraints with zero length\n",li->nzerolen);
-    fprintf(log,"\n");
-    fflush(log);
+    if (dc == NULL) {
+      done_block(&at2con);
+      fprintf(log,"\nInitializing LINear Constraint Solver\n");
+      fprintf(log,"  number of constraints is %d\n",li->nc);
+      if (li->nc > 0)
+	fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n",
+		(real)(li->ncc)/li->nc);
+      if (li->nflexcon)
+	fprintf(log,"  found %d flexible constraints\n",li->nflexcon);
+      fprintf(log,"\n");
+      fflush(log);
+    }
   }
-
-  return li;
 }
 
 /* Yes. I _am_ awfully ashamed of introducing a static variable after preaching
@@ -566,16 +683,23 @@ static void lincs_warning(rvec *x,rvec *xprime,t_pbc *pbc,
   }
 }
 
-static void cconerr(real *max,real *rms,int *imax,rvec *x,t_pbc *pbc,
+static void cconerr(gmx_domdec_t *dd,
+		    real *max,real *rms,int *imax,rvec *x,t_pbc *pbc,
 		    int ncons,int *bla,real *bllen)
 {
   real      len,d,ma,ms,r2;
-  int       b,im;
+  int       *nlocat,count,b,im;
   rvec      dx;
   
+  if (dd && dd->constraints)
+    nlocat = dd->constraints->con_nlocat;
+  else
+    nlocat = 0;
+
   ma = 0;
   ms = 0;
   im = 0;
+  count = 0;
   for(b=0;b<ncons;b++) {
     if (pbc) {
       pbc_dx(pbc,x[bla[2*b]],x[bla[2*b+1]],dx);
@@ -585,19 +709,66 @@ static void cconerr(real *max,real *rms,int *imax,rvec *x,t_pbc *pbc,
     r2 = norm2(dx);
     len = r2*invsqrt(r2);
     d = fabs(len/bllen[b]-1);
-    if (d > ma) {
+    if (d > ma && (nlocat==NULL || nlocat[b])) {
       ma = d;
       im = b;
     }
-    ms = ms+d*d;
+    if (nlocat == NULL) {
+      ms = ms + d*d;
+      count++;
+    } else {
+      ms = ms + nlocat[b]*d*d;
+      count += nlocat[b];
+    }
   }
   *max = ma;
-  *rms = sqrt(ms/ncons);
+  *rms = sqrt(ms/count);
   *imax = im;
+}
+
+static void dump_conf(gmx_domdec_t *dd,t_lincsdata *li,
+		      char *name,bool bAll,rvec *x,matrix box)
+{
+  char str[STRLEN];
+  FILE *fp;
+  int i,j;
+  gmx_domdec_constraints_t *dc;
+  bool bPrint;
+  
+  dc = dd->constraints;
+
+  sprintf(str,"%s%d.pdb",name,dd->nodeid);
+  fp = ffopen(str,"w");
+  fprintf(fp,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
+	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
+	  90.0,90.0,90.0);
+  for(i=0; i<dd->nat_tot_con; i++) {
+    if (i<dd->comm1[0].nat ||
+	(bAll && i>=dd->nat_tot && dc->ga2la[dd->gatindex[i]]>=0)) {
+      bPrint = (i < dd->comm1[0].nat);
+      if (i>=dd->nat_tot) {
+	for(j=dc->at2con.index[dd->gatindex[i]+1]; j<dc->at2con.index[dd->gatindex[i]+1]; j++)
+	  bPrint = bPrint || (dc->gc2lc[dc->at2con.a[j]]>=0);
+      }
+      if (bPrint)
+	fprintf(fp,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+		"ATOM",glatnr(dd,i),"C","ALA",' ',i+1,
+		10*x[i][XX],10*x[i][YY],10*x[i][ZZ],
+		1.0,i<dd->nat_tot ? 0.0 : 1.0);
+    }
+  }
+  if (bAll) {
+    for(i=0; i<li->nc; i++)
+      fprintf(fp,"CONECT%5d%5d\n",
+	      glatnr(dd,li->bla[2*i]),
+	      glatnr(dd,li->bla[2*i+1]));
+  }
+  fclose(fp);
 }
 
 bool constrain_lincs(FILE *log,t_inputrec *ir,
 		     int step,t_lincsdata *lincsd,t_mdatoms *md,
+		     gmx_domdec_t *dd,
 		     rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		     real lambda,real *dvdlambda,
 		     bool bCalcVir,tensor rmdr,
@@ -625,6 +796,12 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
   } else {
     pbc_null = NULL;
   }
+  if (dd) {
+    /* Communicate the coordinates required for the non-local constraints */
+    dd_move_x_constraints(dd,x);
+    dd_move_x_constraints(dd,xprime);
+    //dump_conf(dd,lincsd,"con",TRUE,xprime,box);
+  }
   if (bCoordinates) {
     if (ir->efep != efepNO) {
       if (md->bMassPerturbed && lincsd->matlam != lambda) {
@@ -636,8 +813,8 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
 	lincsd->bllen[i] = lincsd->bllen0[i] + lambda*lincsd->ddist[i];
     }
     
-    if (lincsd->nzerolen) {
-      /* Set the zero lengths to the old lengths */
+    if (lincsd->nflexcon) {
+      /* Set the flexible constraint lengths to the old lengths */
       if (ir->ePBC == epbcFULL) {
 	for(i=0; i<lincsd->nc; i++)
 	  if (lincsd->bllen[i] == 0) {
@@ -653,13 +830,13 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
     }
     
     if (do_per_step(step,ir->nstlog) || (step < 0))
-      cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,
+      cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 	      lincsd->nc,lincsd->bla,lincsd->bllen);
     
-    do_lincs(x,xprime,pbc_null,lincsd,md->invmass,
+    do_lincs(x,xprime,pbc_null,lincsd,md->invmass,dd,
 	     ir->nLincsIter,ir->nProjOrder,ir->LincsWarnAngle,&warn,
 	     bCalcVir,rmdr);
-    
+
     if (ir->efep != efepNO) {
       real dt_2,dvdl=0;
 
@@ -672,23 +849,25 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
     if (do_per_step(step,ir->nstlog) || (step < 0)) {
       fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
       fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
-	      p_max,lincsd->bla[2*p_imax]+1,lincsd->bla[2*p_imax+1]+1,p_rms);
-      cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,
+	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),
+	      glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
+      cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 	      lincsd->nc,lincsd->bla,lincsd->bllen);
       fprintf(stdlog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
-	      p_max,lincsd->bla[2*p_imax]+1,lincsd->bla[2*p_imax+1]+1,p_rms);
+	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),
+	      glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
     }
     
     if (warn > 0) {
       if (bDumpOnError) {
-	cconerr(&p_max,&p_rms,&p_imax,xprime,pbc_null,
+	cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 		lincsd->nc,lincsd->bla,lincsd->bllen);
 	sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
 		"relative constraint deviation after LINCS:\n"
 		"max %.6f (between atoms %d and %d) rms %.6f\n",
 		step,ir->init_t+step*ir->delta_t,
-		p_max,lincsd->bla[2*p_imax]+1,lincsd->bla[2*p_imax+1]+1,
-		p_rms);
+		p_max,glatnr(dd,lincsd->bla[2*p_imax]),
+		glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
 	fprintf(stdlog,"%s",buf);
 	fprintf(stderr,"%s",buf);
 	lincs_warning(x,xprime,pbc_null,lincsd->nc,lincsd->bla,lincsd->bllen,
@@ -697,7 +876,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
       bOK = (p_max < 0.5);
     }
     
-    if (lincsd->nzerolen) {
+    if (lincsd->nflexcon) {
       for(i=0; (i<lincsd->nc); i++)
 	if (lincsd->bllen0[i] == 0 && lincsd->ddist[i] == 0)
 	  lincsd->bllen[i] = 0;

@@ -152,7 +152,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
     else if ((i == F_DVDL) || (i == F_DVDLKIN))
       bEner[i] = (ir->efep != efepNO);
     else if ((interaction_function[i].flags & IF_VSITE) ||
-	     (i == F_SHAKE) || (i == F_SETTLE))
+	     (i == F_CONSTR) || (i == F_SETTLE))
       bEner[i] = FALSE;
     else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_ETOT) ||
 	     (i == F_EKIN) || (i == F_TEMP) || (i == F_PRES)  || (i==F_EQM))
@@ -179,7 +179,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       f_nre++;
     }
 
-  bShake = (idef->il[F_SHAKE].nr > 0) || (idef->il[F_SETTLE].nr > 0);
+  bShake = (idef->il[F_CONSTR].nr > 0) || (idef->il[F_SETTLE].nr > 0);
   if (bShake) 
     bShake = (getenv("SHAKEVIR") != NULL);
   epc = ir->epc;

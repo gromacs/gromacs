@@ -293,7 +293,7 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     f=1;
     bDih=TRUE;
     break;
-  case F_SHAKENC:
+  case F_CONSTRNC:
     f=1;
     break;
   case F_VSITE3FD:

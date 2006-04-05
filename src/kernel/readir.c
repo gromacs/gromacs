@@ -901,8 +901,8 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
       nrdf_vcm[atoms->atom[i].grpnr[egcVCM]] += 0.5*nrdf[i];
     }
   }
-  ia=idef->il[F_SHAKE].iatoms;
-  for(i=0; (i<idef->il[F_SHAKE].nr); ) {
+  ia=idef->il[F_CONSTR].iatoms;
+  for(i=0; (i<idef->il[F_CONSTR].nr); ) {
     /* Subtract degrees of freedom for the constraints,
      * if the particles still have degrees of freedom left.
      * If one of the particles is a vsite or a shell, then all
@@ -933,8 +933,8 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
       nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 0.5*imin;
       nrdf_vcm[atoms->atom[aj].grpnr[egcVCM]] -= 0.5*jmin;
     }
-    ia += interaction_function[F_SHAKE].nratoms+1;
-    i  += interaction_function[F_SHAKE].nratoms+1;
+    ia += interaction_function[F_CONSTR].nratoms+1;
+    i  += interaction_function[F_CONSTR].nratoms+1;
   }
   ia=idef->il[F_SETTLE].iatoms;
   for(i=0; i<idef->il[F_SETTLE].nr; ) {
@@ -1525,14 +1525,14 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
   }  
 
   if( (ir->eConstrAlg==estSHAKE) && 
-      (mol->plist[F_SHAKE].nr > 0) && 
+      (mol->plist[F_CONSTR].nr > 0) && 
       (ir->shake_tol <= 0.0) ) {
     fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
 	    ir->shake_tol);
     (*nerror)++;
   }
 
-  if( (ir->eConstrAlg==estLINCS) && mol->plist[F_SHAKE].nr>0) {
+  if( (ir->eConstrAlg==estLINCS) && mol->plist[F_CONSTR].nr>0) {
     /* If we have Lincs constraints: */
     if(ir->eI==eiMD && ir->etc==etcNO &&
        ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {

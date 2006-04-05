@@ -223,8 +223,9 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
-static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
-		      t_mdatoms *md,int start,int end,
+static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
+		      gmx_domdec_t *dd,
+		      int step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
 		      rvec *f,rvec *acc_dir,matrix box,
 		      real lambda,real *dvdlambda,t_nrnb *nrnb)
@@ -260,10 +261,10 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
       }
     }
   }
-  constrain(log,top,ir,step,md,start,end,
+  constrain(log,top,ir,dd,step,md,start,end,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,NULL,nrnb,TRUE);
-  constrain(log,top,ir,step,md,start,end,
+  constrain(log,top,ir,dd,step,md,start,end,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,NULL,nrnb,TRUE);
 
@@ -276,7 +277,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,int step,
   }
 
   /* Project the accereration on the old bond directions */
-  constrain(log,top,ir,step,md,start,end,
+  constrain(log,top,ir,dd,step,md,start,end,
 	    x_old,xnew,acc_dir,box,
 	    lambda,dvdlambda,NULL,nrnb,FALSE); 
 }
@@ -389,7 +390,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
   sf_dir = 0;
   if (nflexcon) {
-    init_adir(log,top,inputrec,mdstep,md,start,end,
+    init_adir(log,top,inputrec,cr->dd,mdstep,md,start,end,
 	      x_old-start,state->x,state->x,force[Min],acc_dir-start,
 	      state->box,state->lambda,&dum,nrnb);
 
@@ -451,7 +452,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			graph,cr,fr->ePBC,state->box,vsitecomm);
      
     if (nflexcon) {
-      init_adir(log,top,inputrec,mdstep,md,start,end,
+      init_adir(log,top,inputrec,cr->dd,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
       
@@ -502,7 +503,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     }
     sf_dir = 0;
     if (nflexcon) {
-      init_adir(log,top,inputrec,mdstep,md,start,end,
+      init_adir(log,top,inputrec,cr->dd,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
 
@@ -566,7 +567,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
 
   if (nflexcon > 0) {
-    constrain(log,top,inputrec,mdstep,md,start,end,
+    constrain(log,top,inputrec,cr->dd,mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,
 	      state->lambda,&dum,NULL,nrnb,TRUE);
     set_pbc(&pbc,state->box);

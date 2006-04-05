@@ -79,8 +79,9 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
-extern bool constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
-		      t_mdatoms *md,int start,int homenr,
+extern bool constrain(FILE *log,t_topology *top,t_inputrec *ir,
+		      gmx_domdec_t *dd,
+		      int step,t_mdatoms *md,int start,int homenr,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		      real lambda,real *dvdlambda,tensor *vir,
 		      t_nrnb *nrnb,bool bCoordinates);
@@ -107,15 +108,18 @@ extern int count_constraints(t_topology *top,t_commrec *cr);
 
 extern int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 			    t_mdatoms *md,int start,int homenr,
-			    bool bOnlyCoords,t_commrec *cr);
+			    bool bOnlyCoords,
+			    t_commrec *cr,gmx_domdec_t *dd);
 /* Initialize constraints stuff */
 
 
 /* LINCS stuff */
 typedef struct {
   int  nc;       /* the number of constraints */
-  int  nzerolen; /* the number of constraints with zero length */
+  int  nc_alloc; /* the number we allocated memory for */
+  int  nflexcon; /* the number of flexible constraints */
   int  ncc;      /* the number of constraint connections */
+  int  ncc_alloc;/* the number we allocated memory for */
   real matlam;   /* the FE lambda value used for filling blc and blcc */
   real *bllen0;  /* the reference distance in topology A */
   real *ddist;   /* the reference distance in top B - the r.d. in top A */
@@ -134,8 +138,14 @@ typedef struct {
   real *lambda;  /* the Lagrange multipliers */
 } t_lincsdata;
 
-extern t_lincsdata *init_lincs(FILE *log,t_idef *idef,int start,int homenr,
-			       bool bDynamics);
+extern t_block make_at2con(int start,int natoms,
+			   t_idef *idef,bool bDynamics,
+			   int *nconstraints,int *nflexiblecons);
+/* Allocates and makes the atom to constraint list */
+
+extern  void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
+			bool bDynamics,gmx_domdec_t *dd,
+			t_lincsdata *li);
 /* Initialize lincs stuff */
 
 extern void set_lincs_matrix(t_lincsdata *li,real *invmass);
@@ -143,6 +153,7 @@ extern void set_lincs_matrix(t_lincsdata *li,real *invmass);
 
 extern bool constrain_lincs(FILE *log,t_inputrec *ir,
 			    int step,t_lincsdata *lincsd,t_mdatoms *md,
+			    gmx_domdec_t *dd,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			    real lambda,real *dvdlambda,
 			    bool bCalcVir,tensor rmdr,

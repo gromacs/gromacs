@@ -115,6 +115,7 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 }
 
 static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
+			  gmx_domdec_t *dd,
 			  int step,t_mdatoms *md,int start,int homenr,
 			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			  real lambda,real *dvdlambda,tensor *vir,
@@ -139,15 +140,10 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   int         ncons,bstart,error;
   tensor      rmdr;
   real        hdt_2;
-  
+
   bOK = TRUE;
   if (bInit) {
-    /* Output variables, initiate them right away */
-
     if (bFirst) {
-      if ((ir->etc==etcBERENDSEN) || (ir->epc==epcBERENDSEN))
-	please_cite(log,"Berendsen84a");
-      
       bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
     }
     
@@ -175,97 +171,103 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       if (bFirst)
 	please_cite(log,"Miyamoto92a");
     }
-    
-    ncons=idef->il[F_SHAKE].nr/3;
-    if (ncons > 0) {
-      if (!bFirst)
-	gmx_fatal(FARGS,
-		  "Constraint reinitialization only implemented for settle");
 
-      bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
-      nblocks=blocks->multinr[idef->nodeid] - bstart;
-      if (debug) 
-	fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
-		ncons,bstart,nblocks);
-      
-      /* Calculate block number for each atom */
-      inv_sblock=make_invblock(blocks,md->nr);
-      
-      /* Store the block number in temp array and
-       * sort the constraints in order of the sblock number 
-       * and the atom numbers, really sorting a segment of the array!
-       */
-#ifdef DEBUGIDEF 
-      pr_idef(stdlog,0,"Before Sort",idef);
-#endif
-      iatom=idef->il[F_SHAKE].iatoms;
-      snew(sb,ncons);
-      for(i=0; (i<ncons); i++,iatom+=3) {
-	for(m=0; (m<3); m++)
-	  sb[i].iatom[m]=iatom[m];
-	sb[i].blocknr=inv_sblock[iatom[1]];
-      }
-      
-      /* Now sort the blocks */
-      if (debug) {
-	pr_sortblock(debug,"Before sorting",ncons,sb);
-	fprintf(debug,"Going to sort constraints\n");
-      }
-      
-      qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
-      
-      if (debug) {
-	fprintf(debug,"I used %d calls to pcomp\n",pcount);
-	pr_sortblock(debug,"After sorting",ncons,sb);
-      }
-      
-      iatom=idef->il[F_SHAKE].iatoms;
-      for(i=0; (i<ncons); i++,iatom+=3) 
-	for(m=0; (m<DIM); m++)
-	  iatom[m]=sb[i].iatom[m];
-#ifdef DEBUGIDEF
-      pr_idef(stdlog,0,"After Sort",idef);
-#endif
-      
-      j=0;
-      snew(sblock,nblocks+1);
-      bnr=-2;
-      for(i=0; (i<ncons); i++) {
-	if (sb[i].blocknr != bnr) {
-	  bnr=sb[i].blocknr;
-	  sblock[j++]=3*i;
-	}
-      }
-      /* Last block... */
-      sblock[j++]=3*ncons;
-      
-      if (j != (nblocks+1)) {
-	fprintf(log,"bstart: %d\n",bstart);
-	fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
-		j,nblocks,ncons);
-	for(i=0; (i<ncons); i++)
-	  fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
-	for(j=0; (j<=nblocks); j++)
-	  fprintf(log,"sblock[%3d]=%5d\n",j,(int) sblock[j]);
-	gmx_fatal(FARGS,"DEATH HORROR: "
-		    "top->blocks[ebSBLOCKS] does not match idef->il[F_SHAKE]");
-      }
-      sfree(sb);
-      sfree(inv_sblock);
+    if (dd == NULL) {
+      ncons = idef->il[F_CONSTR].nr/3;
+    } else {
+      if (dd->constraints)
+	ncons = dd->constraints->ncon;
+      else
+	ncons = 0;
     }
-    
-    if (idef->il[F_SHAKE].nr) {
+    if (ncons > 0) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
-	if (bFirst)
+	if (bFirst) {
 	  please_cite(stdlog,"Hess97a");
-	lincsd = init_lincs(stdlog,&top->idef,start,homenr,
-			    EI_DYNAMICS(ir->eI));
+	  snew(lincsd,1);
+	}
+	init_lincs(stdlog,&top->idef,start,homenr,EI_DYNAMICS(ir->eI),dd,
+		   lincsd);
 	set_lincs_matrix(lincsd,md->invmass);
 	lincsd->matlam = lambda;
       } 
       else {
 	if (bFirst)
 	  please_cite(stdlog,"Ryckaert77a");
+	else
+	  gmx_fatal(FARGS,
+		  "Constraint reinitialization not implemented for shake");
+	
+	bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
+	nblocks=blocks->multinr[idef->nodeid] - bstart;
+	if (debug) 
+	  fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
+		  ncons,bstart,nblocks);
+	
+	/* Calculate block number for each atom */
+	inv_sblock=make_invblock(blocks,md->nr);
+	
+	/* Store the block number in temp array and
+	 * sort the constraints in order of the sblock number 
+	 * and the atom numbers, really sorting a segment of the array!
+	 */
+#ifdef DEBUGIDEF 
+	pr_idef(stdlog,0,"Before Sort",idef);
+#endif
+	iatom=idef->il[F_CONSTR].iatoms;
+	snew(sb,ncons);
+	for(i=0; (i<ncons); i++,iatom+=3) {
+	  for(m=0; (m<3); m++)
+	    sb[i].iatom[m]=iatom[m];
+	  sb[i].blocknr=inv_sblock[iatom[1]];
+	}
+      
+	/* Now sort the blocks */
+	if (debug) {
+	  pr_sortblock(debug,"Before sorting",ncons,sb);
+	  fprintf(debug,"Going to sort constraints\n");
+	}
+	
+	qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
+      
+	if (debug) {
+	  fprintf(debug,"I used %d calls to pcomp\n",pcount);
+	  pr_sortblock(debug,"After sorting",ncons,sb);
+	}
+	
+	iatom=idef->il[F_CONSTR].iatoms;
+	for(i=0; (i<ncons); i++,iatom+=3) 
+	  for(m=0; (m<DIM); m++)
+	    iatom[m]=sb[i].iatom[m];
+#ifdef DEBUGIDEF
+	pr_idef(stdlog,0,"After Sort",idef);
+#endif
+	
+	j=0;
+	snew(sblock,nblocks+1);
+	bnr=-2;
+	for(i=0; (i<ncons); i++) {
+	  if (sb[i].blocknr != bnr) {
+	    bnr=sb[i].blocknr;
+	    sblock[j++]=3*i;
+	  }
+	}
+	/* Last block... */
+	sblock[j++]=3*ncons;
+	
+	if (j != (nblocks+1)) {
+	  fprintf(log,"bstart: %d\n",bstart);
+	  fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
+		  j,nblocks,ncons);
+	  for(i=0; (i<ncons); i++)
+	    fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
+	  for(j=0; (j<=nblocks); j++)
+	    fprintf(log,"sblock[%3d]=%5d\n",j,(int) sblock[j]);
+	  gmx_fatal(FARGS,"DEATH HORROR: "
+		    "top->blocks[ebSBLOCKS] does not match idef->il[F_CONSTR]");
+	}
+	sfree(sb);
+	sfree(inv_sblock);
       }
     }
     
@@ -276,11 +278,11 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     if (vir != NULL)
       clear_mat(rmdr);
 
-    if (nblocks > 0) {
+    if (lincsd || nblocks > 0) {
       where();
 
       if (ir->eConstrAlg == estLINCS || !bCoordinates)
-	bOK = constrain_lincs(stdlog,ir,step,lincsd,md,
+	bOK = constrain_lincs(stdlog,ir,step,lincsd,md,dd,
 			      x,xprime,min_proj,box,lambda,dvdlambda,
 			      vir!=NULL,rmdr,
 			      bCoordinates,nrnb,bDumpOnError);
@@ -326,13 +328,15 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   return bOK;
 }
 
-bool constrain(FILE *log,t_topology *top,t_inputrec *ir,int step,
-	       t_mdatoms *md,int start,int homenr,
+bool constrain(FILE *log,t_topology *top,t_inputrec *ir,
+	       gmx_domdec_t *dd,
+	       int step,t_mdatoms *md,int start,int homenr,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,tensor *vir,
 	       t_nrnb *nrnb,bool bCoordinates)
 {
-  return low_constrain(log,top,ir,step,md,start,homenr,x,xprime,min_proj,box,
+  return low_constrain(log,top,ir,dd,
+		       step,md,start,homenr,x,xprime,min_proj,box,
 		       lambda,dvdlambda,vir,nrnb,bCoordinates,FALSE);
 }
 
@@ -340,7 +344,7 @@ int count_constraints(t_topology *top,t_commrec *cr)
 {
   int nc;
   
-  nc = top->idef.il[F_SETTLE].nr*3/2 + top->idef.il[F_SHAKE].nr/3;
+  nc = top->idef.il[F_SETTLE].nr*3/2 + top->idef.il[F_CONSTR].nr/3;
   if (PAR(cr))
     gmx_sumi(1,&nc,cr);
   
@@ -349,17 +353,24 @@ int count_constraints(t_topology *top,t_commrec *cr)
 
 int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
 		      t_mdatoms *md,int start,int homenr,bool bOnlyCoords,
-		      t_commrec *cr)
+		      t_commrec *cr,gmx_domdec_t *dd)
 {
   int count;
 
-  low_constrain(log,top,ir,0,md,start,homenr,NULL,NULL,NULL,NULL,
+  low_constrain(log,top,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
 		0,NULL,NULL,NULL,bOnlyCoords,TRUE);
-
-  if (cr)
-    count = count_constraints(top,cr);
-  else
-    count = -1;
   
+  if (dd) {
+    if (dd->constraints)
+      count = dd->constraints->ncon_global;
+    else
+      count = 0;
+  } else {
+    if (cr)
+      count = count_constraints(top,cr);
+    else
+      count = -1;
+  }
+
   return count;
 }

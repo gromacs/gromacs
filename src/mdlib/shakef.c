@@ -180,9 +180,9 @@ int vec_shakef(FILE *log,
     rij[ll][ZZ]=x[i][ZZ]-x[j][ZZ];
     M2[ll]=1.0/mm;
     if (bFEP) 
-      toler = sqr(L1*ip[type].shake.dA + lambda*ip[type].shake.dB);
+      toler = sqr(L1*ip[type].constr.dA + lambda*ip[type].constr.dB);
     else
-      toler = sqr(ip[type].shake.dA);
+      toler = sqr(ip[type].constr.dA);
     dist2[ll] = toler;
     tt[ll] = 1.0/(toler*tol2);
   }
@@ -215,9 +215,9 @@ int vec_shakef(FILE *log,
 
     type  = ia[0];
     if (bFEP) 
-      toler = L1*ip[type].shake.dA + lambda*ip[type].shake.dB;
+      toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
     else
-      toler = ip[type].shake.dA;
+      toler = ip[type].constr.dA;
     lagr[ll] *= toler;
   }
   
@@ -246,7 +246,7 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
     dp=norm(dx);
     fprintf(log,"%5d  %5.2f  %5d  %5.2f  %10.5f  %10.5f  %10.5f\n",
 	    ai+1,1.0/invmass[ai],
-	    aj+1,1.0/invmass[aj],d,dp,ip[ia[0]].shake.dA);
+	    aj+1,1.0/invmass[aj],d,dp,ip[ia[0]].constr.dA);
   }
 }
 
@@ -270,7 +270,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 #ifdef DEBUG
   fprintf(log,"nblocks=%d, sblock[0]=%d\n",nblocks,sblock[0]);
 #endif
-  ncons=idef->il[F_SHAKE].nr/3;
+  ncons=idef->il[F_CONSTR].nr/3;
   if (bFirst) {
     if (ir->bShakeSOR) 
       please_cite(log,"Barth95a");
@@ -280,7 +280,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   for(i=0; i<ncons; i++)
     lagr[i] =0;
   
-  iatoms = &(idef->il[F_SHAKE].iatoms[sblock[0]]);
+  iatoms = &(idef->il[F_CONSTR].iatoms[sblock[0]]);
   lam    = lagr;
   for(i=0; (i<nblocks); ) {
     blen  = (sblock[i+1]-sblock[i]);
@@ -307,9 +307,9 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     dt_2 = 1/sqr(ir->delta_t);
     dvdl = 0;
     for(i=0; i<ncons; i++) {
-      type = idef->il[F_SHAKE].iatoms[3*i];
+      type = idef->il[F_CONSTR].iatoms[3*i];
       dvdl += lagr[i]*dt_2*
-	(idef->iparams[type].shake.dB-idef->iparams[type].shake.dA);
+	(idef->iparams[type].constr.dB-idef->iparams[type].constr.dA);
     }
     *dvdlambda += dvdl;
   }

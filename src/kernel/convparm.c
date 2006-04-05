@@ -249,10 +249,10 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->rbdihs.rbcB[4]=-4.0*old[NR_FOURDIHS+3];
     new->rbdihs.rbcB[5]=0.0;
     break;    
-  case F_SHAKE:
-  case F_SHAKENC:
-    new->shake.dA = old[0];
-    new->shake.dB = old[1];
+  case F_CONSTR:
+  case F_CONSTRNC:
+    new->constr.dA = old[0];
+    new->constr.dB = old[1];
     break;
   case F_SETTLE:
     new->settle.doh=old[0];

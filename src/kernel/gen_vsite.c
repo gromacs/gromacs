@@ -485,7 +485,7 @@ static void add_vsites(t_params plist[], int vsite_type[],
       if ( (nrheavies != 1) && (nrHatoms != 1) )
 	gmx_fatal(FARGS,"cannot make constraint in add_vsites for %d heavy "
 		    "atoms and %d hydrogen atoms",nrheavies,nrHatoms);
-      my_add_param(&(plist[F_SHAKENC]),Hatoms[i],heavies[0],NOTSET);
+      my_add_param(&(plist[F_CONSTRNC]),Hatoms[i],heavies[0],NOTSET);
     } else {
       switch (ftype) {
       case F_VSITE3:
@@ -566,9 +566,9 @@ static int gen_vsites_6ring(t_atoms *at, int *vsite_type[], t_params plist[],
 
   /* constraints between CG, CE1 and CE2: */
   dCGCE = sqrt( cosrule(bond_cc,bond_cc,ANGLE_6RING) );
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE1],dCGCE);
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE2],dCGCE);
-  my_add_param(&(plist[F_SHAKENC]),ats[atCE1],ats[atCE2],dCGCE);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCG] ,ats[atCE1],dCGCE);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCG] ,ats[atCE2],dCGCE);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCE1],ats[atCE2],dCGCE);
   
   /* rest will be vsite3 */
   mtot=0;
@@ -925,9 +925,9 @@ static int gen_vsites_trp(t_atomtype *atype, rvec *newx[],
   dCBM1 = sqrt( sqr(xcom[0]-xi[atCB]) + sqr(ycom[0]-yi[atCB]) );
   dM1M2 = sqrt( sqr(xcom[0]-xcom[1]) + sqr(ycom[0]-ycom[1]) );
   dCBM2 = sqrt( sqr(xcom[1]-xi[atCB]) + sqr(ycom[1]-yi[atCB]) );
-  my_add_param(&(plist[F_SHAKENC]), ats[atCB],        add_shift+atM[0], dCBM1);
-  my_add_param(&(plist[F_SHAKENC]), ats[atCB],        add_shift+atM[1], dCBM2);
-  my_add_param(&(plist[F_SHAKENC]), add_shift+atM[0], add_shift+atM[1], dM1M2);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCB],       add_shift+atM[0],dCBM1);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCB],       add_shift+atM[1],dCBM2);
+  my_add_param(&(plist[F_CONSTRNC]),add_shift+atM[0],add_shift+atM[1],dM1M2);
   
   /* rest will be vsite3 */
   nvsite=0;
@@ -1031,8 +1031,8 @@ static int gen_vsites_tyr(t_atomtype *atype, rvec *newx[],
   /* constraints between CE1, CE2 and OH */
   dCGCE = sqrt( cosrule(bond_cc,bond_cc,ANGLE_6RING) );
   dCEOH = sqrt( cosrule(bond_cc,bond_co,ANGLE_6RING) );
-  my_add_param(&(plist[F_SHAKENC]),ats[atCE1],ats[atOH],dCEOH);
-  my_add_param(&(plist[F_SHAKENC]),ats[atCE2],ats[atOH],dCEOH);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCE1],ats[atOH],dCEOH);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCE2],ats[atOH],dCEOH);
 
   /* We also want to constrain the angle C-O-H, but since CZ is constructed
    * we need to introduce a constraint to CG.
@@ -1092,8 +1092,8 @@ static int gen_vsites_tyr(t_atomtype *atype, rvec *newx[],
   /* assume we also want the COH angle constrained: */
   tmp1 = bond_cc*cos(0.5*ANGLE_6RING) + dCGCE*sin(ANGLE_6RING*0.5) + bond_co;
   dCGM = sqrt( cosrule(tmp1,vdist,angle_coh) );
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG],add_shift+atM,dCGM);
-  my_add_param(&(plist[F_SHAKENC]),ats[atOH],add_shift+atM,vdist);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCG],add_shift+atM,dCGM);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atOH],add_shift+atM,vdist);
 
   add_vsite2_param(&plist[F_VSITE2],
 		 ats[atHH],ats[atOH],add_shift+atM,1.0/2.0);
@@ -1172,8 +1172,8 @@ static int gen_vsites_his(t_atoms *at, int *vsite_type[], t_params plist[],
   dCGCE1   = sqrt( cosrule(b_CG_ND1,b_ND1_CE1,a_CG_ND1_CE1) );
   dCGNE2   = sqrt( cosrule(b_CG_CD2,b_CD2_NE2,a_CG_CD2_NE2) );
 
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atCE1],dCGCE1);
-  my_add_param(&(plist[F_SHAKENC]),ats[atCG] ,ats[atNE2],dCGNE2);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCG] ,ats[atCE1],dCGCE1);
+  my_add_param(&(plist[F_CONSTRNC]),ats[atCG] ,ats[atNE2],dCGNE2);
   /* we already have a constraint CE1-NE2, so we don't add it again */
   
   /* calculate the positions in a local frame of reference. 
@@ -1651,9 +1651,9 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
 	}
 	/* add constraints between dummy masses and to heavies[0] */
 	/* 'add_shift' says which atoms won't be renumbered afterwards */
-	my_add_param(&(plist[F_SHAKENC]),heavies[0],   add_shift+ni0,  NOTSET);
-	my_add_param(&(plist[F_SHAKENC]),heavies[0],   add_shift+ni0+1,NOTSET);
-	my_add_param(&(plist[F_SHAKENC]),add_shift+ni0,add_shift+ni0+1,NOTSET);
+	my_add_param(&(plist[F_CONSTRNC]),heavies[0],  add_shift+ni0,  NOTSET);
+	my_add_param(&(plist[F_CONSTRNC]),heavies[0],  add_shift+ni0+1,NOTSET);
+	my_add_param(&(plist[F_CONSTRNC]),add_shift+ni0,add_shift+ni0+1,NOTSET);
 	
 	/* generate Heavy, H1, H2 and H3 from M1, M2 and heavies[0] */
 	/* note that vsite_type cannot be NOTSET, because we just set it */
@@ -1778,7 +1778,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
     }
   }
   /* now check if atoms in the added constraints are in increasing order */
-  params=&(plist[F_SHAKENC]);
+  params=&(plist[F_CONSTRNC]);
   for(i=0; i<params->nr; i++)
     if ( params->param[i].AI > params->param[i].AJ ) {
       j                   = params->param[i].AJ;
@@ -1792,7 +1792,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
   /* tell the user what we did */
   fprintf(stderr,"Marked %d virtual sites\n",nvsite);
   fprintf(stderr,"Added %d dummy masses\n",nadd);
-  fprintf(stderr,"Added %d new constraints\n",plist[F_SHAKENC].nr);
+  fprintf(stderr,"Added %d new constraints\n",plist[F_CONSTRNC].nr);
 }
   
 void do_h_mass(t_params *psb, int vsite_type[], t_atoms *at, real mHmult,

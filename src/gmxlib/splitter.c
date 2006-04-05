@@ -114,7 +114,7 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
     ftype   = idef->functype[type];
     nratoms = interaction_function[ftype].nratoms;
 
-    if (ftype == F_SHAKE) {
+    if (ftype == F_CONSTR) {
       /* SPECIAL CASE: All Atoms must have the same home node! */
       nodeid=hid[ilist->iatoms[i+1]];
       if (hid[ilist->iatoms[i+2]] != nodeid) 

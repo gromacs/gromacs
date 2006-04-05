@@ -89,6 +89,47 @@ typedef struct {
 } gmx_ga2la_t;
 
 typedef struct {
+  int nsend;
+  int *a;
+  int a_nalloc;
+  int nrecv;
+} gmx_conatomsend_t;
+
+typedef struct {
+  /* The number of constraints in the whole system */
+  int  ncon_global;
+  /* The number of flexible constraints in the whole system */
+  int  nflexcon_global;
+  /* Index from global atom numbers to global constraints */
+  t_block at2con;
+  /* A pointer to the global iatoms array for the constraints */
+  t_iatom *iatoms;
+  /* The fully local and connected constraints */
+  int  ncon;
+  int  *con;
+  int  *con_nlocat;
+  int  con_nalloc;
+  /* Global to local constraint index */
+  int  *gc2lc;
+  /* The atom indices we need from the surrounding cells */
+  int  nind_req;
+  int  *ind_req;
+  int  ind_req_nalloc;
+  /* Global to local communicated constraint atom only index */
+  int  *ga2la;
+  /* The number of indices to receive during the setup */
+  int  nreq[DIM][2][2];
+  /* The atoms to send */
+  gmx_conatomsend_t cas[DIM][2];
+  bool *bSendAtom;
+  int   bSendAtom_nalloc;
+  /* Send buffers */
+  int  *ibuf;
+  rvec *vbuf;
+  int  buf_nalloc;
+} gmx_domdec_constraints_t;
+
+typedef struct {
   int nodeid;
   int nnodes;
   int masterrank;
@@ -98,6 +139,11 @@ typedef struct {
 
   /* The communication setup, identical for each cell */
   ivec nc;
+  int  ndim;
+  ivec dim;
+  /* Forward and backward neighboring cells */
+  int  neighbor[DIM][2];
+  /* The bonded and non-bonded communication setup */
   int  ncell;
   ivec shift[DD_MAXCELL];
 
@@ -108,6 +154,9 @@ typedef struct {
 
   /* Global atom number to interaction list */
   gmx_at2iatoms_t *ga2iatoms;
+
+  /* Constraint stuff */
+  gmx_domdec_constraints_t *constraints;
 
   /* The following arrays will have size ncell */
   /* Nodes we need to send coordinates to and receive forces from */
@@ -122,6 +171,8 @@ typedef struct {
 
   /* Index from the local atoms to the global atoms */
   int  nat_tot;
+  /* The total number of atoms, including the extra ones for constraints */
+  int  nat_tot_con;
   int  *gatindex;
   int  gatindex_nalloc;
 

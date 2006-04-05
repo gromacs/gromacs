@@ -157,8 +157,8 @@ void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
 	case F_CUBICBONDS:
 	  b0 = top->idef.iparams[type].cubic.b0;
 	  break;
-	case F_SHAKE:
-	  b0 = top->idef.iparams[type].shake.dA;
+	case F_CONSTR:
+	  b0 = top->idef.iparams[type].constr.dA;
 	  break;
 	default:
 	  break;

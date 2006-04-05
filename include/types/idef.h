@@ -95,8 +95,8 @@ enum {
   F_ANGRESZ,
   F_DIHRES,
   F_DIHRESVIOL,
-  F_SHAKE,
-  F_SHAKENC,
+  F_CONSTR,
+  F_CONSTRNC,
   F_SETTLE,
   F_VSITE2,
   F_VSITE3,
@@ -142,7 +142,7 @@ typedef union
    * be periodic anymore.
    */ 
   struct {real phiA,cpA;int mult;real phiB,cpB;            } pdihs;
-  struct {real dA,dB;		        	           } shake;
+  struct {real dA,dB;		        	           } constr;
   /* Settle can not be used for Free energy calculations of water bond geometry.
    * Use shake (or lincs) instead if you have to change the water bonds.
    */

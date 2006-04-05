@@ -780,10 +780,10 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     ndo_real(VA,NR_RBDIHS,bDum);
     ndo_real(VB,NR_RBDIHS,bDum);
     break;
-  case F_SHAKE:
-  case F_SHAKENC:
-    do_real(iparams->shake.dA);
-    do_real(iparams->shake.dB);
+  case F_CONSTR:
+  case F_CONSTRNC:
+    do_real(iparams->constr.dA);
+    do_real(iparams->constr.dB);
     break;
   case F_SETTLE:
     do_real(iparams->settle.doh);

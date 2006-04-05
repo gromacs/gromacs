@@ -28,9 +28,9 @@ static int natoms_global;
 #endif
 
 
-#define CG_ALLOC_SIZE    1000
-#define EXCLS_ALLOC_SIZE  100
-#define IATOM_ALLOC_SIZE  100
+#define CG_ALLOC_SIZE     1000
+#define EXCLS_ALLOC_SIZE  1000
+#define IATOM_ALLOC_SIZE  1000
 
 #define dd_c3n 8
 static const ivec dd_c3[dd_c3n] =
@@ -60,6 +60,19 @@ static void index2xyz(ivec nc,int ind,ivec xyz)
   xyz[XX] = ind % nc[XX];
   xyz[YY] = (ind / nc[XX]) % nc[YY];
   xyz[ZZ] = ind / (nc[YY]*nc[XX]);
+}
+
+int glatnr(gmx_domdec_t *dd,int i)
+{
+  int atnr;
+
+  if (dd == NULL) {
+    atnr = i + 1;
+  } else {
+    if (i >= dd->nat_tot_con)
+      gmx_fatal(FARGS,"glatnr called with %d, which is larger than the local number of atoms (%d)",i,dd->nat_tot_con);
+    atnr = dd->gatindex[i] + 1;
+  }
 }
 
 int dd_nicg(gmx_domdec_t *dd)
@@ -416,12 +429,14 @@ static void make_local_indices(gmx_domdec_t *dd,int *cgindex,bool bNonHome)
   }
 }
 
-static void clear_local_indices(gmx_domdec_t *dd,int *cgindex)
+static void clear_local_indices(gmx_domdec_t *dd)
 {
   int i;
 
   for(i=0; i<dd->nat_tot; i++)
     dd->ga2la[dd->gatindex[i]].cell = -1;
+  if (dd->constraints)
+    clear_local_constraint_indices(dd);
 }
 
 static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
@@ -522,7 +537,7 @@ static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
   int i,buf2[2];
   gmx_domdec_comm_t *cc;
 
-  clear_local_indices(dd,cgs->index);
+  clear_local_indices(dd);
 
   if (DDMASTER(dd)) {
     distribute_cg(fplog,box,cgs,pos,dd);
@@ -935,7 +950,7 @@ static void dd_redistribute_cg(FILE *fplog,
     srenew(cc->index_gl,cc->nalloc);
   }
 
-  clear_local_indices(dd,gcgs->index);
+  clear_local_indices(dd);
 
   local_pos = compact_and_copy_cg(cc->ncg,cell,local,
 				  nnbc,buf_cg_ind,cc->index_gl,buf_cg,
@@ -1008,29 +1023,42 @@ static void dd_redistribute_cg(FILE *fplog,
 
 void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
 {
-  int  ndiv,d,i,j,m;
-  ivec h,s;
+  int  d,i,j,m;
+  ivec xyz,tmp,h,s;
   int  ncell,ncellp;
   ivec *dd_c,dd_cp[DD_MAXICELL];
   gmx_domdec_ns_t *icell;
-  
-  ndiv = 0;
-  for(d=0; d<DIM; d++)
-    if (dd->nc[d] > 1)
-      ndiv++;
 
+  index2xyz(dd->nc,dd->nodeid,xyz);
+
+  dd->ndim = 0;
+  for(d=0; d<DIM; d++) {
+    if (dd->nc[d] > 1) {
+      dd->dim[dd->ndim] = d;
+      copy_ivec(xyz,tmp);
+      tmp[d] = (tmp[d] + 1) % dd->nc[d];
+      dd->neighbor[dd->ndim][0] = dd_index(dd->nc,tmp);
+      copy_ivec(xyz,tmp);
+      tmp[d] = (tmp[d] - 1 + dd->nc[d]) % dd->nc[d];
+      dd->neighbor[dd->ndim][1] = dd_index(dd->nc,tmp);
+      dd->ndim++;
+    }
+  }
+  
   dd_c = dd->shift;
   
   fprintf(stderr,"Making %dD domain decomposition %d x %d x %d\n",
-	  ndiv,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
-  if (ndiv == 3) {
+	  dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
+  switch (dd->ndim) {
+  case 3:
     ncell = dd_c3n;
     for(i=0; i<ncell; i++)
       copy_ivec(dd_c3[i],dd_c[i]);
     ncellp = dd_cp3n;
     for(i=0; i<ncellp; i++)
       copy_ivec(dd_cp3[i],dd_cp[i]);
-  } else if (ndiv == 2) {
+    break;
+  case 2:
     ncell = dd_c2n;
     for(i=0; i<ncell; i++) {
       m = 0;
@@ -1044,7 +1072,8 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
     ncellp = dd_cp2n;
     for(i=0; i<ncellp; i++)
       copy_ivec(dd_cp2[i],dd_cp[i]);
-  } else if (ndiv == 1) {
+    break;
+  case 1:
     ncell = dd_c1n;
     for(i=0; i<ncell; i++) {
       m = 0;
@@ -1058,7 +1087,8 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
     ncellp = dd_cp1n;
     for(i=0; i<ncellp; i++)
       copy_ivec(dd_cp1[i],dd_cp[i]);
-  } else {
+    break;
+  default:
     gmx_fatal(FARGS,"Can only do 1, 2 or 3D domain decomposition");
     ncell = 0;
     ncellp = 0;
@@ -1132,7 +1162,8 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   }
 }
 
-static low_make_at2iatoms(t_idef *idef,gmx_at2iatoms_t *ga2iatoms,bool bAssign)
+static void low_make_at2iatoms(t_idef *idef,
+			       gmx_at2iatoms_t *ga2iatoms,bool bAssign)
 {
   int ftype,nral,i,ind_at;
   t_ilist *il;
@@ -1140,8 +1171,8 @@ static low_make_at2iatoms(t_idef *idef,gmx_at2iatoms_t *ga2iatoms,bool bAssign)
   atom_id a;
   
   for(ftype=0; ftype<F_NRE; ftype++) {
-    if (interaction_function[ftype].flags &
-	(IF_BOND | IF_CONSTRAINT | IF_VSITE)) {
+    if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
+	|| ftype == F_SETTLE) {
       nral = NRAL(ftype);
       il = &idef->il[ftype];
       ia  = il->iatoms;
@@ -1190,7 +1221,8 @@ static gmx_at2iatoms_t *make_at2iatoms(int natoms,t_idef *idef)
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
 					ivec nc,int ncg,int natoms,
 					matrix box,
-					t_idef *idef)
+					t_idef *idef,
+					bool bDynamics)
 {
   gmx_domdec_t *dd;
   int a;
@@ -1219,6 +1251,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
   snew(dd->ga2la,natoms*sizeof(gmx_ga2la_t));
   for(a=0; a<natoms; a++)
     dd->ga2la[a].cell = -1;
+  
+  if (idef->il[F_CONSTR].nr > 0)
+    dd->constraints = init_domdec_constraints(natoms,idef,bDynamics);
 
   return dd;
 }
@@ -1676,6 +1711,31 @@ static void make_local_forcerec(gmx_domdec_t *dd,t_forcerec *fr)
   }
 }
 
+static void dump_conf(gmx_domdec_t *dd,
+		      char *name,rvec *x,matrix box)
+{
+  char str[STRLEN];
+  FILE *fp;
+  int c,i,j;
+  
+  sprintf(str,"%s%d.pdb",name,dd->nodeid);
+  fp = fopen(str,"w");
+  fprintf(fp,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
+	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
+	  90.0,90.0,90.0);
+  i = 0;
+  for(c=0; c<dd->ncell; c++) {
+    for(j=0; j<dd->comm1[c].nat; j++) {
+      fprintf(fp,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
+	    "ATOM",dd->gatindex[i]+1,"C","ALA",' ',i+1,
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],
+	    1.0,1.0*c/(dd->ncell-1.0));
+      i++;
+    }
+  }
+  fclose(fp);
+}
+
 void dd_partition_system(FILE         *fplog,
 			 gmx_domdec_t *dd,
 			 bool         bMasterState,
@@ -1710,20 +1770,41 @@ void dd_partition_system(FILE         *fplog,
   
   dd_start_move_x(dd,state_local->x,buf);
   
+  make_local_top(fplog,dd,top_global,top_local,nsb);
+
+  dd_finish_move_x(dd);
+
+  if (top_global->idef.il[F_CONSTR].nr > 0) {
+    make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
+			   ir->nProjOrder,dd->constraints);
+    /* Make space for the extra coordinates for constraint communication */
+    /* This is not a nice solution.
+     * state->natoms is always equal to the global number of atoms.
+     * Reallocation will only happen for very small systems
+     * with cell sizes close to the cut-off.
+     */
+    if (dd->nat_tot_con > state_local->natoms)
+      srenew(state_local->x,dd->nat_tot_con);
+  } else {
+    dd->nat_tot_con = dd->nat_tot;
+  }
+
+  /* We make the all mdatoms up to nat_tot_con.
+   * We could save some work by only setting invmass
+   * between nat_tot and nat_tot_con.
+   */
   atoms2md(fplog,NULL,&top_global->atoms,ir->opts.nFreeze,
 	   ir->eI,ir->delta_t,ir->bd_fric,ir->opts.tau_t,
-	   ir->efep!=efepNO,dd->nat_tot,dd->gatindex,mdatoms,FALSE);
-  
-  make_local_top(fplog,dd,top_global,top_local,nsb);
+	   ir->efep!=efepNO,dd->nat_tot_con,dd->gatindex,mdatoms,FALSE);
 
   make_local_forcerec(dd,fr);
 
-  /* Does not work with shells or flexible constraints yet */
-  init_constraints(fplog,top_local,ir,mdatoms,
-		   START(nsb),HOMENR(nsb),
-		   ir->eI!=eiSteep,NULL);
+  if (dd->constraints)
+    init_constraints(fplog,top_global,ir,mdatoms,
+		     START(nsb),HOMENR(nsb),
+		     ir->eI!=eiSteep,NULL,dd);
   
-  dd_finish_move_x(dd);
+  //dump_conf(dd,"ap",state_local->x,state_local->box);
   
   /* Calculate the centers of mass of the communicated charge groups.
    * The home charge groups have been done in dd_redistribute_cg.

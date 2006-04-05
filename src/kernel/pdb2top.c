@@ -330,8 +330,8 @@ void write_top(FILE *out, char *pr,char *molname,
     
     print_atoms(out, atype, at, cgnr);
     print_bondeds(out,at->nr,d_bonds,      F_BONDS,    bts[ebtsBONDS], plist);
-    print_bondeds(out,at->nr,d_constraints,F_SHAKE,    0,              plist);
-    print_bondeds(out,at->nr,d_constraints,F_SHAKENC,  0,              plist);
+    print_bondeds(out,at->nr,d_constraints,F_CONSTR,   0,              plist);
+    print_bondeds(out,at->nr,d_constraints,F_CONSTRNC, 0,              plist);
     print_bondeds(out,at->nr,d_pairs,      F_LJ14,     0,              plist);
     print_excl(out,at->nr,excls);
     print_bondeds(out,at->nr,d_angles,     F_ANGLES,   bts[ebtsANGLES],plist);

@@ -502,7 +502,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,cgs->index[cgs->nr],
 				       top_global->atoms.nr,state_global->box,
-				       &top_global->idef);
+				       &top_global->idef,
+				       EI_DYNAMICS(inputrec->eI));
 
     if (DDMASTER(cr->dd)) {
       snew(state,1);

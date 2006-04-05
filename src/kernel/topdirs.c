@@ -138,9 +138,9 @@ int ifunc_index(directive d,int type)
   case d_constrainttypes:
     switch (type) {
     case 1:
-      return F_SHAKE;
+      return F_CONSTR;
     case 2:
-      return F_SHAKENC;
+      return F_CONSTRNC;
     default:
       gmx_fatal(FARGS,"Invalid constraints type %d",type);
     }

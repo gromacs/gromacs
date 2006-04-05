@@ -53,7 +53,7 @@ void set_over_alloc(bool set)
 int over_alloc(int n)
 {
   if (bOverAlloc)
-    return 1.1*n + 10;
+    return 1.1*n + 100;
   else
     return n;
 }
@@ -149,6 +149,8 @@ void done_block(t_block *block)
   sfree(block->index);
   if (block->a)
     sfree(block->a);
+  block->nalloc_index = 0;
+  block->nalloc_a = 0;
 }
 
 void done_atom (t_atoms *at)

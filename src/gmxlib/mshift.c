@@ -272,7 +272,7 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
     }
     else {
       /* This is a special thing used in grompp to generate shake-blocks */
-      mk_igraph(g,idef->functype,&(idef->il[F_SHAKE]),natoms);
+      mk_igraph(g,idef->functype,&(idef->il[F_CONSTR]),natoms);
       if (bSettle)
 	mk_igraph(g,idef->functype,&(idef->il[F_SETTLE]),natoms);
     }
