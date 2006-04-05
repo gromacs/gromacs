@@ -49,6 +49,24 @@
 
 #define XTC_MAGIC 1995
 
+
+int xdr_real(XDR *xdrs,real *r)
+{
+#ifdef GMX_DOUBLE
+    float f;
+    int   ret;
+    
+    f=*r;
+    ret=xdr_float(xdrs,&f);
+    *r=f;
+    
+    return ret;
+#else
+    return xdr_float(xdrs,(float *)r);
+#endif
+}
+
+
 int open_xtc(char *fn,char *mode)
 {
   return fio_open(fn,mode);
@@ -102,31 +120,60 @@ static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time,
   return result;
 }
 
-static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec)
+static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRead)
 {
   int i,j,result;
-  
+#ifdef GMX_DOUBLE
+  float *ftmp;
+  float fprec;
+#endif
+    
   /* box */
   result=1;
   for(i=0; ((i<DIM) && result); i++)
     for(j=0; ((j<DIM) && result); j++)
       result=XTC_CHECK("box",xdr_real(xd,&(box[i][j])));
   
-  if (result)
-    /* coordinates     */
-    result=XTC_CHECK("x",xdr3drcoord(xd,x[0],natoms,prec)); 
+  if (!result)
+      return result;
   
+#ifdef GMX_DOUBLE
+  /* allocate temp. single-precision array */
+  snew(ftmp,(*natoms)*DIM);
+  
+  /* Copy data to temp. array if writing */
+  if(!bRead)
+  {
+      for(i=0; (i<*natoms); i++)
+      {
+          ftmp[DIM*i+XX]=x[i][XX];      
+          ftmp[DIM*i+YY]=x[i][YY];      
+          ftmp[DIM*i+ZZ]=x[i][ZZ];      
+      }
+      fprec = *prec;
+  }
+  result=XTC_CHECK("x",xdr3dfcoord(xd,ftmp,natoms,&fprec));
+  
+  /* Copy from temp. array if reading */
+  if(bRead)
+  {
+      for(i=0; (i<*natoms); i++)
+      {
+          x[i][XX] = ftmp[DIM*i+XX];      
+          x[i][YY] = ftmp[DIM*i+YY];      
+          x[i][ZZ] = ftmp[DIM*i+ZZ];      
+      }
+      *prec = fprec;
+  }  
+  sfree(ftmp);
+#else
+    result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec)); 
+#endif 
+    
   return result;
 }
 
-static int xtc_io(XDR *xd,int *magic,
-		  int *natoms,int *step,real *time,
-		  matrix box,rvec *x,real *prec,bool *bOK)
-{
-  if (!xtc_header(xd,magic,natoms,step,time,bOK))
-    return 0;
-  return xtc_coord(xd,natoms,box,x,prec);
-}
+
 
 int write_xtc(int fp,
 	      int natoms,int step,real time,
@@ -142,7 +189,7 @@ int write_xtc(int fp,
     return 0;
     
   /* write data */
-  return xtc_coord(xd,&natoms,box,x,&prec);
+  return xtc_coord(xd,&natoms,box,x,&prec,FALSE);
 }
 
 int read_first_xtc(int fp,int *natoms,int *step,real *time,
@@ -163,7 +210,7 @@ int read_first_xtc(int fp,int *natoms,int *step,real *time,
   
   snew(*x,*natoms);
 
-  *bOK=xtc_coord(xd,natoms,box,*x,prec);
+  *bOK=xtc_coord(xd,natoms,box,*x,prec,TRUE);
   
   return *bOK;
 }
@@ -189,7 +236,7 @@ int read_next_xtc(int fp,
   /* Check magic number */
   check_xtc_magic(magic);
 
-  *bOK=xtc_coord(xd,&natoms,box,x,prec);
+  *bOK=xtc_coord(xd,&natoms,box,x,prec,TRUE);
 
   return *bOK;
 }
