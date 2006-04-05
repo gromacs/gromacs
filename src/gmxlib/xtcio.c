@@ -165,6 +165,7 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
       }
       *prec = fprec;
   }  
+  sfree(ftmp);
 #else
     result=XTC_CHECK("x",xdr3dfcoord(xd,x[0],natoms,prec)); 
 #endif 
