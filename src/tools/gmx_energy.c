@@ -872,6 +872,8 @@ int gmx_energy(int argc,char *argv[])
   bORIRE = bORA || bORT || bODA || bODR || bODT;
   bOTEN  = opt2bSet("-oten",NFILE,fnm);
 
+  nset = 0;
+
   snew(frame,2);
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
   do_enxnms(fp,&nre,&enm);

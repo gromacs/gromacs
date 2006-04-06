@@ -5,7 +5,12 @@
 #include "gmx_fft.h"
 
 
-extern void correl(real data1[],real data2[],int n,real ans[]);
+void 
+correl(real data1[],real data2[],int n,real ans[]);
+
+void 
+four1(real data[],int nn,int isign);
+
 
 
 typedef struct {
