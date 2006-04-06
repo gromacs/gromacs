@@ -49,6 +49,7 @@
 #include "physics.h"
 #include "names.h"
 #include "txtdump.h"
+#include "domdec.h"
 
 typedef struct {
   atom_id iatom[3];
@@ -145,18 +146,17 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
   if (bInit) {
     if (bFirst) {
       bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
-     
-      /* Check that we have only one settle type.
-       * This is not fool-proof with domain decomposition,
-       * as different nodes could have different types !!!
-       */
-      settle_type=idef->il[F_SETTLE].iatoms[0];
-      for (j=0; j<settle->nr/2; j++) {
-	if (idef->il[F_SETTLE].iatoms[j*2] != settle_type)
-	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
-		    settle_type,idef->il[F_SETTLE].iatoms[j*2]);
+
+      if (idef->il[F_SETTLE].nr > 0) {
+	/* Check that we have only one settle type */
+	settle_type=idef->il[F_SETTLE].iatoms[0];
+	for (j=0; j<idef->il[F_SETTLE].nr; j+=2) {
+	  if (idef->il[F_SETTLE].iatoms[j] != settle_type)
+	    gmx_fatal(FARGS,"More than one settle type (%d and %d)",
+		      settle_type,idef->il[F_SETTLE].iatoms[j]);
+	}
+	please_cite(log,"Miyamoto92a");
       }
-      please_cite(log,"Miyamoto92a");
     }
 
     if (dd == NULL) {
