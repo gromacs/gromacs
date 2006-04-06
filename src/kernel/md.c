@@ -211,11 +211,6 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     init_QMMMrec(cr,mdatoms,state->box,top,inputrec,fr);
   }
    
-  /* Make molecules whole at start of run */
-  if (fr->ePBC != epbcNONE)  {
-    do_pbc_first(stdlog,state->box,fr,graph,state->x);
-  }
-  
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM)
     init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),inputrec);
@@ -225,6 +220,11 @@ void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		    /*HOMENR(nsb),*/nsb->natoms,
 		    mdatoms->bChargePerturbed,
 		    inputrec->bOptFFT,inputrec->ewald_geometry);
+
+  /* Make molecules whole at start of run */
+  if (fr->ePBC != epbcNONE)  {
+    do_pbc_first(stdlog,state->box,fr,graph,state->x);
+  }
   
   /* Now do whatever the user wants us to do (how flexible...) */
   switch (inputrec->eI) {
@@ -359,7 +359,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN) == MD_FFSCAN;
   
   /* Initial values */
-  init_md(cr,inputrec,state->box,&t,&t0,&state->lambda,&lam0,&mynrnb,top,
+  init_md(cr,inputrec,&t,&t0,&state->lambda,&lam0,&mynrnb,top,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();

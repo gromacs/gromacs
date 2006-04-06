@@ -748,7 +748,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
     shift_self(graph,box,x);
     /* By doing an extra mk_mshift the molecules that are broken
      * because they were e.g. imported from another software
-     * will be made whole again. Such are the healing capabilities
+     * will be made whole again. Such are the healing powers
      * of GROMACS.
      */
     mk_mshift(fplog,graph,box,x);
@@ -789,7 +789,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   }
 }
 
-void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
+void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
 	     t_nrnb *mynrnb,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,

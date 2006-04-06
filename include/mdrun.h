@@ -308,7 +308,7 @@ extern void mdrunner(t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
-extern void init_md(t_commrec *cr,t_inputrec *ir,tensor box,real *t,real *t0,
+extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
 		    t_nrnb *mynrnb,t_topology *top,
 		    int nfile,t_filenm fnm[],char **traj,
