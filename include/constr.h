@@ -62,8 +62,8 @@ extern bool bshakef(FILE *log,		/* Log file			*/
  * Return TRUE when OK, FALSE when shake-error
  */
 extern void csettle(FILE *log,
-		    int nshake,		/* Number of water molecules 	*/
-		    int owptr[],	/* pointer to Oxygen in b4 & after */
+		    int nsettle,	/* Number of settles  	        */
+		    t_iatom iatoms[],	/* The settle iatom list        */
 		    real b4[],		/* Old coordinates		*/
 		    real after[],	/* New coords, to be settled	*/
 		    real dOH,		/* Constraint length Ox-Hyd	*/
@@ -79,7 +79,8 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
-extern bool constrain(FILE *log,t_topology *top,t_inputrec *ir,
+extern bool constrain(FILE *log,t_topology *top,t_ilist *settle,
+		      t_inputrec *ir,
 		      gmx_domdec_t *dd,
 		      int step,t_mdatoms *md,int start,int homenr,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
@@ -106,7 +107,8 @@ extern int count_constraints(t_topology *top,t_commrec *cr);
  * unless cr=NULL, then returns -1.
  */
 
-extern int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
+extern int init_constraints(FILE *log,t_topology *top,t_ilist *settle,
+			    t_inputrec *ir,
 			    t_mdatoms *md,int start,int homenr,
 			    bool bOnlyCoords,
 			    t_commrec *cr,gmx_domdec_t *dd);

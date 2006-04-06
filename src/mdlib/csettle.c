@@ -143,7 +143,7 @@ static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH)
 }
 
 
-void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
+void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
 	     real dOH,real dHH,real mO,real mH,
 	     bool bCalcVir,tensor rmdr,int *error)
 {
@@ -189,7 +189,7 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
 
   *error=-1;
   if (bFirst) {
-    fprintf(fp,"Going to use C-settle (%d waters)\n",nshake);
+    fprintf(fp,"Going to use C-settle (%d waters)\n",nsettle);
     wo     = mO;
     wh     = mH;
     wohh   = mO+2.0*mH;
@@ -212,10 +212,10 @@ void csettle(FILE *fp,int nshake, int owptr[],real b4[], real after[],
 #ifdef PRAGMAS
 #pragma ivdep
 #endif
-  for (i = 0; i < nshake; ++i) {
+  for (i = 0; i < nsettle; ++i) {
     doshake = 0;
     /*    --- Step1  A1' ---      */
-    ow1 = owptr[i] * 3;
+    ow1 = iatoms[i*2+1] * 3;
     hw2 = ow1 + 3;
     hw3 = ow1 + 6;
     xb0 = b4[hw2    ] - b4[ow1];

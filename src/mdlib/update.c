@@ -626,9 +626,14 @@ void update(int          natoms,  /* number of atoms in simulation */
     if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
       please_cite(stdlog,"Berendsen84a");
 
-    bHaveConstr = init_constraints(stdlog,top,inputrec,md,start,homenr,
-                                   inputrec->eI!=eiSteep,
-				   cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
+    if (DOMAINDECOMP(cr)) {
+      bHaveConstr = (cr->dd->constraints || top->idef.il[F_SETTLE].nr>0);
+    } else {
+      bHaveConstr = init_constraints(stdlog,top,&top->idef.il[F_SETTLE],
+				     inputrec,md,start,homenr,
+				     inputrec->eI!=eiSteep,
+				     cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
+    }
     bHaveConstr = bHaveConstr || pulldata->bPull;
     bExtended   = (inputrec->etc==etcNOSEHOOVER) || (inputrec->epc==epcPARRINELLORAHMAN);
 
@@ -745,7 +750,8 @@ void update(int          natoms,  /* number of atoms in simulation */
       srenew(xprime,xprime_nalloc);
     }
     /* Constrain the coordinates xprime */
-    constrain(stdlog,top,inputrec,cr->dd,step,md,
+    constrain(stdlog,top,&top->idef.il[F_SETTLE],
+	      inputrec,cr->dd,step,md,
 	      start,homenr,state->x,xprime,NULL,
               state->box,state->lambda,dvdlambda,&vir_con,nrnb,TRUE);
     if (inputrec->eI == eiSD) {
@@ -827,7 +833,8 @@ void update(int          natoms,  /* number of atoms in simulation */
       
       if (bHaveConstr) {
 	/* Constrain the coordinates xprime */
-	constrain(stdlog,top,inputrec,cr->dd,step,md,
+	constrain(stdlog,top,&top->idef.il[F_SETTLE],
+		  inputrec,cr->dd,step,md,
 		  start,homenr,state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,NULL,nrnb,TRUE);
       }

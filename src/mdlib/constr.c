@@ -114,7 +114,8 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
+static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
+			  t_inputrec *ir,
 			  gmx_domdec_t *dd,
 			  int step,t_mdatoms *md,int start,int homenr,
 			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
@@ -124,8 +125,6 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   static bool      bFirst=TRUE;
   static int       nblocks=0;
   static int       *sblock=NULL;
-  static int       nsettle,nsettle_alloc=0,settle_type;
-  static int       *owptr=NULL;
   static t_lincsdata *lincsd=NULL;
   static bool      bDumpOnError = TRUE;
   
@@ -140,36 +139,24 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   int         ncons,bstart,error;
   tensor      rmdr;
   real        hdt_2;
+  int         settle_type;
 
   bOK = TRUE;
   if (bInit) {
     if (bFirst) {
       bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
-    }
-    
-    /* Put the oxygen atoms in the owptr array */
-    nsettle=idef->il[F_SETTLE].nr/2;
-    if (nsettle > 0) {
-      if (nsettle > nsettle_alloc) {
-	nsettle_alloc = over_alloc(nsettle);
-	srenew(owptr,nsettle_alloc);
-      }
-      settle_type=idef->il[F_SETTLE].iatoms[0];
-      for (j=0; (j<idef->il[F_SETTLE].nr); j+=2) {
-	if (idef->il[F_SETTLE].iatoms[j] != settle_type)
-	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
-		      settle_type,idef->il[F_SETTLE].iatoms[j]);
-	owptr[j/2]=idef->il[F_SETTLE].iatoms[j+1];
-#ifdef DEBUG
-	fprintf(log,"owptr[%d]=%d\n",j/2,owptr[j/2]);
-#endif
-      }
-      /* We used to free this memory, but ED sampling needs it later on 
-       *  sfree(idef->il[F_SETTLE].iatoms);
+     
+      /* Check that we have only one settle type.
+       * This is not fool-proof with domain decomposition,
+       * as different nodes could have different types !!!
        */
-      
-      if (bFirst)
-	please_cite(log,"Miyamoto92a");
+      settle_type=idef->il[F_SETTLE].iatoms[0];
+      for (j=0; j<settle->nr/2; j++) {
+	if (idef->il[F_SETTLE].iatoms[j*2] != settle_type)
+	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
+		    settle_type,idef->il[F_SETTLE].iatoms[j*2]);
+      }
+      please_cite(log,"Miyamoto92a");
     }
 
     if (dd == NULL) {
@@ -295,16 +282,16 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
 		eshake_names[ir->eConstrAlg],step);
     }
-    if (nsettle > 0) {
-      int  ow1;
+    if (settle->nr > 0) {
+      int nsettle;
       real mO,mH,dOH,dHH;
       
-      ow1  = owptr[0];
-      mO   = md->massT[ow1];
-      mH   = md->massT[ow1+1];
-      dOH  = top->idef.iparams[settle_type].settle.doh;
-      dHH  = top->idef.iparams[settle_type].settle.dhh;
-      csettle(stdlog,nsettle,owptr,x[0],xprime[0],dOH,dHH,mO,mH,
+      nsettle = settle->nr/2;
+      mO   = md->massT[settle->iatoms[1]];
+      mH   = md->massT[settle->iatoms[1]+1];
+      dOH  = top->idef.iparams[settle->iatoms[0]].settle.doh;
+      dHH  = top->idef.iparams[settle->iatoms[0]].settle.dhh;
+      csettle(stdlog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
 	      vir!=NULL,rmdr,&error);
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
       if (vir != NULL)
@@ -314,7 +301,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       if (!bOK && bDumpOnError)
 	fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
 		"settled.\nCheck for bad contacts and/or reduce the timestep.",
-		ir->init_t+step*ir->delta_t,owptr[error]+1);
+		ir->init_t+step*ir->delta_t,
+		glatnr(dd,settle->iatoms[error*2+1]));
     }
     if (vir != NULL) {
       hdt_2 = 0.5/(ir->delta_t*ir->delta_t);
@@ -328,14 +316,15 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   return bOK;
 }
 
-bool constrain(FILE *log,t_topology *top,t_inputrec *ir,
+bool constrain(FILE *log,t_topology *top,t_ilist *settle,
+	       t_inputrec *ir,
 	       gmx_domdec_t *dd,
 	       int step,t_mdatoms *md,int start,int homenr,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,tensor *vir,
 	       t_nrnb *nrnb,bool bCoordinates)
 {
-  return low_constrain(log,top,ir,dd,
+  return low_constrain(log,top,settle,ir,dd,
 		       step,md,start,homenr,x,xprime,min_proj,box,
 		       lambda,dvdlambda,vir,nrnb,bCoordinates,FALSE);
 }
@@ -351,26 +340,25 @@ int count_constraints(t_topology *top,t_commrec *cr)
   return nc;
 }
 
-int init_constraints(FILE *log,t_topology *top,t_inputrec *ir,
+int init_constraints(FILE *log,t_topology *top,t_ilist *settle,t_inputrec *ir,
 		      t_mdatoms *md,int start,int homenr,bool bOnlyCoords,
 		      t_commrec *cr,gmx_domdec_t *dd)
 {
   int count;
 
-  low_constrain(log,top,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
+  low_constrain(log,top,settle,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
 		0,NULL,NULL,NULL,bOnlyCoords,TRUE);
   
   if (dd) {
+    count = top->idef.il[F_SETTLE].nr*3/2;
     if (dd->constraints)
-      count = dd->constraints->ncon_global;
-    else
-      count = 0;
+      count += dd->constraints->ncon_global;
   } else {
     if (cr)
       count = count_constraints(top,cr);
     else
       count = -1;
   }
-
+  
   return count;
 }

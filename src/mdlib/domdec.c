@@ -1049,6 +1049,8 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   
   dd_c = dd->shift;
   
+  fprintf(fplog,"Making %dD domain decomposition %d x %d x %d\n",
+	  dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
   fprintf(stderr,"Making %dD domain decomposition %d x %d x %d\n",
 	  dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
   switch (dd->ndim) {
@@ -1490,12 +1492,14 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 	liatoms[0] = iatoms[0];
 	for(k=1; k<=nral; k++)
 	  liatoms[k] = tiatoms[k];
+	/*
 	if (debug) {
 	  fprintf(debug,"ftype %d ip %d at",ftype,liatoms[0]);
 	  for(k=1; k<=nral; k++)
 	    fprintf(debug," %d (%d)",liatoms[k],iatoms[k]);
 	  fprintf(debug,"\n");
 	}
+	*/
 	il->nr += 1+nral;
       }
     }
@@ -1777,8 +1781,8 @@ void dd_partition_system(FILE         *fplog,
 
   make_local_forcerec(dd,fr);
 
-  if (dd->constraints)
-    init_constraints(fplog,top_global,ir,mdatoms,
+  if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
+    init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
 		     START(nsb),HOMENR(nsb),
 		     ir->eI!=eiSteep,NULL,dd);
   

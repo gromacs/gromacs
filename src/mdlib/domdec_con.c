@@ -213,7 +213,7 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
 		(dc->ga2la[dc->ind_req[i]]>=0 ? "" : "!"),dc->ind_req[i]);
       fprintf(debug,"\n");
     }
-    gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms connected constraints from neighboring cells. This probably means you constraint lengths are too long compared to the domain decomposition cell size. Decrease lincs-order or decrease the number of domain decmposition grid cells.",dd->nodeid,nrecv_local,dc->nind_req);
+    gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via constraints from the neighboring cells. This probably means you constraint lengths are too long compared to the domain decomposition cell size. Decrease lincs-order or decrease the number of domain decomposition grid cells.",dd->nodeid,nrecv_local,dc->nind_req);
   }
 
   if (debug)
@@ -279,6 +279,7 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec,
 
   dc->ncon = 0;
   nlocal = 0;
+  dc->nind_req = 0;
   for(a=0; a<dd->comm1[0].nat; a++) {
     ag = dd->gatindex[a];
     for(i=at2con.index[ag]; i<at2con.index[ag+1]; i++) {

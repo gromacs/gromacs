@@ -482,6 +482,8 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
   li->ncc = 0;
   
   if (idef->il[F_CONSTR].nr > 0 || (dd && dd->constraints)) {
+    if (debug)
+      fprintf(debug,"Initializing LINCS\n");
     if (dd == NULL) {
       dc = NULL;
       /* Make atom-constraint connection list for temporary use */
@@ -621,6 +623,8 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
       fprintf(log,"\n");
       fflush(log);
     }
+    if (debug)
+      fprintf(debug,"Number of constraints is %d\n",li->nc);
   }
 }
 

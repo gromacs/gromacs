@@ -261,10 +261,10 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
       }
     }
   }
-  constrain(log,top,ir,dd,step,md,start,end,
+  constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,NULL,nrnb,TRUE);
-  constrain(log,top,ir,dd,step,md,start,end,
+  constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,NULL,nrnb,TRUE);
 
@@ -277,7 +277,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
   }
 
   /* Project the accereration on the old bond directions */
-  constrain(log,top,ir,dd,step,md,start,end,
+  constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x_old,xnew,acc_dir,box,
 	    lambda,dvdlambda,NULL,nrnb,FALSE); 
 }
@@ -567,7 +567,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
 
   if (nflexcon > 0) {
-    constrain(log,top,inputrec,cr->dd,mdstep,md,start,end,
+    constrain(log,top,&top->idef.il[F_SETTLE],
+	      inputrec,cr->dd,mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,
 	      state->lambda,&dum,NULL,nrnb,TRUE);
     set_pbc(&pbc,state->box);
