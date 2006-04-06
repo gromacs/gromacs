@@ -488,7 +488,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN) == MD_FFSCAN;
   
   /* Initial values */
-  init_md(cr,inputrec,state_global->box,&t,&t0,&state_global->lambda,&lam0,
+  init_md(cr,inputrec,&t,&t0,&state_global->lambda,&lam0,
 	  &mynrnb,top_global,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
