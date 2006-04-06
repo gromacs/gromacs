@@ -1436,14 +1436,6 @@ static void make_local_ilist(gmx_domdec_t *dd,t_functype ftype,
   }
 
   lil->nr = n*(1 + nral);
-  for(i=0; i<MAXNODES; i++)
-    if (i < dd->nodeid)
-      lil->multinr[i] = 0;
-    else
-      lil->multinr[i] = lil->nr;
-
-  if (debug && il->nr)
-    fprintf(debug,"ftype %d nr %d of %d\n",ftype,lil->nr,il->nr);
 }
 
 static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
@@ -1580,14 +1572,6 @@ static void make_local_ilist_onemoltype_onecg(gmx_domdec_t *dd,
   }
   
   lil->nr = n*(1 + nral);
-  for(i=0; i<MAXNODES; i++)
-    if (i < dd->nodeid)
-      lil->multinr[i] = 0;
-    else
-      lil->multinr[i] = lil->nr;
-
-  if (debug && il->nr)
-    fprintf(debug,"ftype %d nr %d of %d\n",ftype,lil->nr,il->nr);
 }
 
 static void make_local_idef(gmx_domdec_t *dd,t_idef *idef,t_idef *lidef)
@@ -1612,15 +1596,7 @@ static void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 
   lcgs->nr    = dd->ncg_tot;
   lcgs->index = dd->cgindex;
-
-  for(i=0; i<MAXNODES; i++) {
-    if (i <  dd->nodeid)
-      lcgs->multinr[i] = 0;
-    else
-      lcgs->multinr[i] = dd->comm1[0].ncg;
-  }
-
-  lcgs->nra = dd->nat_tot;
+  lcgs->nra   = dd->nat_tot;
 }
 
 static void set_cg_boundaries(gmx_domdec_t *dd,t_block *lcgs)
