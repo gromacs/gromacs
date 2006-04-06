@@ -17,6 +17,9 @@ dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="4:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
+# MPI builds on aix break with shared libs, so they are disabled by default.
+AC_DISABLE_SHARED
+
 
 #######################################################################
 # Simple options and makefile variables
@@ -343,10 +346,11 @@ AC_CHECK_SIZEOF(long long int)
 ACX_FLOAT_FORMAT
 
 
-# MPI builds on aix break with shared libs, so they are disabled by default.
-AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
+AC_PROG_INSTALL
 AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_LIBTOOL_WIN32_DLL
+AC_PROG_LIBTOOL
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
