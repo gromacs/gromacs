@@ -73,6 +73,8 @@ int glatnr(gmx_domdec_t *dd,int i)
       gmx_fatal(FARGS,"glatnr called with %d, which is larger than the local number of atoms (%d)",i,dd->nat_tot_con);
     atnr = dd->gatindex[i] + 1;
   }
+
+  return atnr;
 }
 
 int dd_nicg(gmx_domdec_t *dd)
