@@ -78,10 +78,14 @@ typedef struct {
 } gmx_domdec_ns_t;
 
 typedef struct {
-  int     n;        /* number of interactions */
-  int     *ftype;   /* the function types */
-  t_iatom **iatoms; /* the iatom pointers */
-} gmx_at2iatoms_t;
+  int     ftype;   /* the function type */
+  t_iatom *iatoms; /* the iatom pointer */
+} gmx_at2ilist_t;
+
+typedef struct {
+  int *index;
+  gmx_at2ilist_t *il;
+} gmx_reverse_top_t;
 
 typedef struct {
   int     cell;
@@ -153,7 +157,7 @@ typedef struct {
   bool bMasterHasAllCG;
 
   /* Global atom number to interaction list */
-  gmx_at2iatoms_t *ga2iatoms;
+  gmx_reverse_top_t reverse_top;
 
   /* Constraint stuff */
   gmx_domdec_constraints_t *constraints;

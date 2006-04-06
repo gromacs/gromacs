@@ -1166,8 +1166,8 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   }
 }
 
-static void low_make_at2iatoms(t_idef *idef,
-			       gmx_at2iatoms_t *ga2iatoms,bool bAssign)
+static void low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
+				 bool bAssign)
 {
   int ftype,nral,i,ind_at;
   t_ilist *il;
@@ -1191,35 +1191,38 @@ static void low_make_at2iatoms(t_idef *idef,
 	ia = il->iatoms + i;
 	a = ia[1+ind_at];
 	if (bAssign) {
-	  ga2iatoms[a].ftype [ga2iatoms[a].n] = ftype;
-	  ga2iatoms[a].iatoms[ga2iatoms[a].n] = ia;
+	  rt->il[rt->index[a]+count[a]].ftype  = ftype;
+	  rt->il[rt->index[a]+count[a]].iatoms = ia;
 	}
-	ga2iatoms[a].n++;
+	count[a]++;
       }
     }
   }
 }
 
-static gmx_at2iatoms_t *make_at2iatoms(int natoms,t_idef *idef)
+static gmx_reverse_top_t make_reverse_top(int natoms,t_idef *idef)
 {
-  int i;
-  gmx_at2iatoms_t *ga2iatoms;
+  int *count,i;
+  gmx_reverse_top_t rt;
 
-  snew(ga2iatoms,natoms);
-  
   /* Count the interactions */
-  low_make_at2iatoms(idef,ga2iatoms,FALSE);
-
+  snew(count,natoms);
+  low_make_reverse_top(idef,count,&rt,FALSE);
+  
+  snew(rt.index,natoms+1);
+  rt.index[0] = 0;
   for(i=0; i<natoms; i++) {
-    snew(ga2iatoms[i].ftype, ga2iatoms[i].n);
-    snew(ga2iatoms[i].iatoms,ga2iatoms[i].n);
-    ga2iatoms[i].n = 0;
+    rt.index[i+1] = rt.index[i] + count[i];
+    count[i] = 0;
   }
+  snew(rt.il,rt.index[natoms]);
 
   /* Store the interactions */
-  low_make_at2iatoms(idef,ga2iatoms,TRUE);
+  low_make_reverse_top(idef,count,&rt,TRUE);
 
-  return ga2iatoms;
+  sfree(count);
+
+  return rt;
 }
 
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
@@ -1250,7 +1253,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
   }
   dd->comm1[0].cell = dd->nodeid;
 
-  dd->ga2iatoms = make_at2iatoms(natoms,idef);
+  dd->reverse_top = make_reverse_top(natoms,idef);
   
   snew(dd->ga2la,natoms*sizeof(gmx_ga2la_t));
   for(a=0; a<natoms; a++)
@@ -1443,13 +1446,17 @@ static void make_local_ilist(gmx_domdec_t *dd,t_functype ftype,
 static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 {
   int i,gat,j,ftype,nral,d,k,kc;
+  int *index;
+  gmx_at2ilist_t *rtil;
   gmx_domdec_comm_t *cc;
-  gmx_at2iatoms_t *ga2ia;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST],*liatoms;
   bool bUse;
   ivec shift_min;
   gmx_ga2la_t *ga2la;
   t_ilist *il;
+
+  index = dd->reverse_top.index;
+  rtil  = dd->reverse_top.il;
 
   /* Clear the counts */
   for(ftype=0; ftype<F_NRE; ftype++)
@@ -1458,11 +1465,10 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
   for(i=0; i<dd->nat_tot; i++) {
     /* Get the global atom number */
     gat = dd->gatindex[i];
-    ga2ia = &dd->ga2iatoms[gat];
     /* Check all interactions assigned to this atom */
-    for(j=0; j<ga2ia->n; j++) {
-      ftype  = ga2ia->ftype[j];
-      iatoms = ga2ia->iatoms[j];
+    for(j=index[gat]; j<index[gat+1]; j++) {
+      ftype  = rtil[j].ftype;
+      iatoms = rtil[j].iatoms;
       nral = NRAL(ftype);
       bUse = TRUE;
       for(d=0; d<DIM; d++)
