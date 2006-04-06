@@ -289,11 +289,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     init_QMMMrec(cr,mdatoms,state->box,top,inputrec,fr);
   }
     
-  /* Make molecules whole at start of run */
-  if (fr->ePBC != epbcNONE)  {
-    do_pbc_first(stdlog,state->box,fr,graph,state->x);
-  }
-  
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM) {
     status = gmx_pppm_init(stdlog,cr,nsb,FALSE,TRUE,state->box,
@@ -321,6 +316,11 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     }
   }
     
+  /* Make molecules whole at start of run */
+  if (fr->ePBC != epbcNONE)  {
+    do_pbc_first(stdlog,state->box,fr,graph,state->x);
+  }
+  
   /* Turn on signal handling on all nodes */
   /*
    * (A user signal from the PME nodes (if any)

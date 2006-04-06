@@ -245,7 +245,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   init_nrnb(&nrnb);
   snew(state,1);
   init_single(stdlog,inputrec,tpx,top,state,mdatoms,nsb);
-  init_md(cr,inputrec,state->box,&t,&t0,&lam,&lam0,
+  init_md(cr,inputrec,&t,&t0,&lam,&lam0,
 	  &nrnb,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
 	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);

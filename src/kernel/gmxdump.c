@@ -242,17 +242,17 @@ void list_ene(char *fn)
   snew(fr,1);
   do {
     bCont=do_enx(in,fr);
-    if (fr->nre != nre)
-      gmx_incons("Number of energies in list_ene");
     
     if (bCont) {
       printf("\n%24s  %12.5e  %12s  %12d\n","time:",
 	     fr->t,"step:",fr->step);
-      printf("%24s  %12s  %12s  %12s\n",
-	     "Component","Energy","Av. Energy","Sum Energy");
-      for(i=0; (i<nre); i++) 
-	printf("%24s  %12.5e  %12.5e  %12.5e\n",
-	       enm[i],fr->ener[i].e,fr->ener[i].eav,fr->ener[i].esum);
+      if (fr->nre == nre) {
+	printf("%24s  %12s  %12s  %12s\n",
+	       "Component","Energy","Av. Energy","Sum Energy");
+	for(i=0; (i<nre); i++) 
+	  printf("%24s  %12.5e  %12.5e  %12.5e\n",
+		 enm[i],fr->ener[i].e,fr->ener[i].eav,fr->ener[i].esum);
+      }
       if (fr->ndisre > 0) {
 	printf("Distance restraint %8s  %8s\n","r(t)","< r >");
 	for(i=0; i<fr->ndisre; i++) {
