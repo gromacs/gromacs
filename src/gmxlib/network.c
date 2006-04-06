@@ -620,23 +620,19 @@ void gmx_finalize(const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_finalize");
 #else
-#ifdef MPICH_NAME
-  if (NODEPAR(cr)) {
-    if (debug)
-      fprintf(debug,"In gmx_finalize. Will try to synchronize the ring\n");
-    gmx_sync_ring(cr,cr->nodeid,cr->nnodes,cr->left,cr->right);
-    if (debug)
-      fprintf(debug,"Succesfully did so! Exiting now.\n");
-  }
-  thanx(stdlog);
-  exit(0);
-#else
+  /* We sync the processes here to try to avoid problems
+   * with buggy MPI implementations that could cause
+   * unfinished processes to terminate.
+   */
+  MPI_Barrier(MPI_COMM_WORLD);
+  /* Apparently certain mpich implementations cause problems
+   * with MPI_Finalize. In that case comment out MPI_Finalize.
+   */
   if (debug)
     fprintf(debug,"Will call MPI_Finalize now\n");
   ret = MPI_Finalize();
   if (debug)
     fprintf(debug,"Return code from MPI_Finalize = %d\n",ret);
-#endif
 #endif
 }
 
