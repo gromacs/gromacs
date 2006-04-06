@@ -145,7 +145,8 @@ static void g_error(int line,char *file)
 
 void p_graph(FILE *log,char *title,t_graph *g)
 {
-  int i,j;
+  int  i,j;
+  char *cc[egcolNR] = { "W", "G", "B" };
   
   GCHECK(g);
   fprintf(log,"graph:  %s\n",title);
@@ -154,13 +155,16 @@ void p_graph(FILE *log,char *title,t_graph *g)
   fprintf(log,"nbound: %d\n",g->nbound);
   fprintf(log,"start:  %d\n",g->start);
   fprintf(log,"end:    %d\n",g->end);
-  fprintf(log," atom shiftx shifty shiftz nedg   e1   e2 etc.\n");
+  fprintf(log," atom shiftx shifty shiftz C nedg    e1    e2 etc.\n");
   for(i=0; (i<g->nnodes); i++)
     if (g->nedge[i] > 0) {
-	fprintf(log,"%5d%7d%7d%7d%5d",g->start+i+1,g->ishift[i][XX],g->ishift[i][YY],
-		g->ishift[i][ZZ],g->nedge[i]);
+      fprintf(log,"%5d%7d%7d%7d %1s%5d",g->start+i+1,
+	      g->ishift[i][XX],g->ishift[i][YY],
+	      g->ishift[i][ZZ],
+	      (g->negc > 0) ? cc[g->egc[i]] : " ",
+	      g->nedge[i]);
       for(j=0; (j<g->nedge[i]); j++)
-	fprintf(log,"%5u",g->edge[i][j]+1);
+	fprintf(log," %5u",g->edge[i][j]+1);
       fprintf(log,"\n");
     }
   fflush(log);
