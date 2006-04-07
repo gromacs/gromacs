@@ -17,6 +17,9 @@ void dd_move_x_constraints(gmx_domdec_t *dd,rvec *x)
   gmx_domdec_constraints_t *dc;
   gmx_conatomsend_t *cas;
   int n,d,ndir,dir,i;
+#ifdef GMX_MPI
+  MPI_Status stat;
+#endif
 
   dc = dd->constraints;
   
@@ -33,11 +36,13 @@ void dd_move_x_constraints(gmx_domdec_t *dd,rvec *x)
       for(i=0; i<cas->nsend; i++)
 	copy_rvec(x[cas->a[i]],dc->vbuf[i]);
       /* Send and receive the coordinates */
+#ifdef GMX_MPI
       MPI_Sendrecv(dc->vbuf[0],cas->nsend*sizeof(rvec),MPI_BYTE,
 		   dd->neighbor[d][1-dir],0,
 		   x[n],cas->nrecv*sizeof(rvec),MPI_BYTE,
 		   dd->neighbor[d][dir],0,
-		   dd->all,MPI_STATUS_IGNORE);
+		   dd->all,&stat);
+#endif
       n += cas->nrecv;
     }
   }
@@ -64,6 +69,12 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
   int  nat_tot_con_prev,nalloc_old;
   bool bFirst;
   gmx_conatomsend_t *cas;
+#ifdef GMX_MPI
+  MPI_Status stat;
+#endif
+
+  if (debug)
+    fprintf(debug,"Begin setup_constraint_communication\n");
 
   dc = dd->constraints;
   
@@ -82,26 +93,33 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
       ndir = 1;
     for(dir=0; dir<ndir; dir++) {
       /* Communicate the number of indices */
+#ifdef GMX_MPI
       MPI_Sendrecv(nsend,2*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][dir],0,
 		   dc->nreq[d][dir],2*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][1-dir],0,
-		   dd->all,MPI_STATUS_IGNORE);
+		   dd->all,&stat);
+#endif
       nr = dc->nreq[d][dir][1];
       if (nlast+nr > dc->ind_req_nalloc) {
 	dc->ind_req_nalloc = over_alloc(nlast+nr);
 	srenew(dc->ind_req,dc->ind_req_nalloc);
       }
       /* Communicate the indices */
+#ifdef GMX_MPI
       MPI_Sendrecv(dc->ind_req,nsend[1]*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][dir],0,
 		   dc->ind_req+nlast,nr*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][1-dir],0,
-		   dd->all,MPI_STATUS_IGNORE);
+		   dd->all,&stat);
+#endif
       nlast += nr;
     }
     nsend[1] = nlast;
   }
+  if (debug)
+    fprintf(debug,"Communicated the counts\n");
+
   /* Search for the requested atoms and communicate the indices we have */
   dd->nat_tot_con = dd->nat_tot;
   nrecv_local = 0;
@@ -169,11 +187,13 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
 	dc->bSendAtom[cas->a[i]] = FALSE;
       /* Send and receive the number of indices to communicate */
       nsend[1] = cas->nsend;
+#ifdef GMX_MPI
       MPI_Sendrecv(nsend,2*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][1-dir],0,
 		   buf,2*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][dir],0,
-		   dd->all,MPI_STATUS_IGNORE);
+		   dd->all,&stat);
+#endif
       if (debug) {
 	fprintf(debug,"Send to node %d, %d (%d) indices, "
 		"receive from node %d, %d (%d) indices\n",
@@ -190,11 +210,13 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
 	srenew(dd->gatindex,dd->gatindex_nalloc);
       }
       /* Send and receive the indices */
+#ifdef GMX_MPI
       MPI_Sendrecv(dc->ibuf,cas->nsend*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][1-dir],0,
 		   dd->gatindex+dd->nat_tot_con,cas->nrecv*sizeof(int),MPI_BYTE,
 		   dd->neighbor[d][dir],0,
-		   dd->all,MPI_STATUS_IGNORE);
+		   dd->all,&stat);
+#endif
       dd->nat_tot_con += cas->nrecv;
     }
 
@@ -324,6 +346,9 @@ gmx_domdec_constraints_t *init_domdec_constraints(int natoms,t_idef *idef,
   int i;
   gmx_domdec_constraints_t *dc;
   
+  if (debug)
+    fprintf(debug,"Begin init_domdec_constraints\n");
+
   snew(dc,1);
   dc->at2con = make_at2con(0,natoms,idef,bDynamics,
 			   &dc->ncon_global,&dc->nflexcon_global);
