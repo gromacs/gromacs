@@ -158,6 +158,8 @@ typedef struct {
 
   /* Global atom number to interaction list */
   gmx_reverse_top_t reverse_top;
+  int  nbonded_global;
+  int  nbonded_local;
 
   /* Constraint stuff */
   gmx_domdec_constraints_t *constraints;

@@ -72,11 +72,12 @@ void global_stat(FILE *log,
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,imu,ie,ifv,isv,idedl,icm,imass,ica;
+  int    iterminate,imu,ie,ifv,isv,idedl,icm,imass,ica,inb;
   int    icj=-1,ici=-1,icx=-1;
   int    in[MAXNODES];
   int    inn[egNR];
   int    j;
+  double nb;
   
   if (rb==NULL) {
     rb=mk_bin();
@@ -125,6 +126,11 @@ void global_stat(FILE *log,
   }
   ica   = add_binr(log,rb,1,&(grps->cosacc.mvcos));
   where();
+  if (DOMAINDECOMP(cr)) {
+    nb = cr->dd->nbonded_local;
+    inb = add_bind(log,rb,1,&nb);
+  }
+  where();
   iterminate = add_binr(log,rb,1,terminate);
   
   /* Global sum it all */
@@ -155,6 +161,13 @@ void global_stat(FILE *log,
     where();
   }
   extract_binr(rb,ica,1,&(grps->cosacc.mvcos));
+  where();
+  if (DOMAINDECOMP(cr)) {
+    extract_bind(rb,inb,1,&nb);
+    if ((int)(nb + 0.5) != cr->dd->nbonded_global)
+      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calcalated because some atoms involved moved further apart than the cut-off distance",
+		cr->dd->nbonded_global-(int)(nb + 0.5),cr->dd->nbonded_global);
+  }
   where();
   extract_binr(rb,iterminate,1,terminate);
   where();

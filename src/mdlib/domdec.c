@@ -14,6 +14,7 @@
 #include "pbc.h"
 #include "constr.h"
 #include "mdatoms.h"
+#include "names.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -791,8 +792,9 @@ static void dd_redistribute_cg(FILE *fplog,
       ind[d] -= 2;
       dev[d] = ind[d] - vlocal[d];
       if (dev[d] < -1 || dev[d] > 1)
-	gmx_fatal(FARGS,"Charge group %d (local index %d) moved more than one cell: %d %d %d, coords %f %f %f",
-		  cc->index_gl[icg],icg,dev[XX],dev[YY],dev[ZZ],
+	gmx_fatal(FARGS,"The charge group starting at atom %d moved more than one cell: %d %d %d, coords %f %f %f",
+		  gcgs->index[cc->index_gl[icg]]+1,
+		  dev[XX],dev[YY],dev[ZZ],
 		  cg_cm[icg][XX],cg_cm[icg][YY],cg_cm[icg][ZZ]);
       if (ind[d] < 0) {
 	ind[d] += dd->nc[d];
@@ -1254,6 +1256,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
   dd->comm1[0].cell = dd->nodeid;
 
   dd->reverse_top = make_reverse_top(natoms,idef);
+  dd->nbonded_global = dd->reverse_top.index[natoms];
   
   snew(dd->ga2la,natoms*sizeof(gmx_ga2la_t));
   for(a=0; a<natoms; a++)
@@ -1461,7 +1464,8 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
   /* Clear the counts */
   for(ftype=0; ftype<F_NRE; ftype++)
     idef->il[ftype].nr = 0;
-
+  dd->nbonded_local = 0;
+  
   for(i=0; i<dd->nat_tot; i++) {
     /* Get the global atom number */
     gat = dd->gatindex[i];
@@ -1498,14 +1502,8 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 	liatoms[0] = iatoms[0];
 	for(k=1; k<=nral; k++)
 	  liatoms[k] = tiatoms[k];
-	/*
-	if (debug) {
-	  fprintf(debug,"ftype %d ip %d at",ftype,liatoms[0]);
-	  for(k=1; k<=nral; k++)
-	    fprintf(debug," %d (%d)",liatoms[k],iatoms[k]);
-	  fprintf(debug,"\n");
-	}
-	*/
+	/* Sum locally so we can check in global_stat if we have everything */
+	dd->nbonded_local++;
 	il->nr += 1+nral;
       }
     }
@@ -1738,6 +1736,14 @@ void dd_partition_system(FILE         *fplog,
 			 t_forcerec   *fr,
 			 t_nrnb       *nrnb)
 {
+  if (ir->ePBC == epbcXYZ)
+    gmx_fatal(FARGS,"pbc=%s is not supported (yet), use %s",
+	      epbc_names[epbcXYZ],epbc_names[epbcFULL]);
+  
+  if (ir->eConstrAlg == estSHAKE)
+    gmx_fatal(FARGS,"%s is not supported (yet), use %s",
+	      eshake_names[estSHAKE],eshake_names[estLINCS]);
+
   if (bMasterState) {
     get_cg_distribution(fplog,dd,
 			&top_global->blocks[ebCGS],
