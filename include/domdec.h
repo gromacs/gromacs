@@ -39,19 +39,8 @@ extern void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
 			     t_state *state_local,t_state *state);
 
 extern void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[]);
-
-extern void dd_start_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[]);
-
-extern void dd_finish_move_x(gmx_domdec_t *dd);
 /* buf should should have size natoms (of the whole system)
  * although in most cases far less will be used.
- *
- * dd_move_x waits with returning until the communication has finished.
- *
- * With dd_start_move_x, a call to dd_finish_move_x is required
- * to make sure the communication has finished.
- * Before that only the home coordinates in x can be used
- * and buf can not be used.
  */
 
 extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[]);

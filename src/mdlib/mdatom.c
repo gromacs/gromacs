@@ -138,7 +138,7 @@ void atoms2md(FILE *fp,t_commrec *cr,
     md->cORF[i]      	= atom->grpnr[egcORFIT];
     if (md->massA[i] != 0.0) {
       if (bFirst &&
-	  (cr==NULL || !DOMAINDECOMP(cr) || i < cr->dd->comm1[0].nat)) {
+	  (cr==NULL || !DOMAINDECOMP(cr) || i < cr->dd->nat_local)) {
 	tm[0]          += md->massA[i];
 	tm[1]          += md->massB[i];
       }

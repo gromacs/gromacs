@@ -56,13 +56,10 @@ typedef struct {
 } gmx_domdec_master_t;
 
 typedef struct {
-  /* The cell (node) we communicate with */
-  int cell;
-  int ncg;
-  int nat;
-  /* Index of size ncg into the global charge groups */
-  int *index_gl;
-  /* Index of size ncg into the local charge groups */
+  /* The numbers of charge groups and atoms to send and receive */
+  int nsend[DD_MAXICELL+2];
+  int nrecv[DD_MAXICELL+2];
+  /* The charge groups to send */
   int *index;
   int nalloc;
 } gmx_domdec_comm_t;
@@ -134,9 +131,9 @@ typedef struct {
 } gmx_domdec_constraints_t;
 
 typedef struct {
-  int nodeid;
-  int nnodes;
-  int masterrank;
+  int  nodeid;
+  int  nnodes;
+  int  masterrank;
 #ifdef GMX_MPI
   MPI_Comm all;
 #endif
@@ -164,23 +161,28 @@ typedef struct {
   /* Constraint stuff */
   gmx_domdec_constraints_t *constraints;
 
-  /* The following arrays will have size ncell */
-  /* Nodes we need to send coordinates to and receive forces from */
-  gmx_domdec_comm_t comm0[DD_MAXCELL];
-  /* Nodes we need to receive coordinates from and send forces to */
-  gmx_domdec_comm_t comm1[DD_MAXCELL];
+  /* The charge group boundaries for the cells */
+  int ncg_cell[DD_MAXCELL+1];
 
-  /* Local charge group index */
+  /* The local to gobal charge group index and local cg to local atom index */
+  int  ncg_local;
   int  ncg_tot;
+  int  *index_gl;
   int  *cgindex;
-  int  cgindex_nalloc;
+  int  cg_nalloc;
 
-  /* Index from the local atoms to the global atoms */
+  /* The number of local atoms */
+  int  nat_local;
+  /* The total number of atoms in the neighbor search cells */
   int  nat_tot;
   /* The total number of atoms, including the extra ones for constraints */
   int  nat_tot_con;
+  /* Index from the local atoms to the global atoms */
   int  *gatindex;
   int  gatindex_nalloc;
+
+  /* The indices to communicate */
+  gmx_domdec_comm_t comm[DIM];
 
   /* Global atom number to local atom number, -1 if not local */
   gmx_ga2la_t *ga2la;

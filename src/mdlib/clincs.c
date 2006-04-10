@@ -747,9 +747,9 @@ static void dump_conf(gmx_domdec_t *dd,t_lincsdata *li,
 	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
 	  90.0,90.0,90.0);
   for(i=0; i<dd->nat_tot_con; i++) {
-    if (i<dd->comm1[0].nat ||
+    if (i<dd->nat_local ||
 	(bAll && i>=dd->nat_tot && dc->ga2la[dd->gatindex[i]]>=0)) {
-      bPrint = (i < dd->comm1[0].nat);
+      bPrint = (i < dd->nat_local);
       if (i>=dd->nat_tot) {
 	for(j=dc->at2con.index[dd->gatindex[i]+1]; j<dc->at2con.index[dd->gatindex[i]+1]; j++)
 	  bPrint = bPrint || (dc->gc2lc[dc->at2con.a[j]]>=0);

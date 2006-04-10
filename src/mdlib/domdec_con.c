@@ -24,7 +24,7 @@ void dd_move_x_constraints(gmx_domdec_t *dd,rvec *x)
   dc = dd->constraints;
   
   n = dd->nat_tot;
-  for(d=dd->ndim-1; d>=0; d--) {
+  for(d=0; d<dd->ndim; d++) {
     /* Pulse the grid forward and backward */
     if (dd->nc[dd->dim[d]] > 2)
       ndir = 2;
@@ -85,7 +85,7 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
   nsend[0] = dc->nind_req;
   nsend[1] = nsend[0];
   nlast    = nsend[1];
-  for(d=0; d<dd->ndim; d++) {
+  for(d=dd->ndim-1; d>=0; d--) {
     /* Pulse the grid forward and backward */
     if (dd->nc[dd->dim[d]] > 2)
       ndir = 2;
@@ -123,8 +123,8 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
   /* Search for the requested atoms and communicate the indices we have */
   dd->nat_tot_con = dd->nat_tot;
   nrecv_local = 0;
-  for(d=dd->ndim-1; d>=0; d--) {
-    bFirst = (d == dd->ndim - 1);
+  for(d=0; d<dd->ndim; d++) {
+    bFirst = (d == 0);
     /* Pulse the grid forward and backward */
     if (dd->nc[dd->dim[d]] > 2)
       ndir = 2;
@@ -302,7 +302,7 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec,
   dc->ncon = 0;
   nlocal = 0;
   dc->nind_req = 0;
-  for(a=0; a<dd->comm1[0].nat; a++) {
+  for(a=0; a<dd->nat_local; a++) {
     ag = dd->gatindex[a];
     for(i=at2con.index[ag]; i<at2con.index[ag+1]; i++) {
       con = at2con.a[i];
