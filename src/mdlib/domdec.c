@@ -170,12 +170,12 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[])
 #ifdef GMX_MPI
     MPI_Sendrecv(f[nat_tot],cc->nrecv[ncell+1]*sizeof(rvec),MPI_BYTE,
 		 dd->neighbor[dim][0],0,
-		 buf,cc->nsend[ncell+1]*sizeof(rvec),MPI_BYTE,
+		 buf[0],cc->nsend[ncell+1]*sizeof(rvec),MPI_BYTE,
 		 dd->neighbor[dim][1],0,
 		 dd->all,&stat);
 #endif
     index = cc->index;
-    /* Add the reiceved forces */
+    /* Add the received forces */
     n = 0;
     for(i=0; i<cc->nsend[ncell]; i++) {
       for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
@@ -327,26 +327,45 @@ void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_distribute_vec(dd,cgs,state->sd_X,state_local->sd_X);
 }
 
-static void make_local_indices(gmx_domdec_t *dd,t_block *gcgs)
+static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
+			    t_forcerec *fr)
 {
-  int cell,cg,cg_gl,a,a_gl;
+  int nat,cell,cg0,cg,cg_gl,a,a_gl;
   int *cell_ncg,*index_gl,*cgindex,*gatindex;
   gmx_ga2la_t *ga2la;
+  bool bMakeSolventType;
 
   if (dd->nat_tot > dd->gatindex_nalloc) {
     dd->gatindex_nalloc = over_alloc(dd->nat_tot);
     srenew(dd->gatindex,dd->gatindex_nalloc);
   }
   
+  if (fr->solvent_opt == esolNO) {
+    /* Since all entries are identical, we can use the global array */
+    fr->solvent_type = fr->solvent_type_global;
+    bMakeSolventType = FALSE;
+  } else {
+    if (dd->ncg_tot > fr->solvent_type_nalloc) {
+      fr->solvent_type_nalloc = over_alloc(dd->ncg_tot);
+      srenew(fr->solvent_type,fr->solvent_type_nalloc);
+    }
+    bMakeSolventType = TRUE;
+  }
+  
+
   cell_ncg   = dd->ncg_cell;
   index_gl   = dd->index_gl;
   cgindex    = gcgs->index;
   gatindex   = dd->gatindex;
 
   /* Make the local to global and global to local atom index */
-  a = 0;
+  a = dd->cgindex[cg_start];
   for(cell=0; cell<dd->ncell; cell++) {
-    for(cg=cell_ncg[cell]; cg<cell_ncg[cell+1]; cg++) {
+    if (cell == 0)
+      cg0 = cg_start;
+    else
+      cg0 = cell_ncg[cell];
+    for(cg=cg0; cg<cell_ncg[cell+1]; cg++) {
       cg_gl = index_gl[cg];
       for(a_gl=cgindex[cg_gl]; a_gl<cgindex[cg_gl+1]; a_gl++) {
 	gatindex[a] = a_gl;
@@ -354,16 +373,18 @@ static void make_local_indices(gmx_domdec_t *dd,t_block *gcgs)
 	ga2la->cell = cell;
 	ga2la->a    = a++;
       }
+      if (bMakeSolventType)
+	fr->solvent_type[cg] = fr->solvent_type_global[cg_gl];
     }
   }
 }
 
-static void clear_local_indices(gmx_domdec_t *dd)
+static void clear_dd_indices(gmx_domdec_t *dd,int a_start)
 {
   int i;
 
   /* Clear the indices without have to go over all the atoms in the system */
-  for(i=0; i<dd->nat_tot; i++)
+  for(i=a_start; i<dd->nat_tot; i++)
     dd->ga2la[dd->gatindex[i]].cell = -1;
   if (dd->constraints)
     clear_local_constraint_indices(dd);
@@ -466,7 +487,7 @@ static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
 {
   int i,buf2[2],cg_gl;
 
-  clear_local_indices(dd);
+  clear_dd_indices(dd,0);
 
   if (DDMASTER(dd)) {
     distribute_cg(fplog,box,cgs,pos,dd);
@@ -550,30 +571,47 @@ static int compact_and_copy_vec(int ncg,int *cell,int local,int *cgindex,
 }
 
 static int compact_and_copy_cg(int ncg,int *cell,int local,
-			       int nnbc,int *ind,int *index_gl,int *cgindex,
-			       int *buf,rvec *cg_cm)
+			       int nnbc,int *ind,int *index_gl,
+			       int *cgindex,int *gatindex,gmx_ga2la_t *ga2la,
+			       int *buf,rvec *cg_cm,int *solvent_type)
 {
-  int c,icg,nat,nat_cg;
+  int c,cg,nat,nat_cg,a0,a1,a,a_gl;
   int local_pos,buf_pos[DD_MAXNBCELL];
   
   for(c=0; c<nnbc; c++)
     buf_pos[c] = ind[c];
-
+  
   local_pos = 0;
   nat = 0;
-  for(icg=0; icg<ncg; icg++) {
-    c = cell[icg];
+  for(cg=0; cg<ncg; cg++) {
+    c = cell[cg];
+    a0 = cgindex[cg];
+    a1 = cgindex[cg+1];
     if (c == local) {
-      /* Locally compact the arrays */
-      nat_cg = cgindex[icg+1] - cgindex[icg];
+      /* Locally compact the arrays.
+       * Anything that can be done here avoids access to global arrays.
+       */
       cgindex[local_pos] = nat;
-      nat += nat_cg;
-      index_gl[local_pos] = index_gl[icg];
-      copy_rvec(cg_cm[icg],cg_cm[local_pos]);
+      for(a=a0; a<a1; a++) {
+	a_gl = gatindex[a];
+	gatindex[nat] = a_gl;
+	/* The cell number stays 0, so we don't need to set it */
+	ga2la[a_gl].a = nat;
+	nat++;
+      }
+      index_gl[local_pos] = index_gl[cg];
+      copy_rvec(cg_cm[cg],cg_cm[local_pos]);
+      if (solvent_type)
+	solvent_type[local_pos] = solvent_type[cg];
       local_pos++;
     } else {
       /* Copy to the communication buffer */
-      buf[buf_pos[c]++] = index_gl[icg];
+      buf[buf_pos[c]++] = index_gl[cg];
+      /* Clear the global indices */
+      for(a=a0; a<a1; a++) {
+	a_gl = gatindex[a];
+	ga2la[a_gl].cell = -1;
+      }
     }
   }
   cgindex[local_pos] = nat;
@@ -581,10 +619,11 @@ static int compact_and_copy_cg(int ncg,int *cell,int local,
   return local_pos;
 }
 
-static void dd_redistribute_cg(FILE *fplog,
-			       gmx_domdec_t *dd,t_block *gcgs,
-			       t_state *state,rvec cg_cm[],
-			       t_nrnb *nrnb)
+static int dd_redistribute_cg(FILE *fplog,
+			      gmx_domdec_t *dd,t_block *gcgs,
+			      t_state *state,rvec cg_cm[],
+			      t_forcerec *fr,
+			      t_nrnb *nrnb)
 {
 #define dd_nbindex(ms0,ns,i) ((((i)[ZZ] - ms0[ZZ])*ns[YY] + (i)[YY] - ms0[YY])*ns[XX] + (i)[XX] - ms0[XX])
 
@@ -859,11 +898,17 @@ static void dd_redistribute_cg(FILE *fplog,
     srenew(dd->cgindex,dd->cg_nalloc+1);
   }
 
-  clear_local_indices(dd);
+  /* Clear the local indices, except for the home cell.
+   * The home cell indices are updated in compact_and_copy_cg.
+   */
+  clear_dd_indices(dd,dd->nat_local);
 
-  local_pos = compact_and_copy_cg(dd->ncg_local,cell,local,
-				  nnbc,buf_cg_ind,dd->index_gl,dd->cgindex,
-				  buf_cg,cg_cm);
+  local_pos =
+    compact_and_copy_cg(dd->ncg_local,cell,local,
+			nnbc,buf_cg_ind,dd->index_gl,
+			dd->cgindex,dd->gatindex,dd->ga2la,
+			buf_cg,cg_cm,
+			fr->solvent_opt==esolNO ? NULL : fr->solvent_type);
   
 #ifdef GMX_MPI
   MPI_Waitall(nreq,mpi_req,MPI_STATUSES_IGNORE);
@@ -927,6 +972,8 @@ static void dd_redistribute_cg(FILE *fplog,
 
   if (debug)
     fprintf(debug,"Finished repartitioning\n");
+
+  return ncg[local];
 }
 
 void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
@@ -1291,8 +1338,6 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
   dd->nat_tot = nat_tot;
   dd->nat_tot_con = nat_tot;
 
-  make_local_indices(dd,gcgs);
-
   if (debug) {
     fprintf(debug,"Finished setting up DD communication, cells:");
     for(c=0; c<dd->ncell; c++)
@@ -1563,27 +1608,6 @@ static void make_local_top(FILE *fplog,gmx_domdec_t *dd,
   dd_update_ns_border(dd,nsb);
 }
 
-static void update_local_forcerec(gmx_domdec_t *dd,t_forcerec *fr)
-{
-  int cg;
-  gmx_domdec_comm_t *cc;
-
-  fr->cg0 = 0;
-  fr->hcg = dd_ncg_tot(dd);
-
-  if (fr->solvent_opt == esolNO) {
-    /* Since all entries are identical, we can use the global array */
-    fr->solvent_type = fr->solvent_type_global;
-  } else {
-    if (dd->ncg_tot > fr->solvent_type_nalloc) {
-      fr->solvent_type_nalloc = over_alloc(dd->ncg_tot);
-      srenew(fr->solvent_type,fr->solvent_type_nalloc);
-    }
-    for(cg=0; cg<dd->ncg_tot; cg++)
-      fr->solvent_type[cg] = fr->solvent_type_global[dd->index_gl[cg]];
-  }
-}
-
 static void dump_conf(gmx_domdec_t *dd,
 		      char *name,rvec *x,matrix box)
 {
@@ -1624,6 +1648,8 @@ void dd_partition_system(FILE         *fplog,
 			 t_forcerec   *fr,
 			 t_nrnb       *nrnb)
 {
+  int cg_ind;
+
   if (ir->ePBC == epbcXYZ)
     gmx_fatal(FARGS,"pbc=%s is not supported (yet), use %s",
 	      epbc_names[epbcXYZ],epbc_names[epbcFULL]);
@@ -1646,15 +1672,24 @@ void dd_partition_system(FILE         *fplog,
 	      &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
     
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_local);
+
+    cg_ind = 0;
   } else {
-    dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
-		       state_local,fr->cg_cm,nrnb);
+    cg_ind = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
+				state_local,fr->cg_cm,fr,nrnb);
   }
   
   /* Setup up the communication and communicate the coordinates */
   setup_dd_communication(fplog,dd,&top_global->blocks[ebCGS],
 			 state_local->x,buf,state_local->box,
 			 fr->cg_cm,fr->rlistlong);
+
+  /* Set the indices */
+  make_dd_indices(dd,&top_global->blocks[ebCGS],cg_ind,fr);
+
+  /* Update the rest of the forcerec */
+  fr->cg0;
+  fr->hcg = dd->ncg_tot;
 
   /* Extract a local topology from the global topology */
   make_local_top(fplog,dd,top_global,top_local,nsb);
@@ -1681,8 +1716,6 @@ void dd_partition_system(FILE         *fplog,
   atoms2md(fplog,NULL,&top_global->atoms,ir->opts.nFreeze,
 	   ir->eI,ir->delta_t,ir->bd_fric,ir->opts.tau_t,
 	   ir->efep!=efepNO,dd->nat_tot_con,dd->gatindex,mdatoms,FALSE);
-
-  update_local_forcerec(dd,fr);
 
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
     init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
