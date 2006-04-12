@@ -75,13 +75,8 @@ typedef struct {
 } gmx_domdec_ns_t;
 
 typedef struct {
-  int     ftype;   /* the function type */
-  t_iatom *iatoms; /* the iatom pointer */
-} gmx_at2ilist_t;
-
-typedef struct {
-  int *index;
-  gmx_at2ilist_t *il;
+  int *index; /* Index for each atom into il    */
+  int *il;    /* ftype|type|a0|...|an|ftype|... */
 } gmx_reverse_top_t;
 
 typedef struct {

@@ -33,7 +33,7 @@ static int natoms_global;
 #define EXCLS_ALLOC_SIZE  1000
 #define IATOM_ALLOC_SIZE  1000
 
-static const cell_perm[3][4] = { {0,0,0,0},{1,0,0,0},{3,0,1,2} };
+static const int cell_perm[3][4] = { {0,0,0,0},{1,0,0,0},{3,0,1,2} };
 
 #define dd_c3n 8
 static const ivec dd_c3[dd_c3n] =
@@ -1118,14 +1118,16 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   }
 }
 
-static void low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
-				 bool bAssign)
+static int low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
+				bool bAssign)
 {
-  int ftype,nral,i,ind_at;
+  int ftype,nral,i,ind_at,j;
   t_ilist *il;
   t_iatom *ia;
   atom_id a;
+  int nint;
   
+  nint = 0;
   for(ftype=0; ftype<F_NRE; ftype++) {
     if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
 	|| ftype == F_SETTLE) {
@@ -1143,16 +1145,20 @@ static void low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
 	ia = il->iatoms + i;
 	a = ia[1+ind_at];
 	if (bAssign) {
-	  rt->il[rt->index[a]+count[a]].ftype  = ftype;
-	  rt->il[rt->index[a]+count[a]].iatoms = ia;
+	  rt->il[rt->index[a]+count[a]] = ftype;
+	  for(j=0; j<1+nral; j++)
+	    rt->il[rt->index[a]+count[a]+1+j] = ia[j];
 	}
-	count[a]++;
+	count[a] += 2 + nral;
+	nint++;
       }
     }
   }
+
+  return nint;
 }
 
-static gmx_reverse_top_t make_reverse_top(int natoms,t_idef *idef)
+static gmx_reverse_top_t make_reverse_top(int natoms,t_idef *idef,int *nint)
 {
   int *count,i;
   gmx_reverse_top_t rt;
@@ -1170,7 +1176,7 @@ static gmx_reverse_top_t make_reverse_top(int natoms,t_idef *idef)
   snew(rt.il,rt.index[natoms]);
 
   /* Store the interactions */
-  low_make_reverse_top(idef,count,&rt,TRUE);
+  *nint = low_make_reverse_top(idef,count,&rt,TRUE);
 
   sfree(count);
 
@@ -1204,8 +1210,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     snew(dd->ma.ibuf,dd->nnodes*2);
   }
 
-  dd->reverse_top = make_reverse_top(natoms,idef);
-  dd->nbonded_global = dd->reverse_top.index[natoms];
+  dd->reverse_top = make_reverse_top(natoms,idef,&dd->nbonded_global);
   
   snew(dd->ga2la,natoms*sizeof(gmx_ga2la_t));
   for(a=0; a<natoms; a++)
@@ -1392,9 +1397,8 @@ static void make_local_ilist(gmx_domdec_t *dd,t_functype ftype,
 
 static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 {
-  int i,gat,j,ftype,nral,d,k,kc;
-  int *index;
-  gmx_at2ilist_t *rtil;
+  int i,gat,j,ftype,nral,type,d,k,kc;
+  int *index,*rtil;
   gmx_domdec_comm_t *cc;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST],*liatoms;
   bool bUse;
@@ -1414,9 +1418,10 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
     /* Get the global atom number */
     gat = dd->gatindex[i];
     /* Check all interactions assigned to this atom */
-    for(j=index[gat]; j<index[gat+1]; j++) {
-      ftype  = rtil[j].ftype;
-      iatoms = rtil[j].iatoms;
+    j = index[gat];
+    while (j < index[gat+1]) {
+      ftype  = rtil[j++];
+      iatoms = rtil + j;
       nral = NRAL(ftype);
       bUse = TRUE;
       for(d=0; d<DIM; d++)
@@ -1450,14 +1455,15 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 	dd->nbonded_local++;
 	il->nr += 1+nral;
       }
+      j += 1 + nral;
     }
   }
 }
 
-static void make_local_exclusions(gmx_domdec_t *dd,
+static void make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
 				  t_block *excls,t_block *lexcls)
 {
-  int n,la,a,i;
+  int n,cg,la0,la1,nat,la,a,i,j;
   gmx_ga2la_t *ga2la;
   
   if (dd->nat_tot+1 > lexcls->nalloc_index) {
@@ -1466,22 +1472,51 @@ static void make_local_exclusions(gmx_domdec_t *dd,
   }
   
   n = 0;
-  for(la=0; la<dd->nat_tot; la++) {
-    lexcls->index[la] = n;
-    a = dd->gatindex[la];
-    for(i=excls->index[a]; i<excls->index[a+1]; i++) {
-      ga2la = &dd->ga2la[excls->a[i]];
-      if (ga2la->cell != -1) {
-	if (n >= lexcls->nalloc_a) {
-	  lexcls->nalloc_a += EXCLS_ALLOC_SIZE;
-	  srenew(lexcls->a,lexcls->nalloc_a);
+  for(cg=0; cg<dd->ncg_tot; cg++) {
+    la0 = dd->cgindex[cg];
+    /* Here we assume the number of exclusions in one charge groups
+     * is never larger than EXCLS_ALLOC_SIZE
+     */
+    if (n+EXCLS_ALLOC_SIZE > lexcls->nalloc_a) {
+      lexcls->nalloc_a += EXCLS_ALLOC_SIZE;
+      srenew(lexcls->a,lexcls->nalloc_a);
+    }
+    switch (fr->solvent_type[cg]) {
+    case esolNO:
+      /* Copy the exclusions from the global top */
+      la1 = dd->cgindex[cg+1];
+      for(la=la0; la<la1; la++) {
+	lexcls->index[la] = n;
+	a = dd->gatindex[la];
+	for(i=excls->index[a]; i<excls->index[a+1]; i++) {
+	  ga2la = &dd->ga2la[excls->a[i]];
+	  if (ga2la->cell != -1)
+	    lexcls->a[n++] = ga2la->a;
 	}
-	lexcls->a[n++] = ga2la->a;
       }
+      break;
+    case esolSPC:
+      /* Exclude all 9 atom pairs */
+      for(la=la0; la<la0+3; la++) {
+	lexcls->index[la] = n;
+	for(j=la0; j<la0+3; j++)
+	  lexcls->a[n++] = j;
+      }
+      break;
+    case esolTIP4P:
+      /* Exclude all 16 atoms pairs */
+      for(la=la0; la<la0+4; la++) {
+	lexcls->index[la] = n;
+	for(j=la0; j<la0+4; j++)
+	  lexcls->a[n++] = j;
+      }
+      break;
+    default:
+      gmx_fatal(FARGS,"Unkown solvent type %d",fr->solvent_type[cg]);
     }
   }
-  lexcls->index[la] = n;
-  lexcls->nr = la;
+  lexcls->index[dd->nat_tot] = n;
+  lexcls->nr = dd->nat_tot;
   lexcls->nra = n;
   if (debug)
     fprintf(debug,"We have %d exclusions\n",lexcls->nra);
@@ -1572,6 +1607,7 @@ static void dd_update_ns_border(gmx_domdec_t *dd,t_nsborder *nsb)
 }
 
 static void make_local_top(FILE *fplog,gmx_domdec_t *dd,
+			   t_forcerec *fr,
 			   t_topology *top,t_topology *ltop,
 			   t_nsborder *nsb)
 {
@@ -1583,7 +1619,7 @@ static void make_local_top(FILE *fplog,gmx_domdec_t *dd,
   ltop->name  = top->name;
   make_local_cgs(dd,&ltop->blocks[ebCGS]);
 
-  make_local_exclusions(dd,&top->blocks[ebEXCLS],&ltop->blocks[ebEXCLS]);
+  make_local_exclusions(dd,fr,&top->blocks[ebEXCLS],&ltop->blocks[ebEXCLS]);
 
 #ifdef ONE_MOLTYPE_ONE_CG
   natoms_global = top->blocks[ebCGS].nra;
@@ -1692,7 +1728,7 @@ void dd_partition_system(FILE         *fplog,
   fr->hcg = dd->ncg_tot;
 
   /* Extract a local topology from the global topology */
-  make_local_top(fplog,dd,top_global,top_local,nsb);
+  make_local_top(fplog,dd,fr,top_global,top_local,nsb);
 
   if (top_global->idef.il[F_CONSTR].nr > 0) {
     make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
