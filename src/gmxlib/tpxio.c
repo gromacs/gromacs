@@ -217,12 +217,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_int(ir->nstcomm); 
     if (file_version > 34)
       do_int(ir->comm_mode);
-    else if (ir->nstcomm < 0) {
+    else if (ir->nstcomm < 0) 
       ir->comm_mode = ecmANGULAR;
-      ir->nstcomm = -ir->nstcomm;
-    }
     else
       ir->comm_mode = ecmLINEAR;
+    ir->nstcomm = abs(ir->nstcomm);
     
     if(file_version > 25)
       do_int(ir->nstcheckpoint);
