@@ -173,12 +173,17 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   /* COMM STUFF */
-  if ((ir->ePBC != epbcNONE) && (ir->nstcomm < 0))
+  if (ir->nstcomm < 0) {
+    warning("If you want to remove the rotation around the center of mass, you should set comm_mode = Angular instead of setting nstcomm < 0. nstcomm is modified to its absolute value");
+    ir->nstcomm = abs(ir->nstcomm);
+  }
+  
+  if ((ir->ePBC != epbcNONE) && (ir->comm_mode == ecmANGULAR))
     warning("Removing the rotation around the center of mass in a periodic system (this is not a problem when you have only one molecule).");
-    
+  
   if ((ir->eI == eiMD) && (ir->ePBC == epbcNONE)) {
     if ((ir->nstcomm == 0) || (ir->comm_mode != ecmANGULAR))
-      warning("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should set comm_mode = ANGULAR.");
+      warning("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You probably should set comm_mode = ANGULAR.");
   }
   
   sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
