@@ -3,7 +3,7 @@
 [ NH3+ ]
 [ replace ]
 N		NL	14.0067	0.129
-CA		CH1	13.019	0.127
+CA		CH1	13.019	0.127	0
 [ add ]
 3	4	H	N	CA	C
 	H	1.008	0.248
@@ -74,7 +74,7 @@ CD	N	H	ga_10
 [ GLY-NH3+ ]
 [ replace ]
 N		NL	14.0067	0.129
-CA		CH2	14.027	0.127
+CA		CH2	14.027	0.127	0
 [ add ]
 3	4	H	N	CA	C
 	H	1.008	0.248
