@@ -1027,7 +1027,7 @@ int gmx_chi(int argc,char *argv[])
   static real bfac_init=-1.0,bfac_max=0;
   static char *maxchistr[] = { NULL, "0", "1", "2", "3",  "4", "5", "6", NULL };
   static bool bRama=FALSE,bShift=FALSE,bViol=FALSE,bRamOmega=FALSE;
-  static bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE,bPBC=TRUE;;
+  static bool bNormHisto=TRUE,bChiProduct=FALSE,bHChi=FALSE,bRAD=FALSE,bPBC=TRUE;
   static real core_frac=0.5 ;  
   t_pargs pa[] = {
     { "-r0",  FALSE, etINT, {&r0},
