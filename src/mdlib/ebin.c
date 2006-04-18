@@ -108,7 +108,7 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
     /* first update sigma, then sum */
     eg[i].e    = e;
     diff       = eg[i].esum - m*e;
-    eg[i].eav  += diff*diff*invmm;;
+    eg[i].eav  += diff*diff*invmm;
     eg[i].esum += e;
   }
 }
