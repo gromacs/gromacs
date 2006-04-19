@@ -29,7 +29,7 @@
 #include "types/simple.h"
 #include "gmxcomplex.h"
 
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 
 /* This file contains common fft utility functions, but not

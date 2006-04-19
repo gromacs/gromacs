@@ -25,7 +25,7 @@
 #include <fftw3.h>
 
 #include "gmx_fft.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 
 #ifdef GMX_DOUBLE

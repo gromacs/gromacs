@@ -32,7 +32,7 @@
 #include "gmx_parallel_3dfft.h"
 #include "gmx_fft.h"
 #include "gmxcomplex.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 
 struct gmx_parallel_3dfft 

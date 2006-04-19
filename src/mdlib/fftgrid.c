@@ -125,7 +125,6 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
   if (cr && PAR(cr)) 
   {
 #ifdef GMX_MPI
-<<<<<<< fftgrid.c
       gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
 			      cr->mpi_comm_mysim);
           
@@ -134,15 +133,6 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
                                 &(grid->pfft.local_nx),
                                 &(grid->pfft.local_y_start_after_transpose),
                                 &(grid->pfft.local_ny_after_transpose));
-=======
-      gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,MPI_COMM_WORLD);
-          
-      gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
-                                &(grid->pfft.local_x_start),                                
-                                &(grid->pfft.local_nx),
-                                &(grid->pfft.local_y_start_after_transpose),
-                                &(grid->pfft.local_ny_after_transpose));
->>>>>>> 1.18.2.1
 #else
     gmx_fatal(FARGS,"Parallel FFT supported with MPI only!");
 #endif
