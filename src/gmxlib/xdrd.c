@@ -39,7 +39,7 @@
 
 #include "typedefs.h"
 #include "xdrf.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 
 int xdr_real(XDR *xdrs,real *r)
