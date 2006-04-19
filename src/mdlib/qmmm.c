@@ -453,11 +453,6 @@ void init_QMMMrec(t_commrec *cr,
   c12au = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,12)); 
   fprintf(stderr,"there we go!\n");
 
-  /* fill the nucnum array in the t_mdatoms struct: */
-  for(i=0;i<md->nr;i++){
-    md->atomnumber[i] = top->atomtypes.atomnumber[md->typeA[i]];
-  }
-
   /* Make a local copy of the QMMMrec */
   qr = fr->qr;
 

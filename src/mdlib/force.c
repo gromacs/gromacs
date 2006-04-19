@@ -1109,7 +1109,8 @@ void init_forcerec(FILE *fp,
    * optimized solvent
    */
 
-  check_solvent(fp,top,fr,mdatoms,nsb);
+  check_solvent(fp,top,fr,&top->atoms,nsb);
+
   
   if (getenv("GMX_NO_SOLV_OPT")) {
     if (fp)
