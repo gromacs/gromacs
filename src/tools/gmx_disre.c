@@ -594,13 +594,13 @@ int gmx_disre(int argc,char *argv[])
 	 atoms->nr*sizeof(atoms->atomname[0]));
   memcpy(atoms->resname,top.atoms.resname,
 	 atoms->nres*sizeof(atoms->resname[0]));
-  snew(mdatoms,1);
-  atoms2md(stdlog,NULL,&top.atoms,ir.opts.nFreeze,
-	   eiMD,0,0,NULL,FALSE,0,NULL,mdatoms,TRUE);  
+  mdatoms = init_mdatoms(stdlog,&top.atoms,ir.efep!=efepNO);
+  atoms2md(&top.atoms,&ir,top.idef.il[F_ORIRES].nr,0,NULL,mdatoms);
+  update_mdatoms(mdatoms,lambda);
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec\n");
   calc_nsb(stdlog,&(top.blocks[ebCGS]),1,0,nsb,0);
-  init_forcerec(stdlog,fr,&ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,NULL,FALSE);
+  init_forcerec(stdlog,fr,&ir,&top,cr,nsb,box,FALSE,NULL,NULL,FALSE);
   init_nrnb(&nrnb);
   j=0;
   do {
