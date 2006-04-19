@@ -538,7 +538,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     top = top_global;
     state = state_global;
 
-    atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,0,NULL,mdatoms);
+    atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,mdatoms);
   }
   update_mdatoms(mdatoms,state->lambda);
 

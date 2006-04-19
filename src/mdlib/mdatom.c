@@ -82,10 +82,9 @@ t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
 }
 
 void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
-	      int ind_start,int ind_end,int *index,
-	      t_mdatoms *md)
+	      int nindex,int *index,t_mdatoms *md)
 {
-  int       start,i,g=0;
+  int       i,g=0;
   real      mA,mB,fac;
   t_atom    *atom;
   t_grpopts *opts;
@@ -93,17 +92,13 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
   opts = &ir->opts;
 
   if (index == NULL) {
-    start  = 0;
     md->nr = atoms->nr;
   } else {
-    start  = ind_start;
-    md->nr = ind_end;
+    md->nr = nindex;
   }
 
   if (md->nr > md->nalloc) {
     md->nalloc = over_alloc(md->nr);
-
-    md->bPlainMD = (md->nPerturbed == 0);
 
     if (md->nMassPerturbed) {
       srenew(md->massA,md->nalloc);
@@ -125,40 +120,27 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
       /* We always copy cTC with domain decomposition */
     }
     srenew(md->cENER,md->nalloc);
-    if (opts->ngacc > 1) {
+    if (opts->ngacc > 1)
       srenew(md->cACC,md->nalloc);
-      md->bPlainMD = FALSE;
-    }
-    if (opts->ngfrz > 1) {
+    if (opts->ngfrz > 1)
       srenew(md->cFREEZE,md->nalloc);
-      md->bPlainMD = FALSE;
-    }
     srenew(md->cVCM,md->nalloc);
-    if (norires) {
+    if (norires)
       srenew(md->cORF,md->nalloc);
-      md->bPlainMD = FALSE;
-    }
     if (md->nPerturbed)
       srenew(md->bPerturbed,md->nalloc);
     
     /* The user should fix this */
-    if (FALSE) {
+    if (FALSE)
       srenew(md->cU1,md->nalloc);
-      md->bPlainMD = FALSE;
-    }
-    if (FALSE) {
+    if (FALSE)
       srenew(md->cU2,md->nalloc);
-      md->bPlainMD = FALSE;
-    }
     
-    if (ir->bQMMM) {
-      /* QMMM additions */
+    if (ir->bQMMM)
       srenew(md->bQM,md->nalloc);
-      md->bPlainMD = FALSE;
-    }
   }
 
-  for(i=start; (i<md->nr); i++) {
+  for(i=0; (i<md->nr); i++) {
     if (index == NULL)
       atom = &atoms->atom[i];
     else

@@ -207,7 +207,7 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
   *start = nsb->index[cr->nodeid];
   *end   = nsb->homenr[cr->nodeid] + *start;
 
-  atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,0,NULL,mdatoms);
+  atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,mdatoms);
   update_mdatoms(mdatoms,*lambda,TRUE);
 
   *vcm = init_vcm(log,top,cr,&top->atoms,
