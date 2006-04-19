@@ -317,7 +317,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(warn_buf,"Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
     warning(NULL);
   }
-  
+
   /* FREE ENERGY */
   if (ir->efep != efepNO) {
     sprintf(err_buf,"The soft-core power is %d and can only be 1 or 2",
@@ -1298,7 +1298,7 @@ void do_index(char *ndx,
   ir->opts.ngener=atoms->grps[egcENER].nr;
   nuser=str_nelem(vcm,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,
-	       restnm,forward,FALSE,TRUE,bVerbose);
+	       restnm,FALSE,TRUE,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode);
