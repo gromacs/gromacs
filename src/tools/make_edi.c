@@ -537,23 +537,23 @@ int main(int argc,char *argv[])
     static real T=300.0;
     const real kB = 2.5 / 300.0; /* k_boltzmann in MD units */
     static bool bRestrain = FALSE;
-    static bool       bHesse=FALSE;
+    static bool bHesse=FALSE;
     static bool bHarmonic=FALSE;
     t_pargs pa[] = {
     { "-mon", FALSE, etSTR, {&evSelections[evMON]},
         "Indices of eigenvectors  for projections of x, v and f (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91 " },
-    { "-linfix", FALSE, etSTR, {&evSelections[evLINFIX]},
+    { "-linfix", FALSE, etSTR, {&evSelections[0]},
         "Indices of eigenvectors for fixed increment linear sampling" },
-    { "-linacc", FALSE, etSTR, {&evSelections[evLINACC]},
+    { "-linacc", FALSE, etSTR, {&evSelections[1]},
         "Indices of eigenvectors for acceptance linear sampling" },
-    { "-radfix", FALSE, etSTR, {&evSelections[evRADFIX]},
-        "Indices of eigenvectors for fixed increment radius expansion" },
-    { "-radacc", FALSE, etSTR, {&evSelections[evRADACC]},
-        "Indices of eigenvectors for acceptance radius expansion" },
-    { "-radcon", FALSE, etSTR, {&evSelections[evRADCON]},
-        "Indices of eigenvectors for acceptance radius contraction" },
-    { "-flood", FALSE, etSTR, {&evSelections[evFLOOD]},
+    { "-flood",  FALSE, etSTR, {&evSelections[2]},
         "Indices of eigenvectors for flooding"},
+    { "-radfix", FALSE, etSTR, {&evSelections[3]},
+        "Indices of eigenvectors for fixed increment radius expansion" },
+    { "-radacc", FALSE, etSTR, {&evSelections[4]},
+        "Indices of eigenvectors for acceptance radius expansion" },
+    { "-radcon", FALSE, etSTR, {&evSelections[5]},
+        "Indices of eigenvectors for acceptance radius contraction" },
     { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
         "freqency (in steps) of writing output in .edo file" },
     { "-logfrq", FALSE, etINT, {&edi_params.logfrq},
@@ -576,9 +576,9 @@ int main(int argc,char *argv[])
         " T is temperature, the value is needed if you want to do flooding "},
     { "-alpha",FALSE,etREAL,{&alpha},
         " scale width of gaussian flooding potential with alpha^2 "},
-    { evStepOptions[evLINFIX], FALSE, etSTR, {&evParams[evLINFIX]},
+    { evStepOptions[evLINFIX], FALSE, etSTR, {&evParams[0]},
         "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 -3.1\")"},
-    { evStepOptions[evLINACC], FALSE, etSTR, {&evParams[evLINACC]},
+    { evStepOptions[evLINACC], FALSE, etSTR, {&evParams[1]},
         "Directions for acceptance linear sampling - only sign counts! (put in quotes! \"-1 +1 -1.1\")"},
     { evStepOptions[evRADFIX], FALSE, etREAL, {&radfix},
         "Stepsize (nm/step) for fixed increment radius expansion"},
