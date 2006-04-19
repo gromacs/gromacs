@@ -37,7 +37,7 @@
 #include <config.h>
 #endif
 
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
 

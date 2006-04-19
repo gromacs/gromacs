@@ -54,7 +54,7 @@
 #include "names.h"
 #include "main.h"
 #include "xvgr.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "physics.h"
 #include "force.h"
 #include "bondf.h"
