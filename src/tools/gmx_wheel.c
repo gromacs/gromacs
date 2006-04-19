@@ -56,7 +56,7 @@
 #include "pbc.h"
 #include "index.h"
 #include "gstat.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "writeps.h"
 #include "strdb.h"
 

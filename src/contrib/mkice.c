@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "statutil.h"
 #include "copyrite.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "pdbio.h"
 #include "macros.h"
 #include "smalloc.h"

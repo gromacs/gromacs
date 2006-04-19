@@ -31,65 +31,25 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * Green Red Orange Magenta Azure Cyan Skyblue
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "xdrf.h"
-#include "fatal.h"
-#include "smalloc.h"
+#include <gmx_ana.h>
 
-int xdr_real(XDR *xdrs,real *r)
+
+/* This is just a wrapper binary.
+* The code that used to be in g_kinetics.c is now in gmx_kinetics.c,
+* where the old main function is called gmx_kinetics().
+*/
+int
+main(int argc, char *argv[])
 {
-#ifdef GMX_DOUBLE
-  float f;
-  int   ret;
-  
-  f=*r;
-  ret=xdr_float(xdrs,&f);
-  *r=f;
-
-  return ret;
-#else
-  return xdr_float(xdrs,(float *)r);
-#endif
-}
-
-int xdr3drcoord(XDR *xdrs, real *fp, int *size, real *precision)
-{
-#ifdef GMX_DOUBLE
-  float *ffp;
-  float  fprec;
-  int    i,ret,isize;
-  
-  isize=*size*DIM;
-  if (isize <= 0)
-    gmx_fatal(FARGS,"Don't know what to malloc for ffp, isize = %d",isize);
-
-  snew(ffp,isize);
-
-  for(i=0; (i<isize); i++)
-    ffp[i]=fp[i];
-  fprec=*precision;
-  ret=xdr3dfcoord(xdrs,ffp,size,&fprec);
-  
-  *precision=fprec;
-  for(i=0; (i<isize); i++)
-    fp[i]=ffp[i];
-
-  sfree(ffp);
-  return ret;
-#else
-  return xdr3dfcoord(xdrs,(float *)fp,size,(float *)precision);
-#endif
+  gmx_kinetics(argc,argv);
+  return 0;
 }
 
 
-
-
-
-
-
+  

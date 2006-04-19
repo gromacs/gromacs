@@ -54,7 +54,7 @@
 #include "names.h"
 #include "main.h"
 #include "xvgr.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "physics.h"
 #include "force.h"
 #include "bondf.h"
@@ -553,6 +553,7 @@ do_nonbonded14(int ftype,int nbonds,
     tab = fr->tab14.tab;
     rtab2 = sqr(fr->tab14.r);
     tabscale = fr->tab14.scale;
+
     krf = fr->k_rf;
     crf = fr->c_rf;
     
@@ -599,7 +600,7 @@ do_nonbonded14(int ftype,int nbonds,
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-        gid   = GID(md->cENER[ai],md->cENER[aj],ngrp);
+		gid   = GID(md->cENER[ai],md->cENER[aj],ngrp);
 	
 	switch (ftype) {
 	case F_LJ14:

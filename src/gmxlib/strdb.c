@@ -42,7 +42,7 @@
 #include "string2.h"
 #include "futil.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "strdb.h"
 
 bool get_a_line(FILE *fp,char line[],int n)

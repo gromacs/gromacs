@@ -43,9 +43,13 @@
 #include "futil.h"
 #include "vec.h"
 #include "physics.h"
+<<<<<<< ghat.c
 #include "coulomb.h"
-#include "fftgrid.h"
+=======
+#include "shift_util.h"
 #include "xvgr.h"
+>>>>>>> 1.8.4.2
+#include "fftgrid.h"
 
 static void calc_k(rvec lll,int ix,int iy,int iz,int nx,int ny,int nz,rvec k)
 {

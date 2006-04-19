@@ -44,15 +44,19 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "xvgr.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "txtdump.h"
 #include "network.h"
 #include "nrnb.h"
 #include "pppm.h"
 #include "coulomb.h"
 #include "mdrun.h"
-#include "fftgrid.h"
+#include "gmx_fft.h"
 #include "pme.h"
+
+#ifdef GMX_MPI
+#include "gmx_parallel_3dfft.h"
+#endif
 
 #define llim  (-1)
 #define ulim   (1)

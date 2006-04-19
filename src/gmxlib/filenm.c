@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "filenm.h"
 #include "futil.h"
 #include "wman.h"

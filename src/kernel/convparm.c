@@ -44,7 +44,7 @@
 #include "vec.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "topio.h"
 #include "toputil.h"
 #include "convparm.h"

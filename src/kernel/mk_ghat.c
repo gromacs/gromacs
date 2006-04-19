@@ -51,7 +51,6 @@
 #include "physics.h"
 #include "statutil.h"
 #include "tpxio.h"
-#include "fftgrid.h"
 #include "copyrite.h"
 
 const real tol = 1e-8;

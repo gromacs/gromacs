@@ -42,7 +42,7 @@
 #include <string.h>
 #include <ctype.h>
 #include "typedefs.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "statutil.h"
 #include "readinp.h"
 #include "smalloc.h"

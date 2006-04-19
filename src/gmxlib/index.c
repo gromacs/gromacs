@@ -740,7 +740,7 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
 	       int isize[], atom_id *index[],char *grpnames[])
 {
   char    ***gnames;
-  t_block *grps;
+  t_block *grps = NULL; 
   int     *grpnr;
   
   snew(grpnr,ngrps);

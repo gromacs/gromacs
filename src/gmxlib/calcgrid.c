@@ -41,7 +41,7 @@
 
 #include "typedefs.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "calcgrid.h"
 
 #define facNR 6

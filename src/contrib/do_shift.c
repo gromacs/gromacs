@@ -49,7 +49,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "confio.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gstat.h"
 #include "index.h"

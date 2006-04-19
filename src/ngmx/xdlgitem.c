@@ -42,7 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "macros.h"

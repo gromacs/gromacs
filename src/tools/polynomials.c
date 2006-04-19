@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include <math.h>
 #include "typedefs.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "gstat.h"
 
 real LegendreP(real x,unsigned long m)

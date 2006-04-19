@@ -52,7 +52,7 @@
 #include "topexcl.h"
 #include "symtab.h"
 #include "macros.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "pgutil.h"
 #include "resall.h"
 

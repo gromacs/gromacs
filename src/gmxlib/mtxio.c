@@ -46,7 +46,7 @@
 #include "smalloc.h"
 #include "gmxfio.h"
 #include "copyrite.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "mtxio.h"
 
 

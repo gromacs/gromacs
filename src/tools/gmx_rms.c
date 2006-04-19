@@ -48,7 +48,7 @@
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "princ.h"
 #include "rmpbc.h"
@@ -810,9 +810,9 @@ int gmx_rms (int argc,char *argv[])
   for(i=0; (i<teller); i++) {
     if ( bSplit && i>0 && abs(time[bPrev ? freq*i : i]/time_factor())<1e-5 ) 
       fprintf(fp,"&\n");
-    fprintf(fp,"%8.4f",time[bPrev ? freq*i : i]);
+    fprintf(fp,"%12.7f",time[bPrev ? freq*i : i]);
     for(j=0; (j<nrms); j++) {
-      fprintf(fp," %8.4f",rls[j][i]);
+      fprintf(fp," %12.7f",rls[j][i]);
       if (bAv)
 	rlstot+=rls[j][i];
     }
@@ -834,9 +834,9 @@ int gmx_rms (int argc,char *argv[])
     for(i=0; (i<teller); i++) {
       if ( bSplit && i>0 && abs(time[i])<1e-5 ) 
 	fprintf(fp,"&\n");
-      fprintf(fp,"%8.4f",time[i]);
+      fprintf(fp,"%12.7f",time[i]);
       for(j=0; (j<nrms); j++)
-	fprintf(fp," %8.4f",rlsm[j][i]);
+	fprintf(fp," %12.7f",rlsm[j][i]);
       fprintf(fp,"\n");
     }
   }

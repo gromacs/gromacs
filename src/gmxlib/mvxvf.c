@@ -45,7 +45,7 @@
 #include "mvdata.h"
 #include "network.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "symtab.h"
 #include "main.h"
 #include "typedefs.h"

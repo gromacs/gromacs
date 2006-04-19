@@ -45,7 +45,7 @@
 #include "xutil.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 /* Units are meter and second	*/
 

@@ -72,7 +72,7 @@
 #include "futil.h"
 #include "coulomb.h"
 #include "fftgrid.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "pme.h"
 #include "network.h"
 #include "physics.h"

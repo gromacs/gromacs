@@ -50,7 +50,7 @@
 #include "futil.h"
 #include "wman.h"
 #include "tpxio.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "network.h"
 #include "vec.h"
 

@@ -118,7 +118,7 @@
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "macros.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000
@@ -629,9 +629,9 @@ static inline void msmul(matrix m1,real r1,matrix dest)
 
 static inline void m_inv_lowerleft0(matrix src,matrix dest)
 {
-    double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
-    if(gmx_within_tol(tmp,0.0,100*GMX_REAL_MIN));
-       gmx_fatal(FARGS,"Can not invert matrix, determinant is zero");
+  double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
+  if (gmx_within_tol(tmp,0.0,100*GMX_REAL_MIN))
+    gmx_fatal(FARGS,"Can not invert matrix, determinant is zero");
 
   dest[XX][XX] = 1/src[XX][XX];
   dest[YY][YY] = 1/src[YY][YY];

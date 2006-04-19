@@ -400,8 +400,8 @@ int gmx_density(int argc,char *argv[])
   static bool bCount=FALSE;      /* just count                 */
   static int  axis = 2;          /* normal to memb. default z  */
   static char *axtitle="Z"; 
-  static int  nslices = 10;      /* nr of slices defined       */
-  static int  ngrps = 0;         /* nr. of groups              */
+  static int  nslices = 50;      /* nr of slices defined       */
+  static int  ngrps   = 1;       /* nr. of groups              */
   static bool bSymmetrize=FALSE;
   static bool bCenter=FALSE;
   t_pargs pa[] = {

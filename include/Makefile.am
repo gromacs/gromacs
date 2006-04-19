@@ -1,4 +1,4 @@
-## Process this file with automake to produce Makefile.in
+'## Process this file with automake to produce Makefile.in
 #
 # Don't edit - this file is generated automatically from Makefile.am
 #
@@ -25,7 +25,7 @@ do_fit.h \
 ebin.h \
 edsam.h \
 enxio.h \
-fatal.h \
+gmx_fatal.h \
 ffscanf.h \
 fftgrid.h \
 filenm.h \
@@ -43,6 +43,7 @@ gmx_random.h \
 gmx_parallel_3dfft.h \
 gmx_system_xdr.h \
 gmx_thread.h \
+gmx_parallel_3dfft.h \
 grompp.h \
 gstat.h \
 index.h \

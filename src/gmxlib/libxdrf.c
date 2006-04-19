@@ -139,14 +139,6 @@ F77_FUNC(xdrfint,XDRFINT)(int *xdrid, int *ip, int *ret)
 	cnt += sizeof(int);
 }
 
-void
-F77_FUNC(xdrflong,XDRFLONG)(int *xdrid, long *lp, int *ret)
-{
-	*ret = xdr_long(xdridptr[*xdrid], lp);
-	cnt += sizeof(long);
-}
-
-void
 F77_FUNC(xdrfshort,XDRFSHORT)(int *xdrid, short *sp, int *ret)
 {
 	*ret = xdr_short(xdridptr[*xdrid], sp);
@@ -160,12 +152,6 @@ F77_FUNC(xdrfuchar,XDRFUCHAR)(int *xdrid, unsigned char *ucp, int *ret)
 	cnt += sizeof(char);
 }
 
-void
-F77_FUNC(xdrfulong,XDRFULONG)(int *xdrid, unsigned long *ulp, int *ret)
-{
-	*ret = xdr_u_long(xdridptr[*xdrid], (u_long *)ulp);
-	cnt += sizeof(unsigned long);
-}
 
 void
 F77_FUNC(xdrfushort,XDRFUSHORT)(int *xdrid, unsigned short *usp, int *ret)

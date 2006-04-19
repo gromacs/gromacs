@@ -39,7 +39,7 @@
 
 #include "smalloc.h"
 #include "string2.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "symtab.h"
 
 void replace_atom(t_topology *top,int inr,char *anm,char *resnm,

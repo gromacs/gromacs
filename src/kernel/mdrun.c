@@ -42,6 +42,7 @@
 #include "copyrite.h"
 #include "main.h"
 #include "statutil.h"
+#include "smalloc.h"
 #include "futil.h"
 #include "smalloc.h"
 #include "edsam.h"

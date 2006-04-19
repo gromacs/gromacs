@@ -50,7 +50,7 @@
 #include "vec.h"
 #include "index.h"
 #include "pbc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "confio.h"
 #include "pdbio.h"

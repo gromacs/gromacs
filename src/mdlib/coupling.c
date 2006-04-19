@@ -44,7 +44,7 @@
 #include "macros.h"
 #include "physics.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "txtdump.h"
 #include "nrnb.h"
 

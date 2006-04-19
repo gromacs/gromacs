@@ -40,7 +40,7 @@
 #include "confio.h"
 #include "copyrite.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "string2.h"
 #include "vec.h"

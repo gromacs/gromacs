@@ -48,7 +48,7 @@
 #include "ns.h"
 #include "macros.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "mshift.h"
 #include "main.h"
 #include "disre.h"
@@ -91,7 +91,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     fprintf(fplog,"Step %d: bonded V and dVdl for this node\n",step);
 
 #ifdef DEBUG
-  if (g)
+  if (g && debug)
     p_graph(debug,"Bondage is fun",g);
 #endif
   
@@ -1168,8 +1168,9 @@ real idihs(int nbonds,
 	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112		*/
     /* 217 TOTAL	*/
 #ifdef DEBUG
-    fprintf("idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
-	    ai,aj,ak,al,cos_phi,phi);
+    if (debug)
+      fprintf(debug,"idih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
+	      ai,aj,ak,al,cos_phi,phi);
 #endif
   }
   

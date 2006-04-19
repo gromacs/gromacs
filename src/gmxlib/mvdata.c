@@ -45,7 +45,7 @@
 #include "mvdata.h"
 #include "network.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "symtab.h"
 #include "vec.h"
 #include "tgroup.h"
@@ -175,6 +175,7 @@ static void ld_grpopts(const t_commrec *cr,int src,t_grpopts *g)
   snew(g->acc,g->ngacc);
   snew(g->nFreeze,g->ngfrz);
   snew(g->egp_flags,g->ngener*g->ngener);
+
   nblockrx(cr,src,g->ngtc,g->nrdf);
   nblockrx(cr,src,g->ngtc,g->tau_t);
   nblockrx(cr,src,g->ngtc,g->ref_t);
@@ -196,6 +197,7 @@ static void ld_grpopts(const t_commrec *cr,int src,t_grpopts *g)
       nblockrx(cr,src,n,g->anneal_temp[i]);
     }
   }
+
   /* QMMM stuff, see inputrec */
   blockrx(cr,src,g->ngQM);
   snew(g->QMmethod,g->ngQM);

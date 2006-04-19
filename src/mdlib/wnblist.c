@@ -45,7 +45,7 @@
 #include "smalloc.h"
 #include "wnblist.h"
 #include "nrnb.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "macros.h"
 #include "futil.h"
 #include "names.h"

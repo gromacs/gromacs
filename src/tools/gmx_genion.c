@@ -46,7 +46,7 @@
 #include "statutil.h"
 #include "pbc.h"
 #include "force.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "maths.h"
 #include "macros.h"

@@ -46,7 +46,7 @@
 #include "force.h"
 #include "main.h"
 #include "filenm.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "mdrun.h"
 #include "ns.h"
 #include "txtdump.h"

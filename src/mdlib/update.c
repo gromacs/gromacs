@@ -857,6 +857,7 @@ void update(int          natoms,  /* number of atoms in simulation */
     
     /* We must always unshift here, also if we did not shake
      * x was shifted in do_force */
+
     if ((inputrec->ePBC == epbcXYZ) && (graph->nnodes > 0)) {
       unshift_x(graph,state->box,state->x,xprime);
       if (TRICLINIC(state->box))

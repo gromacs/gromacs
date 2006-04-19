@@ -48,7 +48,7 @@
 #include "statutil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "names.h"
 #include "tpxio.h"
 #include "enxio.h"
@@ -270,6 +270,7 @@ static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2,real ftol)
   int i;
   
   fprintf(fp,"comparing atoms\n");
+
   if (a2) {
     cmp_int(fp,"atoms->nr",-1,a1->nr,a2->nr);
     for(i=0; (i<a1->nr); i++)

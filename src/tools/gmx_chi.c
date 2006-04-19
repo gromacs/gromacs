@@ -42,7 +42,7 @@
 #include "confio.h"
 #include "pdbio.h"
 #include "copyrite.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
 #include "macros.h"
@@ -1082,7 +1082,7 @@ int gmx_chi(int argc,char *argv[])
   bool       bChi,bCorr,bSSHisto;
   bool       bDo_rt, bDo_oh, bDo_ot, bDo_jc ; 
   real       dt=0, traj_t_ns;
-
+  
   atom_id    isize,*index;
   int        ndih,nactdih,nf;
   real       **dih,*trans_frac,*aver_angle,*time;

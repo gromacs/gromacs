@@ -1,6 +1,7 @@
 /*
  * $Id$
  * 
+ * 
  *                This source code is part of
  * 
  *                 G   R   O   M   A   C   S
@@ -46,7 +47,7 @@
 #include "tpxio.h"
 #include "physics.h"
 #include "macros.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "index.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -212,7 +213,7 @@ static bool is_hb(unsigned int hbexist[],int frame)
 
 static void set_hb(t_hbdata *hb,int id,int ih, int ia,int frame,int ihb)
 {
-  unsigned int *ghptr;
+  unsigned int *ghptr=NULL;
   
   if (ihb == hbHB)
     ghptr = hb->hbmap[id][ia]->h[ih];
@@ -580,8 +581,9 @@ static t_gridcell ***init_grid(bool bBox,rvec box[],real rcut,ivec ngrid)
   if ( !bBox || (ngrid[XX]<3) || (ngrid[YY]<3) || (ngrid[ZZ]<3) )
     for(i=0; i<DIM; i++)
       ngrid[i]=1;
-  printf("\nWill do grid-seach on %dx%dx%d grid, rcut=%g\n",
-	 ngrid[XX],ngrid[YY],ngrid[ZZ],rcut);
+  else 
+    printf("\nWill do grid-seach on %dx%dx%d grid, rcut=%g\n",
+	   ngrid[XX],ngrid[YY],ngrid[ZZ],rcut);
   snew(grid,ngrid[ZZ]);
   for (z=0; z<ngrid[ZZ]; z++) {
     snew((grid)[z],ngrid[YY]);
@@ -1453,7 +1455,7 @@ static void dump_hbmap(t_hbdata *hb,
     fprintf(fp,"[ %s ]",grpnames[grp]);
     for (i=0; i<isize[grp]; i++) {
       fprintf(fp,(i%15)?" ":"\n");
-      fprintf(fp,"%4u",index[grp][i]+1);
+      fprintf(fp," %4u",index[grp][i]+1);
     }
     fprintf(fp,"\n");
     fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp]);
@@ -1535,10 +1537,10 @@ int gmx_hbond(int argc,char *argv[])
     "bonds between atoms within the shell distance from the one atom are",
     "considered.[PAR]"
     
-    "It is also possible to analyse specific hydrogen bonds with",
+    /*    "It is also possible to analyse specific hydrogen bonds with",
     "[TT]-sel[tt]. This index file must contain a group of atom triplets",
     "Donor Hydrogen Acceptor, in the following way:[PAR]",
-    
+    */
     "[TT]",
     "[ selected ][BR]",
     "     20    21    24[BR]",
@@ -1617,12 +1619,14 @@ int gmx_hbond(int argc,char *argv[])
     { "-merge", FALSE, etBOOL, {&bMerge},
       "H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF." }
   };
-
+  static char *bugs[] = {
+    "The option [TT]-sel[tt] that used to work on selected hbonds is out of order, and therefore not available for the time being."
+  };
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,     ffREAD  },
     { efTPX, NULL,   NULL,     ffREAD  },
     { efNDX, NULL,   NULL,     ffOPTRD },
-    { efNDX, "-sel", "select", ffOPTRD },
+    /*    { efNDX, "-sel", "select", ffOPTRD },*/
     { efXVG, "-num", "hbnum",  ffWRITE },
     { efXVG, "-ac",  "hbac",   ffOPTWR },
     { efXVG, "-dist","hbdist", ffOPTWR },
@@ -1654,7 +1658,7 @@ int gmx_hbond(int argc,char *argv[])
   matrix  box;
   real    t,ccut,dist,ang;
   double  max_nhb,aver_nhb,aver_dist;
-  int     h,i,j,k,l,start,end,id,ja,ogrp;
+  int     h,i,j,k,l,start,end,id,ja,ogrp,nsel;
   int     xi,yi,zi,ai;
   int     xj,yj,zj,aj,xjj,yjj,zjj;
   int     xk,yk,zk,ak,xkk,ykk,zkk;
@@ -1674,7 +1678,7 @@ int gmx_hbond(int argc,char *argv[])
   ppa    = add_acf_pargs(&npargs,pa);
   
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,NFILE,fnm,npargs,
-		    ppa,asize(desc),desc,0,NULL);
+		    ppa,asize(desc),desc,asize(bugs),bugs);
 
   /* process input */
   bSelected = opt2bSet("-sel",NFILE,fnm);
@@ -1713,24 +1717,26 @@ int gmx_hbond(int argc,char *argv[])
     /* analyze selected hydrogen bonds */
     printf("Select group with selected atoms:\n");
     get_index(&(top.atoms),opt2fn("-sel",NFILE,fnm),
-	      1,isize,index,grpnames);
-    if (isize[0] % 3)
+	      1,&nsel,index,grpnames);
+    if (nsel % 3)
       gmx_fatal(FARGS,"Number of atoms in group '%s' not a multiple of 3\n"
 		  "and therefore cannot contain triplets of "
 		  "Donor-Hydrogen-Acceptor",grpnames[0]);
     bTwo=FALSE;
     
-    for(i=0; (i<isize[0]); i+=3) {
+    for(i=0; (i<nsel); i+=3) {
       int dd = index[0][i];
       int hh = index[0][i+1];
       int aa = index[0][i+2];
       add_dh (&hb->d,dd,hh,i);
       add_acc(&hb->a,aa,i);
       /* Should this be here ? */
-      /* add_hbond(hb,dd,aa,hh,gr0,gr0,-1,FALSE,bMerge);*/
+      snew(hb->d.dptr,top.atoms.nr);
+      snew(hb->a.aptr,top.atoms.nr);
+      add_hbond(hb,dd,aa,hh,gr0,gr0,0,FALSE,bMerge,0);
     }
     printf("Analyzing %d selected hydrogen bonds from '%s'\n",
-	   hb->nrhb,grpnames[0]);
+	   isize[0],grpnames[0]);
   } 
   else {
     /* analyze all hydrogen bonds: get group(s) */
@@ -1865,42 +1871,60 @@ int gmx_hbond(int argc,char *argv[])
 
     if (hb->bDAnr)
       count_da_grid(ngrid, grid, hb->danr[nframes]);
-    /* loop over all gridcells (xi,yi,zi)      */
-    /* Removed confusing macro, DvdS 27/12/98  */
-    for(xi=0; (xi<ngrid[XX]); xi++)
-      for(yi=0; (yi<ngrid[YY]); yi++)
-	for(zi=0; (zi<ngrid[ZZ]); zi++) {
+      
+    if (bSelected) {
+      int ii;
+      
+      for(ii=0; (ii<nsel); ii++) {
+	int dd = index[0][i];
+	int hh = index[0][i+1];
+	int aa = index[0][i+2];
+	ihb = is_hbond(hb,ii,ii,dd,aa,rcut,ccut,x,bBox,box,
+		       hbox,&dist,&ang,bDA,&h,bContact);
 	
-	  /* loop over donor groups gr0 (always) and gr1 (if necessary) */
-	  for (grp=gr0; (grp <= (bTwo?gr1:gr0)); grp++) {
-	    icell=&(grid[zi][yi][xi].d[grp]);
+	if (ihb) {
+	  /* add to index if not already there */
+	  /* Add a hbond */
+	  add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb);
+	}
+      }
+    }
+    else {
+      /* loop over all gridcells (xi,yi,zi)      */
+      /* Removed confusing macro, DvdS 27/12/98  */
+      for(xi=0; (xi<ngrid[XX]); xi++)
+	for(yi=0; (yi<ngrid[YY]); yi++)
+	  for(zi=0; (zi<ngrid[ZZ]); zi++) {
 	    
-	    if (bTwo)
-	      ogrp = 1-grp;
-	    else
-	      ogrp = grp;
-	    
-	    /* loop over all hydrogen atoms from group (grp) 
-	     * in this gridcell (icell) 
-	     */
-	    for (ai=0; (ai<icell->nr); ai++) {
-	      i  = icell->atoms[ai];
+	    /* loop over donor groups gr0 (always) and gr1 (if necessary) */
+	    for (grp=gr0; (grp <= (bTwo?gr1:gr0)); grp++) {
+	      icell=&(grid[zi][yi][xi].d[grp]);
 	      
-	      /* loop over all adjacent gridcells (xj,yj,zj) */
-	      /* This is a macro!!! */
-	      LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid,bTric) {
-		jcell=&(grid[zj][yj][xj].a[ogrp]);
-		/* loop over acceptor atoms from other group (ogrp) 
-		 * in this adjacent gridcell (jcell) 
-		 */
-		for (aj=0; (aj<jcell->nr); aj++) {
-		  j = jcell->atoms[aj];
+	      if (bTwo)
+		ogrp = 1-grp;
+	      else
+		ogrp = grp;
+	      
+	      /* loop over all hydrogen atoms from group (grp) 
+	       * in this gridcell (icell) 
+	       */
+	      for (ai=0; (ai<icell->nr); ai++) {
+		i  = icell->atoms[ai];
+		
+		/* loop over all adjacent gridcells (xj,yj,zj) */
+		/* This is a macro!!! */
+		LOOPGRIDINNER(xj,yj,zj,xjj,yjj,zjj,xi,yi,zi,ngrid,bTric) {
+		  jcell=&(grid[zj][yj][xj].a[ogrp]);
+		  /* loop over acceptor atoms from other group (ogrp) 
+		   * in this adjacent gridcell (jcell) 
+		   */
+		  for (aj=0; (aj<jcell->nr); aj++) {
+		    j = jcell->atoms[aj];
 		  
-		  if ((bSelected && (j == i)) || (!bSelected)) {
 		    /* check if this once was a h-bond */
 		    ihb = is_hbond(hb,grp,ogrp,i,j,rcut,ccut,x,bBox,box,
 				   hbox,&dist,&ang,bDA,&h,bContact);
-				   
+		    
 		    if (ihb) {
 		      /* add to index if not already there */
 		      /* Add a hbond */
@@ -1911,13 +1935,13 @@ int gmx_hbond(int argc,char *argv[])
 			ang*=RAD2DEG;
 			adist[(int)( ang/abin)]++;
 			rdist[(int)(dist/rbin)]++;
-		      
+			
 			if (!bTwo) {
 			  int id,ia;
 			  if ((id = donor_index(&hb->d,grp,i)) == NOTSET)
 			    gmx_fatal(FARGS,"Invalid donor %d",i);
 			  if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
-			  gmx_fatal(FARGS,"Invalid acceptor %d",j);
+			    gmx_fatal(FARGS,"Invalid acceptor %d",j);
 			  resdist=abs(top.atoms.atom[id].resnr-
 				      top.atoms.atom[ia].resnr);
 			  if (resdist >= max_hx) 
@@ -1925,98 +1949,98 @@ int gmx_hbond(int argc,char *argv[])
 			  hb->nhx[nframes][resdist]++;
 			}
 		      }
-		    }
-		    if (bInsert && bSelected) {
-		      /* this has been a h-bond, or we are analyzing 
-			 selected bonds: check for inserted */
-		      bool ins_d, ins_a;
-		      real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
-		      int  ins_d_k=0,ins_a_k=0;
-		      
-		      ins_d=ins_a=FALSE;
-		      ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
-		      
-		      /* loop over gridcells adjacent to i (xk,yk,zk) */
-		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid,bTric){
-			kcell=&(grid[zk][yk][xk].a[grI]);
-			/* loop over acceptor atoms from ins group 
-			   in this adjacent gridcell (kcell) */
-			for (ak=0; (ak<kcell->nr); ak++) {
-			  k=kcell->atoms[ak];
-			  ihb = is_hbond(hb,grp,grI,i,k,rcut,ccut,x,
-					 bBox,box,hbox,&dist,&ang,bDA,&h,
-					 bContact);
-			  if (ihb == hbHB) {
-			    if (dist < ins_d_dist) {
-			      ins_d=TRUE;
-			      ins_d_dist=dist;
-			      ins_d_ang =ang ;
-			      ins_d_k   =k   ;
-			    }
-			  }
-			}
-		      }
-		      ENDLOOPGRIDINNER;
-			/* loop over gridcells adjacent to j (xk,yk,zk) */
-		      LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid,bTric){
-			kcell=&grid[zk][yk][xk].d[grI];
-			/* loop over hydrogen atoms from ins group 
-			   in this adjacent gridcell (kcell) */
-			for (ak=0; ak<kcell->nr; ak++) {
-			  k   = kcell->atoms[ak];
-			  ihb = is_hbond(hb,grI,ogrp,k,j,rcut,ccut,x,
-					 bBox,box,hbox,&dist,&ang,bDA,&h,
-					 bContact);
-			  if (ihb == hbHB) {
-			    if (dist<ins_a_dist) {
-			      ins_a=TRUE;
-			      ins_a_dist=dist;
-			      ins_a_ang =ang ;
-			      ins_a_k   =k   ;
-			    }
-			  }
-			}
-		      }
-		      ENDLOOPGRIDINNER;
+		      if (bInsert && bSelected) {
+			/* this has been a h-bond, or we are analyzing 
+			   selected bonds: check for inserted */
+			bool ins_d, ins_a;
+			real ins_d_dist, ins_d_ang, ins_a_dist, ins_a_ang;
+			int  ins_d_k=0,ins_a_k=0;
 			
-		      {
-			ihb = is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,ccut,x,
-				       bBox,box,hbox,&dist,&ang,bDA,&h,
-				       bContact);
-			if (ins_d && ins_a && ihb) {
-			  /* add to hbond index if not already there */
-			  add_hbond(hb,ins_d_k,ins_a_k,h,grI,ogrp,
-				    nframes,TRUE,bMerge,ihb);
-			  
-			  /* print insertion info to file */
-			  /*fprintf(fpins,
-			    "%4g: %4u:%3.3s%4d%3.3s -> "
-			    "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
-			    "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
-			    a[grIA][ins_d_k]+1,
-			    *top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
-			    top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
-			    *top.atoms.atomname[a[grIA][ins_d_k]],
-			    a[grp+grD][i]+1,
-			    *top.atoms.resname[top.atoms.atom[a[grp+grD][i]].resnr],
-			    top.atoms.atom[a[grp+grD][i]].resnr+1,
-			    *top.atoms.atomname[a[grp+grD][i]],
-			    ins_d_dist,ins_d_ang*RAD2DEG,
-			    a[ogrp+grA][j]+1,
-			    *top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
-			    top.atoms.atom[a[ogrp+grA][j]].resnr+1,
-			    *top.atoms.atomname[a[ogrp+grA][j]],
-			    ins_a_dist,ins_a_ang*RAD2DEG);*/
+			ins_d=ins_a=FALSE;
+			ins_d_dist=ins_d_ang=ins_a_dist=ins_a_ang=1e6;
+			
+			/* loop over gridcells adjacent to i (xk,yk,zk) */
+			LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xi,yi,zi,ngrid,bTric){
+			  kcell=&(grid[zk][yk][xk].a[grI]);
+			  /* loop over acceptor atoms from ins group 
+			     in this adjacent gridcell (kcell) */
+			  for (ak=0; (ak<kcell->nr); ak++) {
+			    k=kcell->atoms[ak];
+			    ihb = is_hbond(hb,grp,grI,i,k,rcut,ccut,x,
+					   bBox,box,hbox,&dist,&ang,bDA,&h,
+					   bContact);
+			    if (ihb == hbHB) {
+			      if (dist < ins_d_dist) {
+				ins_d=TRUE;
+				ins_d_dist=dist;
+				ins_d_ang =ang ;
+				ins_d_k   =k   ;
+			      }
+			    }
+			  }
+			}
+			ENDLOOPGRIDINNER;
+			/* loop over gridcells adjacent to j (xk,yk,zk) */
+			LOOPGRIDINNER(xk,yk,zk,xkk,ykk,zkk,xj,yj,zj,ngrid,bTric){
+			  kcell=&grid[zk][yk][xk].d[grI];
+			  /* loop over hydrogen atoms from ins group 
+			     in this adjacent gridcell (kcell) */
+			  for (ak=0; ak<kcell->nr; ak++) {
+			    k   = kcell->atoms[ak];
+			    ihb = is_hbond(hb,grI,ogrp,k,j,rcut,ccut,x,
+					   bBox,box,hbox,&dist,&ang,bDA,&h,
+					   bContact);
+			    if (ihb == hbHB) {
+			      if (dist<ins_a_dist) {
+				ins_a=TRUE;
+				ins_a_dist=dist;
+				ins_a_ang =ang ;
+				ins_a_k   =k   ;
+			      }
+			    }
+			  }
+			}
+			ENDLOOPGRIDINNER;
+			
+			{
+			  ihb = is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,ccut,x,
+					 bBox,box,hbox,&dist,&ang,bDA,&h,
+					 bContact);
+			  if (ins_d && ins_a && ihb) {
+			    /* add to hbond index if not already there */
+			    add_hbond(hb,ins_d_k,ins_a_k,h,grI,ogrp,
+				      nframes,TRUE,bMerge,ihb);
+			    
+			    /* print insertion info to file */
+			    /*fprintf(fpins,
+			      "%4g: %4u:%3.3s%4d%3.3s -> "
+			      "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f) - "
+			      "%4u:%3.3s%4d%3.3s (%4.2f,%2.0f)\n",t,
+			      a[grIA][ins_d_k]+1,
+			      *top.atoms.resname[top.atoms.atom[a[grIA][ins_d_k]].resnr],
+			      top.atoms.atom[a[grIA][ins_d_k]].resnr+1,
+			      *top.atoms.atomname[a[grIA][ins_d_k]],
+			      a[grp+grD][i]+1,
+			      *top.atoms.resname[top.atoms.atom[a[grp+grD][i]].resnr],
+			      top.atoms.atom[a[grp+grD][i]].resnr+1,
+			      *top.atoms.atomname[a[grp+grD][i]],
+			      ins_d_dist,ins_d_ang*RAD2DEG,
+			      a[ogrp+grA][j]+1,
+			      *top.atoms.resname[top.atoms.atom[a[ogrp+grA][j]].resnr],
+			      top.atoms.atom[a[ogrp+grA][j]].resnr+1,
+			      *top.atoms.atomname[a[ogrp+grA][j]],
+			      ins_a_dist,ins_a_ang*RAD2DEG);*/
+			  }
 			}
 		      }
 		    }
-		  }
-		} /* for aj  */
-	      }
-	      ENDLOOPGRIDINNER;
-	    } /* for ai  */
-	  } /* for grp */
-	} /* for xi,yi,zi */
+		  } /* for aj  */
+		}
+		ENDLOOPGRIDINNER;
+	      } /* for ai  */
+	    } /* for grp */
+	  } /* for xi,yi,zi */
+    }
     analyse_donor_props(opt2fn_null("-don",NFILE,fnm),hb,nframes,t);
     if (fpnhb)
       do_nhb_dist(fpnhb,hb,t);

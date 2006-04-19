@@ -40,7 +40,7 @@
 #include <ctype.h>
 #include <stdio.h>
 
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "macros.h"
 #include "smalloc.h"
 #include "futil.h"

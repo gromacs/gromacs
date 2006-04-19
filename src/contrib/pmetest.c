@@ -47,7 +47,7 @@
 #include "tpxio.h"
 #include "statutil.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "mdatoms.h"
 #include "coulomb.h"
@@ -57,7 +57,11 @@
 #include "force.h"
 #include "xvgr.h"
 #include "pbc.h"
+
+#ifdef GMX_MPI
 #include "mpi.h"
+#endif
+
 #include "block_tx.h"
 
 rvec *xptr=NULL;
@@ -340,12 +344,15 @@ int main(int argc,char *argv[])
       top.blocks[ebCGS].multinr[i] = ncg;
   }
   if (PAR(cr)) {
-    /* Distribute the data over processors */
-    MPI_Bcast(&natoms,1,MPI_INT,root,MPI_COMM_WORLD);
     /* Set some variables to zero to avoid core dumps */
     ir->opts.ngtc = ir->opts.ngacc = ir->opts.ngfrz = ir->opts.ngener = 0;
+#ifdef GMX_MPI
+    /* Distribute the data over processors */
+    MPI_Bcast(&natoms,1,MPI_INT,root,MPI_COMM_WORLD);
     MPI_Bcast(ir,sizeof(*ir),MPI_BYTE,root,MPI_COMM_WORLD);
     MPI_Bcast(&qtot,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+#endif
+
     /* Call some dedicated communication routines, master sends n-1 times */
     if (MASTER(cr)) {
       for(i=1; (i<cr->nnodes); i++) {
@@ -361,7 +368,9 @@ int main(int argc,char *argv[])
       snew(charge,natoms);
       snew(x,natoms);
     }
+#ifdef GMX_MPI
     MPI_Bcast(charge,natoms,GMX_MPI_REAL,root,MPI_COMM_WORLD);
+#endif
   }
   ewaldcoeff = calc_ewaldcoeff(ir->rcoulomb,ir->ewald_rtol);
   
@@ -392,7 +401,7 @@ int main(int argc,char *argv[])
   mdatoms = atoms2md(stdlog,&top.atoms,ir->opts.nFreeze,ir->eI,
 		     ir->delta_t,0,ir->opts.tau_t,FALSE,FALSE);
   snew(fr,1);
-  init_forcerec(stdlog,fr,ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,FALSE);
+  init_forcerec(stdlog,fr,ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,NULL,FALSE);
   
   /* First do PME based on coordinates in tpr file, send them to
    * other processors if needed.
@@ -400,11 +409,13 @@ int main(int argc,char *argv[])
   if (MASTER(cr))
     fprintf(stdlog,"-----\n"
 	    "Results based on tpr file %s\n",ftp2fn(efTPX,NFILE,fnm));
+#ifdef GMX_MPI
   if (PAR(cr)) {
     MPI_Bcast(x[0],natoms*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
     MPI_Bcast(box[0],DIM*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
     MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
   }
+#endif
   do_my_pme(stdlog,0,bVerbose,ir,x,xbuf,f,charge,qbuf,qqbuf,box,bSort,
 	    cr,nsb,&nrnb,&(top.atoms.excl),qtot,fr,index,NULL,
 	    bGroups ? ir->opts.ngener : 1,mdatoms->cENER);
@@ -426,11 +437,13 @@ int main(int argc,char *argv[])
       fp = NULL;
     do {
       /* Send coordinates, box and time to the other nodes */
+#ifdef GMX_MPI
       if (PAR(cr)) {
 	MPI_Bcast(x[0],natoms*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
 	MPI_Bcast(box[0],DIM*DIM,GMX_MPI_REAL,root,MPI_COMM_WORLD);
 	MPI_Bcast(&t,1,GMX_MPI_REAL,root,MPI_COMM_WORLD);
       }
+#endif
       rm_pbc(&top.idef,nsb->natoms,box,x,x);
       /* Call the PME wrapper function */
       do_my_pme(stdlog,t,bVerbose,ir,x,xbuf,f,charge,qbuf,qqbuf,box,bSort,cr,
@@ -438,10 +451,13 @@ int main(int argc,char *argv[])
 		bGroups ? ir->opts.ngener : 1,mdatoms->cENER);
       /* Only the master processor reads more data */
       if (MASTER(cr))
-	bCont = read_next_x(status,&t,natoms,x,box);
+          bCont = read_next_x(status,&t,natoms,x,box);
       /* Check whether we need to continue */
+#ifdef GMX_MPI
       if (PAR(cr))
-	MPI_Bcast(&bCont,1,MPI_INT,root,MPI_COMM_WORLD);
+          MPI_Bcast(&bCont,1,MPI_INT,root,MPI_COMM_WORLD);
+#endif
+      
     } while (bCont);
     
     /* Finish I/O, close files */

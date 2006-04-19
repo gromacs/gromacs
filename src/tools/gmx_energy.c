@@ -41,7 +41,7 @@
 #include <math.h>
 
 #include "typedefs.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "string2.h"
 #include "smalloc.h"
@@ -871,6 +871,8 @@ int gmx_energy(int argc,char *argv[])
   bODT   = opt2bSet("-odt",NFILE,fnm);
   bORIRE = bORA || bORT || bODA || bODR || bODT;
   bOTEN  = opt2bSet("-oten",NFILE,fnm);
+
+  nset = 0;
 
   snew(frame,2);
   fp = open_enx(ftp2fn(efENX,NFILE,fnm),"r");

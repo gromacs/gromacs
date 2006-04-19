@@ -46,7 +46,7 @@
 #include "pbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "statutil.h"
 #include "index.h"

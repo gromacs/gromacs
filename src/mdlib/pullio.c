@@ -47,7 +47,7 @@
 #include "smalloc.h"
 #include "typedefs.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "macros.h"
 #include "rdgroup.h"
 #include "symtab.h"

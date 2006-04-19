@@ -44,7 +44,7 @@
 #include "macros.h"
 #include "string2.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 static int calc_nftype(int FTYPE,t_idef *idef)
 {

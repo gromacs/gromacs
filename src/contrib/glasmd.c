@@ -55,7 +55,7 @@
 #include "macros.h"
 #include "names.h"
 #include "stat.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "txtdump.h"
 #include "futil.h"
 #include "typedefs.h"

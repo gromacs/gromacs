@@ -64,7 +64,7 @@
 #include "splitter.h"
 #include "sortwater.h"
 #include "convparm.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "index.h"
 #include "gmxfio.h"
 #include "trnio.h"
@@ -138,27 +138,31 @@ static void check_eg_vs_cg(t_atoms *atoms,t_block *cgblock)
 
 static void check_pairs(int nrmols,t_molinfo mi[],int ntype,t_param *nb)
 {
-  int      i,j,jj,k,taiA,tajA,taiB,tajB,indA,indB,bLJ;
+  int      i,j,jj,k,ai,aj,taiA,tajA,taiB,tajB,bLJ;
   t_params *p;
   
   for(i=0; (i<nrmols); i++) {
     p = &(mi[i].plist[F_LJ14]);
     for(j=jj=0; (j<p->nr); j++) {
       /* Extract atom types and hence the index in the nbf matrix */
-      taiA = mi[i].atoms.atom[p->param[j].a[0]].type;
-      tajA = mi[i].atoms.atom[p->param[j].a[1]].type;
-      indA = ntype*taiA+tajA;
-      taiB = mi[i].atoms.atom[p->param[j].a[0]].typeB;
-      tajB = mi[i].atoms.atom[p->param[j].a[1]].typeB;
-      indB = ntype*taiB+tajB;
+      ai = p->param[j].a[0];
+      aj = p->param[j].a[1];
+      taiA = mi[i].atoms.atom[ai].type;
+      tajA = mi[i].atoms.atom[aj].type;
+      taiB = mi[i].atoms.atom[ai].typeB;
+      tajB = mi[i].atoms.atom[aj].typeB;
       
       bLJ  = FALSE;
       for(k=0; (k<MAXFORCEPARAM); k++)
-	bLJ = bLJ || ((nb[indA].c[k] != 0) || 
-		      (nb[indB].c[k] != 0));
+	bLJ = bLJ || (((nb[taiA].c[k]*nb[tajA].c[k]) != 0) || 
+		      ((nb[taiB].c[k]*nb[tajB].c[k]) != 0));
       if (bLJ) {
 	cp_param(&(p->param[jj]),&(p->param[j]));
 	jj++;
+      }
+      else if (debug) {
+	fprintf(debug,"Removed 1-4 interaction between atoms %d and %d (within mol %s)\n",
+		ai+1,aj+1,*(mi[i].name));
       }
     }
     fprintf(stderr,"Removed %d 1-4 interactions for molecule %s\n",

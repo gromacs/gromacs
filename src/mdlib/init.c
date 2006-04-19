@@ -44,7 +44,7 @@
 #include "vec.h"
 #include "main.h"
 #include "mvdata.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "symtab.h"
 #include "txtdump.h"
 #include "splittop.h"

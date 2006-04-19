@@ -55,9 +55,10 @@ typedef struct {
   bool          *bPerturbed;
   int           *typeA,*typeB;
   unsigned short        *ptype;
-  unsigned short        *cTC,*cENER,*cACC,*cFREEZE,*cVCM;
-  unsigned short        *cU1,*cU2,*cORF;
+  unsigned short        *cTC,*cENER,*cACC,*cFREEZE,*cXTC,*cVCM;
+  unsigned short        *cU1,*cU2,*cORF,*cQMMM;
   /* for QMMM, atomnumber contains atomic number of the atoms */
+  int           *atomnumber;
   bool          *bQM;
 } t_mdatoms;
 

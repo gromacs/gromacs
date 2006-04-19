@@ -44,7 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "main.h"
 
@@ -68,8 +68,8 @@ static void log_action(int bMal,char *what,char *file,int line,
   btot+=bytes;
     
   bytes/=1024;
-  if ((stdlog != NULL) && (bytes != 0))
-    fprintf(stdlog,"%30s:%6d kb (%7d kb) [%s, line %d, nelem %d, size %d]\n",
+  if (debug && (bytes != 0))
+    fprintf(debug,"%s:%d kb (%7d kb) [%s, line %d, nelem %d, size %d]\n",
 	    what ? what : NN,bytes,btot/1024,
 	    file ? file : NN,line,nelem,size);
 #ifdef GMX_THREAD_PTHREAD

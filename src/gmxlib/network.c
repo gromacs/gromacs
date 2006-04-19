@@ -38,7 +38,7 @@
 #endif
 
 #include <string.h>
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "main.h"
 #include "smalloc.h"
 #include "network.h"
@@ -347,7 +347,7 @@ int gmx_idle_rec(void)
 
 void gmx_left_right(int nnodes,int nodeid,int *left,int *right)
 {
-  *left  = (nodeid - 1 + nnodes) % nnodes;
+  *left  = (nnodes+nodeid-1) % nnodes;
   *right = (nodeid + 1) % nnodes;
 }
 

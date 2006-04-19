@@ -1,7 +1,6 @@
 #ifndef _QMMM_h
 #define _QMMM_h
 
-static char *SRCID_QMMM_h = "$Id$";
 
 #ifdef HAVE_IDENT
 #ident	"@(#) QMMM.h 1 28/2/01"

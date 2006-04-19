@@ -42,10 +42,15 @@
 #include "xvgr.h"
 #include "complex.h"
 #include "copyrite.h"
-#include "fftgrid.h"
+#include "gmx_fft.h"
 #include "mdrun.h"
 #include "main.h"
 #include "statutil.h"
+
+#ifdef GMX_MPI
+#include "gmx_parallel_3dfft.h"
+#endif
+
 
 int main(int argc,char *argv[])
 {

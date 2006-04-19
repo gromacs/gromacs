@@ -39,7 +39,7 @@
 
 #include "widget.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 typedef struct {
   Widget   w,other,parent;

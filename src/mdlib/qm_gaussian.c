@@ -63,7 +63,7 @@
 #include "qmmm.h"
 #include <stdio.h>
 #include <string.h>
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "typedefs.h"
 #include <stdlib.h>
 
@@ -452,25 +452,37 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
   }
   fprintf(out,"%s%s%s",
 	  "%subst l9999 ",qm->devel_dir,"/l9999\n");
-  fprintf(out,"%s",
-	  "#P "); 
-  fprintf(out," %s", 
-	  eQMmethod_names[qm->QMmethod]);
-  if(qm->QMmethod>=eQMmethodRHF){
-    fprintf(out,"/%s",
-	    eQMbasis_names[qm->QMbasis]);
-    if(qm->QMmethod==eQMmethodCASSCF){
-      /* in case of cas, how many electrons and orbitals do we need?
-       */
-      fprintf(out,"(%d,%d)",
-	      qm->CASelectrons,qm->CASorbitals);
+  if(step){
+    fprintf(out,"%s",
+	    "#T ");
+  }else{
+    fprintf(out,"%s",
+	    "#P ");
+  }
+  if(qm->QMmethod==eQMmethodB3LYPLAN){
+    fprintf(out," %s", 
+	    "B3LYP/GEN Pseudo=Read");
+  }
+  else{
+    fprintf(out," %s", 
+	    eQMmethod_names[qm->QMmethod]);
+    
+    if(qm->QMmethod>=eQMmethodRHF){
+      fprintf(out,"/%s",
+	      eQMbasis_names[qm->QMbasis]);
+      if(qm->QMmethod==eQMmethodCASSCF){
+	/* in case of cas, how many electrons and orbitals do we need?
+	 */
+	fprintf(out,"(%d,%d)",
+		qm->CASelectrons,qm->CASorbitals);
+      }
     }
   }
   if(QMMMrec->QMMMscheme==eQMMMschemenormal){
     fprintf(out," %s",
 	    "Charge ");
   }
-  if (step || qm->QMmethod>=eQMmethodCASSCF){
+  if (step || qm->QMmethod==eQMmethodCASSCF){
     /* fetch guess from checkpoint file, always for CASSCF */
     fprintf(out,"%s"," guess=read");
   }
@@ -503,6 +515,34 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 	    qm->xQM[i][ZZ]/BORH2NM);
 #endif
   }
+
+  /* Pseudo Potential and ECP are included here if selected (MEthod suffix LAN) */
+  if(qm->QMmethod==eQMmethodB3LYPLAN){
+    fprintf(out,"\n");
+    for(i=0;i<qm->nrQMatoms;i++){
+      if(qm->atomicnumberQM[i]<21){
+	fprintf(out,"%d ",i+1);
+      }
+    }
+    fprintf(out,"\n%s\n****\n",eQMbasis_names[qm->QMbasis]);
+    
+    for(i=0;i<qm->nrQMatoms;i++){
+      if(qm->atomicnumberQM[i]>21){
+	fprintf(out,"%d ",i+1);
+      }
+    }
+    fprintf(out,"\n%s\n****\n\n","lanl2dz");    
+    
+    for(i=0;i<qm->nrQMatoms;i++){
+      if(qm->atomicnumberQM[i]>21){
+	fprintf(out,"%d ",i+1);
+      }
+    }
+    fprintf(out,"\n%s\n","lanl2dz");    
+  }    
+  
+    
+  
   /* MM point charge data */
   if(QMMMrec->QMMMscheme!=eQMMMschemeoniom && mm->nrMMatoms){
     fprintf(stderr,"nr mm atoms in gaussian.c = %d\n",mm->nrMMatoms);
@@ -518,7 +558,6 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
 	  fprintf(out,"%d F\n",i+1); /* counting from 1 */
 	}
       }
-      fprintf(out,"\n");
       /* MM point charges include LJ parameters in case of QM optimization
        */
       for(i=0;i<mm->nrMMatoms;i++){
@@ -559,6 +598,8 @@ void write_gaussian_input(int step ,t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
     }
   }
   fprintf(out,"\n");
+  
+
   fclose(out);
 
 }  /* write_gaussian_input */

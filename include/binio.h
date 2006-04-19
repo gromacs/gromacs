@@ -47,7 +47,7 @@
 
 #include <stdio.h>
 #include "sysstuff.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 /*
  *    Module to binary write and read.

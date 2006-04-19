@@ -47,7 +47,7 @@
 #include "x11.h"
 #include "xdlg.h"
 #include "xmb.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "gromacs.bm"
 #include "stop.bm"
 #include "info.bm"

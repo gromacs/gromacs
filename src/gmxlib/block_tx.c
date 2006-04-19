@@ -41,7 +41,7 @@
 
 #include "network.h"
 #include "block_tx.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "main.h"
         

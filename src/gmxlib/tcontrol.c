@@ -39,7 +39,7 @@
 
 #include "typedefs.h"
 #include "statutil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 /* Globals for trajectory input */
 typedef struct {

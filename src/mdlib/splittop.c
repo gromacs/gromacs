@@ -42,7 +42,7 @@
 #include "typedefs.h"
 #include "splittop.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "main.h"
 #include "vsite.h"
 

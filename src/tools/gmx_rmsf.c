@@ -50,7 +50,7 @@
 #include "pdbio.h"
 #include "tpxio.h"
 #include "pbc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "do_fit.h"
 #include "princ.h"

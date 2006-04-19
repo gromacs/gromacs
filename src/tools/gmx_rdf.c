@@ -594,6 +594,7 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
   }
 }
 
+
 t_complex *** rc_tensor_allocation(int x, int y, int z)
 {
   t_complex ***t;

@@ -18,7 +18,6 @@
 
 
 
-
 .globl nb_kernel030_ia32_3dnow
 .globl _nb_kernel030_ia32_3dnow
 nb_kernel030_ia32_3dnow:        

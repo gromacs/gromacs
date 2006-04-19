@@ -42,7 +42,7 @@
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "string.h"
 #include "futil.h"
 #include "smalloc.h"

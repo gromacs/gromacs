@@ -54,7 +54,7 @@
 #include "macros.h"
 #include "random.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "txtdump.h"
 #include "typedefs.h"
 #include "update.h"

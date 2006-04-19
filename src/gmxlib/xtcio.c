@@ -45,7 +45,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 #define XTC_MAGIC 1995
 

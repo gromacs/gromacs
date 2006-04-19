@@ -49,7 +49,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "main.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 #define LEFT     0          /* channel to the left processor  */
 #define RIGHT    1          /* channel to the right processor */

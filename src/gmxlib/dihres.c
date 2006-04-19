@@ -46,7 +46,7 @@
 #include "vec.h"
 #include "futil.h"
 #include "xvgr.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "bondf.h"
 #include "copyrite.h"
 #include "disre.h"

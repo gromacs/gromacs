@@ -54,7 +54,7 @@
 #include "names.h"
 #include "string2.h"
 #include "symtab.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vsite_parm.h"
 
 #include "toputil.h"

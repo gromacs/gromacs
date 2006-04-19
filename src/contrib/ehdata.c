@@ -44,7 +44,7 @@
 #include "macros.h"
 #include "copyrite.h"
 #include "statutil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "random.h"
 #include "strdb.h"
 #include "futil.h"

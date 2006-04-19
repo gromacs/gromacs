@@ -47,7 +47,7 @@
 #include "statutil.h"
 #include "copyrite.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "pbc.h"
 #include "xvgr.h"

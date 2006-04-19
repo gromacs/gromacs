@@ -43,7 +43,7 @@
 #include "string2.h"
 #include "macros.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "matio.h"
 #include "statutil.h"
 

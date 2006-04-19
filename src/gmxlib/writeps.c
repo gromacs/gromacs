@@ -39,7 +39,7 @@
 
 #include <stdio.h>
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "copyrite.h"
 #include "writeps.h"
 #include "smalloc.h"

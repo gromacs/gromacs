@@ -40,7 +40,7 @@
 #include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "txtdump.h"
 #include "mdrun.h"

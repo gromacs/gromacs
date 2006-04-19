@@ -48,7 +48,7 @@
 #include "futil.h"
 #include "macros.h"
 #include "index.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 int gmx_genpr(int argc,char *argv[])
 {

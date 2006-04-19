@@ -69,7 +69,7 @@
 #include "smalloc.h"
 #include "futil.h"
 #include "genalg.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "random.h"
 #include "txtdump.h"
 #include "vec.h"

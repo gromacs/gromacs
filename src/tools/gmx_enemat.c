@@ -41,7 +41,7 @@
 
 #include "string2.h"
 #include "typedefs.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "smalloc.h"
 #include "enxio.h"

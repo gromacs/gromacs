@@ -1,4 +1,4 @@
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 void my_func(char *msg)
 {

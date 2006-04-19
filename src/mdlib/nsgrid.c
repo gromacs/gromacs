@@ -43,7 +43,7 @@
 #include "macros.h"
 #include "smalloc.h"
 #include "nsgrid.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "network.h"
 

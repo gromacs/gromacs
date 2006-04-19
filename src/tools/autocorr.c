@@ -47,7 +47,7 @@
 #include "futil.h"
 #include "gstat.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "string2.h"
 #include "correl.h"
