@@ -46,7 +46,7 @@
 #include "statutil.h"
 #include "main.h"
 #include "network.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "copyrite.h"
 #include "macros.h"
 #include "string2.h"
