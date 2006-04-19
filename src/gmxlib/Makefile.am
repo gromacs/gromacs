@@ -39,7 +39,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	3dview.c	atomprop.c	block_tx.c	bondfree.c	\
 	calcgrid.c	calch.c		\
 	confio.c	copyrite.c	disre.c		do_fit.c	\
-	enxio.c		ewald_util.c	fatal.c		ffscanf.c	\
+	enxio.c		ewald_util.c	gmx_fatal.c	ffscanf.c	\
 	filenm.c	futil.c		gbutil.c	\
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
 	invblock.c	macros.c	orires.c	sparsematrix.c  \
