@@ -141,7 +141,7 @@ static void
 check_solvent(FILE *                fp,
               const t_topology *    top,
               t_forcerec *          fr,
-			  const t_mdatoms *     md,
+	      const t_atoms *       atoms,
               const t_nsborder *    nsb)
 {
     const t_block *   cgs;
@@ -264,7 +264,7 @@ check_solvent(FILE *                fp,
 
         for(j=j0 ; j<j1 && !qm; j++)
         {
-            qm = md->bQM[mols->a[j]];
+            qm = (atoms->atom[i].grpnr[egcQMMM] < atoms->grps[egcQMMM].nr-1);
         }
         
         /* Cannot use solvent optimization with QM */
@@ -328,13 +328,13 @@ check_solvent(FILE *                fp,
 		
         for(j=j0 ; j<j1 && !perturbed; j++)
         {
-			perturbed =	md->bPerturbed[mols->a[j]];
+	  perturbed = PERTURBED(atoms->atom[i]);
         }
 	
-	    if(perturbed)
-		{
-			continue;
-		}
+	if(perturbed)
+	  {
+	    continue;
+	  }
 
         /* Now it's only a question if the VdW and charge parameters 
          * are OK. Before doing the check we compare and see if they are 
@@ -530,19 +530,19 @@ check_solvent(FILE *                fp,
  
 
 
-void set_chargesum(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
+void set_chargesum(FILE *log,t_forcerec *fr,const t_atoms *atoms)
 {
   double qsum;
   int    i;
 
   qsum = 0;
-  for(i=0; i<mdatoms->nr; i++)
-    qsum += mdatoms->chargeA[i];
+  for(i=0; i<atoms->nr; i++)
+    qsum += atoms->atom[i].q;
   fr->qsum[0] = qsum;
   if (fr->efep != efepNO) {
     qsum = 0;
-    for(i=0; i<mdatoms->nr; i++)
-    qsum += mdatoms->chargeB[i];
+    for(i=0; i<atoms->nr; i++)
+    qsum += atoms->atom[i].qB;
     fr->qsum[1] = qsum;
   } else {
     fr->qsum[1] = fr->qsum[0];
@@ -575,7 +575,7 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 }
 
 void set_avcsixtwelve(FILE *log,t_forcerec *fr,
-		      const t_mdatoms *mdatoms,const t_block *excl)
+		      const t_atoms *atoms,const t_block *excl)
 {
   int    i,j,tpi,tpj,j1,j2,k,n,nexcl,q;
 #if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
@@ -584,22 +584,18 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
   double npair, npair_ij,tmpi,tmpj;
 #endif
   double csix,ctwelve;
-  int    natoms,ntp,*type,*typecount;
+  int    natoms,ntp,*typecount;
   bool   bBHAM;
   real   *nbfp;
   atom_id *AA;
 
-  natoms = mdatoms->nr;
+  natoms = atoms->nr;
   ntp = fr->ntype;
   bBHAM = fr->bBHAM;
   nbfp = fr->nbfp;
   AA = excl->a;
 
   for(q=0; q<(fr->efep==efepNO ? 1 : 2); q++) {
-    if (q == 0)
-      type = mdatoms->typeA;
-    else
-      type = mdatoms->typeB;
     csix = 0;
     ctwelve = 0;
     npair = 0;
@@ -607,8 +603,13 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
     if (!fr->bTPI) {
       /* Count the types so we avoid natoms^2 operations */
       snew(typecount,ntp);
-      for(i=0; i<natoms; i++)
-	typecount[type[i]]++;
+      for(i=0; i<natoms; i++) {
+	if (q == 0)
+	  tpi = atoms->atom[i].type;
+	else
+	  tpi = atoms->atom[i].typeB;
+	typecount[tpi]++;
+      }
       for(tpi=0; tpi<ntp; tpi++) {
 	for(tpj=tpi; tpj<ntp; tpj++) {
 	  tmpi = typecount[tpi];
@@ -634,13 +635,19 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
        * correction.
        */
       for(i=0; (i<natoms); i++) {
-	tpi = type[i];
+	if (q == 0)
+	  tpi = atoms->atom[i].type;
+	else
+	  tpi = atoms->atom[i].typeB;
 	j1  = excl->index[i];
 	j2  = excl->index[i+1];
 	for(j=j1; j<j2; j++) {
 	  k = AA[j];
 	  if (k > i) {
-	    tpj   = type[k];
+	    if (q == 0)
+	      tpj = atoms->atom[k].type;
+	    else
+	      tpj = atoms->atom[k].typeB;
 	    if (bBHAM) {
 	      csix -= BHAMC(nbfp,ntp,tpi,tpj);
 	    } else {
@@ -655,9 +662,15 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
       /* Only correct for the interaction of the test particle
        * with the rest of the system.
        */
-      tpi = type[natoms - 1];
+      if (q == 0)
+	tpi = atoms->atom[natoms-1].type;
+      else
+	tpi = atoms->atom[natoms-1].typeB;
       for(j=0; (j<natoms-1); j++) {
-	tpj   = type[j];
+	if (q == 0)
+	  tpj = atoms->atom[j].type;
+	else
+	  tpj = atoms->atom[j].typeB;
 	if (bBHAM) {
 	  csix += BHAMC(nbfp,ntp,tpi,tpj);
 	} else {
@@ -680,27 +693,25 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 }
 
 
-static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_mdatoms *mdatoms)
+static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_atoms *atoms)
 {
-  int  i,j,tpi,tpj,ntypes,natoms,*type;
+  int  i,j,tpi,tpj,ntypes;
   real b,bmin;
   real *nbfp;
 
   fprintf(log,"Determining largest Buckingham b parameter for table\n");
   nbfp   = fr->nbfp;
   ntypes = fr->ntype;
-  type   = mdatoms->typeA;
-  natoms = mdatoms->nr;
 
   bmin           = -1;
   fr->bham_b_max = 0;
-  for(i=0; (i<natoms); i++) {
-    tpi = type[i];
+  for(i=0; (i<atoms->nr); i++) {
+    tpi = atoms->atom[i].type;
     if (tpi >= ntypes)
       gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",i,tpi,ntypes);
     
-    for(j=0; (j<natoms); j++) {
-      tpj   = type[j];
+    for(j=0; (j<atoms->nr); j++) {
+      tpj = atoms->atom[j].type;
       if (tpj >= ntypes)
 	gmx_fatal(FARGS,"Atomtype[%d] = %d, maximum = %d",j,tpj,ntypes);
       b = BHAMB(nbfp,ntypes,tpi,tpj);
@@ -771,7 +782,6 @@ void init_forcerec(FILE *fp,
 		   const t_inputrec *ir,
 		   const t_topology *top,
 		   const t_commrec  *cr,
-		   const t_mdatoms  *mdatoms,
 		   const t_nsborder *nsb,
 		   matrix     box,
 		   bool       bMolEpot,
@@ -795,7 +805,7 @@ void init_forcerec(FILE *fp,
   mols           = &(top->blocks[ebMOLS]);
   idef           = &(top->idef);
   
-  natoms         = mdatoms->nr;
+  natoms         = top->atoms.nr;
 
   /* Test particle insertion ? */
   fr->bTPI = (ir->eI == eiTPI);
@@ -871,7 +881,7 @@ void init_forcerec(FILE *fp,
     for (i=0; (i<cgs->nr); i++) {
       q = 0;
       for(j=cgs->index[i]; (j<cgs->index[i+1]); j++)
-	q+=mdatoms->chargeA[cgs->a[j]];
+	q += top->atoms.atom[j].q;
       if (q != 0.0)
 	/* Changed from square to fabs 990314 DvdS 
 	 * Does not make a difference for monovalent ions, but doe for 
@@ -907,7 +917,7 @@ void init_forcerec(FILE *fp,
       box_size[m]=box[m][m];
 
     if (fr->phi == NULL)
-      snew(fr->phi,mdatoms->nr);
+      snew(fr->phi,natoms);
     
     if ((fr->eeltype==eelPPPM) || (fr->eeltype==eelPOISSON) || 
 	(fr->eeltype == eelSHIFT && fr->rcoulomb > fr->rcoulomb_switch))
@@ -921,10 +931,6 @@ void init_forcerec(FILE *fp,
   }
   
   if (EEL_FULL(fr->eeltype)) {
-    if (mdatoms->nPerturbed>0 &&
-	(fr->eeltype==eelPPPM || fr->eeltype==eelPMEUSER))
-      gmx_fatal(FARGS,"Free energy with %s is not implemented",
-		eel_names[fr->eeltype]);
     snew(fr->f_el_recip,natoms);
   }
   
@@ -982,10 +988,10 @@ void init_forcerec(FILE *fp,
 	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
   if (ir->eDispCorr != edispcNO)
-    set_avcsixtwelve(fp,fr,mdatoms,&top->blocks[ebEXCLS]);
+    set_avcsixtwelve(fp,fr,&top->atoms,&top->blocks[ebEXCLS]);
 
   if (fr->bBHAM)
-    set_bham_b_max(fp,fr,mdatoms);
+    set_bham_b_max(fp,fr,&top->atoms);
 
   /* Copy the GBSA data (radius, volume and surftens for each
    * atomtype) from the topology atomtype section to forcerec.
@@ -1005,7 +1011,7 @@ void init_forcerec(FILE *fp,
   /* Now update the rest of the vars */
   update_forcerec(fp,fr,box);
   
-  set_chargesum(fp,fr,mdatoms);
+  set_chargesum(fp,fr,&top->atoms);
 
   /* if we are using LR electrostatics, and they are tabulated,
    * the tables will contain modified coulomb interactions.
@@ -1103,7 +1109,7 @@ void init_forcerec(FILE *fp,
    * optimized solvent
    */
 
-  check_solvent(fp,top,fr,mdatoms,nsb);
+  check_solvent(fp,top,fr,&top->atoms,nsb);
 
   
   if (getenv("GMX_NO_SOLV_OPT")) {

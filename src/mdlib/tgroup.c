@@ -62,36 +62,20 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 }
 
 static void init_grpstat(FILE *log,
-			 t_mdatoms *md,int ngacc,t_grp_acc gstat[])
+			 t_atoms *atoms,int ngacc,t_grp_acc gstat[])
 {
-  int i,j,grp;
+  int    i,grp;
 
-  /* First reset and count the number of atoms... */
   if (ngacc > 0) {
-    for(j=0; (j<md->nr); j++) {
-      grp=md->cACC[j];
+    for(i=0; (i<atoms->nr); i++) {
+      grp = atoms->atom[i].grpnr[egcACC];
       if ((grp < 0) && (grp >= ngacc))
 	gmx_incons("Input for acceleration groups wrong");
       gstat[grp].nat++;
-      gstat[grp].M+=md->massT[j];
+      /* This will not work for integrator BD */
+      gstat[grp].mA += atoms->atom[i].m;
+      gstat[grp].mB += atoms->atom[i].mB;
     }
-    
-    for(i=0; (i<ngacc); i++) {
-      /* Now allocate memory and fill the groups */
-#ifdef DEBUG
-      fprintf(log,"gstat[%d] has %d atoms\n",i,gstat[i].nat);
-#endif
-      snew(gstat[i].aid,gstat[i].nat);
-      gstat[i].nat=0;
-    }
-    for(j=0; (j<md->nr); j++) {
-      grp=md->cACC[j];
-      gstat[grp].aid[gstat[grp].nat++]=j;
-    }
-#ifdef DEBUG
-    for(i=0; (i<ngacc); i++) 
-      fprintf(log,"gstat[%d] has %d atoms\n",i,gstat[i].nat);
-#endif
   }
 }
 
@@ -109,7 +93,7 @@ static void init_grpener(FILE *log,int ngener,t_grp_ener *estat)
   }
 }
 
-void init_groups(FILE *log,t_mdatoms *md,t_grpopts *opts,t_groups *grps)
+void init_groups(FILE *log,t_atoms *atoms,t_grpopts *opts,t_groups *grps)
 {
   int i;
 #ifdef DEBUG
@@ -120,7 +104,7 @@ void init_groups(FILE *log,t_mdatoms *md,t_grpopts *opts,t_groups *grps)
   init_grptcstat(opts->ngtc,grps->tcstat);
   
   snew(grps->grpstat,opts->ngacc);
-  init_grpstat(log,md,opts->ngacc,grps->grpstat);
+  init_grpstat(log,atoms,opts->ngacc,grps->grpstat);
   
   init_grpener(log,opts->ngener,&grps->estat);
 }
@@ -176,31 +160,35 @@ static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps)
 }       
 
 void update_grps(int start,int homenr,t_groups *grps,
-		 t_grpopts *opts,rvec v[],t_mdatoms *md,bool bNEMD)
+		 t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
+		 bool bNEMD)
 {
   int  d,g,n;
   real mv;
 
   /* calculate mean velocities at whole timestep */ 
   for(g=0; (g<opts->ngtc); g++) {
-    grps->tcstat[g].T=0;
+    grps->tcstat[g].T = 0;
   }
 
   if (bNEMD) {
     for (g=0; (g<opts->ngacc); g++)
       clear_rvec(grps->grpstat[g].u);
     
+    g = 0;
     for(n=start; (n<start+homenr); n++) {
-      g=md->cACC[n];
+      if (md->cACC)
+	g = md->cACC[n];
       for(d=0; (d<DIM);d++) {
-	mv=md->massT[n]*v[n][d];
+	mv = md->massT[n]*v[n][d];
 	grps->grpstat[g].u[d] += mv;
       }
     }
 
     for (g=0; (g < opts->ngacc); g++) {
       for(d=0; (d<DIM);d++) {
-	grps->grpstat[g].u[d] /= grps->grpstat[g].M;
+	grps->grpstat[g].u[d] /=
+	  (1-lambda)*grps->grpstat[g].mA + lambda*grps->grpstat[g].mB;
       }
     }
   }

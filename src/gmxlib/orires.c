@@ -50,12 +50,12 @@
 
 void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
 		 const t_iparams ip[],
-		 rvec xref[],const t_mdatoms *md,const t_inputrec *ir,
+		 rvec xref[],const t_atoms *atoms,const t_inputrec *ir,
 		 const gmx_multisim_t *ms,t_oriresdata *od)
 {
-  int  i,j,d,ex,nr,*nr_ex;
-  real mtot;
-  rvec com;
+  int    i,j,d,ex,nr,*nr_ex;
+  double mtot;
+  rvec   com;
 
   od->fc  = ir->orires_fc;
   od->nex = 0;
@@ -115,8 +115,8 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
   }
 
   od->nref = 0;
-  for(i=0; i<md->nr; i++)
-    if (md->cORF[i] == 0)
+  for(i=0; i<atoms->nr; i++)
+    if (atoms->atom[i].grpnr[egcORFIT] == 0)
       od->nref++;
   snew(od->mref,od->nref);
   snew(od->xref,od->nref);
@@ -131,9 +131,10 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
   clear_rvec(com);
   mtot = 0.0;
   j = 0;
-  for(i=0; i<md->nr; i++) {
-    if (md->cORF[i] == 0) {
-      od->mref[j] = md->massT[i];
+  for(i=0; i<atoms->nr; i++) {
+    if (atoms->atom[i].grpnr[egcORFIT] == 0) {
+      /* Not correct for free-energy with changing masses */
+      od->mref[j] = atoms->atom[i].m;
       if (ms==NULL || MASTERSIM(ms)) {
 	copy_rvec(xref[i],od->xref[j]);
 	for(d=0; d<DIM; d++)
@@ -143,8 +144,7 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
       j++;
     }
   }
-  od->invmref = 1.0/mtot;
-  svmul(od->invmref,com,com);
+  svmul(1.0/mtot,com,com);
   if (ms==NULL || MASTERSIM(ms))
     for(j=0; j<od->nref; j++)
       rvec_dec(od->xref[j],com);
@@ -248,10 +248,11 @@ real calc_orires_dev(const gmx_multisim_t *ms,
   tensor       *S,R,TMP;
   rvec5        *Dinsl,*Dins,*Dtav,*rhs;
   real         *mref,***T;
+  double       mtot;
   rvec         *xref,*xtmp,com,r_unrot,r;
   t_oriresdata *od;
   bool         bTAV;
-  const real  two_thr=2.0/3.0;
+  const real   two_thr=2.0/3.0;
 
   od = &(fcd->orires);
 
@@ -277,15 +278,18 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     invn = 1.0;
 
   clear_rvec(com);
+  mtot = 0;
   j=0;
   for(i=0; i<md->nr; i++)
     if (md->cORF[i] == 0) {
       copy_rvec(x[i],xtmp[j]);
+      mref[j] = md->massT[i];
       for(d=0; d<DIM; d++)
 	com[d] += mref[j]*xref[j][d];
+      mtot += mref[j];
       j++;
     }
-  svmul(od->invmref,com,com);
+  svmul(1.0/mtot,com,com);
   for(j=0; j<nref; j++)
     rvec_dec(xtmp[j],com);
   /* Calculate the rotation matrix to rotate x to the reference orientation */

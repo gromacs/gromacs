@@ -244,7 +244,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* Calculate total (local) dipole moment in a temporary common array. 
      * This makes it possible to sum them over nodes faster.
      */
-    calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->bChargePerturbed,
+    calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
 	    mu,mu+DIM);
   }
   
@@ -958,9 +958,9 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_rvec(mu_tot);
   
   /* Set initial values for invmass etc. */
-  update_mdatoms(mdatoms,*lambda,TRUE);
+  update_mdatoms(mdatoms,*lambda);
 
-  *vcm = init_vcm(stdlog,top,cr,mdatoms,START(nsb),HOMENR(nsb),ir->nstcomm,
+  *vcm = init_vcm(stdlog,top,cr,&top->atoms,START(nsb),HOMENR(nsb),ir->nstcomm,
 		  ir->comm_mode);
     
   debug_gmx();

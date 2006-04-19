@@ -89,7 +89,6 @@ extern void init_forcerec(FILE       *fplog,
 			  const t_inputrec *ir,   
 			  const t_topology *top,
 			  const t_commrec  *cr,
-			  const t_mdatoms  *mdatoms,
 			  const t_nsborder *nsb,
 			  matrix     box,
 			  bool       bMolEpot,
@@ -107,7 +106,7 @@ extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 
 /* Compute the average C6 and C12 params for LJ corrections */
 extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
-			     const t_mdatoms *mdatoms,const t_block *excl);
+			     const t_atoms *atoms,const t_block *excl);
 
 extern void ns(FILE       *fplog,
 	       t_forcerec *fr,

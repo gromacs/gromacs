@@ -55,17 +55,17 @@ typedef struct {
   tensor *group_i;             /* Moment of inertia per group         */
   real   *group_mass;          /* Mass per group                      */
   char   **group_name;         /* These two are copies to pointers in */
-  unsigned short *group_id;    /* other structures.                   */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
 		int start,int homenr,int nstcomm,int comm_mode);
 
 /* Do a per group center of mass things */
-extern void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
+extern void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
 			 rvec x[],rvec v[],t_vcm *vcm);
 
 extern void do_stopcm_grp(FILE *fp,int start,int homenr,
+			  unsigned short *group_id,
 			  rvec x[],rvec v[],t_vcm *vcm);
 
 extern void check_cm_grp(FILE *fp,t_vcm *vcm);

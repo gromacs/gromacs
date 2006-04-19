@@ -50,7 +50,7 @@ extern "C" {
 
 extern void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
 			const t_iparams ip[],
-			rvec x[],const t_mdatoms *md,const t_inputrec *ir,
+			rvec x[],const t_atoms *atoms,const t_inputrec *ir,
 			const gmx_multisim_t *ms,t_oriresdata *od);
 /* Initializes all the orientation restraint stuff in *od */
 

@@ -163,20 +163,13 @@ extern int do_per_step(int step,int nstep);
 extern int do_any_io(int step, t_inputrec *ir);
 
 extern void write_xtc_traj(FILE *log,t_commrec *cr,
-			   char *xtc_traj,t_nsborder *nsb,t_mdatoms *md,
+			   char *xtc_traj,t_nsborder *nsb,t_atoms *atoms,
 			   int step,real t,rvec *xx,
 			   matrix box,real prec);
 
 extern void close_xtc_traj(void);
 
 /* ROUTINES from sim_util.c */
-extern void update_mdatoms(t_mdatoms *md,real lambda, bool bFirst);
-/* Compute fields from mdatoms struct (invmass etc.) which may change
- * due to lambda dependent FEP calculations.
- * If bFirst all values are set, this is necessary once in the
- * first step.
- * You only have to call this routine again if lambda changes.
- */
  
 extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 
@@ -228,7 +221,7 @@ extern void check_nnodes_top(char *fn,t_topology *top);
 
 extern void init_single(FILE *log,
                         t_inputrec *inputrec, char *tpbfile, t_topology *top,
-			t_state *state,t_mdatoms **mdatoms,
+			t_state *state,
 			t_nsborder *nsb);
      /*
       * Allocates space for the topology (top), the coordinates x, the
@@ -238,7 +231,7 @@ extern void init_single(FILE *log,
 
 extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
 			  t_inputrec *inputrec,t_topology *top,
-			  t_state *state,t_mdatoms **mdatoms,
+			  t_state *state,
 			  int list);
      /*
       * Loads the data for a simulation from the ring. Parameters, topology

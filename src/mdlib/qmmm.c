@@ -242,7 +242,7 @@ void update_QMMM_coord(rvec x[],t_forcerec *fr, t_QMrec *qm, t_MMrec *mm)
   }
 } /* update_QMMM_coord */
 
-void punch_QMMM_excl(t_QMrec *qm,t_MMrec *mm,t_block *excls)
+static void punch_QMMM_excl(t_QMrec *qm,t_MMrec *mm,t_block *excls)
 {
   /* punch a file containing the bonded interactions of each QM
    * atom with MM atoms. These need to be excluded in the QM routines
@@ -302,8 +302,9 @@ t_MMrec *mk_MMrec(void){
   return mm;
 } /* mk_MMrec */
 
-void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray, 
-		t_mdatoms *md, t_inputrec *ir){
+static void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray, 
+		       t_topology *top, t_inputrec *ir)
+{
   /* fills the t_QMrec struct of QM group grpnr 
    */
   int
@@ -320,8 +321,10 @@ void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray,
 
   snew(qm->atomicnumberQM,nr);
   for (i=0;i<qm->nrQMatoms;i++){
-    qm->nelectrons       += md->atomnumber[qm->indexQM[i]];  
-    qm->atomicnumberQM[i] = md->atomnumber[qm->indexQM[i]]; 
+    qm->nelectrons       +=  
+      top->atomtypes.atomnumber[top->atoms.atom[qm->indexQM[i]].type];
+    qm->atomicnumberQM[i] = 
+      top->atomtypes.atomnumber[top->atoms.atom[qm->indexQM[i]].type];
   }
   qm->QMcharge       = ir->opts.QMcharge[grpnr];
   qm->multiplicity   = ir->opts.QMmult[grpnr];
@@ -427,7 +430,6 @@ t_QMMMrec *mk_QMMMrec(void)
 } /* mk_QMMMrec */
 
 void init_QMMMrec(t_commrec *cr,
-		  t_mdatoms *md,
 		  matrix box,
 		  t_topology *top,
 		  t_inputrec *ir,
@@ -439,26 +441,17 @@ void init_QMMMrec(t_commrec *cr,
    * simply contains true/false for QM and MM (the other) atoms.
    */
 
-  atom_id 
-    *qm_arr=NULL,dummy,ai,aj;
-  int     
-    qm_max=0,qm_nr=0,i,j,jmax,k,l,nrdum=0;
-  t_QMMMrec
-    *qr;
-  t_MMrec 
-    *mm;
-  t_iatom 
-    *iatoms;
-  real
-    c12au,c6au;
+  atom_id   *qm_arr=NULL,dummy,ai,aj;
+  int       qm_max=0,qm_nr=0,i,j,jmax,k,l,nrdum=0;
+  t_QMMMrec *qr;
+  t_MMrec   *mm;
+  t_iatom   *iatoms;
+  real      c12au,c6au;
+  t_atoms   *atoms;
 
   c6au  = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,6)); 
   c12au = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,12)); 
-
-  /* fill the nucnum array in the t_mdatoms struct: */
-  for(i=0;i<md->nr;i++){
-    md->atomnumber[i] = top->atomtypes.atomnumber[md->typeA[i]];
-  }
+  fprintf(stderr,"there we go!\n");
 
   /* Make a local copy of the QMMMrec */
   qr = fr->qr;
@@ -491,6 +484,8 @@ void init_QMMMrec(t_commrec *cr,
   else
     qr->nrQMlayers = 1; 
 
+  atoms = &top->atoms;
+
   /* there are jmax groups of QM atoms. In case of multiple QM groups
    * I assume that the users wants to do ONIOM. However, maybe it
    * should also be possible to define more than one QM subsystem with
@@ -500,12 +495,13 @@ void init_QMMMrec(t_commrec *cr,
   snew(qr->qm,jmax);
   for(j=0;j<jmax;j++){
     /* new layer */
-    for (i=0;i<md->nr;i++){
+    for (i=0;i<atoms->nr;i++){
       if(qm_nr >= qm_max){
 	qm_max += 1000;
 	srenew(qm_arr,qm_max);
       }
-      if(md->cQMMM[i]==j){
+      if((atoms->atom[i].grpnr[egcQMMM]==j &&
+	  top->atomtypes.atomnumber[atoms->atom[i].type])){ /* hack for tip4p */
 	qm_arr[qm_nr++]=i;
       }
     }
@@ -515,9 +511,6 @@ void init_QMMMrec(t_commrec *cr,
 
       /* I assume that users specify the QM groups from small to
        * big(ger) in the mdp file 
-       */
-      /*      for (k=0;k<qm_nr;k++)
-       *	md->bQM[qm_arr[k]]=TRUE; DONE IN mdatoms.c 
        */
       qr->qm[j] = mk_QMrec(); 
       /* we need to throw out link atoms that in the previous layer
@@ -531,7 +524,7 @@ void init_QMMMrec(t_commrec *cr,
 	dummy=iatoms[k+1]; /* the dummy */
 	ai=iatoms[k+2]; /* the atoms that construct */
 	aj=iatoms[k+3]; /* the dummy */
-	if(md->bQM[dummy] && md->bQM[aj] && md->bQM[ai]){
+	if (atoms->atom[dummy].grpnr[egcQMMM] < atoms->grps[egcQMMM].nr-1) {
 	  /* this dummy link atom needs to be removed from the qm_arr
 	   * before making the QMrec of this layer!  
 	   */
@@ -550,7 +543,7 @@ void init_QMMMrec(t_commrec *cr,
 
       /* store QM atoms in this layer in the QMrec and initialise layer 
        */
-      init_QMrec(j,qr->qm[j],qm_nr,qm_arr,md,ir);
+      init_QMrec(j,qr->qm[j],qm_nr,qm_arr,top,ir);
       
       /* we now store the LJ C6 and C12 parameters in QM rec in case
        * we need to do an optimization 
@@ -558,11 +551,11 @@ void init_QMMMrec(t_commrec *cr,
       if(qr->qm[j]->bOPT || qr->qm[j]->bTS){
 	for(i=0;i<qm_nr;i++){
 	  qr->qm[j]->c6[i]  =  C6(fr->nbfp,top->idef.atnr,
-				 md->typeA[qm_arr[i]],
-				  md->typeA[qm_arr[i]])/c6au;
+				 atoms->atom[i].type,
+				  atoms->atom[i].type)/c6au;
 	  qr->qm[j]->c12[i] = C12(fr->nbfp,top->idef.atnr,
-				 md->typeA[qm_arr[i]],
-				  md->typeA[qm_arr[i]])/c12au;
+				 atoms->atom[i].type,
+				  atoms->atom[i].type)/c12au;
 	}
       }
       /* now we check for frontier QM atoms. These occur in pairs that
@@ -572,7 +565,8 @@ void init_QMMMrec(t_commrec *cr,
 	dummy=iatoms[k+1]; /* the dummy */
 	ai=iatoms[k+2]; /* the atoms that construct */
 	aj=iatoms[k+3]; /* the dummy */
-	if(md->bQM[ai] && (md->bQM[aj]==FALSE)){
+	if(atoms->atom[ai].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
+	   (atoms->atom[aj].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1))){
 	  /* mark ai as frontier atom */
 	  for(i=0;i<qm_nr;i++){
 	    if( (qm_arr[i]==ai) || (qm_arr[i]==dummy) ){
@@ -580,7 +574,8 @@ void init_QMMMrec(t_commrec *cr,
 	    }
 	  }
 	}
-	else if((md->bQM[ai]==FALSE) && md->bQM[aj]){
+	else if(atoms->atom[aj].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
+		(atoms->atom[ai].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1))){
 	  /* mark aj as frontier atom */
 	  for(i=0;i<qm_nr;i++){
 	    if( (qm_arr[i]==aj) || (qm_arr[i]==dummy)){
@@ -599,22 +594,21 @@ void init_QMMMrec(t_commrec *cr,
      * the innerloops from doubly counting the electostatic QM MM interaction
      */
     for (k=0;k<qm_nr;k++){
-      /*      md->bQM[qm_arr[k]]=TRUE; done in mdatoms from v. 3.3 onward */
-      md->chargeA[qm_arr[k]]=0.0;
-      md->chargeB[qm_arr[k]]=0.0;
+      atoms->atom[qm_arr[k]].q = 0.0;
+      atoms->atom[qm_arr[k]].qB = 0.0;
     } 
     qr->qm[0] = mk_QMrec();
     /* store QM atoms in the QMrec and initialise
      */
-    init_QMrec(0,qr->qm[0],qm_nr,qm_arr,md,ir);
+    init_QMrec(0,qr->qm[0],qm_nr,qm_arr,top,ir);
     if(qr->qm[0]->bOPT || qr->qm[0]->bTS){
       for(i=0;i<qm_nr;i++){
 	qr->qm[0]->c6[i]  =  C6(fr->nbfp,top->idef.atnr,
-				md->typeA[qm_arr[i]],
-				md->typeA[qm_arr[i]])/c6au;
+				atoms->atom[i].type,
+				atoms->atom[i].type)/c6au;
 	qr->qm[0]->c12[i] = C12(fr->nbfp,top->idef.atnr,
-				md->typeA[qm_arr[i]],
-				md->typeA[qm_arr[i]])/c12au;
+				atoms->atom[i].type,
+				atoms->atom[i].type)/c12au;
       }
       
     }
@@ -627,7 +621,8 @@ void init_QMMMrec(t_commrec *cr,
       dummy=iatoms[k+1]; /* the dummy */
       ai=iatoms[k+2];    /* the atoms that construct */
       aj=iatoms[k+3];    /* the dummy */
-      if(md->bQM[ai] && !(md->bQM[aj])){
+      if(atoms->atom[ai].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
+	 (atoms->atom[aj].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1))){
 	/* mark ai as frontier atom */
 	for(i=0;i<qm_nr;i++){
 	  if ( (qm_arr[i]==ai) || (qm_arr[i]==dummy) ){
@@ -635,7 +630,9 @@ void init_QMMMrec(t_commrec *cr,
 	  }
 	}
       }
-      else if(!(md->bQM[ai]) && md->bQM[aj]){
+      else if(atoms->atom[aj].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
+	      (atoms->atom[ai].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1)))
+      {
 	/* mark aj as frontier atom */
 	for(i=0;i<qm_nr;i++){
 	  if ( (qm_arr[i]==aj) || (qm_arr[i]==dummy) ){
@@ -648,7 +645,7 @@ void init_QMMMrec(t_commrec *cr,
     /* MM rec creation */
     mm               = mk_MMrec(); 
     mm->scalefactor  = ir->scalefactor;
-    mm->nrMMatoms    = (md->nr)-(qr->qm[0]->nrQMatoms); /* rest of the atoms */
+    mm->nrMMatoms    = (atoms->nr)-(qr->qm[0]->nrQMatoms); /* rest of the atoms */
     qr->mm           = mm;
   } else {/* ONIOM */
     /* MM rec creation */    
@@ -903,9 +900,9 @@ void update_QMMMrec(t_commrec *cr,
      * scaled by a factor 
      */
     srenew(mm->MMcharges,mm->nrMMatoms);
-    for(i=0;i<mm->nrMMatoms;i++)/* no free energy yet */
+    for(i=0;i<mm->nrMMatoms;i++){/* no free energy yet */
       mm->MMcharges[i]=md->chargeA[mm->indexMM[i]]*mm->scalefactor; 
- 
+    } 
     if(qm->bTS||qm->bOPT){
       /* store (copy) the c6 and c12 parameters into the MMrec struct 
        */

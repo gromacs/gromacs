@@ -43,16 +43,16 @@
 
 #include "typedefs.h"
 
-extern void atoms2md(FILE *fp,t_commrec *cr,
-		     t_atoms *atoms,ivec nFreeze[],
-		     int eI,real delta_t,real fric,real tau_t[],
-		     bool bPert,
-		     int nindex,int *index,
-		     t_mdatoms *md,bool bFirst);
+extern t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy);
+
+extern void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
+		     int ind_start,int ind_end,int *index,
+		     t_mdatoms *md);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.
  */
 
-extern void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree);
-/* And vice versa */
+extern void update_mdatoms(t_mdatoms *md,real lambda);
+/* (Re)set all the mass parameters */
+
 #endif

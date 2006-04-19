@@ -148,7 +148,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
      * then dsitributes everything to the other processors.
      */
     init_parallel(stdlog,ftp2fn(efTPX,nfile,fnm),cr,
-		  inputrec,top,state,&mdatoms,
+		  inputrec,top,state,
 		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
     /* It seems that nsb->nnodes is never set !!! 
      * So we (temporarily) fix it here.
@@ -171,8 +171,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   }
   else {
     /* Read a file for a single processor */
-    init_single(stdlog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state,
-		&mdatoms,nsb);
+    init_single(stdlog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state,nsb);
     bParVsites=FALSE;
   }
   
@@ -183,7 +182,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     /* Is not read from TPR yet, so we allocate space here */
     snew(state->sd_X,nsb->natoms);
   }
-  cr->npmenodes = nsb->npmenodes;
+  nsb->npmenodes = cr->npmenodes;
   snew(buf,nsb->natoms);
   snew(f,nsb->natoms);
   snew(vt,nsb->natoms);
@@ -246,7 +245,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   top->idef.nodeid = cr->nodeid;
 
   /* Group stuff (energies etc) */
-  init_groups(stdlog,mdatoms,&(inputrec->opts),grps);
+  init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);
   /* Copy the cos acceleration to the groups struct */
   grps->cosacc.cos_accel = inputrec->cos_accel;
   
@@ -265,7 +264,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Orientation restraints */
   init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-	      top->idef.iparams,state->x,mdatoms,inputrec,cr->ms,
+	      top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
 	      &(fcd->orires));
 
   /* Dihedral Restraints */
@@ -280,17 +279,25 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initiate forcerecord */
   fr = mk_forcerec();
-  init_forcerec(stdlog,fr,inputrec,top,cr,mdatoms,nsb,state->box,FALSE,
+  init_forcerec(stdlog,fr,inputrec,top,cr,nsb,state->box,FALSE,
 		opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),FALSE);
   fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
 
   /* Initialize QM-MM */
-  if(fr->bQMMM){
-    init_QMMMrec(cr,mdatoms,state->box,top,inputrec,fr);
-  }
-    
+  if(fr->bQMMM)
+    init_QMMMrec(cr,state->box,top,inputrec,fr);
+
+  /* Initialize the mdatoms structure.
+   * mdatoms is not filled with atom data,
+   * as this can not be done now with domain decomposition.
+   */
+  mdatoms = init_mdatoms(stdlog,&top->atoms,inputrec->efep!=efepNO);
+
   /* Initiate PPPM if necessary */
   if (fr->eeltype == eelPPPM) {
+    if (mdatoms->nChargePerturbed)
+      gmx_fatal(FARGS,"Free energy with %s is not implemented",
+		eel_names[fr->eeltype]);
     status = gmx_pppm_init(stdlog,cr,nsb,FALSE,TRUE,state->box,
 			   getenv("GMXGHAT"),inputrec);
     if (status != 0)
@@ -308,7 +315,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       
       status = gmx_pme_init(stdlog,&fr->pmedata,cr,inputrec,
 			    /*HOMENR(nsb),*/nsb->natoms,
-			    mdatoms->bChargePerturbed,bVerbose);
+			    mdatoms->nChargePerturbed,bVerbose);
       
       GMX_MPE_LOG(ev_init_pme_finish);
       if (status != 0)
@@ -399,11 +406,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   else 
     realtime=0;
     
-  if (pmeduty(cr) != epmePMEONLY)
-  {
-    /* Convert back the atoms */
-    md2atoms(mdatoms,&(top->atoms),TRUE);
-  }
   /* Finish up, write some stuff
    * if rerunMD, don't write last frame again 
    */
@@ -535,7 +537,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   } else {
     top = top_global;
     state = state_global;
+
+    atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,0,NULL,mdatoms);
   }
+  update_mdatoms(mdatoms,state->lambda);
 
   /* init edsam, no effect if edyn->bEdsam==FALSE */
   init_edsam(stdlog,top,inputrec,mdatoms,START(nsb),HOMENR(nsb),cr,edyn);
@@ -634,9 +639,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),inputrec->nsteps,inputrec->nsteps*inputrec->delta_t);
   }
-
-  /* Initialize values for invmass, etc. */
-  update_mdatoms(mdatoms,state->lambda,TRUE);
 
   /* Set the node time counter to 0 after initialisation */
   start_time();
@@ -778,7 +780,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * ever used, only when doing free energy calculations.
      */
     if(inputrec->efep != efepNO)
-      update_mdatoms(mdatoms,state->lambda,FALSE); 
+      update_mdatoms(mdatoms,state->lambda); 
     
     clear_mat(force_vir);
     
@@ -892,9 +894,18 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
     /* don't write xtc and last structure for rerunMD */
     if (!bRerunMD && !bFFscan) {
-      if (do_per_step(step,inputrec->nstxtcout))
-	write_xtc_traj(log,cr,xtc_traj,nsb,mdatoms,
-		       step,t,state->x,state->box,inputrec->xtcprec);
+      if (do_per_step(step,inputrec->nstxtcout)) {
+	if (xx == NULL) {
+	  if (DOMAINDECOMP(cr)) {
+	    xx = state_global->x;
+	    dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->x,xx);
+	  } else {
+	    xx = state->x;
+	  }
+	}
+	write_xtc_traj(log,cr,xtc_traj,nsb,&top->atoms,
+		       step,t,xx,state->box,inputrec->xtcprec);
+      }
       if (bLastStep && MASTER(cr)) {
 	fprintf(stderr,"Writing final coordinates.\n");
 	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
@@ -999,8 +1010,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     debug_gmx();
     /* Calculate center of mass velocity if necessary, also parallellized */
     if (bStopCM && !bFFscan && !bRerunMD)
-      calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->massT,
-		   state->x,state->v,vcm);
+      calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms,state->x,state->v,vcm);
 
     /* Check whether everything is still allright */    
     if (bGotTermSignal || bGotUsr1Signal) {
@@ -1070,7 +1080,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      /* Do center of mass motion removal */
     if (bStopCM && !bFFscan && !bRerunMD) {
       check_cm_grp(log,vcm);
-      do_stopcm_grp(log,START(nsb),HOMENR(nsb),state->x,state->v,vcm);
+      do_stopcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->cVCM,
+		    state->x,state->v,vcm);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
       /*
       calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
@@ -1112,7 +1123,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Calculate long range corrections to pressure and energy */
     if (bTCR || bFFscan)
-      set_avcsixtwelve(log,fr,mdatoms,&top->blocks[ebEXCLS]);
+      set_avcsixtwelve(log,fr,&top_global->atoms,&top_global->blocks[ebEXCLS]);
       
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,inputrec,fr,step,mdatoms->nr,lastbox,state->lambda,

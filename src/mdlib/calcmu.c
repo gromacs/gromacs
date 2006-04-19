@@ -49,7 +49,7 @@
 #include "main.h"
 
 void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
-	     bool bFreeEnergy,
+	     int nChargePerturbed,
 	     dvec mu,dvec mu_B)
 {
   int i,start,end,m;
@@ -65,7 +65,7 @@ void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
   for(m=0; (m<DIM); m++)
     mu[m] *= ENM2DEBYE;
   
-  if (bFreeEnergy) {
+  if (nChargePerturbed) {
     clear_dvec(mu_B);
     for(i=start; (i<end); i++)
       for(m=0; (m<DIM); m++)

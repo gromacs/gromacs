@@ -44,8 +44,8 @@
 #include "typedefs.h"
 #include "network.h"
 
-extern void init_groups(FILE *log,t_mdatoms *md,
-			t_grpopts *opts,t_groups *grps);
+extern void init_groups(FILE *log,t_atoms *atoms,t_grpopts *opts,
+			t_groups *grps);
 /* Allocate memory and set the grpnr array. */
 
 extern void done_groups(t_groups *grps);
@@ -68,7 +68,8 @@ extern void sum_epot(t_grpopts *opts,t_groups *grps,real epot[]);
 /* Sum the epot from the group contributions */
 
 extern void update_grps(int start,int homenr,t_groups *grps,
-			t_grpopts *opts,rvec v[],t_mdatoms *md,bool bNEMD);
+			t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
+			bool bNEMD);
 /* Do the update of group velocities (if bNEMD) and
  * (partial) group ekin.
  */

@@ -573,7 +573,8 @@ static int compact_and_copy_vec(int ncg,int *cell,int local,int *cgindex,
 static int compact_and_copy_cg(int ncg,int *cell,int local,
 			       int nnbc,int *ind,int *index_gl,
 			       int *cgindex,int *gatindex,gmx_ga2la_t *ga2la,
-			       int *buf,rvec *cg_cm,int *solvent_type)
+			       int *buf,rvec *cg_cm,int *solvent_type,
+			       t_mdatoms *md)
 {
   int c,cg,nat,nat_cg,a0,a1,a,a_gl;
   int local_pos,buf_pos[DD_MAXNBCELL];
@@ -597,6 +598,15 @@ static int compact_and_copy_cg(int ncg,int *cell,int local,
 	gatindex[nat] = a_gl;
 	/* The cell number stays 0, so we don't need to set it */
 	ga2la[a_gl].a = nat;
+	if (md->bPlainMD) {
+	  md->massT[nat]   = md->massT[a];
+	  md->invmass[nat] = md->invmass[a];
+	  md->chargeA[nat] = md->chargeA[a];
+	  md->typeA[nat]   = md->typeA[a];
+	  md->ptype[nat]   = md->ptype[a];
+	  if (md->cTC)
+	    md->cTC[nat]   = md->cTC[a];
+	}
 	nat++;
       }
       index_gl[local_pos] = index_gl[cg];
@@ -622,7 +632,7 @@ static int compact_and_copy_cg(int ncg,int *cell,int local,
 static int dd_redistribute_cg(FILE *fplog,
 			      gmx_domdec_t *dd,t_block *gcgs,
 			      t_state *state,rvec cg_cm[],
-			      t_forcerec *fr,
+			      t_forcerec *fr,t_mdatoms *md,
 			      t_nrnb *nrnb)
 {
 #define dd_nbindex(ms0,ns,i) ((((i)[ZZ] - ms0[ZZ])*ns[YY] + (i)[YY] - ms0[YY])*ns[XX] + (i)[XX] - ms0[XX])
@@ -908,7 +918,7 @@ static int dd_redistribute_cg(FILE *fplog,
 			nnbc,buf_cg_ind,dd->index_gl,
 			dd->cgindex,dd->gatindex,dd->ga2la,
 			buf_cg,cg_cm,
-			fr->solvent_opt==esolNO ? NULL : fr->solvent_type);
+			fr->solvent_opt==esolNO ? NULL : fr->solvent_type,md);
   
 #ifdef GMX_MPI
   MPI_Waitall(nreq,mpi_req,MPI_STATUSES_IGNORE);
@@ -1684,7 +1694,7 @@ void dd_partition_system(FILE         *fplog,
 			 t_forcerec   *fr,
 			 t_nrnb       *nrnb)
 {
-  int cg_ind;
+  int cg0,a0;
 
   if (ir->ePBC == epbcXYZ)
     gmx_fatal(FARGS,"pbc=%s is not supported (yet), use %s",
@@ -1709,10 +1719,10 @@ void dd_partition_system(FILE         *fplog,
     
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_local);
 
-    cg_ind = 0;
+    cg0 = 0;
   } else {
-    cg_ind = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
-				state_local,fr->cg_cm,fr,nrnb);
+    cg0 = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
+			     state_local,fr->cg_cm,fr,mdatoms,nrnb);
   }
   
   /* Setup up the communication and communicate the coordinates */
@@ -1721,7 +1731,7 @@ void dd_partition_system(FILE         *fplog,
 			 fr->cg_cm,fr->rlistlong);
 
   /* Set the indices */
-  make_dd_indices(dd,&top_global->blocks[ebCGS],cg_ind,fr);
+  make_dd_indices(dd,&top_global->blocks[ebCGS],cg0,fr);
 
   /* Update the rest of the forcerec */
   fr->cg0;
@@ -1749,10 +1759,17 @@ void dd_partition_system(FILE         *fplog,
    * We could save some work by only setting invmass
    * between nat_tot and nat_tot_con.
    */
-  atoms2md(fplog,NULL,&top_global->atoms,ir->opts.nFreeze,
-	   ir->eI,ir->delta_t,ir->bd_fric,ir->opts.tau_t,
-	   ir->efep!=efepNO,dd->nat_tot_con,dd->gatindex,mdatoms,FALSE);
-
+  if (mdatoms->bPlainMD) {
+    /* The mdatom data for atoms that remained local have been copied
+     * in dd_redistribute_cg.
+     */
+    a0 = dd->cgindex[cg0];
+  } else {
+    a0 = 0;
+  }
+  atoms2md(&top_global->atoms,ir,top_global->idef.il[F_ORIRES].nr,
+	   a0,dd->nat_tot_con,dd->gatindex,mdatoms);
+  
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
     init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
 		     START(nsb),HOMENR(nsb),

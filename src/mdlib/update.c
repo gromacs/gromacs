@@ -90,7 +90,7 @@ static void do_update_md(int start,int homenr,double dt,
                          rvec f[],matrix M,bool bExtended)
 {
   double imass,w_dt;
-  int    gf,ga,gt;
+  int    gf=0,ga=0,gt=0;
   rvec   vrel;
   real   vn,vv,va,vb,vnrel;
   real   lg,xi,u;
@@ -104,9 +104,12 @@ static void do_update_md(int start,int homenr,double dt,
      */
     for(n=start; n<start+homenr; n++) {
       imass = invmass[n];
-      gf   = cFREEZE[n];
-      ga   = cACC[n];
-      gt   = cTC[n];
+      if (cFREEZE)
+	gf   = cFREEZE[n];
+      if (cACC)
+	ga   = cACC[n];
+      if (cTC)
+	gt   = cTC[n];
       lg   = tcstat[gt].lambda;
       xi   = nh_xi[gt];
 
@@ -131,9 +134,12 @@ static void do_update_md(int start,int homenr,double dt,
     /* Classic version of update, used with berendsen coupling */
     for(n=start; n<start+homenr; n++) {
       w_dt = invmass[n]*dt;
-      gf   = cFREEZE[n];
-      ga   = cACC[n];
-      gt   = cTC[n];
+      if (cFREEZE)
+	gf   = cFREEZE[n];
+      if (cACC)
+	ga   = cACC[n];
+      if (cTC)
+	gt   = cTC[n];
       lg   = tcstat[gt].lambda;
 
       for(d=0; d<DIM; d++) {
@@ -166,7 +172,7 @@ static void do_update_visc(int start,int homenr,double dt,
                            cos_accel,real vcos,bool bExtended)
 {
   double imass,w_dt;
-  int    gt;
+  int    gt=0;
   real   vn,vc;
   real   lg,xi,vv;
   real   fac,cosz;
@@ -181,7 +187,8 @@ static void do_update_visc(int start,int homenr,double dt,
      */
     for(n=start; n<start+homenr; n++) {
       imass = invmass[n];
-      gt   = cTC[n];
+      if (cTC)
+	gt   = cTC[n];
       lg   = tcstat[gt].lambda;
       cosz = cos(fac*x[n][ZZ]);
 
@@ -297,7 +304,7 @@ static void do_update_sd(int start,int homenr,
    */
   static rvec *sd_V;
   real   kT;
-  int    gf,ga,gt;
+  int    gf=0,ga=0,gt=0;
   real   vn=0,Vmh,Xmh;
   real   ism;
   int    n,d;
@@ -321,9 +328,12 @@ static void do_update_sd(int start,int homenr,
 
   for(n=start; n<start+homenr; n++) {
     ism = sqrt(invmass[n]);
-    gf  = cFREEZE[n];
-    ga  = cACC[n];
-    gt  = cTC[n];
+    if (cFREEZE)
+      gf  = cFREEZE[n];
+    if (cACC)
+      ga  = cACC[n];
+    if (cTC)
+      gt  = cTC[n];
 
     for(d=0; d<DIM; d++) {
       if(bFirstHalf) {
@@ -380,7 +390,7 @@ static void do_update_bd(int start,int homenr,double dt,
                          int ngtc,real tau_t[],real ref_t[],
                          gmx_rng_t gaussrand)
 {
-  int    gf,gt;
+  int    gf=0,gt=0;
   real   vn;
   static real *rf=NULL;
   real   invfr=0;
@@ -399,8 +409,10 @@ static void do_update_bd(int start,int homenr,double dt,
       rf[n] = sqrt(2.0*BOLTZ*ref_t[n]);
 
   for(n=start; (n<start+homenr); n++) {
-    gf = cFREEZE[n];
-    gt = cTC[n];
+    if (cFREEZE)
+      gf = cFREEZE[n];
+    if (cTC)
+      gt = cTC[n];
     for(d=0; (d<DIM); d++) {
       vold[n][d]     = v[n][d];
       if((ptype[n]!=eptVSite) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
@@ -439,7 +451,7 @@ void calc_ke_part(int start,int homenr,rvec v[],
                   t_grpopts *opts,t_mdatoms *md,t_groups *grps,
                   t_nrnb *nrnb,real lambda)
 {
-  int          g,d,n,ga,gt;
+  int          g,d,n,ga=0,gt=0;
   rvec         v_corrt;
   real         hm;
   t_grp_tcstat *tcstat=grps->tcstat;
@@ -458,8 +470,10 @@ void calc_ke_part(int start,int homenr,rvec v[],
 
   dekindl = 0;
   for(n=start; (n<start+homenr); n++) {
-    ga   = md->cACC[n];
-    gt   = md->cTC[n];
+    if (md->cACC)
+      ga = md->cACC[n];
+    if (md->cTC)
+      gt = md->cTC[n];
     hm   = 0.5*md->massT[n];
 
     for(d=0; (d<DIM); d++) {
@@ -483,7 +497,7 @@ void calc_ke_part_visc(int start,int homenr,
                        t_grpopts *opts,t_mdatoms *md,t_groups *grps,
                        t_nrnb *nrnb,real lambda)
 {
-  int          g,d,n,gt;
+  int          g,d,n,gt=0;
   rvec         v_corrt;
   real         hm;
   t_grp_tcstat *tcstat=grps->tcstat;
@@ -502,7 +516,8 @@ void calc_ke_part_visc(int start,int homenr,
   mvcos = 0;
   dekindl = 0;
   for(n=start; n<start+homenr; n++) {
-    gt   = md->cTC[n];
+    if (md->cTC)
+      gt = md->cTC[n];
     hm   = 0.5*md->massT[n];
 
     /* Note that the times of x and v differ by half a step */
@@ -865,7 +880,8 @@ void update(int          natoms,  /* number of atoms in simulation */
   where();
 
   if (bDoUpdate) {
-    update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,bNEMD);
+    update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,state->lambda,
+		bNEMD);
     if (DEFORM(*inputrec))
       deform_store(state->box,inputrec,step,bFirstStep);
     if (inputrec->epc == epcBERENDSEN) {

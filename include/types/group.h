@@ -57,9 +57,9 @@ typedef struct {
 
 typedef struct {
   int     nat;		/* Number of atoms in this group		*/
-  atom_id *aid;		/* Atom ids of the atoms in this group		*/
-  real    M;		/* Total mass of group				*/
   rvec	  u;           	/* Mean velocities of home particles    	*/
+  double  mA;           /* Mass for topology A		                */
+  double  mB;           /* Mass for topology B		                */
 } t_grp_acc;
 
 typedef struct {

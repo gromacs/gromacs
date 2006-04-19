@@ -46,7 +46,7 @@
 #include "txtdump.h"
 #include "network.h"
  
-t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
+t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
 		int start,int homenr,int nstcomm,int comm_mode)
 {
   t_vcm *vcm;
@@ -69,14 +69,12 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
     snew(vcm->group_v,vcm->nr);
     snew(vcm->group_mass,vcm->nr);
     snew(vcm->group_name,vcm->nr);
-    vcm->group_id = md->cVCM;
-    for(i=start; (i<start+homenr); i++) {
-      g = vcm->group_id[i];
-      vcm->group_mass[g] += md->massT[i];
-    }
     snew(mass,vcm->nr);
-    for(g=0; (g<vcm->nr); g++)
-      mass[g] = vcm->group_mass[g];
+    for(i=start; (i<start+homenr); i++) {
+      g = atoms->atom[i].grpnr[egcVCM];
+      /* Only determine the topology A mass */
+      vcm->group_mass[g] += atoms->atom[i].m;
+    }
     if(PAR(cr))
       gmx_sum(vcm->nr,mass,cr);
 
@@ -115,10 +113,10 @@ static void update_tensor(rvec x,real m0,tensor I)
 }
 
 /* Center of mass code for groups */
-void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
+void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
 		  rvec x[],rvec v[],t_vcm *vcm)
 {
-  int    i,g,m;
+  int    i,g=0,m;
   real   m0,xx,xy,xz,yy,yz,zz;
   rvec   j0;
   
@@ -138,8 +136,9 @@ void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
     }
     
     for(i=start; (i<start+homenr); i++) {
-      m0 = mass[i];
-      g  = vcm->group_id[i];
+      m0 = md->massT[i];
+      if (md->cVCM)
+	g = md->cVCM[i];
       
       /* Calculate linear momentum */
       vcm->group_mass[g]  += m0;
@@ -161,23 +160,25 @@ void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
   }
 }
 
-void do_stopcm_grp(FILE *fp,int start,int homenr,rvec x[],rvec v[],
-		   t_vcm *vcm)
+void do_stopcm_grp(FILE *fp,int start,int homenr,unsigned short *group_id,
+		   rvec x[],rvec v[],t_vcm *vcm)
 {
-  int  i,g,m;
+  int  i,g=0,m;
   real tm,tm_1;
   rvec dv,dx;
   
   if (vcm->mode != ecmNO) {
     /* Subtract linear momentum */
     for(i=start; (i<start+homenr); i++) {
-      g = vcm->group_id[i];
+      if (group_id)
+	g = group_id[i];
       rvec_dec(v[i],vcm->group_v[g]);
     }
     if (vcm->mode == ecmANGULAR) {
       /* Subtract angular momentum */
       for(i=start; (i<start+homenr); i++) {
-	g = vcm->group_id[i];
+	if (group_id)
+	  g = group_id[i];
 	/* Compute the correction to the velocity for each atom */
 	rvec_sub(x[i],vcm->group_x[g],dx);
 	oprod(vcm->group_w[g],dx,dv);

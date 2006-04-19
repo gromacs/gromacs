@@ -102,7 +102,7 @@ static char *int_title(char *title,int nodeid,char buf[], int size)
 
 void init_single(FILE *log,t_inputrec *inputrec,
 		 char *tpxfile,t_topology *top, 
-                 t_state *state,t_mdatoms **mdatoms,
+                 t_state *state,
 		 t_nsborder *nsb)
 {
   int         step;
@@ -110,12 +110,6 @@ void init_single(FILE *log,t_inputrec *inputrec,
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
   check_nnodes_top(tpxfile,top);
-
-  snew(*mdatoms,1);
-  atoms2md(log,NULL,&top->atoms,inputrec->opts.nFreeze,
-	   inputrec->eI,inputrec->delta_t,
-	   inputrec->bd_fric,inputrec->opts.tau_t,
-	   inputrec->efep!=efepNO,0,NULL,*mdatoms,TRUE);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
   calc_nsb(log,&(top->blocks[ebCGS]),1,0,nsb,0);
@@ -142,7 +136,7 @@ static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile)
 
 void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
 		   t_inputrec *inputrec,t_topology *top,
-		   t_state *state,t_mdatoms **mdatoms,
+		   t_state *state,
 		   int list)
 {
   char buf[256];
@@ -174,11 +168,6 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       pr_top(log,0,int_title("topology",cr->nodeid,buf,255),top,TRUE);
     fflush(log);
   }
-  snew(*mdatoms,1);
-  atoms2md(log,cr,&(top->atoms),inputrec->opts.nFreeze,
-	   inputrec->eI,inputrec->delta_t,
-	   inputrec->bd_fric,inputrec->opts.tau_t,
-	   inputrec->efep!=efepNO,0,NULL,*mdatoms,TRUE);
 }
 
 

@@ -70,7 +70,6 @@ typedef struct {
   int    nr;          /* The number of orientation restraints               */
   int    nex;         /* The number of experiments                          */
   int  nref;          /* The number of atoms for the fit                    */
-  real invmref;       /* The inverse total mass of the fit atoms            */
   real *mref;         /* The masses of the reference atoms                  */
   rvec *xref;         /* The reference coordinates for the fit (nref)       */
   rvec *xtmp;         /* Temporary array for fitting (nref)                 */

@@ -210,7 +210,7 @@ int write_traj(FILE *log,t_commrec *cr,
   }
 
 #define MX(xvf) moveit(cr,cr->left,cr->right,#xvf,xvf,nsb)
-  if ((cr->nnodes-cr->npmenodes) > 1 && cr->dd==NULL) {
+  if ((cr->nnodes-cr->npmenodes) > 1 && !DOMAINDECOMP(cr)) {
     MX(xx);
     MX(vv);
     MX(ff);
@@ -226,7 +226,7 @@ int write_traj(FILE *log,t_commrec *cr,
 static int xd;
 
 void write_xtc_traj(FILE *log,t_commrec *cr,
-		    char *xtc_traj,t_nsborder *nsb,t_mdatoms *md,
+		    char *xtc_traj,t_nsborder *nsb,t_atoms *atoms,
 		    int step,real t,rvec *xx,matrix box,real prec)
 {
   static bool bFirst=TRUE;
@@ -242,27 +242,27 @@ void write_xtc_traj(FILE *log,t_commrec *cr,
     
     /* Count the number of atoms in the selection */
     natoms=0;
-    for(i=0; (i<md->nr); i++)
-      if (md->cXTC[i] == 0)
+    for(i=0; (i<atoms->nr); i++)
+      if (atoms->atom[i].grpnr[egcXTC] == 0)
 	natoms++;
     fprintf(log,"There are %d atoms in your xtc output selection\n",natoms);
-    if (natoms != md->nr)
+    if (natoms != atoms->nr)
       snew(x_sel,natoms);
     
     bFirst=FALSE;
   }
   
-  if ((cr->nnodes-cr->npmenodes) > 1) {
+  if ((cr->nnodes-cr->npmenodes) > 1 && !DOMAINDECOMP(cr)) {
     MX(xx);
   }
   
   if ((xx) && MASTER(cr)) {
-    if (natoms == md->nr)
+    if (natoms == atoms->nr)
       x_sel = xx;
     else {
       /* We need to copy everything into a temp array */
-      for(i=j=0; (i<md->nr); i++) {
-	if (md->cXTC[i] == 0) {
+      for(i=j=0; (i<atoms->nr); i++) {
+	if (atoms->atom[i].grpnr[egcXTC] == 0) {
 	  copy_rvec(xx[i],x_sel[j]);
 	  j++;
 	}

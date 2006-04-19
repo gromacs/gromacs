@@ -45,203 +45,204 @@
 
 #define ALMOST_ZERO 1e-30
 
-void atoms2md(FILE *fp,t_commrec *cr,
-	      t_atoms *atoms,ivec nFreeze[],
-	      int eI,real delta_t,real fric,real tau_t[],
-	      bool bPert,int nindex,int *index,
-	      t_mdatoms *md,bool bFirst)
+t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
 {
-  int       i,g;
-  real      fac;
-  double    tm[2];
+  int    i,g;
+  double tmA,tmB;
+  t_atom *atom;
+  t_mdatoms *md;
+  
+  snew(md,1);
+
+  tmA = 0.0;
+  tmB = 0.0;
+  for(i=0; i<atoms->nr; i++) {
+    atom = &atoms->atom[i];
+    
+    if (bFreeEnergy && PERTURBED(*atom)) {
+      md->nPerturbed++;
+      if (atom->mB != atom->m)
+	md->nMassPerturbed++;
+      if (atom->qB != atom->q)
+	md->nChargePerturbed++;
+    }
+    
+    tmA += atom->m;
+    tmB += atom->mB;
+  }
+
+  md->tmassA = tmA;
+  md->tmassB = tmB;
+  
+  if (bFreeEnergy && fp)
+    fprintf(fp,"There are %d atoms for free energy perturbation\n",
+	    md->nPerturbed);
+
+  return md;
+}
+
+void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
+	      int ind_start,int ind_end,int *index,
+	      t_mdatoms *md)
+{
+  int       start,i,g=0;
+  real      mA,mB,fac;
   t_atom    *atom;
+  t_grpopts *opts;
+
+  opts = &ir->opts;
 
   if (index == NULL) {
+    start  = 0;
     md->nr = atoms->nr;
   } else {
-    md->nr = nindex;
+    start  = ind_start;
+    md->nr = ind_end;
   }
+
   if (md->nr > md->nalloc) {
     md->nalloc = over_alloc(md->nr);
 
-    srenew(md->massA,md->nalloc);
-    srenew(md->massB,md->nalloc);
+    md->bPlainMD = (md->nPerturbed == 0);
+
+    if (md->nMassPerturbed) {
+      srenew(md->massA,md->nalloc);
+      srenew(md->massB,md->nalloc);
+    }
     srenew(md->massT,md->nalloc);
     srenew(md->invmass,md->nalloc);
     srenew(md->chargeA,md->nalloc);
-    srenew(md->chargeB,md->nalloc);
-    srenew(md->resnr,md->nalloc);
+    if (md->nPerturbed) {
+      srenew(md->chargeB,md->nalloc);
+    }
     srenew(md->typeA,md->nalloc);
-    srenew(md->typeB,md->nalloc);
+    if (md->nPerturbed) {
+      srenew(md->typeB,md->nalloc);
+    }
     srenew(md->ptype,md->nalloc);
-    srenew(md->cTC,md->nalloc);
+    if (opts->ngtc > 1) {
+      srenew(md->cTC,md->nalloc);
+      /* We always copy cTC with domain decomposition */
+    }
     srenew(md->cENER,md->nalloc);
-    srenew(md->cACC,md->nalloc);
-    srenew(md->cFREEZE,md->nalloc);
-    srenew(md->cXTC,md->nalloc);
+    if (opts->ngacc > 1) {
+      srenew(md->cACC,md->nalloc);
+      md->bPlainMD = FALSE;
+    }
+    if (opts->ngfrz > 1) {
+      srenew(md->cFREEZE,md->nalloc);
+      md->bPlainMD = FALSE;
+    }
     srenew(md->cVCM,md->nalloc);
-    srenew(md->cORF,md->nalloc);
-    srenew(md->bPerturbed,md->nalloc);
+    if (norires) {
+      srenew(md->cORF,md->nalloc);
+      md->bPlainMD = FALSE;
+    }
+    if (md->nPerturbed)
+      srenew(md->bPerturbed,md->nalloc);
     
-    srenew(md->cU1,md->nalloc);
-    srenew(md->cU2,md->nalloc);
-
-    /* QMMM additions */
-    srenew(md->cQMMM,md->nalloc);
-    srenew(md->atomnumber,md->nalloc);
-    srenew(md->bQM,md->nalloc);
+    /* The user should fix this */
+    if (FALSE) {
+      srenew(md->cU1,md->nalloc);
+      md->bPlainMD = FALSE;
+    }
+    if (FALSE) {
+      srenew(md->cU2,md->nalloc);
+      md->bPlainMD = FALSE;
+    }
+    
+    if (ir->bQMMM) {
+      /* QMMM additions */
+      srenew(md->bQM,md->nalloc);
+      md->bPlainMD = FALSE;
+    }
   }
 
-  md->nPerturbed=0;
-  md->bMassPerturbed=FALSE;
-  md->bChargePerturbed=FALSE;
-  tm[0] = 0.0;
-  tm[1] = 0.0;
-  for(i=0; (i<md->nr); i++) {
+  for(i=start; (i<md->nr); i++) {
     if (index == NULL)
       atom = &atoms->atom[i];
     else
       atom = &atoms->atom[index[i]];
 
-    if (EI_ENERGY_MINIMIZATION(eI)) {
-      md->massA[i]	= 1.0;
-      md->massB[i]	= 1.0;
-    } else if (eI == eiBD) {
+    if (md->cFREEZE)
+      md->cFREEZE[i]	= atom->grpnr[egcFREEZE];
+    if (EI_ENERGY_MINIMIZATION(ir->eI)) {
+      mA = 1.0;
+      mB = 1.0;
+    } else if (ir->eI == eiBD) {
       /* Make the mass proportional to the friction coefficient for BD.
        * This is necessary for the constraint algorithms.
        */
-      if (fric) {
-	md->massA[i]	= fric*delta_t;
-	md->massB[i]	= fric*delta_t;
+      if (ir->bd_fric) {
+	mA = ir->bd_fric*ir->delta_t;
+	mB = ir->bd_fric*ir->delta_t;
       } else {
-	fac = delta_t/tau_t[atom->grpnr[egcTC]];
-	md->massA[i]	= atom->m*fac;
-	md->massB[i]	= atom->mB*fac;
+	fac = ir->delta_t/opts->tau_t[atom->grpnr[egcTC]];
+	mA = atom->m*fac;
+	mB = atom->mB*fac;
       }
     } else {
-      md->massA[i]	= atom->m;
-      md->massB[i]	= atom->mB;
+      mA = atom->m;
+      mB = atom->mB;
     }
-    md->massT[i]	= md->massA[i];
-    md->chargeA[i]	= atom->q;
-    md->chargeB[i]	= atom->qB;
-    md->resnr[i]	= atom->resnr;
-    md->typeA[i]	= atom->type;
-    md->typeB[i]	= atom->typeB;
-    md->ptype[i]	= atom->ptype;
-    md->cTC[i]		= atom->grpnr[egcTC];
-    md->cENER[i]	= atom->grpnr[egcENER];
-    md->cACC[i]		= atom->grpnr[egcACC];
-    md->cFREEZE[i]	= atom->grpnr[egcFREEZE];
-    md->cXTC[i]      	= atom->grpnr[egcXTC];
-    md->cVCM[i]      	= atom->grpnr[egcVCM];
-    md->cORF[i]      	= atom->grpnr[egcORFIT];
-    if (md->massA[i] != 0.0) {
-      if (bFirst &&
-	  (cr==NULL || !DOMAINDECOMP(cr) || i < cr->dd->nat_local)) {
-	tm[0]          += md->massA[i];
-	tm[1]          += md->massB[i];
-      }
-      g = md->cFREEZE[i];
-      if (nFreeze[g][XX] && nFreeze[g][YY] && nFreeze[g][ZZ])
+    if (md->nPerturbed) {
+      md->massA[i]	= mA;
+      md->massB[i]	= mB;
+    }
+    md->massT[i]	= mA;
+    if (mA == 0.0) {
+      md->invmass[i] = 0;
+    } else {
+      if (md->cFREEZE)
+	g = md->cFREEZE[i];
+      if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
 	/* Set the mass of completely frozen particles to ALMOST_ZERO iso 0
 	   to avoid div by zero in lincs or shake.
 	   Note that constraints can still move a partially frozen particle. */
 	md->invmass[i]	= ALMOST_ZERO;
-      else if (md->massT[i] == 0)
-	md->invmass[i]  = 0;
       else
-	md->invmass[i]	= 1.0/md->massT[i];
+	md->invmass[i]	= 1.0/mA;
     }
-    if (bPert) {
-      md->bPerturbed[i] = PERTURBED(atoms->atom[i]);
-      if (md->bPerturbed[i]) {
-	md->nPerturbed++;
-	if (atom->mB != atom->m)
-	  md->bMassPerturbed = TRUE;
-	if (atom->qB != atom->q)
-	  md->bChargePerturbed = TRUE;
+    md->chargeA[i]	= atom->q;
+    if (md->nPerturbed)
+      md->chargeB[i]	= atom->qB;
+    md->typeA[i]	= atom->type;
+    if (md->nPerturbed)
+      md->typeB[i]	= atom->typeB;
+    md->ptype[i]	= atom->ptype;
+    if (md->cTC)
+      md->cTC[i]	= atom->grpnr[egcTC];
+    md->cENER[i]	= atom->grpnr[egcENER];
+    if (md->cACC)
+      md->cACC[i]	= atom->grpnr[egcACC];
+    if (md->cVCM)
+      md->cVCM[i]      	= atom->grpnr[egcVCM];
+    if (md->cORF)
+      md->cORF[i]      	= atom->grpnr[egcORFIT];
+
+    if (md->cU1)
+      md->cU1[i]      	= atom->grpnr[egcUser1];
+    if (md->cU2)
+      md->cU2[i]      	= atom->grpnr[egcUser2];
+
+    if (ir->bQMMM) {
+      if (atom->grpnr[egcQMMM] < atoms->grps[egcQMMM].nr-1) {
+	md->bQM[i]      = TRUE;
+      } else {
+	md->bQM[i]      = FALSE;
       }
     }
-
-    md->cU1[i]      	= atom->grpnr[egcUser1];
-    md->cU2[i]      	= atom->grpnr[egcUser2];
-    md->cQMMM[i]        = atom->grpnr[egcQMMM];
-    if ((md->cQMMM[i])<(atoms->grps[egcQMMM].nr-1)){
-      md->bQM[i]          = TRUE;
-    } else {
-      md->bQM[i] = FALSE;
-    }
-  }
-  if (bFirst) {
-    if (cr && DOMAINDECOMP(cr)) {
-      gmx_sumd(2,tm,cr);
-    }
-    md->tmassA = tm[0];
-    md->tmassB = tm[1];
-
-    if (bPert && fp)
-      fprintf(fp,"There are %d atoms for free energy perturbation\n",
-	      md->nPerturbed);
   }
 }
 
-void md2atoms(t_mdatoms *md,t_atoms *atoms,bool bFree)
-{
-  int i;
-  
-  snew(atoms->atom,md->nr);
-  for(i=0; (i<md->nr); i++) {
-    atoms->atom[i].m                = md->massT[i];
-    atoms->atom[i].resnr            = md->resnr[i];
-    atoms->atom[i].type             = md->typeA[i];
-    atoms->atom[i].ptype            = md->ptype[i];
-    atoms->atom[i].grpnr[egcTC]     = md->cTC[i];
-    atoms->atom[i].grpnr[egcENER]   = md->cENER[i];
-    atoms->atom[i].grpnr[egcACC]    = md->cACC[i];
-    atoms->atom[i].grpnr[egcFREEZE] = md->cFREEZE[i];
-    atoms->atom[i].grpnr[egcVCM]    = md->cVCM[i];
-    atoms->atom[i].grpnr[egcXTC]    = md->cXTC[i];
-    atoms->atom[i].grpnr[egcORFIT]  = md->cORF[i];
-
-    atoms->atom[i].grpnr[egcUser1]  = md->cU1[i];
-    atoms->atom[i].grpnr[egcUser2]  = md->cU2[i];
-    atoms->atom[i].grpnr[egcQMMM]   = md->cQMMM[i];
-
-  }
-  if (bFree) {
-    sfree(md->massA);
-    sfree(md->massB);
-    sfree(md->massT);
-    sfree(md->invmass);
-    sfree(md->chargeA);
-    sfree(md->chargeB);
-    sfree(md->resnr);
-    sfree(md->typeA);
-    sfree(md->typeB);
-    sfree(md->ptype);
-    sfree(md->cTC);
-    sfree(md->cENER);
-    sfree(md->cACC);
-    sfree(md->cFREEZE);
-    sfree(md->cVCM);
-    sfree(md->cXTC);
-    sfree(md->cORF);
-    
-    sfree(md->cU1);
-    sfree(md->cU2);
-    sfree(md->cQMMM);
-  }
-}
-
-void update_mdatoms(t_mdatoms *md,real lambda, bool bFirst)
+void update_mdatoms(t_mdatoms *md,real lambda)
 {
   int    i,end;
   real   L1=1.0-lambda;
   
   end=md->nr;
 
-  if (md->bMassPerturbed || bFirst) {
+  if (md->nMassPerturbed) {
     for(i=0; (i<end); i++) {
       if (md->bPerturbed[i]) {
 	md->massT[i] = L1*md->massA[i] + lambda*md->massB[i];
@@ -250,7 +251,7 @@ void update_mdatoms(t_mdatoms *md,real lambda, bool bFirst)
       }
     }
     md->tmass = L1*md->tmassA + lambda*md->tmassB;
+  } else {
+    md->tmass = md->tmassA;
   }
 }
-
-

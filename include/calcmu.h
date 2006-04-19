@@ -45,7 +45,7 @@
 #include "network.h"
 
 extern void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
-		    bool bFreeEnergy,
+		    bool nChargePerturbed,
 		    dvec mu,dvec mu_B);
 
 extern bool read_mu(FILE *fp,rvec mu,real *vol);

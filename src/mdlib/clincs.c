@@ -808,7 +808,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
   }
   if (bCoordinates) {
     if (ir->efep != efepNO) {
-      if (md->bMassPerturbed && lincsd->matlam != lambda) {
+      if (md->nMassPerturbed && lincsd->matlam != lambda) {
 	set_lincs_matrix(lincsd,md->invmass);
 	lincsd->matlam = lambda;
       }
