@@ -67,7 +67,6 @@
 #include "pppm.h"
 #include "pme.h"
 #include "mdatoms.h"
-#include "rmpbc.h"
 #include "repl_ex.h"
 #include "qmmm.h"
 #include "mpelogging.h"
@@ -75,11 +74,6 @@
 
 #ifdef GMX_MPI
 #include <mpi.h>
-#endif
-
-#ifdef USE_MPE
-#include "mpe.h"
-#include "mpelogging.h"
 #endif
 
 /* The following two variables and the signal_handler function
@@ -341,21 +335,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
    * energy message in do_pmeonly => receive_lrforces) */
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
-   
-  /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM)
-    init_pppm(stdlog,cr,nsb,FALSE,TRUE,state->box,getenv("GMXGHAT"),inputrec);
-  if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER))
-    (void) init_pme(stdlog,cr,inputrec->nkx,inputrec->nky,inputrec->nkz,
-		    inputrec->pme_order,
-		    /*HOMENR(nsb),*/nsb->natoms,
-		    mdatoms->bChargePerturbed,
-		    inputrec->bOptFFT,inputrec->ewald_geometry);
-
-  /* Make molecules whole at start of run */
-  if (fr->ePBC != epbcNONE)  {
-    do_pbc_first(stdlog,state->box,fr,graph,state->x);
-  }
   
   /* Now do whatever the user wants us to do (how flexible...) */
   switch (inputrec->eI) {
@@ -513,7 +492,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initial values */
   init_md(cr,inputrec,&t,&t0,&state_global->lambda,&lam0,
 	  &mynrnb,top_global,
-
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
@@ -643,8 +621,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       copy_rvec(state->v[ii],vcopy[ii]);
     }
     copy_mat(state->box,boxcopy);
-  }  
-  
+  } 
   /* Write start time and temperature */
   start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
   
@@ -780,7 +757,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       }
       copy_mat(boxcopy,state->box);
     }
-
+    
     if (bVsites) {
       if (graph) {
 	/* Following is necessary because the graph may get out of sync
@@ -791,10 +768,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	shift_self(graph,state->box,state->x);
       }
       construct_vsites(log,state->x,&mynrnb,inputrec->delta_t,state->v,
-		       &top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
+			&top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
+      
       if (graph)
 	unshift_self(graph,state->box,state->x);
     }
+     
     debug_gmx();
     
     /* Set values for invmass etc. This routine not parallellized, but hardly
@@ -841,7 +820,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * Check comments in sim_util.c
        */
       do_force(log,cr,inputrec,nsb,step,&mynrnb,top,grps,
-
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
