@@ -44,7 +44,7 @@
 #include "smalloc.h"
 #include "vec.h"
 #include "xvgr.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "txtdump.h"
 #include "network.h"
 #include "nrnb.h"

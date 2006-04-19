@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include "vec.h"
 #include "constr.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 #ifdef DEBUG
 static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)

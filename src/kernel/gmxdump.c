@@ -47,7 +47,7 @@
 #include "copyrite.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "xtcio.h"
 #include "enxio.h"
 #include "smalloc.h"

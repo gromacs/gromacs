@@ -47,7 +47,7 @@
 #include "xutil.h"
 #include "xdlg.h"
 #include "xmb.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 /*****************************
  *
  * Helpful routines

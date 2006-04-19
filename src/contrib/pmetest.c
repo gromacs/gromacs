@@ -47,7 +47,7 @@
 #include "tpxio.h"
 #include "statutil.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "mdatoms.h"
 #include "ewald_util.h"

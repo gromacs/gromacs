@@ -46,7 +46,7 @@
 #include "topdirs.h"
 #include "toputil.h"
 #include "symtab.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include <math.h>
 
 /* UTILITIES */

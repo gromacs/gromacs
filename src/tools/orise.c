@@ -42,7 +42,7 @@
 #include "maths.h"
 #include "string2.h"
 #include "hxprops.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "smalloc.h"
 #include "readev.h"

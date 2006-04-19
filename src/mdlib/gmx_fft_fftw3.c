@@ -25,7 +25,7 @@
 #include <fftw3.h>
 
 #include "gmx_fft.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 
 #ifdef GMX_DOUBLE
@@ -147,7 +147,7 @@ gmx_fft_init_1d_real(gmx_fft_t *   pfft,
 {
     gmx_fft_t              fft;
     real            *p1,*p2,*up1,*up2;
-    void *                pc;
+    char *                pc;
     int                   i,j,k;
 
     if(pfft==NULL)

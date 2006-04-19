@@ -50,7 +50,7 @@
 #include "vec.h"
 #include "statutil.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "physics.h"
 #include "calch.h"
 #include "genhydro.h"

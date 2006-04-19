@@ -43,7 +43,7 @@
 #include <limits.h>
 #include <time.h>
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "network.h"
 #include "main.h"
 #include "macros.h"

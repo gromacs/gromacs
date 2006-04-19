@@ -43,7 +43,7 @@
 #include "typedefs.h"
 #include "network.h"
 #include "vec.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "physics.h"
 #include "nsb.h"
 #include "main.h"

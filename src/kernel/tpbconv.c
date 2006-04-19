@@ -39,7 +39,7 @@
 
 #include <math.h>
 #include "index.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "string2.h"
 #include "sysstuff.h"
 #include "smalloc.h"

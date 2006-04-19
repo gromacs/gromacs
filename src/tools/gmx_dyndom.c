@@ -43,7 +43,7 @@
 #include "copyrite.h"
 #include "index.h"
 #include "confio.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "physics.h"
 #include "random.h"

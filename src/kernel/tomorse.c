@@ -46,7 +46,7 @@
 #include "grompp.h"
 #include "futil.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 typedef struct {
   char *ai,*aj;

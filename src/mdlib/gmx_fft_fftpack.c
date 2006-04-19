@@ -27,7 +27,7 @@
 
 
 #include "gmx_fft.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 
 /** Contents of the FFTPACK fft datatype. 

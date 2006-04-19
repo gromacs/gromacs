@@ -41,7 +41,7 @@
 #include <math.h>
 
 #include "typedefs.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "string2.h"
 #include "smalloc.h"

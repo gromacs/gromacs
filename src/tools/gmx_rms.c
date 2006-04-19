@@ -48,7 +48,7 @@
 #include "string2.h"
 #include "vec.h"
 #include "index.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "princ.h"
 #include "rmpbc.h"

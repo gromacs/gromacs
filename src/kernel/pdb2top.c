@@ -46,7 +46,7 @@
 #include "macros.h"
 #include "symtab.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "pdb2top.h"
 #include "topexcl.h"
 #include "topdirs.h"

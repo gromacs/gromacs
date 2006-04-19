@@ -39,7 +39,7 @@
 
 #include <string.h>
 #include "sysstuff.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "names.h"
 #include "macros.h"
 #include "nrnb.h"

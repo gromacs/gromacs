@@ -47,7 +47,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "vec.h"
 #include "copyrite.h"
 #include "futil.h"

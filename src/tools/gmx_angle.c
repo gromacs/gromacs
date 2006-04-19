@@ -49,7 +49,7 @@
 #include "vec.h"
 #include "index.h"
 #include "macros.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "xvgr.h"
 #include "gstat.h"
 #include "trnio.h"

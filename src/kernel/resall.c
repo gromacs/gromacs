@@ -43,7 +43,7 @@
 #include "strdb.h"
 #include "futil.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "symtab.h"
 #include "macros.h"
 #include "resall.h"

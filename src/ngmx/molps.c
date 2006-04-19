@@ -44,7 +44,7 @@
 #include "macros.h"
 #include "xutil.h"
 #include "3dview.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "buttons.h"
 #include "manager.h"
 #include "nmol.h"

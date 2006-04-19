@@ -46,7 +46,7 @@
 #include "statutil.h"
 #include "main.h"
 #include "network.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "copyrite.h"
 #include "macros.h"
 #include "string2.h"
@@ -463,7 +463,7 @@ void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline)
 
 /* 
  * These files are global variables in the gromacs preprocessor
- * Every routine in a file that includes fatal.h can write to these
+ * Every routine in a file that includes gmx_fatal.h can write to these
  * debug channels. Depending on the debuglevel used
  * 0 to 3 of these filed are redirected to /dev/null
  *

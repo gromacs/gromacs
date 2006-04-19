@@ -40,7 +40,7 @@
 #include <string.h>
 #include "sysstuff.h"
 #include "smalloc.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "txtdump.h"
 #include "names.h"
 #include "futil.h"

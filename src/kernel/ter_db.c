@@ -46,7 +46,7 @@
 #include "h_db.h"
 #include "string2.h"
 #include "strdb.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "ter_db.h"
 #include "toputil.h"
 

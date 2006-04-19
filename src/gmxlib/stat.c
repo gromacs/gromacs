@@ -41,7 +41,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "sysstuff.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "network.h"
 #include "txtdump.h"
 #include "names.h"

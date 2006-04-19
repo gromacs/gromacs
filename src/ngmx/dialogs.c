@@ -49,7 +49,7 @@
 #include "nmol.h"
 #include "manager.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 #define MBFLAGS /* MB_APPLMODAL | */ MB_DONTSHOW
 

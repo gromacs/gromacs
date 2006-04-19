@@ -53,7 +53,7 @@
 #include "atomprop.h"
 #include "names.h"
 #include "vec.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "statutil.h"
 #include "vec.h"
 #include "gbutil.h"

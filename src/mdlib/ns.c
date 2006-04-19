@@ -55,7 +55,7 @@
 #include "ns.h"
 #include "pbc.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "nrnb.h"
 #include "txtdump.h"
 

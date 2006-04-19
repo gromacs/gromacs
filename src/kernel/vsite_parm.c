@@ -49,7 +49,7 @@
 #include "physics.h"
 #include "index.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "string2.h"
 #include "physics.h"
 

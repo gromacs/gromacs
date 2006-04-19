@@ -48,7 +48,7 @@
 #include "ns.h"
 #include "macros.h"
 #include "names.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "mshift.h"
 #include "main.h"
 #include "disre.h"

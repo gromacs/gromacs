@@ -44,7 +44,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "main.h"
 

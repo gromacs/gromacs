@@ -116,7 +116,7 @@
 #include "typedefs.h"
 #include "sysstuff.h"
 #include "macros.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 #define EXP_LSB         0x00800000
 #define EXP_MASK        0x7f800000

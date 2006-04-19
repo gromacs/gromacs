@@ -48,7 +48,7 @@
 #include "string2.h"
 #include "futil.h"
 #include "network.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "statutil.h"
 

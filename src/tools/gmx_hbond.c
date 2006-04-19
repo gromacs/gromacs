@@ -47,7 +47,7 @@
 #include "tpxio.h"
 #include "physics.h"
 #include "macros.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "index.h"
 #include "smalloc.h"
 #include "vec.h"

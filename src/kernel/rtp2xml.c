@@ -49,7 +49,7 @@
 #include "vec.h"
 #include "statutil.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "pdbio.h"
 #include "toputil.h"
 #include "h_db.h"

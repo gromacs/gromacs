@@ -46,7 +46,7 @@
 #include "pbc.h"
 #include "smalloc.h"
 #include "txtdump.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 /*****************************************
  *     PERIODIC BOUNDARY CONDITIONS

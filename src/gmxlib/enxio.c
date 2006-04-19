@@ -39,7 +39,7 @@
 
 #include "futil.h"
 #include "string2.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "smalloc.h"
 #include "gmxfio.h"
 #include "enxio.h"

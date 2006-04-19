@@ -47,7 +47,7 @@
 #include "ewald_util.h"
 #include "shift_util.h"
 #include "fftgrid.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "physics.h"
 #include "ewald.h"
 

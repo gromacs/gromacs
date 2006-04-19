@@ -45,7 +45,7 @@
 #include "random.h"
 #include "bondf.h"
 #include "futil.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "nrama.h"
 #include "rmpbc.h"
 

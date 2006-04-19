@@ -41,7 +41,7 @@
 
 #include "confio.h"
 #include "copyrite.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
 #include "macros.h"

@@ -41,7 +41,7 @@
 #include <math.h>
 #include "macros.h"
 #include "vec.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "gstat.h"
 #include "pbc.h"
 

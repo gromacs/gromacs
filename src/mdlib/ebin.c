@@ -43,7 +43,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "string2.h"
 #include "ebin.h"
 #include "main.h"

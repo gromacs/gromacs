@@ -53,7 +53,7 @@
 #include "filenm.h"
 #include "pdbio.h"
 #include "tpxio.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "copyrite.h"
 #include "filenm.h"
 #include "statutil.h"

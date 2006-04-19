@@ -73,7 +73,7 @@
 #include "shift_util.h"
 #include "ewald_util.h"
 #include "fftgrid.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "ewald.h"
 #include "pme.h"
 #include "network.h"

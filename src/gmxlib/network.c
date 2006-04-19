@@ -38,7 +38,7 @@
 #endif
 
 #include <string.h>
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "main.h"
 #include "smalloc.h"
 #include "network.h"

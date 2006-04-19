@@ -45,7 +45,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "string2.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "macros.h"
 #include "names.h"
 #include "symtab.h"

@@ -25,7 +25,7 @@ edsam.h \
 enxio.h \
 ewald.h \
 ewald_util.h \
-fatal.h \
+gmx_fatal.h \
 ffscanf.h \
 fftgrid.h \
 filenm.h \

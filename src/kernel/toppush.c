@@ -49,7 +49,7 @@
 #include "toppush.h"
 #include "topdirs.h"
 #include "symtab.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 
 
 void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)

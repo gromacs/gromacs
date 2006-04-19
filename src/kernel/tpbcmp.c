@@ -48,7 +48,7 @@
 #include "statutil.h"
 #include "sysstuff.h"
 #include "txtdump.h"
-#include "fatal.h"
+#include "gmx_fatal.h"
 #include "names.h"
 #include "tpxio.h"
 #include "enxio.h"
