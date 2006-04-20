@@ -72,6 +72,7 @@
 #include "gmx_random.h"
 #include "physics.h"
 #include "xvgr.h"
+#include "mdatoms.h"
 
 static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 {
@@ -208,7 +209,7 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
   *end   = nsb->homenr[cr->nodeid] + *start;
 
   atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,mdatoms);
-  update_mdatoms(mdatoms,*lambda,TRUE);
+  update_mdatoms(mdatoms,*lambda);
 
   *vcm = init_vcm(log,top,cr,&top->atoms,
 		  *start,HOMENR(nsb),inputrec->nstcomm,inputrec->comm_mode);
