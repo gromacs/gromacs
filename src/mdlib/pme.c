@@ -311,7 +311,8 @@ static void pmeredist(t_commrec *cr, bool forw,
 /* domain decomposition by x coordinate           */
 {
   static int *scounts, *rcounts,*sdispls, *rdispls, *sidx;
-  static real *buf;
+  static real *buf=NULL;
+  static int buf_nalloc=0;
   int i, ii;
   static bool bFirst=TRUE;
   static int  npme; /* how many nodes participate in PME? */
@@ -327,8 +328,11 @@ static void pmeredist(t_commrec *cr, bool forw,
     snew(sdispls,npme);
     snew(rdispls,npme);
     snew(sidx,npme);
-    snew(buf,n*DIM);
     bFirst=FALSE;
+  }
+  if (n > buf_nalloc) {
+    buf_nalloc = over_alloc(n);
+    srenew(buf,buf_nalloc*DIM);
   }
 
 #ifdef GMX_MPI
