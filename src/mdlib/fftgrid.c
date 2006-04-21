@@ -126,7 +126,7 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
   {
 #ifdef GMX_MPI
       gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
-			      cr->mpi_comm_mysim);
+			      cr->mpi_comm_mygroup);
           
       gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
                                 &(grid->pfft.local_x_start),                                
