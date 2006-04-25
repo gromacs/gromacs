@@ -142,8 +142,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
   bDomDec = FALSE;
   if (PAR(cr)) {
-    bDomDec = (ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1);
-    
     /* The master thread on the master node reads from disk, 
      * then dsitributes everything to the other processors.
      */
@@ -154,6 +152,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
      * So we (temporarily) fix it here.
      */
     nsb->nnodes = cr->nnodes;
+
+    bDomDec = (ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1);
+
     if (!bDomDec) {
       split_system_first(stdlog,inputrec,state,cr,top,nsb);
     } else {
@@ -192,6 +193,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   /* If necessary split communicator and adapt ring topology */ 
   if (pmeduty(cr)==epmePPONLY || pmeduty(cr)==epmePMEONLY)
   {
+    if (2*cr->npmenodes > cr->nnodes)
+      gmx_fatal(FARGS,"The number of pme nodes (%d) can not be more than half of the total number of nodes (%d)",cr->npmenodes,cr->nnodes);
     /* Split communicator */
 #define split
 #ifdef split
@@ -226,6 +229,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       cr->mpi_comm_mygroup = MPI_COMM_NULL;
     }
 #endif
+    fprintf(stdlog,"This is a %s only node\n",
+	    pmeduty(cr)==epmePMEONLY ? "PME-mesh" : "particle-particle");
     /* Change topology to one ring for PP and another for PME nodes */ 
     if (cr->nodeid==0)
       cr->left=cr->nnodes-cr->npmenodes-1; 
@@ -239,6 +244,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   else  /* PME is done on all nodes */
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim; 
 #endif /* GMX_MPI */
+
+  if (bDomDec)
+    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,top->blocks[ebCGS].nr);
 
   /* Index numbers for parallellism... */
   nsb->nodeid      = cr->nodeid;
@@ -307,15 +315,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initiate PME if necessary */
   /* either on all nodes (if epmePMEANDPP is TRUE) 
    * or on dedicated PME nodes (if epmePMEONLY is TRUE) */
-  if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER))
-  {
-    if (pmeduty(cr)==epmePMEONLY || pmeduty(cr)==epmePMEANDPP)
-    { 
+  if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER)) {
+    if (pmeduty(cr)==epmePMEONLY || pmeduty(cr)==epmePMEANDPP) { 
       GMX_MPE_LOG(ev_init_pme_start);
       
       status = gmx_pme_init(stdlog,&fr->pmedata,cr,inputrec,
-			    /*HOMENR(nsb),*/nsb->natoms,
-			    mdatoms->nChargePerturbed,bVerbose);
+			    nsb->natoms,mdatoms->nChargePerturbed,bVerbose);
       
       GMX_MPE_LOG(ev_init_pme_finish);
       if (status != 0)
@@ -355,7 +360,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     else /* pmeduty(cr) == epmePMEONLY */
     {
       /* do PME: */
-      gmx_pmeonly(stdlog,fr->pmedata,cr,state->box,nsb,&nrnb[nsb->nodeid],
+
+      gmx_pmeonly(stdlog,fr->pmedata,cr,nsb,&nrnb[nsb->nodeid],
 		  fr->ewaldcoeff,state->lambda,FALSE);
     }
 #endif    
@@ -496,16 +502,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
-  if (PAR(cr) &&
-      (ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
-    t_block  *cgs=&(top_global->blocks[ebCGS]);
-
+  if (DOMAINDECOMP(cr)) {
+    /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc(TRUE);
 
-    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,cgs->index[cgs->nr],
-				       top_global->atoms.nr,state_global->box,
-				       &top_global->idef,
-				       EI_DYNAMICS(inputrec->eI));
+    dd_make_reverse_top(cr->dd,
+			top_global->atoms.nr,&top_global->idef,
+			EI_DYNAMICS(inputrec->eI));
 
     if (DDMASTER(cr->dd)) {
       snew(state,1);
@@ -965,27 +968,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* (un)shifting should NOT be done after this,
      * since the box vectors might have changed
      */
-
-#ifdef GMX_MPI     
-    /* in case of node splitting, the PP node with the highest node ID sends
-     * the new box to the PME nodes */
-    if ( DYNAMIC_BOX(*inputrec) && 
-        (cr->npmenodes)        && 
-	(cr->nodeid == cr->nnodes-cr->npmenodes-1) ) 
-    {   
-      elements=0;
-      for (i=0; i<DIM; i++)
-        for (j=0; j<DIM; j++)
-          {
-	    boxbuf[elements]=state->box[i][j];
-	    elements++;
-	  }
-      /* send box buffer */
-      MPI_Send(&boxbuf,DIM*DIM,GMX_MPI_REAL,cr->nnodes-cr->npmenodes,0,
-	       cr->mpi_comm_mysim);	
-    }
-/*    fprintf(stderr,"Node %d, box[0][0], %20.15f\n", cr->nodeid, state->box[0][0]); */
-#endif
 
     /* Non-equilibrium MD: this is parallellized, but only does communication
      * when there really is NEMD.

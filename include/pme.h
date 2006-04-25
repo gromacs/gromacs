@@ -51,8 +51,8 @@ typedef real *splinevec[DIM];
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
 extern int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
-			t_inputrec *ir,int homenr,bool bFreeEnergy,
-			bool bVerbose);
+			t_inputrec *ir,int homenr,
+			bool bFreeEnergy,bool bVerbose);
 			
 extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 /* Initialize and destroy the pme data structures resepectively.
@@ -75,7 +75,7 @@ extern int gmx_pme_do(FILE *log,       gmx_pme_t pme,
  */
 
 extern int gmx_pmeonly(FILE *logfile,     gmx_pme_t pme,
-                       t_commrec *cr,     matrix box,   
+                       t_commrec *cr,
 		       t_nsborder *nsb,   t_nrnb *mynrnb,
 		       real ewaldcoeff,   real lambda,
 		       bool bGatherOnly);
@@ -86,10 +86,10 @@ extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
 			  int direction);
 
 /* The following two routines are for PME/PP node splitting: */
-extern void gmx_pme_send_x(t_nsborder *nsb, rvec x[], 
+extern void gmx_pme_send_x(t_commrec *cr, t_nsborder *nsb,
+			   matrix box,rvec x[], 
 			   real chargeA[],  real chargeB[], 
-			   bool bLastTime, bool bFreeEnergy,
-			   t_commrec *cr);
+			   bool bFreeEnergy, bool bLastStep);
 /* send the particle coordinates (and charges) from the PP to the PME nodes,
  * so that they can do a PME step */
 
@@ -98,6 +98,4 @@ extern void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
 			      real *energy,  int step);
 /* PP nodes receive the long range forces from the PME nodes */
 
-
-		   
 #endif

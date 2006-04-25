@@ -281,7 +281,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
 #ifdef GMX_MPI
   /* send particle coordinates and charges to the pme nodes if necessary */
-  if (pmeduty(cr)==epmePPONLY)
+  if (pmeduty(cr) == epmePPONLY)
   { 
     GMX_MPE_LOG(ev_send_coordinates_start);
     
@@ -291,8 +291,8 @@ void do_force(FILE *fplog,t_commrec *cr,
       GMX_MPE_LOG(ev_shift_finish);
     }
 
-    gmx_pme_send_x(nsb,x,mdatoms->chargeA,mdatoms->chargeB,
-		   step >= inputrec->nsteps,inputrec->efep!=efepNO,cr); 
+    gmx_pme_send_x(cr,nsb,box,x,mdatoms->chargeA,mdatoms->chargeB,
+		   mdatoms->nChargePerturbed,step>=inputrec->nsteps);
 
     if (graph) {
       GMX_MPE_LOG(ev_shift_start);
@@ -412,7 +412,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 #ifdef GMX_MPI       
       if (pmeduty(cr)==epmePPONLY) 
       {
-        gmx_pme_receive_f(cr,nsb,fr->f_el_recip,fr->vir_el_recip,&e_temp,step);
+	gmx_pme_receive_f(cr,nsb,fr->f_el_recip,fr->vir_el_recip,&e_temp,step);
         ener[F_COUL_RECIP] += e_temp;
       }
 #endif

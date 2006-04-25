@@ -25,11 +25,12 @@ extern int dd_ncg_tot(gmx_domdec_t *dd);
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 
-extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
-					       ivec nc,int ncg,int natoms,
-					       matrix box,
-					       t_idef *idef,
-					       bool bDynamics);
+extern void dd_make_reverse_top(gmx_domdec_t *dd,
+				int natoms,t_idef *idef,bool bDynamics);
+
+extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
+					       t_commrec *cr,ivec nc,
+					       int ncg);
 
 extern void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd);
 

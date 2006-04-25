@@ -86,7 +86,8 @@
 #define DFT_TOL 1e-7
 /* #define PRT_FORCE */
 /* conditions for on the fly time-measurement */
-#define TAKETIME (step > 1 && timesteps < 10)
+//#define TAKETIME (step > 1 && timesteps < 10)
+#define TAKETIME FALSE
 
 #ifdef GMX_DOUBLE
 #define mpi_type MPI_DOUBLE
@@ -107,7 +108,6 @@ typedef struct gmx_pme {
   bool bPar;               /* Run in parallel? */
   bool bFEP;               /* Compute Free energy contribution */
   bool bVerbose;           /* Should we be talkative? */
-  bool bDynamicBox;        /* Whether the box changes during the simulation */
   int leftbnd, rightbnd;   /* Size of left and right boundary */
   int my_homenr;
   int nkx,nky,nkz;         /* Grid dimensions */
@@ -124,12 +124,27 @@ typedef struct gmx_pme {
   t_pmeatom *pmeatom;
 } t_gmx_pme;
 
+typedef struct {
+  int    natoms;
+  matrix box;
+  bool   bLastStep;
+} gmx_pme_comm_n_box_t;
+
+typedef struct {
+  matrix vir;
+  real   energy;
+  int    flags;
+} gmx_pme_comm_vir_ene_t;
+
 /* The following stuff is needed for signal handling on the PME nodes. 
  * signal_handler needs to be defined in md.c, the bGot..Signal variables
  * here */ 
 extern RETSIGTYPE signal_handler(int n);
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE; 
+
+#define PME_TERM (1<<0)
+#define PME_USR1 (1<<1)
 
 /* #define SORTPME */
 
@@ -263,7 +278,7 @@ static void calc_idx(gmx_pme_t pme,rvec x[])
 
 static void pme_calc_pidx(t_commrec *cr,
 			  int natoms,matrix box, rvec x[],int nx, int nnx[],
-			  int *pidx, int *gidx)
+			  int *pidx, int *gidx, int *count)
 {
   int  i,j,jj;
   int nx2;
@@ -289,6 +304,10 @@ static void pme_calc_pidx(t_commrec *cr,
     taskid++;
   }
 
+  if (count)
+    for(i=0; i<npme; i++)
+      count[i] = 0;
+
   nx2=2*nx;
   calc_recipbox(box,recipbox);
   rxx = recipbox[XX][XX];
@@ -301,6 +320,8 @@ static void pme_calc_pidx(t_commrec *cr,
     tx = nx2 + nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
     tix = (int)(tx);
     gidx[i] = pidx[nnx[tix]];
+    if (count)
+      count[gidx[i]]++;
   }
 }
 
@@ -385,12 +406,13 @@ static void pmeredist(t_commrec *cr, bool forw,
                   cr->mpi_comm_mygroup);
 
 /* Copy data from receive buffer */
-    for(i=0; i<npme; i++) sidx[i]=sdispls[i];
+    for(i=0; i<npme; i++)
+      sidx[i] = sdispls[i];
     for(i=0; (i<n); i++) {
-      ii=DIM*sidx[idxa[i]];
-      x_f[i][XX]+=buf[ii+XX];
-      x_f[i][YY]+=buf[ii+YY];
-      x_f[i][ZZ]+=buf[ii+ZZ];
+      ii = DIM*sidx[idxa[i]];
+      x_f[i][XX] = buf[ii+XX];
+      x_f[i][YY] = buf[ii+YY];
+      x_f[i][ZZ] = buf[ii+ZZ];
       sidx[idxa[i]]++;
     }
   }
@@ -801,9 +823,11 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
       fx     = 0.0;
       fy     = 0.0;
       fz     = 0.0;
+      /*
       fnx    = f[n][XX];
       fny    = f[n][YY];
       fnz    = f[n][ZZ];
+      */
       idxptr = pme->idx[n];
       norder = n*order;
       
@@ -839,9 +863,14 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
 	  fz += tx*ty*fz1; 
 	} 
       }
+      /*
       f[n][XX] = fnx - qn*( fx*nx*rxx );
       f[n][YY] = fny - qn*( fx*nx*ryx + fy*ny*ryy );
       f[n][ZZ] = fnz - qn*( fx*nx*rzx + fy*ny*rzy + fz*nz*rzz );
+      */
+      f[n][XX] = -qn*( fx*nx*rxx );
+      f[n][YY] = -qn*( fx*nx*ryx + fy*ny*ryy );
+      f[n][ZZ] = -qn*( fx*nx*rzx + fy*ny*rzy + fz*nz*rzz );
     }
   }
   /* Since the energy and not forces are interpolated
@@ -988,9 +1017,22 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
   return 0;
 }
 
+static void pme_realloc_homenr_things(gmx_pme_t pme,int homenr)
+{
+  int i;
+
+  for(i=0;i<DIM;i++) {
+    srenew(pme->theta[i],pme->pme_order*homenr); 
+    srenew(pme->dtheta[i],pme->pme_order*homenr);
+  }
+  srenew(pme->fractx,homenr); 
+  srenew(pme->pmeatom,homenr);
+  srenew(pme->idx,homenr);
+}
+
 int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
-		 t_inputrec *ir,int homenr,bool bFreeEnergy,
-		 bool bVerbose)
+		 t_inputrec *ir,int homenr,
+		 bool bFreeEnergy,bool bVerbose)
 {
   gmx_pme_t pme=NULL;
   
@@ -1019,7 +1061,6 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   pme->bPar = cr && (npme>1); 
   pme->pme_order   = ir->pme_order;
   pme->epsilon_r   = ir->epsilon_r;
-  pme->bDynamicBox = DYNAMIC_BOX(*ir);
   
   if (pme->bPar) {
     pme->leftbnd  = ir->pme_order/2 - 1;
@@ -1030,19 +1071,8 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
       fprintf(log,"Warning: For load balance, "
 	      "fourier_nx should be divisible by the number of PME nodes\n");
   } 
- 
-  /* allocate space for things */
-  snew(pme->bsp_mod[XX],ir->nkx);
-  snew(pme->bsp_mod[YY],ir->nky);
-  snew(pme->bsp_mod[ZZ],ir->nkz);
-  for(i=0;i<DIM;i++) {
-    snew(pme->theta[i],ir->pme_order*homenr); 
-    snew(pme->dtheta[i],ir->pme_order*homenr);
-  }
-  snew(pme->fractx,homenr); 
-  snew(pme->pmeatom,homenr);
-  
-  snew(pme->idx,homenr);
+
+  /* With domain decomposition we need nnx on the PP only nodes */
   snew(pme->nnx,5*ir->nkx);
   snew(pme->nny,5*ir->nky);
   snew(pme->nnz,5*ir->nkz);
@@ -1053,13 +1083,20 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   for(i=0; (i<5*ir->nkz); i++)
     pme->nnz[i] = i % ir->nkz;
 
+  snew(pme->bsp_mod[XX],ir->nkx);
+  snew(pme->bsp_mod[YY],ir->nky);
+  snew(pme->bsp_mod[ZZ],ir->nkz);
+  
   pme->gridA = mk_fftgrid(log,ir->nkx,ir->nky,ir->nkz,cr);
   if (bFreeEnergy)
     pme->gridB = mk_fftgrid(log,ir->nkx,ir->nky,ir->nkz,cr);
   else
     pme->gridB = NULL;
-    
-  make_bspline_moduli(pme->bsp_mod,ir->nkx,ir->nky,ir->nkz,ir->pme_order);   
+  
+  make_bspline_moduli(pme->bsp_mod,ir->nkx,ir->nky,ir->nkz,ir->pme_order);
+  
+  if (!(pmeduty(cr)==epmePMEONLY && pme->bPar && DOMAINDECOMP(cr)))
+    pme_realloc_homenr_things(pme,homenr);
 
   *pmedata = pme;
   
@@ -1101,20 +1138,22 @@ static void spread_on_grid(FILE *logfile,    gmx_pme_t pme,
 /*************/
 #ifdef GMX_MPI  
 /*************/
-/* The following three routines are for split-off pme nodes */
-void gmx_pme_send_x(t_nsborder *nsb, rvec x[], 
-		    real chargeA[],  real chargeB[], 
-		    bool bLastTime,  bool bFreeEnergy, 
-		    t_commrec *cr)
+/* The following routines are for split-off pme nodes */
+static void pd_pme_send_x(t_nsborder *nsb, matrix box,
+			  rvec x[], 
+			  real chargeA[],  real chargeB[], 
+			  bool bLastStep,  bool bFreeEnergy, 
+			  t_commrec *cr)
 {
+  gmx_pme_comm_n_box_t cnb;
   int receiver, i;
   int firstpmenode=nsb->nnodes-nsb->npmenodes;
   int lastpmenode =nsb->nnodes-1;
-  int firstindex,lastindex;
+  int ind_start,ind_end;
   static bool bFirst=TRUE;
   static int nsend;
-  static MPI_Request req[2];
-  static MPI_Status  stat[2];
+  static MPI_Request req[3];
+  static MPI_Status  stat[3];
   FILE *fp;
   char fn[8];
 
@@ -1130,34 +1169,45 @@ void gmx_pme_send_x(t_nsborder *nsb, rvec x[],
   }
 #endif
 
+  nsend = 0;
+  if (cr->nodeid < cr->npmenodes) {
+    /* This communication could be avoided in most cases,
+     * but for high performance one should anyhow use domain decomposition */
+    cnb.natoms = 0;
+    copy_mat(box,cnb.box);
+    cnb.bLastStep = bLastStep;
+    
+    MPI_Isend(&cnb,sizeof(cnb),MPI_BYTE,
+	      cr->nodeid+cr->nnodes-cr->npmenodes,0,cr->mpi_comm_mysim,
+	      &req[nsend++]);
+  }
 
   /* Communicate coordinates and charges to the PME nodes */
   /* find out which of our local data has to be sent do pme node i!
    * local data has indices from START(nsb) to START(nsb)+HOMENR(nsb)-1 
    */
-  nsend=0;
   for (receiver=firstpmenode; receiver<=lastpmenode; receiver++) 
   {
-    firstindex=max(START(nsb),nsb->pmeindex[receiver]);
-    lastindex =min(START(nsb)+HOMENR(nsb)-1,nsb->pmeindex[receiver]+nsb->pmehomenr[receiver]-1);
-    if (lastindex >= firstindex)
+    ind_start = max(START(nsb),nsb->pmeindex[receiver]);
+    ind_end   = min(START(nsb)+HOMENR(nsb),
+		    nsb->pmeindex[receiver]+nsb->pmehomenr[receiver]);
+    if (ind_end > ind_start)
     {
 /*    fprintf(stderr,"SEND: Node %d -> node %d (Indices %d to %d) - %f %f %f\n",
- *            nsb->nodeid,receiver,firstindex,lastindex,x[firstindex][0],x[firstindex][1],x[firstindex][2]);
+ *            nsb->nodeid,receiver,ind_start,ind_end,x[ind_start][0],x[ind_start][1],x[ind_start][2]);
  */
-      if (MPI_Isend(&x[firstindex][0],(lastindex-firstindex+1)*DIM,
-                    GMX_MPI_REAL,receiver,bLastTime,cr->mpi_comm_mysim,&req[nsend]) !=0 )
+      if (MPI_Isend(&x[ind_start][0],(ind_end-ind_start)*DIM,
+                    GMX_MPI_REAL,receiver,1,cr->mpi_comm_mysim,&req[nsend++]) !=0 )
         gmx_comm("MPI_Isend failed in send_coordinates");
-      nsend++;
       
       if (bFirst) /* we need to send the charges in the first step 
                    * (this can be done using blocking sends) */
       {
-        MPI_Send(&chargeA[firstindex],(lastindex-firstindex+1),
-	         GMX_MPI_REAL,receiver,bLastTime,cr->mpi_comm_mysim);
+        MPI_Send(&chargeA[ind_start],(ind_end-ind_start),
+	         GMX_MPI_REAL,receiver,2,cr->mpi_comm_mysim);
         if (bFreeEnergy) 
-          MPI_Send(&chargeB[firstindex],(lastindex-firstindex+1),
-	           GMX_MPI_REAL,receiver,bLastTime,cr->mpi_comm_mysim);
+          MPI_Send(&chargeB[ind_start],(ind_end-ind_start),
+	           GMX_MPI_REAL,receiver,3,cr->mpi_comm_mysim);
       }
     }
   }
@@ -1166,14 +1216,12 @@ void gmx_pme_send_x(t_nsborder *nsb, rvec x[],
   MPI_Waitall(nsend, req, stat);
 }
 
-void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb, 
-		       rvec f[]     , matrix vir, 
-		       real *energy, int step)
+static void pd_pme_receive_f(t_commrec *cr, t_nsborder *nsb, 
+			     rvec f[]     , int step)
 {
   int  i,j,sender,elements;
   static int  firstpmenode, lastpmenode;
-  int  firstindex, lastindex;
-  real  vbuf[DIM*DIM];
+  int  ind_start, ind_end;
   MPI_Status  status;
   static rvec  *f_rec;  /* force receive buffer, don't lose address across calls! */
   static bool  bFirst=TRUE;
@@ -1193,8 +1241,6 @@ void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
     bFirst=FALSE;
   }
 
-  *energy=0.0;
-  
 #ifdef PRT_FORCELR
     static FILE *fp_f1;
     static char fn1[10];
@@ -1227,17 +1273,17 @@ void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
   nrecv=0;
   for (sender=firstpmenode; sender<=lastpmenode; sender++)
   {
-    firstindex=max(START(nsb), nsb->pmeindex[sender]);
-    lastindex =min(START(nsb)+HOMENR(nsb)-1, nsb->pmeindex[sender]+nsb->pmehomenr[sender]-1);
-    if (lastindex >= firstindex)
+    ind_start=max(START(nsb), nsb->pmeindex[sender]);
+    ind_end =min(START(nsb)+HOMENR(nsb), nsb->pmeindex[sender]+nsb->pmehomenr[sender]);
+    if (ind_end > ind_start)
     {
-      if (MPI_Irecv(f_rec[firstindex-START(nsb)],(lastindex-firstindex+1)*DIM,
+      if (MPI_Irecv(f_rec[ind_start-START(nsb)],(ind_end-ind_start)*DIM,
                     GMX_MPI_REAL,sender,0,cr->mpi_comm_mysim,&req[nrecv]) != 0)
         gmx_comm("MPI_Irecv failed in receive_lrforces");
       nrecv++;
 /*      fprintf(stderr,"   RECEIVE F: Node %d from node %d (Indices %d to %d) - %12.4e %12.4e %12.4e\n",
- *              nsb->nodeid,sender,firstindex,lastindex,
- *  	      f_rec[firstindex-START(nsb)][0],f_rec[firstindex-START(nsb)][1],f_rec[firstindex-START(nsb)][2]);
+ *              nsb->nodeid,sender,ind_start,ind_end,
+ *  	      f_rec[ind_start-START(nsb)][0],f_rec[ind_start-START(nsb)][1],f_rec[ind_start-START(nsb)][2]);
  */
     }
   }
@@ -1247,33 +1293,6 @@ void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
    * and must not be overridden at this point!) */
   for (i=START(nsb); i<START(nsb)+HOMENR(nsb); i++)
     rvec_inc(f[i], f_rec[i-START(nsb)]);
-  
-  /* receive energy, virial */
-  sender=cr->nodeid+(cr->nnodes-cr->npmenodes);
-  if (sender < cr->nnodes) 
-  {
-    /* receive energy 
-     * (The tag of the energy message is used to transport a
-     * TERM/USR1 signal if necessary)
-     */
-    MPI_Recv(energy,1,GMX_MPI_REAL,sender,MPI_ANY_TAG,cr->mpi_comm_mysim,&status);
-    if (status.MPI_TAG == 1)
-      bGotTermSignal=TRUE;
-    else if (status.MPI_TAG == 2)
-      bGotUsr1Signal=TRUE;
-	                
-    /* receive virial buffer */
-    MPI_Recv(&vbuf,DIM*DIM,GMX_MPI_REAL,sender,2,cr->mpi_comm_mysim,&status);
-
-    /* add receive buffer to vir variable */
-    elements=0;
-    for (i=0; i<DIM; i++)
-      for (j=0; j<DIM; j++)
-        {
-	  vir[i][j] += vbuf[elements];
-	  elements++;
-	}
-  }
     
 #ifdef PRT_FORCELR
   for(i=0; i<HOMENR(nsb); i++) 
@@ -1286,19 +1305,168 @@ void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb,
 
 }
 
+/* This routine is in domdec.c, should be called there */
+static void index2xyz(ivec nc,int ind,ivec xyz)
+{
+  xyz[XX] = ind % nc[XX];
+  xyz[YY] = (ind / nc[XX]) % nc[YY];
+  xyz[ZZ] = ind / (nc[YY]*nc[XX]);
+}
+
+#define dd_index_rev(n,i) ((((i)[XX]*(n)[YY] + (i)[YY])*(n)[ZZ]) + (i)[ZZ])
+
+static int dd_my_pmenode(t_commrec *cr)
+{
+  gmx_domdec_t *dd;
+  ivec xyz;
+
+  dd = cr->dd;
+
+  index2xyz(dd->nc,dd->nodeid,xyz);
+  
+  return dd->nnodes + (int)(dd_index_rev(dd->nc,xyz)*cr->npmenodes/dd->nnodes);
+}
+
+static void get_my_ddnodes(gmx_domdec_t *dd,int npmenodes,int my_nodeid,
+			   int *nmy_ddnodes,int **my_ddnodes)
+{
+  ivec xyz;
+  int i,pmenodeid;
+
+  snew(*my_ddnodes,(dd->nnodes+npmenodes-1)/npmenodes);
+
+  *nmy_ddnodes = 0;
+  for(i=0; i<dd->nnodes; i++) {
+    index2xyz(dd->nc,i,xyz);
+    
+    pmenodeid =
+      dd->nnodes + (int)(dd_index_rev(dd->nc,xyz)*npmenodes/dd->nnodes);
+    if (pmenodeid == my_nodeid)
+      (*my_ddnodes)[(*nmy_ddnodes)++] = i;
+  }
+}
+
+static void dd_pme_send_x_q(t_commrec *cr, matrix box,
+			    rvec x[], real chargeA[], real chargeB[],
+			    bool bFreeEnergy, bool bLastStep)
+{
+  int  pme_node,n,nreq;
+  gmx_pme_comm_n_box_t cnb;
+  MPI_Request req[4];
+
+  pme_node = dd_my_pmenode(cr);
+
+  n = cr->dd->nat_local;
+  cnb.natoms = n;
+  copy_mat(box,cnb.box);
+  cnb.bLastStep = bLastStep;
+
+  nreq = 0;
+  /* Communicate bLastTime (0/1) via the MPI tag */
+  MPI_Isend(&cnb,sizeof(cnb),MPI_BYTE,
+	    pme_node,0,cr->mpi_comm_mysim,&req[nreq++]);
+
+  MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
+	    pme_node,1,cr->mpi_comm_mysim,&req[nreq++]);
+  MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
+	    pme_node,2,cr->mpi_comm_mysim,&req[nreq++]);
+  if (bFreeEnergy)
+    MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
+	      pme_node,3,cr->mpi_comm_mysim,&req[nreq++]);
+
+  /* We would like to postpone this wait until dd_pme_receive_f,
+   * but currently the coordinates can be (un)shifted.
+   * We will have to wait with this until we have separate
+   * arrays for the shifted and unshifted coordinates.
+   */
+  MPI_Waitall(nreq,req,MPI_STATUSES_IGNORE);
+}
+
+static void dd_pme_receive_f(t_commrec *cr,rvec f[])
+{
+  static rvec *f_rec=NULL;
+  static int  nalloc=0;
+  int natoms,i;
+
+  natoms = cr->dd->nat_local;
+
+  if (natoms > nalloc) {
+    nalloc = over_alloc(natoms);
+    srenew(f_rec,nalloc);
+  }
+  
+  MPI_Recv(f_rec[0],natoms*sizeof(rvec),MPI_BYTE,
+	   dd_my_pmenode(cr),0,cr->mpi_comm_mysim,
+	   MPI_STATUS_IGNORE);
+
+  for(i=0; i<natoms; i++)
+    rvec_inc(f[i],f_rec[i]);
+}
+
+static void receive_virial_energy(t_commrec *cr,
+				  matrix vir,real *energy) 
+{
+  int  sender;
+  gmx_pme_comm_vir_ene_t cve;
+  MPI_Status status;
+
+  /* receive energy, virial */
+  sender = cr->nodeid + (cr->nnodes - cr->npmenodes);
+  if (sender < cr->nnodes) 
+  {
+    /* receive virial and energy */
+    MPI_Recv(&cve,sizeof(cve),MPI_BYTE,sender,1,cr->mpi_comm_mysim,&status);
+	
+    m_add(vir,cve.vir,vir);
+    *energy = cve.energy;
+    
+    bGotTermSignal = (cve.flags & PME_TERM);
+    bGotUsr1Signal = (cve.flags & PME_USR1);
+  } else {
+    *energy = 0;
+  }
+}
+
+void gmx_pme_send_x(t_commrec *cr, t_nsborder *nsb,
+		    matrix box,rvec x[], 
+		    real chargeA[],  real chargeB[], 
+		    bool bFreeEnergy, bool bLastStep)
+{
+  if (DOMAINDECOMP(cr)) {
+    dd_pme_send_x_q(cr,box,x,chargeA,chargeB,bFreeEnergy,bLastStep);
+  } else {
+    pd_pme_send_x(nsb,box,x,chargeA,chargeB,bLastStep,bFreeEnergy,cr);
+  }
+}
+
+void gmx_pme_receive_f(t_commrec *cr, t_nsborder *nsb, 
+		       rvec f[]     , matrix vir, 
+		       real *energy, int step)
+{
+  if (DOMAINDECOMP(cr)) {
+    dd_pme_receive_f(cr,f);
+  } else {
+    pd_pme_receive_f(cr,nsb,f,step);
+  }
+  
+  receive_virial_energy(cr,vir,energy);
+}
 
 int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
-		t_commrec *cr,   matrix box, 
+		t_commrec *cr,
 		t_nsborder *nsb, t_nrnb *mynrnb,
 		real ewaldcoeff, real lambda,
 		bool bGatherOnly)
      
 {
   MPI_Status  status;
-  rvec  *xpme,*fpme;
-  real  *chargeA,*chargeB=NULL,*chargepme;
-  int  sender,receiver,elements,tag;
-  int  firstindex, lastindex;
+  rvec  *xpme=NULL,*fpme=NULL;
+  real  *chargeA=NULL,*chargeB=NULL,*chargepme;
+  int  nppnodes,sender,receiver,natreceivedpp=0,elements,tag;
+  int  nmy_ddnodes,*my_ddnodes;
+  int  ind_start, ind_end;
+  gmx_pme_comm_n_box_t *cnb;
+  int  nalloc_natpp=0,nalloc_homenr=0;
   int  nx,ny,nz,nx2,ny2,nz2,la12,la2;
   int  i,j,q,ntot,npme;
   real *ptr;
@@ -1306,15 +1474,16 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
   int  *pidx=NULL;
   int  *gidx=NULL; /* Grid index of particle, used for PME redist */
   rvec  *x_tmp=NULL;
-  rvec  *f_tmp;
+  rvec  *f_tmp=NULL;
   real  *q_tmp=NULL;
   FILE  *fp_f3,*fp_f4;
   char  fn[8];
   real  energy_AB[2] = {0,0};
-  matrix  vir,vir_AB[2];
-  real  vbuf[DIM*DIM];
+  matrix  vir_AB[2];
+  gmx_pme_comm_vir_ene_t cve;
+  real  buf[DIM*DIM+1];
   bool  bFirst=TRUE;
-  real  vol,energy;
+  real  vol;
   real  *dvdlambda=0;
   int messages; /* count the Isends or Ireceives */    
   MPI_Request *req;
@@ -1327,23 +1496,34 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
 
 #define ME (nsb->nodeid) 
 
+  nppnodes = cr->nnodes - cr->npmenodes;
+
   /* Allocate space for the request handles, a lonely PME node may
      receive (and later send back) as many messages as there are PP nodes */
-  snew(req ,nsb->nnodes-nsb->npmenodes);
-  snew(stat,nsb->nnodes-nsb->npmenodes);
-          
-  snew(xpme,PMEHOMENR(nsb));
-  snew(fpme,PMEHOMENR(nsb));
-  snew(chargeA,PMEHOMENR(nsb));
-  if (pme->bFEP)
-    snew(chargeB,PMEHOMENR(nsb));
-  snew(f_tmp,nsb->natoms);
-  if (cr->npmenodes > 1) {
+  snew(req ,3*nppnodes);
+  snew(stat,3*nppnodes);
+
+  if (!DOMAINDECOMP(cr)) {
+    snew(xpme,PMEHOMENR(nsb));
+    snew(fpme,PMEHOMENR(nsb));
+    snew(chargeA,PMEHOMENR(nsb));
+    if (pme->bFEP)
+      snew(chargeB,PMEHOMENR(nsb));
+    snew(cnb,1);
+  } else {
+    /* Determine the DD nodes we need to talk with */
+    get_my_ddnodes(cr->dd,cr->npmenodes,cr->nodeid,&nmy_ddnodes,&my_ddnodes);
+    snew(cnb,nmy_ddnodes);
+  }
+  if (pme->bPar) {
+    /* With domain decompostion these arrays should be dynamic */
+    snew(f_tmp,nsb->natoms);
     snew(x_tmp,nsb->natoms);
     snew(q_tmp,nsb->natoms);
-    snew(pidx,nsb->natoms);
+    snew(pidx,pme->nkx);
     snew(gidx,nsb->natoms);
-  }
+  } 
+
   MPI_Type_contiguous(DIM, mpi_type, &rvec_mpi);
   MPI_Type_commit(&rvec_mpi);
 
@@ -1360,44 +1540,97 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
      * Find out from which ppnodes I have to receive this data.
      */
     messages=0;
-    for (sender=0; sender < nsb->nnodes-nsb->npmenodes; sender++) /* index of sender pp node */
+    if (!DOMAINDECOMP(cr)) {
+      /* Receive the box */
+      MPI_Irecv(cnb,sizeof(cnb[0]),MPI_BYTE,
+		cr->nodeid-nppnodes,0,cr->mpi_comm_mysim,&req[messages++]);
+    for (sender=0; sender<nppnodes; sender++) /* index of sender pp node */
     {
       /* First data index to be received from PP node i: */
-      firstindex=max(nsb->index[sender], nsb->pmeindex[ME]); 
+      ind_start=max(nsb->index[sender], nsb->pmeindex[ME]); 
       /* Last data index to be received from PP node i: */
-      lastindex =min(nsb->index[sender]+nsb->homenr[sender]-1, nsb->pmeindex[ME]+nsb->pmehomenr[ME]-1);
-      if (lastindex >= firstindex)
+      ind_end =min(nsb->index[sender]+nsb->homenr[sender], nsb->pmeindex[ME]+nsb->pmehomenr[ME]);
+      if (ind_end > ind_start)
       {
-        if (MPI_Irecv(&xpme[firstindex-nsb->pmeindex[ME]][0],
-	              (lastindex-firstindex+1)*DIM,GMX_MPI_REAL,sender,
-                      MPI_ANY_TAG,cr->mpi_comm_mysim,&req[messages]) != 0)
+        if (MPI_Irecv(&xpme[ind_start-nsb->pmeindex[ME]][0],
+	              (ind_end-ind_start)*DIM,GMX_MPI_REAL,sender,
+                      1,cr->mpi_comm_mysim,&req[messages++]) != 0)
           gmx_comm("MPI_Irecv failed in do_pmeonly");
-        messages++;
 		       
 	if (bFirst) /* receive charges at first time-step */
 	{
-          MPI_Recv(&chargeA[firstindex-nsb->pmeindex[ME]],
-	           (lastindex-firstindex+1),GMX_MPI_REAL,sender,
-                   MPI_ANY_TAG,cr->mpi_comm_mysim,&status);
+          MPI_Recv(&chargeA[ind_start-nsb->pmeindex[ME]],
+	           (ind_end-ind_start),GMX_MPI_REAL,sender,
+                   2,cr->mpi_comm_mysim,&status);
           if (pme->bFEP)
-            MPI_Recv(&chargeB[firstindex-nsb->pmeindex[ME]],
-	             (lastindex-firstindex+1),GMX_MPI_REAL,sender,
-                     MPI_ANY_TAG,cr->mpi_comm_mysim,&status);		      
+            MPI_Recv(&chargeB[ind_start-nsb->pmeindex[ME]],
+	             (ind_end-ind_start),GMX_MPI_REAL,sender,
+                     3,cr->mpi_comm_mysim,&status);		      
         }
-/*        fprintf(stderr, "    RECEIVE: Node %d from node %d (Indices %d to %d) - %f %f %f\n",
- *                ME,sender,firstindex,lastindex,xpme[firstindex-nsb->pmeindex[ME]][0],
- *  	                                       xpme[firstindex-nsb->pmeindex[ME]][1],
- *	    		  		       xpme[firstindex-nsb->pmeindex[ME]][2]);
- */
       }
     }
     /* now we got the data! */
     bFirst=FALSE;
     MPI_Waitall(messages, req, stat);
+    bDone = cnb[0].bLastStep;
+    } else {
+      /* Domain decomposition */
+      /* Receive the send counts and box */
+      for(sender=0; sender<nmy_ddnodes; sender++) {
+	MPI_Irecv(cnb+sender,sizeof(cnb[0]),MPI_BYTE,
+		  my_ddnodes[sender],0,
+		  cr->mpi_comm_mysim,&req[messages++]);
+      }
+      MPI_Waitall(messages, req, stat);
+      messages = 0;
+      bDone = cnb[0].bLastStep;
 
-    /* Check MPI_TAG if this was the last time step: */
-    if (stat[0].MPI_TAG == 1) bDone=TRUE;
-     
+      natreceivedpp = 0;
+      for(sender=0; sender<nmy_ddnodes; sender++) {
+	natreceivedpp += cnb[sender].natoms;
+      }
+      if (natreceivedpp > nalloc_natpp) {
+	nalloc_natpp = over_alloc(natreceivedpp);
+
+	srenew(xpme,nalloc_natpp);
+	srenew(chargeA,nalloc_natpp);
+	if (pme->bFEP)
+	  srenew(chargeB,nalloc_natpp);
+	srenew(fpme,nalloc_natpp);
+      }
+
+      /* Receive the coordinates in place */
+      i = 0;
+      for(sender=0; sender<nmy_ddnodes; sender++) {
+	if (cnb[sender].natoms > 0) {
+	  MPI_Irecv(xpme[i],cnb[sender].natoms*sizeof(rvec),MPI_BYTE,
+		    my_ddnodes[sender],1,
+		    cr->mpi_comm_mysim,&req[messages++]);
+	  i += cnb[sender].natoms;
+	}
+      }
+
+      /* Receive the charges in place */
+      for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
+	if (q == 0)
+	  chargepme = chargeA;
+	else
+	  chargepme = chargeB;
+	i = 0;
+	for(sender=0; sender<nmy_ddnodes; sender++) {
+	  if (cnb[sender].natoms > 0) {
+	    MPI_Irecv(&chargepme[i],cnb[sender].natoms*sizeof(real),MPI_BYTE,
+		      my_ddnodes[sender],2+q,
+		      cr->mpi_comm_mysim,&req[messages++]);
+	    i += cnb[sender].natoms;
+	  }
+	}
+      }
+
+      /* Wait for the coordinates and charges to arrive */
+      MPI_Waitall(messages, req, stat);
+      messages = 0;
+    }
 
     for(q=0; q<(pme->bFEP ? 2 : 1); q++) /* loop over q */
     {
@@ -1412,8 +1645,6 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
       /* Unpack structure */
       unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     
-      pme->my_homenr = nsb->natoms;
-
 #ifdef PRT_FORCE_X
       if (count==0) {
         for(i=0; i<PMEHOMENR(nsb); i++) { 
@@ -1423,26 +1654,33 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
       }
 #endif
  
-      if(cr->npmenodes == 1) {
-        x_tmp=xpme;
-        f_tmp=fpme;
-        q_tmp=chargepme;
+      if (cr->npmenodes == 1) {
+	pme->my_homenr = nsb->natoms;
+        x_tmp = xpme;
+        f_tmp = fpme;
+        q_tmp = chargepme;
       } else {
-/*        fprintf(stderr,"node %d -- PMEHOMENR(nsb)=%d -- xpme[0][0]=%f -- ir->nkx=%d\n",
- *                cr->nodeid,PMEHOMENR(nsb),xpme[0][0],ir->nkx);
- */
+	if (!DOMAINDECOMP(cr))
+	  natreceivedpp =  PMEHOMENR(nsb);
         GMX_MPE_LOG(ev_pmeredist_start);
-        pme_calc_pidx(cr,PMEHOMENR(nsb),box,xpme,pme->nkx,pme->nnx,pidx,gidx);
-        pmeredist(cr,TRUE,PMEHOMENR(nsb), xpme, chargepme, gidx, 
+        pme_calc_pidx(cr,natreceivedpp,cnb[0].box,xpme,
+		      pme->nkx,pme->nnx,pidx,gidx,NULL);
+	pme->my_homenr = nsb->natoms;
+        pmeredist(cr,TRUE,natreceivedpp, xpme, chargepme, gidx, 
                   &pme->my_homenr, x_tmp, q_tmp);
         GMX_MPE_LOG(ev_pmeredist_finish);
+	
+	if (pme->my_homenr > nalloc_homenr) {
+	  nalloc_homenr = over_alloc(pme->my_homenr);
+	  pme_realloc_homenr_things(pme,nalloc_homenr);
+	}
       }
       /* fprintf(logfile,"Node= %6d, pme local particles=%6d\n", cr->nodeid,my_homenr); */
 
       /* Spread the charges on a grid */
       GMX_MPE_LOG(ev_spread_on_grid_start);
       spread_on_grid(logfile,pme,grid,cr,
-  		     x_tmp,q_tmp,box,bGatherOnly,
+  		     x_tmp,q_tmp,cnb[0].box,bGatherOnly,
 		     q==0 ? FALSE : TRUE); 
       GMX_MPE_LOG(ev_spread_on_grid_finish);
 
@@ -1452,7 +1690,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
 	         pme->pme_order*pme->pme_order*pme->pme_order*pme->my_homenr);
       
         /* sum contributions to local grid from other nodes */
-        if (cr->npmenodes > 1) 
+        if (pme->bPar) 
  	  gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_FORWARD);
         if (debug)
 	  pr_fftgrid(debug,"qgrid",grid);
@@ -1463,7 +1701,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
         GMX_MPE_LOG(ev_gmxfft3d_finish);
 
         /* solve in k-space for our local cells */
-        vol = det(box);
+        vol = det(cnb[0].box);
         GMX_MPE_LOG(ev_solve_pme_start);
 /*      energy_AB[q]=solve_pme(grid,ewaldcoeff,vol,bsp_mod,recipbox,
 	  		       vir_AB[q],cr); */			       
@@ -1478,7 +1716,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
         GMX_MPE_LOG(ev_gmxfft3d_finish);
 
         /* distribute local grid to all nodes */
-        if (cr->npmenodes > 1) 
+        if (pme->bPar) 
 	  gmx_sum_qgrid_dd(pme,cr,grid,GMX_SUM_QGRID_BACKWARD); 
         if (debug)
 	  pr_fftgrid(debug,"potential",grid);
@@ -1495,10 +1733,10 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
       GMX_MPE_LOG(ev_gather_f_bsplines_finish);
 
       /* redistribute forces */
-      if(cr->npmenodes > 1) 
+      if (pme->bPar) 
       {
         GMX_MPE_LOG(ev_pmeredist_start);
-        pmeredist(cr,FALSE,PMEHOMENR(nsb), fpme, chargepme, gidx, 
+        pmeredist(cr,FALSE,natreceivedpp, fpme, chargepme, gidx, 
                   &pme->my_homenr, f_tmp, q_tmp);
         GMX_MPE_LOG(ev_pmeredist_finish);
       }
@@ -1520,20 +1758,20 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
     } /* of q-loop */
 
 
-    if (!pme->bFEP) 
-    {
-      energy = energy_AB[0];
-      copy_mat(vir_AB[0],vir);
+    if (!pme->bFEP) {
+      cve.energy = energy_AB[0];
+      copy_mat(vir_AB[0],cve.vir);
     } else 
     {
-      energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
+      cve.energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
       *dvdlambda += energy_AB[1] - energy_AB[0];
       for(i=0; i<DIM; i++)
         for(j=0; j<DIM; j++)
-	  vir[i][j] = (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+	  cve.vir[i][j] =
+	    (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
     }
     if (debug)
-      fprintf(debug,"PME mesh energy: %g\n",energy);
+      fprintf(debug,"PME mesh energy: %g\n",cve.energy);
 
 
     /* this is to help the user balance the ratio
@@ -1545,7 +1783,7 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
      */
     t3=MPI_Wtime()-t2;
     t2=MPI_Wtime();
-    if TAKETIME
+    if (TAKETIME)
     {
       t0=MPI_Wtime();
       MPI_Barrier(cr->mpi_comm_mysim);
@@ -1561,28 +1799,31 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
     }
 
     /* Now the evaluated forces have to be transferred to the PP nodes */
-    messages=0;
-    for (receiver=0; receiver < nsb->nnodes-nsb->npmenodes; receiver++)
-    {
-      firstindex=max(nsb->index[receiver], nsb->pmeindex[ME]);
-      lastindex =min(nsb->index[receiver]+nsb->homenr[receiver]-1,
-                     nsb->pmeindex[ME]+nsb->pmehomenr[ME]-1);
-      if (lastindex >= firstindex)
-      {
-/*        fprintf(stderr, "SEND BACK f: Node %d to node %d (Indices %d to %d) - %12.4e %12.4e %12.4e\n",
- *	        ME,receiver,firstindex,lastindex,
- *       	        fpme[firstindex-nsb->pmeindex[ME]][XX],
- *		fpme[firstindex-nsb->pmeindex[ME]][YY],
- *		fpme[firstindex-nsb->pmeindex[ME]][ZZ]);
- */
-	if (MPI_Isend(&fpme[firstindex-nsb->pmeindex[ME]][0],
-	              (lastindex-firstindex+1)*DIM,GMX_MPI_REAL,
-		      receiver,0,cr->mpi_comm_mysim,&req[messages]) != 0)
+    messages = 0;
+    if (!DOMAINDECOMP(cr)) {
+      for (receiver=0; receiver < nsb->nnodes-nsb->npmenodes; receiver++) {
+	ind_start = max(nsb->index[receiver], nsb->pmeindex[ME]);
+	ind_end   = min(nsb->index[receiver]+nsb->homenr[receiver],
+			nsb->pmeindex[ME]+nsb->pmehomenr[ME]);
+	if (ind_end > ind_start) {
+	  if (MPI_Isend(fpme[ind_start-nsb->pmeindex[ME]],
+			(ind_end-ind_start)*DIM,GMX_MPI_REAL,receiver,0,
+			cr->mpi_comm_mysim,&req[messages++]) != 0)
+	    gmx_comm("MPI_Isend failed in do_pmeonly");
+	}
+      }
+    } else {
+      ind_end = 0;
+      for (receiver=0; receiver<nmy_ddnodes; receiver++) {
+	ind_start = ind_end;
+	ind_end   = ind_start + cnb[receiver].natoms;
+	if (MPI_Isend(fpme[ind_start-nsb->pmeindex[ME]],
+	              (ind_end-ind_start)*DIM,GMX_MPI_REAL,
+		      my_ddnodes[receiver],0,
+		      cr->mpi_comm_mysim,&req[messages++]) != 0)
 	  gmx_comm("MPI_Isend failed in do_pmeonly");
-        messages++;
       }
     }
-    MPI_Waitall(messages, req, stat);
 
     /* send energy, virial */
     /* task i out of the PME nodes group sends to task i out of the PP nodes group.
@@ -1590,37 +1831,20 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
      * get no values. This is no problem since all these values are summed anyway in 
      * global_stat 
      */
-    receiver=cr->nodeid-(cr->nnodes-cr->npmenodes);
+    receiver = cr->nodeid - (cr->nnodes - cr->npmenodes);
 
-    /* send energy 
-     *
-     * The tag of the energy message is used to carry some extra information
-     * upon wether the user has send a TERM or USR1 signal to one of the PME 
-     * nodes */
-    if (bGotTermSignal) {
-      tag = 1;
-      bGotTermSignal=FALSE;
-    }
-    else if (bGotUsr1Signal) {
-      tag = 2;
-      bGotUsr1Signal=FALSE;
-    }
-    else
-      tag = 0;
- 
-    MPI_Send(&energy,1,GMX_MPI_REAL,receiver,tag,cr->mpi_comm_mysim); 
+    /* send virial and energy */
+    cve.flags    = 0;
+    if (bGotTermSignal)
+      cve.flags |= PME_TERM;
+    if (bGotUsr1Signal)
+      cve.flags |= PME_USR1;
 
-    /* for virial first fill send buffer with matrix values */
-    elements=0;
-    for (i=0; i<DIM; i++)
-      for (j=0; j<DIM; j++)
-        {
-	  vbuf[elements]=vir[i][j];
-	  elements++;
-	}
-	
-    /* send virial buffer */
-    MPI_Send(&vbuf,elements,GMX_MPI_REAL,receiver,2,cr->mpi_comm_mysim);	
+    MPI_Isend(&cve,sizeof(cve),MPI_BYTE,
+	      receiver,1,cr->mpi_comm_mysim,&req[messages++]);
+
+    /* Wait for the forces to arrive */
+    MPI_Waitall(messages, req, stat);
 
     count++;
 
@@ -1629,39 +1853,13 @@ int gmx_pmeonly(FILE *logfile,   gmx_pme_t pme,
      * zero out f_tmp vector, since gather_f_bsplines
      * only subsequently adds to f_tmp:
      */
-    clear_rvecs(pme->my_homenr,f_tmp);
-    /* zero out fpme vector */
-    clear_rvecs(PMEHOMENR(nsb),fpme);
+    //clear_rvecs(pme->my_homenr,f_tmp);
     
-    /* In case of dynamic pressure coupling, here the box for the
-     * next time step is received: */
-    if (pme->bDynamicBox)
-    {
-      /* receive buffer with box data from last PP node */
-      sender = nsb->nnodes-nsb->npmenodes-1;
-      /* I receive in case I am the first PME node */
-      receiver = sender+1;
-      if (nsb->nodeid == receiver)
-        MPI_Recv(&vbuf,DIM*DIM,GMX_MPI_REAL,sender,0,cr->mpi_comm_mysim,&status);
-      /* Broadcast box to all other nodes in the PME group */
-      /* attention: receiver has rank=0 in PME group mpi_comm_mygroup! */
-      MPI_Bcast(&vbuf, DIM*DIM, GMX_MPI_REAL, 0, cr->mpi_comm_mygroup);
-      /* copy box buffer into box variable */
-      elements=0;
-      for (i=0; i<DIM; i++)
-        for (j=0; j<DIM; j++)
-          {
-	    box[i][j] = vbuf[elements];
-	    elements++;
-	  }
-    }
     /* Keep track of time step */
     step++;
-    MPI_Barrier(cr->mpi_comm_mysim); /* 100 */
+    //MPI_Barrier(cr->mpi_comm_mysim); /* 100 */
   } /***** end of quasi-loop */
   while (!bDone);
-
-  /*  fprintf(stderr,"=== node %d received TAG=1 message!\n", ME); */
      
 #undef ME
   return 0;
@@ -1706,7 +1904,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       snew(x_tmp,nsb->natoms);
       snew(f_tmp,nsb->natoms);
       snew(q_tmp,nsb->natoms);
-      snew(pidx,nsb->natoms);
+      snew(pidx,pme->nkx);
       MPI_Type_contiguous(DIM, mpi_type, &rvec_mpi);
       MPI_Type_commit(&rvec_mpi);
     }
@@ -1754,7 +1952,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       q_tmp=homecharge;
     } else {
       pme_calc_pidx(cr,HOMENR(nsb),box,x+START(nsb),
-		    pme->nkx,pme->nnx,pidx,gidx);
+		    pme->nkx,pme->nnx,pidx,gidx,NULL);
       where();
 
       GMX_BARRIER(cr->mpi_comm_mysim);

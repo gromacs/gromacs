@@ -112,14 +112,51 @@ void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
   copy_ivec(dd->icell[i].shift1,shift1);
 }
 
+enum {
+  ddForward,ddBackward
+};
+
+static void dd_sendrecv_int(const gmx_domdec_t *dd,
+			    int dim,int direction,
+			    int *buf_s,int n_s,
+			    int *buf_r,int n_r)
+{
+#ifdef GMX_MPI
+  int rank_s,rank_r;
+  MPI_Status stat;
+
+  rank_s = dd->neighbor[dim][direction==ddForward ? 1 : 0];
+  rank_r = dd->neighbor[dim][direction==ddForward ? 0 : 1];
+
+  MPI_Sendrecv(buf_s,n_s*sizeof(int),MPI_BYTE,rank_s,0,
+	       buf_r,n_r*sizeof(int),MPI_BYTE,rank_r,0,
+	       dd->all,&stat);
+#endif
+}
+
+static void dd_sendrecv_rvec(const gmx_domdec_t *dd,
+			     int dim,int direction,
+			     rvec *buf_s,int n_s,
+			     rvec *buf_r,int n_r)
+{
+#ifdef GMX_MPI
+  int rank_s,rank_r;
+  MPI_Status stat;
+
+  rank_s = dd->neighbor[dim][direction==ddForward ? 1 : 0];
+  rank_r = dd->neighbor[dim][direction==ddForward ? 0 : 1];
+
+  MPI_Sendrecv(buf_s[0],n_s*sizeof(rvec),MPI_BYTE,rank_s,0,
+	       buf_r[0],n_r*sizeof(rvec),MPI_BYTE,rank_r,0,
+	       dd->all,&stat);
+#endif
+}
+
 void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
 {
   int  ncell,nat_tot,n,dim,i,j;
   int  *index,*cgindex;
   gmx_domdec_comm_t *cc;
-#ifdef GMX_MPI
-  MPI_Status stat;
-#endif
   
   cgindex = dd->cgindex;
 
@@ -135,13 +172,10 @@ void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
 	n++;
       }
     }
-#ifdef GMX_MPI
-    MPI_Sendrecv(buf[0],cc->nsend[ncell+1]*sizeof(rvec),MPI_BYTE,
-		 dd->neighbor[dim][1],0,
-		 x[nat_tot],cc->nrecv[ncell+1]*sizeof(rvec),MPI_BYTE,
-		 dd->neighbor[dim][0],0,
-		 dd->all,&stat);
-#endif
+    /* Send and receive the coordinates */
+    dd_sendrecv_rvec(dd, dim, ddForward,
+		     buf,       cc->nsend[ncell+1],
+		     x+nat_tot, cc->nrecv[ncell+1]);
     nat_tot += cc->nrecv[ncell+1];
     ncell += ncell;
   }
@@ -152,9 +186,6 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[])
   int  ncell,nat_tot,n,dim,i,j;
   int  *index,*cgindex;
   gmx_domdec_comm_t *cc;
-#ifdef GMX_MPI
-  MPI_Status stat;
-#endif
   
   cgindex = dd->cgindex;
 
@@ -167,13 +198,9 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[])
     cc = &dd->comm[dim];
     nat_tot -= cc->nrecv[ncell+1];
     /* Communicate the forces */
-#ifdef GMX_MPI
-    MPI_Sendrecv(f[nat_tot],cc->nrecv[ncell+1]*sizeof(rvec),MPI_BYTE,
-		 dd->neighbor[dim][0],0,
-		 buf[0],cc->nsend[ncell+1]*sizeof(rvec),MPI_BYTE,
-		 dd->neighbor[dim][1],0,
-		 dd->all,&stat);
-#endif
+    dd_sendrecv_rvec(dd,dim,ddBackward,
+		     f+nat_tot, cc->nrecv[ncell+1],
+		     buf,       cc->nsend[ncell+1]);
     index = cc->index;
     /* Add the received forces */
     n = 0;
@@ -215,7 +242,7 @@ static void dd_collect_cg(gmx_domdec_t *dd)
       dd->ma.ibuf[dd->nnodes+i] = dd->ma.index[i]*sizeof(int);
     }
     if (debug) {
-      fprintf(debug,"Charge group distribution: ");
+      fprintf(debug,"Initial charge group distribution: ");
       for(i=0; i<dd->nnodes; i++)
 	fprintf(debug," %d",dd->ma.ncg[i]);
       fprintf(debug,"\n");
@@ -1183,32 +1210,10 @@ static gmx_reverse_top_t make_reverse_top(int natoms,t_idef *idef,int *nint)
   return rt;
 }
 
-gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
-					ivec nc,int ncg,int natoms,
-					matrix box,
-					t_idef *idef,
-					bool bDynamics)
+void dd_make_reverse_top(gmx_domdec_t *dd,
+			 int natoms,t_idef *idef,bool bDynamics)
 {
-  gmx_domdec_t *dd;
   int a;
-
-  fprintf(fplog,"Will do domain decomposition\n");
-  
-  snew(dd,1);
-
-  copy_ivec(nc,dd->nc);
-  dd->nnodes = cr->nnodes - cr->npmenodes;
-  dd->nodeid = cr->nodeid;
-#ifdef GMX_MPI
-  dd->all    = cr->mpi_comm_mygroup;
-#endif
-  if (DDMASTER(dd)) {
-    snew(dd->ma.ncg,dd->nnodes);
-    snew(dd->ma.index,dd->nnodes+1);
-    snew(dd->ma.cg,ncg);
-    snew(dd->ma.nat,dd->nnodes);
-    snew(dd->ma.ibuf,dd->nnodes*2);
-  }
 
   dd->reverse_top = make_reverse_top(natoms,idef,&dd->nbonded_global);
   
@@ -1218,6 +1223,32 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
   
   if (idef->il[F_CONSTR].nr > 0)
     dd->constraints = init_domdec_constraints(natoms,idef,bDynamics);
+}
+
+gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
+					int ncg)
+{
+  gmx_domdec_t *dd;
+
+  fprintf(fplog,"Will do domain decomposition\n");
+  
+  snew(dd,1);
+
+  copy_ivec(nc,dd->nc);
+  dd->nnodes = cr->nnodes - cr->npmenodes;
+  if (cr->nodeid < dd->nnodes) {
+    dd->nodeid = cr->nodeid;
+#ifdef GMX_MPI
+    dd->all    = cr->mpi_comm_mygroup;
+#endif
+    if (DDMASTER(dd)) {
+      snew(dd->ma.ncg,dd->nnodes);
+      snew(dd->ma.index,dd->nnodes+1);
+      snew(dd->ma.cg,ncg);
+      snew(dd->ma.nat,dd->nnodes);
+      snew(dd->ma.ibuf,dd->nnodes*2);
+    }
+  }
 
   return dd;
 }
@@ -1233,9 +1264,6 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
   rvec corner;
   real r_comm2,r2,inv_ncg;
   int  nsend,nat;
-#ifdef GMX_MPI
-  MPI_Status stat;
-#endif
 
   if (debug)
     fprintf(debug,"Setting up DD communication\n");
@@ -1289,34 +1317,22 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
     cc->nsend[ncell]   = nsend;
     cc->nsend[ncell+1] = nat;
     /* Communicate the number of cg's and atoms to receive */
-#ifdef GMX_MPI
-    MPI_Sendrecv(cc->nsend,(ncell+2)*sizeof(int),MPI_BYTE,
-		 dd->neighbor[dim][1],0,
-		 cc->nrecv,(ncell+2)*sizeof(int),MPI_BYTE,
-		 dd->neighbor[dim][0],0,
-		 dd->all,&stat);
-#endif
+    dd_sendrecv_int(dd, dim, ddForward,
+		    cc->nsend, ncell+2,
+		    cc->nrecv, ncell+2);
     /* Communicate the global cg indices, receive in place */
     if (ncg_cell[ncell] + cc->nrecv[ncell] > dd->cg_nalloc) {
       dd->cg_nalloc = over_alloc(ncg_cell[ncell] + cc->nrecv[ncell]);
       srenew(index_gl,dd->cg_nalloc);
       srenew(cgindex,dd->cg_nalloc+1);
     }
-#ifdef GMX_MPI
-    MPI_Sendrecv(dd->buf_i1,nsend*sizeof(int),MPI_BYTE,
-		 dd->neighbor[dim][1],0,
-		 index_gl+ncg_cell[ncell],cc->nrecv[ncell]*sizeof(int),MPI_BYTE,
-		 dd->neighbor[dim][0],0,
-		 dd->all,&stat);
-#endif
+    dd_sendrecv_int(dd, dim, ddForward,
+		    dd->buf_i1,               nsend,
+		    index_gl+ncg_cell[ncell], cc->nrecv[ncell]);
     /* Communicate the coordinate, receive in place */
-#ifdef GMX_MPI
-    MPI_Sendrecv(buf,cc->nsend[ncell+1]*sizeof(rvec),MPI_BYTE,
-		 dd->neighbor[dim][1],0,
-		 x[nat_tot],cc->nrecv[ncell+1]*sizeof(rvec),MPI_BYTE,
-		 dd->neighbor[dim][0],0,
-		 dd->all,&stat);
-#endif
+    dd_sendrecv_rvec(dd, dim, ddForward,
+		     buf,       cc->nsend[ncell+1],
+		     x+nat_tot, cc->nrecv[ncell+1]);
     /* Make the charge group index and determine cgcm */
     for(cell=ncell; cell<2*ncell; cell++) {
       ncg_cell[cell+1] = ncg_cell[cell] + cc->nrecv[cell-ncell];

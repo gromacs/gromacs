@@ -1279,7 +1279,8 @@ void force(FILE       *fplog,   int        step,
   dvdlambda = 0;
 
 #ifdef GMX_MPI
-#define TAKETIME ((cr->npmenodes) && (timesteps < 12))
+  //#define TAKETIME ((cr->npmenodes) && (timesteps < 12))
+#define TAKETIME FALSE
   if (TAKETIME)
   {
     MPI_Barrier(cr->mpi_comm_mygroup);
@@ -1339,6 +1340,7 @@ void force(FILE       *fplog,   int        step,
   where();
   if (EEL_FULL(fr->eeltype)) {
     dvdlambda = 0;
+    status = 0;
     switch (fr->eeltype) {
     case eelPPPM:
       status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_el_recip,
