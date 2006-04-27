@@ -1230,6 +1230,9 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
     pme->leftbnd  = ir->pme_order/2 - 1;
     pme->rightbnd = ir->pme_order - pme->leftbnd - 1;
 
+    if (pme->nkx/pme->nnodes < pme->rightbnd)
+      gmx_fatal(FARGS,"fourier_nx/#PMEnodes < pme_order/2 (%d)",pme->rightbnd);
+
     fprintf(log,"Parallelized PME sum used. nkx=%d, npme=%d\n",
 	    ir->nkx,pme->nnodes);
     if ((ir->nkx % pme->nnodes) != 0)
@@ -2215,6 +2218,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     GMX_BARRIER(cr->mpi_comm_mysim);
     GMX_MPE_LOG(ev_gather_f_bsplines_start);
     
+    /*
     if (pme->nnodes > 1) {
       for(i=0; (i<pme->my_homenr); i++) {
 	f_tmp[i][XX]=0;
@@ -2222,6 +2226,8 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
 	f_tmp[i][ZZ]=0;
       }
     }
+    */
+
     where();
     gather_f_bsplines(pme,grid,f_tmp,q_tmp,
 		      pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
