@@ -56,6 +56,7 @@ static const ivec dd_c1[dd_c1n] =
 static const ivec dd_cp1[dd_cp1n] =
   {{0,0,2}};
 
+/*
 #define dd_index(n,i) ((((i)[ZZ]*(n)[YY] + (i)[YY])*(n)[XX]) + (i)[XX])
 
 static void index2xyz(ivec nc,int ind,ivec xyz)
@@ -63,6 +64,19 @@ static void index2xyz(ivec nc,int ind,ivec xyz)
   xyz[XX] = ind % nc[XX];
   xyz[YY] = (ind / nc[XX]) % nc[YY];
   xyz[ZZ] = ind / (nc[YY]*nc[XX]);
+}
+*/
+
+/* This order is required to minimize the coordinate communication in PME
+ * which uses decomposition in the x direction.
+ */
+#define dd_index(n,i) ((((i)[XX]*(n)[YY] + (i)[YY])*(n)[ZZ]) + (i)[ZZ])
+
+static void index2xyz(ivec nc,int ind,ivec xyz)
+{
+  xyz[XX] = ind / (nc[YY]*nc[ZZ]);
+  xyz[YY] = (ind / nc[ZZ]) % nc[YY];
+  xyz[ZZ] = ind % nc[ZZ];
 }
 
 int glatnr(gmx_domdec_t *dd,int i)
