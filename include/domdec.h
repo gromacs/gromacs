@@ -39,6 +39,23 @@ extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v);
 extern void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
 			     t_state *state_local,t_state *state);
 
+enum {
+  ddForward,ddBackward
+};
+
+extern void dd_sendrecv_int(const gmx_domdec_t *dd,
+			    int dim,int direction,
+			    int *buf_s,int n_s,
+			    int *buf_r,int n_r);
+
+extern void dd_sendrecv_rvec(const gmx_domdec_t *dd,
+			     int dim,int direction,
+			     rvec *buf_s,int n_s,
+			     rvec *buf_r,int n_r);
+/* Move data (int/rvec) one cell in dimension dim over the DD grid.
+ * For direction see the enum above.
+ */
+
 extern void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[]);
 /* buf should should have size natoms (of the whole system)
  * although in most cases far less will be used.

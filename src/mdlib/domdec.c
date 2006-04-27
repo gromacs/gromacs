@@ -126,21 +126,17 @@ void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
   copy_ivec(dd->icell[i].shift1,shift1);
 }
 
-enum {
-  ddForward,ddBackward
-};
-
-static void dd_sendrecv_int(const gmx_domdec_t *dd,
-			    int dim,int direction,
-			    int *buf_s,int n_s,
-			    int *buf_r,int n_r)
+void dd_sendrecv_int(const gmx_domdec_t *dd,
+		     int dim,int direction,
+		     int *buf_s,int n_s,
+		     int *buf_r,int n_r)
 {
 #ifdef GMX_MPI
   int rank_s,rank_r;
   MPI_Status stat;
 
-  rank_s = dd->neighbor[dim][direction==ddForward ? 1 : 0];
-  rank_r = dd->neighbor[dim][direction==ddForward ? 0 : 1];
+  rank_s = dd->neighbor[dim][direction==ddForward ? 0 : 1];
+  rank_r = dd->neighbor[dim][direction==ddForward ? 1 : 0];
 
   MPI_Sendrecv(buf_s,n_s*sizeof(int),MPI_BYTE,rank_s,0,
 	       buf_r,n_r*sizeof(int),MPI_BYTE,rank_r,0,
@@ -148,17 +144,17 @@ static void dd_sendrecv_int(const gmx_domdec_t *dd,
 #endif
 }
 
-static void dd_sendrecv_rvec(const gmx_domdec_t *dd,
-			     int dim,int direction,
-			     rvec *buf_s,int n_s,
-			     rvec *buf_r,int n_r)
+void dd_sendrecv_rvec(const gmx_domdec_t *dd,
+		      int dim,int direction,
+		      rvec *buf_s,int n_s,
+		      rvec *buf_r,int n_r)
 {
 #ifdef GMX_MPI
   int rank_s,rank_r;
   MPI_Status stat;
 
-  rank_s = dd->neighbor[dim][direction==ddForward ? 1 : 0];
-  rank_r = dd->neighbor[dim][direction==ddForward ? 0 : 1];
+  rank_s = dd->neighbor[dim][direction==ddForward ? 0 : 1];
+  rank_r = dd->neighbor[dim][direction==ddForward ? 1 : 0];
 
   MPI_Sendrecv(buf_s[0],n_s*sizeof(rvec),MPI_BYTE,rank_s,0,
 	       buf_r[0],n_r*sizeof(rvec),MPI_BYTE,rank_r,0,
@@ -187,7 +183,7 @@ void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
       }
     }
     /* Send and receive the coordinates */
-    dd_sendrecv_rvec(dd, dim, ddForward,
+    dd_sendrecv_rvec(dd, dim, ddBackward,
 		     buf,       cc->nsend[ncell+1],
 		     x+nat_tot, cc->nrecv[ncell+1]);
     nat_tot += cc->nrecv[ncell+1];
@@ -212,7 +208,7 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[])
     cc = &dd->comm[dim];
     nat_tot -= cc->nrecv[ncell+1];
     /* Communicate the forces */
-    dd_sendrecv_rvec(dd,dim,ddBackward,
+    dd_sendrecv_rvec(dd,dim,ddForward,
 		     f+nat_tot, cc->nrecv[ncell+1],
 		     buf,       cc->nsend[ncell+1]);
     index = cc->index;
@@ -1284,9 +1280,19 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 
   index2xyz(dd->nc,dd->nodeid,xyz);
   /* This should be changed for non-uniform grids */
-  for(dim=0; dim<DIM; dim++)
-    corner[dim] = xyz[dim]*box[dim][dim]/dd->nc[dim];
+  for(d=0; d<DIM; d++)
+    corner[d] = xyz[d]*box[d][d]/dd->nc[d];
   r_comm2 = sqr(r_comm);
+
+  for(dim=0; dim<dd->ndim; dim++) {
+    d = dd->dim[dim];
+    /* Should be fixed for triclinic boxes */
+    if (box[d][d]/dd->nc[d] < r_comm)
+      gmx_fatal(FARGS,"One of the domain decomposition grid cell sizes (%f %f %f) is smaller than the cut-off (%f)",
+		box[XX][XX]/dd->nc[XX],
+		box[YY][YY]/dd->nc[YY],
+		box[ZZ][ZZ]/dd->nc[ZZ],r_comm);
+  }
 
   ncg_cell = dd->ncg_cell;
   index_gl = dd->index_gl;
@@ -1331,7 +1337,7 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
     cc->nsend[ncell]   = nsend;
     cc->nsend[ncell+1] = nat;
     /* Communicate the number of cg's and atoms to receive */
-    dd_sendrecv_int(dd, dim, ddForward,
+    dd_sendrecv_int(dd, dim, ddBackward,
 		    cc->nsend, ncell+2,
 		    cc->nrecv, ncell+2);
     /* Communicate the global cg indices, receive in place */
@@ -1340,11 +1346,11 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
       srenew(index_gl,dd->cg_nalloc);
       srenew(cgindex,dd->cg_nalloc+1);
     }
-    dd_sendrecv_int(dd, dim, ddForward,
+    dd_sendrecv_int(dd, dim, ddBackward,
 		    dd->buf_i1,               nsend,
 		    index_gl+ncg_cell[ncell], cc->nrecv[ncell]);
     /* Communicate the coordinate, receive in place */
-    dd_sendrecv_rvec(dd, dim, ddForward,
+    dd_sendrecv_rvec(dd, dim, ddBackward,
 		     buf,       cc->nsend[ncell+1],
 		     x+nat_tot, cc->nrecv[ncell+1]);
     /* Make the charge group index and determine cgcm */
