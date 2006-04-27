@@ -59,6 +59,8 @@ bin_PROGRAMS = \
 	g_clustsize 	g_mdmat     	g_wham
 
 
+EXTRA_PROGRAMS	= g_kinetics
+
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
 
@@ -72,6 +74,8 @@ install-exec-hook:
 	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
 	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
 	fi; 
+
+g_kinetics_SOURCES 	= g_kinetics.c	gmx_kinetics.c
 
 CLEANFILES   = *.la *~ \\\#*
 
