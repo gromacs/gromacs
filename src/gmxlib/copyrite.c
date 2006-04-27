@@ -400,7 +400,12 @@ void please_cite(FILE *fp,char *key)
       "J. Tropp",
       "Dipolar Relaxation and Nuclear Overhauser effects in nonrigid molecules: The effect of fluctuating internuclear distances",
       "J. Chem. Phys.",
-      72, 1980, 6035, 6043 }
+      72, 1980, 6035, 6043 },
+    { "Spoel2006b",
+      "D. van der Spoel, P. J. van Maaren, P. Larsson and N. Timneanu",
+      "Thermodynamics of hydrogen bonding in hydrophilic and hydrophobic media",
+      "J. Phys. Chem. B",
+      110, 2006, 4393, 4398 }
   };
 #define NSTR (int)asize(citedb)
   
