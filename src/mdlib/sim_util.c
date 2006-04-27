@@ -829,7 +829,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 #ifdef GMX_MPI
   int    sender, firstpmenode, lastpmenode;
   double nrnb_buf[4];
-  MPI_Status *status=NULL;
+  MPI_Status status;
 #endif
 
 #ifdef GMX_MPI
@@ -864,7 +864,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       for (sender = firstpmenode; sender <= lastpmenode; sender++)
       {
 	if (MPI_Recv(&nrnb_buf, 4, MPI_DOUBLE, sender, 0,
-		     cr->mpi_comm_mysim, status) != 0)
+		     cr->mpi_comm_mysim, &status) != 0)
 	  gmx_comm("MPI_Recv failed in finish_run\n");
 	nrnb[sender].n[eNR_SPREADQBSP] += nrnb_buf[0];
         nrnb[sender].n[eNR_SOLVEPME  ] += nrnb_buf[1];
