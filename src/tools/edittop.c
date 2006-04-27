@@ -126,21 +126,7 @@ static void delete_from_block(t_block *block,int inr)
 
 static void delete_from_atoms(t_atoms *atoms,int inr)
 {
-  int i,nrei,ind0;
-  
-  /* Delete inr as an exclusion from other atoms */
-  delete_from_block(&(atoms->excl),inr);
-  /* Now delete the exclusions with inr as i atom */
-  ind0 = atoms->excl.index[inr];
-  nrei = atoms->excl.index[inr+1]-ind0;
-  for(i=ind0+nrei; (i<atoms->excl.nra); i++)
-    atoms->excl.a[i-nrei] = atoms->excl.a[i];
-  atoms->excl.nra -= nrei;
-  for(i=inr; (i<atoms->excl.nr); i++)
-    atoms->excl.index[i] = atoms->excl.index[i+1] - nrei;
-  atoms->excl.nr--;
-  if (atoms->excl.index[atoms->excl.nr] != atoms->excl.nra) 
-    gmx_incons("comparing nra in exclusions");
+  int i;
   
   /* Shift the atomnames down */
   for(i=inr; (i<atoms->nr-1); i++)

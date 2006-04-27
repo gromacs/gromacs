@@ -238,7 +238,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     /* mdatoms structure */
     snew(nFreeze,2);
     snew(md,1);
-    atoms2md(debug,NULL,atoms,nFreeze,eiMD,0,0,NULL,FALSE,0,NULL,md,TRUE);
+    md = init_mdatoms(fp,atoms,FALSE);
+    atoms2md(atoms,ir,0,0,NULL,md);
     sfree(nFreeze);
 
     /* nsborder struct */
@@ -283,7 +284,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   /* Init things dependent on parameters */  
   ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
   printf("Neighborsearching with a cut-off of %g\n",rlong);
-  init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);
+  init_forcerec(stdout,fr,ir,top,cr,nsb,box,FALSE,NULL,NULL,TRUE);
   if (debug)
     pr_forcerec(debug,fr,cr);
 		
