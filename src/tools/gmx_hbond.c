@@ -886,7 +886,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
   *hhh = NOTSET;
   if (d2 < rc2) {
     if (bContact) 
-      return hbHB;
+      return hbDist;
     
     if (!bDA)
       d2 = 0;
@@ -2150,10 +2150,11 @@ int gmx_hbond(int argc,char *argv[])
 	 
   /* Do Autocorrelation etc. */
   if (hb->bHBmap) {
-    if (opt2bSet("-ac",NFILE,fnm))
+    if (opt2bSet("-ac",NFILE,fnm) || opt2bSet("-life",NFILE,fnm))
+      please_cite(stdout,"Spoel2006b");
+    if (opt2bSet("-ac",NFILE,fnm)) 
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
 	      bMerge,fit_start,temp);
-    
     if (opt2bSet("-life",NFILE,fnm))
       do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge);
     
