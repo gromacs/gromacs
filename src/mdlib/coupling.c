@@ -326,11 +326,12 @@ void berendsen_pscale(matrix mu,
 		      rvec x[],unsigned short cFREEZE[],
 		      t_nrnb *nrnb,ivec nFreeze[])
 {
-  int    n,d,g;
+  int    n,d,g=0;
       
   /* Scale the positions */
   for (n=start; n<start+nr_atoms; n++) {
-    g=cFREEZE[n];
+    if (cFREEZE)
+      g = cFREEZE[n];
     
     if (!nFreeze[g][XX])
       x[n][XX] = mu[XX][XX]*x[n][XX]+mu[YY][XX]*x[n][YY]+mu[ZZ][XX]*x[n][ZZ];
