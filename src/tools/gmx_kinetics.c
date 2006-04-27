@@ -797,8 +797,3 @@ int gmx_kinetics(int argc,char *argv[])
   return 0;
 }
   
-int main(int argc, char *argv[])
-{
-  gmx_kinetics(argc,argv);
-  return 0;
-}
