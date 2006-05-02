@@ -768,17 +768,21 @@ Ryckaert-Bellemans parameters as follows:
 \displaystyle
 \begin{array}{rcl}
 \displaystyle C_0&=&V_0 + V_2 + \frac{1}{2} (V_1 + V_3)\\
-\displaystyle C_1&=&-\frac{1}{2} (3V_3 - V_1)\\
+\displaystyle C_1&=&\frac{1}{2} (3V_3 - V_1)\\
 \displaystyle C_2&=&-V_2\\
-\displaystyle C_3&=&2V_3\\
+\displaystyle C_3&=&-2V_3\\
 \displaystyle C_4&=&0\\
 \displaystyle C_5&=&0
 \end{array}
-\eeq
-with OPLS parameters in protein convention and RB parameters in 
-polymer convention.\\
+\eeq 
+with OPLS parameters in protein convention and RB parameters in
+polymer convention (this yields a minus sign for the odd powers of 
+cos$(\phi)$).\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
-literature OPLS and RB parameters to {\em kJ mol$^{-1}$} in {\gromacs}.
+literature OPLS and RB parameters to {\em kJ mol$^{-1}$} in {\gromacs}.\\
+\noindent{\bf Note:} With the latest incarnations of
+OPLS (reviewed in ref.~\cite{Jorgensen2005a}) there are also torsion potentials that
+contain a term with cos$^4(\phi)$.
 } % Brace matches ifthenelse test for gmxlite
 
 \section{Restraints}
