@@ -752,12 +752,12 @@ between the first and the last atom of the dihedral, and $\psi$ is defined
 according to the 'polymer convention' ($\psi_{trans}=0$).)
 
 The RB dihedral function can also be used to include the \normindex{OPLS} 
-dihedral potential~\cite{Jorgensen88}. 
+dihedral potential~\cite{Jorgensen86a}. 
 The OPLS potential function is given as the first 
 four terms of a Fourier series:
 \beq
-V_{rb} (\phi_{ijkl}) ~=~ V_0 + \frac{1}{2} (V_1(1+\cos(\psi)) + V_2(
-1-\cos(2\psi)) + V_3(1+\cos(3\psi))),
+V_{rb} (\phi_{ijkl}) ~=~ V_0 + \frac{1}{2} \left[V_1(1+\cos(\psi)) + V_2(
+1-\cos(2\psi)) + V_3(1+\cos(3\psi))\right],
 \eeq
 with \( \displaystyle \psi=\phi \) (protein convention).
 Because of the equalities \( \cos(2\phi) = 2(\cos(\phi))^2 - 1 \) 
@@ -768,9 +768,9 @@ Ryckaert-Bellemans parameters as follows:
 \displaystyle
 \begin{array}{rcl}
 \displaystyle C_0&=&V_0 + V_2 + \frac{1}{2} (V_1 + V_3)\\
-\displaystyle C_1&=&\frac{1}{2} (3V_3 - V_1)\\
+\displaystyle C_1&=&-\frac{1}{2} (3V_3 - V_1)\\
 \displaystyle C_2&=&-V_2\\
-\displaystyle C_3&=&-2V_3\\
+\displaystyle C_3&=&2V_3\\
 \displaystyle C_4&=&0\\
 \displaystyle C_5&=&0
 \end{array}
