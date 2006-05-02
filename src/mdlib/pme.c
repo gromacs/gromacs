@@ -945,7 +945,11 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
 #endif
     qn      = scale*charge[n];
 
-    if (qn != 0) {
+    if (qn == 0) {
+      f[n][XX] = 0;
+      f[n][YY] = 0;
+      f[n][ZZ] = 0;
+    } else {
       fx     = 0.0;
       fy     = 0.0;
       fz     = 0.0;
