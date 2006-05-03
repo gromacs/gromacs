@@ -755,12 +755,12 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
   int nr = at->nr;
 
   if (((nr==0) && (atomnr != 1)) || (nr && (atomnr != at->nr+1)))
-    gmx_fatal(FARGS,"Atoms in the .top are not numbered consecutively from 1\n");
+    gmx_fatal(FARGS,"Atoms in the .top are not numbered consecutively from 1 (rather, atomnr = %d, while at->nr = %d)",atomnr,at->nr);
   if (nr)
     resnr_diff = resnumber - (at->atom[at->nr-1].resnr+1);
   if (((nr==0) && (resnumber != 1)) || 
       (nr && (resnr_diff != 0) && (resnr_diff != 1))) 
-    gmx_fatal(FARGS,"Residue numbers in the .top are not numbered consecutively from 1\n");
+    gmx_fatal(FARGS,"Residue numbers in the .top are not numbered consecutively from 1 (rather, resnumber = %d and resnr_diff = %d)",resnumber,resnr_diff);
   
   /* New atom instance
    * get new space for arrays 
