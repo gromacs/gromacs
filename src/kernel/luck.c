@@ -45,15 +45,25 @@
 int main(int argc,char *argv[])
 {
   char quote[256];
+  int  i,bc=0,bb=0;
   
   /* Necessary to find the library directory before installation */
   set_program_name(argv[0]);
 
-  if ( argc == 2 ) 
-    if ( strcmp(argv[1],"-c")==0)
-      CopyRight(stdout,argv[0]);
+  for(i=1; (i<argc); i++)
+    if ( strcmp(argv[i],"-c")==0)
+      bc = 1;
+    else if ( strcmp(argv[i],"-b")==0)
+      bb = 1;
+      
+  if (bc)
+    CopyRight(stdout,ShortProgram());
+    
+  if (bb) {
+    bromacs(quote,255);
+    printf("%s\n",quote);
+  }
+    
   thanx(stdout);
-  /*printf("%s\n",cool_quote(quote,255,NULL));*/
-  return 0;
 }
  
