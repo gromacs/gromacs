@@ -442,11 +442,12 @@ int gmx_trjconv(int argc,char *argv[])
     "[TT]compact[tt] puts all atoms at the closest distance from the center",
     "of the box. This can be useful for visualizing e.g. truncated",
     "octahedrons. The center for options [TT]tric[tt] and [TT]compact[tt]",
-    "is [TT]tric[tt] (see below), unless the option [TT]-center[tt]",
+    "is [TT]tric[tt] (see below), unless the option [TT]-boxcenter[tt]",
     "is set differently.[PAR]",
     "Option [TT]-center[tt] centers the system in the box. The user can",
     "select the group which is used to determine the geometrical center.",
-    "The center options are:",
+    "Option [TT]-boxcenter[tt] set the position of the center of the box",
+    "for options [TT]-pbc[tt] and [TT]-center[tt]. The center options are:",
     "[TT]tric[tt]: half of the sum of the box vectors,",
     "[TT]rect[tt]: half of the box diagonal,",
     "[TT]zero[tt]: zero.",
@@ -485,10 +486,9 @@ int gmx_trjconv(int argc,char *argv[])
     { NULL, "rect", "tric", "compact", NULL };
 
   enum
-    { ecSel, ecNo, ecTric, ecRect, ecZero, ecNR};
+    { ecSel, ecTric, ecRect, ecZero, ecNR};
   static char *center_opt[ecNR+1] = 
-    { NULL, "no", "tric", "rect", "zero", NULL };
-  bool bCenter;
+    { NULL, "tric", "rect", "zero", NULL };
   int ecenter;
   
   int fit_enum;
@@ -498,7 +498,7 @@ int gmx_trjconv(int argc,char *argv[])
     { NULL, "none", "rot+trans", "translation", "progressive", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
-  static bool  bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
+  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
@@ -520,8 +520,10 @@ int gmx_trjconv(int argc,char *argv[])
       "PBC treatment (see help text for full description)" },
     { "-ur", FALSE,  etENUM, {unitcell_opt},
       "Unit-cell representation" },
-    { "-center", FALSE,  etENUM, {center_opt},
+    { "-center", FALSE,  etBOOL, {&bCenter},
       "Center atoms in box" },
+    { "-boxcenter", FALSE,  etENUM, {center_opt},
+      "Center for -pbc and -center" },
     { "-box", FALSE, etRVEC, {newbox},
       "Size for new cubic box (default: read from input)" },
     { "-shift", FALSE, etRVEC, {shift},
@@ -651,10 +653,7 @@ int gmx_trjconv(int argc,char *argv[])
     bRect     = unitcell_enum==euRect;
     bTric     = unitcell_enum==euTric;
     bComp     = unitcell_enum==euCompact;
-    ecenter = nenum(center_opt) - ecTric;
-    bCenter = (ecenter >= 0);
-    if (!bCenter)
-      ecenter = ecenterDEF;
+    ecenter   = nenum(center_opt) - ecTric;
 
     /* set and check option dependencies */    
     if (bPFit) bFit = TRUE; /* for pfit, fit *must* be set */
