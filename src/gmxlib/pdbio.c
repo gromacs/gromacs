@@ -469,18 +469,20 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
       break;
 
     case epdbTITLE:
-    case epdbHEADER:      
-      c=line+6;
-      /* skip HEADER or TITLE and spaces */
-      while (c && (c[0]!=' ')) c++;
-      while (c && (c[0]==' ')) c++;
-      /* truncate after title */
-      d=strstr(c,"      ");
-      if (d) {
-	d[0]='\0';
+    case epdbHEADER:
+      if (strlen(line) > 6) {
+	c=line+6;
+	/* skip HEADER or TITLE and spaces */
+	while (c && (c[0]!=' ')) c++;
+	while (c && (c[0]==' ')) c++;
+	/* truncate after title */
+	d=strstr(c,"      ");
+	if (d) {
+	  d[0]='\0';
+	}
+	if (strlen(c)>0)
+	  strcpy(title,c);
       }
-      if (strlen(c)>0)
-	strcpy(title,c);
       break;
       
     case epdbCOMPND:
