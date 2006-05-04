@@ -60,11 +60,11 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 {
   int    i,j,j0=137,j1=391;
   int    cur,nsum;
-#define next ((cur+1) % (nsb->nnodes-nsb->npmenodes))
-#define prev ((cur-1+(nsb->nnodes-nsb->npmenodes)) % (nsb->nnodes-nsb->npmenodes))
+#define next ((cur+1) % (cr->nnodes-cr->npmenodes))
+#define prev ((cur-1+(cr->nnodes-cr->npmenodes)) % (cr->nnodes-cr->npmenodes))
 
   if (bSum)
-    cur=(nsb->nodeid+nsb->shift) % (nsb->nnodes-nsb->npmenodes);
+    cur=(nsb->nodeid+nsb->shift) % (cr->nnodes-cr->npmenodes);
   else
     cur=nsb->nodeid;
 

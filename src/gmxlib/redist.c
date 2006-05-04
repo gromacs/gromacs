@@ -52,7 +52,6 @@
 #include "mdrun.h"
 #include "statutil.h"
 #include "names.h"
-#include "calcgrid.h"
 
 static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes)
 {
@@ -95,57 +94,6 @@ static void split_idef_old(t_idef *idef,int nnodes)
 	idef->il[ftype].multinr[i] = nra*m1;
       }
       idef->il[ftype].multinr[i]=nr;
-    }
-  }
-}
-
-static void check_pme(FILE *log,t_inputrec *ir,matrix box,t_commrec *cr)
-{
-  real fourier_spacing,max_spacing;
-  int  nkx,nky,nkz,ncpu;
-
-  pr_commrec(log,0,cr);  
-  if (ir->coulombtype == eelPME) {
-    if (cr->npmenodes == -1) {
-      /* Determine number of PME nodes automatically */
-      cr->npmenodes = cr->nnodes/3;
-    }
-    else if (cr->npmenodes > cr->nnodes-1)
-      gmx_fatal(FARGS,"There must at least be one node for particle-particle interactions (now %d)",cr->nnodes-cr->npmenodes);
-    fprintf(log,"Using %d out of %d nodes for PME\n",
-	    cr->npmenodes,cr->nnodes);
-  }
-  else 
-    cr->npmenodes = 0;
-    
-  if (cr->npmenodes > 0)
-    ncpu = cr->npmenodes;
-  else
-    ncpu = cr->nnodes;
-    
-  if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) ||
-      (ir->coulombtype == eelEWALD)) {
-    fourier_spacing = max(box[XX][XX]/ir->nkx,
-			  max(box[YY][YY]/ir->nky,box[ZZ][ZZ]/ir->nkz));
-    
-    /* Calculate the optimal grid dimensions */
-    nkx = 0;
-    nky = 0;
-    nkz = 0;
-    max_spacing = calc_grid(log,box,fourier_spacing,&nkx,&nky,&nkz,ncpu);
-    if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1))
-      fprintf(stdlog,"Grid spacing larger then 0.1 while using PPPM.");
-      
-    if ((ir->nkx != nkx) || (ir->nky != nky) || (ir->nkz != nkz)) {
-      fprintf(log,"Modified grid for %s for parallel execution. \n",
-	      eel_names[ir->coulombtype]);
-      fprintf(log,"Grid spacing was: %g, is now %g\n",fourier_spacing,
-	      max_spacing);
-      fprintf(log,"Old grid: %3d x %3d x %3d. New grid: %3d x %3d x %3d.\n",
-	      ir->nkx,ir->nky,ir->nkz,nkx,nky,nkz);
-      ir->nkx = nkx;
-      ir->nky = nky;
-      ir->nkz = nkz;
     }
   }
 }
@@ -196,9 +144,6 @@ void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
   int    i,npp;
   real   *capacity;
   double tcap = 0;
-
-  /* Check for use of PME and split the parallel machine */
-  check_pme(log,inputrec,state->box,cr);
   
   /* Time to setup the division of charge groups over processors */
   npp = cr->nnodes-cr->npmenodes;
@@ -213,7 +158,7 @@ void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
   /* This computes which entities can be placed on processors */
   split_top(log,npp,top,capacity);
   sfree(capacity);
-  calc_nsb(log,&(top->blocks[ebCGS]),cr->nnodes,cr->npmenodes,nsb,0);
+  calc_nsb(log,&(top->blocks[ebCGS]),cr->nnodes,nsb,0);
 
   /* This should be fine */
   /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/

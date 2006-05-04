@@ -88,7 +88,7 @@ void mdsplit_top(FILE *log,t_topology *top,t_commrec *cr,
 		 t_nsborder *nsb, bool *bParallelVsites,
 		 t_comm_vsites *vsitecomm)
 {
-  if (nsb->nnodes - nsb->npmenodes < 2)
+  if (cr->nnodes - cr->npmenodes < 2)
     return;
 
   *bParallelVsites=setup_parallel_vsites(&(top->idef),cr,nsb,vsitecomm);

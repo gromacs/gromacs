@@ -257,7 +257,10 @@ extern void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
 
 extern void split_system_again();
 /* Id. for subsequent calls (not implemented yet!) */
-      
+
+extern bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
+				  t_comm_vsites *vsitecomm);
+
 extern void start_time(void);
 /* Start timing routines */
 

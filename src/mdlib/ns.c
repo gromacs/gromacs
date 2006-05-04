@@ -1113,14 +1113,10 @@ static void setexcl(atom_id start,atom_id end,t_block *excl,bool b,
 {
   atom_id i,k;
   
-  int c;
-  c = 0;
-  
   if (b) {
     for(i=start; i<end; i++) {
       for(k=excl->index[i]; k<excl->index[i+1]; k++) {
 	SETEXCL(bexcl,i-start,excl->a[k]);
-	c++;
       }
     }
   }

@@ -88,8 +88,7 @@ void check_nnodes_top(char *fn,t_topology *top)
 	    "You are using an old multiprocessor tpr file.\n"
 	    "It has been converted back to a single processor topology file\n"
 	    "before further processing. In case of problems please make\n"
-	    "a new tpr file.\n",
-	    fn);
+	    "a new tpr file.\n");
   }
 }
 
@@ -112,7 +111,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
   check_nnodes_top(tpxfile,top);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
-  calc_nsb(log,&(top->blocks[ebCGS]),1,0,nsb,0);
+  calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0);
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 

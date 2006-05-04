@@ -230,7 +230,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   static double mu[2*DIM]; 
   rvec   mu_tot_AB[2];
   bool   bFillGrid,bCalcCGCM;
-  real e_temp;
+  real   e,d;
   
   start  = START(nsb);
   homenr = HOMENR(nsb);
@@ -291,8 +291,8 @@ void do_force(FILE *fplog,t_commrec *cr,
       GMX_MPE_LOG(ev_shift_finish);
     }
 
-    gmx_pme_send_x(cr,nsb,box,x,mdatoms->chargeA,mdatoms->chargeB,
-		   mdatoms->nChargePerturbed,step>=inputrec->nsteps);
+    gmx_pme_send_x_q(cr,box,x,mdatoms->chargeA,mdatoms->chargeB,
+		     mdatoms->nChargePerturbed,lambda,step>=inputrec->nsteps);
 
     if (graph) {
       GMX_MPE_LOG(ev_shift_start);
@@ -412,8 +412,12 @@ void do_force(FILE *fplog,t_commrec *cr,
 #ifdef GMX_MPI       
       if (pmeduty(cr)==epmePPONLY) 
       {
-	gmx_pme_receive_f(cr,nsb,fr->f_el_recip,fr->vir_el_recip,&e_temp,step);
-        ener[F_COUL_RECIP] += e_temp;
+	d = 0;
+	gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d);
+	if (fr->bSepDVDL && do_per_step(step,inputrec->nstlog))
+	  fprintf(fplog,sepdvdlformat,"PME mesh",e,d);
+        ener[F_COUL_RECIP] += e;
+	ener[F_DVDL] += d;
       }
 #endif
     }
@@ -885,16 +889,16 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     runtime=inputrec->nsteps*inputrec->delta_t;
     if (MASTER(cr)) {
       fprintf(stderr,"\n\n");
-      print_perf(stderr,nodetime,realtime,runtime,&ntot,nsb->nnodes-nsb->npmenodes);
+      print_perf(stderr,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
     }
     else
       print_nrnb(fplog,&(nrnb[nsb->nodeid]));
   }
 
   if (MASTER(cr)) {
-    print_perf(fplog,nodetime,realtime,runtime,&ntot,nsb->nnodes-nsb->npmenodes);
-    if ((nsb->nnodes-nsb->npmenodes) > 1)
-      pr_load(fplog,nsb->nnodes-nsb->npmenodes,nrnb);
+    print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
+    if ((cr->nnodes-cr->npmenodes) > 1)
+      pr_load(fplog,cr->nnodes-cr->npmenodes,nrnb);
   }
 }
 

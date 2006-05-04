@@ -40,7 +40,6 @@
 typedef struct {
   int  nodeid;			/* Node id	         		*/
   int  nnodes;			/* The number of nodes    		*/
-  int  npmenodes;               /* Number of nodes that do PME only     */
   int  cgtotal; 		/* Total number of charge groups	*/
   int  natoms;			/* Total number of atoms		*/
   int  nstDlb;                  /* Every how many steps must we do load */
@@ -61,10 +60,6 @@ typedef struct {
                                 /* searching, this is initially the same*/
 				/* as cgload, but may change due to     */
 				/* dynamic load balancing               */
-  int  pmehomenr[MAXNODES];     /* The number of home particles for the */
-                                /* PME calculation.                     */
-  int  pmeindex[MAXNODES];      /* Starting of the home atoms on the    */
-                                /* PME exclusive nodes                  */
 } t_nsborder;
 
 #define START(nsb)  ((nsb)->index[(nsb)->nodeid])

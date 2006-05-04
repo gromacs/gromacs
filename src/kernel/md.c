@@ -183,7 +183,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     /* Is not read from TPR yet, so we allocate space here */
     snew(state->sd_X,nsb->natoms);
   }
-  nsb->npmenodes = cr->npmenodes;
   snew(buf,nsb->natoms);
   snew(f,nsb->natoms);
   snew(vt,nsb->natoms);
@@ -193,8 +192,13 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   /* If necessary split communicator and adapt ring topology */ 
   if (pmeduty(cr)==epmePPONLY || pmeduty(cr)==epmePMEONLY)
   {
+    if (inputrec->coulombtype!=eelPME && inputrec->coulombtype!=eelPMEUSER)
+      gmx_fatal(FARGS,"Can not have PME nodes with coulombtype %s",
+		eel_names[inputrec->coulombtype]);
+    if (!bDomDec)
+      gmx_fatal(FARGS,"Seperate PME nodes can only be used with domain decomposition");
     if (2*cr->npmenodes > cr->nnodes)
-      gmx_fatal(FARGS,"The number of pme nodes (%d) can not be more than half of the total number of nodes (%d)",cr->npmenodes,cr->nnodes);
+      gmx_fatal(FARGS,"The number of PME nodes (%d) can not be more than half of the total number of nodes (%d)",cr->npmenodes,cr->nnodes);
     /* Split communicator */
 #define split
 #ifdef split
@@ -361,8 +365,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     {
       /* do PME: */
 
-      gmx_pmeonly(stdlog,fr->pmedata,cr,nsb,&nrnb[nsb->nodeid],
-		  fr->ewaldcoeff,state->lambda,FALSE);
+      gmx_pmeonly(stdlog,fr->pmedata,cr,&nrnb[nsb->nodeid],
+		  fr->ewaldcoeff,state->lambda);
     }
 #endif    
     break;

@@ -289,7 +289,7 @@ static void pd_collect_state(const t_commrec *cr,t_nsborder *nsb,
   if (debug)
     fprintf(debug,"Collecting state before exchange\n");
   
-  shift = nsb->nnodes - nsb->npmenodes - 1;
+  shift = cr->nnodes - cr->npmenodes - 1;
   move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,
 	     state->x,NULL,shift,nsb,NULL);
   if (state->v)

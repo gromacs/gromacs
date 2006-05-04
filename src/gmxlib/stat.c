@@ -192,7 +192,7 @@ static void moveit(t_commrec *cr,
     return;
 
   move_rvecs(cr,FALSE,FALSE,left,right,
-	     xx,NULL,(nsb->nnodes-nsb->npmenodes)-1,nsb,NULL);
+	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,nsb,NULL);
 }
 
 int write_traj(FILE *log,t_commrec *cr,

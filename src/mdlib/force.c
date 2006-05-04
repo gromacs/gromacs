@@ -328,7 +328,7 @@ check_solvent(FILE *                fp,
 		
         for(j=j0 ; j<j1 && !perturbed; j++)
         {
-	  perturbed = PERTURBED(atoms->atom[i]);
+	  perturbed = PERTURBED(atoms->atom[j]);
         }
 	
 	if(perturbed)
@@ -1235,7 +1235,7 @@ void force(FILE       *fplog,   int        step,
 	   bool       bNBFonly, bool bDoForces,
 	   rvec       mu_tot[],
 	   bool       bGatherOnly,
-	   t_edsamyn *edyn)
+	   t_edsamyn  *edyn)
 {
   int     i,nit,status;
   bool    bDoEpot,bSepDVDL;
@@ -1350,9 +1350,11 @@ void force(FILE       *fplog,   int        step,
     case eelPME:
     case eelPMEUSER:
       if (pmeduty(cr)==epmePMEANDPP) {
-        status = gmx_pme_do(fplog,fr->pmedata,x,fr->f_el_recip,
+        status = gmx_pme_do(fplog,fr->pmedata,
+			    START(nsb),HOMENR(nsb),
+			    x,fr->f_el_recip,
 			    md->chargeA,md->chargeB,
-			    box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
+			    box,cr,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
 			    &Vlr,lambda,&dvdlambda,bGatherOnly);
         PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
       } 
@@ -1402,7 +1404,7 @@ void force(FILE       *fplog,   int        step,
   } else if (EEL_RF(fr->eeltype)) {
     dvdlambda = 0;
 
-      if (fr->eeltype != eelRF_NEC)
+    if (fr->eeltype != eelRF_NEC)
       epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
 
