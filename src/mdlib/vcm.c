@@ -50,7 +50,6 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
 		int start,int homenr,int nstcomm,int comm_mode)
 {
   t_vcm *vcm;
-  real  *mass;
   int   i,g;
   
   snew(vcm,1);
@@ -69,14 +68,13 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
     snew(vcm->group_v,vcm->nr);
     snew(vcm->group_mass,vcm->nr);
     snew(vcm->group_name,vcm->nr);
-    snew(mass,vcm->nr);
     for(i=start; (i<start+homenr); i++) {
       g = atoms->atom[i].grpnr[egcVCM];
-      /* Only determine the topology A mass */
+      /* Only determine the topology A mass, used only for printing */
       vcm->group_mass[g] += atoms->atom[i].m;
     }
     if(PAR(cr))
-      gmx_sum(vcm->nr,mass,cr);
+      gmx_sum(vcm->nr,vcm->group_mass,cr);
 
     /* Copy pointer to group names and print it. */
     fprintf(fp,"Center of mass motion removal mode is %s\n",ECOM(vcm->mode));
@@ -86,10 +84,10 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
       vcm->group_name[g] = 
 	*top->atoms.grpname[top->atoms.grps[egcVCM].nm_ind[g]];
       fprintf(fp,"%3d:  %s, initial mass: %g\n",
-	      g,vcm->group_name[g],mass[g]);
+	      g,vcm->group_name[g],vcm->group_mass[g]);
     }
-    sfree(mass);
   }
+
   return vcm;
 }
 

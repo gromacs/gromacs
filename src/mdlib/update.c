@@ -484,7 +484,7 @@ void calc_ke_part(int start,int homenr,rvec v[],
       tcstat[gt].ekinh[YY][d]+=hm*v_corrt[YY]*v_corrt[d];
       tcstat[gt].ekinh[ZZ][d]+=hm*v_corrt[ZZ]*v_corrt[d];
     }
-    if (md->nPerturbed && md->bPerturbed[n])
+    if (md->nMassPerturbed && md->bPerturbed[n])
       dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
   }
   grps->dekindl = dekindl;
