@@ -1245,7 +1245,10 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   snew(dd,1);
 
   copy_ivec(nc,dd->nc);
-  dd->nnodes = cr->nnodes - cr->npmenodes;
+  dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
+  if (dd->nnodes != cr->nnodes - cr->npmenodes)
+    gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d)\n",dd->nnodes,cr->nnodes - cr->npmenodes);
+
   if (cr->nodeid < dd->nnodes) {
     dd->nodeid = cr->nodeid;
 #ifdef GMX_MPI
