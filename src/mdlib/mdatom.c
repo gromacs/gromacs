@@ -167,7 +167,7 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
       mA = atom->m;
       mB = atom->mB;
     }
-    if (md->nPerturbed) {
+    if (md->nMassPerturbed) {
       md->massA[i]	= mA;
       md->massB[i]	= mB;
     }
@@ -186,11 +186,12 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
 	md->invmass[i]	= 1.0/mA;
     }
     md->chargeA[i]	= atom->q;
-    if (md->nPerturbed)
-      md->chargeB[i]	= atom->qB;
     md->typeA[i]	= atom->type;
-    if (md->nPerturbed)
+    if (md->nPerturbed) {
+      md->chargeB[i]	= atom->qB;
       md->typeB[i]	= atom->typeB;
+      md->bPerturbed[i] = PERTURBED(*atom);
+    }
     md->ptype[i]	= atom->ptype;
     if (md->cTC)
       md->cTC[i]	= atom->grpnr[egcTC];
