@@ -459,6 +459,7 @@ check_solvent(FILE *                fp,
                has_vdw[1] == FALSE &&
                has_vdw[2] == FALSE &&
                has_vdw[3] == FALSE &&
+	       tmp_charge[0]  == 0 &&
                tmp_charge[1]  != 0 &&
                tmp_charge[2]  == tmp_charge[1] &&
                tmp_charge[3]  != 0)
