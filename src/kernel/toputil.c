@@ -91,7 +91,7 @@ void set_p_string(t_param *p,char *s)
     if (strlen(s) < sizeof(p->s)-1)
       strcpy(p->s,s);
     else
-      gmx_fatal(FARGS,"Increase MAXSLEN in src/kernel/grompp.h to at least %d,"
+      gmx_fatal(FARGS,"Increase MAXSLEN in include/grompp.h to at least %d,"
 		  " or shorten your definition of bonds like %s to at most %d",
 		  strlen(s)+1,s,MAXSLEN-1);
   }

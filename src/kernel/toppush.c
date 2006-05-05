@@ -1177,8 +1177,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	 */	
 	if (nread != 0 && nread != EOF && nread != nrfp)
 	{
-	     gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d.",
-			nread,nrfpA,nrfp);	
+	     gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d for %s.",
+		       nread,nrfpA,nrfp,interaction_function[ftype].longname);	
 	}
 	  
     for(j=0; (j<nread); j++)

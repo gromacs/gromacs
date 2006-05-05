@@ -203,12 +203,14 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
 
 int *set_cgnr(t_atoms *atoms)
 {
-  int    i,n=0;
+  int    i,n=1;
   int    *cgnr;
   double qt = 0;
   
   snew(cgnr,atoms->nr);
   for(i=0; (i<atoms->nr); i++) {
+    if (atoms->pdbinfo)
+      atoms->atom[i].q = atoms->pdbinfo[i].bfac;
     qt += atoms->atom[i].q;
     cgnr[i] = n;
     if (is_int(qt)) {
@@ -219,20 +221,16 @@ int *set_cgnr(t_atoms *atoms)
   return cgnr;
 }
 
-t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
+t_atomtype *set_atom_type(t_symtab *tab,
+			  t_atoms *atoms,int nbonds[],
 			  int nnm,t_nm2type nm2t[])
 {
-  static t_symtab symtab;
   t_atomtype *atype;
   char *type;
   int  i,k;
   
-  open_symtab(&symtab);
   snew(atype,1);
-  atype->nr       = 0;
-  atype->atom     = NULL;
-  atype->atomname = NULL;
-  atype->bondatomtype = NULL;
+  snew(atoms->atomtype,atoms->nr);
   k=0;
   for(i=0; (i<atoms->nr); i++) {
     if ((type = nm2type(nnm,nm2t,*atoms->atomname[i],nbonds[i])) == NULL)
@@ -254,7 +252,7 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
       srenew(atype->atomname,atype->nr);
       srenew(atype->atom,atype->nr);
       srenew(atype->bondatomtype,atype->nr);
-      atype->atomname[k]   = put_symtab(&symtab,type);
+      atype->atomname[k]   = put_symtab(tab,type);
       atype->bondatomtype[k] = k; /* Set bond_atomtype identical to atomtype */
       atype->atom[k].type  = k;
       atoms->atom[i].type  = k;
@@ -263,9 +261,10 @@ t_atomtype *set_atom_type(t_atoms *atoms,int nbonds[],
     }
   } 
   /* MORE CODE */
-
-  close_symtab(&symtab);
-    
+  for(i=0; (i<atoms->nr); i++) {
+    atoms->atomtype[i] = put_symtab(tab,*atype->atomname[atoms->atom[i].type]);
+  }
+  
   fprintf(stderr,"There are %d different atom types in your sample\n",
 	  atype->nr);
     
@@ -370,10 +369,50 @@ static void dump_hybridization(FILE *fp,t_atoms *atoms,int nbonds[])
   }
 }
 
-static void print_rtp(char *filenm,char *title,char *name,t_atoms *atoms,
-		      t_params plist[],t_atomtype *atype,int cgnr[])
+static void print_pl(FILE *fp,t_params plist[],int ftp,char *name,
+		     char ***atomname)
+{ 
+  int i,j,nral,nrfp;
+
+  if (plist[ftp].nr > 0) {
+    fprintf(fp,"\n");
+    fprintf(fp,"[ %s ]\n",name);
+    nral = interaction_function[ftp].nratoms;
+    nrfp = interaction_function[ftp].nrfpA;
+    for(i=0; (i<plist[ftp].nr); i++) {
+      for(j=0; (j<nral); j++) 
+	fprintf(fp,"  %5s",*atomname[plist[ftp].param[i].a[j]]);
+      for(j=0; (j<nrfp); j++) 
+	fprintf(fp,"  %10.3e",plist[ftp].param[i].c[j]);
+      fprintf(fp,"\n");
+    }
+  }
+}
+
+static void print_rtp(char *filenm,char *title,t_atoms *atoms,
+		      t_params plist[],t_atomtype *atype,int cgnr[],
+		      int nbts,int bts[])
 {
   FILE *fp;
+  int i;
+  
+  fp = ffopen(filenm,"w");
+  fprintf(fp,"; %s\n",title);
+  fprintf(fp,"\n");
+  fprintf(fp,"[ %s ]\n",*atoms->resname[0]);
+  fprintf(fp,"\n");
+  fprintf(fp,"[ atoms ]\n");
+  for(i=0; (i<atoms->nr); i++) {
+    fprintf(fp,"%-8s  %12s  %8.4f  %5d\n",
+	    *atoms->atomname[i],*atoms->atomtype[i],
+	    atoms->atom[i].q,cgnr[i]);
+  }
+  print_pl(fp,plist,F_BONDS,"bonds",atoms->atomname);
+  print_pl(fp,plist,F_ANGLES,"angles",atoms->atomname);
+  print_pl(fp,plist,F_PDIHS,"dihedrals",atoms->atomname);
+  print_pl(fp,plist,F_IDIHS,"impropers",atoms->atomname);
+  
+  fclose(fp);
 }
 
 int main(int argc, char *argv[])
@@ -426,6 +465,7 @@ int main(int argc, char *argv[])
   int        nres;         /* number of molecules? */
   int        i,j,k,l,m;
   bool       bRTP,bTOP;
+  t_symtab   symtab;
   real       cutoff;
   
   t_filenm fnm[] = {
@@ -437,7 +477,7 @@ int main(int argc, char *argv[])
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static int  nexcl = 3;
   static bool bRemoveDih = FALSE;
-  static bool bParam = FALSE,bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
+  static bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
   static bool bPairs = TRUE, bPBC = TRUE;
   static char *molnm = "ICE";
   static char *ff = "select";
@@ -478,7 +518,7 @@ int main(int argc, char *argv[])
 		    asize(desc),desc,asize(bugs),bugs);
   bRTP = opt2bSet("-r",NFILE,fnm);
   bTOP = opt2bSet("-o",NFILE,fnm);
-
+  
   if (!bRTP && !bTOP)
     gmx_fatal(FARGS,"Specify at least one output file");
 
@@ -509,7 +549,7 @@ int main(int argc, char *argv[])
   snew(atoms,1);
   
   /* make space for all the atoms */
-  init_t_atoms(atoms,natoms,FALSE);
+  init_t_atoms(atoms,natoms,TRUE);
   snew(x,natoms);              
 
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,box);
@@ -523,7 +563,9 @@ int main(int argc, char *argv[])
   printf("There are %d name to type translations\n",nnm);
   if (debug)
     dump_nm2type(debug,nnm,nm2t);
-  atype = set_atom_type(atoms,nbonds,nnm,nm2t);
+  
+  open_symtab(&symtab);
+  atype = set_atom_type(&symtab,atoms,nbonds,nnm,nm2t);
   
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);
@@ -560,12 +602,13 @@ int main(int argc, char *argv[])
   }
   if (bRTP)
     print_rtp(ftp2fn(efRTP,NFILE,fnm),"Generated by x2top",
-	      mymol.name,atoms,plist,atype,cgnr);
+	      atoms,plist,atype,cgnr,asize(bts),bts);
   
   if (debug) {
     dump_hybridization(debug,atoms,nbonds);
   }
-  
+  close_symtab(&symtab);
+    
   thanx(stderr);
   
   return 0;
