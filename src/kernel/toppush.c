@@ -1161,14 +1161,14 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5],
 		   &cc[6],&cc[7],&cc[8],&cc[9],&cc[10],&cc[11],&cc[12]);
 
-	if (nread == nrfpA && nrfpB != 0)
-	{
-      if (*bWarn_copy_A_B)
+    if (nread == nrfpA && nrfpB != 0)
       {
-        fprintf(stderr,
-                "NOTE:\n  Some parameters specified explicitly in state A, but not B - copying A to B.\n\n");
-        *bWarn_copy_A_B = FALSE;
-      }
+	if (*bWarn_copy_A_B)
+	  {
+	    fprintf(stderr,
+		    "NOTE:\n  Some parameters specified explicitly in state A, but not B - copying A to B.\n\n");
+	    *bWarn_copy_A_B = FALSE;
+	  }
        
        
       /* If only the A parameters were specified, copy them to the B state too */
@@ -1185,8 +1185,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	 */	
 	if (nread != 0 && nread != EOF && nread != nrfp)
 	{
-	     gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d.",
-			nread,nrfpA,nrfp);	
+	     gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d for %s.",
+			nread,nrfpA,nrfp,interaction_function[ftype].longname);	
 	}
 	  
     for(j=0; (j<nread); j++)
