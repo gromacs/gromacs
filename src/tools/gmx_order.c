@@ -576,8 +576,8 @@ int gmx_order(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
 
-  sgfnm = opt2fn("-Sg",NFILE,fnm);
-  skfnm = opt2fn("-Sk",NFILE,fnm);
+  sgfnm = opt2fn_null("-Sg",NFILE,fnm);
+  skfnm = opt2fn_null("-Sk",NFILE,fnm);
   ndxfnm = ftp2fn(efNDX,NFILE,fnm);
   tpsfnm = ftp2fn(efTPX,NFILE,fnm);
   trxfnm = ftp2fn(efTRX,NFILE,fnm);
