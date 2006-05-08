@@ -1425,13 +1425,12 @@ static int ns_simple_core(t_forcerec *fr,
  *
  ************************************************/
 
-static inline void get_dx(int Nx,real gridx,real grid_x,real rc2,real x,
+static inline void get_dx(int Nx,real gridx,real rc2,int xgi,real x,
 			      int *dx0,int *dx1,real *dcx2)
 {
   real dcx,tmp;
-  int  xgi,xgi0,xgi1,i;
+  int  xgi0,xgi1,i;
 
-  xgi = (int)(Nx+x*grid_x)-Nx;
   if (xgi < 0) {
     *dx0 = 0;
     xgi0 = -1;
@@ -1468,14 +1467,12 @@ static inline void get_dx(int Nx,real gridx,real grid_x,real rc2,real x,
   }
 }
 
-static inline void get_dx_dd(int Nx,real gridx,real grid_x,real rc2,real x,
+static inline void get_dx_dd(int Nx,real gridx,real rc2,int xgi,real x,
 			     int ncpddc,int shift_min,int shift_max,
 			     int *g0,int *g1,real *dcx2)
 {
   real dcx,tmp;
-  int  xgi,g_min,g_max,xgidiv;
-
-  xgi = (int)(Nx + x*grid_x) - Nx;
+  int  g_min,g_max,xgidiv;
 
   if (xgi < 0) {
     g_min = 0;
@@ -1596,6 +1593,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   unsigned short  *gid=md->cENER;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
   ivec    sh0,sh1,shp0,shp1;
+  int     cell_x,cell_y,cell_z;
   int     d,tx,ty,tz,dx,dy,dz,cj;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
   int     zsh_ty,zsh_tx,ysh_tx;
@@ -1805,6 +1803,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	}
     }
     
+    ci2xyz(grid,icg,&cell_x,&cell_y,&cell_z);
+
     /* Changed iicg to icg, DvdS 990115 
      * (but see consistency check above, DvdS 990330) 
      */
@@ -1817,9 +1817,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
       /* Calculate range of cells in Z direction that have the shift tz */
 #define FAST_DD_NS
 #ifndef FAST_DD_NS
-      get_dx(Nz,gridz,grid_z,rl2,ZI,&dz0,&dz1,dcz2);
+      get_dx(Nz,gridz,rl2,cell_z+tz*Nz,ZI,&dz0,&dz1,dcz2);
 #else
-      get_dx_dd(Nz,gridz,grid_z,rl2,ZI,ncpddc[ZZ],sh0[ZZ],sh1[ZZ],&dz0,&dz1,dcz2);
+      get_dx_dd(Nz,gridz,rl2,cell_z+tz*Nz,ZI,ncpddc[ZZ],sh0[ZZ],sh1[ZZ],&dz0,&dz1,dcz2);
 #endif
       if (dz0 > dz1)
 	continue;
@@ -1831,9 +1831,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
 #ifndef FAST_DD_NS
-	get_dx(Ny,gridy,grid_y,rl2,YI,&dy0,&dy1,dcy2);
+	get_dx(Ny,gridy,rl2,cell_y+ty*Ny,YI,&dy0,&dy1,dcy2);
 #else
-	get_dx_dd(Ny,gridy,grid_y,rl2,YI,ncpddc[YY],sh0[YY],sh1[YY],&dy0,&dy1,dcy2);
+	get_dx_dd(Ny,gridy,rl2,cell_y+ty*Ny,YI,ncpddc[YY],sh0[YY],sh1[YY],&dy0,&dy1,dcy2);
 #endif
 	if (dy0 > dy1)
 	  continue;
@@ -1845,9 +1845,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
 #ifndef FAST_DD_NS
-	  get_dx(Nx,gridx,grid_x,rl2,XI,&dx0,&dx1,dcx2);
+	  get_dx(Nx,gridx,rl2,cell_x+tx*Nx,XI,&dx0,&dx1,dcx2);
 #else
-	  get_dx_dd(Nx,gridx,grid_x,rl2,XI,ncpddc[XX],sh0[XX],sh1[XX],&dx0,&dx1,dcx2);
+	  get_dx_dd(Nx,gridx,rl2,cell_x+tx*Nx,XI,ncpddc[XX],sh0[XX],sh1[XX],&dx0,&dx1,dcx2);
 #endif
 	  if (dx0 > dx1)
 	    continue;
