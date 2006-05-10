@@ -273,9 +273,6 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
 {
   int  n,i,c,a;
   rvec *buf;
-#ifdef GMX_MPI
-  MPI_Request mpi_req;
-#endif
 
   if (!dd->bMasterHasAllCG)
     dd_collect_cg(dd);
@@ -367,7 +364,7 @@ void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
 static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
 			    t_forcerec *fr)
 {
-  int nat,cell,cg0,cg,cg_gl,a,a_gl;
+  int cell,cg0,cg,cg_gl,a,a_gl;
   int *cell_ncg,*index_gl,*cgindex,*gatindex;
   gmx_ga2la_t *ga2la;
   bool bMakeSolventType;
@@ -431,11 +428,11 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
 			  gmx_domdec_t *dd)
 {
   int **tmp_ind=NULL,*tmp_nalloc=NULL;
-  int  i,icg,ai,k,k0,k1,d;
+  int  i,icg,k,k0,k1,d;
   rvec g_inv,cg_cm;
   ivec ind;
   real nrcg,inv_ncg;
-  atom_id *cga,*cgindex;
+  atom_id *cgindex;
 
   if (tmp_ind == NULL) {
     snew(tmp_nalloc,dd->nnodes);
@@ -612,7 +609,7 @@ static int compact_and_copy_cg(int ncg,int *cell,int local,
 			       int *cgindex,int *gatindex,gmx_ga2la_t *ga2la,
 			       int *buf,rvec *cg_cm,int *solvent_type)
 {
-  int c,cg,nat,nat_cg,a0,a1,a,a_gl;
+  int c,cg,nat,a0,a1,a,a_gl;
   int local_pos,buf_pos[DD_MAXNBCELL];
   
   for(c=0; c<nnbc; c++)
@@ -667,16 +664,16 @@ static int dd_redistribute_cg(FILE *fplog,
   int  *cell,*buf_cg;
   int  ncg[DD_MAXNBCELL],nat[DD_MAXNBCELL];
   int  ncg_r[DD_MAXNBCELL],nat_r[DD_MAXNBCELL],nat_r_max;
-  int  nnbc,nvec,c,i,cg,ai,k,k0,k1,d,x,y,z,nreq,nreq2,ncg_new;
+  int  nnbc,nvec,c,i,cg,k,k0,k1,d,x,y,z,nreq,ncg_new;
   int  local=-1,dest[DD_MAXNBCELL],src[DD_MAXNBCELL];
   int  sbuf[DD_MAXNBCELL*2],rbuf[DD_MAXNBCELL*2];
-  int  buf_cg_ind[DD_MAXNBCELL+1],buf_vs_ind[DD_MAXNBCELL+1],buf_vr_size;
+  int  buf_cg_ind[DD_MAXNBCELL+1],buf_vs_ind[DD_MAXNBCELL+1];
   int  local_pos,buf_pos[DD_MAXNBCELL],buf_pos_r;
   rvec inv_box;
   ivec ms0,ms1,ns,ind,dev,vlocal,vdest,vsrc;
   int  cg_gl,nrcg;
   real inv_ncg;
-  atom_id *cga,*cgindex;
+  atom_id *cgindex;
 #ifdef GMX_MPI
   MPI_Request mpi_req[DD_MAXNBCELL*2];
 #endif
@@ -1270,12 +1267,12 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 				   rvec x[],rvec buf[],matrix box,rvec cg_cm[],
 				   real r_comm)
 {
-  int dim,nat_tot,ncell,cell,celli,ncg,c,i,cg,cg_gl,nrcg,d;
+  int dim_ind,dim,nat_tot,ncell,cell,celli,c,i,cg,cg_gl,nrcg,d;
   int *ncg_cell,*index_gl,*cgindex;
   gmx_domdec_comm_t *cc;
   ivec xyz;
   rvec corner;
-  real r_comm2,r2,inv_ncg;
+  real corner0,corner1,r_comm2,r2,inv_ncg;
   int  nsend,nat;
 
   if (debug)
@@ -1285,6 +1282,14 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
   /* This should be changed for non-uniform grids */
   for(d=0; d<DIM; d++)
     corner[d] = xyz[d]*box[d][d]/dd->nc[d];
+  if (dd->ndim >= 2) {
+    /* Set the upper-right corner for rounding */
+    d = dd->dim[0];
+    corner0 = ((xyz[d] + 1) % dd->nc[d])*box[d][d]/dd->nc[d];
+    d = dd->dim[1];
+    corner1 = ((xyz[d] + 1) % dd->nc[d])*box[d][d]/dd->nc[d];
+  }
+
   r_comm2 = sqr(r_comm);
 
   for(dim=0; dim<dd->ndim; dim++) {
@@ -1306,16 +1311,21 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 
   nat_tot = dd->nat_local;
   ncell = 1;
-  for(dim=0; dim<dd->ndim; dim++) {
-    cc = &dd->comm[dim];
+  for(dim_ind=0; dim_ind<dd->ndim; dim_ind++) {
+    dim = dd->dim[dim_ind];
+    cc = &dd->comm[dim_ind];
     nsend = 0;
     nat = 0;
     for(cell=0; cell<ncell; cell++) {
       cc->nsend[cell] = 0;
-      celli = cell_perm[dim][cell];
+      celli = cell_perm[dim_ind][cell];
       for(cg=ncg_cell[celli]; cg<ncg_cell[celli+1]; cg++) {
-	/* No rounding yet here */
-	r2 = sqr(cg_cm[cg][dd->dim[dim]] - corner[dd->dim[dim]]);
+	r2 = sqr(cg_cm[cg][dim] - corner[dim]);
+	/* Rounding gives at most a 16% reduction in communicated atoms */
+	if (dim_ind >= 1 && (celli == 1 || celli == 2))
+	  r2 += sqr(cg_cm[cg][dd->dim[0]] - corner0);
+	if (dim_ind == 2 && (celli == 2 || celli == 3))
+	  r2 += sqr(cg_cm[cg][dd->dim[1]] - corner1);
 	if (r2 < r_comm2) {
 	  /* Make an index to the local charge groups */
 	  if (nsend >= cc->nalloc) {
@@ -1340,7 +1350,7 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
     cc->nsend[ncell]   = nsend;
     cc->nsend[ncell+1] = nat;
     /* Communicate the number of cg's and atoms to receive */
-    dd_sendrecv_int(dd, dim, ddBackward,
+    dd_sendrecv_int(dd, dim_ind, ddBackward,
 		    cc->nsend, ncell+2,
 		    cc->nrecv, ncell+2);
     /* Communicate the global cg indices, receive in place */
@@ -1349,11 +1359,11 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
       srenew(index_gl,dd->cg_nalloc);
       srenew(cgindex,dd->cg_nalloc+1);
     }
-    dd_sendrecv_int(dd, dim, ddBackward,
+    dd_sendrecv_int(dd, dim_ind, ddBackward,
 		    dd->buf_i1,               nsend,
 		    index_gl+ncg_cell[ncell], cc->nrecv[ncell]);
     /* Communicate the coordinate, receive in place */
-    dd_sendrecv_rvec(dd, dim, ddBackward,
+    dd_sendrecv_rvec(dd, dim_ind, ddBackward,
 		     buf,       cc->nsend[ncell+1],
 		     x+nat_tot, cc->nrecv[ncell+1]);
     /* Make the charge group index and determine cgcm */
@@ -1436,9 +1446,8 @@ static void make_local_ilist(gmx_domdec_t *dd,t_functype ftype,
 
 static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 {
-  int i,gat,j,ftype,nral,type,d,k,kc;
+  int i,gat,j,ftype,nral,d,k,kc;
   int *index,*rtil;
-  gmx_domdec_comm_t *cc;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST],*liatoms;
   bool bUse;
   ivec shift_min;
@@ -1502,7 +1511,7 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 static void make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
 				  t_block *excls,t_block *lexcls)
 {
-  int n,cg,la0,la1,nat,la,a,i,j;
+  int n,cg,la0,la1,la,a,i,j;
   gmx_ga2la_t *ga2la;
   
   if (dd->nat_tot+1 > lexcls->nalloc_index) {
@@ -1618,8 +1627,6 @@ static void make_local_idef(gmx_domdec_t *dd,t_idef *idef,t_idef *lidef)
 
 static void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 {
-  int i,c;
-
   lcgs->nr    = dd->ncg_tot;
   lcgs->index = dd->cgindex;
   lcgs->nra   = dd->nat_tot;
@@ -1650,8 +1657,6 @@ static void make_local_top(FILE *fplog,gmx_domdec_t *dd,
 			   t_topology *top,t_topology *ltop,
 			   t_nsborder *nsb)
 {
-  int a,i,cg,eb;
-
   if (debug)
     fprintf(debug,"Making local topology\n");
 
@@ -1763,7 +1768,7 @@ void dd_partition_system(FILE         *fplog,
   make_dd_indices(dd,&top_global->blocks[ebCGS],cg0,fr);
 
   /* Update the rest of the forcerec */
-  fr->cg0;
+  fr->cg0 = 0;
   fr->hcg = dd->ncg_tot;
 
   /* Extract a local topology from the global topology */
