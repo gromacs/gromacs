@@ -526,8 +526,8 @@ static void write_htmlman(FILE *out,
   fprintf(out,"<TABLE WIDTH=\"98%%\" NOBORDER >\n<TR><TD WIDTH=400>\n");
   fprintf(out,"<TABLE WIDTH=400 NOBORDER>\n<TD WIDTH=116>\n");
   fprintf(out,"<a href=\"http://www.gromacs.org/\">"
-	  "<img SRC=\"../images/gmxlogo_small.jpg\""
-	  "BORDER=0 height=133 width=116></a></td>\n");
+	  "<img SRC=\"../images/gmxlogo_small.png\""
+	  "BORDER=0 </a></td>\n");
   fprintf(out,"<td ALIGN=LEFT VALIGN=TOP WIDTH=280>"
 	  "<br><h2>%s</h2>",program);
   fprintf(out,"<font size=-1><A HREF=\"../online.html\">Main Table of Contents</A></font><br>");
