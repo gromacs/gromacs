@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_order</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -23,7 +23,11 @@ order parameter Scd (default). If the option -szonly is given, only one
 order tensor component (specified by the -d option) is given and the
 order parameter per slice is calculated as well. If -szonly is not
 selected, all diagonal elements and the deuterium order parameter is
-given.
+given.<p>The tetrahedrality order parameters can be determined
+around an atom. Both angle an distance order parameters are calculated. See
+P.-L. Chau and A.J. Hardwick, Mol. Phys., 93, (1998), 511-518.
+for more details.<br>
+
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
@@ -34,6 +38,8 @@ given.
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   order.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-od</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  deuter.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-os</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  sliced.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-Sg</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  sg-ang.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-Sk</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> sk-dist.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>

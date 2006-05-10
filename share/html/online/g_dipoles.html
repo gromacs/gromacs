@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dipoles</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -24,12 +24,13 @@ simulation.
 The file dipdist.<a href="xvg.html">xvg</a> contains the distribution of dipole moments during
 the simulation
 The mu_max is used as the highest value in the distribution graph.<p>
-Furthermore the dipole autocorrelation function will be computed, when
-option -c is used. It can be averaged over all molecules, 
-or (with option -avercorr) it can be computed as the autocorrelation
-of the total dipole moment of the simulation box.<p>
-At the moment the dielectric constant is calculated only correct if
-a rectangular or cubic simulation box is used.<p>
+Furthermore the dipole autocorrelation function will be computed when
+option -corr is used. The output file name is given with the <tt>-c</tt>
+option.
+The correlation functions can be averaged over all molecules
+(<tt>mol</tt>), plotted per molecule seperately (<tt>molsep</tt>)
+or it can be computed over the total dipole moment of the simulation box
+(<tt>total</tt>).<p>
 Option <tt>-g</tt> produces a plot of the distance dependent Kirkwood
 G-factor, as well as the average cosine of the angle between the dipoles
 as a function of the distance. The plot also includes gOO and hOO
@@ -38,8 +39,7 @@ we also include the energy per scale computed by taking the inner product of
 the dipoles divided by the distance to the third power.<p>
 <p>
 EXAMPLES<p>
-g_dipoles -P1 -n mols -o dip_sqr -mu 2.273 -mumax 5.0
--nofft<p>
+g_dipoles -corr mol -P1 -o dip_sqr -mu 2.273 -mumax 5.0 -nofft<p>
 This will calculate the autocorrelation function of the molecular
 dipoles using a first order Legendre polynomial of the angle of the
 dipole vector and itself a time t later. For this calculation 1001
@@ -82,13 +82,13 @@ distribution function a maximum of 5.0 will be used.
 <TR><TD ALIGN=RIGHT> <b><tt>-mumax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     5</tt> </TD><TD> max dipole in Debye (for histrogram) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-epsilonRF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> epsilon of the reaction field used during the simulation, needed for dieclectric constant calculation. WARNING: 0.0 means infinity (default) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip steps in the output (but not in the computations) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   300</tt> </TD><TD> average temperature of the simulation (needed for dielectric constant calculation) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]avercorr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> calculate AC function of average dipole moment of the simulation box rather than average of AC function per molecule </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   300</tt> </TD><TD> Average temperature of the simulation (needed for dielectric constant calculation) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-corr</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Correlation function to calculate: <tt>none</tt>, <tt>mol</tt>, <tt>molsep</tt> or <tt>total</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pairs</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Calculate |cos theta| between all pairs of molecules. May be slow </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-axis</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>Z</tt> </TD><TD> Take the normal on the computational box in direction X, Y or Z. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-sl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Divide the box in #nr slices. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-gkratom</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Use the n-th atom of a molecule (starting from 1) to calculate the distance between molecules rather than the center of charge (when 0) in the calculation of distance dependent Kirkwood factors </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Normalize ACF </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>

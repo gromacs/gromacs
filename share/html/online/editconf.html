@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>editconf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -21,9 +21,9 @@ The box can be modified with options <tt>-box</tt>, <tt>-d</tt> and
 <tt>-angles</tt>. Both <tt>-box</tt> and <tt>-d</tt>
 will center the system in the box.
 <p>
-Option <tt>-bt</tt> determines the box type: <tt>tric</tt> is a
-triclinic box, <tt>cubic</tt> is a cubic box, <tt>dodecahedron</tt> is
-a rhombic dodecahedron and <tt>octahedron</tt> is a truncated octahedron.
+Option <tt>-bt</tt> determines the box type: <tt>triclinic</tt> is a
+triclinic box, <tt>cubic</tt> is a rectangular box with all sides equal
+<tt>dodecahedron</tt> represents a rhombic dodecahedron and <tt>octahedron</tt> is a truncated octahedron.
 The last two are special cases of a triclinic box.
 The length of the three box vectors of the truncated octahedron is the
 shortest distance between two opposite hexagons.
@@ -32,10 +32,12 @@ is 0.77 of that of a cubic box with the same periodic image distance.
 <p>
 Option <tt>-box</tt> requires only
 one value for a cubic box, dodecahedron and a truncated octahedron.
-With <tt>-d</tt> and <tt>tric</tt> the size of the system in the x, y
+<p>
+With <tt>-d</tt> and a <tt>triclinic</tt> box the size of the system in the x, y
 and z directions is used. With <tt>-d</tt> and <tt>cubic</tt>,
-<tt>dodecahedron</tt> or <tt>octahedron</tt> the diameter of the system
-is used, which is the largest distance between two atoms.
+<tt>dodecahedron</tt> or <tt>octahedron</tt> boxes, the dimensions are set
+to the diameter of the system (largest distance between atoms) plus twice
+the specified distance.
 <p>
 Option <tt>-angles</tt> is only meaningful with option <tt>-box</tt> and
 a triclinic box and can not be used with option <tt>-d</tt>.
@@ -105,7 +107,7 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]ndef</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Choose output from default index groups </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-bt</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>tric</tt> </TD><TD> Box type for -box and -d: <tt>tric</tt>, <tt>cubic</tt>, <tt>dodecahedron</tt> or <tt>octahedron</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bt</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>triclinic</tt> </TD><TD> Box type for -box and -d: <tt>triclinic</tt>, <tt>cubic</tt>, <tt>dodecahedron</tt> or <tt>octahedron</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Box vector lengths (a,b,c) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-angles</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>90 90 90</tt> </TD><TD> Angles between the box vectors (bc,ac,ab) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Distance between the solute and the box </TD></TD>

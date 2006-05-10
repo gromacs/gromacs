@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>x2top</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -58,7 +58,7 @@ case <a href="pdb2gmx.html">pdb2gmx</a> just looks for the corresponding file.<p
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pairs</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Output 1-4 interactions (pairs) in topology file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-name</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>ICE</tt> </TD><TD> Name of your molecule </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use periodic boundary conditions. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]param</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print parameters in the output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]param</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Print parameters in the output </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]round</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Round off measured values </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-kb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>400000</tt> </TD><TD> Bonded force constant (kJ/mol/nm^2) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-kt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   400</tt> </TD><TD> Angle force constant (kJ/mol/rad^2) </TD></TD>
@@ -67,7 +67,6 @@ case <a href="pdb2gmx.html">pdb2gmx</a> just looks for the corresponding file.<p
 <P>
 <UL>
 <LI>The atom type selection is primitive. Virtually no chemical knowledge is used
-<LI>Periodic boundary conditions screw up the bonding
 <LI>No improper dihedrals are generated
 <LI>The atoms to atomtype translation table is incomplete (ffG43a1.n2t file in the $GMXLIB directory). Please extend it and send the results back to the GROMACS crew.
 </UL>

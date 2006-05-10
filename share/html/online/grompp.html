@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>grompp</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -36,11 +36,10 @@ in the coordinate file (option <tt>-c</tt>) are only read to generate
 warnings when they do not match the atom names in the topology.
 Note that the atom names are irrelevant for the simulation as
 only the atom types are used for generating interaction parameters.<p>
-grompp calls the c-preprocessor to resolve includes, macros 
-etcetera. To specify a macro-preprocessor other than /lib/cpp 
-(such as m4)
+grompp calls a preprocessor to resolve includes, macros 
+etcetera. By default we use the cpp in your path. To specify a different macro-preprocessor (e.g. m4) or alternative location
 you can put a line in your parameter file specifying the path
-to that cpp. Specifying <tt>-pp</tt> will get the pre-processed
+to that program. Specifying <tt>-pp</tt> will get the pre-processed
 topology file written out.<p>
 If your system does not have a c-preprocessor, you can still
 use grompp, but you do not have access to the features 

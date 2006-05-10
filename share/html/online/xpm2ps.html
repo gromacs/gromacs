@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>xpm2ps</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -37,13 +37,16 @@ first one (<tt>-f</tt>) is plotted together with the lower right
 half of the second one (<tt>-f2</tt>). The diagonal will contain
 values from the matrix file selected with <tt>-diag</tt>.
 Plotting of the diagonal values can be suppressed altogether by
-setting <tt>-diag</tt> to <tt>none</tt>. With 
-<tt>-combine</tt> an alternative operation can be selected to combine
-the matrices. In this case, a new color map will be generated with
-a red gradient for negative numbers and a blue for positive.<p>
+setting <tt>-diag</tt> to <tt>none</tt>.
+In this case, a new color map will be generated with
+a red gradient for negative numbers and a blue for positive.
 If the color coding and legend labels of both matrices are identical,
 only one legend will be displayed, else two separate legends are
-displayed.<p>
+displayed.
+With <tt>-combine</tt> an alternative operation can be selected
+to combine the matrices. The output range is automatically set
+to the actual range of the combined matrix. This can be overridden
+with <tt>-cmin</tt> and <tt>-cmax</tt>.<p>
 <tt>-title</tt> can be set to <tt>none</tt> to suppress the title, or to
 <tt>ylabel</tt> to show the title in the Y-label position (alongside
 the Y-axis).<p>
@@ -74,7 +77,6 @@ the <tt>-<a href="xpm.html">xpm</a></tt> option.
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]yonce</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Show y-label only once </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-legend</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>both</tt> </TD><TD> Show legend: <tt>both</tt>, <tt>first</tt>, <tt>second</tt> or <tt>none</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-diag</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>first</tt> </TD><TD> Diagonal: <tt>first</tt>, <tt>second</tt> or <tt>none</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-combine</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>halves</tt> </TD><TD> Combine two matrices: <tt>halves</tt>, <tt>add</tt>, <tt>sub</tt>, <tt>mult</tt> or <tt>div</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-size</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   400</tt> </TD><TD> Horizontal size of the matrix in ps units </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-bx</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Element x-size, overrides -size (also y-size when -by is not set) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-by</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Element y-size </TD></TD>
@@ -83,6 +85,9 @@ the <tt>-<a href="xpm.html">xpm</a></tt> option.
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> only write out every nr-th row and column </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]zeroline</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> insert line in <a href="xpm.html">xpm</a> matrix where axis label is zero </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-legoffset</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip first N colors from <a href="xpm.html">xpm</a> file for the legend </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-combine</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>halves</tt> </TD><TD> Combine two matrices: <tt>halves</tt>, <tt>add</tt>, <tt>sub</tt>, <tt>mult</tt> or <tt>div</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-cmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Minimum for combination output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-cmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum for combination output </TD></TD>
 </TABLE>
 <P>
 <hr>

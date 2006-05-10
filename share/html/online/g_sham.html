@@ -7,14 +7,19 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_sham</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-g_sham reads a number of <a href="xvg.html">xvg</a> files and analyzes data sets.
+g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.
+g_sham reads one or more <a href="xvg.html">xvg</a> files and analyzes data sets.
+g_sham basic purpose is plotting Gibbs free energy landscapes
+by Bolzmann inverting multi-dimensional histograms, but it can also
+make enthalpy (option <tt>-lsh</tt>) and entropy (option <tt>-lss</tt>)
+plots. The histograms can be made for any quantities the user supplies.
 A line in the input file may start with a time
 (see option <tt>-time</tt>) and any number of y values may follow.
 Multiple sets can also be
@@ -23,8 +28,16 @@ in this case only one y value is read from each line.
 All lines starting with # and @ are skipped.
 <p>
 Option <tt>-ge</tt> can be used to supply a file with free energies
-when the ensemble is not a Boltzmann ensemble, but has been biased
-by this free energy.
+when the ensemble is not a Boltzmann ensemble, but needs to be biased
+by this free energy. One free energy value is required for each
+(multi-dimensional) data point in the <tt>-f</tt> input.
+<p>
+Option <tt>-<a href="ene.html">ene</a></tt> can be used to supply a file with energies.
+These energies are used as a weighting function in the single
+histogram analysis method due to Kumar et. al. When also temperatures
+are supplied (as a second column in the file) an experimental
+weighting scheme is applied. In addition the vales
+are used for making enthalpy and entropy plots.
 <p>
 With option <tt>-dim</tt> dimensions can be gives for distances.
 When a distance is 2- or 3-dimensional, the circumference or surface
@@ -33,6 +46,8 @@ Depending on what one would like to show, one can choose to correct
 the free-energy for this volume effect.
 The probability is normalized by r and r^2 for a dimension of 2 and 3
 respectively.
+A value of -1 is used to indicate an angle in degrees between two
+vectors: a sin(angle) normalization will be applied.
 Note that for angles between vectors the inner-product or cosine
 is the natural quantity to use, as it will produce bins of the same
 volume.
@@ -76,8 +91,10 @@ volume.
 <TR><TD ALIGN=RIGHT> <b><tt>-ngrid</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>32 32 32</tt> </TD><TD> Number of bins for energy landscapes (max 3 values, dimensions &gt; 3 will get the same value as the last) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xmin</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Minimum for the axes in energy landscape (see above for &gt; 3 dimensions) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-xmax</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>1 1 1</tt> </TD><TD> Maximum for the axes in energy landscape (see above for &gt; 3 dimensions) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-gmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum level in output, 0 is calculate </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>25</tt> </TD><TD> Number of levels for energy landscape from single histogram analysis </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-gmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum free energy in output, default is calculate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-emin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Minimum enthalpy in output, default is calculate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-emax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum enthalpy in output, default is calculate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>25</tt> </TD><TD> Number of levels for energy landscape </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-mname</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Legend label for the custom landscape </TD></TD>
 </TABLE>
 <P>

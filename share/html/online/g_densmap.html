@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_densmap</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
+Wed 10 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -20,10 +20,12 @@ The output <tt>.<a href="xpm.html">xpm</a></tt> file can be visualized with for 
 and can be converted to postscript with <a href="xpm2ps.html">xpm2ps</a>.
 <p>
 The default analysis is a 2-D number-density map for a selected
-group of atoms in the x-z plane. The grid spacing is set with the option
-<tt>-bin</tt>. When <tt>-nx</tt> or <tt>-nz</tt> is non-zero, the grid
-size is set by this option. Box size fluctuations are properly taken
-into account.
+group of atoms in the x-z plane.
+The averaging direction can be changed with the option <tt>-aver</tt>.
+The grid spacing is set with the option <tt>-bin</tt>.
+When <tt>-n1</tt> or <tt>-n2</tt> is non-zero, the grid
+size is set by this option.
+Box size fluctuations are properly taken into account.
 <p>
 When options <tt>-amax</tt> and <tt>-rmax</tt> are set, an axial-radial
 number-density map is made. Three groups should be supplied, the centers
@@ -34,6 +36,10 @@ the positive direction goes from the first to the second center of mass.
 The radial direction goes from 0 to rmax or from -rmax to +rmax
 when the <tt>-mirror</tt> option has been set.
 <p>
+The normalization of the output is set with the <tt>-unit</tt> option.
+The default produces a true number density. Unit <tt>nm-2</tt> leaves out
+the normalization for the averaging or the angular direction.
+Option <tt>count</tt> produces the count for each grid cell.
 When you do not want the scale in the output to go
 from zero to the maximum density, you can set the maximum
 with the option <tt>-dmax</tt>.
@@ -56,13 +62,16 @@ with the option <tt>-dmax</tt>.
 <TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-bin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.02</tt> </TD><TD> Grid size </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nx</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of grid cells in x direction </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nz</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of grid cells in z direction </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.02</tt> </TD><TD> Grid size (nm) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-aver</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>z</tt> </TD><TD> The direction to average over: <tt>z</tt>, <tt>y</tt> or <tt>x</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-n1</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of grid cells in the first direction </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-n2</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Number of grid cells in the second direction </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-amax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum axial distance from the center </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum radial distance </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]mirror</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Add the mirror image below the axial axis </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum density (0 means calculate it) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-unit</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>nm-3</tt> </TD><TD> Unit for the output: <tt>nm-3</tt>, <tt>nm-2</tt> or <tt>count</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Minimum density in output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dmax</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Maximum density in output (0 means calculate it) </TD></TD>
 </TABLE>
 <P>
 <hr>
