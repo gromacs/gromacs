@@ -88,6 +88,28 @@ static void gromacs_name(char *name)
     strcpy(name,"O2");
 }
 
+void gmx_write_pdb_box(FILE *out,matrix box)
+{
+  real alpha,beta,gamma;
+
+  if (norm2(box[YY])*norm2(box[ZZ])!=0)
+    alpha = RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ]));
+  else
+    alpha = 90;
+  if (norm2(box[XX])*norm2(box[ZZ])!=0)
+    beta  = RAD2DEG*acos(cos_angle_no_table(box[XX],box[ZZ]));
+  else
+    beta  = 90;
+  if (norm2(box[XX])*norm2(box[YY])!=0)
+    gamma = RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY]));
+  else
+    gamma = 90;
+  fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
+  fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
+	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),alpha,beta,gamma);
+}
+
+
 void write_pdbfile_indexed(FILE *out,char *title,
 			   t_atoms *atoms,rvec x[],matrix box,char chain,
 			   int model_nr, atom_id nindex, atom_id index[])
@@ -96,7 +118,6 @@ void write_pdbfile_indexed(FILE *out,char *title,
   atom_id i,ii;
   int  resnr,type;
   real occup,bfac;
-  real alpha,beta,gamma;
   bool bOccup;
 
   bromacs(pukestring,99);
@@ -106,22 +127,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
     fprintf(out,"REMARK    As a result of, some programs may not like it\n");
   }
   if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) ) {
-    if (norm2(box[YY])*norm2(box[ZZ])!=0)
-      alpha = RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ]));
-    else
-      alpha = 90;
-    if (norm2(box[XX])*norm2(box[ZZ])!=0)
-      beta  = RAD2DEG*acos(cos_angle_no_table(box[XX],box[ZZ]));
-    else
-      beta  = 90;
-    if (norm2(box[XX])*norm2(box[YY])!=0)
-      gamma = RAD2DEG*acos(cos_angle_no_table(box[XX],box[YY]));
-    else
-      gamma = 90;
-    fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
-    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
-	    10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
-	    alpha,beta,gamma);
+    gmx_write_pdb_box(out,box);
   }
   if (atoms->pdbinfo) {
     /* Check whether any occupancies are set, in that case leave it as is,

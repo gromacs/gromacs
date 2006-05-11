@@ -65,6 +65,9 @@ extern void set_pdb_wide_format(bool bSet);
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE) */
 
+extern void gmx_write_pdb_box(FILE *out,matrix box);
+/* write the box in the CRYST1 record */
+
 extern void write_pdbfile_indexed(FILE *out,char *title,t_atoms *atoms,
 				  rvec x[],matrix box,char chain,
 				  int model_nr,atom_id nindex,atom_id index[]);
