@@ -681,8 +681,14 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
       }
       npair = natoms - 1;
     }
-    csix    /= npair - nexcl;
-    ctwelve /= npair - nexcl;
+    if (npair - nexcl <= 0) {
+      fprintf(log,"\nWARNING: There are no atom pairs for dispersion correction\n\n");
+      csix     = 0;
+      ctwelve  = 0;
+    } else {
+      csix    /= npair - nexcl;
+      ctwelve /= npair - nexcl;
+    }
     if (debug) {
       fprintf(debug,"Counted %d exclusions\n",nexcl);
       fprintf(debug,"Average C6 parameter is: %10g\n",(double)csix);
