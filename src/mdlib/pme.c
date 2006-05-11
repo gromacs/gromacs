@@ -347,9 +347,9 @@ static void pme_realloc_homenr_things(gmx_pme_t pme)
     pme->homenr_nalloc = over_alloc(pme->my_homenr);
 
     if (pme->nnodes > 1) {
-      snew(pme->x_home,pme->homenr_nalloc);
-      snew(pme->q_home,pme->homenr_nalloc);
-      snew(pme->f_home,pme->homenr_nalloc);
+      srenew(pme->x_home,pme->homenr_nalloc);
+      srenew(pme->q_home,pme->homenr_nalloc);
+      srenew(pme->f_home,pme->homenr_nalloc);
     }
     for(i=0;i<DIM;i++) {
       srenew(pme->theta[i],pme->pme_order*pme->homenr_nalloc); 
