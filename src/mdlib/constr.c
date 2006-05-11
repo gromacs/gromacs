@@ -50,6 +50,7 @@
 #include "names.h"
 #include "txtdump.h"
 #include "domdec.h"
+#include "pdbio.h"
 
 typedef struct {
   atom_id iatom[3];
@@ -91,15 +92,55 @@ static int icomp(const void *p1, const void *p2)
   return (*a1)-(*a2);
 }
 
+static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
+			     int start,int homenr,gmx_domdec_t *dd,
+			     rvec x[],matrix box)
+{
+  char fname[STRLEN],format[STRLEN];
+  FILE *out;
+  int  i,ii,resnr;
+
+  if (dd) {
+    sprintf(fname,"%s_n%d.pdb",fn,dd->nodeid);
+    start = 0;
+    homenr = dd->nat_tot_con;
+  } else {
+    sprintf(fname,"%s.pdb",fn);
+  }
+  sprintf(format,"%s\n",pdbformat);
+
+  out = ffopen(fname,"w");
+
+  fprintf(out,"TITLE     %s\n",title);
+  gmx_write_pdb_box(out,box);
+  for(i=start; i<start+homenr; i++) {
+    if (dd) {
+      if (i >= dd->nat_local && i < dd->nat_tot)
+	continue;
+      ii = dd->gatindex[i];
+    } else {
+      ii = i;
+    }
+    resnr = atoms->atom[ii].resnr;
+    fprintf(out,format,"ATOM",(ii+1)%100000,
+	    *atoms->atomname[ii],*atoms->resname[resnr],' ',(resnr+1)%10000,
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
+  }
+  fprintf(out,"TER\n");
+
+  fclose(out);
+}
+			     
 static void dump_confs(int step,t_atoms *atoms,
+		       int start,int homenr,gmx_domdec_t *dd,
 		       rvec x[],rvec xprime[],matrix box)
 {
   char buf[256];
   
-  sprintf(buf,"step%d.pdb",step-1);
-  write_sto_conf(buf,"one step before crash",atoms,x,NULL,box);
-  sprintf(buf,"step%d.pdb",step);
-  write_sto_conf(buf,"crashed",atoms,xprime,NULL,box);
+  sprintf(buf,"step%db",step);
+  write_constr_pdb(buf,"initial coordinates",atoms,start,homenr,dd,x,box);
+  sprintf(buf,"step%dc",step);
+  write_constr_pdb(buf,"coordinates after constraining",atoms,start,homenr,dd,xprime,box);
   fprintf(stdlog,"Wrote pdb files with previous and current coordinates\n");
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
 }
@@ -129,7 +170,6 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
   static t_lincsdata *lincsd=NULL;
   static bool      bDumpOnError = TRUE;
   
-  char        buf[STRLEN];
   bool        bOK;
   t_sortblock *sb;
   t_block     *blocks=&(top->blocks[ebSBLOCKS]);
@@ -311,7 +351,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
 	  (*vir)[i][j] = hdt_2*rmdr[i][j];
     }
     if (!bOK && bDumpOnError) 
-      dump_confs(step,&(top->atoms),x,xprime,box);
+      dump_confs(step,&(top->atoms),start,homenr,dd,x,xprime,box);
   }
   return bOK;
 }
