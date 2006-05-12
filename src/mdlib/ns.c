@@ -2083,6 +2083,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     if (cgs->nra > nra_alloc) {
       nra_alloc = over_alloc(cgs->nra);
       srenew(bexcl,nra_alloc);
+      for(i=0; i<nra_alloc; i++)
+	bexcl[i] = 0;
     }
     
     if (cgs->nr > cg_alloc) {
