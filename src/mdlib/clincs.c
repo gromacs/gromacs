@@ -473,7 +473,7 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
   gmx_domdec_constraints_t *dc;
   t_block     at2con;
   t_iatom     *iatom;
-  int         i,k,ncc_alloc,ni,con,cong,nconnect;
+  int         i,k,ncc_alloc,ni,con,cong,nconnect,concon;
   int         type,ag1,ag2,a1,a2;
   real        lenA=0,lenB;
   bool        bLocal;
@@ -495,7 +495,7 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
       li->nflexcon = dc->nflexcon_global;
     }
     
-    if (li->nc > li->nc_alloc) {
+    if (li->nc > li->nc_alloc || li->nc_alloc == 0) {
       li->nc_alloc = over_alloc(li->nc);
       srenew(li->bllen0,li->nc_alloc);
       srenew(li->ddist,li->nc_alloc);
@@ -566,32 +566,35 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
 	li->bla[2*con+1] = a2;
 	/* Construct the constraint connection matrix blbnb */
 	for(k=at2con.index[ag1-start]; k<at2con.index[ag1-start+1]; k++) {
-	  if (at2con.a[k] != cong &&
-	      (bLocal || at2con.a[k] != -1)) {
+	  concon = at2con.a[k];
+	  if (concon != cong &&
+	      (bLocal || dc->gc2lc[concon] != -1)) {
 	    if (nconnect >= ncc_alloc) {
 	      ncc_alloc += CONCON_ALLOC_SIZE;
 	      srenew(li->blbnb,ncc_alloc);
 	    }
 	    if (dc == NULL)
-	      li->blbnb[nconnect++] = at2con.a[k];
+	      li->blbnb[nconnect++] = concon;
 	    else
-	      li->blbnb[nconnect++] = dc->gc2lc[at2con.a[k]];
+	      li->blbnb[nconnect++] = dc->gc2lc[concon];
 	  }
 	}
 	for(k=at2con.index[ag2-start]; k<at2con.index[ag2-start+1]; k++) {
-	  if (at2con.a[k] != cong &&
-	      (bLocal || dc->gc2lc[at2con.a[k]] != -1)) {
+	  concon = at2con.a[k];
+	  if (concon != cong &&
+	      (bLocal || dc->gc2lc[concon] != -1)) {
 	    if (nconnect >= ncc_alloc) {
 	      ncc_alloc += CONCON_ALLOC_SIZE;
 	      srenew(li->blbnb,ncc_alloc);
 	    }
 	    if (dc == NULL)
-	      li->blbnb[nconnect++] = at2con.a[k];
+	      li->blbnb[nconnect++] = concon;
 	    else
-	      li->blbnb[nconnect++] = dc->gc2lc[at2con.a[k]];
+	      li->blbnb[nconnect++] = dc->gc2lc[concon];
 	  }
 	}
 	li->blnr[con+1] = nconnect;
+
 	if (dc == NULL) {
 	  /* Order the blbnb matrix to optimize memory access */
 	  qsort(&(li->blbnb[li->blnr[con]]),li->blnr[con+1]-li->blnr[con],
@@ -638,7 +641,7 @@ static int lincs_warncount = 0;
 
 #define LINCS_MAXWARN 10000
 
-static void lincs_warning(rvec *x,rvec *xprime,t_pbc *pbc,
+static void lincs_warning(gmx_domdec_t *dd,rvec *x,rvec *xprime,t_pbc *pbc,
 			  int ncons,int *bla,real *bllen,real wangle)
 {
   int b,i,j;
@@ -669,7 +672,7 @@ static void lincs_warning(rvec *x,rvec *xprime,t_pbc *pbc,
     cosine = iprod(v0,v1)/(d0*d1);
     if (cosine<wfac) {
       sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
-	      i+1,j+1,RAD2DEG*acos(cosine),d0,d1,bllen[b]);
+	      glatnr(dd,i),glatnr(dd,j),RAD2DEG*acos(cosine),d0,d1,bllen[b]);
       fprintf(stderr,buf);
       fprintf(stdlog,buf);
       lincs_warncount++;
@@ -874,7 +877,8 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
 		glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
 	fprintf(stdlog,"%s",buf);
 	fprintf(stderr,"%s",buf);
-	lincs_warning(x,xprime,pbc_null,lincsd->nc,lincsd->bla,lincsd->bllen,
+	lincs_warning(dd,x,xprime,pbc_null,
+		      lincsd->nc,lincsd->bla,lincsd->bllen,
 		      ir->LincsWarnAngle);
       }
       bOK = (p_max < 0.5);
