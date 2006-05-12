@@ -538,7 +538,7 @@ static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
 
   dd->ncg_local = buf2[0];
   dd->nat_local = buf2[1];
-  if (dd->ncg_local > dd->cg_nalloc) {
+  if (dd->ncg_local > dd->cg_nalloc || dd->cg_nalloc == 0) {
     dd->cg_nalloc = over_alloc(dd->ncg_local);
     srenew(dd->index_gl,dd->cg_nalloc);
     srenew(dd->cgindex,dd->cg_nalloc+1);
@@ -926,7 +926,7 @@ static int dd_redistribute_cg(FILE *fplog,
     }
   }
 
-  if (ncg_new > dd->cg_nalloc) {
+  if (ncg_new > dd->cg_nalloc || dd->cg_nalloc == 0) {
     dd->cg_nalloc = over_alloc(ncg_new);
     srenew(dd->index_gl,dd->cg_nalloc);
     srenew(dd->cgindex,dd->cg_nalloc+1);
@@ -1272,7 +1272,7 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
   gmx_domdec_comm_t *cc;
   ivec xyz;
   rvec corner;
-  real corner0,corner1,r_comm2,r2,inv_ncg;
+  real corner0=0,corner1=0,r_comm2,r2,inv_ncg;
   int  nsend,nat;
 
   if (debug)
@@ -1333,7 +1333,7 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 	    srenew(cc->index,cc->nalloc);
 	  }
 	  if (nsend >= dd->nalloc_i1) {
-	    dd->nalloc_i1 = over_alloc(nsend);
+	    dd->nalloc_i1 += CG_ALLOC_SIZE;
 	    srenew(dd->buf_i1,dd->nalloc_i1);
 	  }
 	  cc->index[nsend] = cg;
@@ -1354,7 +1354,8 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 		    cc->nsend, ncell+2,
 		    cc->nrecv, ncell+2);
     /* Communicate the global cg indices, receive in place */
-    if (ncg_cell[ncell] + cc->nrecv[ncell] > dd->cg_nalloc) {
+    if (ncg_cell[ncell] + cc->nrecv[ncell] > dd->cg_nalloc
+	|| dd->cg_nalloc == 0) {
       dd->cg_nalloc = over_alloc(ncg_cell[ncell] + cc->nrecv[ncell]);
       srenew(index_gl,dd->cg_nalloc);
       srenew(cgindex,dd->cg_nalloc+1);
@@ -1795,7 +1796,7 @@ void dd_partition_system(FILE         *fplog,
    */
   atoms2md(&top_global->atoms,ir,top_global->idef.il[F_ORIRES].nr,
 	   dd->nat_tot_con,dd->gatindex,mdatoms);
-  
+
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
     init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
 		     START(nsb),HOMENR(nsb),
