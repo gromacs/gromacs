@@ -92,9 +92,13 @@ int gmx_trjorder(int argc,char *argv[])
     "In that case the reference group would be the protein and the group",
     "of molecules would consist of all the water atoms. When an index group",
     "of the first n waters is made, the ordered trajectory can be used",
-    "with any Gromacs program to analyze the n closest waters.[PAR]",
+    "with any Gromacs program to analyze the n closest waters.",
+    "[PAR]",
     "If the output file is a pdb file, the distance to the reference target",
-    "will be stored in the B-factor field in order to color with e.g. rasmol."
+    "will be stored in the B-factor field in order to color with e.g. rasmol.",
+    "[PAR]",
+    "With option [TT]-nshell[tt] the number of molecules within a shell",
+    "of radius [TT]-r[tt] around the refernce group are printed."
   };
   static int na=3,ref_a=1;
   static real rcut=0;
@@ -111,7 +115,7 @@ int gmx_trjorder(int argc,char *argv[])
   };
   FILE       *fp;
   int        status,out;
-  bool       bPDBout;
+  bool       bNShell,bPDBout;
   t_topology top;
   rvec       *x,xcom,dx;
   matrix     box;
@@ -127,7 +131,7 @@ int gmx_trjorder(int argc,char *argv[])
     { efTRX, "-f", NULL, ffREAD  }, 
     { efTPS, NULL, NULL, ffREAD  }, 
     { efNDX, NULL, NULL, ffOPTRD },
-    { efTRX, "-o", "ordered", ffWRITE },
+    { efTRX, "-o", "ordered", ffOPTWR },
     { efXVG, "-nshell", "nshell", ffOPTWR } 
   }; 
 #define NFILE asize(fnm) 
@@ -166,24 +170,26 @@ int gmx_trjorder(int argc,char *argv[])
   snew(swi,natoms);
   for(i=0; (i<natoms); i++)
     swi[i] = i;
-  
-  if ((opt2bSet("-nshell",NFILE,fnm)) || (opt2parg_bSet("-r",asize(pa),pa))) {
-    bPDBout = FALSE;
-    out     = -1;
+
+  out     = -1;
+  fp      = NULL;
+  bNShell = ((opt2bSet("-nshell",NFILE,fnm)) ||
+	     (opt2parg_bSet("-r",asize(pa),pa)));
+  bPDBout = FALSE;
+  if (bNShell) {
     rcut2   = rcut*rcut;
     fp = xvgropen(opt2fn("-nshell",NFILE,fnm),"Number of molecules",
 		  "Time (ps)","N");
     printf("Will compute the number of molecules within a radius of %g\n",
 	   rcut);
   }
-  else {
+  if (!bNShell || opt2bSet("-o",NFILE,fnm)) {
     bPDBout = (fn2ftp(opt2fn("-o",NFILE,fnm)) == efPDB);
     if (bPDBout && !top.atoms.pdbinfo) {
       fprintf(stderr,"Creating pdbfino records\n");
       snew(top.atoms.pdbinfo,top.atoms.nr);
     }
     out = open_trx(opt2fn("-o",NFILE,fnm),"w");
-    fp  = NULL;
   }
   do {
     rm_pbc(&top.idef,natoms,box,x,x);
@@ -225,6 +231,13 @@ int gmx_trjorder(int argc,char *argv[])
       }
     }
 
+    if (bNShell) {
+      ncut = 0;
+      for(i=0; (i<nwat); i++)
+	if (order[i].d2 <= rcut2)
+	  ncut++;
+      fprintf(fp,"%10.3f  %8d\n",t,ncut);
+    }
     if (out != -1) {
       qsort(order,nwat,sizeof(*order),ocomp);
       for(i=0; (i<nwat); i++)
@@ -240,13 +253,6 @@ int gmx_trjorder(int argc,char *argv[])
 	}
       }
       write_trx(out,natoms,swi,&top.atoms,0,t,box,x,NULL);
-    }
-    else {
-      ncut = 0;
-      for(i=0; (i<nwat); i++)
-	if (order[i].d2 <= rcut2)
-	  ncut++;
-      fprintf(fp,"%10.3f  %8d\n",t,ncut);
     }
   } while(read_next_x(status,&t,natoms,x,box));
   close_trj(status);
