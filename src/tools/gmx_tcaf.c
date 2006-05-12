@@ -215,8 +215,7 @@ int gmx_tcaf(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_tcaf computes tranverse current autocorrelations.",
-    "These are used to estimate the shear viscosity eta.",
-    "For details see: Palmer, JCP 49 (1994) pp 359-366.[PAR]",
+    "These are used to estimate the shear viscosity eta.[PAR]",
     "Transverse currents are calculated using the",
     "k-vectors (1,0,0) and (2,0,0) each also in the y- and z-direction,",
     "(1,1,0) and (1,-1,0) each also in the 2 other plains (these vectors",
@@ -298,7 +297,8 @@ int gmx_tcaf(int argc,char *argv[])
 
   bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,NULL,NULL,box,TRUE);
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
-
+  please_cite(stdout,"Palmer94a");
+  
   if (bMol) {
     if (!bTop)
       gmx_fatal(FARGS,"Need a topology to determine the molecules");
