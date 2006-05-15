@@ -607,8 +607,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   {
     GMX_MPE_LOG(ev_global_stat_start);
        
-    global_stat(log,cr,ener,force_vir,shake_vir,
-		&(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
+    global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
+		inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
 
     GMX_MPE_LOG(ev_global_stat_finish);
   }
@@ -1021,8 +1021,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * This includes communication 
        */
       GMX_MPE_LOG(ev_global_stat_start);
-      global_stat(log,cr,ener,force_vir,shake_vir,
-		  &(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
+      global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
+		  inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
       GMX_MPE_LOG(ev_global_stat_finish);
 
       /* Correct for double counting energies, should be moved to 

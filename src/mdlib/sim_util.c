@@ -313,10 +313,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     } else {
       move_x(fplog,cr,cr->left,cr->right,x,nsb,nrnb);
     }
-    /* Removed with DDas it hinders parallel performance,
-     * but in some cases we need it, so we should fix this !!!
-     */
-    if (!DOMAINDECOMP(cr))
+    /* When we don't need the total dipole we sum it in global_stat */
+    if (NEED_MUTOT(*inputrec))
       gmx_sumd(2*DIM,mu,cr);
   }
   for(i=0; i<2; i++)

@@ -65,14 +65,14 @@
 
 void global_stat(FILE *log,
 		 t_commrec *cr,real ener[],
-		 tensor fvir,tensor svir,
-		 t_grpopts *opts,t_groups *grps,
+		 tensor fvir,tensor svir,rvec mu_tot,
+		 t_inputrec *inputrec,t_groups *grps,
 		 t_nrnb *mynrnb,t_nrnb nrnb[],
 		 t_vcm *vcm,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,imu,ie,ifv,isv,idedl,icm,imass,ica,inb;
+  int    iterminate,ie,ifv,isv,imu=0,idedl,icm,imass,ica,inb=0;
   int    icj=-1,ici=-1,icx=-1;
   int    in[MAXNODES];
   int    inn[egNR];
@@ -81,7 +81,7 @@ void global_stat(FILE *log,
   
   if (rb==NULL) {
     rb=mk_bin();
-    snew(itc,opts->ngtc);
+    snew(itc,inputrec->opts.ngtc);
   }
   else
     reset_bin(rb);
@@ -101,10 +101,14 @@ void global_stat(FILE *log,
   where();
   isv = add_binr(log,rb,DIM*DIM,svir[0]);
   where();
+  if (!NEED_MUTOT(*inputrec)) {
+    imu = add_binr(log,rb,DIM,mu_tot);
+    where();
+  }
   for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
     in[j] = add_bind(log,rb,eNRNB,nrnb[j].n);
   where();
-  for(j=0; (j<opts->ngtc); j++) 
+  for(j=0; (j<inputrec->opts.ngtc); j++) 
     itc[j]=add_binr(log,rb,DIM*DIM,grps->tcstat[j].ekinh[0]);
   where();
   idedl = add_binr(log,rb,1,&(grps->dekindl));
@@ -141,9 +145,11 @@ void global_stat(FILE *log,
   extract_binr(rb,ie  ,F_NRE,ener);
   extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
+  if (!NEED_MUTOT(*inputrec))
+    extract_binr(rb,imu,DIM,mu_tot);
   for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
     extract_bind(rb,in[j],eNRNB,nrnb[j].n);
-  for(j=0; (j<opts->ngtc); j++) 
+  for(j=0; (j<inputrec->opts.ngtc); j++) 
     extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekinh[0]);
   extract_binr(rb,idedl,1,&(grps->dekindl));
   for(j=0; (j<egNR); j++)

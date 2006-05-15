@@ -259,8 +259,8 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
       
   /* Communicate stuff when parallel */
   if (PAR(cr)) 
-    global_stat(log,cr,ener,force_vir,shake_vir,
-		&(inputrec->opts),grps,mynrnb,nrnb,vcm,&terminate);
+    global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
+		inputrec,grps,mynrnb,nrnb,vcm,&terminate);
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
   return ener[F_EPOT];
@@ -373,8 +373,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   
   /* Communicat energies etc. */
   if (PAR(cr)) 
-    global_stat(log,cr,ener,force_vir,shake_vir,
-		&(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
+    global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
+		inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -985,8 +985,8 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   
   /* Communicat energies etc. */
   if (PAR(cr)) 
-    global_stat(log,cr,ener,force_vir,shake_vir,
-		&(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate);
+    global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
+		inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -1658,8 +1658,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
-      global_stat(log,cr,ener,force_vir,shake_vir, 
- 		  &(inputrec->opts),grps,&mynrnb,nrnb,vcm,&terminate); 
+      global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
+ 		  inputrec,grps,&mynrnb,nrnb,vcm,&terminate); 
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,

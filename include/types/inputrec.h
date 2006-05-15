@@ -197,3 +197,7 @@ typedef struct {
 
 #define DEFORM(ir) ((ir).deform[XX][XX]!=0 || (ir).deform[YY][YY]!=0 || (ir).deform[ZZ][ZZ]!=0 || (ir).deform[YY][XX]!=0 || (ir).deform[ZZ][XX]!=0 || (ir).deform[ZZ][YY]!=0)
 #define DYNAMIC_BOX(ir) ((ir).epc!=epcNO || (ir).eI==eiTPI || DEFORM(ir))
+
+#define EWALD(ir) ((ir).coulombtype==eelEWALD || (ir).coulombtype==eelPME || (ir).coulombtype==eelPMEUSER)
+
+#define NEED_MUTOT(ir) (EWALD(ir) && ((ir).ewald_geometry==eewg3DC || (ir).epsilon_surface!=0))

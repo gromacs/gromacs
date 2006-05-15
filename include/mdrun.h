@@ -141,8 +141,8 @@ extern void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 /* ROUTINES from stat.c */		
 extern void global_stat(FILE *log,
 			t_commrec *cr,real ener[],
-			tensor fvir,tensor svir,
-			t_grpopts *opts,t_groups *grps,
+			tensor fvir,tensor svir,rvec mu_tot,
+			t_inputrec *inputrec,t_groups *grps,
 			t_nrnb *mynrnb,t_nrnb nrnb[],
 			t_vcm *vcm,real *terminate);
 /* Communicate statistics around the ring */
