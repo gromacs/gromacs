@@ -453,13 +453,45 @@ static void pmeredist(gmx_pme_t pme, bool forw,
 #endif 
 }
 
+static void pme_dd_sendrecv(gmx_pme_t pme,bool bBackward,int shift,
+			    void *buf_s,int nbyte_s,
+			    void *buf_r,int nbyte_r)
+{
+#ifdef GMX_MPI
+  int node,src,dest;
+  MPI_Status stat;
+  
+  node = (pme->nodeid - (shift + pme->shmin) + pme->nnodes) % pme->nnodes;
+  if (bBackward == FALSE) {
+    dest = pme->commnode[shift];
+    src  = node;
+  } else {
+    dest = node;
+    src  = pme->commnode[shift];
+  }
+
+  if (nbyte_s > 0 && nbyte_r > 0) {
+    MPI_Sendrecv(buf_s,nbyte_s,MPI_BYTE,
+		 dest,shift,
+		 buf_r,nbyte_r,MPI_BYTE,
+		 src,shift,
+		 pme->mpi_comm,&stat);
+  } else if (nbyte_s > 0) {
+    MPI_Send(buf_s,nbyte_s,MPI_BYTE,
+	     dest,shift,
+	     pme->mpi_comm);
+  } else if (nbyte_r > 0) {
+    MPI_Recv(buf_r,nbyte_r,MPI_BYTE,
+	     src,shift,
+	     pme->mpi_comm,&stat);
+  }
+#endif
+}
 static void dd_pmeredist_x_q(gmx_pme_t pme,
 			     int n, rvec *x, real *charge, int *idxa)
 {
-#ifdef GMX_MPI
   int npme,*commnode,*buf_index;
-  int i,nsend,local_pos,buf_pos,node,scount,src;
-  MPI_Status stat;
+  int i,nsend,local_pos,buf_pos,node,scount;
 
   npme = pme->nnodes;
   
@@ -475,7 +507,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
   }
   if (x) {
     if (pme->count[pme->nodeid] + nsend != n)
-      gmx_fatal(FARGS,"%d particles communicated to PME node %d are more than half a cell length out of the domain decomposition cell of their charge group",
+      gmx_fatal(FARGS,"%d particles communicated to PME node %d are more than a cell length out of the domain decomposition cell of their charge group",
 		n - (pme->count[pme->nodeid] + nsend),pme->nodeid);
     
     if (nsend > pme->buf_nalloc) {
@@ -488,19 +520,13 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
     for(i=0; i<=pme->shmax-pme->shmin; i++) {
       if (i != -pme->shmin) {
 	scount = pme->count[commnode[i]];
-	src = (pme->nodeid - (i + pme->shmin) + npme) % npme;
 	/* Communicate the count */
 	if (debug)
 	  fprintf(debug,"PME node %d send to node %d: %d\n",
 		  pme->nodeid,commnode[i],scount);
-	MPI_Sendrecv(&scount,sizeof(int),MPI_BYTE,
-		     commnode[i],0,
-		     &pme->rcount[i],sizeof(int),MPI_BYTE,
-		     src,0,
-		     pme->mpi_comm,&stat);
-	if (debug)
-	  fprintf(debug,"PME node %d receive from node %d: %d\n",
-		  pme->nodeid,src,pme->rcount[i]);
+	pme_dd_sendrecv(pme,FALSE,i,
+			&scount,sizeof(int),
+			&pme->rcount[i],sizeof(int));
 	pme->my_homenr += pme->rcount[i];
       }
     }
@@ -530,34 +556,26 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
   for(i=0; i<=pme->shmax-pme->shmin; i++) {
     if (i != -pme->shmin) {
       scount = pme->count[commnode[i]];
-      src = (pme->nodeid - (i + pme->shmin) + npme) % npme;
       if (x) {
 	/* Communicate the coordinates */
-	MPI_Sendrecv(pme->bufv[buf_pos],scount*sizeof(rvec),MPI_BYTE,
-		     commnode[i],0,
-		     pme->x_home[local_pos],pme->rcount[i]*sizeof(rvec),MPI_BYTE,
-		     src,0,
-		     pme->mpi_comm,&stat);
+	pme_dd_sendrecv(pme,FALSE,i,
+			pme->bufv[buf_pos],scount*sizeof(rvec),
+			pme->x_home[local_pos],pme->rcount[i]*sizeof(rvec));
       }
       /* Communicate the charges */
-      MPI_Sendrecv(pme->bufr+buf_pos,scount*sizeof(real),MPI_BYTE,
-		   commnode[i],0,
-		   pme->q_home+local_pos,pme->rcount[i]*sizeof(real),MPI_BYTE,
-		   src,0,
-		   pme->mpi_comm,&stat);
+      pme_dd_sendrecv(pme,FALSE,i,
+		      pme->bufr+buf_pos,scount*sizeof(real),
+		      pme->q_home+local_pos,pme->rcount[i]*sizeof(real));
       buf_pos   += scount;
       local_pos += pme->rcount[i];
     }
   }
-#endif
 }
 
 static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
 {
-#ifdef GMX_MPI
   int npme,*commnode,*buf_index;
-  int local_pos,buf_pos,i,rcount,dest,node;
-  MPI_Status stat;
+  int local_pos,buf_pos,i,rcount,node;
 
   npme      = pme->nnodes;
   commnode  = pme->commnode;
@@ -568,13 +586,10 @@ static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
   for(i=0; i<=pme->shmax-pme->shmin; i++) {
     if (i != -pme->shmin) {
       rcount = pme->count[commnode[i]];
-      dest = (pme->nodeid - (i + pme->shmin) + npme) % npme;
       /* Communicate the forces */
-      MPI_Sendrecv(pme->f_home[local_pos],pme->rcount[i]*sizeof(rvec),MPI_BYTE,
-		   dest,0,
-		   pme->bufv[buf_pos],rcount*sizeof(rvec),MPI_BYTE,
-		   commnode[i],0,
-		   pme->mpi_comm,&stat);
+      pme_dd_sendrecv(pme,TRUE,i,
+		      pme->f_home[local_pos],pme->rcount[i]*sizeof(rvec),
+		      pme->bufv[buf_pos],rcount*sizeof(rvec));
       local_pos += pme->rcount[i];
       buf_index[commnode[i]] = buf_pos;
       buf_pos   += rcount;
@@ -594,7 +609,6 @@ static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
       buf_index[node]++;
     }
   }
-#endif
 }
 
 static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_fftgrid *grid,
@@ -1158,24 +1172,71 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
+
+
+static int dd_node2pmenode(t_commrec *cr,int nodeid)
+{
+  /* This assumes a uniform x domain decomposition grid cell size */
+  /* This assumes DD cells with identical x coordinates
+   * are numbered sequentially.
+   */
+  return cr->dd->nnodes +
+    (nodeid*cr->npmenodes + cr->npmenodes/2)/cr->dd->nnodes;
+}
+
+static void get_my_ddnodes(FILE *logfile,t_commrec *cr,
+			   int *nmy_ddnodes,int **my_ddnodes)
+{
+  ivec xyz;
+  int i;
+
+  snew(*my_ddnodes,(cr->dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
+  
+  *nmy_ddnodes = 0;
+  for(i=0; i<cr->dd->nnodes; i++) {
+    if (dd_node2pmenode(cr,i) == cr->nodeid)
+      (*my_ddnodes)[(*nmy_ddnodes)++] = i;
+  }
+
+  fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
+	  cr->nodeid,*nmy_ddnodes);
+}
+
 static void get_communication_range(FILE *log, t_commrec *cr,gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
-  real bx,xmin,xmax,x0,x1;
-  int  npme,dd_nx,cxmin,cxmax,i;
-  ivec xyz;
+  int  npme,dd_nx,shmax,i,dd_cx0,dd_cx1,pmenode;
 
   npme = pme->nnodes;
+  dd_nx = cr->dd->nc[XX];
 
   /* This code assumes a uniform DD cell size in x direction
-   * and that particles are not further than half a DD cell size
+   * and that particles are no further than one DD cell size
    * out of their charge group home cell due to charge group size
    * and diffusion between neighbor list updates.
    */
+  shmax = 1;
+  for(i=0; i<cr->dd->nnodes; i++) {
+    /* Initial (ns step) charge group center x in range 0 - dd_nx */
+    dd_cx0 = (i*dd_nx)/cr->dd->nnodes;
+    dd_cx1 = dd_cx0 + 1;
+    /* Add one DD cell size */
+    dd_cx0--;
+    dd_cx1++;
+    /* The PME node for this range */
+    pmenode = dd_node2pmenode(cr,i) - cr->dd->nnodes;
+    /* Now we multiply with npme, so the x range is 0 - dd_nx*npme */
+    dd_cx0 *= npme;
+    dd_cx1 *= npme;
+    /* Check if we need to increase the maximum shift */
+    while (dd_cx1 > (pmenode + 1 + shmax)*dd_nx)
+      shmax++;
+    while (dd_cx0 < (pmenode - shmax)*dd_nx)
+      shmax++;
+  }
 
-  /* Round up */
-  pme->shmax = (npme + cr->dd->nc[XX] - 1)/cr->dd->nc[XX];
-  pme->shmin = -pme->shmax;
+  pme->shmax = shmax;
+  pme->shmin = -shmax;
 
   /* Make sure the communication range is not larger then nnodes */
   while (pme->shmax - pme->shmin + 1 > npme) {
@@ -1186,7 +1247,7 @@ static void get_communication_range(FILE *log, t_commrec *cr,gmx_pme_t pme)
   }
 
   if (bFirst) {
-    fprintf(log,"PME coordinate communication range: %d to %d\n",
+    fprintf(log,"PME node shifts for coordinate communication: %d to %d\n",
 	    pme->shmin,pme->shmax);
     bFirst = FALSE;
   }
@@ -1343,33 +1404,6 @@ static void spread_on_grid(FILE *logfile,    gmx_pme_t pme,
     spread_q_bsplines(pme,grid,charge,pme->my_homenr,pme->pme_order);
 /*    pr_grid_dist(logfile,"spread",grid); */
   }
-}
-
-static int dd_node2pmenode(t_commrec *cr,int nodeid)
-{
-  /* This assumes a uniform x domain decomposition grid cell size */
-  /* This assumes DD cells with identical x coordinates
-   * are numbered sequentially.
-   */
-  return cr->dd->nnodes + (int)(nodeid*cr->npmenodes/cr->dd->nnodes + 0.5);
-}
-
-static void get_my_ddnodes(FILE *logfile,t_commrec *cr,
-			   int *nmy_ddnodes,int **my_ddnodes)
-{
-  ivec xyz;
-  int i;
-
-  snew(*my_ddnodes,(cr->dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
-  
-  *nmy_ddnodes = 0;
-  for(i=0; i<cr->dd->nnodes; i++) {
-    if (dd_node2pmenode(cr,i) == cr->nodeid)
-      (*my_ddnodes)[(*nmy_ddnodes)++] = i;
-  }
-
-  fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
-	  cr->nodeid,*nmy_ddnodes);
 }
 
 void gmx_pme_send_x_q(t_commrec *cr, matrix box,
