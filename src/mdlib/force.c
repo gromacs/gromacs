@@ -889,12 +889,7 @@ void init_forcerec(FILE *fp,
       q = 0;
       for(j=cgs->index[i]; (j<cgs->index[i+1]); j++)
 	q += top->atoms.atom[j].q;
-      if (q != 0.0)
-	/* Changed from square to fabs 990314 DvdS 
-	 * Does not make a difference for monovalent ions, but doe for 
-	 * divalent ions (Ca2+!!)
-	 */
-	zsq += fabs(q);
+      zsq += q*q;
     }
     fr->zsquare = zsq;
     
