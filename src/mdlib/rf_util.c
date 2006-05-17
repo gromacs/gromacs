@@ -170,7 +170,7 @@ void calc_rffac(FILE *log,int eel,real eps_r,real eps_rf,real Rc,real Temp,
   
   if (EEL_RF(eel)) {
     vol     = det(box);
-    I       = zsq/vol;
+    I       = 0.5*zsq/vol;
     if (eel == eelGRF) {
       /* Consistency check */
       if (Temp <= 0.0)
