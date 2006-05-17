@@ -298,7 +298,7 @@ static void do_ljc(FILE *fp,int eel,double resolution,real rc,real rtol)
 static void do_guillot_maple(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
-  //  double xi     = 0.15;
+  /*  double xi     = 0.15;*/
   double r,vc,vc2,vd,vd2,vr,vr2;
 
   imax = 3/resolution;
@@ -345,7 +345,7 @@ static void do_GG_q_q(FILE *fp,int eel,double resolution,double rc,double rtol,d
 static void do_GG_qd_q(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
-  //  double xi     = 0.15;
+  /*  double xi     = 0.15;*/
   double r,vc,vc2,vd,vd2,vr,vr2;
 
   imax = 3/resolution;
@@ -369,7 +369,7 @@ static void do_GG_qd_q(FILE *fp,int eel,double resolution,double rc,double rtol,
 static void do_GG_qd_qd(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
-  //  double xi     = 0.15;
+  /*  double xi     = 0.15;*/
   double r,vc,vc2,vd,vd2,vr,vr2;
 
   imax = 3/resolution;

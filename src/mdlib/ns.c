@@ -1992,7 +1992,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   
   /* Close off short range neighbourlists */
   close_neighbor_list(fr,FALSE,-1,-1);
-  //fprintf(stderr,"%d nns %d\n",cr->nodeid,nns);
+  /*fprintf(stderr,"%d nns %d\n",cr->nodeid,nns);*/
   return nns;
 }
 

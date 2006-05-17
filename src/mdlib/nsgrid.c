@@ -77,7 +77,7 @@ void init_grid(FILE *log,t_grid *grid,int delta,ivec *dd_nc,
       m = cx[d] % (*dd_nc)[d];
       if (m > 0)
 	cx[d] += (*dd_nc)[d] - m;
-      //cx[d] = ((int)(cx[d]/(*dd_nc)[d] + 0.5))*(*dd_nc)[d];
+      /*cx[d] = ((int)(cx[d]/(*dd_nc)[d] + 0.5))*(*dd_nc)[d];*/
     }
   }
 
@@ -160,7 +160,7 @@ void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,
       m = cx[k] % (*dd_nc)[k];
       if (m > 0)
 	cx[k] += (*dd_nc)[k] - m;
-      //cx[k] = ((int)(cx[k]/(*dd_nc)[k] + 0.5))*(*dd_nc)[k];
+      /*cx[k] = ((int)(cx[k]/(*dd_nc)[k] + 0.5))*(*dd_nc)[k];*/
     }
   }
 

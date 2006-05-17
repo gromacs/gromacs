@@ -86,7 +86,7 @@
 #define DFT_TOL 1e-7
 /* #define PRT_FORCE */
 /* conditions for on the fly time-measurement */
-//#define TAKETIME (step > 1 && timesteps < 10)
+/*#define TAKETIME (step > 1 && timesteps < 10)*/
 #define TAKETIME FALSE
 
 #ifdef GMX_DOUBLE
@@ -1660,11 +1660,11 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
      * zero out f_tmp vector, since gather_f_bsplines
      * only subsequently adds to f_tmp:
      */
-    //clear_rvecs(pme->my_homenr,f_tmp);
+    /*clear_rvecs(pme->my_homenr,f_tmp);*/
     
     /* Keep track of time step */
     step++;
-    //MPI_Barrier(cr->mpi_comm_mysim); /* 100 */
+    /*MPI_Barrier(cr->mpi_comm_mysim);*/ /* 100 */
   } /***** end of quasi-loop */
   while (!bDone);
      

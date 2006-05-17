@@ -807,7 +807,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
     /* Communicate the coordinates required for the non-local constraints */
     dd_move_x_constraints(dd,x);
     dd_move_x_constraints(dd,xprime);
-    //dump_conf(dd,lincsd,"con",TRUE,xprime,box);
+    /*dump_conf(dd,lincsd,"con",TRUE,xprime,box);*/
   }
   if (bCoordinates) {
     if (ir->efep != efepNO) {

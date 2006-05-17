@@ -1802,7 +1802,7 @@ void dd_partition_system(FILE         *fplog,
 		     START(nsb),HOMENR(nsb),
 		     ir->eI!=eiSteep,NULL,dd);
   
-  //dump_conf(dd,"ap",state_local->x,state_local->box);
+  /*dump_conf(dd,"ap",state_local->x,state_local->box);*/
   
   /* Calculate the centers of mass of the communicated charge groups.
    * The home charge groups have been done in dd_redistribute_cg.

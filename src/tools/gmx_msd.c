@@ -469,7 +469,7 @@ void corr_loop(t_corr *this,char *fn,t_topology *top,
     this->time[this->nframes] = t - this->t0;
 
     if (nmol) {
-      //rm_pbc(&top->idef,natoms,box,x[cur],x[cur]);
+      /*rm_pbc(&top->idef,natoms,box,x[cur],x[cur]);*/
       calc_mol_com(&top->blocks[ebMOLS],&top->atoms,x[cur],xa[cur]);
     }
     
@@ -481,7 +481,7 @@ void corr_loop(t_corr *this,char *fn,t_topology *top,
     /* loop over all groups in index file */
     for(i=0; (i<this->ngrp); i++) {
       /* nice for putting things in boxes and such */
-      //prep_data(this,gnx[i],index[i],xa[cur],xa[prev],box);
+      /*prep_data(this,gnx[i],index[i],xa[cur],xa[prev],box);*/
       /* calculate something useful, like mean square displacements */
       calc_corr(this,i,gnx[i],index[i],xa[cur],calc1);
     }

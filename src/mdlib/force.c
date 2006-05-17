@@ -1286,7 +1286,7 @@ void force(FILE       *fplog,   int        step,
   dvdlambda = 0;
 
 #ifdef GMX_MPI
-  //#define TAKETIME ((cr->npmenodes) && (timesteps < 12))
+  /*#define TAKETIME ((cr->npmenodes) && (timesteps < 12))*/
 #define TAKETIME FALSE
   if (TAKETIME)
   {
