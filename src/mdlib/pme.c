@@ -86,7 +86,7 @@
 #define DFT_TOL 1e-7
 /* #define PRT_FORCE */
 /* conditions for on the fly time-measurement */
-/*#define TAKETIME (step > 1 && timesteps < 10)*/
+/* #define TAKETIME (step > 1 && timesteps < 10) */
 #define TAKETIME FALSE
 
 #ifdef GMX_DOUBLE
@@ -133,14 +133,15 @@ typedef struct gmx_pme {
   t_pmeatom *pmeatom;
   int  homenr_nalloc;
 
-  int  shmin,shmax;         /* The pme node communication range with DD */
-  int  *commnode;           /* The nodes to communicate with with DD */
-  int  *count;              /* The number of atoms to send to each node */
-  int  *rcount;             /* The number of atoms to receive */
-  int  *buf_index;          /* Index for commnode into the buffers */
-  rvec *bufv;               /* Communication buffer */
-  real *bufr;               /* Communication buffer */
-  int  buf_nalloc;          /* The communication buffer size */
+  int  nnodes_comm;       /* The number of nodes to communicate with with DD */
+  int  *node_dest;        /* The nodes to send x and q to with DD */
+  int  *node_src;         /* The nodes to receive x and q from with DD */
+  int  *count;            /* The number of atoms to send to each node */
+  int  *rcount;           /* The number of atoms to receive */
+  int  *buf_index;        /* Index for commnode into the buffers */
+  rvec *bufv;             /* Communication buffer */
+  real *bufr;             /* Communication buffer */
+  int  buf_nalloc;        /* The communication buffer size */
 } t_gmx_pme;
   
 typedef struct {
@@ -458,16 +459,15 @@ static void pme_dd_sendrecv(gmx_pme_t pme,bool bBackward,int shift,
 			    void *buf_r,int nbyte_r)
 {
 #ifdef GMX_MPI
-  int node,src,dest;
+  int dest,src;
   MPI_Status stat;
   
-  node = (pme->nodeid - (shift + pme->shmin) + pme->nnodes) % pme->nnodes;
   if (bBackward == FALSE) {
-    dest = pme->commnode[shift];
-    src  = node;
+    dest = pme->node_dest[shift];
+    src  = pme->node_src[shift];
   } else {
-    dest = node;
-    src  = pme->commnode[shift];
+    dest = pme->node_src[shift];
+    src  = pme->node_dest[shift];
   }
 
   if (nbyte_s > 0 && nbyte_r > 0) {
@@ -495,15 +495,13 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
 
   npme = pme->nnodes;
   
-  commnode  = pme->commnode;
+  commnode  = pme->node_dest;
   buf_index = pme->buf_index;
   
   nsend = 0;
-  for(i=0; i<=pme->shmax-pme->shmin; i++) {
-    if (i != -pme->shmin) {
-      buf_index[commnode[i]] = nsend;
-      nsend += pme->count[commnode[i]];
-    }
+  for(i=0; i<pme->nnodes_comm; i++) {
+    buf_index[commnode[i]] = nsend;
+    nsend += pme->count[commnode[i]];
   }
   if (x) {
     if (pme->count[pme->nodeid] + nsend != n)
@@ -517,18 +515,16 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
     }
     
     pme->my_homenr = pme->count[pme->nodeid];
-    for(i=0; i<=pme->shmax-pme->shmin; i++) {
-      if (i != -pme->shmin) {
-	scount = pme->count[commnode[i]];
-	/* Communicate the count */
-	if (debug)
-	  fprintf(debug,"PME node %d send to node %d: %d\n",
-		  pme->nodeid,commnode[i],scount);
-	pme_dd_sendrecv(pme,FALSE,i,
-			&scount,sizeof(int),
-			&pme->rcount[i],sizeof(int));
-	pme->my_homenr += pme->rcount[i];
-      }
+    for(i=0; i<pme->nnodes_comm; i++) {
+      scount = pme->count[commnode[i]];
+      /* Communicate the count */
+      if (debug)
+	fprintf(debug,"PME node %d send to node %d: %d\n",
+		pme->nodeid,commnode[i],scount);
+      pme_dd_sendrecv(pme,FALSE,i,
+		      &scount,sizeof(int),
+		      &pme->rcount[i],sizeof(int));
+      pme->my_homenr += pme->rcount[i];
     }
 
     pme_realloc_homenr_things(pme);
@@ -553,22 +549,20 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
   }
 
   buf_pos = 0;
-  for(i=0; i<=pme->shmax-pme->shmin; i++) {
-    if (i != -pme->shmin) {
-      scount = pme->count[commnode[i]];
-      if (x) {
-	/* Communicate the coordinates */
-	pme_dd_sendrecv(pme,FALSE,i,
-			pme->bufv[buf_pos],scount*sizeof(rvec),
-			pme->x_home[local_pos],pme->rcount[i]*sizeof(rvec));
-      }
-      /* Communicate the charges */
+  for(i=0; i<pme->nnodes_comm; i++) {
+    scount = pme->count[commnode[i]];
+    if (x) {
+      /* Communicate the coordinates */
       pme_dd_sendrecv(pme,FALSE,i,
-		      pme->bufr+buf_pos,scount*sizeof(real),
-		      pme->q_home+local_pos,pme->rcount[i]*sizeof(real));
-      buf_pos   += scount;
-      local_pos += pme->rcount[i];
+		      pme->bufv[buf_pos],scount*sizeof(rvec),
+		      pme->x_home[local_pos],pme->rcount[i]*sizeof(rvec));
     }
+    /* Communicate the charges */
+    pme_dd_sendrecv(pme,FALSE,i,
+		    pme->bufr+buf_pos,scount*sizeof(real),
+		    pme->q_home+local_pos,pme->rcount[i]*sizeof(real));
+    buf_pos   += scount;
+    local_pos += pme->rcount[i];
   }
 }
 
@@ -578,22 +572,20 @@ static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
   int local_pos,buf_pos,i,rcount,node;
 
   npme      = pme->nnodes;
-  commnode  = pme->commnode;
+  commnode  = pme->node_dest;
   buf_index = pme->buf_index;
 
   local_pos = pme->count[pme->nodeid];
   buf_pos = 0;
-  for(i=0; i<=pme->shmax-pme->shmin; i++) {
-    if (i != -pme->shmin) {
-      rcount = pme->count[commnode[i]];
-      /* Communicate the forces */
-      pme_dd_sendrecv(pme,TRUE,i,
-		      pme->f_home[local_pos],pme->rcount[i]*sizeof(rvec),
-		      pme->bufv[buf_pos],rcount*sizeof(rvec));
-      local_pos += pme->rcount[i];
-      buf_index[commnode[i]] = buf_pos;
-      buf_pos   += rcount;
-    }
+  for(i=0; i<pme->nnodes_comm; i++) {
+    rcount = pme->count[commnode[i]];
+    /* Communicate the forces */
+    pme_dd_sendrecv(pme,TRUE,i,
+		    pme->f_home[local_pos],pme->rcount[i]*sizeof(rvec),
+		    pme->bufv[buf_pos],rcount*sizeof(rvec));
+    local_pos += pme->rcount[i];
+    buf_index[commnode[i]] = buf_pos;
+    buf_pos   += rcount;
   }
 
   local_pos = 0;
@@ -1202,10 +1194,11 @@ static void get_my_ddnodes(FILE *logfile,t_commrec *cr,
 	  cr->nodeid,*nmy_ddnodes);
 }
 
-static void get_communication_range(FILE *log, t_commrec *cr,gmx_pme_t pme)
+static void setup_coordinate_communication(FILE *log, t_commrec *cr,
+					   gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
-  int  npme,dd_nx,shmax,i,dd_cx0,dd_cx1,pmenode;
+  int  npme,dd_nx,shmax,i,dd_cx0,dd_cx1,pmenode,fw,bw;
 
   npme = pme->nnodes;
   dd_nx = cr->dd->nc[XX];
@@ -1235,26 +1228,33 @@ static void get_communication_range(FILE *log, t_commrec *cr,gmx_pme_t pme)
       shmax++;
   }
 
-  pme->shmax = shmax;
-  pme->shmin = -shmax;
-
-  /* Make sure the communication range is not larger then nnodes */
-  while (pme->shmax - pme->shmin + 1 > npme) {
-    if (pme->shmin < 0)
-      pme->shmin++;
-    else
-      pme->shmax--;
-  }
-
   if (bFirst) {
-    fprintf(log,"PME node shifts for coordinate communication: %d to %d\n",
-	    pme->shmin,pme->shmax);
+    fprintf(log,"PME maximum node shift for coordinate communication: %d\n",
+	    shmax);
     bFirst = FALSE;
   }
 
-  /* Set the communication ids */
-  for(i=0; i<=pme->shmax-pme->shmin; i++)
-    pme->commnode[i] = (pme->nodeid + (i + pme->shmin) + npme) % npme;
+  /* Set the communication ids.
+   * We interleave forward and backward directions,
+   * as for large shifts often only one of the two will
+   * occur on each node and we can therefore avoid nodes waiting
+   * while other nodes are communicating.
+   */
+  pme->nnodes_comm = 0;
+  for(i=1; i<=shmax; i++) {
+    fw = (pme->nodeid + i) % npme;
+    bw = (pme->nodeid - i + npme) % npme;
+    if (pme->nnodes_comm < pme->nnodes - 1) {
+      pme->node_dest[pme->nnodes_comm] = fw;
+      pme->node_src[pme->nnodes_comm] = bw;
+      pme->nnodes_comm++;
+    } 
+    if (pme->nnodes_comm < pme->nnodes - 1) {
+      pme->node_dest[pme->nnodes_comm] = bw;
+      pme->node_src[pme->nnodes_comm] = fw;
+      pme->nnodes_comm++;
+    }
+  }
 }
 
 int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
@@ -1333,8 +1333,9 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
 	      "fourier_nx should be divisible by the number of PME nodes\n");
 
     if (DOMAINDECOMP(cr)) {
-      snew(pme->commnode,pme->nnodes);
-      get_communication_range(log,cr,pme);
+      snew(pme->node_dest,pme->nnodes);
+      snew(pme->node_src,pme->nnodes);
+      setup_coordinate_communication(log,cr,pme);
     }
     snew(pme->count,pme->nnodes);
     snew(pme->rcount,pme->nnodes);
@@ -1655,6 +1656,8 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
     count++;
 
+<<<<<<< pme.c
+=======
     /* These variables are needed clean in the next time step: 
      *
      * zero out f_tmp vector, since gather_f_bsplines
@@ -1662,9 +1665,14 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
      */
     /*clear_rvecs(pme->my_homenr,f_tmp);*/
     
+>>>>>>> 1.76
     /* Keep track of time step */
     step++;
+<<<<<<< pme.c
+    /* MPI_Barrier(cr->mpi_comm_mysim); */ /* 100 */
+=======
     /*MPI_Barrier(cr->mpi_comm_mysim);*/ /* 100 */
+>>>>>>> 1.76
   } /***** end of quasi-loop */
   while (!bDone);
      
