@@ -1357,9 +1357,9 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   snew(pme->bsp_mod[YY],pme->nky);
   snew(pme->bsp_mod[ZZ],pme->nkz);
   
-  pme->gridA = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,pme->nodeid,cr);
+  pme->gridA = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,NULL,cr);
   if (bFreeEnergy)
-    pme->gridB = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,pme->nodeid,cr);
+    pme->gridB = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,NULL,cr);
   else
     pme->gridB = NULL;
   

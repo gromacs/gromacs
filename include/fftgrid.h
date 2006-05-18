@@ -77,14 +77,15 @@ extern t_fftgrid *mk_fftgrid(FILE *       fp,
                              int          nx,
                              int          ny,
                              int          nz,
-			     int          local_slab,
+			     int          *node2slab,
                              t_commrec *  cr);
 
 /* Create an FFT grid (1 Dimensional), to be indexed by the INDEX macro 
  * Setup FFT plans and extract local sizes for the grid.
  * If the file pointer is given, information is printed to it.
- * If cr is non-NULL and cr->nnodes>1, a parallel grid and FFT will be created
- * and local_slab is the part of the grid assigned to this node.
+ * If cr is non-NULL and cr->nnodes>1, a parallel grid and FFT will be created.
+ * The node2slab array translates to node ids to slab indices,
+ * when NULL the slab ids are assumed to be identical to the node ids.
  */
 
 extern void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid);

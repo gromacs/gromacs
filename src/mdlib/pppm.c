@@ -558,7 +558,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
 #ifdef GMX_MPI
   cr->mpi_comm_mygroup=cr->mpi_comm_mysim;
 #endif
-  grid = mk_fftgrid(log,nx,ny,nz,cr->nodeid,cr);
+  grid = mk_fftgrid(log,nx,ny,nz,NULL,cr);
   
   return 0;
 }

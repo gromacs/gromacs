@@ -85,7 +85,7 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
                       int          nx,
                       int          ny,
                       int          nz,
-		      int          local_slab,
+		      int          *node2slab,
                       t_commrec *  cr)
 {
 /* parallel runs with non-parallel ffts haven't been tested yet */
@@ -126,8 +126,8 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
   if (cr && PAR(cr)) 
   {
 #ifdef GMX_MPI
-      gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,local_slab,
-			      cr->mpi_comm_mygroup);
+      gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
+			      node2slab,cr->mpi_comm_mygroup);
           
       gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
                                 &(grid->pfft.local_x_start),                                

@@ -47,6 +47,7 @@ struct gmx_parallel_3dfft
     gmx_fft_t       fft_x;
     t_complex *     work;
     t_complex *     work2;
+	int             *node2slab;
     MPI_Comm        comm;
 };
 
@@ -56,7 +57,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            int                       ngridx,
                            int                       ngridy,
                            int                       ngridz,
-						   int                       local_slab,
+						   int                       *node2slab,
                            MPI_Comm                  comm)
 {
     gmx_parallel_3dfft_t p;
@@ -71,7 +72,13 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     p->ny  = ngridy;
     p->nz  = ngridz;
     p->nzc = ngridz/2 + 1;
-	p->local_slab = local_slab;
+
+	p->node2slab = node2slab;
+
+	MPI_Comm_rank( comm , &(p->local_slab) );
+	if (p->node2slab)
+		p->local_slab = p->node2slab[p->local_slab];
+		
 
     MPI_Comm_dup( comm , &(p->comm) );
 
@@ -145,8 +152,10 @@ gmx_parallel_transpose_xy(t_complex *   data,
                           int           local_ny,
                           int           nzc,
 						  int           nnodes,
+						  int           *node2slab,
                           MPI_Comm      comm)
 {
+    static int *counts=NULL,*disps=NULL,nalloc=0;
     int     i,j;
     int     blocksize;
     
@@ -157,13 +166,32 @@ gmx_parallel_transpose_xy(t_complex *   data,
     
     /* B: Parallel communication, exchange data blocks. */
     blocksize = local_nx*local_ny*nzc*2;
-    MPI_Alltoall(work,
-                 blocksize,
-                 GMX_MPI_REAL,
-                 data,
-                 blocksize,
-                 GMX_MPI_REAL,
-                 comm);
+	if (node2slab == NULL) {
+		MPI_Alltoall(work,
+					 blocksize,
+					 GMX_MPI_REAL,
+					 data,
+					 blocksize,
+					 GMX_MPI_REAL,
+					 comm);
+	} else {
+		if (nnodes > nalloc) {
+			nalloc = nnodes;
+			counts = realloc(counts,nalloc*sizeof(int));
+			disps  = realloc(disps, nalloc*sizeof(int));
+		}
+		for(i=0; i<nnodes; i++) {
+			counts[i] = blocksize;
+			disps[i]  = node2slab[i]*blocksize;
+		}
+		MPI_Alltoallv(work,
+					  counts,disps,
+					  GMX_MPI_REAL,
+					  data,
+					  counts,disps,
+					  GMX_MPI_REAL,
+					  comm);
+	}
         
     /* C: Copy entire blocks into place, so we have YXZ. */
     for(j=0;j<local_ny;j++)
@@ -256,6 +284,7 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
                                   local_ny,
                                   nzc,
 								  pfft_setup->nnodes,
+								  pfft_setup->node2slab,
                                   pfft_setup->comm);
 
         /* Transpose from temporary work array in order YXZ to
@@ -341,7 +370,8 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
                                   local_nx,
                                   nzc,
 								  pfft_setup->nnodes,
-                                  pfft_setup->comm);
+								  pfft_setup->node2slab,
+								  pfft_setup->comm);
         
         
         /* Perform nx local 2D complex-to-real FFTs in the yz slices.
