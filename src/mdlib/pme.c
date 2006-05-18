@@ -1357,9 +1357,9 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   snew(pme->bsp_mod[YY],pme->nky);
   snew(pme->bsp_mod[ZZ],pme->nkz);
   
-  pme->gridA = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,cr);
+  pme->gridA = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,pme->nodeid,cr);
   if (bFreeEnergy)
-    pme->gridB = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,cr);
+    pme->gridB = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,pme->nodeid,cr);
   else
     pme->gridB = NULL;
   
@@ -1656,23 +1656,9 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
     count++;
 
-<<<<<<< pme.c
-=======
-    /* These variables are needed clean in the next time step: 
-     *
-     * zero out f_tmp vector, since gather_f_bsplines
-     * only subsequently adds to f_tmp:
-     */
-    /*clear_rvecs(pme->my_homenr,f_tmp);*/
-    
->>>>>>> 1.76
     /* Keep track of time step */
     step++;
-<<<<<<< pme.c
     /* MPI_Barrier(cr->mpi_comm_mysim); */ /* 100 */
-=======
-    /*MPI_Barrier(cr->mpi_comm_mysim);*/ /* 100 */
->>>>>>> 1.76
   } /***** end of quasi-loop */
   while (!bDone);
      

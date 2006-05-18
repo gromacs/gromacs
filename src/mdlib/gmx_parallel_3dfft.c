@@ -41,7 +41,7 @@ struct gmx_parallel_3dfft
     int             ny;
     int             nz;
     int             nzc;
-    int             rank;
+    int             local_slab;
     int             nnodes;
     gmx_fft_t       fft_yz;
     gmx_fft_t       fft_x;
@@ -56,6 +56,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            int                       ngridx,
                            int                       ngridy,
                            int                       ngridz,
+						   int                       local_slab,
                            MPI_Comm                  comm)
 {
     gmx_parallel_3dfft_t p;
@@ -70,11 +71,11 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     p->ny  = ngridy;
     p->nz  = ngridz;
     p->nzc = ngridz/2 + 1;
+	p->local_slab = local_slab;
 
     MPI_Comm_dup( comm , &(p->comm) );
 
     MPI_Comm_size( p->comm , &p->nnodes);
-    MPI_Comm_rank( p->comm , &p->rank);
 
     /* Check stuff */
     if ( (ngridx % p->nnodes ) != 0 || (ngridy % p->nnodes ) )
@@ -125,8 +126,8 @@ gmx_parallel_3dfft_limits(gmx_parallel_3dfft_t      pfft_setup,
     *local_nx = pfft_setup->nx / pfft_setup->nnodes;
     *local_ny = pfft_setup->ny / pfft_setup->nnodes;
     
-    *local_x_start = pfft_setup->rank* (*local_nx);
-    *local_y_start = pfft_setup->rank* (*local_ny);    
+    *local_x_start = pfft_setup->local_slab* (*local_nx);
+    *local_y_start = pfft_setup->local_slab* (*local_ny);    
     
     return 0;
 }
@@ -143,16 +144,11 @@ gmx_parallel_transpose_xy(t_complex *   data,
                           int           local_y_start,
                           int           local_ny,
                           int           nzc,
+						  int           nnodes,
                           MPI_Comm      comm)
 {
     int     i,j;
     int     blocksize;
-    int     nnodes;
-    int     rank;
-    
-    MPI_Comm_rank(comm,&rank);
-    MPI_Comm_size(comm,&nnodes);
-    
     
     /* A: Do a local transpose to get data continuous for communication.
     *     We can use NULL for the workarray since we do it out-of-place.
@@ -197,9 +193,6 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
     real *       rdata;
     t_complex *  cdata;
     t_complex *  ctmp;
-    int rank;
-    
-    MPI_Comm_rank(pfft_setup->comm,&rank);
     
     work    = pfft_setup->work;
     
@@ -262,6 +255,7 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
                                   local_y_start,
                                   local_ny,
                                   nzc,
+								  pfft_setup->nnodes,
                                   pfft_setup->comm);
 
         /* Transpose from temporary work array in order YXZ to
@@ -346,6 +340,7 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
                                   local_x_start,
                                   local_nx,
                                   nzc,
+								  pfft_setup->nnodes,
                                   pfft_setup->comm);
         
         

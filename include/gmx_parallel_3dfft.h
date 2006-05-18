@@ -63,6 +63,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            int                       ngridx,
                            int                       ngridy,
                            int                       ngridz,
+						   int                       local_slab,
                            MPI_Comm                  comm);
                            
 
@@ -74,6 +75,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
  *  The z dimension is never distributed. In the direct space, the x dimension
  *  is distributed over nodes, and after the real-to-complex FFT we work with
  *  a transposed grid where the y dimension is partitioned over nodes.
+ *  local_slab is the part of the grid local to this node.
  *
  *  The order is determined from the rank in the communicator used at
  *  initialization.
@@ -96,6 +98,7 @@ gmx_parallel_transpose(t_complex *   data,
                        int           local_y_start,
                        int           local_ny,
                        int           nelem,
+					   int           nnodes,
                        MPI_Comm      comm);
 
 
