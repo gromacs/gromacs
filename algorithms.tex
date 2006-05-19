@@ -1393,8 +1393,11 @@ BD is an option of the {\tt mdrun} program.
 
 \section{Energy Minimization}
 \label{sec:EM}
-Energy minimization in {\gromacs} can be done using 
-steepest descent, conjugate gradients, or l-bfgs (limited-memory Broyden-Fletcher-Goldfarb-Shanno quasi-Newtonian minimizer... we prefer the abbreviation). EM is just an option of the {\tt mdrun} program.
+Energy minimization in {\gromacs} can be done using steepest descent,
+conjugate gradients, or l-bfgs (limited-memory
+Broyden-Fletcher-Goldfarb-Shanno quasi-Newtonian minimizer... we
+prefer the abbreviation). EM is just an option of the {\tt mdrun}
+program.
 
 \subsection{\normindex{Steepest Descent}}
 Although steepest descent is certainly not the most efficient
@@ -1453,21 +1456,22 @@ purposes steepest descent is efficient enough.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{L-BFGS}}
-The original BFGS algorithm works by successively creating better 
-approximations of the inverse Hessian matrix, and moving the system to the 
-currently estimated minimum. The memory requirements for this are proportional
-to the square of the number of particles, so it is not practical for large
-systems like biomolecules. Instead, we use the L-BFGS algorithm of Nocedal, 
-which approximates the inverse Hessian by a fixed number of corrections from
-previous steps. This sliding-window technique is almost as efficient as the
-original method, but the memory requirements are much lower - proportional
-to the number of particles multiplied with the correction steps. In practice
-we have found it to converge faster than conjugate gradients, but due to the
-correction steps it is not yet parallelized.  It is also noteworthy that
-switched or shifted interactions usually improve the convergence, since 
-sharp cut-offs means the potential function at the current coordinates is
-slightly different from the previous steps used to build the inverse Hessian
-approximation. 
+The original BFGS algorithm works by successively creating better
+approximations of the inverse Hessian matrix, and moving the system to
+the currently estimated minimum. The memory requirements for this are
+proportional to the square of the number of particles, so it is not
+practical for large systems like biomolecules. Instead, we use the
+L-BFGS algorithm of Nocedal~\cite{Byrd95a,Zhu97a}, which approximates
+the inverse Hessian by a fixed number of corrections from previous
+steps. This sliding-window technique is almost as efficient as the
+original method, but the memory requirements are much lower -
+proportional to the number of particles multiplied with the correction
+steps. In practice we have found it to converge faster than conjugate
+gradients, but due to the correction steps it is not yet parallelized.
+It is also noteworthy that switched or shifted interactions usually
+improve the convergence, since sharp cut-offs means the potential
+function at the current coordinates is slightly different from the
+previous steps used to build the inverse Hessian approximation.
 } % Brace matches ifthenelse test for gmxlite
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
