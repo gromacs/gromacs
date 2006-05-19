@@ -45,7 +45,7 @@
 #include "typedefs.h"
 #include "macros.h"
 
-#define MAXSLEN 32
+#define MAXSLEN 128
 
 typedef struct {
   bool bSet;                    /* Has this combination been set        */
