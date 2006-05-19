@@ -525,7 +525,8 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "gmxcheck reads a trajectory ([TT].trj[tt], [TT].trr[tt] or ",
-    "[TT].xtc[tt]) or an energy file ([TT].ene[tt] or [TT].edr[tt])",
+    "[TT].xtc[tt]), an energy file ([TT].ene[tt] or [TT].edr[tt])",
+    "or an index file ([TT].ndx[tt])",
     "and prints out useful information about them.[PAR]",
     "Option [TT]-c[tt] checks for presence of coordinates,",
     "velocities and box in the file, for close contacts (smaller than",
