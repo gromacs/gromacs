@@ -10,7 +10,7 @@
 <a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>genion</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
 </TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3.1<br>
-Wed 10 May 2006</B></td></tr></TABLE>
+Thu 11 May 2006</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -66,6 +66,7 @@ For larger ions, e.g. sulfate we recommended to use <a href="genbox.html">genbox
 <TR><TD ALIGN=RIGHT> <b><tt>-[no]neutral</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated. </TD></TD>
 </TABLE>
 <P>
+<H3>Known problems</H3>
 <UL>
 <LI>Calculation of the potential is not reliable, therefore the <tt>-random</tt> option is now turned on by default.
 <LI>If you specify a salt concentration existing ions are not taken into account. In effect you therefore specify the amount of salt to be added.
