@@ -419,6 +419,7 @@ static void write_nroffman(FILE *out,
   }
 
   if (nbug > 0) {
+    fprintf(out,".SH KNOWN PROBLEMS\n");
     for(i=0; (i<nbug); i++)
       fprintf(out,"\\- %s\n\n",check_nroff(bugs[i]));
   }
@@ -477,7 +478,7 @@ static void write_ttyman(FILE *out,
   }
   if (nbug > 0) {
     fprintf(out,"\n");
-    fprintf(out,"KNOWN BUGS\n----------\n");
+    fprintf(out,"KNOWN PROBLEMS\n----------\n");
     for(i=0; i<nbug; i++) {
       snew(tmp,strlen(bugs[i])+3);
       strcpy(tmp,"* ");
@@ -593,6 +594,7 @@ static void write_htmlman(FILE *out,
   }
   if (nbug > 0) {
     fprintf(out,"<P>\n");
+    fprintf(out,"<H3>Known problems</H3>\n");
     fprintf(out,"<UL>\n");
     for(i=0; (i<nbug); i++)
       fprintf(out,"<LI>%s\n",NSR(bugs[i]));
