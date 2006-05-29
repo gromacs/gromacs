@@ -281,7 +281,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
 #ifdef GMX_MPI
   /* send particle coordinates and charges to the pme nodes if necessary */
-  if (pmeduty(cr) == epmePPONLY)
+  if (!(cr->duty & DUTY_PME))
   { 
     GMX_MPE_LOG(ev_send_coordinates_start);
     
@@ -408,7 +408,7 @@ void do_force(FILE *fplog,t_commrec *cr,
        * forces, virial and energy from the PME nodes here 
        */    
 #ifdef GMX_MPI       
-      if (pmeduty(cr)==epmePPONLY) 
+      if (!(cr->duty & DUTY_PME))
       {
 	d = 0;
 	gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d);
@@ -829,7 +829,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   t_nrnb ntot;
   real   runtime;
 #ifdef GMX_MPI
-  int    sender, firstpmenode, lastpmenode;
+  int    sender;
   double nrnb_buf[4];
   MPI_Status status;
 #endif
@@ -839,7 +839,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
    * nrnb information from the PME nodes here */
   if (cr->npmenodes)
   {
-    if (pmeduty(cr) == epmePMEONLY)
+    if (!(cr->duty & DUTY_PP) && (cr->duty & DUTY_PME))
     /* I am PME node and need to send my nrnb data to the master 
      * We only need to send 4 nrnb data items: 
      * eNR_SPREADQBSP,
@@ -861,27 +861,29 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     if (MASTER(cr))
     /* The master receives the data: */
     {
-      firstpmenode = cr->nnodes - cr->npmenodes;
-      lastpmenode  = cr->nnodes - 1;
-      for (sender = firstpmenode; sender <= lastpmenode; sender++)
-      {
-	if (MPI_Recv(&nrnb_buf, 4, MPI_DOUBLE, sender, 0,
+      for (sender=0; sender<cr->nnodes; sender++) {
+	if (dd_node2pmenode(cr,sender) == -1) {
+	  /* sender is a PME only node */
+	  if (MPI_Recv(&nrnb_buf, 4, MPI_DOUBLE, sender, 0,
 		     cr->mpi_comm_mysim, &status) != 0)
-	  gmx_comm("MPI_Recv failed in finish_run\n");
-	nrnb[sender].n[eNR_SPREADQBSP] += nrnb_buf[0];
-        nrnb[sender].n[eNR_SOLVEPME  ] += nrnb_buf[1];
-        nrnb[sender].n[eNR_FFT       ] += nrnb_buf[2];
-        nrnb[sender].n[eNR_GATHERFBSP] += nrnb_buf[3];
+	    gmx_comm("MPI_Recv failed in finish_run\n");
+	  nrnb[sender].n[eNR_SPREADQBSP] += nrnb_buf[0];
+	  nrnb[sender].n[eNR_SOLVEPME  ] += nrnb_buf[1];
+	  nrnb[sender].n[eNR_FFT       ] += nrnb_buf[2];
+	  nrnb[sender].n[eNR_GATHERFBSP] += nrnb_buf[3];
+	}
       }
     }
   } /* End of PME/PP node splitting stuff */
 #endif
     
-  for(i=0; (i<eNRNB); i++)
-    ntot.n[i]=0;
-  for(i=0; (i<nsb->nnodes); i++)
-    for(j=0; (j<eNRNB); j++)
-      ntot.n[j]+=nrnb[i].n[j];
+  if (MASTER(cr)) {
+    for(i=0; (i<eNRNB); i++)
+      ntot.n[i]=0;
+    for(i=0; (i<cr->nnodes); i++)
+      for(j=0; (j<eNRNB); j++)
+	ntot.n[j]+=nrnb[i].n[j];
+  }
   runtime=0;
   if (bWriteStat) {
     runtime=inputrec->nsteps*inputrec->delta_t;
@@ -890,7 +892,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       print_perf(stderr,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
     }
     else
-      print_nrnb(fplog,&(nrnb[nsb->nodeid]));
+      print_nrnb(fplog,&(nrnb[cr->nodeid]));
   }
 
   if (MASTER(cr)) {

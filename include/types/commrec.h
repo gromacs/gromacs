@@ -126,12 +126,21 @@ typedef struct {
 } gmx_domdec_constraints_t;
 
 typedef struct {
-  int  nodeid;
-  int  nnodes;
-  int  masterrank;
+  /* The communication setup including the pme only nodes */
+  bool bCartesian;
+  ivec ntot;
+  int  pmedim;
+
+  /* The DD particle-particle nodes only */
+  int  pme_nodeid;
+  bool pme_receive_vir_ener;
+  /* The communication setup within the communicator all */
 #ifdef GMX_MPI
   MPI_Comm all;
 #endif
+  int  nodeid;
+  int  nnodes;
+  int  masterrank;
 
   /* The communication setup, identical for each cell */
   ivec nc;
@@ -212,6 +221,9 @@ typedef struct {
 #endif
 } gmx_multisim_t;
 
+#define DUTY_PP  (1<<0)
+#define DUTY_PME (1<<1)
+
 typedef struct {
   /* The nodids in one sim are numbered sequentially from 0.
    * All communication within some simulation should happen
@@ -225,6 +237,8 @@ typedef struct {
   MPI_Comm mpi_comm_mygroup;
 #endif
   gmx_domdec_t *dd;
+  /* The duties of this node, see the defines above */
+  int duty;
 
   gmx_multisim_t *ms;
 } t_commrec;
@@ -251,17 +265,3 @@ typedef struct {
 /* Parallel and/or multi simulation */
 #define MULTIMASTER(cr)    ((cr)->nodeid == 0)
 #define MULTIPAR(cr)       (PAR(cr) || MULTISIM(cr))
-
-/*
- * with the help of this macro + enum we are able to find out 
- * what type of pme work the local node has to do 
- *
- * pmeduty = 0 if node does pp only
- *         = 1 if node does pme only
- *         = 2 if ALL nodes do both (no PME/PP node splitting)
- */ 
-#define pmeduty(cr)        ((!cr->npmenodes)? 2:(cr->nodeid >= cr->nnodes-cr->npmenodes))
-
-enum {
-  epmePPONLY, epmePMEONLY, epmePMEANDPP
-};

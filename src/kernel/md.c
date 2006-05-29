@@ -71,6 +71,7 @@
 #include "qmmm.h"
 #include "mpelogging.h"
 #include "domdec.h"
+#include "coulomb.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -93,7 +94,40 @@ static RETSIGTYPE signal_handler(int n)
   }
 }
 
+static void send_inputrec(t_commrec *cr,
+			  t_inputrec *inputrec,int nChargePerturbed)
+{
+  int dest;
+  
+  if (MASTER(cr) && cr->npmenodes > 0) {
+    for(dest=0; dest<cr->nnodes; dest++) {
+      if (dd_node2pmenode(cr,dest) == -1) {
+#ifdef GMX_MPI
+	/* dest is a PME only node */
+	/* Send the inputrec to a PME node */
+	MPI_Send(inputrec,sizeof(t_inputrec),MPI_BYTE,
+		 dest,0,cr->mpi_comm_mysim);
+	/* Tell if we need to do PME with free energy */
+	MPI_Send(&nChargePerturbed,sizeof(int),MPI_BYTE,
+		 dest,0,cr->mpi_comm_mysim);
+#endif
+      }
+    }
+  }
+}
 
+static void receive_inputrec(t_commrec *cr,
+			     t_inputrec *inputrec,int *nChargePerturbed)
+{
+#ifdef GMX_MPI
+  MPI_Recv(inputrec,sizeof(t_inputrec),MPI_BYTE,
+	   0,0,cr->mpi_comm_mysim,
+	   MPI_STATUS_IGNORE);
+  MPI_Recv(nChargePerturbed,sizeof(int),MPI_BYTE,
+	   0,0,cr->mpi_comm_mysim,
+	   MPI_STATUS_IGNORE);
+#endif
+}
 
 void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
@@ -115,233 +149,181 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   t_mdatoms  *mdatoms;
   t_forcerec *fr;
   t_fcdata   *fcd;
+  real       ewaldcoeff;
+  gmx_pme_t  *pmedata;
   time_t     start_t=0;
-  bool       bDomDec,bVsites,bParVsites;
+  bool       bVsites,bParVsites;
   t_comm_vsites vsitecomm;
-  int        i,m,status;
+  int        i,m,nChargePerturbed,status;
   char       *gro;
+  
+  if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
+    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz);
+    
+    make_dd_communicators(stdlog,cr);
+  } else {
+    cr->duty = (DUTY_PP | DUTY_PME);
+  }
 
-#ifdef GMX_MPI
-  /* Communicator needed for PME/PP node division */
-  MPI_Comm   mpi_comm_pporpme;
-#endif
-
-  /* Initiate everything (snew sets to zero!) */
-  snew(ener,F_NRE);
-  snew(fcd,1);
-  snew(nsb,1);
-  snew(top,1);
-  snew(grps,1);
   snew(inputrec,1);
-  snew(state,1);
   snew(nrnb,cr->nnodes);
+  if (cr->duty & DUTY_PP) {
+    /* Initiate everything (snew sets to zero!) */
+    snew(ener,F_NRE);
+    snew(fcd,1);
+    snew(nsb,1);
+    snew(top,1);
+    snew(grps,1);
+    snew(state,1);
 
-
-  if (bVerbose && MASTER(cr)) 
-    fprintf(stderr,"Getting Loaded...\n");
-
-  bDomDec = FALSE;
-  if (PAR(cr)) {
-    /* The master thread on the master node reads from disk, 
-     * then dsitributes everything to the other processors.
-     */
-    init_parallel(stdlog,ftp2fn(efTPX,nfile,fnm),cr,
-		  inputrec,top,state,
-		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
-    /* It seems that nsb->nnodes is never set !!! 
-     * So we (temporarily) fix it here.
-     */
-    nsb->nnodes = cr->nnodes;
-
-    bDomDec = (ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1);
-
-    if (!bDomDec) {
-      split_system_first(stdlog,inputrec,state,cr,top,nsb);
-    } else {
-      /* Set natoms to the total number of atoms in the system
-       * to have large enough arrays.
-       * This should be optimized !!!
+    if (bVerbose && MASTER(cr)) 
+      fprintf(stderr,"Getting Loaded...\n");
+    
+    if (PAR(cr)) {
+      /* The master thread on the master node reads from disk, 
+       * then dsitributes everything to the other processors.
        */
-      nsb->natoms = top->atoms.nr;
-      nsb->index[cr->nodeid] = 0;
-      nsb->homenr[cr->nodeid] = 0;
+      init_parallel(stdlog,ftp2fn(efTPX,nfile,fnm),cr,
+		    inputrec,top,state,
+		    MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
+      /* It seems that nsb->nnodes is never set !!! 
+       * So we (temporarily) fix it here.
+       */
+      nsb->nnodes = cr->nnodes;
+      
+      if (!DOMAINDECOMP(cr)) {
+      split_system_first(stdlog,inputrec,state,cr,top,nsb);
+      } else {
+	/* Set natoms to the total number of atoms in the system
+	 * to have large enough arrays.
+	 * This should be optimized !!!
+	 */
+	nsb->natoms = top->atoms.nr;
+	nsb->index[cr->nodeid] = 0;
+	nsb->homenr[cr->nodeid] = 0;
+      }
+      
+      /* This code has to be made aware of splitting the machine */
+      bParVsites=setup_parallel_vsites(&(top->idef),cr,nsb,&vsitecomm);
+    }
+    else {
+      /* Read a file for a single processor */
+      init_single(stdlog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state,nsb);
+      bParVsites=FALSE;
     }
     
-    /* This code has to be made aware of splitting the machine */
-    bParVsites=setup_parallel_vsites(&(top->idef),cr,nsb,&vsitecomm);
-  }
-  else {
-    /* Read a file for a single processor */
-    init_single(stdlog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state,nsb);
-    bParVsites=FALSE;
-  }
-  
-  if (bVerbose && MASTER(cr))
-    fprintf(stderr,"Loaded with Money\n\n");
-  
-  if (inputrec->eI == eiSD) {
-    /* Is not read from TPR yet, so we allocate space here */
-    snew(state->sd_X,nsb->natoms);
-  }
-  snew(buf,nsb->natoms);
-  snew(f,nsb->natoms);
-  snew(vt,nsb->natoms);
-  snew(vold,nsb->natoms);
-
-#ifdef GMX_MPI
-  /* If necessary split communicator and adapt ring topology */ 
-  if (pmeduty(cr)==epmePPONLY || pmeduty(cr)==epmePMEONLY)
-  {
-    if (inputrec->coulombtype!=eelPME && inputrec->coulombtype!=eelPMEUSER)
-      gmx_fatal(FARGS,"Can not have PME nodes with coulombtype %s",
-		eel_names[inputrec->coulombtype]);
-    if (!bDomDec)
-      gmx_fatal(FARGS,"Seperate PME nodes can only be used with domain decomposition");
-    if (2*cr->npmenodes > cr->nnodes)
-      gmx_fatal(FARGS,"The number of PME nodes (%d) can not be more than half of the total number of nodes (%d)",cr->npmenodes,cr->nnodes);
-    /* Split communicator */
-#define split
-#ifdef split
-    MPI_Comm_split(cr->mpi_comm_mysim,pmeduty(cr),cr->nodeid,
-		   &mpi_comm_pporpme);
-    cr->mpi_comm_mygroup = mpi_comm_pporpme;
-#else
-    /* splitting a communicator sometimes results in a hang on 
-     * MPI_Finalize if MPE logging is used. In some of the cases
-     * this workaround helps: 
+    if (bVerbose && MASTER(cr))
+      fprintf(stderr,"Loaded with Money\n\n");
+    
+    if (inputrec->eI == eiSD) {
+      /* Is not read from TPR yet, so we allocate space here */
+      snew(state->sd_X,nsb->natoms);
+    }
+    snew(buf,nsb->natoms);
+    snew(f,nsb->natoms);
+    snew(vt,nsb->natoms);
+    snew(vold,nsb->natoms);
+    
+    /* Index numbers for parallellism... */
+    nsb->nodeid      = cr->nodeid;
+    top->idef.nodeid = cr->nodeid;
+    
+    /* Group stuff (energies etc) */
+    init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);
+    /* Copy the cos acceleration to the groups struct */
+    grps->cosacc.cos_accel = inputrec->cos_accel;
+    
+    /* Periodicity stuff */  
+    if (inputrec->ePBC == epbcXYZ) {
+      graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
+      if (debug) 
+	p_graph(debug,"Initial graph",graph);
+    }
+    else
+      graph = NULL;
+    
+    /* Distance Restraints */
+    init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
+		top->idef.iparams,inputrec,cr->ms,fcd);
+    
+    /* Orientation restraints */
+    init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
+		top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
+		&(fcd->orires));
+    
+    /* Dihedral Restraints */
+    init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
+		top->idef.iparams,inputrec,fcd);
+    
+    /* check if there are vsites */
+    bVsites=FALSE;
+    for(i=0; (i<F_NRE) && !bVsites; i++)
+      bVsites = ((interaction_function[i].flags & IF_VSITE) && 
+		 (top->idef.il[i].nr > 0));
+    
+    /* Initiate forcerecord */
+    fr = mk_forcerec();
+    init_forcerec(stdlog,fr,inputrec,top,cr,nsb,state->box,FALSE,
+		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),FALSE);
+    fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
+    
+    /* Initialize QM-MM */
+    if(fr->bQMMM)
+      init_QMMMrec(cr,state->box,top,inputrec,fr);
+    
+    /* Initialize the mdatoms structure.
+     * mdatoms is not filled with atom data,
+     * as this can not be done now with domain decomposition.
      */
-    MPI_Group  world_group, ppgroup, pmegroup;
-    MPI_Comm   comm_pp, comm_pme;
-    int  ranks[MAXNODES];
-
-    for (i=0; i<cr->nnodes-cr->npmenodes; i++)
-      ranks[i]=i;
-    /* Make a group that consists of all processors: */
-    MPI_Comm_group(cr->mpi_comm_mysim, &world_group);
-    /* exclude the PP nodes and form the pmegroup: */
-    MPI_Group_excl(world_group, cr->nnodes-cr->npmenodes, ranks, &pmegroup);
-    /* create a communicator for the pmegroup: */
-    MPI_Comm_create(cr->mpi_comm_mysim, pmegroup, &comm_pme);
-    if (pmeduty(cr) == epmePMEONLY)
-    {
-      fprintf(stderr,"node %d has comm_pme as cr->mpi_comm_mygroup\n",cr->nodeid);
-      cr->mpi_comm_mygroup = comm_pme;
+    mdatoms = init_mdatoms(stdlog,&top->atoms,inputrec->efep!=efepNO);
+    
+    /* Make molecules whole at start of run */
+    if (fr->ePBC != epbcNONE)  {
+      do_pbc_first(stdlog,state->box,fr,graph,state->x);
     }
-    else 
-    {
-      fprintf(stderr,"node %d has MPI_COMM_NULL as cr->mpi_comm_mygroup\n",cr->nodeid);
-      cr->mpi_comm_mygroup = MPI_COMM_NULL;
-    }
-#endif
-    fprintf(stdlog,"This is a %s only node\n",
-	    pmeduty(cr)==epmePMEONLY ? "PME-mesh" : "particle-particle");
-    /* Change topology to one ring for PP and another for PME nodes */ 
-    if (cr->nodeid==0)
-      cr->left=cr->nnodes-cr->npmenodes-1; 
-    else if (cr->nodeid==cr->nnodes-cr->npmenodes-1)
-      cr->right=0;
-    else if (cr->nodeid==cr->nnodes-cr->npmenodes)
-      cr->left=cr->nnodes-1;
-    else if (cr->nodeid==cr->nnodes-1)
-      cr->right=cr->nnodes-cr->npmenodes;
-  }
-  else  /* PME is done on all nodes */
-    cr->mpi_comm_mygroup = cr->mpi_comm_mysim; 
-#endif /* GMX_MPI */
 
-  if (bDomDec)
-    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,top->blocks[ebCGS].nr);
-
-  /* Index numbers for parallellism... */
-  nsb->nodeid      = cr->nodeid;
-  top->idef.nodeid = cr->nodeid;
-
-  /* Group stuff (energies etc) */
-  init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);
-  /* Copy the cos acceleration to the groups struct */
-  grps->cosacc.cos_accel = inputrec->cos_accel;
-  
-  /* Periodicity stuff */  
-  if (inputrec->ePBC == epbcXYZ) {
-    graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-    if (debug) 
-      p_graph(debug,"Initial graph",graph);
-  }
-  else
-    graph = NULL;
-  
-  /* Distance Restraints */
-  init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
-	      top->idef.iparams,inputrec,cr->ms,fcd);
-
-  /* Orientation restraints */
-  init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-	      top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
-	      &(fcd->orires));
-
-  /* Dihedral Restraints */
-  init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
-	      top->idef.iparams,inputrec,fcd);
-
-  /* check if there are vsites */
-  bVsites=FALSE;
-  for(i=0; (i<F_NRE) && !bVsites; i++)
-    bVsites = ((interaction_function[i].flags & IF_VSITE) && 
-		(top->idef.il[i].nr > 0));
-
-  /* Initiate forcerecord */
-  fr = mk_forcerec();
-  init_forcerec(stdlog,fr,inputrec,top,cr,nsb,state->box,FALSE,
-		opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),FALSE);
-  fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
-
-  /* Initialize QM-MM */
-  if(fr->bQMMM)
-    init_QMMMrec(cr,state->box,top,inputrec,fr);
-
-  /* Initialize the mdatoms structure.
-   * mdatoms is not filled with atom data,
-   * as this can not be done now with domain decomposition.
-   */
-  mdatoms = init_mdatoms(stdlog,&top->atoms,inputrec->efep!=efepNO);
-
-  /* Initiate PPPM if necessary */
-  if (fr->eeltype == eelPPPM) {
-    if (mdatoms->nChargePerturbed)
-      gmx_fatal(FARGS,"Free energy with %s is not implemented",
-		eel_names[fr->eeltype]);
-    status = gmx_pppm_init(stdlog,cr,nsb,FALSE,TRUE,state->box,
+    /* Initiate PPPM if necessary */
+    if (fr->eeltype == eelPPPM) {
+      if (mdatoms->nChargePerturbed)
+	gmx_fatal(FARGS,"Free energy with %s is not implemented",
+		  eel_names[fr->eeltype]);
+      status = gmx_pppm_init(stdlog,cr,nsb,FALSE,TRUE,state->box,
 			   getenv("GMXGHAT"),inputrec);
-    if (status != 0)
-      gmx_fatal(FARGS,"Error %d initializing PPPM",status);
+      if (status != 0)
+	gmx_fatal(FARGS,"Error %d initializing PPPM",status);
+    }
+    
+    send_inputrec(cr,inputrec,mdatoms->nChargePerturbed);
   }
-  
+
   /* Initiate PME if necessary */
   /* either on all nodes (if epmePMEANDPP is TRUE) 
    * or on dedicated PME nodes (if epmePMEONLY is TRUE) */
-  if ((fr->eeltype == eelPME) || (fr->eeltype == eelPMEUSER)) {
-    if (pmeduty(cr)==epmePMEONLY || pmeduty(cr)==epmePMEANDPP) { 
-      GMX_MPE_LOG(ev_init_pme_start);
+  if (!(cr->duty & DUTY_PP) ||
+      (fr->eeltype == eelPME || fr->eeltype == eelPMEUSER)) {
+    if (cr->duty & DUTY_PME) {
+      if (cr->duty & DUTY_PP) {
+	ewaldcoeff = fr->ewaldcoeff;
+	pmedata = &fr->pmedata;
+	nChargePerturbed = mdatoms->nChargePerturbed;
+      } else {
+	receive_inputrec(cr,inputrec,&nChargePerturbed);
+	ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
+	snew(pmedata,1);
+      }
       
-      status = gmx_pme_init(stdlog,&fr->pmedata,cr,inputrec,
-			    nsb->natoms,mdatoms->nChargePerturbed,bVerbose);
-      
-      GMX_MPE_LOG(ev_init_pme_finish);
+      status = gmx_pme_init(stdlog,pmedata,cr,inputrec,
+			    nsb->natoms,nChargePerturbed,bVerbose);
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PME",status);
     }
-  }
-    
-  /* Make molecules whole at start of run */
-  if (fr->ePBC != epbcNONE)  {
-    do_pbc_first(stdlog,state->box,fr,graph,state->x);
   }
   
   /* Turn on signal handling on all nodes */
   /*
    * (A user signal from the PME nodes (if any)
-   * is transported to the PP nodes via the tag of the 
-   * energy message in do_pmeonly => receive_lrforces) */
+   * is communicated to the PP nodes.
+   */
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
   
@@ -350,7 +332,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   case eiMD:
   case eiSD:
   case eiBD:
-    if (pmeduty(cr) != epmePMEONLY) 
+    if (cr->duty & DUTY_PP) 
     {
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,
@@ -361,12 +343,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		    Flags);
     } 
 #ifdef GMX_MPI
-    else /* pmeduty(cr) == epmePMEONLY */
+    else
     {
       /* do PME: */
 
-      gmx_pmeonly(stdlog,fr->pmedata,cr,&nrnb[nsb->nodeid],
-		  fr->ewaldcoeff,state->lambda);
+      gmx_pmeonly(stdlog,*pmedata,cr,&nrnb[cr->nodeid],
+		  ewaldcoeff,FALSE);
     }
 #endif    
     break;
@@ -1238,7 +1220,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Dump the NODE time to the log file on each node */
-  if (PAR(cr) && (pmeduty(cr) != epmePMEONLY)) {
+  if (PAR(cr) && (cr->duty & DUTY_PP)) {
     double *ct,ctmax,ctsum;
     
     snew(ct,(cr->nnodes-cr->npmenodes));

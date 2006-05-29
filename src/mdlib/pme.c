@@ -78,6 +78,7 @@
 #include "physics.h"
 #include "nrnb.h"
 #include "copyrite.h"
+#include "domdec.h"
 #ifdef GMX_MPI
 #include <mpi.h>
 #endif
@@ -756,7 +757,6 @@ static void spread_q_bsplines(gmx_pme_t pme,t_fftgrid *grid,real charge[],
 {
   /* spread charges from home atoms to local grid */
   real     *ptr;
-  int      leftid,rightid;
   int      i,nn,n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
   int      nx,ny,nz,nx2,ny2,nz2,la2,la12;
   int      norder,*idxptr,index_x,index_xy,index_xyz;
@@ -833,7 +833,7 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
   /* do recip sum over local cells in grid */
   t_complex *ptr,*p0;
   int     nx,ny,nz,nx2,ny2,nz2,la2,la12;
-  int     kx,ky,kz,idx,idx0,maxkx,maxky,maxkz,kystart=0,kyend=0;
+  int     kx,ky,kz,maxkx,maxky,maxkz,kystart=0,kyend=0;
   real    m2,mx,my,mz;
   real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
   real    ets2,struct2,vfactor,ets2vf;
@@ -955,11 +955,10 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
   int     nx,ny,nz,nx2,ny2,nz2,la2,la12,index_x,index_xy;
   real *  ptr;
   real    tx,ty,dx,dy,qn;
-  real    fx,fy,fz,fnx,fny,fnz,gval,tgz,dgz;
-  real    gval1,gval2,gval3,gval4;
+  real    fx,fy,fz,gval;
   real    fxy1,fz1;
   real    *thx,*thy,*thz,*dthx,*dthy,*dthz;
-  int     sn,norder,*idxptr,ind0;
+  int     norder,*idxptr;
   real    rxx,ryx,ryy,rzx,rzy,rzz;
   int     order;
   
@@ -1056,7 +1055,7 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
 {
   /* construct splines for local atoms */
   int  i,j,k,l;
-  real dr,div,rcons;
+  real dr,div;
   real *data,*ddata,*xptr;
 
   for(i=0; (i<nr); i++) {
@@ -1164,28 +1163,29 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-
-
-static int dd_node2pmenode(t_commrec *cr,int nodeid)
+static int cart_coords2slab(gmx_domdec_t *dd,int *coords)
 {
-  /* This assumes a uniform x domain decomposition grid cell size */
-  /* This assumes DD cells with identical x coordinates
-   * are numbered sequentially.
-   */
-  return cr->dd->nnodes +
-    (nodeid*cr->npmenodes + cr->npmenodes/2)/cr->dd->nnodes;
+  ivec nc;
+  int  pmecoords[DIM],i;
+
+  copy_ivec(dd->ntot,nc);
+  for(i=0; i<DIM; i++)
+    pmecoords[i] = coords[i];
+  nc[dd->pmedim] -= dd->nc[dd->pmedim];
+  pmecoords[dd->pmedim] -= dd->nc[dd->pmedim];
+  
+  return (pmecoords[XX]*nc[YY] + pmecoords[YY])*nc[ZZ] + pmecoords[ZZ];
 }
 
 static void get_my_ddnodes(FILE *logfile,t_commrec *cr,
 			   int *nmy_ddnodes,int **my_ddnodes)
 {
-  ivec xyz;
   int i;
 
   snew(*my_ddnodes,(cr->dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
   
   *nmy_ddnodes = 0;
-  for(i=0; i<cr->dd->nnodes; i++) {
+  for(i=0; i<cr->nnodes; i++) {
     if (dd_node2pmenode(cr,i) == cr->nodeid)
       (*my_ddnodes)[(*nmy_ddnodes)++] = i;
   }
@@ -1198,7 +1198,9 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
 					   gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
-  int  npme,dd_nx,shmax,i,dd_cx0,dd_cx1,pmenode,fw,bw;
+  int  npme,dd_nx,shmax,i,dd_cx0,dd_cx1,slab,fw,bw;
+  ivec coords;
+  bool bPPnode;
 
   npme = pme->nnodes;
   dd_nx = cr->dd->nc[XX];
@@ -1209,24 +1211,37 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
    * and diffusion between neighbor list updates.
    */
   shmax = 1;
-  for(i=0; i<cr->dd->nnodes; i++) {
-    /* Initial (ns step) charge group center x in range 0 - dd_nx */
-    dd_cx0 = (i*dd_nx)/cr->dd->nnodes;
-    dd_cx1 = dd_cx0 + 1;
-    /* Add one DD cell size */
-    dd_cx0--;
-    dd_cx1++;
-    /* The PME node for this range */
-    pmenode = dd_node2pmenode(cr,i) - cr->dd->nnodes;
-    /* Now we multiply with npme, so the x range is 0 - dd_nx*npme */
-    dd_cx0 *= npme;
-    dd_cx1 *= npme;
-    /* Check if we need to increase the maximum shift */
-    while (dd_cx1 > (pmenode + 1 + shmax)*dd_nx)
-      shmax++;
-    while (dd_cx0 < (pmenode - shmax)*dd_nx)
-      shmax++;
-  }
+  for(i=0; i<cr->nnodes; i++) {
+    if (cr->dd->bCartesian) {
+      bPPnode = dd_node2pme_cart_coords(cr,i,coords);
+      if (bPPnode)
+	slab = cart_coords2slab(cr->dd,coords);
+    } else {
+      bPPnode = (i < cr->dd->nnodes);
+      if (bPPnode)
+	slab = dd_node2pmenode(cr,i) - cr->dd->nnodes;
+    }
+    if (bPPnode) {
+      /* Initial (ns step) charge group center x in range 0 - dd_nx */
+      if (cr->dd->bCartesian) {
+	dd_cx0 = coords[XX];
+      } else {
+	dd_cx0 = (i*dd_nx)/cr->dd->nnodes;
+      }
+      dd_cx1 = dd_cx0 + 1;
+      /* Add one DD cell size */
+      dd_cx0--;
+      dd_cx1++;
+      /* Now we multiply with npme, so the x range is 0 - dd_nx*npme */
+      dd_cx0 *= npme;
+      dd_cx1 *= npme;
+      /* Check if we need to increase the maximum shift */
+      while (dd_cx1 > (slab + 1 + shmax)*dd_nx)
+	shmax++;
+      while (dd_cx0 < (slab - shmax)*dd_nx)
+	shmax++;
+    }
+  }    
 
   if (bFirst) {
     fprintf(log,"PME maximum node shift for coordinate communication: %d\n",
@@ -1286,15 +1301,12 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
 
   fprintf(log,"Creating PME data structures.\n");
   snew(pme,1);
-  
-  if (cr->npmenodes) {
-    pme->nodeid = cr->nodeid - (cr->nnodes - cr->npmenodes);
-    pme->nnodes = cr->npmenodes;
-  } else {
-    pme->nodeid = cr->nodeid;
-    pme->nnodes = cr->nnodes;
-  }
+
+#ifdef GMX_MPI
   pme->mpi_comm = cr->mpi_comm_mygroup;
+  MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
+  MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
+#endif
 
   fprintf(log,"Will do PME sum in reciprocal space.\n");
   please_cite(log,"Essman95a");
@@ -1411,13 +1423,11 @@ void gmx_pme_send_x_q(t_commrec *cr, matrix box,
 		      rvec x[], real chargeA[], real chargeB[],
 		      bool bFreeEnergy, real lambda, bool bLastStep)
 {
-  int  pme_node,n,nreq;
+  int  n,nreq;
   gmx_pme_comm_n_box_t cnb;
 #ifdef GMX_MPI
   MPI_Request req[4];
 #endif
-
-  pme_node = dd_node2pmenode(cr,cr->nodeid);
 
   n = cr->dd->nat_local;
   cnb.natoms = n;
@@ -1429,15 +1439,15 @@ void gmx_pme_send_x_q(t_commrec *cr, matrix box,
   nreq = 0;
   /* Communicate bLastTime (0/1) via the MPI tag */
   MPI_Isend(&cnb,sizeof(cnb),MPI_BYTE,
-	    pme_node,0,cr->mpi_comm_mysim,&req[nreq++]);
+	    cr->dd->pme_nodeid,0,cr->mpi_comm_mysim,&req[nreq++]);
 
   MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
-	    pme_node,1,cr->mpi_comm_mysim,&req[nreq++]);
+	    cr->dd->pme_nodeid,1,cr->mpi_comm_mysim,&req[nreq++]);
   MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
-	    pme_node,2,cr->mpi_comm_mysim,&req[nreq++]);
+	    cr->dd->pme_nodeid,2,cr->mpi_comm_mysim,&req[nreq++]);
   if (bFreeEnergy)
     MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
-	      pme_node,3,cr->mpi_comm_mysim,&req[nreq++]);
+	      cr->dd->pme_nodeid,3,cr->mpi_comm_mysim,&req[nreq++]);
 
   /* We would like to postpone this wait until dd_pme_receive_f,
    * but currently the coordinates can be (un)shifted.
@@ -1451,16 +1461,12 @@ void gmx_pme_send_x_q(t_commrec *cr, matrix box,
 static void receive_virial_energy(t_commrec *cr,
 				  matrix vir,real *energy,real *dvdlambda) 
 {
-  int  sender;
   gmx_pme_comm_vir_ene_t cve;
 
-  /* receive energy, virial */
-  sender = cr->nodeid + (cr->nnodes - cr->npmenodes);
-  if (sender < cr->nnodes) 
-  {
+  if (cr->dd->pme_receive_vir_ener) {
     /* receive virial and energy */
 #ifdef GMX_MPI
-    MPI_Recv(&cve,sizeof(cve),MPI_BYTE,sender,1,cr->mpi_comm_mysim,
+    MPI_Recv(&cve,sizeof(cve),MPI_BYTE,cr->dd->pme_nodeid,1,cr->mpi_comm_mysim,
 	     MPI_STATUS_IGNORE);
 #endif
 	
@@ -1492,7 +1498,7 @@ void gmx_pme_receive_f(t_commrec *cr,
 
 #ifdef GMX_MPI  
   MPI_Recv(f_rec[0],natoms*sizeof(rvec),MPI_BYTE,
-	   dd_node2pmenode(cr,cr->nodeid),0,cr->mpi_comm_mysim,
+	   cr->dd->pme_nodeid,0,cr->mpi_comm_mysim,
 	   MPI_STATUS_IGNORE);
 #endif
 
@@ -1508,7 +1514,6 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
      
 {
 #ifdef GMX_MPI
-  MPI_Status  status;
   rvec  *x_pp=NULL,*f_pp=NULL;
   real  *chargeA=NULL,*chargeB=NULL,*charge_pp;
   int  nppnodes,sender,receiver;
@@ -1518,7 +1523,6 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
   int  nalloc_natpp=0;
   int  n,i,q;
   gmx_pme_comm_vir_ene_t cve;
-  bool  bFirst=TRUE;
   int messages; /* count the Isends or Ireceives */    
   MPI_Request *req;
   MPI_Status  *stat;
@@ -1633,15 +1637,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 	gmx_comm("MPI_Isend failed in do_pmeonly");
     }
 
-    /* send energy, virial */
-    /* task i out of the PME nodes group sends to task i out of the PP nodes group.
-     * since we normally have more PP nodes than PME nodes some of the PP nodes will 
-     * get no values. This is no problem since all these values are summed anyway in 
-     * global_stat 
-     */
-    receiver = cr->nodeid - (cr->nnodes - cr->npmenodes);
-
-    /* send virial and energy */
+    /* send virial and energy to our last PP node */
     cve.flags    = 0;
     if (bGotTermSignal)
       cve.flags |= PME_TERM;
@@ -1649,7 +1645,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
       cve.flags |= PME_USR1;
 
     MPI_Isend(&cve,sizeof(cve),MPI_BYTE,
-	      receiver,1,cr->mpi_comm_mysim,&req[messages++]);
+	      my_ddnodes[nmy_ddnodes-1],1,cr->mpi_comm_mysim,&req[messages++]);
 
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, req, stat);

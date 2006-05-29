@@ -28,9 +28,22 @@ extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 extern void dd_make_reverse_top(gmx_domdec_t *dd,
 				int natoms,t_idef *idef,bool bDynamics);
 
+extern bool dd_node2pme_cart_coords(t_commrec *cr,int nodeid,int *coords);
+/* Returns TRUE if nodeid is a PP node.
+ * Set coords to the Cartesian coordinates of the PME-only node
+ * that the PP node nodeid communicates with.
+ */
+
+extern int dd_node2pmenode(t_commrec *cr,int nodeid);
+/* Returns the nodeid in cr->mpi_comm_mysim of the PME-only node
+ * that nodeid communicates with.
+ * Returns -1 if nodeid is a PME-only node.
+ */
+
+extern void make_dd_communicators(FILE *fplog,t_commrec *cr);
+
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
-					       t_commrec *cr,ivec nc,
-					       int ncg);
+					       t_commrec *cr,ivec nc);
 
 extern void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd);
 

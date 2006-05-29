@@ -82,7 +82,7 @@ void gmx_tx(const t_commrec *cr,int nodeid,void *buf,int bufsize)
   }
 #endif
   tag = 0;
-  if (MPI_Isend(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mysim,&mpi_req_tx) != 0)
+  if (MPI_Isend(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mygroup,&mpi_req_tx) != 0)
     gmx_comm("MPI_Isend Failed");
 #endif
 }
@@ -112,7 +112,7 @@ void gmx_txs(const t_commrec *cr,int nodeid,void *buf,int bufsize)
 	  nodeid,buf,bufsize);
 #endif
   tag = 0;
-  if (MPI_Send(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mysim) != 0)
+  if (MPI_Send(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mygroup) != 0)
     gmx_comm("MPI_Send Failed");
 #endif
 }
@@ -129,7 +129,7 @@ void gmx_rx(const t_commrec *cr,int nodeid,void *buf,int bufsize)
 	  nodeid,buf,bufsize);
 #endif
   tag = 0;
-  if (MPI_Irecv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mysim, &mpi_req_rx) != 0 )
+  if (MPI_Irecv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mygroup, &mpi_req_rx) != 0 )
     gmx_comm("MPI_Recv Failed");
 #endif
 }
@@ -176,7 +176,7 @@ void gmx_rxs(const t_commrec *cr,int nodeid,void *buf,int bufsize)
 	  nodeid,buf,bufsize);
 #endif
   tag = 0;
-  if (MPI_Recv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mysim, &stat) != 0 )
+  if (MPI_Recv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mygroup, &stat) != 0 )
     gmx_comm("MPI_Recv Failed");
 #endif
 }
@@ -363,7 +363,7 @@ void gmx_tx_rx(const t_commrec *cr,
   
   MPI_Sendrecv(send_buf,send_bufsize,MPI_BYTE,RANK(cr,send_nodeid),tx_tag,
 	       rec_buf,rec_bufsize,MPI_BYTE,RANK(cr,rec_nodeid),rx_tag,
-	       cr->mpi_comm_mysim,&stat);
+	       cr->mpi_comm_mygroup,&stat);
 #endif
 }
 		 
@@ -384,7 +384,7 @@ void gmx_tx_rx_real(const t_commrec *cr,
   
   MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
 	       rec_buf,rec_bufsize,mpi_type,RANK(cr,rec_nodeid),rx_tag,
-	       cr->mpi_comm_mysim,&stat);
+	       cr->mpi_comm_mygroup,&stat);
 #undef mpi_type
 #endif
 }
@@ -500,6 +500,19 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumf");
 #else
+#ifdef TEST_MPI_SUM
+  static float *buf;
+  static int nalloc=0;
+  int i;
+  
+  if (nr > nalloc) {
+    nalloc = nr;
+    srenew(buf,nalloc);
+  }
+  MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
+  for(i=0; i<nr; i++)
+    r[i] = buf[i];
+#else
   float *buf[2];
   int  NR,bufs,j,i,cur=0;
 #define next (1-cur)
@@ -524,12 +537,27 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
   sfree(buf[1]);
   sfree(buf[0]);
 #endif
+#endif
 }
 
 void gmx_sumi(int nr,int r[],const t_commrec *cr)
 {
 #ifndef GMX_MPI
   gmx_call("gmx_sumi");
+#else
+#define TEST_MPI_SUM
+#ifdef TEST_MPI_SUM
+  static int *buf;
+  static int nalloc=0;
+  int i;
+  
+  if (nr > nalloc) {
+    nalloc = nr;
+    srenew(buf,nalloc);
+  }
+  MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
+  for(i=0; i<nr; i++)
+    r[i] = buf[i];
 #else
   int *buf[2];
   int  NR,bufs,j,i,cur=0;
@@ -554,6 +582,7 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
   }
   sfree(buf[1]);
   sfree(buf[0]);
+#endif
 #endif
 }
 
@@ -625,6 +654,16 @@ void gmx_finalize(const t_commrec *cr)
    * unfinished processes to terminate.
    */
   MPI_Barrier(MPI_COMM_WORLD);
+
+  /*
+  if (DOMAINDECOMP(cr)) {
+    if (cr->npmenodes > 0 || cr->dd->bCartesian) 
+      MPI_Comm_free(&cr->mpi_comm_mygroup);
+    if (cr->dd->bCartesian)
+      MPI_Comm_free(&cr->mpi_comm_mysim);
+  }
+  */
+
   /* Apparently certain mpich implementations cause problems
    * with MPI_Finalize. In that case comment out MPI_Finalize.
    */

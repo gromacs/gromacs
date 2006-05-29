@@ -1351,7 +1351,7 @@ void force(FILE       *fplog,   int        step,
       break;
     case eelPME:
     case eelPMEUSER:
-      if (pmeduty(cr)==epmePMEANDPP) {
+      if (cr->duty & DUTY_PME) {
         status = gmx_pme_do(fplog,fr->pmedata,
 			    START(nsb),HOMENR(nsb),
 			    x,fr->f_el_recip,

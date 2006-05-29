@@ -342,6 +342,7 @@ void init_multisystem(t_commrec *cr,int nsim,
     gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
 #ifdef GMX_MPI
     MPI_Comm_split(MPI_COMM_WORLD,sim,cr->nodeid,&cr->mpi_comm_mysim);
+    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
 #endif
   }
 
@@ -411,6 +412,7 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
 #ifdef GMX_MPI
     cr->mpi_comm_mysim = MPI_COMM_WORLD;
+    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
 #endif
 #ifdef DEBUGPAR
     fprintf(stderr,"Going to initialise network\n");
