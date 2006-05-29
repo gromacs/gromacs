@@ -232,7 +232,9 @@ int main(int argc,char *argv[])
 #endif
 
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
-
+  
+  if (repl_ex_nst != 0 && nmultisim < 2)
+    gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
   if (opt2bSet("-tpi",NFILE,fnm))
     nmultisim = cr->nnodes;
   if (nmultisim > 1 && PAR(cr))
