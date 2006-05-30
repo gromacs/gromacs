@@ -1184,9 +1184,11 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
 					   gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
-  int  shmax,i,slab,dd_cx0,dd_cx1,npme,fw,bw;
+  int  npme,shmax,i,slab,dd_cx0,dd_cx1,fw,bw;
   ivec coords;
   bool bPPnode;
+
+  npme = pme->nnodes;
 
   /* This code assumes a uniform DD cell size in x direction
    * and that particles are no further than one DD cell size
@@ -1225,17 +1227,16 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
    * occur on each node and we can therefore avoid nodes waiting
    * while other nodes are communicating.
    */
-  npme = pme->nnodes;
   pme->nnodes_comm = 0;
   for(i=1; i<=shmax; i++) {
     fw = (pme->nodeid + i) % npme;
     bw = (pme->nodeid - i + npme) % npme;
-    if (pme->nnodes_comm < pme->nnodes - 1) {
+    if (pme->nnodes_comm < npme - 1) {
       pme->node_dest[pme->nnodes_comm] = fw;
       pme->node_src[pme->nnodes_comm] = bw;
       pme->nnodes_comm++;
     } 
-    if (pme->nnodes_comm < pme->nnodes - 1) {
+    if (pme->nnodes_comm < npme - 1) {
       pme->node_dest[pme->nnodes_comm] = bw;
       pme->node_src[pme->nnodes_comm] = fw;
       pme->nnodes_comm++;
