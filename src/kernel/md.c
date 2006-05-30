@@ -141,8 +141,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       *buf,*f,*vold,*vt;
   real       tmpr1,tmpr2;
   real       *ener;
-  t_nrnb     nrnb;
-  t_nsborder *nsb;
+  t_nrnb     *nrnb;
+  t_nsborder *nsb=NULL;
   t_topology *top;
   t_groups   *grps;
   t_graph    *graph;
@@ -167,6 +167,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   }
 
   snew(inputrec,1);
+  snew(nrnb,1);
   if (cr->duty & DUTY_PP) {
     /* Initiate everything (snew sets to zero!) */
     snew(ener,F_NRE);
@@ -192,7 +193,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       nsb->nnodes = cr->nnodes;
       
       if (!DOMAINDECOMP(cr)) {
-      split_system_first(stdlog,inputrec,state,cr,top,nsb);
+	split_system_first(stdlog,inputrec,state,cr,top,nsb);
       } else {
 	/* Set natoms to the total number of atoms in the system
 	 * to have large enough arrays.
@@ -313,7 +314,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       }
       
       status = gmx_pme_init(stdlog,pmedata,cr,inputrec,
-			    nsb->natoms,nChargePerturbed,bVerbose);
+			    nsb ? nsb->natoms : 0,nChargePerturbed,bVerbose);
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PME",status);
     }
@@ -326,67 +327,60 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
    */
   signal(SIGTERM,signal_handler);
   signal(SIGUSR1,signal_handler);
-  
-  /* Now do whatever the user wants us to do (how flexible...) */
-  switch (inputrec->eI) {
-  case eiMD:
-  case eiSD:
-  case eiBD:
-    if (cr->duty & DUTY_PP) 
-    {
+
+  if (cr->duty & DUTY_PP) {
+    /* Now do whatever the user wants us to do (how flexible...) */
+    switch (inputrec->eI) {
+    case eiMD:
+    case eiSD:
+    case eiBD:
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,
 		    ddxyz,bVsites,bParVsites ? &vsitecomm : NULL,
 		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
-		    mdatoms,nsb,&nrnb,graph,edyn,fr,
+		    mdatoms,nsb,nrnb,graph,edyn,fr,
 		    repl_ex_nst,repl_ex_seed,
 		    Flags);
-    } 
-#ifdef GMX_MPI
-    else
-    {
-      /* do PME: */
-
-      gmx_pmeonly(stdlog,*pmedata,cr,&nrnb,
-		  ewaldcoeff,FALSE);
+      break;
+    case eiCG:
+      start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,nsb,
+		    state,f,buf,mdatoms,ener,fcd,
+		    nrnb,bVerbose,bVsites,
+		    bParVsites ? &vsitecomm : NULL,
+		    cr,graph,fr);
+      break;
+    case eiLBFGS:
+      start_t=do_lbfgs(stdlog,nfile,fnm,inputrec,top,grps,nsb,
+		       state,f,buf,mdatoms,ener,fcd,
+		       nrnb,bVerbose,bVsites,
+		       bParVsites ? &vsitecomm : NULL,
+		       cr,graph,fr);
+      break;
+    case eiSteep:
+      start_t=do_steep(stdlog,nfile,fnm,inputrec,top,grps,nsb,
+		       state,f,buf,mdatoms,ener,fcd,
+		       nrnb,bVerbose,bVsites,
+		       bParVsites ? &vsitecomm : NULL,
+		       cr,graph,fr);
+    break;
+    case eiNM:
+      start_t=do_nm(stdlog,cr,nfile,fnm,
+		    bVerbose,bCompact,nstepout,inputrec,grps,
+		    top,ener,fcd,state,vold,vt,f,buf,
+		    mdatoms,nsb,nrnb,graph,edyn,fr);
+      break;
+    case eiTPI:
+      start_t=do_tpi(stdlog,nfile,fnm,inputrec,top,grps,nsb,
+		     state,f,buf,mdatoms,ener,fcd,
+		     nrnb,bVerbose,
+		     cr,graph,fr);
+      break;
+    default:
+      gmx_fatal(FARGS,"Invalid integrator (%d)...\n",inputrec->eI);
     }
-#endif    
-    break;
-  case eiCG:
-    start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,nsb,
-		  state,f,buf,mdatoms,ener,fcd,
-		  &nrnb,bVerbose,bVsites,
-		  bParVsites ? &vsitecomm : NULL,
-		  cr,graph,fr);
-    break;
-  case eiLBFGS:
-    start_t=do_lbfgs(stdlog,nfile,fnm,inputrec,top,grps,nsb,
-		     state,f,buf,mdatoms,ener,fcd,
-		     &nrnb,bVerbose,bVsites,
-		     bParVsites ? &vsitecomm : NULL,
-		     cr,graph,fr);
-    break;
-  case eiSteep:
-    start_t=do_steep(stdlog,nfile,fnm,inputrec,top,grps,nsb,
-		     state,f,buf,mdatoms,ener,fcd,
-		     &nrnb,bVerbose,bVsites,
-		     bParVsites ? &vsitecomm : NULL,
-		     cr,graph,fr);
-    break;
-  case eiNM:
-    start_t=do_nm(stdlog,cr,nfile,fnm,
-		  bVerbose,bCompact,nstepout,inputrec,grps,
-		  top,ener,fcd,state,vold,vt,f,buf,
-		  mdatoms,nsb,&nrnb,graph,edyn,fr);
-    break;
-  case eiTPI:
-    start_t=do_tpi(stdlog,nfile,fnm,inputrec,top,grps,nsb,
-		   state,f,buf,mdatoms,ener,fcd,
-		   &nrnb,bVerbose,
-		   cr,graph,fr);
-    break;
-  default:
-    gmx_fatal(FARGS,"Invalid integrator (%d)...\n",inputrec->eI);
+  } else {
+    /* do PME only */
+    gmx_pmeonly(stdlog,*pmedata,cr,nrnb,ewaldcoeff,FALSE);
   }
  
   /* Some timing stats */  
@@ -402,7 +396,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
    * if rerunMD, don't write last frame again 
    */
   finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
-	     nsb,top,inputrec,&nrnb,nodetime,realtime,inputrec->nsteps,
+	     nsb,top,inputrec,nrnb,nodetime,realtime,inputrec->nsteps,
 	     EI_DYNAMICS(inputrec->eI));
   
   /* Does what it says */  
