@@ -826,7 +826,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 		bool bWriteStat)
 {
   int    i,j;
-  t_nrnb *nrnb_all,ntot;
+  t_nrnb *nrnb_all=NULL,ntot;
   real   runtime;
 #ifdef GMX_MPI
   int    sender;
@@ -851,7 +851,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       ntot.n[i]=0;
     for(i=0; (i<cr->nnodes); i++)
       for(j=0; (j<eNRNB); j++)
-	ntot.n[j]+=nrnb_all[i].n[j];
+	ntot.n[j] += nrnb_all[i].n[j];
   }
   runtime=0;
   if (bWriteStat) {
@@ -861,7 +861,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       print_perf(stderr,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
     }
     else
-      print_nrnb(fplog,&(nrnb[cr->nodeid]));
+      print_nrnb(fplog,nrnb);
   }
 
   if (MASTER(cr)) {
