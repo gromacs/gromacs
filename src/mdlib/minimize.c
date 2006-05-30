@@ -188,7 +188,7 @@ static real f_norm(t_commrec *cr,
 } 
 
 void init_em(FILE *log,const char *title,t_inputrec *inputrec,
-	     real *lambda,t_nrnb *mynrnb,rvec mu_tot,
+	     real *lambda,t_nrnb *nrnb,rvec mu_tot,
 	     matrix box,
 	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
 	     t_commrec *cr,t_vcm **vcm,int *start,int *end)
@@ -201,7 +201,7 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
   else 
     *lambda = 0.0;
 
-  init_nrnb(mynrnb);
+  init_nrnb(nrnb);
     
   clear_rvec(mu_tot);
   calc_shifts(box,fr->shift_vec);
@@ -218,7 +218,7 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
 
 static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec, 
 			    t_topology *top,t_groups *grps,t_nsborder *nsb, 
-			    t_nrnb nrnb[], t_nrnb *mynrnb,
+			    t_nrnb *nrnb,
 			    bool bVsites,t_comm_vsites *vsitecomm,
 			    t_fcdata *fcd,t_commrec *cr,
 			    t_graph *graph,t_mdatoms *mdatoms,
@@ -233,7 +233,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
   bNS = (inputrec->nstlist > 0);
 
   if (bVsites)
-    construct_vsites(log,x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+    construct_vsites(log,x,nrnb,1,NULL,&top->idef,
 		      graph,cr,fr->ePBC,box,vsitecomm);
       
   /* Calc force & energy on new trial position  */
@@ -241,13 +241,13 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
    * We do not unshift, so molecules are always whole in congrad.c
    */
   do_force(log,cr,inputrec,nsb,
-	   count,&(nrnb[cr->nodeid]),top,grps,box,x,f,
+	   count,nrnb,top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
      
   /* Spread the force on vsite particle to the other particles... */
   if(bVsites) 
-    spread_vsite_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,
+    spread_vsite_f(log,x,f,nrnb,&top->idef,
 		   fr,graph,box,vsitecomm,cr); 
       
   /* Sum the potential energy terms from group contributions */
@@ -261,7 +261,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
   /* Communicate stuff when parallel */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,mynrnb,nrnb,vcm,&terminate);
+		inputrec,grps,vcm,&terminate);
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
   return ener[F_EPOT];
@@ -272,7 +272,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_inputrec *inputrec,t_topology *top,
 	     t_groups *grps,t_nsborder *nsb,
 	     t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-	     real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+	     real ener[],t_fcdata *fcd,t_nrnb *nrnb,
 	     bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 	     t_commrec *cr,t_graph *graph,
 	     t_forcerec *fr)
@@ -287,7 +287,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   real   pnorm;
   t_vcm      *vcm;
   t_mdebin   *mdebin;
-  t_nrnb mynrnb;
   bool   bNS=TRUE,converged,foundlower;
   rvec   mu_tot;
   time_t start_t;
@@ -301,7 +300,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   step=0;
 
-  init_em(log,CG,inputrec,&lambda,&mynrnb,mu_tot,state->box,
+  init_em(log,CG,inputrec,&lambda,nrnb,mu_tot,state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
   
   /* Print to log file */
@@ -342,14 +341,14 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   sp_header(log,CG,inputrec->em_tol,number_steps);
 
   if (bVsites)
-    construct_vsites(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+    construct_vsites(log,state->x,nrnb,1,NULL,&top->idef,
 		      graph,cr,fr->ePBC,state->box,vsitecomm);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,inputrec,nsb,0,&(nrnb[cr->nodeid]),
+  do_force(log,cr,inputrec,nsb,0,nrnb,
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -357,7 +356,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   /* Spread the force on vsite particle to the other particles... */
   if (bVsites)
-    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
+    spread_vsite_f(log,state->x,f,nrnb,&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
 
   /* Calculate long range corrections to pressure and energy */
@@ -375,7 +374,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
+		inputrec,grps,vcm,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -490,7 +489,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     do_f = do_per_step(step,inputrec->nstfout);
     
     fp_trn = write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),nsb,step,(real) step,
-			lambda,nrnb,nsb->natoms,
+			lambda,nsb->natoms,
 			do_x ? state->x  : NULL,NULL,  /* we never have velocities */
 			do_f ? f  : NULL,state->box);
     
@@ -524,7 +523,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     
     neval++;
     /* Calculate energy for the trial step */
-    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,&mynrnb,
+    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,xc,fc,buf,ener,step);
     
@@ -603,7 +602,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	
 	neval++;
 	/* Calculate energy for the trial step */
-	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,&mynrnb,
+	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,xb,fb,buf,ener,step);
 	
@@ -813,7 +812,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Only write the trajectory if we didn't do it last step */
   fp_trn = write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
 		      nsb,step,(real)step,
-		      lambda,nrnb,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
+		      lambda,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
@@ -846,7 +845,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		t_inputrec *inputrec,t_topology *top,
 		t_groups *grps,t_nsborder *nsb, t_state *state,
 		rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		real ener[],t_fcdata *fcd,t_nrnb *nrnb,
 		bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		t_commrec *cr,t_graph *graph,
 		t_forcerec *fr)
@@ -862,7 +861,6 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   real   dgdx,dgdg,sq,yr,beta;
   t_vcm      *vcm;
   t_mdebin   *mdebin;
-  t_nrnb mynrnb;
   bool   bNS=TRUE,converged,first;
   rvec   mu_tot;
   real   lambda,fnorm,fmax;
@@ -915,7 +913,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   step = 0;
   neval = 0; 
 
-  init_em(log,LBFGS,inputrec,&lambda,&mynrnb,mu_tot,state->box,
+  init_em(log,LBFGS,inputrec,&lambda,nrnb,mu_tot,state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
     
   /* Print to log file */
@@ -952,7 +950,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   sp_header(log,LBFGS,inputrec->em_tol,number_steps);
   
   if (bVsites)
-    construct_vsites(log,state->x,&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+    construct_vsites(log,state->x,nrnb,1,NULL,&top->idef,
 		      graph,cr,fr->ePBC,state->box,vsitecomm);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
@@ -960,7 +958,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
    * We do not unshift, so molecules are always whole in congrad.c
    */
   neval++;
-  do_force(log,cr,inputrec,nsb,0,&(nrnb[cr->nodeid]),
+  do_force(log,cr,inputrec,nsb,0,nrnb,
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -968,7 +966,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   
   /* Spread the force on vsite particle to the other particles... */
   if (bVsites)
-    spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
+    spread_vsite_f(log,state->x,f,nrnb,&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
 
   /* Calculate long range corrections to pressure and energy */
@@ -986,7 +984,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
+		inputrec,grps,vcm,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -1054,7 +1052,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     do_f = do_per_step(step,inputrec->nstfout);
     
     write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),nsb,step,(real) step,
-	       lambda,nrnb,nsb->natoms,
+	       lambda,nsb->natoms,
 	       do_x ? state->x  : NULL,NULL,  /* we never have velocities */
 	       do_f ? f  : NULL,state->box);
     
@@ -1139,7 +1137,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     
     neval++;
     /* Calculate energy for the trial step */
-    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,&mynrnb,
+    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
     
@@ -1212,7 +1210,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	
 	neval++;
 	/* Calculate energy for the trial step */
-	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,&mynrnb,
+	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
 	
@@ -1448,7 +1446,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   /* Only write the trajectory if we didn't do it last step */
   write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
 	     nsb,step,(real)step,
-	     lambda,nrnb,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
+	     lambda,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
@@ -1479,7 +1477,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		    t_inputrec *inputrec,t_topology *top, 
 		    t_groups *grps,t_nsborder *nsb, 
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
-		    real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
+		    real ener[],t_fcdata *fcd,t_nrnb *nrnb, 
 		    bool bVerbose,bool bVsites, t_comm_vsites *vsitecomm,
 		    t_commrec *cr,t_graph *graph,
 		    t_forcerec *fr) 
@@ -1493,7 +1491,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   t_vcm      *vcm;
   int        fp_ene; 
   t_mdebin   *mdebin; 
-  t_nrnb     mynrnb; 
   bool   bDone,bAbort; 
   time_t start_t; 
   tensor force_vir,shake_vir,pres,vir; 
@@ -1508,7 +1505,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   real   terminate=0;
 #define  TRY (1-Min)
 
-  init_em(log,SD,inputrec,&lambda,&mynrnb,mu_tot,state->box,
+  init_em(log,SD,inputrec,&lambda,nrnb,mu_tot,state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
    
   /* Print to log file  */
@@ -1596,7 +1593,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     }
     
     if (bVsites)
-      construct_vsites(log,pos[TRY],&(nrnb[cr->nodeid]),1,NULL,&top->idef,
+      construct_vsites(log,pos[TRY],nrnb,1,NULL,&top->idef,
 			graph,cr,fr->ePBC,state->box,vsitecomm);
     
     /* Calc force & energy on new positions
@@ -1604,7 +1601,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
      * We do not unshift, so molecules are always whole in steep.c
      */
     do_force(log,cr,inputrec,nsb,
- 	     count,&(nrnb[cr->nodeid]),top,grps,state->box,pos[TRY],
+ 	     count,nrnb,top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
  	     lambda,graph,
@@ -1613,7 +1610,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Spread the force on vsite particle to the other particles... */
     if (bVsites) 
-      spread_vsite_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
+      spread_vsite_f(log,pos[TRY],force[TRY],nrnb,
 		     &top->idef,fr,graph,state->box,vsitecomm,cr);
 
     /* Calculate long range corrections to pressure and energy */
@@ -1654,7 +1651,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
- 		  inputrec,grps,&mynrnb,nrnb,vcm,&terminate); 
+ 		  inputrec,grps,vcm,&terminate); 
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,
@@ -1701,7 +1698,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	xx=pos[TRY];   
 	write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 		   nsb,count,(real) count, 
-		   lambda,nrnb,nsb->natoms,xx,NULL,ff,state->box); 
+		   lambda,nsb->natoms,xx,NULL,ff,state->box); 
       } else 
 	xx=NULL; 
       
@@ -1743,7 +1740,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   ff=force[Min]; 
   write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
 	     nsb,count,(real) count, 
-	     lambda,nrnb,nsb->natoms,xx,NULL,ff,state->box); 
+	     lambda,nsb->natoms,xx,NULL,ff,state->box); 
 
 
   fnorm=f_norm(cr,&(inputrec->opts),mdatoms,start,end,ff);
@@ -1778,7 +1775,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
              t_topology *top,real ener[],t_fcdata *fcd,
              t_state *state,rvec vold[],rvec vt[],rvec f[],
              rvec buf[],t_mdatoms *mdatoms,
-             t_nsborder *nsb,t_nrnb nrnb[],
+             t_nsborder *nsb,t_nrnb *nrnb,
              t_graph *graph,t_edsamyn *edyn,
              t_forcerec *fr)
 {
@@ -1788,7 +1785,6 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     real       t,lambda,t0,lam0;
     bool       bNS;
     tensor     force_vir;
-    t_nrnb     mynrnb;
     int        nfmax;
     rvec       mu_tot;
     rvec       *fneg,*fpos;
@@ -1858,7 +1854,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     t            = t0;
     lambda       = lam0;
     
-    init_nrnb(&mynrnb);
+    init_nrnb(nrnb);
     
     fp_ene=-1;
     mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr);
@@ -1877,7 +1873,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     clear_mat(force_vir);
     
     bNS=TRUE;
-    do_force(log,cr,inputrec,nsb,0,&mynrnb,top,grps,
+    do_force(log,cr,inputrec,nsb,0,nrnb,top,grps,
              state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
              lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
     bNS=FALSE;
@@ -1924,7 +1920,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             clear_mat(force_vir);
             
             do_force(log,cr,inputrec,nsb,2*(step*DIM+idum),
-                     &mynrnb,top,grps,
+                     nrnb,top,grps,
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -1939,7 +1935,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             clear_mat(force_vir);
             
             do_force(log,cr,inputrec,nsb,2*(step*DIM+idum)+1,
-                     &mynrnb,top,grps,
+                     nrnb,top,grps,
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -1998,7 +1994,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * be parallelized. Be sure to copy the correct code from
      * e.g. md.c or steep.c if you make nm parallel!
      */
-    construct_vsites(log,state->x,&mynrnb,inputrec->delta_t,state->v,&top->idef,
+    construct_vsites(log,state->x,nrnb,inputrec->delta_t,state->v,&top->idef,
                      graph,cr,fr->ePBC,state->box,NULL);
     
     fprintf(stderr,"\n\nWriting Hessian...\n");
@@ -2013,14 +2009,11 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	      t_inputrec *inputrec,t_topology *top, 
 	      t_groups *grps,t_nsborder *nsb, 
 	      t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
-	      real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
+	      real ener[],t_fcdata *fcd,t_nrnb *nrnb, 
 	      bool bVerbose,
 	      t_commrec *cr,t_graph *graph,
 	      t_forcerec *fr)
 {
-  /* This should be switched by the integrator */
-  bool bCavity = TRUE;
-
   const char *TPI="Test Particle Insertion"; 
   real   lambda,t,temp,beta,drmax;
   double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all;
@@ -2039,11 +2032,17 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   FILE   *fp_tpi=NULL;
   char   *dump_pdb,**leg,str[STRLEN],str2[STRLEN];
   double dump_ener;
+  bool   bCavity;
+  
+
+  /* This should be switched by the integrator */
+  bCavity = (getenv("GMX_TPI_CAVITY") != NULL);
+
 
   if (PAR(cr))
     gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
 
-  init_em(fplog,TPI,inputrec,&lambda,&(nrnb[cr->nodeid]),mu_tot,
+  init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
 	  state->box,
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
      temp = inputrec->opts.ref_t[0];
@@ -2240,7 +2239,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	 * We do not unshift, so molecules are always whole in tpi.c
 	 */
 	do_force(fplog,cr,inputrec,nsb,
-		 step,&(nrnb[cr->nodeid]),top,grps,rerun_fr.box,state->x,f,
+		 step,nrnb,top,grps,rerun_fr.box,state->x,f,
 		 buf,mdatoms,ener,fcd,bVerbose, 
 		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL,NULL); 

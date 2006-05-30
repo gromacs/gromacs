@@ -18,6 +18,11 @@ extern int glatnr(gmx_domdec_t *dd,int i);
  * When dd=NULL returns i+1.
  */
 
+extern void gmx_ddindex2xyz(ivec nc,int ind,ivec xyz);
+/* Returns the DD cell coordinates xyz for DD index ind,
+ * nc should contain the number of cells.
+ */
+
 extern int dd_nicg(gmx_domdec_t *dd);
 
 extern int dd_ncg_tot(gmx_domdec_t *dd);
@@ -28,19 +33,17 @@ extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 extern void dd_make_reverse_top(gmx_domdec_t *dd,
 				int natoms,t_idef *idef,bool bDynamics);
 
-extern bool dd_node2pme_cart_coords(t_commrec *cr,int nodeid,int *coords);
-/* Returns TRUE if nodeid is a PP node.
- * Set coords to the Cartesian coordinates of the PME-only node
- * that the PP node nodeid communicates with.
- */
+extern int gmx_ddindex2pmeslab(t_commrec *cr,int ddindex);
+/* Returns the pme slab for DD index ddindex */
 
-extern int dd_node2pmenode(t_commrec *cr,int nodeid);
-/* Returns the nodeid in cr->mpi_comm_mysim of the PME-only node
- * that nodeid communicates with.
- * Returns -1 if nodeid is a PME-only node.
- */
+extern int gmx_ddindex2nodeid(t_commrec *cr,int ddindex);
+/* Returns the nodeid in cr->mpi_comm_mysim for ddindex */
 
-extern void make_dd_communicators(FILE *fplog,t_commrec *cr);
+extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
+/* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
+
+extern void make_dd_communicators(FILE *fplog,t_commrec *cr,
+				  bool bCartesian,bool bInterleave);
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       t_commrec *cr,ivec nc);

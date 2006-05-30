@@ -101,7 +101,7 @@ static void send_inputrec(t_commrec *cr,
   
   if (MASTER(cr) && cr->npmenodes > 0) {
     for(dest=0; dest<cr->nnodes; dest++) {
-      if (dd_node2pmenode(cr,dest) == -1) {
+      if (gmx_pmeonlynode(cr,dest)) {
 #ifdef GMX_MPI
 	/* dest is a PME only node */
 	/* Send the inputrec to a PME node */
@@ -141,7 +141,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       *buf,*f,*vold,*vt;
   real       tmpr1,tmpr2;
   real       *ener;
-  t_nrnb     *nrnb;
+  t_nrnb     nrnb;
   t_nsborder *nsb;
   t_topology *top;
   t_groups   *grps;
@@ -160,13 +160,13 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz);
     
-    make_dd_communicators(stdlog,cr);
+    make_dd_communicators(stdlog,cr,
+			  Flags & MD_CARTESIAN,Flags & MD_INTERLEAVE);
   } else {
     cr->duty = (DUTY_PP | DUTY_PME);
   }
 
   snew(inputrec,1);
-  snew(nrnb,cr->nnodes);
   if (cr->duty & DUTY_PP) {
     /* Initiate everything (snew sets to zero!) */
     snew(ener,F_NRE);
@@ -338,7 +338,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		    bVerbose,bCompact,
 		    ddxyz,bVsites,bParVsites ? &vsitecomm : NULL,
 		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
-		    mdatoms,nsb,nrnb,graph,edyn,fr,
+		    mdatoms,nsb,&nrnb,graph,edyn,fr,
 		    repl_ex_nst,repl_ex_seed,
 		    Flags);
     } 
@@ -347,7 +347,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     {
       /* do PME: */
 
-      gmx_pmeonly(stdlog,*pmedata,cr,&nrnb[cr->nodeid],
+      gmx_pmeonly(stdlog,*pmedata,cr,&nrnb,
 		  ewaldcoeff,FALSE);
     }
 #endif    
@@ -355,21 +355,21 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   case eiCG:
     start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		  state,f,buf,mdatoms,ener,fcd,
-		  nrnb,bVerbose,bVsites,
+		  &nrnb,bVerbose,bVsites,
 		  bParVsites ? &vsitecomm : NULL,
 		  cr,graph,fr);
     break;
   case eiLBFGS:
     start_t=do_lbfgs(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		     state,f,buf,mdatoms,ener,fcd,
-		     nrnb,bVerbose,bVsites,
+		     &nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
 		     cr,graph,fr);
     break;
   case eiSteep:
     start_t=do_steep(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		     state,f,buf,mdatoms,ener,fcd,
-		     nrnb,bVerbose,bVsites,
+		     &nrnb,bVerbose,bVsites,
 		     bParVsites ? &vsitecomm : NULL,
 		     cr,graph,fr);
     break;
@@ -377,12 +377,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     start_t=do_nm(stdlog,cr,nfile,fnm,
 		  bVerbose,bCompact,nstepout,inputrec,grps,
 		  top,ener,fcd,state,vold,vt,f,buf,
-		  mdatoms,nsb,nrnb,graph,edyn,fr);
+		  mdatoms,nsb,&nrnb,graph,edyn,fr);
     break;
   case eiTPI:
     start_t=do_tpi(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		   state,f,buf,mdatoms,ener,fcd,
-		   nrnb,bVerbose,
+		   &nrnb,bVerbose,
 		   cr,graph,fr);
     break;
   default:
@@ -402,7 +402,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
    * if rerunMD, don't write last frame again 
    */
   finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
-	     nsb,top,inputrec,nrnb,nodetime,realtime,inputrec->nsteps,
+	     nsb,top,inputrec,&nrnb,nodetime,realtime,inputrec->nsteps,
 	     EI_DYNAMICS(inputrec->eI));
   
   /* Does what it says */  
@@ -416,7 +416,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_topology *top_global,
 	     real ener[],t_fcdata *fcd,
 	     t_state *state_global,rvec vold[],rvec vt[],rvec f[],
-	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb nrnb[],
+	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb *nrnb,
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     unsigned long Flags)
@@ -430,7 +430,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
 	     bFullPBC,bForceUpdate=FALSE;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
-  t_nrnb     mynrnb;
   char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m,status;
   rvec       mu_tot;
@@ -483,7 +482,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Initial values */
   init_md(cr,inputrec,&t,&t0,&state_global->lambda,&lam0,
-	  &mynrnb,top_global,
+	  nrnb,top_global,
 	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
@@ -569,7 +568,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   if (!inputrec->bUncStart && !bRerunMD) {
     do_shakefirst(log,ener,inputrec,nsb,mdatoms,state,vold,buf,f,
-		  graph,cr,&mynrnb,grps,fr,top,edyn,&pulldata);
+		  graph,cr,nrnb,grps,fr,top,edyn,&pulldata);
     if (DOMAINDECOMP(cr))
       dd_move_x(cr->dd,state->x,buf);
   }
@@ -578,11 +577,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Compute initial EKin for all.. */
   if (grps->cosacc.cos_accel == 0)
     calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(inputrec->opts),
-		 mdatoms,grps,&mynrnb,state->lambda);
+		 mdatoms,grps,nrnb,state->lambda);
   else
     calc_ke_part_visc(START(nsb),HOMENR(nsb),
 		      state->box,state->x,state->v,&(inputrec->opts),
-		      mdatoms,grps,&mynrnb,state->lambda);
+		      mdatoms,grps,nrnb,state->lambda);
   debug_gmx();
 
  if (PAR(cr)) 
@@ -590,7 +589,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     GMX_MPE_LOG(ev_global_stat_start);
        
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
+		inputrec,grps,vcm,&terminate);
 
     GMX_MPE_LOG(ev_global_stat_finish);
   }
@@ -756,7 +755,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  mk_mshift(log,graph,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
-      construct_vsites(log,state->x,&mynrnb,inputrec->delta_t,state->v,
+      construct_vsites(log,state->x,nrnb,inputrec->delta_t,state->v,
 			&top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
       
       if (graph)
@@ -793,7 +792,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,bVerbose,bFFscan ? step+1 : step,
 			 inputrec,bNS,bStopCM,top,ener,fcd,
-			 state,vold,vt,f,buf,mdatoms,nsb,&mynrnb,graph,
+			 state,vold,vt,f,buf,mdatoms,nsb,nrnb,graph,
 			 grps,
 			 nshell,shells,nflexcon,fr,traj,t,mu_tot,
 			 nsb->natoms,&bConverged,bVsites,vsitecomm,
@@ -808,7 +807,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(log,cr,inputrec,nsb,step,&mynrnb,top,grps,
+      do_force(log,cr,inputrec,nsb,step,nrnb,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
@@ -835,14 +834,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * for RerunMD t is read from input trajectory
      */
     if (bVsites) 
-      spread_vsite_f(log,state->x,f,&mynrnb,&top->idef,
+      spread_vsite_f(log,state->x,f,nrnb,&top->idef,
 		     fr,graph,state->box,vsitecomm,cr);
 
     GMX_MPE_LOG(ev_virial_start);
     /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
     calc_virial(log,START(nsb),HOMENR(nsb),state->x,f,
-		force_vir,fr->vir_el_recip,graph,state->box,&mynrnb,fr);
+		force_vir,fr->vir_el_recip,graph,state->box,nrnb,fr);
     GMX_MPE_LOG(ev_virial_finish);
 
     /* Spread the LR force on virtual sites to the other particles... 
@@ -850,7 +849,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * if the constructing atoms aren't local.
      */
     if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+      spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
 		     fr,graph,state->box,vsitecomm,cr);
 
     GMX_MPE_LOG(ev_sum_lrforces_start);
@@ -878,7 +877,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     }
     fp_trn = write_traj(log,cr,traj,nsb,step,t,state->lambda,
-			nrnb,nsb->natoms,xx,vv,ff,state->box);
+			nsb->natoms,xx,vv,ff,state->box);
     debug_gmx();
   
     /* don't write xtc and last structure for rerunMD */
@@ -934,7 +933,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (!bRerunMD || rerun_fr.bV || bForceUpdate)
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
 	     inputrec,mdatoms,state,graph,f,vold,
-	     top,grps,shake_vir,cr,&mynrnb,edyn,&pulldata,bNEMD,
+	     top,grps,shake_vir,cr,nrnb,edyn,&pulldata,bNEMD,
 	     TRUE,bFirstStep,NULL,pres);
     else {
       /* Need to unshift here */
@@ -964,11 +963,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     debug_gmx();
     if (grps->cosacc.cos_accel == 0)
       calc_ke_part(START(nsb),HOMENR(nsb),state->v,&(inputrec->opts),
-		   mdatoms,grps,&mynrnb,state->lambda);
+		   mdatoms,grps,nrnb,state->lambda);
     else
       calc_ke_part_visc(START(nsb),HOMENR(nsb),
 			state->box,state->x,state->v,&(inputrec->opts),
-			mdatoms,grps,&mynrnb,state->lambda);
+			mdatoms,grps,nrnb,state->lambda);
 
     /* since we use the new coordinates in calc_ke_part_visc, we should use
      * the new box too. Still, won't this be offset by one timestep in the
@@ -1004,7 +1003,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        */
       GMX_MPE_LOG(ev_global_stat_start);
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		  inputrec,grps,&mynrnb,nrnb,vcm,&terminate);
+		  inputrec,grps,vcm,&terminate);
       GMX_MPE_LOG(ev_global_stat_finish);
 
       /* Correct for double counting energies, should be moved to 
@@ -1016,8 +1015,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  grps->estat.ee[egLJLR][i]   /= (cr->nnodes-cr->npmenodes);
 	}
     }
-    else
-      cp_nrnb(&(nrnb[0]),&mynrnb);
       
     /* This is just for testing. Nothing is actually done to Ekin
      * since that would require extra communication.
@@ -1050,7 +1047,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       check_cm_grp(log,vcm);
       do_stopcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->cVCM,
 		    state->x,state->v,vcm);
-      inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
+      inc_nrnb(nrnb,eNR_STOPCM,HOMENR(nsb));
       /*
       calc_vcm_grp(log,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
       check_cm_grp(log,vcm);

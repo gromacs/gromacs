@@ -56,12 +56,14 @@
 #include "vsite.h"
 #include "pull.h"
 
-#define MD_GLAS      (1<<1)
-#define MD_POLARISE  (1<<2)
-#define MD_IONIZE    (1<<3)
-#define MD_RERUN     (1<<4)
-#define MD_FFSCAN    (1<<6)
-#define MD_SEPDVDL   (1<<7)
+#define MD_GLAS        (1<<1)
+#define MD_POLARISE    (1<<2)
+#define MD_IONIZE      (1<<3)
+#define MD_RERUN       (1<<4)
+#define MD_FFSCAN      (1<<6)
+#define MD_SEPDVDL     (1<<7)
+#define MD_CARTESIAN   (1<<8)
+#define MD_INTERLEAVE  (1<<9)
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,
@@ -73,7 +75,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
-		    t_nsborder *nsb,t_nrnb nrnb[],
+		    t_nsborder *nsb,t_nrnb *nrnb,
 		    t_graph *graph,t_edsamyn *edyn,
 		    t_forcerec *fr,
 		    int repl_ex_nst,int repl_ex_seed,
@@ -84,7 +86,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_inputrec *inputrec,t_topology *top,
 		       t_groups *grps,t_nsborder *nsb,
 		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		       real ener[],t_fcdata *fcd,t_nrnb *nrnb,
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,
 		       t_graph *graph,t_forcerec *fr);
@@ -94,7 +96,7 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_inputrec *inputrec,t_topology *top,
 		    t_groups *grps,t_nsborder *nsb,
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		    real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		    real ener[],t_fcdata *fcd,t_nrnb *nrnb,
 		    bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		    t_commrec *cr,
 		    t_graph *graph,t_forcerec *fr);
@@ -104,7 +106,7 @@ extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		       t_inputrec *inputrec,t_topology *top,
 		       t_groups *grps,t_nsborder *nsb, t_state *state,
 		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       real ener[],t_fcdata *fcd,t_nrnb nrnb[],
+		       real ener[],t_fcdata *fcd,t_nrnb *nrnb,
 		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		       t_commrec *cr,
 		       t_graph *graph,t_forcerec *fr);
@@ -117,7 +119,7 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
-		    t_nsborder *nsb,t_nrnb nrnb[],
+		    t_nsborder *nsb,t_nrnb *nrnb,
 		    t_graph *graph,t_edsamyn *edyn,
 		    t_forcerec *fr);
 /* Do normal mode analysis */
@@ -126,7 +128,7 @@ extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[],
 		     t_inputrec *inputrec,t_topology *top, 
 		     t_groups *grps,t_nsborder *nsb, 
 		     t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
-		     real ener[],t_fcdata *fcd,t_nrnb nrnb[], 
+		     real ener[],t_fcdata *fcd,t_nrnb *nrnb, 
 		     bool bVerbose,
 		     t_commrec *cr,t_graph *graph,
 		     t_forcerec *fr);
@@ -143,12 +145,11 @@ extern void global_stat(FILE *log,
 			t_commrec *cr,real ener[],
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,t_groups *grps,
-			t_nrnb *mynrnb,t_nrnb nrnb[],
 			t_vcm *vcm,real *terminate);
-/* Communicate statistics around the ring */
+/* Communicate statistics over cr->mpi_comm_mysim */
 
 extern int write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,
-		      int step,real t,real lambda,t_nrnb nr_nb[],
+		      int step,real t,real lambda,
 		      int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box);
 /* Routine to output statusfiles during a run, as specified in
  * in inputrec->ir. If any of the pointers xx,vv,ff or ener is not NULL
@@ -295,7 +296,7 @@ extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
 extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
-		    t_nrnb *mynrnb,t_topology *top,
+		    t_nrnb *nrnb,t_topology *top,
 		    int nfile,t_filenm fnm[],char **traj,
 		    char **xtc_traj,int *fp_ene,
 		    FILE **fp_dgdl,FILE **fp_field,
@@ -306,7 +307,7 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 /* Routine in sim_util.c */
 
 extern void init_em(FILE *log,const char *title,t_inputrec *inputrec,
-		    real *lambda,t_nrnb *mynrnb,rvec mu_tot,
+		    real *lambda,t_nrnb *nrnb,rvec mu_tot,
 		    matrix box,
 		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,
 		    t_nsborder *nsb,

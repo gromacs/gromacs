@@ -51,7 +51,6 @@
 #include "mvdata.h"
 #include "main.h"
 #include "force.h"
-#include "nrnb.h"
 #include "vcm.h"
 #include "smalloc.h"
 #include "futil.h"
@@ -67,7 +66,6 @@ void global_stat(FILE *log,
 		 t_commrec *cr,real ener[],
 		 tensor fvir,tensor svir,rvec mu_tot,
 		 t_inputrec *inputrec,t_groups *grps,
-		 t_nrnb *mynrnb,t_nrnb nrnb[],
 		 t_vcm *vcm,real *terminate)
 {
   static t_bin *rb=NULL; 
@@ -86,11 +84,6 @@ void global_stat(FILE *log,
   else
     reset_bin(rb);
 
-  /* Reset nrnb stuff */
-  for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
-    init_nrnb(&(nrnb[j]));
-  cp_nrnb(&(nrnb[cr->nodeid]),mynrnb);
-  
   /* This routine copies all the data to be summed to one big buffer
    * using the t_bin struct. 
    */
@@ -105,9 +98,6 @@ void global_stat(FILE *log,
     imu = add_binr(log,rb,DIM,mu_tot);
     where();
   }
-  for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
-    in[j] = add_bind(log,rb,eNRNB,nrnb[j].n);
-  where();
   for(j=0; (j<inputrec->opts.ngtc); j++) 
     itc[j]=add_binr(log,rb,DIM*DIM,grps->tcstat[j].ekinh[0]);
   where();
@@ -147,8 +137,6 @@ void global_stat(FILE *log,
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
   if (!NEED_MUTOT(*inputrec))
     extract_binr(rb,imu,DIM,mu_tot);
-  for(j=0; (j<(cr->nnodes-cr->npmenodes)); j++)
-    extract_bind(rb,in[j],eNRNB,nrnb[j].n);
   for(j=0; (j<inputrec->opts.ngtc); j++) 
     extract_binr(rb,itc[j],DIM*DIM,grps->tcstat[j].ekinh[0]);
   extract_binr(rb,idedl,1,&(grps->dekindl));
@@ -203,7 +191,7 @@ static void moveit(t_commrec *cr,
 
 int write_traj(FILE *log,t_commrec *cr,
 	       char *traj,t_nsborder *nsb,
-	       int step,real t,real lambda,t_nrnb nrnb[],
+	       int step,real t,real lambda,
 	       int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box)
 {
   static int fp=-1;

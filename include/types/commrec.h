@@ -130,6 +130,7 @@ typedef struct {
   bool bCartesian;
   ivec ntot;
   int  pmedim;
+  int  *pmenodes;
 
   /* The DD particle-particle nodes only */
   int  pme_nodeid;

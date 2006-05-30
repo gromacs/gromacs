@@ -826,7 +826,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 		bool bWriteStat)
 {
   int    i,j;
-  t_nrnb ntot;
+  t_nrnb *nrnb_all,ntot;
   real   runtime;
 #ifdef GMX_MPI
   int    sender;
@@ -834,55 +834,24 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   MPI_Status status;
 #endif
 
-#ifdef GMX_MPI
-  /* In case of PME/PP node splitting, the master node needs the 
-   * nrnb information from the PME nodes here */
-  if (cr->npmenodes)
-  {
-    if (!(cr->duty & DUTY_PP) && (cr->duty & DUTY_PME))
-    /* I am PME node and need to send my nrnb data to the master 
-     * We only need to send 4 nrnb data items: 
-     * eNR_SPREADQBSP,
-     * eNR_SOLVEPME,
-     * eNR_FFT,
-     * eNR_GATHERFBSP 
-     * since these are the only ones incremented on the PME nodes.
-     */ 
-    {
-      /* fill send buffer */
-      nrnb_buf[0] = nrnb[cr->nodeid].n[eNR_SPREADQBSP];
-      nrnb_buf[1] = nrnb[cr->nodeid].n[eNR_SOLVEPME  ];
-      nrnb_buf[2] = nrnb[cr->nodeid].n[eNR_FFT       ];
-      nrnb_buf[3] = nrnb[cr->nodeid].n[eNR_GATHERFBSP];
-
-      if (MPI_Send(&nrnb_buf, 4, MPI_DOUBLE, 0, 0, cr->mpi_comm_mysim) != 0)
-        gmx_comm("MPI_Send failed in finish_run\n");
-    }
+  if (cr->nnodes > 1) {
     if (MASTER(cr))
-    /* The master receives the data: */
-    {
-      for (sender=0; sender<cr->nnodes; sender++) {
-	if (dd_node2pmenode(cr,sender) == -1) {
-	  /* sender is a PME only node */
-	  if (MPI_Recv(&nrnb_buf, 4, MPI_DOUBLE, sender, 0,
-		     cr->mpi_comm_mysim, &status) != 0)
-	    gmx_comm("MPI_Recv failed in finish_run\n");
-	  nrnb[sender].n[eNR_SPREADQBSP] += nrnb_buf[0];
-	  nrnb[sender].n[eNR_SOLVEPME  ] += nrnb_buf[1];
-	  nrnb[sender].n[eNR_FFT       ] += nrnb_buf[2];
-	  nrnb[sender].n[eNR_GATHERFBSP] += nrnb_buf[3];
-	}
-      }
-    }
-  } /* End of PME/PP node splitting stuff */
-#endif
+      snew(nrnb_all,cr->nnodes);
+#ifdef GMX_MPI
+    MPI_Gather(nrnb,sizeof(t_nrnb),MPI_BYTE,
+	       nrnb_all,sizeof(t_nrnb),MPI_BYTE,
+	       0,cr->mpi_comm_mysim);
+#endif  
+  } else {
+    nrnb_all = nrnb;
+  }
     
   if (MASTER(cr)) {
     for(i=0; (i<eNRNB); i++)
       ntot.n[i]=0;
     for(i=0; (i<cr->nnodes); i++)
       for(j=0; (j<eNRNB); j++)
-	ntot.n[j]+=nrnb[i].n[j];
+	ntot.n[j]+=nrnb_all[i].n[j];
   }
   runtime=0;
   if (bWriteStat) {
@@ -898,13 +867,15 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   if (MASTER(cr)) {
     print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
     if ((cr->nnodes-cr->npmenodes) > 1)
-      pr_load(fplog,cr->nnodes-cr->npmenodes,nrnb);
+      pr_load(fplog,cr,nrnb_all);
+    if (cr->nnodes > 1)
+      sfree(nrnb_all);
   }
 }
 
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
-	     t_nrnb *mynrnb,t_topology *top,
+	     t_nrnb *nrnb,t_topology *top,
 	     int nfile,t_filenm fnm[],char **traj,
 	     char **xtc_traj, int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
@@ -934,7 +905,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   if(*bSimAnn) 
     update_annealing_target_temp(&(ir->opts),ir->init_t); 
 
-  init_nrnb(mynrnb);
+  init_nrnb(nrnb);
   
   if (nfile != -1) {
     /* Filenames */

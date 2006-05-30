@@ -72,7 +72,7 @@ static void index2xyz(ivec nc,int ind,ivec xyz)
  */
 #define dd_index(n,i) ((((i)[XX]*(n)[YY] + (i)[YY])*(n)[ZZ]) + (i)[ZZ])
 
-static void index2xyz(ivec nc,int ind,ivec xyz)
+void gmx_ddindex2xyz(ivec nc,int ind,ivec xyz)
 {
   xyz[XX] = ind / (nc[YY]*nc[ZZ]);
   xyz[YY] = (ind / nc[ZZ]) % nc[YY];
@@ -705,7 +705,7 @@ static int dd_redistribute_cg(FILE *fplog,
   /* Make a local (possibly) 3x3x3 communication grid */
   /* This could be done in setup_dd_grid */
   /* This should be corrected for triclinic pbc !!! */
-  index2xyz(dd->nc,dd->nodeid,vlocal);
+  gmx_ddindex2xyz(dd->nc,dd->nodeid,vlocal);
   nnbc = 0;
   for(z=ms0[ZZ]; z<=ms1[ZZ]; z++) {
     vdest[ZZ] = (vlocal[ZZ] + z + dd->nc[ZZ]) % dd->nc[ZZ];
@@ -1026,7 +1026,7 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   ivec *dd_c,dd_cp[DD_MAXICELL];
   gmx_domdec_ns_t *icell;
 
-  index2xyz(dd->nc,dd->nodeid,xyz);
+  gmx_ddindex2xyz(dd->nc,dd->nodeid,xyz);
 
   /* The partition order is z, y, x */
   dd->ndim = 0;
@@ -1096,7 +1096,7 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   }
 
   dd->ncell  = ncell;
-  index2xyz(dd->nc,dd->nodeid,h);
+  gmx_ddindex2xyz(dd->nc,dd->nodeid,h);
   for(i=0; i<ncell; i++) {
     for(d=0; d<DIM; d++) {
       s[d] = h[d] + dd_c[i][d];
@@ -1241,52 +1241,123 @@ void dd_make_reverse_top(gmx_domdec_t *dd,
     dd->constraints = init_domdec_constraints(natoms,idef,bDynamics);
 }
 
-bool dd_node2pme_cart_coords(t_commrec *cr,int nodeid,int *coords)
+static int *dd_pmenodes(t_commrec *cr)
 {
-  int pmedim,ntot,nc;
+  int *pmenodes;
+  int n,i,p0,p1;
 
-#ifdef GMX_MPI
-  MPI_Cart_coords(cr->mpi_comm_mysim,nodeid,DIM,coords);
-#endif  
+  snew(pmenodes,cr->npmenodes);
+  n = 0;
+  for(i=0; i<cr->dd->nnodes; i++) {
+    p0 = ( i   *cr->npmenodes + cr->npmenodes/2)/cr->dd->nnodes;
+    p1 = ((i+1)*cr->npmenodes + cr->npmenodes/2)/cr->dd->nnodes;
+    if (i+1 == cr->dd->nnodes || p1 > p0) {
+      if (debug)
+	fprintf(debug,"pmenode[%d] = %d\n",n,i+1+n);
+      pmenodes[n] = i + 1 + n;
+      n++;
+    }
+  }
 
-  pmedim = cr->dd->pmedim;
-  ntot   = cr->dd->ntot[pmedim];
-  nc     = cr->dd->nc[pmedim];
-
-  if (coords[pmedim] >= nc)
-    return FALSE;
-
-  coords[pmedim] = nc + (coords[pmedim]*(ntot - nc) + (ntot - nc)/2)/nc;
-
-  return TRUE;
+  return pmenodes;
 }
 
-int dd_node2pmenode(t_commrec *cr,int nodeid)
+static void dd_coords2pmecoords(gmx_domdec_t *dd,ivec coords,ivec coords_pme)
 {
-  int coords[DIM],pmenode;
+  int nc,ntot;
 
-  /* This assumes a uniform x domain decomposition grid cell size */
+  nc   = dd->nc[dd->pmedim];
+  ntot = dd->ntot[dd->pmedim];
+  copy_ivec(coords,coords_pme);
+  coords_pme[dd->pmedim] =
+    nc + (coords[dd->pmedim]*(ntot - nc) + (ntot - nc)/2)/nc;
+}
+
+int gmx_ddindex2pmeslab(t_commrec *cr,int ddindex)
+{
+  gmx_domdec_t *dd;
+  ivec coords,coords_pme,nc;
+  int  slab;
+
+  dd = cr->dd;
+  if (dd->bCartesian) {
+    gmx_ddindex2xyz(dd->nc,ddindex,coords);
+    dd_coords2pmecoords(dd,coords,coords_pme);
+    copy_ivec(dd->ntot,nc);
+    nc[dd->pmedim]         -= dd->nc[dd->pmedim];
+    coords_pme[dd->pmedim] -= dd->nc[dd->pmedim];
+
+    slab = (coords_pme[XX]*nc[YY] + coords_pme[YY])*nc[ZZ] + coords_pme[ZZ];
+  } else {
+    slab = (ddindex*cr->npmenodes + cr->npmenodes/2)/dd->nnodes;
+  }
+
+  return slab;
+}
+
+int gmx_ddindex2nodeid(t_commrec *cr,int ddindex)
+{
+  ivec coords;
+  int  nodeid;
+
   if (cr->dd->bCartesian) {
-    if (dd_node2pme_cart_coords(cr,nodeid,coords)) {
+    gmx_ddindex2xyz(cr->dd->nc,ddindex,coords);
 #ifdef GMX_MPI
-      MPI_Cart_rank(cr->mpi_comm_mysim,coords,&pmenode);
+    MPI_Cart_rank(cr->mpi_comm_mysim,coords,&nodeid);
 #endif
-    } else {
-      pmenode = -1;
+  } else {
+    nodeid = ddindex;
+    if (cr->dd->pmenodes)
+      nodeid += gmx_ddindex2pmeslab(cr,ddindex);
+  }
+  
+  return nodeid;
+}
+
+static int dd_node2pmenode(t_commrec *cr,int nodeid)
+{
+  gmx_domdec_t *dd;
+  ivec coords,coords_pme;
+  int  i;
+  int  pmenode;
+  
+  dd = cr->dd;
+
+  pmenode = -1;
+  /* This assumes a uniform x domain decomposition grid cell size */
+  if (dd->bCartesian) {
+#ifdef GMX_MPI
+    MPI_Cart_coords(cr->mpi_comm_mysim,nodeid,DIM,coords);
+    if (coords[dd->pmedim] < dd->nc[dd->pmedim]) {
+      /* This is a PP node */
+      dd_coords2pmecoords(cr->dd,coords,coords_pme);
+      MPI_Cart_rank(cr->mpi_comm_mysim,coords_pme,&pmenode);
     }
+#endif
   } else {
     /* This assumes DD cells with identical x coordinates
      * are numbered sequentially.
      */
-    if (nodeid < cr->dd->nnodes) {
-      pmenode = cr->dd->nnodes +
-	(nodeid*cr->npmenodes + cr->npmenodes/2)/cr->dd->nnodes;
+    if (dd->pmenodes == NULL) {
+      if (nodeid < dd->nnodes) {
+	pmenode = dd->nnodes +
+	  (nodeid*cr->npmenodes + cr->npmenodes/2)/dd->nnodes;
+      }
     } else {
-      pmenode = -1;
+      i = 0;
+      while (nodeid > dd->pmenodes[i])
+	i++;
+      if (nodeid < dd->pmenodes[i])
+	pmenode = dd->pmenodes[i];
     }
   }
 
   return pmenode;
+}
+
+bool gmx_pmeonlynode(t_commrec *cr,int nodeid)
+{
+  return (dd_node2pmenode(cr,nodeid) == -1);
 }
 
 static bool receive_vir_ener(t_commrec *cr)
@@ -1322,12 +1393,13 @@ static bool receive_vir_ener(t_commrec *cr)
   return bReceive;
 }
 
-void make_dd_communicators(FILE *fplog,t_commrec *cr)
+void make_dd_communicators(FILE *fplog,t_commrec *cr,
+			   bool bCartesian,bool bInterleave)
 {
   gmx_domdec_t *dd;
   bool bDiv[DIM];
   int  i;
-  ivec dims,periods,coords;
+  ivec periods,coords;
 #ifdef GMX_MPI
   MPI_Comm comm_cart;
 #endif
@@ -1335,11 +1407,9 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr)
   dd = cr->dd;
 
   copy_ivec(dd->nc,dd->ntot);
-
-  if (getenv("GMX_NO_CART_COMM")) {
-    dd->bCartesian = FALSE;
-  } else {
-    dd->bCartesian = TRUE;
+  
+  dd->bCartesian = bCartesian;
+  if (dd->bCartesian) {
     if (cr->npmenodes > 0) {
       for(i=1; i<DIM; i++)
 	bDiv[i] = ((cr->npmenodes*dd->nc[i]) % (dd->nnodes) == 0);
@@ -1400,18 +1470,23 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr)
   } else {
     fprintf(fplog,"Will not use a Cartesian communicator\n\n");
     
-    if (cr->nodeid < dd->nnodes)
-      cr->duty |= DUTY_PP;
-    if (cr->npmenodes == 0 || cr->nodeid >= dd->nnodes)
-      cr->duty |= DUTY_PME;
+    if (cr->npmenodes == 0) {
+      cr->duty |= (DUTY_PP | DUTY_PME);
 
-    if (cr->npmenodes > 0) {
+      cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+    } else {
+      if (bInterleave)
+	cr->dd->pmenodes = dd_pmenodes(cr);
+
+      if (dd_node2pmenode(cr,cr->nodeid) == -1)
+	cr->duty |= DUTY_PME;
+      else
+	cr->duty |= DUTY_PP;
+
       MPI_Comm_split(cr->mpi_comm_mysim,
 		     cr->duty,
 		     cr->nodeid,
 		     &cr->mpi_comm_mygroup);
-    } else {
-      cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
     }
   }
   
@@ -1472,7 +1547,7 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
   if (debug)
     fprintf(debug,"Setting up DD communication\n");
 
-  index2xyz(dd->nc,dd->nodeid,xyz);
+  gmx_ddindex2xyz(dd->nc,dd->nodeid,xyz);
   /* This should be changed for non-uniform grids */
   for(d=0; d<DIM; d++)
     corner[d] = xyz[d]*box[d][d]/dd->nc[d];

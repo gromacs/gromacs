@@ -183,6 +183,9 @@ int main(int argc,char *argv[])
 
   static rvec rddxyz={1,1,1};
 
+  static char *comm[] = 
+    { NULL, "pp_pme", "interleave", "cartesian", NULL };
+
   static t_pargs pa[] = {
     { "-dd",      FALSE, etRVEC,{&rddxyz},
       "Domain decomposition grid, 1 is particle dec." },
@@ -190,6 +193,8 @@ int main(int argc,char *argv[])
       "Number of threads to start on each node" },
     { "-npme",    FALSE, etINT, {&npme},
       "Number of nodes/threads to be used for the PME algorithm. If -1 determine automatically." },
+    { "-comm",  FALSE, etENUM, {comm}, 
+      "Communication setup" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -253,6 +258,10 @@ int main(int argc,char *argv[])
   Flags = Flags | (bSepDVDL  ? MD_SEPDVDL  : 0);
   Flags = Flags | (bIonize   ? MD_IONIZE   : 0);
   Flags = Flags | (bGlas     ? MD_GLAS     : 0);
+  if (comm[0][0] == 'c')
+    Flags |= MD_CARTESIAN;
+  if (comm[0][0] == 'i')
+    Flags |= MD_INTERLEAVE;
 
   ddxyz[XX] = (int)(rddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(rddxyz[YY] + 0.5);

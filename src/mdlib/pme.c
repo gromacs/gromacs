@@ -1163,21 +1163,7 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-static int cart_coords2slab(gmx_domdec_t *dd,int *coords)
-{
-  ivec nc;
-  int  pmecoords[DIM],i;
-
-  copy_ivec(dd->ntot,nc);
-  for(i=0; i<DIM; i++)
-    pmecoords[i] = coords[i];
-  nc[dd->pmedim] -= dd->nc[dd->pmedim];
-  pmecoords[dd->pmedim] -= dd->nc[dd->pmedim];
-  
-  return (pmecoords[XX]*nc[YY] + pmecoords[YY])*nc[ZZ] + pmecoords[ZZ];
-}
-
-static void get_my_ddnodes(FILE *logfile,t_commrec *cr,
+static void get_my_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
 			   int *nmy_ddnodes,int **my_ddnodes)
 {
   int i;
@@ -1185,9 +1171,9 @@ static void get_my_ddnodes(FILE *logfile,t_commrec *cr,
   snew(*my_ddnodes,(cr->dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
   
   *nmy_ddnodes = 0;
-  for(i=0; i<cr->nnodes; i++) {
-    if (dd_node2pmenode(cr,i) == cr->nodeid)
-      (*my_ddnodes)[(*nmy_ddnodes)++] = i;
+  for(i=0; i<cr->dd->nnodes; i++) {
+    if (gmx_ddindex2pmeslab(cr,i) == pmenodeid)
+      (*my_ddnodes)[(*nmy_ddnodes)++] = gmx_ddindex2nodeid(cr,i);
   }
 
   fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
@@ -1198,12 +1184,9 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
 					   gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
-  int  npme,dd_nx,shmax,i,dd_cx0,dd_cx1,slab,fw,bw;
+  int  shmax,i,slab,dd_cx0,dd_cx1,npme,fw,bw;
   ivec coords;
   bool bPPnode;
-
-  npme = pme->nnodes;
-  dd_nx = cr->dd->nc[XX];
 
   /* This code assumes a uniform DD cell size in x direction
    * and that particles are no further than one DD cell size
@@ -1211,37 +1194,24 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
    * and diffusion between neighbor list updates.
    */
   shmax = 1;
-  for(i=0; i<cr->nnodes; i++) {
-    if (cr->dd->bCartesian) {
-      bPPnode = dd_node2pme_cart_coords(cr,i,coords);
-      if (bPPnode)
-	slab = cart_coords2slab(cr->dd,coords);
-    } else {
-      bPPnode = (i < cr->dd->nnodes);
-      if (bPPnode)
-	slab = dd_node2pmenode(cr,i) - cr->dd->nnodes;
-    }
-    if (bPPnode) {
-      /* Initial (ns step) charge group center x in range 0 - dd_nx */
-      if (cr->dd->bCartesian) {
-	dd_cx0 = coords[XX];
-      } else {
-	dd_cx0 = (i*dd_nx)/cr->dd->nnodes;
-      }
-      dd_cx1 = dd_cx0 + 1;
-      /* Add one DD cell size */
-      dd_cx0--;
-      dd_cx1++;
-      /* Now we multiply with npme, so the x range is 0 - dd_nx*npme */
-      dd_cx0 *= npme;
-      dd_cx1 *= npme;
-      /* Check if we need to increase the maximum shift */
-      while (dd_cx1 > (slab + 1 + shmax)*dd_nx)
-	shmax++;
-      while (dd_cx0 < (slab - shmax)*dd_nx)
-	shmax++;
-    }
-  }    
+  for(i=0; i<cr->dd->nnodes; i++) {
+    gmx_ddindex2xyz(cr->dd->nc,i,coords);
+    slab = gmx_ddindex2pmeslab(cr,i);
+    /* Initial (ns step) charge group center x in range 0 - dd_nx */
+    dd_cx0 = coords[XX];
+    dd_cx1 = coords[XX] + 1;
+    /* Add one DD cell size */
+    dd_cx0--;
+    dd_cx1++;
+    /* Now we multiply with npme, so the x range is 0 - dd_nx*npme */
+    dd_cx0 *= npme;
+    dd_cx1 *= npme;
+    /* Check if we need to increase the maximum shift */
+    while (dd_cx1 > (slab + 1 + shmax)*cr->dd->nc[XX])
+      shmax++;
+    while (dd_cx0 < (slab - shmax)*cr->dd->nc[XX])
+      shmax++;
+}
 
   if (bFirst) {
     fprintf(log,"PME maximum node shift for coordinate communication: %d\n",
@@ -1255,6 +1225,7 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
    * occur on each node and we can therefore avoid nodes waiting
    * while other nodes are communicating.
    */
+  npme = pme->nnodes;
   pme->nnodes_comm = 0;
   for(i=1; i<=shmax; i++) {
     fw = (pme->nodeid + i) % npme;
@@ -1509,7 +1480,7 @@ void gmx_pme_receive_f(t_commrec *cr,
 }
 
 int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
-		t_commrec *cr,    t_nrnb *mynrnb,
+		t_commrec *cr,    t_nrnb *nrnb,
 		real ewaldcoeff,  bool bGatherOnly)
      
 {
@@ -1539,8 +1510,10 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
   snew(stat,3*nppnodes);
 
   /* Determine the DD nodes we need to talk with */
-  get_my_ddnodes(logfile,cr,&nmy_ddnodes,&my_ddnodes);
+  get_my_ddnodes(logfile,cr,pme->nodeid,&nmy_ddnodes,&my_ddnodes);
   snew(cnb,nmy_ddnodes);
+
+  init_nrnb(nrnb);
 
   do /****** this is a quasi-loop over time steps! */
   {  
@@ -1604,7 +1577,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
     cve.dvdlambda = 0;
     gmx_pme_do(logfile,pme,0,n,x_pp,f_pp,chargeA,chargeB,cnb[0].box,
-	       cr,mynrnb,cve.vir,ewaldcoeff,
+	       cr,nrnb,cve.vir,ewaldcoeff,
 	       &cve.energy,cnb[0].lambda,&cve.dvdlambda,
 	       bGatherOnly);
 
