@@ -1214,12 +1214,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (PAR(cr) && (cr->duty & DUTY_PP)) {
     double *ct,ctmax,ctsum;
     
-    snew(ct,(cr->nnodes-cr->npmenodes));
+    snew(ct,cr->nnodes);
     ct[cr->nodeid] = node_time();
-    gmx_sumd((cr->nnodes-cr->npmenodes),ct,cr);
+    gmx_sumd(cr->nnodes,ct,cr);
     ctmax = ct[0];
     ctsum = ct[0];
-    for(i=1; (i<cr->nodeid); i++) {
+    for(i=1; (i<cr->nnodes); i++) {
       ctmax = max(ctmax,ct[i]);
       ctsum += ct[i];
     }
@@ -1227,7 +1227,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(log,"\nTotal NODE time on node %d: %g\n",cr->nodeid,ct[cr->nodeid]);
     fprintf(log,"Average NODE time: %g\n",ctsum);
     fprintf(log,"Load imbalance reduced performance to %3d%% of max\n",
-	    (int) (100.0*ctmax/ctsum));
+	    (int) (100.0*ctsum/ctmax));
     sfree(ct);
   }
       
