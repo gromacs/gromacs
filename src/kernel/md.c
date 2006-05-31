@@ -160,8 +160,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz);
     
-    make_dd_communicators(stdlog,cr,
-			  Flags & MD_CARTESIAN,Flags & MD_INTERLEAVE);
+    make_dd_communicators(stdlog,cr,Flags & MD_CARTESIAN);
   } else {
     cr->duty = (DUTY_PP | DUTY_PME);
   }

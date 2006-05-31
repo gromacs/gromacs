@@ -1393,8 +1393,7 @@ static bool receive_vir_ener(t_commrec *cr)
   return bReceive;
 }
 
-void make_dd_communicators(FILE *fplog,t_commrec *cr,
-			   bool bCartesian,bool bInterleave)
+void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
 {
   gmx_domdec_t *dd;
   bool bDiv[DIM];
@@ -1475,8 +1474,14 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,
 
       cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
     } else {
-      if (bInterleave)
+      if (getenv("GMX_ORDER_PP_PME") == NULL) {
+	/* Interleave the PP-only and PME-only nodes,
+	 * as on clusters with dual-core machines this will double
+	 * the communication bandwidth of the PME processes
+	 * and thus speed up the PP <-> PME and inter PME communication.
+	 */
 	cr->dd->pmenodes = dd_pmenodes(cr);
+      }
 
       if (dd_node2pmenode(cr,cr->nodeid) == -1)
 	cr->duty |= DUTY_PME;

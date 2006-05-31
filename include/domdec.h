@@ -42,8 +42,7 @@ extern int gmx_ddindex2nodeid(t_commrec *cr,int ddindex);
 extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
 
-extern void make_dd_communicators(FILE *fplog,t_commrec *cr,
-				  bool bCartesian,bool bInterleave);
+extern void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian);
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       t_commrec *cr,ivec nc);

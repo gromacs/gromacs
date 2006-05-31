@@ -63,7 +63,6 @@
 #define MD_FFSCAN      (1<<6)
 #define MD_SEPDVDL     (1<<7)
 #define MD_CARTESIAN   (1<<8)
-#define MD_INTERLEAVE  (1<<9)
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,
