@@ -238,6 +238,7 @@ int main(int argc,char *argv[])
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
+    please_cite(stdlog,"Spoel2005a");
     please_cite(stdlog,"Lindahl2001a");
     please_cite(stdlog,"Berendsen95a");
   }
