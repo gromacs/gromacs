@@ -406,6 +406,16 @@ void please_cite(FILE *fp,char *key)
       "Thermodynamics of hydrogen bonding in hydrophilic and hydrophobic media",
       "J. Phys. Chem. B",
       110, 2006, 4393, 4398 }
+    { "Spoel2005a",
+      "D. van der Spoel, E. Lindahl, B. Hess, G. Groenhof, A. E. Mark and H. J.`C. Berendsen",
+      "GROMACS: Fast, Flexible and Free",
+      "J. Comp. Chem.",
+      26, 2005, 1701, 1719 },
+    { "Palmer94a",
+      "B. J. Palmer",
+      "Transverse-current autocorrelation-function calculations of the shear viscosity for molecular liquids",
+      "Phys. Rev. E",
+      49, 1994, 359, 366 }
   };
 #define NSTR (int)asize(citedb)
   
