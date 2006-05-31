@@ -1382,7 +1382,7 @@ static bool receive_vir_ener(t_commrec *cr)
       }
 #endif  
     } else {
-      if (cr->nodeid+1 < cr->dd->nnodes &&
+      if (cr->nodeid+1 < cr->nnodes &&
 	  dd_node2pmenode(cr,cr->nodeid+1) == pmenode) {
 	/* This is not the last PP node for pmenode */
 	bReceive = FALSE;
