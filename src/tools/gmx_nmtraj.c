@@ -131,11 +131,11 @@ int gmx_nmtraj(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,bDMA);
-
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit,
 		    &xref,&bDMR,&xav,&bDMA,&nvec,&eignr,&eigvec,&eigval);
   
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,bDMA);
+
   atoms=&top.atoms;
 
   if(atoms->nr != natoms)
