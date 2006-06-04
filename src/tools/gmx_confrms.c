@@ -361,7 +361,8 @@ int gmx_confrms(int argc,char *argv[])
     "(use [TT]rasmol -nmrpdb[tt]). Also in a [TT].pdb[tt] file, B-factors",
     "calculated from the atomic MSD values can be written with [TT]-bfac[tt].",
   };
-  static bool bOne=FALSE,bRmpbc=FALSE,bMW=TRUE,bName=FALSE,bBfac=FALSE,bFit=TRUE;
+  static bool bOne=FALSE,bRmpbc=FALSE,bMW=TRUE,bName=FALSE,
+    bBfac=FALSE,bFit=TRUE,bLabel=FALSE;
   
   t_pargs pa[] = {
     { "-one", FALSE, etBOOL, {&bOne},   "Only write the fitted structure to file" },
@@ -369,8 +370,12 @@ int gmx_confrms(int argc,char *argv[])
     { "-pbc", FALSE, etBOOL, {&bRmpbc}, "Try to make molecules whole again" },
     { "-fit", FALSE, etBOOL, {&bFit},   
       "Do least squares superposition of the target structure to the reference" },
-    {"-name",FALSE,etBOOL,{&bName},"Only compare matching atom names" },
-    {"-bfac",FALSE,etBOOL,{&bBfac},"Output B-factors from atomic MSD values"}
+    { "-name", FALSE,etBOOL,{&bName},
+      "Only compare matching atom names" },
+    { "-label",FALSE,etBOOL,{&bLabel},
+      "Added chain labels A for first and B for second structure"},
+    { "-bfac", FALSE,etBOOL,{&bBfac},
+      "Output B-factors from atomic MSD values" }
   };
   t_filenm fnm[] = {
     { efTPS, "-f1",  "conf1.gro", ffREAD  },
@@ -547,13 +552,27 @@ int gmx_confrms(int argc,char *argv[])
   case efPDB:
   case efBRK:
   case efENT:
-    if (bBfac) {
+    if (bBfac || bLabel) {
       srenew(atoms1.pdbinfo, atoms1.nr);
-      for(i=0; i<isize1; i++)
-	atoms1.pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+      srenew(atoms1.atom, atoms1.nr);
+      for(i=0; i<isize1; i++) {
+	atoms1.pdbinfo[index1[i]].type = eptAtom;
+	atoms1.pdbinfo[index1[i]].bAnisotropic = FALSE;
+	if (bBfac)
+	  atoms1.pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	if (bLabel)
+	  atoms1.atom[index1[i]].chain = 'A';
+      }
       srenew(atoms2.pdbinfo, atoms2.nr);
-      for(i=0; i<isize2; i++)
-	atoms2.pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+      srenew(atoms2.atom, atoms2.nr);
+      for(i=0; i<isize2; i++) {
+	atoms2.pdbinfo[index2[i]].type = eptAtom;
+	atoms2.pdbinfo[index2[i]].bAnisotropic = FALSE;
+	if (bBfac)
+	  atoms2.pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	if (bLabel)
+	  atoms2.atom[index2[i]].chain = 'B';
+      }
     }
     fp=ffopen(outfile,"w");
     if (!bOne)
