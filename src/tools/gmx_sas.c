@@ -258,7 +258,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     fprintf(stderr,"Warning: your tpr file is too old, will not compute "
 	    "Delta G of solvation\n");
   atomprop = get_atomprop();
-  
+
+  fprintf(stdout,"In case you use free energy of solvation predictions:\n");
+  please_cite(stdout,"Eisenberg86a");
+    
   snew(nx,2);
   snew(index,2);
   snew(grpname,2);

@@ -394,6 +394,10 @@ int gmx_rms (int argc,char *argv[])
   
   /* read first frame */
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
+  if (natoms != top.atoms.nr) 
+    fprintf(stderr,
+	    "\nWARNING: topology has %d atoms, whereas trajectory has %d\n",
+	    top.atoms.nr,natoms);
   if (bMat || bBond || bPrev) {
     snew(mat_x,NFRAME);
     

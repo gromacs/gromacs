@@ -207,8 +207,6 @@ void *get_atomprop(void)
   fprintf(stdout,
 	  "WARNING: masses will be determined based on residue and atom names,\n"
 	  "         this can deviate from the real mass of the atom type\n");
-  fprintf(stdout,"In case you use free energy of solvation predictions:\n");
-  please_cite(stdout,"Eisenberg86a");
   
   snew(ap,1);
 
