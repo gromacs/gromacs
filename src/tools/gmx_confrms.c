@@ -391,8 +391,8 @@ int gmx_confrms(int argc,char *argv[])
   char    *conf1file, *conf2file, *matchndxfile, *outfile;
   FILE    *fp;
   char    title1[STRLEN],title2[STRLEN],*name1,*name2;
-  t_topology top1,top2;
-  t_atoms atoms1,atoms2;
+  t_topology *top1,*top2;
+  t_atoms *atoms1,*atoms2;
   int     warn=0;
   atom_id at;
   real    *w_rls,mass,totmass;
@@ -422,16 +422,17 @@ int gmx_confrms(int argc,char *argv[])
   
   /* reading reference structure from first structure file */
   fprintf(stderr,"\nReading first structure file\n");
-  read_tps_conf(conf1file,title1,&top1,&x1,&v1,box1,TRUE);
-  atoms1 = top1.atoms;
+  snew(top1,1);
+  read_tps_conf(conf1file,title1,top1,&x1,&v1,box1,TRUE);
+  atoms1 = &(top1->atoms);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
-	  title1,atoms1.nr,atoms1.nres);
+	  title1,atoms1->nr,atoms1->nres);
   
   if ( bRmpbc ) 
-    rm_gropbc(&atoms1,x1,box1);
+    rm_gropbc(atoms1,x1,box1);
 
   fprintf(stderr,"Select group from first structure\n");
-  get_index(&atoms1,opt2fn_null("-n1",NFILE,fnm),
+  get_index(atoms1,opt2fn_null("-n1",NFILE,fnm),
 	    1,&isize1,&index1,&groupnames1);
   printf("\n");
   
@@ -440,20 +441,21 @@ int gmx_confrms(int argc,char *argv[])
   
   /* reading second structure file */
   fprintf(stderr,"\nReading second structure file\n");
-  read_tps_conf(conf2file,title2,&top2,&x2,&v2,box2,TRUE);
-  atoms2 = top2.atoms;
+  snew(top2,1);
+  read_tps_conf(conf2file,title2,top2,&x2,&v2,box2,TRUE);
+  atoms2 = &(top2->atoms);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
-	  title2,atoms2.nr,atoms2.nres);
+	  title2,atoms2->nr,atoms2->nres);
   
   if ( bRmpbc ) 
-    rm_gropbc(&atoms2,x2,box2);
+    rm_gropbc(atoms2,x2,box2);
   
   fprintf(stderr,"Select group from second structure\n");
-  get_index(&atoms2,opt2fn_null("-n2",NFILE,fnm),
+  get_index(atoms2,opt2fn_null("-n2",NFILE,fnm),
 	    1,&isize2,&index2,&groupnames2);
   
   if (bName) {
-    find_matching_names(&isize1, index1, &atoms1, &isize2, index2, &atoms2);
+    find_matching_names(&isize1, index1, atoms1, &isize2, index2, atoms2);
     if (matchndxfile) {
       fp = ffopen(matchndxfile,"w");
       fprintf(fp, "; Matching atoms between %s from %s and %s from %s\n",
@@ -472,8 +474,8 @@ int gmx_confrms(int argc,char *argv[])
     gmx_fatal(FARGS,"You selected groups with differen number of atoms.\n");
   
   for(i=0; i<isize1; i++) {
-    name1=*atoms1.atomname[index1[i]];
-    name2=*atoms2.atomname[index2[i]];
+    name1=*atoms1->atomname[index1[i]];
+    name2=*atoms2->atomname[index2[i]];
     if (strcmp(name1,name2)) {
       if (warn < 20)
 	fprintf(stderr,
@@ -482,8 +484,8 @@ int gmx_confrms(int argc,char *argv[])
       warn++;
     }
     if (!bMW) {
-      atoms1.atom[index1[i]].m = 1;
-      atoms2.atom[index2[i]].m = 1;
+      atoms1->atom[index1[i]].m = 1;
+      atoms2->atom[index2[i]].m = 1;
     }
   }
   if (warn)
@@ -491,18 +493,18 @@ int gmx_confrms(int argc,char *argv[])
   
   if (bFit) {  
     /* calculate and remove center of mass of structures */
-    calc_rm_cm(isize1, index1, &atoms1, x1, xcm1);
-    calc_rm_cm(isize2, index2, &atoms2, x2, xcm2);
+    calc_rm_cm(isize1, index1, atoms1, x1, xcm1);
+    calc_rm_cm(isize2, index2, atoms2, x2, xcm2);
     
-    snew(w_rls,atoms2.nr);
-    snew(fit_x,atoms2.nr);
+    snew(w_rls,atoms2->nr);
+    snew(fit_x,atoms2->nr);
     for(at=0; (at<isize1); at++) {
-      w_rls[index2[at]] = atoms1.atom[index1[at]].m;
+      w_rls[index2[at]] = atoms1->atom[index1[at]].m;
       copy_rvec(x1[index1[at]],fit_x[index2[at]]);
     }
     
     /* do the least squares fit to the reference structure */
-    do_fit(atoms2.nr,w_rls,fit_x,x2);
+    do_fit(atoms2->nr,w_rls,fit_x,x2);
     
     sfree(fit_x);
     sfree(w_rls);
@@ -521,7 +523,7 @@ int gmx_confrms(int argc,char *argv[])
   minmsd  =  1e18;
   snew(msds, isize1);
   for(at=0; at<isize1; at++) {
-    mass = atoms1.atom[index1[at]].m;
+    mass = atoms1->atom[index1[at]].m;
     for(m=0; m<DIM; m++) {
       msd = sqr(x1[index1[at]][m] - x2[index2[at]][m]);
       rms += msd*mass;
@@ -539,10 +541,10 @@ int gmx_confrms(int argc,char *argv[])
   
   if (bFit) {
     /* reset coordinates of reference and fitted structure */
-    for(i=0; i<atoms1.nr; i++)
+    for(i=0; i<atoms1->nr; i++)
       for(m=0; m<DIM; m++)
 	x1[i][m]+=xcm1[m];
-    for(i=0; i<atoms2.nr; i++)
+    for(i=0; i<atoms2->nr; i++)
       for(m=0; m<DIM; m++)
 	x2[i][m]+=xcm1[m];
   }
@@ -553,31 +555,31 @@ int gmx_confrms(int argc,char *argv[])
   case efBRK:
   case efENT:
     if (bBfac || bLabel) {
-      srenew(atoms1.pdbinfo, atoms1.nr);
-      srenew(atoms1.atom, atoms1.nr);
+      snew(atoms1->pdbinfo, atoms1->nr);
+      snew(atoms1->atom, atoms1->nr);
       for(i=0; i<isize1; i++) {
-	atoms1.pdbinfo[index1[i]].type = eptAtom;
-	atoms1.pdbinfo[index1[i]].bAnisotropic = FALSE;
+	atoms1->pdbinfo[index1[i]].type = eptAtom;
+	atoms1->pdbinfo[index1[i]].bAnisotropic = FALSE;
 	if (bBfac)
-	  atoms1.pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	  atoms1->pdbinfo[index1[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
 	if (bLabel)
-	  atoms1.atom[index1[i]].chain = 'A';
+	  atoms1->atom[index1[i]].chain = 'A';
       }
-      srenew(atoms2.pdbinfo, atoms2.nr);
-      srenew(atoms2.atom, atoms2.nr);
+      snew(atoms2->pdbinfo, atoms2->nr);
+      snew(atoms2->atom, atoms2->nr);
       for(i=0; i<isize2; i++) {
-	atoms2.pdbinfo[index2[i]].type = eptAtom;
-	atoms2.pdbinfo[index2[i]].bAnisotropic = FALSE;
+	atoms2->pdbinfo[index2[i]].type = eptAtom;
+	atoms2->pdbinfo[index2[i]].bAnisotropic = FALSE;
 	if (bBfac)
-	  atoms2.pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
+	  atoms2->pdbinfo[index2[i]].bfac = 800*M_PI*M_PI/3.0*msds[i]/100;
 	if (bLabel)
-	  atoms2.atom[index2[i]].chain = 'B';
+	  atoms2->atom[index2[i]].chain = 'B';
       }
     }
     fp=ffopen(outfile,"w");
     if (!bOne)
-      write_pdbfile(fp,title1,&atoms1,x1,box1,0,1);
-    write_pdbfile(fp,title2,&atoms2,x2,box2,0,bOne ? -1 : 2);
+      write_pdbfile(fp,title1,atoms1,x1,box1,0,1);
+    write_pdbfile(fp,title2,atoms2,x2,box2,0,bOne ? -1 : 2);
     fclose(fp);
     break;
   case efGRO:
@@ -585,8 +587,8 @@ int gmx_confrms(int argc,char *argv[])
       fprintf(stderr,"WARNING: cannot write B-factor values to gro file\n");
     fp=ffopen(outfile,"w");
     if (!bOne)
-      write_hconf_p(fp,title1,&atoms1,3,x1,v1,box1);
-    write_hconf_p(fp,title2,&atoms2,3,x2,v2,box2);
+      write_hconf_p(fp,title1,atoms1,3,x1,v1,box1);
+    write_hconf_p(fp,title2,atoms2,3,x2,v2,box2);
     fclose(fp);
     break;
   default:
@@ -597,7 +599,7 @@ int gmx_confrms(int argc,char *argv[])
       fprintf(stderr,
 	      "WARNING: cannot write the reference structure to %s file\n",
 	      ftp2ext(fn2ftp(outfile))); 
-    write_sto_conf(outfile,title2,&atoms2,x2,v2,box2);
+    write_sto_conf(outfile,title2,atoms2,x2,v2,box2);
     break;
   }
   
