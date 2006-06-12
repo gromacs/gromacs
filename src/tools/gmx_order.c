@@ -532,6 +532,8 @@ int gmx_order(int argc,char *argv[])
   static int  nslices = 1;                    /* nr of slices defined       */
   static bool bSzonly = FALSE;                /* True if only Sz is wanted  */
   static bool bUnsat = FALSE;                 /* True if carbons are unsat. */
+  static bool bDoTetraheder = FALSE;          /* True if the options -Sg or */
+                                              /* -Sk are given */
   static char *normal_axis[] = { NULL, "z", "x", "y", NULL };
   t_pargs pa[] = {
     { "-d",      FALSE, etENUM, {normal_axis}, 
@@ -569,27 +571,30 @@ int gmx_order(int argc,char *argv[])
   };
   bool      bSliced = FALSE;                /* True if box is sliced      */
 #define NFILE asize(fnm)
-  char *sgfnm,*skfnm,*ndxfnm,*tpsfnm,*trxfnm;
+  char *sgfnm=NULL,*skfnm=NULL,*ndxfnm,*tpsfnm,*trxfnm;
 
   CopyRight(stderr,argv[0]);
   
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0, NULL);
 
-  sgfnm = opt2fn_null("-Sg",NFILE,fnm);
-  skfnm = opt2fn_null("-Sk",NFILE,fnm);
   ndxfnm = ftp2fn(efNDX,NFILE,fnm);
   tpsfnm = ftp2fn(efTPX,NFILE,fnm);
   trxfnm = ftp2fn(efTRX,NFILE,fnm);
+
+  if (opt2bSet("-Sg",NFILE,fnm) || opt2bSet("-Sk",NFILE,fnm)) {
+    sgfnm = opt2fn_null("-Sg",NFILE,fnm);
+    skfnm = opt2fn_null("-Sk",NFILE,fnm);
+    bDoTetraheder = TRUE;
+  }
   
   /* tetraheder order parameter */
-  if (skfnm || sgfnm) {
+  if (bDoTetraheder) {
     calc_tetra_order_parm(ndxfnm,tpsfnm,trxfnm,sgfnm,skfnm);
     /* view xvgr files */
     do_view(opt2fn("-Sg",NFILE,fnm), NULL);
     do_view(opt2fn("-Sk",NFILE,fnm), NULL);
-  } 
-  else {  
+  } else {  
     /* tail order parameter */
     /* Calculate axis */
     if (strcmp(normal_axis[0],"x") == 0) axis = XX;
