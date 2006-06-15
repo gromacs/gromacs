@@ -2015,8 +2015,8 @@ int gmx_hbond(int argc,char *argv[])
 			    gmx_fatal(FARGS,"Invalid donor %d",i);
 			  if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
 			    gmx_fatal(FARGS,"Invalid acceptor %d",j);
-			  resdist=abs(top.atoms.atom[id].resnr-
-				      top.atoms.atom[ia].resnr);
+			  resdist=abs(top.atoms.atom[i].resnr-
+				      top.atoms.atom[j].resnr);
 			  if (resdist >= max_hx) 
 			    resdist = max_hx-1;
 			  hb->nhx[nframes][resdist]++;
