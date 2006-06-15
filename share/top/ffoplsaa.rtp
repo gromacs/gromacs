@@ -502,8 +502,8 @@
     CG    opls_274   -0.120     3
    HG1    opls_140    0.060     3
    HG2    opls_140    0.060     3
-    CD    opls_271    0.500     4
-    OE    opls_272   -0.500     4
+    CD    opls_235    0.500     4
+    OE    opls_236   -0.500     4
      C    opls_235    0.500     5
      O    opls_236   -0.500     5
  [ bonds ]
