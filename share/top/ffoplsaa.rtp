@@ -490,6 +490,47 @@
     CG   OE1    CD   OE2    improper_O_C_X_Y   
 
 
+[ PGLU ]
+ [ atoms ]
+     N    opls_238   -0.500     1
+     H    opls_241    0.300     1
+    CA    opls_224B   0.140     1
+    HA    opls_140    0.060     1
+    CB    opls_136   -0.120     2
+   HB1    opls_140    0.060     2
+   HB2    opls_140    0.060     2
+    CG    opls_274   -0.120     3
+   HG1    opls_140    0.060     3
+   HG2    opls_140    0.060     3
+    CD    opls_271    0.500     4
+    OE    opls_272   -0.500     4
+     C    opls_235    0.500     5
+     O    opls_236   -0.500     5
+ [ bonds ]
+     N     H
+     N    CA
+    CA    HA
+    CA    CB
+    CA     C
+    CB   HB1
+    CB   HB2
+    CB    CG
+    CG   HG1
+    CG   HG2
+    CG    CD
+    CD    OE
+    CD     N
+     C     O
+    -C     N
+ [ dihedrals ] ; override some with residue-specific ones
+     N    CA    CB    CG    dih_GLU_chi1_N_C_C_C
+    CG    CB    CA     C    dih_GLU_chi1_C_C_C_CO
+ [ impropers ]
+    -C    CA     N     H    improper_Z_N_X_Y 
+    CA    +N     C     O    improper_O_C_X_Y 
+;    CG   OE1    CD   OE2    improper_O_C_X_Y   
+
+
 [ GLUH ]
  [ atoms ]
      N    opls_238   -0.500     1

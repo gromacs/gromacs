@@ -60,6 +60,11 @@ GLU     4
 1	5	HA	CA	N	C	CB
 2	6	HB	CB	CG	CA
 2	6	HG	CG	CD	CB
+PGLU    4       
+1	1	H	N	CD	CA
+1	5	HA	CA	N	C	CB
+2	6	HB	CB	CG	CA
+2	6	HG	CG	CD	CB
 GLUH    5       
 1	1	H	N	-C	CA
 1	5	HA	CA	N	C	CB
