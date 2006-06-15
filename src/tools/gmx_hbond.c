@@ -150,7 +150,15 @@ typedef struct {
   t_hbond     ***hbmap;
 } t_hbdata;
 
-static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool bMerge)
+
+/*
+  Changed argument 'bMerge' into 'oneHB' below,
+  since -contact should cause maxhydro to be 1,
+  not just -merge.
+  - Erik Marklund May 29, 2006
+
+ */
+static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool oneHB)
 {
   t_hbdata *hb;
   
@@ -158,7 +166,7 @@ static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool bMerge)
   hb->wordlen = 8*sizeof(unsigned int);
   hb->bHBmap  = bHBmap;
   hb->bDAnr   = bDAnr;
-  if (bMerge)
+  if (oneHB)
     hb->maxhydro = 1;
   else
     hb->maxhydro = MAXHYDRO;
@@ -221,7 +229,7 @@ static void set_hb(t_hbdata *hb,int id,int ih, int ia,int frame,int ihb)
     ghptr = hb->hbmap[id][ia]->g[ih];
   else
     gmx_fatal(FARGS,"Incomprehensible iValue %d in set_hb",ihb);
-    
+
   _set_hb(ghptr,frame-hb->hbmap[id][ia]->n0,TRUE);
 }
 
@@ -347,7 +355,7 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
     }
   }
   /* Increment number if HBonds per H */
-  if (ihb == hbHB) 
+  if (ihb == hbHB)
     inc_nhbonds(&(hb->d),d,h);
 }
 
@@ -904,12 +912,14 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
   return hbNo;
 }
 
+/* Fixed previously undiscovered bug in the merge
+   code, where the last frame of each hbond disappears.
+   - Erik Marklund, June 1, 2006 */
 static void do_merge(t_hbdata *hb,int ntmp,
 		     unsigned int htmp[],unsigned int gtmp[],
 		     t_hbond *hb0,t_hbond *hb1)
 {
   int m,mm,n00,n01,nn0,nnframes;
-  
   /* Decide where to start from when merging */
   n00      = hb0->n0;
   n01      = hb1->n0;
@@ -921,13 +931,17 @@ static void do_merge(t_hbdata *hb,int ntmp,
     gtmp[m] = 0;
   }
   /* Fill tmp arrays with values due to first HB */
-  for(m=0; (m<hb0->nframes); m++) {
+  /* Once again '<' had to be replaced with '<='
+     to catch the last frame in which the hbond
+     appears.
+     - Erik Marklund, June 1, 2006 */  
+  for(m=0; (m<=hb0->nframes); m++) {
     mm = m+n00-nn0;
     htmp[mm] = is_hb(hb0->h[0],m);
     gtmp[mm] = is_hb(hb0->g[0],m);
   }
   /* Next HB */
-  for(m=0; (m<hb1->nframes); m++) {
+  for(m=0; (m<=hb1->nframes); m++) {
     mm = m+n01-nn0;
     htmp[mm] = htmp[mm] || is_hb(hb1->h[0],m);
     gtmp[mm] = gtmp[mm] || is_hb(hb1->g[0],m);
@@ -938,7 +952,7 @@ static void do_merge(t_hbdata *hb,int ntmp,
     srenew(hb0->g[0],4+nnframes/hb->wordlen);
   }
   /* Copy temp array to target array */
-  for(m=0; (m<nnframes); m++) {
+  for(m=0; (m<=nnframes); m++) {
     _set_hb(hb0->h[0],m,htmp[m]);
     _set_hb(hb0->g[0],m,gtmp[m]);
   }
@@ -1022,7 +1036,11 @@ static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t)
   fprintf(fp,"  %8d\n",nbtot);
 }
 
-static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
+/* Added argument bContact in do_hblife(...). Also
+   added support for -contact in function body.
+   - Erik Marklund, May 31, 2006 */
+
+static void do_hblife(char *fn,t_hbdata *hb,bool bMerge, bool bContact)
 {
   FILE *fp;
   static char *leg[] = { "p(t)", "t p(t)" };
@@ -1043,7 +1061,7 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
       if (hbh) {
 	if (bMerge) {
 	  if (hbh->h[0]) {
-	    h[0] = hbh->h[0];
+	    h[0] = bContact ? hbh->g[0] : hbh->h[0];
 	    nhydro   = 1;
 	  }
 	  else
@@ -1053,13 +1071,18 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
 	  nhydro = 0;
 	  for(m=0; (m<hb->maxhydro); m++)
 	    if (hbh->h[m]) {
-	      h[nhydro++] = hbh->h[m];
+	      h[nhydro++] = bContact ? hbh->g[m] : hbh->h[m];
 	    }
 	}
 	for(nh=0; (nh<nhydro); nh++) {
 	  ohb = 0;
 	  j0  = 0;
-	  for(j=0; (j<hbh->nframes); j++) {
+
+	  /* Changed '<' into '<=' below, just like I
+	     did in the hbm-output-loop in the main code.
+	     - Erik Marklund, May 31, 2006
+	  */
+	  for(j=0; (j<=hbh->nframes); j++) {
 	    ihb      = is_hb(h[nh],j);
 	    if (debug && (ndump < 10))
 	      fprintf(debug,"%5d  %5d\n",j,ihb);
@@ -1079,7 +1102,11 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge)
     }
   }
   fprintf(stderr,"\n");
-  fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()");
+  if (bContact)
+    fp = xvgropen(fn,"Uninterrupted contact lifetime","Time (ps)","()");
+  else
+    fp = xvgropen(fn,"Uninterrupted hydrogen bond lifetime","Time (ps)","()");
+
   xvgr_legend(fp,asize(leg),leg);
   j0 = nframes-1;
   while ((j0 > 0) && (histo[j0] == 0))
@@ -1227,10 +1254,15 @@ static void compute_derivative(int nn,real x[],real y[],real dydx[])
   dydx[nn-1] = 2*dydx[nn-2] - dydx[nn-3];
 }
 
+/* Added argument bContact in do_hbac(...). Also
+   added support for -contact in the actual code.
+   - Erik Marklund, May 31, 2006 */
+
 static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
-		    int nDump,bool bMerge,real fit_start,real temp)
+		    int nDump,bool bMerge,bool bContact,real fit_start,real temp)
 {
   FILE *fp;
+  static char *leg[] = { "Ac\\sfin sys\\v{}\\z{}(t)", "Ac(t)", "Cc\\scontact,hb\\v{}\\z{}(t)", "-dAc\\sfs\\v{}\\z{}/dt" };
   int  i,j,k,m,n,nd,ihb,idist,n2,nn;
   bool bNorm=FALSE;
   double nhb = 0;
@@ -1274,7 +1306,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
       hbh = hb->hbmap[i][k];
       if (hbh) {
 	if (bMerge) {
-	  if (ISHB(hbh->history[0])) {
+	  if (bContact ? ISDIST(hbh->history[0]) : ISHB(hbh->history[0])) {
 	    h[0] = hbh->h[0];
 	    g[0] = hbh->g[0];
 	    nhydro = 1;
@@ -1282,7 +1314,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	}
 	else {
 	  for(m=0; (m<hb->maxhydro); m++)
-	    if (ISHB(hbh->history[m])) {
+	    if (bContact ? ISDIST(hbh->history[m]) : ISHB(hbh->history[m])) {
 	      g[nhydro] = hbh->g[m];
 	      h[nhydro] = hbh->h[m];
 	      nhydro++;
@@ -1290,21 +1322,30 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	}
 	nf = hbh->nframes;
 	for(nh=0; (nh<nhydro); nh++) {
-	  if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == hb->nrhb))
-	    fprintf(stderr,"\rACF %d/%d",nhbonds+1,hb->nrhb);
+	  int nrint = bContact ? hb->nrdist : hb->nrhb;
+	  if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == nrint))
+	    fprintf(stderr,"\rACF %d/%d",nhbonds+1,nrint);
 	  nhbonds++;
 	  for(j=0; (j<nframes); j++) {
-	    if (j < nf) {
+	    /* Changed '<' into '<=' below, just like I did in
+	       the hbm-output-loop in the gmx_hbond() block.
+	       - Erik Marklund, May 31, 2006 */
+	    if (j <= nf) {
 	      ihb   = is_hb(h[nh],j);
 	      idist = is_hb(g[nh],j);
 	    }
 	    else {
 	      ihb = idist = 0;
 	    }
-	    rhbex[j] = ihb-aver_nhb;
+	    ht[j]    = ihb-aver_nhb;
 	    gt[j]    = idist*(1-ihb);
-	    ht[j]    = rhbex[j];
-	    nhb     += ihb; 
+	    if (bContact) {
+	      rhbex[j] = gt[j];
+	      nhb     += idist;
+	    } else {
+	      rhbex[j] = ht[j];
+	      nhb     += ihb;
+	    }
 	  }
 	  
 	  /* The autocorrelation function is normalized after summation only */
@@ -1365,8 +1406,13 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   compute_derivative(nn,hb->time,ct,kt);
   for(j=0; (j<nn); j++)
     kt[j] = -kt[j];
-  
-  fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
+
+  if (bContact)
+    fp = xvgropen(fn, "Contact Autocorrelation","Time (ps)","C(t)");
+  else
+    fp = xvgropen(fn, "Hydrogen Bond Autocorrelation","Time (ps)","C(t)");
+  xvgr_legend(fp,asize(leg),leg);
+
   for(j=0; (j<nn); j++)
     fprintf(fp,"%10g  %10g  %10g  %10g  %10g\n",
 	    hb->time[j]-hb->time[0],ct[j],cct[j],ght[j],kt[j]);
@@ -1437,7 +1483,7 @@ static void analyse_donor_props(char *fn,t_hbdata *hb,int nframes,real t)
 
 static void dump_hbmap(t_hbdata *hb,
 		       int nfile,t_filenm fnm[],bool bTwo,bool bInsert,
-		       int isize[],int *index[],char *grpnames[],
+		       bool bContact, int isize[],int *index[],char *grpnames[],
 		       t_atoms *atoms)
 {
   FILE *fp,*fplog;
@@ -1458,39 +1504,56 @@ static void dump_hbmap(t_hbdata *hb,
       fprintf(fp," %4u",index[grp][i]+1);
     }
     fprintf(fp,"\n");
-    fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp]);
-    for (i=0; (i<hb->d.nrd); i++) {
-      for(j=0; (j<hb->d.nhydro[i]); j++)
-	fprintf(fp," %4u %4u",hb->d.don[i]+1,
-		hb->d.hydro[i][j]+1);
+    /*
+      Added -contact support below.
+      - Erik Marklund, May 29, 2006
+     */
+    if (!bContact) {
+      fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp]);
+      for (i=0; (i<hb->d.nrd); i++) {
+	for(j=0; (j<hb->d.nhydro[i]); j++)
+	  fprintf(fp," %4u %4u",hb->d.don[i]+1,
+		  hb->d.hydro[i][j]+1);
+	fprintf(fp,"\n");
+      }
+      fprintf(fp,"[ acceptors_%s ]",grpnames[grp]);
+      for (i=0; (i<hb->a.nra); i++) {
+	fprintf(fp,(i%15)?" ":"\n");
+	fprintf(fp," %4u",hb->a.acc[i]+1);
+      }
       fprintf(fp,"\n");
     }
-    fprintf(fp,"[ acceptors_%s ]",grpnames[grp]);
-    for (i=0; (i<hb->a.nra); i++) {
-      fprintf(fp,(i%15)?" ":"\n");
-      fprintf(fp," %4u",hb->a.acc[i]+1);
-    }
-    fprintf(fp,"\n");
   }
   if (bTwo)
-    fprintf(fp,"[ hbonds_%s-%s ]\n",grpnames[0],grpnames[1]);
+    fprintf(fp,bContact ? "[ contacts_%s-%s ]\n" :
+	    "[ hbonds_%s-%s ]\n",grpnames[0],grpnames[1]);
   else
-    fprintf(fp,"[ hbonds_%s ]\n",grpnames[0]);
+    fprintf(fp,bContact ? "[ contacts_%s ]" : "[ hbonds_%s ]\n",grpnames[0]);
   
   for(i=0; (i<hb->d.nrd); i++) {
     ddd = hb->d.don[i];
     for(k=0; (k<hb->a.nra); k++) {
       aaa = hb->a.acc[k];
-      for(m=0; (m<hb->d.nhydro[i]); m++) {
-	if (hb->hbmap[i][k] && ISHB(hb->hbmap[i][k]->history[m])) {
-	  hhh = hb->d.hydro[i][m];
-	  
+      if (bContact) {
+	if (hb->hbmap[i][k] && ISDIST(hb->hbmap[i][k]->history[0])) {
 	  sprintf(ds,"%s",mkatomname(atoms,ddd));
-	  sprintf(hs,"%s",mkatomname(atoms,hhh));
 	  sprintf(as,"%s",mkatomname(atoms,aaa));
-	  fprintf(fp," %6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
+	  fprintf(fp," %6u %6u\n",ddd+1,aaa+1);
 	  if (fplog) 
-	    fprintf(fplog,"%12s  %12s  %12s\n",ds,hs,as);
+	    fprintf(fplog,"%12s  %12s\n",ds,as);
+	}
+      } else {
+	for(m=0; (m<hb->d.nhydro[i]); m++) {
+	  if (hb->hbmap[i][k] && ISHB(hb->hbmap[i][k]->history[m])) {
+	    hhh = hb->d.hydro[i][m];
+	    
+	    sprintf(ds,"%s",mkatomname(atoms,ddd));
+	    sprintf(hs,"%s",mkatomname(atoms,hhh));
+	    sprintf(as,"%s",mkatomname(atoms,aaa));
+	    fprintf(fp," %6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
+	    if (fplog) 
+	      fprintf(fplog,"%12s  %12s  %12s\n",ds,hs,as);
+	  }
 	}
       }
     }
@@ -1704,7 +1767,7 @@ int gmx_hbond(int argc,char *argv[])
     xvgr_legend(fpnhb,asize(leg),leg);
   }
   
-  hb = mk_hbdata(bHBmap,opt2bSet("-dan",NFILE,fnm),bMerge);
+  hb = mk_hbdata(bHBmap,opt2bSet("-dan",NFILE,fnm),bMerge || bContact);
   
   /* get topology */
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&i,&t,&t,
@@ -1942,8 +2005,8 @@ int gmx_hbond(int argc,char *argv[])
 			    gmx_fatal(FARGS,"Invalid donor %d",i);
 			  if ((ia = acceptor_index(&hb->a,ogrp,j)) == NOTSET)
 			    gmx_fatal(FARGS,"Invalid acceptor %d",j);
-			  resdist=abs(top.atoms.atom[id].resnr-
-				      top.atoms.atom[ia].resnr);
+			  resdist=abs(top.atoms.atom[i].resnr-
+				      top.atoms.atom[j].resnr);
 			  if (resdist >= max_hx) 
 			    resdist = max_hx-1;
 			  hb->nhx[nframes][resdist]++;
@@ -2062,20 +2125,27 @@ int gmx_hbond(int argc,char *argv[])
   else {
     max_nhb = 0.5*(hb->d.nrd*hb->a.nra);
   }
-
+  /* Added support for -contact below.
+     - Erik Marklund, May 29-31, 2006 */
   if (bHBmap) {
-    if (hb->nrhb == 0)
-      printf("No hydrogen bonds found!!\n");
-    else {
-      printf("Found %d different hydrogen bonds in trajectory\n"
-	     "Found %d different atom-pairs within hydrogen bonding distance\n",
-	     hb->nrhb,hb->nrdist);
-      
-      if (opt2bSet("-hbn",NFILE,fnm)) 
-	dump_hbmap(hb,NFILE,fnm,bTwo,bInsert,isize,index,grpnames,&top.atoms);
-      
-      if (bMerge)
-	merge_hb(hb,bTwo);
+    bool doit = bContact ? (hb->nrdist > 0) : (hb->nrhb > 0);
+    if (!doit) {
+      printf("No %s found!!\n", bContact ? "contacts" : "hydrogen bonds");
+    } else {
+	printf("Found %d different hydrogen bonds in trajectory\n"
+	       "Found %d different atom-pairs within %s distance\n",
+	       hb->nrhb,hb->nrdist,bContact?"contact":"hydrogen bonding");
+
+	if (bMerge)
+	  merge_hb(hb,bTwo);
+
+	if (opt2bSet("-hbn",NFILE,fnm)) 
+	  dump_hbmap(hb,NFILE,fnm,bTwo,bInsert,bContact,isize,index,grpnames,&top.atoms);
+	/* Shouldn't the merging take place BEFORE dump_hbmap
+	   to make the -hbn and -hmb output match eachother? 
+	   - Erik Marklund, May 30, 2006
+	*/
+
     }
   }
   /* Print out number of hbonds and distances */
@@ -2145,49 +2215,69 @@ int gmx_hbond(int argc,char *argv[])
     }
     fclose(fp);
   }
-  printf("Average number of hbonds per timeframe %.3f out of %g possible\n",
-	 aver_nhb,max_nhb);
+  printf("Average number of %s per timeframe %.3f out of %g possible\n",
+	 bContact ? "contacts" : "hbonds",
+	 bContact ? aver_dist : aver_nhb, max_nhb);
 	 
   /* Do Autocorrelation etc. */
   if (hb->bHBmap) {
+    /* 
+       Added support for -contact in ac and hbm calculations below.
+       - Erik Marklund, May 29, 2006
+     */
+
     if (opt2bSet("-ac",NFILE,fnm) || opt2bSet("-life",NFILE,fnm))
       please_cite(stdout,"Spoel2006b");
     if (opt2bSet("-ac",NFILE,fnm)) 
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
-	      bMerge,fit_start,temp);
+	      bMerge,bContact,fit_start,temp);
     if (opt2bSet("-life",NFILE,fnm))
-      do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge);
-    
+      do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge,bContact);
     if (opt2bSet("-hbm",NFILE,fnm)) {
       t_matrix mat;
       int id,ia,hh,x,y;
       
       mat.nx=nframes;
-      mat.ny=hb->nrhb;
+      mat.ny=(bContact ? hb->nrdist : hb->nrhb);
+
       snew(mat.matrix,mat.nx);
       for(x=0; (x<mat.nx); x++) 
 	snew(mat.matrix[x],mat.ny);
       y=0;
       for(id=0; (id<hb->d.nrd); id++) 
-	for(ia=0; (ia<hb->a.nra); ia++) 
+	for(ia=0; (ia<hb->a.nra); ia++) {
 	  for(hh=0; (hh<hb->maxhydro); hh++) {
-	    if (hb->hbmap[id][ia] && ISHB(hb->hbmap[id][ia]->history[hh])) {
-	      for(x=0; (x<hb->hbmap[id][ia]->nframes); x++) {
+	    bool doit = FALSE;
+	    if (hb->hbmap[id][ia])
+	      doit = bContact ? ISDIST(hb->hbmap[id][ia]->history[hh]) :
+		                ISHB(hb->hbmap[id][ia]->history[hh]);
+	    if (doit) {
+	      /* Changed '<' into '<=' in the for-statement below.
+		 It fixed the previously undiscovered bug that caused
+		 the last occurance of an hbond/contact to not be
+		 set in mat.matrix. Have a look at any old -hbm-output
+		 and you will notice that the last column is allways empty.
+		 - Erik Marklund May 30, 2006
+	      */
+	      for(x=0; (x<=hb->hbmap[id][ia]->nframes); x++) {
 		int nn0 = hb->hbmap[id][ia]->n0;
 		range_check(y,0,mat.ny);
-		mat.matrix[x+nn0][y] = is_hb(hb->hbmap[id][ia]->h[hh],x);
+		mat.matrix[x+nn0][y] = bContact ? is_hb(hb->hbmap[id][ia]->g[hh],x) :
+		                                  is_hb(hb->hbmap[id][ia]->h[hh],x);
 	      }
 	      y++;
 	    }
 	  }
+	}
       mat.axis_x=hb->time;
       snew(mat.axis_y,mat.ny);
       for(j=0; j<mat.ny; j++)
 	mat.axis_y[j]=j;
-      sprintf(mat.title,"Hydrogen Bond Existence Map");
-      sprintf(mat.legend,"Hydrogen Bonds");
+      sprintf(mat.title,bContact ? "Contact Existence Map":
+	      "Hydrogen Bond Existence Map");
+      sprintf(mat.legend,bContact ? "Contacts" : "Hydrogen Bonds");
       sprintf(mat.label_x,"Time (ps)");
-      sprintf(mat.label_y,"Hydrogen Bond Index");
+      sprintf(mat.label_y, bContact ? "Contact Index" : "Hydrogen Bond Index");
       mat.bDiscrete=TRUE;
       if (bInsert)
 	mat.nmap=HB_NR;
