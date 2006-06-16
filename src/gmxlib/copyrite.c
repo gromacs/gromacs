@@ -405,7 +405,7 @@ void please_cite(FILE *fp,char *key)
       "D. van der Spoel, P. J. van Maaren, P. Larsson and N. Timneanu",
       "Thermodynamics of hydrogen bonding in hydrophilic and hydrophobic media",
       "J. Phys. Chem. B",
-      110, 2006, 4393, 4398 }
+      110, 2006, 4393, 4398 },
     { "Spoel2005a",
       "D. van der Spoel, E. Lindahl, B. Hess, G. Groenhof, A. E. Mark and H. J.`C. Berendsen",
       "GROMACS: Fast, Flexible and Free",
