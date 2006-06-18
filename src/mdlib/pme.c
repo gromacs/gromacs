@@ -764,7 +764,7 @@ static void spread_q_bsplines(gmx_pme_t pme,t_fftgrid *grid,real charge[],
   real     *thx,*thy,*thz;
   int localsize, bndsize;
   
-  if (pme->nnodes == 1) {
+  if (pme->nnodes <= 1) {
     clear_fftgrid(grid); 
 #ifdef GMX_MPI
   } else {
@@ -1270,14 +1270,17 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   gmx_pme_t pme=NULL;
   
   int i;
-
+  
   fprintf(log,"Creating PME data structures.\n");
   snew(pme,1);
 
 #ifdef GMX_MPI
-  pme->mpi_comm = cr->mpi_comm_mygroup;
-  MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
-  MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
+  if(PAR(cr))
+  {
+      pme->mpi_comm = cr->mpi_comm_mygroup;
+      MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
+      MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
+  }
 #endif
 
   fprintf(log,"Will do PME sum in reciprocal space.\n");
@@ -1295,6 +1298,7 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   pme->pme_order   = ir->pme_order;
   pme->epsilon_r   = ir->epsilon_r;
   
+
   if (pme->nnodes > 1) {
 #ifdef GMX_MPI
     MPI_Type_contiguous(DIM, mpi_type, &rvec_mpi);
@@ -1324,7 +1328,7 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
     snew(pme->count,pme->nnodes);
     snew(pme->rcount,pme->nnodes);
     snew(pme->buf_index,pme->nnodes);
-  } 
+  }
 
   /* With domain decomposition we need nnx on the PP only nodes */
   snew(pme->nnx,5*pme->nkx);
@@ -1340,7 +1344,7 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   snew(pme->bsp_mod[XX],pme->nkx);
   snew(pme->bsp_mod[YY],pme->nky);
   snew(pme->bsp_mod[ZZ],pme->nkz);
-  
+
   pme->gridA = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,NULL,cr);
   if (bFreeEnergy)
     pme->gridB = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,NULL,cr);
@@ -1349,7 +1353,7 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   
   make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
   
-  if (pme->nnodes == 1) {
+  if (pme->nnodes <= 1) {
     pme->my_homenr = homenr;
     pme_realloc_homenr_things(pme);
   }
@@ -1687,7 +1691,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     where();
 
-    if (pme->nnodes == 1) {
+    if (pme->nnodes <= 1) {
       pme->x_home = x;
       pme->q_home = charge;
       pme->f_home = f;
@@ -1705,6 +1709,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       }
       where();
     }
+
     if (debug)
       fprintf(debug,"Node= %6d, pme local particles=%6d\n",
 	      cr->nodeid,pme->my_homenr);
@@ -1739,7 +1744,6 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       GMX_MPE_LOG(ev_gmxfft3d_start);
       gmxfft3D(grid,GMX_FFT_REAL_TO_COMPLEX,cr);
       GMX_MPE_LOG(ev_gmxfft3d_finish);
-
       where();
 
       /* solve in k-space for our local cells */
@@ -1758,7 +1762,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       gmxfft3D(grid,GMX_FFT_COMPLEX_TO_REAL,cr);
       where();
       GMX_MPE_LOG(ev_gmxfft3d_finish);
-      
+
       /* distribute local grid to all nodes */
       if (pme->nnodes > 1) {
         GMX_BARRIER(cr->mpi_comm_mysim);
@@ -1801,7 +1805,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     }
   }
   where();
-  
+
   if (!pme->bFEP) {
     *energy = energy_AB[0];
     copy_mat(vir_AB[0],vir);
