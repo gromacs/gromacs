@@ -2681,3 +2681,14 @@
 ; Added DvdS for Quartz simulations
    SI   OS    1     0.000       3.766      3
    SI   OH    1     0.000       3.766      3
+
+; Added by DvdS for DMSO 17/06/2006
+ [ bondtypes ]
+   O2     S    1  0.153	400000
+
+ [ angletypes ]
+ O2 S CT 1 107 400
+ 
+ [ dihedraltypes ]
+ O2 S CT HC 3       1.35352   4.06057   0.00000  -5.41410   0.00000   0.00000 ; sulfide all-atom
+ 

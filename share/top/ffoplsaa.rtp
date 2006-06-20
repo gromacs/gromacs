@@ -1570,3 +1570,30 @@
    CA    HA2
    CA    OH
    OH    HO
+
+; New All atom DMSO model, DvdS, 17/06/2006
+; Use at your own risk!
+[ DMSO  ]
+ [ atoms ]
+OD	    opls_125	-0.459	    1
+SD	    opls_124	 0.139      1
+CD1	    opls_139	-0.020	    1
+HD11	    opls_140	 0.060	    1
+HD12	    opls_140	 0.060	    1
+HD13	    opls_140	 0.060	    1
+CD2	    opls_139	-0.020	    1
+HD21	    opls_140	 0.060	    1
+HD22	    opls_140	 0.060	    1
+HD23	    opls_140	 0.060	    1
+
+ [ bonds ]
+    OD     SD  
+    SD     CD1 
+    SD     CD2 
+    CD1    HD11
+    CD1	   HD12
+    CD1	   HD13
+    CD2	   HD21
+    CD2	   HD22
+    CD2	   HD23
+
