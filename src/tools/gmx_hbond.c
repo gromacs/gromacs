@@ -66,7 +66,7 @@ char *hxtypenames[NRHXTYPES]=
 #define MAXHH 4
 
 enum { gr0,  gr1,    grI,  grNR };
-enum { hbNo, hbDist, hbHB, hbNR }; 
+enum { hbNo, hbDist, hbHB, hbNR, hbR2}; 
   
 static char *grpnames[grNR] = {"0","1","I" };
 
@@ -81,6 +81,8 @@ static bool bDebug = FALSE;
 
 #define ISHB(h)   (((h) & 2) == 2)
 #define ISDIST(h) (((h) & 1) == 1)
+#define ISDIST2(h) (((h) & 4) == 4)
+
 
 typedef struct {
   int nr;
@@ -151,12 +153,10 @@ typedef struct {
 } t_hbdata;
 
 
-/*
-  Changed argument 'bMerge' into 'oneHB' below,
-  since -contact should cause maxhydro to be 1,
-  not just -merge.
-  - Erik Marklund May 29, 2006
-
+/* Changed argument 'bMerge' into 'oneHB' below,
+ * since -contact should cause maxhydro to be 1,
+ * not just -merge.
+ * - Erik Marklund May 29, 2006
  */
 static t_hbdata *mk_hbdata(bool bHBmap,bool bDAnr,bool oneHB)
 {
@@ -285,9 +285,15 @@ static void inc_nhbonds(t_donors *ddd,int d, int h)
   if (j == ddd->nhydro[dptr])
     gmx_fatal(FARGS,"No such hydrogen %d on donor %d\n",h+1,d+1);
 }
-
+/* Added argument bContact. The reason may not be obvious,
+   but when using -contacts all contacts are stored in h[],
+   while contacts within -r2 (when provided) are stored in g[].
+   Therefore bContact needs to be passed in order to prevent
+   add_hbond from trying to deal with hydrogens.
+ * - Erik Marklund, June 29, 2006 
+ */
 static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
-		      int frame,bool bInsert,bool bMerge,int ihb)
+		      int frame,bool bInsert,bool bMerge,int ihb,bool bContact)
 { 
   int k,id,ia,hh;
   
@@ -304,7 +310,7 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
 
   if (hb->hbmap) {
     /* Loop over hydrogens to find which hydrogen is in this particular HB */
-    if ((ihb == hbHB) && !bMerge) {
+    if ((ihb == hbHB) && !bMerge && !bContact) {
       for(k=0; (k<hb->d.nhydro[id]); k++) 
 	if (hb->d.hydro[id][k] == h)
 	  break;
@@ -355,7 +361,7 @@ static void add_hbond(t_hbdata *hb,int d,int a,int h,int grpd,int grpa,
     }
   }
   /* Increment number if HBonds per H */
-  if (ihb == hbHB)
+  if (ihb == hbHB && !bContact)
     inc_nhbonds(&(hb->d),d,h);
 }
 
@@ -836,7 +842,7 @@ static void pbc_correct(rvec dx,matrix box,rvec hbox)
 }
 
 static int low_is_hbond(int d,int a,int h,
-			rvec r_da,real rcut2, real ccut, 
+			rvec r_da,real rcut2,real ccut, 
 			rvec x[], bool bBox, matrix box,rvec hbox,
 			real *d_ha, real *ang,real d2)
 {
@@ -868,15 +874,19 @@ static int low_is_hbond(int d,int a,int h,
   return hbNo;
 }
 
+/* Added argument r2cut, changed contact and implemented 
+ * use of second cut-off.
+ * - Erik Marklund, June 29, 2006
+ */
 static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
-		    real rcut, real ccut, 
+		    real rcut, real r2cut, real ccut, 
 		    rvec x[], bool bBox, matrix box,rvec hbox,
 		    real *d_ha, real *ang,bool bDA,int *hhh,
 		    bool bContact)
 {
   int  h,hh,id,ja,ihb;
   rvec r_da;
-  real rc2,d2;
+  real rc2,r2c2,d2;
   
   if (d == a)
     return hbNo;
@@ -890,11 +900,12 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
     pbc_correct(r_da,box,hbox);    
   d2 = iprod(r_da,r_da);
   rc2 = rcut*rcut;
-  
+  r2c2 = r2cut*r2cut;  
   *hhh = NOTSET;
   if (d2 < rc2) {
     if (bContact) 
-      return hbDist;
+      return hbHB; /* Ok, it's not a hb, but it should be stored in h[].*/
+      /* return hbDist; */
     
     if (!bDA)
       d2 = 0;
@@ -909,6 +920,8 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
     }
     return hbDist;
   }
+  if (d2 < r2c2)
+    return hbDist;
   return hbNo;
 }
 
@@ -961,7 +974,10 @@ static void do_merge(t_hbdata *hb,int ntmp,
   hb0->maxframes = nnframes;
 }
 
-static void merge_hb(t_hbdata *hb,bool bTwo)
+/* Added argument bContact for nicer output.
+ * Erik Marklund, June 29, 2006
+ */
+static void merge_hb(t_hbdata *hb,bool bTwo, bool bContact)
 {
   int  i,inrnew,indnew,j,ii,jj,m,id,ia,grp,ogrp,ntmp;
   unsigned int *htmp,*gtmp;
@@ -994,7 +1010,10 @@ static void merge_hb(t_hbdata *hb,bool bTwo)
 	  else if (ISDIST(hb1->history[0])) 
 	    indnew--;
 	  else
-	    gmx_incons("Neither hydrogen bond nor distance");
+	    if (bContact) 
+	      gmx_incons("No contact history");
+	    else
+	      gmx_incons("Neither hydrogen bond nor distance");
 	  sfree(hb1->h[0]);
 	  sfree(hb1->g[0]);
 	  hb1->h[0] = NULL;
@@ -1037,10 +1056,12 @@ static void do_nhb_dist(FILE *fp,t_hbdata *hb,real t)
 }
 
 /* Added argument bContact in do_hblife(...). Also
-   added support for -contact in function body.
-   - Erik Marklund, May 31, 2006 */
-
-static void do_hblife(char *fn,t_hbdata *hb,bool bMerge, bool bContact)
+ * added support for -contact in function body.
+ * - Erik Marklund, May 31, 2006 */
+/* Changed the contact code slightly.
+ * - Erik Marklund, June 29, 2006
+ */
+static void do_hblife(char *fn,t_hbdata *hb,bool bMerge,bool bContact)
 {
   FILE *fp;
   static char *leg[] = { "p(t)", "t p(t)" };
@@ -1061,8 +1082,8 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge, bool bContact)
       if (hbh) {
 	if (bMerge) {
 	  if (hbh->h[0]) {
-	    h[0] = bContact ? hbh->g[0] : hbh->h[0];
-	    nhydro   = 1;
+	    h[0] = hbh->h[0];
+	    nhydro = 1;
 	  }
 	  else
 	    nhydro = 0;
@@ -1071,7 +1092,7 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge, bool bContact)
 	  nhydro = 0;
 	  for(m=0; (m<hb->maxhydro); m++)
 	    if (hbh->h[m]) {
-	      h[nhydro++] = bContact ? hbh->g[m] : hbh->h[m];
+	      h[nhydro++] = hbh->h[m];
 	    }
 	}
 	for(nh=0; (nh<nhydro); nh++) {
@@ -1125,12 +1146,15 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge, bool bContact)
   }
   integral *= dt;
   fclose(fp);
-  printf("HB lifetime = %.2f ps\n",integral);
+  printf("%s lifetime = %.2f ps\n", bContact?"Contact":"HB", integral);
   sfree(h);
   sfree(histo);
 }
 
-static void dump_ac(t_hbdata *hb,bool bMerge,int nDump)
+/* Changed argument bMerge into oneHB to handle contacts properly.
+ * - Erik Marklund, June 29, 2006
+ */
+static void dump_ac(t_hbdata *hb,bool oneHB,int nDump)
 {
   FILE  *fp;
   int   i,j,k,m,nd,ihb,idist;
@@ -1148,7 +1172,7 @@ static void dump_ac(t_hbdata *hb,bool bMerge,int nDump)
 	bPrint = FALSE;
 	ihb = idist = 0;
 	hbh = hb->hbmap[i][k];
-	if (bMerge) {
+	if (oneHB) {
 	  if (hbh->h[0]) {
 	    ihb   = is_hb(hbh->h[0],j);
 	    idist = is_hb(hbh->g[0],j);
@@ -1161,6 +1185,7 @@ static void dump_ac(t_hbdata *hb,bool bMerge,int nDump)
 	    idist = idist || ((hbh->g[m]) && is_hb(hbh->g[m],j));
 	  }
 	  /* This is not correct! */
+	  /* What isn't correct? -Erik M */
 	  bPrint = TRUE;
 	}
 	if (bPrint) {
@@ -1255,11 +1280,13 @@ static void compute_derivative(int nn,real x[],real y[],real dydx[])
 }
 
 /* Added argument bContact in do_hbac(...). Also
-   added support for -contact in the actual code.
-   - Erik Marklund, May 31, 2006 */
-
+ * added support for -contact in the actual code.
+ * - Erik Marklund, May 31, 2006 */
+/* Changed contact code and added argument R2 
+ * - Erik Marklund, June 29, 2006
+ */
 static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
-		    int nDump,bool bMerge,bool bContact,real fit_start,real temp)
+		    int nDump,bool bMerge,bool bContact,real fit_start,real temp,bool R2)
 {
   FILE *fp;
   static char *leg[] = { "Ac\\sfin sys\\v{}\\z{}(t)", "Ac(t)", "Cc\\scontact,hb\\v{}\\z{}(t)", "-dAc\\sfs\\v{}\\z{}/dt" };
@@ -1300,9 +1327,8 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 #ifndef WITHOUT_FFTW
   correl = init_correl(n2);
 #endif
-  
   /* Dump hbonds for debugging */
-  dump_ac(hb,bMerge,nDump);
+  dump_ac(hb,bMerge||bContact,nDump);
   
   /* Total number of hbonds analyzed here */
   nhbonds = 0;
@@ -1312,8 +1338,8 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
       nhydro = 0;
       hbh = hb->hbmap[i][k];
       if (hbh) {
-	if (bMerge) {
-	  if (bContact ? ISDIST(hbh->history[0]) : ISHB(hbh->history[0])) {
+	if (bMerge || bContact) {
+	  if (ISHB(hbh->history[0])) {
 	    h[0] = hbh->h[0];
 	    g[0] = hbh->g[0];
 	    nhydro = 1;
@@ -1321,7 +1347,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	}
 	else {
 	  for(m=0; (m<hb->maxhydro); m++)
-	    if (bContact ? ISDIST(hbh->history[m]) : ISHB(hbh->history[m])) {
+	    if (ISHB(hbh->history[m])) {
 	      g[nhydro] = hbh->g[m];
 	      h[nhydro] = hbh->h[m];
 	      nhydro++;
@@ -1329,9 +1355,8 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	}
 	nf = hbh->nframes;
 	for(nh=0; (nh<nhydro); nh++) {
-	  int nrint = bContact ? hb->nrdist : hb->nrhb;
-	  if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == nrint))
-	    fprintf(stderr,"\rACF %d/%d",nhbonds+1,nrint);
+	  if ((((nhbonds+1) % 10) == 0) || (nhbonds+1 == hb->nrhb))
+	    fprintf(stderr,"\rACF %d/%d",nhbonds+1,hb->nrhb);
 	  nhbonds++;
 	  for(j=0; (j<nframes); j++) {
 	    /* Changed '<' into '<=' below, just like I did in
@@ -1344,15 +1369,15 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	    else {
 	      ihb = idist = 0;
 	    }
-	    ht[j]    = ihb-aver_nhb;
-	    gt[j]    = idist*(1-ihb);
-	    if (bContact) {
-	      rhbex[j] = gt[j];
-	      nhb     += idist;
-	    } else {
-	      rhbex[j] = ht[j];
-	      nhb     += ihb;
-	    }
+	    rhbex[j] = ihb-aver_nhb;
+	    /* For contacts: if a second cut-off is provided, use it,
+	     * otherwise use g(t) = 1-h(t) */
+	    if (!R2 && bContact)
+	      gt[j]  = 1-ihb;
+	    else
+	      gt[j]  = idist*(1-ihb); 
+	    ht[j]    = rhbex[j];
+	    nhb     += ihb;
 	  }
 	  
 	  /* The autocorrelation function is normalized after summation only */
@@ -1503,7 +1528,10 @@ static void dump_hbmap(t_hbdata *hb,
   fp = opt2FILE("-hbn",nfile,fnm,"w");
   if (opt2bSet("-g",nfile,fnm)) {
     fplog = ffopen(opt2fn("-g",nfile,fnm),"w");
-    fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
+    if (bContact)
+      fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
+    else
+      fprintf(fplog,"# %10s  %12s  %12s\n","Donor","Hydrogen","Acceptor");
   }
   else
     fplog = NULL;
@@ -1544,22 +1572,17 @@ static void dump_hbmap(t_hbdata *hb,
     ddd = hb->d.don[i];
     for(k=0; (k<hb->a.nra); k++) {
       aaa = hb->a.acc[k];
-      if (bContact) {
-	if (hb->hbmap[i][k] && ISDIST(hb->hbmap[i][k]->history[0])) {
+      for(m=0; (m<hb->d.nhydro[i]); m++) {
+	if (hb->hbmap[i][k] && ISHB(hb->hbmap[i][k]->history[m])) {
 	  sprintf(ds,"%s",mkatomname(atoms,ddd));
 	  sprintf(as,"%s",mkatomname(atoms,aaa));
-	  fprintf(fp," %6u %6u\n",ddd+1,aaa+1);
-	  if (fplog) 
-	    fprintf(fplog,"%12s  %12s\n",ds,as);
-	}
-      } else {
-	for(m=0; (m<hb->d.nhydro[i]); m++) {
-	  if (hb->hbmap[i][k] && ISHB(hb->hbmap[i][k]->history[m])) {
+	  if (bContact) {
+	    fprintf(fp," %6u %6u\n",ddd+1,aaa+1);
+	    if (fplog) 
+	      fprintf(fplog,"%12s  %12s\n",ds,as);
+	  } else {
 	    hhh = hb->d.hydro[i][m];
-	    
-	    sprintf(ds,"%s",mkatomname(atoms,ddd));
 	    sprintf(hs,"%s",mkatomname(atoms,hhh));
-	    sprintf(as,"%s",mkatomname(atoms,aaa));
 	    fprintf(fp," %6u %6u %6u\n",ddd+1,hhh+1,aaa+1);
 	    if (fplog) 
 	      fprintf(fplog,"%12s  %12s  %12s\n",ds,hs,as);
@@ -1655,7 +1678,7 @@ int gmx_hbond(int argc,char *argv[])
     "times the total number of acceptors in the selected group(s)."
   };
   
-  static real acut=30, abin=1, rcut=0.35, rbin=0.005, rshell=-1;
+  static real acut=30, abin=1, rcut=0.35, r2cut=0, rbin=0.005, rshell=-1;
   static real maxnhb=0,fit_start=1,temp=298.15;
   static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE,bMerge=TRUE;
   static int  nDump=0;
@@ -1670,6 +1693,8 @@ int gmx_hbond(int argc,char *argv[])
       "Cutoff radius (nm, X - Acceptor, see next option)" },
     { "-da",   FALSE,  etBOOL, {&bDA},
       "Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE)" },
+    { "-r2",   FALSE,  etREAL, {&r2cut},
+      "Second cutoff radius. Mainly useful with -contact and -ac"},
     { "-abin", FALSE,  etREAL, {&abin},
       "Binwidth angle distribution (degrees)" },
     { "-rbin", FALSE,  etREAL, {&rbin},
@@ -1806,7 +1831,7 @@ int gmx_hbond(int argc,char *argv[])
       /* Should this be here ? */
       snew(hb->d.dptr,top.atoms.nr);
       snew(hb->a.aptr,top.atoms.nr);
-      add_hbond(hb,dd,aa,hh,gr0,gr0,0,FALSE,bMerge,0);
+      add_hbond(hb,dd,aa,hh,gr0,gr0,0,FALSE,bMerge,0,bContact);
     }
     printf("Analyzing %d selected hydrogen bonds from '%s'\n",
 	   isize[0],grpnames[0]);
@@ -1836,8 +1861,8 @@ int gmx_hbond(int argc,char *argv[])
 	     bContact ? "contacts" : "hydrogen bonds",
 	     grpnames[0],isize[0],grpnames[1],isize[1]);
     else
-      fprintf(stderr,"Calculating hydrogen bonds in %s (%d atoms)\n",
-	      grpnames[0],isize[0]);
+      fprintf(stderr,"Calculating %s in %s (%d atoms)\n",
+	      bContact?"contacts":"hydrogen bonds",grpnames[0],isize[0]);
   }
   if (bInsert) {
     printf("Specify group for insertion analysis:\n");
@@ -1924,7 +1949,7 @@ int gmx_hbond(int argc,char *argv[])
 	      top.atoms.nr,natoms);
 		
   bBox  = ir.ePBC!=epbcNONE;
-  grid  = init_grid(bBox, box, rcut, ngrid);
+  grid  = init_grid(bBox, box, (rcut>r2cut)?rcut:r2cut, ngrid);
   nabin = acut/abin;
   nrbin = rcut/rbin;
   snew(adist,nabin+1);
@@ -1932,7 +1957,7 @@ int gmx_hbond(int argc,char *argv[])
   
   do {
     bTric = bBox && TRICLINIC(box);
-    build_grid(hb,x,x[shatom], bBox,box,hbox, rcut, rshell, ngrid,grid);
+    build_grid(hb,x,x[shatom], bBox,box,hbox, (rcut>r2cut)?rcut:r2cut, rshell, ngrid,grid);
     
     reset_nhbonds(&(hb->d));
 
@@ -1952,13 +1977,13 @@ int gmx_hbond(int argc,char *argv[])
 	int dd = index[0][i];
 	int hh = index[0][i+1];
 	int aa = index[0][i+2];
-	ihb = is_hbond(hb,ii,ii,dd,aa,rcut,ccut,x,bBox,box,
+	ihb = is_hbond(hb,ii,ii,dd,aa,rcut,r2cut,ccut,x,bBox,box,
 		       hbox,&dist,&ang,bDA,&h,bContact);
 	
 	if (ihb) {
 	  /* add to index if not already there */
 	  /* Add a hbond */
-	  add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb);
+	  add_hbond(hb,dd,aa,hh,ii,ii,nframes,FALSE,bMerge,ihb,bContact);
 	}
       }
     }
@@ -1995,16 +2020,16 @@ int gmx_hbond(int argc,char *argv[])
 		    j = jcell->atoms[aj];
 		  
 		    /* check if this once was a h-bond */
-		    ihb = is_hbond(hb,grp,ogrp,i,j,rcut,ccut,x,bBox,box,
+		    ihb = is_hbond(hb,grp,ogrp,i,j,rcut,r2cut,ccut,x,bBox,box,
 				   hbox,&dist,&ang,bDA,&h,bContact);
 		    
 		    if (ihb) {
 		      /* add to index if not already there */
 		      /* Add a hbond */
-		      add_hbond(hb,i,j,h,grp,ogrp,nframes,FALSE,bMerge,ihb);
+		      add_hbond(hb,i,j,h,grp,ogrp,nframes,FALSE,bMerge,ihb,bContact);
 		      
 		      /* make angle and distance distributions */
-		      if (ihb == hbHB) {
+		      if (ihb == hbHB && !bContact) {
 			ang*=RAD2DEG;
 			adist[(int)( ang/abin)]++;
 			rdist[(int)(dist/rbin)]++;
@@ -2039,7 +2064,7 @@ int gmx_hbond(int argc,char *argv[])
 			     in this adjacent gridcell (kcell) */
 			  for (ak=0; (ak<kcell->nr); ak++) {
 			    k=kcell->atoms[ak];
-			    ihb = is_hbond(hb,grp,grI,i,k,rcut,ccut,x,
+			    ihb = is_hbond(hb,grp,grI,i,k,rcut,r2cut,ccut,x,
 					   bBox,box,hbox,&dist,&ang,bDA,&h,
 					   bContact);
 			    if (ihb == hbHB) {
@@ -2060,7 +2085,7 @@ int gmx_hbond(int argc,char *argv[])
 			     in this adjacent gridcell (kcell) */
 			  for (ak=0; ak<kcell->nr; ak++) {
 			    k   = kcell->atoms[ak];
-			    ihb = is_hbond(hb,grI,ogrp,k,j,rcut,ccut,x,
+			    ihb = is_hbond(hb,grI,ogrp,k,j,rcut,r2cut,ccut,x,
 					   bBox,box,hbox,&dist,&ang,bDA,&h,
 					   bContact);
 			    if (ihb == hbHB) {
@@ -2076,13 +2101,12 @@ int gmx_hbond(int argc,char *argv[])
 			ENDLOOPGRIDINNER;
 			
 			{
-			  ihb = is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,ccut,x,
-					 bBox,box,hbox,&dist,&ang,bDA,&h,
-					 bContact);
+			  ihb = is_hbond(hb,grI,grI,ins_d_k,ins_a_k,rcut,r2cut,ccut,x,
+					 bBox,box,hbox,&dist,&ang,bDA,&h,bContact);
 			  if (ins_d && ins_a && ihb) {
 			    /* add to hbond index if not already there */
 			    add_hbond(hb,ins_d_k,ins_a_k,h,grI,ogrp,
-				      nframes,TRUE,bMerge,ihb);
+				      nframes,TRUE,bMerge,ihb,bContact);
 			    
 			    /* print insertion info to file */
 			    /*fprintf(fpins,
@@ -2136,26 +2160,27 @@ int gmx_hbond(int argc,char *argv[])
     max_nhb = 0.5*(hb->d.nrd*hb->a.nra);
   }
   /* Added support for -contact below.
-     - Erik Marklund, May 29-31, 2006 */
+   * - Erik Marklund, May 29-31, 2006 */
+  /* Changed contact code.
+   * - Erik Marklund, June 29, 2006 */
   if (bHBmap) {
-    bool doit = bContact ? (hb->nrdist > 0) : (hb->nrhb > 0);
-    if (!doit) {
+    if (hb->nrhb==0) {
       printf("No %s found!!\n", bContact ? "contacts" : "hydrogen bonds");
     } else {
-	printf("Found %d different hydrogen bonds in trajectory\n"
+	printf("Found %d different %s in trajectory\n"
 	       "Found %d different atom-pairs within %s distance\n",
-	       hb->nrhb,hb->nrdist,bContact?"contact":"hydrogen bonding");
+	       hb->nrhb, bContact?"contacts":"hydrogen bonds",
+	       hb->nrdist,(r2cut>0)?"second cut-off":"hydrogen bonding");
 
 	if (bMerge)
-	  merge_hb(hb,bTwo);
+	  merge_hb(hb,bTwo,bContact);
 
 	if (opt2bSet("-hbn",NFILE,fnm)) 
 	  dump_hbmap(hb,NFILE,fnm,bTwo,bInsert,bContact,isize,index,grpnames,&top.atoms);
-	/* Shouldn't the merging take place BEFORE dump_hbmap
-	   to make the -hbn and -hmb output match eachother? 
-	   - Erik Marklund, May 30, 2006
-	*/
 
+	/* Moved the call to merge_hb() to a line BEFORE dump_hbmap
+	 * to make the -hbn and -hmb output match eachother. 
+	 * - Erik Marklund, May 30, 2006 */
     }
   }
   /* Print out number of hbonds and distances */
@@ -2166,8 +2191,8 @@ int gmx_hbond(int argc,char *argv[])
   snew(leg,2);
   snew(leg[0],STRLEN);
   snew(leg[1],STRLEN);
-  sprintf(leg[0],"Hydrogen bonds");
-  sprintf(leg[1],"Pairs within %g nm",rcut);
+  sprintf(leg[0],"%s",bContact?"Contacts":"Hydrogen bonds");
+  sprintf(leg[1],"Pairs within %g nm",(r2cut>0)?r2cut:rcut);
   xvgr_legend(fp,2,leg);
   sfree(leg[1]);
   sfree(leg[0]);
@@ -2240,7 +2265,7 @@ int gmx_hbond(int argc,char *argv[])
       please_cite(stdout,"Spoel2006b");
     if (opt2bSet("-ac",NFILE,fnm)) 
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
-	      bMerge,bContact,fit_start,temp);
+	      bMerge,bContact,fit_start,temp,r2cut>0);
     if (opt2bSet("-life",NFILE,fnm))
       do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge,bContact);
     if (opt2bSet("-hbm",NFILE,fnm)) {
@@ -2257,25 +2282,22 @@ int gmx_hbond(int argc,char *argv[])
       for(id=0; (id<hb->d.nrd); id++) 
 	for(ia=0; (ia<hb->a.nra); ia++) {
 	  for(hh=0; (hh<hb->maxhydro); hh++) {
-	    bool doit = FALSE;
-	    if (hb->hbmap[id][ia])
-	      doit = bContact ? ISDIST(hb->hbmap[id][ia]->history[hh]) :
-		                ISHB(hb->hbmap[id][ia]->history[hh]);
-	    if (doit) {
-	      /* Changed '<' into '<=' in the for-statement below.
-		 It fixed the previously undiscovered bug that caused
-		 the last occurance of an hbond/contact to not be
-		 set in mat.matrix. Have a look at any old -hbm-output
-		 and you will notice that the last column is allways empty.
-		 - Erik Marklund May 30, 2006
-	      */
-	      for(x=0; (x<=hb->hbmap[id][ia]->nframes); x++) {
-		int nn0 = hb->hbmap[id][ia]->n0;
-		range_check(y,0,mat.ny);
-		mat.matrix[x+nn0][y] = bContact ? is_hb(hb->hbmap[id][ia]->g[hh],x) :
-		                                  is_hb(hb->hbmap[id][ia]->h[hh],x);
+	    if (hb->hbmap[id][ia]) {
+	      if (ISHB(hb->hbmap[id][ia]->history[hh])) {
+		/* Changed '<' into '<=' in the for-statement below.
+		 * It fixed the previously undiscovered bug that caused
+		 * the last occurance of an hbond/contact to not be
+		 * set in mat.matrix. Have a look at any old -hbm-output
+		 * and you will notice that the last column is allways empty.
+		 * - Erik Marklund May 30, 2006
+		 */
+		for(x=0; (x<=hb->hbmap[id][ia]->nframes); x++) {
+		  int nn0 = hb->hbmap[id][ia]->n0;
+		  range_check(y,0,mat.ny);
+		  mat.matrix[x+nn0][y] = is_hb(hb->hbmap[id][ia]->h[hh],x);
+		}
+		y++;
 	      }
-	      y++;
 	    }
 	  }
 	}
