@@ -499,7 +499,10 @@ int gmx_sas(int argc,char *argv[])
     "generated (option [TT]-i[tt])",
     "which can be used to restrain surface atoms.[PAR]",
     "By default, periodic boundary conditions are taken into account,",
-    "this can be turned off using the [TT]-pbc[tt] option."
+    "this can be turned off using the [TT]-pbc[tt] option.[PAR]",
+    "With the [TT]-tv[tt] option the total volume of the molecule can be",
+    "computed. Please consider whether the normal probe radius is appropriate",
+    "in this case or whether you would rather use e.g. 0.01 nm.."
   };
 
   static real solsize = 0.14;
