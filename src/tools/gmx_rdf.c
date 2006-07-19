@@ -63,8 +63,9 @@
 
 typedef struct
 {
-  const char   *Label;
-  real        a[4], b[4], c;
+  char *label;
+  int  elem,mass;
+  real a[4], b[4], c;
 } t_CM_table;
 
 /*
@@ -76,51 +77,24 @@ typedef struct
 const t_CM_table CM_t[] =
 {
 
-  { "H",    { 0.489918, 0.262003, 0.196767, 0.049879 },
+  { "H", 1,  1,   { 0.489918, 0.262003, 0.196767, 0.049879 },
     { 20.6593, 7.74039, 49.5519, 2.20159 },
     0.001305 },
- { "HO",    { 0.489918, 0.262003, 0.196767, 0.049879 },
-   { 20.6593, 7.74039, 49.5519, 2.20159 },
-   0.001305 },
-  { "HW",    { 0.489918, 0.262003, 0.196767, 0.049879 },
-    { 20.6593, 7.74039, 49.5519, 2.20159 },
-    0.001305 },
-  { "C",  { 2.26069, 1.56165, 1.05075, 0.839259 },
+  { "C", 6,  12, { 2.26069, 1.56165, 1.05075, 0.839259 },
     { 22.6907, 0.656665, 9.75618, 55.5949 },
     0.286977 },
-  { "CB",  { 2.26069, 1.56165, 1.05075, 0.839259 },
-    { 22.6907, 0.656665, 9.75618, 55.5949 },
-    0.286977 },
-  { "CS1", { 0., 0., 0., 0.},{ 0., 0., 0., 0.}, 0.}, 
-  { "CS2", { 0., 0., 0., 0.},{ 0., 0., 0., 0.}, 0.},
-  { "N",     { 12.2126, 3.13220, 2.01250, 1.16630 },     
+  { "N", 7,  14,   { 12.2126, 3.13220, 2.01250, 1.16630 },     
     { 0.005700, 9.89330, 28.9975, 0.582600 },
     -11.529 },
-  { "O",      { 3.04850, 2.28680, 1.54630, 0.867000 },  
+  { "O", 8,  16, { 3.04850, 2.28680, 1.54630, 0.867000 },  
     { 13.2771, 5.70110, 0.323900, 32.9089 },
     0.250800 },
-  { "OW",     { 3.04850, 2.28680, 1.54630, 0.867000 }, 
-    { 13.2771, 5.70110, 0.323900, 32.9089 },
-    0.250800 },
-  { "OWT3",   { 3.04850, 2.28680, 1.54630, 0.867000 },   
-    { 13.2771, 5.70110, 0.323900, 32.9089 },
-    0.250800 },
-  { "OA",     { 3.04850, 2.28680, 1.54630, 0.867000 },  
-    { 13.2771, 5.70110, 0.323900, 32.9089 },
-    0.250800 },
-  { "OS",     { 3.04850, 2.28680, 1.54630, 0.867000 }, 
-    { 13.2771, 5.70110, 0.323900, 32.9089 },
-    0.250800 },
-  { "OSE",    { 3.04850, 2.28680, 1.54630, 0.867000 },
-    { 13.2771, 5.70110, 0.323900, 32.9089 },
-    0.250800 },
-  { "Na",  { 3.25650, 3.93620, 1.39980, 1.00320 },       /*  Na 1+ */
+  { "Na", 11, 23,  { 3.25650, 3.93620, 1.39980, 1.00320 },       /*  Na 1+ */
     { 2.66710, 6.11530, 0.200100, 14.0390 }, 
-    0.404000 },
-  { "CH3", { 0., 0., 0., 0.},{ 0., 0., 0., 0.}, 0.},    
-  { "CH2", { 0., 0., 0., 0.},{ 0., 0., 0., 0.}, 0.},    
-  { "CH1", { 0., 0., 0., 0.},{ 0., 0., 0., 0.}, 0.},   
+    0.404000 }
 };
+
+#define NCMT asize(CM_t)
 
 typedef struct
 {
@@ -140,8 +114,6 @@ typedef struct
   rvec x;
   int  t;
 } reduced_atom;
-
-real ** sf_table;
 
 static void check_box_c(matrix box)
 {
@@ -594,6 +566,195 @@ static void extract_sq(t_fftgrid *fftgrid,int nbin,real k_max,real lambda,
   }
 }
 
+typedef struct {
+  char *name;
+  int  nelec;
+} t_element;
+
+static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
+		  char *fnXPM,real grid,real lambda,real distance,
+		  int npixel,int nlevel)
+{
+  FILE       *fp;
+  t_element  elem[] = { { "H", 1 }, { "C", 6 }, { "N", 7 }, { "O", 8 }, { "F", 9 }, { "S", 16 } };
+#define NELEM asize(elem)
+  int        status;
+  char       title[STRLEN],*aname;
+  int        natoms,i,j,k,nbin,j0,j1,n,nframes,pme_order;
+  real       *count,**map;
+  char       *grpname;
+  int        isize;
+  atom_id    *index;
+  real       I0,C,t,k_max,factor,yfactor,segvol;
+  rvec       *x,*xndx,box_size,kk,lll;
+  real       fj0,*fj,max_spacing,r,lambda_1;
+  bool       *bExcl;
+  matrix     box;
+  int        nx,ny,nz,nelectron;
+  atom_id    ix,jx,**pairs;
+  splinevec  *theta;
+  t_topology top;
+  t_fftgrid  *fftgrid;
+  t_nrnb     nrnb;
+  t_xdata    *data;
+    
+  /*  bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE); */
+
+  fprintf(stderr,"\nSelect group for structure factor computation:\n");
+  get_index(&top.atoms,fnNDX,1,&isize,&index,&grpname);
+  natoms=read_first_x(&status,fnTRX,&t,&x,box);
+  if (isize < top.atoms.nr)
+    snew(xndx,isize);
+  else
+    xndx = x;
+  fprintf(stderr,"\n");
+  
+  init_nrnb(&nrnb);
+    
+  if ( !natoms )
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
+  /* check with topology */
+  if ( natoms > top.atoms.nr ) 
+    gmx_fatal(FARGS,"Trajectory (%d atoms) does not match topology (%d atoms)",
+		natoms,top.atoms.nr);
+	
+  /* Atomic scattering factors */
+  snew(fj,isize);
+  I0 = 0;
+  nelectron = 0;
+  for(i=0; (i<isize); i++) {
+    aname = *(top.atoms.atomname[index[i]]);
+    fj0 = 1;
+    if (top.atoms.atom[i].ptype == eptAtom) {
+      for(j=0; (j<NELEM); j++)
+	if (aname[0] == elem[j].name[0]) {
+	  fj0 = elem[j].nelec;
+	  break;
+	}
+      if (j == NELEM)
+	fprintf(stderr,"Warning: don't know number of electrons for atom %s\n",aname);
+    }
+    /* Correct for partial charge */
+    fj[i] = fj0 - top.atoms.atom[index[i]].q;
+    
+    nelectron += fj[i];
+    
+    I0 += sqr(fj[i]);
+  }
+  if (debug) {
+    /* Dump scattering factors */
+    for(i=0; (i<isize); i++)
+      fprintf(debug,"Atom %3s-%5d q = %10.4f  f = %10.4f\n",
+	      *(top.atoms.atomname[index[i]]),index[i],
+	      top.atoms.atom[index[i]].q,fj[i]);
+  }
+
+  /* Constant for scattering */
+  C = sqr(1.0/(ELECTRONMASS_keV*KILO*ELECTRONVOLT*1e7*distance));
+  fprintf(stderr,"C is %g\n",C);
+  
+  /* This bit is dimensionless */
+  nx = ny = nz = 0;
+  max_spacing = calc_grid(box,grid,&nx,&ny,&nz,1);	
+  pme_order   = max(4,1+(0.2/grid));
+  npixel      = max(nx,ny);
+  data        = init_xdata(nx,ny);
+  
+  fprintf(stderr,"Largest grid spacing: %g nm, pme_order %d, %dx%d pixel on image\n",
+	  max_spacing,pme_order,npixel,npixel);
+  fftgrid = init_pme(stdout,NULL,nx,ny,nz,pme_order,isize,FALSE,FALSE,eewg3D);
+    
+  /* Determine largest k vector length. */
+  k_max = 1+sqrt(sqr(1+nx/2)+sqr(1+ny/2)+sqr(1+nz/2));
+
+  /* this is the S(q) array */
+  nbin = npixel;
+  snew(count,nbin+1);
+  snew(map,npixel);
+  for(i=0; (i<npixel); i++)
+    snew(map[i],npixel);
+  
+  nframes = 0;
+  do {
+    /* Put the atoms with scattering factor on a grid. Misuses
+     * an old routine from the PPPM code.
+     */
+    for(j=0; (j<DIM); j++)
+      box_size[j] = box[j][j];
+    
+    /* Scale coordinates to the wavelength */
+    for(i=0; (i<isize); i++)
+      copy_rvec(x[index[i]],xndx[i]);
+      
+    /* put local atoms on grid. */
+    spread_on_grid(stdout,fftgrid,isize,pme_order,xndx,fj,box,FALSE,TRUE);
+
+    /* FFT the density */
+    gmxfft3D(fftgrid,GMX_FFT_REAL_TO_COMPLEX,NULL);  
+    
+    /* Extract the Sq function and sum it into the average array */
+    extract_sq(fftgrid,nbin,k_max,lambda,count,box_size,npixel,map,data);
+    
+    nframes++;
+  } while (read_next_x(status,&t,natoms,x,box));
+  fprintf(stderr,"\n");
+  
+  close_trj(status);
+  
+  sfree(x);
+
+  /* Normalize it ?? */  
+  factor  = k_max/(nbin);
+  yfactor = (1.0/nframes)/*(1.0/fftgrid->nxyz)*/;
+  fp=xvgropen(fnSQ,"Structure Factor","q (1/nm)","S(q)");
+  fprintf(fp,"@ subtitle \"Lambda = %g nm. Grid spacing = %g nm\"\n",
+	  lambda,grid);
+  factor *= lambda;
+  for(i=0; i<nbin; i++) {
+    r      = (i+0.5)*factor*2*M_PI;
+    segvol = 4*M_PI*sqr(r)*factor;
+    fprintf(fp,"%10g %10g\n",r,count[i]*yfactor/segvol);
+  }
+  ffclose(fp);
+  
+  do_view(fnSQ,NULL);
+
+  if (fnXPM) {
+    t_rgb rhi = { 0,0,0 }, rlo = { 1,1,1 };
+    real *tx,*ty,hi,inv_nframes;
+    
+    hi = 0;
+    inv_nframes = 1.0/nframes;
+    snew(tx,npixel);
+    snew(ty,npixel);
+    for(i=0; (i<npixel); i++) {
+      tx[i] = i-npixel/2;
+      ty[i] = i-npixel/2;
+
+      for(j=0; (j<npixel); j++) { 
+	map[i][j] *= inv_nframes;
+	hi         = max(hi,map[i][j]);
+      }
+    }
+      
+    fp = ffopen(fnXPM,"w");
+    write_xpm(fp,0,"Diffraction Image","Intensity","kx","ky",
+	      nbin,nbin,tx,ty,map,0,hi,rlo,rhi,&nlevel);
+    fclose(fp);
+    sfree(tx);
+    sfree(ty);
+
+    /* qsort(data,nx*ny,sizeof(data[0]),comp_xdata);    
+       fp = ffopen("test.xvg","w");
+       for(i=0; (i<nx*ny); i++) {
+       if (data[i].ndata != 0) {
+       fprintf(fp,"%10.3f  %10.3f\n",data[i].kkk,data[i].intensity/data[i].ndata);
+       }
+       }
+       fclose(fp);
+    */
+  }
+}
 
 t_complex *** rc_tensor_allocation(int x, int y, int z)
 {
@@ -619,77 +780,90 @@ t_complex *** rc_tensor_allocation(int x, int y, int z)
   return t;
 }
     
-int return_atom_type (char *type)
+int return_atom_type (char *name)
 {
+  typedef struct {
+    char *name;
+    int  nh;
+  } t_united_h;
+  t_united_h uh[] = {
+    { "CH1", 1 }, { "CH2", 2 }, { "CH3", 3 }, 
+    { "CS1", 1 }, { "CS2", 2 }, { "CS3", 3 }, 
+    { "CP1", 1 }, { "CP2", 2 }, { "CP3", 3 }
+  };
   int i;
-  
-  for (i = 0; (i < asize(CM_t)); i++)
-    if (!strcmp (type, CM_t[i].Label))
-      return i;
-  gmx_fatal(FARGS,"\nError: atom type (%s) not in list (%d types checked)!\n", 
-	      type,i);
 
+  for(i-0; (i<asize(uh)); i++) 
+    if (strcmp(name,uh[i].name) == 0)
+      return NCMT-1+uh[i].nh;
+      
+  for(i=0; (i<NCMT); i++)
+    if (strncmp (name, CM_t[i].label,strlen(CM_t[i].label)) == 0)
+      return i;
+  gmx_fatal(FARGS,"\nError: atom (%s) not in list (%d types checked)!\n", 
+	    name,i);
+  
   return 0;
 }
 
-double CMSF (int type, double lambda, double sin_theta)
+double CMSF (int type,int nh,double lambda, double sin_theta)
 /* 
  * return Cromer-Mann fit for the atomic scattering factor:
  * sin_theta is the sine of half the angle between incoming and scattered
  * vectors. See g_sq.h for a short description of CM fit.
  */
 {
-    int i;
-    double tmp = 0.0, k2;
-
+  int i;
+  double tmp = 0.0, k2;
+  
+  /*
+   *  united atoms case
+   *  CH2 / CH3 groups  
+   */
+  if (nh > 0) {
+    tmp = (CMSF (return_atom_type ("C"),0,lambda, sin_theta) +
+	   nh*CMSF (return_atom_type ("H"),0,lambda, sin_theta));
+  }
+  /* all atom case */
+  else {
     k2 = (sqr (sin_theta) / sqr (10.0 * lambda));
-    /*
-     *  united atoms case
-     *  CH2 / CH3 groups  
-     */
-    if (!strcmp (CM_t[type].Label, "CS2") ||
-	!strcmp (CM_t[type].Label, "CH2") ||
-	!strcmp (CM_t[type].Label, "CH3") ||
-	!strcmp (CM_t[type].Label, "CS3")) {
-	tmp = CMSF (return_atom_type ("C"), lambda, sin_theta);
-	if (!strcmp (CM_t[type].Label, "CH3") ||
-	    !strcmp (CM_t[type].Label, "CS3"))
-	    tmp += 3.0 * CMSF (return_atom_type ("H"), lambda, sin_theta);
-	else
-	    tmp += 2.0 * CMSF (return_atom_type ("H"), lambda, sin_theta);
-    }
-    /* all atom case */
-    else {
-	tmp = CM_t[type].c;
-	for (i = 0; i < 4; i++)
-	    tmp += CM_t[type].a[i] * exp (-CM_t[type].b[i] * k2);
-    }
-    return tmp;
+    tmp = CM_t[type].c;
+    for (i = 0; (i < 4); i++)
+      tmp += CM_t[type].a[i] * exp (-CM_t[type].b[i] * k2);
+  }
+  return tmp;
 }
 
-void compute_scattering_factor_table (structure_factor * sf)
+real **compute_scattering_factor_table (structure_factor * sf,int *nsftable)
 {
 /*
  *  this function build up a table of scattering factors for every atom
  *  type and for every scattering angle.
  */
     int i, j;
-    double sin_theta,q;
+    double sin_theta,q,hc=1239.842;
+    real ** sf_table;
 
-/* \hbar \omega \lambda = hc = 1239.842 eV * nm */
-    sf->momentum = ((double) (2. * 1000.0 * M_PI * sf->energy) / 1239.842);
-    sf->lambda = 1239.842 / (1000.0 * sf->energy);
+    /* \hbar \omega \lambda = hc = 1239.842 eV * nm */
+    sf->momentum = ((double) (2. * 1000.0 * M_PI * sf->energy) / hc);
+    sf->lambda = hc / (1000.0 * sf->energy);
     fprintf (stderr, "\nwavelenght = %f nm\n", sf->lambda);
-    snew (sf_table,asize (CM_t));
-    for (i = 0; (i < asize(CM_t)); i++) {
+    *nsftable = NCMT+3;
+    snew (sf_table,*nsftable);
+    for (i = 0; (i < *nsftable); i++) {
 	snew (sf_table[i], sf->n_angles);
 	for (j = 0; j < sf->n_angles; j++) {
 	    q = ((double) j * sf->ref_k);
-/* theta is half the angle between incoming and scattered wavevectors. */
+	    /* theta is half the angle between incoming 
+	       and scattered wavevectors. */
 	    sin_theta = q / (2.0 * sf->momentum);
-	    sf_table[i][j] = CMSF (i, sf->lambda, sin_theta);
+	    if (i < NCMT)
+	      sf_table[i][j] = CMSF (i,0,sf->lambda, sin_theta);
+	    else
+	      sf_table[i][j] = CMSF (i,i-NCMT+1,sf->lambda, sin_theta);
 	}
     }
+    return sf_table;
 }
 
 int * create_indexed_atom_type (reduced_atom * atm, int size)
@@ -722,18 +896,18 @@ int * create_indexed_atom_type (reduced_atom * atm, int size)
     return index_atp;
 }
 
-void rearrange_atoms (reduced_atom * positions, t_trxframe * fr, atom_id * index,
-		 int isize, t_topology * top, real ** sf_table, bool flag)
+void rearrange_atoms (reduced_atom * positions, t_trxframe *fr, atom_id * index,
+		      int isize, t_topology * top, bool flag)
 /* given the group's index, return the (continuous) array of atoms */
 {
-    int i;
-
-    if (flag)
-	for (i = 0; i < isize; i++)
-	    positions[i].t =
-		return_atom_type (*(top->atoms.atomtype[index[i]]));
+  int i;
+  
+  if (flag)
     for (i = 0; i < isize; i++)
-	copy_rvec (fr->x[index[i]], positions[i].x);
+      positions[i].t =
+	return_atom_type (*(top->atoms.atomname[index[i]]));
+  for (i = 0; i < isize; i++)
+    copy_rvec (fr->x[index[i]], positions[i].x);
 }
 
 
@@ -747,8 +921,8 @@ int atp_size (int *index_atp)
 }
 
 void compute_structure_factor (structure_factor * sf, matrix box,
-			  reduced_atom * red, int isize, real start_q,
-			  real end_q, int group)
+			       reduced_atom * red, int isize, real start_q,
+			       real end_q, int group,real **sf_table)
 {
     t_complex ***tmpSF;
     rvec k_factor;
@@ -775,7 +949,6 @@ void compute_structure_factor (structure_factor * sf, matrix box,
     fprintf(stderr,"\n");
     for (i = 0; i < maxkx; i++) {
 	fprintf (stderr,"\rdone %3.1f%%     ", (double)(100.0*(i+1))/maxkx);
-	fflush (stdout);
 	kx = i * k_factor[XX];
 	for (j = 0; j < maxky; j++) {
 	    ky = j * k_factor[YY];
@@ -876,6 +1049,8 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
     reduced_atom **red;
     structure_factor *sf;
     rvec *xtop;
+    real **sf_table;
+    int nsftable;
     matrix box;
     double r_tmp;
 
@@ -918,20 +1093,19 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
 	snew (sf->F[i], sf->n_angles);
     for (i = 0; i < ng; i++) {
 	snew (red[i], isize[i]);
-	rearrange_atoms (red[i], &fr, index[i], isize[i], &top, sf_table, 1);
+	rearrange_atoms (red[i], &fr, index[i], isize[i], &top, TRUE);
 	index_atp[i] = create_indexed_atom_type (red[i], isize[i]);
     }
-    compute_scattering_factor_table (sf);
+    sf_table = compute_scattering_factor_table (sf,&nsftable);
     /* This is the main loop over frames */
 
     do {
 	sf->nSteps++;
 	for (i = 0; i < ng; i++) {
-	    rearrange_atoms (red[i], &fr, index[i], isize[i], &top,
-			     sf_table, 0);
+	    rearrange_atoms (red[i], &fr, index[i], isize[i], &top,FALSE);
 
 	    compute_structure_factor (sf, box, red[i], isize[i],
-				      start_q, end_q, i);
+				      start_q, end_q, i, sf_table);
 	}
     }
     while (read_next_frame (status, &fr));

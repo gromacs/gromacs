@@ -1024,7 +1024,7 @@ int gmx_cluster(int argc,char *argv[])
   char     *grpname;
   real     rmsd,**d1,**d2,*time,time_invfac,*mass=NULL;
   char     buf[STRLEN],buf1[80],title[STRLEN];
-  bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj,bWriteDist;
+  bool     bAnalyze,bUseRmsdCut,bJP_RMSD=FALSE,bReadMat,bReadTraj;
 
   int method,ncluster=0;  
   static char *methodname[] = { 
@@ -1109,7 +1109,6 @@ int gmx_cluster(int argc,char *argv[])
   /* parse options */
   bReadMat   = opt2bSet("-dm",NFILE,fnm);
   bReadTraj  = opt2bSet("-f",NFILE,fnm) || !bReadMat;
-  bWriteDist = opt2bSet("-dist",NFILE,fnm) || !bReadMat;
   if ( opt2parg_bSet("-av",asize(pa),pa) ||
        opt2parg_bSet("-wcl",asize(pa),pa) ||
        opt2parg_bSet("-nst",asize(pa),pa) ||
@@ -1309,9 +1308,8 @@ int gmx_cluster(int argc,char *argv[])
     fprintf(stderr,"WARNING: rmsd minimum %g is above rmsd cutoff %g\n",
 	    rmsmin,rmsdcut);
   
-  if (bWriteDist)
-    /* Plot the rmsd distribution */
-    rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms);
+  /* Plot the rmsd distribution */
+  rmsd_distribution(opt2fn("-dist",NFILE,fnm),rms);
   
   if (bBinary) {
     for(i1=0; (i1 < nf); i1++) 
@@ -1426,8 +1424,7 @@ int gmx_cluster(int argc,char *argv[])
   do_view(opt2fn_null("-sz",NFILE,fnm),"-nxy");
   if (method == m_diagonalize)
     do_view(opt2fn_null("-ev",NFILE,fnm),"-nxy");
-  if (bWriteDist)
-    do_view(opt2fn("-dist",NFILE,fnm),"-nxy");
+  do_view(opt2fn("-dist",NFILE,fnm),"-nxy");
   if (bAnalyze) {
     do_view(opt2fn_null("-tr",NFILE,fnm),"-nxy");
     do_view(opt2fn_null("-ntr",NFILE,fnm),"-nxy");

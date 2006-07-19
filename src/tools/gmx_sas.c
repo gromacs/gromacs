@@ -221,9 +221,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real qcut,bool bSave,real minarea,bool bPBC,
 	      real dgs_default,bool bFindex)
 {
-  FILE         *fp,*fp2,*fp3=NULL;
+  FILE         *fp,*fp2,*fp3=NULL,*vp;
   char         *legend[] = { "Hydrophobic", "Hydrophilic", 
 			     "Total", "D Gsolv" };
+  char         *vfile;
   real         t;
   void         *atomprop=NULL;
   int          status,ndefault;
@@ -348,7 +349,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
   xvgr_legend(fp,asize(legend) - (bDGsol ? 0 : 1),legend);
-  
+  vfile = opt2fn_null("-tv",nfile,fnm);
+  if (vfile)
+    vp=xvgropen(vfile,"Volume","Time (ps)",
+		"V (nm\\S3\\N)");
+  else
+    vp = NULL;
+    
   nfr=0;
   do {
     if (bPBC)
@@ -359,7 +366,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       flag = FLAG_ATOM_AREA | FLAG_DOTS;
     else
       flag = FLAG_ATOM_AREA;
-    
+    if (vp)
+      flag = flag | FLAG_VOLUME;
+      
     if (debug)
       write_sto_conf("check.pdb","pbc check",atoms,x,NULL,box);
 
@@ -372,7 +381,6 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       connelly_plot(ftp2fn(efPDB,nfile,fnm),
 		    nsurfacedots,surfacedots,x,atoms,
 		    &(top->symtab),box,bSave);
-    
     harea  = 0; 
     tarea  = 0;
     dgsolv = 0;
@@ -406,6 +414,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     else
       fprintf(fp,"\n");
     
+    /* Print volume */
+    if (vp)
+      fprintf(vp,"%12.5e  %12.5e\n",t,totvolume);
+    
     if (area) {
       sfree(area);
       area = NULL;
@@ -420,7 +432,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   fprintf(stderr,"\n");
   close_trj(status);
   fclose(fp);
-  
+  if (vp)
+    fclose(vp);
+    
   /* if necessary, print areas per atom to file too: */
   if (bResAt) {
     for(i=0; i<atoms->nres; i++) {
@@ -485,7 +499,10 @@ int gmx_sas(int argc,char *argv[])
     "generated (option [TT]-i[tt])",
     "which can be used to restrain surface atoms.[PAR]",
     "By default, periodic boundary conditions are taken into account,",
-    "this can be turned off using the [TT]-pbc[tt] option."
+    "this can be turned off using the [TT]-pbc[tt] option.[PAR]",
+    "With the [TT]-tv[tt] option the total volume of the molecule can be",
+    "computed. Please consider whether the normal probe radius is appropriate",
+    "in this case or whether you would rather use e.g. 0.01 nm.."
   };
 
   static real solsize = 0.14;
@@ -517,6 +534,7 @@ int gmx_sas(int argc,char *argv[])
     { efXVG, "-o",   "area",     ffWRITE },
     { efXVG, "-or",  "resarea",  ffOPTWR },
     { efXVG, "-oa",  "atomarea", ffOPTWR },
+    { efXVG, "-tv",  "volume",   ffOPTWR },
     { efPDB, "-q",   "connelly", ffOPTWR },
     { efNDX, "-n",   "index",    ffOPTRD },
     { efITP, "-i",   "surfat",   ffOPTWR }
