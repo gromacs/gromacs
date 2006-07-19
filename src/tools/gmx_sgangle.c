@@ -93,7 +93,7 @@ static void calculate_normal(atom_id index[],rvec x[],rvec result,rvec center)
 }
 
 /* calculate the angle and distance between the two groups */
-static void calc_angle(matrix box,rvec x[], atom_id index1[], 
+static void calc_angle(rvec *box,rvec x[], atom_id index1[], 
 		       atom_id index2[], int gnx1, int gnx2,
 		       real *angle,      real *distance, 
 		       real *distance1,  real *distance2)
@@ -254,7 +254,7 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
   sfree(x0);
 }
 
-static void calc_angle_single(matrix box,
+static void calc_angle_single(rvec *box,
 			      rvec xzero[],
 			      rvec x[], 
 			      atom_id index1[],
