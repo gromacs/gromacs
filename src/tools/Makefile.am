@@ -20,7 +20,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_analyze.c	gmx_anaeig.c	gmx_angle.c	gmx_bond.c	\
 	gmx_bundle.c	gmx_chi.c	gmx_cluster.c	gmx_confrms.c	\
 	gmx_covar.c	gmx_density.c	gmx_densmap.c   gmx_dih.c	\
-	gmx_dielectric.c \
+	gmx_dielectric.c	gmx_kinetics.c \
 	gmx_dipoles.c	gmx_disre.c	gmx_dist.c	gmx_dyndom.c	\
 	gmx_enemat.c	gmx_energy.c	gmx_lie.c	gmx_filter.c	\
 	gmx_gyrate.c	gmx_h2order.c	gmx_hbond.c	gmx_helix.c	\
@@ -56,10 +56,8 @@ bin_PROGRAMS = \
 	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
 	g_sham \
 	g_sorient   	g_tcaf      	g_traj      	g_velacc    	\
-	g_clustsize 	g_mdmat     	g_wham
+	g_clustsize 	g_mdmat     	g_wham		g_kinetics
 
-
-EXTRA_PROGRAMS	= g_kinetics
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \
 	../gmxlib/libgmx@LIBSUFFIX@.la
@@ -74,8 +72,6 @@ install-exec-hook:
 	  (cd $$libdir && test -e $$libname.a -a ! -e $$nompi.a && $(LN_S) $$libname.a $$nompi.a ; exit 0); \
 	  (cd $$libdir && test -e $$libname.so -a ! -e $$nompi.so && $(LN_S) $$libname.so $$nompi.so ; exit 0); \
 	fi; 
-
-g_kinetics_SOURCES 	= g_kinetics.c	gmx_kinetics.c
 
 CLEANFILES   = *.la *~ \\\#*
 
