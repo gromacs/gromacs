@@ -17,6 +17,9 @@ dnl It does *not* correspond to the release number.
 SHARED_VERSION_INFO="4:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
+# MPI builds on aix break with shared libs, so they are disabled by default.
+AC_DISABLE_SHARED
+
 #######################################################################
 # Simple options and makefile variables
 #######################################################################
@@ -51,7 +54,6 @@ if test "$enable_fortran" = "yes"; then
 fi
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
-
 
 ### MPI or not
 AC_ARG_ENABLE(mpi,
@@ -342,10 +344,11 @@ AC_CHECK_SIZEOF(long long int)
 ACX_FLOAT_FORMAT
 
 
-# MPI builds on aix break with shared libs, so they are disabled by default.
-AC_DISABLE_SHARED
-AC_PROG_LIBTOOL
+AC_PROG_INSTALL
 AC_PROG_LN_S
+AC_PROG_MAKE_SET
+AC_LIBTOOL_WIN32_DLL
+AC_PROG_LIBTOOL
 AC_SYS_LARGEFILE
 AC_FUNC_FSEEKO
 
@@ -517,12 +520,26 @@ else
   AM_CONDITIONAL(USE_X11,false)
 fi
 
+# GNU Scientific Library or not
+AC_ARG_WITH(gsl,
+ [  --without-gsl                 do not link to the GNU scientific library, prevents certain analysis tools from being built],,without_gsl=no)
+
+######
+if test "$without_gsl" = "no"; then
+  AC_CHECK_LIB(gslcblas,main)
+  AC_CHECK_LIB(gsl,main)
+fi
+
+AC_ARG_WITH(xml,
+ [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,without_xml2=no)
+ 
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
-#AC_CHECK_LIB(xml2,main)
-# This should really only be done when the library is found. Doesn't hurt though.
-#INCLUDES="$INCLUDES -I/usr/include/libxml2"
+if test "$without_xml2" = "no"; then
+  AC_CHECK_LIB(xml2,main)
+  INCLUDES="$INCLUDES -I/usr/include/libxml2"
+ fi
 
 
 #### 
