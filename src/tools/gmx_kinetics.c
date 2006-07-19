@@ -54,6 +54,7 @@
 #include "gstat.h"
 #include "xvgr.h"
 #include "physics.h"
+#ifdef HAVE_LIBGSL
 #include <gsl/gsl_multimin.h>
 
 enum { epAuf, epEuf, epAfu, epEfu, epNR };
@@ -68,10 +69,12 @@ typedef struct {
   int nparams;    /* Is 2, 4 or 8                                            */
   bool *bMask;    /* Determine whether this replica is part of the d2 comp.  */
   bool bSum;
+  bool bDiscrete; /* Use either discrete folding (0/1) or a continuous       */
+                  /* criterion */
   int nmask;      /* Number of replicas taken into account                   */
   real dt;        /* Timestep between frames                                 */
   int  j0,j1;     /* Range of frames used in calculating delta               */
-  real **temp,**data;
+  real **temp,**data,**data2;
   int  **state;   /* State index running from 0 (F) to nstate-1 (U)          */
   real **beta,**fcalt,**icalt;
   real *time,*sumft,*sumit,*sumfct,*sumict;
@@ -135,14 +138,20 @@ real is_intermediate(t_remd_data *d,int irep,int jframe)
 void integrate_dfdt(t_remd_data *d)
 {
   int    i,j;
-  double beta,ddf,ddi,df,db,fac,sumf,sumi;
+  double beta,ddf,ddi,df,db,fac,sumf,sumi,area;
   
   d->sumfct[0] = 0;
   d->sumict[0] = 0;
   for(i=0; (i<d->nreplica); i++) {
     if (d->bMask[i]) {
-      ddf = 0.5*d->dt*is_folded(d,i,0);
-      ddi = 0.5*d->dt*is_intermediate(d,i,0);
+      if (d->bDiscrete) {
+	ddf = 0.5*d->dt*is_folded(d,i,0);
+	ddi = 0.5*d->dt*is_intermediate(d,i,0);
+      }
+      else {
+	ddf = 0.5*d->dt*d->state[i][0];
+	ddi = 0.0;
+      }
       d->fcalt[i][0] = ddf;
       d->icalt[i][0] = ddi;
       d->sumfct[0]  += ddf;
@@ -158,12 +167,21 @@ void integrate_dfdt(t_remd_data *d)
     for(i=0; (i<d->nreplica); i++) {
       if (d->bMask[i]) {
 	beta = d->beta[i][j];
-	if (d->nstate <= 2) {
-	  df = (d->params[epAuf]*exp(-beta*d->params[epEuf])*
-		is_unfolded(d,i,j));
+	if ((d->nstate <= 2) || d->bDiscrete) {
+	  if (d->bDiscrete) 
+	    df = (d->params[epAuf]*exp(-beta*d->params[epEuf])*
+		  is_unfolded(d,i,j));
+	  else {
+	    area = (d->data2 ? d->data2[i][j] : 1.0);
+	    df   =  area*d->params[epAuf]*exp(-beta*d->params[epEuf]);
+	  }
 	  if (bBack(d)) {
-	    db = (d->params[epAfu]*exp(-beta*d->params[epEfu])*
-		  is_folded(d,i,j));
+	    db = 0;
+	    if (d->bDiscrete) 
+	      db = (d->params[epAfu]*exp(-beta*d->params[epEfu])*
+		    is_folded(d,i,j));
+	    else 
+	      gmx_fatal(FARGS,"Back reaction not implemented with continuous");
 	    ddf = fac*(df-db);
 	  }
 	  else
@@ -190,6 +208,13 @@ void integrate_dfdt(t_remd_data *d)
     d->sumfct[j] = d->sumfct[j-1] + sumf;
     d->sumict[j] = d->sumict[j-1] + sumi;
   }
+  if (debug) {
+    fprintf(debug,"@type xy\n");
+    for(j=0; (j<d->nframe); j++) {
+      fprintf(debug,"%8.3f  %12.5e\n",d->time[j],d->sumfct[j]);
+    }
+    fprintf(debug,"&\n");
+  }
 }
 
 void sum_ft(t_remd_data *d)
@@ -206,8 +231,12 @@ void sum_ft(t_remd_data *d)
       fac = d->dt;
     for(i=0; (i<d->nreplica); i++) {
       if (d->bMask[i]) {
-	d->sumft[j] += fac*is_folded(d,i,j);
-	d->sumit[j] += fac*is_intermediate(d,i,j);
+	if (d->bDiscrete) {
+	  d->sumft[j] += fac*is_folded(d,i,j);
+	  d->sumit[j] += fac*is_intermediate(d,i,j);
+	}
+	else 
+	  d->sumft[j] += fac*d->state[i][j];
       }
     }
   }
@@ -222,11 +251,15 @@ double calc_d2(t_remd_data *d)
   
   if (d->bSum) {
     for(j=d->j0; (j<d->j1); j++) {
-      d2  += sqr(d->sumft[j]-d->sumfct[j]);
-      if (d->nstate > 2)
-	d2 += sqr(d->sumit[j]-d->sumict[j]);
-    }
-  }
+      if (d->bDiscrete) {
+	d2  += sqr(d->sumft[j]-d->sumfct[j]);
+	if (d->nstate > 2)
+	  d2 += sqr(d->sumit[j]-d->sumict[j]);
+      }
+      else
+	d2  += sqr(d->sumft[j]-d->sumfct[j]);
+    }   
+  }   
   else {
     for(i=0; (i<d->nreplica); i++) {
       dr2 = 0;
@@ -245,7 +278,7 @@ double calc_d2(t_remd_data *d)
       }
     }
   }
-  dd2 = (d2/(d->j1-d->j0))/d->nmask;
+  dd2 = (d2/(d->j1-d->j0))/(d->bDiscrete ? d->nmask : 1);
    
   return dd2;
 }
@@ -271,7 +304,7 @@ static void optimize_remd_parameters(FILE *fp,t_remd_data *d,int maxiter,
 				     real tol)
 {
   real   size,d2;
-  size_t iter = 0;
+  int    iter = 0;
   int    status = 0;
   int    i;
 
@@ -304,8 +337,8 @@ static void optimize_remd_parameters(FILE *fp,t_remd_data *d,int maxiter,
 
   printf ("%5s","Iter");
   for(i=0; (i<my_func.n); i++) 
-    printf(" %8s",epnm(my_func.n,i));
-  printf (" %8s %8s\n","NM Size","Chi2");
+    printf(" %12s",epnm(my_func.n,i));
+  printf (" %12s %12s\n","NM Size","Chi2");
   
   do  {
     iter++;
@@ -325,18 +358,18 @@ static void optimize_remd_parameters(FILE *fp,t_remd_data *d,int maxiter,
   
     printf ("%5d", iter);
     for(i=0; (i<my_func.n); i++) 
-      printf(" %8.2e",gsl_vector_get (s->x,i));
-    printf (" %8.2e %8.2e\n",size,d2);
+      printf(" %12.4e",gsl_vector_get (s->x,i));
+    printf (" %12.4e %12.4e\n",size,d2);
   }
   while ((status == GSL_CONTINUE) && (iter < maxiter));
   
   gsl_multimin_fminimizer_free (s);
 }
 
-
 static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
 			    real ucut,bool bBack,real Euf,real Efu,
-			    real Ei,real t0,real t1,bool bSum)
+			    real Ei,real t0,real t1,bool bSum,bool bDiscrete,
+			    int nmult)
 {
   int i,j,ninter;
   real dd,tau_f,tau_u;
@@ -353,7 +386,8 @@ static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
     d->nparams = 4*(1+ninter);
     d->nstate  = 2+ninter;
   }
-  d->bSum = bSum;
+  d->bSum      = bSum;
+  d->bDiscrete = bDiscrete;
   snew(d->beta, d->nreplica);
   snew(d->state,d->nreplica);
   snew(d->bMask,d->nreplica);
@@ -365,7 +399,9 @@ static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
   snew(d->params,d->nparams);
   snew(d->fcalt,d->nreplica);
   snew(d->icalt,d->nreplica);
-
+  
+  convert_times(d->nframe,d->time);
+  
   if (t0 < 0)
     d->j0 = 0;
   else
@@ -390,35 +426,48 @@ static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
     for(j=0; (j<d->nframe); j++) {
       d->beta[i][j] = 1.0/(BOLTZ*d->temp[i][j]);
       dd = d->data[i][j];
-      if (dd <= cutoff)
-	d->state[i][j] = 0;
-      else if ((ucut > cutoff) && (dd <= ucut))
-	d->state[i][j] = 1;
+      if (bDiscrete) {
+	if (dd <= cutoff)
+	  d->state[i][j] = 0;
+	else if ((ucut > cutoff) && (dd <= ucut))
+	  d->state[i][j] = 1;
+	else
+	  d->state[i][j] = d->nstate-1;
+      }
       else
-	d->state[i][j] = d->nstate-1;
+	d->state[i][j] = dd*nmult;
     }
   }
   sum_ft(d);
   
   /* Assume forward rate constant is half the total time in this
    * simulation and backward is ten times as long */
-  tau_f = d->time[d->nframe-1];
-  tau_u = 4*tau_f;
-  d->params[epEuf] = Euf;
-  d->params[epAuf] = exp(d->params[epEuf]/(BOLTZ*tref))/tau_f;
-  if (bBack) {
-    d->params[epEfu] = Efu;
-    d->params[epAfu] = exp(d->params[epEfu]/(BOLTZ*tref))/tau_u;
-    if (ninter >0) {
-      d->params[eqEui] = Ei;
-      d->params[eqAui] = exp(d->params[eqEui]/(BOLTZ*tref))/tau_u;
-      d->params[eqEiu] = Ei;
-      d->params[eqAiu] = exp(d->params[eqEiu]/(BOLTZ*tref))/tau_u;
+  if (bDiscrete) {
+    tau_f = d->time[d->nframe-1];
+    tau_u = 4*tau_f;
+    d->params[epEuf] = Euf;
+    d->params[epAuf] = exp(d->params[epEuf]/(BOLTZ*tref))/tau_f;
+    if (bBack) {
+      d->params[epEfu] = Efu;
+      d->params[epAfu] = exp(d->params[epEfu]/(BOLTZ*tref))/tau_u;
+      if (ninter >0) {
+	d->params[eqEui] = Ei;
+	d->params[eqAui] = exp(d->params[eqEui]/(BOLTZ*tref))/tau_u;
+	d->params[eqEiu] = Ei;
+	d->params[eqAiu] = exp(d->params[eqEiu]/(BOLTZ*tref))/tau_u;
+      }
+    }
+    else {
+      d->params[epAfu]  = 0;
+      d->params[epEfu]  = 0;
     }
   }
   else {
-    d->params[epAfu]  = 0;
-    d->params[epEfu]  = 0;
+    d->params[epEuf] = Euf;
+    if (d->data2)
+      d->params[epAuf] = 0.1;
+    else
+      d->params[epAuf] = 20.0;
   }
 }
 
@@ -464,6 +513,8 @@ void print_tau(FILE *gp,t_remd_data *d,real tref)
 	    DG,DH,TDS);
     Tb = 260;
     Te = 420;
+    Tm = 0;
+    Fm = 0;
     Fb = folded_fraction(d,Tb);
     Fe = folded_fraction(d,Te);
     while((Te-Tb > 0.001) && (Fm != 0.5)) {
@@ -513,18 +564,21 @@ void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char *rfn,
   real fac[] = { 0.97, 0.98, 0.99, 1.0, 1.01, 1.02, 1.03 };
 #define NFAC asize(fac)
   real d2[NFAC];
-  
+  double norm;
+    
   integrate_dfdt(d);
   print_tau(gp,d,tref);
+  norm = (d->bDiscrete ? 1.0/d->nmask : 1.0);
   
   if (fn) {
     fp = xvgropen(fn,"Optimized fit to data","Time (ps)","Fraction Folded");
     xvgr_legend(fp,asize(leg),leg);
     for(i=0; (i<d->nframe); i++) {
-      if ((skip <= 0) || ((i % skip) == 0))
-	fprintf(fp,"%12.5e  %12.5e  %12.5e\n",d->time[i],
-		d->sumft[i]/d->nmask,d->sumfct[i]/d->nmask,
-		(d->sumft[i]-d->sumfct[i])/d->nmask);
+      if ((skip <= 0) || ((i % skip) == 0)) {
+	fprintf(fp,"%12.5e  %12.5e  %12.5e  %12.5e\n",d->time[i],
+		d->sumft[i]*norm,d->sumfct[i]*norm,
+		(d->sumft[i]-d->sumfct[i])*norm);
+      }
     }
     fclose(fp);
   }
@@ -556,8 +610,8 @@ void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char *rfn,
     for(i=0; (i<d->nframe); i++) {
       if ((skip <= 0) || ((i % skip) == 0))
 	fprintf(fp,"%12.5e  %12.5e  %12.5e  %12.5e\n",d->time[i],
-		d->sumit[i]/d->nmask,d->sumict[i]/d->nmask,
-		(d->sumit[i]-d->sumict[i])/d->nmask);
+		d->sumit[i]*norm,d->sumict[i]*norm,
+		(d->sumit[i]-d->sumict[i])*norm);
     }
     fclose(fp);
   }
@@ -626,26 +680,34 @@ int gmx_kinetics(int argc,char *argv[])
     "cutoff < DATA < ucut. Structures with DATA values larger than ucut will",
     "not be regarded as potential folders. In this case 8 parameters are optimized.[PAR]",
     "The average fraction foled is printed in an xvg file together with the fit to it.", 
-    "If an intermediate is used a further file will show the build of the intermediate and the fit to that process."
+    "If an intermediate is used a further file will show the build of the intermediate and the fit to that process.[PAR]",
+    "The program can also be used with continuous variables (by setting",
+    "[TT]-nodiscrete[tt]). In this case kinetics of other processes can be",
+    "studied. This is very much a work in progress and hence the manual",
+    "(this information) is lagging behind somewhat.[PAR]",
+    "In order to compile this program you need access to the GNU",
+    "scientific library."
   };
-  static int  nreplica = 1;
-  static real tref     = 298.15;
-  static real cutoff   = 0.2;
-  static real ucut     = 0.0;
-  static real Euf      = 10;
-  static real Efu      = 30;
-  static real Ei       = 10;
-  static bool bHaveT   = TRUE;
-  static real t0       = -1;
-  static real t1       = -1;
-  static real tb       = 0;
-  static real te       = 0;
-  static real tol      = 1e-3;
-  static int  maxiter  = 100;
-  static int  skip     = 0;
-  static bool bBack    = TRUE;
-  static bool bSplit   = TRUE;
-  static bool bSum     = TRUE;
+  static int  nreplica  = 1;
+  static real tref      = 298.15;
+  static real cutoff    = 0.2;
+  static real ucut      = 0.0;
+  static real Euf       = 10;
+  static real Efu       = 30;
+  static real Ei        = 10;
+  static bool bHaveT    = TRUE;
+  static real t0        = -1;
+  static real t1        = -1;
+  static real tb        = 0;
+  static real te        = 0;
+  static real tol       = 1e-3;
+  static int  maxiter   = 100;
+  static int  skip      = 0;
+  static int  nmult     = 1;
+  static bool bBack     = TRUE;
+  static bool bSplit    = TRUE;
+  static bool bSum      = TRUE;
+  static bool bDiscrete = TRUE;
   t_pargs pa[] = {
     { "-time",    FALSE, etBOOL, {&bHaveT},
       "Expect a time in the input" },
@@ -660,7 +722,7 @@ int gmx_kinetics(int argc,char *argv[])
     { "-T",       FALSE, etREAL, {&tref},
       "Reference temperature for computing rate constants" },
     { "-n",       FALSE, etINT, {&nreplica},
-      "Read data for # replicas" },
+      "Read data for # replicas. Only necessary when files are written in xmgrace format using @type and & as delimiters." },
     { "-cut",     FALSE, etREAL, {&cutoff},
       "Cut-off (max) value for regarding a structure as folded" },
     { "-ucut",    FALSE, etREAL, {&ucut},
@@ -682,19 +744,24 @@ int gmx_kinetics(int argc,char *argv[])
     { "-split",   FALSE, etBOOL,{&bSplit},
       "Estimate error by splitting the number of replicas in two and refitting" },
     { "-sum",     FALSE, etBOOL,{&bSum},
-      "Average folding before computing chi^2" }
+      "Average folding before computing chi^2" },
+    { "-discrete", FALSE, etBOOL, {&bDiscrete},
+      "Use a discrete folding criterium (F <-> U) or a continuous one" },
+    { "-mult",    FALSE, etINT, {&nmult},
+      "Factor to multiply the data with before discretization" }
   };
 #define NPA asize(pa)
 
   FILE        *fp;
-  real        dt_t,dt_d;
-  int         nset_t,nset_d,n_t,n_d,i;
-  char        *tfile,*dfile;
+  real        dt_t,dt_d,dt_d2;
+  int         nset_t,nset_d,nset_d2,n_t,n_d,n_d2,i;
+  char        *tfile,*dfile,*dfile2;
   t_remd_data remd;  
   
   t_filenm fnm[] = { 
     { efXVG, "-f",    "temp",    ffREAD   },
     { efXVG, "-d",    "data",    ffREAD   },
+    { efXVG, "-d2",   "data2",   ffOPTRD  },
     { efXVG, "-o",    "ft_all",  ffWRITE  },
     { efXVG, "-o2",   "it_all",  ffOPTWR  },
     { efXVG, "-o3",   "ft_repl", ffOPTWR  },
@@ -705,14 +772,16 @@ int gmx_kinetics(int argc,char *argv[])
 #define NFILE asize(fnm) 
 
   CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_BE_NICE | PCA_TIME_UNIT,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL); 
 
+  please_cite(stdout,"Spoel2006d");
   if (cutoff < 0)
     gmx_fatal(FARGS,"cutoff should be >= 0 (rather than %f)",cutoff);
-		    
-  tfile  = opt2fn("-f",NFILE,fnm);
-  dfile  = opt2fn("-d",NFILE,fnm);
+
+  tfile   = opt2fn("-f",NFILE,fnm);
+  dfile   = opt2fn("-d",NFILE,fnm);
+  dfile2  = opt2fn_null("-d2",NFILE,fnm);
   
   fp = ffopen(opt2fn("-g",NFILE,fnm),"w");
   
@@ -728,14 +797,31 @@ int gmx_kinetics(int argc,char *argv[])
 			    opt2parg_bSet("-e",NPA,pa),te,
 			    nreplica,&nset_d,&n_d,&dt_d,&remd.time);
   printf("Read %d sets of %d points in %s, dt = %g\n\n",nset_d,n_d,dfile,dt_d);
-  
+
   if ((nset_t != nset_d) || (n_t != n_d) || (dt_t != dt_d))
     gmx_fatal(FARGS,"Files %s and %s are inconsistent. Check log file",
 	      tfile,dfile);
-  remd.nreplica = nset_d;
-  remd.nframe   = n_d;
-  remd.dt       = dt_d;
-  preprocess_remd(fp,&remd,cutoff,tref,ucut,bBack,Euf,Efu,Ei,t0,t1,bSum);
+
+  if (dfile2) {
+    remd.data2 = read_xvg_time(dfile2,bHaveT,
+			       opt2parg_bSet("-b",NPA,pa),tb,
+			       opt2parg_bSet("-e",NPA,pa),te,
+			       nreplica,&nset_d2,&n_d2,&dt_d2,&remd.time);
+    printf("Read %d sets of %d points in %s, dt = %g\n\n",
+	   nset_d2,n_d2,dfile2,dt_d2);
+    if ((nset_d2 != nset_d) || (n_d != n_d2) || (dt_d != dt_d2))
+      gmx_fatal(FARGS,"Files %s and %s are inconsistent. Check log file",
+		dfile,dfile2);
+  }
+  else {
+    remd.data2 = NULL;
+  }
+  
+  remd.nreplica  = nset_d;
+  remd.nframe    = n_d;
+  remd.dt        = 1;
+  preprocess_remd(fp,&remd,cutoff,tref,ucut,bBack,Euf,Efu,Ei,t0,t1,
+		  bSum,bDiscrete,nmult);
   
   optimize_remd_parameters(fp,&remd,maxiter,tol);
   
@@ -797,3 +883,9 @@ int gmx_kinetics(int argc,char *argv[])
   return 0;
 }
   
+#else
+int gmx_kinetics(int argc,char *argv[])
+{
+  gmx_fatal(FARGS,"This program should be compiled with the GNU scientific library. Please install the library and reinstall GROMACS.");
+}
+#endif
