@@ -82,7 +82,7 @@ static void get_bondeds(int nrat, t_iatom atoms[],
 {
   int     i,j,k,ftype;
   int     nra,nrd,tp,nrcheck;
-  t_iatom *ia;
+  t_iatom *ia,*aa;
   bool    bCheck;
   t_param param;
   
@@ -115,9 +115,10 @@ static void get_bondeds(int nrat, t_iatom atoms[],
       for(i=0; (i<plist[ftype].nr); i++) {
 	/* now we have something, check includes one of atoms[*] */
 	bCheck=FALSE;
-	for(j=0; j<nrcheck && !bCheck; j++)
+	aa = plist[ftype].param[i].a;
+	for(j=0; (j<nrcheck); j++)
 	  for(k=0; k<nrat; k++)
-	    bCheck = bCheck || (plist[ftype].param[i].a[j]==atoms[k]);
+	    bCheck = bCheck || (aa[j] == atoms[k]);
 	
 	if (bCheck)
 	  /* abuse nrcheck to see if we're adding bond, angle or idih */
