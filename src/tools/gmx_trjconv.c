@@ -40,6 +40,7 @@
 #include <string.h>
 #include <math.h>
 #include "macros.h"
+#include "assert.h"
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "typedefs.h"
@@ -63,22 +64,41 @@
 #include "viewit.h"
 #include "xvgr.h"
 
+static real calc_isquared(int nmol,rvec m_com[],rvec m_shift[],rvec clust_com)
+{
+  real Isq=0;
+  int  i;
+  rvec m0,dx;
+  
+  for(i=0; (i<nmol); i++) {
+    rvec_add(m_com[i],m_shift[i],m0);
+    rvec_sub(m0,clust_com,dx);
+    Isq += iprod(dx,dx);
+  }
+  return Isq;
+}
+
 static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
 			     atom_id index[],
-			     rvec xref,matrix box)
+			     rvec clust_com,matrix box)
 {
-  const   real tol=1e-4;
+  const   real tol=1e-3;
   bool    bChanged;
-  int     m,i,j,j0,j1,jj,ai,iter;
-  real    mass,mtot,fac;
-  rvec    dx,xtest,xrm;
-  int     nmol;
+  int     m,i,j,j0,j1,jj,ai,iter,is;
+  real    fac,Isq,min_dist2;
+  rvec    dx,ddx,xtest,xrm,box_center;
+  int     nmol,nmol_cl,imol_center;
   atom_id *molind,*mola;
   bool    *bMol,*bTmp;
   rvec    *m_com,*m_shift,m0;
-  real    *m_mass;
   t_pbc   pbc;
+
+  calc_box_center(ecenterTRIC,box,box_center);
   
+  /* Initiate the pbc structure */
+  memset(&pbc,0,sizeof(pbc));
+  set_pbc(&pbc,box);
+    
   /* Convert atom index to molecular */
   nmol   = top->blocks[ebMOLS].nr;
   molind = top->blocks[ebMOLS].index;
@@ -86,8 +106,8 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
   snew(bMol,nmol);
   snew(m_com,nmol);
   snew(m_shift,nmol);
-  snew(m_mass,nmol);
   snew(bTmp,top->atoms.nr);
+  nmol_cl = 0;
   for(i=0; (i<nrefat); i++) {
     /* Mark all molecules in the index */
     ai = index[i];
@@ -111,92 +131,101 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
     bMol[j0] = TRUE;
   }
   /* Double check whether all atoms in all molecules that are marked are part 
-   * of the cluster. Simultaneously compute the center of mass.
+   * of the cluster. Simultaneously compute the center of geometry.
    */
+  min_dist2   = 10*sqr(trace(box));
+  imol_center = -1;
   for(i=0; (i<nmol); i++) {
     for(j=molind[i]; (j<molind[i+1]); j++) {
       if (bMol[i] && !bTmp[mola[j]])
 	gmx_fatal(FARGS,"Molecule %d marked for clustering but not atom %d",
-		    i,mola[j]);
+		  i,mola[j]);
       else if (!bMol[i] && bTmp[mola[j]])
 	gmx_fatal(FARGS,"Atom %d marked for clustering but not molecule %d",
-		    mola[j],i);
+		  mola[j],i);
       else if (bMol[i]) {
-	/* Compute center of mass of molecule */
+	/* Compute center of geometry of molecule */
 	rvec_inc(m_com[i],x[mola[j]]);
-	m_mass[i] += top->atoms.atom[mola[j]].m;
       }
     }
     if (bMol[i]) {
-      /* Normalize center of mass */
+      /* Normalize center of geometry */
       fac = 1.0/(molind[i+1]-molind[i]);
       for(m=0; (m<DIM); m++) 
 	m_com[i][m] *= fac;
+      /* Determine which molecule is closest to the center of the box */
+      pbc_dx(&pbc,box_center,m_com[i],dx);
+      if (iprod(dx,dx) < min_dist2) {
+	min_dist2   = iprod(dx,dx);
+	imol_center = i;
+      }
+      nmol_cl++;
     }
   }
   sfree(bTmp);
 
-  set_pbc(&pbc,box);
+  if (nmol_cl <= 0) {
+    fprintf(stderr,"No molecules selected in the cluster\n");
+    return;
+  } else if (imol_center == -1) {
+    fprintf(stderr,"No central molecules could be found\n");
+    return;
+  }
+  
+  
   /* First calculation is incremental */
-  clear_rvec(xref);
-  mtot = 0;
-  for(i=0; (i<nmol); i++) {
+  clear_rvec(clust_com);
+  Isq = 0;
+  for(i=m=0; (i<nmol); i++) {
     /* Check whether this molecule is part of the cluster */
     if (bMol[i]) {
-      mass = m_mass[i];
-      if ((i > 0) && (mtot > 0)) {
-	svmul(1.0/mtot,xref,xrm);
+      if ((i > 0) && (m > 0)) {
+	/* Compute center of cluster by dividing by number of molecules */
+	svmul(1.0/m,clust_com,xrm);
+	/* Distance vector between molecular COM and cluster */
 	pbc_dx(&pbc,m_com[i],xrm,dx);
 	rvec_add(xrm,dx,xtest);
-	/* xtest is now the image of m_com[i] that is closest to xref */
-	for(j=0; (j<DIM); j++)
-	  xref[j] += mass*xtest[j];
+	/* xtest is now the image of m_com[i] that is closest to clust_com */
+	rvec_inc(clust_com,xtest);
 	rvec_sub(xtest,m_com[i],m_shift[i]);
       }
       else {
-	for(j=0; (j<DIM); j++)
-	  xref[j] += mass*m_com[i][j];
+	rvec_inc(clust_com,m_com[i]);
       }
-      mtot += mass;
+      m++;
     }
   }
-  svmul(1/mtot,xref,xref);
-  for(j=0; (j<DIM); j++) {
-    while(xref[j] < 0)
-      xref[j] += box[j][j];
-    while(xref[j] >= box[j][j])
-      xref[j] -= box[j][j];
-  }
+  assert(m == nmol_cl);
+  svmul(1/nmol_cl,clust_com,clust_com);
+  put_atom_in_box(box,clust_com);
+
   /* Now check if any molecule is more than half the box from the COM */
   if (box) {
     iter = 0;
     do {
       bChanged = FALSE;
-      for(i=0; (i<nmol); i++) {
+      for(i=0; (i<nmol) && !bChanged; i++) {
 	if (bMol[i]) {
-	  mass = m_mass[i]/mtot;
 	  /* Sum com and shift from com */
 	  rvec_add(m_com[i],m_shift[i],m0);
-	  pbc_dx(&pbc,m0,xref,dx);
-	  rvec_add(xref,dx,xtest);
-	  for(j=0; (j<DIM); j++)
-	    if (fabs(xtest[j]-m0[j]) > tol) {
-	      /* Here we have used the wrong image for contributing to the COM */
-	      xref[j] += mass*(xtest[j]-m0[j]);
-	      m_shift[i][j] = xtest[j]-m_com[i][j];
-	      bChanged = TRUE;
-	    }
+	  pbc_dx(&pbc,m0,clust_com,dx);
+	  rvec_add(clust_com,dx,xtest);
+	  rvec_sub(xtest,m0,ddx);
+	  if (iprod(ddx,ddx) > tol) {
+	    /* Here we have used the wrong image for contributing to the COM */
+	    rvec_sub(xtest,m_com[i],m_shift[i]);
+	    for(j=0; (j<DIM); j++) 
+	      clust_com[j] += (xtest[j]-m0[j])/nmol_cl;
+	    bChanged = TRUE;
+	  }
 	}
       }
-      for(j=0; (j<DIM); j++) {
-	while(xref[j] < 0)
-	  xref[j] += box[j][j];
-	while(xref[j] >= box[j][j])
-	  xref[j] -= box[j][j];
-      }
+      Isq = calc_isquared(nmol,m_com,m_shift,clust_com);
+      put_atom_in_box(box,clust_com);
+
       if (bChanged && (iter > 0))
-	printf("COM: %8.3f  %8.3f  %8.3f  iter = %d\n",
-	       xref[XX],xref[YY],xref[ZZ],iter);
+	printf("COM: %8.3f  %8.3f  %8.3f  iter = %d  Isq = %8.3f\n",
+	       clust_com[XX],clust_com[YY],clust_com[ZZ],iter,Isq);
       iter++;
     } while (bChanged);
   }
@@ -210,7 +239,50 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
   sfree(bMol);
   sfree(m_com);
   sfree(m_shift);
-  sfree(m_mass);
+}
+
+static void put_molecule_com_in_box(t_block *mols,matrix box,rvec x[])
+{
+  const real tol = 1e-3;
+  atom_id i,j;
+  int     m;
+  rvec    com,new_com,shift,dx,box_center;
+  t_pbc   pbc;
+  
+  calc_box_center(ecenterTRIC,box,box_center);
+  set_pbc(&pbc,box);
+  
+  for(i=0; (i<mols->nr); i++) {
+    /* calc COM */
+    clear_rvec(com);
+    for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
+      rvec_inc(com, x[i]);
+    }
+    /* calculate final COM */
+    svmul(1.0/(real)(mols->index[i+1]-mols->index[i]), com, com);
+      
+    /* check if COM is outside box */
+    clear_rvec(shift);
+
+    /*pbc_dx(&pbc,com,box_center,dx); */
+    copy_rvec(com,new_com);
+    put_atom_in_box(box,new_com);   
+    /*rvec_add(box_center,dx,new_com);*/
+    rvec_sub(new_com,com,shift);
+    /*for(m=0; m<DIM; m++) {
+      while (com[m]+shift[m]< 0        ) shift[m]+=box[m][m];
+      while (com[m]+shift[m]>=box[m][m]) shift[m]-=box[m][m];
+      }*/
+    clear_rvec(com);
+    if (norm2(shift) > tol) {
+      if (debug)
+	fprintf (debug,"\nShifting position of molecule %d "
+		 "by %8.3f  %8.3f  %8.3f\n", i+1, PR_VEC(shift));
+      for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
+	rvec_inc(x[j],shift);
+      }
+    }
+  }
 }
 
 static void put_residue_com_in_box(t_atom atom[],int natoms,matrix box,rvec x[])
@@ -227,7 +299,7 @@ static void put_residue_com_in_box(t_atom atom[],int natoms,matrix box,rvec x[])
       /* calculate final COM */
       res_end = i;
       res_nat = res_end - res_start;
-      svmul(1.0/(float)res_nat, com, com);
+      svmul(1.0/(real)res_nat, com, com);
       
       /* check if COM is outside box */
       clear_rvec(shift);
@@ -418,6 +490,8 @@ int gmx_trjconv(int argc,char *argv[])
     "* [TT]com[tt] puts the center of mass of all [IT]residues[it] ",
     "in the box. Not that this can break molecules that consist of",
     "more than one residue (e.g. proteins).[BR]",
+    "* [TT]com_mol[tt] puts the center of mass of all [IT]molecules[it] ",
+    "in the box.[BR]",
     "* [TT]inbox[tt] puts all the atoms in the box.[BR]",
     "* [TT]nojump[tt] checks if atoms jump across the box and then puts",
     "them back. This has the effect that all molecules",
@@ -430,7 +504,8 @@ int gmx_trjconv(int argc,char *argv[])
     "such that they are all closest to the center of mass of the cluster",
     "which is iteratively updated. Note that this will only give meaningful",
     "results if you in fact have a cluster. Luckily that can be checked",
-    "afterwards using a trajectory viewer.[BR]",
+    "afterwards using a trajectory viewer. Note also that if your molecules",
+    "are broken this will not work either.[BR]",
     "[TT]-pbc[tt] is ignored when [TT]-fit[tt] or [TT]-pfit[tt] is set,",
     "in that case molecules will be made whole.[PAR]",
     "Option [TT]-ur[tt] sets the unit cell representation for options",
@@ -474,9 +549,9 @@ int gmx_trjconv(int argc,char *argv[])
   
   int pbc_enum;
   enum
-    { epSel,epNone, epWhole, epInbox, epNojump, epCluster, epCom, epNR };
+    { epSel,epNone, epWhole, epInbox, epNojump, epCluster, epComRes, epComMol, epNR };
   static char *pbc_opt[epNR+1] = 
-    { NULL, "none", "whole", "inbox", "nojump", "cluster", "com", NULL };
+    { NULL, "none", "whole", "inbox", "nojump", "cluster", "com", "com_mol", NULL };
   
   int unitcell_enum;
   enum
@@ -583,7 +658,7 @@ int gmx_trjconv(int argc,char *argv[])
   int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
   double       **dropval;
   real         tshift=0,t0=-1,dt=0.001,prec;
-  bool         bPBC,bPBCcom,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
+  bool         bPBC,bPBCcomRes,bPBCcomMol,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
@@ -637,22 +712,23 @@ int gmx_trjconv(int argc,char *argv[])
     bSplit    = (split_t != 0);
 
     /* parse enum options */    
-    fit_enum  = nenum(fit);
-    bFit      = fit_enum==efFit;
-    bReset    = fit_enum==efReset;
-    bPFit     = fit_enum==efPFit;
-    pbc_enum  = nenum(pbc_opt);
-    bPBC      = pbc_enum==epWhole;
-    bPBCcom   = pbc_enum==epCom;
-    bInBox    = pbc_enum==epInbox;
-    bNoJump   = pbc_enum==epNojump;
-    bCluster  = pbc_enum==epCluster;
+    fit_enum   = nenum(fit);
+    bFit       = fit_enum==efFit;
+    bReset     = fit_enum==efReset;
+    bPFit      = fit_enum==efPFit;
+    pbc_enum   = nenum(pbc_opt);
+    bPBC       = pbc_enum==epWhole;
+    bPBCcomRes = pbc_enum==epComRes;
+    bPBCcomMol = pbc_enum==epComMol;
+    bInBox     = pbc_enum==epInbox;
+    bNoJump    = pbc_enum==epNojump;
+    bCluster   = pbc_enum==epCluster;
     unitcell_enum = nenum(unitcell_opt);
-    bRect     = unitcell_enum==euRect;
-    bTric     = unitcell_enum==euTric;
-    bComp     = unitcell_enum==euCompact;
-    ecenter = nenum(center_opt) - ecTric;
-    bCenter = (ecenter >= 0);
+    bRect      = unitcell_enum==euRect;
+    bTric      = unitcell_enum==euTric;
+    bComp      = unitcell_enum==euCompact;
+    ecenter    = nenum(center_opt) - ecTric;
+    bCenter    = (ecenter >= 0);
     if (!bCenter)
       ecenter = ecenterDEF;
 
@@ -671,7 +747,7 @@ int gmx_trjconv(int argc,char *argv[])
 		"representation.\n\n", unitcell_opt[0], pbc_opt[0]);
 	bSetUR = FALSE;
       }
-      else if ( !bPBCcom && !bInBox ) {
+      else if ( !bPBCcomRes && !bInBox ) {
 	fprintf(stderr,"Note: No PBC option selected in combination with "
 		"unitcell representation\n"
 		"      (-ur %s); will put molecules in unitcell "
@@ -737,7 +813,7 @@ int gmx_trjconv(int argc,char *argv[])
     
     /* Determine whether to read a topology */
     bTPS = (ftp2bSet(efTPS,NFILE,fnm) ||
-	    bPBC || bReset || (ftp == efGRO) || (ftp == efPDB));
+	    bPBC || bReset || bPBCcomMol || (ftp == efGRO) || (ftp == efPDB));
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
@@ -1096,8 +1172,11 @@ int gmx_trjconv(int argc,char *argv[])
 	      }
 	    }
 	    /* put COM of residues inside box */
-	    if (bPBCcom) {
+	    if (bPBCcomRes) {
 	      put_residue_com_in_box(atoms->atom, natoms, fr.box, fr.x);
+	    }
+	    if (bPBCcomMol) {
+	      put_molecule_com_in_box(&top.blocks[ebMOLS],fr.box, fr.x);
 	    }
 	    /* Copy the input trxframe struct to the output trxframe struct */
 	    frout = fr;
