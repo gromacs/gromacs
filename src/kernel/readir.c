@@ -302,14 +302,17 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"With vdwtype = %s,rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
-  if ((((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH))
-       && (ir->rlist == ir->rcoulomb)) ||
-      (((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT))
-       && (ir->rlist == ir->rvdw))) {
-    sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb/rvdw.");
+  if (((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) ||
+       (ir->coulombtype == eelPMESWITCH)) && (ir->rlist == ir->rcoulomb)) {
+    sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb.");
     warning(NULL);
   }
-  
+  if (((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT))
+      && (ir->rlist == ir->rvdw)) {
+    sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rvdw.");
+    warning(NULL);
+  }
+
   if(ir->eI == eiLBFGS && (ir->coulombtype==eelCUT || ir->vdwtype==evdwCUT)) {
     sprintf(warn_buf,"For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
     warning(NULL);
