@@ -273,13 +273,15 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK(ir->rlist > ir->rcoulomb);
   }
 
-  if (EEL_FULL(ir->coulombtype)) {
+  if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER) {
+    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",eel_names[ir->coulombtype]);
+    CHECK(ir->rcoulomb > ir->rlist);
+  } else if (EEL_FULL(ir->coulombtype)) {
     sprintf(err_buf,"With coulombtype = %s, rcoulomb must be equal to rlist",eel_names[ir->coulombtype]);
     CHECK(ir->rcoulomb != ir->rlist);
   }
 
-  if ((ir->coulombtype == eelPME) ||
-      (ir->coulombtype == eelPMEUSER)) {
+  if (EEL_PME(ir->coulombtype)) {
     if ((ir->pme_order < 4) || ((ir->pme_order % 2) == 1)) {
       if (ir->pme_order < 4)
 	ir->pme_order = 4;

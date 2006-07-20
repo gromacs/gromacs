@@ -299,8 +299,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initiate PME if necessary */
   /* either on all nodes (if epmePMEANDPP is TRUE) 
    * or on dedicated PME nodes (if epmePMEONLY is TRUE) */
-  if (!(cr->duty & DUTY_PP) ||
-      (fr->eeltype == eelPME || fr->eeltype == eelPMEUSER)) {
+  if (!(cr->duty & DUTY_PP) || EEL_PME(fr->eeltype)) {
     if (cr->duty & DUTY_PME) {
       if (cr->duty & DUTY_PP) {
 	ewaldcoeff = fr->ewaldcoeff;

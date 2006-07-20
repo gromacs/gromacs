@@ -846,8 +846,7 @@ void init_forcerec(FILE *fp,
   fr->vdwtype    = ir->vdwtype;
 
   fr->bTwinRange = fr->rlistlong > fr->rlist;
-  fr->bEwald     = (fr->eeltype==eelPME || fr->eeltype==eelPMEUSER || 
-		    fr->eeltype==eelEWALD);
+  fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
   fr->bvdwtab    = (fr->vdwtype != evdwCUT);
   
   fr->bcoultab   = (fr->eeltype != eelCUT) && !EEL_RF(fr->eeltype);
@@ -1350,6 +1349,7 @@ void force(FILE       *fplog,   int        step,
 			   box_size,fr->phi,cr,nsb,nrnb,ir->pme_order,&Vlr);
       break;
     case eelPME:
+    case eelPMESWITCH:
     case eelPMEUSER:
       if (cr->duty & DUTY_PME) {
         status = gmx_pme_do(fplog,fr->pmedata,

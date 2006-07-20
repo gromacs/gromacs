@@ -51,16 +51,16 @@
 /* All the possible (implemented) table functions */
 enum { 
   etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
-  etabRF,    etabCOUL, etabEwald, etabEwaldUser,
-  etabLJ6Switch, etabLJ12Switch,etabCOULSwitch, 
+  etabRF,    etabCOUL, etabEwald, etabEwaldSwitch, etabEwaldUser,
+  etabLJ6Switch, etabLJ12Switch, etabCOULSwitch, 
   etabLJ6Encad, etabLJ12Encad, etabCOULEncad,  
   etabEXPMIN, etabUSER, etabNR 
 };
 
 static const char *tabnm[etabNR] = { 
   "LJ6",   "LJ12", "LJ6Shift", "LJ12Shift", "Shift",
-  "RF",    "COUL", "Ewald", "Ewald-User",
-  "LJ6Switch", "LJ12Switch","COULSwitch", 
+  "RF",    "COUL", "Ewald", "Ewald-Switch", "Ewald-User",
+  "LJ6Switch", "LJ12Switch", "COULSwitch", 
   "LJ6-Encad shift", "LJ12-Encad shift", "COUL-Encad shift",  
   "EXPMIN","USER" 
 };
@@ -305,8 +305,8 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   double ewc=fr->ewaldcoeff;
   double isp= 0.564189583547756;
    
-  bSwitch = ((tp == etabLJ6Switch)    || (tp == etabLJ12Switch)    || 
-	     (tp == etabCOULSwitch));
+  bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) || 
+	     (tp == etabCOULSwitch) || (tp == etabEwaldSwitch));
   bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
 	     (tp == etabShift));
 
@@ -465,6 +465,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       }
       break;
     case etabEwald:
+    case etabEwaldSwitch:
       Vtab  = erfc(ewc*r)/r;
       Ftab  = erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
       Vtab2 = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
@@ -596,6 +597,9 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
   case eelEWALD:
   case eelPME:
     tabsel[etiCOUL] = etabEwald;
+    break;
+  case eelPMESWITCH:
+    tabsel[etiCOUL] = etabEwaldSwitch;
     break;
   case eelPMEUSER:
     tabsel[etiCOUL] = etabEwaldUser;
