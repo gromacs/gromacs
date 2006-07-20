@@ -92,7 +92,7 @@ extern int relax_shells(FILE *log,t_commrec *cr,t_commrec *mcr,bool bVerbose,
 enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce, eoFx, eoFy, eoFz,
        eoPx, eoPy, eoPz, 
        eoPolarizability, eoDipole, eoObsNR, 
-       eoMemory=eoObsNR, eoInter, eoUseVirial,  eoNR };
+       eoMemory=eoObsNR, eoInter, eoUseVirial,  eoCombRule, eoNR };
 extern char *eoNames[eoNR];
 
 typedef struct {
@@ -139,6 +139,7 @@ typedef struct {
   int        nmemory;
   bool       bInter;
   bool       bVirial;
+  int        combrule;
 } t_coupl_rec;
 
 extern void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef);

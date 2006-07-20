@@ -54,7 +54,8 @@
 char *eoNames[eoNR] = { 
   "Pres", "Epot", "Vir", "Dist", "Mu", "Force", "Fx", "Fy", "Fz",
   "Px", "Py", "Pz",
-  "Polarizability", "Dipole", "Memory", "UseEinter", "UseVirial"
+  "Polarizability", "Dipole", "Memory", "UseEinter", "UseVirial",
+  "CombinationRule"
 };
 
 static int Name2eo(char *s)
@@ -73,8 +74,6 @@ static int Name2eo(char *s)
   return res;
 }
 
-static const char *NoYes[] = { "No", "Yes" };
-	
 static void send_tcr(int dest,t_coupl_rec *tcr)
 {
   nblocktx(dest,eoObsNR,tcr->ref_value);
@@ -84,6 +83,10 @@ static void send_tcr(int dest,t_coupl_rec *tcr)
   nblocktx(dest,tcr->nBU,tcr->tcBU);
   blocktx(dest,tcr->nQ);
   nblocktx(dest,tcr->nQ,tcr->tcQ);
+  blocktx(dest,tcr->nmemory);
+  blocktx(dest,tcr->bInter);
+  blocktx(dest,tcr->bVirial);
+  blocktx(dest,tcr->combrule);
 }
 
 static void rec_tcr(int src,t_coupl_rec *tcr)
@@ -101,6 +104,11 @@ static void rec_tcr(int src,t_coupl_rec *tcr)
   blockrx(src,tcr->nQ);
   snew(tcr->tcQ,tcr->nQ);
   nblockrx(src,tcr->nQ,tcr->tcQ);
+  
+  blockrx(src,tcr->nmemory);
+  blockrx(src,tcr->bInter);
+  blockrx(src,tcr->bVirial);
+  blockrx(src,tcr->combrule);
 }
 
 void comm_tcr(FILE *log,t_commrec *cr,t_coupl_rec **tcr)
@@ -239,6 +247,8 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
 	  eoNames[eoInter],yesno_names[tcr->bInter]);
   fprintf(fp,"%-15s = %12s  ; Use virial iso pressure\n",
 	  eoNames[eoUseVirial],yesno_names[tcr->bVirial]);
+  fprintf(fp,"%-15s = %12d  ; Combination rule, same coding as in grompp.\n",
+	  eoNames[eoCombRule],tcr->combrule);
   
   fprintf(fp,"\n; Q-Coupling   %6s  %12s\n","type","xi");
   for(i=0; (i<tcr->nQ); i++) {
@@ -448,7 +458,7 @@ void read_gct(char *fn,t_coupl_rec *tcr)
   ITYPE (eoNames[eoMemory],     tcr->nmemory,   1);
   ETYPE (eoNames[eoInter],      tcr->bInter,    yesno_names);
   ETYPE (eoNames[eoUseVirial],  tcr->bVirial,   yesno_names);
-  
+  ITYPE (eoNames[eoCombRule],   tcr->combrule,  1);
   tcr->tcLJ=NULL;
   tcr->tcBU=NULL;
   tcr->tcQ=NULL;
