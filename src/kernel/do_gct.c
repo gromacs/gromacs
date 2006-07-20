@@ -69,11 +69,12 @@ t_coupl_rec *init_coupling(FILE *log,int nfile,t_filenm fnm[],
     read_gct (opt2fn("-j",nfile,fnm), tcr);
     write_gct(opt2fn("-jo",nfile,fnm),tcr,idef);
   }
-  copy_ff(tcr,fr,md,idef);
-    
   /* Update all processors with coupling info */
   if (PAR(cr))
     comm_tcr(log,cr,&tcr);
+
+  /* Copy information from the coupling to the force field stuff */    
+  copy_ff(tcr,fr,md,idef);
   
   return tcr;
 }
@@ -110,7 +111,8 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   t_coupl_LJ  *tclj;
   t_coupl_BU  *tcbu;
   char        buf[256];
-  char        *leg[] =  { "C12", "C6" };
+  char        *leg[]  =  { "C12", "C6" };
+  char        *eleg[] =  { "Epsilon", "Sigma" };
   char        *bleg[] = { "A", "B", "C" };
   char        **raleg;
   int         i,j,index;
@@ -143,7 +145,10 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
 		     "Force constant (units)");
 	  fprintf(out[i],"@ subtitle \"Interaction between types %d and %d\"\n",
 		  tclj->at_i,tclj->at_j);
-	  xvgr_legend(out[i],asize(leg),leg);
+	  if (tcr->combrule == 1)
+	    xvgr_legend(out[i],asize(leg),leg);
+	  else
+	    xvgr_legend(out[i],asize(eleg),eleg);
 	  fflush(out[i]);
 	}
       }
@@ -197,8 +202,15 @@ static void pr_ff(t_coupl_rec *tcr,real time,t_idef *idef,
   for(i=0; (i<tcr->nLJ); i++) {
     tclj=&(tcr->tcLJ[i]);
     if (tclj->bPrint) {
-      fprintf(out[i],"%14.7e  %14.7e  %14.7e\n",
-	      time,tclj->c12,tclj->c6);
+      if (tcr->combrule == 1)
+	fprintf(out[i],"%14.7e  %14.7e  %14.7e\n",
+		time,tclj->c12,tclj->c6);
+      else {
+	double sigma   = pow(tclj->c12/tclj->c6,1.0/6.0);
+	double epsilon = 0.25*sqr(tclj->c6)/tclj->c12;
+	fprintf(out[i],"%14.7e  %14.7e  %14.7e\n",
+		time,epsilon,sigma);
+      }
       fflush(out[i]);
     }
   }
@@ -256,16 +268,54 @@ static void pr_dev(t_coupl_rec *tcr,
   fflush(fp);
 }
 
-static void upd_nbfplj(FILE *log,real *nbfp,int atnr,real f6[],real f12[])
+static void upd_nbfplj(FILE *log,real *nbfp,int atnr,real f6[],real f12[],
+		       int combrule)
 {
+  double *sigma,*epsilon,c6,c12,eps,sig,sig6;
   int n,m,k;
   
   /* Update the nonbonded force parameters */
-  for(k=n=0; (n<atnr); n++) {
-    for(m=0; (m<atnr); m++,k++) {
-      C6 (nbfp,atnr,n,m) *= f6[k];
-      C12(nbfp,atnr,n,m) *= f12[k];
+  switch (combrule) {
+  case 1:
+    for(k=n=0; (n<atnr); n++) {
+      for(m=0; (m<atnr); m++,k++) {
+	C6 (nbfp,atnr,n,m) *= f6[k];
+	C12(nbfp,atnr,n,m) *= f12[k];
+      }
     }
+    break;
+  case 2:
+  case 3:
+    /* Convert to sigma and epsilon */
+    snew(sigma,atnr);
+    snew(epsilon,atnr);
+    for(n=0; (n<atnr); n++) {
+      k = n*(atnr+1);
+      c6  = C6 (nbfp,atnr,n,n) * f6[k];
+      c12 = C12(nbfp,atnr,n,n) * f12[k];
+      if ((c6 == 0) || (c12 == 0))
+	gmx_fatal(FARGS,"You can not use combination rule %d with zero C6 (%f) or C12 (%f)",combrule,c6,c12);
+      sigma[n]   = pow(c12/c6,1.0/6.0);
+      epsilon[n] = 0.25*(c6*c6/c12);
+    }
+    for(k=n=0; (n<atnr); n++) {
+      for(m=0; (m<atnr); m++,k++) {
+	eps  = sqrt(epsilon[n]*epsilon[m]);
+	if (combrule == 2)
+	  sig  = 0.5*(sigma[n]+sigma[m]);
+	else
+	  sig  = sqrt(sigma[n]*sigma[m]);
+	sig6 = pow(sig,6.0);
+	C6 (nbfp,atnr,n,m) = 4*eps*sig6; 
+	C12(nbfp,atnr,n,m) = 4*eps*sig6*sig6;
+      }
+    }
+    sfree(sigma);
+    sfree(epsilon);
+    break;
+  default:
+    gmx_fatal(FARGS,"Combination rule should be 1,2 or 3 instead of %d",
+	      combrule);
   }
 }
 
@@ -623,7 +673,7 @@ void do_coupling(FILE *log,int nfile,t_filenm fnm[],
       dump_fm(log,idef->atnr,f12,"f12");
 #endif
     }
-    upd_nbfplj(log,fr->nbfp,idef->atnr,f6,f12);
+    upd_nbfplj(log,fr->nbfp,idef->atnr,f6,f12,tcr->combrule);
     
     /* Copy for printing */
     for(i=0; (i<tcr->nLJ); i++) {
