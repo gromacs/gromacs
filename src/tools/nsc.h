@@ -61,6 +61,13 @@ extern int nsc_dclm2(rvec *coords, real *radius, int nat, atom_id index[],
 		     real **lidots, int *nu_dots,
 		     matrix box);
 
+extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
+			int  densit, int mode,
+			real *value_of_area, real **at_area,
+			real *value_of_vol,
+			real **lidots, int *nu_dots,
+			atom_id index[],matrix box);
+
 /* 
     User notes :
 The input requirements :
