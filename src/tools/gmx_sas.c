@@ -57,6 +57,7 @@
 #include "rmpbc.h"
 #include "names.h"
 #include "atomprop.h"
+#include "physics.h"
 
 typedef struct {
   atom_id  aa,ab;
@@ -222,8 +223,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      real dgs_default,bool bFindex)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
-  char         *legend[] = { "Hydrophobic", "Hydrophilic", 
-			     "Total", "D Gsolv" };
+  char         *flegend[] = { "Hydrophobic", "Hydrophilic", 
+			      "Total", "D Gsolv" };
+  char         *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
   char         *vfile;
   real         t;
   void         *atomprop=NULL;
@@ -239,29 +241,32 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
   real         at_area,*atom_area=NULL,*atom_area2=NULL;
   real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
-  real         totarea,totvolume,harea,tarea,fluc2;
+  real         totarea,totvolume,totmass,density,harea,tarea,fluc2;
   atom_id      **index,*findex;
-  int          *nx,nphobic,npcheck;
+  int          *nx,nphobic,npcheck,retval;
   char         **grpname,*fgrpname;
   real         dgsolv;
 
   bITP   = opt2bSet("-i",nfile,fnm);
   bResAt = opt2bSet("-or",nfile,fnm) || opt2bSet("-oa",nfile,fnm) || bITP;
 
-  if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
-			   &t,&x,box))==0)
-    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
-
   top   = read_top(ftp2fn(efTPX,nfile,fnm));
   atoms = &(top->atoms);
+  
   bDGsol = strcmp(*(atoms->atomtype[0]),"?") != 0;
   if (!bDGsol) 
     fprintf(stderr,"Warning: your tpr file is too old, will not compute "
 	    "Delta G of solvation\n");
+  else {
+    printf("In case you use free energy of solvation predictions:\n");
+    please_cite(stdout,"Eisenberg86a");
+  }
   atomprop = get_atomprop();
+  
+  if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
+			   &t,&x,box))==0)
+    gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
-  fprintf(stdout,"In case you use free energy of solvation predictions:\n");
-  please_cite(stdout,"Eisenberg86a");
     
   snew(nx,2);
   snew(index,2);
@@ -348,11 +353,25 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
-  xvgr_legend(fp,asize(legend) - (bDGsol ? 0 : 1),legend);
+  xvgr_legend(fp,asize(flegend) - (bDGsol ? 0 : 1),flegend);
   vfile = opt2fn_null("-tv",nfile,fnm);
-  if (vfile)
-    vp=xvgropen(vfile,"Volume","Time (ps)",
-		"V (nm\\S3\\N)");
+  if (vfile) {
+    vp=xvgropen(vfile,"Volume and Density","Time (ps)","");
+    xvgr_legend(vp,asize(vlegend),vlegend);
+    totmass  = 0;
+    ndefault = 0;
+    for(i=0; (i<nx[0]); i++) {
+      real mm;
+      ii = index[0][i];
+      if (!query_atomprop(atomprop,epropMass,
+			  *(top->atoms.resname[top->atoms.atom[ii].resnr]),
+			  *(top->atoms.atomname[ii]),&mm))
+	ndefault++;
+      totmass += mm;
+    }
+    if (ndefault)
+      fprintf(stderr,"WARNING: Using %d default masses for density calculation, which most likely are inaccurate\n",ndefault);
+  }
   else
     vp = NULL;
     
@@ -372,9 +391,19 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if (debug)
       write_sto_conf("check.pdb","pbc check",atoms,x,NULL,box);
 
-    if (nsc_dclm2(x,radius,nx[0],index[0],ndots,flag,&totarea,
-		  &area,&totvolume,&surfacedots,&nsurfacedots,
-		  bPBC ? box : NULL))
+    if (!bPBC)
+      retval = nsc_dclm(x[0],radius,nx[0],ndots,flag,&totarea,
+			&area,&totvolume,&surfacedots,&nsurfacedots);
+    else
+      retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
+			    &area,&totvolume,&surfacedots,&nsurfacedots,
+			    index[0],box);
+    /*else
+      retval = nsc_dclm2(x,radius,nx[0],index[0],ndots,flag,&totarea,
+			 &area,&totvolume,&surfacedots,&nsurfacedots,
+			 box);
+    */
+    if (retval)
       gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
     
     if (bConnelly)
@@ -415,9 +444,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       fprintf(fp,"\n");
     
     /* Print volume */
-    if (vp)
-      fprintf(vp,"%12.5e  %12.5e\n",t,totvolume);
-    
+    if (vp) {
+      density = totmass*AMU/(totvolume*NANO*NANO*NANO);
+      fprintf(vp,"%12.5e  %12.5e  %12.5e\n",t,totvolume,density);
+    }
     if (area) {
       sfree(area);
       area = NULL;
@@ -500,9 +530,10 @@ int gmx_sas(int argc,char *argv[])
     "which can be used to restrain surface atoms.[PAR]",
     "By default, periodic boundary conditions are taken into account,",
     "this can be turned off using the [TT]-pbc[tt] option.[PAR]",
-    "With the [TT]-tv[tt] option the total volume of the molecule can be",
-    "computed. Please consider whether the normal probe radius is appropriate",
-    "in this case or whether you would rather use e.g. 0.01 nm.."
+    "With the [TT]-tv[tt] option the total volume and density of the molecule can be",
+    "computed.",
+    "Please consider whether the normal probe radius is appropriate",
+    "in this case or whether you would rather use e.g. 0.."
   };
 
   static real solsize = 0.14;
@@ -511,7 +542,7 @@ int gmx_sas(int argc,char *argv[])
   static real minarea = 0.5, dgs_default=0;
   static bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
   t_pargs pa[] = {
-    { "-solsize", FALSE, etREAL, {&solsize},
+    { "-probe", FALSE, etREAL, {&solsize},
       "Radius of the solvent probe (nm)" },
     { "-ndots",   FALSE, etINT,  {&ndots},
       "Number of dots per sphere, more dots means more accuracy" },
@@ -544,9 +575,9 @@ int gmx_sas(int argc,char *argv[])
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  if (solsize <= 0) {
+  if (solsize < 0) {
     solsize=1e-3;
-    fprintf(stderr,"Solsize too small, setting it to %g\n",solsize);
+    fprintf(stderr,"Probe size too small, setting it to %g\n",solsize);
   }
   if (ndots < 20) {
     ndots = 20;
