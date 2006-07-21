@@ -1357,7 +1357,15 @@ static int dd_node2pmenode(t_commrec *cr,int nodeid)
 
 bool gmx_pmeonlynode(t_commrec *cr,int nodeid)
 {
-  return (dd_node2pmenode(cr,nodeid) == -1);
+  bool bPMEOnlyNode;
+
+  if (DOMAINDECOMP(cr)) {
+    bPMEOnlyNode = (dd_node2pmenode(cr,nodeid) == -1);
+  } else {
+    bPMEOnlyNode = FALSE;
+  }
+
+  return bPMEOnlyNode;
 }
 
 static bool receive_vir_ener(t_commrec *cr)
