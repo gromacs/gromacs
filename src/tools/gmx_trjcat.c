@@ -276,7 +276,7 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
    
   snew(fp_out,nfile_out);
   for(i=0; (i<nfile_out); i++)
-    fp_out[i] = open_trx(fnms_out[0],"w");
+    fp_out[i] = open_trx(fnms_out[i],"w");
   k = 0;
   if (gmx_nint(time[k] - t) != 0) 
     gmx_fatal(FARGS,"First time in demuxing table does not match trajectories");
