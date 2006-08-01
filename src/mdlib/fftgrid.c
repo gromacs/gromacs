@@ -72,7 +72,7 @@ gmx_alloc_aligned(size_t size)
     
     if(p0 == NULL)
     {
-        gmx_fatal(FARGS,"Failed to allocated %Zu bytes of aligned memory.",size+32);
+      gmx_fatal(FARGS,"Failed to allocate %d bytes of aligned memory.",(int) (size+32));
     }
     
     p = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
