@@ -41,9 +41,10 @@
 #include <stdio.h>
 	
 typedef struct {
-  char *elem,*type;
-  int  nbonds;
-  char **bond;
+  char   *elem,*type;
+  double q;
+  int    nbonds;
+  char   **bond;
 } t_nm2type;
 
 extern t_nm2type *rd_nm2type(char *ff,int *nnm);
@@ -54,7 +55,8 @@ extern t_nm2type *rd_nm2type(char *ff,int *nnm);
 extern void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 
-extern char *nm2type(int nnm,t_nm2type nm2t[],char *nm,int nbonds);
+extern bool nm2type(int nnm,t_nm2type nm2t[],char *nm,int nbonds,
+		    char **type,double *q);
 /* Try to determine the atomtype (force field dependent) for an element */
 
 #endif

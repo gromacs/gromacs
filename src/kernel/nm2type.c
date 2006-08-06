@@ -67,6 +67,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
   int       i,nb,nnnm,line=1;
+  double    qq;
   t_nm2type *nm2t=NULL;
   
   sprintf(libfilename,"%s.n2t",ff);
@@ -80,7 +81,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
     if (bCont) {
       /* Remove comment */
       strip_comment(buf);
-      if (sscanf(buf,"%s%s%d",elem,type,&nb) == 3) {
+      if (sscanf(buf,"%s%s%lf%d",elem,type,&qq,&nb) == 4) {
 	/* If we can read the first three, there probably is more */
 	if (nb > 0) {
 	  snew(newbuf,nb);
@@ -100,6 +101,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
 	srenew(nm2t,nnnm+1);
 	nm2t[nnnm].elem   = strdup(elem);
 	nm2t[nnnm].type   = strdup(type);
+	nm2t[nnnm].q      = qq;
 	nm2t[nnnm].nbonds = nb;
 	nm2t[nnnm].bond   = newbuf;
 	nnnm++;
@@ -120,30 +122,38 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
   
   fprintf(fp,"; nm2type database\n");
   for(i=0; (i<nnm); i++) {
-    fprintf(fp,"%-8s%-8s%-4d",nm2t[i].elem,nm2t[i].type,nm2t[i].nbonds);
+    fprintf(fp,"%-8s%-8s%8.4f%-4d",nm2t[i].elem,nm2t[i].type,
+	    nm2t[i].q,nm2t[i].nbonds);
     for(j=0; (j<nm2t[i].nbonds); j++)
       fprintf(fp,"%-5s",nm2t[i].bond[j]);
     fprintf(fp,"\n");
   }
 }
 
-char *nm2type(int nnm,t_nm2type nm2t[],char *nm,int nbonds)
+bool nm2type(int nnm,t_nm2type nm2t[],char *nm,int nbonds,
+	     char **type,double *q)
 {
   int i;
 
   /* First check for names */  
   for(i=0; (i<nnm); i++) {
     if ((strcasecmp(nm2t[i].elem,nm) == 0) &&
-	(nm2t[i].nbonds == nbonds))
-      return nm2t[i].type;
+	(nm2t[i].nbonds == nbonds)) {
+      *type = strdup(nm2t[i].type);
+      *q    = nm2t[i].q;
+      return TRUE;
+    }
   }
   /* Then for element */
   for(i=0; (i<nnm); i++) {
     if ((nm2t[i].elem[0] == nm[0]) &&
-	(nm2t[i].nbonds == nbonds))
-      return nm2t[i].type;
+	(nm2t[i].nbonds == nbonds)) {
+      *type = strdup(nm2t[i].type);
+      *q    = nm2t[i].q;
+      return TRUE;
+    }
   }
 	      
-  return NULL;
+  return FALSE;
 }
      
