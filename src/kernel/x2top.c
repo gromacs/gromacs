@@ -201,7 +201,7 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
   fprintf(stderr,"\ratom %d\n",i);
 }
 
-int *set_cgnr(t_atoms *atoms)
+int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge)
 {
   int    i,n=1;
   int    *cgnr;
@@ -209,8 +209,13 @@ int *set_cgnr(t_atoms *atoms)
   
   snew(cgnr,atoms->nr);
   for(i=0; (i<atoms->nr); i++) {
+<<<<<<< x2top.c
     if (atoms->pdbinfo)
       atoms->atom[i].q = atoms->pdbinfo[i].bfac;
+=======
+    if (atoms->pdbinfo && bUsePDBcharge)
+      atoms->atom[i].q = atoms->pdbinfo[i].bfac;
+>>>>>>> 1.36.2.2
     qt += atoms->atom[i].q;
     cgnr[i] = n;
     if (is_int(qt)) {
@@ -226,14 +231,15 @@ t_atomtype *set_atom_type(t_symtab *tab,
 			  int nnm,t_nm2type nm2t[])
 {
   t_atomtype *atype;
-  char *type;
-  int  i,k;
+  double q;
+  char   *type;
+  int    i,k;
   
   snew(atype,1);
   snew(atoms->atomtype,atoms->nr);
   k=0;
   for(i=0; (i<atoms->nr); i++) {
-    if ((type = nm2type(nnm,nm2t,*atoms->atomname[i],nbonds[i])) == NULL)
+    if ((!nm2type(nnm,nm2t,*atoms->atomname[i],nbonds[i],&type,&q)))
       gmx_fatal(FARGS,"No forcefield type for atom %s (%d) with %d bonds",
 		  *atoms->atomname[i],i+1,nbonds[i]);
     else if (debug)
@@ -243,6 +249,8 @@ t_atomtype *set_atom_type(t_symtab *tab,
       if (strcmp(type,*atype->atomname[k]) == 0) {
 	atoms->atom[i].type  = k;
 	atoms->atom[i].typeB = k;
+	atoms->atom[i].q  = q;
+	atoms->atom[i].qB = q;
 	break;
       }
     }
@@ -258,6 +266,10 @@ t_atomtype *set_atom_type(t_symtab *tab,
       atoms->atom[i].type  = k;
       atype->atom[k].typeB = k;
       atoms->atom[i].typeB = k;
+      atype->atom[k].q  = q;
+      atype->atom[k].qB = q;
+      atoms->atom[i].q  = q;
+      atoms->atom[i].qB = q;
     }
   } 
   /* MORE CODE */
@@ -479,6 +491,7 @@ int main(int argc, char *argv[])
   static bool bRemoveDih = FALSE;
   static bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
   static bool bPairs = TRUE, bPBC = TRUE;
+  static bool bUsePDBcharge = FALSE;
   static char *molnm = "ICE";
   static char *ff = "select";
   t_pargs pa[] = {
@@ -500,6 +513,8 @@ int main(int argc, char *argv[])
       "Name of your molecule" },
     { "-pbc",    FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions." },
+    { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
+      "Use the B-factor supplied in a pdb file for the atomic charges" },
     { "-param", FALSE, etBOOL, {&bParam},
       "Print parameters in the output" },
     { "-round",  FALSE, etBOOL, {&bRound},
@@ -588,7 +603,7 @@ int main(int argc, char *argv[])
   
   set_force_const(plist,kb,kt,kp,bRound,bParam);
 
-  cgnr = set_cgnr(atoms);
+  cgnr = set_cgnr(atoms,bUsePDBcharge);
 
   if (bTOP) {    
     fp = ftp2FILE(efTOP,NFILE,fnm,"w");
