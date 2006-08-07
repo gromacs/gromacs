@@ -55,8 +55,10 @@ extern t_nm2type *rd_nm2type(char *ff,int *nnm);
 extern void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[]);
 /* Dump the database for debugging. Can be reread by the program */
 
-extern bool nm2type(int nnm,t_nm2type nm2t[],char *nm,int nbonds,
-		    char **type,double *q);
-/* Try to determine the atomtype (force field dependent) for an element */
+extern int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
+		   t_atomtype *atype,int *nbonds,t_params *bond);
+/* Try to determine the atomtype (force field dependent) for the atoms 
+ * with help of the bond list 
+ */
 
 #endif
