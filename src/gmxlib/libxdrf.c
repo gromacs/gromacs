@@ -1307,7 +1307,7 @@ xtc_get_current_frame_number(int fp,int natoms, bool * bOK)
 static gmx_off_t xtc_get_next_frame_start(int fp, int natoms)
 {
     int inp;
-    int res;
+    gmx_off_t res;
   
     while(xdr_int(xdridptr[fp+1],&inp))
     {
