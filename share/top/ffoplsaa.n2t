@@ -1,0 +1,18 @@
+C    opls_157    -0.18   4    H    H    H    *
+C    opls_158    -0.12   4    H    H    *    *
+C    opls_157    0.145   4    H    O    H    *
+C    opls_157    0.145   4    H    H    O    C
+C    opls_158    -0.06   4    H    *    *    *
+C    opls_145    -0.12   3    C    C    H
+C    opls_145    -0.12   3    C    C    O
+C    opls_235    0.5     3    C    N    O
+O    opls_236    -0.5    1    C
+N    opls_238    -0.5    3    H    C    C
+H    opls_156    0.06    1    C
+H    opls_155    0.418   1    O
+H    opls_241    0.30    1    N
+O    opls_154    -0.683  2    C    H
+P    opls_393    1       4    O    O    O    O
+O    opls_395    -1      2    P    *
+O    opls_394    -1      1    P
+N    opls_237    0       4    C    C    C    C
