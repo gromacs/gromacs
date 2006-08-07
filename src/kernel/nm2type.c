@@ -38,6 +38,7 @@
 #include <config.h>
 #endif
 
+#include "assert.h"
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -82,10 +83,10 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
       /* Remove comment */
       strip_comment(buf);
       if (sscanf(buf,"%s%s%lf%d",elem,type,&qq,&nb) == 4) {
-	/* If we can read the first three, there probably is more */
+	/* If we can read the first four, there probably is more */
 	if (nb > 0) {
 	  snew(newbuf,nb);
-	  strcpy(format,"%*s%*s%*d");
+	  strcpy(format,"%*s%*s%*lf%*d");
 	  for(i=0; (i<nb); i++) {
 	    /* Complicated format statement */
 	    strcpy(f1,format);
@@ -122,7 +123,7 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
   
   fprintf(fp,"; nm2type database\n");
   for(i=0; (i<nnm); i++) {
-    fprintf(fp,"%-8s%-8s%8.4f%-4d",nm2t[i].elem,nm2t[i].type,
+    fprintf(fp,"%-8s %-8s %8.4f %-4d",nm2t[i].elem,nm2t[i].type,
 	    nm2t[i].q,nm2t[i].nbonds);
     for(j=0; (j<nm2t[i].nbonds); j++)
       fprintf(fp,"%-5s",nm2t[i].bond[j]);
@@ -130,30 +131,157 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
   }
 }
 
-bool nm2type(int nnm,t_nm2type nm2t[],char *nm,int nbonds,
-	     char **type,double *q)
-{
-  int i;
+enum { ematchNone, ematchWild, ematchElem, ematchExact, ematchNR };
 
-  /* First check for names */  
-  for(i=0; (i<nnm); i++) {
-    if ((strcasecmp(nm2t[i].elem,nm) == 0) &&
-	(nm2t[i].nbonds == nbonds)) {
-      *type = strdup(nm2t[i].type);
-      *q    = nm2t[i].q;
-      return TRUE;
+static int match_str(char *atom,char *template)
+{
+  if (!atom || !template)
+    return ematchNone;
+  else if (strcasecmp(atom,template) == 0) 
+    return ematchExact;
+  else if (atom[0] == template[0])
+    return ematchElem;
+  else if (strcmp(template,"*") == 0) 
+    return ematchWild;
+  else
+    return ematchNone;
+}
+
+int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
+	    t_atomtype *atype,int *nbonds,t_params *bonds)
+{
+  int cur = 0;
+#define prev (1-cur)
+  int i,j,k,m,n,nresolved,nb,maxbond,ai,aj,best,im,nqual[2][ematchNR];
+  int *bbb,*n_mask,*m_mask,**match,**quality;
+  char *aname_i,*aname_m,*aname_n,*type;
+  double q;
+      
+  maxbond = 0;
+  for(i=0; (i<atoms->nr); i++) 
+    maxbond = max(maxbond,nbonds[i]);
+  if (debug)
+    fprintf(debug,"Max number of bonds per atom is %d\n",maxbond);
+  snew(bbb,maxbond);
+  snew(n_mask,maxbond);
+  snew(m_mask,maxbond);
+  snew(match,maxbond);
+  for(i=0; (i<maxbond); i++)
+    snew(match[i],maxbond);
+    
+  nresolved = 0;
+  for(i=0; (i<atoms->nr); i++) {
+    aname_i = *atoms->atomname[i];
+    nb = 0;
+    for(j=0; (j<bonds->nr); j++) {
+      ai = bonds->param[j].AI;
+      aj = bonds->param[j].AJ;
+      if (ai == i)
+	bbb[nb++] = aj;
+      else if (aj == i)
+	bbb[nb++] = ai;
+    }
+    if (nb != nbonds[i])
+      gmx_fatal(FARGS,"Counting number of bonds nb = %d, nbonds[%d] = %d",
+		nb,i,nbonds[i]);
+    if(debug) {
+      fprintf(debug,"%4s has bonds to",aname_i);
+      for(j=0; (j<nb); j++)
+	fprintf(debug," %4s",*atoms->atomname[bbb[j]]);
+      fprintf(debug,"\n");
+    }    
+    best = -1;
+    for(k=0; (k<ematchNR); k++) 
+      nqual[prev][k] = 0;
+    
+    /* First check for names */  
+    for(k=0; (k<nnm); k++) {
+      if (nm2t[k].nbonds == nb) {
+	im = match_str(*atoms->atomname[i],nm2t[k].elem);
+	if (im > ematchWild) {
+	  for(j=0; (j<ematchNR); j++) 
+	    nqual[cur][j] = 0;
+
+	  /* Fill a matrix with matching quality */
+	  for(m=0; (m<nb); m++) {
+	    aname_m = *atoms->atomname[bbb[m]];
+	    for(n=0; (n<nb); n++) {
+	      aname_n = nm2t[k].bond[n];
+	      match[m][n] = match_str(aname_m,aname_n);
+	    }
+	  }
+	  /* Now pick the best matches */
+	  for(m=0; (m<nb); m++) {
+	    n_mask[m] = 0;
+	    m_mask[m] = 0;
+	  }
+	  for(j=ematchNR-1; (j>0); j--) {
+	    for(m=0; (m<nb); m++) {
+	      for(n=0; (n<nb); n++) {
+		if ((n_mask[n] == 0) && 
+		    (m_mask[m] == 0) &&
+		    (match[m][n] == j)) {
+		  n_mask[n] = 1;
+		  m_mask[m] = 1;
+		  nqual[cur][j]++;
+		}
+	      }
+	    }
+	  }
+	  if ((nqual[cur][ematchExact]+
+	       nqual[cur][ematchElem]+
+	       nqual[cur][ematchWild]) == nb) {
+	    if ((nqual[cur][ematchExact] > nqual[prev][ematchExact]) ||
+		
+		((nqual[cur][ematchExact] == nqual[prev][ematchExact]) &&
+		 (nqual[cur][ematchElem] > nqual[prev][ematchElem])) ||
+		
+		((nqual[cur][ematchExact] == nqual[prev][ematchExact]) &&
+		 (nqual[cur][ematchElem] == nqual[prev][ematchElem]) &&
+		 (nqual[cur][ematchWild] > nqual[prev][ematchWild]))) {
+	      best = k;
+	      cur  = prev;
+	    }
+	  }
+	}
+      }
+    }
+    if (best != -1) {
+      q    = nm2t[best].q;
+      type = nm2t[best].type;
+      
+      for(k=0; (k<atype->nr); k++) {
+	if (strcasecmp(*atype->atomname[k],type) == 0)
+	  break;
+      }
+      if (k == atype->nr) {
+	/* New atomtype */
+	atype->nr++;
+	srenew(atype->atomname,atype->nr);
+	srenew(atype->atom,atype->nr);
+	srenew(atype->bondatomtype,atype->nr);
+	atype->atomname[k]   = put_symtab(tab,type);
+	atype->bondatomtype[k] = k; /* Set bond_atomtype identical to atomtype */
+	atype->atom[k].type  = k;
+	atype->atom[k].typeB = k;
+	atype->atom[k].q     = q;
+	atype->atom[k].qB    = q;
+      }      
+      atoms->atom[i].type  = k;
+      atoms->atom[i].typeB = k;
+      atoms->atom[i].q  = q;
+      atoms->atom[i].qB = q;
+      nresolved++;
+    }
+    else {
+      fprintf(stderr,"Can not find forcefield for atom %s with %d bonds\n",
+	      *atoms->atomname[i],nb);
     }
   }
-  /* Then for element */
-  for(i=0; (i<nnm); i++) {
-    if ((nm2t[i].elem[0] == nm[0]) &&
-	(nm2t[i].nbonds == nbonds)) {
-      *type = strdup(nm2t[i].type);
-      *q    = nm2t[i].q;
-      return TRUE;
-    }
-  }
-	      
-  return FALSE;
+  sfree(bbb);
+  sfree(n_mask);
+  sfree(m_mask);
+    
+  return nresolved;
 }
      
