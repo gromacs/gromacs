@@ -261,7 +261,7 @@ int gmx_saltbr(int argc,char *argv[])
 	    xvgr_legend(out[nnn],1,&buf);
 	  else {
 	    if (use_xmgr())
-	      fprintf(out,"@ legend string %d \"%s\"\n",nset[nn],buf);
+	      fprintf(out,"@ legend string %d \"%s\"\n",nset[nnn],buf);
 	    else
 	      fprintf(out,"@ s%d legend \"%s\"\n",nset[nnn],buf);
 	  }
