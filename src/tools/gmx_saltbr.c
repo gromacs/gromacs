@@ -259,9 +259,12 @@ int gmx_saltbr(int argc,char *argv[])
 	  
 	  if (nset[nnn] == 0) 
 	    xvgr_legend(out[nnn],1,&buf);
-	  else
-	    fprintf(out[nnn],"@ legend string %d \"%s\"\n",nset[nnn],buf);
-	  
+	  else {
+	    if (use_xmgr())
+	      fprintf(out,"@ legend string %d \"%s\"\n",nset[nn],buf);
+	    else
+	      fprintf(out,"@ s%d legend \"%s\"\n",nset[nnn],buf);
+	  }
 	  nset[nnn]++;
 	  nWithin[i][j]=nnn+1;
 	}
