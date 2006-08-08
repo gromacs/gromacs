@@ -1266,7 +1266,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
       snew(x_tmp,nsb->natoms);
       snew(f_tmp,nsb->natoms);
       snew(q_tmp,nsb->natoms);
-      snew(pidx,nsb->natoms);
+      snew(pidx,ir->nkx);
       MPI_Type_contiguous(DIM, mpi_type, &rvec_mpi);
       MPI_Type_commit(&rvec_mpi);
     }
