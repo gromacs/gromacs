@@ -140,7 +140,7 @@ int gmx_saltbr(int argc,char *argv[])
     "as a function of time. The groups are combined in different ways."
     "A minimum distance can be given, (eg. the cut-off), then groups",
     "that are never closer than that distance will not be plotted.[BR]",
-    "Output will be in a number of fixed filenames, min-min.xvg,min-plus.xvg",
+    "Output will be in a number of fixed filenames, min-min.xvg, plus-min.xvg",
     "and plus-plus.xvg, or files for every individual ion-pair if selected"
   };
   static bool bSep=FALSE;
@@ -261,9 +261,9 @@ int gmx_saltbr(int argc,char *argv[])
 	    xvgr_legend(out[nnn],1,&buf);
 	  else {
 	    if (use_xmgr())
-	      fprintf(out,"@ legend string %d \"%s\"\n",nset[nnn],buf);
+	      fprintf(out[nnn],"@ legend string %d \"%s\"\n",nset[nnn],buf);
 	    else
-	      fprintf(out,"@ s%d legend \"%s\"\n",nset[nnn],buf);
+	      fprintf(out[nnn],"@ s%d legend \"%s\"\n",nset[nnn],buf);
 	  }
 	  nset[nnn]++;
 	  nWithin[i][j]=nnn+1;
