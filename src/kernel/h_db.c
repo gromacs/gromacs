@@ -52,7 +52,8 @@
  * Here these number are given. Because arrays start at 0 an
  * extra dummy for index 0 is added 
  */
-/* const int ncontrol[12] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 }; */
+const int ncontrol[] = { -1, 3, 3, 3, 3, 4, 3, 1, 3, 3, 1, 1 };
+#define maxcontrol asize(ncontrol)
 
 int compaddh(const void *a,const void *b)
 {
@@ -86,7 +87,12 @@ void read_ab(char *line,char *fn,t_hack *hack)
   
   hack->nr=nh;
   hack->tp=tp;
+  if ((tp < 1) || (tp >= maxcontrol)) 
+    gmx_fatal(FARGS,"Error in hdb file %s:\nH-type should be in 1-%d. Offending line:\n%s",fn,maxcontrol-1,line);
+  
   hack->nctl = ns - 3;
+  if ((hack->nctl != ncontrol[hack->tp]) && (ncontrol[hack->tp] != -1))
+    gmx_fatal(FARGS,"Error in hdb file %s:\nWrong number of control atoms (%d iso %d) on line:\n%s\n",fn,hack->nctl,ncontrol[hack->tp],line);
   for(i=0; (i<hack->nctl); i++) 
     hack->a[i]=strdup(a[i]);
   for(   ; i<4; i++)

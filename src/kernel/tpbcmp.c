@@ -275,6 +275,7 @@ static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2,real ftol)
     cmp_int(fp,"atoms->nr",-1,a1->nr,a2->nr);
     for(i=0; (i<a1->nr); i++)
       cmp_atom(fp,i,&(a1->atom[i]),&(a2->atom[i]),ftol);
+    cmp_block(fp,&a1->excl,&a2->excl,"excl");
   } else {
     for(i=0; (i<a1->nr); i++)
       cmp_atom(fp,i,&(a1->atom[i]),NULL,ftol);
@@ -529,6 +530,7 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
 
 void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)
 {
+  fprintf(fp,"\n");
   cmp_int(fp,"flags",-1,fr1->flags,fr2->flags);
   cmp_int(fp,"not_ok",-1,fr1->not_ok,fr2->not_ok);
   cmp_int(fp,"natoms",-1,fr1->natoms,fr2->natoms);
@@ -558,10 +560,6 @@ void comp_frame(FILE *fp, t_trxframe *fr1, t_trxframe *fr2, real ftol)
 
 void comp_trx(char *fn1, char *fn2, real ftol)
 {
-#define THIS   i
-#define DOBOTH for(i=0; i<2; i++)
-#define OTHER  (1-i)
-  
   int i;
   char *fn[2];
   t_trxframe fr[2];
@@ -573,7 +571,7 @@ void comp_trx(char *fn1, char *fn2, real ftol)
   fprintf(stderr,"Comparing trajectory files %s and %s\n",fn1,fn2);
   for (i=0; i<2; i++)
     read_first_frame(&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
-  
+
   do {
     comp_frame(stdout, &(fr[0]), &(fr[1]), ftol);
     
