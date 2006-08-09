@@ -1,4 +1,5 @@
 /* $Id$ */
+>>>>>>> 1.16.2.1
 #include "math.h"
 #include "string.h"
 #include "copyrite.h"
@@ -9,7 +10,7 @@
 #include "statutil.h"
 #include "ewald.h"
 
-enum { mGuillot, mN61, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
+enum { mGuillot, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
 
 static double erf2(double x)
 {
@@ -43,25 +44,26 @@ void do_hard(FILE *fp,double resolution,double efac,double delta)
     }
     vr  = erfc(efac*(x-delta))/2;
     vr2 = (1-erf2(efac*(x-delta)))/2;
-    fprintf(fp,"%10g  %10g  %10g  %10g  %10g  %10g  %10g\n",
+    fprintf(fp,"%12.5e  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e  %12.5e\n",
 	    x,vr,vr2,0.0,0.0,vc,vc2);
   }
 
 }
 
-void do_n61(FILE *fp,int eel,double resolution,int npow)
+void do_AB1(FILE *fp,int eel,double resolution,int ndisp,int nrep)
 {
   int    i,k,imax;
   double myfac[3] = { 1, -1, 1 };
   double myexp[3] = { 1, 6, 0 };
   double x,v,v2;
   
-  myexp[2] = npow;
+  myexp[1] = ndisp;
+  myexp[2] = nrep;
   imax     = 3.0/resolution;
   for(i=0; (i<=imax); i++) {
     x   =  i*resolution;
     
-    fprintf(fp,"%10g",x);
+    fprintf(fp,"%12.5e",x);
     
     for(k=0; (k<3); k++) {
       if (x < 0.04) {
@@ -72,7 +74,7 @@ void do_n61(FILE *fp,int eel,double resolution,int npow)
 	v  =  myfac[k]*pow(x,-myexp[k]);
 	v2 = (myexp[k]+1)*(myexp[k])*v/(x*x); 
       }
-      fprintf(fp,"  %10g  %10g",v,v2);
+      fprintf(fp,"  %12.5e  %12.5e",v,v2);
     }
     fprintf(fp,"\n");
   }
@@ -421,9 +423,10 @@ int main(int argc,char *argv[])
     "potentials."
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
-  static char *model[]   = { NULL, "guillot", "n61", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL };
+  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL };
   static real resolution = 0.001,delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
-  static int  npow       = 12;
+  static int  nrep       = 12;
+  static int  ndisp      = 6;
   t_pargs pa[] = {
     { "-el",     FALSE, etENUM, {opt},
       "Electrostatics type: cut, rf or pme" },
@@ -443,8 +446,10 @@ int main(int argc,char *argv[])
       "Displacement in the Coulomb functions (nm), used as 1/(r+delta). Only for hard wall potential." },
     { "-efac",   FALSE, etREAL, {&efac},
       "Number indicating the steepness of the hardwall potential." },
-    { "-n",      FALSE, etINT,  {&npow},
-      "Power for the repulsion potential (with model n61 or maaren)" }
+    { "-nrep",   FALSE, etINT,  {&nrep},
+      "Power for the repulsion potential (with model AB1 or maaren)" },
+    { "-ndisp",   FALSE, etINT,  {&ndisp},
+      "Power for the dispersion potential (with model AB1 or maaren)" }
   };
 #define NPA asize(pa)
   t_filenm fnm[] = {
@@ -468,8 +473,8 @@ int main(int argc,char *argv[])
     gmx_fatal(FARGS,"Invalid argument %s for option -e",opt[0]);
   if (strcmp(model[0],"maaren") == 0) 
     m = mMaaren;
-  else if (strcmp(model[0],"n61") == 0) 
-    m = mN61;
+  else if (strcmp(model[0],"AB1") == 0) 
+    m = mAB1;
   else if (strcmp(model[0],"ljc") == 0) 
     m = mLjc;
   else if (strcmp(model[0],"guillot") == 0) 
@@ -511,11 +516,11 @@ int main(int argc,char *argv[])
     do_GG_qd_qd(fp,eel,resolution,rc,rtol,xi,xir);
     break;
   case mMaaren:
-    do_maaren(fp,eel,resolution,npow);
+    do_maaren(fp,eel,resolution,nrep);
     break;
-  case mN61:
-    fprintf(fp, "#\n# Table N61: npow=%d\n#\n",npow);
-    do_n61(fp,eel,resolution,npow);
+  case mAB1:
+    fprintf(fp, "#\n# Table AB1: ndisp=%d nrep=%d\n#\n",ndisp,nrep);
+    do_AB1(fp,eel,resolution,ndisp,nrep);
     break;
   case mLjc:
     fprintf(fp, "#\n# Table LJC(12-6-1): rc=%g, rtol=%g\n#\n",rc,rtol);
