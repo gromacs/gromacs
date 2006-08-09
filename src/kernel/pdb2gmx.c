@@ -108,6 +108,18 @@ static const char *get_glutp(int resnr)
   return select_res(egluNR,resnr,lh,expl,"GLUTAMIC ACID");
 }
 
+static const char *get_glntp(int resnr)
+{
+  enum { egln, eglnH, eglnNR };
+  const char *lh[eglnNR] = { "GLN", "QLN" };
+  const char *expl[eglnNR] = {
+    "Not protonated (charge 0)",
+    "Protonated (charge +1)"
+  };
+
+  return select_res(eglnNR,resnr,lh,expl,"GLUTAMINE");
+}
+
 static const char *get_lystp(int resnr)
 {
   enum { elys, elysH, elysNR };
@@ -118,6 +130,18 @@ static const char *get_lystp(int resnr)
   };
 
   return select_res(elysNR,resnr,lh,expl,"LYSINE");
+}
+
+static const char *get_argtp(int resnr)
+{
+  enum { earg, eargH, eargNR };
+  const  char *lh[eargNR] = { "ARGN", "ARG" };
+  const char *expl[eargNR] = {
+    "Not protonated (charge 0)",
+    "Protonated (charge +1)"
+  };
+
+  return select_res(eargNR,resnr,lh,expl,"ARGININE");
 }
 
 static const char *get_cystp(int resnr)
@@ -289,7 +313,7 @@ int read_pdball(char *inf, char *outf,char *title,
 void process_chain(t_atoms *pdba, rvec *x, 
 		   bool bTrpU,bool bPheU,bool bTyrU,
 		   bool bLysMan,bool bAspMan,bool bGluMan,
-		   bool bHisMan,
+		   bool bHisMan,bool bArgMan,bool bGlnMan,
 		   real angle,real distance,t_symtab *symtab)
 {
   /* Rename aromatics, lys, asp and histidine */
@@ -300,6 +324,10 @@ void process_chain(t_atoms *pdba, rvec *x,
     rename_pdbresint(pdba,"LYS",get_lystp,FALSE,symtab);
   else
     rename_pdbres(pdba,"LYS","LYSH",FALSE,symtab);
+  if (bArgMan) 
+    rename_pdbresint(pdba,"ARG",get_argtp,FALSE,symtab);
+  if (bGlnMan) 
+    rename_pdbresint(pdba,"GLN",get_glntp,FALSE,symtab);
   if (bAspMan) 
     rename_pdbresint(pdba,"ASP",get_asptp,FALSE,symtab);
   else
@@ -660,6 +688,7 @@ int main(int argc, char *argv[])
   static bool bNewRTP=FALSE,bMerge=FALSE;
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
+  static bool bGlnMan=FALSE, bArgMan=FALSE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
   static bool bDeuterate=FALSE,bVerbose=FALSE;
@@ -689,10 +718,14 @@ int main(int argc, char *argv[])
       "Interactive termini selection, iso charged" },
     { "-lys",    FALSE, etBOOL, {&bLysMan}, 
       "Interactive Lysine selection, iso charged" },
+    { "-arg",    FALSE, etBOOL, {&bArgMan}, 
+      "Interactive Arganine selection, iso charged" },
     { "-asp",    FALSE, etBOOL, {&bAspMan}, 
       "Interactive Aspartic Acid selection, iso charged" },
     { "-glu",    FALSE, etBOOL, {&bGluMan}, 
       "Interactive Glutamic Acid selection, iso charged" },
+    { "-gln",    FALSE, etBOOL, {&bGlnMan}, 
+      "Interactive Glutamine selection, iso neutral" },
     { "-his",    FALSE, etBOOL, {&bHisMan},
       "Interactive Histidine selection, iso checking H-bonds" },
     { "-angle",  FALSE, etREAL, {&angle}, 
@@ -995,7 +1028,7 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
 
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,angle,distance,&symtab);
+		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab);
 		  
     if (bSort) {
       block = new_block();
