@@ -60,6 +60,7 @@
 #include "topexcl.h"
 #include "vec.h"
 #include "x2top.h"
+#include "atomprop.h"
 
 char atp[6] = "HCNOSX";
 #define NATP asize(atp)
@@ -131,32 +132,13 @@ static bool is_bond(int aai,int aaj,real len2)
   return bIsBond;
 }
 
-real get_amass(char *aname,int nmass,char **nm2mass)
-{
-  int    i;
-  char   nmbuf[32];
-  double mass;
-  real   m;
-  
-  m = 12;
-  for(i=0; (i<nmass); i++) {
-    sscanf(nm2mass[i],"%s%lf",nmbuf,&mass);
-    trim(nmbuf);
-    if (strcmp(aname,nmbuf) == 0) {
-      m = mass;
-      break;
-    }
-  }
-  return m;
-}
-
 void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
-	      real cutoff,bool bPBC,matrix box)
+	      real cutoff,bool bPBC,matrix box,void *atomprop)
 {
   t_param b;
   t_atom  *atom;
-  char    **nm2mass=NULL,buf[128];
-  int     i,j,aai,nmass;
+  char    buf[12],resnm[12];
+  int     i,j,aai;
   t_pbc   pbc;
   rvec    dx;
   real    dx2,c2;
@@ -166,13 +148,14 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
   for(i=0; (i<MAXFORCEPARAM); i++)
     b.c[i] = 0.0;
     
-  sprintf(buf,"%s.atp",ff);
-  nmass = get_file(buf,&nm2mass);
-  fprintf(stderr,"There are %d type to mass translations\n",nmass);
   atom  = atoms->atom;
+  strcpy(resnm,"XXX");
   for(i=0; (i<atoms->nr); i++) {
-    atom[i].type = get_atype(*atoms->atomname[i]);
-    atom[i].m    = get_amass(*atoms->atomname[i],nmass,nm2mass);
+    strcpy(buf,*atoms->atomname[i]);
+    atom[i].typeB = atom[i].type = get_atype(buf);
+    buf[1]='\0';
+    (void) query_atomprop(atomprop,epropMass,resnm,buf,&atom[i].m);
+    atom[i].mB = atom[i].m;
   }
   c2 = sqr(cutoff);
   if (bPBC)
@@ -204,17 +187,20 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
   fprintf(stderr,"\ratom %d\n",i);
 }
 
-int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge)
+int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot)
 {
   int    i,n=1;
   int    *cgnr;
-  double qt = 0;
+  double qt=0,mt=0;
   
+  *qtot = *mtot = 0;
   snew(cgnr,atoms->nr);
   for(i=0; (i<atoms->nr); i++) {
     if (atoms->pdbinfo && bUsePDBcharge)
       atoms->atom[i].q = atoms->pdbinfo[i].bfac;
     qt += atoms->atom[i].q;
+    *qtot += atoms->atom[i].q;
+    *mtot += atoms->atom[i].m;
     cgnr[i] = n;
     if (is_int(qt)) {
       n++;
@@ -426,6 +412,7 @@ int main(int argc, char *argv[])
   t_nextnb   nnb;
   t_nm2type  *nm2t;
   t_mols     mymol;
+  void       *atomprop;
   int        nnm;
   char       title[STRLEN],forcefield[32];
   rvec       *x;        /* coordinates? */
@@ -434,10 +421,10 @@ int main(int argc, char *argv[])
   matrix     box;          /* box length matrix */
   int        natoms;       /* number of atoms in one molecule  */
   int        nres;         /* number of molecules? */
-  int        i,j,k,l,m;
-  bool       bRTP,bTOP;
+  int        i,j,k,l,m,ndih;
+  bool       bRTP,bTOP,bOPLS;
   t_symtab   symtab;
-  real       cutoff;
+  real       cutoff,qtot,mtot;
   
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
@@ -496,6 +483,8 @@ int main(int argc, char *argv[])
   if (!bRTP && !bTOP)
     gmx_fatal(FARGS,"Specify at least one output file");
 
+  atomprop = get_atomprop();
+    
   cutoff = set_x_blen(scale);
 
   if(!strncmp(ff,"select",6)) {
@@ -511,7 +500,10 @@ int main(int argc, char *argv[])
     printf("Looking whether force field file %s exists\n",rtp);
     fclose(libopen(rtp));
   }
-    		    
+
+  bOPLS = (strcmp(forcefield,"ffoplsaa") == 0);
+  
+    
   mymol.name = strdup(molnm);
   mymol.nr   = 1;
 	
@@ -531,7 +523,8 @@ int main(int argc, char *argv[])
   snew(nbonds,atoms->nr);
   
   printf("Generating bonds from distances...\n");
-  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds,forcefield,cutoff,bPBC,box);
+  mk_bonds(atoms,x,&(plist[F_BONDS]),nbonds,forcefield,cutoff,
+	   bPBC,box,atomprop);
 
   nm2t = rd_nm2type(forcefield,&nnm);
   printf("There are %d name to type translations\n",nnm);
@@ -553,17 +546,24 @@ int main(int argc, char *argv[])
   if (!bPairs)
     plist[F_LJ14].nr = 0;
   fprintf(stderr,
-	  "There are %4d dihedrals, %4d impropers, %4d angles\n"
+	  "There are %4d %s dihedrals, %4d impropers, %4d angles\n"
 	  "          %4d pairs,     %4d bonds and  %4d atoms\n",
-	  plist[F_PDIHS].nr, plist[F_IDIHS].nr, plist[F_ANGLES].nr,
+	  plist[F_PDIHS].nr, 
+	  bOPLS ? "Ryckaert-Bellemans" : "proper",
+	  plist[F_IDIHS].nr, plist[F_ANGLES].nr,
 	  plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr);
 
   calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x,bPBC,box);
   
   set_force_const(plist,kb,kt,kp,bRound,bParam);
 
-  cgnr = set_cgnr(atoms,bUsePDBcharge);
-
+  cgnr = set_cgnr(atoms,bUsePDBcharge,&qtot,&mtot);
+  printf("Total charge is %g, total mass is %g\n",qtot,mtot);
+  if (bOPLS) {
+    bts[2] = 3;
+    bts[3] = 1;
+  }
+  
   if (bTOP) {    
     fp = ftp2FILE(efTOP,NFILE,fnm,"w");
     print_top_header(fp,ftp2fn(efTOP,NFILE,fnm),
