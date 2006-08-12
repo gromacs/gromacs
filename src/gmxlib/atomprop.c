@@ -104,7 +104,7 @@ static int get_prop_index(t_props *ap,t_aa_names *aan,
     }
     alen = dbcmp_len(atomnm, ap->atomnm[i]);
     if ( (alen > NOTFOUND) && (rlen > NOTFOUND)) {
-      if ( (alen>=malen) && (rlen>=mrlen) ) {
+      if ( (alen>malen) && (rlen>mrlen) ) {
 	malen = alen;
 	mrlen = rlen;
 	j     = i;
