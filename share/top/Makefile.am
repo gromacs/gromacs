@@ -6,7 +6,7 @@ topoldir = ${pkgdatadir}/top
 
 topol_DATA = \
 	ffgmx.itp	ffgmxnb.itp	ffgmxbon.itp	\
-	ffgmx.atp	ffgmx.hdb	ffgmx.n2t	ffgmx.rtp	\
+	ffgmx.atp	ffgmx.hdb	ffgmx.rtp	\
 	ffgmx-c.tdb 	ffgmx-n.tdb	ffgmx2.itp	ffgmx2nb.itp	\
 	ffgmx2bon.itp	ffgmx2.atp	ffgmx2.hdb	ffgmx2.rtp	\
 	ffgmx2-c.tdb	ffgmx2-n.tdb	ffG43a1.itp	ffG43a1nb.itp	\
@@ -22,13 +22,13 @@ topol_DATA = \
 	ffG45a3bon.itp							\
 	ffG53a5-c.tdb  	ffG53a5.atp    	ffG53a5.hdb    	ffG53a5.rtp	\
 	ffG53a5nb.itp	ffG53a5-n.tdb  	ffG53a5.ddb    	ffG53a5.itp	\
-	ffG53a5bon.itp							\
+	ffG53a5bon.itp	ffG53a5.n2t					\
 	ffG53a6-c.tdb  	ffG53a6.atp    	ffG53a6.hdb    	ffG53a6.rtp	\
 	ffG53a6nb.itp	ffG53a6-n.tdb  	ffG53a6.ddb    	ffG53a6.itp	\
 	ffG53a6bon.itp							\
 	ffoplsaa.atp    ffoplsaa.itp	ffoplsaabon.itp ffoplsaanb.itp  \
 	ffoplsaa.hdb	ffoplsaa-n.tdb	ffoplsaa-c.tdb	ffoplsaa.rtp	\
-	ffoplsaa.ddb							\
+	ffoplsaa.ddb	ffoplsaa.n2t					\
 	ffencads-c.tdb  ffencads.itp    ffencadv-c.tdb  ffencadv.itp	\
 	ffencads-n.tdb  ffencads.rtp    ffencadv-n.tdb  ffencadv.rtp	\
 	ffencads.atp    ffencadsbon.itp ffencadv.atp    ffencadvbon.itp	\
