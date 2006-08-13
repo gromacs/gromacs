@@ -96,19 +96,6 @@ static real set_x_blen(real scale)
   return maxlen*MARGIN_FAC;
 }
 
-static int get_atype(char *nm)
-{
-  int i,aai=NATP-1;
-
-  for(i=0; (i<NATP-1); i++) {
-    if (nm[0] == atp[i]) {
-      aai=i;
-      break;
-    }
-  }
-  return aai;
-}
-
 static bool is_bond(int aai,int aaj,real len2)
 {
   bool bIsBond;
@@ -137,7 +124,6 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
 {
   t_param b;
   t_atom  *atom;
-  char    buf[12],resnm[12];
   int     i,j,aai;
   t_pbc   pbc;
   rvec    dx;
@@ -149,14 +135,6 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
     b.c[i] = 0.0;
     
   atom  = atoms->atom;
-  strcpy(resnm,"XXX");
-  for(i=0; (i<atoms->nr); i++) {
-    strcpy(buf,*atoms->atomname[i]);
-    atom[i].typeB = atom[i].type = get_atype(buf);
-    buf[1]='\0';
-    (void) query_atomprop(atomprop,epropMass,resnm,buf,&atom[i].m);
-    atom[i].mB = atom[i].m;
-  }
   c2 = sqr(cutoff);
   if (bPBC)
     set_pbc(&pbc,box);

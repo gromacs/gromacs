@@ -42,7 +42,7 @@
 	
 typedef struct {
   char   *elem,*type;
-  double q;
+  double q,m;
   int    nbonds;
   char   **bond;
 } t_nm2type;

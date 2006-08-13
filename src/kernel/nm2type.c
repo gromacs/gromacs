@@ -68,7 +68,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
   int       i,nb,nnnm,line=1;
-  double    qq;
+  double    qq,mm;
   t_nm2type *nm2t=NULL;
   
   sprintf(libfilename,"%s.n2t",ff);
@@ -82,11 +82,11 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
     if (bCont) {
       /* Remove comment */
       strip_comment(buf);
-      if (sscanf(buf,"%s%s%lf%d",elem,type,&qq,&nb) == 4) {
+      if (sscanf(buf,"%s%s%lf%lf%d",elem,type,&qq,&mm,&nb) == 5) {
 	/* If we can read the first four, there probably is more */
 	if (nb > 0) {
 	  snew(newbuf,nb);
-	  strcpy(format,"%*s%*s%*lf%*d");
+	  strcpy(format,"%*s%*s%*lf%Plf%*d");
 	  for(i=0; (i<nb); i++) {
 	    /* Complicated format statement */
 	    strcpy(f1,format);
@@ -103,6 +103,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
 	nm2t[nnnm].elem   = strdup(elem);
 	nm2t[nnnm].type   = strdup(type);
 	nm2t[nnnm].q      = qq;
+	nm2t[nnnm].m      = mm;
 	nm2t[nnnm].nbonds = nb;
 	nm2t[nnnm].bond   = newbuf;
 	nnnm++;
@@ -123,8 +124,9 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
   
   fprintf(fp,"; nm2type database\n");
   for(i=0; (i<nnm); i++) {
-    fprintf(fp,"%-8s %-8s %8.4f %-4d",nm2t[i].elem,nm2t[i].type,
-	    nm2t[i].q,nm2t[i].nbonds);
+    fprintf(fp,"%-8s %-8s %8.4f %8.4f %-4d",
+	    nm2t[i].elem,nm2t[i].type,
+	    nm2t[i].q,nm2t[i].m,nm2t[i].nbonds);
     for(j=0; (j<nm2t[i].nbonds); j++)
       fprintf(fp,"%-5s",nm2t[i].bond[j]);
     fprintf(fp,"\n");
@@ -155,7 +157,7 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
   int i,j,k,m,n,nresolved,nb,maxbond,ai,aj,best,im,nqual[2][ematchNR];
   int *bbb,*n_mask,*m_mask,**match,**quality;
   char *aname_i,*aname_m,*aname_n,*type;
-  double q;
+  double qq,mm;
       
   maxbond = 0;
   for(i=0; (i<atoms->nr); i++) 
@@ -247,7 +249,8 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
       }
     }
     if (best != -1) {
-      q    = nm2t[best].q;
+      qq   = nm2t[best].q;
+      mm   = nm2t[best].m;
       type = nm2t[best].type;
       
       for(k=0; (k<atype->nr); k++) {
@@ -264,13 +267,17 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
 	atype->bondatomtype[k] = k; /* Set bond_atomtype identical to atomtype */
 	atype->atom[k].type  = k;
 	atype->atom[k].typeB = k;
-	atype->atom[k].q     = q;
-	atype->atom[k].qB    = q;
+	atype->atom[k].q     = qq;
+	atype->atom[k].qB    = qq;
+	atype->atom[k].m     = mm;
+	atype->atom[k].mB    = mm;
       }      
       atoms->atom[i].type  = k;
       atoms->atom[i].typeB = k;
-      atoms->atom[i].q  = q;
-      atoms->atom[i].qB = q;
+      atoms->atom[i].q  = qq;
+      atoms->atom[i].qB = qq;
+      atoms->atom[i].m  = mm;
+      atoms->atom[i].mB = mm;
       nresolved++;
     }
     else {
