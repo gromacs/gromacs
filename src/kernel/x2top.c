@@ -119,12 +119,24 @@ static bool is_bond(int aai,int aaj,real len2)
   return bIsBond;
 }
 
+static int get_atype(char *nm)
+{
+  int i,aai=NATP-1;
+  
+  for(i=0; (i<NATP-1); i++) {
+    if (nm[0] == atp[i]) {
+      aai=i;
+      break;
+    }
+  }
+  return aai;
+}
+
 void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
 	      real cutoff,bool bPBC,matrix box,void *atomprop)
 {
   t_param b;
-  t_atom  *atom;
-  int     i,j,aai;
+  int     i,j,*elem;
   t_pbc   pbc;
   rvec    dx;
   real    dx2,c2;
@@ -134,14 +146,16 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
   for(i=0; (i<MAXFORCEPARAM); i++)
     b.c[i] = 0.0;
     
-  atom  = atoms->atom;
+  snew(elem,atoms->nr);
+  for(i=0; (i<atoms->nr); i++) 
+    elem[i] = get_atype(*atoms->atomname[i]);
+  
   c2 = sqr(cutoff);
   if (bPBC)
     set_pbc(&pbc,box);
   for(i=0; (i<atoms->nr); i++) {
     if ((i % 10) == 0)
       fprintf(stderr,"\ratom %d",i);
-    aai = atom[i].type;
     for(j=i+1; (j<atoms->nr); j++) {
       if (bPBC)
 	pbc_dx(&pbc,x[i],x[j],dx);
@@ -149,7 +163,7 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
 	rvec_sub(x[i],x[j],dx);
       
       dx2 = iprod(dx,dx);
-      if ((dx2 < c2) && (is_bond(aai,atom[j].type,dx2))) {
+      if ((dx2 < c2) && (is_bond(elem[i],elem[j],dx2))) {
 	b.AI = i;
 	b.AJ = j;
 	b.C0 = sqrt(dx2);
@@ -157,8 +171,8 @@ void mk_bonds(t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
 	nbond[i]++;
 	nbond[j]++;
 	if (debug) 
-	  fprintf(debug,"Bonding atoms %s-%d and %s-%d\n",*atoms->atomname[i],i+1,
-		  *atoms->atomname[j],j+1);
+	  fprintf(debug,"Bonding atoms %s-%d and %s-%d\n",
+		  *atoms->atomname[i],i+1,*atoms->atomname[j],j+1);
       }
     }
   }

@@ -86,7 +86,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
 	/* If we can read the first four, there probably is more */
 	if (nb > 0) {
 	  snew(newbuf,nb);
-	  strcpy(format,"%*s%*s%*lf%Plf%*d");
+	  strcpy(format,"%*s%*s%*s%*s%*s");
 	  for(i=0; (i<nb); i++) {
 	    /* Complicated format statement */
 	    strcpy(f1,format);
