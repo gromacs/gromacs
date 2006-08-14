@@ -1010,7 +1010,7 @@
   ND1   CE1   NE2   CD2     gi_1    
   CD2    CG   ND1   CE1     gi_1    
   CD2    CG   NE2   HD2     gi_1    
-  CE1   ND1   NE2   HD2     gi_1    
+  CE1   ND1   NE2   HE1     gi_1    
   NE2   CD2   CE1   HE2     gi_1    
     C    CA    +N     O     gi_1    
  [ dihedrals ]
