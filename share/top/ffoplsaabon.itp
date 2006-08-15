@@ -1300,6 +1300,11 @@
   S      CA     CA      1   119.400    711.280   ; thioanisole             copy from SY-CA-CA      rcr HIVRT
   P      CA     CA      1   119.400    711.280   ; 
   CA     S      CT      1   104.200    518.816   ; thioanisole             adjusted from CT-S-CT  rcr HIVRT
+ 
+; Charged Glutamine
+; See. Patriksson et al. Int. J. Mass. Spectrom. 248 pp 124-135 (2006)
+  OH     C      N       1   115.43     292.88
+ 
   
 [ dihedraltypes ]
 ;  i    j    k    l   func     coefficients
