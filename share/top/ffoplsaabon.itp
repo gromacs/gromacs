@@ -1300,6 +1300,11 @@
   S      CA     CA      1   119.400    711.280   ; thioanisole             copy from SY-CA-CA      rcr HIVRT
   P      CA     CA      1   119.400    711.280   ; 
   CA     S      CT      1   104.200    518.816   ; thioanisole             adjusted from CT-S-CT  rcr HIVRT
+ 
+; Charged Glutamine
+; See. Patriksson et al. Int. J. Mass. Spectrom. 248 pp 124-135 (2006)
+  OH     C      N       1   115.43     292.88
+ 
   
 [ dihedraltypes ]
 ;  i    j    k    l   func     coefficients
@@ -2681,3 +2686,14 @@
 ; Added DvdS for Quartz simulations
    SI   OS    1     0.000       3.766      3
    SI   OH    1     0.000       3.766      3
+
+; Added by DvdS for DMSO 17/06/2006
+ [ bondtypes ]
+   O2     S    1  0.153	400000
+
+ [ angletypes ]
+ O2 S CT 1 107 400
+ 
+ [ dihedraltypes ]
+ O2 S CT HC 3       1.35352   4.06057   0.00000  -5.41410   0.00000   0.00000 ; sulfide all-atom
+ 
