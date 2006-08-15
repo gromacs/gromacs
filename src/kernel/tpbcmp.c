@@ -275,7 +275,6 @@ static void cmp_atoms(FILE *fp,t_atoms *a1,t_atoms *a2,real ftol)
     cmp_int(fp,"atoms->nr",-1,a1->nr,a2->nr);
     for(i=0; (i<a1->nr); i++)
       cmp_atom(fp,i,&(a1->atom[i]),&(a2->atom[i]),ftol);
-    cmp_block(fp,&a1->excl,&a2->excl,"excl");
   } else {
     for(i=0; (i<a1->nr); i++)
       cmp_atom(fp,i,&(a1->atom[i]),NULL,ftol);
