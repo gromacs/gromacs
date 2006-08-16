@@ -107,6 +107,7 @@ real ewald_LRcorrection(FILE *fplog,
 #endif
   int     start = START(nsb);
   int     end   = start+HOMENR(nsb);
+  int     niat;
   bool    bFreeEnergy = (fr->efep != efepNO);
   bool    bFullPBC = (fr->ePBC == epbcFULL);
 
@@ -160,14 +161,21 @@ real ewald_LRcorrection(FILE *fplog,
     fprintf(debug,"mutot   = %8.3f  %8.3f  %8.3f\n",
 	    mutot[0][XX],mutot[0][YY],mutot[0][ZZ]);
   }
+
+  if (DOMAINDECOMP(cr))
+    niat = excl->nr;
+  else
+    niat = end; 
+      
   clear_mat(dxdf);
   if (!bFreeEnergy) {
-    for(i=start; (i<end); i++) {
+    for(i=start; (i<niat); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i]*one_4pi_eps;
       i1  = excl->index[i];
       i2  = excl->index[i+1];
-      q2sumA += chargeA[i]*chargeA[i];
+      if (i < end)
+	q2sumA += chargeA[i]*chargeA[i];
       
       /* Loop over excluded neighbours */
       for(j=i1; (j<i2); j++) {
@@ -255,14 +263,16 @@ real ewald_LRcorrection(FILE *fplog,
       }
     }
   } else {
-    for(i=start; (i<end); i++) {
+    for(i=start; (i<niat); i++) {
       /* Initiate local variables (for this i-particle) to 0 */
       qiA = chargeA[i]*one_4pi_eps;
       qiB = chargeB[i]*one_4pi_eps;
       i1  = excl->index[i];
       i2  = excl->index[i+1];
-      q2sumA += chargeA[i]*chargeA[i];
-      q2sumB += chargeB[i]*chargeB[i];
+      if (i < end) {
+	q2sumA += chargeA[i]*chargeA[i];
+	q2sumB += chargeB[i]*chargeB[i];
+      }
       
       /* Loop over excluded neighbours */
       for(j=i1; (j<i2); j++) {

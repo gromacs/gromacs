@@ -1704,7 +1704,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     ncpddc[YY] = Ny/cr->dd->nc[YY];
     ncpddc[ZZ] = Nz/cr->dd->nc[ZZ];
     cg0 = 0;
-    cg1 = dd_nicg(cr->dd);
+    cg1 = cr->dd->ncg_tot;
   } else {
     ncpddc[XX] = Nx;
     ncpddc[YY] = Ny;

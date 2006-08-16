@@ -23,10 +23,6 @@ extern void gmx_ddindex2xyz(ivec nc,int ind,ivec xyz);
  * nc should contain the number of cells.
  */
 
-extern int dd_nicg(gmx_domdec_t *dd);
-
-extern int dd_ncg_tot(gmx_domdec_t *dd);
-
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 

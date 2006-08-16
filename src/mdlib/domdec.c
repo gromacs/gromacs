@@ -94,16 +94,6 @@ int glatnr(gmx_domdec_t *dd,int i)
   return atnr;
 }
 
-int dd_nicg(gmx_domdec_t *dd)
-{
-  return dd->icell[dd->nicell-1].cg1;
-}
-
-int dd_ncg_tot(gmx_domdec_t *dd)
-{
-  return dd->ncg_tot;
-}
-
 void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 		      int *jcg0,int *jcg1,ivec shift0,ivec shift1)
 {
@@ -1794,60 +1784,76 @@ static void make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 static void make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
 				  t_block *excls,t_block *lexcls)
 {
-  int n,cg,la0,la1,la,a,i,j;
+  int n,ic,jlat0,jlat1,jlat,cg,la0,la1,la,a,i,j;
   gmx_ga2la_t *ga2la;
-  
-  if (dd->nat_tot+1 > lexcls->nalloc_index) {
-    lexcls->nalloc_index = over_alloc(dd->nat_tot)+1;
+
+  /* Since for RF and PME we need to loop over the exclusions
+   * we should store each exclusion only once. This is done
+   * using the same cell scheme as used for neighbor searching.
+   * The exclusions involving non-home atoms are stored only
+   * one way: atom j is in the excl list of i only for j > i,
+   * where i and j are local atom numbers.
+   */
+
+  lexcls->nr = dd->cgindex[dd->icell[dd->nicell-1].cg1];
+  if (lexcls->nr+1 > lexcls->nalloc_index) {
+    lexcls->nalloc_index = over_alloc(lexcls->nr)+1;
     srenew(lexcls->index,lexcls->nalloc_index);
   }
   
   n = 0;
-  for(cg=0; cg<dd->ncg_tot; cg++) {
-    la0 = dd->cgindex[cg];
-    /* Here we assume the number of exclusions in one charge groups
-     * is never larger than EXCLS_ALLOC_SIZE
-     */
-    if (n+EXCLS_ALLOC_SIZE > lexcls->nalloc_a) {
-      lexcls->nalloc_a += EXCLS_ALLOC_SIZE;
-      srenew(lexcls->a,lexcls->nalloc_a);
-    }
-    switch (fr->solvent_type[cg]) {
-    case esolNO:
-      /* Copy the exclusions from the global top */
-      la1 = dd->cgindex[cg+1];
-      for(la=la0; la<la1; la++) {
-	lexcls->index[la] = n;
-	a = dd->gatindex[la];
-	for(i=excls->index[a]; i<excls->index[a+1]; i++) {
-	  ga2la = &dd->ga2la[excls->a[i]];
-	  if (ga2la->cell != -1)
-	    lexcls->a[n++] = ga2la->a;
+  for(ic=0; ic<dd->nicell; ic++) {
+    jlat0 = dd->cgindex[dd->icell[ic].jcg0];
+    jlat1 = dd->cgindex[dd->icell[ic].jcg1];
+    for(cg=dd->ncg_cell[ic]; cg<dd->ncg_cell[ic+1]; cg++) {
+      /* Here we assume the number of exclusions in one charge group
+       * is never larger than EXCLS_ALLOC_SIZE
+       */
+      if (n+EXCLS_ALLOC_SIZE > lexcls->nalloc_a) {
+	lexcls->nalloc_a += EXCLS_ALLOC_SIZE;
+	srenew(lexcls->a,lexcls->nalloc_a);
+      }
+      la0 = dd->cgindex[cg];
+      switch (fr->solvent_type[cg]) {
+      case esolNO:
+	/* Copy the exclusions from the global top */
+	la1 = dd->cgindex[cg+1];
+	for(la=la0; la<la1; la++) {
+	  lexcls->index[la] = n;
+	  a = dd->gatindex[la];
+	  for(i=excls->index[a]; i<excls->index[a+1]; i++) {
+	    ga2la = &dd->ga2la[excls->a[i]];
+	    if (ga2la->cell != -1) {
+	      jlat = ga2la->a;
+	      /* Check to avoid double counts */
+	      if (jlat >= jlat0 && jlat < jlat1) 
+		lexcls->a[n++] = jlat;
+	    }
+	  }
 	}
+	break;
+      case esolSPC:
+	/* Exclude all 9 atom pairs */
+	for(la=la0; la<la0+3; la++) {
+	  lexcls->index[la] = n;
+	  for(j=la0; j<la0+3; j++)
+	    lexcls->a[n++] = j;
+	}
+	break;
+      case esolTIP4P:
+	/* Exclude all 16 atoms pairs */
+	for(la=la0; la<la0+4; la++) {
+	  lexcls->index[la] = n;
+	  for(j=la0; j<la0+4; j++)
+	    lexcls->a[n++] = j;
+	}
+	break;
+      default:
+	gmx_fatal(FARGS,"Unkown solvent type %d",fr->solvent_type[cg]);
       }
-      break;
-    case esolSPC:
-      /* Exclude all 9 atom pairs */
-      for(la=la0; la<la0+3; la++) {
-	lexcls->index[la] = n;
-	for(j=la0; j<la0+3; j++)
-	  lexcls->a[n++] = j;
-      }
-      break;
-    case esolTIP4P:
-      /* Exclude all 16 atoms pairs */
-      for(la=la0; la<la0+4; la++) {
-	lexcls->index[la] = n;
-	for(j=la0; j<la0+4; j++)
-	  lexcls->a[n++] = j;
-      }
-      break;
-    default:
-      gmx_fatal(FARGS,"Unkown solvent type %d",fr->solvent_type[cg]);
     }
   }
-  lexcls->index[dd->nat_tot] = n;
-  lexcls->nr = dd->nat_tot;
+  lexcls->index[lexcls->nr] = n;
   lexcls->nra = n;
   if (debug)
     fprintf(debug,"We have %d exclusions\n",lexcls->nra);
@@ -1915,7 +1921,7 @@ static void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
   lcgs->nra   = dd->nat_tot;
 }
 
-static void set_cg_boundaries(gmx_domdec_t *dd,t_block *lcgs)
+static void set_cg_boundaries(gmx_domdec_t *dd)
 {
   int c;
 
@@ -1929,7 +1935,7 @@ static void set_cg_boundaries(gmx_domdec_t *dd,t_block *lcgs)
 static void dd_update_ns_border(gmx_domdec_t *dd,t_nsborder *nsb)
 {
   nsb->nodeid    = 0 /* dd->nodeid */;
-  nsb->cgtotal   = dd_ncg_tot(dd);
+  nsb->cgtotal   = dd->ncg_tot;
   nsb->index[nsb->nodeid]  = 0;
   nsb->homenr[nsb->nodeid] = dd->nat_local;
   nsb->cgload[nsb->nodeid] = nsb->cgtotal;
@@ -1965,8 +1971,6 @@ static void make_local_top(FILE *fplog,gmx_domdec_t *dd,
   }
   */
   ltop->symtab = top->symtab;
-
-  set_cg_boundaries(dd,&ltop->blocks[ebCGS]);
 
   dd_update_ns_border(dd,nsb);
 }
@@ -2046,9 +2050,12 @@ void dd_partition_system(FILE         *fplog,
   setup_dd_communication(fplog,dd,&top_global->blocks[ebCGS],
 			 state_local->x,buf,state_local->box,
 			 fr->cg_cm,fr->rlistlong);
-
+  
   /* Set the indices */
   make_dd_indices(dd,&top_global->blocks[ebCGS],cg0,fr);
+
+  /* Set the charge group boundaries for neighbor searching */
+  set_cg_boundaries(dd);
 
   /* Update the rest of the forcerec */
   fr->cg0 = 0;

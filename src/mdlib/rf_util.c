@@ -46,7 +46,8 @@
 #include "copyrite.h"
 #include "pbc.h"
 
-real RF_excl_correction(FILE *log,const t_nsborder *nsb,
+real RF_excl_correction(FILE *log,
+			t_commrec *cr,const t_nsborder *nsb,
 			const t_forcerec *fr,t_graph *g,
 			const t_mdatoms *mdatoms,const t_block *excl,
 			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
@@ -65,6 +66,7 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
   ivec   dt;
   int    start = START(nsb);
   int    end   = start+HOMENR(nsb);
+  int    niat;
   bool   bFullPBC;
 
   if (fr->bTPI)
@@ -79,13 +81,19 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
   bFullPBC = (fr->ePBC == epbcFULL);
   ki = CENTRAL;
 
+  if (DOMAINDECOMP(cr))
+    niat = excl->nr;
+  else
+    niat = end;
+
   q2sumA = 0;
   q2sumB = 0;
   ener = 0;
   if (fr->efep == efepNO) {
-    for(i=start; i<end; i++) {
+    for(i=start; i<niat; i++) {
       qiA = chargeA[i];
-      q2sumA += qiA*qiA;
+      if (i < end)
+	q2sumA += qiA*qiA;
       /* Do the exclusions */
       j1  = excl->index[i];
       j2  = excl->index[i+1];
@@ -115,11 +123,13 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
     ener += -0.5*ec*q2sumA;
   } else {
     L1 = 1.0 - lambda;
-    for(i=start; i<end; i++) {
+    for(i=start; i<niat; i++) {
       qiA = chargeA[i];
       qiB = chargeB[i];
-      q2sumA += qiA*qiA;
-      q2sumB += qiB*qiB;
+      if (i < end) {
+	q2sumA += qiA*qiA;
+	q2sumB += qiB*qiB;
+      }
       /* Do the exclusions */
       j1  = excl->index[i];
       j2  = excl->index[i+1];

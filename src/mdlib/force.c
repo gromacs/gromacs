@@ -1407,7 +1407,7 @@ void force(FILE       *fplog,   int        step,
     dvdlambda = 0;
 
     if (fr->eeltype != eelRF_NEC)
-      epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
+      epot[F_RF_EXCL] = RF_excl_correction(fplog,cr,nsb,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
 
     epot[F_DVDL] += dvdlambda;
