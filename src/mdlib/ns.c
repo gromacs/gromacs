@@ -1588,7 +1588,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   static atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr=NULL;
   static int     *nlr_ljc,*nlr_one,*nsr;
   static real *dcx2=NULL,*dcy2=NULL,*dcz2=NULL;
-  
+
+  gmx_domdec_t *dd;
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
@@ -1700,11 +1701,12 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   debug_gmx();
 
   if (bDomDec) {
-    ncpddc[XX] = Nx/cr->dd->nc[XX];
-    ncpddc[YY] = Ny/cr->dd->nc[YY];
-    ncpddc[ZZ] = Nz/cr->dd->nc[ZZ];
+    dd = cr->dd;
+    ncpddc[XX] = Nx/dd->nc[XX];
+    ncpddc[YY] = Ny/dd->nc[YY];
+    ncpddc[ZZ] = Nz/dd->nc[ZZ];
     cg0 = 0;
-    cg1 = cr->dd->ncg_tot;
+    cg1 = dd->icell[dd->nicell-1].cg1;
   } else {
     ncpddc[XX] = Nx;
     ncpddc[YY] = Ny;
