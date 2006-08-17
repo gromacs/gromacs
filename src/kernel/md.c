@@ -162,6 +162,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     
     make_dd_communicators(stdlog,cr,Flags & MD_CARTESIAN);
   } else {
+    if (cr->npmenodes > 0)
+      gmx_fatal(FARGS,
+		"Can only use seperate PME nodes with domain decomposition\n");
     cr->duty = (DUTY_PP | DUTY_PME);
   }
 
@@ -483,9 +486,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc(TRUE);
 
-    dd_make_reverse_top(cr->dd,
-			top_global->atoms.nr,&top_global->idef,
-			EI_DYNAMICS(inputrec->eI));
+    dd_make_reverse_top(stdlog,cr->dd,top_global,
+			EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
 
     if (DDMASTER(cr->dd)) {
       snew(state,1);

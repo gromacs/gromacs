@@ -115,7 +115,7 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
   gmx_write_pdb_box(out,box);
   for(i=start; i<start+homenr; i++) {
     if (dd) {
-      if (i >= dd->nat_local && i < dd->nat_tot)
+      if (i >= dd->nat_home && i < dd->nat_tot)
 	continue;
       ii = dd->gatindex[i];
     } else {

@@ -163,6 +163,9 @@ typedef struct {
   int  nbonded_global;
   int  nbonded_local;
 
+  /* The number of inter charge-group exclusions */
+  int  n_intercg_excl;
+
   /* Constraint stuff */
   gmx_domdec_constraints_t *constraints;
 
@@ -170,14 +173,14 @@ typedef struct {
   int ncg_cell[DD_MAXCELL+1];
 
   /* The local to gobal charge group index and local cg to local atom index */
-  int  ncg_local;
+  int  ncg_home;
   int  ncg_tot;
   int  *index_gl;
   int  *cgindex;
   int  cg_nalloc;
 
-  /* The number of local atoms */
-  int  nat_local;
+  /* The number of home atoms */
+  int  nat_home;
   /* The total number of atoms in the neighbor search cells */
   int  nat_tot;
   /* The total number of atoms, including the extra ones for constraints */

@@ -335,7 +335,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     /* Reset long range forces if necessary */
     if (fr->bTwinRange) {
-      clear_rvecs(nsb->natoms,fr->f_twin);
+      clear_rvecs(fr->f_twin_n,fr->f_twin);
       clear_rvecs(SHIFTS,fr->fshift_twin);
     }
     /* Do the actual neighbour searching and if twin range electrostatics
@@ -353,14 +353,14 @@ void do_force(FILE *fplog,t_commrec *cr,
     {
       GMX_BARRIER(cr->mpi_comm_mygroup);
       if (fr->bDomDec)
-	clear_rvecs(fr->f_n,fr->f_el_recip);
+	clear_rvecs(fr->f_el_recip_n,fr->f_el_recip);
       else
 	clear_rvecs(homenr,fr->f_el_recip+start);
       GMX_BARRIER(cr->mpi_comm_mygroup);
     }
     /* Copy long range forces into normal buffers */
     if (fr->bTwinRange) {
-      for(i=0; i<nsb->natoms; i++)
+      for(i=0; i<fr->f_twin_n; i++)
 	copy_rvec(fr->f_twin[i],f[i]);
       for(i=0; i<SHIFTS; i++)
 	copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
@@ -403,10 +403,13 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     /* Communicate the forces */
     if (PAR(cr)) {
-      if (DOMAINDECOMP(cr))
+      if (DOMAINDECOMP(cr)) {
 	dd_move_f(cr->dd,f,buf);
-      else
+	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl)
+	  dd_move_f(cr->dd,fr->f_el_recip,buf);
+      } else {
 	move_f(fplog,cr,cr->left,cr->right,f,buf,nsb,nrnb);
+      }
       /* In case of node-splitting, the PP nodes receive the long-range 
        * forces, virial and energy from the PME nodes here 
        */    
@@ -433,7 +436,7 @@ void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
    */
   if (EEL_FULL(fr->eeltype)) {
     if (fr->bDomDec)
-      sum_forces(0,fr->f_n,f,fr->f_el_recip);
+      sum_forces(0,fr->f_el_recip_n,f,fr->f_el_recip);
     else
       sum_forces(start,start+homenr,f,fr->f_el_recip);
   }

@@ -26,8 +26,9 @@ extern void gmx_ddindex2xyz(ivec nc,int ind,ivec xyz);
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 
-extern void dd_make_reverse_top(gmx_domdec_t *dd,
-				int natoms,t_idef *idef,bool bDynamics);
+extern void dd_make_reverse_top(FILE *fplog,
+				gmx_domdec_t *dd,t_topology *top,
+				bool bDynamics,int eeltype);
 
 extern int gmx_ddindex2pmeslab(t_commrec *cr,int ddindex);
 /* Returns the pme slab for DD index ddindex */

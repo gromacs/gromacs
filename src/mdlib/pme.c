@@ -1405,7 +1405,7 @@ void gmx_pme_send_x_q(t_commrec *cr, matrix box,
   MPI_Request req[4];
 #endif
 
-  n = cr->dd->nat_local;
+  n = cr->dd->nat_home;
   cnb.natoms = n;
   copy_mat(box,cnb.box);
   cnb.lambda = lambda;
@@ -1465,7 +1465,7 @@ void gmx_pme_receive_f(t_commrec *cr,
   static int  nalloc=0;
   int natoms,i;
 
-  natoms = cr->dd->nat_local;
+  natoms = cr->dd->nat_home;
 
   if (natoms > nalloc) {
     nalloc = over_alloc(natoms);

@@ -210,26 +210,26 @@ static void setup_constraint_communication(gmx_domdec_t *dd)
 }
 
 static void walk_out(int con,int a,int nrec,const t_iatom *ia,
-		     const gmx_ga2la_t *ga2la,bool bLocalConnect,
+		     const gmx_ga2la_t *ga2la,bool bHomeConnect,
 		     gmx_domdec_constraints_t *dc)
 {
   int i,coni,b;
 
   if (dc->gc2lc[con] == -1) {
-    /* Add this non-local constraint to the list */
+    /* Add this non-home constraint to the list */
     if (dc->ncon >= dc->con_nalloc) {
       dc->con_nalloc += CONSTRAINTS_ALLOC_SIZE;
       srenew(dc->con,dc->con_nalloc);
       srenew(dc->con_nlocat,dc->con_nalloc);
     }
     dc->con[dc->ncon] = con;
-    dc->con_nlocat[dc->ncon] = (bLocalConnect ? 1 : 0);
+    dc->con_nlocat[dc->ncon] = (bHomeConnect ? 1 : 0);
     dc->gc2lc[con] = dc->ncon;
     dc->ncon++;
   }
   /* Check to not ask for the same atom more than once */
   if (dc->ga2la[a] == -1) {
-    /* Add this non-local atom to the list */
+    /* Add this non-home atom to the list */
     if (dc->nind_req >= dc->ind_req_nalloc) {
       dc->ind_req_nalloc += CONSTRAINTS_ALLOC_SIZE;
       srenew(dc->ind_req,dc->ind_req_nalloc);
@@ -261,15 +261,15 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec,
   t_block at2con;
   gmx_ga2la_t *ga2la;
   t_iatom *iap;
-  int nlocal,a,ag,bg,i,con;
+  int nhome,a,ag,bg,i,con;
 
   at2con = dc->at2con;
   ga2la  = dd->ga2la;
 
   dc->ncon = 0;
-  nlocal = 0;
+  nhome = 0;
   dc->nind_req = 0;
-  for(a=0; a<dd->nat_local; a++) {
+  for(a=0; a<dd->nat_home; a++) {
     ag = dd->gatindex[a];
     for(i=at2con.index[ag]; i<at2con.index[ag+1]; i++) {
       con = at2con.a[i];
@@ -280,7 +280,7 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec,
 	bg = iap[1];
       }
       if (ga2la[bg].cell == 0) {
-	/* Add this fully local constraint at the first atom */
+	/* Add this fully home constraint at the first atom */
 	if (ag < bg) {
 	  if (dc->ncon >= dc->con_nalloc) {
 	    dc->con_nalloc += CONSTRAINTS_ALLOC_SIZE;
@@ -291,18 +291,18 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec,
 	  dc->con_nlocat[dc->ncon] = 2;
 	  dc->gc2lc[con] = dc->ncon;
 	  dc->ncon++;
-	  nlocal++;
+	  nhome++;
 	}
       } else {
-	/* We need to walk out of the local cell by nrec constraints */
+	/* We need to walk out of the home cell by nrec constraints */
 	walk_out(con,bg,nrec,ia,dd->ga2la,TRUE,dc);
       }
     }
   }
   if (debug)
     fprintf(debug,
-	    "Constraints: local %3d border %3d atoms: %3d\n",
-	    nlocal,dc->ncon-nlocal,dc->nind_req);
+	    "Constraints: home %3d border %3d atoms: %3d\n",
+	    nhome,dc->ncon-nhome,dc->nind_req);
 
   setup_constraint_communication(dd);
 }

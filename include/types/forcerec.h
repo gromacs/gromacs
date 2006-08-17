@@ -158,19 +158,18 @@ typedef struct {
    */
   /* bool *bMask; */
 
-  /* The size of the force arrays */
-  int  f_n;
-  /* The allocated size of the force arrays */
-  int  f_nalloc;
-
   /* Twin Range stuff. */
   bool bTwinRange;
   int  nlr;
+  int  f_twin_n;
+  int  f_twin_nalloc;
   rvec *f_twin;
   rvec *fshift_twin;
 
   /* Long-range forces and virial for PPPM/PME/Ewald */
   gmx_pme_t pmedata;
+  int       f_el_recip_n;
+  int       f_el_recip_nalloc;
   rvec      *f_el_recip;
   tensor    vir_el_recip;
 

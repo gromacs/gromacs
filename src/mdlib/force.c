@@ -929,15 +929,19 @@ void init_forcerec(FILE *fp,
 
   /* Initiate arrays */
   if (fr->bTwinRange) {
+    if (!DOMAINDECOMP(cr)) {
+      fr->f_twin_n = natoms;
+      fr->f_twin_nalloc = fr->f_twin_n;
+      snew(fr->f_twin,fr->f_twin_nalloc);
+    }
     snew(fr->fshift_twin,SHIFTS);
   }
-  if (!DOMAINDECOMP(cr)) {
-    fr->f_n = natoms;
-    fr->f_nalloc = fr->f_n;
-    if (fr->bTwinRange)
-      snew(fr->f_twin,fr->f_nalloc);
-    if (EEL_FULL(fr->eeltype))
-      snew(fr->f_el_recip,fr->f_nalloc);
+  if (EEL_FULL(fr->eeltype)) {
+    if (!DOMAINDECOMP(cr)) {
+      fr->f_el_recip_n = natoms;
+      fr->f_el_recip_nalloc = fr->f_el_recip_n;
+      snew(fr->f_el_recip,fr->f_el_recip_nalloc);
+    }
   }
   
   /* Mask that says whether or not this NBF list should be computed */
