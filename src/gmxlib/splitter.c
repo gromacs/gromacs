@@ -119,8 +119,8 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
       nodeid=hid[ilist->iatoms[i+1]];
       if (hid[ilist->iatoms[i+2]] != nodeid) 
 	gmx_fatal(FARGS,"Shake block crossing node boundaries\n"
-		    "constraint between atoms (%d,%d)",
-		    ilist->iatoms[i+1],ilist->iatoms[i+2]);
+		  "constraint between atoms (%d,%d)",
+		  ilist->iatoms[i+1]+1,ilist->iatoms[i+2]+1);
     }
     else if (ftype == F_SETTLE) {
       /* Only the first particle is stored for settles ... */
@@ -129,7 +129,7 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
       if ((nodeid != hid[ai+1]) ||
 	  (nodeid != hid[ai+2]))
 	gmx_fatal(FARGS,"Settle block crossing node boundaries\n"
-		    "constraint between atoms (%d-%d)",ai,ai+2);
+		  "constraint between atoms (%d-%d)",ai+1,ai+2+1);
     }
     else if(interaction_function[ftype].flags & IF_VSITE) {
       /* Virtual sites should be constructed on the home node */
