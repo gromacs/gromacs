@@ -366,7 +366,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		   fr,graph,state->box,vsitecomm,cr);
 
   if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+    spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
   
   sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
@@ -982,7 +982,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		   fr,graph,state->box,vsitecomm,cr);
 
   if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+    spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
   
   sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
@@ -1632,7 +1632,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		     &top->idef,fr,graph,state->box,vsitecomm,cr);
 
     if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+      spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
 		     fr,graph,state->box,vsitecomm,cr);
     
     sum_lrforces(force[TRY],fr,START(nsb),HOMENR(nsb));
