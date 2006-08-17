@@ -1874,16 +1874,20 @@ static void make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
 	/* Exclude all 9 atom pairs */
 	for(la=la0; la<la0+3; la++) {
 	  lexcls->index[la] = n;
-	  for(j=la0; j<la0+3; j++)
-	    lexcls->a[n++] = j;
+	  if (ic == 0) {
+	    for(j=la0; j<la0+3; j++)
+	      lexcls->a[n++] = j;
+	  }
 	}
 	break;
       case esolTIP4P:
 	/* Exclude all 16 atoms pairs */
 	for(la=la0; la<la0+4; la++) {
 	  lexcls->index[la] = n;
-	  for(j=la0; j<la0+4; j++)
-	    lexcls->a[n++] = j;
+	  if (ic == 0) {
+	    for(j=la0; j<la0+4; j++)
+	      lexcls->a[n++] = j;
+	  }
 	}
 	break;
       default:
@@ -1903,7 +1907,7 @@ static void make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
     /* nr is only used to loop over the exclusions for Ewald and RF,
      * so we can set it to the number of home atoms for efficiency.
      */
-    lexcls->nr = dd->cgindex[dd->icell[nicell].cg1];
+    lexcls->nr = dd->cgindex[dd->icell[0].cg1];
   }
   if (debug)
     fprintf(debug,"We have %d exclusions\n",lexcls->nra);
