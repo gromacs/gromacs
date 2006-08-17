@@ -104,10 +104,10 @@ static int *select_it(int nre,char *nm[],int *nset)
   return set;
 }
 
-int strcount(char *s1,char *s2)
+static int strcount(char *s1,char *s2)
 {
   int n=0;
-  while (s1 && s2 && (s1[n] == s2[n]))
+  while (s1 && s2 && (toupper(s1[n]) == toupper(s2[n])))
     n++;
   return n;
 }
@@ -115,54 +115,79 @@ int strcount(char *s1,char *s2)
 static int *select_by_name(int nre,char *nm[],int *nset)
 {
   bool *bE;
-  int  n,k,kk,j,i,nsame,nind,nlen;
+  int  n,k,kk,j,i,nsame,nind,nlen,nss;
   int  *set;
   bool bVerbose = TRUE;
   char *ptr,buf[STRLEN];
-    
+  char **newnm;
+  
   if ((getenv("VERBOSE")) != NULL)
     bVerbose = FALSE;
   
-  fprintf(stderr,"\n  Select the terms you want from the following list\n");
-  fprintf(stderr,"-----------------------------------------------------\n");
-
+  fprintf(stderr,"\n");
+  fprintf(stderr,"Select the terms you want from the following list by\n");
+  fprintf(stderr,"selecting either the name or the number or a combination.\n");
+  fprintf(stderr,"End your selection with an empty line or a zero.\n");
+  fprintf(stderr,"---------------------------------------------------------\n");
+  
   if ( bVerbose ) {
     nlen = 0;
-    for(i=0; (i<nre); i++)
-      nlen = max(nlen,strlen(nm[i]));
-    kk = max(1,80/(nlen+2));
-    sprintf(buf,"%%-%ds ",nlen);
+    snew(newnm,nre);
+    for(i=0; (i<nre); i++) {
+      newnm[i] = strdup(nm[i]);
+      nlen = max(nlen,strlen(newnm[i]));
+    }
+    kk = max(1,80/(nlen+4));
+    sprintf(buf,"%%-3d %%-%ds ",nlen);
     for(k=0; (k<nre); ) {
       for(j=0; (j<kk) && (k<nre); j++,k++) {
 	/* Insert dashes in all the names */
-	while ((ptr = strchr(nm[k],' ')) != NULL)
+	while ((ptr = strchr(newnm[k],' ')) != NULL)
 	  *ptr='-';
-	
-	fprintf(stderr,buf,nm[k]);
+	fprintf(stderr,buf,k+1,newnm[k]);
       }
       fprintf(stderr,"\n");
     }
     fprintf(stderr,"\n");
   }
-
+  
   snew(bE,nre);
-  do {
-    ptr = fgets2(buf,STRLEN-1,stdin);
-    if (ptr) {
-      nsame = 0;
+  while (fgets2(buf,STRLEN-1,stdin)) {
+    /* Remove spaces */
+    trim(buf);
+    
+    /* Empty line means end of input */
+    if (strlen(buf) == 0)
+      break;
+      
+    /* First try to read an integer */
+    nss   = sscanf(buf,"%d",&nind);
+    if (nss == 1) {
+      /* Zero means end of input */
+      if (nind == 0)
+	break;
+      else if ((1<=nind) && (nind<=nre))
+	bE[nind-1] = TRUE;
+    }
+    else {
+      /* Now try to read a string */
       nind  = -1;
+      nsame = 0;
+      
       for(n=0; (n<nre); n++) {
-	k = strcount(nm[n],ptr);
+	k = strcount(newnm[n],buf);
 	if (k > nsame) {
 	  nind  = n;
- 	  nsame = k;
+	  nsame = k;
 	}
       }
       if (nsame > 0)
 	bE[nind] = TRUE;
+      else
+	fprintf(stderr,"I don't understand %s\n",buf);
     }
-  } while (ptr && (strlen(ptr) > 0));
-
+  }
+  
   snew(set,nre);
   for(i=(*nset)=0; (i<nre); i++)
     if (bE[i])
@@ -172,6 +197,10 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   
   if (*nset == 0)
     gmx_fatal(FARGS,"No energy terms selected");
+
+  for(i=0; (i<nre); i++) 
+    sfree(newnm[i]);
+  sfree(newnm);
   
   return set;
 }
