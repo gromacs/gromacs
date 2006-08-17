@@ -250,6 +250,12 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
     spread_vsite_f(log,x,f,&(nrnb[cr->nodeid]),&top->idef,
 		   fr,graph,box,vsitecomm,cr); 
       
+  if (bVsites && fr->bEwald) 
+    spread_vsite_f(log,x,fr->f_el_recip,&nrnb[cr->nodeid],&top->idef,
+		   fr,graph,box,vsitecomm,cr);
+  
+  sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
   where();
@@ -359,6 +365,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   if (bVsites)
     spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
+
+  if (bVsites && fr->bEwald) 
+    spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+		   fr,graph,state->box,vsitecomm,cr);
+  
+  sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(log,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
@@ -971,6 +983,12 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   if (bVsites)
     spread_vsite_f(log,state->x,f,&(nrnb[cr->nodeid]),&top->idef,
 		   fr,graph,state->box,vsitecomm,cr);
+
+  if (bVsites && fr->bEwald) 
+    spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+		   fr,graph,state->box,vsitecomm,cr);
+  
+  sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(log,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
@@ -1619,6 +1637,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       spread_vsite_f(log,pos[TRY],force[TRY],&(nrnb[cr->nodeid]),
 		     &top->idef,fr,graph,state->box,vsitecomm,cr);
 
+    if (bVsites && fr->bEwald) 
+      spread_vsite_f(log,state->x,fr->f_el_recip,&mynrnb,&top->idef,
+		     fr,graph,state->box,vsitecomm,cr);
+    
+    sum_lrforces(force[TRY],fr,START(nsb),HOMENR(nsb));
+
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,inputrec,fr,count,mdatoms->nr,state->box,state->lambda,
 		  pres,vir,ener);
@@ -1884,6 +1908,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
              lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
     bNS=FALSE;
     
+    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+
+
     /* Shift back the coordinates, since we're not calling update */
     if (graph)
         unshift_self(graph,state->box,state->x);
@@ -1930,6 +1957,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
+	    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+
             if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
@@ -1945,7 +1974,9 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
-            if (graph)
+	    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+	    
+	    if (graph)
             {
                 /* Shift back the coordinates, since we're not calling update */
                 unshift_self(graph,state->box,state->x);
@@ -2181,6 +2212,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL,NULL); 
 	bStateChanged = FALSE;
+
+	sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
 	/* Calculate long range corrections to pressure and energy */
 	calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,lambda,
