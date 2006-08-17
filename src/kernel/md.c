@@ -1085,7 +1085,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       set_avcsixtwelve(log,fr,&top_global->atoms,&top_global->blocks[ebEXCLS]);
       
     /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(log,inputrec,fr,step,mdatoms->nr,lastbox,state->lambda,
+    calc_dispcorr(log,inputrec,fr,step,top_global->atoms.nr,
+		  lastbox,state->lambda,
 		  pres,total_vir,ener);
 
     ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
