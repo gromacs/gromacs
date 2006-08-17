@@ -418,8 +418,7 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   add_xml_char(cutoffptr,"nstype",ens_names[ir->ns_type]);
   add_xml_char(cutoffptr,"coulombtype",eel_names[ir->coulombtype]);
   add_xml_char(cutoffptr,"vdwtype",evdw_names[ir->vdwtype]);
-  if ((ir->coulombtype == eelPME) ||
-      (ir->coulombtype == eelPMEUSER)) {
+  if (EEL_PME(ir->coulombtype)) {
     pmeptr = add_xml_child(cutoffptr,exmlPMEPARM);
     add_xml_int(pmeptr,"nkx",ir->nkx);
     add_xml_int(pmeptr,"nky",ir->nky);
