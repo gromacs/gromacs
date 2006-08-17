@@ -491,11 +491,9 @@ static void pme_dd_sendrecv(gmx_pme_t pme,bool bBackward,int shift,
 static void dd_pmeredist_x_q(gmx_pme_t pme,
 			     int n, rvec *x, real *charge, int *idxa)
 {
-  int npme,*commnode,*buf_index;
+  int *commnode,*buf_index;
   int i,nsend,local_pos,buf_pos,node,scount;
 
-  npme = pme->nnodes;
-  
   commnode  = pme->node_dest;
   buf_index = pme->buf_index;
   
@@ -569,10 +567,9 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
 
 static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
 {
-  int npme,*commnode,*buf_index;
+  int *commnode,*buf_index;
   int local_pos,buf_pos,i,rcount,node;
 
-  npme      = pme->nnodes;
   commnode  = pme->node_dest;
   buf_index = pme->buf_index;
 
@@ -1274,14 +1271,15 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   fprintf(log,"Creating PME data structures.\n");
   snew(pme,1);
 
+  if (PAR(cr)) {
 #ifdef GMX_MPI
-  if(PAR(cr))
-  {
       pme->mpi_comm = cr->mpi_comm_mygroup;
       MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
       MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
-  }
 #endif
+  } else {
+    pme->nnodes = 1;
+  }
 
   fprintf(log,"Will do PME sum in reciprocal space.\n");
   please_cite(log,"Essman95a");
@@ -1353,7 +1351,7 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   
   make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
   
-  if (pme->nnodes <= 1) {
+  if (pme->nnodes == 1) {
     pme->my_homenr = homenr;
     pme_realloc_homenr_things(pme);
   }
@@ -1691,7 +1689,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
     where();
 
-    if (pme->nnodes <= 1) {
+    if (pme->nnodes == 1) {
       pme->x_home = x;
       pme->q_home = charge;
       pme->f_home = f;
