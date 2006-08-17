@@ -805,6 +805,8 @@ void init_forcerec(FILE *fp,
   t_nblists *nbl;
   int     *nm_ind,egp_flags;
 
+  fr->bDomDec = DOMAINDECOMP(cr);
+
   if (check_box(box))
     gmx_fatal(FARGS,check_box(box));
 
@@ -927,12 +929,15 @@ void init_forcerec(FILE *fp,
 
   /* Initiate arrays */
   if (fr->bTwinRange) {
-    snew(fr->f_twin,natoms);
     snew(fr->fshift_twin,SHIFTS);
   }
-  
-  if (EEL_FULL(fr->eeltype)) {
-    snew(fr->f_el_recip,natoms);
+  if (!DOMAINDECOMP(cr)) {
+    fr->f_n = natoms;
+    fr->f_nalloc = fr->f_n;
+    if (fr->bTwinRange)
+      snew(fr->f_twin,fr->f_nalloc);
+    if (EEL_FULL(fr->eeltype))
+      snew(fr->f_el_recip,fr->f_nalloc);
   }
   
   /* Mask that says whether or not this NBF list should be computed */
@@ -1407,7 +1412,7 @@ void force(FILE       *fplog,   int        step,
     dvdlambda = 0;
 
     if (fr->eeltype != eelRF_NEC)
-      epot[F_RF_EXCL] = RF_excl_correction(fplog,cr,nsb,fr,graph,md,excl,x,f,
+      epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
 
     epot[F_DVDL] += dvdlambda;

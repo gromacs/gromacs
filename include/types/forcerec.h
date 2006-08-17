@@ -71,6 +71,9 @@ typedef struct {
 } t_nblists;
  
 typedef struct {
+  /* Domain Decomposition */
+  bool bDomDec;
+
   /* Cut-Off stuff */
   int  ePBC;
   real rlist,rlistlong;
@@ -154,7 +157,12 @@ typedef struct {
    * forces are computed.
    */
   /* bool *bMask; */
-    
+
+  /* The size of the force arrays */
+  int  f_n;
+  /* The allocated size of the force arrays */
+  int  f_nalloc;
+
   /* Twin Range stuff. */
   bool bTwinRange;
   int  nlr;

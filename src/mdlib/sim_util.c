@@ -352,7 +352,10 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (EEL_FULL(fr->eeltype)) 
     {
       GMX_BARRIER(cr->mpi_comm_mygroup);
-      clear_rvecs(homenr,fr->f_el_recip+start);
+      if (fr->bDomDec)
+	clear_rvecs(fr->f_n,fr->f_el_recip);
+      else
+	clear_rvecs(homenr,fr->f_el_recip+start);
       GMX_BARRIER(cr->mpi_comm_mygroup);
     }
     /* Copy long range forces into normal buffers */
@@ -428,8 +431,12 @@ void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
    * forces on the local atoms, this can be safely done after the
    * communication step.
    */
-  if (EEL_FULL(fr->eeltype))
-    sum_forces(start,start+homenr,f,fr->f_el_recip);
+  if (EEL_FULL(fr->eeltype)) {
+    if (fr->bDomDec)
+      sum_forces(0,fr->f_n,f,fr->f_el_recip);
+    else
+      sum_forces(start,start+homenr,f,fr->f_el_recip);
+  }
 }
 
 void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],

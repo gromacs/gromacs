@@ -2060,7 +2060,16 @@ void dd_partition_system(FILE         *fplog,
   /* Update the rest of the forcerec */
   fr->cg0 = 0;
   fr->hcg = dd->ncg_tot;
-
+  /* The normal force array should also be dynamic and reallocate here */
+  fr->f_n = dd->nat_tot;
+  if (fr->f_n > fr->f_nalloc) {
+    fr->f_nalloc = over_alloc(fr->f_n);
+    if (fr->bTwinRange)
+      srenew(fr->f_twin,fr->f_nalloc);
+    if (EEL_FULL(fr->eeltype))
+      srenew(fr->f_el_recip,fr->f_nalloc);
+  }
+  
   /* Extract a local topology from the global topology */
   make_local_top(fplog,dd,fr,top_global,top_local,nsb);
 

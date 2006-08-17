@@ -46,8 +46,7 @@
 #include "copyrite.h"
 #include "pbc.h"
 
-real RF_excl_correction(FILE *log,
-			t_commrec *cr,const t_nsborder *nsb,
+real RF_excl_correction(FILE *log,const t_nsborder *nsb,
 			const t_forcerec *fr,t_graph *g,
 			const t_mdatoms *mdatoms,const t_block *excl,
 			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
@@ -81,7 +80,7 @@ real RF_excl_correction(FILE *log,
   bFullPBC = (fr->ePBC == epbcFULL);
   ki = CENTRAL;
 
-  if (DOMAINDECOMP(cr))
+  if (fr->bDomDec)
     niat = excl->nr;
   else
     niat = end;

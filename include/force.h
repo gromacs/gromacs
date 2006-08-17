@@ -57,8 +57,7 @@ extern void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
 		       t_graph *g,rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-extern real RF_excl_correction(FILE *fplog,
-			       t_commrec *cr,const t_nsborder *nsb,
+extern real RF_excl_correction(FILE *fplog,const t_nsborder *nsb,
 			       const t_forcerec *fr,t_graph *g,
 			       const t_mdatoms *mdatoms,const t_block *excl,
 			       rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
