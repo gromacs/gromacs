@@ -52,10 +52,10 @@
 #include "symtab.h"
 #include "xmlio.h"
 
-static const char *xyz_names[]    = { 
+static const xmlChar *xyz_names[]    = { 
   "x", "y", "z" 
 };
-static const char *tensor_names[] = { 
+static const xmlChar *tensor_names[] = { 
   "xx", "xy", "xz", "yx", "yy", "yz", "zx", "zy", "zz"
 };
 
@@ -416,8 +416,6 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   add_xml_real(cutoffptr,"epsilonr",ir->epsilon_r);
   add_xml_int(cutoffptr,"nstlist",ir->nstlist);
   add_xml_char(cutoffptr,"nstype",ens_names[ir->ns_type]);
-  add_xml_char(cutoffptr,"domdecomp",yesno_names[ir->bDomDecomp]);
-  add_xml_char(cutoffptr,"decompdir",xyz_names[ir->decomp_dir]);
   add_xml_char(cutoffptr,"coulombtype",eel_names[ir->coulombtype]);
   add_xml_char(cutoffptr,"vdwtype",evdw_names[ir->vdwtype]);
   if ((ir->coulombtype == eelPME) ||
