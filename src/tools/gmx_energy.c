@@ -112,12 +112,22 @@ static int strcount(char *s1,char *s2)
   return n;
 }
 
+static void chomp(char *buf)
+{
+  int len = strlen(buf);
+  
+  while ((len > 0) && (buf[len-1] == '\n')) {
+    buf[len-1] = '\0';
+    len--;
+  }
+}
+
 static int *select_by_name(int nre,char *nm[],int *nset)
 {
   bool *bE;
   int  n,k,kk,j,i,nsame,nind,nlen,nss;
   int  *set;
-  bool bVerbose = TRUE;
+  bool bEOF,bVerbose = TRUE;
   char *ptr,buf[STRLEN];
   char **newnm;
   
@@ -152,39 +162,53 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   }
   
   snew(bE,nre);
-  while (fgets2(buf,STRLEN-1,stdin)) {
+  
+  bEOF = FALSE;
+  while (!bEOF && (fgets2(buf,STRLEN-1,stdin))) {
+    /* Remove newlines */
+    chomp(buf);
+    
     /* Remove spaces */
     trim(buf);
     
     /* Empty line means end of input */
-    if (strlen(buf) == 0)
-      break;
-      
-    /* First try to read an integer */
-    nss   = sscanf(buf,"%d",&nind);
-    if (nss == 1) {
-      /* Zero means end of input */
-      if (nind == 0)
-	break;
-      else if ((1<=nind) && (nind<=nre))
-	bE[nind-1] = TRUE;
-    }
-    else {
-      /* Now try to read a string */
-      nind  = -1;
-      nsame = 0;
-      
-      for(n=0; (n<nre); n++) {
-	k = strcount(newnm[n],buf);
-	if (k > nsame) {
-	  nind  = n;
-	  nsame = k;
+    bEOF = (strlen(buf) == 0);
+    if (!bEOF) {
+      ptr = buf;
+      do {
+	fprintf(stderr,"ptr = '%s'\n",ptr);
+	if (!bEOF) {
+	  /* First try to read an integer */
+	  nss   = sscanf(ptr,"%d",&nind);
+	  if (nss == 1) {
+	    /* Zero means end of input */
+	    if (nind == 0)
+	      bEOF = TRUE;
+	    else if ((1<=nind) && (nind<=nre))
+	      bE[nind-1] = TRUE;
+	  }
+	  else {
+	    /* Now try to read a string */
+	    nind  = -1;
+	    nsame = 0;
+	    
+	    for(n=0; (n<nre); n++) {
+	      k = strcount(newnm[n],ptr);
+	      if (k > nsame) {
+		nind  = n;
+		nsame = k;
+	      }
+	    }
+	    if (nsame > 0)
+	      bE[nind] = TRUE;
+	    else
+	      fprintf(stderr,"I don't understand %s\n",ptr);
+	  }
 	}
-      }
-      if (nsame > 0)
-	bE[nind] = TRUE;
-      else
-	fprintf(stderr,"I don't understand %s\n",buf);
+	/* Look for the first space, and remove spaces from there */
+	if ((ptr = strchr(ptr,' ')) != NULL)
+	  trim(ptr);
+      } while (!bEOF && (ptr && (strlen(ptr) > 0)));
     }
   }
   
