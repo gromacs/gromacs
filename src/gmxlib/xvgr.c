@@ -326,6 +326,7 @@ real **read_xvg_time(char *fn,
 		     bool bHaveT,bool bTB,real tb,bool bTE,real te,
 		     int nsets_in,int *nset,int *nval,real *dt,real **t)
 {
+#define XVG_NALLOC 8001
   FILE   *fp;
 #define MAXLINELEN 16384
   char line0[MAXLINELEN];
@@ -398,14 +399,14 @@ real **read_xvg_time(char *fn,
 	    }
 	    if (set == -1) {
 	      if (sin == 0) {
-		if (n % 100 == 0) 
-		  srenew(*t,n+100);
+		if (n % XVG_NALLOC == 0) 
+		  srenew(*t,n+XVG_NALLOC);
 		(*t)[n] = dbl;
 	      }
 	      /* else we should check the time of the next sets with set 0 */
 	    } else {
-	      if (n % 100 == 0) 
-		srenew(val[set],n+100);
+	      if (n % XVG_NALLOC == 0) 
+		srenew(val[set],n+XVG_NALLOC);
 	      val[set][n] = (real)dbl;
 	    }
 	  }
