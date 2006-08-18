@@ -176,7 +176,6 @@ static int *select_by_name(int nre,char *nm[],int *nset)
     if (!bEOF) {
       ptr = buf;
       do {
-	fprintf(stderr,"ptr = '%s'\n",ptr);
 	if (!bEOF) {
 	  /* First try to read an integer */
 	  nss   = sscanf(ptr,"%d",&nind);
