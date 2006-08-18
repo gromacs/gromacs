@@ -123,19 +123,20 @@ V_{LJ}(\rvij) = 4\epsilon_{ij}\left(\left(\frac{\sigma_{ij}} {\rij}\right)^{12}
 \eeq
 
 In constructing the parameter matrix for the non-bonded LJ-parameters,
-two types of combination rules can be used within {\gromacs}: 
+two types of \normindex{combination rule}s can be used within {\gromacs}:
+only geometric averages
 \beq
 \begin{array}{rcl}
-C_{ij}^{(6)}    &=& \left({C_{ii}^{(6)} * C_{jj}^{(6)}}\right)^{1/2}    \\
-C_{ij}^{(12)}   &=& \left({C_{ii}^{(12)} * C_{jj}^{(12)}}\right)^{1/2}
+C_{ij}^{(6)}    &=& \left({C_{ii}^{(6)} \, C_{jj}^{(6)}}\right)^{1/2}    \\
+C_{ij}^{(12)}   &=& \left({C_{ii}^{(12)} \, C_{jj}^{(12)}}\right)^{1/2}
 \label{eqn:comb}
 \end{array}
 \eeq
 or, alternatively the Lorentz-Bertelot rules can be used. An arithmetic average is used for the sigma's, while a geometric average is used for the epsilon's,
 \beq
 \begin{array}{rcl}
- \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii}+\sigma_{jj})        \\
- \epsilon_{ij} &=& \left({\epsilon_{ii} \epsilon_{jj}}\right)^{1/2}
+ \sigma_{ij}   &=& \frac{1}{ 2}(\sigma_{ii} + \sigma_{jj})        \\
+ \epsilon_{ij} &=& \left({\epsilon_{ii} \, \epsilon_{jj}}\right)^{1/2}
 \end{array}
 \eeq
 
@@ -159,6 +160,16 @@ see also \figref{bham}, the force derived from this is:
 \beq
  \ve{F}_i(\rij) = \left[ A_{ij}B_{ij}\exp(-B_{ij} \rij) -
                                  6\frac{C_{ij}}{\rij^7} \right] \rnorm
+\eeq
+
+There is only one set of \normindex{combination rule}s
+for Buckingham potentials:
+\beq
+\begin{array}{rcl}
+A_{ij}   &=& \left(A_{ii} \, A_{jj}\right)^{1/2}    \\
+B_{ij}   &=& \frac{1}{ 2}(B_{ii} + B_{jj})        \\
+C_{ij}   &=& \left(C_{ii} \, C_{jj}\right)^{1/2}
+\end{array}
 \eeq
 } % Brace matches ifthenelse test for gmxlite
 
@@ -1780,13 +1791,14 @@ forms of the non-bonded interactions.}
 } % Brace matches ifthenelse test for gmxlite
 
 
+\newcommand{\vvis}{\ve{r}_s}
 \newcommand{\Fi}{\ve{F}_i'}
 \newcommand{\Fj}{\ve{F}_j'}
 \newcommand{\Fk}{\ve{F}_k'}
 \newcommand{\Fl}{\ve{F}_l'}
-\newcommand{\Fvis}{\ve{F}_{d}}
+\newcommand{\Fvis}{\ve{F}_{s}}
 \newcommand{\rvik}{\ve{r}_{ik}}
-\newcommand{\rvid}{\ve{r}_{id}}
+\newcommand{\rvis}{\ve{r}_{is}}
 \newcommand{\rvjk}{\ve{r}_{jk}}
 \newcommand{\rvjl}{\ve{r}_{jl}}
 
@@ -1796,8 +1808,8 @@ forms of the non-bonded interactions.}
 \index{virtual interaction-sites}
 Virtual interaction-sites (called \seeindex{dummy atoms}{virtual interaction-sites} in {\gromacs} versions before 3.3)
 can be used in {\gromacs} in a number of ways. 
-We write the position of the virtual site $\ve{r}_v$ as a function of
-the positions of other particles \ve{r}$_i$: $\ve{r}_d =
+We write the position of the virtual site $\ve{r}_s$ as a function of
+the positions of other particles \ve{r}$_i$: $\ve{r}_s =
 f(\ve{r}_1..\ve{r}_n)$. The virtual site, which may carry charge, or can be
 involved in other interactions can now be used in the force
 calculation.  The force acting on the virtual site must be
@@ -1805,14 +1817,14 @@ redistributed over the particles with mass in a consistent way.
 A good way to do this can be found in ref.~\cite{Berendsen84b}.
 We can write the potential energy as
 \beq
-V = V(\ve{r}_v,\ve{r}_1..\ve{r}_n) = V^*(\ve{r}_1..\ve{r}_n)
+V = V(\vvis,\ve{r}_1,\ldots,\ve{r}_n) = V^*(\ve{r}_1,\ldots,\ve{r}_n)
 \eeq
 The force on the particle $i$ is then
 \beq
 \ve{F}_i = -\frac{\partial V^*}{\partial \ve{r}_i} 
          = -\frac{\partial V}{\partial \ve{r}_i} - 
-            \frac{\partial \ve{r}_v}{\partial \ve{r}_i}
-            \frac{\partial V}{\partial \ve{r}_v} 
+            \frac{\partial V}{\partial \vvis} 
+            \frac{\partial \vvis}{\partial \ve{r}_i}
          = \ve{F}_i^{direct} + \Fi
 \eeq
 the first term of which is the normal force. 
@@ -1821,14 +1833,14 @@ can be written in tensor notation:
 \newcommand{\partd}[2]{\displaystyle\frac{\partial #1}{\partial #2_i}}
 \beq
 \Fi = \left[\begin{array}{ccc}
-\partd{x_v}{x} & \partd{y_v}{x} & \partd{z_v}{x}        \\[1ex]
-\partd{x_v}{y} & \partd{y_v}{y} & \partd{z_v}{y}        \\[1ex]
-\partd{x_v}{z} & \partd{y_v}{z} & \partd{z_v}{z}
+\partd{x_s}{x} & \partd{y_s}{x} & \partd{z_s}{x}        \\[1ex]
+\partd{x_s}{y} & \partd{y_s}{y} & \partd{z_s}{y}        \\[1ex]
+\partd{x_s}{z} & \partd{y_s}{z} & \partd{z_s}{z}
 \end{array}\right]\Fvis
 \label{eqn:fvsite}
 \eeq
-where $\Fvis$ is the force on the virtual site and $x_v$, $y_v$ and
-$z_v$ are the coordinates of the virtual site. In this way the total
+where $\Fvis$ is the force on the virtual site and $x_s$, $y_s$ and
+$z_s$ are the coordinates of the virtual site. In this way the total
 force and the total torque are conserved~\cite{Berendsen84b}.
 
 As a further note, the computation of the \normindex{virial}
@@ -1863,7 +1875,7 @@ virtual site type that will be sufficient for a certain purpose.
 \item[{\bf\sf 2.}]As a linear combination of two atoms
         (\figref{vsites} 2):
 \beq
-        \ve{r}_v ~=~ \ve{r}_i + a \rvij
+        \vvis ~=~ \ve{r}_i + a \rvij
 \eeq
         In this case the virtual site is on the line through atoms $i$ and
         $j$. The force on particles $i$ and $j$ due to the force on
@@ -1878,7 +1890,7 @@ virtual site type that will be sufficient for a certain purpose.
 \item[{\bf\sf 3.}]As a linear combination of three atoms
         (\figref{vsites} 3):
 \beq
-        \ve{r}_v ~=~ \ve{r}_i + a \rvij + b \rvik
+        \vvis ~=~ \ve{r}_i + a \rvij + b \rvik
 \eeq
         In this case the virtual site is in the plane of the other three
 	particles.
@@ -1895,8 +1907,8 @@ virtual site type that will be sufficient for a certain purpose.
 \item[{\bf\sf 3fd.}]In the plane of three atoms, with a fixed distance
         (\figref{vsites} 3fd):
 \beq
-        \ve{r}_v ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
-                                     {| \rvij + a \rvjk |}      
+        \vvis ~=~ \ve{r}_i + b \frac{  \rvij + a \rvjk  }
+                                    {| \rvij + a \rvjk |}      
 \eeq
         In this case the virtual site is in the plane of the other three
         particles at a distance of $|b|$ from $i$.
@@ -1911,8 +1923,8 @@ virtual site type that will be sufficient for a certain purpose.
         ~\mbox{~ where~ }~
         \begin{array}{c}
 \displaystyle \gamma = \frac{b}{| \rvij + a \rvjk |} \\[2ex]
-\displaystyle \ve{p} = \frac{ \rvid \cdot \Fvis }
-                      { \rvid \cdot \rvid } \rvid
+\displaystyle \ve{p} = \frac{ \rvis \cdot \Fvis }
+                      { \rvis \cdot \rvis } \rvis
         \end{array}
 \eeq
 
@@ -1920,7 +1932,7 @@ virtual site type that will be sufficient for a certain purpose.
         distance (\figref{vsites} 3fad):
 \beq
 \label{eqn:vsite2fad-F}
-         \ve{r}_v ~=~ \ve{r}_i +
+         \vvis ~=~ \ve{r}_i +
                     d \cos \theta \frac{\rvij}{|\rvij|} +
                     d \sin \theta \frac{\ve{r}_\perp}{|\ve{r}_\perp|}
         ~\mbox{~ where~ }~
@@ -1974,7 +1986,7 @@ virtual site type that will be sufficient for a certain purpose.
 \item[{\bf\sf 3out.}]As a non-linear combination of three atoms, out of plane
         (\figref{vsites} 3out):
 \beq
-        \ve{r}_v ~=~ \ve{r}_i + a \rvij + b \rvik +
+        \vvis ~=~ \ve{r}_i + a \rvij + b \rvik +
                 c (\rvij \times \rvik)
 \eeq
         This enables the construction of virtual sites out of the plane of the
@@ -2002,8 +2014,8 @@ virtual site type that will be sufficient for a certain purpose.
 \item[{\bf\sf 4fd.}]From four atoms, with a fixed distance
         (\figref{vsites} 4fd):
 \beq
-        \ve{r}_v ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
-                                     {| \rvij + a \rvjk + b \rvjl|}     
+        \vvis ~=~ \ve{r}_i + c \frac{  \rvij + a \rvjk + b \rvjl }
+                                    {| \rvij + a \rvjk + b \rvjl|}     
 \eeq
         In this case the virtual site is at a distance of $|c|$ from $i$.
         The force on particles $i$, $j$, $k$ and $l$ due to the force 
@@ -2018,8 +2030,8 @@ virtual site type that will be sufficient for a certain purpose.
         ~\mbox{~ where~ }~
         \begin{array}{c}
 \displaystyle \gamma = \frac{c}{| \rvij + a \rvjk + b \rvjl |} \\[2ex]
-\displaystyle \ve{p} = \frac{ \rvid \cdot \Fvis }
-                      { \rvid \cdot \rvid } \rvid
+\displaystyle \ve{p} = \frac{ \rvis \cdot \Fvis }
+                      { \rvis \cdot \rvis } \rvis
         \end{array}
 \eeq
 
