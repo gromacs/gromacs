@@ -506,10 +506,8 @@ static void split_group(t_atoms *atoms,int sel_nr,t_block *block,char ***gn,
   int i,nr;
   atom_id a,n0,n1,max;
 
-  if (bAtom)
-    printf("Splitting group %d '%s' into residues\n",sel_nr,(*gn)[sel_nr]);
-  else
-    printf("Splitting group %d '%s' into atoms\n",sel_nr,(*gn)[sel_nr]);
+  printf("Splitting group %d '%s' into %s\n",sel_nr,(*gn)[sel_nr],
+	 bAtom ? "atoms" : "residues");
   
   max=block->nra;
   n0=block->index[sel_nr];

@@ -87,6 +87,7 @@ void push_ps(FILE *fp)
   snew(ps,1);
   ps->fp   = fp;
   ps->prev = pstack;
+  pstack   = ps;
 }
 
 #ifdef fclose
