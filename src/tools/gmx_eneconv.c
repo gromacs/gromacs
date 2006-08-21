@@ -362,8 +362,9 @@ static void update_ee(t_energy *lastee,int laststep,
       sigmacorr=prestart_esum/(p-1)-
 	outee[i].esum/(q);
       outee[i].esum-=prestart_esum;
-      outee[i].eav=outee[i].eav-prestart_sigma-
-	sigmacorr*sigmacorr*((p-1)*q)/(q-p+1);
+      if (q-p+1 > 0)
+	outee[i].eav=outee[i].eav-prestart_sigma-
+	  sigmacorr*sigmacorr*((p-1)*q)/(q-p+1);
     }
  
     if((outee[i].eav/(laststep+step+1))<(GMX_REAL_EPS))
