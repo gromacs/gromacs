@@ -1896,8 +1896,10 @@ static void make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
     }
   }
   if (dd->n_intercg_excl == 0) {
-    /* There are no exclusions involving non-home charge groups */
-    la0 = dd->cgindex[dd->icell[nicell].cg1];
+    /* There are no exclusions involving non-home charge groups,
+     * but we need to set the indices for neighborsearching.
+     */
+    la0 = dd->cgindex[dd->icell[0].cg1];
     for(la=la0; la<lexcls->nr; la++)
       lexcls->index[la] = n;
   }
