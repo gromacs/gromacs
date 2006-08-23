@@ -1604,7 +1604,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   real    gridx,gridy,gridz,grid_x,grid_y,grid_z;
   real    margin_x,margin_y;
   int     zgi,ygi,xgi;
-  int     cg0,cg1,icg=-1,cgsnr,i0,nri,naaj,min_icg;
+  int     cg0,cg1,icg=-1,cgsnr,i0,igid,nri,naaj,min_icg;
   int     jcg0,jcg1,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
   bool    rvdw_lt_rcoul,rcoul_lt_rvdw;
@@ -1730,19 +1730,19 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 
   /* Loop over charge groups */
   for(icg=cg0; (icg < cg1); icg++) {
+    i0   = cgs->index[icg];
+    igid = gid[i0];
+    /* Skip this charge group if all energy groups are excluded! */
+    if (bExcludeAlleg[igid])
+      continue;
+
     if(bMakeQMMMnblist)
     { 
         /* Skip this charge group if it is not a QM atom while making a
         * QM/MM neighbourlist
         */
-        
-        if (md->bQM[cgs->a[cgs->index[icg]]]==FALSE)
+        if (md->bQM[cgs->a[i0]]==FALSE)
             continue; /* MM particle, go to next particle */ 
-        if(bExcludeAlleg[icg])
-            continue;
-
-        i_egp_flags = fr->egp_flags + ngid*gid[cgs->index[icg]];
-        setexcl(cgs->index[icg],cgs->index[icg+1],&top->blocks[ebEXCLS],TRUE,bexcl);
         
         /* Compute the number of charge groups that fall within the control
          * of this one (icg)
@@ -1755,24 +1755,6 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     else
     { 
         /* make a normal neighbourlist */
-        
-        /* Skip this charge group if all energy groups are excluded! */
-        if(bExcludeAlleg[icg])
-            continue;
-        
-        /*
-         i0        = cgsindex[icg];
-         nri       = cgsindex[icg+1]-i0;
-         i_atoms   = &(cgsatoms[i0]);
-         i_eg_excl = fr->eg_excl + ngid*gid[*i_atoms];
-         */
-        i_egp_flags = fr->egp_flags + ngid*gid[cgs->index[icg]];
-
-        /* Set the exclusions for the atoms in charge group icg using
-         * a bitmask
-         */    
-        /* setexcl(nri,i_atoms,&top->atoms.excl,TRUE,bexcl); */
-        setexcl(cgs->index[icg],cgs->index[icg+1],&top->blocks[ebEXCLS],TRUE,bexcl);
 
 	if (bDomDec) {
 	  /* Get the j charge-group and dd cell shift ranges */
@@ -1806,6 +1788,11 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	    }
 	}
     }
+
+    i_egp_flags = fr->egp_flags + igid*ngid;
+    
+    /* Set the exclusions for the atoms in charge group icg using a bitmask */
+    setexcl(i0,cgs->index[icg+1],&top->blocks[ebEXCLS],TRUE,bexcl);
     
     ci2xyz(grid,icg,&cell_x,&cell_y,&cell_z);
 
@@ -2047,7 +2034,6 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   rvec     box_size;
   int      i,j,m,ngid;
   real     min_size;
-  bool     allexcl;
   int      nsearch;
   bool     bGrid;
   char     *ptr;
@@ -2075,14 +2061,14 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   }
 
   /* First time initiation of arrays etc. */  
-  if (bFirst || bDomDec) {
+  if (bFirst) {
     int icg,nr_in_cg,maxcg;
     
     /* Compute largest charge groups size (# atoms) */
     nr_in_cg=1;
     for (icg=0; (icg < cgs->nr); icg++)
       nr_in_cg=max(nr_in_cg,(int)(cgs->index[icg+1]-cgs->index[icg]));
-
+    
     /* Verify whether largest charge group is <= max cg.
      * This is determined by the type of the local exclusion type 
      * Exclusions are stored in bits. (If the type is not large
@@ -2091,68 +2077,53 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     maxcg=sizeof(t_excl)*8;
     if (nr_in_cg > maxcg)
       gmx_fatal(FARGS,"Max #atoms in a charge group: %d > %d\n",
-		  nr_in_cg,maxcg);
-      
-    if (cgs->nra > nra_alloc) {
-      nra_alloc = over_alloc(cgs->nra);
-      srenew(bexcl,nra_alloc);
-      for(i=0; i<nra_alloc; i++)
-	bexcl[i] = 0;
+		nr_in_cg,maxcg);
+    
+    snew(bExcludeAlleg,ngid);
+    for(i=0; i<ngid; i++) {
+      bExcludeAlleg[i] = TRUE;
+      for(j=0; j<ngid; j++)
+	if (!(fr->egp_flags[i*ngid+j] & EGP_EXCL))
+	  bExcludeAlleg[i] = FALSE;
     }
     
-    if (cgs->nr > cg_alloc) {
-      /* Check for charge groups with all energy groups excluded */
-      cg_alloc = over_alloc(cgs->nr);
-      srenew(bExcludeAlleg,cg_alloc);
-    }
-    for(i=0;i<cgs->nr;i++) {
-      allexcl=TRUE;
-      /* Make ptr to the excl list for the 1st atoms energy group */
-      /* i_egp_flags = fr->egp_flags + ngid*md->cENER[cgs->a[cgs->index[i]]]; */
-      i_egp_flags = fr->egp_flags + ngid*md->cENER[cgs->index[i]];
-      
-      for(j=0; j<ngid && allexcl;j++) {
-	if(!(i_egp_flags[j] & EGP_EXCL)) {
-	  /* Not excluded, i.e. we should search neighbors */ 
-	  allexcl=FALSE;
-	}
-      }
-      bExcludeAlleg[i]=allexcl;
-    }
-    
-    debug_gmx();
-
     if ((ptr=getenv("NLIST")) != NULL) {
       sscanf(ptr,"%d",&NLJ_INC);
       
       fprintf(log,"%s: I will increment J-lists by %d\n",
 	      __FILE__,NLJ_INC);
     }
-
-    if (bGrid && bFirst) {
+    
+    if (bGrid) {
       snew(grid,1);
       init_grid(log,grid,fr->ndelta,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
 		box,fr->rlistlong,cgs->nr);
     }
     
-    if (bHaveVdW == NULL) {
-      /* Create array that determines whether or not atoms have VdW */
-      snew(bHaveVdW,fr->ntype);
-      for(i=0; (i<fr->ntype); i++) {
-	for(j=0; (j<fr->ntype); j++) {
-	  bHaveVdW[i] = (bHaveVdW[i] || 
-			 (fr->bBHAM ? 
-			  ((BHAMA(fr->nbfp,fr->ntype,i,j) != 0) ||
-			   (BHAMB(fr->nbfp,fr->ntype,i,j) != 0) ||
-			   (BHAMC(fr->nbfp,fr->ntype,i,j) != 0)) :
-			  ((C6(fr->nbfp,fr->ntype,i,j) != 0) ||
-			   (C12(fr->nbfp,fr->ntype,i,j) != 0))));
-	}
+    /* Create array that determines whether or not atoms have VdW */
+    snew(bHaveVdW,fr->ntype);
+    for(i=0; (i<fr->ntype); i++) {
+      for(j=0; (j<fr->ntype); j++) {
+	bHaveVdW[i] = (bHaveVdW[i] || 
+		       (fr->bBHAM ? 
+			((BHAMA(fr->nbfp,fr->ntype,i,j) != 0) ||
+			 (BHAMB(fr->nbfp,fr->ntype,i,j) != 0) ||
+			 (BHAMC(fr->nbfp,fr->ntype,i,j) != 0)) :
+			((C6(fr->nbfp,fr->ntype,i,j) != 0) ||
+			 (C12(fr->nbfp,fr->ntype,i,j) != 0))));
       }
     }
     if (debug) 
       pr_ivec(debug,0,"bHaveVdW",bHaveVdW,fr->ntype,TRUE);
-    
+  }
+
+  if (bDomDec || bFirst) {
+    if (cgs->nra > nra_alloc) {
+      nra_alloc = over_alloc(cgs->nra);
+      srenew(bexcl,nra_alloc);
+      for(i=0; i<nra_alloc; i++)
+	bexcl[i] = 0;
+    }
     bFirst=FALSE;
   }
   debug_gmx();
