@@ -383,13 +383,13 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
 		       t_atomtype *atype,t_topology *sys,
 		       t_molinfo *msys,t_params plist[],int *comb,real *reppow,
 		       int nnodes,bool bEnsemble,bool bMorse,
-		       bool bCheckPairs,int *nerror)
+		       bool bCheckPairs,int *nerror,bool bRmVSBds)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
   t_atoms     *confat;
   int         *forward=NULL;
-  int         i,nrmols,Nsim,nmismatch;
+  int         i,nrmols,Nsim,nvsite,nmismatch;
   int         ntab,*tab;
   char        buf[STRLEN];
 
@@ -433,7 +433,17 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
     if (bVerbose && i)
       fprintf(stderr,"removed %d dihedral restraints\n",i);
   }
-  
+
+  for(i=0; (i<nrmols); i++) {  
+    /* set parameters for virtual site construction */
+    nvsite=set_vsites(bVerbose,*molinfo[i].name,&molinfo[i].atoms,
+		      atype,molinfo[i].plist);
+    /* now throw away all obsolete bonds, angles and dihedrals: */
+    /* note: constraints are ALWAYS removed */
+    if (nvsite)
+      clean_vsite_bondeds(bVerbose && (i == 0),molinfo[i].plist,
+			  molinfo[i].atoms.nr,bRmVSBds);
+  }
   topcat(msys,nrmols,molinfo,ntab,tab,Nsim,Sims,bEnsemble);
   
   /* Copy structures from msys to sys */
@@ -923,7 +933,7 @@ int main (int argc, char *argv[])
   t_molinfo    msys;
   t_atomtype   atype;
   t_inputrec   *ir;
-  int          natoms,nvsite,nc,comb;
+  int          natoms,nc,comb;
   int          *forward=NULL;
   t_params     *plist;
   t_state      state;
@@ -1044,7 +1054,7 @@ int main (int argc, char *argv[])
 		     &atype,sys,&msys,plist,&comb,&reppow,
 		     bShuffle ? nnodes : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,
-		     bCheckPairs,&nerror);
+		     bCheckPairs,&nerror,bRmVSBds);
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
@@ -1129,13 +1139,6 @@ int main (int argc, char *argv[])
     gen_posres(&(msys.plist[F_POSRES]),fn,fnB,forward);
   }
   
-  /* set parameters for virtual site construction */
-  nvsite=set_vsites(bVerbose, &sys->atoms, atype, msys.plist);
-  /* now throw away all obsolete bonds, angles and dihedrals: */
-  /* note: constraints are ALWAYS removed */
-  if (nvsite)
-    clean_vsite_bondeds(msys.plist,sys->atoms.nr,bRmVSBds);
-  
   if (bRenum) 
     atype.nr=renum_atype(plist, sys, &atype, bVerbose);
   
@@ -1165,11 +1168,8 @@ int main (int argc, char *argv[])
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
 
   /* set ptype to VSite for virtual sites */
-  if (nvsite) {
-    set_vsites_ptype(bVerbose,&sys->idef,&sys->atoms);
-    if (debug)
-      pr_symtab(debug,0,"After virtual sites",&sys->symtab);
-  }
+  set_vsites_ptype(bVerbose,&sys->idef,&sys->atoms);
+  
   /* Check velocity for virtual sites and shells */
   if (bGenVel) 
     check_vel(&sys->atoms,state.v);
