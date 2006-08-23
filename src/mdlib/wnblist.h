@@ -40,7 +40,7 @@
 #include "stdio.h"
 #include "typedefs.h"
 
-extern void dump_nblist(FILE *out,t_forcerec *fr,int nDNL);
+extern void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
 
 extern int read_nblist(FILE *in,FILE *out,int **mat,int natoms,bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */

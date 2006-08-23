@@ -49,10 +49,11 @@
 #include "macros.h"
 #include "futil.h"
 #include "names.h"
+#include "domdec.h"
 
 #define header "Neighborlist:"
 
-static void write_nblist(FILE *out,t_nblist *nblist)
+static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist)
 {
   int i,j,j0,k,i_atom,jid,nj;
 
@@ -64,9 +65,9 @@ static void write_nblist(FILE *out,t_nblist *nblist)
     for(i=0; i<nblist->nri; i++) {
       nj = nblist->jindex[i+1] - nblist->jindex[i];
       fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
-	      nblist->iinr[i],nblist->shift[i],nblist->gid[i],nj);
+	      glatnr(dd,nblist->iinr[i]),nblist->shift[i],nblist->gid[i],nj);
       for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++)
-	fprintf(out,"  j: %d\n",nblist->jjnr[j]);
+	fprintf(out,"  j: %d\n",glatnr(dd,nblist->jjnr[j]));
     }
     fflush(out);
   }
@@ -162,7 +163,7 @@ int read_nblist(FILE *in,FILE *fp,int **mat,int natoms,bool bSymm)
     return -1;
 }
 
-void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
+void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL)
 {
   int  n,i;
   
@@ -170,6 +171,6 @@ void dump_nblist(FILE *out,t_forcerec *fr,int nDNL)
 
   for(n=0; (n<fr->nnblists); n++)
     for(i=0; (i<eNL_NR); i++) 
-      write_nblist(out,&fr->nblists[n].nlist_sr[i]);
+      write_nblist(out,cr->dd,&fr->nblists[n].nlist_sr[i]);
 }
 

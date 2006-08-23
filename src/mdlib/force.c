@@ -1225,7 +1225,7 @@ void ns(FILE *fp,
     &(top->idef),opts->ngener);
   */
   if (nDNL > 0)
-    dump_nblist(fp,fr,nDNL);
+    dump_nblist(fp,cr,fr,nDNL);
 
   GMX_MPE_LOG(ev_ns_finish);
 }
