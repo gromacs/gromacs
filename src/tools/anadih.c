@@ -544,7 +544,7 @@ void calc_distribution_props(int nh,int histo[],real start,
   *S2 = tdc*tdc+tds*tds;
 }
 
-static void calc_angles(FILE *log,matrix box,
+static void calc_angles(FILE *log,t_pbc *pbc,
 			int n3,atom_id index[],real ang[],rvec x_s[])
 {
   int  i,ix,t1,t2;
@@ -553,14 +553,12 @@ static void calc_angles(FILE *log,matrix box,
   
   for(i=ix=0; (ix<n3); i++,ix+=3) 
     ang[i]=bond_angle(x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
-		      NULL,
-		      r_ij,r_kj,&costh,&t1,&t2);
+		      pbc,r_ij,r_kj,&costh,&t1,&t2);
   if (debug) {
     fprintf(debug,"Angle[0]=%g, costh=%g, index0 = %d, %d, %d\n",
 	    ang[0],costh,index[0],index[1],index[2]);
     pr_rvec(debug,0,"rij",r_ij,DIM,TRUE);
     pr_rvec(debug,0,"rkj",r_kj,DIM,TRUE);
-    pr_rvecs(debug,0,"box",box,DIM);
   }
 }
 
@@ -587,7 +585,7 @@ static real calc_fraction(real angles[], int nangles)
     return 0;
 }
 
-static void calc_dihs(FILE *log,matrix box,
+static void calc_dihs(FILE *log,t_pbc *pbc,
 		      int n4,atom_id index[],real ang[],rvec x_s[])
 {
   int  i,ix,t1,t2,t3;
@@ -596,7 +594,7 @@ static void calc_dihs(FILE *log,matrix box,
   
   for(i=ix=0; (ix<n4); i++,ix+=4) {
     aaa=dih_angle(x_s[index[ix]],x_s[index[ix+1]],x_s[index[ix+2]],
-		  x_s[index[ix+3]],NULL,
+		  x_s[index[ix+3]],pbc,
 		  r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);
 	  
@@ -660,6 +658,7 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
 		  real *dih[])
 {
   t_topology *top;
+  t_pbc      *pbc;
   int        ftp,i,angind,status,natoms,total,teller;
   int        nangles,nat_trj,n_alloc;
   real       t,fraction,pifac,aa,angle;
@@ -678,8 +677,8 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   else {
     top = NULL;
     get_stx_coordnum(stx_fn,&natoms);
-    fprintf(stderr,"Can not remove periodicity since %s is not a GROMACS topology\n",stx_fn);
   }
+  snew(pbc,1);
   nat_trj = read_first_x(&status,trj_fn,&t,&x,box);
   
   /* Check for consistency of topology and trajectory */
@@ -723,16 +722,14 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
 
     (*time)[teller] = t;
 
-    if (top)
-      rm_pbc(&(top->idef),nat_trj,box,x,x_s);
+    if (pbc)
+      set_pbc(pbc,box);
     
-    if (bAngles)
-    {
-	  calc_angles(stdout,box,isize,index,angles[cur],x_s);
-	}
-    else 
-	{
-      calc_dihs(stdout,box,isize,index,angles[cur],x_s);
+    if (bAngles) {
+      calc_angles(stdout,pbc,isize,index,angles[cur],x_s);
+    }
+    else {
+      calc_dihs(stdout,pbc,isize,index,angles[cur],x_s);
 			
       /* Trans fraction */
       fraction = calc_fraction(angles[cur], nangles);
