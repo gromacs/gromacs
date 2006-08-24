@@ -188,8 +188,8 @@ void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,
   }
 
   grid->nr = ncg;
-  if (grid->nr > grid->nr_alloc) {
-    grid->nr_alloc = over_alloc(grid->nr)+1;
+  if (grid->nr+1 > grid->nr_alloc) {
+    grid->nr_alloc = over_alloc(grid->nr) + 1;
     srenew(grid->cell_index,grid->nr_alloc);
     srenew(grid->a,grid->nr_alloc);
   }
