@@ -72,8 +72,6 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
  
   bDisres = (ftype == F_DISRES);
   if (bDisres) {
-    if (src->nr)
-      max_index = src->param[0].c[0];
     for(i=0; i<src->nr; i++)
       max_index = max(src->param[i].c[0],max_index);
   }
@@ -87,10 +85,9 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	for (j=0; (j<copies); j++) {
 	  index = src->param[i].c[0];
 	  type  = src->param[i].c[1];
-	  if ((type == 2) && (j>0)) {
+	  if (type == 2) {
 	    /* Don't ensemble average type' 2 distance restraints */
-	    max_index++;
-	    index = max_index;
+	    index += j*(max_index + 1);
 	  }
 	  dest->param[l].c[0] = index;
 	  dest->param[l].c[1] = type;
@@ -120,10 +117,8 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 	       (char *)&(src->param[i]),(size_t)sizeof(src->param[i]));
 	for (m=0; (m<nral); m++)
 	  dest->param[l].a[m] += n0;
-	if (bDisres && (j>0)) {
-	  max_index++;
-	  dest->param[l].c[0] = max_index;
-	}
+	if (bDisres)
+	  dest->param[l].c[0] += j*(max_index + 1);
 	l++;
       }
       n0 += dstart;
