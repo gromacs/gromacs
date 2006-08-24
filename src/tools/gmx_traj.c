@@ -287,8 +287,10 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
     }
 }
 
-static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
-			   int isize,atom_id *index,int nfr,rvec *x,rvec *sum,
+static void write_pdb_bfac(char *fname,char *xname,
+			   char *title,t_atoms *atoms,matrix box,
+			   int isize,atom_id *index,int nfr_x,rvec *x,
+			   int nfr_v,rvec *sum,
 			   bool bDim[],real scale_factor)
 {
   FILE    *fp;
@@ -297,10 +299,11 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
   int     i,m,onedim;
   bool    bOne;
 
-  if (nfr == 0) {
+  if ((nfr_x == 0) || (nfr_v == 0)) {
     fprintf(stderr,"No frames found for %s, will not write %s\n",title,fname);
   } else {
-    fprintf(stderr,"Used %d frames for %s\n",nfr,title);
+    fprintf(stderr,"Used %d frames for %s\n",nfr_x,"coordinates");
+    fprintf(stderr,"Used %d frames for %s\n",nfr_v,title);
     onedim = -1;
     if (!bDim[DIM]) {
       m = 0;
@@ -312,9 +315,18 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
       if (m != 1)
 	onedim = -1;
     }
-    scale = 1.0/nfr;
+    scale = 1.0/nfr_x;
     for(i=0; i<isize; i++)
       svmul(scale,x[index[i]],x[index[i]]);
+    scale = 1.0/nfr_v;
+    for(i=0; i<isize; i++)
+      svmul(scale,sum[index[i]],sum[index[i]]);
+      
+    fp=xvgropen(xname,title,"Atom","");
+    for(i=0; i<isize; i++)
+      fprintf(fp,"%-5d  %10.3f  %10.3f  %10.3f\n",i,
+	      sum[index[i]][XX],sum[index[i]][YY],sum[index[i]][ZZ]);
+    fclose(fp);
     max  = 0;
     maxi = 0;
     for(i=0; i<isize; i++) {
@@ -336,10 +348,10 @@ static void write_pdb_bfac(char *fname,char *title,t_atoms *atoms,matrix box,
 	scale = 10.0/sqrt(max);
     }
     
-    fprintf(stdout,"Maximum %s is %g on atom %d %s, res. %s %d\n",
-	    title,sqrt(max)/nfr,maxi+1,*(atoms->atomname[maxi]),
-	    *(atoms->resname[atoms->atom[maxi].resnr]),
-	    atoms->atom[maxi].resnr+1);
+    printf("Maximum %s is %g on atom %d %s, res. %s %d\n",
+	   title,sqrt(max)/nfr_v,maxi+1,*(atoms->atomname[maxi]),
+	   *(atoms->resname[atoms->atom[maxi].resnr]),
+	   atoms->atom[maxi].resnr+1);
     
     if (atoms->pdbinfo == NULL)
       snew(atoms->pdbinfo,atoms->nr);
@@ -426,7 +438,10 @@ int gmx_traj(int argc,char *argv[])
     "[TT]-scale[tt]. To get the velocities or forces of one",
     "frame set both [TT]-b[tt] and [TT]-e[tt] to the time of",
     "desired frame. When averaging over frames you might need to use",
-    "the [TT]-nojump[tt] option to obtain the correct average coordinates.[PAR]",
+    "the [TT]-nojump[tt] option to obtain the correct average coordinates.",
+    "If you select either of these option the average force and velocity",
+    "for each atom are written to an xvg file as well",
+    "(specified with [TT]-av[tt] or [TT]-af[tt]).[PAR]",
     "Option [TT]-vd[tt] computes a velocity distribution, i.e. the",
     "norm of the vector is plotted. In addition in the same graph",
     "the kinetic energy distribution is given."
@@ -470,7 +485,7 @@ int gmx_traj(int argc,char *argv[])
   matrix     topbox;
   int        status;
   int        i,j,n;
-  int        nr_vfr,nr_ffr;
+  int        nr_xfr,nr_vfr,nr_ffr;
   char       **grpname;
   int        *isize0,*isize;
   atom_id    **index0,**index;
@@ -492,7 +507,9 @@ int gmx_traj(int argc,char *argv[])
     { efXVG, "-ekr","ekrot.xvg", ffOPTWR },
     { efXVG, "-vd", "veldist.xvg", ffOPTWR },
     { efPDB, "-cv", "veloc.pdb", ffOPTWR },
-    { efPDB, "-cf", "force.pdb", ffOPTWR }
+    { efPDB, "-cf", "force.pdb", ffOPTWR },
+    { efXVG, "-av", "all_veloc.xvg", ffOPTWR },
+    { efXVG, "-af", "all_force.xvg", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -512,8 +529,8 @@ int gmx_traj(int argc,char *argv[])
   bOT  = opt2bSet("-ot",NFILE,fnm);
   bEKT = opt2bSet("-ekt",NFILE,fnm);
   bEKR = opt2bSet("-ekr",NFILE,fnm);
-  bCV  = opt2bSet("-cv",NFILE,fnm);
-  bCF  = opt2bSet("-cf",NFILE,fnm);
+  bCV  = opt2bSet("-cv",NFILE,fnm) || opt2bSet("-av",NFILE,fnm);
+  bCF  = opt2bSet("-cf",NFILE,fnm) || opt2bSet("-af",NFILE,fnm);
   bVD  = opt2bSet("-vd",NFILE,fnm) || opt2parg_bSet("-bin",asize(pa),pa);
   if (bMol || bOT || bEKT || bEKR)
     bCom = TRUE;
@@ -643,6 +660,7 @@ int gmx_traj(int argc,char *argv[])
     snew(sumxf,fr.natoms);
     snew(sumf,fr.natoms);
   }
+  nr_xfr = 0;
   nr_vfr = 0;
   nr_ffr = 0;
   
@@ -692,21 +710,31 @@ int gmx_traj(int argc,char *argv[])
 	fprintf(outekr,"\t%g",ekrot(fr.x,fr.v,mass,isize[i],index[i]));
       fprintf(outekr,"\n");
     }
-    if (bCV && fr.bX && fr.bV) {
-      for(i=0; i<fr.natoms; i++)
-	rvec_inc(sumxv[i],fr.x[i]);
-      for(i=0; i<fr.natoms; i++)
-	rvec_inc(sumv[i],fr.v[i]);
-      nr_vfr++;
+    if (bCV) {
+      if (fr.bX) {
+	for(i=0; i<fr.natoms; i++)
+	  rvec_inc(sumxv[i],fr.x[i]);
+	nr_xfr++;
+      }
+      if (fr.bV) {
+	for(i=0; i<fr.natoms; i++)
+	  rvec_inc(sumv[i],fr.v[i]);
+	nr_vfr++;
+      }
     }
-    if (bCF && fr.bX && fr.bF) {
-      for(i=0; i<fr.natoms; i++)
-	rvec_inc(sumxf[i],fr.x[i]);
-      for(i=0; i<fr.natoms; i++)
-	rvec_inc(sumf[i],fr.f[i]);
-      nr_ffr++;
+    if (bCF) {
+      if (fr.bX) {
+	for(i=0; i<fr.natoms; i++)
+	  rvec_inc(sumxf[i],fr.x[i]);
+	nr_xfr++;
+      }
+      if (fr.bF) {
+	for(i=0; i<fr.natoms; i++)
+	  rvec_inc(sumf[i],fr.f[i]);
+	nr_ffr++;
+      }
     }
-
+    
   } while(read_next_frame(status,&fr));
   
 
@@ -729,11 +757,15 @@ int gmx_traj(int argc,char *argv[])
 	    "If atoms jump across the box you should use the -nojump option\n");
 
   if (bCV)
-    write_pdb_bfac(opt2fn("-cv",NFILE,fnm),"average velocity",&(top.atoms),
-		   topbox,isize[0],index[0],nr_vfr,sumxv,sumv,bDim,scale);
+    write_pdb_bfac(opt2fn("-cv",NFILE,fnm),
+		   opt2fn("-av",NFILE,fnm),"average velocity",&(top.atoms),
+		   topbox,isize[0],index[0],nr_xfr,sumxv,
+		   nr_vfr,sumv,bDim,scale);
   if (bCF)
-    write_pdb_bfac(opt2fn("-cf",NFILE,fnm),"average force",&(top.atoms),
-		   topbox,isize[0],index[0],nr_ffr,sumxf,sumf,bDim,scale);
+    write_pdb_bfac(opt2fn("-cf",NFILE,fnm),
+		   opt2fn("-af",NFILE,fnm),"average force",&(top.atoms),
+		   topbox,isize[0],index[0],nr_xfr,sumxf,
+		   nr_ffr,sumf,bDim,scale);
 
   /* view it */
   view_all(NFILE, fnm);
