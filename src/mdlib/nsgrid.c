@@ -291,7 +291,7 @@ void fill_grid(FILE *log,
 {
   int    *cell_index=grid->cell_index;
   int    nrx,nry,nrz;
-  rvec   gon;
+  rvec   n_box;
   int    cell,cg,d;
   ivec   home,b0,b1,ind;
   
@@ -300,12 +300,12 @@ void fill_grid(FILE *log,
   nry = grid->n[YY];
   nrz = grid->n[ZZ];
   for(d=0; d<DIM; d++)
-    gon[d] = divide(grid->n[d],box[d][d]);
+    n_box[d] = divide(grid->n[d],box[d][d]);
 
   if (debug)
     fprintf(debug,"Filling grid from %d to %d\n",cg0,cg1);
 
-  /* We assume here that the charge group center of mass is allways
+  /* We assume here that the charge group center of mass is always
    * 0 <= cgcm < box
    * If not this will generate errors (SEGV). If you suspect this, turn on
    * DEBUG_PBC
@@ -314,12 +314,12 @@ void fill_grid(FILE *log,
   if (dd == NULL) {
     for (cg=cg0; cg<cg1; cg++) {
       for(d=0; d<DIM; d++) {
-	ind[d] = cg_cm[cg][d]*gon[d];
+	ind[d] = cg_cm[cg][d]*n_box[d];
 	if (ind[d] == grid->n[d])
 	  ind[d]--;
       }
 #ifdef DEBUG_PBC
-#define myrc(ixyz,n) if ((ixyz<0) || (ixyz>=n)) gmx_fatal(FARGS,"%s=%d(max=%d), index=%d, i=%d, cgcm=(%f,%f,%f)",#ixyz,ixyz,n,index,i,cg_cm[index][XX],cg_cm[index][YY],cg_cm[index][ZZ])
+#define myrc(ixyz,n) if ((ixyz<0) || (ixyz>=n)) gmx_fatal(FARGS,"%s=%d(max=%d), index=%d, i=%d, cgcm=(%f,%f,%f)",#ixyz,ixyz,n,index,cg,cg_cm[index][XX],cg_cm[index][YY],cg_cm[index][ZZ])
       myrc(ix,nrx);
       myrc(iy,nry);
       myrc(iz,nrz);
@@ -330,6 +330,7 @@ void fill_grid(FILE *log,
   } else {
     gmx_ddindex2xyz(dd->nc,dd->nodeid,home);
     for(cell=0; cell<dd->ncell; cell++) {
+      /* Determine the ns grid cell limits for this DD cell */
       for(d=0; d<DIM; d++) {
 	b0[d]   = home[d] + dd->shift[cell][d];
 	if (b0[d] == dd->nc[d])
@@ -338,20 +339,21 @@ void fill_grid(FILE *log,
 	b0[d]  *= grid->n[d]/dd->nc[d];
 	b1[d]  *= grid->n[d]/dd->nc[d];
       }
+      /* Put all the charge groups of this DD cell on the grid */
       cg0 = dd->ncg_cell[cell];
       cg1 = dd->ncg_cell[cell+1];
       for(cg=cg0; cg<cg1; cg++) {
 	for(d=0; d<DIM; d++) {
-	  ind[d] = cg_cm[cg][d]*gon[d];
-	  /* Here we have to correct for rounding problems
-	   * as this real to index operation is not necessarily
-	   * binary identical to the opertion for the DD cell assignment
+	  ind[d] = cg_cm[cg][d]*n_box[d];
+	  /* Here we have to correct for rounding problems,
+	   * as this cg_cm to cell index operation is not necessarily
+	   * binary identical to the operation for the DD cell assignment
 	   * and therefore a cg could end up in an unused grid cell.
 	   */
 	  if (ind[d] < b0[d])
-	    ind[d]++;
+	    ind[d] = b0[d];
 	  else if (ind[d] >= b1[d])
-	    ind[d]--;
+	    ind[d] = b1[d];
 	}
 	cell_index[cg] = xyz2ci(nry,nrz,ind[XX],ind[YY],ind[ZZ]);
       }
