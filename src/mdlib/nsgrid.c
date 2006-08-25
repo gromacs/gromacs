@@ -351,9 +351,9 @@ void fill_grid(FILE *log,
 	   * and therefore a cg could end up in an unused grid cell.
 	   */
 	  if (ind[d] < b0[d])
-	    ind[d] = b0[d];
+	    ind[d]++;
 	  else if (ind[d] >= b1[d])
-	    ind[d] = b1[d];
+	    ind[d]--;
 	}
 	cell_index[cg] = xyz2ci(nry,nrz,ind[XX],ind[YY],ind[ZZ]);
       }
