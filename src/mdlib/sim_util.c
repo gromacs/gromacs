@@ -260,7 +260,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (bCalcCGCM) { 
       put_charge_groups_in_box(fplog,cg0,cg1,box,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
-      inc_nrnb(nrnb,eNR_RESETX,homenr);
+      inc_nrnb(nrnb,eNR_CGCM,homenr);
+      inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
     } 
     else if (EI_ENERGY_MINIMIZATION(inputrec->eI) && graph) {
       unshift_self(graph,box,x);

@@ -199,7 +199,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Convolution",                   4   },
     { "Solve PME",                     64  },
     { "NS-Pairs",                      21  },
-    { "Reset In Box",                  9   },
+    { "Reset In Box",                  3   },
     { "Shift-X",                       6   },
     { "CG-CoM",                        3   },
     { "Sum Forces",                    1   },
