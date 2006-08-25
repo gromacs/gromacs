@@ -52,8 +52,9 @@ extern void grid_first(FILE *log,t_grid *grid,
 		       ivec *dd_nc,matrix box,real rlong,int ncg);
 
 extern void fill_grid(FILE *log,
+		      gmx_domdec_t *dd,
 		      t_grid *grid,matrix box,
-		      int ncg,int cg0,int cg1,rvec cg_cm[]);
+		      int cg0,int cg1,rvec cg_cm[]);
 
 extern void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg);
 

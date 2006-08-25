@@ -39,7 +39,7 @@
 
 typedef struct {
   int	 nr;		/* Total number of charge groups	*/
-  int	 nrx,nry,nrz;	/* The dimension of the grid		*/
+  ivec	 n;	        /* The dimension of the grid		*/
   int    ncells;	/* Total number of cells		*/
   int    maxcells;	/* Max number of cells (when box grows)	*/
   int	 delta;		/* The distance in cells to be searched */

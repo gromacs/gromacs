@@ -1667,9 +1667,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 
   /* Unpack arrays */
   cgcm    = fr->cg_cm;
-  Nx      = grid->nrx;
-  Ny      = grid->nry;
-  Nz      = grid->nrz;
+  Nx      = grid->n[XX];
+  Ny      = grid->n[YY];
+  Nz      = grid->n[ZZ];
   grida   = grid->a;
   gridind = grid->index;
   gridnra = grid->nra;
@@ -1682,9 +1682,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     snew(dcz2,Nz*2);
   }
 
-  gridx      = box[XX][XX]/grid->nrx;
-  gridy      = box[YY][YY]/grid->nry;
-  gridz      = box[ZZ][ZZ]/grid->nrz;
+  gridx      = box[XX][XX]/Nx;
+  gridy      = box[YY][YY]/Ny;
+  gridz      = box[ZZ][ZZ]/Nz;
   grid_x     = 1/gridx;
   grid_y     = 1/gridy;
   grid_z     = 1/gridz;
@@ -2147,9 +2147,9 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
     if (bDomDec) {
       end = cgs->nr;
-      fill_grid(log,grid,box,end,0,end,fr->cg_cm);
+      fill_grid(log,cr->dd,grid,box,0,end,fr->cg_cm);
     } else {
-      fill_grid(log,grid,box,cgs->nr,fr->cg0,fr->hcg,fr->cg_cm);
+      fill_grid(log,NULL,grid,box,fr->cg0,fr->hcg,fr->cg_cm);
       debug_gmx();
 
       if (PAR(cr))
