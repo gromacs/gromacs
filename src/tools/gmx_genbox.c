@@ -546,7 +546,7 @@ static void update_top(t_atoms *atoms,matrix box,int NFILE,t_filenm fnm[],
     }
     fclose(fpin);
     if ( nsol ) {
-      fprintf(stdout,"Adding line for %d solute molecules to "
+      fprintf(stdout,"Adding line for %d solvent molecules to "
 	      "topology file (%s)\n",nsol,topinout);
       fprintf(fpout,"%-15s %5d\n","SOL",nsol);
     }
