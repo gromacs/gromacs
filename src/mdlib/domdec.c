@@ -1006,6 +1006,14 @@ static int dd_redistribute_cg(FILE *fplog,
   
   dd->bMasterHasAllCG = FALSE;
 
+  /* Set the boundaries of the new charge groups */
+  k1 = dd->cgindex[ncg[home_cell]];
+  for(cg=ncg[home_cell]; cg<dd->ncg_home; cg++) {
+    cg_gl = dd->index_gl[cg];
+    k1 += gcgs->index[cg_gl+1] - gcgs->index[cg_gl];
+    dd->cgindex[cg+1] = k1;
+  }
+
   if (debug)
     fprintf(debug,"Finished repartitioning\n");
 
