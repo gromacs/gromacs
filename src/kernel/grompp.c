@@ -1239,8 +1239,10 @@ int main (int argc, char *argv[])
   {
     double cio = compute_io(ir,sys->atoms.nr,F_NRE,1);
     sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
-    if (cio > 2000)
+    if (cio > 2000) {
+      set_warning_line("",0);
       warning(NULL);
+    }
     else
       printf("%s\n",warn_buf);
   }

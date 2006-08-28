@@ -20,7 +20,8 @@ grompp_SOURCES = \
 	toputil.c	topdirs.c	grompp.c	add_par.h	\
 	splitter.h	topio.h		toputil.h	convparm.h	\
 	sorting.h	topdirs.h	toppush.h	vsite_parm.h	\
-	readir.h	topcat.h	topexcl.h	topshake.h
+	readir.h	topcat.h	topexcl.h	topshake.h	\
+	compute_io.h	compute_io.c
 
 tpbconv_SOURCES = \
 	readir.c	toputil.c	topdirs.c	add_par.c	\
@@ -72,17 +73,15 @@ mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	relax_sh.c	repl_ex.c	repl_ex.h	\
-	xutils.c	\
+	xutils.c	compute_io.h	compute_io.c \
 	md.c		mdrun.c		genalg.c	genalg.h
 
 ffscan_SOURCES = \
 	ffscan.c	\
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
-	ionize.c 	ionize.h 	\
+	ionize.c 	ionize.h 	md.c		genalg.c	\
 	do_gct.c 	relax_sh.c	repl_ex.c	repl_ex.h	\
-	xutils.c	\
-	md.c		genalg.c
-
+	xutils.c	compute_io.h	compute_io.c
 
 # shortcut to install only mdrun
 
