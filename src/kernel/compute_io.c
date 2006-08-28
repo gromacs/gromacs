@@ -60,10 +60,10 @@ double compute_io(t_inputrec *ir,int natoms,int nrener,int nrepl)
   if (ir->nstenergy > 0)
     nste = 3 + nsteps % ir->nstenergy;
   cio  = 80*natoms;
-  cio += (nstx+nstf+nstv)*sizeof(real)*3*natoms;
-  cio += nstxtc*natoms*5; /* roughly 5 bytes per atom */
-  cio += nstlog*nrener*16*2; /* 16 bytes per energy term plus header */
-  cio += nste*nrener*sizeof(t_energy);
+  cio += (nstx+nstf+nstv)*sizeof(real)*(3.0*natoms);
+  cio += nstxtc*(natoms*5.0); /* roughly 5 bytes per atom */
+  cio += nstlog*(nrener*16*2.0); /* 16 bytes per energy term plus header */
+  cio += (1.0*nste)*nrener*sizeof(t_energy);
   
   return 1e-6*cio*nrepl;
 }
