@@ -375,6 +375,8 @@ void init_warning(int maxwarning)
 
 void set_warning_line(const char *s,int line)
 {
+  if (s == NULL)
+    gmx_incons("Calling set_warning_line with NULL pointer");
   strcpy(filenm,s);
   lineno = line;
 }
@@ -408,8 +410,11 @@ static void low_warning(const char *warn_err,const char *s)
   temp[indent] = '\0';
   strcat(temp,s);
   temp2 = wrap_lines(temp,78-indent,indent,FALSE);
-  fprintf(stderr,"%s %d [file %s, line %s]:\n%s\n",
-	  warn_err,nwarn,filenm,linenobuf,temp2);
+  if (strlen(filenm) > 0)
+    fprintf(stderr,"%s %d [file %s, line %s]:\n%s\n",
+	    warn_err,nwarn,filenm,linenobuf,temp2);
+  else
+    fprintf(stderr,"%s %d:\n%s\n",warn_err,nwarn,temp2);
   sfree(temp);
   sfree(temp2);
   if (nwarn >= maxwarn)
