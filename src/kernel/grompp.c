@@ -74,6 +74,7 @@
 #include "calcgrid.h"
 #include "add_par.h"
 #include "enxio.h"
+#include "compute_io.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
@@ -933,6 +934,15 @@ int main (int argc, char *argv[])
   }
   /*  reset_multinr(sys); */
   
+  {
+    double cio = compute_io(ir,sys->atoms.nr,F_NRE,1);
+    sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
+    if (cio > 2000)
+      warning(NULL);
+    else
+      printf("%s\n",warn_buf);
+  }
+    
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 

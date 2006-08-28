@@ -72,6 +72,7 @@
 #include "mpelogging.h"
 #include "domdec.h"
 #include "coulomb.h"
+#include "compute_io.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -482,6 +483,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
+  {
+    double io = compute_io(inputrec,mdatoms->nr,mdebin->ebin->nener,1);
+    fprintf((io > 2000) ? stderr : log,
+	    "This run will generate roughly %.0f Mb of data\n",io);
+  }
+  
   if (DOMAINDECOMP(cr)) {
     /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc(TRUE);
