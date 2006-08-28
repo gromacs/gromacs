@@ -366,7 +366,8 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 
   {
     double io = compute_io(inputrec,mdatoms->nr,mdebin->ebin->nener,1);
-    fprintf(log,"This run will generate roughly %.0f Mb of data\n",io);
+    fprintf((io > 2000) ? stderr : log,
+	    "This run will generate roughly %.0f Mb of data\n",io);
   }
   
   /* init edsam, no effect if edyn->bEdsam==FALSE */
