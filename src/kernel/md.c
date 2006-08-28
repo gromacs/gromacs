@@ -485,8 +485,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   {
     double io = compute_io(inputrec,mdatoms->nr,mdebin->ebin->nener,1);
-    fprintf((io > 2000) ? stderr : log,
-	    "This run will generate roughly %.0f Mb of data\n",io);
+    if (io > 2000) 
+      fprintf(stderr,
+	      "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
+	      io);
   }
   
   if (DOMAINDECOMP(cr)) {
