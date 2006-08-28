@@ -74,6 +74,7 @@
 #include "calcgrid.h"
 #include "add_par.h"
 #include "enxio.h"
+#include "compute_io.h"
 
 static void write_deshufndx(char *ndx,int *forward,t_atoms *atoms)
 {
@@ -1234,7 +1235,16 @@ int main (int argc, char *argv[])
   capacity = mk_capacity(cap,nnodes);
   split_top(bVerbose,nnodes,sys,capacity);
   sfree(capacity);
-  
+
+  {
+    double cio = compute_io(ir,sys->atoms.nr,F_NRE,1);
+    sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
+    if (cio > 2000)
+      warning(NULL);
+    else
+      printf("%s\n",warn_buf);
+  }
+    
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
