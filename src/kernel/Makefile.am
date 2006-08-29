@@ -15,10 +15,10 @@ bin_PROGRAMS = \
 
 grompp_SOURCES = \
 	topio.c 	toppush.c 	topcat.c 	topshake.c 	\
-	convparm.c 	tomorse.c	sorting.c 		\
+	convparm.c 	tomorse.c	sorting.c 	compute_io.c	\
 	vsite_parm.c	readir.c  	add_par.c	topexcl.c	\
 	toputil.c	topdirs.c	grompp.c	add_par.h	\
-	topio.h		toputil.h	convparm.h		\
+	topio.h		toputil.h	convparm.h	compute_io.h	\
 	sorting.h	topdirs.h	toppush.h	vsite_parm.h	\
 	readir.h	topcat.h	topexcl.h	topshake.h
 
@@ -73,7 +73,7 @@ mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	relax_sh.c	repl_ex.c	repl_ex.h	\
-	xutils.c		\
+	xutils.c	compute_io.c	compute_io.h		\
 	md.c		mdrun.c		genalg.c	genalg.h
 
 ffscan_SOURCES = \
@@ -81,7 +81,7 @@ ffscan_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
 	ionize.c 	ionize.h 	\
 	do_gct.c 	relax_sh.c	repl_ex.c	repl_ex.h	\
-	xutils.c	\
+	xutils.c	compute_io.c    compute_io.h   \
 	md.c		genalg.c
 
 
