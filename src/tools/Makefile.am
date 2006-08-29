@@ -38,7 +38,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	calcpot.c 	calcpot.h 	edittop.c
 
 bin_PROGRAMS = \
-	average		do_dssp		editconf	eneconv		\
+	do_dssp		editconf	eneconv		\
 	genbox		genconf		genpr		g_nmtraj	\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
