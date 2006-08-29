@@ -134,8 +134,8 @@ static void regression_analysis(int n,bool bXYdy,real *x,real **val)
   real S,chi2,a,b,da,db,r=0;
 
   printf("Fitting data to a function f(x) = ax + b\n");
-  printf("Minmizing residual chi2 = Sum_i [f(x_i) - y_i]2\n");
-  printf("Error estimates will be given if sigma_y values are given\n");
+  printf("Minimizing residual chi2 = Sum_i w_i [f(x_i) - y_i]2\n");
+  printf("Error estimates will be given if w_i (sigma) values are given\n");
   printf("(use option -xydy).\n\n");
   if (bXYdy) 
     S =  lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r);
@@ -143,7 +143,7 @@ static void regression_analysis(int n,bool bXYdy,real *x,real **val)
     S =  lsq_y_ax_b(n,x,val[0],&a,&b,&r);
   chi2 = sqr((n-2)*S);
   printf("Chi2                    = %g\n",chi2);
-  printf("Quality of fit          = %g\n",S);
+  printf("S (Sqrt(Chi2/(n-2))     = %g\n",S);
   printf("Correlation coefficient = %.1f%%\n",100*r);
   printf("\n");
   if (bXYdy) {
