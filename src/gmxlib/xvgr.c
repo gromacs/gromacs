@@ -229,8 +229,9 @@ real lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
   chi2=0;
   for(i=0; i<n; i++)
     chi2+=sqr((y[i]-((*a)*x[i]+(*b)))/dy[i]);
+  chi2 = chi2/w;
   
-  *da = sqrt(chi2/(w*(n-2)*dx2));
+  *da = sqrt(chi2/((n-2)*dx2));
   *db = *da*sqrt(sxx);
   *r  = *a*sqrt(dx2/dy2);
   
@@ -238,7 +239,6 @@ real lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
     fprintf(debug,"sx = %g, sy = %g, sxy = %g, sxx = %g, w = %g\n"
 	    "chi2 = %g, dx2 = %g\n",
 	    sx,sy,sxy,sxx,w,chi2,dx2);
-  
   
   if (n > 2)
     return sqrt(chi2/(n-2));
