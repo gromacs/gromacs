@@ -435,7 +435,7 @@ void printmol(t_corr *this,char *fn)
   FILE  *out;
   t_lsq lsq1;
   int   i,j;
-  real  a,b,*D,Dav,D2av,VarD;
+  real  a,b,r,*D,Dav,D2av,VarD;
   
   out=xvgropen(fn,"Diffusion Coefficients / Molecule","Molecule","D");
   
@@ -479,7 +479,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
   atom_id      **index;
   char         **grpname;
   int          i,i0,i1,j,N;
-  real         *DD,*SigmaD,a,a2,b;
+  real         *DD,*SigmaD,a,a2,b,r;
   
   snew(gnx,nrgrp);
   snew(index,nrgrp);
@@ -536,12 +536,12 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
     snew(SigmaD,msd->ngrp);
     for(j=0; j<msd->ngrp; j++) {
       if (N >= 4) {
-	lsq_y_ax_b(N/2,&(msd->time[i0]),&(msd->data[j][i0]),&a,&b);
-	lsq_y_ax_b(N/2,&(msd->time[i0+N/2]),&(msd->data[j][i0+N/2]),&a2,&b);
+	lsq_y_ax_b(N/2,&(msd->time[i0]),&(msd->data[j][i0]),&a,&b,&r);
+	lsq_y_ax_b(N/2,&(msd->time[i0+N/2]),&(msd->data[j][i0+N/2]),&a2,&b,&r);
 	SigmaD[j] = fabs(a-a2);
       } else
 	SigmaD[j] = 0;
-      lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b);
+      lsq_y_ax_b(N,&(msd->time[i0]),&(msd->data[j][i0]),&(DD[j]),&b,&r);
       DD[j]     *= FACTOR/msd->dim_factor;
       SigmaD[j] *= FACTOR/msd->dim_factor;
       fprintf(stdout,"D[%10s] %.4f (+/- %.4f) 1e-5 cm^2/s\n",

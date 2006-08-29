@@ -166,24 +166,79 @@ void lsq_y_ax(int n, real x[], real y[], real *a)
   *a=yx/xx;
 }
 
-real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b)
+real lsq_y_ax_b(int n, real x[], real y[], real *a, real *b,real *r)
 {
   int    i;
-  double yx,xx,sx,sy,chi2;
+  double yx,xx,yy,sx,sy,chi2;
 
-  yx=xx=sx=sy=0.0;
+  yx=xx=yy=sx=sy=0.0;
   for (i=0; i<n; i++) {
     yx+=y[i]*x[i];
     xx+=x[i]*x[i];
+    yy+=y[i]*y[i];
     sx+=x[i];
     sy+=y[i];
   }
   *a=(n*yx-sy*sx)/(n*xx-sx*sx);
   *b=(sy-(*a)*sx)/n;
-
+  *r=sqrt((xx-sx*sx)/(yy-sy*sy));
+  
   chi2=0;
   for(i=0; i<n; i++)
     chi2+=sqr(y[i]-((*a)*x[i]+(*b)));
+  
+  if (n > 2)
+    return sqrt(chi2/(n-2));
+  else
+    return 0;
+}
+
+real lsq_y_ax_b_error(int n, real x[], real y[], real dy[],
+		      real *a, real *b, real *da, real *db,
+		      real *r)
+{
+  int    i;
+  double sxy,sxx,syy,sx,sy,w,s_2,dx2,dy2,mins,chi2;
+
+  sxy=sxx=syy=sx=sy=w=0.0;
+  mins = dy[0];
+  for(i=1; (i<n); i++)
+    mins = min(mins,dy[i]);
+  if (mins <= 0)
+    gmx_fatal(FARGS,"Zero or negative weigths in linear regression analysis");
+    
+  for (i=0; i<n; i++) {
+    s_2  = sqr(1.0/dy[i]);
+    sxx += s_2*sqr(x[i]);
+    sxy += s_2*y[i]*x[i];
+    syy += s_2*sqr(y[i]);
+    sx  += s_2*x[i];
+    sy  += s_2*y[i];
+    w   += s_2;
+  }
+  sxx = sxx/w;
+  sxy = sxy/w;
+  syy = syy/w;
+  sx  = sx/w;
+  sy  = sy/w;
+  dx2 = (sxx-sx*sx);
+  dy2 = (syy-sy*sy);
+  *a=(sxy-sy*sx)/dx2;
+  *b=(sy-(*a)*sx);
+  
+  chi2=0;
+  for(i=0; i<n; i++)
+    chi2+=sqr((y[i]-((*a)*x[i]+(*b)))/dy[i]);
+  
+  *da = sqrt(chi2/(w*(n-2)*dx2));
+  *db = *da*sqrt(sxx);
+  *r  = *a*sqrt(dx2/dy2);
+  
+  if (debug)
+    fprintf(debug,"sx = %g, sy = %g, sxy = %g, sxx = %g, w = %g\n"
+	    "chi2 = %g, dx2 = %g\n",
+	    sx,sy,sxy,sxx,w,chi2,dx2);
+  
   
   if (n > 2)
     return sqrt(chi2/(n-2));

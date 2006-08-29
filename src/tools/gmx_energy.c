@@ -468,7 +468,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 {
   FILE *fp;
   /* Check out the printed manual for equations! */
-  real Dt,a,b,aver,avertot,stddev,delta_t,sigma,totaldrift;
+  real Dt,a,b,r,aver,avertot,stddev,delta_t,sigma,totaldrift;
   real xxx,integral,intBulk;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
   double beta=0,expE,expEtot,*fee=NULL;
@@ -559,7 +559,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 	pr_aver   = aver;
 	pr_stddev = stddev;
       }
-      lsq_y_ax_b(nenergy,time,eneset[i],&a,&b);
+      lsq_y_ax_b(nenergy,time,eneset[i],&a,&b,&r);
       if(fabs(a)<GMX_REAL_EPS)
 	a=0;
       totaldrift = a * delta_t * (nsteps+1)/nsteps;

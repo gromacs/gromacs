@@ -58,7 +58,7 @@ enum { avbarSEL, avbarNONE, avbarSTDDEV, avbarERROR, avbar90, avbarNR };
 
 static void power_fit(int n,int nset,real **val,real *t)
 {
-  real *x,*y,quality,a,b;
+  real *x,*y,quality,a,b,r;
   int  s,i;
 
   snew(x,n);
@@ -80,7 +80,7 @@ static void power_fit(int n,int nset,real **val,real *t)
       y[i] = log(val[s][i]);
     if (i < n)
       fprintf(stdout,"Will power fit up to point %d, since it is not larger than 0\n",i);
-    quality = lsq_y_ax_b(i,x,y,&a,&b);
+    quality = lsq_y_ax_b(i,x,y,&a,&b,&r);
     fprintf(stdout,"Power fit set %3d:  error %.3f  a %g  b %g\n",
 	    s+1,quality,a,exp(b));
   }
@@ -128,6 +128,34 @@ static void plot_coscont(char *ccfile,int n,int nset,real **val)
 	    
   fclose(fp);
 }
+
+static void regression_analysis(int n,bool bXYdy,real *x,real **val)
+{
+  real S,chi2,a,b,da,db,r=0;
+
+  printf("Fitting data to a function f(x) = ax + b\n");
+  printf("Minmizing residual chi2 = Sum_i [f(x_i) - y_i]2\n");
+  printf("Error estimates will be given if sigma_y values are given\n");
+  printf("(use option -xydy).\n\n");
+  if (bXYdy) 
+    S =  lsq_y_ax_b_error(n,x,val[0],val[1],&a,&b,&da,&db,&r);
+  else
+    S =  lsq_y_ax_b(n,x,val[0],&a,&b,&r);
+  chi2 = sqr((n-2)*S);
+  printf("Chi2                    = %g\n",chi2);
+  printf("Quality of fit          = %g\n",S);
+  printf("Correlation coefficient = %.1f%%\n",100*r);
+  printf("\n");
+  if (bXYdy) {
+    printf("a    = %g +/- %g\n",a,da);
+    printf("b    = %g +/- %g\n",b,db);
+  }
+  else {
+    printf("a    = %g\n",a);
+    printf("b    = %g\n",b);
+  }
+}
+
 
 void histogram(char *distfile,real binwidth,int n, int nset, real **val)
 {
@@ -616,7 +644,7 @@ int gmx_analyze(int argc,char *argv[])
   static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1,aver_start=0;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
-  static bool bIntegrate=FALSE; 
+  static bool bIntegrate=FALSE,bRegression=FALSE; 
   static int  nsets_in=1,d=1,nb_min=4,resol=10;
 
   /* must correspond to enum avbar* declared at beginning of file */
@@ -647,6 +675,8 @@ int gmx_analyze(int argc,char *argv[])
       "Start averaging the integral from here" },
     { "-xydy",    FALSE, etBOOL, {&bXYdy},
       "Interpret second data set as error in the y values for integrating" },
+    { "-regression",FALSE,etBOOL,{&bRegression},
+      "Perform a linear regression analysis on the data" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
       "HIDDENMinimum number of blocks for block averaging" },
     { "-resol", FALSE, etINT, {&resol},
@@ -829,7 +859,9 @@ int gmx_analyze(int argc,char *argv[])
     do_autocorr(acfile,"Autocorrelation",n,nset,val,dt,
 		eacNormal,bAverCorr);
   }
-  
+  if (bRegression)
+    regression_analysis(n,bXYdy,t,val);
+    
   view_all(NFILE, fnm);
   
   thanx(stderr);
