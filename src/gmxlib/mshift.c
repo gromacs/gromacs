@@ -102,7 +102,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,int natoms)
 {
   t_iatom *ia;
   t_iatom tp;
-  int     i,j,np;
+  int     i,j,k,np;
   int     end;
 
   end=il->nr;
@@ -285,9 +285,8 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
       if (g->nedge[i] > 0)
         g->nbound++;
   }
-#ifdef DEBUG
-  p_graph(stdlog,"graph",g);
-#endif
+  if (debug)
+    p_graph(debug,"graph",g);
 
   g->negc = 0;
   g->egc = NULL;
