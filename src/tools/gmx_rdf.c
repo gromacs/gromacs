@@ -494,7 +494,7 @@ int return_atom_type (char *name)
   };
   int i;
 
-  for(i-0; (i<asize(uh)); i++) 
+  for(i=0; (i<asize(uh)); i++) 
     if (strcmp(name,uh[i].name) == 0)
       return NCMT-1+uh[i].nh;
       

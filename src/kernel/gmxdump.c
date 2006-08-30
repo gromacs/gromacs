@@ -124,7 +124,7 @@ static void list_trn(char *fn)
 
   fpread  = open_trn(fn,"r"); 
   fpwrite = open_tpx(NULL,"w");
-  fio_setdebug(fpwrite,TRUE);
+  gmx_fio_setdebug(fpwrite,TRUE);
   
   nframe = 0;
   while (fread_trnheader(fpread,&trn,&bOK)) {

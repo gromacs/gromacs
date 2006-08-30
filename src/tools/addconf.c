@@ -50,7 +50,6 @@
 #include "mdatoms.h"
 #include "nrnb.h"
 #include "ns.h"
-#include "../mdlib/wnblist.h"
 
 static real box_margin;
 
@@ -300,7 +299,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 		    TRUE,FALSE);
 
   if (debug)
-    dump_nblist(debug,fr,0);
+    dump_nblist(debug,cr,fr,0);
 
   if (bVerbose)    
     fprintf(stderr,"Succesfully made neighbourlist\n");

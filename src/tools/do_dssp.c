@@ -495,7 +495,14 @@ int main(int argc,char *argv[])
     rewind(tapeout);
 #else
     fclose(tapein);
+
+#ifdef GMX_NO_SYSTEM
+    printf("Warning-- No calls to system(3) supported on this platform.");
+    printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
+#else
     system(dssp);
+#endif
+
 #endif
     strip_dssp(tmpfile,nres,bPhbres,t,
 	       accr[nframe],fTArea,&mat,average_area);

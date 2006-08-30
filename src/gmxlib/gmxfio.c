@@ -85,7 +85,7 @@ bool in_ftpset(int ftp,int nset,const int set[])
 static bool do_dummy(void *item,int nitem,int eio,
 		     char *desc,char *srcfile,int line)
 {
-  gmx_fatal(FARGS,"fio_select not called!");
+  gmx_fatal(FARGS,"gmx_fio_select not called!");
   
   return FALSE;
 }
@@ -628,14 +628,14 @@ static bool do_xdr(void *item,int nitem,int eio,
 }
 #endif
 
-#define fio_check(fio) range_check(fio,0,nFIO)
+#define gmx_fio_check(fio) range_check(fio,0,nFIO)
 
 /*****************************************************************
  *
  *                     EXPORTED SECTION
  *
  *****************************************************************/
-int fio_open(char *fn,char *mode)
+int gmx_fio_open(char *fn,char *mode)
 {
   t_fileio *fio=NULL;
   int      i,nfio=0;
@@ -653,7 +653,7 @@ int fio_open(char *fn,char *mode)
     else if (mode[0]=='a')
       strcpy(newmode,"a");
     else
-      gmx_fatal(FARGS,"DEATH HORROR in fio_open, mode is '%s'",mode);
+      gmx_fatal(FARGS,"DEATH HORROR in gmx_fio_open, mode is '%s'",mode);
   }
 
   /* Check if it should be opened as a binary file */
@@ -730,9 +730,9 @@ int fio_open(char *fn,char *mode)
 }
 
 
-void fio_close(int fio)
+void gmx_fio_close(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   
   if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
     xdrclose(FIO[fio].xdr);
@@ -750,9 +750,9 @@ void fio_close(int fio)
   do_write = do_dummy;
 }
 
-void fio_select(int fio)
+void gmx_fio_select(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
 #ifdef DEBUG
   fprintf(stderr,"Select fio called with type %d for file %s\n",
 	  FIO[fio].iFTP,FIO[fio].fn);
@@ -787,45 +787,45 @@ void fio_select(int fio)
   curfio = &(FIO[fio]);
 }
 
-void fio_setprecision(int fio,bool bDouble)
+void gmx_fio_setprecision(int fio,bool bDouble)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   FIO[fio].bDouble = bDouble;
 }
 
-bool fio_getdebug(int fio)
+bool gmx_fio_getdebug(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   return FIO[fio].bDebug;
 }
 
-void fio_setdebug(int fio,bool bDebug)
+void gmx_fio_setdebug(int fio,bool bDebug)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   FIO[fio].bDebug = bDebug;
 }
 
-char *fio_getname(int fio)
+char *gmx_fio_getname(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   return curfio->fn;
 }
 
-void fio_setftp(int fio,int ftp)
+void gmx_fio_setftp(int fio,int ftp)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   FIO[fio].iFTP = ftp;
 }
 
-int fio_getftp(int fio)
+int gmx_fio_getftp(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   return FIO[fio].iFTP;
 }
  
-void fio_rewind(int fio)
+void gmx_fio_rewind(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   if (FIO[fio].xdr) {
     xdrclose(FIO[fio].xdr);
     /* File is always opened as binary by xdropen */
@@ -835,27 +835,27 @@ void fio_rewind(int fio)
     frewind(FIO[fio].fp);
 }
 
-void fio_flush(int fio)
+void gmx_fio_flush(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   if (FIO[fio].fp)
     fflush(FIO[fio].fp);
  if (FIO[fio].xdr)
       (void) fflush ((FILE *) FIO[fio].xdr->x_private);
 }
   
-off_t fio_ftell(int fio)
+off_t gmx_fio_ftell(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   if (FIO[fio].fp)
     return ftell(FIO[fio].fp);
   else
     return 0;
 }
 
-void fio_seek(int fio, off_t fpos)
+void gmx_fio_seek(int fio, off_t fpos)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   if (FIO[fio].fp)
 #ifdef HAVE_FSEEKO
     fseeko(FIO[fio].fp,fpos,SEEK_SET);
@@ -866,27 +866,27 @@ void fio_seek(int fio, off_t fpos)
     gmx_file(FIO[fio].fn);
 }
 
-FILE *fio_getfp(int fio)
+FILE *gmx_fio_getfp(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   if (FIO[fio].fp)
     return FIO[fio].fp;
   else
     return NULL;
 }
 
-XDR *fio_getxdr(int fio)
+XDR *gmx_fio_getxdr(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   if (FIO[fio].xdr) 
     return FIO[fio].xdr;
   else
     return NULL;
 }
 
-bool fio_getread(int fio)
+bool gmx_fio_getread(int fio)
 {
-  fio_check(fio);
+  gmx_fio_check(fio);
   
   return FIO[fio].bRead;
 }

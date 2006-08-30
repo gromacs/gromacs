@@ -276,7 +276,7 @@ void chk_trj(char *fn,char *tpr,real tol)
     INC(fr,count,first,last,bF);
     INC(fr,count,first,last,bBox);
 #undef INC
-    fpos = fio_ftell(status);
+    fpos = gmx_fio_ftell(status);
   } while (read_next_frame(status,&fr));
   
   fprintf(stderr,"\n");

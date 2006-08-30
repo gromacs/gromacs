@@ -52,7 +52,6 @@
 #include "nsb.h"
 #include "names.h"
 #include "network.h"
-#include "wnblist.h"
 #include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"
@@ -866,8 +865,13 @@ void do_gaussian(int step,char *exe)
             "input.com",
 	    "input.log");
   fprintf(stderr,"Calling '%s'\n",buf);
+#ifdef GMX_NO_SYSTEM
+  printf("Warning-- No calls to system(3) supported on this platform.");
+  gmx_fatal(FARGS,"Call to '%s' failed\n",buf);
+#else
   if ( system(buf) != 0 )
     gmx_fatal(FARGS,"Call to '%s' failed\n",buf);
+#endif
 }
 
 real call_gaussian(t_commrec *cr,  t_forcerec *fr, 

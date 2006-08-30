@@ -98,9 +98,9 @@ gmx_mtxio_write(char *                   filename,
         gmx_fatal(FARGS,"Both full AND sparse matrix specified to gmx_mtxio_write().\n");
     }
     
-    fd = fio_open(filename,"w");
-    fio_select(fd);
-    xd = fio_getxdr(fd);
+    fd = gmx_fio_open(filename,"w");
+    gmx_fio_select(fd);
+    xd = gmx_fio_getxdr(fd);
     
     /* Write magic number */
     i = GMX_MTXIO_MAGIC_NUMBER;
@@ -149,7 +149,7 @@ gmx_mtxio_write(char *                   filename,
             }
         }
     }
-    fio_close(fd);
+    gmx_fio_close(fd);
 }
 
 
@@ -168,9 +168,9 @@ gmx_mtxio_read (char *                  filename,
     char    gmxver[256];
     size_t  sz;
     
-    fd = fio_open(filename,"r");
-    fio_select(fd);
-    xd = fio_getxdr(fd);
+    fd = gmx_fio_open(filename,"r");
+    gmx_fio_select(fd);
+    xd = gmx_fio_getxdr(fd);
     
     /* Read and check magic number */
     i = GMX_MTXIO_MAGIC_NUMBER;
@@ -240,7 +240,7 @@ gmx_mtxio_read (char *                  filename,
             }
         }
     }
-    fio_close(fd);
+    gmx_fio_close(fd);
 }
 
 

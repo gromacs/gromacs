@@ -226,7 +226,13 @@ void preprocess(char *infile,char *outfile,
     fprintf(debug,"Command line for cpp:\n\t%s\n",command);
   
   /* execute preprocessor */
+#ifdef GMX_NO_SYSTEM
+  error = 0;
+  printf("Warning-- No calls to system(3) supported on this platform.");
+  printf("Warning-- Skipping execution of 'system(\"%s\")'.",command);
+#else
   error=system(command);
+#endif
   if (error) {
     if (error>0)
       printf("cpp exit code: %d\n",error);

@@ -1442,6 +1442,8 @@ static void receive_virial_energy(t_commrec *cr,
 #ifdef GMX_MPI
     MPI_Recv(&cve,sizeof(cve),MPI_BYTE,cr->dd->pme_nodeid,1,cr->mpi_comm_mysim,
 	     MPI_STATUS_IGNORE);
+#else
+    memset(&cve,0,sizeof(cve));
 #endif
 	
     m_add(vir,cve.vir,vir);

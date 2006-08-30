@@ -103,7 +103,14 @@ static void ApplCallback(t_x11 *x11,int dlg_mess,int item_id,
     }
     strcat(doit," &");
     fprintf(stderr,"Going to exec: '%s'\n",doit);
+
+#ifdef GMX_NO_SYSTEM
+    printf("Warning-- No calls to system(3) supported on this platform.");
+    printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
+#else
     system(doit);
+#endif
+
     HideDlg(data->appl);
   }
   else if (strcasecmp(set,"Cancel") == 0) {

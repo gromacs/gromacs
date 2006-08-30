@@ -14,5 +14,7 @@ typedef struct {
 extern correl_t *init_correl(int n);
 extern void done_correl(correl_t *c);
 
+extern void correl(real data1[],real data2[],int n,real ans[]);
+extern void four1(real data[],int nn,int isign);
 
 #endif

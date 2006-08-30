@@ -748,8 +748,13 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
       else
 	sscanf(not_nicestr[0],"%d",&nicelevel);
     }
+
+#ifndef GMX_NO_NICE
+  /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
   if (nicelevel != 0 && !bExit)
     nice(nicelevel);
+#endif
+
 #endif
   
   if (!(FF(PCA_QUIET) || bQuiet )) {

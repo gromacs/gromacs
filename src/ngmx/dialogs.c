@@ -85,7 +85,14 @@ static void shell_comm(char *title,char *script,int nsleep)
 #ifdef DEBUG
   fprintf(stderr,"command: %s\n",command);
 #endif
+
+#ifdef GMX_NO_SYSTEM
+  printf("Warning-- No calls to system(3) supported on this platform.");
+  printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
+#else
   system(command);
+#endif
+
 #ifdef DEBUG
   unlink(tmp)
 #endif

@@ -89,4 +89,10 @@ extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     bool bFillGrid,bool bDoForces);
  
 
+/* Debugging routines from wnblist.c */
+extern void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
+
+extern int read_nblist(FILE *in,FILE *out,int **mat,int natoms,bool bSymm);
+/* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
+
 #endif	/* _ns_h */

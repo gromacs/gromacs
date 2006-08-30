@@ -43,6 +43,12 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_CRAY_XT3
+#ifndef NO_PWUID
+#define NO_PWUID
+#endif
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <stdlib.h>

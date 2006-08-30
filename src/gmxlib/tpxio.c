@@ -149,16 +149,16 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
   char buf[STRLEN];
   bool bDbg;
 
-  if (fio_getftp(fp) == efTPA) {
+  if (gmx_fio_getftp(fp) == efTPA) {
     if (!bRead) {
       do_string(itemstr[key]);
-      bDbg       = fio_getdebug(fp);
-      fio_setdebug(fp,FALSE);
+      bDbg       = gmx_fio_getdebug(fp);
+      gmx_fio_setdebug(fp,FALSE);
       do_string(comment_str[key]);
-      fio_setdebug(fp,bDbg);
+      gmx_fio_setdebug(fp,bDbg);
     }
     else {
-      if (fio_getdebug(fp))
+      if (gmx_fio_getdebug(fp))
 	fprintf(stderr,"Looking for section %s (%s, %d)",
 		itemstr[key],src,line);
       
@@ -168,7 +168,7 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
       
       if (strcasecmp(buf,itemstr[key]) != 0) 
 	gmx_fatal(FARGS,"\nCould not find section heading %s",itemstr[key]);
-      else if (fio_getdebug(fp))
+      else if (gmx_fio_getdebug(fp))
 	fprintf(stderr," and found it\n");
     }
   }
@@ -1162,8 +1162,8 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   bool  bDouble;
   int   precision;
   int   fver,fgen;
-  fio_select(fp);
-  fio_setdebug(fp,bDebugMode());
+  gmx_fio_select(fp);
+  gmx_fio_setdebug(fp,bDebugMode());
   
   /* NEW! XDR tpb file */
   precision = sizeof(real);
@@ -1173,21 +1173,21 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
       gmx_fatal(FARGS,"Can not read file %s,\n"
 		  "             this file is from a Gromacs version which is older than 2.0\n"
 		  "             Make a new one with grompp or use a gro or pdb file, if possible",
-		  fio_getname(fp));
+		  gmx_fio_getname(fp));
     do_int(precision);
     bDouble = (precision == sizeof(double));
     if ((precision != sizeof(float)) && !bDouble)
       gmx_fatal(FARGS,"Unknown precision in file %s: real is %d bytes "
 		  "instead of %d or %d",
-		  fio_getname(fp),precision,sizeof(float),sizeof(double));
-    fio_setprecision(fp,bDouble);
+		  gmx_fio_getname(fp),precision,sizeof(float),sizeof(double));
+    gmx_fio_setprecision(fp,bDouble);
     fprintf(stderr,"Reading file %s, %s (%s precision)\n",
-	    fio_getname(fp),buf,bDouble ? "double" : "single");
+	    gmx_fio_getname(fp),buf,bDouble ? "double" : "single");
   }
   else {
     do_string(GromacsVersion());
     bDouble = (precision == sizeof(double));
-    fio_setprecision(fp,bDouble);
+    gmx_fio_setprecision(fp,bDouble);
     do_int(precision);
     fver = tpx_version;
     fgen = tpx_generation;
@@ -1211,7 +1211,7 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
       ((fver > tpx_version) && !TopOnlyOK) ||
       (fgen > tpx_generation))
     gmx_fatal(FARGS,"reading tpx file (%s) version %d with version %d program",
-		fio_getname(fp),fver,tpx_version);
+		gmx_fio_getname(fp),fver,tpx_version);
   
   do_section(eitemHEADER,bRead);
   do_int (tpx->natoms);
@@ -1281,7 +1281,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     }
   }
 
-#define do_test(b,p) if (bRead && (p!=NULL) && !b) gmx_fatal(FARGS,"No %s in %s",#p,fio_getname(fp)) 
+#define do_test(b,p) if (bRead && (p!=NULL) && !b) gmx_fatal(FARGS,"No %s in %s",#p,gmx_fio_getname(fp)) 
 
   do_test(tpx.bBox,state->box);
   do_section(eitemBOX,bRead);
@@ -1380,12 +1380,12 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
 
 int open_tpx(char *fn,char *mode)
 {
-  return fio_open(fn,mode);
+  return gmx_fio_open(fn,mode);
 }    
  
 void close_tpx(int fp)
 {
-  fio_close(fp);
+  gmx_fio_close(fp);
 }
 
 void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version, int *file_generation)

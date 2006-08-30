@@ -69,12 +69,12 @@ int xdr_real(XDR *xdrs,real *r)
 
 int open_xtc(char *fn,char *mode)
 {
-  return fio_open(fn,mode);
+  return gmx_fio_open(fn,mode);
 }
 
 void close_xtc(int fp)
 {
-  fio_close(fp);
+  gmx_fio_close(fp);
 }
 
 static void check_xtc_magic(int magic)
@@ -183,7 +183,7 @@ int write_xtc(int fp,
   XDR *xd;
   bool bDum;
 
-  xd = fio_getxdr(fp);
+  xd = gmx_fio_getxdr(fp);
   /* write magic number and xtc identidier */
   if (!xtc_header(xd,&magic_number,&natoms,&step,&time,&bDum))
     return 0;
@@ -199,7 +199,7 @@ int read_first_xtc(int fp,int *natoms,int *step,real *time,
   XDR *xd;
   
   *bOK=TRUE;
-  xd = fio_getxdr(fp);
+  xd = gmx_fio_getxdr(fp);
   
   /* read header and malloc x */
   if ( !xtc_header(xd,&magic,natoms,step,time,bOK))
@@ -224,7 +224,7 @@ int read_next_xtc(int fp,
   XDR *xd;
 
   *bOK=TRUE;
-  xd = fio_getxdr(fp);
+  xd = gmx_fio_getxdr(fp);
   
   /* read header */
   if (!xtc_header(xd,&magic,&n,step,time,bOK))

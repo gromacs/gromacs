@@ -68,7 +68,7 @@ extern char *comment_str[eitemNR];
  * Open and Close 
  ********************************************************/
 
-extern int fio_open(char *fn,char *mode);
+extern int gmx_fio_open(char *fn,char *mode);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
  * If fn is NULL, stdin / stdout will be used for Ascii I/O (TPA type)
@@ -78,12 +78,12 @@ extern int fio_open(char *fn,char *mode);
  * unix, but is important on windows.
  */
  
-extern void fio_close(int fp);
+extern void gmx_fio_close(int fp);
 /* Close the file corresponding to fp (if not stdio)
  * The routine will exit when an invalid fio is handled.
  */
 
-extern void fio_select(int fp);
+extern void gmx_fio_select(int fp);
 /* This routine sets the global variables do_read and do_write
  * to point to the correct routines for fp.
  */
@@ -92,47 +92,47 @@ extern void fio_select(int fp);
  * Change properties of the open file
  ********************************************************/
 
-extern void fio_setprecision(int fio,bool bDouble);
+extern void gmx_fio_setprecision(int fio,bool bDouble);
 /* Select the floating point precision for reading and writing files */
 
-extern char *fio_getname(int fio);
+extern char *gmx_fio_getname(int fio);
 /* Return the filename corresponding to the fio index */
 
-extern int fio_getftp(int fio);
+extern int gmx_fio_getftp(int fio);
 /* Return the filetype corresponding to the fio index */
 
-extern void fio_setftp_fio(int fio,int ftp);
+extern void gmx_fio_setftp_fio(int fio,int ftp);
 /* And set it */
 
-extern void fio_setdebug(int fio,bool bDebug);
+extern void gmx_fio_setdebug(int fio,bool bDebug);
 /* Set the debug mode */
 
-extern bool fio_getdebug(int fio);
+extern bool gmx_fio_getdebug(int fio);
 /* Return  whether debug mode is on in fio  */
 
-extern bool fio_getread(int fio);
+extern bool gmx_fio_getread(int fio);
 /* Return  whether read mode is on in fio  */
 
 /***************************************************
  * FILE Operations
  ***************************************************/
 
-extern void fio_rewind(int fio);
+extern void gmx_fio_rewind(int fio);
 /* Rewind the tpa file in fio */
 
-extern void fio_flush(int fio);
+extern void gmx_fio_flush(int fio);
 /* Flush the fio */
 
-extern off_t fio_ftell(int fio);
+extern off_t gmx_fio_ftell(int fio);
 /* Return file position if possible */
 
-extern void fio_seek(int fio,off_t fpos);
+extern void gmx_fio_seek(int fio,off_t fpos);
 /* Set file position if possible, quit otherwise */
 
-extern FILE *fio_getfp(int fio);
+extern FILE *gmx_fio_getfp(int fio);
 /* Return the file pointer itself */
 
-extern XDR *fio_getxdr(int fio);
+extern XDR *gmx_fio_getxdr(int fio);
 /* Return the file pointer itself */
 
 extern void set_comment(char *comment);

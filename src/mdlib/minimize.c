@@ -2170,7 +2170,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
       sfree(leg[i]);
     sfree(leg);
   }
-
+  clear_rvec(x_init);
   V_all = 0;
   VembU_all = 0;
 

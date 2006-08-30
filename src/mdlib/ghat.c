@@ -44,6 +44,8 @@
 #include "vec.h"
 #include "physics.h"
 #include "coulomb.h"
+#include "pppm.h"
+#include "xvgr.h"
 #include "fftgrid.h"
 
 static void calc_k(rvec lll,int ix,int iy,int iz,int nx,int ny,int nz,rvec k)

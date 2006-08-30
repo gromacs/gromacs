@@ -53,7 +53,6 @@
 #include "nsb.h"
 #include "names.h"
 #include "network.h"
-#include "wnblist.h"
 #include "pbc.h"
 #include "ns.h"
 #include "nrnb.h"

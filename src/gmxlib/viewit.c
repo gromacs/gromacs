@@ -98,7 +98,12 @@ void do_view(char *fn, char *opts)
       if ( strlen(cmd) ) {
 	sprintf(buf,"%s %s %s &",cmd,opts ? opts : "",fn);
 	fprintf(stderr,"Executing '%s'\n",buf);
+#ifdef GMX_NO_SYSTEM
+        printf("Warning-- No calls to system(3) supported on this platform.");
+        printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
+#else
 	system(buf);
+#endif
       }
     }
   }

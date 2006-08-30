@@ -70,7 +70,7 @@ static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
   inda0 = a0 - g->start;
   inda1 = a1 - g->start;
   bFound = FALSE;
-  /* Search for a direct edga between a0 and a1.
+  /* Search for a direct edge between a0 and a1.
    * All egdes are bidirectional, so we only need to search one way.
    */
   for(i=0; (i<g->nedge[inda0] && !bFound); i++)

@@ -92,11 +92,11 @@ static void rd_ener_nms(FILE *in,int *nre,char ***nm)
 static void edr_nms(int fp,int *nre,char ***nms)
 {
   XDR  *xdr;
-  bool bRead = fio_getread(fp);
+  bool bRead = gmx_fio_getread(fp);
   int  i;
   char **NM;
 
-  xdr = fio_getxdr(fp);
+  xdr = gmx_fio_getxdr(fp);
 
   NM=*nms;
   
@@ -120,7 +120,7 @@ static void edr_nms(int fp,int *nre,char ***nms)
 static bool do_eheader(int fp,t_enxframe *fr,bool *bOK)
 {
   int  block,i,dum=0;
-  bool bRead = fio_getread(fp);
+  bool bRead = gmx_fio_getread(fp);
   int  tempfix_nr=0;
 
   *bOK=TRUE;
@@ -163,20 +163,20 @@ void do_enxnms(int fp,int *nre,char ***nms)
 {
   bool bRead;
   
-  bRead = fio_getread(fp);
-  if (fio_getftp(fp) == efEDR) {
-    fio_select(fp);
+  bRead = gmx_fio_getread(fp);
+  if (gmx_fio_getftp(fp) == efEDR) {
+    gmx_fio_select(fp);
     edr_nms(fp,nre,nms);
   }
   else if (bRead)
-    rd_ener_nms(fio_getfp(fp),nre,nms);
+    rd_ener_nms(gmx_fio_getfp(fp),nre,nms);
   else
-    wr_ener_nms(fio_getfp(fp),*nre,*nms);
+    wr_ener_nms(gmx_fio_getfp(fp),*nre,*nms);
 }
 
 void close_enx(int fp)
 {
-  fio_close(fp);
+  gmx_fio_close(fp);
 }
 
 static bool empty_file(char *fn)
@@ -204,9 +204,9 @@ int open_enx(char *fn,char *mode)
   bool       bDum=TRUE;
 
   if (mode[0]=='r') {
-    fp=fio_open(fn,mode);
-    fio_select(fp);
-    fio_setprecision(fp,FALSE);
+    fp=gmx_fio_open(fn,mode);
+    gmx_fio_select(fp);
+    gmx_fio_setprecision(fp,FALSE);
     do_enxnms(fp,&nre,&nm);
     snew(fr,1);
     do_eheader(fp,fr,&bDum);
@@ -222,9 +222,9 @@ int open_enx(char *fn,char *mode)
       sfree(nm);
     }
     else {
-      fio_rewind(fp);
-      fio_select(fp);
-      fio_setprecision(fp,TRUE);
+      gmx_fio_rewind(fp);
+      gmx_fio_select(fp);
+      gmx_fio_setprecision(fp,TRUE);
       do_enxnms(fp,&nre,&nm);
       do_eheader(fp,fr,&bDum);
       if (((fr->e_size && (fr->nre == nre) && 
@@ -245,10 +245,10 @@ int open_enx(char *fn,char *mode)
     }
     free_enxframe(fr);
     sfree(fr);
-    fio_rewind(fp);
+    gmx_fio_rewind(fp);
   }
   else 
-    fp = fio_open(fn,mode);
+    fp = gmx_fio_open(fn,mode);
     
   framenr=0;
   frametime=0;
@@ -263,13 +263,13 @@ bool do_enx(int fp,t_enxframe *fr)
   real      tmp1,tmp2;
 
   bOK = TRUE;
-  bRead = fio_getread(fp);
+  bRead = gmx_fio_getread(fp);
   if (!bRead) {  
     fr->e_size = fr->nre*sizeof(fr->ener[0].e)*4;
     fr->d_size = fr->ndisre*(sizeof(fr->rav[0]) + 
 			   sizeof(fr->rt[0]));
   }
-  fio_select(fp);
+  gmx_fio_select(fp);
 
   if (!do_eheader(fp,fr,&bOK)) {
     if (bRead) {
@@ -295,7 +295,7 @@ bool do_enx(int fp,t_enxframe *fr)
     bSane = bSane || (fr->nr[block] > 0);
   if (!((fr->step >= 0) && bSane)) {
     fprintf(stderr,"\nWARNING: there may be something wrong with energy file %s\n",
-	    fio_getname(fp));
+	    gmx_fio_getname(fp));
     fprintf(stderr,"Found: step=%d, nre=%d, ndisre=%d, nblock=%d, time=%g.\n"
 	    "Trying to skip frame expect a crash though\n",
 	    fr->step,fr->nre,fr->ndisre,fr->nblock,fr->t);

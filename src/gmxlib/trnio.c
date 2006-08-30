@@ -80,7 +80,7 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
   
   *bOK=TRUE;
 
-  fio_select(fp);
+  gmx_fio_select(fp);
   if (!do_int(magic))
     return FALSE;
   
@@ -105,7 +105,7 @@ static bool do_trnheader(int fp,bool bRead,t_trnheader *sh, bool *bOK)
 
   if (!*bOK) return *bOK; 
   sh->bDouble = (nFloatSize(sh) == sizeof(double));
-  fio_setprecision(fp,sh->bDouble);
+  gmx_fio_setprecision(fp,sh->bDouble);
 
   if (bRead && bFirst) {
     fprintf(stderr,"(%s precision)\n",sh->bDouble ? "double" : "single");
@@ -264,10 +264,10 @@ bool fread_htrn(int fp,t_trnheader *trn,rvec *box,rvec *x,rvec *v,rvec *f)
 
 int open_trn(char *fn,char *mode)
 {
-  return fio_open(fn,mode);
+  return gmx_fio_open(fn,mode);
 }
 
 void close_trn(int fp)
 {
-  fio_close(fp);
+  gmx_fio_close(fp);
 }

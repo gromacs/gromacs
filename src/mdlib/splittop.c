@@ -45,6 +45,7 @@
 #include "gmx_fatal.h"
 #include "main.h"
 #include "vsite.h"
+#include "mdrun.h"
 
 static void split_ilist(FILE *log,t_ilist *il,t_commrec *cr)
 {

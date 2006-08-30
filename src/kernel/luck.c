@@ -65,5 +65,7 @@ int main(int argc,char *argv[])
   }
     
   thanx(stdout);
+  
+  return 0;
 }
  

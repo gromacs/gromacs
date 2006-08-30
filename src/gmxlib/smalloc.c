@@ -109,10 +109,20 @@ void *save_calloc(char *name,char *file,int line,
     p=NULL;
   else
     {
+#ifdef GMX_BROKEN_CALLOC
+      /* emulate calloc(3) with malloc/memset on machines with 
+         a broken calloc, e.g. in -lgmalloc on cray xt3. */
+      if ((p=malloc((size_t)nelem*(size_t)elsize))==NULL) 
+        gmx_fatal(errno,__FILE__,__LINE__,
+		  "calloc for %s (nelem=%d, elsize=%d, file %s"
+		  ", line %d)",name,nelem,elsize,file,line);
+      memset(p, 0,(size_t) (nelem * elsize));
+#else
       if ((p=calloc((size_t)nelem,(size_t)elsize))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
 		  "calloc for %s (nelem=%d, elsize=%d, file %s"
 		  ", line %d)",name,nelem,elsize,file,line);
+#endif
     }
 #ifdef DEBUG
   log_action(1,name,file,line,nelem,elsize,p);

@@ -37,6 +37,11 @@
 #include <config.h>
 #endif
 
+#ifdef GMX_CRAY_XT3
+#include<catamount/dclock.h>
+#endif
+
+
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
@@ -477,6 +482,24 @@ void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
 #define clock() -1
 #endif
 static double runtime=0;
+#ifdef GMX_CRAY_XT3
+static double cprev;
+
+void start_time(void)
+{
+  cprev   = dclock();
+  runtime = 0.0;
+}
+
+void update_time(void)
+{
+  double c;
+
+  c        = dclock();
+  runtime += (c-cprev);
+  cprev    = c;
+}
+#else
 static clock_t cprev;
 
 void start_time(void)
@@ -493,7 +516,7 @@ void update_time(void)
   runtime += (c-cprev)/(double)CLOCKS_PER_SEC;
   cprev    = c;
 }
-
+#endif
 double node_time(void)
 {
   return runtime;

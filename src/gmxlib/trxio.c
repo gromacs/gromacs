@@ -163,18 +163,18 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
   else
     prec = 1000.0;
   
-  switch (fio_getftp(fnum)) {
+  switch (gmx_fio_getftp(fnum)) {
   case efTRJ:
   case efTRR:
     break;
   default:
     if (!fr->bX)
       gmx_fatal(FARGS,"Need coordinates to write a %s trajectory",
-		  ftp2ext(fio_getftp(fnum)));
+		  ftp2ext(gmx_fio_getftp(fnum)));
     break;
   }
 
-  switch (fio_getftp(fnum)) {
+  switch (gmx_fio_getftp(fnum)) {
   case efTRJ:
   case efTRR:
     if (fr->bV) {
@@ -199,7 +199,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
     break;
   }
 
-  switch (fio_getftp(fnum)) {
+  switch (gmx_fio_getftp(fnum)) {
   case efXTC: 
     write_xtc(fnum,nind,fr->step,fr->time,fr->box,xout,prec);
     break;
@@ -214,29 +214,29 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
   case efENT:
     if (!fr->bAtoms)
       gmx_fatal(FARGS,"Can not write a %s file without atom names",
-		  ftp2ext(fio_getftp(fnum)));
+		  ftp2ext(gmx_fio_getftp(fnum)));
     sprintf(title,"frame t= %.3f",fr->time);
-    if (fio_getftp(fnum) == efGRO)
-      write_hconf_indexed_p(fio_getfp(fnum),title,fr->atoms,nind,ind,
+    if (gmx_fio_getftp(fnum) == efGRO)
+      write_hconf_indexed_p(gmx_fio_getfp(fnum),title,fr->atoms,nind,ind,
 			    prec2ndec(prec),
 			    fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
-      write_pdbfile_indexed(fio_getfp(fnum),title,fr->atoms,
+      write_pdbfile_indexed(gmx_fio_getfp(fnum),title,fr->atoms,
 			    fr->x,fr->box,0,fr->step,nind,ind);
     break;
   case efG87:
-    write_gms(fio_getfp(fnum),nind,xout,fr->box);
+    write_gms(gmx_fio_getfp(fnum),nind,xout,fr->box);
     break;
   case efG96:
-    write_g96_conf(fio_getfp(fnum),fr,nind,ind); 
+    write_g96_conf(gmx_fio_getfp(fnum),fr,nind,ind); 
     break;
   default:
     gmx_fatal(FARGS,"Sorry, write_trxframe_indexed can not write %s",
-		ftp2ext(fio_getftp(fnum)));
+		ftp2ext(gmx_fio_getftp(fnum)));
     break;
   }
 
-  switch (fio_getftp(fnum)) {
+  switch (gmx_fio_getftp(fnum)) {
   case efTRN:
   case efTRJ:
   case efTRR:
@@ -263,18 +263,18 @@ int write_trxframe(int fnum,t_trxframe *fr)
   else
     prec = 1000.0;
 
-  switch (fio_getftp(fnum)) {
+  switch (gmx_fio_getftp(fnum)) {
   case efTRJ:
   case efTRR:
     break;
   default:
     if (!fr->bX)
       gmx_fatal(FARGS,"Need coordinates to write a %s trajectory",
-		  ftp2ext(fio_getftp(fnum)));
+		  ftp2ext(gmx_fio_getftp(fnum)));
     break;
   }
 
-  switch (fio_getftp(fnum)) {
+  switch (gmx_fio_getftp(fnum)) {
   case efXTC:
     write_xtc(fnum,fr->natoms,fr->step,fr->time,fr->box,fr->x,prec);
     break;
@@ -289,24 +289,24 @@ int write_trxframe(int fnum,t_trxframe *fr)
   case efENT:
     if (!fr->bAtoms)
       gmx_fatal(FARGS,"Can not write a %s file without atom names",
-		  ftp2ext(fio_getftp(fnum)));
+		  ftp2ext(gmx_fio_getftp(fnum)));
     sprintf(title,"frame t= %.3f",fr->time);
-    if (fio_getftp(fnum) == efGRO)
-      write_hconf_p(fio_getfp(fnum),title,fr->atoms,
+    if (gmx_fio_getftp(fnum) == efGRO)
+      write_hconf_p(gmx_fio_getfp(fnum),title,fr->atoms,
 		    prec2ndec(prec),fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
-      write_pdbfile(fio_getfp(fnum),title,
+      write_pdbfile(gmx_fio_getfp(fnum),title,
 		    fr->atoms,fr->x,fr->box,0,fr->step);
     break;
   case efG87:
-    write_gms(fio_getfp(fnum),fr->natoms,fr->x,fr->box);
+    write_gms(gmx_fio_getfp(fnum),fr->natoms,fr->x,fr->box);
     break;
   case efG96:
-    write_g96_conf(fio_getfp(fnum),fr,-1,NULL); 
+    write_g96_conf(gmx_fio_getfp(fnum),fr,-1,NULL); 
     break;
   default:
     gmx_fatal(FARGS,"Sorry, write_trxframe can not write %s",
-		ftp2ext(fio_getftp(fnum)));
+		ftp2ext(gmx_fio_getftp(fnum)));
     break;
   }
 
@@ -337,7 +337,7 @@ int write_trx(int fnum,int nind,atom_id *ind,t_atoms *atoms,
 
 void close_trx(int status)
 {
-  fio_close(status);
+  gmx_fio_close(status);
 }
 
 int open_trx(char *outfile,char *filemode)
@@ -345,7 +345,7 @@ int open_trx(char *outfile,char *filemode)
   if (filemode[0]!='w' && filemode[0]!='a')
     gmx_fatal(FARGS,"Sorry, write_trx can only write");
 
-  return fio_open(outfile,filemode);
+  return gmx_fio_open(outfile,filemode);
 }
 
 static bool gmx_next_frame(int status,t_trxframe *fr)
@@ -607,17 +607,17 @@ bool read_next_frame(int status,t_trxframe *fr)
     fr->tppf = fr->tpf;
     fr->tpf  = fr->time;
     
-    switch (fio_getftp(status)) {
+    switch (gmx_fio_getftp(status)) {
     case efTRJ:
     case efTRR:
         bRet = gmx_next_frame(status,fr);
         break;
     case efG96:
-      read_g96_conf(fio_getfp(status),NULL,fr);
+      read_g96_conf(gmx_fio_getfp(status),NULL,fr);
       bRet = (fr->natoms > 0);
       break;
     case efG87:
-      bRet = xyz_next_x(fio_getfp(status),&fr->time,fr->natoms,fr->x,fr->box);
+      bRet = xyz_next_x(gmx_fio_getfp(status),&fr->time,fr->natoms,fr->x,fr->box);
       fr->bTime = bRet;
       fr->bX    = bRet;
       fr->bBox  = bRet;
@@ -650,14 +650,14 @@ bool read_next_frame(int status,t_trxframe *fr)
       }
       break;
     case efPDB:
-      bRet = pdb_next_x(fio_getfp(status),fr);
+      bRet = pdb_next_x(gmx_fio_getfp(status),fr);
       break;
     case efGRO:
-      bRet = gro_next_x_or_v(fio_getfp(status),fr);
+      bRet = gro_next_x_or_v(gmx_fio_getfp(status),fr);
       break;
     default:
       gmx_fatal(FARGS,"DEATH HORROR in read_next_frame ftp=%s,status=%d",
-		  ftp2ext(fio_getftp(status)),status);
+		  ftp2ext(gmx_fio_getftp(status)),status);
     }
     
     if (bRet) {
@@ -700,25 +700,25 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
   bFirst = TRUE;
   INITCOUNT;
   
-  fp = *status =fio_open(fn,"r");
-  switch (fio_getftp(fp)) 
+  fp = *status =gmx_fio_open(fn,"r");
+  switch (gmx_fio_getftp(fp)) 
   {
   case efTRJ:
   case efTRR:
     break;
   case efG96:
     /* Can not rewind a compressed file, so open it twice */
-    read_g96_conf(fio_getfp(fp),fn,fr);
-    fio_close(fp);
+    read_g96_conf(gmx_fio_getfp(fp),fn,fr);
+    gmx_fio_close(fp);
     clear_trxframe(fr,FALSE);
     if (flags & (TRX_READ_X | TRX_NEED_X))
       snew(fr->x,fr->natoms);
     if (flags & (TRX_READ_V | TRX_NEED_V))
       snew(fr->v,fr->natoms);
-    fp = *status =fio_open(fn,"r");
+    fp = *status =gmx_fio_open(fn,"r");
     break;
   case efG87:
-    fr->natoms=xyz_first_x(fio_getfp(fp),&fr->time,&fr->x,fr->box);
+    fr->natoms=xyz_first_x(gmx_fio_getfp(fp),&fr->time,&fr->x,fr->box);
     if (fr->natoms) {
       fr->bTime = TRUE;
       fr->bX    = TRUE;
@@ -750,13 +750,13 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
     bFirst = FALSE;
     break;
   case efPDB:
-    pdb_first_x(fio_getfp(fp),fr);
+    pdb_first_x(gmx_fio_getfp(fp),fr);
     if (fr->natoms)
       printcount(fr->time,FALSE);
     bFirst = FALSE;
     break;
   case efGRO:
-    if (gro_first_x_or_v(fio_getfp(fp),fr))
+    if (gro_first_x_or_v(gmx_fio_getfp(fp),fr))
       printcount(fr->time,FALSE);
     bFirst = FALSE;
     break;
@@ -809,14 +809,14 @@ bool read_next_x(int status,real *t, int natoms, rvec x[], matrix box)
 
 void close_trj(int status)
 {
-  fio_close(status);
+  gmx_fio_close(status);
 }
 
 void rewind_trj(int status)
 {
   INITCOUNT;
   
-  fio_rewind(status);
+  gmx_fio_rewind(status);
 }
 
 /***** V E L O C I T Y   S T U F F *****/

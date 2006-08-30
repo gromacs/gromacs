@@ -211,7 +211,7 @@ int write_traj(FILE *log,t_commrec *cr,
   }
   if ((xx || vv || ff) && MASTER(cr)) {
     fwrite_trn(fp,step,t,lambda,box,natoms,xx,vv,ff);
-    fio_flush(fp);
+    gmx_fio_flush(fp);
   }
   return fp;
 }

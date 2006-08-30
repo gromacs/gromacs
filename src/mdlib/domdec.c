@@ -510,7 +510,8 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
 static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
 				t_block *cgs,matrix box,rvec pos[])
 {
-  int i,buf2[2],cg_gl;
+  int i,cg_gl;
+  int buf2[2] = { 0, 0 };
 
   clear_dd_indices(dd,0);
 
@@ -1339,7 +1340,7 @@ int gmx_ddindex2pmeslab(t_commrec *cr,int ddindex)
 int gmx_ddindex2nodeid(t_commrec *cr,int ddindex)
 {
   ivec coords;
-  int  nodeid;
+  int  nodeid=-1;
 
   if (cr->dd->bCartesian) {
     gmx_ddindex2xyz(cr->dd->nc,ddindex,coords);
@@ -1361,10 +1362,11 @@ static int dd_node2pmenode(t_commrec *cr,int nodeid)
   ivec coords,coords_pme;
   int  i;
   int  pmenode;
-  
+ 
   dd = cr->dd;
 
   pmenode = -1;
+  if (dd == NULL) return pmenode; /* no domain decomposition? */
   /* This assumes a uniform x domain decomposition grid cell size */
   if (dd->bCartesian) {
 #ifdef GMX_MPI

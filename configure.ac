@@ -281,6 +281,29 @@ if test "$enable_mpi" = "yes"; then
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
     AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
+
+# on the cray xt3 we have to tell autoconf that we 
+# are actually cross-compiling even if the architecture
+# of host and target are the same. so we enforce 
+# cross-compilation if __QK_USER__ is defined
+  AC_MSG_CHECKING([for catamount])
+  AC_TRY_COMPILE([
+#if defined __QK_USER__
+#else
+#error not catamount
+#endif
+],,[
+  AC_MSG_RESULT(yes)
+  cross_compiling=yes 
+  AC_DEFINE(GMX_CRAY_XT3,[],[Enable special hacks for Cray XT3])
+  AC_DEFINE(GMX_NO_SYSTEM,[],[Ignore calls to system(3)])
+  AC_DEFINE(GMX_NO_NICE,[],[Ignore calls to nice(3)])
+  AC_DEFINE(GMX_BROKEN_CALLOC,[],[Don't use calloc(3)])
+  extra_LDFLAGS="$extra_LDFLAGS -lgmalloc -lacml"
+],[
+  AC_MSG_RESULT(no)
+])
+# end of "$enable_mpi" = "yes"
 fi
 
 if test "$enable_threads" = "yes"; then

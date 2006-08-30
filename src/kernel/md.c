@@ -138,24 +138,24 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 {
   double     nodetime=0,realtime;
   t_inputrec *inputrec;
-  t_state    *state;
-  rvec       *buf,*f,*vold,*vt;
+  t_state    *state=NULL;
+  rvec       *buf=NULL,*f=NULL,*vold=NULL,*vt=NULL;
   real       tmpr1,tmpr2;
-  real       *ener;
+  real       *ener=NULL;
   t_nrnb     *nrnb;
   t_nsborder *nsb=NULL;
-  t_topology *top;
-  t_groups   *grps;
-  t_graph    *graph;
-  t_mdatoms  *mdatoms;
-  t_forcerec *fr;
-  t_fcdata   *fcd;
-  real       ewaldcoeff;
-  gmx_pme_t  *pmedata;
+  t_topology *top=NULL;
+  t_groups   *grps=NULL;
+  t_graph    *graph=NULL;
+  t_mdatoms  *mdatoms=NULL;
+  t_forcerec *fr=NULL;
+  t_fcdata   *fcd=NULL;
+  real       ewaldcoeff=0;
+  gmx_pme_t  *pmedata=NULL;
   time_t     start_t=0;
-  bool       bVsites,bParVsites;
+  bool       bVsites=FALSE,bParVsites=FALSE;
   t_comm_vsites vsitecomm;
-  int        i,m,nChargePerturbed,status;
+  int        i,m,nChargePerturbed=0,status;
   char       *gro;
   
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {

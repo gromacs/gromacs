@@ -241,7 +241,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   real         *radius,*dgs_factor=NULL,*area=NULL,*surfacedots=NULL;
   real         at_area,*atom_area=NULL,*atom_area2=NULL;
   real         *res_a=NULL,*res_area=NULL,*res_area2=NULL;
-  real         totarea,totvolume,totmass,density,harea,tarea,fluc2;
+  real         totarea,totvolume,totmass=0,density,harea,tarea,fluc2;
   atom_id      **index,*findex;
   int          *nx,nphobic,npcheck,retval;
   char         **grpname,*fgrpname;

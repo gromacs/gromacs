@@ -462,7 +462,7 @@ bool replica_exchange(FILE *fplog,const t_commrec *cr,gmx_repl_ex_t *re,
 {
   gmx_multisim_t *ms;
   int  exchange=-1,shift;
-  bool bExchanged;
+  bool bExchanged=FALSE;
 
   ms = cr->ms;
 
