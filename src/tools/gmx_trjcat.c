@@ -254,12 +254,13 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
 {
   int        i,j,k,natoms,nnn;
   int        *fp_in,*fp_out;
-  bool       bCont;
+  bool       bCont,*bSet;
   real       t;
   t_trxframe *trx;
   
   snew(fp_in,nset);
   snew(trx,nset);
+  snew(bSet,nset);
   natoms = -1;
   t = -1;
   for(i=0; (i<nset); i++) {
@@ -282,15 +283,23 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
     gmx_fatal(FARGS,"First time in demuxing table does not match trajectories");
     
   do {
-    while ((trx[0].time >= time[k+1]) && (k+1 < nval))
+    while ((k+1 < nval) && ((trx[0].time - time[k+1]) > dt_remd*0.1))
       k++;
+    if (debug)
+      fprintf(debug,"trx[0].time = %g, time[k] = %g\n",trx[0].time,time[k]);
+    for(i=0; (i<nfile_out); i++) 
+      bSet[i] = FALSE;
     for(i=0; (i<nfile_out); i++) {
       j = gmx_nint(value[i][k]);
       range_check(j,0,nset);
+      if (bSet[j])
+	gmx_fatal(FARGS,"Demuxing the same replica %d twice at time %f",
+		  j,trx[0].time);
+      bSet[j] = TRUE;
       if (isize != natoms)
-	write_trxframe_indexed(fp_out[i],&trx[j],isize,index);
+	write_trxframe_indexed(fp_out[j],&trx[i],isize,index);
       else
-	write_trxframe(fp_out[i],&trx[j]);
+	write_trxframe(fp_out[j],&trx[i]);
     }
     
     bCont = (k < nval);
