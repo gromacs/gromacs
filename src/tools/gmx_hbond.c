@@ -1691,6 +1691,7 @@ int gmx_hbond(int argc,char *argv[])
     { efNDX, NULL,   NULL,     ffOPTRD },
     /*    { efNDX, "-sel", "select", ffOPTRD },*/
     { efXVG, "-num", "hbnum",  ffWRITE },
+    { efLOG, "-g",   "hbond",  ffOPTWR },
     { efXVG, "-ac",  "hbac",   ffOPTWR },
     { efXVG, "-dist","hbdist", ffOPTWR },
     { efXVG, "-ang", "hbang",  ffOPTWR },
@@ -1730,7 +1731,7 @@ int gmx_hbond(int argc,char *argv[])
   int        grp,nabin,nrbin,bin,resdist,ihb;
   char       **leg;
   t_hbdata   *hb;
-  FILE       *fp,*fpins=NULL,*fplog,*fpnhb=NULL;
+  FILE       *fp,*fpins=NULL,*fpnhb=NULL;
   t_gridcell ***grid;
   t_ncell    *icell,*jcell,*kcell;
   ivec       ngrid;
