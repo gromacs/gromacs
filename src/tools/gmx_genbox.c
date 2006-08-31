@@ -673,7 +673,7 @@ int gmx_genbox(int argc,char *argv[])
     { "-maxsol", FALSE, etINT,  {&max_sol},
       "maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored" },
     { "-vel",    FALSE, etBOOL, {&bReadV},
-      "HIDDENkeep velocities from input solute and solvent" }
+      "keep velocities from input solute and solvent" }
   };
 
   CopyRight(stderr,argv[0]);
