@@ -127,7 +127,7 @@ int gmx_dyndom(int argc,char *argv[])
 {
   char *desc[] = {
     "g_dyndom reads a pdb file output from DynDom",
-    "http://md.chem.rug.nl/~steve/DynDom/dyndom.home.html",
+    "http://www.cmp.uea.ac.uk/dyndom/",
     "It reads the coordinates, and the coordinates of the rotation axis",
     "furthermore it reads an index file containing the domains.",
     "Furthermore it takes the first and last atom of the arrow file",
