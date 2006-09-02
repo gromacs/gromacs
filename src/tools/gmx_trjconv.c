@@ -1302,7 +1302,7 @@ int gmx_trjconv(int argc,char *argv[])
 	      /*fprintf(stderr,"Executing '%s'\n",c);*/
 #ifdef GMX_NO_SYSTEM
               printf("Warning-- No calls to system(3) supported on this platform.");
-              printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
+              printf("Warning-- Skipping execution of 'system(\"%s\")'.", c);
 #else
 	      system(c);
 #endif

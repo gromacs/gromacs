@@ -498,7 +498,7 @@ int main(int argc,char *argv[])
 
 #ifdef GMX_NO_SYSTEM
     printf("Warning-- No calls to system(3) supported on this platform.");
-    printf("Warning-- Skipping execution of 'system(\"%s\")'.", buf);
+    printf("Warning-- Skipping execution of 'system(\"%s\")'.", dssp);
 #else
     system(dssp);
 #endif
