@@ -102,11 +102,16 @@ extern void dd_move_x_constraints(gmx_domdec_t *dd,rvec *x);
 
 extern void clear_local_constraint_indices(gmx_domdec_t *dd);
 
-extern void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec,
-				   gmx_domdec_constraints_t *dc);
+extern void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
 
-extern gmx_domdec_constraints_t *init_domdec_constraints(int natoms,
-							 t_idef *idef,
-							 bool bDynamics);
+extern void init_domdec_constraints(gmx_domdec_t *dd,
+				    int natoms,t_idef *idef,bool bDynamics);
+
+/* In domdec_top.c */
+
+extern void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
+
+extern void make_local_top(FILE *fplog,gmx_domdec_t *dd,
+			   t_forcerec *fr,t_topology *top,t_topology *ltop);
 
 #endif	/* _domdec_h */

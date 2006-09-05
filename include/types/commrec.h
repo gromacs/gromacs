@@ -46,23 +46,7 @@
 #define DD_MAXCELL  8
 #define DD_MAXICELL 4
 
-typedef struct {
-  /* The global charge group division */
-  int  *ncg;     /* Number of home charge groups for each node */
-  int  *index;   /* Index of nnodes+1 into cg */
-  int  *cg;      /* Global charge group index */
-  int  *nat;     /* Number of home atoms for each node. */
-  int  *ibuf;    /* Buffer for communication */
-} gmx_domdec_master_t;
-
-typedef struct {
-  /* The numbers of charge groups and atoms to send and receive */
-  int nsend[DD_MAXICELL+2];
-  int nrecv[DD_MAXICELL+2];
-  /* The charge groups to send */
-  int *index;
-  int nalloc;
-} gmx_domdec_comm_t;
+typedef struct gmx_domdec_master *gmx_domdec_master_p_t;
 
 typedef struct {
   int  j0;       /* j-cell start               */
@@ -72,24 +56,14 @@ typedef struct {
   int  jcg1;     /* j-charge-group end         */
   ivec shift0;   /* Minimum shifts to consider */
   ivec shift1;   /* Maximum shifts to consider */
-} gmx_domdec_ns_t;
-
-typedef struct {
-  int *index; /* Index for each atom into il    */
-  int *il;    /* ftype|type|a0|...|an|ftype|... */
-} gmx_reverse_top_t;
+} gmx_domdec_ns_ranges_t;
 
 typedef struct {
   int     cell;
   atom_id a;
 } gmx_ga2la_t;
 
-typedef struct {
-  int nsend;
-  int *a;
-  int a_nalloc;
-  int nrecv;
-} gmx_conatomsend_t;
+typedef struct gmx_reverse_top *gmx_reverse_top_p_t;
 
 typedef struct {
   /* The number of constraints in the whole system */
@@ -107,23 +81,13 @@ typedef struct {
   int  con_nalloc;
   /* Global to local constraint index */
   int  *gc2lc;
-  /* The atom indices we need from the surrounding cells */
-  int  nind_req;
-  int  *ind_req;
-  int  ind_req_nalloc;
   /* Global to local communicated constraint atom only index */
   int  *ga2la;
-  /* The number of indices to receive during the setup */
-  int  nreq[DIM][2][2];
-  /* The atoms to send */
-  gmx_conatomsend_t cas[DIM][2];
-  bool *bSendAtom;
-  int   bSendAtom_nalloc;
-  /* Send buffers */
-  int  *ibuf;
-  rvec *vbuf;
-  int  buf_nalloc;
 } gmx_domdec_constraints_t;
+
+typedef struct gmx_domdec_constraint_comm *gmx_domdec_constraint_comm_p_t;
+
+typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
 
 typedef struct {
   /* The communication setup including the pme only nodes */
@@ -154,12 +118,12 @@ typedef struct {
   ivec shift[DD_MAXCELL];
 
   /* Only available on the master node */
-  gmx_domdec_master_t ma;
+  gmx_domdec_master_p_t ma;
   /* Switch that tells if the master has the charge group distribution */
   bool bMasterHasAllCG;
 
   /* Global atom number to interaction list */
-  gmx_reverse_top_t reverse_top;
+  gmx_reverse_top_p_t reverse_top;
   int  nbonded_global;
   int  nbonded_local;
 
@@ -168,6 +132,7 @@ typedef struct {
 
   /* Constraint stuff */
   gmx_domdec_constraints_t *constraints;
+  gmx_domdec_constraint_comm_p_t constraint_comm;
 
   /* The charge group boundaries for the cells */
   int ncg_cell[DD_MAXCELL+1];
@@ -189,31 +154,15 @@ typedef struct {
   int  *gatindex;
   int  gatindex_nalloc;
 
-  /* The indices to communicate */
-  gmx_domdec_comm_t comm[DIM];
-
   /* Global atom number to local atom number, -1 if not local */
   gmx_ga2la_t *ga2la;
 
   /* For neighborsearching */
   int  nicell;
-  gmx_domdec_ns_t icell[DD_MAXICELL];
+  gmx_domdec_ns_ranges_t icell[DD_MAXICELL];
 
-  /* Communication buffers */
-  int  *buf_i1;
-  int  nalloc_i1;
-  int  *buf_i2;
-  int  nalloc_i2;
-  rvec *buf_vs;
-  int  nalloc_vs;
-  rvec *buf_vr;
-  int  nalloc_vr;
-  
-  /* MPI requests for move_x */
-  int  nmpi_req;
-#ifdef GMX_MPI
-  MPI_Request mpi_req[(DD_MAXCELL-1)*2];
-#endif
+  /* Communication stuff */
+  gmx_domdec_comm_p_t comm;
 } gmx_domdec_t;
 
 typedef struct {
