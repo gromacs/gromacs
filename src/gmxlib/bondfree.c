@@ -431,7 +431,7 @@ real polarize(int nbonds,
     aj   = forceatoms[i++];
     ksh  = sqr(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].polarize.alpha;
     if (debug)
-      fprintf(debug,"POL: ai + %d aj = %d ksh = %.3f\n",ai,aj,ksh);
+      fprintf(debug,"POL: ai = %d aj = %d ksh = %.3f\n",ai,aj,ksh);
   
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
     dr2  = iprod(dx,dx);			/*   5		*/
@@ -630,12 +630,12 @@ real thole_pol(int nbonds,
   real q1,q2,qq,a,al1,al2,afac;
   real V=0;
   
-  for(i=0; (i<nbonds); i+=5) {
-    type  = forceatoms[0];
-    a1    = forceatoms[1];
-    da1   = forceatoms[2];
-    a2    = forceatoms[3];
-    da2   = forceatoms[4];
+  for(i=0; (i<nbonds); ) {
+    type  = forceatoms[i++];
+    a1    = forceatoms[i++];
+    da1   = forceatoms[i++];
+    a2    = forceatoms[i++];
+    da2   = forceatoms[i++];
     q1    = md->chargeA[da1];
     q2    = md->chargeA[da2];
     a     = forceparams[type].thole.a;
