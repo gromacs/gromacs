@@ -431,7 +431,7 @@ real polarize(int nbonds,
     aj   = forceatoms[i++];
     ksh  = sqr(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].polarize.alpha;
     if (debug)
-      fprintf(debug,"POL: ai + %d aj = %d ksh = %.3f\n",ai,aj,ksh);
+      fprintf(debug,"POL: ai = %d aj = %d ksh = %.3f\n",ai,aj,ksh);
   
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
     dr2  = iprod(dx,dx);			/*   5		*/
