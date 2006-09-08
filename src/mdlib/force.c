@@ -918,7 +918,7 @@ void init_forcerec(FILE *fp,
     for(m=0; (m<DIM); m++)
       box_size[m]=box[m][m];
 
-    if (fr->phi == NULL)
+    if (fr->eeltype == eelPPPM && fr->phi == NULL)
       snew(fr->phi,natoms);
     
     if ((fr->eeltype==eelPPPM) || (fr->eeltype==eelPOISSON) || 
@@ -1393,8 +1393,10 @@ void force(FILE       *fplog,   int        step,
     epot[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
       dvdlambda = 0;
-      Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,md->chargeA,md->chargeB,excl,
-				 x,box,mu_tot,
+      Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,
+				 md->chargeA,
+				 md->nChargePerturbed ? md->chargeB : NULL,
+				 excl,x,box,mu_tot,
 				 ir->ewald_geometry,ir->epsilon_surface,
 				 lambda,&dvdlambda,&vdip,&vcharge);
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);

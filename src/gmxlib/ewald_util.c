@@ -108,7 +108,7 @@ real ewald_LRcorrection(FILE *fplog,
   int     start = START(nsb);
   int     end   = start+HOMENR(nsb);
   int     niat;
-  bool    bFreeEnergy = (fr->efep != efepNO);
+  bool    bFreeEnergy = (chargeB != NULL);
   bool    bFullPBC = (fr->ePBC == epbcFULL);
 
   one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
