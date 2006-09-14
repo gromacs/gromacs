@@ -64,6 +64,8 @@
 #include "viewit.h"
 #include "xvgr.h"
 
+enum { euSel,euRect, euTric, euCompact, euNR};
+
 static real calc_isquared(int nmol,rvec m_com[],rvec m_shift[],rvec clust_com)
 {
   real Isq=0;
@@ -78,7 +80,7 @@ static real calc_isquared(int nmol,rvec m_com[],rvec m_shift[],rvec clust_com)
   return Isq;
 }
 
-static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
+static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
 			     atom_id index[],
 			     rvec clust_com,matrix box)
 {
@@ -93,7 +95,7 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
   rvec    *m_com,*m_shift,m0;
   t_pbc   pbc;
 
-  calc_box_center(ecenterTRIC,box,box_center);
+  calc_box_center(ecenter,box,box_center);
   
   /* Initiate the pbc structure */
   memset(&pbc,0,sizeof(pbc));
@@ -241,73 +243,96 @@ static void calc_pbc_cluster(int nrefat,t_topology *top,rvec x[],
   sfree(m_shift);
 }
 
-static void put_molecule_com_in_box(t_block *mols,matrix box,rvec x[])
+static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
+				    t_block *mols,
+				    int natoms,t_atom atom[],
+				    matrix box,rvec x[])
 {
-  const real tol = 1e-3;
   atom_id i,j;
-  int     m;
+  int     d;
   rvec    com,new_com,shift,dx,box_center;
+  real    m;
+  double  mtot;
   t_pbc   pbc;
   
-  calc_box_center(ecenterTRIC,box,box_center);
+  calc_box_center(ecenter,box,box_center);
   set_pbc(&pbc,box);
   
   for(i=0; (i<mols->nr); i++) {
     /* calc COM */
     clear_rvec(com);
-    for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
-      rvec_inc(com, x[i]);
+    mtot = 0;
+    for(j=mols->index[i]; (j<mols->index[i+1] && j<natoms); j++) {
+      m = atom[j].m;
+      for(d=0; d<DIM; d++)
+	com[d] += m*x[j][d];
+      mtot += m;
     }
     /* calculate final COM */
-    svmul(1.0/(real)(mols->index[i+1]-mols->index[i]), com, com);
+    svmul(1.0/mtot, com, com);
       
     /* check if COM is outside box */
-    clear_rvec(shift);
-
-    /*pbc_dx(&pbc,com,box_center,dx); */
     copy_rvec(com,new_com);
-    put_atom_in_box(box,new_com);   
-    /*rvec_add(box_center,dx,new_com);*/
+    switch (unitcell_enum) {
+    case euRect: 
+      put_atoms_in_box(box,1,&new_com);
+      break;
+    case euTric: 
+      put_atoms_in_triclinic_unitcell(ecenter,box,1,&new_com);
+      break;
+    case euCompact:
+      put_atoms_in_compact_unitcell(ecenter,box,1,&new_com);
+      break;
+    }
     rvec_sub(new_com,com,shift);
-    /*for(m=0; m<DIM; m++) {
-      while (com[m]+shift[m]< 0        ) shift[m]+=box[m][m];
-      while (com[m]+shift[m]>=box[m][m]) shift[m]-=box[m][m];
-      }*/
-    clear_rvec(com);
-    if (norm2(shift) > tol) {
+    if (norm2(shift) > 0) {
       if (debug)
 	fprintf (debug,"\nShifting position of molecule %d "
 		 "by %8.3f  %8.3f  %8.3f\n", i+1, PR_VEC(shift));
-      for(j=mols->index[i]; (j<mols->index[i+1]); j++) {
+      for(j=mols->index[i]; (j<mols->index[i+1] && j<natoms); j++) {
 	rvec_inc(x[j],shift);
       }
     }
   }
 }
 
-static void put_residue_com_in_box(t_atom atom[],int natoms,matrix box,rvec x[])
+static void put_residue_com_in_box(int unitcell_enum,int ecenter,
+				   int natoms,t_atom atom[],
+				   matrix box,rvec x[])
 {
   atom_id i, j, res_start, res_end, res_nat;
-  int     m, presnr;
-  rvec    com, shift;
+  int     d, presnr;
+  real    m;
+  double  mtot;
+  rvec    box_center,com,new_com,shift;
+
+  calc_box_center(ecenter,box,box_center);
   
   presnr = NOTSET;
   res_start = 0;
   clear_rvec(com);
-  for(i=0; i<natoms; i++) {
-    if (presnr != atom[i].resnr && presnr != NOTSET) {
+  mtot = 0;
+  for(i=0; i<natoms+1; i++) {
+    if (i == natoms || (presnr != atom[i].resnr && presnr != NOTSET)) {
       /* calculate final COM */
       res_end = i;
       res_nat = res_end - res_start;
-      svmul(1.0/(real)res_nat, com, com);
+      svmul(1.0/mtot, com, com);
       
       /* check if COM is outside box */
-      clear_rvec(shift);
-      for(m=0; m<DIM; m++) {
-	while (com[m]+shift[m]< 0        ) shift[m]+=box[m][m];
-	while (com[m]+shift[m]>=box[m][m]) shift[m]-=box[m][m];
+      copy_rvec(com,new_com);
+      switch (unitcell_enum) {
+      case euRect: 
+	put_atoms_in_box(box,1,&new_com);
+	break;
+      case euTric: 
+	put_atoms_in_triclinic_unitcell(ecenter,box,1,&new_com);
+	break;
+      case euCompact:
+	put_atoms_in_compact_unitcell(ecenter,box,1,&new_com);
+	break;
       }
-      clear_rvec(com);
+      rvec_sub(new_com,com,shift);
       if (norm2(shift)) {
 	if (debug)
 	  fprintf (debug,"\nShifting position of residue %d (atoms %u-%u) "
@@ -316,14 +341,21 @@ static void put_residue_com_in_box(t_atom atom[],int natoms,matrix box,rvec x[])
 	for(j=res_start; j<res_end; j++)
 	  rvec_inc(x[j],shift);
       }
-      
+      clear_rvec(com);
+      mtot = 0;
+
       /* remember start of new residue */
       res_start = i;
     }
-    /* calc COM */
-    rvec_inc(com, x[i]);
-    
-    presnr = atom[i].resnr;
+    if (i < natoms) {
+      /* calc COM */
+      m = atom[i].m;
+      for(d=0; d<DIM; d++)
+	com[d] += m*x[i][d];
+      mtot += m;
+
+      presnr = atom[i].resnr;
+    }
   }
 }
 
@@ -428,7 +460,7 @@ int gmx_trjconv(int argc,char *argv[])
     "trjconv can convert trajectory files in many ways:[BR]",
     "[BB]1.[bb] from one format to another[BR]",
     "[BB]2.[bb] select a subset of atoms[BR]"
-    "[BB]3.[bb] remove periodicity from molecules[BR]",
+    "[BB]3.[bb] change the periodicity representation[BR]",
     "[BB]4.[bb] keep multimeric molecules together[BR]",
     "[BB]5.[bb] center atoms in the box[BR]",
     "[BB]6.[bb] fit atoms to reference structure[BR]",
@@ -484,15 +516,9 @@ int gmx_trjconv(int argc,char *argv[])
     "conformational transitions.[PAR]",
     "Option [TT]-pbc[tt] sets the type of periodic boundary condition",
     "treatment:[BR]",
-    "* [TT]whole[tt] puts the atoms in the box and then makes",
-    "broken molecules whole (a run input file is required).",
-    "Atom number 1 of each molecule will be inside the box.[BR]",
-    "* [TT]com[tt] puts the center of mass of all [IT]residues[it] ",
-    "in the box. Not that this can break molecules that consist of",
-    "more than one residue (e.g. proteins).[BR]",
-    "* [TT]com_mol[tt] puts the center of mass of all [IT]molecules[it] ",
-    "in the box.[BR]",
-    "* [TT]inbox[tt] puts all the atoms in the box.[BR]",
+    "* [TT]mol[tt] puts the center of mass of molecules in the box.[BR]",
+    "* [TT]res[tt] puts the center of mass of residues in the box.[BR]",
+    "* [TT]atom[tt] puts all the atoms in the box.[BR]",
     "* [TT]nojump[tt] checks if atoms jump across the box and then puts",
     "them back. This has the effect that all molecules",
     "will remain whole (provided they were whole in the initial",
@@ -506,10 +532,9 @@ int gmx_trjconv(int argc,char *argv[])
     "results if you in fact have a cluster. Luckily that can be checked",
     "afterwards using a trajectory viewer. Note also that if your molecules",
     "are broken this will not work either.[BR]",
-    "[TT]-pbc[tt] is ignored when [TT]-fit[tt] or [TT]-pfit[tt] is set,",
-    "in that case molecules will be made whole.[PAR]",
+    "* [TT]whole[tt] only makes broken molecules whole.[PAR]",
     "Option [TT]-ur[tt] sets the unit cell representation for options",
-    "[TT]whole[tt] and [TT]inbox[tt] of [TT]-pbc[tt].",
+    "[TT]mol[tt], [TT]res[tt] and [TT]inbox[tt] of [TT]-pbc[tt].",
     "All three options give different results for triclinc boxes and",
     "identical results for rectangular boxes.",
     "[TT]rect[tt] is the ordinary brick shape.",
@@ -521,11 +546,11 @@ int gmx_trjconv(int argc,char *argv[])
     "is set differently.[PAR]",
     "Option [TT]-center[tt] centers the system in the box. The user can",
     "select the group which is used to determine the geometrical center.",
-    "The center options are:",
+    "The location of the center is set with [TT]-boxcenter[tt]:",
     "[TT]tric[tt]: half of the sum of the box vectors,",
     "[TT]rect[tt]: half of the box diagonal,",
     "[TT]zero[tt]: zero.",
-    "Use option [TT]-pbc whole[tt] in addition to [TT]-center[tt] when you",
+    "Use option [TT]-pbc mol[tt] in addition to [TT]-center[tt] when you",
     "want all molecules in the box after the centering.[PAR]",
     "With [TT]-dt[tt] it is possible to reduce the number of ",
     "frames in the output. This option relies on the accuracy of the times",
@@ -549,21 +574,18 @@ int gmx_trjconv(int argc,char *argv[])
   
   int pbc_enum;
   enum
-    { epSel,epNone, epWhole, epInbox, epNojump, epCluster, epComRes, epComMol, epNR };
+    { epSel,epNone, epComMol, epComRes, epInbox, epNojump, epCluster, epWhole, epNR };
   static char *pbc_opt[epNR+1] = 
-    { NULL, "none", "whole", "inbox", "nojump", "cluster", "com", "com_mol", NULL };
+    { NULL, "none", "mol", "res", "atom", "nojump", "cluster", "whole", NULL };
   
   int unitcell_enum;
-  enum
-    { euSel,euRect, euTric, euCompact, euNR};
   static char *unitcell_opt[euNR+1] = 
     { NULL, "rect", "tric", "compact", NULL };
 
   enum
-    { ecSel, ecNo, ecTric, ecRect, ecZero, ecNR};
+    { ecSel, ecTric, ecRect, ecZero, ecNR};
   static char *center_opt[ecNR+1] = 
-    { NULL, "no", "tric", "rect", "zero", NULL };
-  bool bCenter;
+    { NULL, "tric", "rect", "zero", NULL };
   int ecenter;
   
   int fit_enum;
@@ -573,7 +595,7 @@ int gmx_trjconv(int argc,char *argv[])
     { NULL, "none", "rot+trans", "translation", "progressive", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
-  static bool  bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
+  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
@@ -595,8 +617,10 @@ int gmx_trjconv(int argc,char *argv[])
       "PBC treatment (see help text for full description)" },
     { "-ur", FALSE,  etENUM, {unitcell_opt},
       "Unit-cell representation" },
-    { "-center", FALSE,  etENUM, {center_opt},
+    { "-center", FALSE,  etBOOL, {&bCenter},
       "Center atoms in box" },
+    { "-boxcenter", FALSE,  etENUM, {center_opt},
+      "Center for -pbc and -center" },
     { "-box", FALSE, etRVEC, {newbox},
       "Size for new cubic box (default: read from input)" },
     { "-shift", FALSE, etRVEC, {shift},
@@ -658,7 +682,7 @@ int gmx_trjconv(int argc,char *argv[])
   int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
   double       **dropval;
   real         tshift=0,t0=-1,dt=0.001,prec;
-  bool         bPBC,bPBCcomRes,bPBCcomMol,bInBox,bNoJump,bRect,bTric,bComp,bCluster;
+  bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bInBox,bNoJump,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
@@ -717,42 +741,26 @@ int gmx_trjconv(int argc,char *argv[])
     bReset     = fit_enum==efReset;
     bPFit      = fit_enum==efPFit;
     pbc_enum   = nenum(pbc_opt);
-    bPBC       = pbc_enum==epWhole;
+    bPBCWhole  = pbc_enum==epWhole;
     bPBCcomRes = pbc_enum==epComRes;
     bPBCcomMol = pbc_enum==epComMol;
     bInBox     = pbc_enum==epInbox;
     bNoJump    = pbc_enum==epNojump;
     bCluster   = pbc_enum==epCluster;
     unitcell_enum = nenum(unitcell_opt);
-    bRect      = unitcell_enum==euRect;
-    bTric      = unitcell_enum==euTric;
-    bComp      = unitcell_enum==euCompact;
     ecenter    = nenum(center_opt) - ecTric;
-    bCenter    = (ecenter >= 0);
-    if (!bCenter)
-      ecenter = ecenterDEF;
 
     /* set and check option dependencies */    
     if (bPFit) bFit = TRUE; /* for pfit, fit *must* be set */
     if (bFit) bReset = TRUE; /* for fit, reset *must* be set */
-    if (bFit && pbc_enum==epNone )
-      bPBC = TRUE;
-    if (bPBC && !bFit)
-      bInBox = TRUE;
+    bRmPBC = bFit || bPBCWhole || bPBCcomRes || bPBCcomMol;
     if (bSetUR) {
-      if ( bNoJump || bCluster || bPBC ) {
+      if ( bNoJump || bCluster || bPBCWhole ) {
 	fprintf(stderr,"Note: Option for unitcell representation (-ur %s) has "
 		"no effect in\n"
 		"      combination with -pbc %s; ingoring unitcell "
 		"representation.\n\n", unitcell_opt[0], pbc_opt[0]);
 	bSetUR = FALSE;
-      }
-      else if ( !bPBCcomRes && !bInBox ) {
-	fprintf(stderr,"Note: No PBC option selected in combination with "
-		"unitcell representation\n"
-		"      (-ur %s); will put molecules in unitcell "
-		"(-pbc inbox)\n\n", unitcell_opt[0]);
-	bInBox = TRUE;
       }
     }
     /* set flag for pdbio to terminate frames at 'TER' (iso 'ENDMDL') */
@@ -813,7 +821,8 @@ int gmx_trjconv(int argc,char *argv[])
     
     /* Determine whether to read a topology */
     bTPS = (ftp2bSet(efTPS,NFILE,fnm) ||
-	    bPBC || bReset || bPBCcomMol || (ftp == efGRO) || (ftp == efPDB));
+	    bRmPBC || bReset || bPBCcomMol ||
+	    (ftp == efGRO) || (ftp == efPDB));
 
     /* Determine if when can read index groups */
     bIndex = (bIndex || bTPS);
@@ -892,7 +901,7 @@ int gmx_trjconv(int argc,char *argv[])
       
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
-      if (bPBC)
+      if (bRmPBC)
 	rm_pbc(&(top.idef),atoms->nr,top_box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
       reset_x(ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
@@ -1064,13 +1073,13 @@ int gmx_trjconv(int argc,char *argv[])
 	else if (bCluster && bTPS) {
 	  rvec com;
 	  
-	  calc_pbc_cluster(ifit,&top,fr.x,ind_fit,com,fr.box);
+	  calc_pbc_cluster(ecenter,ifit,&top,fr.x,ind_fit,com,fr.box);
 	}
       
 	if (bPFit) {
 	  /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
-	  if (bPBC)
+	  if (bRmPBC)
 	    rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	
 	  reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
@@ -1141,7 +1150,7 @@ int gmx_trjconv(int argc,char *argv[])
 	      /* Now modify the coords according to the flags,
 		 for PFit we did this already! */
 	    
-	      if (bPBC)
+	      if (bRmPBC)
 		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	  
 	      if (bReset) {
@@ -1155,28 +1164,34 @@ int gmx_trjconv(int argc,char *argv[])
 
 	      if (bCenter)
 		center_x(ecenter,fr.x,fr.box,natoms,ncent,cindex);
+	    }
 
-	      if (bInBox) {
-		if (bRect)
-		  put_atoms_in_box(fr.box,natoms,fr.x);
-		else if (bTric)
-		  put_atoms_in_triclinic_unitcell(ecenter,fr.box,natoms,fr.x);
-		else if (bComp) {
-		  warn = put_atoms_in_compact_unitcell(ecenter,fr.box,
-						       natoms,fr.x);
-		  if (warn && !bWarnCompact) {
-		    fprintf(stderr,"\n%s\n",warn);
-		    bWarnCompact = TRUE;
-		  }
+	    if (bInBox) {
+	      switch (unitcell_enum) {
+	      case euRect:
+		put_atoms_in_box(fr.box,natoms,fr.x);
+		break;
+	      case euTric:
+		put_atoms_in_triclinic_unitcell(ecenter,fr.box,natoms,fr.x);
+		break;
+	      case euCompact:
+		warn = put_atoms_in_compact_unitcell(ecenter,fr.box,
+						     natoms,fr.x);
+		if (warn && !bWarnCompact) {
+		  fprintf(stderr,"\n%s\n",warn);
+		  bWarnCompact = TRUE;
 		}
+		break;
 	      }
 	    }
-	    /* put COM of residues inside box */
 	    if (bPBCcomRes) {
-	      put_residue_com_in_box(atoms->atom, natoms, fr.box, fr.x);
+	      put_residue_com_in_box(unitcell_enum,ecenter,
+				     natoms,atoms->atom,fr.box,fr.x);
 	    }
 	    if (bPBCcomMol) {
-	      put_molecule_com_in_box(&top.blocks[ebMOLS],fr.box, fr.x);
+	      put_molecule_com_in_box(unitcell_enum,ecenter,
+				      &top.blocks[ebMOLS],
+				      natoms,atoms->atom,fr.box, fr.x);
 	    }
 	    /* Copy the input trxframe struct to the output trxframe struct */
 	    frout = fr;
