@@ -565,7 +565,7 @@ int gmx_eneconv(int argc,char *argv[])
 	fro->block  = fr->block;
 	
 	do_enx(out,fro);
-	if (noutfr % 10 == 0)
+	if (noutfr % 1000 == 0)
 	  fprintf(stderr,"Writing frame time %g    ",fro->t);
 	noutfr++;
       }
