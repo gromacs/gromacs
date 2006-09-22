@@ -2140,7 +2140,7 @@ _nb_kernel232_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb232_outerend
+        jz .nb232_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb232_n], esi
@@ -2150,7 +2150,7 @@ _nb_kernel232_x86_64_sse2:
         mov   ecx, [rsp + nb232_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb232_end
+        jz .nb232_end
         ;# non-zero, do one more workunit
         jmp   .nb232_threadloop
 .nb232_end:
@@ -3590,7 +3590,7 @@ _nb_kernel232nf_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb232nf_outerend
+        jz .nb232nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb232nf_n], esi
@@ -3600,7 +3600,7 @@ _nb_kernel232nf_x86_64_sse2:
         mov   ecx, [rsp + nb232nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb232nf_end
+        jz .nb232nf_end
         ;# non-zero, do one more workunit
         jmp   .nb232nf_threadloop
 .nb232nf_end:

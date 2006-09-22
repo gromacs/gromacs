@@ -2224,7 +2224,7 @@ _nb_kernel214_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb214_outerend
+        jz .nb214_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb214_n], esi
@@ -2234,7 +2234,7 @@ _nb_kernel214_x86_64_sse2:
         mov   ecx, [rsp + nb214_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb214_end
+        jz .nb214_end
         ;# non-zero, do one more workunit
         jmp   .nb214_threadloop
 .nb214_end:
@@ -3663,7 +3663,7 @@ _nb_kernel214nf_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb214nf_outerend
+        jz .nb214nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb214nf_n], esi
@@ -3673,7 +3673,7 @@ _nb_kernel214nf_x86_64_sse2:
         mov   ecx, [rsp + nb214nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb214nf_end
+        jz .nb214nf_end
         ;# non-zero, do one more workunit
         jmp   .nb214nf_threadloop
 .nb214nf_end:

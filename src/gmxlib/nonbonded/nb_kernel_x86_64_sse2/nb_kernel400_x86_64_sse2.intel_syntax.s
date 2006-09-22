@@ -684,7 +684,7 @@ _nb_kernel400_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb400_outerend
+        jz .nb400_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb400_n], esi
@@ -694,7 +694,7 @@ _nb_kernel400_x86_64_sse2:
         mov   ecx, [rsp + nb400_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb400_end
+        jz .nb400_end
         ;# non-zero, do one more workunit
         jmp   .nb400_threadloop
 .nb400_end:
@@ -1197,7 +1197,7 @@ _nb_kernel400nf_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb400nf_outerend
+        jz .nb400nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb400nf_n], esi
@@ -1207,7 +1207,7 @@ _nb_kernel400nf_x86_64_sse2:
         mov   ecx, [rsp + nb400nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb400nf_end
+        jz .nb400nf_end
         ;# non-zero, do one more workunit
         jmp   .nb400nf_threadloop
 .nb400nf_end:
