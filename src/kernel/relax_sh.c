@@ -290,7 +290,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 t_graph *graph,t_groups *grps,
 		 int nshell,t_shell shells[],int nflexcon,
 		 t_forcerec *fr,
-		 char *traj,real t,rvec mu_tot,
+		 real t,rvec mu_tot,
 		 int natoms,bool *bConverged,
 		 bool bVsites,t_comm_vsites *vsitecomm,
 		 FILE *fp_field)

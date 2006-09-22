@@ -134,15 +134,26 @@ static real f_max(t_commrec *cr,
    */
   fmax2 = 0;
   nfm   = -1;
-  for(i=start; i<end; i++) {
-    gf = mdatoms->cFREEZE[i];
-    fam = 0;
-    for(m=0; m<DIM; m++)
-      if (!opts->nFreeze[gf][m])
-	fam += sqr(grad[i][m]);
-    if (fam > fmax2) {
-      fmax2 = fam;
-      nfm   = i;
+  gf = 0;
+  if (mdatoms->cFREEZE) {
+    for(i=start; i<end; i++) {
+      gf = mdatoms->cFREEZE[i];
+      fam = 0;
+      for(m=0; m<DIM; m++)
+	if (!opts->nFreeze[gf][m])
+	  fam += sqr(grad[i][m]);
+      if (fam > fmax2) {
+	fmax2 = fam;
+	nfm   = i;
+      }
+    }
+  } else {
+    for(i=start; i<end; i++) {
+      fam = norm2(grad[i]);
+      if (fam > fmax2) {
+	fmax2 = fam;
+	nfm   = i;
+      }
     }
   }
 
@@ -173,13 +184,18 @@ static real f_norm(t_commrec *cr,
 
   /* This routine returns the norm of the force */
   fnorm2 = 0;
-  
-  for(i=start; i<end; i++) {
-    gf = mdatoms->cFREEZE[i];
-    for(m=0; m<DIM; m++)
-      if (!opts->nFreeze[gf][m])
-	fnorm2 += sqr(grad[i][m]); 
-  } 
+
+  if (mdatoms->cFREEZE) {
+    for(i=start; i<end; i++) {
+      gf = mdatoms->cFREEZE[i];
+      for(m=0; m<DIM; m++)
+	if (!opts->nFreeze[gf][m])
+	  fnorm2 += sqr(grad[i][m]); 
+    }
+  } else {
+    for(i=start; i<end; i++)
+      fnorm2 += norm2(grad[i]);
+  }
   
   if (PAR(cr))
     gmx_sumd(1,&fnorm2,cr);
@@ -191,7 +207,8 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
 	     real *lambda,t_nrnb *nrnb,rvec mu_tot,
 	     matrix box,
 	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
-	     t_commrec *cr,t_vcm **vcm,int *start,int *end)
+	     t_commrec *cr,t_vcm **vcm,int *start,int *end,
+	     int nfile,t_filenm fnm[],int *fp_trn,int *fp_ene)
 {
   fprintf(log,"Initiating %s\n",title);
 
@@ -214,6 +231,22 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
 
   *vcm = init_vcm(log,top,cr,&top->atoms,
 		  *start,HOMENR(nsb),inputrec->nstcomm,inputrec->comm_mode);
+
+  if (MASTER(cr)) {
+    if (fp_trn)
+      *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm),"w");
+    if (fp_ene)
+      *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+  }
+}
+
+static void finish_em(FILE *log,t_commrec *cr,
+		      int fp_traj,int fp_ene)
+{
+  if (MASTER(cr)) {
+    close_trn(fp_traj);
+    close_enx(fp_ene);
+  }
 }
 
 static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec, 
@@ -299,7 +332,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   bool   do_log,do_ene,do_x,do_f;
   tensor force_vir,shake_vir,vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
-  int    fp_ene,fp_trn;
+  int    fp_trn,fp_ene;
   int    i,m,nfmax,start,end,gf,step,nminstep;
   real   terminate=0;  
 
@@ -307,7 +340,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   step=0;
 
   init_em(log,CG,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
   
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,"Started Polak-Ribiere Conjugate Gradients");
@@ -322,12 +355,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   snew(fb,nsb->natoms);
   snew(fc,nsb->natoms);
 
-  /* Open the energy file */  
-  if (MASTER(cr))
-    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
-  else
-    fp_ene=-1;
-    
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr); 
 
@@ -438,9 +465,11 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
      */
 
     /* Calculate the new direction in p, and the gradient in this direction, gpa */
-    gpa = 0;	
+    gpa = 0;
+    gf = 0;
     for(i=start; i<end; i++) {
-      gf = mdatoms->cFREEZE[i];
+      if (mdatoms->cFREEZE)
+	gf = mdatoms->cFREEZE[i];
       for(m=0; m<DIM; m++) 
 	if (!inputrec->opts.nFreeze[gf][m]) {
 	  p[i][m] = f[i][m] + beta*p[i][m];
@@ -500,10 +529,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    fp_trn = write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),nsb,step,(real) step,
-			lambda,nsb->natoms,
-			do_x ? state->x  : NULL,NULL,  /* we never have velocities */
-			do_f ? f  : NULL,state->box);
+    write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
+	       nsb,top,step,(real)step,state,state,f,f);
     
     /* Take a step downhill.
      * In theory, we should minimize the function along this direction.
@@ -735,9 +762,11 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
        * and might have to sum it in parallel runs.
        */
       
-      tmp=0;	
+      tmp=0;
+      gf = 0;
       for(i=start; i<end; i++) {
-	gf = mdatoms->cFREEZE[i];
+	if (mdatoms->cFREEZE)
+	  gf = mdatoms->cFREEZE[i];
 	for(m=0; m<DIM; m++)
 	  if (!inputrec->opts.nFreeze[gf][m]) {
 	    fnorm2 += fb[i][m]*fb[i][m];
@@ -822,9 +851,8 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
   
   /* Only write the trajectory if we didn't do it last step */
-  fp_trn = write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
-		      nsb,step,(real)step,
-		      lambda,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
+  write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
+	     nsb,top,step,(real)step,state,state,f,f);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
@@ -838,14 +866,13 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    number_steps,Epot0,fmax,nfmax,fnorm);
     
     fprintf(log,"\nPerformed %d energy evaluations in total.\n",neval);
-    
-    close_enx(fp_ene);
-    close_trn(fp_trn);
   }
+  
+  finish_em(log,cr,fp_trn,fp_ene);
   
   /* To print the actual number of steps we needed somewhere */
   inputrec->nsteps=step;
-  
+
   return start_t;
 } /* That's all folks */
 
@@ -879,7 +906,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   time_t start_t;
   bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
   tensor force_vir,shake_vir,vir,pres;
-  int    fp_ene,start,end,number_steps;
+  int    fp_trn,fp_ene,start,end,number_steps;
   int    i,k,m,n,nfmax,gf,step;
   /* not used */
   real   terminate;
@@ -926,16 +953,10 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   neval = 0; 
 
   init_em(log,LBFGS,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
     
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,"Started Low-Memory BFGS Minimization");
-  
-  /* Open the energy file */  
-  if (MASTER(cr))
-    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w");
-  else
-    fp_ene=-1;
   
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr);
@@ -952,8 +973,10 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   number_steps=inputrec->nsteps;
 
   /* Create a 3*natoms index to tell whether each degree of freedom is frozen */
+  gf = 0;
   for(i=start; i<end; i++) {
-    gf = mdatoms->cFREEZE[i];
+    if (mdatoms->cFREEZE)
+      gf = mdatoms->cFREEZE[i];
      for(m=0; m<DIM; m++) 
        frozen[3*i+m]=inputrec->opts.nFreeze[gf][m];  
   }
@@ -1069,11 +1092,9 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),nsb,step,(real) step,
-	       lambda,nsb->natoms,
-	       do_x ? state->x  : NULL,NULL,  /* we never have velocities */
-	       do_f ? f  : NULL,state->box);
-    
+    write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
+	       nsb,top,step,(real)step,state,state,f,f);
+
     /* Do the linesearching in the direction dx[point][0..(n-1)] */
     
     /* pointer to current direction - point=0 first time here */
@@ -1462,9 +1483,9 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
   
   /* Only write the trajectory if we didn't do it last step */
-  write_traj(log,cr,ftp2fn(efTRN,nfile,fnm),
-	     nsb,step,(real)step,
-	     lambda,nsb->natoms,!do_x ? state->x : NULL ,NULL,!do_f ? f : NULL,state->box);
+  write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
+	     nsb,top,step,(real)step,state,state,f,f);
+
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
@@ -1482,9 +1503,11 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     close_enx(fp_ene);
   }
   
+  finish_em(log,cr,fp_trn,fp_ene);
+
   /* To print the actual number of steps we needed somewhere */
   inputrec->nsteps=step;
-  
+
   return start_t;
 } /* That's all folks */
 
@@ -1503,13 +1526,13 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   const char *SD="Steepest Descents"; 
   real   stepsize,constepsize,lambda,fmax; 
   rvec   *pos[2],*force[2],*xcf=NULL; 
-  rvec   *xx,*ff; 
   real   Fmax[2],Epot[2]; 
   real   ustep,dvdlambda,fnorm;
+  t_state    state_min;
   t_vcm      *vcm;
-  int        fp_ene; 
+  int        fp_trn,fp_ene; 
   t_mdebin   *mdebin; 
-  bool   bDone,bAbort; 
+  bool   bDone,bAbort,do_x,do_f; 
   time_t start_t; 
   tensor force_vir,shake_vir,pres,vir; 
   rvec   mu_tot;
@@ -1524,7 +1547,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #define  TRY (1-Min)
 
   init_em(log,SD,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
    
   /* Print to log file  */
   start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents"); 
@@ -1534,13 +1557,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     snew(pos[i],nsb->natoms); 
     snew(force[i],nsb->natoms); 
   } 
-  
-  /* Open the enrgy file */   
-  if (MASTER(cr)) 
-    fp_ene=open_enx(ftp2fn(efENX,nfile,fnm),"w"); 
-  else 
-    fp_ene=-1; 
-  
+
   /* Init bin for energy stuff  */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr);
   
@@ -1593,8 +1610,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* set new coordinates, except for first step */
     if (count>0)
+      gf = 0;
       for(i=start; i<end; i++) {
-	gf = mdatoms->cFREEZE[i];
+	if (mdatoms->cFREEZE)
+	  gf = mdatoms->cFREEZE[i];
 	for(m=0; m<DIM; m++) 
 	  if (inputrec->opts.nFreeze[gf][m])
 	    pos[TRY][i][m] = pos[Min][i][m];
@@ -1714,18 +1733,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     if ( (count==0) || (Epot[TRY] < Epot[Min]) ) {
       steps_accepted++; 
-      if (do_per_step(steps_accepted,inputrec->nstfout)) 
-	ff=force[TRY];  
-      else 
-	ff=NULL;    
-      if (do_per_step(steps_accepted,inputrec->nstxout)) {
-	xx=pos[TRY];   
-	write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
-		   nsb,count,(real) count, 
-		   lambda,nsb->natoms,xx,NULL,ff,state->box); 
-      } else 
-	xx=NULL; 
-      
+
       /* Test whether the convergence criterion is met...  */
       bDone=(Fmax[TRY] < inputrec->em_tol);
       
@@ -1735,6 +1743,15 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       Min = TRY; 
       if (count > 0)
 	ustep *= 1.2;
+
+      /* Write to trn, if necessary */
+      do_x = do_per_step(steps_accepted,inputrec->nstxout);
+      do_f = do_per_step(steps_accepted,inputrec->nstfout);
+      state_min = *state;
+      state_min.x = pos[Min];
+      write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
+		 nsb,top,count,(real)count,
+		 &state_min,&state_min,force[Min],force[Min]);
     } 
     else
       /* If energy is not smaller make the step smaller...  */
@@ -1757,32 +1774,29 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     count++;
   } /* End of the loop  */
   
-    /* Print some shit...  */
-  if (MASTER(cr)) 
-    fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
-  xx=pos[Min]; 
-  ff=force[Min]; 
-  write_traj(log,cr,ftp2fn(efTRN,nfile,fnm), 
-	     nsb,count,(real) count, 
-	     lambda,nsb->natoms,xx,NULL,ff,state->box); 
-
-
-  fnorm=f_norm(cr,&(inputrec->opts),mdatoms,start,end,ff);
-
-  if (MASTER(cr)) {
-    write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		   *top->name, &(top->atoms),xx,NULL,state->box);
-    
-    print_converged(stderr,SD,inputrec->em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min],nfmax[Min],fnorm);
-    print_converged(log,SD,inputrec->em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min],nfmax[Min],fnorm);
-    close_enx(fp_ene);
-  }
-  
   /* Put the coordinates back in the x array (otherwise the whole
    * minimization would be in vain)
    */
   for(i=0; (i<nsb->natoms); i++)
     copy_rvec(pos[Min][i],state->x[i]);
+  
+    /* Print some shit...  */
+  if (MASTER(cr)) 
+    fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
+  write_traj(cr,fp_trn,TRUE,FALSE,TRUE,0,FALSE,0,
+	     nsb,top,count,(real)count,state,state,force[Min],force[Min]);
+
+  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,start,end,force[Min]);
+
+  if (MASTER(cr)) {
+    write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		   *top->name,&(top->atoms),state->x,NULL,state->box);
+    
+    print_converged(stderr,SD,inputrec->em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min],nfmax[Min],fnorm);
+    print_converged(log,SD,inputrec->em_tol,count,bDone,nsteps,Epot[Min],Fmax[Min],nfmax[Min],fnorm);
+  }
+
+  finish_em(log,cr,fp_trn,fp_ene);
   
   /* To print the actual number of steps we needed somewhere */
   inputrec->nsteps=count;
@@ -2075,7 +2089,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 
   init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
 	  state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end);
+	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,NULL,NULL);
      temp = inputrec->opts.ref_t[0];
   for(i=1; (i<inputrec->opts.ngtc); i++) {
     if (inputrec->opts.ref_t[i] != temp) {

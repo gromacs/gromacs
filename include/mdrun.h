@@ -147,27 +147,21 @@ extern void global_stat(FILE *log,
 			t_vcm *vcm,real *terminate);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
-extern int write_traj(FILE *log,t_commrec *cr,char *traj,t_nsborder *nsb,
-		      int step,real t,real lambda,
-		      int natoms,rvec *xx,rvec *vv,rvec *ff,matrix box);
-/* Routine to output statusfiles during a run, as specified in
- * in inputrec->ir. If any of the pointers xx,vv,ff or ener is not NULL
- * it is written to the trajectory file.
- * Also write the energies etc. to the log file.
- * Returns the file handle (to be closed with close_trn).
+void write_traj(t_commrec *cr,
+		int fp_trn,bool bX,bool bV,bool bF,
+		int fp_xtc,bool bXTC,int xtc_prec,
+		t_nsborder *nsb,t_topology *top_global,
+		int step,real t,
+		t_state *state_local,t_state *state_global,
+		rvec *f_local,rvec *f_global);
+/* Routine that writes frames to trn and xtc.
+ * Data is collected to the master node only when necessary.
  */
 
 extern int do_per_step(int step,int nstep);
 /* Return TRUE if io should be done */
 
 extern int do_any_io(int step, t_inputrec *ir);
-
-extern void write_xtc_traj(FILE *log,t_commrec *cr,
-			   char *xtc_traj,t_nsborder *nsb,t_atoms *atoms,
-			   int step,real t,rvec *xx,
-			   matrix box,real prec);
-
-extern void close_xtc_traj(void);
 
 /* ROUTINES from sim_util.c */
  
@@ -296,21 +290,13 @@ extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
 		    t_nrnb *nrnb,t_topology *top,
-		    int nfile,t_filenm fnm[],char **traj,
-		    char **xtc_traj,int *fp_ene,
+		    int nfile,t_filenm fnm[],
+		    int *fp_trn,int *fp_xtc,int *fp_ene,
 		    FILE **fp_dgdl,FILE **fp_field,
 		    t_mdebin **mdebin,t_groups *grps,
 		    tensor force_vir,tensor shake_vir,
 		    t_mdatoms *mdatoms,rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb);
 /* Routine in sim_util.c */
-
-extern void init_em(FILE *log,const char *title,t_inputrec *inputrec,
-		    real *lambda,t_nrnb *nrnb,rvec mu_tot,
-		    matrix box,
-		    t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,
-		    t_nsborder *nsb,
-		    t_commrec *cr,t_vcm **vcm,int *start,int *end);
-/* Routine in minimize.c */
      
 #endif	/* _mdrun_h */

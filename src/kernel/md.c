@@ -53,6 +53,7 @@
 #include "update.h"
 #include "ns.h"
 #include "trnio.h"
+#include "xtcio.h"
 #include "mdrun.h"
 #include "confio.h"
 #include "network.h"
@@ -418,18 +419,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     unsigned long Flags)
 {
   t_mdebin   *mdebin;
-  int        fp_ene=0,fp_trn=0,step,step_rel;
+  int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
-	     bFullPBC,bForceUpdate=FALSE;
+	     bFullPBC,bForceUpdate=FALSE,bX,bV,bF,bXTC;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
-  char       *traj,*xtc_traj; /* normal and compressed trajectory filename */
   int        i,m,status;
   rvec       mu_tot;
-  rvec       *xx,*vv,*ff;
   t_vcm      *vcm;
   t_trxframe rerun_fr;
   t_pull     pulldata; /* for pull code */
@@ -475,11 +474,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bIonize  = (Flags & MD_IONIZE) == MD_IONIZE;
   bGlas    = (Flags & MD_GLAS)   == MD_GLAS;
   bFFscan  = (Flags & MD_FFSCAN) == MD_FFSCAN;
-  
+
+  if (bRerunMD || bFFscan)
+    inputrec->nstxtcout = 0;
+
   /* Initial values */
   init_md(cr,inputrec,&t,&t0,&state_global->lambda,&lam0,
 	  nrnb,top_global,
-	  nfile,fnm,&traj,&xtc_traj,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
+	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm,nsb);
   debug_gmx();
 
@@ -528,6 +530,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   } else {
     top = top_global;
     state = state_global;
+    f_global = f;
 
     atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,mdatoms);
   }
@@ -797,7 +800,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 			 inputrec,bNS,bStopCM,top,ener,fcd,
 			 state,vold,vt,f,buf,mdatoms,nsb,nrnb,graph,
 			 grps,
-			 nshell,shells,nflexcon,fr,traj,t,mu_tot,
+			 nshell,shells,nflexcon,fr,t,mu_tot,
 			 nsb->natoms,&bConverged,bVsites,vsitecomm,
 			 fp_field);
       tcount+=count;
@@ -861,48 +864,21 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     GMX_MPE_LOG(ev_output_start);
 
-    xx = (do_per_step(step,inputrec->nstxout) || bLastStep) ? state->x : NULL;
-    vv = (do_per_step(step,inputrec->nstvout) || bLastStep) ? state->v : NULL;
-    ff = (do_per_step(step,inputrec->nstfout)) ? f : NULL;
+    bX   = (do_per_step(step,inputrec->nstxout) || bLastStep);
+    bV   = (do_per_step(step,inputrec->nstvout) || bLastStep);
+    bF   = (do_per_step(step,inputrec->nstfout));
+    bXTC = (do_per_step(step,inputrec->nstxtcout));
 
-    if (DOMAINDECOMP(cr)) {
-      if (xx) {
-	xx = state_global->x;
-	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->x,xx);
-      }
-      if (vv) {
-	vv = state_global->v;
-	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->v,vv);
-      }
-      if (ff) {
-	ff = f_global;
-	dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],f,ff);
-      }
-    }
-    fp_trn = write_traj(log,cr,traj,nsb,step,t,state->lambda,
-			nsb->natoms,xx,vv,ff,state->box);
+    write_traj(cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,inputrec->xtcprec,
+	       nsb,top_global,step,t,state,state_global,f,f_global);
     debug_gmx();
-  
-    /* don't write xtc and last structure for rerunMD */
-    if (!bRerunMD && !bFFscan) {
-      if (do_per_step(step,inputrec->nstxtcout)) {
-	if (xx == NULL) {
-	  if (DOMAINDECOMP(cr)) {
-	    xx = state_global->x;
-	    dd_collect_vec(cr->dd,&top_global->blocks[ebCGS],state->x,xx);
-	  } else {
-	    xx = state->x;
-	  }
-	}
-	write_xtc_traj(log,cr,xtc_traj,nsb,&top->atoms,
-		       step,t,xx,state->box,inputrec->xtcprec);
-      }
-      if (bLastStep && MASTER(cr)) {
-	fprintf(stderr,"Writing final coordinates.\n");
-	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		       *top->name, &(top->atoms),
-		       state_global->x,state_global->v,state->box);
-      }
+
+    if (MASTER(cr) && bLastStep && !bRerunMD && !bFFscan) {
+      /* x and v have been collected in write_traj */
+      fprintf(stderr,"Writing final coordinates.\n");
+      write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		     *top->name,&top->atoms,
+		     state_global->x,state_global->v,state->box);
       debug_gmx();
     }
     GMX_MPE_LOG(ev_output_finish);
@@ -1250,8 +1226,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,log,step,step_rel,t,
 	       eprRMS,FALSE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
     close_enx(fp_ene);
-    if (!bRerunMD && inputrec->nstxtcout)
-      close_xtc_traj();
+    if (inputrec->nstxtcout)
+      close_xtc(fp_xtc);
     close_trn(fp_trn);
     if (fp_dgdl)
       fclose(fp_dgdl);

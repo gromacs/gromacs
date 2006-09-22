@@ -70,6 +70,8 @@
 #include "calcmu.h"
 #include "constr.h"
 #include "xvgr.h"
+#include "trnio.h"
+#include "xtcio.h"
 
 #include "mpelogging.h"
 #include "domdec.h"
@@ -910,8 +912,8 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
 	     t_nrnb *nrnb,t_topology *top,
-	     int nfile,t_filenm fnm[],char **traj,
-	     char **xtc_traj, int *fp_ene,
+	     int nfile,t_filenm fnm[],
+	     int *fp_trn,int *fp_xtc,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
 	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,
@@ -942,11 +944,10 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   init_nrnb(nrnb);
   
   if (nfile != -1) {
-    /* Filenames */
-    *traj     = ftp2fn(efTRN,nfile,fnm);
-    *xtc_traj = ftp2fn(efXTC,nfile,fnm);
-    
     if (MASTER(cr)) {
+      *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm),"w");
+      if (ir->nstxtcout > 0)
+	*fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm),"w");
       *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
       if ((fp_dgdl != NULL) && ir->efep!=efepNO)
 	*fp_dgdl =
