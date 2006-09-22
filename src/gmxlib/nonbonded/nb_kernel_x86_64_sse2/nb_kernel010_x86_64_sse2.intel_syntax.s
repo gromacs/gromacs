@@ -46,7 +46,7 @@
 
 
 .globl nb_kernel010_x86_64_sse2	 
-.globl _nb_kerne010_x86_64_sse2	 
+.globl _nb_kernel010_x86_64_sse2	 
 nb_kernel010_x86_64_sse2:	
 _nb_kernel010_x86_64_sse2:	
 .equiv          nb010_fshift,           16
