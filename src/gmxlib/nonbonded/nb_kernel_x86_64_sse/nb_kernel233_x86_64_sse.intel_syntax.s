@@ -1344,7 +1344,7 @@ _nb_kernel233_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb233_outerend
+        jz .nb233_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb233_n], esi
@@ -1354,7 +1354,7 @@ _nb_kernel233_x86_64_sse:
         mov   ecx, [rsp + nb233_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb233_end
+        jz .nb233_end
         ;# non-zero, do one more workunit
         jmp   .nb233_threadloop
 .nb233_end:
@@ -2229,7 +2229,7 @@ _nb_kernel233nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb233nf_outerend
+        jz .nb233nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb233nf_n], esi
@@ -2239,7 +2239,7 @@ _nb_kernel233nf_x86_64_sse:
         mov   ecx, [rsp + nb233nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb233nf_end
+        jz .nb233nf_end
         ;# non-zero, do one more workunit
         jmp   .nb233nf_threadloop
 .nb233nf_end:

@@ -1537,7 +1537,7 @@ _nb_kernel204_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb204_outerend
+        jz .nb204_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb204_n], esi
@@ -1547,7 +1547,7 @@ _nb_kernel204_x86_64_sse:
         mov   ecx, [rsp + nb204_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb204_end
+        jz .nb204_end
         ;# non-zero, do one more workunit
         jmp   .nb204_threadloop
 .nb204_end:
@@ -2351,7 +2351,7 @@ _nb_kernel204nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb204nf_outerend
+        jz .nb204nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb204nf_n], esi
@@ -2361,7 +2361,7 @@ _nb_kernel204nf_x86_64_sse:
         mov   ecx, [rsp + nb204nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb204nf_end
+        jz .nb204nf_end
         ;# non-zero, do one more workunit
         jmp   .nb204nf_threadloop
 .nb204nf_end:

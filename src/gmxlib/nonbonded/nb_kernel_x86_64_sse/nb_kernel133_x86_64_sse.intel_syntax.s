@@ -1287,7 +1287,7 @@ _nb_kernel133_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb133_outerend
+        jz .nb133_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb133_n], esi
@@ -1297,7 +1297,7 @@ _nb_kernel133_x86_64_sse:
         mov   ecx, [rsp + nb133_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb133_end
+        jz .nb133_end
         ;# non-zero, do one more workunit
         jmp   .nb133_threadloop
 .nb133_end:
@@ -2116,7 +2116,7 @@ _nb_kernel133nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb133nf_outerend
+        jz .nb133nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb133nf_n], esi
@@ -2126,7 +2126,7 @@ _nb_kernel133nf_x86_64_sse:
         mov   ecx, [rsp + nb133nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb133nf_end
+        jz .nb133nf_end
         ;# non-zero, do one more workunit
         jmp   .nb133nf_threadloop
 .nb133nf_end:

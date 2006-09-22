@@ -2629,7 +2629,7 @@ _nb_kernel334_x86_64_sse.nb334_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel334_x86_64_sse.nb334_outerend
+        jz _nb_kernel334_x86_64_sse.nb334_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb334_n(%rsp)
@@ -2639,7 +2639,7 @@ _nb_kernel334_x86_64_sse.nb334_outerend:
         movl  nb334_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel334_x86_64_sse.nb334_end
+        jz _nb_kernel334_x86_64_sse.nb334_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel334_x86_64_sse.nb334_threadloop
 _nb_kernel334_x86_64_sse.nb334_end: 
@@ -4381,7 +4381,7 @@ _nb_kernel334nf_x86_64_sse.nb334nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel334nf_x86_64_sse.nb334nf_outerend
+        jz _nb_kernel334nf_x86_64_sse.nb334nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb334nf_n(%rsp)
@@ -4391,7 +4391,7 @@ _nb_kernel334nf_x86_64_sse.nb334nf_outerend:
         movl  nb334nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel334nf_x86_64_sse.nb334nf_end
+        jz _nb_kernel334nf_x86_64_sse.nb334nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel334nf_x86_64_sse.nb334nf_threadloop
 _nb_kernel334nf_x86_64_sse.nb334nf_end: 

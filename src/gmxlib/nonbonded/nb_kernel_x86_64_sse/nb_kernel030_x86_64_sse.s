@@ -957,7 +957,7 @@ _nb_kernel030_x86_64_sse.nb030_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel030_x86_64_sse.nb030_outerend
+        jz _nb_kernel030_x86_64_sse.nb030_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb030_n(%rsp)
@@ -967,7 +967,7 @@ _nb_kernel030_x86_64_sse.nb030_outerend:
         movl  nb030_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel030_x86_64_sse.nb030_end
+        jz _nb_kernel030_x86_64_sse.nb030_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel030_x86_64_sse.nb030_threadloop
 _nb_kernel030_x86_64_sse.nb030_end: 
@@ -1693,7 +1693,7 @@ _nb_kernel030nf_x86_64_sse.nb030nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel030nf_x86_64_sse.nb030nf_outerend
+        jz _nb_kernel030nf_x86_64_sse.nb030nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb030nf_n(%rsp)
@@ -1703,7 +1703,7 @@ _nb_kernel030nf_x86_64_sse.nb030nf_outerend:
         movl  nb030nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel030nf_x86_64_sse.nb030nf_end ## non-zero, do one more workunit
+        jz _nb_kernel030nf_x86_64_sse.nb030nf_end ## non-zero, do one more workunit
         jmp   _nb_kernel030nf_x86_64_sse.nb030nf_threadloop
 _nb_kernel030nf_x86_64_sse.nb030nf_end: 
 

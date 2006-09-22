@@ -879,7 +879,7 @@ _nb_kernel103_x86_64_sse:
 	inc esi
         sub ecx, esi
 
-        jecxz .nb103_outerend
+        jz .nb103_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb103_n], esi
@@ -889,7 +889,7 @@ _nb_kernel103_x86_64_sse:
         mov   ecx, [rsp + nb103_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb103_end
+        jz .nb103_end
         ;# non-zero, do one more workunit
         jmp   .nb103_threadloop
 .nb103_end:
@@ -1418,7 +1418,7 @@ _nb_kernel103nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb103nf_outerend
+        jz .nb103nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb103nf_n], esi
@@ -1428,7 +1428,7 @@ _nb_kernel103nf_x86_64_sse:
         mov   ecx, [rsp + nb103nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb103nf_end
+        jz .nb103nf_end
         ;# non-zero, do one more workunit
         jmp   .nb103nf_threadloop
 .nb103nf_end:

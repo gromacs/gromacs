@@ -1467,7 +1467,7 @@ _nb_kernel112_x86_64_sse.nb112_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel112_x86_64_sse.nb112_outerend
+        jz _nb_kernel112_x86_64_sse.nb112_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb112_n(%rsp)
@@ -1477,7 +1477,7 @@ _nb_kernel112_x86_64_sse.nb112_outerend:
         movl  nb112_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel112_x86_64_sse.nb112_end
+        jz _nb_kernel112_x86_64_sse.nb112_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel112_x86_64_sse.nb112_threadloop
 _nb_kernel112_x86_64_sse.nb112_end: 
@@ -2298,7 +2298,7 @@ _nb_kernel112nf_x86_64_sse.nb112nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel112nf_x86_64_sse.nb112nf_outerend
+        jz _nb_kernel112nf_x86_64_sse.nb112nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb112nf_n(%rsp)
@@ -2308,7 +2308,7 @@ _nb_kernel112nf_x86_64_sse.nb112nf_outerend:
         movl  nb112nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel112nf_x86_64_sse.nb112nf_end
+        jz _nb_kernel112nf_x86_64_sse.nb112nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel112nf_x86_64_sse.nb112nf_threadloop
 _nb_kernel112nf_x86_64_sse.nb112nf_end: 
