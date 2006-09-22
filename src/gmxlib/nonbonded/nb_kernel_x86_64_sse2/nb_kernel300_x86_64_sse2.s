@@ -576,7 +576,7 @@ _nb_kernel300_x86_64_sse2.nb300_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel300_x86_64_sse2.nb300_outerend
+        jz _nb_kernel300_x86_64_sse2.nb300_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb300_n(%rsp)
@@ -586,7 +586,7 @@ _nb_kernel300_x86_64_sse2.nb300_outerend:
         movl  nb300_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel300_x86_64_sse2.nb300_end
+        jz _nb_kernel300_x86_64_sse2.nb300_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel300_x86_64_sse2.nb300_threadloop
 _nb_kernel300_x86_64_sse2.nb300_end: 
@@ -1058,7 +1058,7 @@ _nb_kernel300nf_x86_64_sse2.nb300nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel300nf_x86_64_sse2.nb300nf_outerend
+        jz _nb_kernel300nf_x86_64_sse2.nb300nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb300nf_n(%rsp)
@@ -1068,7 +1068,7 @@ _nb_kernel300nf_x86_64_sse2.nb300nf_outerend:
         movl  nb300nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel300nf_x86_64_sse2.nb300nf_end
+        jz _nb_kernel300nf_x86_64_sse2.nb300nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel300nf_x86_64_sse2.nb300nf_threadloop
 _nb_kernel300nf_x86_64_sse2.nb300nf_end: 

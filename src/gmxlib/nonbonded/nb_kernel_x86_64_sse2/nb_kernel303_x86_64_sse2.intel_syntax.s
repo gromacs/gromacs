@@ -1200,7 +1200,7 @@ _nb_kernel303_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb303_outerend
+        jz .nb303_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb303_n], esi
@@ -1210,7 +1210,7 @@ _nb_kernel303_x86_64_sse2:
         mov   ecx, [rsp + nb303_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb303_end
+        jz .nb303_end
         ;# non-zero, do one more workunit
         jmp   .nb303_threadloop
 .nb303_end:
@@ -2069,7 +2069,7 @@ _nb_kernel303nf_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb303nf_outerend
+        jz .nb303nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb303nf_n], esi
@@ -2079,7 +2079,7 @@ _nb_kernel303nf_x86_64_sse2:
         mov   ecx, [rsp + nb303nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb303nf_end
+        jz .nb303nf_end
         ;# non-zero, do one more workunit
         jmp   .nb303nf_threadloop
 .nb303nf_end:

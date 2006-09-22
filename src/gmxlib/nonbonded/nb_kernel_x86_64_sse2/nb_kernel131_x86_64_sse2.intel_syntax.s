@@ -1153,7 +1153,7 @@ _nb_kernel131_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb131_outerend
+        jz .nb131_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb131_n], esi
@@ -1163,7 +1163,7 @@ _nb_kernel131_x86_64_sse2:
         mov   ecx, [rsp + nb131_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb131_end
+        jz .nb131_end
         ;# non-zero, do one more workunit
         jmp   .nb131_threadloop
 .nb131_end:
@@ -2032,7 +2032,7 @@ _nb_kernel131nf_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb131nf_outerend
+        jz .nb131nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb131nf_n], esi
@@ -2042,7 +2042,7 @@ _nb_kernel131nf_x86_64_sse2:
         mov   ecx, [rsp + nb131nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb131nf_end
+        jz .nb131nf_end
         ;# non-zero, do one more workunit
         jmp   .nb131nf_threadloop
 .nb131nf_end:

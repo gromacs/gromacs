@@ -1755,7 +1755,7 @@ _nb_kernel114_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb114_outerend
+        jz .nb114_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb114_n], esi
@@ -1765,7 +1765,7 @@ _nb_kernel114_x86_64_sse:
         mov   ecx, [rsp + nb114_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb114_end
+        jz .nb114_end
         ;# non-zero, do one more workunit
         jmp   .nb114_threadloop
 .nb114_end:
@@ -2664,7 +2664,7 @@ _nb_kernel114nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb114nf_outerend
+        jz .nb114nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb114nf_n], esi
@@ -2674,7 +2674,7 @@ _nb_kernel114nf_x86_64_sse:
         mov   ecx, [rsp + nb114nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb114nf_end
+        jz .nb114nf_end
         ;# non-zero, do one more workunit
         jmp   .nb114nf_threadloop
 .nb114nf_end:

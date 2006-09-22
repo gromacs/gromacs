@@ -860,7 +860,7 @@ _nb_kernel210_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb210_outerend
+        jz .nb210_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb210_n], esi
@@ -870,7 +870,7 @@ _nb_kernel210_x86_64_sse:
         mov   ecx, [rsp + nb210_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb210_end
+        jz .nb210_end
         ;# non-zero, do one more workunit
         jmp   .nb210_threadloop
 .nb210_end:
@@ -1513,7 +1513,7 @@ _nb_kernel210nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb210nf_outerend
+        jz .nb210nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb210nf_n], esi
@@ -1523,7 +1523,7 @@ _nb_kernel210nf_x86_64_sse:
         mov   ecx, [rsp + nb210nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb210nf_end
+        jz .nb210nf_end
         ;# non-zero, do one more workunit
         jmp   .nb210nf_threadloop
 .nb210nf_end:

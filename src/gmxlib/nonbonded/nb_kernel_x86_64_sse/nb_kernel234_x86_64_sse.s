@@ -2018,7 +2018,7 @@ _nb_kernel234_x86_64_sse.nb234_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel234_x86_64_sse.nb234_outerend
+        jz _nb_kernel234_x86_64_sse.nb234_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb234_n(%rsp)
@@ -2028,7 +2028,7 @@ _nb_kernel234_x86_64_sse.nb234_outerend:
         movl  nb234_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel234_x86_64_sse.nb234_end
+        jz _nb_kernel234_x86_64_sse.nb234_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel234_x86_64_sse.nb234_threadloop
 _nb_kernel234_x86_64_sse.nb234_end: 
@@ -3204,7 +3204,7 @@ _nb_kernel234nf_x86_64_sse.nb234nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel234nf_x86_64_sse.nb234nf_outerend
+        jz _nb_kernel234nf_x86_64_sse.nb234nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb234nf_n(%rsp)
@@ -3214,7 +3214,7 @@ _nb_kernel234nf_x86_64_sse.nb234nf_outerend:
         movl  nb234nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel234nf_x86_64_sse.nb234nf_end
+        jz _nb_kernel234nf_x86_64_sse.nb234nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel234nf_x86_64_sse.nb234nf_threadloop
 _nb_kernel234nf_x86_64_sse.nb234nf_end: 

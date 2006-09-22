@@ -1417,7 +1417,7 @@ _nb_kernel102_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb102_outerend
+        jz .nb102_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb102_n], esi
@@ -1427,7 +1427,7 @@ _nb_kernel102_x86_64_sse:
         mov   ecx, [rsp + nb102_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb102_end
+        jz .nb102_end
         ;# non-zero, do one more workunit
         jmp   .nb102_threadloop
 .nb102_end:
@@ -2198,7 +2198,7 @@ _nb_kernel102nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb102nf_outerend
+        jz .nb102nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb102nf_n], esi
@@ -2208,7 +2208,7 @@ _nb_kernel102nf_x86_64_sse:
         mov   ecx, [rsp + nb102nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb102nf_end
+        jz .nb102nf_end
         ;# non-zero, do one more workunit
         jmp   .nb102nf_threadloop
 .nb102nf_end:

@@ -16,11 +16,7 @@
 ## Gnomes, ROck Monsters And Chili Sauce
 ##
 
-
-
-
-
-
+		
 .globl nb_kernel204_x86_64_sse
 .globl _nb_kernel204_x86_64_sse
 nb_kernel204_x86_64_sse:        
@@ -1512,7 +1508,7 @@ _nb_kernel204_x86_64_sse.nb204_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel204_x86_64_sse.nb204_outerend
+        jz _nb_kernel204_x86_64_sse.nb204_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb204_n(%rsp)
@@ -1522,7 +1518,7 @@ _nb_kernel204_x86_64_sse.nb204_outerend:
         movl  nb204_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel204_x86_64_sse.nb204_end
+        jz _nb_kernel204_x86_64_sse.nb204_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel204_x86_64_sse.nb204_threadloop
 _nb_kernel204_x86_64_sse.nb204_end: 
@@ -2326,7 +2322,7 @@ _nb_kernel204nf_x86_64_sse.nb204nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel204nf_x86_64_sse.nb204nf_outerend
+        jz _nb_kernel204nf_x86_64_sse.nb204nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb204nf_n(%rsp)
@@ -2336,7 +2332,7 @@ _nb_kernel204nf_x86_64_sse.nb204nf_outerend:
         movl  nb204nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel204nf_x86_64_sse.nb204nf_end
+        jz _nb_kernel204nf_x86_64_sse.nb204nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel204nf_x86_64_sse.nb204nf_threadloop
 _nb_kernel204nf_x86_64_sse.nb204nf_end: 

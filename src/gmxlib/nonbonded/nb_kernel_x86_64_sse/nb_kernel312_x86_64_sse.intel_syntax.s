@@ -2193,7 +2193,7 @@ _nb_kernel312_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb312_outerend
+        jz .nb312_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb312_n], esi
@@ -2203,7 +2203,7 @@ _nb_kernel312_x86_64_sse:
         mov   ecx, [rsp + nb312_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb312_end
+        jz .nb312_end
         ;# non-zero, do one more workunit
         jmp   .nb312_threadloop
 .nb312_end:
@@ -3668,7 +3668,7 @@ _nb_kernel312nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb312nf_outerend
+        jz .nb312nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb312nf_n], esi
@@ -3678,7 +3678,7 @@ _nb_kernel312nf_x86_64_sse:
         mov   ecx, [rsp + nb312nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb312nf_end
+        jz .nb312nf_end
         ;# non-zero, do one more workunit
         jmp   .nb312nf_threadloop
 .nb312nf_end:

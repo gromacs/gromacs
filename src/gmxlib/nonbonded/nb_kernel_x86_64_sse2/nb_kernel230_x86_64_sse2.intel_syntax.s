@@ -769,7 +769,7 @@ _nb_kernel230_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb230_outerend
+        jz .nb230_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb230_n], esi
@@ -779,7 +779,7 @@ _nb_kernel230_x86_64_sse2:
         mov   ecx, [rsp + nb230_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb230_end
+        jz .nb230_end
         ;# non-zero, do one more workunit
         jmp   .nb230_threadloop
 .nb230_end:
@@ -1429,7 +1429,7 @@ _nb_kernel230nf_x86_64_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb230nf_outerend
+        jz .nb230nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb230nf_n], esi
@@ -1439,7 +1439,7 @@ _nb_kernel230nf_x86_64_sse2:
         mov   ecx, [rsp + nb230nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb230nf_end
+        jz .nb230nf_end
         ;# non-zero, do one more workunit
         jmp   .nb230nf_threadloop
 .nb230nf_end:

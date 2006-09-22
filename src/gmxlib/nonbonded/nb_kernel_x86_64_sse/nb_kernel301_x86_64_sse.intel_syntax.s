@@ -1127,7 +1127,7 @@ _nb_kernel301_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb301_outerend
+        jz .nb301_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb301_n], esi
@@ -1137,7 +1137,7 @@ _nb_kernel301_x86_64_sse:
         mov   ecx, [rsp + nb301_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb301_end
+        jz .nb301_end
         ;# non-zero, do one more workunit
         jmp   .nb301_threadloop
 .nb301_end:
@@ -1912,7 +1912,7 @@ _nb_kernel301nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb301nf_outerend
+        jz .nb301nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb301nf_n], esi
@@ -1922,7 +1922,7 @@ _nb_kernel301nf_x86_64_sse:
         mov   ecx, [rsp + nb301nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb301nf_end
+        jz .nb301nf_end
         ;# non-zero, do one more workunit
         jmp   .nb301nf_threadloop
 .nb301nf_end:

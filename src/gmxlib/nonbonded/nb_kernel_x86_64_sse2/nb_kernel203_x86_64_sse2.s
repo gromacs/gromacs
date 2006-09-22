@@ -991,7 +991,7 @@ _nb_kernel203_x86_64_sse2.nb203_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel203_x86_64_sse2.nb203_outerend
+        jz _nb_kernel203_x86_64_sse2.nb203_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb203_n(%rsp)
@@ -1001,7 +1001,7 @@ _nb_kernel203_x86_64_sse2.nb203_outerend:
         movl  nb203_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel203_x86_64_sse2.nb203_end
+        jz _nb_kernel203_x86_64_sse2.nb203_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel203_x86_64_sse2.nb203_threadloop
 _nb_kernel203_x86_64_sse2.nb203_end: 
@@ -1671,7 +1671,7 @@ _nb_kernel203nf_x86_64_sse2.nb203nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel203nf_x86_64_sse2.nb203nf_outerend
+        jz _nb_kernel203nf_x86_64_sse2.nb203nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb203nf_n(%rsp)
@@ -1681,7 +1681,7 @@ _nb_kernel203nf_x86_64_sse2.nb203nf_outerend:
         movl  nb203nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel203nf_x86_64_sse2.nb203nf_end
+        jz _nb_kernel203nf_x86_64_sse2.nb203nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel203nf_x86_64_sse2.nb203nf_threadloop
 _nb_kernel203nf_x86_64_sse2.nb203nf_end: 

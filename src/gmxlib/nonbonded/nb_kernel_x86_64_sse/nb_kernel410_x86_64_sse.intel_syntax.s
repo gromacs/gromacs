@@ -1154,7 +1154,7 @@ _nb_kernel410_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb410_outerend
+        jz .nb410_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb410_n], esi
@@ -1164,7 +1164,7 @@ _nb_kernel410_x86_64_sse:
         mov   ecx, [rsp + nb410_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb410_end
+        jz .nb410_end
         ;# non-zero, do one more workunit
         jmp   .nb410_threadloop
 .nb410_end:
@@ -1971,7 +1971,7 @@ _nb_kernel410nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb410nf_outerend
+        jz .nb410nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb410nf_n], esi
@@ -1981,7 +1981,7 @@ _nb_kernel410nf_x86_64_sse:
         mov   ecx, [rsp + nb410nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb410nf_end
+        jz .nb410nf_end
         ;# non-zero, do one more workunit
         jmp   .nb410nf_threadloop
 .nb410nf_end:

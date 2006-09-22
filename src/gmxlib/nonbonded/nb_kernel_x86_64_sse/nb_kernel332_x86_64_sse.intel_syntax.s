@@ -2322,7 +2322,7 @@ _nb_kernel332_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb332_outerend
+        jz .nb332_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [rsp + nb332_n], esi
@@ -2332,7 +2332,7 @@ _nb_kernel332_x86_64_sse:
         mov   ecx, [rsp + nb332_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb332_end
+        jz .nb332_end
         ;# non-zero, do one more workunit
         jmp   .nb332_threadloop
 .nb332_end:
@@ -3915,7 +3915,7 @@ _nb_kernel332nf_x86_64_sse:
 	;# esi already loaded with n
 	inc esi
     	sub ecx, esi
-        jecxz .nb332nf_outerend
+        jz .nb332nf_outerend
 
     	;# not last, iterate outer loop once more!  
     	mov [rsp + nb332nf_n], esi
@@ -3925,7 +3925,7 @@ _nb_kernel332nf_x86_64_sse:
     	mov   ecx, [rsp + nb332nf_nri]
 	;# esi already loaded with n above
     	sub   ecx, esi
-        jecxz .nb332nf_end
+        jz .nb332nf_end
     	;# non-zero, do one more workunit
         jmp   .nb332nf_threadloop
 .nb332nf_end:

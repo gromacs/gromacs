@@ -499,7 +499,7 @@ _nb_kernel100_x86_64_sse2.nb100_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel100_x86_64_sse2.nb100_outerend
+        jz _nb_kernel100_x86_64_sse2.nb100_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb100_n(%rsp)
@@ -509,7 +509,7 @@ _nb_kernel100_x86_64_sse2.nb100_outerend:
         movl  nb100_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel100_x86_64_sse2.nb100_end
+        jz _nb_kernel100_x86_64_sse2.nb100_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel100_x86_64_sse2.nb100_threadloop
 _nb_kernel100_x86_64_sse2.nb100_end: 
@@ -905,7 +905,7 @@ _nb_kernel100nf_x86_64_sse2.nb100nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel100nf_x86_64_sse2.nb100nf_outerend
+        jz _nb_kernel100nf_x86_64_sse2.nb100nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb100nf_n(%rsp)
@@ -915,7 +915,7 @@ _nb_kernel100nf_x86_64_sse2.nb100nf_outerend:
         movl  nb100nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel100nf_x86_64_sse2.nb100nf_end
+        jz _nb_kernel100nf_x86_64_sse2.nb100nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel100nf_x86_64_sse2.nb100nf_threadloop
 _nb_kernel100nf_x86_64_sse2.nb100nf_end: 

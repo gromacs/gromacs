@@ -941,7 +941,7 @@ _nb_kernel400_x86_64_sse.nb400_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel400_x86_64_sse.nb400_outerend
+        jz _nb_kernel400_x86_64_sse.nb400_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb400_n(%rsp)
@@ -951,7 +951,7 @@ _nb_kernel400_x86_64_sse.nb400_outerend:
         movl  nb400_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel400_x86_64_sse.nb400_end
+        jz _nb_kernel400_x86_64_sse.nb400_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel400_x86_64_sse.nb400_threadloop
 _nb_kernel400_x86_64_sse.nb400_end: 
@@ -1601,7 +1601,7 @@ _nb_kernel400nf_x86_64_sse.nb400nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel400nf_x86_64_sse.nb400nf_outerend
+        jz _nb_kernel400nf_x86_64_sse.nb400nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb400nf_n(%rsp)
@@ -1611,7 +1611,7 @@ _nb_kernel400nf_x86_64_sse.nb400nf_outerend:
         movl  nb400nf_nri(%rsp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel400nf_x86_64_sse.nb400nf_end
+        jz _nb_kernel400nf_x86_64_sse.nb400nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel400nf_x86_64_sse.nb400nf_threadloop
 _nb_kernel400nf_x86_64_sse.nb400nf_end: 
