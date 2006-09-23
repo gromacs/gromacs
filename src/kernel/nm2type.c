@@ -68,7 +68,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
   char      format[128],f1[128];
   char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
   int       i,nb,nnnm,line=1;
-  double    qq,mm;
+  double    qq,mm,*blen;
   t_nm2type *nm2t=NULL;
   
   sprintf(libfilename,"%s.n2t",ff);
@@ -84,22 +84,23 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
       strip_comment(buf);
       if (sscanf(buf,"%s%s%lf%lf%d",elem,type,&qq,&mm,&nb) == 5) {
 	/* If we can read the first four, there probably is more */
+	srenew(nm2t,nnnm+1);
+	snew(nm2t[nnnm].blen,nb);
 	if (nb > 0) {
 	  snew(newbuf,nb);
 	  strcpy(format,"%*s%*s%*s%*s%*s");
 	  for(i=0; (i<nb); i++) {
 	    /* Complicated format statement */
 	    strcpy(f1,format);
-	    strcat(f1,"%s");
-	    if (sscanf(buf,f1,nbbuf) != 1)
+	    strcat(f1,"%s%lf");
+	    if (sscanf(buf,f1,nbbuf,&(nm2t[nnnm].blen[i])) != 2)
 	      gmx_fatal(FARGS,"Error on line %d of %s",line,libfilename);
 	    newbuf[i] = strdup(nbbuf);
-	    strcat(format,"%*s");
+	    strcat(format,"%*s%*s");
 	  }
 	}
 	else
 	  newbuf = NULL;
-	srenew(nm2t,nnnm+1);
 	nm2t[nnnm].elem   = strdup(elem);
 	nm2t[nnnm].type   = strdup(type);
 	nm2t[nnnm].q      = qq;
@@ -128,7 +129,7 @@ void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
 	    nm2t[i].elem,nm2t[i].type,
 	    nm2t[i].q,nm2t[i].m,nm2t[i].nbonds);
     for(j=0; (j<nm2t[i].nbonds); j++)
-      fprintf(fp,"%-5s",nm2t[i].bond[j]);
+      fprintf(fp," %-5s %6.4f",nm2t[i].bond[j],nm2t[i].blen[j]);
     fprintf(fp,"\n");
   }
 }
@@ -281,8 +282,8 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
       nresolved++;
     }
     else {
-      fprintf(stderr,"Can not find forcefield for atom %s with %d bonds\n",
-	      *atoms->atomname[i],nb);
+      fprintf(stderr,"Can not find forcefield for atom %s-%d with %d bonds\n",
+	      *atoms->atomname[i],i+1,nb);
     }
   }
   sfree(bbb);

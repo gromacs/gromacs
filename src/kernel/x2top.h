@@ -45,6 +45,7 @@ typedef struct {
   double q,m;
   int    nbonds;
   char   **bond;
+  double *blen;
 } t_nm2type;
 
 extern t_nm2type *rd_nm2type(char *ff,int *nnm);
