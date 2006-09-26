@@ -64,8 +64,7 @@ int can_view(int ftp)
 
 void do_view(char *fn, char *opts)
 {
-#define N_EXT 3
-  char buf[STRLEN], env[20], ext[N_EXT+1];
+  char buf[STRLEN], env[STRLEN];
   const char *cmd;
   int ftp, n;
   
@@ -74,9 +73,8 @@ void do_view(char *fn, char *opts)
       fprintf(stderr,"Can not view %s, no DISPLAY environment variable.\n",fn);
     } else {
       ftp=fn2ftp(fn);
-      strncpy(ext, ftp2ext(ftp), N_EXT);
-      upstring(ext);
-      sprintf(env, "GMX_VIEW_%s", ext);
+      sprintf(env, "GMX_VIEW_%s", ftp2ext(ftp));
+      upstring(env);
       switch(ftp) {
       case efXVG:
 	if ( ! (cmd=getenv(env)) ) {
