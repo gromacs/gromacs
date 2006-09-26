@@ -58,15 +58,16 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
   
   if (vcm->mode != ecmNO) {
     vcm->nr = top->atoms.grps[egcVCM].nr;
+    /* Allocate one extra for a possible rest group */
     if (vcm->mode == ecmANGULAR) {
-      snew(vcm->group_j,vcm->nr);
-      snew(vcm->group_x,vcm->nr);
-      snew(vcm->group_i,vcm->nr);
-      snew(vcm->group_w,vcm->nr);
+      snew(vcm->group_j,vcm->nr+1);
+      snew(vcm->group_x,vcm->nr+1);
+      snew(vcm->group_i,vcm->nr+1);
+      snew(vcm->group_w,vcm->nr+1);
     }
-    snew(vcm->group_p,vcm->nr);
-    snew(vcm->group_v,vcm->nr);
-    snew(vcm->group_mass,vcm->nr);
+    snew(vcm->group_p,vcm->nr+1);
+    snew(vcm->group_v,vcm->nr+1);
+    snew(vcm->group_mass,vcm->nr+1);
     snew(vcm->group_name,vcm->nr);
     for(i=start; (i<start+homenr); i++) {
       g = atoms->atom[i].grpnr[egcVCM];
@@ -119,7 +120,8 @@ void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
   rvec   j0;
   
   if (vcm->mode != ecmNO) {
-    for(g=0; (g<vcm->nr); g++) {
+    /* Also clear a possible rest group */
+    for(g=0; (g<vcm->nr+1); g++) {
       /* Reset linear momentum */
       vcm->group_mass[g] = 0;
       clear_rvec(vcm->group_p[g]);

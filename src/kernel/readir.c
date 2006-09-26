@@ -81,6 +81,8 @@ static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
+enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
+
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
   snew(opts->title,STRLEN);
@@ -801,7 +803,7 @@ static int search_string(char *s,int ng,char *gn[])
 static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 			 t_block *block,char *gnames[],
 			 int gtype,int restnm,
-			 bool bOneGroup,bool bGenRest,bool bVerbose)
+			 int grptp,bool bVerbose)
 {
   unsigned short *cbuf;
   t_grps *groups=&(atoms->grps[gtype]);
@@ -821,7 +823,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   for(i=0; (i<ng); i++) {
     /* Lookup the group name in the block structure */
     gid = search_string(ptrs[i],block->nr,gnames);
-    if ((i==0) || !bOneGroup)
+    if ((grptp != egrptpONE) || (i == 0))
       groups->nm_ind[groups->nr++]=gid;
     if (debug) 
       fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
@@ -841,7 +843,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 		    aj+1,title,ognr+1,i+1);
       else {
 	/* Store the group number in buffer */
-	if (bOneGroup)
+	if (grptp == egrptpONE)
 	  cbuf[aj] = 0;
 	else
 	  cbuf[aj] = i;
@@ -852,21 +854,33 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   
   /* Now check whether we have done all atoms */
   if (ntot != atoms->nr) {
-    if (!bGenRest)
+    if (grptp == egrptpALL) {
       gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
 		atoms->nr-ntot,title);
-    if (bVerbose)
-      fprintf(stderr,"Making dummy/rest group for %s containing %d elements\n",
-	      title,atoms->nr-ntot);
-    /* Add group name "rest" */ 
-    groups->nm_ind[groups->nr] = restnm;
-    
-    /* Assign the rest name to all atoms not currently assigned to a group */
+    } else if (grptp == egrptpPART) {
+      fprintf(stderr,"NOTE: %d atoms are not part of any of the %s groups\n",
+	      atoms->nr-ntot,title);
+    }
+    /* Assign all atoms currently unassigned to a rest group */
     for(j=0; (j<atoms->nr); j++) {
       if (cbuf[j] == NOGID)
 	cbuf[j] = groups->nr;
     }
-    groups->nr++;
+    if (grptp != egrptpPART) {
+      if (bVerbose)
+	fprintf(stderr,
+		"Making dummy/rest group for %s containing %d elements\n",
+		title,atoms->nr-ntot);
+      /* Add group name "rest" */ 
+      groups->nm_ind[groups->nr] = restnm;
+      
+      /* Assign the rest name to all atoms not currently assigned to a group */
+      for(j=0; (j<atoms->nr); j++) {
+	if (cbuf[j] == NOGID)
+	  cbuf[j] = groups->nr;
+      }
+      groups->nr++;
+    }
   }
   for(j=0; (j<atoms->nr); j++) 
     atoms->atom[j].grpnr[gtype]=cbuf[j];
@@ -889,8 +903,9 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
    * Only atoms and nuclei contribute to the degrees of freedom...
    */
 
-  snew(nrdf_vcm,atoms->grps[egcVCM].nr);
-  snew(na_vcm,atoms->grps[egcVCM].nr);
+  /* Allocate one more for a possible rest group */
+  snew(nrdf_vcm,atoms->grps[egcVCM].nr+1);
+  snew(na_vcm,atoms->grps[egcVCM].nr+1);
   
   for(i=0; i<atoms->grps[egcTC].nr; i++)
     opts->nrdf[i] = 0;
@@ -1089,7 +1104,7 @@ void do_index(char *ndx,
   t_block *grps;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
-  int     nacg,nfreeze,nfrdim,nenergy,nuser;
+  int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
@@ -1134,7 +1149,7 @@ void do_index(char *ndx,
     ir->etc = etcNO;
   bSetTCpar = ir->etc || ir->eI==eiSD || ir->eI==eiBD || ir->eI==eiTPI;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
-	       restnm,FALSE,!bSetTCpar,bVerbose);
+	       restnm,bSetTCpar ? egrptpALL : egrptpALL_GENREST,bVerbose);
   nr=atoms->grps[egcTC].nr;
   ir->opts.ngtc=nr;
   snew(ir->opts.nrdf,nr);
@@ -1260,7 +1275,7 @@ void do_index(char *ndx,
     gmx_fatal(FARGS,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
   do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,
-	       restnm,FALSE,TRUE,bVerbose);
+	       restnm,egrptpALL_GENREST,bVerbose);
   nr=atoms->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
   ir->opts.ngacc=nr;
@@ -1278,7 +1293,7 @@ void do_index(char *ndx,
     gmx_fatal(FARGS,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
   do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,
-	       restnm,FALSE,TRUE,bVerbose);
+	       restnm,egrptpALL_GENREST,bVerbose);
   nr=atoms->grps[egcFREEZE].nr;
   ir->opts.ngfrz=nr;
   snew(ir->opts.nFreeze,nr);
@@ -1299,11 +1314,11 @@ void do_index(char *ndx,
   
   nenergy=str_nelem(energy,MAXPTR,ptr1);
   do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,
-	       restnm,FALSE,TRUE,bVerbose);
+	       restnm,egrptpALL_GENREST,bVerbose);
   ir->opts.ngener=atoms->grps[egcENER].nr;
-  nuser=str_nelem(vcm,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcVCM,
-	       restnm,FALSE,TRUE,bVerbose);
+  nvcm=str_nelem(vcm,MAXPTR,ptr1);
+  do_numbering(atoms,nvcm,ptr1,grps,gnames,egcVCM,
+	       restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode);
@@ -1325,16 +1340,16 @@ void do_index(char *ndx,
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,
-	       restnm,FALSE,TRUE,bVerbose);
+	       restnm,egrptpALL_GENREST,bVerbose);
   nuser=str_nelem(user2,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,
-	       restnm,FALSE,TRUE,bVerbose);
+	       restnm,egrptpALL_GENREST,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,
-	       restnm,TRUE,TRUE,bVerbose);
+	       restnm,egrptpONE,bVerbose);
   nofg = str_nelem(orirefitgrp,MAXPTR,ptr1);
   do_numbering(atoms,nofg,ptr1,grps,gnames,egcORFIT,
-	       restnm,FALSE,TRUE,bVerbose);
+	       restnm,egrptpALL_GENREST,bVerbose);
 
   /* QMMM input processing */
   nQMg          = str_nelem(QMMM,MAXPTR,ptr1);
@@ -1346,7 +1361,7 @@ void do_index(char *ndx,
   }
   /* group rest, if any, is always MM! */
   do_numbering(atoms,nQMg,ptr1,grps,gnames,egcQMMM,
-               restnm,FALSE,TRUE,bVerbose);
+               restnm,egrptpALL_GENREST,bVerbose);
   nr = nQMg; /*atoms->grps[egcQMMM].nr;*/
   ir->opts.ngQM = nQMg;
   snew(ir->opts.QMmethod,nr);
