@@ -1341,6 +1341,8 @@ static gmx_off_t xtc_get_next_frame_start(int fp, int natoms)
     int ret;
     int step;
     float time;
+    /* read one int just to make sure we dont read this frame but the next */
+    xdr_int(xdridptr[fp+1],&step);
     while(1)
     {
       ret = xtc_at_header_start(fp,natoms,&step,&time);
