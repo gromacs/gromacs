@@ -15,6 +15,8 @@
 #include "constr.h"
 #include "mdatoms.h"
 #include "names.h"
+#include "pdbio.h"
+#include "futil.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -42,22 +44,21 @@ typedef struct gmx_domdec_comm {
   /* The indices to communicate */
   gmx_domdec_ind_t ind[DIM];
 
-  /* Communication buffers */
-  int  *buf_i1;
-  int  nalloc_i1;
-  int  *buf_i2;
-  int  nalloc_i2;
-  rvec *buf_vs;
-  int  nalloc_vs;
+  /* Communication buffer for general use */
+  int  *buf_int;
+  int  nalloc_int;
+
+  /* Communication buffers for local redistribution */
+  int  **cggl_flag;
+  int  cggl_flag_nalloc[DIM*2];
+  rvec **cgcm_state;
+  int  cgcm_state_nalloc[DIM*2];
   rvec *buf_vr;
   int  nalloc_vr;
-  
-  /* MPI requests for move_x */
-  int  nmpi_req;
-#ifdef GMX_MPI
-  MPI_Request mpi_req[(DD_MAXCELL-1)*2];
-#endif
 } gmx_domdec_comm_t;
+
+/* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
+#define DD_CGIBS 2
 
 #define CG_ALLOC_SIZE     1000
 
@@ -145,7 +146,7 @@ void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 }
 
 void dd_sendrecv_int(const gmx_domdec_t *dd,
-		     int dim,int direction,
+		     int ddim,int direction,
 		     int *buf_s,int n_s,
 		     int *buf_r,int n_r)
 {
@@ -153,8 +154,8 @@ void dd_sendrecv_int(const gmx_domdec_t *dd,
   int rank_s,rank_r;
   MPI_Status stat;
 
-  rank_s = dd->neighbor[dim][direction==ddForward ? 0 : 1];
-  rank_r = dd->neighbor[dim][direction==ddForward ? 1 : 0];
+  rank_s = dd->neighbor[ddim][direction==ddForward ? 0 : 1];
+  rank_r = dd->neighbor[ddim][direction==ddForward ? 1 : 0];
 
   MPI_Sendrecv(buf_s,n_s*sizeof(int),MPI_BYTE,rank_s,0,
 	       buf_r,n_r*sizeof(int),MPI_BYTE,rank_r,0,
@@ -163,7 +164,7 @@ void dd_sendrecv_int(const gmx_domdec_t *dd,
 }
 
 void dd_sendrecv_rvec(const gmx_domdec_t *dd,
-		      int dim,int direction,
+		      int ddim,int direction,
 		      rvec *buf_s,int n_s,
 		      rvec *buf_r,int n_r)
 {
@@ -171,8 +172,8 @@ void dd_sendrecv_rvec(const gmx_domdec_t *dd,
   int rank_s,rank_r;
   MPI_Status stat;
 
-  rank_s = dd->neighbor[dim][direction==ddForward ? 0 : 1];
-  rank_r = dd->neighbor[dim][direction==ddForward ? 1 : 0];
+  rank_s = dd->neighbor[ddim][direction==ddForward ? 0 : 1];
+  rank_r = dd->neighbor[ddim][direction==ddForward ? 1 : 0];
 
   MPI_Sendrecv(buf_s[0],n_s*sizeof(rvec),MPI_BYTE,rank_s,0,
 	       buf_r[0],n_r*sizeof(rvec),MPI_BYTE,rank_r,0,
@@ -400,6 +401,34 @@ void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_distribute_vec(dd,cgs,state->v,state_local->v);
   if (state->sd_X)
     dd_distribute_vec(dd,cgs,state->sd_X,state_local->sd_X);
+}
+
+static void write_dd_pdb(char *fn,char *title,t_atoms *atoms,
+			 gmx_domdec_t *dd,int natoms,
+			 rvec x[],matrix box)
+{
+  char fname[STRLEN],format[STRLEN];
+  FILE *out;
+  int  i,ii,resnr;
+
+  sprintf(fname,"%s_n%d.pdb",fn,dd->nodeid);
+
+  sprintf(format,"%s\n",pdbformat);
+
+  out = ffopen(fname,"w");
+
+  fprintf(out,"TITLE     %s\n",title);
+  gmx_write_pdb_box(out,box);
+  for(i=0; i<natoms; i++) {
+    ii = dd->gatindex[i];
+    resnr = atoms->atom[ii].resnr;
+    fprintf(out,format,"ATOM",(ii+1)%100000,
+	    *atoms->atomname[ii],*atoms->resname[resnr],' ',(resnr+1)%10000,
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
+  }
+  fprintf(out,"TER\n");
+  
+  fclose(out);
 }
 
 static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
@@ -639,75 +668,88 @@ static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
   dd->bMasterHasAllCG = TRUE;
 }
 
-#define DD_MAXNBCELL 27
-
-static int compact_and_copy_vec_at(int ncg,int *cell,int home_cell,
+static int compact_and_copy_vec_at(int ncg,int *move,
 				   int *cgindex,
-				   int *buf_pos,rvec *vec,rvec *buf)
+				   int nvec,int vec,
+				   rvec *src,gmx_domdec_comm_t *comm)
 {
-  int c,icg,i;
+  int m,icg,i,i0,i1,nrcg;
   int home_pos;
-  
+  int pos_vec[DIM*2];
 
   home_pos = 0;
 
+  for(m=0; m<DIM*2; m++)
+    pos_vec[m] = 0;
+
+  i0 = 0;
   for(icg=0; icg<ncg; icg++) {
-    c = cell[icg];
-    if (c == home_cell) {
+    i1 = cgindex[icg+1];
+    m = move[icg];
+    if (m == -1) {
       /* Compact the home array in place */
-      for(i=cgindex[icg]; i<cgindex[icg+1]; i++)
-	copy_rvec(vec[i],vec[home_pos++]);
+      for(i=i0; i<i1; i++)
+	copy_rvec(src[i],src[home_pos++]);
     } else {
       /* Copy to the communication buffer */
-      for(i=cgindex[icg]; i<cgindex[icg+1]; i++)
-	copy_rvec(vec[i],buf[buf_pos[c]++]);
+      nrcg = i1 - i0;
+      pos_vec[m] += 1 + vec*nrcg;
+      for(i=i0; i<i1; i++)
+	copy_rvec(src[i],comm->cgcm_state[m][pos_vec[m]++]);
+      pos_vec[m] += (nvec - vec - 1)*nrcg;
     }
+    i0 = i1;
   }
 
   return home_pos;
 }
 
-static int compact_and_copy_vec_cg(int ncg,int *cell,int home_cell,
-				   int *buf_pos,rvec *vec,rvec *buf)
+static int compact_and_copy_vec_cg(int ncg,int *move,
+				   int *cgindex,
+				   int nvec,rvec *src,gmx_domdec_comm_t *comm)
 {
-  int c,icg;
+  int m,icg,i0,i1,nrcg;
   int home_pos;
-  
+  int pos_vec[DIM*2];
 
   home_pos = 0;
 
+  for(m=0; m<DIM*2; m++)
+    pos_vec[m] = 0;
+
+  i0 = 0;
   for(icg=0; icg<ncg; icg++) {
-    c = cell[icg];
-    if (c == home_cell) {
+    i1 = cgindex[icg+1];
+    m = move[icg];
+    if (m == -1) {
       /* Compact the home array in place */
-      copy_rvec(vec[icg],vec[home_pos++]);
+      copy_rvec(src[icg],src[home_pos++]);
     } else {
+      nrcg = i1 - i0;
       /* Copy to the communication buffer */
-      copy_rvec(vec[icg],buf[buf_pos[c]++]);
+      copy_rvec(src[icg],comm->cgcm_state[m][pos_vec[m]]);
+      pos_vec[m] += 1 + nrcg*nvec;
     }
+    i0 = i1;
   }
 
   return home_pos;
 }
 
-static int compact_and_copy_ind(int ncg,int *cell,int home_cell,
-				int nnbc,int *ind,int *index_gl,
-				int *cgindex,int *gatindex,gmx_ga2la_t *ga2la,
-				int *buf,int *solvent_type)
+static int compact_ind(int ncg,int *move,
+		       int *index_gl,int *cgindex,
+		       int *gatindex,gmx_ga2la_t *ga2la,
+		       int *solvent_type)
 {
-  int c,cg,nat,a0,a1,a,a_gl;
-  int home_pos,buf_pos[DD_MAXNBCELL];
-  
-  for(c=0; c<nnbc; c++)
-    buf_pos[c] = ind[c];
+  int cg,nat,a0,a1,a,a_gl;
+  int home_pos;
   
   home_pos = 0;
   nat = 0;
   for(cg=0; cg<ncg; cg++) {
-    c = cell[cg];
     a0 = cgindex[cg];
     a1 = cgindex[cg+1];
-    if (c == home_cell) {
+    if (move[cg] == -1) {
       /* Compact the home arrays in place.
        * Anything that can be done here avoids access to global arrays.
        */
@@ -724,8 +766,6 @@ static int compact_and_copy_ind(int ncg,int *cell,int home_cell,
 	solvent_type[home_pos] = solvent_type[cg];
       home_pos++;
     } else {
-      /* Copy to the communication buffer */
-      buf[buf_pos[c]++] = index_gl[cg];
       /* Clear the global indices */
       for(a=a0; a<a1; a++) {
 	a_gl = gatindex[a];
@@ -734,7 +774,7 @@ static int compact_and_copy_ind(int ncg,int *cell,int home_cell,
     }
   }
   cgindex[home_pos] = nat;
-
+  
   return home_pos;
 }
 
@@ -744,82 +784,33 @@ static int dd_redistribute_cg(FILE *fplog,
 			      t_forcerec *fr,t_mdatoms *md,
 			      t_nrnb *nrnb)
 {
-#define dd_nbindex(ms0,ns,i) ((((i)[ZZ] - ms0[ZZ])*ns[YY] + (i)[YY] - ms0[YY])*ns[XX] + (i)[XX] - ms0[XX])
-
-  int  *cell,*buf_cg;
-  int  ncg[DD_MAXNBCELL],nat[DD_MAXNBCELL];
-  int  ncg_r[DD_MAXNBCELL],nat_r[DD_MAXNBCELL],nvr_max;
-  int  nnbc,nvec,c,i,cg,k,k0,k1,d,x,y,z,nreq,ncg_new;
-  int  home_cell=-1,dest[DD_MAXNBCELL],src[DD_MAXNBCELL];
-  int  sbuf[DD_MAXNBCELL*2],rbuf[DD_MAXNBCELL*2];
-  int  buf_cg_ind[DD_MAXNBCELL+1],buf_vs_ind[DD_MAXNBCELL+1];
-  int  home_pos,home_pos_cg,buf_pos[DD_MAXNBCELL],buf_pos_r;
+  int  *move;
+  int  ncg[DIM*2],nat[DIM*2];
+  int  c,i,cg,k,k0,k1,d,dim,dir,d2;
+  int  mc,cdd,nrcg,ncg_recv,nat_recv,nvs,nvr,nvec,vec;
+  int  sbuf[2],rbuf[2];
+  int  home_pos_cg,home_pos_at,ncg_stay_home,buf_pos;
+  int  flag;
   rvec inv_box;
-  ivec ms0,ms1,ns,dev,vhome,vdest,vsrc;
+  ivec dev,vhome;
   int  shift,vnew;
-  int  cg_gl,nrcg;
   real inv_ncg;
   atom_id *cgindex;
-#ifdef GMX_MPI
-  MPI_Request mpi_req[DD_MAXNBCELL*2];
-#endif
   gmx_domdec_comm_t *comm;
 
   comm = dd->comm;
 
-  /* Set the required grid shift ranges */
-  /* This could be done in setup_dd_grid */
-  for(d=0; d<DIM; d++) {
-    if (dd->nc[d] == 1) {
-      ms0[d] = 0;
-      ms1[d] = 0;
-    } else if (dd->nc[d] == 2) {
-      ms0[d] = 0;
-      ms1[d] = 1;
-    } else {
-      ms0[d] = -1;
-      ms1[d] = 1;
-    }
-    ns[d] = 1 + ms1[d] - ms0[d];
-  }
-
-  /* Make a local (possibly) 3x3x3 communication grid */
-  /* This could be done in setup_dd_grid */
   /* This should be corrected for triclinic pbc !!! */
   gmx_ddindex2xyz(dd->nc,dd->nodeid,vhome);
-  nnbc = 0;
-  for(z=ms0[ZZ]; z<=ms1[ZZ]; z++) {
-    vdest[ZZ] = (vhome[ZZ] + z + dd->nc[ZZ]) % dd->nc[ZZ];
-    vsrc[ZZ]  = (vhome[ZZ] - z + dd->nc[ZZ]) % dd->nc[ZZ];
-    for(y=ms0[YY]; y<=ms1[YY]; y++) {
-      vdest[YY] = (vhome[YY] + y + dd->nc[YY]) % dd->nc[YY];
-      vsrc[YY]  = (vhome[YY] - y + dd->nc[YY]) % dd->nc[YY];
-      for(x=ms0[XX]; x<=ms1[XX]; x++) {
-	vdest[XX] = (vhome[XX] + x + dd->nc[XX]) % dd->nc[XX];
-	vsrc[XX]  = (vhome[XX] - x + dd->nc[XX]) % dd->nc[XX];
-	dest[nnbc] = dd_index(dd->nc,vdest);
-	src[nnbc]  = dd_index(dd->nc,vsrc);
-	if (x==0 && y==0 && z==0)
-	  home_cell = nnbc;
-	nnbc++;
-      }
-    }
-  }
 
-  nvec = 1;
-  if (state->v)
-    nvec++;
-  if (state->sd_X)
-    nvec++;
-
-  if (dd->ncg_tot > comm->nalloc_i1) {
-    comm->nalloc_i1 = over_alloc(dd->ncg_tot);
-    srenew(comm->buf_i1,comm->nalloc_i1);
+  if (dd->ncg_tot > comm->nalloc_int) {
+    comm->nalloc_int = over_alloc(dd->ncg_tot);
+    srenew(comm->buf_int,comm->nalloc_int);
   }
-  cell = comm->buf_i1;
+  move = comm->buf_int;
 
   /* Clear the count */
-  for(c=0; c<DD_MAXNBCELL; c++) {
+  for(c=0; c<dd->ndim*2; c++) {
     ncg[c] = 0;
     nat[c] = 0;
   }
@@ -871,219 +862,206 @@ static int dd_redistribute_cg(FILE *fplog,
 	vnew--;
       dev[d] = vnew - vhome[d] - shift*dd->nc[d];
     }
-    for(d=0; d<DIM; d++) {
-      if (dev[d] < -1 || dev[d] > 1)
+
+    /* Determine where this cg should go */
+    flag = 0;
+    mc = -1;
+    for(d=0; d<dd->ndim; d++) {
+      dim = dd->dim[d];
+      if (dev[dim] < -1 || dev[dim] > 1)
 	gmx_fatal(FARGS,"The charge group starting at atom %d moved more than one cell: %d %d %d, coords %f %f %f",
 		  glatnr(dd,dd->index_gl[cg]),
 		  dev[XX],dev[YY],dev[ZZ],
 		  cg_cm[cg][XX],cg_cm[cg][YY],cg_cm[cg][ZZ]);
-      if (ns[d] == 1) {
-	/* There is only one cell in this dimension, the cg can stay here */
-	dev[d] = 0;
-      } else if (ns[d] == 2 && dev[d] == -1) {
-	/* Two cells in this dimension: shift -1 = shift +1 */
-	/* Needs to be corrected for triclinic unit-cells !!! */
-	dev[d] = 1;
+      if (dev[dim] != 0) {
+	if (dd->nc[dim] == 2 || dev[dim] == 1) {
+	  flag |= 1<<(16+d*2);
+	  if (mc == -1)
+	    mc = d*2;
+	} else {
+	  flag |= 1<<(16+d*2+1);
+	  if (mc == -1)
+	    mc = d*2 + 1;
+	}
       }
     }
-    i = dd_nbindex(ms0,ns,dev);
-    cell[cg] = i;
-    ncg[i] ++;
-    nat[i] += nrcg;
+    move[cg] = mc;
+    if (mc >= 0) {
+      if (ncg[mc]+1 > comm->cggl_flag_nalloc[mc]) {
+	comm->cggl_flag_nalloc[mc] = over_alloc(ncg[mc]+1);
+	srenew(comm->cggl_flag[mc],comm->cggl_flag_nalloc[mc]*DD_CGIBS);
+      }
+      comm->cggl_flag[mc][ncg[mc]*DD_CGIBS  ] = dd->index_gl[cg];
+      /* We store the cg size in the lower 16 bits
+       * and the place where the charge group should go
+       * in the next 6 bits. This saves some communication volume.
+       */
+      comm->cggl_flag[mc][ncg[mc]*DD_CGIBS+1] = nrcg | flag;
+      ncg[mc] += 1;
+      nat[mc] += nrcg;
+    }
   }
 
   inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
   inc_nrnb(nrnb,eNR_RESETX,dd->ncg_home);
-  
-  if (debug) {
-    fprintf(debug,"Sending:");
-    for(c=0; c<nnbc; c++)
-      fprintf(debug," %d %d (%d)",dest[c],ncg[c],nat[c]);
-    fprintf(debug,"\n");
-  }
 
-  buf_cg_ind[0] = 0;
-  buf_vs_ind[0] = 0;
-  nreq = 0;
-  for(c=0; c<nnbc; c++) {
-    buf_cg_ind[c+1] = buf_cg_ind[c];
-    buf_vs_ind[c+1] = buf_vs_ind[c];
-    if (c != home_cell) {
-      sbuf[c*2]   = ncg[c];
-      sbuf[c*2+1] = nat[c];
-#ifdef GMX_MPI
-      MPI_Isend(sbuf+c*2,2*sizeof(int),MPI_BYTE,
-		DDRANK(dd,dest[c]),c,dd->all,&mpi_req[nreq++]);
-      MPI_Irecv(rbuf+c*2,2*sizeof(int),MPI_BYTE,
-		DDRANK(dd,src[c]),c,dd->all,&mpi_req[nreq++]);
-#endif
-      /* Make index into communication buffers,
-       * but without the charge groups that stay on this node.
-       */
-      buf_cg_ind[c+1] += ncg[c];
-      buf_vs_ind[c+1] += nvec*nat[c] + ncg[c];
-    }
-    buf_pos[c] = buf_vs_ind[c];
-  }
-
-  if (buf_cg_ind[nnbc] > comm->nalloc_i2) {
-    comm->nalloc_i2 = over_alloc(buf_cg_ind[nnbc]);
-    srenew(comm->buf_i2,comm->nalloc_i2);
-  }
-  buf_cg = comm->buf_i2;
-
-  if (buf_vs_ind[nnbc] > comm->nalloc_vs) {
-    comm->nalloc_vs = over_alloc(buf_vs_ind[nnbc]);
-    srenew(comm->buf_vs,comm->nalloc_vs);
-  }
-
-  home_pos = compact_and_copy_vec_at(dd->ncg_home,cell,home_cell,cgindex,
-				     buf_pos,state->x,comm->buf_vs);
+  nvec = 1;
   if (state->v)
-    compact_and_copy_vec_at(dd->ncg_home,cell,home_cell,cgindex,
-			    buf_pos,state->v,comm->buf_vs);
-  if (state->sd_X) {
-    compact_and_copy_vec_at(dd->ncg_home,cell,home_cell,cgindex,
-			    buf_pos,state->sd_X,comm->buf_vs);
+    nvec++;
+  if (state->sd_X)
+    nvec++;
+
+  /* Make sure the communication buffers are large enough */
+  for(mc=0; mc<dd->ndim*2; mc++) {
+    nvr = ncg[mc] + nat[mc]*nvec;
+    if (nvr>comm->cgcm_state_nalloc[mc]) {
+      comm->cgcm_state_nalloc[mc] = over_alloc(nvr);
+      srenew(comm->cgcm_state[mc],comm->cgcm_state_nalloc[mc]);
+    }
   }
 
   /* Recalculating cg_cm might be cheaper than communicating,
    * but that could give rise to rounding issues.
    */
-  home_pos_cg = compact_and_copy_vec_cg(dd->ncg_home,cell,home_cell,
-					buf_pos,cg_cm,comm->buf_vs);
+  home_pos_cg =
+    compact_and_copy_vec_cg(dd->ncg_home,move,cgindex,
+			    nvec,cg_cm,comm);
 
-#ifdef GMX_MPI
-  MPI_Waitall(nreq,mpi_req,MPI_STATUSES_IGNORE);
-#endif
-
- 
-  ncg_new = 0;
-  nvr_max = 0;
-  for(c=0; c<nnbc; c++){
-    if (c == home_cell) {
-      ncg_r[c] = ncg[c];
-      nat_r[c] = nat[c];
-    } else {
-      ncg_r[c] = rbuf[c*2];
-      nat_r[c] = rbuf[c*2+1];
-      if (nvec*nat_r[c] + ncg_r[c] > nvr_max)
-	nvr_max = nvec*nat_r[c] + ncg_r[c];
-    }
-    ncg_new += ncg_r[c];
-  }
-
-  if (debug) {
-    fprintf(debug,"Receiving:");
-    for(c=0; c<nnbc; c++)
-      fprintf(debug," %d %d (%d)",src[c],ncg_r[c],nat_r[c]);
-    fprintf(debug,"\n");
-  }
- 
-  if (nvr_max > comm->nalloc_vr) {
-    comm->nalloc_vr = over_alloc(nvr_max);
-    srenew(comm->buf_vr,comm->nalloc_vr);
-  }
-
-  nreq = 0;
-  for(c=0; c<nnbc; c++) {
-    if (c != home_cell && nat[c] > 0) {
-#ifdef GMX_MPI
-      MPI_Isend(comm->buf_vs+buf_vs_ind[c],(nvec*nat[c]+ncg[c])*sizeof(rvec),MPI_BYTE,
-		DDRANK(dd,dest[c]),c,dd->all,&mpi_req[nreq++]);
-#endif
-    }
-  }
+  vec = 0;
+  home_pos_at =
+    compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
+			    nvec,vec++,state->x,comm);
+  if (state->v)
+    compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
+			    nvec,vec++,state->v,comm);
+  if (state->sd_X)
+    compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
+			    nvec,vec++,state->sd_X,comm);
   
-  for(c=0; c<nnbc; c++) {
-    if (c != home_cell && nat_r[c] > 0) {
-#ifdef GMX_MPI
-      MPI_Recv(comm->buf_vr,(nvec*nat_r[c]+ncg_r[c])*sizeof(rvec),MPI_BYTE,
-	       DDRANK(dd,src[c]),c,dd->all,MPI_STATUS_IGNORE);
-#endif
-      memcpy(state->x+home_pos,comm->buf_vr,nat_r[c]*sizeof(rvec));
-      buf_pos_r = nat_r[c];
-      if (state->v) {
-	memcpy(state->v+home_pos,comm->buf_vr+buf_pos_r,nat_r[c]*sizeof(rvec));
-	buf_pos_r += nat_r[c];
-      }
-      if (state->sd_X) {
-	memcpy(state->sd_X+home_pos,comm->buf_vr+buf_pos_r,
-		 nat_r[c]*sizeof(rvec));
-	buf_pos_r += nat_r[c];
-      }
-      memcpy(cg_cm+home_pos_cg,comm->buf_vr+buf_pos_r,ncg_r[c]*sizeof(rvec));
+  compact_ind(dd->ncg_home,move,
+	      dd->index_gl,dd->cgindex,
+	      dd->gatindex,dd->ga2la,
+	      fr->solvent_opt==esolNO ? NULL : fr->solvent_type);
 
-      home_pos    += nat_r[c];
-      home_pos_cg += ncg_r[c];
+  ncg_stay_home = home_pos_cg;
+  for(d=0; d<dd->ndim; d++) {
+    ncg_recv = 0;
+    nat_recv = 0;
+    nvr      = 0;
+    for(dir=0; dir<(dd->nc[dd->dim[d]]==2 ? 1 : 2); dir++) {
+      cdd = d*2 + dir;
+      /* Communicate the cg and atom counts */
+      sbuf[0] = ncg[cdd];
+      sbuf[1] = nat[cdd];
+      if (debug)
+	fprintf(debug,"Sending ddim %d dir %d: ncg %d nat %d\n",
+		d,dir,sbuf[0],sbuf[1]);
+      dd_sendrecv_int(dd,d,dir,sbuf,2,rbuf,2);
+
+      if ((ncg_recv+rbuf[0])*DD_CGIBS > comm->nalloc_int) {
+	comm->nalloc_int = over_alloc((ncg_recv+rbuf[0])*DD_CGIBS);
+	srenew(comm->buf_int,comm->nalloc_int);
+      }
+
+      /* Communicate the charge group indices, sizes and flags */
+      dd_sendrecv_int(dd,d,dir,
+		      comm->cggl_flag[cdd],sbuf[0]*DD_CGIBS,
+		      comm->buf_int+ncg_recv*DD_CGIBS,rbuf[0]*DD_CGIBS);
+      
+      nvs = ncg[cdd] + nat[cdd]*nvec;
+      i   = rbuf[0]  + rbuf[1] *nvec;
+      if (nvr+i > comm->nalloc_vr) {
+	comm->nalloc_vr = over_alloc(nvr+i);
+	srenew(comm->buf_vr,comm->nalloc_vr);
+      }
+
+      /* Communicate cgcm and state */
+      dd_sendrecv_rvec(dd,d,dir,
+		       comm->cgcm_state[cdd],nvs,
+		       comm->buf_vr+nvr,i);
+      ncg_recv += rbuf[0];
+      nat_recv += rbuf[1];
+      nvr      += i;
     }
-  }
 
-  if (ncg_new > dd->cg_nalloc || dd->cg_nalloc == 0) {
-    dd->cg_nalloc = over_alloc(ncg_new);
-    srenew(dd->index_gl,dd->cg_nalloc);
-    srenew(dd->cgindex,dd->cg_nalloc+1);
+    /* Process the received charge groups */
+    buf_pos = 0;
+    for(cg=0; cg<ncg_recv; cg++) {
+      flag = comm->buf_int[cg*DD_CGIBS+1];
+      /* Check where this cg should go */
+      mc = -1;
+      for(d2=d+1; d2<dd->ndim; d2++) {
+	if (flag & (1<<(16+d2*2))) {
+	  mc = d2*2;
+	} else if (flag & (1<<(16+d2*2+1))) {
+	  mc = d2*2+1;
+	}
+      }
+      
+      nrcg = flag & 65535;
+      if (mc == -1) {
+	if (home_pos_cg+1 > dd->cg_nalloc) {
+	  dd->cg_nalloc = over_alloc(home_pos_cg+1);
+	  srenew(dd->index_gl,dd->cg_nalloc);
+	  srenew(dd->cgindex,dd->cg_nalloc+1);
+	}
+	/* If the other home arrays were dynamic, we would need
+	 * to reallocate here.
+	 */
+	  /* Set the global charge group index and size */
+	dd->index_gl[home_pos_cg] = comm->buf_int[cg*DD_CGIBS];
+	dd->cgindex[home_pos_cg+1] = dd->cgindex[home_pos_cg] + nrcg;
+	/* Copy the state from the buffer */
+	copy_rvec(comm->buf_vr[buf_pos++],cg_cm[home_pos_cg]);
+	for(i=0; i<nrcg; i++)
+	  copy_rvec(comm->buf_vr[buf_pos++],state->x[home_pos_at+i]);
+	if (state->v)
+	  for(i=0; i<nrcg; i++)
+	    copy_rvec(comm->buf_vr[buf_pos++],state->v[home_pos_at+i]);
+	  if (state->sd_X)
+	    for(i=0; i<nrcg; i++)
+	      copy_rvec(comm->buf_vr[buf_pos++],state->sd_X[home_pos_at+i]);
+	  home_pos_cg += 1;
+	  home_pos_at += nrcg;
+      } else {
+	/* Reallocate the buffers if necessary  */
+	if (ncg[mc]+1 > comm->cggl_flag_nalloc[mc]) {
+	  comm->cggl_flag_nalloc[mc] = over_alloc(ncg[mc]+1);
+	  srenew(comm->cggl_flag[mc],comm->cggl_flag_nalloc[mc]*DD_CGIBS);
+	}
+	nvr = ncg[mc] + nat[mc]*nvec;
+	if (nvr + 1 + nrcg*nvec > comm->cgcm_state_nalloc[mc]) {
+	  comm->cgcm_state_nalloc[mc] = over_alloc(nvr + 1 + nrcg*nvec);
+	  srenew(comm->cgcm_state[mc],comm->cgcm_state_nalloc[mc]);
+	}
+	/* Copy from the receive to the send buffers */
+	memcpy(comm->cggl_flag[mc] + ncg[mc]*DD_CGIBS,
+	       comm->buf_int + cg*DD_CGIBS,
+	       DD_CGIBS*sizeof(int));
+	memcpy(comm->cgcm_state[mc][nvr],
+		 comm->buf_vr[buf_pos],
+	       (1+nrcg*nvec)*sizeof(rvec));
+	buf_pos += 1 + nrcg*nvec;
+	ncg[mc] += 1;
+	nat[mc] += nrcg;
+      }
+    }
   }
 
   /* Clear the local indices, except for the home cell.
-   * The home cell indices are updated in compact_and_copy_cg.
+   * The home cell indices were updated and cleaned in compact_ind.
    */
   clear_dd_indices(dd,dd->nat_home);
 
-  home_pos_cg =
-    compact_and_copy_ind(dd->ncg_home,cell,home_cell,
-			 nnbc,buf_cg_ind,dd->index_gl,
-			 dd->cgindex,dd->gatindex,dd->ga2la,
-			 buf_cg,
-			 fr->solvent_opt==esolNO ? NULL : fr->solvent_type);
-  
-#ifdef GMX_MPI
-  MPI_Waitall(nreq,mpi_req,MPI_STATUSES_IGNORE);
-#endif
-  
-  nreq = 0;
-  for(c=0; c<nnbc; c++) {
-    if (c != home_cell) {
-#ifdef GMX_MPI
-      if (ncg[c])
-	MPI_Isend(buf_cg+buf_cg_ind[c],ncg[c]*sizeof(int),MPI_BYTE,
-		  DDRANK(dd,dest[c]),c,dd->all,&mpi_req[nreq++]);
-      if (ncg_r[c])
-	/* Receive the cg's in place */
-	MPI_Irecv(dd->index_gl+home_pos_cg,ncg_r[c]*sizeof(int),MPI_BYTE,
-		  DDRANK(dd,src[c]),c,dd->all,&mpi_req[nreq++]);
-#endif
-      home_pos_cg += ncg_r[c];
-    }
-  }
-  
-  dd->ncg_home = ncg[home_cell];
-  dd->nat_home = nat[home_cell];
-  for(c=0; c<nnbc; c++){
-    if (c != home_cell) {
-      dd->ncg_home += ncg_r[c];
-      dd->nat_home += nat_r[c];
-    }
-  }
-  
-#ifdef GMX_MPI
-  MPI_Waitall(nreq,mpi_req,MPI_STATUSES_IGNORE);
-#endif
-  
-  dd->bMasterHasAllCG = FALSE;
+  dd->ncg_home = home_pos_cg;
+  dd->nat_home = home_pos_at;
 
-  /* Set the boundaries of the new charge groups */
-  k1 = dd->cgindex[ncg[home_cell]];
-  for(cg=ncg[home_cell]; cg<dd->ncg_home; cg++) {
-    cg_gl = dd->index_gl[cg];
-    k1 += gcgs->index[cg_gl+1] - gcgs->index[cg_gl];
-    dd->cgindex[cg+1] = k1;
-  }
+  dd->bMasterHasAllCG = FALSE;
 
   if (debug)
     fprintf(debug,"Finished repartitioning\n");
 
-  return ncg[home_cell];
+  return ncg_stay_home;
 }
 
 void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
@@ -1528,6 +1506,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc)
 
   snew(dd,1);
   snew(dd->comm,1);
+  snew(dd->comm->cggl_flag,DIM*2);
+  snew(dd->comm->cgcm_state,DIM*2);
 
   copy_ivec(nc,dd->nc);
   dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
@@ -1609,12 +1589,12 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 	    ind->nalloc += CG_ALLOC_SIZE;
 	    srenew(ind->index,ind->nalloc);
 	  }
-	  if (nsend >= comm->nalloc_i1) {
-	    comm->nalloc_i1 += CG_ALLOC_SIZE;
-	    srenew(comm->buf_i1,comm->nalloc_i1);
+	  if (nsend >= comm->nalloc_int) {
+	    comm->nalloc_int += CG_ALLOC_SIZE;
+	    srenew(comm->buf_int,comm->nalloc_int);
 	  }
 	  ind->index[nsend] = cg;
-	  comm->buf_i1[nsend] = index_gl[cg];
+	  comm->buf_int[nsend] = index_gl[cg];
 	  ind->nsend[cell]++;
 	  nsend++;
 	  for(i=cgindex[cg]; i<cgindex[cg+1]; i++) {
@@ -1638,7 +1618,7 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
       srenew(cgindex,dd->cg_nalloc+1);
     }
     dd_sendrecv_int(dd, dim_ind, ddBackward,
-		    comm->buf_i1,             nsend,
+		    comm->buf_int,            nsend,
 		    index_gl+ncg_cell[ncell], ind->nrecv[ncell]);
     /* Communicate the coordinate, receive in place */
     dd_sendrecv_rvec(dd, dim_ind, ddBackward,

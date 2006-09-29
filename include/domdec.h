@@ -56,15 +56,16 @@ enum {
 };
 
 extern void dd_sendrecv_int(const gmx_domdec_t *dd,
-			    int dim,int direction,
+			    int ddim,int direction,
 			    int *buf_s,int n_s,
 			    int *buf_r,int n_r);
 
 extern void dd_sendrecv_rvec(const gmx_domdec_t *dd,
-			     int dim,int direction,
+			     int ddim,int direction,
 			     rvec *buf_s,int n_s,
 			     rvec *buf_r,int n_r);
-/* Move data (int/rvec) one cell in dimension dim over the DD grid.
+/* Move data (int/rvec) one cell in decomposition dimension ddim
+ * over the DD grid.
  * For direction see the enum above.
  */
 
