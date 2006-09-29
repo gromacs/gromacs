@@ -664,7 +664,7 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   real       t,fraction,pifac,aa,angle;
   real       *angles[2];
   matrix     box;
-  rvec       *x,*x_s;
+  rvec       *x;
   int        cur=0;
 #define prev (1-cur)
   
@@ -685,11 +685,6 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   if (natoms < nat_trj)
     fprintf(stderr,"WARNING! Topology has fewer atoms than trajectory\n");
   
-  if (top)
-    snew(x_s,nat_trj);
-  else
-    x_s = x;
-    
   if (bAngles) {
     nangles=isize/3;
     pifac=M_PI;
@@ -726,10 +721,10 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
       set_pbc(pbc,box);
     
     if (bAngles) {
-      calc_angles(stdout,pbc,isize,index,angles[cur],x_s);
+      calc_angles(stdout,pbc,isize,index,angles[cur],x);
     }
     else {
-      calc_dihs(stdout,pbc,isize,index,angles[cur],x_s);
+      calc_dihs(stdout,pbc,isize,index,angles[cur],x);
 			
       /* Trans fraction */
       fraction = calc_fraction(angles[cur], nangles);
@@ -820,8 +815,6 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   close_trj(status); 
   
   sfree(x);
-  if (top)
-    sfree(x_s);
   sfree(angles[cur]);
   sfree(angles[prev]);
   
