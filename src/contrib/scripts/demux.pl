@@ -2,7 +2,7 @@
 
 # in: input filename
 $in = shift || die("Please specify input filename");
-$ndx  = "replica_index.ndx";
+$ndx  = "replica_index.xvg";
 $temp = "replica_temp.xvg";
 
 @comm = ("-----------------------------------------------------------------",
