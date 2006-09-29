@@ -870,7 +870,7 @@ static int dd_redistribute_cg(FILE *fplog,
       dim = dd->dim[d];
       if (dev[dim] < -1 || dev[dim] > 1)
 	gmx_fatal(FARGS,"The charge group starting at atom %d moved more than one cell: %d %d %d, coords %f %f %f",
-		  glatnr(dd,dd->index_gl[cg]),
+		  glatnr(dd,dd->cgindex[cg]),
 		  dev[XX],dev[YY],dev[ZZ],
 		  cg_cm[cg][XX],cg_cm[cg][YY],cg_cm[cg][ZZ]);
       if (dev[dim] != 0) {
@@ -990,7 +990,7 @@ static int dd_redistribute_cg(FILE *fplog,
       flag = comm->buf_int[cg*DD_CGIBS+1];
       /* Check where this cg should go */
       mc = -1;
-      for(d2=d+1; d2<dd->ndim; d2++) {
+      for(d2=d+1; (d2<dd->ndim && mc==-1); d2++) {
 	if (flag & (1<<(16+d2*2))) {
 	  mc = d2*2;
 	} else if (flag & (1<<(16+d2*2+1))) {
@@ -1008,7 +1008,7 @@ static int dd_redistribute_cg(FILE *fplog,
 	/* If the other home arrays were dynamic, we would need
 	 * to reallocate here.
 	 */
-	  /* Set the global charge group index and size */
+	/* Set the global charge group index and size */
 	dd->index_gl[home_pos_cg] = comm->buf_int[cg*DD_CGIBS];
 	dd->cgindex[home_pos_cg+1] = dd->cgindex[home_pos_cg] + nrcg;
 	/* Copy the state from the buffer */
@@ -1039,7 +1039,7 @@ static int dd_redistribute_cg(FILE *fplog,
 	       comm->buf_int + cg*DD_CGIBS,
 	       DD_CGIBS*sizeof(int));
 	memcpy(comm->cgcm_state[mc][nvr],
-		 comm->buf_vr[buf_pos],
+	       comm->buf_vr[buf_pos],
 	       (1+nrcg*nvec)*sizeof(rvec));
 	buf_pos += 1 + nrcg*nvec;
 	ncg[mc] += 1;
