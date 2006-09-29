@@ -2,13 +2,15 @@
 
 # in: input filename
 $in = shift || die("Please specify input filename");
-$ndx  = "replica_index.xvg";
+$ndx  = "replica_index.ndx";
+$temp = "replica_temp.xvg";
 
 @comm = ("-----------------------------------------------------------------",
 	 "Going to read a file containing the exchange information from",
 	 "your mdrun log file ($in).", 
 	 "This will produce a file ($ndx) suitable for",
-	 "demultiplexing your trajectories using trjcat.",
+	 "demultiplexing your trajectories using trjcat,",
+	 "as well as a replica temperature file ($temp).",
 	 "-----------------------------------------------------------------");
 for($c=0; ($c<=$#comm); $c++) {
     printf("$comm[$c]\n");
@@ -16,17 +18,30 @@ for($c=0; ($c<=$#comm); $c++) {
 
 # Open input and output files
 open (IN_FILE,"$in") || die ("Cannot open input file $in");
-open (ALL,">$ndx") || die("Opening $ndx for writing");
+open (NDX,">$ndx") || die("Opening $ndx for writing");
+open (TEMP,">$temp") || die("Opening $temp for writing");
+
 
 sub pr_order {
     my $t     = shift;
     my $nrepl = shift;
-    printf(ALL "%-8g",$t);
+    printf(NDX "%-8g",$t);
     for(my $k=0; ($k<$nrepl); $k++) {
 	my $oo = shift;
-	printf(ALL "  %3d",$oo);
+	printf(NDX "  %3d",$oo);
     }
-    printf(ALL "\n");
+    printf(NDX "\n");
+}
+
+sub pr_revorder {
+    my $t     = shift;
+    my $nrepl = shift;
+    printf(TEMP "%-8g",$t);
+    for(my $k=0; ($k<$nrepl); $k++) {
+	my $oo = shift;
+	printf(TEMP "  %3d",$oo);
+    }
+    printf(TEMP "\n");
 }
 
 $nrepl = 0;
@@ -64,10 +79,13 @@ while ($line = <IN_FILE>) {
 	    printf("There are $nrepl replicas.\n");
 
 	    @order = ();
+            @revorder = ();
 	    for($k=0; ($k<$nrepl); $k++) {
 		$order[$k] = $k;
+                $revorder[$k] = $k;
 	    }
 	    pr_order($tinit,$nrepl,@order);
+	    pr_revorder($tinit,$nrepl,@revorder);
 	    $init = 1;
 	    $nline++;
 	}
@@ -76,6 +94,8 @@ while ($line = <IN_FILE>) {
 	    $k = 0;
 	    for($m=3; ($m<$#log_line); $m++) {
 		if ($log_line[$m] eq "x") {
+		    $revorder[$order[$k]] = $k+1;
+		    $revorder[$order[$k+1]] = $k;
 		    $tmp = $order[$k];
 		    $order[$k] = $order[$k+1];
 		    $order[$k+1] = $tmp;
@@ -86,11 +106,13 @@ while ($line = <IN_FILE>) {
 		}
 	    }
 	    pr_order($tstep,$nrepl,@order);
+	    pr_revorder($tstep,$nrepl,@revorder);
 	    $nline++;
 	}
     }
 }
 close IN_FILE;
-close ALL;
+close NDX;
+close TEMP;
 
-printf ("Finished writing $ndx with %d lines\n",$nline);
+printf ("Finished writing $ndx and $temp with %d lines\n",$nline);
