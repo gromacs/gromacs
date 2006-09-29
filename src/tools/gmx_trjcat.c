@@ -296,7 +296,7 @@ static void do_demux(int nset,char *fnms[],int nfile_out,char *fnms_out[],
 	gmx_fatal(FARGS,"Demuxing the same replica %d twice at time %f",
 		  j,trx[0].time);
       bSet[j] = TRUE;
-      if (isize != natoms)
+      if (index)
 	write_trxframe_indexed(fp_out[j],&trx[i],isize,index);
       else
 	write_trxframe(fp_out[j],&trx[i]);
@@ -525,8 +525,10 @@ int gmx_trjcat(int argc,char *argv[])
 	 */
 	
 	bNewFile=TRUE;
-	
-	printf("\nlasttime %g\n", lasttime);
+
+	printf("\n");
+	if (lasttime != NOTSET)
+	  printf("lasttime %g\n", lasttime);
 	
 	do {
 	  /* copy the input frame to the output frame */
