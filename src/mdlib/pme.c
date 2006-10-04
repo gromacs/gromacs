@@ -1725,6 +1725,10 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     where();
 
     if (pme->nnodes == 1) {
+      if (DOMAINDECOMP(cr)) {
+	pme->my_homenr = homenr;
+	pme_realloc_homenr_things(pme);
+      }
       pme->x_home = x;
       pme->q_home = charge;
       pme->f_home = f;
