@@ -219,7 +219,8 @@ static void do_update_visc(int start,int homenr,double dt,
     /* Classic version of update, used with berendsen coupling */
     for(n=start; n<start+homenr; n++) {
       w_dt = invmass[n]*dt;
-      gt   = cTC[n];
+      if (cTC)
+        gt   = cTC[n];
       lg   = tcstat[gt].lambda;
       cosz = cos(fac*x[n][ZZ]);
 
