@@ -1,5 +1,4 @@
 /* $Id$ */
->>>>>>> 1.16.2.1
 #include "math.h"
 #include "string.h"
 #include "copyrite.h"
@@ -8,7 +7,7 @@
 #include "macros.h"
 #include "vec.h"
 #include "statutil.h"
-#include "ewald.h"
+#include "coulomb.h"
 
 enum { mGuillot, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
 
