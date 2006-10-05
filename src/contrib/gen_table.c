@@ -21,7 +21,7 @@ static double erf1(double x)
   return (2/sqrt(M_PI))*exp(-x*x);
 }
 
-void do_hard(FILE *fp,double resolution,double efac,double delta)
+void do_hard(FILE *fp,int pts_nm,double efac,double delta)
 {
   int    i,k,imax;
   double x,vr,vr2,vc,vc2;
@@ -29,9 +29,9 @@ void do_hard(FILE *fp,double resolution,double efac,double delta)
   if (delta < 0)
     gmx_fatal(FARGS,"Delta should be >= 0 rather than %f\n",delta);
     
-  imax     = 3.0/resolution;
+  imax     = 3.0*pts_nm;
   for(i=0; (i<=imax); i++) {
-    x   =  i*resolution;
+    x   =  i*(1.0/pts_nm);
     
     if (x < delta) {
       /* Avoid very high numbers */
@@ -49,7 +49,7 @@ void do_hard(FILE *fp,double resolution,double efac,double delta)
 
 }
 
-void do_AB1(FILE *fp,int eel,double resolution,int ndisp,int nrep)
+void do_AB1(FILE *fp,int eel,int pts_nm,int ndisp,int nrep)
 {
   int    i,k,imax;
   double myfac[3] = { 1, -1, 1 };
@@ -58,9 +58,9 @@ void do_AB1(FILE *fp,int eel,double resolution,int ndisp,int nrep)
   
   myexp[1] = ndisp;
   myexp[2] = nrep;
-  imax     = 3.0/resolution;
+  imax     = 3.0*pts_nm;
   for(i=0; (i<=imax); i++) {
-    x   =  i*resolution;
+    x   =  i*(1.0/pts_nm);
     
     fprintf(fp,"%12.5e",x);
     
@@ -80,52 +80,53 @@ void do_AB1(FILE *fp,int eel,double resolution,int ndisp,int nrep)
 }
 
 void lo_do_ljc(double r,
-	       double *vc,double *vc2,
-	       double *vd,double *vd2,
-	       double *vr,double *vr2)
+	       double *vc,double *fc,
+	       double *vd,double *fd,
+	       double *vr,double *fr)
 {
-  double r2,r6,r12;
+  double r2,r_6,r_12;
   
   r2    = r*r;
-  r6    = 1.0/(r2*r2*r2);
-  r12   = r6*r6;
+  r_6   = 1.0/(r2*r2*r2);
+  r_12  = r_6*r_6;
 
   *vc   = 1.0/r;
-  *vc2  = 2.0/(r*r2);
+  *fc   = 1.0/(r2);
 
-  *vd   = -r6;
-  *vd2  = 42.0*(*vd)/r2;
+  *vd   = -r_6;
+  *fd   = -6.0*(*vd)/r;
 
-  *vr  = r12;
-  *vr2 = 156.0*(*vr)/r2;
+  *vr   = r_12;
+  *fr   = 12.0*(*vr)/r;
 }
 
 /* use with coulombtype = user */
 void lo_do_ljc_pme(double r,
 		   double rcoulomb, double ewald_rtol,
-		   double *vc,double *vc2,
-		   double *vd,double *vd2,
-		   double *vr,double *vr2)
+		   double *vc,double *fc,
+		   double *vd,double *fd,
+		   double *vr,double *fr)
 {
-  double r2,r6,r12;
+  double r2,r_6,r_12;
   double isp= 0.564189583547756;
   double ewc;
 
-  ewc = calc_ewaldcoeff(rcoulomb,ewald_rtol);
+  ewc  = calc_ewaldcoeff(rcoulomb,ewald_rtol);
 
-  r2    = r*r;
-  r6    = 1.0/(r2*r2*r2);
-  r12   = r6*r6;
+  r2   = r*r;
+  r_6  = 1.0/(r2*r2*r2);
+  r_12 = r_6*r_6;
   
   *vc   = erfc(ewc*r)/r;
-  *vc2  = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
-          4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;
+  /* *vc2  = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
+     4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;*/
+  *fc  = 2*ewc*exp(-ewc*ewc*r2)*isp/r + erfc(ewc*r)/r2;
 
-  *vd   = -r6;
-  *vd2  = 42.0*(*vd)/r2;
+  *vd  = -r_6;
+  *fd  = -6.0*(*vd)/r;
 
-  *vr  = r12;
-  *vr2 = 156.0*(*vr)/r2;
+  *vr  = r_12;
+  *fr  = 12.0*(*vr)/r;
 }
 
 void lo_do_guillot(double r,double xi, double xir,
@@ -254,14 +255,14 @@ void lo_do_GG_q_q(double r,double xi,double xir,
   *vr2  = 4.0*pow(M_PI, -1.0/2.0)*pow(r, -2.0)*exp((-1.0/4.0)*(r*r)*pow(xir, -2.0)) + pow(M_PI, -1.0/2.0)*pow(xir, -2.0)*exp((-1.0/4.0)*(r*r)*pow(xir, -2.0)) + 4.0*pow(r, -3.0)*xir*erfc((r*(1.0/2.0))/xir);
 }
 
-static void do_guillot(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+static void do_guillot(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
   double r,vc,vc2,vd,vd2,vr,vr2;
 
-  imax = 3/resolution;
+  imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
-    r     = i*resolution;
+    r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
@@ -273,38 +274,38 @@ static void do_guillot(FILE *fp,int eel,double resolution,double rc,double rtol,
   }
 }
 
-static void do_ljc(FILE *fp,int eel,double resolution,real rc,real rtol)
+static void do_ljc(FILE *fp,int eel,int pts_nm,real rc,real rtol)
 {
   int    i,i0,imax;
-  double r,vc,vc2,vd,vd2,vr,vr2;
+  double r,vc,fc,vd,fd,vr,fr;
 
-  imax = 3/resolution;
+  imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
-    r     = i*resolution;
+    r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
-      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+      vc = fc = vd = fd = vr = fr = 0;
     } else {
       if (eel == eelPME) {
-	lo_do_ljc_pme(r,rc,rtol,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+	lo_do_ljc_pme(r,rc,rtol,&vc,&fc,&vd,&fd,&vr,&fr);
       } else if (eel == eelCUT) { 
-	lo_do_ljc(r,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+	lo_do_ljc(r,&vc,&fc,&vd,&fd,&vr,&fr);
       }
     }
     fprintf(fp,"%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
-	    r,vc,vc2,vd,vd2,vr,vr2);
+	    r,vc,fc,vd,fd,vr,fr);
   }
 }
 
-static void do_guillot_maple(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+static void do_guillot_maple(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
   /*  double xi     = 0.15;*/
   double r,vc,vc2,vd,vd2,vr,vr2;
 
-  imax = 3/resolution;
+  imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
-    r     = i*resolution;
+    r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
@@ -320,14 +321,14 @@ static void do_guillot_maple(FILE *fp,int eel,double resolution,double rc,double
   }
 } 
 
-static void do_GG_q_q(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+static void do_GG_q_q(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
   double r,vc,vc2,vd,vd2,vr,vr2;
 
-  imax = 3/resolution;
+  imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
-    r     = i*resolution;
+    r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
@@ -343,15 +344,15 @@ static void do_GG_q_q(FILE *fp,int eel,double resolution,double rc,double rtol,d
   }
 } 
 
-static void do_GG_qd_q(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+static void do_GG_qd_q(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
   /*  double xi     = 0.15;*/
   double r,vc,vc2,vd,vd2,vr,vr2;
 
-  imax = 3/resolution;
+  imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
-    r     = i*resolution;
+    r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
@@ -367,15 +368,15 @@ static void do_GG_qd_q(FILE *fp,int eel,double resolution,double rc,double rtol,
   }
 } 
 
-static void do_GG_qd_qd(FILE *fp,int eel,double resolution,double rc,double rtol,double xi,double xir)
+static void do_GG_qd_qd(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
   /*  double xi     = 0.15;*/
   double r,vc,vc2,vd,vd2,vr,vr2;
 
-  imax = 3/resolution;
+  imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
-    r     = i*resolution;
+    r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
@@ -391,16 +392,16 @@ static void do_GG_qd_qd(FILE *fp,int eel,double resolution,double rc,double rtol
   }
 } 
 
-static void do_maaren(FILE *fp,int eel,double resolution,int npow)
+static void do_maaren(FILE *fp,int eel,int pts_nm,int npow)
 {
   int    i,i0,imax;
   double xi     = 0.05;
   double xir     = 0.0615;
   double r,vc,vc2,vd,vd2,vr,vr2;
 
-  imax = 3/resolution;
+  imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
-    r     = i*resolution;
+    r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
       vc = vc2 = vd = vd2 = vr = vr2 = 0;
@@ -422,10 +423,12 @@ int main(int argc,char *argv[])
     "potentials."
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
-  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL };
-  static real resolution = 0.001,delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
+  /*  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL }; */
+  static char *model[]   = { NULL, "ljc", NULL };
+  static real delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
   static int  nrep       = 12;
   static int  ndisp      = 6;
+  static int  pts_nm     = 500;
   t_pargs pa[] = {
     { "-el",     FALSE, etENUM, {opt},
       "Electrostatics type: cut, rf or pme" },
@@ -439,8 +442,8 @@ int main(int argc,char *argv[])
       "Width of erfc(z)/z repulsion of the G&G model (z=0.5 rOO/xir)" },
     { "-m",      FALSE, etENUM, {model},
       "Model for the tables" },
-    { "-resol",  FALSE, etREAL, {&resolution},
-      "Resolution of the table (nm)" },
+    { "-resol",  FALSE, etINT,  {&pts_nm},
+      "Resolution of the table (points per nm)" },
     { "-delta",  FALSE, etREAL, {&delta},
       "Displacement in the Coulomb functions (nm), used as 1/(r+delta). Only for hard wall potential." },
     { "-efac",   FALSE, etREAL, {&efac},
@@ -494,39 +497,39 @@ int main(int argc,char *argv[])
   fp = ffopen(opt2fn("-o",NFILE,fnm),"w");
   switch (m) {
   case mGuillot:
-    do_guillot(fp,eel,resolution,rc,rtol,xi,xir);
+    do_guillot(fp,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mGuillot_Maple:
     fprintf(fp, "#\n# Table Guillot_Maple: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
-    do_guillot_maple(fp,eel,resolution,rc,rtol,xi,xir);
+    do_guillot_maple(fp,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mGG_q_q:
     fprintf(fp, "#\n# Table GG_q_q: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
-    do_GG_q_q(fp,eel,resolution,rc,rtol,xi,xir);
+    do_GG_q_q(fp,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mGG_qd_q:
     fprintf(stdout, "case mGG_qd_q");
     fprintf(fp, "#\n# Table GG_qd_q: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
-    do_GG_qd_q(fp,eel,resolution,rc,rtol,xi,xir);
+    do_GG_qd_q(fp,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mGG_qd_qd:
     fprintf(stdout, "case mGG_qd_qd");
     fprintf(fp, "#\n# Table GG_qd_qd: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
-    do_GG_qd_qd(fp,eel,resolution,rc,rtol,xi,xir);
+    do_GG_qd_qd(fp,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mMaaren:
-    do_maaren(fp,eel,resolution,nrep);
+    do_maaren(fp,eel,pts_nm,nrep);
     break;
   case mAB1:
     fprintf(fp, "#\n# Table AB1: ndisp=%d nrep=%d\n#\n",ndisp,nrep);
-    do_AB1(fp,eel,resolution,ndisp,nrep);
+    do_AB1(fp,eel,pts_nm,ndisp,nrep);
     break;
   case mLjc:
     fprintf(fp, "#\n# Table LJC(12-6-1): rc=%g, rtol=%g\n#\n",rc,rtol);
-    do_ljc(fp,eel,resolution,rc,rtol);
+    do_ljc(fp,eel,pts_nm,rc,rtol);
     break;
   case mHard_Wall:
-    do_hard(fp,resolution,efac,delta);
+    do_hard(fp,pts_nm,efac,delta);
     break;
   default:
     gmx_fatal(FARGS,"Model %s not supported yet",model[0]);
