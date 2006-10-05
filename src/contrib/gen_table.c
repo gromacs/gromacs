@@ -420,7 +420,10 @@ int main(int argc,char *argv[])
 {
   static char *desc[] = {
     "gen_table generates tables for mdrun for use with the USER defined",
-    "potentials."
+    "potentials. Note that the format has been update for higher",
+    "accuracy ni the forces starting with version 4.0. Using older",
+    "tables with 4.0 will silently crash your simulations, as will",
+    "using new tables with an older GROMACS version."
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
   /*  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL }; */
