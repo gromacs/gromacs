@@ -93,7 +93,7 @@ enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
 typedef struct {
   int  nx,nx0;
   double tabscale;
-  double *x,*v,*v2;
+  double *x,*v,*f;
 } t_tabledata;
 
 #define pow2(x) ((x)*(x))
@@ -168,7 +168,7 @@ static void splint(real xa[],real ya[],real y2a[],
 
 
 static void copy2table(int n,int offset,int stride,
-		       double x[],double Vtab[],double Vtab2[],
+		       double x[],double Vtab[],double Ftab[],
 		       real dest[],real r_zeros)
 {
 /* Use double prec. for the intermediary variables
@@ -179,11 +179,11 @@ static void copy2table(int n,int offset,int stride,
   double F,G,H,h;
 
   for(i=1; (i<n-1); i++) {
-    h   = x[i+1]-x[i];
-    F   = (Vtab[i+1]-Vtab[i]-(h*h/6.0)*(2*Vtab2[i]+Vtab2[i+1]));
-    G   = (h*h/2.0)*Vtab2[i];
-    H   = (h*h/6.0)*(Vtab2[i+1]-Vtab2[i]);
-    nn0 = offset+i*stride;
+    h   = x[i+1] - x[i];
+    F   = -Ftab[i]*h;
+    G   =  3*(Vtab[i+1] - Vtab[i]) + (Ftab[i+1] + 2*Ftab[i])*h;
+    H   = -2*(Vtab[i+1] - Vtab[i]) - (Ftab[i+1] +   Ftab[i])*h;
+    nn0 = offset + i*stride;
     dest[nn0]   = Vtab[i];
     dest[nn0+1] = F;
     dest[nn0+2] = G;
@@ -213,7 +213,7 @@ static void init_table(FILE *fp,int n,int nx0,
   if (bAlloc) {
     snew(td->x,td->nx);
     snew(td->v,td->nx);
-    snew(td->v2,td->nx);
+    snew(td->f,td->nx);
   }
   for(i=td->nx0; (i<td->nx); i++)
     td->x[i] = i/tabscale;
@@ -248,9 +248,9 @@ static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
   for(k=0; (k<etiNR); k++) {
     init_table(fp,nx,nx0,tabscale,&(td[k]),TRUE);
     for(i=0; (i<nx); i++) {
-      td[k].x[i]  = yy[0][i];
-      td[k].v[i]  = yy[2*k+1][i];
-      td[k].v2[i] = yy[2*k+2][i];
+      td[k].x[i] = yy[0][i];
+      td[k].v[i] = yy[2*k+1][i];
+      td[k].f[i] = yy[2*k+2][i];
     }
   }
   for(i=0; (i<ny); i++)
@@ -271,7 +271,7 @@ static void done_tabledata(t_tabledata *td)
     
   sfree(td->x);
   sfree(td->v);
-  sfree(td->v2);
+  sfree(td->f);
 }
 
 static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
@@ -292,16 +292,13 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   int  i,p;
   double r1,rc,r12,r13;
   double r,r2,r6,rc6;
-  double expr,Vtab,Ftab,Vtab2,Ftab2;
+  double expr,Vtab,Ftab;
   /* Parameters for David's function */
   double A=0,B=0,C=0,A_3=0,B_4=0;
   /* Parameters for the switching function */
-  double ksw,swi,swi1,swi2;
+  double ksw,swi,swi1;
   /* Temporary parameters */
   bool bSwitch,bShift;
-  double VtabT;  
-  double VtabT1;  
-  double VtabT2; 
   double ewc=fr->ewaldcoeff;
   double isp= 0.564189583547756;
    
@@ -354,8 +351,6 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     r12   = r6*r6;
     Vtab  = 0.0;
     Ftab  = 0.0;
-    Vtab2 = 0.0;
-    Ftab2 = 0.0;
     if (bSwitch) {
       /* swi is function, swi1 1st derivative and swi2 2nd derivative */
       /* The switch function is 1 for r<r1, 0 for r>rc, and smooth for
@@ -364,22 +359,21 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
        * ksw is just the constant 1/(rc-r1)^5, to save some calculations...
        */ 
       if(r<=r1) {
-	swi = 1.0;
-	swi1 = swi2 = 0.0;
+	swi  = 1.0;
+	swi1 = 0.0;
       } else if (r>=rc) {
-	swi = swi1 = swi2 = 0.0;
+	swi  = 0.0;
+	swi1 = 0.0;
       } else {
 	swi      = 1 - 10*pow3(r-r1)*ksw*pow2(rc-r1) 
 	  + 15*pow4(r-r1)*ksw*(rc-r1) - 6*pow5(r-r1)*ksw;
 	swi1     = -30*pow2(r-r1)*ksw*pow2(rc-r1) 
 	  + 60*pow3(r-r1)*ksw*(rc-r1) - 30*pow4(r-r1)*ksw;
-	swi2     =  -60*(r-r1)*ksw*pow2(rc-r1) 
-	  + 180*pow2(r-r1)*ksw*(rc-r1) - 120*pow3(r-r1)*ksw;
       }
     }
     else { /* not really needed, but avoids compiler warnings... */
-      swi = 1.0;
-      swi1 = swi2 = 0.0;
+      swi  = 1.0;
+      swi1 = 0.0;
     }
 #ifdef DEBUG_SWITCH
     fprintf(fp,"%10g  %10g  %10g  %10g\n",r,swi,swi1,swi2);
@@ -393,8 +387,6 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       /* Dispersion */
       Vtab  = -r6;
       Ftab  = 6.0*Vtab/r;
-      Vtab2 = 7.0*Ftab/r;
-      Ftab2 = 8.0*Vtab2/r;
       break;
     case etabLJ6Switch:
     case etabLJ6Shift:
@@ -402,16 +394,12 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       if (r < rc) {      
 	Vtab  = -r6;
 	Ftab  = 6.0*Vtab/r;
-	Vtab2 = 7.0*Ftab/r;
-	Ftab2 = 8.0*Vtab2/r;
       }
       break;
     case etabLJ12:
       /* Repulsion */
       Vtab  = r12;
       Ftab  = 12.0*Vtab/r;
-      Vtab2 = 13.0*Ftab/r;
-      Ftab2 = 14.0*Vtab2/r;
       break;
     case etabLJ12Switch:
     case etabLJ12Shift:
@@ -419,97 +407,63 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       if (r < rc) {                
 	Vtab  = r12;
 	Ftab  = 12.0*Vtab/r;
-	Vtab2 = 13.0*Ftab/r;
-	Ftab2 = 14.0*Vtab2/r;
       }  
       break;
 	case etabLJ6Encad:
         if(r < rc) {
             Vtab  = -(r6-6.0*(rc-r)*rc6/rc-rc6);
             Ftab  = -(6.0*r6/r-6.0*rc6/rc);
-            Vtab2 = -(42.0*r6/r2);
-            Ftab2 = 8.0*Vtab2/r;
         } else { /* r>rc */ 
             Vtab  = 0;
             Ftab  = 0;
-            Vtab2 = 0;
-            Ftab2 = 0;
         } 
         break;
     case etabLJ12Encad:
         if(r < rc) {
             Vtab  = r12-12.0*(rc-r)*rc6*rc6/rc-1.0*rc6*rc6;
             Ftab  = 12.0*r12/r-12.0*rc6*rc6/rc;
-            Vtab2 = 12.0*13.0*r12/r2;
-            Ftab2 = 14.0*Vtab2/r;	
         } else { /* r>rc */ 
             Vtab  = 0;
             Ftab  = 0;
-            Vtab2 = 0;
-            Ftab2 = 0;
         } 
         break;        
     case etabCOUL:
       Vtab  = 1.0/r;
       Ftab  = 1.0/r2;
-      Vtab2 = 2.0/(r*r2);
-      Ftab2 = 6.0/(r2*r2);
       break;
     case etabCOULSwitch:
     case etabShift:
       if (r < rc) { 
 	Vtab  = 1.0/r;
 	Ftab  = 1.0/r2;
-	Vtab2 = 2.0/(r*r2);
-	Ftab2 = 6.0/(r2*r2);
       }
       break;
     case etabEwald:
     case etabEwaldSwitch:
       Vtab  = erfc(ewc*r)/r;
       Ftab  = erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
-      Vtab2 = 2*erfc(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
-	  4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;
-      Ftab2 = 6*erfc(ewc*r)/(r2*r2)+
-	  12*exp(-(ewc*ewc*r2))*ewc*isp/(r*r2)+
-	  8*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp/r+
-	  8*ewc*ewc*ewc*ewc*ewc*r*exp(-(ewc*ewc*r2))*isp;
       break;
     case etabEwaldUser:
       /* Only calculate minus the reciprocal space contribution */
       Vtab  = -erf(ewc*r)/r;
       Ftab  = -erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
-      Vtab2 = -2*erf(ewc*r)/(r*r2)+4*exp(-(ewc*ewc*r2))*ewc*isp/r2+
-	  4*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp;
-      Ftab2 = -6*erf(ewc*r)/(r2*r2)+
-	  12*exp(-(ewc*ewc*r2))*ewc*isp/(r*r2)+
-	  8*ewc*ewc*ewc*exp(-(ewc*ewc*r2))*isp/r+
-	  8*ewc*ewc*ewc*ewc*ewc*r*exp(-(ewc*ewc*r2))*isp;
       break;
     case etabRF:
       Vtab  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
       Ftab  = 1.0/r2     - 2*fr->k_rf*r;
-      Vtab2 = 2.0/(r*r2) + 2*fr->k_rf;
-      Ftab2 = 6.0/(r2*r2);
       break;
     case etabEXPMIN:
       expr  = exp(-r);
       Vtab  = expr;
       Ftab  = expr;
-      Vtab2 = expr;
-      Ftab2 = expr;
       break;
     case etabCOULEncad:
         if(r < rc) {
             Vtab  = 1.0/r-(rc-r)/(rc*rc)-1.0/rc;
             Ftab  = 1.0/r2-1.0/(rc*rc);
-            Vtab2 = 2.0/(r*r2);
-            Ftab2 = 6.0/(r2*r2); 	
         } else { /* r>rc */ 
             Vtab  = 0;
             Ftab  = 0;
-            Vtab2 = 0;
-            Ftab2 = 0;
         } 
         break;
     default:
@@ -526,27 +480,22 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 	  r13 = (r-r1)*r12;
 	  Vtab  += - A_3*r13 - B_4*r12*r12;
 	  Ftab  +=   A*r12 + B*r13;
-	  Vtab2 += - 2.0*A*(r-r1) - 3.0*B*r12;
-	  Ftab2 +=   2.0*A + 6.0*B*(r-r1);
 	}
       }
     }
     
     if ((r > r1) && bSwitch) {
-      VtabT     = Vtab;
-      VtabT1    = -Ftab;
-      VtabT2    = Vtab2;
-      Vtab   = VtabT*swi;
-      Vtab2  = VtabT2*swi + VtabT1*swi1 + VtabT1*swi1 + VtabT*swi2;
+      Ftab = Ftab*swi - Vtab*swi1;
+      Vtab = Vtab*swi;
     }  
     
     /* Convert to single precision when we store to mem */
     if (tp == etabEwaldUser) {
-      td->v[i]  += Vtab;
-      td->v2[i] += Vtab2;
+      td->v[i] += Vtab;
+      td->f[i] += Ftab;
     } else {
       td->v[i]  = Vtab;
-      td->v2[i] = Vtab2;
+      td->f[i]  = Ftab;
     }
   }
 
@@ -747,7 +696,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 		tabsel[k]==etabEwaldUser ? "Modified" : "Generated",
 		td[k].nx,b14only?"1-4 ":"",tabnm[tabsel[k]],td[k].tabscale);
     }
-    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].v2,table.tab,-1);
+    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,table.tab,-1);
     
     if (bDebugMode() && bVerbose) {
       if (b14only)
