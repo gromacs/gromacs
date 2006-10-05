@@ -840,39 +840,43 @@ There are separate tables for electrostatic, dispersion and repulsion
 interactions,
 but for the sake of caching performance these have been combined
 into a single array. 
-The cubic spline interpolation looks like this:
+The cubic spline interpolation for $x_i \leq x < x_{i+1}$ looks like this:
 \beq
-y(x)~=~\eta y_i + \epsilon y_{i+1} + \frac{h^2}{6}\left[(\eta^3-\eta)y_i^{''} + (\epsilon^3-\epsilon)y_{i+1}^{''}\right]
+V_s(x) = A_0 + A_1 \,\epsilon + A_2 \,\epsilon^2 + A_3 \,\epsilon^3
 \label{eqn:spline}
 \eeq
-where $\epsilon$ = 1-$\eta$, and $y_i$ and $y_i^{''}$ 
-are the tabulated values of a function $y(x)$ 
-and its second derivative respectively. Furthermore,
+where the table spacing $h$ and fraction $\epsilon$ are given by:
 \bea
 h	&=&	x_{i+1} - x_i	\\
 \epsilon&=&	(x - x_i)/h
 \eea
-so that $0 \le\epsilon < 1$. \eqnref{spline} can be rewritten as
+so that $0 \le \epsilon < 1$.
+From this we can calculate the derivative in order to determine the forces:
 \beq
-y(x)~=~ y_i + \epsilon\left(y_{i+1}-y_i-\frac{h^2}{6}\left(2 y_i^{''}+y_{i+1}^{''}\right)\right) + \epsilon^2\left(\frac{h^2}{2}y_i^{''}\right) + \epsilon^3\frac{h^2}{6}\left(y_{i+1}^{''}-y_i^{''}\right)
+-V_s'(x) ~=~ 
+-\frac{{\rm d}V_s(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x} ~=~
+-(A_1 + 2 A_2 \,\epsilon + 3 A_3 \,\epsilon^2)/h
 \eeq
-Note that the x-dependence is completely in $\epsilon$. This can abbreviated
-to
-\beq
-y(x)~=~ y_i + \epsilon F_i + \epsilon^2 G_i + \epsilon^3 H_i
-\eeq
->From this we can calculate the derivative in order to determine the forces:
-\beq
-\frac{{\rm d}y(x)}{{\rm d}x}~=~\frac{{\rm d}y(x)}{{\rm d}\epsilon}\frac{{\rm d}\epsilon}{{\rm d}x}~=~(F_i + 2\epsilon G_i + 3\epsilon^2 H_i)/h
-\eeq
-If we store in the table $y_i$, $F_i$, $G_i$ and $H_i$ we need 
-a table of length 4n. The number of points per nanometer is 500 and 2000
+The four coefficients are determined from the four conditions
+that $V_s$ and $-V_s'$ at both ends of each interval should match
+the exact potential $V$ and force $-V'$.
+This results in the following errors for each interval:
+\bea
+|V_s  - V  |_{max} &=& V'''' \frac{h^4}{384} + O(h^5) \\
+|V_s' - V' |_{max} &=& V'''' \frac{h^3}{72\sqrt{3}} + O(h^4) \\
+|V_s''- V''|_{max} &=& V'''' \frac{h^2}{12}  + O(h^3)
+\eea
+V and V' are continuous, while V'' is the first discontinuous
+derivative.
+The number of points per nanometer is 500 and 2000
 for single and double precision compiled versions of {\gromacs}, respectively.
-The relative error is less then $10^{-4}$ when n = 500 points/nm.
-The force routines get a 
-scaling factor $s$ as a parameter that is equal to the number of points per
-nm. (Note that $h$ is $s^{-1}$).
+This means that the errors in the potential and force will usually
+be smaller than the single precision accuracy.
 
+{\gromacs} stores $A_0$, $A_1$, $A_2$ and $A_3$.
+The force routines get a table with these four parameters and
+a scaling factor $s$ that is equal to the number of points per nm.
+(Note that $h$ is $s^{-1}$).
 The algorithm goes a little something like this:
 \begin{enumerate}
 \item	Calculate distance vector (\ve{r}$_{ij}$) and distance r$_{ij}$
@@ -883,15 +887,6 @@ The algorithm goes a little something like this:
 \item	Do the interpolation to calculate the potential $V$ and the the scalar force $f$
 \item	Calculate the vector force \ve{F} by multiplying $f$ with \ve{r}$_{ij}$
 \end{enumerate}
-
-The tables are stored internally as y$_i$, F$_i$, G$_i$, H$_i$ in the order
-coulomb, dispersion, repulsion.
-In total there are 12 values in each table entry. However, as evident from 
-\eqnref{spline}, only two values ($y$ and $y''$) are necessary to determine each of the repulsion,
-dispersion and Coulomb potentials; from these $y_i$, $F_i$, $G_i$ and
-$H_i$ can be determined.  Hence the {\gromacs} user only has to
-specify $y$ and $y''$, for each of these, leading to a total of six
-functions to be specified in the input to the {\tt mdrun} program.
 
 Note that table lookup is significantly {\em
 slower} than computation of the most simple Lennard-Jones and Coulomb
@@ -906,7 +901,7 @@ You can also use your own \swapindex{potential}{function}s
 without editing the {\gromacs} code. 
 The potential function should be according to the following equation
 \beq
-V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 g(r_{ij}) + C_{12} h(r_{ij})
+V(r_{ij}) ~=~ \frac{q_i q_j}{4 \pi\epsilon_0} f(r_{ij}) + C_6 \,g(r_{ij}) + C_{12} \,h(r_{ij})
 \eeq
 with f,g,h user defined functions. Note that if g(r) represents a
 normal dispersion interaction, g(r) should be $<$ 0. C$_6$, C$_{12}$
@@ -924,11 +919,11 @@ rvdw            = 1.0\\
 \end{tt}
 the MD program will read a single file (the name can be changed with
 option {\tt -table}) with seven columns of table lookup data in the
-order: $x$, $f(x)$, $f''(x)$, $g(x)$, $g''(x)$, $h(x)$, $h''(x)$.
+order: $x$, $f(x)$, $-f'(x)$, $g(x)$, $-g'(x)$, $h(x)$, $-h'(x)$.
  The $x$ should run from 0 to $r_c+1$ (the value table extension can be
 changed in the {\tt .mdp} file).
 You can choose the spacing you like; for the standard tables {\gromacs}
-using a spacing of 0.002 and 0.0005 nm when you run in single
+uses a spacing of 0.002 and 0.0005 nm when you run in single
 and double precision, respectively.  In this
 context $r_c$ denotes the maximum of the two cut-offs {\tt rvdw} and
 {\tt rcoulomb} (see above). These variables need not be the same (and
