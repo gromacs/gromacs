@@ -572,12 +572,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     repl_ex = init_replica_exchange(log,cr->ms,state_global,inputrec,
 				    repl_ex_nst,repl_ex_seed);
   
-  if (!inputrec->bUncStart && !bRerunMD) {
+  if (!inputrec->bUncStart && !bRerunMD)
     do_shakefirst(log,ener,inputrec,nsb,mdatoms,state,vold,buf,f,
 		  graph,cr,nrnb,grps,fr,top,edyn,&pulldata);
-    if (DOMAINDECOMP(cr))
-      dd_move_x(cr->dd,state->x,buf);
-  }
   debug_gmx();
 
   /* Compute initial EKin for all.. */

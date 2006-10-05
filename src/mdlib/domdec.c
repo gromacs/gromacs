@@ -1518,7 +1518,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc)
 }
 
 static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
-				   rvec x[],rvec buf[],matrix box,rvec cg_cm[],
+				   rvec buf[],matrix box,rvec cg_cm[],
 				   real r_comm)
 {
   int dim_ind,dim,nat_tot,ncell,cell,celli,c,i,cg,cg_gl,nrcg,d;
@@ -1596,11 +1596,9 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 	  ind->index[nsend] = cg;
 	  comm->buf_int[nsend] = index_gl[cg];
 	  ind->nsend[cell]++;
+	  copy_rvec(cg_cm[cg],buf[nsend]);
 	  nsend++;
-	  for(i=cgindex[cg]; i<cgindex[cg+1]; i++) {
-	    copy_rvec(x[i],buf[nat]);
-	    nat++;
-	  }
+	  nat += cgindex[cg+1] - cgindex[cg];
 	}
       }
     }
@@ -1622,23 +1620,16 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 		    index_gl+ncg_cell[ncell], ind->nrecv[ncell]);
     /* Communicate the coordinate, receive in place */
     dd_sendrecv_rvec(dd, dim_ind, ddBackward,
-		     buf,       ind->nsend[ncell+1],
-		     x+nat_tot, ind->nrecv[ncell+1]);
+		     buf,                   nsend,
+		     cg_cm+ncg_cell[ncell], ind->nrecv[ncell]);
     /* Make the charge group index and determine cgcm */
     for(cell=ncell; cell<2*ncell; cell++) {
       ncg_cell[cell+1] = ncg_cell[cell] + ind->nrecv[cell-ncell];
       for(cg=ncg_cell[cell]; cg<ncg_cell[cell+1]; cg++) {
 	cg_gl = index_gl[cg];
 	nrcg = gcgs->index[cg_gl+1] - gcgs->index[cg_gl];
-	clear_rvec(cg_cm[cg]);
-	for(i=0; i<nrcg; i++)
-	  rvec_inc(cg_cm[cg],x[nat_tot++]);
-	if (nrcg > 1) {
-	  inv_ncg = 1.0/nrcg;
-	  for(d=0; (d<DIM); d++)
-	    cg_cm[cg][d] *= inv_ncg;
-	}
 	cgindex[cg+1] = cgindex[cg] + nrcg;
+	nat_tot += nrcg;
       }
     }
     ncell += ncell;
@@ -1751,7 +1742,7 @@ void dd_partition_system(FILE         *fplog,
   
   /* Setup up the communication and communicate the coordinates */
   setup_dd_communication(fplog,dd,&top_global->blocks[ebCGS],
-			 state_local->x,buf,state_local->box,
+			 buf,state_local->box,
 			 fr->cg_cm,fr->rlistlong);
   
   /* Set the indices */
@@ -1810,14 +1801,4 @@ void dd_partition_system(FILE         *fplog,
     init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
 		     START(nsb),HOMENR(nsb),
 		     ir->eI!=eiSteep,NULL,dd);
-  
-  /*dump_conf(dd,"ap",state_local->x,state_local->box);*/
-  
-  /* Calculate the centers of mass of the communicated charge groups.
-   * The home charge groups have been done in dd_redistribute_cg.
-   */
-  calc_cgcm(fplog,dd->ncg_home,dd->ncg_tot,
-	    &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
-
-  inc_nrnb(nrnb,eNR_CGCM,dd->nat_tot-dd->nat_home);
 }

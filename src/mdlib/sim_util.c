@@ -315,9 +315,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
     if (DOMAINDECOMP(cr)) {
-      /* On neighborsearch x has already been moved after repartitioning. */
-      if (!bNS)
-	dd_move_x(cr->dd,x,buf);
+      dd_move_x(cr->dd,x,buf);
     } else {
       move_x(fplog,cr,cr->left,cr->right,x,nsb,nrnb);
     }
