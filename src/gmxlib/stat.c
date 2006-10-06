@@ -160,7 +160,7 @@ void global_stat(FILE *log,
   if (DOMAINDECOMP(cr)) {
     extract_bind(rb,inb,1,&nb);
     if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calcalated because some atoms involved moved further apart than the cut-off distance",
+      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the cut-off distance",
 		cr->dd->nbonded_global-(int)(nb + 0.5),cr->dd->nbonded_global);
   }
   where();
