@@ -270,7 +270,7 @@ void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
   int    *a          = grid->a;
 
   ncells=grid->ncells;
-  if(ncells<=0 || grid->nr<=0) 
+  if (ncells <= 0) 
     gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
 
   calc_bor(log,cg0,cg1,ncg,CG0,CG1);
