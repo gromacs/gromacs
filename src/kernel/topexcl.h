@@ -55,7 +55,7 @@ extern void init_nnb(t_nextnb *nnb, int nr, int nrex);
 extern void done_nnb(t_nextnb *nnb);
 /* Cleanup the nnb struct */
 
-#ifdef DEBUG
+#ifdef DEBUG_NNB
 #define print_nnb(nnb, s) __print_nnb(nnb, s)
 extern void print_nnb(t_nextnb *nnb, char *s);
 /* Print the nnb struct */

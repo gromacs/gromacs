@@ -293,3 +293,66 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
   return nresolved;
 }
      
+t_q_alpha *rd_q_alpha(char *fn,int *nr)
+/* Read file with charges and polarizabilities */
+{
+  FILE *fp;
+  int    n=0;
+  double q,alpha;
+  char   name[STRLEN];
+  char   line[STRLEN];
+  t_q_alpha *qa=NULL;
+  
+  fp = ffopen(fn,"r");
+  while (fgets2(line,STRLEN-1,fp) != NULL) {
+    strip_comment(line);
+    trim(line);
+    if (strlen(line) > 0) {
+      if (sscanf(line,"%s%lf%lf",name,&q,&alpha) == 3) {
+	srenew(qa,n+1);
+	qa[n].atom  = strdup(name);
+	qa[n].q     = q;
+	qa[n].alpha = alpha;
+	n++;
+      }
+      else 
+	fprintf(stderr,"Don't understand line '%s'\n",line);
+    }
+  }
+  fclose(fp);
+  *nr = n;
+  return qa;
+}
+
+void dump_q_alpha(FILE *fp,int nr,t_q_alpha qa[])
+/* Dump the database for debugging */
+{
+}
+
+double get_qa_q(char *atom,int nr,t_q_alpha qa[])
+/* Return the charge belonging to atom */
+{
+  int i;
+  
+  for(i=0; (i<nr); i++)
+    if (strcasecmp(atom,qa[i].atom) == 0)
+      return qa[i].q;
+      
+  gmx_fatal(FARGS,"Can not find charge for atom %s",atom);
+  
+  return 0;
+}
+
+double get_qa_alpha(char *atom,int nr,t_q_alpha qa[])
+/* Return the alpha belonging to atom */
+{
+  int i;
+  
+  for(i=0; (i<nr); i++)
+    if (strcasecmp(atom,qa[i].atom) == 0)
+      return qa[i].alpha;
+      
+  gmx_fatal(FARGS,"Can not find polarizability for atom %s",atom);
+  
+  return 0;
+}

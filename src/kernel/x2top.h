@@ -62,4 +62,21 @@ extern int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
  * with help of the bond list 
  */
 
+typedef struct {
+  char *atom;
+  double q,alpha;
+} t_q_alpha;
+
+extern t_q_alpha *rd_q_alpha(char *fn,int *nr);
+/* Read file with charges and polarizabilities */
+
+extern void dump_q_alpha(FILE *fp,int nr,t_q_alpha qa[]);
+/* Dump the database for debugging */
+
+extern double get_qa_q(char *atom,int nr,t_q_alpha qa[]);
+/* Return the charge belonging to atom */
+
+extern double get_qa_alpha(char *atom,int nr,t_q_alpha qa[]);
+/* Return the alpha belonging to atom */
+
 #endif

@@ -41,6 +41,7 @@
 #include "sysstuff.h"
 #include "smalloc.h"
 #include "macros.h"
+/* #define DEBUG_NNB */
 #include "topexcl.h"
 #include "toputil.h"
 
@@ -120,7 +121,7 @@ void done_nnb (t_nextnb *nnb)
   nnb->nrex = 0;
 }
 
-#ifdef DEBUG
+#ifdef DEBUG_NNB
 void __print_nnb(t_nextnb *nnb, char *s)
 {
   int i,j,k;
@@ -234,7 +235,8 @@ static void do_gen(int nrbonds,	       /* total number of bonds in s	*/
 
 	/* store all atoms in nb's n-th list into i's n+1-th list */
 	for (k=0; (k < nnb->nrexcl[nb][n]); k++)
-	  add_nnb(nnb,n+1,i,nnb->a[nb][n][k]);
+	  if (i != nnb->a[nb][n][k])
+	    add_nnb(nnb,n+1,i,nnb->a[nb][n][k]);
       }
   print_nnb(nnb,"After exclude rest");
 }

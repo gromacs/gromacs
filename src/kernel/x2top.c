@@ -62,40 +62,6 @@
 #include "x2top.h"
 #include "atomprop.h"
 
-char atp[6] = "HCNOSX";
-#define NATP asize(atp)
-
-real blen[NATP][NATP] = { 
-  {  0.00,  0.108, 0.105, 0.10, 0.10, 0.10 },
-  {  0.108, 0.15,  0.14,  0.14, 0.16, 0.14 },
-  {  0.105, 0.14,  0.14,  0.14, 0.16, 0.14 },
-  {  0.10,  0.14,  0.14,  0.14, 0.17, 0.14 },
-  {  0.10,  0.16,  0.16,  0.17, 0.20, 0.17 },
-  {  0.10,  0.14,  0.14,  0.14, 0.17, 0.17 }
-};
-
-#define MARGIN_FAC 1.1
-
-static real set_x_blen(real scale)
-{
-  real maxlen;
-  int  i,j;
-
-  for(i=0; i<NATP-1; i++) {
-    blen[NATP-1][i] *= scale;
-    blen[i][NATP-1] *= scale;
-  }
-  blen[NATP-1][NATP-1] *= scale;
-  
-  maxlen = 0;
-  for(i=0; i<NATP; i++)
-    for(j=0; j<NATP; j++)
-      if (blen[i][j] > maxlen)
-	maxlen = blen[i][j];
-  
-  return maxlen*MARGIN_FAC;
-}
-
 static bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
 {
   int i,j;
@@ -111,19 +77,6 @@ static bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
     }
   }
   return FALSE;
-}
-
-static int get_atype(char *nm)
-{
-  int i,aai=NATP-1;
-  
-  for(i=0; (i<NATP-1); i++) {
-    if (nm[0] == atp[i]) {
-      aai=i;
-      break;
-    }
-  }
-  return aai;
 }
 
 void mk_bonds(int nnm,t_nm2type nmt[],
@@ -355,6 +308,242 @@ static void print_rtp(char *filenm,char *title,t_atoms *atoms,
   fclose(fp);
 }
 
+static int pcompar(const void *a, const void *b)
+{
+  t_param *pa,*pb;
+  int     d;
+  pa=(t_param *)a;
+  pb=(t_param *)b;
+  
+  d = pa->AI - pb->AI;
+  if (d == 0) 
+    d = pa->AJ - pb->AJ;
+  if (d == 0) 
+    d = pa->AK - pb->AK;
+  if (d == 0) 
+    d = pa->AL - pb->AL;
+  /*if (d == 0)
+    return strlen(pb->s) - strlen(pa->s);
+    else*/
+    return d;
+}
+
+static int acomp(const void *a,const void *b)
+{
+  atom_id *aa = (atom_id *)a;
+  atom_id *ab = (atom_id *)b;
+  
+  return (*aa - *ab);
+}
+
+void clean_excls(int nr,t_excls excls[])
+{
+  int i,j,k;
+  
+  for(i=0; (i<nr); i++) {
+    if ( excls[i].nr > 0) {
+      qsort(excls[i].e,excls[i].nr,sizeof(excls[i].e[0]),acomp);
+      k=0;
+      for(j=0; (j<excls[i].nr); j++) {
+	if (excls[i].e[j] != excls[i].e[k]) {
+	  excls[i].e[++k] = excls[i].e[j];
+	}
+      }
+      excls[i].nr = ++k;
+    }
+  }
+}
+
+static void clean_thole(t_params *ps)
+{
+  int     i,j;
+  atom_id a,ai,aj,ak,al;
+  
+  if (ps->nr > 0) {
+    /* swap atomnumbers in bond if first larger than second: */
+    for(i=0; (i<ps->nr); i++)
+      if ( ps->param[i].AK < ps->param[i].AI ) {
+	a = ps->param[i].AI;
+	ps->param[i].AI = ps->param[i].AK;
+	ps->param[i].AK = a;
+	a = ps->param[i].AJ;
+	ps->param[i].AJ = ps->param[i].AL;
+	ps->param[i].AL = a;
+      }
+    
+    /* Sort bonds */
+    qsort(ps->param,ps->nr,(size_t)sizeof(ps->param[0]),pcompar);
+    
+    /* remove doubles, keep the first one always. */
+    j = 1;
+    for(i=1; (i<ps->nr); i++) {
+      if ((ps->param[i].AI != ps->param[j-1].AI) ||
+	  (ps->param[i].AJ != ps->param[j-1].AJ) ||
+	  (ps->param[i].AK != ps->param[j-1].AK) ||
+	  (ps->param[i].AL != ps->param[j-1].AL) ) {
+	cp_param(&(ps->param[j]),&(ps->param[i]));
+	j++;
+      } 
+    }
+    fprintf(stderr,"Number of Tholes was %d, now %d\n",ps->nr,j);
+    ps->nr=j;
+  }
+  else
+    fprintf(stderr,"No Tholes\n");
+}
+
+static void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
+				      t_atomtype *atype,t_nextnb *nnb,
+				      t_excls excls[])
+{
+  int atp,jtp,jid,i,j,k,l,m,ftype,nb,nra,npol=0;
+  bool *bRemove,*bHaveShell,bShell;
+  int  *shell_index;
+  t_param *p;
+  int bt[] = { F_BONDS, F_ANGLES, F_PDIHS, F_IDIHS, F_LJ14 };
+  
+  snew(plist[F_POLARIZATION].param,plist[F_BONDS].nr);
+  for(i=0; (i<asize(bt)); i++) {
+    ftype = bt[i];
+    p     = plist[ftype].param;
+    nra   = interaction_function[ftype].nratoms;
+    snew(bRemove,plist[ftype].nr);
+    for(j=0; (j<plist[ftype].nr); j++) {
+      for(k=0; (k<nra); k++) {
+	atp = atoms->atom[p[j].a[k]].type;
+	if (strcasecmp(*atype->atomname[atp],"SHELL") == 0) {
+	  bRemove[j] = TRUE;
+	  if (ftype == F_BONDS) {
+	    memcpy(&plist[F_POLARIZATION].param[npol],
+		   &plist[F_BONDS].param[j],
+		   sizeof(plist[F_BONDS].param[j]));
+	    plist[F_POLARIZATION].param[npol].C0 = atoms->atom[p[j].a[k]].qB;
+	    npol++;
+	    fprintf(stderr,"Adding polarization\n");
+	  }
+	}
+      }
+    }
+    for(j=k=0; (j<plist[ftype].nr); j++) {
+      if (!bRemove[j] && (j > k)) 
+	memcpy(&plist[ftype].param[k++],
+	       &plist[ftype].param[j],
+	       sizeof(plist[ftype].param[j]));
+    }
+    plist[ftype].nr = k;
+  }
+  plist[F_POLARIZATION].nr = npol;
+
+  /* now for all atoms */
+  for (i=0; (i < atoms->nr); i++) {
+    atp = atoms->atom[i].type;
+    if (strcasecmp(*atype->atomname[atp],"SHELL") == 0) {
+      
+      for(m=3; (m<=4); m++) {
+	/* for all fifth bonded atoms of atom i */
+	for (j=0; (j < nnb->nrexcl[i][m]); j++) {
+      
+	  /* store the 1st neighbour in nb */
+	  nb = nnb->a[i][m][j];
+	  jtp = atoms->atom[nb].type;
+	  if ((i != nb) && (strcasecmp(*atype->atomname[jtp],"SHELL") == 0)) {
+	    srenew(excls[i].e,excls[i].nr+1);
+	    excls[i].e[excls[i].nr++] = nb;
+	    fprintf(stderr,"Excluding %d from %d\n",nb+1,i+1);
+	  }
+	}
+      }
+    }
+  }
+  clean_excls(atoms->nr,excls);
+  snew(plist[F_THOLE_POL].param,atoms->nr);
+  npol = 0;
+  snew(bHaveShell,atoms->nr);
+  snew(shell_index,atoms->nr);
+  for (i=0; (i < atoms->nr); i++) {
+    /* for all first bonded atoms of atom i */
+    for (j=0; (j < nnb->nrexcl[i][1]); j++) {
+      jid = nnb->a[i][1][j];
+      atp = atoms->atom[jid].type;
+    
+      if (strcasecmp(*atype->atomname[atp],"SHELL") == 0) {
+	bHaveShell[i] = TRUE;
+	shell_index[i] = jid;
+      }
+    }
+  }
+  
+  for (i=0; (i < atoms->nr); i++) {
+    if (bHaveShell[i]) {
+      /* for all first bonded atoms of atom i */
+      for (j=0; (j < nnb->nrexcl[i][1]); j++) {
+	jid = nnb->a[i][1][j];
+	if (bHaveShell[jid]) {
+	  plist[F_THOLE_POL].param[npol].AI = i;
+	  plist[F_THOLE_POL].param[npol].AJ = shell_index[i];
+	  plist[F_THOLE_POL].param[npol].AK = jid;
+	  plist[F_THOLE_POL].param[npol].AL = shell_index[jid];
+	  plist[F_THOLE_POL].param[npol].C0 = 2.6;
+	  plist[F_THOLE_POL].param[npol].C1 = atoms->atom[shell_index[i]].qB;
+	  plist[F_THOLE_POL].param[npol].C2 = atoms->atom[shell_index[jid]].qB;
+	  npol++;
+	}
+      }
+      /* for all second bonded atoms of atom i */
+      for (j=0; (j < nnb->nrexcl[i][2]); j++) {
+	jid = nnb->a[i][2][j];
+	if ((jid != i) && bHaveShell[jid]) {
+	  plist[F_THOLE_POL].param[npol].AI = i;
+	  plist[F_THOLE_POL].param[npol].AJ = shell_index[i];
+	  plist[F_THOLE_POL].param[npol].AK = jid;
+	  plist[F_THOLE_POL].param[npol].AL = shell_index[jid];
+	  plist[F_THOLE_POL].param[npol].C0 = 2.6;
+	  plist[F_THOLE_POL].param[npol].C1 = atoms->atom[shell_index[i]].qB;
+	  plist[F_THOLE_POL].param[npol].C2 = atoms->atom[shell_index[jid]].qB;
+	  npol++;
+	}
+      }
+    }
+  }
+  plist[F_THOLE_POL].nr = npol;
+  clean_thole(&plist[F_THOLE_POL]);
+  /* Add shell interactions to pairs */
+  for(j=0; (j<plist[F_LJ14].nr); j++) {
+    atom_id ai,aj;
+    ai = plist[F_LJ14].param[j].AI;
+    aj = plist[F_LJ14].param[j].AJ;
+    if ((bHaveShell[ai]) || (bHaveShell[aj])) {
+    }
+  }
+}
+
+static void assign_qa(t_atoms *atoms,int nqa,t_q_alpha *qa)
+{
+  int i;
+  
+  if (nqa == 0) {
+    /* Use default values */
+  }
+  else if (nqa == atoms->nr) {
+    /* Use values from file */
+    for(i=0; (i<nqa); i++) {
+      atoms->atom[i].q  = get_qa_q(*atoms->atomname[i],nqa,qa);
+      atoms->atom[i].qB = get_qa_alpha(*atoms->atomname[i],nqa,qa);
+    }
+  }
+  else
+    gmx_fatal(FARGS,"Inconsistency between charge file (%d entries) and coordinate file (%d atoms)",nqa,atoms->nr);
+}
+
+static void reset_q(t_atoms *atoms)
+{
+  int i;
+  
+  /* Use values from file */
+  for(i=0; (i<atoms->nr); i++) 
+    atoms->atom[i].qB = atoms->atom[i].q;
+}
+
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
@@ -380,6 +569,8 @@ int main(int argc, char *argv[])
     "is interactive, but you can use the [TT]-ff[tt] option to specify",
     "one of the short names above on the command line instead. In that",
     "case pdb2gmx just looks for the corresponding file.[PAR]",
+    "An optional file containing atomname charge polarizability can be",
+    "given with the [TT]-d[tt] flag."
   };
   static char *bugs[] = {
     "The atom type selection is primitive. Virtually no chemical knowledge is used",
@@ -405,14 +596,17 @@ int main(int argc, char *argv[])
   int        natoms;       /* number of atoms in one molecule  */
   int        nres;         /* number of molecules? */
   int        i,j,k,l,m,ndih;
-  bool       bRTP,bTOP,bOPLS;
+  bool       bRTP,bTOP,bOPLS,bCharmm;
   t_symtab   symtab;
+  t_q_alpha  *qa=NULL;
+  int        nqa=0;
   real       cutoff,qtot,mtot;
   
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
     { efTOP, "-o", "out",  ffOPTWR },
-    { efRTP, "-r", "out",  ffOPTWR }
+    { efRTP, "-r", "out",  ffOPTWR },
+    { efDAT, "-d", "qpol", ffOPTRD }
   };
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
@@ -466,6 +660,9 @@ int main(int argc, char *argv[])
   if (!bRTP && !bTOP)
     gmx_fatal(FARGS,"Specify at least one output file");
 
+  if (opt2bSet("-d",NFILE,fnm))
+    qa = rd_q_alpha(opt2fn("-d",NFILE,fnm),&nqa);
+    
   atomprop = get_atomprop();
     
   if(!strncmp(ff,"select",6)) {
@@ -482,8 +679,8 @@ int main(int argc, char *argv[])
     fclose(libopen(rtp));
   }
 
-  bOPLS = (strcmp(forcefield,"ffoplsaa") == 0);
-  
+  bOPLS   = (strcmp(forcefield,"ffoplsaa") == 0);
+  bCharmm = (strcmp(forcefield,"ffcharmm") == 0);
     
   mymol.name = strdup(molnm);
   mymol.nr   = 1;
@@ -514,13 +711,16 @@ int main(int argc, char *argv[])
   open_symtab(&symtab);
   atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nnm,nm2t);
   
+  assign_qa(atoms,nqa,qa);
+  
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);
   printf("Generating angles and dihedrals from bonds...\n");
-  init_nnb(&nnb,atoms->nr,4);
+  init_nnb(&nnb,atoms->nr,5);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
   gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,bAllDih,bRemoveDih,TRUE);
+  delete_shell_interactions(plist,atoms,atype,&nnb,excls);
   done_nnb(&nnb);
 
   if (!bPairs)
@@ -543,6 +743,12 @@ int main(int argc, char *argv[])
     bts[2] = 3;
     bts[3] = 1;
   }
+  if (bCharmm) {
+    bts[1] = 5;
+    bts[2] = 3;
+    bts[3] = 1;
+  }
+  reset_q(atoms);
   
   if (bTOP) {    
     fp = ftp2FILE(efTOP,NFILE,fnm,"w");

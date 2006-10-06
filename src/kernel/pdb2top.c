@@ -337,6 +337,8 @@ void write_top(FILE *out, char *pr,char *molname,
     print_bondeds(out,at->nr,d_angles,     F_ANGLES,   bts[ebtsANGLES],plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_PDIHS,    bts[ebtsPDIHS], plist);
     print_bondeds(out,at->nr,d_dihedrals,  F_IDIHS,    bts[ebtsIDIHS], plist);
+    print_bondeds(out,at->nr,d_polarization,F_POLARIZATION,   0,       plist);
+    print_bondeds(out,at->nr,d_thole_polarization,F_THOLE_POL,0,       plist);
     print_bondeds(out,at->nr,d_vsites2,    F_VSITE2,   0,              plist);
     print_bondeds(out,at->nr,d_vsites3,    F_VSITE3,   0,              plist);
     print_bondeds(out,at->nr,d_vsites3,    F_VSITE3FD, 0,              plist);
