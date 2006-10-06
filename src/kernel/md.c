@@ -525,6 +525,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fr->solvent_type_global = fr->solvent_type;
     fr->solvent_type        = NULL;
 
+    construct_vsites(log,
+		     state_global->x,nrnb,inputrec->delta_t,NULL,
+		     &top_global->idef,NULL,NULL,fr->ePBC,state_global->box,
+		     NULL);
+
     dd_partition_system(stdlog,cr->dd,TRUE,state_global,top_global,inputrec,
 			state,buf,mdatoms,top,nsb,fr,nrnb);
   } else {
@@ -587,7 +592,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		      mdatoms,grps,nrnb,state->lambda);
   debug_gmx();
 
- if (PAR(cr)) 
+  if (PAR(cr)) 
   {
     GMX_MPE_LOG(ev_global_stat_start);
        
@@ -700,13 +705,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /*if (MASTER(cr) && do_log && !bFFscan)
       print_ebin_header(log,step,t,state->lambda);*/
     
-    if (DOMAINDECOMP(cr) && 
-	(step % inputrec->nstlist == 0) && !bFirstStep) {
-      /* Repartition the domain decomposition */
-      dd_partition_system(stdlog,cr->dd,FALSE,NULL,top_global,inputrec,
-			  state,buf,mdatoms,top,nsb,fr,nrnb);
-    }
-
     if (bSimAnn) 
       update_annealing_target_temp(&(inputrec->opts),t);
     
@@ -748,7 +746,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       }
       copy_mat(boxcopy,state->box);
     }
-    
+
     if (bVsites) {
       if (graph) {
 	/* Following is necessary because the graph may get out of sync
@@ -759,14 +757,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	shift_self(graph,state->box,state->x);
       }
       construct_vsites(log,state->x,nrnb,inputrec->delta_t,state->v,
-			&top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
+		       &top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
     }
-     
     debug_gmx();
-    
+
+    if (DOMAINDECOMP(cr) && bNS) {
+      /* Repartition the domain decomposition */
+      dd_partition_system(stdlog,cr->dd,FALSE,NULL,top_global,inputrec,
+			  state,buf,mdatoms,top,nsb,fr,nrnb);
+    }
+
     /* Set values for invmass etc. This routine not parallellized, but hardly
      * ever used, only when doing free energy calculations.
      */

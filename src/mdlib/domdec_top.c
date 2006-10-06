@@ -11,6 +11,7 @@
 typedef struct gmx_reverse_top {
   int *index; /* Index for each atom into il    */
   int *il;    /* ftype|type|a0|...|an|ftype|... */
+  int n_intercg_vsite;
 } gmx_reverse_top_t;
 
 #define EXCLS_ALLOC_SIZE  1000
@@ -45,6 +46,50 @@ static int count_excls(t_block *cgs,t_block *excls,int *n_intercg_excl)
   }  
   
   return n;
+}
+
+static int count_intercg_vsite(t_block *cgs,t_atom *atom,gmx_reverse_top_t *rt)
+{
+  int  cg,a,a0,a1,i,j,ftype,nral;
+  int  *index,*rtil;
+  t_iatom *iatoms;
+  int  n_intercg_vsite,n,nvs;
+
+  index = rt->index;
+  rtil  = rt->il;
+  
+  n_intercg_vsite = 0;
+  for(cg=0; cg<cgs->nr; cg++) {
+    a0 = cgs->index[cg];
+    a1 = cgs->index[cg+1];
+    for(a=a0; a<a1; a++) {
+      i = index[a];
+      while (i < index[a+1]) {
+	ftype  = rtil[i++];
+	iatoms = rtil + i;
+	nral = NRAL(ftype);
+	if (interaction_function[ftype].flags & IF_VSITE) {
+	  n   = 0;
+	  nvs = 0;
+	  for(j=2; j<1+nral; j++) {
+	    if (iatoms[j] < a0 || iatoms[j] >= a1) {
+	      n++;
+	    }
+	    if (atom[iatoms[j]].ptype == eptVSite)
+	      nvs++;
+	  }
+	  if (n) {
+	    n_intercg_vsite++;
+	    if (nvs)
+	      gmx_fatal(FARGS,"Can not handle recursive virtual sites that involve multiple charge groups");
+	  }
+	}
+	i += 1 + nral;
+      }
+    }
+  }
+
+  return n_intercg_vsite;
 }
 
 static int low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
@@ -125,6 +170,9 @@ void dd_make_reverse_top(FILE *fplog,
   natoms = top->atoms.nr;
 
   dd->reverse_top = make_reverse_top(natoms,&top->idef,&dd->nbonded_global);
+
+  dd->reverse_top->n_intercg_vsite =
+    count_intercg_vsite(&top->blocks[ebCGS],top->atoms.atom,dd->reverse_top);
   
   nexcl = count_excls(&top->blocks[ebCGS],&top->blocks[ebEXCLS],
 		      &dd->n_intercg_excl);
@@ -140,52 +188,15 @@ void dd_make_reverse_top(FILE *fplog,
   for(a=0; a<natoms; a++)
     dd->ga2la[a].cell = -1;
   
-  if (top->idef.il[F_CONSTR].nr > 0)
-    init_domdec_constraints(dd,natoms,&top->idef,bDynamics);
-}
-
-static void make_local_ilist(gmx_domdec_t *dd,t_functype ftype,
-			     t_ilist *il,t_ilist *lil)
-{
-  int nral,nlocal,i,j,n;
-  t_iatom *ia,*lia;
-  atom_id a;
-  
-  nral = NRAL(ftype);
-
-  if (lil->iatoms == NULL)
-    /* In most cases we could do with far less memory */
-    snew(lil->iatoms,il->nr);
-
-  nlocal = dd->nat_home;
-
-  n   = 0;
-  ia  = il->iatoms;
-  lia = lil->iatoms;
-  for(i=0; i<il->nr; i+=1+nral) {
-    ia = il->iatoms + i;
-    a = dd->ga2la[ia[1]].a;
-    if (a >= 0 && a < nlocal) {
-      lia[0] = ia[0];
-      lia[1] = a;
-      for(j=2; j<=nral; j++) {
-	a = dd->ga2la[ia[j]].a;
-	if (a == -1)
-	  /* This interaction could be assigned to a different node
-	   * with the current setup (as long as the distance between
-	   * all particles involved is smaller than the grid spacing).
-	   * But we need an algorithm to assign it.
-	   */
-	  gmx_fatal(FARGS,"A bonded interaction is spread over cells");
-	lia[j] = a;
-      }
-      lia += 1 + nral;
-      n++;
-    }
-    ia += 1 + nral;
+  if (dd->reverse_top->n_intercg_vsite) {
+    fprintf(fplog,"There are %d inter charge-group virtual sites,\n"
+	    "will use extra communication steps for selected coordinates and forces\n",
+	    dd->reverse_top->n_intercg_vsite);
+    init_domdec_vsites(dd,natoms);
   }
 
-  lil->nr = n*(1 + nral);
+  if (top->idef.il[F_CONSTR].nr > 0)
+    init_domdec_constraints(dd,natoms,&top->idef,bDynamics);
 }
 
 static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
@@ -215,24 +226,43 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
       ftype  = rtil[j++];
       iatoms = rtil + j;
       nral = NRAL(ftype);
-      bUse = TRUE;
-      for(d=0; d<DIM; d++)
-	shift_min[d] = 1;
-      for(k=1; k<=nral && bUse; k++) {
-	ga2la = &dd->ga2la[iatoms[k]];
-	kc = ga2la->cell;
-	if (kc == -1) {
-	  /* We do not have this atom of this interaction locally */
-	  bUse = FALSE;
-	} else {
-	  tiatoms[k] = ga2la->a;
-	  for(d=0; d<DIM; d++)
-	    if (dd->shift[kc][d] < shift_min[d])
-	      shift_min[d] = dd->shift[kc][d];
+      if (interaction_function[ftype].flags & IF_VSITE) {
+	/* The vsite construction goes where the vsite itself is */
+	bUse = (i < dd->nat_home);
+	if (bUse) {
+	  /* We know the local index of the first atom */
+	  tiatoms[1] = i;
+	  for(k=2; k<=nral; k++) {
+	    ga2la = &dd->ga2la[iatoms[k]];
+	    if (ga2la->cell == 0) {
+	      tiatoms[k] = ga2la->a;
+	    } else {
+	      /* Copy the global index, convert later in make_local_vsites */
+	      tiatoms[k] = -(iatoms[k] + 1);
+	    }
+	  }
 	}
+      } else {
+	bUse = TRUE;
+	for(d=0; d<DIM; d++)
+	  shift_min[d] = 1;
+	for(k=1; k<=nral && bUse; k++) {
+	  ga2la = &dd->ga2la[iatoms[k]];
+	  kc = ga2la->cell;
+	  if (kc == -1) {
+	    /* We do not have this atom of this interaction locally */
+	    bUse = FALSE;
+	  } else {
+	    tiatoms[k] = ga2la->a;
+	    for(d=0; d<DIM; d++)
+	      if (dd->shift[kc][d] < shift_min[d])
+		shift_min[d] = dd->shift[kc][d];
+	  }
+	}
+	bUse = (bUse && 
+		shift_min[XX]==0 && shift_min[YY]==0 && shift_min[ZZ]==0);
       }
-      if (bUse &&
-	  shift_min[XX]==0 && shift_min[YY]==0 && shift_min[ZZ]==0) {
+      if (bUse) {
 	/* Add this interaction to the local topology */
 	il = &idef->il[ftype];
 	if (il->nr >= il->nalloc) {
@@ -250,6 +280,9 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
       j += 1 + nral;
     }
   }
+
+  if (dd->reverse_top->n_intercg_vsite)
+    make_local_vsites(dd,idef->il);
 
   return nbonded_local;
 }
@@ -414,7 +447,6 @@ static void make_local_idef(gmx_domdec_t *dd,t_idef *idef,t_idef *lidef)
   lidef->iparams  = idef->iparams;
 
   for(f=0; f<F_NRE; f++)
-    /* make_local_ilist(dd,f,&idef->il[f],&lidef->il[f]); */
     make_local_ilist_onemoltype_onecg(dd,f,&idef->il[f],&lidef->il[f]);
 }
 #endif
@@ -452,14 +484,8 @@ void make_local_top(FILE *fplog,gmx_domdec_t *dd,
    */
   if (EEL_FULL(fr->eeltype))
     dd->nbonded_local += nexcl;
- 
-  ltop->atoms = top->atoms;
+  
+  ltop->atoms     = top->atoms;
   ltop->atomtypes = top->atomtypes;
-  /*
-  for(eb=0; eb<ebNR; eb++) {
-    if (eb != ebCGS)
-      ltop->blocks[eb] = top->blocks[eb];
-  }
-  */
-  ltop->symtab = top->symtab;
+  ltop->symtab    = top->symtab;
 }

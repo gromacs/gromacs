@@ -85,7 +85,7 @@ typedef struct {
   int  *ga2la;
 } gmx_domdec_constraints_t;
 
-typedef struct gmx_domdec_constraint_comm *gmx_domdec_constraint_comm_p_t;
+typedef struct gmx_domdec_specat_comm *gmx_domdec_specat_comm_p_t;
 
 typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
 
@@ -130,9 +130,13 @@ typedef struct {
   /* The number of inter charge-group exclusions */
   int  n_intercg_excl;
 
+  /* Vsite stuff */
+  int  *ga2la_vsite;
+  gmx_domdec_specat_comm_p_t vsite_comm;
+
   /* Constraint stuff */
   gmx_domdec_constraints_t *constraints;
-  gmx_domdec_constraint_comm_p_t constraint_comm;
+  gmx_domdec_specat_comm_p_t constraint_comm;
 
   /* The charge group boundaries for the cells */
   int ncg_cell[DD_MAXCELL+1];
@@ -148,6 +152,8 @@ typedef struct {
   int  nat_home;
   /* The total number of atoms in the neighbor search cells */
   int  nat_tot;
+  /* The total number of atoms, including the extra ones for vsites */
+  int  nat_tot_vsite;
   /* The total number of atoms, including the extra ones for constraints */
   int  nat_tot_con;
   /* Index from the local atoms to the global atoms */

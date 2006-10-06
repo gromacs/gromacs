@@ -97,16 +97,28 @@ extern void dd_partition_system(FILE         *fplog,
  * else state_local is redistributed between the nodes.
  */
 
+
 /* In domdec_con.c */
+
+extern void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f);
 
 extern void dd_move_x_constraints(gmx_domdec_t *dd,rvec *x);
 
+extern void dd_move_x_vsites(gmx_domdec_t *dd,rvec *x);
+
 extern void clear_local_constraint_indices(gmx_domdec_t *dd);
+
+extern void clear_local_vsite_indices(gmx_domdec_t *dd);
+
+extern void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
 
 extern void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
 				    int natoms,t_idef *idef,bool bDynamics);
+
+extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
+
 
 /* In domdec_top.c */
 

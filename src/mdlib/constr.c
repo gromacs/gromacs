@@ -115,7 +115,7 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
   gmx_write_pdb_box(out,box);
   for(i=start; i<start+homenr; i++) {
     if (dd) {
-      if (i >= dd->nat_home && i < dd->nat_tot)
+      if (i >= dd->nat_home && i < dd->nat_tot_vsite)
 	continue;
       ii = dd->gatindex[i];
     } else {
@@ -207,7 +207,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
       else
 	ncons = 0;
     }
-    if (ncons > 0 || dd->constraints) {
+    if (ncons > 0 || (dd && dd->constraints)) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
 	if (bFirst) {
 	  please_cite(stdlog,"Hess97a");
@@ -373,10 +373,16 @@ int count_constraints(t_topology *top,t_commrec *cr)
 {
   int nc;
   
-  nc = top->idef.il[F_SETTLE].nr*3/2 + top->idef.il[F_CONSTR].nr/3;
-  if (PAR(cr))
-    gmx_sumi(1,&nc,cr);
-  
+  if (DOMAINDECOMP(cr)) {
+    nc = top->idef.il[F_SETTLE].nr*3/2;
+    if (cr->dd->constraints)
+      nc += cr->dd->constraints->ncon_global;
+  } else {
+    nc = top->idef.il[F_SETTLE].nr*3/2 + top->idef.il[F_CONSTR].nr/3;
+    if (PAR(cr))
+      gmx_sumi(1,&nc,cr);
+  }
+
   return nc;
 }
 
@@ -389,16 +395,10 @@ int init_constraints(FILE *log,t_topology *top,t_ilist *settle,t_inputrec *ir,
   low_constrain(log,top,settle,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
 		0,NULL,NULL,NULL,bOnlyCoords,TRUE);
   
-  if (dd) {
-    count = top->idef.il[F_SETTLE].nr*3/2;
-    if (dd->constraints)
-      count += dd->constraints->ncon_global;
-  } else {
-    if (cr)
-      count = count_constraints(top,cr);
-    else
-      count = -1;
-  }
+  if (cr)
+    count = count_constraints(top,cr);
+  else
+    count = -1;
   
   return count;
 }

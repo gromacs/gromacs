@@ -48,6 +48,7 @@
 #include "network.h"
 #include "mshift.h"
 #include "pbc.h"
+#include "domdec.h"
 
 /* Communication buffers */
 
@@ -390,8 +391,8 @@ static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
 
 
 void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
-		       rvec *v,t_idef *idef,t_graph *graph,t_commrec *cr,
-		       int ePBC,matrix box,t_comm_vsites *vsitecomm)
+		      rvec *v,t_idef *idef,t_graph *graph,t_commrec *cr,
+		      int ePBC,matrix box,t_comm_vsites *vsitecomm)
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
@@ -411,13 +412,15 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
     pbc_null = NULL;
   }
 
-  /* I'm not sure whether the periodicity and shift are guaranteed
-   * to be consistent between different nodes when running e.g. polymers
-   * in parallel. In this special case we thus unshift/shift,
-   * but only when necessary. This is to make sure the coordinates
-   * we move don't end up a box away...
-   */
-  if (vsitecomm) {
+  if (cr && DOMAINDECOMP(cr)) {
+    dd_move_x_vsites(cr->dd,x);
+  } else if (vsitecomm) {
+    /* I'm not sure whether the periodicity and shift are guaranteed
+     * to be consistent between different nodes when running e.g. polymers
+     * in parallel. In this special case we thus unshift/shift,
+     * but only when necessary. This is to make sure the coordinates
+     * we move don't end up a box away...
+     */
     if (graph)
       unshift_self(graph,box,x);
     move_construct_x(vsitecomm,x,cr);
@@ -1009,8 +1012,11 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
   inc_nrnb(nrnb,eNR_VSITE3OUT,nd3OUT);
   inc_nrnb(nrnb,eNR_VSITE4FD, nd4FD );
 
-  /* We only move forces here, and they are independent of shifts */
-  if(vsitecomm)
+  if (DOMAINDECOMP(cr)) {
+    dd_move_f_vsites(cr->dd,f);
+  } else if (vsitecomm) {
+    /* We only move forces here, and they are independent of shifts */
     move_construct_f(vsitecomm,f,cr);
+  }
 }
 

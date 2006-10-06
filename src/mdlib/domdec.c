@@ -491,6 +491,8 @@ static void clear_dd_indices(gmx_domdec_t *dd,int a_start)
   for(i=a_start; i<dd->nat_tot; i++)
     dd->ga2la[dd->gatindex[i]].cell = -1;
 
+  clear_local_vsite_indices(dd);
+
   if (dd->constraints)
     clear_local_constraint_indices(dd);
 }
@@ -1638,8 +1640,9 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
   dd->cgindex  = cgindex;
 
   dd->ncg_tot = ncg_cell[dd->ncell];
-  dd->nat_tot = nat_tot;
-  dd->nat_tot_con = nat_tot;
+  dd->nat_tot       = nat_tot;
+  dd->nat_tot_vsite = nat_tot;
+  dd->nat_tot_con   = nat_tot;
 
   if (debug) {
     fprintf(debug,"Finished setting up DD communication, cells:");
@@ -1778,17 +1781,20 @@ void dd_partition_system(FILE         *fplog,
   if (top_global->idef.il[F_CONSTR].nr > 0) {
     make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
 			   ir->nProjOrder);
-    /* Make space for the extra coordinates for constraint communication */
-    /* This is not a nice solution.
-     * state->natoms is always equal to the global number of atoms.
-     * Reallocation will only happen for very small systems
-     * with cell sizes close to the cut-off.
-     */
-    if (dd->nat_tot_con > state_local->natoms)
-      srenew(state_local->x,dd->nat_tot_con);
   } else {
-    dd->nat_tot_con = dd->nat_tot;
+    dd->nat_tot_con = dd->nat_tot_vsite;
   }
+  /* Make space for the extra coordinates for virtual site
+   * or constraint communication.
+   */
+  /* This is not a nice solution.
+   * state->natoms is always equal to the global number of atoms.
+   * Reallocation will only happen for very small systems
+   * with cell sizes close to the cut-off.
+   */
+  if (dd->nat_tot_con > state_local->natoms)
+    srenew(state_local->x,dd->nat_tot_con);
+  
 
   /* We make the all mdatoms up to nat_tot_con.
    * We could save some work by only setting invmass
@@ -1801,4 +1807,9 @@ void dd_partition_system(FILE         *fplog,
     init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
 		     START(nsb),HOMENR(nsb),
 		     ir->eI!=eiSteep,NULL,dd);
+
+  /* We need the constructing atom coordinates of the virtual sites
+   * when spreading the forces.
+   */
+  dd_move_x_vsites(dd,state_local->x);
 }
