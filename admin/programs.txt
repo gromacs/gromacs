@@ -74,6 +74,7 @@ g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
 g_rotacf|calculates the rotational correlation function for molecules
 g_rdf|calculates radial distribution functions
+g_vanhove|calculates Van Hove displacement functions
 END
 
 HEAD|Analyzing bonded interactions

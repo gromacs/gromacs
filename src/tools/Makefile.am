@@ -33,7 +33,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	correl.c	correl.h	gmx_sham.c	gmx_nmtraj.c	\
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
-	gmx_genpr.c	gmx_eneconv.c	gmx_wheel.c	\
+	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
 	addconf.c 	addconf.h	\
 	calcpot.c 	calcpot.h 	edittop.c
 
@@ -56,7 +56,8 @@ bin_PROGRAMS = \
 	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
 	g_sham \
 	g_sorient   	g_tcaf      	g_traj      	g_velacc    	\
-	g_clustsize 	g_mdmat     	g_wham		g_kinetics
+	g_clustsize 	g_mdmat     	g_vanhove	g_wham
+	g_kinetics
 
 
 LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la \

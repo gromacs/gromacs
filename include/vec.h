@@ -111,6 +111,7 @@
   void m_inv_lowerleft0(matrix src,matrix dest)    dest = src^-1
   void m_inv(matrix src,matrix dest)		!  dest = src^-1
   void mvmul(matrix a,rvec src,rvec dest)	!  dest = a . src
+  void mvmul_lowerleft0(matrix a,rvec src,rvec dest) dest = a . src
   real trace(matrix m)                             = trace(m)
 */
 
@@ -674,6 +675,13 @@ static inline void mvmul(matrix a,const rvec src,rvec dest)
   dest[XX]=a[XX][XX]*src[XX]+a[XX][YY]*src[YY]+a[XX][ZZ]*src[ZZ];
   dest[YY]=a[YY][XX]*src[XX]+a[YY][YY]*src[YY]+a[YY][ZZ]*src[ZZ];
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
+}
+
+static inline void mvmul_lowerleft0(matrix a,const rvec src,rvec dest)
+{
+  dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
+  dest[YY]=a[YY][XX]*src[XX]+a[YY][YY];
+  dest[XX]=a[XX][XX]*src[XX];
 }
 
 static inline void unitv(const rvec src,rvec dest)
