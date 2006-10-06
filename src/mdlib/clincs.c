@@ -791,7 +791,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
   
   bOK = TRUE;
 
-  if (lincsd->nc == 0)
+  if (lincsd->nc == 0 && dd==NULL)
     return bOK;
 
   if (ir->ePBC == epbcFULL) {
@@ -853,7 +853,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
       *dvdlambda += dvdl;
     }
     
-    if (do_per_step(step,ir->nstlog) || (step < 0)) {
+    if ((do_per_step(step,ir->nstlog) || step < 0) && lincsd->nc > 0) {
       fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
       fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
 	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),

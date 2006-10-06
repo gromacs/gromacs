@@ -207,7 +207,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
       else
 	ncons = 0;
     }
-    if (ncons > 0) {
+    if (ncons > 0 || dd->constraints) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
 	if (bFirst) {
 	  please_cite(stdlog,"Hess97a");
