@@ -931,9 +931,13 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
     pbc_null = NULL;
   }
   
+  if (DOMAINDECOMP(cr)) {
+    for(i=cr->dd->nat_tot; i<cr->dd->nat_tot_vsite; i++)
+      clear_rvec(f[i]);
+  } else if (vsitecomm) {
   /* We only move forces here, and they are independent of shifts */
-  if (vsitecomm)
     move_vsite_f(vsitecomm,f,cr);
+  }
 
   ip     = idef->iparams;
 
