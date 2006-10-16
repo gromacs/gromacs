@@ -6,6 +6,7 @@
 #include "smalloc.h"
 #include "domdec.h"
 #include "names.h"
+#include "network.h"
 
 
 typedef struct gmx_reverse_top {
@@ -23,6 +24,55 @@ typedef struct gmx_reverse_top {
 #ifdef ONE_MOLTYPE_ONE_CG
 static int natoms_global;
 #endif
+
+/* Static pointers only used for an error message */
+static t_topology *err_top_global,*err_top_local;
+
+void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
+{
+  int cl[F_NRE],n,rest_global,rest_local;
+  int ftype,nral;
+
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    nral = NRAL(ftype);
+    cl[ftype] = err_top_local->idef.il[ftype].nr/(1+nral);
+  }
+
+  gmx_sumi(F_NRE,cl,cr);
+  
+  fprintf(fplog,"\nA list of missing interactions:\n");
+  if (DDMASTER(cr->dd))
+    fprintf(stderr,"\nA list of missing interactions:\n");
+  rest_global = cr->dd->nbonded_global;
+  rest_local  = local_count;
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
+	|| ftype == F_SETTLE) {
+      nral = NRAL(ftype);
+      n = err_top_global->idef.il[ftype].nr/(1+nral);
+      if (cl[ftype] != n) {
+	fprintf(fplog,"%20s of %6d missing %6d\n",
+		interaction_function[ftype].longname,n,n-cl[ftype]);
+	if (DDMASTER(cr->dd))
+	  fprintf(stderr,"%20s of %6d missing %6d\n",
+		  interaction_function[ftype].longname,n,n-cl[ftype]);
+      }
+      rest_global -= n;
+      rest_local  -= cl[ftype];
+    }
+  }
+  
+  if (rest_local != rest_global) {
+    fprintf(fplog,"%20s of %6d missing %6d\n",
+	    "exclusions",rest_global,rest_global-rest_local);
+    if (DDMASTER(cr->dd))
+      fprintf(stderr,"%20s of %6d missing %6d\n",
+	      "exclusions",rest_global,rest_global-rest_local);
+  }
+
+  gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the cut-off distance",
+	    cr->dd->nbonded_global-local_count,cr->dd->nbonded_global);
+}
 
 static int count_excls(t_block *cgs,t_block *excls,int *n_intercg_excl)
 {
@@ -488,4 +538,8 @@ void make_local_top(FILE *fplog,gmx_domdec_t *dd,
   ltop->atoms     = top->atoms;
   ltop->atomtypes = top->atomtypes;
   ltop->symtab    = top->symtab;
+
+  /* For an error message only */
+  err_top_global = top;
+  err_top_local = ltop;
 }

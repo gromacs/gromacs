@@ -122,6 +122,9 @@ extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 
 /* In domdec_top.c */
 
+extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
+					  int local_count);
+
 extern void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 extern void make_local_top(FILE *fplog,gmx_domdec_t *dd,
