@@ -73,7 +73,6 @@ g_traj|plots x, v, f, box, temperature and rotational energy
 g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
 g_rotacf|calculates the rotational correlation function for molecules
-g_rdf|calculates radial distribution functions
 g_vanhove|calculates Van Hove displacement functions
 END
 
@@ -89,6 +88,8 @@ g_hbond|computes and analyzes hydrogen bonds
 g_saltbr|computes salt bridges
 g_sas|computes solvent accessible surface area
 g_order|computes the order parameter per atom for carbon tails
+g_rdf|calculates radial distribution functions
+g_sdf|calculates solvent distribution functions
 g_sgangle|computes the angle and distance between two groups
 g_sorient|analyzes solvent orientation around solutes
 g_bundle|analyzes bundles of axes, e.g. helices
