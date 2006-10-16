@@ -146,6 +146,9 @@ int
 gmx_sas(int argc,char *argv[]);
 
 int 
+gmx_sdf(int argc,char *argv[]);
+
+int 
 gmx_sgangle(int argc,char *argv[]);
 
 int 
