@@ -145,7 +145,7 @@ static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH)
 
 void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
 	     real dOH,real dHH,real mO,real mH,
-	     bool bCalcVir,tensor rmdr,int *error)
+	     real invdt,real *v,bool bCalcVir,tensor rmdr,int *error)
 {
   /* ***************************************************************** */
   /*                                                               ** */
@@ -181,6 +181,7 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
     za1d, xb1d, yb1d, zb1d, xc1d, yc1d, zc1d, ya2d, xb2d, yb2d, yc2d, 
     xa3d, ya3d, za3d, xb3d, yb3d, zb3d, xc3d, yc3d, zc3d;
   real t1,t2;
+  real dax, day, daz, dbx, dby, dbz, dcx, dcy, dcz;
   real mdax, mday, mdaz, mdbx, mdby, mdbz, mdcx, mdcy, mdcz;
 
   int doshake;
@@ -359,26 +360,50 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
       after[hw3 + 2] = zcom + zc3;
       /* 9 flops */
 
+      dax = xa3 - xa1;
+      day = ya3 - ya1;
+      daz = za3 - za1;
+      dbx = xb3 - xb1;
+      dby = yb3 - yb1;
+      dbz = zb3 - zb1;
+      dcx = xc3 - xc1;
+      dcy = yc3 - yc1;
+      dcz = zc3 - zc1;
+      /* 9 flops, counted with the virial */
+
+      if (v) {
+	v[ow1]     += dax*invdt;
+	v[ow1 + 1] += day*invdt;
+	v[ow1 + 2] += daz*invdt;
+	v[hw2]     += dbx*invdt;
+	v[hw2 + 1] += dby*invdt;
+	v[hw2 + 2] += dbz*invdt;
+	v[hw3]     += dcx*invdt;
+	v[hw3 + 1] += dcy*invdt;
+	v[hw3 + 2] += dcz*invdt;
+	/* 3*6 flops */
+      }
+
       if (bCalcVir) {
-	mdax = mO*(xa1 - xa3);
-	mday = mO*(ya1 - ya3);
-	mdaz = mO*(za1 - za3);
-	mdbx = mH*(xb1 - xb3);
-	mdby = mH*(yb1 - yb3);
-	mdbz = mH*(zb1 - zb3);
-	mdcx = mH*(xc1 - xc3);
-	mdcy = mH*(yc1 - yc3);
-	mdcz = mH*(zc1 - zc3);
-	rmdr[XX][XX] += b4[ow1]*mdax + b4[hw2]*mdbx + b4[hw3]*mdcx;
-	rmdr[XX][YY] += b4[ow1]*mday + b4[hw2]*mdby + b4[hw3]*mdcy;
-	rmdr[XX][ZZ] += b4[ow1]*mdaz + b4[hw2]*mdbz + b4[hw3]*mdcz;
-	rmdr[YY][XX] += b4[ow1+1]*mdax + b4[hw2+1]*mdbx + b4[hw3+1]*mdcx;
-	rmdr[YY][YY] += b4[ow1+1]*mday + b4[hw2+1]*mdby + b4[hw3+1]*mdcy;
-	rmdr[YY][ZZ] += b4[ow1+1]*mdaz + b4[hw2+1]*mdbz + b4[hw3+1]*mdcz;
-	rmdr[ZZ][XX] += b4[ow1+2]*mdax + b4[hw2+2]*mdbx + b4[hw3+2]*mdcx;
-	rmdr[ZZ][YY] += b4[ow1+2]*mday + b4[hw2+2]*mdby + b4[hw3+2]*mdcy;
-	rmdr[ZZ][ZZ] += b4[ow1+2]*mdaz + b4[hw2+2]*mdbz + b4[hw3+2]*mdcz;
-	/* 3*24 flops */
+	mdax = mO*dax;
+	mday = mO*day;
+	mdaz = mO*daz;
+	mdbx = mH*dbx;
+	mdby = mH*dby;
+	mdbz = mH*dbz;
+	mdcx = mH*dcx;
+	mdcy = mH*dcy;
+	mdcz = mH*dcz;
+	rmdr[XX][XX] -= b4[ow1]*mdax + b4[hw2]*mdbx + b4[hw3]*mdcx;
+	rmdr[XX][YY] -= b4[ow1]*mday + b4[hw2]*mdby + b4[hw3]*mdcy;
+	rmdr[XX][ZZ] -= b4[ow1]*mdaz + b4[hw2]*mdbz + b4[hw3]*mdcz;
+	rmdr[YY][XX] -= b4[ow1+1]*mdax + b4[hw2+1]*mdbx + b4[hw3+1]*mdcx;
+	rmdr[YY][YY] -= b4[ow1+1]*mday + b4[hw2+1]*mdby + b4[hw3+1]*mdcy;
+	rmdr[YY][ZZ] -= b4[ow1+1]*mdaz + b4[hw2+1]*mdbz + b4[hw3+1]*mdcz;
+	rmdr[ZZ][XX] -= b4[ow1+2]*mdax + b4[hw2+2]*mdbx + b4[hw3+2]*mdcx;
+	rmdr[ZZ][YY] -= b4[ow1+2]*mday + b4[hw2+2]*mdby + b4[hw3+2]*mdcy;
+	rmdr[ZZ][ZZ] -= b4[ow1+2]*mdaz + b4[hw2+2]*mdbz + b4[hw3+2]*mdcz;
+	/* 3*24 - 9 flops */
       }
     } else {
       /* If we couldn't settle this water, try a simplified iterative shake instead */

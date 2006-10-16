@@ -769,7 +769,8 @@ void update(int          natoms,  /* number of atoms in simulation */
     constrain(stdlog,top,&top->idef.il[F_SETTLE],
 	      inputrec,cr->dd,step,md,
 	      start,homenr,state->x,xprime,NULL,
-              state->box,state->lambda,dvdlambda,&vir_con,nrnb,TRUE);
+              state->box,state->lambda,dvdlambda,
+	      dt,state->v,&vir_con,nrnb,TRUE);
     if (inputrec->eI == eiSD) {
       /* A correction factor eph is needed for the SD constraint force */
       /* Here we can, unfortunately, not have proper corrections
@@ -781,6 +782,8 @@ void update(int          natoms,  /* number of atoms in simulation */
     } else {
       m_add(vir_part,vir_con,vir_part);
     }
+    if (debug)
+      pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     where();
 
     dump_it_all(stdlog,"After Shake",
@@ -805,29 +808,6 @@ void update(int          natoms,  /* number of atoms in simulation */
 	   md,start,homenr,cr);
 
     where();      
-
-    if (bDoUpdate) {
-      /* Note that with SD with ED or pull constraints the velocity
-       * corrections for these constraints is missing (this only
-       * involves a few degress of freedom though).
-       */
-      if (inputrec->eI != eiSD) {
-        /* The constraint virial and the velocities are incorrect for BD */
-        for(n=start; n<start+homenr; n++) {
-          for(i=0; i<DIM; i++) {
-            state->v[n][i] = (xprime[n][i] - state->x[n][i])*dt_1;
-          }
-        }
-	inc_nrnb(nrnb,eNR_CONSTR_V,homenr);
-        where();
-      }
-      dump_it_all(stdlog,"After Shake-V",
-		  natoms,state->x,xprime,state->v,vold,force);
-      where();
-
-      if (debug)
-	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
-    }
   }  else if (edyn->bEdsam) {     
       /* no constraints but still edsam - yes, that can happen */
     do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
@@ -852,7 +832,8 @@ void update(int          natoms,  /* number of atoms in simulation */
 	constrain(stdlog,top,&top->idef.il[F_SETTLE],
 		  inputrec,cr->dd,step,md,
 		  start,homenr,state->x,xprime,NULL,
-		  state->box,state->lambda,dvdlambda,NULL,nrnb,TRUE);
+		  state->box,state->lambda,dvdlambda,
+		  dt,NULL,NULL,nrnb,TRUE);
       }
     }
     

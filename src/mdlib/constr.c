@@ -161,7 +161,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
 			  gmx_domdec_t *dd,
 			  int step,t_mdatoms *md,int start,int homenr,
 			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			  real lambda,real *dvdlambda,tensor *vir,
+			  real lambda,real *dvdlambda,
+			  real invdt,rvec *v,tensor *vir,
 			  t_nrnb *nrnb,bool bCoordinates,bool bInit)
 {
   static bool      bFirst=TRUE;
@@ -311,12 +312,12 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
       if (ir->eConstrAlg == estLINCS || !bCoordinates)
 	bOK = constrain_lincs(stdlog,ir,step,lincsd,md,dd,
 			      x,xprime,min_proj,box,lambda,dvdlambda,
-			      vir!=NULL,rmdr,
+			      invdt,v,vir!=NULL,rmdr,
 			      bCoordinates,nrnb,bDumpOnError);
       else if (ir->eConstrAlg == estSHAKE)
 	bOK = bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
 		      ir,box,x,xprime,nrnb,lambda,dvdlambda,
-		      vir!=NULL,rmdr,bDumpOnError);
+		      invdt,v,vir!=NULL,rmdr,bDumpOnError);
 
       if (!bOK && bDumpOnError)
 	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
@@ -332,8 +333,10 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
       dOH  = top->idef.iparams[settle->iatoms[0]].settle.doh;
       dHH  = top->idef.iparams[settle->iatoms[0]].settle.dhh;
       csettle(stdlog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
-	      vir!=NULL,rmdr,&error);
+	      invdt,v[0],vir!=NULL,rmdr,&error);
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+      if (v != NULL)
+	inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
       if (vir != NULL)
 	inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
       
@@ -361,12 +364,14 @@ bool constrain(FILE *log,t_topology *top,t_ilist *settle,
 	       gmx_domdec_t *dd,
 	       int step,t_mdatoms *md,int start,int homenr,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-	       real lambda,real *dvdlambda,tensor *vir,
+	       real lambda,real *dvdlambda,
+	       real dt,rvec *v,tensor *vir,
 	       t_nrnb *nrnb,bool bCoordinates)
 {
   return low_constrain(log,top,settle,ir,dd,
 		       step,md,start,homenr,x,xprime,min_proj,box,
-		       lambda,dvdlambda,vir,nrnb,bCoordinates,FALSE);
+		       lambda,dvdlambda,
+		       dt==0 ? 0 : 1/dt,v,vir,nrnb,bCoordinates,FALSE);
 }
 
 int count_constraints(t_topology *top,t_commrec *cr)
@@ -393,7 +398,7 @@ int init_constraints(FILE *log,t_topology *top,t_ilist *settle,t_inputrec *ir,
   int count;
 
   low_constrain(log,top,settle,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
-		0,NULL,NULL,NULL,bOnlyCoords,TRUE);
+		0,NULL,0,NULL,NULL,NULL,bOnlyCoords,TRUE);
   
   if (cr)
     count = count_constraints(top,cr);

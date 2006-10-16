@@ -50,6 +50,8 @@ extern bool bshakef(FILE *log,		/* Log file			*/
 		    t_nrnb *nrnb,       /* Performance measure          */
 		    real lambda,        /* FEP lambda                   */
 		    real *dvdlambda,    /* FEP force                    */
+		    real invdt,         /* 1/delta_t                    */
+		    rvec *v,            /* Also constrain v if v!=NULL  */
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
 		    bool bDumpOnError); /* Dump debugging stuff on error*/
@@ -70,6 +72,8 @@ extern void csettle(FILE *log,
 		    real dHH, 		/* Constraint length Hyd-Hyd	*/
 		    real mO,  		/* Mass of Oxygen		*/
 		    real mH, 		/* Mass of Hydrogen		*/
+		    real invdt,         /* 1/delta_t                    */
+		    real *v,            /* Also constrain v if v!=NULL  */
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
 		    int *xerror);
@@ -84,7 +88,8 @@ extern bool constrain(FILE *log,t_topology *top,t_ilist *settle,
 		      gmx_domdec_t *dd,
 		      int step,t_mdatoms *md,int start,int homenr,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-		      real lambda,real *dvdlambda,tensor *vir,
+		      real lambda,real *dvdlambda,
+		      real dt,rvec *v,tensor *vir,
 		      t_nrnb *nrnb,bool bCoordinates);
 /*
  * When bCoordinates=TRUE constrains coordinates xprime using th
@@ -93,6 +98,8 @@ extern bool constrain(FILE *log,t_topology *top,t_ilist *settle,
  * When bCoordinates=FALSE, calculates the components xprime in
  * the constraint directions and subtracts these components from min_proj.
  * So when min_proj=xprime, the constraint components are projected out.
+ *
+ * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *
  * If vir!=NULL calculate the constraint virial.
  *
@@ -158,6 +165,7 @@ extern bool constrain_lincs(FILE *log,t_inputrec *ir,
 			    gmx_domdec_t *dd,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			    real lambda,real *dvdlambda,
+			    real invdt,rvec *v,
 			    bool bCalcVir,tensor rmdr,
 			    bool bCoordinates,
 			    t_nrnb *nrnb,bool bDumpOnError);

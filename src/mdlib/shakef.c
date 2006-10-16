@@ -143,6 +143,7 @@ int vec_shakef(FILE *log,
 	       t_iparams ip[],t_iatom *iatom,
 	       real tol,rvec x[],rvec xp[],real omega,
 	       bool bFEP,real lambda,real lagr[],
+	       real invdt,rvec *v,
 	       bool bCalcVir,tensor rmdr)
 {
   static  rvec *rij=NULL;
@@ -203,6 +204,17 @@ int vec_shakef(FILE *log,
   /* Constraint virial and correct the lagrange multipliers for the length */
   ia=iatom;
   for(ll=0; (ll<ncon); ll++,ia+=3) {
+    if (v) {
+      /* Correct the velocities */
+      mm = lagr[ll]*invmass[ia[1]]*invdt;
+      for(i=0; i<DIM; i++)
+	v[ia[1]][i] += mm*rij[ll][i];
+      mm = lagr[ll]*invmass[ia[2]]*invdt;
+      for(i=0; i<DIM; i++)
+	v[ia[2]][i] -= mm*rij[ll][i];
+      /* 16 flops */
+    }
+
     if (bCalcVir) {
       mm = lagr[ll];
       for(i=0; i<DIM; i++) {
@@ -253,7 +265,7 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
 bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 	     t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
 	     t_nrnb *nrnb,real lambda,real *dvdlambda,
-	     bool bCalcVir,tensor rmdr,bool bDumpOnError)
+	     real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError)
 {
   static  bool bFirst=TRUE;
   static  real *lagr;
@@ -287,7 +299,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     blen /= 3;
     n0 = vec_shakef(log,natoms,invmass,blen,idef->iparams,
 		    iatoms,ir->shake_tol,x_s,xp,omega,
-		    ir->efep!=efepNO,lambda,lam,bCalcVir,rmdr);
+		    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr);
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
 #endif
@@ -325,6 +337,8 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
   }
   inc_nrnb(nrnb,eNR_SHAKE,tnit);
   inc_nrnb(nrnb,eNR_SHAKE_RIJ,trij);
+  if (v)
+    inc_nrnb(nrnb,eNR_CONSTR_V,trij*2);
   if (bCalcVir)
     inc_nrnb(nrnb,eNR_CONSTR_VIR,trij);
   

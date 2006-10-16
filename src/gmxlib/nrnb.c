@@ -232,7 +232,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Lincs",                         60  },
     { "Lincs-Mat",                     4   },
     { "Shake",                         30  },
-    { "Constraint-V",                   6  },
+    { "Constraint-V",                   8  },
     { "Shake-Init",                    10  },
     { "Constraint-Vir",                24  },
     { "Settle",                        323 },

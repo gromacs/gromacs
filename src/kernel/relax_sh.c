@@ -263,10 +263,10 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
   }
   constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x,xnold-start,NULL,box,
-	    lambda,dvdlambda,NULL,nrnb,TRUE);
+	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
   constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x,xnew-start,NULL,box,
-	    lambda,dvdlambda,NULL,nrnb,TRUE);
+	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
 
   /* Set xnew to minus the acceleration */
   for (n=start; n<end; n++) {
@@ -276,10 +276,10 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
     clear_rvec(acc_dir[n]);
   }
 
-  /* Project the accereration on the old bond directions */
+  /* Project the acceleration on the old bond directions */
   constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x_old,xnew,acc_dir,box,
-	    lambda,dvdlambda,NULL,nrnb,FALSE); 
+	    lambda,dvdlambda,dt,NULL,NULL,nrnb,FALSE); 
 }
 
 int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
@@ -570,12 +570,14 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     constrain(log,top,&top->idef.il[F_SETTLE],
 	      inputrec,cr->dd,mdstep,md,start,end,
 	      state->x-start,x_old-start,NULL,state->box,
-	      state->lambda,&dum,NULL,nrnb,TRUE);
+	      state->lambda,&dum,inputrec->delta_t,state->v,NULL,nrnb,TRUE);
+    /*
     set_pbc(&pbc,state->box);
     for(i=0; i<homenr; i++) {
       pbc_dx(&pbc,state->x[start+i],x_old[i],dx);
       svmul(1/inputrec->delta_t,dx,state->v[start+i]);
     }
+    */
   }
 
   return count; 

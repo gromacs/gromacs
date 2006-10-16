@@ -149,11 +149,11 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
 		     gmx_domdec_t *dd,
 		     int nit,int nrec,
 		     real wangle,int *warn,
+		     real invdt,rvec *v,
 		     bool bCalcVir,tensor rmdr)
 {
   int     b,i,j,k,n,it,rec;
-  real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
-  real    u0,u1,u2,v0,v1,v2;
+  real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,len2,dlen2,wfac,lam;  
   rvec    dx;
   int     ncons,*bla,*blnr,*blbnb;
   rvec    *r;
@@ -256,18 +256,12 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
     tmp0 = r[b][0]*mvb;
     tmp1 = r[b][1]*mvb;
     tmp2 = r[b][2]*mvb;
-    u0 = xp[i][0] - tmp0*im1;
-    u1 = xp[i][1] - tmp1*im1;
-    u2 = xp[i][2] - tmp2*im1;
-    v0 = xp[j][0] + tmp0*im2;
-    v1 = xp[j][1] + tmp1*im2;
-    v2 = xp[j][2] + tmp2*im2;
-    xp[i][0] = u0;
-    xp[i][1] = u1;
-    xp[i][2] = u2;
-    xp[j][0] = v0;
-    xp[j][1] = v1;
-    xp[j][2] = v2;
+    xp[i][0] -= tmp0*im1;
+    xp[i][1] -= tmp1*im1;
+    xp[i][2] -= tmp2*im1;
+    xp[j][0] += tmp0*im2;
+    xp[j][1] += tmp1*im2;
+    xp[j][2] += tmp2*im2;
   } /* 16 ncons flops */
   
   
@@ -291,13 +285,13 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
       } else {
 	rvec_sub(xp[bla[2*b]],xp[bla[2*b+1]],dx);
       }
-      u1 = len*len;
-      u0 = 2*u1 - norm2(dx);
-      if (u0 < wfac*u1 && (nlocat==NULL || nlocat[b]))
+      len2 = len*len;
+      dlen2 = 2*len2 - norm2(dx);
+      if (dlen2 < wfac*len2 && (nlocat==NULL || nlocat[b]))
 	*warn = b;
-      if (u0 < 0)
-	u0 = 0;
-      mvb = blc[b]*(len - u0*invsqrt(u0));
+      if (dlen2 < 0)
+	dlen2 = 0;
+      mvb = blc[b]*(len - dlen2*invsqrt(dlen2));
       rhs1[b] = mvb;
       sol[b]  = mvb;
     } /* 18*ncons flops */
@@ -328,20 +322,30 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
       tmp0 = r[b][0]*mvb;
       tmp1 = r[b][1]*mvb;
       tmp2 = r[b][2]*mvb;
-      u0 = xp[i][0] - tmp0*im1;
-      u1 = xp[i][1] - tmp1*im1;
-      u2 = xp[i][2] - tmp2*im1;
-      v0 = xp[j][0] + tmp0*im2;
-      v1 = xp[j][1] + tmp1*im2;
-      v2 = xp[j][2] + tmp2*im2;
-      xp[i][0] = u0;
-      xp[i][1] = u1;
-      xp[i][2] = u2;
-      xp[j][0] = v0;
-      xp[j][1] = v1;
-      xp[j][2] = v2;
+      xp[i][0] -= tmp0*im1;
+      xp[i][1] -= tmp1*im1;
+      xp[i][2] -= tmp2*im1;
+      xp[j][0] += tmp0*im2;
+      xp[j][1] += tmp1*im2;
+      xp[j][2] += tmp2*im2;
     } /* 17 ncons flops */
   } /* nit*ncons*(35+9*nrec) flops */
+
+  if (v) {
+    /* Correct the velocities */
+    for(b=0; b<ncons; b++) {
+      i = bla[2*b];
+      j = bla[2*b+1];
+      im1 = invmass[i]*lambda[b]*invdt;
+      im2 = invmass[j]*lambda[b]*invdt;
+      v[i][0] += im1*r[b][0];
+      v[i][1] += im1*r[b][1];
+      v[i][2] += im1*r[b][2];
+      v[j][0] -= im2*r[b][0];
+      v[j][1] -= im2*r[b][1];
+      v[j][2] -= im2*r[b][2];
+    } /* 16 ncons flops */
+  }
 
   if (nlocat) {
     /* Only account for local atoms */
@@ -778,6 +782,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
 		     gmx_domdec_t *dd,
 		     rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		     real lambda,real *dvdlambda,
+		     real invdt,rvec *v,
 		     bool bCalcVir,tensor rmdr,
 		     bool bCoordinates,
 		     t_nrnb *nrnb,bool bDumpOnError)
@@ -842,7 +847,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
     
     do_lincs(x,xprime,pbc_null,lincsd,md->invmass,dd,
 	     ir->nLincsIter,ir->nProjOrder,ir->LincsWarnAngle,&warn,
-	     bCalcVir,rmdr);
+	     invdt,v,bCalcVir,rmdr);
 
     if (ir->efep != efepNO) {
       real dt_2,dvdl=0;
@@ -897,6 +902,8 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
   /* count assuming nit=1 */
   inc_nrnb(nrnb,eNR_LINCS,lincsd->nc);
   inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*lincsd->ncc);
+  if (v)
+    inc_nrnb(nrnb,eNR_CONSTR_V,lincsd->nc*2);
   if (bCalcVir)
     inc_nrnb(nrnb,eNR_CONSTR_VIR,lincsd->nc);
 
