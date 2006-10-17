@@ -741,11 +741,12 @@ static void do_dip(t_topology *top,real volume,
 	  M_av[m]  += dipole[i][m];               /* M per frame */
 	  mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
 	}
-	
-	mu_ave += sqrt(mu_mol);                   /* calc. the average mu */
+	mu_mol = sqrt(mu_mol);
+
+	mu_ave += mu_mol;                         /* calc. the average mu */
 	
 	/* Update the dipole distribution */
-	ibin = (ndipbin*sqrt(mu_mol)/mu_max);
+	ibin = (int)(ndipbin*mu_mol/mu_max + 0.5);
 	if (ibin < ndipbin)
 	  dipole_bin[ibin]++;
 
@@ -993,7 +994,8 @@ static void do_dip(t_topology *top,real volume,
      */
     outdd=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","");
     for(i=0; (i<ndipbin); i++)
-      fprintf(outdd,"%10g  %d\n",(i*mu_max)/ndipbin,dipole_bin[i]);
+      fprintf(outdd,"%10g  %10f\n",
+	      (i*mu_max)/ndipbin,dipole_bin[i]/(double)teller);
     fclose(outdd);
     sfree(dipole_bin);
   }
