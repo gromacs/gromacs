@@ -75,8 +75,9 @@ t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
   md->tmassB = tmB;
   
   if (bFreeEnergy && fp)
-    fprintf(fp,"There are %d atoms for free energy perturbation\n",
-	    md->nPerturbed);
+    fprintf(fp,
+	    "There are %d atoms and %d charges for free energy perturbation\n",
+	    md->nPerturbed,md->nChargePerturbed);
 
   return md;
 }
