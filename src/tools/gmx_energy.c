@@ -775,7 +775,8 @@ int gmx_energy(int argc,char *argv[])
     "Average and RMSD are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
     "a LSQ fit of the data to a straight line. Total drift is drift",
-    "multiplied by total time.[PAR]",
+    "multiplied by total time. The term fluctuation gives the RMSD around",
+    "the LSQ fit.[PAR]",
     
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",
