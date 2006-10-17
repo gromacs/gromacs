@@ -98,6 +98,55 @@ real calc_gyro(rvec x[],int gnx,atom_id index[],t_atom atom[],real tm,
   return sqrt(gyro/tm);
 }
 
+void calc_gyro_z(rvec x[],matrix box,
+		 int gnx,atom_id index[],t_atom atom[],
+		 int nz,real time,FILE *out)
+{
+  static dvec *inertia=NULL;
+  static double *tm=NULL;
+  int    i,ii,j,zi;
+  real   zf,w,sdet,e1,e2;
+
+  if (inertia == NULL) {
+    snew(inertia,nz);
+    snew(tm,nz);
+  }
+
+  for(i=0; i<nz; i++) {
+    clear_dvec(inertia[i]);
+    tm[i] = 0;
+  }
+
+  for(i=0; (i<gnx); i++) {
+    ii = index[i];
+    zf = nz*x[ii][ZZ]/box[ZZ][ZZ];
+    if (zf >= nz)
+      zf -= nz;
+    if (zf < 0)
+      zf += nz;
+    for(j=0; j<2; j++) {
+      zi = zf + j;
+      if (zi == nz)
+	zi = 0;
+      w = atom[ii].m*(1 + cos(M_PI*(zf - zi)));
+      inertia[zi][0] += w*sqr(x[ii][YY]);
+      inertia[zi][1] += w*sqr(x[ii][XX]);
+      inertia[zi][2] -= w*x[ii][XX]*x[ii][YY];
+      tm[zi] += w;
+    }
+  }
+  fprintf(out,"%10g",time);
+  for(j=0; j<nz; j++) {
+    for(i=0; i<3; i++)
+      inertia[j][i] /= tm[j];
+    sdet = sqrt(sqr(inertia[j][0] - inertia[j][1]) + 4*sqr(inertia[j][2]));
+    e1 = 0.5*(inertia[j][0] + inertia[j][1] + sdet);
+    e2 = 0.5*(inertia[j][0] + inertia[j][1] - sdet);
+    fprintf(out," %5.3f %5.3f",e1,e2);
+  }
+  fprintf(out,"\n");
+}
+
 int gmx_gyrate(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -108,7 +157,7 @@ int gmx_gyrate(int argc,char *argv[])
     "for multiple molecules by splitting the analysis group in equally",
     "sized parts."
   };
-  static int  nmol=1;
+  static int  nmol=1,nz=0;
   static bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
   t_pargs pa[] = {
     { "-nmol", FALSE, etINT, {&nmol},
@@ -118,7 +167,9 @@ int gmx_gyrate(int argc,char *argv[])
     { "-p", FALSE, etBOOL, {&bRot},
       "Calculate the radii of gyration about the principal axes." },
     { "-moi", FALSE, etBOOL, {&bMOI},
-      "Calculate the moments of inertia (defined by  the principal axes)." }
+      "Calculate the moments of inertia (defined by  the principal axes)." },
+    { "-nz", FALSE, etINT, {&nz},
+      "Calculate the 2D moments of inertia of # slices along the z-axis" },
   };
   FILE       *out;
   int        status;
@@ -159,6 +210,8 @@ int gmx_gyrate(int argc,char *argv[])
   if (bACF && nmol!=1)
     gmx_fatal(FARGS,"Can only do acf with nmol=1");
   bRot = bRot || bMOI || bACF;
+  if (nz > 0)
+    bMOI = TRUE;
   if (bRot) {
     printf("Will rotate system along principal axes\n"); 
     snew(moi_trans,DIM);
@@ -200,14 +253,18 @@ int gmx_gyrate(int argc,char *argv[])
     xvgr_legend(out,NLEG,leg);
   }
   do {
-    rm_pbc(&top.idef,natoms,box,x,x_s);
+    if (nz == 0)
+      rm_pbc(&top.idef,natoms,box,x,x_s);
     gyro = 0;
     clear_rvec(gvec);
     clear_rvec(d);
     for(mol=0; mol<nmol; mol++) {
-      tm    = sub_xcm(x_s,nam,index+mol*nam,top.atoms.atom,xcm,bQ);
-      gyro += calc_gyro(x_s,nam,index+mol*nam,top.atoms.atom,
-			tm,gvec1,d1,bQ,bRot,bMOI,trans);
+      tm    = sub_xcm(nz==0?x_s:x,nam,index+mol*nam,top.atoms.atom,xcm,bQ);
+      if (nz == 0)
+	gyro += calc_gyro(x_s,nam,index+mol*nam,top.atoms.atom,
+			  tm,gvec1,d1,bQ,bRot,bMOI,trans);
+      else
+	calc_gyro_z(x,box,nam,index+mol*nam,top.atoms.atom,nz,t,out);
       rvec_inc(gvec,gvec1);
       rvec_inc(d,d1);
     }
@@ -217,19 +274,21 @@ int gmx_gyrate(int argc,char *argv[])
       svmul(1.0/nmol,d,d);
     }
 
-    if (bRot) {
-      if (j >= max_moi) {
-	max_moi += delta_moi;
+    if (nz == 0) {
+      if (bRot) {
+	if (j >= max_moi) {
+	  max_moi += delta_moi;
+	  for(m=0; (m<DIM); m++)
+	    srenew(moi_trans[m],max_moi*DIM);
+	}
 	for(m=0; (m<DIM); m++)
-	  srenew(moi_trans[m],max_moi*DIM);
-      }
-      for(m=0; (m<DIM); m++)
-	copy_rvec(trans[m],moi_trans[m]+DIM*j);
-      fprintf(out,"%10g  %10g  %10g  %10g  %10g\n",
-	      t,gyro,d[XX],d[YY],d[ZZ]); }
-    else {
-      fprintf(out,"%10g  %10g  %10g  %10g  %10g\n",
-	      t,gyro,gvec[XX],gvec[YY],gvec[ZZ]); }
+	  copy_rvec(trans[m],moi_trans[m]+DIM*j);
+	fprintf(out,"%10g  %10g  %10g  %10g  %10g\n",
+		t,gyro,d[XX],d[YY],d[ZZ]); }
+      else {
+	fprintf(out,"%10g  %10g  %10g  %10g  %10g\n",
+		t,gyro,gvec[XX],gvec[YY],gvec[ZZ]); }
+    }
     j++;
   } while(read_next_x(status,&t,natoms,x,box));
   close_trj(status);
