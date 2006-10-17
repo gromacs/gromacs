@@ -54,6 +54,7 @@
 #include "statutil.h"
 #include "index.h"
 #include "tpxio.h"
+#include "physics.h"
 
 typedef struct {
   char *atomname;
@@ -238,8 +239,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 
 void calc_density(char *fn, atom_id **index, int gnx[], 
 		  real ***slDensity, int *nslices, t_topology *top, 
-		  int axis, int nr_grps, real *slWidth, bool bNumber,
-		  bool bCount,bool bCenter)
+		  int axis, int nr_grps, real *slWidth, bool bCenter)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -301,14 +301,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
       
 	/* determine which slice atom is in */
 	slice = (int)(z / (*slWidth)); 
-	if (bNumber || bCount) {
-	  buf = strdup(*(top->atoms.atomname[index[n][i]]));
-	  trim(buf);
-	  if (buf[0] != 'H')
-	    (*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
-	  free(buf);
-	} else
-	  (*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
+	(*slDensity)[n][slice] += top->atoms.atom[index[n][i]].m;
       }
     }
 
@@ -327,10 +320,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++) {
-      if (bCount) 
-	(*slDensity)[n][i] = (*slDensity)[n][i]/nr_frames;
-      else
-	(*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) * 1.66057 /
+      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) * 1.66057 /
 	(nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
     }
   }
@@ -340,23 +330,22 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 
 void plot_density(real *slDensity[], char *afile, int nslices,
 		  int nr_grps, char *grpname[], real slWidth, 
-		  bool bElectron, bool bNumber, bool bCount,
+		  char **dens_opt,
 		  bool bSymmetrize)
 {
-  FILE  *den;     /* xvgr file with density   */
-  char  buf[256]; /* for xvgr title */
+  FILE  *den;
+  char  *ylabel=NULL;
   int   slice, n;
   real  ddd;
 
-  sprintf(buf,"Partial densities");
-  if (bElectron)
-    den = xvgropen(afile, buf, "Box (nm)", "Electron density (e/nm\\S3\\N)");
-  else if (bNumber)
-    den = xvgropen(afile, buf, "Box (nm)","Density (atoms/nm\\S3\\N)");
-  else if (bCount)
-    den = xvgropen(afile, buf, "Slice","Absolute numbers");
-  else
-    den = xvgropen(afile, buf, "Box (nm)","Density (kg/m\\S3\\N)");
+  switch (dens_opt[0][0]) {
+  case 'm': ylabel = "Density (kg m\\S-3\\N)"; break;
+  case 'n': ylabel = "Number density (nm\\S-3\\N)"; break;
+  case 'c': ylabel = "Charge density (e nm\\S-3\\N)"; break;
+  case 'e': ylabel = "Electron density (e nm\\S-3\\N)"; break;
+  }
+  
+  den = xvgropen(afile, "Partial densities", "Box (nm)", ylabel);
 
   xvgr_legend(den,nr_grps,grpname);
 
@@ -367,8 +356,8 @@ void plot_density(real *slDensity[], char *afile, int nslices,
 	ddd = (slDensity[n][slice]+slDensity[n][nslices-slice-1])*0.5;
       else
 	ddd = slDensity[n][slice];
-      if (bNumber)
-	fprintf(den,"   %12g", ddd/1.66057);
+      if (dens_opt[0][0] == 'm')
+	fprintf(den,"   %12g", ddd*AMU/(NANO*NANO*NANO));
       else
 	fprintf(den,"   %12g", ddd);
     }
@@ -394,10 +383,9 @@ int gmx_density(int argc,char *argv[])
     "The number of electrons for each atom is modified by its atomic",
     "partial charge."
   };
-  
-  static bool bNumber=FALSE;     /* calculate number density   */
-  static bool bElectron=FALSE;   /* calculate electron density */
-  static bool bCount=FALSE;      /* just count                 */
+
+  static char *dens_opt[] = 
+    { NULL, "mass", "number", "charge", "electron", NULL };
   static int  axis = 2;          /* normal to memb. default z  */
   static char *axtitle="Z"; 
   static int  nslices = 50;      /* nr of slices defined       */
@@ -409,12 +397,8 @@ int gmx_density(int argc,char *argv[])
       "Take the normal on the membrane in direction X, Y or Z." },
     { "-sl",  FALSE, etINT, {&nslices},
       "Divide the box in #nr slices." },
-    { "-number",  FALSE, etBOOL, {&bNumber},
-      "Calculate number density instead of mass density. Hydrogens are not counted!" },
-    { "-ed",      FALSE, etBOOL, {&bElectron},
-      "Calculate electron density instead of mass density" },
-    { "-count",   FALSE, etBOOL, {&bCount},
-      "Only count atoms in slices, no densities. Hydrogens are not counted"},
+    { "-dens",    FALSE, etENUM, {dens_opt},
+      "Density"},
     { "-ng",       FALSE, etINT, {&ngrps},
       "Number of groups to compute densities of" },
     { "-symm",    FALSE, etBOOL, {&bSymmetrize},
@@ -425,7 +409,6 @@ int gmx_density(int argc,char *argv[])
 
   static char *bugs[] = {
     "When calculating electron densities, atomnames are used instead of types. This is bad.",
-    "When calculating number densities, atoms with names that start with H are not counted. This may be surprising if you use hydrogens with names like OP3."
   };
   
   real **density;        /* density per slice          */
@@ -436,7 +419,8 @@ int gmx_density(int argc,char *argv[])
   t_electron *el_tab;    /* tabel with nr. of electrons*/
   t_topology *top;       /* topology 		       */ 
   atom_id   **index;     /* indices for all groups     */
-  
+  int  i;
+
   t_filenm  fnm[] = {    /* files for g_density 	  */
     { efTRX, "-f", NULL,  ffREAD },  
     { efNDX, NULL, NULL,  ffOPTRD }, 
@@ -460,11 +444,12 @@ int gmx_density(int argc,char *argv[])
   axis = toupper(axtitle[0]) - 'X';
   
   top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
-  if ( bNumber  || bCount) {
-    int n;
-    for(n=0;(n<top->atoms.nr);n++)
-      top->atoms.atom[n].m=1;  
-    /* this sucks! mass is in amu, so a factor 1.66 is missing */
+  if (dens_opt[0][0] == 'n') {
+    for(i=0; (i<top->atoms.nr); i++)
+      top->atoms.atom[i].m = 1;  
+  } else if (dens_opt[0][0] == 'c') {
+    for(i=0; (i<top->atoms.nr); i++)
+      top->atoms.atom[i].m = top->atoms.atom[i].q;  
   }
 
   snew(grpname,ngrps);
@@ -473,10 +458,7 @@ int gmx_density(int argc,char *argv[])
  
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),ngrps,ngx,index,grpname); 
 
-  if (bElectron) {
-    if (bCount)
-      gmx_fatal(FARGS,"I don't feel like counting electrons. Bye.\n");
-
+  if (dens_opt[0][0] == 'e') {
     nr_electrons =  get_electrons(&el_tab,ftp2fn(efDAT,NFILE,fnm));
     fprintf(stderr,"Read %d atomtypes from datafile\n", nr_electrons);
 
@@ -485,16 +467,13 @@ int gmx_density(int argc,char *argv[])
 			  nr_electrons,bCenter);
   } else
     calc_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, &nslices, top, 
-		 axis, ngrps, &slWidth, bNumber,bCount,bCenter); 
+		 axis, ngrps, &slWidth, bCenter); 
   
   plot_density(density, opt2fn("-o",NFILE,fnm),
-	       nslices, ngrps, grpname, slWidth, bElectron, bNumber, bCount,
+	       nslices, ngrps, grpname, slWidth, dens_opt,
 	       bSymmetrize);
   
   do_view(opt2fn("-o",NFILE,fnm), "-nxy");       /* view xvgr file */
   thanx(stderr);
   return 0;
 }
-
-
-
