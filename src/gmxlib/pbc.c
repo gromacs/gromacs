@@ -48,22 +48,12 @@
 #include "txtdump.h"
 #include "gmx_fatal.h"
 
-/*****************************************
- *     PERIODIC BOUNDARY CONDITIONS
- *****************************************/
-
-/* #define MAX_NTRICVEC 8 */
-
-/* Global variables */
-/*
-static bool bInit=FALSE;
-static bool bTriclinic,bSupported;
-static rvec gl_fbox,gl_hbox,gl_mhbox,tric_vec[MAX_NTRICVEC];
-static ivec tric_shift[MAX_NTRICVEC];
-static matrix gl_box;
-static int ntric_vec;
-static real sure_dist2;
-*/
+/* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
+enum { epbcdxRECTANGULAR=1, epbcdxRECTANGULAR_SS, 
+       epbcdxTRICLINIC, epbcdxTRICLINIC_SS,
+       epbcdx1D_RECT_SS, epbcdx1D_TRIC_SS,
+       epbcdx2D_RECT_SS, epbcdx2D_TRIC_SS,
+       epbcdxNOPBC, epbcdxUNSUPPORTED };
 
 char *check_box(matrix box)
 {
@@ -105,9 +95,9 @@ real max_cutoff2(matrix box)
   return min(min_hv2,min_diag*min_diag);
 }
 
-static void low_set_pbc(t_pbc *pbc,matrix box,bool bSingleShift)
+static void low_set_pbc(t_pbc *pbc,matrix box,ivec *dd_nc,bool bSingleShift)
 {
-  int  i,j,k,d,jc,kc;
+  int  i,j,k,d,jc,kc,npbcdim;
   real d2old,d2new,d2new_c;
   rvec try,pos;
   char *ptr;
@@ -127,10 +117,46 @@ static void low_set_pbc(t_pbc *pbc,matrix box,bool bSingleShift)
   } else if (box[XX][XX]==0 || box[YY][YY]==0 || box[ZZ][ZZ]==0) {
     pbc->ePBCDX = epbcdxNOPBC;
   } else {
-    if (TRICLINIC(box)) {
-      pbc->ePBCDX = (bSingleShift ? epbcdxTRICLINIC_SS : epbcdxTRICLINIC);
+    if (dd_nc) {
+      if (!bSingleShift)
+	gmx_fatal(FARGS,"Domain decomposition only supports single shifts");
+      npbcdim = 0;
+      for(i=0; i<DIM; i++)
+	if ((*dd_nc)[i] == 1)
+	  npbcdim++;
+      switch (npbcdim) {
+      case 1:
+	pbc->ePBCDX = epbcdx1D_RECT_SS;
+	for(i=0; i<DIM; i++)
+	  if ((*dd_nc)[i] == 1)
+	    pbc->dim = i;
+	for(i=0; i<DIM; i++)
+	  if (i!=pbc->dim && pbc->box[pbc->dim][i]!=0)
+	    pbc->ePBCDX = epbcdx1D_TRIC_SS;
+	break;
+      case 2:
+	pbc->ePBCDX = epbcdx2D_RECT_SS;
+	for(i=0; i<DIM; i++)
+	  if ((*dd_nc)[i] > 1)
+	    pbc->dim = i;
+	for(i=0; i<DIM; i++)
+	  if (i!=pbc->dim)
+	    for(j=0; j<DIM; j++)
+	      if (j!=i && pbc->box[i][j]!=0)
+		pbc->ePBCDX = epbcdx2D_TRIC_SS;
+	break;
+      default:
+	gmx_fatal(FARGS,"Incorrect number of pbc dimensions with DD: %d",
+		  npbcdim);
+      }
     } else {
-      pbc->ePBCDX = (bSingleShift ? epbcdxRECTANGULAR_SS : epbcdxRECTANGULAR);
+      if (TRICLINIC(box)) {
+	pbc->ePBCDX =
+	  (bSingleShift ? epbcdxTRICLINIC_SS : epbcdxTRICLINIC);
+      } else {
+	pbc->ePBCDX =
+	  (bSingleShift ? epbcdxRECTANGULAR_SS : epbcdxRECTANGULAR);
+      }
     }
     for(i=0; (i<DIM); i++) {
       pbc->fbox_diag[i]  =  box[i][i];
@@ -213,12 +239,32 @@ static void low_set_pbc(t_pbc *pbc,matrix box,bool bSingleShift)
 
 void set_pbc(t_pbc *pbc,matrix box)
 {
-  low_set_pbc(pbc,box,FALSE);
+  low_set_pbc(pbc,box,NULL,FALSE);
 }
 
-void set_pbc_ss(t_pbc *pbc,matrix box)
+t_pbc *set_pbc_ss(t_pbc *pbc,matrix box,gmx_domdec_t *dd,bool bSingleDir)
 {
-  low_set_pbc(pbc,box,TRUE);
+  ivec nc2;
+  int  npbcdim,i;
+  
+  if (dd == NULL) {
+    npbcdim = DIM;
+  } else {
+    npbcdim = 0;
+    for(i=0; i<DIM; i++) {
+      if (dd->nc[i] <= (bSingleDir ? 1 : 2)) {
+	nc2[i] = 1;
+	npbcdim++;
+      } else {
+	nc2[i] = dd->nc[i];
+      }
+    }
+  }
+  
+  if (npbcdim > 0)
+    low_set_pbc(pbc,box,npbcdim<DIM ? &nc2 : NULL,TRUE);
+
+  return (npbcdim>0 ? pbc : NULL);
 }
 
 int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
@@ -306,6 +352,34 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       }
       i++;
     }
+    break;
+  case epbcdx1D_RECT_SS:
+    i = pbc->dim;
+    if (dx[i] > pbc->hbox_diag[i]) {
+      dx[i] -= pbc->fbox_diag[i];
+      ishift[i]--;
+    } else if (dx[i] <= pbc->mhbox_diag[i]) {
+      dx[i] += pbc->fbox_diag[i];
+      ishift[i]++;
+    }
+    break;
+  case epbcdx1D_TRIC_SS:
+    gmx_fatal(FARGS,"epbcdx2D_TRIC_SS not implemented yet");
+    break;
+  case epbcdx2D_RECT_SS:
+    for(i=0; i<DIM; i++)
+      if (i != pbc->dim) {
+	if (dx[i] > pbc->hbox_diag[i]) {
+	  dx[i] -= pbc->fbox_diag[i];
+	  ishift[i]--;
+	} else if (dx[i] <= pbc->mhbox_diag[i]) {
+	  dx[i] += pbc->fbox_diag[i];
+	  ishift[i]++;
+	}
+      }
+    break;
+  case epbcdx2D_TRIC_SS:
+    gmx_fatal(FARGS,"epbcdx2D_TRIC_SS not implemented yet");
     break;
   case epbcdxNOPBC:
   case epbcdxUNSUPPORTED:

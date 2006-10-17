@@ -55,7 +55,6 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 {
   int     b,i,j,k,n,it,rec;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
-  real    u0,u1,u2,v0,v1,v2;
   rvec    dx;
   int     ncons,*bla,*blnr,*blbnb;
   rvec    *r;
@@ -129,22 +128,16 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
     tmp0 = r[b][0]*mvb;
     tmp1 = r[b][1]*mvb;
     tmp2 = r[b][2]*mvb;
-    u0 = fp[i][0] - tmp0*im1;
-    u1 = fp[i][1] - tmp1*im1;
-    u2 = fp[i][2] - tmp2*im1;
-    v0 = fp[j][0] + tmp0*im2;
-    v1 = fp[j][1] + tmp1*im2;
-    v2 = fp[j][2] + tmp2*im2;
-    fp[i][0] = u0;
-    fp[i][1] = u1;
-    fp[i][2] = u2;
-    fp[j][0] = v0;
-    fp[j][1] = v1;
-    fp[j][2] = v2;
+    fp[i][0] -= tmp0*im1;
+    fp[i][1] -= tmp1*im1;
+    fp[i][2] -= tmp2*im1;
+    fp[j][0] += tmp0*im2;
+    fp[j][1] += tmp1*im2;
+    fp[j][2] += tmp2*im2;
   } /* 16 ncons flops */
 }
 
-static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
+static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
 		     t_lincsdata *lincsd,real *invmass,
 		     gmx_domdec_t *dd,
 		     int nit,int nrec,
@@ -276,7 +269,7 @@ static void do_lincs(rvec *x,rvec *xp,t_pbc *pbc,
   for(it=0; it<nit; it++) {
     if (dd && dd->constraints)
       /* Communicate the corrected non-local coordinates */
-      dd_move_x_constraints(dd,xp);
+      dd_move_x_constraints(dd,box,xp);
 
     for(b=0;b<ncons;b++) {
       len = bllen[b];
@@ -799,19 +792,18 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
   if (lincsd->nc == 0 && dd==NULL)
     return bOK;
 
-  if (ir->ePBC == epbcFULL) {
+  if (dd || ir->ePBC == epbcFULL) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step.
      */
-    set_pbc_ss(&pbc,box);
-    pbc_null = &pbc;
+    pbc_null = set_pbc_ss(&pbc,box,dd,FALSE);
   } else {
     pbc_null = NULL;
   }
   if (dd) {
     /* Communicate the coordinates required for the non-local constraints */
-    dd_move_x_constraints(dd,x);
-    dd_move_x_constraints(dd,xprime);
+    dd_move_x_constraints(dd,box,x);
+    dd_move_x_constraints(dd,box,xprime);
     /*dump_conf(dd,lincsd,"con",TRUE,xprime,box);*/
   }
   if (bCoordinates) {
@@ -845,7 +837,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
       cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 	      lincsd->nc,lincsd->bla,lincsd->bllen);
     
-    do_lincs(x,xprime,pbc_null,lincsd,md->invmass,dd,
+    do_lincs(x,xprime,box,pbc_null,lincsd,md->invmass,dd,
 	     ir->nLincsIter,ir->nProjOrder,ir->LincsWarnAngle,&warn,
 	     invdt,v,bCalcVir,rmdr);
 

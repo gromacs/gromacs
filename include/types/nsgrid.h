@@ -42,8 +42,10 @@ typedef struct {
   ivec	 n;	        /* The dimension of the grid		*/
   int    ncells;	/* Total number of cells		*/
   int    maxcells;	/* Max number of cells (when box grows)	*/
-  int	 delta;		/* The distance in cells to be searched */
-  int    gmax;		/* The size of the largest grid cell	*/
+  ivec   ncpddc;        /* The number of cells per DD cell      */
+  rvec   cell_size;     /* The size of the cells                */
+  rvec   cell_offset;   /* The offset of the cell (0,0,0)       */
+  int    delta;         /* The distance in cells to be searched */
   int	 *cell_index;	/* The cell number of each cg		*/
   int    *index;	/* The index into a for each cell	*/
 			/* The location of the cell in the index*/

@@ -69,14 +69,16 @@ extern void dd_sendrecv_rvec(const gmx_domdec_t *dd,
  * For direction see the enum above.
  */
 
-extern void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[]);
+extern void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[]);
 /* buf should should have size natoms (of the whole system)
  * although in most cases far less will be used.
  */
 
-extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[]);
+extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
 /* buf should should have size natoms (of the whole system)
  * although in most cases far less will be used.
+ * When fshift!=NULL the shift forces are updated to obtain
+ * the correct virial from the single sum including f.
  */
 
 extern void dd_partition_system(FILE         *fplog,
@@ -100,11 +102,11 @@ extern void dd_partition_system(FILE         *fplog,
 
 /* In domdec_con.c */
 
-extern void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f);
+extern void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f,rvec *fshift);
 
-extern void dd_move_x_constraints(gmx_domdec_t *dd,rvec *x);
+extern void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,rvec *x);
 
-extern void dd_move_x_vsites(gmx_domdec_t *dd,rvec *x);
+extern void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x);
 
 extern void clear_local_constraint_indices(gmx_domdec_t *dd);
 

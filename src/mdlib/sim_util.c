@@ -315,7 +315,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
     if (DOMAINDECOMP(cr)) {
-      dd_move_x(cr->dd,x,buf);
+      dd_move_x(cr->dd,box,x,buf);
     } else {
       move_x(fplog,cr,cr->left,cr->right,x,nsb,nrnb);
     }
@@ -335,7 +335,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Reset energies */
   reset_energies(&(inputrec->opts),grps,fr,bNS,ener);    
   if (bNS) {
-    if (fr->ePBC == epbcXYZ && bStateChanged)
+    if (graph && bStateChanged)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(fplog,graph,box,x);
 
@@ -410,9 +410,9 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* Communicate the forces */
     if (PAR(cr)) {
       if (DOMAINDECOMP(cr)) {
-	dd_move_f(cr->dd,f,buf);
+	dd_move_f(cr->dd,f,buf,fr->fshift);
 	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl)
-	  dd_move_f(cr->dd,fr->f_el_recip,buf);
+	  dd_move_f(cr->dd,fr->f_el_recip,buf,NULL);
       } else {
 	move_f(fplog,cr,cr->left,cr->right,f,buf,nsb,nrnb);
       }

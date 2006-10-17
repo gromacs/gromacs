@@ -181,13 +181,14 @@ void dd_sendrecv_rvec(const gmx_domdec_t *dd,
 #endif
 }
 
-void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
+void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
 {
   int  ncell,nat_tot,n,dim,i,j;
   int  *index,*cgindex;
   gmx_domdec_comm_t *comm;
   gmx_domdec_ind_t *ind;
-  
+  rvec shift;
+
   comm = dd->comm;
   
   cgindex = dd->cgindex;
@@ -199,9 +200,18 @@ void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
     index = ind->index;
     n = 0;
     for(i=0; i<ind->nsend[ncell]; i++) {
-      for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
-	copy_rvec(x[j],buf[n]);
-	n++;
+      if (dd->ci[dd->dim[dim]] == 0) {
+	/* We need to shift the coordinates */
+	copy_rvec(box[dd->dim[dim]],shift);
+	for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
+	  rvec_add(x[j],shift,buf[n]);
+	  n++;
+	}
+      } else {
+	for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
+	  copy_rvec(x[j],buf[n]);
+	  n++;
+	}
       }
     }
     /* Send and receive the coordinates */
@@ -213,13 +223,15 @@ void dd_move_x(gmx_domdec_t *dd,rvec x[],rvec buf[])
   }
 }
 
-void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[])
+void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
 {
   int  ncell,nat_tot,n,dim,i,j;
   int  *index,*cgindex;
   gmx_domdec_comm_t *comm;
   gmx_domdec_ind_t *ind;
-  
+  ivec vis;
+  int  is;
+
   comm = dd->comm;
   
   cgindex = dd->cgindex;
@@ -240,9 +252,21 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[])
     /* Add the received forces */
     n = 0;
     for(i=0; i<ind->nsend[ncell]; i++) {
-      for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
-	rvec_inc(f[j],buf[n]);
-	n++;
+      if (fshift && dd->ci[dd->dim[dim]] == 0) {
+	clear_ivec(vis);
+	vis[dd->dim[dim]] = 1;
+	is = IVEC2IS(vis);
+	for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
+	  rvec_inc(f[j],buf[n]);
+	  /* Add this force to the shift force */
+	  rvec_inc(fshift[is],buf[n]);
+	  n++;
+	}
+      } else {
+	for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
+	  rvec_inc(f[j],buf[n]);
+	  n++;
+	}
       }
     }
     ncell /= 2;
@@ -1069,22 +1093,22 @@ static int dd_redistribute_cg(FILE *fplog,
 void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
 {
   int  d,i,j,m;
-  ivec xyz,tmp,h,s;
+  ivec tmp,s;
   int  ncell,ncellp;
   ivec *dd_c,dd_cp[DD_MAXICELL];
   gmx_domdec_ns_ranges_t *icell;
 
-  gmx_ddindex2xyz(dd->nc,dd->nodeid,xyz);
+  gmx_ddindex2xyz(dd->nc,dd->nodeid,dd->ci);
 
   /* The partition order is z, y, x */
   dd->ndim = 0;
   for(d=DIM-1; d>=0; d--) {
     if (dd->nc[d] > 1) {
       dd->dim[dd->ndim] = d;
-      copy_ivec(xyz,tmp);
+      copy_ivec(dd->ci,tmp);
       tmp[d] = (tmp[d] + 1) % dd->nc[d];
       dd->neighbor[dd->ndim][0] = dd_index(dd->nc,tmp);
-      copy_ivec(xyz,tmp);
+      copy_ivec(dd->ci,tmp);
       tmp[d] = (tmp[d] - 1 + dd->nc[d]) % dd->nc[d];
       dd->neighbor[dd->ndim][1] = dd_index(dd->nc,tmp);
       dd->ndim++;
@@ -1093,8 +1117,10 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   
   dd_c = dd->shift;
   
-  fprintf(fplog,"Making %dD domain decomposition %d x %d x %d\n",
-	  dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
+  fprintf(fplog,"Making %dD domain decomposition %d x %d x %d, home cell index %d %d %d\n",
+	  dd->ndim,
+	  dd->nc[XX],dd->nc[YY],dd->nc[ZZ],
+	  dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
   if (DDMASTER(dd))
     fprintf(stderr,"Making %dD domain decomposition %d x %d x %d\n",
 	    dd->ndim,dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
@@ -1144,10 +1170,9 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   }
 
   dd->ncell  = ncell;
-  gmx_ddindex2xyz(dd->nc,dd->nodeid,h);
   for(i=0; i<ncell; i++) {
     for(d=0; d<DIM; d++) {
-      s[d] = h[d] + dd_c[i][d];
+      s[d] = dd->ci[d] + dd_c[i][d];
       /* Currently only works for rectangular boxes.
        * For even numbers of grid cells it is easy to extend
        * to things like rhombic dodecahedrons.
@@ -1158,7 +1183,7 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
 	s[d] -= dd->nc[d];
     }
     for(d=0; d<DIM; d++) {
-      s[d] = h[d] - dd_c[i][d];
+      s[d] = dd->ci[d] - dd_c[i][d];
       /* Currently only works for rectangular boxes.
        * For even numbers of grid cells it is easy to extend
        * to things like rhombic dodecahedrons.
@@ -1527,7 +1552,6 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
   int *ncg_cell,*index_gl,*cgindex;
   gmx_domdec_comm_t *comm;
   gmx_domdec_ind_t *ind;
-  ivec xyz;
   rvec corner;
   real corner0=0,corner1=0,r_comm2,r2,inv_ncg;
   int  nsend,nat;
@@ -1537,16 +1561,15 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 
   comm = dd->comm;
 
-  gmx_ddindex2xyz(dd->nc,dd->nodeid,xyz);
   /* This should be changed for non-uniform grids */
   for(d=0; d<DIM; d++)
-    corner[d] = xyz[d]*box[d][d]/dd->nc[d];
+    corner[d] = dd->ci[d]*box[d][d]/dd->nc[d];
   if (dd->ndim >= 2) {
     /* Set the upper-right corner for rounding */
     d = dd->dim[0];
-    corner0 = ((xyz[d] + 1) % dd->nc[d])*box[d][d]/dd->nc[d];
+    corner0 = (dd->ci[d] + 1)*box[d][d]/dd->nc[d];
     d = dd->dim[1];
-    corner1 = ((xyz[d] + 1) % dd->nc[d])*box[d][d]/dd->nc[d];
+    corner1 = (dd->ci[d] + 1)*box[d][d]/dd->nc[d];
   }
 
   r_comm2 = sqr(r_comm);
@@ -1598,7 +1621,12 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 	  ind->index[nsend] = cg;
 	  comm->buf_int[nsend] = index_gl[cg];
 	  ind->nsend[cell]++;
-	  copy_rvec(cg_cm[cg],buf[nsend]);
+	  if (dd->ci[dim] == 0) {
+	    /* Correct cg_cm for pbc */
+	    rvec_add(cg_cm[cg],box[dim],buf[nsend]);
+	  } else {
+	    copy_rvec(cg_cm[cg],buf[nsend]);
+	  }
 	  nsend++;
 	  nat += cgindex[cg+1] - cgindex[cg];
 	}
@@ -1620,11 +1648,11 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
     dd_sendrecv_int(dd, dim_ind, ddBackward,
 		    comm->buf_int,            nsend,
 		    index_gl+ncg_cell[ncell], ind->nrecv[ncell]);
-    /* Communicate the coordinate, receive in place */
+    /* Communicate cg_cm, receive in place */
     dd_sendrecv_rvec(dd, dim_ind, ddBackward,
 		     buf,                   nsend,
 		     cg_cm+ncg_cell[ncell], ind->nrecv[ncell]);
-    /* Make the charge group index and determine cgcm */
+    /* Make the charge group index */
     for(cell=ncell; cell<2*ncell; cell++) {
       ncg_cell[cell+1] = ncg_cell[cell] + ind->nrecv[cell-ncell];
       for(cg=ncg_cell[cell]; cg<ncg_cell[cell+1]; cg++) {
@@ -1672,32 +1700,6 @@ static void dd_update_ns_border(gmx_domdec_t *dd,t_nsborder *nsb)
   nsb->cgload[nsb->nodeid] = nsb->cgtotal;
 }
 
-static void dump_conf(gmx_domdec_t *dd,
-		      char *name,rvec *x,matrix box)
-{
-  char str[STRLEN];
-  FILE *fp;
-  int c,i,j,a;
-  
-  sprintf(str,"%s%d.pdb",name,dd->nodeid);
-  fp = fopen(str,"w");
-  fprintf(fp,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
-	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
-	  90.0,90.0,90.0);
-  a = 0;
-  for(c=0; c<dd->ncell; c++) {
-    for(i=dd->ncg_cell[c]; i<dd->ncg_cell[c+1]; i++)
-      for(j=dd->cgindex[i]; j<dd->cgindex[i+1]; j++) {
-	fprintf(fp,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-		"ATOM",dd->gatindex[i]+1,"C","ALA",' ',a+1,
-		10*x[a][XX],10*x[a][YY],10*x[a][ZZ],
-		1.0,1.0*c/(dd->ncell-1.0));
-	a++;
-    }
-  }
-  fclose(fp);
-}
-
 void dd_partition_system(FILE         *fplog,
 			 gmx_domdec_t *dd,
 			 bool         bMasterState,
@@ -1714,12 +1716,22 @@ void dd_partition_system(FILE         *fplog,
 {
   int cg0;
 
-  if (ir->ePBC == epbcXYZ)
-    gmx_fatal(FARGS,"pbc=%s is not supported (yet), use %s",
-	      epbc_names[epbcXYZ],epbc_names[epbcFULL]);
+  if (ir->ePBC == epbcNONE)
+    gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",
+	      epbc_names[epbcNONE]);
+
+  if (dd->ndim == DIM)
+    fr->ePBC = epbcXYZ;
+  else
+    fr->ePBC = epbcFULL;
+
+  if (ir->ns_type == ensSIMPLE)
+    gmx_fatal(FARGS,"ns type %s is not supported with domain decomposition",
+	      ens_names[ensSIMPLE]);
   
   if (ir->eConstrAlg == estSHAKE)
-    gmx_fatal(FARGS,"%s is not supported (yet), use %s",
+    gmx_fatal(FARGS,
+	      "%s is not supported (yet) with domain decomposition, use %s",
 	      eshake_names[estSHAKE],eshake_names[estLINCS]);
 
   if (bMasterState) {
@@ -1792,9 +1804,11 @@ void dd_partition_system(FILE         *fplog,
    * Reallocation will only happen for very small systems
    * with cell sizes close to the cut-off.
    */
-  if (dd->nat_tot_con > state_local->natoms)
-    srenew(state_local->x,dd->nat_tot_con);
-  
+  if (dd->nat_tot_con > state_local->natoms) {
+    state_local->natoms = dd->nat_tot_con;
+    srenew(state_local->x,state_local->natoms);
+    srenew(state_local->v,state_local->natoms);
+  }
 
   /* We make the all mdatoms up to nat_tot_con.
    * We could save some work by only setting invmass
@@ -1811,5 +1825,5 @@ void dd_partition_system(FILE         *fplog,
   /* We need the constructing atom coordinates of the virtual sites
    * when spreading the forces.
    */
-  dd_move_x_vsites(dd,state_local->x);
+  dd_move_x_vsites(dd,state_local->box,state_local->x);
 }

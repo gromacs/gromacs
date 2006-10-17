@@ -239,7 +239,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     grps->cosacc.cos_accel = inputrec->cos_accel;
     
     /* Periodicity stuff */  
-    if (inputrec->ePBC == epbcXYZ) {
+    if (inputrec->ePBC == epbcXYZ && !DOMAINDECOMP(cr)) {
       graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
       if (debug) 
 	p_graph(debug,"Initial graph",graph);
@@ -527,7 +527,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     construct_vsites(log,
 		     state_global->x,nrnb,inputrec->delta_t,NULL,
-		     &top_global->idef,NULL,NULL,fr->ePBC,state_global->box,
+		     &top_global->idef,NULL,NULL,epbcFULL,state_global->box,
 		     NULL);
 
     dd_partition_system(stdlog,cr->dd,TRUE,state_global,top_global,inputrec,
@@ -840,8 +840,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * for RerunMD t is read from input trajectory
      */
     if (bVsites) 
-      spread_vsite_f(log,state->x,f,nrnb,&top->idef,
-		     fr,graph,state->box,vsitecomm,cr);
+      spread_vsite_f(log,state->x,f,fr->fshift,nrnb,&top->idef,
+		     fr->ePBC,graph,state->box,vsitecomm,cr);
 
     GMX_MPE_LOG(ev_virial_start);
     /* Calculation of the virial must be done after vsites!    */
@@ -855,8 +855,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * if the constructing atoms aren't local.
      */
     if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
-		     fr,graph,state->box,vsitecomm,cr);
+      spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
+		     fr->ePBC,graph,state->box,vsitecomm,cr);
 
     GMX_MPE_LOG(ev_sum_lrforces_start);
     sum_lrforces(f,fr,START(nsb),HOMENR(nsb));

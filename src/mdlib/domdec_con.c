@@ -36,10 +36,12 @@ typedef struct gmx_domdec_specat_comm {
 #define CONSTRAINT_ALLOC_SIZE 1000
 
 static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
-			     int end,rvec *f)
+			     int end,rvec *f,rvec *fshift)
 {
   gmx_specatsend_t *spas;
-  int n,d,ndir,dir,i;
+  int  n,d,ndir,dir,i;
+  ivec vis;
+  int  is;
   
   n = end;
   for(d=dd->ndim-1; d>=0; d--) {
@@ -55,23 +57,36 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       dd_sendrecv_rvec(dd,d,dir==0 ? ddForward : ddBackward,
 		       f+n,spas->nrecv,spac->vbuf,spas->nsend);
       /* Sum the buffer into the required forces */
-      for(i=0; i<spas->nsend; i++)
-	rvec_inc(f[spas->a[i]],spac->vbuf[i]);
+      if (fshift && ndir == 2 &&
+	  ((dir == 0 && dd->ci[dd->dim[d]] == 0) || 
+	   (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1))) {
+	clear_ivec(vis);
+	vis[dd->dim[d]] = (dir==0 ? 1 : -1);
+	is = IVEC2IS(vis);
+	for(i=0; i<spas->nsend; i++) {
+	  rvec_inc(f[spas->a[i]],spac->vbuf[i]);
+	  rvec_inc(fshift[is],spac->vbuf[i]);
+	}
+      } else {
+	for(i=0; i<spas->nsend; i++)
+	  rvec_inc(f[spas->a[i]],spac->vbuf[i]);
+      }
     }
   }
 }
 
-void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f)
+void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f,rvec *fshift)
 {
   if (dd->vsite_comm)
-    dd_move_f_specat(dd,dd->vsite_comm,dd->nat_tot_vsite,f);
+    dd_move_f_specat(dd,dd->vsite_comm,dd->nat_tot_vsite,f,fshift);
 }
 
 static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
-			     int start,rvec *x)
+			     matrix box,int start,rvec *x)
 {
   gmx_specatsend_t *spas;
-  int n,d,ndir,dir,i;
+  int  n,d,ndir,dir,i;
+  rvec shift;
   
   n = start;
   for(d=0; d<dd->ndim; d++) {
@@ -83,8 +98,20 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     for(dir=ndir-1; dir>=0; dir--) {
       spas = &spac->spas[d][dir];
       /* Copy the required coordinates to the send buffer */
-      for(i=0; i<spas->nsend; i++)
-	copy_rvec(x[spas->a[i]],spac->vbuf[i]);
+      if (ndir == 2 && dir == 0 &&
+	  dd->ci[dd->dim[d]] == 0) {
+	copy_rvec(box[dd->dim[d]],shift);
+	for(i=0; i<spas->nsend; i++)
+	  rvec_add(x[spas->a[i]],shift,spac->vbuf[i]);
+      } else if (ndir == 2 && dir == 1 &&
+		 dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1) {
+	copy_rvec(box[dd->dim[d]],shift);
+	for(i=0; i<spas->nsend; i++)
+	  rvec_sub(x[spas->a[i]],shift,spac->vbuf[i]);
+      } else {
+	for(i=0; i<spas->nsend; i++)
+	  copy_rvec(x[spas->a[i]],spac->vbuf[i]);
+      }
       /* Send and receive the coordinates */
       dd_sendrecv_rvec(dd,d,dir==0 ? ddBackward : ddForward,
 		       spac->vbuf,spas->nsend,x+n,spas->nrecv);
@@ -93,16 +120,16 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
   }
 }
 
-void dd_move_x_constraints(gmx_domdec_t *dd,rvec *x)
+void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,rvec *x)
 {
   if (dd->constraint_comm)
-    dd_move_x_specat(dd,dd->constraint_comm,dd->nat_tot_vsite,x);
+    dd_move_x_specat(dd,dd->constraint_comm,box,dd->nat_tot_vsite,x);
 }
 
-void dd_move_x_vsites(gmx_domdec_t *dd,rvec *x)
+void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x)
 {
   if (dd->vsite_comm)
-    dd_move_x_specat(dd,dd->vsite_comm,dd->nat_tot,x);
+    dd_move_x_specat(dd,dd->vsite_comm,box,dd->nat_tot,x);
 }
 
 void clear_local_constraint_indices(gmx_domdec_t *dd)

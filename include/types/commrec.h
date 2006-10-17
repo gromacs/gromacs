@@ -107,15 +107,18 @@ typedef struct {
   int  nnodes;
   int  masterrank;
 
-  /* The communication setup, identical for each cell */
+  /* The communication setup, identical for each cell, cartesian index */
   ivec nc;
   int  ndim;
   ivec dim;
-  /* Forward and backward neighboring cells */
-  int  neighbor[DIM][2];
-  /* The bonded and non-bonded communication setup */
+  /* The bonded and non-bonded communication setup, cartesian index */
   int  ncell;
   ivec shift[DD_MAXCELL];
+
+  /* The home cell index, cartesian index */
+  ivec ci;
+  /* Forward and backward neighboring cells, indexed by 0 to ndim */
+  int  neighbor[DIM][2];
 
   /* Only available on the master node */
   gmx_domdec_master_p_t ma;

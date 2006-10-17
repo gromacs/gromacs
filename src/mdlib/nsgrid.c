@@ -63,35 +63,88 @@ static void init_range_check()
 	  "energy seems reasonable before trying again.\n");
 }
 
-void init_grid(FILE *log,t_grid *grid,int delta,ivec *dd_nc,
+static void set_grid_sizes(FILE *fplog,
+			   matrix box,real rlist,int delta,
+			   ivec *dd_nc,ivec dd_ci,
+			   t_grid *grid)
+{
+  int  i,j;
+  bool bDD,bDDRect;
+  real len;
+  ivec nc;
+
+  clear_rvec(grid->cell_offset);
+  for(i=0; (i<DIM); i++) {
+    bDD = dd_nc && ((*dd_nc)[i] > 1);
+    if (!bDD) {
+      bDDRect = FALSE;
+      len = box[i][i];
+    } else {
+      /* With DD we only need a grid of one DD cell size + rlist */
+      grid->cell_offset[i] = dd_ci[i]*box[i][i]/(*dd_nc)[i];
+      len = box[i][i]/(*dd_nc)[i] + rlist;
+      /* Check if the cell boundary in this direction is
+       * perpendicular to the Cartesian axis.
+       */
+      bDDRect = TRUE;
+      for(j=0; j<i; j++) {
+	bDDRect = bDDRect && (box[j][i] == 0);
+	if (box[j][i] < 0) {
+	  grid->cell_offset[i] += box[j][i];
+	  len -= box[j][i];
+	} else {
+	  len += box[j][i];
+	}
+      }
+    }
+    if (!bDDRect) {
+      /* No DD or the box is triclinic is this direction:
+       * we will use the normal grid ns that checks all cells
+       * that are within cut-off distance of the i-particle.
+       */
+      nc[i] = delta*len/rlist;
+      grid->cell_size[i] = len/nc[i];
+      grid->ncpddc[i] = nc[i];
+    } else {
+      /* We use grid->ncpddc[i] != nc[i] such that all particles
+       * in one ns cell belong to one DD cell only.
+       * We can then beforehand exclude certain ns grid cells
+       * for non-home i-particles.
+       */
+      len = box[i][i]/(*dd_nc)[i];
+      grid->ncpddc[i] = delta*len/rlist;
+      grid->cell_size[i] = len/grid->ncpddc[i];
+      nc[i] = grid->ncpddc[i] + (int)(rlist/grid->cell_size[i]) + 1;
+    }
+    if (debug)
+      fprintf(debug,"grid dim %d size %d x %f: %f - %f\n",
+	      i,grid->n[i],grid->cell_size[i],
+	      grid->cell_offset[i],
+	      grid->cell_offset[i]+nc[i]*grid->cell_size[i]);
+  }
+  
+  if (nc[XX] != grid->n[XX] || nc[YY] != grid->n[YY] || nc[ZZ] != grid->n[ZZ])
+    fprintf(fplog,"Grid: %d x %d x %d cells\n",nc[XX],nc[YY],nc[ZZ]);
+  copy_ivec(nc,grid->n);
+}
+
+void init_grid(FILE *log,t_grid *grid,int delta,ivec *dd_nc,ivec dd_ci,
 	       matrix box,real rlistlong,int ncg)
 {
   int     d,m;
   
-  for(d=0; d<DIM; d++) {
-    grid->n[d] = (delta*box[d][d])/rlistlong;
-    if (dd_nc) {
-      /* Make the grid dimension a multiple of the DD grid dimension */
-      m = grid->n[d] % (*dd_nc)[d];
-      if (m > 0)
-	grid->n[d] += (*dd_nc)[d] - m;
-      /*cx[d] = ((int)(cx[d]/(*dd_nc)[d] + 0.5))*(*dd_nc)[d];*/
-    }
-  }
+  clear_ivec(grid->n);
+  set_grid_sizes(log,box,rlistlong,delta,dd_nc,dd_ci,grid);
 
   grid->nr      = ncg;
   grid->ncells  = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
   grid->maxcells= 2*grid->ncells;
   grid->delta	= delta;
-  grid->gmax    = 0;
   grid->nr_alloc= over_alloc(grid->nr)+1;
   snew(grid->cell_index,grid->nr_alloc);
   snew(grid->a,grid->nr_alloc);
   snew(grid->index,grid->maxcells);
   snew(grid->nra,grid->maxcells);
-
-  fprintf(log,"Grid: %d x %d x %d cells\n",
-	  grid->n[XX],grid->n[YY],grid->n[ZZ]);
     
   if (debug) 
     fprintf(debug,"Succesfully allocated memory for grid pointers.");
@@ -104,7 +157,6 @@ void done_grid(t_grid *grid)
   grid->ncells  = 0;
   grid->maxcells= 0;
   grid->delta	= 0;
-  grid->gmax    = 0;
   sfree(grid->cell_index);
   sfree(grid->a);
   sfree(grid->index);
@@ -135,7 +187,7 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
   *z  = ci;
 }
 
-void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,
+void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,ivec dd_ci,
 		matrix box,real rlistlong,int ncg)
 {
   int    i,k,m,ncells;
@@ -143,23 +195,9 @@ void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,
 
   /* Must do this every step because other routines may override it. */
   init_range_check();
-  
-  for(k=0; (k<DIM); k++) {
-    cx[k]=(grid->delta*box[k][k])/rlistlong;
-    if (dd_nc) {
-      /* Make the grid dimension a multiple of the DD grid dimension */
-      m = cx[k] % (*dd_nc)[k];
-      if (m > 0)
-	cx[k] += (*dd_nc)[k] - m;
-      /*cx[k] = ((int)(cx[k]/(*dd_nc)[k] + 0.5))*(*dd_nc)[k];*/
-    }
-  }
 
-  if (grid->n[XX] != cx[XX] || grid->n[YY] != cx[YY] || grid->n[ZZ] != cx[ZZ])
-    fprintf(log,"Grid: %d x %d x %d cells\n",
-	    grid->n[XX],grid->n[YY],grid->n[ZZ]);
-  
-  copy_ivec(cx,grid->n);
+  set_grid_sizes(log,box,rlistlong,grid->delta,dd_nc,dd_ci,grid);
+
   ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 
   if (grid->ncells != ncells) {
@@ -239,7 +277,6 @@ void calc_ptrs(t_grid *grid)
   int *nra   = grid->nra;
   int ix,iy,iz,ci,nr;
   int nnra,ncells;
-  int gmax     = 0;
 
   ncells=grid->ncells;
   if(ncells<=0) 
@@ -253,10 +290,8 @@ void calc_ptrs(t_grid *grid)
 	index[ci] = nr;
 	nnra      = nra[ci];
 	nr       += nnra;
-	gmax      = max(gmax,nnra);
 	nra[ci]   = 0;
       }
-  grid->gmax=gmax;
 }
 
 void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
@@ -291,7 +326,7 @@ void fill_grid(FILE *log,
 {
   int    *cell_index=grid->cell_index;
   int    nrx,nry,nrz;
-  rvec   n_box;
+  rvec   n_box,offset;
   int    cell,cg,d;
   ivec   home,b0,b1,ind;
   
@@ -300,7 +335,7 @@ void fill_grid(FILE *log,
   nry = grid->n[YY];
   nrz = grid->n[ZZ];
   for(d=0; d<DIM; d++)
-    n_box[d] = divide(grid->n[d],box[d][d]);
+    n_box[d] = 1/grid->cell_size[d];
 
   if (debug)
     fprintf(debug,"Filling grid from %d to %d\n",cg0,cg1);
@@ -328,23 +363,27 @@ void fill_grid(FILE *log,
       cell_index[cg] = xyz2ci(nry,nrz,ind[XX],ind[YY],ind[ZZ]);
     }
   } else {
+    copy_rvec(grid->cell_offset,offset);
     gmx_ddindex2xyz(dd->nc,dd->nodeid,home);
     for(cell=0; cell<dd->ncell; cell++) {
       /* Determine the ns grid cell limits for this DD cell */
       for(d=0; d<DIM; d++) {
-	b0[d]   = home[d] + dd->shift[cell][d];
-	if (b0[d] == dd->nc[d])
+	if (grid->ncpddc[d] == grid->n[d]) {
 	  b0[d] = 0;
-	b1[d]   = b0[d] + 1;
-	b0[d]  *= grid->n[d]/dd->nc[d];
-	b1[d]  *= grid->n[d]/dd->nc[d];
+	  b1[d] = grid->n[d];
+	} else {
+	  b0[d] = dd->shift[cell][d];
+	  b1[d] = b0[d] + 1;
+	  b0[d] *= grid->ncpddc[d];
+	  b1[d] *= grid->ncpddc[d];
+	}
       }
       /* Put all the charge groups of this DD cell on the grid */
       cg0 = dd->ncg_cell[cell];
       cg1 = dd->ncg_cell[cell+1];
       for(cg=cg0; cg<cg1; cg++) {
 	for(d=0; d<DIM; d++) {
-	  ind[d] = cg_cm[cg][d]*n_box[d];
+	  ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
 	  /* Here we have to correct for rounding problems,
 	   * as this cg_cm to cell index operation is not necessarily
 	   * binary identical to the operation for the DD cell assignment
@@ -398,7 +437,6 @@ void print_grid(FILE *log,t_grid *grid)
   fprintf(log,"nry:   %d\n",grid->n[YY]);
   fprintf(log,"nrz:   %d\n",grid->n[ZZ]);
   fprintf(log,"delta: %d\n",grid->delta);
-  fprintf(log,"gmax:  %d\n",grid->gmax);
   fprintf(log,"    i  cell_index\n");
   for(i=0; (i<grid->nr); i++)
     fprintf(log,"%5d  %5d\n",i,grid->cell_index[i]);

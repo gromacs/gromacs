@@ -402,18 +402,17 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
   t_iparams *ip;
   t_pbc     pbc,*pbc_null;
 
-  if (ePBC == epbcFULL) {
+  if ((cr && DOMAINDECOMP(cr)) || ePBC == epbcFULL) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
-    set_pbc_ss(&pbc,box);
-    pbc_null = &pbc;
+    pbc_null = set_pbc_ss(&pbc,box,cr!=NULL ? cr->dd : NULL,FALSE);
   } else {
     pbc_null = NULL;
   }
 
   if (cr && DOMAINDECOMP(cr)) {
-    dd_move_x_vsites(cr->dd,x);
+    dd_move_x_vsites(cr->dd,box,x);
   } else if (vsitecomm) {
     /* I'm not sure whether the periodicity and shift are guaranteed
      * to be consistent between different nodes when running e.g. polymers
@@ -547,7 +546,7 @@ static void spread_vsite2(t_iatom ia[],real a,
     sij = CENTRAL;
   }
 
-  if (siv != CENTRAL || sij != CENTRAL) {
+  if (fshift && (siv != CENTRAL || sij != CENTRAL)) {
     rvec_inc(fshift[siv],f[ia[1]]);
     rvec_dec(fshift[CENTRAL],fi);
     rvec_dec(fshift[sij],fj);
@@ -596,7 +595,7 @@ static void spread_vsite3(t_iatom ia[],real a,real b,
     sik = CENTRAL;
   }
 
-  if (siv!=CENTRAL || sij!=CENTRAL || sik!=CENTRAL) {
+  if (fshift && (siv!=CENTRAL || sij!=CENTRAL || sik!=CENTRAL)) {
     rvec_inc(fshift[siv],f[ia[1]]);
     rvec_dec(fshift[CENTRAL],fi);
     rvec_dec(fshift[sij],fj);
@@ -668,7 +667,7 @@ static void spread_vsite3FD(t_iatom ia[],real a,real b,
     svi = CENTRAL;
   }
 
-  if (svi!=CENTRAL || sji!=CENTRAL || skj!=CENTRAL) {
+  if (fshift && (svi!=CENTRAL || sji!=CENTRAL || skj!=CENTRAL)) {
     rvec_dec(fshift[svi],fv);
     fshift[CENTRAL][XX] += fv[XX] - (1 + a)*temp[XX];
     fshift[CENTRAL][YY] += fv[YY] - (1 + a)*temp[YY];
@@ -755,7 +754,7 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
     svi = CENTRAL;
   }
 
-  if (svi!=CENTRAL || sji!=CENTRAL || skj!=CENTRAL) {
+  if (fshift && (svi!=CENTRAL || sji!=CENTRAL || skj!=CENTRAL)) {
     rvec_dec(fshift[svi],fv);
     fshift[CENTRAL][XX] += fv[XX] - f1[XX] - (1-c1)*f2[XX] + f3[XX];
     fshift[CENTRAL][YY] += fv[YY] - f1[YY] - (1-c1)*f2[YY] + f3[YY];
@@ -823,7 +822,7 @@ static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
     svi = CENTRAL;
   }
 
-  if (svi!=CENTRAL || sji!=CENTRAL || ski!=CENTRAL) {
+  if (fshift && (svi!=CENTRAL || sji!=CENTRAL || ski!=CENTRAL)) {
     rvec_dec(fshift[svi],fv);
     fshift[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX];
     fshift[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY];
@@ -897,7 +896,8 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
     svi = CENTRAL;
   }
 
-  if (svi!=CENTRAL || sji!=CENTRAL || skj!=CENTRAL || slj!=CENTRAL) {
+  if (fshift &&
+      (svi!=CENTRAL || sji!=CENTRAL || skj!=CENTRAL || slj!=CENTRAL)) {
     rvec_dec(fshift[svi],fv);
     for(m=0; m<DIM; m++) {
       fshift[CENTRAL][m] += fv[m] - (1 + a + b)*temp[m];
@@ -910,8 +910,9 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
   /* TOTAL: 77 flops */
 }
 
-void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
-		    t_forcerec *fr,t_graph *g,matrix box,
+void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
+		    t_nrnb *nrnb,t_idef *idef,
+		    int ePBC,t_graph *g,matrix box,
 		    t_comm_vsites *vsitecomm,t_commrec *cr)
 {
   real      a1,b1,c1;
@@ -921,12 +922,11 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
   t_iparams *ip;
   t_pbc     pbc,*pbc_null;
 
-  if (fr->ePBC == epbcFULL) {
+  if (DOMAINDECOMP(cr) || ePBC == epbcFULL) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
-    set_pbc(&pbc,box);
-    pbc_null = &pbc;
+    pbc_null = set_pbc_ss(&pbc,box,cr->dd,FALSE);
   } else {
     pbc_null = NULL;
   }
@@ -966,34 +966,34 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
 	/* Construct the vsite depending on type */
 	switch (ftype) {
 	case F_VSITE2:
-	  spread_vsite2(ia,a1,x,f,fr->fshift,pbc_null,g);
+	  spread_vsite2(ia,a1,x,f,fshift,pbc_null,g);
 	  nd2++;
 	  break;
 	case F_VSITE3:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3(ia,a1,b1,x,f,fr->fshift,pbc_null,g);
+	  spread_vsite3(ia,a1,b1,x,f,fshift,pbc_null,g);
 	  nd3++;
 	  break;
 	case F_VSITE3FD:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3FD(ia,a1,b1,x,f,fr->fshift,pbc_null,g);
+	  spread_vsite3FD(ia,a1,b1,x,f,fshift,pbc_null,g);
 	  nd3FD++;
 	  break;
 	case F_VSITE3FAD:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3FAD(ia,a1,b1,x,f,fr->fshift,pbc_null,g);
+	  spread_vsite3FAD(ia,a1,b1,x,f,fshift,pbc_null,g);
 	  nd3FAD++;
 	  break;
 	case F_VSITE3OUT:
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  spread_vsite3OUT(ia,a1,b1,c1,x,f,fr->fshift,pbc_null,g);
+	  spread_vsite3OUT(ia,a1,b1,c1,x,f,fshift,pbc_null,g);
 	  nd3OUT++;
 	  break;
 	case F_VSITE4FD:
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  spread_vsite4FD(ia,a1,b1,c1,x,f,fr->fshift,pbc_null,g);
+	  spread_vsite4FD(ia,a1,b1,c1,x,f,fshift,pbc_null,g);
 	  nd4FD++;
 	  break;
 	default:
@@ -1017,7 +1017,7 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],t_nrnb *nrnb,t_idef *idef,
   inc_nrnb(nrnb,eNR_VSITE4FD, nd4FD );
 
   if (DOMAINDECOMP(cr)) {
-    dd_move_f_vsites(cr->dd,f);
+    dd_move_f_vsites(cr->dd,f,fshift);
   } else if (vsitecomm) {
     /* We only move forces here, and they are independent of shifts */
     move_construct_f(vsitecomm,f,cr);

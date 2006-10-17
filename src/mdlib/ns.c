@@ -1589,7 +1589,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   static int     *nlr_ljc,*nlr_one,*nsr;
   static real *dcx2=NULL,*dcy2=NULL,*dcz2=NULL;
 
-  gmx_domdec_t *dd;
+  gmx_domdec_t *dd=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
@@ -1608,7 +1608,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   int     jcg0,jcg1,jjcg,cgj0,jgid;
   int     *grida,*gridnra,*gridind;
   bool    rvdw_lt_rcoul,rcoul_lt_rvdw;
-  rvec    xi,*cgcm;
+  rvec    xi,*cgcm,grid_offset;
   real    r2,rs2,rvdw2,rcoul2,rm2,rl2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
   bool    *i_egp_flags;
   bool    bDomDec,bTriclinic;
@@ -1682,12 +1682,14 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     snew(dcz2,Nz*2);
   }
 
-  gridx      = box[XX][XX]/Nx;
-  gridy      = box[YY][YY]/Ny;
-  gridz      = box[ZZ][ZZ]/Nz;
+  gridx      = grid->cell_size[XX];
+  gridy      = grid->cell_size[YY];
+  gridz      = grid->cell_size[ZZ];
   grid_x     = 1/gridx;
   grid_y     = 1/gridy;
   grid_z     = 1/gridz;
+  copy_rvec(grid->cell_offset,grid_offset);
+  copy_ivec(grid->ncpddc,ncpddc);
 
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
   zsh_ty = floor(-box[ZZ][YY]/box[YY][YY]+0.5);
@@ -1702,15 +1704,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 
   if (bDomDec) {
     dd = cr->dd;
-    ncpddc[XX] = Nx/dd->nc[XX];
-    ncpddc[YY] = Ny/dd->nc[YY];
-    ncpddc[ZZ] = Nz/dd->nc[ZZ];
     cg0 = 0;
     cg1 = dd->icell[dd->nicell-1].cg1;
   } else {
-    ncpddc[XX] = Nx;
-    ncpddc[YY] = Ny;
-    ncpddc[ZZ] = Nz;
     if (fr->bTPI)
       /* We only want a list for the test particle */
       cg0 = cgsnr - 1;
@@ -1720,12 +1716,18 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     cg1 = fr->hcg;
   }
 
-  /* Set the default shift range for without DD */
+  /* Set the shift range */
   for(d=0; d<DIM; d++) {
     sh0[d] = -1;
     sh1[d] = 1;
-    shp0[d] = -1;
-    shp1[d] = 1;
+    if (bDomDec && dd->nc[d] > 1) {
+      /* With domain decomposition we don't need periodic shifts */
+      shp0[d] = 0;
+      shp1[d] = 0;
+    } else {
+      shp0[d] = -1;
+      shp1[d] = 1;
+    }
   }
 
   /* Loop over charge groups */
@@ -1759,13 +1761,6 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	if (bDomDec) {
 	  /* Get the j charge-group and dd cell shift ranges */
 	  dd_get_ns_ranges(cr->dd,icg,&jcg0,&jcg1,sh0,sh1);
-
-	  /* Compute the periodic shift ranges */
-	  for(d=0; d<DIM; d++) {
-	    shp0[d] = min(-sh1[d],0);
-	    shp1[d] = max(-sh0[d],0);
-	  }
-
 	  min_icg = 0;
 	} else {
 	  /* Compute the number of charge groups that fall within the control
@@ -1811,7 +1806,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 #ifndef FAST_DD_NS
       get_dx(Nz,gridz,rl2,zgi,ZI,&dz0,&dz1,dcz2);
 #else
-      get_dx_dd(Nz,gridz,rl2,zgi,ZI,ncpddc[ZZ],sh0[ZZ],sh1[ZZ],&dz0,&dz1,dcz2);
+      get_dx_dd(Nz,gridz,rl2,zgi,ZI-grid_offset[ZZ],
+		ncpddc[ZZ],sh0[ZZ],sh1[ZZ],&dz0,&dz1,dcz2);
 #endif
       if (dz0 > dz1)
 	continue;
@@ -1829,7 +1825,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 #ifndef FAST_DD_NS
 	get_dx(Ny,gridy,rl2,ygi,YI,&dy0,&dy1,dcy2);
 #else
-	get_dx_dd(Ny,gridy,rl2,ygi,YI,ncpddc[YY],sh0[YY],sh1[YY],&dy0,&dy1,dcy2);
+	get_dx_dd(Ny,gridy,rl2,ygi,YI-grid_offset[YY],
+		  ncpddc[YY],sh0[YY],sh1[YY],&dy0,&dy1,dcy2);
 #endif
 	if (dy0 > dy1)
 	  continue;
@@ -1847,7 +1844,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 #ifndef FAST_DD_NS
 	  get_dx(Nx,gridx,rl2,xgi*Nx,XI,&dx0,&dx1,dcx2);
 #else
-	  get_dx_dd(Nx,gridx,rl2,xgi,XI,ncpddc[XX],sh0[XX],sh1[XX],&dx0,&dx1,dcx2);
+	  get_dx_dd(Nx,gridx,rl2,xgi,XI-grid_offset[XX],
+		    ncpddc[XX],sh0[XX],sh1[XX],&dx0,&dx1,dcx2);
 #endif
 	  if (dx0 > dx1)
 	    continue;
@@ -2040,15 +2038,22 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   bool     *i_egp_flags;
   int      start,end;
   bool     bDomDec;
+  ivec     dd_ci;
 
   /* Set some local variables */
   bDomDec = DOMAINDECOMP(cr);
-  bGrid=fr->bGrid;
-  ngid=top->atoms.grps[egcENER].nr;
+  bGrid = fr->bGrid;
+  ngid = top->atoms.grps[egcENER].nr;
   
   for(m=0; (m<DIM); m++)
-    box_size[m]=box[m][m];
-  
+    box_size[m] = box[m][m];
+ 
+  if (bDomDec) {
+    copy_ivec(cr->dd->ci,dd_ci);
+  } else {
+    clear_ivec(dd_ci);
+  }
+ 
   if (fr->ePBC != epbcNONE) {
     if (bGrid) {
       if (sqr(fr->rlistlong) >= max_cutoff2(box))
@@ -2096,7 +2101,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     
     if (bGrid) {
       snew(grid,1);
-      init_grid(log,grid,fr->ndelta,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
+      init_grid(log,grid,fr->ndelta,
+		DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,dd_ci,
 		box,fr->rlistlong,cgs->nr);
     }
     
@@ -2132,7 +2138,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   reset_neighbor_list(fr,FALSE,-1,-1);
 
   if (bGrid && bFillGrid) {
-    grid_first(log,grid,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,
+    grid_first(log,grid,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,dd_ci,
 	       box,fr->rlistlong,cgs->nr);
     debug_gmx();
 

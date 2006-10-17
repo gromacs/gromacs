@@ -478,8 +478,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	     state->lambda,graph,
 	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
     if (bVsites) 
-      spread_vsite_f(log,pos[Try],force[Try],nrnb,&top->idef,
-		     fr,graph,state->box,vsitecomm,cr);
+      spread_vsite_f(log,pos[Try],force[Try],fr->fshift,nrnb,&top->idef,
+		     fr->ePBC,graph,state->box,vsitecomm,cr);
       
     /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
@@ -491,8 +491,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
      * if the constructing atoms aren't local.
      */
     if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,pos[Try],fr->f_el_recip,nrnb,&top->idef,
-		     fr,graph,state->box,vsitecomm,cr);
+      spread_vsite_f(log,pos[Try],fr->f_el_recip,NULL,nrnb,&top->idef,
+		     fr->ePBC,graph,state->box,vsitecomm,cr);
     
     sum_lrforces(force[Try],fr,start,homenr);
     copy_mat(fr->vir_el_recip,vir_el_recip[Try]);

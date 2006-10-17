@@ -1342,7 +1342,7 @@ void force(FILE       *fplog,   int        step,
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
     }
     if (fr->ePBC==epbcFULL || idef->il[F_POSRES].nr>0)
-      set_pbc_ss(&pbc,box);
+      set_pbc_ss(&pbc,box,cr->dd,TRUE);
     debug_gmx();
   }
 

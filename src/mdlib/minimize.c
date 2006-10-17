@@ -280,12 +280,12 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
      
   /* Spread the force on vsite particle to the other particles... */
   if(bVsites) 
-    spread_vsite_f(log,x,f,nrnb,&top->idef,
-		   fr,graph,box,vsitecomm,cr); 
+    spread_vsite_f(log,x,f,fr->fshift,nrnb,&top->idef,
+		   fr->ePBC,graph,box,vsitecomm,cr); 
       
   if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,x,fr->f_el_recip,&nrnb[cr->nodeid],&top->idef,
-		   fr,graph,box,vsitecomm,cr);
+    spread_vsite_f(log,x,fr->f_el_recip,NULL,&nrnb[cr->nodeid],&top->idef,
+		   fr->ePBC,graph,box,vsitecomm,cr);
   
   sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
@@ -389,12 +389,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
   /* Spread the force on vsite particle to the other particles... */
   if (bVsites)
-    spread_vsite_f(log,state->x,f,nrnb,&top->idef,
-		   fr,graph,state->box,vsitecomm,cr);
+    spread_vsite_f(log,state->x,f,fr->fshift,nrnb,&top->idef,
+		   fr->ePBC,graph,state->box,vsitecomm,cr);
 
   if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
-		   fr,graph,state->box,vsitecomm,cr);
+    spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
+		   fr->ePBC,graph,state->box,vsitecomm,cr);
   
   sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
@@ -1001,12 +1001,12 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   
   /* Spread the force on vsite particle to the other particles... */
   if (bVsites)
-    spread_vsite_f(log,state->x,f,nrnb,&top->idef,
-		   fr,graph,state->box,vsitecomm,cr);
+    spread_vsite_f(log,state->x,f,fr->fshift,nrnb,&top->idef,
+		   fr->ePBC,graph,state->box,vsitecomm,cr);
 
   if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
-		   fr,graph,state->box,vsitecomm,cr);
+    spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
+		   fr->ePBC,graph,state->box,vsitecomm,cr);
   
   sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
@@ -1647,12 +1647,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Spread the force on vsite particle to the other particles... */
     if (bVsites) 
-      spread_vsite_f(log,pos[TRY],force[TRY],nrnb,
-		     &top->idef,fr,graph,state->box,vsitecomm,cr);
+      spread_vsite_f(log,pos[TRY],force[TRY],fr->fshift,nrnb,
+		     &top->idef,fr->ePBC,graph,state->box,vsitecomm,cr);
 
     if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,state->x,fr->f_el_recip,nrnb,&top->idef,
-		     fr,graph,state->box,vsitecomm,cr);
+      spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
+		     fr->ePBC,graph,state->box,vsitecomm,cr);
     
     sum_lrforces(force[TRY],fr,START(nsb),HOMENR(nsb));
 
