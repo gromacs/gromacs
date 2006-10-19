@@ -158,7 +158,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 				      gmx_domdec_specat_comm_t *spac,
 				      int *ga2la_specat,
 				      int at_start,
-				      char *specat_type)
+				      char *specat_type,char *add_err)
 {
   int  d,dir,nsend[2],nlast,ndir,nr,i,nrecv_local,n0,start,ireq,ind,buf[2];
   int  nat_tot_specat,nat_tot_prev,nalloc_old;
@@ -212,9 +212,9 @@ static int setup_specat_communication(gmx_domdec_t *dd,
       ndir = 1;
     nat_tot_prev = nat_tot_specat;
     for(dir=ndir-1; dir>=0; dir--) {
-      if (dd->nat_tot_con > spac->bSendAtom_nalloc) {
+      if (nat_tot_specat > spac->bSendAtom_nalloc) {
 	nalloc_old = spac->bSendAtom_nalloc;
-	spac->bSendAtom_nalloc = over_alloc(dd->nat_tot_con);
+	spac->bSendAtom_nalloc = over_alloc(nat_tot_specat);
 	srenew(spac->bSendAtom,spac->bSendAtom_nalloc);
 	for(i=nalloc_old; i<spac->bSendAtom_nalloc; i++)
 	  spac->bSendAtom[i] = FALSE;
@@ -303,10 +303,13 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	      spac->nind_req,nrecv_local,nat_tot_specat-at_start);
       for(i=0; i<spac->nind_req; i++)
 	fprintf(debug," %s%d",
-		ga2la_specat[spac->ind_req[i]]>=0 ? "" : "!",spac->ind_req[i]);
+		ga2la_specat[spac->ind_req[i]]>=0 ? "" : "!",
+		spac->ind_req[i]+1);
       fprintf(debug,"\n");
     }
-    gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means you %s lengths are too long compared to the domain decomposition cell size. Decrease lincs-order or decrease the number of domain decomposition grid cells.",dd->nodeid,nrecv_local,spac->nind_req,specat_type,specat_type);
+    gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means you %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s.",
+	      dd->nodeid,nrecv_local,spac->nind_req,specat_type,
+	      specat_type,add_err);
   }
 
   if (debug)
@@ -416,7 +419,8 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 
   dd->nat_tot_con =
     setup_specat_communication(dd,dd->constraint_comm,dd->constraints->ga2la,
-			       dd->nat_tot_vsite,"constraint");
+			       dd->nat_tot_vsite,"constraint",
+			       " or lincs-order");
 }
 
 void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
@@ -430,6 +434,7 @@ void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
   spac         = dd->vsite_comm;
   ga2la_specat = dd->ga2la_vsite;
 
+  spac->nind_req = 0;
   /* Loop over all the home vsites */
   for(ftype=0; ftype<F_NRE; ftype++) {
     if (interaction_function[ftype].flags & IF_VSITE) {
@@ -461,7 +466,7 @@ void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
 
   dd->nat_tot_vsite =
     setup_specat_communication(dd,dd->vsite_comm,ga2la_specat,
-			       dd->nat_tot,"vsite");
+			       dd->nat_tot,"vsite","");
 
   /* Fill in the missing indices */
   for(ftype=0; ftype<F_NRE; ftype++) {
