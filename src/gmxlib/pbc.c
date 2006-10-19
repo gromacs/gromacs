@@ -364,7 +364,14 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
     }
     break;
   case epbcdx1D_TRIC_SS:
-    gmx_fatal(FARGS,"epbcdx2D_TRIC_SS not implemented yet");
+    i = pbc->dim;
+    if (dx[i] > pbc->hbox_diag[i]) {
+      rvec_dec(dx,pbc->box[i]);
+      ishift[i]--;
+    } else if (dx[i] <= pbc->mhbox_diag[i]) {
+      rvec_inc(dx,pbc->box[i]);
+      ishift[i]++;
+    }
     break;
   case epbcdx2D_RECT_SS:
     for(i=0; i<DIM; i++)
@@ -379,7 +386,20 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       }
     break;
   case epbcdx2D_TRIC_SS:
-    gmx_fatal(FARGS,"epbcdx2D_TRIC_SS not implemented yet");
+    for(i=DIM-1; i>=0; i--) {
+      if (i != pbc->dim) {
+	while (dx[i] > pbc->hbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] -= pbc->box[i][j];
+	  ishift[i]--;
+	}
+	while (dx[i] <= pbc->mhbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] += pbc->box[i][j];
+	  ishift[i]++;
+	}
+      }
+    }
     break;
   case epbcdxNOPBC:
   case epbcdxUNSUPPORTED:

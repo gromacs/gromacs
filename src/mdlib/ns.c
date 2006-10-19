@@ -1611,11 +1611,16 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   rvec    xi,*cgcm,grid_offset;
   real    r2,rs2,rvdw2,rcoul2,rm2,rl2,XI,YI,ZI,dcx,dcy,dcz,tmp1,tmp2;
   bool    *i_egp_flags;
-  bool    bDomDec,bTriclinic;
+  bool    bDomDec,bTriclinicX,bTriclinicY;
   ivec    ncpddc;
 
   bDomDec = DOMAINDECOMP(cr);
-  bTriclinic = TRICLINIC(box);
+  if (bDomDec)
+    dd = cr->dd;
+
+  bTriclinicX = (((!bDomDec || dd->nc[YY]==1) && box[YY][XX] != 0) ||
+		 ((!bDomDec || dd->nc[ZZ]==1) && box[ZZ][XX] != 0));
+  bTriclinicY =  ((!bDomDec || dd->nc[ZZ]==1) && box[ZZ][YY] != 0);
 
   cgsnr    = cgs->nr;
   rs2      = sqr(fr->rlist);
@@ -1703,7 +1708,6 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   debug_gmx();
 
   if (bDomDec) {
-    dd = cr->dd;
     cg0 = 0;
     cg1 = dd->icell[dd->nicell-1].cg1;
   } else {
@@ -1818,8 +1822,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 #endif 
 	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
-	if (bTriclinic)
-	  ygi = (int)(Ny + YI*grid_y) - Ny;
+	if (bTriclinicY)
+	  ygi = (int)(Ny + (YI - grid_offset[YY])*grid_y) - Ny;
 	else
 	  ygi = cell_y + ty*Ny;
 #ifndef FAST_DD_NS
@@ -1837,8 +1841,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 #endif
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
-	  if (bTriclinic)
-	    xgi = (int)(Nx + XI*grid_x) - Nx;
+	  if (bTriclinicX)
+	    xgi = (int)(Nx + (XI - grid_offset[XX])*grid_x) - Nx;
 	  else
 	    xgi = cell_x + tx*Nx;
 #ifndef FAST_DD_NS

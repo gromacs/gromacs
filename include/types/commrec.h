@@ -110,10 +110,13 @@ typedef struct {
   /* The communication setup, identical for each cell, cartesian index */
   ivec nc;
   int  ndim;
-  ivec dim;
+  ivec dim;  /* indexed by 0 to ndim */
   /* The bonded and non-bonded communication setup, cartesian index */
   int  ncell;
   ivec shift[DD_MAXCELL];
+
+  /* Tells if the box is skewed for each of the three cartesian directions */
+  ivec tric_dir;
 
   /* The home cell index, cartesian index */
   ivec ci;

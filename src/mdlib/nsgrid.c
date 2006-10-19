@@ -70,7 +70,7 @@ static void set_grid_sizes(FILE *fplog,
 {
   int  i,j;
   bool bDD,bDDRect;
-  real len;
+  real size,skew_fac,radd,add_tric;
   ivec nc;
 
   clear_rvec(grid->cell_offset);
@@ -78,22 +78,43 @@ static void set_grid_sizes(FILE *fplog,
     bDD = dd_nc && ((*dd_nc)[i] > 1);
     if (!bDD) {
       bDDRect = FALSE;
-      len = box[i][i];
+      size = box[i][i];
     } else {
+      bDDRect = TRUE;
+      for(j=i+1; j<DIM; j++) {
+	if (box[j][i] != 0)
+	  bDDRect = FALSE;
+      }
+      if (bDDRect) {
+	radd = rlist;
+      } else {
+	skew_fac = 1;
+	for(j=i+1; j<DIM; j++)
+	  /* This is an overestimate as we ignore the coupling */
+	  skew_fac -= sqr(box[j][i]/box[j][j]);
+	radd = rlist/sqrt(skew_fac);
+      }
       /* With DD we only need a grid of one DD cell size + rlist */
       grid->cell_offset[i] = dd_ci[i]*box[i][i]/(*dd_nc)[i];
-      len = box[i][i]/(*dd_nc)[i] + rlist;
+      size = box[i][i]/(*dd_nc)[i] + radd;
       /* Check if the cell boundary in this direction is
        * perpendicular to the Cartesian axis.
        */
-      bDDRect = TRUE;
-      for(j=0; j<i; j++) {
-	bDDRect = bDDRect && (box[j][i] == 0);
-	if (box[j][i] < 0) {
-	  grid->cell_offset[i] += box[j][i];
-	  len -= box[j][i];
-	} else {
-	  len += box[j][i];
+      for(j=i+1; j<DIM; j++) {
+	if (box[j][i] != 0) {
+	  /* Correct the offset for the home cell location */
+	  grid->cell_offset[i] += box[j][i]*dd_ci[j]/(real)(*dd_nc)[j];
+	  /* Correct the offset and size for the off-diagonal
+	   * displacement of opposing DD cell corners.
+	   */
+	  /* Without rouding we would need to add box[j][i]*radd/box[j][j]); */
+	  add_tric = box[j][i]/(*dd_nc)[j];
+	  if (box[j][i] < 0) {
+	    grid->cell_offset[i] += add_tric;
+	    size -= add_tric;
+	  } else {
+	    size += add_tric;
+	  }
 	}
       }
     }
@@ -102,8 +123,8 @@ static void set_grid_sizes(FILE *fplog,
        * we will use the normal grid ns that checks all cells
        * that are within cut-off distance of the i-particle.
        */
-      nc[i] = delta*len/rlist;
-      grid->cell_size[i] = len/nc[i];
+      nc[i] = delta*size/rlist;
+      grid->cell_size[i] = size/nc[i];
       grid->ncpddc[i] = nc[i];
     } else {
       /* We use grid->ncpddc[i] != nc[i] such that all particles
@@ -111,14 +132,14 @@ static void set_grid_sizes(FILE *fplog,
        * We can then beforehand exclude certain ns grid cells
        * for non-home i-particles.
        */
-      len = box[i][i]/(*dd_nc)[i];
-      grid->ncpddc[i] = delta*len/rlist;
-      grid->cell_size[i] = len/grid->ncpddc[i];
+      size = box[i][i]/(*dd_nc)[i];
+      grid->ncpddc[i] = delta*size/rlist;
+      grid->cell_size[i] = size/grid->ncpddc[i];
       nc[i] = grid->ncpddc[i] + (int)(rlist/grid->cell_size[i]) + 1;
     }
     if (debug)
       fprintf(debug,"grid dim %d size %d x %f: %f - %f\n",
-	      i,grid->n[i],grid->cell_size[i],
+	      i,nc[i],grid->cell_size[i],
 	      grid->cell_offset[i],
 	      grid->cell_offset[i]+nc[i]*grid->cell_size[i]);
   }

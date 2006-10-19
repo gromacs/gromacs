@@ -126,23 +126,31 @@ int glatnr(gmx_domdec_t *dd,int i)
 void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 		      int *jcg0,int *jcg1,ivec shift0,ivec shift1)
 {
-  int i;
+  int icell,d;
 
-  i = 0;
-  while (icg >= dd->icell[i].cg1)
-    i++;
+  icell = 0;
+  while (icg >= dd->icell[icell].cg1)
+    icell++;
 
-  if (i == 0)
+  if (icell == 0)
     *jcg0 = icg;
-  else if (i < dd->nicell)
-    *jcg0 = dd->icell[i].jcg0;
+  else if (icell < dd->nicell)
+    *jcg0 = dd->icell[icell].jcg0;
   else
     gmx_fatal(FARGS,"DD icg %d out of range: icell (%d) >= nicell (%d)",
-	      icg,i,dd->nicell);
+	      icg,icell,dd->nicell);
 
-  *jcg1 = dd->icell[i].jcg1;
-  copy_ivec(dd->icell[i].shift0,shift0);
-  copy_ivec(dd->icell[i].shift1,shift1);
+  *jcg1 = dd->icell[icell].jcg1;
+
+  for(d=0; d<DIM; d++) {
+    shift0[d] = dd->icell[icell].shift0[d];
+    shift1[d] = dd->icell[icell].shift1[d];
+    if (dd->tric_dir[d]) {
+      /* A conservative approach, this can be optimized */
+      shift0[d] -= 1;
+      shift1[d] += 1;
+    }
+  }
 }
 
 void dd_sendrecv_int(const gmx_domdec_t *dd,
@@ -427,17 +435,32 @@ void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_distribute_vec(dd,cgs,state->sd_X,state_local->sd_X);
 }
 
+static char dim2char(int dim)
+{
+  char c='?';
+
+  switch (dim) {
+  case XX: c = 'x'; break;
+  case YY: c = 'y'; break;
+  case ZZ: c = 'z'; break;
+  default: gmx_fatal(FARGS,"Unknown dim %d",dim);
+  }
+
+  return c;
+}
+
 static void write_dd_pdb(char *fn,char *title,t_atoms *atoms,
 			 gmx_domdec_t *dd,int natoms,
 			 rvec x[],matrix box)
 {
   char fname[STRLEN],format[STRLEN];
   FILE *out;
-  int  i,ii,resnr;
+  int  i,ii,resnr,c;
+  real b;
 
   sprintf(fname,"%s_n%d.pdb",fn,dd->nodeid);
 
-  sprintf(format,"%s\n",pdbformat);
+  sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
 
   out = ffopen(fname,"w");
 
@@ -446,9 +469,20 @@ static void write_dd_pdb(char *fn,char *title,t_atoms *atoms,
   for(i=0; i<natoms; i++) {
     ii = dd->gatindex[i];
     resnr = atoms->atom[ii].resnr;
+    if (i < dd->nat_tot) {
+      c = 0;
+      while (i >= dd->cgindex[dd->ncg_cell[c+1]]) {
+	c++;
+      }
+      b = c;
+    } else if (i < dd->nat_tot_vsite) {
+      b = dd->ncell;
+    } else {
+      b = dd->ncell + 1;
+    }
     fprintf(out,format,"ATOM",(ii+1)%100000,
 	    *atoms->atomname[ii],*atoms->resname[resnr],' ',(resnr+1)%10000,
-	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ]);
+	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],1.0,b);
   }
   fprintf(out,"TER\n");
   
@@ -526,10 +560,10 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
 {
   gmx_domdec_master_t *ma;
   int **tmp_ind=NULL,*tmp_nalloc=NULL;
-  int  i,icg,k,k0,k1,d;
-  rvec g_inv,cg_cm;
+  int  i,icg,j,k,k0,k1,d;
+  rvec invbox,cg_cm;
   ivec ind;
-  real nrcg,inv_ncg;
+  real nrcg,inv_ncg,pos_d;
   atom_id *cgindex;
 
   ma = dd->ma;
@@ -548,9 +582,9 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
     ma->ncg[i] = 0;
     ma->nat[i] = 0;
   }
-  
+
   for(d=0; (d<DIM); d++)
-    g_inv[d] = divide(dd->nc[d],box[d][d]);
+    invbox[d] = divide(1,box[d][d]);
 
   cgindex = cgs->index;
   
@@ -573,17 +607,23 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
     }
     /* Put the charge group in the box and determine the cell index */
     for(d=DIM-1; d>=0; d--) {
-      while(cg_cm[d] >= box[d][d]) {
+      pos_d = cg_cm[d];
+      if (dd->tric_dir[d] && dd->nc[d] > 1)
+	for(j=d+1; j<DIM; j++)
+	  pos_d -= cg_cm[j]*box[j][d]*invbox[j];
+      while(pos_d >= box[d][d]) {
+	pos_d -= box[d][d];
 	rvec_dec(cg_cm,box[d]);
 	for(k=k0; (k<k1); k++)
 	  rvec_dec(pos[k],box[d]);
       }
-      while(cg_cm[d] < 0) {
+      while(pos_d < 0) {
+	pos_d += box[d][d];
 	rvec_inc(cg_cm,box[d]);
 	for(k=k0; (k<k1); k++)
 	  rvec_inc(pos[k],box[d]);
       }
-      ind[d] = cg_cm[d]*g_inv[d];
+      ind[d] = pos_d*dd->nc[d]*invbox[d];
       if (ind[d] >= dd->nc[d])
 	ind[d] = dd->nc[d] - 1;
     }
@@ -812,22 +852,18 @@ static int dd_redistribute_cg(FILE *fplog,
 {
   int  *move;
   int  ncg[DIM*2],nat[DIM*2];
-  int  c,i,cg,k,k0,k1,d,dim,dir,d2;
+  int  c,i,cg,k,k0,k1,d,dim,dir,d2,cell_d;
   int  mc,cdd,nrcg,ncg_recv,nat_recv,nvs,nvr,nvec,vec;
   int  sbuf[2],rbuf[2];
   int  home_pos_cg,home_pos_at,ncg_stay_home,buf_pos;
   int  flag;
-  rvec inv_box;
-  ivec dev,vhome;
-  int  shift,vnew;
-  real inv_ncg;
+  ivec tric_dir,dev;
+  real inv_ncg,pos_d;
+  rvec invbox,cell_bound0,cell_bound1,disp_limit;
   atom_id *cgindex;
   gmx_domdec_comm_t *comm;
 
   comm = dd->comm;
-
-  /* This should be corrected for triclinic pbc !!! */
-  gmx_ddindex2xyz(dd->nc,dd->nodeid,vhome);
 
   if (dd->ncg_tot > comm->nalloc_int) {
     comm->nalloc_int = over_alloc(dd->ncg_tot);
@@ -840,9 +876,17 @@ static int dd_redistribute_cg(FILE *fplog,
     ncg[c] = 0;
     nat[c] = 0;
   }
-  
-  for(d=0; d<DIM; d++)
-    inv_box[d] = divide(dd->nc[d],state->box[d][d]);
+
+  for(d=0; (d<DIM); d++) {
+    invbox[d] = divide(1,state->box[d][d]);
+    cell_bound0[d] =  dd->ci[d]   *state->box[d][d]/dd->nc[d];
+    cell_bound1[d] = (dd->ci[d]+1)*state->box[d][d]/dd->nc[d];
+    disp_limit[d]  =               state->box[d][d]/dd->nc[d];
+    if (dd->tric_dir[d] && dd->nc[d] > 1)
+      tric_dir[d] = 1;
+    else
+      tric_dir[d] = 0;
+  }
 
   cgindex = dd->cgindex;
 
@@ -865,28 +909,54 @@ static int dd_redistribute_cg(FILE *fplog,
       for(d=0; (d<DIM); d++)
 	cg_cm[cg][d] = inv_ncg*cg_cm[cg][d];
     }
+
     for(d=DIM-1; d>=0; d--) {
-      shift = 0;
-      while (cg_cm[cg][d] >= state->box[d][d]) {
-	rvec_dec(cg_cm[cg],state->box[d]);
-	for(k=k0; (k<k1); k++)
-	  rvec_dec(state->x[k],state->box[d]);
-	shift--;
+      if (dd->nc[d] > 1) {
+	pos_d = cg_cm[cg][d];
+	if (tric_dir[d])
+	  for(d2=d+1; d2<DIM; d2++)
+	    pos_d -= cg_cm[cg][d2]*state->box[d2][d]*invbox[d2];
+	/* Put the charge group in the triclinic unit-cell */
+	if (pos_d >= cell_bound1[d]) {
+	  if (pos_d >= cell_bound1[d] + disp_limit[d])
+	    gmx_fatal(FARGS,"The charge group starting at atom %d moved more than one cell in direction %c: distance out of cell %f, coords %f %f %f",
+		      glatnr(dd,dd->cgindex[cg]),
+		      dim2char(d),pos_d - cell_bound1[d],
+		      cg_cm[cg][XX],cg_cm[cg][YY],cg_cm[cg][ZZ]);
+	  dev[d] = 1;
+	  if (dd->ci[d] == dd->nc[d] - 1) {
+	    rvec_dec(cg_cm[cg],state->box[d]);
+	    for(k=k0; (k<k1); k++)
+	      rvec_dec(state->x[k],state->box[d]);
+	  }
+	} else if (pos_d < cell_bound0[d]) {
+	  if (pos_d < cell_bound0[d] - disp_limit[d])
+	    gmx_fatal(FARGS,"The charge group starting at atom %d moved more than one cell in direction %c: distance out of cell %f, coords %f %f %f",
+		      glatnr(dd,dd->cgindex[cg]),
+		      dim2char(d),pos_d - cell_bound0[d],
+		      cg_cm[cg][XX],cg_cm[cg][YY],cg_cm[cg][ZZ]);
+	  dev[d] = -1;
+	  if (dd->ci[d] == 0) {
+	    rvec_inc(cg_cm[cg],state->box[d]);
+	    for(k=k0; (k<k1); k++)
+	      rvec_inc(state->x[k],state->box[d]);
+	  }
+	} else {
+	  dev[d] = 0;
+	}
+      } else {
+	/* Put the charge group in the rectangular unit-cell */
+	while (cg_cm[cg][d] >= state->box[d][d]) {
+	  rvec_dec(cg_cm[cg],state->box[d]);
+	  for(k=k0; (k<k1); k++)
+	    rvec_dec(state->x[k],state->box[d]);
+	}
+	while (cg_cm[cg][d] < 0) {
+	  rvec_inc(cg_cm[cg],state->box[d]);
+	  for(k=k0; (k<k1); k++)
+	    rvec_inc(state->x[k],state->box[d]);
+	}
       }
-      while (cg_cm[cg][d] < 0) {
-	rvec_inc(cg_cm[cg],state->box[d]);
-	for(k=k0; (k<k1); k++)
-	  rvec_inc(state->x[k],state->box[d]);
-	shift++;
-      }
-      /* Determine the cell shift.
-       * This does not involve pbc shifts as charge groups
-       * should not have been put in the box between repartitioning.
-       */
-      vnew   = cg_cm[cg][d]*inv_box[d];
-      if (vnew == dd->nc[d])
-	vnew--;
-      dev[d] = vnew - vhome[d] - shift*dd->nc[d];
     }
 
     /* Determine where this cg should go */
@@ -1548,18 +1618,21 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 				   rvec buf[],matrix box,rvec cg_cm[],
 				   real r_comm)
 {
-  int dim_ind,dim,nat_tot,ncell,cell,celli,c,i,cg,cg_gl,nrcg,d;
+  int dim_ind,dim,nat_tot,ncell,cell,celli,c,i,cg,cg_gl,nrcg,d,d1,d2;
   int *ncg_cell,*index_gl,*cgindex;
   gmx_domdec_comm_t *comm;
   gmx_domdec_ind_t *ind;
-  rvec corner;
-  real corner0=0,corner1=0,r_comm2,r2,inv_ncg;
+  rvec corner,v[DIM][DIM],skew_fac;
+  real corner0=0,corner1=0,r_comm2,r,r2,inv_ncg,dep;
   int  nsend,nat;
+  bool bTric;
 
   if (debug)
     fprintf(debug,"Setting up DD communication\n");
 
   comm = dd->comm;
+
+  bTric = TRICLINIC(box);
 
   /* This should be changed for non-uniform grids */
   for(d=0; d<DIM; d++)
@@ -1576,12 +1649,56 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 
   for(dim=0; dim<dd->ndim; dim++) {
     d = dd->dim[dim];
-    /* Should be fixed for triclinic boxes */
-    if (box[d][d]/dd->nc[d] < r_comm)
-      gmx_fatal(FARGS,"One of the domain decomposition grid cell sizes (%f %f %f) is smaller than the cut-off (%f)",
+    /* Determine the cell thickness in this direction */
+    r2 = sqr(box[d][d]);
+    if (bTric) {
+      if (d == XX || d == YY) {
+	/* Normalize such that the "diagonal" is 1 */
+	svmul(1/box[d+1][d+1],box[d+1],v[d][d+1]);
+	for(i=0; i<d; i++)
+	  v[d][d+1][i] = 0;
+	r2 -= sqr(iprod(box[d],v[d][d+1]));
+	if (d == XX) {
+	  /* Normalize such that the "diagonal" is 1 */
+	  svmul(1/box[d+2][d+2],box[d+2],v[d][d+2]);
+	  for(i=0; i<d; i++)
+	    v[d][d+2][i] = 0;
+	  /* Make vector [d+2] perpendicular to vector [d+1],
+	   * this does not affect the normalization.
+	   */
+	  dep = iprod(v[d][d+1],v[d][d+2])/norm2(v[d][d+1]);
+	  for(i=0; i<DIM; i++)
+	    v[d][d+2][i] -= dep*v[d][d+1][i];
+	  r2 -= sqr(iprod(box[d],v[d][d+2]));
+	}
+      }
+      if (debug) {
+	fprintf(debug,"box[%d]  %.3f %.3f %.3f",
+		d,box[d][XX],box[d][YY],box[d][ZZ]);
+	for(i=d+1; i<DIM; i++)
+	  fprintf(debug,"  v[%d] %.3f %.3f %.3f",
+		  i,v[d][i][XX],v[d][i][YY],v[d][i][ZZ]);
+	fprintf(debug,"\n");
+      }
+    }
+
+    if (r2/dd->nc[d] < r_comm2)
+      gmx_fatal(FARGS,"One of the domain decomposition grid cell sizes (%f %f %f: %c size %f) is smaller than the cut-off (%f)",
 		box[XX][XX]/dd->nc[XX],
 		box[YY][YY]/dd->nc[YY],
-		box[ZZ][ZZ]/dd->nc[ZZ],r_comm);
+		box[ZZ][ZZ]/dd->nc[ZZ],
+		dim2char(d),sqrt(r2),r_comm);
+  }
+
+  if (bTric) {
+    /* Determine correction factors for transforming
+     * x or y distances^2 to distances^2 between triclinic cell planes.
+     */
+    for(d=0; d<DIM; d++) {
+      skew_fac[d] = 1;
+      for(i=d+1; i<DIM; i++)
+	skew_fac[d] -= sqr(v[d][i][d]);
+    }
   }
 
   ncg_cell = dd->ncg_cell;
@@ -1602,12 +1719,36 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
       ind->nsend[cell] = 0;
       celli = cell_perm[dim_ind][cell];
       for(cg=ncg_cell[celli]; cg<ncg_cell[celli+1]; cg++) {
-	r2 = sqr(cg_cm[cg][dim] - corner[dim]);
-	/* Rounding gives at most a 16% reduction in communicated atoms */
-	if (dim_ind >= 1 && (celli == 1 || celli == 2))
-	  r2 += sqr(cg_cm[cg][dd->dim[0]] - corner0);
-	if (dim_ind == 2 && (celli == 2 || celli == 3))
-	  r2 += sqr(cg_cm[cg][dd->dim[1]] - corner1);
+	if (!bTric) {
+	  /* Rectangular box, easy */
+	  r2 = sqr(cg_cm[cg][dim] - corner[dim]);
+	  /* Rounding gives at most a 16% reduction in communicated atoms */
+	  if (dim_ind >= 1 && (celli == 1 || celli == 2))
+	    r2 += sqr(cg_cm[cg][dd->dim[0]] - corner0);
+	  if (dim_ind == 2 && (celli == 2 || celli == 3))
+	    r2 += sqr(cg_cm[cg][dd->dim[1]] - corner1);
+	} else {
+	  /* Triclinic box, complicated */
+	  r = cg_cm[cg][dim] - corner[dim];
+	  for(i=dim+1; i<DIM; i++)
+	    r -= cg_cm[cg][i]*v[dim][i][dim];
+	  r2 = sqr(r)*skew_fac[dim];
+	  /* Rounding, conservative as the skew_fac multiplication
+	   * will slighlty underestimate the distance.
+	   */
+	  if (dim_ind >= 1 && (celli == 1 || celli == 2)) {
+	    r = cg_cm[cg][dd->dim[0]] - corner0;
+	    for(i=dd->dim[0]+1; i<DIM; i++)
+	      r -= cg_cm[cg][i]*v[dd->dim[0]][i][dd->dim[0]];
+	    r2 += sqr(r)*skew_fac[dd->dim[0]];
+	  }
+	  if (dim_ind == 2 && (celli == 2 || celli == 3)) {
+	    r = cg_cm[cg][dd->dim[1]] - corner1;
+	    for(i=dd->dim[1]+1; i<DIM; i++)
+	      r -= cg_cm[cg][i]*v[dd->dim[1]][i][dd->dim[1]];
+	    r2 += sqr(r)*skew_fac[dd->dim[1]];
+	  }
+	}
 	if (r2 < r_comm2) {
 	  /* Make an index to the local charge groups */
 	  if (nsend >= ind->nalloc) {
@@ -1714,7 +1855,19 @@ void dd_partition_system(FILE         *fplog,
 			 t_forcerec   *fr,
 			 t_nrnb       *nrnb)
 {
-  int cg0;
+  int i,j,cg0;
+
+  for(i=0; i<DIM; i++) {
+    dd->tric_dir[i] = 0;
+    for(j=i+1; j<DIM; j++)
+      if (state_local->box[j][i] != 0) {
+	dd->tric_dir[i] = 1;
+	if (dd->nc[j] > 1 && dd->nc[i] == 1)
+	  gmx_fatal(FARGS,"Domain decomposition has not been implemented for box vectors that have non-zero components in directions that do not use domain decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
+		    dd->nc[XX],dd->nc[YY],dd->nc[ZZ],
+		    j+1,state_local->box[j][XX],state_local->box[j][YY],state_local->box[j][ZZ]);
+      }
+  }
 
   if (ir->ePBC == epbcNONE)
     gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",
@@ -1784,7 +1937,7 @@ void dd_partition_system(FILE         *fplog,
       srenew(fr->f_el_recip,fr->f_el_recip_nalloc);
     }
   }
-  
+
   /* Extract a local topology from the global topology */
   make_local_top(fplog,dd,fr,top_global,top_local);
 
@@ -1826,4 +1979,10 @@ void dd_partition_system(FILE         *fplog,
    * when spreading the forces.
    */
   dd_move_x_vsites(dd,state_local->box,state_local->x);
+
+  /*
+  dd_move_x(dd,state_local->box,state_local->x,buf);
+  write_dd_pdb("test","test",&top_global->atoms,dd,dd->nat_tot,
+	       state_local->x,state_local->box);
+  */
 }
