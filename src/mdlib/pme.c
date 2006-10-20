@@ -145,12 +145,16 @@ typedef struct gmx_pme {
   real *bufr;             /* Communication buffer */
   int  buf_nalloc;        /* The communication buffer size */
 } t_gmx_pme;
-  
-typedef struct {
+
+#define CNBF_COORD    (1<<0)
+#define CNBF_CHARGE   (1<<1)
+#define CNBF_LASTSTEP (1<<2)
+
+typedef struct gmx_pme_comm_n_box {
   int    natoms;
   matrix box;
   real   lambda;
-  bool   bLastStep;
+  int    flags;
 } gmx_pme_comm_n_box_t;
 
 typedef struct {
@@ -489,6 +493,7 @@ static void pme_dd_sendrecv(gmx_pme_t pme,bool bBackward,int shift,
   }
 #endif
 }
+
 static void dd_pmeredist_x_q(gmx_pme_t pme,
 			     int n, rvec *x, real *charge, int *idxa)
 {
@@ -1426,44 +1431,158 @@ static void spread_on_grid(FILE *logfile,    gmx_pme_t pme,
   }
 }
 
-void gmx_pme_send_x_q(t_commrec *cr, matrix box,
-		      rvec x[], real chargeA[], real chargeB[],
+/* This should be faster with a real non-blocking MPI implementation */
+/* #define GMX_PME_DELAYED_WAIT */
+
+static void gmx_pme_send_x_q_wait(gmx_domdec_t *dd)
+{
+  if (dd->nreq_pme) {
+#ifdef GMX_MPI
+    MPI_Waitall(dd->nreq_pme,dd->req_pme,MPI_STATUSES_IGNORE);
+#endif
+    dd->nreq_pme = 0;
+  }
+}
+
+void gmx_pme_send_x_q(t_commrec *cr, matrix box, rvec *x, 
+		      real *chargeA, real *chargeB,
 		      bool bFreeEnergy, real lambda, bool bLastStep)
 {
-  int  n,nreq;
-  gmx_pme_comm_n_box_t cnb;
-#ifdef GMX_MPI
-  MPI_Request req[4];
+  gmx_domdec_t *dd;
+  gmx_pme_comm_n_box_t *cnb;
+  int  n;
+
+  dd = cr->dd;
+
+#ifdef GMX_PME_DELAYED_WAIT
+  /* When can not use cnb until pending communication has finished */
+  gmx_pme_send_x_q_wait(dd);
 #endif
 
-  n = cr->dd->nat_home;
-  cnb.natoms = n;
-  copy_mat(box,cnb.box);
-  cnb.lambda = lambda;
-  cnb.bLastStep = bLastStep;
+  if (dd->cnb == NULL)
+    snew(dd->cnb,1);
+  cnb = dd->cnb;
+
+  n = dd->nat_home;
+  cnb->natoms = n;
+  copy_mat(box,cnb->box);
+  cnb->lambda = lambda;
+  cnb->flags = 0;
+  if (x)
+    cnb->flags |= CNBF_COORD;
+  if (chargeA)
+    cnb->flags |= CNBF_CHARGE;
+  if (bLastStep)
+    cnb->flags |= CNBF_LASTSTEP;
 
 #ifdef GMX_MPI
-  nreq = 0;
   /* Communicate bLastTime (0/1) via the MPI tag */
-  MPI_Isend(&cnb,sizeof(cnb),MPI_BYTE,
-	    cr->dd->pme_nodeid,0,cr->mpi_comm_mysim,&req[nreq++]);
+  MPI_Isend(cnb,sizeof(*cnb),MPI_BYTE,
+	    dd->pme_nodeid,0,cr->mpi_comm_mysim,
+	    &dd->req_pme[dd->nreq_pme++]);
 
-  MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
-	    cr->dd->pme_nodeid,1,cr->mpi_comm_mysim,&req[nreq++]);
-  MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
-	    cr->dd->pme_nodeid,2,cr->mpi_comm_mysim,&req[nreq++]);
-  if (bFreeEnergy)
-    MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
-	      cr->dd->pme_nodeid,3,cr->mpi_comm_mysim,&req[nreq++]);
+  if (x)
+    MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
+	      dd->pme_nodeid,1,cr->mpi_comm_mysim,
+	      &dd->req_pme[dd->nreq_pme++]);
+  if (chargeA) {
+    MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
+	      dd->pme_nodeid,2,cr->mpi_comm_mysim,
+	      &dd->req_pme[dd->nreq_pme++]);
+    if (bFreeEnergy)
+      MPI_Isend(chargeB,n*sizeof(real),MPI_BYTE,
+		dd->pme_nodeid,3,cr->mpi_comm_mysim,
+		&dd->req_pme[dd->nreq_pme++]);
+  }
 
-  /* We would like to postpone this wait until dd_pme_receive_f,
-   * but currently the coordinates can be (un)shifted.
-   * We will have to wait with this until we have separate
-   * arrays for the shifted and unshifted coordinates.
+#ifndef GMX_PME_DELAYED_WAIT
+  /* Wait for the data to arrive */
+  /* We can skip this wait as we are sure x and q will not be modified
+   * before the next call to gmx_pme_send_x_q or gmx_pme_receive_f.
    */
-  MPI_Waitall(nreq,req,MPI_STATUSES_IGNORE);
+  gmx_pme_send_x_q_wait(dd);
+#endif
 #endif
 }
+
+#ifdef GMX_MPI
+static int gmx_pme_recv_x_q(t_commrec *cr,
+			    int nmy_ddnodes,int *my_ddnodes,
+			    gmx_pme_comm_n_box_t *cnb,
+			    MPI_Request *req, MPI_Status *stat,
+			    int *nalloc_natpp,
+			    rvec **x, real **chargeA, real **chargeB,
+			    bool bFreeEnergy,bool *bRealloc)
+{
+  int  i,n=0,q,messages,sender;
+  real *charge_pp;
+
+  *bRealloc = FALSE;
+  messages = 0;
+  do {
+    /* Receive the send counts and box */
+    for(sender=0; sender<nmy_ddnodes; sender++) {
+      MPI_Irecv(cnb+sender,sizeof(cnb[0]),MPI_BYTE,
+		my_ddnodes[sender],0,
+		cr->mpi_comm_mysim,&req[messages++]);
+    }
+    MPI_Waitall(messages, req, stat);
+    messages = 0;
+
+    n = 0;
+    for(sender=0; sender<nmy_ddnodes; sender++) {
+      n += cnb[sender].natoms;
+    }
+    if (n > *nalloc_natpp) {
+      *bRealloc = TRUE;
+      *nalloc_natpp = over_alloc(n);
+      
+      srenew(*x,*nalloc_natpp);
+      srenew(*chargeA,*nalloc_natpp);
+      if (bFreeEnergy)
+	srenew(*chargeB,*nalloc_natpp);
+    }
+
+    if (cnb[0].flags & CNBF_COORD) {
+      /* Receive the coordinates in place */
+      i = 0;
+      for(sender=0; sender<nmy_ddnodes; sender++) {
+	if (cnb[sender].natoms > 0) {
+	  MPI_Irecv((*x)[i],cnb[sender].natoms*sizeof(rvec),MPI_BYTE,
+		    my_ddnodes[sender],1,
+		    cr->mpi_comm_mysim,&req[messages++]);
+	  i += cnb[sender].natoms;
+	}
+      }
+    }
+
+    if (cnb[0].flags & CNBF_CHARGE) {
+      /* Receive the charges in place */
+      for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
+	if (q == 0)
+	  charge_pp = *chargeA;
+	else
+	  charge_pp = *chargeB;
+	i = 0;
+	for(sender=0; sender<nmy_ddnodes; sender++) {
+	  if (cnb[sender].natoms > 0) {
+	    MPI_Irecv(&charge_pp[i],cnb[sender].natoms*sizeof(real),MPI_BYTE,
+		      my_ddnodes[sender],2+q,
+		      cr->mpi_comm_mysim,&req[messages++]);
+	    i += cnb[sender].natoms;
+	  }
+	}
+      }
+    }
+
+    /* Wait for the coordinates and/or charges to arrive */
+    MPI_Waitall(messages, req, stat);
+    messages = 0;
+  } while (!(cnb[0].flags & CNBF_COORD));
+
+  return n;
+}
+#endif
 
 static void receive_virial_energy(t_commrec *cr,
 				  matrix vir,real *energy,real *dvdlambda) 
@@ -1498,6 +1617,11 @@ void gmx_pme_receive_f(t_commrec *cr,
   static int  nalloc=0;
   int natoms,i;
 
+#ifdef GMX_PME_DELAYED_WAIT
+  /* Wait for the x request to finish */
+  gmx_pme_send_x_q_wait(cr->dd);
+#endif
+
   natoms = cr->dd->nat_home;
 
   if (natoms > nalloc) {
@@ -1524,18 +1648,18 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 {
 #ifdef GMX_MPI
   rvec  *x_pp=NULL,*f_pp=NULL;
-  real  *chargeA=NULL,*chargeB=NULL,*charge_pp;
-  int  nppnodes,sender,receiver;
+  real  *chargeA=NULL,*chargeB=NULL;
+  int  nppnodes,receiver;
   int  nmy_ddnodes,*my_ddnodes;
   int  ind_start, ind_end;
   gmx_pme_comm_n_box_t *cnb;
+  bool bRealloc;
   int  nalloc_natpp=0;
-  int  n,i,q;
+  int  n;
   gmx_pme_comm_vir_ene_t cve;
   int messages; /* count the Isends or Ireceives */    
   MPI_Request *req;
   MPI_Status  *stat;
-  bool bDone=FALSE;
   int count=0;
   double t0, t1, t2=0, t3, t_send_f=0.0, tstep_sum=0.0;
   unsigned long int step=0, timesteps=0;
@@ -1556,62 +1680,10 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
   do /****** this is a quasi-loop over time steps! */
   {  
     /* Domain decomposition */
-    /* Receive the send counts and box */
-    messages=0;
-    for(sender=0; sender<nmy_ddnodes; sender++) {
-      MPI_Irecv(cnb+sender,sizeof(cnb[0]),MPI_BYTE,
-		my_ddnodes[sender],0,
-		cr->mpi_comm_mysim,&req[messages++]);
-    }
-    MPI_Waitall(messages, req, stat);
-    messages = 0;
-    bDone = cnb[0].bLastStep;
-    
-    n = 0;
-    for(sender=0; sender<nmy_ddnodes; sender++) {
-      n += cnb[sender].natoms;
-    }
-    if (n > nalloc_natpp) {
-      nalloc_natpp = over_alloc(n);
-      
-      srenew(x_pp,nalloc_natpp);
-      srenew(chargeA,nalloc_natpp);
-      if (pme->bFEP)
-	srenew(chargeB,nalloc_natpp);
+    n = gmx_pme_recv_x_q(cr,nmy_ddnodes,my_ddnodes,cnb,req,stat,&nalloc_natpp,
+			 &x_pp,&chargeA,&chargeB,pme->bFEP,&bRealloc);
+    if (bRealloc)
       srenew(f_pp,nalloc_natpp);
-    }
-    
-    /* Receive the coordinates in place */
-    i = 0;
-    for(sender=0; sender<nmy_ddnodes; sender++) {
-      if (cnb[sender].natoms > 0) {
-	MPI_Irecv(x_pp[i],cnb[sender].natoms*sizeof(rvec),MPI_BYTE,
-		  my_ddnodes[sender],1,
-		  cr->mpi_comm_mysim,&req[messages++]);
-	i += cnb[sender].natoms;
-      }
-    }
-    
-    /* Receive the charges in place */
-    for(q=0; q<(pme->bFEP ? 2 : 1); q++) {
-      if (q == 0)
-	charge_pp = chargeA;
-      else
-	charge_pp = chargeB;
-      i = 0;
-      for(sender=0; sender<nmy_ddnodes; sender++) {
-	if (cnb[sender].natoms > 0) {
-	  MPI_Irecv(&charge_pp[i],cnb[sender].natoms*sizeof(real),MPI_BYTE,
-		    my_ddnodes[sender],2+q,
-		    cr->mpi_comm_mysim,&req[messages++]);
-	  i += cnb[sender].natoms;
-	}
-      }
-    }
-
-    /* Wait for the coordinates and charges to arrive */
-    MPI_Waitall(messages, req, stat);
-    messages = 0;
 
     cve.dvdlambda = 0;
     gmx_pme_do(logfile,pme,0,n,x_pp,f_pp,chargeA,chargeB,cnb[0].box,
@@ -1667,7 +1739,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
     step++;
     /* MPI_Barrier(cr->mpi_comm_mysim); */ /* 100 */
   } /***** end of quasi-loop */
-  while (!bDone);
+  while (!(cnb[0].flags & CNBF_LASTSTEP));
      
 #endif
   return 0;

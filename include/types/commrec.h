@@ -89,6 +89,8 @@ typedef struct gmx_domdec_specat_comm *gmx_domdec_specat_comm_p_t;
 
 typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
 
+typedef struct gmx_pme_comm_n_box *gmx_pme_comm_n_box_p_t;
+
 typedef struct {
   /* The communication setup including the pme only nodes */
   bool bCartesian;
@@ -97,8 +99,6 @@ typedef struct {
   int  *pmenodes;
 
   /* The DD particle-particle nodes only */
-  int  pme_nodeid;
-  bool pme_receive_vir_ener;
   /* The communication setup within the communicator all */
 #ifdef GMX_MPI
   MPI_Comm all;
@@ -106,6 +106,15 @@ typedef struct {
   int  nodeid;
   int  nnodes;
   int  masterrank;
+  /* Communication with the PME only nodes */
+  int  pme_nodeid;
+  bool pme_receive_vir_ener;
+  gmx_pme_comm_n_box_p_t cnb;
+#ifdef GMX_MPI
+  int  nreq_pme;
+  MPI_Request req_pme[4];
+#endif
+  
 
   /* The communication setup, identical for each cell, cartesian index */
   ivec nc;

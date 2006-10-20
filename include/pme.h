@@ -86,12 +86,12 @@ extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
 
 /* The following two routines are for PME/PP node splitting: */
 extern void gmx_pme_send_x_q(t_commrec *cr,
-			     matrix box, rvec x[], 
-			     real chargeA[], real chargeB[], 
+			     matrix box, rvec *x, 
+			     real *chargeA, real *chargeB, 
 			     bool bFreeEnergy, real lambda,
 			     bool bLastStep);
-/* send the particle coordinates (and charges) from the PP to the PME nodes,
- * so that they can do a PME step */
+/* Send the particle coordinates and/or charges from the PP to the PME nodes
+ */
 
 extern void gmx_pme_receive_f(t_commrec *cr,
 			      rvec f[], matrix vir, 

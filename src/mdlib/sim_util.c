@@ -299,7 +299,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       GMX_MPE_LOG(ev_shift_finish);
     }
 
-    gmx_pme_send_x_q(cr,box,x,mdatoms->chargeA,mdatoms->chargeB,
+    gmx_pme_send_x_q(cr,box,x,NULL,NULL,
 		     mdatoms->nChargePerturbed,lambda,step>=inputrec->nsteps);
 
     if (graph) {

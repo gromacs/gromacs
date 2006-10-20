@@ -17,6 +17,7 @@
 #include "names.h"
 #include "pdbio.h"
 #include "futil.h"
+#include "pme.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -1842,7 +1843,7 @@ static void dd_update_ns_border(gmx_domdec_t *dd,t_nsborder *nsb)
 }
 
 void dd_partition_system(FILE         *fplog,
-			 gmx_domdec_t *dd,
+			 t_commrec    *cr,
 			 bool         bMasterState,
 			 t_state      *state_global,
 			 t_topology   *top_global,
@@ -1855,7 +1856,10 @@ void dd_partition_system(FILE         *fplog,
 			 t_forcerec   *fr,
 			 t_nrnb       *nrnb)
 {
+  gmx_domdec_t *dd;
   int i,j,cg0;
+
+  dd = cr->dd;
 
   for(i=0; i<DIM; i++) {
     dd->tric_dir[i] = 0;
@@ -1969,6 +1973,12 @@ void dd_partition_system(FILE         *fplog,
    */
   atoms2md(&top_global->atoms,ir,top_global->idef.il[F_ORIRES].nr,
 	   dd->nat_tot_con,dd->gatindex,mdatoms);
+
+  if (!(cr->duty & DUTY_PME))
+    /* Send the charges to our PME only node */
+    gmx_pme_send_x_q(cr,state_local->box,NULL,
+		     mdatoms->chargeA,mdatoms->chargeB,
+		     mdatoms->nChargePerturbed,0,FALSE);
 
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
     init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,

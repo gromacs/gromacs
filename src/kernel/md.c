@@ -530,7 +530,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		     &top_global->idef,NULL,NULL,epbcFULL,state_global->box,
 		     NULL);
 
-    dd_partition_system(stdlog,cr->dd,TRUE,state_global,top_global,inputrec,
+    dd_partition_system(stdlog,cr,TRUE,state_global,top_global,inputrec,
 			state,buf,mdatoms,top,nsb,fr,nrnb);
   } else {
     top = top_global;
@@ -766,7 +766,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (DOMAINDECOMP(cr) && bNS) {
       /* Repartition the domain decomposition */
-      dd_partition_system(stdlog,cr->dd,FALSE,NULL,top_global,inputrec,
+      dd_partition_system(stdlog,cr,FALSE,NULL,top_global,inputrec,
 			  state,buf,mdatoms,top,nsb,fr,nrnb);
     }
 
@@ -877,7 +877,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* x and v have been collected in write_traj */
       fprintf(stderr,"Writing final coordinates.\n");
       write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		     *top->name,&top->atoms,
+		     *top_global->name,&top_global->atoms,
 		     state_global->x,state_global->v,state->box);
       debug_gmx();
     }

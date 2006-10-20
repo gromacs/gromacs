@@ -82,7 +82,7 @@ extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
  */
 
 extern void dd_partition_system(FILE         *fplog,
-				gmx_domdec_t *dd,
+				t_commrec    *cr,
 				bool         bMasterState,
 				t_state      *state_global,
 				t_topology   *top_global,
