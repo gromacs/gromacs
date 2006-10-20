@@ -380,7 +380,8 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 
   dc->ncon = 0;
   nhome = 0;
-  dd->constraint_comm->nind_req = 0;
+  if (dd->constraint_comm)
+    dd->constraint_comm->nind_req = 0;
   for(a=0; a<dd->nat_home; a++) {
     ag = dd->gatindex[a];
     for(i=at2con.index[ag]; i<at2con.index[ag+1]; i++) {
@@ -415,12 +416,14 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
   if (debug)
     fprintf(debug,
 	    "Constraints: home %3d border %3d atoms: %3d\n",
-	    nhome,dc->ncon-nhome,dd->constraint_comm->nind_req);
+	    nhome,dc->ncon-nhome,
+	    dd->constraint_comm ? dd->constraint_comm->nind_req : 0);
 
-  dd->nat_tot_con =
-    setup_specat_communication(dd,dd->constraint_comm,dd->constraints->ga2la,
-			       dd->nat_tot_vsite,"constraint",
-			       " or lincs-order");
+  if (dd->constraint_comm)
+    dd->nat_tot_con =
+      setup_specat_communication(dd,dd->constraint_comm,dd->constraints->ga2la,
+				 dd->nat_tot_vsite,"constraint",
+				 " or lincs-order");
 }
 
 void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
@@ -485,11 +488,13 @@ void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
 }
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-			     int natoms,t_idef *idef,bool bDynamics)
+			     int natoms,t_idef *idef,t_block *cgs,
+			     bool bDynamics)
 {
-  int i;
+  int c,cg,cg0,cg1,a,a2;
   gmx_domdec_constraints_t *dc;
-  
+  bool bInterCGConstraints;
+
   if (debug)
     fprintf(debug,"Begin init_domdec_constraints\n");
 
@@ -501,14 +506,30 @@ void init_domdec_constraints(gmx_domdec_t *dd,
   dc->iatoms = idef->il[F_CONSTR].iatoms;
 
   snew(dc->gc2lc,idef->il[F_CONSTR].nr/3);
-  for(i=0; i<idef->il[F_CONSTR].nr/3; i++)
-    dc->gc2lc[i] = -1;
+  for(c=0; c<idef->il[F_CONSTR].nr/3; c++)
+    dc->gc2lc[c] = -1;
 
   snew(dc->ga2la,natoms);
-  for(i=0; i<natoms; i++)
-    dc->ga2la[i] = -1;
+  for(a=0; a<natoms; a++)
+    dc->ga2la[a] = -1;
 
-  snew(dd->constraint_comm,1);
+  bInterCGConstraints = FALSE;
+  for(cg=0; cg<cgs->nr && !bInterCGConstraints; cg++) {
+    cg0 = cgs->index[cg];
+    cg1 = cgs->index[cg+1];
+    for(a=cg0; a<cg1; a++)
+      for(c=dc->at2con.index[a]; c<dc->at2con.index[a+1]; c++) {
+	/* Single all constraints are stored for both atoms
+	 * we only need to check the second atom.
+	 */
+	a2 = dc->iatoms[3*dc->at2con.a[c]+2];
+	if (a2 < cg0 || a2 >= cg1)
+	  bInterCGConstraints = TRUE;
+      }
+  }
+  
+  if (bInterCGConstraints)
+    snew(dd->constraint_comm,1);
 }
 
 void init_domdec_vsites(gmx_domdec_t *dd,int natoms)

@@ -245,8 +245,13 @@ void dd_make_reverse_top(FILE *fplog,
     init_domdec_vsites(dd,natoms);
   }
 
-  if (top->idef.il[F_CONSTR].nr > 0)
-    init_domdec_constraints(dd,natoms,&top->idef,bDynamics);
+  if (top->idef.il[F_CONSTR].nr > 0) {
+    init_domdec_constraints(dd,natoms,&top->idef,&top->blocks[ebCGS],
+			    bDynamics);
+    if (dd->constraint_comm)
+      fprintf(fplog,"There are inter charge-group constraints,\n"
+	      "will communicate selected coordinates each lincs iteration\n");
+  }
 }
 
 static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)

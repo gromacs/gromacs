@@ -117,7 +117,8 @@ extern void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
 extern void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
-				    int natoms,t_idef *idef,bool bDynamics);
+				    int natoms,t_idef *idef,t_block *cgs,
+				    bool bDynamics);
 
 extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 
