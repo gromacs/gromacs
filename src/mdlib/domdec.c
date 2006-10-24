@@ -624,9 +624,10 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
 	for(k=k0; (k<k1); k++)
 	  rvec_inc(pos[k],box[d]);
       }
-      ind[d] = pos_d*dd->nc[d]*invbox[d];
-      if (ind[d] >= dd->nc[d])
-	ind[d] = dd->nc[d] - 1;
+      /* This could be done more efficiently */
+      ind[d] = 0;
+      while(ind[d]+1 < dd->nc[d] && pos_d >= dd->cell_x[d][ind[d]+1])
+	ind[d]++;
     }
     i = dd_index(dd->nc,ind);
     if (ma->ncg[i] == tmp_nalloc[i]) {
@@ -860,7 +861,7 @@ static int dd_redistribute_cg(FILE *fplog,
   int  flag;
   ivec tric_dir,dev;
   real inv_ncg,pos_d;
-  rvec invbox,cell_bound0,cell_bound1,disp_limit;
+  rvec invbox,cell_x0,cell_x1,limit0,limit1;
   atom_id *cgindex;
   gmx_domdec_comm_t *comm;
 
@@ -880,9 +881,16 @@ static int dd_redistribute_cg(FILE *fplog,
 
   for(d=0; (d<DIM); d++) {
     invbox[d] = divide(1,state->box[d][d]);
-    cell_bound0[d] =  dd->ci[d]   *state->box[d][d]/dd->nc[d];
-    cell_bound1[d] = (dd->ci[d]+1)*state->box[d][d]/dd->nc[d];
-    disp_limit[d]  =               state->box[d][d]/dd->nc[d];
+    cell_x0[d] = dd->cell_x[d][dd->ci[d]];
+    cell_x1[d] = dd->cell_x[d][dd->ci[d]+1];
+    c = dd->ci[d] - 1;
+    if (c < 0)
+      c = dd->nc[d] - 1;
+    limit0[d] = cell_x0[d] - (dd->cell_x[d][c+1] - dd->cell_x[d][c]);
+    c = dd->ci[d] + 1;
+    if (c >= dd->nc[d])
+      c = 0;
+    limit1[d] = cell_x1[d] + (dd->cell_x[d][c+1] - dd->cell_x[d][c]);
     if (dd->tric_dir[d] && dd->nc[d] > 1)
       tric_dir[d] = 1;
     else
@@ -918,11 +926,11 @@ static int dd_redistribute_cg(FILE *fplog,
 	  for(d2=d+1; d2<DIM; d2++)
 	    pos_d -= cg_cm[cg][d2]*state->box[d2][d]*invbox[d2];
 	/* Put the charge group in the triclinic unit-cell */
-	if (pos_d >= cell_bound1[d]) {
-	  if (pos_d >= cell_bound1[d] + disp_limit[d])
+	if (pos_d >= cell_x1[d]) {
+	  if (pos_d >= limit1[d])
 	    gmx_fatal(FARGS,"The charge group starting at atom %d moved more than one cell in direction %c: distance out of cell %f, coords %f %f %f",
 		      glatnr(dd,dd->cgindex[cg]),
-		      dim2char(d),pos_d - cell_bound1[d],
+		      dim2char(d),pos_d - cell_x1[d],
 		      cg_cm[cg][XX],cg_cm[cg][YY],cg_cm[cg][ZZ]);
 	  dev[d] = 1;
 	  if (dd->ci[d] == dd->nc[d] - 1) {
@@ -930,11 +938,11 @@ static int dd_redistribute_cg(FILE *fplog,
 	    for(k=k0; (k<k1); k++)
 	      rvec_dec(state->x[k],state->box[d]);
 	  }
-	} else if (pos_d < cell_bound0[d]) {
-	  if (pos_d < cell_bound0[d] - disp_limit[d])
+	} else if (pos_d < cell_x0[d]) {
+	  if (pos_d < limit0[d])
 	    gmx_fatal(FARGS,"The charge group starting at atom %d moved more than one cell in direction %c: distance out of cell %f, coords %f %f %f",
 		      glatnr(dd,dd->cgindex[cg]),
-		      dim2char(d),pos_d - cell_bound0[d],
+		      dim2char(d),pos_d - cell_x0[d],
 		      cg_cm[cg][XX],cg_cm[cg][YY],cg_cm[cg][ZZ]);
 	  dev[d] = -1;
 	  if (dd->ci[d] == 0) {
@@ -1243,22 +1251,7 @@ void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd)
   dd->ncell  = ncell;
   for(i=0; i<ncell; i++) {
     for(d=0; d<DIM; d++) {
-      s[d] = dd->ci[d] + dd_c[i][d];
-      /* Currently only works for rectangular boxes.
-       * For even numbers of grid cells it is easy to extend
-       * to things like rhombic dodecahedrons.
-       */
-      if (s[d] < 0)
-	s[d] += dd->nc[d];
-      else if (s[d] >= dd->nc[d])
-	s[d] -= dd->nc[d];
-    }
-    for(d=0; d<DIM; d++) {
       s[d] = dd->ci[d] - dd_c[i][d];
-      /* Currently only works for rectangular boxes.
-       * For even numbers of grid cells it is easy to extend
-       * to things like rhombic dodecahedrons.
-       */
       if (s[d] < 0)
 	s[d] += dd->nc[d];
       else if (s[d] >= dd->nc[d])
@@ -1594,9 +1587,36 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
   }
 }
 
-gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc)
+static real *get_cell_load(FILE *fplog,char *dir,int nc,char *load_string)
+{
+  real *cell_load;
+  int  i,n;
+  double dbl;
+
+  cell_load = NULL;
+  if (nc > 1 && load_string != NULL) {
+    fprintf(fplog,"Using static load balancing for the %s direction\n",dir);
+    snew(cell_load,nc);
+    for (i=0; i<nc; i++) {
+      dbl = 0;
+      sscanf(load_string,"%lf%n",&dbl,&n);
+      if (dbl == 0)
+	gmx_fatal(FARGS,
+		  "Incorrect or not enough load entries for direction %s",
+		  dir);
+      cell_load[i] = dbl;
+      load_string += n;
+    }
+  }
+  
+  return cell_load;
+}
+
+gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
+					char *loadx,char *loady,char *loadz)
 {
   gmx_domdec_t *dd;
+  int  d;
   
   fprintf(fplog,
 	  "Domain decomposition grid %d x %d x %d, separate PME nodes %d\n",
@@ -1611,6 +1631,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc)
   dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
   if (dd->nnodes != cr->nnodes - cr->npmenodes)
     gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d)\n",dd->nnodes,cr->nnodes - cr->npmenodes);
+
+  snew(dd->cell_x,DIM);
+  for(d=0; d<DIM; d++)
+    snew(dd->cell_x[d],dd->nc[d]+1);
+  snew(dd->cell_load,DIM);
+  dd->cell_load[XX] = get_cell_load(fplog,"x",dd->nc[XX],loadx);
+  dd->cell_load[YY] = get_cell_load(fplog,"y",dd->nc[YY],loady);
+  dd->cell_load[ZZ] = get_cell_load(fplog,"z",dd->nc[ZZ],loadz);
 
   return dd;
 }
@@ -1637,13 +1665,13 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
 
   /* This should be changed for non-uniform grids */
   for(d=0; d<DIM; d++)
-    corner[d] = dd->ci[d]*box[d][d]/dd->nc[d];
+    corner[d] = dd->cell_x[d][dd->ci[d]];
   if (dd->ndim >= 2) {
     /* Set the upper-right corner for rounding */
     d = dd->dim[0];
-    corner0 = (dd->ci[d] + 1)*box[d][d]/dd->nc[d];
+    corner0 = dd->cell_x[d][dd->ci[d]+1];
     d = dd->dim[1];
-    corner1 = (dd->ci[d] + 1)*box[d][d]/dd->nc[d];
+    corner1 = dd->cell_x[d][dd->ci[d]+1];
   }
 
   r_comm2 = sqr(r_comm);
@@ -1683,11 +1711,14 @@ static void setup_dd_communication(FILE *fplog,gmx_domdec_t *dd,t_block *gcgs,
       }
     }
 
-    if (r2/dd->nc[d] < r_comm2)
+    r2 *=
+      sqr((dd->cell_x[d][dd->ci[d]+1] - dd->cell_x[d][dd->ci[d]])/box[d][d]);
+
+    if (r2 < r_comm2)
       gmx_fatal(FARGS,"One of the domain decomposition grid cell sizes (%f %f %f: %c size %f) is smaller than the cut-off (%f)",
-		box[XX][XX]/dd->nc[XX],
-		box[YY][YY]/dd->nc[YY],
-		box[ZZ][ZZ]/dd->nc[ZZ],
+		dd->cell_x[XX][dd->ci[d]+1] - dd->cell_x[XX][dd->ci[d]],
+		dd->cell_x[YY][dd->ci[d]+1] - dd->cell_x[YY][dd->ci[d]],
+		dd->cell_x[ZZ][dd->ci[d]+1] - dd->cell_x[ZZ][dd->ci[d]],
 		dim2char(d),sqrt(r2),r_comm);
   }
 
@@ -1842,6 +1873,38 @@ static void dd_update_ns_border(gmx_domdec_t *dd,t_nsborder *nsb)
   nsb->cgload[nsb->nodeid] = nsb->cgtotal;
 }
 
+static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box)
+{
+  int  d,j;
+  real tot;
+
+  for(d=0; d<DIM; d++) {
+    dd->tric_dir[d] = 0;
+    for(j=d+1; j<DIM; j++)
+      if (box[j][d] != 0) {
+	dd->tric_dir[d] = 1;
+	if (dd->nc[j] > 1 && dd->nc[d] == 1)
+	  gmx_fatal(FARGS,"Domain decomposition has not been implemented for box vectors that have non-zero components in directions that do not use domain decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
+		    dd->nc[XX],dd->nc[YY],dd->nc[ZZ],
+		    j+1,box[j][XX],box[j][YY],box[j][ZZ]);
+      }
+    if (dd->cell_load[d] == NULL || dd->nc[d] == 1) {
+      /* Uniform grid */
+      for(j=0; j<dd->nc[d]+1; j++)
+	dd->cell_x[d][j] = j*box[d][d]/dd->nc[d];
+    } else {
+      /* Load balanced grid */
+      tot = 0;
+      for(j=0; j<dd->nc[d]; j++)
+	tot += 1/dd->cell_load[d][j];
+      dd->cell_x[d][0] = 0;
+      for(j=0; j<dd->nc[d]; j++)
+	dd->cell_x[d][j+1] =
+	  dd->cell_x[d][j] + box[d][d]/(dd->cell_load[d][j]*tot);
+    }
+  }
+}
+
 void dd_partition_system(FILE         *fplog,
 			 t_commrec    *cr,
 			 bool         bMasterState,
@@ -1861,17 +1924,7 @@ void dd_partition_system(FILE         *fplog,
 
   dd = cr->dd;
 
-  for(i=0; i<DIM; i++) {
-    dd->tric_dir[i] = 0;
-    for(j=i+1; j<DIM; j++)
-      if (state_local->box[j][i] != 0) {
-	dd->tric_dir[i] = 1;
-	if (dd->nc[j] > 1 && dd->nc[i] == 1)
-	  gmx_fatal(FARGS,"Domain decomposition has not been implemented for box vectors that have non-zero components in directions that do not use domain decomposition: ncells = %d %d %d, box vector[%d] = %f %f %f",
-		    dd->nc[XX],dd->nc[YY],dd->nc[ZZ],
-		    j+1,state_local->box[j][XX],state_local->box[j][YY],state_local->box[j][ZZ]);
-      }
-  }
+  set_dd_cell_sizes(dd,bMasterState ? state_global->box : state_local->box);
 
   if (ir->ePBC == epbcNONE)
     gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",

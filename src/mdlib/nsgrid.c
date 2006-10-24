@@ -65,17 +65,23 @@ static void init_range_check()
 
 static void set_grid_sizes(FILE *fplog,
 			   matrix box,real rlist,int delta,
-			   ivec *dd_nc,ivec dd_ci,
+			   gmx_domdec_t *dd,
 			   t_grid *grid)
 {
   int  i,j;
   bool bDD,bDDRect;
+  rvec dd_cell_size;
   real size,skew_fac,radd,add_tric;
   ivec nc;
 
+  if (dd) {
+    for(i=0; (i<DIM); i++)
+      dd_cell_size[i] = dd->cell_x[i][dd->ci[i]+1] - dd->cell_x[i][dd->ci[i]];
+  }
+
   clear_rvec(grid->cell_offset);
   for(i=0; (i<DIM); i++) {
-    bDD = dd_nc && ((*dd_nc)[i] > 1);
+    bDD = dd && (dd->nc[i] > 1);
     if (!bDD) {
       bDDRect = FALSE;
       size = box[i][i];
@@ -95,20 +101,20 @@ static void set_grid_sizes(FILE *fplog,
 	radd = rlist/sqrt(skew_fac);
       }
       /* With DD we only need a grid of one DD cell size + rlist */
-      grid->cell_offset[i] = dd_ci[i]*box[i][i]/(*dd_nc)[i];
-      size = box[i][i]/(*dd_nc)[i] + radd;
+      grid->cell_offset[i] = dd->cell_x[i][dd->ci[i]];
+      size = dd_cell_size[i] + radd;
       /* Check if the cell boundary in this direction is
        * perpendicular to the Cartesian axis.
        */
       for(j=i+1; j<DIM; j++) {
 	if (box[j][i] != 0) {
 	  /* Correct the offset for the home cell location */
-	  grid->cell_offset[i] += box[j][i]*dd_ci[j]/(real)(*dd_nc)[j];
+	  grid->cell_offset[i] += dd->cell_x[j][dd->ci[j]]*box[j][i]/box[j][j];
 	  /* Correct the offset and size for the off-diagonal
 	   * displacement of opposing DD cell corners.
 	   */
 	  /* Without rouding we would need to add box[j][i]*radd/box[j][j]); */
-	  add_tric = box[j][i]/(*dd_nc)[j];
+	  add_tric = dd_cell_size[j]*box[j][i]/box[j][j];
 	  if (box[j][i] < 0) {
 	    grid->cell_offset[i] += add_tric;
 	    size -= add_tric;
@@ -132,7 +138,7 @@ static void set_grid_sizes(FILE *fplog,
        * We can then beforehand exclude certain ns grid cells
        * for non-home i-particles.
        */
-      size = box[i][i]/(*dd_nc)[i];
+      size = dd_cell_size[i];
       grid->ncpddc[i] = delta*size/rlist;
       grid->cell_size[i] = size/grid->ncpddc[i];
       nc[i] = grid->ncpddc[i] + (int)(rlist/grid->cell_size[i]) + 1;
@@ -149,13 +155,13 @@ static void set_grid_sizes(FILE *fplog,
   copy_ivec(nc,grid->n);
 }
 
-void init_grid(FILE *log,t_grid *grid,int delta,ivec *dd_nc,ivec dd_ci,
+void init_grid(FILE *log,t_grid *grid,int delta,gmx_domdec_t *dd,
 	       matrix box,real rlistlong,int ncg)
 {
   int     d,m;
   
   clear_ivec(grid->n);
-  set_grid_sizes(log,box,rlistlong,delta,dd_nc,dd_ci,grid);
+  set_grid_sizes(log,box,rlistlong,delta,dd,grid);
 
   grid->nr      = ncg;
   grid->ncells  = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
@@ -208,7 +214,7 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
   *z  = ci;
 }
 
-void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,ivec dd_ci,
+void grid_first(FILE *log,t_grid *grid,gmx_domdec_t *dd,
 		matrix box,real rlistlong,int ncg)
 {
   int    i,k,m,ncells;
@@ -217,7 +223,7 @@ void grid_first(FILE *log,t_grid *grid,ivec *dd_nc,ivec dd_ci,
   /* Must do this every step because other routines may override it. */
   init_range_check();
 
-  set_grid_sizes(log,box,rlistlong,grid->delta,dd_nc,dd_ci,grid);
+  set_grid_sizes(log,box,rlistlong,grid->delta,dd,grid);
 
   ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 

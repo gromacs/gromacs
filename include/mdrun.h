@@ -68,7 +68,7 @@
 extern time_t do_md(FILE *log,t_commrec *cr,
 		    int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,
-		    ivec ddxyz,
+		    ivec ddxyz,char *loadx,char *loady,char *loadz,
 		    bool bVsites,t_comm_vsites *vsitecomm,int stepout,
 		    t_inputrec *inputrec,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
@@ -282,7 +282,8 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   
 extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
-		     ivec ddxyz,int nDlb,int nstepout,
+		     ivec ddxyz,char *loadx,char *loady,char *loadz,
+		     int nstepout,
 		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */

@@ -2105,9 +2105,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     
     if (bGrid) {
       snew(grid,1);
-      init_grid(log,grid,fr->ndelta,
-		DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,dd_ci,
-		box,fr->rlistlong,cgs->nr);
+      init_grid(log,grid,fr->ndelta,cr->dd,box,fr->rlistlong,cgs->nr);
     }
     
     /* Create array that determines whether or not atoms have VdW */
@@ -2142,8 +2140,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   reset_neighbor_list(fr,FALSE,-1,-1);
 
   if (bGrid && bFillGrid) {
-    grid_first(log,grid,DOMAINDECOMP(cr) ? &cr->dd->nc : NULL,dd_ci,
-	       box,fr->rlistlong,cgs->nr);
+    grid_first(log,grid,cr->dd,box,fr->rlistlong,cgs->nr);
     debug_gmx();
 
     /* Don't know why this all is... (DvdS 3/99) */

@@ -120,6 +120,8 @@ typedef struct {
   ivec nc;
   int  ndim;
   ivec dim;  /* indexed by 0 to ndim */
+  real **cell_x;
+  real **cell_load;
   /* The bonded and non-bonded communication setup, cartesian index */
   int  ncell;
   ivec shift[DD_MAXCELL];

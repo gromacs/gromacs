@@ -133,7 +133,7 @@ static void receive_inputrec(t_commrec *cr,
 
 void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
-	      ivec ddxyz,int nDlb,int nstepout,
+	      ivec ddxyz,char *loadx,char *loady,char *loadz,int nstepout,
 	      t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 	      unsigned long Flags)
 {
@@ -160,7 +160,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   char       *gro;
   
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
-    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz);
+    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,loadx,loady,loadz);
     
     make_dd_communicators(stdlog,cr,Flags & MD_CARTESIAN);
   } else {
@@ -339,7 +339,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     case eiBD:
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,
-		    ddxyz,bVsites,bParVsites ? &vsitecomm : NULL,
+		    ddxyz,loadx,loady,loadz,
+		    bVsites,bParVsites ? &vsitecomm : NULL,
 		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
 		    mdatoms,nsb,nrnb,graph,edyn,fr,
 		    repl_ex_nst,repl_ex_seed,
@@ -408,7 +409,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
-	     ivec ddxyz,bool bVsites, t_comm_vsites *vsitecomm,
+	     ivec ddxyz,char *loadx,char *loady,char *loadz,
+	     bool bVsites, t_comm_vsites *vsitecomm,
 	     int stepout,t_inputrec *inputrec,t_groups *grps,
 	     t_topology *top_global,
 	     real ener[],t_fcdata *fcd,

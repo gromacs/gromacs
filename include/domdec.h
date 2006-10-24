@@ -42,7 +42,10 @@ extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 extern void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian);
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
-					       t_commrec *cr,ivec nc);
+					       t_commrec *cr,ivec nc,
+					       char *loadx,
+					       char *loady,
+					       char *loadz);
 
 extern void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd);
 

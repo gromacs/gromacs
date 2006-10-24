@@ -174,7 +174,6 @@ int main(int argc,char *argv[])
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
   
-  static int  nDLB=0; 
   static int  npme=0;
   static int  nmultisim=0;
   static int  repl_ex_nst=0;
@@ -183,6 +182,8 @@ int main(int argc,char *argv[])
   static int  nthreads=1;
 
   static rvec rddxyz={1,1,1};
+
+  static char *loadx=NULL,*loady=NULL,*loadz=NULL;
 
   static t_pargs pa[] = {
     { "-dd",      FALSE, etRVEC,{&rddxyz},
@@ -193,6 +194,12 @@ int main(int argc,char *argv[])
       "Number of separate nodes to be used for PME" },
     { "-cart",    FALSE, etBOOL, {&bCart}, 
       "Use a Cartesian communicator" },
+    { "-loadx",   FALSE, etSTR, {&loadx},
+      "HIDDENLoad distribution in x" },
+    { "-loady",   FALSE, etSTR, {&loady},
+      "HIDDENLoad distribution in y" },
+    { "-loadz",   FALSE, etSTR, {&loadz},
+      "HIDDENLoad distribution in z" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -262,8 +269,8 @@ int main(int argc,char *argv[])
   ddxyz[XX] = (int)(rddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(rddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(rddxyz[ZZ] + 0.5);
-
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,ddxyz,nDLB,nstepout,
+  
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,ddxyz,loadx,loady,loadz,nstepout,
 	   edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)
