@@ -35,7 +35,6 @@ static char *SRCID_template_c = "$Id$";
 #include "rdgroup.h"
 #include "smalloc.h"
 #include "nrnb.h"
-#include "shift_util.h"
 #include "gstat.h"
 #include "matio.h"
 #include "gmx_fatal.h"

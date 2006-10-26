@@ -97,6 +97,7 @@ int main(int argc,char *argv[])
     /* bVerbose */   FALSE,
     /* bLogEps  */   FALSE
   };
+  static char *loadx=NULL,*loady=NULL,*loadz=NULL;
   static t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&ff.tol},   "Energy tolerance (kJ/mol) (zero means everything is printed)" },
     { "-fmax",  FALSE, etREAL, {&ff.fmax},  "Force tolerance (zero means everything is printed)" },
@@ -146,7 +147,8 @@ int main(int argc,char *argv[])
   
   Flags = (Flags | MD_FFSCAN);
 
-  mdrunner(cr,NFILE,fnm,ff.bVerbose,FALSE,ddxyz,0,1,&edyn,0,0,Flags);
+  mdrunner(cr,NFILE,fnm,ff.bVerbose,FALSE,ddxyz,loadx,loady,loadz,1,
+	   &edyn,0,0,Flags);
   if (gmx_parallel_env)
     gmx_finalize(cr);
 
