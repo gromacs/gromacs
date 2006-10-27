@@ -120,7 +120,7 @@ typedef struct {
   ivec nc;
   int  ndim;
   ivec dim;  /* indexed by 0 to ndim */
-  real **cell_x;
+  bool bDynLoadBal;
   real **cell_load;
   /* The bonded and non-bonded communication setup, cartesian index */
   int  ncell;
@@ -129,8 +129,10 @@ typedef struct {
   /* Tells if the box is skewed for each of the three cartesian directions */
   ivec tric_dir;
 
-  /* The home cell index, cartesian index */
+  /* The home cell index, cartesian index and the cell boundaries */
   ivec ci;
+  rvec cell_x0;
+  rvec cell_x1;
   /* Forward and backward neighboring cells, indexed by 0 to ndim */
   int  neighbor[DIM][2];
 

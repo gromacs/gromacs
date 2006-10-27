@@ -168,6 +168,7 @@ int main(int argc,char *argv[])
 
   /* Command line options ! */
   static bool bCart        = FALSE;
+  static bool bDLB         = FALSE;
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
   static bool bSepDVDL     = FALSE;
@@ -178,7 +179,7 @@ int main(int argc,char *argv[])
   static int  nmultisim=0;
   static int  repl_ex_nst=0;
   static int  repl_ex_seed=-1;
-  static int  nstepout=10;
+  static int  nstepout=100;
   static int  nthreads=1;
 
   static rvec rddxyz={1,1,1};
@@ -194,6 +195,8 @@ int main(int argc,char *argv[])
       "Number of separate nodes to be used for PME" },
     { "-cart",    FALSE, etBOOL, {&bCart}, 
       "Use a Cartesian communicator" },
+    { "-dlb",     FALSE, etBOOL, {&bDLB},
+      "Use dynamic load balancing" },
     { "-loadx",   FALSE, etSTR, {&loadx},
       "HIDDENLoad distribution in x" },
     { "-loady",   FALSE, etSTR, {&loady},
@@ -265,6 +268,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bIonize   ? MD_IONIZE   : 0);
   Flags = Flags | (bGlas     ? MD_GLAS     : 0);
   Flags = Flags | (bCart     ? MD_CARTESIAN: 0);
+  Flags = Flags | (bDLB      ? MD_DLB      : 0);
 
   ddxyz[XX] = (int)(rddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(rddxyz[YY] + 0.5);

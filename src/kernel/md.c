@@ -160,7 +160,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   char       *gro;
   
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
-    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,loadx,loady,loadz);
+    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,
+				       Flags & MD_DLB,loadx,loady,loadz);
     
     make_dd_communicators(stdlog,cr,Flags & MD_CARTESIAN);
   } else {
@@ -532,7 +533,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		     &top_global->idef,NULL,NULL,epbcFULL,state_global->box,
 		     NULL);
 
-    dd_partition_system(stdlog,cr,TRUE,state_global,top_global,inputrec,
+    dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
 			state,buf,mdatoms,top,nsb,fr,nrnb);
   } else {
     top = top_global;
@@ -768,7 +769,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (DOMAINDECOMP(cr) && bNS) {
       /* Repartition the domain decomposition */
-      dd_partition_system(stdlog,cr,FALSE,NULL,top_global,inputrec,
+      dd_partition_system(stdlog,step,cr,FALSE,NULL,top_global,inputrec,
 			  state,buf,mdatoms,top,nsb,fr,nrnb);
     }
 

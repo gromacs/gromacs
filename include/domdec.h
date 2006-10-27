@@ -43,6 +43,7 @@ extern void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian);
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       t_commrec *cr,ivec nc,
+					       bool bDynLoadBal,
 					       char *loadx,
 					       char *loady,
 					       char *loadz);
@@ -85,6 +86,7 @@ extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
  */
 
 extern void dd_partition_system(FILE         *fplog,
+				int          step,
 				t_commrec    *cr,
 				bool         bMasterState,
 				t_state      *state_global,
@@ -98,6 +100,7 @@ extern void dd_partition_system(FILE         *fplog,
 				t_forcerec   *fr,
 				t_nrnb       *nrnb);
 /* Partition the system over the nodes.
+ * step is only used for printing error messages.
  * If bMasterState==TRUE then state_global from the master node is used,
  * else state_local is redistributed between the nodes.
  */

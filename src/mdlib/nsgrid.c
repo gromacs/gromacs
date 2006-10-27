@@ -76,7 +76,7 @@ static void set_grid_sizes(FILE *fplog,
 
   if (dd) {
     for(i=0; (i<DIM); i++)
-      dd_cell_size[i] = dd->cell_x[i][dd->ci[i]+1] - dd->cell_x[i][dd->ci[i]];
+      dd_cell_size[i] = dd->cell_x1[i] - dd->cell_x0[i];
   }
 
   clear_rvec(grid->cell_offset);
@@ -91,6 +91,15 @@ static void set_grid_sizes(FILE *fplog,
 	if (box[j][i] != 0)
 	  bDDRect = FALSE;
       }
+      if (dd->bDynLoadBal && dd->ndim == DIM) {
+	/* With 3D dynamic load balancing fully non-home cell pairs
+	 * cross cell boundaries in all directions
+	 * and only the first direction has identical boundaries for all cells.
+	 */
+	for(j=1; j<dd->ndim; j++)
+	  if (i == dd->dim[j])
+	    bDDRect = FALSE;
+      }
       if (bDDRect) {
 	radd = rlist;
       } else {
@@ -101,7 +110,7 @@ static void set_grid_sizes(FILE *fplog,
 	radd = rlist/sqrt(skew_fac);
       }
       /* With DD we only need a grid of one DD cell size + rlist */
-      grid->cell_offset[i] = dd->cell_x[i][dd->ci[i]];
+      grid->cell_offset[i] = dd->cell_x0[i];
       size = dd_cell_size[i] + radd;
       /* Check if the cell boundary in this direction is
        * perpendicular to the Cartesian axis.
@@ -109,7 +118,7 @@ static void set_grid_sizes(FILE *fplog,
       for(j=i+1; j<DIM; j++) {
 	if (box[j][i] != 0) {
 	  /* Correct the offset for the home cell location */
-	  grid->cell_offset[i] += dd->cell_x[j][dd->ci[j]]*box[j][i]/box[j][j];
+	  grid->cell_offset[i] += dd->cell_x0[j]*box[j][i]/box[j][j];
 	  /* Correct the offset and size for the off-diagonal
 	   * displacement of opposing DD cell corners.
 	   */
