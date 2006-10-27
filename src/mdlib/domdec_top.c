@@ -30,8 +30,18 @@ static t_topology *err_top_global,*err_top_local;
 
 void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 {
-  int cl[F_NRE],n,rest_global,rest_local;
-  int ftype,nral;
+  int  ndiff_tot,sign,cl[F_NRE],n,ndiff,rest_global,rest_local;
+  int  ftype,nral;
+  char *ts,buf[STRLEN];
+
+  ndiff_tot = local_count - cr->dd->nbonded_global;
+  if (ndiff_tot >= 0) {
+    sign = 1;
+    ts = "evaluated more than once";
+  } else {
+    sign = -1;
+    ts = "missing";
+  }
 
   for(ftype=0; ftype<F_NRE; ftype++) {
     nral = NRAL(ftype);
@@ -40,9 +50,9 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 
   gmx_sumi(F_NRE,cl,cr);
   
-  fprintf(fplog,"\nA list of missing interactions:\n");
+  fprintf(fplog,"\nA list of %s interactions:\n",ts);
   if (DDMASTER(cr->dd))
-    fprintf(stderr,"\nA list of missing interactions:\n");
+    fprintf(stderr,"\nA list of %s interactions:\n",ts);
   rest_global = cr->dd->nbonded_global;
   rest_local  = local_count;
   for(ftype=0; ftype<F_NRE; ftype++) {
@@ -50,28 +60,34 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 	|| ftype == F_SETTLE) {
       nral = NRAL(ftype);
       n = err_top_global->idef.il[ftype].nr/(1+nral);
-      if (cl[ftype] != n) {
-	fprintf(fplog,"%20s of %6d missing %6d\n",
-		interaction_function[ftype].longname,n,n-cl[ftype]);
+      ndiff = cl[ftype] - n;
+      if (ndiff != 0) {
+	sprintf(buf,"%20s of %6d %s %6d",
+		interaction_function[ftype].longname,n,ts,sign*ndiff);
+	fprintf(fplog,"%s\n",buf);
 	if (DDMASTER(cr->dd))
-	  fprintf(stderr,"%20s of %6d missing %6d\n",
-		  interaction_function[ftype].longname,n,n-cl[ftype]);
+	  fprintf(stderr,"%s\n",buf);
       }
       rest_global -= n;
       rest_local  -= cl[ftype];
     }
   }
-  
-  if (rest_local != rest_global) {
-    fprintf(fplog,"%20s of %6d missing %6d\n",
-	    "exclusions",rest_global,rest_global-rest_local);
+
+  ndiff = rest_local - rest_global;
+  if (ndiff != 0) {
+    sprintf(buf,"%20s of %6d %s %6d","exclusions",rest_global,ts,sign*ndiff);
+    fprintf(fplog,"%s\n",buf);
     if (DDMASTER(cr->dd))
-      fprintf(stderr,"%20s of %6d missing %6d\n",
-	      "exclusions",rest_global,rest_global-rest_local);
+      fprintf(stderr,"%s\n",buf);
   }
 
-  gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the cut-off distance",
-	    cr->dd->nbonded_global-local_count,cr->dd->nbonded_global);
+  if (sign == 1) {
+    gmx_fatal(FARGS,"%d of the %d bonded interactions were evaluated multiple times. This can occur when the number of domain decomposition cell in a direction is 2 and a cell is not much larger than the cut-off length. The solution is to use 1 or 3 or more cells in such a direction.",
+	      sign*ndiff_tot,cr->dd->nbonded_global);
+  } else {
+    gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the cut-off distance",
+	      sign*ndiff_tot,cr->dd->nbonded_global);
+  }
 }
 
 static int count_excls(t_block *cgs,t_block *excls,int *n_intercg_excl)
