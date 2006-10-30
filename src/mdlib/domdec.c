@@ -291,6 +291,54 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
   }
 }
 
+static void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data)
+{
+#ifdef GMX_MPI
+  MPI_Bcast(data,nbytes,MPI_BYTE,
+	    DDMASTERRANK(dd),dd->all);
+#endif
+}
+
+static void dd_scatter(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
+{
+#ifdef GMX_MPI
+  MPI_Scatter(src,nbytes,MPI_BYTE,
+	      dest,nbytes,MPI_BYTE,
+	      DDMASTERRANK(dd),dd->all);
+#endif
+}
+
+static void dd_gather(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
+{
+#ifdef GMX_MPI
+  MPI_Gather(src,nbytes,MPI_BYTE,
+	     dest,nbytes,MPI_BYTE,
+	     DDMASTERRANK(dd),dd->all);
+#endif
+}
+
+static void dd_scatterv(gmx_domdec_t *dd,
+			int *scounts,int *disps,void *sbuf,
+			int rcount,void *rbuf)
+{
+#ifdef GMX_MPI
+  MPI_Scatterv(sbuf,scounts,disps,MPI_BYTE,
+	       rbuf,rcount,MPI_BYTE,
+	       DDMASTERRANK(dd),dd->all);
+#endif
+}
+
+static void dd_gatherv(gmx_domdec_t *dd,
+		       int scount,void *sbuf,
+		       int *rcounts,int *disps,void *rbuf)
+{
+#ifdef GMX_MPI
+  MPI_Gatherv(sbuf,scount,MPI_BYTE,
+	      rbuf,rcounts,disps,MPI_BYTE,
+	      DDMASTERRANK(dd),dd->all);
+#endif
+}
+
 static void dd_collect_cg(gmx_domdec_t *dd)
 {
   gmx_domdec_master_t *ma;
@@ -306,12 +354,8 @@ static void dd_collect_cg(gmx_domdec_t *dd)
     ibuf = NULL;
   }
   /* Collect the charge group and atom counts on the master */
-#ifdef GMX_MPI
-  MPI_Gather(buf2,2*sizeof(int),MPI_BYTE,
-	     ibuf,2*sizeof(int),MPI_BYTE,
-	     DDMASTERRANK(dd),dd->all);
-#endif
-  
+  dd_gather(dd,2*sizeof(int),buf2,ibuf);
+
   if (DDMASTER(dd)) {
     ma->index[0] = 0;
     for(i=0; i<dd->nnodes; i++) {
@@ -333,15 +377,12 @@ static void dd_collect_cg(gmx_domdec_t *dd)
     }
   }
   
-  /* Collect the charge group indices the master */
-#ifdef GMX_MPI
-  MPI_Gatherv(dd->index_gl,dd->ncg_home*sizeof(int),MPI_BYTE,
-	      DDMASTER(dd) ? ma->cg : NULL,
-	      DDMASTER(dd) ? ma->ibuf : NULL,
-	      DDMASTER(dd) ? ma->ibuf+dd->nnodes : NULL,
-	      MPI_BYTE,
-	      DDMASTERRANK(dd),dd->all);
-#endif
+  /* Collect the charge group indices on the master */
+  dd_gatherv(dd,
+	     dd->ncg_home*sizeof(int),dd->index_gl,
+	     DDMASTER(dd) ? ma->ibuf : NULL,
+	     DDMASTER(dd) ? ma->ibuf+dd->nnodes : NULL,
+	     DDMASTER(dd) ? ma->cg : NULL);
 
   dd->bMasterHasAllCG = TRUE;
 }
@@ -391,6 +432,9 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
 void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
 		      t_state *state_local,t_state *state)
 {
+  if (DDMASTER(dd)) {
+    copy_mat(state_local->box,state->box);
+  }
   dd_collect_vec(dd,cgs,state_local->x,state->x);
   if (state->v)
     dd_collect_vec(dd,cgs,state_local->v,state->v);
@@ -437,7 +481,11 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
 
 void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
 			 t_state *state,t_state *state_local)
-{
+  {
+  if (DDMASTER(dd)) {
+    copy_mat(state->box,state_local->box);
+  }
+  dd_bcast(dd,sizeof(state_local->box),state_local->box);
   dd_distribute_vec(dd,cgs,state->x,state_local->x);
   if (state->v)
     dd_distribute_vec(dd,cgs,state->v,state_local->v);
@@ -631,7 +679,7 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
     snew(tmp_nalloc,dd->nnodes);
     snew(tmp_ind,dd->nnodes);
     for(i=0; i<dd->nnodes; i++) {
-      tmp_nalloc[i] = (cgs->nr/CG_ALLOC_SIZE + 2)*CG_ALLOC_SIZE;
+      tmp_nalloc[i] = (cgs->nr/(dd->nnodes*CG_ALLOC_SIZE) + 2)*CG_ALLOC_SIZE;
       snew(tmp_ind[i],tmp_nalloc[i]);
     }
   }
@@ -705,10 +753,10 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
   }
   ma->index[dd->nnodes] = k1;
 
-  sfree(tmp_nalloc);
   for(i=0; i<dd->nnodes; i++)
     sfree(tmp_ind[i]);
   sfree(tmp_ind);
+  sfree(tmp_nalloc);
 
   fprintf(fplog,"Charge group distribution:");
   for(i=0; i<dd->nnodes; i++)
@@ -747,11 +795,7 @@ static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
   } else {
     ibuf = NULL;
   }
-#ifdef GMX_MPI
-  MPI_Scatter(ibuf,2*sizeof(int),MPI_BYTE,
-	      buf2,2*sizeof(int),MPI_BYTE,
-	      DDMASTERRANK(dd),dd->all);
-#endif
+  dd_scatter(dd,2*sizeof(int),ibuf,buf2);
 
   dd->ncg_home = buf2[0];
   dd->nat_home = buf2[1];
@@ -767,14 +811,11 @@ static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
     }
   }
 
-#ifdef GMX_MPI
-  MPI_Scatterv(DDMASTER(dd) ? ma->cg : NULL,
-	       DDMASTER(dd) ? ma->ibuf : NULL,
-	       DDMASTER(dd) ? ma->ibuf+dd->nnodes : NULL,
-	       MPI_BYTE,
-	       dd->index_gl,dd->ncg_home*sizeof(int),MPI_BYTE,
-	       DDMASTERRANK(dd),dd->all);
-#endif
+  dd_scatterv(dd,
+	      DDMASTER(dd) ? ma->ibuf : NULL,
+	      DDMASTER(dd) ? ma->ibuf+dd->nnodes : NULL,
+	      DDMASTER(dd) ? ma->cg : NULL,
+	      dd->ncg_home*sizeof(int),dd->index_gl);
 
   /* Determine the home charge group sizes */
   dd->cgindex[0] = 0;
