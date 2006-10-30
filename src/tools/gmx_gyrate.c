@@ -140,8 +140,8 @@ void calc_gyro_z(rvec x[],matrix box,
     for(i=0; i<3; i++)
       inertia[j][i] /= tm[j];
     sdet = sqrt(sqr(inertia[j][0] - inertia[j][1]) + 4*sqr(inertia[j][2]));
-    e1 = 0.5*(inertia[j][0] + inertia[j][1] + sdet);
-    e2 = 0.5*(inertia[j][0] + inertia[j][1] - sdet);
+    e1 = sqrt(0.5*(inertia[j][0] + inertia[j][1] + sdet));
+    e2 = sqrt(0.5*(inertia[j][0] + inertia[j][1] - sdet));
     fprintf(out," %5.3f %5.3f",e1,e2);
   }
   fprintf(out,"\n");
@@ -152,10 +152,12 @@ int gmx_gyrate(int argc,char *argv[])
   static char *desc[] = {
     "g_gyrate computes the radius of gyration of a group of atoms",
     "and the radii of gyration about the x, y and z axes,",
-    "as a function of time. The atoms are explicitly mass weighted.",
+    "as a function of time. The atoms are explicitly mass weighted.[PAR]",
     "With the [TT]-nmol[tt] option the radius of gyration will be calculated",
     "for multiple molecules by splitting the analysis group in equally",
-    "sized parts."
+    "sized parts.[PAR]",
+    "With the option [TT]-nz[tt] 2D radii of gyration in the x-y plane",
+    "of slices along the z-axis are calculated."
   };
   static int  nmol=1,nz=0;
   static bool bQ=FALSE,bRot=FALSE,bMOI=FALSE;
@@ -167,9 +169,9 @@ int gmx_gyrate(int argc,char *argv[])
     { "-p", FALSE, etBOOL, {&bRot},
       "Calculate the radii of gyration about the principal axes." },
     { "-moi", FALSE, etBOOL, {&bMOI},
-      "Calculate the moments of inertia (defined by  the principal axes)." },
+      "Calculate the moments of inertia (defined by the principal axes)." },
     { "-nz", FALSE, etINT, {&nz},
-      "Calculate the 2D moments of inertia of # slices along the z-axis" },
+      "Calculate the 2D radii of gyration of # slices along the z-axis" },
   };
   FILE       *out;
   int        status;
@@ -210,8 +212,8 @@ int gmx_gyrate(int argc,char *argv[])
   if (bACF && nmol!=1)
     gmx_fatal(FARGS,"Can only do acf with nmol=1");
   bRot = bRot || bMOI || bACF;
-  if (nz > 0)
-    bMOI = TRUE;
+  //  if (nz > 0)
+  //  bMOI = TRUE;
   if (bRot) {
     printf("Will rotate system along principal axes\n"); 
     snew(moi_trans,DIM);
