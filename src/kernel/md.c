@@ -428,7 +428,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
-	     bFullPBC,bForceUpdate=FALSE,bX,bV,bF,bXTC;
+	     bFullPBC,bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
@@ -528,10 +528,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fr->solvent_type_global = fr->solvent_type;
     fr->solvent_type        = NULL;
 
-    construct_vsites(log,
-		     state_global->x,nrnb,inputrec->delta_t,NULL,
-		     &top_global->idef,NULL,NULL,epbcFULL,state_global->box,
-		     NULL);
+    if (bVsites)
+      construct_vsites(log,
+		       state_global->x,nrnb,inputrec->delta_t,NULL,
+		       &top_global->idef,NULL,NULL,epbcFULL,state_global->box,
+		       NULL);
 
     dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
 			state,buf,mdatoms,top,nsb,fr,nrnb);
@@ -767,10 +768,22 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     debug_gmx();
 
-    if (DOMAINDECOMP(cr) && bNS) {
-      /* Repartition the domain decomposition */
-      dd_partition_system(stdlog,step,cr,FALSE,NULL,top_global,inputrec,
-			  state,buf,mdatoms,top,nsb,fr,nrnb);
+    if (bNS) {
+      bMasterState = FALSE;
+      /* Correct the new box if it is too skewed */
+      if (DYNAMIC_BOX(*inputrec) && !bRerunMD) {
+	bMasterState = correct_box(state->box,graph);
+	if (DOMAINDECOMP(cr) && bMasterState)
+	  dd_collect_state(cr->dd,&top_global->blocks[ebCGS],
+			   state,state_global);
+      }
+      
+      if (DOMAINDECOMP(cr)) {
+	/* Repartition the domain decomposition */
+	dd_partition_system(stdlog,step,cr,bMasterState,
+			    state_global,top_global,inputrec,
+			    state,buf,mdatoms,top,nsb,fr,nrnb);
+      }
     }
 
     /* Set values for invmass etc. This routine not parallellized, but hardly
@@ -928,13 +941,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (!bOK && !bFFscan)
       gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
-
-    /* Correct the new box if it is too skewed */
-    if (DYNAMIC_BOX(*inputrec) && !bRerunMD)
-      correct_box(state->box,fr,graph);
-    /* (un)shifting should NOT be done after this,
-     * since the box vectors might have changed
-     */
 
     /* Non-equilibrium MD: this is parallellized, but only does communication
      * when there really is NEMD.
@@ -1160,13 +1166,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 				    step,t);
     if (bExchanged && PAR(cr)) {
       if (DOMAINDECOMP(cr))
-	gmx_fatal(FARGS,"Redistribution after replica exchange not implemented for DD");
+	dd_partition_system(stdlog,step,cr,TRUE,
+			    state_global,top_global,inputrec,
+			    state,buf,mdatoms,top,nsb,fr,nrnb);
       else
 	pd_distribute_state(cr,state);
     }
     
     bFirstStep = FALSE;
-
+    
     if (bRerunMD) 
       /* read next frame from input trajectory */
       bNotLastFrame = read_next_frame(status,&rerun_fr);

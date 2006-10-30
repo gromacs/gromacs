@@ -55,6 +55,10 @@ enum { epbcdxRECTANGULAR=1, epbcdxRECTANGULAR_SS,
        epbcdx2D_RECT_SS, epbcdx2D_TRIC_SS,
        epbcdxNOPBC, epbcdxUNSUPPORTED };
 
+/* Margin factor for error message and correction if the box is too skewed */
+#define BOX_MARGIN         0.5010
+#define BOX_MARGIN_CORRECT 0.5005
+
 char *check_box(matrix box)
 {
   char *ptr;
@@ -93,6 +97,63 @@ real max_cutoff2(matrix box)
   min_diag = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
   
   return min(min_hv2,min_diag*min_diag);
+}
+
+static int correct_box_elem(tensor box,int v,int d)
+{
+  int shift,maxshift=10;
+
+  shift = 0;
+
+  /* correct elem d of vector v with vector d */
+  while (box[v][d] > BOX_MARGIN_CORRECT*box[d][d]) {
+    fprintf(stdlog,"Correcting invalid box:\n");
+    pr_rvecs(stdlog,0,"old box",box,DIM);
+    rvec_dec(box[v],box[d]);
+    shift--;
+    pr_rvecs(stdlog,0,"new box",box,DIM);
+    if (shift <= -maxshift)
+      gmx_fatal(FARGS,
+		"Box was shifted at least %d times. Please see log-file.",
+		maxshift);
+  } 
+  while (box[v][d] < -BOX_MARGIN_CORRECT*box[d][d]) {
+    fprintf(stdlog,"Correcting invalid box:\n");
+    pr_rvecs(stdlog,0,"old box",box,DIM);
+    rvec_inc(box[v],box[d]);
+    shift++;
+    pr_rvecs(stdlog,0,"new box",box,DIM);
+    if (shift >= maxshift)
+      gmx_fatal(FARGS,
+		"Box was shifted at least %d times. Please see log-file.",
+		maxshift);
+  }
+
+  return shift;
+}
+
+bool correct_box(tensor box,t_graph *graph)
+{
+  int  zy,zx,yx,i;
+  bool bCorrected;
+
+  /* check if the box still obeys the restrictions, if not, correct it */
+  zy = correct_box_elem(box,ZZ,YY);
+  zx = correct_box_elem(box,ZZ,XX);
+  yx = correct_box_elem(box,YY,XX);
+  
+  bCorrected = (zy || zx || yx);
+
+  if (bCorrected && graph) {
+    /* correct the graph */
+    for(i=0; i<graph->nnodes; i++) {
+      graph->ishift[i][YY] -= graph->ishift[i][ZZ]*zy;
+      graph->ishift[i][XX] -= graph->ishift[i][ZZ]*zx;
+      graph->ishift[i][XX] -= graph->ishift[i][YY]*yx;
+    }
+  }
+   
+  return bCorrected;
 }
 
 static void low_set_pbc(t_pbc *pbc,matrix box,ivec *dd_nc,bool bSingleShift)

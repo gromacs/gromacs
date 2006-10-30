@@ -48,9 +48,6 @@
 extern "C" { 
 #endif
 
-#define BOX_MARGIN 0.5001
-  /* margin factor for checking if the box is too skewed */
-
 #define TRICLINIC(box) (box[YY][XX]!=0 || box[ZZ][XX]!=0 || box[ZZ][YY]!=0)
 
 #define NTRICIMG 14
@@ -74,7 +71,13 @@ extern "C" {
    * taking into account that the grid neighborsearch code and pbc_dx
    * only check combinations of single box-vector shifts.
    */
-  
+
+  extern bool correct_box(tensor box,t_graph *graph);
+  /* Checks for un-allowed box angles and corrects the box
+   * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
+   * Returns TRUE when the box was corrected.
+   */
+
   extern void set_pbc(t_pbc *pbc,matrix box);
   /* Initiate the periodic boundary conditions.
    * pbc_dx will not use pbc and return the normal difference vector

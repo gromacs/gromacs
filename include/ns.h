@@ -54,11 +54,6 @@
  *    U T I L I T I E S May be found in ns.c
  *
  ****************************************************/
-extern void correct_box(tensor box,t_forcerec *fr,t_graph *g);
-/* Corrects the box by subtracting box vector when the box is too skewed.
- * The integer shift vectors in the graph and 
- * the shift indices of the short-range neighborlists are changed accordingly.
- */
 
 extern void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr);
 /* 
