@@ -411,8 +411,11 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
       Emin = min(E[i],Emin);
       Emax = max(E[i],Emax);
       Wmax = max(W[i],Wmax);
-    } 
-  Wmax -= Wmin;
+    }
+  if (gmax > 0)
+    Wmax = gmax;
+  else
+    Wmax -= Wmin;
   Winf = Wmax+1;
   Einf = Emax+1;
   Smin = Emin-Wmax;
