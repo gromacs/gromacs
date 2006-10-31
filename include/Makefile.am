@@ -36,6 +36,7 @@ gmx_ana.h \
 gmx_arpack.h \
 gmx_blas.h \
 gmxcomplex.h \
+gmx_cyclecounter.h \
 gmxfio.h \
 gmx_fft.h \
 gmx_lapack.h \
