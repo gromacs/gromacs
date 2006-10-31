@@ -57,6 +57,7 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	libxdrf.c	xmlio.h		gmx_arpack.c			\
 	dihres.c	xmlio.c		gmx_random_gausstable.h		\
 	tcontrol.c	splitter.c	redist.c
+	gmx_cyclecounter.c		
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
 	mgmx.c		widget.c	widget.h	\
