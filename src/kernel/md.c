@@ -788,9 +788,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       if (DOMAINDECOMP(cr)) {
 	/* Repartition the domain decomposition */
+	wallcycle_start(wcycle,ewcDOMDEC);
 	dd_partition_system(stdlog,step,cr,bMasterState,
 			    state_global,top_global,inputrec,
 			    state,buf,mdatoms,top,nsb,fr,nrnb);
+	wallcycle_stop(wcycle,ewcDOMDEC);
       }
     }
 

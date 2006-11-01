@@ -902,7 +902,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     runtime=inputrec->nsteps*inputrec->delta_t;
     if (MASTER(cr)) {
       fprintf(stderr,"\n\n");
-      wallcycle_print(stderr,cr->nnodes*realtime,wcycle,cycles);
+      wallcycle_print(stderr,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
       print_perf(stderr,nodetime,realtime,runtime,&ntot,
 		 cr->nnodes-cr->npmenodes);
     }
@@ -911,7 +911,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   }
 
   if (MASTER(cr)) {
-    wallcycle_print(fplog,cr->nnodes*realtime,wcycle,cycles);
+    wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
     print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
     if ((cr->nnodes-cr->npmenodes) > 1)
       pr_load(fplog,cr,nrnb_all);

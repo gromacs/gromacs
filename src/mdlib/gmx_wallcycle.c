@@ -13,7 +13,7 @@ typedef struct gmx_wallcycle {
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
-  { "Run", "Neighbor search", "Force", "PME mesh", "PME mesh", "Update" };
+  { "Run", "Domain decomp.", "Neighbor search", "Force", "PME mesh", "PME mesh", "Update" };
 
 gmx_wallcycle_t init_wallcycle(void)
 {
@@ -72,8 +72,8 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
   }
 }
 
-static void print_cycles(FILE *fplog, double c2t,
-			 char *name, int n, gmx_cycles_t c, gmx_cycles_t tot)
+static void print_cycles(FILE *fplog, double c2t, char *name, int nnodes,
+			 int n, gmx_cycles_t c, gmx_cycles_t tot)
 {
   char num[11];
   
@@ -82,38 +82,40 @@ static void print_cycles(FILE *fplog, double c2t,
       sprintf(num,"%10d",n);
     else
       sprintf(num,"          ");
-    fprintf(fplog," %-24s %10s %12.3f %9.1f   %5.1f\n",
-	    name,num,c*1e-9,c*c2t,100*(double)c/(double)tot);
+    fprintf(fplog," %-19s %4d %10s %12.3f %9.1f   %5.1f\n",
+	    name,nnodes,num,c*1e-9,c*c2t,100*(double)c/(double)tot);
   }
 }
 
-void wallcycle_print(FILE *fplog, double realtime, gmx_wallcycle_t wc,
-		     double cycles[])
+void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
+		     gmx_wallcycle_t wc, double cycles[])
 {
   double c2t,tot,sum;
-  int    i;
+  int    i,npp;
   char   *myline = "-----------------------------------------------------------------------";
   
   if (wc) {
+    npp = nnodes - npme;
     tot = cycles[ewcRUN];
     /* Conversion factor from cycles to seconds */
     if (tot > 0)
-      c2t = realtime/tot;
+      c2t = nnodes*realtime/tot;
     else
       c2t = 0;
 
     fprintf(fplog,"     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
 
-    fprintf(fplog," Computing:                   Number      G-Cyles   Seconds     %c\n",'%');
+    fprintf(fplog," Computing:         Nodes     Number     G-Cycles   Seconds     %c\n",'%');
     fprintf(fplog,"%s\n",myline);
     sum = 0;
-    for(i=ewcNS; i<ewcNR; i++) {
-      print_cycles(fplog,c2t,wcn[i],wc[i].n,cycles[i],tot);
+    for(i=ewcRUN+1; i<ewcNR; i++) {
+      print_cycles(fplog,c2t,wcn[i],i==ewcPMEMESH_SEP ? npme : npp,
+		   wc[i].n,cycles[i],tot);
       sum += cycles[i];
     }
-    print_cycles(fplog,c2t,"Rest",0,tot-sum,tot);
+    print_cycles(fplog,c2t,"Rest",nnodes,0,tot-sum,tot);
     fprintf(fplog,"%s\n",myline);
-    print_cycles(fplog,c2t,"Total",0,tot,tot);
+    print_cycles(fplog,c2t,"Total",nnodes,0,tot,tot);
     fprintf(fplog,"%s\n",myline);
   }
 }
