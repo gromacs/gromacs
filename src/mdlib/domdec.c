@@ -732,7 +732,7 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
       }
       /* This could be done more efficiently */
       ind[d] = 0;
-      while(ind[d]+1 < dd->nc[d] && pos_d >= dd->cell_x1[d])
+      while(ind[d]+1 < dd->nc[d] && pos_d >= ma->cell_x[d][ind[d]+1])
 	ind[d]++;
     }
     i = dd_index(dd->nc,ind);
