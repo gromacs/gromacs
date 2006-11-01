@@ -29,7 +29,7 @@
 #include <windows.h>
 #endif
 
-#include <gromacs/gmx_cyclecounter.h>
+#include "gmx_cyclecounter.h"
 
 
 
