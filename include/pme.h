@@ -45,6 +45,7 @@
 #include "typedefs.h"
 #include "gmxcomplex.h"
 #include "fftgrid.h"
+#include "gmx_wallcycle.h"
 
 typedef real *splinevec[DIM];
 
@@ -77,6 +78,7 @@ extern int gmx_pme_do(FILE *log,       gmx_pme_t pme,
 
 extern int gmx_pmeonly(FILE *logfile,     gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
+		       gmx_wallcycle_t wcycle,
 		       real ewaldcoeff,   bool bGatherOnly);
 /* Called on the nodes that do PME exclusively (as slaves) 
  */

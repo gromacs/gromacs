@@ -1,0 +1,119 @@
+#include "gmx_wallcycle.h"
+#include "gmx_cyclecounter.h"
+#include "smalloc.h"
+
+#ifdef GMX_MPI
+#include <mpi.h>
+#endif
+
+typedef struct gmx_wallcycle {
+  int          n;
+  gmx_cycles_t c;
+  gmx_cycles_t start;
+} gmx_wallcycle_t_t;
+
+static char *wcn[ewcNR] =
+  { "Run", "Neighbor search", "Force", "PME mesh", "PME mesh", "Update" };
+
+gmx_wallcycle_t init_wallcycle(void)
+{
+  gmx_wallcycle_t_t *wc;
+
+  if (gmx_cycles_have_counter()) {
+    snew(wc,ewcNR);
+  } else {
+    wc = NULL;
+  }
+
+  return wc;
+}
+
+void wallcycle_start(gmx_wallcycle_t wc, int ewc)
+{
+  if (wc) {
+    wc[ewc].start = gmx_cycles_read();
+  }
+}
+
+void wallcycle_stop(gmx_wallcycle_t wc, int ewc)
+{
+  gmx_cycles_t cycle;
+
+  if (wc) {
+    cycle = gmx_cycles_read();
+    cycle -= wc[ewc].start;
+    wc[ewc].c += cycle;
+    wc[ewc].n++;
+  }
+}
+
+void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
+{
+  double buf[ewcNR];
+  int    i;
+
+  if (wc) {
+    for(i=0; i<ewcNR; i++)
+      cycles[i] = (double)wc[i].c;
+
+    /* Correct for double counting of PME mesh */
+    cycles[ewcFORCE] -= cycles[ewcPMEMESH];
+
+    /* Correct the PME mesh only call count */
+    wc[ewcPMEMESH_SEP].n = wc[ewcFORCE].n;
+
+#ifdef GMX_MPI    
+    if (cr->nnodes > 1) {
+      MPI_Allreduce(cycles,buf,ewcNR,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mysim);
+      for(i=0; i<ewcNR; i++)
+	cycles[i] = buf[i];
+    }
+#endif
+  }
+}
+
+static void print_cycles(FILE *fplog, double c2t,
+			 char *name, int n, gmx_cycles_t c, gmx_cycles_t tot)
+{
+  char num[11];
+  
+  if (c > 0) {
+    if (n > 0)
+      sprintf(num,"%10d",n);
+    else
+      sprintf(num,"          ");
+    fprintf(fplog," %-24s %10s %12.3f %9.1f   %5.1f\n",
+	    name,num,c*1e-9,c*c2t,100*(double)c/(double)tot);
+  }
+}
+
+void wallcycle_print(FILE *fplog, double realtime, gmx_wallcycle_t wc,
+		     double cycles[])
+{
+  double c2t,tot,sum;
+  int    i;
+  char   *myline = "-----------------------------------------------------------------------";
+  
+  if (wc) {
+    tot = cycles[ewcRUN];
+    /* Conversion factor from cycles to seconds */
+    if (tot > 0)
+      c2t = realtime/tot;
+    else
+      c2t = 0;
+
+    fprintf(fplog,"     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
+
+    fprintf(fplog," Computing:                   Number      G-Cyles   Seconds     %c\n",'%');
+    fprintf(fplog,"%s\n",myline);
+    sum = 0;
+    for(i=ewcNS; i<ewcNR; i++) {
+      print_cycles(fplog,c2t,wcn[i],wc[i].n,cycles[i],tot);
+      sum += cycles[i];
+    }
+    print_cycles(fplog,c2t,"Rest",0,tot-sum,tot);
+    fprintf(fplog,"%s\n",myline);
+    print_cycles(fplog,c2t,"Total",0,tot,tot);
+    fprintf(fplog,"%s\n",myline);
+  }
+}

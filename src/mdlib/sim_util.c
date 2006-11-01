@@ -75,6 +75,7 @@
 
 #include "mpelogging.h"
 #include "domdec.h"
+#include "gmx_wallcycle.h"
 
 #ifdef GMX_MPI
 #include "mpi.h"
@@ -128,6 +129,7 @@ time_t print_date_and_time(FILE *fplog,int nodeid,char *title)
   for (i=0; ts[i]>=' '; i++) time_string[i]=ts[i];
   time_string[i]='\0';
   fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
+
   return now;
 }
 
@@ -222,7 +224,8 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 
 void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,t_nsborder *nsb,
-	      int step,t_nrnb *nrnb,t_topology *top,t_groups *grps,
+	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+	      t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
 	      real lambda,t_graph *graph,
@@ -335,6 +338,8 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Reset energies */
   reset_energies(&(inputrec->opts),grps,fr,bNS,ener);    
   if (bNS) {
+    wallcycle_start(wcycle,ewcNS);
+    
     if (graph && bStateChanged)
       /* Calculate intramolecular shift vectors to make molecules whole */
       mk_mshift(fplog,graph,box,x);
@@ -351,7 +356,11 @@ void do_force(FILE *fplog,t_commrec *cr,
 
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
        cr,nrnb,nsb,step,lambda,&dvdl_lr,bFillGrid,bDoForces);
+
+    wallcycle_stop(wcycle,ewcNS);
   }
+  
+  wallcycle_start(wcycle,ewcFORCE);
 
   if (bDoForces) {
       /* Reset PME/Ewald forces if necessary */
@@ -383,7 +392,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     update_QMMMrec(cr,fr,x,mdatoms,box,top);
 
   /* Compute the forces */    
-  force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,nrnb,grps,mdatoms,
+  force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,nrnb,wcycle,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->blocks[ebEXCLS]),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
@@ -391,11 +400,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 	
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
-  
-#ifdef DEBUG
-  if (bNS)
-    print_nrnb(fplog,nrnb);
-#endif
+
+  wallcycle_stop(wcycle,ewcFORCE);
 
   if (bDoForces) {
     /* Compute forces due to electric field */
@@ -856,17 +862,21 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 		t_nsborder *nsb,t_topology *top,t_inputrec *inputrec,
-		t_nrnb nrnb[],double nodetime,double realtime,int step,
+		t_nrnb nrnb[],gmx_wallcycle_t wcycle,
+		double nodetime,double realtime,int step,
 		bool bWriteStat)
 {
   int    i,j;
   t_nrnb *nrnb_all=NULL,ntot;
   real   runtime;
+  double cycles[ewcNR];
 #ifdef GMX_MPI
   int    sender;
   double nrnb_buf[4];
   MPI_Status status;
 #endif
+
+  wallcycle_sum(cr,wcycle,cycles);
 
   if (cr->nnodes > 1) {
     if (MASTER(cr))
@@ -892,13 +902,16 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     runtime=inputrec->nsteps*inputrec->delta_t;
     if (MASTER(cr)) {
       fprintf(stderr,"\n\n");
-      print_perf(stderr,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
+      wallcycle_print(stderr,cr->nnodes*realtime,wcycle,cycles);
+      print_perf(stderr,nodetime,realtime,runtime,&ntot,
+		 cr->nnodes-cr->npmenodes);
     }
     else
       print_nrnb(fplog,nrnb);
   }
 
   if (MASTER(cr)) {
+    wallcycle_print(fplog,cr->nnodes*realtime,wcycle,cycles);
     print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
     if ((cr->nnodes-cr->npmenodes) > 1)
       pr_load(fplog,cr,nrnb_all);

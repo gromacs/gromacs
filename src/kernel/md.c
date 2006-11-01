@@ -158,6 +158,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   t_comm_vsites vsitecomm;
   int        i,m,nChargePerturbed=0,status;
   char       *gro;
+  gmx_wallcycle_t wcycle;
+
+  wcycle = init_wallcycle();
   
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,
@@ -343,28 +346,28 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		    ddxyz,loadx,loady,loadz,
 		    bVsites,bParVsites ? &vsitecomm : NULL,
 		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
-		    mdatoms,nsb,nrnb,graph,edyn,fr,
+		    mdatoms,nsb,nrnb,wcycle,graph,edyn,fr,
 		    repl_ex_nst,repl_ex_seed,
 		    Flags);
       break;
     case eiCG:
       start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		    state,f,buf,mdatoms,ener,fcd,
-		    nrnb,bVerbose,bVsites,
+		    nrnb,wcycle,bVerbose,bVsites,
 		    bParVsites ? &vsitecomm : NULL,
 		    cr,graph,fr);
       break;
     case eiLBFGS:
       start_t=do_lbfgs(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		       state,f,buf,mdatoms,ener,fcd,
-		       nrnb,bVerbose,bVsites,
+		       nrnb,wcycle,bVerbose,bVsites,
 		       bParVsites ? &vsitecomm : NULL,
 		       cr,graph,fr);
       break;
     case eiSteep:
       start_t=do_steep(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		       state,f,buf,mdatoms,ener,fcd,
-		       nrnb,bVerbose,bVsites,
+		       nrnb,wcycle,bVerbose,bVsites,
 		       bParVsites ? &vsitecomm : NULL,
 		       cr,graph,fr);
     break;
@@ -372,12 +375,12 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       start_t=do_nm(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,nstepout,inputrec,grps,
 		    top,ener,fcd,state,vold,vt,f,buf,
-		    mdatoms,nsb,nrnb,graph,edyn,fr);
+		    mdatoms,nsb,nrnb,wcycle,graph,edyn,fr);
       break;
     case eiTPI:
       start_t=do_tpi(stdlog,nfile,fnm,inputrec,top,grps,nsb,
 		     state,f,buf,mdatoms,ener,fcd,
-		     nrnb,bVerbose,
+		     nrnb,wcycle,bVerbose,
 		     cr,graph,fr);
       break;
     default:
@@ -385,7 +388,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     }
   } else {
     /* do PME only */
-    gmx_pmeonly(stdlog,*pmedata,cr,nrnb,ewaldcoeff,FALSE);
+    gmx_pmeonly(stdlog,*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
   }
  
   /* Some timing stats */  
@@ -396,12 +399,14 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   }
   else 
     realtime=0;
+
+  wallcycle_stop(wcycle,ewcRUN);
     
   /* Finish up, write some stuff
    * if rerunMD, don't write last frame again 
    */
   finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
-	     nsb,top,inputrec,nrnb,nodetime,realtime,inputrec->nsteps,
+	     nsb,top,inputrec,nrnb,wcycle,nodetime,realtime,inputrec->nsteps,
 	     EI_DYNAMICS(inputrec->eI));
   
   /* Does what it says */  
@@ -416,7 +421,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_topology *top_global,
 	     real ener[],t_fcdata *fcd,
 	     t_state *state_global,rvec vold[],rvec vt[],rvec f[],
-	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,t_nrnb *nrnb,
+	     rvec buf[],t_mdatoms *mdatoms,t_nsborder *nsb,
+	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     unsigned long Flags)
@@ -622,9 +628,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     copy_mat(state->box,boxcopy);
   } 
-  /* Write start time and temperature */
+
+  /* Write start time */
   start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
-  
+  wallcycle_start(wcycle,ewcRUN);
+
   if (MASTER(cr)) {
     fprintf(log,"Initial temperature: %g K\n",temp0);
     if (bRerunMD) {
@@ -814,7 +822,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,bVerbose,bFFscan ? step+1 : step,
 			 inputrec,bNS,bStopCM,top,ener,fcd,
-			 state,vold,vt,f,buf,mdatoms,nsb,nrnb,graph,
+			 state,vold,vt,f,buf,mdatoms,nsb,nrnb,wcycle,graph,
 			 grps,
 			 nshell,shells,nflexcon,fr,t,mu_tot,
 			 nsb->natoms,&bConverged,bVsites,vsitecomm,
@@ -829,7 +837,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(log,cr,inputrec,nsb,step,nrnb,top,grps,
+      do_force(log,cr,inputrec,nsb,step,nrnb,wcycle,top,grps,
 	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
@@ -925,12 +933,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* This is also parallellized, but check code in update.c */
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,state->lambda,&ener[F_DVDL], */
     bOK = TRUE;
-    if (!bRerunMD || rerun_fr.bV || bForceUpdate)
+    if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
+      wallcycle_start(wcycle,ewcUPDATE);
       update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
 	     inputrec,mdatoms,state,graph,f,vold,
 	     top,grps,shake_vir,cr,nrnb,edyn,&pulldata,bNEMD,
 	     TRUE,bFirstStep,NULL,pres);
-    else {
+      wallcycle_stop(wcycle,ewcUPDATE);
+    } else {
       /* Need to unshift here */
       if ((inputrec->ePBC == epbcXYZ) && (graph->nnodes > 0))
 	unshift_self(graph,state->box,state->x);

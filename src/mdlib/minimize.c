@@ -65,6 +65,7 @@
 #include "tgroup.h"
 #include "mdebin.h"
 #include "vsite.h"
+#include "force.h"
 #include "mdrun.h"
 #include "trnio.h"
 #include "sparsematrix.h"
@@ -74,6 +75,7 @@
 #include "xvgr.h"
 #include "mdatoms.h"
 #include "gbutil.h"
+#include "gmx_wallcycle.h"
 
 static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
 {
@@ -251,7 +253,7 @@ static void finish_em(FILE *log,t_commrec *cr,
 
 static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec, 
 			    t_topology *top,t_groups *grps,t_nsborder *nsb, 
-			    t_nrnb *nrnb,
+			    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			    bool bVsites,t_comm_vsites *vsitecomm,
 			    t_fcdata *fcd,t_commrec *cr,
 			    t_graph *graph,t_mdatoms *mdatoms,
@@ -274,7 +276,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
    * We do not unshift, so molecules are always whole in congrad.c
    */
   do_force(log,cr,inputrec,nsb,
-	   count,nrnb,top,grps,box,x,f,
+	   count,nrnb,wcycle,top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
      
@@ -311,7 +313,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_inputrec *inputrec,t_topology *top,
 	     t_groups *grps,t_nsborder *nsb,
 	     t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-	     real ener[],t_fcdata *fcd,t_nrnb *nrnb,
+	     real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 	     t_commrec *cr,t_graph *graph,
 	     t_forcerec *fr)
@@ -343,7 +345,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
   
   /* Print to log file */
-  start_t=print_date_and_time(log,cr->nodeid,"Started Polak-Ribiere Conjugate Gradients");
+  start_t=print_date_and_time(log,cr->nodeid,
+			      "Started Polak-Ribiere Conjugate Gradients");
+  wallcycle_start(wcycle,ewcRUN);
   
   /* p is the search direction */
   snew(p,nsb->natoms);
@@ -381,7 +385,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,inputrec,nsb,0,nrnb,
+  do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -562,7 +566,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     
     neval++;
     /* Calculate energy for the trial step */
-    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
+    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,xc,fc,buf,ener,step);
     
@@ -641,7 +645,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	
 	neval++;
 	/* Calculate energy for the trial step */
-	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
+	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,xb,fb,buf,ener,step);
 	
@@ -884,7 +888,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		t_inputrec *inputrec,t_topology *top,
 		t_groups *grps,t_nsborder *nsb, t_state *state,
 		rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		real ener[],t_fcdata *fcd,t_nrnb *nrnb,
+		real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
 		t_commrec *cr,t_graph *graph,
 		t_forcerec *fr)
@@ -956,7 +960,9 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
     
   /* Print to log file */
-  start_t=print_date_and_time(log,cr->nodeid,"Started Low-Memory BFGS Minimization");
+  start_t=print_date_and_time(log,cr->nodeid,
+			      "Started Low-Memory BFGS Minimization");
+  wallcycle_start(wcycle,ewcRUN);
   
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr);
@@ -993,7 +999,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
    * We do not unshift, so molecules are always whole in congrad.c
    */
   neval++;
-  do_force(log,cr,inputrec,nsb,0,nrnb,
+  do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -1176,7 +1182,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     
     neval++;
     /* Calculate energy for the trial step */
-    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
+    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
     
@@ -1249,7 +1255,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	
 	neval++;
 	/* Calculate energy for the trial step */
-	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,
+	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
 	
@@ -1515,13 +1521,13 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 
 
 time_t do_steep(FILE *log,int nfile,t_filenm fnm[], 
-		    t_inputrec *inputrec,t_topology *top, 
-		    t_groups *grps,t_nsborder *nsb, 
-		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
-		    real ener[],t_fcdata *fcd,t_nrnb *nrnb, 
-		    bool bVerbose,bool bVsites, t_comm_vsites *vsitecomm,
-		    t_commrec *cr,t_graph *graph,
-		    t_forcerec *fr) 
+		t_inputrec *inputrec,t_topology *top, 
+		t_groups *grps,t_nsborder *nsb, 
+		t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
+		real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+		bool bVerbose,bool bVsites, t_comm_vsites *vsitecomm,
+		t_commrec *cr,t_graph *graph,
+		t_forcerec *fr) 
 { 
   const char *SD="Steepest Descents"; 
   real   stepsize,constepsize,lambda,fmax; 
@@ -1550,7 +1556,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
    
   /* Print to log file  */
-  start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents"); 
+  start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents");
+  wallcycle_start(wcycle,ewcRUN);
   
   /* We need two coordinate arrays and two force arrays  */
   for(i=0; (i<2); i++) { 
@@ -1638,7 +1645,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
      * We do not unshift, so molecules are always whole in steep.c
      */
     do_force(log,cr,inputrec,nsb,
- 	     count,nrnb,top,grps,state->box,pos[TRY],
+ 	     count,nrnb,wcycle,top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
  	     lambda,graph,
@@ -1813,7 +1820,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
              t_topology *top,real ener[],t_fcdata *fcd,
              t_state *state,rvec vold[],rvec vt[],rvec f[],
              rvec buf[],t_mdatoms *mdatoms,
-             t_nsborder *nsb,t_nrnb *nrnb,
+             t_nsborder *nsb,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              t_graph *graph,t_edsamyn *edyn,
              t_forcerec *fr)
 {
@@ -1901,6 +1908,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Write start time and temperature */
     start_t=print_date_and_time(log,cr->nodeid,"Started nmrun");
+    wallcycle_start(wcycle,ewcRUN);
     if (MASTER(cr)) 
     {
         fprintf(stderr,"starting normal mode calculation '%s'\n%d steps.\n\n",*(top->name),
@@ -1911,7 +1919,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     clear_mat(force_vir);
     
     bNS=TRUE;
-    do_force(log,cr,inputrec,nsb,0,nrnb,top,grps,
+    do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,top,grps,
              state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
              lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
     bNS=FALSE;
@@ -1961,7 +1969,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             clear_mat(force_vir);
             
             do_force(log,cr,inputrec,nsb,2*(step*DIM+idum),
-                     nrnb,top,grps,
+                     nrnb,wcycle,top,grps,
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -1978,7 +1986,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             clear_mat(force_vir);
             
             do_force(log,cr,inputrec,nsb,2*(step*DIM+idum)+1,
-                     nrnb,top,grps,
+                     nrnb,wcycle,top,grps,
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,
 		     bVerbose && !PAR(cr),lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -2054,7 +2062,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	      t_inputrec *inputrec,t_topology *top, 
 	      t_groups *grps,t_nsborder *nsb, 
 	      t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
-	      real ener[],t_fcdata *fcd,t_nrnb *nrnb, 
+	      real ener[],t_fcdata *fcd,
+	      t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      bool bVerbose,
 	      t_commrec *cr,t_graph *graph,
 	      t_forcerec *fr)
@@ -2122,6 +2131,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   /* Print to log file  */
   start_t=print_date_and_time(fplog,cr->nodeid,
 			      "Started Test Particle Insertion"); 
+  wallcycle_start(wcycle,ewcRUN);
 
   /* The last charge group is the group to be inserted */
   cg_tp = top->blocks[ebCGS].nr - 1;
@@ -2284,7 +2294,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	 * We do not unshift, so molecules are always whole in tpi.c
 	 */
 	do_force(fplog,cr,inputrec,nsb,
-		 step,nrnb,top,grps,rerun_fr.box,state->x,f,
+		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
 		 buf,mdatoms,ener,fcd,bVerbose, 
 		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL,NULL); 

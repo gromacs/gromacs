@@ -135,6 +135,7 @@ extern void force(FILE         *fplog,
 		  t_nsborder   *nsb,
 		  t_commrec    *cr,
 		  t_nrnb       *nrnb,
+		  gmx_wallcycle_t wcycle,
 		  t_groups     *grps,
 		  t_mdatoms    *md,
 		  int          ngener,
@@ -152,7 +153,7 @@ extern void force(FILE         *fplog,
 		  bool         bDoForces,
 		  rvec         mu_tot[2],
 		  bool         bGatherOnly,
-		  t_edsamyn      *edyn);
+		  t_edsamyn    *edyn);
 /* Call all the force routines */
 
 

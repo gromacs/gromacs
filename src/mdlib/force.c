@@ -1233,7 +1233,7 @@ void force(FILE       *fplog,   int        step,
 	   t_forcerec *fr,      t_inputrec *ir,
 	   t_idef     *idef,    t_nsborder *nsb,
 	   t_commrec  *cr,
-	   t_nrnb     *nrnb,
+	   t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
 	   t_groups   *grps,    t_mdatoms  *md,
 	   int        ngener,   t_grpopts  *opts,
 	   rvec       x[],      rvec       f[],
@@ -1360,6 +1360,7 @@ void force(FILE       *fplog,   int        step,
     case eelPMESWITCH:
     case eelPMEUSER:
       if (cr->duty & DUTY_PME) {
+	wallcycle_start(wcycle,ewcPMEMESH);
         status = gmx_pme_do(fplog,fr->pmedata,
 			    START(nsb),HOMENR(nsb),
 			    x,fr->f_el_recip,
@@ -1367,6 +1368,7 @@ void force(FILE       *fplog,   int        step,
 			    box,cr,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
 			    &Vlr,lambda,&dvdlambda,bGatherOnly);
         PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
+	wallcycle_stop(wcycle,ewcPMEMESH);
       } 
       else {
         /* Energies and virial are obtained later from the PME nodes */

@@ -113,3 +113,4 @@ typedef struct {
 } t_nrnb;
 
 
+typedef struct gmx_wallcycle *gmx_wallcycle_t;

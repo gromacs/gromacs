@@ -54,6 +54,7 @@
 #include "mdebin.h"
 #include "vcm.h"
 #include "vsite.h"
+#include "gmx_wallcycle.h"
 
 /* This	file contains XMDRUN datatypes and function prototypes, grouped
  * neatly according to parts of the functionalisty
@@ -79,7 +80,8 @@ extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 			t_topology *top,real ener[],t_fcdata *fcd,
 			t_state *state,rvec vold[],rvec vt[],rvec f[],
-			rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
+			rvec buf[],t_mdatoms *md,t_nsborder *nsb,
+			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			t_graph *graph,t_groups *grps,
 			int nshell,t_shell shells[],int nflexcon,
 			t_forcerec *fr,

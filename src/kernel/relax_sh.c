@@ -286,7 +286,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],t_fcdata *fcd,
 		 t_state *state,rvec vold[],rvec vt[],rvec f[],
-		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,t_nrnb *nrnb,
+		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,
+		 t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		 t_graph *graph,t_groups *grps,
 		 int nshell,t_shell shells[],int nflexcon,
 		 t_forcerec *fr,
@@ -381,7 +382,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   if (debug) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(log,cr,inputrec,nsb,mdstep,nrnb,top,grps,
+  do_force(log,cr,inputrec,nsb,mdstep,nrnb,wcycle,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
 	   state->lambda,graph,
 	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
@@ -472,7 +473,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       pr_rvecs(debug,0,"RELAX: pos[Try]  ",pos[Try] + start,homenr);
     }
     /* Try the new positions */
-    do_force(log,cr,inputrec,nsb,1,nrnb,
+    do_force(log,cr,inputrec,nsb,1,nrnb,wcycle,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     bVerbose && !PAR(cr),
 	     state->lambda,graph,

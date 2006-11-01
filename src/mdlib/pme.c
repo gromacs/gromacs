@@ -79,6 +79,7 @@
 #include "nrnb.h"
 #include "copyrite.h"
 #include "domdec.h"
+#include "gmx_wallcycle.h"
 #ifdef GMX_MPI
 #include <mpi.h>
 #endif
@@ -1436,12 +1437,12 @@ static void spread_on_grid(FILE *logfile,    gmx_pme_t pme,
 
 static void gmx_pme_send_x_q_wait(gmx_domdec_t *dd)
 {
-  if (dd->nreq_pme) {
 #ifdef GMX_MPI
+  if (dd->nreq_pme) {
     MPI_Waitall(dd->nreq_pme,dd->req_pme,MPI_STATUSES_IGNORE);
-#endif
     dd->nreq_pme = 0;
   }
+#endif
 }
 
 void gmx_pme_send_x_q(t_commrec *cr, matrix box, rvec *x, 
@@ -1643,10 +1644,10 @@ void gmx_pme_receive_f(t_commrec *cr,
 
 int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 		t_commrec *cr,    t_nrnb *nrnb,
+		gmx_wallcycle_t wcycle,
 		real ewaldcoeff,  bool bGatherOnly)
      
 {
-#ifdef GMX_MPI
   rvec  *x_pp=NULL,*f_pp=NULL;
   real  *chargeA=NULL,*chargeB=NULL;
   int  nppnodes,receiver;
@@ -1658,9 +1659,11 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
   int  n;
   gmx_pme_comm_vir_ene_t cve;
   int messages; /* count the Isends or Ireceives */    
+#ifdef GMX_MPI
   MPI_Request *req;
   MPI_Status  *stat;
-  int count=0;
+#endif
+  int count;
   double t0, t1, t2=0, t3, t_send_f=0.0, tstep_sum=0.0;
   unsigned long int step=0, timesteps=0;
 
@@ -1677,6 +1680,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
   init_nrnb(nrnb);
 
+  count = 0;
   do /****** this is a quasi-loop over time steps! */
   {  
     /* Domain decomposition */
@@ -1685,11 +1689,18 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
     if (bRealloc)
       srenew(f_pp,nalloc_natpp);
 
+    if (count == 0)
+      wallcycle_start(wcycle,ewcRUN);
+
+    wallcycle_start(wcycle,ewcPMEMESH_SEP);
+
     cve.dvdlambda = 0;
     gmx_pme_do(logfile,pme,0,n,x_pp,f_pp,chargeA,chargeB,cnb[0].box,
 	       cr,nrnb,cve.vir,ewaldcoeff,
 	       &cve.energy,cnb[0].lambda,&cve.dvdlambda,
 	       bGatherOnly);
+
+    wallcycle_stop(wcycle,ewcPMEMESH_SEP);
 
     t3=MPI_Wtime()-t2;
     t2=MPI_Wtime();
@@ -1714,10 +1725,12 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
     for (receiver=0; receiver<nmy_ddnodes; receiver++) {
       ind_start = ind_end;
       ind_end   = ind_start + cnb[receiver].natoms;
+#ifdef GMX_MPI
       if (MPI_Isend(f_pp[ind_start],(ind_end-ind_start)*sizeof(rvec),MPI_BYTE,
 		    my_ddnodes[receiver],0,
 		    cr->mpi_comm_mysim,&req[messages++]) != 0)
 	gmx_comm("MPI_Isend failed in do_pmeonly");
+#endif
     }
 
     /* send virial and energy to our last PP node */
@@ -1727,11 +1740,13 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
     if (bGotUsr1Signal)
       cve.flags |= PME_USR1;
 
+#ifdef GMX_MPI
     MPI_Isend(&cve,sizeof(cve),MPI_BYTE,
 	      my_ddnodes[nmy_ddnodes-1],1,cr->mpi_comm_mysim,&req[messages++]);
 
     /* Wait for the forces to arrive */
     MPI_Waitall(messages, req, stat);
+#endif
 
     count++;
 
@@ -1740,8 +1755,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
     /* MPI_Barrier(cr->mpi_comm_mysim); */ /* 100 */
   } /***** end of quasi-loop */
   while (!(cnb[0].flags & CNBF_LASTSTEP));
-     
-#endif
+
   return 0;
 }
 
