@@ -320,7 +320,7 @@ static __inline__ gmx_cycles_t gmx_cycles_read(void)
 { 
     /* x86 with GCC inline assembly - pentium TSC register */
     gmx_cycles_t   cycle;
-    int            low,high;
+    unsigned       low,high;
     
     __asm__ __volatile__("rdtsc" : "=a" (low), "=d" (high));
     
