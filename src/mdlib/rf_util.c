@@ -88,7 +88,7 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
   q2sumA = 0;
   q2sumB = 0;
   ener = 0;
-  if (fr->efep == efepNO) {
+  if (mdatoms->nChargePerturbed == 0) {
     for(i=start; i<niat; i++) {
       qiA = chargeA[i];
       if (i < end)
