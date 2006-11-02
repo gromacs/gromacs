@@ -62,17 +62,19 @@ int gmx_velacc(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_velacc computes the velocity autocorrelation function.",
-    "When the [TT]-s[tt] option is used, the momentum autocorrelation",
+    "When the [TT]-m[tt] option is used, the momentum autocorrelation",
     "function is calculated.[PAR]",
     "With option [TT]-mol[tt] the momentum autocorrelation function of",
     "molecules is calculated. In this case the index group should consist",
     "of molecule numbers instead of atom numbers."
   };
   
-  static bool bMol=FALSE;
+  static bool bM=FALSE,bMol=FALSE;
   t_pargs pa[] = {
+    { "-m", FALSE, etBOOL, {&bM},
+      "Calculate the momentum autocorrelation function" },
     { "-mol", FALSE, etBOOL, {&bMol},
-      "Calculate vac of molecules" }
+      "Calculate the momentum acf of molecules" }
   };
 
   t_topology top;
@@ -106,7 +108,9 @@ int gmx_velacc(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 
-  bTPS = bMol || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
+  if (bMol)
+    bM = TRUE;
+  bTPS = bM || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
 
   if (bTPS) {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,NULL,NULL,box,TRUE);
@@ -120,8 +124,6 @@ int gmx_velacc(int argc,char *argv[])
     a     = top.blocks[ebMOLS].a;
     atndx = top.blocks[ebMOLS].index;
   }
-  
-  sprintf(title,"Velocity Autocorrelation Function for %s",grpname);
   
   /* Correlation stuff */
   snew(c1,gnx);
@@ -156,7 +158,7 @@ int gmx_velacc(int argc,char *argv[])
       }
     else
       for(i=0; i<gnx; i++) {
-	if (bTPS)
+	if (bM)
 	  m = top.atoms.atom[index[i]].m;
 	else
 	  m = 1;
@@ -171,7 +173,10 @@ int gmx_velacc(int argc,char *argv[])
   } while (read_next_frame(status,&fr));
   close_trj(status);
 
-  do_autocorr(ftp2fn(efXVG,NFILE,fnm),"Velocity Autocorrelation Function",
+  do_autocorr(ftp2fn(efXVG,NFILE,fnm),
+	      bM ? 
+	      "Momentum Autocorrelation Function" :
+	      "Velocity Autocorrelation Function",
 	      teller,gnx,c1,(t1-t0)/(teller-1),eacVector,TRUE);
   
   do_view(ftp2fn(efXVG,NFILE,fnm),"-nxy");
