@@ -447,10 +447,12 @@ void fill_grid(FILE *log,
 	  if (ind[d] < b0[d]) {
 	    ind[d]++;
 	  } else if (ind[d] >= b1[d]) {
-	    if (dd->nc[d] == 1) {
+	    if (b0[d] == 0) {
 	      ind[d]--;
 	    } else {
-	      /* We do not need the cg for non-bonded interactions */
+	      /* Charge groups in this DD cell further away than the cut-off
+	       * in direction d do not participate in non-bonded interactions.
+	       */
 	      bUse = FALSE;
 	    }
 	  }
