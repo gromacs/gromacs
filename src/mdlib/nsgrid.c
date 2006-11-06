@@ -223,6 +223,12 @@ void ci2xyz(t_grid *grid, int i, int *x, int *y, int *z)
   *z  = ci;
 }
 
+static int ci_not_used(ivec n)
+{
+  /* Return an improbable value */
+  return xyz2ci(n[YY],n[ZZ],3*n[XX],3*n[YY],3*n[ZZ]);
+}
+
 void grid_first(FILE *log,t_grid *grid,gmx_domdec_t *dd,
 		matrix box,real rlistlong,int ncg)
 {
@@ -292,18 +298,22 @@ void calc_elemnr(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
   int    *cell_index=grid->cell_index;
   int    *nra=grid->nra;
   int    i,m,ncells;
-  int    ci;
+  int    ci,not_used;
 
   ncells=grid->ncells;
   if(ncells<=0) 
     gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
-		
+
+  not_used = ci_not_used(grid->n);
+
   calc_bor(log,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
       ci = cell_index[i];
-      range_check(ci,0,ncells);
-      nra[ci]++;
+      if (ci != not_used) {
+	range_check(ci,0,ncells);
+	nra[ci]++;
+      }
     }
 }
 
@@ -334,7 +344,7 @@ void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
 {
   int    CG0[2],CG1[2];
   int    i,m;
-  int    ci,ind,ncells;
+  int    ci,not_used,ind,ncells;
   int    *cell_index = grid->cell_index;
   int    *nra        = grid->nra;
   int    *index      = grid->index;
@@ -344,14 +354,18 @@ void grid_last(FILE *log,t_grid *grid,int cg0,int cg1,int ncg)
   if (ncells <= 0) 
     gmx_fatal(FARGS,"Number of grid cells is zero. Probably the system and box collapsed.\n");
 
+  not_used = ci_not_used(grid->n);
+
   calc_bor(log,cg0,cg1,ncg,CG0,CG1);
   for(m=0; (m<2); m++)
     for(i=CG0[m]; (i<CG1[m]); i++) {
       ci     = cell_index[i];
-      range_check(ci,0,ncells);
-      ind    = index[ci]+nra[ci]++;
-      range_check(ind,0,grid->nr);
-      a[ind] = i;
+      if (ci != not_used) {
+	range_check(ci,0,ncells);
+	ind    = index[ci]+nra[ci]++;
+	range_check(ind,0,grid->nr);
+	a[ind] = i;
+      }
     }
 }
 
@@ -363,8 +377,9 @@ void fill_grid(FILE *log,
   int    *cell_index=grid->cell_index;
   int    nrx,nry,nrz;
   rvec   n_box,offset;
-  int    cell,cg,d;
+  int    cell,cg,d,not_used;
   ivec   home,b0,b1,ind;
+  bool   bUse;
   
   /* Initiate cell borders */
   nrx = grid->n[XX];
@@ -414,10 +429,14 @@ void fill_grid(FILE *log,
 	  b1[d] *= grid->ncpddc[d];
 	}
       }
+
+      not_used = ci_not_used(grid->n);
+
       /* Put all the charge groups of this DD cell on the grid */
       cg0 = dd->ncg_cell[cell];
       cg1 = dd->ncg_cell[cell+1];
       for(cg=cg0; cg<cg1; cg++) {
+	bUse = TRUE;
 	for(d=0; d<DIM; d++) {
 	  ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
 	  /* Here we have to correct for rounding problems,
@@ -425,12 +444,21 @@ void fill_grid(FILE *log,
 	   * binary identical to the operation for the DD cell assignment
 	   * and therefore a cg could end up in an unused grid cell.
 	   */
-	  if (ind[d] < b0[d])
+	  if (ind[d] < b0[d]) {
 	    ind[d]++;
-	  else if (ind[d] >= b1[d])
-	    ind[d]--;
+	  } else if (ind[d] >= b1[d]) {
+	    if (dd->nc[d] == 1) {
+	      ind[d]--;
+	    } else {
+	      /* We do not need the cg for non-bonded interactions */
+	      bUse = FALSE;
+	    }
+	  }
 	}
-	cell_index[cg] = xyz2ci(nry,nrz,ind[XX],ind[YY],ind[ZZ]);
+	if (bUse)
+	  cell_index[cg] = xyz2ci(nry,nrz,ind[XX],ind[YY],ind[ZZ]);
+	else
+	  cell_index[cg] = not_used;
       }
     }
   }
