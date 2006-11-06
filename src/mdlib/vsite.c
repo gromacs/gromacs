@@ -401,8 +401,13 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
   t_iatom   *ia;
   t_iparams *ip;
   t_pbc     pbc,*pbc_null;
+  bool      bDomDec;
 
-  if ((cr && DOMAINDECOMP(cr)) || ePBC == epbcFULL) {
+  bDomDec = cr && DOMAINDECOMP(cr);
+
+  /* We only need to do pbc when we have inter-cg vsites */
+  if ((bDomDec || ePBC == epbcFULL) &&
+      !(bDomDec && cr->dd->vsite_comm==NULL)) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
@@ -411,7 +416,7 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
     pbc_null = NULL;
   }
 
-  if (cr && DOMAINDECOMP(cr)) {
+  if (bDomDec) {
     dd_move_x_vsites(cr->dd,box,x);
   } else if (vsitecomm) {
     /* I'm not sure whether the periodicity and shift are guaranteed
@@ -922,7 +927,9 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
   t_iparams *ip;
   t_pbc     pbc,*pbc_null;
 
-  if (DOMAINDECOMP(cr) || ePBC == epbcFULL) {
+  /* We only need to do pbc when we have inter-cg vsites */
+  if ((DOMAINDECOMP(cr) || ePBC == epbcFULL) &&
+      !(DOMAINDECOMP(cr) && cr->dd->vsite_comm==NULL)) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */

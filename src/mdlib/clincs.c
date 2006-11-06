@@ -792,7 +792,10 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
   if (lincsd->nc == 0 && dd==NULL)
     return bOK;
 
-  if (dd || ir->ePBC == epbcFULL) {
+  /* We do not need full pbc when constraints do not cross charge groups,
+   * i.e. when dd->constraint_comm==NULL
+   */
+  if ((dd || ir->ePBC == epbcFULL) && !(dd && dd->constraint_comm==NULL)) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step.
      */
