@@ -427,6 +427,8 @@ void fill_grid(FILE *log,
 	  b1[d] = b0[d] + 1;
 	  b0[d] *= grid->ncpddc[d];
 	  b1[d] *= grid->ncpddc[d];
+	  if (b1[d] > grid->n[d])
+	    b1[d] = grid->n[d];
 	}
       }
 
