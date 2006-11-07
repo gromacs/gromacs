@@ -54,7 +54,7 @@ bin_PROGRAMS = \
 	g_nmens     	g_order     	g_potential 	g_rama      	\
 	g_rdf       	g_rms       	g_rmsdist   	g_rmsf      	\
 	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
-	g_sham 		g_sdf.c		\
+	g_sham 		g_sdf		\
 	g_sorient   	g_tcaf      	g_traj      	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_vanhove	g_wham
 	g_kinetics
