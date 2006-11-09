@@ -182,19 +182,21 @@ int main(int argc,char *argv[])
   static int  nstepout=100;
   static int  nthreads=1;
 
-  static rvec rddxyz={1,1,1};
-
+  static rvec realddxyz={1,1,1};
+  static real rdd=0.0;
   static char *loadx=NULL,*loady=NULL,*loadz=NULL;
 
   static t_pargs pa[] = {
-    { "-dd",      FALSE, etRVEC,{&rddxyz},
+    { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 1 is particle dec." },
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start on each node" },
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME" },
     { "-cart",    FALSE, etBOOL, {&bCart}, 
-      "Use a Cartesian communicator" },
+      "HIDDENUse a Cartesian communicator" },
+    { "-rdd",     FALSE, etREAL, {&rdd},
+      "The minimum distance for DD communication" },
     { "-dlb",     FALSE, etBOOL, {&bDLB},
       "Use dynamic load balancing" },
     { "-loadx",   FALSE, etSTR, {&loadx},
@@ -270,12 +272,12 @@ int main(int argc,char *argv[])
   Flags = Flags | (bCart     ? MD_CARTESIAN: 0);
   Flags = Flags | (bDLB      ? MD_DLB      : 0);
 
-  ddxyz[XX] = (int)(rddxyz[XX] + 0.5);
-  ddxyz[YY] = (int)(rddxyz[YY] + 0.5);
-  ddxyz[ZZ] = (int)(rddxyz[ZZ] + 0.5);
+  ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
+  ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
+  ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,ddxyz,loadx,loady,loadz,nstepout,
-	   edyn,repl_ex_nst,repl_ex_seed,Flags);
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,ddxyz,rdd,loadx,loady,loadz,
+	   nstepout,edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)
     gmx_finalize(cr);

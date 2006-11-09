@@ -162,6 +162,7 @@ typedef struct {
   matrix vir;
   real   energy;
   real   dvdlambda;
+  float  cycles;
   int    flags;
 } gmx_pme_comm_vir_ene_t;
 
@@ -1586,7 +1587,8 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
 #endif
 
 static void receive_virial_energy(t_commrec *cr,
-				  matrix vir,real *energy,real *dvdlambda) 
+				  matrix vir,real *energy,real *dvdlambda,
+				  float *pme_cycles) 
 {
   gmx_pme_comm_vir_ene_t cve;
 
@@ -1602,7 +1604,8 @@ static void receive_virial_energy(t_commrec *cr,
     m_add(vir,cve.vir,vir);
     *energy = cve.energy;
     *dvdlambda += cve.dvdlambda;
- 
+    *pme_cycles = cve.cycles;
+
     bGotTermSignal = (cve.flags & PME_TERM);
     bGotUsr1Signal = (cve.flags & PME_USR1);
   } else {
@@ -1612,7 +1615,8 @@ static void receive_virial_energy(t_commrec *cr,
 
 void gmx_pme_receive_f(t_commrec *cr,
 		       rvec f[], matrix vir, 
-		       real *energy, real *dvdlambda)
+		       real *energy, real *dvdlambda,
+		       float *pme_cycles)
 {
   static rvec *f_rec=NULL;
   static int  nalloc=0;
@@ -1639,7 +1643,7 @@ void gmx_pme_receive_f(t_commrec *cr,
   for(i=0; i<natoms; i++)
     rvec_inc(f[i],f_rec[i]);
   
-  receive_virial_energy(cr,vir,energy,dvdlambda);
+  receive_virial_energy(cr,vir,energy,dvdlambda,pme_cycles);
 }
 
 int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
@@ -1701,6 +1705,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 	       bGatherOnly);
 
     wallcycle_stop(wcycle,ewcPMEMESH_SEP);
+    cve.cycles = wallcycle_lastcycle(wcycle,ewcPMEMESH_SEP);
 
     t3=MPI_Wtime()-t2;
     t2=MPI_Wtime();

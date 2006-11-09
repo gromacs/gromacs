@@ -93,7 +93,9 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
   double dt;
   char buf[48];
 
-  fprintf(out,"\rstep %d",step - ir->init_step);
+  if (!gmx_parallel_env)
+    fprintf(out,"\r");
+  fprintf(out,"step %d",step - ir->init_step);
   if ((step >= ir->nstlist)) {
     if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
       /* We have done a full cycle let's update time_per_step */
@@ -107,10 +109,10 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
       finish = end+(time_t)dt;
       sprintf(buf,"%s",ctime(&finish));
       buf[strlen(buf)-1]='\0';
-      fprintf(out,", will finish at %s",buf);
+      fprintf(out,", will finish %s",buf);
     }
     else
-      fprintf(out,", remaining runtime: %5d s               ",(int)dt);
+      fprintf(out,", remaining runtime: %5d s          ",(int)dt);
   }
   if (gmx_parallel_env)
     fprintf(out,"\n");
@@ -241,6 +243,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   rvec   mu_tot_AB[2];
   bool   bFillGrid,bCalcCGCM;
   real   e,d;
+  float  pme_cycles;
   
   start  = START(nsb);
   homenr = HOMENR(nsb);
@@ -402,7 +405,9 @@ void do_force(FILE *fplog,t_commrec *cr,
   ener[F_DVDL] += dvdl_lr;
 
   wallcycle_stop(wcycle,ewcFORCE);
-
+  if (DOMAINDECOMP(cr) && wcycle)
+    dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcFORCE),FALSE);
+  
   if (bDoForces) {
     /* Compute forces due to electric field */
     calc_f_el(MASTER(cr) ? field : NULL,
@@ -429,11 +434,14 @@ void do_force(FILE *fplog,t_commrec *cr,
       if (!(cr->duty & DUTY_PME))
       {
 	d = 0;
-	gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d);
+	gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d,
+			  &pme_cycles);
 	if (fr->bSepDVDL && do_per_step(step,inputrec->nstlog))
 	  fprintf(fplog,sepdvdlformat,"PME mesh",e,d);
         ener[F_COUL_RECIP] += e;
 	ener[F_DVDL] += d;
+	if (wcycle)
+	  dd_cycles_add(cr->dd,pme_cycles,TRUE);
       }
 #endif
     }

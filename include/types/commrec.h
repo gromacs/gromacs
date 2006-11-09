@@ -121,6 +121,7 @@ typedef struct {
   int  ndim;
   ivec dim;  /* indexed by 0 to ndim */
   bool bDynLoadBal;
+  bool bGridJump;
   real **cell_load;
   /* The bonded and non-bonded communication setup, cartesian index */
   int  ncell;
@@ -133,6 +134,9 @@ typedef struct {
   ivec ci;
   rvec cell_x0;
   rvec cell_x1;
+  /* The extreme sizes of the local cells needed for the neighbor searching */
+  rvec cell_ns_x0;
+  rvec cell_ns_x1;
   /* Forward and backward neighboring cells, indexed by 0 to ndim */
   int  neighbor[DIM][2];
 

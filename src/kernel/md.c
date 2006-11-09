@@ -133,8 +133,8 @@ static void receive_inputrec(t_commrec *cr,
 
 void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
-	      ivec ddxyz,char *loadx,char *loady,char *loadz,int nstepout,
-	      t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
+	      ivec ddxyz,real rdd,char *loadx,char *loady,char *loadz,
+	      int nstepout,t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 	      unsigned long Flags)
 {
   double     nodetime=0,realtime;
@@ -160,10 +160,10 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   char       *gro;
   gmx_wallcycle_t wcycle;
 
-  wcycle = init_wallcycle();
+  wcycle = wallcycle_init();
   
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
-    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,
+    cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,rdd,
 				       Flags & MD_DLB,loadx,loady,loadz);
     
     make_dd_communicators(stdlog,cr,Flags & MD_CARTESIAN);
@@ -433,7 +433,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   time_t     start_t;
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-             bFirstStep,bLastStep,bNEMD,do_log,bRerunWarnNoV=TRUE,
+             bFirstStep,bLastStep,bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	     bFullPBC,bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
@@ -541,7 +541,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		       NULL);
 
     dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
-			state,buf,mdatoms,top,nsb,fr,nrnb);
+			state,buf,mdatoms,top,nsb,fr,nrnb,wcycle,FALSE);
   } else {
     top = top_global;
     state = state_global;
@@ -707,6 +707,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     
     do_log = do_per_step(step,inputrec->nstlog) || bLastStep;
+    do_verbose = bVerbose && (step % stepout == 0 || bLastStep);
 
     if (inputrec->efep != efepNO) {
       if (bRerunMD && rerun_fr.bLambda && (inputrec->delta_lambda!=0))
@@ -714,8 +715,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       else
 	state->lambda = lam0 + step*inputrec->delta_lambda;
     }
-    /*if (MASTER(cr) && do_log && !bFFscan)
-      print_ebin_header(log,step,t,state->lambda);*/
     
     if (bSimAnn) 
       update_annealing_target_temp(&(inputrec->opts),t);
@@ -791,10 +790,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	wallcycle_start(wcycle,ewcDOMDEC);
 	dd_partition_system(stdlog,step,cr,bMasterState,
 			    state_global,top_global,inputrec,
-			    state,buf,mdatoms,top,nsb,fr,nrnb);
+			    state,buf,mdatoms,top,nsb,fr,nrnb,
+			    wcycle,do_verbose);
 	wallcycle_stop(wcycle,ewcDOMDEC);
       }
     }
+
+    if (MASTER(cr) && do_log && !bFFscan)
+      print_ebin_header(log,step,t,state->lambda);
 
     /* Set values for invmass etc. This routine not parallellized, but hardly
      * ever used, only when doing free energy calculations.
@@ -1153,8 +1156,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       do_dr  = do_per_step(step,inputrec->nstdisreout) || bLastStep;
       do_or  = do_per_step(step,inputrec->nstorireout) || bLastStep;
       do_dihr= do_per_step(step,inputrec->nstdihreout) || bLastStep;
-      if (do_log && !bFFscan)
-	print_ebin_header(log,step,t,state->lambda);
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,
 		 step,step_rel,t,
 		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(inputrec->opts));
@@ -1163,7 +1164,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     
     /* Remaining runtime */
-    if (MASTER(cr) && bVerbose && ( ((step % stepout)==0) || bLastStep)) {
+    if (MASTER(cr) && do_verbose) {
       if (bShell_FlexCon)
 	fprintf(stderr,"\n");
       print_time(stderr,start_t,step,inputrec);
@@ -1180,7 +1181,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (DOMAINDECOMP(cr))
 	dd_partition_system(stdlog,step,cr,TRUE,
 			    state_global,top_global,inputrec,
-			    state,buf,mdatoms,top,nsb,fr,nrnb);
+			    state,buf,mdatoms,top,nsb,fr,nrnb,wcycle,FALSE);
       else
 	pd_distribute_state(cr,state);
     }

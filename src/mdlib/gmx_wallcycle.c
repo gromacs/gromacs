@@ -10,16 +10,22 @@ typedef struct gmx_wallcycle {
   int          n;
   gmx_cycles_t c;
   gmx_cycles_t start;
+  gmx_cycles_t last;
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
   { "Run", "Domain decomp.", "Neighbor search", "Force", "PME mesh", "PME mesh", "Update" };
 
-gmx_wallcycle_t init_wallcycle(void)
+bool wallcycle_have_counter(void)
+{
+  return gmx_cycles_have_counter();
+}
+
+gmx_wallcycle_t wallcycle_init(void)
 {
   gmx_wallcycle_t_t *wc;
 
-  if (gmx_cycles_have_counter()) {
+  if (wallcycle_have_counter()) {
     snew(wc,ewcNR);
   } else {
     wc = NULL;
@@ -37,14 +43,27 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 
 void wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 {
-  gmx_cycles_t cycle;
-
   if (wc) {
-    cycle = gmx_cycles_read();
-    cycle -= wc[ewc].start;
-    wc[ewc].c += cycle;
+    wc[ewc].last = gmx_cycles_read() - wc[ewc].start;
+    wc[ewc].c += wc[ewc].last;
     wc[ewc].n++;
   }
+}
+
+double wallcycle_lastcycle(gmx_wallcycle_t wc, int ewc)
+{
+  double c;
+  
+  if (wc) {
+    c = (double)wc[ewc].last;
+    if (ewc == ewcFORCE)
+      /* Remove the PME mesh part from the force count */
+      c -= (double)wc[ewcPMEMESH].last;
+  } else {
+    c = 0;
+  }
+
+  return c;
 }
 
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
@@ -56,7 +75,7 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     for(i=0; i<ewcNR; i++)
       cycles[i] = (double)wc[i].c;
 
-    /* Correct for double counting of PME mesh */
+    /* Remove the PME mesh part from the force count */
     cycles[ewcFORCE] -= cycles[ewcPMEMESH];
 
     /* Correct the PME mesh only call count */

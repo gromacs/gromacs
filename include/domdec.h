@@ -43,6 +43,7 @@ extern void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian);
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       t_commrec *cr,ivec nc,
+					       real comm_distance_min,
 					       bool bDynLoadBal,
 					       char *loadx,
 					       char *loady,
@@ -54,6 +55,10 @@ extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v);
 
 extern void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
 			     t_state *state_local,t_state *state);
+
+extern void dd_cycles_add(gmx_domdec_t *dd,float cycles,bool bPMEMeshOnly);
+/* Add the wallcycle count to the DD counter */
+
 
 enum {
   ddForward,ddBackward
@@ -98,7 +103,9 @@ extern void dd_partition_system(FILE         *fplog,
 				t_topology   *top_local,
 				t_nsborder   *nsb,
 				t_forcerec   *fr,
-				t_nrnb       *nrnb);
+				t_nrnb       *nrnb,
+				gmx_wallcycle_t wcycle,
+				bool         bVerbose);
 /* Partition the system over the nodes.
  * step is only used for printing error messages.
  * If bMasterState==TRUE then state_global from the master node is used,

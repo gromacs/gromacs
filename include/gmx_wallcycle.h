@@ -6,7 +6,10 @@
 
 enum { ewcRUN, ewcDOMDEC, ewcNS, ewcFORCE, ewcPMEMESH, ewcPMEMESH_SEP, ewcUPDATE, ewcNR };
 
-extern gmx_wallcycle_t init_wallcycle(void);
+extern bool wallcycle_have_counter(void);
+/* Returns if cycle counting is supported */
+
+extern gmx_wallcycle_t wallcycle_init(void);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */
@@ -16,6 +19,9 @@ extern void wallcycle_start(gmx_wallcycle_t wc, int ewc);
 
 extern void wallcycle_stop(gmx_wallcycle_t wc, int ewc);
 /* Stop the cycle count for ewc */
+
+extern double wallcycle_lastcycle(gmx_wallcycle_t wc, int ewc);
+/* Get the last cycle count */
 
 extern void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[]);
 /* Sum the cycles over the nodes in cr->mpi_comm_mysim */

@@ -97,7 +97,8 @@ extern void gmx_pme_send_x_q(t_commrec *cr,
 
 extern void gmx_pme_receive_f(t_commrec *cr,
 			      rvec f[], matrix vir, 
-			      real *energy, real *dvdlambda);
+			      real *energy, real *dvdlambda,
+			      float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
 
 #endif
