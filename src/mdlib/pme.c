@@ -114,7 +114,6 @@ typedef struct gmx_pme {
 #endif
 
   bool bFEP;               /* Compute Free energy contribution */
-  bool bVerbose;           /* Should we be talkative? */
   int nleftbnd,nrightbnd;  /* The number of nodes to communicate with */
   int *leftbnd,*rightbnd;  /* Size of left and right boundary */
   int *leftid,*rightid;
@@ -1280,7 +1279,7 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
 
 int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
 		 t_inputrec *ir,int homenr,
-		 bool bFreeEnergy,bool bVerbose)
+		 bool bFreeEnergy)
 {
   gmx_pme_t pme=NULL;
   

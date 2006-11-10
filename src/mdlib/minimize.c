@@ -277,7 +277,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
    */
   do_force(log,cr,inputrec,nsb,
 	   count,nrnb,wcycle,top,grps,box,x,f,
-	   buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	   buf,mdatoms,ener,fcd,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
      
   /* Spread the force on vsite particle to the other particles... */
@@ -387,7 +387,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
    */
   do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,
 	   top,grps,state->box,
-	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	   state->x,f,buf,mdatoms,ener,fcd,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
   where();
 
@@ -1001,7 +1001,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   neval++;
   do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,
 	   top,grps,state->box,
-	   state->x,f,buf,mdatoms,ener,fcd,bVerbose && !(PAR(cr)),
+	   state->x,f,buf,mdatoms,ener,fcd,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
   where();
   
@@ -1647,7 +1647,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     do_force(log,cr,inputrec,nsb,
  	     count,nrnb,wcycle,top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
-	     mdatoms,ener,fcd,bVerbose && !(PAR(cr)), 
+	     mdatoms,ener,fcd,
  	     lambda,graph,
 	     TRUE,inputrec->nstlist>0 || count==0,FALSE,TRUE,fr,mu_tot,
 	     FALSE,0.0,NULL,NULL); 
@@ -1920,7 +1920,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     bNS=TRUE;
     do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,top,grps,
-             state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+             state->box,state->x,f,buf,mdatoms,ener,fcd,
              lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
     bNS=FALSE;
     
@@ -1971,7 +1971,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             do_force(log,cr,inputrec,nsb,2*(step*DIM+idum),
                      nrnb,wcycle,top,grps,
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,
-		     bVerbose && !PAR(cr),lambda,graph,
+		     lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
 	    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 
@@ -1988,7 +1988,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             do_force(log,cr,inputrec,nsb,2*(step*DIM+idum)+1,
                      nrnb,wcycle,top,grps,
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,
-		     bVerbose && !PAR(cr),lambda,graph,
+		     lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
 	    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
 	    
@@ -2295,7 +2295,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	 */
 	do_force(fplog,cr,inputrec,nsb,
 		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
-		 buf,mdatoms,ener,fcd,bVerbose, 
+		 buf,mdatoms,ener,fcd,
 		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL,NULL); 
 	bStateChanged = FALSE;

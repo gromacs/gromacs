@@ -383,7 +383,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
   do_force(log,cr,inputrec,nsb,mdstep,nrnb,wcycle,top,grps,
-	   state->box,state->x,force[Min],buf,md,ener,fcd,bVerbose && !PAR(cr),
+	   state->box,state->x,force[Min],buf,md,ener,fcd,
 	   state->lambda,graph,
 	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
   sum_lrforces(force[Min],fr,start,homenr);
@@ -398,7 +398,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     for(i=start; i<end; i++)
       sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
 
-    if (bVerbose)
+    if (bVerbose && MASTER(cr))
       fprintf(stderr,"RMS dir. force: %g\n",sqrt(sf_dir/nflexcon));
   }
 
@@ -475,7 +475,6 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     /* Try the new positions */
     do_force(log,cr,inputrec,nsb,1,nrnb,wcycle,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
-	     bVerbose && !PAR(cr),
 	     state->lambda,graph,
 	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
     if (bVsites) 
@@ -511,7 +510,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       for(i=start; i<end; i++)
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
 
-      if (bVerbose)
+      if (bVerbose && MASTER(cr))
 	fprintf(stderr,"dir. rmsf %g\n",sqrt(sf_dir/nflexcon));
     }
 

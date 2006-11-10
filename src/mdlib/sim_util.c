@@ -229,7 +229,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
-	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,bool bVerbose,
+	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 	      real lambda,t_graph *graph,
 	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 	      t_forcerec *fr,rvec mu_tot,
@@ -397,7 +397,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Compute the forces */    
   force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,nrnb,wcycle,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
-	x,f,ener,fcd,bVerbose,box,lambda,graph,&(top->blocks[ebEXCLS]),
+	x,f,ener,fcd,box,lambda,graph,&(top->blocks[ebEXCLS]),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 	

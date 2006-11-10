@@ -321,7 +321,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       }
       
       status = gmx_pme_init(stdlog,pmedata,cr,inputrec,
-			    nsb ? nsb->natoms : 0,nChargePerturbed,bVerbose);
+			    nsb ? nsb->natoms : 0,nChargePerturbed);
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PME",status);
     }
@@ -843,7 +843,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * Check comments in sim_util.c
        */
       do_force(log,cr,inputrec,nsb,step,nrnb,wcycle,top,grps,
-	       state->box,state->x,f,buf,mdatoms,ener,fcd,bVerbose && !PAR(cr),
+	       state->box,state->x,f,buf,mdatoms,ener,fcd,
 	       state->lambda,graph,
 	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
     }

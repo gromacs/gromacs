@@ -180,7 +180,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
-		     bool bVerbose,real lambda,t_graph *graph,
+		     real lambda,t_graph *graph,
 		     bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 		     t_forcerec *fr, rvec mu_tot,
 		     bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn);

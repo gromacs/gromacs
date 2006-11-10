@@ -238,7 +238,7 @@ int main(int argc,char *argv[])
 		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
-  bVerbose = bVerbose && MASTER(cr);
+
   cr->npmenodes = npme;
     
 #ifndef GMX_THREADS
