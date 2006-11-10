@@ -222,7 +222,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 {
   real     t,t0,lam,lam0;
   bool     bNEMD,bSA;
-  char     *traj,*xtc_traj;
+  int      traj=0,xtc_traj=0;
   t_state  *state;
   rvec     mutot;
   t_nrnb   nrnb;
