@@ -45,6 +45,9 @@ typedef struct {
 } gmx_domdec_ind_t;
 
 typedef struct gmx_domdec_comm {
+  /* Are there bonded interactions between charge groups? */
+  bool bInterCGBondeds;
+    
   /* The width of the communicated boundaries */
   real distance_min;
   real distance;
@@ -84,7 +87,7 @@ typedef struct gmx_domdec_comm {
   float load_pme[DIM];
   float cvol_min[DIM];
 #ifdef GMX_MPI
-  MPI_Comm *mpi_comm_dlb;
+  MPI_Comm *mpi_comm_load;
 #endif
   /* Cycle counters */
   float cycl_force;
@@ -686,6 +689,41 @@ static void clear_dd_indices(gmx_domdec_t *dd,int a_start)
     clear_local_constraint_indices(dd);
 }
 
+static void grid_jump_error(gmx_domdec_t *dd,int dim,int shift0,int shift1)
+{
+  ivec next;
+
+  copy_ivec(dd->ci,next);
+  next[dd->dim[0]] = (next[dd->dim[0]] + shift0) % dd->nc[dd->dim[0]];
+  next[dd->dim[1]] = (next[dd->dim[1]] + shift1) % dd->nc[dd->dim[1]];
+  gmx_fatal(FARGS,"The domain decomposition grid has shifted too much in the %c-direction between cell %d %d %d and %d %d %d\n",
+	    dim2char(dim),
+	    dd->ci[XX],dd->ci[YY],dd->ci[ZZ],
+	    next[XX],next[YY],next[ZZ]);
+}
+
+static void check_grid_jump(gmx_domdec_t *dd)
+{
+  gmx_domdec_comm_t *comm;
+  int  i,j;
+
+  comm = dd->comm;
+  
+  /* Check if the cell boundaries fullfill the distance requirements */
+  if (dd->ndim >= 2) {
+    if (comm->cell_d1[0][1] - comm->cell_d1[1][0] < comm->distance ||
+	comm->cell_d1[1][1] - comm->cell_d1[0][0] < comm->distance)
+      grid_jump_error(dd,dd->dim[1],1,0);
+  }
+  if (dd->ndim >= 3) {
+    for(i=0; i<2; i++)
+      for(j=0; j<2; j++)
+	if (comm->cell_d2[0][0][1] - comm->cell_d2[i][j][0] < comm->distance ||
+	    comm->cell_d2[i][j][1] - comm->cell_d2[0][0][0] < comm->distance)
+	  grid_jump_error(dd,dd->dim[2],i,j);
+  }
+}
+
 static void set_tric_dir(gmx_domdec_t *dd,matrix box)
 {
   int d,i,j;
@@ -768,11 +806,11 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bUniform)
     }
     if (bRowRoot) {
       if (bUniform) {
-	for(i=0; i<dd->nc[d]; i++)
+	for(i=0; i<dd->nc[dim]; i++)
 	  comm->cell_size[d][i] = 1.0/dd->nc[dim];
       } else if (comm->cycl_force_n > 0) {
 	load_aver = comm->load_sum[d]/dd->nc[d];
-	for(i=0; i<dd->nc[d]; i++) {
+	for(i=0; i<dd->nc[dim]; i++) {
 	  /* Determine the relative imbalance of cell i */
 	  imbalance = (comm->load[d][i*comm->nload] - load_aver)/load_aver;
 	  /* Limit the amount of scaling */
@@ -790,16 +828,15 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bUniform)
       }
       /* We need the total for normalization */
       tot = 0;
-      for(i=0; i<dd->nc[d]; i++)
+      for(i=0; i<dd->nc[dim]; i++)
 	tot += comm->cell_size[d][i];
       /* Determine the cell boundaries */
       comm->cell_f[d][0] = 0;
-      for(i=0; i<dd->nc[d]; i++) {
+      for(i=0; i<dd->nc[dim]; i++) {
 	comm->cell_size[d][i] /= tot;
 	comm->cell_f[d][i+1] = comm->cell_f[d][i] + comm->cell_size[d][i];
       }
-    }
-    if (bRowRoot) {
+
       pos = dd->nc[d] + 1;
       /* Store the cell boundaries of the lower dimensions at the end */
       for(d1=0; d1<d; d1++) {
@@ -811,7 +848,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bUniform)
       pos = dd->nc[d] + 1 + d*2;
 #ifdef GMX_MPI
       MPI_Bcast(comm->cell_f[d],pos*sizeof(real),MPI_BYTE,
-		0,dd->comm->mpi_comm_dlb[d]);
+		0,dd->comm->mpi_comm_load[d]);
 #endif
       dd->cell_x0[dim] = comm->cell_f[d][dd->ci[dim]  ]*box[dim][dim];
       dd->cell_x1[dim] = comm->cell_f[d][dd->ci[dim]+1]*box[dim][dim];
@@ -836,9 +873,9 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bUniform)
 {
   int d;
 
-  if (dd->bDynLoadBal)
+  if (dd->bDynLoadBal) {
     set_dd_cell_sizes_dlb(dd,box,bUniform);
-  else
+  } else
     set_dd_cell_sizes_slb(dd,box,FALSE);
 
   if (debug)
@@ -1565,7 +1602,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
        */
       MPI_Gather(sbuf         ,comm->nload*sizeof(float),MPI_BYTE,
 		 comm->load[d],comm->nload*sizeof(float),MPI_BYTE,
-		 0,comm->mpi_comm_dlb[d]);
+		 0,comm->mpi_comm_load[d]);
       if (dd->ci[dim] == 0) {
 	/* We are the root, process this row */
 	comm->load_sum[d] = 0;
@@ -1650,17 +1687,17 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
    * called by all the processes in the original communicator.
    * Calling MPI_Group_free afterwards gives errors, so I assume
    * also the group is needed by all processes. (B. Hess)
-   */ 
+   */
   MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
   MPI_Comm_create(dd->all,g_row,&c_row);
   if (c_row != MPI_COMM_NULL) {
     /* This process is part of the group */
-    snew(dd->comm->cell_f[dim_ind],dd->nc[dim]+1+(dd->ndim-dim_ind-1)*2);
+    dd->comm->mpi_comm_load[dim_ind] = c_row;
+    snew(dd->comm->cell_f[dim_ind],dd->nc[dim]+1+dim_ind*2);
     if (dd->ci[dim_ind] == 0) {
-      snew(dd->comm->cell_size[dim_ind],dd->nc[dim]+1+(dd->ndim-dim_ind-1)*2);
+      snew(dd->comm->cell_size[dim_ind],dd->nc[dim]);
       snew(dd->comm->load[dim_ind],dd->nc[dim]*4);
     }
-    dd->comm->mpi_comm_dlb[dim_ind] = c_row;
   }
   sfree(rank);
 }
@@ -1673,12 +1710,15 @@ static void make_load_communicators(gmx_domdec_t *dd)
   int  dim0,dim1,i,j;
   ivec loc;
 
+  if (debug)
+    fprintf(debug,"Making load communicators\n");
+
   MPI_Comm_group(dd->all,&g_all);
   
   snew(dd->comm->cell_f,dd->ndim);
   snew(dd->comm->cell_size,dd->ndim);
   snew(dd->comm->load,dd->ndim);
-  snew(dd->comm->mpi_comm_dlb,dd->ndim);
+  snew(dd->comm->mpi_comm_load,dd->ndim);
   
   clear_ivec(loc);
   make_load_communicator(dd,g_all,0,loc);
@@ -1702,6 +1742,9 @@ static void make_load_communicators(gmx_domdec_t *dd)
   }
 
   MPI_Group_free(&g_all);
+
+  if (debug)
+    fprintf(debug,"Finished making load communicators\n");
 #endif
 }
 
@@ -2154,8 +2197,8 @@ static real *get_cell_load(FILE *fplog,char *dir,int nc,char *load_string)
 }
 
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
-					real comm_distance_min
-					,bool bDynLoadBal,
+					real comm_distance_min,
+					bool bDynLoadBal,
 					char *loadx,char *loady,char *loadz)
 {
   gmx_domdec_t *dd;
@@ -2296,8 +2339,10 @@ static void setup_dd_communication(FILE *fplog,int step,
 
   bTric = TRICLINIC(box);
 
-  if (dd->bGridJump && dd->ndim > 1)
+  if (dd->bGridJump && dd->ndim > 1) {
     dd_move_cellx(dd);
+    check_grid_jump(dd);
+  }
 
   set_ns_cell_sizes(dd);
 
@@ -2305,7 +2350,10 @@ static void setup_dd_communication(FILE *fplog,int step,
   corner[0][0] = dd->cell_x0[dd->dim[0]];
   if (dd->ndim >= 2) {
     /* This cell row is only seen from the first row */
-    corner[1][0] = dd->cell_x0[dd->dim[1]];
+    if (dd->bGridJump && comm->bInterCGBondeds)
+      corner[1][0] = max(dd->cell_x0[dd->dim[1]],comm->cell_d1[1][0]);
+    else
+      corner[1][0] = dd->cell_x0[dd->dim[1]];
     /* All rows can see this row */
     if (dd->bGridJump)
       corner[1][1] = max(dd->cell_x0[dd->dim[1]],comm->cell_d1[1][0]);
@@ -2318,12 +2366,21 @@ static void setup_dd_communication(FILE *fplog,int step,
     for(j=0; j<4; j++)
       corner[2][j] = dd->cell_x0[dd->dim[2]];
     if (dd->bGridJump) {
-      for(i=0; i<dd->nicell; i++) {
-	for(j=dd->icell[i].j0; j<dd->icell[i].j1; j++) {
-	  if (j >= 4) {
-	    corner[2][j-4]
-	      = max(corner[2][j-4],
-		    comm->cell_d2[dd->shift[i][dd->dim[0]]][dd->shift[i][dd->dim[1]]][0]);
+      if (comm->bInterCGBondeds) {
+	/* Use the maximum value of all 4 cells */
+	for(i=0; i<2; i++)
+	  for(j=0; j<2; j++)
+	    corner[2][0] = max(corner[2][0],comm->cell_d2[i][j][0]);
+	for(i=1; i<4; i++)
+	  corner[2][i] = corner[2][0];
+      } else {
+	/* Use the maximum of the i-cells that see a j-cell */
+	for(i=0; i<dd->nicell; i++) {
+	  for(j=dd->icell[i].j0; j<dd->icell[i].j1; j++) {
+	    if (j >= 4) {
+	      corner[2][j-4]
+		= max(corner[2][j-4],comm->cell_d2[dd->shift[i][dd->dim[0]]][dd->shift[i][dd->dim[1]]][0]);
+	    }
 	  }
 	}
       }
@@ -2572,6 +2629,9 @@ void dd_partition_system(FILE         *fplog,
 
   dd = cr->dd;
 
+  dd->comm->bInterCGBondeds =
+    (top_global->blocks[ebCGS].nr > top_global->blocks[ebMOLS].nr);
+
   if (dd->comm->bRecordLoad && dd->comm->cycl_force_n > 0) {
     bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
 		  !dd->comm->bFirstPrinted);
@@ -2629,7 +2689,7 @@ void dd_partition_system(FILE         *fplog,
     cg0 = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
 			     state_local,fr->cg_cm,fr,mdatoms,nrnb);
   }
-  
+
   /* Setup up the communication and communicate the coordinates */
   setup_dd_communication(fplog,step,dd,&top_global->blocks[ebCGS],
 			 buf,state_local->box,
