@@ -33,8 +33,14 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
   int  ndiff_tot,sign,cl[F_NRE],n,ndiff,rest_global,rest_local;
   int  ftype,nral;
   char *ts,buf[STRLEN];
+  gmx_domdec_t *dd;
 
-  ndiff_tot = local_count - cr->dd->nbonded_global;
+  dd = cr->dd;
+
+  fprintf(fplog,"\nNot all bonded interactions have been properly assigned to the domain decomposition cells\n");
+  fflush(fplog);
+
+  ndiff_tot = local_count - dd->nbonded_global;
   if (ndiff_tot >= 0) {
     sign = 1;
     ts = "evaluated more than once";
@@ -50,43 +56,42 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 
   gmx_sumi(F_NRE,cl,cr);
   
-  fprintf(fplog,"\nA list of %s interactions:\n",ts);
-  if (DDMASTER(cr->dd))
+  if (DDMASTER(dd)) {
+    fprintf(fplog,"\nA list of %s interactions:\n",ts);
     fprintf(stderr,"\nA list of %s interactions:\n",ts);
-  rest_global = cr->dd->nbonded_global;
-  rest_local  = local_count;
-  for(ftype=0; ftype<F_NRE; ftype++) {
-    if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
-	|| ftype == F_SETTLE) {
-      nral = NRAL(ftype);
-      n = err_top_global->idef.il[ftype].nr/(1+nral);
-      ndiff = cl[ftype] - n;
-      if (ndiff != 0) {
-	sprintf(buf,"%20s of %6d %s %6d",
-		interaction_function[ftype].longname,n,ts,sign*ndiff);
-	fprintf(fplog,"%s\n",buf);
-	if (DDMASTER(cr->dd))
+    rest_global = dd->nbonded_global;
+    rest_local  = local_count;
+    for(ftype=0; ftype<F_NRE; ftype++) {
+      if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
+	  || ftype == F_SETTLE) {
+	nral = NRAL(ftype);
+	n = err_top_global->idef.il[ftype].nr/(1+nral);
+	ndiff = cl[ftype] - n;
+	if (ndiff != 0) {
+	  sprintf(buf,"%20s of %6d %s %6d",
+		  interaction_function[ftype].longname,n,ts,sign*ndiff);
+	  fprintf(fplog,"%s\n",buf);
 	  fprintf(stderr,"%s\n",buf);
+	}
+	rest_global -= n;
+	rest_local  -= cl[ftype];
       }
-      rest_global -= n;
-      rest_local  -= cl[ftype];
     }
-  }
-
-  ndiff = rest_local - rest_global;
-  if (ndiff != 0) {
-    sprintf(buf,"%20s of %6d %s %6d","exclusions",rest_global,ts,sign*ndiff);
-    fprintf(fplog,"%s\n",buf);
-    if (DDMASTER(cr->dd))
+    
+    ndiff = rest_local - rest_global;
+    if (ndiff != 0) {
+      sprintf(buf,"%20s of %6d %s %6d","exclusions",rest_global,ts,sign*ndiff);
+      fprintf(fplog,"%s\n",buf);
       fprintf(stderr,"%s\n",buf);
-  }
+    }
 
-  if (sign == 1) {
-    gmx_fatal(FARGS,"%d of the %d bonded interactions were evaluated multiple times. This can occur when the number of domain decomposition cell in a direction is 2 and a cell is not much larger than the cut-off length. The solution is to use 1 or 3 or more cells in such a direction.",
-	      sign*ndiff_tot,cr->dd->nbonded_global);
-  } else {
-    gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the cut-off distance",
-	      sign*ndiff_tot,cr->dd->nbonded_global);
+    if (sign == 1) {
+      gmx_fatal(FARGS,"%d of the %d bonded interactions were evaluated multiple times. This can occur when the number of domain decomposition cell in a direction is 2 and a cell is not much larger than the cut-off length. The solution is to use 1 or 3 or more cells in such a direction.",
+		sign*ndiff_tot,cr->dd->nbonded_global);
+    } else {
+      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the cut-off distance",
+		sign*ndiff_tot,cr->dd->nbonded_global);
+    }
   }
 }
 
