@@ -1659,7 +1659,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
   gmx_pme_comm_n_box_t *cnb;
   bool bRealloc;
   int  nalloc_natpp=0;
-  int  n;
+  int  n=0;
   gmx_pme_comm_vir_ene_t cve;
   int messages; /* count the Isends or Ireceives */    
 #ifdef GMX_MPI
@@ -1672,10 +1672,12 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
   nppnodes = cr->nnodes - cr->npmenodes;
 
+#ifdef GMX_MPI
   /* Allocate space for the request handles, a lonely PME node may
      receive (and later send back) as many messages as there are PP nodes */
   snew(req ,3*nppnodes);
   snew(stat,3*nppnodes);
+#endif
 
   /* Determine the DD nodes we need to talk with */
   get_my_ddnodes(logfile,cr,pme->nodeid,&nmy_ddnodes,&my_ddnodes);
@@ -1685,12 +1687,14 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
   count = 0;
   do /****** this is a quasi-loop over time steps! */
-  {  
+  {
+#ifdef GMX_MPI
     /* Domain decomposition */
     n = gmx_pme_recv_x_q(cr,nmy_ddnodes,my_ddnodes,cnb,req,stat,&nalloc_natpp,
 			 &x_pp,&chargeA,&chargeB,pme->bFEP,&bRealloc);
     if (bRealloc)
       srenew(f_pp,nalloc_natpp);
+#endif
 
     if (count == 0)
       wallcycle_start(wcycle,ewcRUN);
@@ -1705,23 +1709,6 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
     wallcycle_stop(wcycle,ewcPMEMESH_SEP);
     cve.cycles = wallcycle_lastcycle(wcycle,ewcPMEMESH_SEP);
-
-    t3=MPI_Wtime()-t2;
-    t2=MPI_Wtime();
-    if (TAKETIME)
-    {
-      t0=MPI_Wtime();
-      MPI_Barrier(cr->mpi_comm_mysim);
-      t1=MPI_Wtime();
-      t_send_f += t1-t0;
-      tstep_sum   += t3;
-      timesteps++;
-/*      fprintf(stderr," PME node %d, this time step %f, sum %f, steps %d, length t3=%f, tstep_sum=%f, ratio %f\n",
- *              cr->nodeid, t1-t0, t_send_f, timesteps, t3, tstep_sum, t_send_f/tstep_sum);
- */
-      if (timesteps % 10 ==0)
-        fprintf(stderr, "PME node %d waits %3.0f%% of the time step.\n", cr->nodeid, 100*t_send_f/tstep_sum);
-    }
 
     /* Now the evaluated forces have to be transferred to the PP nodes */
     messages = 0;
