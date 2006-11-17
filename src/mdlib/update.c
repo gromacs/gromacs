@@ -630,7 +630,7 @@ void update(int          natoms,  /* number of atoms in simulation */
   static rvec      *xprime=NULL;
   static int       xprime_nalloc=0;
   static int       ngtc,ngacc;
-  static bool      bHaveConstr,bExtended;
+  static bool      bHaveConstr=FALSE,bExtended;
   double           dt;
   real             dt_1;
   int              i,n,m,g;
@@ -641,20 +641,20 @@ void update(int          natoms,  /* number of atoms in simulation */
   if(bFirst) {
     if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
       please_cite(stdlog,"Berendsen84a");
-
-    if (DOMAINDECOMP(cr)) {
-      bHaveConstr = (cr->dd->constraints || top->idef.il[F_SETTLE].nr>0);
-    } else {
+    
+    if (!DOMAINDECOMP(cr)) {
       bHaveConstr = init_constraints(stdlog,top,&top->idef.il[F_SETTLE],
 				     inputrec,md,start,homenr,
 				     inputrec->eI!=eiSteep,
 				     cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
     }
-    bHaveConstr = bHaveConstr || pulldata->bPull;
+    if (pulldata->bPull)
+      bHaveConstr = TRUE;
     bExtended   = (inputrec->etc==etcNOSEHOOVER) || (inputrec->epc==epcPARRINELLORAHMAN);
 
     /* if edyn->bEdsam == FALSE --- this has no effect */
-    bHaveConstr = bHaveConstr || ed_constraints(edyn);  
+    if (ed_constraints(edyn))
+      bHaveConstr = TRUE;
     do_first_edsam(stdlog,top,md,start,homenr,cr,state->x,state->box,edyn,bHaveConstr);
 
     /* Initiate random number generator for stochastic and brownian dynamic integrators */
@@ -676,6 +676,8 @@ void update(int          natoms,  /* number of atoms in simulation */
     /* done with initializing */
     bFirst=FALSE;
   }
+  if (DOMAINDECOMP(cr) && (cr->dd->constraints || top->idef.il[F_SETTLE].nr>0))
+    bHaveConstr = TRUE;
 
   dt   = inputrec->delta_t;
   dt_1 = 1.0/dt;

@@ -210,10 +210,10 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
     }
     if (ncons > 0 || (dd && dd->constraints)) {
       if (ir->eConstrAlg == estLINCS || !bCoordinates) {
-	if (bFirst) {
+	if (bFirst)
 	  please_cite(stdlog,"Hess97a");
+	if (lincsd == NULL)
 	  snew(lincsd,1);
-	}
 	init_lincs(stdlog,&top->idef,start,homenr,EI_DYNAMICS(ir->eI),dd,
 		   lincsd);
 	set_lincs_matrix(lincsd,md->invmass);
