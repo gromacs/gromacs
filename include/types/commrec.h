@@ -129,6 +129,7 @@ typedef struct {
 
   /* Tells if the box is skewed for each of the three cartesian directions */
   ivec tric_dir;
+  rvec skew_fac2;
 
   /* The home cell index, cartesian index and the cell boundaries */
   ivec ci;

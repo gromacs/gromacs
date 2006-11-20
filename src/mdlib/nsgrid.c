@@ -71,7 +71,7 @@ static void set_grid_sizes(FILE *fplog,
   int  i,j;
   bool bDD,bDDRect;
   rvec dd_cell_size;
-  real size,skew_fac,radd,add_tric;
+  real size,radd,add_tric;
 
   if (dd) {
     for(i=0; (i<DIM); i++)
@@ -85,25 +85,15 @@ static void set_grid_sizes(FILE *fplog,
       bDDRect = FALSE;
       size = box[i][i];
     } else {
-      bDDRect = TRUE;
-      for(j=i+1; j<DIM; j++) {
-	if (box[j][i] != 0)
-	  bDDRect = FALSE;
-      }
-      if (dd->bGridJump && i != dd->dim[0]) {
-	/* With DD grid cell jumps only the first decomposition
-	 * direction has uniform DD cell boundaries.
-	 */
-	bDDRect = FALSE;
-      }
+      /* With DD grid cell jumps only the first decomposition
+       * direction has uniform DD cell boundaries.
+       */
+      bDDRect = !(dd->tric_dir[i] || (dd->bGridJump && i != dd->dim[0]));
+
       if (bDDRect) {
 	radd = rlist;
       } else {
-	skew_fac = 1;
-	for(j=i+1; j<DIM; j++)
-	  /* This is an overestimate as we ignore the coupling */
-	  skew_fac -= sqr(box[j][i]/box[j][j]);
-	radd = rlist/sqrt(skew_fac);
+	radd = rlist/sqrt(dd->skew_fac2[i]);
       }
       /* With DD we only need a grid of one DD cell size + rlist */
       grid->cell_offset[i] = dd->cell_ns_x0[i];
