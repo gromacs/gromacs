@@ -1001,13 +1001,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (PAR(cr)) {
+      wallcycle_start(wcycle,ewcMoveE);
       /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
        */
-      GMX_MPE_LOG(ev_global_stat_start);
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
 		  inputrec,grps,vcm,&terminate);
-      GMX_MPE_LOG(ev_global_stat_finish);
 
       /* Correct for double counting energies, should be moved to 
        * global_stat 
@@ -1017,6 +1016,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  grps->estat.ee[egCOULLR][i] /= (cr->nnodes-cr->npmenodes);
 	  grps->estat.ee[egLJLR][i]   /= (cr->nnodes-cr->npmenodes);
 	}
+      wallcycle_stop(wcycle,ewcMoveE);
     }
       
     /* This is just for testing. Nothing is actually done to Ekin

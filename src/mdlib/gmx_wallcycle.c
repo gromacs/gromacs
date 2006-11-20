@@ -14,7 +14,7 @@ typedef struct gmx_wallcycle {
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
-  { "Run", "Domain decomp.", "Neighbor search", "Force", "PME mesh", "PME mesh", "Update" };
+  { "Run", "Domain decomp.", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Update", "Comm. energies" };
 
 bool wallcycle_have_counter(void)
 {

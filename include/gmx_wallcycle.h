@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 
-enum { ewcRUN, ewcDOMDEC, ewcNS, ewcFORCE, ewcPMEMESH, ewcPMEMESH_SEP, ewcUPDATE, ewcNR };
+enum { ewcRUN, ewcDOMDEC, ewcMOVEX, ewcNS, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPMEMESH_SEP, ewcUPDATE, ewcMoveE, ewcNR };
 
 extern bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */

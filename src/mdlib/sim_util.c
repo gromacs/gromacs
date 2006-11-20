@@ -320,6 +320,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   /* Communicate coordinates and sum dipole if necessary */
   if (PAR(cr)) {
+    wallcycle_start(wcycle,ewcMOVEX);
     if (DOMAINDECOMP(cr)) {
       dd_move_x(cr->dd,box,x,buf);
     } else {
@@ -328,6 +329,9 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* When we don't need the total dipole we sum it in global_stat */
     if (NEED_MUTOT(*inputrec))
       gmx_sumd(2*DIM,mu,cr);
+    wallcycle_stop(wcycle,ewcMOVEX);
+    if (DOMAINDECOMP(cr) && wcycle)
+      dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcMOVEX),ddCyclMoveX);
   }
   for(i=0; i<2; i++)
     for(j=0;j<DIM;j++)
@@ -406,7 +410,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   wallcycle_stop(wcycle,ewcFORCE);
   if (DOMAINDECOMP(cr) && wcycle)
-    dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcFORCE),FALSE);
+    dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcFORCE),ddCyclF);
   
   if (bDoForces) {
     /* Compute forces due to electric field */
@@ -420,6 +424,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     /* Communicate the forces */
     if (PAR(cr)) {
+      wallcycle_start(wcycle,ewcMOVEF);
       if (DOMAINDECOMP(cr)) {
 	dd_move_f(cr->dd,f,buf,fr->fshift);
 	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl)
@@ -427,6 +432,9 @@ void do_force(FILE *fplog,t_commrec *cr,
       } else {
 	move_f(fplog,cr,cr->left,cr->right,f,buf,nsb,nrnb);
       }
+      wallcycle_stop(wcycle,ewcMOVEF);
+      if (DOMAINDECOMP(cr) && wcycle)
+	dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcMOVEF),ddCyclMoveF);
       /* In case of node-splitting, the PP nodes receive the long-range 
        * forces, virial and energy from the PME nodes here 
        */    
@@ -441,7 +449,7 @@ void do_force(FILE *fplog,t_commrec *cr,
         ener[F_COUL_RECIP] += e;
 	ener[F_DVDL] += d;
 	if (wcycle)
-	  dd_cycles_add(cr->dd,pme_cycles,TRUE);
+	  dd_cycles_add(cr->dd,pme_cycles,ddCyclPME);
       }
 #endif
     }
