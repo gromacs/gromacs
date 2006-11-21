@@ -1,6 +1,6 @@
 # Grace project file
 #
-@version 50114
+@version 50119
 @page size 792, 612
 @page scroll 5%
 @page inout 5%
@@ -54,7 +54,7 @@
 @timestamp rot 0
 @timestamp font 0
 @timestamp char size 1.000000
-@timestamp def "Thu Mar 30 16:54:08 2006"
+@timestamp def "Tue Nov 21 11:56:48 2006"
 @r0 off
 @link r0 to g0
 @r0 type above
@@ -101,16 +101,10 @@
 @g0 fixedpoint format general general
 @g0 fixedpoint prec 6, 6
 @with g0
-@    world xmin 0
-@    world xmax 15
-@    world ymin 0
-@    world ymax 2
+@    world 0, 0, 12, 2
 @    stack world 0, 0, 0, 0
 @    znorm 1
-@    view xmin 0.150000
-@    view xmax 1.245134
-@    view ymin 0.150000
-@    view ymax 0.950000
+@    view 0.050000, 0.100000, 1.245134, 0.950000
 @    title ""
 @    title font 4
 @    title size 1.500000
@@ -130,14 +124,14 @@
 @    xaxis  bar color 1
 @    xaxis  bar linestyle 1
 @    xaxis  bar linewidth 1.0
-@    xaxis  label "Velocity (nm/ps)"
+@    xaxis  label "Velocity"
 @    xaxis  label layout para
 @    xaxis  label place auto
 @    xaxis  label char size 1.480000
 @    xaxis  label font 4
 @    xaxis  label color 1
 @    xaxis  label place normal
-@    xaxis  tick on
+@    xaxis  tick off
 @    xaxis  tick major 5
 @    xaxis  tick minor ticks 4
 @    xaxis  tick default 6
@@ -153,7 +147,7 @@
 @    xaxis  tick minor linestyle 1
 @    xaxis  tick minor grid off
 @    xaxis  tick minor size 0.500000
-@    xaxis  ticklabel on
+@    xaxis  ticklabel off
 @    xaxis  ticklabel format decimal
 @    xaxis  ticklabel prec 0
 @    xaxis  ticklabel formula ""
@@ -181,7 +175,7 @@
 @    yaxis  bar color 1
 @    yaxis  bar linestyle 1
 @    yaxis  bar linewidth 1.0
-@    yaxis  label "Probability"
+@    yaxis  label ""
 @    yaxis  label layout para
 @    yaxis  label place auto
 @    yaxis  label char size 1.480000
