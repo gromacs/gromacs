@@ -14,7 +14,7 @@ typedef struct gmx_wallcycle {
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
-  { "Run", "Domain decomp.", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Update", "Comm. energies" };
+  { "Run", "Domain decomp.", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Update", "Comm. energies" };
 
 bool wallcycle_have_counter(void)
 {
@@ -72,14 +72,21 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
   int    i;
 
   if (wc) {
+    if (wc[ewcPMEMESH_SEP].n > 0) {
+      /* This must be a PME only node, calculate the Wait + Comm. time */
+      wc[ewcPMEWAITCOMM].c = wc[ewcRUN].c - wc[ewcPMEMESH_SEP].c;
+    } else {
+      /* Correct the PME mesh only call count */
+      wc[ewcPMEMESH_SEP].n = wc[ewcFORCE].n;
+      wc[ewcPMEWAITCOMM].n = wc[ewcFORCE].n;
+    }
+
+    /* Store the cycles in a double buffer for summing */
     for(i=0; i<ewcNR; i++)
       cycles[i] = (double)wc[i].c;
 
     /* Remove the PME mesh part from the force count */
     cycles[ewcFORCE] -= cycles[ewcPMEMESH];
-
-    /* Correct the PME mesh only call count */
-    wc[ewcPMEMESH_SEP].n = wc[ewcFORCE].n;
 
 #ifdef GMX_MPI    
     if (cr->nnodes > 1) {
@@ -128,11 +135,12 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     fprintf(fplog,"%s\n",myline);
     sum = 0;
     for(i=ewcRUN+1; i<ewcNR; i++) {
-      print_cycles(fplog,c2t,wcn[i],i==ewcPMEMESH_SEP ? npme : npp,
+      print_cycles(fplog,c2t,wcn[i],
+		   (i==ewcPMEMESH_SEP || i==ewcPMEWAITCOMM) ? npme : npp,
 		   wc[i].n,cycles[i],tot);
       sum += cycles[i];
     }
-    print_cycles(fplog,c2t,"Rest",nnodes,0,tot-sum,tot);
+    print_cycles(fplog,c2t,"Rest",npp,0,tot-sum,tot);
     fprintf(fplog,"%s\n",myline);
     print_cycles(fplog,c2t,"Total",nnodes,0,tot,tot);
     fprintf(fplog,"%s\n",myline);
