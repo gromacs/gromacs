@@ -49,7 +49,10 @@ extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       char *loady,
 					       char *loadz);
 
-extern void setup_dd_grid(FILE *fplog,matrix box,gmx_domdec_t *dd);
+extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
+			      t_topology *top,t_inputrec *ir,t_forcerec *fr);
+
+extern void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
 extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v);
 

@@ -506,6 +506,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc(TRUE);
 
+    set_dd_parameters(stdlog,cr->dd,top_global,inputrec,fr);
+
     dd_make_reverse_top(stdlog,cr->dd,top_global,
 			EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
 
@@ -523,7 +525,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       state = state_global;
     }
 
-    setup_dd_grid(stdlog,state->box,cr->dd);
+    setup_dd_grid(stdlog,cr->dd);
 
     snew(top,1);
     top->idef = top_global->idef;
