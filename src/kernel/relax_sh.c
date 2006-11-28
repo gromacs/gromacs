@@ -160,38 +160,41 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
 }
 
 static void print_epot(FILE *fp,int mdstep,int count,real step,real epot,
-		       real df,bool bLast)
+		       real df,int ndir,real sf_dir)
 {
   fprintf(fp,"MDStep=%5d/%2d lamb: %6g, EPot: %12.8e",
 	  mdstep,count,step,epot);
-  
-  if (count != 0)
-    fprintf(fp,", rmsF: %12.8e\n",df);
-  else
-    fprintf(fp,"\n");
+  fprintf(fp,", rmsF: %12.8e\n",df);
+  if (ndir)
+    fprintf(fp,"RMS dir. force: %g\n",sqrt(sf_dir/ndir));
 }
 
 
 static real rms_force(t_commrec *cr,rvec f[],int ns,t_shell s[],
-		      int ndir,real sf_dir)
+		      int ndir,real *sf_dir,real *Epot)
 {
   int  i,shell,ntot;
-  real df2;
-  
-  ntot = ns+ndir;
+  double buf[4];
 
-  if (!ntot)
-    return 0;
-  df2 = sf_dir;
+  buf[0] = *sf_dir;
   for(i=0; i<ns; i++) {
     shell = s[i].shell;
-    df2  += iprod(f[shell],f[shell]);
+    buf[0]  += norm2(f[shell]);
   }
+  ntot = ns;
+
   if (PAR(cr)) {
-    gmx_sum(1,&df2,cr);
-    gmx_sumi(1,&ntot,cr);
+    buf[1] = ntot;
+    buf[2] = *sf_dir;
+    buf[3] = *Epot;
+    gmx_sumd(4,buf,cr);
+    ntot = (int)(buf[1] + 0.5);
+    *sf_dir = buf[2];
+    *Epot   = buf[3];
   }
-  return sqrt(df2/ntot);
+  ntot += ndir;
+
+  return (ntot ? sqrt(buf[0]/ntot) : 0);
 }
 
 static void check_pbc(FILE *fp,rvec x[],int shell)
@@ -253,11 +256,11 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
     
     for (d=0; d<DIM; d++) {
       if ((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
-	xnold[start+n][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
-	xnew[start+n][d] = 2*x[n][d] - x_old[n][d] + f[n][d]*w_dt*dt;
+	xnold[n-start][d] = x[n][d] - (x_init[n][d] - x_old[n][d]);
+	xnew[n-start][d] = 2*x[n][d] - x_old[n][d] + f[n][d]*w_dt*dt;
       } else {
-	xnold[start+n][d] = x[n][d];
-	xnew[start+n][d] = x[n][d];
+	xnold[n-start][d] = x[n][d];
+	xnew[n-start][d] = x[n][d];
       }
     }
   }
@@ -271,14 +274,15 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
   /* Set xnew to minus the acceleration */
   for (n=start; n<end; n++) {
     for(d=0; d<DIM; d++)
-      xnew[n-start][d] = -(2*x[n][d]-xnold[n][d]-xnew[n][d])/sqr(dt)
+      xnew[n-start][d] =
+	-(2*x[n][d]-xnold[n-start][d]-xnew[n-start][d])/sqr(dt)
 	- f[n][d]*md->invmass[n];
     clear_rvec(acc_dir[n]);
   }
 
   /* Project the acceleration on the old bond directions */
   constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
-	    x_old,xnew,acc_dir,box,
+	    x_old,xnew-start,acc_dir,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,FALSE); 
 }
 
@@ -302,29 +306,20 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   real   Epot[2],df[2],Estore[F_NRE];
   tensor vir_el_recip[2];
   rvec   dx;
-  real   sf_dir;
-#define NEPOT asize(Epot)
+  real   sf_dir,invdt;
   real   ftol,step,step0,xiH,xiS,dum=0;
   char   cbuf[56];
   bool   bDone,bInit;
   int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
   int    g,number_steps,d,Min=0,count=0;
-  t_pbc  pbc;
 #define  Try (1-Min)             /* At start Try = 1 */
 
   if (bFirst) {
     bDebug = getenv("DEBUGSHELLS") != NULL;
     /* Allocate local arrays */
-    if (nshell+nflexcon > 0) {
-      for(i=0; (i<2); i++) {
-	snew(pos[i],nsb->natoms);
-	snew(force[i],nsb->natoms);
-      }
-    }
-    else {
-      /* Copy pointers */
-      pos[Min]   = state->x;
-      force[Min] = f;
+    for(i=0; (i<2); i++) {
+      snew(pos[i],nsb->natoms);
+      snew(force[i],nsb->natoms);
     }
     bNoPredict = getenv("NOPREDICT") != NULL;
     if (bNoPredict)
@@ -336,7 +331,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     }
     bFirst = FALSE;
   }
-
+  
   bInit        = bForceInit || ((mdstep == 0) && !inputrec->bUncStart);
   ftol         = inputrec->em_tol;
   number_steps = inputrec->niter;
@@ -397,17 +392,18 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
     for(i=start; i<end; i++)
       sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
-
-    if (bVerbose && MASTER(cr))
-      fprintf(stderr,"RMS dir. force: %g\n",sqrt(sf_dir/nflexcon));
   }
 
-  df[Min]=rms_force(cr,force[Min],nshell,shells,nflexcon,sf_dir);
+  /* Sum the potential energy terms from group contributions */
+  sum_epot(&(inputrec->opts),grps,ener);
+  Epot[Min]=ener[F_EPOT];
+
+  df[Min]=rms_force(cr,force[Min],nshell,shells,nflexcon,&sf_dir,&Epot[Min]);
   df[Try]=0;
   if (debug) {
     fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
   }
-    
+
   if (debug && bDebug) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
   }
@@ -420,17 +416,11 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     memcpy(pos[Min],state->x,nsb->natoms*sizeof(state->x[0]));
     memcpy(pos[Try],state->x,nsb->natoms*sizeof(state->x[0]));
   }
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(inputrec->opts),grps,ener);
-  Epot[Min]=ener[F_EPOT];
-
-  if (PAR(cr))
-    gmx_sum(NEPOT,Epot,cr);
   
   step=step0;
   
-  if (bVerbose && MASTER(cr) && (nshell+nflexcon > 0))
-    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],FALSE);
+  if (bVerbose && MASTER(cr))
+    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],nflexcon,sf_dir);
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
@@ -445,7 +435,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   /* First check whether we should do shells, or whether the force is 
    * low enough even without minimization.
    */
-  *bConverged = bDone = (df[Min] < ftol) || (nshell+nflexcon == 0);
+  *bConverged = bDone = (df[Min] < ftol);
   
   for(count=1; (!bDone && (count < number_steps)); count++) {
     if (bVsites)
@@ -509,12 +499,13 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
       for(i=start; i<end; i++)
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
-
-      if (bVerbose && MASTER(cr))
-	fprintf(stderr,"dir. rmsf %g\n",sqrt(sf_dir/nflexcon));
     }
 
-    df[Try]=rms_force(cr,force[Try],nshell,shells,nflexcon,sf_dir);
+    /* Sum the potential energy terms from group contributions */
+    sum_epot(&(inputrec->opts),grps,ener);
+    Epot[Try]=ener[F_EPOT]; 
+    
+    df[Try]=rms_force(cr,force[Try],nshell,shells,nflexcon,&sf_dir,&Epot[Try]);
 
     if (debug)
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
@@ -527,15 +518,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
       }
     }
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts),grps,ener);
-    Epot[Try]=ener[F_EPOT];
-
-    if (PAR(cr)) 
-      gmx_sum(1,&Epot[Try],cr);
 
     if (bVerbose && MASTER(cr))
-      print_epot(stdout,mdstep,count,step,Epot[Try],df[Try],FALSE);
+      print_epot(stdout,mdstep,count,step,Epot[Try],df[Try],nflexcon,sf_dir);
       
     *bConverged = (df[Try] < ftol);
     bDone       = *bConverged || (step < 0.01);
@@ -544,6 +529,13 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       if ((df[Try] < df[Min])) {
       if (debug)
 	fprintf(debug,"Swapping Min and Try\n");
+      if (nflexcon) {
+	/* Correct the velocities for the flexible constraints */
+	invdt = 1/inputrec->delta_t;
+	for(i=start; i<end; i++)
+	  for(d=0; d<DIM; d++)
+	    state->v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
+      }
       Min  = Try;
       step = step0;
     }
@@ -563,22 +555,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   /* CHECK VIRIAL */
   copy_mat(vir_el_recip[Min],fr->vir_el_recip);
   
-  if (nshell+nflexcon > 0)
-    memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
-
-  if (nflexcon > 0) {
-    constrain(log,top,&top->idef.il[F_SETTLE],
-	      inputrec,cr->dd,mdstep,md,start,end,
-	      state->x-start,x_old-start,NULL,state->box,
-	      state->lambda,&dum,inputrec->delta_t,state->v,NULL,nrnb,TRUE);
-    /*
-    set_pbc(&pbc,state->box);
-    for(i=0; i<homenr; i++) {
-      pbc_dx(&pbc,state->x[start+i],x_old[i],dx);
-      svmul(1/inputrec->delta_t,dx,state->v[start+i]);
-    }
-    */
-  }
+  memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
 
   return count; 
 }

@@ -451,7 +451,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
  
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
-  int         nshell,nflexcon,nshell_flexcon_tot,count,nconverged=0;
+  int         nshell,nshell_tot,nflexcon,count,nconverged=0;
   t_shell     *shells=NULL;
   real        timestep=0;
   double      tcount=0;
@@ -566,10 +566,18 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Check for flexible constraints */
   nflexcon = count_flexible_constraints(log,fr,&top->idef);
 
-  nshell_flexcon_tot = nshell + nflexcon;
-  if (PAR(cr))
-    gmx_sumi(1,&nshell_flexcon_tot,cr);
-  bShell_FlexCon = nshell_flexcon_tot > 0;
+  if (PAR(cr)) {
+    int buf[2];
+
+    buf[0] = nshell;
+    buf[1] = nflexcon;
+    gmx_sumi(2,buf,cr);
+    nshell_tot = buf[0];
+    nflexcon   = buf[1];
+  } else {
+    nshell_tot = nshell;
+  }
+  bShell_FlexCon = (nshell_tot > 0 || nflexcon > 0);
   
   gnx = top->blocks[ebMOLS].nr;
   snew(grpindex,gnx);
