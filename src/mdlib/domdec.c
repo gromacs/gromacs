@@ -2544,8 +2544,10 @@ static int dd_nst_env(char *env_var)
 
   nst = 0;
   val = getenv(env_var);
-  if (val)
-    sscanf(val,"%d",&nst);
+  if (val) {
+    if (sscanf(val,"%d",&nst) <= 0)
+      nst = 1;
+  }
   
   return nst;
 }
