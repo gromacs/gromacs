@@ -83,9 +83,6 @@ typedef struct gmx_domdec_comm {
   /* Orthogonal vectors for triclinic cells */
   rvec v[DIM][DIM];
 
-  /* The maximum of the lower cell boundaries */
-  rvec cell_max_x0;
-
   /* The cell boundaries of neighbor cells for dynamic load balancing */
   real **cell_d1;
   real ***cell_d2;
@@ -159,7 +156,8 @@ static const ivec dd_cp2[dd_cp2n] = {{0,0,4},{1,3,4}};
 #define dd_cp1n 1
 static const ivec dd_cp1[dd_cp1n] = {{0,0,2}};
 
-static bool bDDDump;
+static int nstDDDump,nstDDDumpGrid;
+
 
 #define DD_CELL_MARGIN       1.0001
 #define DD_PRES_SCALE_MARGIN 1.02
@@ -432,17 +430,25 @@ static void dd_move_cellx(gmx_domdec_t *dd,matrix box)
   }
 
   if (dd->ndim >= 2) {
-    len = box[dd->dim[1]][dd->dim[1]];
-    for(i=0; i<2; i++)
+    dim = dd->dim[1];
+    len = box[dim][dim];
+    for(i=0; i<2; i++) {
       for(k=0; k<2; k++)
 	comm->cell_d1[i][k] *= len;
+      dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],comm->cell_d1[i][0]);
+      dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],comm->cell_d1[i][1]);
+    }
   }
   if (dd->ndim >= 3) {
-    len = box[dd->dim[2]][dd->dim[2]];
+    dim = dd->dim[2];
+    len = box[dim][dim];
     for(i=0; i<2; i++)
-      for(j=0; j<2; j++)
+      for(j=0; j<2; j++) {
 	for(k=0; k<2; k++)
 	  comm->cell_d2[i][j][k] *= len;
+	dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],comm->cell_d2[i][j][0]);
+	dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],comm->cell_d2[i][j][1]);
+      }
   }
   for(d=1; d<dd->ndim; d++) {
     comm->cell_f_max0[d] = extr_s[d-1][0];
@@ -666,6 +672,56 @@ static char dim2char(int dim)
   return c;
 }
 
+static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
+{
+  rvec grid_s[2],*grid_r=NULL;
+  char fname[STRLEN],format[STRLEN];
+  FILE *out;
+  int  a,i,d,z,y,x;
+  real vol;
+
+  copy_rvec(dd->cell_x0,grid_s[0]);
+  copy_rvec(dd->cell_x1,grid_s[1]);
+
+  if (DDMASTER(dd))
+    snew(grid_r,2*dd->nnodes);
+  
+  dd_gather(dd,2*sizeof(rvec),grid_s[0],DDMASTER(dd) ? grid_r[0] : NULL);
+
+  if (DDMASTER(dd)) {
+    sprintf(fname,"%s_%d.pdb",fn,step);
+    sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
+    out = ffopen(fname,"w");
+    gmx_write_pdb_box(out,box);
+    a = 1;
+    for(i=0; i<dd->nnodes; i++) {
+      vol = dd->nnodes/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
+      for(d=0; d<DIM; d++)
+	vol *= grid_r[i*2+1][d] - grid_r[i*2][d];
+      for(z=0; z<2; z++)
+	for(y=0; y<2; y++)
+	  for(x=0; x<2; x++)
+	    fprintf(out,format,"ATOM",a++,"CA","GLY",' ',1+i,
+		    10*grid_r[i*2+x][XX],
+		    10*grid_r[i*2+y][YY],
+		    10*grid_r[i*2+z][ZZ],
+		    1.0,vol);
+      for(d=0; d<DIM; d++) {
+	for(x=0; x<4; x++) {
+	  switch(d) {
+	  case 0: y = 1 + i*8 + 2*x; break;
+	  case 1: y = 1 + i*8 + 2*x - (x % 2); break;
+	  case 2: y = 1 + i*8 + x; break;
+	  }
+	  fprintf(out,"%6s%5d%5d\n","CONECT",y,y+(1<<d));
+	}
+      }
+    }
+    fclose(out);
+    sfree(grid_r);
+  }
+}
+
 static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
 			 gmx_domdec_t *dd,int natoms,
 			 rvec x[],matrix box)
@@ -784,7 +840,7 @@ static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
     dim = dd->dim[d];
     bfac = box[dim][dim];
     if (dd->tric_dir[dim])
-      bfac *= sqrt(dd->skew_fac2[dim]);
+      bfac *= dd->skew_fac[dim];
     if ((comm->cell_f1[d] - comm->cell_f_max0[d])*bfac <  comm->distance ||
 	(comm->cell_f0[d] - comm->cell_f_min1[d])*bfac > -comm->distance)
       gmx_fatal(FARGS,"Step %d: The domain decomposition grid has shifted too much in the %c-direction around cell %d %d %d\n",
@@ -796,7 +852,7 @@ static void set_tric_dir(gmx_domdec_t *dd,matrix box)
 {
   int  d,i,j;
   rvec *v;
-  real dep;
+  real dep,skew_fac2;
 
   for(d=0; d<DIM; d++) {
     dd->tric_dir[d] = 0;
@@ -810,15 +866,21 @@ static void set_tric_dir(gmx_domdec_t *dd,matrix box)
       }
     }
     
-    dd->skew_fac2[d] = 1;
+    /* Convert box vectors to orthogonal vectors for this dimension,
+     * for use in distance calculations.
+     * Set the trilinic skewing factor that translates
+     * the thickness of a slab perpendicular to this dimension
+     * into the real thickness of the slab.
+     */
     if (dd->tric_dir[d]) {
+      skew_fac2 = 1;
       v = dd->comm->v[d];
       if (d == XX || d == YY) {
 	/* Normalize such that the "diagonal" is 1 */
 	svmul(1/box[d+1][d+1],box[d+1],v[d+1]);
 	for(i=0; i<d; i++)
 	  v[d+1][i] = 0;
-	dd->skew_fac2[d] -= sqr(v[d+1][d]);
+	skew_fac2 -= sqr(v[d+1][d]);
 	if (d == XX) {
 	  /* Normalize such that the "diagonal" is 1 */
 	  svmul(1/box[d+2][d+2],box[d+2],v[d+2]);
@@ -830,7 +892,7 @@ static void set_tric_dir(gmx_domdec_t *dd,matrix box)
 	  dep = iprod(v[d+1],v[d+2])/norm2(v[d+1]);
 	  for(i=0; i<DIM; i++)
 	    v[d+2][i] -= dep*v[d+1][i];
-	  dd->skew_fac2[d] -= sqr(v[d+2][d]);
+	  skew_fac2 -= sqr(v[d+2][d]);
 	}
 	if (debug) {
 	  fprintf(debug,"box[%d]  %.3f %.3f %.3f",
@@ -841,6 +903,9 @@ static void set_tric_dir(gmx_domdec_t *dd,matrix box)
 	  fprintf(debug,"\n");
 	}
       }
+      dd->skew_fac[d] = sqrt(skew_fac2);
+    } else {
+      dd->skew_fac[d] = 1;
     }
   }
 }
@@ -851,10 +916,11 @@ static void check_box_size(gmx_domdec_t *dd,matrix box)
   
   for(d=0; d<dd->ndim; d++) {
     dim = dd->dim[d];
-    if (sqr(box[dim][dim]) <
-	sqr(dd->nc[dim]*dd->comm->distance*DD_CELL_MARGIN)*dd->skew_fac2[dim])
-      gmx_fatal(FARGS,"The %c-size of the box (%f) is smaller than the number of DD cells (%d) times the cut-off distance (%f)\n",
-		dim2char(dim),box[dim][dim],dd->nc[d],dd->comm->distance);
+    if (box[dim][dim]*dd->skew_fac[dim] <
+	dd->nc[dim]*dd->comm->distance*DD_CELL_MARGIN)
+      gmx_fatal(FARGS,"The %c-size of the box (%f) times the triclinic skew factor (%f) is smaller than the number of DD cells (%d) times the cut-off distance (%f)\n",
+		dim2char(dim),box[dim][dim],dd->skew_fac[dim],
+		dd->nc[dim],dd->comm->distance);
   }
 }
 
@@ -862,11 +928,6 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster)
 {
   int  d,j;
   real tot;
-
-  set_tric_dir(dd,box);
-  
-  if (DDMASTER(dd))
-    check_box_size(dd,box);
 
   for(d=0; d<DIM; d++) {
     if (dd->cell_load[d] == NULL || dd->nc[d] == 1) {
@@ -907,16 +968,11 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
   gmx_domdec_root_t *root;
   int  d,d1,dim,dim1,i,pos,nmin,nmin_old;
   bool bRowMember,bRowRoot,bLimLo,bLimHi;
-  real load_aver,load_i,imbalance,cell_min,fac,space;
+  real load_aver,load_i,imbalance,cutoff_f,cell_min,fac,space;
   real imbal_max = 0.1;
   real relax = 0.5;
 
   comm = dd->comm;
-
-  set_tric_dir(dd,box);
-
-  if (DDMASTER(dd))
-    check_box_size(dd,box);
 
   for(d=0; d<dd->ndim; d++) {
     dim = dd->dim[d];
@@ -949,10 +1005,11 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	  root->cell_size[i] *= 1 - relax*imbalance;
 	}
       }
-      
-      cell_min = DD_CELL_MARGIN*comm->distance/box[dim][dim];
+
+      cutoff_f = comm->distance/box[dim][dim];
+      cell_min = DD_CELL_MARGIN*cutoff_f;
       if (dd->tric_dir[dim])
-	cell_min /= sqrt(dd->skew_fac2[dim]);
+	cell_min /= dd->skew_fac[dim];
       if (bDynamicBox && d > 0)
 	cell_min *= DD_PRES_SCALE_MARGIN;
 
@@ -1003,6 +1060,15 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	  root->cell_f[i+1] = root->cell_f[i] + root->cell_size[i];
 	}
       } while (nmin > nmin_old);
+
+      /* Set the last boundary to exactly 1 */
+      i = dd->nc[dim] - 1;
+      root->cell_f[i+1] = 1;
+      root->cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
+      if (root->cell_size[i] < cutoff_f)
+	gmx_fatal(FARGS,"The dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, cut-off %f\n",
+		  dim2char(dim),box[dim][dim],dd->skew_fac[dim],
+		  dd->nc[dim],comm->distance);
 
       root->bLimited = (nmin > 0);
       
@@ -1074,19 +1140,25 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 }
 
 static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
-			      bool bUniform)
+			      bool bUniform,bool bMaster)
 {
   int d;
 
-  if (dd->bDynLoadBal) {
+  set_tric_dir(dd,box);
+
+  if (DDMASTER(dd))
+    check_box_size(dd,box);
+
+  if (dd->bDynLoadBal && !bMaster) {
     set_dd_cell_sizes_dlb(dd,box,bDynamicBox,bUniform);
-  } else
-    set_dd_cell_sizes_slb(dd,box,FALSE);
+  } else {
+    set_dd_cell_sizes_slb(dd,box,bMaster);
+  }
 
   if (debug)
     for(d=0; d<DIM; d++)
       fprintf(debug,"cell_x[%d] %f - %f skew_fac %f\n",
-	      d,dd->cell_x0[d],dd->cell_x1[d],sqrt(dd->skew_fac2[d]));
+	      d,dd->cell_x0[d],dd->cell_x1[d],dd->skew_fac[d]);
 }
 
 static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
@@ -1103,7 +1175,7 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
   ma = dd->ma;
 
   /* Set the cell boundaries */
-  set_dd_cell_sizes_slb(dd,box,TRUE);
+  set_dd_cell_sizes(dd,box,FALSE,TRUE,TRUE);
 
   if (tmp_ind == NULL) {
     snew(tmp_nalloc,dd->nnodes);
@@ -2465,6 +2537,19 @@ static real *get_cell_load(FILE *fplog,char *dir,int nc,char *load_string)
   return cell_load;
 }
 
+static int dd_nst_env(char *env_var)
+{
+  char *val;
+  int  nst;
+
+  nst = 0;
+  val = getenv(env_var);
+  if (val)
+    sscanf(val,"%d",&nst);
+  
+  return nst;
+}
+
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 					real comm_distance_min,
 					bool bDynLoadBal,
@@ -2530,7 +2615,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     dd->cell_load[ZZ] = get_cell_load(fplog,"z",dd->nc[ZZ],loadz);
   }
 
-  bDDDump = (getenv("GMX_DD_DUMP") != NULL);
+  nstDDDump     = dd_nst_env("GMX_DD_DUMP");
+  nstDDDumpGrid = dd_nst_env("GMX_DD_DUMP_GRID");
 
   return dd;
 }
@@ -2570,55 +2656,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   }
 }
 
-static void set_ns_cell_sizes(gmx_domdec_t *dd)
-{
-  int d,dim,i,j;
-  gmx_domdec_comm_t *comm;
-
-  comm = dd->comm;
-
-  /* With dynamic load balancing we should know the maximum
-   * lower boundary for setting up the cg communication.
-   */
-  for(d=0; d<dd->ndim; d++) {
-    dim = dd->dim[d];
-    comm->cell_max_x0[dim] = dd->cell_x0[dim];
-  }
-  if (dd->bGridJump && dd->ndim > 1) {
-    dim = dd->dim[1];
-    comm->cell_max_x0[dim] = max(comm->cell_max_x0[dim],comm->cell_d1[1][0]);
-  }
-  if (dd->bGridJump && dd->ndim > 2) {
-    dim = dd->dim[2];
-    for(i=0; i<2; i++) {
-      for(j=0; j<2; j++)
-	comm->cell_max_x0[dim] =
-	  max(comm->cell_max_x0[dim],comm->cell_d2[i][j][0]);
-    }
-  }
-
-  /* With dynamic load balancing the ns grid should know
-   * the extreme dimensions of the DD i-cells.
-   */
-  copy_rvec(dd->cell_x0,dd->cell_ns_x0);
-  copy_rvec(dd->cell_x1,dd->cell_ns_x1);
-
-  if (dd->bGridJump && dd->ndim > 1) {
-    dim = dd->dim[1];
-    dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],comm->cell_d1[1][0]);
-    dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],comm->cell_d1[1][1]);
-  }
-  if (dd->bGridJump && dd->ndim > 2) {
-    dim = dd->dim[2];
-    for(i=0; i<2; i++) {
-      for(j=0; j<2; j++) {
-	dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],comm->cell_d2[i][j][0]);
-	dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],comm->cell_d2[i][j][1]);
-      }
-    }
-  }
-}
-
 static void setup_dd_communication(FILE *fplog,int step,
 				   gmx_domdec_t *dd,t_block *gcgs,
 				   rvec buf[],matrix box,rvec cg_cm[])
@@ -2639,19 +2676,17 @@ static void setup_dd_communication(FILE *fplog,int step,
 
   comm = dd->comm;
 
-  r_comm2 = sqr(comm->distance);
-
   for(dim_ind=0; dim_ind<dd->ndim; dim_ind++) {
     dim = dd->dim[dim_ind];
-
-    r2 = sqr(dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac2[dim];
-    if (r2 < r_comm2)
-      gmx_fatal(FARGS,"Step %d: The %c-size (%f) of domain decomposition grid cell %d %d %d (node %d) is smaller than the cut-off (%f)",
-		step,
-		dim2char(dim),sqrt(r2),
-		dd->ci[XX],dd->ci[YY],dd->ci[ZZ],dd->nodeid,
-		comm->distance);
-
+    
+    if ((dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac[dim] <
+	comm->distance)
+      gmx_fatal(FARGS,"Step %d: The %c-size (%f) times the triclinic skew factor (%f)is smaller than the cut-off (%f) for domain decomposition grid cell %d %d %d (node %d)",
+		step,dim2char(dim),
+		dd->cell_x1[dim] - dd->cell_x0[dim],dd->skew_fac[dim],
+		comm->distance,
+		dd->ci[XX],dd->ci[YY],dd->ci[ZZ],dd->nodeid);
+    
     /* Check if we need to use triclinic distances */
     tric_dist[dim_ind] = 0;
     for(i=0; i<=dim_ind; i++)
@@ -2659,12 +2694,16 @@ static void setup_dd_communication(FILE *fplog,int step,
 	tric_dist[dim_ind] = 1;
   }
 
+  /* Set the size of the ns grid,
+   * for dynamic load balancing this is corrected in dd_move_cellx.
+   */
+  copy_rvec(dd->cell_x0,dd->cell_ns_x0);
+  copy_rvec(dd->cell_x1,dd->cell_ns_x1);
+  
   if (dd->bGridJump && dd->ndim > 1) {
     dd_move_cellx(dd,box);
     check_grid_jump(step,dd,box);
   }
-
-  set_ns_cell_sizes(dd);
 
   dim0 = dd->dim[0];
   /* The first dimension is equal for all cells */
@@ -2701,8 +2740,8 @@ static void setup_dd_communication(FILE *fplog,int step,
 	}
 	if (comm->bInterCGBondeds) {
 	  /* For the bonded distance we need the maximum */
-	  for(j=1; j<4; j++)
-	    corner[2][j] = corner[2][0];
+	  for(j=0; j<4; j++)
+	    corner[2][j] = corner[2][1];
 	}
       }
       
@@ -2722,14 +2761,16 @@ static void setup_dd_communication(FILE *fplog,int step,
     }
   }
 
+  r_comm2 = sqr(comm->distance);
+
   /* Triclinic stuff */
   if (dd->ndim >= 2) {
     v_0 = comm->v[dim0];
-    skew_fac2_0 = dd->skew_fac2[dim0];
+    skew_fac2_0 = sqr(dd->skew_fac[dim0]);
   }
   if (dd->ndim >= 3) {
     v_1 = comm->v[dim1];
-    skew_fac2_1 = dd->skew_fac2[dim1];
+    skew_fac2_1 = sqr(dd->skew_fac[dim1]);
   }
 
   ncg_cell = dd->ncg_cell;
@@ -2745,7 +2786,7 @@ static void setup_dd_communication(FILE *fplog,int step,
     dim = dd->dim[dim_ind];
 
     v_d = comm->v[dim];
-    skew_fac2_d = dd->skew_fac2[dim];
+    skew_fac2_d = sqr(dd->skew_fac[dim]);
 
     ind = &comm->ind[dim_ind];
     nsend = 0;
@@ -2942,7 +2983,9 @@ void dd_partition_system(FILE         *fplog,
     cg0 = 0;
   }
 
-  set_dd_cell_sizes(dd,state_local->box,DYNAMIC_BOX(*ir),bMasterState);
+  set_dd_cell_sizes(dd,state_local->box,DYNAMIC_BOX(*ir),bMasterState,FALSE);
+  if (nstDDDumpGrid > 0 && step % nstDDDumpGrid == 0)
+    write_dd_grid_pdb("dd_grid",step,dd,state_local->box);
 
   if (!bMasterState) {
     cg0 = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
@@ -3028,7 +3071,7 @@ void dd_partition_system(FILE         *fplog,
 
   clear_dd_cycle_counts(dd);
 
-  if (bDDDump) {
+  if (nstDDDump > 0 && step % nstDDDump == 0) {
     dd_move_x(dd,state_local->box,state_local->x,buf);
     write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,dd->nat_tot,
 		 state_local->x,state_local->box);

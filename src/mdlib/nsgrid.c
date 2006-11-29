@@ -93,7 +93,7 @@ static void set_grid_sizes(FILE *fplog,
       if (bDDRect) {
 	radd = rlist;
       } else {
-	radd = rlist/sqrt(dd->skew_fac2[i]);
+	radd = rlist/dd->skew_fac[i];
       }
       /* With DD we only need a grid of one DD cell size + rlist */
       grid->cell_offset[i] = dd->cell_ns_x0[i];
@@ -361,7 +361,7 @@ void fill_grid(FILE *log,
   int    nrx,nry,nrz;
   rvec   n_box,offset;
   int    cell,cg,d,not_used;
-  ivec   home,b0,b1,ind;
+  ivec   home,shift0,b0,b1,ind;
   bool   bUse;
   
   /* Initiate cell borders */
@@ -402,11 +402,12 @@ void fill_grid(FILE *log,
     for(cell=0; cell<dd->ncell; cell++) {
       /* Determine the ns grid cell limits for this DD cell */
       for(d=0; d<DIM; d++) {
+	shift0[d] = dd->shift[cell][d];
 	if (grid->ncpddc[d] == grid->n[d]) {
 	  b0[d] = 0;
 	  b1[d] = grid->n[d];
 	} else {
-	  b0[d] = dd->shift[cell][d];
+	  b0[d] = shift0[d];
 	  b1[d] = b0[d] + 1;
 	  b0[d] *= grid->ncpddc[d];
 	  b1[d] *= grid->ncpddc[d];
@@ -432,7 +433,7 @@ void fill_grid(FILE *log,
 	  if (ind[d] < b0[d]) {
 	    ind[d]++;
 	  } else if (ind[d] >= b1[d]) {
-	    if (b0[d] == 0) {
+	    if (shift0[d] == 0) {
 	      ind[d]--;
 	    } else {
 	      /* Charge groups in this DD cell further away than the cut-off
