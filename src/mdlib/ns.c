@@ -346,7 +346,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
 
  static void reset_nblist(t_nblist *nl)
  {
-   nl->nri       = 0;
+   nl->nri       = -1;
    nl->nrj       = 0;
    nl->maxlen    = 0;
    if (nl->maxnri > 0) {
@@ -399,14 +399,16 @@ static inline void new_i_nblist(t_nblist *nlist,
   nri = nlist->nri;
 
   /* Check whether we have to increase the i counter */
-  if ((nlist->iinr[nri]  != i_atom) || 
+  if ((nri == -1) ||
+      (nlist->iinr[nri]  != i_atom) || 
       (nlist->shift[nri] != shift) || 
       (nlist->gid[nri]   != gid)) {
     /* This is something else. Now see if any entries have 
      * been added in the list of the previous atom.
      */
-    if ((nlist->jindex[nri+1] > nlist->jindex[nri]) && 
-	(nlist->gid[nri] != -1)) {
+    if ((nri == -1) ||
+	((nlist->jindex[nri+1] > nlist->jindex[nri]) && 
+	 (nlist->gid[nri] != -1))) {
       
       /* If so increase the counter */
       nlist->nri++;
