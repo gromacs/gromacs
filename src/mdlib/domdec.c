@@ -363,7 +363,7 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
 static void dd_move_cellx(gmx_domdec_t *dd,matrix box)
 {
   int  d,d1,dim,dim1,pos,i,j,k;
-  rvec buf[7],extr_s[2],extr_r[2];
+  rvec buf[8],extr_s[2],extr_r[2];
   real len;
   gmx_domdec_comm_t *comm;
 
@@ -674,10 +674,11 @@ static char dim2char(int dim)
 
 static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
 {
-  rvec grid_s[2],*grid_r=NULL;
+  rvec grid_s[2],*grid_r=NULL,cx,r;
   char fname[STRLEN],format[STRLEN];
   FILE *out;
   int  a,i,d,z,y,x;
+  matrix tric;
   real vol;
 
   copy_rvec(dd->cell_x0,grid_s[0]);
@@ -689,6 +690,18 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
   dd_gather(dd,2*sizeof(rvec),grid_s[0],DDMASTER(dd) ? grid_r[0] : NULL);
 
   if (DDMASTER(dd)) {
+    for(d=0; d<DIM; d++) {
+      for(i=0; i<DIM; i++) {
+	if (d == i) {
+	  tric[d][i] = 1;
+	} else {
+	  if (dd->nc[d] > 1)
+	    tric[d][i] = box[i][d]/box[i][i];
+	  else
+	    tric[d][i] = 0;
+	}
+      }
+    }
     sprintf(fname,"%s_%d.pdb",fn,step);
     sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
     out = ffopen(fname,"w");
@@ -700,12 +713,14 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
 	vol *= grid_r[i*2+1][d] - grid_r[i*2][d];
       for(z=0; z<2; z++)
 	for(y=0; y<2; y++)
-	  for(x=0; x<2; x++)
+	  for(x=0; x<2; x++) {
+	    cx[XX] = grid_r[i*2+x][XX];
+	    cx[YY] = grid_r[i*2+y][YY];
+	    cx[ZZ] = grid_r[i*2+z][ZZ];
+	    mvmul(tric,cx,r);
 	    fprintf(out,format,"ATOM",a++,"CA","GLY",' ',1+i,
-		    10*grid_r[i*2+x][XX],
-		    10*grid_r[i*2+y][YY],
-		    10*grid_r[i*2+z][ZZ],
-		    1.0,vol);
+		    10*r[XX],10*r[YY],10*r[ZZ],1.0,vol);
+	  }
       for(d=0; d<DIM; d++) {
 	for(x=0; x<4; x++) {
 	  switch(d) {
