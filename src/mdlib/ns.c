@@ -104,10 +104,10 @@ static void reallocate_nblist(t_nblist *nl)
   if (debug)
     fprintf(debug,"reallocating neigborlist il_code=%d, maxnri=%d\n",
 	    nl->il_code,nl->maxnri); 
-  srenew(nl->iinr,   nl->maxnri+2);
-  srenew(nl->gid,    nl->maxnri+2);
-  srenew(nl->shift,  nl->maxnri+2);
-  srenew(nl->jindex, nl->maxnri+2);
+  srenew(nl->iinr,   nl->maxnri);
+  srenew(nl->gid,    nl->maxnri);
+  srenew(nl->shift,  nl->maxnri);
+  srenew(nl->jindex, nl->maxnri+1);
 }
 
 /* ivdw/icoul are used to determine the type of interaction, so we
@@ -228,7 +228,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         nl->maxnri      = homenr*4;
         nl->maxnrj      = 0;
         nl->maxlen      = 0;
-        nl->nri         = 0;
+        nl->nri         = -1;
         nl->nrj         = 0;
         nl->iinr        = NULL;
         nl->gid         = NULL;
@@ -237,8 +237,6 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         nl->solvent_opt = solvent;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
-        nl->jindex[1] = 0;
-        nl->gid[0] = -1;
 #ifdef GMX_THREADS
         nl->counter = 0;
         snew(nl->mtx,1);
@@ -349,13 +347,8 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
    nl->nri       = -1;
    nl->nrj       = 0;
    nl->maxlen    = 0;
-   if (nl->maxnri > 0) {
-     nl->gid[0]   = -1;
-     if (nl->maxnrj > 1) {
-       nl->jindex[0] = 0;
-       nl->jindex[1] = 0;
-     }
-   }
+   if (nl->jindex)
+     nl->jindex[0] = 0;
 }
 
 static void reset_neighbor_list(t_forcerec *fr,bool bLR,int nls,int eNL)
@@ -459,28 +452,22 @@ static inline void close_i_nblist(t_nblist *nlist)
   int nri = nlist->nri;
   int len;
   
-  nlist->jindex[nri+1] = nlist->nrj;
+  if (nri >= 0) {
+    nlist->jindex[nri+1] = nlist->nrj;
 
-  len=nlist->nrj -  nlist->jindex[nri];
-  
-  /* nlist length for water i molecules is treated statically 
-   * in the innerloops 
-   */
-  if(len > nlist->maxlen)
-    nlist->maxlen = len;
+    len=nlist->nrj -  nlist->jindex[nri];
+    
+    /* nlist length for water i molecules is treated statically 
+     * in the innerloops 
+     */
+    if(len > nlist->maxlen)
+      nlist->maxlen = len;
+  }
 }
 
 static inline void close_nblist(t_nblist *nlist)
 {
-  if (nlist->maxnri > 0) {
-    int nri = nlist->nri;
-    
-    if ((nlist->jindex[nri+1] > nlist->jindex[nri]) && 
-	(nlist->gid[nri] != -1)) {
-      nlist->nri++;
-      nlist->jindex[nri+2] = nlist->nrj;
-    }
-  }
+  nlist->nri++;
 }
 
 static inline void close_neighbor_list(t_forcerec *fr,bool bLR,int nls,int eNL)
