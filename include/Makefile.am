@@ -45,6 +45,7 @@ gmx_parallel_3dfft.h \
 gmx_system_xdr.h \
 gmx_thread.h \
 gmx_parallel_3dfft.h \
+gmx_wallcycle.h \
 grompp.h \
 gstat.h \
 index.h \
