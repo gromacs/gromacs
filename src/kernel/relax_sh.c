@@ -51,8 +51,6 @@
 #include "names.h"
 #include "constr.h"
 
-bool bDebug = FALSE;
-
 static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
 {
   real xo,yo,zo;
@@ -91,7 +89,7 @@ static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
     shell = s[i].shell;
     k_1   = fudge*s[i].k_1;
     do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
-    if (debug && bDebug) {
+    if (gmx_debug_at) {
       pr_rvec(debug,0,"fshell",f[shell],DIM,TRUE);
       pr_rvec(debug,0,"xold",xold[shell],DIM,TRUE);
       pr_rvec(debug,0,"xnew",xnew[shell],DIM,TRUE);
@@ -315,7 +313,6 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 #define  Try (1-Min)             /* At start Try = 1 */
 
   if (bFirst) {
-    bDebug = getenv("DEBUGSHELLS") != NULL;
     /* Allocate local arrays */
     for(i=0; (i<2); i++) {
       snew(pos[i],nsb->natoms);
@@ -374,7 +371,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     unshift_self(graph,state->box,state->x);
 
   /* Calculate the forces first time around */
-  if (debug) {
+  if (gmx_debug_at) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
   do_force(log,cr,inputrec,nsb,mdstep,nrnb,wcycle,top,grps,
@@ -404,7 +401,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
   }
 
-  if (debug && bDebug) {
+  if (gmx_debug_at) {
     pr_rvecs(debug,0,"force0",force[Min],md->nr);
   }
 
@@ -458,7 +455,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     if (graph)
       unshift_self(graph,state->box,pos[Try]);
 
-    if (debug) {
+    if (gmx_debug_at) {
       pr_rvecs(debug,0,"RELAX: pos[Min]  ",pos[Min] + start,homenr);
       pr_rvecs(debug,0,"RELAX: pos[Try]  ",pos[Try] + start,homenr);
     }
@@ -487,7 +484,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     sum_lrforces(force[Try],fr,start,homenr);
     copy_mat(fr->vir_el_recip,vir_el_recip[Try]);
     
-    if (debug) {
+    if (gmx_debug_at) {
       pr_rvecs(debug,0,"RELAX: force[Min]",force[Min] + start,homenr);
       pr_rvecs(debug,0,"RELAX: force[Try]",force[Try] + start,homenr);
     }
@@ -511,9 +508,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       fprintf(debug,"df = %g  %g\n",df[Min],df[Try]);
 
     if (debug) {
-      if (bDebug)
+      if (gmx_debug_at)
 	pr_rvecs(debug,0,"F na do_force",force[Try] + start,homenr);
-      if (bDebug) {
+      if (gmx_debug_at) {
 	fprintf(debug,"SHELL ITER %d\n",count);
 	dump_shells(debug,pos[Try],force[Try],ftol,nshell,shells);
       }
@@ -525,8 +522,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     *bConverged = (df[Try] < ftol);
     bDone       = *bConverged || (step < 0.01);
     
-    /*if ((Epot[Try] < Epot[Min])) {*/
-      if ((df[Try] < df[Min])) {
+    if ((df[Try] < df[Min])) {
       if (debug)
 	fprintf(debug,"Swapping Min and Try\n");
       if (nflexcon) {
