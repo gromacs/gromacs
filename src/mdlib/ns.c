@@ -467,7 +467,9 @@ static inline void close_i_nblist(t_nblist *nlist)
 
 static inline void close_nblist(t_nblist *nlist)
 {
-  nlist->nri++;
+  /* Only close this nblist when it has been initialized */
+  if (nlist->jindex)
+    nlist->nri++;
 }
 
 static inline void close_neighbor_list(t_forcerec *fr,bool bLR,int nls,int eNL)
