@@ -211,9 +211,11 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	nsb->index[cr->nodeid] = 0;
 	nsb->homenr[cr->nodeid] = 0;
       }
-      
-      /* This code has to be made aware of splitting the machine */
-      bParVsites=setup_parallel_vsites(&(top->idef),cr,nsb,&vsitecomm);
+
+      if (!DOMAINDECOMP(cr)) {
+	/* This code has to be made aware of splitting the machine */
+	bParVsites=setup_parallel_vsites(&(top->idef),cr,nsb,&vsitecomm);
+      }
     }
     else {
       /* Read a file for a single processor */
@@ -245,7 +247,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     /* Periodicity stuff */  
     if (inputrec->ePBC == epbcXYZ && !DOMAINDECOMP(cr)) {
       graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-      if (debug) 
+      if (gmx_debug_at) 
 	p_graph(debug,"Initial graph",graph);
     }
     else

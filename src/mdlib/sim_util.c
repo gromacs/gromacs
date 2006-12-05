@@ -139,7 +139,7 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
 {
   int i;
   
-  if (debug) {
+  if (gmx_debug_at) {
     pr_rvecs(debug,0,"fsr",f+start,end-start);
     pr_rvecs(debug,0,"flr",flr+start,end-start);
   }
@@ -289,7 +289,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (PAR(cr) && !DOMAINDECOMP(cr)) {
       move_cgcm(fplog,cr,fr->cg_cm,nsb->workload);
     }
-    if (debug)
+    if (gmx_debug_at)
       pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
   }
 
@@ -861,7 +861,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
   calc_shifts(box,fr->shift_vec);
   if (graph) {
     mk_mshift(fplog,graph,box,x);
-    if (debug)
+    if (gmx_debug_at)
       p_graph(debug,"do_pbc_first 1",graph);
     shift_self(graph,box,x);
     /* By doing an extra mk_mshift the molecules that are broken
@@ -870,7 +870,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
      * of GROMACS.
      */
     mk_mshift(fplog,graph,box,x);
-    if (debug)
+    if (gmx_debug_at)
       p_graph(debug,"do_pbc_first 2",graph);
   }
   fprintf(fplog,"Done rmpbc\n");

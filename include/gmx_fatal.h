@@ -152,8 +152,9 @@ extern void _unexpected_eof(const char *fn,int line,const char *srcfn,int srclin
  * if (debug) fprintf(debug,"%s","Hallo");
  */
 extern FILE *debug;
-  
-void init_debug (const char *dbgfile);
+extern bool gmx_debug_at;
+
+void init_debug (const int dbglevel,const char *dbgfile);
   
 extern bool bDebugMode(void);
 /* Return TRUE when the program was started in debug mode */

@@ -891,7 +891,7 @@ static void do_idef(t_idef *idef,bool bRead, int file_version)
       idef->il[j].iatoms = NULL;
     } else
       do_ilist(&idef->il[j],bRead,interaction_function[j].name);
-    if (bRead && debug)
+    if (bRead && gmx_debug_at)
       pr_ilist(debug,0,interaction_function[j].longname,
 	       idef,&idef->il[j],TRUE);  }
 }
@@ -1120,7 +1120,7 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   do_symstr(&(top->name),bRead,&(top->symtab));
   
   do_atoms (&(top->atoms),bRead,&(top->symtab), file_version);
-  if (bRead && debug) 
+  if (bRead && gmx_debug_at) 
     pr_atoms(debug,0,"atoms",&top->atoms,TRUE);
 
   /* This used to be in the atoms struct */
@@ -1136,7 +1136,7 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   for(i=0; (i<ebNR); i++) {
     if (i != ebEXCLS) {
       do_block(&(top->blocks[i]),bRead);
-      if (bRead && debug)
+      if (bRead && gmx_debug_at)
 	pr_block(debug,0,EBLOCKS(i),&(top->blocks[i]),TRUE);
     }
   }

@@ -492,8 +492,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   static char *nicestr[]     = { NULL, "19", "10", "4", "0", NULL };
   static char *not_npristr[] = { NULL, "0", "128", "100", "200", "250", NULL };
   static char *npristr[]     = { NULL, "128", "250", "200", "100", "0", NULL };
-  static int  nicelevel=0,mantp=0,npri=0;
-  static bool bGUI=FALSE,bDebug=FALSE;
+  static int  nicelevel=0,mantp=0,npri=0,debug_level=0;
+  static bool bGUI=FALSE;
   static char *deffnm=NULL;
   static real tbegin=0,tend=0,tdelta=0;
        
@@ -535,8 +535,8 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
       "HIDDENDo not print help info" },
     { "-man",  FALSE, etENUM,  {manstr},
       "HIDDENWrite manual and quit" },
-    { "-debug",FALSE, etBOOL, {&bDebug},
-      "HIDDENWrite file with debug information" },
+    { "-debug",FALSE, etINT, {&debug_level},
+      "HIDDENWrite file with debug information, 1: short, 2: also x and f" },
   };
 #define NPCA_PA asize(pca_pa)
   FILE *fp;  
@@ -681,7 +681,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   parse_file_args(argc,argv,nfile,fnm,FF(PCA_KEEP_ARGS));
 
   /* Open the debug file */
-  if (bDebug) {
+  if (debug_level > 0) {
     char buf[256];
 
     if (gmx_mpi_initialized())
@@ -689,7 +689,7 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     else
       sprintf(buf,"%s.log",ShortProgram());
       
-    init_debug(buf);
+    init_debug(debug_level,buf);
     fprintf(stderr,"Opening debug file %s (src code file %s, line %d)\n",
 	    buf,__FILE__,__LINE__);
   }

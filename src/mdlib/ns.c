@@ -101,7 +101,7 @@ static int NLJ_INC = 16384;
 
 static void reallocate_nblist(t_nblist *nl)
 {
-  if (debug)
+  if (gmx_debug_at)
     fprintf(debug,"reallocating neigborlist il_code=%d, maxnri=%d\n",
 	    nl->il_code,nl->maxnri); 
   srenew(nl->iinr,   nl->maxnri);
@@ -381,7 +381,7 @@ static inline void new_i_nblist(t_nblist *nlist,
   int    i,k,nri,nshift;
     
   if (nlist->maxnrj <= nlist->nrj + NLJ_INC-1) {
-    if (debug)
+    if (gmx_debug_at)
       fprintf(debug,"Adding %5d J particles for %s nblist %s\n",NLJ_INC,
 	      bLR ? "LR" : "SR",nrnb_str(nlist->il_code));
 
@@ -2089,7 +2089,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     calc_ptrs(grid);
     grid_last(log,grid,start,end,cgs->nr);
 
-    if (debug) {
+    if (gmx_debug_at) {
       check_grid(debug,grid);
       print_grid(debug,grid);
     }

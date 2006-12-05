@@ -285,7 +285,7 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
       if (g->nedge[i] > 0)
         g->nbound++;
   }
-  if (debug)
+  if (gmx_debug_at)
     p_graph(debug,"graph",g);
 
   g->negc = 0;

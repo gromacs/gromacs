@@ -475,12 +475,15 @@ void _unexpected_eof(const char *fn,int line,const char *srcfn,int srcline)
  *
  */
 FILE *debug=NULL;
+bool gmx_debug_at=FALSE;
 
-void init_debug (const char *dbgfile)
+void init_debug (const int dbglevel,const char *dbgfile)
 {
   no_buffers();
   debug=ffopen(dbgfile,"w");
   bDebug = TRUE;
+  if (dbglevel >= 2)
+    gmx_debug_at = TRUE;
 }
 
 #if (defined __sgi && defined USE_SGI_FPE)
