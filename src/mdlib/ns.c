@@ -182,13 +182,6 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         }
         else
         {
-   
-            /* Ewald uses the standard tabulated loops */
-            if(icoul==5)
-            {
-                icoul==3;
-            }
-            
             nn = inloop[4*icoul + ivdw];
             
             /* solvent loops follow directly after the corresponding
@@ -253,7 +246,7 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
     * cache trashing.
     */
    int maxsr,maxsr_wat,maxlr,maxlr_wat;
-   int icoul, ivdw;
+   int icoul,icoulf,ivdw;
    int solvent;
    int i;
    t_nblists *nbl;
@@ -331,13 +324,16 @@ void init_neighbor_list(FILE *log,t_forcerec *fr,int homenr)
        if (fr->efep != efepNO) 
        {
            if(fr->bEwald)
-               icoul = 5;
+	     icoulf = 5;
+	   else
+	     icoulf = icoul;
+
            init_nblist(&nbl->nlist_sr[eNL_VDWQQ_FREE],&nbl->nlist_lr[eNL_VDWQQ_FREE],
-                       maxsr,maxlr,ivdw,icoul, TRUE,solvent,enlistATOM);
+                       maxsr,maxlr,ivdw,icoulf,TRUE,solvent,enlistATOM);
            init_nblist(&nbl->nlist_sr[eNL_VDW_FREE],&nbl->nlist_lr[eNL_VDW_FREE],
                        maxsr,maxlr,ivdw,0,TRUE,solvent,enlistATOM);
            init_nblist(&nbl->nlist_sr[eNL_QQ_FREE],&nbl->nlist_lr[eNL_QQ_FREE],
-                       maxsr,maxlr,0,icoul, TRUE,solvent,enlistATOM);
+                       maxsr,maxlr,0,icoulf,TRUE,solvent,enlistATOM);
        }  
    }
 }
