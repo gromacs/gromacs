@@ -606,7 +606,7 @@ do_nonbonded14(int ftype,int nbonds,
 	case F_LJ14:
 	  bFreeEnergy =
 	    (fr->efep != efepNO &&
-	     (md->bPerturbed[ai] || md->bPerturbed[aj] ||
+	     ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
 	      iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
 	      iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
 	case F_LJC14_A:
