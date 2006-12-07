@@ -468,7 +468,8 @@ static int make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
     lexcls->nr = dd->cgindex[dd->icell[0].cg1];
   }
   if (debug)
-    fprintf(debug,"We have %d exclusions\n",lexcls->nra);
+    fprintf(debug,"We have %d exclusions, check count %d\n",
+	    lexcls->nra,count);
 
   return count;
 }
