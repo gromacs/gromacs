@@ -83,7 +83,8 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
-extern bool constrain(FILE *log,t_topology *top,t_ilist *settle,
+extern bool constrain(FILE *log,bool bLog,
+		      t_topology *top,t_ilist *settle,
 		      t_inputrec *ir,
 		      gmx_domdec_t *dd,
 		      int step,t_mdatoms *md,int start,int homenr,
@@ -160,7 +161,8 @@ extern  void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
 extern void set_lincs_matrix(t_lincsdata *li,real *invmass);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
-extern bool constrain_lincs(FILE *log,t_inputrec *ir,
+extern bool constrain_lincs(FILE *log,bool bLog,
+			    t_inputrec *ir,
 			    int step,t_lincsdata *lincsd,t_mdatoms *md,
 			    gmx_domdec_t *dd,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,

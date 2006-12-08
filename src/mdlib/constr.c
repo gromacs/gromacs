@@ -156,7 +156,8 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
+static bool low_constrain(FILE *log,bool bLog,
+			  t_topology *top,t_ilist *settle,
 			  t_inputrec *ir,
 			  gmx_domdec_t *dd,
 			  int step,t_mdatoms *md,int start,int homenr,
@@ -310,7 +311,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
       where();
 
       if (ir->eConstrAlg == estLINCS || !bCoordinates)
-	bOK = constrain_lincs(stdlog,ir,step,lincsd,md,dd,
+	bOK = constrain_lincs(stdlog,bLog,ir,step,lincsd,md,dd,
 			      x,xprime,min_proj,box,lambda,dvdlambda,
 			      invdt,v,vir!=NULL,rmdr,
 			      bCoordinates,nrnb,bDumpOnError);
@@ -359,7 +360,8 @@ static bool low_constrain(FILE *log,t_topology *top,t_ilist *settle,
   return bOK;
 }
 
-bool constrain(FILE *log,t_topology *top,t_ilist *settle,
+bool constrain(FILE *log,bool bLog,
+	       t_topology *top,t_ilist *settle,
 	       t_inputrec *ir,
 	       gmx_domdec_t *dd,
 	       int step,t_mdatoms *md,int start,int homenr,
@@ -368,7 +370,7 @@ bool constrain(FILE *log,t_topology *top,t_ilist *settle,
 	       real dt,rvec *v,tensor *vir,
 	       t_nrnb *nrnb,bool bCoordinates)
 {
-  return low_constrain(log,top,settle,ir,dd,
+  return low_constrain(log,bLog,top,settle,ir,dd,
 		       step,md,start,homenr,x,xprime,min_proj,box,
 		       lambda,dvdlambda,
 		       dt==0 ? 0 : 1/dt,v,vir,nrnb,bCoordinates,FALSE);
@@ -397,7 +399,8 @@ int init_constraints(FILE *log,t_topology *top,t_ilist *settle,t_inputrec *ir,
 {
   int count;
 
-  low_constrain(log,top,settle,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
+  low_constrain(log,TRUE,
+		top,settle,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
 		0,NULL,0,NULL,NULL,NULL,bOnlyCoords,TRUE);
   
   if (cr)

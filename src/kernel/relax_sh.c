@@ -262,10 +262,10 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
       }
     }
   }
-  constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
+  constrain(log,FALSE,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
-  constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
+  constrain(log,FALSE,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
 
@@ -279,7 +279,7 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
   }
 
   /* Project the acceleration on the old bond directions */
-  constrain(log,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
+  constrain(log,FALSE,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
 	    x_old,xnew-start,acc_dir,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,FALSE); 
 }
@@ -538,8 +538,14 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     else
       step *= 0.8;
   }
-  if (MASTER(cr) && !bDone) 
-    fprintf(stderr,"EM did not converge in %d steps\n",number_steps);
+  if (MASTER(cr) && !bDone) {
+    fprintf(log,
+	    "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
+	    mdstep,number_steps,df[Min]);
+    fprintf(stderr,
+	    "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
+	    mdstep,number_steps,df[Min]);
+  }
 
   /* Parallelise this one! */
   if (EEL_FULL(fr->eeltype)) {

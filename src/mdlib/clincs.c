@@ -770,7 +770,8 @@ static void dump_conf(gmx_domdec_t *dd,t_lincsdata *li,
   fclose(fp);
 }
 
-bool constrain_lincs(FILE *log,t_inputrec *ir,
+bool constrain_lincs(FILE *log,bool bLog,
+		     t_inputrec *ir,
 		     int step,t_lincsdata *lincsd,t_mdatoms *md,
 		     gmx_domdec_t *dd,
 		     rvec *x,rvec *xprime,rvec *min_proj,matrix box,
@@ -836,7 +837,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
       }
     }
     
-    if (do_per_step(step,ir->nstlog) || (step < 0))
+    if (bLog)
       cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 	      lincsd->nc,lincsd->bla,lincsd->bllen);
     
@@ -853,7 +854,7 @@ bool constrain_lincs(FILE *log,t_inputrec *ir,
       *dvdlambda += dvdl;
     }
     
-    if ((do_per_step(step,ir->nstlog) || step < 0) && lincsd->nc > 0) {
+    if (bLog && lincsd->nc > 0) {
       fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
       fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
 	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),

@@ -631,6 +631,7 @@ void update(int          natoms,  /* number of atoms in simulation */
   static int       xprime_nalloc=0;
   static int       ngtc,ngacc;
   static bool      bHaveConstr=FALSE,bExtended;
+  bool             bLog=FALSE;
   double           dt;
   real             dt_1;
   int              i,n,m,g;
@@ -763,12 +764,13 @@ void update(int          natoms,  /* number of atoms in simulation */
   prepare_edsam(step,start,homenr,cr,xprime,edyn);
   
   if (bHaveConstr) {
+    bLog = (do_per_step(step,inputrec->nstlog) || (step < 0));
     if (DOMAINDECOMP(cr) && cr->dd->nat_tot_con > xprime_nalloc) {
       xprime_nalloc = over_alloc(cr->dd->nat_tot_con);
       srenew(xprime,xprime_nalloc);
     }
     /* Constrain the coordinates xprime */
-    constrain(stdlog,top,&top->idef.il[F_SETTLE],
+    constrain(stdlog,bLog,top,&top->idef.il[F_SETTLE],
 	      inputrec,cr->dd,step,md,
 	      start,homenr,state->x,xprime,NULL,
               state->box,state->lambda,dvdlambda,
@@ -831,7 +833,7 @@ void update(int          natoms,  /* number of atoms in simulation */
       
       if (bHaveConstr) {
 	/* Constrain the coordinates xprime */
-	constrain(stdlog,top,&top->idef.il[F_SETTLE],
+	constrain(stdlog,bLog,top,&top->idef.il[F_SETTLE],
 		  inputrec,cr->dd,step,md,
 		  start,homenr,state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,
