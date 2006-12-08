@@ -9,6 +9,10 @@
 ???  N     0.110
 ???  O     0.105
 ???  S     0.16
+; Water charge sites
+SOL  MW    0
+SOL  LP    0
+; Masses for vsite construction
 GLY  MN1   0
 GLY  MN2   0
 ALA  MCB1  0
