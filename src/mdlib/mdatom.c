@@ -85,7 +85,7 @@ t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
 void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
 	      int nindex,int *index,t_mdatoms *md)
 {
-  int       i,g=0;
+  int       i,g;
   real      mA,mB,fac;
   t_atom    *atom;
   t_grpopts *opts;
@@ -123,7 +123,9 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
     srenew(md->cENER,md->nalloc);
     if (opts->ngacc > 1)
       srenew(md->cACC,md->nalloc);
-    if (opts->ngfrz > 1)
+    if (opts->nFreeze &&
+	(opts->ngfrz > 1 ||
+	 opts->nFreeze[0][XX] || opts->nFreeze[0][YY] || opts->nFreeze[0][ZZ]))
       srenew(md->cFREEZE,md->nalloc);
     srenew(md->cVCM,md->nalloc);
     if (norires)
@@ -175,16 +177,18 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
     md->massT[i]	= mA;
     if (mA == 0.0) {
       md->invmass[i] = 0;
-    } else {
-      if (md->cFREEZE)
-	g = md->cFREEZE[i];
+    } else if (md->cFREEZE) {
+      g = md->cFREEZE[i];
       if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
 	/* Set the mass of completely frozen particles to ALMOST_ZERO iso 0
-	   to avoid div by zero in lincs or shake.
-	   Note that constraints can still move a partially frozen particle. */
+	 * to avoid div by zero in lincs or shake.
+	 * Note that constraints can still move a partially frozen particle.
+	 */
 	md->invmass[i]	= ALMOST_ZERO;
       else
 	md->invmass[i]	= 1.0/mA;
+    } else {
+      md->invmass[i]	= 1.0/mA;
     }
     md->chargeA[i]	= atom->q;
     md->typeA[i]	= atom->type;

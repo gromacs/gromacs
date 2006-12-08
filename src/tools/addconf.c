@@ -234,6 +234,14 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     top->idef.iparams[0].lj.c6  = 1;
     top->idef.iparams[0].lj.c12 = 1;
 
+    /* inputrec structure */
+    snew(ir,1);
+    ir->coulombtype = eelCUT;
+    ir->vdwtype     = evdwCUT;
+    ir->ndelta      = 2;
+    ir->ns_type     = ensGRID;
+    snew(ir->opts.egp_flags,1);
+    
     /* mdatoms structure */
     snew(nFreeze,2);
     snew(md,1);
@@ -249,14 +257,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     if (debug)
       print_nsb(debug,"nsborder",nsb);
   
-    /* inputrec structure */
-    snew(ir,1);
-    ir->coulombtype = eelCUT;
-    ir->vdwtype     = evdwCUT;
-    ir->ndelta      = 2;
-    ir->ns_type     = ensGRID;
-    snew(ir->opts.egp_flags,1);
-    
     /* forcerec structure */
     if (fr == NULL)
       fr = mk_forcerec();
