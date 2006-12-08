@@ -59,17 +59,21 @@ enum {
   F_CONNBONDS,
   F_HARMONIC,
   F_FENEBONDS,
+  F_TABBONDS,
+  F_TABBONDSNC,
   F_ANGLES, 
   F_G96ANGLES,
   F_CROSS_BOND_BONDS,
   F_CROSS_BOND_ANGLES,
   F_UREY_BRADLEY,
   F_QUARTIC_ANGLES,
+  F_TABANGLES,
   F_PDIHS,
   F_RBDIHS, 
   F_FOURDIHS,
   F_IDIHS, 
   F_PIDIHS, 
+  F_TABDIHS,
   F_LJ14,
   F_COUL14,
   F_LJC14_A,
@@ -155,6 +159,7 @@ typedef union
   struct {real low,up1,up2,kfac;int type,label;           } disres; 
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
+  struct {real kA;int table;real kB;                      } tab;
   struct {real buf[MAXFORCEPARAM];	  	          } generic; /* Conversion */
 } t_iparams;
 
@@ -240,5 +245,11 @@ typedef struct
  *      The list of interactions for each type. Note that some,
  *      such as LJ and COUL will have 0 entries.
  */
+
+typedef struct {
+  int  n;         /* n+1 is the number of points */
+  real scale;     /* distance between two points */
+  real *tab;      /* the actual tables, per point there are  4 numbers */
+} bondedtable_t;
 
 #endif

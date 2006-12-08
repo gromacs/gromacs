@@ -598,10 +598,16 @@ int main(int argc,char *argv[])
   
   fn1 = opt2fn_null("-s1",NFILE,fnm);
   fn2 = opt2fn_null("-s2",NFILE,fnm);
-  if ((fn1 && fn2) || bCompAB)
+  if ((fn1 && fn2) || bCompAB) {
+    if (bCompAB) {
+      if (fn1 == NULL)
+	gmx_fatal(FARGS,"With -ab you need to set the -s1 option");
+      fn2 = NULL;
+    }
     comp_tpx(fn1,fn2,ftol);
-  else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2))
+  } else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2)) {
     fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
+  }
   
   fn1 = opt2fn_null("-e",NFILE,fnm);
   fn2 = opt2fn_null("-e2",NFILE,fnm);

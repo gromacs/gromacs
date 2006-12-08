@@ -274,8 +274,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Initiate forcerecord */
     fr = mk_forcerec();
-    init_forcerec(stdlog,fr,inputrec,top,cr,nsb,state->box,FALSE,
-		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),FALSE);
+    init_forcerec(stdlog,fr,fcd,inputrec,top,cr,nsb,state->box,FALSE,
+		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
+		  opt2fn("-tableb",nfile,fnm),FALSE);
     fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
     
     /* Initialize QM-MM */

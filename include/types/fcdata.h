@@ -106,11 +106,16 @@ typedef struct {
 
 /* 
  * Data struct used in the force calculation routines
+ * for storing the tables for bonded interactions and
  * for storing information which is needed in following steps
  * (for instance for time averaging in distance retraints)
  * or for storing output, since force routines only return the potential.
  */
 typedef struct {
+  bondedtable_t *bondtab;
+  bondedtable_t *angletab;
+  bondedtable_t *dihtab;
+
   t_disresdata disres;
   t_oriresdata orires;
   t_dihresdata dihres;

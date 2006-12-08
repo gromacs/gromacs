@@ -736,13 +736,15 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
 			    const char *tabfn,char *eg1,char *eg2,
 			    t_nblists *nbl)
 {
-  const char *tab_default = "gmx_table.xvg";
   char buf[STRLEN];
   int i,j;
   void *      p_tmp;
 
-  if (tabfn == NULL)
-    tabfn = tab_default;
+  if (tabfn == NULL) {
+    if (debug)
+      fprintf(debug,"No table file name passed, can not read table, can not do non-bonded interactions\n");
+    return;
+  }
     
   sprintf(buf,"%s",tabfn);
   if (eg1 && eg2)
@@ -783,8 +785,61 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
   }
 }
 
+static void count_tables(const t_ilist *il,int stride,const t_iparams *iparams,
+			 int *ncount,int **count)
+{
+  int i,j,tabnr;
+  
+  for(i=0; i<il->nr; i+=stride) {
+    tabnr = iparams[il->iatoms[i]].tab.table;
+    if (tabnr < 0)
+      gmx_fatal(FARGS,"A bonded table number is smaller than 0: %d\n",tabnr);
+    if (tabnr >= *ncount) {
+      srenew(*count,tabnr+1);
+      for(j=*ncount; j<tabnr+1; j++)
+	(*count)[j] = 0;
+      *ncount = tabnr+1;
+    }
+    (*count)[tabnr]++;
+  }
+}
+
+static bondedtable_t *make_bonded_tables(FILE *fplog,
+					 const t_ilist *il1,const t_ilist *il2,
+					 int natoms,const t_iparams *iparams,
+					 const char *basefn,const char *tabext)
+{
+  int  i,ncount,*count;
+  char tabfn[STRLEN];
+  bondedtable_t *tab;
+  
+  tab = NULL;
+
+  ncount = 0;
+  count = NULL;
+  count_tables(il1,1+natoms,iparams,&ncount,&count);
+  if (il2)
+    count_tables(il2,1+natoms,iparams,&ncount,&count);
+  
+  if (ncount > 0) {
+    snew(tab,ncount);
+    for(i=0; i<ncount; i++) {
+      if (count[i] > 0) {
+	sprintf(tabfn,"%s",basefn);
+	sprintf(tabfn + strlen(basefn) - strlen(ftp2ext(efXVG)) - 1,"_%s%d.%s",
+		tabext,i,ftp2ext(efXVG));
+	tab[i] = make_bonded_table(fplog,tabfn,natoms-2);
+      }
+    }
+    sfree(count);
+  }
+  
+  return tab;
+}
+
 void init_forcerec(FILE *fp,
 		   t_forcerec *fr,
+		   t_fcdata   *fcd,
 		   const t_inputrec *ir,
 		   const t_topology *top,
 		   const t_commrec  *cr,
@@ -793,6 +848,7 @@ void init_forcerec(FILE *fp,
 		   bool       bMolEpot,
 		   const char *tabfn,
 		   const char *tabpfn,
+		   const char *tabbfn,
 		   bool       bNoSolvOpt)
 {
   int     i,j,m,natoms,ngrp,negptable,egi,egj;
@@ -848,8 +904,8 @@ void init_forcerec(FILE *fp,
 
   fr->bTwinRange = fr->rlistlong > fr->rlist;
   fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
+
   fr->bvdwtab    = (fr->vdwtype != evdwCUT);
-  
   fr->bcoultab   = (fr->eeltype != eelCUT) && !EEL_RF(fr->eeltype);
   
   if (getenv("GMX_FORCE_TABLES")) {
@@ -1099,10 +1155,32 @@ void init_forcerec(FILE *fp,
       }
     }
   }
-  if (bSep14tab)
+  if (bSep14tab && tabbfn)
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
     fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,ir->tabext,TRUE);
-
+  
+  if (fcd && tabbfn) {
+    if (top->idef.il[F_TABBONDS].nr || top->idef.il[F_TABBONDSNC].nr)
+      fcd->bondtab = make_bonded_tables(fp,
+					&top->idef.il[F_TABBONDS],
+					&top->idef.il[F_TABBONDSNC],
+					2,top->idef.iparams,
+					tabbfn,"b");
+    if (top->idef.il[F_TABANGLES].nr)
+      fcd->angletab = make_bonded_tables(fp,
+					 &top->idef.il[F_TABANGLES],NULL,
+					 3,top->idef.iparams,
+					 tabbfn,"a");
+    if (top->idef.il[F_TABDIHS].nr)
+      fcd->dihtab = make_bonded_tables(fp,
+				       &top->idef.il[F_TABDIHS],NULL,
+				       4,top->idef.iparams,
+				       tabbfn,"d");
+  } else {
+    if (debug)
+      fprintf(debug,"No fcdata or table file name passed, can not read table, can not do bonded interactions\n");
+  }
+  
   /* QM/MM initialization if requested
    */
   if (ir->bQMMM)

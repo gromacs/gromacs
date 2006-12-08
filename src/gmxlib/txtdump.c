@@ -570,6 +570,13 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_FENEBONDS:
     fprintf(fp,"bm=%15.8e, kb=%15.8e\n",iparams->fene.bm,iparams->fene.kb);
     break;
+  case F_TABBONDS:
+  case F_TABBONDSNC:
+  case F_TABANGLES:
+  case F_TABDIHS:
+    fprintf(fp,"kA=%15.8e, tab=%d, kB=%15.8e\n",
+	    iparams->tab.kA,iparams->tab.table,iparams->tab.kB);
+    break;
   case F_POLARIZATION:
     fprintf(fp,"alpha=%15.8e\n",iparams->polarize.alpha);
     break;

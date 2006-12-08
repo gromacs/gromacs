@@ -68,9 +68,10 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 #define IF_ATYPE      1<<5
 /* These flags tell to some of the routines what can be done with this
  * item in the list.
- * If flags & IF_BOND, then bonded interactions will be calculated.
- * If flags & IF_BTYPE grompp can convert the bond to a Morse potential.
- * IF_ATYPE is only used by analysis tools.
+ * With IF_BOND a bonded interaction will be calculated.
+ * With IF_BTYPE grompp can convert the bond to a Morse potential.
+ * With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
+ * a constraint or used for vsite parameter determination by grompp.
  */
 typedef struct
 {

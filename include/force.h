@@ -82,10 +82,16 @@ extern t_forcetable make_tables(FILE *fp,const t_forcerec *fr,
  * to .xvg files
  */
  
+extern bondedtable_t make_bonded_table(FILE *fplog,char *fn,bool angle);
+/* Return a table for bonded interactions,
+ * angle should be: bonds 0, angles 1, dihedrals 2
+ */
+
 extern void pr_forcerec(FILE *fplog,t_forcerec *fr,t_commrec *cr);
 
 extern void init_forcerec(FILE       *fplog,     
 			  t_forcerec *fr,   
+			  t_fcdata   *fcd,
 			  const t_inputrec *ir,   
 			  const t_topology *top,
 			  const t_commrec  *cr,
@@ -94,6 +100,7 @@ extern void init_forcerec(FILE       *fplog,
 			  bool       bMolEpot,
 			  const char *tabfn,
 			  const char *tabpfn,
+			  const char *tabbfn,
 			  bool       bNoSolvOpt);
 /* The Force rec struct must be created with mk_forcerec 
  * The booleans have the following meaning:

@@ -47,6 +47,7 @@
 #include "vec.h"
 #include "main.h"
 #include "network.h"
+#include "physics.h"
 
 /* All the possible (implemented) table functions */
 enum { 
@@ -169,7 +170,7 @@ static void splint(real xa[],real ya[],real y2a[],
 
 static void copy2table(int n,int offset,int stride,
 		       double x[],double Vtab[],double Ftab[],
-		       real dest[],real r_zeros)
+		       real dest[])
 {
 /* Use double prec. for the intermediary variables
  * and temporary x/vtab/vtab2 data to avoid unnecessary 
@@ -178,27 +179,26 @@ static void copy2table(int n,int offset,int stride,
   int  i,nn0;
   double F,G,H,h;
 
-  for(i=1; (i<n-1); i++) {
-    h   = x[i+1] - x[i];
-    F   = -Ftab[i]*h;
-    G   =  3*(Vtab[i+1] - Vtab[i]) + (Ftab[i+1] + 2*Ftab[i])*h;
-    H   = -2*(Vtab[i+1] - Vtab[i]) - (Ftab[i+1] +   Ftab[i])*h;
+  h = 0;
+  for(i=0; (i<n); i++) {
+    if (i < n-1) {
+      h   = x[i+1] - x[i];
+      F   = -Ftab[i]*h;
+      G   =  3*(Vtab[i+1] - Vtab[i]) + (Ftab[i+1] + 2*Ftab[i])*h;
+      H   = -2*(Vtab[i+1] - Vtab[i]) - (Ftab[i+1] +   Ftab[i])*h;
+    } else {
+      /* Fill the last entry with a linear potential,
+       * this is mainly for rounding issues with angle and dihedral potentials.
+       */
+      F   = -Ftab[i]*h;
+      G   = 0;
+      H   = 0;
+    }
     nn0 = offset + i*stride;
     dest[nn0]   = Vtab[i];
     dest[nn0+1] = F;
     dest[nn0+2] = G;
     dest[nn0+3] = H;
-  }
-  if (r_zeros > 0.0) {
-    for(i=1; (i<n-1); i++) {
-      if (0.5*(x[i]+x[i+1]) >= r_zeros) {
-	nn0 = offset+i*stride;
-	dest[nn0]   = 0.0;
-	dest[nn0+1] = 0.0;
-	dest[nn0+2] = 0.0;
-	dest[nn0+3] = 0.0;
-      }
-    }
   }
 }
 
@@ -219,33 +219,46 @@ static void init_table(FILE *fp,int n,int nx0,
     td->x[i] = i/tabscale;
 }
 
-static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
+static void read_tables(FILE *fp,const char *fn,
+			int ntab,int angle,t_tabledata td[])
 {
   const char *libfn;
-  double **yy=NULL;
+  double **yy=NULL,start,end;
   int  k,i,nx,nx0,ny,nny;
   bool bCont;
   real tabscale;
 
-  nny = 2*etiNR+1;  
+  nny = 2*ntab+1;  
   libfn = low_libfn(fn,TRUE);
   nx  = read_xvg(libfn,&yy,&ny);
   if (ny != nny)
     gmx_fatal(FARGS,"Trying to read file %s, but nr columns = %d, should be %d",
 		libfn,ny,nny);
-  if (yy[0][0] != 0)
-    gmx_fatal(FARGS,"The first distance in file %s is %f instead of 0",
-		libfn,yy[0][0]);
+  if (angle == 0) {
+    if (yy[0][0] != 0.0)
+      gmx_fatal(FARGS,
+		"The first distance in file %s is %f nm instead of %f nm",
+		libfn,yy[0][0],0.0);
+  } else {
+    if (angle == 1)
+      start = 0.0;
+    else
+      start = -180.0;
+    end = 180.0;
+    if (yy[0][0] != start || yy[0][nx-1] != end)
+      gmx_fatal(FARGS,"The angles in file %s should go from %f to %f instead of %f to %f\n",
+		libfn,start,end,yy[0][0],yy[0][nx-1]);
+  }
   bCont = TRUE;
   for(nx0=0; bCont && (nx0 < nx); nx0++)
     for(k=1; (k<ny); k++)
       if (yy[k][nx0] != 0)
 	bCont = FALSE;
   if (nx0 == nx)
-    gmx_fatal(FARGS,"All elements in table %s are zero!\n",libfn);
+    fprintf(fp,"\nWARNINGAll elements in table %s are zero\n\n",libfn);
     
   tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
-  for(k=0; (k<etiNR); k++) {
+  for(k=0; (k<ntab); k++) {
     init_table(fp,nx,nx0,tabscale,&(td[k]),TRUE);
     for(i=0; (i<nx); i++) {
       td[k].x[i] = yy[0][i];
@@ -257,9 +270,11 @@ static void read_tables(FILE *fp,const char *fn,t_tabledata td[])
     sfree(yy[i]);
   sfree(yy);
   
-  if (fp) 
-    fprintf(fp,"Read user tables from %s with %d data points.\n"
-	    "Tabscale = %g points/nm\n",libfn,nx,tabscale);
+  if (fp) {
+    fprintf(fp,"Read user tables from %s with %d data points.\n",libfn,nx);
+    if (angle == 0)
+      fprintf(fp,"Tabscale = %g points/nm\n",tabscale);
+  }
 }
 
 static void done_tabledata(t_tabledata *td)
@@ -643,7 +658,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
       bGenTab  = TRUE;
   }
   if (bReadTab) {
-    read_tables(out,fn,td);
+    read_tables(out,fn,etiNR,0,td);
     if (td[0].x[td[0].nx-1] < rtab) 
       gmx_fatal(FARGS,"Tables in file %s not long enough for cut-off:\n"
 		  "\tshould be at least %f nm\n",fn,rtab);
@@ -696,7 +711,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 		tabsel[k]==etabEwaldUser ? "Modified" : "Generated",
 		td[k].nx,b14only?"1-4 ":"",tabnm[tabsel[k]],td[k].tabscale);
     }
-    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,table.tab,-1);
+    copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,table.tab);
     
     if (bDebugMode() && bVerbose) {
       if (b14only)
@@ -716,4 +731,33 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   sfree(td);
 
   return table;
+}
+
+bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle)
+{
+  t_tabledata td;
+  double start;
+  int    i;
+  bondedtable_t tab;
+  
+  if (angle < 2)
+    start = 0;
+  else
+    start = -180.0;
+  read_tables(fplog,fn,1,angle,&td);
+  if (angle > 0) {
+    /* Convert the table from degrees to radians */
+    for(i=0; i<td.nx; i++) {
+      td.x[i] *= DEG2RAD;
+      td.f[i] *= RAD2DEG;
+    }
+    td.tabscale *= RAD2DEG;
+  }
+  tab.n = td.nx;
+  tab.scale = td.tabscale;
+  snew(tab.tab,tab.n*4);
+  copy2table(tab.n,0,4,td.x,td.v,td.f,tab.tab);
+  done_tabledata(&td);
+
+  return tab;
 }

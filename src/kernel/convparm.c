@@ -78,6 +78,14 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->fene.bm=old[0];
     new->fene.kb=old[1];
     break;
+  case F_TABBONDS:
+  case F_TABBONDSNC:
+  case F_TABANGLES:
+  case F_TABDIHS:
+    new->tab.kA    = old[0];
+    new->tab.table = old[1];
+    new->tab.kB    = old[2];
+    break;
   case F_CROSS_BOND_BONDS:
     new->cross_bb.r1e=old[0];
     new->cross_bb.r2e=old[1];

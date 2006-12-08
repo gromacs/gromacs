@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 42;
+static const int tpx_version = 43;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 42;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 9;
+static const int tpx_generation = 10;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -122,12 +122,16 @@ static const t_ftupd ftupd[] = {
   { 20, F_CONNBONDS         },
   { 20, F_HARMONIC          },
   { 34, F_FENEBONDS         },
+  { 43, F_TABBONDS          },
+  { 43, F_TABBONDSNC        },
   { 30, F_CROSS_BOND_BONDS  },
   { 30, F_CROSS_BOND_ANGLES },
   { 30, F_UREY_BRADLEY      },
   { 34, F_QUARTIC_ANGLES    },
+  { 43, F_TABANGLES         },
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
+  { 43, F_TABDIHS           },
   { 41, F_LJC14_A           },
   { 41, F_LJC_PAIRS_A       },
   { 32, F_BHAM_LR           },
@@ -646,6 +650,14 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
   case F_FENEBONDS:
     do_real(iparams->fene.bm);
     do_real(iparams->fene.kb);
+    break;
+  case F_TABBONDS:
+  case F_TABBONDSNC:
+  case F_TABANGLES:
+  case F_TABDIHS:
+    do_real(iparams->tab.kA);
+    do_int (iparams->tab.table);
+    do_real(iparams->tab.kB);
     break;
   case F_CROSS_BOND_BONDS:
     do_real(iparams->cross_bb.r1e);

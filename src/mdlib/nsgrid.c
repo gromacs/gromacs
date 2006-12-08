@@ -437,7 +437,7 @@ void fill_grid(FILE *log,
 	      ind[d]--;
 	    } else {
 	      /* Charge groups in this DD cell further away than the cut-off
-	       * in direction d do not participate in non-bonded interactions.
+	       * in direction do not participate in non-bonded interactions.
 	       */
 	      bUse = FALSE;
 	    }

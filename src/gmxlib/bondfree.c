@@ -1750,3 +1750,207 @@ real cross_bond_angle(int nbonds,
   return vtot;
 }
 
+static real bonded_tab(real kA,real kB,const bondedtable_t *table,real r,
+		       real lambda,real *V,real *F)
+{
+  real k,tabscale,*VFtab,rt,eps,eps2,Yt,Ft,Geps,Heps2,Fp,VV,FF;
+  int  n0,nnn;
+  real v,f,dvdl;
+
+  k = (1.0 - lambda)*kA + lambda*kB;
+
+  tabscale = table->scale;
+  VFtab    = table->tab;
+  
+  rt    = r*tabscale;
+  n0    = rt;
+  eps   = rt - n0;
+  eps2  = eps*eps;
+  nnn   = 4*n0;
+  Yt    = VFtab[nnn];
+  Ft    = VFtab[nnn+1];
+  Geps  = VFtab[nnn+2]*eps;
+  Heps2 = VFtab[nnn+3]*eps2;
+  Fp    = Ft + Geps + Heps2;
+  VV    = Yt + Fp*eps;
+  FF    = Fp + Geps + 2.0*Heps2;
+  
+  *F    = -k*FF*tabscale;
+  *V    = k*VV;
+  dvdl  = (kB - kA)*VV;
+  
+  return dvdl;
+  
+  /* That was 22 flops */
+}
+
+real tab_bonds(int nbonds,
+	       const t_iatom forceatoms[],const t_iparams forceparams[],
+	       const rvec x[],rvec f[],rvec fshift[],
+	       const t_pbc *pbc,const t_graph *g,
+	       real lambda,real *dvdlambda,
+	       const t_mdatoms *md,t_fcdata *fcd)
+{
+  int  i,m,ki,ai,aj,type;
+  real dr,dr2,fbond,vbond,fij,vtot;
+  rvec dx;
+  ivec dt;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+  
+    ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
+    dr2  = iprod(dx,dx);			/*   5		*/
+    dr   = dr2*invsqrt(dr2);		        /*  10		*/
+
+    *dvdlambda += bonded_tab(forceparams[type].tab.kA,
+			     forceparams[type].tab.kB,
+			     &fcd->bondtab[forceparams[type].tab.table],
+			     dr,lambda,&vbond,&fbond);  /*  22 */
+
+    if (dr2 == 0.0)
+      continue;
+
+    
+    vtot  += vbond;/* 1*/
+    fbond *= invsqrt(dr2);			/*   6		*/
+#ifdef DEBUG
+    if (debug)
+      fprintf(debug,"TABBONDS: dr = %10g  vbond = %10g  fbond = %10g\n",
+	      dr,vbond,fbond);
+#endif
+    if (g) {
+      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+      ki=IVEC2IS(dt);
+    }
+    for (m=0; (m<DIM); m++) {			/*  15		*/
+      fij=fbond*dx[m];
+      f[ai][m]+=fij;
+      f[aj][m]-=fij;
+      fshift[ki][m]+=fij;
+      fshift[CENTRAL][m]-=fij;
+    }
+  }					/* 62 TOTAL	*/
+  return vtot;
+}
+
+real tab_angles(int nbonds,
+		const t_iatom forceatoms[],const t_iparams forceparams[],
+		const rvec x[],rvec f[],rvec fshift[],
+		const t_pbc *pbc,const t_graph *g,
+		real lambda,real *dvdlambda,
+		const t_mdatoms *md,t_fcdata *fcd)
+{
+  int  i,ai,aj,ak,t1,t2,type;
+  rvec r_ij,r_kj;
+  real cos_theta,theta,dVdt,va,vtot;
+  ivec jt,dt_ij,dt_kj;
+  
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    
+    theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
+			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
+  
+    *dvdlambda += bonded_tab(forceparams[type].tab.kA,
+			     forceparams[type].tab.kB,
+			     &fcd->angletab[forceparams[type].tab.table],
+			     theta,lambda,&va,&dVdt);  /*  22  */
+    vtot += va;
+    
+    {
+      int  m;
+      real snt,st,sth;
+      real cik,cii,ckk;
+      real nrkj2,nrij2;
+      rvec f_i,f_j,f_k;
+      
+      snt=sin(theta);				/*  10		*/
+      if (fabs(snt) < 1e-12)
+	snt=1e-12;
+      st  = dVdt/snt;				/*  10		*/
+      sth = st*cos_theta;			/*   1		*/
+#ifdef DEBUG
+      if (debug)
+	fprintf(debug,"ANGLES: theta = %10g  vth = %10g  dV/dtheta = %10g\n",
+		theta*RAD2DEG,va,dVdt);
+#endif
+      nrkj2=iprod(r_kj,r_kj);			/*   5		*/
+      nrij2=iprod(r_ij,r_ij);
+      
+      cik=st*invsqrt(nrkj2*nrij2);		/*  12		*/ 
+      cii=sth/nrij2;				/*  10		*/
+      ckk=sth/nrkj2;				/*  10		*/
+      
+      for (m=0; (m<DIM); m++) {			/*  39		*/
+	f_i[m]=-(cik*r_kj[m]-cii*r_ij[m]);
+	f_k[m]=-(cik*r_ij[m]-ckk*r_kj[m]);
+	f_j[m]=-f_i[m]-f_k[m];
+	f[ai][m]+=f_i[m];
+	f[aj][m]+=f_j[m];
+	f[ak][m]+=f_k[m];
+      }
+      if (g) {
+	copy_ivec(SHIFT_IVEC(g,aj),jt);
+      
+	ivec_sub(SHIFT_IVEC(g,ai),jt,dt_ij);
+	ivec_sub(SHIFT_IVEC(g,ak),jt,dt_kj);
+	t1=IVEC2IS(dt_ij);
+	t2=IVEC2IS(dt_kj);
+      }
+      rvec_inc(fshift[t1],f_i);
+      rvec_inc(fshift[CENTRAL],f_j);
+      rvec_inc(fshift[t2],f_k);
+    }                                           /* 169 TOTAL	*/
+  }
+  return vtot;
+}
+
+real tab_dihs(int nbonds,
+	      const t_iatom forceatoms[],const t_iparams forceparams[],
+	      const rvec x[],rvec f[],rvec fshift[],
+	      const t_pbc *pbc,const t_graph *g,
+	      real lambda,real *dvdlambda,
+	      const t_mdatoms *md,t_fcdata *fcd)
+{
+  int  i,type,ai,aj,ak,al;
+  int  t1,t2,t3;
+  rvec r_ij,r_kj,r_kl,m,n;
+  real phi,cos_phi,sign,ddphi,vpd,vtot;
+
+  vtot = 0.0;
+  for(i=0; (i<nbonds); ) {
+    type = forceatoms[i++];
+    ai   = forceatoms[i++];
+    aj   = forceatoms[i++];
+    ak   = forceatoms[i++];
+    al   = forceatoms[i++];
+    
+    phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
+		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84  */
+
+    /* Hopefully phi+M_PI never results in values < 0 */
+    *dvdlambda += bonded_tab(forceparams[type].tab.kA,
+			     forceparams[type].tab.kB,
+			     &fcd->dihtab[forceparams[type].tab.table],
+			     phi+M_PI,lambda,&vpd,&ddphi);
+		       
+    vtot += vpd;
+    do_dih_fup(ai,aj,ak,al,-ddphi,r_ij,r_kj,r_kl,m,n,
+	       f,fshift,pbc,g,x,t1,t2,t3);			/* 112	*/
+
+#ifdef DEBUG
+    fprintf(debug,"pdih: (%d,%d,%d,%d) cp=%g, phi=%g\n",
+	    ai,aj,ak,al,cos_phi,phi);
+#endif
+  } /* 227 TOTAL 	*/
+
+  return vtot;
+}
