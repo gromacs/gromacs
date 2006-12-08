@@ -307,7 +307,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   real   sf_dir,invdt;
   real   ftol,step,step0,xiH,xiS,dum=0;
   char   cbuf[56];
-  bool   bDone,bInit;
+  bool   bDone,bCont,bInit;
   int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
   int    g,number_steps,d,Min=0,count=0;
 #define  Try (1-Min)             /* At start Try = 1 */
@@ -329,7 +329,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     bFirst = FALSE;
   }
   
-  bInit        = bForceInit || ((mdstep == 0) && !inputrec->bUncStart);
+  bCont        = (mdstep == inputrec->init_step) && inputrec->bUncStart;
+  bInit        = (mdstep == inputrec->init_step) || bForceInit;
   ftol         = inputrec->em_tol;
   number_steps = inputrec->niter;
   step0        = 1.0;
@@ -362,7 +363,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   }
   
   /* Do a prediction of the shell positions */
-  if (!bNoPredict)
+  if (!bNoPredict && !bCont)
     predict_shells(log,state->x,state->v,inputrec->delta_t,nshell,shells,
 		   md->massT,bInit);
 
