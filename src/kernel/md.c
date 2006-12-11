@@ -1278,9 +1278,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   if (bShell_FlexCon) {
     fprintf(log,"Fraction of iterations that converged:           %.2f %%\n",
-	    (nconverged*100.0)/(step_rel+1));
+	    (nconverged*100.0)/step_rel);
     fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
-	    tcount/(step_rel+1));
+	    tcount/step_rel);
   }
 
   if (repl_ex_nst > 0 && MASTER(cr))
