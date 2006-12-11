@@ -178,13 +178,13 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	    shell[nsi].k    += idef->iparams[type].cubic.kb;
 	    break;
 	  case F_POLARIZATION:
-	    if (qS != md->chargeB[aS])
+	    if (md->nChargePerturbed && qS != md->chargeB[aS])
 	      gmx_fatal(FARGS,"polarize can not be used with qA != qB");
 	    shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
 	      idef->iparams[type].polarize.alpha;
 	  break;
 	  case F_WATER_POL:
-	    if (qS != md->chargeB[aS])
+	    if (md->nChargePerturbed && qS != md->chargeB[aS])
 	      gmx_fatal(FARGS,"water_pol can not be used with qA != qB");
 	    alpha          = (idef->iparams[type].wpol.al_x+
 			      idef->iparams[type].wpol.al_y+
