@@ -28,8 +28,7 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	wnblist.c	wnblist.h	\
 	pull_internal.h	csettle.c       clincs.c	\
 	qmmm.c		gmx_fft.c 	gmx_parallel_3dfft.c	\
-	gmx_wallcycle.c	\
-	splittop.c	splittop.h
+	gmx_wallcycle.c
 
 
 EXTRA_libmd@LIBSUFFIX@_la_SOURCES = \
