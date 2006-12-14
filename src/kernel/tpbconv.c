@@ -195,9 +195,6 @@ static void reduce_ilist(atom_id invindex[],bool bKeep[],
     for(i=0; (i<newnr); i++)
       il->iatoms[i] = ia[i];
     
-    for(i=0; (i<MAXNODES); i++)
-      il->multinr[i] = newnr;
-  
     sfree(ia);
   }
 }

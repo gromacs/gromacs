@@ -73,7 +73,6 @@ void global_stat(FILE *log,
   static int   *itc;
   int    iterminate,ie,ifv,isv,imu=0,idedl,icm,imass,ica,inb=0;
   int    icj=-1,ici=-1,icx=-1;
-  int    in[MAXNODES];
   int    inn[egNR];
   int    j;
   double nb;

@@ -42,8 +42,6 @@ typedef struct {
   int  nnodes;			/* The number of nodes    		*/
   int  cgtotal; 		/* Total number of charge groups	*/
   int  natoms;			/* Total number of atoms		*/
-  int  nstDlb;                  /* Every how many steps must we do load */
-                                /* balancing                            */
   int  shift,bshift;		/* Coordinates are shifted left for     */
                                 /* 'shift' systolic pulses, and right   */
 				/* for 'bshift' pulses. Forces are      */
@@ -51,12 +49,12 @@ typedef struct {
 				/* and left for 'bshift' pulses         */
 				/* This way is not necessary to shift   */
 				/* the coordinates over the entire ring */
-  int  homenr[MAXNODES];       	/* The number of home particles		*/
-  int  index[MAXNODES];		/* The starting of the home atoms	*/
-  int  cgload[MAXNODES];        /* Division of charge groups over CPUS  */
+  int  *homenr;         	/* The number of home particles		*/
+  int  *index;  		/* The starting of the home atoms	*/
+  int  *cgload;                 /* Division of charge groups over CPUS  */
                                 /* This is static, i.e. it does not     */
 				/* change during the simulation         */
-  int  workload[MAXNODES];      /* This is the load for neighbor-       */
+  int  *workload;               /* This is the load for neighbor-       */
                                 /* searching, this is initially the same*/
 				/* as cgload, but may change due to     */
 				/* dynamic load balancing               */
@@ -64,7 +62,5 @@ typedef struct {
 
 #define START(nsb)  ((nsb)->index[(nsb)->nodeid])
 #define HOMENR(nsb) ((nsb)->homenr[(nsb)->nodeid])
-#define PMESTART(nsb)  ((nsb)->pmeindex[(nsb)->nodeid])
-#define PMEHOMENR(nsb) ((nsb)->pmehomenr[(nsb)->nodeid])
 #define CG0(nsb)    (((nsb)->nodeid == 0) ? 0 : (nsb)->cgload[(nsb)->nodeid-1])
 #define CG1(nsb)    ((nsb)->cgload[(nsb)->nodeid])

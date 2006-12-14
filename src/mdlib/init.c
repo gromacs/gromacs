@@ -59,39 +59,6 @@
 #define NOT_FINISHED(l1,l2) \
   printf("not finished yet: lines %d .. %d in %s\n",l1,l2,__FILE__)
 
-void check_nnodes_top(char *fn,t_topology *top)
-{
-  int i,j;
-  bool bOld=FALSE;
-  
-  /* This routine resets old parallel topologies to single processor
-   * topologies.
-   */
-  
-  for(i=0; (i<ebNR); i++) {
-    top->blocks[i].multinr[0] = top->blocks[i].nr;
-    for(j=1; (j<MAXNODES); j++) {
-      bOld = bOld || (top->blocks[i].multinr[j] != 0);
-      top->blocks[i].multinr[j] = 0;
-    }
-  }
-  for(i=0; (i<F_NRE); i++) {
-    top->idef.il[i].multinr[0] = top->idef.il[i].nr;
-    for(j=1; (j<MAXNODES); j++) {
-      bOld = bOld || (top->idef.il[i].multinr[j] != 0);
-      top->idef.il[i].multinr[j] = 0;
-    }
-  } 
-  if (bOld) {
-    fprintf((stdlog != NULL) ? stdlog : stderr,
-	    "WARNING:\n"
-	    "You are using an old multiprocessor tpr file.\n"
-	    "It has been converted back to a single processor topology file\n"
-	    "before further processing. In case of problems please make\n"
-	    "a new tpr file.\n");
-  }
-}
-
 static char *int_title(char *title,int nodeid,char buf[], int size)
 {
   snprintf(buf,size-1,"%s (%d)",title,nodeid);
@@ -108,10 +75,9 @@ void init_single(FILE *log,t_inputrec *inputrec,
   real        t;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-  check_nnodes_top(tpxfile,top);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
-  calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0);
+  calc_nsb(log,&(top->blocks[ebCGS]),1,NULL,nsb);
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
@@ -126,7 +92,6 @@ static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile)
   
   init_inputrec(&inputrec);
   read_tpx_state(tpxfile,&step,&t,&inputrec,&state,NULL,&top);
-  check_nnodes_top(tpxfile,&top);
   mv_data(cr,left,right,&inputrec,&top,&state);
   done_top(&top);
   done_state(&state);

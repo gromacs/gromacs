@@ -81,10 +81,6 @@ void _blockrx(const t_commrec *cr,int src,int nelem,int size,void *data)
 
 void mv_block(const t_commrec *cr,int dest,t_block *block)
 {
-  nblocktx(cr,dest,MAXNODES,block->multinr);
-#ifdef DEBUG
-  fprintf(stdlog,"mv multinr\n");
-#endif
   blocktx(cr,dest,block->nr);
 #ifdef DEBUG
   fprintf(stdlog,"mv block->nr (%d)\n",block->nr);
@@ -105,10 +101,6 @@ void mv_block(const t_commrec *cr,int dest,t_block *block)
 
 void ld_block(const t_commrec *cr,int src,t_block *block)
 {
-  nblockrx(cr,src,MAXNODES,block->multinr);
-#ifdef DEBUG
-  fprintf(stdlog,"ld multinr\n");
-#endif
   blockrx(cr,src,block->nr);
 #ifdef DEBUG
   fprintf(stdlog,"ld block->nr (%d)\n",block->nr);

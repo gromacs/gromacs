@@ -38,12 +38,6 @@
 #endif
 
 typedef struct {
-  int multinr[MAXNODES];       	/* The indices for the multinode
-                                 * version. For n=0, the blocks run from 0
-                                 * upto multinr[index[0]]. The blocks for 
-                                 * node n (n>0) run from 
-                                 * index[multinr[n-1]] to index[multinr[n]].
-                                 */
   int nr;			/* The number of blocks			*/
   atom_id *index;		/* Array of indices in a (dim: nr+1)	*/
   int nra;			/* The number of atoms 			*/

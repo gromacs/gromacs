@@ -234,9 +234,6 @@ extern void rewind_trj(int status);
 extern t_topology *read_top(char *fn);
 /* Extract a topology data structure from a topology file */
 
-extern void mk_single_top(t_topology *top);
-/* Make the topology file single node ready */
-
 extern bool bDoView(void);
 /* Return TRUE when user requested viewing of the file */
 

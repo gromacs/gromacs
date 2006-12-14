@@ -52,17 +52,21 @@ typedef struct {
   t_iatom *ia;
 } t_sf;
 
-static void init_sf(int nr,t_sf sf[])
+static t_sf *init_sf(int nr)
 {
-  int i;
+  t_sf *sf;
+  int  i;
 
+  snew(sf,nr);
   for(i=0; (i<nr); i++) {
     sf[i].nr=0;
     sf[i].ia=NULL;
   }
+
+  return sf;
 }
 
-static void done_sf(int nr,t_sf sf[])
+static void done_sf(int nr,t_sf *sf)
 {
   int i;
 
@@ -71,6 +75,7 @@ static void done_sf(int nr,t_sf sf[])
     sfree(sf[i].ia);
     sf[i].ia=NULL;
   }
+  sfree(sf);
 }
 
 static void push_sf(t_sf *sf,int nr,t_iatom ia[])
@@ -97,14 +102,15 @@ static int min_nodeid(int nr,atom_id list[],int hid[])
   return minnodeid;
 }
 
-static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
+static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist,
+			 int *multinr)
 {
   int     i,j,k,type,ftype,nodeid,nratoms,tnr;
   int     nvsite_constr,tmpid;
   t_iatom ai;
-  t_sf    sf[MAXNODES];
+  t_sf    *sf;
   
-  init_sf(MAXNODES,sf);
+  sf = init_sf(nnodes);
 
   /* Walk along all the bonded forces, find the appropriate node
    * to calc it on, and add it to that nodes list.
@@ -163,19 +169,19 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist)
     push_sf(&(sf[nodeid]),nratoms+1,&(ilist->iatoms[i]));
   }
   tnr=0;
-  for(nodeid=0; (nodeid<MAXNODES); nodeid++) {
+  for(nodeid=0; (nodeid<nnodes); nodeid++) {
     for (i=0; (i<sf[nodeid].nr); i++) 
       ilist->iatoms[tnr++]=sf[nodeid].ia[i];
 
-    ilist->multinr[nodeid]=(nodeid==0) ? 0 : ilist->multinr[nodeid-1];
-    ilist->multinr[nodeid]+=sf[nodeid].nr;
+    multinr[nodeid]=(nodeid==0) ? 0 : multinr[nodeid-1];
+    multinr[nodeid]+=sf[nodeid].nr;
   }
   if (tnr != ilist->nr)
     gmx_incons("Splitting forces over processors");
-  done_sf(MAXNODES,sf);
+  done_sf(nnodes,sf);
 }
 
-static int *home_index(int nnodes,t_block *cgs)
+static int *home_index(int nnodes,t_block *cgs,int *multinr)
 {
   /* This routine determines the node id for each particle */
   int *hid;
@@ -190,8 +196,8 @@ static int *home_index(int nnodes,t_block *cgs)
     
   /* loop over nodes */
   for(nodeid=0; (nodeid<nnodes); nodeid++) {
-    j0 = (nodeid==0) ? 0 : cgs->multinr[nodeid-1];
-    j1 = cgs->multinr[nodeid];
+    j0 = (nodeid==0) ? 0 : multinr[nodeid-1];
+    j1 = multinr[nodeid];
     
     /* j0 and j1 are the boundariesin the index array */
     for(j=j0; (j<j1); j++) {
@@ -328,9 +334,10 @@ static t_border *mk_border(FILE *fp,int natom,atom_id *invcgs,
 }
 
 static void split_blocks(FILE *fp,int nnodes,
-			 t_block *cgs,t_block *sblock,real capacity[])
+			 t_block *cgs,t_block *sblock,real capacity[],
+			 int *multinr_cgs,int *multinr_shk)
 {
-  int      maxatom[MAXNODES];
+  int      *maxatom;
   int      i,ii,ai,b0,b1;
   int      nodeid,last_shk,nbor;
   t_border *border;
@@ -348,6 +355,7 @@ static void split_blocks(FILE *fp,int nnodes,
   cgsnum = make_invblock(cgs,cgs->nra+1);
   border = mk_border(fp,cgs->nra,cgsnum,shknum,&nbor);
 
+  snew(maxatom,nnodes);
   tload  = capacity[0]*cgs->nra;
   tcap   = 1.0;
   nodeid = 0;
@@ -362,10 +370,10 @@ static void split_blocks(FILE *fp,int nnodes,
     
     if ((fabs(b0-tload)<fabs(b1-tload))) {
       /* New nodeid time */
-      cgs->multinr[nodeid]    = border[i].ic;
+      multinr_cgs[nodeid] = border[i].ic;
       /* Store the atom number here, has to be processed later */
-      sblock->multinr[nodeid] = border[i].atom;
-      maxatom[nodeid]         = b0;
+      multinr_shk[nodeid] = border[i].atom;
+      maxatom[nodeid]     = b0;
       tcap -= capacity[nodeid];
       nodeid++;
       
@@ -379,10 +387,10 @@ static void split_blocks(FILE *fp,int nnodes,
   }
   /* Now the last one... */
   while (nodeid < nnodes) {
-    cgs->multinr[nodeid]    = cgs->nr;
+    multinr_cgs[nodeid] = cgs->nr;
     /* Store atom number, see above */
-    sblock->multinr[nodeid] = cgs->nra;
-    maxatom[nodeid]         = cgs->nra;
+    multinr_shk[nodeid] = cgs->nra;
+    maxatom[nodeid]     = cgs->nra;
     nodeid++;
   }
   if (nodeid != nnodes) {
@@ -396,19 +404,11 @@ static void split_blocks(FILE *fp,int nnodes,
   for(i=0; (i<nnodes); i++)
     fprintf(fp," %7d",maxatom[i]);
   fprintf(fp,"\n");
-  
+
+  sfree(maxatom);
   sfree(shknum);
   sfree(cgsnum);
   sfree(border);
-}
-
-static void def_mnr(int nr,int mnr[])
-{
-  int i;
-
-  for (i=0; (i<MAXNODES); i++) 
-    mnr[i]=0;
-  mnr[0]=nr;
 }
 
 typedef struct {
@@ -620,20 +620,11 @@ void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
     fprintf(debug,"Done gen_sblocks\n");
 }
 
-void reset_multinr(t_topology *top)
-{
-  int j;
-  
-  for(j=0; (j<F_NRE); j++)  
-    def_mnr(top->idef.il[j].nr,top->idef.il[j].multinr);
-  
-  for (j=0; j<ebNR; j++) 
-    def_mnr(top->blocks[j].nr,top->blocks[j].multinr);
-}
-
-void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity)
+void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
+	       int *multinr_cgs,int **multinr_nre)
 {
   int     i,j,k,mj,atom,maxatom;
+  int     *multinr_shk;
   t_block sblock;
   int     *homeind;
   atom_id *sblinv;
@@ -646,34 +637,42 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity)
     
   fprintf(fp,"splitting topology...\n");
   
-  reset_multinr(top);
-  
+#define MOL_BORDER
+#ifndef MOL_BORDER
   /* Make a special shake block that includes settles */
   init_block(&sblock);
   gen_sblocks(fp,top->atoms.nr,&top->idef,&sblock,TRUE);
-  
-  split_blocks(fp,nnodes,&(top->blocks[ebCGS]),&sblock,capacity);
+#else
+  sblock = top->blocks[ebMOLS];
+#endif  
+
+  snew(multinr_shk,nnodes);
+  split_blocks(fp,nnodes,&(top->blocks[ebCGS]),&sblock,capacity,
+	       multinr_cgs,multinr_shk);
   
   /* Now transform atom numbers to real inverted shake blocks */
   sblinv = make_invblock(&(top->blocks[ebSBLOCKS]),top->atoms.nr+1);
-  for(j=0; (j<MAXNODES); j++) {
-    atom = sblock.multinr[j];
+  for(j=0; (j<nnodes); j++) {
+    atom = multinr_shk[j];
     mj   = NO_ATID;
-    for(k=(j == 0) ? 0 : sblock.multinr[j-1]; (k<atom); k++)
+    for(k=(j == 0) ? 0 : multinr_shk[j-1]; (k<atom); k++)
       if (sblinv[k] != NO_ATID)
 	mj = max(mj,(int)sblinv[k]);
     if (mj == NO_ATID) 
-      mj = (j == 0) ? -1 : top->blocks[ebSBLOCKS].multinr[j-1]-1;
+      mj = (j == 0) ? -1 : multinr_shk[j-1]-1;
     
-    top->blocks[ebSBLOCKS].multinr[j] = mj+1;
+    multinr_shk[j] = mj+1;
   }
   sfree(sblinv);
-    
-  homeind=home_index(nnodes,&(top->blocks[ebCGS]));
+  sfree(multinr_shk);
+
+  homeind=home_index(nnodes,&(top->blocks[ebCGS]),multinr_cgs);
   
   for(j=0; (j<F_NRE); j++)
-    split_force2(nnodes,homeind,&top->idef,&top->idef.il[j]);
+    split_force2(nnodes,homeind,&top->idef,&top->idef.il[j],multinr_nre[j]);
   sfree(homeind);
+#ifndef MOL_BORDER
   done_block(&sblock);
+#endif
 }
 

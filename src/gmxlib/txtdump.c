@@ -711,11 +711,6 @@ void pr_ilist(FILE *fp,int indent,const char *title,
       fprintf(fp,"nr: %d\n",ilist->nr);
       if (ilist->nr > 0) {
 	(void) pr_indent(fp,indent);
-	fprintf(fp,"multinr[division over processors]:");
-	for (i=0; (i<MAXNODES) && (ilist->multinr[i] > 0); i++) 
-	  (void) fprintf(fp," %d",ilist->multinr[i]);
-	fprintf(fp,"\n");
-	(void) pr_indent(fp,indent);
 	fprintf(fp,"iatoms:\n");
 	iatoms=ilist->iatoms;
 	for (i=j=0; i<ilist->nr;) {
@@ -772,11 +767,6 @@ static int pr_block_title(FILE *fp,int indent,const char *title,t_block *block)
   if (available(fp,block,title))
     {
       indent=pr_title(fp,indent,title);
-      (void) pr_indent(fp,indent);
-      fprintf(fp,"multinr[division over processors]:");
-      for (i=0; (i<MAXNODES); i++) 
-	(void) fprintf(fp," %d",block->multinr[i]);
-      fprintf(fp,"\n");
       (void) pr_indent(fp,indent);
       (void) fprintf(fp,"nr=%d\n",block->nr);
       (void) pr_indent(fp,indent);

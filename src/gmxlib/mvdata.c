@@ -142,7 +142,6 @@ void ld_state(const t_commrec *cr,int src,t_state *state)
 static void ld_ilist(const t_commrec *cr,int src,t_ilist *ilist)
 {
   blockrx(cr,src,ilist->nr);
-  nblockrx(cr,src,MAXNODES,ilist->multinr);
   snew(ilist->iatoms,ilist->nr);
   nblockrx(cr,src,ilist->nr,ilist->iatoms);
 }
@@ -417,7 +416,6 @@ void mv_state(const t_commrec *cr,int dest,t_state *state)
 static void mv_ilist(const t_commrec *cr,int dest,t_ilist *ilist)
 {
   blocktx(cr,dest,ilist->nr);
-  nblocktx(cr,dest,MAXNODES,ilist->multinr);
   nblocktx(cr,dest,ilist->nr,ilist->iatoms);
 }
 

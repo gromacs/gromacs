@@ -53,7 +53,7 @@
 #include "statutil.h"
 #include "names.h"
 
-static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes)
+static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes,int **multinr)
 {
   int i,ftype,nr,nra,m0,m1;
   
@@ -70,8 +70,8 @@ static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes)
       fprintf(stdlog,"%-12s", interaction_function[ftype].name);
       /* Loop over processors */
       for(i=0; (i<nnodes); i++) {
-	m0 = (i == 0) ? 0 : idef->il[ftype].multinr[i-1]/nra;
-	m1 = idef->il[ftype].multinr[i]/nra;
+	m0 = (i == 0) ? 0 : multinr[ftype][i-1]/nra;
+	m1 = multinr[ftype][i]/nra;
 	fprintf(stdlog," %5d",m1-m0);
       }
       fprintf(stdlog,"\n");
@@ -79,7 +79,7 @@ static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes)
   }
 }
 
-static void split_idef_old(t_idef *idef,int nnodes)
+static void split_idef_old(t_idef *idef,int nnodes,int **multinr)
 {
   int i,ftype,nr,nra,m1;
   
@@ -91,14 +91,14 @@ static void split_idef_old(t_idef *idef,int nnodes)
       /* Loop over processors */
       for(i=0; (i<nnodes-1); i++) {
 	m1 = ((i+1)*(nr/nra)/nnodes);
-	idef->il[ftype].multinr[i] = nra*m1;
+	multinr[ftype][i] = nra*m1;
       }
-      idef->il[ftype].multinr[i]=nr;
+      multinr[ftype][i]=nr;
     }
   }
 }
 
-static void select_my_ilist(FILE *log,t_ilist *il,t_commrec *cr)
+static void select_my_ilist(FILE *log,t_ilist *il,int *multinr,t_commrec *cr)
 {
   t_iatom *ia;
   int     i,start,end,nr;
@@ -106,8 +106,8 @@ static void select_my_ilist(FILE *log,t_ilist *il,t_commrec *cr)
   if (cr->nodeid == 0)
     start=0;
   else
-    start=il->multinr[cr->nodeid-1];
-  end=il->multinr[cr->nodeid];
+    start=multinr[cr->nodeid-1];
+  end=multinr[cr->nodeid];
   
   nr=end-start;
   if (nr < 0)
@@ -123,17 +123,15 @@ static void select_my_ilist(FILE *log,t_ilist *il,t_commrec *cr)
   sfree(il->iatoms);
   il->iatoms=ia;
   
-  for(i=0; (i<MAXNODES); i++)
-    il->multinr[i]=nr;
   il->nr=nr;
 }
 
-static void select_my_idef(FILE *log,t_idef *idef,t_commrec *cr)
+static void select_my_idef(FILE *log,t_idef *idef,int **multinr,t_commrec *cr)
 {
   int i;
   
   for(i=0; (i<F_NRE); i++)
-    select_my_ilist(log,&idef->il[i],cr);
+    select_my_ilist(log,&idef->il[i],multinr[i],cr);
 }
 	
 
@@ -144,7 +142,8 @@ void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
   int    i,npp;
   real   *capacity;
   double tcap = 0;
-  
+  int    *multinr_cgs,**multinr_nre;
+
   /* Time to setup the division of charge groups over processors */
   npp = cr->nnodes-cr->npmenodes;
   snew(capacity,npp);
@@ -155,17 +154,27 @@ void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
   /* Take care that the sum of capacities is 1.0 */
   capacity[npp-1] = 1.0 - tcap;
 
+  snew(multinr_cgs,npp);
+  snew(multinr_nre,F_NRE);
+  for(i=0; i<F_NRE; i++)
+    snew(multinr_nre[i],npp);
+  
   /* This computes which entities can be placed on processors */
-  split_top(log,npp,top,capacity);
+  split_top(log,npp,top,capacity,multinr_cgs,multinr_nre);
   sfree(capacity);
-  calc_nsb(log,&(top->blocks[ebCGS]),cr->nnodes,nsb,0);
+  calc_nsb(log,&(top->blocks[ebCGS]),cr->nnodes,multinr_cgs,nsb);
 
   /* This should be fine */
   /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/
   
-  select_my_idef(log,&(top->idef),cr);
+  select_my_idef(log,&(top->idef),multinr_nre,cr);
   
-  pr_idef_division(log,&(top->idef),npp);
+  pr_idef_division(log,&(top->idef),npp,multinr_nre);
+
+  for(i=0; i<F_NRE; i++)
+    sfree(multinr_nre[i]);
+  sfree(multinr_nre);
+  sfree(multinr_cgs);
   
   print_nsb(log,"Workload division",nsb);
 }

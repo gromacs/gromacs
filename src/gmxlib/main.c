@@ -83,7 +83,7 @@ static int get_nodeid(FILE *log,t_commrec *cr,
       * system!
       */
 {
-  int i,nodeids[MAXNODES],min_index,min_nodeid,send_nodeid,receive_nodeid;
+  int i,*nodeids=NULL,min_index,min_nodeid,send_nodeid,receive_nodeid;
 
   *nnodes=0;
   send_nodeid=*nodeid;
@@ -104,6 +104,7 @@ static int get_nodeid(FILE *log,t_commrec *cr,
       min_nodeid=send_nodeid;
       min_index=*nnodes;
     }
+    srenew(nodeids,*nnodes+1);
     nodeids[(*nnodes)++]=send_nodeid;
     send_nodeid=receive_nodeid;
   } while (receive_nodeid!=*nodeid);
@@ -129,6 +130,7 @@ static int get_nodeid(FILE *log,t_commrec *cr,
     fprintf(log,"\n");
   }
 #endif
+  sfree(nodeids);
   return 1;
 }
 

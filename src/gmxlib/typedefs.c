@@ -67,8 +67,6 @@ void init_block(t_block *block)
   snew(block->index,1);
   block->index[0] = 0;
   block->a     = NULL;
-  for(i=0; (i<MAXNODES); i++)
-    block->multinr[i]=0;
 }
 
 void init_atom(t_atoms *at)
@@ -139,7 +137,6 @@ void stupid_fill(t_block *grp,int natom,bool bOneIndexGroup)
       grp->index[i]=i;
     grp->nr=natom;
   }
-  grp->multinr[0] = natom;
 }
 
 void done_block(t_block *block)

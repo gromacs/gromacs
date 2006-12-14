@@ -98,7 +98,6 @@ static void do_sdf(char *fnNDX,char *fnTPS,char *fnTRX, char *fnSDF,
   /* Read Topology */
   if (fnTPS) {
     bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
-    mk_single_top(&top);
   }
   
 

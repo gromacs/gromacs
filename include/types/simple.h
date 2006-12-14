@@ -66,8 +66,6 @@ extern "C" {
 #define ZZXX    6
 #define ZZYY    7
 #define ZZZZ    8
-/* Max number of nodes 	*/  
-#define MAXNODES	256	
 #ifndef HAVE_BOOL
 #define bool int
   /* typedef int         	bool; */

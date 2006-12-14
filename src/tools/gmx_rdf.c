@@ -160,7 +160,6 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   
   if (fnTPS) {
     bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
-    mk_single_top(&top);
     if (bTop && !bCM)
       /* get exclusions from topology */
       excl=&(top.blocks[ebEXCLS]);

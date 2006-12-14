@@ -87,24 +87,34 @@ void calc_nsbshift(FILE *fp,t_nsborder *nsb)
 	    nsb->shift,nsb->bshift);
 }
 
-void calc_nsb(FILE *fp,t_block *cgs,int nnodes,t_nsborder *nsb,int nstDlb)
+void calc_nsb(FILE *fp,t_block *cgs,int nnodes,int *multinr,
+	      t_nsborder *nsb)
 {
   int  i,cg0,dummy=0;
   
-  /* Clean! */
-  for(i=0; (i<MAXNODES); i++) 
-    nsb->homenr[i]=nsb->index[i]=nsb->cgload[i]=nsb->workload[i];
+  snew(nsb->homenr,nnodes);
+  snew(nsb->index,nnodes);
+  snew(nsb->cgload,nnodes);
+  snew(nsb->workload,nnodes);
   
   nsb->nnodes=nnodes;
-  nsb->nstDlb=nstDlb;
   nsb->cgtotal=cgs->nr;
   nsb->natoms=cgs->nra;
-  for(i=0; (i < nnodes); i++) {
-    cg0              = (i > 0) ? cgs->multinr[i-1] : 0;
-    nsb->cgload[i]   = cgs->multinr[i];
-    nsb->workload[i] = cgs->multinr[i];
-    nsb->index[i]    = cgs->index[cg0];
-    nsb->homenr[i]   = cgs->index[cgs->multinr[i]]-nsb->index[i];
+  if (nnodes == 1) {
+    nsb->cgload[0]   = cgs->nr;
+    nsb->workload[0] = cgs->nr;
+    nsb->index[0]    = cgs->index[0];
+    nsb->homenr[0]   = cgs->index[cgs->nr];
+  } else {
+    if (multinr == NULL)
+      gmx_fatal(FARGS,"Internal error in calc_nsb: multinr = NULL");
+    for(i=0; (i < nnodes); i++) {
+      cg0              = (i > 0) ? multinr[i-1] : 0;
+      nsb->cgload[i]   = multinr[i];
+      nsb->workload[i] = multinr[i];
+      nsb->index[i]    = cgs->index[cg0];
+      nsb->homenr[i]   = cgs->index[multinr[i]]-nsb->index[i];
+    }
   }
   calc_nsbshift(fp,nsb);
 }

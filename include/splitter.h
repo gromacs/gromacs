@@ -37,7 +37,8 @@
 #ifndef _splitter_h
 #define _splitter_h
 
-extern void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity);
+extern void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
+		      int *mulitnr_cgs,int **multinr_nre);
 /* Split the topology (blocks and forces, based on charge groups 
  * and shake blocks.
  * The capacity is releated to the capacity of each node. If all numbers are 

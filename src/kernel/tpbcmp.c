@@ -153,9 +153,6 @@ static void cmp_ilist(FILE *fp,int ftype,t_ilist *il1,t_ilist *il2)
   fprintf(fp,"comparing ilist %s\n",interaction_function[ftype].name);
   sprintf(buf,"%s->nr",interaction_function[ftype].name);
   cmp_int(fp,buf,0,il1->nr,il2->nr);
-  sprintf(buf,"%s->multinr",interaction_function[ftype].name);
-  for(i=0; (i<MAXNODES); i++)
-    cmp_int(fp,buf,i,il1->multinr[i],il2->multinr[i]);
   sprintf(buf,"%s->iatoms",interaction_function[ftype].name);
   if (((il1->nr > 0) && (!il1->iatoms)) || 
       ((il2->nr > 0) && (!il2->iatoms)) ||
@@ -235,9 +232,6 @@ static void cmp_block(FILE *fp,t_block *b1,t_block *b2,const char *s)
   cmp_int(fp,buf,-1,b1->nr,b2->nr);
   sprintf(buf,"%s.nra",s);
   cmp_int(fp,buf,-1,b1->nra,b2->nra);
-  sprintf(buf,"%s.multinr",s);
-  for(i=0; (i<MAXNODES); i++)
-    cmp_int(fp,buf,i,b1->multinr[i],b2->multinr[i]);
 } 
 
 static void cmp_atom(FILE *fp,int index,t_atom *a1,t_atom *a2,real ftol)

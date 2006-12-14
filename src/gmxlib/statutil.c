@@ -292,16 +292,6 @@ t_topology *read_top(char *fn)
   return top;
 }
 
-void mk_single_top(t_topology *top)
-{
-  int i;
-
-  for(i=0; (i<ebNR); i++)
-    top->blocks[i].multinr[0]=top->blocks[i].multinr[MAXNODES-1];
-  for(i=0; (i<F_NRE); i++)
-    top->idef.il[i].multinr[0]=top->idef.il[i].multinr[MAXNODES-1];
-}
-
 /*************************************************************
  *
  *           P A R S I N G   S T U F F

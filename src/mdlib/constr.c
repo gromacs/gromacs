@@ -227,8 +227,12 @@ static bool low_constrain(FILE *log,bool bLog,
 	  gmx_fatal(FARGS,
 		  "Constraint reinitialization not implemented for shake");
 	
+	/*
 	bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
 	nblocks=blocks->multinr[idef->nodeid] - bstart;
+	*/
+	bstart  = 0;
+	nblocks = blocks->nr;
 	if (debug) 
 	  fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
 		  ncons,bstart,nblocks);

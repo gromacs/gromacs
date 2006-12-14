@@ -884,7 +884,6 @@ int main (int argc, char *argv[])
   check_warning_error(FARGS);
 
   /* Now build the shakeblocks from the shakes */
-  reset_multinr(sys);
   gen_sblocks(stdout,sys->atoms.nr,&(sys->idef),
 	      &(sys->blocks[ebSBLOCKS]),FALSE);
   if (debug)

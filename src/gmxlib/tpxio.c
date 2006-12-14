@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 43;
+static const int tpx_version = 44;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 43;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 10;
+static const int tpx_generation = 11;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -147,6 +147,9 @@ static const t_ftupd ftupd[] = {
   { 20, F_EQM               }
 };
 #define NFTUPD asize(ftupd)
+
+/* Needed for backward compatibility */
+#define MAXNODES 256
 
 void _do_section(int fp,int key,bool bRead,char *src,int line)
 {
@@ -829,14 +832,16 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     unset_comment();
 }
 
-static void do_ilist(t_ilist *ilist,bool bRead,char *name)
+static void do_ilist(t_ilist *ilist,bool bRead,char *name,int file_version)
 {
-  int i;
+  int  i,idum;
   bool bDum=TRUE;
   
   if (!bRead)
     set_comment(name);
-  ndo_int(ilist->multinr,MAXNODES,bDum);
+  if (file_version < 44)
+    for(i=0; i<MAXNODES; i++)
+      do_int(idum);
   do_int (ilist->nr);
   if (bRead)
     snew(ilist->iatoms,ilist->nr);
@@ -898,22 +903,22 @@ static void do_idef(t_idef *idef,bool bRead, int file_version)
 	  bClear = TRUE;
     if (bClear) {
       idef->il[j].nr = 0;
-      for(i=0; i<MAXNODES; i++)
-	idef->il[j].multinr[i] = 0;
       idef->il[j].iatoms = NULL;
     } else
-      do_ilist(&idef->il[j],bRead,interaction_function[j].name);
+      do_ilist(&idef->il[j],bRead,interaction_function[j].name,file_version);
     if (bRead && gmx_debug_at)
       pr_ilist(debug,0,interaction_function[j].longname,
 	       idef,&idef->il[j],TRUE);  }
 }
 
-static void do_block(t_block *block,bool bRead)
+static void do_block(t_block *block,bool bRead,int file_version)
 {
-  int i;
+  int  i,idum;
   bool bDum=TRUE;
 
-  ndo_int(block->multinr,MAXNODES,bDum);
+  if (file_version < 44)
+    for(i=0; i<MAXNODES; i++)
+      do_int(idum);
   do_int (block->nr);
   do_int (block->nra);
   if (bRead) {
@@ -1136,7 +1141,7 @@ static void do_top(t_topology *top,bool bRead, int file_version)
     pr_atoms(debug,0,"atoms",&top->atoms,TRUE);
 
   /* This used to be in the atoms struct */
-  do_block(&(top->blocks[ebEXCLS]),bRead);
+  do_block(&(top->blocks[ebEXCLS]),bRead,file_version);
 
   do_atomtypes (&(top->atomtypes),bRead,&(top->symtab), file_version);
   if (bRead && debug) 
@@ -1147,7 +1152,7 @@ static void do_top(t_topology *top,bool bRead, int file_version)
     
   for(i=0; (i<ebNR); i++) {
     if (i != ebEXCLS) {
-      do_block(&(top->blocks[i]),bRead);
+      do_block(&(top->blocks[i]),bRead,file_version);
       if (bRead && gmx_debug_at)
 	pr_block(debug,0,EBLOCKS(i),&(top->blocks[i]),TRUE);
     }

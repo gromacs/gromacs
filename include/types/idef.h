@@ -168,7 +168,6 @@ typedef int t_functype;
 typedef struct
 {
   int nr;
-  int multinr[MAXNODES];
   t_iatom *iatoms;
   int nalloc;
 } t_ilist;
@@ -177,15 +176,7 @@ typedef struct
  * The struct t_ilist defines a list of atoms with their interactions. 
  * General field description:
  *   int nr
- *	the size (nr elements) of the interactions array (iatoms[]). This 
- *      equals multinr[MAXNODES-1].
- *   int multinr[MAXNODES]
- * 	specifies the number of type and atom id sequences in the iatoms[] 
- *	array. Every element specifies the index of the first interaction
- *      for the next node. The first node starts at zero. So for 
- *      n=0, the interactions run from 0 upto multinr[0]. The interactions
- *      for node n (n>0) run from multinr[n-1] to index[n] (not including 
- *      multinr[n]).
+ *	the size (nr elements) of the interactions array (iatoms[]).
  *   t_iatom *iatoms
  * 	specifies which atoms are involved in an interaction of a certain 
  *       type. The layout of this array is as follows:
@@ -198,16 +189,6 @@ typedef struct
  *      type3 only 2. The type identifier is used to select the function to 
  *	calculate the interaction and its actual parameters. This type 
  *	identifier is an index in a params[] and functype[] array.
- * The multinr[] array will be initialised for MAXNODES in such a way that up 
- * to the actual number of nodes (during creation time), the array is
- * filled with the indices, the remaining nodes get empty parts by 
- * setting the indices to the largest value. In that way it is always possible
- * to run this system on a larger multinode ring however only the
- * configured number of nodes will we used. Running on less nodes
- * than configured is also possible by taking together adjacent
- * nodes. Note that in this case the load balance might get worse.
- * The single node version is implemented by simply using the complete
- * configuration as one piece.
  */
 
 typedef struct

@@ -533,7 +533,6 @@ int gmx_disre(int argc,char *argv[])
     if (top.atoms.pdbinfo == NULL)
       snew(top.atoms.pdbinfo,ntopatoms);
   } 
-  check_nnodes_top(ftp2fn(efTPX,NFILE,fnm),&top);
 
   if (ir.ePBC == epbcXYZ) {
     g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);
@@ -599,7 +598,7 @@ int gmx_disre(int argc,char *argv[])
   update_mdatoms(mdatoms,lambda);
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec\n");
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),1,nsb,0);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),1,NULL,nsb);
   init_forcerec(stdlog,fr,NULL,&ir,&top,cr,nsb,box,FALSE,NULL,NULL,NULL,FALSE);
   init_nrnb(&nrnb);
   j=0;
