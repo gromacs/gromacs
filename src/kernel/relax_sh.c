@@ -51,50 +51,116 @@
 #include "names.h"
 #include "constr.h"
 
-static void do_1pos(rvec xnew,rvec xold,rvec f,real k_1,real step)
+static void do_1pos(rvec xnew,rvec xold,rvec f,real step)
 {
   real xo,yo,zo;
-  real dx,dy,dz,dx2;
+  real dx,dy,dz;
   
   xo=xold[XX];
   yo=xold[YY];
   zo=xold[ZZ];
 
-  dx=f[XX]*k_1;
-  dy=f[YY]*k_1;
-  dz=f[ZZ]*k_1;
+  dx=f[XX]*step;
+  dy=f[YY]*step;
+  dz=f[ZZ]*step;
 
-  xnew[XX]=xo+dx*step;
-  xnew[YY]=yo+dy*step;
-  xnew[ZZ]=zo+dz*step;
+  xnew[XX]=xo+dx;
+  xnew[YY]=yo+dy;
+  xnew[ZZ]=zo+dz;
 }
 
-static void directional_sd(FILE *log,real step,rvec xold[],rvec xnew[],
-			   rvec acc_dir[],int start,int homenr,real k)
+static void do_1pos3(rvec xnew,rvec xold,rvec f,rvec step)
+{
+  real xo,yo,zo;
+  real dx,dy,dz;
+  
+  xo=xold[XX];
+  yo=xold[YY];
+  zo=xold[ZZ];
+
+  dx=f[XX]*step[XX];
+  dy=f[YY]*step[YY];
+  dz=f[ZZ]*step[ZZ];
+
+  xnew[XX]=xo+dx;
+  xnew[YY]=yo+dy;
+  xnew[ZZ]=zo+dz;
+}
+
+static void directional_sd(FILE *log,rvec xold[],rvec xnew[],rvec acc_dir[],
+			   int start,int homenr,real step)
 {
   int  i;
 
   for(i=start; i<homenr; i++)
-    do_1pos(xnew[i],xold[i],acc_dir[i],k,step);
+    do_1pos(xnew[i],xold[i],acc_dir[i],step);
 }
 
-static void shell_pos_sd(FILE *log,real step,rvec xold[],rvec xnew[],rvec f[],
-			 int ns,t_shell s[])
+static void shell_pos_sd(FILE *log,rvec xcur[],rvec xnew[],rvec f[],
+			 int ns,t_shell s[],int count)
 {
-  int  i,shell;
-  real k_1;
-  real fudge=1.0;
-  
+  int  i,shell,d;
+  real dx,df,k_est;
+#ifdef PRINT_STEP  
+  real step_min,step_max;
+
+  step_min = 1e30;
+  step_max = 0;
+#endif
   for(i=0; (i<ns); i++) {
     shell = s[i].shell;
-    k_1   = fudge*s[i].k_1;
-    do_1pos(xnew[shell],xold[shell],f[shell],k_1,step);
+    if (count == 1) {
+      for(d=0; d<DIM; d++) {
+	s[i].step[d] = s[i].k_1;
+#ifdef PRINT_STEP
+	step_min = min(step_min,s[i].step[d]);
+	step_max = max(step_max,s[i].step[d]);
+#endif
+      }
+    } else {
+      for(d=0; d<DIM; d++) {
+	dx = xcur[shell][d] - s[i].xold[d];
+	df =    f[shell][d] - s[i].fold[d];
+	if (dx != 0 && df != 0) {
+	  k_est = -dx/df;
+	  if (k_est >= 2*s[i].step[d]) {
+	    s[i].step[d] *= 1.2;
+	  } else if (k_est <= 0) {
+	    s[i].step[d] *= 0.8;
+	  } else {
+	    s[i].step[d] = 0.8*s[i].step[d] + 0.2*k_est;
+	  }
+	} else if (dx != 0) {
+	  s[i].step[d] *= 1.2;
+	}
+#ifdef PRINT_STEP
+	step_min = min(step_min,s[i].step[d]);
+	step_max = max(step_max,s[i].step[d]);
+#endif
+      }
+    }
+    copy_rvec(xcur[shell],s[i].xold);
+    copy_rvec(f[shell],   s[i].fold);
+
+    do_1pos3(xnew[shell],xcur[shell],f[shell],s[i].step);
+
     if (gmx_debug_at) {
       pr_rvec(debug,0,"fshell",f[shell],DIM,TRUE);
-      pr_rvec(debug,0,"xold",xold[shell],DIM,TRUE);
+      pr_rvec(debug,0,"xold",xcur[shell],DIM,TRUE);
       pr_rvec(debug,0,"xnew",xnew[shell],DIM,TRUE);
     }
   }
+#ifdef PRINT_STEP
+  printf("step %.3e %.3e\n",step_min,step_max);
+#endif
+}
+
+static void decrease_step_size(int nshell,t_shell s[])
+{
+  int i;
+  
+  for(i=0; i<nshell; i++)
+    svmul(0.8,s[i].step,s[i].step);
 }
 
 static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
@@ -157,14 +223,15 @@ static void predict_shells(FILE *log,rvec x[],rvec v[],real dt,
   }
 }
 
-static void print_epot(FILE *fp,int mdstep,int count,real step,real epot,
-		       real df,int ndir,real sf_dir)
+static void print_epot(FILE *fp,int mdstep,int count,real epot,real df,
+		       int ndir,real sf_dir)
 {
-  fprintf(fp,"MDStep=%5d/%2d lamb: %6g, EPot: %12.8e",
-	  mdstep,count,step,epot);
-  fprintf(fp,", rmsF: %12.8e\n",df);
+  fprintf(fp,"MDStep=%5d/%2d EPot: %12.8e, rmsF: %6.2e",
+	  mdstep,count,epot,df);
   if (ndir)
-    fprintf(fp,"RMS dir. force: %g\n",sqrt(sf_dir/ndir));
+    fprintf(fp,", dir. rmsF: %6.2e\n",sqrt(sf_dir/ndir));
+  else
+    fprintf(fp,"\n");
 }
 
 
@@ -305,9 +372,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   tensor vir_el_recip[2];
   rvec   dx;
   real   sf_dir,invdt;
-  real   ftol,step,step0,xiH,xiS,dum=0;
+  real   ftol,xiH,xiS,dum=0;
   char   cbuf[56];
-  bool   bDone,bCont,bInit;
+  bool   bCont,bInit;
   int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
   int    g,number_steps,d,Min=0,count=0;
 #define  Try (1-Min)             /* At start Try = 1 */
@@ -333,7 +400,6 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   bInit        = (mdstep == inputrec->init_step) || bForceInit;
   ftol         = inputrec->em_tol;
   number_steps = inputrec->niter;
-  step0        = 1.0;
 
   if (bDoNS) {
     /* This is the only time where the coordinates are used
@@ -415,10 +481,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     memcpy(pos[Try],state->x,nsb->natoms*sizeof(state->x[0]));
   }
   
-  step=step0;
-  
   if (bVerbose && MASTER(cr))
-    print_epot(stdout,mdstep,0,step,Epot[Min],df[Min],nflexcon,sf_dir);
+    print_epot(stdout,mdstep,0,Epot[Min],df[Min],nflexcon,sf_dir);
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
@@ -433,9 +497,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   /* First check whether we should do shells, or whether the force is 
    * low enough even without minimization.
    */
-  *bConverged = bDone = (df[Min] < ftol);
+  *bConverged = (df[Min] < ftol);
   
-  for(count=1; (!bDone && (count < number_steps)); count++) {
+  for(count=1; (!(*bConverged) && (count < number_steps)); count++) {
     if (bVsites)
       construct_vsites(log,pos[Min],nrnb,inputrec->delta_t,state->v,&top->idef,
 			graph,cr,fr->ePBC,state->box,vsitecomm);
@@ -445,12 +509,12 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
       
-      directional_sd(log,step,pos[Min],pos[Try],acc_dir-start,start,end,
+      directional_sd(log,pos[Min],pos[Try],acc_dir-start,start,end,
 		     fr->fc_stepsize);
     }
     
     /* New positions, Steepest descent */
-    shell_pos_sd(log,step,pos[Min],pos[Try],force[Min],nshell,shells); 
+    shell_pos_sd(log,pos[Min],pos[Try],force[Min],nshell,shells,count); 
 
     /* do_force expected the charge groups to be in the box */
     if (graph)
@@ -518,10 +582,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     }
 
     if (bVerbose && MASTER(cr))
-      print_epot(stdout,mdstep,count,step,Epot[Try],df[Try],nflexcon,sf_dir);
+      print_epot(stdout,mdstep,count,Epot[Try],df[Try],nflexcon,sf_dir);
       
     *bConverged = (df[Try] < ftol);
-    bDone       = *bConverged || (step < 0.01);
     
     if ((df[Try] < df[Min])) {
       if (debug)
@@ -534,12 +597,11 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	    state->v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
       }
       Min  = Try;
-      step = step0;
+    } else {
+      decrease_step_size(nshell,shells);
     }
-    else
-      step *= 0.8;
   }
-  if (MASTER(cr) && !bDone) {
+  if (MASTER(cr) && !(*bConverged)) {
     fprintf(log,
 	    "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
 	    mdstep,number_steps,df[Min]);

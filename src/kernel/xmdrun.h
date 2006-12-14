@@ -67,6 +67,9 @@ typedef struct {
   atom_id nucl1,nucl2,nucl3;	/* The nuclei connected to the shell	*/
   real    k;		        /* force constant		        */
   real    k_1;		        /* 1 over force constant		*/
+  rvec    xold;
+  rvec    fold;
+  rvec    step;
 } t_shell;
 
 /* Initialization function */
