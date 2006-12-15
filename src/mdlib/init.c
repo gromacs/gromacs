@@ -47,7 +47,6 @@
 #include "gmx_fatal.h"
 #include "symtab.h"
 #include "txtdump.h"
-#include "splittop.h"
 #include "mdatoms.h"
 #include "mdrun.h"
 #include "statutil.h"
