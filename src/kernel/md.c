@@ -208,6 +208,10 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	 * This should be optimized !!!
 	 */
 	nsb->natoms = top->atoms.nr;
+	snew(nsb->index,1);
+	snew(nsb->homenr,1);
+	snew(nsb->cgload,1);
+	snew(nsb->workload,1);
 	nsb->index[cr->nodeid] = 0;
 	nsb->homenr[cr->nodeid] = 0;
       }
