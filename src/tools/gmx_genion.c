@@ -340,7 +340,6 @@ int gmx_genion(int argc, char *argv[])
   t_inputrec  inputrec;
   t_commrec   cr;
   t_mdatoms   *mdatoms;
-  t_nsborder  nsb;
   t_groups    grps;
   t_graph     *graph;
   t_forcerec  *fr;
@@ -377,12 +376,10 @@ int gmx_genion(int argc, char *argv[])
   if ((p_num<0) || (n_num<0))
     gmx_fatal(FARGS,"Negative number of ions to add?");
 
-  nsb.nodeid=0;
-
   snew(top,1);
   init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 	       opt2fn("-table",NFILE,fnm),top,&inputrec,&cr,
-	       &graph,&mdatoms,&nsb,&grps,&fr,&pot,box,&x);
+	       &graph,&mdatoms,&grps,&fr,&pot,box,&x);
   qtot = 0;
   for(i=0; (i<top->atoms.nr); i++)
     qtot += top->atoms.atom[i].q;
@@ -457,7 +454,7 @@ int gmx_genion(int argc, char *argv[])
   /* Now loop over the ions that have to be placed */
   do {
     if (!bRandom) {
-      calc_pot(stdlog,&nsb,&cr,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
+      calc_pot(stdlog,&cr,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
       if (bPDB || debug) {
 	char buf[STRLEN];
 	

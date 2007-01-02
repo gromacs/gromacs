@@ -46,7 +46,7 @@
 #include "copyrite.h"
 #include "pbc.h"
 
-real RF_excl_correction(FILE *log,const t_nsborder *nsb,
+real RF_excl_correction(FILE *log,
 			const t_forcerec *fr,t_graph *g,
 			const t_mdatoms *mdatoms,const t_block *excl,
 			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
@@ -63,8 +63,8 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
   rvec   dx,df;
   atom_id *AA;
   ivec   dt;
-  int    start = START(nsb);
-  int    end   = start+HOMENR(nsb);
+  int    start = mdatoms->start;
+  int    end   = mdatoms->homenr+start;
   int    niat;
   bool   bFullPBC;
 

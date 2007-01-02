@@ -477,7 +477,7 @@ static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
 int gmx_pppm_init(FILE *log,      t_commrec *cr,
-		  t_nsborder *nsb,bool bVerbose,
+		  bool bVerbose,
 		  bool bOld,      matrix box,
 		  char *ghatfn,   t_inputrec *ir)
 {
@@ -568,14 +568,10 @@ int gmx_pppm_do(FILE *log,       gmx_pme_t pme,
 		rvec x[],        rvec f[],
 		real charge[],   rvec box,
 		real phi[],      t_commrec *cr,
-		t_nsborder *nsb, t_nrnb *nrnb,
+		int start,       int nr,
+		t_nrnb *nrnb,
 		int pme_order,   real *energy)
 {
-  int     start,nr;
-  
-  start = START(nsb);
-  nr   = HOMENR(nsb);
-  
   /* Make the grid empty */
   clear_fftgrid(grid);
   

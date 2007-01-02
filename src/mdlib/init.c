@@ -67,8 +67,7 @@ static char *int_title(char *title,int nodeid,char buf[], int size)
 
 void init_single(FILE *log,t_inputrec *inputrec,
 		 char *tpxfile,t_topology *top, 
-                 t_state *state,
-		 t_nsborder *nsb)
+                 t_state *state)
 {
   int         step;
   real        t;
@@ -76,8 +75,6 @@ void init_single(FILE *log,t_inputrec *inputrec,
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
-  calc_nsb(log,&(top->blocks[ebCGS]),1,NULL,nsb);
-  print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
 static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile)

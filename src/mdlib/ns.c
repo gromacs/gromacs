@@ -1936,7 +1936,7 @@ static int  rv_comp(const void *a,const void *b)
 int search_neighbours(FILE *log,t_forcerec *fr,
                       rvec x[],matrix box,
                       t_topology *top,t_groups *grps,
-                      t_commrec *cr,t_nsborder *nsb,
+                      t_commrec *cr,
                       t_nrnb *nrnb,t_mdatoms *md,
                       real lambda,real *dvdlambda,
                       bool bFillGrid,bool bDoForces)
@@ -2076,8 +2076,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       fill_grid(log,NULL,grid,box,fr->cg0,fr->hcg,fr->cg_cm);
       debug_gmx();
 
-      if (PAR(cr))
-	mv_grid(cr,grid,nsb->workload);
+      if (PARTDECOMP(cr))
+	mv_grid(cr,grid);
       debug_gmx();
     }
       

@@ -281,8 +281,7 @@ static void broadcast_matrix(const t_commrec *cr,matrix m)
 #endif
 }
 
-static void pd_collect_state(const t_commrec *cr,t_nsborder *nsb,
-			     t_state *state)
+static void pd_collect_state(const t_commrec *cr,t_state *state)
 {
   int shift;
   
@@ -290,14 +289,11 @@ static void pd_collect_state(const t_commrec *cr,t_nsborder *nsb,
     fprintf(debug,"Collecting state before exchange\n");
   
   shift = cr->nnodes - cr->npmenodes - 1;
-  move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,
-	     state->x,NULL,shift,nsb,NULL);
+  move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,state->x,NULL,shift,NULL);
   if (state->v)
-    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,
-	       state->v,NULL,shift,nsb,NULL);
+    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,state->v,NULL,shift,NULL);
   if (state->sd_X)
-    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,
-	       state->sd_X,NULL,shift,nsb,NULL);
+    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,state->sd_X,NULL,shift,NULL);
 }
 
 void pd_distribute_state(const t_commrec *cr,t_state *state)
@@ -456,7 +452,7 @@ static void write_debug_x(t_state *state)
 }
 
 bool replica_exchange(FILE *fplog,const t_commrec *cr,gmx_repl_ex_t *re,
-		      t_state *state,real epot,t_nsborder *nsb,
+		      t_state *state,real epot,
 		      t_block *cgs,t_state *state_local,
 		      int step,real time)
 {
@@ -484,7 +480,7 @@ bool replica_exchange(FILE *fplog,const t_commrec *cr,gmx_repl_ex_t *re,
       if (DOMAINDECOMP(cr))
 	dd_collect_state(cr->dd,cgs,state_local,state);
       else
-	pd_collect_state(cr,nsb,state);
+	pd_collect_state(cr,state);
     }
     if (MASTER(cr)) {
       if (debug)

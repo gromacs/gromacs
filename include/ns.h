@@ -46,7 +46,6 @@
 #include "typedefs.h"
 #include "pbc.h"
 #include "tgroup.h"
-#include "nsb.h"
 #include "network.h"
 
 /****************************************************
@@ -79,7 +78,7 @@ extern int calc_naaj(int icg,int cgtot);
 extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     rvec x[],matrix box,
 			     t_topology *top,t_groups *grps,
-			     t_commrec *cr,t_nsborder *nsb,t_nrnb *nrnb,
+			     t_commrec *cr,t_nrnb *nrnb,
 			     t_mdatoms *md,real lambda,real *dvdlambda,
 			     bool bFillGrid,bool bDoForces);
  

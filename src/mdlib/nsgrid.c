@@ -47,6 +47,7 @@
 #include "vec.h"
 #include "network.h"
 #include "domdec.h"
+#include "partdec.h"
 
 /***********************************
  *         Grid Routines
@@ -508,21 +509,22 @@ void print_grid(FILE *log,t_grid *grid)
   fflush(log);
 }
 
-void mv_grid(t_commrec *cr,t_grid *grid,int cgload[])
+void mv_grid(t_commrec *cr,t_grid *grid)
 {
   int i,start,nr;
   int cur=cr->nodeid;
-  int *ci;
+  int *ci,*cgindex;
 #define next ((cur+1) % (cr->nnodes-cr->npmenodes))
 
-  ci=grid->cell_index;
+  ci = grid->cell_index;
+  cgindex = pd_cgindex(cr);
   for(i=0; (i<cr->nnodes-1); i++) {
-    start=(cur == 0) ? 0 : cgload[cur-1];
-    nr=cgload[cur]-start;
+    start = cgindex[cur];
+    nr    = cgindex[cur+1] - start;
     gmx_tx(cr,cr->left,&(ci[start]),nr*sizeof(*ci));
     
-    start=(next == 0) ? 0 : cgload[next-1];
-    nr=cgload[next]-start;
+    start = cgindex[next];
+    nr    = cgindex[next+1] - start;
     gmx_rx(cr,cr->right,&(ci[start]),nr*sizeof(*ci));
     
     gmx_tx_wait(cr->left);

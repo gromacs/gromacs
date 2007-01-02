@@ -195,6 +195,8 @@ typedef struct {
   gmx_domdec_comm_p_t comm;
 } gmx_domdec_t;
 
+typedef struct gmx_partdec *gmx_partdec_p_t;
+
 typedef struct {
   int nsim;
   int sim;
@@ -219,7 +221,13 @@ typedef struct {
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
 #endif
+
+  /* For domain decomposition */
   gmx_domdec_t *dd;
+
+  /* For particle decomposition */
+  gmx_partdec_p_t pd;
+
   /* The duties of this node, see the defines above */
   int duty;
 
@@ -240,6 +248,8 @@ typedef struct {
 #define DDMASTER(dd)       ((dd)->nodeid == 0)
 #define DDRANK(dd,nodeid)  (nodeid)
 #define DDMASTERRANK(dd)   (0)
+
+#define PARTDECOMP(cr)     ((cr)->pd != NULL)
 
 #define MULTISIM(cr)       ((cr)->ms)
 #define MSRANK(ms,nodeid)  (nodeid)

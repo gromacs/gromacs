@@ -45,17 +45,15 @@
 #include "vec.h"
 #include "gmx_fatal.h"
 #include "physics.h"
-#include "nsb.h"
 #include "main.h"
 
-void calc_mu(t_nsborder *nsb,rvec x[],real q[],real qB[],
+void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
 	     int nChargePerturbed,
 	     dvec mu,dvec mu_B)
 {
-  int i,start,end,m;
+  int i,end,m;
   
-  start = START(nsb);
-  end   = start + HOMENR(nsb);  
+  end   = start + homenr;  
   
   clear_dvec(mu);
   for(i=start; (i<end); i++)

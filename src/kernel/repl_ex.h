@@ -64,7 +64,6 @@ extern bool replica_exchange(FILE *fplog,
 			     const t_commrec *cr,
 			     gmx_repl_ex_t *re,
 			     t_state *state,real epot,
-			     t_nsborder *nsb,
 			     t_block *cgs,t_state *state_local,
 			     int step,real time);
 /* Attempts replica exchange, should be called on all nodes.

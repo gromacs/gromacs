@@ -160,7 +160,7 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
   fprintf(log,"There were %d interactions\n",nlist->nrj);
 }
 
-void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
+void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
 	      t_inputrec *inputrec,t_topology *top,rvec x[],t_forcerec *fr,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
@@ -175,13 +175,13 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
   fprintf(stderr,"Doing single force calculation...\n");
 
   if (bFirst) {
-    snew(f,   nsb->natoms);
+    snew(f,top->atoms.nr);
     
     bFirst = FALSE;
   }
   /* Reset long range forces if necessary */
   if (fr->bTwinRange) {
-    clear_rvecs(nsb->natoms,fr->f_twin);
+    clear_rvecs(top->atoms.nr,fr->f_twin);
     clear_rvecs(SHIFTS,fr->fshift_twin);
   }
   if (inputrec->ePBC != epbcNONE)
@@ -196,7 +196,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
    */
   
   ns(logf,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,nsb,0,lam,&dum,TRUE,FALSE);
+     &nrnb,0,lam,&dum,TRUE,FALSE);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
@@ -216,7 +216,7 @@ void calc_pot(FILE *logf,t_nsborder *nsb,t_commrec *cr,t_groups *grps,
 void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 		  t_inputrec *inputrec,t_commrec *cr,
 		  t_graph **graph,t_mdatoms **mdatoms,
-		  t_nsborder *nsb,t_groups *grps,
+		  t_groups *grps,
 		  t_forcerec **fr,real **pot,
 		  matrix box,rvec **x)
 {
@@ -244,11 +244,11 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 
   init_nrnb(&nrnb);
   snew(state,1);
-  init_single(stdlog,inputrec,tpx,top,state,nsb);
+  init_single(stdlog,inputrec,tpx,top,state);
   init_md(cr,inputrec,&t,&t0,&lam,&lam0,
 	  &nrnb,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
-	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm,nsb);
+	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm);
   init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);  
 
   if (inputrec->ePBC == epbcXYZ) {
@@ -274,7 +274,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(stdlog,*fr,NULL,inputrec,top,cr,
-		nsb,state->box,FALSE,table,table,NULL,TRUE);
+		state->box,FALSE,table,table,NULL,TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
@@ -288,5 +288,5 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   done_state(state);
   sfree(state);
 
-  snew(*pot,nsb->natoms);
+  snew(*pot,top->atoms.nr);
 }

@@ -2935,15 +2935,6 @@ static void set_cg_boundaries(gmx_domdec_t *dd)
   }
 }
 
-static void dd_update_ns_border(gmx_domdec_t *dd,t_nsborder *nsb)
-{
-  nsb->nodeid    = 0 /* dd->nodeid */;
-  nsb->cgtotal   = dd->ncg_tot;
-  nsb->index[nsb->nodeid]  = 0;
-  nsb->homenr[nsb->nodeid] = dd->nat_home;
-  nsb->cgload[nsb->nodeid] = nsb->cgtotal;
-}
-
 void dd_partition_system(FILE         *fplog,
 			 int          step,
 			 t_commrec    *cr,
@@ -2955,7 +2946,6 @@ void dd_partition_system(FILE         *fplog,
 			 rvec         *buf,
 			 t_mdatoms    *mdatoms,
 			 t_topology   *top_local,
-			 t_nsborder   *nsb,
 			 t_forcerec   *fr,
 			 t_nrnb       *nrnb,
 			 gmx_wallcycle_t wcycle,
@@ -3041,8 +3031,6 @@ void dd_partition_system(FILE         *fplog,
   /* Extract a local topology from the global topology */
   make_local_top(fplog,dd,fr,top_global,top_local);
 
-  dd_update_ns_border(dd,nsb);
-
   if (top_global->idef.il[F_CONSTR].nr > 0) {
     make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
 			   ir->nProjOrder);
@@ -3067,8 +3055,9 @@ void dd_partition_system(FILE         *fplog,
    * We could save some work by only setting invmass
    * between nat_tot and nat_tot_con.
    */
+  /* This call also sets the new number of home particles to dd->nat_home */
   atoms2md(&top_global->atoms,ir,top_global->idef.il[F_ORIRES].nr,
-	   dd->nat_tot_con,dd->gatindex,mdatoms);
+	   dd->nat_tot_con,dd->gatindex,0,dd->nat_home,mdatoms);
 
   if (!(cr->duty & DUTY_PME))
     /* Send the charges to our PME only node */
@@ -3078,8 +3067,7 @@ void dd_partition_system(FILE         *fplog,
 
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
     init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
-		     START(nsb),HOMENR(nsb),
-		     ir->eI!=eiSteep,NULL,dd);
+		     0,dd->nat_home,ir->eI!=eiSteep,NULL,dd);
 
   /* We need the constructing atom coordinates of the virtual sites
    * when spreading the forces.

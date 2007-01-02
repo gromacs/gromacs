@@ -225,7 +225,7 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 }
 
 void do_force(FILE *fplog,t_commrec *cr,
-	      t_inputrec *inputrec,t_nsborder *nsb,
+	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
@@ -245,10 +245,18 @@ void do_force(FILE *fplog,t_commrec *cr,
   real   e,d;
   float  pme_cycles;
   
-  start  = START(nsb);
-  homenr = HOMENR(nsb);
-  cg0    = CG0(nsb);
-  cg1    = CG1(nsb);
+  start  = mdatoms->start;
+  homenr = mdatoms->homenr;
+  
+  if (PARTDECOMP(cr)) {
+    pd_cg_range(cr,&cg0,&cg1);
+  } else {
+    cg0 = 0;
+    if (DOMAINDECOMP(cr))
+      cg1 = cr->dd->ncg_tot;
+    else
+      cg1 = top->blocks[ebCGS].nr;
+  }
 
   bFillGrid = (bNS && bStateChanged);
   bCalcCGCM = (bFillGrid && !DOMAINDECOMP(cr));
@@ -259,7 +267,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* Calculate total (local) dipole moment in a temporary common array. 
      * This makes it possible to sum them over nodes faster.
      */
-    calc_mu(nsb,x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
+    calc_mu(start,homenr,
+	    x,mdatoms->chargeA,mdatoms->chargeB,mdatoms->nChargePerturbed,
 	    mu,mu+DIM);
   }
   
@@ -286,11 +295,11 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
   
   if (bCalcCGCM) {
-    if (PAR(cr) && !DOMAINDECOMP(cr)) {
-      move_cgcm(fplog,cr,fr->cg_cm,nsb->workload);
+    if (PAR(cr)) {
+      move_cgcm(fplog,cr,fr->cg_cm);
     }
     if (gmx_debug_at)
-      pr_rvecs(debug,0,"cgcm",fr->cg_cm,nsb->cgtotal);
+      pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
   }
 
 #ifdef GMX_MPI
@@ -324,7 +333,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (DOMAINDECOMP(cr)) {
       dd_move_x(cr->dd,box,x,buf);
     } else {
-      move_x(fplog,cr,cr->left,cr->right,x,nsb,nrnb);
+      move_x(fplog,cr,cr->left,cr->right,x,nrnb);
     }
     /* When we don't need the total dipole we sum it in global_stat */
     if (NEED_MUTOT(*inputrec))
@@ -362,7 +371,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     dvdl_lr = 0; 
 
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,nsb,step,lambda,&dvdl_lr,bFillGrid,bDoForces);
+       cr,nrnb,step,lambda,&dvdl_lr,bFillGrid,bDoForces);
 
     wallcycle_stop(wcycle,ewcNS);
   }
@@ -388,7 +397,10 @@ void do_force(FILE *fplog,t_commrec *cr,
 	copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
     } 
     else {
-      clear_rvecs(nsb->natoms,f);      
+      if (DOMAINDECOMP(cr))
+	clear_rvecs(cr->dd->nat_tot_vsite,f);
+      else
+	clear_rvecs(top->atoms.nr,f);
       clear_rvecs(SHIFTS,fr->fshift);
     }
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -399,7 +411,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     update_QMMMrec(cr,fr,x,mdatoms,box,top);
 
   /* Compute the forces */    
-  force(fplog,step,fr,inputrec,&(top->idef),nsb,cr,nrnb,wcycle,grps,mdatoms,
+  force(fplog,step,fr,inputrec,&(top->idef),cr,nrnb,wcycle,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,box,lambda,graph,&(top->blocks[ebEXCLS]),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
@@ -430,7 +442,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl)
 	  dd_move_f(cr->dd,fr->f_el_recip,buf,NULL);
       } else {
-	move_f(fplog,cr,cr->left,cr->right,f,buf,nsb,nrnb);
+	move_f(fplog,cr,cr->left,cr->right,f,buf,nrnb);
       }
       wallcycle_stop(wcycle,ewcMOVEF);
       if (DOMAINDECOMP(cr) && wcycle)
@@ -545,13 +557,13 @@ double node_time(void)
 }
 
 void do_shakefirst(FILE *fplog,real ener[],
-		   t_inputrec *inputrec,t_nsborder *nsb,t_mdatoms *md,
+		   t_inputrec *inputrec,t_mdatoms *md,
 		   t_state *state,rvec vold[],rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
 		   t_edsamyn *edyn,t_pull *pulldata)
 {
-  int    i,m,start,homenr,end,step;
+  int    i,m,start,end,step;
   tensor shake_vir,pres;
   double mass,tmass,vcm[4];
   real   dt=inputrec->delta_t;
@@ -559,18 +571,17 @@ void do_shakefirst(FILE *fplog,real ener[],
   rvec   *xptr;
 
   if (count_constraints(top,cr)) {
-    start  = START(nsb);
-    homenr = HOMENR(nsb);
-    end    = start+homenr;
+    start = md->start;
+    end   = md->homenr + start;
     if (debug)
-      fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",start,homenr,end);
+      fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
+	      start,md->homenr,end);
     /* Do a first SHAKE to reset particles... */
     step = -2;
     fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
     clear_mat(shake_vir);
     clear_mat(pres);
-    update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
-	   inputrec,md,state,graph,
+    update(step,&ener[F_DVDL],inputrec,md,state,graph,
 	   NULL,vold,top,grps,shake_vir,cr,nrnb,
 	   edyn,pulldata,FALSE,FALSE,FALSE,state->x,pres);
     /* Compute coordinates at t=-dt, store them in buf */
@@ -588,8 +599,7 @@ void do_shakefirst(FILE *fplog,real ener[],
     fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",step);
     clear_mat(shake_vir);
     clear_mat(pres);
-    update(nsb->natoms,start,homenr,step,&ener[F_DVDL],
-	   inputrec,md,state,graph,
+    update(step,&ener[F_DVDL],inputrec,md,state,graph,
 	   NULL,vold,top,grps,shake_vir,cr,nrnb,
 	   edyn,pulldata,FALSE,FALSE,FALSE,buf,pres);
 
@@ -877,7 +887,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 }
 
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,
-		t_nsborder *nsb,t_topology *top,t_inputrec *inputrec,
+		t_topology *top,t_inputrec *inputrec,
 		t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		double nodetime,double realtime,int step,
 		bool bWriteStat)
@@ -943,8 +953,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     int *fp_trn,int *fp_xtc,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
-	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm,
-	     t_nsborder *nsb)
+	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm)
 {
   int  i,j,n;
   real tmpt,mod;
@@ -999,8 +1008,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   /* Set initial values for invmass etc. */
   update_mdatoms(mdatoms,*lambda);
 
-  *vcm = init_vcm(stdlog,top,cr,&top->atoms,START(nsb),HOMENR(nsb),ir->nstcomm,
-		  ir->comm_mode);
+  *vcm = init_vcm(stdlog,top,cr,&top->atoms,mdatoms->start,mdatoms->homenr,
+		  ir->nstcomm,ir->comm_mode);
     
   debug_gmx();
 

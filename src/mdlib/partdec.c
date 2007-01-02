@@ -33,25 +33,151 @@
  * And Hey:
  * GROwing Monsters And Cloning Shrimps
  */
+/* This file is completely threadsafe - keep it that way! */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include <stdio.h>
+#include <math.h>
+
+#include "sysstuff.h"
 #include "typedefs.h"
-#include "tpxio.h"
 #include "smalloc.h"
-#include "vec.h"
+#include "invblock.h"
+#include "macros.h"
 #include "main.h"
-#include "mvdata.h"
-#include "gmx_fatal.h"
-#include "symtab.h"
-#include "txtdump.h"
+#include "ns.h"
+#include "partdec.h"
 #include "splitter.h"
-#include "mdatoms.h"
-#include "mdrun.h"
-#include "statutil.h"
-#include "names.h"
+
+typedef struct gmx_partdec {
+  int  *cgindex;                /* The charge group boundaries,         */
+				/* size nnodes+1,                       */
+                                /* only allocated with particle decomp. */
+  int  *index;                  /* The home particle boundaries,        */
+				/* size nnodes+1,                       */
+                                /* only allocated with particle decomp. */
+  int  shift,bshift;		/* Coordinates are shifted left for     */
+                                /* 'shift' systolic pulses, and right   */
+				/* for 'bshift' pulses. Forces are      */
+				/* shifted right for 'shift' pulses     */
+				/* and left for 'bshift' pulses         */
+				/* This way is not necessary to shift   */
+				/* the coordinates over the entire ring */
+} gmx_partdec_t;
+
+int *pd_cgindex(const t_commrec *cr)
+{
+  return cr->pd->cgindex;
+}
+
+int *pd_index(const t_commrec *cr)
+{
+  return cr->pd->index;
+}
+
+int pd_shift(const t_commrec *cr)
+{
+  return cr->pd->shift;
+}
+
+int pd_bshift(const t_commrec *cr)
+{
+  return cr->pd->bshift;
+}
+
+void pd_cg_range(const t_commrec *cr,int *cg0,int *cg1)
+{
+  *cg0 = cr->pd->cgindex[cr->nodeid];
+  *cg1 = cr->pd->cgindex[cr->nodeid+1];
+}
+
+void pd_at_range(const t_commrec *cr,int *at0,int *at1)
+{
+  *at0 = cr->pd->index[cr->nodeid];
+  *at1 = cr->pd->index[cr->nodeid+1];
+}
+
+static void calc_nsbshift(FILE *fp,int nnodes,gmx_partdec_t *pd)
+{
+  int i;
+  int lastcg,targetcg,nshift,naaj;
+  
+  pd->bshift=0;
+  for(i=1; (i<nnodes); i++) {
+    targetcg = pd->cgindex[i];
+    for(nshift=i; (nshift > 0) && (pd->cgindex[nshift] > targetcg); nshift--)
+      ;
+    pd->bshift=max(pd->bshift,i-nshift);
+  }
+
+  pd->shift = (nnodes + 1)/2;
+  for(i=0; (i<nnodes); i++) {
+    lastcg = pd->cgindex[i+1]-1;
+    naaj = calc_naaj(lastcg,pd->cgindex[nnodes]);
+    targetcg = (lastcg+naaj) % pd->cgindex[nnodes];
+    
+    /* Search until we find the target charge group */
+    for(nshift=0;
+	(nshift < nnodes) && (targetcg > pd->cgindex[nshift+1]);
+	nshift++)
+      ;
+    /* Now compute the shift, that is the difference in node index */
+    nshift=((nshift - i + nnodes) % nnodes);
+    
+    if (fp)
+      fprintf(fp,"CPU=%3d, lastcg=%5d, targetcg=%5d, myshift=%5d\n",
+	      i,lastcg,targetcg,nshift);
+	    
+    /* It's the largest shift that matters */
+    pd->shift=max(nshift,pd->shift);
+  }
+  if (fp)
+    fprintf(fp,"pd->shift = %3d, pd->bshift=%3d\n",
+	    pd->shift,pd->bshift);
+}
+
+static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr)
+{
+  int  i;
+  gmx_partdec_t *pd;
+
+  snew(pd,1);
+  
+  if (cr->nnodes > 1) {
+    if (multinr == NULL)
+      gmx_fatal(FARGS,"Internal error in init_partdec: multinr = NULL");
+    snew(pd->index,cr->nnodes+1);
+    snew(pd->cgindex,cr->nnodes+1);
+    pd->cgindex[0] = 0;
+    pd->index[0]   = 0;
+    for(i=0; (i < cr->nnodes); i++) {
+      pd->cgindex[i+1] = multinr[i];
+      pd->index[i+1]   = cgs->index[multinr[i]];
+    }
+    calc_nsbshift(fp,cr->nnodes,pd);
+  }
+
+  cr->pd = pd;
+}
+
+static void print_partdec(FILE *fp,char *title,int nnodes,gmx_partdec_t *pd)
+{
+  int i;
+
+  fprintf(fp,"%s\n",title);
+  fprintf(fp,"nnodes:       %5d\n",nnodes);
+  fprintf(fp,"pd->shift:    %5d\n",pd->shift);
+  fprintf(fp,"pd->bshift:   %5d\n",pd->bshift);
+  
+  fprintf(fp,"Nodeid   atom0   #atom     cg0       #cg\n");
+  for(i=0; (i<nnodes); i++)
+    fprintf(fp,"%6d%8d%8d%8d%10d\n",
+	    i,
+	    pd->index[i],pd->index[i+1]-pd->index[i],
+	    pd->cgindex[i],pd->cgindex[i+1]-pd->cgindex[i]);
+  fprintf(fp,"\n");
+}
 
 static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes,int **multinr)
 {
@@ -75,25 +201,6 @@ static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes,int **multinr)
 	fprintf(stdlog," %5d",m1-m0);
       }
       fprintf(stdlog,"\n");
-    }
-  }
-}
-
-static void split_idef_old(t_idef *idef,int nnodes,int **multinr)
-{
-  int i,ftype,nr,nra,m1;
-  
-  /* Loop over energy types */
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (idef->il[ftype].nr > 0) {
-      nr  = idef->il[ftype].nr;
-      nra = 1+interaction_function[ftype].nratoms;
-      /* Loop over processors */
-      for(i=0; (i<nnodes-1); i++) {
-	m1 = ((i+1)*(nr/nra)/nnodes);
-	multinr[ftype][i] = nra*m1;
-      }
-      multinr[ftype][i]=nr;
     }
   }
 }
@@ -133,11 +240,9 @@ static void select_my_idef(FILE *log,t_idef *idef,int **multinr,t_commrec *cr)
   for(i=0; (i<F_NRE); i++)
     select_my_ilist(log,&idef->il[i],multinr[i],cr);
 }
-	
 
-
-void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
-			t_commrec *cr,t_topology *top,t_nsborder *nsb)
+void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
+		  t_commrec *cr,t_topology *top)
 {
   int    i,npp;
   real   *capacity;
@@ -162,7 +267,7 @@ void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
   /* This computes which entities can be placed on processors */
   split_top(log,npp,top,capacity,multinr_cgs,multinr_nre);
   sfree(capacity);
-  calc_nsb(log,&(top->blocks[ebCGS]),cr->nnodes,multinr_cgs,nsb);
+  init_partdec(log,cr,&(top->blocks[ebCGS]),multinr_cgs);
 
   /* This should be fine */
   /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/
@@ -176,15 +281,11 @@ void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
   sfree(multinr_nre);
   sfree(multinr_cgs);
   
-  print_nsb(log,"Workload division",nsb);
+  print_partdec(log,"Workload division",cr->nnodes,cr->pd);
 }
 
-void split_system_again()
-{
-}
-
-void create_vsitelist(int nindex, int *list,
-		      int *targetn, int **listptr)
+static void create_vsitelist(int nindex, int *list,
+			     int *targetn, int **listptr)
 {
   int i,j,k,inr;
   int minidx;
@@ -218,8 +319,8 @@ void create_vsitelist(int nindex, int *list,
 }
   
 
-bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
-			    t_comm_vsites *vsitecomm)
+bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
+			   t_comm_vsites *vsitecomm)
 {
   int i,inr,j,k,ftype;
   int minidx,minhome,ihome;
@@ -232,9 +333,12 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
   int *idxnextconstr;
   int  nprevvsite=0,nnextvsite=0;
   int  nprevconstr=0,nnextconstr=0;
+  gmx_partdec_t *pd;
 
 #define BUFLEN 100
   
+  pd = cr->pd;
+
   snew(idxprevvsite,BUFLEN);
   snew(idxnextvsite,BUFLEN);
   snew(idxprevconstr,BUFLEN);
@@ -262,7 +366,7 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	    minidx=ia[j];
 
 	minhome=0;
-	while(minidx>=(nsb->index[minhome]+nsb->homenr[minhome]))
+	while(minidx>=(pd->index[minhome+1]))
           minhome++;
 
 	if(minhome==cr->nodeid) {
@@ -270,8 +374,8 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	   * If not, he must be on the next node (error otherwise)
 	   * (but we do account for the cyclic ring structure)
 	   */
-	  if(ia[1]<nsb->index[cr->nodeid] ||
-	     ia[1]>=(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid])) {
+	  if(ia[1]<pd->index[cr->nodeid] ||
+	     ia[1]>=(pd->index[cr->nodeid+1])) {
 	    if((nnextvsite%BUFLEN)==0 && nnextvsite>0)
 	      srenew(idxnextvsite,nnextvsite+BUFLEN);
 	    idxnextvsite[nnextvsite++]=ia[1];
@@ -280,7 +384,7 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	  for(j=2;j<nconstr+2;j++) {
 	    inr=ia[j];
 	    ihome=0;
-	    while(inr>=(nsb->index[ihome]+nsb->homenr[ihome]))
+	    while(inr>=(pd->index[ihome+1]))
 	      ihome++;
 	    if( ihome>(cr->nodeid+1))
 	      gmx_fatal(FARGS,"Vsite particle %d and its constructing"
@@ -300,8 +404,8 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	  }
 	} else if(minhome==((cr->nodeid-1+cr->nnodes)%cr->nnodes)) {
 	  /* Not our vsite, but we might be involved */
-	  if(ia[1]>=nsb->index[cr->nodeid] &&
-	     (ia[1]<(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid]))) {
+	  if(ia[1]>=pd->index[cr->nodeid] &&
+	     (ia[1]<(pd->index[cr->nodeid+1]))) {
 	    if((nprevvsite%BUFLEN)==0 && nprevvsite>0)
 	      srenew(idxprevvsite,nprevvsite+BUFLEN);
 	    idxprevvsite[nprevvsite++]=ia[1];
@@ -309,8 +413,8 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
 	  }
 	  for(j=2;j<nconstr+2;j++) {
 	    inr=ia[j];
-	    if(ia[j]>=nsb->index[cr->nodeid] &&
-	       (ia[1]<(nsb->index[cr->nodeid]+nsb->homenr[cr->nodeid]))) {
+	    if(ia[j]>=pd->index[cr->nodeid] &&
+	       (ia[1]<(pd->index[cr->nodeid+1]))) {
 	      if((nprevconstr%BUFLEN)==0 && nprevconstr>0)
 		srenew(idxprevconstr,nprevconstr+BUFLEN);
 	      idxprevconstr[nprevconstr++]=ia[j];
@@ -342,4 +446,3 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
   return found;
 #undef BUFLEN
 }
-

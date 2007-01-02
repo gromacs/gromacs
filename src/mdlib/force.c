@@ -49,7 +49,6 @@
 #include "nonbonded.h"
 #include "invblock.h"
 #include "confio.h"
-#include "nsb.h"
 #include "names.h"
 #include "network.h"
 #include "pbc.h"
@@ -62,6 +61,7 @@
 #include "pppm.h"
 #include "pme.h"
 #include "mdrun.h"
+#include "partdec.h"
 #include "qmmm.h"
 #include "mpelogging.h"
 
@@ -140,8 +140,7 @@ static void
 check_solvent(FILE *                fp,
               const t_topology *    top,
               t_forcerec *          fr,
-	      const t_atoms *       atoms,
-              const t_nsborder *    nsb)
+	      const t_atoms *       atoms)
 {
     const t_block *   cgs;
     const t_block *   excl;
@@ -843,7 +842,6 @@ void init_forcerec(FILE *fp,
 		   const t_inputrec *ir,
 		   const t_topology *top,
 		   const t_commrec  *cr,
-		   const t_nsborder *nsb,
 		   matrix     box,
 		   bool       bMolEpot,
 		   const char *tabfn,
@@ -1196,7 +1194,7 @@ void init_forcerec(FILE *fp,
    * optimized solvent
    */
 
-  check_solvent(fp,top,fr,&top->atoms,nsb);
+  check_solvent(fp,top,fr,&top->atoms);
 
   
   if (getenv("GMX_NO_SOLV_OPT")) {
@@ -1210,6 +1208,13 @@ void init_forcerec(FILE *fp,
   if (!fr->solvent_opt) {
     for(i=0; i<top->blocks[ebCGS].nr; i++) 
       fr->solvent_type[i] = esolNO;
+  }
+
+  if (PARTDECOMP(cr)) {
+    pd_cg_range(cr,&fr->cg0,&fr->hcg);
+  } else {
+    fr->cg0 = 0;
+    fr->hcg = top->blocks[ebCGS].nr;
   }
 }
  
@@ -1251,7 +1256,6 @@ void ns(FILE *fp,
 	t_mdatoms  *md,
 	t_commrec  *cr,
 	t_nrnb     *nrnb,
-	t_nsborder *nsb,
 	int        step,
 	real       lambda,
 	real       *dvdlambda,
@@ -1273,7 +1277,7 @@ void ns(FILE *fp,
     } else
       nDNL=0;
     /* Allocate memory for the neighbor lists */
-    init_neighbor_list(fp,fr,HOMENR(nsb));
+    init_neighbor_list(fp,fr,md->homenr);
       
     bFirst=FALSE;
   }
@@ -1281,17 +1285,7 @@ void ns(FILE *fp,
   if (fr->bTwinRange) 
     fr->nlr=0;
 
-  /* Whether or not we do dynamic load balancing,
-   * workload contains the proper numbers of charge groups
-   * to be searched.
-   */
-  if (cr->nodeid == 0)
-    fr->cg0=0;
-  else
-    fr->cg0=nsb->workload[cr->nodeid-1];
-  fr->hcg=nsb->workload[cr->nodeid];
-
-  nsearch = search_neighbours(fp,fr,x,box,top,grps,cr,nsb,nrnb,md,
+  nsearch = search_neighbours(fp,fr,x,box,top,grps,cr,nrnb,md,
 			      lambda,dvdlambda,bFillGrid,bDoForces);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
@@ -1309,8 +1303,7 @@ void ns(FILE *fp,
 
 void force(FILE       *fplog,   int        step,
 	   t_forcerec *fr,      t_inputrec *ir,
-	   t_idef     *idef,    t_nsborder *nsb,
-	   t_commrec  *cr,
+	   t_idef     *idef,    t_commrec  *cr,
 	   t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
 	   t_groups   *grps,    t_mdatoms  *md,
 	   int        ngener,   t_grpopts  *opts,
@@ -1432,7 +1425,8 @@ void force(FILE       *fplog,   int        step,
     case eelPPPM:
       status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_el_recip,
 			   md->chargeA,
-			   box_size,fr->phi,cr,nsb,nrnb,ir->pme_order,&Vlr);
+			   box_size,fr->phi,cr,md->start,md->homenr,
+			   nrnb,ir->pme_order,&Vlr);
       break;
     case eelPME:
     case eelPMESWITCH:
@@ -1440,7 +1434,7 @@ void force(FILE       *fplog,   int        step,
       if (cr->duty & DUTY_PME) {
 	wallcycle_start(wcycle,ewcPMEMESH);
         status = gmx_pme_do(fplog,fr->pmedata,
-			    START(nsb),HOMENR(nsb),
+			    md->start,md->homenr,
 			    x,fr->f_el_recip,
 			    md->chargeA,md->chargeB,
 			    box,cr,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
@@ -1457,7 +1451,8 @@ void force(FILE       *fplog,   int        step,
       break;
     case eelEWALD:
       Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
-		     box_size,cr,nsb,fr->vir_el_recip,fr->ewaldcoeff,
+		     box_size,cr,md->homenr,
+		     fr->vir_el_recip,fr->ewaldcoeff,
 		     lambda,&dvdlambda);
       PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
       break;
@@ -1473,7 +1468,7 @@ void force(FILE       *fplog,   int        step,
     epot[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
       dvdlambda = 0;
-      Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,
+      Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,cr,fr,
 				 md->chargeA,
 				 md->nChargePerturbed ? md->chargeB : NULL,
 				 excl,x,box,mu_tot,
@@ -1482,7 +1477,8 @@ void force(FILE       *fplog,   int        step,
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
       epot[F_DVDL] += dvdlambda;
     } else {
-      Vcorr = shift_LRcorrection(fplog,nsb,cr,fr,md->chargeA,excl,x,TRUE,box,
+      Vcorr = shift_LRcorrection(fplog,md->start,md->homenr,cr,fr,
+				 md->chargeA,excl,x,TRUE,box,
 				 fr->vir_el_recip);
     }
     epot[F_COUL_RECIP] = Vlr + Vcorr;
@@ -1497,7 +1493,7 @@ void force(FILE       *fplog,   int        step,
     dvdlambda = 0;
 
     if (fr->eeltype != eelRF_NEC)
-      epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
+      epot[F_RF_EXCL] = RF_excl_correction(fplog,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
 
     epot[F_DVDL] += dvdlambda;

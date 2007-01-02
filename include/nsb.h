@@ -41,17 +41,14 @@
 #include <config.h>
 #endif
 
-extern void calc_nsbshift(FILE *fp,t_nsborder *nsb);
-/* Calculates the shift and bshift variables */
-
-extern void calc_nsb(FILE *fp,t_block *cgs,int nprocs,int *multinr,
-		     t_nsborder *nsb);
+extern t_nsborder *calc_nsb(FILE *fp,t_block *cgs,int nprocs,int nodeid,
+			    int *multinr);
 /* Calculate which blocks of charge groups should be calculated,
  * depending on processor number.
  * multinr is not used with nprocs=1.
  */
 
-extern void print_nsb(FILE *fp,char *title,t_nsborder *nsb);
+extern void print_nsb(FILE *fp,char *title,int nnodes,t_nsborder *nsb);
 /* Print the values to file */
 
 /*extern bool cg_avail(int icg,int jcg,t_nsborder *nsb);*/

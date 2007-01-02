@@ -46,7 +46,6 @@
 #include "network.h"
 #include "tgroup.h"
 #include "filenm.h"
-#include "nsb.h"
 #include "mshift.h"
 #include "force.h"
 #include "time.h"
@@ -83,7 +82,7 @@ extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 			t_topology *top,real ener[],t_fcdata *fcd,
 			t_state *state,rvec vold[],rvec vt[],rvec f[],
-			rvec buf[],t_mdatoms *md,t_nsborder *nsb,
+			rvec buf[],t_mdatoms *md,
 			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			t_graph *graph,t_groups *grps,
 			int nshell,t_shell shells[],int nflexcon,
@@ -186,7 +185,7 @@ extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 extern real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[]);
 /* Calculate total dipole for group of atoms */
 
-extern real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
+extern real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,
 			 t_topology *top,t_mdatoms *md,int gnx,atom_id grpindex[]);
 /* Compute average dipole */
 

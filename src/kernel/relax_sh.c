@@ -44,6 +44,7 @@
 #include "vec.h"
 #include "txtdump.h"
 #include "mdrun.h"
+#include "partdec.h"
 #include "xmdrun.h"
 #include "mdatoms.h"
 #include "vsite.h"
@@ -355,7 +356,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 		 t_topology *top,real ener[],t_fcdata *fcd,
 		 t_state *state,rvec vold[],rvec vt[],rvec f[],
-		 rvec buf[],t_mdatoms *md,t_nsborder *nsb,
+		 rvec buf[],t_mdatoms *md,
 		 t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		 t_graph *graph,t_groups *grps,
 		 int nshell,t_shell shells[],int nflexcon,
@@ -375,15 +376,15 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   real   ftol,xiH,xiS,dum=0;
   char   cbuf[56];
   bool   bCont,bInit;
-  int    i,start=START(nsb),homenr=HOMENR(nsb),end=START(nsb)+HOMENR(nsb);
+  int    i,start=md->start,homenr=md->homenr,end=start+homenr,cg0,cg1;
   int    g,number_steps,d,Min=0,count=0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
   if (bFirst) {
     /* Allocate local arrays */
     for(i=0; (i<2); i++) {
-      snew(pos[i],nsb->natoms);
-      snew(force[i],nsb->natoms);
+      snew(pos[i],state->natoms);
+      snew(force[i],state->natoms);
     }
     bNoPredict = getenv("NOPREDICT") != NULL;
     if (bNoPredict)
@@ -406,7 +407,13 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
      * before do_force is called, which normally puts all
      * charge groups in the box.
      */
-    put_charge_groups_in_box(log,CG0(nsb),CG1(nsb),state->box,
+    if (PARTDECOMP(cr)) {
+      pd_cg_range(cr,&cg0,&cg1);
+    } else {
+      cg0 = 0;
+      cg1 = top->blocks[ebCGS].nr;
+    }
+    put_charge_groups_in_box(log,cg0,cg1,state->box,
 			     &(top->blocks[ebCGS]),state->x,fr->cg_cm);
     if (graph)
       mk_mshift(log,graph,state->box,state->x);
@@ -441,7 +448,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   if (gmx_debug_at) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(log,cr,inputrec,nsb,mdstep,nrnb,wcycle,top,grps,
+  do_force(log,cr,inputrec,mdstep,nrnb,wcycle,top,grps,
 	   state->box,state->x,force[Min],buf,md,ener,fcd,
 	   state->lambda,graph,
 	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
@@ -477,8 +484,8 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
      * shell positions are updated, therefore the other particles must
      * be set here.
      */
-    memcpy(pos[Min],state->x,nsb->natoms*sizeof(state->x[0]));
-    memcpy(pos[Try],state->x,nsb->natoms*sizeof(state->x[0]));
+    memcpy(pos[Min],state->x,state->natoms*sizeof(state->x[0]));
+    memcpy(pos[Try],state->x,state->natoms*sizeof(state->x[0]));
   }
   
   if (bVerbose && MASTER(cr))
@@ -525,7 +532,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
       pr_rvecs(debug,0,"RELAX: pos[Try]  ",pos[Try] + start,homenr);
     }
     /* Try the new positions */
-    do_force(log,cr,inputrec,nsb,1,nrnb,wcycle,
+    do_force(log,cr,inputrec,1,nrnb,wcycle,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     state->lambda,graph,
 	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
@@ -615,12 +622,12 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     for(i=start; (i<end); i++)
       rvec_dec(force[Min][i],fr->f_el_recip[i]);
   }
-  memcpy(f,force[Min],nsb->natoms*sizeof(f[0]));
+  memcpy(f,force[Min],state->natoms*sizeof(f[0]));
 
   /* CHECK VIRIAL */
   copy_mat(vir_el_recip[Min],fr->vir_el_recip);
   
-  memcpy(state->x,pos[Min],nsb->natoms*sizeof(state->x[0]));
+  memcpy(state->x,pos[Min],state->natoms*sizeof(state->x[0]));
 
   return count; 
 }

@@ -73,7 +73,7 @@ extern void check_grid(FILE *log,t_grid *grid);
 
 extern void print_grid(FILE *log,t_grid *grid);
 
-extern void mv_grid(t_commrec *cr,t_grid *grid,int cgload[]);
+extern void mv_grid(t_commrec *cr,t_grid *grid);
 /* Move the grid over processors */
 
 #endif	/* ns_grid_h */

@@ -53,31 +53,37 @@
 #include "tgroup.h"
 #include "block_tx.h"
 #include "nrnb.h"
+#include "partdec.h"
 
 void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 		int left,int right,rvec vecs[],rvec buf[],
-		int shift,t_nsborder *nsb,t_nrnb *nrnb)
+		int shift,t_nrnb *nrnb)
 {
   int    i,j,j0=137,j1=391;
   int    cur,nsum;
-#define next ((cur+1) % (cr->nnodes-cr->npmenodes))
-#define prev ((cur-1+(cr->nnodes-cr->npmenodes)) % (cr->nnodes-cr->npmenodes))
+  int    *index;
+#define next ((cur + 1) % cr->nnodes)
+#define prev ((cur - 1 + cr->nnodes) % cr->nnodes)
+
+#define HOMENRI(ind,i) ((ind)[(i)+1] - (ind)[(i)])
+
+  index = pd_index(cr);
 
   if (bSum)
-    cur=(nsb->nodeid+nsb->shift) % (cr->nnodes-cr->npmenodes);
+    cur = (cr->nodeid + pd_shift(cr)) % cr->nnodes;
   else
-    cur=nsb->nodeid;
+    cur = cr->nodeid;
 
   nsum=0;
   for(i=0; (i<shift); i++) {
     if (bSum) {
       if (bForward) {
-	j0=nsb->index[prev];
-	j1=j0+nsb->homenr[prev];
+	j0 = index[prev];
+	j1 = index[prev+1];
       }
       else {
-	j0=nsb->index[next];
-	j1=j0+nsb->homenr[next];
+	j0 = index[next];
+	j1 = index[next+1];
       }
       for(j=j0; (j<j1); j++) {
 	clear_rvec(buf[j]);
@@ -87,12 +93,12 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
     if (bForward) {
       if (bSum)
 	gmx_tx_rx_real(cr,
-		       right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-		       left,buf [nsb->index[prev]],nsb->homenr[prev]*DIM);
+		       right,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       left, buf [index[prev]],HOMENRI(index,prev)*DIM);
       else
 	gmx_tx_rx_real(cr,
-		       right,vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-		       left, vecs[nsb->index[prev]],nsb->homenr[prev]*DIM);
+		       right,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       left, vecs[index[prev]],HOMENRI(index,prev)*DIM);
       /* Wait for communication to end */
       gmx_wait(right,left);
     }
@@ -101,12 +107,12 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
     else {
       if (bSum)
 	gmx_tx_rx_real(cr,
-		       left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-		       right,buf [nsb->index[next]],nsb->homenr[next]*DIM);
+		       left, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       right,buf [index[next]],HOMENRI(index,next)*DIM);
       else
 	gmx_tx_rx_real(cr,
-		       left, vecs[nsb->index[cur]], nsb->homenr[cur]*DIM,
-		       right,vecs[nsb->index[next]],nsb->homenr[next]*DIM);
+		       left, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       right,vecs[index[next]],HOMENRI(index,next)*DIM);
       /* Wait for communication to end */
       gmx_wait(left,right);
     }
@@ -130,42 +136,45 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
 }
 
 void move_x(FILE *log,const t_commrec *cr,
-	    int left,int right,rvec x[],t_nsborder *nsb,
+	    int left,int right,rvec x[],
 	    t_nrnb *nrnb)
 {
-  move_rvecs(cr,FALSE,FALSE,left,right,x,NULL,nsb->shift,nsb,nrnb);
-  move_rvecs(cr,TRUE, FALSE,left,right,x,NULL,nsb->bshift,nsb,nrnb);
+  move_rvecs(cr,FALSE,FALSE,left,right,x,NULL,pd_shift(cr),nrnb);
+  move_rvecs(cr,TRUE, FALSE,left,right,x,NULL,pd_bshift(cr),nrnb);
 
   where();
 }
 
 void move_f(FILE *log,const t_commrec *cr,
 	    int left,int right,rvec f[],rvec fadd[],
-	    t_nsborder *nsb,t_nrnb *nrnb)
+	    t_nrnb *nrnb)
 {
-  move_rvecs(cr,TRUE, TRUE,left,right,f,fadd,nsb->shift,nsb,nrnb);
-  move_rvecs(cr,FALSE,TRUE,left,right,f,fadd,nsb->bshift,nsb,nrnb);
+  move_rvecs(cr,TRUE, TRUE,left,right,f,fadd,pd_shift(cr),nrnb);
+  move_rvecs(cr,FALSE,TRUE,left,right,f,fadd,pd_bshift(cr),nrnb);
 
   where();
 }
 
-void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[],int nload[])
+void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[])
 {
   int i,start,nr;
   int cur=cr->nodeid;
+  int *cgindex;
 
-#define next ((cur+1) % (cr->nnodes-cr->npmenodes))
+#define next ((cur+1) % cr->nnodes)
   
-  for(i=0; (i<(cr->nnodes-cr->npmenodes)-1); i++) {
-    start = (cur == 0) ? 0 : nload[cur-1];
-    nr    = nload[cur] - start;
+  cgindex = pd_cgindex(cr);
+
+  for(i=0; (i<cr->nnodes-1); i++) {
+    start = cgindex[cur];
+    nr    = cgindex[cur+1] - start;
 
     gmx_tx(cr,cr->left, cg_cm[start], nr*sizeof(cg_cm[0]));
 #ifdef DEBUG
     fprintf(log,"move_cgcm: TX start=%d, nr=%d\n",start,nr);
 #endif    
-    start = (next == 0) ? 0 : nload[next-1];
-    nr    = nload[next] - start;
+    start = cgindex[next];
+    nr    = cgindex[next+1] - start;
 
     gmx_rx(cr,cr->right,cg_cm[start], nr*sizeof(cg_cm[0]));
 #ifdef DEBUG

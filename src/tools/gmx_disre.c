@@ -57,7 +57,6 @@
 #include "pdbio.h"
 #include "index.h"
 #include "mdatoms.h"
-#include "nsb.h"
 #include "tpxio.h"
 #include "mdrun.h"
 #include "names.h"
@@ -473,7 +472,6 @@ int gmx_disre(int argc,char *argv[])
   t_forcerec  *fr;
   t_fcdata    fcd;
   t_nrnb      nrnb;
-  t_nsborder  *nsb;
   t_commrec   *cr;
   t_graph     *g;
   int         status,ntopatoms,natoms,i,j,step,kkk;
@@ -581,7 +579,6 @@ int gmx_disre(int argc,char *argv[])
 		   "Largest Violation","Time (ps)","nm");
   }
 
-  snew(nsb,1);
   snew(atoms,1);
   atoms->nr=top.atoms.nr;
   atoms->nres=top.atoms.nres;
@@ -594,12 +591,12 @@ int gmx_disre(int argc,char *argv[])
   memcpy(atoms->resname,top.atoms.resname,
 	 atoms->nres*sizeof(atoms->resname[0]));
   mdatoms = init_mdatoms(stdlog,&top.atoms,ir.efep!=efepNO);
-  atoms2md(&top.atoms,&ir,top.idef.il[F_ORIRES].nr,0,NULL,mdatoms);
+  atoms2md(&top.atoms,&ir,top.idef.il[F_ORIRES].nr,0,NULL,0,top.atoms.nr,
+	   mdatoms);
   update_mdatoms(mdatoms,lambda);
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec\n");
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),1,NULL,nsb);
-  init_forcerec(stdlog,fr,NULL,&ir,&top,cr,nsb,box,FALSE,NULL,NULL,NULL,FALSE);
+  init_forcerec(stdlog,fr,NULL,&ir,&top,cr,box,FALSE,NULL,NULL,NULL,FALSE);
   init_nrnb(&nrnb);
   j=0;
   do {

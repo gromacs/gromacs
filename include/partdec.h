@@ -34,21 +34,34 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _calcmu_h
-#define _calcmu_h
+#ifndef _partdec_h
+#define _partdec_h
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
-#include "typedefs.h"
-#include "network.h"
+#include "vsite.h"
 
-extern void calc_mu(int start,int homenr,rvec x[],real q[],real qB[],
-		    bool nChargePerturbed,
-		    dvec mu,dvec mu_B);
+extern int *pd_cgindex(const t_commrec *cr);
 
-extern bool read_mu(FILE *fp,rvec mu,real *vol);
-/* Return true on succes */
+extern int *pd_index(const t_commrec *cr);
+
+extern int pd_shift(const t_commrec *cr);
+
+extern int pd_bshift(const t_commrec *cr);
+
+extern void pd_cg_range(const t_commrec *cr,int *cg0,int *cg1);
+/* Get the range for the home charge groups */
+
+extern void pd_at_range(const t_commrec *cr,int *at0,int *at1);
+/* Get the range for the home particles */
+
+extern void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
+			 t_commrec *cr,t_topology *top);
+/* Split the system over N processors. */
+
+extern bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
+				  t_comm_vsites *vsitecomm);
 
 #endif

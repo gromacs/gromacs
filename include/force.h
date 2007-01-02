@@ -44,7 +44,6 @@
 
 #include "typedefs.h"
 #include "pbc.h"
-#include "nsb.h"
 #include "network.h"
 #include "tgroup.h"
 
@@ -57,7 +56,7 @@ extern void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
 		       t_graph *g,rvec shift_vec[]);
 /* Calculate virial taking periodicity into account */
 
-extern real RF_excl_correction(FILE *fplog,const t_nsborder *nsb,
+extern real RF_excl_correction(FILE *fplog,
 			       const t_forcerec *fr,t_graph *g,
 			       const t_mdatoms *mdatoms,const t_block *excl,
 			       rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
@@ -95,7 +94,6 @@ extern void init_forcerec(FILE       *fplog,
 			  const t_inputrec *ir,   
 			  const t_topology *top,
 			  const t_commrec  *cr,
-			  const t_nsborder *nsb,
 			  matrix     box,
 			  bool       bMolEpot,
 			  const char *tabfn,
@@ -126,7 +124,6 @@ extern void ns(FILE       *fplog,
 	       t_mdatoms  *md,
 	       t_commrec  *cr,
 	       t_nrnb     *nrnb,
-	       t_nsborder *nsb,
 	       int        step,
 	       real       lambda,
 	       real       *dvdlambda,
@@ -139,7 +136,6 @@ extern void force(FILE         *fplog,
 		  t_forcerec   *fr,
 		  t_inputrec   *ir,
 		  t_idef       *idef,
-		  t_nsborder   *nsb,
 		  t_commrec    *cr,
 		  t_nrnb       *nrnb,
 		  gmx_wallcycle_t wcycle,

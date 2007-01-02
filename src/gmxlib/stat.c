@@ -179,19 +179,19 @@ int do_per_step(int step,int nstep)
 }
 
 static void moveit(t_commrec *cr,
-		   int left,int right,char *s,rvec xx[],t_nsborder *nsb)
+		   int left,int right,char *s,rvec xx[])
 {
   if (!xx) 
     return;
 
   move_rvecs(cr,FALSE,FALSE,left,right,
-	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,nsb,NULL);
+	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,NULL);
 }
 
 void write_traj(t_commrec *cr,
 		int fp_trn,bool bX,bool bV,bool bF,
 		int fp_xtc,bool bXTC,int xtc_prec,
-		t_nsborder *nsb,t_topology *top_global,
+		t_topology *top_global,
 		int step,real t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global)
@@ -202,7 +202,7 @@ void write_traj(t_commrec *cr,
   t_block *cgs;
   int     i,j;
 
-#define MX(xvf) moveit(cr,cr->left,cr->right,#xvf,xvf,nsb)
+#define MX(xvf) moveit(cr,cr->left,cr->right,#xvf,xvf)
 
   if (DOMAINDECOMP(cr)) {
     cgs = &top_global->blocks[ebCGS];

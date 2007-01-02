@@ -83,7 +83,9 @@ t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
 }
 
 void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
-	      int nindex,int *index,t_mdatoms *md)
+	      int nindex,int *index,
+	      int start,int homenr,
+	      t_mdatoms *md)
 {
   int       i,g;
   real      mA,mB,fac;
@@ -221,6 +223,9 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
       }
     }
   }
+
+  md->start  = start;
+  md->homenr = homenr;
 }
 
 void update_mdatoms(t_mdatoms *md,real lambda)

@@ -60,7 +60,7 @@ real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
   return norm(mu);  /* Dipole moment of this molecule in e nm */
 }
 
-real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
+real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,
 		  t_topology *top,t_mdatoms *md,int gnx,atom_id grpindex[])
 {
   int     i,start,end;
@@ -68,8 +68,8 @@ real calc_mu_aver(t_commrec *cr,t_nsborder *nsb,rvec x[],real q[],rvec mu,
   t_atom  *atom;
   t_block *mols;
   
-  start = START(nsb);
-  end   = start + HOMENR(nsb);  
+  start = md->start;
+  end   = md->homenr + start;  
   
   atom = top->atoms.atom;
   mols = &(top->blocks[ebMOLS]);

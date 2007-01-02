@@ -47,7 +47,7 @@
 #include "fftgrid.h"
 
 extern int gmx_pppm_init(FILE *log,      t_commrec *cr,
-			 t_nsborder *nsb,bool bVerbose,
+			 bool bVerbose,
 			 bool bOld,      matrix box,
 			 char *ghatfn,   t_inputrec *ir);
 /* Setup stuff for PPPM. 
@@ -60,7 +60,8 @@ extern int gmx_pppm_do(FILE *log,       gmx_pme_t pme,
 		       rvec x[],        rvec f[],
 		       real charge[],   rvec box,
 		       real phi[],      t_commrec *cr,
-		       t_nsborder *nsb, t_nrnb *nrnb,
+		       int start,       int nt,
+		       t_nrnb *nrnb,
 		       int pme_order,   real *energy);
 /* Do a PPPM calculation for the long range electrostatics. */
 

@@ -98,7 +98,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	      rvec x[],        rvec f[],
 	      real chargeA[],  real chargeB[],
 	      rvec box,
-	      t_commrec *cr,   t_nsborder *nsb,
+	      t_commrec *cr,   int natoms,
 	      matrix lrvir,    real ewaldcoeff,
 	      real lambda,     real *dvdlambda)
 {
@@ -130,16 +130,16 @@ real do_ewald(FILE *log,       bool bVerbose,
     kmax = max(nx,max(ny,nz));
     snew(eir,kmax);
     for(n=0;n<kmax;n++)
-      snew(eir[n],HOMENR(nsb));
-    snew(tab_xy,HOMENR(nsb));
-    snew(tab_qxyz,HOMENR(nsb));
+      snew(eir[n],natoms);
+    snew(tab_xy,natoms);
+    snew(tab_qxyz,natoms);
     bFirst = FALSE;
   }
   clear_mat(lrvir);
   
   calc_lll(box,lll);
   /* make tables for the structure factor parts */
-  tabulate_eir(HOMENR(nsb),x,kmax,eir,lll);
+  tabulate_eir(natoms,x,kmax,eir,lll);
 
   for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
     if (!bFreeEnergy) {
@@ -160,10 +160,10 @@ real do_ewald(FILE *log,       bool bVerbose,
       for(iy=lowiy;iy<ny;iy++) {
 	my=iy*lll[YY];
 	if(iy>=0) 
-	  for(n=0;n<HOMENR(nsb);n++) 
+	  for(n=0;n<natoms;n++) 
 	    tab_xy[n]=cmul(eir[ix][n][XX],eir[iy][n][YY]);
 	else 
-	  for(n=0;n<HOMENR(nsb);n++) 
+	  for(n=0;n<natoms;n++) 
 	    tab_xy[n]=conjmul(eir[ix][n][XX],eir[-iy][n][YY]); 
 	for(iz=lowiz;iz<nz;iz++) {
 	  mz=iz*lll[ZZ];	       
@@ -171,14 +171,14 @@ real do_ewald(FILE *log,       bool bVerbose,
 	  ak=exp(m2*factor)/m2;
 	  akv=2.0*ak*(1.0/m2-factor);  
 	  if(iz>=0) 
-	    for(n=0;n<HOMENR(nsb);n++) 
+	    for(n=0;n<natoms;n++) 
 	      tab_qxyz[n]=rcmul(charge[n],cmul(tab_xy[n],eir[iz][n][ZZ]));
 	  else 
-	    for(n=0;n<HOMENR(nsb);n++) 
+	    for(n=0;n<natoms;n++) 
 	      tab_qxyz[n]=rcmul(charge[n],conjmul(tab_xy[n],eir[-iz][n][ZZ]));
 	  
 	  cs=ss=0;
-	  for(n=0;n<HOMENR(nsb);n++) {
+	  for(n=0;n<natoms;n++) {
 	    cs+=tab_qxyz[n].re;
 	    ss+=tab_qxyz[n].im;
 	  }
@@ -190,7 +190,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	  lrvir[YY][YY]-=tmp*my*my;
 	  lrvir[YY][ZZ]-=tmp*my*mz;
 	  lrvir[ZZ][ZZ]-=tmp*mz*mz;
-	  for(n=0;n<HOMENR(nsb);n++) {
+	  for(n=0;n<natoms;n++) {
 	    tmp=scale*ak*(cs*tab_qxyz[n].im-ss*tab_qxyz[n].re);
 	    f[n][XX]+=tmp*mx;
 	    f[n][YY]+=tmp*my;
@@ -211,7 +211,7 @@ real do_ewald(FILE *log,       bool bVerbose,
     energy = (1.0 - lambda)*energy_AB[0] + lambda*energy_AB[1];
     *dvdlambda += tmp*(energy_AB[1] - energy_AB[0]);
   }
-  for(n=0;n<HOMENR(nsb);n++) {
+  for(n=0;n<natoms;n++) {
     f[n][XX]*=2*tmp;
     f[n][YY]*=2*tmp;
     f[n][ZZ]*=2*tmp;

@@ -448,10 +448,10 @@ static void dump_it_all(FILE *fp,char *title,
 #endif
 }
 
-void calc_ke_part(int start,int homenr,rvec v[],
-                  t_grpopts *opts,t_mdatoms *md,t_groups *grps,
+void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,t_groups *grps,
                   t_nrnb *nrnb,real lambda)
 {
+  int          start=md->start,homenr=md->homenr;
   int          g,d,n,ga=0,gt=0;
   rvec         v_corrt;
   real         hm;
@@ -493,11 +493,11 @@ void calc_ke_part(int start,int homenr,rvec v[],
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
-void calc_ke_part_visc(int start,int homenr,
-                       matrix box,rvec x[],rvec v[],
+void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
                        t_grpopts *opts,t_mdatoms *md,t_groups *grps,
                        t_nrnb *nrnb,real lambda)
 {
+  int          start=md->start,homenr=md->homenr;
   int          g,d,n,gt=0;
   rvec         v_corrt;
   real         hm;
@@ -602,10 +602,7 @@ static void deform(int start,int homenr,rvec x[],matrix box,
 }
 
 
-void update(int          natoms,  /* number of atoms in simulation */
-            int          start,
-            int          homenr,  /* number of home particles 	*/
-            int          step,
+void update(int          step,
             real         *dvdlambda,    /* FEP stuff */
             t_inputrec   *inputrec,      /* input record and box stuff	*/
             t_mdatoms    *md,
@@ -634,11 +631,14 @@ void update(int          natoms,  /* number of atoms in simulation */
   bool             bLog=FALSE;
   double           dt;
   real             dt_1;
-  int              i,n,m,g;
+  int              start,homenr,i,n,m,g;
   matrix           M;
   tensor           vir_con;
   static gmx_rng_t sd_gaussrand=NULL;
   
+  start  = md->start;
+  homenr = md->homenr;
+
   if(bFirst) {
     if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
       please_cite(stdlog,"Berendsen84a");
@@ -663,7 +663,7 @@ void update(int          natoms,  /* number of atoms in simulation */
       sd_gaussrand = gmx_rng_init(inputrec->ld_seed);
     
     /* Allocate memory for xold and for xprime. */
-    xprime_nalloc = natoms;
+    xprime_nalloc = state->natoms;
     snew(xprime,xprime_nalloc);
     /* Copy the pointer to the external acceleration in the opts */
     ngacc=inputrec->opts.ngacc;    
@@ -701,7 +701,7 @@ void update(int          natoms,  /* number of atoms in simulation */
     /* Now do the actual update of velocities and positions */
     where();
     dump_it_all(stdlog,"Before update",
-		natoms,state->x,xprime,state->v,vold,force);
+		state->natoms,state->x,xprime,state->v,vold,force);
     if (inputrec->eI == eiMD) {
       if (grps->cosacc.cos_accel == 0)
         /* use normal version of update */
@@ -741,7 +741,7 @@ void update(int          natoms,  /* number of atoms in simulation */
     where();
     inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
     dump_it_all(stdlog,"After update",
-		natoms,state->x,xprime,state->v,vold,force);
+		state->natoms,state->x,xprime,state->v,vold,force);
   } else {
     /* If we're not updating we're doing shakefirst!
      */
@@ -791,7 +791,7 @@ void update(int          natoms,  /* number of atoms in simulation */
     where();
 
     dump_it_all(stdlog,"After Shake",
-		natoms,state->x,xprime,state->v,vold,force);
+		state->natoms,state->x,xprime,state->v,vold,force);
 
     /* Apply Essential Dynamics constraints when required.
      * Note that the reported ED and pull forces can be off
@@ -863,7 +863,7 @@ void update(int          natoms,  /* number of atoms in simulation */
       copy_rvec(xprime[n],shakefirst_x[n]);
   }
   dump_it_all(stdlog,"After unshift",
-	      natoms,state->x,xprime,state->v,vold,force);
+	      state->natoms,state->x,xprime,state->v,vold,force);
   where();
 
   if (bDoUpdate) {

@@ -49,7 +49,6 @@
 #include "force.h"
 #include "invblock.h"
 #include "confio.h"
-#include "nsb.h"
 #include "names.h"
 #include "network.h"
 #include "pbc.h"

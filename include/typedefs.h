@@ -60,7 +60,6 @@ extern "C" {
 #include <types/topology.h>
 #include <types/energy.h>
 #include <types/inputrec.h>
-#include <types/nsborder.h>
 #include <types/ishift.h>
 #include <types/graph.h>
 #include <types/nrnb.h>

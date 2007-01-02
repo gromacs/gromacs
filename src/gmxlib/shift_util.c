@@ -236,7 +236,8 @@ real potential(real r1,real rc,real R)
 
 
 
-real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
+real shift_LRcorrection(FILE *fp,int start,int natoms,
+			t_commrec *cr,t_forcerec *fr,
 			real charge[],t_block *excl,rvec x[],
 			bool bOld,matrix box,matrix lr_vir)
 {
@@ -251,8 +252,6 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   real   r1=fr->rcoulomb_switch;
   real   rc=fr->rcoulomb;
   ivec   shift;     
-  int    start=START(nsb);
-  int    natoms=HOMENR(nsb);
   
   if (bFirst) {
     qq =0;  

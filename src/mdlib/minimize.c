@@ -67,6 +67,7 @@
 #include "vsite.h"
 #include "force.h"
 #include "mdrun.h"
+#include "partdec.h"
 #include "trnio.h"
 #include "sparsematrix.h"
 #include "mtxio.h"
@@ -126,10 +127,10 @@ static void print_converged(FILE *fp,const char *alg,real ftol,int count,bool bD
 static real f_max(t_commrec *cr,
 		  int left,int right,int nnodes,
 		  t_grpopts *opts,t_mdatoms *mdatoms,
-		  int start,int end,rvec grad[],int *nfmax)
+		  rvec grad[],int *nfmax)
 {
   real fmax2,fmax2_0,fam,nfm;
-  int  i,m,gf;
+  int  start,end,i,m,gf;
 
   /* This routine finds the largest force and returns it.
    * On parallel machines the global max is taken.
@@ -137,6 +138,8 @@ static real f_max(t_commrec *cr,
   fmax2 = 0;
   nfm   = -1;
   gf = 0;
+  start = mdatoms->start;
+  end   = mdatoms->homenr + start;
   if (mdatoms->cFREEZE) {
     for(i=start; i<end; i++) {
       gf = mdatoms->cFREEZE[i];
@@ -178,15 +181,16 @@ static real f_max(t_commrec *cr,
 }
 
 static real f_norm(t_commrec *cr,
-		   t_grpopts *opts,t_mdatoms *mdatoms,
-		   int start,int end,rvec grad[])
+		   t_grpopts *opts,t_mdatoms *mdatoms,rvec grad[])
 {
   double fnorm2;
-  int    i,m,gf;
+  int    start,end,i,m,gf;
 
   /* This routine returns the norm of the force */
   fnorm2 = 0;
 
+  start = mdatoms->start;
+  end   = mdatoms->homenr + start;
   if (mdatoms->cFREEZE) {
     for(i=start; i<end; i++) {
       gf = mdatoms->cFREEZE[i];
@@ -208,10 +212,12 @@ static real f_norm(t_commrec *cr,
 void init_em(FILE *log,const char *title,t_inputrec *inputrec,
 	     real *lambda,t_nrnb *nrnb,rvec mu_tot,
 	     matrix box,
-	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,t_nsborder *nsb,
-	     t_commrec *cr,t_vcm **vcm,int *start,int *end,
+	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,
+	     t_commrec *cr,t_vcm **vcm,
 	     int nfile,t_filenm fnm[],int *fp_trn,int *fp_ene)
 {
+  int start,homenr;
+
   fprintf(log,"Initiating %s\n",title);
 
   /* Initiate some variables */
@@ -225,14 +231,19 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
   clear_rvec(mu_tot);
   calc_shifts(box,fr->shift_vec);
   
-  *start = nsb->index[cr->nodeid];
-  *end   = nsb->homenr[cr->nodeid] + *start;
-
-  atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,mdatoms);
+  if (PARTDECOMP(cr)) {
+    pd_at_range(cr,&start,&homenr);
+    homenr -= start;
+  } else {
+    start  = 0;
+    homenr = top->atoms.nr;
+  }
+  atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,
+	   start,homenr,mdatoms);
   update_mdatoms(mdatoms,*lambda);
 
-  *vcm = init_vcm(log,top,cr,&top->atoms,
-		  *start,HOMENR(nsb),inputrec->nstcomm,inputrec->comm_mode);
+  *vcm = init_vcm(log,top,cr,&top->atoms,mdatoms->start,mdatoms->homenr,
+		  inputrec->nstcomm,inputrec->comm_mode);
 
   if (MASTER(cr)) {
     if (fp_trn)
@@ -252,7 +263,7 @@ static void finish_em(FILE *log,t_commrec *cr,
 }
 
 static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec, 
-			    t_topology *top,t_groups *grps,t_nsborder *nsb, 
+			    t_topology *top,t_groups *grps,
 			    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			    bool bVsites,t_comm_vsites *vsitecomm,
 			    t_fcdata *fcd,t_commrec *cr,
@@ -275,7 +286,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,inputrec,nsb,
+  do_force(log,cr,inputrec,
 	   count,nrnb,wcycle,top,grps,box,x,f,
 	   buf,mdatoms,ener,fcd,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -289,7 +300,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
     spread_vsite_f(log,x,fr->f_el_recip,NULL,&nrnb[cr->nodeid],&top->idef,
 		   fr->ePBC,graph,box,vsitecomm,cr);
   
-  sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+  sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
@@ -310,8 +321,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
 
 
 time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
-	     t_inputrec *inputrec,t_topology *top,
-	     t_groups *grps,t_nsborder *nsb,
+	     t_inputrec *inputrec,t_topology *top,t_groups *grps,
 	     t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
@@ -342,7 +352,10 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   step=0;
 
   init_em(log,CG,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
+	  fr,mdatoms,top,cr,&vcm,nfile,fnm,&fp_trn,&fp_ene);
+
+  start = mdatoms->start;
+  end   = mdatoms->homenr + start;
   
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,
@@ -350,14 +363,14 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   wallcycle_start(wcycle,ewcRUN);
   
   /* p is the search direction */
-  snew(p,nsb->natoms);
-  snew(f,nsb->natoms);
-  snew(xa,nsb->natoms);
-  snew(xb,nsb->natoms);
-  snew(xc,nsb->natoms);
-  snew(fa,nsb->natoms);
-  snew(fb,nsb->natoms);
-  snew(fc,nsb->natoms);
+  snew(p,state->natoms);
+  snew(f,state->natoms);
+  snew(xa,state->natoms);
+  snew(xb,state->natoms);
+  snew(xc,state->natoms);
+  snew(fa,state->natoms);
+  snew(fb,state->natoms);
+  snew(fc,state->natoms);
 
   /* Init bin for energy stuff */
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr); 
@@ -385,7 +398,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* do_force always puts the charge groups in the box and shifts again
    * We do not unshift, so molecules are always whole in congrad.c
    */
-  do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,
+  do_force(log,cr,inputrec,0,nrnb,wcycle,
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -400,7 +413,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
 		   fr->ePBC,graph,state->box,vsitecomm,cr);
   
-  sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+  sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(log,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
@@ -438,11 +451,11 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   Epot0=ener[F_EPOT];
 
   /* Calculate the norm of the force (take all CPUs into account) */
-  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,start,end,f);
+  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,f);
   fnorm2=fnorm*fnorm;
   /* Calculate maximum force */
-  fmax = f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,
-	       start,end,f,&nfmax);
+  fmax = f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
+	       f,&nfmax);
 
   /* Estimate/guess the initial stepsize */
   stepsize = inputrec->em_stepsize/fnorm;
@@ -456,7 +469,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     fprintf(log,"   F-max             = %12.5e on atom %d\n",fmax,nfmax+1);
     fprintf(log,"   F-Norm            = %12.5e\n",fnorm);
     fprintf(log,"\n");
-  }   
+  }  
   /* Start the loop over CG steps.		
    * Each successful step is counted, and we continue until
    * we either converge or reach the max number of steps.
@@ -487,7 +500,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       gmx_sumd(1,&gpa,cr);
 
     /* Calculate the norm of the search vector */
-    pnorm=f_norm(cr,&(inputrec->opts),mdatoms,start,end,p);
+    pnorm=f_norm(cr,&(inputrec->opts),mdatoms,p);
     
     /* Just in case stepsize reaches zero due to numerical precision... */
     if(stepsize<=0)	  
@@ -522,7 +535,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     if(PAR(cr))
       gmx_sumd(1,&minstep,cr);
 
-    minstep = GMX_REAL_EPS/sqrt(minstep/(3*nsb->natoms));
+    minstep = GMX_REAL_EPS/sqrt(minstep/(3*state->natoms));
 
     if(stepsize<minstep) {
       converged=TRUE;
@@ -534,7 +547,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     do_f = do_per_step(step,inputrec->nstfout);
     
     write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	       nsb,top,step,(real)step,state,state,f,f);
+	       top,step,(real)step,state,state,f,f);
     
     /* Take a step downhill.
      * In theory, we should minimize the function along this direction.
@@ -566,7 +579,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     
     neval++;
     /* Calculate energy for the trial step */
-    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
+    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,xc,fc,buf,ener,step);
     
@@ -645,7 +658,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	
 	neval++;
 	/* Calculate energy for the trial step */
-	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
+	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,xb,fb,buf,ener,step);
 	
@@ -802,15 +815,15 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     gpa = gpb;
     
     /* Test whether the convergence criterion is met */
-    fmax=f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,
-	       start,end,f,&nfmax);
+    fmax=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
+	       f,&nfmax);
     
     /* Print it if necessary */
     if (MASTER(cr)) {
       ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
       if(bVerbose)
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
-		step,Epot0,sqrt(fnorm2/(3*nsb->natoms)),fmax,nfmax+1);
+		step,Epot0,sqrt(fnorm2/(3*state->natoms)),fmax,nfmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
@@ -856,12 +869,12 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   
   /* Only write the trajectory if we didn't do it last step */
   write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	     nsb,top,step,(real)step,state,state,f,f);
+	     top,step,(real)step,state,state,f,f);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
   
-  fnorm=sqrt(fnorm2/(3*nsb->natoms));
+  fnorm=sqrt(fnorm2/(3*state->natoms));
   
   if (MASTER(cr)) {
     print_converged(stderr,CG,inputrec->em_tol,step,converged,
@@ -886,7 +899,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
 time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		t_inputrec *inputrec,t_topology *top,
-		t_groups *grps,t_nsborder *nsb, t_state *state,
+		t_groups *grps,t_state *state,
 		rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
@@ -918,11 +931,11 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   if(PAR(cr))
     gmx_fatal(FARGS,"Cannot do parallel L-BFGS Minimization - yet.\n");
   
-  n = 3*nsb->natoms;
+  n = 3*state->natoms;
   nmaxcorr = inputrec->nbfgscorr;
   
   /* Allocate memory */
-  snew(f,nsb->natoms);
+  snew(f,state->natoms);
   /* Use pointers to real so we dont have to loop over both atoms and
    * dimensions all the time...
    * x/f are allocated as rvec *, so make new x0/f0 pointers-to-real
@@ -957,7 +970,10 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   neval = 0; 
 
   init_em(log,LBFGS,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
+	  fr,mdatoms,top,cr,&vcm,nfile,fnm,&fp_trn,&fp_ene);
+
+  start = mdatoms->start;
+  end   = mdatoms->homenr + start;
     
   /* Print to log file */
   start_t=print_date_and_time(log,cr->nodeid,
@@ -999,7 +1015,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
    * We do not unshift, so molecules are always whole in congrad.c
    */
   neval++;
-  do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,
+  do_force(log,cr,inputrec,0,nrnb,wcycle,
 	   top,grps,state->box,
 	   state->x,f,buf,mdatoms,ener,fcd,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
@@ -1014,7 +1030,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
 		   fr->ePBC,graph,state->box,vsitecomm,cr);
   
-  sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+  sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(log,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
@@ -1051,10 +1067,10 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   /* This is the starting energy */
   Epot=ener[F_EPOT];
   
-  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,start,end,f);
+  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,f);
   
-  fmax=f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,
-	     start,end,f,&nfmax);
+  fmax=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
+	     f,&nfmax);
   
   /* Set the initial step.
    * since it will be multiplied by the non-normalized search direction 
@@ -1099,7 +1115,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     do_f = do_per_step(step,inputrec->nstfout);
     
     write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	       nsb,top,step,(real)step,state,state,f,f);
+	       top,step,(real)step,state,state,f,f);
 
     /* Do the linesearching in the direction dx[point][0..(n-1)] */
     
@@ -1182,7 +1198,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     
     neval++;
     /* Calculate energy for the trial step */
-    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
+    EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 			    vcm,mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
     
@@ -1255,7 +1271,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	
 	neval++;
 	/* Calculate energy for the trial step */
-	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nsb,nrnb,wcycle,
+	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
 				vcm,mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
 	
@@ -1317,7 +1333,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	  for(i=0;i<n;i++)
 	    dx[point][i]=ff[i];
 	  /* Reset stepsize */
-	  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,start,end,f);
+	  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,f);
 	  stepsize = 1.0/fnorm;
 	  continue;
 	}
@@ -1433,17 +1449,17 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     stepsize=1.0;
     
     /* Test whether the convergence criterion is met */
-    fmax=f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,
-	       start,end,f,&nfmax);
+    fmax=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
+	       f,&nfmax);
     
-    fnorm = f_norm(cr,&(inputrec->opts),mdatoms,start,end,f);
+    fnorm = f_norm(cr,&(inputrec->opts),mdatoms,f);
     
     /* Print it if necessary */
     if (MASTER(cr)) {
       ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
       if(bVerbose)
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
-		step,Epot,fnorm/sqrt(3*nsb->natoms),fmax,nfmax+1);
+		step,Epot,fnorm/sqrt(3*state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
@@ -1490,13 +1506,13 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   
   /* Only write the trajectory if we didn't do it last step */
   write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	     nsb,top,step,(real)step,state,state,f,f);
+	     top,step,(real)step,state,state,f,f);
 
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
   
-  fnorm=fnorm/sqrt(3*nsb->natoms);
+  fnorm=fnorm/sqrt(3*state->natoms);
   
   if (MASTER(cr)) {
     print_converged(stderr,LBFGS,inputrec->em_tol,step,converged,
@@ -1522,7 +1538,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 
 time_t do_steep(FILE *log,int nfile,t_filenm fnm[], 
 		t_inputrec *inputrec,t_topology *top, 
-		t_groups *grps,t_nsborder *nsb, 
+		t_groups *grps,
 		t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
 		real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		bool bVerbose,bool bVsites, t_comm_vsites *vsitecomm,
@@ -1544,7 +1560,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   rvec   mu_tot;
   int    nfmax[2],nsteps;
   int    count=0; 
-  int    i,m,start,end,gf; 
+  int    i,m,start,end,gf=0; 
   int    Min=0; 
   int    steps_accepted=0; 
   bool   bConstrain;
@@ -1553,16 +1569,19 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #define  TRY (1-Min)
 
   init_em(log,SD,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,&fp_trn,&fp_ene);
+	  fr,mdatoms,top,cr,&vcm,nfile,fnm,&fp_trn,&fp_ene);
    
+  start = mdatoms->start;
+  end   = mdatoms->homenr + start;
+
   /* Print to log file  */
   start_t=print_date_and_time(log,cr->nodeid,"Started Steepest Descents");
   wallcycle_start(wcycle,ewcRUN);
   
   /* We need two coordinate arrays and two force arrays  */
   for(i=0; (i<2); i++) { 
-    snew(pos[i],nsb->natoms); 
-    snew(force[i],nsb->natoms); 
+    snew(pos[i],state->natoms); 
+    snew(force[i],state->natoms); 
   } 
 
   /* Init bin for energy stuff  */
@@ -1577,14 +1596,14 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Initiate constraint stuff */
   bConstrain=init_constraints(stdlog,top,&top->idef.il[F_SETTLE],
 			      inputrec,mdatoms,
-			      start,end,FALSE,
+			      start,end-start,FALSE,
 			      cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
   
   if (bConstrain)
-    snew(xcf,nsb->natoms); 
+    snew(xcf,state->natoms); 
 
   /* Copy coord vectors to our temp array  */
-  for(i=0; (i<nsb->natoms); i++) { 
+  for(i=0; (i<state->natoms); i++) { 
     copy_rvec(state->x[i],pos[Min][i]); 
     copy_rvec(state->x[i],pos[TRY][i]); 
   } 
@@ -1644,7 +1663,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
      * do_force always puts the charge groups in the box and shifts again
      * We do not unshift, so molecules are always whole in steep.c
      */
-    do_force(log,cr,inputrec,nsb,
+    do_force(log,cr,inputrec,
  	     count,nrnb,wcycle,top,grps,state->box,pos[TRY],
 	     force[TRY],buf,
 	     mdatoms,ener,fcd,
@@ -1661,7 +1680,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
 		     fr->ePBC,graph,state->box,vsitecomm,cr);
     
-    sum_lrforces(force[TRY],fr,START(nsb),HOMENR(nsb));
+    sum_lrforces(force[TRY],fr,mdatoms->start,mdatoms->homenr);
 
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(log,inputrec,fr,count,mdatoms->nr,state->box,state->lambda,
@@ -1675,8 +1694,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     if (bConstrain) {
       /* Determine the forces working on the constraints */
-      fmax = f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),
-		   mdatoms,start,end,force[TRY],&(nfmax[TRY]));
+      fmax = f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
+		   force[TRY],&(nfmax[TRY]));
       constepsize = ustep/fmax;
       for(i=start; (i<end); i++)  
 	for(m=0;(m<DIM);m++) 
@@ -1704,8 +1723,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
  		  inputrec,grps,vcm,&terminate); 
     
     /* This is the new energy  */
-    Fmax[TRY]=f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,
-		    start,end,force[TRY],&(nfmax[TRY]));
+    Fmax[TRY]=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
+		    force[TRY],&(nfmax[TRY]));
     Epot[TRY]=ener[F_EPOT];
     if (count == 0)
       Epot[Min] = Epot[TRY]+1;
@@ -1757,7 +1776,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
       state_min = *state;
       state_min.x = pos[Min];
       write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-		 nsb,top,count,(real)count,
+		 top,count,(real)count,
 		 &state_min,&state_min,force[Min],force[Min]);
     } 
     else
@@ -1784,16 +1803,16 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Put the coordinates back in the x array (otherwise the whole
    * minimization would be in vain)
    */
-  for(i=0; (i<nsb->natoms); i++)
+  for(i=0; (i<state->natoms); i++)
     copy_rvec(pos[Min][i],state->x[i]);
   
     /* Print some shit...  */
   if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
   write_traj(cr,fp_trn,TRUE,FALSE,TRUE,0,FALSE,0,
-	     nsb,top,count,(real)count,state,state,force[Min],force[Min]);
+	     top,count,(real)count,state,state,force[Min],force[Min]);
 
-  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,start,end,force[Min]);
+  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,force[Min]);
 
   if (MASTER(cr)) {
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
@@ -1820,7 +1839,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
              t_topology *top,real ener[],t_fcdata *fcd,
              t_state *state,rvec vold[],rvec vt[],rvec f[],
              rvec buf[],t_mdatoms *mdatoms,
-             t_nsborder *nsb,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+             t_nrnb *nrnb,gmx_wallcycle_t wcycle,
              t_graph *graph,t_edsamyn *edyn,
              t_forcerec *fr)
 {
@@ -1919,12 +1938,12 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     clear_mat(force_vir);
     
     bNS=TRUE;
-    do_force(log,cr,inputrec,nsb,0,nrnb,wcycle,top,grps,
+    do_force(log,cr,inputrec,0,nrnb,wcycle,top,grps,
              state->box,state->x,f,buf,mdatoms,ener,fcd,
              lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
     bNS=FALSE;
     
-    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+    sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
 
     /* Shift back the coordinates, since we're not calling update */
@@ -1933,8 +1952,8 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   
     /* if forces not small, warn user */
-    fmax=f_max(cr,cr->left,cr->right,nsb->nnodes,&(inputrec->opts),mdatoms,
-               0,top->atoms.nr,f,&nfmax);
+    fmax=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
+               f,&nfmax);
     fprintf(stderr,"Maximum force:%12.5e\n",fmax);
     if (fmax > 1.0e-3) 
     {
@@ -1968,12 +1987,12 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             
             clear_mat(force_vir);
             
-            do_force(log,cr,inputrec,nsb,2*(step*DIM+idum),
+            do_force(log,cr,inputrec,2*(step*DIM+idum),
                      nrnb,wcycle,top,grps,
                      state->box,state->x,fneg,buf,mdatoms,ener,fcd,
 		     lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
-	    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+	    sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
             if (graph)
             {
@@ -1985,12 +2004,12 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
             
             clear_mat(force_vir);
             
-            do_force(log,cr,inputrec,nsb,2*(step*DIM+idum)+1,
+            do_force(log,cr,inputrec,2*(step*DIM+idum)+1,
                      nrnb,wcycle,top,grps,
                      state->box,state->x,fpos,buf,mdatoms,ener,fcd,
 		     lambda,graph,
 		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
-	    sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+	    sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 	    
 	    if (graph)
             {
@@ -2060,7 +2079,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
 time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[], 
 	      t_inputrec *inputrec,t_topology *top, 
-	      t_groups *grps,t_nsborder *nsb, 
+	      t_groups *grps,
 	      t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
 	      real ener[],t_fcdata *fcd,
 	      t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -2097,8 +2116,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
 
   init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
-	  state->box,
-	  fr,mdatoms,top,nsb,cr,&vcm,&start,&end,nfile,fnm,NULL,NULL);
+	  state->box,fr,mdatoms,top,cr,&vcm,nfile,fnm,NULL,NULL);
      temp = inputrec->opts.ref_t[0];
   for(i=1; (i<inputrec->opts.ngtc); i++) {
     if (inputrec->opts.ref_t[i] != temp) {
@@ -2293,14 +2311,14 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	 * do_force always puts the charge groups in the box and shifts again
 	 * We do not unshift, so molecules are always whole in tpi.c
 	 */
-	do_force(fplog,cr,inputrec,nsb,
+	do_force(fplog,cr,inputrec,
 		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
 		 buf,mdatoms,ener,fcd,
 		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL,NULL); 
 	bStateChanged = FALSE;
 
-	sum_lrforces(f,fr,START(nsb),HOMENR(nsb));
+	sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
 	/* Calculate long range corrections to pressure and energy */
 	calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,lambda,

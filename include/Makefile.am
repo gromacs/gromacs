@@ -68,10 +68,10 @@ nonbonded.h \
 nrama.h \
 nrjac.h \
 nrnb.h \
-nsb.h \
 nsgrid.h \
 ns.h \
 orires.h \
+partdec.h \
 pbc.h \
 pdbio.h \
 pdebug.h \

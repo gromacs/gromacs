@@ -48,10 +48,7 @@
 #include "force.h"
 #include "pull.h"
 
-extern void update(int          natoms,	/* number of atoms in simulation */
-		   int      	start,
-		   int          homenr,	/* number of home particles 	*/
-		   int          step,
+extern void update(int          step,
 		   real         *dvdlambda, /* FEP stuff */
 		   t_inputrec   *inputrec,  /* input record and box stuff	*/
 		   t_mdatoms    *md,
@@ -73,8 +70,7 @@ extern void update(int          natoms,	/* number of atoms in simulation */
 		   tensor       pres);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
-extern void calc_ke_part(int start,int homenr,rvec v[],
-			 t_grpopts *opts,t_mdatoms *md,
+extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
 			 t_groups *grps,t_nrnb *nrnb,
 			 real lambda);
 /*
@@ -93,8 +89,7 @@ extern void calc_ke_part(int start,int homenr,rvec v[],
  *
  */
 
-extern void calc_ke_part_visc(int start,int homenr,
-			      matrix box,rvec x[],rvec v[],
+extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 			      t_grpopts *opts,t_mdatoms *md,
 			      t_groups *grps,t_nrnb *nrnb,
 			      real lambda);

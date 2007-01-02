@@ -46,7 +46,9 @@
 extern t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy);
 
 extern void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
-		     int nindex,int *index,t_mdatoms *md);
+		     int nindex,int *index,
+		     int start,int homenr,
+		     t_mdatoms *md);
 /* This routine copies the atoms->atom struct into md.
  * If index!=NULL only the indexed atoms are copied.
  */

@@ -46,7 +46,6 @@
 #include "network.h"
 #include "tgroup.h"
 #include "filenm.h"
-#include "nsb.h"
 #include "mshift.h"
 #include "force.h"
 #include "time.h"
@@ -75,7 +74,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
-		    t_nsborder *nsb,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		    t_graph *graph,t_edsamyn *edyn,
 		    t_forcerec *fr,
 		    int repl_ex_nst,int repl_ex_seed,
@@ -84,7 +83,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,
 /* ROUTINES from minimize.c */
 extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_inputrec *inputrec,t_topology *top,
-		       t_groups *grps,t_nsborder *nsb,
+		       t_groups *grps,
 		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       real ener[],t_fcdata *fcd,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -95,7 +94,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 
 extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_inputrec *inputrec,t_topology *top,
-		    t_groups *grps,t_nsborder *nsb,
+		    t_groups *grps,
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    real ener[],t_fcdata *fcd,
 		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -106,7 +105,7 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 
 extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		       t_inputrec *inputrec,t_topology *top,
-		       t_groups *grps,t_nsborder *nsb, t_state *state,
+		       t_groups *grps,t_state *state,
 		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       real ener[],t_fcdata *fcd,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -122,14 +121,14 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec vold[],rvec vt[],rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
-		    t_nsborder *nsb,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		    t_graph *graph,t_edsamyn *edyn,
 		    t_forcerec *fr);
 /* Do normal mode analysis */
 
 extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[], 
 		     t_inputrec *inputrec,t_topology *top, 
-		     t_groups *grps,t_nsborder *nsb, 
+		     t_groups *grps,
 		     t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
 		     real ener[],t_fcdata *fcd,
 		     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -155,7 +154,7 @@ extern void global_stat(FILE *log,
 void write_traj(t_commrec *cr,
 		int fp_trn,bool bX,bool bV,bool bF,
 		int fp_xtc,bool bXTC,int xtc_prec,
-		t_nsborder *nsb,t_topology *top_global,
+		t_topology *top_global,
 		int step,real t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global);
@@ -175,7 +174,7 @@ extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
 extern void do_force(FILE *log,t_commrec *cr,
-		     t_inputrec *inputrec,t_nsborder *nsb,
+		     t_inputrec *inputrec,
 		     int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		     t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
@@ -195,7 +194,7 @@ extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 
-extern void finish_run(FILE *log,t_commrec *cr,char *confout, t_nsborder *nsb,
+extern void finish_run(FILE *log,t_commrec *cr,char *confout,
 		       t_topology *top, t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		       double nodetime,double realtime,int step,
@@ -222,8 +221,7 @@ extern void check_nnodes_top(char *fn,t_topology *top);
 
 extern void init_single(FILE *log,
                         t_inputrec *inputrec, char *tpbfile, t_topology *top,
-			t_state *state,
-			t_nsborder *nsb);
+			t_state *state);
      /*
       * Allocates space for the topology (top), the coordinates x, the
       * velocities v, masses mass. Reads the parameters, topology,
@@ -251,17 +249,6 @@ extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       * all interactions.
       */
 
-/* Routines from redist.c */
-extern void split_system_first(FILE *log,t_inputrec *inputrec,t_state *state,
-			       t_commrec *cr,t_topology *top,t_nsborder *nsb);
-/* Split the system over N processors for the first time. */
-
-extern void split_system_again();
-/* Id. for subsequent calls (not implemented yet!) */
-
-extern bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,t_nsborder *nsb,
-				  t_comm_vsites *vsitecomm);
-
 extern void start_time(void);
 /* Start timing routines */
 
@@ -274,7 +261,7 @@ extern double node_time(void);
 /* Return the node time so far in seconds. */
 
 extern void do_shakefirst(FILE *log,real ener[],
-			  t_inputrec *inputrec,t_nsborder *nsb,t_mdatoms *md,
+			  t_inputrec *inputrec,t_mdatoms *md,
 			  t_state *state,rvec vold[],rvec buf[],rvec f[],
 			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 			  t_groups *grps,t_forcerec *fr,t_topology *top,
@@ -304,7 +291,7 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    t_mdebin **mdebin,t_groups *grps,
 		    tensor force_vir,tensor shake_vir,
 		    t_mdatoms *mdatoms,rvec mu_tot,
-		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm,t_nsborder *nsb);
+		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm);
 /* Routine in sim_util.c */
      
 #endif	/* _mdrun_h */

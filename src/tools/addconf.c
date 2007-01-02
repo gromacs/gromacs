@@ -193,7 +193,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 {
   static bool bFirst = TRUE;
   static t_topology *top;
-  static t_nsborder *nsb;
   static t_mdatoms  *md;
   static t_block    *cgs;
   static t_inputrec *ir;
@@ -246,17 +245,9 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     snew(nFreeze,2);
     snew(md,1);
     md = init_mdatoms(fp,atoms,FALSE);
-    atoms2md(atoms,ir,0,0,NULL,md);
+    atoms2md(atoms,ir,0,0,NULL,0,top->atoms.nr,md);
     sfree(nFreeze);
 
-    /* nsborder struct */
-    snew(nsb,1);
-    nsb->nodeid  = 0;
-    nsb->nnodes  = 1;
-    calc_nsb(debug,&(top->blocks[ebCGS]),1,NULL,nsb);
-    if (debug)
-      print_nsb(debug,"nsborder",nsb);
-  
     /* forcerec structure */
     if (fr == NULL)
       fr = mk_forcerec();
@@ -266,7 +257,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     
     /*    ir->rlist       = ir->rcoulomb = ir->rvdw = rlong;
     printf("Neighborsearching with a cut-off of %g\n",rlong);
-    init_forcerec(stdout,fr,ir,top,cr,md,nsb,box,FALSE,NULL,NULL,TRUE);*/
+    init_forcerec(stdout,fr,ir,top,cr,md,box,FALSE,NULL,NULL,TRUE);*/
     fr->cg0 = 0;
     fr->hcg = top->blocks[ebCGS].nr;
     fr->nWatMol = 0;
@@ -283,7 +274,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   /* Init things dependent on parameters */  
   ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
   printf("Neighborsearching with a cut-off of %g\n",rlong);
-  init_forcerec(stdout,fr,NULL,ir,top,cr,nsb,box,FALSE,NULL,NULL,NULL,TRUE);
+  init_forcerec(stdout,fr,NULL,ir,top,cr,box,FALSE,NULL,NULL,NULL,TRUE);
   if (debug)
     pr_forcerec(debug,fr,cr);
 		
@@ -294,8 +285,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   put_charge_groups_in_box(fp,0,cgs->nr,box,cgs,x,fr->cg_cm);
   
   /* Do the actual neighboursearching */
-  init_neighbor_list(fp,fr,HOMENR(nsb));
-  search_neighbours(fp,fr,x,box,top,grps,cr,nsb,&nrnb,md,lambda,&dvdlambda,
+  init_neighbor_list(fp,fr,md->homenr);
+  search_neighbours(fp,fr,x,box,top,grps,cr,&nrnb,md,lambda,&dvdlambda,
 		    TRUE,FALSE);
 
   if (debug)

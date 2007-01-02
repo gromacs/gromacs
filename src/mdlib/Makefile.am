@@ -18,9 +18,9 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	edsam.c		ewald.c         fftgrid.c	\
 	force.c  	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
-	ns.c		nsb.c		nsgrid.c	\
+	ns.c		nsgrid.c	\
 	pme.c		pppm.c		fftgrid.c	\
-	pull.c 		pullinit.c	\
+	partdec.c	pull.c 		pullinit.c	\
 	pullio.c	pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	tables.c	tgroup.c	\

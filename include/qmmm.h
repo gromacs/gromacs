@@ -7,7 +7,6 @@
 #endif /* HAVE_IDENT */
 #include "typedefs.h"
 #include "pbc.h"
-#include "nsb.h"
 #include "network.h"
 #include "tgroup.h"
 

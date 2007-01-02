@@ -77,7 +77,8 @@ real calc_ewaldcoeff(real rc,real dtol)
 
 
 real ewald_LRcorrection(FILE *fplog,
-			t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
+			int start,int end,
+			t_commrec *cr,t_forcerec *fr,
 			real *chargeA,real *chargeB,
 			t_block *excl,rvec x[],
 			matrix box,rvec mu_tot[],
@@ -105,8 +106,6 @@ real ewald_LRcorrection(FILE *fplog,
 #else
   double  isp=0.564189583547756;
 #endif
-  int     start = START(nsb);
-  int     end   = start+HOMENR(nsb);
   int     niat;
   bool    bFreeEnergy = (chargeB != NULL);
   bool    bFullPBC = (fr->ePBC == epbcFULL);

@@ -53,12 +53,13 @@ extern real do_ewald(FILE *log,       bool bVerbose,
 		     rvec x[],        rvec f[],
 		     real chargeA[],  real chargeB[],
                      rvec box,
-		     t_commrec *cr,  t_nsborder *nsb,
+		     t_commrec *cr,  int natoms,
 		     matrix lrvir,   real ewaldcoeff,
 		     real lambda,    real *dvdlambda);
 /* Do an Ewald calculation for the long range electrostatics. */
  
-extern real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,
+extern real ewald_LRcorrection(FILE *fp,
+			       int start,int end,
 			       t_commrec *cr,t_forcerec *fr,
 			       real *chargeA,real *chargeB,
 			       t_block *excl,rvec x[],
@@ -76,7 +77,7 @@ extern real ewald_LRcorrection(FILE *fp,t_nsborder *nsb,
 extern void set_shift_consts(FILE *log,real r1,real rc,rvec box,
 			     t_forcerec *fr);
 
-extern real shift_LRcorrection(FILE *fp,t_nsborder *nsb,
+extern real shift_LRcorrection(FILE *fp,int start,int natoms,
 			       t_commrec *cr,t_forcerec *fr,
 			       real charge[],t_block *excl,rvec x[],
 			       bool bOld,matrix box,matrix lrvir);
