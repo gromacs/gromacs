@@ -75,6 +75,7 @@
 
 #include "mpelogging.h"
 #include "domdec.h"
+#include "partdec.h"
 #include "gmx_wallcycle.h"
 
 #ifdef GMX_MPI
