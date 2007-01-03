@@ -93,7 +93,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
   real        t;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-  correct_state_entries(state,&inputrec);
+  correct_state_entries(state,inputrec);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
 }
