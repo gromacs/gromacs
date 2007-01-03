@@ -225,9 +225,10 @@ void init_state(t_state *state,int natoms,int ngtc)
   for(i=0; i<DIM; i++)
     state->pcoupl_mu[i][i] = 1.0;
   init_gtc_state(state,ngtc);
-  if (state->natoms > 0) {
-    snew(state->x,state->natoms);
-    snew(state->v,state->natoms);
+  state->nalloc = state->natoms;
+  if (state->nalloc > 0) {
+    snew(state->x,state->nalloc);
+    snew(state->v,state->nalloc);
   } else {
     state->x = NULL;
     state->v = NULL;
@@ -239,6 +240,7 @@ void done_state(t_state *state)
   if (state->nosehoover_xi) sfree(state->nosehoover_xi);
   if (state->x) sfree(state->x);
   if (state->v) sfree(state->v);
+  state->nalloc = 0;
 }
 
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)

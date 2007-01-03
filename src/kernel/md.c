@@ -245,10 +245,16 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     init_disres(stdlog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
 		top->idef.iparams,inputrec,cr->ms,fcd);
     
-    /* Orientation restraints */
-    init_orires(stdlog,top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-		top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
-		&(fcd->orires));
+    if (top->idef.il[F_ORIRES].nr) {
+      if (DOMAINDECOMP(cr))
+	gmx_fatal(FARGS,"Orientation restraints do not work with domain decomposition");
+      else
+	/* Orientation restraints */
+	init_orires(stdlog,
+		    top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
+		    top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
+		    &(fcd->orires));
+    }
     
     /* Dihedral Restraints */
     init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
@@ -502,19 +508,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     dd_make_reverse_top(stdlog,cr->dd,top_global,
 			EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
 
-    if (DDMASTER(cr->dd)) {
-      snew(state,1);
-      *state = *state_global;
-      /* Allocate (too much) new space for the local x and v */
-      snew(state->x,state->natoms);
-      if (state_global->v)
-	snew(state->v,state->natoms);
-      if (state_global->sd_X)
-	snew(state->sd_X,state->natoms);
+    snew(state,1);
+    /* Copy the state setting from global
+     * and clear the pointers for the natoms sized vectors.
+     */
+    *state = *state_global;
+    state->nalloc = 0;
+    state->x = NULL;
+    state->v = NULL;
+    state->sd_X = NULL;
+    snew(state->nosehoover_xi,state->ngtc);
+
+    if (DDMASTER(cr->dd) && inputrec->nstfout)
       snew(f_global,state->natoms);
-    } else {
-      state = state_global;
-    }
 
     setup_dd_grid(stdlog,cr->dd);
 

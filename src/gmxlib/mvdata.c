@@ -135,8 +135,10 @@ void ld_state(const t_commrec *cr,int src,t_state *state)
   blockrx(cr,src,state->boxv);
   blockrx(cr,src,state->pcoupl_mu);
   nblockrx(cr,src,state->ngtc,state->nosehoover_xi);
-  nblockrx(cr,src,state->natoms,state->x);
-  nblockrx(cr,src,state->natoms,state->v);
+  if (!DOMAINDECOMP(cr)) {
+    nblockrx(cr,src,state->natoms,state->x);
+    nblockrx(cr,src,state->natoms,state->v);
+  }
 }
 
 static void ld_ilist(const t_commrec *cr,int src,t_ilist *ilist)
@@ -263,9 +265,16 @@ void ld_data(const t_commrec *cr,int left,int right,t_inputrec *inputrec,
   for (i=0; (i<ebNR); i++) 
     ld_block(cr,left,&top->blocks[i]);
   if (debug) fprintf(stdlog,"after ld_block");
-  snew(state->nosehoover_xi,inputrec->opts.ngtc);
-  snew(state->x,top->atoms.nr);
-  snew(state->v,top->atoms.nr);
+  if (!DOMAINDECOMP(cr) || !DDMASTER(cr->dd)) {
+    snew(state->nosehoover_xi,inputrec->opts.ngtc);
+    if (!DOMAINDECOMP(cr)) {
+      state->nalloc = top->atoms.nr;
+      snew(state->x,state->nalloc);
+      snew(state->v,state->nalloc);
+    } else {
+      state->nalloc = 0;
+    }
+  }
   ld_state(cr,left,state);
   if (debug) fprintf(stdlog,"after ld_state");
 }
@@ -409,8 +418,10 @@ void mv_state(const t_commrec *cr,int dest,t_state *state)
   blocktx(cr,dest,state->boxv);
   blocktx(cr,dest,state->pcoupl_mu);
   nblocktx(cr,dest,state->ngtc,state->nosehoover_xi);
-  nblocktx(cr,dest,state->natoms,state->x);
-  nblocktx(cr,dest,state->natoms,state->v);
+  if (!DOMAINDECOMP(cr)) {
+    nblocktx(cr,dest,state->natoms,state->x);
+    nblocktx(cr,dest,state->natoms,state->v);
+  }
 }
 
 static void mv_ilist(const t_commrec *cr,int dest,t_ilist *ilist)

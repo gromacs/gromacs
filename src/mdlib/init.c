@@ -77,7 +77,8 @@ void init_single(FILE *log,t_inputrec *inputrec,
   pr_inputrec(log,0,"Input Parameters",inputrec);
 }
 
-static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile)
+static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile,
+				t_state *state_p)
 {
   int         step;
   real        t;
@@ -87,10 +88,12 @@ static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile)
   int         npmenodes=0;
   
   init_inputrec(&inputrec);
-  read_tpx_state(tpxfile,&step,&t,&inputrec,&state,NULL,&top);
-  mv_data(cr,left,right,&inputrec,&top,&state);
+  read_tpx_state(tpxfile,&step,&t,&inputrec,state_p ? state_p : &state,
+		 NULL,&top);
+  mv_data(cr,left,right,&inputrec,&top,state_p ? state_p : &state);
   done_top(&top);
-  done_state(&state);
+  if (state_p == NULL)
+    done_state(&state);
   done_inputrec(&inputrec);
 }
 
@@ -102,7 +105,8 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   char buf[256];
   
   if (MASTER(cr)) 
-    distribute_parallel(cr,cr->left,cr->right,tpxfile);
+    distribute_parallel(cr,cr->left,cr->right,tpxfile,
+			DOMAINDECOMP(cr) ? state : NULL);
     
     /* Read the actual data */
   ld_data(cr,cr->left,cr->right,inputrec,top,state);

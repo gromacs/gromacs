@@ -55,4 +55,5 @@ typedef struct
   rvec          *x;     /* the coordinates (natoms)                     */
   rvec          *v;     /* the velocities (natoms)                      */
   rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
+  int           nalloc; /* Allocation size for x, v and sd_x when !=NULL*/
 } t_state;
