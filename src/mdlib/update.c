@@ -86,7 +86,7 @@ static void do_update_md(int start,int homenr,double dt,
                          rvec accel[],ivec nFreeze[],real invmass[],
                          unsigned short ptype[],unsigned short cFREEZE[],
                          unsigned short cACC[],unsigned short cTC[],
-                         rvec x[],rvec xprime[],rvec v[],rvec vold[],
+                         rvec x[],rvec xprime[],rvec v[],
                          rvec f[],matrix M,bool bExtended)
 {
   double imass,w_dt;
@@ -116,8 +116,6 @@ static void do_update_md(int start,int homenr,double dt,
       rvec_sub(v[n],gstat[ga].u,vrel);
 
       for(d=0; d<DIM; d++) {
-        vold[n][d]     = v[n][d];
-
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
           vnrel = lg*(vrel[d] + dt*(imass*f[n][d] - 0.5*xi*vrel[d]
 				    - iprod(M[d],vrel)))/(1 + 0.5*xi*dt);  
@@ -144,7 +142,6 @@ static void do_update_md(int start,int homenr,double dt,
 
       for(d=0; d<DIM; d++) {
         vn             = v[n][d];
-        vold[n][d]     = vn;
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
           vv             = lg*(vn + f[n][d]*w_dt);
@@ -167,7 +164,7 @@ static void do_update_md(int start,int homenr,double dt,
 static void do_update_visc(int start,int homenr,double dt,
 			   t_grp_tcstat *tcstat,real invmass[],real nh_xi[],
                            unsigned short ptype[],unsigned short cTC[],
-                           rvec x[],rvec xprime[],rvec v[],rvec vold[],
+                           rvec x[],rvec xprime[],rvec v[],
                            rvec f[],matrix M,matrix box,real
                            cos_accel,real vcos,bool bExtended)
 {
@@ -192,7 +189,6 @@ static void do_update_visc(int start,int homenr,double dt,
       lg   = tcstat[gt].lambda;
       cosz = cos(fac*x[n][ZZ]);
 
-      copy_rvec(v[n],vold[n]);
       copy_rvec(v[n],vrel);
 
       vc            = cosz*vcos;
@@ -226,7 +222,6 @@ static void do_update_visc(int start,int homenr,double dt,
 
       for(d=0; d<DIM; d++) {
         vn             = v[n][d];
-        vold[n][d]     = vn;
 
         if((ptype[n] != eptVSite) && (ptype[n] != eptShell)) {
           if(d == XX) {
@@ -286,7 +281,7 @@ static void do_update_sd(int start,int homenr,
                          real invmass[],unsigned short ptype[],
                          unsigned short cFREEZE[],unsigned short cACC[],
                          unsigned short cTC[],
-                         rvec x[],rvec xprime[],rvec v[],rvec vold[],rvec f[],
+                         rvec x[],rvec xprime[],rvec v[],rvec f[],
 			 rvec sd_X[],
                          int ngtc,real tau_t[],real ref_t[],
                          gmx_rng_t gaussrand, bool bFirstHalf)
@@ -339,7 +334,6 @@ static void do_update_sd(int start,int homenr,
     for(d=0; d<DIM; d++) {
       if(bFirstHalf) {
         vn             = v[n][d];
-        vold[n][d]     = vn;
       }
       if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
         if(bFirstHalf) {
@@ -386,7 +380,7 @@ static void do_update_bd(int start,int homenr,double dt,
                          ivec nFreeze[],
                          real invmass[],unsigned short ptype[],
                          unsigned short cFREEZE[],unsigned short cTC[],
-                         rvec x[],rvec xprime[],rvec v[],rvec vold[],
+                         rvec x[],rvec xprime[],rvec v[],
                          rvec f[],real friction_coefficient,
                          int ngtc,real tau_t[],real ref_t[],
                          gmx_rng_t gaussrand)
@@ -415,7 +409,6 @@ static void do_update_bd(int start,int homenr,double dt,
     if (cTC)
       gt = cTC[n];
     for(d=0; (d<DIM); d++) {
-      vold[n][d]     = v[n][d];
       if((ptype[n]!=eptVSite) && (ptype[n]!=eptShell) && !nFreeze[gf][d]) {
         if (friction_coefficient != 0)
           vn = invfr*f[n][d] + rf[gt]*gmx_rng_gaussian_table(gaussrand);
@@ -435,15 +428,13 @@ static void do_update_bd(int start,int homenr,double dt,
 }
 
 static void dump_it_all(FILE *fp,char *title,
-                        int natoms,rvec x[],rvec xp[],rvec v[],
-                        rvec vold[],rvec f[])
+                        int natoms,rvec x[],rvec xp[],rvec v[],rvec f[])
 {
 #ifdef DEBUG
   fprintf(fp,"%s\n",title);
   pr_rvecs(fp,0,"x",x,natoms);
   pr_rvecs(fp,0,"xp",xp,natoms);
   pr_rvecs(fp,0,"v",v,natoms);
-  pr_rvecs(fp,0,"vold",vold,natoms);
   pr_rvecs(fp,0,"f",f,natoms);
 #endif
 }
@@ -609,7 +600,6 @@ void update(int          step,
 	    t_state      *state,
             t_graph      *graph,  
             rvec         force[],   /* forces on home particles 	*/
-            rvec         vold[],  /* Old velocities		   */
             t_topology   *top,
             t_groups     *grps,
             tensor       vir_part,
@@ -701,7 +691,7 @@ void update(int          step,
     /* Now do the actual update of velocities and positions */
     where();
     dump_it_all(stdlog,"Before update",
-		state->natoms,state->x,xprime,state->v,vold,force);
+		state->natoms,state->x,xprime,state->v,force);
     if (inputrec->eI == eiMD) {
       if (grps->cosacc.cos_accel == 0)
         /* use normal version of update */
@@ -709,12 +699,12 @@ void update(int          step,
 		     grps->tcstat,grps->grpstat,state->nosehoover_xi,
                      inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
                      md->cFREEZE,md->cACC,md->cTC,
-		     state->x,xprime,state->v,vold,force,M,
+		     state->x,xprime,state->v,force,M,
                      bExtended);
       else
         do_update_visc(start,homenr,dt,
 		       grps->tcstat,md->invmass,state->nosehoover_xi,
-                       md->ptype,md->cTC,state->x,xprime,state->v,vold,force,M,
+                       md->ptype,md->cTC,state->x,xprime,state->v,force,M,
                        state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
     } else if (inputrec->eI == eiSD) {
       /* The SD update is done in 2 parts, because an extra constraint step
@@ -724,14 +714,14 @@ void update(int          step,
                    inputrec->opts.acc,inputrec->opts.nFreeze,
                    md->invmass,md->ptype,
                    md->cFREEZE,md->cACC,md->cTC,
-                   state->x,xprime,state->v,vold,force,state->sd_X,
+                   state->x,xprime,state->v,force,state->sd_X,
                    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
                    sd_gaussrand,TRUE);
     } else if (inputrec->eI == eiBD) {
       do_update_bd(start,homenr,dt,
                    inputrec->opts.nFreeze,md->invmass,md->ptype,
                    md->cFREEZE,md->cTC,
-                   state->x,xprime,state->v,vold,force,
+                   state->x,xprime,state->v,force,
                    inputrec->bd_fric,
                    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
                    sd_gaussrand);
@@ -741,7 +731,7 @@ void update(int          step,
     where();
     inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
     dump_it_all(stdlog,"After update",
-		state->natoms,state->x,xprime,state->v,vold,force);
+		state->natoms,state->x,xprime,state->v,force);
   } else {
     /* If we're not updating we're doing shakefirst!
      */
@@ -791,7 +781,7 @@ void update(int          step,
     where();
 
     dump_it_all(stdlog,"After Shake",
-		state->natoms,state->x,xprime,state->v,vold,force);
+		state->natoms,state->x,xprime,state->v,force);
 
     /* Apply Essential Dynamics constraints when required.
      * Note that the reported ED and pull forces can be off
@@ -826,7 +816,7 @@ void update(int          step,
 		   inputrec->opts.acc,inputrec->opts.nFreeze,
 		   md->invmass,md->ptype,
 		   md->cFREEZE,md->cACC,md->cTC,
-		   state->x,xprime,state->v,vold,force,state->sd_X,
+		   state->x,xprime,state->v,force,state->sd_X,
 		   inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
 		   sd_gaussrand,FALSE);
       inc_nrnb(nrnb, eNR_UPDATE, homenr);
@@ -863,7 +853,7 @@ void update(int          step,
       copy_rvec(xprime[n],shakefirst_x[n]);
   }
   dump_it_all(stdlog,"After unshift",
-	      state->natoms,state->x,xprime,state->v,vold,force);
+	      state->natoms,state->x,xprime,state->v,force);
   where();
 
   if (bDoUpdate) {

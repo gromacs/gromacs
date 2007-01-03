@@ -214,15 +214,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
      * This should be optimized !!!
      */
     nalloc = top->atoms.nr;
-
-    if (inputrec->eI == eiSD) {
-      /* Is not read from TPR yet, so we allocate space here */
-      snew(state->sd_X,nalloc);
-    }
     snew(buf,nalloc);
     snew(f,nalloc);
-    snew(vt,nalloc);
-    snew(vold,nalloc);
     
     /* Index numbers for parallellism... */
     top->idef.nodeid = cr->nodeid;
@@ -342,7 +335,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		    bVerbose,bCompact,
 		    ddxyz,loadx,loady,loadz,
 		    bVsites,bParVsites ? &vsitecomm : NULL,
-		    nstepout,inputrec,grps,top,ener,fcd,state,vold,vt,f,buf,
+		    nstepout,inputrec,grps,top,ener,fcd,state,f,buf,
 		    mdatoms,nrnb,wcycle,graph,edyn,fr,
 		    repl_ex_nst,repl_ex_seed,
 		    Flags);
@@ -371,7 +364,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     case eiNM:
       start_t=do_nm(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,nstepout,inputrec,grps,
-		    top,ener,fcd,state,vold,vt,f,buf,
+		    top,ener,fcd,state,f,buf,
 		    mdatoms,nrnb,wcycle,graph,edyn,fr);
       break;
     case eiTPI:
@@ -417,7 +410,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     int stepout,t_inputrec *inputrec,t_groups *grps,
 	     t_topology *top_global,
 	     real ener[],t_fcdata *fcd,
-	     t_state *state_global,rvec vold[],rvec vt[],rvec f[],
+	     t_state *state_global,rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
@@ -603,7 +596,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 				    repl_ex_nst,repl_ex_seed);
   
   if (!inputrec->bUncStart && !bRerunMD)
-    do_shakefirst(log,ener,inputrec,mdatoms,state,vold,buf,f,
+    do_shakefirst(log,ener,inputrec,mdatoms,state,buf,f,
 		  graph,cr,nrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
 
@@ -840,7 +833,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,bVerbose,bFFscan ? step+1 : step,
 			 inputrec,bNS,bStopCM,top,ener,fcd,
-			 state,vold,vt,f,buf,mdatoms,
+			 state,f,buf,mdatoms,
 			 nrnb,wcycle,graph,grps,
 			 nshell,shells,nflexcon,fr,t,mu_tot,
 			 state->natoms,&bConverged,bVsites,vsitecomm,
@@ -953,7 +946,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     bOK = TRUE;
     if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
       wallcycle_start(wcycle,ewcUPDATE);
-      update(step,&ener[F_DVDL],inputrec,mdatoms,state,graph,f,vold,
+      update(step,&ener[F_DVDL],inputrec,mdatoms,state,graph,f,
 	     top,grps,shake_vir,cr,nrnb,edyn,&pulldata,bNEMD,
 	     TRUE,bFirstStep,NULL,pres);
       wallcycle_stop(wcycle,ewcUPDATE);

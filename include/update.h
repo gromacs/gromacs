@@ -55,7 +55,6 @@ extern void update(int          step,
 		   t_state      *state,
 		   t_graph      *graph,	
 		   rvec         force[],/* forces on home particles 	*/
-		   rvec         vold[],	/* Old velocities		   */
 		   t_topology   *top,
 		   t_groups     *grps,
 		   tensor       vir_part,

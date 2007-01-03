@@ -81,7 +81,7 @@ extern int count_flexible_constraints(FILE* log,t_forcerec *fr,t_idef *idef);
 extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
 			t_topology *top,real ener[],t_fcdata *fcd,
-			t_state *state,rvec vold[],rvec vt[],rvec f[],
+			t_state *state,rvec f[],
 			rvec buf[],t_mdatoms *md,
 			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			t_graph *graph,t_groups *grps,

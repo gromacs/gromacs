@@ -559,7 +559,7 @@ double node_time(void)
 
 void do_shakefirst(FILE *fplog,real ener[],
 		   t_inputrec *inputrec,t_mdatoms *md,
-		   t_state *state,rvec vold[],rvec buf[],rvec f[],
+		   t_state *state,rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
 		   t_edsamyn *edyn,t_pull *pulldata)
@@ -583,7 +583,7 @@ void do_shakefirst(FILE *fplog,real ener[],
     clear_mat(shake_vir);
     clear_mat(pres);
     update(step,&ener[F_DVDL],inputrec,md,state,graph,
-	   NULL,vold,top,grps,shake_vir,cr,nrnb,
+	   NULL,top,grps,shake_vir,cr,nrnb,
 	   edyn,pulldata,FALSE,FALSE,FALSE,state->x,pres);
     /* Compute coordinates at t=-dt, store them in buf */
     /* for(i=0; (i<nsb->natoms); i++) {*/
@@ -601,7 +601,7 @@ void do_shakefirst(FILE *fplog,real ener[],
     clear_mat(shake_vir);
     clear_mat(pres);
     update(step,&ener[F_DVDL],inputrec,md,state,graph,
-	   NULL,vold,top,grps,shake_vir,cr,nrnb,
+	   NULL,top,grps,shake_vir,cr,nrnb,
 	   edyn,pulldata,FALSE,FALSE,FALSE,buf,pres);
 
     /* Compute the velocities at t=-dt/2 using the coordinates at
