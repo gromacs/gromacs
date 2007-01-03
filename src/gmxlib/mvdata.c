@@ -131,6 +131,7 @@ void ld_state(const t_commrec *cr,int src,t_state *state)
 {
   blockrx(cr,src,state->natoms);
   blockrx(cr,src,state->ngtc);
+  blockrx(cr,src,state->flags);
   blockrx(cr,src,state->box);
   blockrx(cr,src,state->boxv);
   blockrx(cr,src,state->pcoupl_mu);
@@ -414,6 +415,7 @@ void mv_state(const t_commrec *cr,int dest,t_state *state)
 {
   blocktx(cr,dest,state->natoms);
   blocktx(cr,dest,state->ngtc);
+  blocktx(cr,dest,state->flags);
   blocktx(cr,dest,state->box);
   blocktx(cr,dest,state->boxv);
   blocktx(cr,dest,state->pcoupl_mu);

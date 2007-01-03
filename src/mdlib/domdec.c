@@ -608,36 +608,55 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
       state->nosehoover_xi[i] = state_local->nosehoover_xi[i];
   }
   dd_collect_vec(dd,cgs,state_local->x,state->x);
-  if (state->v)
+  if (state_local->flags & STATE_HAS_V)
     dd_collect_vec(dd,cgs,state_local->v,state->v);
-  if (state->sd_X)
+  if (state_local->flags & STATE_HAS_SDX)
     dd_collect_vec(dd,cgs,state_local->sd_X,state->sd_X);
+}
+
+static void dd_realloc_state(t_state *state,int nalloc)
+{
+  if (debug)
+    fprintf(debug,"Reallocating state: currently %d, required %d, allocating %d\n",state->nalloc,nalloc,over_alloc(nalloc));
+
+  state->nalloc = over_alloc(nalloc);
+  srenew(state->x,state->nalloc);
+  if (state->flags & STATE_HAS_V)
+    srenew(state->v,state->nalloc);
+  if (state->flags & STATE_HAS_SDX)
+    srenew(state->sd_X,state->nalloc);
 }
 
 static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
 {
   gmx_domdec_master_t *ma;
-  int n,i,c,a;
+  int  n,i,c,a,nalloc=0;
+  rvec *buf=NULL;
 
   if (DDMASTER(dd)) {
     ma  = dd->ma;
 
     for(n=0; n<dd->nnodes; n++) {
       if (n != dd->nodeid) {
+	if (ma->nat[n] > nalloc) {
+	  nalloc = over_alloc(ma->nat[n]);
+	  srenew(buf,nalloc);
+	}
 	/* Use lv as a temporary buffer */
 	a = 0;
 	for(i=ma->index[n]; i<ma->index[n+1]; i++)
 	  for(c=cgs->index[ma->cg[i]]; c<cgs->index[ma->cg[i]+1]; c++)
-	    copy_rvec(v[c],lv[a++]);
+	    copy_rvec(v[c],buf[a++]);
 	if (a != ma->nat[n])
 	  gmx_fatal(FARGS,"Internal error a (%d) != nat (%d)",a,ma->nat[n]);
 
 #ifdef GMX_MPI
-	MPI_Send(lv,ma->nat[n]*sizeof(rvec),MPI_BYTE,
+	MPI_Send(buf,ma->nat[n]*sizeof(rvec),MPI_BYTE,
 		 DDRANK(dd,n),n,dd->all);
 #endif
       }
     }
+    sfree(buf);
     n = 0;
     a = 0;
     for(i=ma->index[n]; i<ma->index[n+1]; i++)
@@ -651,11 +670,10 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
   }
 }
 
-static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,int eI,
+static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
 				t_state *state,t_state *state_local)
 {
   int  i;
-  bool bRealloc;
 
   if (DDMASTER(dd)) {
     state_local->lambda = state->lambda;
@@ -668,25 +686,13 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,int eI,
   dd_bcast(dd,sizeof(state_local->box),state_local->box);
   dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
   dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->nosehoover_xi);
-  if (dd->nat_home >  state_local->nalloc) {
-    state_local->nalloc = over_alloc(dd->nat_home);
-    bRealloc = TRUE;
-  } else {
-    bRealloc = FALSE;
-  }
-  if (bRealloc)
-    srenew(state_local->x,state_local->nalloc);
+  if (dd->nat_home > state_local->nalloc)
+    dd_realloc_state(state_local,dd->nat_home);
   dd_distribute_vec(dd,cgs,state->x,state_local->x);
-  if (EI_DYNAMICS(eI)) {
-    if (bRealloc)
-      srenew(state_local->v,state_local->nalloc);
+  if (state_local->flags & STATE_HAS_V)
     dd_distribute_vec(dd,cgs,state->v,state_local->v);
-  }
-  if (eI == eiSD) {
-    if (bRealloc)
-      srenew(state_local->sd_X,state_local->nalloc);
+  if (state_local->flags & STATE_HAS_SDX)
     dd_distribute_vec(dd,cgs,state->sd_X,state_local->sd_X);
-  }
 }
 
 static char dim2char(int dim)
@@ -1508,7 +1514,7 @@ static void cg_move_error(gmx_domdec_t *dd,int cg,int dim,int dir,
 }
 
 static int dd_redistribute_cg(FILE *fplog,
-			      gmx_domdec_t *dd,t_block *gcgs,int eI,
+			      gmx_domdec_t *dd,t_block *gcgs,
 			      t_state *state,rvec cg_cm[],
 			      t_forcerec *fr,t_mdatoms *md,
 			      t_nrnb *nrnb)
@@ -1520,7 +1526,7 @@ static int dd_redistribute_cg(FILE *fplog,
   int  sbuf[2],rbuf[2];
   int  home_pos_cg,home_pos_at,ncg_stay_home,buf_pos;
   int  flag;
-  bool bV,bSDX,bRealloc;
+  bool bV,bSDX;
   ivec tric_dir,dev;
   real inv_ncg,pos_d;
   rvec invbox,cell_x0,cell_x1,limit0,limit1,cm_new;
@@ -1529,8 +1535,8 @@ static int dd_redistribute_cg(FILE *fplog,
 
   comm = dd->comm;
 
-  bV   = EI_DYNAMICS(eI);
-  bSDX = (eI == eiSD);
+  bV   = (state->flags & STATE_HAS_V);
+  bSDX = (state->flags & STATE_HAS_SDX);
 
   if (dd->ncg_tot > comm->nalloc_int) {
     comm->nalloc_int = over_alloc(dd->ncg_tot);
@@ -1695,10 +1701,10 @@ static int dd_redistribute_cg(FILE *fplog,
   home_pos_at =
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
 			    nvec,vec++,state->x,comm);
-  if (EI_DYNAMICS(eI))
+  if (bV)
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
 			    nvec,vec++,state->v,comm);
-  if (eI == eiSD)
+  if (bSDX)
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
 			    nvec,vec++,state->sd_X,comm);
   
@@ -1814,25 +1820,15 @@ static int dd_redistribute_cg(FILE *fplog,
 	dd->cgindex[home_pos_cg+1] = dd->cgindex[home_pos_cg] + nrcg;
 	/* Copy the state from the buffer */
 	copy_rvec(comm->buf_vr[buf_pos++],cg_cm[home_pos_cg]);
-	if (home_pos_at+nrcg > state->nalloc) {
-	  state->nalloc = over_alloc(home_pos_at+nrcg);
-	  bRealloc = TRUE;
-	} else {
-	  bRealloc = FALSE;
-	}
-	if (bRealloc)
-	  srenew(state->x,state->nalloc);
+	if (home_pos_at+nrcg > state->nalloc)
+	  dd_realloc_state(state,home_pos_at+nrcg);
 	for(i=0; i<nrcg; i++)
 	  copy_rvec(comm->buf_vr[buf_pos++],state->x[home_pos_at+i]);
 	if (bV) {
-	  if (bRealloc)
-	    srenew(state->v,state->nalloc);
 	  for(i=0; i<nrcg; i++)
 	    copy_rvec(comm->buf_vr[buf_pos++],state->v[home_pos_at+i]);
 	}
 	if (bSDX) {
-	  if (bRealloc)
-	    srenew(state->sd_X,state->nalloc);
 	  for(i=0; i<nrcg; i++)
 	    copy_rvec(comm->buf_vr[buf_pos++],state->sd_X[home_pos_at+i]);
 	}
@@ -3026,7 +3022,7 @@ void dd_partition_system(FILE         *fplog,
 			&top_global->blocks[ebCGS],
 			state_global->box,state_global->x);
     
-    dd_distribute_state(dd,&top_global->blocks[ebCGS],ir->eI,
+    dd_distribute_state(dd,&top_global->blocks[ebCGS],
 			state_global,state_local);
     
     make_local_cgs(dd,&top_local->blocks[ebCGS]);
@@ -3044,7 +3040,7 @@ void dd_partition_system(FILE         *fplog,
     write_dd_grid_pdb("dd_grid",step,dd,state_local->box);
 
   if (!bMasterState) {
-    cg0 = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],ir->eI,
+    cg0 = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
 			     state_local,fr->cg_cm,fr,mdatoms,nrnb);
   }
 
@@ -3089,14 +3085,8 @@ void dd_partition_system(FILE         *fplog,
   /* Make space for the extra coordinates for virtual site
    * or constraint communication.
    */
-  if (dd->nat_tot_con > state_local->nalloc) {
-    state_local->nalloc = over_alloc(dd->nat_tot_con);
-    srenew(state_local->x,state_local->nalloc);
-    if (EI_DYNAMICS(ir->eI))
-      srenew(state_local->v,state_local->nalloc);
-    if (ir->eI == eiSD)
-      srenew(state_local->sd_X,state_local->nalloc);
-  }
+  if (dd->nat_tot_con > state_local->nalloc)
+    dd_realloc_state(state_local,dd->nat_tot_con);
 
   /* We make the all mdatoms up to nat_tot_con.
    * We could save some work by only setting invmass

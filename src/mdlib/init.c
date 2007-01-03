@@ -65,6 +65,26 @@ static char *int_title(char *title,int nodeid,char buf[], int size)
   return buf;
 }
 
+static void correct_state_entries(t_state *state,t_inputrec *ir)
+{
+  /* The entries in the state in the tpx file might not correspond
+   * with what is needed, so we correct this here.
+   */
+  state->flags = STATE_HAS_X;
+  if (state->x == NULL)
+    snew(state->x,state->nalloc);
+  if (EI_DYNAMICS(ir->eI)) {
+    state->flags = STATE_HAS_V;
+    if (state->v == NULL)
+      snew(state->v,state->nalloc);
+  }
+  if (ir->eI == eiSD) {
+    state->flags = STATE_HAS_SDX;
+    if (state->sd_X == NULL)
+      snew(state->sd_X,state->nalloc);
+  }
+}
+
 void init_single(FILE *log,t_inputrec *inputrec,
 		 char *tpxfile,t_topology *top, 
                  t_state *state)
@@ -73,6 +93,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
   real        t;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
+  correct_state_entries(state,&inputrec);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
 }
@@ -84,16 +105,22 @@ static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile,
   real        t;
   t_inputrec  inputrec;
   t_topology  top;
-  t_state     state;
+  t_state     s,*state;
   int         npmenodes=0;
   
+  if (state_p)
+    state = state_p;
+  else
+    state = &s;
+
   init_inputrec(&inputrec);
-  read_tpx_state(tpxfile,&step,&t,&inputrec,state_p ? state_p : &state,
-		 NULL,&top);
-  mv_data(cr,left,right,&inputrec,&top,state_p ? state_p : &state);
+  read_tpx_state(tpxfile,&step,&t,&inputrec,state,NULL,&top);
+  correct_state_entries(state,&inputrec);
+
+  mv_data(cr,left,right,&inputrec,&top,state);
   done_top(&top);
   if (state_p == NULL)
-    done_state(&state);
+    done_state(state);
   done_inputrec(&inputrec);
 }
 

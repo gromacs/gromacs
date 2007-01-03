@@ -43,17 +43,22 @@
  * Currently the random seeds for SD and BD are missing.
  */
 
+#define STATE_HAS_X   (1<<0)
+#define STATE_HAS_V   (1<<1)
+#define STATE_HAS_SDX (1<<2)
+
 typedef struct
 {
   int           natoms;
   int           ngtc;
+  int           flags;  /* Flags telling which entries are present      */
   real          lambda; /* the free energy switching parameter          */
   matrix 	box;    /* box vector coordinates                      	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pcoupl_mu; /* for Berendsen pcoupl                      */
   real          *nosehoover_xi; /* for Nose-Hoover tcoupl (ngtc)        */
+  int           nalloc; /* Allocation size for x, v and sd_x when !=NULL*/
   rvec          *x;     /* the coordinates (natoms)                     */
   rvec          *v;     /* the velocities (natoms)                      */
   rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
-  int           nalloc; /* Allocation size for x, v and sd_x when !=NULL*/
 } t_state;

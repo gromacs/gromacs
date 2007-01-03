@@ -1285,12 +1285,14 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   if (bRead) {
     *step         = tpx.step;
     *t            = tpx.t;
+    state->flags  = 0;
     state->lambda = tpx.lambda;
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
       init_state(state,0,tpx.ngtc);
       state->natoms = tpx.natoms;
+      state->nalloc = tpx.natoms;
       state->x = xptr;
       state->v = vptr;
     } else {
@@ -1354,13 +1356,25 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   }
   do_test(tpx.bX,state->x);  
   do_section(eitemX,bRead);
-  if (bRead && !bXVallocated) snew(state->x,state->natoms);
-  if (tpx.bX) ndo_rvec(state->x,state->natoms);
+  if (tpx.bX) {
+    if (bRead) {
+      state->flags |= STATE_HAS_X;
+      if (!bXVallocated)
+	snew(state->x,state->nalloc);
+    }
+    ndo_rvec(state->x,state->natoms);
+  }
   
   do_test(tpx.bV,state->v);
   do_section(eitemV,bRead);
-  if (bRead && !bXVallocated) snew(state->v,state->natoms);
-  if (tpx.bV) ndo_rvec(state->v,state->natoms);
+  if (tpx.bV) {
+    if (bRead) {
+      state->flags |= STATE_HAS_V;
+      if (!bXVallocated)
+	snew(state->v,state->nalloc);
+    }
+    ndo_rvec(state->v,state->natoms);
+  }
 
   do_test(tpx.bF,f);
   do_section(eitemF,bRead);
