@@ -141,8 +141,8 @@ typedef struct {
   bool bGrid;
   int  *solvent_type_global;
   int  *solvent_type;
-  int  solvent_type_nalloc;
   rvec *cg_cm;
+  int  cg_nalloc;
   rvec *shift_vec;
 
   /* The neighborlists including tables */

@@ -555,8 +555,8 @@ static void dd_collect_cg(gmx_domdec_t *dd)
 void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
 {
   gmx_domdec_master_t *ma;
-  int  n,i,c,a;
-  rvec *buf;
+  int  n,i,c,a,nalloc=0;
+  rvec *buf=NULL;
 
   ma = dd->ma;
 
@@ -575,12 +575,13 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
     for(i=ma->index[n]; i<ma->index[n+1]; i++)
       for(c=cgs->index[ma->cg[i]]; c<cgs->index[ma->cg[i]+1]; c++)
 	copy_rvec(lv[a++],v[c]);
-
-    /* Use the unused part of lv as a temporary buffer */
-    buf = lv + ma->nat[n];
-
+    
     for(n=0; n<dd->nnodes; n++) {
       if (n != dd->nodeid) {
+	if (ma->nat[n] > nalloc) {
+	  nalloc = over_alloc(ma->nat[n]);
+	  srenew(buf,nalloc);
+	}
 #ifdef GMX_MPI
 	MPI_Recv(buf,ma->nat[n]*sizeof(rvec),MPI_BYTE,DDRANK(dd,n),
 		 n,dd->all,MPI_STATUS_IGNORE);
@@ -591,6 +592,7 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
 	    copy_rvec(buf[a++],v[c]);
       }
     }
+    sfree(buf);
   }
 }
 
@@ -614,7 +616,18 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
     dd_collect_vec(dd,cgs,state_local->sd_X,state->sd_X);
 }
 
-static void dd_realloc_state(t_state *state,int nalloc)
+static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
+{
+  if (debug)
+    fprintf(debug,"Reallocating forcerec: currently %d, required %d, allocating %d\n",fr->cg_nalloc,nalloc,over_alloc(nalloc));
+
+  fr->cg_nalloc = over_alloc(nalloc);
+  srenew(fr->cg_cm,fr->cg_nalloc);
+  if (fr->solvent_opt != esolNO)
+    srenew(fr->solvent_type,fr->cg_nalloc);
+}
+
+static void dd_realloc_state(t_state *state,rvec **f,rvec **buf,int nalloc)
 {
   if (debug)
     fprintf(debug,"Reallocating state: currently %d, required %d, allocating %d\n",state->nalloc,nalloc,over_alloc(nalloc));
@@ -625,6 +638,9 @@ static void dd_realloc_state(t_state *state,int nalloc)
     srenew(state->v,state->nalloc);
   if (state->flags & STATE_HAS_SDX)
     srenew(state->sd_X,state->nalloc);
+  
+  srenew(*f,state->nalloc);
+  srenew(*buf,state->nalloc);
 }
 
 static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
@@ -671,7 +687,8 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
 }
 
 static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
-				t_state *state,t_state *state_local)
+				t_state *state,t_state *state_local,
+				rvec **f,rvec **buf)
 {
   int  i;
 
@@ -687,7 +704,7 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
   dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
   dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->nosehoover_xi);
   if (dd->nat_home > state_local->nalloc)
-    dd_realloc_state(state_local,dd->nat_home);
+    dd_realloc_state(state_local,f,buf,dd->nat_home);
   dd_distribute_vec(dd,cgs,state->x,state_local->x);
   if (state_local->flags & STATE_HAS_V)
     dd_distribute_vec(dd,cgs,state->v,state_local->v);
@@ -832,13 +849,8 @@ static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
     fr->solvent_type = fr->solvent_type_global;
     bMakeSolventType = FALSE;
   } else {
-    if (dd->ncg_tot > fr->solvent_type_nalloc) {
-      fr->solvent_type_nalloc = over_alloc(dd->ncg_tot);
-      srenew(fr->solvent_type,fr->solvent_type_nalloc);
-    }
     bMakeSolventType = TRUE;
   }
-  
 
   cell_ncg   = dd->ncg_cell;
   index_gl   = dd->index_gl;
@@ -1515,7 +1527,7 @@ static void cg_move_error(gmx_domdec_t *dd,int cg,int dim,int dir,
 
 static int dd_redistribute_cg(FILE *fplog,
 			      gmx_domdec_t *dd,t_block *gcgs,
-			      t_state *state,rvec cg_cm[],
+			      t_state *state,rvec **f,rvec **buf,
 			      t_forcerec *fr,t_mdatoms *md,
 			      t_nrnb *nrnb)
 {
@@ -1529,11 +1541,12 @@ static int dd_redistribute_cg(FILE *fplog,
   bool bV,bSDX;
   ivec tric_dir,dev;
   real inv_ncg,pos_d;
-  rvec invbox,cell_x0,cell_x1,limit0,limit1,cm_new;
+  rvec *cg_cm,invbox,cell_x0,cell_x1,limit0,limit1,cm_new;
   atom_id *cgindex;
   gmx_domdec_comm_t *comm;
 
-  comm = dd->comm;
+  comm  = dd->comm;
+  cg_cm = fr->cg_cm;
 
   bV   = (state->flags & STATE_HAS_V);
   bSDX = (state->flags & STATE_HAS_SDX);
@@ -1812,16 +1825,17 @@ static int dd_redistribute_cg(FILE *fplog,
 	  srenew(dd->index_gl,dd->cg_nalloc);
 	  srenew(dd->cgindex,dd->cg_nalloc+1);
 	}
-	/* If the other home arrays were dynamic, we would need
-	 * to reallocate here.
-	 */
 	/* Set the global charge group index and size */
 	dd->index_gl[home_pos_cg] = comm->buf_int[cg*DD_CGIBS];
 	dd->cgindex[home_pos_cg+1] = dd->cgindex[home_pos_cg] + nrcg;
 	/* Copy the state from the buffer */
+	if (home_pos_cg >= fr->cg_nalloc) {
+	  dd_realloc_fr_cg(fr,home_pos_cg+1);
+	  cg_cm = fr->cg_cm;
+	}
 	copy_rvec(comm->buf_vr[buf_pos++],cg_cm[home_pos_cg]);
 	if (home_pos_at+nrcg > state->nalloc)
-	  dd_realloc_state(state,home_pos_at+nrcg);
+	  dd_realloc_state(state,f,buf,home_pos_at+nrcg);
 	for(i=0; i<nrcg; i++)
 	  copy_rvec(comm->buf_vr[buf_pos++],state->x[home_pos_at+i]);
 	if (bV) {
@@ -2720,7 +2734,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 
 static void setup_dd_communication(FILE *fplog,int step,
 				   gmx_domdec_t *dd,t_block *gcgs,
-				   rvec buf[],matrix box,rvec cg_cm[])
+				   matrix box,t_forcerec *fr)
 {
   int dim_ind,dim,dim0,dim1=-1,nat_tot,ncell,cell,celli,c,i,j,cg,cg_gl,nrcg;
   int *ncg_cell,*index_gl,*cgindex;
@@ -2729,14 +2743,15 @@ static void setup_dd_communication(FILE *fplog,int step,
   real r_comm2,r,r2,inv_ncg;
   real corner[DIM][4],corner_round_0=0,corner_round_1[4];
   ivec tric_dist;
-  rvec *v_d,*v_0=NULL,*v_1=NULL;
+  rvec *cg_cm,*v_d,*v_0=NULL,*v_1=NULL;
   real skew_fac2_d,skew_fac2_0=0,skew_fac2_1=0;
   int  nsend,nat;
 
   if (debug)
     fprintf(debug,"Setting up DD communication\n");
 
-  comm = dd->comm;
+  comm  = dd->comm;
+  cg_cm = fr->cg_cm;
 
   for(dim_ind=0; dim_ind<dd->ndim; dim_ind++) {
     dim = dd->dim[dim_ind];
@@ -2910,11 +2925,15 @@ static void setup_dd_communication(FILE *fplog,int step,
 	  ind->index[nsend] = cg;
 	  comm->buf_int[nsend] = index_gl[cg];
 	  ind->nsend[cell]++;
+	  if (nsend >= comm->nalloc_vr) {
+	    comm->nalloc_vr += CG_ALLOC_SIZE;
+	    srenew(comm->buf_vr,comm->nalloc_vr);
+	  }
 	  if (dd->ci[dim] == 0) {
 	    /* Correct cg_cm for pbc */
-	    rvec_add(cg_cm[cg],box[dim],buf[nsend]);
+	    rvec_add(cg_cm[cg],box[dim],comm->buf_vr[nsend]);
 	  } else {
-	    copy_rvec(cg_cm[cg],buf[nsend]);
+	    copy_rvec(cg_cm[cg],comm->buf_vr[nsend]);
 	  }
 	  nsend++;
 	  nat += cgindex[cg+1] - cgindex[cg];
@@ -2938,8 +2957,12 @@ static void setup_dd_communication(FILE *fplog,int step,
 		    comm->buf_int,            nsend,
 		    index_gl+ncg_cell[ncell], ind->nrecv[ncell]);
     /* Communicate cg_cm, receive in place */
+    if (ncg_cell[ncell] + ind->nrecv[ncell] > fr->cg_nalloc) {
+      dd_realloc_fr_cg(fr,ncg_cell[ncell] + ind->nrecv[ncell]);
+      cg_cm = fr->cg_cm;
+    }
     dd_sendrecv_rvec(dd, dim_ind, ddBackward,
-		     buf,                   nsend,
+		     comm->buf_vr,          nsend,
 		     cg_cm+ncg_cell[ncell], ind->nrecv[ncell]);
     /* Make the charge group index */
     for(cell=ncell; cell<2*ncell; cell++) {
@@ -2988,7 +3011,8 @@ void dd_partition_system(FILE         *fplog,
 			 t_topology   *top_global,
 			 t_inputrec   *ir,
 			 t_state      *state_local,
-			 rvec         *buf,
+			 rvec         **f,
+			 rvec         **buf,
 			 t_mdatoms    *mdatoms,
 			 t_topology   *top_local,
 			 t_forcerec   *fr,
@@ -3023,10 +3047,12 @@ void dd_partition_system(FILE         *fplog,
 			state_global->box,state_global->x);
     
     dd_distribute_state(dd,&top_global->blocks[ebCGS],
-			state_global,state_local);
+			state_global,state_local,f,buf);
     
     make_local_cgs(dd,&top_local->blocks[ebCGS]);
 
+    if (dd->ncg_home > fr->cg_nalloc)
+      dd_realloc_fr_cg(fr,dd->ncg_home);
     calc_cgcm(fplog,0,dd->ncg_home,
 	      &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
     
@@ -3041,12 +3067,12 @@ void dd_partition_system(FILE         *fplog,
 
   if (!bMasterState) {
     cg0 = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
-			     state_local,fr->cg_cm,fr,mdatoms,nrnb);
+			     state_local,f,buf,fr,mdatoms,nrnb);
   }
 
   /* Setup up the communication and communicate the coordinates */
   setup_dd_communication(fplog,step,dd,&top_global->blocks[ebCGS],
-			 buf,state_local->box,fr->cg_cm);
+			 state_local->box,fr);
   
   /* Set the indices */
   make_dd_indices(dd,&top_global->blocks[ebCGS],cg0,fr);
@@ -3057,7 +3083,6 @@ void dd_partition_system(FILE         *fplog,
   /* Update the rest of the forcerec */
   fr->cg0 = 0;
   fr->hcg = dd->ncg_tot;
-  /* The normal force array should also be dynamic and reallocate here */
   if (fr->bTwinRange) {
     fr->f_twin_n = dd->nat_tot;
     if (fr->f_twin_n > fr->f_twin_nalloc) {
@@ -3086,7 +3111,7 @@ void dd_partition_system(FILE         *fplog,
    * or constraint communication.
    */
   if (dd->nat_tot_con > state_local->nalloc)
-    dd_realloc_state(state_local,dd->nat_tot_con);
+    dd_realloc_state(state_local,f,buf,dd->nat_tot_con);
 
   /* We make the all mdatoms up to nat_tot_con.
    * We could save some work by only setting invmass
@@ -3114,7 +3139,7 @@ void dd_partition_system(FILE         *fplog,
   clear_dd_cycle_counts(dd);
 
   if (nstDDDump > 0 && step % nstDDDump == 0) {
-    dd_move_x(dd,state_local->box,state_local->x,buf);
+    dd_move_x(dd,state_local->box,state_local->x,*buf);
     write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,dd->nat_tot,
 		 state_local->x,state_local->box);
   }

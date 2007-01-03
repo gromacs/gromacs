@@ -210,12 +210,13 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     if (bVerbose && MASTER(cr))
       fprintf(stderr,"Loaded with Money\n\n");
     
-    /* For domain decomposition we do not need the whole system size.
-     * This should be optimized !!!
+    /* For domain decomposition we allocate dynamically
+     * in dd_partition_system.
      */
-    nalloc = top->atoms.nr;
-    snew(buf,nalloc);
-    snew(f,nalloc);
+    if (!DOMAINDECOMP(cr)) {
+      snew(buf,top->atoms.nr);
+      snew(f,top->atoms.nr);
+    }
     
     /* Index numbers for parallellism... */
     top->idef.nodeid = cr->nodeid;
@@ -533,7 +534,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		       NULL);
 
     dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
-			state,buf,mdatoms,top,fr,nrnb,wcycle,FALSE);
+			state,&f,&buf,mdatoms,top,fr,nrnb,wcycle,FALSE);
   } else {
     top = top_global;
     state = state_global;
@@ -796,7 +797,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	wallcycle_start(wcycle,ewcDOMDEC);
 	dd_partition_system(stdlog,step,cr,bMasterState,
 			    state_global,top_global,inputrec,
-			    state,buf,mdatoms,top,fr,nrnb,
+			    state,&f,&buf,mdatoms,top,fr,nrnb,
 			    wcycle,do_verbose);
 	wallcycle_stop(wcycle,ewcDOMDEC);
       }
@@ -1185,7 +1186,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (DOMAINDECOMP(cr))
 	dd_partition_system(stdlog,step,cr,TRUE,
 			    state_global,top_global,inputrec,
-			    state,buf,mdatoms,top,fr,nrnb,wcycle,FALSE);
+			    state,&f,&buf,mdatoms,top,fr,nrnb,wcycle,FALSE);
       else
 	pd_distribute_state(cr,state);
     }

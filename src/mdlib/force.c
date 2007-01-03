@@ -522,7 +522,8 @@ check_solvent(FILE *                fp,
                 esol_names[bestsol],
                 solvent_parameters[j].count);
     }
-    
+
+    sfree(cgid);
     sfree(solvent_parameters);
     fr->solvent_opt = bestsol;
 }
@@ -1006,8 +1007,10 @@ void init_forcerec(FILE *fp,
 	fr->bMask[i] = TRUE;
 	}*/
   
-  if (fr->cg_cm == NULL)
-    snew(fr->cg_cm,cgs->nr);
+  if (fr->cg_cm == NULL && !DOMAINDECOMP(cr)) {
+    fr->cg_nalloc = cgs->nr;
+    snew(fr->cg_cm,fr->cg_nalloc);
+  }
   if (fr->shift_vec == NULL)
     snew(fr->shift_vec,SHIFTS);
     
