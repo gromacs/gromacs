@@ -241,9 +241,6 @@ real ewald_LRcorrection(FILE *fplog,
 	       * distance vector 
 	       */
 	      svmul(fscal,dx,df);
-	      if (debug)
-		fprintf(debug,"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
-			dr,fscal,df[XX],df[YY],df[ZZ]);
 	      rvec_inc(f[k],df);
 	      rvec_dec(f[i],df);
 	      for(iv=0; (iv<DIM); iv++)
@@ -301,10 +298,6 @@ real ewald_LRcorrection(FILE *fplog,
 	      Vexcl += vc;
 	      fscal  = rinv2*(vc-2.0*qqL*ewc*isp*exp(-ewc*ewc*dr2));
 	      svmul(fscal,dx,df);
-	      if (debug)
-		fprintf(debug,
-			"dr=%8.4f, fscal=%8.0f, df=%10.0f,%10.0f,%10.0f\n",
-			dr,fscal,df[XX],df[YY],df[ZZ]);
 	      rvec_inc(f[k],df);
 	      rvec_dec(f[i],df);
 	      for(iv=0; (iv<DIM); iv++)
