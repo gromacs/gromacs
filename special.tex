@@ -491,7 +491,7 @@ provides several ways to calculate potentials of mean force.
 A potential of mean force between two atoms can be calculated
 by connecting them with a harmonic potential or a constraint
 (for this purpose there a special potentials that avoid the generation of
-extra exclusions, see \ssecref{excl}).
+extra exclusions, see \secref{excl}).
 When the position of the minimum or the constraint length is 1 nm more
 in state B than in state A, the restraint or constraint force is given
 by $\partial H/\partial \lambda$.
@@ -830,8 +830,9 @@ correlation time of the liquid.
 Two quantities are written to the energy file, along with their averages
 and fluctuations: $V$ and $1/\eta$ as obtained from (\ref{visc}).
 
-\section{\swapindex{Tabulated}{function}s}
+\section{\normindex{Tabulated interaction function}s}
 \subsection{Cubic splines for potentials}
+\label{subsec:cubicspline}
 In some of the inner loops of {\gromacs} lookup tables are used 
 for computation of potential and forces. 
 The tables are interpolated using a cubic

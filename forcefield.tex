@@ -796,6 +796,41 @@ OPLS (reviewed in ref.~\cite{Jorgensen2005a}) there are also torsion potentials 
 contain a term with cos$^4(\phi)$.
 } % Brace matches ifthenelse test for gmxlite
 
+\subsection{\normindex{Tabulated interaction function}s}
+For full flexibility, any functional shape can be used for
+bonds, angles and dihedrals through user supplied tabulated functions.
+The functional shapes are:
+\bea
+V_b(r_{ij})      &=& k \, f^b_n(r_{ij}) \\
+V_a(\tijk)       &=& k \, f^a_n(\tijk) \\
+V_d(\phi_{ijkl}) &=& k \, f^d_n(\phi_{ijkl})
+\eea
+where $k$ is a force constant in units of energy
+and $f$ is a cubic spline function, for details see \ssecref{cubicspline}.
+For each interaction the force constant $k$ and the table number $n$
+are specified in the topology.
+The are two different types of bonds, one that generates exclusions
+and one that does not.
+For details see \tabref{topfile2}.
+The table files are supplied to the {\tt mdrun} program.
+After the table file name an underscore, the letter 'b' for bonds,
+'a' for angles or 'd' for dihedrals and the table number are appended.
+For example, for a bond with $n=0$ (and using the default table file name)
+the table is read from the file {\tt table\_b0.xvg}.
+The format for the table files is three columns with $x$, $f(x)$, $-f'(x)$,
+where $x$ should be uniformly spaced.
+The setup of the tables is as follows:
+\\{\bf bonds}:
+$x$ is the distance in nanometers, for distances beyond the table length
+cause {\tt mdrun} to quit with an error message
+\\{\bf angles}:
+$x$ is the angle in degrees, the table should go from
+0 up to and including 180 degrees
+\\{\bf dihedrals}:
+$x$ is the dihedral angle in degrees, the table should go from
+-180 up to and including 180 degrees,
+the IUPAC/IUB convention is used, i.e. zero is cis
+
 \section{Restraints}
 Special potentials are used for imposing restraints on the motion of
 the system, either to avoid disastrous deviations, or to include
@@ -916,7 +951,7 @@ used for structure refinement using NMR data\index{nmr
 refinement}\index{refinement,nmr}.
 If one just wants to the restrain the distance between two particles
 using a harmonic potential one should use {\tt [ bonds ]}
-type 6 (see \ssecref{excl}).
+type 6 (see \secref{excl}).
 The potential form for distance restraints is quadratic below a specified
 lower bound and between two specified upper bounds and linear beyond the
 largest bound (see \figref{dist}).
@@ -1511,6 +1546,13 @@ V_d     &=&(\LL k_d^A + \LAM k_d^B)
 \eea
 {\bf Note:} that the multiplicity $n_{\phi}$ can not be parameterized
 because the function should remain periodic on the interval $[0,2\pi]$.
+
+\subsubsection{Tabulated bonded interactions}
+For tabulated bonded interactions only the force constant can interpolated:
+\bea
+      V  &=& (\LL k^A + \LAM k^B) \, f \\
+\dvdl{V} &=& (k^B - k^A) \, f
+\eea
 
 \subsubsection{Coulomb interaction}
 The \normindex{Coulomb} interaction between two particles 
