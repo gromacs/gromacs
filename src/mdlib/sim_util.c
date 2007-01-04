@@ -924,23 +924,17 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       for(j=0; (j<eNRNB); j++)
 	ntot.n[j] += nrnb_all[i].n[j];
   }
-  runtime=0;
-  if (bWriteStat) {
+  if (MASTER(cr)) {
     runtime=inputrec->nsteps*inputrec->delta_t;
-    if (MASTER(cr)) {
+    if (bWriteStat) {
       fprintf(stderr,"\n\n");
       wallcycle_print(stderr,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
       print_perf(stderr,nodetime,realtime,runtime,&ntot,
 		 cr->nnodes-cr->npmenodes);
     }
-    else
-      print_nrnb(fplog,nrnb);
-  }
-
-  if (MASTER(cr)) {
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
     print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
-    if ((cr->nnodes-cr->npmenodes) > 1)
+    if (PARTDECOMP(cr))
       pr_load(fplog,cr,nrnb_all);
     if (cr->nnodes > 1)
       sfree(nrnb_all);
