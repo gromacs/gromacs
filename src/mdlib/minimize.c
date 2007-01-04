@@ -250,6 +250,11 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
       *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm),"w");
     if (fp_ene)
       *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+  } else {
+    if (fp_trn)
+      *fp_trn = -1;
+    if (fp_ene)
+      *fp_ene = -1;
   }
 }
 
