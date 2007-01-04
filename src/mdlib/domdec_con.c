@@ -274,9 +274,11 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 		"receive from node %d, %d (%d) indices\n",
 		dd->neighbor[d][1-dir],nsend[1],nsend[0],
 		dd->neighbor[d][dir],buf[1],buf[0]);
-	for(i=0; i<spas->nsend; i++)
-	  fprintf(debug," %d",spac->ibuf[i]);
-	fprintf(debug,"\n");
+	if (gmx_debug_at) {
+	  for(i=0; i<spas->nsend; i++)
+	    fprintf(debug," %d",spac->ibuf[i]);
+	  fprintf(debug,"\n");
+	}
       }
       nrecv_local += buf[0];
       spas->nrecv  = buf[1];
@@ -301,11 +303,13 @@ static int setup_specat_communication(gmx_domdec_t *dd,
     if (debug) {
       fprintf(debug,"Requested %d, received %d (tot recv %d)\n",
 	      spac->nind_req,nrecv_local,nat_tot_specat-at_start);
-      for(i=0; i<spac->nind_req; i++)
-	fprintf(debug," %s%d",
-		ga2la_specat[spac->ind_req[i]]>=0 ? "" : "!",
-		spac->ind_req[i]+1);
-      fprintf(debug,"\n");
+      if (gmx_debug_at) {
+	for(i=0; i<spac->nind_req; i++)
+	  fprintf(debug," %s%d",
+		  ga2la_specat[spac->ind_req[i]]>=0 ? "" : "!",
+		  spac->ind_req[i]+1);
+	fprintf(debug,"\n");
+      }
     }
     gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means you %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s.",
 	      dd->nodeid,nrecv_local,spac->nind_req,specat_type,
