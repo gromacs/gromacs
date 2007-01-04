@@ -52,8 +52,6 @@ extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 			      t_topology *top,t_inputrec *ir,t_forcerec *fr);
 
-extern t_topology *dd_init_local_top(t_topology *top_global);
-
 extern void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
 extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v);
@@ -127,13 +125,13 @@ extern void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,rvec *x);
 
 extern void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x);
 
-extern void clear_local_constraint_indices(gmx_domdec_t *dd);
+extern void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
 
-extern void clear_local_vsite_indices(gmx_domdec_t *dd);
+extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 
-extern void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
+extern void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
 
-extern void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
+extern void dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
 				    int natoms,t_idef *idef,t_block *cgs,
@@ -147,9 +145,11 @@ extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 					  int local_count);
 
-extern void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
+extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
-extern void make_local_top(FILE *fplog,gmx_domdec_t *dd,
-			   t_forcerec *fr,t_topology *top,t_topology *ltop);
+extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+			      t_forcerec *fr,t_topology *top,t_topology *ltop);
+
+extern t_topology *dd_init_local_top(t_topology *top_global);
 
 #endif	/* _domdec_h */

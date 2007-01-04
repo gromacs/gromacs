@@ -132,7 +132,7 @@ void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x)
     dd_move_x_specat(dd,dd->vsite_comm,box,dd->nat_tot,x);
 }
 
-void clear_local_constraint_indices(gmx_domdec_t *dd)
+void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 {
   gmx_domdec_constraints_t *dc;
   int i;
@@ -146,7 +146,7 @@ void clear_local_constraint_indices(gmx_domdec_t *dd)
     dc->ga2la[dd->gatindex[i]] = -1;
 }
 
-void clear_local_vsite_indices(gmx_domdec_t *dd)
+void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 {
   int i;
 
@@ -365,7 +365,7 @@ static void walk_out(int con,int a,int nrec,const t_iatom *ia,
   }
 }
 
-void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
+void dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 {
   t_block at2con;
   gmx_ga2la_t *ga2la;
@@ -426,7 +426,7 @@ void make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 				 " or lincs-order");
 }
 
-void make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
+void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
 {
   gmx_domdec_specat_comm_t *spac;
   int  *ga2la_specat;

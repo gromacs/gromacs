@@ -358,7 +358,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
   }
 
   if (dd->reverse_top->n_intercg_vsite)
-    make_local_vsites(dd,idef->il);
+    dd_make_local_vsites(dd,idef->il);
 
   return nbonded_local;
 }
@@ -528,15 +528,15 @@ static void make_local_idef(gmx_domdec_t *dd,t_idef *idef,t_idef *lidef)
 }
 #endif
 
-void make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
+void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 {
   lcgs->nr    = dd->ncg_tot;
   lcgs->index = dd->cgindex;
   lcgs->nra   = dd->nat_tot;
 }
 
-void make_local_top(FILE *fplog,gmx_domdec_t *dd,
-		    t_forcerec *fr,t_topology *top,t_topology *ltop)
+void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+		       t_forcerec *fr,t_topology *top,t_topology *ltop)
 {
   int nexcl;
 
@@ -544,7 +544,7 @@ void make_local_top(FILE *fplog,gmx_domdec_t *dd,
     fprintf(debug,"Making local topology\n");
 
   ltop->name  = top->name;
-  make_local_cgs(dd,&ltop->blocks[ebCGS]);
+  dd_make_local_cgs(dd,&ltop->blocks[ebCGS]);
 
 #ifdef ONE_MOLTYPE_ONE_CG
   natoms_global = top->blocks[ebCGS].nra;
@@ -569,4 +569,19 @@ void make_local_top(FILE *fplog,gmx_domdec_t *dd,
   /* For an error message only */
   err_top_global = top;
   err_top_local = ltop;
+}
+
+t_topology *dd_init_local_top(t_topology *top_global)
+{
+  t_topology *top;
+  int i;
+  
+  snew(top,1);
+  top->idef = top_global->idef;
+  for(i=0; i<F_NRE; i++) {
+    top->idef.il[i].iatoms = NULL;
+    top->idef.il[i].nalloc = 0;
+  }
+
+  return top;
 }

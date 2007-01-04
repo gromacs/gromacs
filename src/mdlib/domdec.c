@@ -886,10 +886,10 @@ static void clear_dd_indices(gmx_domdec_t *dd,int a_start)
   for(i=a_start; i<dd->nat_tot; i++)
     dd->ga2la[dd->gatindex[i]].cell = -1;
 
-  clear_local_vsite_indices(dd);
+  dd_clear_local_vsite_indices(dd);
 
   if (dd->constraints)
-    clear_local_constraint_indices(dd);
+    dd_clear_local_constraint_indices(dd);
 }
 
 static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
@@ -2735,21 +2735,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   }
 }
 
-t_topology *dd_init_local_top(t_topology *top_global)
-{
-  t_topology *top;
-  int i;
-  
-  snew(top,1);
-  top->idef = top_global->idef;
-  for(i=0; i<F_NRE; i++) {
-    top->idef.il[i].iatoms = NULL;
-    top->idef.il[i].nalloc = 0;
-  }
-
-  return top;
-}
-
 static void setup_dd_communication(FILE *fplog,int step,
 				   gmx_domdec_t *dd,t_block *gcgs,
 				   matrix box,t_forcerec *fr)
@@ -3067,7 +3052,7 @@ void dd_partition_system(FILE         *fplog,
     dd_distribute_state(dd,&top_global->blocks[ebCGS],
 			state_global,state_local,f,buf);
     
-    make_local_cgs(dd,&top_local->blocks[ebCGS]);
+    dd_make_local_cgs(dd,&top_local->blocks[ebCGS]);
 
     if (dd->ncg_home > fr->cg_nalloc)
       dd_realloc_fr_cg(fr,dd->ncg_home);
@@ -3117,11 +3102,11 @@ void dd_partition_system(FILE         *fplog,
   }
 
   /* Extract a local topology from the global topology */
-  make_local_top(fplog,dd,fr,top_global,top_local);
+  dd_make_local_top(fplog,dd,fr,top_global,top_local);
 
   if (top_global->idef.il[F_CONSTR].nr > 0) {
-    make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
-			   ir->nProjOrder);
+    dd_make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
+			      ir->nProjOrder);
   } else {
     dd->nat_tot_con = dd->nat_tot_vsite;
   }
