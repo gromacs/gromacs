@@ -1764,6 +1764,9 @@ static real bonded_tab(real kA,real kB,const bondedtable_t *table,real r,
   
   rt    = r*tabscale;
   n0    = rt;
+  if (n0 >= table->n)
+    gmx_fatal(FARGS,"A tabulated bonded interaction is out of the table range: r %f, between table indices %d and %d, table length %d",
+	      r,n0,n0+1,table->n);
   eps   = rt - n0;
   eps2  = eps*eps;
   nnn   = 4*n0;
