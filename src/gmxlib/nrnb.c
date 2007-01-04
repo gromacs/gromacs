@@ -277,7 +277,8 @@ void print_nrnb(FILE *out, t_nrnb *nrnb)
   int i;
 
   for(i=0; (i<eNRNB); i++)
-    fprintf(out,"%24s    %10.0f.\n",nbdata[i].name,nrnb->n[i]);
+    if (nrnb->n[i] > 0)
+      fprintf(out," %-26s %10.0f.\n",nbdata[i].name,nrnb->n[i]);
 }
 
 void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
@@ -398,7 +399,7 @@ static double pr_av(FILE *log,t_commrec *cr,
   unb=0;
   if (fav > 0) {
     fav /= cr->nnodes - cr->npmenodes;
-    fprintf(log,"\n%15s:",title);
+    fprintf(log,"\n %-26s",title);
     for(i=0; (i<cr->nnodes); i++) {
       if (!gmx_pmeonlynode(cr,i)) {
 	dperc=(100.0*ftot[i])/fav;
@@ -448,12 +449,12 @@ void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
     
     fprintf(log,"\nDetailed load balancing info in percentage of average\n");
   
-  fprintf(log,"Type        NODE:");
+  fprintf(log," Type                 NODE:");
   for(i=0; (i<cr->nnodes); i++)
     if (!gmx_pmeonlynode(cr,i))
       fprintf(log,"%3d ",i);
   fprintf(log,"Scaling\n");
-  fprintf(log,"----------------");
+  fprintf(log,"---------------------------");
   for(i=0; (i<cr->nnodes); i++)
     if (!gmx_pmeonlynode(cr,i))
       fprintf(log,"----");
@@ -462,7 +463,7 @@ void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
   for(j=0; (j<eNRNB); j++) {
     unb=100.0;
     if (av->n[j] > 0) {
-      fprintf(log,"%15s:",nrnb_str(j));
+      fprintf(log," %-26s",nrnb_str(j));
       for(i=0; (i<cr->nnodes); i++) {
 	if (!gmx_pmeonlynode(cr,i)) {
 	  dperc=(100.0*nrnb[i].n[j])/av->n[j];
