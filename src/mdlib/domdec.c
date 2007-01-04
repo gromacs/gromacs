@@ -2720,6 +2720,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 	      "%s is not supported (yet) with domain decomposition, use %s",
 	      eshake_names[estSHAKE],eshake_names[estLINCS]);
 
+  fr->solvent_type_global = fr->solvent_type;
+  fr->solvent_type        = NULL;
+
   comm = dd->comm;
 
   comm->bInterCGBondeds = (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
@@ -2730,6 +2733,21 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
     if (DDMASTER(dd))
       fprintf(fplog,"\nAtoms involved in bonded interactions should be within %g nm\n",comm->distance);
   }
+}
+
+t_topology *dd_init_local_top(t_topology *top_global)
+{
+  t_topology *top;
+  int i;
+  
+  snew(top,1);
+  top->idef = top_global->idef;
+  for(i=0; i<F_NRE; i++) {
+    top->idef.il[i].iatoms = NULL;
+    top->idef.il[i].nalloc = 0;
+  }
+
+  return top;
 }
 
 static void setup_dd_communication(FILE *fplog,int step,

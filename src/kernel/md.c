@@ -502,30 +502,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     dd_make_reverse_top(stdlog,cr->dd,top_global,
 			EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
 
+    top = dd_init_local_top(top_global);
+
     snew(state,1);
-    /* Copy the state setting from global
-     * and clear the pointers for the natoms sized vectors.
-     */
-    *state = *state_global;
-    state->nalloc = 0;
-    state->x = NULL;
-    state->v = NULL;
-    state->sd_X = NULL;
-    snew(state->nosehoover_xi,state->ngtc);
+    init_state(state,0,state_global->ngtc);
+    state->natoms = state_global->natoms;
+    state->flags  = state_global->flags;
 
     if (DDMASTER(cr->dd) && inputrec->nstfout)
       snew(f_global,state->natoms);
 
     setup_dd_grid(stdlog,cr->dd);
-
-    snew(top,1);
-    top->idef = top_global->idef;
-    for(i=0; i<F_NRE; i++) {
-      top->idef.il[i].iatoms = NULL;
-      top->idef.il[i].nalloc = 0;
-    }
-    fr->solvent_type_global = fr->solvent_type;
-    fr->solvent_type        = NULL;
 
     if (bVsites)
       construct_vsites(log,
