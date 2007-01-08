@@ -27,8 +27,9 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_mindist.c	gmx_msd.c	gmx_morph.c	gmx_nmeig.c	\
 	gmx_nmens.c	gmx_order.c	gmx_potential.c	gmx_rama.c	\
 	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
-	gmx_rotacf.c	gmx_saltbr.c	gmx_sas.c	gmx_sgangle.c	\
-	gmx_sorient.c 	gmx_tcaf.c	gmx_traj.c	gmx_velacc.c	\
+	gmx_rotacf.c	gmx_saltbr.c	gmx_sas.c	gmx_sdf.c	\
+	gmx_sgangle.c	gmx_sorient.c 	gmx_spatial.c	gmx_tcaf.c	\
+	gmx_traj.c	gmx_velacc.c	\
 	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h		\
 	correl.c	correl.h	gmx_sham.c	gmx_nmtraj.c	\
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
@@ -54,8 +55,8 @@ bin_PROGRAMS = \
 	g_nmens     	g_order     	g_potential 	g_rama      	\
 	g_rdf       	g_rms       	g_rmsdist   	g_rmsf      	\
 	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
-	g_sdf		g_sham \
-	g_sorient   	g_tcaf      	g_traj      	g_velacc    	\
+	g_sham 		g_sorient   	g_sdf		g_spatial	\
+	g_tcaf      	g_traj      	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics
 
 
