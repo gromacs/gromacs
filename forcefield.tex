@@ -762,27 +762,25 @@ $C_1$   & 12.16 & $C_3$   & -3.06   & $C_5$   & -31.5   \\
 between the first and the last atom of the dihedral, and $\psi$ is defined
 according to the 'polymer convention' ($\psi_{trans}=0$).)
 
-The RB dihedral function can also be used to include the \normindex{OPLS} 
-dihedral potential~\cite{Jorgensen86a}. 
-The OPLS potential function is given as the first 
-four terms of a Fourier series:
+The RB dihedral function can also be used to include Fourier dihedrals
+(see below):
 \beq
-V_{rb} (\phi_{ijkl}) ~=~ V_0 + \frac{1}{2} \left[V_1(1+\cos(\psi)) + V_2(
-1-\cos(2\psi)) + V_3(1+\cos(3\psi))\right],
+V_{rb} (\phi_{ijkl}) ~=~ \frac{1}{2} \left[F_1(1+\cos(\phi)) + F_2(
+1-\cos(2\phi)) + F_3(1+\cos(3\phi) + F_4(1-\cos(4\phi))\right]
 \eeq
-with \( \displaystyle \psi=\phi \) (protein convention).
-Because of the equalities \( \cos(2\phi) = 2(\cos(\phi))^2 - 1 \) 
-and \( \cos(3\phi) = 4(\cos(\phi))^3 - 3\cos(\phi) \), 
+Because of the equalities \( \cos(2\phi) = 2\cos^2(\phi) - 1 \),
+\( \cos(3\phi) = 4\cos^3(\phi) - 3\cos(\phi) \) and
+\( \cos(4\phi) = 8\cos^4(\phi) - 8\cos^2(\phi) + 1 \)
 one can translate the OPLS parameters to 
 Ryckaert-Bellemans parameters as follows:
 \beq
 \displaystyle
 \begin{array}{rcl}
-\displaystyle C_0&=&V_0 + V_2 + \frac{1}{2} (V_1 + V_3)\\
-\displaystyle C_1&=&\frac{1}{2} (3V_3 - V_1)\\
-\displaystyle C_2&=&-V_2\\
-\displaystyle C_3&=&-2V_3\\
-\displaystyle C_4&=&0\\
+\displaystyle C_0&=&F_2 + \frac{1}{2} (F_1 + F_3)\\
+\displaystyle C_1&=&\frac{1}{2} (- F_1 + 3 \, F_3)\\
+\displaystyle C_2&=& -F_1 + 4 \, F_4\\
+\displaystyle C_3&=&-2 \, F_3\\
+\displaystyle C_4&=&-4 \, F_4\\
 \displaystyle C_5&=&0
 \end{array}
 \eeq 
@@ -791,11 +789,23 @@ polymer convention (this yields a minus sign for the odd powers of
 cos$(\phi)$).\\
 \noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
 literature OPLS and RB parameters to {\em kJ mol$^{-1}$} in {\gromacs}.\\
-\noindent{\bf Note:} With the latest incarnations of
-OPLS (reviewed in ref.~\cite{Jorgensen2005a}) there are also torsion potentials that
-contain a term with cos$^4(\phi)$.
 } % Brace matches ifthenelse test for gmxlite
 
+\subsubsection{Proper dihedrals: Fourier function}
+The OPLS potential function is given as the first three
+or four~\cite{Jorgensen2005a} cosine terms of a Fourier series.
+In {\gromacs} the four term function is implemented:
+\beq
+V_{F} (\phi_{ijkl}) ~=~ \frac{1}{2} \left[C_1(1+\cos(\phi)) + C_2(
+1-\cos(2\phi)) + C_3(1+\cos(3\phi) + C_4(1+\cos(4\phi))\right],
+\eeq
+\ifthenelse{\equal{\gmxlite}{1}}{}{Internally {\gromacs}
+uses the Ryckaert-Bellemans code
+to compute Fourier dihedrals (see above), because this is more efficient.}\\
+\noindent{\bf Note:} Mind the conversion from {\em kcal mol$^{-1}$} for 
+literature OPLS parameters to {\em kJ mol$^{-1}$} in {\gromacs}.\\
+
+\ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{Tabulated interaction function}s}
 For full flexibility, any functional shape can be used for
 bonds, angles and dihedrals through user supplied tabulated functions.
@@ -830,6 +840,7 @@ $x$ is the angle in degrees, the table should go from
 $x$ is the dihedral angle in degrees, the table should go from
 -180 up to and including 180 degrees,
 the IUPAC/IUB convention is used, i.e. zero is cis
+} % Brace matches ifthenelse test for gmxlite
 
 \section{Restraints}
 Special potentials are used for imposing restraints on the motion of
