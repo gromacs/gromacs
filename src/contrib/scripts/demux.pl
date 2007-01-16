@@ -1,7 +1,12 @@
 #!/usr/bin/perl -w
+# $Id$
 
 # in: input filename
 $in = shift || die("Please specify input filename");
+# If your exchange was every N ps and you saved every M ps you can make for
+# the missing frames by setting extra to (N/M - 1). If N/M is not integer,
+# you're out of luck and you will not be able to demux your trajectories at all.
+$extra = shift || 0;
 $ndx  = "replica_index.xvg";
 $temp = "replica_temp.xvg";
 
@@ -11,6 +16,7 @@ $temp = "replica_temp.xvg";
 	 "This will produce a file ($ndx) suitable for",
 	 "demultiplexing your trajectories using trjcat,",
 	 "as well as a replica temperature file ($temp).",
+	 "Each entry in the log file will be copied $extra times.",
 	 "-----------------------------------------------------------------");
 for($c=0; ($c<=$#comm); $c++) {
     printf("$comm[$c]\n");
@@ -84,10 +90,12 @@ while ($line = <IN_FILE>) {
 		$order[$k] = $k;
                 $revorder[$k] = $k;
 	    }
-	    pr_order($tinit,$nrepl,@order);
-	    pr_revorder($tinit,$nrepl,@revorder);
+	    for($ee=0; ($ee<=$extra); $ee++) {
+		pr_order($tinit+$ee,$nrepl,@order);
+		pr_revorder($tinit+$ee,$nrepl,@revorder);
+		$nline++;
+	    }
 	    $init = 1;
-	    $nline++;
 	}
 
 	if (index($line,"Repl ex") == 0) {
@@ -105,9 +113,11 @@ while ($line = <IN_FILE>) {
 		    $k++;
 		}
 	    }
-	    pr_order($tstep,$nrepl,@order);
-	    pr_revorder($tstep,$nrepl,@revorder);
-	    $nline++;
+	    for($ee=0; ($ee<=$extra); $ee++) {
+		pr_order($tstep+$ee,$nrepl,@order);
+		pr_revorder($tstep+$ee,$nrepl,@revorder);
+		$nline++;
+	    }
 	}
     }
 }
