@@ -245,8 +245,37 @@ bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,real *t,
   return bCont;
 }
 
+static void neutralize_mols(int n,int *index,t_block *mols,t_atom *atom)
+{
+  double mtot,qtot;
+  int  ncharged,m,a0,a1,a;
 
-void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
+  ncharged = 0;
+  for(m=0; m<n; m++) {
+    a0 = mols->index[index[m]];
+    a1 = mols->index[index[m]+1];
+    mtot = 0;
+    qtot = 0;
+    for(a=a0; a<a1; a++) {
+      mtot += atom[mols->a[a]].m;
+      qtot += atom[mols->a[a]].q;
+    }
+    /* This check is only for the count print */
+    if (fabs(qtot) > 0.01)
+      ncharged++;
+    if (mtot > 0) {
+      /* Remove the net charge at the center of mass */
+      for(a=a0; a<a1; a++)
+	atom[mols->a[a]].q -= qtot*atom[mols->a[a]].m/mtot;
+    }
+  }
+
+  if (ncharged)
+    printf("There are %d charged molecules in the selection,\n"
+	   "will subtract their charge at their center of mass\n",ncharged);
+}
+
+static void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
 {
   int  k,kk,m;
   real q;
@@ -260,7 +289,8 @@ void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
   }
 }
 
-void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
+static void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],
+		     rvec quad)
 {
   int    i,k,kk,m,n,niter;
   real   q,r2,mass,masstot;
@@ -708,6 +738,8 @@ static void do_dip(t_topology *top,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
+
+      rm_pbc(&(top->idef),natom,box,x,x);
       
       init_lsq(&muframelsq);
       /* Begin loop of all molecules in frame */
@@ -982,7 +1014,6 @@ static void do_dip(t_topology *top,real volume,
 
   printf(" < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
   
-  /* sigmaM2 = sqrt( */
   if (!bMU || (mu_aver != -1)) {
     printf("Finite system Kirkwood g factor G_k = %g\n", Gk);
     printf("Infinite system Kirkwood g factor g_k = %g\n\n", g_k);
@@ -1032,7 +1063,9 @@ int gmx_dipoles(int argc,char *argv[])
   static char *desc[] = {
     "g_dipoles computes the total dipole plus fluctuations of a simulation",
     "system. From this you can compute e.g. the dielectric constant for",
-    "low dielectric media[PAR]",
+    "low dielectric media.",
+    "For molecules with a net charge, the net charge is subtracted at",
+    "center of mass of the molecule.[PAR]",
     "The file Mtot.xvg contains the total dipole moment of a frame, the",
     "components as well as the norm of the vector.",
     "The file aver.xvg contains < |Mu|^2 > and < |Mu| >^2 during the",
@@ -1160,6 +1193,8 @@ int gmx_dipoles(int argc,char *argv[])
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
 	    1,&gnx,&grpindex,&grpname);
   atom2molindex(&gnx,grpindex,&(top->blocks[ebMOLS]));
+
+  neutralize_mols(gnx,grpindex,&(top->blocks[ebMOLS]),top->atoms.atom);
 
   do_dip(top,det(box),ftp2fn(efTRX,NFILE,fnm),
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
