@@ -531,7 +531,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       pd_at_range(cr,&a0,&a1);
     } else {
       a0 = 0;
-      a1 = top->blocks[ebCGS].nr;
+      a1 = top->atoms.nr;
     }
     atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,a0,a1-a0,
 	     mdatoms);
