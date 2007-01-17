@@ -107,9 +107,11 @@ real max_cutoff2(matrix box)
 
 static void low_set_pbc(t_pbc *pbc,matrix box,bool bSingleShift)
 {
-  int  i,j,k,d,jc,kc;
+  int  order[5]={0,-1,1,-2,2};
+  int  ii,jj,kk,i,j,k,d,dd,jc,kc,shift;
   real d2old,d2new,d2new_c;
   rvec try,pos;
+  bool bUse;
   char *ptr;
 
   copy_mat(box,pbc->box);
@@ -139,14 +141,21 @@ static void low_set_pbc(t_pbc *pbc,matrix box,bool bSingleShift)
     }
     pbc->max_cutoff2 = max_cutoff2(box);
     if (pbc->ePBCDX == epbcdxTRICLINIC || pbc->ePBCDX == epbcdxTRICLINIC_SS) {
+      if (debug) {
+	pr_rvecs(debug,0,"Box",box,DIM);
+	fprintf(debug,"max cutoff %.3f\n",sqrt(pbc->max_cutoff2));
+      }
       pbc->ntric_vec = 0;
       /* We will only use single shifts, but we will check a few
        * more shifts to see if there is a limiting distance
        * above which we can not be sure of the correct distance.
        */
-      for(i=-1; i<=1; i++)
-	for(j=-2; j<=2; j++)
-	  for(k=-2; k<=2; k++)
+      for(kk=0; kk<5; kk++) {
+	k = order[kk];
+	for(jj=0; jj<5; jj++) {
+	  j = order[jj];
+	  for(ii=0; ii<3; ii++) {
+	    i = order[ii];
 	    if ((i!=0) || (j!=0) || (k!=0)) {
 	      d2old = 0;
 	      d2new = 0;
@@ -186,27 +195,45 @@ static void low_set_pbc(t_pbc *pbc,matrix box,bool bSingleShift)
 		    pbc->bLimitDistance = TRUE;
 		  }
 		} else {
+		  /* Check if shifts with one box vector less do better */
+		  bUse = TRUE;
+		  for(dd=0; dd<DIM; dd++) {
+		    shift = (dd==0 ? i : (dd==1 ? j : k));
+		    if (shift) {
+		      d2new_c = 0;
+		      for(d=0; d<DIM; d++)
+			d2new_c += sqr(pos[d] + try[d] - shift*box[dd][d]);
+		      if (d2new_c <= d2new)
+			bUse = FALSE;
+		    }
+		  }
+		  if (bUse) {
 		  /* Accept this shift vector. */
-		  if (pbc->ntric_vec >= MAX_NTRICVEC) {
-		    fprintf(stderr,"\nWARNING: Found more than %d triclinic correction vectors, ignoring some.\n"
-			    "  There is probably something wrong with your box.\n",MAX_NTRICVEC);
-		    pr_rvecs(stderr,0,"         Box",box,DIM);
-		  } else {
-		    copy_rvec(try,pbc->tric_vec[pbc->ntric_vec]);
-		    pbc->tric_shift[pbc->ntric_vec][XX] = i;
-		    pbc->tric_shift[pbc->ntric_vec][YY] = j;
-		    pbc->tric_shift[pbc->ntric_vec][ZZ] = k;
-		    pbc->ntric_vec++;
+		    if (pbc->ntric_vec >= MAX_NTRICVEC) {
+		      fprintf(stderr,"\nWARNING: Found more than %d triclinic correction vectors, ignoring some.\n"
+			      "  There is probably something wrong with your box.\n",MAX_NTRICVEC);
+		      pr_rvecs(stderr,0,"         Box",box,DIM);
+		    } else {
+		      copy_rvec(try,pbc->tric_vec[pbc->ntric_vec]);
+		      pbc->tric_shift[pbc->ntric_vec][XX] = i;
+		      pbc->tric_shift[pbc->ntric_vec][YY] = j;
+		      pbc->tric_shift[pbc->ntric_vec][ZZ] = k;
+		      pbc->ntric_vec++;
+		    }
 		  }
 		}
-#ifdef DEBUG
-		fprintf(stderr,"  tricvec %2d = %2d %2d %2d  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
-			pbc->ntric_vec,i,j,k,
-			sqrt(pbc->max_cutoff2),sqrt(d2old),sqrt(d2new),
-			try[XX],try[YY],try[ZZ]);
-#endif
+		if (debug) {
+		  fprintf(debug,"  tricvec %2d = %2d %2d %2d  %5.2f %5.2f  %5.2f %5.2f %5.2f  %5.2f %5.2f %5.2f\n",
+			  pbc->ntric_vec,i,j,k,
+			  sqrt(d2old),sqrt(d2new),
+			  try[XX],try[YY],try[ZZ],
+			  pos[XX],pos[YY],pos[ZZ]);
+		}
 	      }
 	    }
+	  }
+	}
+      }
     }
   }
 }
