@@ -245,8 +245,37 @@ bool read_mu_from_enx(int fmu,int Vol,ivec iMu,rvec mu,real *vol,real *t,
   return bCont;
 }
 
+static void neutralize_mols(int n,int *index,t_block *mols,t_atom *atom)
+{
+  double mtot,qtot;
+  int  ncharged,m,a0,a1,a;
 
-void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
+  ncharged = 0;
+  for(m=0; m<n; m++) {
+    a0 = mols->index[index[m]];
+    a1 = mols->index[index[m]+1];
+    mtot = 0;
+    qtot = 0;
+    for(a=a0; a<a1; a++) {
+      mtot += atom[mols->a[a]].m;
+      qtot += atom[mols->a[a]].q;
+    }
+    /* This check is only for the count print */
+    if (fabs(qtot) > 0.01)
+      ncharged++;
+    if (mtot > 0) {
+      /* Remove the net charge at the center of mass */
+      for(a=a0; a<a1; a++)
+	atom[mols->a[a]].q -= qtot*atom[mols->a[a]].m/mtot;
+    }
+  }
+
+  if (ncharged)
+    printf("There are %d charged molecules in the selection,\n"
+	   "will subtract their charge at their center of mass\n",ncharged);
+}
+
+static void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
 {
   int  k,kk,m;
   real q;
@@ -260,7 +289,8 @@ void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
   }
 }
 
-void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec quad)
+static void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],
+		     rvec quad)
 {
   int    i,k,kk,m,n,niter;
   real   q,r2,mass,masstot;
@@ -521,7 +551,8 @@ static void do_dip(t_topology *top,real volume,
   bool       bCorr,bTotal,bCont;
   double     M_diff=0,epsilon,invtel,vol_aver;
   double     mu_ave,mu_mol,M2_ave=0,M_ave2=0,M_av[DIM],M_av2[DIM];
-  double     M_XX,M_YY,M_ZZ,M_XX2,M_YY2,M_ZZ2,Gk=0,g_k=0;
+  double     M[3],M2[3],M4[3],Gk=0,g_k=0;
+  t_lsq      Mx,My,Mz,Msq,Vol;
   t_lsq      *Qlsq,mulsq,muframelsq;
   ivec       iMu;
   real       **muall=NULL;
@@ -668,10 +699,10 @@ static void do_dip(t_topology *top,real volume,
   snew(dipole_bin, ndipbin);
   epsilon    = 0.0;
   mu_ave     = 0.0;
-  M_XX=M_XX2 = 0.0;
-  M_YY=M_YY2 = 0.0;
-  M_ZZ=M_ZZ2 = 0.0;
-
+  for(m=0; (m<DIM); m++) {
+    M[m] = M2[m] = M4[m] = 0.0;
+  }
+  
   if (bGkr) {
     /* Use 0.7 iso 0.5 to account for pressure scaling */
     /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
@@ -707,6 +738,8 @@ static void do_dip(t_topology *top,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
+
+      rm_pbc(&(top->idef),natom,box,x,x);
       
       init_lsq(&muframelsq);
       /* Begin loop of all molecules in frame */
@@ -740,11 +773,12 @@ static void do_dip(t_topology *top,real volume,
 	  M_av[m]  += dipole[i][m];               /* M per frame */
 	  mu_mol   += dipole[i][m]*dipole[i][m];  /* calc. mu for distribution */
 	}
-	
-	mu_ave += sqrt(mu_mol);                   /* calc. the average mu */
+	mu_mol = sqrt(mu_mol);
+
+	mu_ave += mu_mol;                         /* calc. the average mu */
 	
 	/* Update the dipole distribution */
-	ibin = (ndipbin*sqrt(mu_mol)/mu_max);
+	ibin = (int)(ndipbin*mu_mol/mu_max + 0.5);
 	if (ibin < ndipbin)
 	  dipole_bin[ibin]++;
 
@@ -836,20 +870,18 @@ static void do_dip(t_topology *top,real volume,
 	      t,M_av[XX],M_av[YY],M_av[ZZ],
 	      sqrt(M_av2[XX]+M_av2[YY]+M_av2[ZZ]));
 
-    M_XX  += M_av[XX];
-    M_XX2 += M_av2[XX];
-    M_YY  += M_av[YY];
-    M_YY2 += M_av2[YY];
-    M_ZZ  += M_av[ZZ];
-    M_ZZ2 += M_av2[ZZ];
-
+    for(m=0; (m<DIM); m++) {
+      M[m]  += M_av[m];
+      M2[m] += M_av2[m];
+      M4[m] += sqr(M_av2[m]);
+    }
     /* Increment loop counter */
     teller++;
     
     /* Calculate for output the running averages */
     invtel  = 1.0/teller;
-    M2_ave  = (M_XX2+M_YY2+M_ZZ2)*invtel;
-    M_ave2  = invtel*(invtel*(M_XX*M_XX + M_YY*M_YY + M_ZZ*M_ZZ));
+    M2_ave  = (M2[XX]+M2[YY]+M2[ZZ])*invtel;
+    M_ave2  = invtel*(invtel*(M[XX]*M[XX] + M[YY]*M[YY] + M[ZZ]*M[ZZ]));
     M_diff  = M2_ave - M_ave2;
 
     /* Compute volume from box in traj, else we use the one from above */
@@ -969,18 +1001,19 @@ static void do_dip(t_topology *top,real volume,
     printf("\n");
   }
   printf("The following averages for the complete trajectory have been calculated:\n\n");
-  printf(" Total < M_x > = %g Debye\n", M_XX/teller);
-  printf(" Total < M_y > = %g Debye\n", M_YY/teller);
-  printf(" Total < M_z > = %g Debye\n\n", M_ZZ/teller);
+  printf(" Total < M_x > = %g Debye\n", M[XX]/teller);
+  printf(" Total < M_y > = %g Debye\n", M[YY]/teller);
+  printf(" Total < M_z > = %g Debye\n\n", M[ZZ]/teller);
 
-  printf(" Total < M_x^2 > = %g Debye^2\n", M_XX2/teller);
-  printf(" Total < M_y^2 > = %g Debye^2\n", M_YY2/teller);
-  printf(" Total < M_z^2 > = %g Debye^2\n\n", M_ZZ2/teller);
+  printf(" Total < M_x^2 > = %g Debye^2\n", M2[XX]/teller);
+  printf(" Total < M_y^2 > = %g Debye^2\n", M2[YY]/teller);
+  printf(" Total < M_z^2 > = %g Debye^2\n\n", M2[ZZ]/teller);
 
   printf(" Total < |M|^2 > = %g Debye^2\n", M2_ave);
   printf(" Total < |M| >^2 = %g Debye^2\n\n", M_ave2);
 
   printf(" < |M|^2 > - < |M| >^2 = %g Debye^2\n\n", M_diff);
+  
   if (!bMU || (mu_aver != -1)) {
     printf("Finite system Kirkwood g factor G_k = %g\n", Gk);
     printf("Infinite system Kirkwood g factor g_k = %g\n\n", g_k);
@@ -992,7 +1025,8 @@ static void do_dip(t_topology *top,real volume,
      */
     outdd=xvgropen(dipdist,"Dipole Moment Distribution","mu (Debye)","");
     for(i=0; (i<ndipbin); i++)
-      fprintf(outdd,"%10g  %d\n",(i*mu_max)/ndipbin,dipole_bin[i]);
+      fprintf(outdd,"%10g  %10f\n",
+	      (i*mu_max)/ndipbin,dipole_bin[i]/(double)teller);
     fclose(outdd);
     sfree(dipole_bin);
   }
@@ -1029,7 +1063,9 @@ int gmx_dipoles(int argc,char *argv[])
   static char *desc[] = {
     "g_dipoles computes the total dipole plus fluctuations of a simulation",
     "system. From this you can compute e.g. the dielectric constant for",
-    "low dielectric media[PAR]",
+    "low dielectric media.",
+    "For molecules with a net charge, the net charge is subtracted at",
+    "center of mass of the molecule.[PAR]",
     "The file Mtot.xvg contains the total dipole moment of a frame, the",
     "components as well as the norm of the vector.",
     "The file aver.xvg contains < |Mu|^2 > and < |Mu| >^2 during the",
@@ -1157,6 +1193,8 @@ int gmx_dipoles(int argc,char *argv[])
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
 	    1,&gnx,&grpindex,&grpname);
   atom2molindex(&gnx,grpindex,&(top->blocks[ebMOLS]));
+
+  neutralize_mols(gnx,grpindex,&(top->blocks[ebMOLS]),top->atoms.atom);
 
   do_dip(top,det(box),ftp2fn(efTRX,NFILE,fnm),
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
