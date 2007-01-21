@@ -2637,8 +2637,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   char *warn="WARNING: Cycle counting is not supported on this architecture, will not use dynamic load balancing";
 
   fprintf(fplog,
-	  "Domain decomposition grid %d x %d x %d, separate PME nodes %d\n",
-	  nc[XX],nc[YY],nc[ZZ],cr->npmenodes);
+	  "Domain decomposition grid %d x %d x %d, separate PME nodes %d\n"
+	  "Total number of nodes is %d\n",
+	  nc[XX],nc[YY],nc[ZZ],cr->npmenodes,cr->nnodes);
 
   snew(dd,1);
   snew(dd->comm,1);
@@ -2649,7 +2650,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   copy_ivec(nc,dd->nc);
   dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
   if (dd->nnodes != cr->nnodes - cr->npmenodes)
-    gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d)\n",dd->nnodes,cr->nnodes - cr->npmenodes);
+    gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d). Total number of nodes is %d\n",
+	      dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
   dd->ndim = 0;
   for(d=0; d<DIM; d++)
     if (dd->nc[d] > 1)
