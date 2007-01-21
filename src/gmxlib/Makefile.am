@@ -14,7 +14,7 @@ if !GMX_EXTERNAL_LAPACK
 endif
 
 
-SUBDIRS = nonbonded $(BLAS_DIR) $(LAPACK_DIR)
+SUBDIRS = nonbonded xdrio $(BLAS_DIR) $(LAPACK_DIR)
 
 AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
