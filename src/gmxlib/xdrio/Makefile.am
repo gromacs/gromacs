@@ -8,26 +8,18 @@ AM_CPPFLAGS= -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 lib_LTLIBRARIES = libxdrio@LIBSUFFIX@.la
 
 #
-# Use a utility library for all the nonbonded kernels and wrapper routines.
-#
-libxdrio@LIBSUFFIX@_la_LIBADD =       @XDRIOLIB_LIBOBJS@                  \
-			            nonbonded/libnonbonded.la         \
-	                            $(BLAS_LIBOBJS) $(LAPACK_LIBOBJS)
-
-libxdrio@LIBSUFFIX@_la_DEPENDENCIES = @XDRIOLIB_LIBOBJS@                  \
-			            nonbonded/libnonbonded.la         \
-				    $(BLAS_LIBOBJS) $(LAPACK_LIBOBJS)
-
-#	
-#
+libmd@LIBSUFFIX@_la_LIBADD         = @XDRIO_LIBOBJS@	
+libmd@LIBSUFFIX@_la_DEPENDENCIES   = @XDRIO_LIBOBJS@	
 libxdrio@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
 libxdrio@LIBSUFFIX@_la_SOURCES = \
-	xdrfile.o
+	xdrfile.c
 
 EXTRA_PROGRAMS = test_xdrio_c test_xdrio_f
 test_xdrio_c_SOURCES = test_xdrio_c.c
 test_xdrio_f_SOURCES = test_xdrio_f.f
+test_xdrio_c_LDADD   = libxdrio@LIBSUFFIX@.la
+test_xdrio_f_LDADD   = libxdrio@LIBSUFFIX@.la
 
 # clean all libtool libraries, since the target names might have changed
 CLEANFILES     = *.la *~ \\\#*

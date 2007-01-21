@@ -76,7 +76,7 @@
 #  include <rpc/xdr.h>
 #endif
 
-#include "xdrfile.h"
+#include "xdrio/xdrfile.h"
 
 /* This program tests reading and writing to XDR files */
 

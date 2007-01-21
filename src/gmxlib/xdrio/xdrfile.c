@@ -76,7 +76,7 @@
 #  include <rpc/xdr.h>
 #endif
 
-#include "xdrfile.h"
+#include "xdrio/xdrfile.h"
 
 /* Default FORTRAN name mangling is: lower case name, append underscore */
 #ifndef F77_FUNC
