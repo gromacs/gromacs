@@ -1113,11 +1113,12 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   for(i=0; (i<nral); i++) {
     if ( aa[i] < 1 || aa[i] > at->nr )
       gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
-		"Atom index (%d) in %s out of bounds (1-%d). This probably means that you have\n" 
-		"inserted topology section %s in the part belonging to another molecule\n" 
-		"than you intended to. Move the %s section to the right molecule.",
+		"Atom index (%d) in %s out of bounds (1-%d).\n"
+		"This probably means that you have inserted topology section \"%s\"\n"
+		"in a part belonging to a different molecule than you intended to.\n" 
+		"In that case move the \"%s\" section to the right molecule.",
 		get_warning_file(),get_warning_line(),
-		aa[i],dir2str(d),at->nr,aa[i],aa[i]);
+		aa[i],dir2str(d),at->nr,dir2str(d),dir2str(d));
     for(j=i+1; (j<nral); j++)
       if (aa[i] == aa[j]) {
 	sprintf(errbuf,"Duplicate atom index (%d) in %s",aa[i],dir2str(d));
