@@ -482,7 +482,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   init_md(cr,inputrec,&t,&t0,&state_global->lambda,&lam0,
 	  nrnb,top_global,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
-	  force_vir,shake_vir,mdatoms,mu_tot,&bNEMD,&bSimAnn,&vcm);
+	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
   debug_gmx();
 
   {

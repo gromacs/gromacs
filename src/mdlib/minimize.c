@@ -45,7 +45,6 @@
 #include "network.h"
 #include "confio.h"
 #include "copyrite.h"
-#include "vcm.h"
 #include "smalloc.h"
 #include "nrnb.h"
 #include "main.h"
@@ -213,7 +212,7 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
 	     real *lambda,t_nrnb *nrnb,rvec mu_tot,
 	     matrix box,
 	     t_forcerec *fr,t_mdatoms *mdatoms,t_topology *top,
-	     t_commrec *cr,t_vcm **vcm,
+	     t_commrec *cr,
 	     int nfile,t_filenm fnm[],int *fp_trn,int *fp_ene)
 {
   int start,homenr;
@@ -241,9 +240,6 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
   atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,
 	   start,homenr,mdatoms);
   update_mdatoms(mdatoms,*lambda);
-
-  *vcm = init_vcm(log,top,cr,&top->atoms,mdatoms->start,mdatoms->homenr,
-		  inputrec->nstcomm,inputrec->comm_mode);
 
   if (MASTER(cr)) {
     if (fp_trn)
@@ -273,7 +269,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
 			    bool bVsites,t_comm_vsites *vsitecomm,
 			    t_fcdata *fcd,t_commrec *cr,
 			    t_graph *graph,t_mdatoms *mdatoms,
-			    t_forcerec *fr, real lambda, t_vcm *vcm, 
+			    t_forcerec *fr, real lambda,
 			    rvec mu_tot, matrix box,rvec *x, rvec *f, 
 			    rvec *buf, real ener[], int count)
 {
@@ -318,7 +314,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
   /* Communicate stuff when parallel */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,vcm,&terminate);
+		inputrec,grps,NULL,&terminate);
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
   return ener[F_EPOT];
@@ -341,7 +337,6 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   rvec   *p,*xa,*xb,*xc,*f,*fa,*fb,*fc,*xtmp,*ftmp;
   real   EpotA,EpotB,EpotC,Epot0,a,b,c,beta=0.0;
   real   pnorm;
-  t_vcm      *vcm;
   t_mdebin   *mdebin;
   bool   bNS=TRUE,converged,foundlower;
   rvec   mu_tot;
@@ -357,7 +352,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   step=0;
 
   init_em(log,CG,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,cr,&vcm,nfile,fnm,&fp_trn,&fp_ene);
+	  fr,mdatoms,top,cr,nfile,fnm,&fp_trn,&fp_ene);
 
   start = mdatoms->start;
   end   = mdatoms->homenr + start;
@@ -435,7 +430,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,vcm,&terminate);
+		inputrec,grps,NULL,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -586,7 +581,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* Calculate energy for the trial step */
     EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
-			    vcm,mu_tot,state->box,xc,fc,buf,ener,step);
+			    mu_tot,state->box,xc,fc,buf,ener,step);
     
     /* Calc derivative along line */
     gpc=0;
@@ -665,7 +660,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	/* Calculate energy for the trial step */
 	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
-				vcm,mu_tot,state->box,xb,fb,buf,ener,step);
+				mu_tot,state->box,xb,fb,buf,ener,step);
 	
 	gpb=0;
 	for(i=start; i<end; i++) {
@@ -920,7 +915,6 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   real   a,b,c,maxdelta,delta;
   real   diag,Epot0,Epot,EpotA,EpotB,EpotC;
   real   dgdx,dgdg,sq,yr,beta;
-  t_vcm      *vcm;
   t_mdebin   *mdebin;
   bool   bNS=TRUE,converged,first;
   rvec   mu_tot;
@@ -975,7 +969,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   neval = 0; 
 
   init_em(log,LBFGS,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,cr,&vcm,nfile,fnm,&fp_trn,&fp_ene);
+	  fr,mdatoms,top,cr,nfile,fnm,&fp_trn,&fp_ene);
 
   start = mdatoms->start;
   end   = mdatoms->homenr + start;
@@ -1052,7 +1046,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,vcm,&terminate);
+		inputrec,grps,NULL,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -1205,7 +1199,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     /* Calculate energy for the trial step */
     EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
-			    vcm,mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
+			    mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
     
     /* Calc derivative along line */
     for(gpc=0,i=0; i<n; i++) {
@@ -1278,7 +1272,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	/* Calculate energy for the trial step */
 	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
 				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
-				vcm,mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
+				mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
 	
 	for(gpb=0,i=0; i<n; i++) 
 	  gpb -= s[i]*fb[i];   /* f is negative gradient, thus the sign */
@@ -1556,7 +1550,6 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   real   Fmax[2],Epot[2]; 
   real   ustep,dvdlambda,fnorm;
   t_state    state_min;
-  t_vcm      *vcm;
   int        fp_trn,fp_ene; 
   t_mdebin   *mdebin; 
   bool   bDone,bAbort,do_x,do_f; 
@@ -1574,7 +1567,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #define  TRY (1-Min)
 
   init_em(log,SD,inputrec,&lambda,nrnb,mu_tot,state->box,
-	  fr,mdatoms,top,cr,&vcm,nfile,fnm,&fp_trn,&fp_ene);
+	  fr,mdatoms,top,cr,nfile,fnm,&fp_trn,&fp_ene);
    
   start = mdatoms->start;
   end   = mdatoms->homenr + start;
@@ -1725,7 +1718,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
- 		  inputrec,grps,vcm,&terminate); 
+ 		  inputrec,grps,NULL,&terminate); 
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
@@ -2095,7 +2088,6 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   const char *TPI="Test Particle Insertion"; 
   real   lambda,t,temp,beta,drmax;
   double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all;
-  t_vcm  *vcm;
   int    status;
   t_trxframe rerun_fr;
   bool   bCharge,bNotLastFrame,bStateChanged,bNS;
@@ -2121,7 +2113,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
 
   init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
-	  state->box,fr,mdatoms,top,cr,&vcm,nfile,fnm,NULL,NULL);
+	  state->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);
      temp = inputrec->opts.ref_t[0];
   for(i=1; (i<inputrec->opts.ngtc); i++) {
     if (inputrec->opts.ref_t[i] != temp) {

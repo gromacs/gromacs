@@ -947,7 +947,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
-	     tensor force_vir,tensor shake_vir,t_mdatoms *mdatoms,rvec mu_tot,
+	     tensor force_vir,tensor shake_vir,rvec mu_tot,
 	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm)
 {
   int  i,j,n;
@@ -999,12 +999,8 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_mat(force_vir);
   clear_mat(shake_vir);
   clear_rvec(mu_tot);
-  
-  /* Set initial values for invmass etc. */
-  update_mdatoms(mdatoms,*lambda);
 
-  *vcm = init_vcm(stdlog,top,cr,&top->atoms,mdatoms->start,mdatoms->homenr,
-		  ir->nstcomm,ir->comm_mode);
+  *vcm = init_vcm(stdlog,&top->atoms,ir->nstcomm,ir->comm_mode);
     
   debug_gmx();
 

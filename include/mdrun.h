@@ -290,7 +290,7 @@ extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    FILE **fp_dgdl,FILE **fp_field,
 		    t_mdebin **mdebin,t_groups *grps,
 		    tensor force_vir,tensor shake_vir,
-		    t_mdatoms *mdatoms,rvec mu_tot,
+		    rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm);
 /* Routine in sim_util.c */
      

@@ -46,18 +46,17 @@
 #include "txtdump.h"
 #include "network.h"
  
-t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
-		int start,int homenr,int nstcomm,int comm_mode)
+t_vcm *init_vcm(FILE *fp,t_atoms *atoms,int nstcomm,int comm_mode)
 {
   t_vcm *vcm;
-  int   i,g;
+  int   g;
   
   snew(vcm,1);
   
   vcm->mode = (nstcomm > 0) ? comm_mode : ecmNO;
   
   if (vcm->mode != ecmNO) {
-    vcm->nr = top->atoms.grps[egcVCM].nr;
+    vcm->nr = atoms->grps[egcVCM].nr;
     /* Allocate one extra for a possible rest group */
     if (vcm->mode == ecmANGULAR) {
       snew(vcm->group_j,vcm->nr+1);
@@ -69,13 +68,6 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
     snew(vcm->group_v,vcm->nr+1);
     snew(vcm->group_mass,vcm->nr+1);
     snew(vcm->group_name,vcm->nr);
-    for(i=start; (i<start+homenr); i++) {
-      g = atoms->atom[i].grpnr[egcVCM];
-      /* Only determine the topology A mass, used only for printing */
-      vcm->group_mass[g] += atoms->atom[i].m;
-    }
-    if(PAR(cr))
-      gmx_sum(vcm->nr,vcm->group_mass,cr);
 
     /* Copy pointer to group names and print it. */
     fprintf(fp,"Center of mass motion removal mode is %s\n",ECOM(vcm->mode));
@@ -83,9 +75,8 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_atoms *atoms,
 	    " mass motion removal:\n");
     for(g=0; (g<vcm->nr); g++) {
       vcm->group_name[g] = 
-	*top->atoms.grpname[top->atoms.grps[egcVCM].nm_ind[g]];
-      fprintf(fp,"%3d:  %s, initial mass: %g\n",
-	      g,vcm->group_name[g],vcm->group_mass[g]);
+	*atoms->grpname[atoms->grps[egcVCM].nm_ind[g]];
+      fprintf(fp,"%3d:  %s\n",g,vcm->group_name[g]);
     }
   }
 
