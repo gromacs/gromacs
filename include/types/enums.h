@@ -85,7 +85,7 @@ enum {
 };
 
 enum {
-  eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiTPI, eiNR
+  eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiTPI, eiTPIC, eiNR
 };
 
 #define EI_DYNAMICS(e) ((e == eiMD) || (e == eiSD) || (e == eiBD))

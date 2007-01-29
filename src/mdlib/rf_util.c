@@ -68,9 +68,9 @@ real RF_excl_correction(FILE *log,
   int    niat;
   bool   bFullPBC;
 
-  if (fr->bTPI)
-    /* For test particle insertion we only correct for the test particle */
-    start = mdatoms->nr - 1;
+  if (fr->n_tpi)
+    /* For test particle insertion we only correct for the test molecule */
+    start = mdatoms->nr - fr->n_tpi;
 
   ek = fr->epsfac*fr->k_rf;
   ec = fr->epsfac*fr->c_rf;

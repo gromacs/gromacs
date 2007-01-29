@@ -111,7 +111,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   char err_buf[256];
 
   /* TPI STUFF */
-  if (ir->eI == eiTPI) {
+  if (ir->eI == eiTPI || ir->eI == eiTPIC) {
     sprintf(err_buf,"TPI does not work with pbc = %s",epbc_names[epbcNONE]);
     CHECK(ir->ePBC == epbcNONE);
     sprintf(err_buf,"TPI only works with ns = %s",ens_names[ensGRID]);
@@ -1147,7 +1147,8 @@ void do_index(char *ndx,
 
   if (ir->eI != eiMD)
     ir->etc = etcNO;
-  bSetTCpar = ir->etc || ir->eI==eiSD || ir->eI==eiBD || ir->eI==eiTPI;
+  bSetTCpar = ir->etc ||
+    ir->eI==eiSD || ir->eI==eiBD || ir->eI==eiTPI || ir->eI==eiTPIC;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
 	       restnm,bSetTCpar ? egrptpALL : egrptpALL_GENREST,bVerbose);
   nr=atoms->grps[egcTC].nr;

@@ -794,10 +794,10 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
       calc_enervirdiff(fplog,ir->eDispCorr,fr);
     
     invvol = 1/det(box);
-    if (fr->bTPI) {
-      /* Only correct for the interactions with the inserted particle */
-      dens = (natoms - 1)*invvol;
-      ninter = 1;
+    if (fr->n_tpi) {
+      /* Only correct for the interactions with the inserted molecule */
+      dens = (natoms - fr->n_tpi)*invvol;
+      ninter = fr->n_tpi;
     } else {
       dens = natoms*invvol;
       ninter = 0.5*natoms;

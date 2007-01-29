@@ -369,6 +369,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		    mdatoms,nrnb,wcycle,graph,edyn,fr);
       break;
     case eiTPI:
+    case eiTPIC:
       start_t=do_tpi(stdlog,nfile,fnm,inputrec,top,grps,
 		     state,f,buf,mdatoms,ener,fcd,
 		     nrnb,wcycle,bVerbose,

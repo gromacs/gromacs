@@ -205,11 +205,12 @@ typedef struct {
   /* Implicit solvent - surface tension for each atomtype */
   real *atype_surftens;
 
-  /* Test particle insertion.
-   * Only the energy difference due to the addition of the last atmo
+  /* If > 0 signals Test Particle Insertion,
+   * the value is the number of atoms of the molecule to insert
+   * Only the energy difference due to the addition of the last molecule
    * should be calculated.
    */
-  bool bTPI;
+  bool n_tpi;
 
   /* QMMM stuff */
   bool         bQMMM;

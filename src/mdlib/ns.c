@@ -1628,7 +1628,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     cg0 = 0;
     cg1 = dd->icell[dd->nicell-1].cg1;
   } else {
-    if (fr->bTPI)
+    if (fr->n_tpi)
       /* We only want a list for the test particle */
       cg0 = cgsnr - 1;
     else
@@ -1691,7 +1691,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	  jcg0 = icg;
 	  jcg1 = icg + naaj;
 	  
-	  if (fr->bTPI)
+	  if (fr->n_tpi)
 	    {
 	      /* The i-particle is awlways the test particle,
 	       * so we want all j-particles

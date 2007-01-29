@@ -2090,10 +2090,10 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all;
   int    status;
   t_trxframe rerun_fr;
-  bool   bCharge,bNotLastFrame,bStateChanged,bNS;
+  bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS;
   time_t start_t; 
   tensor force_vir,shake_vir,vir,pres;
-  int    cg_tp,a_tp0,a_tp1,ngid,gid_tp;
+  int    cg_tp,a_tp0,a_tp1,ngid,gid_tp,nener,e;
   rvec   *x_mol;
   rvec   mu_tot,x_init,dx,x_tp;
   int    frame,nsteps,step;
@@ -2104,17 +2104,17 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   double dump_ener;
   bool   bCavity;
   
-
-  /* This should be switched by the integrator */
-  bCavity = (getenv("GMX_TPI_CAVITY") != NULL);
-
-
   if (PAR(cr))
     gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
 
+  bCavity = (inputrec->eI == eiTPIC);
+
   init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
 	  state->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);
-     temp = inputrec->opts.ref_t[0];
+  /* We never need full pbc for TPI */
+  fr->ePBC = epbcXYZ;
+  /* Determine the temperature for the Boltzmann weighting */
+  temp = inputrec->opts.ref_t[0];
   for(i=1; (i<inputrec->opts.ngtc); i++) {
     if (inputrec->opts.ref_t[i] != temp) {
       fprintf(fplog,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
@@ -2154,6 +2154,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   a_tp1 = top->blocks[ebCGS].index[cg_tp+1];
   snew(x_mol,a_tp1-a_tp0);
 
+  bDispCorr = (inputrec->eDispCorr != edispcNO);
   bCharge = FALSE;
   for(i=a_tp0; i<a_tp1; i++) {
     /* Copy the coordinates of the molecule to be insterted */
@@ -2161,6 +2162,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     /* Check if we need to print electrostatic energies */
     bCharge |= (top->atoms.atom[i].q!=0 || top->atoms.atom[i].qB!=0);
   }
+  bRFExcl = (bCharge && EEL_RF(fr->eeltype) && fr->eeltype!=eelRF_NEC);
 
   fprintf(stdlog,"\nWill insert %d atoms %s partial charges\n",
 	  a_tp1-a_tp0,bCharge ? "with" : "without");
@@ -2168,19 +2170,28 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   fprintf(stdlog,"\nWill insert %d times in each frame of %s\n",
 	  inputrec->nstlist,opt2fn("-rerun",nfile,fnm));
   
-  if (inputrec->nstlist>1 && drmax==0 && a_tp1-a_tp0==1)
-    gmx_fatal(FARGS,"Re-using the neighborlist %d times for insertions in a sphere of radius %f does not make sense",inputrec->nstlist,drmax);
   if (!bCavity) {
     if (inputrec->nstlist > 1) {
+      if (drmax==0 && a_tp1-a_tp0==1) {
+	gmx_fatal(FARGS,"Re-using the neighborlist %d times for insertions of a single atom in a sphere of radius %f does not make sense",inputrec->nstlist,drmax);
+      }
       fprintf(stdlog,"Will use the same neighborlist for %d insertions in a sphere of radius %f\n",inputrec->nstlist,drmax);
     }
   } else {
     fprintf(stdlog,"Will insert randomly in a sphere of radius %f around the center of the cavity\n",drmax);
   }
 
-  ngid =top->atoms.grps[egcENER].nr;
+  ngid = top->atoms.grps[egcENER].nr;
   gid_tp = mdatoms->cENER[a_tp0];
-  snew(sum_UgembU,ngid);
+  nener = 1 + ngid;
+  if (bDispCorr)
+    nener += 1;
+  if (bCharge) {
+    nener += ngid;
+    if (bRFExcl)
+      nener += 1;
+  }
+  snew(sum_UgembU,nener);
 
   /* Initialize random generator */
   tpi_rand = gmx_rng_init(inputrec->ld_seed);
@@ -2190,22 +2201,40 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 		      "TPI energies","Time (ps)",
 		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
     fprintf(fp_tpi,"@ subtitle \"f. are averages over one frame\"\n");
-    snew(leg,4+ngid);
+    snew(leg,4+nener);
+    e = 0;
     sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
-    leg[0] = strdup(str);
+    leg[e++] = strdup(str);
     sprintf(str,"f. -kT log<e\\S-\\8b\\4U\\N>");
-    leg[1] = strdup(str);
+    leg[e++] = strdup(str);
     sprintf(str,"f. <e\\S-\\8b\\4U\\N>");
-    leg[2] = strdup(str);
+    leg[e++] = strdup(str);
     sprintf(str,"f. V");
-    leg[3] = strdup(str);
+    leg[e++] = strdup(str);
+    sprintf(str,"f. <Ue\\S-\\8b\\4U\\N>");
+    leg[e++] = strdup(str);
     for(i=0; i<ngid; i++) {
-      sprintf(str,"f. <U\\s%s\\Ne\\S-\\8b\\4U\\N>",
+      sprintf(str,"f. <U\\sVdW %s\\Ne\\S-\\8b\\4U\\N>",
 	      *(top->atoms.grpname[top->atoms.grps[egcENER].nm_ind[i]]));
-      leg[4+i] = strdup(str);
+      leg[e++] = strdup(str);
     }
-    xvgr_legend(fp_tpi,4+ngid,leg);
-    for(i=0; i<4+ngid; i++)
+    if (bDispCorr) {
+      sprintf(str,"f. <U\\sdisp c\\Ne\\S-\\8b\\4U\\N>");
+      leg[e++] = strdup(str);
+    }
+    if (bCharge) {
+      for(i=0; i<ngid; i++) {
+	sprintf(str,"f. <U\\sCoul %s\\Ne\\S-\\8b\\4U\\N>",
+		*(top->atoms.grpname[top->atoms.grps[egcENER].nm_ind[i]]));
+	leg[e++] = strdup(str);
+      }
+      if (bRFExcl) {
+	sprintf(str,"f. <U\\sRF excl\\Ne\\S-\\8b\\4U\\N>");
+	leg[e++] = strdup(str);
+      }
+    }
+    xvgr_legend(fp_tpi,4+nener,leg);
+    for(i=0; i<4+nener; i++)
       sfree(leg[i]);
     sfree(leg);
   }
@@ -2231,8 +2260,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
     t = rerun_fr.time;
     
     sum_embU = 0;
-    for(i=0; i<ngid; i++)
-      sum_UgembU[i] = 0;
+    for(e=0; e<nener; e++)
+      sum_UgembU[e] = 0;
 
     /* Copy the coordinates from the input trajectory */
     for(i=0; i<rerun_fr.natoms; i++)
@@ -2304,14 +2333,17 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	/* Set the charge group center of mass of the test particle */
 	copy_rvec(x_init,fr->cg_cm[top->blocks[ebCGS].nr-1]);
 
-	/* Calc energy (no forces) on new positions
-	 * do_force always puts the charge groups in the box and shifts again
-	 * We do not unshift, so molecules are always whole in tpi.c
+	/* Calc energy (no forces) on new positions.
+	 * Since we only need the intermolecular energy
+	 * and the RF exclusion terms of the inserted molecule occur
+	 * within a single charge group we can pass NULL for the graph.
+	 * This also avoids shifts that would move charge groups
+	 * out of the box.
 	 */
 	do_force(fplog,cr,inputrec,
 		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
 		 buf,mdatoms,ener,fcd,
-		 lambda,graph,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
+		 lambda,NULL,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL,NULL); 
 	bStateChanged = FALSE;
 
@@ -2336,22 +2368,28 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	  embU = exp(-beta*ener[F_EPOT]);
 	  sum_embU += embU;
 	  /* Determine the weighted energy contributions of each energy group */
+	  e = 0;
+	  sum_UgembU[e++] += ener[F_EPOT]*embU;
 	  if (fr->bBHAM) {
 	    for(i=0; i<ngid; i++)
-	      sum_UgembU[i] +=
+	      sum_UgembU[e++] +=
 		(grps->estat.ee[egBHAMSR][GID(i,gid_tp,ngid)] +
 		 grps->estat.ee[egBHAMLR][GID(i,gid_tp,ngid)])*embU;
 	  } else {
 	    for(i=0; i<ngid; i++)
-	      sum_UgembU[i] +=
+	      sum_UgembU[e++] +=
 		(grps->estat.ee[egLJSR][GID(i,gid_tp,ngid)] +
 		 grps->estat.ee[egLJLR][GID(i,gid_tp,ngid)])*embU;
 	  }
+	  if (bDispCorr)
+	    sum_UgembU[e++] += ener[F_DISPCORR]*embU;
 	  if (bCharge) {
 	    for(i=0; i<ngid; i++)
-	      sum_UgembU[i] +=
+	      sum_UgembU[e++] +=
 		(grps->estat.ee[egCOULSR][GID(i,gid_tp,ngid)] +
 		 grps->estat.ee[egCOULLR][GID(i,gid_tp,ngid)])*embU;
+	    if (bRFExcl)
+	      sum_UgembU[e++] += ener[F_RF_EXCL]*embU;
 	  }
 	}
 	
@@ -2369,8 +2407,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 
     if (MULTISIM(cr)) {
       /* When running in parallel sum the energies over the processes */
-      gmx_sumd_sim(   1, &sum_embU,cr->ms);
-      gmx_sumd_sim(ngid,sum_UgembU,cr->ms);
+      gmx_sumd_sim(    1, &sum_embU,cr->ms);
+      gmx_sumd_sim(nener,sum_UgembU,cr->ms);
     }
 
     V = det(rerun_fr.box);
@@ -2389,8 +2427,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	      VembU_all==0 ? 20/beta : -log(VembU_all/V_all)/beta,
 	      sum_embU==0  ? 20/beta : -log(sum_embU/nsteps)/beta,
 	      sum_embU/nsteps,V);
-      for(i=0; i<ngid; i++)
-	fprintf(fp_tpi," %12.5e",sum_UgembU[i]/nsteps);
+      for(e=0; e<nener; e++)
+	fprintf(fp_tpi," %12.5e",sum_UgembU[e]/nsteps);
       fprintf(fp_tpi,"\n");
     }
 

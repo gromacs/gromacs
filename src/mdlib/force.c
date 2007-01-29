@@ -600,7 +600,7 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
     ctwelve = 0;
     npair = 0;
     nexcl = 0;
-    if (!fr->bTPI) {
+    if (!fr->n_tpi) {
       /* Count the types so we avoid natoms^2 operations */
       snew(typecount,ntp);
       for(i=0; i<natoms; i++) {
@@ -871,7 +871,12 @@ void init_forcerec(FILE *fp,
   natoms         = top->atoms.nr;
 
   /* Test particle insertion ? */
-  fr->bTPI = (ir->eI == eiTPI);
+  if (ir->eI == eiTPI || ir->eI == eiTPIC) {
+    /* Set to the size of the molecule to be inserted (the last one) */
+    fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr-1];
+  } else {
+    fr->n_tpi = 0;
+  }
 
   /* Copy the user determined parameters */
   fr->userint1 = ir->userint1;
@@ -1406,19 +1411,23 @@ void force(FILE       *fplog,   int        step,
    * go when no bonded forces have to be evaluated.
    */
   
-  /* Check whether we need to do bondeds or correct for exclusions */
-  if (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)) {
-    if (graph) {
-      shift_self(graph,box,x);
-      if (TRICLINIC(box))
-	inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
-      else
-	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
-    }
-    if (fr->ePBC==epbcFULL || idef->il[F_POSRES].nr>0)
-      set_pbc_ss(&pbc,box,cr->dd,TRUE);
-    debug_gmx();
+  /* Here sometimes we would not need to shift with NBFonly,
+   * but we do so anyhow for consistency of the returned coordinates.
+   */
+  if (graph) {
+    shift_self(graph,box,x);
+    if (TRICLINIC(box))
+      inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
+    else
+      inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
   }
+  /* Check whether we need to do bondeds or correct for exclusions */
+  if ((fr->ePBC==epbcFULL &&
+       (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype))) ||
+      (idef->il[F_POSRES].nr>0 && !bNBFonly)) {
+    set_pbc_ss(&pbc,box,cr->dd,TRUE);
+  }
+  debug_gmx();
 
   where();
   if (EEL_FULL(fr->eeltype)) {
