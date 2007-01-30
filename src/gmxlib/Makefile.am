@@ -44,12 +44,12 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
 	invblock.c	macros.c	orires.c	sparsematrix.c  \
 	main.c		maths.c		matio.c		mtxio.c		\
-	mshift.c	mvdata.c	mvxvf.c		names.c		\
+	mshift.c	mvdata.c	names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
 	pargs.c		pbc.c		pdbio.c		princ.c		\
 	rando.c		random.c	gmx_random.c	rbin.c		\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\
-	sortwater.c	smalloc.c	stat.c		statutil.c	\
+	sortwater.c	smalloc.c	statutil.c	\
 	strdb.c		string2.c	symtab.c	tpxio.c		\
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\

@@ -71,7 +71,7 @@ void global_stat(FILE *log,
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,ie,ifv,isv,imu=0,idedl,icm,imass,ica,inb=0;
+  int    iterminate,ie,ifv,isv,imu=0,idedl,icm=0,imass=0,ica,inb=0;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   int    j;

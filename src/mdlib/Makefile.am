@@ -18,12 +18,12 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	edsam.c		ewald.c         fftgrid.c	\
 	force.c  	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
-	ns.c		nsgrid.c	\
+	mvxvf.c		ns.c		nsgrid.c	\
 	pme.c		pppm.c		fftgrid.c	\
 	partdec.c	pull.c 		pullinit.c	\
 	pullio.c	pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
-	tables.c	tgroup.c	\
+	stat.c 		tables.c	tgroup.c	\
 	update.c	vcm.c		vsite.c	\
 	wnblist.c	wnblist.h	\
 	pull_internal.h	csettle.c       clincs.c	\
