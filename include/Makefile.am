@@ -3,7 +3,7 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-SUBDIRS = . types xdrio
+SUBDIRS = . types
 
 pkginclude_HEADERS = \
 3dview.h \
