@@ -245,10 +245,11 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   init_nrnb(&nrnb);
   snew(state,1);
   init_single(stdlog,inputrec,tpx,top,state);
+  clear_rvec(mutot);
   init_md(cr,inputrec,&t,&t0,&lam,&lam0,
 	  &nrnb,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
-	  shake_vir,*mdatoms,mutot,&bNEMD,&bSA,&vcm);
+	  shake_vir,mutot,&bNEMD,&bSA,&vcm);
   init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);  
 
   if (inputrec->ePBC == epbcXYZ) {
