@@ -1064,7 +1064,7 @@ int read_edi(FILE* in, t_edsamyn *edyn,t_edpar *edi,int nr_mdatoms, int edi_nr)
     
 }
 
-void check(char *line, char *label) {
+static void check(char *line, char *label) {
   if (!strstr(line,label)) 
         gmx_fatal(FARGS,"Could not find input parameter %s at expected position in edsam input-file (.edi)\nline read instead is %s",label,line);
 }
