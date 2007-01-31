@@ -13,7 +13,9 @@ libmd@LIBSUFFIX@_la_DEPENDENCIES   = @XDRIO_LIBOBJS@
 libxdrio@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
 libxdrio@LIBSUFFIX@_la_SOURCES = \
-	xdrfile.c
+	xdrfile.c	xtcio.c\
+	enxio.c		trnio.c		
+#gmx_system_xdr.c		
 
 EXTRA_PROGRAMS = test_xdrio_c test_xdrio_f
 test_xdrio_c_SOURCES = test_xdrio_c.c
