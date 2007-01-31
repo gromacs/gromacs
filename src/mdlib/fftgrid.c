@@ -89,9 +89,16 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
                       t_commrec *  cr)
 {
 /* parallel runs with non-parallel ffts haven't been tested yet */
-  int           flags;
+  int           nnodes;
   int           localsize;
   t_fftgrid *   grid;
+  
+  nnodes = 1;
+#ifdef GMX_MPI
+  if (cr && cr->nnodes > 1) {
+    MPI_Comm_size(cr->mpi_comm_mygroup,&nnodes);
+  }
+#endif
   
   snew(grid,1);
   grid->nx   = nx;
@@ -99,7 +106,7 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
   grid->nz   = nz;
   grid->nxyz = nx*ny*nz;
   
-  if(cr && PAR(cr))
+  if (nnodes > 1)
   {
       grid->la2r = (nz/2+1)*2;
   }
@@ -112,7 +119,7 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
 
   grid->la12r = ny*grid->la2r;
   
-  if(cr && PAR(cr))
+  if (nnodes > 1)
   {
       grid->la12c = nx*grid->la2c;
   }
@@ -123,7 +130,7 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
   
   grid->nptr = nx*ny*grid->la2c*2;
 
-  if (cr && PAR(cr)) 
+  if (nnodes > 1) 
   {
 #ifdef GMX_MPI
       gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
@@ -146,11 +153,11 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
   
   grid->localptr=NULL;
 #ifdef GMX_MPI
-  if (cr && PAR(cr) && fp) 
+  if (nnodes > 1 && fp) 
   {
     print_parfft(fp,"Plan", &grid->pfft);
   }
-  if(cr && PAR(cr))
+  if (nnodes > 1)
   {
       int localsize;
       grid->localptr=grid->ptr+grid->la12r*grid->pfft.local_x_start;
@@ -206,8 +213,8 @@ void done_fftgrid(t_fftgrid *grid)
 void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 {
   void *tmp;
-    
-  if (cr && PAR(cr) && grid->localptr) 
+
+  if (grid->localptr) 
   {
 #ifdef GMX_MPI
     if( dir == GMX_FFT_REAL_TO_COMPLEX || dir == GMX_FFT_COMPLEX_TO_REAL )
