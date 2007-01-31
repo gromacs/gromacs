@@ -210,7 +210,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* Make sure the z-height does not influence the cut-off */
     box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
   }
-  rmax2   = 0.99*0.99*max_cutoff2(box_pbc);
+  if (bPBC)
+    rmax2   = 0.99*0.99*max_cutoff2(box_pbc);
+  else
+    rmax2   = 3*max(box[XX][XX],max(box[YY][YY],box[ZZ][ZZ]));
   nbin    = (int)(sqrt(rmax2) / binwidth) + 1;
   invbinw = 1.0 / binwidth;
   cut2   = sqr(cutoff);
@@ -851,7 +854,7 @@ int gmx_rdf(int argc,char *argv[])
     { "-com",      FALSE, etBOOL, {&bCM},
       "RDF with respect to the center of mass of first group" },
     { "-pbc",      FALSE, etBOOL, {&bPBC},
-      "Use periodic boundary conditions for computing distances" },
+      "Use periodic boundary conditions for computing distances. Without PBC the maximum range will be infinity." },
     { "-xy",       FALSE, etBOOL, {&bXY},
       "Use only the x and y components of the distance" },
     { "-cut",      FALSE, etREAL, {&cutoff},
