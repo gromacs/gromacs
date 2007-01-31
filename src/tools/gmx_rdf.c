@@ -213,7 +213,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   if (bPBC)
     rmax2   = 0.99*0.99*max_cutoff2(box_pbc);
   else
-    rmax2   = 3*max(box[XX][XX],max(box[YY][YY],box[ZZ][ZZ]));
+    rmax2   = sqr(3*max(box[XX][XX],max(box[YY][YY],box[ZZ][ZZ])));
+  if (debug)
+    fprintf(debug,"rmax2 = %g\n",rmax2);
+    
   nbin    = (int)(sqrt(rmax2) / binwidth) + 1;
   invbinw = 1.0 / binwidth;
   cut2   = sqr(cutoff);
