@@ -94,7 +94,7 @@ void lo_do_ljc(double r,
   *fc   = 1.0/(r2);
 
   *vd   = -r_6;
-  *fd   = -6.0*(*vd)/r;
+  *fd   = 6.0*(*vd)/r;
 
   *vr   = r_12;
   *fr   = 12.0*(*vr)/r;
