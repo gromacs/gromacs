@@ -85,7 +85,7 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
   real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
-  if (!use_xmgr())
+  if (!use_xmgr() && bPrintXvgrCodes())
     fprintf(out,"@ autoscale onread none\n");
   for(g=0; g<ngraphs; g++) {
     if (y) {
@@ -111,45 +111,48 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
     max=max+0.1*(max-min);
     xsp=tick_spacing((x[n-1]-x[0])*scale_x,4);
     ysp=tick_spacing(max-min,3);
-    fprintf(out,"@ with g%d\n@ g%d on\n",g,g);
-    if (g==0) {
-      fprintf(out,"@ title \"%s\"\n",title);
-      if (subtitle)
-	if (bPrintXvgrCodes())
+    if (bPrintXvgrCodes()) {
+      fprintf(out,"@ with g%d\n@ g%d on\n",g,g);
+      if (g==0) {
+	fprintf(out,"@ title \"%s\"\n",title);
+	if (subtitle)
 	  fprintf(out,"@ subtitle \"%s\"\n",subtitle);
-    }
-    if (g==ngraphs-1)
-      fprintf(out,"@ xaxis  label \"%s\"\n",xlabel);
-    else 
-      fprintf(out,"@ xaxis  ticklabel off\n");
-    fprintf(out,"@ world xmin %g\n",x[0]*scale_x);
-    fprintf(out,"@ world xmax %g\n",x[n-1]*scale_x);
-    fprintf(out,"@ world ymin %g\n",min);
-    fprintf(out,"@ world ymax %g\n",max);
-    fprintf(out,"@ view xmin 0.15\n");
-    fprintf(out,"@ view xmax 0.85\n");
-    fprintf(out,"@ view ymin %g\n",0.15+(ngraphs-1-g)*0.7/ngraphs);
-    fprintf(out,"@ view ymax %g\n",0.15+(ngraphs-g)*0.7/ngraphs);
-    fprintf(out,"@ yaxis  label \"%s\"\n",ylabel[g]);
-    fprintf(out,"@ xaxis tick major %g\n",xsp);
-    fprintf(out,"@ xaxis tick minor %g\n",xsp/2);
-    fprintf(out,"@ xaxis ticklabel start type spec\n");
-    fprintf(out,"@ xaxis ticklabel start %g\n",ceil(min/xsp)*xsp);
-    fprintf(out,"@ yaxis tick major %g\n",ysp);
-    fprintf(out,"@ yaxis tick minor %g\n",ysp/2);
-    fprintf(out,"@ yaxis ticklabel start type spec\n");
-    fprintf(out,"@ yaxis ticklabel start %g\n",ceil(min/ysp)*ysp);
-    if ((min<0) && (max>0)) {
-      fprintf(out,"@ zeroxaxis bar on\n");
-      fprintf(out,"@ zeroxaxis bar linestyle 3\n");
+      }
+      if (g==ngraphs-1)
+	fprintf(out,"@ xaxis  label \"%s\"\n",xlabel);
+      else 
+	fprintf(out,"@ xaxis  ticklabel off\n");
+      fprintf(out,"@ world xmin %g\n",x[0]*scale_x);
+      fprintf(out,"@ world xmax %g\n",x[n-1]*scale_x);
+      fprintf(out,"@ world ymin %g\n",min);
+      fprintf(out,"@ world ymax %g\n",max);
+      fprintf(out,"@ view xmin 0.15\n");
+      fprintf(out,"@ view xmax 0.85\n");
+      fprintf(out,"@ view ymin %g\n",0.15+(ngraphs-1-g)*0.7/ngraphs);
+      fprintf(out,"@ view ymax %g\n",0.15+(ngraphs-g)*0.7/ngraphs);
+      fprintf(out,"@ yaxis  label \"%s\"\n",ylabel[g]);
+      fprintf(out,"@ xaxis tick major %g\n",xsp);
+      fprintf(out,"@ xaxis tick minor %g\n",xsp/2);
+      fprintf(out,"@ xaxis ticklabel start type spec\n");
+      fprintf(out,"@ xaxis ticklabel start %g\n",ceil(min/xsp)*xsp);
+      fprintf(out,"@ yaxis tick major %g\n",ysp);
+      fprintf(out,"@ yaxis tick minor %g\n",ysp/2);
+      fprintf(out,"@ yaxis ticklabel start type spec\n");
+      fprintf(out,"@ yaxis ticklabel start %g\n",ceil(min/ysp)*ysp);
+      if ((min<0) && (max>0)) {
+	fprintf(out,"@ zeroxaxis bar on\n");
+	fprintf(out,"@ zeroxaxis bar linestyle 3\n");
+      }
     }
     for(s=0; s<nsetspergraph; s++) {
       for(i=0; i<n; i++) {
 	if ( bSplit && i>0 && abs(x[i])<1e-5 )
-	  fprintf(out,"&\n");
+	  if (bPrintXvgrCodes())
+	    fprintf(out,"&\n");
 	fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y ? y[g][i] : sy[g][s][i]);
       }
-      fprintf(out,"&\n");
+      if (bPrintXvgrCodes()) 
+	fprintf(out,"&\n");
     }
   }
   fclose(out);
