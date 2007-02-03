@@ -279,7 +279,8 @@ int gmx_bundle(int argc,char *argv[])
 		      xvgr_tlabel(),"(degrees)");
     fkinkr = xvgropen(opt2fn("-okr",NFILE,fnm),"Radial kink angles",
 		      xvgr_tlabel(),"(degrees)");
-    fprintf(fkinkr,"@ subtitle \"+ = ) (   - = ( )\"\n");
+    if (bPrintXvgrCodes())
+      fprintf(fkinkr,"@ subtitle \"+ = ) (   - = ( )\"\n");
     fkinkl = xvgropen(opt2fn("-okl",NFILE,fnm),"Lateral kink angles",
 		      xvgr_tlabel(),"(degrees)");
   }

@@ -117,7 +117,8 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   
   out = xvgropen(outfn,"Minimum distance to periodic image",
 		 time_label(),"Distance (nm)");
-  fprintf(out,"@ subtitle \"and maximum internal distance\"\n");
+  if (bPrintXvgrCodes())
+    fprintf(out,"@ subtitle \"and maximum internal distance\"\n");
   xvgr_legend(out,5,leg);
     
   rmint = box[XX][XX];

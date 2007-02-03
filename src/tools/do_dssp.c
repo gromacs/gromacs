@@ -272,7 +272,8 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
   
   fp=xvgropen(outfile,"Secondary Structure",
 	      xvgr_tlabel(),"Number of Residues");
-  fprintf(fp,"@ subtitle \"Structure = ");
+  if (bPrintXvgrCodes())
+    fprintf(fp,"@ subtitle \"Structure = ");
   for(s=0; s<strlen(ss_string); s++) {
     if (s>0)
       fprintf(fp," + ");

@@ -347,6 +347,7 @@ int gmx_trjcat(int argc,char *argv[])
   static bool  bKeepLast=FALSE;
   static bool  bSetTime=FALSE;
   static bool  bDeMux;
+  static int   nrepl=1;
   static real  begin=-1;
   static real  end=-1;
   static real  dt=0;
@@ -364,6 +365,8 @@ int gmx_trjcat(int argc,char *argv[])
       "Read and write velocities if possible" },
     { "-settime", FALSE, etBOOL, {&bSetTime}, 
       "Change starting time interactively" },
+    { "-nrepl",   FALSE, etINT,  {&nrepl},
+      "Number of replicas assumed to be numbered consecutively. Only used with the -demux option" },
     { "-sort",    FALSE, etBOOL, {&bSort},
       "Sort trajectory files (not frames)" },
     { "-keeplast",FALSE, etBOOL, {&bKeepLast},
@@ -403,7 +406,7 @@ int gmx_trjcat(int argc,char *argv[])
 		    0,NULL);
 
   bIndex = ftp2bSet(efNDX,NFILE,fnm);
-  bDeMux = ftp2bSet(efXVG,NFILE,fnm);
+  bDeMux = ftp2bSet(efXVG,NFILE,fnm) || (nrepl > 1);
   bSort  = bSort && !bDeMux;
   
   imax=NO_ATID;
@@ -432,7 +435,13 @@ int gmx_trjcat(int argc,char *argv[])
   nfile_in = opt2fns(&fnms,"-f",NFILE,fnm);
   if (!nfile_in)
     gmx_fatal(FARGS,"No input files!");
+  else if ((nfile_in == 1) && (nrepl > 1)) {
+    /* We'll expand filenames ourselves */
     
+  } else if ((nfile_in > 1) && (nrepl != 1) && (nrepl != nfile_in)) {
+    gmx_fatal(FARGS,"You passed %d input file names while nrepl is %d",
+	      nfile_in,nrepl);
+  }
   if (bDeMux && (nfile_in != nset)) 
     gmx_fatal(FARGS,"You have specified %d files and %d entries in the demux table",nfile_in,nset);
     

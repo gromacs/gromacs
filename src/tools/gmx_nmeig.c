@@ -333,10 +333,12 @@ int gmx_nmeig(int argc,char *argv[])
                "Eigenvalues","Eigenvalue index","Eigenvalue [Gromacs units]");
   if (bM)
   {
+    if (bPrintXvgrCodes())
       fprintf(out,"@ subtitle \"mass weighted\"\n");
   }
   else 
   {
+    if (bPrintXvgrCodes())
       fprintf(out,"@ subtitle \"not mass weighted\"\n");
   }
   
@@ -352,10 +354,12 @@ int gmx_nmeig(int argc,char *argv[])
                "Eigenfrequencies","Eigenvector index","Wavenumber [cm\\S-1\\N]");
   if (bM)
   {
+    if (bPrintXvgrCodes())
       fprintf(out,"@ subtitle \"mass weighted\"\n");
   }
   else 
   {
+    if (bPrintXvgrCodes())
       fprintf(out,"@ subtitle \"not mass weighted\"\n");
   }
   

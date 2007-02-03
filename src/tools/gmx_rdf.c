@@ -384,10 +384,13 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   }
     
   fp=xvgropen(fnRDF,"Radial Distribution","r","");
-  if (ng==1)
-    fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+  if (ng==1) {
+    if (bPrintXvgrCodes())
+      fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+  }
   else {
-    fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
+    if (bPrintXvgrCodes())
+      fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
     xvgr_legend(fp,ng,grpname+1);
   }
   for(i=0; (i<nrdf); i++) {
@@ -431,10 +434,13 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   if (fnCNRDF) {  
     normfac = 1.0/(isize[0]*nframes);
     fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number");
-    if (ng==1)
-      fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+    if (ng==1) {
+      if (bPrintXvgrCodes())
+	fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+    }
     else {
-      fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
+      if (bPrintXvgrCodes())
+	fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
       xvgr_legend(fp,ng,grpname+1);
     }
     snew(sum,ng);
@@ -708,8 +714,9 @@ static void do_sq(char *fnNDX,char *fnTPS,char *fnTRX,char *fnSQ,
   factor  = k_max/(nbin);
   yfactor = (1.0/nframes)/*(1.0/fftgrid->nxyz)*/;
   fp=xvgropen(fnSQ,"Structure Factor","q (1/nm)","S(q)");
-  fprintf(fp,"@ subtitle \"Lambda = %g nm. Grid spacing = %g nm\"\n",
-	  lambda,grid);
+  if (bPrintXvgrCodes())
+    fprintf(fp,"@ subtitle \"Lambda = %g nm. Grid spacing = %g nm\"\n",
+	    lambda,grid);
   factor *= lambda;
   for(i=0; i<nbin; i++) {
     r      = (i+0.5)*factor*2*M_PI;

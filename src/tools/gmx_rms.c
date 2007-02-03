@@ -806,9 +806,10 @@ int gmx_rms (int argc,char *argv[])
     sprintf(buf,"%s with frame %g %s ago",whatxvgname[ewhat],
 	    time[prev*freq]-time[0], time_label());
   fp=xvgropen(opt2fn("-o",NFILE,fnm),buf,xvgr_tlabel(),whatxvglabel[ewhat]);
-  fprintf(fp,"@ subtitle \"%s%s after %s%s%s\"\n",
-	  (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
-	  bFit     ?" to ":""   , bFit?gn_fit:"");
+  if (bPrintXvgrCodes())
+    fprintf(fp,"@ subtitle \"%s%s after %s%s%s\"\n",
+	    (nrms==1)?"":"of "    , gn_rms[0], fitgraphlabel[efit],
+	    bFit     ?" to ":""   , bFit?gn_fit:"");
   if (nrms != 1)
     xvgr_legend(fp,nrms,gn_rms);
   for(i=0; (i<teller); i++) {
@@ -828,11 +829,14 @@ int gmx_rms (int argc,char *argv[])
     sprintf(buf,"%s with Mirror",whatxvgname[ewhat]);
     sprintf(buf2,"Mirror %s",whatxvglabel[ewhat]);
     fp=xvgropen(opt2fn("-mir",NFILE,fnm), buf, xvgr_tlabel(), buf2);
-    if (nrms == 1)
-      fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
-	      gn_rms[0],gn_fit);
+    if (nrms == 1) {
+      if (bPrintXvgrCodes())
+	fprintf(fp,"@ subtitle \"of %s after lsq fit to mirror of %s\"\n",
+		gn_rms[0],gn_fit);
+    }
     else {
-      fprintf(fp,"@ subtitle \"after lsq fit to mirror %s\"\n",gn_fit);
+      if (bPrintXvgrCodes())
+	fprintf(fp,"@ subtitle \"after lsq fit to mirror %s\"\n",gn_fit);
       xvgr_legend(fp,nrms,gn_rms);
     }
     for(i=0; (i<teller); i++) {

@@ -115,7 +115,8 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
     if (g==0) {
       fprintf(out,"@ title \"%s\"\n",title);
       if (subtitle)
-	fprintf(out,"@ subtitle \"%s\"\n",subtitle);
+	if (bPrintXvgrCodes())
+	  fprintf(out,"@ subtitle \"%s\"\n",subtitle);
     }
     if (g==ngraphs-1)
       fprintf(out,"@ xaxis  label \"%s\"\n",xlabel);
@@ -307,8 +308,9 @@ static void overlap(char *outfile,int natoms,
 
   out=xvgropen(outfile,"Subspace overlap",
 	       "Eigenvectors of trajectory 2","Overlap");
-  fprintf(out,"@ subtitle \"using %d eigenvectors of trajectory 1\"\n",
-	  noutvec);
+  if (bPrintXvgrCodes())
+    fprintf(out,"@ subtitle \"using %d eigenvectors of trajectory 1\"\n",
+	    noutvec);
   overlap=0;
   for(x=0; x<nvec2; x++) {
     for(v=0; v<noutvec; v++) {

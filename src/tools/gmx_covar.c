@@ -88,9 +88,15 @@ int gmx_covar(int argc,char *argv[])
     "[PAR]",
     "Option [TT]-xpma[tt] writes the atomic covariance matrix to an xpm file,",
     "i.e. for each atom pair the sum of the xx, yy and zz covariances is",
-    "written."
+    "written.[PAR]",
+    "With the [TT]-dist[tt] option a list of atom pairs is read from the",
+    "index file and the distance between these pairs, minus the average",
+    "distance is used for the covariance analysis. In this manner one",
+    "can analyses correlations between distance fluctuations. The distances",
+    "could be derived from e.g. NMR experiments (distance restraints) or",
+    "from hydrogen bonds or your choosing."
   };
-  static bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE;
+  static bool bFit=TRUE,bRef=FALSE,bM=FALSE,bPBC=TRUE,bDist=FALSE;
   static int  end=-1;
   t_pargs pa[] = {
     { "-fit",  FALSE, etBOOL, {&bFit},
@@ -102,7 +108,9 @@ int gmx_covar(int argc,char *argv[])
     { "-last",  FALSE, etINT, {&end}, 
       "Last eigenvector to write away (-1 is till the last)" },
     { "-pbc",  FALSE,  etBOOL, {&bPBC},
-      "Apply corrections for periodic boundary conditions" }
+      "Apply corrections for periodic boundary conditions" },
+    { "-dist", FALSE, etBOOL, {&bDist},
+      "Use distance based PCA (see help text)" }
   };
   FILE       *out;
   int        status,trjout;
