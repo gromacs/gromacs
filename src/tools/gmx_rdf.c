@@ -389,10 +389,13 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   }
     
   fp=xvgropen(fnRDF,"Radial Distribution","r","");
-  if (ng==1)
-    fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+  if (ng==1) {
+    if (bPrintXvgrCodes())
+      fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+  }
   else {
-    fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
+    if (bPrintXvgrCodes())
+      fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
     xvgr_legend(fp,ng,grpname+1);
   }
   for(i=0; (i<nrdf); i++) {
@@ -436,10 +439,13 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   if (fnCNRDF) {  
     normfac = 1.0/(isize[0]*nframes);
     fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number");
-    if (ng==1)
-      fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+    if (ng==1) {
+      if (bPrintXvgrCodes())
+	fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+    }
     else {
-      fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
+      if (bPrintXvgrCodes())
+	fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
       xvgr_legend(fp,ng,grpname+1);
     }
     snew(sum,ng);

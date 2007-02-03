@@ -297,9 +297,10 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
   real   *tbs,*ybs,rtmp,dens,*fitsig,twooe,tau1_est,fitparm[4];
 
   fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
-  fprintf(fp,
-	  "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
-	  (n-1)*dt,n);
+  if (bPrintXvgrCodes())
+    fprintf(fp,
+	    "@ subtitle \"using block averaging, total time %g (%d points)\"\n",
+	    (n-1)*dt,n);
   snew(leg,2*nset);
   xvgr_legend(fp,2*nset,leg);
   sfree(leg);
