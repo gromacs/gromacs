@@ -85,7 +85,7 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
   real min,max,xsp,ysp;
   
   out=ffopen(file,"w"); 
-  if (!use_xmgr())
+  if (!use_xmgr() && bPrintXvgrCodes())
     fprintf(out,"@ autoscale onread none\n");
   for(g=0; g<ngraphs; g++) {
     if (y) {
@@ -147,10 +147,12 @@ static void write_xvgr_graphs(char *file, int ngraphs, int nsetspergraph,
     for(s=0; s<nsetspergraph; s++) {
       for(i=0; i<n; i++) {
 	if ( bSplit && i>0 && abs(x[i])<1e-5 )
-	  fprintf(out,"&\n");
+	  if (bPrintXvgrCodes())
+	    fprintf(out,"&\n");
 	fprintf(out,"%10.4f %10.5f\n",x[i]*scale_x,y ? y[g][i] : sy[g][s][i]);
       }
-      fprintf(out,"&\n");
+      if (bPrintXvgrCodes())
+	fprintf(out,"&\n");
     }
   }
   fclose(out);
