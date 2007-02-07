@@ -425,12 +425,13 @@ static void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
       }
     }
     for(j=k=0; (j<plist[ftype].nr); j++) {
-      if (!bRemove[j] && (j > k)) 
+      if (!bRemove[j]) 
 	memcpy(&plist[ftype].param[k++],
 	       &plist[ftype].param[j],
 	       sizeof(plist[ftype].param[j]));
     }
     plist[ftype].nr = k;
+    sfree(bRemove);
   }
   plist[F_POLARIZATION].nr = npol;
 
