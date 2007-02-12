@@ -635,8 +635,7 @@ void update(int          step,
     
     if (!DOMAINDECOMP(cr)) {
       bHaveConstr = init_constraints(stdlog,top,&top->idef.il[F_SETTLE],
-				     inputrec,md,start,homenr,
-				     inputrec->eI!=eiSteep,
+				     inputrec,md,start,homenr,TRUE,
 				     cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
     }
     if (pulldata->bPull)

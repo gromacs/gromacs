@@ -1594,7 +1594,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   /* Initiate constraint stuff */
   bConstrain=init_constraints(stdlog,top,&top->idef.il[F_SETTLE],
 			      inputrec,mdatoms,
-			      start,end-start,FALSE,
+			      start,end-start,TRUE,
 			      cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
   
   if (bConstrain)

@@ -210,7 +210,7 @@ static bool low_constrain(FILE *log,bool bLog,
 	ncons = 0;
     }
     if (ncons > 0 || (dd && dd->constraints)) {
-      if (ir->eConstrAlg == estLINCS || !bCoordinates) {
+      if (ir->eConstrAlg == estLINCS) {
 	if (bFirst)
 	  please_cite(stdlog,"Hess97a");
 	if (lincsd == NULL)
@@ -220,7 +220,9 @@ static bool low_constrain(FILE *log,bool bLog,
 	set_lincs_matrix(lincsd,md->invmass);
 	lincsd->matlam = lambda;
       } 
-      else {
+      if (ir->eConstrAlg == estSHAKE) {
+	if (!bCoordinates)
+	  gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
 	if (bFirst)
 	  please_cite(stdlog,"Ryckaert77a");
 	else
@@ -310,28 +312,36 @@ static bool low_constrain(FILE *log,bool bLog,
     /* !bInit */
     if (vir != NULL)
       clear_mat(rmdr);
-
-    if (lincsd || nblocks > 0) {
-      where();
-
-      if (ir->eConstrAlg == estLINCS || !bCoordinates)
-	bOK = constrain_lincs(stdlog,bLog,ir,step,lincsd,md,dd,
-			      x,xprime,min_proj,box,lambda,dvdlambda,
-			      invdt,v,vir!=NULL,rmdr,
-			      bCoordinates,nrnb,bDumpOnError);
-      else if (ir->eConstrAlg == estSHAKE)
-	bOK = bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
-		      ir,box,x,xprime,nrnb,lambda,dvdlambda,
-		      invdt,v,vir!=NULL,rmdr,bDumpOnError);
-
+    
+    where();
+    if (lincsd) {
+      bOK = constrain_lincs(stdlog,bLog,ir,step,lincsd,md,dd,
+			    x,xprime,min_proj,box,lambda,dvdlambda,
+			    invdt,v,vir!=NULL,rmdr,
+			    bCoordinates,nrnb,bDumpOnError);
       if (!bOK && bDumpOnError)
 	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
-		eshake_names[ir->eConstrAlg],step);
+		eshake_names[estLINCS],step);
     }
+
+    if (nblocks > 0) {
+      if (!bCoordinates)
+	gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
+      bOK = bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
+		    ir,box,x,xprime,nrnb,lambda,dvdlambda,
+		    invdt,v,vir!=NULL,rmdr,bDumpOnError);
+      if (!bOK && bDumpOnError)
+	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
+		eshake_names[estSHAKE],step);
+    }
+
     if (settle->nr > 0) {
       int nsettle;
       real mO,mH,dOH,dHH;
       
+      if (!bCoordinates)
+	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SETTLE");
+
       nsettle = settle->nr/2;
       mO   = md->massT[settle->iatoms[1]];
       mH   = md->massT[settle->iatoms[1]+1];
