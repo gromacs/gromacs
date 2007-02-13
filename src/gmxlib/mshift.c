@@ -313,7 +313,8 @@ void done_graph(t_graph *g)
  *
  ************************************************************/
 
-static void mk_1shift_tric(matrix box,rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
+static void mk_1shift_tric(int npbcdim,matrix box,rvec hbox,
+			   rvec xi,rvec xj,int *mi,int *mj)
 {
   /* Calculate periodicity for triclinic box... */
   int  m,d;
@@ -321,7 +322,8 @@ static void mk_1shift_tric(matrix box,rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
   
   rvec_sub(xi,xj,dx);
 
-  for(m=DIM-1; (m>=0); m--) {
+  mj[ZZ] = 0;
+  for(m=npbcdim-1; (m>=0); m--) {
     /* If dx < hbox, then xj will be reduced by box, so that
      * xi - xj will be bigger
      */
@@ -338,7 +340,7 @@ static void mk_1shift_tric(matrix box,rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
   }
 }
 
-static void mk_1shift(rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
+static void mk_1shift(int npbcdim,rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
 {
   /* Calculate periodicity for rectangular box... */
   int  m;
@@ -346,7 +348,8 @@ static void mk_1shift(rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
   
   rvec_sub(xi,xj,dx);
 
-  for(m=0; (m<DIM); m++) {
+  mj[ZZ] = 0;
+  for(m=0; (m<npbcdim); m++) {
     /* If dx < hbox, then xj will be reduced by box, so that
      * xi - xj will be bigger
      */
@@ -360,7 +363,7 @@ static void mk_1shift(rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
 }
 
 static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
-		   matrix box,rvec x[],int *nerror)
+		   int npbcdim,matrix box,rvec x[],int *nerror)
 {
   int      m,j,ng,ai,aj,g0;
   rvec     hbox;
@@ -380,9 +383,9 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
     aj=g->edge[ai][j]-g0;
     /* If there is a white one, make it gray and set pbc */
     if (bTriclinic)
-      mk_1shift_tric(box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
+      mk_1shift_tric(npbcdim,box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
     else
-      mk_1shift(hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
+      mk_1shift(npbcdim,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
     
     if (egc[aj] == egcolWhite) {
       if (aj < *AtomI)
@@ -416,13 +419,19 @@ static int first_colour(int fC,egCol Col,t_graph *g,egCol egc[])
   return -1;
 }
 
-void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
+void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
 {
   static int nerror_tot = 0;
+  int    npbcdim;
   int    ng,nnodes,i;
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
   int    fW,fG;			/* First of each category	*/
   int    nerror=0;
+
+  if (ePBC == epbcXY)
+    npbcdim = 2;
+  else
+    npbcdim = 3;
 
   GCHECK(g);
   /* This puts everything in the central box, that is does not move it 
@@ -486,7 +495,7 @@ void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[])
       /* Make all the neighbours of this black node grey
        * and set their periodicity 
        */
-      ng=mk_grey(log,nnodes,g->egc,g,&fG,box,x,&nerror);
+      ng=mk_grey(log,nnodes,g->egc,g,&fG,npbcdim,box,x,&nerror);
       /* ng is the number of white nodes made grey */
       nG+=ng;
       nW-=ng;

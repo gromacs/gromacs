@@ -76,6 +76,7 @@ typedef struct {
 
   /* Cut-Off stuff */
   int  ePBC;
+  bool bMolPBC;
   real rlist,rlistlong;
   
   /* Dielectric constant resp. multiplication factor for charges */
@@ -149,7 +150,10 @@ typedef struct {
   int  nnblists;
   int  *gid2nblists;
   t_nblists *nblists;
-  
+
+  /* The wall tables (if used) */
+  t_forcetable **wall_tab;
+
   /* This mask array of length nn determines whether or not this bit of the
    * neighbourlists should be computed. Usually all these are true of course,
    * but not when shells are used. During minimisation all the forces that 
@@ -179,7 +183,8 @@ typedef struct {
 
   /* Virial Stuff */
   rvec *fshift;
-  
+  real vir_wall_zz;
+
   /* Free energy stuff */
   int     nmol;
   atom_id *mol_nr;

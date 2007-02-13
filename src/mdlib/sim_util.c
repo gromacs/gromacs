@@ -242,7 +242,8 @@ void do_force(FILE *fplog,t_commrec *cr,
   int    start,homenr;
   static double mu[2*DIM]; 
   rvec   mu_tot_AB[2];
-  bool   bFillGrid,bCalcCGCM;
+  bool   bFillGrid,bCalcCGCM,bBS;
+  matrix boxs;
   real   e,d;
   float  pme_cycles;
   
@@ -281,7 +282,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       calc_shifts(box,fr->shift_vec);
     
     if (bCalcCGCM) { 
-      put_charge_groups_in_box(fplog,cg0,cg1,box,
+      put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,box,
 			       &(top->blocks[ebCGS]),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_CGCM,homenr);
       inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
@@ -304,25 +305,23 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
 
 #ifdef GMX_MPI
-  /* send particle coordinates and charges to the pme nodes if necessary */
-  if (!(cr->duty & DUTY_PME))
-  { 
+  if (!(cr->duty & DUTY_PME)) {
+    /* Send particle coordinates to the pme nodes.
+     * Since this is only implemented for domain decomposition
+     * and domain decomposition does not use the graph,
+     * we do not need to worry about shifting.
+     */    
+
     GMX_MPE_LOG(ev_send_coordinates_start);
-    
-    if (graph) {
-      GMX_MPE_LOG(ev_shift_start);
-      shift_self(graph,box,x);
-      GMX_MPE_LOG(ev_shift_finish);
+
+    bBS = (inputrec->nwall == 2);
+    if (bBS) {
+      copy_mat(box,boxs);
+      svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
-    gmx_pme_send_x_q(cr,box,x,NULL,NULL,
+    gmx_pme_send_x_q(cr,bBS ? boxs : box,x,NULL,NULL,
 		     mdatoms->nChargePerturbed,lambda,step>=inputrec->nsteps);
-
-    if (graph) {
-      GMX_MPE_LOG(ev_shift_start);
-      unshift_self(graph,box,x);
-      GMX_MPE_LOG(ev_shift_finish);
-    }    
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
   }
@@ -359,7 +358,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     if (graph && bStateChanged)
       /* Calculate intramolecular shift vectors to make molecules whole */
-      mk_mshift(fplog,graph,box,x);
+      mk_mshift(fplog,graph,fr->ePBC,box,x);
 
     /* Reset long range forces if necessary */
     if (fr->bTwinRange) {
@@ -509,6 +508,9 @@ void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
       for(j=0; (j<DIM); j++) 
 	vir_part[i][j] += vir_el_recip[i][j];
   }
+  /* Add wall contribution */
+  vir_part[ZZ][ZZ] += fr->vir_wall_zz;
+
   if (debug)
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
 }
@@ -871,7 +873,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
   fprintf(fplog,"Removing pbc first time\n");
   calc_shifts(box,fr->shift_vec);
   if (graph) {
-    mk_mshift(fplog,graph,box,x);
+    mk_mshift(fplog,graph,fr->ePBC,box,x);
     if (gmx_debug_at)
       p_graph(debug,"do_pbc_first 1",graph);
     shift_self(graph,box,x);
@@ -880,7 +882,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
      * will be made whole again. Such are the healing powers
      * of GROMACS.
      */
-    mk_mshift(fplog,graph,box,x);
+    mk_mshift(fplog,graph,fr->ePBC,box,x);
     if (gmx_debug_at)
       p_graph(debug,"do_pbc_first 2",graph);
   }
@@ -1000,7 +1002,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_mat(shake_vir);
   clear_rvec(mu_tot);
 
-  *vcm = init_vcm(stdlog,&top->atoms,ir->nstcomm,ir->comm_mode);
+  *vcm = init_vcm(stdlog,&top->atoms,ir);
     
   debug_gmx();
 

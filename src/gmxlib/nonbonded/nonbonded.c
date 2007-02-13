@@ -499,7 +499,6 @@ do_nonbonded14(int ftype,int nbonds,
                const t_forcerec *fr,int ngrp,t_grp_ener *gener)
 {
     static    bool bWarn=FALSE;
-    bool      bFullPBC;
     real      eps,r2,*tab,rtab2=0;
     rvec      dx,x14[2],f14[2];
     int       i,ai,aj,itype;
@@ -518,7 +517,7 @@ do_nonbonded14(int ftype,int nbonds,
     real      *egnb=NULL,*egcoul=NULL;
     t_nblist  tmplist;
     int       icoul,ivdw;
-    bool      bFreeEnergy;
+    bool      bMolPBC,bFreeEnergy;
     
 #if GMX_THREADS
     pthread_mutex_t mtx;
@@ -530,6 +529,8 @@ do_nonbonded14(int ftype,int nbonds,
 #if GMX_THREADS
     pthread_mutex_initialize(&mtx);
 #endif
+
+    bMolPBC = fr->bMolPBC;
 
     switch (ftype) {
     case F_LJ14:
@@ -592,15 +593,13 @@ do_nonbonded14(int ftype,int nbonds,
      * unrolling on short lists 
      */
     
-    bFullPBC = (fr->ePBC == epbcFULL);
-    
     bFreeEnergy = FALSE;
     for(i=0; (i<nbonds); ) 
     {
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-		gid   = GID(md->cENER[ai],md->cENER[aj],ngrp);
+	gid   = GID(md->cENER[ai],md->cENER[aj],ngrp);
 	
 	switch (ftype) {
 	case F_LJ14:
@@ -619,7 +618,7 @@ do_nonbonded14(int ftype,int nbonds,
 	  break;
 	}
 
-        if (!bFullPBC) 
+        if (!bMolPBC) 
         {
             /* This is a bonded interaction, atoms are in the same box */
             shift_f = CENTRAL;

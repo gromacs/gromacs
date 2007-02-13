@@ -71,8 +71,8 @@
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
-  orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],deform[STRLEN],
-  QMMM[STRLEN];
+  orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
+  wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
 static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
@@ -109,11 +109,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
    */
 #define CHECK(b) _low_check(b,err_buf,nerror)
   char err_buf[256];
+  int  ns_type=0;
 
   /* TPI STUFF */
   if (ir->eI == eiTPI || ir->eI == eiTPIC) {
-    sprintf(err_buf,"TPI does not work with pbc = %s",epbc_names[epbcNONE]);
-    CHECK(ir->ePBC == epbcNONE);
+    sprintf(err_buf,"TPI only works with pbc = %s",epbc_names[epbcXYZ]);
+    CHECK(ir->ePBC != epbcXYZ);
     sprintf(err_buf,"TPI only works with ns = %s",ens_names[ensGRID]);
     CHECK(ir->ns_type != ensGRID);
     sprintf(err_buf,"with TPI nstlist should be larger than zero");
@@ -137,28 +138,40 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   CHECK(((ir->shake_tol <= 0.0) && (opts->nshake>0) && 
 	 (ir->eConstrAlg == estSHAKE)));
      
-     
-  /* VACUUM STUFF */
-  if (ir->ePBC == epbcNONE) {
-    if (ir->epc != epcNO) {
-      warning("Turning off pressure coupling for vacuum system");
-      ir->epc = epcNO;
-    }
-    if (EEL_FULL(ir->coulombtype)) 
-      warning("Do you REALLY want to use Ewald with a non-periodic system?");
+  /* PBC/WALLS */
+  sprintf(err_buf,"walls only work with pbc=%s",epbc_names[epbcXY]);
+  CHECK(ir->nwall && ir->ePBC!=epbcXY);
 
-    if (ir->ns_type != ensSIMPLE) {
+  /* VACUUM STUFF */
+  if (ir->ePBC != epbcXYZ && ir->nwall != 2) {
+    if (ir->ePBC == epbcNONE) {
+      if (ir->epc != epcNO) {
+	warning("Turning off pressure coupling for vacuum system");
+	ir->epc = epcNO;
+      }
+    } else {
+      sprintf(err_buf,"Can not have pressure coupling with pbc=%s",
+	      epbc_names[ir->ePBC]);
+      CHECK(ir->epc != epcNO);
+    }
+    sprintf(err_buf,"Can not have Ewald with pbc=%s",epbc_names[ir->ePBC]);
+    CHECK(EEL_FULL(ir->coulombtype));
+    
+    if (ir->ePBC == epbcNONE)
+      ns_type = ensSIMPLE;
+    else
+      ns_type = ensGRID;
+    if (ir->ns_type != ns_type) {
       sprintf(warn_buf,"Can only use nstype=%s with pbc=%s, setting nstype "
 	      "to %s\n",
-	      ens_names[ensSIMPLE],epbc_names[epbcNONE],ens_names[ensSIMPLE]);
+	      ens_names[ns_type],epbc_names[ir->ePBC],ens_names[ns_type]);
       warning(NULL);
-      ir->ns_type = ensSIMPLE;
+      ir->ns_type = ns_type;
     }
-    if (ir->eDispCorr != edispcNO) {
-      warning("Can not have long-range dispersion correction without PBC,"
-	      " turned off.");
-      ir->eDispCorr = edispcNO;
-    }
+    
+    sprintf(err_buf,"Can not have dispersion correction with pbc=%s",
+	    epbc_names[ir->ePBC]);
+    CHECK(ir->eDispCorr != edispcNO);
   }
 
   if (ir->rlist == 0.0) {
@@ -295,6 +308,17 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     }
   }
 
+  if (ir->nwall==2 && EEL_FULL(ir->coulombtype)) {
+    if (ir->ewald_geometry == eewg3D) {
+      sprintf(warn_buf,"With pbc=%s you should use ewald_geometry=%s",
+	      epbc_names[ir->ePBC],eewg_names[eewg3DC]);
+      warning(NULL);
+    }
+    /* This check avoids extra pbc coding for exclusion corrections */
+    sprintf(err_buf,"wall_ewald_zfac should be >= 2");
+    CHECK(ir->wall_ewald_zfac < 2);
+  }
+
   if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT) || (ir->vdwtype == evdwENCADSHIFT) )
   {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
@@ -362,6 +386,62 @@ static int str_nelem(char *str,int maxptr,char *ptr[])
   return np;
 }
 
+static void do_wall_params(t_inputrec *ir,
+			   char *wall_atomtype, char *wall_density,
+			   t_gromppopts *opts)
+{
+  int  nstr,i;
+  char *names[MAXPTR];
+  double dbl;
+
+  opts->wall_atomtype[0] = NULL;
+  opts->wall_atomtype[1] = NULL;
+
+  ir->wall_atomtype[0] = -1;
+  ir->wall_atomtype[1] = -1;
+  ir->wall_density[0] = 0;
+  ir->wall_density[1] = 0;
+  
+  if (ir->nwall > 0) {
+    nstr = str_nelem(wall_atomtype,MAXPTR,names);
+    if (nstr != ir->nwall)
+      gmx_fatal(FARGS,"Expected %d elements for wall_atomtype, found %d",
+		ir->nwall,nstr);
+    for(i=0; i<ir->nwall; i++)
+      opts->wall_atomtype[i] = strdup(names[i]);
+    
+    if (ir->wall_type != ewtTABLE) {
+      nstr = str_nelem(wall_density,MAXPTR,names);
+      if (nstr != ir->nwall)
+	gmx_fatal(FARGS,"Expected %d elements for wall_density, found %d",
+		  ir->nwall,nstr);
+      for(i=0; i<ir->nwall; i++) {
+	sscanf(names[i],"%lf",&dbl);
+	if (dbl <= 0)
+	  gmx_fatal(FARGS,"wall_density[%d] = %f\n",i,dbl);
+	ir->wall_density[i] = dbl;
+      }
+    }
+  }
+}
+
+static void add_wall_energrps(t_atoms *atoms,int nwall,t_symtab *symtab)
+{
+  int  i;
+  t_grps *groups;
+  char str[STRLEN];
+  
+  if (nwall > 0) {
+    srenew(atoms->grpname,atoms->ngrpname+nwall);
+    groups = &(atoms->grps[egcENER]);
+    srenew(groups->nm_ind,groups->nr+nwall);
+    for(i=0; i<nwall; i++) {
+      sprintf(str,"wall%d",i);
+      atoms->grpname[atoms->ngrpname] = put_symtab(symtab,str);
+      groups->nm_ind[groups->nr++] = atoms->ngrpname++;
+    }
+  }
+}
 
 void get_ir(char *mdparin,char *mdparout,
 	    t_inputrec *ir,t_gromppopts *opts,int *nerror)
@@ -418,6 +498,9 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nstcgsteep",	ir->nstcgsteep,	1000);
   ITYPE ("nbfgscorr",   ir->nbfgscorr,  10); 
 
+  CCTYPE ("TEST PARTICLE INSERTION OPTIONS");
+  RTYPE ("rtpi",	ir->rtpi,	0.05);
+
   /* Output options */
   CCTYPE ("OUTPUT CONTROL OPTIONS");
   CTYPE ("Output frequency for coords (x), velocities (v) and forces (f)");
@@ -446,12 +529,13 @@ void get_ir(char *mdparin,char *mdparout,
   EETYPE("ns-type",     ir->ns_type,    ens_names, nerror, TRUE);
   /* set ndelta to the optimal value of 2 */
   ir->ndelta = 2;
-  CTYPE ("Periodic boundary conditions: xyz (default), no (vacuum)");
+  CTYPE ("Periodic boundary conditions: xyz, no, xy");
   CTYPE ("or full (infinite systems only)");
   EETYPE("pbc",         ir->ePBC,       epbc_names, nerror, TRUE);
+  EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
   RTYPE ("rlist",	ir->rlist,	1.0);
-  
+
   /* Electrostatics */
   CCTYPE ("OPTIONS FOR ELECTROSTATICS AND VDW");
   CTYPE ("Method for doing electrostatics");
@@ -572,7 +656,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Type of constraint algorithm");
   EETYPE("constraint-algorithm",  ir->eConstrAlg, eshake_names, nerror, TRUE);
   CTYPE ("Do not constrain the start configuration");
-  EETYPE("unconstrained-start", ir->bUncStart, yesno_names, nerror, TRUE);
+  EETYPE("continuation", ir->bContinuation, yesno_names, nerror, TRUE);
   CTYPE ("Use successive overrelaxation to reduce the number of shake iterations");
   EETYPE("Shake-SOR", ir->bShakeSOR, yesno_names, nerror, TRUE);
   CTYPE ("Relative tolerance of shake");
@@ -593,6 +677,15 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("ENERGY GROUP EXCLUSIONS");
   CTYPE ("Pairs of energy groups for which all non-bonded interactions are excluded");
   STYPE ("energygrp_excl", egpexcl,     NULL);
+  
+  /* Walls */
+  CCTYPE ("WALLS");
+  CTYPE ("Number of walls, type, atom types, densities and box-z scale factor for Ewald");
+  ITYPE ("nwall", ir->nwall, 0);
+  EETYPE("wall_type",     ir->wall_type,   ewt_names, nerror, TRUE);
+  STYPE ("wall_atomtype", wall_atomtype, NULL);
+  STYPE ("wall_density",  wall_density,  NULL);
+  RTYPE ("wall_ewald_zfac", ir->wall_ewald_zfac, 3);
   
   /* Refinement */
   CCTYPE("NMR refinement stuff");
@@ -732,6 +825,8 @@ void get_ir(char *mdparin,char *mdparout,
   
   if (ir->comm_mode == ecmNO)
     ir->nstcomm = 0;
+
+  do_wall_params(ir,wall_atomtype,wall_density,opts);
   
   if (opts->bOrire && str_nelem(orirefitgrp,MAXPTR,NULL)!=1) {
     fprintf(stderr,"ERROR: Need one orientation restraint fit group\n");
@@ -1059,7 +1154,7 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
   sfree(t);
 }
 
-static bool do_egp_flag(t_inputrec *ir,t_atoms *atoms,char **gnames,
+static bool do_egp_flag(t_inputrec *ir,t_atoms *atoms,char ***gnames,
 			char *option,char *val,int flag)
 {
   int  nelem,i,j,k,nr;
@@ -1074,14 +1169,14 @@ static bool do_egp_flag(t_inputrec *ir,t_atoms *atoms,char **gnames,
   for(i=0; i<nelem/2; i++) {
     j = 0;
     while ((j < nr) &&
-	   strcasecmp(names[2*i],gnames[atoms->grps[egcENER].nm_ind[j]]))
+	   strcasecmp(names[2*i],*(gnames[atoms->grps[egcENER].nm_ind[j]])))
       j++;
     if (j == nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
 		  names[2*i],option);
     k = 0;
     while ((k < nr) &&
-	   strcasecmp(names[2*i+1],gnames[atoms->grps[egcENER].nm_ind[k]]))
+	   strcasecmp(names[2*i+1],*(gnames[atoms->grps[egcENER].nm_ind[k]])))
       k++;
     if (k==nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
@@ -1316,6 +1411,7 @@ void do_index(char *ndx,
   nenergy=str_nelem(energy,MAXPTR,ptr1);
   do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,
 	       restnm,egrptpALL_GENREST,bVerbose);
+  add_wall_energrps(atoms,ir->nwall,symtab);
   ir->opts.ngener=atoms->grps[egcENER].nr;
   nvcm=str_nelem(vcm,MAXPTR,ptr1);
   do_numbering(atoms,nvcm,ptr1,grps,gnames,egcVCM,
@@ -1433,11 +1529,13 @@ void do_index(char *ndx,
   nr=atoms->grps[egcENER].nr;
   snew(ir->opts.egp_flags,nr*nr);
 
-  bExcl = do_egp_flag(ir,atoms,gnames,"energygrp_excl",egpexcl,EGP_EXCL);
+  bExcl = do_egp_flag(ir,atoms,atoms->grpname,
+		      "energygrp_excl",egpexcl,EGP_EXCL);
   if (bExcl && EEL_FULL(ir->coulombtype))
     warning("Can not exclude the lattice Coulomb energy between energy groups");
 
-  bTable = do_egp_flag(ir,atoms,gnames,"energygrp_table",egptable,EGP_TABLE);
+  bTable = do_egp_flag(ir,atoms,atoms->grpname,
+		       "energygrp_table",egptable,EGP_TABLE);
   if (bTable && !(ir->vdwtype == evdwUSER) && 
       !(ir->coulombtype == eelUSER) &&!(ir->coulombtype == eelPMEUSER))
     gmx_fatal(FARGS,"Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
@@ -1581,7 +1679,7 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     rlong = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
     bTWIN = (rlong > ir->rlist);
     if (ir->ns_type==ensGRID) {
-      if (sqr(rlong) >= max_cutoff2(box)) {
+      if (sqr(rlong) >= max_cutoff2(ir->ePBC,box)) {
 	fprintf(stderr,"ERROR: The cut-off length is longer than half the shortest box vector or longer than the smallest box diagonal element. Increase the box size or decrease %s.\n",
 		bTWIN ? (ir->rcoulomb==rlong ? "rcoulomb" : "rvdw"):"rlist");
 	(*nerror)++;

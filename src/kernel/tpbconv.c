@@ -283,7 +283,7 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
-  static bool bUncStart = TRUE,bZeroQ = FALSE;
+  static bool bContinuation = TRUE,bZeroQ = FALSE;
   static t_pargs pa[] = {
     { "-time",          FALSE, etREAL, {&start_t}, 
       "Continue from frame at this time (ps) instead of the last frame" },
@@ -293,8 +293,8 @@ int main (int argc, char *argv[])
       "Extend runtime until this ending time (ps)" },
     { "-zeroq",         FALSE, etBOOL, {&bZeroQ},
       "Set the charges of a group (from the index) to zero" },
-    { "-unconstrained", FALSE, etBOOL, {&bUncStart},
-      "For a continuous trajectory, the constraints should not be solved before the first step (default)" }
+    { "-cont",          FALSE, etBOOL, {&bContinuation},
+      "For exact continuation, the constraints should not be solved before the first step" }
   };
   int nerror = 0;
   
@@ -316,9 +316,10 @@ int main (int argc, char *argv[])
   snew(ir,1);
   read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&top);
   
-  if (ir->bUncStart != bUncStart)
-    fprintf(stderr,"Modifying ir->bUncStart to %s\n",bool_names[bUncStart]);
-  ir->bUncStart = bUncStart;
+  if (ir->bContinuation != bContinuation)
+    fprintf(stderr,"Modifying ir->bContinuation to %s\n",
+	    bool_names[bContinuation]);
+  ir->bContinuation = bContinuation;
   
   run_step   = 0;
 

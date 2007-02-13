@@ -33,8 +33,9 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#ld"><b>langevin dynamics</b></A> (bd_fric, ld_seed)
 <li><A HREF="#em"><b>energy minimization</b></A> (emtol, emstep, nstcgsteep)
 <li><a HREF="#xmdrun"><b>shell molecular dynamics</b></a>(emtol,niter,fcstep)
+<li><a HREF="#tpi"><b>test particle insertion</b></a>(rtpi)
 <li><A HREF="#out"><b>output control</b></A> (nstxout, nstvout, nstfout, nstlog, nstenergy, nstxtcout, xtc_precision, xtc_grps, energygrps)
-<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, rlist)
+<li><A HREF="#nl"><b>neighbor searching</b></A> (nstlist, ns_type, pbc, periodic_molecules, rlist)
 <li><A HREF="#el"><b>electrostatics</b></A> (coulombtype, rcoulomb_switch, rcoulomb, epsilon_r, epsilon_rf)
 <li><A HREF="#vdw"><b>VdW</b></A> (vdwtype, rvdw_switch, rvdw, DispCorr)
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp_table)
@@ -45,6 +46,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
+<li><A HREF="#walls"><b>Walls</b></A> (nwall, wall_type, wall_atomtype, wall_density, wall_ewald_zfac)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
 <li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_power, sc_sigma)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, deform)
@@ -155,17 +157,18 @@ to the correction steps necessary it is not (yet) parallelized.
 on the structure in the <tt>tpr</tt> file. GROMACS should be
 compiled in double precision.</dd>
 <dt><b>tpi</b></dt>
-<dd> Test particle insertion. The last atom in the topology
+<dd> Test particle insertion. The last molecule in the topology
 is the test particle. A trajectory should be provided with
 the <tt>-rerun</tt> option of <tt>mdrun</tt>. This trajectory
-should contain one atom less than the topology. Insertions
-are performed <b>nsteps</b> times in each frame. When <b>nstlist</b>
-is larger than one, after a first 'normal' insertion <b>nstlist</b>-1
-insertions are performed in a sphere with radius 0.05*<b>rlist</b>
-around the 'first' location using the same neighborlist
+should not contain the molecule to be inserted. Insertions
+are performed <b>nsteps</b> times in each frame at random locations
+and with random orientiations of the molecule. When <b>nstlist</b>
+is larger than one, <b>nstlist</b> insertions are performed
+in a sphere with radius <b><A HREF="#tpi">rtpi</A></b>
+around a the same random location using the same neighborlist
 (and the same long-range energy when <b>rvdw</b> or <b>rcoulomb</b>
 &gt <b>rlist</b>).
-Since neighborlist construction is expensive one can perform several
+Since neighborlist construction is expensive, one can perform several
 extra insertions with the same list almost for free.
 The random seed is set with <b><A HREF="#ld">ld_seed</A></b>.
 The temperature for the Boltzmann weighting is set with
@@ -175,6 +178,13 @@ Dispersion correction is implemented correctly for tpi.
 All relevant quantities are written using the <tt>-tpi</tt> option
 of <tt>mdrun</tt>. No trajectory or energy file is written.
 </dd>
+<dt><b>tpic</b></dt>
+<dd> Test particle insertion into a predefined cavity location.
+The procedure is the same as for <b>tpi</b>, except that one coordinate
+extra is read from the trajectory, which is used as the insertion location.
+Also <b><A HREF="#tpi">rtpi</A></b> sets the radius for the sphere
+around this location. Neighbor searching is done only once per frame,
+<b>nstlist</b> is not used.
 </dl>
 
 <dt><h4>tinit: (0) [ps]</h4></dt>
@@ -223,9 +233,9 @@ particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>.</dd>
 <dd>used to initialize random generator for thermal noise
 for stochastic and Brownian dynamics.
 When <b>ld_seed</b> is set to -1, the seed is calculated as
-<tt>(time() + getpid()) % 1000000</tt></dd>.
+<tt>(time() + getpid()) % 1000000</tt>.
 When running on multiple processors, each processor uses a seed equal
-to <b>ld_seed</b> plus the processor number.
+to <b>ld_seed</b> plus the processor number.</dd>
 </dl>
 
 <A NAME="em"><br>
@@ -243,7 +253,6 @@ conjugate gradient energy minimization.</dd>
 <dt><h4>nbfgscorr: (10)</h4></dt>
 <dd>Number of correction steps to use for L-BFGS minimization. A higher
 number is (at least theoretically) more accurate, but slower.</dd>
-
 </dl>
 
 <A NAME="xmdrun"><br>
@@ -272,6 +281,14 @@ and thus the runtime is very sensitive to <tt>fcstep</tt>.
 Try several values!</dd>
 </dl>
 
+<A NAME="tpi"><br>
+<hr>
+<h3>Test particle insertion</h3>
+<dl>
+<dt><h4>rtpi: (0.05) [nm]</h4></dt>
+<dd>the test particle insertion radius see integrators
+<b><a href="#run">tpi</a></b> and <b><a href="#run">tpic</a></b></dd>
+</dl>
 
 <A NAME="out"><br>
 <hr>
@@ -327,8 +344,28 @@ every <b>nstlist</b> steps.</dd>
 <dt><b>xyz</b></dt>
 <dd>Use periodic boundary conditions in all directions.</dd>
 <dt><b>no</b></dt>
-<dd>Use no periodic boundary conditions, ignore the box.
+<dd>Use no periodic boundary conditions, ignore the box,
+only works with <b>ns_type=simple</b>.
 To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.</dd>
+<dt><b>xy</b></dt>
+<dd>Use periodic boundary conditions in x and y directions only.
+This works only with <b>ns_type=grid</b> and can be used
+in combination with <b><a href="#walls">walls</a></b>.
+Without walls or with only one wall the system size is infinite
+in the z direction. Therefore pressure coupling or Ewald summation
+methods can not be used. For thick layers neighbor searching will
+become slow, as a simple search is used for the z direction.
+All these disadvantages do not apply when two walls are used.</dd>
+</dl></dd>
+
+<dt><h4>periodic_molecules:</h4></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>molecules are finite, fast molecular pbc can be used</dd>
+<dt><b>yes</b></dt>
+<dd>for systems with molecules that couple to themselves through
+the periodic boundary conditions, this requires a slower pbc algorithm
+and molecules are not made whole in the output</dd>
 </dl></dd>
 
 <dt><h4>rlist: (1) [nm]</h4></dt>
@@ -429,16 +466,15 @@ The neighbor search cut-off <b>rlist</b> should be 0.1 to 0.3 nm larger than
 between neighbor list updates.</dd>
 
 <dt><b>User</b></dt> 
-<dd><a name="user"></a><tt>mdrun</tt> will now expect to find a file
+<dd><a name="usertab"></a><tt>mdrun</tt> will now expect to find a file
 <tt>table.xvg</tt> with user-defined potential functions for
 repulsion, dispersion and Coulomb.  This file should contain 7
-columns: the <tt>x</tt> value, <tt>f(x)</tt>,
-<tt>f<sup>(2)</sup>(x)</tt>, <tt>g(x)</tt>,
-<tt>g<sup>(2)</sup>(x)</tt>, <tt>h(x)</tt>,
-<tt>h<sup>(2)</sup>(x)</tt>, where <tt>f<sup>(2)</sup>(x)</tt>
-denotes the <tt>2<sup>nd</sup></tt> derivative of function
-<tt>f(x)</tt> with respect to <tt>x</tt>.  f(x) is the Coulomb
-function, g(x) the dispersion function and h(x) the repulsion function.
+columns: the <tt>x</tt> value,
+<tt>f(x)</tt>, <tt>-f'(x)</tt>,
+<tt>g(x)</tt>, <tt>-g'(x)</tt>,
+<tt>h(x)</tt>, <tt>-h'(x)</tt>,
+where f(x) is the Coulomb function, g(x) the dispersion function
+and h(x) the repulsion function.
 The <tt>x</tt> values should run from 0 to the largest cut-off distance
 + <b>table-extension</b> and should be uniformly spaced.
 The optimal spacing, which is used for non-user tables,
@@ -519,7 +555,7 @@ potential is decreased over the whole range, using the definition
 from the Encad simulation package.</dd>
 
 <dt><b>User</b></dt>
-<dd><a href="#user">See above</a>
+<dd>See <b><a href="#usertab">user</a></b> for <b>coulombtype</b>.
 The function value at <tt>x=0</tt> is not important. When you want to
 use LJ correction, make sure that <b>rvdw</b> corresponds to the
 cut-off in the user-defined function.</dd>
@@ -860,7 +896,7 @@ to use 4 or even 8 (double precision) iteration steps.
 
 <A NAME="egexcl"><br>
 <hr>
-<h3>Energy group exclusions</h3>
+<h3>Energy group <!--Idx-->exclusions<!--EIdx--></h3>
 <dl>
 <dt><h4>energygrp_excl: </h4></dt>
 <dd>Pairs of energy groups for which all non-bonded interactions are
@@ -872,6 +908,44 @@ and <tt>SOL</tt>, specifying
 would give only the non-bonded interactions between the protein and the
 solvent. This is especially useful for speeding up energy calculations with
 <tt>mdrun -rerun</tt> and for excluding interactions within frozen groups.</dd>
+</dl>
+
+<A NAME="walls"><br>
+<hr>
+<h3><!--Idx-->Walls<!--EIdx--></h3>
+<dl>
+<dt><h4>nwall: 0</h4></dt>
+<dd>When set to <b>1</b> there is a wall at z=0, when set to <b>2</b>
+there is also a wall at z=z_box. Walls can only be used with <b>pbc=xy</b>.
+When set to <b>2</b> pressure coupling and Ewald summation can be used.
+Energy groups <tt>wall0</tt> and <tt>wall1</tt> (for <b>nwall=2</b>) are
+added automatically to monitor the interaction of energy groups
+with each wall.</dd>
+<dt><h4>wall_type:</h4></dt>
+<dl>
+<dt><b>9-3</b></dt>
+<dd>LJ integrated over the volume behind the wall: 9-3 potential</dd>
+<dt><b>10-4</b></dt>
+<dd>LJ integrated over the wall surface: 10-4 potential</dd>
+<dt><b>table</b></dt><dd>user defined potentials indexed with the z distance from the wall, the tables are read analogously to
+the <b><A HREF="#table">energygrp_table</A></b> option,
+where the first name is for a "normal" energy group and the second name
+is <tt>wall0</tt> or <tt>wall1</tt>,
+only the dispersion and repulsion columns are used</dd>
+</dl>
+<dt><h4>wall_atomtype:</h4></dt>
+<dd>the atom type name for each wall, this allows for independent tuning
+of the interaction of each atomtype with the walls</dd>
+<dt><h4>wall_density: [nm<sup>-3</sup>/nm<sup>-2</sup>]</h4></dt>
+<dd>the number density of the atoms for each wall for wall types
+<b>9-3</b> and <b>10-4</b>
+<dt><h4>wall_ewald_zfac: 3</h4></dt>
+<dd>The scaling factor for the third box vector for Ewald summation only,
+the minimum is 2.
+Ewald summation can only be used with <b>nwall=2</b>, where one
+should use <b><A HREF="#ewald">ewald_geometry</A>=3dc</b>.
+The empty layer in the box serves to decrease the unphysical Coulomb
+interaction between periodic images.
 </dl>
 
 <A NAME="nmr"><br>
@@ -1225,6 +1299,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">nstxout</A><br>
 <A HREF="#out">nstxtcout</A><br>
 <A HREF="#nl">ns_type</A><br>
+<A HREF="#wall">nwall</A><br>
 <A HREF="#ewald">optimize_fft</A><br>
 <A HREF="#nmr2">orire</A><br>
 <A HREF="#nmr2">orire_fc</A><br>
@@ -1234,12 +1309,14 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#nl">pbc</A><br>
 <A HREF="#pc">pcoupl</A><br>
 <A HREF="#pc">pcoupltype</A><br>
+<A HREF="#nl">periodic_molecules</A><br>
 <A HREF="#ewald">pme_order</A><br>
 <A HREF="#pc">ref_p</A><br>
 <A HREF="#tc">ref_t</A><br>
-<A HREF="#nl">rlist</A><br>
 <A HREF="#el2">rcoulomb_switch</A><br>
 <A HREF="#el2">rcoulomb</A><br>
+<A HREF="#nl">rlist</A><br>
+<A HREF="#tpi">rtpi</A><br>
 <A HREF="#vdw">rvdw_switch</A><br>
 <A HREF="#vdw">rvdw</A><br>
 <A HREF="#free">sc_alpha</A><br>
@@ -1269,6 +1346,10 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#out">xtc_grps</A><br>
 <A HREF="#out">xtc_precision</A><br>
 <A HREF="#sa">zero_temp_time</A><br>
+<A HREF="#walls">wall_atomtype</A><br>
+<A HREF="#walls">wall_density</A><br>
+<A HREF="#walls">wall_ewald_zfac</A><br>
+<A HREF="#walls">wall_type</A><br>
 </multicol>
 
 <hr>

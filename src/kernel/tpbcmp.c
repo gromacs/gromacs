@@ -369,6 +369,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->nsteps",-1,ir1->nsteps,ir2->nsteps);
   cmp_int(fp,"inputrec->init_step",-1,ir1->init_step,ir2->init_step);
   cmp_int(fp,"inputrec->ePBC",-1,ir1->ePBC,ir2->ePBC);
+  cmp_int(fp,"inputrec->bPeriodicMols",-1,ir1->bPeriodicMols,ir2->bPeriodicMols);
   cmp_int(fp,"inputrec->ns_type",-1,ir1->ns_type,ir2->ns_type);
   cmp_int(fp,"inputrec->nstlist",-1,ir1->nstlist,ir2->nstlist);
   cmp_int(fp,"inputrec->ndelta",-1,ir1->ndelta,ir2->ndelta);
@@ -392,7 +393,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->ewald_geometry",-1,ir1->ewald_geometry,ir2->ewald_geometry);
   cmp_real(fp,"inputrec->epsilon_surface",-1,ir1->epsilon_surface,ir2->epsilon_surface,ftol);
   cmp_int(fp,"inputrec->bOptFFT",-1,ir1->bOptFFT,ir2->bOptFFT);
-  cmp_int(fp,"inputrec->bUncStart",-1,ir1->bUncStart,ir2->bUncStart);
+  cmp_int(fp,"inputrec->bContinuation",-1,ir1->bContinuation,ir2->bContinuation);
   cmp_int(fp,"inputrec->bShakeSOR",-1,ir1->bShakeSOR,ir2->bShakeSOR);
   cmp_int(fp,"inputrec->etc",-1,ir1->etc,ir2->etc);
   cmp_int(fp,"inputrec->epc",-1,ir1->epc,ir2->epc);
@@ -406,6 +407,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_rvec(fp,"inputrec->compress(z)",-1,ir1->compress[ZZ],ir2->compress[ZZ],ftol);
   cmp_int(fp,"inputrec->andersen_seed",-1,ir1->andersen_seed,ir2->andersen_seed);
   cmp_real(fp,"inputrec->rlist",-1,ir1->rlist,ir2->rlist,ftol);
+  cmp_real(fp,"inputrec->rtpi",-1,ir1->rtpi,ir2->rtpi,ftol);
   cmp_int(fp,"inputrec->coulombtype",-1,ir1->coulombtype,ir2->coulombtype);
   cmp_real(fp,"inputrec->rcoulomb_switch",-1,ir1->rcoulomb_switch,ir2->rcoulomb_switch,ftol);
   cmp_real(fp,"inputrec->rcoulomb",-1,ir1->rcoulomb,ir2->rcoulomb,ftol);
@@ -429,6 +431,15 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol);
   cmp_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
   cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol);
+
+  cmp_int(fp,"inputrec->nwall",-1,ir1->nwall,ir2->nwall);
+  cmp_int(fp,"inputrec->wall_type",-1,ir1->wall_type,ir2->wall_type);
+  cmp_int(fp,"inputrec->wall_atomtype[0]",-1,ir1->wall_atomtype[0],ir2->wall_atomtype[0]);
+  cmp_int(fp,"inputrec->wall_atomtype[1]",-1,ir1->wall_atomtype[1],ir2->wall_atomtype[1]);
+  cmp_real(fp,"inputrec->wall_density[0]",-1,ir1->wall_density[0],ir2->wall_density[0],ftol);
+  cmp_real(fp,"inputrec->wall_density[1]",-1,ir1->wall_density[1],ir2->wall_density[1],ftol);
+  cmp_real(fp,"inputrec->wall_ewald_zfac",-1,ir1->wall_ewald_zfac,ir2->wall_ewald_zfac,ftol);
+
   cmp_real(fp,"inputrec->dr_fc",-1,ir1->dr_fc,ir2->dr_fc,ftol);
   cmp_int(fp,"inputrec->eDisreWeighting",-1,ir1->eDisreWeighting,ir2->eDisreWeighting);
   cmp_int(fp,"inputrec->bDisreMixed",-1,ir1->bDisreMixed,ir2->bDisreMixed);

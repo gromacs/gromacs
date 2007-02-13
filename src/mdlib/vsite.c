@@ -390,9 +390,11 @@ static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
 }
 
 
-void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt, 
-		      rvec *v,t_idef *idef,t_graph *graph,t_commrec *cr,
-		      int ePBC,matrix box,t_comm_vsites *vsitecomm)
+void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
+		      real dt,rvec *v,t_idef *idef,
+		      int ePBC,bool bMolPBC,t_graph *graph,
+		      t_commrec *cr,matrix box,
+		      t_comm_vsites *vsitecomm)
 {
   rvec      xd,vv;
   real      a1,b1,c1,inv_dt;
@@ -406,12 +408,11 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,real dt,
   bDomDec = cr && DOMAINDECOMP(cr);
 
   /* We only need to do pbc when we have inter-cg vsites */
-  if ((bDomDec || ePBC == epbcFULL) &&
-      !(bDomDec && cr->dd->vsite_comm==NULL)) {
+  if ((bDomDec || bMolPBC) && !(bDomDec && cr->dd->vsite_comm==NULL)) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
-    pbc_null = set_pbc_ss(&pbc,box,cr!=NULL ? cr->dd : NULL,FALSE);
+    pbc_null = set_pbc_ss(&pbc,ePBC,box,cr!=NULL ? cr->dd : NULL,FALSE);
   } else {
     pbc_null = NULL;
   }
@@ -917,7 +918,7 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
 
 void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
 		    t_nrnb *nrnb,t_idef *idef,
-		    int ePBC,t_graph *g,matrix box,
+		    int ePBC,bool bMolPBC,t_graph *g,matrix box,
 		    t_comm_vsites *vsitecomm,t_commrec *cr)
 {
   real      a1,b1,c1;
@@ -928,12 +929,12 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
   t_pbc     pbc,*pbc_null;
 
   /* We only need to do pbc when we have inter-cg vsites */
-  if ((DOMAINDECOMP(cr) || ePBC == epbcFULL) &&
+  if ((DOMAINDECOMP(cr) || bMolPBC) &&
       !(DOMAINDECOMP(cr) && cr->dd->vsite_comm==NULL)) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
-    pbc_null = set_pbc_ss(&pbc,box,cr->dd,FALSE);
+    pbc_null = set_pbc_ss(&pbc,ePBC,box,cr->dd,FALSE);
   } else {
     pbc_null = NULL;
   }

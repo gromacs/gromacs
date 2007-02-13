@@ -116,7 +116,8 @@ typedef struct {
   real epsilon_surface; /* Epsilon for PME dipole correction            */
   bool bOptFFT;         /* optimize the fft plan at start               */
   int  ePBC;		/* Type of periodic boundary conditions		*/
-  bool bUncStart;       /* Do not constrain the start configuration	*/
+  int  bPeriodicMols;   /* Periodic molecules                           */
+  bool bContinuation;   /* Continuation run: starting state is correct	*/
   int  etc;		/* temperature coupling         		*/
   int  epc;		/* pressure coupling                            */
   int  epct;		/* pressure coupling type			*/
@@ -125,6 +126,7 @@ typedef struct {
   tensor compress;	/* compressability ((mol nm^3)/kJ) 		*/
   int  andersen_seed;   /* Random seed for Andersen thermostat.         */
   real rlist;		/* short range pairlist cut-off (nm)		*/
+  real rtpi;            /* Radius for test particle insertion           */
   int  coulombtype;	/* Type of electrostatics treatment             */
   real rcoulomb_switch; /* Coulomb switch range start (nm)		*/
   real rcoulomb;        /* Coulomb cutoff (nm)		                */
@@ -176,6 +178,11 @@ typedef struct {
   bool bShakeSOR;       /* Use successive overrelaxation for shake      */
   real bd_fric;         /* Friction coefficient for BD (amu/ps)         */
   int  ld_seed;         /* Random seed for SD and BD                    */
+  int  nwall;           /* The number of walls                          */
+  int  wall_type;       /* The type of walls                            */
+  int  wall_atomtype[2];/* The atom type for walls                      */
+  real wall_density[2]; /* Number density for walls                     */
+  real wall_ewald_zfac; /* Scaling factor for the box for Ewald         */
   real cos_accel;       /* Acceleration for viscosity calculation       */
   tensor deform;        /* Triclinic deformation velocities (nm/ps)     */
   int  userint1;        /* User determined parameters                   */

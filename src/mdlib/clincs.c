@@ -796,11 +796,11 @@ bool constrain_lincs(FILE *log,bool bLog,
   /* We do not need full pbc when constraints do not cross charge groups,
    * i.e. when dd->constraint_comm==NULL
    */
-  if ((dd || ir->ePBC == epbcFULL) && !(dd && dd->constraint_comm==NULL)) {
+  if ((dd || ir->bPeriodicMols) && !(dd && dd->constraint_comm==NULL)) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step.
      */
-    pbc_null = set_pbc_ss(&pbc,box,dd,FALSE);
+    pbc_null = set_pbc_ss(&pbc,ir->ePBC,box,dd,FALSE);
   } else {
     pbc_null = NULL;
   }
@@ -823,7 +823,7 @@ bool constrain_lincs(FILE *log,bool bLog,
     
     if (lincsd->nflexcon) {
       /* Set the flexible constraint lengths to the old lengths */
-      if (ir->ePBC == epbcFULL) {
+      if (pbc_null) {
 	for(i=0; i<lincsd->nc; i++)
 	  if (lincsd->bllen[i] == 0) {
 	    pbc_dx(pbc_null,x[lincsd->bla[2*i]],x[lincsd->bla[2*i+1]],dx);

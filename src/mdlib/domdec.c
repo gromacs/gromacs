@@ -2707,11 +2707,13 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   if (ir->ePBC == epbcNONE)
     gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",
 	      epbc_names[epbcNONE]);
+  if (ir->ePBC!=epbcXYZ && ir->nwall<2 && dd->nc[ZZ]>1)
+    gmx_fatal(FARGS,"Can not do domain decomposition in the z-direction with pbc=%s,",epbc_names[ir->ePBC]);
 
-  if (dd->ndim == DIM)
-    fr->ePBC = epbcXYZ;
+  if (dd->nc[XX]>1 && dd->nc[YY]>1 && (dd->nc[ZZ]>1 || fr->ePBC==epbcXY))
+    fr->bMolPBC = FALSE;
   else
-    fr->ePBC = epbcFULL;
+    fr->bMolPBC = TRUE;
 
   if (ir->ns_type == ensSIMPLE)
     gmx_fatal(FARGS,"ns type %s is not supported with domain decomposition",

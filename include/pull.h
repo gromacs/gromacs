@@ -104,6 +104,7 @@ typedef struct {
   bool       AbsoluteRef; /* Reference is in absolute coordinates */
   bool       bVerbose;    /* be loud and noise */
   int        nSkip;       /* only write output every nSkip steps */
+  int        ePBC;        /* the boundary conditions */
 } t_pull;
 
 /* main pull routine that controls all the action */
@@ -132,6 +133,7 @@ extern void init_pull(FILE *log,
                       rvec *x,        /* all coordinates */
                       t_mdatoms *md,  /* masses and charges of all atoms */
 		      ivec nFreeze[], /* the freeze dimensions */
+		      int ePBC,
                       matrix box,     
                       int start,      /* startinig index of this node */
                       int homenr,     /* number of atoms on this node */

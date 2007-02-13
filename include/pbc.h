@@ -66,11 +66,14 @@ extern "C" {
    * Otherwise is returns a string with the problem.
    */
 
-  extern real max_cutoff2(matrix box);
+  extern real max_cutoff2(int ePBC,matrix box);
   /* Returns the square of the maximum cut-off allowed for the box,
    * taking into account that the grid neighborsearch code and pbc_dx
    * only check combinations of single box-vector shifts.
    */
+
+  int guess_ePBC(matrix box);
+  /* Guesses the type of periodic boundary conditions using the box */
 
   extern bool correct_box(tensor box,t_graph *graph);
   /* Checks for un-allowed box angles and corrects the box
@@ -83,7 +86,7 @@ extern "C" {
    * pbc_dx will not use pbc and return the normal difference vector
    * when one or more of the diagonal elements of box is zero.
    */
-  extern t_pbc *set_pbc_ss(t_pbc *pbc,matrix box,
+  extern t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
 			   gmx_domdec_t *dd,bool bSingleDir);
   /* As pbc_dx, but additionally sets that correct distances can be
    * obtained using (combinations of) single box-vector shifts.
@@ -151,7 +154,7 @@ extern "C" {
    */
   
   extern void put_charge_groups_in_box (FILE *log,int cg0,int cg1,
-					matrix box,t_block *cgs,
+					int ePBC,matrix box,t_block *cgs,
 					rvec pos[],
 					rvec cg_cm[]);
 			    

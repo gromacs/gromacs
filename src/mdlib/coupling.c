@@ -56,12 +56,13 @@
  *
  */
 
-void calc_pres(int ePBC,matrix box,tensor ekin,tensor vir,tensor pres,real Elr)
+void calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
+	       tensor pres,real Elr)
 {
   int  n,m;
   real fac,Plr;
 
-  if (ePBC == epbcNONE)
+  if (ePBC==epbcNONE || (ePBC==epbcXY && nwall!=2))
     clear_mat(pres);
   else {
     /* Uitzoeken welke ekin hier van toepassing is, zie Evans & Morris - E. 

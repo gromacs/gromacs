@@ -413,7 +413,8 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PR("epsilon_surface",ir->epsilon_surface);
     PS("optimize_fft",BOOL(ir->bOptFFT));
     PS("ePBC",EPBC(ir->ePBC));
-    PS("bUncStart",BOOL(ir->bUncStart));
+    PS("bPeriodicMols",BOOL(ir->bPeriodicMols));
+    PS("bContinuation",BOOL(ir->bContinuation));
     PS("bShakeSOR",BOOL(ir->bShakeSOR));
     PS("etc",ETCOUPLTYPE(ir->etc));
     PS("epc",EPCOUPLTYPE(ir->epc));
@@ -423,6 +424,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     pr_rvecs(fp,indent,"compress",ir->compress,DIM);
     PI("andersen_seed",ir->andersen_seed);
     PR("rlist",ir->rlist);
+    PR("rtpi",ir->rtpi);
     PS("coulombtype",EELTYPE(ir->coulombtype));
     PR("rcoulomb_switch",ir->rcoulomb_switch);
     PR("rcoulomb",ir->rcoulomb);
@@ -452,6 +454,14 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PR("sc_sigma",ir->sc_sigma);
     PR("delta_lambda",ir->delta_lambda);
     
+    PI("nwall",ir->nwall);
+    PS("wall_type",EWALLTYPE(ir->wall_type));
+    PI("wall_atomtype[0]",ir->wall_atomtype[0]);
+    PI("wall_atomtype[1]",ir->wall_atomtype[1]);
+    PR("wall_density[0]",ir->wall_density[0]);
+    PR("wall_density[1]",ir->wall_density[1]);
+    PR("wall_ewald_zfac",ir->wall_ewald_zfac);
+
     PS("disre_weighting",EDISREWEIGHTING(ir->eDisreWeighting));
     PS("disre_mixed",BOOL(ir->bDisreMixed));
     PR("dr_fc",ir->dr_fc);

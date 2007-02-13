@@ -487,7 +487,7 @@ int gmx_disre(int argc,char *argv[])
   char        **leg;
   real        *vvindex=NULL,*w_rls=NULL;
   t_mdatoms   *mdatoms;
-  t_pbc       pbc;
+  t_pbc       pbc,*pbc_null;
   int         my_clust;
   
   t_filenm fnm[] = {
@@ -532,10 +532,13 @@ int gmx_disre(int argc,char *argv[])
       snew(top.atoms.pdbinfo,ntopatoms);
   } 
 
-  if (ir.ePBC == epbcXYZ) {
-    g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);
-  } else {
-    g = NULL;
+  g = NULL;
+  pbc_null = NULL;
+  if (ir.ePBC != epbcNONE) {
+    if (ir.bPeriodicMols)
+      pbc_null = &pbc;
+    else
+      g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);
   }
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
@@ -600,10 +603,12 @@ int gmx_disre(int argc,char *argv[])
   init_nrnb(&nrnb);
   j=0;
   do {
-    if (ir.ePBC == epbcXYZ)
-      rm_pbc(&top.idef,natoms,box,x,x);
-    else if (ir.ePBC == epbcFULL)
-      set_pbc(&pbc,box);
+    if (ir.ePBC != epbcNONE) {
+      if (ir.bPeriodicMols)
+	set_pbc(&pbc,box);
+      else
+	rm_pbc(&top.idef,natoms,box,x,x);
+    }
     
     if (clust) {
       if (j > clust->maxframe)
@@ -612,14 +617,12 @@ int gmx_disre(int argc,char *argv[])
       range_check(my_clust,0,clust->clust->nr);
       check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
-		 x,f,fr,ir.ePBC==epbcFULL ? &pbc : NULL,g,
-		 dr_clust,my_clust,isize,index,vvindex,&fcd);
+		 x,f,fr,pbc_null,g,dr_clust,my_clust,isize,index,vvindex,&fcd);
     }
     else
       check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
-		 x,f,fr,ir.ePBC==epbcFULL ? &pbc : NULL,g,&dr,0,
-		 isize,index,vvindex,&fcd);
+		 x,f,fr,pbc_null,g,&dr,0,isize,index,vvindex,&fcd);
     if (bPDB) {
       reset_x(top.atoms.nr,ind_fit,top.atoms.nr,NULL,x,w_rls);
       do_fit(top.atoms.nr,w_rls,x,x);

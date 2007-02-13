@@ -82,7 +82,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
   real   v,dvdl;
   const  t_pbc *pbc_null;
 
-  if (fr->ePBC == epbcFULL)
+  if (fr->bMolPBC)
     pbc_null = pbc;
   else
     pbc_null = NULL;

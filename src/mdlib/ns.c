@@ -1650,6 +1650,10 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
       shp1[d] = 1;
     }
   }
+  if (fr->ePBC == epbcXY) {
+    shp0[ZZ] = 0;
+    shp1[ZZ] = 0;
+  }
 
   /* Loop over charge groups */
   for(icg=cg0; (icg < cg1); icg++) {
@@ -1827,10 +1831,10 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 			    if (r2 < rs2) {
 			      if (nsr[jgid] >= MAX_CG) {
 				put_in_list(bHaveVdW,ngid,md,icg,jgid,
-                            nsr[jgid],nl_sr[jgid],
-                            cgs->index,/* cgsatoms, */ bexcl,
-                            shift,fr,FALSE,TRUE,TRUE,
-                            bMakeQMMMnblist);
+					    nsr[jgid],nl_sr[jgid],
+					    cgs->index,/* cgsatoms, */ bexcl,
+					    shift,fr,FALSE,TRUE,TRUE,
+					    bMakeQMMMnblist);
 				nsr[jgid]=0;
 			      }
 			      nl_sr[jgid][nsr[jgid]++]=jjcg;
@@ -1977,7 +1981,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
  
   if (fr->ePBC != epbcNONE) {
     if (bGrid) {
-      if (sqr(fr->rlistlong) >= max_cutoff2(box))
+      if (sqr(fr->rlistlong) >= max_cutoff2(fr->ePBC,box))
 	gmx_fatal(FARGS,"One of the box vectors has become shorter than twice the cut-off length or one of the box diagonal elements has become smaller than the cut-off.");
     } else {
       min_size = min(box_size[XX],min(box_size[YY],box_size[ZZ]));
@@ -2022,7 +2026,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     
     if (bGrid) {
       snew(grid,1);
-      init_grid(log,grid,fr->ndelta,cr->dd,box,fr->rlistlong,cgs->nr);
+      init_grid(log,grid,fr->ndelta,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
     }
     
     /* Create array that determines whether or not atoms have VdW */
@@ -2057,7 +2061,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   reset_neighbor_list(fr,FALSE,-1,-1);
 
   if (bGrid && bFillGrid) {
-    grid_first(log,grid,cr->dd,box,fr->rlistlong,cgs->nr);
+    grid_first(log,grid,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
     debug_gmx();
 
     /* Don't know why this all is... (DvdS 3/99) */

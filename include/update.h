@@ -118,7 +118,7 @@ extern void update_annealing_target_temp(t_grpopts *opts,real t);
 extern real calc_temp(real ekin,real nrdf);
 /* Calculate the temperature */
 
-extern void calc_pres(int ePBC,matrix box,
+extern void calc_pres(int ePBC,int nwall,matrix box,
 		      tensor ekin,tensor vir,tensor pres,real Elr);
 /* Calculate the pressure. Unit of pressure is bar, If Elr != 0
  * a long range correction based on Ewald/PPPM is made (see c-code)

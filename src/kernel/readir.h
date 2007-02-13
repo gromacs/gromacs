@@ -66,6 +66,7 @@ typedef struct {
   bool bOrire;
   int  eDihre;
   bool bMorse;
+  char *wall_atomtype[2];
 } t_gromppopts;
 
 

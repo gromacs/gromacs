@@ -751,7 +751,7 @@ static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
     /* Append the two energy group names */
     sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
 	    eg1,eg2,ftp2ext(efXVG));
-  nbl->tab = make_tables(fp,fr,MASTER(cr),buf,rtab,FALSE);
+  nbl->tab = make_tables(fp,fr,MASTER(cr),buf,rtab,FALSE,FALSE);
   /* Copy the contents of the table to separate coulomb and LJ tables too,
    * to improve cache performance.
    */
@@ -850,7 +850,7 @@ void init_forcerec(FILE *fp,
 		   const char *tabbfn,
 		   bool       bNoSolvOpt)
 {
-  int     i,j,m,natoms,ngrp,negptable,egi,egj;
+  int     i,j,m,natoms,ngrp,negp_pp,negptable,egi,egj;
   real    q,zsq,nrdf,T,rtab;
   rvec    box_size;
   const t_block *mols,*cgs;
@@ -901,6 +901,7 @@ void init_forcerec(FILE *fp,
   fr->bGrid      = (ir->ns_type == ensGRID);
   fr->ndelta     = ir->ndelta;
   fr->ePBC       = ir->ePBC;
+  fr->bMolPBC    = ir->bPeriodicMols;
   fr->rlist      = ir->rlist;
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->eeltype    = ir->coulombtype;
@@ -1100,14 +1101,15 @@ void init_forcerec(FILE *fp,
 		top->idef.il[F_LJC_PAIRS_A].nr > 0) &&
 	       (!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT));
   
+  negp_pp = ir->opts.ngener - ir->nwall;
   negptable = 0;
   if (!bTab) {
     bNormalnblists = TRUE;
     fr->nnblists = 1;
   } else {
     bNormalnblists = (ir->eDispCorr != edispcNO);
-    for(egi=0; egi<ir->opts.ngener; egi++) {
-      for(egj=egi;  egj<ir->opts.ngener; egj++) {
+    for(egi=0; egi<negp_pp; egi++) {
+      for(egj=egi;  egj<negp_pp; egj++) {
 	egp_flags = ir->opts.egp_flags[GID(egi,egj,ir->opts.ngener)];
 	if (!(egp_flags & EGP_EXCL)) {
 	  if (egp_flags & EGP_TABLE) {
@@ -1142,8 +1144,8 @@ void init_forcerec(FILE *fp,
     if (negptable > 0) {
       /* Read the special tables for certain energy group pairs */
       nm_ind = top->atoms.grps[egcENER].nm_ind;
-      for(egi=0; egi<ir->opts.ngener; egi++) {
-	for(egj=egi;  egj<ir->opts.ngener; egj++) {
+      for(egi=0; egi<negp_pp; egi++) {
+	for(egj=egi;  egj<negp_pp; egj++) {
 	  egp_flags = ir->opts.egp_flags[GID(egi,egj,ir->opts.ngener)];
 	  if ((egp_flags & EGP_TABLE) && !(egp_flags & EGP_EXCL)) {
 	    nbl = &(fr->nblists[m]);
@@ -1163,8 +1165,11 @@ void init_forcerec(FILE *fp,
   }
   if (bSep14tab && tabbfn)
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
-    fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,ir->tabext,TRUE);
+    fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,ir->tabext,FALSE,TRUE);
   
+  if (ir->nwall && ir->wall_type==ewtTABLE)
+    make_wall_tables(fp,ir,tabfn,&top->atoms,fr);
+
   if (fcd && tabbfn) {
     if (top->idef.il[F_TABBONDS].nr || top->idef.il[F_TABBONDSNC].nr)
       fcd->bondtab = make_bonded_tables(fp,
@@ -1326,7 +1331,8 @@ void force(FILE       *fplog,   int        step,
 	   t_edsamyn  *edyn)
 {
   int     i,nit,status;
-  bool    bDoEpot,bSepDVDL;
+  bool    bDoEpot,bSepDVDL,bSB;
+  matrix  boxs;
   rvec    box_size;
   real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
   t_pbc   pbc;
@@ -1376,6 +1382,12 @@ void force(FILE       *fplog,   int        step,
   }
 #endif
 
+  if (ir->nwall) {
+    dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,grps->estat.ee[egLJSR],nrnb);
+    PRINT_SEPDVDL("Walls",0,dvdlambda);
+    epot[F_DVDL] += dvdlambda;
+  }
+
   where();
   do_nonbonded(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
@@ -1422,15 +1434,22 @@ void force(FILE       *fplog,   int        step,
       inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
   }
   /* Check whether we need to do bondeds or correct for exclusions */
-  if ((fr->ePBC==epbcFULL &&
+  if ((fr->bMolPBC &&
        (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype))) ||
       (idef->il[F_POSRES].nr>0 && !bNBFonly)) {
-    set_pbc_ss(&pbc,box,cr->dd,TRUE);
+    set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
   }
   debug_gmx();
 
   where();
   if (EEL_FULL(fr->eeltype)) {
+    bSB = (ir->nwall == 2);
+    if (bSB) {
+      copy_mat(box,boxs);
+      svmul(ir->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
+      box_size[ZZ] *= ir->wall_ewald_zfac;
+    }
+
     dvdlambda = 0;
     status = 0;
     switch (fr->eeltype) {
@@ -1449,7 +1468,8 @@ void force(FILE       *fplog,   int        step,
 			    md->start,md->homenr,
 			    x,fr->f_el_recip,
 			    md->chargeA,md->chargeB,
-			    box,cr,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
+			    bSB ? boxs : box,cr,nrnb,
+			    fr->vir_el_recip,fr->ewaldcoeff,
 			    &Vlr,lambda,&dvdlambda,bGatherOnly);
         PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
 	wallcycle_stop(wcycle,ewcPMEMESH);
@@ -1483,7 +1503,7 @@ void force(FILE       *fplog,   int        step,
       Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,cr,fr,
 				 md->chargeA,
 				 md->nChargePerturbed ? md->chargeB : NULL,
-				 excl,x,box,mu_tot,
+				 excl,x,bSB ? boxs : box,mu_tot,
 				 ir->ewald_geometry,ir->epsilon_surface,
 				 lambda,&dvdlambda,&vdip,&vcharge);
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);

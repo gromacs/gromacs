@@ -48,11 +48,13 @@
 #include "main.h"
 #include "network.h"
 #include "physics.h"
+#include "force.h"
 
 /* All the possible (implemented) table functions */
 enum { 
   etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
   etabRF,    etabCOUL, etabEwald, etabEwaldSwitch, etabEwaldUser,
+  etabEwaldUserSwitch,
   etabLJ6Switch, etabLJ12Switch, etabCOULSwitch, 
   etabLJ6Encad, etabLJ12Encad, etabCOULEncad,  
   etabEXPMIN, etabUSER, etabNR 
@@ -77,6 +79,7 @@ bool bCoulomb[etabNR] = {
     TRUE,    /* Coul       */
     TRUE,    /* Ewald      */
     TRUE,    /* Ewald-User */
+    TRUE,    /* Ewald-User-Switch */
     FALSE,   /* LJ6Switch  */
     FALSE,   /* LJ12Switch */  
     TRUE,    /* CoulSwitch */
@@ -318,7 +321,8 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   double isp= 0.564189583547756;
    
   bSwitch = ((tp == etabLJ6Switch) || (tp == etabLJ12Switch) || 
-	     (tp == etabCOULSwitch) || (tp == etabEwaldSwitch));
+	     (tp == etabCOULSwitch) ||
+	     (tp == etabEwaldSwitch) || (tp == etabEwaldUserSwitch));
   bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
 	     (tp == etabShift));
 
@@ -459,6 +463,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       Ftab  = erfc(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
       break;
     case etabEwaldUser:
+    case etabEwaldUserSwitch:
       /* Only calculate minus the reciprocal space contribution */
       Vtab  = -erf(ewc*r)/r;
       Ftab  = -erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
@@ -498,20 +503,20 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
 	}
       }
     }
-    
+
+    if (tp == etabEwaldUser) {
+      Vtab += td->v[i];
+      Ftab += td->f[i];
+    }
+
     if ((r > r1) && bSwitch) {
       Ftab = Ftab*swi - Vtab*swi1;
       Vtab = Vtab*swi;
     }  
     
     /* Convert to single precision when we store to mem */
-    if (tp == etabEwaldUser) {
-      td->v[i] += Vtab;
-      td->f[i] += Ftab;
-    } else {
-      td->v[i]  = Vtab;
-      td->f[i]  = Ftab;
-    }
+    td->v[i]  = Vtab;
+    td->f[i]  = Ftab;
   }
 
 #ifdef DEBUG_SWITCH
@@ -626,7 +631,7 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
 
 t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 			 bool bVerbose,const char *fn,
-			 real rtab,bool b14only)
+			 real rtab,bool bForceUser,bool b14only)
 {
   const char *fns[3] = { "ctab.xvg", "dtab.xvg", "rtab.xvg" };
   const char *fns14[3] = { "ctab14.xvg", "dtab14.xvg", "rtab14.xvg" };
@@ -639,7 +644,13 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   
   t_forcetable table;
 
-  set_table_type(tabsel,fr,b14only);
+  if (bForceUser) {
+    tabsel[etiCOUL] = etabUSER;
+    tabsel[etiLJ6]  = etabUSER;
+    tabsel[etiLJ12] = etabUSER;
+  } else {
+    set_table_type(tabsel,fr,b14only);
+  }
   snew(td,etiNR);
   table.r         = rtab;
   table.scale     = 0;
@@ -659,12 +670,17 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
   }
   if (bReadTab) {
     read_tables(out,fn,etiNR,0,td);
-    if (td[0].x[td[0].nx-1] < rtab) 
-      gmx_fatal(FARGS,"Tables in file %s not long enough for cut-off:\n"
+    if (rtab == 0) {
+      rtab      = td[0].x[td[0].nx-1];
+      nx        = table.n;
+    } else {
+      if (td[0].x[td[0].nx-1] < rtab) 
+	gmx_fatal(FARGS,"Tables in file %s not long enough for cut-off:\n"
 		  "\tshould be at least %f nm\n",fn,rtab);
+      nx        = table.n = rtab*td[0].tabscale;
+    }
     table.scale = td[0].tabscale;
     nx0         = td[0].nx0;
-    nx          = table.n = rtab*table.scale;
   }
   if (bGenTab) {
     if (!bReadTab) {
@@ -720,7 +736,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 	fp=xvgropen(fns[k],fns[k],"r","V");
       /* plot the output 5 times denser than the table data */
       for(i=5*nx0;i<5*table.n;i++) {
-	x0=i*rtab/(5*table.n);
+	x0=i*table.r/(5*table.n);
 	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
       }

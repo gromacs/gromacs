@@ -108,7 +108,7 @@ real ewald_LRcorrection(FILE *fplog,
 #endif
   int     niat;
   bool    bFreeEnergy = (chargeB != NULL);
-  bool    bFullPBC = (fr->ePBC == epbcFULL);
+  bool    bMolPBC = fr->bMolPBC;
 
   one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
   vr0 = ewc*2/sqrt(M_PI);
@@ -190,7 +190,7 @@ real ewald_LRcorrection(FILE *fplog,
 	  qqA = qiA*chargeA[k];
 	  if (qqA != 0.0) {
 	    rvec_sub(x[i],x[k],dx);
-	    if (bFullPBC) {
+	    if (bMolPBC) {
 	      /* Cheap pbc_dx, assume excluded pairs are at short distance. */
 	      for(m=DIM-1; (m>=0); m--) {
 		if (dx[m] > 0.5*box[m][m])
@@ -279,7 +279,7 @@ real ewald_LRcorrection(FILE *fplog,
 	  if (qqA != 0.0 || qqB != 0.0) {
 	    qqL = L1*qqA + lambda*qqB;
 	    rvec_sub(x[i],x[k],dx);
-	    if (bFullPBC) {
+	    if (bMolPBC) {
 	      /* Cheap pbc_dx, assume excluded pairs are at short distance. */
 	      for(m=DIM-1; (m>=0); m--) {
 		if (dx[m] > 0.5*box[m][m])

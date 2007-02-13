@@ -44,7 +44,7 @@ enum {
 };
 
 enum {
-  epbcXYZ, epbcNONE, epbcFULL, epbcNR
+  epbcXYZ, epbcNONE, epbcXY, epbcNR
 };
 
 enum {
@@ -63,7 +63,7 @@ enum {
 enum {
   eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
   eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_NEC, eelENCADSHIFT, 
-  eelPMEUSER, eelPMESWITCH, eelNR
+  eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelNR
 };
 
 /* Ewald geometry */
@@ -71,10 +71,10 @@ enum {
   eewg3D, eewg3DC, eewgNR
 };
 
-#define EEL_RF(e) ((e == eelRF) || (e == eelGRF) || (e == eelRF_NEC))
+#define EEL_RF(e) ((e) == eelRF || (e) == eelGRF || (e) == eelRF_NEC)
 
-#define EEL_PME(e)  ((e == eelPME) || (e == eelPMESWITCH) || (e == eelPMEUSER))
-#define EEL_FULL(e) (EEL_PME(e) || (e == eelPPPM) || (e == eelPOISSON) || (e == eelEWALD))
+#define EEL_PME(e)  ((e) == eelPME || (e) == eelPMESWITCH || (e) == eelPMEUSER || (e) ==eelPMEUSERSWITCH)
+#define EEL_FULL(e) (EEL_PME(e) || (e) == eelPPPM || (e) == eelPOISSON || (e) == eelEWALD)
 
 enum {
   evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
@@ -88,8 +88,8 @@ enum {
   eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiTPI, eiTPIC, eiNR
 };
 
-#define EI_DYNAMICS(e) ((e == eiMD) || (e == eiSD) || (e == eiBD))
-#define EI_ENERGY_MINIMIZATION(e) ((e == eiSteep) || (e == eiCG) || (e == eiLBFGS))
+#define EI_DYNAMICS(e) ((e) == eiMD || (e) == eiSD || (e) == eiBD)
+#define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 
 enum {
   estLINCS, estSHAKE, estNR
@@ -156,6 +156,11 @@ enum {
 /* Implicit solvent algorithms */
 enum { 
   eisNO, eisLCPO, eisNR 
+};
+
+/* Wall types */
+enum {
+  ewt93, ewt104, ewtTABLE, ewtNR
 };
 
 enum {

@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 44;
+static const int tpx_version = 45;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -218,6 +218,16 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_int(ir->ePBC);
     if ((file_version <= 15) && (ir->ePBC == 2))
       ir->ePBC = epbcNONE;
+    if (file_version >= 45) {
+      do_int(ir->bPeriodicMols);
+    } else {
+      if (ir->ePBC == 2) {
+	ir->ePBC = epbcXYZ;
+	ir->bPeriodicMols = TRUE;
+      } else {
+	ir->bPeriodicMols = FALSE;
+      }
+    }
     do_int(ir->ns_type); 
     do_int(ir->nstlist); 
     do_int(ir->ndelta);
@@ -225,6 +235,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_int(idum);
       do_int(idum);
     }
+    if (file_version >= 45)
+      do_real(ir->rtpi);
+    else
+      ir->rtpi = 0.05;
     do_int(ir->nstcomm); 
     if (file_version > 34)
       do_int(ir->comm_mode);
@@ -322,7 +336,7 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     
     do_int(ir->bOptFFT);
 
-    do_int(ir->bUncStart); 
+    do_int(ir->bContinuation); 
     do_int(ir->etc);
     /* before version 18, ir->etc was a bool (ir->btc),
      * but the values 0 and 1 still mean no and
@@ -563,7 +577,25 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
 	ndo_real(ir->opts.anneal_time[j],k,bDum);
 	ndo_real(ir->opts.anneal_temp[j],k,bDum);
       }
-    }		   
+    }
+    /* Walls */
+    if (file_version >= 45) {
+      do_int(ir->nwall);
+      do_int(ir->wall_type);
+      do_int(ir->wall_atomtype[0]);
+      do_int(ir->wall_atomtype[1]);
+      do_real(ir->wall_density[0]);
+      do_real(ir->wall_density[1]);
+      do_real(ir->wall_ewald_zfac);
+    } else {
+      ir->nwall = 0;
+      ir->wall_type = 0;
+      ir->wall_atomtype[0] = -1;
+      ir->wall_atomtype[1] = -1;
+      ir->wall_density[0] = 0;
+      ir->wall_density[1] = 0;
+      ir->wall_ewald_zfac = 3;
+    }
     /* Cosine stuff for electric fields */
     for(j=0; (j<DIM); j++) {
       do_int  (ir->ex[j].n);

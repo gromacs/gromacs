@@ -65,7 +65,7 @@ static void init_range_check()
 }
 
 static void set_grid_sizes(FILE *fplog,
-			   matrix box,real rlist,int delta,
+			   int ePBC,matrix box,real rlist,int delta,
 			   gmx_domdec_t *dd,
 			   t_grid *grid)
 {
@@ -125,7 +125,10 @@ static void set_grid_sizes(FILE *fplog,
        * we will use the normal grid ns that checks all cells
        * that are within cut-off distance of the i-particle.
        */
-      grid->n[i] = delta*size/rlist;
+      if (ePBC==epbcXY && i==ZZ)
+	grid->n[i] = 1;
+      else
+	grid->n[i] = delta*size/rlist;
       grid->cell_size[i] = size/grid->n[i];
       grid->ncpddc[i] = grid->n[i];
     } else {
@@ -148,11 +151,11 @@ static void set_grid_sizes(FILE *fplog,
 }
 
 void init_grid(FILE *fplog,t_grid *grid,int delta,gmx_domdec_t *dd,
-	       matrix box,real rlistlong,int ncg)
+	       int ePBC,matrix box,real rlistlong,int ncg)
 {
   int     d,m;
   
-  set_grid_sizes(fplog,box,rlistlong,delta,dd,grid);
+  set_grid_sizes(fplog,ePBC,box,rlistlong,delta,dd,grid);
 
   fprintf(fplog,"Grid: %d x %d x %d cells\n",
 	  grid->n[XX],grid->n[YY],grid->n[ZZ]);
@@ -215,7 +218,7 @@ static int ci_not_used(ivec n)
 }
 
 void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
-		matrix box,real rlistlong,int ncg)
+		int ePBC,matrix box,real rlistlong,int ncg)
 {
   int    i,k,m,ncells;
   ivec   cx;
@@ -223,7 +226,7 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
   /* Must do this every step because other routines may override it. */
   init_range_check();
 
-  set_grid_sizes(fplog,box,rlistlong,grid->delta,dd,grid);
+  set_grid_sizes(fplog,ePBC,box,rlistlong,grid->delta,dd,grid);
 
   ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 
@@ -250,6 +253,8 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
   
   for(i=0; (i<ncells); i++)
     grid->nra[i]=0;
+  for(i=0; i<grid->maxcells; i++)
+    grid->index[i] = 10000*random();
 }
 
 static void calc_bor(int cg0,int cg1,int ncg,int CG0[2],int CG1[2])
@@ -369,8 +374,12 @@ void fill_grid(FILE *log,
   nrx = grid->n[XX];
   nry = grid->n[YY];
   nrz = grid->n[ZZ];
-  for(d=0; d<DIM; d++)
-    n_box[d] = 1/grid->cell_size[d];
+  for(d=0; d<DIM; d++) {
+    if (grid->cell_size[d] > 0)
+      n_box[d] = 1/grid->cell_size[d];
+    else
+      n_box[d] = 0;
+  }
 
   if (debug)
     fprintf(debug,"Filling grid from %d to %d\n",cg0,cg1);

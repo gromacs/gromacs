@@ -187,10 +187,10 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
   if (inputrec->ePBC != epbcNONE)
     calc_shifts(box,fr->shift_vec);
   put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,
-			   box,&(top->blocks[ebCGS]),x,
+			   fr->ePBC,box,&(top->blocks[ebCGS]),x,
 			   fr->cg_cm);
   if (graph)
-    mk_mshift(stdlog,graph,box,x);
+    mk_mshift(stdlog,graph,fr->ePBC,box,x);
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
    */
@@ -255,7 +255,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   if (inputrec->ePBC == epbcXYZ) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
     *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-    mk_mshift(stdlog,*graph,state->box,state->x);
+    mk_mshift(stdlog,*graph,inputrec->ePBC,state->box,state->x);
   } else {
     *graph = NULL;
   }

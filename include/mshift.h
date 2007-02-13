@@ -56,7 +56,7 @@ extern void done_graph(t_graph *g);
 extern void p_graph(FILE *log,char *title,t_graph *g);
 /* Print a graph to log */
 
-extern void mk_mshift(FILE *log,t_graph *g,matrix box,rvec x[]);
+extern void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[]);
 /* Calculate the mshift codes, based on the connection graph in g. */
 
 extern void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[]);

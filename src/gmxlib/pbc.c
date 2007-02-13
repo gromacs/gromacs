@@ -80,23 +80,53 @@ char *check_box(matrix box)
   return ptr;
 }
 
-real max_cutoff2(matrix box)
+real max_cutoff2(int ePBC,matrix box)
 {
   real min_hv2,min_diag;
 
   /* Physical limitation of the cut-off
    * by half the length of the shortest box vector.
    */
-  min_hv2 = 0.25*min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
+  min_hv2 = min(norm2(box[XX]),norm2(box[YY]));
+  if (ePBC != epbcXY)
+    min_hv2 = min(min_hv2,norm2(box[ZZ]));
+  min_hv2 *= 0.25;
   
   /* Limitation to the smallest diagonal element due to optimizations:
    * checking only linear combinations of single box-vectors
    * in the grid search and pbc_dx is a lot faster
    * than checking all possible combinations.
    */
-  min_diag = min(box[XX][XX],min(box[YY][YY],box[ZZ][ZZ]));
+  min_diag = min(box[XX][XX],box[YY][YY]);
+  if (ePBC != epbcXY)
+    min_diag = min(min_diag,box[ZZ][ZZ]);
   
   return min(min_hv2,min_diag*min_diag);
+}
+
+static bool bWarnedGuess=FALSE;
+
+int guess_ePBC(matrix box)
+{
+  int ePBC;
+  
+  if (box[XX][XX]>0 && box[YY][YY]>0 && box[ZZ][ZZ]>0) {
+    ePBC = epbcXYZ;
+  } else if (box[XX][XX]>0 && box[YY][YY]>0 && box[ZZ][ZZ]==0) {
+    ePBC = epbcXY;
+  } else if (box[XX][XX]==0 && box[YY][YY]==0 && box[ZZ][ZZ]==0) {
+    ePBC = epbcNONE;
+  } else {
+    if (!bWarnedGuess) {
+      fprintf(stderr,"WARNING: Unsupported box diagonal %f %f %f, "
+	      "will not use periodic boundary conditions\n\n",
+	      box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+      bWarnedGuess = TRUE;
+    }
+    ePBC = epbcNONE;
+  }
+
+  return ePBC;
 }
 
 static int correct_box_elem(tensor box,int v,int d)
@@ -156,42 +186,50 @@ bool correct_box(tensor box,t_graph *graph)
   return bCorrected;
 }
 
-static void low_set_pbc(t_pbc *pbc,matrix box,ivec *dd_nc,bool bSingleShift)
+static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
+			ivec *dd_nc,bool bSingleShift)
 {
   int  order[5]={0,-1,1,-2,2};
   int  ii,jj,kk,i,j,k,d,dd,jc,kc,npbcdim,shift;
+  ivec bPBC;
   real d2old,d2new,d2new_c;
   rvec try,pos;
-  bool bUse;
+  bool bXY,bUse;
   char *ptr;
-
+  
   copy_mat(box,pbc->box);
   pbc->bLimitDistance = FALSE;
   pbc->max_cutoff2 = 0;
 
   ptr = check_box(box);
-  if (ptr) {
+  if (ePBC == epbcNONE) {
+    pbc->ePBCDX = epbcdxNOPBC;
+  } else if (ptr) {
     fprintf(stderr,   "Warning: %s\n",ptr);
     pr_rvecs(stderr,0,"         Box",box,DIM);
     fprintf(stderr,   "         Can not fix pbc.\n");
     pbc->ePBCDX = epbcdxUNSUPPORTED;
     pbc->bLimitDistance = TRUE;
     pbc->limit_distance2 = 0;
-  } else if (box[XX][XX]==0 || box[YY][YY]==0 || box[ZZ][ZZ]==0) {
-    pbc->ePBCDX = epbcdxNOPBC;
   } else {
-    if (dd_nc) {
-      if (!bSingleShift)
+    bXY = (ePBC == epbcXY);
+    if (dd_nc || bXY) {
+      if (dd_nc && !bSingleShift)
 	gmx_fatal(FARGS,"Domain decomposition only supports single shifts");
       npbcdim = 0;
-      for(i=0; i<DIM; i++)
-	if ((*dd_nc)[i] == 1)
+      for(i=0; i<DIM; i++) {
+	if ((dd_nc && (*dd_nc)[i] > 1) || (bXY && i==ZZ)) {
+	  bPBC[i] = 0;
+	} else {
+	  bPBC[i] = 1;
 	  npbcdim++;
+	}
+      }
       switch (npbcdim) {
       case 1:
 	pbc->ePBCDX = epbcdx1D_RECT_SS;
 	for(i=0; i<DIM; i++)
-	  if ((*dd_nc)[i] == 1)
+	  if (!bPBC[i])
 	    pbc->dim = i;
 	for(i=0; i<DIM; i++)
 	  if (i!=pbc->dim && pbc->box[pbc->dim][i]!=0)
@@ -200,7 +238,7 @@ static void low_set_pbc(t_pbc *pbc,matrix box,ivec *dd_nc,bool bSingleShift)
       case 2:
 	pbc->ePBCDX = epbcdx2D_RECT_SS;
 	for(i=0; i<DIM; i++)
-	  if ((*dd_nc)[i] > 1)
+	  if (bPBC[i])
 	    pbc->dim = i;
 	for(i=0; i<DIM; i++)
 	  if (i!=pbc->dim)
@@ -226,7 +264,7 @@ static void low_set_pbc(t_pbc *pbc,matrix box,ivec *dd_nc,bool bSingleShift)
       pbc->hbox_diag[i]  =  pbc->fbox_diag[i]*0.5;
       pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
     }
-    pbc->max_cutoff2 = max_cutoff2(box);
+    pbc->max_cutoff2 = max_cutoff2(ePBC,box);
     if (pbc->ePBCDX == epbcdxTRICLINIC || pbc->ePBCDX == epbcdxTRICLINIC_SS) {
       if (debug) {
 	pr_rvecs(debug,0,"Box",box,DIM);
@@ -327,10 +365,11 @@ static void low_set_pbc(t_pbc *pbc,matrix box,ivec *dd_nc,bool bSingleShift)
 
 void set_pbc(t_pbc *pbc,matrix box)
 {
-  low_set_pbc(pbc,box,NULL,FALSE);
+  low_set_pbc(pbc,guess_ePBC(box),box,NULL,FALSE);
 }
 
-t_pbc *set_pbc_ss(t_pbc *pbc,matrix box,gmx_domdec_t *dd,bool bSingleDir)
+t_pbc *set_pbc_ss(t_pbc *pbc,bool bXY,matrix box,
+		  gmx_domdec_t *dd,bool bSingleDir)
 {
   ivec nc2;
   int  npbcdim,i;
@@ -350,7 +389,7 @@ t_pbc *set_pbc_ss(t_pbc *pbc,matrix box,gmx_domdec_t *dd,bool bSingleDir)
   }
   
   if (npbcdim > 0)
-    low_set_pbc(pbc,box,npbcdim<DIM ? &nc2 : NULL,TRUE);
+    low_set_pbc(pbc,bXY,box,npbcdim<DIM ? &nc2 : NULL,TRUE);
 
   return (npbcdim>0 ? pbc : NULL);
 }
@@ -589,16 +628,15 @@ void calc_shifts(matrix box,rvec shift_vec[])
 void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
 	       rvec pos[],rvec cg_cm[])
 {
-  int  icg,ai,k,k0,k1,d;
+  int  icg,k,k0,k1,d;
   rvec cg;
   real nrcg,inv_ncg;
-  atom_id *cga,*cgindex;
+  atom_id *cgindex;
   
 #ifdef DEBUG
   fprintf(log,"Calculating centre of geometry for charge groups %d to %d\n",
 	  cg0,cg1);
 #endif
-  /*cga     = cgs->a;*/
   cgindex = cgs->index;
   
   /* Compute the center of geometry for all charge groups */
@@ -607,19 +645,15 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
     k1      = cgindex[icg+1];
     nrcg    = k1-k0;
     if (nrcg == 1) {
-      /*ai = cga[k0];*/
-      ai = k0;
-      copy_rvec(pos[ai],cg_cm[icg]);
+      copy_rvec(pos[k0],cg_cm[icg]);
     }
     else {
       inv_ncg = 1.0/nrcg;
       
       clear_rvec(cg);
       for(k=k0; (k<k1); k++)  {
-	/*ai     = cga[k];*/
-	ai = k;
 	for(d=0; (d<DIM); d++)
-	  cg[d] += pos[ai][d];
+	  cg[d] += pos[k][d];
       }
       for(d=0; (d<DIM); d++)
 	cg_cm[icg][d] = inv_ncg*cg[d];
@@ -628,21 +662,25 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
 }
 
 void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
-			      matrix box,t_block *cgs,
+			      int ePBC,matrix box,t_block *cgs,
 			      rvec pos[],rvec cg_cm[])
 			      
 { 
-  int  icg,ai,k,k0,k1,d,e;
+  int  npbcdim,icg,k,k0,k1,d,e;
   rvec cg;
   real nrcg,inv_ncg;
-  atom_id *cga,*cgindex;
+  atom_id *cgindex;
   bool bTric;
 
 #ifdef DEBUG
   fprintf(log,"Putting cgs %d to %d in box\n",cg0,cg1);
 #endif
-  /*cga     = cgs->a;*/
   cgindex = cgs->index;
+
+  if (ePBC == epbcXY)
+    npbcdim = 2;
+  else
+    npbcdim = 3;
 
   bTric = TRICLINIC(box);
 
@@ -651,55 +689,54 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
     k0      = cgindex[icg];
     k1      = cgindex[icg+1];
     nrcg    = k1-k0;
-    inv_ncg = 1.0/nrcg;
-    
-    clear_rvec(cg);
-    for(k=k0; (k<k1); k++)  {
-      /*      ai     = cga[k];*/
-      ai = k;
+
+    if (nrcg == 1) {
+      copy_rvec(pos[k0],cg_cm[icg]);
+    } else {
+      inv_ncg = 1.0/nrcg;
+
+      clear_rvec(cg);
+      for(k=k0; (k<k1); k++)  {
+	for(d=0; d<DIM; d++)
+	  cg[d] += pos[k][d];
+      }
       for(d=0; d<DIM; d++)
-	cg[d] += inv_ncg*pos[ai][d];
+	cg_cm[icg][d] = inv_ncg*cg[d];
     }
     /* Now check pbc for this cg */
     if (bTric) {
-      for(d=DIM-1; d>=0; d--) {
-	while(cg[d] < 0) {
+      for(d=npbcdim-1; d>=0; d--) {
+	while(cg_cm[icg][d] < 0) {
 	  for(e=d; e>=0; e--) {
-	    cg[e] += box[d][e];
+	    cg_cm[icg][e] += box[d][e];
 	    for(k=k0; (k<k1); k++) 
-	      /*pos[cga[k]][e] += box[d][e];*/
 	      pos[k][e] += box[d][e];
 	  }
 	}
-	while(cg[d] >= box[d][d]) {
+	while(cg_cm[icg][d] >= box[d][d]) {
 	  for(e=d; e>=0; e--) {
-	    cg[e] -= box[d][e];
+	    cg_cm[icg][e] -= box[d][e];
 	    for(k=k0; (k<k1); k++) 
-	      /*pos[cga[k]][e] -= box[d][e];*/
 	      pos[k][e] -= box[d][e];
 	  }
 	}
-	cg_cm[icg][d] = cg[d];
       }
     } else {
-      for(d=0; d<DIM; d++) {
-	while(cg[d] < 0) {
-	  cg[d] += box[d][d];
+      for(d=0; d<npbcdim; d++) {
+	while(cg_cm[icg][d] < 0) {
+	  cg_cm[icg][d] += box[d][d];
 	  for(k=k0; (k<k1); k++) 
-	    /*pos[cga[k]][d] += box[d][d];*/
 	    pos[k][d] += box[d][d];
 	}
-	while(cg[d] >= box[d][d]) {
-	  cg[d] -= box[d][d];
+	while(cg_cm[icg][d] >= box[d][d]) {
+	  cg_cm[icg][d] -= box[d][d];
 	  for(k=k0; (k<k1); k++) 
-	    /*pos[cga[k]][d] -= box[d][d];*/
 	    pos[k][d] -= box[d][d];
 	}
-	cg_cm[icg][d] = cg[d];
       }
     }
 #ifdef DEBUG_PBC
-    for(d=0; (d<DIM); d++) {
+    for(d=0; (d<npbcdim); d++) {
       if ((cg_cm[icg][d] < 0) || (cg_cm[icg][d] >= box[d][d]))
 	gmx_fatal(FARGS,"cg_cm[%d] = %15f  %15f  %15f\n"
 		  "box = %15f  %15f  %15f\n",

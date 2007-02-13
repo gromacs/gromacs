@@ -218,7 +218,7 @@ static void get_pull_index(FILE *log,t_pullgrp *pgrp,
     gmx_fatal(FARGS,"Number of weights (%d) for pull group '%s' does not match the number of atoms (%d)",pgrp->nweight,pgrp->name,pgrp->ngx);
 }
 void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
-               t_mdatoms *md,ivec nFreeze[],matrix box,
+               t_mdatoms *md,ivec nFreeze[],int ePBC,matrix box,
 	       int start,int homenr,t_commrec *cr) 
 {
   int  i,j,m,ii;
@@ -233,6 +233,8 @@ void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
   pull->bPull = opt2bSet("-pi",nfile,fnm);
   if (!pull->bPull)
     return;
+
+  pull->ePBC = ePBC;
 
   /* initialize Absolute Reference boolean to FALSE  -- DLB */
   /* if TRUE then read_pullparams() will update AbsoluteRef properly -- DLB */

@@ -227,8 +227,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     grps->cosacc.cos_accel = inputrec->cos_accel;
     
     /* Periodicity stuff */  
-    if (inputrec->ePBC == epbcXYZ && !DOMAINDECOMP(cr)) {
-      graph=mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
+    if (inputrec->ePBC != epbcNONE && !inputrec->bPeriodicMols &&
+	!DOMAINDECOMP(cr)) {
+      graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
       if (gmx_debug_at) 
 	p_graph(debug,"Initial graph",graph);
     }
@@ -426,7 +427,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   real       t,t0,lam0;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
-	     bFullPBC,bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState;
+	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
@@ -518,8 +519,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bVsites)
       construct_vsites(log,
 		       state_global->x,nrnb,inputrec->delta_t,NULL,
-		       &top_global->idef,NULL,NULL,epbcFULL,state_global->box,
-		       NULL);
+		       &top_global->idef,fr->ePBC,TRUE,NULL,
+		       NULL,state_global->box,NULL);
 
     dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
 			state,&f,&buf,mdatoms,top,fr,nrnb,wcycle,FALSE);
@@ -543,9 +544,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   init_edsam(stdlog,top,inputrec,mdatoms,mdatoms->start,mdatoms->homenr,cr,
 	     edyn);
     
-  /* Check for full periodicity calculations */
-  bFullPBC = (inputrec->ePBC == epbcFULL);  
-  
   /* Check for polarizable models */
   shells   = init_shells(log,mdatoms->start,mdatoms->homenr,&top->idef,mdatoms,
 			 &nshell);
@@ -578,13 +576,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initialize pull code */
   init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,inputrec->opts.nFreeze,
-	    state->box,mdatoms->start,mdatoms->homenr,cr);
+	    inputrec->ePBC,state->box,mdatoms->start,mdatoms->homenr,cr);
   
   if (repl_ex_nst > 0 && MASTER(cr))
     repl_ex = init_replica_exchange(log,cr->ms,state_global,inputrec,
 				    repl_ex_nst,repl_ex_seed);
   
-  if (!inputrec->bUncStart && !bRerunMD)
+  if (!inputrec->bContinuation && !bRerunMD)
     do_shakefirst(log,ener,inputrec,mdatoms,state,buf,f,
 		  graph,cr,nrnb,grps,fr,top,edyn,&pulldata);
   debug_gmx();
@@ -759,11 +757,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	 * with the coordinates if we only have every N'th coordinate set
 	 */
 	if (bRerunMD || bExchanged)
-	  mk_mshift(log,graph,state->box,state->x);
+	  mk_mshift(log,graph,fr->ePBC,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
-      construct_vsites(log,state->x,nrnb,inputrec->delta_t,state->v,
-		       &top->idef,graph,cr,fr->ePBC,state->box,vsitecomm);
+      construct_vsites(log,state->x,nrnb,inputrec->delta_t,state->v,&top->idef,
+		       fr->ePBC,fr->bMolPBC,graph,cr,state->box,vsitecomm);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
@@ -865,7 +863,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     if (bVsites) 
       spread_vsite_f(log,state->x,f,fr->fshift,nrnb,&top->idef,
-		     fr->ePBC,graph,state->box,vsitecomm,cr);
+		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
 
     GMX_MPE_LOG(ev_virial_start);
     /* Calculation of the virial must be done after vsites!    */
@@ -880,7 +878,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     if (bVsites && fr->bEwald) 
       spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		     fr->ePBC,graph,state->box,vsitecomm,cr);
+		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
 
     GMX_MPE_LOG(ev_sum_lrforces_start);
     sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
@@ -1079,7 +1077,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Calculate pressure and apply LR correction if PPPM is used.
      * Use the box from last timestep since we already called update().
      */
-    calc_pres(fr->ePBC,lastbox,ekin,total_vir,pres,
+    calc_pres(fr->ePBC,inputrec->nwall,lastbox,ekin,total_vir,pres,
 	      (fr->eeltype==eelPPPM) ? ener[F_COUL_RECIP] : 0.0);
     
     /* Calculate long range corrections to pressure and energy */

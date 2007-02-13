@@ -66,7 +66,7 @@ real RF_excl_correction(FILE *log,
   int    start = mdatoms->start;
   int    end   = mdatoms->homenr+start;
   int    niat;
-  bool   bFullPBC;
+  bool   bMolPBC = fr->bMolPBC;
 
   if (fr->n_tpi)
     /* For test particle insertion we only correct for the test molecule */
@@ -77,7 +77,6 @@ real RF_excl_correction(FILE *log,
   chargeA = mdatoms->chargeA;
   chargeB = mdatoms->chargeB;
   AA = excl->a;
-  bFullPBC = (fr->ePBC == epbcFULL);
   ki = CENTRAL;
 
   if (fr->bDomDec)
@@ -105,7 +104,7 @@ real RF_excl_correction(FILE *log,
 	      rvec_sub(x[i],x[k],dx);
 	      ivec_sub(SHIFT_IVEC(g,i),SHIFT_IVEC(g,k),dt);
 	      ki=IVEC2IS(dt);
-	    } else if (bFullPBC) {
+	    } else if (bMolPBC) {
 	      ki = pbc_dx(pbc,x[i],x[k],dx);
 	    } else
 	      rvec_sub(x[i],x[k],dx);
@@ -143,7 +142,7 @@ real RF_excl_correction(FILE *log,
 	      rvec_sub(x[i],x[k],dx);
 	      ivec_sub(SHIFT_IVEC(g,i),SHIFT_IVEC(g,k),dt);
 	      ki=IVEC2IS(dt);
-	    } else if (bFullPBC) {
+	    } else if (bMolPBC) {
 	      ki = pbc_dx(pbc,x[i],x[k],dx);
 	    } else
 	      rvec_sub(x[i],x[k],dx);
@@ -179,17 +178,19 @@ void calc_rffac(FILE *log,int eel,real eps_r,real eps_rf,real Rc,real Temp,
   
   if (EEL_RF(eel)) {
     vol     = det(box);
-    I       = 0.5*zsq/vol;
     if (eel == eelGRF) {
       /* Consistency check */
       if (Temp <= 0.0)
 	gmx_fatal(FARGS,"Temperature is %f while using"
 		    " Generalized Reaction Field\n",Temp);
       /* Ionic strength (only needed for eelGRF */
+      I       = 0.5*zsq/vol;
       *kappa  = sqrt(2*I/(EPSILON0*eps_rf*BOLTZ*Temp));
     }
-    else
+    else {
+      I      = 0;
       *kappa = 0;
+    }
 
     /* eps == 0 signals infinite dielectric */
     if (eps_rf == 0) {
@@ -206,15 +207,20 @@ void calc_rffac(FILE *log,int eel,real eps_r,real eps_rf,real Rc,real Temp,
     rmin   = pow(*krf*2.0,-1.0/3.0);
     
     if (bFirst) {
-      if (eel == eelGRF)
+      if (eel == eelGRF) {
 	please_cite(log,"Tironi95a");
-      fprintf(log,"%s:\n"
-	      "epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
-	      "rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
-	      eel_names[eel],eps_rf,I,vol,*kappa,Rc,*krf,*crf,
-	      ONE_4PI_EPS0/eps_r);
+	fprintf(log,"%s:\n"
+		"epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
+		"rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
+		eel_names[eel],eps_rf,I,vol,*kappa,Rc,*krf,*crf,
+		ONE_4PI_EPS0/eps_r);
+      } else {
+	fprintf(log,"%s:\n"
+		"epsRF = %g, rc = %g, krf = %g, crf = %g, epsfac = %g\n",
+		eel_names[eel],eps_rf,Rc,*krf,*crf,ONE_4PI_EPS0/eps_r);
+      }
       fprintf(log,
-	      "The electrostatics potential has its minimum at rc = %g\n",
+	      "The electrostatics potential has its minimum at r = %g\n",
 	      rmin);
       
       bFirst=FALSE;

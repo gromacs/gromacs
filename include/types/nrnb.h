@@ -97,7 +97,7 @@ enum
     eNR_RB,                   eNR_FOURDIH,              eNR_TABDIHS,
     eNR_DISRES,               eNR_ORIRES,               eNR_DIHRES,
     eNR_POSRES,               eNR_ANGRES,               eNR_ANGRESZ,
-    eNR_MORSE,                eNR_CUBICBONDS,
+    eNR_MORSE,                eNR_CUBICBONDS,           eNR_WALLS,
     eNR_WPOL,                 eNR_THOLE,                eNR_VIRIAL,
     eNR_UPDATE,               eNR_EXTUPDATE,            eNR_STOPCM,
     eNR_PCOUPL,               eNR_EKIN,                 eNR_LINCS,

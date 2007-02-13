@@ -150,7 +150,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   real       *inv_segvol,invvol,invvol_sum,rho;
   bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box,box_pbc;
-  int        **npairs,*nself;
+  int        **npairs;
   atom_id    ix,jx,***pairs;
   t_topology top;
   t_block    *excl;
@@ -211,12 +211,12 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
   }
   if (bPBC)
-    rmax2   = 0.99*0.99*max_cutoff2(box_pbc);
+    rmax2   = 0.99*0.99*max_cutoff2(bXY ? epbcXY : epbcXYZ,box_pbc);
   else
     rmax2   = sqr(3*max(box[XX][XX],max(box[YY][YY],box[ZZ][ZZ])));
   if (debug)
     fprintf(debug,"rmax2 = %g\n",rmax2);
-    
+
   nbin    = (int)(sqrt(rmax2) / binwidth) + 1;
   invbinw = 1.0 / binwidth;
   cut2   = sqr(cutoff);
@@ -224,7 +224,6 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   snew(count,ng);
   snew(pairs,ng);
   snew(npairs,ng);
-  snew(nself,ng);
 
   snew(bExcl,natoms);
   max_i = 0;
@@ -256,8 +255,6 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	else if (ix != jx)
 	  /* Check if we have exclusions other than self exclusions */
 	  bNonSelfExcl = TRUE;
-	if (ix == jx)
-	  nself[g]++;
       }
       if (bNonSelfExcl) {
 	npairs[g][i]=k;
@@ -281,7 +278,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       rm_pbc(&top.idef,natoms,box,x,x);
       if (bXY) {
 	check_box_c(box);
-	box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
+	clear_rvec(box_pbc[ZZ]);
       }
       set_pbc(&pbc,box_pbc);
 
@@ -372,7 +369,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   snew(rdf,ng);
   for(g=0; g<ng; g++) {
     /* We have to normalize by dividing by the number of frames */
-    normfac = 1.0/(nframes*invvol*(isize[0]*isize[g+1] - nself[g]));
+    normfac = 1.0/(nframes*invvol*isize[0]*isize[g+1]);
       
     /* Do the normalization */
     nrdf = max(nbin-1,1+(2*fade/binwidth));

@@ -195,7 +195,7 @@ int gmx_sorient(int argc,char *argv[])
 
   rmin2 = sqr(rmin);
   rmax2 = sqr(rmax);
-  rcut  = 0.99*sqrt(max_cutoff2(box));
+  rcut  = 0.99*sqrt(max_cutoff2(guess_ePBC(box),box));
   if (rcut == 0)
     rcut = 10*rmax;
   rcut2 = sqr(rcut);

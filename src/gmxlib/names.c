@@ -49,7 +49,7 @@ const char *eblock_names[ebNR+1]=
 
 const char *epbc_names[epbcNR+1]=
 {
-  "xyz", "no", "full", NULL
+  "xyz", "no", "xy", NULL
 };
 
 const char *ens_names[ensNR+1]=
@@ -80,7 +80,7 @@ const char *eel_names[eelNR+1] = {
   "Cut-off", "Reaction-Field", "Generalized-Reaction-Field",
   "PME", "Ewald", "PPPM", "Poisson", "Switch", "Shift", "User", 
   "Generalized-Born", "Reaction-Field-nec", "Encad-shift", 
-  "PME-User", "PME-Switch", NULL
+  "PME-User", "PME-Switch", "PME-User-Switch", NULL
 };
 
 const char *eewg_names[eewgNR+1] = {
@@ -163,6 +163,10 @@ const char *egb_names[egbNR+1] = {
 
 const char *eis_names[eisNR+1] = {
   "No", "LCPO", NULL
+};
+
+const char *ewt_names[ewtNR+1] = {
+  "9-3", "10-4", "table", NULL
 };
 
 const char *eQMmethod_names[eQMmethodNR+1] = {

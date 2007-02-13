@@ -46,15 +46,19 @@
 #include "txtdump.h"
 #include "network.h"
  
-t_vcm *init_vcm(FILE *fp,t_atoms *atoms,int nstcomm,int comm_mode)
+t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir)
 {
   t_vcm *vcm;
   int   g;
   
   snew(vcm,1);
   
-  vcm->mode = (nstcomm > 0) ? comm_mode : ecmNO;
-  
+  vcm->mode = (ir->nstcomm > 0) ? ir->comm_mode : ecmNO;
+  vcm->bXY  = (ir->nwall > 0);
+  if (vcm->mode == ecmANGULAR && ir->ePBC==epbcXY)
+    gmx_fatal(FARGS,"Can not have angular comm removal with pbc=%s",
+	      epbc_names[ir->ePBC]);
+
   if (vcm->mode != ecmNO) {
     vcm->nr = atoms->grps[egcVCM].nr;
     /* Allocate one extra for a possible rest group */
@@ -160,10 +164,19 @@ void do_stopcm_grp(FILE *fp,int start,int homenr,unsigned short *group_id,
   
   if (vcm->mode != ecmNO) {
     /* Subtract linear momentum */
-    for(i=start; (i<start+homenr); i++) {
-      if (group_id)
-	g = group_id[i];
-      rvec_dec(v[i],vcm->group_v[g]);
+    if (vcm->bXY) {
+      for(i=start; (i<start+homenr); i++) {
+	if (group_id)
+	  g = group_id[i];
+	v[i][XX] -= vcm->group_v[g][XX];
+	v[i][YY] -= vcm->group_v[g][YY];
+      }
+    } else {
+      for(i=start; (i<start+homenr); i++) {
+	if (group_id)
+	  g = group_id[i];
+	rvec_dec(v[i],vcm->group_v[g]);
+      }
     }
     if (vcm->mode == ecmANGULAR) {
       /* Subtract angular momentum */
@@ -266,7 +279,7 @@ void check_cm_grp(FILE *fp,t_vcm *vcm)
   for(g=0; (g<vcm->nr); g++) {
     ekcm    = 0;
     if (vcm->group_mass[g] != 0) {
-      for(m=0; (m<DIM); m++) 
+      for(m=0; m<(vcm->bXY ? 2 : DIM); m++) 
 	ekcm += sqr(vcm->group_v[g][m]);
       ekcm *= 0.5*vcm->group_mass[g];
       

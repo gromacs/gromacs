@@ -56,15 +56,16 @@ typedef struct {
 } t_comm_vsites;
 
 extern void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
-			      real dt,rvec v[],t_idef *idef,
-			      t_graph *graph,t_commrec *cr,
-			      int ePBC,matrix box,t_comm_vsites *vsitecomm);
+			     real dt,rvec v[],t_idef *idef,
+			     int ePBC,bool bMolPBC,t_graph *graph,
+			     t_commrec *cr,matrix box,
+			     t_comm_vsites *vsitecomm);
 /* Create positions of vsite atoms based on surrounding atoms.
  */
  
 extern void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
 			   t_nrnb *nrnb,t_idef *idef,
-			   int ePBC,t_graph *g,matrix box,
+			   int ePBC,bool bMolPBC,t_graph *g,matrix box,
 			   t_comm_vsites *vsitecomm,t_commrec *cr);
 /* Spread the force operating on the vsite atoms on the surrounding atoms.
  * If fshift!=NULL also update the shift forces.

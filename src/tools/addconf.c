@@ -282,7 +282,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   calc_shifts(box,fr->shift_vec);
-  put_charge_groups_in_box(fp,0,cgs->nr,box,cgs,x,fr->cg_cm);
+  put_charge_groups_in_box(fp,0,cgs->nr,fr->ePBC,box,cgs,x,fr->cg_cm);
   
   /* Do the actual neighboursearching */
   init_neighbor_list(fp,fr,md->homenr);

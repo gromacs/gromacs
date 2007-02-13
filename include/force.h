@@ -72,11 +72,22 @@ extern void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,
 		       real *kappa,real *krf,real *crf);
 /* Determine the reaction-field constants */
 
+
+/* In wall.c */
+extern void make_wall_tables(FILE *fplog,
+			     const t_inputrec *ir,char *tabfn,t_atoms *atoms,
+			     t_forcerec *fr);
+
+extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
+		     rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb);
+
+
+
 extern t_forcerec *mk_forcerec(void);
 
 extern t_forcetable make_tables(FILE *fp,const t_forcerec *fr,
 				bool bVerbose,const char *fn,
-				real rtab,bool b14only);
+				real rtab,bool bForceUser,bool b14only);
 /* Return tables for inner loops. When bVerbose the tables are printed
  * to .xvg files
  */

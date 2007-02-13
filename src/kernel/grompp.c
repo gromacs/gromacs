@@ -451,7 +451,7 @@ static int search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
   return i;
 }
 
-static int renum_atype(t_params plist[],t_topology *top,
+static int renum_atype(t_params plist[],t_topology *top,int *wall_atomtype,
 		       t_atomtype *at,bool bVerbose)
 {
   int      i,j,k,l,mi,mj,nat,nrfp,ftype;
@@ -497,6 +497,12 @@ static int renum_atype(t_params plist[],t_topology *top,
     top->atoms.atom[i].typeB=
       search_atomtypes(at,&nat,typelist,top->atoms.atom[i].typeB,
 		       plist[ftype].param,ftype);
+  }
+
+  for(i=0; i<2; i++) {
+    if (wall_atomtype[i] >= 0)
+      wall_atomtype[i] = search_atomtypes(at,&nat,typelist,wall_atomtype[i],
+					  plist[ftype].param,ftype);
   }
 
   snew(new_radius,nat);
@@ -556,7 +562,18 @@ static int renum_atype(t_params plist[],t_topology *top,
   return nat;
 }
 
-int count_constraints(t_params plist[])
+static void set_wall_atomtype(t_atomtype *at,t_gromppopts *opts,
+			      t_inputrec *ir)
+{
+  int i;
+
+  if (ir->nwall > 0)
+    fprintf(stderr,"Searching the wall atom type(s)\n");
+  for(i=0; i<ir->nwall; i++)
+    ir->wall_atomtype[i] = at2type(opts->wall_atomtype[i],at);
+}
+
+static int count_constraints(t_params plist[])
 {
   int count,i;
 
@@ -661,6 +678,7 @@ int main (int argc, char *argv[])
   int          natoms,nvsite,nc,comb;
   t_params     *plist;
   t_state      state;
+  matrix       box;
   real         max_spacing,reppow;
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror;
@@ -760,9 +778,9 @@ int main (int argc, char *argv[])
 	    nc);
     nerror++;
   }
-  if ((ir->ePBC == epbcFULL) && (ir->eConstrAlg == estSHAKE) && nc) {
+  if (ir->bPeriodicMols && (ir->eConstrAlg == estSHAKE) && nc) {
     fprintf(stderr,
-	    "ERROR: can not do full pbc with %s, use %s\n",
+	    "ERROR: can not do periodic molecules with %s, use %s\n",
 	    eshake_names[estSHAKE],eshake_names[estLINCS]);
     nerror++;
   }
@@ -840,8 +858,9 @@ int main (int argc, char *argv[])
   if (nvsite)
     clean_vsite_bondeds(msys.plist,sys->atoms.nr,bRmVSBds);
   
+  set_wall_atomtype(atype,opts,ir);
   if (bRenum) 
-    atype->nr = renum_atype(plist, sys, atype, bVerbose);
+    atype->nr = renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
   
   /* Copy the atomtype data to the topology atomtype list */
   sys->atomtypes.nr=atype->nr;
@@ -919,11 +938,17 @@ int main (int argc, char *argv[])
     cont_status(ftp2fn(efTRN,NFILE,fnm),ftp2fn_null(efENX,NFILE,fnm),
 		bNeedVel,bGenVel,fr_time,ir,&state,sys);
   }
+
+  if (ir->ePBC==epbcXY && ir->nwall!=2)
+    clear_rvec(state.box[ZZ]);
   
   if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) || 
       (ir->coulombtype == eelPMEUSER)|| (ir->coulombtype == eelEWALD)) {
     /* Calculate the optimal grid dimensions */
-    max_spacing = calc_grid(stdout,state.box,opts->fourierspacing,
+    copy_mat(state.box,box);
+    if (ir->ePBC==epbcXY && ir->nwall==2)
+      svmul(ir->wall_ewald_zfac,box[ZZ],box[ZZ]);
+    max_spacing = calc_grid(stdout,box,opts->fourierspacing,
 			    &(ir->nkx),&(ir->nky),&(ir->nkz),1);
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
       set_warning_line(mdparin,-1);

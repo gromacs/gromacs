@@ -224,6 +224,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Angle Restr. Z",                164 },
     { "Morse Potent.",                 58  },
     { "Cubic Bonds",                   54  },
+    { "Walls",                         31  },
     { "Water Pol.",                    62  },
     { "Thole Pol.",                    296 },
     { "Virial",                        18  },

@@ -47,6 +47,7 @@
 typedef struct {
   int    nr;                   /* Number of groups                    */
   int    mode;                 /* One of the enums above              */
+  bool   bXY;                  /* x and y correction only             */
   rvec   *group_p;             /* Linear momentum per group           */
   rvec   *group_v;             /* Linear velocity per group           */
   rvec   *group_x;             /* Center of mass per group            */
@@ -57,7 +58,7 @@ typedef struct {
   char   **group_name;         /* These two are copies to pointers in */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp,t_atoms *atoms,int nstcomm,int comm_mode);
+t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir);
 
 /* Do a per group center of mass things */
 extern void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
