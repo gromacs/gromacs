@@ -153,3 +153,5 @@ extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 extern t_topology *dd_init_local_top(t_topology *top_global);
 
 #endif	/* _domdec_h */
+
+

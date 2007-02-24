@@ -28,14 +28,14 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_nmens.c	gmx_order.c	gmx_potential.c	gmx_rama.c	\
 	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
 	gmx_rotacf.c	gmx_saltbr.c	gmx_sas.c	gmx_sdf.c	\
-	gmx_sgangle.c	gmx_sorient.c 	gmx_spatial.c	gmx_tcaf.c	\
+	gmx_sgangle.c	gmx_sorient.c 	gmx_tcaf.c	\
 	gmx_traj.c	gmx_velacc.c	\
 	gmx_clustsize.c	gmx_mdmat.c	gmx_wham.c	eigio.h		\
 	correl.c	correl.h	gmx_sham.c	gmx_nmtraj.c	\
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
 	gmx_genpr.c	gmx_eneconv.c	gmx_vanhove.c	gmx_wheel.c	\
-	addconf.c 	addconf.h	gmx_sdf.c	gmx_spatial	\
+	addconf.c 	addconf.h	gmx_sdf.c	\
 	calcpot.c 	calcpot.h 	edittop.c
 
 bin_PROGRAMS = \
@@ -55,7 +55,7 @@ bin_PROGRAMS = \
 	g_nmens     	g_order     	g_potential 	g_rama      	\
 	g_rdf       	g_rms       	g_rmsdist   	g_rmsf      	\
 	g_rotacf    	g_saltbr    	g_sas       	g_sgangle   	\
-	g_sham 		g_sorient   	g_sdf		g_spatial	\
+	g_sham 		g_sorient   	g_sdf		\
 	g_tcaf      	g_traj      	g_vanhove	g_velacc    	\
 	g_clustsize 	g_mdmat     	g_wham		g_kinetics
 
