@@ -229,7 +229,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
       case 1:
 	pbc->ePBCDX = epbcdx1D_RECT_SS;
 	for(i=0; i<DIM; i++)
-	  if (!bPBC[i])
+	  if (bPBC[i])
 	    pbc->dim = i;
 	for(i=0; i<DIM; i++)
 	  if (i!=pbc->dim && pbc->box[pbc->dim][i]!=0)
@@ -238,7 +238,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
       case 2:
 	pbc->ePBCDX = epbcdx2D_RECT_SS;
 	for(i=0; i<DIM; i++)
-	  if (bPBC[i])
+	  if (!bPBC[i])
 	    pbc->dim = i;
 	for(i=0; i<DIM; i++)
 	  if (i!=pbc->dim)
@@ -368,7 +368,7 @@ void set_pbc(t_pbc *pbc,matrix box)
   low_set_pbc(pbc,guess_ePBC(box),box,NULL,FALSE);
 }
 
-t_pbc *set_pbc_ss(t_pbc *pbc,bool bXY,matrix box,
+t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
 		  gmx_domdec_t *dd,bool bSingleDir)
 {
   ivec nc2;
@@ -389,7 +389,7 @@ t_pbc *set_pbc_ss(t_pbc *pbc,bool bXY,matrix box,
   }
   
   if (npbcdim > 0)
-    low_set_pbc(pbc,bXY,box,npbcdim<DIM ? &nc2 : NULL,TRUE);
+    low_set_pbc(pbc,ePBC,box,npbcdim<DIM ? &nc2 : NULL,TRUE);
 
   return (npbcdim>0 ? pbc : NULL);
 }
