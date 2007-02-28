@@ -516,7 +516,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     setup_dd_grid(stdlog,cr->dd);
 
-    if (bVsites)
+    if (DDMASTER(cr->dd) && bVsites)
       construct_vsites(log,
 		       state_global->x,nrnb,inputrec->delta_t,NULL,
 		       &top_global->idef,fr->ePBC,TRUE,NULL,
