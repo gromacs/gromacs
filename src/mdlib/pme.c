@@ -1750,26 +1750,15 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
   return 0;
 }
 
-int gmx_pme_do(FILE *logfile,
-               gmx_pme_t pme,
-               int start,     
-               int homenr,
-               rvec x[],      
-               rvec f[],
-               real *chargeA, 
-               real *chargeB,
-               matrix box,	
-               t_commrec *cr,
-               t_nrnb *nrnb,    
-               matrix vir,      
-               real ewaldcoeff,
-               real *total_energy,
-               t_groups   *grps,
-               t_grpopts  *opts,
-               int   nlambda,
-               real *lambda, 
-               real *dvdlambda,
-               bool bGatherOnly)
+int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
+	       int start,       int homenr,
+	       rvec x[],        rvec f[],
+	       real *chargeA,   real *chargeB,
+	       matrix box,	t_commrec *cr,
+	       t_nrnb *nrnb,    
+	       matrix vir,      real ewaldcoeff,
+	       real *energy,    real lambda, 
+	       real *dvdlambda, bool bGatherOnly)
 {
   int     q,i,j,ntot,npme;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
@@ -1812,7 +1801,10 @@ int gmx_pme_do(FILE *logfile,
     where();
     unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
 #ifdef GMX_MPI
-    local_ny = grid->pfft.local_ny_after_transpose;
+    if (pme->nnodes > 1)
+      local_ny = grid->pfft.local_ny_after_transpose;
+    else
+      local_ny = ny;
 #else
     local_ny = ny;
 #endif
@@ -1884,7 +1876,7 @@ int gmx_pme_do(FILE *logfile,
       energy_AB[q]=solve_pme(pme,grid,ewaldcoeff,vol,vir_AB[q],cr);
       where();
       GMX_MPE_LOG(ev_solve_pme_finish);
-      inc_nrnb(nrnb,eNR_SOLVEPME,nx*local_ny*nz*0.5);
+      inc_nrnb(nrnb,eNR_SOLVEPME,nx*local_ny*((nz+1)/2+1));
 
       /* do 3d-invfft */
       GMX_BARRIER(cr->mpi_comm_mysim);
