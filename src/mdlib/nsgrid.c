@@ -367,7 +367,7 @@ void fill_grid(FILE *log,
   int    nrx,nry,nrz;
   rvec   n_box,offset;
   int    cell,cg,d,not_used;
-  ivec   home,shift0,b0,b1,ind;
+  ivec   shift0,b0,b1,ind;
   bool   bUse;
   
   /* Initiate cell borders */
@@ -408,7 +408,6 @@ void fill_grid(FILE *log,
     }
   } else {
     copy_rvec(grid->cell_offset,offset);
-    gmx_ddindex2xyz(dd->nc,dd->nodeid,home);
     for(cell=0; cell<dd->ncell; cell++) {
       /* Determine the ns grid cell limits for this DD cell */
       for(d=0; d<DIM; d++) {
