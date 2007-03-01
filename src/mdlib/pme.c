@@ -1876,7 +1876,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       energy_AB[q]=solve_pme(pme,grid,ewaldcoeff,vol,vir_AB[q],cr);
       where();
       GMX_MPE_LOG(ev_solve_pme_finish);
-      inc_nrnb(nrnb,eNR_SOLVEPME,nx*local_ny*((nz+1)/2+1));
+      inc_nrnb(nrnb,eNR_SOLVEPME,nx*local_ny*(nz/2+1));
 
       /* do 3d-invfft */
       GMX_BARRIER(cr->mpi_comm_mysim);
