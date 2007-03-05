@@ -75,7 +75,8 @@ extern void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,
 
 /* In wall.c */
 extern void make_wall_tables(FILE *fplog,
-			     const t_inputrec *ir,char *tabfn,t_atoms *atoms,
+			     const t_inputrec *ir,const char *tabfn,
+			     const t_atoms *atoms,
 			     t_forcerec *fr);
 
 extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,

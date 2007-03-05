@@ -13,7 +13,8 @@
 #include "nrnb.h"
 
 void make_wall_tables(FILE *fplog,
-		      const t_inputrec *ir,char *tabfn,t_atoms *atoms,
+		      const t_inputrec *ir,const char *tabfn,
+		      const t_atoms *atoms,
 		      t_forcerec *fr)
 {
   int  w,negp_pp,egp,i,j;
