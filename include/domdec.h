@@ -18,11 +18,6 @@ extern int glatnr(gmx_domdec_t *dd,int i);
  * When dd=NULL returns i+1.
  */
 
-extern void gmx_ddindex2xyz(ivec nc,int ind,ivec xyz);
-/* Returns the DD cell coordinates xyz for DD index ind,
- * nc should contain the number of cells.
- */
-
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 
@@ -30,14 +25,15 @@ extern void dd_make_reverse_top(FILE *fplog,
 				gmx_domdec_t *dd,t_topology *top,
 				bool bDynamics,int eeltype);
 
-extern int gmx_ddindex2pmeslab(t_commrec *cr,int ddindex);
-/* Returns the pme slab for DD index ddindex */
-
-extern int gmx_ddindex2nodeid(t_commrec *cr,int ddindex);
-/* Returns the nodeid in cr->mpi_comm_mysim for ddindex */
+extern int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z);
+/* Returns the pme slab for DD cell x,y,z */
 
 extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
+
+extern void get_pme_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
+			    int *nmy_ddnodes,int **my_ddnodes);
+/* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
 extern void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian);
 

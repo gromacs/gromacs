@@ -101,7 +101,7 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
   int  i,ii,resnr;
 
   if (dd) {
-    sprintf(fname,"%s_n%d.pdb",fn,dd->nodeid);
+    sprintf(fname,"%s_n%d.pdb",fn,dd->sim_nodeid);
     start = 0;
     homenr = dd->nat_tot_con;
   } else {

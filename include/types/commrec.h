@@ -93,19 +93,24 @@ typedef struct gmx_pme_comm_n_box *gmx_pme_comm_n_box_p_t;
 
 typedef struct {
   /* The communication setup including the pme only nodes */
-  bool bCartesian;
+  bool bCartesianSim;
   ivec ntot;
   int  pmedim;
   int  *pmenodes;
+  int  sim_nodeid;
 
   /* The DD particle-particle nodes only */
   /* The communication setup within the communicator all */
 #ifdef GMX_MPI
   MPI_Comm all;
 #endif
-  int  nodeid;
   int  nnodes;
+  bool bCartesianPP;
+  ivec ci;
+  int  rank;
+  ivec master_ci;
   int  masterrank;
+  int  *ddindex2simnodeid;
   /* Communication with the PME only nodes */
   int  pme_nodeid;
   bool pme_receive_vir_ener;
@@ -131,8 +136,7 @@ typedef struct {
   ivec tric_dir;
   rvec skew_fac;
 
-  /* The home cell index, cartesian index and the cell boundaries */
-  ivec ci;
+  /* The cell boundaries */
   rvec cell_x0;
   rvec cell_x1;
   /* The extreme sizes of the local cells needed for the neighbor searching */
@@ -244,10 +248,7 @@ typedef struct {
 #define MASTERRANK(cr)     (0)
 
 #define DOMAINDECOMP(cr)   ((cr)->dd != NULL)
-
-#define DDMASTER(dd)       ((dd)->nodeid == 0)
-#define DDRANK(dd,nodeid)  (nodeid)
-#define DDMASTERRANK(dd)   (0)
+#define DDMASTER(dd)       ((dd)->rank == (dd)->masterrank)
 
 #define PARTDECOMP(cr)     ((cr)->pd != NULL)
 

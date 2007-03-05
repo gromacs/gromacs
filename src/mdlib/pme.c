@@ -1177,29 +1177,11 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-static void get_my_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
-			   int *nmy_ddnodes,int **my_ddnodes)
-{
-  int i;
-
-  snew(*my_ddnodes,(cr->dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
-  
-  *nmy_ddnodes = 0;
-  for(i=0; i<cr->dd->nnodes; i++) {
-    if (gmx_ddindex2pmeslab(cr,i) == pmenodeid)
-      (*my_ddnodes)[(*nmy_ddnodes)++] = gmx_ddindex2nodeid(cr,i);
-  }
-
-  fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
-	  cr->nodeid,*nmy_ddnodes);
-}
-
 static void setup_coordinate_communication(FILE *log, t_commrec *cr,
 					   gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
-  int  npme,shmax,i,slab,dd_cx0,dd_cx1,fw,bw;
-  ivec coords;
+  int  npme,shmax,x,y,z,i,slab,dd_cx0,dd_cx1,fw,bw;
   bool bPPnode;
 
   npme = pme->nnodes;
@@ -1210,24 +1192,26 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
    * and diffusion between neighbor list updates.
    */
   shmax = 1;
-  for(i=0; i<cr->dd->nnodes; i++) {
-    gmx_ddindex2xyz(cr->dd->nc,i,coords);
-    slab = gmx_ddindex2pmeslab(cr,i);
-    /* Initial (ns step) charge group center x in range 0 - dd_nx */
-    dd_cx0 = coords[XX];
-    dd_cx1 = coords[XX] + 1;
+  for(x=0; x<cr->dd->nc[XX]; x++) {
+    dd_cx0 = x;
+    dd_cx1 = x + 1;
     /* Add one DD cell size */
     dd_cx0--;
     dd_cx1++;
     /* Now we multiply with npme, so the x range is 0 - dd_nx*npme */
     dd_cx0 *= npme;
     dd_cx1 *= npme;
-    /* Check if we need to increase the maximum shift */
-    while (dd_cx1 > (slab + 1 + shmax)*cr->dd->nc[XX])
-      shmax++;
-    while (dd_cx0 < (slab - shmax)*cr->dd->nc[XX])
-      shmax++;
-}
+    for(y=0; y<cr->dd->nc[YY]; y++) {
+      for(z=0; z<cr->dd->nc[ZZ]; z++) {
+	slab = gmx_ddcoord2pmeslab(cr,x,y,z);
+	/* Check if we need to increase the maximum shift */
+	while (dd_cx1 > (slab + 1 + shmax)*cr->dd->nc[XX])
+	  shmax++;
+	while (dd_cx0 < (slab - shmax)*cr->dd->nc[XX])
+	  shmax++;
+      }
+    }
+  }
 
   if (bFirst) {
     fprintf(log,"PME maximum node shift for coordinate communication: %d\n",
@@ -1680,7 +1664,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 #endif
 
   /* Determine the DD nodes we need to talk with */
-  get_my_ddnodes(logfile,cr,pme->nodeid,&nmy_ddnodes,&my_ddnodes);
+  get_pme_ddnodes(logfile,cr,pme->nodeid,&nmy_ddnodes,&my_ddnodes);
   snew(cnb,nmy_ddnodes);
 
   init_nrnb(nrnb);

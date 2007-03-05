@@ -312,7 +312,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
       }
     }
     gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means you %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s.",
-	      dd->nodeid,nrecv_local,spac->nind_req,specat_type,
+	      dd->sim_nodeid,nrecv_local,spac->nind_req,specat_type,
 	      specat_type,add_err);
   }
 
