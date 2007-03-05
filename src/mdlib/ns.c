@@ -1962,23 +1962,14 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   char     *ptr;
   bool     *i_egp_flags;
   int      start,end;
-  bool     bDomDec;
-  ivec     dd_ci;
-
+ 
   /* Set some local variables */
-  bDomDec = DOMAINDECOMP(cr);
   bGrid = fr->bGrid;
   ngid = top->atoms.grps[egcENER].nr;
   
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
- 
-  if (bDomDec) {
-    copy_ivec(cr->dd->ci,dd_ci);
-  } else {
-    clear_ivec(dd_ci);
-  }
- 
+  
   if (fr->ePBC != epbcNONE) {
     if (bGrid) {
       if (sqr(fr->rlistlong) >= max_cutoff2(fr->ePBC,box))
@@ -2046,7 +2037,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       pr_ivec(debug,0,"bHaveVdW",bHaveVdW,fr->ntype,TRUE);
   }
 
-  if (bDomDec || bFirst) {
+  if (DOMAINDECOMP(cr) || bFirst) {
     if (cgs->nra > nra_alloc) {
       nra_alloc = over_alloc(cgs->nra);
       srenew(bexcl,nra_alloc);
@@ -2073,7 +2064,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     end   = (cgs->nr+1)/2;
 #endif
 
-    if (bDomDec) {
+    if (DOMAINDECOMP(cr)) {
       end = cgs->nr;
       fill_grid(log,cr->dd,grid,box,0,end,fr->cg_cm);
     } else {
