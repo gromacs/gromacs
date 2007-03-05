@@ -1593,6 +1593,7 @@ static void receive_virial_energy(t_commrec *cr,
     bGotUsr1Signal = (cve.flags & PME_USR1);
   } else {
     *energy = 0;
+    *pme_cycles = 0;
   }
 }
 
