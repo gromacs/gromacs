@@ -92,25 +92,17 @@ typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
 typedef struct gmx_pme_comm_n_box *gmx_pme_comm_n_box_p_t;
 
 typedef struct {
-  /* The communication setup including the pme only nodes */
-  bool bCartesianSim;
-  ivec ntot;
-  int  pmedim;
-  int  *pmenodes;
   int  sim_nodeid;
 
   /* The DD particle-particle nodes only */
-  /* The communication setup within the communicator all */
-#ifdef GMX_MPI
-  MPI_Comm all;
-#endif
+  /* The communication setup within the communicator all
+   * defined in dd->comm in domdec.c
+   */
   int  nnodes;
-  bool bCartesianPP;
   ivec ci;
   int  rank;
   ivec master_ci;
   int  masterrank;
-  int  *ddindex2simnodeid;
   /* Communication with the PME only nodes */
   int  pme_nodeid;
   bool pme_receive_vir_ener;

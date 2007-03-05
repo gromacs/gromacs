@@ -175,6 +175,7 @@ int main(int argc,char *argv[])
 
   /* Command line options ! */
   static bool bCart        = FALSE;
+  static bool bPPPME       = FALSE;
   static bool bDLB         = FALSE;
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
@@ -201,7 +202,9 @@ int main(int argc,char *argv[])
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME" },
     { "-cart",    FALSE, etBOOL, {&bCart}, 
-      "HIDDENUse a Cartesian communicator" },
+      "Use a Cartesian communicator" },
+    { "-pppme",    FALSE, etBOOL, {&bPPPME}, 
+      "HIDDENNode order PP PME iso interleaved" },
     { "-rdd",     FALSE, etREAL, {&rdd},
       "The minimum distance for DD communication" },
     { "-dlb",     FALSE, etBOOL, {&bDLB},
@@ -273,11 +276,12 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,edyn,cr);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-  Flags = Flags | (bSepDVDL  ? MD_SEPDVDL  : 0);
-  Flags = Flags | (bIonize   ? MD_IONIZE   : 0);
-  Flags = Flags | (bGlas     ? MD_GLAS     : 0);
-  Flags = Flags | (bCart     ? MD_CARTESIAN: 0);
-  Flags = Flags | (bDLB      ? MD_DLB      : 0);
+  Flags = Flags | (bSepDVDL  ? MD_SEPDVDL    : 0);
+  Flags = Flags | (bIonize   ? MD_IONIZE     : 0);
+  Flags = Flags | (bGlas     ? MD_GLAS       : 0);
+  Flags = Flags | (bCart     ? MD_CARTESIAN  : 0);
+  Flags = Flags | (bPPPME    ? MD_ORD_PP_PME : 0);
+  Flags = Flags | (bDLB      ? MD_DLB        : 0);
 
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);

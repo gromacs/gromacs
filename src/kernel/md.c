@@ -166,7 +166,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,rdd,
 				       Flags & MD_DLB,loadx,loady,loadz);
     
-    make_dd_communicators(stdlog,cr,Flags & MD_CARTESIAN);
+    make_dd_communicators(stdlog,cr,
+			  Flags & MD_CARTESIAN,
+			  Flags & MD_ORD_PP_PME);
   } else {
     if (cr->npmenodes > 0)
       gmx_fatal(FARGS,

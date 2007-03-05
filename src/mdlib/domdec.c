@@ -60,8 +60,8 @@ typedef struct {
 
 #define DD_NLOAD_MAX 9
 
-/* Here float are accurate enough, since these variables are only
- * influence the load balancing, not the actual MD results.
+/* Here floats are accurate enough, since these variables
+ * only influence the load balancing, not the actual MD results.
  */
 typedef struct {
   int  nload;
@@ -76,6 +76,21 @@ typedef struct {
 } gmx_domdec_load_t;
 
 typedef struct gmx_domdec_comm {
+  /* The communication setup including the PME only nodes */
+  bool bCartesianPP_PME;
+  ivec ntot;
+  int  pmedim;
+  int  *pmenodes;
+  int  *ddindex2simnodeid;
+
+  /* The DD particle-particle nodes only */
+  /* The communication setup within the communicator all */
+#ifdef GMX_MPI
+  MPI_Comm all;
+#endif
+  bool bCartesianPP;
+  int  *ddindex2ddnodeid;
+
   /* Are there bonded interactions between charge groups? */
   bool bInterCGBondeds;
     
@@ -189,6 +204,25 @@ static void ddindex2xyz(ivec nc,int ind,ivec xyz)
   xyz[ZZ] = ind % nc[ZZ];
 }
 
+static int ddcoord2ddnodeid(gmx_domdec_t *dd,ivec c)
+{
+  int ddindex;
+  int ddnodeid=-1;
+
+  ddindex = dd_index(dd->nc,c);
+  if (dd->comm->bCartesianPP_PME) {
+    ddnodeid = dd->comm->ddindex2ddnodeid[ddindex];
+  } else if (dd->comm->bCartesianPP) {
+#ifdef GMX_MPI
+    MPI_Cart_rank(dd->comm->all,c,&ddnodeid);
+#endif
+  } else {
+    ddnodeid = ddindex;
+  }
+
+  return ddnodeid;
+}
+
 int glatnr(gmx_domdec_t *dd,int i)
 {
   int atnr;
@@ -249,7 +283,7 @@ void dd_sendrecv_int(const gmx_domdec_t *dd,
 
   MPI_Sendrecv(buf_s,n_s*sizeof(int),MPI_BYTE,rank_s,0,
 	       buf_r,n_r*sizeof(int),MPI_BYTE,rank_r,0,
-	       dd->all,&stat);
+	       dd->comm->all,&stat);
 #endif
 }
 
@@ -267,7 +301,7 @@ void dd_sendrecv_rvec(const gmx_domdec_t *dd,
 
   MPI_Sendrecv(buf_s[0],n_s*sizeof(rvec),MPI_BYTE,rank_s,0,
 	       buf_r[0],n_r*sizeof(rvec),MPI_BYTE,rank_r,0,
-	       dd->all,&stat);
+	       dd->comm->all,&stat);
 #endif
 }
 
@@ -463,7 +497,7 @@ static void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data)
 {
 #ifdef GMX_MPI
   MPI_Bcast(data,nbytes,MPI_BYTE,
-	    DDMASTERRANK(dd),dd->all);
+	    DDMASTERRANK(dd),dd->comm->all);
 #endif
 }
 
@@ -472,7 +506,7 @@ static void dd_scatter(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
 #ifdef GMX_MPI
   MPI_Scatter(src,nbytes,MPI_BYTE,
 	      dest,nbytes,MPI_BYTE,
-	      DDMASTERRANK(dd),dd->all);
+	      DDMASTERRANK(dd),dd->comm->all);
 #endif
 }
 
@@ -481,7 +515,7 @@ static void dd_gather(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
 #ifdef GMX_MPI
   MPI_Gather(src,nbytes,MPI_BYTE,
 	     dest,nbytes,MPI_BYTE,
-	     DDMASTERRANK(dd),dd->all);
+	     DDMASTERRANK(dd),dd->comm->all);
 #endif
 }
 
@@ -492,7 +526,7 @@ static void dd_scatterv(gmx_domdec_t *dd,
 #ifdef GMX_MPI
   MPI_Scatterv(sbuf,scounts,disps,MPI_BYTE,
 	       rbuf,rcount,MPI_BYTE,
-	       DDMASTERRANK(dd),dd->all);
+	       DDMASTERRANK(dd),dd->comm->all);
 #endif
 }
 
@@ -503,7 +537,7 @@ static void dd_gatherv(gmx_domdec_t *dd,
 #ifdef GMX_MPI
   MPI_Gatherv(sbuf,scount,MPI_BYTE,
 	      rbuf,rcounts,disps,MPI_BYTE,
-	      DDMASTERRANK(dd),dd->all);
+	      DDMASTERRANK(dd),dd->comm->all);
 #endif
 }
 
@@ -569,7 +603,7 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
   if (!DDMASTER(dd)) {
 #ifdef GMX_MPI
     MPI_Send(lv,dd->nat_home*sizeof(rvec),MPI_BYTE,DDMASTERRANK(dd),
-	     dd->rank,dd->all);
+	     dd->rank,dd->comm->all);
 #endif
   } else {
     /* Copy the master coordinates to the global array */
@@ -587,7 +621,7 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
 	}
 #ifdef GMX_MPI
 	MPI_Recv(buf,ma->nat[n]*sizeof(rvec),MPI_BYTE,DDRANK(dd,n),
-		 n,dd->all,MPI_STATUS_IGNORE);
+		 n,dd->comm->all,MPI_STATUS_IGNORE);
 #endif
 	a = 0;
 	for(i=ma->index[n]; i<ma->index[n+1]; i++)
@@ -671,7 +705,7 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
 
 #ifdef GMX_MPI
 	MPI_Send(buf,ma->nat[n]*sizeof(rvec),MPI_BYTE,
-		 DDRANK(dd,n),n,dd->all);
+		 DDRANK(dd,n),n,dd->comm->all);
 #endif
       }
     }
@@ -684,7 +718,7 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
   } else {
 #ifdef GMX_MPI
     MPI_Recv(lv,dd->nat_home*sizeof(rvec),MPI_BYTE,DDMASTERRANK(dd),
-	     MPI_ANY_TAG,dd->all,MPI_STATUS_IGNORE);
+	     MPI_ANY_TAG,dd->comm->all,MPI_STATUS_IGNORE);
 #endif
   }
 }
@@ -2081,6 +2115,7 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
   MPI_Comm  c_row;
   int  dim,i,*rank;
   ivec loc_c;
+  gmx_domdec_root_t *root;
 
   dim = dd->dim[dim_ind];
   copy_ivec(loc,loc_c);
@@ -2090,26 +2125,27 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
     rank[i] = dd_index(dd->nc,loc_c);
   }
   /* Here we create a new group, that does not necessarily
-   * include our process. But MPI_Comm_create need to be
+   * include our process. But MPI_Comm_create needs to be
    * called by all the processes in the original communicator.
    * Calling MPI_Group_free afterwards gives errors, so I assume
    * also the group is needed by all processes. (B. Hess)
    */
   MPI_Group_incl(g_all,dd->nc[dim],rank,&g_row);
-  MPI_Comm_create(dd->all,g_row,&c_row);
+  MPI_Comm_create(dd->comm->all,g_row,&c_row);
   if (c_row != MPI_COMM_NULL) {
     /* This process is part of the group */
     dd->comm->mpi_comm_load[dim_ind] = c_row;
     if (dd->bGridJump) {
-      snew(dd->comm->root[dim_ind].cell_f,dd->nc[dim]+1+dim_ind*2);
+      root = &dd->comm->root[dim_ind];
+      snew(root->cell_f,dd->nc[dim]+1+dim_ind*2);
       if (dd->ci[dim_ind] == dd->master_ci[dim_ind]) {
-	snew(dd->comm->root[dim_ind].cell_size,dd->nc[dim]);
-	snew(dd->comm->root[dim_ind].bCellMin,dd->nc[dim]);
+	snew(root->cell_size,dd->nc[dim]);
+	snew(root->bCellMin,dd->nc[dim]);
 	if (dim_ind > 0) {
-	  snew(dd->comm->root[dim_ind].cell_f_max0,dd->nc[dim]);
-	  snew(dd->comm->root[dim_ind].cell_f_min1,dd->nc[dim]);
-	  snew(dd->comm->root[dim_ind].bound_min,dd->nc[dim]);
-	  snew(dd->comm->root[dim_ind].bound_max,dd->nc[dim]);
+	  snew(root->cell_f_max0,dd->nc[dim]);
+	  snew(root->cell_f_min1,dd->nc[dim]);
+	  snew(root->bound_min,dd->nc[dim]);
+	  snew(root->bound_max,dd->nc[dim]);
 	}
       }
     }
@@ -2130,7 +2166,7 @@ static void make_load_communicators(gmx_domdec_t *dd)
   if (debug)
     fprintf(debug,"Making load communicators\n");
 
-  MPI_Comm_group(dd->all,&g_all);
+  MPI_Comm_group(dd->comm->all,&g_all);
   
   snew(dd->comm->load,dd->ndim);
   snew(dd->comm->mpi_comm_load,dd->ndim);
@@ -2189,20 +2225,12 @@ void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd)
   for(d=start; (d>=0 && d<DIM); d+=inc) {
     if (dd->nc[d] > 1) {
       dd->dim[dd->ndim] = d;
-      if (dd->bCartesianPP) {
-#ifdef GMX_MPI
-	MPI_Cart_shift(dd->all,d,1,
-		       &dd->neighbor[dd->ndim][1],
-		       &dd->neighbor[dd->ndim][0]);
-#endif
-      } else {
-	copy_ivec(dd->ci,tmp);
-	tmp[d] = (tmp[d] + 1) % dd->nc[d];
-	dd->neighbor[dd->ndim][0] = dd_index(dd->nc,tmp);
-	copy_ivec(dd->ci,tmp);
-	tmp[d] = (tmp[d] - 1 + dd->nc[d]) % dd->nc[d];
-	dd->neighbor[dd->ndim][1] = dd_index(dd->nc,tmp);
-      }
+      copy_ivec(dd->ci,tmp);
+      tmp[d] = (tmp[d] + 1) % dd->nc[d];
+      dd->neighbor[dd->ndim][0] = ddcoord2ddnodeid(dd,tmp);
+      copy_ivec(dd->ci,tmp);
+      tmp[d] = (tmp[d] - 1 + dd->nc[d]) % dd->nc[d];
+      dd->neighbor[dd->ndim][1] = ddcoord2ddnodeid(dd,tmp);
       if (debug)
 	fprintf(debug,"DD rank %d neighbor ranks in dir %d are + %d - %d\n",
 		dd->rank,d,
@@ -2315,11 +2343,11 @@ static void dd_cart_coord2pmecoord(gmx_domdec_t *dd,ivec coord,ivec coord_pme)
 {
   int nc,ntot;
 
-  nc   = dd->nc[dd->pmedim];
-  ntot = dd->ntot[dd->pmedim];
+  nc   = dd->nc[dd->comm->pmedim];
+  ntot = dd->comm->ntot[dd->comm->pmedim];
   copy_ivec(coord,coord_pme);
-  coord_pme[dd->pmedim] =
-    nc + (coord[dd->pmedim]*(ntot - nc) + (ntot - nc)/2)/nc;
+  coord_pme[dd->comm->pmedim] =
+    nc + (coord[dd->comm->pmedim]*(ntot - nc) + (ntot - nc)/2)/nc;
 }
 
 static int ddindex2pmeslab(const t_commrec *cr,int ddindex)
@@ -2357,7 +2385,7 @@ int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z)
 
   dd = cr->dd;
   /*
-  if (dd->bCartesian) {
+  if (dd->comm->bCartesian) {
     gmx_ddindex2xyz(dd->nc,ddindex,coords);
     dd_coords2pmecoords(dd,coords,coords_pme);
     copy_ivec(dd->ntot,nc);
@@ -2379,22 +2407,25 @@ int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z)
 
 static int ddcoord2simnodeid(t_commrec *cr,int x,int y,int z)
 {
+  gmx_domdec_comm_t *comm;
   ivec coords;
   int  ddindex,nodeid=-1;
+
+  comm = cr->dd->comm;
 
   coords[XX] = x;
   coords[YY] = y;
   coords[ZZ] = z;
-  if (cr->dd->bCartesianSim) {
+  if (comm->bCartesianPP_PME) {
 #ifdef GMX_MPI
     MPI_Cart_rank(cr->mpi_comm_mysim,coords,&nodeid);
 #endif
   } else {
     ddindex = dd_index(cr->dd->nc,coords);
-    if (cr->dd->bCartesianPP) {
-      nodeid = cr->dd->ddindex2simnodeid[ddindex];
+    if (comm->bCartesianPP) {
+      nodeid = comm->ddindex2simnodeid[ddindex];
     } else {
-      if (cr->dd->pmenodes) {
+      if (comm->pmenodes) {
 	nodeid = ddindex + gmx_ddcoord2pmeslab(cr,x,y,z);
       } else {
 	nodeid = ddindex;
@@ -2408,23 +2439,25 @@ static int ddcoord2simnodeid(t_commrec *cr,int x,int y,int z)
 static int dd_node2pmenode(t_commrec *cr,int nodeid)
 {
   gmx_domdec_t *dd;
+  gmx_domdec_comm_t *comm;
   ivec coord,coord_pme;
   int  i;
   int  pmenode=-1;
  
   dd = cr->dd;
+  comm = dd->comm;
 
   /* This assumes a uniform x domain decomposition grid cell size */
-  if (dd->bCartesianSim) {
+  if (comm->bCartesianPP_PME) {
 #ifdef GMX_MPI
     MPI_Cart_coords(cr->mpi_comm_mysim,nodeid,DIM,coord);
-    if (coord[dd->pmedim] < dd->nc[dd->pmedim]) {
+    if (coord[comm->pmedim] < dd->nc[comm->pmedim]) {
       /* This is a PP node */
-      dd_cart_coord2pmecoord(cr->dd,coord,coord_pme);
+      dd_cart_coord2pmecoord(dd,coord,coord_pme);
       MPI_Cart_rank(cr->mpi_comm_mysim,coord_pme,&pmenode);
     }
 #endif
-  } else if (dd->bCartesianPP) {
+  } else if (comm->bCartesianPP) {
     if (nodeid < dd->nnodes) {
       pmenode = dd->nnodes + ddindex2pmeslab(cr,nodeid);
     }
@@ -2432,17 +2465,17 @@ static int dd_node2pmenode(t_commrec *cr,int nodeid)
     /* This assumes DD cells with identical x coordinates
      * are numbered sequentially.
      */
-    if (dd->pmenodes == NULL) {
+    if (dd->comm->pmenodes == NULL) {
       if (nodeid < dd->nnodes) {
 	/* The DD index equals the nodeid */
 	pmenode = dd->nnodes + ddindex2pmeslab(cr,nodeid);
       }
     } else {
       i = 0;
-      while (nodeid > dd->pmenodes[i])
+      while (nodeid > dd->comm->pmenodes[i])
 	i++;
-      if (nodeid < dd->pmenodes[i])
-	pmenode = dd->pmenodes[i];
+      if (nodeid < dd->comm->pmenodes[i])
+	pmenode = dd->comm->pmenodes[i];
     }
   }
 
@@ -2465,26 +2498,49 @@ bool gmx_pmeonlynode(t_commrec *cr,int nodeid)
 void get_pme_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
 		     int *nmy_ddnodes,int **my_ddnodes)
 {
+  gmx_domdec_t *dd;
   int x,y,z;
-  
-  snew(*my_ddnodes,(cr->dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
+  ivec coord,coord_pme;
+
+  dd = cr->dd;
+
+  snew(*my_ddnodes,(dd->nnodes+cr->npmenodes-1)/cr->npmenodes);
   
   *nmy_ddnodes = 0;
-  for(x=0; x<cr->dd->nc[XX]; x++) {
-    for(y=0; y<cr->dd->nc[YY]; y++) {
-      for(z=0; z<cr->dd->nc[ZZ]; z++) {
-	if (gmx_ddcoord2pmeslab(cr,x,y,z) == pmenodeid)
-	  (*my_ddnodes)[(*nmy_ddnodes)++] = ddcoord2simnodeid(cr,x,y,z);
+  for(x=0; x<dd->nc[XX]; x++) {
+    for(y=0; y<dd->nc[YY]; y++) {
+      for(z=0; z<dd->nc[ZZ]; z++) {
+	if (dd->comm->bCartesianPP_PME) {
+	  coord[XX] = x;
+	  coord[YY] = y;
+	  coord[ZZ] = z;
+	  dd_cart_coord2pmecoord(dd,coord,coord_pme);
+	  if (dd->ci[XX] == coord_pme[XX] &&
+	      dd->ci[YY] == coord_pme[YY] &&
+	      dd->ci[ZZ] == coord_pme[ZZ])
+	    (*my_ddnodes)[(*nmy_ddnodes)++] = ddcoord2simnodeid(cr,x,y,z);
+	} else {
+	  /* The slab corresponds to the nodeid in the PME group */
+	  if (gmx_ddcoord2pmeslab(cr,x,y,z) == pmenodeid)
+	    (*my_ddnodes)[(*nmy_ddnodes)++] = ddcoord2simnodeid(cr,x,y,z);
+	}
       }
     }
   }
 
   fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
 	  cr->nodeid,*nmy_ddnodes);
+  if (debug) {
+    fprintf(debug,"Receive coordinates from PP nodes:");
+    for(x=0; x<*nmy_ddnodes; x++)
+      fprintf(debug," %d",(*my_ddnodes)[x]);
+    fprintf(debug,"\n");
+  }
 }
 
 static bool receive_vir_ener(t_commrec *cr)
 {
+  gmx_domdec_comm_t *comm;
   int  pmenode,coords[DIM],rank;
   bool bReceive;
 
@@ -2492,11 +2548,12 @@ static bool receive_vir_ener(t_commrec *cr)
 
   bReceive = TRUE;
   if (cr->npmenodes < cr->dd->nnodes) {
-    if (cr->dd->bCartesianSim) {
+    comm = cr->dd->comm;
+    if (comm->bCartesianPP_PME) {
 #ifdef GMX_MPI
       MPI_Cart_coords(cr->mpi_comm_mysim,cr->nodeid,DIM,coords);
-      coords[cr->dd->pmedim]++;
-      if (coords[cr->dd->pmedim] < cr->dd->nc[cr->dd->pmedim]) {
+      coords[comm->pmedim]++;
+      if (coords[comm->pmedim] < cr->dd->nc[comm->pmedim]) {
 	MPI_Cart_rank(cr->mpi_comm_mysim,coords,&rank);
 	if (dd_node2pmenode(cr,rank) == pmenode) {
 	  /* This is not the last PP node for pmenode */
@@ -2516,78 +2573,85 @@ static bool receive_vir_ener(t_commrec *cr)
   return bReceive;
 }
 
-void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
+void make_dd_communicators(FILE *fplog,t_commrec *cr,
+			   bool bCartesian,bool bOrderPP_PME)
 {
   gmx_domdec_t *dd;
+  gmx_domdec_comm_t *comm;
   bool bDiv[DIM];
-  int  i,*buf;
-  ivec periods,coords;
+  int  i,rank,*buf;
+  ivec periods;
 #ifdef GMX_MPI
   MPI_Comm comm_cart;
 #endif
 
   dd = cr->dd;
+  comm = dd->comm;
 
   dd->sim_nodeid = cr->nodeid;
 
-  copy_ivec(dd->nc,dd->ntot);
+  copy_ivec(dd->nc,comm->ntot);
   
-  dd->bCartesianPP = bCartesian;
-  dd->bCartesianSim = FALSE;
-  if (dd->bCartesianPP && cr->npmenodes > 0 &&
-      getenv("GMX_CARTESIAN_SIM") != NULL) {
+  comm->bCartesianPP = bCartesian;
+  comm->bCartesianPP_PME = FALSE;
+  if (comm->bCartesianPP && cr->npmenodes > 0) {
     for(i=1; i<DIM; i++)
       bDiv[i] = ((cr->npmenodes*dd->nc[i]) % (dd->nnodes) == 0);
     if (bDiv[YY] || bDiv[ZZ]) {
-      dd->bCartesianSim = TRUE;
+      comm->bCartesianPP_PME = TRUE;
       /* We choose the direction that provides the thinnest slab
        * of PME only nodes as this will have the least effect
        * on the PP communication.
        * But for the PME communication the opposite might be better.
        */
       if (bDiv[YY] && (!bDiv[ZZ] || dd->nc[YY] <= dd->nc[ZZ])) {
-	dd->pmedim = YY;
+	comm->pmedim = YY;
       } else {
-	dd->pmedim = ZZ;
+	comm->pmedim = ZZ;
       }
-      dd->ntot[dd->pmedim] += (cr->npmenodes*dd->nc[dd->pmedim])/dd->nnodes;
+      comm->ntot[comm->pmedim]
+	+= (cr->npmenodes*dd->nc[comm->pmedim])/dd->nnodes;
+    } else {
+      fprintf(fplog,"#pmenodes (%d) is not a multiple of nx*ny (%d*%d) or nx*nz (%d*%d)\n",cr->npmenodes,dd->nc[XX],dd->nc[YY],dd->nc[XX],dd->nc[ZZ]);
+      fprintf(fplog,
+	      "Will not use a Cartesian communicator for PP <-> PME\n\n");
     }
   }
 
 #ifdef GMX_MPI
-  if (dd->bCartesianSim) {
+  if (comm->bCartesianPP_PME) {
     fprintf(fplog,
-	    "Will use a Cartesian communicator for PP+PME: %d x %d x %d\n",
-	    dd->ntot[XX],dd->ntot[YY],dd->ntot[ZZ]);
+	    "Will use a Cartesian communicator for PP <-> PME: %d x %d x %d\n",
+	    comm->ntot[XX],comm->ntot[YY],comm->ntot[ZZ]);
 
     for(i=0; i<DIM; i++)
       periods[i] = TRUE;
-    MPI_Cart_create(cr->mpi_comm_mysim,DIM,dd->ntot,periods,TRUE,&comm_cart);
-    
+    MPI_Cart_create(cr->mpi_comm_mysim,DIM,comm->ntot,periods,TRUE,&comm_cart);
+
+    MPI_Comm_rank(comm_cart,&rank);
+    if (MASTERNODE(cr) && rank != 0)
+      gmx_fatal(FARGS,"MPI rank 0 was renumbered by MPI_Cart_create, we do not allow this");
+
     /* With this assigment we loose the link to the original communicator
      * which will usually be MPI_COMM_WORLD, unless have multisim.
      */
     cr->mpi_comm_mysim = comm_cart;
-    
-    MPI_Comm_rank(cr->mpi_comm_mysim,&cr->nodeid);
+    cr->nodeid = rank;
 
-    MPI_Cart_coords(cr->mpi_comm_mysim,cr->nodeid,DIM,coords);
+    MPI_Cart_coords(cr->mpi_comm_mysim,cr->nodeid,DIM,dd->ci);
 
     fprintf(fplog,"Cartesian nodeid %d, coordinates %d %d %d\n\n",
-	    cr->nodeid,coords[0],coords[1],coords[2]);
+	    cr->nodeid,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
     
-    if (coords[dd->pmedim] < dd->nc[dd->pmedim])
+    if (dd->ci[comm->pmedim] < dd->nc[comm->pmedim])
       cr->duty |= DUTY_PP;
-    if (cr->npmenodes == 0 || coords[dd->pmedim] >= dd->nc[dd->pmedim])
+    if (cr->npmenodes == 0 || dd->ci[comm->pmedim] >= dd->nc[comm->pmedim])
       cr->duty |= DUTY_PME;
 
-    /* We always split here, even when we do not have separate PME nodes,
-     * as MPI_Comm_split is the only MPI call that allows us to reorder
-     * the nodeids, so we do not have to keep an extra index ourselves.
-     */
+    /* Split the sim communicator into PP and PME only nodes */
     MPI_Comm_split(cr->mpi_comm_mysim,
 		   cr->duty,
-		   dd_index(dd->ntot,coords),
+		   dd_index(comm->ntot,dd->ci),
 		   &cr->mpi_comm_mygroup);
   } else {
     if (cr->npmenodes == 0) {
@@ -2595,14 +2659,16 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
 
       cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
     } else {
-      fprintf(fplog,"Will not use a Cartesian communicator for PP+PME\n\n");
-      if (!dd->bCartesianPP && getenv("GMX_ORDER_PP_PME") == NULL) {
+      if (comm->bCartesianPP || bOrderPP_PME) {
+	fprintf(fplog,"Order of the nodes: PP first, PME last\n");
+      } else {
 	/* Interleave the PP-only and PME-only nodes,
 	 * as on clusters with dual-core machines this will double
 	 * the communication bandwidth of the PME processes
 	 * and thus speed up the PP <-> PME and inter PME communication.
 	 */
-	cr->dd->pmenodes = dd_pmenodes(cr);
+	fprintf(fplog,"Interleaving PP and PME nodes\n");
+	comm->pmenodes = dd_pmenodes(cr);
       }
 
       if (dd_node2pmenode(cr,cr->nodeid) == -1)
@@ -2610,6 +2676,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
       else
 	cr->duty |= DUTY_PP;
 
+      /* Split the sim communicator into PP and PME only nodes */
       MPI_Comm_split(cr->mpi_comm_mysim,
 		     cr->duty,
 		     cr->nodeid,
@@ -2618,7 +2685,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
   }
   
   if (cr->duty & DUTY_PP) {
-    if (dd->bCartesianPP) {
+    if (comm->bCartesianPP) {
       /* Set up cartesian communication for the particle-particle part */
       fprintf(fplog,"Will use a Cartesian communicator: %d x %d x %d\n",
 	      dd->nc[XX],dd->nc[YY],dd->nc[ZZ]);
@@ -2630,43 +2697,52 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
       cr->mpi_comm_mygroup = comm_cart;
     }
     
-    dd->all = cr->mpi_comm_mygroup;
-    MPI_Comm_rank(dd->all,&dd->rank);
+    comm->all = cr->mpi_comm_mygroup;
+    MPI_Comm_rank(comm->all,&dd->rank);
     
-    if (dd->bCartesianPP)
-      MPI_Cart_coords(dd->all,dd->rank,DIM,dd->ci);
+    if (comm->bCartesianPP)
+      MPI_Cart_coords(comm->all,dd->rank,DIM,dd->ci);
   }
    
-  if (dd->bCartesianPP) {
+  if (comm->bCartesianPP) {
     /* We need to make an index to go from the coordinates
      * to the nodeid of this simulation.
      */
-    snew(dd->ddindex2simnodeid,dd->nnodes);
+    snew(comm->ddindex2simnodeid,dd->nnodes);
     snew(buf,dd->nnodes);
     if (cr->duty & DUTY_PP)
       buf[dd_index(dd->nc,dd->ci)] = dd->sim_nodeid;
     /* Communicate the ddindex to simulation nodeid index */
-    MPI_Allreduce(buf,dd->ddindex2simnodeid,dd->nnodes,MPI_INT,MPI_SUM,
+    MPI_Allreduce(buf,comm->ddindex2simnodeid,dd->nnodes,MPI_INT,MPI_SUM,
 		  cr->mpi_comm_mysim);
     sfree(buf);
   }
   
   if (cr->duty & DUTY_PP) {
-    if (dd->bCartesianPP) {
+    if (comm->bCartesianPP) {
       /* Determine the master coordinates and rank.
        * The DD master should be the same node as the master of this sim.
        */
       dd->masterrank = -1;
       for(i=0; i<dd->nnodes; i++) {
-	if (dd->ddindex2simnodeid[i] == 0) {
+	if (comm->ddindex2simnodeid[i] == 0) {
 	  ddindex2xyz(dd->nc,i,dd->master_ci);
-	  MPI_Cart_rank(dd->all,dd->master_ci,&dd->masterrank);
+	  MPI_Cart_rank(comm->all,dd->master_ci,&dd->masterrank);
 	}
       }
       if (dd->masterrank == -1)
 	gmx_fatal(FARGS,"MPI_Cart_create has remapped the cells such that the orginal master node has become a PME node, can not continue");
+          
+      if (comm->bCartesianPP_PME) {
+	/* Since we want to use the original cartesian setup for sim,
+	 * and not the one after split, we need to make an index.
+	 */
+	snew(comm->ddindex2ddnodeid,dd->nnodes);
+	comm->ddindex2ddnodeid[dd_index(dd->nc,dd->ci)] = dd->rank;
+	gmx_sumi(dd->nnodes,comm->ddindex2ddnodeid,cr);
+      }
     } else { 
-      /* We use the rank in dd->all as DD index */
+      /* We use the rank in dd->comm->all as DD index */
       ddindex2xyz(dd->nc,dd->rank,dd->ci);
       /* The simulation master nodeid is 0, so the DD master rank is also 0 */
       dd->masterrank = 0;
@@ -2674,8 +2750,8 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
 	dd->master_ci[i] = 0;
     }
     
-    fprintf(fplog,"Domain decomposition coordinates %d %d %d, nodeid %d\n\n",
-	    dd->ci[XX],dd->ci[YY],dd->ci[ZZ],dd->rank);
+    fprintf(fplog,"Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
+	    dd->rank,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
   }
   
   if (cr->npmenodes > 0) {
@@ -2693,6 +2769,9 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,bool bCartesian)
   if (!(cr->duty & DUTY_PME)) {
     dd->pme_nodeid = dd_node2pmenode(cr,cr->nodeid);
     dd->pme_receive_vir_ener = receive_vir_ener(cr);
+    if (debug)
+      fprintf(debug,"My pme_nodeid %d receive ener %d\n",
+	      dd->pme_nodeid,dd->pme_receive_vir_ener);
   }
 
   if (DDMASTER(dd) && dd->ma == NULL) {
