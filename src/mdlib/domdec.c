@@ -1953,7 +1953,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 
   comm = dd->comm;
   
-  bSepPME = (comm->cycl_n[ddCyclPME] > 0);
+  bSepPME = (dd->pme_nodeid >= 0);
   
   for(d=dd->ndim-1; d>=0; d--) {
     dim = dd->dim[d];
@@ -2005,7 +2005,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
       MPI_Gather(sbuf      ,load->nload*sizeof(float),MPI_BYTE,
 		 load->load,load->nload*sizeof(float),MPI_BYTE,
 		 0,comm->mpi_comm_load[d]);
-      if (dd->ci[dim] == 0) {
+      if (dd->ci[dim] == dd->master_ci[dim]) {
 	/* We are the root, process this row */
 	load->sum = 0;
 	load->max = 0;
@@ -2069,9 +2069,9 @@ static float dd_f_imbal(gmx_domdec_t *dd)
   return dd->comm->load[0].max*dd->nnodes/dd->comm->load[0].sum - 1;
 }
 
-static float dd_pme_f_imbal(gmx_domdec_t *dd)
+static float dd_pme_f_ratio(gmx_domdec_t *dd)
 {
-  return dd->comm->load[0].pme/dd->comm->load[0].mdf - 1;
+  return dd->comm->load[0].pme/dd->comm->load[0].mdf;
 }
 
 static void dd_print_load(FILE *fplog,gmx_domdec_t *dd)
@@ -2092,7 +2092,7 @@ static void dd_print_load(FILE *fplog,gmx_domdec_t *dd)
     fprintf(fplog,"  vol min/aver %5.3f%c",dd_vol_min(dd),flags ? '!' : ' ');
   fprintf(fplog," load imbalance: force %4.1f %%",dd_f_imbal(dd)*100);
   if (dd->comm->cycl_n[ddCyclPME])
-    fprintf(fplog,"  pme mesh/force %4.1f %%",dd_pme_f_imbal(dd)*100);
+    fprintf(fplog,"  pme mesh/force %5.3f",dd_pme_f_ratio(dd));
   fprintf(fplog,"\n\n");
 }
 
@@ -2103,7 +2103,7 @@ static void dd_print_load_verbose(gmx_domdec_t *dd)
 	    dd_vol_min(dd),dd_load_flags(dd) ? '!' : ' ');
   fprintf(stderr,"imb F %2d%% ",(int)(dd_f_imbal(dd)*100+0.5));
   if (dd->comm->cycl_n[ddCyclPME])
-    fprintf(stderr,"pme/F %2d%% ",(int)(dd_pme_f_imbal(dd)*100+0.5));
+    fprintf(stderr,"pme/F %4.2f ",dd_pme_f_ratio(dd));
 }
 
 
@@ -2700,7 +2700,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,
     comm->all = cr->mpi_comm_mygroup;
     MPI_Comm_rank(comm->all,&dd->rank);
     
-    if (comm->bCartesianPP)
+    if (comm->bCartesianPP && !comm->bCartesianPP_PME)
       MPI_Cart_coords(comm->all,dd->rank,DIM,dd->ci);
   }
    
@@ -2772,6 +2772,8 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,
     if (debug)
       fprintf(debug,"My pme_nodeid %d receive ener %d\n",
 	      dd->pme_nodeid,dd->pme_receive_vir_ener);
+  } else {
+    dd->pme_nodeid = -1;
   }
 
   if (DDMASTER(dd) && dd->ma == NULL) {
