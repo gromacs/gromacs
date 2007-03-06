@@ -140,7 +140,7 @@ static void list_trn(char *fn)
       indent=0;
       indent=pr_title(stdout,indent,buf);
       pr_indent(stdout,indent);
-      fprintf(stdout,"natoms=%10d  step=%10d  time=%10g  lambda=%10g\n",
+      fprintf(stdout,"natoms=%10d  step=%10d  time=%12.7e  lambda=%10g\n",
 	      trn.natoms,trn.step,trn.t,trn.lambda);
       if (trn.box_size)
 	pr_rvecs(stdout,indent,"box",box,DIM);
@@ -195,7 +195,7 @@ void list_xtc(char *fn, bool bXVG)
       indent=0;
       indent=pr_title(stdout,indent,buf);
       pr_indent(stdout,indent);
-      fprintf(stdout,"natoms=%10d  step=%10d  time=%10g  prec=%10g\n",
+      fprintf(stdout,"natoms=%10d  step=%10d  time=%12.7e  prec=%10g\n",
 	    natoms,step,time,prec);
       pr_rvecs(stdout,indent,"box",box,DIM);
       pr_rvecs(stdout,indent,"x",x,natoms);
