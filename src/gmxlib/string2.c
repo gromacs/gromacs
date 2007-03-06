@@ -47,7 +47,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#ifndef NO_PWUID
+#ifdef HAVE_UNISTD
 #include <pwd.h>
 #endif
 #include <time.h>
@@ -152,7 +152,7 @@ void nice_header (FILE *out,char *fn)
   int    gh;
   uid_t  uid;
   char   buf[256];
-#ifndef NO_PWUID
+#ifdef HAVE_UNISTD
   struct passwd *pw;
 #endif
 
@@ -161,7 +161,7 @@ void nice_header (FILE *out,char *fn)
   fprintf (out,"%c\n",COMMENTSIGN);
   fprintf (out,"%c\tFile '%s' was generated\n",COMMENTSIGN,fn ? fn : unk);
   
-#ifndef NO_PWUID
+#ifdef HAVE_UNISTD
   uid = getuid();
   pw  = getpwuid(uid);
   gh  = gethostname(buf,255);
