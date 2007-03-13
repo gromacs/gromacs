@@ -46,7 +46,6 @@
 #include "macros.h"
 #include "vec.h"
 #include "pbc.h"
-#include "rmpbc.h"
 #include "xvgr.h"
 #include "copyrite.h"
 #include "futil.h"
@@ -152,17 +151,18 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   matrix     box,box_pbc;
   int        **npairs;
   atom_id    ix,jx,***pairs;
-  t_topology top;
+  t_topology *top=NULL;
   t_block    *excl;
   t_pbc      pbc;
 
   excl=NULL;
   
   if (fnTPS) {
-    bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
+    snew(top,1);
+    bTop=read_tps_conf(fnTPS,title,top,&x,NULL,box,TRUE);
     if (bTop && !bCM)
       /* get exclusions from topology */
-      excl=&(top.blocks[ebEXCLS]);
+      excl=&(top->blocks[ebEXCLS]);
   }
   snew(grpname,ng+1);
   snew(isize,ng+1);
@@ -170,7 +170,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   fprintf(stderr,"\nSelect a reference group and %d group%s\n",
 	  ng,ng==1?"":"s");
   if (fnTPS)
-    get_index(&top.atoms,fnNDX,ng+1,isize,index,grpname);
+    get_index(&(top->atoms),fnNDX,ng+1,isize,index,grpname);
   else
     rd_index(fnNDX,ng+1,isize,index,grpname);
   
@@ -179,9 +179,9 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
   if (fnTPS)
     /* check with topology */
-    if ( natoms > top.atoms.nr ) 
+    if ( natoms > top->atoms.nr ) 
       gmx_fatal(FARGS,"Trajectory (%d atoms) does not match topology (%d atoms)",
-		  natoms,top.atoms.nr);
+		  natoms,top->atoms.nr);
   /* check with index groups */
   for (i=0; i<=ng; i++)
     for (j=0; j<isize[i]; j++)
@@ -275,7 +275,8 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* Must init pbc every step because of pressure coupling */
     copy_mat(box,box_pbc);
     if (bPBC) {
-      rm_pbc(&top.idef,natoms,box,x,x);
+      if (top != NULL)
+	rm_pbc(&top->idef,natoms,box,x,x);
       if (bXY) {
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);
@@ -765,11 +766,11 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
 
     snew (sf, 1);
     sf->energy = energy;
+
     /* Read the topology informations */
-    
     read_tps_conf (fnTPS, title, &top, &xtop, NULL, box, TRUE);
     sfree (xtop);
-
+    
     /* groups stuff... */
     snew (isize, ng);
     snew (index, ng);
