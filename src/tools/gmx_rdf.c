@@ -270,7 +270,8 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* Must init pbc every step because of pressure coupling */
     copy_mat(box,box_pbc);
     if (bPBC) {
-      rm_pbc(&top.idef,natoms,box,x,x);
+      if (bTop)
+	rm_pbc(&top.idef,natoms,box,x,x);
       if (bXY) {
 	check_box_c(box);
 	box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
