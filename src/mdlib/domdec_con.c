@@ -27,8 +27,9 @@ typedef struct gmx_domdec_specat_comm {
   int   bSendAtom_nalloc;
   /* Send buffers */
   int  *ibuf;
+  int  ibuf_nalloc;
   rvec *vbuf;
-  int  buf_nalloc;
+  int  vbuf_nalloc;
 } gmx_domdec_specat_comm_t;
 
 #define SPECAT_ALLOC_SIZE     1000
@@ -39,38 +40,54 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 			     int end,rvec *f,rvec *fshift)
 {
   gmx_specatsend_t *spas;
-  int  n,d,ndir,dir,i;
+  rvec *vbuf;
+  int  n,n0,n1,d,dir,i;
   ivec vis;
   int  is;
   
   n = end;
   for(d=dd->ndim-1; d>=0; d--) {
-    /* Pulse the grid forward and backward */
-    if (dd->nc[dd->dim[d]] > 2)
-      ndir = 2;
-    else
-      ndir = 1;
-    for(dir=0; dir<ndir; dir++) {
-      spas = &spac->spas[d][dir];
+    if (dd->nc[dd->dim[d]] > 2) {
+      /* Pulse the grid forward and backward */
+      spas = spac->spas[d];
+      n0 = spas[0].nrecv;
+      n1 = spas[1].nrecv;
+      n -= n1 + n0;
+      vbuf = spac->vbuf;
+      /* Send and receive the coordinates */
+      dd_sendrecv2_rvec(dd,d,
+			f+n   ,n0,vbuf              ,spas[0].nsend,
+			f+n+n0,n1,vbuf+spas[0].nsend,spas[1].nsend);
+      for(dir=0; dir<2; dir++) {
+	/* Sum the buffer into the required forces */
+	if (fshift &&
+	    ((dir == 0 && dd->ci[dd->dim[d]] == 0) || 
+	     (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1))) {
+	  clear_ivec(vis);
+	  vis[dd->dim[d]] = (dir==0 ? 1 : -1);
+	  is = IVEC2IS(vis);
+	  for(i=0; i<spas->nsend; i++) {
+	    rvec_inc(f[spas->a[i]],*vbuf);
+	    rvec_inc(fshift[is],*vbuf);
+	    vbuf++;
+	  }
+	} else {
+	  for(i=0; i<spas->nsend; i++) {
+	    rvec_inc(f[spas->a[i]],*vbuf);
+	    vbuf++;
+	  }
+	}
+      }
+    } else {
+      /* Two cells, so we only need to communicate one way */
+      spas = &spac->spas[d][0];
       n -= spas->nrecv;
       /* Send and receive the coordinates */
-      dd_sendrecv_rvec(dd,d,dir==0 ? ddForward : ddBackward,
+      dd_sendrecv_rvec(dd,d,ddForward,
 		       f+n,spas->nrecv,spac->vbuf,spas->nsend);
       /* Sum the buffer into the required forces */
-      if (fshift && ndir == 2 &&
-	  ((dir == 0 && dd->ci[dd->dim[d]] == 0) || 
-	   (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1))) {
-	clear_ivec(vis);
-	vis[dd->dim[d]] = (dir==0 ? 1 : -1);
-	is = IVEC2IS(vis);
-	for(i=0; i<spas->nsend; i++) {
-	  rvec_inc(f[spas->a[i]],spac->vbuf[i]);
-	  rvec_inc(fshift[is],spac->vbuf[i]);
-	}
-      } else {
-	for(i=0; i<spas->nsend; i++)
-	  rvec_inc(f[spas->a[i]],spac->vbuf[i]);
-      }
+      for(i=0; i<spas->nsend; i++)
+	rvec_inc(f[spas->a[i]],spac->vbuf[i]);
     }
   }
 }
@@ -85,35 +102,56 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 			     matrix box,int start,rvec *x)
 {
   gmx_specatsend_t *spas;
-  int  n,d,ndir,dir,i;
+  rvec *vbuf;
+  int  n,ns0,ns1,nr0,nr1,d,dir,i;
   rvec shift;
   
   n = start;
   for(d=0; d<dd->ndim; d++) {
-    /* Pulse the grid forward and backward */
-    if (dd->nc[dd->dim[d]] > 2)
-      ndir = 2;
-    else
-      ndir = 1;
-    for(dir=ndir-1; dir>=0; dir--) {
-      spas = &spac->spas[d][dir];
-      /* Copy the required coordinates to the send buffer */
-      if (ndir == 2 && dir == 0 &&
-	  dd->ci[dd->dim[d]] == 0) {
-	copy_rvec(box[dd->dim[d]],shift);
-	for(i=0; i<spas->nsend; i++)
-	  rvec_add(x[spas->a[i]],shift,spac->vbuf[i]);
-      } else if (ndir == 2 && dir == 1 &&
-		 dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1) {
-	copy_rvec(box[dd->dim[d]],shift);
-	for(i=0; i<spas->nsend; i++)
-	  rvec_sub(x[spas->a[i]],shift,spac->vbuf[i]);
-      } else {
-	for(i=0; i<spas->nsend; i++)
-	  copy_rvec(x[spas->a[i]],spac->vbuf[i]);
+    if (dd->nc[dd->dim[d]] > 2) {
+      /* Pulse the grid forward and backward */
+      vbuf = spac->vbuf;
+      for(dir=0; dir<2; dir++) {
+	spas = &spac->spas[d][dir];
+	/* Copy the required coordinates to the send buffer */
+	if (dir == 0 &&
+	    dd->ci[dd->dim[d]] == 0) {
+	  copy_rvec(box[dd->dim[d]],shift);
+	  for(i=0; i<spas->nsend; i++) {
+	    rvec_add(x[spas->a[i]],shift,*vbuf);
+	    vbuf++;
+	  }
+	} else if (dir == 1 &&
+		   dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1) {
+	  copy_rvec(box[dd->dim[d]],shift);
+	  for(i=0; i<spas->nsend; i++) {
+	    rvec_sub(x[spas->a[i]],shift,*vbuf);
+	    vbuf++;
+	  }
+	} else {
+	  for(i=0; i<spas->nsend; i++) {
+	    copy_rvec(x[spas->a[i]],*vbuf);
+	    vbuf++;
+	  }
+	}
       }
       /* Send and receive the coordinates */
-      dd_sendrecv_rvec(dd,d,dir==0 ? ddBackward : ddForward,
+      spas = spac->spas[d];
+      ns0 = spas[0].nsend;
+      nr0 = spas[0].nrecv;
+      ns1 = spas[1].nsend;
+      nr1 = spas[1].nrecv;
+      dd_sendrecv2_rvec(dd,d,
+			spac->vbuf+ns0,ns1,x+n    ,nr1,
+			spac->vbuf    ,ns0,x+n+nr1,nr0);
+      n += nr0 + nr1;
+    } else {
+      spas = &spac->spas[d][0];
+      /* Copy the required coordinates to the send buffer */
+      for(i=0; i<spas->nsend; i++)
+	copy_rvec(x[spas->a[i]],spac->vbuf[i]);
+      /* Send and receive the coordinates */
+      dd_sendrecv_rvec(dd,d,ddBackward,
 		       spac->vbuf,spas->nsend,x+n,spas->nrecv);
       n += spas->nrecv;
     }
@@ -248,10 +286,9 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	     */
 	    spas->a[spas->nsend] = ind;
 	    spac->bSendAtom[ind] = TRUE;
-	    if (spas->nsend >= spac->buf_nalloc) {
-	      spac->buf_nalloc += SPECAT_ALLOC_SIZE;
-	      srenew(spac->ibuf,spac->buf_nalloc);
-	      srenew(spac->vbuf,spac->buf_nalloc);
+	    if (spas->nsend >= spac->ibuf_nalloc) {
+	      spac->ibuf_nalloc += SPECAT_ALLOC_SIZE;
+	      srenew(spac->ibuf,spac->ibuf_nalloc);
 	    }
 	    /* Store the global index so we can send it now */
 	    spac->ibuf[spas->nsend] = ireq;
@@ -291,6 +328,15 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 		      spac->ibuf,spas->nsend,
 		      dd->gatindex+nat_tot_specat,spas->nrecv);
       nat_tot_specat += spas->nrecv;
+    }
+
+    /* Allocate the x/f communication buffers */
+    nr = spac->spas[d][0].nsend;
+    if (ndir == 2)
+      nr += spac->spas[d][1].nsend;
+    if (nr > spac->vbuf_nalloc) {
+      spac->vbuf_nalloc = over_alloc(nr);
+      srenew(spac->vbuf,spac->vbuf_nalloc);
     }
 
     /* Make a global to local index for the communication atoms */

@@ -174,7 +174,7 @@ static const ivec dd_cp2[dd_cp2n] = {{0,0,4},{1,3,4}};
 #define dd_cp1n 1
 static const ivec dd_cp1[dd_cp1n] = {{0,0,2}};
 
-static int nstDDDump,nstDDDumpGrid;
+static int SendRecv2,nstDDDump,nstDDDumpGrid;
 
 
 #define DD_CELL_MARGIN       1.0001
@@ -302,6 +302,56 @@ void dd_sendrecv_rvec(const gmx_domdec_t *dd,
   MPI_Sendrecv(buf_s[0],n_s*sizeof(rvec),MPI_BYTE,rank_s,0,
 	       buf_r[0],n_r*sizeof(rvec),MPI_BYTE,rank_r,0,
 	       dd->comm->all,&stat);
+#endif
+}
+
+void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
+		       int ddim,
+		       rvec *buf_s_fw,int n_s_fw,
+		       rvec *buf_r_fw,int n_r_fw,
+		       rvec *buf_s_bw,int n_s_bw,
+		       rvec *buf_r_bw,int n_r_bw)
+{
+#ifdef GMX_MPI
+  int rank_fw,rank_bw;
+  MPI_Request req[4];
+  MPI_Status  stat[4];
+
+  rank_fw = dd->neighbor[ddim][0];
+  rank_bw = dd->neighbor[ddim][1];
+
+  if (!SendRecv2) {
+    /* Try to send and receive in two directions simultaneously.
+     * Should be faster, especially on machines
+     * with full 3D communication networks.
+     * However, it could be that communication libraries are
+     * optimized for MPI_Sendrecv and non-blocking MPI calls
+     * are slower.
+     * SendRecv2 can be turned on with the env.var. GMX_DD_SENDRECV2
+     */
+    MPI_Irecv(buf_r_fw[0],n_r_fw*sizeof(rvec),MPI_BYTE,
+	      rank_bw,0,dd->comm->all,&req[0]);
+    MPI_Irecv(buf_r_bw[0],n_r_bw*sizeof(rvec),MPI_BYTE,
+	      rank_fw,1,dd->comm->all,&req[1]);
+    MPI_Isend(buf_s_fw[0],n_s_fw*sizeof(rvec),MPI_BYTE,
+	      rank_fw,0,dd->comm->all,&req[2]);
+    MPI_Isend(buf_s_bw[0],n_s_bw*sizeof(rvec),MPI_BYTE,
+	      rank_bw,1,dd->comm->all,&req[3]);
+    MPI_Waitall(4,req,stat);
+  } else {
+    /* Communicate in two ordered phases.
+     * This is slower, even on a dual-core Opteron cluster
+     * with a single full-duplex network connection per machine.
+     */
+    /* Forward */
+    MPI_Sendrecv(buf_s_bw[0],n_s_fw*sizeof(rvec),MPI_BYTE,rank_fw,0,
+		 buf_r_bw[0],n_r_fw*sizeof(rvec),MPI_BYTE,rank_bw,0,
+		 dd->comm->all,&stat[0]);
+    /* Backward */
+    MPI_Sendrecv(buf_s_bw[0],n_s_bw*sizeof(rvec),MPI_BYTE,rank_bw,0,
+		 buf_r_bw[0],n_r_bw*sizeof(rvec),MPI_BYTE,rank_fw,0,
+		 dd->comm->all,&stat[0]);
+  }
 #endif
 }
 
@@ -1092,7 +1142,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	for(i=0; i<dd->nc[dim]; i++)
 	  root->cell_size[i] = 1.0/dd->nc[dim];
       } else if (comm->cycl_n[ddCyclF] > 0) {
-	load_aver = comm->load[d].sum_m/dd->nc[d];
+	load_aver = comm->load[d].sum_m/dd->nc[dim];
 	for(i=0; i<dd->nc[dim]; i++) {
 	  /* Determine the relative imbalance of cell i */
 	  load_i = comm->load[d].load[i*comm->load[d].nload+2];
@@ -1197,7 +1247,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	}
       }
 
-      pos = dd->nc[d] + 1;
+      pos = dd->nc[dim] + 1;
       /* Store the cell boundaries of the lower dimensions at the end */
       for(d1=0; d1<d; d1++) {
 	root->cell_f[pos++] = comm->cell_f0[d1];
@@ -1205,7 +1255,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       }
     }
     if (bRowMember) {
-      pos = dd->nc[d] + 1 + d*2;
+      pos = dd->nc[dim] + 1 + d*2;
 #ifdef GMX_MPI
       /* Each node would only need to know two fractions,
        * but it is probably cheaper to broadcast the whole array.
@@ -1216,7 +1266,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       /* Copy the fractions for this dimension from the buffer */
       comm->cell_f0[d] = root->cell_f[dd->ci[dim]  ];
       comm->cell_f1[d] = root->cell_f[dd->ci[dim]+1];
-      pos = dd->nc[d] + 1;
+      pos = dd->nc[dim] + 1;
       for(d1=0; d1<=d; d1++) {
 	if (d1 < d) {
 	  /* Copy the cell fractions of the lower dimensions */
@@ -2074,7 +2124,7 @@ static float dd_pme_f_ratio(gmx_domdec_t *dd)
   return dd->comm->load[0].pme/dd->comm->load[0].mdf;
 }
 
-static void dd_print_load(FILE *fplog,gmx_domdec_t *dd)
+static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,int step)
 {
   int flags,d;
 
@@ -2087,10 +2137,10 @@ static void dd_print_load(FILE *fplog,gmx_domdec_t *dd)
 	fprintf(fplog," %c",dim2char(dd->dim[d]));
     fprintf(fplog,"\n");
   }
-  fprintf(fplog,"DD");
+  fprintf(fplog,"DD  step %d",step);
   if (dd->bDynLoadBal)
     fprintf(fplog,"  vol min/aver %5.3f%c",dd_vol_min(dd),flags ? '!' : ' ');
-  fprintf(fplog," load imbalance: force %4.1f %%",dd_f_imbal(dd)*100);
+  fprintf(fplog," load imb.: force %4.1f%%",dd_f_imbal(dd)*100);
   if (dd->comm->cycl_n[ddCyclPME])
     fprintf(fplog,"  pme mesh/force %5.3f",dd_pme_f_ratio(dd));
   fprintf(fplog,"\n\n");
@@ -2806,7 +2856,7 @@ static real *get_cell_load(FILE *fplog,char *dir,int nc,char *load_string)
   return cell_load;
 }
 
-static int dd_nst_env(char *env_var)
+static int dd_nst_env(FILE *fplog,char *env_var)
 {
   char *val;
   int  nst;
@@ -2816,6 +2866,8 @@ static int dd_nst_env(char *env_var)
   if (val) {
     if (sscanf(val,"%d",&nst) <= 0)
       nst = 1;
+    fprintf(fplog,"Found env.var. %s = %s, using value %d\n",
+	    env_var,val,nst);
   }
   
   return nst;
@@ -2858,13 +2910,15 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 
   dd->bDynLoadBal = FALSE;
   if (bDynLoadBal) {
-    if (comm->bRecordLoad)
+    if (comm->bRecordLoad) {
       dd->bDynLoadBal = TRUE;
-    else {
+    } else {
       fprintf(fplog,"\n%s\n\n",warn);
       fprintf(stderr,"\n%s\n\n",warn);
     }
   }
+  fprintf(fplog,"Will%s use dynamic load balancing\n",
+	  dd->bDynLoadBal ? "" : " not");
   dd->bGridJump = dd->bDynLoadBal;
   snew(dd->cell_load,DIM);
   if (comm->bRecordLoad) {
@@ -2888,8 +2942,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     dd->cell_load[ZZ] = get_cell_load(fplog,"z",dd->nc[ZZ],loadz);
   }
 
-  nstDDDump     = dd_nst_env("GMX_DD_DUMP");
-  nstDDDumpGrid = dd_nst_env("GMX_DD_DUMP_GRID");
+  SendRecv2     = dd_nst_env(fplog,"GMX_DD_SENDRECV2");
+  nstDDDump     = dd_nst_env(fplog,"GMX_DD_DUMP");
+  nstDDDumpGrid = dd_nst_env(fplog,"GMX_DD_DUMP_GRID");
+  if (SendRecv2)
+    fprintf(fplog,"Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");
 
   return dd;
 }
@@ -2898,6 +2955,10 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 		       t_topology *top,t_inputrec *ir,t_forcerec *fr)
 {
   gmx_domdec_comm_t *comm;
+
+  if (dd->pme_nodeid >= 0 && !EEL_PME(ir->coulombtype))
+    gmx_fatal(FARGS,
+	      "Can not have separate PME nodes without PME electrostatics");
 
   if (ir->ePBC == epbcNONE)
     gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",
@@ -3227,15 +3288,18 @@ void dd_partition_system(FILE         *fplog,
   bool bLogLoad;
 
   dd = cr->dd;
-
+  
+  /* Check if we have recorded loads on the nodes */
   if (dd->comm->bRecordLoad && dd->comm->cycl_n[ddCyclF] > 0) {
+    /* Print load every nstlog, first and last step to the log file */
     bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
-		  !dd->comm->bFirstPrinted);
+		!dd->comm->bFirstPrinted ||
+		(step + ir->nstlist > ir->init_step + ir->nsteps));
     if (dd->bDynLoadBal || bLogLoad || bVerbose) {
       get_load_distribution(dd,wcycle);
       if (DDMASTER(dd)) {
 	if (bLogLoad)
-	  dd_print_load(fplog,dd);
+	  dd_print_load(fplog,dd,step-1);
 	if (bVerbose)
 	  dd_print_load_verbose(dd);
       }

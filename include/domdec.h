@@ -79,6 +79,17 @@ extern void dd_sendrecv_rvec(const gmx_domdec_t *dd,
  * For direction see the enum above.
  */
 
+extern void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
+			      int ddim,
+			      rvec *buf_s_fw,int n_s_fw,
+			      rvec *buf_r_fw,int n_r_fw,
+			      rvec *buf_s_bw,int n_s_bw,
+			      rvec *buf_r_bw,int n_r_bw);
+/* Move data (rvec) forward and backward 
+ * one cell in decomposition dimension ddim over the DD grid.
+ * If possible, this is done simultaneously.
+ */
+
 extern void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[]);
 /* buf should should have size natoms (of the whole system)
  * although in most cases far less will be used.
