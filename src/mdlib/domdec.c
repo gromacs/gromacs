@@ -51,6 +51,7 @@ typedef struct {
   real *cell_size;
   bool *bCellMin;
   real *cell_f;
+  real *old_cell_f;
   real *cell_f_max0;
   real *cell_f_min1;
   real *bound_min;
@@ -101,7 +102,11 @@ typedef struct gmx_domdec_comm {
   /* Orthogonal vectors for triclinic cells */
   rvec v[DIM][DIM];
 
-  /* The cell boundaries of neighbor cells for dynamic load balancing */
+  /* The old location of the cell boundaries, to check cg displacements */
+  rvec old_cell_x0;
+  rvec old_cell_x1;
+
+  /* The cell boundaries of neighboring cells for dynamic load balancing */
   real **cell_d1;
   real ***cell_d2;
 
@@ -313,7 +318,7 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
 		       rvec *buf_r_bw,int n_r_bw)
 {
 #ifdef GMX_MPI
-  int rank_fw,rank_bw;
+  int rank_fw,rank_bw,nreq;
   MPI_Request req[4];
   MPI_Status  stat[4];
 
@@ -329,23 +334,29 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
      * are slower.
      * SendRecv2 can be turned on with the env.var. GMX_DD_SENDRECV2
      */
-    MPI_Irecv(buf_r_fw[0],n_r_fw*sizeof(rvec),MPI_BYTE,
-	      rank_bw,0,dd->comm->all,&req[0]);
-    MPI_Irecv(buf_r_bw[0],n_r_bw*sizeof(rvec),MPI_BYTE,
-	      rank_fw,1,dd->comm->all,&req[1]);
-    MPI_Isend(buf_s_fw[0],n_s_fw*sizeof(rvec),MPI_BYTE,
-	      rank_fw,0,dd->comm->all,&req[2]);
-    MPI_Isend(buf_s_bw[0],n_s_bw*sizeof(rvec),MPI_BYTE,
-	      rank_bw,1,dd->comm->all,&req[3]);
-    MPI_Waitall(4,req,stat);
+    nreq = 0;
+    if (n_r_fw)
+      MPI_Irecv(buf_r_fw[0],n_r_fw*sizeof(rvec),MPI_BYTE,
+		rank_bw,0,dd->comm->all,&req[nreq++]);
+    if (n_r_bw)
+      MPI_Irecv(buf_r_bw[0],n_r_bw*sizeof(rvec),MPI_BYTE,
+		rank_fw,1,dd->comm->all,&req[nreq++]);
+    if (n_s_fw)
+      MPI_Isend(buf_s_fw[0],n_s_fw*sizeof(rvec),MPI_BYTE,
+		rank_fw,0,dd->comm->all,&req[nreq++]);
+    if (n_s_bw)
+      MPI_Isend(buf_s_bw[0],n_s_bw*sizeof(rvec),MPI_BYTE,
+		rank_bw,1,dd->comm->all,&req[nreq++]);
+    if (nreq)
+      MPI_Waitall(nreq,req,stat);
   } else {
     /* Communicate in two ordered phases.
      * This is slower, even on a dual-core Opteron cluster
      * with a single full-duplex network connection per machine.
      */
     /* Forward */
-    MPI_Sendrecv(buf_s_bw[0],n_s_fw*sizeof(rvec),MPI_BYTE,rank_fw,0,
-		 buf_r_bw[0],n_r_fw*sizeof(rvec),MPI_BYTE,rank_bw,0,
+    MPI_Sendrecv(buf_s_fw[0],n_s_fw*sizeof(rvec),MPI_BYTE,rank_fw,0,
+		 buf_r_fw[0],n_r_fw*sizeof(rvec),MPI_BYTE,rank_bw,0,
 		 dd->comm->all,&stat[0]);
     /* Backward */
     MPI_Sendrecv(buf_s_bw[0],n_s_bw*sizeof(rvec),MPI_BYTE,rank_bw,0,
@@ -1113,14 +1124,14 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster)
 }
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
-				  bool bUniform)
+				  bool bUniform,int step)
 {
   gmx_domdec_comm_t *comm;
   gmx_domdec_root_t *root;
   int  d,d1,dim,dim1,i,pos,nmin,nmin_old;
   bool bRowMember,bRowRoot,bLimLo,bLimHi;
-  real load_aver,load_i,imbalance,cutoff_f,cell_min,fac,space;
-  real imbal_max = 0.1;
+  real load_aver,load_i,imbalance,change,cutoff_f,cell_min,fac,space,halfway;
+  real change_max = 0.05;
   real relax = 0.5;
 
   comm = dd->comm;
@@ -1136,8 +1147,12 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	bRowRoot = FALSE;
       }
     }
+    
     root = &comm->root[d];
     if (bRowRoot) {
+      /* Store the original boundaries */
+      for(i=0; i<dd->nc[dim]+1; i++)
+	root->old_cell_f[i] = root->cell_f[i];
       if (bUniform) {
 	for(i=0; i<dd->nc[dim]; i++)
 	  root->cell_size[i] = 1.0/dd->nc[dim];
@@ -1147,13 +1162,15 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	  /* Determine the relative imbalance of cell i */
 	  load_i = comm->load[d].load[i*comm->load[d].nload+2];
 	  imbalance = (load_i - load_aver)/load_aver;
+	  /* Determine the change of the cell size using underrelaxtion */
+	  change = -relax*imbalance;
 	  /* Limit the amount of scaling */
-	  if (imbalance > imbal_max)
-	    imbalance = imbal_max;
-	  else if (imbalance < -imbal_max)
-	    imbalance = -imbal_max;
-	  /* Correct using underrelaxation */
-	  root->cell_size[i] *= 1 - relax*imbalance;
+	  if (change > change_max)
+	    change = change_max;
+	  else if (change < -change_max)
+	    change = -change_max;
+	  /* Set the optimal cell size */
+	  root->cell_size[i] *= 1 + change;
 	}
       }
 
@@ -1217,13 +1234,29 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       root->cell_f[i+1] = 1;
       root->cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
       if (root->cell_size[i] < cutoff_f)
-	gmx_fatal(FARGS,"The dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, cut-off %f\n",
-		  dim2char(dim),box[dim][dim],dd->skew_fac[dim],
+	gmx_fatal(FARGS,"Step %d: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, cut-off %f\n",
+		  step,dim2char(dim),box[dim][dim],dd->skew_fac[dim],
 		  dd->nc[dim],comm->distance);
 
       root->bLimited = (nmin > 0);
       
+      if (!bUniform) {
+	/* Check if the boundary did not displace more than halfway
+	 * each of the cells it bounds, as this could cause problems,
+	 * especially when the differences between cell sizes are large.
+	 */
+	for(i=1; i<dd->nc[dim]; i++) {
+	  halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
+	  if (root->cell_f[i] < halfway)
+	    root->cell_f[i] = halfway;
+	  halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i+1]);
+	  if (root->cell_f[i] > halfway)
+	    root->cell_f[i] = halfway;
+	}
+      }
+
       if (d > 0) {
+	/* Take care of the staggering of the cell boundaries */
 	if (bUniform) {
 	  for(i=0; i<dd->nc[dim]; i++) {
 	    root->cell_f_max0[i] = root->cell_f[i];
@@ -1246,7 +1279,14 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	  }
 	}
       }
-
+      for(i=0; i<dd->nc[dim]; i++)
+	if (root->cell_f[i+1] - root->cell_f[i] < cutoff_f)
+	  fprintf(stderr,
+		  "\nWARNING step %d: direction %c, cell %d too small: %f\n",
+		  step,dim2char(dim),i,
+		  (root->cell_f[i+1] - root->cell_f[i])
+		  *box[dim][dim]*dd->skew_fac[dim]);
+    
       pos = dd->nc[dim] + 1;
       /* Store the cell boundaries of the lower dimensions at the end */
       for(d1=0; d1<d; d1++) {
@@ -1291,9 +1331,13 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 }
 
 static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
-			      bool bUniform,bool bMaster)
+			      bool bUniform,bool bMaster,int step)
 {
   int d;
+
+  /* Copy the old cell boundaries for the cg displacement check */
+  copy_rvec(dd->cell_x0,dd->comm->old_cell_x0);
+  copy_rvec(dd->cell_x1,dd->comm->old_cell_x1);
 
   set_tric_dir(dd,box);
 
@@ -1301,7 +1345,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
     check_box_size(dd,box);
 
   if (dd->bDynLoadBal && !bMaster) {
-    set_dd_cell_sizes_dlb(dd,box,bDynamicBox,bUniform);
+    set_dd_cell_sizes_dlb(dd,box,bDynamicBox,bUniform,step);
   } else {
     set_dd_cell_sizes_slb(dd,box,bMaster);
   }
@@ -1312,7 +1356,8 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	      d,dd->cell_x0[d],dd->cell_x1[d],dd->skew_fac[d]);
 }
 
-static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
+static void distribute_cg(FILE *fplog,int step,
+			  matrix box,t_block *cgs,rvec pos[],
 			  gmx_domdec_t *dd)
 {
   gmx_domdec_master_t *ma;
@@ -1326,7 +1371,7 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
   ma = dd->ma;
 
   /* Set the cell boundaries */
-  set_dd_cell_sizes(dd,box,FALSE,TRUE,TRUE);
+  set_dd_cell_sizes(dd,box,FALSE,TRUE,TRUE,step);
 
   if (tmp_ind == NULL) {
     snew(tmp_nalloc,dd->nnodes);
@@ -1417,7 +1462,7 @@ static void distribute_cg(FILE *fplog,matrix box,t_block *cgs,rvec pos[],
   fprintf(fplog,"\n");
 }
 
-static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
+static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
 				t_block *cgs,matrix box,rvec pos[])
 {
   gmx_domdec_master_t *ma=NULL;
@@ -1439,7 +1484,7 @@ static void get_cg_distribution(FILE *fplog,gmx_domdec_t *dd,
 	snew(ma->cell_x[i],dd->nc[i]+1);
     }      
     
-    distribute_cg(fplog,box,cgs,pos,dd);
+    distribute_cg(fplog,step,box,cgs,pos,dd);
     for(i=0; i<dd->nnodes; i++) {
       ma->ibuf[2*i]   = ma->ncg[i];
       ma->ibuf[2*i+1] = ma->nat[i];
@@ -1601,18 +1646,37 @@ static int compact_ind(int ncg,int *move,
   return home_pos;
 }
 
-static void cg_move_error(gmx_domdec_t *dd,int cg,int dim,int dir,
+static void print_cg_move(FILE *fplog,
+			  gmx_domdec_t *dd,int step,int cg,int dim,int dir,
 			  rvec cm_old,rvec cm_new,real pos_d)
 {
-  gmx_fatal(FARGS,"The charge group starting at atom %d moved more than the cut-off (%f) in direction %c: distance out of cell %f, old coords %f %f %f, new coords %f %f %f",
-	    glatnr(dd,dd->cgindex[cg]),
-	    dd->comm->distance,dim2char(dim),
-	    dim==1 ? pos_d - dd->cell_x1[dim] : pos_d - dd->cell_x0[dim],
-	    cm_old[XX],cm_old[YY],cm_old[ZZ],
-	    cm_new[XX],cm_new[YY],cm_new[ZZ] );
+  fprintf(fplog,"\nStep %d:\n",step);
+  fprintf(fplog,"The charge group starting at atom %d moved more than the cut-off (%f) in direction %c\n",
+	  glatnr(dd,dd->cgindex[cg]),dd->comm->distance,dim2char(dim));
+  fprintf(fplog,"distance out of cell %f\n",
+	  dir==1 ? pos_d - dd->cell_x1[dim] : pos_d - dd->cell_x0[dim]);
+  fprintf(fplog,"Old coordinates: %8.3f %8.3f %8.3f\n",
+	  cm_old[XX],cm_old[YY],cm_old[ZZ]);
+  fprintf(fplog,"New coordinates: %8.3f %8.3f %8.3f\n",
+	  cm_new[XX],cm_new[YY],cm_new[ZZ]);
+  fprintf(fplog,"Old cell boundaries in direction %c: %8.3f %8.3f\n",
+	  dim2char(dim),
+	  dd->comm->old_cell_x0[dim],dd->comm->old_cell_x1[dim]);
+  fprintf(fplog,"New cell boundaries in direction %c: %8.3f %8.3f\n",
+	  dim2char(dim),
+	  dd->cell_x0[dim],dd->cell_x1[dim]);
 }
 
-static int dd_redistribute_cg(FILE *fplog,
+static void cg_move_error(FILE *fplog,
+			  gmx_domdec_t *dd,int step,int cg,int dim,int dir,
+			  rvec cm_old,rvec cm_new,real pos_d)
+{
+  print_cg_move(fplog, dd,step,cg,dim,dir,cm_old,cm_new,pos_d);
+  print_cg_move(stderr,dd,step,cg,dim,dir,cm_old,cm_new,pos_d);
+  gmx_fatal(FARGS,"A charge group move too far between two domain decomposition steps");
+}
+
+static int dd_redistribute_cg(FILE *fplog,int step,
 			      gmx_domdec_t *dd,t_block *gcgs,
 			      t_state *state,rvec **f,rvec **buf,
 			      t_forcerec *fr,t_mdatoms *md,
@@ -1657,11 +1721,11 @@ static int dd_redistribute_cg(FILE *fplog,
     c = dd->ci[d] - 1;
     if (c < 0)
       c = dd->nc[d] - 1;
-    limit0[d] = cell_x0[d] - comm->distance;
+    limit0[d] = comm->old_cell_x0[d] - comm->distance;
     c = dd->ci[d] + 1;
     if (c >= dd->nc[d])
       c = 0;
-    limit1[d] = cell_x1[d] + comm->distance;
+    limit1[d] = comm->old_cell_x1[d] + comm->distance;
     if (dd->tric_dir[d] && dd->nc[d] > 1)
       tric_dir[d] = 1;
     else
@@ -1700,7 +1764,7 @@ static int dd_redistribute_cg(FILE *fplog,
 	/* Put the charge group in the triclinic unit-cell */
 	if (pos_d >= cell_x1[d]) {
 	  if (pos_d >= limit1[d])
-	    cg_move_error(dd,cg,d,1,cg_cm[cg],cm_new,pos_d);
+	    cg_move_error(fplog,dd,step,cg,d,1,cg_cm[cg],cm_new,pos_d);
 	  dev[d] = 1;
 	  if (dd->ci[d] == dd->nc[d] - 1) {
 	    rvec_dec(cm_new,state->box[d]);
@@ -1709,7 +1773,7 @@ static int dd_redistribute_cg(FILE *fplog,
 	  }
 	} else if (pos_d < cell_x0[d]) {
 	  if (pos_d < limit0[d])
-	    cg_move_error(dd,cg,d,-1,cg_cm[cg],cm_new,pos_d);
+	    cg_move_error(fplog,dd,step,cg,d,-1,cg_cm[cg],cm_new,pos_d);
 	  dev[d] = -1;
 	  if (dd->ci[d] == 0) {
 	    rvec_inc(cm_new,state->box[d]);
@@ -2188,6 +2252,7 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
     if (dd->bGridJump) {
       root = &dd->comm->root[dim_ind];
       snew(root->cell_f,dd->nc[dim]+1+dim_ind*2);
+      snew(root->old_cell_f,dd->nc[dim]+1);
       if (dd->ci[dim_ind] == dd->master_ci[dim_ind]) {
 	snew(root->cell_size,dd->nc[dim]);
 	snew(root->bCellMin,dd->nc[dim]);
@@ -3308,7 +3373,7 @@ void dd_partition_system(FILE         *fplog,
   }
 
   if (bMasterState) {
-    get_cg_distribution(fplog,dd,
+    get_cg_distribution(fplog,step,dd,
 			&top_global->blocks[ebCGS],
 			state_global->box,state_global->x);
     
@@ -3327,12 +3392,13 @@ void dd_partition_system(FILE         *fplog,
     cg0 = 0;
   }
 
-  set_dd_cell_sizes(dd,state_local->box,DYNAMIC_BOX(*ir),bMasterState,FALSE);
+  set_dd_cell_sizes(dd,state_local->box,DYNAMIC_BOX(*ir),bMasterState,FALSE,
+		    step);
   if (nstDDDumpGrid > 0 && step % nstDDDumpGrid == 0)
     write_dd_grid_pdb("dd_grid",step,dd,state_local->box);
 
   if (!bMasterState) {
-    cg0 = dd_redistribute_cg(fplog,dd,&top_global->blocks[ebCGS],
+    cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->blocks[ebCGS],
 			     state_local,f,buf,fr,mdatoms,nrnb);
   }
 

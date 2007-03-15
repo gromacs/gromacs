@@ -269,7 +269,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
   for(it=0; it<nit; it++) {
     if (dd && dd->constraints)
       /* Communicate the corrected non-local coordinates */
-      dd_move_x_constraints(dd,box,xp);
+      dd_move_x_constraints(dd,box,xp,NULL);
 
     for(b=0;b<ncons;b++) {
       len = bllen[b];
@@ -806,8 +806,7 @@ bool constrain_lincs(FILE *log,bool bLog,
   }
   if (dd) {
     /* Communicate the coordinates required for the non-local constraints */
-    dd_move_x_constraints(dd,box,x);
-    dd_move_x_constraints(dd,box,xprime);
+    dd_move_x_constraints(dd,box,x,xprime);
     /*dump_conf(dd,lincsd,"con",TRUE,xprime,box);*/
   }
   if (bCoordinates) {

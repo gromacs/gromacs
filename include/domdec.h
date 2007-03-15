@@ -129,7 +129,9 @@ extern void dd_partition_system(FILE         *fplog,
 
 extern void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f,rvec *fshift);
 
-extern void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,rvec *x);
+extern void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,
+				  rvec *x0,rvec *x1);
+/* Move x0 and also x1 if x1!=NULL */
 
 extern void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x);
 
