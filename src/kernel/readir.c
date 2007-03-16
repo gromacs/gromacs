@@ -847,6 +847,16 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 	ntot++;
       }
     }
+    if (gtype == egcTC) {
+      j = block->index[gid+1] - block->index[gid];
+      if (j <= 0.1*atoms->nr) {
+	sprintf(warn_buf,"T-Coupling group %s has fewer than 10%% of the atoms"
+		" (%d out of %d)\n"
+		"Maybe you want to try Protein and Non-Protein instead?",
+		ptrs[i],j,atoms->nr);
+	warning(NULL);
+      }
+    }
   }
   
   /* Now check whether we have done all atoms */
@@ -1091,7 +1101,7 @@ void do_index(char *ndx,
 	      t_inputrec *ir,t_idef *idef,int *forward,rvec *v)
 {
   t_block *grps;
-  char    warnbuf[STRLEN],**gnames;
+  char    **gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
   int     nacg,nfreeze,nfrdim,nenergy,nuser;
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
@@ -1293,7 +1303,7 @@ void do_index(char *ndx,
       ir->opts.nFreeze[i][j]=(strncasecmp(ptr1[k],"Y",1)==0);
       if (!ir->opts.nFreeze[i][j]) {
 	if (strncasecmp(ptr1[k],"N",1) != 0) {
-	  sprintf(warnbuf,"Please use Y(ES) or N(O) for freezedim only "
+	  sprintf(warn_buf,"Please use Y(ES) or N(O) for freezedim only "
 		  "(not %s)", ptr1[k]);
 	  warning(NULL);
 	}
