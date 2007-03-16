@@ -453,9 +453,9 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-#define TEST_MPI_SUM
-#ifdef TEST_MPI_SUM
-  static double *buf;
+#define GMX_MPI_SUM
+#ifdef GMX_MPI_SUM
+  static double *buf=NULL;
   static int nalloc=0;
   int i;
   
@@ -500,8 +500,8 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumf");
 #else
-#ifdef TEST_MPI_SUM
-  static float *buf;
+#ifdef GMX_MPI_SUM
+  static float *buf=NULL;
   static int nalloc=0;
   int i;
   
@@ -545,9 +545,9 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumi");
 #else
-#define TEST_MPI_SUM
-#ifdef TEST_MPI_SUM
-  static int *buf;
+#define GMX_MPI_SUM
+#ifdef GMX_MPI_SUM
+  static int *buf=NULL;
   static int nalloc=0;
   int i;
   
@@ -591,7 +591,7 @@ void gmx_sumd_sim(int nr,double r[],const gmx_multisim_t *ms)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-  static double *buf;
+  static double *buf=NULL;
   static int nalloc=0;
   int i;
   
@@ -610,7 +610,7 @@ void gmx_sumf_sim(int nr,float r[],const gmx_multisim_t *ms)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-  static float *buf;
+  static float *buf=NULL;
   static int nalloc=0;
   int i;
   
@@ -629,7 +629,7 @@ void gmx_sumi_sim(int nr,int r[],const gmx_multisim_t *ms)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-  static int *buf;
+  static int *buf=NULL;
   static int nalloc=0;
   int i;
   
