@@ -464,7 +464,7 @@ static void copy_group(int g,t_block *block,atom_id *nr,atom_id *index)
   
   i0=block->index[g];
   *nr=block->index[g+1]-i0;
-  for (i=0; i<=*nr; i++)
+  for (i=0; i<*nr; i++)
     index[i]=block->a[i0+i];
 }
 
