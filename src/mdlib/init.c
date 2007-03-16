@@ -79,7 +79,7 @@ static void correct_state_entries(t_state *state,t_inputrec *ir)
       snew(state->v,state->nalloc);
   }
   if (ir->eI == eiSD) {
-    state->flags = STATE_HAS_SDX;
+    state->flags |= STATE_HAS_SDX;
     if (state->sd_X == NULL)
       snew(state->sd_X,state->nalloc);
   }
