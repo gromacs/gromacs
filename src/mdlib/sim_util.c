@@ -377,6 +377,8 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
   
   wallcycle_start(wcycle,ewcFORCE);
+  if (DOMAINDECOMP(cr))
+    dd_force_flop_start(cr->dd,nrnb);
 
   if (bDoForces) {
       /* Reset PME/Ewald forces if necessary */
@@ -421,8 +423,11 @@ void do_force(FILE *fplog,t_commrec *cr,
   ener[F_DVDL] += dvdl_lr;
 
   wallcycle_stop(wcycle,ewcFORCE);
-  if (DOMAINDECOMP(cr) && wcycle)
-    dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcFORCE),ddCyclF);
+  if (DOMAINDECOMP(cr)) {
+    dd_force_flop_stop(cr->dd,nrnb);
+    if (wcycle)
+      dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcFORCE),ddCyclF);
+  }
   
   if (bDoForces) {
     /* Compute forces due to electric field */

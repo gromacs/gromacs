@@ -61,6 +61,12 @@ enum { ddCyclMoveX, ddCyclF, ddCyclMoveF, ddCyclPME, ddCyclNr };
 extern void dd_cycles_add(gmx_domdec_t *dd,float cycles,int ddCycl);
 /* Add the wallcycle count to the DD counter */
 
+extern void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb);
+/* Start the force flop count */
+
+extern void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb);
+/* Stop the force flop count */
+
 enum {
   ddForward,ddBackward
 };

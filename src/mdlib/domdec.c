@@ -92,6 +92,9 @@ typedef struct gmx_domdec_comm {
   bool bCartesianPP;
   int  *ddindex2ddnodeid;
 
+  /* How to communicate for constraints and vsites */
+  bool bSendRecv2;
+  
   /* Are there bonded interactions between charge groups? */
   bool bInterCGBondeds;
     
@@ -141,6 +144,12 @@ typedef struct gmx_domdec_comm {
   /* Cycle counters */
   float cycl[ddCyclNr];
   int   cycl_n[ddCyclNr];
+  /* Flop counter */
+  bool bCountFlop;
+  double flop;
+  int    flop_n;
+  /* Have we measured the load? */
+  bool bHaveLoad;
   /* Have we printed the load at least once? */
   bool bFirstPrinted;
 } gmx_domdec_comm_t;
@@ -179,7 +188,7 @@ static const ivec dd_cp2[dd_cp2n] = {{0,0,4},{1,3,4}};
 #define dd_cp1n 1
 static const ivec dd_cp1[dd_cp1n] = {{0,0,2}};
 
-static int SendRecv2,nstDDDump,nstDDDumpGrid;
+static int nstDDDump,nstDDDumpGrid;
 
 
 #define DD_CELL_MARGIN       1.0001
@@ -325,7 +334,7 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
   rank_fw = dd->neighbor[ddim][0];
   rank_bw = dd->neighbor[ddim][1];
 
-  if (!SendRecv2) {
+  if (!dd->comm->bSendRecv2) {
     /* Try to send and receive in two directions simultaneously.
      * Should be faster, especially on machines
      * with full 3D communication networks.
@@ -1072,6 +1081,16 @@ static void set_tric_dir(gmx_domdec_t *dd,matrix box)
   }
 }
 
+static bool dd_have_load(gmx_domdec_comm_t *comm)
+{
+  return (comm->bCountFlop ? (comm->flop_n > 0) : (comm->cycl_n[ddCyclF] > 0));
+}
+
+static float dd_force_load(gmx_domdec_comm_t *comm)
+{
+  return (comm->bCountFlop ? comm->flop : comm->cycl[ddCyclF]);
+}
+
 static void check_box_size(gmx_domdec_t *dd,matrix box)
 {
   int d,dim;
@@ -1128,7 +1147,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 {
   gmx_domdec_comm_t *comm;
   gmx_domdec_root_t *root;
-  int  d,d1,dim,dim1,i,pos,nmin,nmin_old;
+  int  d,d1,dim,dim1,i,j,pos,nmin,nmin_old;
   bool bRowMember,bRowRoot,bLimLo,bLimHi;
   real load_aver,load_i,imbalance,change,cutoff_f,cell_min,fac,space,halfway;
   real change_max = 0.05;
@@ -1156,7 +1175,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       if (bUniform) {
 	for(i=0; i<dd->nc[dim]; i++)
 	  root->cell_size[i] = 1.0/dd->nc[dim];
-      } else if (comm->cycl_n[ddCyclF] > 0) {
+      } else if (dd_have_load(comm)) {
 	load_aver = comm->load[d].sum_m/dd->nc[dim];
 	for(i=0; i<dd->nc[dim]; i++) {
 	  /* Determine the relative imbalance of cell i */
@@ -1244,14 +1263,30 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	/* Check if the boundary did not displace more than halfway
 	 * each of the cells it bounds, as this could cause problems,
 	 * especially when the differences between cell sizes are large.
+	 * If changes are applied, they will not make cells smaller
+	 * than the cut-off, as we check all the boundaries which
+	 * might be affected by a change and if the old state was ok,
+	 * the cells will at most be shrunk back to their old size.
 	 */
 	for(i=1; i<dd->nc[dim]; i++) {
 	  halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
-	  if (root->cell_f[i] < halfway)
+	  if (root->cell_f[i] < halfway) {
 	    root->cell_f[i] = halfway;
+	    /* Check if the change also causes shifts of the next boundaries */
+	    for(j=i+1; j<dd->nc[dim]; j++) {
+	      if (root->cell_f[j] < root->cell_f[j-1] + cutoff_f)
+		root->cell_f[j] =  root->cell_f[j-1] + cutoff_f;
+	    }
+	  }
 	  halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i+1]);
-	  if (root->cell_f[i] > halfway)
+	  if (root->cell_f[i] > halfway) {
 	    root->cell_f[i] = halfway;
+	    /* Check if the change also causes shifts of the next boundaries */
+	    for(j=i-1; j>=1; j--) {
+	      if (root->cell_f[j] > root->cell_f[j+1] - cutoff_f)
+		root->cell_f[j] = root->cell_f[j+1] - cutoff_f;
+	    }
+	  }
 	}
       }
 
@@ -1279,6 +1314,9 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	  }
 	}
       }
+      /* After the checks above, the cells should obey the cut-off
+       * restrictions, but it does not hurt to check.
+       */
       for(i=0; i<dd->nc[dim]; i++)
 	if (root->cell_f[i+1] - root->cell_f[i] < cutoff_f)
 	  fprintf(stderr,
@@ -2046,6 +2084,34 @@ void dd_cycles_add(gmx_domdec_t *dd,float cycles,int ddCycl)
   dd->comm->cycl_n[ddCycl]++;
 }
 
+static double force_flop_count(t_nrnb *nrnb)
+{
+  int i;
+  double sum;
+
+  sum = 0;
+  for(i=eNR_NBKERNEL010; i<=eNR_NB14; i++)
+    sum += nrnb->n[i]*cost_nrnb(i);
+  for(i=eNR_BONDS; i<=eNR_WALLS; i++)
+    sum += nrnb->n[i]*cost_nrnb(i);
+
+  return sum;
+}
+
+void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb)
+{
+  if (dd->comm->bCountFlop) {
+    dd->comm->flop -= force_flop_count(nrnb);
+  }
+}
+void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb)
+{
+  if (dd->comm->bCountFlop) {
+    dd->comm->flop += force_flop_count(nrnb);
+    dd->comm->flop_n++;
+  }
+}  
+
 static void clear_dd_cycle_counts(gmx_domdec_t *dd)
 {
   int i;
@@ -2054,6 +2120,8 @@ static void clear_dd_cycle_counts(gmx_domdec_t *dd)
     dd->comm->cycl[i] = 0;
     dd->comm->cycl_n[i] = 0;
   }
+  dd->comm->flop = 0;
+  dd->comm->flop_n = 0;
 }
 
 static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
@@ -2080,7 +2148,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 	            comm->root[d].cell_f[dd->ci[dim]  ];
       pos = 0;
       if (d == dd->ndim-1) {
-	sbuf[pos++] = comm->cycl[ddCyclF];
+	sbuf[pos++] = dd_force_load(comm);
 	sbuf[pos++] = sbuf[0];
 	if (dd->bGridJump) {
 	  sbuf[pos++] = sbuf[0];
@@ -2971,7 +3039,18 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 
   comm->distance_min = comm_distance_min;
 
-  comm->bRecordLoad = wallcycle_have_counter();
+  comm->bSendRecv2 = dd_nst_env(fplog,"GMX_DD_SENDRECV2");
+  comm->bCountFlop = dd_nst_env(fplog,"GMX_DLB_FLOP");
+  nstDDDump        = dd_nst_env(fplog,"GMX_DD_DUMP");
+  nstDDDumpGrid    = dd_nst_env(fplog,"GMX_DD_DUMP_GRID");
+  if (comm->bSendRecv2)
+    fprintf(fplog,"Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");
+  if (comm->bCountFlop) {
+    fprintf(fplog,"Will load balance based on FLOP count\n");
+    comm->bRecordLoad = TRUE;
+  } else {
+    comm->bRecordLoad = wallcycle_have_counter();
+  }
 
   dd->bDynLoadBal = FALSE;
   if (bDynLoadBal) {
@@ -3006,12 +3085,6 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     dd->cell_load[YY] = get_cell_load(fplog,"y",dd->nc[YY],loady);
     dd->cell_load[ZZ] = get_cell_load(fplog,"z",dd->nc[ZZ],loadz);
   }
-
-  SendRecv2     = dd_nst_env(fplog,"GMX_DD_SENDRECV2");
-  nstDDDump     = dd_nst_env(fplog,"GMX_DD_DUMP");
-  nstDDDumpGrid = dd_nst_env(fplog,"GMX_DD_DUMP_GRID");
-  if (SendRecv2)
-    fprintf(fplog,"Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");
 
   return dd;
 }
@@ -3355,7 +3428,7 @@ void dd_partition_system(FILE         *fplog,
   dd = cr->dd;
   
   /* Check if we have recorded loads on the nodes */
-  if (dd->comm->bRecordLoad && dd->comm->cycl_n[ddCyclF] > 0) {
+  if (dd->comm->bRecordLoad && dd_have_load(dd->comm)) {
     /* Print load every nstlog, first and last step to the log file */
     bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
 		!dd->comm->bFirstPrinted ||
