@@ -381,7 +381,8 @@ t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
     for(i=0; i<DIM; i++) {
       if (dd->nc[i] <= (bSingleDir ? 1 : 2)) {
 	nc2[i] = 1;
-	npbcdim++;
+	if (!(ePBC==epbcXY && i==ZZ))
+	  npbcdim++;
       } else {
 	nc2[i] = dd->nc[i];
       }
