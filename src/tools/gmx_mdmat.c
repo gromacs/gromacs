@@ -293,7 +293,7 @@ int gmx_mdmat(int argc,char *argv[])
       totmdmat[i][j] /= nframes;
   write_xpm(opt2FILE("-mean",NFILE,fnm,"w"),0,"Mean smallest distance",
 	    "Distance (nm)","Residue Index","Residue Index",
-	    nres,nres,resnr,resnr,mdmat,0,truncate,rlo,rhi,&nlevels);
+	    nres,nres,resnr,resnr,totmdmat,0,truncate,rlo,rhi,&nlevels);
   
   if ( bCalcN ) {
     tot_nmat(nres,natoms,nframes,totnmat,tot_n,mean_n);
