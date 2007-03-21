@@ -7277,15 +7277,6 @@ rov and V. S. Ananthanarayanan},
   pages         = {10220-10230}
 }
 
-@Article{Beckers98a,
-  author = 	 {J. V. L. Beckers and C. P. Lowe and S. W. de Leeuw},
-  title = 	 {An iterative {PPPM} method for simulating coulombic systems on distributed memory parallel computers},
-  journal = 	 BTmsim,
-  year = 	 1998,
-  volume =	 20,
-  pages =	 {369-383}
-}
-
 @Book{gromos96,
   author =	 {W. F. van Gunsteren and S. R. Billeter and A. A. Eising and P. H. H{\"u}nenberger and P. Kr{\"u}ger and A. E. Mark and W. R. P. Scott and I. G. Tironi},
   title = 	 {Biomolecular Simulation: The {GROMOS96} manual and user guide},
@@ -7647,3 +7638,221 @@ note = {\uppercase{G}aussian, Inc., Wallingford, CT, 2004},
   volume =	 126,
   pages =	 046101
 }
+
+@Article{Bush2006a,
+   author  = {I. J. Bush and I. T. Todorov and W. Smith},
+  title   = {A DAFT DL_POLY1 distributed memory adaptation of the smoothed particle mesh Ewald method},
+  journal = {Comput. Phys. Commun.},
+  volume  = {175},
+  year    = {2006},
+  pages   = {323-329},
+  OPTabstract = {The Smoothed Particle Mesh Ewald method [U. Essmann, L. Perera, M.L.
+Berkowtz, T. Darden, H. Lee, L.G. Pedersen, J. Chem. Phys. 103 (1995)
+8577] for calculating long ranged forces in molecular simulation has
+been adapted for the parallel molecular dynamics code DL_POLY_3 [I.T.
+Todorov, W. Smith, Philos. Trans. Roy. Soc. London 362 (2004) 18351,
+making use of a novel 3D Fast Fourier Transform (DAFT) [ I.J. Bush, The
+Daresbury Advanced Fourier transform, Daresbury Laboratory, 19991 that
+perfectly matches the Domain Decomposition (DD) parallelisation
+strategy [W. Smith, Comput. Phys. Comm. 62 (1991) 229; M.R.S. Pinches,
+D. Tildesley, W. Smith, Mol. Sim. 6 (1991) 51; D. Rapaport, Comput.
+Phys. Comm. 62 (1991) 217] of the DL_POLY_3 code. In this article we
+describe software adaptations undertaken to import this functionality
+and provide a review of its performance. (C) 2006 Elsevier B.V. All
+rights reserved.
+0010-4655}
+}
+
+@Article{Masella2006a,
+   author  = {M. Masella},
+  title   = {The multiple time step r-RESPA procedure and polarizable potentials based on induced dipole moments},
+  journal = {Mol. Phys.},
+  volume  = {104},
+  year    = {2006},
+  pages   = {415-428},
+  OPTabstract = {In the present study, we present an accelerating scheme based on the
+reversible multiple time step r-RESPA method to be used in molecular
+dynamics simulations with polarizable potentials based on induced
+dipole moments. Even if the induced dipoles are estimated with an
+iterative self-consistent procedure, this scheme significantly reduces
+the CPU time needed to perform a molecular dynamics simulation, up to a
+factor 2, as compared to the Car-Parrinello method where additional
+dynamical variables are introduced for the treatment of the induced
+dipoles. The tests show that stable and reliable molecular dynamics
+trajectories can be generated with that scheme, and that the physical
+properties derived from the trajectories are equivalent to those
+computed with the classical all atom iterative approach and the
+Car-Parrinello one.
+0026-8976}
+}
+
+@Article{Wang2005a,
+   author  = {W. Wang and R. D. Skeel},
+  title   = {Fast evaluation of polarizable forces},
+  journal = {J. Chem. Phys.},
+  volume  = {123},
+  year    = {2005},
+  pages   = {164107},
+  OPTabstract = {Polarizability is considered to be the single most significant
+development in the next generation of force fields for biomolecular
+simulations. However, the self-consistent computation of induced atomic
+dipoles in a polarizable force field is expensive due to the cost of
+solving a large dense linear system at each step of a simulation. This
+article introduces methods that reduce the cost of computing the
+electrostatic energy and force of a polarizable model from about 7.5
+times the cost of computing those of a nonpolarizable model to less
+than twice the cost. This is probably sufficient for the routine use of
+polarizable forces in biomolecular simulations. The reduction in
+computing time is achieved by an efficient implementation of the
+particle-mesh Ewald method, an accurate and robust predictor based on
+least-squares fitting, and non-stationary iterative methods whose fast
+convergence is accelerated by a simple preconditioner. Furthermore,
+with these methods, the self-consistent approach with a larger timestep
+is shown to be faster than the extended Lagrangian approach. The use of
+dipole moments from previous timesteps to calculate an accurate initial
+guess for iterative methods leads to an energy drift, which can be made
+acceptably small. The use of a zero initial guess does not lead to
+perceptible energy drift if a reasonably strict convergence criterion
+for the iteration is imposed. (c) 2005 American Institute of Physics.
+0021-9606}
+}
+
+@Article{Izaguirre2005a,
+   author  = {J. A. Izaguirre and S. S. Hampton and T. Matthey},
+  title   = {Parallel multigrid summation for the N-body problem},
+  journal = {J. Parallel Distrib. Comput.},
+  volume  = {65},
+  year    = {2005},
+  pages   = {949-962},
+  OPTabstract = {An Theta(n) parallel multigrid summation method (MG) for the N-body
+problem is presented. The method was originally devised for vacuum
+boundary conditions. Here, it is extended to periodic boundary
+conditions and implemented in parallel using force decomposition and
+MPI. MG is based on a hierarchical decomposition of computational
+kernels on multiple grids. For low accuracy calculations, appropriate
+for molecular dynamics, a sequential implementation is as fast or
+faster than particle mesh Ewald (PME). Our parallel implementation is
+more scalable than PME. The method can be combined with multiple time
+stepping integrators to produce a powerful simulation protocol for
+simulation of biological molecules and other materials. The parallel
+implementation is tested on both a Linux cluster with Myrinet
+interconnect and a shared memory computer. It is available as
+open-source at http://protomol.sourceforge.net. An auxiliary tool
+allows the automatic selection of optimal parameters for MG, and is
+available at http://mdsimaid.cse.nd.edu. (c) 2005 Elsevier Inc. All
+rights reserved.
+0743-7315}
+}
+
+@Article{Crocker2005a,
+   author  = {M. S. Crocker and S. S. Hampton and T. Matthey and J. A. Izaguirre},
+  title   = {MDSIMAID: Automatic parameter optimization in fast electrostatic algorithms},
+  journal = {J. Comput. Chem.},
+  volume  = {26},
+  year    = {2005},
+  pages   = {1021-1031},
+  OPTabstract = {MDSIMAID is a recommender system that optimizes parallel Particle Mesh
+Ewald (PME) and both sequential and parallel multigrid (MG) summation
+fast electrostatic solvers. MDSIMAID optimizes the running time or
+parallel scalability of these methods within a given error tolerance.
+MDSIMAID performs a run time constrained search on the parameter space
+of each method starting from semiempirical performance models.
+Recommended parameters are presented to the user. MDSIMAID'S
+optimization of MG leads to configurations that are up to 14 times
+faster or 17 times more accurate than published recommendations.
+Optimization of PME can improve its parallel scalability, making it run
+twice as fast in parallel in our tests. MDSIMAID and its Python source
+code are accessible through a Web portal located at
+http://mdsimaid.cse.nd.edu. (c) 2005 Wiley Periodicals, Inc.
+0192-8651}
+}
+
+@Article{Germain2005a,
+   author  = {R. S. Germain and Y. Zhestkov and M. Eleftheriou and A. Rayshubskiy and F. Suits and T. J. C. Ward and B. G. Fitch},
+  title   = {Early performance data on the Blue Matter molecular simulation framework},
+  journal = {IBM J. Res. Dev.},
+  volume  = {49},
+  year    = {2005},
+  pages   = {447-455},
+  OPTabstract = {Blue Matter is the application framework being developed in conjunction
+with the scientific portion of the IBM Blue Gene(&REG;) project. We
+describe the parallel decomposition currently, being used to target the
+Blue Gene/L machine and discuss the application-based trace tools used
+to analyze the performance of the application. We also present the
+resuits of early performace studies, including a comparison of the
+performance of the Ewald and the particle-particle particle-mesh (P3ME)
+methods, compare the measured performance of some key collective
+operations with the limitations imposed by the hardware, and discuss
+some future directions for research.
+0018-8646}
+}
+
+@Article{Peter2002a,
+   author  = {C. Peter and W. F. van Gunsteren and P. H. Hunenberger},
+  title   = {Solving the Poisson equation for solute-solvent systems using fast Fourier transforms},
+  journal = {J. Chem. Phys.},
+  volume  = {116},
+  year    = {2002},
+  pages   = {7434-7451},
+  OPTabstract = {An iterative algorithm based on fast Fourier transforms is proposed to
+solve the Poisson equation for systems of heterogeneous permittivity
+(e.g., solute cavity in a solvent) under periodic boundary conditions.
+The method makes explicit use of the dipole-dipole interaction tensor,
+and is thus easily generalizable to arbitrary forms of electrostatic
+interactions (e.g., Coulomb's law with straight or smooth cutoff
+truncation). The convergence properties of the algorithm and the
+influence of various model parameters are investigated in detail, and a
+set of appropriate values for these parameters is determined. The
+algorithm is further tested by application to three types of systems (a
+single spherical ion, two spherical ions, and small biomolecules), and
+comparison with analytical results (single ion) and with results
+obtained using a finite-difference solver under periodic boundary
+conditions. The proposed algorithm performs very well in terms of
+accuracy and convergence properties, with an overall speed comparable
+in the current implementation to that of a typical finite-difference
+solver. Future developments and applications of the algorithm will
+include: (i) the assessment of periodicity- and cutoff-induced
+artifacts in explicit-solvent simulations; (ii) the design of new
+electrostatic schemes for explicit-solvent simulations mimicking more
+accurately bulk solution; (iii) a faster evaluation of solvation free
+energies based on continuum electrostatics in cases where
+periodicity-induced artifacts can be neglected. (C) 2002 American
+Institute of Physics.
+0021-9606}
+}
+
+@Article{Beckers1998a,
+   author  = {J. V. L. Beckers and C. P. Lowe and S. W. De Leeuw},
+  title   = {An iterative PPPM method for simulating Coulombic systems on distributed memory parallel computers},
+  journal = {Mol. Simul.},
+  volume  = {20},
+  year    = {1998},
+  pages   = {369-383},
+  OPTabstract = {We describe results obtained from a new implementation of Hockney's
+Particle-Particle Particle-Mesh (PPPM) method for evaluation of Coulomb
+energies and forces in simulations of charged particles. Rather than
+taking the usual approach, solving Poisson's equation by means of a
+Fourier transformation, we use an iterative Poisson solver. In a
+molecular dynamics (MD) simulation the solution from the previous
+time-step provides a good starting point for the next solution. This
+reduces the number of iterations per time-step to acceptable values.
+The iterative scheme has a complexity O(N), and, in contrast with the
+Fourier transform based approach, it is easily implemented on a
+parallel architecture with a minimum of communication overhead.
+We examine the origin of the errors in the algorithm and find that
+reasonable accuracies in the Coulomb interaction can best be attained
+by making the charge density profile as smooth as possible. This
+involves spreading the particle charges over a large number of grid
+points. Assigning these charges then becomes the most time consuming
+part of the algorithm. We show how we can then gain a considerable
+saving in computing time by employing a diffusion equation as a charge
+spreading mechanism.
+The effect of employing the algorithm with an accuracy less than that
+typically tolerated in an Ewald summation is studied by computing, from
+an MD simulation of silica, quantities that are sensitive to the long
+range part of the Coulomb interaction. These results are compared to
+full Ewald sum reference simulations and found to be within the
+statistical error.
+0892-7022}
+}
+
