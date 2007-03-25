@@ -9,7 +9,7 @@
 #include "statutil.h"
 #include "coulomb.h"
 
-enum { mGuillot, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
+enum { mGuillot2001a, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
 
 static double erf2(double x)
 {
@@ -90,14 +90,14 @@ void lo_do_ljc(double r,
   r_6   = 1.0/(r2*r2*r2);
   r_12  = r_6*r_6;
 
-  *vc   = 1.0/r;
-  *fc   = 1.0/(r2);
+  *vc   = 1.0/r;            /*  f(x)     Coulomb    */
+  *fc   = 1.0/(r2);         /* -f'(x)               */
+  
+  *vd   = -r_6;             /*  g(c)     Dispersion */
+  *fd   =  6.0*(*vd)/r;     /* -g'(x)               */
 
-  *vd   = -r_6;
-  *fd   = 6.0*(*vd)/r;
-
-  *vr   = r_12;
-  *fr   = 12.0*(*vr)/r;
+  *vr   = r_12;             /*  h(x)     Repulsion  */
+  *fr   = 12.0*(*vr)/r;     /* -h'(x)               */
 }
 
 /* use with coulombtype = user */
@@ -130,28 +130,78 @@ void lo_do_ljc_pme(double r,
 }
 
 void lo_do_guillot(double r,double xi, double xir,
-			    double *vc,double *vc2,
-			    double *vd,double *vd2,
-			    double *vr,double *vr2)
+			    double *vc,double *fc,
+			    double *vd,double *fd,
+			    double *vr,double *fr)
 {
   double qO     = -0.888;
-  double qOd    = 0.226;
+  double qOd    =  0.226;
   double f0     = qOd/qO;
   double sqpi   = sqrt(M_PI);
-  double r1,r2,z;
+  double rxi1,rxi2,z;
+  double r2,r_6;
+
+  r2   = r*r;
+  r_6  = 1.0/(r2*r2*r2);
   
-  r1    = r/(2*xi);
-  r2    = r/(sqrt(2)*xi);
-  *vc   = (1+sqr(f0)*erf(r1) + 2*f0*erf(r2))/r;
-  *vc2  = ((2/sqr(r))*(*vc -
+  rxi1    = r/(2*xi);
+  rxi2    = r/(sqrt(2)*xi);
+  *vc   = (1 + f0*f0*erf(r/(2*xi)) + 2*f0*erf(r/(sqrt(2)*xi)) )/r;
+
+  *fc   =  f0*f0*erf(r/(2*xi)) + 2*f0*erf(r/(sqrt(2)*xi));
+    ;
+ /* MuPad: Uc := erf(r/(2*xi))/r +  
+
+     Mathematica:
+     r1 := r/(2*xi);
+     r2 := r/(Sqrt[2] * xi);
+     Uc[r_] := (1 + f0 * f0 * Erf[r/(2*xi)] + 2 * f0 * Erf[r/(Sqrt[2]*xi)]) / r;
+     -D[Uc[r],r]
+     CForm= 
+     -(((2*f0*Sqrt(2/Pi))/(Power(E,Power(r,2)/(2.*Power(xi,2)))*xi) + 
+     Power(f0,2)/(Power(E,Power(r,2)/(4.*Power(xi,2)))*Sqrt(Pi)*xi))/r) + 
+     (1 + Power(f0,2)*Erf(r/(2.*xi)) + 2*f0*Erf(r/(Sqrt(2)*xi)))/Power(r,2)
+
+     
+Uc1[r_] := 1/r;
+-D[Uc1[r],r]
+          -2
+Out[20]= r
+
+Uc2[r_] := f0^2 * Erf[r1] / r;
+-D[Uc2[r],r]
+
+
+Uc3[r_] := 2 * f0 * Erf[r2]/ r;
+-D[Uc3[r],r]
+
+Uc[r_] := Erf[r/(2*xi)] / r
+
+D[Uc[r],r]
+
+
+D[Erf[r],r]
+
+*/
+    *vc   = (1 + sqr(f0)*erf(rxi1) + 2*f0*erf(rxi2))/r;
+    *fc   = 
+      (1/r 
+	+ (- f0 * (2 * sqrt(2) + exp(r2/4*xi*xi)*f0)/(exp(r2/(2*xi*xi))*sqrt(M_PI)*xi) + f0*f0*erf(r/(2*xi)) + 2 *f0 * erf(r/(sqrt(2 * xi)))  )/r2)
+      ;
+
+
+  /*  *vc2  = ((2/sqr(r))*(*vc -
 		       sqr(f0)*erf1(r1)/(2*xi) -
 		       4*f0*erf1(r2)/sqrt(2)*xi) + 
-	   (1/r)*(sqr(f0/(2.0*xi))*erf2(r1) + (2*f0/sqr(xi)))*erf2(r2));
-  *vd   = -1.0/(r*r*r*r*r*r);
-  *vd2  = 42.0*(*vd)/(r*r);
+		       (1/r)*(sqr(f0/(2.0*xi))*erf2(r1) + (2*f0/sqr(xi)))*erf2(r2)); */
+
+  *vd  = -r_6;
+  *fd  = -6.0*(*vd)/r;
+
   z     = r/(2.0*xir);
   *vr   = erfc(z)/z;
-  *vr2  = (sqpi*(*vr)/(2.0*z*z)+(1.0/(z*z)+1)*exp(-z*z))/(sqpi*sqr(xir));
+  *fr   = 0.0;
+  //  *vr2  = (sqpi*(*vr)/(2.0*z*z)+(1.0/(z*z)+1)*exp(-z*z))/(sqpi*sqr(xir));
 }
 
 void lo_do_guillot_maple(double r,double xi,double xir,
@@ -171,6 +221,39 @@ void lo_do_guillot_maple(double r,double xi,double xir,
   *vd2  = -42.0/(r*r*r*r*r*r*r*r);
   *vr   = 2.0*erfc(r/xir/2.0)/r*xir;
   *vr2  = 1.0/sqrt(M_PI)/(xir*xir)*exp(-r*r/(xir*xir)/4.0)+4.0/sqrt(M_PI)*exp(-r*r/(xir*xir)/4.0)/(r*r)+4.0*erfc(r/xir/2.0)/(r*r*r)*xir;
+}
+
+void lo_do_GG(double r,double xi,double xir,
+	      double *vc,double *fc,
+	      double *vd,double *fd,
+	      double *vr,double *fr)
+{
+  double qO     = -0.888;
+  double qOd    =  0.226;
+  double f0     = qOd/qO;
+  double sqpi   = sqrt(M_PI);
+  double r2,xi2;
+
+  r2 = r*r;
+  xi2 = xi*xi;
+
+  *vc = 1.0/r + f0*f0*erf(r/(2*xi))/r + 2*f0*erf(r/(sqrt(2)*xi))/r;
+
+  // -D[1/r,r] -D[f0*f0*Erf[r/(2*xi)]/r,r] -D[2*f0*Erf[r/(Sqrt[2]*xi)]/r,r]
+  *fc  = (
+    1.0/r2 +
+    f0*f0*(-exp(-r2/(4*xi2))/(sqrt(M_PI) * r * xi) + erf(r/(2*xi))/r2) +
+    2*f0*(-sqrt(2.0/M_PI)*exp(-r2/(2*xi2))/ (r*xi) + erf(r/(sqrt(2)*xi))/r2)
+    );
+
+  // -D[1/r^6,r]
+  *vd  = -1.0/(r*r*r*r*r*r);
+  *fd  = 6.0*(*vd)/r;
+  
+  //  -D[2*xir*Erfc[r/(2*xir)]/r,r]
+  *vr  = 2.*xir*erfc(r/(2.*xir))/r;
+  *fr  = -(-2.*exp(-r2/(4*xir*xir)) / (sqrt(M_PI)*r)  - 2*xir*erfc(r/(2*xir))/r2  );
+
 }
 
 /* Guillot2001 diffuse charge - diffuse charge interaction
@@ -258,24 +341,29 @@ void lo_do_GG_q_q(double r,double xi,double xir,
 static void do_guillot(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
 {
   int    i,i0,imax;
-  double r,vc,vc2,vd,vd2,vr,vr2;
+  double r,vc,fc,vd,fd,vr,fr;
 
   imax = 3*pts_nm;
   for(i=0; (i<=imax); i++) {
     r     = i*(1.0/pts_nm);
     /* Avoid very large numbers */
     if (r < 0.04) {
-      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+      vc = fc = vd = fd = vr = fr = 0;
     }
     else 
-      lo_do_guillot(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
-    fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
-	    r,vc,vc2,vd,vd2,vr,vr2);
+      if (eel == eelPME) {
+	fprintf(fp, "Not implemented\n");
+      } else if (eel == eelCUT) { 
+	lo_do_guillot(r,xi,xir,&vc,&fc,&vd,&fd,&vr,&fr);
+      }
+    fprintf(fp,"%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
+	    r,vc,fc,vd,fd,vr,fr);
+
   }
 }
 
 static void do_ljc(FILE *fp,int eel,int pts_nm,real rc,real rtol)
-{
+{ 
   int    i,i0,imax;
   double r,vc,fc,vd,fd,vr,fr;
 
@@ -317,6 +405,29 @@ static void do_guillot_maple(FILE *fp,int eel,int pts_nm,double rc,double rtol,d
 	lo_do_guillot_maple(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
       }
     fprintf(fp,"%12.5e  %12.5e  %12.5e   %12.5e  %12.5e  %12.5e  %12.5e\n",
+	    r,vc,vc2,vd,vd2,vr,vr2);
+  }
+} 
+
+static void do_GG(FILE *fp,int eel,int pts_nm,double rc,double rtol,double xi,double xir)
+{
+  int    i,i0,imax;
+  double r,vc,vc2,vd,vd2,vr,vr2;
+
+  imax = 3*pts_nm;
+  for(i=0; (i<=imax); i++) {
+    r     = i*(1.0/pts_nm);
+    /* Avoid very large numbers */
+    if (r < 0.04) {
+      vc = vc2 = vd = vd2 = vr = vr2 = 0;
+    }
+    else
+      if (eel == eelPME) {
+	fprintf(fp, "Not implemented\n");
+      } else if (eel == eelCUT) { 
+	lo_do_GG(r,xi,xir,&vc,&vc2,&vd,&vd2,&vr,&vr2);
+      }
+    fprintf(fp,"%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
 	    r,vc,vc2,vd,vd2,vr,vr2);
   }
 } 
@@ -427,7 +538,7 @@ int main(int argc,char *argv[])
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
   /*  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL }; */
-  static char *model[]   = { NULL, "ljc", NULL };
+  static char *model[]   = { NULL, "ljc", "gg", NULL };
   static real delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
   static int  nrep       = 12;
   static int  ndisp      = 6;
@@ -482,12 +593,14 @@ int main(int argc,char *argv[])
     m = mAB1;
   else if (strcmp(model[0],"ljc") == 0) 
     m = mLjc;
-  else if (strcmp(model[0],"guillot") == 0) 
-    m = mGuillot;
+  else if (strcmp(model[0],"guillot2001a") == 0) 
+    m = mGuillot2001a;
   else if (strcmp(model[0],"guillot_maple") == 0) 
     m = mGuillot_Maple;
   else if (strcmp(model[0],"hard_wall") == 0) 
     m = mHard_Wall;
+  else if (strcmp(model[0],"gg") == 0) 
+    m = mGG;
   else if (strcmp(model[0],"gg_qd_q") == 0) 
     m = mGG_qd_q;
   else if (strcmp(model[0],"gg_qd_qd") == 0) 
@@ -499,7 +612,7 @@ int main(int argc,char *argv[])
     
   fp = ffopen(opt2fn("-o",NFILE,fnm),"w");
   switch (m) {
-  case mGuillot:
+  case mGuillot2001a:
     do_guillot(fp,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mGuillot_Maple:
@@ -509,6 +622,10 @@ int main(int argc,char *argv[])
   case mGG_q_q:
     fprintf(fp, "#\n# Table GG_q_q: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
     do_GG_q_q(fp,eel,pts_nm,rc,rtol,xi,xir);
+    break;
+  case mGG:
+    fprintf(fp, "#\n# Table GG: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
+    do_GG(fp,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mGG_qd_q:
     fprintf(stdout, "case mGG_qd_q");
