@@ -231,6 +231,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   int      fp_ene,m;
   rvec     box_size;
   tensor   force_vir,shake_vir;
+  atom_id  *index;
   
   /* Initiate */
   cr->nnodes = 1; cr->nodeid    = 0; cr->left   = 0; cr->right  = 1;
@@ -250,6 +251,13 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 	  &nrnb,top,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,&vcm);
+  snew(index,top->atoms.nr);
+  for(m=0; (m<top->atoms.nr); m++)
+    index[m] = m;	  
+  *mdatoms = init_mdatoms(stderr,&top->atoms,FALSE);
+  atoms2md(&(top->atoms),&inputrec,0,top->atoms.nr,index,0,top->atoms.nr,*mdatoms);
+  sfree(index);
+  
   init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);  
 
   if (inputrec->ePBC == epbcXYZ) {
