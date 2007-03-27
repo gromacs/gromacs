@@ -1811,8 +1811,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 		     * can skip the whole cell.
 		     * Should save some time, especially with DD.
 		     */
-		    if (grida[cgj0] >= min_icg &&
-			(grida[cgj0] >= jcg1 || grida[cgj0+nrj-1] < jcg0))
+		    if (nrj == 0 ||
+			(grida[cgj0] >= min_icg &&
+			 (grida[cgj0] >= jcg1 || grida[cgj0+nrj-1] < jcg0)))
 		      continue;
 
 		    /* Loop over cgs */
