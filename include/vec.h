@@ -63,6 +63,7 @@
   void dvec_add(const dvec a,const dvec b,dvec c)  c = a + b
   void ivec_add(const ivec a,const ivec b,ivec c)  c = a + b
   void rvec_inc(rvec a,const rvec b)               a += b
+  void dvec_inc(dvec a,const dvec b)               a += b
   void ivec_inc(ivec a,const ivec b)               a += b
   void rvec_sub(const rvec a,const rvec b,rvec c)  c = a - b
   void dvec_sub(const dvec a,const dvec b,dvec c)  c = a - b
@@ -261,9 +262,9 @@ static inline void rvec_inc(rvec a,const rvec b)
   a[ZZ]=z;
 }
 
-static inline void ivec_inc(ivec a,const ivec b)
+static inline void dvec_inc(dvec a,const dvec b)
 {
-  int x,y,z;
+  double x,y,z;
 
   x=a[XX]+b[XX];
   y=a[YY]+b[YY];
