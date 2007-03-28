@@ -370,7 +370,7 @@ static void pme_realloc_homenr_things(gmx_pme_t pme)
 }
 
 static void pmeredist(gmx_pme_t pme, bool forw,
-		      int n, rvec *x_f, real *charge,int *idxa)
+		      int n, bool bXF, rvec *x_f, real *charge,int *idxa)
 /* Redistribute particle data for PME calculation */
 /* domain decomposition by x coordinate           */
 {
@@ -397,7 +397,8 @@ static void pmeredist(gmx_pme_t pme, bool forw,
   }
 
 #ifdef GMX_MPI
-  if (forw && x_f) { /* forward, redistribution from pp to pme */ 
+  if (forw && bXF) {
+    /* forward, redistribution from pp to pme */ 
 
 /* Calculate send counts and exchange them with other nodes */
     for(i=0; (i<npme); i++) scounts[i]=0;
@@ -496,7 +497,7 @@ static void pme_dd_sendrecv(gmx_pme_t pme,bool bBackward,int shift,
 }
 
 static void dd_pmeredist_x_q(gmx_pme_t pme,
-			     int n, rvec *x, real *charge, int *idxa)
+			     int n, bool bX, rvec *x, real *charge, int *idxa)
 {
   int *commnode,*buf_index;
   int i,nsend,local_pos,buf_pos,node,scount;
@@ -509,7 +510,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
     buf_index[commnode[i]] = nsend;
     nsend += pme->count[commnode[i]];
   }
-  if (x) {
+  if (bX) {
     if (pme->count[pme->nodeid] + nsend != n)
       gmx_fatal(FARGS,"%d particles communicated to PME node %d are more than a cell length out of the domain decomposition cell of their charge group",
 		n - (pme->count[pme->nodeid] + nsend),pme->nodeid);
@@ -541,13 +542,13 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
     node = idxa[i];
     if (node == pme->nodeid) {
       /* Copy direct to the receive buffer */
-      if (x)
+      if (bX)
 	copy_rvec(x[i],pme->x_home[local_pos]);
       pme->q_home[local_pos] = charge[i];
       local_pos++;
     } else {
       /* Copy to the send buffer */
-      if (x)
+      if (bX)
 	copy_rvec(x[i],pme->bufv[buf_index[node]]);
       pme->bufr[buf_index[node]] = charge[i];
       buf_index[node]++;
@@ -557,7 +558,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
   buf_pos = 0;
   for(i=0; i<pme->nnodes_comm; i++) {
     scount = pme->count[commnode[i]];
-    if (x) {
+    if (bX) {
       /* Communicate the coordinates */
       pme_dd_sendrecv(pme,FALSE,i,
 		      pme->bufv[buf_pos],scount*sizeof(rvec),
@@ -1521,7 +1522,7 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
     if (n > *nalloc_natpp) {
       *bRealloc = TRUE;
       *nalloc_natpp = over_alloc(n);
-      
+
       srenew(*x,*nalloc_natpp);
       srenew(*chargeA,*nalloc_natpp);
       if (bFreeEnergy)
@@ -1811,9 +1812,9 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       GMX_BARRIER(cr->mpi_comm_mysim);
       /* Redistribute x (only once) and qA or qB */
       if (DOMAINDECOMP(cr)) {
-	dd_pmeredist_x_q(pme, homenr, q==0 ? x : NULL, charge, gidx);
+	dd_pmeredist_x_q(pme, homenr, q==0, x, charge, gidx);
       } else {
-	pmeredist(pme, TRUE, homenr, q==0 ? x+start : NULL, charge, gidx);
+	pmeredist(pme, TRUE, homenr, q==0, x+start, charge, gidx);
       }
       where();
     }
@@ -1909,7 +1910,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     if (DOMAINDECOMP(cr)) {
       dd_pmeredist_f(pme, homenr, f, gidx);
     } else {
-      pmeredist(pme, FALSE, homenr, f+start, NULL, gidx);
+      pmeredist(pme, FALSE, homenr, TRUE, f+start, NULL, gidx);
     }
   }
   where();
