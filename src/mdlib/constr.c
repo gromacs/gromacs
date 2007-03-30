@@ -125,8 +125,9 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
   static int       nsettle,settle_type;
   static int       *owptr;
   static t_lincsdata *lincsd=NULL;
-  static bool      bDumpOnError = TRUE;
-  
+  static int       bDumpOnError = -1;
+  static bool      tmpError = FALSE; 
+ 
   char        buf[STRLEN];
   bool        bOK;
   t_sortblock *sb;
@@ -146,8 +147,15 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
     if ((ir->etc==etcBERENDSEN) || (ir->epc==epcBERENDSEN))
       please_cite(log,"Berendsen84a");
     
-    bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
-    
+    tmpError = (getenv("NO_SHAKE_ERROR") == NULL);
+    if (tmpError) {
+       bDumpOnError = 1;
+    }
+    else {
+       bDumpOnError = 0;
+    }
+   
+
     /* Put the oxygen atoms in the owptr array */
     nsettle=idef->il[F_SETTLE].nr/2;
     if (nsettle > 0) {
@@ -169,6 +177,10 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
       please_cite(log,"Miyamoto92a");
     }
     
+    if (bDumpOnError==-1) {
+      bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
+    }
+
     ncons=idef->il[F_SHAKE].nr/3;
     if (ncons > 0) {
       bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
@@ -273,7 +285,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 		      ir,box,x,xprime,nrnb,lambda,dvdlambda,
 		      vir!=NULL,rmdr,bDumpOnError);
 
-      if (!bOK && bDumpOnError)
+      if (!bOK && bDumpOnError==1)
 	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
 		eshake_names[ir->eConstrAlg],step);
     }
@@ -293,7 +305,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 	inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
       
       bOK = (error < 0);
-      if (!bOK && bDumpOnError)
+      if (!bOK && bDumpOnError==1)
 	fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
 		"settled.\nCheck for bad contacts and/or reduce the timestep.",
 		ir->init_t+step*ir->delta_t,owptr[error]+1);
@@ -304,7 +316,7 @@ static bool low_constrain(FILE *log,t_topology *top,t_inputrec *ir,
 	for(j=0; j<DIM; j++)
 	  (*vir)[i][j] = hdt_2*rmdr[i][j];
     }
-    if (!bOK && bDumpOnError) 
+    if (!bOK && bDumpOnError==1) 
       dump_confs(step,&(top->atoms),x,xprime,box);
   }
   return bOK;
