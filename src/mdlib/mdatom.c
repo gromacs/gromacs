@@ -226,6 +226,7 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
 
   md->start  = start;
   md->homenr = homenr;
+  md->lambda = 0;
 }
 
 void update_mdatoms(t_mdatoms *md,real lambda)
@@ -247,4 +248,5 @@ void update_mdatoms(t_mdatoms *md,real lambda)
   } else {
     md->tmass = md->tmassA;
   }
+  md->lambda = lambda;
 }

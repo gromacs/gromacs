@@ -60,6 +60,8 @@ typedef struct {
   /* The range of home atoms */
   int           start;
   int           homenr;
+  /* The lambda value used to create the contents of the struct */
+  real          lambda;
 } t_mdatoms;
 
 #endif
