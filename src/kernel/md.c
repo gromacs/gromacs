@@ -74,6 +74,7 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "coulomb.h"
+#include "constr.h"
 #include "compute_io.h"
 
 #ifdef GMX_MPI
@@ -141,7 +142,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   double     nodetime=0,realtime;
   t_inputrec *inputrec;
   t_state    *state=NULL;
-  rvec       *buf=NULL,*f=NULL,*vold=NULL,*vt=NULL;
+  rvec       *buf=NULL,*f=NULL;
   real       tmpr1,tmpr2;
   real       *ener=NULL;
   t_nrnb     *nrnb;
@@ -435,7 +436,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       mu_tot;
   t_vcm      *vcm;
   t_trxframe rerun_fr;
-  t_pull     pulldata; /* for pull code */
   gmx_repl_ex_t *repl_ex=NULL;
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
@@ -443,14 +443,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_topology *top;
   t_state    *state=NULL;
   rvec       *f_global=NULL;
- 
+  gmx_constr_t *constr=NULL;
+
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
-  int         nshell,nshell_tot,nflexcon,count,nconverged=0;
+  int         nshell,count,nconverged=0;
   t_shell     *shells=NULL;
   real        timestep=0;
   double      tcount=0;
-  bool        bShell_FlexCon,bIonize=FALSE,bGlas=FALSE;
+  bool        bHaveConstr=FALSE,bShell_FlexCon,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bExchanged;
   real        temp0,mu_aver=0,fmax;
   int         a0,a1,gnx,ii;
@@ -484,7 +485,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initial values */
   init_md(cr,inputrec,&t,&t0,&state_global->lambda,&lam0,
-	  nrnb,top_global,
+	  nrnb,top_global,&constr,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
   debug_gmx();
@@ -525,7 +526,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		       NULL,state_global->box,NULL);
 
     dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
-			state,&f,&buf,mdatoms,top,fr,nrnb,wcycle,FALSE);
+			state,&f,&buf,mdatoms,top,fr,constr,nrnb,wcycle,FALSE);
   } else {
     top = top_global;
     state = state_global;
@@ -542,29 +543,34 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   update_mdatoms(mdatoms,state->lambda);
 
-  /* init edsam, no effect if edyn->bEdsam==FALSE */
+  /* Initialize constraints */
+  if (constr) {
+    if (!DOMAINDECOMP(cr))
+      set_constraints(stdlog,constr,top,inputrec,mdatoms,NULL);
+    bHaveConstr = TRUE;
+  }
+
   init_edsam(stdlog,top,inputrec,mdatoms,mdatoms->start,mdatoms->homenr,cr,
 	     edyn);
+  if (ed_constraints(edyn))
+    bHaveConstr = TRUE;
     
   /* Check for polarizable models */
-  shells   = init_shells(log,mdatoms->start,mdatoms->homenr,&top->idef,mdatoms,
-			 &nshell);
+  shells = init_shells(log,cr,&top->idef,mdatoms,&nshell);
 
-  /* Check for flexible constraints */
-  nflexcon = count_flexible_constraints(log,fr,&top->idef);
+  /* Do we need to minimize at every MD step? */
+  bShell_FlexCon = (shells || (constr && constr->nflexcon > 0));
 
-  if (PAR(cr)) {
-    int buf[2];
+  /* Initialize pull code */
+  init_pull(log,nfile,fnm,inputrec,state->x,mdatoms,state->box,cr);
+  if (inputrec->pull.ePull == epullCONSTRAINT)
+    bHaveConstr = TRUE;
 
-    buf[0] = nshell;
-    buf[1] = nflexcon;
-    gmx_sumi(2,buf,cr);
-    nshell_tot = buf[0];
-    nflexcon   = buf[1];
-  } else {
-    nshell_tot = nshell;
-  }
-  bShell_FlexCon = (nshell_tot > 0 || nflexcon > 0);
+  /* Initialize the essential dynamics sampling */
+  do_first_edsam(stdlog,top,mdatoms,mdatoms->start,mdatoms->homenr,cr,
+		 state->x,state->box,edyn,bHaveConstr);
+  if (ed_constraints(edyn))
+    bHaveConstr = TRUE;
   
   gnx = top->blocks[ebMOLS].nr;
   snew(grpindex,gnx);
@@ -576,17 +582,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (MASTER(cr) && bTCR)
     fprintf(stderr,"Will do General Coupling Theory!\n");
 
-  /* Initialize pull code */
-  init_pull(log,nfile,fnm,&pulldata,state->x,mdatoms,inputrec->opts.nFreeze,
-	    inputrec->ePBC,state->box,mdatoms->start,mdatoms->homenr,cr);
-  
   if (repl_ex_nst > 0 && MASTER(cr))
     repl_ex = init_replica_exchange(log,cr->ms,state_global,inputrec,
 				    repl_ex_nst,repl_ex_seed);
   
-  if (!inputrec->bContinuation && !bRerunMD)
-    do_shakefirst(log,ener,inputrec,mdatoms,state,buf,f,
-		  graph,cr,nrnb,grps,fr,top,edyn,&pulldata);
+  if (bHaveConstr && !inputrec->bContinuation && !bRerunMD)
+    do_shakefirst(log,constr,inputrec,mdatoms,state,buf,f,
+		  graph,cr,nrnb,grps,fr,top,edyn);
   debug_gmx();
 
   /* Compute initial EKin for all.. */
@@ -785,8 +787,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	wallcycle_start(wcycle,ewcDOMDEC);
 	dd_partition_system(stdlog,step,cr,bMasterState,
 			    state_global,top_global,inputrec,
-			    state,&f,&buf,mdatoms,top,fr,nrnb,
-			    wcycle,do_verbose);
+			    state,&f,&buf,mdatoms,top,fr,constr,
+			    nrnb,wcycle,do_verbose);
 	wallcycle_stop(wcycle,ewcDOMDEC);
       }
     }
@@ -821,10 +823,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bShell_FlexCon) {
       /* Now is the time to relax the shells */
       count=relax_shells(log,cr,bVerbose,bFFscan ? step+1 : step,
-			 inputrec,bNS,bStopCM,top,ener,fcd,
+			 inputrec,bNS,bStopCM,top,constr,ener,fcd,
 			 state,f,buf,mdatoms,
 			 nrnb,wcycle,graph,grps,
-			 nshell,shells,nflexcon,fr,t,mu_tot,
+			 nshell,shells,fr,t,mu_tot,
 			 state->natoms,&bConverged,bVsites,vsitecomm,
 			 fp_field);
       tcount+=count;
@@ -912,11 +914,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Afm and Umbrella type pulling happens before the update, 
      * other types in update 
      */
-    if (pulldata.bPull && 
-	(pulldata.runtype == eAfm || pulldata.runtype == eUmbrella))
-      pull(&pulldata,state->x,f,force_vir,state->box,
-	   top,inputrec->delta_t,step,t,
-	   mdatoms,mdatoms->start,mdatoms->homenr,cr); 
+    if (inputrec->pull.ePull == epullUMBRELLA)
+      pull_umbrella(&inputrec->pull,state->x,f,force_vir,state->box,
+		    top,inputrec->delta_t,step,mdatoms,cr); 
 
     if (bFFscan)
       clear_rvecs(state->natoms,buf);
@@ -935,9 +935,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     bOK = TRUE;
     if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
       wallcycle_start(wcycle,ewcUPDATE);
-      update(step,&ener[F_DVDL],inputrec,mdatoms,state,graph,f,
-	     top,grps,shake_vir,cr,nrnb,edyn,&pulldata,bNEMD,
-	     TRUE,bFirstStep,NULL,pres);
+      update(step,&ener[F_DVDL],inputrec,mdatoms,state,graph,f,buf,
+	     top,grps,shake_vir,cr,nrnb,constr,edyn,bHaveConstr,bNEMD,
+	     TRUE,bFirstStep,pres);
       wallcycle_stop(wcycle,ewcUPDATE);
     } else {
       /* Need to unshift here */
@@ -1152,6 +1152,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,
 		 step,step_rel,t,
 		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(inputrec->opts));
+      if (inputrec->pull.ePull != epullNO)
+	pull_print_output(&inputrec->pull,step,t);
+
       if (bVerbose)
 	fflush(log);
     }
@@ -1174,7 +1177,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (DOMAINDECOMP(cr))
 	dd_partition_system(stdlog,step,cr,TRUE,
 			    state_global,top_global,inputrec,
-			    state,&f,&buf,mdatoms,top,fr,nrnb,wcycle,FALSE);
+			    state,&f,&buf,mdatoms,top,fr,constr,
+			    nrnb,wcycle,FALSE);
       else
 	pd_distribute_state(cr,state);
     }

@@ -599,26 +599,22 @@ void update(int          step,
             t_mdatoms    *md,
 	    t_state      *state,
             t_graph      *graph,  
-            rvec         force[],   /* forces on home particles 	*/
+            rvec         force[],        /* forces on home particles */
+	    rvec         xprime[],       /* buffer for x for update  */
             t_topology   *top,
             t_groups     *grps,
             tensor       vir_part,
             t_commrec    *cr,
             t_nrnb       *nrnb,
+	    gmx_constr_t *constr,
             t_edsamyn    *edyn,
-            t_pull       *pulldata,
+	    bool         bHaveConstr,
             bool         bNEMD,
 	    bool         bDoUpdate,
 	    bool         bFirstStep,
-	    rvec         *shakefirst_x,
 	    tensor       pres)
 {
-  static bool      bFirst=TRUE;
-  static rvec      *xprime=NULL;
-  static int       xprime_nalloc=0;
-  static int       ngtc,ngacc;
-  static bool      bHaveConstr=FALSE,bExtended;
-  bool             bLog=FALSE;
+  bool             bExtended,bLog=FALSE;
   double           dt;
   real             dt_1;
   int              start,homenr,i,n,m,g;
@@ -626,48 +622,27 @@ void update(int          step,
   tensor           vir_con;
   static gmx_rng_t sd_gaussrand=NULL;
   
-  start  = md->start;
-  homenr = md->homenr;
-
-  if(bFirst) {
+  if (bFirstStep) {
     if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
       please_cite(stdlog,"Berendsen84a");
-    
-    if (!DOMAINDECOMP(cr)) {
-      bHaveConstr = init_constraints(stdlog,top,&top->idef.il[F_SETTLE],
-				     inputrec,md,start,homenr,TRUE,
-				     cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
-    }
-    if (pulldata->bPull)
-      bHaveConstr = TRUE;
-    bExtended   = (inputrec->etc==etcNOSEHOOVER) || (inputrec->epc==epcPARRINELLORAHMAN);
-
-    /* if edyn->bEdsam == FALSE --- this has no effect */
-    if (ed_constraints(edyn))
-      bHaveConstr = TRUE;
-    do_first_edsam(stdlog,top,md,start,homenr,cr,state->x,state->box,edyn,bHaveConstr);
 
     /* Initiate random number generator for stochastic and brownian dynamic integrators */
     if(inputrec->eI==eiSD || inputrec->eI==eiBD) 
       sd_gaussrand = gmx_rng_init(inputrec->ld_seed);
-    
-    /* Allocate memory for xold and for xprime. */
-    xprime_nalloc = state->natoms;
-    snew(xprime,xprime_nalloc);
-    /* Copy the pointer to the external acceleration in the opts */
-    ngacc=inputrec->opts.ngacc;    
-    ngtc=inputrec->opts.ngtc;    
+
     /* Set Berendsen tcoupl lambda's to 1, 
      * so runs without Berendsen coupling are not affected.
      */
-    for(i=0; i<ngtc; i++)
+    for(i=0; i<inputrec->opts.ngtc; i++)
       grps->tcstat[i].lambda = 1.0;
-  
-    /* done with initializing */
-    bFirst=FALSE;
   }
-  if (DOMAINDECOMP(cr) && (cr->dd->constraints || top->idef.il[F_SETTLE].nr>0))
-    bHaveConstr = TRUE;
+
+  start  = md->start;
+  homenr = md->homenr;
+
+  bExtended =
+    (inputrec->etc == etcNOSEHOOVER) ||
+    (inputrec->epc == epcPARRINELLORAHMAN);
 
   dt   = inputrec->delta_t;
   dt_1 = 1.0/dt;
@@ -731,12 +706,6 @@ void update(int          step,
     inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
     dump_it_all(stdlog,"After update",
 		state->natoms,state->x,xprime,state->v,force);
-  } else {
-    /* If we're not updating we're doing shakefirst!
-     */
-    for(n=start; (n<start+homenr); n++) {
-      copy_rvec(shakefirst_x[n],xprime[n]);
-    }
   }
 
   /* 
@@ -754,29 +723,14 @@ void update(int          step,
   
   if (bHaveConstr) {
     bLog = (do_per_step(step,inputrec->nstlog) || (step < 0));
-    if (DOMAINDECOMP(cr) && cr->dd->nat_tot_con > xprime_nalloc) {
-      xprime_nalloc = over_alloc(cr->dd->nat_tot_con);
-      srenew(xprime,xprime_nalloc);
+    if (constr) {
+      /* Constrain the coordinates xprime */
+      constrain(stdlog,bLog,constr,top,
+		inputrec,cr->dd,step,md,
+		state->x,xprime,NULL,
+		state->box,state->lambda,dvdlambda,
+		dt,state->v,&vir_con,nrnb,TRUE);
     }
-    /* Constrain the coordinates xprime */
-    constrain(stdlog,bLog,top,&top->idef.il[F_SETTLE],
-	      inputrec,cr->dd,step,md,
-	      start,homenr,state->x,xprime,NULL,
-              state->box,state->lambda,dvdlambda,
-	      dt,state->v,&vir_con,nrnb,TRUE);
-    if (inputrec->eI == eiSD) {
-      /* A correction factor eph is needed for the SD constraint force */
-      /* Here we can, unfortunately, not have proper corrections
-       * for different friction constants, so we use the first one.
-       */
-      for(i=0; i<DIM; i++)
-	for(m=0; m<DIM; m++)
-	  vir_part[i][m] += sdc[0].eph*vir_con[i][m];
-    } else {
-      m_add(vir_part,vir_con,vir_part);
-    }
-    if (debug)
-      pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     where();
 
     dump_it_all(stdlog,"After Shake",
@@ -795,13 +749,25 @@ void update(int          step,
 
     /* apply pull constraints when required. Act on xprime, the SHAKED
        coordinates. Don't do anything to f */
-    if (pulldata->bPull && pulldata->runtype == eConstraint)
-      pull(pulldata,xprime,force,vir_part,state->box,
-	   top,dt,step,inputrec->init_t+step*dt,
-	   md,start,homenr,cr);
+    if (inputrec->pull.ePull == epullCONSTRAINT)
+      pull_constraint(&inputrec->pull,state->x,xprime,state->v,vir_con,
+		      state->box,top,dt,step,md,cr);
 
+    if (inputrec->eI == eiSD) {
+      /* A correction factor eph is needed for the SD constraint force */
+      /* Here we can, unfortunately, not have proper corrections
+       * for different friction constants, so we use the first one.
+       */
+      for(i=0; i<DIM; i++)
+	for(m=0; m<DIM; m++)
+	  vir_part[i][m] += sdc[0].eph*vir_con[i][m];
+    } else {
+      m_add(vir_part,vir_con,vir_part);
+    }
+    if (debug)
+      pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     where();      
-  }  else if (edyn->bEdsam) {     
+  } else if (edyn->bEdsam) {     
       /* no constraints but still edsam - yes, that can happen */
     do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
  	     force,state->box,edyn,bDoUpdate);
@@ -820,11 +786,11 @@ void update(int          step,
 		   sd_gaussrand,FALSE);
       inc_nrnb(nrnb, eNR_UPDATE, homenr);
       
-      if (bHaveConstr) {
+      if (constr) {
 	/* Constrain the coordinates xprime */
-	constrain(stdlog,bLog,top,&top->idef.il[F_SETTLE],
+	constrain(stdlog,bLog,constr,top,
 		  inputrec,cr->dd,step,md,
-		  start,homenr,state->x,xprime,NULL,
+		  state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,
 		  dt,NULL,NULL,nrnb,TRUE);
       }
@@ -847,9 +813,6 @@ void update(int          step,
       for(n=start; (n<start+homenr); n++)
 	copy_rvec(xprime[n],state->x[n]);
     }
-  } else {
-    for(n=start; (n<start+homenr); n++)
-      copy_rvec(xprime[n],shakefirst_x[n]);
   }
   dump_it_all(stdlog,"After unshift",
 	      state->natoms,state->x,xprime,state->v,force);

@@ -1561,7 +1561,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int    i,m,start,end,gf=0; 
   int    Min=0; 
   int    steps_accepted=0; 
-  bool   bConstrain;
+  gmx_constr_t *constr;
   /* not used */
   real   terminate=0;
 #define  TRY (1-Min)
@@ -1592,13 +1592,12 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   clear_mat(pres); 
 
   /* Initiate constraint stuff */
-  bConstrain=init_constraints(stdlog,top,&top->idef.il[F_SETTLE],
-			      inputrec,mdatoms,
-			      start,end-start,TRUE,
-			      cr,DOMAINDECOMP(cr) ? cr->dd : NULL);
-  
-  if (bConstrain)
+  constr = init_constraints(stdlog,cr,top,inputrec);
+  if (constr) {
+    set_constraints(stdlog,constr,top,inputrec,mdatoms,
+		    DOMAINDECOMP(cr) ? cr->dd : NULL);
     snew(xcf,state->natoms); 
+  }
 
   /* Copy coord vectors to our temp array  */
   for(i=0; (i<state->natoms); i++) { 
@@ -1645,10 +1644,10 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	    pos[TRY][i][m] = pos[Min][i][m] + stepsize*force[Min][i][m];
       }
     
-    if (bConstrain) {
+    if (constr) {
       dvdlambda=0;
-      constrain(stdlog,TRUE,top,&top->idef.il[F_SETTLE],
-		inputrec,cr->dd,count,mdatoms,start,end,
+      constrain(stdlog,TRUE,constr,top,		
+		inputrec,cr->dd,count,mdatoms,
 		pos[Min],pos[TRY],NULL,state->box,lambda,&dvdlambda,
 		0,NULL,NULL,nrnb,TRUE);
     }
@@ -1690,7 +1689,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     if (MASTER(cr))
       print_ebin_header(log,count,count,lambda);
     
-    if (bConstrain) {
+    if (constr) {
       /* Determine the forces working on the constraints */
       fmax = f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
 		   force[TRY],&(nfmax[TRY]));
@@ -1700,8 +1699,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	  xcf[i][m] = pos[TRY][i][m] + constepsize*force[TRY][i][m];
       
       dvdlambda=0;
-      constrain(stdlog,FALSE,top,&top->idef.il[F_SETTLE],
-		inputrec,cr->dd,count,mdatoms,start,end,
+      constrain(stdlog,FALSE,constr,top,
+		inputrec,cr->dd,count,mdatoms,
 		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,
 		0,NULL,NULL,nrnb,TRUE);
       
@@ -1790,8 +1789,8 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 #else
     if (ustep < 1e-6) {
 #endif
-      warn_step(stderr,inputrec->em_tol,bConstrain);
-      warn_step(log,inputrec->em_tol,bConstrain);
+      warn_step(stderr,inputrec->em_tol,constr!=NULL);
+      warn_step(log,inputrec->em_tol,constr!=NULL);
       bAbort=TRUE;
     }
     

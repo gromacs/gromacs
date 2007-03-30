@@ -261,12 +261,12 @@ extern void update_time(void);
 extern double node_time(void);
 /* Return the node time so far in seconds. */
 
-extern void do_shakefirst(FILE *log,real ener[],
+extern void do_shakefirst(FILE *log,gmx_constr_t *constr,
 			  t_inputrec *inputrec,t_mdatoms *md,
 			  t_state *state,rvec buf[],rvec f[],
 			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 			  t_groups *grps,t_forcerec *fr,t_topology *top,
-			  t_edsamyn *edyn,t_pull *pulldata);
+			  t_edsamyn *edyn);
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,
@@ -285,7 +285,7 @@ extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
 extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
-		    t_nrnb *nrnb,t_topology *top,
+		    t_nrnb *nrnb,t_topology *top,gmx_constr_t **constr,
 		    int nfile,t_filenm fnm[],
 		    int *fp_trn,int *fp_xtc,int *fp_ene,
 		    FILE **fp_dgdl,FILE **fp_field,

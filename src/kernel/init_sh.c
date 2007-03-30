@@ -63,12 +63,12 @@ static void pr_shell(FILE *log,int ns,t_shell s[])
   }
 }
 
-t_shell *init_shells(FILE *log,int start,int homenr,
+t_shell *init_shells(FILE *log,t_commrec *cr,
 		     t_idef *idef,t_mdatoms *md,int *nshell)
 {
   t_shell     *shell=NULL;
   int         *shell_index;
-  int         n[eptNR],ns,nsi;
+  int         n[eptNR],ns,nsi,nshell_tot;
   int         i,j,type,ftype,nra;
   real        qS,alpha;
   int         aS,aN=0; /* Shell and nucleus */
@@ -80,12 +80,12 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   /* Count number of shells, and find their indices */
   for(i=0; (i<eptNR); i++)
     n[i]=0;
-  snew(shell_index,homenr);
+  snew(shell_index,md->homenr);
   nsi = 0;
-  for(i=start; (i<start+homenr); i++) {
+  for(i=md->start; (i<md->start+md->homenr); i++) {
     n[md->ptype[i]]++;
     if (md->ptype[i] == eptShell)
-      shell_index[i-start] = nsi++;
+      shell_index[i-md->start] = nsi++;
   }
   if (nsi != n[eptShell])
     gmx_fatal(FARGS,"Your number of shells %d is not equal to the number of shells %d",
@@ -98,7 +98,12 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   
   ns      = n[eptShell];
   *nshell = ns;
-  if (ns > 0) {
+
+  nshell_tot = ns;
+  if (PAR(cr))
+    gmx_sumi(1,&nshell_tot,cr);
+
+  if (nshell_tot > 0) {
     snew(shell,ns);
   
     /* Initiate the shell structures */    
@@ -149,7 +154,7 @@ t_shell *init_shells(FILE *log,int start,int homenr,
 	  qS = md->chargeA[aS];
 	  
 	  /* Check whether one of the particles is a shell... */
-	  nsi = shell_index[aS-start];
+	  nsi = shell_index[aS-md->start];
 	  if ((nsi < 0) || (nsi >= *nshell))
 	    gmx_fatal(FARGS,"nsi is %d should be within 0 - %d. aS = %d",
 			nsi,*nshell,aS);
@@ -213,31 +218,4 @@ t_shell *init_shells(FILE *log,int start,int homenr,
   }
   
   return shell;
-}
-
-int count_flexible_constraints(FILE* log,t_forcerec *fr,t_idef *idef)
-{
-  int nflexcon,i;
-  
-  nflexcon = 0;
-  
-  for(i=0; i<idef->il[F_CONSTR].nr; i+=3)
-    if (idef->iparams[idef->il[F_CONSTR].iatoms[i]].constr.dA == 0 &&
-	idef->iparams[idef->il[F_CONSTR].iatoms[i]].constr.dB == 0)
-      nflexcon++;
-  
-  if (nflexcon > 0) {
-    fprintf(log,"There are %d flexible constraints\n",nflexcon);
-    if (fr->fc_stepsize == 0) {
-      fprintf(log,"WARNING: step size for flexible constraining = 0\n"
-	          "         All flexible constraints will be rigid.\n"
-	          "         Will try to keep all flexible constraints at their original length,\n"
-	          "         but the lengths may exhibit some drift.\n\n");
-      nflexcon = 0;
-    } else {
-      please_cite(log,"Hess2002");
-    }
-  }
-  
-  return nflexcon;
 }

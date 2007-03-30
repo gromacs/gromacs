@@ -86,6 +86,46 @@ typedef struct {
   bool    *bTS;
 } t_grpopts;
 
+typedef struct {
+  int        nat;      /* Number of atoms in the pull group */
+  atom_id    *ind;     /* The global atoms numbers */
+  int        nat_loc;  /* Number of local pull atoms */
+  atom_id    *ind_loc; /* Local pull indices */
+  int        nweight;  /* The number of weights (0 or nat) */
+  real       *weight;  /* Weights (use all 1 when weight==NULL) */
+  real       *weight_loc; /* Weights for the local indices */
+  atom_id    pbcatom;  /* The reference atom for pbc (global number) */
+  char       *name;    /* pull group name */
+  dvec       vec;      /* The pull vector, direction or position */
+  real       init;     /* Initial position */
+  real       rate;     /* Rate of motion (nm/ps) */
+  real       k;        /* force constant */
+  real       wscale;   /* scaling factor for the weights: sum w m/sum w w m */
+  real       invtm;    /* inverse total mass of the group: 1/wscale sum w m */
+  dvec       x;        /* center of mass before update */
+  dvec       xp;       /* center of mass after update before constraining */
+  double     f_scal;   /* Scalar force for directional pulling */
+  dvec       f;        /* force due to the pulling/constraining */
+} t_pullgrp; 
+
+typedef struct {
+  int        ngrp;        /* number of groups */
+  t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
+  t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
+  int        ePull;       /* start, afm, constraint, umbrella, test */
+  int        eGeom;       /* pull geometry */
+  ivec       dim;         /* used to select components for constraint */
+  real       cyl_r1;      /* radius of cylinder for dynamic COM */
+  real       cyl_r0;      /* radius of cylinder including switch length */
+  real       constr_tol;  /* absolute tolerance for constraints in (nm) */
+  bool       bStart;      /* Add the initial distance to init */
+  int        nstxout;     /* Output frequency for pull x */
+  int        nstfout;     /* Output frequency for pull f */
+  int        ePBC;        /* the boundary conditions */
+  int        npbcdim;     /* do pbc in dims 0 <= dim < npbcdim */
+  FILE       *out_x;      /* output file for pull data */
+  FILE       *out_f;      /* output file for pull data */
+} t_pull;
 
 typedef struct {
   int  eI;              /* Integration method 				*/
@@ -183,6 +223,7 @@ typedef struct {
   int  wall_atomtype[2];/* The atom type for walls                      */
   real wall_density[2]; /* Number density for walls                     */
   real wall_ewald_zfac; /* Scaling factor for the box for Ewald         */
+  t_pull pull;          /* The data for center of mass pulling          */
   real cos_accel;       /* Acceleration for viscosity calculation       */
   tensor deform;        /* Triclinic deformation velocities (nm/ps)     */
   int  userint1;        /* User determined parameters                   */

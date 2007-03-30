@@ -54,18 +54,19 @@ extern void update(int          step,
 		   t_mdatoms    *md,
 		   t_state      *state,
 		   t_graph      *graph,	
-		   rvec         force[],/* forces on home particles 	*/
+		   rvec         force[],    /* forces on home particles */
+		   rvec         xprime[],   /* buffer for x for update  */
 		   t_topology   *top,
 		   t_groups     *grps,
 		   tensor       vir_part,
 		   t_commrec    *cr,
 		   t_nrnb       *nrnb,
+		   gmx_constr_t *constr,
 		   t_edsamyn    *edyn,
-		   t_pull       *pulldata,
+		   bool         bHaveConstr,
 		   bool         bNEMD,
 		   bool         bDoUpdate,
 		   bool         bFirstStep,
-		   rvec         *shakefirst_x,
 		   tensor       pres);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      

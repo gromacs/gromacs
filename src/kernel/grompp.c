@@ -749,7 +749,7 @@ int main (int argc, char *argv[])
     fprintf(stderr,"Setting the LD random seed to %d\n",ir->ld_seed);
   }
 
-  bNeedVel = (ir->eI == eiMD || ir->eI == eiSD);
+  bNeedVel = EI_STATE_VELOCITY(ir->eI);
   bGenVel  = (bNeedVel && opts->bGenVel);
 
   snew(plist,F_NRE);

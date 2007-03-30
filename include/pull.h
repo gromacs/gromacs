@@ -47,96 +47,38 @@
 /* This file contains datatypes and function declarations necessary 
    for mdrun to interface with the pull code */
 
-typedef enum {
-  eAfm, eConstraint, eUmbrella, ePullruntypeNR
-} t_pullruntype;
-typedef enum {
-  eCom, eComT0, eDyn, eDynT0
-} t_pullreftype;
+/* Determine the umbrella forces and add them to f */
+extern void pull_umbrella(t_pull *pull, rvec *x, rvec *f, tensor vir, 
+			  matrix box, t_topology *top, real dt, int step,
+			  t_mdatoms *md, t_commrec *cr);
 
-typedef struct {
-  atom_id    *idx;     /* indices of pull atoms in full coordinate array */
-  int        nweight;  /* The number of weights read from the param file */
-  real       *weight;  /* weights (use all 1 when nweight==0) */
-  int        ngx;      /* pull group size */
-  char       *name;    /* pull group name */
-  real       wscale;   /* scaling factor for the weights: sum w m/sum w w m */
-  real       invtm;    /* inverse total mass of the group: 1/wscale sum w m */
-  rvec       *x0;      /* pull group coordinates at t=0 */
-  rvec       *xp;      /* pull group coordinates at previous step */
-  dvec       x_ref;    /* reference position */
-  dvec       x_unc;    /* center of mass before constraining */
-  dvec       x_con;    /* center of mass, obeying constraints */
-  dvec       xprev;    /* position of coms in last written structure */
-  dvec       f;        /* force due to the pulling/constraining */
-  dvec       spring;   /* coordinates of the spring (eAfm) */
-  dvec       dir;      /* direction of constraint */
-  real       constr_d0;/* reference distance of constraint (nm) */
-  real       constr_rate;/* rate of change of the constraint length (nm/ps) */
-  dvec       xtarget;  /* target coordinates for structure generation */
-  dvec       *comhist; /* com over the last nhist steps (for running aver) */
-  dvec       AfmVec;   /* Vector to pull along for AFM */
-  real       AfmK;     /* Force constant to use for AFM */
-  real       AfmRate;  /* Pull rate in nm/ps */
-  dvec       AfmInit;  /* Initial sprint posistions for AFM */
-  dvec       UmbPos;   /* center of umbrella potential */
-  real       UmbCons;  /* force constant of umbrella potential */
-} t_pullgrp; 
-
-typedef struct {
-  t_pullgrp  ref;         /* reference group, reaction force grps */
-  int        ngrp;        /* number of groups */
-  t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
-  t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
-  t_pullruntype  runtype; /* start, afm, constraint, umbrella, test */
-  t_pullreftype  reftype; /* com, com_t0, dynamic, dynamic_t0 */
-  ivec       dims;        /* used to select components for constraint */
-  int        bDir;        /* use only the direction dir */
-  dvec       dir;         /* direction */
-  real       r;           /* radius of cylinder for dynamic COM */
-  real       rc;          /* radius of cylinder including switch length */
-  real       constr_tol;  /* absolute tolerance for constraints in (nm) */
-  bool       bPull;       /* true if we're doing any pulling */
-  bool       bCyl;        /* true if we're using dynamic ref. groups */
-  FILE       *out;        /* output file for pull data */
-  int        update;      /* update frequency for dynamic grps */
-  int        reflag;      /* running average over reflag steps for com */
-  bool       AbsoluteRef; /* Reference is in absolute coordinates */
-  bool       bVerbose;    /* be loud and noise */
-  int        nSkip;       /* only write output every nSkip steps */
-  int        ePBC;        /* the boundary conditions */
-} t_pull;
-
-/* main pull routine that controls all the action */
-extern void pull(t_pull *pull,    /* all pull data */
-                 rvec *x,         /* coordinates, changed by constraint run */ 
-                 rvec *f,         /* forces, changed by Afm run */
-		 tensor vir,      /* the virial */
-                 matrix box,               
-                 t_topology *top, /* needed to write out coordinate files */   
-                 real dt,         /* time step */
-                 int step,        /* step number in simulation */
-                 real time,       /* time, only used for printing output */
-                 t_mdatoms *md,   /* masses and charges of all atoms */
-                 int start,       /* number of first atom belonging to this node */
-                 int homenr,      /* number of atoms that belong to this node */
-                 t_commrec * cr   /* Stuff for communication */
-                );
-
+/* Constrain the coordinates xp in the directions in x
+ * and also constrain v when v!=NULL.
+ */
+extern void pull_constraint(t_pull *pull, rvec *x, rvec *xp, rvec *v,
+			    tensor vir, matrix box, t_topology *top,
+			    real dt, int step, t_mdatoms *md,
+			    t_commrec *cr);
 
 /* get memory and initialize the fields of pull that still need it, and
    do runtype specific initialization */
 extern void init_pull(FILE *log,  
                       int nfile,       
                       t_filenm fnm[], /* standard filename struct */
-                      t_pull *pull,   /* all pull data */
+                      t_inputrec *ir, /* the inputrec */
                       rvec *x,        /* all coordinates */
                       t_mdatoms *md,  /* masses and charges of all atoms */
-		      ivec nFreeze[], /* the freeze dimensions */
-		      int ePBC,
                       matrix box,     
-                      int start,      /* startinig index of this node */
-                      int homenr,     /* number of atoms on this node */
                       t_commrec * cr  /* struct for communication info */
                       );
+
+/* Make a selection of the home atoms for all pull groups.
+ * Should be called at every domain decomposition.
+ */
+extern void dd_make_local_pull_groups(gmx_domdec_t *dd,
+				      t_pull *pull,t_mdatoms *md);
+
+/* Print the pull output (x and/or f) */
+extern void pull_print_output(t_pull *pull, int step, real time);
+
 #endif

@@ -292,7 +292,8 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
   }
 }
 
-static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
+static void init_adir(FILE *log,
+		      gmx_constr_t *constr,t_topology *top,t_inputrec *ir,
 		      gmx_domdec_t *dd,
 		      int step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
@@ -330,10 +331,10 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
       }
     }
   }
-  constrain(log,FALSE,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
+  constrain(log,FALSE,constr,top,ir,dd,step,md,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
-  constrain(log,FALSE,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
+  constrain(log,FALSE,constr,top,ir,dd,step,md,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
 
@@ -347,19 +348,20 @@ static void init_adir(FILE *log,t_topology *top,t_inputrec *ir,
   }
 
   /* Project the acceleration on the old bond directions */
-  constrain(log,FALSE,top,&top->idef.il[F_SETTLE],ir,dd,step,md,start,end,
+  constrain(log,FALSE,constr,top,ir,dd,step,md,
 	    x_old,xnew-start,acc_dir,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,FALSE); 
 }
 
 int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
-		 t_topology *top,real ener[],t_fcdata *fcd,
+		 t_topology *top,gmx_constr_t *constr,
+		 real ener[],t_fcdata *fcd,
 		 t_state *state,rvec f[],
 		 rvec buf[],t_mdatoms *md,
 		 t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		 t_graph *graph,t_groups *grps,
-		 int nshell,t_shell shells[],int nflexcon,
+		 int nshell,t_shell shells[],
 		 t_forcerec *fr,
 		 real t,rvec mu_tot,
 		 int natoms,bool *bConverged,
@@ -377,7 +379,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   char   cbuf[56];
   bool   bCont,bInit;
   int    i,start=md->start,homenr=md->homenr,end=start+homenr,cg0,cg1;
-  int    g,number_steps,d,Min=0,count=0;
+  int    nflexcon,g,number_steps,d,Min=0,count=0;
 #define  Try (1-Min)             /* At start Try = 1 */
 
   if (bFirst) {
@@ -401,6 +403,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   bInit        = (mdstep == inputrec->init_step) || bForceInit;
   ftol         = inputrec->em_tol;
   number_steps = inputrec->niter;
+  nflexcon     = (constr ? constr->nflexcon : 0);
 
   if (bDoNS) {
     /* This is the only time where the coordinates are used
@@ -457,7 +460,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 
   sf_dir = 0;
   if (nflexcon) {
-    init_adir(log,top,inputrec,cr->dd,mdstep,md,start,end,
+    init_adir(log,constr,top,inputrec,cr->dd,mdstep,md,start,end,
 	      x_old-start,state->x,state->x,force[Min],acc_dir-start,
 	      state->box,state->lambda,&dum,nrnb);
 
@@ -512,7 +515,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		       fr->ePBC,fr->bMolPBC,graph,cr,state->box,vsitecomm);
      
     if (nflexcon) {
-      init_adir(log,top,inputrec,cr->dd,mdstep,md,start,end,
+      init_adir(log,constr,top,inputrec,cr->dd,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
       
@@ -562,7 +565,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     }
     sf_dir = 0;
     if (nflexcon) {
-      init_adir(log,top,inputrec,cr->dd,mdstep,md,start,end,
+      init_adir(log,constr,top,inputrec,cr->dd,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
 

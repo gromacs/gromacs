@@ -18,6 +18,7 @@
 #include "pdbio.h"
 #include "futil.h"
 #include "pme.h"
+#include "pull.h"
 #include "gmx_wallcycle.h"
 
 #ifdef GMX_MPI
@@ -3417,6 +3418,7 @@ void dd_partition_system(FILE         *fplog,
 			 t_mdatoms    *mdatoms,
 			 t_topology   *top_local,
 			 t_forcerec   *fr,
+			 gmx_constr_t *constr,
 			 t_nrnb       *nrnb,
 			 gmx_wallcycle_t wcycle,
 			 bool         bVerbose)
@@ -3533,8 +3535,11 @@ void dd_partition_system(FILE         *fplog,
 		     mdatoms->nChargePerturbed,0,FALSE);
 
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
-    init_constraints(fplog,top_global,&top_local->idef.il[F_SETTLE],ir,mdatoms,
-		     0,dd->nat_home,ir->eI!=eiSteep,NULL,dd);
+    set_constraints(fplog,constr,top_global,ir,mdatoms,dd);
+
+  if (ir->pull.ePull != epullNO)
+    /* Update the local pull groups */
+    dd_make_local_pull_groups(dd,&ir->pull,mdatoms);
 
   /* We need the constructing atom coordinates of the virtual sites
    * when spreading the forces.

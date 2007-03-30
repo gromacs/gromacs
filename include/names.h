@@ -77,6 +77,8 @@ extern const char *eann_names[eannNR+1];
 extern const char *egb_names[egbNR+1];
 extern const char *eis_names[eisNR+1];
 extern const char *ewt_names[ewtNR+1];
+extern const char *epull_names[epullNR+1];
+extern const char *epullg_names[epullgNR+1];
 extern const char *eQMmethod_names[eQMmethodNR+1];
 extern const char *eQMbasis_names[eQMbasisNR+1];
 extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
@@ -109,6 +111,8 @@ extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
 #define EGBALGORITHM(e) ENUM_NAME(e,egbNR,egb_names)
 #define EIMPLICITSOL(e) ENUM_NAME(e,eisNR,eis_names)
 #define EWALLTYPE(e)   ENUM_NAME(e,ewtNR,ewt_names)
+#define EPULLTYPE(e)   ENUM_NAME(e,epullNR,epull_names)
+#define EPULLGEOM(e)   ENUM_NAME(e,epullgtNR,epullg_names)
 #define EQMMETHOD(e)   ENUM_NAME(e,eQMmethodNR,eQMmethod_names)
 #define EQMBASIS(e)    ENUM_NAME(e,eQMbasisNR,eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e,eQMMMschemeNR,eQMMMscheme_names)

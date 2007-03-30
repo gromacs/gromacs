@@ -121,6 +121,7 @@ extern void dd_partition_system(FILE         *fplog,
 				t_mdatoms    *mdatoms,
 				t_topology   *top_local,
 				t_forcerec   *fr,
+				gmx_constr_t *constr,
 				t_nrnb       *nrnb,
 				gmx_wallcycle_t wcycle,
 				bool         bVerbose);

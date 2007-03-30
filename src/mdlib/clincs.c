@@ -628,18 +628,9 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
   }
 }
 
-/* Yes. I _am_ awfully ashamed of introducing a static variable after preaching
- * that we should get rid of them. Do as I say, not as I do!
- *
- * In defense, this is a hack just before the 3.3 release. The proper solution
- * is to introduce an abstract constraint object where it is stored. /EL 20050830
- */
-static int lincs_warncount = 0;
-
-#define LINCS_MAXWARN 10000
-
 static void lincs_warning(gmx_domdec_t *dd,rvec *x,rvec *xprime,t_pbc *pbc,
-			  int ncons,int *bla,real *bllen,real wangle)
+			  int ncons,int *bla,real *bllen,real wangle,
+			  int maxwarn,int *warncount)
 {
   int b,i,j;
   rvec v0,v1;
@@ -667,24 +658,16 @@ static void lincs_warning(gmx_domdec_t *dd,rvec *x,rvec *xprime,t_pbc *pbc,
     d0 = norm(v0);
     d1 = norm(v1);
     cosine = iprod(v0,v1)/(d0*d1);
-    if (cosine<wfac) {
+    if (cosine < wfac) {
       sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
 	      glatnr(dd,i),glatnr(dd,j),RAD2DEG*acos(cosine),d0,d1,bllen[b]);
       fprintf(stderr,buf);
       fprintf(stdlog,buf);
-      lincs_warncount++;
+      (*warncount)++;
     }
   }
-  if(lincs_warncount > LINCS_MAXWARN)
-  {
-      gmx_fatal(FARGS,
-                "Too many LINCS warnings (%d) - aborting to avoid logfile runaway.\n"
-                "This normally happens when your system is not sufficiently equilibrated,"
-                "or if you are changing lambda too fast in free energy simulations.\n"
-                "If you know what you are doing you can adjust the lincs warning threshold\n"
-                "in your mdp file, but normally it is better to fix the problem.\n",
-                lincs_warncount);
-  }
+  if (*warncount > maxwarn)
+    too_many_constraint_warnings(estLINCS,*warncount);
 }
 
 static void cconerr(gmx_domdec_t *dd,
@@ -779,7 +762,8 @@ bool constrain_lincs(FILE *log,bool bLog,
 		     real invdt,rvec *v,
 		     bool bCalcVir,tensor rmdr,
 		     bool bCoordinates,
-		     t_nrnb *nrnb,bool bDumpOnError)
+		     t_nrnb *nrnb,
+		     int maxwarn,int *warncount)
 {
   char  buf[STRLEN];
   int   i,warn,p_imax,error;
@@ -811,9 +795,9 @@ bool constrain_lincs(FILE *log,bool bLog,
   }
   if (bCoordinates) {
     if (ir->efep != efepNO) {
-      if (md->nMassPerturbed && lincsd->matlam != lambda) {
+      if (md->nMassPerturbed && lincsd->matlam != md->lambda) {
 	set_lincs_matrix(lincsd,md->invmass);
-	lincsd->matlam = lambda;
+	lincsd->matlam = md->lambda;
       }
       
       for(i=0; i<lincsd->nc; i++)
@@ -866,7 +850,7 @@ bool constrain_lincs(FILE *log,bool bLog,
     }
     
     if (warn > 0) {
-      if (bDumpOnError) {
+      if (maxwarn > 0) {
 	cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 		lincsd->nc,lincsd->bla,lincsd->bllen);
 	sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
@@ -879,7 +863,7 @@ bool constrain_lincs(FILE *log,bool bLog,
 	fprintf(stderr,"%s",buf);
 	lincs_warning(dd,x,xprime,pbc_null,
 		      lincsd->nc,lincsd->bla,lincsd->bllen,
-		      ir->LincsWarnAngle);
+		      ir->LincsWarnAngle,maxwarn,warncount);
       }
       bOK = (p_max < 0.5);
     }

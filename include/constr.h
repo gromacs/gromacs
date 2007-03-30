@@ -37,6 +37,8 @@
 #include<config.h>
 #endif
 
+extern void too_many_constraint_warnings(int eConstrAlg,int warncount);
+
 extern bool bshakef(FILE *log,		/* Log file			*/
 		    int natoms,		/* Total number of atoms	*/
 		    real invmass[],	/* Atomic masses		*/
@@ -84,10 +86,11 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 /* Regular iterative shake */
 
 extern bool constrain(FILE *log,bool bLog,
-		      t_topology *top,t_ilist *settle,
+		      gmx_constr_t *constr,
+		      t_topology *top,
 		      t_inputrec *ir,
 		      gmx_domdec_t *dd,
-		      int step,t_mdatoms *md,int start,int homenr,
+		      int step,t_mdatoms *md,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		      real lambda,real *dvdlambda,
 		      real dt,rvec *v,tensor *vir,
@@ -115,38 +118,17 @@ extern int count_constraints(t_topology *top,t_commrec *cr);
  * unless cr=NULL, then returns -1.
  */
 
-extern int init_constraints(FILE *log,t_topology *top,t_ilist *settle,
-			    t_inputrec *ir,
-			    t_mdatoms *md,int start,int homenr,
-			    bool bOnlyCoords,
-			    t_commrec *cr,gmx_domdec_t *dd);
+extern gmx_constr_t *init_constraints(FILE *log,t_commrec *cr,
+				      t_topology *top,t_inputrec *ir);
 /* Initialize constraints stuff */
 
-
-/* LINCS stuff */
-typedef struct {
-  int  nc;       /* the number of constraints */
-  int  nc_alloc; /* the number we allocated memory for */
-  int  nflexcon; /* the number of flexible constraints */
-  int  ncc;      /* the number of constraint connections */
-  int  ncc_alloc;/* the number we allocated memory for */
-  real matlam;   /* the FE lambda value used for filling blc and blcc */
-  real *bllen0;  /* the reference distance in topology A */
-  real *ddist;   /* the reference distance in top B - the r.d. in top A */
-  int  *bla;     /* the atom pairs involved in the constraints */
-  real *blc;     /* 1/sqrt(invmass1 + invmass2) */
-  int  *blnr;    /* index into blbnb and blcc */
-  int  *blbnb;   /* list of bond connections */
-  real *blcc;    /* bond coupling coefficient matrix */
-  real *bllen;   /* the reference bond length */
-  /* arrays for temporary storage in the LINCS algorithm */
-  rvec *tmpv;
-  real *tmpncc;
-  real *tmp1;
-  real *tmp2;
-  real *tmp3;
-  real *lambda;  /* the Lagrange multipliers */
-} t_lincsdata;
+extern void set_constraints(FILE *log,
+			    gmx_constr_t *constr,
+			    t_topology *top,
+			    t_inputrec *ir,
+			    t_mdatoms *md,
+			    gmx_domdec_t *dd);
+/* Set up all the local constraints for the node */
 
 extern t_block make_at2con(int start,int natoms,
 			   t_idef *idef,bool bDynamics,
@@ -170,5 +152,6 @@ extern bool constrain_lincs(FILE *log,bool bLog,
 			    real invdt,rvec *v,
 			    bool bCalcVir,tensor rmdr,
 			    bool bCoordinates,
-			    t_nrnb *nrnb,bool bDumpOnError);
+			    t_nrnb *nrnb,
+			    int maxwarn,int *warncount);
 /* Returns if the constraining succeeded */

@@ -53,241 +53,148 @@
 #include "pull.h"
 #include "pull_internal.h"
 
-/* update COM of pulled and reference groups */
-void update_COM(t_pull * pull, rvec * x, t_mdatoms * md, matrix box, int step)
-{
-  int i;
-
-  /*  Correct for particles jumping across the box relative to t=0 if any of
-      the T0 reference types were selected
-  */
-  if (pull->AbsoluteRef) {
-    for(i=0; i<DIM; i++)
-      pull->ref.x_unc[i] = 0;
-  } else {
-    if(pull->reftype == eComT0 || pull->reftype == eDynT0) {
-      correct_t0_pbc(pull, x, md, box);
-    } else {
-      for(i=0; i<pull->ref.ngx;i++)
-	copy_rvec(x[pull->ref.idx[i]], pull->ref.x0[i]);
-    }
-
-    /* Dynamic case */
-    if (pull->bCyl) {
-      if (step % pull->update == 0 )   /* Should we update? */
-	make_refgrps(pull,box,md);
-      else {
-	for (i=0; i<pull->ngrp; ++i) {
-	  calc_com2(&pull->dyna[i],pull->ref.x0,md,box);
-	  if (pull->bVerbose)
-	    fprintf(stderr,"dynacom: %8.3f%8.3f%8.3f\n",pull->dyna[i].x_unc[0],
-		    pull->dyna[i].x_unc[1],pull->dyna[i].x_unc[2]);
-	}
-      }
-    } else {
-      /* Normal case */
-      calc_com2(&pull->ref,pull->ref.x0,md,box);
-
-      /* Do running average if necessary */
-      if (pull->reflag > 1) {
-	calc_running_com(pull);
-      }
-    }
-  } /* Done updating reference group */
-  
-  /* Update COM of pulled groups */
-  for (i=0; i<pull->ngrp; ++i)
-    calc_com(&pull->grp[i],x,md,box);
-}
-
 /* Apply forces in a mass weighted fashion */
-static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md, rvec * f,
-			     int start, int homenr, dvec f_pull, int sign)
+static void apply_forces_grp(t_commrec *cr,
+			     t_pullgrp *pgrp, t_mdatoms * md, rvec * f,
+			     dvec f_pull, int sign)
 {
-  int i, ii, m;
+  int i,ii,m,start,end;
   double wmass,inv_wm;
-  
+  gmx_ga2la_t *ga2la=NULL;
+
+  if (DOMAINDECOMP(cr))
+    ga2la = cr->dd->ga2la;
+  else
+    ga2la = NULL;
+  start = md->start;
+  end   = md->homenr + start;
+
   inv_wm = pgrp->wscale*pgrp->invtm;
   
-  for(i=0; i<pgrp->ngx; i++) {
-    ii=pgrp->idx[i];
+  for(i=0; i<pgrp->nat_loc; i++) {
+    ii = pgrp->ind_loc[i];
     wmass = md->massT[ii];
-    if (pgrp->nweight > 0)
-      wmass *= pgrp->weight[i];
+    if (pgrp->weight_loc > 0)
+      wmass *= pgrp->weight_loc[i];
     
     for(m=0; m<DIM; m++)
       f[ii][m] += sign * wmass * f_pull[m] * inv_wm;
   }
 }
+
 /* Apply forces in a mass weighted fashion */
-static void apply_forces(t_pull * pull, t_mdatoms * md, rvec * f,
-			 int start, int homenr)
+static void apply_forces(t_commrec *cr,
+			 t_pull * pull, t_mdatoms * md, rvec * f)
 {
   int i;
   t_pullgrp *pgrp;
 
-  for(i=0; i<pull->ngrp; i++) {
+  for(i=1; i<pull->ngrp+1; i++) {
     pgrp = &(pull->grp[i]);
-    apply_forces_grp(pgrp,md,f,start,homenr,pgrp->f,1);
-    if (!pull->AbsoluteRef) {
-      if (pull->bCyl) {
-	apply_forces_grp(&(pull->dyna[i]),md,f,start,homenr,pgrp->f,-1);
+    apply_forces_grp(cr,pgrp,md,f,pgrp->f,1);
+    if (pull->grp[0].nat) {
+      if (PULL_CYL(pull)) {
+	apply_forces_grp(cr,&(pull->dyna[i]),md,f,pgrp->f,-1);
       } else {
-	apply_forces_grp(&(pull->ref),md,f,start,homenr,pgrp->f,-1);
+	apply_forces_grp(cr,&(pull->grp[0]),md,f,pgrp->f,-1);
       }
     }
   }
 }
 
-static void do_umbrella(t_pull *pull, rvec *x,rvec *f, tensor vir, matrix box, 
-                        t_mdatoms *md, int start, int homenr) 
-{
-  int i,ii=0,j,m,g;
-  dvec cm;    /* center of mass displacement of reference */
-  dvec dr;    /* distance from com to potential center */
-
-  /* loop over the groups that are being umbrella sampled */
-  for(i=0;i<pull->ngrp;i++) {
-
-    /* Fix distance stuff
-       pull->ref.x_unc[0] has position of reference group
-       pull->x_ref is the coordinate that we would like to be at
-       pull->spring has the corrected position of the pulled group
-    */
-
-    /* Set desired position in x_ref[i] */
-    if(pull->bCyl)    /* Dynamic Case */
-      dvec_add(pull->dyna[i].x_unc, pull->grp[i].UmbPos, pull->grp[i].x_ref);
-    else              /* Normal Case */
-      dvec_add(pull->ref.x_unc,  pull->grp[i].UmbPos, pull->grp[i].x_ref);
-
-
-    /* Find vector between current and desired positions */
-    d_pbc_dx(box, pull->grp[i].x_ref, pull->grp[i].x_unc, dr);
-
-    /* Select the components we want */
-    for(m=DIM-1;m>=0;m--) {
-      dr[m] *= pull->dims[m];
-    }
-    copy_dvec(dr,pull->grp[i].spring);
-
-    /* f = um_width*dx */
-    dsvmul(pull->grp[i].UmbCons,dr,pull->grp[i].f);
-
-    if (pull->bCyl) {
-      d_pbc_dx(box, pull->dyna[i].x_unc, pull->grp[i].x_unc, dr);
-    } else {
-      d_pbc_dx(box, pull->ref.x_unc, pull->grp[i].x_unc, dr);
-    }
-    for(m=0; m<DIM; m++)
-      dr[m] *= pull->dims[m];
-    for(j=0; j<DIM; j++)
-      for(m=0;m<DIM;m++)
-	vir[j][m] += 0.5*pull->grp[i].f[j]*dr[m];
-  }
-  apply_forces(pull, md, f, start, homenr);
-}
-
-/* this implements a constraint run like SHAKE does. */
-static void do_constraint(t_pull *pull, rvec *x, tensor vir,
+/* Apply constraint using SHAKE */
+static void do_constraint(t_pull *pull, rvec *x, rvec *v,
+			  bool bVir, tensor vir,
 			  matrix box, t_mdatoms *md, 
-                          real dt, int step, int *niter) 
+                          real dt, int step) 
 {
 
-  dvec r_ij, /* x_con[i] com of i in prev. step. Obeys constr. -> r_ij   */
-  unc_ij,    /* x_unc[i] com of i this step, before constr.    -> unc_ij */
-  ref_ij;    /* x_ref[i] com of i at t0, not updated           -> ref_ij */
+  dvec *r_ij;  /* x[i] com of i in prev. step. Obeys constr. -> r_ij[i] */
+  dvec unc_ij; /* xp[i] com of i this step, before constr.   -> unc_ij  */
 
   dvec *rinew;           /* current 'new' position of group i */
   dvec *rjnew;           /* current 'new' position of group j */
-  double *direction;       /* direction of dr relative to r_ij  */
-  double d0,refinc,ref,inpr;
-  double lambda, rm, mass;
+  double d0,ref,inpr;
+  double lambda, rm, mass, invdt=0;
   bool bConverged = FALSE;
-  int n=0,i,ii,j,m,max_iter=1000;
+  int niter=0,g,ii,j,m,max_iter=100;
   double q,a,b,c;  /* for solving the quadratic equation, 
 		      see Num. Recipes in C ed 2 p. 184 */
-  dvec *dr;              /* correction for group i */
-  dvec *ref_dr;          /* correction for group j */
-  dvec tmp,tmp2,tmp3,sum;
-  t_pullgrp *pdyna,*pgrp;
+  dvec *dr;        /* correction for group i */
+  dvec ref_dr;     /* correction for group j */
+  dvec tmp,tmp3;
+  t_pullgrp *pdyna,*pgrp,*pref;
 
-  if(pull->bCyl) {
-    snew(ref_dr,pull->ngrp);
-    snew(rjnew,pull->ngrp);
+  snew(r_ij,pull->ngrp+1);
+  if (PULL_CYL(pull)) {
+    snew(rjnew,pull->ngrp+1);
   } else {
-    snew(ref_dr,1);
     snew(rjnew,1);
   }
-  snew(dr,pull->ngrp);
-  snew(rinew,pull->ngrp);
-  snew(direction,pull->ngrp);
+  snew(dr,pull->ngrp+1);
+  snew(rinew,pull->ngrp+1);
 
   ref = 0;
   
-  /* copy the current unconstraint positions for use in iterations. We 
+  /* copy the current unconstrained positions for use in iterations. We 
      iterate until rinew[i] and rjnew[j] obey the constraints. Then
      rinew - pull.x_unc[i] is the correction dr to group i */
-  for(i=0;i<pull->ngrp;i++)
-    copy_dvec(pull->grp[i].x_unc,rinew[i]);
-  if(pull->bCyl)
-    for(i=0;i<pull->ngrp;i++)
-      copy_dvec(pull->dyna[i].x_unc,rjnew[i]);
-  else
-    copy_dvec(pull->ref.x_unc,rjnew[0]);
+  for(g=1; g<1+pull->ngrp; g++)
+    copy_dvec(pull->grp[g].xp,rinew[g]);
+  if (PULL_CYL(pull)) {
+    for(g=1; g<1+pull->ngrp; g++)
+      copy_dvec(pull->dyna[g].xp,rjnew[g]);
+  } else {
+    copy_dvec(pull->grp[0].xp,rjnew[0]);
+  }
 
-  while(!bConverged && n<max_iter) {
+  /* Determine the constraint directions from the old positions */
+  pref = &pull->grp[0];
+  for(g=1; g<1+pull->ngrp; g++) {
+    if (PULL_CYL(pull))
+      pref = &pull->dyna[g];
+    pull_d_pbc_dx(pull->npbcdim,box,pull->grp[g].x,pref->x,r_ij[g]);
+    if (pull->eGeom == epullgDIR) {
+      /* Select the component along vec */
+      a = diprod(pull->grp[g].vec,r_ij[g]);
+      dsvmul(a,pull->grp[g].vec,r_ij[g]);
+    } else {
+      for(m=0; m<DIM; m++)
+	r_ij[g][m] *= pull->dim[m];
+    }
+  }
+
+  while (!bConverged && niter < max_iter) {
     /* loop over all constraints */
-    for(i=0; i<pull->ngrp; i++) {
+    for(g=1; g<1+pull->ngrp; g++) {
+      pgrp = &pull->grp[g];
+      if (PULL_CYL(pull))
+	pref = &pull->dyna[g];
+      else
+	pref = &pull->grp[0];
 
-      if(pull->bVerbose)
-        fprintf(stderr,"\ngroup %d, iteration %d",i,n);
+      /* Get the current difference vector */
+      pull_d_pbc_dx(pull->npbcdim,box,
+		    rinew[g],rjnew[PULL_CYL(pull) ? g : 0],unc_ij);
 
-      if(pull->bCyl) {
-        d_pbc_dx(box,pull->grp[i].x_con,pull->dyna[i].x_con,r_ij);
-        d_pbc_dx(box,rinew[i],rjnew[i],unc_ij);
-        d_pbc_dx(box,pull->grp[i].x_ref,pull->dyna[i].x_ref,ref_ij);
-      } else {
-        d_pbc_dx(box,pull->grp[i].x_con,pull->ref.x_con,r_ij);
-        d_pbc_dx(box,rinew[i],rjnew[0],unc_ij);
-        d_pbc_dx(box,pull->grp[i].x_ref,pull->ref.x_ref,ref_ij);
-      }
+      /* Select components we want */
+      for(m=0; m<DIM; m++)
+        unc_ij[m] *= pull->dim[m];
 
-      for(m=DIM-1; m>=0; m--) {
-        /* select components we want */
-        r_ij[m]     *= pull->dims[m];
-        unc_ij[m]   *= pull->dims[m];
-        ref_ij[m]   *= pull->dims[m];
-      }
+      ref = pgrp->init + pgrp->rate*step*dt;
 
-      d0     = pull->grp[i].constr_d0; 
-      refinc = pull->grp[i].constr_rate*step*dt;
+      if (debug)
+        fprintf(debug,"Pull group %d, iteration %d\n",g,niter);
 
-      if (pull->bDir) {
-	a = 0;
-	b = 0;
-	for(m=0; m<DIM; m++) {
-	  a += unc_ij[m]*pull->dir[m];
-	  b += ref_ij[m]*pull->dir[m];
-	}
-	if (d0 > 0) {
-	  ref = d0 + refinc;
-	} else {
-	  ref = b + refinc;
-	}
-	copy_dvec(pull->dir,r_ij);
-	dsvmul(a,pull->dir,unc_ij);
-	lambda = a - ref;
-	if(pull->bVerbose)
-	  fprintf(stderr,"\nlambda:%e\n",lambda);
-      } else {
-	a = diprod(r_ij,r_ij); 
-	b = diprod(unc_ij,r_ij)*2;
-	if (d0 > 0) {
-	  ref = d0 + refinc;
-	} else {
-	  ref = dnorm(ref_ij) + refinc;
-	}
+      rm = 1.0/(pull->grp[g].invtm + pref->invtm);
+
+      switch (pull->eGeom) {
+      case epullgDIST:
+	if (ref <= 0)
+	  gmx_fatal(FARGS,"The pull constraint reference distance for group %d is <= 0 (%f)",g,ref);
+	
+	a = diprod(r_ij[g],r_ij[g]); 
+	b = diprod(unc_ij,r_ij[g])*2;
 	c = diprod(unc_ij,unc_ij) - sqr(ref);
 
 	if (b < 0) {
@@ -298,330 +205,321 @@ static void do_constraint(t_pull *pull, rvec *x, tensor vir,
 	  lambda = -c/q;
 	}
 
-	if(pull->bVerbose)
-	  fprintf(stderr,"ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n",
+	if (debug)
+	  fprintf(debug,"Pull ax^2+bx+c=0: a=%e b=%e c=%e lambda=%e\n",
 		  a,b,c,lambda);
-      }
-      
-      /* the position corrections dr due to the constraint are: */
-      if(pull->bCyl) {
-	rm = 1.0/(pull->grp[i].invtm + pull->dyna[i].invtm);
-        dsvmul(-lambda*rm*pull->grp[i].invtm, r_ij,dr[i]);
-        dsvmul( lambda*rm*pull->dyna[i].invtm,r_ij,ref_dr[i]);
-      } else {
-	rm = 1.0/(pull->grp[i].invtm + pull->ref.invtm);
-        dsvmul(-lambda*rm*pull->grp[i].invtm,r_ij,dr[i]);
-        dsvmul( lambda*rm*pull->ref.invtm,   r_ij,ref_dr[0]);
-      }
+	
+	/* The position corrections dr due to the constraints */
+	dsvmul(-lambda*rm*pgrp->invtm, r_ij[g],  dr[g]);
+	dsvmul( lambda*rm*pref->invtm, r_ij[g], ref_dr);
+	break;
+      case epullgDIR:
+      case epullgCYL:
+	/* A 1-dimensional constraint along a vector */
+	a = 0;
+	for(m=0; m<DIM; m++)
+	  a += unc_ij[m]*pgrp->vec[m];
+	/* Select only the component along the vector */
+        dsvmul(a,pgrp->vec,unc_ij);
+	lambda = a - ref;
+	if (debug)
+	  fprintf(debug,"Pull inpr %e lambda: %e\n",a,lambda);
 
-      /* and the direction of the constraint force: */
-      if (dr[i][0] != 0 || dr[i][1] != 0 || dr[i][2] != 0) {
-	direction[i] = diprod(r_ij,dr[i])
-	  /sqrt(diprod(r_ij,r_ij)*diprod(dr[i],dr[i]));
-      } else {
-	direction[i] = 0;
+	/* The position corrections dr due to the constraints */
+	dsvmul(-lambda*rm*pull->grp[g].invtm, pgrp->vec, dr[g]);
+	dsvmul( lambda*rm*       pref->invtm, pgrp->vec,ref_dr);
+	break;
+      case epullgPOS:
+	for(m=0; m<DIM; m++) {
+	  if (pull->dim[m]) {
+	    lambda = r_ij[g][m] - pgrp->vec[m];
+	    /* The position corrections dr due to the constraints */
+	    dr[g][m]  = -lambda*rm*pull->grp[g].invtm;
+	    ref_dr[m] =  lambda*rm*pref->invtm;
+	  } else {
+	    dr[g][m]  = 0;
+	    ref_dr[m] = 0;
+	  }
+	}
+	break;
       }
 
       /* DEBUG */
-      if(pull->bVerbose) {
-        fprintf(stderr,"Direction: %f\n",direction[i]);
-        if(pull->bCyl) {
-          d_pbc_dx(box,rinew[i],rjnew[i],tmp);
-        } else {
-          d_pbc_dx(box,rinew[i],rjnew[0],tmp);
+      if (debug) {
+        j = (PULL_CYL(pull) ? g : 0);
+	pull_d_pbc_dx(pull->npbcdim, box, rinew[g], rjnew[j], tmp);
+        pull_d_pbc_dx(pull->npbcdim, box,    dr[g],   ref_dr, tmp3);
+        for(m=0; m<DIM; m++) {
+          tmp[m]  *= pull->dim[m];
+          tmp3[m] *= pull->dim[m];
         }
-        d_pbc_dx(box,dr[i],ref_dr[0],tmp3);
-        for(m=DIM-1; m>=0; m--) {
-          tmp[m]  *= pull->dims[m];
-          tmp2[m] *= pull->dims[m];
-          tmp3[m] *= pull->dims[m];
-        }
-
-        if(pull->bCyl)
-          fprintf(stderr,
-                  "cur. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n"
-                  "ref.   %8s %8s %8s   %8s %8s %8s d: %8f\n"
-                  "cor. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n",
-                  rinew[i][0],rinew[i][1],rinew[i][2], 
-                  rjnew[i][0],rjnew[i][1],rjnew[i][2], dnorm(tmp),
-                  "","","","","","",ref,
-                  dr[i][0],dr[i][1],dr[i][2],
-                  ref_dr[0][0],ref_dr[0][1],ref_dr[0][2],
-                  dnorm(tmp3));
-        else
-          fprintf(stderr,
-                  "cur. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n"
-                  "ref.   %8s %8s %8s   %8s %8s %8s d: %8f\n"
-                  "cor. i:%8f %8f %8f j:%8f %8f %8f d: %8f\n",
-                  rinew[i][0],rinew[i][1],rinew[i][2], 
-                  rjnew[0][0],rjnew[0][1],rjnew[0][2], dnorm(tmp),
-		  "","","","","","",ref,
-                  dr[i][0],dr[i][1],dr[i][2],
-                  ref_dr[0][0],ref_dr[0][1],ref_dr[0][2],
-                  dnorm(tmp3));
+	fprintf(debug,
+		"Pull cur %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
+		rinew[g][0],rinew[g][1],rinew[g][2], 
+		rjnew[j][0],rjnew[j][1],rjnew[j][2], dnorm(tmp));
+	if (pull->eGeom == epullgPOS)
+	  fprintf(debug,
+		  "Pull ref %8.5f %8.5f %8.5f\n",
+		  pgrp->vec[0],pgrp->vec[1],pgrp->vec[2]);
+	else
+	  fprintf(debug,
+		  "Pull ref %8s %8s %8s   %8s %8s %8s d: %8.5f\n",
+		  "","","","","","",ref);
+	fprintf(debug,
+		"Pull cor %8.5f %8.5f %8.5f j:%8.5f %8.5f %8.5f d: %8.5f\n",
+		dr[g][0],dr[g][1],dr[g][2],
+		ref_dr[0],ref_dr[1],ref_dr[2],
+		dnorm(tmp3));
+	fprintf(debug,
+		"Pull cor %10.7f %10.7f %10.7f\n",
+		dr[g][0],dr[g][1],dr[g][2]);
       } /* END DEBUG */
 
-      /* update the positions with dr */
-      dvec_add(rinew[i],dr[i],rinew[i]);
-
-      if(pull->bCyl) {
-        dvec_add(rjnew[i],ref_dr[i],rjnew[i]);
-
-        /* calculate new distance between the two groups */
-        d_pbc_dx(box,rinew[i],rjnew[i],unc_ij);
-
-        /* select components */
-        for(m=DIM-1; m>=0; m--) {
-          unc_ij[m] *= pull->dims[m];
-        }
-      } else {
-        dvec_add(rjnew[0],ref_dr[0],rjnew[0]);
-
-        /* calculate new distance between the two groups */
-        d_pbc_dx(box,rinew[i],rjnew[0],unc_ij);
-
-        /* select components again */
-        for(m=DIM-1; m>=0; m--) {
-          unc_ij[m] *= pull->dims[m];
-        }
-      }
+      /* Update the COMs with dr */
+      dvec_inc(rinew[g],                     dr[g]);
+      dvec_inc(rjnew[PULL_CYL(pull) ? g : 0],ref_dr);
     }
 
-    /* check if all constraints are fullfilled now */
-    for(i=0;i<pull->ngrp;i++) {
-      if(pull->bCyl) {
-        d_pbc_dx(box,rinew[i],rjnew[i],unc_ij);
-      } else {
-        d_pbc_dx(box,rinew[i],rjnew[0],unc_ij);
-      }
+    /* Check if all constraints are fullfilled now */
+    for(g=1; g<1+pull->ngrp; g++) {
+      pgrp = &pull->grp[g];
 
-      for(m=DIM-1; m>=0; m--) {
-        unc_ij[m] *= pull->dims[m];
-      }
-      if (pull->bDir) {
-	inpr = diprod(unc_ij,pull->dir);
-	dsvmul(inpr,pull->dir,unc_ij);
-	bConverged =
-	  fabs(diprod(unc_ij,pull->dir) - ref) < pull->constr_tol;
-      } else {
-	bConverged =
-	  fabs(dnorm(unc_ij) - ref) < pull->constr_tol;
+      pull_d_pbc_dx(pull->npbcdim, box,
+		    rinew[g], rjnew[PULL_CYL(pull) ? g : 0],unc_ij);
+      for(m=0; m<DIM; m++)
+        unc_ij[m] *= pull->dim[m];
+
+      switch (pull->eGeom) {
+      case epullgDIST:
+	bConverged = fabs(dnorm(unc_ij) - ref) < pull->constr_tol;
+	break;
+      case epullgDIR:
+      case epullgCYL:
+	inpr = diprod(unc_ij,pgrp->vec);
+	dsvmul(inpr,pgrp->vec,unc_ij);
+	bConverged = fabs(diprod(unc_ij,pgrp->vec) - ref) < pull->constr_tol;
+	break;
+      case epullgPOS:
+	bConverged = TRUE;
+	for(m=0; m<DIM; m++) {
+	  if (pull->dim[m] && 
+	      fabs(unc_ij[m] - pgrp->vec[m]) >= pull->constr_tol)
+	    bConverged = FALSE;
+	}
+	break;
       }
 
       /* DEBUG */
-      if(pull->bVerbose) {
-	if(!bConverged)
-	  fprintf(stderr,"NOT CONVERGED YET: Group %d (%s):"
+      if (debug) {
+	if (!bConverged)
+	  fprintf(debug,"NOT CONVERGED YET: Group %d (%s):"
 		  "d_ref = %f, current d = %f\n",
-		  i,pull->grp[i].name,ref,dnorm(unc_ij));
+		  g,pgrp->name,ref,dnorm(unc_ij));
       } /* END DEBUG */
     }
 
-    n++;
+    niter++;
     /* if after all constraints are dealt with and bConverged is still TRUE
        we're finished, if not we do another iteration */
   }
-  if (n > max_iter)
-    gmx_fatal(FARGS,"Too many iterations for constraint run");
+  if (niter > max_iter)
+    gmx_fatal(FARGS,"Too many iterations for constraint run: %d",niter);
 
   /* DONE ITERATING, NOW UPDATE COORDINATES AND CALC. CONSTRAINT FORCES */
 
+  if (v)
+    invdt = 1/dt;
+
   /* update the normal groups */
-  for(i=0; i<pull->ngrp; i++) {
-    pgrp = &pull->grp[i];
+  for(g=1; g<1+pull->ngrp; g++) {
+    pgrp = &pull->grp[g];
     /* get the final dr and constraint force for group i */
-    dvec_sub(rinew[i],pgrp->x_unc,dr[i]);
+    dvec_sub(rinew[g],pgrp->xp,dr[g]);
     /* select components of dr */
     for(m=0; m<DIM; m++)
-      dr[i][m] *= pull->dims[m];
-    dsvmul(1.0/(pgrp->invtm*dt*dt),dr[i],tmp);
-    /* get the direction of dr */
-    pgrp->f[ZZ] = -dnorm(tmp)*direction[i];
-    
-    /* update the virial */
-    if(pull->bCyl) {
-      d_pbc_dx(box,pull->grp[i].x_con,pull->dyna[i].x_con,r_ij);
-    } else {
-      d_pbc_dx(box,pull->grp[i].x_con,pull->ref.x_con,r_ij);
-    }
-    q = 0.5*pgrp->f[ZZ]/dnorm(r_ij);
-    for(j=0; j<DIM; j++)
+      dr[g][m] *= pull->dim[m];
+    dsvmul(1.0/(pgrp->invtm*dt*dt),dr[g],pgrp->f);
+    switch (pull->eGeom) {
+    case epullgDIST:
+      pgrp->f_scal = 0;
       for(m=0; m<DIM; m++)
-	vir[j][m] += q*r_ij[j]*r_ij[m];
+	pgrp->f_scal += r_ij[g][m]*pgrp->f[m];
+      pgrp->f_scal /= dnorm(r_ij[g]);
+      break;
+    case epullgDIR:
+    case epullgCYL:
+      pgrp->f_scal = 0;
+      for(m=0; m<DIM; m++)
+	pgrp->f_scal += pgrp->vec[m]*pgrp->f[m];
+      break;
+    case epullgPOS:
+      break;
+    }
 
-    /* copy the new x_unc to x_con */
-    copy_dvec(rinew[i],pgrp->x_con);
+    if (bVir) {
+      /* Add the pull contribution to the virial */
+      for(j=0; j<DIM; j++)
+	for(m=0; m<DIM; m++)
+	  vir[j][m] += 0.5*pull->grp[g].f[j]*r_ij[g][m];
+    }
 
     /* update the atom positions */
-    clear_dvec(sum);
-    for(j=0;j<pgrp->ngx;j++) {
-      ii = pgrp->idx[j];
-      if (pgrp->nweight == 0) {
-	copy_dvec(dr[i],tmp);
-      } else {
-	dsvmul(pgrp->wscale*pgrp->weight[j],dr[i],tmp); 
-      }
+    copy_dvec(dr[g],tmp);
+    for(j=0;j<pgrp->nat_loc;j++) {
+      ii = pgrp->ind_loc[j];
+      if (pgrp->weight_loc)
+	dsvmul(pgrp->wscale*pgrp->weight_loc[j],dr[g],tmp); 
       for(m=0; m<DIM; m++)
 	x[ii][m] += tmp[m];
-      dsvmul(md->massT[ii],tmp,tmp2);
-      dvec_add(tmp2,sum,sum);
+      if (v)
+	for(m=0; m<DIM; m++)
+	  v[ii][m] += invdt*tmp[m];
     }
-
-    if(pull->bVerbose)
-      fprintf(stderr,"Group %i: correction %e %e %e\n",
-              i,sum[0],sum[1],sum[2]);
   }
 
   /* update the reference groups */
-  if(pull->bCyl) {
+  if (PULL_CYL(pull)) {
     /* update the dynamic reference groups */
-    for(i=0;i<pull->ngrp;i++) {
-      pdyna = &pull->dyna[i];
-      dvec_sub(rjnew[i],pdyna->x_unc,ref_dr[i]);
-      /* copy the new x_unc to x_con */
-      copy_dvec(rjnew[i],pdyna->x_con);
+    for(g=1; g<1+pull->ngrp; g++) {
+      pdyna = &pull->dyna[g];
+      dvec_sub(rjnew[g],pdyna->xp,ref_dr);
       /* select components of ref_dr */
-      for(m=0;m<DIM;m++)
-        ref_dr[i][m] *= pull->dims[m];
+      for(m=0; m<DIM; m++)
+        ref_dr[m] *= pull->dim[m];
 
-      clear_dvec(sum);
-      for(j=0;j<pdyna->ngx;j++) {
+      for(j=0;j<pdyna->nat_loc;j++) {
         /* reset the atoms with dr, weighted by w_i */
-        dsvmul(pdyna->wscale*pdyna->weight[j],ref_dr[i],tmp); 
-        ii = pdyna->idx[j];
+        dsvmul(pdyna->wscale*pdyna->weight_loc[j],ref_dr,tmp); 
+        ii = pdyna->ind_loc[j];
 	for(m=0; m<DIM; m++)
 	  x[ii][m] += tmp[m];
-        dsvmul(md->massT[ii],tmp,tmp2);
-        dvec_add(tmp2,sum,sum);
+	if (v)
+	  for(m=0; m<DIM; m++)
+	    v[ii][m] += invdt*tmp[m];
       }
-      if(pull->bVerbose)
-        fprintf(stderr,"Dyna grp %i: correction %e %e %e\n",
-                i,sum[0],sum[1],sum[2]);
     }
   } else {
+    pgrp = &pull->grp[0];
     /* update the reference group */
-    dvec_sub(rjnew[0],pull->ref.x_unc, ref_dr[0]); 
-    /* copy the new x_unc to x_con */
-    copy_dvec(rjnew[0],pull->ref.x_con);
+    dvec_sub(rjnew[0],pgrp->xp, ref_dr); 
     /* select components of ref_dr */
     for(m=0;m<DIM;m++)
-      ref_dr[0][m] *= pull->dims[m];
-
-    clear_dvec(sum);
-    for(j=0;j<pull->ref.ngx;j++) {
-      ii = pull->ref.idx[j];
-      if (pull->ref.nweight == 0) {
-	copy_dvec(ref_dr[0],tmp);
-      } else {
-	dsvmul(pull->ref.wscale*pull->ref.weight[j],ref_dr[0],tmp); 
-      }
+      ref_dr[m] *= pull->dim[m];
+    
+    copy_dvec(ref_dr,tmp);
+    for(j=0; j<pgrp->nat_loc;j++) {
+      ii = pgrp->ind_loc[j];
+      if (pgrp->weight_loc)
+	dsvmul(pgrp->wscale*pgrp->weight_loc[j],ref_dr,tmp); 
       for(m=0; m<DIM; m++)
 	x[ii][m] += tmp[m];
-      dsvmul(md->massT[ii],tmp,tmp2);
-      dvec_add(tmp2,sum,sum);
+      if (v)
+	for(m=0; m<DIM; m++)
+	  v[ii][m] += invdt*tmp[m];
     }
-    if(pull->bVerbose)
-      fprintf(stderr,"Reference: correction %e %e %e\n",
-              sum[0],sum[1],sum[2]);
-
   }
 
   /* finished! I hope. Give back some memory */
-  sfree(ref_dr);
+  sfree(r_ij);
   sfree(rinew);
   sfree(rjnew);
   sfree(dr);
-  sfree(direction);
-  *niter = n;
 }
 
-/* mimicks an AFM experiment, groups are pulled via a spring */
-static void do_afm(t_pull *pull, rvec *f, tensor vir, 
-		   matrix box, t_mdatoms *md,
-		   int start, int homenr, real dt, int step)
+/* Pulling with a harmonic umbrella potential */
+static void do_umbrella(t_commrec *cr,
+			t_pull *pull, rvec *f, bool bVir, tensor vir, 
+			matrix box, t_mdatoms *md,
+			real dt, int step)
 {
-  int i,j,m;
-  dvec dr;     /* extension of the springs */
+  static bool bWarned=FALSE;
+  int g,j,m;
+  dvec dr,ds;     /* extension of the springs */
+  double drs,dss,inpr,ref;
+  t_pullgrp *pgrp,*pref;
 
   /* loop over the groups that are being pulled */
-  for(i=0;i<pull->ngrp;i++) {
+  for(g=1; g<1+pull->ngrp; g++) {
+    pgrp = &pull->grp[g];
+    if (PULL_CYL(pull))
+      pref = &pull->dyna[g];
+    else
+      pref = &pull->grp[0];
 
-    /* move pulling spring along dir, over pull->rate  */
-    for(m=0;m<DIM;m++)
-      pull->grp[i].spring[m] = pull->grp[i].AfmInit[m] + pull->ref.x_unc[m] +
-	pull->grp[i].AfmVec[m]*pull->grp[i].AfmRate*step*dt;
+    pull_d_pbc_dx(pull->npbcdim, box, pgrp->x, pref->x, dr);
+    for(m=0; m<DIM; m++)
+      dr[m] *= pull->dim[m];
 
-    d_pbc_dx(box,pull->grp[i].spring, pull->grp[i].x_unc, dr);
-    
-    /* compute how far the springs are stretched */
-    for(m=DIM-1; m>=0; m--) {
-      /* dr[m]=pull->dims[m]*(pull->grp.spring[i][m]-pull->grp.x_unc[i][m]);*/
-      dr[m]*=pull->dims[m];
+    switch (pull->eGeom) {
+    case epullgDIST:
+      ref = pgrp->init + pgrp->rate*step*dt;
+      /* Pull along the vector between the com's */
+      drs = dnorm(dr);
+      if (drs == 0) {
+	dss = 0;
+      } else {
+	/* Determine the extension */
+	dss = drs - ref;
+	if (ref < 0) {
+	  if (!bWarned) {
+	    fprintf(stdlog,"\nPull reference distance for group %d is negative (%f) will use zero\n",g,ref);
+	    fprintf(stderr,"\nPull reference distance for group %d is negative (%f) will use zero\n",g,ref);
+	    bWarned = TRUE;
+	  }
+	  dss = 0;
+	}
+      }
+      pgrp->f_scal = -pgrp->k*dss;
+      for(m=0; m<DIM; m++)
+	pull->grp[g].f[m] = pgrp->f_scal*dr[m]/drs;
+      break;
+    case epullgDIR:
+    case epullgCYL:
+      ref = pgrp->init + pgrp->rate*step*dt;
+      /* Pull along vec */
+      drs = dnorm(dr);
+      inpr = 0;
+      for(m=0; m<DIM; m++)
+	inpr += pgrp->vec[m]*dr[m];
+      dss = inpr - ref;
+      pgrp->f_scal = -pgrp->k*dss;
+      for(m=0; m<DIM; m++)
+	pgrp->f[m] = pgrp->f_scal*dr[m]/drs;
+      break;
+    case epullgPOS:
+      /* Restrain to the location vec */
+      pull_d_pbc_dx(pull->npbcdim, box, pgrp->x, pgrp->vec, ds);
+      for(m=0; m<DIM; m++)
+	pgrp->f[m] = -pgrp->k*pull->dim[m]*ds[m];
+      break;
     }
 
-    /* calculate force from the spring on the pull group: f = - k*dr */
-    for(m=0;m<DIM;m++)
-      pull->grp[i].f[m] = pull->grp[i].AfmK*dr[m];
-
-    d_pbc_dx(box,pull->ref.x_unc, pull->grp[i].x_unc, dr);
-    for(m=DIM-1; m>=0; m--)
-      dr[m] *= pull->dims[m];
-    for(j=0; j<DIM; j++)
-      for(m=0;m<DIM;m++)
-	vir[j][m] += 0.5*pull->grp[i].f[j]*dr[m];
+    if (bVir) {
+      /* Add the pull contribution to the virial */
+      for(j=0; j<DIM; j++)
+	for(m=0;m<DIM;m++)
+	  vir[j][m] += 0.5*pgrp->f[j]*dr[m];
+    }
   }
+
   /* Distribute forces over pulled groups */
-  apply_forces(pull, md, f, start, homenr);
+  apply_forces(cr, pull, md, f);
 }
 
-void pull(t_pull *pull,rvec *x,rvec *f, tensor vir, 
-	  matrix box, t_topology *top, real dt, int step, real time,
-	  t_mdatoms *md, int start, int homenr,
-          t_commrec * cr) 
+void pull_umbrella(t_pull *pull, rvec *x, rvec *f, tensor vir, 
+		   matrix box, t_topology *top, real dt, int step,
+		   t_mdatoms *md, t_commrec *cr) 
 {
-  int i,niter;
-  rvec *x_s = NULL;
-  bool bShakeFirst;
+  pull_calc_coms(cr,pull,md,x,NULL,box);
 
-  bShakeFirst = (f == NULL);
+  do_umbrella(cr,pull,f,MASTER(cr),vir,box,md,dt,step);
+}
 
-    snew(x_s,md->nr); /* can't rely on natoms */
+void pull_constraint(t_pull *pull, rvec *x, rvec *xp, rvec *v, tensor vir, 
+		     matrix box, t_topology *top, real dt, int step,
+		     t_mdatoms *md, t_commrec *cr) 
+{
+  pull_calc_coms(cr,pull,md,x,xp,box);
 
-  /* copy x to temp array x_s. We assume all molecules are whole already */
-  for(i=0;i<md->nr;i++)
-    copy_rvec(x[i],x_s[i]);  
-  
-  /* Update COM's */
-  update_COM(pull, x_s, md, box, step);
-
-  switch(pull->runtype) {
-  case eAfm:
-    if(!bShakeFirst) {
-      do_afm(pull,f,vir,box,md,start,homenr, dt, step);
-      
-      if(MASTER(cr))
-        print_afm(pull,step,time);
-    }
-    break;
-
-  case eConstraint:
-    /* do the actual constraint calculation */
-    do_constraint(pull,x,vir,box,md,dt,step,&niter);
-    print_constraint(pull,step,time); 
-    break;
-
-  case eUmbrella:
-    if(!bShakeFirst) {
-      do_umbrella(pull,x,f,vir,box,md,start,homenr);
-
-      if(MASTER(cr))
-        print_umbrella(pull,step,time);
-    }
-    break;
-
-  default:
-    gmx_fatal(FARGS,"undetermined runtype");
-  }
-
-  sfree(x_s);
+  do_constraint(pull,xp,v,MASTER(cr),vir,box,md,dt,step);
 }

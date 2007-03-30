@@ -91,6 +91,8 @@ enum {
 #define EI_DYNAMICS(e) ((e) == eiMD || (e) == eiSD || (e) == eiBD)
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 
+#define EI_STATE_VELOCITY(e) ((e) == eiMD || (e) == eiSD)
+
 enum {
   estLINCS, estSHAKE, estNR
 };
@@ -163,6 +165,18 @@ enum {
   ewt93, ewt104, ewtTABLE, ewtNR
 };
 
+/* Pull stuff */
+enum {
+  epullNO, epullUMBRELLA, epullCONSTRAINT, epullNR
+};
+
+enum {
+  epullgDIST, epullgDIR, epullgCYL, epullgPOS, epullgNR
+};
+
+#define PULL_CYL(pull) ((pull)->eGeom == epullgCYL)
+
+/* QMMM */
 enum {
   eQMmethodAM1, eQMmethodPM3, eQMmethodRHF, 
   eQMmethodUHF, eQMmethodDFT, eQMmethodB3LYP, eQMmethodMP2, eQMmethodCASSCF, eQMmethodB3LYPLAN,

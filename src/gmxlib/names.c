@@ -169,6 +169,14 @@ const char *ewt_names[ewtNR+1] = {
   "9-3", "10-4", "table", NULL
 };
 
+const char *epull_names[epullNR+1] = { 
+  "no", "umbrella", "constraint", NULL
+};
+
+const char *epullg_names[epullgNR+1] = { 
+  "distance", "direction", "cylinder", "position", NULL
+};
+
 const char *eQMmethod_names[eQMmethodNR+1] = {
   "AM1", "PM3", "RHF",
   "UHF", "DFT", "B3LYP", "MP2", "CASSCF","B3LYPLAN",

@@ -564,86 +564,85 @@ double node_time(void)
   return runtime;
 }
 
-void do_shakefirst(FILE *fplog,real ener[],
+void do_shakefirst(FILE *fplog,gmx_constr_t *constr,
 		   t_inputrec *inputrec,t_mdatoms *md,
 		   t_state *state,rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
 		   t_groups *grps,t_forcerec *fr,t_topology *top,
-		   t_edsamyn *edyn,t_pull *pulldata)
+		   t_edsamyn *edyn)
 {
   int    i,m,start,end,step;
   tensor shake_vir,pres;
   double mass,tmass,vcm[4];
   real   dt=inputrec->delta_t;
-  real   dt_1;
-  rvec   *xptr;
+  real   dvdlambda=0;
 
-  if (count_constraints(top,cr)) {
-    start = md->start;
-    end   = md->homenr + start;
-    if (debug)
-      fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
-	      start,md->homenr,end);
-    /* Do a first SHAKE to reset particles... */
-    step = -2;
-    fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
-    clear_mat(shake_vir);
-    clear_mat(pres);
-    update(step,&ener[F_DVDL],inputrec,md,state,graph,
-	   NULL,top,grps,shake_vir,cr,nrnb,
-	   edyn,pulldata,FALSE,FALSE,FALSE,state->x,pres);
-    /* Compute coordinates at t=-dt, store them in buf */
-    /* for(i=0; (i<nsb->natoms); i++) {*/
+  start = md->start;
+  end   = md->homenr + start;
+  if (debug)
+    fprintf(debug,"vcm: start=%d, homenr=%d, end=%d\n",
+	    start,md->homenr,end);
+  /* Do a first SHAKE to reset particles... */
+  step = inputrec->init_step;
+  fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
+  clear_mat(shake_vir);
+  clear_mat(pres);
+  update(step,&dvdlambda,inputrec,md,state,graph,
+	 NULL,state->x,top,grps,shake_vir,cr,nrnb,
+	 constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
+  if (EI_STATE_VELOCITY(inputrec->eI)) {
     for(i=start; (i<end); i++) {
       for(m=0; (m<DIM); m++) {
-	buf[i][m] = state->x[i][m] - dt*state->v[i][m];
+	/* Reverse the velocity */
+	state->v[i][m] = -state->v[i][m];
+	/* Store the position at t-dt in buf */
+	buf[i][m] = state->x[i][m] + dt*state->v[i][m];
       }
     }
     
     /* Shake the positions at t=-dt with the positions at t=0
      * as reference coordinates.
      */
-    step = -1;
-    fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",step);
+    step = inputrec->init_step - 1;
+    fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
+	    step);
     clear_mat(shake_vir);
     clear_mat(pres);
-    update(step,&ener[F_DVDL],inputrec,md,state,graph,
-	   NULL,top,grps,shake_vir,cr,nrnb,
-	   edyn,pulldata,FALSE,FALSE,FALSE,buf,pres);
-
-    /* Compute the velocities at t=-dt/2 using the coordinates at
-     * t=-dt and t=0
-     * Compute velocity of center of mass and total mass
-     */
+    update(step,&dvdlambda,inputrec,md,state,graph,
+	   NULL,buf,top,grps,shake_vir,cr,nrnb,
+	   constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
+    
     for(m=0; (m<4); m++)
       vcm[m] = 0;
-    dt_1=1.0/dt;
-    for(i=start; (i<end); i++) {
-      /*for(i=0; (i<nsb->natoms); i++) {*/
+    for(i=start; i<end; i++) {
       mass = md->massT[i];
-      for(m=0; (m<DIM); m++) {
-	state->v[i][m] = (state->x[i][m] - buf[i][m])*dt_1;
+      for(m=0; m<DIM; m++) {
+	/* Re-reverse the velocities */
+	state->v[i][m] = -state->v[i][m];
 	vcm[m] += state->v[i][m]*mass;
       }
       vcm[3] += mass;
     }
-    /* Compute the global sum of vcm */
-    if (debug)
-      fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-	      " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
-    if (PAR(cr))
-      gmx_sumd(4,vcm,cr);
-    tmass = vcm[3];
-    for(m=0; (m<DIM); m++)
-      vcm[m] /= tmass;
-    if (debug) 
-      fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
-	      " total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
-    if (inputrec->nstcomm != 0) {
-      /* Now we have the velocity of center of mass, let's remove it */
-      for(i=start; (i<end); i++) {
-	for(m=0; (m<DIM); m++)
-	  state->v[i][m] -= vcm[m];
+    
+    if (inputrec->nstcomm != 0 || debug) {
+      /* Compute the global sum of vcm */
+      if (debug)
+	fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+		" total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],vcm[3]);
+      if (PAR(cr))
+	gmx_sumd(4,vcm,cr);
+      tmass = vcm[3];
+      for(m=0; (m<DIM); m++)
+	vcm[m] /= tmass;
+      if (debug) 
+	fprintf(debug,"vcm: %8.3f  %8.3f  %8.3f,"
+		" total mass = %12.5e\n",vcm[XX],vcm[YY],vcm[ZZ],tmass);
+      if (inputrec->nstcomm != 0) {
+	/* Now we have the velocity of center of mass, let's remove it */
+	for(i=start; (i<end); i++) {
+	  for(m=0; (m<DIM); m++)
+	    state->v[i][m] -= vcm[m];
+	}
       }
     }
   }
@@ -950,7 +949,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
-	     t_nrnb *nrnb,t_topology *top,
+	     t_nrnb *nrnb,t_topology *top,gmx_constr_t **constr,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
@@ -1007,7 +1006,11 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_mat(shake_vir);
   clear_rvec(mu_tot);
 
-  *vcm = init_vcm(stdlog,&top->atoms,ir);
+  if (constr)
+    *constr = init_constraints(stdlog,cr,top,ir);
+
+  if (vcm)
+    *vcm = init_vcm(stdlog,&top->atoms,ir);
     
   debug_gmx();
 

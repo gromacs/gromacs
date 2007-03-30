@@ -72,20 +72,19 @@ typedef struct {
 } t_shell;
 
 /* Initialization function */
-extern t_shell *init_shells(FILE *log,int start,int homenr,
+extern t_shell *init_shells(FILE *log,t_commrec *cr,
 			    t_idef *idef,t_mdatoms *md,int *nshell);
-
-extern int count_flexible_constraints(FILE* log,t_forcerec *fr,t_idef *idef);
 
 /* Optimize shell positions */
 extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
-			t_topology *top,real ener[],t_fcdata *fcd,
+			t_topology *top,gmx_constr_t *constr,
+			real ener[],t_fcdata *fcd,
 			t_state *state,rvec f[],
 			rvec buf[],t_mdatoms *md,
 			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			t_graph *graph,t_groups *grps,
-			int nshell,t_shell shells[],int nflexcon,
+			int nshell,t_shell shells[],
 			t_forcerec *fr,
 			real t,rvec mu_tot,
 			int natoms,bool *bConverged,

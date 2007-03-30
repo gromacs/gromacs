@@ -58,6 +58,7 @@
 #include "pull.h"
 #include "pull_internal.h"
 #include "string.h"
+#include "network.h"
 #include "pbc.h"
 
 static void print_info(FILE *log,t_pull *pull) 
@@ -67,45 +68,25 @@ static void print_info(FILE *log,t_pull *pull)
           "                         PULL INFO                      \n"
           "**************************************************\n");
 
-  switch(pull->runtype) {
-  case eAfm:
-    fprintf(log,"RUN TYPE: Afm\n");
-    break;
-  case eConstraint:
-    fprintf(log,"RUN TYPE: Constraint\n");
-    break;
-  case eUmbrella:
+  switch(pull->ePull) {
+  case epullUMBRELLA:
     fprintf(log,"RUN TYPE: Umbrella sampling\n");
     break;
+  case epullCONSTRAINT:
+    fprintf(log,"RUN TYPE: Constraint\n");
+    break;
   default:
-    fprintf(log,"RUN TYPE: WARNING! pullinit does not know this runtype\n");
+    gmx_fatal(FARGS,"No such pull type: %d",pull->ePull);
   }
 
-  switch(pull->reftype) {
-  case eCom: 
-    if(pull->AbsoluteRef)
-      fprintf(log,"REFERENCE TYPE: the origin (0,0,0) --> Absolute Coordinates\n");
-    else
-      fprintf(log,"REFERENCE TYPE: center of mass of reference group\n");
-    break;
-  case eComT0:
-    fprintf(log,
-	    "REFERENCE TYPE: center of mass of reference group at t=0\n");
-    break;
-  case eDyn:
+  if (pull->grp[0].nat == 0) {
+    fprintf(log,"REFERENCE TYPE: the origin (0,0,0) --> Absolute Coordinates\n");
+  } else if (PULL_CYL(pull)) {
     fprintf(log, "REFERENCE TYPE: center of mass of dynamically made groups\n");
-    fprintf(log,"Using dynamic reference groups: r=%8.3f, rc=%8.3f\n",
-	    pull->r,pull->rc);
-    break;
-  case eDynT0:
-    fprintf(log,
-	    "REFERENCE TYPE: center of mass of dynamically made groups,\n"
-	    "based on the positions of its atoms at t=0\n");
-    fprintf(log,"Using dynamic reference groups: r=%8.3f, rc=%8.3f\n",
-	    pull->r,pull->rc);
-    break;
-  default:
-    fprintf(log,"REFERENCE TYPE: no clue! What did you do wrong?\n");
+    fprintf(log,"Using dynamic reference groups: r1=%8.3f, r0=%8.3f\n",
+	    pull->cyl_r1,pull->cyl_r0);
+  } else {
+    fprintf(log,"REFERENCE TYPE: center of mass of reference group\n");
   }
 }
 
@@ -144,47 +125,124 @@ static void read_whole_index(char *indexfile,char ***grpnames,
   sfree(grps);
 }
 
-static void set_mass(FILE *log,t_pullgrp *pg,ivec pulldims,
-		     t_mdatoms *md,ivec nFreeze[])
+static void dd_make_local_pull_group(gmx_domdec_t *dd,
+				     t_pullgrp *pg,t_mdatoms *md)
 {
-  int i,d;
-  real m,w;
-  double wmass,wwmass;
-  bool bFrozen,bPartial;
+  int i,ii;
+  gmx_ga2la_t *ga2la=NULL;
 
-  bFrozen = FALSE;
-  bPartial = FALSE;
+  ga2la = dd->ga2la;
+  pg->nat_loc = 0;
+  for(i=0; i<pg->nat; i++) {
+    if (ga2la[pg->ind[i]].cell == 0) {
+      ii = ga2la[pg->ind[i]].a;
+      if (ii < md->start+md->homenr) {
+	/* This is a home atom, add it to the local pull group */
+	pg->ind_loc[pg->nat_loc] = ii;
+	if (pg->weight)
+	  pg->weight_loc[pg->nat_loc] = pg->weight[i];
+	pg->nat_loc++;
+      }
+    }
+  }
+}
+
+void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
+{
+  int g;
+
+  if (pull->eGeom != epullgPOS)
+    dd_make_local_pull_group(dd,&pull->grp[0],md);
+  for(g=1; g<1+pull->ngrp; g++)
+    dd_make_local_pull_group(dd,&pull->grp[g],md);
+}
+
+static void init_pull_group_index(FILE *log,t_commrec *cr,
+				  t_pullgrp *pg,ivec pulldims,
+				  t_mdatoms *md,ivec nFreeze[])
+{
+  int i,ii,d,start,end,nfreeze,ndim;
+  real m,w;
+  double wmass,wwmass,buf[2];
+  bool bDomDec;
+  gmx_ga2la_t *ga2la=NULL;
+
+  bDomDec = DOMAINDECOMP(cr);
+  if (bDomDec)
+    ga2la = cr->dd->ga2la;
+
+  start = md->start;
+  end   = md->homenr + start;
+
+  if (PAR(cr)) {
+    snew(pg->ind_loc,pg->nat);
+    pg->nat_loc = 0;
+    if (pg->weight)
+      snew(pg->weight_loc,pg->nat);
+  } else {
+    pg->nat_loc = pg->nat;
+    pg->ind_loc = pg->ind;
+    pg->weight_loc = pg->weight;
+  }
+
+  nfreeze = 0;
   wmass = 0;
   wwmass = 0;
-  for(i=0; i<pg->ngx; i++) {
-    for(d=0; d<DIM; d++)
-      if (pulldims[d]) {
-	if (nFreeze[md->cFREEZE[pg->idx[i]]][d])
-	  bFrozen = TRUE;
-	else if (bFrozen)
-	  bPartial = TRUE;
+  for(i=0; i<pg->nat; i++) {
+    ii = pg->ind[i];
+    if (bDomDec) {
+      /* Get the local index of this atom */
+      if (ga2la[pg->ind[i]].cell == 0)
+	ii = ga2la[pg->ind[i]].a;
+      else
+	ii = -1;
+    }
+    if (ii >= start && ii < end) {
+      if (PAR(cr) && !bDomDec)
+	pg->ind_loc[pg->nat_loc++] = ii;
+      if (md->cFREEZE) {
+	for(d=0; d<DIM; d++)
+	  if (pulldims[d] && nFreeze[md->cFREEZE[ii]][d])
+	    nfreeze++;
       }
-    m = md->massT[pg->idx[i]];
-    if (pg->nweight > 0)
-      w = pg->weight[i];
-    else
-      w = 1;
-    wmass += w*m;
-    wwmass += w*w*m;
+      m = md->massT[ii];
+      if (pg->weight)
+	w = pg->weight[i];
+      else
+	w = 1;
+      wmass += w*m;
+      wwmass += w*w*m;
+    }
   }
-  if (bPartial)
-    fprintf(log,
-	    "\nWARNING: In pull group '%s' some, but not all of the degrees of freedom\n"
-	    "         that are subject to pulling are frozen.\n"
-	    "         For pulling the whole group will be frozen.\n\n",
-	    pg->name);
-  if (bFrozen) {
-    pg->wscale = 1.0;
-    pg->invtm  = 0.0;
-  } else {
+  if (PAR(cr)) {
+    buf[0]  = wmass;
+    buf[1]  = wwmass;
+    buf[2]  = nfreeze;
+    gmx_sumd(2,buf,cr);
+    wmass   = buf[0];
+    wwmass  = buf[1];
+    nfreeze = (int)(buf[2] + 0.5);
+  }
+
+  if (nfreeze == 0) {
     pg->wscale = wmass/wwmass;
     pg->invtm  = 1.0/(pg->wscale*wmass);
+  } else {
+    ndim = 0;
+    for(d=0; d<DIM; d++)
+      ndim += pulldims[d]*pg->nat;
+    if (nfreeze > 0 && nfreeze < ndim)
+      fprintf(log,
+	      "\nWARNING: In pull group '%s' some, but not all of the degrees of freedom\n"
+	      "         that are subject to pulling are frozen.\n"
+	      "         For pulling the whole group will be frozen.\n\n",
+	      pg->name);
+    pg->wscale = 1.0;
+    pg->invtm  = 0.0;
   }
+  
+  if (bDomDec)
+    dd_make_local_pull_group(cr->dd,pg,md);
 }
 
 static void get_pull_index(FILE *log,t_pullgrp *pgrp,
@@ -200,209 +258,194 @@ static void get_pull_index(FILE *log,t_pullgrp *pgrp,
   for(i=0;i<totalgrps;i++) {
     if(strcmp(pgrp->name,grpnames[i]) == 0) {
       /* found the group we're looking for */
-      snew(pgrp->idx,ngx[i]);
-      for(j=0;j<ngx[i];j++)
-        pgrp->idx[j] = index[i][j];
-      pgrp->ngx = ngx[i];
+      pgrp->nat = ngx[i];
+      snew(pgrp->ind,pgrp->nat);
+      for(j=0; j<pgrp->nat; j++)
+        pgrp->ind[j] = index[i][j];
       bFound = TRUE;
       if(MASTER(cr))
         fprintf(log,"found group %s: %d elements. First: %d\n",
-		pgrp->name,ngx[i],pgrp->idx[0]+1);
+		pgrp->name,pgrp->nat,pgrp->ind[0]+1);
     }
   }
 
   if(!bFound)
     gmx_fatal(FARGS,"Can't find group %s in the index file",pgrp->name);
 
-  if (pgrp->nweight > 0 && pgrp->nweight != pgrp->ngx)
-    gmx_fatal(FARGS,"Number of weights (%d) for pull group '%s' does not match the number of atoms (%d)",pgrp->nweight,pgrp->name,pgrp->ngx);
+  if (pgrp->nweight > 0 && pgrp->nweight != pgrp->nat)
+    gmx_fatal(FARGS,"Number of weights (%d) for pull group '%s' does not match the number of atoms (%d)",pgrp->nweight,pgrp->name,pgrp->nat);
 }
-void init_pull(FILE *log,int nfile,t_filenm fnm[],t_pull *pull,rvec *x,
-               t_mdatoms *md,ivec nFreeze[],int ePBC,matrix box,
-	       int start,int homenr,t_commrec *cr) 
+
+void init_pull(FILE *log,int nfile,t_filenm fnm[],t_inputrec *ir,
+	       rvec *x,t_mdatoms *md,matrix box,t_commrec *cr) 
 {
-  int  i,j,m,ii;
+  int  g,j,m,ii;
   dvec tmp;
+  double dist;
   char **grpnames;
   atom_id **index;
   int  *ngx;
   int  totalgrps;    /* total number of groups in the index file */
   char buf[256];
+  t_pull *pull;
+  t_pullgrp *pgrp;
+
+  pull = &ir->pull;
 
   /* do we have to do any pulling at all? If not return */
-  pull->bPull = opt2bSet("-pi",nfile,fnm);
-  if (!pull->bPull)
+  pull->ePull = epullNO;
+  if (opt2bSet("-pi",nfile,fnm) == FALSE)
     return;
 
-  pull->ePBC = ePBC;
-
-  /* initialize Absolute Reference boolean to FALSE  -- DLB */
-  /* if TRUE then read_pullparams() will update AbsoluteRef properly -- DLB */
-  pull->AbsoluteRef = FALSE;
+  pull->ePBC = ir->ePBC;
+  switch (pull->ePBC) {
+  case epbcNONE: pull->npbcdim = 0; break;
+  case epbcXY:   pull->npbcdim = 2; break;
+  default:       pull->npbcdim = 3; break;
+  }
 
   read_pullparams(pull, opt2fn("-pi",nfile,fnm), opt2fn("-po",nfile,fnm));
 
-  if (cr->nnodes > 1 && pull->runtype == eConstraint)
-    gmx_fatal(FARGS,"Can not do constraint force calculation in parallel!\n");
+  if (pull->cyl_r1 > pull->cyl_r0)
+    gmx_fatal(FARGS,"pull_r1 > pull_r0");
 
-  /* Only do I/O if we are the MASTER */
   if (MASTER(cr)) {
-    char * filename = opt2fn("-pd", nfile, fnm); 
-
-    pull->out = ffopen(opt2fn("-pd",nfile,fnm),"w");
-  }
-
-  if(pull->reftype == eDyn || pull->reftype == eDynT0)
-    pull->bCyl = TRUE;
-  else
-    pull->bCyl = FALSE;
-
-  if(pull->bCyl && (pull->rc < 0.01 || pull->r < 0.01))
-    gmx_fatal(FARGS,"rc or r is too small or zero.");
-
-  if(MASTER(cr)) {
     print_info(log,pull);
   }
 
   /* read the whole index file */
   read_whole_index(opt2fn("-pn",nfile,fnm),&grpnames,&index,&ngx,&totalgrps);
 
-  if(MASTER(cr)) {
-    if(pull->bVerbose) {
-      fprintf(stderr,"read_whole_index: %d groups total\n",totalgrps);
-      for(i=0;i<totalgrps;i++) {
-        fprintf(stderr,"group %i (%s) %d elements\n",
-                i+1,grpnames[i],ngx[i]);
-      }
-    }
+  if (debug) {
+    fprintf(debug,"read_whole_index: %d groups total\n",totalgrps);
+    for(g=0; g<totalgrps; g++)
+      fprintf(debug,"group %i (%s) %d elements\n",g+1,grpnames[g],ngx[g]);
   }
 
 
   /* grab the groups that are specified in the param file */
-  for(i=0;i<pull->ngrp;i++)
-    get_pull_index(log,&pull->grp[i],index,ngx,grpnames,totalgrps,cr);
+  for(g=1; g<1+pull->ngrp; g++)
+    get_pull_index(log,&pull->grp[g],index,ngx,grpnames,totalgrps,cr);
 
-  if (!pull->AbsoluteRef) {
-    get_pull_index(log,&pull->ref,index,ngx,grpnames,totalgrps,cr);
-    
-    /* get more memory! Don't we love C? */
-    snew(pull->ref.x0,pull->ref.ngx);
-    snew(pull->ref.xp,pull->ref.ngx);
-    snew(pull->ref.comhist,pull->reflag);
+  if (pull->eGeom == epullgPOS || strcmp(pull->grp[0].name,"") == 0) {
+    pull->grp[0].nat = 0;
+    pull->grp[0].invtm = 0;
   } else {
-    pull->ref.ngx = 0;
+    get_pull_index(log,&pull->grp[0],index,ngx,grpnames,totalgrps,cr);
   }
 
-  for(i=0;i<pull->ngrp;i++) {
-    set_mass(log,&pull->grp[i],pull->dims,md,nFreeze);
-    calc_com(&pull->grp[i],x,md,box);
-    copy_dvec(pull->grp[i].x_unc,pull->grp[i].x_con);
-    copy_dvec(pull->grp[i].x_unc,pull->grp[i].x_ref);
-    copy_dvec(pull->grp[i].x_unc,pull->grp[i].spring);
-    if(MASTER(cr)) {
-      fprintf(log,"Initializing pull groups. Inv. mass of group %d: %8.6f\n"
-              "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-              i+1,pull->grp[i].invtm,
-	      pull->grp[i].x_ref[XX],
-	      pull->grp[i].x_ref[YY],
-	      pull->grp[i].x_ref[ZZ]);
+  for(g=0; g<pull->ngrp+1; g++) {
+    pgrp = &pull->grp[g];
+    if (pgrp->nat > 0) {
+      /* Set the indices */
+      init_pull_group_index(log,cr,pgrp,pull->dim,md,ir->opts.nFreeze);
+      
+      /* Set the pbc atom */
+      if (pgrp->nat > 1) {
+	if (pgrp->pbcatom > 0)
+	  pgrp->pbcatom -= 1;
+	else
+	  pgrp->pbcatom = pgrp->ind[pgrp->nat/2];
+      } else {
+	pull->grp[g].pbcatom = -1;
+      }
+      if (MASTER(cr))
+	fprintf(log,"Pull group %d pbcatom %d\n",g,pgrp->pbcatom);
+    } else {
+      pgrp->pbcatom = -1;
     }
   }
-
-  /* initialize the reference group, in all cases */
-  if (!pull->AbsoluteRef) {
-    set_mass(log,&pull->ref,pull->dims,md,nFreeze);
-    calc_com(&pull->ref,x,md,box);
-  } else {
-    for(i=0; i<DIM; i++) 
-      pull->ref.x_unc[i] = 0;
-  }
-  copy_dvec(pull->ref.x_unc,pull->ref.x_con);
-  copy_dvec(pull->ref.x_unc,pull->ref.x_ref);
- 
-  /* DLB -- I'm not sure if ref.comhist needs to be initialized */
-  /* DLB    if we are using Absolute Ref., so I'm removing it from */
-  /* DLB    the picture.  Otherwise I get a bus error		*/
-  if (!pull->AbsoluteRef) /* DLB */
-    for(j=0;j<pull->reflag;j++)
-      copy_dvec(pull->ref.x_unc,pull->ref.comhist[j]);
-
-  if(MASTER(cr))
-    fprintf(log,"Initializing reference group. Inv. mass: %8.6f\n"
-            "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-            pull->ref.invtm,
-	    pull->ref.x_ref[XX],
-	    pull->ref.x_ref[YY],
-	    pull->ref.x_ref[ZZ]);
-
-  /* keep the initial coordinates for center of mass at t0 */
-  for(j=0;j<pull->ref.ngx;j++) {
-    copy_rvec(x[pull->ref.idx[j]],pull->ref.x0[j]);
-    copy_rvec(x[pull->ref.idx[j]],pull->ref.xp[j]);
-  }
-
+  
   /* if we use dynamic reference groups, do some initialising for them */
-  if(pull->bCyl) {
-    if (pull->AbsoluteRef)
+  if (PULL_CYL(pull)) {
+    if (pull->grp[0].nat == 0)
       gmx_fatal(FARGS, "Dynamic reference groups are not support when using absolute reference!\n");
-
-    snew(pull->dyna,pull->ngrp);
-    for(i=0;i<pull->ngrp;i++) {
-      snew(pull->dyna[i].idx,pull->ref.ngx);    /* more than nessary */
-      snew(pull->dyna[i].weight,pull->ref.ngx);
-      snew(pull->dyna[i].comhist,pull->reflag);
+    
+    snew(pull->dyna,pull->ngrp+1);
+    for(g=1; g<1+pull->ngrp; g++) {
+      snew(pull->dyna[g].ind,pull->grp[0].nat);
+      snew(pull->dyna[g].weight_loc,pull->grp[0].nat);
     }
-    make_refgrps(pull,x,md);
-    for(i=0; i<pull->ngrp; i++) {
-      copy_dvec(pull->dyna[i].x_unc,pull->dyna[i].x_con);
-      copy_dvec(pull->dyna[i].x_unc,pull->dyna[i].x_ref);
-
-      /* initialize comhist values for running averages */
-      for(j=0;j<pull->reflag;j++)
-        copy_dvec(pull->dyna[i].x_unc,pull->dyna[i].comhist[j]);
-
-      if(MASTER(cr)) {
-        fprintf(log,"Initializing dynamic groups. %d atoms. Weighted mass"
-                "for %d:%8.3f\n"
-                "Initial coordinates center of mass: %8.3f %8.3f %8.3f\n",
-                pull->dyna[i].ngx,i,1.0/pull->dyna[i].invtm,
-		pull->dyna[i].x_ref[XX],
-                pull->dyna[i].x_ref[YY],
-		pull->dyna[i].x_ref[ZZ]);
+  }
+  
+  /* Determine the initial COMs */
+  pull_calc_coms(cr,pull,md,x,NULL,box);
+  
+  /* Print initial COMs */
+  if (MASTER(cr)) {
+    for(g=0; g<1+pull->ngrp; g++) {
+      if (!(g==0 && PULL_CYL(pull))) {
+	pgrp = &pull->grp[g];
+	fprintf(log,"Pull inv. mass of group %d: %8.6f\n"
+		"Pull initial center of mass: %8.3f %8.3f %8.3f\n",
+		g,pgrp->invtm,pgrp->x[XX],pgrp->x[YY],pgrp->x[ZZ]);
+	if (PULL_CYL(pull))
+	  fprintf(log,"Pull initial cylinder group %d atoms. Weighted mass"
+		  "for %d:%8.3f\n"
+		  "Pull initial center of mass: %8.3f %8.3f %8.3f\n",
+		  pull->dyna[g].nat,g,1.0/pull->dyna[g].invtm,
+		  pull->dyna[g].x[XX],
+		  pull->dyna[g].x[YY],
+		  pull->dyna[g].x[ZZ]);
+      }
+    }
+  }
+  
+  if (pull->bStart) {
+    /* Set the initial distances */
+    for(g=1; g<1+pull->ngrp; g++) {
+      if (PULL_CYL(pull))
+	pull_d_pbc_dx(pull->npbcdim,box,
+		      pull->grp[g].x,pull->dyna[g].x,tmp);
+      else
+	pull_d_pbc_dx(pull->npbcdim,box,
+		      pull->grp[g].x,pull->grp[0].x,tmp);
+      
+      switch (pull->eGeom) {
+      case epullgDIST:
+      case epullgDIR:
+      case epullgCYL:
+	dist = 0;
+	if (pull->eGeom == epullgDIST) {
+	  for(m=0; m<DIM; m++)
+	    dist += sqr(pull->dim[m]*tmp[m]);
+	  dist = sqrt(dist);
+	} else {
+	  for(m=0; m<DIM; m++)
+	    dist += pull->grp[g].vec[m]*tmp[m];
+	}
+	/* Add the initial distance to init */
+	pull->grp[g].init += dist;
+	
+	if (MASTER(cr))
+	  fprintf(log,"Pull init: %8.5f nm, rate: %8.5f nm/ns\n",
+		  pull->grp[g].init,pull->grp[g].rate);
+	break;
+      case epullgPOS:
+	/* Add the initial position of the reference to vec */
+	dvec_add(pull->grp[g].vec,tmp,pull->grp[g].vec);
+	if (MASTER(cr)) {
+	  fprintf(log,"Pull init:");
+	  for(m=0; m<DIM; m++) {
+	    if (pull->dim[m])
+	      fprintf(log," %8.5f",pull->grp[g].vec[m]);
+	  }
+	  fprintf(log,"\n");
+	}
+	break;
       }
     }
   }
 
-  /* set the reference distances and directions, taking into account pbc */
-  for(i=0; i<pull->ngrp; i++) {
-    if (pull->bDir) {
-      copy_dvec(pull->dir,pull->grp[i].dir);
-    } else {
-      if(pull->bCyl)
-	d_pbc_dx(box,pull->grp[i].x_ref,pull->dyna[i].x_ref,tmp);
-      else
-	d_pbc_dx(box,pull->grp[i].x_ref,pull->ref.x_ref,tmp);
-      
-      /* select elements of direction vector to use for Afm and Start runs */
-      for(m=0; m<DIM; m++)
-	tmp[m] *= pull->dims[m];
-      fprintf(log,"Initial distance of group %d: %8.3f\n",i+1,dnorm(tmp));
-      dsvmul(1/dnorm(tmp),tmp,pull->grp[i].dir);
+  /* Only do I/O if we are the MASTER */
+  if (MASTER(cr)) {
+    if (pull->nstxout > 0) {
+      pull->out_x = ffopen(opt2fn("-px",nfile,fnm),"w");
+      print_pull_header(pull->out_x,pull);
     }
-
-    if(MASTER(cr)) {
-      if (pull->runtype == eAfm)
-	for(m=0; m<pull->ngrp; ++m) {
-	  fprintf(log,"\nPull rate: %e nm/ns. Force constant: %e kJ/(mol nm)",
-		  pull->grp[m].AfmRate,pull->grp[m].AfmK);
-	  
-	  fprintf(log,"\nPull direction: %8.3f %8.3f %8.3f\n",
-		  pull->grp[i].dir[XX],pull->grp[i].dir[YY],
-		  pull->grp[i].dir[ZZ]);
-	}
+    if (pull->nstfout > 0) {
+      pull->out_f = ffopen(opt2fn("-pf",nfile,fnm),"w");
+      print_pull_header(pull->out_f,pull);
     }
   }
-
-  if(MASTER(cr))
-    print_pull_header(pull);
 }

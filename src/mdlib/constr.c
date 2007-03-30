@@ -92,6 +92,22 @@ static int icomp(const void *p1, const void *p2)
   return (*a1)-(*a2);
 }
 
+void too_many_constraint_warnings(int eConstrAlg,int warncount)
+{
+  char *abort="- aborting to avoid logfile runaway.\n"
+    "This normally happens when your system is not sufficiently equilibrated,"
+    "or if you are changing lambda too fast in free energy simulations.\n";
+  
+  gmx_fatal(FARGS,
+	    "Too many %s warnings (%d) %s"
+	    "If you know what you are doing you can %s"
+	    "set the environment variable GMX_MAXCONSTRWARN=0,\n",
+	    "but normally it is better to fix the problem",
+	    (eConstrAlg == estLINCS) ? "LINCS" : "SETTLE",warncount,
+	    (eConstrAlg == estLINCS) ?
+	    "adjust the lincs warning threshold in your mdp file\nor " : "\n");
+}
+
 static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
 			     int start,int homenr,gmx_domdec_t *dd,
 			     rvec x[],matrix box)
@@ -156,238 +172,103 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-static bool low_constrain(FILE *log,bool bLog,
-			  t_topology *top,t_ilist *settle,
-			  t_inputrec *ir,
-			  gmx_domdec_t *dd,
-			  int step,t_mdatoms *md,int start,int homenr,
-			  rvec *x,rvec *xprime,rvec *min_proj,matrix box,
-			  real lambda,real *dvdlambda,
-			  real invdt,rvec *v,tensor *vir,
-			  t_nrnb *nrnb,bool bCoordinates,bool bInit)
-{
-  static bool      bFirst=TRUE;
-  static int       nblocks=0;
-  static int       *sblock=NULL;
-  static t_lincsdata *lincsd=NULL;
-  static bool      bDumpOnError = TRUE;
-  
-  bool        bOK;
-  t_sortblock *sb;
-  t_block     *blocks=&(top->blocks[ebSBLOCKS]);
-  t_idef      *idef=&(top->idef);
-  t_iatom     *iatom;
-  atom_id     *inv_sblock;
-  int         i,j,m,bnr;
-  int         ncons,bstart,error;
-  tensor      rmdr;
-  real        hdt_2;
-  int         settle_type;
-
-  bOK = TRUE;
-  if (bInit) {
-    if (bFirst) {
-      bDumpOnError = (getenv("NO_SHAKE_ERROR") == NULL);
-
-      if (idef->il[F_SETTLE].nr > 0) {
-	/* Check that we have only one settle type */
-	settle_type=idef->il[F_SETTLE].iatoms[0];
-	for (j=0; j<idef->il[F_SETTLE].nr; j+=2) {
-	  if (idef->il[F_SETTLE].iatoms[j] != settle_type)
-	    gmx_fatal(FARGS,"More than one settle type (%d and %d)",
-		      settle_type,idef->il[F_SETTLE].iatoms[j]);
-	}
-	please_cite(log,"Miyamoto92a");
-      }
-    }
-
-    if (dd == NULL) {
-      ncons = idef->il[F_CONSTR].nr/3;
-    } else {
-      if (dd->constraints)
-	ncons = dd->constraints->ncon;
-      else
-	ncons = 0;
-    }
-    if (ncons > 0 || (dd && dd->constraints)) {
-      if (ir->eConstrAlg == estLINCS) {
-	if (bFirst)
-	  please_cite(stdlog,"Hess97a");
-	if (lincsd == NULL)
-	  snew(lincsd,1);
-	init_lincs(stdlog,&top->idef,start,homenr,EI_DYNAMICS(ir->eI),dd,
-		   lincsd);
-	set_lincs_matrix(lincsd,md->invmass);
-	lincsd->matlam = lambda;
-      } 
-      if (ir->eConstrAlg == estSHAKE) {
-	if (!bCoordinates)
-	  gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
-	if (bFirst)
-	  please_cite(stdlog,"Ryckaert77a");
-	else
-	  gmx_fatal(FARGS,
-		  "Constraint reinitialization not implemented for shake");
-	
-	/*
-	bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
-	nblocks=blocks->multinr[idef->nodeid] - bstart;
-	*/
-	bstart  = 0;
-	nblocks = blocks->nr;
-	if (debug) 
-	  fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
-		  ncons,bstart,nblocks);
-	
-	/* Calculate block number for each atom */
-	inv_sblock=make_invblock(blocks,md->nr);
-	
-	/* Store the block number in temp array and
-	 * sort the constraints in order of the sblock number 
-	 * and the atom numbers, really sorting a segment of the array!
-	 */
-#ifdef DEBUGIDEF 
-	pr_idef(stdlog,0,"Before Sort",idef);
-#endif
-	iatom=idef->il[F_CONSTR].iatoms;
-	snew(sb,ncons);
-	for(i=0; (i<ncons); i++,iatom+=3) {
-	  for(m=0; (m<3); m++)
-	    sb[i].iatom[m]=iatom[m];
-	  sb[i].blocknr=inv_sblock[iatom[1]];
-	}
-      
-	/* Now sort the blocks */
-	if (debug) {
-	  pr_sortblock(debug,"Before sorting",ncons,sb);
-	  fprintf(debug,"Going to sort constraints\n");
-	}
-	
-	qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
-      
-	if (debug) {
-	  fprintf(debug,"I used %d calls to pcomp\n",pcount);
-	  pr_sortblock(debug,"After sorting",ncons,sb);
-	}
-	
-	iatom=idef->il[F_CONSTR].iatoms;
-	for(i=0; (i<ncons); i++,iatom+=3) 
-	  for(m=0; (m<DIM); m++)
-	    iatom[m]=sb[i].iatom[m];
-#ifdef DEBUGIDEF
-	pr_idef(stdlog,0,"After Sort",idef);
-#endif
-	
-	j=0;
-	snew(sblock,nblocks+1);
-	bnr=-2;
-	for(i=0; (i<ncons); i++) {
-	  if (sb[i].blocknr != bnr) {
-	    bnr=sb[i].blocknr;
-	    sblock[j++]=3*i;
-	  }
-	}
-	/* Last block... */
-	sblock[j++]=3*ncons;
-	
-	if (j != (nblocks+1)) {
-	  fprintf(log,"bstart: %d\n",bstart);
-	  fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
-		  j,nblocks,ncons);
-	  for(i=0; (i<ncons); i++)
-	    fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
-	  for(j=0; (j<=nblocks); j++)
-	    fprintf(log,"sblock[%3d]=%5d\n",j,(int) sblock[j]);
-	  gmx_fatal(FARGS,"DEATH HORROR: "
-		    "top->blocks[ebSBLOCKS] does not match idef->il[F_CONSTR]");
-	}
-	sfree(sb);
-	sfree(inv_sblock);
-      }
-    }
-    
-    bFirst = FALSE;
-  } 
-  else {
-    /* !bInit */
-    if (vir != NULL)
-      clear_mat(rmdr);
-    
-    where();
-    if (lincsd) {
-      bOK = constrain_lincs(stdlog,bLog,ir,step,lincsd,md,dd,
-			    x,xprime,min_proj,box,lambda,dvdlambda,
-			    invdt,v,vir!=NULL,rmdr,
-			    bCoordinates,nrnb,bDumpOnError);
-      if (!bOK && bDumpOnError)
-	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
-		eshake_names[estLINCS],step);
-    }
-
-    if (nblocks > 0) {
-      if (!bCoordinates)
-	gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
-      bOK = bshakef(stdlog,homenr,md->invmass,nblocks,sblock,idef,
-		    ir,box,x,xprime,nrnb,lambda,dvdlambda,
-		    invdt,v,vir!=NULL,rmdr,bDumpOnError);
-      if (!bOK && bDumpOnError)
-	fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
-		eshake_names[estSHAKE],step);
-    }
-
-    if (settle->nr > 0) {
-      int nsettle;
-      real mO,mH,dOH,dHH;
-      
-      if (!bCoordinates)
-	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SETTLE");
-
-      nsettle = settle->nr/2;
-      mO   = md->massT[settle->iatoms[1]];
-      mH   = md->massT[settle->iatoms[1]+1];
-      dOH  = top->idef.iparams[settle->iatoms[0]].settle.doh;
-      dHH  = top->idef.iparams[settle->iatoms[0]].settle.dhh;
-      csettle(stdlog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
-	      invdt,v[0],vir!=NULL,rmdr,&error);
-      inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-      if (v != NULL)
-	inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
-      if (vir != NULL)
-	inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
-      
-      bOK = (error < 0);
-      if (!bOK && bDumpOnError)
-	fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
-		"settled.\nCheck for bad contacts and/or reduce the timestep.",
-		ir->init_t+step*ir->delta_t,
-		glatnr(dd,settle->iatoms[error*2+1]));
-    }
-    if (vir != NULL) {
-      hdt_2 = 0.5/(ir->delta_t*ir->delta_t);
-      for(i=0; i<DIM; i++)
-	for(j=0; j<DIM; j++)
-	  (*vir)[i][j] = hdt_2*rmdr[i][j];
-    }
-    if (!bOK && bDumpOnError) 
-      dump_confs(step,&(top->atoms),start,homenr,dd,x,xprime,box);
-  }
-  return bOK;
-}
-
 bool constrain(FILE *log,bool bLog,
-	       t_topology *top,t_ilist *settle,
-	       t_inputrec *ir,
+	       gmx_constr_t *constr,
+	       t_topology *top,t_inputrec *ir,
 	       gmx_domdec_t *dd,
-	       int step,t_mdatoms *md,int start,int homenr,
+	       int step,t_mdatoms *md,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,
 	       real dt,rvec *v,tensor *vir,
 	       t_nrnb *nrnb,bool bCoordinates)
 {
-  return low_constrain(log,bLog,top,settle,ir,dd,
-		       step,md,start,homenr,x,xprime,min_proj,box,
-		       lambda,dvdlambda,
-		       dt==0 ? 0 : 1/dt,v,vir,nrnb,bCoordinates,FALSE);
+  bool    bOK;
+  int     start,homenr;
+  int     i,j;
+  int     ncons,error;
+  tensor  rmdr;
+  real    invdt,hdt_2;
+  t_ilist *settle;
+  int     nsettle;
+  real    mO,mH,dOH,dHH;
+    
+  bOK = TRUE;
+
+  start  = md->start;
+  homenr = md->homenr;
+  if (ir->delta_t == 0)
+    invdt = 0;
+  else
+    invdt  = 1/ir->delta_t;
+
+  if (vir != NULL)
+    clear_mat(rmdr);
+    
+  where();
+  if (constr->lincsd) {
+    bOK = constrain_lincs(stdlog,bLog,ir,step,constr->lincsd,md,dd,
+			  x,xprime,min_proj,box,lambda,dvdlambda,
+			  invdt,v,vir!=NULL,rmdr,
+			  bCoordinates,nrnb,
+			  constr->maxwarn,&constr->warncount_lincs);
+    if (!bOK && constr->maxwarn > 0)
+      fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
+	      eshake_names[estLINCS],step);
+  }
+  
+  if (constr->nblocks > 0) {
+    if (!bCoordinates)
+      gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
+
+    bOK = bshakef(stdlog,homenr,md->invmass,constr->nblocks,constr->sblock,
+		  &top->idef,ir,box,x,xprime,nrnb,lambda,dvdlambda,
+		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>0);
+    if (!bOK && constr->maxwarn > 0)
+      fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
+	      eshake_names[estSHAKE],step);
+  }
+  
+  settle  = &top->idef.il[F_SETTLE];
+  if (settle->nr > 0) {
+    if (!bCoordinates)
+	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SETTLE");
+
+    nsettle = settle->nr/2;
+    mO   = md->massT[settle->iatoms[1]];
+    mH   = md->massT[settle->iatoms[1]+1];
+    dOH  = top->idef.iparams[settle->iatoms[0]].settle.doh;
+    dHH  = top->idef.iparams[settle->iatoms[0]].settle.dhh;
+    csettle(stdlog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
+	    invdt,v[0],vir!=NULL,rmdr,&error);
+    inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+    if (v != NULL)
+      inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
+    if (vir != NULL)
+      inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
+    
+    bOK = (error < 0);
+    if (!bOK && constr->maxwarn > 0) {
+      fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
+	      "settled.\nCheck for bad contacts and/or reduce the timestep.",
+	      ir->init_t+step*ir->delta_t,
+	      glatnr(dd,settle->iatoms[error*2+1]));
+      constr->warncount_settle++;
+      if (constr->warncount_settle > constr->maxwarn)
+	too_many_constraint_warnings(-1,constr->warncount_settle);
+    }
+  }
+
+  if (vir != NULL) {
+    hdt_2 = 0.5/(ir->delta_t*ir->delta_t);
+    for(i=0; i<DIM; i++)
+      for(j=0; j<DIM; j++)
+	(*vir)[i][j] = hdt_2*rmdr[i][j];
+  }
+
+  if (!bOK && constr->maxwarn > 0) 
+    dump_confs(step,&(top->atoms),start,homenr,dd,x,xprime,box);
+
+  return bOK;
 }
 
 int count_constraints(t_topology *top,t_commrec *cr)
@@ -401,20 +282,204 @@ int count_constraints(t_topology *top,t_commrec *cr)
   return nc;
 }
 
-int init_constraints(FILE *log,t_topology *top,t_ilist *settle,t_inputrec *ir,
-		      t_mdatoms *md,int start,int homenr,bool bOnlyCoords,
-		      t_commrec *cr,gmx_domdec_t *dd)
+static int count_flexible_constraints(FILE* log,
+				      t_commrec *cr,
+				      t_inputrec *ir,t_idef *idef)
 {
-  int count;
+  int nflexcon,i;
+  
+  nflexcon = 0;
+  
+  for(i=0; i<idef->il[F_CONSTR].nr; i+=3)
+    if (idef->iparams[idef->il[F_CONSTR].iatoms[i]].constr.dA == 0 &&
+	idef->iparams[idef->il[F_CONSTR].iatoms[i]].constr.dB == 0)
+      nflexcon++;
+  
+  if (PAR(cr))
+    gmx_sumi(1,&nflexcon,cr);
 
-  low_constrain(log,TRUE,
-		top,settle,ir,dd,0,md,start,homenr,NULL,NULL,NULL,NULL,
-		0,NULL,0,NULL,NULL,NULL,bOnlyCoords,TRUE);
+  if (nflexcon > 0) {
+    fprintf(log,"There are %d flexible constraints\n",nflexcon);
+    if (ir->fc_stepsize == 0) {
+      fprintf(log,"WARNING: step size for flexible constraining = 0\n"
+	          "         All flexible constraints will be rigid.\n"
+	          "         Will try to keep all flexible constraints at their original length,\n"
+	          "         but the lengths may exhibit some drift.\n\n");
+      nflexcon = 0;
+    }
+  }
   
-  if (cr)
-    count = count_constraints(top,cr);
-  else
-    count = -1;
+  return nflexcon;
+}
+
+void set_constraints(FILE *log,gmx_constr_t *constr,
+		     t_topology *top,t_inputrec *ir,
+		     t_mdatoms *md,gmx_domdec_t *dd)
+{
+  int  i,j,m,ncons;
+  t_idef *idef=&(top->idef);
+  int  bstart,bnr;
+  t_sortblock *sb;
+  t_block     *blocks=&(top->blocks[ebSBLOCKS]);
+  t_iatom     *iatom;
+  atom_id     *inv_sblock;
+  int  settle_type;
+
+  if (dd == NULL) {
+    ncons = idef->il[F_CONSTR].nr/3;
+  } else {
+    if (dd->constraints)
+      ncons = dd->constraints->ncon;
+    else
+      ncons = 0;
+  }
+  if (ncons > 0 || (dd && dd->constraints)) {
+    if (ir->eConstrAlg == estLINCS) {
+      init_lincs(stdlog,&top->idef,md->start,md->homenr,
+		 EI_DYNAMICS(ir->eI),dd,constr->lincsd);
+      set_lincs_matrix(constr->lincsd,md->invmass);
+      constr->lincsd->matlam = md->lambda;
+    } 
+    if (ir->eConstrAlg == estSHAKE) {
+      if (constr->nblocks > 0)
+	gmx_fatal(FARGS,
+		  "Constraint reinitialization not implemented for shake");
+      
+      /*
+	bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
+	nblocks=blocks->multinr[idef->nodeid] - bstart;
+      */
+      bstart  = 0;
+      constr->nblocks = blocks->nr;
+      if (debug) 
+	fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
+		ncons,bstart,constr->nblocks);
+      
+      /* Calculate block number for each atom */
+      inv_sblock = make_invblock(blocks,md->nr);
+      
+      /* Store the block number in temp array and
+       * sort the constraints in order of the sblock number 
+       * and the atom numbers, really sorting a segment of the array!
+       */
+#ifdef DEBUGIDEF 
+      pr_idef(stdlog,0,"Before Sort",idef);
+#endif
+      iatom=idef->il[F_CONSTR].iatoms;
+      snew(sb,ncons);
+      for(i=0; (i<ncons); i++,iatom+=3) {
+	for(m=0; (m<3); m++)
+	  sb[i].iatom[m] = iatom[m];
+	sb[i].blocknr = inv_sblock[iatom[1]];
+      }
+      
+      /* Now sort the blocks */
+      if (debug) {
+	pr_sortblock(debug,"Before sorting",ncons,sb);
+	fprintf(debug,"Going to sort constraints\n");
+      }
+      
+      qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
+      
+      if (debug) {
+	fprintf(debug,"I used %d calls to pcomp\n",pcount);
+	pr_sortblock(debug,"After sorting",ncons,sb);
+      }
+      
+      iatom=idef->il[F_CONSTR].iatoms;
+      for(i=0; (i<ncons); i++,iatom+=3) 
+	for(m=0; (m<DIM); m++)
+	  iatom[m]=sb[i].iatom[m];
+#ifdef DEBUGIDEF
+      pr_idef(stdlog,0,"After Sort",idef);
+#endif
+      
+      j=0;
+      snew(constr->sblock,constr->nblocks+1);
+      bnr=-2;
+      for(i=0; (i<ncons); i++) {
+	if (sb[i].blocknr != bnr) {
+	  bnr=sb[i].blocknr;
+	  constr->sblock[j++]=3*i;
+	}
+      }
+      /* Last block... */
+      constr->sblock[j++] = 3*ncons;
+      
+      if (j != (constr->nblocks+1)) {
+	fprintf(log,"bstart: %d\n",bstart);
+	fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
+		j,constr->nblocks,ncons);
+	for(i=0; (i<ncons); i++)
+	  fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
+	for(j=0; (j<=constr->nblocks); j++)
+	  fprintf(log,"sblock[%3d]=%5d\n",j,(int)constr->sblock[j]);
+	gmx_fatal(FARGS,"DEATH HORROR: "
+		  "top->blocks[ebSBLOCKS] does not match idef->il[F_CONSTR]");
+      }
+      sfree(sb);
+      sfree(inv_sblock);
+    }
+  }
+}
+
+gmx_constr_t *init_constraints(FILE *log,t_commrec *cr,
+			       t_topology *top,t_inputrec *ir)
+{
+  int settle_type,j;
+  gmx_constr_t *constr;
+  char *env;
+
+  if (count_constraints(top,cr) > 0) {
+    snew(constr,1);
+
+    constr->nflexcon = count_flexible_constraints(log,cr,ir,&top->idef);
+
+    if (constr->nflexcon > 0)
+      please_cite(log,"Hess2002");
+    
+    if (ir->eConstrAlg == estLINCS) {
+      please_cite(stdlog,"Hess97a");
+      snew(constr->lincsd,1);
+    }
+
+    if (ir->eConstrAlg == estSHAKE) {
+      if (constr->nflexcon)
+	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
+      please_cite(stdlog,"Ryckaert77a");
+    }
+
+    if (top->idef.il[F_SETTLE].nr > 0) {
+      /* Check that we have only one settle type */
+      settle_type=top->idef.il[F_SETTLE].iatoms[0];
+      for (j=0; j<top->idef.il[F_SETTLE].nr; j+=2) {
+	if (top->idef.il[F_SETTLE].iatoms[j] != settle_type)
+	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
+		    settle_type,top->idef.il[F_SETTLE].iatoms[j]);
+      }
+      please_cite(log,"Miyamoto92a");
+    }
+
+    constr->maxwarn = 9999;
+    env = getenv("GMX_MAXCONSTRWARN");
+    if (env) {
+      constr->maxwarn = 0;
+      sscanf(env,"%d",&constr->maxwarn);
+      fprintf(log,"Setting the maximum number of constraint warnings to %d\n",
+	      constr->maxwarn);
+      if (MASTER(cr))
+	fprintf(stderr,
+		"Setting the maximum number of constraint warnings to %d\n",
+		constr->maxwarn);
+    }
+    if (constr->maxwarn <= 0)
+      fprintf(log,"maxwarn = %d, will not stop on constraint errors\n",
+	      constr->maxwarn);
+    constr->warncount_lincs  = 0;
+    constr->warncount_settle = 0;
+  } else {
+    constr = NULL;
+  }
   
-  return count;
+  return constr;
 }
