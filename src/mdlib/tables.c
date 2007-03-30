@@ -677,7 +677,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
       if (td[0].x[td[0].nx-1] < rtab) 
 	gmx_fatal(FARGS,"Tables in file %s not long enough for cut-off:\n"
 		  "\tshould be at least %f nm\n",fn,rtab);
-      nx        = table.n = rtab*td[0].tabscale;
+      nx        = table.n = (int)(rtab*td[0].tabscale + 0.5);
     }
     table.scale = td[0].tabscale;
     nx0         = td[0].nx0;
