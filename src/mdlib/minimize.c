@@ -1561,7 +1561,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
   int    i,m,start,end,gf=0; 
   int    Min=0; 
   int    steps_accepted=0; 
-  gmx_constr_t *constr;
+  gmx_constr_t constr;
   /* not used */
   real   terminate=0;
 #define  TRY (1-Min)

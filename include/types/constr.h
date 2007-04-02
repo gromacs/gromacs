@@ -40,40 +40,10 @@
 #ifndef _constr_h
 #define _constr_h
 
-/* LINCS stuff */
-typedef struct {
-  int  nc;       /* the number of constraints */
-  int  nc_alloc; /* the number we allocated memory for */
-  int  nflexcon; /* the number of flexible constraints */
-  int  ncc;      /* the number of constraint connections */
-  int  ncc_alloc;/* the number we allocated memory for */
-  real matlam;   /* the FE lambda value used for filling blc and blcc */
-  real *bllen0;  /* the reference distance in topology A */
-  real *ddist;   /* the reference distance in top B - the r.d. in top A */
-  int  *bla;     /* the atom pairs involved in the constraints */
-  real *blc;     /* 1/sqrt(invmass1 + invmass2) */
-  int  *blnr;    /* index into blbnb and blcc */
-  int  *blbnb;   /* list of bond connections */
-  real *blcc;    /* bond coupling coefficient matrix */
-  real *bllen;   /* the reference bond length */
-  /* arrays for temporary storage in the LINCS algorithm */
-  rvec *tmpv;
-  real *tmpncc;
-  real *tmp1;
-  real *tmp2;
-  real *tmp3;
-  real *lambda;  /* the Lagrange multipliers */
-} t_lincsdata;
+/* Abstract type for LINCS that is defined only in the file that uses it */
+typedef struct gmx_lincsdata *gmx_lincsdata_t;
 
-/* All the constraint data */
-typedef struct {
-  int         nflexcon;     /* The number of flexible constraints */
-  t_lincsdata *lincsd;      /* LINCS data                         */
-  int         nblocks;      /* The number of SHAKE blocks         */
-  int         *sblock;      /* The SHAKE blocks                   */
-  int         maxwarn;      /* The maximum number of warnings     */
-  int         warncount_lincs;
-  int         warncount_settle;
-} gmx_constr_t;
+/* Abstract type for constraints */
+typedef struct gmx_constr *gmx_constr_t;
 
 #endif

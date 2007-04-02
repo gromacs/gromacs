@@ -52,6 +52,16 @@
 #include "domdec.h"
 #include "pdbio.h"
 
+typedef struct gmx_constr {
+  int             nflexcon;     /* The number of flexible constraints */
+  gmx_lincsdata_t lincsd;       /* LINCS data                         */
+  int             nblocks;      /* The number of SHAKE blocks         */
+  int             *sblock;      /* The SHAKE blocks                   */
+  int             maxwarn;      /* The maximum number of warnings     */
+  int             warncount_lincs;
+  int             warncount_settle;
+} t_gmx_constr;
+
 typedef struct {
   atom_id iatom[3];
   atom_id blocknr;
@@ -92,6 +102,18 @@ static int icomp(const void *p1, const void *p2)
   return (*a1)-(*a2);
 }
 
+int n_flexible_constraints(struct gmx_constr *constr)
+{
+  int nflexcon;
+
+  if (constr)
+    nflexcon = constr->nflexcon;
+  else
+    nflexcon = 0;
+
+  return nflexcon;
+}
+
 void too_many_constraint_warnings(int eConstrAlg,int warncount)
 {
   char *abort="- aborting to avoid logfile runaway.\n"
@@ -101,7 +123,7 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount)
   gmx_fatal(FARGS,
 	    "Too many %s warnings (%d) %s"
 	    "If you know what you are doing you can %s"
-	    "set the environment variable GMX_MAXCONSTRWARN=0,\n",
+	    "set the environment variable GMX_MAXCONSTRWARN to -1,\n",
 	    "but normally it is better to fix the problem",
 	    (eConstrAlg == estLINCS) ? "LINCS" : "SETTLE",warncount,
 	    (eConstrAlg == estLINCS) ?
@@ -173,7 +195,7 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 }
 
 bool constrain(FILE *log,bool bLog,
-	       gmx_constr_t *constr,
+	       struct gmx_constr *constr,
 	       t_topology *top,t_inputrec *ir,
 	       gmx_domdec_t *dd,
 	       int step,t_mdatoms *md,
@@ -211,7 +233,7 @@ bool constrain(FILE *log,bool bLog,
 			  invdt,v,vir!=NULL,rmdr,
 			  bCoordinates,nrnb,
 			  constr->maxwarn,&constr->warncount_lincs);
-    if (!bOK && constr->maxwarn > 0)
+    if (!bOK && constr->maxwarn >= 0)
       fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
 	      eshake_names[estLINCS],step);
   }
@@ -222,8 +244,8 @@ bool constrain(FILE *log,bool bLog,
 
     bOK = bshakef(stdlog,homenr,md->invmass,constr->nblocks,constr->sblock,
 		  &top->idef,ir,box,x,xprime,nrnb,lambda,dvdlambda,
-		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>0);
-    if (!bOK && constr->maxwarn > 0)
+		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
+    if (!bOK && constr->maxwarn >= 0)
       fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
 	      eshake_names[estSHAKE],step);
   }
@@ -247,7 +269,7 @@ bool constrain(FILE *log,bool bLog,
       inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
     
     bOK = (error < 0);
-    if (!bOK && constr->maxwarn > 0) {
+    if (!bOK && constr->maxwarn >= 0) {
       fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
 	      "settled.\nCheck for bad contacts and/or reduce the timestep.",
 	      ir->init_t+step*ir->delta_t,
@@ -265,7 +287,7 @@ bool constrain(FILE *log,bool bLog,
 	(*vir)[i][j] = hdt_2*rmdr[i][j];
   }
 
-  if (!bOK && constr->maxwarn > 0) 
+  if (!bOK && constr->maxwarn >= 0) 
     dump_confs(step,&(top->atoms),start,homenr,dd,x,xprime,box);
 
   return bOK;
@@ -312,7 +334,7 @@ static int count_flexible_constraints(FILE* log,
   return nflexcon;
 }
 
-void set_constraints(FILE *log,gmx_constr_t *constr,
+void set_constraints(FILE *log,struct gmx_constr *constr,
 		     t_topology *top,t_inputrec *ir,
 		     t_mdatoms *md,gmx_domdec_t *dd)
 {
@@ -337,8 +359,7 @@ void set_constraints(FILE *log,gmx_constr_t *constr,
     if (ir->eConstrAlg == estLINCS) {
       init_lincs(stdlog,&top->idef,md->start,md->homenr,
 		 EI_DYNAMICS(ir->eI),dd,constr->lincsd);
-      set_lincs_matrix(constr->lincsd,md->invmass);
-      constr->lincsd->matlam = md->lambda;
+      set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
     } 
     if (ir->eConstrAlg == estSHAKE) {
       if (constr->nblocks > 0)
@@ -423,11 +444,11 @@ void set_constraints(FILE *log,gmx_constr_t *constr,
   }
 }
 
-gmx_constr_t *init_constraints(FILE *log,t_commrec *cr,
-			       t_topology *top,t_inputrec *ir)
+gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
+			      t_topology *top,t_inputrec *ir)
 {
   int settle_type,j;
-  gmx_constr_t *constr;
+  struct gmx_constr *constr;
   char *env;
 
   if (count_constraints(top,cr) > 0) {
@@ -440,7 +461,7 @@ gmx_constr_t *init_constraints(FILE *log,t_commrec *cr,
     
     if (ir->eConstrAlg == estLINCS) {
       please_cite(stdlog,"Hess97a");
-      snew(constr->lincsd,1);
+      constr->lincsd = init_lincsdata();
     }
 
     if (ir->eConstrAlg == estSHAKE) {
@@ -460,7 +481,7 @@ gmx_constr_t *init_constraints(FILE *log,t_commrec *cr,
       please_cite(log,"Miyamoto92a");
     }
 
-    constr->maxwarn = 9999;
+    constr->maxwarn = 999;
     env = getenv("GMX_MAXCONSTRWARN");
     if (env) {
       constr->maxwarn = 0;
@@ -472,9 +493,8 @@ gmx_constr_t *init_constraints(FILE *log,t_commrec *cr,
 		"Setting the maximum number of constraint warnings to %d\n",
 		constr->maxwarn);
     }
-    if (constr->maxwarn <= 0)
-      fprintf(log,"maxwarn = %d, will not stop on constraint errors\n",
-	      constr->maxwarn);
+    if (constr->maxwarn < 0)
+      fprintf(log,"maxwarn < 0, will not stop on constraint errors\n");
     constr->warncount_lincs  = 0;
     constr->warncount_settle = 0;
   } else {

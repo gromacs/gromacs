@@ -78,7 +78,7 @@ extern t_shell *init_shells(FILE *log,t_commrec *cr,
 /* Optimize shell positions */
 extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
-			t_topology *top,gmx_constr_t *constr,
+			t_topology *top,gmx_constr_t constr,
 			real ener[],t_fcdata *fcd,
 			t_state *state,rvec f[],
 			rvec buf[],t_mdatoms *md,

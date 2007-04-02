@@ -293,7 +293,7 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
 }
 
 static void init_adir(FILE *log,
-		      gmx_constr_t *constr,t_topology *top,t_inputrec *ir,
+		      gmx_constr_t constr,t_topology *top,t_inputrec *ir,
 		      gmx_domdec_t *dd,
 		      int step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
@@ -355,7 +355,7 @@ static void init_adir(FILE *log,
 
 int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
-		 t_topology *top,gmx_constr_t *constr,
+		 t_topology *top,gmx_constr_t constr,
 		 real ener[],t_fcdata *fcd,
 		 t_state *state,rvec f[],
 		 rvec buf[],t_mdatoms *md,
@@ -403,7 +403,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   bInit        = (mdstep == inputrec->init_step) || bForceInit;
   ftol         = inputrec->em_tol;
   number_steps = inputrec->niter;
-  nflexcon     = (constr ? constr->nflexcon : 0);
+  nflexcon     = n_flexible_constraints(constr);
 
   if (bDoNS) {
     /* This is the only time where the coordinates are used

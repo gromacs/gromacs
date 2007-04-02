@@ -49,8 +49,32 @@
 #include "nrnb.h"
 #include "domdec.h"
 
+typedef struct gmx_lincsdata {
+  int  nc;       /* the number of constraints */
+  int  nc_alloc; /* the number we allocated memory for */
+  int  nflexcon; /* the number of flexible constraints */
+  int  ncc;      /* the number of constraint connections */
+  int  ncc_alloc;/* the number we allocated memory for */
+  real matlam;   /* the FE lambda value used for filling blc and blcc */
+  real *bllen0;  /* the reference distance in topology A */
+  real *ddist;   /* the reference distance in top B - the r.d. in top A */
+  int  *bla;     /* the atom pairs involved in the constraints */
+  real *blc;     /* 1/sqrt(invmass1 + invmass2) */
+  int  *blnr;    /* index into blbnb and blcc */
+  int  *blbnb;   /* list of bond connections */
+  real *blcc;    /* bond coupling coefficient matrix */
+  real *bllen;   /* the reference bond length */
+  /* arrays for temporary storage in the LINCS algorithm */
+  rvec *tmpv;
+  real *tmpncc;
+  real *tmp1;
+  real *tmp2;
+  real *tmp3;
+  real *lambda;  /* the Lagrange multipliers */
+} t_gmx_lincsdata;
+
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
-		      t_lincsdata *lincsd,real *invmass,
+		      struct gmx_lincsdata *lincsd,real *invmass,
 		      int nrec)
 {
   int     b,i,j,k,n,it,rec;
@@ -138,7 +162,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 }
 
 static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
-		     t_lincsdata *lincsd,real *invmass,
+		     struct gmx_lincsdata *lincsd,real *invmass,
 		     gmx_domdec_t *dd,
 		     int nit,int nrec,
 		     real wangle,int *warn,
@@ -370,7 +394,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
    */
 }
 
-void set_lincs_matrix(t_lincsdata *li,real *invmass)
+void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
 {
   int i,a1,a2,n,k,sign,center;
 
@@ -397,6 +421,9 @@ void set_lincs_matrix(t_lincsdata *li,real *invmass)
       li->blcc[n] = sign*invmass[center]*li->blc[i]*li->blc[k];
     }
   }
+
+  /* Set matlam, so we know with which lambda value the masses have been set */
+  li->matlam = lambda;
 }
 
 t_block make_at2con(int start,int natoms,
@@ -463,9 +490,18 @@ static int int_comp(const void *a,const void *b)
 
 #define CONCON_ALLOC_SIZE 1000
 
+gmx_lincsdata_t init_lincsdata()
+{
+  struct gmx_lincsdata *li;
+
+  snew(li,1);
+  
+  return li;
+}
+
 void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
 		bool bDynamics,gmx_domdec_t *dd,
-		t_lincsdata *li)
+		struct gmx_lincsdata *li)
 {
   gmx_domdec_constraints_t *dc;
   t_block     at2con;
@@ -713,7 +749,7 @@ static void cconerr(gmx_domdec_t *dd,
   *imax = im;
 }
 
-static void dump_conf(gmx_domdec_t *dd,t_lincsdata *li,
+static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
 		      char *name,bool bAll,rvec *x,matrix box)
 {
   char str[STRLEN];
@@ -755,7 +791,7 @@ static void dump_conf(gmx_domdec_t *dd,t_lincsdata *li,
 
 bool constrain_lincs(FILE *log,bool bLog,
 		     t_inputrec *ir,
-		     int step,t_lincsdata *lincsd,t_mdatoms *md,
+		     int step,struct gmx_lincsdata *lincsd,t_mdatoms *md,
 		     gmx_domdec_t *dd,
 		     rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		     real lambda,real *dvdlambda,
@@ -796,8 +832,7 @@ bool constrain_lincs(FILE *log,bool bLog,
   if (bCoordinates) {
     if (ir->efep != efepNO) {
       if (md->nMassPerturbed && lincsd->matlam != md->lambda) {
-	set_lincs_matrix(lincsd,md->invmass);
-	lincsd->matlam = md->lambda;
+	set_lincs_matrix(lincsd,md->invmass,md->lambda);
       }
       
       for(i=0; i<lincsd->nc; i++)
@@ -850,7 +885,7 @@ bool constrain_lincs(FILE *log,bool bLog,
     }
     
     if (warn > 0) {
-      if (maxwarn > 0) {
+      if (maxwarn >= 0) {
 	cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 		lincsd->nc,lincsd->bla,lincsd->bllen);
 	sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"

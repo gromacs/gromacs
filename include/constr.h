@@ -37,7 +37,13 @@
 #include<config.h>
 #endif
 
+#include "typedefs.h"
+
+extern int n_flexible_constraints(struct gmx_constr *constr);
+/* Returns the total number of flexible constraints in the system */
+
 extern void too_many_constraint_warnings(int eConstrAlg,int warncount);
+/* Generate a fatal error because of too many LINCS/SETTLE warnings */
 
 extern bool bshakef(FILE *log,		/* Log file			*/
 		    int natoms,		/* Total number of atoms	*/
@@ -86,7 +92,7 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 /* Regular iterative shake */
 
 extern bool constrain(FILE *log,bool bLog,
-		      gmx_constr_t *constr,
+		      gmx_constr_t constr,
 		      t_topology *top,
 		      t_inputrec *ir,
 		      gmx_domdec_t *dd,
@@ -118,12 +124,12 @@ extern int count_constraints(t_topology *top,t_commrec *cr);
  * unless cr=NULL, then returns -1.
  */
 
-extern gmx_constr_t *init_constraints(FILE *log,t_commrec *cr,
-				      t_topology *top,t_inputrec *ir);
+extern gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
+				     t_topology *top,t_inputrec *ir);
 /* Initialize constraints stuff */
 
 extern void set_constraints(FILE *log,
-			    gmx_constr_t *constr,
+			    gmx_constr_t constr,
 			    t_topology *top,
 			    t_inputrec *ir,
 			    t_mdatoms *md,
@@ -135,17 +141,20 @@ extern t_block make_at2con(int start,int natoms,
 			   int *nconstraints,int *nflexiblecons);
 /* Allocates and makes the atom to constraint list */
 
-extern  void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
-			bool bDynamics,gmx_domdec_t *dd,
-			t_lincsdata *li);
+gmx_lincsdata_t init_lincsdata();
+/* Allocates the lincs data struct */
+
+extern void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
+		       bool bDynamics,gmx_domdec_t *dd,
+		       gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
-extern void set_lincs_matrix(t_lincsdata *li,real *invmass);
+extern void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
 extern bool constrain_lincs(FILE *log,bool bLog,
 			    t_inputrec *ir,
-			    int step,t_lincsdata *lincsd,t_mdatoms *md,
+			    int step,gmx_lincsdata_t lincsd,t_mdatoms *md,
 			    gmx_domdec_t *dd,
 			    rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 			    real lambda,real *dvdlambda,

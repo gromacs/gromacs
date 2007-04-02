@@ -564,7 +564,7 @@ double node_time(void)
   return runtime;
 }
 
-void do_shakefirst(FILE *fplog,gmx_constr_t *constr,
+void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 		   t_inputrec *inputrec,t_mdatoms *md,
 		   t_state *state,rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
@@ -949,7 +949,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
-	     t_nrnb *nrnb,t_topology *top,gmx_constr_t **constr,
+	     t_nrnb *nrnb,t_topology *top,gmx_constr_t *constr,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,

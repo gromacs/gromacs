@@ -443,7 +443,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_topology *top;
   t_state    *state=NULL;
   rvec       *f_global=NULL;
-  gmx_constr_t *constr=NULL;
+  gmx_constr_t constr=NULL;
 
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
@@ -559,7 +559,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   shells = init_shells(log,cr,&top->idef,mdatoms,&nshell);
 
   /* Do we need to minimize at every MD step? */
-  bShell_FlexCon = (shells || (constr && constr->nflexcon > 0));
+  bShell_FlexCon = (shells || n_flexible_constraints(constr) > 0);
 
   /* Initialize pull code */
   init_pull(log,nfile,fnm,inputrec,state->x,mdatoms,state->box,cr);
