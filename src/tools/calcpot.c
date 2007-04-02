@@ -50,6 +50,7 @@
 #include "mdrun.h"
 #include "ns.h"
 #include "txtdump.h"
+#include "mdatoms.h"
 
 static void c_tabpot(real tabscale,   real VFtab[],
 		     int  nri,        int  iinr[],
@@ -249,8 +250,11 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 	  &nrnb,top,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL);
-  
+
   init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);  
+
+  *mdatoms = init_mdatoms(stdlog,&top->atoms,FALSE);
+  atoms2md(&top->atoms,inputrec,0,0,NULL,0,top->atoms.nr,*mdatoms);
 
   if (inputrec->ePBC == epbcXYZ) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
