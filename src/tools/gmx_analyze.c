@@ -179,6 +179,9 @@ void histogram(char *distfile,real binwidth,int n, int nset, real **val)
   
   min = binwidth*floor(min/binwidth);
   max = binwidth*ceil(max/binwidth);
+  if (min != 0)
+    min -= binwidth;
+  max += binwidth;
 
   nbin = (int)((max - min)/binwidth + 0.5) + 1;
   fprintf(stderr,"Making distributions with %d bins\n",nbin);
