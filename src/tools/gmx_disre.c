@@ -60,6 +60,7 @@
 #include "tpxio.h"
 #include "mdrun.h"
 #include "names.h"
+#include "matio.h"
 
 typedef struct {
   int n;
@@ -436,6 +437,68 @@ static void init_dr_res(t_dr_result *dr,int ndr)
   dr->averv   = 0;
 }
 
+static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
+			      t_topology *top)
+{
+  FILE     *fp;
+  int      i,j,nra,nratoms,tp,ri,rj,n_res,index,nlabel,label,nlevels=20;
+  atom_id  *a,*ptr;
+  real     **matrix,*t_res,hi,*w_dr;
+  t_rgb    rlo = { 1, 1, 1 };
+  t_rgb    rhi = { 0, 0, 0 };
+  if (fn == NULL)
+    return;
+
+  n_res = top->atoms.nres;
+  snew(w_dr,ndr);
+  snew(t_res,n_res);
+  snew(matrix,n_res);
+  for(i=0; (i<n_res); i++) 
+    snew(matrix[i],n_res);
+  nra = 2*(top->idef.il[F_DISRES].nr/(nratoms+1));
+  snew(a,nra);
+  snew(ptr,nra+1);
+  index  = 0;
+  nlabel = 0;
+  nratoms = interaction_function[F_DISRES].nratoms;
+  ptr[0] = 0;
+  for(i=j=0; (i<top->idef.il[F_DISRES].nr); i+=nratoms+1,j+=2) {
+    t_res[i] = i+1;
+    tp       = top->idef.il[F_DISRES].iatoms[i];
+    a[j]     = top->idef.il[F_DISRES].iatoms[i+1];
+    a[j+1]   = top->idef.il[F_DISRES].iatoms[i+2];
+    label    = top->idef.iparams[tp].disres.label;
+    
+    if (label != index) {
+      /* Set index pointer */
+      ptr[index+1] = j;
+      if (nlabel <= 0)
+	gmx_fatal(FARGS,"nlabel is %d",nlabel);
+      w_dr[index] = 1.0/nlabel;
+      index  = label;
+      nlabel = 0;
+    }
+    else {
+      nlabel++;
+    }
+  }
+  printf("nlabel = %d, ndr = %d\n",nlabel,ndr);
+  for(i=0; (i<ndr); i++) {
+    for(j=ptr[i]; (j<ptr[i+1]); j+=2) {
+      ri = top->atoms.atom[a[j]].resnr;
+      rj = top->atoms.atom[a[j+1]].resnr;
+      matrix[ri][rj] += dr->aver_3[i]*w_dr[i];
+      matrix[rj][ri] += dr->aver_3[i]*w_dr[i];
+    }
+  }
+  
+  fp = ffopen(fn,"w");  
+  write_xpm(fp,0,"Distance Violations","<V> (nm)","Residue","Residue",
+	    n_res,n_res,t_res,t_res,
+	    matrix,0,hi,rlo,rhi,&nlevels);
+  fclose(fp);
+}
+
 int gmx_disre(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -454,7 +517,7 @@ int gmx_disre(int argc,char *argv[])
     "When the [TT]-c[tt] option is given, an index file will be read",
     "containing the frames in your trajectory corresponding to the clusters",
     "(defined in another manner) that you want to analyze. For these clusters",
-    "the program will compute average violations using the thisd power",
+    "the program will compute average violations using the third power",
     "averaging algorithm and print them in the log file."
   };
   static int  ntop      = 0;
@@ -501,7 +564,8 @@ int gmx_disre(int argc,char *argv[])
     { efLOG, "-l",  "disres", ffWRITE },
     { efNDX, NULL,  "viol",   ffOPTRD },
     { efPDB, "-q",  "viol",   ffOPTWR },
-    { efNDX, "-c",  "clust",  ffOPTRD }
+    { efNDX, "-c",  "clust",  ffOPTRD },
+    { efXPM, "-x",  "matrix", ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -664,6 +728,7 @@ int gmx_disre(int argc,char *argv[])
 		     "Coloured by average violation in Angstrom",
 		     &(top.atoms),xav,NULL,box);
     }
+    dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nr,&top);
     fclose(out);
     fclose(aver);
     fclose(numv);
