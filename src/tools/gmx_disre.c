@@ -438,64 +438,75 @@ static void init_dr_res(t_dr_result *dr,int ndr)
 }
 
 static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
-			      t_topology *top)
+			      int nsteps,t_topology *top)
 {
   FILE     *fp;
-  int      i,j,nra,nratoms,tp,ri,rj,n_res,index,nlabel,label,nlevels=20;
-  atom_id  *a,*ptr;
-  real     **matrix,*t_res,hi,*w_dr;
+  int      iii,i,j,nra,nratoms,tp,ri,rj,n_res,index,nlabel,label,nlevels=20;
+  atom_id  ai,aj,*ptr;
+  real     **matrix,*t_res,hi,*w_dr,rav,rviol;
   t_rgb    rlo = { 1, 1, 1 };
   t_rgb    rhi = { 0, 0, 0 };
   if (fn == NULL)
     return;
 
   n_res = top->atoms.nres;
-  snew(w_dr,ndr);
   snew(t_res,n_res);
+  for(i=0; (i<n_res); i++)
+    t_res[i] = i+1;
   snew(matrix,n_res);
   for(i=0; (i<n_res); i++) 
     snew(matrix[i],n_res);
-  nra = 2*(top->idef.il[F_DISRES].nr/(nratoms+1));
-  snew(a,nra);
+  nra = (top->idef.il[F_DISRES].nr/(nratoms+1));
   snew(ptr,nra+1);
-  index  = 0;
-  nlabel = 0;
+  index   = 0;
+  nlabel  = 0;
   nratoms = interaction_function[F_DISRES].nratoms;
-  ptr[0] = 0;
-  for(i=j=0; (i<top->idef.il[F_DISRES].nr); i+=nratoms+1,j+=2) {
-    t_res[i] = i+1;
+  ptr[0]  = 0;
+  snew(w_dr,ndr);
+  for(i=0; (i<top->idef.il[F_DISRES].nr); i+=nratoms+1) {
     tp       = top->idef.il[F_DISRES].iatoms[i];
-    a[j]     = top->idef.il[F_DISRES].iatoms[i+1];
-    a[j+1]   = top->idef.il[F_DISRES].iatoms[i+2];
     label    = top->idef.iparams[tp].disres.label;
     
     if (label != index) {
       /* Set index pointer */
-      ptr[index+1] = j;
+      ptr[index+1] = i;
       if (nlabel <= 0)
-	gmx_fatal(FARGS,"nlabel is %d",nlabel);
+	gmx_fatal(FARGS,"nlabel is %d, label = %d",nlabel,label);
+      if (index >= ndr)
+	gmx_fatal(FARGS,"ndr = %d, index = %d",ndr,index);
+      /* Update the weight */
       w_dr[index] = 1.0/nlabel;
       index  = label;
-      nlabel = 0;
+      nlabel = 1;
     }
     else {
       nlabel++;
     }
   }
-  printf("nlabel = %d, ndr = %d\n",nlabel,ndr);
+  printf("nlabel = %d, index = %d, ndr = %d\n",nlabel,index,ndr);
+  hi = 0;
   for(i=0; (i<ndr); i++) {
-    for(j=ptr[i]; (j<ptr[i+1]); j+=2) {
-      ri = top->atoms.atom[a[j]].resnr;
-      rj = top->atoms.atom[a[j+1]].resnr;
-      matrix[ri][rj] += dr->aver_3[i]*w_dr[i];
-      matrix[rj][ri] += dr->aver_3[i]*w_dr[i];
+    for(j=ptr[i]; (j<ptr[i+1]); j+=nratoms+1) {
+      tp  = top->idef.il[F_DISRES].iatoms[j];
+      ai  = top->idef.il[F_DISRES].iatoms[j+1];
+      aj  = top->idef.il[F_DISRES].iatoms[j+2];
+    
+      ri = top->atoms.atom[ai].resnr;
+      rj = top->atoms.atom[aj].resnr;
+      rav = pow(dr->aver_3[i]/nsteps,-1.0/3.0);
+      if (debug)
+	fprintf(debug,"DR %d, atoms %d, %d, distance %g\n",i,ai,aj,rav);
+      rviol = max(0,rav-top->idef.iparams[tp].disres.up1);
+      matrix[ri][rj] += w_dr[i]*rviol;
+      matrix[rj][ri] += w_dr[i]*rviol;
+      hi = max(hi,matrix[ri][rj]);
+      hi = max(hi,matrix[rj][ri]);
     }
   }
   
   fp = ffopen(fn,"w");  
   write_xpm(fp,0,"Distance Violations","<V> (nm)","Residue","Residue",
-	    n_res,n_res,t_res,t_res,
-	    matrix,0,hi,rlo,rhi,&nlevels);
+	    n_res,n_res,t_res,t_res,matrix,0,hi,rlo,rhi,&nlevels);
   fclose(fp);
 }
 
@@ -728,7 +739,8 @@ int gmx_disre(int argc,char *argv[])
 		     "Coloured by average violation in Angstrom",
 		     &(top.atoms),xav,NULL,box);
     }
-    dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nr,&top);
+    dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nr,
+		      j,&top);
     fclose(out);
     fclose(aver);
     fclose(numv);
