@@ -5,7 +5,7 @@ editconf|edits the box and writes subgroups
 genbox|solvates a system
 genion|generates mono atomic ions on energetically favorable positions
 genconf|multiplies a conformation in 'random' orientations
-genpr|generates position restraints for index groups
+genrestr|generates position restraints or distance restraints for index groups
 protonate|protonates structures
 END
 
