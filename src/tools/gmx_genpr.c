@@ -47,17 +47,18 @@
 #include "confio.h"
 #include "futil.h"
 #include "macros.h"
+#include "vec.h"
 #include "index.h"
 #include "gmx_fatal.h"
 
 int gmx_genpr(int argc,char *argv[])
 {
   static char *desc[] = {
-    "genpr produces an include file for a topology containing",
+    "genrestr produces an include file for a topology containing",
     "a list of atom numbers and three force constants for the",
     "X, Y and Z direction. A single isotropic force constant may",
     "be given on the command line instead of three components.[PAR]",
-    "WARNING: genpr only works for the first molecule.",
+    "WARNING: position restraints only work for the one molecule at a time.",
     "Position restraints are interactions within molecules, therefore",
     "they should be included within the correct [TT][ moleculetype ][tt]",
     "block in the topology. Since the atom numbers in every moleculetype",
@@ -65,26 +66,43 @@ int gmx_genpr(int argc,char *argv[])
     "genpr number consecutively from 1, genpr will only produce a useful",
     "file for the first molecule.[PAR]",
     "The -of option produces an index file that can be used for",
-    "freezing atoms. In this case the input file must be a pdb file."
+    "freezing atoms. In this case the input file must be a pdb file.[PAR]",
+    "With the [TT]-disre[tt] option half a matrix of distance restraints",
+    "is generated instead of position restraints. With this matrix, that",
+    "one typically would apply to C-alpha atoms in a protein, one can",
+    "maintain the overall conformation of a protein without tieing it to",
+    "a specific position (as with position restraints)."
   };
   static rvec    fc={1000.0,1000.0,1000.0};
   static real    freeze_level;
+  static real    disre_dist = 0.1;
+  static real    disre_up2  = 1.0;
+  static bool    bDisre=FALSE;
   t_pargs pa[] = {
     { "-fc", FALSE, etRVEC, {fc}, 
       "force constants (kJ mol-1 nm-2)" },
     { "-freeze", FALSE, etREAL, {&freeze_level},
-      "if the -of option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" }
+      "if the -of option or this one is given an index file will be written containing atom numbers of all atoms that have a B-factor less than the level given here" },
+    { "-disre", FALSE, etBOOL, {&bDisre},
+      "Generate a distance restraint matrix for all the atoms in index" },
+    { "-disre_dist", FALSE, etREAL, {&disre_dist},
+      "Distance range around the actual distance for generating distance restraints" },
+    { "-disre_up2", FALSE, etREAL, {&disre_up2},
+      "Distance between upper bound for distance restraints, and the distance at which the force becomes constant (see manual)" }
   };
-  
-  t_atoms atoms;
-  int     i;
-  FILE    *out;
+#define npargs asize(pa)
+
+  t_atoms      *atoms=NULL;
+  int          i,j,k;
+  FILE         *out;
   int          igrp;
+  real         d;
   atom_id      *ind_grp;
-  char         *gn_grp;
+  char         *gn_grp,*xfn,*nfn;
   char         title[STRLEN];
   matrix       box;
   bool         bFreeze;
+  rvec         dx,*x=NULL,*v=NULL;
   
   t_filenm fnm[] = {
     { efSTX, "-f",  NULL,    ffREAD },
@@ -95,43 +113,62 @@ int gmx_genpr(int argc,char *argv[])
 #define NFILE asize(fnm)
   
   CopyRight(stderr,argv[0]);
-  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,0,NFILE,fnm,npargs,pa,
 		    asize(desc),desc,0,NULL);
   
   bFreeze = opt2bSet("-of",NFILE,fnm) || opt2parg_bSet("-freeze",asize(pa),pa);
+  bDisre  = bDisre || opt2parg_bSet("disre_dist",npargs,pa);
+  xfn     = opt2fn_null("-f",NFILE,fnm);
+  nfn     = opt2fn_null("-n",NFILE,fnm);
   
-  if ( !opt2bSet("-n",NFILE,fnm) ) {
-    if ( !ftp2bSet(efSTX,NFILE,fnm) )
-      gmx_fatal(FARGS,"no index file and no structure file suplied");
-    else {
-      rvec *x,*v;
+  if (( nfn == NULL ) && ( xfn == NULL))
+    gmx_fatal(FARGS,"no index file and no structure file suplied");
       
-      get_stx_coordnum(ftp2fn(efSTX,NFILE,fnm),&(atoms.nr));
-      init_t_atoms(&atoms,atoms.nr,TRUE);
-      snew(x,atoms.nr);
-      snew(v,atoms.nr);
-      fprintf(stderr,"\nReading structure file\n");
-      read_stx_conf(ftp2fn(efSTX,NFILE,fnm),title,&atoms,x,v,box);
-      sfree(x);
-      sfree(v);
-    }
+  if (xfn != NULL) {
+    snew(atoms,1);
+    get_stx_coordnum(xfn,&(atoms->nr));
+    init_t_atoms(atoms,atoms->nr,TRUE);
+    snew(x,atoms->nr);
+    snew(v,atoms->nr);
+    fprintf(stderr,"\nReading structure file\n");
+    read_stx_conf(xfn,title,atoms,x,v,box);
   }
+  
   if (bFreeze) {
-    if (atoms.pdbinfo == NULL) 
+    if (atoms && atoms->pdbinfo) 
       gmx_fatal(FARGS,"No B-factors in input file %s, use a pdb file next time.",
-		  ftp2fn(efSTX,NFILE,fnm));
+		xfn);
     
     out=opt2FILE("-of",NFILE,fnm,"w");
     fprintf(out,"[ freeze ]\n");
-    for(i=0; (i<atoms.nr); i++) {
-      if (atoms.pdbinfo[i].bfac <= freeze_level)
+    for(i=0; (i<atoms->nr); i++) {
+      if (atoms->pdbinfo[i].bfac <= freeze_level)
 	fprintf(out,"%d\n",i+1);
     }
     fclose(out);
   }
+  else if (bDisre && x) {
+    printf("Select group to generate distance restraint matrix from\n");
+    get_index(atoms,nfn,1,&igrp,&ind_grp,&gn_grp);
+    
+    out=ftp2FILE(efITP,NFILE,fnm,"w");
+    fprintf(out,"; distance restraints for %s of %s\n\n",gn_grp,title);
+    fprintf(out,"[ distance_restraints ]\n");
+    fprintf(out,";%3s %4s %1s %5s %5s %10s %10s %10s %10s\n","i","j","?",
+	    "label","funct","lo","up1","up2","weight");
+    for(i=k=0; i<igrp; i++) 
+      for(j=i+1; j<igrp; j++,k++) {
+	rvec_sub(x[ind_grp[i]],x[ind_grp[j]],dx);
+	d = norm(dx);
+	fprintf(out,"%4d %4d %1d %5d %5d %10g %10g %10g %10g\n",
+		ind_grp[i]+1,ind_grp[j]+1,1,k,1,
+		max(0,d-disre_dist),d+disre_dist,d+disre_dist+1,1.0);
+      }
+    fclose(out);
+  }
   else {
     printf("Select group to position restrain\n");
-    get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&igrp,&ind_grp,&gn_grp);
+    get_index(atoms,nfn,1,&igrp,&ind_grp,&gn_grp);
     
     out=ftp2FILE(efITP,NFILE,fnm,"w");
     fprintf(out,"; position restraints for %s of %s\n\n",gn_grp,title);
@@ -142,7 +179,12 @@ int gmx_genpr(int argc,char *argv[])
 	      ind_grp[i]+1,1,fc[XX],fc[YY],fc[ZZ]);
     fclose(out);
   }
-  thanx(stderr);
+  if (xfn) {
+    sfree(x);
+    sfree(v);
+  }  
   
+  thanx(stderr);
+ 
   return 0;
 }

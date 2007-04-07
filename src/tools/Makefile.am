@@ -40,7 +40,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 
 bin_PROGRAMS = \
 	do_dssp		editconf	eneconv		\
-	genbox		genconf		genpr		g_nmtraj	\
+	genbox		genconf		genrestr	g_nmtraj	\
 	make_ndx	mk_angndx	trjcat		trjconv        	\
 	trjorder	wheel		xpm2ps		genion		\
 	anadock		make_edi	\
