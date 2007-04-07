@@ -62,32 +62,35 @@
 #include "x2top.h"
 #include "atomprop.h"
 
-static bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen)
+static bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen,
+		    real tol)
 {
-  int i,j;
+  int i,j,nn;
     
   for(i=0; (i<nnm); i++) {
-    for(j=0; (j<nmt[i].nbonds); j++) {
-      if ((((strncasecmp(ai,nmt[i].elem,1) == 0) && 
-	   (strncasecmp(aj,nmt[i].bond[j],1) == 0)) ||
-	  ((strncasecmp(ai,nmt[i].bond[j],1) == 0) && 
-	   (strncasecmp(aj,nmt[i].elem,1) == 0))) &&
-	  (fabs(blen-nmt[i].blen[j]) <= 0.1*nmt[i].blen[j]))
-	return TRUE;
-    }
+    nn = strlen(nmt[i].elem);
+    if (strlen(ai) >= nn)
+      if (strncasecmp(ai,nmt[i].elem,nn) == 0) {
+	for(j=0; (j<nmt[i].nbonds); j++) {
+	  if (((strncasecmp(aj,nmt[i].bond[j],1) == 0) ||
+	       (strcmp(nmt[i].bond[j],"*") == 0)) &&
+	      (fabs(blen-nmt[i].blen[j]) <= tol*nmt[i].blen[j]))
+	    return TRUE;
+	}
+      }
   }
   return FALSE;
 }
 
 void mk_bonds(int nnm,t_nm2type nmt[],
 	      t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
-	      bool bPBC,matrix box,void *atomprop)
+	      bool bPBC,matrix box,void *atomprop,real tol)
 {
   t_param b;
   int     i,j;
   t_pbc   pbc;
   rvec    dx;
-  real    dx2;
+  real    dx1;
   
   for(i=0; (i<MAXATOMLIST); i++)
     b.a[i] = -1;
@@ -105,18 +108,18 @@ void mk_bonds(int nnm,t_nm2type nmt[],
       else
 	rvec_sub(x[i],x[j],dx);
       
-      dx2 = iprod(dx,dx);
-      if (is_bond(nnm,nmt,*atoms->atomname[i],*atoms->atomname[j],
-		  sqrt(dx2))) {
+      dx1 = norm(dx);
+      if (is_bond(nnm,nmt,*atoms->atomname[i],*atoms->atomname[j],dx1,tol) ||
+	  is_bond(nnm,nmt,*atoms->atomname[j],*atoms->atomname[i],dx1,tol)) {
 	b.AI = i;
 	b.AJ = j;
-	b.C0 = sqrt(dx2);
+	b.C0 = dx1;
 	push_bondnow (bond,&b);
 	nbond[i]++;
 	nbond[j]++;
 	if (debug) 
-	  fprintf(debug,"Bonding atoms %s-%d and %s-%d\n",
-		  *atoms->atomname[i],i+1,*atoms->atomname[j],j+1);
+	  fprintf(debug,"Bonding atoms %s-%d and %s-%d at distance %g\n",
+		  *atoms->atomname[i],i+1,*atoms->atomname[j],j+1,dx1);
       }
     }
   }
@@ -611,6 +614,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
+  static real tol=0.1;
   static int  nexcl = 3;
   static bool bRemoveDih = FALSE;
   static bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
@@ -639,6 +643,8 @@ int main(int argc, char *argv[])
       "Use periodic boundary conditions." },
     { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
       "Use the B-factor supplied in a pdb file for the atomic charges" },
+    { "-tol",   FALSE, etREAL, {&tol},
+      "Relative tolerance for determining whether two atoms are bonded." },
     { "-param", FALSE, etBOOL, {&bParam},
       "Print parameters in the output" },
     { "-round",  FALSE, etBOOL, {&bRound},
@@ -663,6 +669,9 @@ int main(int argc, char *argv[])
 
   if (opt2bSet("-d",NFILE,fnm))
     qa = rd_q_alpha(opt2fn("-d",NFILE,fnm),&nqa);
+  
+  if ((tol < 0) || (tol > 1)) 
+    gmx_fatal(FARGS,"Tolerance should be between 0 and 1 (not %g)",tol);
     
   atomprop = get_atomprop();
     
@@ -707,7 +716,7 @@ int main(int argc, char *argv[])
   printf("Generating bonds from distances...\n");
   snew(nbonds,atoms->nr);
   mk_bonds(nnm,nm2t,atoms,x,&(plist[F_BONDS]),nbonds,forcefield,
-	   bPBC,box,atomprop);
+	   bPBC,box,atomprop,tol);
 
   open_symtab(&symtab);
   atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nnm,nm2t);
