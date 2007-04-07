@@ -154,13 +154,13 @@ int gmx_genpr(int argc,char *argv[])
     out=ftp2FILE(efITP,NFILE,fnm,"w");
     fprintf(out,"; distance restraints for %s of %s\n\n",gn_grp,title);
     fprintf(out,"[ distance_restraints ]\n");
-    fprintf(out,";%3s %4s %1s %5s %5s %10s %10s %10s %10s\n","i","j","?",
+    fprintf(out,";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n","i","j","?",
 	    "label","funct","lo","up1","up2","weight");
     for(i=k=0; i<igrp; i++) 
       for(j=i+1; j<igrp; j++,k++) {
 	rvec_sub(x[ind_grp[i]],x[ind_grp[j]],dx);
 	d = norm(dx);
-	fprintf(out,"%4d %4d %1d %5d %5d %10g %10g %10g %10g\n",
+	fprintf(out,"%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
 		ind_grp[i]+1,ind_grp[j]+1,1,k,1,
 		max(0,d-disre_dist),d+disre_dist,d+disre_dist+1,1.0);
       }
