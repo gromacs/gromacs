@@ -530,7 +530,6 @@ void get_ir(char *mdparin,char *mdparout,
   /* set ndelta to the optimal value of 2 */
   ir->ndelta = 2;
   CTYPE ("Periodic boundary conditions: xyz, no, xy");
-  CTYPE ("or full (infinite systems only)");
   EETYPE("pbc",         ir->ePBC,       epbc_names, nerror, TRUE);
   EETYPE("periodic_molecules", ir->bPeriodicMols, yesno_names, nerror, TRUE);
   CTYPE ("nblist cut-off");
