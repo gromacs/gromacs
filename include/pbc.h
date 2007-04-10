@@ -64,6 +64,9 @@ extern "C" {
     ecenterDEF = ecenterTRIC
   };
 
+  extern void dump_pbc(FILE *fp,t_pbc *pbc);
+  /* Dump the contents of the pbc structure to the file */
+  
   extern char *check_box(matrix box);
   /* Returns NULL if the box is supported by Gromacs.
    * Otherwise is returns a string with the problem.

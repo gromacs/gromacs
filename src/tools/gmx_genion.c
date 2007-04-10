@@ -456,6 +456,8 @@ int gmx_genion(int argc, char *argv[])
 
   /* Now loop over the ions that have to be placed */
   do {
+    if (debug)
+      dump_pbc(debug,&pbc);
     if (!bRandom) {
       calc_pot(stdlog,&nsb,&cr,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
       if (bPDB || debug) {
