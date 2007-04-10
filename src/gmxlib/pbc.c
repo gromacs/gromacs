@@ -59,6 +59,27 @@ enum { epbcdxRECTANGULAR=1, epbcdxRECTANGULAR_SS,
 #define BOX_MARGIN         0.5010
 #define BOX_MARGIN_CORRECT 0.5005
 
+void dump_pbc(FILE *fp,t_pbc *pbc) 
+{
+  rvec sum_box;
+  
+  fprintf(fp,"ePBCDX = %d\n",pbc->ePBCDX);
+  pr_rvecs(fp,0,"box",pbc->box,DIM);
+  pr_rvecs(fp,0,"fbox_diag",&pbc->fbox_diag,1);
+  pr_rvecs(fp,0,"hbox_diag",&pbc->hbox_diag,1);
+  pr_rvecs(fp,0,"mhbox_diag",&pbc->mhbox_diag,1);
+  rvec_add(pbc->hbox_diag,pbc->mhbox_diag,sum_box);
+  pr_rvecs(fp,0,"sum of the above two",&sum_box,1);
+  fprintf(fp,"max_cutoff2 = %g\n",pbc->max_cutoff2);
+  fprintf(fp,"bLimitDistance = %s\n",BOOL(pbc->bLimitDistance));
+  fprintf(fp,"limit_distance2 = %g\n",pbc->limit_distance2);
+  fprintf(fp,"ntric_vec = %d\n",pbc->ntric_vec);
+  if (pbc->ntric_vec > 0) {
+    pr_ivecs(fp,0,"tric_shift",pbc->tric_shift,pbc->ntric_vec,FALSE);
+    pr_rvecs(fp,0,"tric_vec",pbc->tric_vec,pbc->ntric_vec);
+  }
+}
+
 char *check_box(matrix box)
 {
   char *ptr;
@@ -399,7 +420,7 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
   int  i,j,is;
   rvec dx_start,try;
-  real d2min,d2try;
+  real fb,d2min,d2try;
   ivec ishift,ishift_start;
 
   rvec_sub(x1,x2,dx);
@@ -408,23 +429,25 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
   switch (pbc->ePBCDX) {
   case epbcdxRECTANGULAR:
     for(i=0; i<DIM; i++) {
-	while (dx[i] > pbc->hbox_diag[i]) {
-	  dx[i] -= pbc->fbox_diag[i];
-	  ishift[i]--;
-	}
-	while (dx[i] <= pbc->mhbox_diag[i]) {
-	  dx[i] += pbc->fbox_diag[i];
-	  ishift[i]++;
-	}
+      fb = pbc->fbox_diag[i];
+      while (dx[i] > pbc->hbox_diag[i]) {
+	dx[i] -= fb;
+	ishift[i]--;
       }
+      while (dx[i] <= pbc->mhbox_diag[i]) {
+	dx[i] += fb;
+	ishift[i]++;
+      }
+    }
     break;
   case epbcdxRECTANGULAR_SS:
     for(i=0; i<DIM; i++)
+      fb = pbc->fbox_diag[i];
       if (dx[i] > pbc->hbox_diag[i]) {
-	dx[i] -= pbc->fbox_diag[i];
+	dx[i] -= fb;
 	ishift[i]--;
       } else if (dx[i] <= pbc->mhbox_diag[i]) {
-	dx[i] += pbc->fbox_diag[i];
+	dx[i] += fb;
 	ishift[i]++;
       }
     break;
