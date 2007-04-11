@@ -273,10 +273,11 @@ bool do_enx(int fp,t_enxframe *fr)
 
   if (!do_eheader(fp,fr,&bOK)) {
     if (bRead) {
-      fprintf(stderr,"\rLast frame read %d time %8.3f           ",
+      fprintf(stderr,"\rLast energy frame read %d time %8.3f           ",
 	      framenr-1,frametime);
       if (!bOK)
-	fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f\n",
+	fprintf(stderr,
+		"\nWARNING: Incomplete energy frame: nr %d time %8.3f\n",
 		framenr,fr->t);
     }
     return FALSE;
@@ -285,7 +286,8 @@ bool do_enx(int fp,t_enxframe *fr)
     if ((framenr <   20 || framenr %   10 == 0) &&
 	(framenr <  200 || framenr %  100 == 0) &&
 	(framenr < 2000 || framenr % 1000 == 0))
-      fprintf(stderr,"\rReading frame %6d time %8.3f           ",framenr,fr->t);
+      fprintf(stderr,"\rReading energy frame %6d time %8.3f           ",
+	      framenr,fr->t);
     framenr++;
     frametime = fr->t;
   }
@@ -341,9 +343,9 @@ bool do_enx(int fp,t_enxframe *fr)
   }
   if (!bOK) {
     if (bRead) {
-      fprintf(stderr,"\nLast frame read %d                               ",
+      fprintf(stderr,"\nLast energy frame read %d",
 	      framenr-1);
-      fprintf(stderr,"\nWARNING: Incomplete frame: nr %6d time %8.3f     \n",
+      fprintf(stderr,"\nWARNING: Incomplete energy frame: nr %d time %8.3f\n",
 	      framenr,fr->t);
     } else 
       gmx_fatal(FARGS,"could not write energies");

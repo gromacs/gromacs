@@ -388,8 +388,9 @@ int main (int argc, char *argv[])
 	}
       }
       if (bFrame || !bOK) {
-	fprintf(stderr,"\r%s frame %6d: step %6d time %8.3f",
-		bUse ? "Read   " : "Skipped",frame,head.step,head.t);
+	fprintf(stderr,"\r%s %s frame %6d: step %6d time %8.3f",
+		bUse ? "Read   " : "Skipped",ftp2ext(fn2ftp(frame_fn)),
+		frame,head.step,head.t);
 	frame++;
 	if (bTime && (head.t >= start_t))
 	  bFrame = FALSE;
@@ -406,8 +407,8 @@ int main (int argc, char *argv[])
     fprintf(stderr,"\n");
 
     if (!bOK)
-      fprintf(stderr,"Frame %d (step %d, time %g) is incomplete\n",
-	      frame-1,head.step,head.t);
+      fprintf(stderr,"%s frame %d (step %d, time %g) is incomplete\n",
+	      ftp2ext(fn2ftp(frame_fn)),frame-1,head.step,head.t);
     fprintf(stderr,"\nUsing frame of step %d time %g\n",run_step,run_t);
 
     if (bNeedEner) {
