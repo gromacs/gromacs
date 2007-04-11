@@ -258,11 +258,11 @@ int main (int argc, char *argv[])
   };
 
   char         *top_fn,*frame_fn;
-  int          fp;
+  int          fp,fp_ener=-1;
   t_trnheader head;
   int          i,frame,run_step,nsteps_org;
   real         run_t,state_t;
-  bool         bOK,bTraj,bFrame,bTime,bSel;
+  bool         bOK,bTraj,bFrame,bUse,bTime,bSel,bNeedEner,bReadEner,bScanEner;
   t_topology   top;
   t_inputrec   *ir,*irnew=NULL;
   t_gromppopts *gopts;
@@ -272,6 +272,9 @@ int main (int argc, char *argv[])
   int          gnx;
   char         *grpname;
   atom_id      *index=NULL;
+  int          nre;
+  char         **enm=NULL;
+  t_enxframe   *fr_ener=NULL;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,    ffREAD  },
     { efTRN, "-f",  NULL,    ffOPTRD },
@@ -324,12 +327,22 @@ int main (int argc, char *argv[])
   run_step   = 0;
 
   if (bTraj) {
+    bNeedEner = (ir->epc != epcNO || ir->etc == etcNOSEHOOVER);
+    bReadEner = (bNeedEner && ftp2bSet(efENX,NFILE,fnm));
+    bScanEner = (bReadEner && !bTime);
+
     frame_fn = ftp2fn(efTRN,NFILE,fnm);
     fprintf(stderr,
 	    "\nREADING COORDS, VELS AND BOX FROM TRAJECTORY %s...\n\n",
 	    frame_fn);
     
-    fp=open_trn(frame_fn,"r");
+    fp = open_trn(frame_fn,"r");
+    if (bScanEner) {
+      fp_ener = open_enx(ftp2fn(efENX,NFILE,fnm),"r");
+      do_enxnms(fp_ener,&nre,&enm);
+      snew(fr_ener,1);
+      fr_ener->t = -1e-12;
+    }
 
     /* Now scan until the last set of x and v (step == 0)
      * or the ones at step step.
@@ -337,7 +350,7 @@ int main (int argc, char *argv[])
     bFrame = TRUE;
     frame  = 0;
     while (bFrame) {
-      bFrame=fread_trnheader(fp,&head,&bOK);
+      bFrame = fread_trnheader(fp,&head,&bOK);
       if (bOK && frame == 0) {
 	if (top.atoms.nr != head.natoms) 
 	  gmx_fatal(FARGS,"Number of atoms in Topology (%d) "
@@ -346,43 +359,64 @@ int main (int argc, char *argv[])
 	snew(newx,head.natoms);
 	snew(newv,head.natoms);
       }
-      bFrame=bFrame && bOK;
+      bFrame = bFrame && bOK;
       if (bFrame) {
 	
-	bOK=fread_htrn(fp,&head,newbox,newx,newv,NULL);
+	bOK = fread_htrn(fp,&head,newbox,newx,newv,NULL);
       }
-      bFrame=bFrame && bOK;
-      if (bFrame && (head.x_size) && (head.v_size)) {
-	tmpx    = newx;
-	newx    = state.x;
-	state.x = tmpx;
-	tmpv    = newv;
-	newv    = state.v;
-	state.v = tmpv;
-	run_t        = head.t;
-	run_step     = head.step;
-	state.lambda = head.lambda;
-	copy_mat(newbox,state.box);
+      bFrame = bFrame && bOK;
+      bUse = FALSE;
+      if (bFrame &&
+	  (head.x_size) && (head.v_size || !EI_STATE_VELOCITY(ir->eI))) {
+	bUse = TRUE;
+	if (bScanEner) {
+	  /* Read until the energy time is >= the trajectory time */
+	  while (fr_ener->t < head.t && do_enx(fp_ener,fr_ener));
+	  bUse = (fr_ener->t == head.t);
+	}
+	if (bUse) {
+	  tmpx    = newx;
+	  newx    = state.x;
+	  state.x = tmpx;
+	  tmpv    = newv;
+	  newv    = state.v;
+	  state.v = tmpv;
+	  run_t        = head.t;
+	  run_step     = head.step;
+	  state.lambda = head.lambda;
+	  copy_mat(newbox,state.box);
+	}
       }
-      fprintf(stderr,"\rRead frame %6d: step %6d time %8.3f",
-	      frame,run_step,run_t);
-      frame++;
-      if (bTime && (head.t >= start_t))
-	bFrame=FALSE;
+      if (bFrame || !bOK) {
+	fprintf(stderr,"\r%s frame %6d: step %6d time %8.3f",
+		bUse ? "Read   " : "Skipped",frame,head.step,head.t);
+	frame++;
+	if (bTime && (head.t >= start_t))
+	  bFrame = FALSE;
+      }
+    }
+    if (bScanEner) {
+      close_enx(fp_ener);
+      free_enxframe(fr_ener);
+      for(i=0; i<nre; i++)
+	sfree(enm[i]);
+      sfree(enm);
     }
     close_trn(fp);
     fprintf(stderr,"\n");
+
     if (!bOK)
       fprintf(stderr,"Frame %d (step %d, time %g) is incomplete\n",
 	      frame-1,head.step,head.t);
     fprintf(stderr,"\nUsing frame of step %d time %g\n",run_step,run_t);
 
-    if (ir->epc != epcNO || ir->etc != etcNO) {
-      if (ftp2bSet(efENX,NFILE,fnm)) {
+    if (bNeedEner) {
+      if (bReadEner) {
 	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&top.atoms,ir,&state);
-      } else if (ir->epc != epcNO || ir->etc == etcNOSEHOOVER)
+      } else {
 	fprintf(stderr,"\nWARNING: The simulation uses pressure and/or Nose-Hoover temperature coupling,\n"
 		"         the continuation will only be exact when an energy file is supplied\n\n");
+      }
     }
   } 
   else {
