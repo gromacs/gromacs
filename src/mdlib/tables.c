@@ -63,6 +63,7 @@ enum {
 static const char *tabnm[etabNR] = { 
   "LJ6",   "LJ12", "LJ6Shift", "LJ12Shift", "Shift",
   "RF",    "COUL", "Ewald", "Ewald-Switch", "Ewald-User",
+  "Ewald-User-Switch",
   "LJ6Switch", "LJ12Switch", "COULSwitch", 
   "LJ6-Encad shift", "LJ12-Encad shift", "COUL-Encad shift",  
   "EXPMIN","USER" 
