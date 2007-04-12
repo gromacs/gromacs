@@ -52,48 +52,59 @@
 
 /* All the possible (implemented) table functions */
 enum { 
-  etabLJ6,   etabLJ12, etabLJ6Shift, etabLJ12Shift, etabShift,
-  etabRF,    etabCOUL, etabEwald, etabEwaldSwitch, etabEwaldUser,
+  etabLJ6,   
+  etabLJ12, 
+  etabLJ6Shift, 
+  etabLJ12Shift, 
+  etabShift,
+  etabRF,    
+  etabCOUL, 
+  etabEwald, 
+  etabEwaldSwitch, 
+  etabEwaldUser,
   etabEwaldUserSwitch,
-  etabLJ6Switch, etabLJ12Switch, etabCOULSwitch, 
-  etabLJ6Encad, etabLJ12Encad, etabCOULEncad,  
-  etabEXPMIN, etabUSER, etabNR 
+  etabLJ6Switch, 
+  etabLJ12Switch, 
+  etabCOULSwitch, 
+  etabLJ6Encad, 
+  etabLJ12Encad, 
+  etabCOULEncad,  
+  etabEXPMIN, 
+  etabUSER, 
+  etabNR 
 };
 
-static const char *tabnm[etabNR] = { 
-  "LJ6",   "LJ12", "LJ6Shift", "LJ12Shift", "Shift",
-  "RF",    "COUL", "Ewald", "Ewald-Switch", "Ewald-User",
-  "Ewald-User-Switch",
-  "LJ6Switch", "LJ12Switch", "COULSwitch", 
-  "LJ6-Encad shift", "LJ12-Encad shift", "COUL-Encad shift",  
-  "EXPMIN","USER" 
-};
+typedef struct {
+  char *name;
+  bool bCoulomb;
+} t_tab_props;
 
-/* This flag tells whether this is a Coulomb type funtion */
-bool bCoulomb[etabNR] = { 
-    FALSE,   /* LJ6        */
-    FALSE,   /* LJ12       */
-    FALSE,   /* LJ6Shift   */
-    FALSE,   /* LJ12Shift  */
-    TRUE,    /* Shift      */
-    TRUE,    /* RF         */
-    TRUE,    /* Coul       */
-    TRUE,    /* Ewald      */
-    TRUE,    /* Ewald-User */
-    TRUE,    /* Ewald-User-Switch */
-    FALSE,   /* LJ6Switch  */
-    FALSE,   /* LJ12Switch */  
-    TRUE,    /* CoulSwitch */
-    FALSE,   /* LJ6-Encad  */
-    FALSE,   /* LJ12-Encad */ 
-    TRUE,    /* Coul Encad */
-    FALSE,   /* Expmin     */
-    FALSE    /* User  (?)  */
-}; 
+/* This structure holds name and a flag that tells whether 
+   this is a Coulomb type funtion */
+static t_tab_props tprops[etabNR] = {
+  { "LJ6",  FALSE },
+  { "LJ12", FALSE },
+  { "LJ6Shift", FALSE },
+  { "LJ12Shift", FALSE },
+  { "Shift", TRUE },
+  { "RF", TRUE },
+  { "COUL", TRUE },
+  { "Ewald", TRUE },
+  { "Ewald-Switch", TRUE },
+  { "Ewald-User", TRUE },
+  { "Ewald-User-Switch", TRUE },
+  { "LJ6Switch", FALSE },
+  { "LJ12Switch", FALSE },
+  { "COULSwitch", TRUE },
+  { "LJ6-Encad shift", FALSE },
+  { "LJ12-Encad shift", FALSE },
+  { "COUL-Encad shift",  TRUE },
+  { "EXPMIN", FALSE },
+  { "USER", FALSE }
+};
 
 /* Index in the table that says which function to use */
 enum { etiCOUL, etiLJ6, etiLJ12, etiNR };
-
 
 typedef struct {
   int  nx,nx0;
@@ -327,7 +338,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   bShift  = ((tp == etabLJ6Shift) || (tp == etabLJ12Shift) || 
 	     (tp == etabShift));
 
-  if (bCoulomb[tp]) {
+  if (tprops[tp].bCoulomb) {
     r1 = fr->rcoulomb_switch;
     rc = fr->rcoulomb;
   } 
@@ -726,7 +737,8 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 	fprintf(out,"%s table with %d data points for %s%s.\n"
 		"Tabscale = %g points/nm\n",
 		tabsel[k]==etabEwaldUser ? "Modified" : "Generated",
-		td[k].nx,b14only?"1-4 ":"",tabnm[tabsel[k]],td[k].tabscale);
+		td[k].nx,b14only?"1-4 ":"",tprops[tabsel[k]].name,
+		td[k].tabscale);
     }
     copy2table(table.n,k*4,12,td[k].x,td[k].v,td[k].f,table.tab);
     
