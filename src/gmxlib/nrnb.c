@@ -329,8 +329,8 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
   fprintf(out,"   T=Tabulated        W3=SPC/TIP3p    W4=TIP4p (single or pairs)\n");
   fprintf(out,"   NF=No Forces\n\n");
   
-  fprintf(out," %-26s %15s %15s  %8s\n",
-	  "Computing:","M-Number","M-Flops","% of Flops");
+  fprintf(out," %-26s %16s %15s  %7s\n",
+	  "Computing:","M-Number","M-Flops","% Flops");
   fprintf(out,"%s\n",myline);
   mflop=0.0;
   tfrac=0.0;
@@ -340,11 +340,11 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
     frac   = 100.0*mni*nbdata[i].flop/tflop;
     tfrac += frac;
     if (mni != 0)
-      fprintf(out," %-26s %15.6f %15.6f  %6.1f\n",
+      fprintf(out," %-26s %16.6f %15.3f  %6.1f\n",
 	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
   }
   fprintf(out,"%s\n",myline);
-  fprintf(out," %-26s %15s %15.6f  %6.1f\n",
+  fprintf(out," %-26s %16s %15.3f  %6.1f\n",
 	  "Total","",mflop,tfrac);
   fprintf(out,"%s\n\n",myline);
   

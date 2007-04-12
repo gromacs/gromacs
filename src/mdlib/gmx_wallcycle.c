@@ -108,7 +108,7 @@ static void print_cycles(FILE *fplog, double c2t, char *name, int nnodes,
       sprintf(num,"%10d",n);
     else
       sprintf(num,"          ");
-    fprintf(fplog," %-19s %4d %10s %12.3f %9.1f   %5.1f\n",
+    fprintf(fplog," %-19s %4d %10s %12.3f %10.1f   %5.1f\n",
 	    name,nnodes,num,c*1e-9,c*c2t,100*(double)c/(double)tot);
   }
 }
@@ -131,7 +131,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 
     fprintf(fplog,"     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
 
-    fprintf(fplog," Computing:         Nodes     Number     G-Cycles   Seconds     %c\n",'%');
+    fprintf(fplog," Computing:         Nodes     Number     G-Cycles    Seconds     %c\n",'%');
     fprintf(fplog,"%s\n",myline);
     sum = 0;
     for(i=ewcRUN+1; i<ewcNR; i++) {
