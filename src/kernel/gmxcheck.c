@@ -87,10 +87,11 @@ void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol)
 {
   int i,j;
   int nNul=0;
+  real vol = det(box);
   
   for(i=0; (i<natoms); i++) {
     for(j=0; (j<DIM); j++) {
-      if (fabs(x[i][j]) > fac*box[j][j])
+      if ((vol > 0) && (fabs(x[i][j]) > fac*box[j][j]))
 	printf("Warning at frame %d: coordinates for atom %d are large (%g)\n",
 	       frame,i,x[i][j]);
     }
