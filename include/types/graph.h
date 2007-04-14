@@ -42,7 +42,6 @@
 typedef enum { egcolWhite, egcolGrey, egcolBlack, egcolNR } egCol;
 
 typedef struct {
-  int      maxedge;     /* Max number of edges per atom                 */
   int      nnodes;	/* The number of nodes				*/
   int      nbound;	/* The number of nodes with edges		*/
   int      start;	/* The first atom in this graph			*/

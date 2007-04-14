@@ -87,13 +87,7 @@ static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
   }
 
   if (!bFound) {
-    if (g->nedge[inda0] == g->maxedge)
-      gmx_fatal(FARGS,"More than %d graph edges per atom (atom %d)\n",
-		g->maxedge,a0+1);
     g->edge[inda0][g->nedge[inda0]++] = a1;
-    if (g->nedge[inda1] == g->maxedge)
-      gmx_fatal(FARGS,"More than %d graph edges per atom (atom %d)\n",
-		g->maxedge,a1+1);
     g->edge[inda1][g->nedge[inda1]++] = a0;
   }
 }
@@ -150,7 +144,6 @@ void p_graph(FILE *log,char *title,t_graph *g)
   
   GCHECK(g);
   fprintf(log,"graph:  %s\n",title);
-  fprintf(log,"maxedge:%d\n",g->maxedge);
   fprintf(log,"nnodes: %d\n",g->nnodes);
   fprintf(log,"nbound: %d\n",g->nbound);
   fprintf(log,"start:  %d\n",g->start);
@@ -171,7 +164,7 @@ void p_graph(FILE *log,char *title,t_graph *g)
 }
 
 static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
-		     short nbond[],int natoms)
+		     int nbond[],int natoms)
 {
   int     k,nratoms,tp,end,j;
   t_iatom *ia,iaa;
@@ -193,50 +186,65 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
 	g->end        = max(g->end,iaa+2);
       }
     } else {
-      for(k=0; (k<nratoms); k++) {
-	iaa=ia[k+1];
+      for(k=1; (k<=nratoms); k++) {
+	iaa=ia[k];
 	if (iaa<natoms) {
 	  g->start=min(g->start,iaa);
 	  g->end  =max(g->end,  iaa);
-	  if (interaction_function[tp].flags & IF_CHEMBOND)
-	    nbond[iaa]++;
+	  /*if (interaction_function[tp].flags & IF_CHEMBOND)*/
+	  nbond[iaa]++;
 	}
       }
     }
   }
 }
 
-static void calc_start_end(t_graph *g,t_idef *idef,int natoms)
+static int calc_start_end(t_graph *g,t_idef *idef,int natoms,
+			  int nbond[])
 {
-  short *nbond;
-  int   i,nnb;
+  int   i,nnb,nbtot;
   
   g->start=natoms;
   g->end=0;
 
-  snew(nbond,natoms);
+  /* First add all the real bonds: they should determine the molecular 
+   * graph.
+   */
   for(i=0; (i<F_NRE); i++)
-    calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
+    if (interaction_function[i].flags & IF_CHEMBOND)
+      calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
+  /* Then add all the other interactions in fixed lists, but first
+   * check to see what's there already.
+   */
+  for(i=0; (i<F_NRE); i++) {
+    if (!(interaction_function[i].flags & IF_CHEMBOND)) {
+      calc_1se(g,&idef->il[i],idef->functype,nbond,natoms);
+    }
+  }
   
-  nnb=0;
-  for(i=g->start; (i<=g->end); i++)
-    nnb=max(nnb,nbond[i]);
-  if (stdlog)
+  nnb   = 0;
+  nbtot = 0;
+  for(i=g->start; (i<=g->end); i++) {
+    nbtot += nbond[i];
+    nnb    = max(nnb,nbond[i]);
+  }
+  if (stdlog) {
     fprintf(stdlog,"Max number of graph edges per atom is %d\n",nnb);
-  
-  sfree(nbond);
-  
-  g->maxedge = nnb + 4;
+    fprintf(stdlog,"Total number of graph edges is %d\n",nbtot);
+  }
+  return nbtot;
 }
 
 t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 {
   t_graph *g;
-  int     i;
+  int     *nbond;
+  int     i,nbtot;
   
   snew(g,1);
 
-  calc_start_end(g,idef,natoms);
+  snew(nbond,natoms);
+  nbtot = calc_start_end(g,idef,natoms,nbond);
   
   if (g->start >= g->end) {
     g->nnodes=0;
@@ -250,13 +258,11 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
      * we allocate some more memory, and divide it ourselves.
      * We calculate pointers... (Yuck Yuck)
      */
-    if (debug)
-      fprintf(debug,"MSHIFT: nnodes=%d, maxedge=%d\n",g->nnodes,g->maxedge);
     snew(g->edge,g->nnodes);
-    snew(g->edge[0],g->maxedge*g->nnodes);
+    snew(g->edge[0],nbtot);
 
     for(i=1; (i<g->nnodes); i++)
-      g->edge[i]=g->edge[i-1]+g->maxedge;
+      g->edge[i]=g->edge[i-1]+nbond[i-1];
 
     if (!bShakeOnly) {
       /* First add all the real bonds: they should determine the molecular 
@@ -290,6 +296,8 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 
   g->negc = 0;
   g->egc = NULL;
+  
+  sfree(nbond);
   
   return g;
 }
