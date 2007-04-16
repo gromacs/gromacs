@@ -235,6 +235,22 @@ static int calc_start_end(t_graph *g,t_idef *idef,int natoms,
   return nbtot;
 }
 
+static void compact_graph(t_graph *g)
+{
+  int i,j,n;
+  atom_id *e;
+
+  n = 0;
+  e = g->edge[0];
+  for(i=0; i<g->nnodes; i++) {
+    for(j=0; j<g->nedge[i]; j++)
+      e[n++] = g->edge[i][j];
+  }
+  srenew(g->edge[0],n);
+  for(i=1; i<g->nnodes; i++)
+    g->edge[i] = g->edge[i-1] + g->nedge[i-1];
+}
+
 t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 {
   t_graph *g;
@@ -279,6 +295,9 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 	  mk_igraph(g,idef->functype,&(idef->il[i]),natoms);
 	}
       }
+      
+      /* Removed all the unused space from the edge array */
+      compact_graph(g);
     }
     else {
       /* This is a special thing used in grompp to generate shake-blocks */
