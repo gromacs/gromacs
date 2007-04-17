@@ -62,8 +62,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     rest_global = dd->nbonded_global;
     rest_local  = local_count;
     for(ftype=0; ftype<F_NRE; ftype++) {
-      if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
-	  || ftype == F_SETTLE) {
+      if ((interaction_function[ftype].flags & IF_BOND) || ftype == F_SETTLE) {
 	nral = NRAL(ftype);
 	n = err_top_global->idef.il[ftype].nr/(1+nral);
 	ndiff = cl[ftype] - n;
@@ -318,7 +317,7 @@ static void add_vsite(gmx_domdec_t *dd,
   /* We know the local index of the first atom */
   tiatoms[1] = i;
 
-  for(k=2; k<=nral; k++) {
+  for(k=2; k<1+nral; k++) {
     ga2la = &dd->ga2la[iatoms[k]];
     if (ga2la->cell == 0) {
       tiatoms[k] = ga2la->a;
@@ -335,11 +334,11 @@ static void add_vsite(gmx_domdec_t *dd,
     /* Check for recursion */
     index = dd->reverse_top->index;
     rtil  = dd->reverse_top->il;
-    for(k=2; k<=nral; k++) {
+    for(k=2; k<1+nral; k++) {
       if ((iatoms[1] & (2<<k)) && (tiatoms[k] < 0)) {
 	/* This construction atoms is a vsite and not a home atom */
 	if (gmx_debug_at)
-	  fprintf(debug,"Constructing atom %d of vsite atom %d is a vsite and non-home\n",iatoms[k]+1,dd->gatindex[i]+1);
+	  fprintf(debug,"Constructing atom %d of vsite atom %d is a vsite and non-home\n",iatoms[k]+1,i >= 0 ? dd->gatindex[i]+1 : -i);
 
 	/* Find the vsite construction */
 
