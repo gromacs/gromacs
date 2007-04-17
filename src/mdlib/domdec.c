@@ -903,7 +903,7 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
 			 gmx_domdec_t *dd,int natoms,
 			 rvec x[],matrix box)
 {
-  char fname[STRLEN],format[STRLEN];
+  char fname[STRLEN],format[STRLEN],format4[STRLEN];
   FILE *out;
   int  i,ii,resnr,c;
   real b;
@@ -911,6 +911,7 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
   sprintf(fname,"%s_%d_n%d.pdb",fn,step,dd->sim_nodeid);
 
   sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
+  sprintf(format4,"%s%s\n",pdbformat4,"%6.2f%6.2f");
 
   out = ffopen(fname,"w");
 
@@ -930,7 +931,8 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
     } else {
       b = dd->ncell + 1;
     }
-    fprintf(out,format,"ATOM",(ii+1)%100000,
+    fprintf(out,strlen(*atoms->atomname[ii])<4 ? format : format4,
+	    "ATOM",(ii+1)%100000,
 	    *atoms->atomname[ii],*atoms->resname[resnr],' ',(resnr+1)%10000,
 	    10*x[i][XX],10*x[i][YY],10*x[i][ZZ],1.0,b);
   }
@@ -3541,11 +3543,7 @@ void dd_partition_system(FILE         *fplog,
     /* Update the local pull groups */
     dd_make_local_pull_groups(dd,&ir->pull,mdatoms);
 
-  /* We need the constructing atom coordinates of the virtual sites
-   * when spreading the forces.
-   */
-  dd_move_x_vsites(dd,state_local->box,state_local->x);
-
+  /* Make sure we only count the cycles for this DD partitioning */
   clear_dd_cycle_counts(dd);
 
   if (nstDDDump > 0 && step % nstDDDump == 0) {
