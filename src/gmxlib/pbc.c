@@ -432,25 +432,26 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
     for(i=0; i<DIM; i++) {
       fb = pbc->fbox_diag[i];
       while (dx[i] > pbc->hbox_diag[i]) {
-	dx[i] -= fb;
-	ishift[i]--;
+	    dx[i] -= fb;
+	    ishift[i]--;
       }
       while (dx[i] <= pbc->mhbox_diag[i]) {
-	dx[i] += fb;
-	ishift[i]++;
+	    dx[i] += fb;
+	    ishift[i]++;
       }
     }
     break;
   case epbcdxRECTANGULAR_SS:
-    for(i=0; i<DIM; i++)
+    for(i=0; i<DIM; i++) {
       fb = pbc->fbox_diag[i];
       if (dx[i] > pbc->hbox_diag[i]) {
-	dx[i] -= fb;
-	ishift[i]--;
+  	    dx[i] -= fb;
+	    ishift[i]--;
       } else if (dx[i] <= pbc->mhbox_diag[i]) {
-	dx[i] += fb;
-	ishift[i]++;
+	    dx[i] += fb;
+	    ishift[i]++;
       }
+    }  
     break;
   case epbcdxTRICLINIC:
   case epbcdxTRICLINIC_SS:
