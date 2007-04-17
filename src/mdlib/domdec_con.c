@@ -366,7 +366,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 		dd->neighbor[d][dir],buf[1],buf[0]);
 	if (gmx_debug_at) {
 	  for(i=0; i<spas->nsend; i++)
-	    fprintf(debug," %d",spac->ibuf[i]);
+	    fprintf(debug," %d",spac->ibuf[i]+1);
 	  fprintf(debug,"\n");
 	}
       }
@@ -556,7 +556,7 @@ void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
       for(i=0; i<lilf->nr; i+=1+nral) {
 	iatoms = lilf->iatoms + i;
 	/* Check if we have the other atoms */
-	for(j=2; j<1+nral; j++) {
+	for(j=1; j<1+nral; j++) {
 	  if (iatoms[j] < 0) {
 	    /* This is not a home atom, we need to ask our neighbors */
 	    a = -iatoms[j] - 1;
@@ -588,7 +588,7 @@ void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
       lilf = &lil[ftype];
       for(i=0; i<lilf->nr; i+=1+nral) {
 	iatoms = lilf->iatoms + i;
-	for(j=2; j<1+nral; j++) {
+	for(j=1; j<1+nral; j++) {
 	  if (iatoms[j] < 0)
 	    iatoms[j] = ga2la_specat[-iatoms[j]-1];
 	}

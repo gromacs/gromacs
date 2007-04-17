@@ -43,7 +43,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
   ndiff_tot = local_count - dd->nbonded_global;
   if (ndiff_tot >= 0) {
     sign = 1;
-    ts = "evaluated more than once";
+    ts = "more than once evaluated";
   } else {
     sign = -1;
     ts = "missing";
@@ -124,7 +124,7 @@ static int count_intercg_vsite(t_block *cgs,t_atom *atom,gmx_reverse_top_t *rt)
   int  cg,a,a0,a1,i,j,ftype,nral;
   int  *index,*rtil;
   t_iatom *iatoms;
-  int  n_intercg_vsite,n,nvs;
+  int  n_intercg_vsite,n;
 
   index = rt->index;
   rtil  = rt->il;
@@ -141,19 +141,12 @@ static int count_intercg_vsite(t_block *cgs,t_atom *atom,gmx_reverse_top_t *rt)
 	nral = NRAL(ftype);
 	if (interaction_function[ftype].flags & IF_VSITE) {
 	  n   = 0;
-	  nvs = 0;
 	  for(j=2; j<1+nral; j++) {
-	    if (iatoms[j] < a0 || iatoms[j] >= a1) {
+	    if (iatoms[j] < a0 || iatoms[j] >= a1)
 	      n++;
-	    }
-	    if (atom[iatoms[j]].ptype == eptVSite)
-	      nvs++;
 	  }
-	  if (n) {
+	  if (n)
 	    n_intercg_vsite++;
-	    if (nvs)
-	      gmx_fatal(FARGS,"Can not handle recursive virtual sites that involve multiple charge groups");
-	  }
 	}
 	i += 1 + nral;
       }
@@ -163,15 +156,16 @@ static int count_intercg_vsite(t_block *cgs,t_atom *atom,gmx_reverse_top_t *rt)
   return n_intercg_vsite;
 }
 
-static int low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
+static int low_make_reverse_top(t_idef *idef,t_atom *atom,
+				int *count,gmx_reverse_top_t *rt,
 				bool bAssign)
 {
-  int ftype,nral,i,ind_at,j;
+  int  ftype,nral,i,ind_at,j;
   t_ilist *il;
   t_iatom *ia;
   atom_id a;
-  int nint;
-  
+  int  nint;
+
   nint = 0;
   for(ftype=0; ftype<F_NRE; ftype++) {
     if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
@@ -194,8 +188,26 @@ static int low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
 	  for(j=0; j<1+nral; j++)
 	    rt->il[rt->index[a]+count[a]+1+j] = ia[j];
 	}
+	if (interaction_function[ftype].flags & IF_VSITE) {
+	  /* Since we now that the first atom is the atom
+	   * that this vsite interaction is linked to,
+	   * we can (mis)use it to store which constructing
+	   * atoms are again vsites.
+	   */
+	  if (bAssign) {
+	    rt->il[rt->index[a]+count[a]+2] = 0;
+	    for(j=2; j<1+nral; j++) {
+	      if (atom[ia[j]].ptype == eptVSite)
+		rt->il[rt->index[a]+count[a]+2] |= (2<<j);
+	    }
+	  }
+	} else {
+	  /* We do not count vsites since they are always uniquely assigned
+	   * and can be assigned to multiple nodes with recursive vsites.
+	   */
+	  nint++;
+	}
 	count[a] += 2 + nral;
-	nint++;
       }
     }
   }
@@ -203,7 +215,8 @@ static int low_make_reverse_top(t_idef *idef,int *count,gmx_reverse_top_t *rt,
   return nint;
 }
 
-static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,int *nint)
+static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
+					   t_atom *atom,int *nint)
 {
   int *count,i;
   gmx_reverse_top_t *rt;
@@ -212,7 +225,7 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,int *nint)
 
   /* Count the interactions */
   snew(count,natoms);
-  low_make_reverse_top(idef,count,rt,FALSE);
+  low_make_reverse_top(idef,atom,count,rt,FALSE);
 
   snew(rt->index,natoms+1);
   rt->index[0] = 0;
@@ -223,7 +236,7 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,int *nint)
   snew(rt->il,rt->index[natoms]);
 
   /* Store the interactions */
-  *nint = low_make_reverse_top(idef,count,rt,TRUE);
+  *nint = low_make_reverse_top(idef,atom,count,rt,TRUE);
 
   sfree(count);
 
@@ -234,13 +247,14 @@ void dd_make_reverse_top(FILE *fplog,
 			 gmx_domdec_t *dd,t_topology *top,
 			 bool bDynamics,int eeltype)
 {
-  int natoms,nexcl,a;
-  
+  int natoms,n_recursive_vsite,nexcl,a;
+
   fprintf(fplog,"\nLinking all bonded interactions to atoms\n");
 
   natoms = top->atoms.nr;
 
-  dd->reverse_top = make_reverse_top(natoms,&top->idef,&dd->nbonded_global);
+  dd->reverse_top = make_reverse_top(natoms,&top->idef,top->atoms.atom,
+				     &dd->nbonded_global);
 
   dd->reverse_top->n_intercg_vsite =
     count_intercg_vsite(&top->blocks[ebCGS],top->atoms.atom,dd->reverse_top);
@@ -259,9 +273,9 @@ void dd_make_reverse_top(FILE *fplog,
   for(a=0; a<natoms; a++)
     dd->ga2la[a].cell = -1;
   
-  if (dd->reverse_top->n_intercg_vsite) {
+  if (dd->reverse_top->n_intercg_vsite > 0) {
     fprintf(fplog,"There are %d inter charge-group virtual sites,\n"
-	    "will use extra communication steps for selected coordinates and forces\n",
+	    "will an extra communication step for selected coordinates and forces\n",
 	    dd->reverse_top->n_intercg_vsite);
     init_domdec_vsites(dd,natoms);
   }
@@ -275,15 +289,86 @@ void dd_make_reverse_top(FILE *fplog,
   }
 }
 
+static inline void add_ifunc(int type,int nral,t_iatom *tiatoms,t_ilist *il)
+{
+  t_iatom *liatoms;
+  int     k;
+
+  if (il->nr >= il->nalloc) {
+    il->nalloc += IATOM_ALLOC_SIZE*(1 + nral);
+    srenew(il->iatoms,il->nalloc);
+  }
+  liatoms = il->iatoms + il->nr;
+  liatoms[0] = type;
+  for(k=1; k<=nral; k++)
+    liatoms[k] = tiatoms[k];
+  il->nr += 1 + nral;
+}
+
+static void add_vsite(gmx_domdec_t *dd,
+		      int ftype,int nral,int i,t_iatom *iatoms,
+		      t_idef *idef)
+{
+  int  k;
+  t_iatom tiatoms[1+MAXATOMLIST],*iatoms_r;
+  gmx_ga2la_t *ga2la;
+  int  *index,*rtil;
+  int  j,ftype_r,nral_r;
+  
+  /* We know the local index of the first atom */
+  tiatoms[1] = i;
+
+  for(k=2; k<=nral; k++) {
+    ga2la = &dd->ga2la[iatoms[k]];
+    if (ga2la->cell == 0) {
+      tiatoms[k] = ga2la->a;
+    } else {
+      /* Copy the global index, convert later in make_local_vsites */
+      tiatoms[k] = -(iatoms[k] + 1);
+    }
+  }
+
+  /* Add this interaction to the local topology */
+  add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
+
+  if (iatoms[1]) {
+    /* Check for recursion */
+    index = dd->reverse_top->index;
+    rtil  = dd->reverse_top->il;
+    for(k=2; k<=nral; k++) {
+      if ((iatoms[1] & (2<<k)) && (tiatoms[k] < 0)) {
+	/* This construction atoms is a vsite and not a home atom */
+	if (gmx_debug_at)
+	  fprintf(debug,"Constructing atom %d of vsite atom %d is a vsite and non-home\n",iatoms[k]+1,dd->gatindex[i]+1);
+
+	/* Find the vsite construction */
+
+	/* Check all interactions assigned to this atom */
+	j = index[iatoms[k]];
+	while (j < index[iatoms[k]+1]) {
+	  ftype_r = rtil[j++];
+	  nral_r = NRAL(ftype_r);
+	  if (interaction_function[ftype_r].flags & IF_VSITE) {
+	    /* Add this vsite (recursion).
+	     * Signal that the vsite atom is non-home by negation.
+	     */
+	    add_vsite(dd,ftype_r,nral_r,-(iatoms[k]+1),rtil+j,idef);
+	  }
+	  j += 1 + nral_r;
+	}
+      }
+    }
+  }
+}
+
 static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 {
   int nbonded_local,i,gat,j,ftype,nral,d,k,kc;
   int *index,*rtil;
-  t_iatom *iatoms,tiatoms[1+MAXATOMLIST],*liatoms;
+  t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
   bool bUse;
   ivec shift_min;
   gmx_ga2la_t *ga2la;
-  t_ilist *il;
 
   index = dd->reverse_top->index;
   rtil  = dd->reverse_top->il;
@@ -304,20 +389,8 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
       nral = NRAL(ftype);
       if (interaction_function[ftype].flags & IF_VSITE) {
 	/* The vsite construction goes where the vsite itself is */
-	bUse = (i < dd->nat_home);
-	if (bUse) {
-	  /* We know the local index of the first atom */
-	  tiatoms[1] = i;
-	  for(k=2; k<=nral; k++) {
-	    ga2la = &dd->ga2la[iatoms[k]];
-	    if (ga2la->cell == 0) {
-	      tiatoms[k] = ga2la->a;
-	    } else {
-	      /* Copy the global index, convert later in make_local_vsites */
-	      tiatoms[k] = -(iatoms[k] + 1);
-	    }
-	  }
-	}
+	if (i < dd->nat_home)
+	  add_vsite(dd,ftype,nral,i,iatoms,idef);
       } else {
 	bUse = TRUE;
 	for(d=0; d<DIM; d++)
@@ -337,21 +410,12 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 	}
 	bUse = (bUse && 
 		shift_min[XX]==0 && shift_min[YY]==0 && shift_min[ZZ]==0);
-      }
-      if (bUse) {
-	/* Add this interaction to the local topology */
-	il = &idef->il[ftype];
-	if (il->nr >= il->nalloc) {
-	  il->nalloc += IATOM_ALLOC_SIZE*(1+nral);
-	  srenew(il->iatoms,il->nalloc);
+	if (bUse) {
+	  /* Add this interaction to the local topology */
+	  add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
+	  /* Sum so we can check in global_stat if we have everything */
+	  nbonded_local++;
 	}
-	liatoms = il->iatoms + il->nr;
-	liatoms[0] = iatoms[0];
-	for(k=1; k<=nral; k++)
-	  liatoms[k] = tiatoms[k];
-	/* Sum locally so we can check in global_stat if we have everything */
-	nbonded_local++;
-	il->nr += 1+nral;
       }
       j += 1 + nral;
     }
