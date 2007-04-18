@@ -924,7 +924,9 @@ solvent. This is especially useful for speeding up energy calculations with
 <dt><h4>nwall: 0</h4></dt>
 <dd>When set to <b>1</b> there is a wall at z=0, when set to <b>2</b>
 there is also a wall at z=z_box. Walls can only be used with <b>pbc=xy</b>.
-When set to <b>2</b> pressure coupling and Ewald summation can be used.
+When set to <b>2</b> pressure coupling and Ewald summation can be used
+(it is usually best to use semiisotropic pressure coupling with
+the x/y compressibility set to 0, as otherwise the surface area will change).
 Energy groups <tt>wall0</tt> and <tt>wall1</tt> (for <b>nwall=2</b>) are
 added automatically to monitor the interaction of energy groups
 with each wall.</dd>
@@ -941,8 +943,8 @@ is <tt>wall0</tt> or <tt>wall1</tt>,
 only the dispersion and repulsion columns are used</dd>
 </dl>
 <dt><h4>wall_atomtype:</h4></dt>
-<dd>the atom type name for each wall, this allows for independent tuning
-of the interaction of each atomtype with the walls</dd>
+<dd>the atom type name in the force field for each wall, this allows
+for independent tuning of the interaction of each atomtype with the walls</dd>
 <dt><h4>wall_density: [nm<sup>-3</sup>/nm<sup>-2</sup>]</h4></dt>
 <dd>the number density of the atoms for each wall for wall types
 <b>9-3</b> and <b>10-4</b>
