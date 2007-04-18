@@ -314,6 +314,7 @@ void process_chain(t_atoms *pdba, rvec *x,
 		   bool bTrpU,bool bPheU,bool bTyrU,
 		   bool bLysMan,bool bAspMan,bool bGluMan,
 		   bool bHisMan,bool bArgMan,bool bGlnMan,
+		   bool bRenameCys,
 		   real angle,real distance,t_symtab *symtab)
 {
   /* Rename aromatics, lys, asp and histidine */
@@ -337,8 +338,9 @@ void process_chain(t_atoms *pdba, rvec *x,
   else
     rename_pdbres(pdba,"GLUH","GLU",FALSE,symtab);
 
-  /* Make sure we don't have things like CYS? */ 
-  rename_pdbres(pdba,"CYS","CYS",FALSE,symtab);
+  if (bRenameCys)
+    /* Make sure we don't have things like CYS? */ 
+    rename_pdbres(pdba,"CYS","CYS",FALSE,symtab);
 
   if (!bHisMan)
     set_histp(pdba,x,angle,distance);
@@ -688,6 +690,7 @@ int main(int argc, char *argv[])
   static bool bInter=FALSE, bCysMan=FALSE; 
   static bool bLysMan=FALSE, bAspMan=FALSE, bGluMan=FALSE, bHisMan=FALSE;
   static bool bGlnMan=FALSE, bArgMan=FALSE;
+  static bool bRenameCys=TRUE;
   static bool bTerMan=FALSE, bUnA=FALSE, bHeavyH;
   static bool bSort=TRUE, bMissing=FALSE, bRemoveH=FALSE;
   static bool bDeuterate=FALSE,bVerbose=FALSE;
@@ -710,7 +713,7 @@ int main(int argc, char *argv[])
     { "-water",  FALSE, etENUM, {watstr},
       "Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P" },
     { "-inter",  FALSE, etBOOL, {&bInter},
-      "Set the next 6 options to interactive"},
+      "Set the next 8 options to interactive"},
     { "-ss",     FALSE, etBOOL, {&bCysMan}, 
       "Interactive SS bridge selection" },
     { "-ter",    FALSE, etBOOL, {&bTerMan}, 
@@ -727,6 +730,8 @@ int main(int argc, char *argv[])
       "Interactive Glutamine selection, iso neutral" },
     { "-his",    FALSE, etBOOL, {&bHisMan},
       "Interactive Histidine selection, iso checking H-bonds" },
+    { "-cys",    FALSE, etBOOL, {&bRenameCys},
+      "HIDDENRename cysteines to cys" },
     { "-angle",  FALSE, etREAL, {&angle}, 
       "Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)" },
     { "-dist",   FALSE, etREAL, {&distance},
@@ -777,8 +782,10 @@ int main(int argc, char *argv[])
     bCysMan = TRUE;
     bTerMan = TRUE;
     bLysMan = TRUE;
+    bArgMan = TRUE;
     bAspMan = TRUE;
     bGluMan = TRUE;
+    bGlnMan = TRUE;
     bHisMan = TRUE;
   }
   
@@ -1027,7 +1034,7 @@ int main(int argc, char *argv[])
 	      chain+1,natom,nres);
 
     process_chain(pdba,x,bUnA,bUnA,bUnA,bLysMan,bAspMan,bGluMan,
-		  bHisMan,bArgMan,bGlnMan,angle,distance,&symtab);
+		  bHisMan,bArgMan,bGlnMan,bRenameCys,angle,distance,&symtab);
 		  
     if (bSort) {
       block = new_block();
