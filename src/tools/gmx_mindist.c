@@ -57,7 +57,7 @@
 #include "xtcio.h"
 
 static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
-			  real *rmin,real *rmax)
+			  real *rmin,real *rmax,int *min_ind)
 {
 #define NSHIFT 26
   int  sx,sy,sz,i,j,s;
@@ -88,8 +88,11 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
       for(s=0; s<NSHIFT; s++) {
 	rvec_add(d0,shift[s],d);
 	r2 = norm2(d);
-	if (r2 < r2min)
+	if (r2 < r2min) {
 	  r2min = r2;
+	  min_ind[0] = i;
+	  min_ind[1] = j;
+	}
       }
     }
 
@@ -107,7 +110,7 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   real   t;
   rvec   *x;
   matrix box;
-  int    natoms;
+  int    natoms,ind_min[2],ind_mini,ind_minj;
   real   r,rmin,rmax,rmint,tmint;
   bool   bFirst;
   
@@ -127,10 +130,12 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   bFirst=TRUE;  
   do {
     rm_pbc(&(top->idef),natoms,box,x,x);
-    periodic_dist(box,x,n,index,&rmin,&rmax);
+    periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {
       rmint = rmin;
       tmint = t;
+      ind_mini = ind_min[0];
+      ind_minj = ind_min[1];
     }
     if ( bSplit && !bFirst && abs(t/time_factor())<1e-5 )
       fprintf(out, "&\n");
@@ -142,8 +147,10 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   fclose(out);
   
   fprintf(stdout,
-	  "\nThe shortest periodic distance is %g (nm) at time %g (%s)\n",
-	  rmint,convert_time(tmint),time_unit());
+	  "\nThe shortest periodic distance is %g (nm) at time %g (%s),\n"
+	  "between atoms %d and %d\n",
+	  rmint,convert_time(tmint),time_unit(),
+	  index[ind_mini]+1,index[ind_minj]+1);
 }
 
 static void calc_dist(real rcut, matrix box, rvec x[], 
