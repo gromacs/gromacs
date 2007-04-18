@@ -365,7 +365,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 t_forcerec *fr,
 		 real t,rvec mu_tot,
 		 int natoms,bool *bConverged,
-		 bool bVsites,t_comm_vsites *vsitecomm,
+		 gmx_vsite_t *vsite,
 		 FILE *fp_field)
 {
   static bool bFirst=TRUE,bForceInit=FALSE,bNoPredict=FALSE;
@@ -510,9 +510,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   *bConverged = (df[Min] < ftol);
   
   for(count=1; (!(*bConverged) && (count < number_steps)); count++) {
-    if (bVsites)
-      construct_vsites(log,pos[Min],nrnb,inputrec->delta_t,state->v,&top->idef,
-		       fr->ePBC,fr->bMolPBC,graph,cr,state->box,vsitecomm);
+    if (vsite)
+      construct_vsites(log,vsite,pos[Min],nrnb,inputrec->delta_t,state->v,
+		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
      
     if (nflexcon) {
       init_adir(log,constr,top,inputrec,cr->dd,mdstep,md,start,end,
@@ -539,9 +539,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
 	     state->lambda,graph,
 	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
-    if (bVsites) 
-      spread_vsite_f(log,pos[Try],force[Try],fr->fshift,nrnb,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+    if (vsite) 
+      spread_vsite_f(log,vsite,pos[Try],force[Try],fr->fshift,nrnb,
+		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
       
     /* Calculation of the virial must be done after vsites!    */
     /* Question: Is it correct to do the PME forces after this? */
@@ -552,9 +552,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
      */
-    if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,pos[Try],fr->f_el_recip,NULL,nrnb,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+    if (vsite && fr->bEwald) 
+      spread_vsite_f(log,vsite,pos[Try],fr->f_el_recip,NULL,nrnb,
+		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
     
     sum_lrforces(force[Try],fr,start,homenr);
     copy_mat(fr->vir_el_recip,vir_el_recip[Try]);

@@ -49,6 +49,7 @@
 #include "mshift.h"
 #include "pbc.h"
 #include "domdec.h"
+#include "partdec.h"
 
 /* Communication buffers */
 
@@ -390,13 +391,13 @@ static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
 }
 
 
-void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
+void construct_vsites(FILE *log,gmx_vsite_t *vsite,
+		      rvec x[],t_nrnb *nrnb,
 		      real dt,rvec *v,t_idef *idef,
 		      int ePBC,bool bMolPBC,t_graph *graph,
-		      t_commrec *cr,matrix box,
-		      t_comm_vsites *vsitecomm)
+		      t_commrec *cr,matrix box)
 {
-  rvec      xd,vv;
+  rvec      xv,vv,dx;
   real      a1,b1,c1,inv_dt;
   int       i,ii,nra,nrd,tp,ftype;
   t_iatom   avsite,ai,aj,ak,al;
@@ -404,22 +405,26 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
   t_iparams *ip;
   t_pbc     pbc,*pbc_null;
   bool      bDomDec;
+  int       *vsite_pbc,ishift;
 
   bDomDec = cr && DOMAINDECOMP(cr);
 
   /* We only need to do pbc when we have inter-cg vsites */
-  if ((bDomDec || bMolPBC) && !(bDomDec && cr->dd->vsite_comm==NULL)) {
+  vsite_pbc = NULL;
+  if ((bDomDec || bMolPBC) && vsite->n_intercg_vsite) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
     pbc_null = set_pbc_ss(&pbc,ePBC,box,cr!=NULL ? cr->dd : NULL,FALSE);
+    if (pbc_null)
+      vsite_pbc = (bDomDec ? vsite->vsite_pbc_dd : vsite->vsite_pbc);
   } else {
     pbc_null = NULL;
   }
 
   if (bDomDec) {
     dd_move_x_vsites(cr->dd,box,x);
-  } else if (vsitecomm) {
+  } else if (vsite->bPDvsitecomm) {
     /* I'm not sure whether the periodicity and shift are guaranteed
      * to be consistent between different nodes when running e.g. polymers
      * in parallel. In this special case we thus unshift/shift,
@@ -428,7 +433,7 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
      */
     if (graph)
       unshift_self(graph,box,x);
-    move_construct_x(vsitecomm,x,cr);
+    move_construct_x(vsite->vsitecomm,x,cr);
     if (graph)
       shift_self(graph,box,x);
   }
@@ -459,7 +464,7 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
 	a1   = ip[tp].vsite.a;
 	
 	/* Copy the old position */
-	copy_rvec(x[avsite],xd);
+	copy_rvec(x[avsite],xv);
 	
 	/* Construct the vsite depending on type */
 	switch (ftype) {
@@ -498,21 +503,28 @@ void construct_vsites(FILE *log,rvec x[],t_nrnb *nrnb,
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
+	if (vsite_pbc && vsite_pbc[avsite] >= 0) {
+	  /* Match the pbc of this vsite to the rest of its charge group */
+	  ishift = pbc_dx(pbc_null,x[avsite],x[vsite_pbc[avsite]],dx);
+	  if (ishift != CENTRAL)
+	    rvec_add(x[vsite_pbc[avsite]],dx,x[avsite]);
+	}
 	if (v) {
 	  /* Calculate velocity of vsite... */
-	  rvec_sub(x[avsite],xd,vv);
+	  rvec_sub(x[avsite],xv,vv);
 	  svmul(inv_dt,vv,v[avsite]);
 	}
+
 	/* Increment loop variables */
 	i  += nra+1;
 	ia += nra+1;
       }
     }
   }
-  if (vsitecomm) {
+  if (vsite->bPDvsitecomm) {
     if (graph)
       unshift_self(graph,box,x);
-    move_vsite_xv(vsitecomm,x,NULL,cr);
+    move_vsite_xv(vsite->vsitecomm,x,NULL,cr);
     if (graph)
       shift_self(graph,box,x); /* maybe not necessary */
   }
@@ -523,16 +535,17 @@ static void spread_vsite2(t_iatom ia[],real a,
 			    t_pbc *pbc,t_graph *g)
 {
   rvec    fi,fj,dx;
-  t_iatom ai,aj;
+  t_iatom av,ai,aj;
   ivec    di;
   real    b;
   int     siv,sij;
   
+  av = ia[1];
   ai = ia[2];
   aj = ia[3];
   
-  svmul(1-a,f[ia[1]],fi);
-  svmul(  a,f[ia[1]],fj);
+  svmul(1-a,f[av],fi);
+  svmul(  a,f[av],fj);
   /* 7 flop */
   
   rvec_inc(f[ai],fi);
@@ -545,7 +558,7 @@ static void spread_vsite2(t_iatom ia[],real a,
     ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),di);
     sij = IVEC2IS(di);
   } else if (pbc) {
-    siv = CENTRAL;
+    siv = pbc_dx(pbc,x[ai],x[av],dx);
     sij = pbc_dx(pbc,x[ai],x[aj],dx);
   } else {
     siv = CENTRAL;
@@ -553,7 +566,7 @@ static void spread_vsite2(t_iatom ia[],real a,
   }
 
   if (fshift && (siv != CENTRAL || sij != CENTRAL)) {
-    rvec_inc(fshift[siv],f[ia[1]]);
+    rvec_inc(fshift[siv],f[av]);
     rvec_dec(fshift[CENTRAL],fi);
     rvec_dec(fshift[sij],fj);
   }
@@ -566,17 +579,18 @@ static void spread_vsite3(t_iatom ia[],real a,real b,
 			    t_pbc *pbc,t_graph *g)
 {
   rvec    fi,fj,fk,dx;
-  atom_id ai,aj,ak;
+  atom_id av,ai,aj,ak;
   ivec    di;
   int     siv,sij,sik;
 
+  av = ia[1];
   ai = ia[2];
   aj = ia[3];
   ak = ia[4];
   
-  svmul(1-a-b,f[ia[1]],fi);
-  svmul(    a,f[ia[1]],fj);
-  svmul(    b,f[ia[1]],fk);
+  svmul(1-a-b,f[av],fi);
+  svmul(    a,f[av],fj);
+  svmul(    b,f[av],fk);
   /* 11 flops */
 
   rvec_inc(f[ai],fi);
@@ -592,7 +606,7 @@ static void spread_vsite3(t_iatom ia[],real a,real b,
     ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,ak),di);
     sik = IVEC2IS(di);
   } else if (pbc) {
-    siv = CENTRAL;
+    siv = pbc_dx(pbc,x[ai],x[av],dx);
     sij = pbc_dx(pbc,x[ai],x[aj],dx);
     sik = pbc_dx(pbc,x[ai],x[ak],dx);
   } else {
@@ -602,7 +616,7 @@ static void spread_vsite3(t_iatom ia[],real a,real b,
   }
 
   if (fshift && (siv!=CENTRAL || sij!=CENTRAL || sik!=CENTRAL)) {
-    rvec_inc(fshift[siv],f[ia[1]]);
+    rvec_inc(fshift[siv],f[av]);
     rvec_dec(fshift[CENTRAL],fi);
     rvec_dec(fshift[sij],fj);
     rvec_dec(fshift[sik],fk);
@@ -616,15 +630,16 @@ static void spread_vsite3FD(t_iatom ia[],real a,real b,
 			    t_pbc *pbc,t_graph *g)
 {
   real fx,fy,fz,c,invl,fproj,a1;
-  rvec xij,xjk,xix,fv,temp;
-  t_iatom ai,aj,ak;
+  rvec xvi,xij,xjk,xix,fv,temp;
+  t_iatom av,ai,aj,ak;
   int     svi,sji,skj,d;
   ivec    di;
 
+  av = ia[1];
   ai = ia[2];
   aj = ia[3];
   ak = ia[4];
-  copy_rvec(f[ia[1]],fv);
+  copy_rvec(f[av],fv);
   
   sji = pbc_rvec_sub(pbc,x[aj],x[ai],xij);
   skj = pbc_rvec_sub(pbc,x[ak],x[aj],xjk);
@@ -669,6 +684,8 @@ static void spread_vsite3FD(t_iatom ia[],real a,real b,
     sji = IVEC2IS(di);
     ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,aj),di);
     skj = IVEC2IS(di);
+  } else if (pbc) {
+    svi = pbc_rvec_sub(pbc,x[av],x[ai],xvi);
   } else {
     svi = CENTRAL;
   }
@@ -693,12 +710,13 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
 			     rvec x[],rvec f[],rvec fshift[],
 			     t_pbc *pbc,t_graph *g)
 {
-  rvec    xij,xjk,xperp,Fpij,Fppp,fv,f1,f2,f3;
+  rvec    xvi,xij,xjk,xperp,Fpij,Fppp,fv,f1,f2,f3;
   real    a1,b1,c1,c2,invdij,invdij2,invdp,fproj;
-  t_iatom ai,aj,ak;
+  t_iatom av,ai,aj,ak;
   int     svi,sji,skj,d;
   ivec    di;
-
+  
+  av = ia[1];
   ai = ia[2];
   aj = ia[3];
   ak = ia[4];
@@ -756,6 +774,8 @@ static void spread_vsite3FAD(t_iatom ia[],real a,real b,
     sji = IVEC2IS(di);
     ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,aj),di);
     skj = IVEC2IS(di);
+  } else if (pbc) {
+    svi = pbc_rvec_sub(pbc,x[av],x[ai],xvi);
   } else {
     svi = CENTRAL;
   }
@@ -780,12 +800,13 @@ static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
 			     rvec x[],rvec f[],rvec fshift[],
 			     t_pbc *pbc,t_graph *g)
 {
-  rvec    xij,xik,fv,fj,fk;
+  rvec    xvi,xij,xik,fv,fj,fk;
   real    cfx,cfy,cfz;
-  atom_id ai,aj,ak;
+  atom_id av,ai,aj,ak;
   ivec    di;
   int     svi,sji,ski;
   
+  av = ia[1];
   ai = ia[2];
   aj = ia[3];
   ak = ia[4];
@@ -794,7 +815,7 @@ static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
   ski = pbc_rvec_sub(pbc,x[ak],x[ai],xik);
   /* 6 Flops */
   
-  copy_rvec(f[ia[1]],fv);
+  copy_rvec(f[av],fv);
 
   cfx = c*fv[XX];
   cfy = c*fv[YY];
@@ -824,6 +845,8 @@ static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
     sji = IVEC2IS(di);
     ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,ai),di);
     ski = IVEC2IS(di);
+  } else if (pbc) {
+    svi = pbc_rvec_sub(pbc,x[av],x[ai],xvi);
   } else {
     svi = CENTRAL;
   }
@@ -845,11 +868,12 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
 			     t_pbc *pbc,t_graph *g)
 {
   real    d,invl,fproj,a1;
-  rvec    xij,xjk,xjl,xix,fv,temp;
-  atom_id ai,aj,ak,al;
+  rvec    xvi,xij,xjk,xjl,xix,fv,temp;
+  atom_id av,ai,aj,ak,al;
   ivec    di;
   int     svi,sji,skj,slj,m;
 
+  av = ia[1];
   ai = ia[2];
   aj = ia[3];
   ak = ia[4];
@@ -869,7 +893,7 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
   d=c*invl;
   /* 4 + ?10? flops */
 
-  copy_rvec(f[ia[1]],fv);
+  copy_rvec(f[av],fv);
 
   fproj=iprod(xix,fv)*invl*invl; /* = (xix . f)/(xix . xix) */
 
@@ -898,6 +922,8 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
     skj = IVEC2IS(di);
     ivec_sub(SHIFT_IVEC(g,al),SHIFT_IVEC(g,aj),di);
     slj = IVEC2IS(di);
+  } else if (pbc) {
+    svi = pbc_rvec_sub(pbc,x[av],x[ai],xvi);
   } else {
     svi = CENTRAL;
   }
@@ -916,10 +942,11 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
   /* TOTAL: 77 flops */
 }
 
-void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
+void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
+		    rvec x[],rvec f[],rvec *fshift,
 		    t_nrnb *nrnb,t_idef *idef,
 		    int ePBC,bool bMolPBC,t_graph *g,matrix box,
-		    t_comm_vsites *vsitecomm,t_commrec *cr)
+		    t_commrec *cr)
 {
   real      a1,b1,c1;
   int       i,m,nra,nrd,tp,ftype;
@@ -929,8 +956,7 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
   t_pbc     pbc,*pbc_null;
 
   /* We only need to do pbc when we have inter-cg vsites */
-  if ((DOMAINDECOMP(cr) || bMolPBC) &&
-      !(DOMAINDECOMP(cr) && cr->dd->vsite_comm==NULL)) {
+  if ((DOMAINDECOMP(cr) || bMolPBC) && vsite->n_intercg_vsite) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
@@ -942,9 +968,9 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
   if (DOMAINDECOMP(cr)) {
     for(i=cr->dd->nat_tot; i<cr->dd->nat_tot_vsite; i++)
       clear_rvec(f[i]);
-  } else if (vsitecomm) {
+  } else if (vsite->bPDvsitecomm) {
   /* We only move forces here, and they are independent of shifts */
-    move_vsite_f(vsitecomm,f,cr);
+    move_vsite_f(vsite->vsitecomm,f,cr);
   }
 
   ip     = idef->iparams;
@@ -1026,9 +1052,136 @@ void spread_vsite_f(FILE *log,rvec x[],rvec f[],rvec *fshift,
 
   if (DOMAINDECOMP(cr)) {
     dd_move_f_vsites(cr->dd,f,fshift);
-  } else if (vsitecomm) {
+  } else if (vsite->bPDvsitecomm) {
     /* We only move forces here, and they are independent of shifts */
-    move_construct_f(vsitecomm,f,cr);
+    move_construct_f(vsite->vsitecomm,f,cr);
   }
 }
 
+static int count_intercg_vsite(t_idef *idef,int *a2cg)
+{
+  int  ftype,nral,i,cg,a;
+  t_ilist *il;
+  t_iatom *ia;
+  int  n_intercg_vsite;
+
+  n_intercg_vsite = 0;
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
+      nral = NRAL(ftype);
+      il = &idef->il[ftype];
+      ia  = il->iatoms;
+      for(i=0; i<il->nr; i+=1+nral) {
+	cg = a2cg[ia[1+i]];
+	for(a=1; a<nral; a++) {
+	  if (a2cg[ia[1+a]] != cg) {
+	    n_intercg_vsite++;
+	    break;
+	  }
+	}
+      }
+    }
+  }
+
+  return n_intercg_vsite;
+}
+
+static int *get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
+			  t_block *cgs,int *a2cg)
+{
+  int  ftype,nral,i,vsite,cg_v,cg_c,a;
+  t_ilist *il;
+  t_iatom *ia;
+  int  *vsite_pbc;
+
+  snew(vsite_pbc,cgs->index[cgs->nr]);
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
+      nral = NRAL(ftype);
+      il = &idef->il[ftype];
+      ia  = il->iatoms;
+      for(i=0; i<il->nr; i+=1+nral) {
+	vsite = ia[1+i];
+	cg_v = a2cg[vsite];
+	cg_c = a2cg[ia[1+i+1]];
+	vsite_pbc[vsite] = -1;
+	if (cg_v != cg_c && cgs->index[cg_v+1] > cgs->index[cg_v]+1) {
+	  /* This vsite has a different charge group index
+	   * than it's first constructing atom
+	   * and the charge group has more than one atom,
+	   * store the first non-vsite atom of the vsite cg
+	   */
+	  for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
+	    if (atom[a].ptype != eptVSite) {
+	      vsite_pbc[vsite] = a;
+	      break;
+	    }
+	  }
+	  if (gmx_debug_at)
+	    fprintf(debug,"vsite atom %d  cg %d - %d pbc atom %d\n",
+		    vsite+1,cgs->index[cg_v]+1,cgs->index[cg_v+1],
+		    vsite_pbc[vsite]+1);
+
+	  if (vsite_pbc[vsite] == -1)
+	    gmx_fatal(FARGS,"Virtual site atom %d is part of a charge group of only virtual sites, but its first constructing atom (%d) is part of a different charge group, this combination is not allowed",ia[1+i]+1,ia[1+i+1]+1);
+	}
+      }
+    }
+  }
+  
+  return vsite_pbc;
+}
+
+static int *atom2cg(t_block *cgs)
+{
+  int *a2cg,cg,i;
+  
+  snew(a2cg,cgs->index[cgs->nr]);
+  for(cg=0; cg<cgs->nr; cg++) {
+    for(i=cgs->index[cg]; i<cgs->index[cg+1]; i++)
+      a2cg[i] = cg;
+  }
+  
+  return a2cg;
+}
+
+gmx_vsite_t *init_vsite(t_commrec *cr,t_topology *top)
+{
+  int nvsite,i;
+  int *a2cg,cg;
+  gmx_vsite_t *vsite;
+  
+  /* check if there are vsites */
+  nvsite = 0;
+  for(i=0; i<F_NRE; i++) {
+    if (interaction_function[i].flags & IF_VSITE)
+      nvsite += top->idef.il[i].nr;
+  }
+  if (PAR(cr) && !DOMAINDECOMP(cr))
+    gmx_sumi(1,&nvsite,cr);
+
+  if (nvsite == 0)
+    return NULL;
+
+  snew(vsite,1);
+  vsite->n_vsite = nvsite;
+
+  /* Make an atom to charge group index */
+  a2cg = atom2cg(&top->blocks[ebCGS]);
+
+  vsite->n_intercg_vsite = count_intercg_vsite(&top->idef,a2cg);
+  if (vsite->n_intercg_vsite) {
+    vsite->vsite_pbc = get_vsite_pbc(vsite->n_vsite,&top->idef,top->atoms.atom,
+				     &top->blocks[ebCGS],a2cg);
+
+    if (PARTDECOMP(cr)) {
+      snew(vsite->vsitecomm,1);
+      vsite->bPDvsitecomm =
+	setup_parallel_vsites(&(top->idef),cr,vsite->vsitecomm);
+    }
+  }
+
+  sfree(a2cg);
+  
+  return vsite;
+}

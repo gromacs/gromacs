@@ -56,8 +56,13 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
   int i,j;
   
   for(i=0; (i<ngtc); i++) {
-    tcstat[i].T=0;
+    tcstat[i].T = 0;
     clear_mat(tcstat[i].ekin);
+    /* Set the conserved quantity for Nose-Hoover to zero.
+     * This means there will be jumps in this quantity when
+     * continuing a simulation.
+     */
+    tcstat[i].integral_xi = 0;
   }
 }
 
@@ -195,25 +200,25 @@ void update_grps(int start,int homenr,t_groups *grps,
 }
 
 real sum_ekin(bool bFirstStep,
-	      t_grpopts *opts,t_groups *grps,tensor ekin,
-	      real *dekindlambda)
+	      t_grpopts *opts,t_groups *grps,
+	      tensor ekin,real *dekindlambda)
 {
   int          i,j,m,ngtc;
   real         T,ek;
   t_grp_tcstat *tcstat;
   real         nrdf,nd,*ndf;
   
-  ngtc=opts->ngtc;
-  tcstat=grps->tcstat;
-  ndf=opts->nrdf;
+  ngtc = opts->ngtc;
+  ndf  = opts->nrdf;
   
   clear_mat(ekin);
   
-  T=0; 
-  nrdf=0;
+  T = 0; 
+  nrdf = 0;
 
   for(i=0; (i<ngtc); i++) {
-    nd=ndf[i];
+    tcstat = &grps->tcstat[i];
+    nd = ndf[i];
     /* Sometimes a group does not have degrees of freedom, e.g.
      * when it consists of shells and virtual sites, then we just
      * set the temperatue to 0 and also neglect the kinetic
@@ -224,30 +229,30 @@ real sum_ekin(bool bFirstStep,
 	/* This Ekin is only used for reporting the initial temperature
 	 * or when doing mdrun -rerun.
 	 */
-	copy_mat(tcstat[i].ekinh,tcstat[i].ekin);
+	copy_mat(tcstat->ekinh,tcstat->ekin);
       } else {
 	/* Calculate the full step Ekin as the average of the half steps */
 	for(j=0; (j<DIM); j++)
 	  for(m=0; (m<DIM); m++)
-	    tcstat[i].ekin[j][m] =
-	      0.5*(tcstat[i].ekinh[j][m] + tcstat[i].ekinh_old[j][m]);
+	    tcstat->ekin[j][m] =
+	      0.5*(tcstat->ekinh[j][m] + tcstat->ekinh_old[j][m]);
       }
-      m_add(tcstat[i].ekin,ekin,ekin);
-      ek=0;
+      m_add(tcstat->ekin,ekin,ekin);
+      ek = 0;
       for(m=0; (m<DIM); m++)
-	ek+=tcstat[i].ekinh[m][m];
-      tcstat[i].Th=calc_temp(ek,nd);
+	ek += tcstat->ekinh[m][m];
+      tcstat->Th = calc_temp(ek,nd);
       ek = 0;
       for(m=0; (m<DIM); m++) 
-	ek+=tcstat[i].ekin[m][m];
-      tcstat[i].T=calc_temp(ek,nd);
+	ek += tcstat->ekin[m][m];
+      tcstat->T = calc_temp(ek,nd);
     }
     else {
-      tcstat[i].T=0.0;
-      tcstat[i].Th=0.0;
+      tcstat->T  = 0;
+      tcstat->Th = 0;
     }
     
-    T    += nd*tcstat[i].T;
+    T    += nd*tcstat->T;
     nrdf += nd;
   }
   if (nrdf > 0)
@@ -255,7 +260,7 @@ real sum_ekin(bool bFirstStep,
 
   if (dekindlambda)
     *dekindlambda = 0.5*(grps->dekindl + grps->dekindl_old);
-  
+
   return T;
 }
 

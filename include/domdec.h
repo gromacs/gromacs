@@ -6,6 +6,7 @@
 #define _domdec_h
 
 #include "typedefs.h"
+#include "vsite.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -23,6 +24,7 @@ extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 
 extern void dd_make_reverse_top(FILE *fplog,
 				gmx_domdec_t *dd,t_topology *top,
+				gmx_vsite_t *vsite,
 				bool bDynamics,int eeltype);
 
 extern int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z);
@@ -121,6 +123,7 @@ extern void dd_partition_system(FILE         *fplog,
 				t_mdatoms    *mdatoms,
 				t_topology   *top_local,
 				t_forcerec   *fr,
+				gmx_vsite_t  *vsite,
 				gmx_constr_t constr,
 				t_nrnb       *nrnb,
 				gmx_wallcycle_t wcycle,
@@ -146,9 +149,9 @@ extern void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
 
 extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 
-extern void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
+extern int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
 
-extern void dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
+extern int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
 				    int natoms,t_idef *idef,t_block *cgs,
@@ -165,7 +168,8 @@ extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
-			      t_forcerec *fr,t_topology *top,t_topology *ltop);
+			      t_forcerec *fr,gmx_vsite_t *vsite,
+			      t_topology *top,t_topology *ltop);
 
 extern t_topology *dd_init_local_top(t_topology *top_global);
 

@@ -266,7 +266,7 @@ static void finish_em(FILE *log,t_commrec *cr,
 static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec, 
 			    t_topology *top,t_groups *grps,
 			    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-			    bool bVsites,t_comm_vsites *vsitecomm,
+			    gmx_vsite_t *vsite,
 			    t_fcdata *fcd,t_commrec *cr,
 			    t_graph *graph,t_mdatoms *mdatoms,
 			    t_forcerec *fr, real lambda,
@@ -279,9 +279,9 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
 
   bNS = (inputrec->nstlist > 0);
 
-  if (bVsites)
-    construct_vsites(log,x,nrnb,1,NULL,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,cr,box,vsitecomm);
+  if (vsite)
+    construct_vsites(log,vsite,x,nrnb,1,NULL,&top->idef,
+		     fr->ePBC,fr->bMolPBC,graph,cr,box);
       
   /* Calc force & energy on new trial position  */
   /* do_force always puts the charge groups in the box and shifts again
@@ -293,13 +293,13 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
      
   /* Spread the force on vsite particle to the other particles... */
-  if(bVsites) 
-    spread_vsite_f(log,x,f,fr->fshift,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,box,vsitecomm,cr); 
+  if (vsite) 
+    spread_vsite_f(log,vsite,x,f,fr->fshift,nrnb,&top->idef,
+		   fr->ePBC,fr->bMolPBC,graph,box,cr); 
       
-  if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,x,fr->f_el_recip,NULL,&nrnb[cr->nodeid],&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,box,vsitecomm,cr);
+  if (vsite && fr->bEwald) 
+    spread_vsite_f(log,vsite,x,fr->f_el_recip,NULL,&nrnb[cr->nodeid],
+		   &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
   
   sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
@@ -325,7 +325,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	     t_inputrec *inputrec,t_topology *top,t_groups *grps,
 	     t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 	     real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	     bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
+	     bool bVerbose,gmx_vsite_t *vsite,
 	     t_commrec *cr,t_graph *graph,
 	     t_forcerec *fr)
 {
@@ -390,9 +390,9 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     sp_header(stderr,CG,inputrec->em_tol,number_steps);
   sp_header(log,CG,inputrec->em_tol,number_steps);
 
-  if (bVsites)
-    construct_vsites(log,state->x,nrnb,1,NULL,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,cr,state->box,vsitecomm);
+  if (vsite)
+    construct_vsites(log,vsite,state->x,nrnb,1,NULL,&top->idef,
+		     fr->ePBC,fr->bMolPBC,graph,cr,state->box);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
@@ -405,13 +405,13 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   where();
 
   /* Spread the force on vsite particle to the other particles... */
-  if (bVsites)
-    spread_vsite_f(log,state->x,f,fr->fshift,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+  if (vsite)
+    spread_vsite_f(log,vsite,state->x,f,fr->fshift,nrnb,&top->idef,
+		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
 
-  if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+  if (vsite && fr->bEwald) 
+    spread_vsite_f(log,vsite,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
+		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
   
   sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
@@ -580,7 +580,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     neval++;
     /* Calculate energy for the trial step */
     EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
-			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
+			    vsite,fcd,cr,graph,mdatoms,fr,lambda,
 			    mu_tot,state->box,xc,fc,buf,ener,step);
     
     /* Calc derivative along line */
@@ -659,7 +659,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 	neval++;
 	/* Calculate energy for the trial step */
 	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
-				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
+				vsite,fcd,cr,graph,mdatoms,fr,lambda,
 				mu_tot,state->box,xb,fb,buf,ener,step);
 	
 	gpb=0;
@@ -902,7 +902,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		t_groups *grps,t_state *state,
 		rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
+		bool bVerbose,gmx_vsite_t *vsite,
 		t_commrec *cr,t_graph *graph,
 		t_forcerec *fr)
 {
@@ -1005,9 +1005,9 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     sp_header(stderr,LBFGS,inputrec->em_tol,number_steps);
   sp_header(log,LBFGS,inputrec->em_tol,number_steps);
   
-  if (bVsites)
-    construct_vsites(log,state->x,nrnb,1,NULL,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,cr,state->box,vsitecomm);
+  if (vsite)
+    construct_vsites(log,vsite,state->x,nrnb,1,NULL,&top->idef,
+		     fr->ePBC,fr->bMolPBC,graph,cr,state->box);
   
   /* Call the force routine and some auxiliary (neighboursearching etc.) */
   /* do_force always puts the charge groups in the box and shifts again
@@ -1021,13 +1021,13 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   where();
   
   /* Spread the force on vsite particle to the other particles... */
-  if (bVsites)
-    spread_vsite_f(log,state->x,f,fr->fshift,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+  if (vsite)
+    spread_vsite_f(log,vsite,state->x,f,fr->fshift,nrnb,&top->idef,
+		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
 
-  if (bVsites && fr->bEwald) 
-    spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+  if (vsite && fr->bEwald) 
+    spread_vsite_f(log,vsite,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
+		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
   
   sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
@@ -1198,7 +1198,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     neval++;
     /* Calculate energy for the trial step */
     EpotC = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
-			    bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
+			    vsite,fcd,cr,graph,mdatoms,fr,lambda,
 			    mu_tot,state->box,(rvec *)xc,(rvec *)fc,buf,ener,step);
     
     /* Calc derivative along line */
@@ -1271,7 +1271,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 	neval++;
 	/* Calculate energy for the trial step */
 	EpotB = evaluate_energy(log,bVerbose,inputrec,top,grps,nrnb,wcycle,
-				bVsites,vsitecomm,fcd,cr,graph,mdatoms,fr,lambda,
+				vsite,fcd,cr,graph,mdatoms,fr,lambda,
 				mu_tot,state->box,(rvec *)xb,(rvec *)fb,buf,ener,step);
 	
 	for(gpb=0,i=0; i<n; i++) 
@@ -1540,7 +1540,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		t_groups *grps,
 		t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms, 
 		real ener[],t_fcdata *fcd,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		bool bVerbose,bool bVsites, t_comm_vsites *vsitecomm,
+		bool bVerbose,gmx_vsite_t *vsite,
 		t_commrec *cr,t_graph *graph,
 		t_forcerec *fr) 
 { 
@@ -1652,9 +1652,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		0,NULL,NULL,nrnb,TRUE);
     }
     
-    if (bVsites)
-      construct_vsites(log,pos[TRY],nrnb,1,NULL,&top->idef,
-		       fr->ePBC,fr->bMolPBC,graph,cr,state->box,vsitecomm);
+    if (vsite)
+      construct_vsites(log,vsite,pos[TRY],nrnb,1,NULL,&top->idef,
+		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
     
     /* Calc force & energy on new positions
      * do_force always puts the charge groups in the box and shifts again
@@ -1669,13 +1669,13 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	     FALSE,0.0,NULL,NULL); 
     
     /* Spread the force on vsite particle to the other particles... */
-    if (bVsites) 
-      spread_vsite_f(log,pos[TRY],force[TRY],fr->fshift,nrnb,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+    if (vsite) 
+      spread_vsite_f(log,vsite,pos[TRY],force[TRY],fr->fshift,nrnb,&top->idef,
+		     fr->ePBC,fr->bMolPBC,graph,state->box,cr);
 
-    if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+    if (vsite && fr->bEwald) 
+      spread_vsite_f(log,vsite,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
+		     fr->ePBC,fr->bMolPBC,graph,state->box,cr);
     
     sum_lrforces(force[TRY],fr,mdatoms->start,mdatoms->homenr);
 
@@ -1837,6 +1837,7 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
              t_state *state,rvec f[],
              rvec buf[],t_mdatoms *mdatoms,
              t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+	     gmx_vsite_t *vsite,
              t_graph *graph,t_edsamyn *edyn,
              t_forcerec *fr)
 {
@@ -2057,15 +2058,12 @@ time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
                    FALSE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
     }
     
-    /* Construct vsite particles, for last output frame */
-    /* NB: I have not included the communication for parallel
-     * vsites here, since the rest of nm doesn't seem to
-     * be parallelized. Be sure to copy the correct code from
-     * e.g. md.c or steep.c if you make nm parallel!
-     */
-    construct_vsites(log,state->x,nrnb,inputrec->delta_t,state->v,&top->idef,
-                     fr->ePBC,fr->bMolPBC,graph,cr,state->box,NULL);
-    
+    if (vsite) {
+      /* Construct vsite particles, for last output frame */
+      construct_vsites(log,vsite,state->x,nrnb,inputrec->delta_t,state->v,
+		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+    }
+      
     fprintf(stderr,"\n\nWriting Hessian...\n");
     gmx_mtxio_write(ftp2fn(efMTX,nfile,fnm),sz,sz,full_matrix,sparse_matrix);
     

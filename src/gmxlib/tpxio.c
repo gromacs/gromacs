@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 45;
+static const int tpx_version = 46;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 45;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 11;
+static const int tpx_generation = 12;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -137,6 +137,7 @@ static const t_ftupd ftupd[] = {
   { 32, F_BHAM_LR           },
   { 32, F_RF_EXCL           },
   { 32, F_COUL_RECIP        },
+  { 46, F_DPD               },
   { 30, F_POLARIZATION      },
   { 36, F_THOLE_POL         },
   { 22, F_DISRESVIOL        },
@@ -144,7 +145,9 @@ static const t_ftupd ftupd[] = {
   { 22, F_ORIRESDEV         },
   { 26, F_DIHRES            },
   { 26, F_DIHRESVIOL        },
-  { 20, F_EQM               }
+  { 46, F_PULL_UMB          },
+  { 20, F_EQM               },
+  { 46, F_ECONSERVED        }
 };
 #define NFTUPD asize(ftupd)
 

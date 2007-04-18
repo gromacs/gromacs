@@ -155,8 +155,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   real       ewaldcoeff=0;
   gmx_pme_t  *pmedata=NULL;
   time_t     start_t=0;
-  bool       bVsites=FALSE,bParVsites=FALSE;
-  t_comm_vsites vsitecomm;
+  gmx_vsite_t *vsite;
   int        i,m,nChargePerturbed=0,status,nalloc;
   char       *gro;
   gmx_wallcycle_t wcycle;
@@ -179,7 +178,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
   snew(inputrec,1);
   snew(nrnb,1);
-  bParVsites = FALSE;
   if (cr->duty & DUTY_PP) {
     /* Initiate everything (snew sets to zero!) */
     snew(ener,F_NRE);
@@ -201,8 +199,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       
       if (!DOMAINDECOMP(cr)) {
 	split_system(stdlog,inputrec,state,cr,top);
-
-	bParVsites = setup_parallel_vsites(&(top->idef),cr,&vsitecomm);
       }
     }
     else {
@@ -258,12 +254,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     init_dihres(stdlog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
 		top->idef.iparams,inputrec,fcd);
     
-    /* check if there are vsites */
-    bVsites=FALSE;
-    for(i=0; (i<F_NRE) && !bVsites; i++)
-      bVsites = ((interaction_function[i].flags & IF_VSITE) && 
-		 (top->idef.il[i].nr > 0));
-    
     /* Initiate forcerecord */
     fr = mk_forcerec();
     init_forcerec(stdlog,fr,fcd,inputrec,top,cr,state->box,FALSE,
@@ -299,6 +289,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     
     send_inputrec(cr,inputrec,mdatoms->nChargePerturbed);
   }
+
+  /* Initialize the virtual site communication */
+  vsite = init_vsite(cr,top);
 
   /* Initiate PME if necessary */
   /* either on all nodes (if epmePMEANDPP is TRUE) 
@@ -339,7 +332,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,
 		    ddxyz,loadx,loady,loadz,
-		    bVsites,bParVsites ? &vsitecomm : NULL,
+		    vsite,
 		    nstepout,inputrec,grps,top,ener,fcd,state,f,buf,
 		    mdatoms,nrnb,wcycle,graph,edyn,fr,
 		    repl_ex_nst,repl_ex_seed,
@@ -348,29 +341,26 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     case eiCG:
       start_t=do_cg(stdlog,nfile,fnm,inputrec,top,grps,
 		    state,f,buf,mdatoms,ener,fcd,
-		    nrnb,wcycle,bVerbose,bVsites,
-		    bParVsites ? &vsitecomm : NULL,
+		    nrnb,wcycle,bVerbose,vsite,
 		    cr,graph,fr);
       break;
     case eiLBFGS:
       start_t=do_lbfgs(stdlog,nfile,fnm,inputrec,top,grps,
 		       state,f,buf,mdatoms,ener,fcd,
-		       nrnb,wcycle,bVerbose,bVsites,
-		       bParVsites ? &vsitecomm : NULL,
+		       nrnb,wcycle,bVerbose,vsite,
 		       cr,graph,fr);
       break;
     case eiSteep:
       start_t=do_steep(stdlog,nfile,fnm,inputrec,top,grps,
 		       state,f,buf,mdatoms,ener,fcd,
-		       nrnb,wcycle,bVerbose,bVsites,
-		       bParVsites ? &vsitecomm : NULL,
+		       nrnb,wcycle,bVerbose,vsite,
 		       cr,graph,fr);
     break;
     case eiNM:
       start_t=do_nm(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,nstepout,inputrec,grps,
 		    top,ener,fcd,state,f,buf,
-		    mdatoms,nrnb,wcycle,graph,edyn,fr);
+		    mdatoms,nrnb,wcycle,vsite,graph,edyn,fr);
       break;
     case eiTPI:
     case eiTPIC:
@@ -412,7 +402,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     ivec ddxyz,char *loadx,char *loady,char *loadz,
-	     bool bVsites, t_comm_vsites *vsitecomm,
+	     gmx_vsite_t *vsite,
 	     int stepout,t_inputrec *inputrec,t_groups *grps,
 	     t_topology *top_global,
 	     real ener[],t_fcdata *fcd,
@@ -504,7 +494,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     set_dd_parameters(stdlog,cr->dd,top_global,inputrec,fr);
 
-    dd_make_reverse_top(stdlog,cr->dd,top_global,
+    dd_make_reverse_top(stdlog,cr->dd,top_global,vsite,
 			EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
 
     top = dd_init_local_top(top_global);
@@ -519,14 +509,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     setup_dd_grid(stdlog,cr->dd);
 
-    if (DDMASTER(cr->dd) && bVsites)
-      construct_vsites(log,
+    if (DDMASTER(cr->dd) && vsite)
+      construct_vsites(log,vsite,
 		       state_global->x,nrnb,inputrec->delta_t,NULL,
-		       &top_global->idef,fr->ePBC,TRUE,NULL,
-		       NULL,state_global->box,NULL);
+		       &top_global->idef,inputrec->ePBC,TRUE,NULL,
+		       NULL,state_global->box);
 
     dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
-			state,&f,&buf,mdatoms,top,fr,constr,nrnb,wcycle,FALSE);
+			state,&f,&buf,mdatoms,top,fr,vsite,constr,
+			nrnb,wcycle,FALSE);
   } else {
     top = top_global;
     state = state_global;
@@ -755,7 +746,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       copy_mat(boxcopy,state->box);
     }
 
-    if (bVsites) {
+    if (vsite) {
       if (graph) {
 	/* Following is necessary because the graph may get out of sync
 	 * with the coordinates if we only have every N'th coordinate set
@@ -764,8 +755,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  mk_mshift(log,graph,fr->ePBC,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
-      construct_vsites(log,state->x,nrnb,inputrec->delta_t,state->v,&top->idef,
-		       fr->ePBC,fr->bMolPBC,graph,cr,state->box,vsitecomm);
+      construct_vsites(log,vsite,state->x,nrnb,inputrec->delta_t,state->v,
+		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
@@ -787,7 +778,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	wallcycle_start(wcycle,ewcDOMDEC);
 	dd_partition_system(stdlog,step,cr,bMasterState,
 			    state_global,top_global,inputrec,
-			    state,&f,&buf,mdatoms,top,fr,constr,
+			    state,&f,&buf,mdatoms,top,fr,vsite,constr,
 			    nrnb,wcycle,do_verbose);
 	wallcycle_stop(wcycle,ewcDOMDEC);
       }
@@ -827,7 +818,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 			 state,f,buf,mdatoms,
 			 nrnb,wcycle,graph,grps,
 			 nshell,shells,fr,t,mu_tot,
-			 state->natoms,&bConverged,bVsites,vsitecomm,
+			 state->natoms,&bConverged,vsite,
 			 fp_field);
       tcount+=count;
       
@@ -865,9 +856,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * the update.
      * for RerunMD t is read from input trajectory
      */
-    if (bVsites) 
-      spread_vsite_f(log,state->x,f,fr->fshift,nrnb,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+    if (vsite) 
+      spread_vsite_f(log,vsite,state->x,f,fr->fshift,nrnb,
+		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
 
     GMX_MPE_LOG(ev_virial_start);
     /* Calculation of the virial must be done after vsites!    */
@@ -880,9 +871,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
      */
-    if (bVsites && fr->bEwald) 
-      spread_vsite_f(log,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,state->box,vsitecomm,cr);
+    if (vsite && fr->bEwald) 
+      spread_vsite_f(log,vsite,state->x,fr->f_el_recip,NULL,nrnb,
+		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
 
     GMX_MPE_LOG(ev_sum_lrforces_start);
     sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
@@ -1062,9 +1053,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
 
     /* Sum the kinetic energies of the groups & calc temp */
-    ener[F_TEMP]=sum_ekin(bRerunMD,&(inputrec->opts),grps,ekin,
-			  &(ener[F_DVDLKIN]));
-    ener[F_EKIN]=trace(ekin);
+    ener[F_TEMP] = sum_ekin(bRerunMD,&(inputrec->opts),grps,ekin,
+			    &(ener[F_DVDLKIN]));
+    ener[F_EKIN] = trace(ekin);
 
     /* Calculate Temperature coupling parameters lambda and adjust
      * target temp when doing simulated annealing
@@ -1091,8 +1082,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  lastbox,state->lambda,
 		  pres,total_vir,ener);
 
-    ener[F_ETOT]=ener[F_EPOT]+ener[F_EKIN];
-    
+    ener[F_ETOT] = ener[F_EPOT] + ener[F_EKIN];
+
+    if (inputrec->etc == etcNOSEHOOVER)
+      ener[F_ECONSERVED] =
+	ener[F_ETOT] + nosehoover_energy(&(inputrec->opts),grps,
+					 state->nosehoover_xi);
+
     /* Check for excessively large energies */
     if (bIonize) {
 #ifdef GMX_DOUBLE
@@ -1177,7 +1173,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (DOMAINDECOMP(cr))
 	dd_partition_system(stdlog,step,cr,TRUE,
 			    state_global,top_global,inputrec,
-			    state,&f,&buf,mdatoms,top,fr,constr,
+			    state,&f,&buf,mdatoms,top,fr,vsite,constr,
 			    nrnb,wcycle,FALSE);
       else
 	pd_distribute_state(cr,state);

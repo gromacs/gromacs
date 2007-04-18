@@ -118,43 +118,6 @@ static int count_excls(t_block *cgs,t_block *excls,int *n_intercg_excl)
   return n;
 }
 
-static int count_intercg_vsite(t_block *cgs,t_atom *atom,gmx_reverse_top_t *rt)
-{
-  int  cg,a,a0,a1,i,j,ftype,nral;
-  int  *index,*rtil;
-  t_iatom *iatoms;
-  int  n_intercg_vsite,n;
-
-  index = rt->index;
-  rtil  = rt->il;
-  
-  n_intercg_vsite = 0;
-  for(cg=0; cg<cgs->nr; cg++) {
-    a0 = cgs->index[cg];
-    a1 = cgs->index[cg+1];
-    for(a=a0; a<a1; a++) {
-      i = index[a];
-      while (i < index[a+1]) {
-	ftype  = rtil[i++];
-	iatoms = rtil + i;
-	nral = NRAL(ftype);
-	if (interaction_function[ftype].flags & IF_VSITE) {
-	  n   = 0;
-	  for(j=2; j<1+nral; j++) {
-	    if (iatoms[j] < a0 || iatoms[j] >= a1)
-	      n++;
-	  }
-	  if (n)
-	    n_intercg_vsite++;
-	}
-	i += 1 + nral;
-      }
-    }
-  }
-
-  return n_intercg_vsite;
-}
-
 static int low_make_reverse_top(t_idef *idef,t_atom *atom,
 				int *count,gmx_reverse_top_t *rt,
 				bool bAssign)
@@ -244,6 +207,7 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
 
 void dd_make_reverse_top(FILE *fplog,
 			 gmx_domdec_t *dd,t_topology *top,
+			 gmx_vsite_t *vsite,
 			 bool bDynamics,int eeltype)
 {
   int natoms,n_recursive_vsite,nexcl,a;
@@ -255,8 +219,10 @@ void dd_make_reverse_top(FILE *fplog,
   dd->reverse_top = make_reverse_top(natoms,&top->idef,top->atoms.atom,
 				     &dd->nbonded_global);
 
-  dd->reverse_top->n_intercg_vsite =
-    count_intercg_vsite(&top->blocks[ebCGS],top->atoms.atom,dd->reverse_top);
+  if (vsite)
+    dd->reverse_top->n_intercg_vsite = vsite->n_intercg_vsite;
+  else
+    dd->reverse_top->n_intercg_vsite = 0;
   
   nexcl = count_excls(&top->blocks[ebCGS],&top->blocks[ebEXCLS],
 		      &dd->n_intercg_excl);
@@ -421,9 +387,54 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
   }
 
   if (dd->reverse_top->n_intercg_vsite)
-    dd_make_local_vsites(dd,idef->il);
+    dd->nat_tot_vsite = dd_make_local_vsites(dd,idef->il);
+  else
+    dd->nat_tot_vsite = dd->nat_tot;
 
   return nbonded_local;
+}
+
+static void make_local_vsite_pbc(gmx_domdec_t *dd,t_idef *idef,
+				 gmx_vsite_t *vsite)
+{
+  int ftype,nral,i,vs,ga,ga_pbc;
+  int *vsite_pbc_global,*vsite_pbc_local;
+  t_ilist *il;
+  t_iatom *ia;
+
+  if (dd->nat_tot_vsite > vsite->vsite_pbc_dd_nalloc) {
+    vsite->vsite_pbc_dd_nalloc = over_alloc(dd->nat_tot_vsite);
+    srenew(vsite->vsite_pbc_dd,vsite->vsite_pbc_dd_nalloc);
+  }
+
+  vsite_pbc_global = vsite->vsite_pbc;
+  vsite_pbc_local  = vsite->vsite_pbc_dd;
+
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
+      nral = NRAL(ftype);
+      il = &idef->il[ftype];
+      ia = il->iatoms;
+      for(i=0; i<il->nr; i+=1+nral) {
+	vs = ia[1+i];
+	if (vs < dd->nat_tot) {
+	  ga     = dd->gatindex[vs];
+	  ga_pbc = vsite_pbc_global[ga];
+	  if (ga_pbc >= 0) {
+	    /* Since the order of atoms does not change within a charge group,
+	     * we do not need to access the global to local index.
+	     */
+	    vsite_pbc_local[vs] = vs + ga_pbc - ga;
+	  } else {
+	    vsite_pbc_local[vs] = -1;
+	  }
+	} else {
+	  /* This is a non-home vsite, its pbc does not matter */
+	  vsite_pbc_local[vs] = -1;
+	}
+      }
+    }
+  }
 }
 
 static int make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
@@ -599,7 +610,8 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 }
 
 void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
-		       t_forcerec *fr,t_topology *top,t_topology *ltop)
+		       t_forcerec *fr,gmx_vsite_t *vsite,
+		       t_topology *top,t_topology *ltop)
 {
   int nexcl;
 
@@ -616,6 +628,9 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 #else
   dd->nbonded_local = make_local_bondeds(dd,&ltop->idef);
 #endif
+
+  if (vsite && vsite->vsite_pbc)
+    make_local_vsite_pbc(dd,&ltop->idef,vsite);
 
   nexcl = make_local_exclusions(dd,fr,&top->blocks[ebEXCLS],
 				&ltop->blocks[ebEXCLS]);

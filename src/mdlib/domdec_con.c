@@ -475,13 +475,14 @@ static void walk_out(int con,int a,int nrec,const t_iatom *ia,
   }
 }
 
-void dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
+int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 {
   t_block at2con;
   gmx_ga2la_t *ga2la;
   t_iatom *iap;
   int nhome,a,ag,bg,i,con;
   gmx_domdec_constraints_t *dc;
+  int nat_tot_con;
 
   dc = dd->constraints;
 
@@ -529,20 +530,26 @@ void dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 	    nhome,dc->ncon-nhome,
 	    dd->constraint_comm ? dd->constraint_comm->nind_req : 0);
 
-  if (dd->constraint_comm)
-    dd->nat_tot_con =
+  if (dd->constraint_comm) {
+    nat_tot_con =
       setup_specat_communication(dd,dd->constraint_comm,dd->constraints->ga2la,
 				 dd->nat_tot_vsite,2,"constraint",
 				 " or lincs-order");
+  } else {
+    nat_tot_con = dd->nat_tot_vsite;
+  }
+
+  return nat_tot_con;
 }
 
-void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
+int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
 {
   gmx_domdec_specat_comm_t *spac;
   int  *ga2la_specat;
   int  ftype,nral,i,j,gat,a;
   t_ilist *lilf;
   t_iatom *iatoms;
+  int  nat_tot_vsite;
 
   spac         = dd->vsite_comm;
   ga2la_specat = dd->ga2la_vsite;
@@ -577,9 +584,8 @@ void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
     }
   }
 
-  dd->nat_tot_vsite =
-    setup_specat_communication(dd,dd->vsite_comm,ga2la_specat,
-			       dd->nat_tot,1,"vsite","");
+  nat_tot_vsite = setup_specat_communication(dd,dd->vsite_comm,ga2la_specat,
+					     dd->nat_tot,1,"vsite","");
 
   /* Fill in the missing indices */
   for(ftype=0; ftype<F_NRE; ftype++) {
@@ -595,6 +601,8 @@ void dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
       }
     }
   }
+
+  return nat_tot_vsite;
 }
 
 void init_domdec_constraints(gmx_domdec_t *dd,

@@ -88,7 +88,7 @@ extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			t_forcerec *fr,
 			real t,rvec mu_tot,
 			int natoms,bool *bConverged,
-			bool bVsites,t_comm_vsites *vsitecomm,
+			gmx_vsite_t *vsite,
 			FILE *fp_field);
 
 /* GENERAL COUPLING THEORY (GCT) STUFF */

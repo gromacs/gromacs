@@ -120,6 +120,8 @@ int main(int argc,char *argv[])
     "As many input files are required as the number of systems.",
     "The system number is appended to the run input and each output filename,",
     "for instance topol.tpr becomes topol0.tpr, topol1.tpr etc.",
+    "The number of nodes per system is the total number of nodes",
+    "divided by the number of systems.",
     "One use of this option is for NMR refinement: when distance",
     "or orientation restraints are present these can be ensemble averaged",
     "over all the systems.[PAR]",

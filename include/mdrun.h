@@ -70,7 +70,7 @@ extern time_t do_md(FILE *log,t_commrec *cr,
 		    int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,
 		    ivec ddxyz,char *loadx,char *loady,char *loadz,
-		    bool bVsites,t_comm_vsites *vsitecomm,int stepout,
+		    gmx_vsite_t *vsite,int stepout,
 		    t_inputrec *inputrec,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
 		    t_state *state,rvec f[],
@@ -88,7 +88,7 @@ extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       real ener[],t_fcdata *fcd,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
+		       bool bVerbose,gmx_vsite_t *vsite,
 		       t_commrec *cr,
 		       t_graph *graph,t_forcerec *fr);
 /* Do steepest descents EM or something like that! */
@@ -99,7 +99,7 @@ extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
 		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		    real ener[],t_fcdata *fcd,
 		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		    bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
+		    bool bVerbose,gmx_vsite_t *vsite,
 		    t_commrec *cr,
 		    t_graph *graph,t_forcerec *fr);
 /* Do conjugate gradients EM! */
@@ -110,7 +110,7 @@ extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
 		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
 		       real ener[],t_fcdata *fcd,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       bool bVerbose,bool bVsites,t_comm_vsites *vsitecomm,
+		       bool bVerbose,gmx_vsite_t *vsite,
 		       t_commrec *cr,
 		       t_graph *graph,t_forcerec *fr);
 /* Do conjugate gradients EM! */
@@ -123,6 +123,7 @@ extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		    t_state *state,rvec f[],
 		    rvec buf[],t_mdatoms *mdatoms,
 		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+		    gmx_vsite_t *vsite,
 		    t_graph *graph,t_edsamyn *edyn,
 		    t_forcerec *fr);
 /* Do normal mode analysis */

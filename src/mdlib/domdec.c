@@ -3420,6 +3420,7 @@ void dd_partition_system(FILE         *fplog,
 			 t_mdatoms    *mdatoms,
 			 t_topology   *top_local,
 			 t_forcerec   *fr,
+			 gmx_vsite_t  *vsite,
 			 gmx_constr_t constr,
 			 t_nrnb       *nrnb,
 			 gmx_wallcycle_t wcycle,
@@ -3508,11 +3509,12 @@ void dd_partition_system(FILE         *fplog,
   }
 
   /* Extract a local topology from the global topology */
-  dd_make_local_top(fplog,dd,fr,top_global,top_local);
+  dd_make_local_top(fplog,dd,fr,vsite,top_global,top_local);
 
   if (top_global->idef.il[F_CONSTR].nr > 0) {
-    dd_make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
-			      ir->nProjOrder);
+    dd->nat_tot_con =
+      dd_make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
+				ir->nProjOrder);
   } else {
     dd->nat_tot_con = dd->nat_tot_vsite;
   }

@@ -382,7 +382,7 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real xi[])
 {
   real  Qinv;
   int   i;
-  real  reft=0,xit,oldxi;
+  real  reft,oldxi;
 
   for(i=0; (i<opts->ngtc); i++) {
     if ((opts->tau_t[i] > 0) && (opts->ref_t[i] > 0))
@@ -390,10 +390,28 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real xi[])
     else
       Qinv=0.0;
     reft = max(0.0,opts->ref_t[i]);
+    oldxi = xi[i];
     xi[i] += dt*Qinv*(grps->tcstat[i].Th - reft);
+    grps->tcstat[i].integral_xi += dt*(oldxi + xi[i])*0.5;
   }
 }
+
+real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi)
+{
+  int  i,nd;
+  real ener_nh;
   
+  ener_nh = 0;
+  for(i=0; i<opts->ngtc; i++) {
+    nd = opts->nrdf[i];
+    if (nd > 0)
+      ener_nh += (sqr(xi[i]*opts->tau_t[i]/(2*M_PI))*0.5 +
+		  grps->tcstat[i].integral_xi)*nd*BOLTZ*max(opts->ref_t[i],0);
+  }
+
+  return ener_nh;
+}
+ 
 /* set target temperatures if we are annealing */
 void update_annealing_target_temp(t_grpopts *opts,real t)
 {

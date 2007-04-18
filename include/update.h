@@ -113,6 +113,9 @@ extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
 			      real xi[]);
 /* Compute temperature scaling. For Nose-Hoover it is done in update. */
 
+extern real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi);
+/* Returns the Nose-Hoover contribution to the conserved energy */
+
 /* Set reference temp for simulated annealing at time t*/
 extern void update_annealing_target_temp(t_grpopts *opts,real t); 
 
