@@ -118,7 +118,7 @@ static int count_excls(t_block *cgs,t_block *excls,int *n_intercg_excl)
   return n;
 }
 
-static int low_make_reverse_top(t_idef *idef,t_atom *atom,
+static int low_make_reverse_top(t_idef *idef,t_atom *atom,int *vsite_pbc,
 				int *count,gmx_reverse_top_t *rt,
 				bool bAssign)
 {
@@ -151,25 +151,27 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,
 	    rt->il[rt->index[a]+count[a]+1+j] = ia[j];
 	}
 	if (interaction_function[ftype].flags & IF_VSITE) {
-	  /* Since we now that the first atom is the atom
-	   * that this vsite interaction is linked to,
-	   * we can (mis)use it to store which constructing
-	   * atoms are again vsites.
-	   */
 	  if (bAssign) {
-	    rt->il[rt->index[a]+count[a]+2] = 0;
+	    /* Add an entry to iatoms for storing 
+	     * which of the constructing atoms are vsites again.
+	     */
+	    rt->il[rt->index[a]+count[a]+2+nral] = 0;
 	    for(j=2; j<1+nral; j++) {
 	      if (atom[ia[j]].ptype == eptVSite)
-		rt->il[rt->index[a]+count[a]+2] |= (2<<j);
+		rt->il[rt->index[a]+count[a]+2+nral] |= (2<<j);
 	    }
+	    /* Store the vsite pbc atom in a second extra entry */
+	    rt->il[rt->index[a]+count[a]+2+nral+1] =
+	      (vsite_pbc ? vsite_pbc[a] : -1);
 	  }
+	  count[a] += 2 + nral + 2;
 	} else {
 	  /* We do not count vsites since they are always uniquely assigned
 	   * and can be assigned to multiple nodes with recursive vsites.
 	   */
 	  nint++;
+	  count[a] += 2 + nral;
 	}
-	count[a] += 2 + nral;
       }
     }
   }
@@ -178,7 +180,8 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,
 }
 
 static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
-					   t_atom *atom,int *nint)
+					   t_atom *atom,int *vsite_pbc,
+					   int *nint)
 {
   int *count,i;
   gmx_reverse_top_t *rt;
@@ -187,7 +190,7 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
 
   /* Count the interactions */
   snew(count,natoms);
-  low_make_reverse_top(idef,atom,count,rt,FALSE);
+  low_make_reverse_top(idef,atom,vsite_pbc,count,rt,FALSE);
 
   snew(rt->index,natoms+1);
   rt->index[0] = 0;
@@ -198,7 +201,7 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
   snew(rt->il,rt->index[natoms]);
 
   /* Store the interactions */
-  *nint = low_make_reverse_top(idef,atom,count,rt,TRUE);
+  *nint = low_make_reverse_top(idef,atom,vsite_pbc,count,rt,TRUE);
 
   sfree(count);
 
@@ -217,6 +220,7 @@ void dd_make_reverse_top(FILE *fplog,
   natoms = top->atoms.nr;
 
   dd->reverse_top = make_reverse_top(natoms,&top->idef,top->atoms.atom,
+				     vsite ? vsite->vsite_pbc : NULL,
 				     &dd->nbonded_global);
 
   if (vsite)
@@ -272,7 +276,7 @@ static inline void add_ifunc(int type,int nral,t_iatom *tiatoms,t_ilist *il)
 
 static void add_vsite(gmx_domdec_t *dd,
 		      int ftype,int nral,int i,t_iatom *iatoms,
-		      t_idef *idef)
+		      t_idef *idef,int *vsite_pbc)
 {
   int  k;
   t_iatom tiatoms[1+MAXATOMLIST],*iatoms_r;
@@ -295,13 +299,20 @@ static void add_vsite(gmx_domdec_t *dd,
 
   /* Add this interaction to the local topology */
   add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
-
-  if (iatoms[1]) {
+  if (vsite_pbc) {
+    /* Set the pbc atom for this vsite.
+     * Since the order of the atoms does not change within a charge group,
+     * we do no need to access to global to local atom index.
+     */
+    vsite_pbc[i] = i + iatoms[1+nral+1] - iatoms[1];
+  }
+  
+  if (iatoms[1+nral]) {
     /* Check for recursion */
     index = dd->reverse_top->index;
     rtil  = dd->reverse_top->il;
     for(k=2; k<1+nral; k++) {
-      if ((iatoms[1] & (2<<k)) && (tiatoms[k] < 0)) {
+      if ((iatoms[1+nral] & (2<<k)) && (tiatoms[k] < 0)) {
 	/* This construction atoms is a vsite and not a home atom */
 	if (gmx_debug_at)
 	  fprintf(debug,"Constructing atom %d of vsite atom %d is a vsite and non-home\n",iatoms[k]+1,i >= 0 ? dd->gatindex[i]+1 : -i);
@@ -317,23 +328,36 @@ static void add_vsite(gmx_domdec_t *dd,
 	    /* Add this vsite (recursion).
 	     * Signal that the vsite atom is non-home by negation.
 	     */
-	    add_vsite(dd,ftype_r,nral_r,-(iatoms[k]+1),rtil+j,idef);
+	    add_vsite(dd,ftype_r,nral_r,-(iatoms[k]+1),rtil+j,idef,NULL);
+	    j += 1 + nral_r + 2;
+	  } else {
+	    j += 1 + nral_r;
 	  }
-	  j += 1 + nral_r;
 	}
       }
     }
   }
 }
 
-static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
+static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef,gmx_vsite_t *vsite)
 {
   int nbonded_local,i,gat,j,ftype,nral,d,k,kc;
-  int *index,*rtil;
+  int *index,*rtil,*vsite_pbc;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
   bool bUse;
   ivec shift_min;
   gmx_ga2la_t *ga2la;
+
+  if (vsite && vsite->vsite_pbc) {
+    if (dd->nat_tot > vsite->vsite_pbc_dd_nalloc) {
+      /* Make space for vsite pbc */
+      vsite->vsite_pbc_dd_nalloc = over_alloc(dd->nat_tot);
+      srenew(vsite->vsite_pbc_dd,vsite->vsite_pbc_dd_nalloc);
+    }
+    vsite_pbc = vsite->vsite_pbc_dd;
+  } else {
+    vsite_pbc = NULL;
+  }
 
   index = dd->reverse_top->index;
   rtil  = dd->reverse_top->il;
@@ -355,7 +379,8 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
       if (interaction_function[ftype].flags & IF_VSITE) {
 	/* The vsite construction goes where the vsite itself is */
 	if (i < dd->nat_home)
-	  add_vsite(dd,ftype,nral,i,iatoms,idef);
+	  add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc);
+	j += 1 + nral + 2;
       } else {
 	bUse = TRUE;
 	for(d=0; d<DIM; d++)
@@ -381,60 +406,27 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef)
 	  /* Sum so we can check in global_stat if we have everything */
 	  nbonded_local++;
 	}
+	j += 1 + nral;
       }
-      j += 1 + nral;
     }
   }
 
-  if (dd->reverse_top->n_intercg_vsite)
+  if (dd->reverse_top->n_intercg_vsite) {
     dd->nat_tot_vsite = dd_make_local_vsites(dd,idef->il);
-  else
+    if (vsite->vsite_pbc) {
+      /* Set the vsite pbc for the extra vsite for recursion to none (-1) */
+      if (dd->nat_tot_vsite > vsite->vsite_pbc_dd_nalloc) {
+	vsite->vsite_pbc_dd_nalloc = over_alloc(dd->nat_tot_vsite);
+	srenew(vsite->vsite_pbc_dd,vsite->vsite_pbc_dd_nalloc);
+      }
+      for(i=dd->nat_tot; i<dd->nat_tot_vsite; i++)
+	vsite->vsite_pbc_dd[i] = -1;
+    }
+  } else {
     dd->nat_tot_vsite = dd->nat_tot;
+  }
 
   return nbonded_local;
-}
-
-static void make_local_vsite_pbc(gmx_domdec_t *dd,t_idef *idef,
-				 gmx_vsite_t *vsite)
-{
-  int ftype,nral,i,vs,ga,ga_pbc;
-  int *vsite_pbc_global,*vsite_pbc_local;
-  t_ilist *il;
-  t_iatom *ia;
-
-  if (dd->nat_tot_vsite > vsite->vsite_pbc_dd_nalloc) {
-    vsite->vsite_pbc_dd_nalloc = over_alloc(dd->nat_tot_vsite);
-    srenew(vsite->vsite_pbc_dd,vsite->vsite_pbc_dd_nalloc);
-  }
-
-  vsite_pbc_global = vsite->vsite_pbc;
-  vsite_pbc_local  = vsite->vsite_pbc_dd;
-
-  for(ftype=0; ftype<F_NRE; ftype++) {
-    if (interaction_function[ftype].flags & IF_VSITE) {
-      nral = NRAL(ftype);
-      il = &idef->il[ftype];
-      ia = il->iatoms;
-      for(i=0; i<il->nr; i+=1+nral) {
-	vs = ia[1+i];
-	if (vs < dd->nat_tot) {
-	  ga     = dd->gatindex[vs];
-	  ga_pbc = vsite_pbc_global[ga];
-	  if (ga_pbc >= 0) {
-	    /* Since the order of atoms does not change within a charge group,
-	     * we do not need to access the global to local index.
-	     */
-	    vsite_pbc_local[vs] = vs + ga_pbc - ga;
-	  } else {
-	    vsite_pbc_local[vs] = -1;
-	  }
-	} else {
-	  /* This is a non-home vsite, its pbc does not matter */
-	  vsite_pbc_local[vs] = -1;
-	}
-      }
-    }
-  }
 }
 
 static int make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
@@ -626,11 +618,8 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 
   make_local_idef(dd,&top->idef,&ltop->idef);
 #else
-  dd->nbonded_local = make_local_bondeds(dd,&ltop->idef);
+  dd->nbonded_local = make_local_bondeds(dd,&ltop->idef,vsite);
 #endif
-
-  if (vsite && vsite->vsite_pbc)
-    make_local_vsite_pbc(dd,&ltop->idef,vsite);
 
   nexcl = make_local_exclusions(dd,fr,&top->blocks[ebEXCLS],
 				&ltop->blocks[ebEXCLS]);
