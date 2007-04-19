@@ -105,7 +105,7 @@ and call
         get_flood_energies(real Vfl[],int nnames); 
 
   TODO:
-- one could program the whole thing such that Efl, Vfl and deltaF is written to the .edr file. -- i don't know how to do that, yet.
+- one could program the whole thing such that Efl, Vfl and deltaF is written to the .edr file. -- i dont know how to do that, yet.
 
   In the moment one can have multiple flooding matrices, but only the first input is used for edsam. Especially with the angular motion
   remover there might be a market for multiple edsam inputs as well. 
@@ -217,13 +217,13 @@ void project_to_eigvectors(rvec *x, t_eigvec *vec, t_edpar *edi,char *mode);
   XXX mass-weighting is applied
  */
 
-inline real projectx(t_edpar *edi,rvec *x,rvec *vec);
+ real projectx(t_edpar *edi,rvec *x,rvec *vec);
    /* does not subtract average positions, projection on single eigenvector is returned
    	used by: do_linfix, do_linacc, do_radfix, do_radacc, do_radcon
 	here average position is subtracted in ed_cons prior to call to projectx
      */
 
-inline real projectf(t_edpar *edi,rvec *x,rvec *vec);
+ real projectf(t_edpar *edi,rvec *x,rvec *vec);
    /* same as projectx, but mass-weighting is applied differently -> forces  */
 
 void rad_project(t_edpar *edi,rvec *x,t_eigvec *vec);
@@ -313,7 +313,7 @@ void free_local(struct t_ed_local *local) {
 }
 
 
-static inline void rvecsub(int dim,rvec *a, rvec *b, rvec *c) {
+static  void rvecsub(int dim,rvec *a, rvec *b, rvec *c) {
   /* c=a-b; */
   int i;
   for (i=0;i<dim;i++) {
@@ -321,14 +321,14 @@ static inline void rvecsub(int dim,rvec *a, rvec *b, rvec *c) {
   }
 }
   
-static inline void rvecadd(int dim,rvec *a, rvec *b, rvec *c) {
+static  void rvecadd(int dim,rvec *a, rvec *b, rvec *c) {
   /* c=a+b; */
   int i;
   for (i=0;i<dim;i++) {
     rvec_add(a[i],b[i],c[i]);
   }
 }
-static inline real rvecnorm(int dim,rvec *a) {
+static  real rvecnorm(int dim,rvec *a) {
   /* c=a+b; */
   int i;
   real sum=0;
@@ -338,19 +338,19 @@ static inline real rvecnorm(int dim,rvec *a) {
   return sqrt(sum);
 }
 
-static inline void rvecsmul(int dim, real s, rvec *a) {
+static  void rvecsmul(int dim, real s, rvec *a) {
   int i;
   for (i=0;i<dim;i++) {
     svmul(s,a[i],a[i]);
   }
 } 
 
-static inline void rvec_to_one(int dim, rvec *a) {
+static  void rvec_to_one(int dim, rvec *a) {
   rvecsmul(dim,1.0/rvecnorm(dim,a),a);
 }
 
 
-static inline void rveccopy(int dim, rvec *a, rvec *b) {
+static  void rveccopy(int dim, rvec *a, rvec *b) {
   /*b=a;*/
   int i;
   for (i=0;i<dim;i++) {
@@ -1524,7 +1524,7 @@ void rad_project(t_edpar *edi,rvec *x,t_eigvec *vec)
     rvec_inc(x[edi->sav.anrs[i]],edi->sav.x[i]);
 }
 
-inline real projectx(t_edpar *edi,rvec *x,rvec *vec)
+real projectx(t_edpar *edi,rvec *x,rvec *vec)
 {
   int i,j;
   real proj=0.0;
@@ -1536,7 +1536,7 @@ inline real projectx(t_edpar *edi,rvec *x,rvec *vec)
   return proj;
 }
 
-inline real projectf(t_edpar *edi,rvec *x,rvec *vec)
+real projectf(t_edpar *edi,rvec *x,rvec *vec)
 {
   int i,j;
   real proj=0.0;
