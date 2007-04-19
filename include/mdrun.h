@@ -54,6 +54,7 @@
 #include "vcm.h"
 #include "vsite.h"
 #include "pull.h"
+#include "update.h"
 
 #define MD_GLAS        (1<<1)
 #define MD_POLARISE    (1<<2)
@@ -286,7 +287,8 @@ extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
 extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
-		    t_nrnb *nrnb,t_topology *top,gmx_constr_t *constr,
+		    t_nrnb *nrnb,t_topology *top,
+		    gmx_stochd_t *stochd,gmx_constr_t *constr,
 		    int nfile,t_filenm fnm[],
 		    int *fp_trn,int *fp_xtc,int *fp_ene,
 		    FILE **fp_dgdl,FILE **fp_field,

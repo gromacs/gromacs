@@ -589,7 +589,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
   clear_mat(pres);
   update(step,&dvdlambda,inputrec,md,state,graph,
 	 NULL,state->x,top,grps,shake_vir,cr,nrnb,
-	 constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
+	 NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
   if (EI_STATE_VELOCITY(inputrec->eI)) {
     for(i=start; (i<end); i++) {
       for(m=0; (m<DIM); m++) {
@@ -610,7 +610,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
     clear_mat(pres);
     update(step,&dvdlambda,inputrec,md,state,graph,
 	   NULL,buf,top,grps,shake_vir,cr,nrnb,
-	   constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
+	   NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
     
     for(m=0; (m<4); m++)
       vcm[m] = 0;
@@ -949,7 +949,8 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
-	     t_nrnb *nrnb,t_topology *top,gmx_constr_t *constr,
+	     t_nrnb *nrnb,t_topology *top,
+	     gmx_stochd_t *sd,gmx_constr_t *constr,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
@@ -1015,9 +1016,9 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   debug_gmx();
 
   *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
-
-  if (ir->eI == eiSD)
-    init_sd_consts(ir->opts.ngtc,ir->opts.tau_t,ir->delta_t);
-
+  
+  if (ir->eI == eiBD || ir->eI == eiSD)
+    *sd = init_stochd(ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
+		      ir->ld_seed);
 }
 

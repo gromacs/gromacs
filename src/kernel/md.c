@@ -433,6 +433,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   t_topology *top;
   t_state    *state=NULL;
   rvec       *f_global=NULL;
+  gmx_stochd_t sd=NULL;
   gmx_constr_t constr=NULL;
 
   /* XMDRUN stuff: shell, general coupling etc. */
@@ -475,7 +476,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initial values */
   init_md(cr,inputrec,&t,&t0,&state_global->lambda,&lam0,
-	  nrnb,top_global,&constr,
+	  nrnb,top_global,&sd,&constr,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
   debug_gmx();
@@ -927,7 +928,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
       wallcycle_start(wcycle,ewcUPDATE);
       update(step,&ener[F_DVDL],inputrec,mdatoms,state,graph,f,buf,
-	     top,grps,shake_vir,cr,nrnb,constr,edyn,bHaveConstr,bNEMD,
+	     top,grps,shake_vir,cr,nrnb,sd,constr,edyn,bHaveConstr,bNEMD,
 	     TRUE,bFirstStep,pres);
       wallcycle_stop(wcycle,ewcUPDATE);
     } else {

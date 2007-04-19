@@ -73,13 +73,26 @@ typedef struct {
   real c;
   real d;
   real vvcorr;
-} t_sdconst;
+} gmx_sd_const_t;
 
+typedef struct {
+  real V;
+  real X;
+  real Yv;
+  real Yx;
+} gmx_sd_sigma_t;
 
-
-
-
-static t_sdconst *sdc;
+typedef struct gmx_stochd {
+  /* The random state */
+  gmx_rng_t gaussrand;
+  /* BD stuff */
+  real *bd_rf;
+  /* SD stuff */
+  gmx_sd_const_t *sdc;
+  gmx_sd_sigma_t *sdsig;
+  rvec *sd_V;
+  int  sd_V_nalloc;
+} t_gmx_stochd;
 
 static void do_update_md(int start,int homenr,double dt,
                          t_grp_tcstat *tcstat,t_grp_acc *gstat,real nh_xi[],
@@ -244,39 +257,54 @@ static void do_update_visc(int start,int homenr,double dt,
   }
 }
 
-
-void init_sd_consts(int ngtc,real tau_t[],real dt)
+gmx_stochd_t init_stochd(int eI,int ngtc,real tau_t[],real dt,int seed)
 {
+  t_gmx_stochd *sd;
+  gmx_sd_const_t *sdc;
   int  n;
   real y;
 
-  snew(sdc,ngtc);
+  snew(sd,1);
 
-  for(n=0; n<ngtc; n++) {
-    sdc[n].gdt = dt/tau_t[n];
-    sdc[n].eph = exp(sdc[n].gdt/2);
-    sdc[n].emh = exp(-sdc[n].gdt/2);
-    sdc[n].em  = exp(-sdc[n].gdt);
-    if(sdc[n].gdt >= 0.25) {
-      sdc[n].b = sdc[n].gdt*(sqr(sdc[n].eph)-1) - 4*sqr(sdc[n].eph-1);
-      sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
-      sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
-    } else {
-      y = sdc[n].gdt/2;
-      /* Seventh order expansions for small y */
-      sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
-      sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
-      sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
+  /* Initiate random number generator for langevin type dynamics */
+  sd->gaussrand = gmx_rng_init(seed);
+
+  if (eI == eiBD) {
+    snew(sd->bd_rf,ngtc);
+  } else if (eI == eiSD) {
+    snew(sd->sdc,ngtc);
+    snew(sd->sdsig,ngtc);
+    
+    sdc = sd->sdc;
+    for(n=0; n<ngtc; n++) {
+      sdc[n].gdt = dt/tau_t[n];
+      sdc[n].eph = exp(sdc[n].gdt/2);
+      sdc[n].emh = exp(-sdc[n].gdt/2);
+      sdc[n].em  = exp(-sdc[n].gdt);
+      if(sdc[n].gdt >= 0.25) {
+	sdc[n].b = sdc[n].gdt*(sqr(sdc[n].eph)-1) - 4*sqr(sdc[n].eph-1);
+	sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
+	sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
+      } else {
+	y = sdc[n].gdt/2;
+	/* Seventh order expansions for small y */
+	sdc[n].b = y*y*y*y*(1/3.0+y*(1/3.0+y*(17/90.0+y*7/9.0)));
+	sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
+	sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
+      }
+      /* The missing velocity correlation over one MD step */
+      sdc[n].vvcorr = 0.5*(1 - sdc[n].em);
+      if(debug)
+	fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g  vvcorr %g\n",
+		n,sdc[n].b,sdc[n].c,sdc[n].d,sdc[n].vvcorr);
     }
-    /* The missing velocity correlation over one MD step */
-    sdc[n].vvcorr = 0.5*(1 - sdc[n].em);
-    if(debug)
-      fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g  vvcorr %g\n",
-              n,sdc[n].b,sdc[n].c,sdc[n].d,sdc[n].vvcorr);
   }
+
+  return sd;
 }
 
-static void do_update_sd(int start,int homenr,
+static void do_update_sd(t_gmx_stochd *sd,bool bFirstStep,
+			 int start,int homenr,
                          rvec accel[],ivec nFreeze[],
                          real invmass[],unsigned short ptype[],
                          unsigned short cFREEZE[],unsigned short cACC[],
@@ -284,21 +312,15 @@ static void do_update_sd(int start,int homenr,
                          rvec x[],rvec xprime[],rvec v[],rvec f[],
 			 rvec sd_X[],
                          int ngtc,real tau_t[],real ref_t[],
-                         gmx_rng_t gaussrand, bool bFirstHalf)
+                         bool bFirstHalf)
 {
-  typedef struct {
-    real V;
-    real X;
-    real Yv;
-    real Yx;
-  } t_sd_sigmas;
-
-  static bool bFirst = TRUE;
-  static t_sd_sigmas *sig=NULL;
+  gmx_sd_const_t *sdc;
+  gmx_sd_sigma_t *sig;
   /* The random part of the velocity update, generated in the first
    * half of the update, needs to be remembered for the second half.
    */
-  static rvec *sd_V;
+  rvec *sd_V;
+  gmx_rng_t gaussrand;
   real   kT;
   int    gf=0,ga=0,gt=0;
   real   vn=0,Vmh,Xmh;
@@ -306,10 +328,14 @@ static void do_update_sd(int start,int homenr,
   int    n,d;
   unsigned long  jran;
 
-  if(sig == NULL) {
-    snew(sig,ngtc);
-    snew(sd_V,homenr);
+  sdc = sd->sdc;
+  sig = sd->sdsig;
+  if (homenr > sd->sd_V_nalloc) {
+    sd->sd_V_nalloc = over_alloc(homenr);
+    srenew(sd->sd_V,sd->sd_V_nalloc);
   }
+  sd_V = sd->sd_V;
+  gaussrand = sd->gaussrand;
 
   if(bFirstHalf) {
     for(n=0; n<ngtc; n++) {
@@ -336,9 +362,9 @@ static void do_update_sd(int start,int homenr,
         vn             = v[n][d];
       }
       if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
-        if(bFirstHalf) {
+        if (bFirstHalf) {
 
-          if(bFirst)
+          if (bFirstStep)
             sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
 
           Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
@@ -372,8 +398,6 @@ static void do_update_sd(int start,int homenr,
       }
     }
   }
-
-  bFirst = FALSE;
 }
 
 static void do_update_bd(int start,int homenr,double dt,
@@ -383,17 +407,13 @@ static void do_update_bd(int start,int homenr,double dt,
                          rvec x[],rvec xprime[],rvec v[],
                          rvec f[],real friction_coefficient,
                          int ngtc,real tau_t[],real ref_t[],
-                         gmx_rng_t gaussrand)
+			 real *rf,gmx_rng_t gaussrand)
 {
   int    gf=0,gt=0;
   real   vn;
-  static real *rf=NULL;
   real   invfr=0;
   int    n,d;
   unsigned long  jran;
-
-  if (rf == NULL)
-    snew(rf,ngtc);
 
   if (friction_coefficient != 0) {
     invfr = 1.0/friction_coefficient;
@@ -592,7 +612,6 @@ static void deform(int start,int homenr,rvec x[],matrix box,
   }
 }
 
-
 void update(int          step,
             real         *dvdlambda,    /* FEP stuff */
             t_inputrec   *inputrec,      /* input record and box stuff	*/
@@ -606,6 +625,7 @@ void update(int          step,
             tensor       vir_part,
             t_commrec    *cr,
             t_nrnb       *nrnb,
+	    gmx_stochd_t sd,
 	    gmx_constr_t constr,
             t_edsamyn    *edyn,
 	    bool         bHaveConstr,
@@ -620,15 +640,10 @@ void update(int          step,
   int              start,homenr,i,n,m,g;
   matrix           M;
   tensor           vir_con;
-  static gmx_rng_t sd_gaussrand=NULL;
   
   if (bFirstStep) {
     if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
       please_cite(stdlog,"Berendsen84a");
-
-    /* Initiate random number generator for stochastic and brownian dynamic integrators */
-    if(inputrec->eI==eiSD || inputrec->eI==eiBD) 
-      sd_gaussrand = gmx_rng_init(inputrec->ld_seed);
 
     /* Set Berendsen tcoupl lambda's to 1, 
      * so runs without Berendsen coupling are not affected.
@@ -684,13 +699,13 @@ void update(int          step,
       /* The SD update is done in 2 parts, because an extra constraint step
        * is needed 
        */
-      do_update_sd(start,homenr,
+      do_update_sd(sd,bFirstStep,start,homenr,
                    inputrec->opts.acc,inputrec->opts.nFreeze,
                    md->invmass,md->ptype,
                    md->cFREEZE,md->cACC,md->cTC,
                    state->x,xprime,state->v,force,state->sd_X,
                    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                   sd_gaussrand,TRUE);
+                   TRUE);
     } else if (inputrec->eI == eiBD) {
       do_update_bd(start,homenr,dt,
                    inputrec->opts.nFreeze,md->invmass,md->ptype,
@@ -698,7 +713,7 @@ void update(int          step,
                    state->x,xprime,state->v,force,
                    inputrec->bd_fric,
                    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                   sd_gaussrand);
+                   sd->bd_rf,sd->gaussrand);
     } else {
       gmx_fatal(FARGS,"Don't know how to update coordinates");
     }
@@ -760,7 +775,7 @@ void update(int          step,
        */
       for(i=0; i<DIM; i++)
 	for(m=0; m<DIM; m++)
-	  vir_part[i][m] += sdc[0].eph*vir_con[i][m];
+	  vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
     } else {
       m_add(vir_part,vir_con,vir_part);
     }
@@ -777,13 +792,13 @@ void update(int          step,
   if (bDoUpdate) {
     if (inputrec->eI == eiSD) {
       /* The second part of the SD integration */
-      do_update_sd(start,homenr,
+      do_update_sd(sd,FALSE,start,homenr,
 		   inputrec->opts.acc,inputrec->opts.nFreeze,
 		   md->invmass,md->ptype,
 		   md->cFREEZE,md->cACC,md->cTC,
 		   state->x,xprime,state->v,force,state->sd_X,
 		   inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-		   sd_gaussrand,FALSE);
+		   FALSE);
       inc_nrnb(nrnb, eNR_UPDATE, homenr);
       
       if (constr) {

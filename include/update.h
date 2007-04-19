@@ -48,6 +48,12 @@
 #include "force.h"
 #include "pull.h"
 
+/* Abstract type for stochastic dynamics */
+typedef struct gmx_stochd *gmx_stochd_t;
+
+/* Initialize the stochastic dynamics struct */
+extern gmx_stochd_t init_stochd(int eI,int ngtc,real tau_t[],real dt,int seed);
+
 extern void update(int          step,
 		   real         *dvdlambda, /* FEP stuff */
 		   t_inputrec   *inputrec,  /* input record and box stuff	*/
@@ -61,6 +67,7 @@ extern void update(int          step,
 		   tensor       vir_part,
 		   t_commrec    *cr,
 		   t_nrnb       *nrnb,
+		   gmx_stochd_t sd,
 		   gmx_constr_t constr,
 		   t_edsamyn    *edyn,
 		   bool         bHaveConstr,
