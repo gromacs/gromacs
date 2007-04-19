@@ -400,17 +400,16 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   rvec      xv,vv,dx;
   real      a1,b1,c1,inv_dt;
   int       i,ii,nra,nrd,tp,ftype;
-  t_iatom   avsite,ai,aj,ak,al;
+  t_iatom   avsite,ai,aj,ak,al,pbc_atom;
   t_iatom   *ia;
   t_iparams *ip;
-  t_pbc     pbc,*pbc_null;
+  t_pbc     pbc,*pbc_null,*pbc_null2;
   bool      bDomDec;
   int       *vsite_pbc,ishift;
 
   bDomDec = cr && DOMAINDECOMP(cr);
 
   /* We only need to do pbc when we have inter-cg vsites */
-  vsite_pbc = NULL;
   if ((bDomDec || bMolPBC) && vsite->n_intercg_vsite) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
@@ -442,6 +441,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   else
     inv_dt = 1.0;
 
+  pbc_null2 = NULL;
   for(ftype=0; (ftype<F_NRE); ftype++) {
     if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
@@ -469,52 +469,64 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 
 	/* Constants for constructing vsites */
 	a1   = ip[tp].vsite.a;
-	
+
+	/* Check what kind of pbc we need to use */
+	if (vsite_pbc) {
+	  pbc_atom = vsite_pbc[i/(1+nra)];
+	  if (pbc_atom > -2)
+	    pbc_null2 = pbc_null;
+	  else
+	    pbc_null2 = NULL;
+	} else {
+	  pbc_atom = -2;
+	}
+
 	/* Copy the old position */
 	copy_rvec(x[avsite],xv);
 	
 	/* Construct the vsite depending on type */
 	switch (ftype) {
 	case F_VSITE2:
-	  constr_vsite2(x[ai],x[aj],x[avsite],a1,pbc_null);
+	  constr_vsite2(x[ai],x[aj],x[avsite],a1,pbc_null2);
 	  break;
 	case F_VSITE3:
 	  ak = ia[4];
 	  b1 = ip[tp].vsite.b;
-	  constr_vsite3(x[ai],x[aj],x[ak],x[avsite],a1,b1,pbc_null);
+	  constr_vsite3(x[ai],x[aj],x[ak],x[avsite],a1,b1,pbc_null2);
 	  break;
 	case F_VSITE3FD:
 	  ak = ia[4];
 	  b1 = ip[tp].vsite.b;
-	  constr_vsite3FD(x[ai],x[aj],x[ak],x[avsite],a1,b1,pbc_null);
+	  constr_vsite3FD(x[ai],x[aj],x[ak],x[avsite],a1,b1,pbc_null2);
 	  break;
 	case F_VSITE3FAD:
 	  ak = ia[4];
 	  b1 = ip[tp].vsite.b;
-	  constr_vsite3FAD(x[ai],x[aj],x[ak],x[avsite],a1,b1,pbc_null);
+	  constr_vsite3FAD(x[ai],x[aj],x[ak],x[avsite],a1,b1,pbc_null2);
 	  break;
 	case F_VSITE3OUT:
 	  ak = ia[4];
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  constr_vsite3OUT(x[ai],x[aj],x[ak],x[avsite],a1,b1,c1,pbc_null);
+	  constr_vsite3OUT(x[ai],x[aj],x[ak],x[avsite],a1,b1,c1,pbc_null2);
 	  break;
 	case F_VSITE4FD:
 	  ak = ia[4];
 	  al = ia[5];
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  constr_vsite4FD(x[ai],x[aj],x[ak],x[al],x[avsite],a1,b1,c1,pbc_null);
+	  constr_vsite4FD(x[ai],x[aj],x[ak],x[al],x[avsite],a1,b1,c1,
+			  pbc_null2);
 	  break;
 	default:
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
-	if (vsite_pbc && vsite_pbc[i/(1+nra)] >= 0) {
+	if (pbc_atom >= 0) {
 	  /* Match the pbc of this vsite to the rest of its charge group */
-	  ishift = pbc_dx(pbc_null,x[avsite],x[vsite_pbc[i/(1+nra)]],dx);
+	  ishift = pbc_dx(pbc_null,x[avsite],x[pbc_atom],dx);
 	  if (ishift != CENTRAL)
-	    rvec_add(x[vsite_pbc[i/(1+nra)]],dx,x[avsite]);
+	    rvec_add(x[pbc_atom],dx,x[avsite]);
 	}
 	if (v) {
 	  /* Calculate velocity of vsite... */
@@ -960,7 +972,8 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
   int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD;
   t_iatom   *ia;
   t_iparams *ip;
-  t_pbc     pbc,*pbc_null;
+  t_pbc     pbc,*pbc_null,*pbc_null2;
+  int       *vsite_pbc;
 
   /* We only need to do pbc when we have inter-cg vsites */
   if ((DOMAINDECOMP(cr) || bMolPBC) && vsite->n_intercg_vsite) {
@@ -991,13 +1004,31 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
    
   /* this loop goes backwards to be able to build *
    * higher type vsites from lower types         */
+  pbc_null2 = NULL;
   for(ftype=F_NRE-1; (ftype>=0); ftype--) {
     if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
-      
+
+      if (pbc_null) {
+	if (DOMAINDECOMP(cr))
+	  vsite_pbc = vsite->vsite_pbc_dd[ftype-F_VSITE2];
+	else
+	  vsite_pbc = vsite->vsite_pbc[ftype-F_VSITE2];
+      } else {
+	vsite_pbc = NULL;
+      }
+     
       for(i=0; (i<nrd); ) {
+	/* Check what kind of pbc we need to use */
+	if (vsite_pbc) {
+	  if (vsite_pbc[i/(1+nra)] > -2)
+	    pbc_null2 = pbc_null;
+	  else
+	    pbc_null2 = NULL;
+	}
+
 	tp   = ia[0];
 	if (ftype != idef->functype[tp])
 	  gmx_incons("Functiontypes for vsites wrong");
@@ -1007,34 +1038,34 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 	/* Construct the vsite depending on type */
 	switch (ftype) {
 	case F_VSITE2:
-	  spread_vsite2(ia,a1,x,f,fshift,pbc_null,g);
+	  spread_vsite2(ia,a1,x,f,fshift,pbc_null2,g);
 	  nd2++;
 	  break;
 	case F_VSITE3:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3(ia,a1,b1,x,f,fshift,pbc_null,g);
+	  spread_vsite3(ia,a1,b1,x,f,fshift,pbc_null2,g);
 	  nd3++;
 	  break;
 	case F_VSITE3FD:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3FD(ia,a1,b1,x,f,fshift,pbc_null,g);
+	  spread_vsite3FD(ia,a1,b1,x,f,fshift,pbc_null2,g);
 	  nd3FD++;
 	  break;
 	case F_VSITE3FAD:
 	  b1 = ip[tp].vsite.b;
-	  spread_vsite3FAD(ia,a1,b1,x,f,fshift,pbc_null,g);
+	  spread_vsite3FAD(ia,a1,b1,x,f,fshift,pbc_null2,g);
 	  nd3FAD++;
 	  break;
 	case F_VSITE3OUT:
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  spread_vsite3OUT(ia,a1,b1,c1,x,f,fshift,pbc_null,g);
+	  spread_vsite3OUT(ia,a1,b1,c1,x,f,fshift,pbc_null2,g);
 	  nd3OUT++;
 	  break;
 	case F_VSITE4FD:
 	  b1 = ip[tp].vsite.b;
 	  c1 = ip[tp].vsite.c;
-	  spread_vsite4FD(ia,a1,b1,c1,x,f,fshift,pbc_null,g);
+	  spread_vsite4FD(ia,a1,b1,c1,x,f,fshift,pbc_null2,g);
 	  nd4FD++;
 	  break;
 	default:
