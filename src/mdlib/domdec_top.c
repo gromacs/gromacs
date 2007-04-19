@@ -278,7 +278,7 @@ static void add_vsite(gmx_domdec_t *dd,
 		      int ftype,int nral,int i,t_iatom *iatoms,
 		      t_idef *idef,int **vsite_pbc,int *vsite_pbc_nalloc)
 {
-  int  k,vsi;
+  int  k,vsi,pbc_ga;
   t_iatom tiatoms[1+MAXATOMLIST],*iatoms_r;
   gmx_ga2la_t *ga2la;
   int  *index,*rtil;
@@ -309,7 +309,16 @@ static void add_vsite(gmx_domdec_t *dd,
      * Since the order of the atoms does not change within a charge group,
      * we do no need to access to global to local atom index.
      */
-    vsite_pbc[ftype-F_VSITE2][vsi] = i + iatoms[1+nral+1] - iatoms[1]; 
+    pbc_ga = iatoms[1+nral+1];
+    if (pbc_ga < 0) {
+      vsite_pbc[ftype-F_VSITE2][vsi] = pbc_ga;
+    } else {
+      if (i >= dd->nat_tot) {
+	gmx_fatal(FARGS,"vsite atom %d is required for constructing another (recursive) vsite, but its first construting atom (%d) is in a different charge group, this is not supported",iatoms[1]+1,iatoms[2]+1);
+      } else {
+	vsite_pbc[ftype-F_VSITE2][vsi] = i + pbc_ga - iatoms[1];
+      }
+    }
   }
   
   if (iatoms[1+nral]) {
