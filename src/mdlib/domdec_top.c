@@ -118,7 +118,7 @@ static int count_excls(t_block *cgs,t_block *excls,int *n_intercg_excl)
   return n;
 }
 
-static int low_make_reverse_top(t_idef *idef,t_atom *atom,int *vsite_pbc,
+static int low_make_reverse_top(t_idef *idef,t_atom *atom,int **vsite_pbc,
 				int *count,gmx_reverse_top_t *rt,
 				bool bAssign)
 {
@@ -162,7 +162,7 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int *vsite_pbc,
 	    }
 	    /* Store the vsite pbc atom in a second extra entry */
 	    rt->il[rt->index[a]+count[a]+2+nral+1] =
-	      (vsite_pbc ? vsite_pbc[a] : -1);
+	      (vsite_pbc ? vsite_pbc[ftype-F_VSITE2][i/(1+nral)] : -2);
 	  }
 	  count[a] += 2 + nral + 2;
 	} else {
@@ -180,7 +180,7 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int *vsite_pbc,
 }
 
 static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
-					   t_atom *atom,int *vsite_pbc,
+					   t_atom *atom,int **vsite_pbc,
 					   int *nint)
 {
   int *count,i;
@@ -276,9 +276,9 @@ static inline void add_ifunc(int type,int nral,t_iatom *tiatoms,t_ilist *il)
 
 static void add_vsite(gmx_domdec_t *dd,
 		      int ftype,int nral,int i,t_iatom *iatoms,
-		      t_idef *idef,int *vsite_pbc)
+		      t_idef *idef,int **vsite_pbc,int *vsite_pbc_nalloc)
 {
-  int  k;
+  int  k,vsi;
   t_iatom tiatoms[1+MAXATOMLIST],*iatoms_r;
   gmx_ga2la_t *ga2la;
   int  *index,*rtil;
@@ -300,11 +300,16 @@ static void add_vsite(gmx_domdec_t *dd,
   /* Add this interaction to the local topology */
   add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
   if (vsite_pbc) {
+    vsi = idef->il[ftype].nr/(1+nral) - 1;
+    if (vsi >= vsite_pbc_nalloc[ftype-F_VSITE2]) {
+      vsite_pbc_nalloc[ftype-F_VSITE2] += IATOM_ALLOC_SIZE;
+      srenew(vsite_pbc[ftype-F_VSITE2],vsite_pbc_nalloc[ftype-F_VSITE2]);
+    }
     /* Set the pbc atom for this vsite.
      * Since the order of the atoms does not change within a charge group,
      * we do no need to access to global to local atom index.
      */
-    vsite_pbc[i] = i + iatoms[1+nral+1] - iatoms[1];
+    vsite_pbc[ftype-F_VSITE2][vsi] = i + iatoms[1+nral+1] - iatoms[1]; 
   }
   
   if (iatoms[1+nral]) {
@@ -328,7 +333,8 @@ static void add_vsite(gmx_domdec_t *dd,
 	    /* Add this vsite (recursion).
 	     * Signal that the vsite atom is non-home by negation.
 	     */
-	    add_vsite(dd,ftype_r,nral_r,-(iatoms[k]+1),rtil+j,idef,NULL);
+	    add_vsite(dd,ftype_r,nral_r,-(iatoms[k]+1),rtil+j,idef,
+		      vsite_pbc,vsite_pbc_nalloc);
 	    j += 1 + nral_r + 2;
 	  } else {
 	    j += 1 + nral_r;
@@ -342,21 +348,18 @@ static void add_vsite(gmx_domdec_t *dd,
 static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef,gmx_vsite_t *vsite)
 {
   int nbonded_local,i,gat,j,ftype,nral,d,k,kc;
-  int *index,*rtil,*vsite_pbc;
+  int *index,*rtil,**vsite_pbc,*vsite_pbc_nalloc;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
   bool bUse;
   ivec shift_min;
   gmx_ga2la_t *ga2la;
 
   if (vsite && vsite->vsite_pbc) {
-    if (dd->nat_tot > vsite->vsite_pbc_dd_nalloc) {
-      /* Make space for vsite pbc */
-      vsite->vsite_pbc_dd_nalloc = over_alloc(dd->nat_tot);
-      srenew(vsite->vsite_pbc_dd,vsite->vsite_pbc_dd_nalloc);
-    }
-    vsite_pbc = vsite->vsite_pbc_dd;
+    vsite_pbc        = vsite->vsite_pbc_dd;
+    vsite_pbc_nalloc = vsite->vsite_pbc_dd_nalloc;
   } else {
-    vsite_pbc = NULL;
+    vsite_pbc        = NULL;
+    vsite_pbc_nalloc = NULL;
   }
 
   index = dd->reverse_top->index;
@@ -379,7 +382,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef,gmx_vsite_t *vsite)
       if (interaction_function[ftype].flags & IF_VSITE) {
 	/* The vsite construction goes where the vsite itself is */
 	if (i < dd->nat_home)
-	  add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc);
+	  add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc,vsite_pbc_nalloc);
 	j += 1 + nral + 2;
       } else {
 	bUse = TRUE;
@@ -413,15 +416,6 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef,gmx_vsite_t *vsite)
 
   if (dd->reverse_top->n_intercg_vsite) {
     dd->nat_tot_vsite = dd_make_local_vsites(dd,idef->il);
-    if (vsite->vsite_pbc) {
-      /* Set the vsite pbc for the extra vsite for recursion to none (-1) */
-      if (dd->nat_tot_vsite > vsite->vsite_pbc_dd_nalloc) {
-	vsite->vsite_pbc_dd_nalloc = over_alloc(dd->nat_tot_vsite);
-	srenew(vsite->vsite_pbc_dd,vsite->vsite_pbc_dd_nalloc);
-      }
-      for(i=dd->nat_tot; i<dd->nat_tot_vsite; i++)
-	vsite->vsite_pbc_dd[i] = -1;
-    }
   } else {
     dd->nat_tot_vsite = dd->nat_tot;
   }

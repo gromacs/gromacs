@@ -416,8 +416,6 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
      * per MD step. But how often do we have vsites with full pbc?
      */
     pbc_null = set_pbc_ss(&pbc,ePBC,box,cr!=NULL ? cr->dd : NULL,FALSE);
-    if (pbc_null)
-      vsite_pbc = (bDomDec ? vsite->vsite_pbc_dd : vsite->vsite_pbc);
   } else {
     pbc_null = NULL;
   }
@@ -449,6 +447,15 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
       nra    = interaction_function[ftype].nratoms;
       nrd    = idef->il[ftype].nr;
       ia     = idef->il[ftype].iatoms;
+
+      if (pbc_null) {
+	if (bDomDec)
+	  vsite_pbc = vsite->vsite_pbc_dd[ftype-F_VSITE2];
+	else
+	  vsite_pbc = vsite->vsite_pbc[ftype-F_VSITE2];
+      } else {
+	vsite_pbc = NULL;
+      }
       
       for(i=0; (i<nrd); ) {
 	tp   = ia[0];
@@ -503,11 +510,11 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
 	}
-	if (vsite_pbc && vsite_pbc[avsite] >= 0) {
+	if (vsite_pbc && vsite_pbc[i/(1+nra)] >= 0) {
 	  /* Match the pbc of this vsite to the rest of its charge group */
-	  ishift = pbc_dx(pbc_null,x[avsite],x[vsite_pbc[avsite]],dx);
+	  ishift = pbc_dx(pbc_null,x[avsite],x[vsite_pbc[i/(1+nra)]],dx);
 	  if (ishift != CENTRAL)
-	    rvec_add(x[vsite_pbc[avsite]],dx,x[avsite]);
+	    rvec_add(x[vsite_pbc[i/(1+nra)]],dx,x[avsite]);
 	}
 	if (v) {
 	  /* Calculate velocity of vsite... */
@@ -1086,44 +1093,59 @@ static int count_intercg_vsite(t_idef *idef,int *a2cg)
   return n_intercg_vsite;
 }
 
-static int *get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
-			  t_block *cgs,int *a2cg)
+static int **get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
+			   t_block *cgs,int *a2cg)
 {
-  int  ftype,nral,i,vsite,cg_v,cg_c,a;
+  int  ftype,nral,i,vsi,vsite,cg_v,cg_c,a;
   t_ilist *il;
   t_iatom *ia;
-  int  *vsite_pbc;
+  int  **vsite_pbc,*vsite_pbc_f;
 
-  snew(vsite_pbc,cgs->index[cgs->nr]);
+  snew(vsite_pbc,F_VSITE4FD-F_VSITE2+1);
   for(ftype=0; ftype<F_NRE; ftype++) {
     if (interaction_function[ftype].flags & IF_VSITE) {
       nral = NRAL(ftype);
       il = &idef->il[ftype];
       ia  = il->iatoms;
+
+      snew(vsite_pbc[ftype-F_VSITE2],il->nr/(1+nral));
+      vsite_pbc_f = vsite_pbc[ftype-F_VSITE2];
+
       for(i=0; i<il->nr; i+=1+nral) {
+	vsi = i/(1+nral);
 	vsite = ia[1+i];
 	cg_v = a2cg[vsite];
-	cg_c = a2cg[ia[1+i+1]];
-	vsite_pbc[vsite] = -1;
-	if (cg_v != cg_c && cgs->index[cg_v+1] > cgs->index[cg_v]+1) {
-	  /* This vsite has a different charge group index
-	   * than it's first constructing atom
-	   * and the charge group has more than one atom,
-	   * store the first non-vsite atom of the vsite cg
-	   */
-	  for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
-	    if (atom[a].ptype != eptVSite) {
-	      vsite_pbc[vsite] = a;
-	      break;
+	/* A value of -2 signals that this vsite and its contructing
+	 * atoms are all within the same cg, so no pbc is required.
+	 */
+	vsite_pbc_f[i/(1+nral)] = -2;
+	/* Check if constructing atoms are outside the vsite's cg */
+	for(a=1; a<nral; a++) {
+	  if (a2cg[ia[1+i+a]] != cg_v)
+	    vsite_pbc_f[i/(1+nral)] = -1;
+	}
+	if (vsite_pbc_f[i/(1+nral)] == -1) {
+	  if (cg_v != a2cg[ia[1+i+1]] &&
+	      cgs->index[cg_v+1] > cgs->index[cg_v]+1) {
+	    /* This vsite has a different charge group index
+	     * than it's first constructing atom
+	     * and the charge group has more than one atom,
+	     * store the first non-vsite atom of the vsite cg
+	     */
+	    for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
+	      if (atom[a].ptype != eptVSite) {
+		vsite_pbc_f[vsi] = a;
+		break;
+	      }
 	    }
+	    if (gmx_debug_at)
+	      fprintf(debug,"vsite atom %d  cg %d - %d pbc atom %d\n",
+		      vsite+1,cgs->index[cg_v]+1,cgs->index[cg_v+1],
+		      vsite_pbc_f[vsi]+1);
+	    
+	    if (vsite_pbc_f[vsi] == -1)
+	      gmx_fatal(FARGS,"Virtual site atom %d is part of a charge group of only virtual sites, but its first constructing atom (%d) is part of a different charge group, this combination is not allowed",ia[1+i]+1,ia[1+i+1]+1);
 	  }
-	  if (gmx_debug_at)
-	    fprintf(debug,"vsite atom %d  cg %d - %d pbc atom %d\n",
-		    vsite+1,cgs->index[cg_v]+1,cgs->index[cg_v+1],
-		    vsite_pbc[vsite]+1);
-
-	  if (vsite_pbc[vsite] == -1)
-	    gmx_fatal(FARGS,"Virtual site atom %d is part of a charge group of only virtual sites, but its first constructing atom (%d) is part of a different charge group, this combination is not allowed",ia[1+i]+1,ia[1+i+1]+1);
 	}
       }
     }
@@ -1173,6 +1195,10 @@ gmx_vsite_t *init_vsite(t_commrec *cr,t_topology *top)
   if (vsite->n_intercg_vsite) {
     vsite->vsite_pbc = get_vsite_pbc(vsite->n_vsite,&top->idef,top->atoms.atom,
 				     &top->blocks[ebCGS],a2cg);
+    if (DOMAINDECOMP(cr)) {
+      snew(vsite->vsite_pbc_dd,F_VSITE4FD-F_VSITE2+1);
+      snew(vsite->vsite_pbc_dd_nalloc,F_VSITE4FD-F_VSITE2+1);
+    }
 
     if (PARTDECOMP(cr)) {
       snew(vsite->vsitecomm,1);

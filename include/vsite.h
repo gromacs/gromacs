@@ -58,9 +58,9 @@ typedef struct {
 typedef struct {
   int  n_vsite;             /* The number of virtual sites             */
   int  n_intercg_vsite;     /* The number of inter charge group vsites */
-  int  *vsite_pbc;          /* The pbc atoms for intercg vsites        */
-  int  *vsite_pbc_dd;       /* The pbc atoms with DD                   */
-  int  vsite_pbc_dd_nalloc;
+  int  **vsite_pbc;         /* The pbc atoms for intercg vsites        */
+  int  **vsite_pbc_dd;      /* The pbc atoms with DD                   */
+  int  *vsite_pbc_dd_nalloc;
   bool bPDvsitecomm;        /* Do we need vsite communication with PD? */
   t_comm_vsites *vsitecomm; /* The PD vsite communication struct       */
 } gmx_vsite_t;
