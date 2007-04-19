@@ -3548,6 +3548,12 @@ void dd_partition_system(FILE         *fplog,
   /* Make sure we only count the cycles for this DD partitioning */
   clear_dd_cycle_counts(dd);
 
+  /* Because the order of the atoms might have changed since
+   * the last vsite construction, we need to communicate the constructing
+   * atom coordinates again (for spreading the forces this MD step).
+   */
+  dd_move_x_vsites(dd,state_local->box,state_local->x);
+
   if (nstDDDump > 0 && step % nstDDDump == 0) {
     dd_move_x(dd,state_local->box,state_local->x,*buf);
     write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,dd->nat_tot,
