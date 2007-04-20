@@ -71,7 +71,8 @@ static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
 void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_idef *idef,
 		rvec x[],rvec f[],
-		t_forcerec *fr,const t_pbc *pbc,const t_graph *g,
+		t_forcerec *fr,
+		const t_pbc *pbc,const t_pbc *pbc_posres,const t_graph *g,
 		real epot[],t_nrnb *nrnb,
 		real lambda,
 		const t_mdatoms *md,int ngrp,t_grp_ener *gener,
@@ -119,7 +120,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	    (nbonds,idef->il[ftype].iatoms,
 	     idef->iparams,
 	     (const rvec*)x,f,fr->fshift,
-	     (ftype == F_POSRES) ? pbc : pbc_null,
+	     (ftype == F_POSRES) ? pbc_posres : pbc_null,
 	     g,lambda,&dvdl,md,fcd);
 	  if (bSepDVDL) {
 	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",

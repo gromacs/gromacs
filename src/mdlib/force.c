@@ -1335,7 +1335,7 @@ void force(FILE       *fplog,   int        step,
   matrix  boxs;
   rvec    box_size;
   real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
-  t_pbc   pbc;
+  t_pbc   pbc,pbc_posres;
 #ifdef GMX_MPI
   double  t0=0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
@@ -1433,11 +1433,13 @@ void force(FILE       *fplog,   int        step,
     else
       inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
   }
-  /* Check whether we need to do bondeds or correct for exclusions */
-  if ((fr->bMolPBC &&
-       (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype))) ||
-      (idef->il[F_POSRES].nr>0 && !bNBFonly)) {
-    set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
+  if (!bNBFonly) {
+    /* Check whether we need to do bondeds or correct for exclusions */
+    if (fr->bMolPBC && (EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)))
+      set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
+    /* Check if we need to do position restraints */
+    if (idef->il[F_POSRES].nr > 0)
+      set_pbc_ss(&pbc_posres,ir->ePBC,box,NULL,TRUE);
   }
   debug_gmx();
 
@@ -1541,7 +1543,7 @@ void force(FILE       *fplog,   int        step,
   if (!bNBFonly) {
     GMX_MPE_LOG(ev_calc_bonds_start);
     calc_bonds(fplog,cr->ms,
-	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
+	       idef,x,f,fr,&pbc,&pbc_posres,graph,epot,nrnb,lambda,md,
 	       opts->ngener,&grps->estat,
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
