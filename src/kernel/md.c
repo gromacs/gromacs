@@ -393,7 +393,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
    */
   finish_run(stdlog,cr,ftp2fn(efSTO,nfile,fnm),
 	     top,inputrec,nrnb,wcycle,nodetime,realtime,inputrec->nsteps,
-	     EI_DYNAMICS(inputrec->eI));
+	     EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
   
   /* Does what it says */  
   print_date_and_time(stdlog,cr->nodeid,"Finished mdrun");
@@ -632,9 +632,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	fprintf(stderr,"Calculated time to finish depends on nsteps from "
 		"run input file,\nwhich may not correspond to the time "
 		"needed to process input trajectory.\n\n");
-    } else
+    } else {
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
 	      *(top->name),inputrec->nsteps,inputrec->nsteps*inputrec->delta_t);
+    }
   }
 
   /* Set the node time counter to 0 after initialisation */
@@ -1157,7 +1158,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     
     /* Remaining runtime */
-    if (MASTER(cr) && do_verbose) {
+    if (MULTIMASTER(cr) && do_verbose) {
       if (bShell_FlexCon)
 	fprintf(stderr,"\n");
       print_time(stderr,start_t,step,inputrec);
@@ -1214,27 +1215,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* End of main MD loop */
   debug_gmx();
 
-  /* Dump the NODE time to the log file on each node */
-  if (PAR(cr) && (cr->duty & DUTY_PP)) {
-    double *ct,ctmax,ctsum;
-    
-    snew(ct,cr->nnodes);
-    ct[cr->nodeid] = node_time();
-    gmx_sumd(cr->nnodes,ct,cr);
-    ctmax = ct[0];
-    ctsum = ct[0];
-    for(i=1; (i<cr->nnodes); i++) {
-      ctmax = max(ctmax,ct[i]);
-      ctsum += ct[i];
-    }
-    ctsum /= (cr->nnodes-cr->npmenodes);
-    fprintf(log,"\nTotal NODE time on node %d: %g\n",cr->nodeid,ct[cr->nodeid]);
-    fprintf(log,"Average NODE time: %g\n",ctsum);
-    fprintf(log,"Load imbalance reduced performance to %3d%% of max\n",
-	    (int) (100.0*ctsum/ctmax));
-    sfree(ct);
-  }
-      
   if (bRerunMD)
     close_trj(status);
 	  
