@@ -500,7 +500,8 @@ static void filter(real flen,int n,int nset,real **val,real dt)
   sfree(filt);
 }
 
-static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val)
+static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val,
+		   int npargs,t_pargs *ppa)
 {
   real *c1=NULL,*sig=NULL,*fitparm;
   real dt=0,tendfit,tbeginfit;
@@ -518,8 +519,16 @@ static void do_fit(FILE *out,int n,bool bYdy,int ny,real *x0,real **val)
   } else {
     snew(sig,ny);
   }
-  tbeginfit = x0 ? x0[0]    : 0;
-  tendfit   = x0 ? x0[ny-1] : (ny-1)*dt;
+  if (opt2parg_bSet("-beginfit",npargs,ppa)) {
+    tbeginfit = opt2parg_real("-beginfit",npargs,ppa);
+  } else {
+    tbeginfit = x0 ? x0[0]    : 0;
+  }
+  if (opt2parg_bSet("-endfit",npargs,ppa)) {
+    tendfit   = opt2parg_real("-endfit",npargs,ppa);
+  } else {
+    tendfit   = x0 ? x0[ny-1] : (ny-1)*dt;
+  }
   
   snew(fitparm,nparm);
   switch(efitfn) {
@@ -639,6 +648,9 @@ int gmx_analyze(int argc,char *argv[])
     "to len/2. len is supplied with the option [TT]-filter[tt].",
     "This filter reduces oscillations with period len/2 and len by a factor",
     "of 0.79 and 0.33 respectively.[PAR]",
+
+    "Option [TT]-g[tt] fits the data to the function given with option",
+    "[TT]-fitfn[tt].[PAR]",
     
     "Option [TT]-power[tt] fits the data to b t^a, which is accomplished",
     "by fitting to a t + b on log-log scale. All points after the first",
@@ -775,10 +787,10 @@ int gmx_analyze(int argc,char *argv[])
   if (fitfile) {
     out_fit = ffopen(fitfile,"w");
     if (bXYdy && nset>=2) {
-      do_fit(out_fit,0,TRUE,n,t,val);
+      do_fit(out_fit,0,TRUE,n,t,val,npargs,ppa);
     } else {
       for(s=0; s<nset; s++)
-	do_fit(out_fit,s,FALSE,n,t,val);
+	do_fit(out_fit,s,FALSE,n,t,val,npargs,ppa);
     }
     fclose(out_fit);
   }
