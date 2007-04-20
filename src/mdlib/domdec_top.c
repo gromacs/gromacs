@@ -276,7 +276,8 @@ static inline void add_ifunc(int type,int nral,t_iatom *tiatoms,t_ilist *il)
 
 static void add_vsite(gmx_domdec_t *dd,
 		      int ftype,int nral,int i,t_iatom *iatoms,
-		      t_idef *idef,int **vsite_pbc,int *vsite_pbc_nalloc)
+		      t_idef *idef,int **vsite_pbc,int *vsite_pbc_nalloc,
+		      int recursion_depth)
 {
   int  k,vsi,pbc_ga;
   t_iatom tiatoms[1+MAXATOMLIST],*iatoms_r;
@@ -305,18 +306,24 @@ static void add_vsite(gmx_domdec_t *dd,
       vsite_pbc_nalloc[ftype-F_VSITE2] += IATOM_ALLOC_SIZE;
       srenew(vsite_pbc[ftype-F_VSITE2],vsite_pbc_nalloc[ftype-F_VSITE2]);
     }
-    /* Set the pbc atom for this vsite.
-     * Since the order of the atoms does not change within a charge group,
-     * we do no need to access to global to local atom index.
-     */
     pbc_ga = iatoms[1+nral+1];
     if (pbc_ga < 0) {
       vsite_pbc[ftype-F_VSITE2][vsi] = pbc_ga;
     } else {
-      if (i >= dd->nat_tot) {
-	gmx_fatal(FARGS,"vsite atom %d is required for constructing another (recursive) vsite, but its first construting atom (%d) is in a different charge group, this is not supported",iatoms[1]+1,iatoms[2]+1);
-      } else {
+      if (i >= 0) {
+	/* Set the pbc atom for this vsite.
+	 * Since the order of the atoms does not change within a charge group,
+	 * we do no need to access to global to local atom index.
+	 */
 	vsite_pbc[ftype-F_VSITE2][vsi] = i + pbc_ga - iatoms[1];
+      } else {
+	if (recursion_depth > 1)
+	  gmx_fatal(FARGS,"Base virtual site %d for higher order recursive virtual sites has its first constructing atom (%d) in a different charge group, this is not supported",-i,iatoms[1]+1);
+	/* This vsite is non-home (required for recursion),
+	 * its pbc does not matter, since it can not be
+	 * in the same charge group as the recursive vsite.
+	 */
+	vsite_pbc[ftype-F_VSITE2][vsi] = -1;
       }
     }
   }
@@ -343,7 +350,7 @@ static void add_vsite(gmx_domdec_t *dd,
 	     * Signal that the vsite atom is non-home by negation.
 	     */
 	    add_vsite(dd,ftype_r,nral_r,-(iatoms[k]+1),rtil+j,idef,
-		      vsite_pbc,vsite_pbc_nalloc);
+		      vsite_pbc,vsite_pbc_nalloc,recursion_depth+1);
 	    j += 1 + nral_r + 2;
 	  } else {
 	    j += 1 + nral_r;
@@ -391,7 +398,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef,gmx_vsite_t *vsite)
       if (interaction_function[ftype].flags & IF_VSITE) {
 	/* The vsite construction goes where the vsite itself is */
 	if (i < dd->nat_home)
-	  add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc,vsite_pbc_nalloc);
+	  add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc,vsite_pbc_nalloc,0);
 	j += 1 + nral + 2;
       } else {
 	bUse = TRUE;
