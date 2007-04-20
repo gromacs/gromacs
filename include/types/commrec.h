@@ -248,6 +248,5 @@ typedef struct {
 #define MSRANK(ms,nodeid)  (nodeid)
 #define MASTERSIM(ms)      ((ms)->sim == 0)
 
-/* Parallel and/or multi simulation */
-#define MULTIMASTER(cr)    ((cr)->nodeid == 0)
-#define MULTIPAR(cr)       (PAR(cr) || MULTISIM(cr))
+/* The master of all (the node that prints the remaining run time etc.) */
+#define MULTIMASTER(cr)    (MASTER(cr) && (!MULTISIM(cr) || MASTERSIM((cr)->ms)))
