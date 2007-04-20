@@ -768,20 +768,22 @@ void update(int          step,
       pull_constraint(&inputrec->pull,state->x,xprime,state->v,vir_con,
 		      state->box,top,dt,step,md,cr);
 
-    if (inputrec->eI == eiSD) {
-      /* A correction factor eph is needed for the SD constraint force */
-      /* Here we can, unfortunately, not have proper corrections
-       * for different friction constants, so we use the first one.
-       */
-      for(i=0; i<DIM; i++)
-	for(m=0; m<DIM; m++)
-	  vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
-    } else {
-      m_add(vir_part,vir_con,vir_part);
+    if (bDoUpdate) {
+      if (inputrec->eI == eiSD) {
+	/* A correction factor eph is needed for the SD constraint force */
+	/* Here we can, unfortunately, not have proper corrections
+	 * for different friction constants, so we use the first one.
+	 */
+	for(i=0; i<DIM; i++)
+	  for(m=0; m<DIM; m++)
+	    vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
+      } else {
+	m_add(vir_part,vir_con,vir_part);
+      }
+      if (debug)
+	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     }
-    if (debug)
-      pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
-    where();      
+    where();
   } else if (edyn->bEdsam) {     
       /* no constraints but still edsam - yes, that can happen */
     do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
