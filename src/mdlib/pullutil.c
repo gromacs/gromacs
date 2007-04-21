@@ -262,7 +262,7 @@ void pull_calc_coms(t_commrec *cr,
   int  g,i,ii,m,npbcdim;
   real wm;
   dvec com,comp;
-  rvec *xx[2],x_pbc,dx;
+  rvec *xx[2],x_pbc={0,0,0},dx;
   t_pullgrp *pgrp;
 
   if (rbuf == NULL)
