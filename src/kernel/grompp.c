@@ -356,10 +356,12 @@ static void cont_status(char *slog,char *ener,
 }
 
 static void read_posres(t_params *pr, char *fn, int offset, 
-			int rc_scaling, int ePBC)
+			int rc_scaling, int ePBC, t_atom *atom, rvec com)
 {
   bool   bFirst = TRUE;
-  rvec   *x,*v,boxc;
+  rvec   *x,*v;
+  dvec   sum;
+  double totmass;
   t_atoms dumat;
   matrix box,invbox;
   int    natoms,npbcdim=0;
@@ -373,15 +375,32 @@ static void read_posres(t_params *pr, char *fn, int offset,
   read_stx_conf(fn,title,&dumat,x,v,box);
   
   npbcdim = ePBC2npbcdim(ePBC);
-  if (rc_scaling == erscALL) {
+  clear_rvec(com);
+  if (rc_scaling != erscNO) {
     copy_mat(box,invbox);
     for(j=npbcdim; j<DIM; j++) {
       clear_rvec(invbox[j]);
       invbox[j][j] = 1;
     }
     m_inv_lowerleft0(invbox,invbox);
-  } else if (rc_scaling == erscCOM) {
-    calc_box_center(ecenterTRIC,box,boxc);
+  }
+  if (rc_scaling == erscCOM) {
+    /* Determine the center of mass of the posres reference coordinates */
+    clear_dvec(sum);
+    totmass = 0;
+    for(i=0; (i<pr->nr); i++) {
+      ai=pr->param[i].AI;
+      if (ai >= natoms)
+	gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than number of atoms in the system (%d).\n",ai+1,natoms);
+      for(j=0; j<npbcdim; j++)
+	sum[j] += atom[ai].m*x[ai][j];
+      totmass += atom[ai].m;
+    }
+    if (totmass == 0)
+      gmx_fatal(FARGS,"The total mass of the position restraint atoms is 0");
+    for(j=0; j<npbcdim; j++)
+      com[j] = sum[j]/totmass;
+    fprintf(stderr,"The center of mass of the position restraint coord's is %6.3f %6.3f %6.3f\n",com[XX],com[YY],com[ZZ]);
   }
 
   for(i=0; (i<pr->nr); i++) {
@@ -396,10 +415,19 @@ static void read_posres(t_params *pr, char *fn, int offset,
 	  for(k=j+1; k<npbcdim; k++)
 	    x[ai][j] += invbox[k][j]*x[ai][k];
 	} else if (rc_scaling == erscCOM) {
-	  x[ai][j] -= boxc[j];
+	  x[ai][j] -= com[j];
 	}
       }
       pr->param[i].c[offset + j] = x[ai][j];
+    }
+  }
+
+  if (rc_scaling == erscCOM) {
+    /* Convert the COM from Cartesian to crystal coordinates */
+    for(j=0; j<npbcdim; j++) {
+      com[j] *= invbox[j][j];
+      for(k=j+1; k<npbcdim; k++)
+	com[j] += invbox[k][j]*com[k];
     }
   }
   
@@ -409,17 +437,19 @@ static void read_posres(t_params *pr, char *fn, int offset,
 }
 
 static void gen_posres(t_params *pr, char *fnA, char *fnB,
-		       int rc_scaling, int ePBC)
+		       int rc_scaling, int ePBC, t_atom *atom,
+		       rvec com, rvec comB)
 {
   int i,j;
 
-  read_posres(pr,fnA,2*DIM,rc_scaling,ePBC);
+  read_posres(pr,fnA,2*DIM,rc_scaling,ePBC,atom,com);
   if (strcmp(fnA,fnB) == 0) {
     for(i=0; (i<pr->nr); i++)
       for(j=0; (j<DIM); j++)
 	pr->param[i].c[3*DIM + j] = pr->param[i].c[2*DIM + j];
+    copy_rvec(com,comB);
   } else {
-    read_posres(pr,fnB,3*DIM,rc_scaling,ePBC);
+    read_posres(pr,fnB,3*DIM,rc_scaling,ePBC,atom,comB);
   }
 }
 
@@ -873,7 +903,9 @@ int main (int argc, char *argv[])
 	fprintf(stderr," and %s\n",fnB);
       }
     }
-    gen_posres(&(msys.plist[F_POSRES]),fn,fnB,ir->refcoord_scaling,ir->ePBC);
+    gen_posres(&(msys.plist[F_POSRES]),fn,fnB,
+	       ir->refcoord_scaling,ir->ePBC,sys->atoms.atom,
+	       ir->posres_com,ir->posres_comB);
   }
   
   /* set parameters for virtual site construction */

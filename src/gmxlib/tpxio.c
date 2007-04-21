@@ -389,10 +389,15 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_rvec(ir->compress[YY]);
       do_rvec(ir->compress[ZZ]);
     }
-    if (file_version >= 47)
+    if (file_version >= 47) {
       do_int(ir->refcoord_scaling);
-    else
+      do_rvec(ir->posres_com);
+      do_rvec(ir->posres_comB);
+    } else {
       ir->refcoord_scaling = erscNO;
+      clear_rvec(ir->posres_com);
+      clear_rvec(ir->posres_comB);
+    }
     if(file_version > 25)
       do_int(ir->andersen_seed);
     else

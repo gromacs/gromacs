@@ -78,6 +78,8 @@ typedef struct {
   int  ePBC;
   bool bMolPBC;
   int  rc_scaling;
+  rvec posres_com;
+  rvec posres_comB;
 
   /* Cut-Off stuff */
   real rlist,rlistlong;

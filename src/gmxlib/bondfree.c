@@ -1103,16 +1103,25 @@ static real posres(int nbonds,
 		   const rvec x[],rvec f[],rvec fshift[],
 		   t_pbc *pbc,const t_graph *g,
 		   real lambda,real *dvdlambda,
-		   int refcoord_scaling,int ePBC)
+		   int refcoord_scaling,int ePBC,rvec comA,rvec comB)
 {
   int  i,ai,m,d,type,ki,npbcdim=0;
   const t_iparams *pr;
   real v,vtot,fm,*fc;
-  rvec boxc,posA,posB,dx;
+  rvec comA_sc,comB_sc,posA,posB,dx;
 
   npbcdim = ePBC2npbcdim(ePBC);
-  if (npbcdim > 0 && refcoord_scaling == erscCOM)
-    calc_box_center(ecenterTRIC,pbc->box,boxc);
+  if (refcoord_scaling == erscCOM) {
+    clear_rvec(comA_sc);
+    clear_rvec(comB_sc);
+    for(m=0; m<npbcdim; m++) {
+      for(d=0; d<=m; d++) {
+	comA_sc[d] += comA[m]*pbc->box[m][d];
+	comB_sc[d] += comB[m]*pbc->box[m][d];
+      }
+    }
+  }
+
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -1131,7 +1140,8 @@ static real posres(int nbonds,
 	    posB[d] += forceparams[type].posres.pos0B[m]*pbc->box[m][d];
 	  }
 	} else if (refcoord_scaling == erscCOM) {
-	  posA[m] += boxc[m];
+	  posA[m] += comA_sc[m];
+	  posB[m] += comB_sc[m];
 	}
       }
     }
@@ -1950,7 +1960,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		       idef->iparams,
 		       (const rvec*)x,f,fr->fshift,
 		       pbc_posres,g,lambda,&dvdl,
-		       fr->rc_scaling,fr->ePBC);
+		       fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
 	  }
 	  if (bSepDVDL) {
 	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
