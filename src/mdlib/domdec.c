@@ -2981,9 +2981,8 @@ static real *get_cell_load(FILE *fplog,char *dir,int nc,char *load_string)
       dbl = 0;
       sscanf(load_string,"%lf%n",&dbl,&n);
       if (dbl == 0)
-	gmx_fatal(FARGS,
-		  "Incorrect or not enough load entries for direction %s",
-		  dir);
+	gmx_fatal(FARGS,"Incorrect or not enough load entries for direction %s: '%s'",
+		  dir,load_string);
       cell_load[i] = dbl;
       load_string += n;
     }
@@ -3556,7 +3555,7 @@ void dd_partition_system(FILE         *fplog,
 
   if (nstDDDump > 0 && step % nstDDDump == 0) {
     dd_move_x(dd,state_local->box,state_local->x,*buf);
-    write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,dd->nat_tot,
+    write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,dd->nat_tot_vsite,
 		 state_local->x,state_local->box);
   }
 }
