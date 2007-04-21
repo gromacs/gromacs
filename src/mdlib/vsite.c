@@ -1166,6 +1166,9 @@ static int **get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
 	    for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
 	      if (atom[a].ptype != eptVSite) {
 		vsite_pbc_f[vsi] = a;
+		if (gmx_debug_at)
+		  fprintf(debug,"vsite %d match pbc with atom %d\n",
+			  vsite+1,a+1);
 		break;
 	      }
 	    }
