@@ -68,88 +68,6 @@ static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
   }
 }
 
-void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
-		const t_idef *idef,
-		rvec x[],rvec f[],
-		t_forcerec *fr,
-		const t_pbc *pbc,const t_pbc *pbc_posres,const t_graph *g,
-		real epot[],t_nrnb *nrnb,
-		real lambda,
-		const t_mdatoms *md,int ngrp,t_grp_ener *gener,
-		t_fcdata *fcd,
-		int step,bool bSepDVDL)
-{
-  int    ftype,nbonds,ind,nat;
-  real   v,dvdl;
-  const  t_pbc *pbc_null;
-
-  if (fr->bMolPBC)
-    pbc_null = pbc;
-  else
-    pbc_null = NULL;
-
-  if (bSepDVDL)
-    fprintf(fplog,"Step %d: bonded V and dVdl for this node\n",step);
-
-#ifdef DEBUG
-  if (g && debug)
-    p_graph(debug,"Bondage is fun",g);
-#endif
-  
-  /* Do pre force calculation stuff which might require communication */
-  if (idef->il[F_ORIRES].nr)
-    epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
-					idef->il[F_ORIRES].iatoms,
-					idef->iparams,md,(const rvec*)x,
-					pbc_null,fcd);
-  if (idef->il[F_DISRES].nr)
-    calc_disres_R_6(ms,idef->il[F_DISRES].nr,
-		    idef->il[F_DISRES].iatoms,
-		    idef->iparams,(const rvec*)x,pbc_null,fcd);
-  
-  /* Loop over all bonded force types to calculate the bonded forces */
-  for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_BOND && ftype!=F_CONNBONDS) {
-      nbonds=idef->il[ftype].nr;
-      if (nbonds > 0) {
-	ind = interaction_function[ftype].nrnb_ind;
-	nat = interaction_function[ftype].nratoms+1;
-	dvdl = 0;
-	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_A) {
-	  v = interaction_function[ftype].ifunc
-	    (nbonds,idef->il[ftype].iatoms,
-	     idef->iparams,
-	     (const rvec*)x,f,fr->fshift,
-	     (ftype == F_POSRES) ? pbc_posres : pbc_null,
-	     g,lambda,&dvdl,md,fcd);
-	  if (bSepDVDL) {
-	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
-		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
-	  }
-	} else {
-	  v = do_nonbonded14(ftype,nbonds,idef->il[ftype].iatoms,
-			     idef->iparams,
-			     (const rvec*)x,f,fr->fshift,
-			     pbc_null,g,
-			     lambda,&dvdl,
-			     md,fr,ngrp,gener);
-	  if (bSepDVDL) {
-	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
-		    interaction_function[ftype].longname,
-		    interaction_function[F_COUL14].longname,nbonds/nat,dvdl);
-	  }
-	}
-	if (ind != -1)
-	  inc_nrnb(nrnb,ind,nbonds/nat);
-	epot[ftype]  += v;
-	epot[F_DVDL] += dvdl;
-      }
-    }
-  }
-  /* Copy the sum of violations for the distance restraints from fcd */
-  epot[F_DISRESVIOL] = fcd->disres.sumviol;
-}
-
 /*
  * Morse potential bond by Frank Everdij
  *
@@ -1180,17 +1098,21 @@ real idihs(int nbonds,
 }
 
 
-real posres(int nbonds,
-	    const t_iatom forceatoms[],const t_iparams forceparams[],
-	    const rvec x[],rvec f[],rvec fshift[],
-	    const t_pbc *pbc,const t_graph *g,
-	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,t_fcdata *fcd)
+static real posres(int nbonds,
+		   const t_iatom forceatoms[],const t_iparams forceparams[],
+		   const rvec x[],rvec f[],rvec fshift[],
+		   t_pbc *pbc,const t_graph *g,
+		   real lambda,real *dvdlambda,
+		   int refcoord_scaling,int ePBC)
 {
-  int  i,ai,m,type,ki;
+  int  i,ai,m,d,type,ki,npbcdim=0;
   const t_iparams *pr;
   real v,vtot,fm,*fc;
-  rvec dx;
+  rvec boxc,posA,posB,dx;
+
+  npbcdim = ePBC2npbcdim(ePBC);
+  if (npbcdim > 0 && refcoord_scaling == erscCOM)
+    calc_box_center(ecenterTRIC,pbc->box,boxc);
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -1198,18 +1120,28 @@ real posres(int nbonds,
     ai   = forceatoms[i++];
     pr   = &forceparams[type];
     
-    /*
-    if (pbc == NULL)
-      rvec_sub(x[ai],forceparams[type].posres.pos0A,dx);
-    else
-    pbc_dx(pbc,x[ai],forceparams[type].posres.pos0A,dx);*/
-    
-    ki = pbc_rvec_sub(pbc,x[ai],forceparams[type].posres.pos0A,dx);
+    for(m=0; m<DIM; m++) {
+      posA[m] = forceparams[type].posres.pos0A[m];
+      posB[m] = forceparams[type].posres.pos0B[m];
+      if (m < npbcdim) {
+	if (refcoord_scaling == erscALL) {
+	  posA[m] *= pbc->box[m][m];
+	  for(d=0; d<m; d++) {
+	    posA[d] += forceparams[type].posres.pos0A[m]*pbc->box[m][d];
+	    posB[d] += forceparams[type].posres.pos0B[m]*pbc->box[m][d];
+	  }
+	} else if (refcoord_scaling == erscCOM) {
+	  posA[m] += boxc[m];
+	}
+      }
+    }
+      
+    ki = pbc_rvec_sub(pbc,x[ai],posA,dx);
     
     v=0;
     for (m=0; (m<DIM); m++) {
       *dvdlambda += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
-			     0,pr->posres.pos0B[m]-pr->posres.pos0A[m],
+			     0,posB[m]-posA[m],
 			     dx[m],lambda,&v,&fm);
       vtot += v;
       f[ai][m] += fm;
@@ -1957,4 +1889,93 @@ real tab_dihs(int nbonds,
   } /* 227 TOTAL 	*/
 
   return vtot;
+}
+
+void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
+		const t_idef *idef,
+		rvec x[],rvec f[],
+		t_forcerec *fr,
+		const t_pbc *pbc,t_pbc *pbc_posres,const t_graph *g,
+		real epot[],t_nrnb *nrnb,
+		real lambda,
+		const t_mdatoms *md,int ngrp,t_grp_ener *gener,
+		t_fcdata *fcd,
+		int step,bool bSepDVDL)
+{
+  int    ftype,nbonds,ind,nat;
+  real   v,dvdl;
+  const  t_pbc *pbc_null;
+
+  if (fr->bMolPBC)
+    pbc_null = pbc;
+  else
+    pbc_null = NULL;
+
+  if (bSepDVDL)
+    fprintf(fplog,"Step %d: bonded V and dVdl for this node\n",step);
+
+#ifdef DEBUG
+  if (g && debug)
+    p_graph(debug,"Bondage is fun",g);
+#endif
+  
+  /* Do pre force calculation stuff which might require communication */
+  if (idef->il[F_ORIRES].nr)
+    epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
+					idef->il[F_ORIRES].iatoms,
+					idef->iparams,md,(const rvec*)x,
+					pbc_null,fcd);
+  if (idef->il[F_DISRES].nr)
+    calc_disres_R_6(ms,idef->il[F_DISRES].nr,
+		    idef->il[F_DISRES].iatoms,
+		    idef->iparams,(const rvec*)x,pbc_null,fcd);
+  
+  /* Loop over all bonded force types to calculate the bonded forces */
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+    if (interaction_function[ftype].flags & IF_BOND && ftype!=F_CONNBONDS) {
+      nbonds=idef->il[ftype].nr;
+      if (nbonds > 0) {
+	ind = interaction_function[ftype].nrnb_ind;
+	nat = interaction_function[ftype].nratoms+1;
+	dvdl = 0;
+	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_A) {
+	  if (ftype != F_POSRES) {
+	    v =
+	      interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
+						idef->iparams,
+						(const rvec*)x,f,fr->fshift,
+						pbc_null,g,lambda,&dvdl,md,fcd);
+	  } else {
+	    v = posres(nbonds,idef->il[ftype].iatoms,
+		       idef->iparams,
+		       (const rvec*)x,f,fr->fshift,
+		       pbc_posres,g,lambda,&dvdl,
+		       fr->rc_scaling,fr->ePBC);
+	  }
+	  if (bSepDVDL) {
+	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
+		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
+	  }
+	} else {
+	  v = do_nonbonded14(ftype,nbonds,idef->il[ftype].iatoms,
+			     idef->iparams,
+			     (const rvec*)x,f,fr->fshift,
+			     pbc_null,g,
+			     lambda,&dvdl,
+			     md,fr,ngrp,gener);
+	  if (bSepDVDL) {
+	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
+		    interaction_function[ftype].longname,
+		    interaction_function[F_COUL14].longname,nbonds/nat,dvdl);
+	  }
+	}
+	if (ind != -1)
+	  inc_nrnb(nrnb,ind,nbonds/nat);
+	epot[ftype]  += v;
+	epot[F_DVDL] += dvdl;
+      }
+    }
+  }
+  /* Copy the sum of violations for the distance restraints from fcd */
+  epot[F_DISRESVIOL] = fcd->disres.sumviol;
 }

@@ -599,7 +599,9 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("tau-p",	ir->tau_p,	1.0);
   STYPE ("compressibility",	dumstr[0],	NULL);
   STYPE ("ref-p",       dumstr[1],      NULL);
-  
+  CTYPE ("Scaling of reference coordinates, No, All or COM");
+  EETYPE ("refcoord_scaling",ir->refcoord_scaling,erefscaling_names, nerror, TRUE);
+
   CTYPE ("Random seed for Andersen thermostat");
   ITYPE ("andersen_seed", ir->andersen_seed, 815131);
 

@@ -60,6 +60,20 @@ enum { epbcdxRECTANGULAR=1, epbcdxRECTANGULAR_SS,
 #define BOX_MARGIN         0.5010
 #define BOX_MARGIN_CORRECT 0.5005
 
+int ePBC2npbcdim(int ePBC)
+{
+  int npbcdim=0;
+
+  switch(ePBC) {
+  case epbcXYZ:  npbcdim = 3; break;
+  case epbcXY:   npbcdim = 2; break;
+  case epbcNONE: npbcdim = 0; break;
+  default: gmx_fatal(FARGS,"Unknown ePBC=%d in ePBC2npbcdim",ePBC);
+  }
+
+  return npbcdim;
+}
+
 void dump_pbc(FILE *fp,t_pbc *pbc) 
 {
   rvec sum_box;

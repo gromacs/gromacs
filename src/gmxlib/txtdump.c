@@ -422,6 +422,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PR("tau_p",ir->tau_p);
     pr_rvecs(fp,indent,"ref_p",ir->ref_p,DIM);
     pr_rvecs(fp,indent,"compress",ir->compress,DIM);
+    PS("refcoord_scaling",EREFSCALINGTYPE(ir->refcoord_scaling));
     PI("andersen_seed",ir->andersen_seed);
     PR("rlist",ir->rlist);
     PR("rtpi",ir->rtpi);

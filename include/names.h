@@ -53,6 +53,7 @@ extern const char *epbc_names[epbcNR+1];
 extern const char *etcoupl_names[etcNR+1];
 extern const char *epcoupl_names[epcNR+1];
 extern const char *epcoupltype_names[epctNR+1];
+extern const char *erefscaling_names[erscNR+1];
 extern const char *ens_names[ensNR+1];
 extern const char *ei_names[eiNR+1];
 extern const char *yesno_names[BOOL_NR+1];
@@ -93,6 +94,7 @@ extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
 #define ETCOUPLTYPE(e) ENUM_NAME(e,etcNR,etcoupl_names)
 #define EPCOUPLTYPE(e) ENUM_NAME(e,epcNR,epcoupl_names)
 #define EPCOUPLTYPETYPE(e) ENUM_NAME(e,epctNR,epcoupltype_names)
+#define EREFSCALINGTYPE(e) ENUM_NAME(e,erscNR,erefscaling_names)
 #define EBLOCKS(e)     ENUM_NAME(e,ebNR,eblock_names)
 #define EPARAM(e)      ENUM_NAME(e,epNR,eparam_names)
 #define EELTYPE(e)     ENUM_NAME(e,eelNR,eel_names)

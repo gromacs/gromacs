@@ -74,9 +74,12 @@ typedef struct {
   /* Domain Decomposition */
   bool bDomDec;
 
-  /* Cut-Off stuff */
+  /* PBC stuff */
   int  ePBC;
   bool bMolPBC;
+  int  rc_scaling;
+
+  /* Cut-Off stuff */
   real rlist,rlistlong;
   
   /* Dielectric constant resp. multiplication factor for charges */

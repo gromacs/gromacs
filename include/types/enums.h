@@ -61,6 +61,10 @@ enum {
 };
 
 enum {
+  erscNO, erscALL, erscCOM, erscNR
+};
+
+enum {
   eelCUT,     eelRF,     eelGRF,   eelPME,  eelEWALD,  eelPPPM, 
   eelPOISSON, eelSWITCH, eelSHIFT, eelUSER, eelGB, eelRF_NEC, eelENCADSHIFT, 
   eelPMEUSER, eelPMESWITCH, eelPMEUSERSWITCH, eelNR

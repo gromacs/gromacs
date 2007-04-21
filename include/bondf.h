@@ -54,7 +54,7 @@ extern "C" {
 extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		       const t_idef *idef,
                        rvec x[],rvec f[],t_forcerec *fr,
-		       const t_pbc *pbc,const t_pbc *pbc_posres,
+		       const t_pbc *pbc,t_pbc *pbc_posres,
 		       const t_graph *g,
                        real epot[],t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,int ngrp,t_grp_ener *gener,
@@ -109,7 +109,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
   extern t_ifunc angles,g96angles,cross_bond_bond,cross_bond_angle,urey_bradley,quartic_angles;
   extern t_ifunc pdihs,idihs,rbdihs;
   extern t_ifunc tab_bonds,tab_angles,tab_dihs;
-  extern t_ifunc polarize,water_pol,thole_pol,posres,angres,angresz,unimplemented;
+  extern t_ifunc polarize,water_pol,thole_pol,angres,angresz,unimplemented;
 
 #ifdef CPLUSPLUS
 }

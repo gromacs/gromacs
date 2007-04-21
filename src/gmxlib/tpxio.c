@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 46;
+static const int tpx_version = 47;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -389,6 +389,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_rvec(ir->compress[YY]);
       do_rvec(ir->compress[ZZ]);
     }
+    if (file_version >= 47)
+      do_int(ir->refcoord_scaling);
+    else
+      ir->refcoord_scaling = erscNO;
     if(file_version > 25)
       do_int(ir->andersen_seed);
     else

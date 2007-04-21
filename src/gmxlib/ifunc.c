@@ -114,7 +114,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bondnb ("POLARIZATION", "Polarization",2, 1, 0,  0,          polarize      ),
   def_bonded ("WATERPOL", "Water Pol.",      5, 6, 0,  eNR_WPOL,   water_pol     ),
   def_bonded ("THOLE",    "Thole Pol.",      4, 3, 0,  eNR_THOLE,  thole_pol     ),
-  def_bonded ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, posres        ),
+  def_bonded ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, unimplemented ),
   def_bonded ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres     ),
   def_nofc   ("DRVIOL",   "D. R. Viol. (nm)"                                     ),    
   def_bonded ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires        ),

@@ -902,6 +902,7 @@ void init_forcerec(FILE *fp,
   fr->ndelta     = ir->ndelta;
   fr->ePBC       = ir->ePBC;
   fr->bMolPBC    = ir->bPeriodicMols;
+  fr->rc_scaling = ir->refcoord_scaling;
   fr->rlist      = ir->rlist;
   fr->rlistlong  = max(ir->rlist,max(ir->rcoulomb,ir->rvdw));
   fr->eeltype    = ir->coulombtype;

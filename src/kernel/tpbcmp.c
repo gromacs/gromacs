@@ -405,6 +405,7 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_rvec(fp,"inputrec->compress(x)",-1,ir1->compress[XX],ir2->compress[XX],ftol);
   cmp_rvec(fp,"inputrec->compress(y)",-1,ir1->compress[YY],ir2->compress[YY],ftol);
   cmp_rvec(fp,"inputrec->compress(z)",-1,ir1->compress[ZZ],ir2->compress[ZZ],ftol);
+  cmp_int(fp,"refcoord_scaling",-1,ir1->refcoord_scaling,ir2->refcoord_scaling);
   cmp_int(fp,"inputrec->andersen_seed",-1,ir1->andersen_seed,ir2->andersen_seed);
   cmp_real(fp,"inputrec->rlist",-1,ir1->rlist,ir2->rlist,ftol);
   cmp_real(fp,"inputrec->rtpi",-1,ir1->rtpi,ir2->rtpi,ftol);

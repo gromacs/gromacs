@@ -164,6 +164,7 @@ typedef struct {
   real tau_p;		/* pressure coupling time (ps)			*/
   tensor ref_p;		/* reference pressure (kJ/(mol nm^3))		*/
   tensor compress;	/* compressability ((mol nm^3)/kJ) 		*/
+  int  refcoord_scaling;/* How to scale absolute reference coordinates  */
   int  andersen_seed;   /* Random seed for Andersen thermostat.         */
   real rlist;		/* short range pairlist cut-off (nm)		*/
   real rtpi;            /* Radius for test particle insertion           */
