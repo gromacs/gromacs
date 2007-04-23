@@ -766,10 +766,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     debug_gmx();
 
     if (bNS) {
-      bMasterState = FALSE;
+      bMasterState = do_per_step(step,inputrec->nstcheckpoint);
       /* Correct the new box if it is too skewed */
       if (DYNAMIC_BOX(*inputrec) && !bRerunMD) {
-	bMasterState = correct_box(state->box,graph);
+	if (correct_box(state->box,graph))
+	  bMasterState = TRUE;
 	if (DOMAINDECOMP(cr) && bMasterState)
 	  dd_collect_state(cr->dd,&top_global->blocks[ebCGS],
 			   state,state_global);

@@ -95,6 +95,9 @@ typedef struct gmx_domdec_comm {
 
   /* How to communicate for constraints and vsites */
   bool bSendRecv2;
+
+  /* Should we sort the cgs after each master redistribution */
+  bool bSortCG;
   
   /* Are there bonded interactions between charge groups? */
   bool bInterCGBondeds;
@@ -3124,7 +3127,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   fr->solvent_type        = NULL;
 
   comm = dd->comm;
-
+  
+  comm->bSortCG = (ir->nstcheckpoint != 0);
+  
   comm->bInterCGBondeds = (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
 
   comm->distance = fr->rlistlong;
@@ -3405,6 +3410,138 @@ static void set_cg_boundaries(gmx_domdec_t *dd)
     dd->icell[c].jcg1 = dd->ncg_cell[dd->icell[c].j1];
   }
 }
+typedef struct {
+  int  box;
+  int  ind_gl;
+  int  ind;
+} gmx_cgsort_t;
+
+static int comp_cgsort(const void *a,const void *b)
+{
+  int comp;
+
+  gmx_cgsort_t *cga,*cgb;
+  cga = (gmx_cgsort_t *)a;
+  cgb = (gmx_cgsort_t *)b;
+
+  comp = cga->box - cgb->box;
+  if (comp == 0) {
+    comp = cga->ind_gl - cgb->ind_gl;
+  }
+  
+  return comp;
+}
+
+static void order_vec_cg(int n,gmx_cgsort_t *sort,
+			 rvec *v,rvec *buf)
+{
+  int i;
+  
+  /* Order the data */
+  for(i=0; i<n; i++)
+    copy_rvec(v[sort[i].ind],buf[i]);
+
+  /* Copy back to the original array */
+  for(i=0; i<n; i++)
+    copy_rvec(buf[i],v[i]);
+}
+
+static void order_vec_atom(int ncg,int *cgindex,gmx_cgsort_t *sort,
+			   rvec *v,rvec *buf)
+{
+  int a,cg,cg0,cg1,i;
+  
+  /* Order the data */
+  a = 0;
+  for(cg=0; cg<ncg; cg++) {
+    cg0 = cgindex[sort[cg].ind];
+    cg1 = cgindex[sort[cg].ind+1];
+    for(i=cg0; i<cg1; i++) {
+      copy_rvec(v[i],buf[a]);
+      a++;
+    }
+  }
+
+  /* Copy back to the original array */
+  for(a=0; a<cgindex[ncg]; a++)
+    copy_rvec(buf[a],v[a]);
+}
+
+static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
+			  rvec *cgcm,t_state *state)
+{
+  int  npbcdim,d,m;
+  real range;
+  rvec start,scale;
+  gmx_cgsort_t *sort;
+  int  i,*ibuf;
+  rvec *vbuf;
+  
+  npbcdim = ePBC2npbcdim(ePBC);
+  for(d=0; d<npbcdim; d++) {
+    range = 0;
+    start[d] = 0;
+    for(m=0; m<npbcdim; m++) {
+      range += fabs(state->box[m][d]/dd->nc[d]);
+      if (state->box[m][d] >= 0) {
+	/* Add the lower point */
+	start[d] += state->box[m][d]*dd->ci[d]/dd->nc[d];
+      } else {
+	/* Negative off-diagonal element, add the upper point */
+	start[d] += state->box[m][d]*(dd->ci[d]+1)/dd->nc[d];
+      }
+    }
+    /* Half the cut-off length seems to be the optimal box size */
+    scale[d] = 1/(cutoff*0.5);
+    /* Check if we don't go out of the 1024 range used below */
+    if (scale[d]*1023 < range)
+      scale[d] = range/1023;
+  }
+  
+  snew(sort,dd->ncg_home);
+  for(i=0; i<dd->ncg_home; i++) {
+    /* Sort in boxes, major is x, than y, than z */
+    sort[i].box = 0;
+    for(d=0; d<npbcdim; d++) {
+      /* Minor negative numbers due to rounding end up in the 0 bin,
+       * due to the int cast.
+       */
+      sort[i].box = 1024*sort[i].box + (int)((cgcm[i][d] - start[d])*scale[d]);
+    }
+    sort[i].ind_gl = dd->index_gl[i];
+    sort[i].ind    = i;
+  }
+  /* Determine the order of the charge groups */
+  qsort(sort,dd->ncg_home,sizeof(sort[0]),comp_cgsort);
+  
+  snew(vbuf,dd->cgindex[dd->ncg_home]);
+  /* Reorder the state */
+  order_vec_atom(dd->ncg_home,dd->cgindex,sort,state->x,vbuf);
+  if (state->flags & STATE_HAS_V)
+    order_vec_atom(dd->ncg_home,dd->cgindex,sort,state->v,vbuf);
+  if (state->flags & STATE_HAS_SDX)
+    order_vec_atom(dd->ncg_home,dd->cgindex,sort,state->sd_X,vbuf);
+  /* Reorder cgcm */
+  order_vec_cg(dd->ncg_home,sort,cgcm,vbuf);
+  sfree(vbuf);
+
+  snew(ibuf,dd->ncg_home+1);
+  /* Reorder the global cg index */
+  for(i=0; i<dd->ncg_home; i++)
+    ibuf[i] = dd->index_gl[sort[i].ind];
+  for(i=0; i<dd->ncg_home; i++)
+    dd->index_gl[i] = ibuf[i];
+  /* Rebuild the local cg index */
+  ibuf[0] = 0;
+  for(i=0; i<dd->ncg_home; i++)
+    ibuf[i+1] = ibuf[i] +
+      dd->cgindex[sort[i].ind+1] - dd->cgindex[sort[i].ind];
+  for(i=0; i<dd->ncg_home; i++)
+    dd->cgindex[i] = ibuf[i];
+  sfree(ibuf);
+
+  sfree(sort);
+}
 
 void dd_partition_system(FILE         *fplog,
 			 int          step,
@@ -3465,6 +3602,11 @@ void dd_partition_system(FILE         *fplog,
 	      &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
     
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
+
+    if (dd->comm->bSortCG) {
+      /* Sort the state */
+      dd_sort_state(dd,ir->ePBC,ir->rlist,fr->cg_cm,state_local);
+    }
 
     cg0 = 0;
   }
