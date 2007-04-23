@@ -1436,14 +1436,13 @@ void force(FILE       *fplog,   int        step,
     else
       inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
   }
-  if (!bNBFonly) {
-    /* Check whether we need to do bondeds or correct for exclusions */
-    if (fr->bMolPBC && (EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)))
-      set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
-    /* Check if we need to do position restraints */
-    if (idef->il[F_POSRES].nr > 0)
-      set_pbc_ss(&pbc_posres,ir->ePBC,box,NULL,TRUE);
-  }
+  /* Check whether we need to do bondeds or correct for exclusions */
+  if (fr->bMolPBC &&
+      (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)))
+    set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
+  /* Check if we need to do position restraints */
+  if (idef->il[F_POSRES].nr > 0 && !bNBFonly)
+    set_pbc_ss(&pbc_posres,ir->ePBC,box,NULL,TRUE);
   debug_gmx();
 
   where();
