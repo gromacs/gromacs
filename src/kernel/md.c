@@ -771,10 +771,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (DYNAMIC_BOX(*inputrec) && !bRerunMD) {
 	if (correct_box(state->box,graph))
 	  bMasterState = TRUE;
-	if (DOMAINDECOMP(cr) && bMasterState)
-	  dd_collect_state(cr->dd,&top_global->blocks[ebCGS],
-			   state,state_global);
       }
+      if (DOMAINDECOMP(cr) && bMasterState)
+	dd_collect_state(cr->dd,&top_global->blocks[ebCGS],state,state_global);
       
       if (DOMAINDECOMP(cr)) {
 	/* Repartition the domain decomposition */
