@@ -321,7 +321,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
 
     gmx_pme_send_x_q(cr,bBS ? boxs : box,x,NULL,NULL,
-		     mdatoms->nChargePerturbed,lambda,step>=inputrec->nsteps);
+		     mdatoms->nChargePerturbed,lambda,
+		     step >= inputrec->init_step+inputrec->nsteps);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
   }
