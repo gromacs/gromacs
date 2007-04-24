@@ -1017,7 +1017,7 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 
   *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
   
-  if (ir->eI == eiBD || ir->eI == eiSD)
+  if (sd && (ir->eI == eiBD || ir->eI == eiSD))
     *sd = init_stochd(ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
 		      ir->ld_seed);
 }
