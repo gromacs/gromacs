@@ -349,8 +349,10 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   /* End of XMDRUN stuff */
 
   /* Turn on signal handling */
-  signal(SIGTERM,signal_handler);
-  signal(SIGUSR1,signal_handler);
+  if (getenv("GMX_NO_TERM") == NULL)
+    signal(SIGTERM,signal_handler);
+  if (getenv("GMX_NO_USR1") == NULL)
+    signal(SIGUSR1,signal_handler);
 
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN)  == MD_RERUN;
@@ -813,7 +815,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
 	inputrec->nsteps =
 	  (step/inputrec->nstxout + 1) * inputrec->nstxout - inputrec->init_step;
       else
-	inputrec->nsteps = step+1;
+	inputrec->nsteps = step + 1 - inputrec->init_step;
       fprintf(log,"\nSetting nsteps to %d\n\n",inputrec->nsteps);
       fflush(log);
       if (MASTER(cr)) {
