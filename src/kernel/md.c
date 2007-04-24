@@ -271,6 +271,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
      */
     mdatoms = init_mdatoms(stdlog,&top->atoms,inputrec->efep!=efepNO);
     
+    /* Initialize the virtual site communication */
+    vsite = init_vsite(cr,top);
+
     /* Make molecules whole at start of run */
     if (fr->ePBC != epbcNONE)  {
       do_pbc_first(stdlog,state->box,fr,graph,state->x);
@@ -286,12 +289,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PPPM",status);
     }
-    
+
     send_inputrec(cr,inputrec,mdatoms->nChargePerturbed);
   }
-
-  /* Initialize the virtual site communication */
-  vsite = init_vsite(cr,top);
 
   /* Initiate PME if necessary */
   /* either on all nodes (if epmePMEANDPP is TRUE) 
