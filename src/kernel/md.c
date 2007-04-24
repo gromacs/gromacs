@@ -510,13 +510,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     setup_dd_grid(stdlog,cr->dd);
 
-    if (DDMASTER(cr->dd) && vsite)
+    if (DDMASTER(cr->dd) && vsite && !inputrec->bContinuation)
       construct_vsites(log,vsite,
 		       state_global->x,nrnb,inputrec->delta_t,NULL,
 		       &top_global->idef,inputrec->ePBC,TRUE,NULL,
 		       NULL,state_global->box);
 
-    dd_partition_system(stdlog,-1,cr,TRUE,state_global,top_global,inputrec,
+    dd_partition_system(stdlog,inputrec->init_step,cr,TRUE,
+			state_global,top_global,inputrec,
 			state,&f,&buf,mdatoms,top,fr,vsite,constr,
 			nrnb,wcycle,FALSE);
   } else {
@@ -757,16 +758,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  mk_mshift(log,graph,fr->ePBC,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
-      construct_vsites(log,vsite,state->x,nrnb,inputrec->delta_t,state->v,
-		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+      if (!(DOMAINDECOMP(cr) && bFirstStep))
+	construct_vsites(log,vsite,state->x,nrnb,inputrec->delta_t,state->v,
+			 &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
     }
     debug_gmx();
 
-    if (bNS) {
-      bMasterState = do_per_step(step,inputrec->nstcheckpoint);
+    if (bNS && !bFirstStep) {
+      bMasterState = FALSE;
       /* Correct the new box if it is too skewed */
       if (DYNAMIC_BOX(*inputrec) && !bRerunMD) {
 	if (correct_box(state->box,graph))

@@ -20,6 +20,7 @@
 #include "pme.h"
 #include "pull.h"
 #include "gmx_wallcycle.h"
+#include "mdrun.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -3432,6 +3433,20 @@ static int comp_cgsort(const void *a,const void *b)
   return comp;
 }
 
+static void order_int_cg(int n,gmx_cgsort_t *sort,
+			 int *a,int *buf)
+{
+  int i;
+  
+  /* Order the data */
+  for(i=0; i<n; i++)
+    buf[i] = a[sort[i].ind];
+
+  /* Copy back to the original array */
+  for(i=0; i<n; i++)
+    a[i] = buf[i];
+}
+
 static void order_vec_cg(int n,gmx_cgsort_t *sort,
 			 rvec *v,rvec *buf)
 {
@@ -3474,7 +3489,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
   real range;
   rvec start,scale;
   gmx_cgsort_t *sort;
-  int  i,*ibuf;
+  int  i,*ibuf,cgsize;
   rvec *vbuf;
   
   npbcdim = ePBC2npbcdim(ePBC);
@@ -3527,20 +3542,20 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
 
   snew(ibuf,dd->ncg_home+1);
   /* Reorder the global cg index */
-  for(i=0; i<dd->ncg_home; i++)
-    ibuf[i] = dd->index_gl[sort[i].ind];
-  for(i=0; i<dd->ncg_home; i++)
-    dd->index_gl[i] = ibuf[i];
+  order_int_cg(dd->ncg_home,sort,dd->index_gl,ibuf);
   /* Rebuild the local cg index */
   ibuf[0] = 0;
-  for(i=0; i<dd->ncg_home; i++)
-    ibuf[i+1] = ibuf[i] +
-      dd->cgindex[sort[i].ind+1] - dd->cgindex[sort[i].ind];
-  for(i=0; i<dd->ncg_home; i++)
+  for(i=0; i<dd->ncg_home; i++) {
+    cgsize = dd->cgindex[sort[i].ind+1] - dd->cgindex[sort[i].ind];
+    ibuf[i+1] = ibuf[i] + cgsize;
+  }
+  for(i=0; i<dd->ncg_home+1; i++)
     dd->cgindex[i] = ibuf[i];
-  sfree(ibuf);
 
+  sfree(ibuf);
   sfree(sort);
+
+  dd->bMasterHasAllCG = FALSE;
 }
 
 void dd_partition_system(FILE         *fplog,
@@ -3603,11 +3618,6 @@ void dd_partition_system(FILE         *fplog,
     
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
-    if (dd->comm->bSortCG) {
-      /* Sort the state */
-      dd_sort_state(dd,ir->ePBC,ir->rlist,fr->cg_cm,state_local);
-    }
-
     cg0 = 0;
   }
 
@@ -3619,6 +3629,20 @@ void dd_partition_system(FILE         *fplog,
   if (!bMasterState) {
     cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->blocks[ebCGS],
 			     state_local,f,buf,fr,mdatoms,nrnb);
+  }
+
+  if (do_per_step(step,ir->nstcheckpoint)) {
+    /* Sort the state on charge group position.
+     * This enables exact restarts from this step.
+     * It also improves performance by about 15% with larger numbers
+     * of atoms per node.
+     */
+    if (debug)
+      fprintf(debug,"Step %d, sorting the %d home charge groups\n",
+	      step,dd->ncg_home);
+    dd_sort_state(dd,ir->ePBC,ir->rlist,fr->cg_cm,state_local);
+    /* Rebuild all the indices */
+    cg0 = 0;
   }
 
   /* Setup up the communication and communicate the coordinates */
