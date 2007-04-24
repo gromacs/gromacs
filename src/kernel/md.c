@@ -315,13 +315,24 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     }
   }
   
-  /* Turn on signal handling on all nodes */
-  /*
-   * (A user signal from the PME nodes (if any)
-   * is communicated to the PP nodes.
-   */
-  signal(SIGTERM,signal_handler);
-  signal(SIGUSR1,signal_handler);
+  switch (inputrec->eI) {
+  case eiMD:
+  case eiSD:
+  case eiBD:
+    /* Turn on signal handling on all nodes */
+    /*
+     * (A user signal from the PME nodes (if any)
+     * is communicated to the PP nodes.
+     */
+    if (getenv("GMX_NO_TERM") == NULL)
+      signal(SIGTERM,signal_handler);
+    if (getenv("GMX_NO_USR1") == NULL)
+      signal(SIGUSR1,signal_handler);
+    break;
+  default:
+    /* No signal handling */
+    break;
+  }
 
   if (cr->duty & DUTY_PP) {
     /* Now do whatever the user wants us to do (how flexible...) */
@@ -460,10 +471,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   int         j, elements;
   real        boxbuf[DIM*DIM];
 #endif
-
-  /* Turn on signal handling */
-  signal(SIGTERM,signal_handler);
-  signal(SIGUSR1,signal_handler);
 
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN)  == MD_RERUN;
@@ -1021,11 +1028,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	inputrec->nsteps =
 	  (step/inputrec->nstxout + 1) * inputrec->nstxout - inputrec->init_step;
       else
-	inputrec->nsteps = step+1;
-      fprintf(log,"\nSetting nsteps to %d\n\n",inputrec->nsteps);
+	inputrec->nsteps = step + 1 - inputrec->init_step;
+      fprintf(log,"\nSetting nsteps to %d, last step is %d\n\n",
+	      inputrec->nsteps,inputrec->init_step+inputrec->nsteps);
       fflush(log);
       if (MASTER(cr)) {
-	fprintf(stderr,"\nSetting nsteps to %d\n\n",inputrec->nsteps);
+	fprintf(stderr,"\nSetting nsteps to %d, last step is %d\n\n",
+		inputrec->nsteps,inputrec->init_step+inputrec->nsteps);
 	fflush(stderr);
       }
       /* erase the terminate signal */
