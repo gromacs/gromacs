@@ -758,16 +758,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  mk_mshift(log,graph,fr->ePBC,state->box,state->x);
 	shift_self(graph,state->box,state->x);
       }
-      if (!(DOMAINDECOMP(cr) && bFirstStep))
-	construct_vsites(log,vsite,state->x,nrnb,inputrec->delta_t,state->v,
-			 &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+      construct_vsites(log,vsite,state->x,nrnb,inputrec->delta_t,state->v,
+		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
     }
     debug_gmx();
 
-    if (bNS && !bFirstStep) {
+    if (bNS && !(bFirstStep && inputrec->bContinuation)) {
       bMasterState = FALSE;
       /* Correct the new box if it is too skewed */
       if (DYNAMIC_BOX(*inputrec) && !bRerunMD) {
