@@ -76,8 +76,10 @@ int gmx_genpr(int argc,char *argv[])
   static rvec    fc={1000.0,1000.0,1000.0};
   static real    freeze_level;
   static real    disre_dist = 0.1;
+  static real    disre_frac = 0.0;
   static real    disre_up2  = 1.0;
   static bool    bDisre=FALSE;
+  static bool    bConstr=FALSE;
   t_pargs pa[] = {
     { "-fc", FALSE, etRVEC, {fc}, 
       "force constants (kJ mol-1 nm-2)" },
@@ -87,8 +89,12 @@ int gmx_genpr(int argc,char *argv[])
       "Generate a distance restraint matrix for all the atoms in index" },
     { "-disre_dist", FALSE, etREAL, {&disre_dist},
       "Distance range around the actual distance for generating distance restraints" },
+    { "-disre_frac", FALSE, etREAL, {&disre_frac},
+      "Fraction of distance to be used as interval rather than a fixed distance. If the fraction of the distance that you specify here is less than the distance given in the previous option, that one is used instead." },
     { "-disre_up2", FALSE, etREAL, {&disre_up2},
-      "Distance between upper bound for distance restraints, and the distance at which the force becomes constant (see manual)" }
+      "Distance between upper bound for distance restraints, and the distance at which the force becomes constant (see manual)" },
+    { "-constr", FALSE, etBOOL, {&bConstr},
+      "Generate a constraint matrix rather than distance restraints" }
   };
 #define npargs asize(pa)
 
@@ -96,7 +102,7 @@ int gmx_genpr(int argc,char *argv[])
   int          i,j,k;
   FILE         *out;
   int          igrp;
-  real         d;
+  real         d,dd,lo,hi;
   atom_id      *ind_grp;
   char         *gn_grp,*xfn,*nfn;
   char         title[STRLEN];
@@ -124,6 +130,11 @@ int gmx_genpr(int argc,char *argv[])
   if (( nfn == NULL ) && ( xfn == NULL))
     gmx_fatal(FARGS,"no index file and no structure file suplied");
       
+  if ((disre_frac < 0) || (disre_frac >= 1))
+    gmx_fatal(FARGS,"disre_frac should be between 0 and 1");
+  if (disre_dist < 0)
+    gmx_fatal(FARGS,"disre_dist should be >= 0");
+    
   if (xfn != NULL) {
     snew(atoms,1);
     get_stx_coordnum(xfn,&(atoms->nr));
@@ -147,22 +158,40 @@ int gmx_genpr(int argc,char *argv[])
     }
     fclose(out);
   }
-  else if (bDisre && x) {
-    printf("Select group to generate distance restraint matrix from\n");
+  else if ((bDisre || bConstr) && x) {
+    printf("Select group to generate %s matrix from\n",
+	   bConstr ? "constraint" : "distance restraint");
     get_index(atoms,nfn,1,&igrp,&ind_grp,&gn_grp);
     
     out=ftp2FILE(efITP,NFILE,fnm,"w");
-    fprintf(out,"; distance restraints for %s of %s\n\n",gn_grp,title);
-    fprintf(out,"[ distance_restraints ]\n");
-    fprintf(out,";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n","i","j","?",
-	    "label","funct","lo","up1","up2","weight");
+    if (bConstr) {
+      fprintf(out,"; constraints for %s of %s\n\n",gn_grp,title);
+      fprintf(out,"[ constraints ]\n");
+      fprintf(out,";%4s %5s %1s %10s\n","i","j","1","dist");
+    }
+    else {
+      fprintf(out,"; distance restraints for %s of %s\n\n",gn_grp,title);
+      fprintf(out,"[ distance_restraints ]\n");
+      fprintf(out,";%4s %5s %1s %5s %10s %10s %10s %10s %10s\n","i","j","?",
+	      "label","funct","lo","up1","up2","weight");
+    }
     for(i=k=0; i<igrp; i++) 
       for(j=i+1; j<igrp; j++,k++) {
 	rvec_sub(x[ind_grp[i]],x[ind_grp[j]],dx);
 	d = norm(dx);
-	fprintf(out,"%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
-		ind_grp[i]+1,ind_grp[j]+1,1,k,1,
-		max(0,d-disre_dist),d+disre_dist,d+disre_dist+1,1.0);
+	if (bConstr) 
+	  fprintf(out,"%5d %5d %1d %10g\n",ind_grp[i]+1,ind_grp[j]+1,1,d);
+	else {
+	  if (disre_frac > 0) 
+	    dd = min(disre_dist,disre_frac*d);
+	  else 
+	    dd = disre_dist;
+	  lo = max(0,d-dd);
+	  hi = d+dd;
+	  fprintf(out,"%5d %5d %1d %5d %10d %10g %10g %10g %10g\n",
+		  ind_grp[i]+1,ind_grp[j]+1,1,k,1,
+		  lo,hi,hi+1,1.0);
+	}
       }
     fclose(out);
   }
