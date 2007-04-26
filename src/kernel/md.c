@@ -155,7 +155,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   real       ewaldcoeff=0;
   gmx_pme_t  *pmedata=NULL;
   time_t     start_t=0;
-  gmx_vsite_t *vsite;
+  gmx_vsite_t *vsite=NULL;
   int        i,m,nChargePerturbed=0,status,nalloc;
   char       *gro;
   gmx_wallcycle_t wcycle;
@@ -463,14 +463,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   /* End of XMDRUN stuff */
-  
-#ifdef GMX_MPI
-#ifdef PRT_TIME
-  double      zeit0, zeit1, zeitc=0.0;
-#endif
-  int         j, elements;
-  real        boxbuf[DIM*DIM];
-#endif
 
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN)  == MD_RERUN;
@@ -489,7 +481,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   {
-    double io = compute_io(inputrec,mdatoms->nr,mdebin->ebin->nener,1);
+    double io = compute_io(inputrec,&top_global->atoms,mdebin->ebin->nener,1);
     if (io > 2000) 
       fprintf(stderr,
 	      "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
@@ -673,19 +665,9 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bExchanged = FALSE;
   step = inputrec->init_step;
   step_rel = 0;
-#ifdef GMX_MPI
-#ifdef PRT_TIME
-  zeit0 = MPI_Wtime( );
-#endif
-#endif
 
   while ((!bRerunMD && (step_rel <= inputrec->nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
-
-#ifdef PRT_TIME
-    if (MASTER(cr)) 
-      fprintf(stderr,"===--- time step %d ---===\n",step_rel);
-#endif
 
     GMX_MPE_LOG(ev_timestep1);
 
@@ -1196,25 +1178,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bRerunMD) 
       /* read next frame from input trajectory */
       bNotLastFrame = read_next_frame(status,&rerun_fr);
-
-#ifdef PRT_TIME
-    if ( MASTER(cr) && !bLastStep)
-    {     
-      MPI_Barrier(MPI_COMM_WORLD);
-
-      zeit1 = MPI_Wtime( ) - zeit0;
-      fprintf(stderr,"Time step %d took %f seconds",step_rel,zeit1);	   
-      if (step_rel>0) 
-      {
-        zeitc += zeit1;
-        fprintf(stderr,", average %f\n\n",zeitc/step_rel);	   
-      }   
-      else
-        fprintf(stderr,"\n\n");
-	
-      zeit0 = MPI_Wtime( );
-    }
-#endif
 
     if (!bRerunMD || !rerun_fr.bStep) {
       /* increase the MD step number */

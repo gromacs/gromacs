@@ -1016,7 +1016,7 @@ int main (int argc, char *argv[])
   /*  reset_multinr(sys); */
   
   {
-    double cio = compute_io(ir,sys->atoms.nr,F_NRE,1);
+    double cio = compute_io(ir,&sys->atoms,F_NRE,1);
     sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
     if (cio > 2000)
       warning(NULL);
