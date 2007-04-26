@@ -41,9 +41,11 @@
 #include <stdlib.h>
 #include "typedefs.h"
 
-double compute_io(t_inputrec *ir,int natoms,int nrener,int nrepl)
+double compute_io(t_inputrec *ir,t_atoms *atoms,int nrener,int nrepl)
 {
-  int nsteps = ir->nsteps-ir->init_step;
+  int nsteps = ir->nsteps;
+  int natoms = atoms->nr;
+  int i,nxtcatoms=0;
   int nstx=0,nstv=0,nstf=0,nste=0,nstlog=0,nstxtc=0,nfep=0;
   double cio;
   
@@ -52,18 +54,22 @@ double compute_io(t_inputrec *ir,int natoms,int nrener,int nrepl)
   if (ir->nstvout > 0)
     nstv = 1 + nsteps / ir->nstvout;
   if (ir->nstfout > 0)
-    nstf = 1 + nsteps / ir->nstfout;
-  if (ir->nstxtcout > 0)
-    nstxtc = 1 + nsteps / ir->nstxtcout;
+    nstf = (1 + nsteps) / ir->nstfout;
+  if (ir->nstxtcout > 0) {
+    for(i=0; i<natoms; i++)
+      if (atoms->atom[i].grpnr[egcXTC] == 0)
+	nxtcatoms++;
+    nstxtc = (1 + nsteps) / ir->nstxtcout;
+  }
   if (ir->nstlog > 0)
     nstlog = 1 + nsteps / ir->nstlog;
   if (ir->nstenergy > 0)
     nste = 3 + nsteps % ir->nstenergy;
   cio  = 80*natoms;
   cio += (nstx+nstf+nstv)*sizeof(real)*(3.0*natoms);
-  cio += nstxtc*(natoms*5.0); /* roughly 5 bytes per atom */
+  cio += nstxtc*(14*4 + nxtcatoms*5.0); /* roughly 5 bytes per atom */
   cio += nstlog*(nrener*16*2.0); /* 16 bytes per energy term plus header */
   cio += (1.0*nste)*nrener*sizeof(t_energy);
   
-  return 1e-6*cio*nrepl;
+  return cio*nrepl/(1024*1024);
 }
