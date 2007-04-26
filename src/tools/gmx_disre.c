@@ -438,10 +438,11 @@ static void init_dr_res(t_dr_result *dr,int ndr)
 }
 
 static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
-			      int nsteps,t_topology *top)
+			      int nsteps,t_topology *top,
+			      real max_dr,int nlevels)
 {
   FILE     *fp;
-  int      iii,i,j,nra,nratoms,tp,ri,rj,n_res,index,nlabel,label,nlevels=20;
+  int      iii,i,j,nra,nratoms,tp,ri,rj,n_res,index,nlabel,label;
   atom_id  ai,aj,*ptr;
   real     **matrix,*t_res,hi,*w_dr,rav,rviol;
   t_rgb    rlo = { 1, 1, 1 };
@@ -503,7 +504,13 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
       hi = max(hi,matrix[rj][ri]);
     }
   }
-  
+
+  if (max_dr > 0) {
+    if (hi > max_dr)
+      printf("Warning: the maxdr that you have specified (%g) is smaller than\nthe largest value in your simulation (%g)\n",max_dr,hi);
+    hi = max_dr;
+  }
+  printf("Highest level in the matrix will be %g\n",hi);
   fp = ffopen(fn,"w");  
   write_xpm(fp,0,"Distance Violations","<V> (nm)","Residue","Residue",
 	    n_res,n_res,t_res,t_res,matrix,0,hi,rlo,rhi,&nlevels);
@@ -532,9 +539,15 @@ int gmx_disre(int argc,char *argv[])
     "averaging algorithm and print them in the log file."
   };
   static int  ntop      = 0;
+  static int  nlevels   = 20;
+  static real max_dr    = 0;
   t_pargs pa[] = {
     { "-ntop", FALSE, etINT,  {&ntop},
-      "Number of large violations that are stored in the log file every step" }
+      "Number of large violations that are stored in the log file every step" },
+    { "-maxdr", FALSE, etREAL, {&max_dr},
+      "Maximum distance violation in matrix output. If less than or equal to 0 the maximum will be determined by the data." },
+    { "-nlevels", FALSE, etINT, {&nlevels},
+      "Number of levels in the matrix output" }
   };
   
   FILE        *out=NULL,*aver=NULL,*numv=NULL,*maxxv=NULL,*xvg=NULL;
@@ -740,7 +753,7 @@ int gmx_disre(int argc,char *argv[])
 		     &(top.atoms),xav,NULL,box);
     }
     dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nr,
-		      j,&top);
+		      j,&top,max_dr,nlevels);
     fclose(out);
     fclose(aver);
     fclose(numv);
