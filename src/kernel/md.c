@@ -482,7 +482,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   {
     double io = compute_io(inputrec,&top_global->atoms,mdebin->ebin->nener,1);
-    if (io > 2000) 
+    if ((io > 2000) && MASTER(cr))
       fprintf(stderr,
 	      "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
 	      io);
