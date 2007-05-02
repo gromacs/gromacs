@@ -98,7 +98,7 @@ real rhodev(int natoms,real mass[],rvec x[],rvec xp[])
   return calc_similar_ind(TRUE, natoms, NULL, mass, x, xp);
 }
 
-void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
+void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
 {
   int    c,r,n,j,m,i,irot;
   double **omega,**om;
@@ -108,16 +108,19 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   int    index;
   real   max_d;
 
-  snew(omega,2*DIM);
-  snew(om,2*DIM);
-  for(i=0; i<2*DIM; i++) {
-    snew(omega[i],2*DIM);
-    snew(om[i],2*DIM);
+  if (ndim != 3 && ndim != 2)
+    gmx_fatal(FARGS,"calc_fit_R called with ndim=%d instead of 3 or 2",ndim);
+
+  snew(omega,2*ndim);
+  snew(om,2*ndim);
+  for(i=0; i<2*ndim; i++) {
+    snew(omega[i],2*ndim);
+    snew(om[i],2*ndim);
   }
   
-  for(i=0; i<2*DIM; i++) {
+  for(i=0; i<2*ndim; i++) {
     d[i]=0;
-    for(j=0; j<2*DIM; j++) {
+    for(j=0; j<2*ndim; j++) {
       omega[i][j]=0;
       om[i][j]=0;
     }
@@ -127,9 +130,9 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   clear_mat(u);
   for(n=0;(n<natoms);n++)
     if ((mn = w_rls[n]) != 0.0)
-      for(c=0; (c<DIM); c++) {
+      for(c=0; (c<ndim); c++) {
 	xpc=xp[n][c];
-	for(r=0; (r<DIM); r++) {
+	for(r=0; (r<ndim); r++) {
 	  xnr=x[n][r];
 	  u[c][r]+=mn*xnr*xpc;
 	}
@@ -137,18 +140,18 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   
   /*construct omega*/
   /*omega is symmetric -> omega==omega' */
-  for(r=0; r<2*DIM; r++)
+  for(r=0; r<2*ndim; r++)
     for(c=0; c<=r; c++)
-      if (r>=DIM && c<DIM) {
-        omega[r][c]=u[r-DIM][c];
-        omega[c][r]=u[r-DIM][c];
+      if (r>=ndim && c<ndim) {
+        omega[r][c]=u[r-ndim][c];
+        omega[c][r]=u[r-ndim][c];
       } else {
         omega[r][c]=0;
         omega[c][r]=0;
       }
   
   /*determine h and k*/
-  jacobi(omega,2*DIM,d,om,&irot);
+  jacobi(omega,2*ndim,d,om,&irot);
   /*real   **omega = input matrix a[0..n-1][0..n-1] must be symmetric
    *int     natoms = number of rows and columns
    *real      NULL = d[0]..d[n-1] are the eigenvalues of a[][]
@@ -163,15 +166,15 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   /* Copy only the first two eigenvectors */  
   for(j=0; j<2; j++) {
     max_d=-1000;
-    for(i=0; i<2*DIM; i++)
+    for(i=0; i<2*ndim; i++)
       if (d[i]>max_d) {
         max_d=d[i];
         index=i;
       }
     d[index]=-10000;
-    for(i=0; i<DIM; i++) {
+    for(i=0; i<ndim; i++) {
       vh[j][i]=M_SQRT2*om[i][index];
-      vk[j][i]=M_SQRT2*om[i+DIM][index];
+      vk[j][i]=M_SQRT2*om[i+ndim][index];
     }
   }
   /* Calculate the last eigenvector as the outer-product of the first two.
@@ -182,13 +185,16 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   oprod(vk[0],vk[1],vk[2]);
 
   /*determine R*/
+  clear_mat(R);
   for(r=0; r<DIM; r++)
-    for(c=0; c<DIM; c++)
+    R[r][r] = 1;
+  for(r=0; r<ndim; r++)
+    for(c=0; c<ndim; c++)
       R[r][c] = vk[0][r]*vh[0][c] +
 	        vk[1][r]*vh[1][c] +
 	        vk[2][r]*vh[2][c];
 
-  for(i=0; i<2*DIM; i++) {
+  for(i=0; i<2*ndim; i++) {
     sfree(omega[i]);
     sfree(om[i]);
   }
@@ -196,14 +202,14 @@ void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   sfree(om);
 }
 
-void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
+void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x)
 {
   int    i,j,m,r,c;
   matrix R;
   rvec   x_old;
 
   /* Calculate the rotation matrix R */
-  calc_fit_R(natoms,w_rls,xp,x,R);
+  calc_fit_R(ndim,natoms,w_rls,xp,x,R);
 
   /*rotate X*/
   for(j=0; j<natoms; j++) {
@@ -217,8 +223,13 @@ void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
   }
 }
 
-void reset_x(int ncm,atom_id ind_cm[],
-	     int nreset,atom_id *ind_reset,rvec x[],real mass[])
+void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x)
+{
+  do_fit_ndim(3,natoms,w_rls,xp,x);
+}
+
+void reset_x_ndim(int ndim,int ncm,atom_id ind_cm[],
+		  int nreset,atom_id *ind_reset,rvec x[],real mass[])
 {
   int  i,m,ai;
   rvec xcm;
@@ -229,11 +240,11 @@ void reset_x(int ncm,atom_id ind_cm[],
   for(i=0; i<ncm; i++) {
     ai=ind_cm[i];
     mm=mass[ai];
-    for(m=0; m<DIM; m++)
+    for(m=0; m<ndim; m++)
       xcm[m]+=mm*x[ai][m];
     tm+=mm;
   }
-  for(m=0; m<DIM; m++)
+  for(m=0; m<ndim; m++)
     xcm[m]/=tm;
     
   if (ind_reset)
@@ -244,3 +255,8 @@ void reset_x(int ncm,atom_id ind_cm[],
       rvec_dec(x[i],xcm);
 }
 
+void reset_x(int ncm,atom_id ind_cm[],
+	     int nreset,atom_id *ind_reset,rvec x[],real mass[])     
+{
+  reset_x_ndim(3,ncm,ind_cm,nreset,ind_reset,x,mass);
+}

@@ -591,12 +591,12 @@ int gmx_trjconv(int argc,char *argv[])
   
   int fit_enum;
   enum 
-    { efSel, efNone , efFit,      efReset,       efPFit,      efNR };
+    { efSel, efNone , efFit,      efFitXY,      efReset,       efPFit,      efNR };
   static char *fit[efNR+1] = 
-    { NULL, "none", "rot+trans", "translation", "progressive", NULL };
+    { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "progressive", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
-  static bool  bCenter=FALSE,bFit=FALSE,bPFit=FALSE,bReset=FALSE,bTer=FALSE;
+  static bool  bCenter=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0};
@@ -683,6 +683,8 @@ int gmx_trjconv(int argc,char *argv[])
   int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
   double       **dropval;
   real         tshift=0,t0=-1,dt=0.001,prec;
+  bool         bFit,bFitXY,bPFit,bReset;
+  int          nfitdim;
   bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bInBox,bNoJump,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
@@ -738,7 +740,8 @@ int gmx_trjconv(int argc,char *argv[])
 
     /* parse enum options */    
     fit_enum   = nenum(fit);
-    bFit       = fit_enum==efFit;
+    bFit       = (fit_enum==efFit || fit_enum==efFitXY);
+    bFitXY     = fit_enum==efFitXY;
     bReset     = fit_enum==efReset;
     bPFit      = fit_enum==efPFit;
     pbc_enum   = nenum(pbc_opt);
@@ -754,6 +757,9 @@ int gmx_trjconv(int argc,char *argv[])
     /* set and check option dependencies */    
     if (bPFit) bFit = TRUE; /* for pfit, fit *must* be set */
     if (bFit) bReset = TRUE; /* for fit, reset *must* be set */
+    nfitdim = 0;
+    if (bFit || bReset)
+      nfitdim = (fit_enum==efFitXY) ? 2 : 3;
     bRmPBC = bFit || bPBCWhole || bPBCcomRes || bPBCcomMol;
     if (bSetUR) {
       if ( bNoJump || bCluster || bPBCWhole ) {
@@ -905,7 +911,7 @@ int gmx_trjconv(int argc,char *argv[])
       if (bRmPBC)
 	rm_pbc(&(top.idef),atoms->nr,top_box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
-      reset_x(ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
+      reset_x_ndim(nfitdim,ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
     } else
       clear_rvec(x_shift);
@@ -1083,7 +1089,7 @@ int gmx_trjconv(int argc,char *argv[])
 	  if (bRmPBC)
 	    rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	
-	  reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
+	  reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
 	  do_fit(natoms,w_rls,xp,fr.x);
 	}
       
@@ -1155,9 +1161,9 @@ int gmx_trjconv(int argc,char *argv[])
 		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
 	  
 	      if (bReset) {
-		reset_x(ifit,ind_fit,natoms,NULL,fr.x,w_rls);
+		reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
 		if (bFit)
-		  do_fit(natoms,w_rls,xp,fr.x);
+		  do_fit_ndim(nfitdim,natoms,w_rls,xp,fr.x);
 		if (!bCenter)
 		  for(i=0; i<natoms; i++)
 		    rvec_inc(fr.x[i],x_shift);

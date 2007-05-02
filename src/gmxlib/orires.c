@@ -293,7 +293,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
   for(j=0; j<nref; j++)
     rvec_dec(xtmp[j],com);
   /* Calculate the rotation matrix to rotate x to the reference orientation */
-  calc_fit_R(nref,mref,xref,xtmp,R);
+  calc_fit_R(DIM,nref,mref,xref,xtmp,R);
   copy_mat(R,od->R);
 
   d = 0;

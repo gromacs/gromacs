@@ -63,14 +63,16 @@ extern real rhodev(int natoms,real mass[],rvec x[],rvec xp[]);
  * Maiorov & Crippen, PROTEINS 22, 273 (1995).
  */
 
-extern void calc_fit_R(int natoms,real *w_rls,rvec *xp,rvec *x,matrix R);
+extern void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,
+		       matrix R);
 /* Calculates the rotation matrix R for which
  * sum_i w_rls_i (xp_i - R x_i).(xp_i - R x_i)
- * is minimal. This matrix is also used do_fit.
+ * is minimal. ndim=3 gives full fit, ndim=2 gives xy fit.
+ * This matrix is also used do_fit.
  * x_rotated[i] = sum R[i][j]*x[j]
  */
 
-extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
+extern void do_fit_ndim(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x);
 /* Do a least squares fit of x to xp. Atoms which have zero mass
  * (w_rls[i]) are not taken into account in fitting.
  * This makes is possible to fit eg. on Calpha atoms and orient
@@ -78,12 +80,19 @@ extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
  * therefore both xp and x should be centered round the origin.
  */
 
-extern void reset_x(int ncm,atom_id ind_cm[],
-		    int nreset,atom_id *ind_reset,rvec x[],real mass[]);
-/* Put the center of mass of atoms in the origin.
+extern void do_fit(int natoms,real *w_rls,rvec *xp,rvec *x);
+/* Calls do_fit with ndim=3, thus fitting in 3D */
+
+extern void reset_x_ndim(int ndim,int ncm,atom_id ind_cm[],
+			 int nreset,atom_id *ind_reset,rvec x[],real mass[]);
+/* Put the center of mass of atoms in the origin for dimensions 0 to ndim.
  * The center of mass is computed from the index ind_cm.
  * When ind_reset!=NULL the coordinates indexed by ind_reset are reset.
  * When ind_reset==NULL the coordinates up to nreset are reset.
  */
+
+extern void reset_x(int ncm,atom_id ind_cm[],
+		    int nreset,atom_id *ind_reset,rvec x[],real mass[]);
+/* Calls reset_x with ndim=3, thus resetting all dimesions */
 
 #endif	/* _do_fit_h */
