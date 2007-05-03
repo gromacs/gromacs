@@ -58,9 +58,10 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       vbuf = spac->vbuf;
       /* Send and receive the coordinates */
       dd_sendrecv2_rvec(dd,d,
-			f+n   ,n0,vbuf              ,spas[0].nsend,
-			f+n+n0,n1,vbuf+spas[0].nsend,spas[1].nsend);
+			f+n+n1,n0,vbuf              ,spas[0].nsend,
+			f+n   ,n1,vbuf+spas[0].nsend,spas[1].nsend);
       for(dir=0; dir<2; dir++) {
+	spas = &spac->spas[d][dir];
 	/* Sum the buffer into the required forces */
 	if (fshift &&
 	    ((dir == 0 && dd->ci[dd->dim[d]] == 0) || 
