@@ -58,8 +58,36 @@ typedef struct {
   real    c;
 } t_mybonded;
 
+typedef struct {
+  int     ftype;
+  t_param *param;
+} vsitebondparam_t;
+
+typedef struct {
+  int              nr;
+  int              ftype;
+  vsitebondparam_t *vsbp;
+} at2vsitebond_t;
+
+typedef struct {
+  int nr;
+  int *aj;
+} at2vsitecon_t;
+
+static int vsite_bond_nrcheck(int ftype)
+{
+  int nrcheck;
+  
+  if ((interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT | IF_ATYPE)) || (ftype == F_IDIHS))
+    nrcheck = NRAL(ftype);
+  else
+    nrcheck = 0;
+  
+  return nrcheck;
+}
+
 static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds, 
-			 t_param param)
+			 t_param *param)
 {
   int j;
 
@@ -67,74 +95,142 @@ static void enter_bonded(int nratoms, int *nrbonded, t_mybonded **bondeds,
   
   /* copy atom numbers */
   for(j=0; j<nratoms; j++)
-    (*bondeds)[*nrbonded].a[j] = param.a[j];
+    (*bondeds)[*nrbonded].a[j] = param->a[j];
   /* copy parameter */
-  (*bondeds)[*nrbonded].c = param.C0;
+  (*bondeds)[*nrbonded].c = param->C0;
   
   (*nrbonded)++;
 }
 
-static void get_bondeds(int nrat, t_iatom atoms[], 
-			t_params plist[],
+static void get_bondeds(int nrat, t_iatom atoms[],
+			at2vsitebond_t *at2vb, t_params plist[],
 			int *nrbond, t_mybonded **bonds,
 			int *nrang,  t_mybonded **angles,
 			int *nridih, t_mybonded **idihs )
 {
-  int     i,j,k,ftype;
-  int     nra,nrd,tp,nrcheck;
-  t_iatom *ia,*aa;
-  bool    bCheck;
-  t_param param;
+  int     k,i,ftype,nrcheck;
+  t_param *param;
   
-  if (debug) {
-    fprintf(debug,"getting bondeds for %u (nr=%d):",atoms[0]+1,nrat);
-    for(k=1; k<nrat; k++)
-      fprintf(debug," %u",atoms[k]+1);
-    fprintf(debug,"\n");
+  for(k=0; k<nrat; k++) {
+    for(i=0; i<at2vb[atoms[k]].nr; i++) {
+      ftype = at2vb[atoms[k]].vsbp[i].ftype;
+      param = at2vb[atoms[k]].vsbp[i].param;
+      nrcheck = vsite_bond_nrcheck(ftype);
+      /* abuse nrcheck to see if we're adding bond, angle or idih */
+      switch (nrcheck) {
+      case 2: enter_bonded(nrcheck,nrbond,bonds, param); break;
+      case 3: enter_bonded(nrcheck,nrang, angles,param); break;
+      case 4: enter_bonded(nrcheck,nridih,idihs, param); break;
+      }
+    }
   }
+}
+
+static at2vsitebond_t *make_at2vsitebond(int natoms,t_params plist[])
+{
+  bool *bVSI;
+  int  ftype,i,j,nrcheck,nr;
+  t_iatom *aa;
+  at2vsitebond_t *at2vb;
+
+  snew(at2vb,natoms);
+
+  snew(bVSI,natoms);
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT))
-      /* this is a bond or a constraint */
-      nrcheck = 2;
-    else if ( interaction_function[ftype].flags & IF_ATYPE )
-      /* this is an angle */
-      nrcheck = 3;
-    else {
-      switch(ftype) {
-      case F_IDIHS: 
-	/* this is an improper dihedral */
-	nrcheck = 4;
-	break;
-      default:
-	/* ignore this */
-	nrcheck = 0;
-      } /* case */
-    } /* else */
-    
-    if (nrcheck)
+    if (interaction_function[ftype].flags & IF_VSITE) {
       for(i=0; (i<plist[ftype].nr); i++) {
-	/* now we have something, check includes one of atoms[*] */
-	bCheck=FALSE;
+	for(j=0; j<NRAL(ftype); j++)
+	  bVSI[plist[ftype].param[i].a[j]] = TRUE;
+      }
+    }
+  }
+  
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+    nrcheck = vsite_bond_nrcheck(ftype);
+    if (nrcheck > 0) {
+      for(i=0; (i<plist[ftype].nr); i++) {
 	aa = plist[ftype].param[i].a;
-	for(j=0; (j<nrcheck); j++)
-	  for(k=0; k<nrat; k++)
-	    bCheck = bCheck || (aa[j] == atoms[k]);
-	
-	if (bCheck)
-	  /* abuse nrcheck to see if we're adding bond, angle or idih */
-	  switch (nrcheck) {
-	  case 2: 
-	    enter_bonded(nrcheck,nrbond,bonds, plist[ftype].param[i]);
-	    break;
-	  case 3: 
-	    enter_bonded(nrcheck,nrang, angles,plist[ftype].param[i]);
-	    break;
-	  case 4: 
-	    enter_bonded(nrcheck,nridih,idihs, plist[ftype].param[i]);
-	    break;
-	  } /* case */
-      } /* for i */
-  } /* for ftype */
+	for(j=0; j<nrcheck; j++) {
+	  if (bVSI[aa[j]]) {
+	    nr = at2vb[aa[j]].nr;
+	    if (nr % 10 == 0)
+	      srenew(at2vb[aa[j]].vsbp,nr+10);
+	    at2vb[aa[j]].vsbp[nr].ftype = ftype;
+	    at2vb[aa[j]].vsbp[nr].param = &plist[ftype].param[i];
+	    at2vb[aa[j]].nr++;
+	  }
+	}
+      }
+    }
+  }
+  sfree(bVSI);
+
+  return at2vb;
+}
+
+static void done_at2vsitebond(int natoms,at2vsitebond_t *at2vb)
+{
+  int i;
+
+  for(i=0; i<natoms; i++)
+    if (at2vb[i].nr)
+      sfree(at2vb[i].vsbp);
+  sfree(at2vb);
+}
+
+static at2vsitecon_t *make_at2vsitecon(int natoms,t_params plist[])
+{
+  bool *bVSI;
+  int  ftype,i,j,ai,aj,nr;
+  at2vsitecon_t *at2vc;
+
+  snew(at2vc,natoms);
+
+  snew(bVSI,natoms);
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+    if (interaction_function[ftype].flags & IF_VSITE) {
+      for(i=0; (i<plist[ftype].nr); i++) {
+	for(j=0; j<NRAL(ftype); j++)
+	  bVSI[plist[ftype].param[i].a[j]] = TRUE;
+      }
+    }
+  }
+  
+  for(ftype=0; (ftype<F_NRE); ftype++) {
+    if (interaction_function[ftype].flags & IF_CONSTRAINT) {
+      for(i=0; (i<plist[ftype].nr); i++) {
+	ai = plist[ftype].param[i].AI;
+	aj = plist[ftype].param[i].AJ;
+	if (bVSI[ai] && bVSI[aj]) {
+	  /* Store forward direction */
+	  nr = at2vc[ai].nr;
+	  if (nr % 10 == 0)
+	    srenew(at2vc[ai].aj,nr+10);
+	  at2vc[ai].aj[nr] = aj;
+	  at2vc[ai].nr++;
+	  /* Store backward direction */
+	  nr = at2vc[aj].nr;
+	  if (nr % 10 == 0)
+	    srenew(at2vc[aj].aj,nr+10);
+	  at2vc[aj].aj[nr] = ai;
+	  at2vc[aj].nr++;
+	}
+      }
+    }
+  }
+  sfree(bVSI);
+
+  return at2vc;
+}
+
+static void done_at2vsitecon(int natoms,at2vsitecon_t *at2vc)
+{
+  int i;
+
+  for(i=0; i<natoms; i++)
+    if (at2vc[i].nr)
+      sfree(at2vc[i].aj);
+  sfree(at2vc);
 }
 
 /* for debug */
@@ -530,6 +626,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
   int i,j,ftype;
   int nvsite,nrbond,nrang,nridih,nrset;
   bool bFirst,bSet,bERROR;
+  at2vsitebond_t *at2vb;
   t_mybonded *bonds;
   t_mybonded *angles;
   t_mybonded *idihs;
@@ -538,7 +635,11 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
   bERROR = TRUE;
   nvsite=0;
   if (debug)
-    fprintf(debug, "\nCalculating parameters for virtual sites\n");  
+    fprintf(debug, "\nCalculating parameters for virtual sites\n");
+
+  /* Make a reverse list to avoid ninteractions^2 operations */
+  at2vb = make_at2vsitebond(atoms->nr,plist);
+
   for(ftype=0; (ftype<F_NRE); ftype++)
     if (interaction_function[ftype].flags & IF_VSITE) {
       nrset=0;
@@ -565,7 +666,7 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
 	  idihs = NULL;
 	  nrset++;
 	  /* now set the vsite parameters: */
-	  get_bondeds(NRAL(ftype), plist[ftype].param[i].a, plist, 
+	  get_bondeds(NRAL(ftype), plist[ftype].param[i].a, at2vb, plist, 
 		      &nrbond, &bonds, &nrang,  &angles, &nridih, &idihs);
 	  if (debug) {
 	    fprintf(debug, "Found %d bonds, %d angles and %d idihs "
@@ -620,6 +721,8 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
 	fprintf(stderr,"Calculated parameters for %d out of %d %s atoms\n",
 		nrset,plist[ftype].nr,interaction_function[ftype].longname);
     } /* if IF_VSITE */
+
+  done_at2vsitebond(atoms->nr,at2vb);
   
   return nvsite;
 }
@@ -859,9 +962,10 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
 }
 
 static void clean_vsite_angles(t_params *plist, t_pindex pindex[], 
-			       int cftype, int vsite_type[])
+			       int cftype, int vsite_type[],
+			       at2vsitecon_t *at2vc)
 {
-  int      ftype,i,j,parnr,k,l,m,n,nvsite,kept_i,vsnral,vsitetype;
+  int      i,j,parnr,k,l,m,n,nvsite,kept_i,vsnral,vsitetype;
   atom_id  atom,constr,at1,at2;
   atom_id  vsiteatoms[MAXATOMLIST];
   bool     bKeep,bUsed,bPresent,bAll3FAD,bFirstTwo;
@@ -931,14 +1035,10 @@ static void clean_vsite_angles(t_params *plist, t_pindex pindex[],
 	at1 = vsiteatoms[m];
 	at2 = vsiteatoms[(m+1) % vsnral];
 	bPresent=FALSE;
-	for (ftype=0; ftype<F_NRE; ftype++)
-	  if ( interaction_function[ftype].flags & IF_CONSTRAINT )
-	    for (j=0; (j<plist[ftype].nr) && !bPresent; j++)
-	      /* all constraints until one matches */
-	      bPresent = ( ( (plist[ftype].param[j].AI == at1) &&
-			     (plist[ftype].param[j].AJ == at2) ) || 
-			   ( (plist[ftype].param[j].AI == at2) &&
-			     (plist[ftype].param[j].AJ == at1) ) );
+	for(j=0; j<at2vc[at1].nr; j++) {
+	  if (at2vc[at1].aj[j] == at2)
+	    bPresent = TRUE;
+	}
 	if (!bPresent)
 	  bKeep=TRUE;
       }
@@ -1045,6 +1145,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
   int i,k,nvsite,ftype,parnr;
   int *vsite_type;
   t_pindex *pindex;
+  at2vsitecon_t *at2vc;
 
   pindex=0; /* avoid warnings */
   /* make vsite_type array */
@@ -1067,6 +1168,10 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
   if (nvsite) {
     fprintf(stderr,"Cleaning up constraints %swith virtual sites\n",
 	    bRmVSiteBds?"and constant bonded interactions ":"");
+
+    /* Make a reverse list to avoid ninteractions^2 operations */
+    at2vc = make_at2vsitecon(natoms,plist);
+
     snew(pindex,natoms);
     for(ftype=0; ftype<F_NRE; ftype++)
       if (interaction_function[ftype].flags & IF_VSITE)
@@ -1089,7 +1194,7 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
 	if (interaction_function[ftype].flags & (IF_BTYPE | IF_CONSTRAINT) )
 	  clean_vsite_bonds (plist, pindex, ftype, vsite_type);
 	else if (interaction_function[ftype].flags & IF_ATYPE)
-	  clean_vsite_angles(plist, pindex, ftype, vsite_type);
+	  clean_vsite_angles(plist, pindex, ftype, vsite_type, at2vc);
 	else if ( (ftype==F_PDIHS) || (ftype==F_IDIHS) )
 	  clean_vsite_dihs  (plist, pindex, ftype, vsite_type);
       }
@@ -1097,7 +1202,8 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
     for(ftype=0; ftype<F_NRE; ftype++)
       if (interaction_function[ftype].flags & IF_CONSTRAINT)
 	check_vsite_constraints(plist, ftype, vsite_type);
-    
+
+    done_at2vsitecon(natoms,at2vc);
   }
   sfree(pindex);
   sfree(vsite_type);
