@@ -126,7 +126,7 @@ static void check_box_c(matrix box)
 
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
-		   bool bCM,bool bXY,bool bPBC,
+		   bool bCM,bool bXY,bool bPBC,bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng)
 {
   FILE       *fp;
@@ -379,8 +379,12 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       r = (i+0.5)*binwidth;
       if ((fade > 0) && (r >= fade))
 	rdf[g][i] = 1+(count[g][i]*inv_segvol[i]*normfac-1)*exp(-16*sqr(r/fade-1));
-      else
-	rdf[g][i] = count[g][i]*inv_segvol[i]*normfac;
+      else {
+	if (bNormalize)
+	  rdf[g][i] = count[g][i]*inv_segvol[i]*normfac;
+	else
+	  rdf[g][i] = count[g][i];
+      }
     }
     for( ; (i<nrdf); i++)
       rdf[g][i] = 1.0;
@@ -851,7 +855,7 @@ int gmx_rdf(int argc,char *argv[])
     "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid"
     "spacing of which is determined by option [TT]-grid[tt]."
   };
-  static bool bCM=FALSE,bXY=FALSE,bPBC=TRUE;
+  static bool bCM=FALSE,bXY=FALSE,bPBC=TRUE,bNormalize=TRUE;
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
@@ -861,7 +865,9 @@ int gmx_rdf(int argc,char *argv[])
     { "-com",      FALSE, etBOOL, {&bCM},
       "RDF with respect to the center of mass of first group" },
     { "-pbc",      FALSE, etBOOL, {&bPBC},
-      "Use periodic boundary conditions for computing distances. Without PBC the maximum range will be infinity." },
+      "Use periodic boundary conditions for computing distances. Without PBC the maximum range will be three times the larges box edge." },
+    { "-norm",     FALSE, etBOOL, {&bNormalize},
+      "Without normalization the amount of interactions is plotted as a function of distance, without taking volume or particle density into account" },
     { "-xy",       FALSE, etBOOL, {&bXY},
       "Use only the x and y components of the distance" },
     { "-cut",      FALSE, etREAL, {&cutoff},
@@ -932,7 +938,7 @@ int gmx_rdf(int argc,char *argv[])
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
 	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
 	   opt2fn_null("-hq",NFILE,fnm),
-	   bCM,bXY,bPBC,cutoff,binwidth,fade,ngroups);
+	   bCM,bXY,bPBC,bNormalize,cutoff,binwidth,fade,ngroups);
 
   thanx(stderr);
   
