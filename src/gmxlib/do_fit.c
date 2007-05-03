@@ -100,7 +100,7 @@ real rhodev(int natoms,real mass[],rvec x[],rvec xp[])
 
 void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
 {
-  int    c,r,n,j,m,i,irot;
+  int    c,r,n,j,m,i,irot,s;
   double **omega,**om;
   double d[2*DIM],xnr,xpc;
   matrix vh,vk,u;
@@ -163,8 +163,8 @@ void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
   
   index=0; /* For the compiler only */
 
-  /* Copy only the first two eigenvectors */  
-  for(j=0; j<2; j++) {
+  /* Copy only the first ndim-1 eigenvectors */  
+  for(j=0; j<ndim-1; j++) {
     max_d=-1000;
     for(i=0; i<2*ndim; i++)
       if (d[i]>max_d) {
@@ -177,22 +177,29 @@ void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
       vk[j][i]=M_SQRT2*om[i+ndim][index];
     }
   }
-  /* Calculate the last eigenvector as the outer-product of the first two.
-   * This insures that the conformation is not mirrored and
-   * prevents problems with completely flat reference structures.
-   */  
-  oprod(vh[0],vh[1],vh[2]);
-  oprod(vk[0],vk[1],vk[2]);
+  if (ndim == 3) {
+    /* Calculate the last eigenvector as the outer-product of the first two.
+     * This insures that the conformation is not mirrored and
+     * prevents problems with completely flat reference structures.
+     */  
+    oprod(vh[0],vh[1],vh[2]);
+    oprod(vk[0],vk[1],vk[2]);
+  } else if (ndim == 2) {
+    /* Calculate the last eigenvector from the first one */
+    vh[1][XX] = -vh[0][YY];
+    vh[1][YY] =  vh[0][XX];
+    vk[1][XX] = -vk[0][YY];
+    vk[1][YY] =  vk[0][XX];
+  }
 
-  /*determine R*/
+  /* determine R */
   clear_mat(R);
-  for(r=0; r<DIM; r++)
-    R[r][r] = 1;
   for(r=0; r<ndim; r++)
     for(c=0; c<ndim; c++)
-      R[r][c] = vk[0][r]*vh[0][c] +
-	        vk[1][r]*vh[1][c] +
-	        vk[2][r]*vh[2][c];
+      for(s=0; s<ndim; s++)
+	R[r][c] += vk[s][r]*vh[s][c];
+  for(r=ndim; r<DIM; r++)
+    R[r][r] = 1;
 
   for(i=0; i<2*ndim; i++) {
     sfree(omega[i]);
