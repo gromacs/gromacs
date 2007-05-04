@@ -194,8 +194,10 @@ int main(int argc,char *argv[])
   static int  nthreads=1;
 
   static rvec realddxyz={1,1,1};
+  static char *ddno_opt[ddnoNR+1] =
+    { NULL, "interleave", "pp_pme", "cartesian", NULL };
   static real rdd=0.0;
-  static char *loadx=NULL,*loady=NULL,*loadz=NULL;
+  static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
 
   static t_pargs pa[] = {
     { "-dd",      FALSE, etRVEC,{&realddxyz},
@@ -204,20 +206,18 @@ int main(int argc,char *argv[])
       "Number of threads to start on each node" },
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME" },
-    { "-cart",    FALSE, etBOOL, {&bCart}, 
-      "Use a Cartesian communicator" },
-    { "-pppme",    FALSE, etBOOL, {&bPPPME}, 
-      "HIDDENNode order PP PME iso interleaved" },
+    { "-ddno",     FALSE, etENUM, {ddno_opt},
+      "DD node order" },
     { "-rdd",     FALSE, etREAL, {&rdd},
-      "The minimum distance for DD communication" },
+      "The minimum distance for DD communication (nm)" },
     { "-dlb",     FALSE, etBOOL, {&bDLB},
-      "Use dynamic load balancing" },
-    { "-loadx",   FALSE, etSTR, {&loadx},
-      "HIDDENLoad distribution in x" },
-    { "-loady",   FALSE, etSTR, {&loady},
-      "HIDDENLoad distribution in y" },
-    { "-loadz",   FALSE, etSTR, {&loadz},
-      "HIDDENLoad distribution in z" },
+      "Use dynamic load balancing (only with DD)" },
+    { "-ddcsx",   FALSE, etSTR, {&ddcsx},
+      "HIDDENThe DD cell sizes in x" },
+    { "-ddcsy",   FALSE, etSTR, {&ddcsy},
+      "HIDDENThe DD cell sizes in y" },
+    { "-ddcsz",   FALSE, etSTR, {&ddcsz},
+      "HIDDENThe DD cell sizes in z" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -240,6 +240,7 @@ int main(int argc,char *argv[])
   t_edsamyn *edyn;
   unsigned long Flags;
   ivec     ddxyz;
+  int      dd_node_order;
   
   cr = init_par(&argc,&argv);
   snew(edyn,1);
@@ -252,6 +253,7 @@ int main(int argc,char *argv[])
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
+  dd_node_order = nenum(ddno_opt);
   cr->npmenodes = npme;
     
 #ifndef GMX_THREADS
@@ -282,15 +284,14 @@ int main(int argc,char *argv[])
   Flags = Flags | (bSepDVDL  ? MD_SEPDVDL    : 0);
   Flags = Flags | (bIonize   ? MD_IONIZE     : 0);
   Flags = Flags | (bGlas     ? MD_GLAS       : 0);
-  Flags = Flags | (bCart     ? MD_CARTESIAN  : 0);
-  Flags = Flags | (bPPPME    ? MD_ORD_PP_PME : 0);
   Flags = Flags | (bDLB      ? MD_DLB        : 0);
 
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,ddxyz,rdd,loadx,loady,loadz,
+  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,
+	   ddxyz,dd_node_order,rdd,ddcsx,ddcsy,ddcsz,
 	   nstepout,edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)

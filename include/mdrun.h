@@ -62,15 +62,17 @@
 #define MD_RERUN       (1<<4)
 #define MD_FFSCAN      (1<<6)
 #define MD_SEPDVDL     (1<<7)
-#define MD_CARTESIAN   (1<<8)
-#define MD_ORD_PP_PME  (1<<9)
-#define MD_DLB         (1<<10)
+#define MD_DLB         (1<<8)
+
+enum {
+  ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
+};
 
 /* ROUTINES from md.c */
 extern time_t do_md(FILE *log,t_commrec *cr,
 		    int nfile,t_filenm fnm[],
 		    bool bVerbose,bool bCompact,
-		    ivec ddxyz,char *loadx,char *loady,char *loadz,
+		    ivec ddxyz,char *ddcsx,char *ddcsy,char *ddcsz,
 		    gmx_vsite_t *vsite,int stepout,
 		    t_inputrec *inputrec,t_groups *grps,
 		    t_topology *top,real ener[],t_fcdata *fcd,
@@ -279,7 +281,8 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   
 extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
-		     ivec ddxyz,real rdd,char *loadx,char *loady,char *loadz,
+		     ivec ddxyz,int dd_node_order,real rdd,
+		     char *ddcsx,char *ddcsy,char *ddcsz,
 		     int nstepout,
 		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 		     unsigned long Flags);

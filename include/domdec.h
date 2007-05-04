@@ -37,16 +37,15 @@ extern void get_pme_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
 			    int *nmy_ddnodes,int **my_ddnodes);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
-extern void make_dd_communicators(FILE *fplog,t_commrec *cr,
-				  bool bCartesian,bool bOrderPP_PME);
+extern void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       t_commrec *cr,ivec nc,
 					       real comm_distance_min,
 					       bool bDynLoadBal,
-					       char *loadx,
-					       char *loady,
-					       char *loadz);
+					       char *sizex,
+					       char *sizey,
+					       char *sizez);
 
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 			      t_topology *top,t_inputrec *ir,t_forcerec *fr);

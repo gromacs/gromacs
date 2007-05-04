@@ -135,7 +135,8 @@ static void receive_inputrec(t_commrec *cr,
 
 void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
-	      ivec ddxyz,real rdd,char *loadx,char *loady,char *loadz,
+	      ivec ddxyz,int dd_node_order,real rdd,
+	      char *ddcsx,char *ddcsy,char *ddcsz,
 	      int nstepout,t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 	      unsigned long Flags)
 {
@@ -164,11 +165,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,rdd,
-				       Flags & MD_DLB,loadx,loady,loadz);
+				       Flags & MD_DLB,ddcsx,ddcsy,ddcsz);
     
-    make_dd_communicators(stdlog,cr,
-			  Flags & MD_CARTESIAN,
-			  Flags & MD_ORD_PP_PME);
+    make_dd_communicators(stdlog,cr,dd_node_order);
   } else {
     if (cr->npmenodes > 0)
       gmx_fatal(FARGS,
@@ -342,7 +341,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     case eiBD:
       start_t=do_md(stdlog,cr,nfile,fnm,
 		    bVerbose,bCompact,
-		    ddxyz,loadx,loady,loadz,
+		    ddxyz,ddcsx,ddcsy,ddcsz,
 		    vsite,
 		    nstepout,inputrec,grps,top,ener,fcd,state,f,buf,
 		    mdatoms,nrnb,wcycle,graph,edyn,fr,
@@ -412,7 +411,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 
 time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
-	     ivec ddxyz,char *loadx,char *loady,char *loadz,
+	     ivec ddxyz,char *ddcsx,char *ddcsy,char *ddcsz,
 	     gmx_vsite_t *vsite,
 	     int stepout,t_inputrec *inputrec,t_groups *grps,
 	     t_topology *top_global,

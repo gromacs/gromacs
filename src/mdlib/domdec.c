@@ -102,6 +102,9 @@ typedef struct gmx_domdec_comm {
   
   /* Are there bonded interactions between charge groups? */
   bool bInterCGBondeds;
+  
+  /* Cell sizes for static load balancing */
+  real **slb_frac;
     
   /* The width of the communicated boundaries */
   real distance_min;
@@ -1115,10 +1118,9 @@ static void check_box_size(gmx_domdec_t *dd,matrix box)
 static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster)
 {
   int  d,j;
-  real tot;
 
   for(d=0; d<DIM; d++) {
-    if (dd->cell_load[d] == NULL || dd->nc[d] == 1) {
+    if (dd->nc[d] == 1 || dd->comm->slb_frac[d] == NULL) {
       /* Uniform grid */
       if (bMaster) {
 	for(j=0; j<dd->nc[d]+1; j++)
@@ -1128,22 +1130,19 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster)
 	dd->cell_x1[d] = (dd->ci[d]+1)*box[d][d]/dd->nc[d];
       }
     } else {
-      /* Load balanced grid */
-      tot = 0;
-      for(j=0; j<dd->nc[d]; j++)
-	tot += 1/dd->cell_load[d][j];
-      
+      /* Statically load balanced grid */
       if (bMaster) {
 	dd->ma->cell_x[d][0] = 0;
 	for(j=0; j<dd->nc[d]; j++)
 	  dd->ma->cell_x[d][j+1] =
-	    dd->ma->cell_x[d][j] + box[d][d]/(dd->cell_load[d][j]*tot);
+	    dd->ma->cell_x[d][j] + box[d][d]*dd->comm->slb_frac[d][j];
       } else {
+	/* Sum in a loop to obtain an identical value to the loop above */
 	dd->cell_x0[d] = 0;
 	for(j=0; j<dd->ci[d]; j++)
-	  dd->cell_x0[d] += box[d][d]/(dd->cell_load[d][j]*tot);
+	  dd->cell_x0[d] += box[d][d]*dd->comm->slb_frac[d][j];
 	dd->cell_x1[d] =
-	  dd->cell_x0[d] +  box[d][d]/(dd->cell_load[d][dd->ci[d]]*tot);
+	  dd->cell_x0[d] +  box[d][d]*dd->comm->slb_frac[d][dd->ci[d]];
       }
     }
   }
@@ -2763,8 +2762,7 @@ static bool receive_vir_ener(t_commrec *cr)
   return bReceive;
 }
 
-void make_dd_communicators(FILE *fplog,t_commrec *cr,
-			   bool bCartesian,bool bOrderPP_PME)
+void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
 {
   gmx_domdec_t *dd;
   gmx_domdec_comm_t *comm;
@@ -2782,7 +2780,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,
 
   copy_ivec(dd->nc,comm->ntot);
   
-  comm->bCartesianPP = bCartesian;
+  comm->bCartesianPP = (dd_node_order == ddnoCARTESIAN);
   comm->bCartesianPP_PME = FALSE;
   if (comm->bCartesianPP && cr->npmenodes > 0) {
     for(i=1; i<DIM; i++)
@@ -2849,9 +2847,11 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,
 
       cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
     } else {
-      if (comm->bCartesianPP || bOrderPP_PME) {
+      switch (dd_node_order) {
+      case ddnoPP_PME:
 	fprintf(fplog,"Order of the nodes: PP first, PME last\n");
-      } else {
+	break;
+      case ddnoINTERLEAVE:
 	/* Interleave the PP-only and PME-only nodes,
 	 * as on clusters with dual-core machines this will double
 	 * the communication bandwidth of the PME processes
@@ -2859,6 +2859,11 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,
 	 */
 	fprintf(fplog,"Interleaving PP and PME nodes\n");
 	comm->pmenodes = dd_pmenodes(cr);
+	break;
+      case ddnoCARTESIAN:
+	break;
+      default:
+	gmx_fatal(FARGS,"Unknown dd_node_order=%d",dd_node_order);
       }
 
       if (dd_node2pmenode(cr,cr->nodeid) == -1)
@@ -2971,28 +2976,36 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,
   }
 }
 
-static real *get_cell_load(FILE *fplog,char *dir,int nc,char *load_string)
+static real *get_slb_frac(FILE *fplog,char *dir,int nc,char *size_string)
 {
-  real *cell_load;
+  real *slb_frac,tot;
   int  i,n;
   double dbl;
 
-  cell_load = NULL;
-  if (nc > 1 && load_string != NULL) {
+  slb_frac = NULL;
+  if (nc > 1 && size_string != NULL) {
     fprintf(fplog,"Using static load balancing for the %s direction\n",dir);
-    snew(cell_load,nc);
+    snew(slb_frac,nc);
+    tot = 0;
     for (i=0; i<nc; i++) {
       dbl = 0;
-      sscanf(load_string,"%lf%n",&dbl,&n);
+      sscanf(size_string,"%lf%n",&dbl,&n);
       if (dbl == 0)
-	gmx_fatal(FARGS,"Incorrect or not enough load entries for direction %s: '%s'",
-		  dir,load_string);
-      cell_load[i] = dbl;
-      load_string += n;
+	gmx_fatal(FARGS,"Incorrect or not enough DD cell size entries for direction %s: '%s'",dir,size_string);
+      slb_frac[i] = dbl;
+      size_string += n;
+      tot += slb_frac[i];
     }
+    /* Normalize */
+    fprintf(fplog,"Relative cell sizes:");
+    for (i=0; i<nc; i++) {
+      slb_frac[i] /= tot;
+      fprintf(fplog," %5.3f",slb_frac[i]);
+    }
+    fprintf(fplog,"\n");
   }
   
-  return cell_load;
+  return slb_frac;
 }
 
 static int dd_nst_env(FILE *fplog,char *env_var)
@@ -3015,7 +3028,7 @@ static int dd_nst_env(FILE *fplog,char *env_var)
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 					real comm_distance_min,
 					bool bDynLoadBal,
-					char *loadx,char *loady,char *loadz)
+					char *sizex,char *sizey,char *sizez)
 {
   gmx_domdec_t *dd;
   gmx_domdec_comm_t *comm;
@@ -3036,8 +3049,10 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   copy_ivec(nc,dd->nc);
   dd->nnodes = dd->nc[XX]*dd->nc[YY]*dd->nc[ZZ];
   if (dd->nnodes != cr->nnodes - cr->npmenodes)
-    gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d). Total number of nodes is %d\n",
+    gmx_fatal(FARGS,"The size of the domain decomposition grid (%d) does not match the number of nodes (%d). The total number of nodes is %d",
 	      dd->nnodes,cr->nnodes - cr->npmenodes,cr->nnodes);
+  if (cr->npmenodes > dd->nnodes)
+    gmx_fatal(FARGS,"The number of separate PME node (%d) is larger than the number of PP nodes (%d), this is not supported.",cr->npmenodes,dd->nnodes);
   dd->ndim = 0;
   for(d=0; d<DIM; d++)
     if (dd->nc[d] > 1)
@@ -3070,7 +3085,6 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   fprintf(fplog,"Will%s use dynamic load balancing\n",
 	  dd->bDynLoadBal ? "" : " not");
   dd->bGridJump = dd->bDynLoadBal;
-  snew(dd->cell_load,DIM);
   if (comm->bRecordLoad) {
     if (dd->ndim > 1) {
       snew(comm->cell_d1,2);
@@ -3086,10 +3100,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
       }
     }
   }
+  snew(comm->slb_frac,DIM);
   if (!dd->bDynLoadBal) {
-    dd->cell_load[XX] = get_cell_load(fplog,"x",dd->nc[XX],loadx);
-    dd->cell_load[YY] = get_cell_load(fplog,"y",dd->nc[YY],loady);
-    dd->cell_load[ZZ] = get_cell_load(fplog,"z",dd->nc[ZZ],loadz);
+    comm->slb_frac[XX] = get_slb_frac(fplog,"x",dd->nc[XX],sizex);
+    comm->slb_frac[YY] = get_slb_frac(fplog,"y",dd->nc[YY],sizey);
+    comm->slb_frac[ZZ] = get_slb_frac(fplog,"z",dd->nc[ZZ],sizez);
   }
 
   return dd;
