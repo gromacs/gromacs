@@ -185,15 +185,13 @@ void calc_rffac(FILE *log,int eel,real eps_r,real eps_rf,real Rc,real Temp,
     /* eps == 0 signals infinite dielectric */
     if (eps_rf == 0) {
       *krf = 1/(2*Rc*Rc*Rc);
-      *crf = 0;
-    }
-    else {
+    } else {
       k1   = 1 + *kappa*Rc;
       k2   = eps_rf*sqr((real)(*kappa*Rc));
       
       *krf = ((eps_rf - eps_r)*k1 + 0.5*k2)/((2*eps_rf + eps_r)*k1 + k2)/(Rc*Rc*Rc);
-      *crf = 1/Rc + *krf*Rc*Rc;
     }
+    *crf   = 1/Rc + *krf*Rc*Rc;
     rmin   = pow(*krf*2.0,-1.0/3.0);
     
     if (bFirst) {
