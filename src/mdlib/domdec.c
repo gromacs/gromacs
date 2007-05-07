@@ -137,7 +137,8 @@ typedef struct gmx_domdec_comm {
   int  nalloc_vr;
 
   /* Cell sizes for dynamic load balancing */
-  gmx_domdec_root_t *root;
+  gmx_domdec_root_t **root;
+  real *cell_f_row;
   real cell_f0[DIM];
   real cell_f1[DIM];
   real cell_f_max0[DIM];
@@ -1152,10 +1153,11 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 				  bool bUniform,int step)
 {
   gmx_domdec_comm_t *comm;
-  gmx_domdec_root_t *root;
+  gmx_domdec_root_t *root=NULL;
   int  d,d1,dim,dim1,i,j,pos,nmin,nmin_old;
   bool bRowMember,bRowRoot,bLimLo,bLimHi;
   real load_aver,load_i,imbalance,change,cutoff_f,cell_min,fac,space,halfway;
+  real *cell_f_row;
   real change_max = 0.05;
   real relax = 0.5;
 
@@ -1173,8 +1175,8 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       }
     }
     
-    root = &comm->root[d];
     if (bRowRoot) {
+      root = comm->root[d];
       /* Store the original boundaries */
       for(i=0; i<dd->nc[dim]+1; i++)
 	root->old_cell_f[i] = root->cell_f[i];
@@ -1339,23 +1341,27 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       }
     }
     if (bRowMember) {
+      if (bRowRoot)
+	cell_f_row = root->cell_f;
+      else
+	cell_f_row = comm->cell_f_row;
       pos = dd->nc[dim] + 1 + d*2;
 #ifdef GMX_MPI
       /* Each node would only need to know two fractions,
        * but it is probably cheaper to broadcast the whole array.
        */
-      MPI_Bcast(root->cell_f,pos*sizeof(real),MPI_BYTE,
+      MPI_Bcast(cell_f_row,pos*sizeof(real),MPI_BYTE,
 		0,dd->comm->mpi_comm_load[d]);
 #endif
       /* Copy the fractions for this dimension from the buffer */
-      comm->cell_f0[d] = root->cell_f[dd->ci[dim]  ];
-      comm->cell_f1[d] = root->cell_f[dd->ci[dim]+1];
+      comm->cell_f0[d] = cell_f_row[dd->ci[dim]  ];
+      comm->cell_f1[d] = cell_f_row[dd->ci[dim]+1];
       pos = dd->nc[dim] + 1;
       for(d1=0; d1<=d; d1++) {
 	if (d1 < d) {
 	  /* Copy the cell fractions of the lower dimensions */
-	  comm->cell_f0[d1] = root->cell_f[pos++];
-	  comm->cell_f1[d1] = root->cell_f[pos++];
+	  comm->cell_f0[d1] = cell_f_row[pos++];
+	  comm->cell_f1[d1] = cell_f_row[pos++];
 	}
 	/* Set the cell dimensions */
 	dim1 = dd->dim[d1];
@@ -2135,6 +2141,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 #ifdef GMX_MPI
   gmx_domdec_comm_t *comm;
   gmx_domdec_load_t *load;
+  gmx_domdec_root_t *root;
   int  d,dim,cid,i,pos;
   float cell_frac=0,sbuf[DD_NLOAD_MAX];
   bool bSepPME;
@@ -2150,8 +2157,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 	(dd->ci[dd->dim[d+1]]==0 && dd->ci[dd->dim[dd->ndim-1]]==0)) {
       load = &comm->load[d];
       if (dd->bGridJump)
-	cell_frac = comm->root[d].cell_f[dd->ci[dim]+1] -
-	            comm->root[d].cell_f[dd->ci[dim]  ];
+	cell_frac = comm->cell_f1[d] - comm->cell_f0[d];
       pos = 0;
       if (d == dd->ndim-1) {
 	sbuf[pos++] = dd_force_load(comm);
@@ -2195,6 +2201,8 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 		 0,comm->mpi_comm_load[d]);
       if (dd->ci[dim] == dd->master_ci[dim]) {
 	/* We are the root, process this row */
+	root = comm->root[d];
+
 	load->sum = 0;
 	load->max = 0;
 	load->sum_m = 0;
@@ -2208,7 +2216,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 	  load->max = max(load->max,load->load[pos]);
 	  pos++;
 	  if (dd->bGridJump) {
-	    if (comm->root[d].bLimited)
+	    if (root->bLimited)
 	      /* This direction could not be load balanced properly,
 	       * therefore we need to use the maximum iso the average load.
 	       */
@@ -2221,8 +2229,8 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 	    if (d < dd->ndim-1)
 	      load->flags = (int)(load->load[pos++] + 0.5);
 	    if (d > 0) {
-	      comm->root[d].cell_f_max0[i] = load->load[pos++];
-	      comm->root[d].cell_f_min1[i] = load->load[pos++];
+	      root->cell_f_max0[i] = load->load[pos++];
+	      root->cell_f_min1[i] = load->load[pos++];
 	    }
 	  }
 	  if (bSepPME) {
@@ -2232,7 +2240,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 	    pos++;
 	  }
 	}
-	if (dd->bDynLoadBal && comm->root[d].bLimited) {
+	if (dd->bDynLoadBal && root->bLimited) {
 	  load->sum_m *= dd->nc[dim];
 	  load->flags |= (1<<d);
 	}
@@ -2324,10 +2332,12 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
     /* This process is part of the group */
     dd->comm->mpi_comm_load[dim_ind] = c_row;
     if (dd->bGridJump) {
-      root = &dd->comm->root[dim_ind];
-      snew(root->cell_f,dd->nc[dim]+1+dim_ind*2);
-      snew(root->old_cell_f,dd->nc[dim]+1);
       if (dd->ci[dim_ind] == dd->master_ci[dim_ind]) {
+	/* This is the root process of this row */
+	snew(dd->comm->root[dim_ind],1);
+	root = dd->comm->root[dim_ind];
+	snew(root->cell_f,dd->nc[dim]+1+dim_ind*2);
+	snew(root->old_cell_f,dd->nc[dim]+1);
 	snew(root->cell_size,dd->nc[dim]);
 	snew(root->bCellMin,dd->nc[dim]);
 	if (dim_ind > 0) {
@@ -2336,6 +2346,9 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
 	  snew(root->bound_min,dd->nc[dim]);
 	  snew(root->bound_max,dd->nc[dim]);
 	}
+      } else {
+	/* This is not a root process, we only need to receive cell_f */
+	snew(dd->comm->cell_f_row,dd->nc[dim]+1+dim_ind*2);
       }
     }
     if (dd->ci[dim_ind] == dd->master_ci[dim_ind])
