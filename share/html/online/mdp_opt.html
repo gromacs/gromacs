@@ -346,7 +346,9 @@ every <b>nstlist</b> steps.</dd>
 <dt><b>no</b></dt>
 <dd>Use no periodic boundary conditions, ignore the box,
 only works with <b>ns_type=simple</b>.
-To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.</dd>
+To simulate without cut-offs, set all cut-offs to 0 and <b>nstlist</b>=0.
+Note that for large molecules it is more efficient to use <b>pbc=xyz</b>,
+because this allow the use of grid neighbor searching.</dd>
 <dt><b>xy</b></dt>
 <dd>Use periodic boundary conditions in x and y directions only.
 This works only with <b>ns_type=grid</b> and can be used
@@ -488,9 +490,9 @@ in the printed manual.</dd>
 A combination of PME and a switch function for the direct-space part
 (see above).
 <b>rcoulomb</b> is allowed to be smaller than <b>rlist</b>.
-This is mainly useful for testing energy conservation.
-For production runs the advantage of improved energy conservation
-is usually outweighed by the loss in accuracy of the electrostatics.
+This is mainly useful constant energy simulations. For constant temperature
+simulations the advantage of improved energy conservation
+is usually outweighed by the small loss in accuracy of the electrostatics.
 </dd>
 
 <dt><b>PME-User</b></dt>
