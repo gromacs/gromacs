@@ -3693,13 +3693,6 @@ void dd_partition_system(FILE         *fplog,
       srenew(fr->f_twin,fr->f_twin_nalloc);
     }
   }
-  if (EEL_FULL(fr->eeltype)) {
-    fr->f_el_recip_n = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
-    if (fr->f_el_recip_n > fr->f_el_recip_nalloc) {
-      fr->f_el_recip_nalloc = over_alloc(fr->f_el_recip_n);
-      srenew(fr->f_el_recip,fr->f_el_recip_nalloc);
-    }
-  }
 
   /* Extract a local topology from the global topology */
   dd_make_local_top(fplog,dd,fr,vsite,top_global,top_local);
@@ -3716,6 +3709,16 @@ void dd_partition_system(FILE         *fplog,
    */
   if (dd->nat_tot_con > state_local->nalloc)
     dd_realloc_state(state_local,f,buf,dd->nat_tot_con);
+  if (EEL_FULL(fr->eeltype)) {
+    if (vsite && vsite->n_intercg_vsite)
+      fr->f_el_recip_n = dd->nat_tot_vsite;
+    else
+      fr->f_el_recip_n = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
+    if (fr->f_el_recip_n > fr->f_el_recip_nalloc) {
+      fr->f_el_recip_nalloc = over_alloc(fr->f_el_recip_n);
+      srenew(fr->f_el_recip,fr->f_el_recip_nalloc);
+    }
+  }
 
   /* We make the all mdatoms up to nat_tot_con.
    * We could save some work by only setting invmass
