@@ -738,7 +738,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (vsite) {
-      if (graph) {
+	wallcycle_start(wcycle,ewcVSITECONSTR);
+	if (graph) {
 	/* Following is necessary because the graph may get out of sync
 	 * with the coordinates if we only have every N'th coordinate set
 	 */
@@ -751,6 +752,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
+      wallcycle_stop(wcycle,ewcVSITECONSTR);
     }
     debug_gmx();
 
@@ -847,9 +849,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * the update.
      * for RerunMD t is read from input trajectory
      */
-    if (vsite) 
+    if (vsite) {
+      wallcycle_start(wcycle,ewcVSITESPREAD);
       spread_vsite_f(log,vsite,state->x,f,fr->fshift,nrnb,
 		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
+      wallcycle_stop(wcycle,ewcVSITESPREAD);
+    }
 
     GMX_MPE_LOG(ev_virial_start);
     /* Calculation of the virial must be done after vsites!    */
@@ -862,9 +867,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
      * This is parallellized. MPI communication is performed
      * if the constructing atoms aren't local.
      */
-    if (vsite && fr->bEwald) 
+    if (vsite && fr->bEwald) {
+      wallcycle_start(wcycle,ewcVSITESPREAD);
       spread_vsite_f(log,vsite,state->x,fr->f_el_recip,NULL,nrnb,
 		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
+      wallcycle_stop(wcycle,ewcVSITESPREAD);
+    }
 
     GMX_MPE_LOG(ev_sum_lrforces_start);
     sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
