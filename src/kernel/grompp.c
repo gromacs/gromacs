@@ -356,7 +356,8 @@ static void cont_status(char *slog,char *ener,
 }
 
 static void read_posres(t_params *pr, char *fn, int offset, 
-			int rc_scaling, int ePBC, t_atom *atom, rvec com)
+			int rc_scaling, int ePBC, 
+			int natoms_top, t_atom *atom, rvec com)
 {
   bool   bFirst = TRUE;
   rvec   *x,*v;
@@ -369,6 +370,10 @@ static void read_posres(t_params *pr, char *fn, int offset,
   int    i,ai,j,k;
   
   get_stx_coordnum(fn,&natoms);
+  if (natoms != natoms_top) {
+    sprintf(warn_buf,"The number of atoms in %s (%d) does not match the number of atoms in the topology (%d). Will assume that the first %d atoms in the topology and %s match.",fn,natoms,natoms_top,min(natoms_top,natoms),fn);
+    warning(NULL);
+  }
   snew(x,natoms);
   snew(v,natoms);
   init_t_atoms(&dumat,natoms,FALSE);
@@ -391,7 +396,7 @@ static void read_posres(t_params *pr, char *fn, int offset,
     for(i=0; (i<pr->nr); i++) {
       ai=pr->param[i].AI;
       if (ai >= natoms)
-	gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than number of atoms in the system (%d).\n",ai+1,natoms);
+	gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than number of atoms in %s (%d).\n",ai+1,fn,natoms);
       for(j=0; j<npbcdim; j++)
 	sum[j] += atom[ai].m*x[ai][j];
       totmass += atom[ai].m;
@@ -406,7 +411,7 @@ static void read_posres(t_params *pr, char *fn, int offset,
   for(i=0; (i<pr->nr); i++) {
     ai=pr->param[i].AI;
     if (ai >= natoms)
-      gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than number of atoms in the system (%d).\n",ai+1,natoms);
+      gmx_fatal(FARGS,"Position restraint atom index (%d) is larger than number of atoms in %s (%d).\n",ai+1,fn,natoms);
     for(j=0; j<DIM; j++) {
       if (j < npbcdim) {
 	if (rc_scaling == erscALL) {
@@ -437,19 +442,19 @@ static void read_posres(t_params *pr, char *fn, int offset,
 }
 
 static void gen_posres(t_params *pr, char *fnA, char *fnB,
-		       int rc_scaling, int ePBC, t_atom *atom,
+		       int rc_scaling, int ePBC, t_atoms *atoms,
 		       rvec com, rvec comB)
 {
   int i,j;
 
-  read_posres(pr,fnA,2*DIM,rc_scaling,ePBC,atom,com);
+  read_posres(pr,fnA,2*DIM,rc_scaling,ePBC,atoms->nr,atoms->atom,com);
   if (strcmp(fnA,fnB) == 0) {
     for(i=0; (i<pr->nr); i++)
       for(j=0; (j<DIM); j++)
 	pr->param[i].c[3*DIM + j] = pr->param[i].c[2*DIM + j];
     copy_rvec(com,comB);
   } else {
-    read_posres(pr,fnB,3*DIM,rc_scaling,ePBC,atom,comB);
+    read_posres(pr,fnB,3*DIM,rc_scaling,ePBC,atoms->nr,atoms->atom,comB);
   }
 }
 
@@ -904,7 +909,7 @@ int main (int argc, char *argv[])
       }
     }
     gen_posres(&(msys.plist[F_POSRES]),fn,fnB,
-	       ir->refcoord_scaling,ir->ePBC,sys->atoms.atom,
+	       ir->refcoord_scaling,ir->ePBC,&sys->atoms,
 	       ir->posres_com,ir->posres_comB);
   }
   
