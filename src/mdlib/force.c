@@ -914,7 +914,8 @@ void init_forcerec(FILE *fp,
   fr->bEwald     = (EEL_PME(fr->eeltype) || fr->eeltype==eelEWALD);
 
   fr->bvdwtab    = (fr->vdwtype != evdwCUT);
-  fr->bcoultab   = (fr->eeltype != eelCUT) && !EEL_RF(fr->eeltype);
+  fr->bcoultab   = (!(fr->eeltype == eelCUT || EEL_RF(fr->eeltype)) ||
+		    fr->eeltype == eelRF_ZERO);
   
   if (getenv("GMX_FORCE_TABLES")) {
     fr->bvdwtab  = TRUE;

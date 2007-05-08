@@ -435,6 +435,18 @@ The ionic strength is computed from the number of charged
 The temperature for the GRF potential is set with 
 <b><A HREF="#tc">ref_t</A></b> [K].</dd>
 
+<dt><b>Reaction-Field-zero</b></dt>
+<dd>In GROMACS normal reaction-field electrostatics leads to bad
+energy conservation. <b>Reaction-Field-zero</b> solves this
+by making the potential zero beyond the cut-off. It can only
+be used with an infinite dielectric constant (<b>epsilon_rf=0</b>),
+because only for that value the force vanishes at the cut-off.
+<b>rlist</b> should be 0.1 to 0.3 nm larger than <b>rcoulomb</b>
+to accommodate for the size of charge groups and diffusion
+between neighbor list updates. This, and the fact that table lookups
+are used instead of analytical functions make <b>Reaction-Field-zero</b>
+slower than normal reaction-field.</dd>
+
 <dt><b>Reaction-Field-nec</b></dt>
 <dd>The same as <b>Reaction-Field</b>, but implemented as in
 GROMACS versions before 3.3. No reaction-field correction is applied

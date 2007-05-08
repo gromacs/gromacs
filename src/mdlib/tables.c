@@ -57,7 +57,8 @@ enum {
   etabLJ6Shift, 
   etabLJ12Shift, 
   etabShift,
-  etabRF,    
+  etabRF,
+  etabRF_ZERO,
   etabCOUL, 
   etabEwald, 
   etabEwaldSwitch, 
@@ -88,6 +89,7 @@ static t_tab_props tprops[etabNR] = {
   { "LJ12Shift", FALSE },
   { "Shift", TRUE },
   { "RF", TRUE },
+  { "RF-zero", TRUE },
   { "COUL", TRUE },
   { "Ewald", TRUE },
   { "Ewald-Switch", TRUE },
@@ -481,8 +483,13 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
       Ftab  = -erf(ewc*r)/r2+2*exp(-(ewc*ewc*r2))*ewc*isp/r;
       break;
     case etabRF:
+    case etabRF_ZERO:
       Vtab  = 1.0/r      +   fr->k_rf*r2 - fr->c_rf;
       Ftab  = 1.0/r2     - 2*fr->k_rf*r;
+      if (tp == etabRF_ZERO && r >= rc) {
+	Vtab = 0;
+	Ftab = 0;
+      }
       break;
     case etabEXPMIN:
       expr  = exp(-r);
@@ -589,6 +596,9 @@ static void set_table_type(int tabsel[],const t_forcerec *fr,bool b14only)
   case eelGRF:
   case eelRF_NEC:
     tabsel[etiCOUL] = etabRF;
+    break;
+  case eelRF_ZERO:
+    tabsel[etiCOUL] = etabRF_ZERO;
     break;
   case eelSWITCH:
     tabsel[etiCOUL] = etabCOULSwitch;

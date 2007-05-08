@@ -265,6 +265,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (EEL_RF(ir->coulombtype)) {
     /* reaction field (at the cut-off) */
     
+    if (ir->coulombtype == eelRF_ZERO) {
+       sprintf(err_buf,"With coulombtype = %s, epsilon_rf must be 0",
+	       eel_names[ir->coulombtype]);
+      CHECK(ir->epsilon_rf != 0);
+    }
+
     sprintf(err_buf,"epsilon_rf must be >= epsilon_r");
     CHECK((ir->epsilon_rf < ir->epsilon_r && ir->epsilon_rf != 0) ||
 	  (ir->epsilon_r == 0));
@@ -278,22 +284,29 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
    * means the interaction is zero outside rcoulomb, but it helps to
    * provide accurate energy conservation.
    */
-  if ((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) || (ir->coulombtype == eelENCADSHIFT) )
-  {
-    sprintf(err_buf,"With coulombtype = %s rcoulomb_switch must be < rcoulomb",
-	    eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
+  if (EEL_NOCUT(ir->coulombtype)) {
+    if (!EEL_PME(ir->coulombtype) && !EEL_RF(ir->coulombtype)) {
+      sprintf(err_buf,
+	      "With coulombtype = %s rcoulomb_switch must be < rcoulomb",
+	      eel_names[ir->coulombtype]);
+      CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
+    }
   } else if (EEL_RF(ir->coulombtype)) {
-    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",eel_names[ir->coulombtype]);
+    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
+	    eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
   }
 
-  if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER) {
-    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb > ir->rlist);
-  } else if (EEL_FULL(ir->coulombtype)) {
-    sprintf(err_buf,"With coulombtype = %s, rcoulomb must be equal to rlist",eel_names[ir->coulombtype]);
-    CHECK(ir->rcoulomb != ir->rlist);
+  if (EEL_FULL(ir->coulombtype)) {
+    if (ir->coulombtype==eelPMESWITCH || ir->coulombtype==eelPMEUSER) {
+      sprintf(err_buf,"With coulombtype = %s, rcoulomb must be <= rlist",
+	      eel_names[ir->coulombtype]);
+      CHECK(ir->rcoulomb > ir->rlist);
+    } else {
+      sprintf(err_buf,"With coulombtype = %s, rcoulomb must be equal to rlist",
+	      eel_names[ir->coulombtype]);
+      CHECK(ir->rcoulomb != ir->rlist);
+    }
   }
 
   if (EEL_PME(ir->coulombtype)) {
@@ -328,13 +341,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"With vdwtype = %s,rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
-  if (((ir->coulombtype == eelSHIFT) || (ir->coulombtype == eelSWITCH) ||
-       (ir->coulombtype == eelPMESWITCH)) && (ir->rlist == ir->rcoulomb)) {
+  if (EEL_NOCUT(ir->coulombtype) && (ir->rlist <= ir->rcoulomb)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb.");
     warning(NULL);
   }
-  if (((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT))
-      && (ir->rlist == ir->rvdw)) {
+  if (EVDW_NOCUT(ir->vdwtype) && (ir->rlist <= ir->rvdw)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rvdw.");
     warning(NULL);
   }
