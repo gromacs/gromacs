@@ -885,9 +885,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     bF   = (do_per_step(step,inputrec->nstfout));
     bXTC = (do_per_step(step,inputrec->nstxtcout));
 
-    write_traj(cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,inputrec->xtcprec,
-	       top_global,step,t,state,state_global,f,f_global);
-    debug_gmx();
+    if (bX || bV || bF || bXTC) {
+      wallcycle_start(wcycle,ewcTRAJ);
+      write_traj(cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,inputrec->xtcprec,
+		 top_global,step,t,state,state_global,f,f_global);
+      debug_gmx();
+      wallcycle_stop(wcycle,ewcTRAJ);
+    }
 
     if (MASTER(cr) && bLastStep && !bRerunMD && !bFFscan) {
       /* x and v have been collected in write_traj */

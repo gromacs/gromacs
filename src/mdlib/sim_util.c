@@ -312,6 +312,7 @@ void do_force(FILE *fplog,t_commrec *cr,
      * we do not need to worry about shifting.
      */    
 
+    wallcycle_start(wcycle,ewcPP_PMESENDX);
     GMX_MPE_LOG(ev_send_coordinates_start);
 
     bBS = (inputrec->nwall == 2);
@@ -325,6 +326,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 		     step >= inputrec->init_step+inputrec->nsteps);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
+    wallcycle_stop(wcycle,ewcPP_PMESENDX);
   }
 #endif /* GMX_MPI */
 
@@ -459,6 +461,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 #ifdef GMX_MPI       
       if (!(cr->duty & DUTY_PME))
       {
+	wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
 	d = 0;
 	gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d,
 			  &pme_cycles);
@@ -468,6 +471,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	ener[F_DVDL] += d;
 	if (wcycle)
 	  dd_cycles_add(cr->dd,pme_cycles,ddCyclPME);
+	wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
       }
 #endif
     }
