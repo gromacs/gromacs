@@ -2141,7 +2141,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 #ifdef GMX_MPI
   gmx_domdec_comm_t *comm;
   gmx_domdec_load_t *load;
-  gmx_domdec_root_t *root;
+  gmx_domdec_root_t *root=NULL;
   int  d,dim,cid,i,pos;
   float cell_frac=0,sbuf[DD_NLOAD_MAX];
   bool bSepPME;
@@ -2201,7 +2201,8 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 		 0,comm->mpi_comm_load[d]);
       if (dd->ci[dim] == dd->master_ci[dim]) {
 	/* We are the root, process this row */
-	root = comm->root[d];
+	if (dd->bDynLoadBal)
+	  root = comm->root[d];
 
 	load->sum = 0;
 	load->max = 0;
