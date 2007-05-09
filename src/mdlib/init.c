@@ -119,7 +119,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
 		    inputrec->efep!=efepNO,FALSE);
   
   pr_inputrec(log,0,"Input Parameters",inputrec);
-  calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0);
+  calc_nsb(log,&(top->blocks[ebCGS]),1,nsb,0,&(top->idef));
   print_nsb(log,"Neighbor Search Blocks",nsb);
 }
 
@@ -136,7 +136,7 @@ void distribute_parts(int left,int right,int nodeid,int nnodes,
   read_tpx_state(tpxfile,&step,&t,inputrec,&state,NULL,&top);
   check_nnodes_top(tpxfile,&top,nnodes);
   
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,&nsb,nstDlb);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),nnodes,&nsb,nstDlb,&(top.idef));
   mv_data(left,right,inputrec,&nsb,&top,&state);
   done_top(&top);
   done_state(&state);

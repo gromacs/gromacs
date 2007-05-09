@@ -47,11 +47,26 @@
 #include "nsb.h"
 #include "ns.h"
 
-void calc_nsbshift(FILE *fp,t_nsborder *nsb)
+static int home_cpu(int nnodes,t_nsborder *nsb,int atomid)
 {
-  int i;
+  int k;
+ 
+  for(k=0; (k<nnodes); k++) {
+    if (atomid<nsb->index[k]+nsb->homenr[k])
+      return k;
+  }
+  gmx_fatal(FARGS,"Atomid %d is larger than number of atoms (%d)",
+	    atomid+1,nsb->index[nnodes-1]+nsb->homenr[nnodes-1]+1);
+	    
+  return -1;
+}
+
+void calc_nsbshift(FILE *fp,t_nsborder *nsb,t_idef *idef)
+{
+  int i,j,k;
   int lastcg,targetcg,nshift,naaj;
-  
+  int homeid[32];
+
   nsb->bshift=0;
   for(i=1; (i<nsb->nnodes); i++) {
     targetcg = nsb->workload[i-1];
@@ -80,12 +95,25 @@ void calc_nsbshift(FILE *fp,t_nsborder *nsb)
     /* It's the largest shift that matters */
     nsb->shift=max(nshift,nsb->shift);
   }
+  /* Now for the bonded forces */
+  for(i=0; (i<F_NRE); i++) {
+    if (interaction_function[i].flags & IF_BOND) {
+      int nratoms = interaction_function[i].nratoms;
+      for(j=0; (j<idef->il[i].nr); j+=nratoms+1) {
+	for(k=1; (k<=nratoms); k++)
+	  homeid[k-1] = home_cpu(nsb->nnodes,nsb,idef->il[i].iatoms[j+k]);
+	for(k=1; (k<nratoms); k++)
+	  nsb->shift = max(nsb->shift,abs(homeid[k]-homeid[0]));
+      }
+    }
+  }
   if (fp)
     fprintf(fp,"nsb->shift = %3d, nsb->bshift=%3d\n",
 	    nsb->shift,nsb->bshift);
 }
 
-void calc_nsb(FILE *fp,t_block *cgs,int nnodes,t_nsborder *nsb,int nstDlb)
+void calc_nsb(FILE *fp,t_block *cgs,int nnodes,t_nsborder *nsb,int nstDlb,
+	      t_idef *idef)
 {
   int  i,cg0;
   
@@ -104,7 +132,7 @@ void calc_nsb(FILE *fp,t_block *cgs,int nnodes,t_nsborder *nsb,int nstDlb)
     nsb->index[i]    = cgs->index[cg0];
     nsb->homenr[i]   = cgs->index[cgs->multinr[i]]-nsb->index[i];
   }
-  calc_nsbshift(fp,nsb);
+  calc_nsbshift(fp,nsb,idef);
 }
 
 void print_nsb(FILE *fp,char *title,t_nsborder *nsb)

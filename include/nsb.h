@@ -41,11 +41,11 @@
 #include <config.h>
 #endif
 
-extern void calc_nsbshift(FILE *fp,t_nsborder *nsb);
+extern void calc_nsbshift(FILE *fp,t_nsborder *nsb,t_idef *idef);
 /* Calculates the shift and bshift variables */
 
 extern void calc_nsb(FILE *fp,t_block *cgs,int nprocs,
-		     t_nsborder *nsb,int nstDlb);
+		     t_nsborder *nsb,int nstDlb,t_idef *idef);
 /* Calculate which blocks of charge groups should be calculated,
  * depending on processor number.
  */
