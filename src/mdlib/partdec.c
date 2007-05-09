@@ -98,11 +98,26 @@ void pd_at_range(const t_commrec *cr,int *at0,int *at1)
   *at1 = cr->pd->index[cr->nodeid+1];
 }
 
-static void calc_nsbshift(FILE *fp,int nnodes,gmx_partdec_t *pd)
+static int home_cpu(int nnodes,gmx_partdec_t *pd,int atomid)
 {
-  int i;
+  int k;
+ 
+  for(k=0; (k<nnodes); k++) {
+    if (atomid<pd->index[k+1])
+      return k;
+  }
+  gmx_fatal(FARGS,"Atomid %d is larger than number of atoms (%d)",
+	    atomid+1,pd->index[nnodes]+1);
+	    
+  return -1;
+}
+
+static void calc_nsbshift(FILE *fp,int nnodes,gmx_partdec_t *pd,t_idef *idef)
+{
+  int i,j,k;
   int lastcg,targetcg,nshift,naaj;
-  
+  int homeid[32];
+      
   pd->bshift=0;
   for(i=1; (i<nnodes); i++) {
     targetcg = pd->cgindex[i];
@@ -132,12 +147,25 @@ static void calc_nsbshift(FILE *fp,int nnodes,gmx_partdec_t *pd)
     /* It's the largest shift that matters */
     pd->shift=max(nshift,pd->shift);
   }
+  /* Now for the bonded forces */
+  for(i=0; (i<F_NRE); i++) {
+    if (interaction_function[i].flags & IF_BOND) {
+      int nratoms = interaction_function[i].nratoms;
+      for(j=0; (j<idef->il[i].nr); j+=nratoms+1) {
+	for(k=1; (k<=nratoms); k++)
+	  homeid[k-1] = home_cpu(nnodes,pd,idef->il[i].iatoms[j+k]);
+	for(k=1; (k<nratoms); k++)
+	  pd->shift = max(pd->shift,abs(homeid[k]-homeid[0]));
+      }
+    }
+  }
   if (fp)
     fprintf(fp,"pd->shift = %3d, pd->bshift=%3d\n",
 	    pd->shift,pd->bshift);
 }
 
-static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr)
+static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
+			 t_idef *idef)
 {
   int  i;
   gmx_partdec_t *pd;
@@ -155,7 +183,10 @@ static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr)
       pd->cgindex[i+1] = multinr[i];
       pd->index[i+1]   = cgs->index[multinr[i]];
     }
-    calc_nsbshift(fp,cr->nnodes,pd);
+    calc_nsbshift(fp,cr->nnodes,pd,idef);
+    /* This is a hack to do with bugzilla 148 */
+    /*pd->shift = cr->nnodes-1;
+      pd->bshift = 0;*/
   }
 
   cr->pd = pd;
@@ -267,7 +298,7 @@ void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
   /* This computes which entities can be placed on processors */
   split_top(log,npp,top,capacity,multinr_cgs,multinr_nre);
   sfree(capacity);
-  init_partdec(log,cr,&(top->blocks[ebCGS]),multinr_cgs);
+  init_partdec(log,cr,&(top->blocks[ebCGS]),multinr_cgs,&(top->idef));
 
   /* This should be fine */
   /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/
