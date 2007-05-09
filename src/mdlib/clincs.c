@@ -457,13 +457,17 @@ t_block make_at2con(int start,int natoms,
     *nconstraints -= nflexcon;
   *nflexiblecons = nflexcon;
 
-  snew(at2con.index,natoms+1);
+  at2con.nr = natoms;
+  at2con.nalloc_index = at2con.nr+1;
+  snew(at2con.index,at2con.nalloc_index);
   at2con.index[0] = 0;
   for(a=0; a<natoms; a++) {
     at2con.index[a+1] = at2con.index[a] + count[a];
     count[a] = 0;
   }
-  snew(at2con.a,at2con.index[natoms]);
+  at2con.nra = at2con.index[natoms];
+  at2con.nalloc_a = at2con.nra;
+  snew(at2con.a,at2con.nalloc_a);
 
   ia   = idef->il[F_CONSTR].iatoms;
   for(con=0; con<ncon; con++) {
