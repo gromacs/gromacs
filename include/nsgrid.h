@@ -34,17 +34,17 @@
  * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _nsgrid_h
-#define _nsgrid_h
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include "typedefs.h"
 
+extern void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
+			   const gmx_domdec_t *dd,t_grid *grid);
+
 extern void init_grid(FILE *log,t_grid *grid,
-		      int delta,gmx_domdec_t *dd,
+		      int delta,const gmx_domdec_t *dd,
 		      int ePBC,matrix box,real rlong,int ncg);
 
 extern void done_grid(t_grid *grid);
@@ -75,7 +75,5 @@ extern void print_grid(FILE *log,t_grid *grid);
 
 extern void mv_grid(t_commrec *cr,t_grid *grid);
 /* Move the grid over processors */
-
-#endif	/* ns_grid_h */
 
 

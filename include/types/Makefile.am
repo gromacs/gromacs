@@ -8,8 +8,8 @@ pkgincludetypes_HEADERS = \
 	atoms.h    	edsams.h  	forcerec.h  	ifunc.h		\
 	mdatom.h  	simple.h	block.h    	constr.h	\
 	energy.h  	graph.h     	inputrec.h  	nblist.h 	\
-	nsgrid.h    	symtab.h	commrec.h  	enums.h   	\
-	group.h     	ishift.h    	nbslist.h  	\
+	ns.h 		nsgrid.h    	symtab.h	commrec.h	\
+	enums.h   	group.h     	ishift.h    	nbslist.h  	\
 	topology.h	fcdata.h  	filenm.h  	idef.h 		\
 	matrix.h    	nrnb.h     	trx.h		state.h		\
 	pbc.h		qmmmrec.h

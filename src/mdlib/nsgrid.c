@@ -64,10 +64,8 @@ static void init_range_check()
 	  "energy seems reasonable before trying again.\n");
 }
 
-static void set_grid_sizes(FILE *fplog,
-			   int ePBC,matrix box,real rlist,int delta,
-			   gmx_domdec_t *dd,
-			   t_grid *grid)
+void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
+		    const gmx_domdec_t *dd,t_grid *grid)
 {
   int  i,j;
   bool bDD,bDDRect;
@@ -150,12 +148,12 @@ static void set_grid_sizes(FILE *fplog,
   }
 }
 
-void init_grid(FILE *fplog,t_grid *grid,int delta,gmx_domdec_t *dd,
+void init_grid(FILE *fplog,t_grid *grid,int delta,const gmx_domdec_t *dd,
 	       int ePBC,matrix box,real rlistlong,int ncg)
 {
   int     d,m;
   
-  set_grid_sizes(fplog,ePBC,box,rlistlong,delta,dd,grid);
+  set_grid_sizes(ePBC,box,rlistlong,delta,dd,grid);
 
   fprintf(fplog,"Grid: %d x %d x %d cells\n",
 	  grid->n[XX],grid->n[YY],grid->n[ZZ]);
@@ -169,7 +167,12 @@ void init_grid(FILE *fplog,t_grid *grid,int delta,gmx_domdec_t *dd,
   snew(grid->a,grid->nr_alloc);
   snew(grid->index,grid->maxcells);
   snew(grid->nra,grid->maxcells);
-    
+
+  /* Allocate with double the initial size for box scaling */
+  snew(grid->dcx2,2*grid->n[XX]);
+  snew(grid->dcy2,2*grid->n[YY]);
+  snew(grid->dcz2,2*grid->n[ZZ]);
+
   if (debug) 
     fprintf(debug,"Succesfully allocated memory for grid pointers.");
 }
@@ -226,7 +229,7 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
   /* Must do this every step because other routines may override it. */
   init_range_check();
 
-  set_grid_sizes(fplog,ePBC,box,rlistlong,grid->delta,dd,grid);
+  set_grid_sizes(ePBC,box,rlistlong,grid->delta,dd,grid);
 
   ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 

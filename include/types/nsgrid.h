@@ -37,6 +37,9 @@
 #include <config.h>
 #endif
 
+#ifndef _nsgrid_h
+#define _nsgrid_h
+
 typedef struct {
   int	 nr;		/* Total number of charge groups	*/
   ivec	 n;	        /* The dimension of the grid		*/
@@ -53,5 +56,9 @@ typedef struct {
   int    *nra;		/* The number of entries in a cell	*/
   int    *a;		/* The grid of cgs			*/
   int    nr_alloc;      /* Allocation size of cell_index and a  */
+  real   *dcx2;         /* Squared distance from atom to j-cell */
+  real   *dcy2;         /* Squared distance from atom to j-cell */
+  real   *dcz2;         /* Squared distance from atom to j-cell */
 } t_grid;
 
+#endif

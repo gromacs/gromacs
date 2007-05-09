@@ -1233,6 +1233,10 @@ void init_forcerec(FILE *fp,
     fr->cg0 = 0;
     fr->hcg = top->blocks[ebCGS].nr;
   }
+
+  /* Initialize neighbor search */
+  init_ns(fp,cr,&fr->ns,
+	  fr,top->atoms.grps[egcENER].nr,&top->blocks[ebCGS],box);
 }
  
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)

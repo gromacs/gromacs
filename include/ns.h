@@ -75,6 +75,10 @@ extern int calc_naaj(int icg,int cgtot);
  *    Return total number of pairs searched 
  *
  ****************************************************/
+extern void init_ns(FILE *fplog,const t_commrec *cr,
+		    gmx_ns_t *ns,t_forcerec *fr,int ngid,const t_block *cgs,
+		    matrix box);
+
 extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     rvec x[],matrix box,
 			     t_topology *top,t_groups *grps,

@@ -37,13 +37,8 @@
 #include <config.h>
 #endif
 
+#include "ns.h"
 #include "qmmmrec.h"
-
-enum { eNL_VDWQQ, eNL_VDW, eNL_QQ, 
-       eNL_VDWQQ_FREE, eNL_VDW_FREE, eNL_QQ_FREE, 
-       eNL_VDWQQ_WATER, eNL_QQ_WATER, 
-       eNL_VDWQQ_WATERWATER, eNL_QQ_WATERWATER, 
-       eNL_NR };
 
 /* Abstract type for PME that is defined only in the routine that use them. */
 typedef struct gmx_pme *gmx_pme_t;
@@ -221,6 +216,9 @@ typedef struct {
    * should be calculated.
    */
   bool n_tpi;
+
+  /* Neighbor searching stuff */
+  gmx_ns_t ns;
 
   /* QMMM stuff */
   bool         bQMMM;

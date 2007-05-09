@@ -61,18 +61,9 @@
 
 #include "domdec.h"
 
-#define MAX_CG 1024
-
-typedef struct {
-  int     ncg;
-  int     nj;
-  atom_id jcg[MAX_CG];
-} t_ns_buf;
-
 /* 
  *    E X C L U S I O N   H A N D L I N G
  */
-typedef unsigned long t_excl;
 
 #ifdef DEBUG
 static void SETEXCL_(t_excl e[],atom_id i,atom_id j)
@@ -1262,11 +1253,10 @@ static int ns_simple_core(t_forcerec *fr,
 			  t_topology *top,
 			  t_mdatoms *md,
 			  matrix box,rvec box_size,
-			  t_excl bexcl[],
+			  t_excl bexcl[],atom_id *aaj,
 			  int ngid,t_ns_buf **ns_buf,
 			  bool bHaveVdW[])
 {
-  static   atom_id  *aaj=NULL;
   int      naaj,k;
   real     rlist2;
   int      nsearch,icg,jcg,i0,nri,nn;
@@ -1277,14 +1267,7 @@ static int ns_simple_core(t_forcerec *fr,
   rvec     b_inv;
   int      m;
   bool     bBox,bTriclinic,*i_egp_flags;
-  
-  if (aaj==NULL) {
-    snew(aaj,2*cgs->nr);
-    for(jcg=0; (jcg<cgs->nr); jcg++) {
-      aaj[jcg]=jcg;
-      aaj[jcg+cgs->nr]=jcg;
-    }
-  }
+
   rlist2 = sqr(fr->rlist);
 
   bBox = (fr->ePBC != epbcNONE);
@@ -1502,10 +1485,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                     bool bHaveVdW[],bool bDoForces,
                     bool bMakeQMMMnblist)
 {
-  static atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr=NULL;
-  static int     *nlr_ljc,*nlr_one,*nsr;
-  static real *dcx2=NULL,*dcy2=NULL,*dcz2=NULL;
-
+  gmx_ns_t *ns;
+  atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr;
+  int     *nlr_ljc,*nlr_one,*nsr;
   gmx_domdec_t *dd=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
@@ -1519,7 +1501,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   int     dx0,dx1,dy0,dy1,dz0,dz1;
   int     Nx,Ny,Nz,shift=-1,j,nrj,nns,nn=-1;
   real    gridx,gridy,gridz,grid_x,grid_y,grid_z;
-  real    margin_x,margin_y;
+  real    *dcx2,*dcy2,*dcz2;
   int     zgi,ygi,xgi;
   int     cg0,cg1,icg=-1,cgsnr,i0,igid,nri,naaj,min_icg;
   int     jcg0,jcg1,jjcg,cgj0,jgid;
@@ -1530,6 +1512,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   bool    *i_egp_flags;
   bool    bDomDec,bTriclinicX,bTriclinicY;
   ivec    ncpddc;
+
+  ns = &fr->ns;
 
   bDomDec = DOMAINDECOMP(cr);
   if (bDomDec)
@@ -1559,33 +1543,39 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
       rs2 = rl2;
   }
 
-  if (nl_sr == NULL) {
+  if (ns->nl_sr == NULL) {
     /* Short range buffers */
-    snew(nl_sr,ngid);
+    snew(ns->nl_sr,ngid);
     /* Counters */
-    snew(nsr,ngid);
-    snew(nlr_ljc,ngid);
-    snew(nlr_one,ngid);
+    snew(ns->nsr,ngid);
+    snew(ns->nlr_ljc,ngid);
+    snew(ns->nlr_one,ngid);
 
     if (rm2 > rs2) 
       /* Long range VdW and Coul buffers */
-      snew(nl_lr_ljc,ngid);
+      snew(ns->nl_lr_ljc,ngid);
     
     if (rl2 > rm2)
       /* Long range VdW or Coul only buffers */
-      snew(nl_lr_one,ngid);
+      snew(ns->nl_lr_one,ngid);
     
     for(j=0; (j<ngid); j++) {
-      snew(nl_sr[j],MAX_CG);
+      snew(ns->nl_sr[j],MAX_CG);
       if (rm2 > rs2)
-	snew(nl_lr_ljc[j],MAX_CG);
+	snew(ns->nl_lr_ljc[j],MAX_CG);
       if (rl2 > rm2)
-	snew(nl_lr_one[j],MAX_CG);
+	snew(ns->nl_lr_one[j],MAX_CG);
     }
     if (debug)
       fprintf(debug,"ns5_core: rs2 = %g, rvdw2 = %g, rcoul2 = %g (nm^2)\n",
 	      rs2,rvdw2,rcoul2);
   }
+  nl_sr     = ns->nl_sr;
+  nsr       = ns->nsr;
+  nl_lr_ljc = ns->nl_lr_ljc;
+  nl_lr_one = ns->nl_lr_one;
+  nlr_ljc   = ns->nlr_ljc;
+  nlr_one   = ns->nlr_one;
 
   /* Unpack arrays */
   cgcm    = fr->cg_cm;
@@ -1597,13 +1587,6 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   gridnra = grid->nra;
   nns     = 0;
 
-  if (dcx2 == NULL) {
-    /* Allocate tmp arrays */
-    snew(dcx2,Nx*2);
-    snew(dcy2,Ny*2);
-    snew(dcz2,Nz*2);
-  }
-
   gridx      = grid->cell_size[XX];
   gridy      = grid->cell_size[YY];
   gridz      = grid->cell_size[ZZ];
@@ -1612,6 +1595,9 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   grid_z     = 1/gridz;
   copy_rvec(grid->cell_offset,grid_offset);
   copy_ivec(grid->ncpddc,ncpddc);
+  dcx2       = grid->dcx2;
+  dcy2       = grid->dcy2;
+  dcz2       = grid->dcz2;
 
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
   zsh_ty = floor(-box[ZZ][YY]/box[YY][YY]+0.5);
@@ -1920,22 +1906,92 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   return nns;
 }
 
-static rvec *sptr;
-static int  sdim;
-
-static int  rv_comp(const void *a,const void *b)
+void ns_realloc_natoms(gmx_ns_t *ns,int natoms)
 {
-  int  ia = *(int *)a;
-  int  ib = *(int *)b;
-  real diff;
+  int i;
+
+  if (natoms > ns->nra_alloc) {
+    ns->nra_alloc = over_alloc(natoms);
+    srenew(ns->bexcl,ns->nra_alloc);
+    for(i=0; i<ns->nra_alloc; i++)
+      ns->bexcl[i] = 0;
+  }
+}
+
+void init_ns(FILE *fplog,const t_commrec *cr,
+	     gmx_ns_t *ns,t_forcerec *fr,int ngid,const t_block *cgs,
+	     matrix box)
+{
+  int  icg,nr_in_cg,maxcg,i,j,jcg;
+  char *ptr;
+
+  /* Compute largest charge groups size (# atoms) */
+  nr_in_cg=1;
+  for (icg=0; (icg < cgs->nr); icg++)
+    nr_in_cg=max(nr_in_cg,(int)(cgs->index[icg+1]-cgs->index[icg]));
   
-  diff = sptr[ia][sdim] - sptr[ib][sdim];
-  if (diff < 0)
-    return -1;
-  else if (diff == 0)
-    return 0;
-  else
-    return 1;
+  /* Verify whether largest charge group is <= max cg.
+   * This is determined by the type of the local exclusion type 
+   * Exclusions are stored in bits. (If the type is not large
+   * enough, enlarge it, unsigned char -> unsigned short -> unsigned long)
+   */
+  maxcg = sizeof(t_excl)*8;
+  if (nr_in_cg > maxcg)
+    gmx_fatal(FARGS,"Max #atoms in a charge group: %d > %d\n",
+	      nr_in_cg,maxcg);
+  
+  snew(ns->bExcludeAlleg,ngid);
+  for(i=0; i<ngid; i++) {
+    ns->bExcludeAlleg[i] = TRUE;
+    for(j=0; j<ngid; j++)
+      if (!(fr->egp_flags[i*ngid+j] & EGP_EXCL))
+	ns->bExcludeAlleg[i] = FALSE;
+  }
+    
+  if ((ptr=getenv("NLIST")) != NULL) {
+    sscanf(ptr,"%d",&NLJ_INC);
+    
+    fprintf(fplog,"%s: I will increment J-lists by %d\n",
+	    __FILE__,NLJ_INC);
+  }
+  
+  if (fr->bGrid) {
+    /* Grid search */
+    snew(ns->grid,1);
+    init_grid(fplog,ns->grid,
+	      fr->ndelta,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
+    /* These lists are allocated in ns5_core */
+    ns->nl_sr = NULL;
+  } else {
+    /* Simple search */
+    snew(ns->ns_buf,ngid);
+    for(i=0; (i<ngid); i++)
+      snew(ns->ns_buf[i],SHIFTS);
+    
+    snew(ns->simple_aaj,2*cgs->nr);
+    for(jcg=0; (jcg<cgs->nr); jcg++) {
+      ns->simple_aaj[jcg] = jcg;
+      ns->simple_aaj[jcg+cgs->nr] = jcg;
+    }
+  }
+  
+  /* Create array that determines whether or not atoms have VdW */
+  snew(ns->bHaveVdW,fr->ntype);
+  for(i=0; (i<fr->ntype); i++) {
+    for(j=0; (j<fr->ntype); j++) {
+      ns->bHaveVdW[i] = (ns->bHaveVdW[i] || 
+			 (fr->bBHAM ? 
+			  ((BHAMA(fr->nbfp,fr->ntype,i,j) != 0) ||
+			   (BHAMB(fr->nbfp,fr->ntype,i,j) != 0) ||
+			   (BHAMC(fr->nbfp,fr->ntype,i,j) != 0)) :
+			  ((C6(fr->nbfp,fr->ntype,i,j) != 0) ||
+			   (C12(fr->nbfp,fr->ntype,i,j) != 0))));
+    }
+  }
+  if (debug) 
+    pr_ivec(debug,0,"bHaveVdW",ns->bHaveVdW,fr->ntype,TRUE);
+
+  ns_realloc_natoms(ns,cgs->nra);
 }
 
 int search_neighbours(FILE *log,t_forcerec *fr,
@@ -1946,14 +2002,6 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       real lambda,real *dvdlambda,
                       bool bFillGrid,bool bDoForces)
 {
-    static   bool        bFirst=TRUE;
-    static   t_grid      *grid=NULL;
-    static   t_excl      *bexcl=NULL;
-    static   bool        *bHaveVdW=NULL;
-    static   t_ns_buf    **ns_buf=NULL;
-    static   bool        *bExcludeAlleg=NULL;
-    static   int         nra_alloc=0,cg_alloc=0;
-
   t_block  *cgs=&(top->blocks[ebCGS]);
   rvec     box_size;
   int      i,j,m,ngid;
@@ -1963,7 +2011,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   char     *ptr;
   bool     *i_egp_flags;
   int      start,end;
- 
+  gmx_ns_t *ns;
+  t_grid   *grid;
+  
+  ns = &fr->ns;
+
   /* Set some local variables */
   bGrid = fr->bGrid;
   ngid = top->atoms.grps[egcENER].nr;
@@ -1982,77 +2034,15 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     }
   }
 
-  /* First time initiation of arrays etc. */  
-  if (bFirst) {
-    int icg,nr_in_cg,maxcg;
-    
-    /* Compute largest charge groups size (# atoms) */
-    nr_in_cg=1;
-    for (icg=0; (icg < cgs->nr); icg++)
-      nr_in_cg=max(nr_in_cg,(int)(cgs->index[icg+1]-cgs->index[icg]));
-    
-    /* Verify whether largest charge group is <= max cg.
-     * This is determined by the type of the local exclusion type 
-     * Exclusions are stored in bits. (If the type is not large
-     * enough, enlarge it, unsigned char -> unsigned short -> unsigned long)
-     */
-    maxcg=sizeof(t_excl)*8;
-    if (nr_in_cg > maxcg)
-      gmx_fatal(FARGS,"Max #atoms in a charge group: %d > %d\n",
-		nr_in_cg,maxcg);
-    
-    snew(bExcludeAlleg,ngid);
-    for(i=0; i<ngid; i++) {
-      bExcludeAlleg[i] = TRUE;
-      for(j=0; j<ngid; j++)
-	if (!(fr->egp_flags[i*ngid+j] & EGP_EXCL))
-	  bExcludeAlleg[i] = FALSE;
-    }
-    
-    if ((ptr=getenv("NLIST")) != NULL) {
-      sscanf(ptr,"%d",&NLJ_INC);
-      
-      fprintf(log,"%s: I will increment J-lists by %d\n",
-	      __FILE__,NLJ_INC);
-    }
-    
-    if (bGrid) {
-      snew(grid,1);
-      init_grid(log,grid,fr->ndelta,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
-    }
-    
-    /* Create array that determines whether or not atoms have VdW */
-    snew(bHaveVdW,fr->ntype);
-    for(i=0; (i<fr->ntype); i++) {
-      for(j=0; (j<fr->ntype); j++) {
-	bHaveVdW[i] = (bHaveVdW[i] || 
-		       (fr->bBHAM ? 
-			((BHAMA(fr->nbfp,fr->ntype,i,j) != 0) ||
-			 (BHAMB(fr->nbfp,fr->ntype,i,j) != 0) ||
-			 (BHAMC(fr->nbfp,fr->ntype,i,j) != 0)) :
-			((C6(fr->nbfp,fr->ntype,i,j) != 0) ||
-			 (C12(fr->nbfp,fr->ntype,i,j) != 0))));
-      }
-    }
-    if (debug) 
-      pr_ivec(debug,0,"bHaveVdW",bHaveVdW,fr->ntype,TRUE);
-  }
-
-  if (DOMAINDECOMP(cr) || bFirst) {
-    if (cgs->nra > nra_alloc) {
-      nra_alloc = over_alloc(cgs->nra);
-      srenew(bexcl,nra_alloc);
-      for(i=0; i<nra_alloc; i++)
-	bexcl[i] = 0;
-    }
-    bFirst=FALSE;
-  }
+  if (DOMAINDECOMP(cr))
+    ns_realloc_natoms(ns,cgs->nra);
   debug_gmx();
   
   /* Reset the neighbourlists */
   reset_neighbor_list(fr,FALSE,-1,-1);
 
   if (bGrid && bFillGrid) {
+    grid = ns->grid;
     grid_first(log,grid,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
     debug_gmx();
 
@@ -2090,9 +2080,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   
   /* Do the core! */
   if (bGrid) {
-      nsearch = ns5_core(log,cr,fr,box,box_size,ngid,top,grps,
-                         grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,
-                         bHaveVdW,bDoForces,FALSE);
+    grid = ns->grid;
+    nsearch = ns5_core(log,cr,fr,box,box_size,ngid,top,grps,
+		       grid,x,ns->bexcl,ns->bExcludeAlleg,
+		       nrnb,md,lambda,dvdlambda,
+		       ns->bHaveVdW,bDoForces,FALSE);
       
       /* neighbour searching withouth QMMM! QM atoms have zero charge in
        * the classical calculation. The charge-charge interaction
@@ -2105,21 +2097,16 @@ int search_neighbours(FILE *log,t_forcerec *fr,
        */
     if (fr->bQMMM && fr->qr->QMMMscheme!=eQMMMschemeoniom) {
           nsearch += ns5_core(log,cr,fr,box,box_size,ngid,top,grps,
-                              grid,x,bexcl,bExcludeAlleg,nrnb,md,lambda,dvdlambda,
-                              bHaveVdW,bDoForces,TRUE);
+                              grid,x,ns->bexcl,ns->bExcludeAlleg,
+			      nrnb,md,lambda,dvdlambda,
+                              ns->bHaveVdW,bDoForces,TRUE);
     }
   }
   else 
   {
-    /* Only allocate this when necessary, saves 100 kb */
-    if (ns_buf == NULL) 
-    {
-      snew(ns_buf,ngid);
-      for(i=0; (i<ngid); i++)
-	snew(ns_buf[i],SHIFTS);
-    }
     nsearch = ns_simple_core(fr,top,md,box,box_size,
-			     bexcl,ngid,ns_buf,bHaveVdW);
+			     ns->bexcl,ns->simple_aaj,
+			     ngid,ns->ns_buf,ns->bHaveVdW);
   }
   debug_gmx();
   
