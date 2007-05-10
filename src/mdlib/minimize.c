@@ -1649,7 +1649,9 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     /* Sum the potential energy terms from group contributions  */
     sum_epot(&(inputrec->opts),grps,ener); 
-    
+
+    ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+
     if (MASTER(cr))
       print_ebin_header(log,count,count,lambda);
     
