@@ -229,26 +229,36 @@ static int calc_start_end(t_graph *g,t_idef *idef,int natoms,
     nnb    = max(nnb,nbond[i]);
   }
   if (stdlog) {
-    fprintf(stdlog,"Max number of graph edges per atom is %d\n",nnb);
-    fprintf(stdlog,"Total number of graph edges is %d\n",nbtot);
+    fprintf(stdlog,"Max number of connections per atom is %d\n",nnb);
+    fprintf(stdlog,"Total number of connections is %d\n",nbtot);
   }
   return nbtot;
 }
 
+
+
 static void compact_graph(t_graph *g)
 {
-  int i,j,n;
+  int i,j,n,max_nedge;
   atom_id *e;
 
   n = 0;
   e = g->edge[0];
+  max_nedge = 0;
   for(i=0; i<g->nnodes; i++) {
     for(j=0; j<g->nedge[i]; j++)
       e[n++] = g->edge[i][j];
+    max_nedge = max(max_nedge,g->nedge[i]);
   }
   srenew(g->edge[0],n);
-  for(i=1; i<g->nnodes; i++)
+  for(i=1; i<g->nnodes; i++) {
     g->edge[i] = g->edge[i-1] + g->nedge[i-1];
+  }
+  if (stdlog) {
+    fprintf(stdlog,"Max number of graph edges per atom is %d\n",
+	    max_nedge);
+    fprintf(stdlog,"Total number of graph edges is %d\n",n);
+  }
 }
 
 t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
@@ -278,7 +288,7 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
     snew(g->edge[0],nbtot);
 
     for(i=1; (i<g->nnodes); i++)
-      g->edge[i]=g->edge[i-1]+nbond[i-1];
+      g->edge[i]=g->edge[i-1]+nbond[g->start+i-1];
 
     if (!bShakeOnly) {
       /* First add all the real bonds: they should determine the molecular 
