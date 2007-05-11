@@ -153,20 +153,28 @@ void init_grid(FILE *fplog,t_grid *grid,int delta,const gmx_domdec_t *dd,
 {
   int     d,m;
   
-  set_grid_sizes(ePBC,box,rlistlong,delta,dd,grid);
+  /* We pass NULL for dd, so we allocate grid cells for the whole system.
+   * This should be made dynamic.
+   */
+  set_grid_sizes(ePBC,box,rlistlong,delta,NULL,grid);
 
   fprintf(fplog,"Grid: %d x %d x %d cells\n",
 	  grid->n[XX],grid->n[YY],grid->n[ZZ]);
 
-  grid->nr      = ncg;
+  grid->delta	= delta;
   grid->ncells  = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
   grid->maxcells= 2*grid->ncells;
-  grid->delta	= delta;
-  grid->nr_alloc= over_alloc(grid->nr)+1;
-  snew(grid->cell_index,grid->nr_alloc);
-  snew(grid->a,grid->nr_alloc);
   snew(grid->index,grid->maxcells);
   snew(grid->nra,grid->maxcells);
+  if (dd) {
+    grid->nr       = 0;
+    grid->nr_alloc = 0;
+  } else {
+    grid->nr       = ncg;
+    grid->nr_alloc = over_alloc(grid->nr) + 1;
+    snew(grid->cell_index,grid->nr_alloc);
+    snew(grid->a,grid->nr_alloc);
+  }
 
   /* Allocate with double the initial size for box scaling */
   snew(grid->dcx2,2*grid->n[XX]);
