@@ -341,6 +341,10 @@ bool do_enx(int fp,t_enxframe *fr)
     ndo_real(fr->block[block],fr->nr[block],bOK1);
     bOK = bOK && bOK1;
   }
+
+  if(!bRead)
+    gmx_fio_flush(fp);
+
   if (!bOK) {
     if (bRead) {
       fprintf(stderr,"\nLast energy frame read %d",

@@ -190,6 +190,8 @@ int write_xtc(int fp,
     
   /* write data */
   return xtc_coord(xd,&natoms,box,x,&prec,FALSE);
+
+  gmx_fio_flush(fp);
 }
 
 int read_first_xtc(int fp,int *natoms,int *step,real *time,
