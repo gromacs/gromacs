@@ -305,40 +305,43 @@ real print_and_integrate(FILE *fp,int n,real dt,real c[],real *fit,int nskip)
 real evaluate_integral(int n,real x[],real y[],real dy[],real aver_start,
 		       real *stddev)
 {
-  double sum=0,sum2=0,sss;
+  double sum,sum_var,w;
   double sum_tail=0,sum2_tail=0;
-  int    j,nsum=0,nsum_tail=0;
+  int    j,nsum_tail=0;
   
   /* Use trapezoidal rule for calculating integral */
   if (n <= 0)
     gmx_fatal(FARGS,"Evaluating integral: n = %d (file %s, line %d)",
 	      n,__FILE__,__LINE__);
   
+  sum = 0;
+  sum_var = 0;
   for(j=0; (j<n); j++) {
+    w = 0;
+    if (j > 0)
+      w += 0.5*(x[j] - x[j-1]);
     if (j < n-1)
-      sss = 0.5*(y[j+1]+y[j])*(x[j+1]-x[j]);
-    else
-      sss = 0;
-    sum  += sss;
-    if (dy) 
-      sum2 += sqr(dy[j]);
-    nsum++;
+      w += 0.5*(x[j+1] - x[j]);
+    sum += w*y[j];
+    if (dy) {
+      /* Assume all errors are uncorrelated */
+      sum_var += sqr(w*dy[j]);
+    }
       
-    if ((aver_start > x[0]) && (x[j] >= aver_start)) {
+    if ((aver_start > 0) && (x[j] >= aver_start)) {
       sum_tail  += sum;
-      sum2_tail += sum*sum;
+      sum2_tail += sqrt(sum_var);
       nsum_tail += 1;
     }
   }
   
   if (nsum_tail > 0) {
     sum = sum_tail/nsum_tail;
-    *stddev = sqrt((sum2_tail/(nsum_tail-1))-sqr(sum));
+    /* This is a worst case estimate, assuming all stddev's are correlated. */
+    *stddev = sum2_tail/nsum_tail;
   }
-  else if ((nsum > 1) && (dy))
-    *stddev = sqrt(sum2/(nsum-1));
-  else 
-    *stddev = 0.0;
+  else
+    *stddev = sqrt(sum_var);
   
   return sum;
 }
