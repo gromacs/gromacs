@@ -45,6 +45,7 @@ typedef struct {
   real          tmassA,tmassB,tmass;
   int           nr;
   int           nalloc;
+  bool          bVCMgrps;
   int           nPerturbed;
   int           nMassPerturbed;
   int           nChargePerturbed;

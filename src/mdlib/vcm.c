@@ -110,7 +110,7 @@ static void update_tensor(rvec x,real m0,tensor I)
 void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
 		  rvec x[],rvec v[],t_vcm *vcm)
 {
-  int    i,g=0,m;
+  int    i,g,m;
   real   m0,xx,xy,xz,yy,yz,zz;
   rvec   j0;
   
@@ -130,6 +130,7 @@ void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
       }
     }
     
+    g = 0;
     for(i=start; (i<start+homenr); i++) {
       m0 = md->massT[i];
       if (md->cVCM)
@@ -158,13 +159,14 @@ void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
 void do_stopcm_grp(FILE *fp,int start,int homenr,unsigned short *group_id,
 		   rvec x[],rvec v[],t_vcm *vcm)
 {
-  int  i,g=0,m;
+  int  i,g,m;
   real tm,tm_1;
   rvec dv,dx;
   
   if (vcm->mode != ecmNO) {
     /* Subtract linear momentum */
     if (vcm->bXY) {
+      g = 0;
       for(i=start; (i<start+homenr); i++) {
 	if (group_id)
 	  g = group_id[i];
@@ -172,6 +174,7 @@ void do_stopcm_grp(FILE *fp,int start,int homenr,unsigned short *group_id,
 	v[i][YY] -= vcm->group_v[g][YY];
       }
     } else {
+      g = 0;
       for(i=start; (i<start+homenr); i++) {
 	if (group_id)
 	  g = group_id[i];

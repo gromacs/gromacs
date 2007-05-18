@@ -54,10 +54,14 @@ t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
   
   snew(md,1);
 
+  md->bVCMgrps = FALSE;
   tmA = 0.0;
   tmB = 0.0;
   for(i=0; i<atoms->nr; i++) {
     atom = &atoms->atom[i];
+
+    if (atom->grpnr[egcVCM] > 0)
+      md->bVCMgrps = TRUE;
     
     if (bFreeEnergy && PERTURBED(*atom)) {
       md->nPerturbed++;
@@ -129,7 +133,8 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
 	(opts->ngfrz > 1 ||
 	 opts->nFreeze[0][XX] || opts->nFreeze[0][YY] || opts->nFreeze[0][ZZ]))
       srenew(md->cFREEZE,md->nalloc);
-    srenew(md->cVCM,md->nalloc);
+    if (md->bVCMgrps)
+      srenew(md->cVCM,md->nalloc);
     if (norires)
       srenew(md->cORF,md->nalloc);
     if (md->nPerturbed)
