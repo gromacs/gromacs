@@ -640,7 +640,7 @@ put_in_list(bool              bHaveVdW[],
 		continue;
 	      
 	      jj0 = index[jcg];
-	      jwater = GET_CGINFO_SOLOPT(fr->cginfo[jcg]);
+	      jwater = GET_CGINFO_SOLOPT(cginfo[jcg]);
 	      
 	      if (iwater == esolSPC && jwater == esolSPC)
 		{
@@ -1179,6 +1179,7 @@ static void ns_inner_tric(rvec x[],int icg,bool *i_egp_flags,
 {
   int      shift;
   int      j,nrj,jgid;
+  int      *cginfo=fr->cginfo;
   atom_id  cg_j,*cgindex;
   t_ns_buf *nsbuf;
   
@@ -1188,7 +1189,7 @@ static void ns_inner_tric(rvec x[],int icg,bool *i_egp_flags,
     cg_j   = jcg[j];
     nrj    = cgindex[cg_j+1]-cgindex[cg_j];
     if (calc_image_tric(x[icg],x[cg_j],box,b_inv,&shift) < rcut2) {
-      jgid  = GET_CGINFO_GID(fr->cginfo[cg_j]);
+      jgid  = GET_CGINFO_GID(cginfo[cg_j]);
       if (!(i_egp_flags[jgid] & EGP_EXCL)) {
 	add_simple(&ns_buf[jgid][shift],nrj,cg_j,
 		   bHaveVdW,ngid,md,icg,jgid,cgs,bexcl,shift,fr);
@@ -1206,6 +1207,7 @@ static void ns_inner_rect(rvec x[],int icg,bool *i_egp_flags,
 {
   int      shift;
   int      j,nrj,jgid;
+  int      *cginfo=fr->cginfo;
   atom_id  cg_j,*cgindex;
   t_ns_buf *nsbuf;
 
@@ -1216,7 +1218,7 @@ static void ns_inner_rect(rvec x[],int icg,bool *i_egp_flags,
       cg_j   = jcg[j];
       nrj    = cgindex[cg_j+1]-cgindex[cg_j];
       if (calc_image_rect(x[icg],x[cg_j],box_size,b_inv,&shift) < rcut2) {
-	jgid  = GET_CGINFO_GID(fr->cginfo[cg_j]);
+	jgid  = GET_CGINFO_GID(cginfo[cg_j]);
 	if (!(i_egp_flags[jgid] & EGP_EXCL)) {
 	  add_simple(&ns_buf[jgid][shift],nrj,cg_j,
 		     bHaveVdW,ngid,md,icg,jgid,cgs,bexcl,shift,fr);
@@ -1483,6 +1485,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   int     *nlr_ljc,*nlr_one,*nsr;
   gmx_domdec_t *dd=NULL;
   t_block *cgs=&(top->blocks[ebCGS]);
+  int     *cginfo=fr->cginfo;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
   ivec    sh0,sh1,shp0,shp1;
   int     cell_x,cell_y,cell_z;
@@ -1635,7 +1638,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 
   /* Loop over charge groups */
   for(icg=cg0; (icg < cg1); icg++) {
-    igid = GET_CGINFO_GID(fr->cginfo[icg]);
+    igid = GET_CGINFO_GID(cginfo[icg]);
     /* Skip this charge group if all energy groups are excluded! */
     if (bExcludeAlleg[igid])
       continue;
@@ -1805,7 +1808,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 			r2=calc_dx2(XI,YI,ZI,cgcm[jjcg]);
 			if (r2 < rl2) {
 			  /* jgid = gid[cgsatoms[cgsindex[jjcg]]]; */
-			  jgid = GET_CGINFO_GID(fr->cginfo[jjcg]);
+			  jgid = GET_CGINFO_GID(cginfo[jjcg]);
 			  /* check energy group exclusions */
 			  if (!(i_egp_flags[jgid] & EGP_EXCL)) {
 			    if (r2 < rs2) {
