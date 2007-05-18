@@ -2181,7 +2181,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   }
 
   ngid = top->atoms.grps[egcENER].nr;
-  gid_tp = mdatoms->cENER[a_tp0];
+  gid_tp = GET_CGINFO_GID(fr->cginfo[cg_tp]);
   nener = 1 + ngid;
   if (bDispCorr)
     nener += 1;

@@ -21,6 +21,7 @@
 #include "pull.h"
 #include "gmx_wallcycle.h"
 #include "mdrun.h"
+#include "nsgrid.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -78,6 +79,23 @@ typedef struct {
   int   flags;
 } gmx_domdec_load_t;
 
+typedef struct {
+  int  box;
+  int  ind_gl;
+  int  ind;
+} gmx_cgsort_t;
+
+typedef struct {
+  gmx_cgsort_t *sort1,*sort2;
+  int  sort_nalloc;
+  gmx_cgsort_t *sort_new;
+  int  sort_new_nalloc;
+  rvec *vbuf;
+  int  vbuf_nalloc;
+  int  *ibuf;
+  int  ibuf_nalloc;
+} gmx_domdec_sort_t;
+
 typedef struct gmx_domdec_comm {
   /* The communication setup including the PME only nodes */
   bool bCartesianPP_PME;
@@ -97,9 +115,11 @@ typedef struct gmx_domdec_comm {
   /* How to communicate for constraints and vsites */
   bool bSendRecv2;
 
-  /* Should we sort the cgs after each master redistribution */
+  /* Should we sort the cgs */
+  int  nstSortCG;
   bool bSortCG;
-  
+  gmx_domdec_sort_t *sort;
+
   /* Are there bonded interactions between charge groups? */
   bool bInterCGBondeds;
   
@@ -259,6 +279,11 @@ int glatnr(gmx_domdec_t *dd,int i)
   }
 
   return atnr;
+}
+
+bool dd_sort_cg(gmx_domdec_t *dd)
+{
+  return dd->comm->bSortCG;
 }
 
 void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
@@ -739,8 +764,7 @@ static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
 
   fr->cg_nalloc = over_alloc(nalloc);
   srenew(fr->cg_cm,fr->cg_nalloc);
-  if (fr->solvent_opt != esolNO)
-    srenew(fr->solvent_type,fr->cg_nalloc);
+  srenew(fr->cginfo,fr->cg_nalloc);
 }
 
 static void dd_realloc_state(t_state *state,rvec **f,rvec **buf,int nalloc)
@@ -955,21 +979,12 @@ static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
   int cell,cg0,cg,cg_gl,a,a_gl;
   int *cell_ncg,*index_gl,*cgindex,*gatindex;
   gmx_ga2la_t *ga2la;
-  bool bMakeSolventType;
 
   if (dd->nat_tot > dd->gatindex_nalloc) {
     dd->gatindex_nalloc = over_alloc(dd->nat_tot);
     srenew(dd->gatindex,dd->gatindex_nalloc);
   }
   
-  if (fr->solvent_opt == esolNO) {
-    /* Since all entries are identical, we can use the global array */
-    fr->solvent_type = fr->solvent_type_global;
-    bMakeSolventType = FALSE;
-  } else {
-    bMakeSolventType = TRUE;
-  }
-
   cell_ncg   = dd->ncg_cell;
   index_gl   = dd->index_gl;
   cgindex    = gcgs->index;
@@ -990,8 +1005,7 @@ static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
 	ga2la->cell = cell;
 	ga2la->a    = a++;
       }
-      if (bMakeSolventType)
-	fr->solvent_type[cg] = fr->solvent_type_global[cg_gl];
+      fr->cginfo[cg] = fr->cginfo_global[cg_gl];
     }
   }
 }
@@ -1406,6 +1420,34 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	      d,dd->cell_x0[d],dd->cell_x1[d],dd->skew_fac[d]);
 }
 
+static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,int step)
+{
+  int dim_ind,dim;
+
+  for(dim_ind=0; dim_ind<dd->ndim; dim_ind++) {
+    dim = dd->dim[dim_ind];
+    
+    if ((dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac[dim] <
+	dd->comm->distance)
+      gmx_fatal(FARGS,"Step %d: The %c-size (%f) times the triclinic skew factor (%f)is smaller than the cut-off (%f) for domain decomposition grid cell %d %d %d (node %d)",
+		step,dim2char(dim),
+		dd->cell_x1[dim] - dd->cell_x0[dim],dd->skew_fac[dim],
+		dd->comm->distance,
+		dd->ci[XX],dd->ci[YY],dd->ci[ZZ],dd->sim_nodeid);
+  }
+
+  /* Set the size of the ns grid,
+   * for dynamic load balancing this is corrected in dd_move_cellx.
+   */
+  copy_rvec(dd->cell_x0,dd->cell_ns_x0);
+  copy_rvec(dd->cell_x1,dd->cell_ns_x1);
+  
+  if (dd->bGridJump && dd->ndim > 1) {
+    dd_move_cellx(dd,box);
+    check_grid_jump(step,dd,box);
+  }
+}
+
 static void distribute_cg(FILE *fplog,int step,
 			  matrix box,t_block *cgs,rvec pos[],
 			  gmx_domdec_t *dd)
@@ -1589,7 +1631,8 @@ static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
 static int compact_and_copy_vec_at(int ncg,int *move,
 				   int *cgindex,
 				   int nvec,int vec,
-				   rvec *src,gmx_domdec_comm_t *comm)
+				   rvec *src,gmx_domdec_comm_t *comm,
+				   bool bCompact)
 {
   int m,icg,i,i0,i1,nrcg;
   int home_pos;
@@ -1605,9 +1648,11 @@ static int compact_and_copy_vec_at(int ncg,int *move,
     i1 = cgindex[icg+1];
     m = move[icg];
     if (m == -1) {
-      /* Compact the home array in place */
-      for(i=i0; i<i1; i++)
-	copy_rvec(src[i],src[home_pos++]);
+      if (bCompact) {
+	/* Compact the home array in place */
+	for(i=i0; i<i1; i++)
+	  copy_rvec(src[i],src[home_pos++]);
+      }
     } else {
       /* Copy to the communication buffer */
       nrcg = i1 - i0;
@@ -1616,6 +1661,8 @@ static int compact_and_copy_vec_at(int ncg,int *move,
 	copy_rvec(src[i],comm->cgcm_state[m][pos_vec[m]++]);
       pos_vec[m] += (nvec - vec - 1)*nrcg;
     }
+    if (!bCompact)
+      home_pos += i1 - i0;
     i0 = i1;
   }
 
@@ -1624,7 +1671,8 @@ static int compact_and_copy_vec_at(int ncg,int *move,
 
 static int compact_and_copy_vec_cg(int ncg,int *move,
 				   int *cgindex,
-				   int nvec,rvec *src,gmx_domdec_comm_t *comm)
+				   int nvec,rvec *src,gmx_domdec_comm_t *comm,
+				   bool bCompact)
 {
   int m,icg,i0,i1,nrcg;
   int home_pos;
@@ -1640,8 +1688,10 @@ static int compact_and_copy_vec_cg(int ncg,int *move,
     i1 = cgindex[icg+1];
     m = move[icg];
     if (m == -1) {
-      /* Compact the home array in place */
-      copy_rvec(src[icg],src[home_pos++]);
+      if (bCompact) {
+	/* Compact the home array in place */
+	copy_rvec(src[icg],src[home_pos++]);
+      }
     } else {
       nrcg = i1 - i0;
       /* Copy to the communication buffer */
@@ -1650,6 +1700,8 @@ static int compact_and_copy_vec_cg(int ncg,int *move,
     }
     i0 = i1;
   }
+  if (!bCompact)
+    home_pos = ncg;
 
   return home_pos;
 }
@@ -1657,7 +1709,8 @@ static int compact_and_copy_vec_cg(int ncg,int *move,
 static int compact_ind(int ncg,int *move,
 		       int *index_gl,int *cgindex,
 		       int *gatindex,gmx_ga2la_t *ga2la,
-		       int *solvent_type)
+		       int *cginfo,bool bSortCG,
+		       bool bCompact,int *cell_index)
 {
   int cg,nat,a0,a1,a,a_gl;
   int home_pos;
@@ -1668,30 +1721,49 @@ static int compact_ind(int ncg,int *move,
     a0 = cgindex[cg];
     a1 = cgindex[cg+1];
     if (move[cg] == -1) {
-      /* Compact the home arrays in place.
-       * Anything that can be done here avoids access to global arrays.
-       */
-      cgindex[home_pos] = nat;
-      for(a=a0; a<a1; a++) {
-	a_gl = gatindex[a];
-	gatindex[nat] = a_gl;
-	/* The cell number stays 0, so we don't need to set it */
-	ga2la[a_gl].a = nat;
-	nat++;
+      if (bCompact) {
+	/* Compact the home arrays in place.
+	 * Anything that can be done here avoids access to global arrays.
+	 */
+	cgindex[home_pos] = nat;
+	if (bSortCG) {
+	  /* We sort later, so we can skip setting the atom indices,
+	   * because they need to be set after sorting anyhow.
+	   */
+	  nat += a1 - a0;
+	} else {
+	  for(a=a0; a<a1; a++) {
+	    a_gl = gatindex[a];
+	    gatindex[nat] = a_gl;
+	    /* The cell number stays 0, so we don't need to set it */
+	    ga2la[a_gl].a = nat;
+	    nat++;
+	  }
+	}
+	index_gl[home_pos] = index_gl[cg];
+	cginfo[home_pos]   = cginfo[cg];
+	home_pos++;
       }
-      index_gl[home_pos] = index_gl[cg];
-      if (solvent_type)
-	solvent_type[home_pos] = solvent_type[cg];
-      home_pos++;
     } else {
       /* Clear the global indices */
       for(a=a0; a<a1; a++) {
 	a_gl = gatindex[a];
 	ga2la[a_gl].cell = -1;
       }
+      if (!bCompact) {
+	/* Signal that this cg is moved using the ns cell index.
+	 * Here we set it to -1.
+	 * fill_grid will change it from -1 to 4*grid->ncells.
+	 */
+	cell_index[cg] = -1;
+      }
     }
   }
-  cgindex[home_pos] = nat;
+  if (bCompact) {
+    cgindex[home_pos] = nat;
+  } else {
+    home_pos = ncg;
+  }
   
   return home_pos;
 }
@@ -1730,6 +1802,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 			      gmx_domdec_t *dd,t_block *gcgs,
 			      t_state *state,rvec **f,rvec **buf,
 			      t_forcerec *fr,t_mdatoms *md,
+			      bool bSortCG,bool bCompact,
 			      t_nrnb *nrnb)
 {
   int  *move;
@@ -1909,23 +1982,23 @@ static int dd_redistribute_cg(FILE *fplog,int step,
    */
   home_pos_cg =
     compact_and_copy_vec_cg(dd->ncg_home,move,cgindex,
-			    nvec,cg_cm,comm);
+			    nvec,cg_cm,comm,bCompact);
 
   vec = 0;
   home_pos_at =
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
-			    nvec,vec++,state->x,comm);
+			    nvec,vec++,state->x,comm,bCompact);
   if (bV)
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
-			    nvec,vec++,state->v,comm);
+			    nvec,vec++,state->v,comm,bCompact);
   if (bSDX)
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
-			    nvec,vec++,state->sd_X,comm);
+			    nvec,vec++,state->sd_X,comm,bCompact);
   
   compact_ind(dd->ncg_home,move,
 	      dd->index_gl,dd->cgindex,
 	      dd->gatindex,dd->ga2la,
-	      fr->solvent_opt==esolNO ? NULL : fr->solvent_type);
+	      fr->cginfo,bSortCG,bCompact,fr->ns.grid->cell_index);
 
   ncg_stay_home = home_pos_cg;
   for(d=0; d<dd->ndim; d++) {
@@ -3022,16 +3095,20 @@ static real *get_slb_frac(FILE *fplog,char *dir,int nc,char *size_string)
   return slb_frac;
 }
 
-static int dd_nst_env(FILE *fplog,char *env_var)
+static int dd_nst_env(FILE *fplog,char *env_var,int def)
 {
   char *val;
   int  nst;
 
-  nst = 0;
+  nst = def;
   val = getenv(env_var);
   if (val) {
-    if (sscanf(val,"%d",&nst) <= 0)
-      nst = 1;
+    if (sscanf(val,"%d",&nst) <= 0) {
+      if (def == 0)
+	nst = 1;
+      else
+	nst = 0;
+    }
     fprintf(fplog,"Found env.var. %s = %s, using value %d\n",
 	    env_var,val,nst);
   }
@@ -3074,10 +3151,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 
   comm->distance_min = comm_distance_min;
 
-  comm->bSendRecv2 = dd_nst_env(fplog,"GMX_DD_SENDRECV2");
-  comm->bCountFlop = dd_nst_env(fplog,"GMX_DLB_FLOP");
-  nstDDDump        = dd_nst_env(fplog,"GMX_DD_DUMP");
-  nstDDDumpGrid    = dd_nst_env(fplog,"GMX_DD_DUMP_GRID");
+  comm->bSendRecv2 = dd_nst_env(fplog,"GMX_DD_SENDRECV2",0);
+  comm->bCountFlop = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
+  comm->nstSortCG  = dd_nst_env(fplog,"GMX_DD_SORT",1);
+  nstDDDump        = dd_nst_env(fplog,"GMX_DD_DUMP",0);
+  nstDDDumpGrid    = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
   if (comm->bSendRecv2)
     fprintf(fplog,"Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");
   if (comm->bCountFlop) {
@@ -3121,6 +3199,17 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     comm->slb_frac[ZZ] = get_slb_frac(fplog,"z",dd->nc[ZZ],sizez);
   }
 
+  if (comm->nstSortCG) {
+    if (comm->nstSortCG == 1)
+      fprintf(fplog,"Will sort the charge groups at every domain (re)decomposition\n");
+    else
+      fprintf(fplog,"Will sort the charge groups every %d steps\n",
+	      comm->nstSortCG);
+    snew(comm->sort,1);
+  } else {
+    fprintf(fplog,"Will not sort the charge groups\n");
+  }
+
   return dd;
 }
 
@@ -3153,12 +3242,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 	      "%s is not supported (yet) with domain decomposition, use %s",
 	      eshake_names[estSHAKE],eshake_names[estLINCS]);
 
-  fr->solvent_type_global = fr->solvent_type;
-  fr->solvent_type        = NULL;
-
   comm = dd->comm;
-  
-  comm->bSortCG = (ir->nstcheckpoint != 0);
   
   comm->bInterCGBondeds = (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
 
@@ -3193,31 +3277,12 @@ static void setup_dd_communication(FILE *fplog,int step,
 
   for(dim_ind=0; dim_ind<dd->ndim; dim_ind++) {
     dim = dd->dim[dim_ind];
-    
-    if ((dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac[dim] <
-	comm->distance)
-      gmx_fatal(FARGS,"Step %d: The %c-size (%f) times the triclinic skew factor (%f)is smaller than the cut-off (%f) for domain decomposition grid cell %d %d %d (node %d)",
-		step,dim2char(dim),
-		dd->cell_x1[dim] - dd->cell_x0[dim],dd->skew_fac[dim],
-		comm->distance,
-		dd->ci[XX],dd->ci[YY],dd->ci[ZZ],dd->sim_nodeid);
-    
+
     /* Check if we need to use triclinic distances */
     tric_dist[dim_ind] = 0;
     for(i=0; i<=dim_ind; i++)
       if (dd->tric_dir[dd->dim[i]])
 	tric_dist[dim_ind] = 1;
-  }
-
-  /* Set the size of the ns grid,
-   * for dynamic load balancing this is corrected in dd_move_cellx.
-   */
-  copy_rvec(dd->cell_x0,dd->cell_ns_x0);
-  copy_rvec(dd->cell_x1,dd->cell_ns_x1);
-  
-  if (dd->bGridJump && dd->ndim > 1) {
-    dd_move_cellx(dd,box);
-    check_grid_jump(step,dd,box);
   }
 
   dim0 = dd->dim[0];
@@ -3440,11 +3505,6 @@ static void set_cg_boundaries(gmx_domdec_t *dd)
     dd->icell[c].jcg1 = dd->ncg_cell[dd->icell[c].j1];
   }
 }
-typedef struct {
-  int  box;
-  int  ind_gl;
-  int  ind;
-} gmx_cgsort_t;
 
 static int comp_cgsort(const void *a,const void *b)
 {
@@ -3493,7 +3553,7 @@ static void order_vec_cg(int n,gmx_cgsort_t *sort,
 static void order_vec_atom(int ncg,int *cgindex,gmx_cgsort_t *sort,
 			   rvec *v,rvec *buf)
 {
-  int a,cg,cg0,cg1,i;
+  int a,atot,cg,cg0,cg1,i;
   
   /* Order the data */
   a = 0;
@@ -3505,84 +3565,151 @@ static void order_vec_atom(int ncg,int *cgindex,gmx_cgsort_t *sort,
       a++;
     }
   }
+  atot = a;
 
   /* Copy back to the original array */
-  for(a=0; a<cgindex[ncg]; a++)
+  for(a=0; a<atot; a++)
     copy_rvec(buf[a],v[a]);
 }
 
-static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
-			  rvec *cgcm,t_state *state)
+static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
+			 int nsort_new,gmx_cgsort_t *sort_new,
+			 gmx_cgsort_t *sort1)
 {
-  int  npbcdim,d,m;
-  real range;
-  rvec start,scale;
-  gmx_cgsort_t *sort;
-  int  i,*ibuf,cgsize;
+  int i1,i2,i_new;
+  
+  /* The new indices are not very ordered, so we qsort them */
+  qsort(sort_new,nsort_new,sizeof(sort_new[0]),comp_cgsort);
+
+  /* sort2 is already ordered, so now we can merge the two arrays */
+  i1 = 0;
+  i2 = 0;
+  i_new = 0;
+  while(i2 < nsort2 || i_new < nsort_new) {
+    if (i2 == nsort2) {
+      sort1[i1++] = sort_new[i_new++];
+    } else if (i_new == nsort_new) {
+      sort1[i1++] = sort2[i2++];
+    } else if (sort2[i2].box < sort_new[i_new].box ||
+	       (sort2[i2].box == sort_new[i_new].box &&
+		sort2[i2].ind_gl < sort_new[i_new].ind_gl)) {
+      sort1[i1++] = sort2[i2++];
+    } else {
+      sort1[i1++] = sort_new[i_new++];
+    }
+  }
+}
+
+static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
+			  rvec *cgcm,t_forcerec *fr,t_state *state,
+			  int ncg_home_old)
+{
+  gmx_domdec_sort_t *sort;
+  gmx_cgsort_t *cgsort,*sort_i;
+  int  ncg_new,nsort2,nsort_new,i,cell_index,*ibuf,cgsize;
   rvec *vbuf;
   
-  npbcdim = ePBC2npbcdim(ePBC);
-  for(d=0; d<npbcdim; d++) {
-    range = 0;
-    start[d] = 0;
-    for(m=0; m<npbcdim; m++) {
-      range += fabs(state->box[m][d]/dd->nc[d]);
-      if (state->box[m][d] >= 0) {
-	/* Add the lower point */
-	start[d] += state->box[m][d]*dd->ci[d]/dd->nc[d];
-      } else {
-	/* Negative off-diagonal element, add the upper point */
-	start[d] += state->box[m][d]*(dd->ci[d]+1)/dd->nc[d];
+  sort = dd->comm->sort;
+
+  if (dd->ncg_home > sort->sort_nalloc) {
+    sort->sort_nalloc = over_alloc(dd->ncg_home);
+    srenew(sort->sort1,sort->sort_nalloc);
+    srenew(sort->sort2,sort->sort_nalloc);
+  }
+
+  if (ncg_home_old >= 0) {
+    /* The charge groups that remained in the same ns grid cell
+     * are completely ordered. So we can sort efficiently by sorting
+     * the charge groups that did move into the stationary list.
+     */
+    ncg_new = 0;
+    nsort2 = 0;
+    nsort_new = 0;
+    for(i=0; i<dd->ncg_home; i++) {
+      /* Check if this cg did not move to another node */
+      cell_index = fr->ns.grid->cell_index[i];
+      if (cell_index !=  4*fr->ns.grid->ncells) {
+	if (i >= ncg_home_old || cell_index != sort->sort1[i].box) {
+	  /* This cg is new on this node or moved ns grid cell */
+	  if (nsort_new >= sort->sort_new_nalloc) {
+	    sort->sort_new_nalloc = over_alloc(nsort_new+1);
+	    srenew(sort->sort_new,sort->sort_new_nalloc);
+	  }
+	  sort_i = &(sort->sort_new[nsort_new++]);
+	} else {
+	  /* This cg did not move */
+	  sort_i = &(sort->sort2[nsort2++]);
+	}
+	/* Sort on the ns grid cell indices and the global topology index */
+	sort_i->box    = cell_index;
+	sort_i->ind_gl = dd->index_gl[i];
+	sort_i->ind    = i;
+	ncg_new++;
       }
     }
-    /* Half the cut-off length seems to be the optimal box size */
-    scale[d] = 1/(cutoff*0.5);
-    /* Check if we don't go out of the 1024 range used below */
-    if (scale[d]*1023 < range)
-      scale[d] = range/1023;
-  }
-  
-  snew(sort,dd->ncg_home);
-  for(i=0; i<dd->ncg_home; i++) {
-    /* Sort in boxes, major is x, than y, than z */
-    sort[i].box = 0;
-    for(d=0; d<npbcdim; d++) {
-      /* Minor negative numbers due to rounding end up in the 0 bin,
-       * due to the int cast.
-       */
-      sort[i].box = 1024*sort[i].box + (int)((cgcm[i][d] - start[d])*scale[d]);
+    if (debug)
+      fprintf(debug,"ordered sort cgs: stationary %d moved %d\n",
+	      nsort2,nsort_new);
+    /* Sort efficiently */
+    ordered_sort(nsort2,sort->sort2,nsort_new,sort->sort_new,sort->sort1);
+  } else {
+    cgsort = sort->sort1;
+    ncg_new = 0;
+    for(i=0; i<dd->ncg_home; i++) {
+      /* Sort on the ns grid cell indices and the global topology index */
+      cgsort[i].box    = fr->ns.grid->cell_index[i];
+      cgsort[i].ind_gl = dd->index_gl[i];
+      cgsort[i].ind    = i;
+      if (cgsort[i].box != 4*fr->ns.grid->ncells)
+	ncg_new++;
     }
-    sort[i].ind_gl = dd->index_gl[i];
-    sort[i].ind    = i;
+    if (debug)
+      fprintf(debug,"qsort cgs: %d new home %d\n",dd->ncg_home,ncg_new);
+    /* Determine the order of the charge groups using qsort */
+    qsort(cgsort,dd->ncg_home,sizeof(cgsort[0]),comp_cgsort);
   }
-  /* Determine the order of the charge groups */
-  qsort(sort,dd->ncg_home,sizeof(sort[0]),comp_cgsort);
+  cgsort = sort->sort1;
   
-  snew(vbuf,dd->cgindex[dd->ncg_home]);
-  /* Reorder the state */
-  order_vec_atom(dd->ncg_home,dd->cgindex,sort,state->x,vbuf);
-  if (state->flags & STATE_HAS_V)
-    order_vec_atom(dd->ncg_home,dd->cgindex,sort,state->v,vbuf);
-  if (state->flags & STATE_HAS_SDX)
-    order_vec_atom(dd->ncg_home,dd->cgindex,sort,state->sd_X,vbuf);
-  /* Reorder cgcm */
-  order_vec_cg(dd->ncg_home,sort,cgcm,vbuf);
-  sfree(vbuf);
+  /* We alloc with the old size, since cgindex is still old */
+  if (dd->cgindex[dd->ncg_home] > sort->vbuf_nalloc) {
+    sort->vbuf_nalloc = over_alloc(dd->cgindex[dd->ncg_home]);
+    srenew(sort->vbuf,sort->vbuf_nalloc);
+  }
+  vbuf = sort->vbuf;
 
-  snew(ibuf,dd->ncg_home+1);
+  /* Remove the charge groups which a no longer home here */
+  dd->ncg_home = ncg_new;
+
+  /* Reorder the state */
+  order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->x,vbuf);
+  if (state->flags & STATE_HAS_V)
+    order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->v,vbuf);
+  if (state->flags & STATE_HAS_SDX)
+    order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->sd_X,vbuf);
+  /* Reorder cgcm */
+  order_vec_cg(dd->ncg_home,cgsort,cgcm,vbuf);
+
+  if (dd->ncg_home+1 > sort->ibuf_nalloc) {
+    sort->ibuf_nalloc = over_alloc(dd->ncg_home+1);
+    srenew(sort->ibuf,sort->ibuf_nalloc);
+  }
+  ibuf = sort->ibuf;
   /* Reorder the global cg index */
-  order_int_cg(dd->ncg_home,sort,dd->index_gl,ibuf);
+  order_int_cg(dd->ncg_home,cgsort,dd->index_gl,ibuf);
   /* Rebuild the local cg index */
   ibuf[0] = 0;
   for(i=0; i<dd->ncg_home; i++) {
-    cgsize = dd->cgindex[sort[i].ind+1] - dd->cgindex[sort[i].ind];
+    cgsize = dd->cgindex[cgsort[i].ind+1] - dd->cgindex[cgsort[i].ind];
     ibuf[i+1] = ibuf[i] + cgsize;
   }
   for(i=0; i<dd->ncg_home+1; i++)
     dd->cgindex[i] = ibuf[i];
+  /* Set the home atom number */
+  dd->nat_home = dd->cgindex[dd->ncg_home];
 
-  sfree(ibuf);
-  sfree(sort);
+  /* Copy the sorted ns cell indices back to the ns grid struct */
+  for(i=0; i<dd->ncg_home; i++)
+    fr->ns.grid->cell_index[i] = cgsort[i].box;
 
   dd->bMasterHasAllCG = FALSE;
 }
@@ -3607,8 +3734,9 @@ void dd_partition_system(FILE         *fplog,
 			 bool         bVerbose)
 {
   gmx_domdec_t *dd;
-  int  i,j,cg0=0;
-  bool bLogLoad;
+  int  i,j,cg0=0,ncg_home_old=-1;
+  bool bLogLoad,bSortCG,bCompact;
+  ivec ncells_old;
 
   dd = cr->dd;
   
@@ -3655,21 +3783,56 @@ void dd_partition_system(FILE         *fplog,
   if (nstDDDumpGrid > 0 && step % nstDDDumpGrid == 0)
     write_dd_grid_pdb("dd_grid",step,dd,state_local->box);
 
-  if (!bMasterState) {
-    cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->blocks[ebCGS],
-			     state_local,f,buf,fr,mdatoms,nrnb);
+  set_dd_ns_cell_sizes(dd,state_local->box,step);
+
+  dd->comm->bSortCG = (dd->comm->nstSortCG > 0 &&
+		       (bMasterState || (step % dd->comm->nstSortCG == 0)));
+  if (dd->comm->bSortCG) {
+    /* Initialize the ns grid */
+    copy_ivec(fr->ns.grid->n,ncells_old);
+    grid_first(fplog,fr->ns.grid,dd,fr->ePBC,state_local->box,fr->rlistlong,
+	       dd->ncg_home);
+    if (!bMasterState &&
+	fr->ns.grid->n[XX] == ncells_old[XX] &&
+	fr->ns.grid->n[YY] == ncells_old[YY] &&
+	fr->ns.grid->n[ZZ] == ncells_old[ZZ]) {
+      /* We can use the old order and ns grid cell indices of the charge groups
+       * to sort the charge groups efficiently.
+       */
+      ncg_home_old = dd->ncg_home;
+    } else {
+      /* The new charge group order will be (quite) unrelated to the old one */
+      ncg_home_old = -1;
+    }
+    bCompact = FALSE;
+  } else {
+    bCompact = TRUE;
   }
 
-  if (do_per_step(step,ir->nstcheckpoint)) {
+  if (!bMasterState) {
+    cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->blocks[ebCGS],
+			     state_local,f,buf,fr,mdatoms,
+			     dd->comm->bSortCG,bCompact,nrnb);
+    set_grid_ncg(fr->ns.grid,dd->ncg_home);
+  }
+
+  if (dd->comm->bSortCG) {
     /* Sort the state on charge group position.
      * This enables exact restarts from this step.
      * It also improves performance by about 15% with larger numbers
      * of atoms per node.
      */
+
+    /* Fill the ns grid with the home cell, so we can sort with the indices */
+    dd->ncg_cell[0] = 0;
+    for(i=1; i<dd->ncell+1; i++)
+      dd->ncg_cell[i] = dd->ncg_home;
+    fill_grid(fplog,dd,fr->ns.grid,state_local->box,0,dd->ncg_home,fr->cg_cm);
+
     if (debug)
       fprintf(debug,"Step %d, sorting the %d home charge groups\n",
 	      step,dd->ncg_home);
-    dd_sort_state(dd,ir->ePBC,ir->rlist,fr->cg_cm,state_local);
+    dd_sort_state(dd,ir->ePBC,ir->rlist,fr->cg_cm,fr,state_local,ncg_home_old);
     /* Rebuild all the indices */
     cg0 = 0;
   }

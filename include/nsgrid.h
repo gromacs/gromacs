@@ -49,6 +49,8 @@ extern void init_grid(FILE *log,t_grid *grid,
 
 extern void done_grid(t_grid *grid);
 
+extern void set_grid_ncg(t_grid *grid,int ncg);
+
 extern void grid_first(FILE *log,t_grid *grid,gmx_domdec_t *dd,
 		       int ePBC,matrix box,real rlong,int ncg);
 

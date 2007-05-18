@@ -64,7 +64,17 @@ typedef struct {
   t_nblist nlist_sr[eNL_NR];
   t_nblist nlist_lr[eNL_NR];
 } t_nblists;
- 
+
+/* macros for the cginfo data in forcerec */
+#define SET_CGINFO_GID(cgi,gid)      (cgi) = (((cgi)  &  ~65535)  |  (gid)   )
+#define GET_CGINFO_GID(cgi)        ( (cgi)            &   65535)
+#define SET_CGINFO_EXCL_INTRA(cgi)   (cgi) =  ((cgi)  |  (1<<16))
+#define GET_CGINFO_EXCL_INTRA(cgi) ( (cgi)            &  (1<<16))
+#define SET_CGINFO_EXCL_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<17))
+#define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
+#define SET_CGINFO_SOLOPT(cgi,opt)   (cgi) = (((cgi)  & ~(15<<18)) | ((opt)<<18))
+#define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   15)
+
 typedef struct {
   /* Domain Decomposition */
   bool bDomDec;
@@ -140,8 +150,8 @@ typedef struct {
   int  solvent_opt;
   int  nWatMol;
   bool bGrid;
-  int  *solvent_type_global;
-  int  *solvent_type;
+  int  *cginfo_global;
+  int  *cginfo;
   rvec *cg_cm;
   int  cg_nalloc;
   rvec *shift_vec;

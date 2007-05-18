@@ -140,11 +140,12 @@ static void
 check_solvent(FILE *                fp,
               const t_topology *    top,
               t_forcerec *          fr,
-	      const t_atoms *       atoms)
+	      int                   *cginfo)
 {
     const t_block *   cgs;
     const t_block *   excl;
     const t_block *   mols;
+    const t_atoms *   atoms;
     atom_id *         cgid;
     int               i,j,k;
     int               j0,j1,nj;
@@ -187,11 +188,11 @@ check_solvent(FILE *                fp,
     excl = &(top->blocks[ebEXCLS]);
     mols = &(top->blocks[ebMOLS]);
     
+    atoms = &(top->atoms);
+
     if (debug)
         fprintf(debug,"Going to determine what solvent types we have.\n");
-  
-    snew(fr->solvent_type,cgs->nr);
-   
+
     /* Overkill to allocate a separate set of parameters for each molecule, 
 	 * but it is not a lot of memory, will be released soon, and it is better
      * than calling realloc lots of times.
@@ -213,7 +214,7 @@ check_solvent(FILE *                fp,
     /* Set a temporary "no solvent" flag everywhere */
     for(i=0; i<cgs->nr; i++) 
     {
-        fr->solvent_type[i] = -1;
+        SET_CGINFO_SOLOPT(cginfo[i],esolNR);
     }
     
     /* Go through all molecules in system and see if they fulfill the conditions
@@ -373,8 +374,8 @@ check_solvent(FILE *                fp,
                 /* Congratulations! We have a matched solvent.
                 * Flag it with this type for later processing.
                 */
-				aj = mols->a[j0];
-                fr->solvent_type[cgid[aj]] = k;
+	        aj = mols->a[j0];
+		SET_CGINFO_SOLOPT(cginfo[cgid[aj]],k);
                 (solvent_parameters[k].count)++;
             }
         }
@@ -444,7 +445,8 @@ check_solvent(FILE *                fp,
                 }
             }
 			aj = mols->a[j0];
-            fr->solvent_type[cgid[aj]] = n_solvent_parameters;
+	    
+	    SET_CGINFO_SOLOPT(cginfo[cgid[aj]],n_solvent_parameters);
             n_solvent_parameters++;
         }
         else if(nj==4)
@@ -471,7 +473,7 @@ check_solvent(FILE *                fp,
                 }
             }
 			aj = mols->a[j0];
-            fr->solvent_type[cgid[aj]] = n_solvent_parameters;
+	    SET_CGINFO_SOLOPT(cginfo[cgid[aj]],n_solvent_parameters);
             n_solvent_parameters++;
         }
     }
@@ -505,14 +507,14 @@ check_solvent(FILE *                fp,
 	fr->nWatMol = 0;
     for(i=0;i<cgs->nr;i++)
     {
-        if(fr->solvent_type[i]==j)
+        if (GET_CGINFO_SOLOPT(cginfo[i]) == j)
         {
-            fr->solvent_type[i] = bestsol;
+            SET_CGINFO_SOLOPT(cginfo[i],bestsol);
             fr->nWatMol++;
         }
         else
         {
-            fr->solvent_type[i] = esolNO;
+            SET_CGINFO_SOLOPT(cginfo[i],esolNO);
         }
     }
     
@@ -527,7 +529,87 @@ check_solvent(FILE *                fp,
     sfree(solvent_parameters);
     fr->solvent_opt = bestsol;
 }
- 
+
+static void *init_cginfo(FILE *fplog,const t_topology *top,
+			 t_forcerec *fr,bool bNoSolvOpt)
+{
+  const t_block *cgs,*excl;
+  const t_atoms *atoms;
+  int  *cginfo;
+  int  cg,a0,a1,gid,ai,j,aj,excl_nalloc;
+  bool *bExcl,bExclIntra,bExclInter;
+  
+  cgs   = &top->blocks[ebCGS];
+  excl  = &top->blocks[ebEXCLS];
+  atoms = &top->atoms;
+
+  snew(cginfo,cgs->nr);
+
+  excl_nalloc = 10;
+  snew(bExcl,excl_nalloc);
+  for (cg=0; cg<cgs->nr; cg++) {
+    a0 = cgs->index[cg];
+    a1 = cgs->index[cg+1];
+
+    /* Store the energy group in cginfo */
+    gid = atoms->atom[a0].grpnr[egcENER];
+    SET_CGINFO_GID(cginfo[cg],gid);
+
+    /* Check the intra/inter charge group exclusions */
+    if (a1-a0 > excl_nalloc) {
+      excl_nalloc = a1 - a0;
+      srenew(bExcl,excl_nalloc);
+    }
+    for(ai=a0; ai<a1; ai++) {
+      bExcl[ai-a0] = FALSE;
+    }
+    bExclIntra = TRUE;
+    bExclInter = FALSE;
+    for(ai=a0; ai<a1; ai++) {
+      /* Loop over all the exclusions of atom ai */
+      for(j=excl->index[ai]; j<excl->index[ai+1]; j++) {
+	aj = excl->a[j];
+	if (aj < a0 || aj >= a1) {
+	  bExclInter = TRUE;
+	} else {
+	  bExcl[aj-a0] = TRUE;
+	}
+      }
+      /* Check if ai excludes a0 to a1 */
+      for(aj=a0; aj<a1; aj++) {
+	if (!bExcl[aj-a0])
+	  bExclIntra = FALSE;
+      }
+    }
+    if (bExclIntra)
+      SET_CGINFO_EXCL_INTRA(cginfo[cg]);
+    if (bExclInter)
+      SET_CGINFO_EXCL_INTER(cginfo[cg]);
+  }
+  sfree(bExcl);
+
+  /* the solvent optimizer is called after the QM is initialized,
+   * because we don't want to have the QM subsystemto become an
+   * optimized solvent
+   */
+
+  check_solvent(fplog,top,fr,cginfo);
+  
+  if (getenv("GMX_NO_SOLV_OPT")) {
+    if (fplog)
+      fprintf(fplog,"Found environment variable GMX_NO_SOLV_OPT.\n"
+  	      "Disabling all solvent optimization\n");
+    fr->solvent_opt = esolNO;
+  }
+  if (bNoSolvOpt)
+    fr->solvent_opt = esolNO;
+  if (!fr->solvent_opt) {
+    for(cg=0; cg<cgs->nr; cg++)
+      SET_CGINFO_SOLOPT(cginfo[cg],esolNO);
+  }
+
+  return cginfo;
+}
 
 
 void set_chargesum(FILE *log,t_forcerec *fr,const t_atoms *atoms)
@@ -1205,26 +1287,13 @@ void init_forcerec(FILE *fp,
 
   fr->bQMMM      = ir->bQMMM;   
   fr->qr         = mk_QMMMrec();
-  
-  /* the solvent optimizer is called after the QM is initialized,
-   * because we don't want to have the QM subsystemto become an
-   * optimized solvent
-   */
 
-  check_solvent(fp,top,fr,&top->atoms);
-
-  
-  if (getenv("GMX_NO_SOLV_OPT")) {
-    if (fp)
-      fprintf(fp,"Found environment variable GMX_NO_SOLV_OPT.\n"
-  	      "Disabling all solvent optimization\n");
-    fr->solvent_opt = esolNO;
-  }
-  if (bNoSolvOpt)
-    fr->solvent_opt = esolNO;
-  if (!fr->solvent_opt) {
-    for(i=0; i<top->blocks[ebCGS].nr; i++) 
-      fr->solvent_type[i] = esolNO;
+  /* Set all the static charge group info */
+  fr->cginfo_global = init_cginfo(fp,top,fr,bNoSolvOpt);
+  if (DOMAINDECOMP(cr)) {
+    fr->cginfo = NULL;
+  } else {
+    fr->cginfo = fr->cginfo_global;
   }
 
   if (PARTDECOMP(cr)) {

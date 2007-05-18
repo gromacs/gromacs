@@ -19,6 +19,9 @@ extern int glatnr(gmx_domdec_t *dd,int i);
  * When dd=NULL returns i+1.
  */
 
+extern bool dd_sort_cg(gmx_domdec_t *dd);
+/* Are the charge groups sorted this step */
+
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 

@@ -228,6 +228,22 @@ static int ci_not_used(ivec n)
   return xyz2ci(n[YY],n[ZZ],3*n[XX],3*n[YY],3*n[ZZ]);
 }
 
+
+void set_grid_ncg(t_grid *grid,int ncg)
+{
+  int nr_old,i;
+
+  grid->nr = ncg;
+  if (grid->nr+1 > grid->nr_alloc) {
+    nr_old = grid->nr_alloc;
+    grid->nr_alloc = over_alloc(grid->nr) + 1;
+    srenew(grid->cell_index,grid->nr_alloc);
+    for(i=nr_old; i<grid->nr_alloc; i++)
+      grid->cell_index[i] = 0;
+    srenew(grid->a,grid->nr_alloc);
+  }
+}
+
 void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
 		int ePBC,matrix box,real rlistlong,int ncg)
 {
@@ -254,18 +270,13 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
     }
     grid->ncells = ncells;
   }
-
-  grid->nr = ncg;
-  if (grid->nr+1 > grid->nr_alloc) {
-    grid->nr_alloc = over_alloc(grid->nr) + 1;
-    srenew(grid->cell_index,grid->nr_alloc);
-    srenew(grid->a,grid->nr_alloc);
-  }
   
   for(i=0; (i<ncells); i++)
     grid->nra[i]=0;
-  for(i=0; i<grid->maxcells; i++)
-    grid->index[i] = 10000*random();
+  //for(i=0; i<grid->maxcells; i++)
+  //  grid->index[i] = 10000*random();
+
+  set_grid_ncg(grid,ncg);
 }
 
 static void calc_bor(int cg0,int cg1,int ncg,int CG0[2],int CG1[2])
@@ -377,7 +388,7 @@ void fill_grid(FILE *log,
   int    *cell_index=grid->cell_index;
   int    nrx,nry,nrz;
   rvec   n_box,offset;
-  int    cell,cg,d,not_used;
+  int    cell,ccg0,ccg1,cg,d,not_used;
   ivec   shift0,b0,b1,ind;
   bool   bUse;
   
@@ -420,6 +431,11 @@ void fill_grid(FILE *log,
   } else {
     copy_rvec(grid->cell_offset,offset);
     for(cell=0; cell<dd->ncell; cell++) {
+      ccg0 = dd->ncg_cell[cell];
+      ccg1 = dd->ncg_cell[cell+1];
+      if (ccg1 <= cg0 || ccg0 >= cg1)
+	continue;
+
       /* Determine the ns grid cell limits for this DD cell */
       for(d=0; d<DIM; d++) {
 	shift0[d] = dd->shift[cell][d];
@@ -439,9 +455,14 @@ void fill_grid(FILE *log,
       not_used = ci_not_used(grid->n);
 
       /* Put all the charge groups of this DD cell on the grid */
-      cg0 = dd->ncg_cell[cell];
-      cg1 = dd->ncg_cell[cell+1];
-      for(cg=cg0; cg<cg1; cg++) {
+      for(cg=ccg0; cg<ccg1; cg++) {
+
+	if (cell_index[cg] == -1) {
+	  /* This cg has moved to another node */
+	  cell_index[cg] = 4*grid->ncells;
+	  continue;
+	}
+
 	bUse = TRUE;
 	for(d=0; d<DIM; d++) {
 	  ind[d] = (cg_cm[cg][d] - offset[d])*n_box[d];
@@ -463,6 +484,9 @@ void fill_grid(FILE *log,
 	    }
 	  }
 	}
+	if (cg > grid->nr_alloc)
+	  fprintf(stderr,"WARNING: nra_alloc %d cg0 %d cg1 %d cg %d\n",
+		  grid->nr_alloc,cg0,cg1,cg);
 	if (bUse)
 	  cell_index[cg] = xyz2ci(nry,nrz,ind[XX],ind[YY],ind[ZZ]);
 	else

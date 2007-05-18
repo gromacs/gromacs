@@ -480,7 +480,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
 	srenew(lexcls->a,lexcls->nalloc_a);
       }
       la0 = dd->cgindex[cg];
-      switch (fr->solvent_type[cg]) {
+      switch (GET_CGINFO_SOLOPT(fr->cginfo[cg])) {
       case esolNO:
 	/* Copy the exclusions from the global top */
 	la1 = dd->cgindex[cg+1];
@@ -526,7 +526,8 @@ static int make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
 	  count += 6;
 	break;
       default:
-	gmx_fatal(FARGS,"Unknown solvent type %d",fr->solvent_type[cg]);
+	gmx_fatal(FARGS,"Unknown solvent type %d",
+		  GET_CGINFO_SOLOPT(fr->cginfo[cg]));
       }
     }
   }
