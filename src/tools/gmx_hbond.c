@@ -1217,7 +1217,7 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
   real   k=1,kp=1,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt;
   double tmp,sn2=0,sc2=0,sk2=0,scn=0,sck=0,snk=0;
   
-  for(i=0; (i<n-2) && (t[i] < fit_start); i++)
+  for(i=0; (i<n-2) && ((t[i]-t[0]) < fit_start); i++)
     ;
   if (i < n-2) { 
     for(; (i<n); i++) {
