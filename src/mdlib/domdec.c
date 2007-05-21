@@ -1713,8 +1713,7 @@ static int compact_and_copy_vec_cg(int ncg,int *move,
 static int compact_ind(int ncg,int *move,
 		       int *index_gl,int *cgindex,
 		       int *gatindex,gmx_ga2la_t *ga2la,
-		       int *cginfo,bool bSortCG,
-		       bool bCompact,int *cell_index)
+		       int *cginfo)
 {
   int cg,nat,a0,a1,a,a_gl;
   int home_pos;
@@ -1725,51 +1724,56 @@ static int compact_ind(int ncg,int *move,
     a0 = cgindex[cg];
     a1 = cgindex[cg+1];
     if (move[cg] == -1) {
-      if (bCompact) {
-	/* Compact the home arrays in place.
-	 * Anything that can be done here avoids access to global arrays.
-	 */
-	cgindex[home_pos] = nat;
-	if (bSortCG) {
-	  /* We sort later, so we can skip setting the atom indices,
-	   * because they need to be set after sorting anyhow.
-	   */
-	  nat += a1 - a0;
-	} else {
-	  for(a=a0; a<a1; a++) {
-	    a_gl = gatindex[a];
-	    gatindex[nat] = a_gl;
-	    /* The cell number stays 0, so we don't need to set it */
-	    ga2la[a_gl].a = nat;
-	    nat++;
-	  }
-	}
-	index_gl[home_pos] = index_gl[cg];
-	cginfo[home_pos]   = cginfo[cg];
-	home_pos++;
+      /* Compact the home arrays in place.
+       * Anything that can be done here avoids access to global arrays.
+       */
+      cgindex[home_pos] = nat;
+      for(a=a0; a<a1; a++) {
+	a_gl = gatindex[a];
+	gatindex[nat] = a_gl;
+	/* The cell number stays 0, so we don't need to set it */
+	ga2la[a_gl].a = nat;
+	nat++;
       }
+      index_gl[home_pos] = index_gl[cg];
+      cginfo[home_pos]   = cginfo[cg];
+      home_pos++;
     } else {
       /* Clear the global indices */
       for(a=a0; a<a1; a++) {
 	a_gl = gatindex[a];
 	ga2la[a_gl].cell = -1;
       }
-      if (!bCompact) {
-	/* Signal that this cg is moved using the ns cell index.
-	 * Here we set it to -1.
-	 * fill_grid will change it from -1 to 4*grid->ncells.
-	 */
-	cell_index[cg] = -1;
-      }
     }
   }
-  if (bCompact) {
-    cgindex[home_pos] = nat;
-  } else {
-    home_pos = ncg;
-  }
+  cgindex[home_pos] = nat;
   
   return home_pos;
+}
+
+static void clear_and_mark_ind(int ncg,int *move,
+			       int *cgindex,int *gatindex,
+			       gmx_ga2la_t *ga2la,
+			       int *cell_index)
+{
+  int cg,a0,a1,a,a_gl;
+  
+  for(cg=0; cg<ncg; cg++) {
+    if (move[cg] >= 0) {
+      a0 = cgindex[cg];
+      a1 = cgindex[cg+1];
+      /* Clear the global indices */
+      for(a=a0; a<a1; a++) {
+	a_gl = gatindex[a];
+	ga2la[a_gl].cell = -1;
+      }
+      /* Signal that this cg has moved using the ns cell index.
+       * Here we set it to -1.
+       * fill_grid will change it from -1 to 4*grid->ncells.
+       */
+      cell_index[cg] = -1;
+    }
+  }
 }
 
 static void print_cg_move(FILE *fplog,
@@ -1806,7 +1810,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 			      gmx_domdec_t *dd,t_block *gcgs,
 			      t_state *state,rvec **f,rvec **buf,
 			      t_forcerec *fr,t_mdatoms *md,
-			      bool bSortCG,bool bCompact,
+			      bool bCompact,
 			      t_nrnb *nrnb)
 {
   int  *move;
@@ -1999,10 +2003,16 @@ static int dd_redistribute_cg(FILE *fplog,int step,
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
 			    nvec,vec++,state->sd_X,comm,bCompact);
   
-  compact_ind(dd->ncg_home,move,
-	      dd->index_gl,dd->cgindex,
-	      dd->gatindex,dd->ga2la,
-	      fr->cginfo,bSortCG,bCompact,fr->ns.grid->cell_index);
+  if (bCompact) {
+    compact_ind(dd->ncg_home,move,
+		dd->index_gl,dd->cgindex,
+		dd->gatindex,dd->ga2la,
+		fr->cginfo);
+  } else {
+    clear_and_mark_ind(dd->ncg_home,move,
+		       dd->cgindex,dd->gatindex,
+		       dd->ga2la,fr->ns.grid->cell_index);
+  }
 
   ncg_stay_home = home_pos_cg;
   for(d=0; d<dd->ndim; d++) {
@@ -3736,7 +3746,7 @@ void dd_partition_system(FILE         *fplog,
 {
   gmx_domdec_t *dd;
   int  i,j,cg0=0,ncg_home_old=-1;
-  bool bLogLoad,bSortCG,bCompact;
+  bool bLogLoad;
   ivec ncells_old;
 
   dd = cr->dd;
@@ -3805,15 +3815,12 @@ void dd_partition_system(FILE         *fplog,
       /* The new charge group order will be (quite) unrelated to the old one */
       ncg_home_old = -1;
     }
-    bCompact = FALSE;
-  } else {
-    bCompact = TRUE;
   }
 
   if (!bMasterState) {
     cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->blocks[ebCGS],
 			     state_local,f,buf,fr,mdatoms,
-			     dd->comm->bSortCG,bCompact,nrnb);
+			     !dd->comm->bSortCG,nrnb);
     set_grid_ncg(fr->ns.grid,dd->ncg_home);
   }
 
