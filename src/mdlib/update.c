@@ -331,7 +331,7 @@ static void do_update_sd(t_gmx_stochd *sd,bool bFirstStep,
   sdc = sd->sdc;
   sig = sd->sdsig;
   if (homenr > sd->sd_V_nalloc) {
-    sd->sd_V_nalloc = over_alloc(homenr);
+    sd->sd_V_nalloc = over_alloc_dd(homenr);
     srenew(sd->sd_V,sd->sd_V_nalloc);
   }
   sd_V = sd->sd_V;

@@ -105,7 +105,7 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
   }
 
   if (md->nr > md->nalloc) {
-    md->nalloc = over_alloc(md->nr);
+    md->nalloc = over_alloc_dd(md->nr);
 
     if (md->nMassPerturbed) {
       srenew(md->massA,md->nalloc);

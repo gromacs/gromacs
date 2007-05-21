@@ -78,15 +78,34 @@ extern "C" {
 #include <types/matrix.h>
 #include <types/edsams.h>
 
-extern void set_over_alloc(bool set);
-  /* Turns over allocation on or off, default is off */
+/* 
+ * Memory (re)allocation can be VERY slow, especially with some
+ * MPI libraries that replace the standard malloc and realloc calls.
+ * To avoid slow memory allocation we use over_alloc to set the memory
+ * allocation size for large data blocks. Since this scales the size
+ * with a factor, we use log(n) realloc calls instead of n.
+ * This can reduce allocation times from minutes to seconds.
+ */
+/* This factor leads to 4 realloc calls to double the array size */
+#define OVER_ALLOC_FAC 1.19
+
+extern void set_over_alloc_dd(bool set);
+  /* Turns over allocation for variable size atoms/cg/top arrays on or off,
+   * default is off.
+   */
   
-extern int over_alloc(int n);
-  /* Returns n when over allocation is off.
-   * Returns 1.1*n + 10 when over allocation in on.
+extern int over_alloc_dd(int n);
+  /* Returns n when domain decomposition over allocation is off.
+   * Returns OVER_ALLOC_FAC*n + 100 when over allocation in on.
    * This is to avoid frequent reallocation
    * during domain decomposition in mdrun.
    */
+
+/* Over allocation for small data types: int, real etc. */
+#define over_alloc_small(n) (OVER_ALLOC_FAC*(n) + 8000)
+
+/* Over allocation for large data types: complex structs */
+#define over_alloc_large(n) (OVER_ALLOC_FAC*(n) + 1000)
 
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c 

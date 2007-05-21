@@ -171,7 +171,7 @@ void init_grid(FILE *fplog,t_grid *grid,int delta,const gmx_domdec_t *dd,
     grid->nr_alloc = 0;
   } else {
     grid->nr       = ncg;
-    grid->nr_alloc = over_alloc(grid->nr) + 1;
+    grid->nr_alloc = grid->nr + 1;
     snew(grid->cell_index,grid->nr_alloc);
     snew(grid->a,grid->nr_alloc);
   }
@@ -236,7 +236,7 @@ void set_grid_ncg(t_grid *grid,int ncg)
   grid->nr = ncg;
   if (grid->nr+1 > grid->nr_alloc) {
     nr_old = grid->nr_alloc;
-    grid->nr_alloc = over_alloc(grid->nr) + 1;
+    grid->nr_alloc = over_alloc_dd(grid->nr) + 1;
     srenew(grid->cell_index,grid->nr_alloc);
     for(i=nr_old; i<grid->nr_alloc; i++)
       grid->cell_index[i] = 0;

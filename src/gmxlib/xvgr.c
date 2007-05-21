@@ -381,18 +381,19 @@ real **read_xvg_time(char *fn,
 		     bool bHaveT,bool bTB,real tb,bool bTE,real te,
 		     int nsets_in,int *nset,int *nval,real *dt,real **t)
 {
-#define XVG_NALLOC 8001
   FILE   *fp;
 #define MAXLINELEN 16384
   char line0[MAXLINELEN];
   char   *line;
-  int    a,narg,n,sin,set,nchar;
+  int    t_nalloc,*val_nalloc,a,narg,n,sin,set,nchar;
   double dbl,tend=0;
   bool   bEndOfSet,bTimeInRange,bFirstLine=TRUE;
   real   **val;
   
-  val = NULL;
+  t_nalloc = 0;
   *t  = NULL;
+  val = NULL;
+  val_nalloc = NULL;
   *dt = 0;
   fp  = ffopen(fn,"r");
   for(sin=0; sin<nsets_in; sin++) {
@@ -449,19 +450,25 @@ real **read_xvg_time(char *fn,
 	      if (set >= 0) {
 		*nset = set+1;
 		srenew(val,*nset);
+		srenew(val_nalloc,*nset);
+		val_nalloc[set] = 0;
 		val[set] = NULL;
 	      }
 	    }
 	    if (set == -1) {
 	      if (sin == 0) {
-		if (n % XVG_NALLOC == 0) 
-		  srenew(*t,n+XVG_NALLOC);
+		if (n >= t_nalloc) {
+		  t_nalloc = over_alloc_small(n);
+		  srenew(*t,t_nalloc);
+		}
 		(*t)[n] = dbl;
 	      }
 	      /* else we should check the time of the next sets with set 0 */
 	    } else {
-	      if (n % XVG_NALLOC == 0) 
-		srenew(val[set],n+XVG_NALLOC);
+	      if (n >= val_nalloc[set]) {
+		val_nalloc[set] = over_alloc_small(n);
+		srenew(val[set],val_nalloc[set]);
+	      }
 	      val[set][n] = (real)dbl;
 	    }
 	  }
@@ -507,6 +514,8 @@ real **read_xvg_time(char *fn,
     }
   }
   fclose(fp);
+
+  sfree(val_nalloc);
   
   return val;
 }

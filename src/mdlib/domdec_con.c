@@ -279,7 +279,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 		      nsend,2,spac->nreq[d][dir],2);
       nr = spac->nreq[d][dir][1];
       if (nlast+nr > spac->ind_req_nalloc) {
-	spac->ind_req_nalloc = over_alloc(nlast+nr);
+	spac->ind_req_nalloc = over_alloc_dd(nlast+nr);
 	srenew(spac->ind_req,spac->ind_req_nalloc);
       }
       /* Communicate the indices */
@@ -306,7 +306,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
     for(dir=ndir-1; dir>=0; dir--) {
       if (nat_tot_specat > spac->bSendAtom_nalloc) {
 	nalloc_old = spac->bSendAtom_nalloc;
-	spac->bSendAtom_nalloc = over_alloc(nat_tot_specat);
+	spac->bSendAtom_nalloc = over_alloc_dd(nat_tot_specat);
 	srenew(spac->bSendAtom,spac->bSendAtom_nalloc);
 	for(i=nalloc_old; i<spac->bSendAtom_nalloc; i++)
 	  spac->bSendAtom[i] = FALSE;
@@ -374,7 +374,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
       nrecv_local += buf[0];
       spas->nrecv  = buf[1];
       if (nat_tot_specat + spas->nrecv > dd->gatindex_nalloc) {
-	dd->gatindex_nalloc = over_alloc(nat_tot_specat + spas->nrecv);
+	dd->gatindex_nalloc = over_alloc_dd(nat_tot_specat + spas->nrecv);
 	srenew(dd->gatindex,dd->gatindex_nalloc);
       }
       /* Send and receive the indices */
@@ -392,11 +392,11 @@ static int setup_specat_communication(gmx_domdec_t *dd,
       nr += spac->spas[d][1].nrecv;
     }
     if (vbuf_fac*ns > spac->vbuf_nalloc) {
-      spac->vbuf_nalloc = over_alloc(vbuf_fac*ns);
+      spac->vbuf_nalloc = over_alloc_dd(vbuf_fac*ns);
       srenew(spac->vbuf,spac->vbuf_nalloc);
     }
     if (vbuf_fac == 2 && vbuf_fac*nr > spac->vbuf2_nalloc) {
-      spac->vbuf2_nalloc = over_alloc(vbuf_fac*nr);
+      spac->vbuf2_nalloc = over_alloc_dd(vbuf_fac*nr);
       srenew(spac->vbuf2,spac->vbuf2_nalloc);
     }
 

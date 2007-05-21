@@ -720,7 +720,7 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
     for(n=0; n<dd->nnodes; n++) {
       if (n != dd->rank) {
 	if (ma->nat[n] > nalloc) {
-	  nalloc = over_alloc(ma->nat[n]);
+	  nalloc = over_alloc_dd(ma->nat[n]);
 	  srenew(buf,nalloc);
 	}
 #ifdef GMX_MPI
@@ -760,9 +760,9 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
 static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
 {
   if (debug)
-    fprintf(debug,"Reallocating forcerec: currently %d, required %d, allocating %d\n",fr->cg_nalloc,nalloc,over_alloc(nalloc));
+    fprintf(debug,"Reallocating forcerec: currently %d, required %d, allocating %d\n",fr->cg_nalloc,nalloc,over_alloc_dd(nalloc));
 
-  fr->cg_nalloc = over_alloc(nalloc);
+  fr->cg_nalloc = over_alloc_dd(nalloc);
   srenew(fr->cg_cm,fr->cg_nalloc);
   srenew(fr->cginfo,fr->cg_nalloc);
 }
@@ -770,9 +770,9 @@ static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
 static void dd_realloc_state(t_state *state,rvec **f,rvec **buf,int nalloc)
 {
   if (debug)
-    fprintf(debug,"Reallocating state: currently %d, required %d, allocating %d\n",state->nalloc,nalloc,over_alloc(nalloc));
+    fprintf(debug,"Reallocating state: currently %d, required %d, allocating %d\n",state->nalloc,nalloc,over_alloc_dd(nalloc));
 
-  state->nalloc = over_alloc(nalloc);
+  state->nalloc = over_alloc_dd(nalloc);
   srenew(state->x,state->nalloc);
   if (state->flags & STATE_HAS_V)
     srenew(state->v,state->nalloc);
@@ -795,7 +795,7 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
     for(n=0; n<dd->nnodes; n++) {
       if (n != dd->rank) {
 	if (ma->nat[n] > nalloc) {
-	  nalloc = over_alloc(ma->nat[n]);
+	  nalloc = over_alloc_dd(ma->nat[n]);
 	  srenew(buf,nalloc);
 	}
 	/* Use lv as a temporary buffer */
@@ -979,9 +979,10 @@ static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
   int cell,cg0,cg,cg_gl,a,a_gl;
   int *cell_ncg,*index_gl,*cgindex,*gatindex;
   gmx_ga2la_t *ga2la;
+  int *cginfo_global,*cginfo;
 
   if (dd->nat_tot > dd->gatindex_nalloc) {
-    dd->gatindex_nalloc = over_alloc(dd->nat_tot);
+    dd->gatindex_nalloc = over_alloc_dd(dd->nat_tot);
     srenew(dd->gatindex,dd->gatindex_nalloc);
   }
   
@@ -989,6 +990,9 @@ static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
   index_gl   = dd->index_gl;
   cgindex    = gcgs->index;
   gatindex   = dd->gatindex;
+
+  cginfo_global = fr->cginfo_global;
+  cginfo        = fr->cginfo;
 
   /* Make the local to global and global to local atom index */
   a = dd->cgindex[cg_start];
@@ -1005,7 +1009,7 @@ static void make_dd_indices(gmx_domdec_t *dd,t_block *gcgs,int cg_start,
 	ga2la->cell = cell;
 	ga2la->a    = a++;
       }
-      fr->cginfo[cg] = fr->cginfo_global[cg_gl];
+      cginfo[cg] = cginfo_global[cg_gl];
     }
   }
 }
@@ -1590,7 +1594,7 @@ static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
   dd->ncg_home = buf2[0];
   dd->nat_home = buf2[1];
   if (dd->ncg_home > dd->cg_nalloc || dd->cg_nalloc == 0) {
-    dd->cg_nalloc = over_alloc(dd->ncg_home);
+    dd->cg_nalloc = over_alloc_dd(dd->ncg_home);
     srenew(dd->index_gl,dd->cg_nalloc);
     srenew(dd->cgindex,dd->cg_nalloc+1);
   }
@@ -1826,7 +1830,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   bSDX = (state->flags & STATE_HAS_SDX);
 
   if (dd->ncg_tot > comm->nalloc_int) {
-    comm->nalloc_int = over_alloc(dd->ncg_tot);
+    comm->nalloc_int = over_alloc_dd(dd->ncg_tot);
     srenew(comm->buf_int,comm->nalloc_int);
   }
   move = comm->buf_int;
@@ -1945,7 +1949,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
     move[cg] = mc;
     if (mc >= 0) {
       if (ncg[mc]+1 > comm->cggl_flag_nalloc[mc]) {
-	comm->cggl_flag_nalloc[mc] = over_alloc(ncg[mc]+1);
+	comm->cggl_flag_nalloc[mc] = over_alloc_dd(ncg[mc]+1);
 	srenew(comm->cggl_flag[mc],comm->cggl_flag_nalloc[mc]*DD_CGIBS);
       }
       comm->cggl_flag[mc][ncg[mc]*DD_CGIBS  ] = dd->index_gl[cg];
@@ -1972,7 +1976,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   for(mc=0; mc<dd->ndim*2; mc++) {
     nvr = ncg[mc] + nat[mc]*nvec;
     if (nvr>comm->cgcm_state_nalloc[mc]) {
-      comm->cgcm_state_nalloc[mc] = over_alloc(nvr);
+      comm->cgcm_state_nalloc[mc] = over_alloc_dd(nvr);
       srenew(comm->cgcm_state[mc],comm->cgcm_state_nalloc[mc]);
     }
   }
@@ -2017,7 +2021,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
       dd_sendrecv_int(dd,d,dir,sbuf,2,rbuf,2);
 
       if ((ncg_recv+rbuf[0])*DD_CGIBS > comm->nalloc_int) {
-	comm->nalloc_int = over_alloc((ncg_recv+rbuf[0])*DD_CGIBS);
+	comm->nalloc_int = over_alloc_dd((ncg_recv+rbuf[0])*DD_CGIBS);
 	srenew(comm->buf_int,comm->nalloc_int);
       }
 
@@ -2029,7 +2033,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
       nvs = ncg[cdd] + nat[cdd]*nvec;
       i   = rbuf[0]  + rbuf[1] *nvec;
       if (nvr+i > comm->nalloc_vr) {
-	comm->nalloc_vr = over_alloc(nvr+i);
+	comm->nalloc_vr = over_alloc_dd(nvr+i);
 	srenew(comm->buf_vr,comm->nalloc_vr);
       }
 
@@ -2095,7 +2099,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
       nrcg = flag & DD_FLAG_NRCG;
       if (mc == -1) {
 	if (home_pos_cg+1 > dd->cg_nalloc) {
-	  dd->cg_nalloc = over_alloc(home_pos_cg+1);
+	  dd->cg_nalloc = over_alloc_dd(home_pos_cg+1);
 	  srenew(dd->index_gl,dd->cg_nalloc);
 	  srenew(dd->cgindex,dd->cg_nalloc+1);
 	}
@@ -2125,12 +2129,12 @@ static int dd_redistribute_cg(FILE *fplog,int step,
       } else {
 	/* Reallocate the buffers if necessary  */
 	if (ncg[mc]+1 > comm->cggl_flag_nalloc[mc]) {
-	  comm->cggl_flag_nalloc[mc] = over_alloc(ncg[mc]+1);
+	  comm->cggl_flag_nalloc[mc] = over_alloc_dd(ncg[mc]+1);
 	  srenew(comm->cggl_flag[mc],comm->cggl_flag_nalloc[mc]*DD_CGIBS);
 	}
 	nvr = ncg[mc] + nat[mc]*nvec;
 	if (nvr + 1 + nrcg*nvec > comm->cgcm_state_nalloc[mc]) {
-	  comm->cgcm_state_nalloc[mc] = over_alloc(nvr + 1 + nrcg*nvec);
+	  comm->cgcm_state_nalloc[mc] = over_alloc_dd(nvr + 1 + nrcg*nvec);
 	  srenew(comm->cgcm_state[mc],comm->cgcm_state_nalloc[mc]);
 	}
 	/* Copy from the receive to the send buffers */
@@ -3104,10 +3108,7 @@ static int dd_nst_env(FILE *fplog,char *env_var,int def)
   val = getenv(env_var);
   if (val) {
     if (sscanf(val,"%d",&nst) <= 0) {
-      if (def == 0)
-	nst = 1;
-      else
-	nst = 0;
+      nst = 1;
     }
     fprintf(fplog,"Found env.var. %s = %s, using value %d\n",
 	    env_var,val,nst);
@@ -3452,7 +3453,7 @@ static void setup_dd_communication(FILE *fplog,int step,
     /* Communicate the global cg indices, receive in place */
     if (ncg_cell[ncell] + ind->nrecv[ncell] > dd->cg_nalloc
 	|| dd->cg_nalloc == 0) {
-      dd->cg_nalloc = over_alloc(ncg_cell[ncell] + ind->nrecv[ncell]);
+      dd->cg_nalloc = over_alloc_dd(ncg_cell[ncell] + ind->nrecv[ncell]);
       srenew(index_gl,dd->cg_nalloc);
       srenew(cgindex,dd->cg_nalloc+1);
     }
@@ -3612,7 +3613,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
   sort = dd->comm->sort;
 
   if (dd->ncg_home > sort->sort_nalloc) {
-    sort->sort_nalloc = over_alloc(dd->ncg_home);
+    sort->sort_nalloc = over_alloc_dd(dd->ncg_home);
     srenew(sort->sort1,sort->sort_nalloc);
     srenew(sort->sort2,sort->sort_nalloc);
   }
@@ -3632,7 +3633,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
 	if (i >= ncg_home_old || cell_index != sort->sort1[i].box) {
 	  /* This cg is new on this node or moved ns grid cell */
 	  if (nsort_new >= sort->sort_new_nalloc) {
-	    sort->sort_new_nalloc = over_alloc(nsort_new+1);
+	    sort->sort_new_nalloc = over_alloc_dd(nsort_new+1);
 	    srenew(sort->sort_new,sort->sort_new_nalloc);
 	  }
 	  sort_i = &(sort->sort_new[nsort_new++]);
@@ -3672,7 +3673,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
   
   /* We alloc with the old size, since cgindex is still old */
   if (dd->cgindex[dd->ncg_home] > sort->vbuf_nalloc) {
-    sort->vbuf_nalloc = over_alloc(dd->cgindex[dd->ncg_home]);
+    sort->vbuf_nalloc = over_alloc_dd(dd->cgindex[dd->ncg_home]);
     srenew(sort->vbuf,sort->vbuf_nalloc);
   }
   vbuf = sort->vbuf;
@@ -3690,7 +3691,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
   order_vec_cg(dd->ncg_home,cgsort,cgcm,vbuf);
 
   if (dd->ncg_home+1 > sort->ibuf_nalloc) {
-    sort->ibuf_nalloc = over_alloc(dd->ncg_home+1);
+    sort->ibuf_nalloc = over_alloc_dd(dd->ncg_home+1);
     srenew(sort->ibuf,sort->ibuf_nalloc);
   }
   ibuf = sort->ibuf;
@@ -3853,7 +3854,7 @@ void dd_partition_system(FILE         *fplog,
   if (fr->bTwinRange) {
     fr->f_twin_n = dd->nat_tot;
     if (fr->f_twin_n > fr->f_twin_nalloc) {
-      fr->f_twin_nalloc = over_alloc(fr->f_twin_n);
+      fr->f_twin_nalloc = over_alloc_dd(fr->f_twin_n);
       srenew(fr->f_twin,fr->f_twin_nalloc);
     }
   }
@@ -3879,7 +3880,7 @@ void dd_partition_system(FILE         *fplog,
     else
       fr->f_el_recip_n = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
     if (fr->f_el_recip_n > fr->f_el_recip_nalloc) {
-      fr->f_el_recip_nalloc = over_alloc(fr->f_el_recip_n);
+      fr->f_el_recip_nalloc = over_alloc_dd(fr->f_el_recip_n);
       srenew(fr->f_el_recip,fr->f_el_recip_nalloc);
     }
   }

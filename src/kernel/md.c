@@ -489,7 +489,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   
   if (DOMAINDECOMP(cr)) {
     /* Set overallocation to avoid frequent reallocation of arrays */
-    set_over_alloc(TRUE);
+    set_over_alloc_dd(TRUE);
 
     set_dd_parameters(stdlog,cr->dd,top_global,inputrec,fr);
 

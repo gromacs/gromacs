@@ -352,7 +352,7 @@ static void pme_realloc_homenr_things(gmx_pme_t pme)
   int i;
 
   if (pme->my_homenr > pme->homenr_nalloc) {
-    pme->homenr_nalloc = over_alloc(pme->my_homenr);
+    pme->homenr_nalloc = over_alloc_dd(pme->my_homenr);
 
     if (pme->nnodes > 1) {
       srenew(pme->x_home,pme->homenr_nalloc);
@@ -392,7 +392,7 @@ static void pmeredist(gmx_pme_t pme, bool forw,
     bFirst=FALSE;
   }
   if (n > buf_nalloc) {
-    buf_nalloc = over_alloc(n);
+    buf_nalloc = over_alloc_dd(n);
     srenew(buf,buf_nalloc*DIM);
   }
 
@@ -516,7 +516,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
 		n - (pme->count[pme->nodeid] + nsend),pme->nodeid);
     
     if (nsend > pme->buf_nalloc) {
-      pme->buf_nalloc = over_alloc(nsend);
+      pme->buf_nalloc = over_alloc_dd(nsend);
       srenew(pme->bufv,pme->buf_nalloc);
       srenew(pme->bufr,pme->buf_nalloc);
     }
@@ -1521,7 +1521,7 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
     }
     if (n > *nalloc_natpp) {
       *bRealloc = TRUE;
-      *nalloc_natpp = over_alloc(n);
+      *nalloc_natpp = over_alloc_dd(n);
 
       srenew(*x,*nalloc_natpp);
       srenew(*chargeA,*nalloc_natpp);
@@ -1615,7 +1615,7 @@ void gmx_pme_receive_f(t_commrec *cr,
   natoms = cr->dd->nat_home;
 
   if (natoms > nalloc) {
-    nalloc = over_alloc(natoms);
+    nalloc = over_alloc_dd(natoms);
     srenew(f_rec,nalloc);
   }
 
@@ -1764,7 +1764,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
       snew(pidx,pme->nkx);
     
     if (homenr > gidx_nalloc) {
-      gidx_nalloc = over_alloc(homenr);
+      gidx_nalloc = over_alloc_dd(homenr);
       srenew(gidx,gidx_nalloc);
     }
   }

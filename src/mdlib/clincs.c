@@ -533,7 +533,7 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
     }
     
     if (li->nc > li->nc_alloc || li->nc_alloc == 0) {
-      li->nc_alloc = over_alloc(li->nc);
+      li->nc_alloc = over_alloc_dd(li->nc);
       srenew(li->bllen0,li->nc_alloc);
       srenew(li->ddist,li->nc_alloc);
       srenew(li->bla,2*li->nc_alloc);

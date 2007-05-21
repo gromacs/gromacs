@@ -43,17 +43,17 @@
 #include "vec.h"
 #include <string.h>
 
-static bool bOverAlloc=FALSE;
+static bool bOverAllocDD=FALSE;
 
-void set_over_alloc(bool set)
+void set_over_alloc_dd(bool set)
 {
-  bOverAlloc = set;
+  bOverAllocDD = set;
 }
 
-int over_alloc(int n)
+int over_alloc_dd(int n)
 {
-  if (bOverAlloc)
-    return 1.1*n + 100;
+  if (bOverAllocDD)
+    return OVER_ALLOC_FAC*n + 100;
   else
     return n;
 }

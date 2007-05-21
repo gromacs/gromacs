@@ -458,7 +458,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
 
   lexcls->nr = dd->cgindex[dd->icell[dd->nicell-1].cg1];
   if (lexcls->nr+1 > lexcls->nalloc_index) {
-    lexcls->nalloc_index = over_alloc(lexcls->nr)+1;
+    lexcls->nalloc_index = over_alloc_dd(lexcls->nr)+1;
     srenew(lexcls->index,lexcls->nalloc_index);
   }
 

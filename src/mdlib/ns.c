@@ -87,9 +87,6 @@ static bool NOTEXCL_(t_excl e[],atom_id i,atom_id j)
  *
  ************************************************/
 
-static int NLI_INC = 1000;
-static int NLJ_INC = 16384;
-
 static void reallocate_nblist(t_nblist *nl)
 {
   if (gmx_debug_at)
@@ -367,12 +364,12 @@ static inline void new_i_nblist(t_nblist *nlist,
 {
   int    i,k,nri,nshift;
     
-  if (nlist->maxnrj <= nlist->nrj + NLJ_INC-1) {
+  if (nlist->maxnrj < nlist->nrj + MAX_CG) {
+    nlist->maxnrj = over_alloc_small(nlist->nrj + MAX_CG);
     if (gmx_debug_at)
-      fprintf(debug,"Adding %5d J particles for %s nblist %s\n",NLJ_INC,
-	      bLR ? "LR" : "SR",nrnb_str(nlist->il_code));
+      fprintf(debug,"Increasing %s nblist %s j size to %d\n",
+	      bLR ? "LR" : "SR",nrnb_str(nlist->il_code),nlist->maxnrj);
 
-    nlist->maxnrj += NLJ_INC;
     srenew(nlist->jjnr,nlist->maxnrj);
   }
 
@@ -394,7 +391,7 @@ static inline void new_i_nblist(t_nblist *nlist,
       nlist->nri++;
       nri++;
       if (nlist->nri >= nlist->maxnri) {
-	nlist->maxnri += NLI_INC;
+	nlist->maxnri += over_alloc_large(nlist->nri);
 	reallocate_nblist(nlist);
       }
     }
@@ -1231,7 +1228,7 @@ static void ns_inner_rect(rvec x[],int icg,bool *i_egp_flags,
       cg_j   = jcg[j];
       nrj    = cgindex[cg_j+1]-cgindex[cg_j];
       if ((rcut2 == 0) || (distance2(x[icg],x[cg_j]) < rcut2)) {
-	jgid  = GET_CGINFO_GID(fr->cginfo[cg_j]);
+	jgid  = GET_CGINFO_GID(cginfo[cg_j]);
 	if (!(i_egp_flags[jgid] & EGP_EXCL)) {
 	  add_simple(&ns_buf[jgid][CENTRAL],nrj,cg_j,
 		     bHaveVdW,ngid,md,icg,jgid,cgs,bexcl,CENTRAL,fr);
@@ -1254,6 +1251,7 @@ static int ns_simple_core(t_forcerec *fr,
   int      naaj,k;
   real     rlist2;
   int      nsearch,icg,jcg,igid,i0,nri,nn;
+  int      *cginfo;
   t_ns_buf *nsbuf;
   /* atom_id  *i_atoms; */
   t_block  *cgs=&(top->blocks[ebCGS]);
@@ -1272,6 +1270,8 @@ static int ns_simple_core(t_forcerec *fr,
   } else
     bTriclinic = FALSE;
 
+  cginfo = fr->cginfo;
+
   nsearch=0;
   for (icg=fr->cg0; (icg<fr->hcg); icg++) {
     /*
@@ -1281,7 +1281,7 @@ static int ns_simple_core(t_forcerec *fr,
     i_eg_excl = fr->eg_excl + ngid*md->cENER[*i_atoms];
     setexcl(nri,i_atoms,excl,TRUE,bexcl);
     */
-    igid = GET_CGINFO_GID(fr->cginfo[icg]);
+    igid = GET_CGINFO_GID(cginfo[icg]);
     i_egp_flags = fr->egp_flags + ngid*igid;
     setexcl(cgs->index[icg],cgs->index[icg+1],excl,TRUE,bexcl);
     
@@ -1907,7 +1907,7 @@ void ns_realloc_natoms(gmx_ns_t *ns,int natoms)
   int i;
 
   if (natoms > ns->nra_alloc) {
-    ns->nra_alloc = over_alloc(natoms);
+    ns->nra_alloc = over_alloc_dd(natoms);
     srenew(ns->bexcl,ns->nra_alloc);
     for(i=0; i<ns->nra_alloc; i++)
       ns->bexcl[i] = 0;
@@ -1942,13 +1942,6 @@ void init_ns(FILE *fplog,const t_commrec *cr,
     for(j=0; j<ngid; j++)
       if (!(fr->egp_flags[i*ngid+j] & EGP_EXCL))
 	ns->bExcludeAlleg[i] = FALSE;
-  }
-    
-  if ((ptr=getenv("NLIST")) != NULL) {
-    sscanf(ptr,"%d",&NLJ_INC);
-    
-    fprintf(fplog,"%s: I will increment J-lists by %d\n",
-	    __FILE__,NLJ_INC);
   }
   
   if (fr->bGrid) {
