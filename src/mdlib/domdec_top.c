@@ -15,9 +15,6 @@ typedef struct gmx_reverse_top {
   int n_intercg_vsite;
 } gmx_reverse_top_t;
 
-#define EXCLS_ALLOC_SIZE  1000
-#define IATOM_ALLOC_SIZE  1000
-
 /* Code that only works for one moleculetype consisting of one charge group */
 /* #define ONE_MOLTYPE_ONE_CG */
 
@@ -263,8 +260,8 @@ static inline void add_ifunc(int type,int nral,t_iatom *tiatoms,t_ilist *il)
   t_iatom *liatoms;
   int     k;
 
-  if (il->nr >= il->nalloc) {
-    il->nalloc += IATOM_ALLOC_SIZE*(1 + nral);
+  if (il->nr+1+nral > il->nalloc) {
+    il->nalloc += over_alloc_large(il->nr+1+nral);
     srenew(il->iatoms,il->nalloc);
   }
   liatoms = il->iatoms + il->nr;
@@ -302,7 +299,7 @@ static void add_vsite(gmx_domdec_t *dd,
   if (vsite_pbc) {
     vsi = idef->il[ftype].nr/(1+nral) - 1;
     if (vsi >= vsite_pbc_nalloc[ftype-F_VSITE2]) {
-      vsite_pbc_nalloc[ftype-F_VSITE2] += IATOM_ALLOC_SIZE;
+      vsite_pbc_nalloc[ftype-F_VSITE2] = over_alloc_large(vsi+1);
       srenew(vsite_pbc[ftype-F_VSITE2],vsite_pbc_nalloc[ftype-F_VSITE2]);
     }
     if (i >= 0) {
@@ -473,10 +470,10 @@ static int make_local_exclusions(gmx_domdec_t *dd,t_forcerec *fr,
     jla1 = dd->cgindex[dd->icell[ic].jcg1];
     for(cg=dd->ncg_cell[ic]; cg<dd->ncg_cell[ic+1]; cg++) {
       /* Here we assume the number of exclusions in one charge group
-       * is never larger than EXCLS_ALLOC_SIZE
+       * is never larger than 1000.
        */
-      if (n+EXCLS_ALLOC_SIZE > lexcls->nalloc_a) {
-	lexcls->nalloc_a += EXCLS_ALLOC_SIZE;
+      if (n+1000 > lexcls->nalloc_a) {
+	lexcls->nalloc_a = over_alloc_large(n+1000);
 	srenew(lexcls->a,lexcls->nalloc_a);
       }
       la0 = dd->cgindex[cg];

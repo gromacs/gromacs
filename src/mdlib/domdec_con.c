@@ -332,7 +332,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	if (ind >= 0) {
 	  if (i < n0 || !spac->bSendAtom[ind]) {
 	    if (spas->nsend >= spas->a_nalloc) {
-	      spas->a_nalloc += SPECAT_ALLOC_SIZE;
+	      spas->a_nalloc = over_alloc_large(spas->nsend+1);
 	      srenew(spas->a,spas->a_nalloc);
 	    }
 	    /* Store the local index so we know which coordinates
@@ -341,7 +341,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	    spas->a[spas->nsend] = ind;
 	    spac->bSendAtom[ind] = TRUE;
 	    if (spas->nsend >= spac->ibuf_nalloc) {
-	      spac->ibuf_nalloc += SPECAT_ALLOC_SIZE;
+	      spac->ibuf_nalloc = over_alloc_large(spas->nsend+1);
 	      srenew(spac->ibuf,spac->ibuf_nalloc);
 	    }
 	    /* Store the global index so we can send it now */
