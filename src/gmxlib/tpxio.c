@@ -231,9 +231,13 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
 	ir->bPeriodicMols = FALSE;
       }
     }
-    do_int(ir->ns_type); 
-    do_int(ir->nstlist); 
+    do_int(ir->ns_type);
+    do_int(ir->nstlist);
     do_int(ir->ndelta);
+    /* Set ndelta to the optimal value of 3 */
+    ir->ndelta = 3;
+    do_int(ir->ndelta);
+    ir->ndelta = 3;
     if (file_version < 41) {
       do_int(idum);
       do_int(idum);

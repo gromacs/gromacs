@@ -126,7 +126,7 @@ void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
       if (ePBC==epbcXY && i==ZZ)
 	grid->n[i] = 1;
       else
-	grid->n[i] = delta*size/rlist;
+	grid->n[i] = delta*size*0.5/rlist;
       grid->cell_size[i] = size/grid->n[i];
       grid->ncpddc[i] = grid->n[i];
     } else {
@@ -136,7 +136,7 @@ void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
        * for non-home i-particles.
        */
       size = dd_cell_size[i];
-      grid->ncpddc[i] = delta*size/rlist;
+      grid->ncpddc[i] = delta*size*0.5/rlist;
       grid->cell_size[i] = size/grid->ncpddc[i];
       grid->n[i] = grid->ncpddc[i] + (int)(rlist/grid->cell_size[i]) + 1;
     }
