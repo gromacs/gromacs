@@ -245,7 +245,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     snew(nsb,1);
     nsb->nodeid  = 0;
     nsb->nnodes  = 1;
-    calc_nsb(debug,&(top->blocks[ebCGS]),1,nsb,0);
+    calc_nsb(debug,&(top->blocks[ebCGS]),1,nsb,0,&top->idef);
     if (debug)
       print_nsb(debug,"nsborder",nsb);
   

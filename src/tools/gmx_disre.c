@@ -598,7 +598,7 @@ int gmx_disre(int argc,char *argv[])
 		     eiMD,0,0,NULL,FALSE,FALSE);  
   fr      = mk_forcerec();
   fprintf(stdlog,"Made forcerec\n");
-  calc_nsb(stdlog,&(top.blocks[ebCGS]),1,nsb,0);
+  calc_nsb(stdlog,&(top.blocks[ebCGS]),1,nsb,0,&top.idef);
   init_forcerec(stdlog,fr,&ir,&top,cr,mdatoms,nsb,box,FALSE,NULL,NULL,FALSE);
   init_nrnb(&nrnb);
   j=0;
