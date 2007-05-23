@@ -64,18 +64,32 @@ static void init_range_check()
 	  "energy seems reasonable before trying again.\n");
 }
 
-void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
-		    const gmx_domdec_t *dd,t_grid *grid)
+static void set_grid_sizes(int ePBC,matrix box,real rlist,
+			   const gmx_domdec_t *dd,t_grid *grid,int ncg)
 {
   int  i,j;
   bool bDD,bDDRect;
   rvec dd_cell_size;
-  real size,radd,add_tric;
+  real dens,inv_r_ideal,size,radd,add_tric;
 
   if (dd) {
-    for(i=0; (i<DIM); i++)
+    dens = 1;
+    for(i=0; (i<DIM); i++) {
       dd_cell_size[i] = dd->cell_ns_x1[i] - dd->cell_ns_x0[i];
+      dens *= dd->cell_x1[i] - dd->cell_x0[i];
+    }
+    /* We use the density of the DD home cell */
+    dens = dd->ncg_home/dens;
+  } else {
+    dens = ncg/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
   }
+
+  /* Use the ideal number of cg's per cell to set the ideal cell size */
+  inv_r_ideal = pow(dens/grid->ncg_ideal,1.0/3.0);
+  if (inv_r_ideal*rlist < 1)
+    inv_r_ideal = 1/rlist;
+  if (debug)
+    fprintf(debug,"CG density %f ideal ns cell size %f\n",dens,1/inv_r_ideal);
 
   clear_rvec(grid->cell_offset);
   for(i=0; (i<DIM); i++) {
@@ -126,7 +140,7 @@ void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
       if (ePBC==epbcXY && i==ZZ)
 	grid->n[i] = 1;
       else
-	grid->n[i] = (int)(delta*size*0.5/rlist);
+	grid->n[i] = (int)(size*inv_r_ideal + 0.5);
       grid->cell_size[i] = size/grid->n[i];
       grid->ncpddc[i] = grid->n[i];
     } else {
@@ -135,7 +149,7 @@ void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
        * We can then beforehand exclude certain ns grid cells
        * for non-home i-particles.
        */
-      grid->ncpddc[i] = (int)(delta*dd_cell_size[i]*0.5/rlist);
+      grid->ncpddc[i] = (int)(dd_cell_size[i]*inv_r_ideal + 0.5);
       if (grid->ncpddc[i] < 2)
 	grid->ncpddc[i] = 2;
       grid->cell_size[i] = dd_cell_size[i]/grid->ncpddc[i];
@@ -152,19 +166,29 @@ void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
 void init_grid(FILE *fplog,t_grid *grid,int delta,const gmx_domdec_t *dd,
 	       int ePBC,matrix box,real rlistlong,int ncg)
 {
-  int     d,m;
-  
+  int  d,m;
+  char *ptr;   
+
+  /* The ideal number of cg's per ns grid cell seems to be 10 */
+  grid->ncg_ideal = 10;
+  ptr = getenv("GMX_NSCELL_NCG");
+  if (ptr) {
+    sscanf(ptr,"%d",&grid->ncg_ideal);
+    fprintf(fplog,"Set ncg_ideal to %d\n",grid->ncg_ideal);
+    if (grid->ncg_ideal <= 0)
+      gmx_fatal(FARGS,"The number of cg's per cell should be > 0");
+  }
+
   /* We pass NULL for dd, so we allocate grid cells for the whole system.
    * This should be made dynamic.
    */
-  set_grid_sizes(ePBC,box,rlistlong,delta,NULL,grid);
+  set_grid_sizes(ePBC,box,rlistlong,NULL,grid,ncg);
 
   fprintf(fplog,"Grid: %d x %d x %d cells\n",
 	  grid->n[XX],grid->n[YY],grid->n[ZZ]);
 
-  grid->delta	= delta;
-  grid->ncells  = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
-  grid->maxcells= 2*grid->ncells;
+  grid->ncells   = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
+  grid->maxcells = 2*grid->ncells;
   snew(grid->index,grid->maxcells);
   snew(grid->nra,grid->maxcells);
   if (dd) {
@@ -192,7 +216,6 @@ void done_grid(t_grid *grid)
   clear_ivec(grid->n);
   grid->ncells  = 0;
   grid->maxcells= 0;
-  grid->delta	= 0;
   sfree(grid->cell_index);
   sfree(grid->a);
   sfree(grid->index);
@@ -254,7 +277,7 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
   /* Must do this every step because other routines may override it. */
   init_range_check();
 
-  set_grid_sizes(ePBC,box,rlistlong,grid->delta,dd,grid);
+  set_grid_sizes(ePBC,box,rlistlong,dd,grid,ncg);
 
   ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 
@@ -529,11 +552,11 @@ void print_grid(FILE *log,t_grid *grid)
   int i,nra,index;
   int ix,iy,iz,ci;
 
-  fprintf(log,"nr:    %d\n",grid->nr);
-  fprintf(log,"nrx:   %d\n",grid->n[XX]);
-  fprintf(log,"nry:   %d\n",grid->n[YY]);
-  fprintf(log,"nrz:   %d\n",grid->n[ZZ]);
-  fprintf(log,"delta: %d\n",grid->delta);
+  fprintf(log,"nr:        %d\n",grid->nr);
+  fprintf(log,"nrx:       %d\n",grid->n[XX]);
+  fprintf(log,"nry:       %d\n",grid->n[YY]);
+  fprintf(log,"nrz:       %d\n",grid->n[ZZ]);
+  fprintf(log,"ncg_ideal: %d\n",grid->ncg_ideal);
   fprintf(log,"    i  cell_index\n");
   for(i=0; (i<grid->nr); i++)
     fprintf(log,"%5d  %5d\n",i,grid->cell_index[i]);

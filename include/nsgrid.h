@@ -40,9 +40,6 @@
 
 #include "typedefs.h"
 
-extern void set_grid_sizes(int ePBC,matrix box,real rlist,int delta,
-			   const gmx_domdec_t *dd,t_grid *grid);
-
 extern void init_grid(FILE *log,t_grid *grid,
 		      int delta,const gmx_domdec_t *dd,
 		      int ePBC,matrix box,real rlong,int ncg);
