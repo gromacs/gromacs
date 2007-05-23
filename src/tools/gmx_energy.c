@@ -39,6 +39,7 @@
 
 #include <string.h>
 #include <math.h>
+#include <ctype.h>
 
 #include "typedefs.h"
 #include "gmx_fatal.h"
@@ -127,12 +128,9 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   bool *bE;
   int  n,k,kk,j,i,nsame,nind,nlen,nss;
   int  *set;
-  bool bEOF,bVerbose = TRUE;
+  bool bEOF;
   char *ptr,buf[STRLEN];
   char **newnm;
-  
-  if ((getenv("VERBOSE")) != NULL)
-    bVerbose = FALSE;
   
   fprintf(stderr,"\n");
   fprintf(stderr,"Select the terms you want from the following list by\n");
@@ -140,26 +138,24 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   fprintf(stderr,"End your selection with an empty line or a zero.\n");
   fprintf(stderr,"---------------------------------------------------------\n");
   
-  if ( bVerbose ) {
-    nlen = 0;
-    snew(newnm,nre);
-    for(i=0; (i<nre); i++) {
-      newnm[i] = strdup(nm[i]);
-      nlen = max(nlen,strlen(newnm[i]));
-    }
-    kk = max(1,80/(nlen+4));
-    sprintf(buf,"%%-3d %%-%ds ",nlen);
-    for(k=0; (k<nre); ) {
-      for(j=0; (j<kk) && (k<nre); j++,k++) {
-	/* Insert dashes in all the names */
-	while ((ptr = strchr(newnm[k],' ')) != NULL)
-	  *ptr='-';
-	fprintf(stderr,buf,k+1,newnm[k]);
-      }
-      fprintf(stderr,"\n");
+  snew(newnm,nre);
+  for(i=0; (i<nre); i++) {
+    newnm[i] = strdup(nm[i]);
+    nlen = max(nlen,strlen(newnm[i]));
+  }
+  nlen = 0;
+  kk = max(1,80/(nlen+4));
+  sprintf(buf,"%%-3d %%-%ds ",nlen);
+  for(k=0; (k<nre); ) {
+    for(j=0; (j<kk) && (k<nre); j++,k++) {
+      /* Insert dashes in all the names */
+      while ((ptr = strchr(newnm[k],' ')) != NULL)
+	*ptr='-';
+      fprintf(stderr,buf,k+1,newnm[k]);
     }
     fprintf(stderr,"\n");
   }
+  fprintf(stderr,"\n");
   
   snew(bE,nre);
   
