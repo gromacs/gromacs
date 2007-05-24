@@ -143,7 +143,6 @@ typedef struct {
   int  eeltype;
   int  vdwtype;
   int  cg0,hcg;
-  int  ndelta;
   /* solvent_opt contains the enum for the most common solvent
    * in the system, which will be optimized.
    * It can be set to esolNO to disable all water optimization */
@@ -162,6 +161,7 @@ typedef struct {
   t_nblists *nblists;
 
   /* The wall tables (if used) */
+  int  nwall;
   t_forcetable **wall_tab;
 
   /* This mask array of length nn determines whether or not this bit of the

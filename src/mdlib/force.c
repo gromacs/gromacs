@@ -981,7 +981,6 @@ void init_forcerec(FILE *fp,
 
   /* Neighbour searching stuff */
   fr->bGrid      = (ir->ns_type == ensGRID);
-  fr->ndelta     = ir->ndelta;
   fr->ePBC       = ir->ePBC;
   fr->bMolPBC    = ir->bPeriodicMols;
   fr->rc_scaling = ir->refcoord_scaling;
@@ -1253,6 +1252,8 @@ void init_forcerec(FILE *fp,
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
     fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,ir->tabext,FALSE,TRUE);
   
+  /* Wall stuff */
+  fr->nwall = ir->nwall;
   if (ir->nwall && ir->wall_type==ewtTABLE)
     make_wall_tables(fp,ir,tabfn,&top->atoms,fr);
 
@@ -1319,7 +1320,6 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
   pr_real(fp,fr->rlist);
   pr_real(fp,fr->rcoulomb);
   pr_real(fp,fr->fudgeQQ);
-  pr_int(fp,fr->ndelta);
   pr_bool(fp,fr->bGrid);
   pr_bool(fp,fr->bTwinRange);
   /*pr_int(fp,fr->cg0);

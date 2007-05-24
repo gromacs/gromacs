@@ -48,6 +48,7 @@
 #include "network.h"
 #include "domdec.h"
 #include "partdec.h"
+#include "pbc.h"
 
 /***********************************
  *         Grid Routines
@@ -64,28 +65,31 @@ static void init_range_check()
 	  "energy seems reasonable before trying again.\n");
 }
 
-static void set_grid_sizes(int ePBC,matrix box,real rlist,
+static void set_grid_sizes(matrix box,real rlist,
 			   const gmx_domdec_t *dd,t_grid *grid,int ncg)
 {
   int  i,j;
   bool bDD,bDDRect;
   rvec dd_cell_size;
-  real dens,inv_r_ideal,size,radd,add_tric;
+  real vol,dens,inv_r_ideal,size,radd,add_tric;
 
   if (dd) {
-    dens = 1;
-    for(i=0; (i<DIM); i++) {
+    for(i=0; (i<DIM); i++)
       dd_cell_size[i] = dd->cell_ns_x1[i] - dd->cell_ns_x0[i];
-      dens *= dd->cell_x1[i] - dd->cell_x0[i];
-    }
+    vol = 1;
+    for(i=0; i<grid->ndim; i++)
+      vol *= dd->cell_x1[i] - dd->cell_x0[i];
     /* We use the density of the DD home cell */
-    dens = dd->ncg_home/dens;
+    dens = dd->ncg_home/vol;
   } else {
-    dens = ncg/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
+    vol = 1;
+    for(i=0; i<grid->ndim; i++)
+      vol *= box[i][i];
+    dens = ncg/vol;
   }
 
   /* Use the ideal number of cg's per cell to set the ideal cell size */
-  inv_r_ideal = pow(dens/grid->ncg_ideal,1.0/3.0);
+  inv_r_ideal = pow(dens/grid->ncg_ideal,1.0/grid->ndim);
   if (inv_r_ideal*rlist < 1)
     inv_r_ideal = 1/rlist;
   if (debug)
@@ -137,10 +141,10 @@ static void set_grid_sizes(int ePBC,matrix box,real rlist,
        * we will use the normal grid ns that checks all cells
        * that are within cut-off distance of the i-particle.
        */
-      if (ePBC==epbcXY && i==ZZ)
-	grid->n[i] = 1;
-      else
+      if (i < grid->ndim)
 	grid->n[i] = (int)(size*inv_r_ideal + 0.5);
+      else
+	grid->n[i] = 1;
       grid->cell_size[i] = size/grid->n[i];
       grid->ncpddc[i] = grid->n[i];
     } else {
@@ -163,11 +167,16 @@ static void set_grid_sizes(int ePBC,matrix box,real rlist,
   }
 }
 
-void init_grid(FILE *fplog,t_grid *grid,int delta,const gmx_domdec_t *dd,
-	       int ePBC,matrix box,real rlistlong,int ncg)
+void init_grid(FILE *fplog,t_forcerec *fr,const gmx_domdec_t *dd,
+	       int ncg,matrix box,t_grid *grid)
 {
   int  d,m;
   char *ptr;   
+
+  if (fr->ePBC == epbcXY && fr->nwall == 2)
+    grid->ndim = 3;
+  else
+    grid->ndim = ePBC2npbcdim(fr->ePBC);
 
   /* The ideal number of cg's per ns grid cell seems to be 10 */
   grid->ncg_ideal = 10;
@@ -182,7 +191,7 @@ void init_grid(FILE *fplog,t_grid *grid,int delta,const gmx_domdec_t *dd,
   /* We pass NULL for dd, so we allocate grid cells for the whole system.
    * This should be made dynamic.
    */
-  set_grid_sizes(ePBC,box,rlistlong,NULL,grid,ncg);
+  set_grid_sizes(box,fr->rlistlong,NULL,grid,ncg);
 
   fprintf(fplog,"Grid: %d x %d x %d cells\n",
 	  grid->n[XX],grid->n[YY],grid->n[ZZ]);
@@ -277,7 +286,7 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
   /* Must do this every step because other routines may override it. */
   init_range_check();
 
-  set_grid_sizes(ePBC,box,rlistlong,dd,grid,ncg);
+  set_grid_sizes(box,rlistlong,dd,grid,ncg);
 
   ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 
