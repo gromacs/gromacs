@@ -221,6 +221,8 @@ int gmx_covar(int argc,char *argv[])
   fprintf(stderr,"Calculating the average structure ...\n");
   nframes0 = 0;
   nat=read_first_x(&status,trxfile,&t,&xread,box);
+  if (nat != natoms)
+    fprintf(stderr,"\nWARNING number of atoms in tpx (%d) and trajectory (%d) do not match\n",natoms,nat);
   do {
     nframes0++;
     /* calculate x: a fitted struture of the selected atoms */
