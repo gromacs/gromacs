@@ -1375,6 +1375,7 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
   real   k=1,kp=1,kow=1;
   real   Q,chi22,chi2,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt,sigma_k,sigma_kp,ddg;
   double tmp,sn2=0,sc2=0,sk2=0,scn=0,sck=0,snk=0;
+  bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
   
   for(i0=0; (i0<n-2) && ((t[i0]-t[0]) < fit_start); i0++)
     ;
@@ -1387,14 +1388,12 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
       snk += nt[i]*kt[i];
       scn += ct[i]*nt[i];
     }
-    printf("   Hydrogen bond thermodynamics at T = %g K\n",temp);
-    printf("--------------------------------------------------\n"
-	   "Type      Rate (1/ps)  Time (ps)  DG (kJ/mol)\n");
+    printf("Hydrogen bond thermodynamics at T = %g K\n",temp);
     tmp = (sn2*sc2-sqr(scn));
     if ((tmp > 0) && (sn2 > 0)) {
       k    = (sn2*sck-scn*snk)/tmp;
       kp   = (k*scn-snk)/sn2;
-      if ((sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL)) {
+      if (bError) {
 	chi2 = 0;
 	for(i=i0; (i<n); i++) {
 	  chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
@@ -1402,14 +1401,17 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 	chi22 = compute_weighted_rates(n,t,ct,nt,kt,sigma_ct,sigma_nt,
 				       sigma_kt,&k,&kp,
 				       &sigma_k,&sigma_kp,fit_start);
-	Q = quality_of_fit(chi22,(n-i0));
+	Q = quality_of_fit(chi2,2);
 	ddg = BOLTZ*temp*sigma_k/k;
 	printf("Fitting paramaters chi^2 = %10g, Quality of fit = %10g\n",
 	       chi2,Q);
-	printf("Forward    %10.3f(%6.2f)   %8.3f  %10.3f(%6.2f) chi2: %10g  Q: %10e\n",
+	printf("The Rate and Delta G are followed by an error estimate\n");
+	printf("----------------------------------------------------------\n"
+	       "Type      Rate (1/ps)  Sigma Time (ps)  DG (kJ/mol)  Sigma\n");
+	printf("Forward    %10.3f %6.2f   %8.3f  %10.3f %6.2f\n",
 	       k,sigma_k,1/k,calc_dg(1/k,temp),ddg);
 	ddg = BOLTZ*temp*sigma_kp/kp;
-	printf("Backward   %10.3f(%6.2f)   %8.3f  %10.3f(%6.2f)\n",
+	printf("Backward   %10.3f %6.2f   %8.3f  %10.3f %6.2f\n",
 	       kp,sigma_kp,1/kp,calc_dg(1/kp,temp),ddg);
       }
       else {
@@ -1417,7 +1419,11 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 	for(i=i0; (i<n); i++) {
 	  chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
 	}
-	printf("Forward    %10.3f   %8.3f  %10.3f chi2: %10g\n",
+	printf("Fitting parameters chi^2 = %10g\n",
+	       chi2,Q);
+	printf("--------------------------------------------------\n"
+	       "Type      Rate (1/ps) Time (ps)  DG (kJ/mol)\n");
+	printf("Forward    %10.3f   %8.3f  %10.3f\n",
 	       k,1/k,calc_dg(1/k,temp),chi2);
 	printf("Backward   %10.3f   %8.3f  %10.3f\n",
 	       kp,1/kp,calc_dg(1/kp,temp));
@@ -1425,8 +1431,8 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
     }
     if (sc2 > 0) {
       kow  = 2*sck/sc2;
-      printf("One-way    %10.3f   %8.3f  %10.3f\n",
-	     kow,1/kow,calc_dg(1/kow,temp));
+      printf("One-way    %10.3f   %s%8.3f  %10.3f\n",
+	     kow,bError ? "       " : "",1/kow,calc_dg(1/kow,temp));
     }
     else 
       printf(" - Numerical problems computing HB thermodynamics:\n"
@@ -1434,8 +1440,8 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 	     sc2,sn2,sk2,sck,snk,scn);
     /* Determine integral of the correlation function */
     tau_hb = evaluate_integral(n,t,ct,NULL,(t[n-1]-t[0])/2,&dtau);
-    printf("Integral   %10.3f   %8.3f  %10.3f\n",1/tau_hb,tau_hb,
-	   calc_dg(tau_hb,temp));
+    printf("Integral   %10.3f   %s%8.3f  %10.3f\n",1/tau_hb,
+	   bError ? "       " : "",tau_hb,calc_dg(tau_hb,temp));
     e_1 = exp(-1);
     for(i=0; (i<n-2); i++) {
       if ((ct[i] > e_1) && (ct[i+1] <= e_1)) {
@@ -1445,7 +1451,8 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
     if (i < n-2) {
       /* Determine tau_relax from linear interpolation */
       tau_rlx = t[i]-t[0] + (e_1-ct[i])*(t[i+1]-t[i])/(ct[i+1]-ct[i]);
-      printf("Relaxation %10.3f   %8.3f  %10.3f\n",1/tau_rlx,tau_rlx,
+      printf("Relaxation %10.3f   %s%8.3f  %10.3f\n",1/tau_rlx,
+	     tau_rlx,bError ? "       " : "",
 	     calc_dg(tau_rlx,temp));
     }
   }
