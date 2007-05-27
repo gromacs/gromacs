@@ -9,7 +9,7 @@
 #include "statutil.h"
 #include "coulomb.h"
 
-enum { mGuillot2001a, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
+enum { mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
 
 static double erf2(double x)
 {
@@ -47,6 +47,50 @@ void do_hard(FILE *fp,int pts_nm,double efac,double delta)
 	    x,vr,vr2,0.0,0.0,vc,vc2);
   }
 
+}
+
+real coul_slater_slater(real w,real r)
+{
+  const real a = 11.0/16.0;
+  const real b =  3.0/16.0;
+  const real c =  1.0/48.0;
+  real r_w  = r/w;
+  real r_w2 = r_w*r_w;
+  real r_w3 = r_w2*r_w;
+  
+  return (1/r)*(1 - (1+a*r_w+b*r_w2+c*r_w3)*exp(-r_w));
+}
+
+real coul_slater_nucl(real w,real r) 
+{
+  real r_w  = r/w;
+  
+  return (1/r)*(1-(1+0.5*r_w)*exp(-r_w));
+}
+
+real coul_nucl_nucl(real w,real r)
+{
+  return 1/r;
+}
+
+void plot_slater(char *sl_fn)
+{
+  FILE *fp;
+  int i;
+  real r;
+  real e0;
+  real e1,e2,e3,w1=0.01,w2=0.05,w3=0.1;
+  
+  fp = ffopen(sl_fn,"w");
+  for(i=5; (i<100); i++) {
+    r = i*0.01;
+    e0 = coul_nucl_nucl(0,r);
+    e1 = e0 - 2*coul_slater_nucl(w1,r) + coul_slater_slater(w1,r);
+    e2 = e0 - 2*coul_slater_nucl(w2,r) + coul_slater_slater(w2,r);
+    e3 = e0 - 2*coul_slater_nucl(w3,r) + coul_slater_slater(w3,r);
+    fprintf(fp,"%10g  %10g  %10g  %10g\n",r,e1,e2,e3);
+  }
+  fclose(fp);
 }
 
 void do_AB1(FILE *fp,int eel,int pts_nm,int ndisp,int nrep)
@@ -505,6 +549,55 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
   }
 }
 
+typedef real (coul_func(real,real));
+
+static void do_Slater(const char *file,int eel,int pts_nm,
+		      double rc,double rtol,double w1,double w2)
+{
+  FILE *fp=NULL;
+  static char buf[256];
+  static char *atype[]   = { "N", "S" };
+  coul_func *cf[] = { coul_nucl_nucl, coul_slater_nucl, 
+		     coul_slater_nucl, coul_slater_slater }; 
+  int    i,j,k,l,kl,m,i0,imax;
+  double r,vc,fc,vd,fd,vr,fr,ww[4];
+#define atypemax asize(atype)
+  /* For Guillot2001a we have four types: HW, OW, HWd and OWd. */
+  
+  ww[0] = w1;
+  ww[1] = ww[2] = (w1+w2)/2;
+  ww[3] = w2;
+  for (k=0; (k<atypemax); k++)                    
+    for (l=0; (l<atypemax); l++) {
+      kl = k*atypemax + l;
+      for (j=0;(j<2);j++) 
+	for(m=j; (m<2); m++) { 
+	  sprintf(buf,"table_%s%d_%s%d.xvg",atype[k],j,atype[l],m);
+	  
+	  printf("Writing %s\n",buf);
+	  
+	  fp = ffopen(buf,"w");
+	  
+	  imax = 3*pts_nm;
+	  for(i=0; (i<=imax); i++) {
+	    r     = i*(1.0/pts_nm);
+	    /* Avoid very large numbers */
+	    if (r < 0.04) {
+	      vc = fc = vd = fd = vr = fr = 0;
+	    }
+	    else { 
+	      vc = cf[kl](ww[kl],r);
+	      fc = 0;
+	      fprintf(fp,"%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
+		      r,vc,fc,vd,fd,vr,fr);
+	    
+	    }
+	  }
+	  fclose(fp);
+	}
+    }
+}
+
 static void do_ljc(FILE *fp,int eel,int pts_nm,real rc,real rtol)
 { 
   int    i,i0,imax;
@@ -675,14 +768,19 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "gen_table generates tables for mdrun for use with the USER defined",
     "potentials. Note that the format has been update for higher",
-    "accuracy ni the forces starting with version 4.0. Using older",
+    "accuracy in the forces starting with version 4.0. Using older",
     "tables with 4.0 will silently crash your simulations, as will",
-    "using new tables with an older GROMACS version."
+    "using new tables with an older GROMACS version. This is because in the",
+    "old version the second derevative of the potential was specified",
+    "whereas in the new version the first derivative of the potential",
+    "is used instead." 
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
   /*  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL }; */
-  static char *model[]   = { NULL, "ljc", "gg", "guillot2001a", NULL };
+  static char *model[]   = { NULL, "ljc", "gg", "guillot2001a", "slater", 
+			     NULL };
   static real delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
+  static real w1=0.05,w2=0.05;
   static int  nrep       = 12;
   static int  ndisp      = 6;
   static int  pts_nm     = 500;
@@ -697,6 +795,10 @@ int main(int argc,char *argv[])
       "Width of the Gaussian diffuse charge of the G&G model" },
     { "-xir",   FALSE, etREAL, {&xir},
       "Width of erfc(z)/z repulsion of the G&G model (z=0.5 rOO/xir)" },
+    { "-w1",   FALSE, etREAL, {&w1},
+      "Width of the first Slater charge" },
+    { "-w2",   FALSE, etREAL, {&w2},
+      "Width of the second Slater charge" },
     { "-m",      FALSE, etENUM, {model},
       "Model for the tables" },
     { "-resol",  FALSE, etINT,  {&pts_nm},
@@ -716,6 +818,7 @@ int main(int argc,char *argv[])
   };
 #define NFILE asize(fnm)
   FILE *fp;
+  char *fn;
   int  eel=0,m=0;
   
   CopyRight(stderr,argv[0]);
@@ -740,6 +843,8 @@ int main(int argc,char *argv[])
     m = mGuillot2001a;
   else if (strcmp(model[0],"guillot_maple") == 0) 
     m = mGuillot_Maple;
+  else if (strcmp(model[0],"slater") == 0) 
+    m = mSlater;
   else if (strcmp(model[0],"hard_wall") == 0) 
     m = mHard_Wall;
   else if (strcmp(model[0],"gg") == 0) 
@@ -753,10 +858,15 @@ int main(int argc,char *argv[])
   else 
     gmx_fatal(FARGS,"Invalid argument %s for option -m",opt[0]);
     
-  fp = ffopen(opt2fn("-o",NFILE,fnm),"w");
+  fn = opt2fn("-o",NFILE,fnm);
+  if ((m != mGuillot2001a) && (m != mSlater)) 
+    fp = ffopen(fn,"w");
   switch (m) {
   case mGuillot2001a:
-    do_guillot2001a(opt2fn("-o",NFILE,fnm),eel,pts_nm,rc,rtol,xi,xir);
+    do_guillot2001a(fn,eel,pts_nm,rc,rtol,xi,xir);
+    break;
+  case mSlater:
+    do_Slater(fn,eel,pts_nm,rc,rtol,w1,w2);
     break;
   case mGuillot_Maple:
     fprintf(fp, "#\n# Table Guillot_Maple: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
@@ -797,7 +907,8 @@ int main(int argc,char *argv[])
   default:
     gmx_fatal(FARGS,"Model %s not supported yet",model[0]);
   }  
-  fclose(fp);
+  if ((m != mGuillot2001a) && (m != mSlater)) 
+    fclose(fp);
   
   thanx(stdout);
   

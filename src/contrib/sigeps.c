@@ -71,50 +71,6 @@ real dpot(real x,real qq,real c6,real cn,int npow)
   return -(npow*cn*pow(x,-npow-1)-6*c6*pow(x,-7)+qq*ONE_4PI_EPS0/sqr(x));
 }
 
-real coul_slater_slater(real w,real r)
-{
-  const real a = 11.0/16.0;
-  const real b =  3.0/16.0;
-  const real c =  1.0/48.0;
-  real r_w  = r/w;
-  real r_w2 = r_w*r_w;
-  real r_w3 = r_w2*r_w;
-  
-  return (1/r)*(1 - (1+a*r_w+b*r_w2+c*r_w3)*exp(-r_w));
-}
-
-real coul_slater_nucl(real w,real r) 
-{
-  real r_w  = r/w;
-  
-  return (1/r)*(1-(1+0.5*r_w)*exp(-r_w));
-}
-
-real coul_nucl_nucl(real r)
-{
-  return 1/r;
-}
-
-void plot_slater(char *sl_fn)
-{
-  FILE *fp;
-  int i;
-  real r;
-  real e0;
-  real e1,e2,e3,w1=0.01,w2=0.05,w3=0.1;
-  
-  fp = ffopen(sl_fn,"w");
-  for(i=5; (i<100); i++) {
-    r = i*0.01;
-    e0 = coul_nucl_nucl(r);
-    e1 = e0 + 2*coul_slater_nucl(w1,r) + coul_slater_slater(w1,r);
-    e2 = e0 + 2*coul_slater_nucl(w2,r) + coul_slater_slater(w2,r);
-    e3 = e0 + 2*coul_slater_nucl(w3,r) + coul_slater_slater(w3,r);
-    fprintf(fp,"%10g  %10g  %10g  %10g\n",r,e1,e2,e3);
-  }
-  fclose(fp);
-}
-
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -217,8 +173,6 @@ int main(int argc,char *argv[])
       
   }
   fclose(fp);
-  
-  plot_slater("slater.xvg");
   
   do_view(ftp2fn(efXVG,NFILE,fnm),NULL);
 
