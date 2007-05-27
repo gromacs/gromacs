@@ -420,6 +420,13 @@ extern void get_chi_product_traj (real **dih,int nframes,int nangles,
 
 extern void print_one (char *base,char *name,char *title, char *ylabel,
 		      int nf,real time[],real data[]); 
+		      
+  /* Routines from g_hbond */
+  extern void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
+			   real sigma_ct[],real sigma_nt[],real sigma_kt[],
+			   real fit_start,real temp);
+			   
+  extern void compute_derivative(int nn,real x[],real y[],real dydx[]);
 
 #ifdef CPLUSPLUS
 	     }

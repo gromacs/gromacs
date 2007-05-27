@@ -1185,17 +1185,201 @@ static real calc_dg(real tau,real temp)
     return kbt*log(kbt*tau/PLANCK);  
 }
 
-static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
-			 real fit_start,real temp)
+typedef struct {
+  int  n0,n1,nparams,ndelta;
+  real kkk[2];
+  real *t,*ct,*nt,*kt,*sigma_ct,*sigma_nt,*sigma_kt;
+} t_luzar;
+
+#ifdef HAVE_LIBGSL
+#include <gsl/gsl_multimin.h>
+#include <gsl/gsl_sf.h>
+
+static double my_f(const gsl_vector *v,void *params)
 {
+  t_luzar *tl = (t_luzar *)params;
   int    i;
-  real   k=1,kp=1,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt;
+  double tol=1e-16,chi2=0;
+  double di;
+  real   k,kp;
+  
+  for(i=0; (i<tl->nparams); i++) {
+    tl->kkk[i] = gsl_vector_get(v, i);
+  }
+  k  = tl->kkk[0];
+  kp = tl->kkk[1];
+  
+  for(i=tl->n0; (i<tl->n1); i+=tl->ndelta) {
+    di=sqr(k*tl->sigma_ct[i]) + sqr(kp*tl->sigma_nt[i]) + sqr(tl->sigma_kt[i]);
+    /*di = 1;*/
+    if (di > tol)
+      chi2 += sqr(k*tl->ct[i]-kp*tl->nt[i]-tl->kt[i])/di;
+      
+    else
+      fprintf(stderr,"WARNING: sigma_ct = %g, sigma_nt = %g, sigma_kt = %g\n"
+	      "di = %g k = %g kp = %g\n",tl->sigma_ct[i],
+	      tl->sigma_nt[i],tl->sigma_kt[i],di,k,kp);
+  }
+#ifdef DEBUG
+  chi2 = 0.3*sqr(k-0.6)+0.7*sqr(kp-1.3);
+#endif
+  return chi2;
+}
+
+static real optimize_luzar_parameters(FILE *fp,t_luzar *tl,int maxiter,
+				      real tol)
+{
+  real   size,d2;
+  int    iter   = 0;
+  int    status = 0;
+  int    i;
+
+  const gsl_multimin_fminimizer_type *T;
+  gsl_multimin_fminimizer *s;
+
+  gsl_vector *x,*dx;
+  gsl_multimin_function my_func;
+
+  my_func.f      = &my_f;
+  my_func.n      = tl->nparams;
+  my_func.params = (void *) tl;
+
+  /* Starting point */
+  x = gsl_vector_alloc (my_func.n);
+  for(i=0; (i<my_func.n); i++)
+    gsl_vector_set (x, i, tl->kkk[i]);
+  
+  /* Step size, different for each of the parameters */
+  dx = gsl_vector_alloc (my_func.n);
+  for(i=0; (i<my_func.n); i++)
+    gsl_vector_set (dx, i, 0.01*tl->kkk[i]);
+
+  T = gsl_multimin_fminimizer_nmsimplex;
+  s = gsl_multimin_fminimizer_alloc (T, my_func.n);
+
+  gsl_multimin_fminimizer_set (s, &my_func, x, dx);
+  gsl_vector_free (x);
+  gsl_vector_free (dx);
+
+  if (fp)
+    fprintf(fp,"%5s %12s %12s %12s %12s\n","Iter","k","kp","NM Size","Chi2");
+  
+  do  {
+    iter++;
+    status = gsl_multimin_fminimizer_iterate (s);
+    
+    if (status != 0)
+      gmx_fatal(FARGS,"Something went wrong in the iteration in minimizer %s",
+		gsl_multimin_fminimizer_name(s));
+    
+    d2     = gsl_multimin_fminimizer_minimum(s);
+    size   = gsl_multimin_fminimizer_size(s);
+    status = gsl_multimin_test_size(size,tol);
+    
+    if (status == GSL_SUCCESS)
+      if (fp) 
+	fprintf(fp,"Minimum found using %s at:\n",
+		gsl_multimin_fminimizer_name(s));
+  
+    if (fp) {
+      fprintf(fp,"%5d", iter);
+      for(i=0; (i<my_func.n); i++) 
+	fprintf(fp," %12.4e",gsl_vector_get (s->x,i));
+      fprintf (fp," %12.4e %12.4e\n",size,d2);
+    }
+  }
+  while ((status == GSL_CONTINUE) && (iter < maxiter));
+  
+  gsl_multimin_fminimizer_free (s);
+  
+  return d2;
+}
+
+static real quality_of_fit(real chi2,int N)
+{
+  return gsl_sf_gamma_inc_Q((N-2)/2.0,chi2/2.0);
+}
+
+#else
+static real optimize_luzar_parameters(FILE *fp,t_luzar *tl,int maxiter,
+				      real tol)
+{
+  fprintf(stderr,"This program needs the GNU scientific library to work.\n");
+  
+  return -1;
+}
+static real quality_of_fit(real chi2,int N)
+{
+  fprintf(stderr,"This program needs the GNU scientific library to work.\n");
+  
+  return -1;
+}
+
+#endif
+
+static real compute_weighted_rates(int n,real t[],real ct[],real nt[],
+				   real kt[],real sigma_ct[],real sigma_nt[],
+				   real sigma_kt[],real *k,real *kp,
+				   real *sigma_k,real *sigma_kp,
+				   real fit_start)
+{
+#define NK 10
+  int      i,j;
+  t_luzar  tl;
+  real     kkk=0,kkp=0,kk2=0,kp2=0,chi2;
+  
+  *sigma_k  = 0;
+  *sigma_kp = 0;
+  
+  for(i=0; (i<n); i++) {
+    if (t[i] >= fit_start)
+      break;
+  }
+  tl.n0      = i;
+  tl.n1      = n;
+  tl.nparams = 2;
+  tl.ndelta  = 1;
+  tl.t  = t;
+  tl.ct = ct;
+  tl.nt = nt;
+  tl.kt = kt;
+  tl.sigma_ct = sigma_ct;
+  tl.sigma_nt = sigma_nt;
+  tl.sigma_kt = sigma_kt;
+  tl.kkk[0] = *k;
+  tl.kkk[1] = *kp;
+  
+  chi2 = optimize_luzar_parameters(debug,&tl,1000,1e-3);
+  *k  = tl.kkk[0];
+  *kp = tl.kkk[1] = *kp;
+  tl.ndelta = NK;
+  for(j=0; (j<NK); j++) {
+    (void) optimize_luzar_parameters(debug,&tl,1000,1e-3);
+    kkk += tl.kkk[0];
+    kkp += tl.kkk[1];
+    kk2 += sqr(tl.kkk[0]);
+    kp2 += sqr(tl.kkk[1]);
+    tl.n0++;
+  }
+  *sigma_k  = sqrt(kk2/NK - sqr(kkk/NK));
+  *sigma_kp = sqrt(kp2/NK - sqr(kkp/NK));
+  
+  return chi2;
+}
+
+void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
+		  real sigma_ct[],real sigma_nt[],real sigma_kt[],
+		  real fit_start,real temp)
+{
+  int    i0,i;
+  real   k=1,kp=1,kow=1;
+  real   Q,chi22,chi2,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt,sigma_k,sigma_kp,ddg;
   double tmp,sn2=0,sc2=0,sk2=0,scn=0,sck=0,snk=0;
   
-  for(i=0; (i<n-2) && (t[i] < fit_start); i++)
+  for(i0=0; (i0<n-2) && ((t[i0]-t[0]) < fit_start); i0++)
     ;
-  if (i < n-2) { 
-    for(; (i<n); i++) {
+  if (i0 < n-2) { 
+    for(i=i0; (i<n); i++) {
       sc2 += sqr(ct[i]);
       sn2 += sqr(nt[i]);
       sk2 += sqr(kt[i]);
@@ -1210,12 +1394,39 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
     if ((tmp > 0) && (sn2 > 0)) {
       k    = (sn2*sck-scn*snk)/tmp;
       kp   = (k*scn-snk)/sn2;
-      printf("Forward    %10.3f   %8.3f  %10.3f\n",k,1/k,calc_dg(1/k,temp));
-      printf("Backward   %10.3f   %8.3f  %10.3f\n",kp,1/kp,calc_dg(1/kp,temp));
+      if ((sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL)) {
+	chi2 = 0;
+	for(i=i0; (i<n); i++) {
+	  chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+	}
+	chi22 = compute_weighted_rates(n,t,ct,nt,kt,sigma_ct,sigma_nt,
+				       sigma_kt,&k,&kp,
+				       &sigma_k,&sigma_kp,fit_start);
+	Q = quality_of_fit(chi22,(n-i0));
+	ddg = BOLTZ*temp*sigma_k/k;
+	printf("Fitting paramaters chi^2 = %10g, Quality of fit = %10g\n",
+	       chi2,Q);
+	printf("Forward    %10.3f(%6.2f)   %8.3f  %10.3f(%6.2f) chi2: %10g  Q: %10e\n",
+	       k,sigma_k,1/k,calc_dg(1/k,temp),ddg);
+	ddg = BOLTZ*temp*sigma_kp/kp;
+	printf("Backward   %10.3f(%6.2f)   %8.3f  %10.3f(%6.2f)\n",
+	       kp,sigma_kp,1/kp,calc_dg(1/kp,temp),ddg);
+      }
+      else {
+	chi2 = 0;
+	for(i=i0; (i<n); i++) {
+	  chi2 += sqr(k*ct[i]-kp*nt[i]-kt[i]);
+	}
+	printf("Forward    %10.3f   %8.3f  %10.3f chi2: %10g\n",
+	       k,1/k,calc_dg(1/k,temp),chi2);
+	printf("Backward   %10.3f   %8.3f  %10.3f\n",
+	       kp,1/kp,calc_dg(1/kp,temp));
+      }
     }
     if (sc2 > 0) {
-      k    = 2*sck/sc2;
-      printf("One-way    %10.3f   %8.3f  %10.3f\n",k,1/k,calc_dg(1/k,temp));
+      kow  = 2*sck/sc2;
+      printf("One-way    %10.3f   %8.3f  %10.3f\n",
+	     kow,1/kow,calc_dg(1/kow,temp));
     }
     else 
       printf(" - Numerical problems computing HB thermodynamics:\n"
@@ -1242,11 +1453,11 @@ static void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
     printf("Correlation functions too short to compute thermodynamics\n");
 }
 
-static void compute_derivative(int nn,real x[],real y[],real dydx[])
+void compute_derivative(int nn,real x[],real y[],real dydx[])
 {
   int j;
   
-  /* Compute k(t) = -dc(t)/dt */
+  /* Compute k(t) = dc(t)/dt */
   for(j=1; (j<nn-1); j++)
     dydx[j] = (y[j+1]-y[j-1])/(x[j+1]-x[j-1]);
   /* Extrapolate endpoints */
@@ -1418,7 +1629,8 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
 	    hb->time[j]-hb->time[0],ct[j],cct[j],ght[j],kt[j]);
   fclose(fp);
   
-  analyse_corr(nn,hb->time,ct,ght,kt,fit_start,temp);
+  analyse_corr(nn,hb->time,ct,ght,kt,NULL,NULL,NULL,
+	       fit_start,temp);
   
   do_view(fn,NULL);
   sfree(rhbex);
@@ -1672,7 +1884,7 @@ int gmx_hbond(int argc,char *argv[])
       "when > 0, only calculate hydrogen bonds within # nm shell around "
       "one particle" },
     { "-fitstart", FALSE, etREAL, {&fit_start},
-      "Time from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
+      "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
     { "-temp",  FALSE, etREAL, {&temp},
       "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
     { "-dump",  FALSE, etINT, {&nDump},

@@ -464,6 +464,41 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
   fclose(fp);
 }
 
+static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
+			 bool bError,real fit_start)
+{
+  const real tol = 1e-8;
+  real *kt;
+  real weight,d2;
+  int  j;
+  
+  please_cite(stdout,"Spoel2006b");
+  
+  /* Compute negative derivative k(t) = -dc(t)/dt */
+  if (!bError) {
+    snew(kt,nn);
+    compute_derivative(nn,time,val[0],kt);
+    for(j=0; (j<nn); j++)
+      kt[j] = -kt[j];
+    if (debug) {
+      d2 = 0;
+      for(j=0; (j<nn); j++)
+	d2 += sqr(kt[j] - val[3][j]);
+      fprintf(debug,"RMS difference in derivatives is %g\n",sqrt(d2/nn));
+    }
+    analyse_corr(nn,time,val[0],val[2],kt,NULL,NULL,NULL,fit_start,temp);
+    sfree(kt);
+  }
+  else if (nset == 6) {
+    analyse_corr(nn,time,val[0],val[2],val[4],
+		 val[1],val[3],val[5],fit_start,temp);
+  }
+  else {
+    printf("Inconsistent input. I need c(t) sigma_c(t) n(t) sigma_n(t) K(t) sigma_K(t)\n");
+    printf("Not doing anything. Sorry.\n");
+  }
+}
+
 static void filter(real flen,int n,int nset,real **val,real dt)
 {
   int    f,s,i,j;
@@ -654,14 +689,19 @@ int gmx_analyze(int argc,char *argv[])
     
     "Option [TT]-power[tt] fits the data to b t^a, which is accomplished",
     "by fitting to a t + b on log-log scale. All points after the first",
-    "zero or negative value are ignored."
+    "zero or negative value are ignored.[PAR]"
+    
+    "Option [TT]-luzar[tt] performs a Luzar & Chandler kinetics analysis",
+    "on output from [TT]g_hbond[TT]. The input file can be taken directly",
+    "from [TT]g_hbond -ac[tt], and then the same result should be produced."
   };
   static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1,aver_start=0;
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
-  static bool bIntegrate=FALSE,bRegression=FALSE; 
+  static bool bIntegrate=FALSE,bRegression=FALSE,bLuzar=FALSE,bLuzarError=FALSE; 
   static int  nsets_in=1,d=1,nb_min=4,resol=10;
-
+  static real temp=298.15,fit_start=1;
+  
   /* must correspond to enum avbar* declared at beginning of file */
   static char *avbar_opt[avbarNR+1] = { 
     NULL, "none", "stddev", "error", "90", NULL
@@ -692,6 +732,12 @@ int gmx_analyze(int argc,char *argv[])
       "Interpret second data set as error in the y values for integrating" },
     { "-regression",FALSE,etBOOL,{&bRegression},
       "Perform a linear regression analysis on the data" },
+    { "-luzar",   FALSE, etBOOL, {&bLuzar},
+      "Do a Luzar and Chandler analysis on a correlation function and related as produced by g_hbond. When in addition the -xydy flag is given the second and fourth column will be interpreted as errors in c(t) and n(t)." },
+    { "-temp",    FALSE, etREAL, {&temp},
+      "Temperature for the Luzar hydrogen bonding kinetics analysis" },
+    { "-fitstart", FALSE, etREAL, {&fit_start},
+      "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
     { "-nbmin",   FALSE, etINT, {&nb_min},
       "HIDDENMinimum number of blocks for block averaging" },
     { "-resol", FALSE, etINT, {&resol},
@@ -782,8 +828,6 @@ int gmx_analyze(int argc,char *argv[])
       }
     }
   }
-
-  
   if (fitfile) {
     out_fit = ffopen(fitfile,"w");
     if (bXYdy && nset>=2) {
@@ -876,6 +920,9 @@ int gmx_analyze(int argc,char *argv[])
   }
   if (bRegression)
     regression_analysis(n,bXYdy,t,val);
+
+  if (bLuzar) 
+    luzar_correl(n,t,nset,val,temp,bXYdy,fit_start);
     
   view_all(NFILE, fnm);
   
