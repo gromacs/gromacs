@@ -93,6 +93,8 @@ so that the restraint is switched off slowly. When Efl==0 and inverted flooding 
 
 to use restraints with harmonic potentials switch -restrain and -harmonic. Then the eigenvalues are 
 used as spring constants for the harmonic potential. 
+Note that eq3 in the flooding paper (J. Comp. Chem. 2006, 27, 1693-1702) defines the parameter lambda as the inverse of the spring constant,
+whereas the implementation uses lambda as the spring constant.
 
 to use more than one flooding matrix just concatenate severale .edi files (cat flood1.edi flood2.edi > flood_all.edi )
 the routine read_edi_file reads all of theses flooding files.
