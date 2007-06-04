@@ -500,7 +500,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
 			     int n, bool bX, rvec *x, real *charge, int *idxa)
 {
   int *commnode,*buf_index;
-  int i,nsend,local_pos,buf_pos,node,scount;
+  int i,nsend,local_pos,buf_pos,node,scount,rcount;
 
   commnode  = pme->node_dest;
   buf_index = pme->buf_index;
@@ -558,25 +558,28 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
   buf_pos = 0;
   for(i=0; i<pme->nnodes_comm; i++) {
     scount = pme->count[commnode[i]];
-    if (bX) {
-      /* Communicate the coordinates */
+    rcount = pme->rcount[i];
+    if (scount > 0 || rcount > 0) {
+      if (bX) {
+	/* Communicate the coordinates */
+	pme_dd_sendrecv(pme,FALSE,i,
+			pme->bufv[buf_pos],scount*sizeof(rvec),
+			pme->x_home[local_pos],rcount*sizeof(rvec));
+      }
+      /* Communicate the charges */
       pme_dd_sendrecv(pme,FALSE,i,
-		      pme->bufv[buf_pos],scount*sizeof(rvec),
-		      pme->x_home[local_pos],pme->rcount[i]*sizeof(rvec));
+		      pme->bufr+buf_pos,scount*sizeof(real),
+		      pme->q_home+local_pos,rcount*sizeof(real));
+      buf_pos   += scount;
+      local_pos += pme->rcount[i];
     }
-    /* Communicate the charges */
-    pme_dd_sendrecv(pme,FALSE,i,
-		    pme->bufr+buf_pos,scount*sizeof(real),
-		    pme->q_home+local_pos,pme->rcount[i]*sizeof(real));
-    buf_pos   += scount;
-    local_pos += pme->rcount[i];
   }
 }
 
 static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
 {
   int *commnode,*buf_index;
-  int local_pos,buf_pos,i,rcount,node;
+  int local_pos,buf_pos,i,scount,rcount,node;
 
   commnode  = pme->node_dest;
   buf_index = pme->buf_index;
@@ -584,12 +587,15 @@ static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
   local_pos = pme->count[pme->nodeid];
   buf_pos = 0;
   for(i=0; i<pme->nnodes_comm; i++) {
+    scount = pme->rcount[i];
     rcount = pme->count[commnode[i]];
-    /* Communicate the forces */
-    pme_dd_sendrecv(pme,TRUE,i,
-		    pme->f_home[local_pos],pme->rcount[i]*sizeof(rvec),
-		    pme->bufv[buf_pos],rcount*sizeof(rvec));
-    local_pos += pme->rcount[i];
+    if (scount > 0 || rcount > 0) {
+      /* Communicate the forces */
+      pme_dd_sendrecv(pme,TRUE,i,
+		      pme->f_home[local_pos],scount*sizeof(rvec),
+		      pme->bufv[buf_pos],rcount*sizeof(rvec));
+      local_pos += scount;
+    }
     buf_index[commnode[i]] = buf_pos;
     buf_pos   += rcount;
   }
