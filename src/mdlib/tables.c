@@ -273,7 +273,7 @@ static void read_tables(FILE *fp,const char *fn,
 	bCont = FALSE;
   if (nx0 == nx)
     fprintf(fp,"\nWARNINGAll elements in table %s are zero\n\n",libfn);
-    
+
   tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
   for(k=0; (k<ntab); k++) {
     init_table(fp,nx,nx0,tabscale,&(td[k]),TRUE);
@@ -694,6 +694,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
     read_tables(out,fn,etiNR,0,td);
     if (rtab == 0) {
       rtab      = td[0].x[td[0].nx-1];
+      table.n   = td[0].nx;
       nx        = table.n;
     } else {
       if (td[0].x[td[0].nx-1] < rtab) 
