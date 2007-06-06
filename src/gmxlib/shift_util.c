@@ -348,7 +348,7 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
        * are non-zero.
        */
       if (k > i) {
-	bSumForces = bSumForces || (k >= end);
+	bSumForces = bSumForces || (k >= start+natoms);
 	qq = qi*charge[k];
 	if (qq != 0.0) {
 	  dr2 = 0;
