@@ -50,6 +50,7 @@
 #include "writeps.h"
 #include "macros.h"
 #include "xvgr.h"
+#include "network.h"
 
 #define p2(x) ((x)*(x))
 #define p3(x) ((x)*(x)*(x)) 
@@ -294,6 +295,7 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
 {
   static bool bFirst=TRUE;
   static real Vself;
+  static bool bSumForces=FALSE;
   int    i,i1,i2,j,k,m,iv,jv;
   int *AA;
   double qq; /* Necessary for precision */
@@ -305,7 +307,7 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   ivec   shift;     
   int    start=START(nsb);
   int    natoms=HOMENR(nsb);
-  
+    
   if (bFirst) {
     qq =0;  
     for(i=start; (i<start+natoms); i++) 
@@ -346,6 +348,7 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
        * are non-zero.
        */
       if (k > i) {
+	bSumForces = bSumForces || (k >= end);
 	qq = qi*charge[k];
 	if (qq != 0.0) {
 	  dr2 = 0;
@@ -385,7 +388,16 @@ real shift_LRcorrection(FILE *fp,t_nsborder *nsb,t_commrec *cr,t_forcerec *fr,
   if (bFirst && debug)
     fprintf(fp,"Long Range correction: Vexcl=%g\n",Vexcl);
   
-  bFirst = FALSE;
+  if (bFirst) {
+    gmx_sumi(1,&bSumForces,cr);
+    bFirst = FALSE;
+  }
+  if (bSumForces) {
+    /* This is necessary if molecules are split over processors. Should
+       be optimized! */
+    gmx_sum(nsb->natoms*DIM,fr->f_el_recip[0],cr);
+  }
+    
   /* Return the correction to the energy */
   return (-(Vself+Vexcl));
 }

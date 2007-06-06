@@ -1304,6 +1304,8 @@ void force(FILE       *fplog,   int        step,
       break;
     case eelPME:
     case eelPMEUSER:
+      if (debug)
+	pr_rvecs(debug,0,"frecip b4 pme",fr->f_el_recip,nsb->natoms);
       Vlr = do_pme(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
 		   box,cr,nsb,nrnb,fr->vir_el_recip,fr->ewaldcoeff,
 		   md->bChargePerturbed,lambda,&dvdlambda,bGatherOnly);
@@ -1323,10 +1325,15 @@ void force(FILE       *fplog,   int        step,
     epot[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
       dvdlambda = 0;
+      if (debug)
+	pr_rvecs(debug,0,"frecip b4 corr",fr->f_el_recip,nsb->natoms);
       Vcorr = ewald_LRcorrection(fplog,nsb,cr,fr,md->chargeA,md->chargeB,excl,
 				 x,box,mu_tot,
 				 ir->ewald_geometry,ir->epsilon_surface,
 				 lambda,&dvdlambda,&vdip,&vcharge);
+      if (debug)
+	pr_rvecs(debug,0,"frecip after corr",fr->f_el_recip,nsb->natoms);
+      
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
       epot[F_DVDL] += dvdlambda;
     } else {
@@ -1345,7 +1352,7 @@ void force(FILE       *fplog,   int        step,
     dvdlambda = 0;
 
       if (fr->eeltype != eelRF_NEC)
-      epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,fr,graph,md,excl,x,f,
+      epot[F_RF_EXCL] = RF_excl_correction(fplog,nsb,cr,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
 
     epot[F_DVDL] += dvdlambda;

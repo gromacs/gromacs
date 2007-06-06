@@ -45,8 +45,10 @@
 #include "physics.h"
 #include "copyrite.h"
 #include "pbc.h"
+#include "network.h"
 
 real RF_excl_correction(FILE *log,const t_nsborder *nsb,
+			const t_commrec *cr,
 			const t_forcerec *fr,t_graph *g,
 			const t_mdatoms *mdatoms,const t_block *excl,
 			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
@@ -56,6 +58,8 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
    * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
    * and force correction for all excluded pairs, including self pairs.
    */
+  static bool bFirst=TRUE;
+  static bool bSumForces=FALSE;
   int    top,i,j,j1,j2,k,ki;
   double q2sumA,q2sumB,ener;
   const real *chargeA,*chargeB;
@@ -92,6 +96,7 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
       for(j=j1; j<j2; j++) {
 	k = AA[j];
 	if (k > i) {
+	  bSumForces = bSumForces || (k >= end);
 	  qqA = qiA*chargeA[k];
 	  if (qqA != 0) {
 	    if (g) {
@@ -153,7 +158,17 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
     ener += -0.5*ec*(L1*q2sumA + lambda*q2sumB);
     *dvdlambda += -0.5*ec*(q2sumB - q2sumA);
   }
-  
+  if (bFirst) {
+    gmx_sumi(1,&bSumForces,cr);
+    bFirst = FALSE;
+  }
+  if (bSumForces) {
+    /* This is necessary if molecules are split over processors. Should
+       be optimized! */
+    gmx_sum(nsb->natoms*DIM,fr->f_el_recip[0],cr);
+  }
+    
+
   if(debug)
     fprintf(debug,"RF exclusion energy: %g\n",ener);
   

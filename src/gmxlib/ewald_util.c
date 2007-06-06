@@ -49,6 +49,7 @@
 #include "names.h"
 #include "writeps.h"
 #include "macros.h"
+#include "network.h"
 
 real calc_ewaldcoeff(real rc,real dtol)
 {
@@ -85,6 +86,8 @@ real ewald_LRcorrection(FILE *fplog,
 			real lambda,real *dvdlambda,
 			real *vdip,real *vcharge)
 {
+  static  bool    bFirst=TRUE;
+  static  bool    bSumForces=FALSE;
   int     i,i1,i2,j,k,m,iv,jv,q;
   atom_id *AA;
   double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
@@ -109,7 +112,6 @@ real ewald_LRcorrection(FILE *fplog,
   int     end   = start+HOMENR(nsb);
   bool    bFreeEnergy = (fr->efep != efepNO);
   bool    bFullPBC = (fr->ePBC == epbcFULL);
-
   one_4pi_eps = ONE_4PI_EPS0/fr->epsilon_r;
   vr0 = ewc*2/sqrt(M_PI);
 
@@ -155,6 +157,7 @@ real ewald_LRcorrection(FILE *fplog,
     break;
   }
   if (debug) {
+    fprintf(debug,"dipole_coeff = %g\n",dipole_coeff);
     fprintf(debug,"dipcorr = %8.3f  %8.3f  %8.3f\n",
 	    dipcorrA[XX],dipcorrA[YY],dipcorrA[ZZ]);
     fprintf(debug,"mutot   = %8.3f  %8.3f  %8.3f\n",
@@ -180,6 +183,7 @@ real ewald_LRcorrection(FILE *fplog,
 	 * are non-zero.
 	 */
 	if (k > i) {
+	  bSumForces = bSumForces || (k >= end);
 	  qqA = qiA*chargeA[k];
 	  if (qqA != 0.0) {
 	    rvec_sub(x[i],x[k],dx);
@@ -193,6 +197,9 @@ real ewald_LRcorrection(FILE *fplog,
 	      }
 	    }
 	    dr2 = norm2(dx);
+	    if (debug) 
+	      fprintf(debug,"Exclusion between %d and %d, distance %g\n",
+		      i,k,dr2);
 	    /* Distance between two excluded particles may be zero in the
 	     * case of shells
 	     */
@@ -372,6 +379,15 @@ real ewald_LRcorrection(FILE *fplog,
 	fprintf(debug,"Total dipole correction: Vdipole=%g\n",
 		L1*Vdipole[0]+lambda*Vdipole[1]);
     }
+  }
+  if (bFirst) {
+    gmx_sumi(1,&bSumForces,cr);
+    bFirst = FALSE;
+  }
+  if (bSumForces) {
+    /* This is necessary if molecules are split over processors. Should
+       be optimized! */
+    gmx_sum(nsb->natoms*DIM,fr->f_el_recip[0],cr);
   }
     
   /* Return the correction to the energy */
