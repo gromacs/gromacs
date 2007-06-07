@@ -218,6 +218,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[])
     case Y:
     case Z:
       r = this->x0[nx0][ix][this->type-X]-xc[ix][this->type-X];
+      r2 += r*r;
       break;
     case LATERAL:
       for(m=0; (m<DIM); m++) {
