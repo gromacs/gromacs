@@ -100,11 +100,13 @@ void ffclose(FILE *fp)
   
   ps=pstack;
   if (ps == NULL) {
-    fclose(fp);
+    if (fp != NULL) 
+      fclose(fp);
     return;
   }
   if (ps->fp == fp) {
-    pclose(fp);
+    if (fp != NULL)
+      pclose(fp);
     pstack=pstack->prev;
     sfree(ps);
   }
@@ -112,13 +114,15 @@ void ffclose(FILE *fp)
     while ((ps->prev != NULL) && (ps->prev->fp != fp))
       ps=ps->prev;
     if (ps->prev->fp == fp) {
-      pclose(ps->prev->fp);
+      if (ps->prev->fp != NULL)
+	pclose(ps->prev->fp);
       tmp=ps->prev;
       ps->prev=ps->prev->prev;
       sfree(tmp);
     }
     else {
-      fclose(fp);
+      if (fp != NULL)
+	fclose(fp);
       return;
     }
   }
