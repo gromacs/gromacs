@@ -394,6 +394,7 @@ real **read_xvg_time(char *fn,
   *t  = NULL;
   val = NULL;
   val_nalloc = NULL;
+  *nset = 0;
   *dt = 0;
   fp  = ffopen(fn,"r");
   for(sin=0; sin<nsets_in; sin++) {
