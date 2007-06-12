@@ -393,6 +393,7 @@ real **read_xvg_time(char *fn,
   
   val = NULL;
   *t  = NULL;
+  *nset = 0;
   *dt = 0;
   fp  = ffopen(fn,"r");
   for(sin=0; sin<nsets_in; sin++) {
