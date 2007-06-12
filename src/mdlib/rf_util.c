@@ -47,10 +47,10 @@
 #include "pbc.h"
 
 real RF_excl_correction(FILE *log,
-			const t_forcerec *fr,t_graph *g,
-			const t_mdatoms *mdatoms,const t_block *excl,
-			rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
-			real lambda,real *dvdlambda)
+                        const t_forcerec *fr,t_graph *g,
+                        const t_mdatoms *mdatoms,const t_block *excl,
+                        rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
+                        real *lambda,int nlambda,real *dvdlambda, real *deltaH)
 {
   /* Calculate the reaction-field energy correction for this node:
    * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
@@ -120,7 +120,7 @@ real RF_excl_correction(FILE *log,
     }
     ener += -0.5*ec*q2sumA;
   } else {
-    L1 = 1.0 - lambda;
+    L1 = 1.0 - lambda[0];
     for(i=start; i<niat; i++) {
       qiA = chargeA[i];
       qiB = chargeB[i];
@@ -137,7 +137,7 @@ real RF_excl_correction(FILE *log,
 	  qqA = qiA*chargeA[k];
 	  qqB = qiB*chargeB[k];
 	  if (qqA != 0 || qqB != 0) {
-	    qqL = L1*qqA + lambda*qqB;
+	    qqL = L1*qqA + lambda[0]*qqB;
 	    if (g) {
 	      rvec_sub(x[i],x[k],dx);
 	      ivec_sub(SHIFT_IVEC(g,i),SHIFT_IVEC(g,k),dt);
@@ -158,7 +158,7 @@ real RF_excl_correction(FILE *log,
 	}
       }
     }
-    ener += -0.5*ec*(L1*q2sumA + lambda*q2sumB);
+    ener += -0.5*ec*(L1*q2sumA + lambda[0]*q2sumB);
     *dvdlambda += -0.5*ec*(q2sumB - q2sumA);
   }
   

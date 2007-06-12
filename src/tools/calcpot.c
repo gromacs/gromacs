@@ -197,7 +197,7 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
    */
   
   ns(logf,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,0,lam,&dum,TRUE,FALSE);
+     &nrnb,0,&lam,1,&dum,NULL,TRUE,FALSE);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)

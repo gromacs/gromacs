@@ -86,7 +86,7 @@ extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 			t_graph *graph,t_groups *grps,
 			int nshell,t_shell shells[],
 			t_forcerec *fr,
-			real t,rvec mu_tot,
+			real t,rvec mu_tot,real *deltaH,
 			int natoms,bool *bConverged,
 			gmx_vsite_t *vsite,
 			FILE *fp_field);

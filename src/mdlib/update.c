@@ -740,11 +740,11 @@ void update(int          step,
     bLog = (do_per_step(step,inputrec->nstlog) || (step < 0));
     if (constr) {
       /* Constrain the coordinates xprime */
-      constrain(stdlog,bLog,constr,top,
-		inputrec,cr->dd,step,md,
-		state->x,xprime,NULL,
-		state->box,state->lambda,dvdlambda,
-		dt,state->v,&vir_con,nrnb,TRUE);
+        constrain(stdlog,bLog,constr,top,
+                  inputrec,cr->dd,step,md,
+                  state->x,xprime,NULL,
+                  state->box,state->lambda[0],dvdlambda,
+                  dt,state->v,&vir_con,nrnb,TRUE);
     }
     where();
 
@@ -808,7 +808,7 @@ void update(int          step,
 	constrain(stdlog,bLog,constr,top,
 		  inputrec,cr->dd,step,md,
 		  state->x,xprime,NULL,
-		  state->box,state->lambda,dvdlambda,
+		  state->box,state->lambda[0],dvdlambda,
 		  dt,NULL,NULL,nrnb,TRUE);
       }
     }
@@ -836,7 +836,7 @@ void update(int          step,
   where();
 
   if (bDoUpdate) {
-    update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,state->lambda,
+    update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,state->lambda[0],
 		bNEMD);
     if (DEFORM(*inputrec))
       deform_store(state->box,inputrec,step,bFirstStep);

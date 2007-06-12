@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 47;
+static const int tpx_version = 48;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -416,8 +416,25 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_int(ir->efep);
     if (file_version <= 14 && ir->efep > efepNO)
       ir->efep = efepYES;
-    do_real(ir->init_lambda); 
-    do_real(ir->delta_lambda);
+    
+    if(file_version <= 47)
+    {
+        /* can only happen on read */
+        ir->nlambda=1;
+    }
+    else
+    {
+        do_int(ir->nlambda);
+    }
+
+    if(bRead)
+    {
+        snew(ir->init_lambda,ir->nlambda);
+        snew(ir->delta_lambda,ir->nlambda);
+    }
+    ndo_real(ir->init_lambda,ir->nlambda,bDum); 
+    ndo_real(ir->delta_lambda,ir->nlambda,bDum);
+    
     if (file_version >= 13)
       do_real(ir->sc_alpha);
     else
@@ -1313,7 +1330,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     tpx.ngtc   = state->ngtc;
     tpx.step   = *step;
     tpx.t      = *t;
-    tpx.lambda = state->lambda;
+    tpx.lambda = state->lambda[0];
     tpx.bIr  = (ir       != NULL);
     tpx.bTop = (top      != NULL);
     tpx.bX   = (state->x != NULL);
@@ -1327,21 +1344,21 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   do_tpxheader(fp,bRead,&tpx,TopOnlyOK,&file_version,&file_generation);
 
   if (bRead) {
-    *step         = tpx.step;
-    *t            = tpx.t;
-    state->flags  = 0;
-    state->lambda = tpx.lambda;
+    *step            = tpx.step;
+    *t               = tpx.t;
+    state->flags     = 0;
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
-      init_state(state,0,tpx.ngtc);
+      init_state(state,0,tpx.ngtc,1);
       state->natoms = tpx.natoms;
       state->nalloc = tpx.natoms;
       state->x = xptr;
       state->v = vptr;
     } else {
-      init_state(state,tpx.natoms,tpx.ngtc);
+      init_state(state,tpx.natoms,tpx.ngtc,1);
     }
+    state->lambda[0] = tpx.lambda;
   }
 
 #define do_test(b,p) if (bRead && (p!=NULL) && !b) gmx_fatal(FARGS,"No %s in %s",#p,gmx_fio_getname(fp)) 
@@ -1445,6 +1462,15 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     /* Reading old version without tcoupl state data: set it */
     init_gtc_state(state,ir->opts.ngtc);
   }
+  
+  if(ir->nlambda>1)
+  {
+      srenew(state->lambda,ir->nlambda);
+      for(i=1;i<ir->nlambda;i++)
+      {
+          state->lambda[i] = ir->init_lambda[i];
+      }
+  }
 }
 
 /************************************************************
@@ -1541,7 +1567,7 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
     close_tpx(fp);
     *natoms = state.natoms;
     if (lambda) 
-      *lambda = state.lambda;
+      *lambda = state.lambda[0];
     if (box) 
       copy_mat(state.box,box);
     state.x = NULL;

@@ -304,4 +304,57 @@ gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *    A,
 }
 
 
+void
+gmx_sparsematrix_vector_multiply_partial(gmx_sparsematrix_t *    A,
+                                         real *                  x,
+                                         real *                  y,
+                                         int                     nstart,
+                                         int                     nlocal)
+{
+    real                        s,v,xi;
+    int                         i,j,k;
+    gmx_sparsematrix_entry_t *  data; /* pointer to simplify data access */
+    
+    for (i = 0; i < A->nrow; i ++)
+        y[i] = 0;
+    
+    if(A->compressed_symmetric)
+    {
+        for (i = nstart; i < nstart+nlocal; i ++)
+        {
+            xi = x[i];
+            s = 0.0;
+            data = A->data[i];
+            
+            for (k=0;k<A->ndata[i];k++)
+            {
+                j = data[k].col;
+                v = data[k].value;
+                s += v * x[j];
+                if(i!=j)
+                    y[j] += v * xi; 
+            }
+            y[i] += s; 
+        }    
+    }
+    else
+    {
+        /* not compressed symmetric storage */
+        for (i = nstart; i < nstart+nlocal; i ++)
+        {
+            xi = x[i];
+            s = 0.0;
+            data = A->data[i];
+            
+            for (k=0;k<A->ndata[i];k++) 
+            {
+                j = data[k].col;
+                v = data[k].value;
+                s += v * x[j];
+            }
+            y[i] += s; 
+        }    
+    }
+}
+
 

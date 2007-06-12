@@ -42,11 +42,11 @@
 
 
 typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
-		     const t_iparams iparams[],
+                     const t_iparams iparams[],
                      const rvec x[],rvec f[],rvec fshift[],
-		     const t_pbc *pbc,const t_graph *g,
-		     real lambda,real *dvdlambda,
-		     const t_mdatoms *md,t_fcdata *fcd);
+                     const t_pbc *pbc,const t_graph *g,
+                     real *lambda,int nlambda,real *dvdl,real *deltaH,
+                     const t_mdatoms *md,t_fcdata *fcd);
 
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[] 

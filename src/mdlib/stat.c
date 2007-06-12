@@ -67,11 +67,11 @@ void global_stat(FILE *log,
 		 t_commrec *cr,real ener[],
 		 tensor fvir,tensor svir,rvec mu_tot,
 		 t_inputrec *inputrec,t_groups *grps,
-		 t_vcm *vcm,real *terminate)
+		 t_vcm *vcm,real *deltaH, real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,ie,ifv,isv,imu=0,idedl,icm=0,imass=0,ica,inb=0;
+  int    iterminate,ie,ifv,isv,imu=0,idedl,icm=0,imass=0,ica,inb=0,idh=0;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   int    j;
@@ -127,6 +127,12 @@ void global_stat(FILE *log,
     inb = add_bind(log,rb,1,&nb);
   }
   where();
+  
+  if(inputrec->nlambda>1 && deltaH!=NULL)
+  {
+      idh = add_binr(log,rb,inputrec->nlambda,deltaH);
+  }
+  
   iterminate = add_binr(log,rb,1,terminate);
   
   /* Global sum it all */
@@ -165,6 +171,11 @@ void global_stat(FILE *log,
     if ((int)(nb + 0.5) != cr->dd->nbonded_global)
       dd_print_missing_interactions(log,cr,(int)(nb + 0.5));
   }
+  if(inputrec->nlambda>1 && deltaH!=NULL)
+  {
+      extract_binr(rb,idh,inputrec->nlambda,deltaH);
+  }
+  
   where();
   extract_binr(rb,iterminate,1,terminate);
   where();
@@ -222,7 +233,7 @@ void write_traj(t_commrec *cr,
   if (MASTER(cr)) {
    atoms = &top_global->atoms;
    if (bX || bV || bF) {
-      fwrite_trn(fp_trn,step,t,state_local->lambda,
+      fwrite_trn(fp_trn,step,t,state_local->lambda[0],
 		 state_local->box,atoms->nr,
 		 bX ? state_global->x : NULL,
 		 bV ? state_global->v : NULL,

@@ -52,7 +52,8 @@ typedef struct
   int           natoms;
   int           ngtc;
   int           flags;  /* Flags telling which entries are present      */
-  real          lambda; /* the free energy switching parameter          */
+  int           nlambda;
+  real          *lambda; /* the free energy switching parameters         */
   matrix 	box;    /* box vector coordinates                      	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pcoupl_mu; /* for Berendsen pcoupl                      */

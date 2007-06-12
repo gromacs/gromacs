@@ -262,7 +262,7 @@ new_status(char *topfile,char *topppfile,char *confin,
     /* make space for coordinates and velocities */
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
-    init_state(state,state->natoms,0);
+    init_state(state,state->natoms,0,ir->nlambda);
     read_stx_conf(confin,opts->title,confat,state->x,state->v,state->box);
 
     nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat);
@@ -1032,7 +1032,12 @@ int main (int argc, char *argv[])
   if (bVerbose) 
     fprintf(stderr,"writing run input file...\n");
 
-  state.lambda = ir->init_lambda;
+  state.nlambda = ir->nlambda;
+  for(i=0;i<state.nlambda;i++)
+  {
+      state.lambda[i] = ir->init_lambda[i];
+  }
+  
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),0,ir->init_t,ir,&state,sys);
   print_warn_num();
   

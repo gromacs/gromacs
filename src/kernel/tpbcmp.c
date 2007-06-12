@@ -354,8 +354,44 @@ static void cmp_cosines(FILE *fp,char *s,t_cosines c1[DIM],t_cosines c2[DIM],rea
   }
 }
 
+static void
+cmp_rlist(FILE *fp, char *s, real *list1, int nlist1, real* list2, int nlist2, real ftol)
+{
+    int i,identical;
+    
+    if(nlist1!=nlist2)
+    {
+        identical = 0;
+    }
+    else
+    {
+        identical = 1;
+        for(i=0;i<nlist1 && identical;i++)
+        {
+            identical = equal_real(list1[i],list2[i],ftol);
+        }
+    }
+    if(!identical)
+    {
+        fprintf(fp,"%s 1: ",s);
+        for(i=0;i<nlist1;i++)
+        {
+            fprintf(fp," %8.4f",list1[i]);
+        }
+        fprintf(fp,"\n%s 2: ",s);
+        for(i=0;i<nlist2;i++)
+        {
+            fprintf(fp," %8.4f",list2[i]);
+        }
+        fprintf(fp,"\n");
+    }
+}
+
+
 static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
 {
+  int i,identical;
+    
   fprintf(fp,"comparing inputrec\n");
 
   /* gcc 2.96 doesnt like these defines at all, but issues a huge list
@@ -429,8 +465,11 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->shake_tol",-1,ir1->shake_tol,ir2->shake_tol,ftol);
   cmp_real(fp,"inputrec->fudgeQQ",-1,ir1->fudgeQQ,ir2->fudgeQQ,ftol);
   cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);
-  cmp_real(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol);
-  cmp_real(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol);
+  cmp_int(fp,"inputrec->nlambda",-1,ir1->nlambda,ir2->nlambda);
+  
+  cmp_rlist(fp,"inputrec->init_lambda",ir1->init_lambda,ir1->nlambda,ir2->init_lambda,ir2->nlambda,ftol);
+  cmp_rlist(fp,"inputrec->delta_lambda",ir1->delta_lambda,ir1->nlambda,ir2->delta_lambda,ir2->nlambda,ftol);
+
   cmp_real(fp,"inputrec->sc_alpha",-1,ir1->sc_alpha,ir2->sc_alpha,ftol);
   cmp_int(fp,"inputrec->sc_power",-1,ir1->sc_power,ir2->sc_power);
   cmp_real(fp,"inputrec->sc_sigma",-1,ir1->sc_sigma,ir2->sc_sigma,ftol);

@@ -83,7 +83,7 @@ extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     rvec x[],matrix box,
 			     t_topology *top,t_groups *grps,
 			     t_commrec *cr,t_nrnb *nrnb,
-			     t_mdatoms *md,real lambda,real *dvdlambda,
+			     t_mdatoms *md,real *lambda,int nlambda,real *dvdlambda,real *deltaH,
 			     bool bFillGrid,bool bDoForces);
  
 

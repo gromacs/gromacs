@@ -61,14 +61,15 @@ extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
  */
 
 extern int gmx_pme_do(FILE *log,       gmx_pme_t pme,
-		      int start,       int homenr,
-		      rvec x[],        rvec f[],
-		      real chargeA[],  real chargeB[],
-		      matrix box,      t_commrec *cr,
-		      t_nrnb *nrnb,
-		      matrix lrvir,    real ewaldcoeff,
-		      real *energy,    real lambda,    
-		      real *dvdlambda, bool bGatherOnly);
+                      int start,       int homenr,
+                      rvec x[],        rvec f[],
+                      real chargeA[],  real chargeB[],
+                      matrix box,      t_commrec *cr,
+                      t_nrnb *nrnb,
+                      matrix lrvir,    real ewaldcoeff,
+                      real *energy,    real *lambda, 
+                      int nlambda,     real *dvdlambda, 
+                      real *deltaH,    bool bGatherOnly);
 /* Do a PME calculation for the long range electrostatics. 
  * If bGatherOnly is set, the energy from the last computation will be used, 
  * and the forces will be interpolated at the new positions. No new solving 
@@ -78,27 +79,27 @@ extern int gmx_pme_do(FILE *log,       gmx_pme_t pme,
 
 extern int gmx_pmeonly(FILE *logfile,     gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
-		       gmx_wallcycle_t wcycle,
-		       real ewaldcoeff,   bool bGatherOnly);
+                       gmx_wallcycle_t wcycle,
+                       real ewaldcoeff,   bool bGatherOnly);
 /* Called on the nodes that do PME exclusively (as slaves) 
- */
+*/
 
 extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
-			  int direction);
+                          int direction);
 
 /* The following two routines are for PME/PP node splitting: */
 extern void gmx_pme_send_x_q(t_commrec *cr,
-			     matrix box, rvec *x, 
-			     real *chargeA, real *chargeB, 
-			     bool bFreeEnergy, real lambda,
-			     bool bLastStep);
+                             matrix box, rvec *x, 
+                             real *chargeA, real *chargeB, 
+                             bool bFreeEnergy, real lambda,
+                             bool bLastStep);
 /* Send the particle coordinates and/or charges from the PP to the PME nodes
- */
+*/
 
 extern void gmx_pme_receive_f(t_commrec *cr,
-			      rvec f[], matrix vir, 
-			      real *energy, real *dvdlambda,
-			      float *pme_cycles);
+                              rvec f[], matrix vir, 
+                              real *energy, real *dvdlambda,
+                              float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
 
 #endif

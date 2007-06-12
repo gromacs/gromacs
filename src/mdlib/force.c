@@ -4,7 +4,7 @@
  *                This source code is part of
  * 
  *                 G   R   O   M   A   C   S
- * 
+ *
  *          GROningen MAchine for Chemical Simulations
  * 
  *                        VERSION 3.2.0
@@ -198,7 +198,6 @@ check_solvent(FILE *                fp,
      * than calling realloc lots of times.
      */   	 
     snew(solvent_parameters,mols->nr);
-    
     
     n_solvent_parameters = 0;
         
@@ -1336,21 +1335,23 @@ void pr_forcerec(FILE *fp,t_forcerec *fr,t_commrec *cr)
 }
 
 void ns(FILE *fp,
-	t_forcerec *fr,
-	rvec       x[],
-	rvec       f[],
-	matrix     box,
-	t_groups   *grps,
-	t_grpopts  *opts,
-	t_topology *top,
-	t_mdatoms  *md,
-	t_commrec  *cr,
-	t_nrnb     *nrnb,
-	int        step,
-	real       lambda,
-	real       *dvdlambda,
-	bool       bFillGrid,
-	bool       bDoForces)
+        t_forcerec *fr,
+        rvec       x[],
+        rvec       f[],
+        matrix     box,
+        t_groups   *grps,
+        t_grpopts  *opts,
+        t_topology *top,
+        t_mdatoms  *md,
+        t_commrec  *cr,
+        t_nrnb     *nrnb,
+        int        step,
+        real       *lambda,
+        int        nlambda,
+        real       *dvdlambda,
+        real       *deltaH,
+        bool       bFillGrid,
+        bool       bDoForces)
 {
   static bool bFirst=TRUE;
   static int  nDNL;
@@ -1376,7 +1377,7 @@ void ns(FILE *fp,
     fr->nlr=0;
 
   nsearch = search_neighbours(fp,fr,x,box,top,grps,cr,nrnb,md,
-			      lambda,dvdlambda,bFillGrid,bDoForces);
+			      lambda,nlambda,dvdlambda,deltaH,bFillGrid,bDoForces);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -1400,7 +1401,9 @@ void force(FILE       *fplog,   int        step,
 	   rvec       x[],      rvec       f[],
 	   real       epot[],   t_fcdata   *fcd,
 	   matrix     box,
-	   real       lambda,   t_graph    *graph,
+	   real       *lambda,  
+       real *deltaH,
+       t_graph    *graph,
 	   t_block    *excl,    
 	   bool       bNBFonly, bool bDoForces,
 	   rvec       mu_tot[],
@@ -1460,7 +1463,7 @@ void force(FILE       *fplog,   int        step,
 #endif
 
   if (ir->nwall) {
-    dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,grps->estat.ee[egLJSR],nrnb);
+    dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,deltaH,grps->estat.ee[egLJSR],nrnb);
     PRINT_SEPDVDL("Walls",0,dvdlambda);
     epot[F_DVDL] += dvdlambda;
   }
@@ -1469,7 +1472,7 @@ void force(FILE       *fplog,   int        step,
   do_nonbonded(fplog,cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
-	  lambda,&dvdlambda,FALSE,-1,-1,bDoForces);
+	  lambda,ir->nlambda,&dvdlambda,deltaH,FALSE,-1,-1,bDoForces);
   where();
 
 #ifdef GMX_MPI
@@ -1533,24 +1536,24 @@ void force(FILE       *fplog,   int        step,
     switch (fr->eeltype) {
     case eelPPPM:
       status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_el_recip,
-			   md->chargeA,
-			   box_size,fr->phi,cr,md->start,md->homenr,
-			   nrnb,ir->pme_order,&Vlr);
+                           md->chargeA,
+                           box_size,fr->phi,cr,md->start,md->homenr,
+                           nrnb,ir->pme_order,&Vlr);
       break;
     case eelPME:
     case eelPMESWITCH:
     case eelPMEUSER:
       if (cr->duty & DUTY_PME) {
 	wallcycle_start(wcycle,ewcPMEMESH);
-        status = gmx_pme_do(fplog,fr->pmedata,
-			    md->start,md->homenr,
-			    x,fr->f_el_recip,
-			    md->chargeA,md->chargeB,
-			    bSB ? boxs : box,cr,nrnb,
-			    fr->vir_el_recip,fr->ewaldcoeff,
-			    &Vlr,lambda,&dvdlambda,bGatherOnly);
-        PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
-	wallcycle_stop(wcycle,ewcPMEMESH);
+          status = gmx_pme_do(fplog,fr->pmedata,
+                              md->start,md->homenr,
+                              x,fr->f_el_recip,
+                              md->chargeA,md->chargeB,
+                              bSB ? boxs : box,cr,nrnb,
+                              fr->vir_el_recip,fr->ewaldcoeff,
+                              &Vlr,lambda,ir->nlambda,&dvdlambda,deltaH,bGatherOnly);
+          PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
+          wallcycle_stop(wcycle,ewcPMEMESH);
       } 
       else {
         /* Energies and virial are obtained later from the PME nodes */
@@ -1563,7 +1566,7 @@ void force(FILE       *fplog,   int        step,
       Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
 		     box_size,cr,md->homenr,
 		     fr->vir_el_recip,fr->ewaldcoeff,
-		     lambda,&dvdlambda);
+		     lambda,ir->nlambda,&dvdlambda,deltaH);
       PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
       break;
     default:
@@ -1583,7 +1586,7 @@ void force(FILE       *fplog,   int        step,
 				 md->nChargePerturbed ? md->chargeB : NULL,
 				 excl,x,bSB ? boxs : box,mu_tot,
 				 ir->ewald_geometry,ir->epsilon_surface,
-				 lambda,&dvdlambda,&vdip,&vcharge);
+				 lambda,ir->nlambda,&dvdlambda,deltaH,&vdip,&vcharge);
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
       epot[F_DVDL] += dvdlambda;
     } else {
@@ -1604,7 +1607,7 @@ void force(FILE       *fplog,   int        step,
 
     if (fr->eeltype != eelRF_NEC)
       epot[F_RF_EXCL] = RF_excl_correction(fplog,fr,graph,md,excl,x,f,
-					   fr->fshift,&pbc,lambda,&dvdlambda);
+					   fr->fshift,&pbc,lambda,ir->nlambda,&dvdlambda,deltaH);
 
     epot[F_DVDL] += dvdlambda;
     PRINT_SEPDVDL("RF exclusion correction",epot[F_RF_EXCL],dvdlambda);
@@ -1617,11 +1620,11 @@ void force(FILE       *fplog,   int        step,
   debug_gmx();
   
   if (!bNBFonly) {
-    GMX_MPE_LOG(ev_calc_bonds_start);
-    calc_bonds(fplog,cr->ms,
-	       idef,x,f,fr,&pbc,&pbc_posres,graph,epot,nrnb,lambda,md,
-	       opts->ngener,&grps->estat,
-	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
+      GMX_MPE_LOG(ev_calc_bonds_start);
+      calc_bonds(fplog,cr->ms,
+                 idef,x,f,fr,&pbc,&pbc_posres,graph,epot,nrnb,lambda,ir->nlambda,deltaH,md,
+                 opts->ngener,&grps->estat,
+                 fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
     GMX_MPE_LOG(ev_calc_bonds_finish);
   }

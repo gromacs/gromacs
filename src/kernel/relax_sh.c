@@ -363,7 +363,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
 		 t_graph *graph,t_groups *grps,
 		 int nshell,t_shell shells[],
 		 t_forcerec *fr,
-		 real t,rvec mu_tot,
+		 real t,rvec mu_tot,real *deltaH,
 		 int natoms,bool *bConverged,
 		 gmx_vsite_t *vsite,
 		 FILE *fp_field)
@@ -452,9 +452,9 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
   do_force(log,cr,inputrec,mdstep,nrnb,wcycle,top,grps,
-	   state->box,state->x,force[Min],buf,md,ener,fcd,
-	   state->lambda,graph,
-	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
+           state->box,state->x,force[Min],buf,md,ener,fcd,
+           state->lambda,deltaH,graph,
+           TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
   sum_lrforces(force[Min],fr,start,homenr);
   copy_mat(fr->vir_el_recip,vir_el_recip[Min]);
 
@@ -462,7 +462,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
   if (nflexcon) {
     init_adir(log,constr,top,inputrec,cr->dd,mdstep,md,start,end,
 	      x_old-start,state->x,state->x,force[Min],acc_dir-start,
-	      state->box,state->lambda,&dum,nrnb);
+	      state->box,state->lambda[0],&dum,nrnb);
 
     for(i=start; i<end; i++)
       sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
@@ -517,7 +517,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     if (nflexcon) {
       init_adir(log,constr,top,inputrec,cr->dd,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
-		state->box,state->lambda,&dum,nrnb);
+		state->box,state->lambda[0],&dum,nrnb);
       
       directional_sd(log,pos[Min],pos[Try],acc_dir-start,start,end,
 		     fr->fc_stepsize);
@@ -537,7 +537,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     /* Try the new positions */
     do_force(log,cr,inputrec,1,nrnb,wcycle,
 	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
-	     state->lambda,graph,
+	     state->lambda,deltaH,graph,
 	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
     if (vsite) 
       spread_vsite_f(log,vsite,pos[Try],force[Try],fr->fshift,nrnb,
@@ -567,7 +567,7 @@ int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
     if (nflexcon) {
       init_adir(log,constr,top,inputrec,cr->dd,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
-		state->box,state->lambda,&dum,nrnb);
+		state->box,state->lambda[0],&dum,nrnb);
 
       for(i=start; i<end; i++)
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);

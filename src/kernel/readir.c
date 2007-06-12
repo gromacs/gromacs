@@ -80,6 +80,7 @@ static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
   SAoff[STRLEN],SAsteps[STRLEN],bTS[STRLEN],bOPT[STRLEN]; 
 static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
+static char init_lambda[STRLEN],delta_lambda[STRLEN];
 
 enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
 
@@ -729,8 +730,11 @@ void get_ir(char *mdparin,char *mdparout,
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");
   EETYPE("free-energy",	ir->efep, efep_names, nerror, TRUE);
-  RTYPE ("init-lambda",	ir->init_lambda,0.0);
-  RTYPE ("delta-lambda",ir->delta_lambda,0.0);
+  ITYPE ("nlambda", ir->nlambda,1);
+  
+  STYPE ("init-lambda",	 init_lambda,  NULL);
+  STYPE ("delta-lambda", delta_lambda, NULL);
+
   RTYPE ("sc-alpha",ir->sc_alpha,0.0);
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
@@ -1218,7 +1222,7 @@ void do_index(char *ndx,
   bool    bExcl,bTable,bSetTCpar,bAnneal;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
     nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
-
+  int     ninit,ndelta;
 
   if (bVerbose)
     fprintf(stderr,"processing index file...\n");
@@ -1446,6 +1450,49 @@ void do_index(char *ndx,
 	svmul(fac,v[i],v[i]);
     }
   }
+  
+  
+  /* Process lambda strings for free energy */
+  if(ir->efep!=efepNO)
+  {
+      ninit=str_nelem(init_lambda,MAXPTR,ptr1);
+      if(ninit != ir->nlambda)
+      {
+          gmx_fatal(FARGS,"Invalid input: nlambda=%d, found %d init_lambda values.\n",ir->nlambda,ninit);
+      }
+      snew(ir->init_lambda,ir->nlambda);
+      snew(ir->delta_lambda,ir->nlambda);
+      for(i=0;i<ir->nlambda;i++)
+      {
+          ir->init_lambda[i]=atof(ptr1[i]);
+          ir->delta_lambda[i]=0;
+      }
+      ndelta=str_nelem(delta_lambda,MAXPTR,ptr2);
+      if(ndelta != ir->nlambda && ndelta > 1)
+      {
+          gmx_fatal(FARGS,"Invalid input: nlambda=%d, found %d delta_lambda values.\n",ir->nlambda,ndelta);
+      }
+      if(ndelta>0)
+      {
+          ir->delta_lambda[0]=atof(ptr2[0]);
+      }
+      for(i=1;i<ndelta;i++)
+      {
+          if(fabs(atof(ptr2[i]))>GMX_REAL_MIN)
+          {
+              gmx_fatal(FARGS,"Invalid input: Currently, only the first delta_lambda can be non-zero.\n");
+          }
+      }
+  }
+  else
+  {
+      /* No free energy */
+      ir->nlambda = 1;
+      snew(ir->init_lambda,1);
+      snew(ir->delta_lambda,1);
+      ir->init_lambda[0]=0.0;
+      ir->delta_lambda[0]=0.0;
+  }  
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
   do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,

@@ -55,7 +55,7 @@ extern real do_ewald(FILE *log,       bool bVerbose,
                      rvec box,
 		     t_commrec *cr,  int natoms,
 		     matrix lrvir,   real ewaldcoeff,
-		     real lambda,    real *dvdlambda);
+		     real *lambda,   int nlambda, real *dvdlambda, real *deltaH);
 /* Do an Ewald calculation for the long range electrostatics. */
  
 extern real ewald_LRcorrection(FILE *fp,
@@ -65,7 +65,7 @@ extern real ewald_LRcorrection(FILE *fp,
 			       t_block *excl,rvec x[],
 			       matrix box,rvec mu_tot[],
 			       int ewald_geometry,real epsilon_surface,
-			       real lambda,real *dvdlambda,
+			       real *lambda,int nlambda, real *dvdlambda,real *deltaH,
 			       real *vdip,real *vcharge);
 /* Calculate the Long range correction to ewald, due to 
  * 1-4 interactions, surface dipole term and charge terms

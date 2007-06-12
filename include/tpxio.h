@@ -60,14 +60,14 @@ typedef struct
   int	bIr;		/* Non zero if input_rec is present		*/
   int	bBox;		/* Non zero if a box is present			*/
   int	bTop;		/* Non zero if a topology is present		*/
-  int	bX;		/* Non zero if coordinates are present		*/
-  int	bV;		/* Non zero if velocities are present		*/
-  int	bF;		/* Non zero if forces are present		*/
+  int	bX;		    /* Non zero if coordinates are present		*/
+  int	bV;		    /* Non zero if velocities are present		*/
+  int	bF;		    /* Non zero if forces are present		*/
 
   int	natoms;		/* The total number of atoms			*/
-  int   ngtc;           /* The number of temperature coupling groups    */
+  int   ngtc;       /* The number of temperature coupling groups    */
   int	step;		/* Current step number				*/
-  real	t;		/* Current time					*/
+  real	t;		    /* Current time					*/
   real	lambda;		/* Current value of lambda			*/
 } t_tpxheader;
 
