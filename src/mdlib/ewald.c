@@ -100,8 +100,7 @@ real do_ewald(FILE *log,       bool bVerbose,
 	      rvec box,
 	      t_commrec *cr,   int natoms,
 	      matrix lrvir,    real ewaldcoeff,
-	      real *lambda,    int nlambda,
-              real *dvdlambda, real *deltaH)
+	      real lambda,     real *dvdlambda)
 {
   static    bool bFirst = TRUE;
   static    int       nx,ny,nz,kmax;
@@ -148,10 +147,10 @@ real do_ewald(FILE *log,       bool bVerbose,
       scale = 1.0;
     } else if (q==0) {
       charge = chargeA;
-      scale = 1.0 - lambda[0];
+      scale = 1.0 - lambda;
     } else {
       charge = chargeB;
-      scale = lambda[0];
+      scale = lambda;
     }
     lowiy=0;
     lowiz=1;
@@ -209,7 +208,7 @@ real do_ewald(FILE *log,       bool bVerbose,
   if (!bFreeEnergy) {
     energy = energy_AB[0];
   } else {
-    energy = (1.0 - lambda[0])*energy_AB[0] + lambda[0]*energy_AB[1];
+    energy = (1.0 - lambda)*energy_AB[0] + lambda*energy_AB[1];
     *dvdlambda += tmp*(energy_AB[1] - energy_AB[0]);
   }
   for(n=0;n<natoms;n++) {

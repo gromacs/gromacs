@@ -194,12 +194,6 @@ gmx_sparsematrix_vector_multiply(gmx_sparsematrix_t *    A,
                                  real *                  y);
 
 
-void
-gmx_sparsematrix_vector_multiply_partial(gmx_sparsematrix_t *    A,
-                                         real *                  x,
-                                         real *                  y,
-                                         int                     nstart,
-                                         int                     nlocal);
 
 
 #endif

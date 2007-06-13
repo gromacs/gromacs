@@ -119,7 +119,6 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   };
   static   char   **grpnms;
   char     **gnm;
-  char     **dhnames;
   char     buf[256];
   t_mdebin *md;
   int      i,j,ni,nj,n,k,kk;
@@ -233,7 +232,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   for(i=0; (i<egNR); i++)
     if (bEInd[i])
       md->nEc++;
-
+      
   n=atoms->grps[egcENER].nr;
   md->nEg=n;
   md->nE=(n*(n+1))/2;
@@ -305,27 +304,6 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
     }
     md->iu=get_ebin_space(md->ebin,3*md->nU,grpnms);
     sfree(grpnms);
-  }  
-  
-  if(ir->efep != efepNO)
-  {
-      md->ndH = ir->nlambda-1;
-      snew(dhnames,md->ndH);
-      for(i=0;i<md->ndH;i++)
-      {
-          sprintf(buf,"deltaH[%d]",i+1);
-          dhnames[i]=strdup(buf);
-      }
-      md->idH=get_ebin_space(md->ebin,md->ndH,dhnames);
-      for(i=0;i<md->ndH;i++)
-      {
-          sfree(dhnames[i]);
-      }
-      sfree(dhnames);
-  }
-  else
-  {
-      md->ndH = 0;
   }
   
   if (fp_ene != -1)
@@ -349,7 +327,6 @@ static void copy_energy(real e[],real ecpy[])
     gmx_incons("Number of energy terms wrong");
 }
 
-
 void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		real tmass,int step,real time,
 		real ener[],
@@ -360,8 +337,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		tensor vir,
 		tensor pres,
 		t_groups *grps,
-		rvec mu_tot,
-        real *deltaH)
+		rvec mu_tot)
 {
   static real *ttt=NULL;
   static rvec *uuu=NULL;
@@ -483,15 +459,6 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       copy_rvec(grps->grpstat[i].u,uuu[i]);
     add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],step);
   }
-  
-  if (md->ndH > 0) 
-  {
-      /* We do not write deltaH[0], since that is 0.0 by definition.
-         (It is however useful for internal debugging).
-       */
-      add_ebin(md->ebin,md->idH,md->ndH,deltaH+1,step);
-  }
-  
   if (fp_dgdl)
     fprintf(fp_dgdl,"%.4f %g\n",time,ener[F_DVDL]+ener[F_DVDLKIN]);
 }
@@ -525,7 +492,7 @@ void print_ebin_header(FILE *log,int steps,real time,real lamb)
 
 void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 		FILE *log,int step,int nsteps,real time,int mode,bool bCompact,
-		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts, real *deltaH)
+		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts)
 {
   static char **grpnms=NULL;
   static char *kjm="(kJ/mol)";
@@ -651,13 +618,6 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 	  pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,nsteps,FALSE);
 	}
 	fprintf(log,"\n");
-      }
-      
-      if(md->ndH > 0)
-      {
-          fprintf(log,"   Free Energy deltaH\n");
-          pr_ebin(log,md->ebin,md->idH,md->ndH,md->ndH,mode,nsteps,FALSE);
-          fprintf(log,"\n");
       }
     }
   }

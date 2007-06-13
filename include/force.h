@@ -60,7 +60,7 @@ extern real RF_excl_correction(FILE *fplog,
 			       const t_forcerec *fr,t_graph *g,
 			       const t_mdatoms *mdatoms,const t_block *excl,
 			       rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
-			       real *lambda,int nlambda, real *dvdlambda, real *deltaH);
+			       real lambda,real *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
  * epsfac q_i q_j (k_rf r_ij^2 - c_rf)
  * and force correction for all excluded pairs, including self pairs.
@@ -80,7 +80,7 @@ extern void make_wall_tables(FILE *fplog,
 			     t_forcerec *fr);
 
 extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
-		     rvec x[],rvec f[],real *lambda,real *deltaH,real Vlj[],t_nrnb *nrnb);
+		     rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb);
 
 
 
@@ -126,23 +126,21 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const t_atoms *atoms,const t_block *excl);
 
 extern void ns(FILE       *fplog,
-               t_forcerec *fr,
-               rvec       x[],
-               rvec       f[],
-               matrix     box,
-               t_groups   *grps,
-               t_grpopts  *opts,
-               t_topology *top,
-               t_mdatoms  *md,
-               t_commrec  *cr,
-               t_nrnb     *nrnb,
-               int        step,
-               real       *lambda,
-               int        nlambda,
-               real       *dvdlambda,
-               real       *deltaH,
-               bool       bFillGrid,
-               bool       bDoForces);
+	       t_forcerec *fr,
+	       rvec       x[],
+	       rvec       f[],
+	       matrix     box,
+	       t_groups   *grps,
+	       t_grpopts  *opts,
+	       t_topology *top,
+	       t_mdatoms  *md,
+	       t_commrec  *cr,
+	       t_nrnb     *nrnb,
+	       int        step,
+	       real       lambda,
+	       real       *dvdlambda,
+	       bool       bFillGrid,
+	       bool       bDoForces);
 /* Call the neighborsearcher */
 
 extern void force(FILE         *fplog,  
@@ -162,8 +160,7 @@ extern void force(FILE         *fplog,
 		  real         epot[], 
 		  t_fcdata     *fcd,
 		  matrix       box,
-		  real         *lambda,
-          real         *deltaH,
+		  real         lambda,
 		  t_graph      *graph,
 		  t_block      *excl,
 		  bool         bNBonly,

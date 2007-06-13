@@ -383,7 +383,7 @@ int main (int argc, char *argv[])
 	  state.v = tmpv;
 	  run_t        = head.t;
 	  run_step     = head.step;
-	  state.lambda[0] = head.lambda;
+	  state.lambda = head.lambda;
 	  copy_mat(newbox,state.box);
 	}
       }

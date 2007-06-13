@@ -153,7 +153,7 @@ extern void global_stat(FILE *log,
 			t_commrec *cr,real ener[],
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,t_groups *grps,
-			t_vcm *vcm,real *deltaH, real *terminate);
+			t_vcm *vcm,real *terminate);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
 void write_traj(t_commrec *cr,
@@ -184,7 +184,7 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
-		     real *lambda,real *deltaH,t_graph *graph,
+		     real lambda,t_graph *graph,
 		     bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 		     t_forcerec *fr, rvec mu_tot,
 		     bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn);

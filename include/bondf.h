@@ -52,15 +52,14 @@ extern "C" {
 #include "pbc.h"
 
 extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
-                       const t_idef *idef,
+		       const t_idef *idef,
                        rvec x[],rvec f[],t_forcerec *fr,
-                       const t_pbc *pbc,t_pbc *pbc_posres,
-                       const t_graph *g,
-                       real epot[],t_nrnb *nrnb,real *lambda,
-                       int nlambda, real *deltaH,
-                       const t_mdatoms *md,int ngrp,t_grp_ener *gener,
-                       t_fcdata *fcd,
-                       int step,bool bSepDVDL);
+		       const t_pbc *pbc,t_pbc *pbc_posres,
+		       const t_graph *g,
+                       real epot[],t_nrnb *nrnb,real lambda,
+		       const t_mdatoms *md,int ngrp,t_grp_ener *gener,
+		       t_fcdata *fcd,
+		       int step,bool bSepDVDL);
 /* 
  * The function calc_bonds() caluclates all bonded force interactions.
  * The "bonds" are specified as follows:
@@ -82,11 +81,11 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
  */
 
 extern real bond_angle(const rvec xi,const rvec xj,const rvec xk,
-                       const t_pbc *pbc,
-                       rvec r_ij,rvec r_kj,real *costh,
-                       int *t1,int *t2);	/* out */
-                       /* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
-                       
+		       const t_pbc *pbc,
+		       rvec r_ij,rvec r_kj,real *costh,
+		       int *t1,int *t2);	/* out */
+/* Calculate bond-angle. No PBC is taken into account (use mol-shift) */
+
 extern real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 		      const t_pbc *pbc,
 		      rvec r_ij,rvec r_kj,rvec r_kl,rvec m,rvec n, /* out */

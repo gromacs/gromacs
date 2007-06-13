@@ -184,7 +184,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
 real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
-	       real *lambda,int nlambda, real *dvdlambda, real *deltaH,
+	       real lambda,real *dvdlambda,
 	       const t_mdatoms *md,t_fcdata *fcd)
 {
   const real sixth=1.0/6.0;

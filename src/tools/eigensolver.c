@@ -38,10 +38,6 @@
 #include <config.h>
 #endif
 
-#ifdef GMX_MPI
-#include <mpi.h>
-#endif
-
 #include "types/simple.h"
 #include "smalloc.h"
 #include "gmx_fatal.h"
@@ -158,61 +154,24 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     int      ipntr[11];
     real *   resid;
     real *   workd;
-    real *   pIN;
-    real *   pOUT;
     real *   workl;
     real *   v;
-    real *   buf1;
-    real *   buf2;
     int      n;
     int      ido,info,lworkl,i,ncv,dovec;
     real     abstol;
     int *    select;
     int      iter;
-    int      nglobal;
-#ifdef GMX_MPI
-    int      *nlocal;
-    int     *nstart;
-    int      nnodes;
-    int      rank,size;
-    int      scratch;
-    int      comm = 0;
-#endif
     
     if(eigenvectors != NULL)
         dovec = 1;
     else
         dovec = 0;
     
-    nglobal  = A->nrow;
-
-#ifdef GMX_MPI
-    MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    MPI_Comm_size(MPI_COMM_WORLD,&size);
-
-    scratch = nglobal % size;
-
-    for(i=0;i<rank;i++)
-    {
-        nlocal[i] = nglobal / size;
-        nstart[i] = i*nlocal[i];
-        if(rank<scratch)
-        {
-            nlocal[i]++;
-            nstart[i] += i;
-        }
-    }
-    n = nlocal[rank];
-    snew(buf1,nglobal);
-    snew(buf2,nglobal);
-#else
-    n = nglobal;
-#endif
-    
+    n   = A->nrow;
     ncv = 2*neig;
     
-    if(ncv>nglobal)
-        ncv=nglobal;
+    if(ncv>n)
+        ncv=n;
     
     for(i=0;i<11;i++)
         iparam[i]=ipntr[i]=0;
@@ -232,51 +191,10 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     abstol = 0;
     
  	ido = info = 0;
-    fprintf(stderr,"Calculating Ritz values and Lanczos vectors, max %d iterations...\n",maxiter);
+    fprintf(stderr,"Calculation Ritz values and Lanczos vectors, max %d iterations...\n",maxiter);
     
     iter = 1;
 	do {
-#ifdef GMX_MPI
-        /* MPI */
-#ifdef GMX_DOUBLE
-        F77_FUNC(pdsaupd,PDSAUPD)(&comm,&ido, "I", &n, "SA", &neig, &abstol, 
-                                resid, &ncv, v, &n, iparam, ipntr, 
-                                workd, iwork, workl, &lworkl, &info);
-#else
-        F77_FUNC(pssaupd,PSSAUPD)(&comm,&ido, "I", &n, "SA", &neig, &abstol, 
-                                resid, &ncv, v, &n, iparam, ipntr, 
-                                workd, iwork, workl, &lworkl, &info);
-#endif
-
-        if(ido==-1 || ido==1)
-        {
-            pIN  = workd+ipntr[0]-1;
-            pOUT = workd+ipntr[1]-1;
-        
-            for(i=0;i<nlocal[rank];i++)
-                buf1[nstart[rank]+i]=pIN[i];
-        
-            /* COMMUNICATE STUFF */
-            for(i=0;i<size;i++)
-            {
-                /* overwrite stuff */
-                /* Broadcast from process i to all other processes */
-                MPI_Bcast(buf1+nstart[i],nlocal[i],MPI_DOUBLE,i,MPI_COMM_WORLD);
-            }
-        
-            gmx_sparsematrix_vector_multiply_partial(A,buf1,buf2,nstart[rank],nlocal[rank]);
-            
-            /* COMMUNICATE BACK */
-            for(i=0;i<size;i++)
-            {
-                /* Add values */
-                /* Reduce (sum) to process i from all other processes */
-                MPI_Reduce(buf2+nstart[i],pOUT,nlocal[i],MPI_DOUBLE,MPI_SUM,i,MPI_COMM_WORLD);
-            }            
-        }
-        
-#else
-        /* NOT MPI */
 #ifdef GMX_DOUBLE
             F77_FUNC(dsaupd,DSAUPD)(&ido, "I", &n, "SA", &neig, &abstol, 
                                     resid, &ncv, v, &n, iparam, ipntr, 
@@ -286,26 +204,14 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
                                     resid, &ncv, v, &n, iparam, ipntr, 
                                     workd, iwork, workl, &lworkl, &info);
 #endif
-            if(ido==-1 || ido==1)
-                gmx_sparsematrix_vector_multiply(A,workd+ipntr[0]-1, workd+ipntr[1]-1);
-#endif
-
-#ifdef GMX_MPI
-            if(rank==0)
-                fprintf(stderr,"\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
-#else
-            fprintf(stderr,"\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
-#endif            
+        if(ido==-1 || ido==1)
+            gmx_sparsematrix_vector_multiply(A,workd+ipntr[0]-1, workd+ipntr[1]-1);
+        
+        fprintf(stderr,"\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
 	} while(info==0 && (ido==-1 || ido==1));
-
 	
-#ifdef GMX_MPI
-    if(rank==0)
-    {    
-#endif
     fprintf(stderr,"\n");
-	
-    if(info==1)
+	if(info==1)
     {
 	    gmx_fatal(FARGS,
                   "Maximum number of iterations (%d) reached in Arnoldi\n"
@@ -321,23 +227,6 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
 	/* Extract eigenvalues and vectors from data */
     fprintf(stderr,"Calculating eigenvalues and eigenvectors...\n");
     
-    
-#ifdef GMX_MPI
-    }
-#ifdef GMX_DOUBLE
-    F77_FUNC(pdseupd,PDSEUPD)(&comm,&dovec, "A", select, eigenvalues, eigenvectors, 
-                            &n, NULL, "I", &n, "SA", &neig, &abstol, 
-                            resid, &ncv, v, &n, iparam, ipntr, 
-                            workd, workl, &lworkl, &info);
-#else
-    F77_FUNC(psseupd,PSSEUPD)(&comm,&dovec, "A", select, eigenvalues, eigenvectors, 
-                            &n, NULL, "I", &n, "SA", &neig, &abstol, 
-                            resid, &ncv, v, &n, iparam, ipntr, 
-                            workd, workl, &lworkl, &info);
-#endif
-    sfree(buf1);
-    sfree(buf2);
-#else
 #ifdef GMX_DOUBLE
     F77_FUNC(dseupd,DSEUPD)(&dovec, "A", select, eigenvalues, eigenvectors, 
 			    &n, NULL, "I", &n, "SA", &neig, &abstol, 
@@ -349,7 +238,7 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
 			    resid, &ncv, v, &n, iparam, ipntr, 
 			    workd, workl, &lworkl, &info);
 #endif
-#endif	
+	
     sfree(v);
     sfree(resid);
     sfree(workd);

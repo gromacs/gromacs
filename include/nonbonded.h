@@ -47,8 +47,7 @@ void
 do_nonbonded(FILE *log,t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f[],t_mdatoms *md,
              real egnb[],real egcoul[],rvec box_size,
-             t_nrnb *nrnb,real *lambda,int nlambda,
-             real *dvdlambda, real *deltaH,
+             t_nrnb *nrnb,real lambda,real *dvdlambda,
              bool bLR,int nls,int eNL,bool bDoForces);
 
 real
@@ -56,7 +55,7 @@ do_nonbonded14(int ftype,int nbonds,
 	       const t_iatom iatoms[],const t_iparams iparams[],
                const rvec x[],rvec f[],rvec fshift[],
                const t_pbc *pbc,const t_graph *g,
-               real *lambda, int nlambda, real *dvdlambda, real *deltaH,
+               real lambda,real *dvdlambda,
                const t_mdatoms *md,
                const t_forcerec *fr,int ngrp,t_grp_ener *gener);
 

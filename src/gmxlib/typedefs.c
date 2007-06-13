@@ -213,14 +213,13 @@ void init_gtc_state(t_state *state,int ngtc)
   }
 }
 
-void init_state(t_state *state,int natoms,int ngtc,int nlambda)
+void init_state(t_state *state,int natoms,int ngtc)
 {
   int i;
 
   state->natoms = natoms;
   state->flags  = 0;
-  state->nlambda = nlambda;
-  snew(state->lambda,nlambda);
+  state->lambda = 0;
   clear_mat(state->box);
   clear_mat(state->boxv);
   clear_mat(state->pcoupl_mu);

@@ -51,7 +51,7 @@ void make_wall_tables(FILE *fplog,
 }
 
 real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
-	      rvec x[],rvec f[],real *lambda,real *deltaH,real Vlj[],t_nrnb *nrnb)
+	      rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb)
 {
   int  nwall,w,lam,i;
   int  ntw[2],at,ntype,ngid,ggid,*egp_flags,*type;
@@ -86,7 +86,7 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
   for(lam=0; lam<(md->nPerturbed ? 2 : 1); lam++) {
     if (md->nPerturbed) {
       if (lam == 0) {
-	lamfac = 1 - lambda[0];
+	lamfac = 1 - lambda;
 	type = md->typeA;
       } else {
 	lamfac = 0;

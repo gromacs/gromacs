@@ -380,8 +380,7 @@ static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos)
 void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
 {
   char *infbuf="inf";
-    int   i;
-    
+  
   if (available(fp,ir,title)) {
     indent=pr_title(fp,indent,title);
 #define PS(t,s) pr_str(fp,indent,t,s)
@@ -452,23 +451,11 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
     PR("fudgeQQ",ir->fudgeQQ);
     PS("free_energy",EFEPTYPE(ir->efep));
-    PI("nlambda",ir->nlambda);
-    
-    fprintf(fp,"init_lambda:  ");
-    for(i=0;i<ir->nlambda;i++)
-    {
-        fprintf(fp," %7.5f",ir->init_lambda[i]);
-    }
-    fprintf(fp,"\ndelta_lambda: ");
-    for(i=0;i<ir->nlambda;i++)
-    {
-        fprintf(fp," %7.5f",ir->delta_lambda[i]);
-    }
-    fprintf(fp,"\n");
-    
+    PR("init_lambda",ir->init_lambda);
     PR("sc_alpha",ir->sc_alpha);
     PI("sc_power",ir->sc_power);
     PR("sc_sigma",ir->sc_sigma);
+    PR("delta_lambda",ir->delta_lambda);
     
     PI("nwall",ir->nwall);
     PS("wall_type",EWALLTYPE(ir->wall_type));

@@ -115,7 +115,7 @@ extern void init_atom (t_atoms *at);
 extern void init_top (t_topology *top);
 extern void init_inputrec(t_inputrec *ir);
 extern void init_gtc_state(t_state *state,int ngtc);
-extern void init_state(t_state *state,int natoms,int ngtc, int nlambda);
+extern void init_state(t_state *state,int natoms,int ngtc);
 extern void done_block(t_block *block);
 extern void done_atom (t_atoms *at);
 extern void done_top(t_topology *top);

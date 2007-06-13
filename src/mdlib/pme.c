@@ -1695,9 +1695,9 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 
     cve.dvdlambda = 0;
     gmx_pme_do(logfile,pme,0,n,x_pp,f_pp,chargeA,chargeB,cnb[0].box,
-               cr,nrnb,cve.vir,ewaldcoeff,
-               &cve.energy,&(cnb[0].lambda),1,&cve.dvdlambda,NULL,
-               bGatherOnly);
+	       cr,nrnb,cve.vir,ewaldcoeff,
+	       &cve.energy,cnb[0].lambda,&cve.dvdlambda,
+	       bGatherOnly);
 
     wallcycle_stop(wcycle,ewcPMEMESH_SEP);
     cve.cycles = wallcycle_lastcycle(wcycle,ewcPMEMESH_SEP);
@@ -1749,9 +1749,8 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
 	       matrix box,	t_commrec *cr,
 	       t_nrnb *nrnb,    
 	       matrix vir,      real ewaldcoeff,
-	       real *energy,    real *lambda,
-           int nlambda,     real *dvdlambda, 
-           real *deltaH,    bool bGatherOnly)
+	       real *energy,    real lambda, 
+	       real *dvdlambda, bool bGatherOnly)
 {
   int     q,i,j,ntot,npme;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
@@ -1903,7 +1902,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     
     where();
     gather_f_bsplines(pme,grid,q==0,pme->f_home,pme->q_home,
-                      pme->bFEP ? (q==0 ? 1.0-lambda[0] : lambda[0]) : 1.0);
+		      pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
     where();
     
     GMX_MPE_LOG(ev_gather_f_bsplines_finish);
@@ -1926,11 +1925,11 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     *energy = energy_AB[0];
     copy_mat(vir_AB[0],vir);
   } else {
-    *energy = (1.0-lambda[0])*energy_AB[0] + lambda[0]*energy_AB[1];
+    *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
     *dvdlambda += energy_AB[1] - energy_AB[0];
     for(i=0; i<DIM; i++)
       for(j=0; j<DIM; j++)
-	vir[i][j] = (1.0-lambda[0])*vir_AB[0][i][j] + lambda[0]*vir_AB[1][i][j];
+	vir[i][j] = (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
   }
   if (debug)
     fprintf(debug,"PME mesh energy: %g\n",*energy);

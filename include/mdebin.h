@@ -48,8 +48,8 @@
 
 typedef struct {
   t_ebin *ebin;
-  int    ie,ib,isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu,ivcos,ivisc,idH;
-  int    nE,nEg,nEc,nTC,nU,ndH;
+  int    ie,ib,isvir,ifvir,ipres,ivir,isurft,ipc,itemp,itc,iu,imu,ivcos,ivisc;
+  int    nE,nEg,nEc,nTC,nU;
   int    *igrp;
 } t_mdebin;
 
@@ -69,16 +69,14 @@ extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       tensor vir,
 		       tensor pres,
 		       t_groups *grps,
-		       rvec mu_tot,
-               real    *deltaH);
+		       rvec mu_tot);
      
 extern void print_ebin_header(FILE *log,int steps,real time,real lamb);
 
 extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
-                       FILE *log,int step,int nsteps,real time,
-                       int mode,bool bCompact,
-                       t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts,
-                       real *deltaH);
+		       FILE *log,int step,int nsteps,real time,
+		       int mode,bool bCompact,
+		       t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts);
 
 #endif	/* _mdebin_h */
 

@@ -231,7 +231,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
-	      real *lambda,real *deltaH,t_graph *graph,
+	      real lambda,t_graph *graph,
 	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 	      t_forcerec *fr,rvec mu_tot,
 	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn)
@@ -246,8 +246,6 @@ void do_force(FILE *fplog,t_commrec *cr,
   matrix boxs;
   real   e,d;
   float  pme_cycles;
-  rvec   xmin,xmax;
-  ivec   imin,imax;
   
   start  = mdatoms->start;
   homenr = mdatoms->homenr;
@@ -323,35 +321,8 @@ void do_force(FILE *fplog,t_commrec *cr,
       svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
-    fprintf(fplog,"Preparing to send coordinates to my PME node. step=%d\n",step);
-    fprintf(fplog,"cr->nodeid=%d pme_nodeid=%d nat_home=%d\n",cr->nodeid,cr->dd.pme_nodeid,cr->dd.nat_home);
-    for(i=0;i<3;i++)
-    {
-        imin[i]=imax[i]=-1;
-        xmax[i]=-1e10;
-        xmin[i]=1e10;
-    }
-    for(i=0;i<cr->dd.nat_home;i++)
-    {        
-        for(j=0;j<3;j++)
-        {
-            if(x[i][j]>xmax[j])
-            {
-                xmax[j]=x[i][j];
-                imax[j]=i;
-            }
-            if(x[i][j]<xmin[j])
-            {
-                xmin[j]=x[i][j];
-                imin[j]=i;
-            }
-        }
-    }
-    fprintf(fplog,"Sending %d atoms. xmin: %g %g %g  (%d %d %d)    xmax: %g %g %g (%d %d %d)\n",cr->dd.nat_home,
-            xmin[0],xmin[1],xmin[2],imin[0],imin[1],imin[2],xmax[0],xmax[1],xmax[2],imax[0],imax[1],imax[2]);
-
     gmx_pme_send_x_q(cr,bBS ? boxs : box,x,NULL,NULL,
-		     mdatoms->nChargePerturbed,lambda[0],
+		     mdatoms->nChargePerturbed,lambda,
 		     step >= inputrec->init_step+inputrec->nsteps);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
@@ -381,20 +352,10 @@ void do_force(FILE *fplog,t_commrec *cr,
     copy_rvec(mu_tot_AB[0],mu_tot);
   else
     for(j=0; j<DIM; j++)
-      mu_tot[j] = (1.0 - lambda[0])*mu_tot_AB[0][j] + lambda[0]*mu_tot_AB[1][j];
+      mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
 
   /* Reset energies */
   reset_energies(&(inputrec->opts),grps,fr,bNS,ener);    
-  
-  /* Reset deltaH */
-  if(inputrec->efep != efepNO)
-  {
-      for(i=0;i<inputrec->nlambda;i++)
-      {
-          deltaH[i] = 0.0;
-      }
-  }
-  
   if (bNS) {
     wallcycle_start(wcycle,ewcNS);
     
@@ -413,7 +374,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     dvdl_lr = 0; 
 
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,step,lambda,inputrec->nlambda,&dvdl_lr,deltaH,bFillGrid,bDoForces);
+       cr,nrnb,step,lambda,&dvdl_lr,bFillGrid,bDoForces);
 
     wallcycle_stop(wcycle,ewcNS);
   }
@@ -456,9 +417,9 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   /* Compute the forces */    
   force(fplog,step,fr,inputrec,&(top->idef),cr,nrnb,wcycle,grps,mdatoms,
-        top->atoms.grps[egcENER].nr,&(inputrec->opts),
-        x,f,ener,fcd,box,lambda,deltaH,graph,&(top->blocks[ebEXCLS]),
-        bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
+	top->atoms.grps[egcENER].nr,&(inputrec->opts),
+	x,f,ener,fcd,box,lambda,graph,&(top->blocks[ebEXCLS]),
+	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 	
   /* Take long range contribution to free energy into account */
@@ -992,14 +953,14 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 }
 
 void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
-             real *lambda,real *lam0,
-             t_nrnb *nrnb,t_topology *top,
-             gmx_stochd_t *sd,gmx_constr_t *constr,
-             int nfile,t_filenm fnm[],
-             int *fp_trn,int *fp_xtc,int *fp_ene,
-             FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
-             tensor force_vir,tensor shake_vir,rvec mu_tot,
-             bool *bNEMD,bool *bSimAnn,t_vcm **vcm)
+	     real *lambda,real *lam0,
+	     t_nrnb *nrnb,t_topology *top,
+	     gmx_stochd_t *sd,gmx_constr_t *constr,
+	     int nfile,t_filenm fnm[],
+	     int *fp_trn,int *fp_xtc,int *fp_ene,
+	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
+	     tensor force_vir,tensor shake_vir,rvec mu_tot,
+	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm)
 {
   int  i,j,n;
   real tmpt,mod;
@@ -1007,17 +968,13 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   /* Initial values */
   *t = *t0       = ir->init_t;
   if (ir->efep != efepNO) {
-    *lam0 = ir->init_lambda[0];
-    *lambda = *lam0 + ir->init_step*ir->delta_lambda[0];
-    for(i=1;i<ir->nlambda;i++)
-    {
-        lambda[i] = ir->init_lambda[i];
-    }
+    *lam0 = ir->init_lambda;
+    *lambda = *lam0 + ir->init_step*ir->delta_lambda;
   }
   else {
     *lambda = *lam0   = 0.0;
   } 
-  
+ 
   *bSimAnn=FALSE;
   for(i=0;i<ir->opts.ngtc;i++) {
     /* set bSimAnn if any group is being annealed */
