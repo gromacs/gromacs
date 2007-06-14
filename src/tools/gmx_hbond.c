@@ -1147,6 +1147,9 @@ static void do_hblife(char *fn,t_hbdata *hb,bool bMerge,bool bContact)
   integral *= dt;
   fclose(fp);
   printf("%s lifetime = %.2f ps\n", bContact?"Contact":"HB", integral);
+  printf("Note that the lifetime obtained in this manner is close to useless\n");
+  printf("Use the -ac option instead and check the Forward lifetime\n");
+  please_cite(stdout,"Spoel2006b");
   sfree(h);
   sfree(histo);
 }
