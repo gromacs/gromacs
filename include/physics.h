@@ -75,7 +75,8 @@
 #define BOLTZ            (RGAS/KILO)            /* (kJ/(mol K)) */
 #define FARADAY          (E_CHARGE*AVOGADRO)    /* (C/mol)      */
 #define ELECTRONVOLT     (E_CHARGE*AVOGADRO/KILO) /* (kJ/mol)   */     
-#define PLANCK           (6.6262e-34*AVOGADRO/(PICO*KILO)) /* kJ/mol ps */
+#define PLANCK1          (6.6262e-34)           /* J s */
+#define PLANCK           (6.6262e-34*AVOGADRO/(PICO*KILO)) /* (kJ/mol) ps */
 
 #define EPSILON0 	 (5.72765E-4)		/* (e^2 / Na (kJ nm))     
 						   == (e^2 mol/(kJ nm)) */
