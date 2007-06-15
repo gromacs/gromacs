@@ -265,10 +265,15 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
 
 #define OPTLEN 12
 #define TYPELEN 6
+#define LONGSTR 1024
 char *pargs_print_line(t_pargs *pa,bool bLeadingSpace)
 {
-  char buf[32],buf2[256],tmp[256];
+  char *buf,*buf2,*tmp;
 
+  snew(buf,LONGSTR+strlen(pa->desc));
+  snew(buf2,LONGSTR+strlen(pa->desc));
+  snew(tmp,LONGSTR+strlen(pa->desc));
+  
   if (pa->type == etBOOL)
     sprintf(buf,"-[no]%s",pa->option+1);
   else
@@ -277,18 +282,25 @@ char *pargs_print_line(t_pargs *pa,bool bLeadingSpace)
     sprintf(buf2,"%s%-12s\n%s%-12s %-6s %-6s  %-s\n",
 	    bLeadingSpace ? " " : "",buf,
 	    bLeadingSpace ? " " : "","",
-	    argtp[pa->type],pa_val(pa,tmp,255),check_tty(pa->desc));
+	    argtp[pa->type],pa_val(pa,tmp,LONGSTR-1),check_tty(pa->desc));
   } else if (strlen(buf)>OPTLEN) {
     /* so type can be 4 or 5 char's (max(...,4)), this fits in the %5s */
     sprintf(buf2,"%s%-14s%-5s %-6s  %-s\n",
 	    bLeadingSpace ? " " : "",buf,argtp[pa->type],
-	    pa_val(pa,tmp,255),check_tty(pa->desc));
+	    pa_val(pa,tmp,LONGSTR-1),check_tty(pa->desc));
   } else
     sprintf(buf2,"%s%-12s %-6s %-6s  %-s\n",
 	    bLeadingSpace ? " " : "",buf,argtp[pa->type],
-	    pa_val(pa,tmp,255),check_tty(pa->desc));
-	    
-  return wrap_lines(buf2,78,29,FALSE);
+	    pa_val(pa,tmp,LONGSTR-1),check_tty(pa->desc));
+  
+  sfree(buf);
+  sfree(tmp);
+    
+  tmp = wrap_lines(buf2,78,29,FALSE);
+  
+  sfree(buf2);
+  
+  return tmp;
 }
 
 void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace)
