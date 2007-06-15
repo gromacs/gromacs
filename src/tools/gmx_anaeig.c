@@ -60,6 +60,135 @@
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
+#include "physics.h"
+
+static void calc_entropy_qh(FILE *fp,int n,real eigval[],real temp,int nskip)
+{
+  int    i;
+  double hwkT,w,S=0;
+  
+  for(i=0; (i<n-nskip); i++) {
+    if (eigval[i] > 0) {
+      w = sqrt((BOLTZMANN*temp/AMU)/(NANO*NANO*eigval[i]));
+      hwkT = (PLANCK1*w)/(2*M_PI*BOLTZMANN*temp);
+      S += (hwkT/(exp(hwkT) - 1) - log(1-exp(-hwkT)));
+    }
+    else {
+      fprintf(stderr,"eigval[%d] = %g\n",i,eigval[i]);
+      w = 0;
+    }
+  }
+  fprintf(fp,"The Entropy due to the Quasi Harmonic approximation is %g J/mol K\n",
+	  S*RGAS);
+}
+
+#define TINY 1e-20
+void ludecomp(double **a,int n,int *indx,double *d)
+{
+  int   i,imax,j,k;
+  double big,dum,sum,temp;
+  double *vv;
+  
+  snew(vv,n+1);
+  *d=1.0;
+  for (i=1; (i<=n); i++) {
+    big=0.0;
+    for (j=1; (j<=n); j++)
+      if ((temp=fabs(a[i][j])) > big) 
+	big=temp;
+    if (big == 0.0) 
+      gmx_fatal(FARGS,"Singular matrix in routine ludcmp");
+    vv[i]=1.0/big;
+  }
+  for (j=1; (j<=n); j++) {
+    for (i=1; (i<j); i++) {
+      sum=a[i][j];
+      for (k=1; (k<i); k++) 
+	sum -= a[i][k]*a[k][j];
+      a[i][j]=sum;
+    }
+    big=0.0;
+    for (i=j; (i<=n);i++) {
+      sum=a[i][j];
+      for (k=1; (k<j);k++)
+	sum -= a[i][k]*a[k][j];
+      a[i][j]=sum;
+      if ( (dum=vv[i]*fabs(sum)) >= big) {
+	big=dum;
+	imax=i;
+      }
+    }
+    if (j != imax) {
+      for (k=1; (k<=n); k++) {
+	dum=a[imax][k];
+	a[imax][k]=a[j][k];
+	a[j][k]=dum;
+      }
+      *d = -(*d);
+      vv[imax]=vv[j];
+    }
+    indx[j]=imax;
+    if (a[j][j] == 0.0) 
+      a[j][j]=TINY;
+    if (j != n) {
+      dum=1.0/(a[j][j]);
+      for (i=j+1; (i<=n); i++) 
+	a[i][j] *= dum;
+    }
+  }
+  sfree(vv);
+}
+#undef TINY
+
+double ln_determinant(double **a,int n,int *indx,double *d)
+{
+  double S,dd;
+  int i;
+  
+  ludecomp(a,n,indx,d);
+
+  dd = 1;
+  for(i=1; (i<=n); i++)
+    if (a[i][i] < 0)
+      dd = -dd;
+      
+  if (*d*dd < 0)
+    fprintf(stderr,"Warning: negative determinant for Schlitter matrix, d = %g, dd = %g\n",*d,dd);
+    
+  S = 0;
+  for(i=1; (i<=n); i++)
+    S += log(fabs(a[i][i]));
+  return S;
+}
+
+static void calc_entropy_schlitter(FILE *fp,int n,int nvec,
+				   rvec **eigvec,real temp)
+{
+  double **ddd,deter;
+  int    *indx;
+  int    i,j,k;
+  char   buf[256];
+  double kt,kteh,S;
+
+  kt   = BOLTZ*temp;
+  kteh = kt*exp(2.0)*sqr(2*M_PI/PLANCK);
+  /* fprintf(stderr,"Planck = %g, n = %d, nvec = %d kteh = %g. kt = %g\n",
+     PLANCK,n,nvec,kteh,kt);*/
+  snew(ddd,1+nvec);
+  snew(indx,1+nvec);
+  for(i=1; (i<=nvec); i++) {
+    snew(ddd[i],1+nvec);
+    for(j=1; (j<=nvec); j++) {
+      ddd[i][j] = kteh*eigvec[i-1][(j-1)/DIM][(j-1)%DIM];
+      if (i == j)
+	ddd[i][j] += 1.0;
+    }
+  }
+  
+  S = 0.5*RGAS*ln_determinant(ddd,nvec,indx,&deter);
+  
+  fprintf(fp,"The Entropy due to the Schlitter formula is %g J/mol K\n",S);
+}
 
 char *proj_unit;
 
@@ -735,11 +864,14 @@ int gmx_anaeig(int argc,char *argv[])
     "of a matrix. The numbers are proportional to the overlap of the square",
     "root of the fluctuations. The normalized overlap is the most useful",
     "number, it is 1 for identical matrices and 0 when the sampled",
-    "subspaces are orthogonal."
+    "subspaces are orthogonal.[PAR]",
+    "When the [TT]-entropy[tt] flag is given an entropy estimate will be",
+    "computed based on the Quasiharmonic approach and based on",
+    "Schlitter's formula."
   };
-  static int  first=1,last=8,skip=1,nextr=2;
-  static real max=0.0;
-  static bool bSplit=FALSE;
+  static int  first=1,last=8,skip=1,nextr=2,nskip=6;
+  static real max=0.0,temp=298.15;
+  static bool bSplit=FALSE,bEntropy=FALSE;
   t_pargs pa[] = {
     { "-first", FALSE, etINT, {&first},     
       "First eigenvector for analysis (-1 is select)" },
@@ -752,8 +884,14 @@ int gmx_anaeig(int argc,char *argv[])
       "max=0 gives the extremes" },
     { "-nframes",  FALSE, etINT, {&nextr}, 
       "Number of frames for the extremes output" },
-    { "-split", FALSE, etBOOL, {&bSplit},
-      "Split eigenvector projections where time is zero" }
+    { "-split",   FALSE, etBOOL, {&bSplit},
+      "Split eigenvector projections where time is zero" },
+    { "-entropy", FALSE, etBOOL, {&bEntropy},
+      "Compute entropy according to the Quasiharmonic formula or Schlitter's method." },
+    { "-temp",    FALSE, etREAL, {&temp},
+      "Temperature for entropy calculations" },
+    { "-nevskip", FALSE, etINT, {&nskip},
+      "Number of eigenvalues to skip when computing the entropy due to the quasi harmonic approximation. When you do a rotational and/or translational fit prior to the covariance analysis, you get 3 or 6 eigenvalues that are very close to zero, and which should not be taken into account when computing the entropy." }
   };
 #define NPA asize(pa)
   
@@ -772,7 +910,7 @@ int gmx_anaeig(int argc,char *argv[])
   int        i,j,d;
   int        nout,*iout,noutvec,*outvec,nfit;
   atom_id    *index,*ifit;
-  char       *Vec2File,*topfile;
+  char       *VecFile,*Vec2File,*topfile;
   char       *EigFile,*Eig2File;
   char       *CompFile,*RmsfFile,*ProjOnVecFile;
   char       *TwoDPlotFile,*ThreeDPlotFile;
@@ -810,6 +948,7 @@ int gmx_anaeig(int argc,char *argv[])
 
   indexfile=ftp2fn_null(efNDX,NFILE,fnm);
 
+  VecFile         = opt2fn("-v",NFILE,fnm);
   Vec2File        = opt2fn_null("-v2",NFILE,fnm);
   topfile         = ftp2fn(efTPS,NFILE,fnm); 
   EigFile         = opt2fn_null("-eig",NFILE,fnm);
@@ -840,43 +979,47 @@ int gmx_anaeig(int argc,char *argv[])
     FilterFile  || (bIndex && indexfile);
   bCompare = Vec2File || Eig2File;
   bPDB3D = fn2ftp(ThreeDPlotFile)==efPDB;
-
-  read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit1,
-                    &xref1,&bDMR1,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1,&eigval1);
-  neig1=natoms;
   
-  if (bVec2)
-  {
-    read_eigenvectors(Vec2File,&neig2,&bFit2,
-		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2,&eigval2);
-
-      if (neig2!=natoms)
-          gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
-  }
+  read_eigenvectors(VecFile,&natoms,&bFit1,
+		    &xref1,&bDMR1,&xav1,&bDMA1,
+		    &nvec1,&eignr1,&eigvec1,&eigval1);
+  neig1 = natoms;
   
   /* Overwrite eigenvalues from separate files if the user provides them */
-  if(EigFile != NULL)
-  {
-      neig1 = read_xvg(EigFile,&xvgdata,&i);
-      srenew(eigval1,neig1);
-      for(j=0;j<neig1;j++)
-          eigval1[j]=xvgdata[1][j];
-      for(j=0;j<i;j++)
-          sfree(xvgdata[j]);
-      sfree(xvgdata);
-      fprintf(stderr,"Read %d eigenvalues from %s\n",neig1,EigFile);
+  if (EigFile != NULL) {
+    neig1 = read_xvg(EigFile,&xvgdata,&i);
+    srenew(eigval1,neig1);
+    for(j=0;j<neig1;j++)
+      eigval1[j]=xvgdata[1][j];
+    for(j=0;j<i;j++)
+      sfree(xvgdata[j]);
+    sfree(xvgdata);
+    fprintf(stderr,"Read %d eigenvalues from %s\n",neig1,EigFile);
+  }
+    
+  if (bEntropy) {
+    calc_entropy_qh(stdout,neig1,eigval1,temp,nskip);
+    if (VecFile)
+      calc_entropy_schlitter(stdout,neig1,nvec1,eigvec1,temp);
   }
   
-  if(Eig2File != NULL)
-  {
-      neig2 = read_xvg(Eig2File,&xvgdata,&i);
-      srenew(eigval2,neig2);
-      for(j=0;j<neig2;j++)
-          eigval2[j]=xvgdata[1][j];
-      for(j=0;j<i;j++)
-          sfree(xvgdata[j]);
-      sfree(xvgdata);
-      fprintf(stderr,"Read %d eigenvalues from %s\n",neig2,Eig2File);      
+  if (bVec2) {
+    read_eigenvectors(Vec2File,&neig2,&bFit2,
+		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2,&eigval2);
+    
+    if (neig2!=natoms)
+      gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
+  }
+  
+  if(Eig2File != NULL) {
+    neig2 = read_xvg(Eig2File,&xvgdata,&i);
+    srenew(eigval2,neig2);
+    for(j=0;j<neig2;j++)
+      eigval2[j]=xvgdata[1][j];
+    for(j=0;j<i;j++)
+      sfree(xvgdata[j]);
+    sfree(xvgdata);
+    fprintf(stderr,"Read %d eigenvalues from %s\n",neig2,Eig2File);      
   }
   
   
@@ -884,7 +1027,7 @@ int gmx_anaeig(int argc,char *argv[])
     bM=FALSE;
   if ((xref1==NULL) && (bM || bTraj))
     bTPS=TRUE;
-    
+  
   xtop=NULL;
   nfit=0;
   ifit=NULL;
@@ -897,195 +1040,180 @@ int gmx_anaeig(int argc,char *argv[])
     atoms=&top.atoms;
     rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
     /* Fitting is only needed when we need to read a trajectory */ 
-    if (bTraj) 
-    {
-      if ((xref1==NULL) || (bM && bDMR1)) 
-      {
-          if (bFit1)
-          {
-              printf("\nNote: the structure in %s should be the same\n"
-                     "      as the one used for the fit in g_covar\n",topfile);
-              printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
-              get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
-              snew(w_rls,atoms->nr);
-              for(i=0; (i<nfit); i++)
-              {
-                  if (bM && bDMR1)
-                      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
-                  else
-                      w_rls[ifit[i]]=1.0;
-              }
-          }
-          else 
-          {
-              /* make the fit index in xref instead of xtop */
-              nfit=natoms;
-              snew(ifit,natoms);
-              snew(w_rls,nfit);
-              for(i=0; (i<nfit); i++) 
-              {
-                  ifit[i]=i;
-                  w_rls[i]=atoms->atom[ifit[i]].m;
-              }
-          }
+    if (bTraj) {
+      if ((xref1==NULL) || (bM && bDMR1)) {
+	if (bFit1) {
+	  printf("\nNote: the structure in %s should be the same\n"
+		 "      as the one used for the fit in g_covar\n",topfile);
+	  printf("\nSelect the index group that was used for the least squares fit in g_covar\n");
+	  get_index(atoms,indexfile,1,&nfit,&ifit,&grpname);
+	  snew(w_rls,atoms->nr);
+	  for(i=0; (i<nfit); i++) {
+	    if (bM && bDMR1)
+	      w_rls[ifit[i]]=atoms->atom[ifit[i]].m;
+	    else
+	      w_rls[ifit[i]]=1.0;
+	  }
+	}
+	else {
+	    /* make the fit index in xref instead of xtop */
+	  nfit=natoms;
+	  snew(ifit,natoms);
+	  snew(w_rls,nfit);
+	  for(i=0; (i<nfit); i++) {
+	    ifit[i]=i;
+	    w_rls[i]=atoms->atom[ifit[i]].m;
+	  }
+	}
       }
-      else 
-      {
-          /* make the fit non mass weighted on xref */
-          nfit=natoms;
-          snew(ifit,nfit);
-          snew(w_rls,nfit);
-          for(i=0; i<nfit; i++) 
-          {
-              ifit[i]=i;
-              w_rls[i]=1.0;
-          }
+      else {
+	/* make the fit non mass weighted on xref */
+	nfit=natoms;
+	snew(ifit,nfit);
+	snew(w_rls,nfit);
+	for(i=0; i<nfit; i++) {
+	  ifit[i]=i;
+	  w_rls[i]=1.0;
+	}
       }
     }
   }
-
-  if (bIndex) 
-  {
-      printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
-      get_index(atoms,indexfile,1,&i,&index,&grpname);
-      if (i!=natoms)
-          gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",i,natoms);
+  
+  if (bIndex) {
+    printf("\nSelect an index group of %d elements that corresponds to the eigenvectors\n",natoms);
+    get_index(atoms,indexfile,1,&i,&index,&grpname);
+    if (i!=natoms)
+      gmx_fatal(FARGS,"you selected a group with %d elements instead of %d",i,natoms);
       printf("\n");
   }
   
   snew(sqrtm,natoms);
-  if (bM && bDMA1) 
-  {
-      proj_unit="u\\S1/2\\Nnm";
-      for(i=0; (i<natoms); i++)
-          sqrtm[i]=sqrt(atoms->atom[index[i]].m);
+  if (bM && bDMA1) {
+    proj_unit="u\\S1/2\\Nnm";
+    for(i=0; (i<natoms); i++)
+      sqrtm[i]=sqrt(atoms->atom[index[i]].m);
   }
-  else 
-  {
-      proj_unit="nm";
-      for(i=0; (i<natoms); i++)
-          sqrtm[i]=1.0;
+  else {
+    proj_unit="nm";
+    for(i=0; (i<natoms); i++)
+      sqrtm[i]=1.0;
   }
   
-  if (bVec2) 
-  {
-      t=0;
-      totmass=0;
-      for(i=0; (i<natoms); i++)
-          for(d=0;(d<DIM);d++) 
-          {
-              t+=sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
-              totmass+=sqr(sqrtm[i]);
-          }
-              fprintf(stdout,"RMSD (without fit) between the two average structures:"
-                      " %.3f (nm)\n\n",sqrt(t/totmass));
+  if (bVec2) {
+    t=0;
+    totmass=0;
+    for(i=0; (i<natoms); i++)
+      for(d=0;(d<DIM);d++) {
+	t+=sqr((xav1[i][d]-xav2[i][d])*sqrtm[i]);
+	totmass+=sqr(sqrtm[i]);
+      }
+    fprintf(stdout,"RMSD (without fit) between the two average structures:"
+	    " %.3f (nm)\n\n",sqrt(t/totmass));
   }
   
   if (last==-1)
-      last=natoms*DIM;
-  if (first>-1) 
-  {
-      if (bFirstToLast) 
-      {
-          /* make an index from first to last */
-          nout=last-first+1;
-          snew(iout,nout);
-          for(i=0; i<nout; i++)
-              iout[i]=first-1+i;
-      } 
-      else if (ThreeDPlotFile) 
-      {
-          /* make an index of first+(0,1,2) and last */
-          nout = bPDB3D ? 4 : 3;
-          nout = min(last-first+1, nout);
-          snew(iout,nout);
-          iout[0]=first-1;
-          iout[1]=first;
-          if (nout>3)
-              iout[2]=first+1;
-          iout[nout-1]=last-1;
-      }
-      else 
-      {
-          /* make an index of first and last */
-          nout=2;
-          snew(iout,nout);
-          iout[0]=first-1;
-          iout[1]=last-1;
-      }
+    last=natoms*DIM;
+  if (first>-1) {
+    if (bFirstToLast) {
+      /* make an index from first to last */
+      nout=last-first+1;
+      snew(iout,nout);
+      for(i=0; i<nout; i++)
+	iout[i]=first-1+i;
+    } 
+    else if (ThreeDPlotFile) {
+      /* make an index of first+(0,1,2) and last */
+      nout = bPDB3D ? 4 : 3;
+      nout = min(last-first+1, nout);
+      snew(iout,nout);
+      iout[0]=first-1;
+      iout[1]=first;
+      if (nout>3)
+	iout[2]=first+1;
+      iout[nout-1]=last-1;
+    }
+    else {
+      /* make an index of first and last */
+      nout=2;
+      snew(iout,nout);
+      iout[0]=first-1;
+      iout[1]=last-1;
+    }
   }
-  else
-  {
-      printf("Select eigenvectors for output, end your selection with 0\n");
-      nout=-1;
-      iout=NULL;
-
-      do 
-      {
-          nout++;
-          srenew(iout,nout+1);
-          scanf("%d",&iout[nout]);
-          iout[nout]--;
-      }
-      while (iout[nout]>=0);
-      
-      printf("\n");
+  else {
+    printf("Select eigenvectors for output, end your selection with 0\n");
+    nout=-1;
+    iout=NULL;
+    
+    do {
+      nout++;
+      srenew(iout,nout+1);
+      scanf("%d",&iout[nout]);
+      iout[nout]--;
+    }
+    while (iout[nout]>=0);
+    
+    printf("\n");
   }
   /* make an index of the eigenvectors which are present */
   snew(outvec,nout);
   noutvec=0;
   for(i=0; i<nout; i++) 
-  {
+    {
       j=0;
       while ((j<nvec1) && (eignr1[j]!=iout[i]))
-          j++;
+	j++;
       if ((j<nvec1) && (eignr1[j]==iout[i])) 
-      {
-          outvec[noutvec]=j;
-          noutvec++;
-      }
-  }
+	{
+	  outvec[noutvec]=j;
+	  noutvec++;
+	}
+    }
   fprintf(stderr,"%d eigenvectors selected for output",noutvec);
   if (noutvec <= 100) 
-  {
+    {
       fprintf(stderr,":");
       for(j=0; j<noutvec; j++)
-          fprintf(stderr," %d",eignr1[outvec[j]]+1);
-  }
+	fprintf(stderr," %d",eignr1[outvec[j]]+1);
+    }
   fprintf(stderr,"\n");
-  
+    
   if (CompFile)
-      components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec);
+    components(CompFile,natoms,eignr1,eigvec1,noutvec,outvec);
   
   if (RmsfFile)
-      rmsf(RmsfFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec,eigval1,neig1);
-  
+    rmsf(RmsfFile,natoms,sqrtm,eignr1,eigvec1,noutvec,outvec,eigval1,neig1);
+    
   if (bProj)
-      project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
-              bTop ? &top : NULL,topbox,xtop,
-              ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
-              ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
-              bFit1,xref1,nfit,ifit,w_rls,
-              sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit);
-  
+    project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
+	    bTop ? &top : NULL,topbox,xtop,
+	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
+	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
+	    bFit1,xref1,nfit,ifit,w_rls,
+	    sqrtm,xav1,eignr1,eigvec1,noutvec,outvec,bSplit);
+    
   if (OverlapFile)
-      overlap(OverlapFile,natoms,
-              eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
-  
+    overlap(OverlapFile,natoms,
+	    eigvec1,nvec2,eignr2,eigvec2,noutvec,outvec);
+    
   if (InpMatFile)
-      inprod_matrix(InpMatFile,natoms,
-                    nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,
-                    bFirstLastSet,noutvec,outvec);
-  
+    inprod_matrix(InpMatFile,natoms,
+		  nvec1,eignr1,eigvec1,nvec2,eignr2,eigvec2,
+		  bFirstLastSet,noutvec,outvec);
+    
   if (bCompare)
-      compare(natoms,nvec1,eigvec1,nvec2,eigvec2,eigval1,neig1,eigval2,neig2);
+    compare(natoms,nvec1,eigvec1,nvec2,eigvec2,eigval1,neig1,eigval2,neig2);
   
-  if (!CompFile && !bProj && !OverlapFile && !InpMatFile && !bCompare)
-      fprintf(stderr,"\nIf you want some output,"
-              " set one (or two or ...) of the output file options\n");
+  
+  if (!CompFile && !bProj && !OverlapFile && !InpMatFile && !bCompare && !bEntropy)
+    fprintf(stderr,"\nIf you want some output,"
+	    " set one (or two or ...) of the output file options\n");
+  
   
   view_all(NFILE, fnm);
   
+  thanx(stdout);
+  
   return 0;
 }
-  
+
