@@ -386,7 +386,7 @@ int main(int argc,char *argv[])
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv,PCA_KEEP_ARGS | PCA_BE_NICE ,
 		      NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
-    print_pargs(stderr,asize(pa),pa);
+    print_pargs(stderr,asize(pa),pa,FALSE);
   }	      
   open_log(ftp2fn(efLOG,NFILE,fnm),cr);
   

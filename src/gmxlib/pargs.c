@@ -236,14 +236,14 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
   
   switch(pa->type) {
   case etINT:
-    sprintf(buf,"%d",*(pa->u.i));
+    sprintf(buf,"%-d",*(pa->u.i));
     break;
   case etTIME:
   case etREAL:
-    sprintf(buf,"%6g",*(pa->u.r));
+    sprintf(buf,"%-6g",*(pa->u.r));
     break;
   case etBOOL:
-    sprintf(buf,"%6s",*(pa->u.b) ? "yes" : "no");
+    sprintf(buf,"%-6s",*(pa->u.b) ? "yes" : "no");
     break;
   case etSTR:
     if (*(pa->u.c)) {
@@ -263,7 +263,35 @@ char *pa_val(t_pargs *pa, char buf[], int sz)
   return buf;
 }
 
-void print_pargs(FILE *fp, int npargs,t_pargs pa[])
+#define OPTLEN 12
+#define TYPELEN 6
+char *pargs_print_line(t_pargs *pa,bool bLeadingSpace)
+{
+  char buf[32],buf2[256],tmp[256];
+
+  if (pa->type == etBOOL)
+    sprintf(buf,"-[no]%s",pa->option+1);
+  else
+    strcpy(buf,pa->option);
+  if (strlen(buf)>((OPTLEN+TYPELEN)-max(strlen(argtp[pa->type]),4))) {
+    sprintf(buf2,"%s%-12s\n%s%-12s %-6s %-6s  %-s\n",
+	    bLeadingSpace ? " " : "",buf,
+	    bLeadingSpace ? " " : "","",
+	    argtp[pa->type],pa_val(pa,tmp,255),check_tty(pa->desc));
+  } else if (strlen(buf)>OPTLEN) {
+    /* so type can be 4 or 5 char's (max(...,4)), this fits in the %5s */
+    sprintf(buf2,"%s%-14s%-5s %-6s  %-s\n",
+	    bLeadingSpace ? " " : "",buf,argtp[pa->type],
+	    pa_val(pa,tmp,255),check_tty(pa->desc));
+  } else
+    sprintf(buf2,"%s%-12s %-6s %-6s  %-s\n",
+	    bLeadingSpace ? " " : "",buf,argtp[pa->type],
+	    pa_val(pa,tmp,255),check_tty(pa->desc));
+	    
+  return wrap_lines(buf2,78,29,FALSE);
+}
+
+void print_pargs(FILE *fp, int npargs,t_pargs pa[],bool bLeadingSpace)
 {
   bool bShowHidden;
   char buf[32],buf2[256],tmp[256];
@@ -279,29 +307,14 @@ void print_pargs(FILE *fp, int npargs,t_pargs pa[])
       bShowHidden = TRUE;
   
   if (npargs > 0) {
-#define OPTLEN 12
-#define TYPELEN 6
-    fprintf(fp,"%12s %6s %6s  %s\n","Option","Type","Value","Description");
-    fprintf(fp,"------------------------------------------------------\n");
+    fprintf(fp,"%s%-12s %-6s %-6s  %-s\n",
+	    bLeadingSpace ? " " : "","Option","Type","Value","Description");
+    fprintf(fp,"%s------------------------------------------------------\n",
+	    bLeadingSpace ? " " : "");
     for(i=0; (i<npargs); i++) {
       if (bShowHidden || !is_hidden(&pa[i])) {
-	if (pa[i].type == etBOOL)
-	  sprintf(buf,"-[no]%s",pa[i].option+1);
-	else
-	  strcpy(buf,pa[i].option);
-	if (strlen(buf)>((OPTLEN+TYPELEN)-max(strlen(argtp[pa[i].type]),4))) {
-	  fprintf(fp,"%12s\n",buf);
-	  sprintf(buf2,"%12s %6s %6s  %s\n",
-		"",argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),check_tty(pa[i].desc));
-	} else if (strlen(buf)>OPTLEN) {
-	  /* so type can be 4 or 5 char's (max(...,4)), this fits in the %5s */
-	  sprintf(buf2,"%-14s%5s %6s  %s\n",
-		  buf,argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),check_tty(pa[i].desc));
-	} else
-	  sprintf(buf2,"%12s %6s %6s  %s\n",
-		buf,argtp[pa[i].type],pa_val(&(pa[i]),tmp,255),check_tty(pa[i].desc));
-	wdesc=wrap_lines(buf2,78,28,FALSE);
-	fprintf(fp,wdesc);
+	wdesc = pargs_print_line(&pa[i],bLeadingSpace);
+	fprintf(fp,"%s",wdesc);
 	sfree(wdesc);
       }
     }
