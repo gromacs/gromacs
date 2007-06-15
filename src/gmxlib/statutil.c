@@ -785,8 +785,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   }
   
   /* clear memory */
-  for(i=0; i<npall; i++)
-    sfree(all_pa[i].desc);
   sfree(all_pa);
   
   if (!FF(PCA_NOEXIT_ON_ARGS)) {
