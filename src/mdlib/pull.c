@@ -477,14 +477,13 @@ static void do_umbrella(t_commrec *cr,
     case epullgCYL:
       ref = pgrp->init + pgrp->rate*step*dt;
       /* Pull along vec */
-      drs = dnorm(dr);
       inpr = 0;
       for(m=0; m<DIM; m++)
 	inpr += pgrp->vec[m]*dr[m];
       dss = inpr - ref;
       pgrp->f_scal = -pgrp->k*dss;
       for(m=0; m<DIM; m++)
-	pgrp->f[m] = pgrp->f_scal*dr[m]/drs;
+	pgrp->f[m] = pgrp->f_scal*pgrp->vec[m];
       break;
     case epullgPOS:
       /* Restrain to the location vec */
