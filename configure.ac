@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 3.3.99_development_20070612, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 3.3.99_development_20070618, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -43,7 +43,7 @@ AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
 
 ### Fortran or not
 AC_ARG_ENABLE(fortran,
- [  --enable-fortran              use fortran (default on sgi,ibm,sun,axp)],, 
+ [  --Enable-fortran              use fortran (default on sgi,ibm,sun,axp)],, 
 [case "${host_cpu}-${host_os}" in
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
@@ -279,7 +279,7 @@ if test "$enable_mpi" = "yes"; then
   CC=$MPICC
   AC_MSG_CHECKING([whether the MPI cc command works]) # be paranoid
   AC_TRY_LINK([#include <mpi.h>],[int argc; char **argv; MPI_Init(&argc,&argv);],
-    AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
+AC_MSG_RESULT([yes]),AC_MSG_ERROR([Cannot compile and link MPI code with $CC]))
   AC_DEFINE(GMX_MPI,,[Make a parallel version of GROMACS using MPI])
 
 # on the cray xt3 we have to tell autoconf that we 
@@ -293,7 +293,7 @@ if test "$enable_mpi" = "yes"; then
 #error not catamount
 #endif
 ],,[
-  AC_MSG_RESULT(yes)
+  AC_MSG_RESULT([yes])
   cross_compiling=yes 
   AC_DEFINE(GMX_CRAY_XT3,[],[Enable special hacks for Cray XT3])
   AC_DEFINE(GMX_NO_SYSTEM,[],[Ignore calls to system(3)])
@@ -301,7 +301,7 @@ if test "$enable_mpi" = "yes"; then
   AC_DEFINE(GMX_BROKEN_CALLOC,[],[Don't use calloc(3)])
   extra_LDFLAGS="$extra_LDFLAGS -lgmalloc -lacml"
 ],[
-  AC_MSG_RESULT(no)
+  AC_MSG_RESULT([no])
 ])
 # end of "$enable_mpi" = "yes"
 fi
@@ -545,25 +545,34 @@ fi
 
 # GNU Scientific Library or not
 AC_ARG_WITH(gsl,
- [  --without-gsl                 do not link to the GNU scientific library, prevents certain analysis tools from being built],,without_gsl=no)
+ [  --without-gsl                 do not link to the GNU scientific library, prevents certain analysis tools from being built],,with_gsl=yes)
 
 ######
-if test "$without_gsl" = "no"; then
-  AC_CHECK_LIB(gslcblas,main)
-  AC_CHECK_LIB(gsl,main)
+if test "$with_gsl" = "yes"; then
+  AC_CHECK_HEADERS([gsl/gsl_version.h],[
+# header found, check for libraries 
+  AC_CHECK_LIB(gslcblas,main,[
+# gslcblas library found, check main lib
+  AC_CHECK_LIB(gsl,main)])])
+#
 fi
 
 AC_ARG_WITH(xml,
- [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,without_xml2=no)
+ [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
  
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
-if test "$without_xml2" = "no"; then
-  AC_CHECK_LIB(xml2,main)
-  INCLUDES="$INCLUDES -I/usr/include/libxml2"
- fi
-
+if test "$with_xml" = "yes"; then
+   ac_save_CPPFLAGS="$CPPFLAGS"
+   CPPFLAGS="$ac_save_CPPFLAGS -I/usr/include/libxml2"
+   AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
+   if test "$ac_cv_lib_gsl_main" = "yes"; then
+     INCLUDES="$INCLUDES -I/usr/include/libxml2"
+   fi
+# restore CPPFLAGS
+   CPPFLAGS="$ac_save_CPPFLAGS"
+fi
 
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
