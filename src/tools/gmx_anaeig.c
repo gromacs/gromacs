@@ -844,15 +844,16 @@ int gmx_anaeig(int argc,char *argv[])
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit1,
                     &xref1,&bDMR1,&xav1,&bDMA1,&nvec1,&eignr1,&eigvec1,&eigval1);
-  neig1=natoms;
+  neig1=DIM*natoms;
   
   if (bVec2)
   {
     read_eigenvectors(Vec2File,&neig2,&bFit2,
 		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2,&eigval2);
-
-      if (neig2!=natoms)
-          gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
+    
+    neig2 = DIM*neig2;
+    if (neig2 != neig1)
+      gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
   }
   
   /* Overwrite eigenvalues from separate files if the user provides them */
