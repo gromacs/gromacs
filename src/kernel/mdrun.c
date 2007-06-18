@@ -265,10 +265,9 @@ int main(int argc,char *argv[])
   
   if (repl_ex_nst != 0 && nmultisim < 2)
     gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
-  if (opt2bSet("-tpi",NFILE,fnm))
-    nmultisim = cr->nnodes;
+
   if (nmultisim > 1 && PAR(cr))
-    init_multisystem(cr,nmultisim,NFILE,fnm,!opt2bSet("-tpi",NFILE,fnm));
+    init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);

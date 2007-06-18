@@ -140,8 +140,10 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   if (cr->nodeid != 0)
     mv_data(cr,cr->left,cr->right,inputrec,top,state);
 
-  /* Make sure the random seeds are different on each node */
-  inputrec->ld_seed += cr->nodeid;
+  if (!EI_TPI(inputrec->eI)) {
+    /* Make sure the random seeds are different on each node */
+    inputrec->ld_seed += cr->nodeid;
+  }
   
   /* Printing */
   if (list) {

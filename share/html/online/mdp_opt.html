@@ -167,7 +167,7 @@ is larger than one, <b>nstlist</b> insertions are performed
 in a sphere with radius <b><A HREF="#tpi">rtpi</A></b>
 around a the same random location using the same neighborlist
 (and the same long-range energy when <b>rvdw</b> or <b>rcoulomb</b>
-&gt <b>rlist</b>).
+&gt <b>rlist</b>, which is only allowed for single-atom molecules).
 Since neighborlist construction is expensive, one can perform several
 extra insertions with the same list almost for free.
 The random seed is set with <b><A HREF="#ld">ld_seed</A></b>.
@@ -177,6 +177,7 @@ of the simulation of the original trajectory.
 Dispersion correction is implemented correctly for tpi.
 All relevant quantities are written using the <tt>-tpi</tt> option
 of <tt>mdrun</tt>. No trajectory or energy file is written.
+Parallel tpi gives identical results to single node tpi.
 </dd>
 <dt><b>tpic</b></dt>
 <dd> Test particle insertion into a predefined cavity location.
@@ -185,6 +186,7 @@ extra is read from the trajectory, which is used as the insertion location.
 Also <b><A HREF="#tpi">rtpi</A></b> sets the radius for the sphere
 around this location. Neighbor searching is done only once per frame,
 <b>nstlist</b> is not used.
+Parallel tpic gives identical results to single node tpic.
 </dl>
 
 <dt><h4>tinit: (0) [ps]</h4></dt>

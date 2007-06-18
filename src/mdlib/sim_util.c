@@ -258,6 +258,8 @@ void do_force(FILE *fplog,t_commrec *cr,
       cg1 = cr->dd->ncg_tot;
     else
       cg1 = top->blocks[ebCGS].nr;
+    if (fr->n_tpi > 0)
+      cg1--;
   }
 
   bFillGrid = (bNS && bStateChanged);

@@ -98,6 +98,7 @@ enum {
 
 #define EI_DYNAMICS(e) ((e) == eiMD || (e) == eiSD || (e) == eiBD)
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
+#define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 
 #define EI_STATE_VELOCITY(e) ((e) == eiMD || (e) == eiSD)
 

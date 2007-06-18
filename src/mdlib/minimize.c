@@ -2089,24 +2089,46 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   double embU,sum_embU,*sum_UgembU,V,V_all,VembU_all;
   int    status;
   t_trxframe rerun_fr;
-  bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS;
+  bool   bDispCorr,bCharge,bRFExcl,bNotLastFrame,bStateChanged,bNS,bOurStep;
   time_t start_t; 
   tensor force_vir,shake_vir,vir,pres;
   int    cg_tp,a_tp0,a_tp1,ngid,gid_tp,nener,e;
   rvec   *x_mol;
   rvec   mu_tot,x_init,dx,x_tp;
-  int    frame,nsteps,step;
+  int    nnodes,frame,nsteps,step;
   int    i,start,end;
   static gmx_rng_t tpi_rand;
   FILE   *fp_tpi=NULL;
-  char   *dump_pdb,**leg,str[STRLEN],str2[STRLEN];
-  double dump_ener;
+  char   *ptr,*dump_pdb,**leg,str[STRLEN],str2[STRLEN];
+  double dbl,dump_ener;
   bool   bCavity;
-  
-  if (PAR(cr))
-    gmx_fatal(FARGS,"Test particle insertion does not work in parallel");
+  int    nat_cavity=0,d;
+  real   *mass_cavity=NULL,mass_tot;
+
+  nnodes = cr->nnodes;
 
   bCavity = (inputrec->eI == eiTPIC);
+  if (bCavity) {
+    ptr = getenv("GMX_TPIC_MASSES");
+    if (ptr == NULL) {
+      nat_cavity = 1;
+    } else {
+      /* Read (multiple) masses from env var GMX_TPIC_MASSES,
+       * The center of mass of the last atoms is then used for TPIC.
+       */
+      nat_cavity = 0;
+      while (sscanf(ptr,"%lf%n",&dbl,&i) > 0) {
+	srenew(mass_cavity,nat_cavity+1);
+	mass_cavity[nat_cavity] = dbl;
+	fprintf(fplog,"mass[%d] = %f\n",
+		nat_cavity+1,mass_cavity[nat_cavity]);
+	nat_cavity++;
+	ptr += i;
+      }
+      if (nat_cavity == 0)
+	gmx_fatal(FARGS,"Found %d masses in GMX_TPIC_MASSES",nat_cavity);
+    }
+  }
 
   init_em(fplog,TPI,inputrec,&lambda,nrnb,mu_tot,
 	  state->box,fr,mdatoms,top,cr,nfile,fnm,NULL,NULL);
@@ -2151,6 +2173,10 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   cg_tp = top->blocks[ebCGS].nr - 1;
   a_tp0 = top->blocks[ebCGS].index[cg_tp];
   a_tp1 = top->blocks[ebCGS].index[cg_tp+1];
+  if (a_tp1 - a_tp0 > 1 &&
+      (inputrec->rlist < inputrec->rcoulomb ||
+       inputrec->rlist < inputrec->rvdw))
+    gmx_fatal(FARGS,"Can not do TPI for multi-atom molecule with a twin-range cut-off");
   snew(x_mol,a_tp1-a_tp0);
 
   bDispCorr = (inputrec->eDispCorr != edispcNO);
@@ -2195,7 +2221,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   /* Initialize random generator */
   tpi_rand = gmx_rng_init(inputrec->ld_seed);
 
-  if (MULTIMASTER(cr)) {
+  if (MASTER(cr)) {
     fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
 		      "TPI energies","Time (ps)",
 		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
@@ -2247,7 +2273,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 				   &rerun_fr,TRX_NEED_X);
   frame = 0;
 
-  if (rerun_fr.natoms - (bCavity ? 1 : 0) != mdatoms->nr - (a_tp1 - a_tp0))
+  if (rerun_fr.natoms - (bCavity ? nat_cavity : 0) !=
+      mdatoms->nr - (a_tp1 - a_tp0))
     gmx_fatal(FARGS,"Number of atoms in trajectory (%d)%s "
 	      "is not equal the number in the run input file (%d) "
 	      "minus the number of atoms to insert (%d)\n",
@@ -2267,8 +2294,13 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
       copy_rvec(rerun_fr.x[i],state->x[i]);
 
     bStateChanged = TRUE;
+    bNS = TRUE;
     for(step=0; step<nsteps; step++) {
+      /* In parallel all nodes generate all random configurations.
+       * In that way the result is identical to a single cpu tpi run.
+       */
       if (!bCavity) {
+	/* Random insertion in the whole volume */
 	bNS = (step % inputrec->nstlist == 0);
 	if (bNS) {
 	  /* Generate a random position in the box */
@@ -2288,12 +2320,26 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	  rvec_add(x_init,dx,x_tp);
 	}
       } else {
+	/* Random insertion around a cavity location
+	 * given by the last coordinate of the trajectory.
+	 */
 	if (step == 0) {
-	  /* Copy the location of the cavity */
-	  copy_rvec(rerun_fr.x[rerun_fr.natoms-1],x_init);
-	  bNS = TRUE;
-	} else {
-	  bNS = FALSE;
+	  if (nat_cavity == 1) {
+	    /* Copy the location of the cavity */
+	    copy_rvec(rerun_fr.x[rerun_fr.natoms-1],x_init);
+	  } else {
+	    /* Determine the center of mass of the last molecule */
+	    clear_rvec(x_init);
+	    mass_tot = 0;
+	    for(i=0; i<nat_cavity; i++) {
+	      for(d=0; d<DIM; d++)
+		x_init[d] +=
+		  mass_cavity[i]*rerun_fr.x[rerun_fr.natoms-nat_cavity+i][d];
+	      mass_tot += mass_cavity[i];
+	    }
+	    for(d=0; d<DIM; d++)
+	      x_init[d] /= mass_tot;
+	  }
 	}
 	/* Generate coordinates within |dx|=drmax of x_init */
 	do {
@@ -2321,8 +2367,21 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	  rvec_inc(state->x[i],x_tp);
       }
 
-      if (!MULTISIM(cr) ||
-	  (step / inputrec->nstlist) % cr->ms->nsim == cr->ms->sim) { 
+      /* Check if this insertion belongs to this node */
+      bOurStep = TRUE;
+      if (PAR(cr)) {
+	switch (inputrec->eI) {
+	case eiTPI:
+	  bOurStep = ((step / inputrec->nstlist) % nnodes == cr->nodeid);
+	  break;
+	case eiTPIC:
+	  bOurStep = (step % nnodes == cr->nodeid);
+	  break;
+	default:
+	  gmx_fatal(FARGS,"Unknown integrator %s",ei_names[inputrec->eI]);
+	}
+      }
+      if (bOurStep) {
 	/* Clear some matrix variables  */
 	clear_mat(force_vir); 
 	clear_mat(shake_vir);
@@ -2339,12 +2398,16 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	 * This also avoids shifts that would move charge groups
 	 * out of the box.
 	 */
+	/* Make do_force do a single node fore calculation */
+	cr->nnodes = 1;
 	do_force(fplog,cr,inputrec,
 		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
 		 buf,mdatoms,ener,fcd,
 		 lambda,NULL,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
 		 FALSE,t,NULL,NULL); 
+	cr->nnodes = nnodes;
 	bStateChanged = FALSE;
+	bNS = FALSE;
 
 	sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
@@ -2394,8 +2457,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	
 	if (debug)
 	  fprintf(debug,"%7d %12.5e %12.5f %12.5f %12.5f\n",
-		step,ener[F_EPOT],x_tp[XX],x_tp[YY],x_tp[ZZ]);
-	
+		  step,ener[F_EPOT],x_tp[XX],x_tp[YY],x_tp[ZZ]);
+
 	if (dump_pdb && ener[F_EPOT] <= dump_ener) {
 	  sprintf(str,"t%g_step%d.pdb",t,step);
 	  sprintf(str2,"t: %f step %d ener: %f",t,step,ener[F_EPOT]);
@@ -2404,12 +2467,12 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
       }
     }
 
-    if (MULTISIM(cr)) {
+    if (PAR(cr)) {
       /* When running in parallel sum the energies over the processes */
-      gmx_sumd_sim(    1, &sum_embU,cr->ms);
-      gmx_sumd_sim(nener,sum_UgembU,cr->ms);
+      gmx_sumd(    1, &sum_embU,cr);
+      gmx_sumd(nener,sum_UgembU,cr);
     }
-
+      
     V = det(rerun_fr.box);
 
     frame++;

@@ -953,7 +953,7 @@ void init_forcerec(FILE *fp,
   natoms         = top->atoms.nr;
 
   /* Test particle insertion ? */
-  if (ir->eI == eiTPI || ir->eI == eiTPIC) {
+  if (EI_TPI(ir->eI)) {
     /* Set to the size of the molecule to be inserted (the last one) */
     fr->n_tpi = cgs->index[cgs->nr] - cgs->index[cgs->nr-1];
   } else {

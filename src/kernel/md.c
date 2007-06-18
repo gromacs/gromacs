@@ -196,7 +196,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		    inputrec,top,state,
 		    MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
       
-      if (!DOMAINDECOMP(cr)) {
+      if (!(EI_TPI(inputrec->eI) || DOMAINDECOMP(cr))) {
 	split_system(stdlog,inputrec,state,cr,top);
       }
     }
