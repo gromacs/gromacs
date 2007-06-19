@@ -65,13 +65,20 @@
 static void calc_entropy_qh(FILE *fp,int n,real eigval[],real temp,int nskip)
 {
   int    i;
-  double hwkT,w,S=0;
+  double hwkT,w,dS,S=0;
+  double hbar,lambda;
   
+  hbar = PLANCK1/(2*M_PI);
   for(i=0; (i<n-nskip); i++) {
     if (eigval[i] > 0) {
-      w = sqrt((BOLTZMANN*temp/AMU)/(NANO*NANO*eigval[i]));
-      hwkT = (PLANCK1*w)/(2*M_PI*BOLTZMANN*temp);
-      S += (hwkT/(exp(hwkT) - 1) - log(1-exp(-hwkT)));
+      lambda = eigval[i]*AMU;
+      w      = sqrt(BOLTZMANN*temp/lambda)/NANO;
+      hwkT   = (hbar*w)/(BOLTZMANN*temp);
+      dS     = (hwkT/(exp(hwkT) - 1) - log(1-exp(-hwkT)));
+      S     += dS;
+      if (debug)
+	fprintf(debug,"i = %5d w = %10g lam = %10g hwkT = %10g dS = %10g\n",
+		i,w,lambda,hwkT,dS);
     }
     else {
       fprintf(stderr,"eigval[%d] = %g\n",i,eigval[i]);
@@ -82,110 +89,27 @@ static void calc_entropy_qh(FILE *fp,int n,real eigval[],real temp,int nskip)
 	  S*RGAS);
 }
 
-#define TINY 1e-20
-void ludecomp(double **a,int n,int *indx,double *d)
+static void calc_entropy_schlitter(FILE *fp,int n,int nskip,
+				   real *eigval,real temp)
 {
-  int   i,imax,j,k;
-  double big,dum,sum,temp;
-  double *vv;
-  
-  snew(vv,n+1);
-  *d=1.0;
-  for (i=1; (i<=n); i++) {
-    big=0.0;
-    for (j=1; (j<=n); j++)
-      if ((temp=fabs(a[i][j])) > big) 
-	big=temp;
-    if (big == 0.0) 
-      gmx_fatal(FARGS,"Singular matrix in routine ludcmp");
-    vv[i]=1.0/big;
-  }
-  for (j=1; (j<=n); j++) {
-    for (i=1; (i<j); i++) {
-      sum=a[i][j];
-      for (k=1; (k<i); k++) 
-	sum -= a[i][k]*a[k][j];
-      a[i][j]=sum;
-    }
-    big=0.0;
-    for (i=j; (i<=n);i++) {
-      sum=a[i][j];
-      for (k=1; (k<j);k++)
-	sum -= a[i][k]*a[k][j];
-      a[i][j]=sum;
-      if ( (dum=vv[i]*fabs(sum)) >= big) {
-	big=dum;
-	imax=i;
-      }
-    }
-    if (j != imax) {
-      for (k=1; (k<=n); k++) {
-	dum=a[imax][k];
-	a[imax][k]=a[j][k];
-	a[j][k]=dum;
-      }
-      *d = -(*d);
-      vv[imax]=vv[j];
-    }
-    indx[j]=imax;
-    if (a[j][j] == 0.0) 
-      a[j][j]=TINY;
-    if (j != n) {
-      dum=1.0/(a[j][j]);
-      for (i=j+1; (i<=n); i++) 
-	a[i][j] *= dum;
-    }
-  }
-  sfree(vv);
-}
-#undef TINY
-
-double ln_determinant(double **a,int n,int *indx,double *d)
-{
-  double S,dd;
-  int i;
-  
-  ludecomp(a,n,indx,d);
-
-  dd = 1;
-  for(i=1; (i<=n); i++)
-    if (a[i][i] < 0)
-      dd = -dd;
-      
-  if (*d*dd < 0)
-    fprintf(stderr,"Warning: negative determinant for Schlitter matrix, d = %g, dd = %g\n",*d,dd);
-    
-  S = 0;
-  for(i=1; (i<=n); i++)
-    S += log(fabs(a[i][i]));
-  return S;
-}
-
-static void calc_entropy_schlitter(FILE *fp,int n,int nvec,
-				   rvec **eigvec,real temp)
-{
-  double **ddd,deter;
+  double dd,deter;
   int    *indx;
-  int    i,j,k;
+  int    i,j,k,m;
   char   buf[256];
-  double kt,kteh,S;
+  double hbar,kt,kteh,S;
 
-  kt   = BOLTZ*temp;
-  kteh = kt*exp(2.0)*sqr(2*M_PI/PLANCK);
-  /* fprintf(stderr,"Planck = %g, n = %d, nvec = %d kteh = %g. kt = %g\n",
-     PLANCK,n,nvec,kteh,kt);*/
-  snew(ddd,1+nvec);
-  snew(indx,1+nvec);
-  for(i=1; (i<=nvec); i++) {
-    snew(ddd[i],1+nvec);
-    for(j=1; (j<=nvec); j++) {
-      ddd[i][j] = kteh*eigvec[i-1][(j-1)/DIM][(j-1)%DIM];
-      if (i == j)
-	ddd[i][j] += 1.0;
-    }
-  }
+  hbar = PLANCK1/(2*M_PI);
+  kt   = BOLTZMANN*temp;
+  kteh = kt*exp(2.0)/sqr(hbar)*AMU*sqr(NANO);
+  if (debug)
+    fprintf(debug,"n = %d, nskip = %d kteh = %g\n",n,nskip,kteh);
   
-  S = 0.5*RGAS*ln_determinant(ddd,nvec,indx,&deter);
+  deter = 0;
+  for(i=0; (i<n-nskip); i++) {
+    dd = 1+kteh*eigval[i];
+    deter += log(dd);
+  }
+  S = 0.5*RGAS*deter;
   
   fprintf(fp,"The Entropy due to the Schlitter formula is %g J/mol K\n",S);
 }
@@ -983,14 +907,22 @@ int gmx_anaeig(int argc,char *argv[])
   read_eigenvectors(VecFile,&natoms,&bFit1,
 		    &xref1,&bDMR1,&xav1,&bDMA1,
 		    &nvec1,&eignr1,&eigvec1,&eigval1);
-  neig1 = natoms;
+  neig1 = DIM*natoms;
   
   /* Overwrite eigenvalues from separate files if the user provides them */
   if (EigFile != NULL) {
-    neig1 = read_xvg(EigFile,&xvgdata,&i);
+    int neig_tmp = read_xvg(EigFile,&xvgdata,&i);
+    if (neig_tmp != neig1)
+      fprintf(stderr,"Warning: number of eigenvalues in xvg file (%d) does not mtch trr file (%d)\n",neig1,natoms);
+    neig1 = neig_tmp;
     srenew(eigval1,neig1);
-    for(j=0;j<neig1;j++)
+    for(j=0;j<neig1;j++) {
+      real tmp = eigval1[j];
       eigval1[j]=xvgdata[1][j];
+      if (debug && (eigval1[j] != tmp))
+	fprintf(debug,"Replacing eigenvalue %d. From trr: %10g, from xvg: %10g\n",
+		j,tmp,eigval1[j]);
+    }
     for(j=0;j<i;j++)
       sfree(xvgdata[j]);
     sfree(xvgdata);
@@ -999,15 +931,15 @@ int gmx_anaeig(int argc,char *argv[])
     
   if (bEntropy) {
     calc_entropy_qh(stdout,neig1,eigval1,temp,nskip);
-    if (VecFile)
-      calc_entropy_schlitter(stdout,neig1,nvec1,eigvec1,temp);
+    calc_entropy_schlitter(stdout,neig1,nskip,eigval1,temp);
   }
   
   if (bVec2) {
     read_eigenvectors(Vec2File,&neig2,&bFit2,
 		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2,&eigval2);
     
-    if (neig2!=natoms)
+    neig2 = DIM*neig2;
+    if (neig2 != neig1)
       gmx_fatal(FARGS,"Dimensions in the eigenvector files don't match");
   }
   
