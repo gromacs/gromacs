@@ -567,7 +567,7 @@ if test "$with_xml" = "yes"; then
    ac_save_CPPFLAGS="$CPPFLAGS"
    CPPFLAGS="$ac_save_CPPFLAGS -I/usr/include/libxml2"
    AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
-   if test "$ac_cv_lib_gsl_main" = "yes"; then
+   if test "$ac_cv_lib_xml2_main" = "yes"; then
      INCLUDES="$INCLUDES -I/usr/include/libxml2"
    fi
 # restore CPPFLAGS
