@@ -163,7 +163,7 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
 {
   int i,ii,d,start,end,nfreeze,ndim;
   real m,w;
-  double wmass,wwmass,buf[2];
+  double wmass,wwmass,buf[3];
   bool bDomDec;
   gmx_ga2la_t *ga2la=NULL;
 
