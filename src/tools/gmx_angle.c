@@ -148,7 +148,7 @@ int gmx_angle(int argc,char *argv[])
   real       *time,*trans_frac,*aver_angle;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,  ffREAD  },
-    { efTPX, NULL, NULL,  ffREAD  },
+    { efTPS, NULL, NULL,  ffREAD  },
     { efNDX, NULL, "angle",  ffREAD  },
     { efXVG, "-od", "angdist",  ffWRITE },
     { efXVG, "-ov", "angaver",  ffOPTWR },
