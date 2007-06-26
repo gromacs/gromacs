@@ -486,8 +486,14 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     if (rerun_fr.natoms != mdatoms->nr)
       gmx_fatal(FARGS,"Number of atoms in trajectory (%d) does not match the "
 		  "run input file (%d)\n",rerun_fr.natoms,mdatoms->nr);
-  } 
-  
+    if (inputrec->ePBC != epbcNONE) {
+      if (!rerun_fr.bBox)
+	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f does not contain a box, while pbc is used",rerun_fr.step,rerun_fr.time);
+      if (max_cutoff2(rerun_fr.box) < sqr(fr->rlistlong))
+	gmx_fatal(FARGS,"Rerun trajectory frame step %d time %f has too small box dimensions",rerun_fr.step,rerun_fr.time);
+    }
+  }
+
   /* loop over MD steps or if rerunMD to end of input trajectory */
   bFirstStep = TRUE;
   bLastStep = FALSE;
