@@ -183,6 +183,9 @@ Parallel tpi gives identical results to single node tpi.
 <dd> Test particle insertion into a predefined cavity location.
 The procedure is the same as for <b>tpi</b>, except that one coordinate
 extra is read from the trajectory, which is used as the insertion location.
+The molecule to be inserted should be centered at 0,0,0. Gromacs does
+not do this for you, since for different situations a different
+way of centering might be optimal.
 Also <b><A HREF="#tpi">rtpi</A></b> sets the radius for the sphere
 around this location. Neighbor searching is done only once per frame,
 <b>nstlist</b> is not used.

@@ -2189,6 +2189,18 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   }
   bRFExcl = (bCharge && EEL_RF(fr->eeltype) && fr->eeltype!=eelRF_NEC);
 
+  calc_cgcm(fplog,cg_tp,cg_tp+1,&(top->blocks[ebCGS]),state->x,fr->cg_cm);
+  if (bCavity) {
+    if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist) {
+      fprintf(fplog, "WARNING: Your TPI molecule is not centered at 0,0,0\n");
+      fprintf(stderr,"WARNING: Your TPI molecule is not centered at 0,0,0\n");
+    }
+  } else {
+    /* Center the molecule to be inserted at zero */
+     for(i=0; i<a_tp1-a_tp0; i++)
+      rvec_dec(x_mol[i],fr->cg_cm[cg_tp]);
+  }
+
   fprintf(stdlog,"\nWill insert %d atoms %s partial charges\n",
 	  a_tp1-a_tp0,bCharge ? "with" : "without");
 
