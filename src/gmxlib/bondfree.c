@@ -311,8 +311,8 @@ real FENE_bonds(int nbonds,
       
     omdr2obm2  = one - dr2/bm2;
     
-    vbond      = -half*bm2*log(omdr2obm2);
-    fbond      = -bm/omdr2obm2;
+    vbond      = -half*kb*bm2*log(omdr2obm2);
+    fbond      = -kb/omdr2obm2;
 
     vtot      += vbond;       /* 35 */
     
