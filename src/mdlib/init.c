@@ -105,22 +105,24 @@ static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile,
   real        t;
   t_inputrec  inputrec;
   t_topology  top;
-  t_state     s,*state;
+  t_state     *state;
   int         npmenodes=0;
   
-  if (state_p)
+  if (state_p) {
     state = state_p;
-  else
-    state = &s;
+  } else {
+    snew(state,1);
+  }
 
   init_inputrec(&inputrec);
   read_tpx_state(tpxfile,&step,&t,&inputrec,state,NULL,&top);
-  correct_state_entries(state,&inputrec);
 
   mv_data(cr,left,right,&inputrec,&top,state);
   done_top(&top);
-  if (state_p == NULL)
+  if (state_p == NULL) {
     done_state(state);
+    sfree(state);
+  }
   done_inputrec(&inputrec);
 }
 
@@ -139,6 +141,8 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   ld_data(cr,cr->left,cr->right,inputrec,top,state);
   if (cr->nodeid != 0)
     mv_data(cr,cr->left,cr->right,inputrec,top,state);
+
+  correct_state_entries(state,inputrec);
 
   if (!EI_TPI(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */
