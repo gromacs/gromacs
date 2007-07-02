@@ -167,6 +167,8 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
 	     i == F_LJC14_A ||
 	     i == F_LJC_PAIRS_A)
       bEner[i] = FALSE;
+    else if (i == F_PULL_UMB)
+      bEner[i] = (ir->ePull == epullUMBRELLA);
     else if (i == F_ECONSERVED)
       bEner[i] = (ir->etc == etcNOSEHOOVER && ir->epc == epcNO);
     else

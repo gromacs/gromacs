@@ -39,6 +39,7 @@
 
 #include "typedefs.h"
 #include "string2.h"
+#include "readinp.h"
 #include "grompp.h"
 
 enum { eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR };
@@ -67,6 +68,7 @@ typedef struct {
   int  eDihre;
   bool bMorse;
   char *wall_atomtype[2];
+  bool pull_start;
 } t_gromppopts;
 
 
@@ -77,7 +79,9 @@ extern void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror);
 /* Validate inputrec data.
  * Fatal errors will be added to nerror.
  */
- 
+extern int search_string(char *s,int ng,char *gn[]);
+/* Returns the index of string s in the index groups */
+
 extern void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror);
 /* Do more checks */
 
@@ -101,6 +105,22 @@ extern void do_index(char *ndx,
 /* Read the index file and assign grp numbers to atoms.
  * If v is not NULL, the velocities will be scaled to the correct number
  * of degrees of freedom.
+ */
+
+/* Routines In readpull.c */
+
+extern char **read_pullparams(int *ninp_p,t_inpfile **inp,
+			      t_pull *pull,bool *bStart,int *nerror_p);
+/* Reads the pull parameters, returns a list of the pull group names */
+
+extern void make_pull_groups(t_pull *pull,char **pgnames,
+			     t_block *grps,char **gnames);
+/* Process the pull parameters after reading the index groups */
+
+extern void set_pull_init(t_inputrec *ir,t_atoms *atoms,rvec *x,matrix box,
+			  bool bStart);
+/* Prints the initial pull group distances in x.
+ * If bStart adds the distance to the initial reference location.
  */
 
 #endif	/* _readir_h */

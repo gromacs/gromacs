@@ -236,12 +236,39 @@ static void ld_cosines(const t_commrec *cr,int src,t_cosines *cs)
   }
 }
 
+static void ld_pullgrp(const t_commrec *cr,int src,t_pullgrp *pgrp)
+{
+  blockrx(cr,src,*pgrp);
+  if (pgrp->nat > 0) {
+    snew(pgrp->ind,pgrp->nat);
+    nblockrx(cr,src,pgrp->nat,pgrp->ind);
+  }
+  if (pgrp->nweight > 0) {
+    snew(pgrp->ind,pgrp->nweight);
+    nblockrx(cr,src,pgrp->nweight,pgrp->weight);
+  }
+}
+
+static void ld_pull(const t_commrec *cr,int src,t_pull *pull)
+{
+  int g;
+
+  blockrx(cr,src,*pull);
+  snew(pull->grp,pull->ngrp+1);
+  for(g=0; g<pull->ngrp+1; g++)
+    ld_pullgrp(cr,src,&pull->grp[g]);
+}
+
 static void ld_inputrec(const t_commrec *cr,int src,t_inputrec *inputrec)
 {
   int i;
   
   blockrx(cr,src,*inputrec);
   ld_grpopts(cr,src,&(inputrec->opts));
+  if (inputrec->ePull != epullNO) {
+    snew(inputrec->pull,1);
+    ld_pull(cr,src,inputrec->pull);
+  }
   for(i=0; (i<DIM); i++) {
     ld_cosines(cr,src,&(inputrec->ex[i]));
     ld_cosines(cr,src,&(inputrec->et[i]));
@@ -327,12 +354,32 @@ static void mv_cosines(const t_commrec *cr,int dest,t_cosines *cs)
   }
 }
 
+static void mv_pullgrp(const t_commrec *cr,int dest,t_pullgrp *pgrp)
+{
+  blocktx(cr,dest,*pgrp);
+  if (pgrp->nat > 0)
+    nblocktx(cr,dest,pgrp->nat,pgrp->ind);
+  if (pgrp->nweight > 0)
+    nblocktx(cr,dest,pgrp->nweight,pgrp->weight);
+}
+
+static void mv_pull(const t_commrec *cr,int dest,t_pull *pull)
+{
+  int g;
+
+  blocktx(cr,dest,*pull);
+  for(g=0; g<pull->ngrp+1; g++)
+    mv_pullgrp(cr,dest,&pull->grp[g]);
+}
+
 static void mv_inputrec(const t_commrec *cr,int dest,t_inputrec *inputrec)
 {
   int i;
   
   blocktx(cr,dest,*inputrec);
   mv_grpopts(cr,dest,&(inputrec->opts));
+  if (inputrec->ePull != epullNO)
+    mv_pull(cr,dest,inputrec->pull);
   for(i=0; (i<DIM); i++) {
     mv_cosines(cr,dest,&(inputrec->ex[i]));
     mv_cosines(cr,dest,&(inputrec->et[i]));

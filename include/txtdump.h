@@ -55,8 +55,8 @@ extern char *atomname(t_atoms *a,int i);
 /* Return pointer to a buffer which holds the atomname in the
  * form resname resnr atomname. Pointer can be freed afterwards.
  */
-extern int available(FILE *fp,void *p,const char *title);
 extern int pr_indent(FILE *fp,int n);
+extern int available(FILE *fp,void *p,int indent,const char *title);
 extern int pr_title(FILE *fp,int indent,const char *title);
 extern int pr_title_n(FILE *fp,int indent,const char *title,int n);
 extern int pr_title_nxn(FILE *fp,int indent,const char *title,int n1,int n2);

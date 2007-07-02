@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 47;
+static const int tpx_version = 48;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -191,6 +191,44 @@ void _do_section(int fp,int key,bool bRead,char *src,int line)
  * Now the higer level routines that do io of the structures and arrays
  *
  **************************************************************/
+static void do_pullgrp(t_pullgrp *pgrp,bool bRead, int file_version)
+{
+  bool bDum=TRUE;
+  int  i;
+
+  do_int(pgrp->nat);
+  if (bRead)
+    snew(pgrp->ind,pgrp->nat);
+  ndo_int(pgrp->ind,pgrp->nat,bDum);
+  do_int(pgrp->nweight);
+  if (bRead)
+    snew(pgrp->weight,pgrp->nweight);
+  ndo_real(pgrp->weight,pgrp->nweight,bDum);
+  do_int(pgrp->pbcatom);
+  do_rvec(pgrp->vec);
+  do_rvec(pgrp->init);
+  do_real(pgrp->rate);
+  do_real(pgrp->k);
+}
+
+static void do_pull(t_pull *pull,bool bRead, int file_version)
+{
+  int g;
+
+  do_int(pull->ngrp);
+  do_int(pull->eGeom);
+  do_ivec(pull->dim);
+  do_real(pull->cyl_r1);
+  do_real(pull->cyl_r0);
+  do_real(pull->constr_tol);
+  do_int(pull->nstxout);
+  do_int(pull->nstfout);
+  if (bRead)
+    snew(pull->grp,pull->ngrp+1);
+  for(g=0; g<pull->ngrp+1; g++)
+    do_pullgrp(&pull->grp[g],bRead,file_version);
+}
+
 static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
 {
   int  i,j,k,*tmp,idum=0; 
@@ -512,6 +550,18 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     do_real(ir->userreal2); 
     do_real(ir->userreal3); 
     do_real(ir->userreal4); 
+    
+    /* pull stuff */
+    if (file_version >= 48) {
+      do_int(ir->ePull);
+      if (ir->ePull != epullNO) {
+	if (bRead)
+	  snew(ir->pull,1);
+	do_pull(ir->pull,bRead,file_version);
+      }
+    } else {
+      ir->ePull = epullNO;
+    }
     
     /* grpopts stuff */
     do_int(ir->opts.ngtc); 

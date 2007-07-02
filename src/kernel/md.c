@@ -479,6 +479,21 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
   debug_gmx();
 
+  if (PARTDECOMP(cr)) {
+    pd_at_range(cr,&a0,&a1);
+  } else {
+    a0 = 0;
+    a1 = top_global->atoms.nr;
+  }
+
+  if (inputrec->ePull != epullNO) {
+    /* Initialize pull code */
+    init_pull(log,inputrec,nfile,fnm,
+	      state_global->x,&top_global->atoms,state_global->box,cr,a0,a1);
+    if (inputrec->ePull == epullCONSTRAINT)
+      bHaveConstr = TRUE;
+  }
+
   {
     double io = compute_io(inputrec,&top_global->atoms,mdebin->ebin->nener,1);
     if ((io > 2000) && MASTER(cr))
@@ -523,12 +538,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     state = state_global;
     f_global = f;
 
-    if (PARTDECOMP(cr)) {
-      pd_at_range(cr,&a0,&a1);
-    } else {
-      a0 = 0;
-      a1 = top->atoms.nr;
-    }
     atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,a0,a1-a0,
 	     mdatoms);
   }
@@ -551,11 +560,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Do we need to minimize at every MD step? */
   bShell_FlexCon = (shells || n_flexible_constraints(constr) > 0);
-
-  /* Initialize pull code */
-  init_pull(log,nfile,fnm,inputrec,state->x,mdatoms,state->box,cr);
-  if (inputrec->pull.ePull == epullCONSTRAINT)
-    bHaveConstr = TRUE;
 
   /* Initialize the essential dynamics sampling */
   do_first_edsam(stdlog,top,mdatoms,mdatoms->start,mdatoms->homenr,cr,
@@ -914,9 +918,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Afm and Umbrella type pulling happens before the update, 
      * other types in update 
      */
-    if (inputrec->pull.ePull == epullUMBRELLA)
-      pull_umbrella(&inputrec->pull,state->x,f,force_vir,state->box,
-		    top,inputrec->delta_t,step,mdatoms,cr); 
+    if (inputrec->ePull == epullUMBRELLA) {
+      ener[F_PULL_UMB] =
+	pull_umbrella(inputrec->pull,state->x,f,force_vir,state->box,
+		      top,inputrec->init_t+step*inputrec->delta_t,mdatoms,cr); 
+    }
 
     if (bFFscan)
       clear_rvecs(state->natoms,buf);
@@ -1159,8 +1165,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?log:NULL,
 		 step,step_rel,t,
 		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(inputrec->opts));
-      if (inputrec->pull.ePull != epullNO)
-	pull_print_output(&inputrec->pull,step,t);
+      if (inputrec->ePull != epullNO)
+	pull_print_output(inputrec->pull,step,t);
 
       if (bVerbose)
 	fflush(log);

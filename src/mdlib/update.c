@@ -764,9 +764,9 @@ void update(int          step,
 
     /* apply pull constraints when required. Act on xprime, the SHAKED
        coordinates. Don't do anything to f */
-    if (inputrec->pull.ePull == epullCONSTRAINT)
-      pull_constraint(&inputrec->pull,state->x,xprime,state->v,vir_con,
-		      state->box,top,dt,step,md,cr);
+    if (inputrec->ePull == epullCONSTRAINT)
+      pull_constraint(inputrec->pull,state->x,xprime,state->v,vir_con,
+		      state->box,top,dt,inputrec->init_t+step*dt,md,cr);
 
     if (bDoUpdate) {
       if (inputrec->eI == eiSD) {

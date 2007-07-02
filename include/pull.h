@@ -47,9 +47,13 @@
 /* This file contains datatypes and function declarations necessary 
    for mdrun to interface with the pull code */
 
-/* Determine the umbrella forces and add them to f */
-extern void pull_umbrella(t_pull *pull, rvec *x, rvec *f, tensor vir, 
-			  matrix box, t_topology *top, real dt, int step,
+/* Get the distance to the reference and deviation for pull group g */
+extern void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
+				 dvec dr,dvec dev);
+
+/* Determine the umbrella forces and add them to f, return the potential */
+extern real pull_umbrella(t_pull *pull, rvec *x, rvec *f, tensor vir, 
+			  matrix box, t_topology *top, double t,
 			  t_mdatoms *md, t_commrec *cr);
 
 /* Constrain the coordinates xp in the directions in x
@@ -57,20 +61,8 @@ extern void pull_umbrella(t_pull *pull, rvec *x, rvec *f, tensor vir,
  */
 extern void pull_constraint(t_pull *pull, rvec *x, rvec *xp, rvec *v,
 			    tensor vir, matrix box, t_topology *top,
-			    real dt, int step, t_mdatoms *md,
-			    t_commrec *cr);
-
-/* get memory and initialize the fields of pull that still need it, and
-   do runtype specific initialization */
-extern void init_pull(FILE *log,  
-                      int nfile,       
-                      t_filenm fnm[], /* standard filename struct */
-                      t_inputrec *ir, /* the inputrec */
-                      rvec *x,        /* all coordinates */
-                      t_mdatoms *md,  /* masses and charges of all atoms */
-                      matrix box,     
-                      t_commrec * cr  /* struct for communication info */
-                      );
+			    real dt, double t,
+			    t_mdatoms *md, t_commrec *cr);
 
 /* Make a selection of the home atoms for all pull groups.
  * Should be called at every domain decomposition.
@@ -78,7 +70,37 @@ extern void init_pull(FILE *log,
 extern void dd_make_local_pull_groups(gmx_domdec_t *dd,
 				      t_pull *pull,t_mdatoms *md);
 
+/* get memory and initialize the fields of pull that still need it, and
+   do runtype specific initialization */
+extern void init_pull(FILE *log,  
+                      t_inputrec *ir, /* the inputrec */
+                      int nfile,       
+                      t_filenm fnm[], /* standard filename struct */
+                      rvec *x,        /* all coordinates */
+                      t_atoms *atoms, /* masses of all atoms */
+                      matrix box,     
+                      t_commrec * cr, /* struct for communication info */
+		      int start,      /* for particle decomposition */ 
+		      int end
+                      );
+
 /* Print the pull output (x and/or f) */
 extern void pull_print_output(t_pull *pull, int step, real time);
+
+/* In pullutil.c */
+
+/* For triclinic boxes only correct for distances
+ * shorter than half the smallest diagonal box element.
+ */
+extern void pull_d_pbc_dx(int npbcdim,
+			  matrix box,const dvec x1, const dvec x2, dvec dx);
+
+/* Calculates centers of mass all pull groups */
+extern void pull_calc_coms(t_commrec *cr,
+			   t_pull *pull,   /* the pull group */
+			   t_mdatoms *md,  /* all atoms */
+			   rvec x[],       /* local coordinates */
+			   rvec *xp,       /* updated x, can be NULL */
+			   matrix box);    
 
 #endif

@@ -166,11 +166,8 @@ int main(int argc,char *argv[])
     { efXVG, "-ffout",  "gct",      ffOPTWR },
     { efXVG, "-devout", "deviatie", ffOPTWR },
     { efXVG, "-runav",  "runaver",  ffOPTWR },
-    { efPPA, "-pi",     "pull",     ffOPTRD },
-    { efPPA, "-po",     "pullout",  ffOPTWR },
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
-    { efNDX, "-pn",     "pull",     ffOPTRD },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
     { efNDX, "-dn",     "dipole",   ffOPTWR }
   };

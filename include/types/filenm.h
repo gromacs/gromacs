@@ -55,7 +55,6 @@ enum {
   efMAP, efEPS, efMAT, efM2P,
   efMTX,
   efEDI, efEDO, 
-  efPPA, efPDO,
   efHAT,
   efXPM,
   efNR

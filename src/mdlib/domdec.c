@@ -3909,9 +3909,9 @@ void dd_partition_system(FILE         *fplog,
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
     set_constraints(fplog,constr,top_global,ir,mdatoms,dd);
 
-  if (ir->pull.ePull != epullNO)
+  if (ir->ePull != epullNO)
     /* Update the local pull groups */
-    dd_make_local_pull_groups(dd,&ir->pull,mdatoms);
+    dd_make_local_pull_groups(dd,ir->pull,mdatoms);
 
   /* Make sure we only count the cycles for this DD partitioning */
   clear_dd_cycle_counts(dd);

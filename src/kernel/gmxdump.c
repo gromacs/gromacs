@@ -73,8 +73,8 @@ static void list_tpx(char *fn, bool bShowNumbers)
 		 &state,tpx.bF ? f : NULL,
 		 tpx.bTop ? &top: NULL);
   
-  if (available(stdout,&tpx,fn)) {
-    indent=0;
+  indent=0;
+  if (available(stdout,&tpx,indent,fn)) {
     indent=pr_title(stdout,indent,fn);
     pr_header(stdout,indent,"header",&(tpx));
     pr_inputrec(stdout,indent,"ir",&(ir));

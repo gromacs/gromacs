@@ -16,7 +16,8 @@ bin_PROGRAMS = \
 grompp_SOURCES = \
 	topio.c 	toppush.c 	topcat.c 	topshake.c 	\
 	convparm.c 	tomorse.c	sorting.c 	compute_io.c	\
-	vsite_parm.c	readir.c  	add_par.c	topexcl.c	\
+	vsite_parm.c	readir.c  	readpull.c	\
+	add_par.c	topexcl.c	\
 	toputil.c	topdirs.c	grompp.c	add_par.h	\
 	topio.h		toputil.h	convparm.h	compute_io.h	\
 	sorting.h	topdirs.h	toppush.h	vsite_parm.h	\

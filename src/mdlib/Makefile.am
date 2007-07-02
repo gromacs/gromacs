@@ -20,13 +20,12 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	mdatom.c	mdebin.c	minimize.c	\
 	mvxvf.c		ns.c		nsgrid.c	\
 	pme.c		pppm.c		fftgrid.c	\
-	partdec.c	pull.c 		pullinit.c	\
-	pullio.c	pullutil.c	\
+	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	stat.c 		tables.c	tgroup.c	\
 	update.c	vcm.c		vsite.c	\
 	wall.c		wnblist.c	\
-	pull_internal.h	csettle.c       clincs.c	\
+	csettle.c       clincs.c	\
 	qmmm.c		gmx_fft.c 	gmx_parallel_3dfft.c	\
 	gmx_wallcycle.c
 

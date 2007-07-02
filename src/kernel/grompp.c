@@ -1018,6 +1018,10 @@ int main (int argc, char *argv[])
       warning(NULL);
     }
   }
+
+  if (ir->ePull != epullNO)
+    set_pull_init(ir,&sys->atoms,state.x,state.box,opts->pull_start);
+
   /*  reset_multinr(sys); */
   
   {

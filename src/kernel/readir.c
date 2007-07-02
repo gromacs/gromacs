@@ -73,6 +73,7 @@ static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
   orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
+static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
   anneal_time[STRLEN],anneal_temp[STRLEN];
 static char QMmethod[STRLEN],QMbasis[STRLEN],QMcharge[STRLEN],QMmult[STRLEN],
@@ -699,6 +700,15 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("wall_density",  wall_density,  NULL);
   RTYPE ("wall_ewald_zfac", ir->wall_ewald_zfac, 3);
   
+  /* COM pulling */
+  CCTYPE("COM PULLING");
+  CTYPE("Pull type: no, umbrella, constraint");
+  EETYPE("pull",          ir->ePull, epull_names, nerror, TRUE);
+  if (ir->ePull != epullNO) {
+    snew(ir->pull,1);
+    pull_grp = read_pullparams(&ninp,&inp,ir->pull,&opts->pull_start,nerror);
+  }
+
   /* Refinement */
   CCTYPE("NMR refinement stuff");
   CTYPE ("Distance restraints type: No, Simple or Ensemble");
@@ -894,7 +904,7 @@ static int search_QMstring(char *s,int ng,const char *gn[])
 } /* search_QMstring */
 
 
-static int search_string(char *s,int ng,char *gn[])
+int search_string(char *s,int ng,char *gn[])
 {
   int i;
   
@@ -1228,8 +1238,9 @@ void do_index(char *ndx,
     snew(grps->index,1);
     snew(gnames,1);
     analyse(atoms,grps,&gnames,FALSE,TRUE);
-  } else
+  } else {
     grps = init_index(ndx,&gnames);
+  }
   
   snew(atoms->grpname,grps->nr+1);
   
@@ -1376,6 +1387,10 @@ void do_index(char *ndx,
       }
     }
   }	
+
+  if (ir->ePull != epullNO) {
+    make_pull_groups(ir->pull,pull_grp,grps,gnames);
+  }
 
   nacc = str_nelem(acc,MAXPTR,ptr1);
   nacg = str_nelem(accgrps,MAXPTR,ptr2);

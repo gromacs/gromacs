@@ -56,7 +56,6 @@
 #include "network.h"
 #include "pbc.h"
 #include "pull.h"
-#include "pull_internal.h"
 
 void pull_d_pbc_dx(int npbcdim,matrix box,
 		   const dvec x1, const dvec x2, dvec dx)
@@ -106,19 +105,23 @@ static void pull_set_pbcatom(t_commrec *cr, t_pullgrp *pg,
 {
   int a,m;
 
-  if (DOMAINDECOMP(cr)) {
-    if (cr->dd->ga2la[pg->pbcatom].cell == 0)
-      a = cr->dd->ga2la[pg->pbcatom].a;
-    else
-      a = -1;
+  if (cr && PAR(cr)) {
+    if (DOMAINDECOMP(cr)) {
+      if (cr->dd->ga2la[pg->pbcatom].cell == 0)
+	a = cr->dd->ga2la[pg->pbcatom].a;
+      else
+	a = -1;
+    } else {
+      a = pg->pbcatom;
+    }
+    
+    if (a >= md->start && a < md->start+md->homenr) {
+      copy_rvec(x[a],x_pbc);
+    } else {
+      clear_rvec(x_pbc);
+    }
   } else {
-    a = pg->pbcatom;
-  }
-
-  if (a >= md->start && a < md->start+md->homenr) {
-    copy_rvec(x[a],x_pbc);
-  } else {
-   clear_rvec(x_pbc);
+    copy_rvec(x[pg->pbcatom],x_pbc);
   }
 }
 
@@ -138,9 +141,9 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
     }
   }
   
-  if (PAR(cr) && n > 0) {
+  if (cr && PAR(cr) && n > 0) {
     /* Sum over the nodes to get x_pbc from the home node of pbcatom */
-    gmx_sumf((1+pull->ngrp)*DIM,x_pbc[0],cr);
+    gmx_sum((1+pull->ngrp)*DIM,x_pbc[0],cr);
   }
 }
 
@@ -199,9 +202,9 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
   t_pullgrp *pref,*pdyna;
   gmx_ga2la_t *ga2la=NULL;
 
-  if (DOMAINDECOMP(cr))
+  if (cr && DOMAINDECOMP(cr))
     ga2la = cr->dd->ga2la;
-
+  
   start = md->start;
   end   = md->homenr + start;
 
@@ -254,7 +257,7 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 
 /* calculates center of mass of selection index from all coordinates x */
 void pull_calc_coms(t_commrec *cr,
-		    t_pull *pull, t_mdatoms *md, 
+		    t_pull *pull, t_mdatoms *md,
 		    rvec x[], rvec *xp, matrix box)
 {
   static rvec *rbuf=NULL;
@@ -317,7 +320,7 @@ void pull_calc_coms(t_commrec *cr,
       copy_dvec(comp,dbuf[1+pull->ngrp+g]);
   }
 
-  if (PAR(cr)) {
+  if (cr && PAR(cr)) {
     /* Sum the contributions over the nodes */
     gmx_sumd((xp ? 2 : 1)*(1+pull->ngrp)*DIM,dbuf[0],cr);
   }

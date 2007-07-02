@@ -216,7 +216,7 @@ void pr_symtab(FILE *fp,int indent,char *title,t_symtab *symtab)
   int i,j,nr;
   t_symbuf *symbuf;
   
-  if (available(fp,symtab,title)) 
+  if (available(fp,symtab,indent,title)) 
     {
       indent=pr_title_n(fp,indent,title,symtab->nr);
       i=0;

@@ -114,7 +114,7 @@ extern const char *eQMMMscheme_names[eQMMMschemeNR+1];
 #define EIMPLICITSOL(e) ENUM_NAME(e,eisNR,eis_names)
 #define EWALLTYPE(e)   ENUM_NAME(e,ewtNR,ewt_names)
 #define EPULLTYPE(e)   ENUM_NAME(e,epullNR,epull_names)
-#define EPULLGEOM(e)   ENUM_NAME(e,epullgtNR,epullg_names)
+#define EPULLGEOM(e)   ENUM_NAME(e,epullgNR,epullg_names)
 #define EQMMETHOD(e)   ENUM_NAME(e,eQMmethodNR,eQMmethod_names)
 #define EQMBASIS(e)    ENUM_NAME(e,eQMbasisNR,eQMbasis_names)
 #define EQMMMSCHEME(e) ENUM_NAME(e,eQMMMschemeNR,eQMMMscheme_names)

@@ -187,8 +187,6 @@ static t_deffile deffile[efNR] = {
   { eftXDR, ".mtx", "hessian","-m", "Hessian matrix"                         },
   { eftASC, ".edi", "sam",    NULL, "ED sampling input"                      },
   { eftASC, ".edo", "sam",    NULL, "ED sampling output"                     },
-  { eftASC, ".ppa", "pull",   NULL, "Pull parameters"                        },
-  { eftASC, ".pdo", "pull",   NULL, "Pull data output"                       },
   { eftASC, ".hat", "gk",     NULL, "Fourier transform of spread function"   },
   { eftASC, ".xpm", "root",   NULL, "X PixMap compatible matrix file"        }
 };
