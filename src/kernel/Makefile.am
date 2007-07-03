@@ -27,7 +27,7 @@ grompp_SOURCES = \
 tpbconv_SOURCES = \
 	readir.c	toputil.c	topdirs.c	add_par.c	\
 	topexcl.c	tpbconv.c	add_par.h	toputil.h	\
-	topdirs.h	readir.h	topexcl.h
+	topdirs.h	readir.h	topexcl.h	readpull.c
 
 pdb2gmx_SOURCES = \
 	hizzie.c	xlate.c		specbond.c	ter_db.c	\
