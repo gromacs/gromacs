@@ -176,7 +176,7 @@ enum {
 
 /* Pull stuff */
 enum {
-  epullNO, epullUMBRELLA, epullCONSTRAINT, epullNR
+  epullNO, epullUMBRELLA, epullCONSTRAINT, epullCONST_F, epullNR
 };
 
 enum {

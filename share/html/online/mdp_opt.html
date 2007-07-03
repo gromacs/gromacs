@@ -46,7 +46,9 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
-<li><A HREF="#walls"><b>Walls</b></A> (nwall, wall_type, wall_atomtype, wall_density, wall_ewald_zfac)
+<li><A HREF="#walls"><b>Walls</b></A> (nwall, wall_type, wall_atomtype,
+wall_density, wall_ewald_zfac)
+<li><A HREF="#pull"><b>COM pulling</b></A> (pull, ...)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
 <li><A HREF="#free"><b>Free Energy Perturbation</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_power, sc_sigma)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, deform)
@@ -948,7 +950,9 @@ When set to <b>2</b> pressure coupling and Ewald summation can be used
 the x/y compressibility set to 0, as otherwise the surface area will change).
 Energy groups <tt>wall0</tt> and <tt>wall1</tt> (for <b>nwall=2</b>) are
 added automatically to monitor the interaction of energy groups
-with each wall.</dd>
+with each wall.
+The <A HREF="#run">center of mass motion removal</A> will be turned
+off in the z-direction.</dd>
 <dt><h4>wall_type:</h4></dt>
 <dl>
 <dt><b>9-3</b></dt>
@@ -974,6 +978,114 @@ Ewald summation can only be used with <b>nwall=2</b>, where one
 should use <b><A HREF="#ewald">ewald_geometry</A>=3dc</b>.
 The empty layer in the box serves to decrease the unphysical Coulomb
 interaction between periodic images.
+</dl>
+
+<A NAME="pull"><br>
+<hr>
+<h3>COM <!--Idx-->pulling<!--EIdx--></h3>
+<dl>
+<dt><h4>pull:</h4></dt>
+<dl>
+<dt><b>no</b></dt>
+<dd>No center of mass pulling.
+All the following pull options will be ignored
+(and if present in the mdp file, they unfortunately generate warnings)</dd>
+<dt><b>umbrella</b></dt>
+<dd>Center of mass pulling using an umbrella potential
+between the reference group and one or more groups.</dd>
+<dt><b>constraint</b></dt>
+<dd>Center of mass pulling using a constraint
+between the reference group and one or more groups.
+The setup is identical to the option <b>umbrella</b>, except for the fact
+that a rigid constraint is applied instead of a harmonic potential.</dd>
+<dt><b>umbrella</b></dt>
+<dd>Center of mass pulling using an linear potential and therefore
+a constant force. For this option there is no reference position
+and therefore the parameters <b>pull_init</b> and <b>pull_rate</b>
+are not used.</dd>
+</dl>
+<dt><h4>pull_geometry</h4></dt>
+<dl>
+<dt><b>distance</b></dt>
+<dd>Pull along the vector connecting the two groups.
+Components can be selected with <b>pull_dim</b>.</dd>
+<dt><b>direction</b></dt>
+<dd>Pull in the direction of <b>pull_vec</b>.
+<dt><b>cylinder</b></dt>
+<dd>Designed for pulling with respect to a layer where the reference COM
+is given by a local cylindrical part of the reference group.
+The pulling is in the direction of <b>pull_vec</b>,
+which should have only a z-component.
+From the reference group a cylinder is selected for determining the COM,
+with the axis given by the x/y location
+of the group to be pulled and two radii. The radius <b>pull_r1</b> gives the
+radius within which all the relative weights are one, between <b>pull_r1</b> and
+<b>pull_r0</b> the weights are switched to zero. Mass weighting is also used.
+<dt><b>position</b></dt>
+<dd>Pull to the position of the reference group plus
+<b>pull_init</b> + time*<b>pull_rate</b>*<b>pull_vec</b>.</dd>
+</dl>
+<dt><h4>pull_dim: (Y Y Y)</h4></dt>
+<dd>the distance components to be used with geometry <b>distance</b>
+and <b>position</b></dd>
+<dt><h4>pull_r1: (1) [nm]</h4></dt>
+<dd>the inner radius of the cylinder for geometry <b>cylinder</b></dd>
+<dt><h4>pull_r0: (1) [nm]</h4></dt>
+<dd>the outer radius of the cylinder for geometry <b>cylinder</b></dd>
+<dt><h4>pull_constr_tol: (1e-6)</h4></dt>
+<dd>the relative constraint tolerance for constraint pulling</dd>
+<dt><h4>pull_start: (1) [nm]</h4></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>do not modify <b>pull_init</b>
+<dt><b>yes</b></dt>
+<dd>add the COM distance of the starting conformation to <b>pull_init</b></dd>
+</dl>
+<dt><h4>pull_nstxout: (10)</h4></dt>
+<dd>frequency for writing out the COMs of all the pull group</dd>
+<dt><h4>pull_nstfout: (1)</h4></dt>
+<dd>frequency for writing out the force of all the pulled group</dd>
+<dt><h4>pull_ngroups: (1)</h4></dt>
+<dd>The number of pull groups, not including the reference group.
+If there is only one group, there is no difference in treatment
+of the reference and pulled group (except with the cylinder geometry).
+Below only the pull options for the reference group (ending on 0)
+and the first group (ending on 1) are given,
+further groups work analogously, but with the number 1 replaced
+by the group number.</dd>
+<dt><h4>pull_group0: </h4></dt>
+<dd>The name of the reference group. When this is empty an absolute reference
+of (0,0,0) is used. With an absolute reference the system is no longer
+translation invariant and one should think about what to do with
+the <A HREF="#run">center of mass motion</A>.</dd>
+</b>
+<dt><h4>pull_weights0: </h4></dt>
+<dd>see <b>pull_weights1</b></dd>
+<dt><h4>pull_pbcatom0: (0)</h4></dt>
+<dd>see <b>pull_pbcatom1</b></dd>
+<dt><h4>pull_group1: </h4></dt>
+<dd>The name of the pull group.</b>
+<dt><h4>pull_weights1: </h4></dt>
+<dd>Optional relative weights which are multiplied with the masses of the atoms
+to give the total weight for the COM. The number should be 0, meaning all 1,
+or the number of atoms in the pull group.</dd>
+<dt><h4>pull_pbcatom1: (0)</h4></dt>
+<dd>The reference atom for the treatment of periodic boundary conditions
+For determining the COM, all atoms are put at their periodic image which
+is closest to <b>pull_pbcatom0</b>. A value of 0 means that the middle atom
+(number wise) is used.</dd>
+<dt><h4>pull_vec1: (0.0 0.0 0.0)</h4></dt>
+<dd>The pull direction. <tt>grompp</tt> normalizes the vector.</dd>
+<dt><h4>pull_init1: (0.0) / (0.0 0.0 0.0) [nm]</h4></dt>
+<dd>The reference distance at t=0. This is a single value,
+except for geometry <b>position</b> which uses a vector.</dd>
+<dt><h4>pull_rate1: (0) [nm/ps]</h4></dt>
+<dd>The rate of change of the reference position.</dd>
+<dt><h4>pull_k1: (0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4></dt>
+<dd>The force constant. For umbrella pulling this is the harmonic force
+constant in [kJ mol<sup>-1</sup> nm<sup>-2</sup>]. For constant force pulling
+this is the force constant of the linear potential, and thus minus (!)
+the constant force in [kJ mol<sup>-1</sup> nm<sup>-1</sup>].</dd>
 </dl>
 
 <A NAME="nmr"><br>
@@ -1339,6 +1451,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#pc">pcoupltype</A><br>
 <A HREF="#nl">periodic_molecules</A><br>
 <A HREF="#ewald">pme_order</A><br>
+<A HREF="#pull">pull</A><br>
 <A HREF="#pc">ref_p</A><br>
 <A HREF="#tc">ref_t</A><br>
 <A HREF="#el2">rcoulomb_switch</A><br>

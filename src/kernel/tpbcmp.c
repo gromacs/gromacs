@@ -354,6 +354,11 @@ static void cmp_cosines(FILE *fp,char *s,t_cosines c1[DIM],t_cosines c2[DIM],rea
   }
 }
 
+static void cmp_pull(FILE *fp,t_pull *pull1,t_pull *pull2,real ftol)
+{
+  fprintf(fp,"WARNING: Both files use COM pulling, but comparing of the pull struct is not implemented (yet). The pull parameters could be the same or different.\n");
+}
+
 static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
 {
   fprintf(fp,"comparing inputrec\n");
@@ -442,6 +447,10 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->wall_density[0]",-1,ir1->wall_density[0],ir2->wall_density[0],ftol);
   cmp_real(fp,"inputrec->wall_density[1]",-1,ir1->wall_density[1],ir2->wall_density[1],ftol);
   cmp_real(fp,"inputrec->wall_ewald_zfac",-1,ir1->wall_ewald_zfac,ir2->wall_ewald_zfac,ftol);
+
+  cmp_int(fp,"inputrec->ePull",-1,ir1->ePull,ir2->ePull);
+  if (ir1->ePull == ir2->ePull && ir1->ePull != epullNO)
+    cmp_pull(fp,ir1->pull,ir2->pull,ftol);
 
   cmp_real(fp,"inputrec->dr_fc",-1,ir1->dr_fc,ir2->dr_fc,ftol);
   cmp_int(fp,"inputrec->eDisreWeighting",-1,ir1->eDisreWeighting,ir2->eDisreWeighting);

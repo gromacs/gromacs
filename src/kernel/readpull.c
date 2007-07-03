@@ -129,7 +129,7 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
   ITYPE("pull_nstxout",     pull->nstxout, 10);
   ITYPE("pull_nstfout",     pull->nstfout,  1);
   CTYPE("Number of pull groups");
-  ITYPE("ngroups",          pull->ngrp,1);
+  ITYPE("pull_ngroups",     pull->ngrp,1);
 
   if (pull->cyl_r1 > pull->cyl_r0) {
     fprintf(stderr,"ERROR: pull_r1 > pull_r0\n");
@@ -137,7 +137,8 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
   }
 
   if (pull->ngrp < 1 || pull->ngrp > MAX_PULL_GROUPS-1)
-    gmx_fatal(FARGS,"ngroups should be between 1 and %d",MAX_PULL_GROUPS-1);
+    gmx_fatal(FARGS,"pull_ngroups should be between 1 and %d",
+	      MAX_PULL_GROUPS-1);
   
   snew(pull->grp,pull->ngrp+1);
 
@@ -197,39 +198,49 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_block *grps,char **gnames)
   char *ptr,pulldim1[STRLEN];
   t_pullgrp *pgrp;
 
-  if (PULL_CYL(pull)) {
-    pull->dim[0] = 0;
-    pull->dim[1] = 0;
+  if (pull->eGeom == epullgDIST || pull->eGeom == epullgCYL) {
+    pull->dim[0] = 1;
+    pull->dim[1] = 1;
     pull->dim[2] = 1;
   } else {
     ptr = pulldim;
+    i = 0;
     for(d=0; d<DIM; d++) {
       if (sscanf(ptr,"%s%n",pulldim1,&nchar) != 1)
-	gmx_fatal(FARGS,"Less than 3 pull dimensions given in pulldim: '%s'",
+	gmx_fatal(FARGS,"Less than 3 pull dimensions given in pull_dim: '%s'",
 		  pulldim);
       
       if (strncasecmp(pulldim1,"N",1) == 0) {
 	pull->dim[d] = 0;
       } else if (strncasecmp(pulldim1,"Y",1) == 0) {
 	pull->dim[d] = 1;
+	i++;
       } else {
-	gmx_fatal(FARGS,"Please use Y(ES) or N(O) for pulldim only (not %s)",
+	gmx_fatal(FARGS,"Please use Y(ES) or N(O) for pull_dim only (not %s)",
 		  pulldim1);
       }
       ptr += nchar;
     }
+    if (i == 0)
+      gmx_fatal(FARGS,"All entries in pull_dim are N");
   }
 
   for(g=0; g<pull->ngrp+1; g++) {
     pgrp = &pull->grp[g];
-    ig = search_string(pgnames[g],grps->nr,gnames);
-    pgrp->nat = grps->index[ig+1] - grps->index[ig];
+    if (g == 0 && strcmp(pgnames[g],"") == 0) {
+      pgrp->nat = 0;
+    } else {
+      ig = search_string(pgnames[g],grps->nr,gnames);
+      pgrp->nat = grps->index[ig+1] - grps->index[ig];
+    }
     if (pgrp->nat > 0) {
       fprintf(stderr,"Pull group %d '%s' has %d atoms\n",
 	      g,pgnames[g],pgrp->nat);
       snew(pgrp->ind,pgrp->nat);
       for(i=0; i<pgrp->nat; i++)
 	pgrp->ind[i] = grps->a[grps->index[ig]+i];
+      if (pull->eGeom == epullgCYL && g == 0 && pgrp->nweight > 0)
+	gmx_fatal(FARGS,"Weights are not supported for the reference group with cyclinder pulling");
       if (pgrp->nweight > 0 && pgrp->nweight != pgrp->nat)
 	gmx_fatal(FARGS,"Number of weights (%d) for pull group %d '%s' does not match the number of atoms (%d)",
 		  pgrp->nweight,g,pgnames[g],pgrp->nat);
@@ -237,9 +248,17 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_block *grps,char **gnames)
 	pgrp->pbcatom -= 1;
       else
 	pgrp->pbcatom = pgrp->ind[(pgrp->nat-1)/2];
+      if ((pull->eGeom == epullgDIR || pull->eGeom == epullgCYL) &&
+	  g > 0 && norm2(pgrp->vec) == 0)
+	gmx_fatal(FARGS,"pull_vec%d can not be zero with geometry %s",
+		  g,EPULLGEOM(pull->eGeom));
+      if (pull->eGeom == epullgCYL &&
+	  (pgrp->vec[XX] != 0 || pgrp->vec[YY] != 0))
+	gmx_fatal(FARGS,"With geometry %s pull_vec%d should have x and y components set to zero",EPULLGEOM(pull->eGeom),g);
     } else {
       if (g == 0) {
-	gmx_fatal(FARGS, "Dynamic reference groups are not support when using absolute reference!\n");
+	if (pull->eGeom == epullgCYL)
+	  gmx_fatal(FARGS, "Absolute reference groups are not support with geometry %s",EPULLGEOM(pull->eGeom));
       } else {
 	gmx_fatal(FARGS,"Pull group %d '%s' is empty",g,pgnames[g]);
       }

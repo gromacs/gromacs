@@ -52,6 +52,7 @@
 #include "smalloc.h"
 #include "pull.h"
 #include "xvgr.h"
+#include "names.h"
 
 static void pull_print_x(FILE *out,t_pull *pull, real t) 
 {
@@ -61,10 +62,8 @@ static void pull_print_x(FILE *out,t_pull *pull, real t)
 
   for (g=0; g<1+pull->ngrp; g++) {
     if (pull->grp[g].nat > 0) {
-      for(m=0; m<DIM; m++) {
-	if (pull->dim[m] != 0)
-	  fprintf(out,"\t%f",pull->grp[g].x[m]);
-      }
+      for(m=0; m<DIM; m++)
+	fprintf(out,"\t%f",pull->grp[g].x[m]);
     }
   }
   fprintf(out,"\n");
@@ -114,11 +113,9 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord)
     if (pull->grp[g].nat > 0 && (g > 0 || bCoord)) {
       if (bCoord || pull->eGeom == epullgPOS) {
 	for(m=0; m<DIM; m++) {
-	  if (pull->dim[m] != 0) {
-	    sprintf(buf,"%d %c",g,'X'+m);
-	    setname[nsets] = strdup(buf);
-	    nsets++;
-	  }
+	  sprintf(buf,"%d %c",g,'X'+m);
+	  setname[nsets] = strdup(buf);
+	  nsets++;
 	}
       } else {
 	sprintf(buf,"%d",g);
@@ -586,15 +583,15 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
   sfree(dr);
 }
 
-/* Pulling with a harmonic umbrella potential */
-static real do_umbrella(t_commrec *cr,
+/* Pulling with a harmonic umbrella potential or constant force */
+static real do_pull_pot(t_commrec *cr,int ePull,
 			t_pull *pull, rvec *f, bool bVir, tensor vir, 
 			matrix box, t_mdatoms *md,
 			double t)
 {
   int       g,j,m;
   dvec      dr,dev;
-  double    invdr;
+  double    ndr,invdr;
   real      V;
   t_pullgrp *pgrp;
 
@@ -606,27 +603,44 @@ static real do_umbrella(t_commrec *cr,
 
     switch (pull->eGeom) {
     case epullgDIST:
-      pgrp->f_scal  = -pgrp->k*dev[0];
-      V            += 0.5*pgrp->k*sqr(dev[0]);
-      invdr         = 1/dnorm(dr);
+      ndr   = dnorm(dr);
+      invdr = 1/ndr;
+      if (ePull == epullUMBRELLA) {
+	pgrp->f_scal  = -pgrp->k*dev[0];
+	V            += 0.5*pgrp->k*sqr(dev[0]);
+      } else {
+	pgrp->f_scal  = -pgrp->k;
+	V            += pgrp->k*ndr;
+      }
       for(m=0; m<DIM; m++)
-	pgrp->f[m]  = pgrp->f_scal*dr[m]*invdr;
+	pgrp->f[m]    = pgrp->f_scal*dr[m]*invdr;
       break;
     case epullgDIR:
     case epullgCYL:
-      pgrp->f_scal  = -pgrp->k*dev[0];
-      V            += 0.5*pgrp->k*sqr(dev[0]);
+      if (ePull == epullUMBRELLA) {
+	pgrp->f_scal  = -pgrp->k*dev[0];
+	V            += 0.5*pgrp->k*sqr(dev[0]);
+      } else {
+	pgrp->f_scal  = -pgrp->k;
+	V            += pgrp->k*dr[0];
+      }
       for(m=0; m<DIM; m++)
-	pgrp->f[m]  = pgrp->f_scal*pgrp->vec[m];
+	pgrp->f[m]    = pgrp->f_scal*pgrp->vec[m];
       break;
     case epullgPOS:
       for(m=0; m<DIM; m++) {
-	pgrp->f[m]  = -pgrp->k*dev[m];
-	V          += 0.5*pgrp->k*sqr(dev[m]);
+	if (ePull == epullUMBRELLA) {
+	  pgrp->f[m]  = -pgrp->k*dev[m];
+	  V          += 0.5*pgrp->k*sqr(dev[m]);
+	} else {
+      	  pgrp->f[m]  = -pgrp->k*pull->dim[m];
+	  V          += pgrp->k*dr[m]*pull->dim[m];
+	}
+	break;
       }
       break;
     }
-
+    
     if (bVir) {
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
@@ -641,13 +655,13 @@ static real do_umbrella(t_commrec *cr,
   return V;
 }
 
-real pull_umbrella(t_pull *pull, rvec *x, rvec *f, tensor vir, 
-		   matrix box, t_topology *top, double t,
-		   t_mdatoms *md, t_commrec *cr) 
+real pull_potential(int ePull,t_pull *pull, rvec *x, rvec *f, tensor vir, 
+		    matrix box, t_topology *top, double t,
+		    t_mdatoms *md, t_commrec *cr) 
 {
   pull_calc_coms(cr,pull,md,x,NULL,box);
 
-  return do_umbrella(cr,pull,f,MASTER(cr),vir,box,md,t);
+  return do_pull_pot(cr,ePull,pull,f,MASTER(cr),vir,box,md,t);
 }
 
 void pull_constraint(t_pull *pull, rvec *x, rvec *xp, rvec *v, tensor vir, 
@@ -772,6 +786,15 @@ void init_pull(FILE *log,t_inputrec *ir,int nfile,t_filenm fnm[],
   case epbcXY:   pull->npbcdim = 2; break;
   default:       pull->npbcdim = 3; break;
   }
+
+  fprintf(log,"\nWill apply %s COM pulling in geometry '%s'\n",
+	  EPULLTYPE(ir->ePull),EPULLGEOM(pull->eGeom));
+  if (pull->grp[0].nat > 0)
+    fprintf(log,"between a reference group and %d group%s\n",
+	    pull->ngrp,pull->ngrp==1 ? "" : "s");
+  else
+    fprintf(log,"with an absolute reference on %d group%s\n",
+	    pull->ngrp,pull->ngrp==1 ? "" : "s");
 
   for(g=0; g<pull->ngrp+1; g++) {
     pgrp = &pull->grp[g];

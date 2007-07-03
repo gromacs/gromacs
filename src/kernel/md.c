@@ -918,10 +918,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Afm and Umbrella type pulling happens before the update, 
      * other types in update 
      */
-    if (inputrec->ePull == epullUMBRELLA) {
-      ener[F_PULL_UMB] =
-	pull_umbrella(inputrec->pull,state->x,f,force_vir,state->box,
-		      top,inputrec->init_t+step*inputrec->delta_t,mdatoms,cr); 
+    if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F) {
+      ener[F_COM_PULL] =
+	pull_potential(inputrec->ePull,inputrec->pull,
+		       state->x,f,force_vir,state->box,
+		       top,inputrec->init_t+step*inputrec->delta_t,mdatoms,cr);
+      /* Avoid double counting */
+      if (!MASTER(cr))
+	ener[F_COM_PULL] = 0;
     }
 
     if (bFFscan)

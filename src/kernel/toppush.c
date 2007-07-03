@@ -880,8 +880,7 @@ void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line)
   t_molinfo *newmol;
 
   if ((sscanf(line,"%s%d",type,&nrexcl)) != 2) {
-    too_few();
-    return;
+    warning_error("Expected a molecule type name and nrexcl");
   }
   
   /* Test if this atomtype overwrites another */

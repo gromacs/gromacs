@@ -145,7 +145,7 @@ static const t_ftupd ftupd[] = {
   { 22, F_ORIRESDEV         },
   { 26, F_DIHRES            },
   { 26, F_DIHRESVIOL        },
-  { 46, F_PULL_UMB          },
+  { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        }
 };

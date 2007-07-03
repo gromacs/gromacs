@@ -109,7 +109,7 @@ enum {
   F_VSITE3FAD,
   F_VSITE3OUT,
   F_VSITE4FD,
-  F_PULL_UMB,
+  F_COM_PULL,
   F_EQM,
   F_EPOT,
   F_EKIN,

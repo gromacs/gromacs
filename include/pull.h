@@ -51,10 +51,11 @@
 extern void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
 				 dvec dr,dvec dev);
 
-/* Determine the umbrella forces and add them to f, return the potential */
-extern real pull_umbrella(t_pull *pull, rvec *x, rvec *f, tensor vir, 
-			  matrix box, t_topology *top, double t,
-			  t_mdatoms *md, t_commrec *cr);
+/* Determine the COM pull forces and add them to f, return the potential */
+extern real pull_potential(int ePull, t_pull *pull,
+			   rvec *x, rvec *f, tensor vir, 
+			   matrix box, t_topology *top, double t,
+			   t_mdatoms *md, t_commrec *cr);
 
 /* Constrain the coordinates xp in the directions in x
  * and also constrain v when v!=NULL.

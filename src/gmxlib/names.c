@@ -175,7 +175,7 @@ const char *ewt_names[ewtNR+1] = {
 };
 
 const char *epull_names[epullNR+1] = { 
-  "no", "umbrella", "constraint", NULL
+  "no", "umbrella", "constraint", "constant_force", NULL
 };
 
 const char *epullg_names[epullgNR+1] = { 
