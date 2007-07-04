@@ -72,10 +72,10 @@ static int ce=0, cb=0;
 
 /* this routine integrates the array data and returns the resulting array */
 /* routine uses simple trapezoid rule                                     */
-void p_integrate(real *result, real data[], int ndata, real slWidth)
+void p_integrate(double *result, double data[], int ndata, double slWidth)
 {
   int i, slice;
-  real sum;
+  double sum;
   
   if (ndata <= 2) 
     fprintf(stderr,"Warning: nr of slices very small. This will result"
@@ -94,10 +94,10 @@ void p_integrate(real *result, real data[], int ndata, real slWidth)
 }
 
 void calc_potential(char *fn, atom_id **index, int gnx[], 
-		    real ***slPotential, real ***slCharge, 
-		    real ***slField, int *nslices, 
-		    t_topology *top, int axis, int nr_grps, real *slWidth,
-		    real fudge_z, bool bSpherical)
+		    double ***slPotential, double ***slCharge, 
+		    double ***slField, int *nslices, 
+		    t_topology *top, int axis, int nr_grps, double *slWidth,
+		    double fudge_z, bool bSpherical, bool bCorrect)
 {
   rvec *x0;              /* coordinates without pbc */
   matrix box;            /* box (3x3) */
@@ -109,10 +109,12 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
       ax1=0, ax2=0,
       nr_frames = 0,     /* number of frames */
       slice;             /* current slice */
-  real slVolume;         /* volume of slice for spherical averaging */
-  real t, z;
+  double slVolume;         /* volume of slice for spherical averaging */
+  double qsum,nn;
+  real t;
+  double z;
   rvec xcm;
-
+  
   switch(axis)
   {
   case 0:
@@ -195,13 +197,14 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
     }
     nr_frames++;
   } while (read_next_x(status,&t,natoms,x0,box));
-  
+
   /*********** done with status file **********/
   close_trj(status);
   
   /* slCharge now contains the total charge per slice, summed over all
      frames. Now divide by nr_frames and integrate twice 
    */
+
   
   if (bSpherical)
     fprintf(stderr,"\n\nRead %d frames from trajectory. Calculating potential"
@@ -212,35 +215,93 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++)
   {
-    for (i = 0; i < *nslices; i++)
-    {
-      if (bSpherical)
+      for (i = 0; i < *nslices; i++)
       {
-	/* charge per volume is now the summed charge, divided by the nr
-	   of frames and by the volume of the slice it's in, 4pi r^2 dr
-	   */
-	slVolume = 4*M_PI * sqr(i) * sqr(*slWidth) * *slWidth;
-	if (slVolume == 0)
-	{
-	  (*slCharge)[n][i] = 0;
-	}
-	else
-	{
-	  (*slCharge)[n][i] = (*slCharge)[n][i] / (nr_frames * slVolume);
-	}
+          if (bSpherical)
+          {
+              /* charge per volume is now the summed charge, divided by the nr
+              of frames and by the volume of the slice it's in, 4pi r^2 dr
+              */
+              slVolume = 4*M_PI * sqr(i) * sqr(*slWidth) * *slWidth;
+              if (slVolume == 0)
+              {
+                  (*slCharge)[n][i] = 0;
+              }
+              else
+              {
+                  (*slCharge)[n][i] = (*slCharge)[n][i] / (nr_frames * slVolume);
+              }
+          }
+          else
+          {
+              /* get charge per volume */
+              (*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices) /
+              (nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);              
+          }
       }
-      else
+      /* Now we have charge densities */
+  }
+  
+  if(bCorrect && !bSpherical)
+  {
+      for(n =0; n < nr_grps; n++)
       {
-	/* get charge per volume */
-	(*slCharge)[n][i] = (*slCharge)[n][i] * (*nslices) /
-	  (nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
-      }
-    }
-    /* Now we have charge densities */
-   
-    /* integrate twice to get field and potential */
-    p_integrate((*slField)[n], (*slCharge)[n], *nslices, *slWidth);
-    p_integrate((*slPotential)[n],(*slField)[n], *nslices, *slWidth);
+          nn = 0;
+          qsum = 0;
+          for (i = 0; i < *nslices; i++)
+          {
+              if( fabs((*slCharge)[n][i]) >= GMX_DOUBLE_MIN )
+              {
+                  nn++;
+                  qsum += (*slCharge)[n][i];
+              }
+          }          
+          qsum /= nn;
+          for (i = 0; i < *nslices; i++)
+          {
+              if( fabs((*slCharge)[n][i]) >= GMX_DOUBLE_MIN )
+              {
+                  (*slCharge)[n][i] -= qsum;
+              }
+          }
+      } 
+  }
+  
+  for(n =0; n < nr_grps; n++)
+  {
+      /* integrate twice to get field and potential */
+      p_integrate((*slField)[n], (*slCharge)[n], *nslices, *slWidth);
+  }
+  
+  
+  if(bCorrect && !bSpherical)
+  {
+      for(n =0; n < nr_grps; n++)
+      {
+          nn = 0;
+          qsum = 0;
+          for (i = 0; i < *nslices; i++)
+          {
+              if( fabs((*slCharge)[n][i]) >= GMX_DOUBLE_MIN )
+              {
+                  nn++;
+                  qsum += (*slField)[n][i];
+              }
+          }          
+          qsum /= nn;
+          for (i = 0; i < *nslices; i++)
+          {
+              if( fabs((*slCharge)[n][i]) >= GMX_DOUBLE_MIN )
+              {
+                  (*slField)[n][i] -= qsum;
+              }
+          }
+      } 
+  }
+  
+  for(n =0; n < nr_grps; n++)
+  {      
+      p_integrate((*slPotential)[n],(*slField)[n], *nslices, *slWidth);
   }
   
   /* Now correct for eps0 and in spherical case for r*/
@@ -264,9 +325,9 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
   sfree(x0);  /* free memory used by coordinate array */
 }
 
-void plot_potential(real *potential[], real *charge[], real *field[], 
+void plot_potential(double *potential[], double *charge[], double *field[], 
 		    char *afile, char *bfile, char *cfile, int nslices,
-		    int nr_grps, char *grpname[], real slWidth)
+		    int nr_grps, char *grpname[], double slWidth)
 {
   FILE       *pot,     /* xvgr file with potential */
              *cha,     /* xvgr file with charges   */
@@ -288,14 +349,14 @@ void plot_potential(real *potential[], real *charge[], real *field[],
 
   for (slice = cb; slice < (nslices - ce); slice++)
   { 
-    fprintf(pot,"%12g  ", slice * slWidth);
-    fprintf(cha,"%12g  ", slice * slWidth);
-    fprintf(fie,"%12g  ", slice * slWidth);
+    fprintf(pot,"%20.16g  ", slice * slWidth);
+    fprintf(cha,"%20.16g  ", slice * slWidth);
+    fprintf(fie,"%20.16g  ", slice * slWidth);
     for (n = 0; n < nr_grps; n++)
     {
-      fprintf(pot,"   %12g", potential[n][slice]);
-      fprintf(fie,"   %12g", field[n][slice]);
-      fprintf(cha,"   %12g", charge[n][slice]);
+      fprintf(pot,"   %20.16g", potential[n][slice]);
+      fprintf(fie,"   %20.16g", field[n][slice]);
+      fprintf(cha,"   %20.16g", charge[n][slice]);
     }
     fprintf(pot,"\n");
     fprintf(cha,"\n");
@@ -325,6 +386,7 @@ int gmx_potential(int argc,char *argv[])
   static int  ngrps   = 1;
   static bool bSpherical = FALSE;            /* default is bilayer types   */
   static real fudge_z = 0;                    /* translate coordinates      */
+  static bool bCorrect = 0;
   t_pargs pa [] = {
     { "-d",   FALSE, etSTR, {&axtitle}, 
       "Take the normal on the membrane in direction X, Y or Z." },
@@ -340,13 +402,15 @@ int gmx_potential(int argc,char *argv[])
     { "-spherical", FALSE, etBOOL, {&bSpherical},
       "Calculate spherical thingie" },
     { "-ng",       FALSE, etINT, {&ngrps},
-      "Number of groups to consider" }
+      "Number of groups to consider" },
+    { "-correct",  FALSE, etBOOL, {&bCorrect},
+      "Assume net zero charge of groups to improve accuracy" }
   };
   static char *bugs[] = {
     "Discarding slices for integration should not be necessary."
   };
 
-  real     **potential,                    /* potential per slice        */
+  double    **potential,                    /* potential per slice        */
             **charge,                       /* total charge per slice     */
             **field,                        /* field per slice            */
             slWidth;                        /* width of one slice         */
@@ -384,7 +448,7 @@ int gmx_potential(int argc,char *argv[])
   calc_potential(ftp2fn(efTRX,NFILE,fnm), index, ngx, 
 		 &potential, &charge, &field,
 		 &nslices, top, axis, ngrps, &slWidth, fudge_z,
-		 bSpherical); 
+		 bSpherical, bCorrect); 
 
   plot_potential(potential, charge, field, opt2fn("-o",NFILE,fnm),
 		 opt2fn("-oc",NFILE,fnm), opt2fn("-of",NFILE,fnm),
