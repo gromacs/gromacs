@@ -84,8 +84,6 @@ static void gromacs_name(char *name)
       name[i-1]=name[i];
     name[length-1]=temp;
   }
-  if(strcmp(name,"OXT")==0)
-    strcpy(name,"O2");
 }
 
 void gmx_write_pdb_box(FILE *out,matrix box)
