@@ -161,8 +161,6 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
   char       *gro;
   gmx_wallcycle_t wcycle;
 
-  wcycle = wallcycle_init();
-  
   if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
     cr->dd = init_domain_decomposition(stdlog,cr,ddxyz,rdd,
 				       Flags & MD_DLB,ddcsx,ddcsy,ddcsz);
@@ -174,6 +172,8 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		"Can only use seperate PME nodes with domain decomposition\n");
     cr->duty = (DUTY_PP | DUTY_PME);
   }
+
+  wcycle = wallcycle_init(stdlog,cr);
 
   snew(inputrec,1);
   snew(nrnb,1);

@@ -4,12 +4,12 @@
 #include <stdio.h>
 #include "typedefs.h"
 
-enum { ewcRUN, ewcDOMDEC, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPMEMESH_SEP, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcMoveE, ewcNR };
+enum { ewcRUN, ewcDOMDEC, ewcVSITECONSTR, ewcPP_PMESENDX, ewcMOVEX, ewcNS, ewcFORCE, ewcMOVEF, ewcPMEMESH, ewcPMEMESH_SEP, ewcPMEWAITCOMM, ewcPP_PMEWAITRECVF, ewcVSITESPREAD, ewcTRAJ, ewcUPDATE, ewcMoveE, ewcTEST, ewcNR };
 
 extern bool wallcycle_have_counter(void);
 /* Returns if cycle counting is supported */
 
-extern gmx_wallcycle_t wallcycle_init(void);
+extern gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr);
 /* Returns the wall cycle structure.
  * Returns NULL when cycle counting is not supported.
  */

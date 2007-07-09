@@ -1,3 +1,8 @@
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
+#include <string.h>
 #include "gmx_wallcycle.h"
 #include "gmx_cyclecounter.h"
 #include "smalloc.h"
@@ -14,19 +19,41 @@ typedef struct gmx_wallcycle {
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
-  { "Run", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Comm. energies" };
+  { "Run", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Comm. energies", "Test" };
+
+/* variables for testing/debugging */
+static bool              wc_barrier=FALSE;
+static gmx_wallcycle_t_t *wc_all=NULL;
+static int               wc_depth=0;
+static int               ewc_prev=-1;
+static gmx_cycles_t      cycle_prev;
+#ifdef GMX_MPI
+static MPI_Comm          wc_mpi_comm_mygroup;
+#endif
 
 bool wallcycle_have_counter(void)
 {
   return gmx_cycles_have_counter();
 }
 
-gmx_wallcycle_t wallcycle_init(void)
+gmx_wallcycle_t wallcycle_init(FILE *fplog,t_commrec *cr)
 {
   gmx_wallcycle_t_t *wc;
 
+#ifdef GMX_MPI
+    if (PAR(cr) && getenv("GMX_CYCLE_BARRIER") != NULL) {
+      fprintf(fplog,"\nWill call MPI_Barrier before each cycle start/stop call\n\n");
+      wc_barrier = TRUE;
+      wc_mpi_comm_mygroup = cr->mpi_comm_mygroup;
+    }
+#endif
+
   if (wallcycle_have_counter()) {
     snew(wc,ewcNR);
+    if (getenv("GMX_CYCLE_ALL") != NULL) {
+      fprintf(fplog,"\nWill time all the code during the run\n\n");
+      snew(wc_all,ewcNR*ewcNR);
+    }
   } else {
     wc = NULL;
   }
@@ -34,19 +61,62 @@ gmx_wallcycle_t wallcycle_init(void)
   return wc;
 }
 
+static void wallcycle_all_start(int ewc,gmx_cycles_t cycle)
+{
+  ewc_prev = ewc;
+  cycle_prev = cycle;
+}
+
+static void wallcycle_all_stop(int ewc,gmx_cycles_t cycle)
+{
+  wc_all[ewc_prev*ewcNR+ewc].n += 1;
+  wc_all[ewc_prev*ewcNR+ewc].c += cycle - cycle_prev;
+}
+
 void wallcycle_start(gmx_wallcycle_t wc, int ewc)
 {
+  gmx_cycles_t cycle;
+
+#ifdef GMX_MPI
+  if (wc_barrier)
+    MPI_Barrier(wc_mpi_comm_mygroup);
+#endif
+
   if (wc) {
-    wc[ewc].start = gmx_cycles_read();
+    cycle = gmx_cycles_read();
+    wc[ewc].start = cycle;
+    if (wc_all) {
+      wc_depth++;
+      if (ewc == ewcRUN)
+	wallcycle_all_start(ewc,cycle);
+      else if (wc_depth == 2) {
+	wallcycle_all_stop(ewc,cycle);
+      }
+    }
   }
 }
 
 void wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 {
+  gmx_cycles_t cycle;
+
+#ifdef GMX_MPI
+    if (wc_barrier)
+      MPI_Barrier(wc_mpi_comm_mygroup);
+#endif
+
   if (wc) {
-    wc[ewc].last = gmx_cycles_read() - wc[ewc].start;
+    cycle = gmx_cycles_read();
+    wc[ewc].last = cycle - wc[ewc].start;
     wc[ewc].c += wc[ewc].last;
     wc[ewc].n++;
+    if (wc_all) {
+      wc_depth--;
+      if (ewc == ewcRUN)
+	wallcycle_all_stop(ewc,cycle);
+      else if (wc_depth == 1)
+	wallcycle_all_start(ewc,cycle);
+    }
   }
 }
 
@@ -68,7 +138,7 @@ double wallcycle_lastcycle(gmx_wallcycle_t wc, int ewc)
 
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 {
-  double buf[ewcNR];
+  double buf[ewcNR],*cyc_all,*buf_all;
   int    i;
 
   if (wc) {
@@ -93,6 +163,18 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
       MPI_Allreduce(cycles,buf,ewcNR,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mysim);
       for(i=0; i<ewcNR; i++)
 	cycles[i] = buf[i];
+      if (wc_all) {
+	snew(cyc_all,ewcNR*ewcNR);
+	snew(buf_all,ewcNR*ewcNR);
+	for(i=0; i<ewcNR*ewcNR; i++)
+	  cyc_all[i] = wc_all[i].c;
+	MPI_Allreduce(cyc_all,buf_all,ewcNR*ewcNR,MPI_DOUBLE,MPI_SUM,
+		      cr->mpi_comm_mysim);
+	for(i=0; i<ewcNR*ewcNR; i++)
+	  wc_all[i].c = buf_all[i];
+	sfree(buf_all);
+	sfree(cyc_all);
+      }
     }
 #endif
   }
@@ -117,7 +199,8 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 		     gmx_wallcycle_t wc, double cycles[])
 {
   double c2t,tot,sum;
-  int    i,npp;
+  int    i,j,npp;
+  char   buf[STRLEN];
   char   *myline = "-----------------------------------------------------------------------";
   
   if (wc) {
@@ -139,6 +222,20 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
 		   (i==ewcPMEMESH_SEP || i==ewcPMEWAITCOMM) ? npme : npp,
 		   wc[i].n,cycles[i],tot);
       sum += cycles[i];
+    }
+    if (wc_all) {
+      for(i=0; i<ewcNR; i++) {
+	for(j=0; j<ewcNR; j++) {
+	  sprintf(buf,"%-9s",wcn[i]);
+	  buf[9] = ' ';
+	  sprintf(buf+10,"%-9s",wcn[j]);
+	  buf[19] = '\0';
+	  print_cycles(fplog,c2t,buf,
+		       (i==ewcPMEMESH_SEP || i==ewcPMEWAITCOMM) ? npme : npp,
+		       wc_all[i*ewcNR+j].n,wc_all[i*ewcNR+j].c,tot);
+	  sum += wc_all[i*ewcNR+j].c;
+	}
+      }
     }
     print_cycles(fplog,c2t,"Rest",npp,0,tot-sum,tot);
     fprintf(fplog,"%s\n",myline);
