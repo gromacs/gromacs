@@ -900,16 +900,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       write_traj(cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,inputrec->xtcprec,
 		 top_global,step,t,state,state_global,f,f_global);
       debug_gmx();
-      wallcycle_stop(wcycle,ewcTRAJ);
-    }
 
-    if (MASTER(cr) && bLastStep && !bRerunMD && !bFFscan) {
-      /* x and v have been collected in write_traj */
-      fprintf(stderr,"Writing final coordinates.\n");
-      write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		     *top_global->name,&top_global->atoms,
-		     state_global->x,state_global->v,state->box);
-      debug_gmx();
+      if (bLastStep && (Flags & MD_CONFOUT) && MASTER(cr) &&
+	  !bRerunMD && !bFFscan) {
+	/* x and v have been collected in write_traj */
+	fprintf(stderr,"Writing final coordinates.\n");
+	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
+		       *top_global->name,&top_global->atoms,
+		       state_global->x,state_global->v,state->box);
+	debug_gmx();
+      }
+      wallcycle_stop(wcycle,ewcTRAJ);
     }
     GMX_MPE_LOG(ev_output_finish);
 

@@ -63,6 +63,8 @@
 #define MD_FFSCAN      (1<<6)
 #define MD_SEPDVDL     (1<<7)
 #define MD_DLB         (1<<8)
+#define MD_CONFOUT     (1<<9)
+
 
 enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR

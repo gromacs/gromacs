@@ -182,6 +182,7 @@ int main(int argc,char *argv[])
   static bool bSepDVDL     = FALSE;
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
+  static bool bConfout     = TRUE;
   
   static int  npme=0;
   static int  nmultisim=0;
@@ -231,6 +232,8 @@ int main(int argc,char *argv[])
       "Do glass simulation with special long range corrections" },
     { "-ionize",  FALSE, etBOOL,{&bIonize},
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
+    { "-confout", FALSE, etBOOL, {&bConfout},
+      "HIDDENWrite the last configuration with -c" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
@@ -281,6 +284,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bIonize   ? MD_IONIZE     : 0);
   Flags = Flags | (bGlas     ? MD_GLAS       : 0);
   Flags = Flags | (bDLB      ? MD_DLB        : 0);
+  Flags = Flags | (bConfout  ? MD_CONFOUT    : 0);
 
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
