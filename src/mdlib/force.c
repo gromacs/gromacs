@@ -530,8 +530,8 @@ check_solvent(FILE *                fp,
     fr->solvent_opt = bestsol;
 }
 
-static void *init_cginfo(FILE *fplog,const t_topology *top,
-			 t_forcerec *fr,bool bNoSolvOpt)
+static int *init_cginfo(FILE *fplog,const t_topology *top,
+			t_forcerec *fr,bool bNoSolvOpt)
 {
   const t_block *cgs,*excl;
   const t_atoms *atoms;
