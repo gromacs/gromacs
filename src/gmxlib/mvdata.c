@@ -280,19 +280,20 @@ void ld_data(const t_commrec *cr,int left,int right,t_inputrec *inputrec,
 {
   int i;
   
+  if (debug) fprintf(debug,"in ld_data\n");
   ld_inputrec(cr,left,inputrec);
-  if (debug) fprintf(stdlog,"after ld_inputrec");
+  if (debug) fprintf(debug,"after ld_inputrec\n");
   ld_symtab(cr,left,&top->symtab);
-  if (debug) fprintf(stdlog,"after ld_symtab");
+  if (debug) fprintf(debug,"after ld_symtab\n");
   top->name=ld_string(cr,left,&top->symtab);
-  if (debug) fprintf(stdlog,"after ld_name");
+  if (debug) fprintf(debug,"after ld_name\n");
   ld_atoms(cr,left,&top->symtab,&top->atoms);
-  if (debug) fprintf(stdlog,"after ld_atoms");
+  if (debug) fprintf(debug,"after ld_atoms\n");
   ld_idef(cr,left,&top->idef);
-  if (debug) fprintf(stdlog,"after ld_idef");
+  if (debug) fprintf(debug,"after ld_idef\n");
   for (i=0; (i<ebNR); i++) 
     ld_block(cr,left,&top->blocks[i]);
-  if (debug) fprintf(stdlog,"after ld_block");
+  if (debug) fprintf(debug,"after ld_block\n");
   if (!DOMAINDECOMP(cr) || !DDMASTER(cr->dd)) {
     snew(state->nosehoover_xi,inputrec->opts.ngtc);
     if (!DOMAINDECOMP(cr)) {
@@ -304,7 +305,7 @@ void ld_data(const t_commrec *cr,int left,int right,t_inputrec *inputrec,
     }
   }
   ld_state(cr,left,state);
-  if (debug) fprintf(stdlog,"after ld_state");
+  if (debug) fprintf(debug,"after ld_state\n");
 }
 
 static void mv_grpopts(const t_commrec *cr,int dest,t_grpopts *g)
