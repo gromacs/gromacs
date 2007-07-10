@@ -2824,8 +2824,9 @@ void get_pme_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
     }
   }
 
-  fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
-	  cr->nodeid,*nmy_ddnodes);
+  if (logfile)
+    fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
+	    cr->nodeid,*nmy_ddnodes);
   if (debug) {
     fprintf(debug,"Receive coordinates from PP nodes:");
     for(x=0; x<*nmy_ddnodes; x++)

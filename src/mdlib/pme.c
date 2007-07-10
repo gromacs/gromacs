@@ -1184,7 +1184,7 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-static void setup_coordinate_communication(FILE *log, t_commrec *cr,
+static void setup_coordinate_communication(FILE *fplog, t_commrec *cr,
 					   gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
@@ -1221,8 +1221,10 @@ static void setup_coordinate_communication(FILE *log, t_commrec *cr,
   }
 
   if (bFirst) {
-    fprintf(log,"PME maximum node shift for coordinate communication: %d\n",
-	    shmax);
+    if (fplog)
+      fprintf(fplog,
+	      "PME maximum node shift for coordinate communication: %d\n",
+	      shmax);
     bFirst = FALSE;
   }
 
@@ -1268,15 +1270,16 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
   return 0;
 }
 
-int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
+int gmx_pme_init(FILE *fplog,gmx_pme_t *pmedata,t_commrec *cr,
 		 t_inputrec *ir,int homenr,
 		 bool bFreeEnergy)
 {
   gmx_pme_t pme=NULL;
   
   int b,d,i,totbnd;
-  
-  fprintf(log,"Creating PME data structures.\n");
+
+  if (fplog)
+    fprintf(fplog,"Creating PME data structures.\n");
   snew(pme,1);
 
   if (PAR(cr)) {
@@ -1289,12 +1292,14 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
     pme->nnodes = 1;
   }
 
-  fprintf(log,"Will do PME sum in reciprocal space.\n");
-  please_cite(log,"Essman95a");
+  if (fplog)
+    fprintf(fplog,"Will do PME sum in reciprocal space.\n");
+  please_cite(fplog,"Essman95a");
 
   if (ir->ewald_geometry == eewg3DC) {
-    fprintf(log,"Using the Ewald3DC correction for systems with a slab geometry.\n");
-    please_cite(log,"In-Chul99a");
+    if (fplog)
+      fprintf(fplog,"Using the Ewald3DC correction for systems with a slab geometry.\n");
+    please_cite(fplog,"In-Chul99a");
   }
 
   pme->bFEP = ((ir->efep != efepNO) && bFreeEnergy);
@@ -1342,16 +1347,17 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
       pme->rightid[b] = (pme->nodeid + (b + 1)) % pme->nnodes;
     }
 
-    fprintf(log,"Parallelized PME sum used. nkx=%d, npme=%d\n",
-	    ir->nkx,pme->nnodes);
-    if ((ir->nkx % pme->nnodes) != 0)
-      fprintf(log,"Warning: For load balance, "
-	      "fourier_nx should be divisible by the number of PME nodes\n");
+    if (fplog) {
+      fprintf(fplog,"Parallelized PME sum used. nkx=%d, npme=%d\n",
+	      ir->nkx,pme->nnodes);
+      if ((ir->nkx % pme->nnodes) != 0)
+	fprintf(fplog,"Warning: For load balance, fourier_nx should be divisible by the number of PME nodes\n");
+    }
 
     if (DOMAINDECOMP(cr)) {
       snew(pme->node_dest,pme->nnodes);
       snew(pme->node_src,pme->nnodes);
-      setup_coordinate_communication(log,cr,pme);
+      setup_coordinate_communication(fplog,cr,pme);
     }
     snew(pme->count,pme->nnodes);
     snew(pme->rcount,pme->nnodes);
@@ -1373,9 +1379,9 @@ int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
   snew(pme->bsp_mod[YY],pme->nky);
   snew(pme->bsp_mod[ZZ],pme->nkz);
 
-  pme->gridA = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,NULL,cr);
+  pme->gridA = mk_fftgrid(fplog,pme->nkx,pme->nky,pme->nkz,NULL,cr);
   if (bFreeEnergy)
-    pme->gridB = mk_fftgrid(log,pme->nkx,pme->nky,pme->nkz,NULL,cr);
+    pme->gridB = mk_fftgrid(fplog,pme->nkx,pme->nky,pme->nkz,NULL,cr);
   else
     pme->gridB = NULL;
   
