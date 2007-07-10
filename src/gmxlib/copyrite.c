@@ -430,6 +430,9 @@ void please_cite(FILE *fp,char *key)
   char *title;
 #define LINE_WIDTH 79
   
+  if (fp == NULL)
+    return;
+
   for(index=0; (index<NSTR) && (strcmp(citedb[index].key,key) != 0); index++)
     ;
   

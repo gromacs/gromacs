@@ -135,6 +135,7 @@ static int get_nodeid(FILE *log,t_commrec *cr,
 }
 
 static void par_fn(char *base,int ftp,const t_commrec *cr,
+		   bool bUnderScore,
 		   char buf[],int bufsize)
 {
   int n;
@@ -147,7 +148,9 @@ static void par_fn(char *base,int ftp,const t_commrec *cr,
   buf[strlen(base) - strlen(ftp2ext(fn2ftp(base))) - 1] = '\0';
 
   /* Add node info */
-  if (MULTISIM(cr)) {
+  if (bUnderScore)
+    strcat(buf,"_");
+  if (MULTISIM(cr) && !bUnderScore) {
     sprintf(buf+strlen(buf),"%d",cr->ms->sim);
   } else if (PAR(cr)) {
     sprintf(buf+strlen(buf),"%d",cr->nodeid);
@@ -189,7 +192,7 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,char *name)
   sfree(ibuf);
 }
 
-void open_log(char *lognm,const t_commrec *cr)
+void open_log(char *lognm,const t_commrec *cr,bool bMasterOnly)
 {
   int  len,testlen,pid;
   char buf[256],host[256];
@@ -198,7 +201,7 @@ void open_log(char *lognm,const t_commrec *cr)
   debug_gmx();
   
   /* Communicate the filename for logfile */
-  if (cr->nnodes > 1) {
+  if (cr->nnodes > 1 && !bMasterOnly) {
     if (MASTER(cr)) {
       len = strlen(lognm)+1;
       gmx_txs(cr,cr->right,&len,sizeof(len));
@@ -225,9 +228,13 @@ void open_log(char *lognm,const t_commrec *cr)
   
   debug_gmx();
 
-  /* Since log always ends with '.log' let's use this info */
-  par_fn(lognm,efLOG,cr,buf,255);
-  stdlog = ffopen(buf,"w");
+  if (PAR(cr) && !bMasterOnly) {
+    /* Since log always ends with '.log' let's use this info */
+    par_fn(lognm,efLOG,cr,cr->ms!=NULL,buf,255);
+    stdlog = ffopen(buf,"w");
+  } else {
+    stdlog = ffopen(lognm,"w");
+  }
   
   /* Get some machine parameters */
 #ifdef HAVE_UNISTD_H
@@ -348,11 +355,13 @@ void init_multisystem(t_commrec *cr,int nsim,
 #endif
   }
 
-  fprintf(stdlog,"This is simulation %d",cr->ms->sim);
-  if (PAR(cr))
-    fprintf(stdlog,", local number of nodes %d, local nodeid %d",
-	    cr->nnodes,cr->nodeid);
-  fprintf(stdlog,"\n\n");
+  if (debug) {
+    fprintf(debug,"This is simulation %d",cr->ms->sim);
+    if (PAR(cr))
+      fprintf(debug,", local number of nodes %d, local nodeid %d",
+	      cr->nnodes,cr->nodeid);
+    fprintf(debug,"\n\n");
+  }
 
   if (bParFn) {
     /* Patch output and tpx file names (except log which has been done already)
@@ -361,9 +370,9 @@ void init_multisystem(t_commrec *cr,int nsim,
       /* Because of possible multiple extensions per type we must look 
        * at the actual file name 
        */
-      if ((is_output(&fnm[i]) || fnm[i].ftp == efTPX) && fnm[i].ftp != efLOG) {
+      if (is_output(&fnm[i]) || fnm[i].ftp == efTPX) {
 	ftp = fn2ftp(fnm[i].fns[0]);
-	par_fn(fnm[i].fns[0],ftp,cr,buf,255);
+	par_fn(fnm[i].fns[0],ftp,cr,FALSE,buf,255);
 	sfree(fnm[i].fns[0]);
 	fnm[i].fns[0] = strdup(buf);
       }

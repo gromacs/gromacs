@@ -668,7 +668,8 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
   }
 }
 
-static void lincs_warning(gmx_domdec_t *dd,rvec *x,rvec *xprime,t_pbc *pbc,
+static void lincs_warning(FILE *fplog,
+			  gmx_domdec_t *dd,rvec *x,rvec *xprime,t_pbc *pbc,
 			  int ncons,int *bla,real *bllen,real wangle,
 			  int maxwarn,int *warncount)
 {
@@ -683,7 +684,8 @@ static void lincs_warning(gmx_domdec_t *dd,rvec *x,rvec *xprime,t_pbc *pbc,
 	  " atom 1 atom 2  angle  previous, current, constraint length\n",
 	  wangle);
   fprintf(stderr,buf);
-  fprintf(stdlog,buf); 
+  if (fplog)
+    fprintf(fplog,buf); 
 
   for(b=0;b<ncons;b++) {
     i = bla[2*b];
@@ -702,7 +704,8 @@ static void lincs_warning(gmx_domdec_t *dd,rvec *x,rvec *xprime,t_pbc *pbc,
       sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
 	      glatnr(dd,i),glatnr(dd,j),RAD2DEG*acos(cosine),d0,d1,bllen[b]);
       fprintf(stderr,buf);
-      fprintf(stdlog,buf);
+      if (fplog)
+	fprintf(fplog,buf);
       (*warncount)++;
     }
   }
@@ -793,7 +796,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
   fclose(fp);
 }
 
-bool constrain_lincs(FILE *log,bool bLog,
+bool constrain_lincs(FILE *fplog,bool bLog,
 		     t_inputrec *ir,
 		     int step,struct gmx_lincsdata *lincsd,t_mdatoms *md,
 		     gmx_domdec_t *dd,
@@ -816,6 +819,9 @@ bool constrain_lincs(FILE *log,bool bLog,
 
   if (lincsd->nc == 0 && dd==NULL)
     return bOK;
+
+  if (fplog == NULL)
+    bLog = FALSE;
 
   /* We do not need full pbc when constraints do not cross charge groups,
    * i.e. when dd->constraint_comm==NULL
@@ -877,13 +883,13 @@ bool constrain_lincs(FILE *log,bool bLog,
     }
     
     if (bLog && lincsd->nc > 0) {
-      fprintf(stdlog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
-      fprintf(stdlog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
+      fprintf(fplog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
+      fprintf(fplog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
 	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),
 	      glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
       cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
 	      lincsd->nc,lincsd->bla,lincsd->bllen);
-      fprintf(stdlog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
+      fprintf(fplog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
 	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),
 	      glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
     }
@@ -898,9 +904,10 @@ bool constrain_lincs(FILE *log,bool bLog,
 		step,ir->init_t+step*ir->delta_t,
 		p_max,glatnr(dd,lincsd->bla[2*p_imax]),
 		glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
-	fprintf(stdlog,"%s",buf);
+	if (fplog)
+	  fprintf(fplog,"%s",buf);
 	fprintf(stderr,"%s",buf);
-	lincs_warning(dd,x,xprime,pbc_null,
+	lincs_warning(fplog,dd,x,xprime,pbc_null,
 		      lincsd->nc,lincsd->bla,lincsd->bllen,
 		      ir->LincsWarnAngle,maxwarn,warncount);
       }

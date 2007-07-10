@@ -34,8 +34,10 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 
   dd = cr->dd;
 
-  fprintf(fplog,"\nNot all bonded interactions have been properly assigned to the domain decomposition cells\n");
-  fflush(fplog);
+  if (fplog) {
+    fprintf(fplog,"\nNot all bonded interactions have been properly assigned to the domain decomposition cells\n");
+    fflush(fplog);
+  }
 
   ndiff_tot = local_count - dd->nbonded_global;
   if (ndiff_tot >= 0) {
@@ -212,7 +214,8 @@ void dd_make_reverse_top(FILE *fplog,
 {
   int natoms,n_recursive_vsite,nexcl,a;
 
-  fprintf(fplog,"\nLinking all bonded interactions to atoms\n");
+  if (fplog)
+    fprintf(fplog,"\nLinking all bonded interactions to atoms\n");
 
   natoms = top->atoms.nr;
 
@@ -229,7 +232,7 @@ void dd_make_reverse_top(FILE *fplog,
 		      &dd->n_intercg_excl);
   if (EEL_FULL(eeltype)) {
     dd->nbonded_global += nexcl;
-    if (dd->n_intercg_excl)
+    if (dd->n_intercg_excl && fplog)
       fprintf(fplog,"There are %d inter charge-group exclusions,\n"
 	      "will use an extra communication step for exclusion forces for %s\n",
 	      dd->n_intercg_excl,eel_names[eeltype]);
@@ -240,16 +243,17 @@ void dd_make_reverse_top(FILE *fplog,
     dd->ga2la[a].cell = -1;
   
   if (dd->reverse_top->n_intercg_vsite > 0) {
-    fprintf(fplog,"There are %d inter charge-group virtual sites,\n"
-	    "will an extra communication step for selected coordinates and forces\n",
-	    dd->reverse_top->n_intercg_vsite);
+    if (fplog)
+      fprintf(fplog,"There are %d inter charge-group virtual sites,\n"
+	      "will an extra communication step for selected coordinates and forces\n",
+	      dd->reverse_top->n_intercg_vsite);
     init_domdec_vsites(dd,natoms);
   }
 
   if (top->idef.il[F_CONSTR].nr > 0) {
     init_domdec_constraints(dd,natoms,&top->idef,&top->blocks[ebCGS],
 			    bDynamics);
-    if (dd->constraint_comm)
+    if (dd->constraint_comm && fplog)
       fprintf(fplog,"There are inter charge-group constraints,\n"
 	      "will communicate selected coordinates each lincs iteration\n");
   }

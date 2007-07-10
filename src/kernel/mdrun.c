@@ -183,6 +183,7 @@ int main(int argc,char *argv[])
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
   static bool bConfout     = TRUE;
+  static bool bMasterLog   = FALSE;
   
   static int  npme=0;
   static int  nmultisim=0;
@@ -234,6 +235,8 @@ int main(int argc,char *argv[])
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
     { "-confout", FALSE, etBOOL, {&bConfout},
       "HIDDENWrite the last configuration with -c" },
+    { "-mlog", FALSE, etBOOL, {&bMasterLog},
+      "HIDDENOnly write a log file on the master node" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
@@ -261,13 +264,14 @@ int main(int argc,char *argv[])
     gmx_fatal(FARGS,"GROMACS compiled without threads support - can only use one thread");
 #endif
 
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
-  
   if (repl_ex_nst != 0 && nmultisim < 2)
     gmx_fatal(FARGS,"Need at least two replicas for replica exchange (option -multi)");
 
   if (nmultisim > 1 && PAR(cr))
     init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
+
+  if (MASTER(cr) || !bMasterLog)
+    open_log(ftp2fn(efLOG,NFILE,fnm),cr,bMasterLog);
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);

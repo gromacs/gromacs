@@ -51,7 +51,7 @@ extern int  gmx_parallel_env; /* 1 when running in a parallel environment,
 			       * with: mpirun -np 1 
 			       */
 
-extern void open_log(char *fn,const t_commrec *cr);
+extern void open_log(char *fn,const t_commrec *cr,bool bMasterOnly);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */

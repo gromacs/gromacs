@@ -293,8 +293,9 @@ static t_border *mk_border(FILE *fp,int natom,atom_id *invcgs,
   }
   sbor[ns] = 0;
   cbor[nc] = 0;
-  fprintf(fp,"There are %d charge group borders and %d shake borders\n",
-	  nc,ns);
+  if (fp)
+    fprintf(fp,"There are %d charge group borders and %d shake borders\n",
+	    nc,ns);
   snew(bor,max(nc,ns));
   ic = is = nbor = 0;
   while ((ic < nc) || (is < ns)) {
@@ -319,7 +320,8 @@ static t_border *mk_border(FILE *fp,int natom,atom_id *invcgs,
       is++;/*gmx_fatal(FARGS,"Can't happen is=%d, ic=%d (%s, %d)",
 	     is,ic,__FILE__,__LINE__);*/
   }
-  fprintf(fp,"There are %d total borders\n",nbor);
+  if (fp)
+    fprintf(fp,"There are %d total borders\n",nbor);
 
   if (debug) {
     fprintf(debug,"There are %d actual bor entries\n",nbor);
@@ -400,10 +402,12 @@ static void split_blocks(FILE *fp,int nnodes,
 
   for(i=nnodes-1; (i>0); i--)
     maxatom[i]-=maxatom[i-1];
-  fprintf(fp,"Division over nodes in atoms:\n");
-  for(i=0; (i<nnodes); i++)
-    fprintf(fp," %7d",maxatom[i]);
-  fprintf(fp,"\n");
+  if (fp) {
+    fprintf(fp,"Division over nodes in atoms:\n");
+    for(i=0; (i<nnodes); i++)
+      fprintf(fp," %7d",maxatom[i]);
+    fprintf(fp,"\n");
+  }
 
   sfree(maxatom);
   sfree(shknum);
@@ -503,7 +507,8 @@ static int mk_sblocks(FILE *fp,t_graph *g,t_sid sid[])
    * nW+nG+nB == g->nbound
    */
   
-  fprintf(fp,"Walking down the molecule graph to make shake-blocks\n");
+  if (fp)
+    fprintf(fp,"Walking down the molecule graph to make shake-blocks\n");
 
   while (nW > 0) {
     /* Find the first white, this will allways be a larger
@@ -634,8 +639,9 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
   
   if (nnodes <= 1)
     return;
-    
-  fprintf(fp,"splitting topology...\n");
+  
+  if (fp)
+    fprintf(fp,"splitting topology...\n");
   
 #define MOL_BORDER
 #ifndef MOL_BORDER

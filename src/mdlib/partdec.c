@@ -213,25 +213,25 @@ static void print_partdec(FILE *fp,char *title,int nnodes,gmx_partdec_t *pd)
 static void pr_idef_division(FILE *fp,t_idef *idef,int nnodes,int **multinr)
 {
   int i,ftype,nr,nra,m0,m1;
-  
-  fprintf(stdlog,"Division of bonded forces over processors\n");
-  fprintf(stdlog,"%-12s","CPU");
+
+  fprintf(fp,"Division of bonded forces over processors\n");
+  fprintf(fp,"%-12s","CPU");
   for(i=0; (i<nnodes); i++) 
-    fprintf(stdlog," %5d",i);
-  fprintf(stdlog,"\n");
+    fprintf(fp," %5d",i);
+  fprintf(fp,"\n");
   
   for(ftype=0; (ftype<F_NRE); ftype++) {
     if (idef->il[ftype].nr > 0) {
       nr  = idef->il[ftype].nr;
       nra = 1+interaction_function[ftype].nratoms;
-      fprintf(stdlog,"%-12s", interaction_function[ftype].name);
+      fprintf(fp,"%-12s", interaction_function[ftype].name);
       /* Loop over processors */
       for(i=0; (i<nnodes); i++) {
 	m0 = (i == 0) ? 0 : multinr[ftype][i-1]/nra;
 	m1 = multinr[ftype][i]/nra;
-	fprintf(stdlog," %5d",m1-m0);
+	fprintf(fp," %5d",m1-m0);
       }
-      fprintf(stdlog,"\n");
+      fprintf(fp,"\n");
     }
   }
 }
@@ -305,14 +305,16 @@ void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
   
   select_my_idef(log,&(top->idef),multinr_nre,cr);
   
-  pr_idef_division(log,&(top->idef),npp,multinr_nre);
+  if (log)
+    pr_idef_division(log,&(top->idef),npp,multinr_nre);
 
   for(i=0; i<F_NRE; i++)
     sfree(multinr_nre[i]);
   sfree(multinr_nre);
   sfree(multinr_cgs);
   
-  print_partdec(log,"Workload division",cr->nnodes,cr->pd);
+  if (log)
+    print_partdec(log,"Workload division",cr->nnodes,cr->pd);
 }
 
 static void create_vsitelist(int nindex, int *list,

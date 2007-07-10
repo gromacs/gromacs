@@ -131,7 +131,8 @@ time_t print_date_and_time(FILE *fplog,int nodeid,char *title)
   ts=ctime(&now);
   for (i=0; ts[i]>=' '; i++) time_string[i]=ts[i];
   time_string[i]='\0';
-  fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
+  if (fplog)
+    fprintf(fplog,"%s on node %d %s\n",title,nodeid,time_string);
 
   return now;
 }
@@ -591,7 +592,8 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 	    start,md->homenr,end);
   /* Do a first SHAKE to reset particles... */
   step = inputrec->init_step;
-  fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
+  if (fplog)
+    fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
   clear_mat(shake_vir);
   clear_mat(pres);
   update(step,&dvdlambda,inputrec,md,state,graph,
@@ -611,8 +613,9 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
      * as reference coordinates.
      */
     step = inputrec->init_step - 1;
-    fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
-	    step);
+    if (fplog)
+      fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
+	      step);
     clear_mat(shake_vir);
     clear_mat(pres);
     update(step,&dvdlambda,inputrec,md,state,graph,
@@ -763,7 +766,7 @@ static void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
       virs[1]  += -16.0*M_PI/(3.0*rc9);
     } 
     else if ((fr->vdwtype == evdwCUT) || (fr->vdwtype == evdwUSER)) {
-      if (fr->vdwtype == evdwUSER)
+      if (fr->vdwtype == evdwUSER && fplog)
 	fprintf(fplog,
 		"WARNING: using dispersion correction with user tables\n");
       rc3  = fr->rvdw*fr->rvdw*fr->rvdw;
@@ -851,7 +854,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
       ener[F_PRES] += spres;
     }
     
-    if (bFirst) {
+    if (bFirst && fplog) {
       if (bCorrAll)
 	fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",
 		avcsix,avctwelve);
@@ -864,8 +867,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
                 ener[F_DISPCORR],spres,svir);
       else
 	fprintf(fplog,"Long Range LJ corr.: Epot %10g\n",ener[F_DISPCORR]);
-      bFirst = FALSE;
     }
+    bFirst = FALSE;
   } 
 
   if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
@@ -881,7 +884,8 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
 void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
 		  t_graph *graph,rvec x[])
 {
-  fprintf(fplog,"Removing pbc first time\n");
+  if (fplog)
+    fprintf(fplog,"Removing pbc first time\n");
   calc_shifts(box,fr->shift_vec);
   if (graph) {
     mk_mshift(fplog,graph,fr->ePBC,box,x);
@@ -897,7 +901,8 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
     if (gmx_debug_at)
       p_graph(debug,"do_pbc_first 2",graph);
   }
-  fprintf(fplog,"Done rmpbc\n");
+  if (fplog)
+    fprintf(fplog,"Done rmpbc\n");
 }
 
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,

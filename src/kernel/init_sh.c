@@ -45,25 +45,25 @@
 #include "physics.h"
 #include "copyrite.h"
 	
-static void pr_shell(FILE *log,int ns,t_shell s[])
+static void pr_shell(FILE *fplog,int ns,t_shell s[])
 {
   int i;
   
-  fprintf(log,"SHELL DATA\n");
-  fprintf(log,"%5s  %8s  %5s  %5s  %5s\n",
+  fprintf(fplog,"SHELL DATA\n");
+  fprintf(fplog,"%5s  %8s  %5s  %5s  %5s\n",
 	  "Shell","Force k","Nucl1","Nucl2","Nucl3");
   for(i=0; (i<ns); i++) {
-    fprintf(log,"%5d  %8.3f  %5d",s[i].shell,1.0/s[i].k_1,s[i].nucl1);
+    fprintf(fplog,"%5d  %8.3f  %5d",s[i].shell,1.0/s[i].k_1,s[i].nucl1);
     if (s[i].nnucl == 2)
-      fprintf(log,"  %5d\n",s[i].nucl2);
+      fprintf(fplog,"  %5d\n",s[i].nucl2);
     else if (s[i].nnucl == 3)
-      fprintf(log,"  %5d  %5d\n",s[i].nucl2,s[i].nucl3);
+      fprintf(fplog,"  %5d  %5d\n",s[i].nucl2,s[i].nucl3);
     else
-      fprintf(log,"\n");
+      fprintf(fplog,"\n");
   }
 }
 
-t_shell *init_shells(FILE *log,t_commrec *cr,
+t_shell *init_shells(FILE *fplog,t_commrec *cr,
 		     t_idef *idef,t_mdatoms *md,int *nshell)
 {
   t_shell     *shell=NULL;
@@ -91,10 +91,12 @@ t_shell *init_shells(FILE *log,t_commrec *cr,
     gmx_fatal(FARGS,"Your number of shells %d is not equal to the number of shells %d",
 		nsi,n[eptShell]);
 
-  /* Print the number of each particle type */  
-  for(i=0; (i<eptNR); i++)
-    if (n[i]!=0)
-      fprintf(log,"There are: %d %ss\n",n[i],ptype_str[i]);
+  if (fplog) {
+    /* Print the number of each particle type */  
+    for(i=0; (i<eptNR); i++)
+      if (n[i]!=0)
+	fprintf(fplog,"There are: %d %ss\n",n[i],ptype_str[i]);
+  }
   
   ns      = n[eptShell];
   *nshell = ns;
@@ -172,7 +174,8 @@ t_shell *init_shells(FILE *log,t_commrec *cr,
 	  else if (shell[nsi].nucl3 == NO_ATID)
 	    shell[nsi].nucl3 = aN;
 	  else {
-	    pr_shell(log,ns,shell);
+	    if (fplog)
+	      pr_shell(fplog,ns,shell);
 	    gmx_fatal(FARGS,"Can not handle more than three bonds per shell\n");
 	  }
 	  switch (bondtypes[j]) {

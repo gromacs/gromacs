@@ -190,7 +190,8 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
 
   *error=-1;
   if (bFirst) {
-    fprintf(fp,"Going to use C-settle (%d waters)\n",nsettle);
+    if (fp)
+      fprintf(fp,"Going to use C-settle (%d waters)\n",nsettle);
     wo     = mO;
     wh     = mH;
     wohh   = mO+2.0*mH;
@@ -203,11 +204,13 @@ void csettle(FILE *fp,int nsettle, t_iatom iatoms[],real b4[], real after[],
     wo    /= wohh;
     wh    /= wohh;
 
-    fprintf(fp,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
-	    wo,wh,wohh,rc,ra);
-    fprintf(fp,"rb = %g, rc2 = %g, rone = %g, dHH = %g, dOH = %g\n",
-	    rb,rc2,rone,dHH,dOH);
-	
+    if (fp) {
+      fprintf(fp,"wo = %g, wh =%g, wohh = %g, rc = %g, ra = %g\n",
+	      wo,wh,wohh,rc,ra);
+      fprintf(fp,"rb = %g, rc2 = %g, rone = %g, dHH = %g, dOH = %g\n",
+	      rb,rc2,rone,dHH,dOH);
+    }
+
     bFirst = FALSE;
   }
 #ifdef PRAGMAS

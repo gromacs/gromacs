@@ -74,13 +74,17 @@ t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir)
     snew(vcm->group_name,vcm->nr);
 
     /* Copy pointer to group names and print it. */
-    fprintf(fp,"Center of mass motion removal mode is %s\n",ECOM(vcm->mode));
-    fprintf(fp,"We have the following groups for center of"
+    if (fp) {
+      fprintf(fp,"Center of mass motion removal mode is %s\n",
+	      ECOM(vcm->mode));
+      fprintf(fp,"We have the following groups for center of"
 	    " mass motion removal:\n");
+    }
     for(g=0; (g<vcm->nr); g++) {
       vcm->group_name[g] = 
 	*atoms->grpname[atoms->grps[egcVCM].nm_ind[g]];
-      fprintf(fp,"%3d:  %s\n",g,vcm->group_name[g]);
+      if (fp)
+	fprintf(fp,"%3d:  %s\n",g,vcm->group_name[g]);
     }
   }
 

@@ -183,7 +183,8 @@ void init_grid(FILE *fplog,t_forcerec *fr,const gmx_domdec_t *dd,
   ptr = getenv("GMX_NSCELL_NCG");
   if (ptr) {
     sscanf(ptr,"%d",&grid->ncg_ideal);
-    fprintf(fplog,"Set ncg_ideal to %d\n",grid->ncg_ideal);
+    if (fplog)
+      fprintf(fplog,"Set ncg_ideal to %d\n",grid->ncg_ideal);
     if (grid->ncg_ideal <= 0)
       gmx_fatal(FARGS,"The number of cg's per cell should be > 0");
   }
@@ -193,8 +194,9 @@ void init_grid(FILE *fplog,t_forcerec *fr,const gmx_domdec_t *dd,
    */
   set_grid_sizes(box,fr->rlistlong,NULL,grid,ncg);
 
-  fprintf(fplog,"Grid: %d x %d x %d cells\n",
-	  grid->n[XX],grid->n[YY],grid->n[ZZ]);
+  if (fplog)
+    fprintf(fplog,"Grid: %d x %d x %d cells\n",
+	    grid->n[XX],grid->n[YY],grid->n[ZZ]);
 
   grid->ncells   = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
   grid->maxcells = 2*grid->ncells;
@@ -298,7 +300,9 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
 	grid->nra[i] = 0;
 	grid->index[i] = 0;
       }
-      fprintf(fplog,"WARNING: your box is exploding! (ncells = %d)\n",ncells);
+      if (fplog)
+	fprintf(fplog,"WARNING: your box is exploding! (ncells = %d)\n",
+		ncells);
       grid->maxcells = ncells;
     }
     grid->ncells = ncells;
