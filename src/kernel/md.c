@@ -323,10 +323,16 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
      * (A user signal from the PME nodes (if any)
      * is communicated to the PP nodes.
      */
-    if (getenv("GMX_NO_TERM") == NULL)
+    if (getenv("GMX_NO_TERM") == NULL) {
+      if (debug)
+	fprintf(debug,"Installing signal handler for SIGTERM\n");
       signal(SIGTERM,signal_handler);
-    if (getenv("GMX_NO_USR1") == NULL)
+    }
+    if (getenv("GMX_NO_USR1") == NULL) {
+      if (debug)
+	fprintf(debug,"Installing signal handler for SIGUSR1\n");
       signal(SIGUSR1,signal_handler);
+    }
     break;
   default:
     /* No signal handling */
