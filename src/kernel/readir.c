@@ -702,7 +702,7 @@ void get_ir(char *mdparin,char *mdparout,
   
   /* COM pulling */
   CCTYPE("COM PULLING");
-  CTYPE("Pull type: no, umbrella, constraint");
+  CTYPE("Pull type: no, umbrella, constraint or constant_force");
   EETYPE("pull",          ir->ePull, epull_names, nerror, TRUE);
   if (ir->ePull != epullNO) {
     snew(ir->pull,1);
