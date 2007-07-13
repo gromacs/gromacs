@@ -246,7 +246,7 @@ int gmx_angle(int argc,char *argv[])
 		 title,"Time (ps)","Angle (degrees)");
     for(i=0; (i<nframes); i++) {
       fprintf(out,"%10.5f  %8.3f",time[i],aver_angle[i]*RAD2DEG);
-      if (bALL)
+      if (bALL) {
 	for(j=0; (j<nangles); j++)
 	  if (bPBC) {
 	    real dd = dih[j][i];
@@ -254,6 +254,7 @@ int gmx_angle(int argc,char *argv[])
 	  }
 	  else
 	    fprintf(out,"  %8.3f",dih[j][i]*RAD2DEG);
+      }
       fprintf(out,"\n");
     }	
     fclose(out);
