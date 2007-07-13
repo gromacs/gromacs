@@ -240,8 +240,9 @@ static void read_tables(FILE *fp,const char *fn,
 			int ntab,int angle,t_tabledata td[])
 {
   const char *libfn;
-  double **yy=NULL,start,end;
-  int  k,i,nx,nx0,ny,nny;
+  char buf[STRLEN];
+  double **yy=NULL,start,end,ssd[etiNR],v0,v1,f0,f1,numf,avf;
+  int  k,i,nx,nx0,ny,nny,ns[etiNR];
   bool bCont;
   real tabscale;
 
@@ -266,15 +267,53 @@ static void read_tables(FILE *fp,const char *fn,
       gmx_fatal(FARGS,"The angles in file %s should go from %f to %f instead of %f to %f\n",
 		libfn,start,end,yy[0][0],yy[0][nx-1]);
   }
+
+  tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
+
   bCont = TRUE;
   for(nx0=0; bCont && (nx0 < nx); nx0++)
     for(k=1; (k<ny); k++)
       if (yy[k][nx0] != 0)
 	bCont = FALSE;
-  if (nx0 == nx)
-    fprintf(fp,"\nWARNINGAll elements in table %s are zero\n\n",libfn);
+  if (nx0 == nx) {
+    if (fp)
+      fprintf(fp,"\nWARNINGAll elements in table %s are zero\n\n",libfn);
+  }
+  /* Check if the second column is close to minus the numerical
+   * derivative of the first column.
+   */
+  for(k=0; k<etiNR; k++) {
+    ssd[k] = 0;
+    ns[k] = 0;
+  }
+  for(i=0; (i < nx-2); i++) {
+    for(k=0; k<etiNR; k++) {
+      v0 = yy[1+2*k][i];
+      v1 = yy[1+2*k][i+1];
+      f0 = yy[1+2*k+1][i];
+      f1 = yy[1+2*k+1][i+1];
+      if (v0 != 0 && v1 != 0 && f0 != 0 && f1 != 0) {
+	numf = -(v1 - v0)*tabscale;
+	avf  = 0.5*(f1 + f0);
+	ssd[k] += fabs(2*(numf - avf)/(numf + avf));
+	ns[k]++;
+      }
+    }
+  }
+  for(k=0; k<etiNR; k++) {
+    if (ns[k] > 0) {
+      ssd[k] /= ns[k];
+      sprintf(buf,"For the %d non-zero entries for table %d in %s the forces deviate on average %d%% from the minus the numerical derivative of the potential\n",ns[k],k+1,libfn,(int)(100*ssd[k]+0.5));
+      if (debug)
+	fprintf(debug,"%s",buf);
+      if (ssd[k] > 0.2) {
+	if (fp)
+	  fprintf(fp,"\nWARNING: %s\n",buf);
+	fprintf(stderr,"\nWARNING: %s\n",buf);
+      }
+    }
+  }
 
-  tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
   for(k=0; (k<ntab); k++) {
     init_table(fp,nx,nx0,tabscale,&(td[k]),TRUE);
     for(i=0; (i<nx); i++) {
