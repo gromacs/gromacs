@@ -198,13 +198,13 @@ gmx_setup_kernels(FILE *fplog)
         nb_kernel_list[i] = NULL;
     
 	if(fplog)
-	    fprintf(log,"Configuring nonbonded kernels...\n");
+	    fprintf(fplog,"Configuring nonbonded kernels...\n");
 	
-    nb_kernel_setup(log,nb_kernel_list);
+    nb_kernel_setup(fplog,nb_kernel_list);
 
     if(getenv("NOASSEMBLYLOOPS") != NULL)
     {
-        if(log)
+        if(fplog)
             fprintf(fplog,
                     "Found environment variable NOASSEMBLYLOOPS.\n"
                     "Disabling all SSE/SSE2/3DNow/Altivec/ia64 asm support.\n\n");
