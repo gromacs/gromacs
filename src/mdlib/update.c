@@ -634,7 +634,7 @@ void update(int          step,
 	    bool         bFirstStep,
 	    tensor       pres)
 {
-  bool             bExtended,bLog=FALSE;
+  bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
   double           dt;
   real             dt_1;
   int              start,homenr,i,n,m,g;
@@ -737,10 +737,12 @@ void update(int          step,
   prepare_edsam(step,start,homenr,cr,xprime,edyn);
   
   if (bHaveConstr) {
-    bLog = (do_per_step(step,inputrec->nstlog) || (step < 0));
+    bLastStep = (step == inputrec->init_step+inputrec->nsteps);
+    bLog  = (do_per_step(step,inputrec->nstlog) || bLastStep || (step < 0));
+    bEner = (do_per_step(step,inputrec->nstenergy) || bLastStep);
     if (constr) {
       /* Constrain the coordinates xprime */
-      constrain(stdlog,bLog,constr,top,
+      constrain(NULL,bLog,bEner,constr,top,
 		inputrec,cr->dd,step,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,
@@ -805,7 +807,7 @@ void update(int          step,
       
       if (constr) {
 	/* Constrain the coordinates xprime */
-	constrain(stdlog,bLog,constr,top,
+	constrain(NULL,bLog,bEner,constr,top,
 		  inputrec,cr->dd,step,md,
 		  state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,

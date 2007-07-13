@@ -113,6 +113,23 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
   }
 }
 
+void add_ebin_nosum(t_ebin *eb,int index,int nener,real ener[])
+{
+  int      i;
+  t_energy *eg;
+  
+  if ((index+nener > eb->nener) || (index < 0))
+    gmx_fatal(FARGS,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
+		__FILE__,__LINE__,index,nener,eb->nener);
+    
+  eg=&(eb->e[index]);
+  
+  for(i=0; (i<nener); i++) {
+    /* Value for this component */
+    eg[i].e = ener[i];
+  }
+}
+
 void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
 	     int prmode,int tsteps,bool bPrHead)
 {

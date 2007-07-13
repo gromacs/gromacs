@@ -135,7 +135,7 @@ int main(int argc,char *argv[])
   if (ff.nmol < 1)
     gmx_fatal(FARGS,"Can not fit %d molecules",ff.nmol);
     
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
+  open_log(ftp2fn(efLOG,NFILE,fnm),cr,FALSE);
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);

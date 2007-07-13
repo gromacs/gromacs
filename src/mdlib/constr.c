@@ -194,7 +194,7 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 	    sb[i].blocknr);
 }
 
-bool constrain(FILE *log,bool bLog,
+bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       struct gmx_constr *constr,
 	       t_topology *top,t_inputrec *ir,
 	       gmx_domdec_t *dd,
@@ -228,13 +228,13 @@ bool constrain(FILE *log,bool bLog,
     
   where();
   if (constr->lincsd) {
-    bOK = constrain_lincs(stdlog,bLog,ir,step,constr->lincsd,md,dd,
+    bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,dd,
 			  x,xprime,min_proj,box,lambda,dvdlambda,
 			  invdt,v,vir!=NULL,rmdr,
 			  bCoordinates,nrnb,
 			  constr->maxwarn,&constr->warncount_lincs);
-    if (!bOK && constr->maxwarn >= 0)
-      fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
+    if (!bOK && constr->maxwarn >= 0 && fplog)
+      fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
 	      eshake_names[estLINCS],step);
   }
   
@@ -245,8 +245,8 @@ bool constrain(FILE *log,bool bLog,
     bOK = bshakef(stdlog,homenr,md->invmass,constr->nblocks,constr->sblock,
 		  &top->idef,ir,box,x,xprime,nrnb,lambda,dvdlambda,
 		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
-    if (!bOK && constr->maxwarn >= 0)
-      fprintf(stdlog,"Constraint error in algorithm %s at step %d\n",
+    if (!bOK && constr->maxwarn >= 0 && fplog)
+      fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
 	      eshake_names[estSHAKE],step);
   }
   
@@ -270,10 +270,15 @@ bool constrain(FILE *log,bool bLog,
     
     bOK = (error < 0);
     if (!bOK && constr->maxwarn >= 0) {
-      fprintf(stdlog,"\nt = %.3f ps: Water molecule starting at atom %d can not be "
-	      "settled.\nCheck for bad contacts and/or reduce the timestep.",
+      char buf[256];
+      sprintf(buf,
+	      "\nt = %.3f ps: Water molecule starting at atom %d can not be "
+	      "settled.\nCheck for bad contacts and/or reduce the timestep.\n",
 	      ir->init_t+step*ir->delta_t,
 	      glatnr(dd,settle->iatoms[error*2+1]));
+      if (fplog)
+	fprintf(fplog,"%s",buf);
+      fprintf(stderr,"%s",buf);
       constr->warncount_settle++;
       if (constr->warncount_settle > constr->maxwarn)
 	too_many_constraint_warnings(-1,constr->warncount_settle);
@@ -291,6 +296,22 @@ bool constrain(FILE *log,bool bLog,
     dump_confs(step,&(top->atoms),start,homenr,dd,x,xprime,box);
 
   return bOK;
+}
+
+real *constr_rmsd_data(struct gmx_constr *constr)
+{
+  if (constr->lincsd)
+    return lincs_rmsd_data(constr->lincsd);
+  else
+    return NULL;
+}
+
+real constr_rmsd(struct gmx_constr *constr,bool bSD2)
+{
+  if (constr->lincsd)
+    return lincs_rmsd(constr->lincsd,bSD2);
+  else
+    return 0;
 }
 
 int count_constraints(t_topology *top,t_commrec *cr)

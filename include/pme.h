@@ -51,7 +51,7 @@ typedef real *splinevec[DIM];
 
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
-extern int gmx_pme_init(FILE *log,gmx_pme_t *pmedata,t_commrec *cr,
+extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			t_inputrec *ir,int homenr,
 			bool bFreeEnergy);
 			
@@ -60,7 +60,7 @@ extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-extern int gmx_pme_do(FILE *log,       gmx_pme_t pme,
+extern int gmx_pme_do(gmx_pme_t pme,
 		      int start,       int homenr,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
@@ -76,7 +76,7 @@ extern int gmx_pme_do(FILE *log,       gmx_pme_t pme,
  * Return value 0 indicates all well, non zero is an error code.
  */
 
-extern int gmx_pmeonly(FILE *logfile,     gmx_pme_t pme,
+extern int gmx_pmeonly(gmx_pme_t pme,
                        t_commrec *cr,     t_nrnb *mynrnb,
 		       gmx_wallcycle_t wcycle,
 		       real ewaldcoeff,   bool bGatherOnly);

@@ -104,6 +104,8 @@ static void send_inputrec(t_commrec *cr,
   int dest;
   
   if (MASTER(cr) && cr->npmenodes > 0) {
+    if (!EEL_PME(inputrec->coulombtype))
+      gmx_fatal(FARGS,"Separate PME nodes have been selected with %s electrostatics",EELTYPE(inputrec->coulombtype));
     for(dest=0; dest<cr->nnodes; dest++) {
       if (gmx_pmeonlynode(cr,dest)) {
 #ifdef GMX_MPI
@@ -258,7 +260,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     init_forcerec(stdlog,fr,fcd,inputrec,top,cr,state->box,FALSE,
 		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
 		  opt2fn("-tableb",nfile,fnm),FALSE);
-    fr->bSepDVDL = ((Flags & MD_SEPDVDL) == MD_SEPDVDL);
+    fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
     
     /* Initialize QM-MM */
     if(fr->bQMMM)
@@ -307,7 +309,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	snew(pmedata,1);
       }
       
-      status = gmx_pme_init(stdlog,pmedata,cr,inputrec,
+      status = gmx_pme_init(pmedata,cr,inputrec,
 			    top ? top->atoms.nr : 0,nChargePerturbed);
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PME",status);
@@ -390,7 +392,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     }
   } else {
     /* do PME only */
-    gmx_pmeonly(stdlog,*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
+    gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
   }
  
   /* Some timing stats */  
@@ -605,7 +607,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     GMX_MPE_LOG(ev_global_stat_start);
        
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,vcm,&terminate);
+		inputrec,grps,constr,vcm,&terminate);
 
     GMX_MPE_LOG(ev_global_stat_finish);
   }
@@ -627,11 +629,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     copy_mat(state->box,boxcopy);
   } 
 
-  /* Write start time */
-  start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
-  wallcycle_start(wcycle,ewcRUN);
-
   if (MASTER(cr)) {
+    if (bHaveConstr && !inputrec->bContinuation)
+      fprintf(log,
+	      "RMS relative constraint deviation after constraining: %.2e\n",
+	      constr_rmsd(constr,FALSE));
     fprintf(log,"Initial temperature: %g K\n",temp0);
     if (bRerunMD) {
       fprintf(stderr,"starting md rerun '%s', reading coordinates from"
@@ -642,10 +644,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		"run input file,\nwhich may not correspond to the time "
 		"needed to process input trajectory.\n\n");
     } else {
-      fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n\n",
+      fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n",
 	      *(top->name),inputrec->nsteps,inputrec->nsteps*inputrec->delta_t);
     }
+    fprintf(log,"\n");
   }
+
+  /* Write start time */
+  start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
+  wallcycle_start(wcycle,ewcRUN);
+  if (log)
+    fprintf(log,"\n");
 
   /* Set the node time counter to 0 after initialisation */
   start_time();
@@ -1016,7 +1025,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * This includes communication 
        */
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		  inputrec,grps,vcm,&terminate);
+		  inputrec,grps,constr,vcm,&terminate);
 
       /* Correct for double counting energies, should be moved to 
        * global_stat 
@@ -1168,7 +1177,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bool do_ene,do_dr,do_or,do_dihr;
       
       upd_mdebin(mdebin,fp_dgdl,mdatoms->tmass,step_rel,t,ener,state,lastbox,
-		 shake_vir,force_vir,total_vir,pres,grps,mu_tot);
+		 shake_vir,force_vir,total_vir,pres,grps,mu_tot,constr);
       do_ene = do_per_step(step,inputrec->nstenergy) || bLastStep;
       do_dr  = do_per_step(step,inputrec->nstdisreout) || bLastStep;
       do_or  = do_per_step(step,inputrec->nstorireout) || bLastStep;

@@ -42,9 +42,11 @@
 #include "network.h"
 #include "tgroup.h"
 
+void
+gmx_setup_kernels(FILE *fplog);
 
 void
-do_nonbonded(FILE *log,t_commrec *cr,t_forcerec *fr,
+do_nonbonded(t_commrec *cr,t_forcerec *fr,
              rvec x[],rvec f[],t_mdatoms *md,
              real egnb[],real egcoul[],rvec box_size,
              t_nrnb *nrnb,real lambda,real *dvdlambda,

@@ -1184,7 +1184,7 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-static void setup_coordinate_communication(FILE *fplog, t_commrec *cr,
+static void setup_coordinate_communication(t_commrec *cr,
 					   gmx_pme_t pme)
 {
   static bool bFirst=TRUE;
@@ -1221,8 +1221,8 @@ static void setup_coordinate_communication(FILE *fplog, t_commrec *cr,
   }
 
   if (bFirst) {
-    if (fplog)
-      fprintf(fplog,
+    if (debug)
+      fprintf(debug,
 	      "PME maximum node shift for coordinate communication: %d\n",
 	      shmax);
     bFirst = FALSE;
@@ -1270,7 +1270,7 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
   return 0;
 }
 
-int gmx_pme_init(FILE *fplog,gmx_pme_t *pmedata,t_commrec *cr,
+int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 		 t_inputrec *ir,int homenr,
 		 bool bFreeEnergy)
 {
@@ -1278,8 +1278,8 @@ int gmx_pme_init(FILE *fplog,gmx_pme_t *pmedata,t_commrec *cr,
   
   int b,d,i,totbnd;
 
-  if (fplog)
-    fprintf(fplog,"Creating PME data structures.\n");
+  if (debug)
+    fprintf(debug,"Creating PME data structures.\n");
   snew(pme,1);
 
   if (PAR(cr)) {
@@ -1290,16 +1290,6 @@ int gmx_pme_init(FILE *fplog,gmx_pme_t *pmedata,t_commrec *cr,
 #endif
   } else {
     pme->nnodes = 1;
-  }
-
-  if (fplog)
-    fprintf(fplog,"Will do PME sum in reciprocal space.\n");
-  please_cite(fplog,"Essman95a");
-
-  if (ir->ewald_geometry == eewg3DC) {
-    if (fplog)
-      fprintf(fplog,"Using the Ewald3DC correction for systems with a slab geometry.\n");
-    please_cite(fplog,"In-Chul99a");
   }
 
   pme->bFEP = ((ir->efep != efepNO) && bFreeEnergy);
@@ -1347,17 +1337,17 @@ int gmx_pme_init(FILE *fplog,gmx_pme_t *pmedata,t_commrec *cr,
       pme->rightid[b] = (pme->nodeid + (b + 1)) % pme->nnodes;
     }
 
-    if (fplog) {
-      fprintf(fplog,"Parallelized PME sum used. nkx=%d, npme=%d\n",
+    if (debug) {
+      fprintf(debug,"Parallelized PME sum used. nkx=%d, npme=%d\n",
 	      ir->nkx,pme->nnodes);
       if ((ir->nkx % pme->nnodes) != 0)
-	fprintf(fplog,"Warning: For load balance, fourier_nx should be divisible by the number of PME nodes\n");
+	fprintf(debug,"Warning: For load balance, fourier_nx should be divisible by the number of PME nodes\n");
     }
 
     if (DOMAINDECOMP(cr)) {
       snew(pme->node_dest,pme->nnodes);
       snew(pme->node_src,pme->nnodes);
-      setup_coordinate_communication(fplog,cr,pme);
+      setup_coordinate_communication(cr,pme);
     }
     snew(pme->count,pme->nnodes);
     snew(pme->rcount,pme->nnodes);
@@ -1379,9 +1369,9 @@ int gmx_pme_init(FILE *fplog,gmx_pme_t *pmedata,t_commrec *cr,
   snew(pme->bsp_mod[YY],pme->nky);
   snew(pme->bsp_mod[ZZ],pme->nkz);
 
-  pme->gridA = mk_fftgrid(fplog,pme->nkx,pme->nky,pme->nkz,NULL,cr);
+  pme->gridA = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr);
   if (bFreeEnergy)
-    pme->gridB = mk_fftgrid(fplog,pme->nkx,pme->nky,pme->nkz,NULL,cr);
+    pme->gridB = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr);
   else
     pme->gridB = NULL;
   
@@ -1397,7 +1387,7 @@ int gmx_pme_init(FILE *fplog,gmx_pme_t *pmedata,t_commrec *cr,
   return 0;
 }
 
-static void spread_on_grid(FILE *logfile,    gmx_pme_t pme,
+static void spread_on_grid(gmx_pme_t pme,
 			   t_fftgrid *grid,  t_commrec *cr,    
 			   rvec x[],
 			   real charge[],    matrix box,
@@ -1643,7 +1633,7 @@ void gmx_pme_receive_f(t_commrec *cr,
   receive_virial_energy(cr,vir,energy,dvdlambda,pme_cycles);
 }
 
-int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
+int gmx_pmeonly(gmx_pme_t pme,
 		t_commrec *cr,    t_nrnb *nrnb,
 		gmx_wallcycle_t wcycle,
 		real ewaldcoeff,  bool bGatherOnly)
@@ -1678,7 +1668,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
 #endif
 
   /* Determine the DD nodes we need to talk with */
-  get_pme_ddnodes(logfile,cr,pme->nodeid,&nmy_ddnodes,&my_ddnodes);
+  get_pme_ddnodes(cr,pme->nodeid,&nmy_ddnodes,&my_ddnodes);
   snew(cnb,nmy_ddnodes);
 
   init_nrnb(nrnb);
@@ -1700,7 +1690,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
     wallcycle_start(wcycle,ewcPMEMESH_SEP);
 
     cve.dvdlambda = 0;
-    gmx_pme_do(logfile,pme,0,n,x_pp,f_pp,chargeA,chargeB,cnb[0].box,
+    gmx_pme_do(pme,0,n,x_pp,f_pp,chargeA,chargeB,cnb[0].box,
 	       cr,nrnb,cve.vir,ewaldcoeff,
 	       &cve.energy,cnb[0].lambda,&cve.dvdlambda,
 	       bGatherOnly);
@@ -1748,7 +1738,7 @@ int gmx_pmeonly(FILE *logfile,    gmx_pme_t pme,
   return 0;
 }
 
-int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
+int gmx_pme_do(gmx_pme_t pme,
 	       int start,       int homenr,
 	       rvec x[],        rvec f[],
 	       real *chargeA,   real *chargeB,
@@ -1839,7 +1829,7 @@ int gmx_pme_do(FILE *logfile,   gmx_pme_t pme,
     GMX_MPE_LOG(ev_spread_on_grid_start);
 
     /* Spread the charges on a grid */
-    spread_on_grid(logfile,pme,grid,cr,
+    spread_on_grid(pme,grid,cr,
 		   pme->x_home,pme->q_home,box,bGatherOnly,
 		   q==0 ? FALSE : TRUE);
     GMX_MPE_LOG(ev_spread_on_grid_finish);

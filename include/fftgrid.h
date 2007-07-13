@@ -73,8 +73,7 @@ typedef struct {
 #endif
 } t_fftgrid;
 
-extern t_fftgrid *mk_fftgrid(FILE *       fp,
-                             int          nx,
+extern t_fftgrid *mk_fftgrid(int          nx,
                              int          ny,
                              int          nz,
 			     int          *node2slab,

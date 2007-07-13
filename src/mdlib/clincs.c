@@ -71,7 +71,22 @@ typedef struct gmx_lincsdata {
   real *tmp2;
   real *tmp3;
   real *lambda;  /* the Lagrange multipliers */
+  /* storage for the constraint RMS relative deviation output */
+  real rmsd_data[3];
 } t_gmx_lincsdata;
+
+real *lincs_rmsd_data(struct gmx_lincsdata *lincsd)
+{
+  return lincsd->rmsd_data;
+}
+
+real lincs_rmsd(struct gmx_lincsdata *lincsd,bool bSD2)
+{
+  if (lincsd->rmsd_data[0] > 0)
+    return sqrt(lincsd->rmsd_data[bSD2 ? 2 : 1]/lincsd->rmsd_data[0]);
+  else
+    return 0;
+}
 
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 		      struct gmx_lincsdata *lincsd,real *invmass,
@@ -234,18 +249,18 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
       len = bllen[b];
       i = bla[2*b];
       j = bla[2*b+1];
-      for(n=blnr[b];n<blnr[b+1];n++) {
+      for(n=blnr[b]; n<blnr[b+1]; n++) {
 	k = blbnb[n];
 	blm[n] = blcc[n]*(tmp0*r[k][0] + tmp1*r[k][1] + tmp2*r[k][2]); 
       } /* 6 nr flops */
       mvb = blc[b]*(tmp0*(xp[i][0] - xp[j][0]) +
 		    tmp1*(xp[i][1] - xp[j][1]) +    
 		    tmp2*(xp[i][2] - xp[j][2]) - len);
-      rhs1[b]=mvb;
-      sol[b]=mvb;
-      /* 8 flops */
+      rhs1[b] = mvb;
+      sol[b]  = mvb;
+      /* 10 flops */
     }
-    /* Together: 24*ncons + 6*nrtot flops */
+    /* Together: 26*ncons + 6*nrtot flops */
   }
     
   for(rec=0; rec<nrec; rec++) {
@@ -311,7 +326,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
       mvb = blc[b]*(len - dlen2*invsqrt(dlen2));
       rhs1[b] = mvb;
       sol[b]  = mvb;
-    } /* 18*ncons flops */
+    } /* 20*ncons flops */
     
     for(rec=0; rec<nrec; rec++) {
       for(b=0; b<ncons; b++) {
@@ -346,7 +361,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
       xp[j][1] += tmp1*im2;
       xp[j][2] += tmp2*im2;
     } /* 17 ncons flops */
-  } /* nit*ncons*(35+9*nrec) flops */
+  } /* nit*ncons*(37+9*nrec) flops */
 
   if (v) {
     /* Correct the velocities */
@@ -384,13 +399,13 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
   }
 
   /* Total:
-   * 24*ncons + 6*nrtot + nrec*(ncons+2*nrtot)
-   * + nit * (18*ncons + nrec*(ncons+2*nrtot) + 17 ncons)
+   * 26*ncons + 6*nrtot + nrec*(ncons+2*nrtot)
+   * + nit * (20*ncons + nrec*(ncons+2*nrtot) + 17 ncons)
    *
-   * (24+nrec)*ncons + (6+2*nrec)*nrtot
-   * + nit * ((35+nrec)*ncons + 2*nrec*nrtot)
+   * (26+nrec)*ncons + (6+2*nrec)*nrtot
+   * + nit * ((37+nrec)*ncons + 2*nrec*nrtot)
    * if nit=1
-   * (59+nrec)*ncons + (6+4*nrec)*nrtot
+   * (63+nrec)*ncons + (6+4*nrec)*nrtot
    */
 }
 
@@ -714,10 +729,10 @@ static void lincs_warning(FILE *fplog,
 }
 
 static void cconerr(gmx_domdec_t *dd,
-		    real *max,real *rms,int *imax,rvec *x,t_pbc *pbc,
-		    int ncons,int *bla,real *bllen)
+		    int ncons,int *bla,real *bllen,rvec *x,t_pbc *pbc,
+		    real *ncons_loc,real *ssd,real *max,int *imax)
 {
-  real      len,d,ma,ms,r2;
+  real      len,d,ma,ssd2,r2;
   int       *nlocat,count,b,im;
   rvec      dx;
   
@@ -727,7 +742,7 @@ static void cconerr(gmx_domdec_t *dd,
     nlocat = 0;
 
   ma = 0;
-  ms = 0;
+  ssd2 = 0;
   im = 0;
   count = 0;
   for(b=0;b<ncons;b++) {
@@ -744,15 +759,17 @@ static void cconerr(gmx_domdec_t *dd,
       im = b;
     }
     if (nlocat == NULL) {
-      ms = ms + d*d;
+      ssd2 += d*d;
       count++;
     } else {
-      ms = ms + nlocat[b]*d*d;
+      ssd2 += nlocat[b]*d*d;
       count += nlocat[b];
     }
   }
+  
+  *ncons_loc = 0.5*count;
+  *ssd = 0.5*ssd2;
   *max = ma;
-  *rms = sqrt(ms/count);
   *imax = im;
 }
 
@@ -796,7 +813,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
   fclose(fp);
 }
 
-bool constrain_lincs(FILE *fplog,bool bLog,
+bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
 		     t_inputrec *ir,
 		     int step,struct gmx_lincsdata *lincsd,t_mdatoms *md,
 		     gmx_domdec_t *dd,
@@ -810,7 +827,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,
 {
   char  buf[STRLEN];
   int   i,warn,p_imax,error;
-  real  p_max,p_rms;
+  real  ncons_loc,p_ssd,p_max;
   t_pbc pbc,*pbc_null;
   rvec  dx;
   bool  bOK;
@@ -865,9 +882,9 @@ bool constrain_lincs(FILE *fplog,bool bLog,
       }
     }
     
-    if (bLog)
-      cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
-	      lincsd->nc,lincsd->bla,lincsd->bllen);
+    if (bLog && fplog)
+      cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+	      &ncons_loc,&p_ssd,&p_max,&p_imax);
     
     do_lincs(x,xprime,box,pbc_null,lincsd,md->invmass,dd,
 	     ir->nLincsIter,ir->nProjOrder,ir->LincsWarnAngle,&warn,
@@ -882,28 +899,43 @@ bool constrain_lincs(FILE *fplog,bool bLog,
       *dvdlambda += dvdl;
     }
     
-    if (bLog && lincsd->nc > 0) {
-      fprintf(fplog,"   Rel. Constraint Deviation:  Max    between atoms     RMS\n");
-      fprintf(fplog,"       Before LINCS         %.6f %6d %6d   %.6f\n",
-	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),
-	      glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
-      cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
-	      lincsd->nc,lincsd->bla,lincsd->bllen);
-      fprintf(fplog,"        After LINCS         %.6f %6d %6d   %.6f\n\n",
-	      p_max,glatnr(dd,lincsd->bla[2*p_imax]),
-	      glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
+    if (bLog && fplog && lincsd->nc > 0) {
+      fprintf(fplog,"   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
+      fprintf(fplog,"       Before LINCS          %.6f    %.6f %6d %6d\n",
+	      sqrt(p_ssd/ncons_loc),p_max,
+	      glatnr(dd,lincsd->bla[2*p_imax]),
+	      glatnr(dd,lincsd->bla[2*p_imax+1]));
+    }
+    if (bLog || bEner) {
+      cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+	      &ncons_loc,&p_ssd,&p_max,&p_imax);
+      lincsd->rmsd_data[0] = ncons_loc;
+      /* Check if we are doing the second part of SD */
+      if (ir->eI == eiSD && v == NULL)
+	i = 2;
+      else
+	i = 1;
+      lincsd->rmsd_data[0] = ncons_loc;
+      lincsd->rmsd_data[i] = p_ssd;
+    }
+    if (bLog && fplog && lincsd->nc > 0) {
+      fprintf(fplog,"        After LINCS          %.6f    %.6f %6d %6d\n\n",
+	      sqrt(p_ssd/ncons_loc),p_max,
+	      glatnr(dd,lincsd->bla[2*p_imax]),
+	      glatnr(dd,lincsd->bla[2*p_imax+1]));
     }
     
     if (warn > 0) {
       if (maxwarn >= 0) {
-	cconerr(dd,&p_max,&p_rms,&p_imax,xprime,pbc_null,
-		lincsd->nc,lincsd->bla,lincsd->bllen);
+	cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
+		&ncons_loc,&p_ssd,&p_max,&p_imax);
 	sprintf(buf,"\nStep %d, time %g (ps)  LINCS WARNING\n"
 		"relative constraint deviation after LINCS:\n"
-		"max %.6f (between atoms %d and %d) rms %.6f\n",
+		"rms %.6f, max %.6f (between atoms %d and %d)\n",
 		step,ir->init_t+step*ir->delta_t,
-		p_max,glatnr(dd,lincsd->bla[2*p_imax]),
-		glatnr(dd,lincsd->bla[2*p_imax+1]),p_rms);
+		sqrt(p_ssd/ncons_loc),p_max,
+		glatnr(dd,lincsd->bla[2*p_imax]),
+		glatnr(dd,lincsd->bla[2*p_imax+1]));
 	if (fplog)
 	  fprintf(fplog,"%s",buf);
 	fprintf(stderr,"%s",buf);

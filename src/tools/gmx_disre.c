@@ -450,6 +450,7 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
   if (fn == NULL)
     return;
 
+  nratoms = top->atoms.nr;
   n_res = top->atoms.nres;
   snew(t_res,n_res);
   for(i=0; (i<n_res); i++)
@@ -598,7 +599,7 @@ int gmx_disre(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
+  open_log(ftp2fn(efLOG,NFILE,fnm),cr,FALSE);
   
   if (ntop)
     init5(ntop);

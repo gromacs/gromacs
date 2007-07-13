@@ -138,7 +138,7 @@ void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
   *nerror=error;
 }
 
-int vec_shakef(FILE *log,
+int vec_shakef(FILE *fplog,
 	       int natoms,real invmass[],int ncon,
 	       t_iparams ip[],t_iatom *iatom,
 	       real tol,rvec x[],rvec xp[],real omega,
@@ -163,7 +163,7 @@ int vec_shakef(FILE *log,
     srenew(dist2,ncon);
     maxcon=ncon;
 #ifdef DEBUG
-    fprintf(log,"shake: maxcon = %d\n",maxcon);
+    fprintf(fplog,"shake: maxcon = %d\n",maxcon);
 #endif
   }
 
@@ -191,11 +191,17 @@ int vec_shakef(FILE *log,
   cshake(iatom,ncon,&nit,maxnit,dist2,xp[0],rij[0],M2,omega,invmass,tt,lagr,&error);
 
   if (nit >= maxnit) {
-    fprintf(log,"Shake did not converge in %d steps\n",maxnit);
+    if (fplog)
+      fprintf(fplog,"Shake did not converge in %d steps\n",maxnit);
+    fprintf(stderr,"Shake did not converge in %d steps\n",maxnit);
     nit=0;
   }
   else if (error != 0) {
-    fprintf(log,"Inner product between old and new vector <= 0.0!\n"
+    if (fplog)
+      fprintf(fplog,"Inner product between old and new vector <= 0.0!\n"
+	      "constraint #%d atoms %u and %u\n",
+	      error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
+    fprintf(stderr,"Inner product between old and new vector <= 0.0!\n"
 	    "constraint #%d atoms %u and %u\n",
 	    error-1,iatom[3*(error-1)+1]+1,iatom[3*(error-1)+2]+1);
     nit=0;
@@ -305,7 +311,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 #endif
     
     if (n0 == 0) {
-      if (bDumpOnError)
+      if (bDumpOnError && log)
 	check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
       return FALSE;
     }

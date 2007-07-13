@@ -2791,7 +2791,7 @@ bool gmx_pmeonlynode(t_commrec *cr,int nodeid)
   return bPMEOnlyNode;
 }
 
-void get_pme_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
+void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 		     int *nmy_ddnodes,int **my_ddnodes)
 {
   gmx_domdec_t *dd;
@@ -2824,9 +2824,6 @@ void get_pme_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
     }
   }
 
-  if (logfile)
-    fprintf(logfile,"PME node %d, receive coordinates from %d PP nodes\n",
-	    cr->nodeid,*nmy_ddnodes);
   if (debug) {
     fprintf(debug,"Receive coordinates from PP nodes:");
     for(x=0; x<*nmy_ddnodes; x++)

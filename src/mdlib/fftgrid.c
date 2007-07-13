@@ -81,8 +81,7 @@ gmx_alloc_aligned(size_t size)
     return p;
 }
 
-t_fftgrid *mk_fftgrid(FILE *       fp,
-                      int          nx,
+t_fftgrid *mk_fftgrid(int          nx,
                       int          ny,
                       int          nz,
 		      int          *node2slab,
@@ -153,9 +152,9 @@ t_fftgrid *mk_fftgrid(FILE *       fp,
   
   grid->localptr=NULL;
 #ifdef GMX_MPI
-  if (nnodes > 1 && fp) 
+  if (nnodes > 1 && debug) 
   {
-    print_parfft(fp,"Plan", &grid->pfft);
+    print_parfft(debug,"Plan", &grid->pfft);
   }
   if (nnodes > 1)
   {

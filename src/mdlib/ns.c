@@ -1432,7 +1432,7 @@ static inline void get_dx_dd(int Nx,real gridx,real rc2,int xgi,real x,
  *
  ****************************************************/
 
-static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
+static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
 			 int ngid,t_mdatoms *md,int icg,
 			 int jgid,int nlr,
 			 atom_id lr[],t_excl bexcl[],int shift,
@@ -1453,7 +1453,7 @@ static void do_longrange(FILE *log,t_commrec *cr,t_topology *top,t_forcerec *fr,
       if ((nl->nri > nl->maxnri-32) || bEvaluateNow) {
 	close_neighbor_list(fr,TRUE,n,i);
 	/* Evaluate the energies and forces */
-	do_nonbonded(log,cr,fr,x,fr->f_twin,md,
+	do_nonbonded(cr,fr,x,fr->f_twin,md,
 		     grps->estat.ee[fr->bBHAM ? egBHAMLR : egLJLR],
 		     grps->estat.ee[egCOULLR],box_size,
 		     nrnb,lambda,dvdlambda,TRUE,n,i,bDoForces);
@@ -1823,7 +1823,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 			      nl_sr[jgid][nsr[jgid]++]=jjcg;
 			    } else if (r2 < rm2) {
 			      if (nlr_ljc[jgid] >= MAX_CG) {
-				do_longrange(log,cr,top,fr,ngid,md,icg,jgid,
+				do_longrange(cr,top,fr,ngid,md,icg,jgid,
 					     nlr_ljc[jgid],
 					     nl_lr_ljc[jgid],bexcl,shift,x,
 					     box_size,nrnb,
@@ -1835,7 +1835,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 			      nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
 			    } else {
 			      if (nlr_one[jgid] >= MAX_CG) {
-				do_longrange(log,cr,top,fr,ngid,md,icg,jgid,
+				do_longrange(cr,top,fr,ngid,md,icg,jgid,
 					     nlr_one[jgid],
 					     nl_lr_one[jgid],bexcl,shift,x,
 					     box_size,nrnb,
@@ -1863,13 +1863,13 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 			  shift,fr,FALSE,TRUE,TRUE,bMakeQMMMnblist);
 	    
 	    if (nlr_ljc[nn] > 0) 
-	      do_longrange(log,cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
+	      do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
 			   nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
 			   lambda,dvdlambda,grps,TRUE,TRUE,FALSE,
 			   bHaveVdW,bDoForces,bMakeQMMMnblist);
 	    
 	    if (nlr_one[nn] > 0) 
-	      do_longrange(log,cr,top,fr,ngid,md,icg,nn,nlr_one[nn],
+	      do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_one[nn],
 			   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
 			   lambda,dvdlambda,grps,
 			   rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
@@ -1884,12 +1884,12 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   /* Perform any left over force calculations */
   for (nn=0; (nn<ngid); nn++) {
     if (rm2 > rs2)
-      do_longrange(log,cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
+      do_longrange(cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
                    nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
                    lambda,dvdlambda,grps,TRUE,TRUE,TRUE,bHaveVdW,bDoForces,
                    bMakeQMMMnblist);
     if (rl2 > rm2)
-      do_longrange(log,cr,top,fr,0,md,icg,nn,nlr_one[nn],
+      do_longrange(cr,top,fr,0,md,icg,nn,nlr_one[nn],
 		   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
 		   lambda,dvdlambda,grps,rvdw_lt_rcoul,rcoul_lt_rvdw,
 		   TRUE,bHaveVdW,bDoForces,bMakeQMMMnblist);

@@ -36,7 +36,7 @@ extern int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z);
 extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
 
-extern void get_pme_ddnodes(FILE *logfile,t_commrec *cr,int pmenodeid,
+extern void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 			    int *nmy_ddnodes,int **my_ddnodes);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 

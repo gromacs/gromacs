@@ -62,19 +62,22 @@
 #include "trnio.h"
 #include "statutil.h"
 #include "domdec.h"
+#include "constr.h"
 
 void global_stat(FILE *log,
 		 t_commrec *cr,real ener[],
 		 tensor fvir,tensor svir,rvec mu_tot,
 		 t_inputrec *inputrec,t_groups *grps,
+		 gmx_constr_t constr,
 		 t_vcm *vcm,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc;
-  int    iterminate,ie,ifv,isv,imu=0,idedl,icm=0,imass=0,ica,inb=0;
+  int    iterminate,ie,ifv,isv,irmsd=0,imu=0,idedl,icm=0,imass=0,ica,inb=0;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   int    j;
+  real   *rmsd_data;
   double nb;
   
   if (rb==NULL) {
@@ -94,6 +97,13 @@ void global_stat(FILE *log,
   where();
   isv = add_binr(log,rb,DIM*DIM,svir[0]);
   where();
+  if (constr) {
+    rmsd_data = constr_rmsd_data(constr);
+    if (rmsd_data)
+      irmsd = add_binr(log,rb,inputrec->eI==eiSD ? 3 : 2,rmsd_data);
+  } else {
+    rmsd_data = NULL;
+  }
   if (!NEED_MUTOT(*inputrec)) {
     imu = add_binr(log,rb,DIM,mu_tot);
     where();
@@ -137,6 +147,8 @@ void global_stat(FILE *log,
   extract_binr(rb,ie  ,F_NRE,ener);
   extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
+  if (rmsd_data)
+    extract_binr(rb,irmsd,inputrec->eI==eiSD ? 3 : 2,rmsd_data);
   if (!NEED_MUTOT(*inputrec))
     extract_binr(rb,imu,DIM,mu_tot);
   for(j=0; (j<inputrec->opts.ngtc); j++) 
@@ -171,7 +183,6 @@ void global_stat(FILE *log,
 
   /* Small hack for temp only */
   ener[F_TEMP] /= (cr->nnodes - cr->npmenodes);
-  
 }
 
 int do_per_step(int step,int nstep)

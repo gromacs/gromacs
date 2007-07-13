@@ -314,7 +314,7 @@ static real evaluate_energy(FILE *log, bool bVerbose,t_inputrec *inputrec,
   /* Communicate stuff when parallel */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,NULL,&terminate);
+		inputrec,grps,NULL,NULL,&terminate);
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
   return ener[F_EPOT];
@@ -430,7 +430,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,NULL,&terminate);
+		inputrec,grps,NULL,NULL,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -439,7 +439,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 	       ener,state,state->box,shake_vir,
-	       force_vir,vir,pres,grps,mu_tot);
+	       force_vir,vir,pres,grps,mu_tot,NULL);
     
     print_ebin_header(log,step,step,lambda);
     print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,step,step,step,eprNORMAL,
@@ -827,7 +827,7 @@ time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
-		 force_vir,vir,pres,grps,mu_tot);
+		 force_vir,vir,pres,grps,mu_tot,NULL);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
@@ -1046,7 +1046,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,NULL,&terminate);
+		inputrec,grps,NULL,NULL,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
@@ -1055,7 +1055,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 	       ener,state,state->box,shake_vir,
-	       force_vir,vir,pres,grps,mu_tot);
+	       force_vir,vir,pres,grps,mu_tot,NULL);
     
     print_ebin_header(log,step,step,lambda);
     print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,log,step,step,step,eprNORMAL,
@@ -1462,7 +1462,7 @@ time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
-		 force_vir,vir,pres,grps,mu_tot);
+		 force_vir,vir,pres,grps,mu_tot,NULL);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
@@ -1646,7 +1646,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     
     if (constr) {
       dvdlambda=0;
-      constrain(stdlog,TRUE,constr,top,		
+      constrain(PAR(cr) ? NULL : stdlog,TRUE,TRUE,constr,top,		
 		inputrec,cr->dd,count,mdatoms,
 		pos[Min],pos[TRY],NULL,state->box,lambda,&dvdlambda,
 		0,NULL,NULL,nrnb,TRUE);
@@ -1701,7 +1701,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	  xcf[i][m] = pos[TRY][i][m] + constepsize*force[TRY][i][m];
       
       dvdlambda=0;
-      constrain(stdlog,FALSE,constr,top,
+      constrain(NULL,FALSE,FALSE,constr,top,
 		inputrec,cr->dd,count,mdatoms,
 		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,
 		0,NULL,NULL,nrnb,TRUE);
@@ -1719,7 +1719,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
- 		  inputrec,grps,NULL,&terminate); 
+ 		  inputrec,grps,constr,NULL,&terminate); 
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
@@ -1740,7 +1740,7 @@ time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
 		   ener,state,state->box,shake_vir, 
-		   force_vir,vir,pres,grps,mu_tot);
+		   force_vir,vir,pres,grps,mu_tot,constr);
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,inputrec->nstdisreout),
 		   do_per_step(steps_accepted,inputrec->nstorireout),

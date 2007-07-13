@@ -179,11 +179,10 @@ int main(int argc,char *argv[])
   static bool bDLB         = FALSE;
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
-  static bool bSepDVDL     = FALSE;
+  static bool bSepPot      = FALSE;
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
   static bool bConfout     = TRUE;
-  static bool bMasterLog   = FALSE;
   
   static int  npme=0;
   static int  nmultisim=0;
@@ -221,7 +220,7 @@ int main(int argc,char *argv[])
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
       "Write a compact log file" },
-    { "-seppot", FALSE, etBOOL,{&bSepDVDL},
+    { "-seppot", FALSE, etBOOL,{&bSepPot},
       "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
@@ -235,8 +234,6 @@ int main(int argc,char *argv[])
       "Do a simulation including the effect of an X-Ray bombardment on your system" },
     { "-confout", FALSE, etBOOL, {&bConfout},
       "HIDDENWrite the last configuration with -c" },
-    { "-mlog", FALSE, etBOOL, {&bMasterLog},
-      "HIDDENOnly write a log file on the master node" },
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
@@ -270,8 +267,8 @@ int main(int argc,char *argv[])
   if (nmultisim > 1 && PAR(cr))
     init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 
-  if (MASTER(cr) || !bMasterLog)
-    open_log(ftp2fn(efLOG,NFILE,fnm),cr,bMasterLog);
+  if (MASTER(cr) || bSepPot)
+    open_log(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot);
 
   if (MASTER(cr)) {
     CopyRight(stdlog,argv[0]);
@@ -284,7 +281,7 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,edyn,cr);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-  Flags = Flags | (bSepDVDL  ? MD_SEPDVDL    : 0);
+  Flags = Flags | (bSepPot   ? MD_SEPPOT     : 0);
   Flags = Flags | (bIonize   ? MD_IONIZE     : 0);
   Flags = Flags | (bGlas     ? MD_GLAS       : 0);
   Flags = Flags | (bDLB      ? MD_DLB        : 0);

@@ -68,7 +68,12 @@ extern void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step);
 /* Add nener reals (eg. energies, box-lengths, pressures) to the
  * energy bin at position index. 
  */
- 
+
+extern void add_ebin_nosum(t_ebin *eb,int index,int nener,real ener[]);
+/* Same as add_ebin, but only stores the current values,
+ * not the averages and fluctuations.
+ */
+
 extern void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
 		    int prmode,int tsteps,bool bPrHead);
 /* Print the contents of the energy bin. If nener = -1 ALL energies from

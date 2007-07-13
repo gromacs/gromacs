@@ -61,7 +61,7 @@
 #define MD_IONIZE      (1<<3)
 #define MD_RERUN       (1<<4)
 #define MD_FFSCAN      (1<<6)
-#define MD_SEPDVDL     (1<<7)
+#define MD_SEPPOT      (1<<7)
 #define MD_DLB         (1<<8)
 #define MD_CONFOUT     (1<<9)
 
@@ -155,6 +155,7 @@ extern void global_stat(FILE *log,
 			t_commrec *cr,real ener[],
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,t_groups *grps,
+			gmx_constr_t constr,
 			t_vcm *vcm,real *terminate);
 /* Communicate statistics over cr->mpi_comm_mysim */
 

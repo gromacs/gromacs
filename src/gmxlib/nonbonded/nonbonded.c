@@ -183,8 +183,8 @@ static nb_kernel_t **
 nb_kernel_list = NULL;
 
 
-static void
-setup_kernels(FILE *log)
+void
+gmx_setup_kernels(FILE *fplog)
 {
     int i;
     
@@ -197,7 +197,7 @@ setup_kernels(FILE *log)
     for(i=0;i<eNR_NBKERNEL_NR;i++)
         nb_kernel_list[i] = NULL;
     
-	if(log)
+	if(fplog)
 	    fprintf(log,"Configuring nonbonded kernels...\n");
 	
     nb_kernel_setup(log,nb_kernel_list);
@@ -205,7 +205,7 @@ setup_kernels(FILE *log)
     if(getenv("NOASSEMBLYLOOPS") != NULL)
     {
         if(log)
-            fprintf(log,
+            fprintf(fplog,
                     "Found environment variable NOASSEMBLYLOOPS.\n"
                     "Disabling all SSE/SSE2/3DNow/Altivec/ia64 asm support.\n\n");
         return;
@@ -216,11 +216,11 @@ setup_kernels(FILE *log)
     /* Double precision */    
 
 #ifdef GMX_IA32_SSE2    
-    nb_kernel_setup_ia32_sse2(log,nb_kernel_list);
+    nb_kernel_setup_ia32_sse2(fplog,nb_kernel_list);
 #elif defined GMX_X86_64_SSE2 
-    nb_kernel_setup_x86_64_sse2(log,nb_kernel_list);
+    nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
 #elif defined GMX_IA64_ASM
-    nb_kernel_setup_ia64_double(log,nb_kernel_list);
+    nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
 #endif
     
 #else
@@ -231,26 +231,26 @@ setup_kernels(FILE *log)
      * it in the SSE check.
      */   
 #ifdef GMX_IA32_3DNOW
-    nb_kernel_setup_ia32_3dnow(log,nb_kernel_list);
+    nb_kernel_setup_ia32_3dnow(fplog,nb_kernel_list);
 #endif
 #ifdef GMX_IA32_SSE    
-    nb_kernel_setup_ia32_sse(log,nb_kernel_list);
+    nb_kernel_setup_ia32_sse(fplog,nb_kernel_list);
 #elif defined GMX_X86_64_SSE   
-    nb_kernel_setup_x86_64_sse(log,nb_kernel_list);
+    nb_kernel_setup_x86_64_sse(fplog,nb_kernel_list);
 #elif defined GMX_PPC_ALTIVEC
-    nb_kernel_setup_ppc_altivec(log,nb_kernel_list);
+    nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
 #elif defined GMX_IA64_ASM
-    nb_kernel_setup_ia64_single(log,nb_kernel_list);
+    nb_kernel_setup_ia64_single(fplog,nb_kernel_list);
 #endif
     
 #endif /* precision */
 
-	if(log)
-	    fprintf(log,"\n\n");
+	if(fplog)
+	    fprintf(fplog,"\n\n");
 }
 
 
-void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
+void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   rvec x[],rvec f[],t_mdatoms *mdatoms,
                   real egnb[],real egcoul[],rvec box_size,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
@@ -303,7 +303,7 @@ void do_nonbonded(FILE *fplog,t_commrec *cr,t_forcerec *fr,
   
   if(nb_kernel_list == NULL)
     {
-    setup_kernels(fplog);    
+      gmx_fatal(FARGS,"gmx_setup_kernels has not been called");
     }
   
   if (bLR)

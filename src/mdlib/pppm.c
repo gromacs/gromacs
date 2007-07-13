@@ -180,9 +180,12 @@ static void spread_q(FILE *log,bool bVerbose,
   calc_invh(box,nx,ny,nz,invh);
 
   if (bFirst) {
-    fprintf(log,"Spreading Charges using Triangle Shaped on %dx%dx%d grid\n",
-	    nx,ny,nz);
-    fprintf(log,"invh = %10g,%10g,%10g\n",invh[XX],invh[YY],invh[ZZ]);
+    if (log) {
+      fprintf(log,
+	      "Spreading Charges using Triangle Shaped on %dx%dx%d grid\n",
+	      nx,ny,nz);
+      fprintf(log,"invh = %10g,%10g,%10g\n",invh[XX],invh[YY],invh[ZZ]);
+    }
   
     calc_nxyz(nx,ny,nz,&nnx,&nny,&nnz);
     
@@ -219,7 +222,7 @@ static void spread_q(FILE *log,bool bVerbose,
 	    grid->ptr[index]+=qwt;
 #ifdef DEBUG
 	    qt   += qwt;
-	    if (bVerbose)
+	    if (bVerbose && log)
 	      fprintf(log,"spread %4d %2d %2d %2d  %10.3e, weight=%10.3e\n",
 		      index,jcx,jcy,jcz,grid->ptr[index],WXYZ[nxyz]);
 #endif
@@ -227,7 +230,8 @@ static void spread_q(FILE *log,bool bVerbose,
 	}
       }
 #ifdef DEBUG
-      fprintf(log,"q[%3d] = %6.3f, qwt = %6.3f\n",i,qi,qt);
+      if (log)
+	fprintf(log,"q[%3d] = %6.3f, qwt = %6.3f\n",i,qi,qt);
 #endif
     }
   }
@@ -319,13 +323,14 @@ static real gather_f(FILE *log,bool bVerbose,
   c2z = c2[ZZ];
 
   if (bFirst) {
-    fprintf(log,"Gathering Forces using Triangle Shaped on %dx%dx%d grid\n",
-	    nx,ny,nz);
-    fprintf(log,"beta = %10g,%10g,%10g\n",beta[XX],beta[YY],beta[ZZ]);
-    fprintf(log,"c1   = %10g,%10g,%10g\n",c1[XX],c1[YY],c1[ZZ]);
-    fprintf(log,"c2   = %10g,%10g,%10g\n",c2[XX],c2[YY],c2[ZZ]);
-    fprintf(log,"invh = %10g,%10g,%10g\n",invh[XX],invh[YY],invh[ZZ]);
-
+    if (log) {
+      fprintf(log,"Gathering Forces using Triangle Shaped on %dx%dx%d grid\n",
+	      nx,ny,nz);
+      fprintf(log,"beta = %10g,%10g,%10g\n",beta[XX],beta[YY],beta[ZZ]);
+      fprintf(log,"c1   = %10g,%10g,%10g\n",c1[XX],c1[YY],c1[ZZ]);
+      fprintf(log,"c2   = %10g,%10g,%10g\n",c2[XX],c2[YY],c2[ZZ]);
+      fprintf(log,"invh = %10g,%10g,%10g\n",invh[XX],invh[YY],invh[ZZ]);
+    }
     calc_nxyz(nx,ny,nz,&nnx,&nny,&nnz);
 
     for(i=0; (i<27); i++) {
@@ -491,11 +496,14 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
   gmx_fatal(FARGS,"PPPM used, but GROMACS was compiled without FFTW support!\n");
 #endif
 
-  if (cr != NULL) {
-    if (cr->nnodes > 1)
+  if (log) {
+    if (cr != NULL) {
+      if (cr->nnodes > 1)
 	fprintf(log,"Initializing parallel PPPM.\n");
+    }
+    fprintf(log,
+	    "Will use the PPPM algorithm for long-range electrostatics\n");
   }
-  fprintf(log,"Will use the PPPM algorithm for long-range electrostatics\n");
  
   for(m=0; m<DIM; m++)
     box_diag[m] = box[m][m];
@@ -505,9 +513,11 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
     nx     = ir->nkx;
     ny     = ir->nky;
     nz     = ir->nkz;
-    
-    fprintf(log,"Generating Ghat function\n");
-    fprintf(log,"Grid size is %d x %d x %d\n",nx,ny,nz);
+   
+    if (log) {
+      fprintf(log,"Generating Ghat function\n");
+      fprintf(log,"Grid size is %d x %d x %d\n",nx,ny,nz);
+    }
 
     if ((nx < 4) || (ny < 4) || (nz < 4)) 
       gmx_fatal(FARGS,"Grid must be at least 4 points in all directions");
@@ -525,10 +535,12 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
     
     /* Check whether cut-offs correspond */
     if ((fabs(r1-ir->rcoulomb_switch)>tol) || (fabs(rc-ir->rcoulomb)>tol)) {
-      fprintf(log,"rcoulomb_switch = %10.3e  rcoulomb = %10.3e"
-	          "  r1 = %10.3e  rc = %10.3e\n",
-	      ir->rcoulomb_switch,ir->rcoulomb,r1,rc);
-      fflush(log);
+      if (log) {
+	fprintf(log,"rcoulomb_switch = %10.3e  rcoulomb = %10.3e"
+		"  r1 = %10.3e  rc = %10.3e\n",
+		ir->rcoulomb_switch,ir->rcoulomb,r1,rc);
+	fflush(log);
+      }
       gmx_fatal(FARGS,"Cut-off lengths in tpb file and Ghat file %s "
 		  "do not match\nCheck your log file!",ghatfn);
     }
@@ -536,10 +548,12 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
     /* Check whether boxes correspond */
     for(m=0; (m<DIM); m++)
       if (fabs(box_diag[m]-grids[m]*spacing[m]) > tol) {
-	pr_rvec(log,0,"box",box_diag,DIM,TRUE);
-	pr_rvec(log,0,"grid-spacing",spacing,DIM,TRUE);
-	pr_ivec(log,0,"grid size",grids,DIM,TRUE);
-	fflush(log);
+	if (log) {
+	  pr_rvec(log,0,"box",box_diag,DIM,TRUE);
+	  pr_rvec(log,0,"grid-spacing",spacing,DIM,TRUE);
+	  pr_ivec(log,0,"grid size",grids,DIM,TRUE);
+	  fflush(log);
+	}
 	gmx_fatal(FARGS,"Box sizes in tpb file and Ghat file %s do not match\n"
 		    "Check your log file!",ghatfn);
       }
@@ -558,7 +572,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
 #ifdef GMX_MPI
   cr->mpi_comm_mygroup=cr->mpi_comm_mysim;
 #endif
-  grid = mk_fftgrid(log,nx,ny,nz,NULL,cr);
+  grid = mk_fftgrid(nx,ny,nz,NULL,cr);
   
   return 0;
 }
@@ -611,7 +625,8 @@ static int gmx_pppm_opt_do(FILE *log,       gmx_pme_t pme,
   real      ***ghat;
   int       nx,ny,nz;
   
-  fprintf(log,"Generating Ghat function\n");
+  if (log)
+    fprintf(log,"Generating Ghat function\n");
   nx     = ir->nkx;
   ny     = ir->nky;
   nz     = ir->nkz;

@@ -50,10 +50,14 @@
 #include "network.h"
 #include "names.h"
 #include "orires.h"
+#include "constr.h"
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE };
 
 static bool bEner[F_NRE];
+
+static char *conrmsd_nm[] = { "Cons. rmsd ()", "Cons.2 rmsd ()" };
+
 static char *boxs_nm[] = {
   "Box-X", "Box-Y", "Box-Z","Volume","Density (SI)",
   "pV"
@@ -77,8 +81,8 @@ static char *pcouplmu_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-static bool bShake,bTricl,bDynBox;
-static int  f_nre=0,epc,etc;
+static bool bConstr,bTricl,bDynBox;
+static int  f_nre=0,epc,etc,nCrmsd;
 
 t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
 		      const t_idef *idef,const t_inputrec *ir,
@@ -183,9 +187,18 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       f_nre++;
     }
 
-  bShake = (idef->il[F_CONSTR].nr > 0) || (idef->il[F_SETTLE].nr > 0);
-  if (bShake) 
-    bShake = (getenv("SHAKEVIR") != NULL);
+  bConstr = (idef->il[F_CONSTR].nr > 0) || (idef->il[F_SETTLE].nr > 0);
+  if (bConstr) {
+    if (ir->eConstrAlg == estLINCS) {
+      if (ir->eI == eiSD)
+	nCrmsd = 2;
+      else
+	nCrmsd = 1;
+    }
+    bConstr = (getenv("GMX_CONSTRAINTVIR") != NULL);
+  } else {
+    nCrmsd = 0;
+  }
   epc = ir->epc;
   bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
   bDynBox = DYNAMIC_BOX(*ir);
@@ -195,10 +208,16 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   snew(md,1);
   md->ebin  = mk_ebin();
   md->ie    = get_ebin_space(md->ebin,f_nre,ener_nm);
+  if (nCrmsd) {
+    /* This should be called directly after the call for md->ie,
+     * such that md->iconrmsd follows directly in the list.
+     */
+    md->iconrmsd = get_ebin_space(md->ebin,nCrmsd,conrmsd_nm);
+  }
   if (bDynBox)
     md->ib    = get_ebin_space(md->ebin, bTricl ? NTRICLBOXS :
 			       NBOXS, bTricl ? tricl_boxs_nm : boxs_nm);
-  if (bShake) {
+  if (bConstr) {
     md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
     md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
   }
@@ -339,12 +358,13 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		tensor vir,
 		tensor pres,
 		t_groups *grps,
-		rvec mu_tot)
+		rvec mu_tot,
+		gmx_constr_t constr)
 {
   static real *ttt=NULL;
   static rvec *uuu=NULL;
   int    i,j,k,kk,m,n,gid;
-  real   bs[NBOXS],tmp6[6];
+  real   crmsd[2],bs[NBOXS],tmp6[6];
   real   tricl_bs[NTRICLBOXS];
   real   eee[egNR];
   real   ecopy[F_NRE];
@@ -356,6 +376,12 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
    */
   copy_energy(ener,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
+  if (nCrmsd) {
+    crmsd[0] = constr_rmsd(constr,FALSE);
+    if (nCrmsd > 1)
+      crmsd[1] = constr_rmsd(constr,TRUE);
+    add_ebin_nosum(md->ebin,md->iconrmsd,nCrmsd,crmsd);
+  }
   if (bDynBox || grps->cosacc.cos_accel != 0) {
     if(bTricl) {
       tricl_bs[0]=box[XX][XX];
@@ -387,7 +413,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       add_ebin(md->ebin,md->ib,NBOXS,bs,step);
     }
   }  
-  if (bShake) {
+  if (bConstr) {
     add_ebin(md->ebin,md->isvir,9,svir[0],step);
     add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
   }
@@ -555,7 +581,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
       print_orires_log(log,&(fcd->orires));
 
     fprintf(log,"   Energies %s\n",kjm);
-    pr_ebin(log,md->ebin,md->ie,f_nre,5,mode,nsteps,TRUE);  
+    pr_ebin(log,md->ebin,md->ie,f_nre+nCrmsd,5,mode,nsteps,TRUE);  
     fprintf(log,"\n");
 
     if (!bCompact) {
@@ -564,8 +590,8 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 		nsteps,TRUE);      
 	fprintf(log,"\n");
       }
-      if (bShake) {
-	fprintf(log,"   Shake Virial %s\n",kjm);
+      if (bConstr) {
+	fprintf(log,"   Constraint Virial %s\n",kjm);
 	pr_ebin(log,md->ebin,md->isvir,9,3,mode,nsteps,FALSE);  
 	fprintf(log,"\n");
 	fprintf(log,"   Force Virial %s\n",kjm);

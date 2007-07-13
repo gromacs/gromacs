@@ -91,7 +91,7 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real invmass[],real tt[],real lagr[],int *nerror);
 /* Regular iterative shake */
 
-extern bool constrain(FILE *log,bool bLog,
+extern bool constrain(FILE *log,bool bLog,bool bEner,
 		      gmx_constr_t constr,
 		      t_topology *top,
 		      t_inputrec *ir,
@@ -141,6 +141,20 @@ extern t_block make_at2con(int start,int natoms,
 			   int *nconstraints,int *nflexiblecons);
 /* Allocates and makes the atom to constraint list */
 
+extern real *constr_rmsd_data(gmx_constr_t constr);
+/* Return the data for determining constraint RMS relative deviations.
+ * Returns NULL when LINCS is not used.
+ */
+
+extern real constr_rmsd(gmx_constr_t constr,bool bSD2);
+/* Return the RMSD of the constraint, bSD2 selects the second SD step */
+
+extern real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
+/* Return the data for determining constraint RMS relative deviations */
+
+extern real lincs_rmsd(gmx_lincsdata_t lincsd,bool bSD2);
+/* Return the RMSD of the constraint, bSD2 selects the second SD step */
+
 gmx_lincsdata_t init_lincsdata();
 /* Allocates the lincs data struct */
 
@@ -152,7 +166,7 @@ extern void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
 extern void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
-extern bool constrain_lincs(FILE *log,bool bLog,
+extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    t_inputrec *ir,
 			    int step,gmx_lincsdata_t lincsd,t_mdatoms *md,
 			    gmx_domdec_t *dd,

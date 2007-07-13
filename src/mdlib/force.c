@@ -64,6 +64,7 @@
 #include "partdec.h"
 #include "qmmm.h"
 #include "mpelogging.h"
+#include "copyrite.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -1010,6 +1011,17 @@ void init_forcerec(FILE *fp,
   
   /* Tables are used for direct ewald sum */
   if(fr->bEwald) {
+    if (EEL_PME(ir->coulombtype)) {
+      if (fp)
+	fprintf(fp,"Will do PME sum in reciprocal space.\n");
+      please_cite(fp,"Essman95a");
+      
+      if (ir->ewald_geometry == eewg3DC) {
+	if (fp)
+	  fprintf(fp,"Using the Ewald3DC correction for systems with a slab geometry.\n");
+	please_cite(fp,"In-Chul99a");
+      }
+    }
     fr->ewaldcoeff=calc_ewaldcoeff(ir->rcoulomb, ir->ewald_rtol);
     if (fp)
       fprintf(fp,"Using a Gaussian width (1/beta) of %g nm for Ewald\n",
@@ -1307,6 +1319,9 @@ void init_forcerec(FILE *fp,
   /* Initialize neighbor search */
   init_ns(fp,cr,&fr->ns,
 	  fr,top->atoms.grps[egcENER].nr,&top->blocks[ebCGS],box);
+
+  if (cr->duty & DUTY_PP)
+    gmx_setup_kernels(fp);
 }
  
 #define pr_real(fp,r) fprintf(fp,"%s: %e\n",#r,r)
@@ -1466,7 +1481,7 @@ void force(FILE       *fplog,   int        step,
   }
 
   where();
-  do_nonbonded(fplog,cr,fr,x,f,md,
+  do_nonbonded(cr,fr,x,f,md,
 	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
 	  grps->estat.ee[egCOULSR],box_size,nrnb,
 	  lambda,&dvdlambda,FALSE,-1,-1,bDoForces);
@@ -1542,7 +1557,7 @@ void force(FILE       *fplog,   int        step,
     case eelPMEUSER:
       if (cr->duty & DUTY_PME) {
 	wallcycle_start(wcycle,ewcPMEMESH);
-        status = gmx_pme_do(fplog,fr->pmedata,
+        status = gmx_pme_do(fr->pmedata,
 			    md->start,md->homenr,
 			    x,fr->f_el_recip,
 			    md->chargeA,md->chargeB,

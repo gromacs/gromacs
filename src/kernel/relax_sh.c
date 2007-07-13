@@ -331,10 +331,10 @@ static void init_adir(FILE *log,
       }
     }
   }
-  constrain(log,FALSE,constr,top,ir,dd,step,md,
+  constrain(log,FALSE,FALSE,constr,top,ir,dd,step,md,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
-  constrain(log,FALSE,constr,top,ir,dd,step,md,
+  constrain(log,FALSE,FALSE,constr,top,ir,dd,step,md,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,TRUE);
 
@@ -348,7 +348,7 @@ static void init_adir(FILE *log,
   }
 
   /* Project the acceleration on the old bond directions */
-  constrain(log,FALSE,constr,top,ir,dd,step,md,
+  constrain(log,FALSE,FALSE,constr,top,ir,dd,step,md,
 	    x_old,xnew-start,acc_dir,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,FALSE); 
 }

@@ -235,7 +235,7 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   /* Initiate */
   cr->nnodes = 1; cr->nodeid    = 0; cr->left   = 0; cr->right  = 1;
   cr->nthreads = 1 ; cr->threadid = 0;
-  open_log(log,cr);
+  open_log(log,cr,FALSE);
 
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
