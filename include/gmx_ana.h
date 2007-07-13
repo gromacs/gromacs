@@ -185,6 +185,9 @@ int
 gmx_mdmat(int argc,char *argv[]);
 
 int 
+gmx_vanhove(int argc,char *argv[]);
+
+int 
 gmx_wham(int argc,char *argv[]);
 
 int 
