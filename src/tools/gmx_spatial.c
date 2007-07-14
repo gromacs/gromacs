@@ -45,6 +45,9 @@ static char *SRCID_template_c = "$Id$";
 #include "statutil.h"
 #include "tpxio.h"
 #include "math.h"
+#include "index.h"
+#include "pbc.h"
+#include "rmpbc.h"
 
 static const double bohr=0.529177249;  /* conversion factor to compensate for VMD plugin conversion... */
 
@@ -208,7 +211,7 @@ int gmx_spatial(int argc,char *argv[])
 
     copy_mat(box,box_pbc);
     if (bPBC) {
-      rm_pbc(&top.idef,natoms,box,x,x);
+      rm_pbc(&top.idef,natoms,box,fr.x,fr.x);
       set_pbc(&pbc,box_pbc);
     }
 
@@ -250,9 +253,9 @@ int gmx_spatial(int argc,char *argv[])
   fprintf(flp,"Spatial Distribution Function\n");
   fprintf(flp,"test\n");
   fprintf(flp,"%5d%12.6f%12.6f%12.6f\n",nidxp,(MINBIN[XX]+(minx+iIGNOREOUTER)*rBINWIDTH)*10./bohr,(MINBIN[YY]+(miny+iIGNOREOUTER)*rBINWIDTH)*10./bohr,(MINBIN[ZZ]+(minz+iIGNOREOUTER)*rBINWIDTH)*10./bohr);
-  fprintf(flp,"%5d%12.6f%12.6f%12.6f\n",maxx-minx+1-(2*iIGNOREOUTER),rBINWIDTH*10./bohr,0.,0.);
-  fprintf(flp,"%5d%12.6f%12.6f%12.6f\n",maxy-miny+1-(2*iIGNOREOUTER),0.,rBINWIDTH*10./bohr,0.);
-  fprintf(flp,"%5d%12.6f%12.6f%12.6f\n",maxz-minz+1-(2*iIGNOREOUTER),0.,0.,rBINWIDTH*10./bohr);
+  fprintf(flp,"%5ld%12.6f%12.6f%12.6f\n",maxx-minx+1-(2*iIGNOREOUTER),rBINWIDTH*10./bohr,0.,0.);
+  fprintf(flp,"%5ld%12.6f%12.6f%12.6f\n",maxy-miny+1-(2*iIGNOREOUTER),0.,rBINWIDTH*10./bohr,0.);
+  fprintf(flp,"%5ld%12.6f%12.6f%12.6f\n",maxz-minz+1-(2*iIGNOREOUTER),0.,0.,rBINWIDTH*10./bohr);
   for(i=0; i<nidxp; i++){
     v=2;
     if(*(top.atoms.atomname[indexp[i]][0])=='C')v=6;
@@ -272,7 +275,7 @@ int gmx_spatial(int argc,char *argv[])
 	if(!(i<minz||i>maxz))continue;
 	if(bin[k][j][i]!=0){
 	  printf("A bin was not empty when it should have been empty. Programming error.\n");
-	  printf("bin[%d][%d][%d] was = %d\n",k,j,i,bin[k][j][i]);
+	  printf("bin[%d][%d][%d] was = %ld\n",k,j,i,bin[k][j][i]);
 	  exit(1);
 	}
       }
@@ -320,10 +323,10 @@ int gmx_spatial(int argc,char *argv[])
   /* printf("z=%d to %d\n",minz,maxz); */
 
   if(bCALCDIV){
-    printf("Counts per frame in all %d cubes divided by %le\n",numcu,1.0/norm);
+    printf("Counts per frame in all %ld cubes divided by %le\n",numcu,1.0/norm);
     printf("Normalized data: average %le, min %le, max %le\n",1.0,norm*(double)min/(double)numfr,norm*(double)max/(double)numfr);
   }else{
-    printf("grid.cube contains counts per frame in all %d cubes\n",numcu);
+    printf("grid.cube contains counts per frame in all %ld cubes\n",numcu);
     printf("Raw data: average %le, min %le, max %le\n",1.0/norm,(double)min/(double)numfr,(double)max/(double)numfr);
   }
 
