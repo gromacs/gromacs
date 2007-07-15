@@ -72,7 +72,10 @@ t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir)
     snew(vcm->group_v,vcm->nr+1);
     snew(vcm->group_mass,vcm->nr+1);
     snew(vcm->group_name,vcm->nr);
-
+    snew(vcm->group_ndf,vcm->nr);
+    for(g=0; (g<vcm->nr); g++)
+      vcm->group_ndf[g] = ir->opts.nrdf[g];
+      
     /* Copy pointer to group names and print it. */
     if (fp) {
       fprintf(fp,"Center of mass motion removal mode is %s\n",
@@ -229,10 +232,10 @@ static void get_minv(tensor A,tensor B)
       B[m][n] *= fac;
 }
 
-void check_cm_grp(FILE *fp,t_vcm *vcm)
+void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max)
 {
   int    m,g;
-  real   ekcm,ekrot,tm,tm_1;
+  real   ekcm,ekrot,tm,tm_1,Temp_cm;
   rvec   jcm;
   tensor Icm,Tcm;
     
@@ -289,11 +292,12 @@ void check_cm_grp(FILE *fp,t_vcm *vcm)
       for(m=0; m<(vcm->bXY ? 2 : DIM); m++) 
 	ekcm += sqr(vcm->group_v[g][m]);
       ekcm *= 0.5*vcm->group_mass[g];
+      Temp_cm = 2*ekcm/vcm->group_ndf[g];
       
-      if ((ekcm > 1) || debug)
-	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, ekin-cm: %12.5e\n",
+      if ((Temp_cm > Temp_Max) || debug)
+	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, Temp-cm: %12.5e\n",
 		vcm->group_name[g],vcm->group_v[g][XX],
-		vcm->group_v[g][YY],vcm->group_v[g][ZZ],ekcm);
+		vcm->group_v[g][YY],vcm->group_v[g][ZZ],Temp_cm);
       
       if (vcm->mode == ecmANGULAR) {
 	ekrot = 0.5*iprod(vcm->group_j[g],vcm->group_w[g]);

@@ -48,6 +48,7 @@ typedef struct {
   int    nr;                   /* Number of groups                    */
   int    mode;                 /* One of the enums above              */
   bool   bXY;                  /* x and y correction only             */
+  real   *group_ndf;           /* Number of degrees of freedom        */
   rvec   *group_p;             /* Linear momentum per group           */
   rvec   *group_v;             /* Linear velocity per group           */
   rvec   *group_x;             /* Center of mass per group            */
@@ -68,6 +69,6 @@ extern void do_stopcm_grp(FILE *fp,int start,int homenr,
 			  unsigned short *group_id,
 			  rvec x[],rvec v[],t_vcm *vcm);
 
-extern void check_cm_grp(FILE *fp,t_vcm *vcm);
+extern void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max);
 			 
 #endif /* _vcm_h */

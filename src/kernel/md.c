@@ -1068,7 +1068,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       
      /* Do center of mass motion removal */
     if (bStopCM && !bFFscan && !bRerunMD) {
-      check_cm_grp(log,vcm);
+      check_cm_grp(log,vcm,1);
       do_stopcm_grp(log,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
 		    state->x,state->v,vcm);
       inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
