@@ -45,9 +45,10 @@
 #include "names.h"
 #include "txtdump.h"
 #include "network.h"
+#include "physics.h"
  
 t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
-		int start,int homenr,int nstcomm,int comm_mode)
+		t_inputrec *ir,int start,int homenr)
 {
   t_vcm *vcm;
   real  *mass;
@@ -55,7 +56,7 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
   
   snew(vcm,1);
   
-  vcm->mode = (nstcomm > 0) ? comm_mode : ecmNO;
+  vcm->mode = (ir->nstcomm > 0) ? ir->comm_mode : ecmNO;
   
   if (vcm->mode != ecmNO) {
     vcm->nr = top->atoms.grps[egcVCM].nr;
@@ -65,11 +66,14 @@ t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
       snew(vcm->group_i,vcm->nr);
       snew(vcm->group_w,vcm->nr);
     }
+    snew(vcm->group_ndf,vcm->nr);
     snew(vcm->group_p,vcm->nr);
     snew(vcm->group_v,vcm->nr);
     snew(vcm->group_mass,vcm->nr);
     snew(vcm->group_name,vcm->nr);
     vcm->group_id = md->cVCM;
+    for(i=0; (i<vcm->nr); i++) 
+      vcm->group_ndf[i] = ir->opts.nrdf[i];
     for(i=start; (i<start+homenr); i++) {
       g = vcm->group_id[i];
       vcm->group_mass[g] += md->massT[i];
@@ -217,10 +221,10 @@ static void get_minv(tensor A,tensor B)
       B[m][n] *= fac;
 }
 
-void check_cm_grp(FILE *fp,t_vcm *vcm)
+void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max)
 {
   int    m,g;
-  real   ekcm,ekrot,tm,tm_1;
+  real   ekcm,ekrot,tm,tm_1,ekcm_max,Temp_cm;
   rvec   jcm;
   tensor Icm,Tcm;
     
@@ -277,12 +281,14 @@ void check_cm_grp(FILE *fp,t_vcm *vcm)
       for(m=0; (m<DIM); m++) 
 	ekcm += sqr(vcm->group_v[g][m]);
       ekcm *= 0.5*vcm->group_mass[g];
+      ekcm_max = 0.5*vcm->group_ndf[g]*BOLTZ*Temp_Max;
       
-      if ((ekcm > 1) || debug)
-	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, ekin-cm: %12.5e\n",
+      if ((ekcm > ekcm_max) || debug) {
+	Temp_cm = 2*ekcm/(BOLTZ*vcm->group_ndf[g]);
+	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, T-cm: %12.5e\n",
 		vcm->group_name[g],vcm->group_v[g][XX],
-		vcm->group_v[g][YY],vcm->group_v[g][ZZ],ekcm);
-      
+		vcm->group_v[g][YY],vcm->group_v[g][ZZ],Temp_cm);
+      }
       if (vcm->mode == ecmANGULAR) {
 	ekrot = 0.5*iprod(vcm->group_j[g],vcm->group_w[g]);
 	if ((ekrot > 1) || debug) {

@@ -47,6 +47,7 @@
 typedef struct {
   int    nr;                   /* Number of groups                    */
   int    mode;                 /* One of the enums above              */
+  real   *group_ndf;           /* Number of DOF per group             */
   rvec   *group_p;             /* Linear momentum per group           */
   rvec   *group_v;             /* Linear velocity per group           */
   rvec   *group_x;             /* Center of mass per group            */
@@ -59,7 +60,7 @@ typedef struct {
 } t_vcm;
 
 t_vcm *init_vcm(FILE *fp,t_topology *top,t_commrec *cr,t_mdatoms *md,
-		int start,int homenr,int nstcomm,int comm_mode);
+		t_inputrec *ir,int start,int homenr);
 
 /* Do a per group center of mass things */
 extern void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
@@ -68,6 +69,6 @@ extern void calc_vcm_grp(FILE *fp,int start,int homenr,real mass[],
 extern void do_stopcm_grp(FILE *fp,int start,int homenr,
 			  rvec x[],rvec v[],t_vcm *vcm);
 
-extern void check_cm_grp(FILE *fp,t_vcm *vcm);
+extern void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max);
 			 
 #endif /* _vcm_h */

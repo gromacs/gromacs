@@ -834,7 +834,13 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
       
     /* Do center of mass motion removal */
     if (bStopCM && !bFFscan && !bRerunMD) {
-      check_cm_grp(log,vcm);
+      /* The last parameter is the temperature of the center of mass.
+       * In this case we put 1 there, to assure that the temperature of
+       * COM motion for each group should be below 1 K. Obviously
+       * one could implement it as a tolerance times the actual T as well
+       * e.g. 1e-3 T, but it remains arbitrary anyway. DvdS 2007-07-14.
+       */ 
+      check_cm_grp(log,vcm,1);
       do_stopcm_grp(log,START(nsb),HOMENR(nsb),state->x,state->v,vcm);
       inc_nrnb(&mynrnb,eNR_STOPCM,HOMENR(nsb));
       /*

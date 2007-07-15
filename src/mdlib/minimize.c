@@ -209,8 +209,7 @@ void init_em(FILE *log,const char *title,t_inputrec *inputrec,
   /* Set initial values for invmass etc. */
   update_mdatoms(mdatoms,*lambda,TRUE);
 
-  *vcm = init_vcm(log,top,cr,mdatoms,
-		  *start,HOMENR(nsb),inputrec->nstcomm,inputrec->comm_mode);
+  *vcm = init_vcm(log,top,cr,mdatoms,inputrec,*start,HOMENR(nsb));
 }
 
 
