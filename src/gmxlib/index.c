@@ -641,7 +641,7 @@ int find_group(char s[], int ngrps, char **grpname)
       strcpy(string, grpname[i]);
       upstring(string);
       minstring(string);
-      if (strstr(s,string)!=NULL) {
+      if (strstr(string,s)!=NULL) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;
