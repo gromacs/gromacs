@@ -641,7 +641,7 @@ int find_group(char s[], int ngrps, char **grpname)
       strcpy(string, grpname[i]);
       upstring(string);
       minstring(string);
-      if (strstr(s,string)!=NULL) {
+      if (strstr(string,s)!=NULL) {
 	if(aa!=NOTSET)
 	  bMultiple = TRUE;
 	aa=i;
@@ -662,16 +662,16 @@ static int qgroup(int *a, int ngrps, char **grpname)
   bool bInRange;
   
   do {
-  fprintf(stderr,"Select a group: ");
-  do {
-    if ( scanf("%s",s)!=1 ) 
-      gmx_fatal(FARGS,"Cannot read from input");
-  trim(s); /* remove spaces */
-  } while (strlen(s)==0);
-  aa = atoi(s);
+    fprintf(stderr,"Select a group: ");
+    do {
+      if ( scanf("%s",s)!=1 ) 
+	gmx_fatal(FARGS,"Cannot read from input");
+      trim(s); /* remove spaces */
+    } while (strlen(s)==0);
+    aa = atoi(s);
     if (aa==0 && strcmp(s,"0")!=0 ) /* string entered */
       aa = find_group(s, ngrps, grpname);
-    bInRange = aa>=0 && aa<ngrps;
+    bInRange = (aa>=0) && (aa<ngrps);
     if (!bInRange)
       printf("Error: No such group '%s'\n", s);
   } while (!bInRange);
