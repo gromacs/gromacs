@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 3.3.99_development_20070618, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 3.3.99_development_20070720, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -268,6 +268,8 @@ if test "$enable_fortran" = "yes"; then
     AC_MSG_ERROR([No fortran compiler found])
   fi
 fi
+
+AM_PROG_AS( $CC )
 
 # if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
 # above, since autoconf checks that the created file can be executed. This would

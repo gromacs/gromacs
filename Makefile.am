@@ -18,7 +18,7 @@ SUBDIRS = include src admin scripts share man
 
 EXTRA_DIST = config/depcomp 	                               
 
-install-hook:
+install-exec-hook:
 	@echo ""
 	@echo "GROMACS is installed under $(prefix)."
 	@echo "Make sure to update your PATH and MANPATH to find the"
