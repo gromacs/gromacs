@@ -162,18 +162,17 @@ real RF_excl_correction(FILE *log,
     *dvdlambda += -0.5*ec*(q2sumB - q2sumA);
   }
   
-  if(debug)
+  if (debug)
     fprintf(debug,"RF exclusion energy: %g\n",ener);
   
   return ener;
 }
 
-void calc_rffac(FILE *log,int eel,real eps_r,real eps_rf,real Rc,real Temp,
+void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,real Rc,real Temp,
 		real zsq,matrix box,
 		real *kappa,real *krf,real *crf)
 {
   /* Compute constants for Generalized reaction field */
-  static bool bFirst=TRUE;
   real   k1,k2,I,vol,rmin;
   
   if (EEL_RF(eel)) {
@@ -204,24 +203,22 @@ void calc_rffac(FILE *log,int eel,real eps_r,real eps_rf,real Rc,real Temp,
     *crf   = 1/Rc + *krf*Rc*Rc;
     rmin   = pow(*krf*2.0,-1.0/3.0);
     
-    if (bFirst) {
+    if (fplog) {
       if (eel == eelGRF) {
-	please_cite(log,"Tironi95a");
-	fprintf(log,"%s:\n"
+	please_cite(fplog,"Tironi95a");
+	fprintf(fplog,"%s:\n"
 		"epsRF = %10g, I   = %10g, volume = %10g, kappa  = %10g\n"
 		"rc    = %10g, krf = %10g, crf    = %10g, epsfac = %10g\n",
 		eel_names[eel],eps_rf,I,vol,*kappa,Rc,*krf,*crf,
 		ONE_4PI_EPS0/eps_r);
       } else {
-	fprintf(log,"%s:\n"
+	fprintf(fplog,"%s:\n"
 		"epsRF = %g, rc = %g, krf = %g, crf = %g, epsfac = %g\n",
 		eel_names[eel],eps_rf,Rc,*krf,*crf,ONE_4PI_EPS0/eps_r);
       }
-      fprintf(log,
+      fprintf(fplog,
 	      "The electrostatics potential has its minimum at r = %g\n",
 	      rmin);
-      
-      bFirst=FALSE;
     }
   }
 }

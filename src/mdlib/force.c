@@ -643,21 +643,16 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 {
   GMX_MPE_LOG(ev_update_fr_start);
 
-  if (fr->epsilon_r != 0)
-    fr->epsfac = ONE_4PI_EPS0/fr->epsilon_r;
-  else
-    /* eps = 0 is infinite dieletric: no coulomb interactions */
-    fr->epsfac = 0;
-  
-  if (EEL_RF(fr->eeltype))
-    calc_rffac(log,fr->eeltype,fr->epsilon_r,fr->epsilon_rf,
+  if (fr->eeltype == eelGRF)
+    calc_rffac(NULL,fr->eeltype,fr->epsilon_r,fr->epsilon_rf,
 	       fr->rcoulomb,fr->temp,fr->zsquare,box,
 	       &fr->kappa,&fr->k_rf,&fr->c_rf);
+
 
   GMX_MPE_LOG(ev_update_fr_finish);
 }
 
-void set_avcsixtwelve(FILE *log,t_forcerec *fr,
+void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 		      const t_atoms *atoms,const t_block *excl)
 {
   int    i,j,tpi,tpj,j1,j2,k,n,nexcl,q;
@@ -763,8 +758,8 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
       }
       npair = natoms - 1;
     }
-    if (npair - nexcl <= 0) {
-      fprintf(log,"\nWARNING: There are no atom pairs for dispersion correction\n\n");
+    if (npair - nexcl <= 0 && fplog) {
+      fprintf(fplog,"\nWARNING: There are no atom pairs for dispersion correction\n\n");
       csix     = 0;
       ctwelve  = 0;
     } else {
@@ -782,13 +777,14 @@ void set_avcsixtwelve(FILE *log,t_forcerec *fr,
 }
 
 
-static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_atoms *atoms)
+static void set_bham_b_max(FILE *fplog,t_forcerec *fr,const t_atoms *atoms)
 {
   int  i,j,tpi,tpj,ntypes;
   real b,bmin;
   real *nbfp;
 
-  fprintf(log,"Determining largest Buckingham b parameter for table\n");
+  if (fplog)
+    fprintf(fplog,"Determining largest Buckingham b parameter for table\n");
   nbfp   = fr->nbfp;
   ntypes = fr->ntype;
 
@@ -810,8 +806,9 @@ static void set_bham_b_max(FILE *log,t_forcerec *fr,const t_atoms *atoms)
 	bmin = b;
     }
   }
-  fprintf(log,"Buckingham b parameters, min: %g, max: %g\n",
-	  bmin,fr->bham_b_max);
+  if (fplog)
+    fprintf(fplog,"Buckingham b parameters, min: %g, max: %g\n",
+	    bmin,fr->bham_b_max);
 }
 
 static void make_nbf_tables(FILE *fp,t_forcerec *fr,real rtab,
@@ -1040,7 +1037,7 @@ void init_forcerec(FILE *fp,
   fr->temp    = 0.0;
   
   if (fr->eeltype == eelGRF) {
-    if (ir->efep!=efepNO)
+    if (ir->efep != efepNO && fp)
       fprintf(fp,"\nWARNING: the generalized reaction field constants are determined from topology A only\n\n");
     zsq = 0.0;
     for (i=0; (i<cgs->nr); i++) {
@@ -1177,8 +1174,18 @@ void init_forcerec(FILE *fp,
       fr->atype_surftens[i]=top->atomtypes.surftens[i];
   }    
 
-  /* Now update the rest of the vars */
-  update_forcerec(fp,fr,box);
+  /* Set the charge scaling */
+  if (fr->epsilon_r != 0)
+    fr->epsfac = ONE_4PI_EPS0/fr->epsilon_r;
+  else
+    /* eps = 0 is infinite dieletric: no coulomb interactions */
+    fr->epsfac = 0;
+
+  /* Reaction field constants */
+  if (EEL_RF(fr->eeltype))
+    calc_rffac(fp,fr->eeltype,fr->epsilon_r,fr->epsilon_rf,
+	       fr->rcoulomb,fr->temp,fr->zsquare,box,
+	       &fr->kappa,&fr->k_rf,&fr->c_rf);
   
   set_chargesum(fp,fr,&top->atoms);
 
