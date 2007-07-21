@@ -41,6 +41,7 @@
 #include "sysstuff.h"
 #include "macros.h"
 #include "smalloc.h"
+#include "assert.h"
 #include "typedefs.h"
 #include "mshift.h"
 #include "invblock.h"
@@ -307,11 +308,20 @@ t_border *mk_border(bool bVerbose,int natom,atom_id *invcgs,
       else if (is < ns) 
 	is++;
     }
-    else if (ic < nc)
+    else {
+      if (ic == nc) {
+	set_bor(&(bor[nbor]),cbor[ic],ic,is);
+	nbor++;
+	if (is < ns) is++;
+      }
+      else if (ic < nc) 
+	ic++;
+    }
+    /*if (ic < nc)
       ic++;
-    else
-      is++;/*gmx_fatal(FARGS,"Can't happen is=%d, ic=%d (%s, %d)",
-	     is,ic,__FILE__,__LINE__);*/
+      else
+      is++;*//*gmx_fatal(FARGS,"Can't happen is=%d, ic=%d (%s, %d)",
+	       is,ic,__FILE__,__LINE__);*/
   }
   fprintf(stderr,"There are %d total borders\n",nbor);
 
@@ -554,11 +564,116 @@ static int mk_sblocks(bool bVerbose,t_graph *g,t_sid sid[])
   return nblock;
 }
 
+typedef struct {
+  int first,last,sid;
+} t_merge_sid;
+
+static int ms_comp(const void *a, const void *b)
+{
+  t_merge_sid *ma = (t_merge_sid *)a;
+  t_merge_sid *mb = (t_merge_sid *)b;
+  int d;
+  
+  d = ma->first-mb->first;
+  if (d == 0)
+    return ma->last-mb->last;
+  else
+    return d;
+}
+
+static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
+		     t_block *sblock)
+{
+  int  i,j,k,n,isid,ndel;
+  t_merge_sid *ms;
+  int  nChanged;
+
+  /* We try to remdy the following problem:
+   * Atom: 1  2  3  4  5 6 7 8 9 10
+   * Sid:  0 -1  1  0 -1 1 1 1 1 1
+   */
+   
+  /* Determine first and last atom in each shake ID */
+  snew(ms,nsid);
+
+  for(k=0; (k<nsid); k++) {
+    ms[k].first = natoms+1;
+    ms[k].last  = -1;
+    ms[k].sid   = k;
+  }
+  for(i=0; (i<natoms); i++) {
+    isid = sid[i].sid;
+    if (isid >= 0) {
+      ms[isid].first = min(ms[isid].first,sid[i].atom);
+      ms[isid].last  = max(ms[isid].last,sid[i].atom);
+    }
+  }
+  qsort(ms,nsid,sizeof(ms[0]),ms_comp);
+  
+  /* Now merge the overlapping ones */
+  ndel = 0;
+  for(k=0; (k<nsid); ) {
+    for(j=k+1; (j<nsid); ) {
+      if (ms[j].first <= ms[k].last) {
+	ms[k].last  = max(ms[k].last,ms[j].last);
+	ms[k].first = min(ms[k].first,ms[j].first);
+	ms[j].sid = -1;
+	ndel++;
+	j++;
+      }
+      else {
+	k = j;
+	j = k+1;
+      }
+    }
+    if (j == nsid)
+      k++;
+  }
+  for(k=0; (k<nsid); k++) {
+    while ((k < nsid-1) && (ms[k].sid == -1)) {
+      for(j=k+1; (j<nsid); j++) {
+	memcpy(&(ms[j-1]),&(ms[j]),sizeof(ms[0]));
+      }
+      nsid--;
+    }
+  }
+
+  for(k=0; (k<natoms); k++) {
+    sid[k].atom = k;
+    sid[k].sid = -1;
+  }
+  sblock->nr  = nsid;
+  sblock->nra = natoms;
+  srenew(sblock->a,sblock->nra);
+  srenew(sblock->index,sblock->nr+2);
+  sblock->index[0] = 0;
+  for(k=n=0; (k<nsid); k++) {
+    sblock->index[k+1] = sblock->index[k] + ms[k].last - ms[k].first+1;
+    for(j=ms[k].first; (j<=ms[k].last); j++) {
+      sblock->a[n++] = j;
+      if (sid[j].sid == -1)
+	sid[j].sid = k;
+      else 
+	fprintf(stderr,"Double sids (%d, %d) for atom %d\n",sid[j].sid,k,j);
+    }
+  }
+  assert(k == nsid);
+  sblock->index[k+1] = natoms;
+  for(k=0; (k<natoms); k++)
+    if (sid[k].sid == -1)
+      sblock->a[n++] = k;
+  assert(n == natoms);
+  
+  sfree(ms);
+  
+  return nsid;
+}
+
 void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
 		 bool bSettle)
 {
   t_graph *g;
-  int     i,j,k;
+  int     i,i0,j,k,istart,n;
   t_sid   *sid;
   int     isid,nsid;
   
@@ -584,40 +699,50 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
       fprintf(debug,"sid[%5d] = atom:%5d sid:%5d\n",i,sid[i].atom,sid[i].sid);
   }
   /* Now check how many are NOT -1, i.e. how many have to be shaken */
-  for(i=0; (i<natoms); i++)
-    if (sid[i].sid > -1)
+  for(i0=0; (i0<natoms); i0++)
+    if (sid[i0].sid > -1)
       break;
   
+  /* Now we have the sids that have to be shaken. We'll check the min and
+   * max atom numbers and this determines the shake block. DvdS 2007-07-19.
+   * For the purpose of making boundaries all atoms in between need to be
+   * part of the shake block too. There may be cases where blocks overlap
+   * and they will have to be merged.
+   */
+  nsid = merge_sid(i0,natoms,nsid,sid,sblock);
+  /* Now sort the shake blocks again... */
+  /*qsort(sid,natoms,(size_t)sizeof(sid[0]),sid_comp);*/
+  
   /* Fill the sblock struct */    
-  sblock->nr  = nsid;
-  sblock->nra = natoms-i;
+  /*  sblock->nr  = nsid;
+  sblock->nra = natoms;
   srenew(sblock->a,sblock->nra);
   srenew(sblock->index,sblock->nr+1);
   
-  if (i < natoms) {
+  i    = i0;
+  isid = sid[i].sid;
+  n    = k = 0;
+  sblock->index[n++]=k;
+  while (i < natoms) {
+    istart = sid[i].atom;
+    while ((i<natoms-1) && (sid[i+1].sid == isid))
+    i++;*/
+    /* After while: we found a new block, or are thru with the atoms */
+  /*    for(j=istart; (j<=sid[i].atom); j++,k++)
+      sblock->a[k]=j;
+    sblock->index[n] = k;
+    if (i < natoms-1)
+      n++;
+    if (n > nsid)
+      gmx_fatal(FARGS,"Death Horror: nsid = %d, n= %d",nsid,n);
+    i++;
     isid = sid[i].sid;
-    sblock->index[0]=0;
-    if (nsid > 0) {
-      k=1;
-      for(j=0 ; (i<natoms); i++,j++) {
-	sblock->a[j]=sid[i].atom;
-	if (sid[i].sid != isid) {
-	  sblock->index[k]=j;
-	  isid = sid[i].sid;
-	  k++;
-	}
-      }
-      sblock->index[k]=j;
-      
-      if (k != nsid) {
-	gmx_fatal(FARGS,"k=%d, nsid=%d\n",k,nsid);
-      }
-    }
   }
+  */
   sfree(sid);
   /* Due to unknown reason this free generates a problem sometimes */
-  /* done_graph(g);
-     sfree(g); */
+  done_graph(g);
+  sfree(g); 
   if (debug)
     fprintf(debug,"Done gen_sblocks\n");
 }
