@@ -62,6 +62,7 @@
 #include "confio.h"
 #include "enxio.h"
 #include "tpxio.h"
+#include "names.h"
 
 typedef struct {
   int bStep;
@@ -82,6 +83,65 @@ typedef struct {
   float bF;
   float bBox;
 } t_fr_time;
+
+static void tpx2system(FILE *fp,t_topology *top)
+{
+  int i,nvsite=0;
+  fprintf(fp,"\\subsection{Simulation system}\n");
+  for(i=0; (i<top->atoms.nr); i++) {
+    if (top->atoms.atom[i].ptype == eptVSite)
+      nvsite++;
+  }
+  fprintf(fp,"A system of %d molecules (%d atoms) was simulated.\n",
+	  top->blocks[ebMOLS].nr,top->atoms.nr-nvsite);
+  if (nvsite)
+    fprintf(fp,"Virtual sites were used in some of the molecules.\n");
+  fprintf(fp,"\n\n");
+}
+
+static void tpx2params(FILE *fp,t_inputrec *ir)
+{
+  fprintf(fp,"\\subsection{Simulation settings}\n");
+  fprintf(fp,"A total of %g ns were simulated with a time step of %g fs.\n",
+	  ir->nsteps*ir->delta_t*0.001,1000*ir->delta_t);
+  fprintf(fp,"Neighborsearching was performed every %d steps.\n",ir->nstlist);
+  fprintf(fp,"The %s algorithm was used for electrostatic interactions.\n",
+	  EELTYPE(ir->coulombtype));
+  fprintf(fp,"with a cut-off of %g nm.\n",ir->rcoulomb);  
+  if (ir->coulombtype == eelPME)
+    fprintf(fp,"A reciprocal grid of %d x %d x %d cells was used with %dth order B-spline interpolation.\n",ir->nkx,ir->nky,ir->nkz,ir->pme_order);
+  if (ir->rvdw > ir->rlist) 
+    fprintf(fp,"A twin-range Van der Waals cut-off (%g/%g nm) was used, where the long range forces were updated during neighborsearching.\n",ir->rlist,ir->rvdw);
+  else
+    fprintf(fp,"A single cut-off of %g was used for Van der Waals interactions.\n",ir->rlist);
+  if (ir->etc != 0) {
+    fprintf(fp,"Temperature coupling was done with the %s algorithm.\n",
+	    etcoupl_names[ir->etc]);
+  }
+  if (ir->epc != 0) {
+    fprintf(fp,"Pressure coupling was done with the %s algorithm.\n",
+	    epcoupl_names[ir->epc]);
+  }
+  fprintf(fp,"\n\n");
+}
+
+static void tpx2methods(char *tpx,char *tex)
+{
+  FILE         *fp;
+  t_tpxheader sh;
+  t_inputrec  ir;
+  t_state     state;
+  t_topology  top;
+  int         i,step;
+  real        t;
+
+  read_tpx_state(tpx,&step,&t,&ir,&state,NULL,&top);
+  fp=fopen(tex,"w");
+  fprintf(fp,"\\section{Methods}\n");
+  tpx2system(fp,&top);
+  tpx2params(fp,&ir);
+  fclose(fp);
+}
 
 void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol)
 {
@@ -548,7 +608,9 @@ int main(int argc,char *argv[])
     "Similarly a pair of trajectory files can be compared (using the [TT]-f2[tt]",
     "option), or a pair of energy files (using the [TT]-e2[tt] option).[PAR]",
     "For free energy simulations the A and B state topology from one",
-    "run input file can be compared with options [TT]-s1[tt] and [TT]-ab[tt]."
+    "run input file can be compared with options [TT]-s1[tt] and [TT]-ab[tt].[PAR]",
+    "In case the [TT]-m[tt] flag is given a LaTeX file will be written",
+    "consisting a rough outline for a methods section for a paper."
   };
   t_filenm fnm[] = {
     { efTRX, "-f",  NULL, ffOPTRD },
@@ -559,9 +621,10 @@ int main(int argc,char *argv[])
     { efENX, "-e",  NULL, ffOPTRD },
     { efENX, "-e2", "ener2", ffOPTRD },
     { efNDX, "-n",  NULL, ffOPTRD },
+    { efTEX, "-m",  NULL, ffOPTWR }
   };
 #define NFILE asize(fnm)
-  char *fn1=NULL,*fn2=NULL;
+  char *fn1=NULL,*fn2=NULL,*tex=NULL;
   
   static real vdw_fac=0.8;
   static real bon_lo=0.4;
@@ -590,6 +653,7 @@ int main(int argc,char *argv[])
 
   fn1 = opt2fn_null("-f",NFILE,fnm);
   fn2 = opt2fn_null("-f2",NFILE,fnm);
+  tex = opt2fn_null("-m",NFILE,fnm);
   if (fn1 && fn2)
     comp_trx(fn1,fn2,ftol);
   else if (fn1)
@@ -606,8 +670,11 @@ int main(int argc,char *argv[])
       fn2 = NULL;
     }
     comp_tpx(fn1,fn2,ftol);
-  } else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2)) {
-    fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files!\n");
+  } else if (fn1 && tex)
+    tpx2methods(fn1,tex);
+  else if ((fn1 && !opt2fn_null("-f",NFILE,fnm)) || (!fn1 && fn2)) {
+    fprintf(stderr,"Please give me TWO run input (.tpr/.tpa/.tpb) files\n"
+	    "or specify the -m flag to generate a methods.tex file\n");
   }
   
   fn1 = opt2fn_null("-e",NFILE,fnm);
