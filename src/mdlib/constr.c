@@ -448,10 +448,7 @@ void set_constraints(FILE *log,struct gmx_constr *constr,
       /* Last block... */
       constr->sblock[j++] = 3*ncons;
       
-      /* if (j != (constr->nblocks+1)) {*/
-      /* Changed from the above, I don't know understand the test. 
-	DvdS 2007-07-03 */
-      if (j != (ncons+1)) {
+      if (j != (constr->nblocks+1)) {
 	fprintf(log,"bstart: %d\n",bstart);
 	fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
 		j,constr->nblocks,ncons);
