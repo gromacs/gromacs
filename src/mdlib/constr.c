@@ -121,9 +121,9 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount)
     "or if you are changing lambda too fast in free energy simulations.\n";
   
   gmx_fatal(FARGS,
-	    "Too many %s warnings (%d) %s"
+	    "Too many %s warnings (%d)\n"
 	    "If you know what you are doing you can %s"
-	    "set the environment variable GMX_MAXCONSTRWARN to -1,\n",
+	    "set the environment variable GMX_MAXCONSTRWARN to -1,\n"
 	    "but normally it is better to fix the problem",
 	    (eConstrAlg == estLINCS) ? "LINCS" : "SETTLE",warncount,
 	    (eConstrAlg == estLINCS) ?
@@ -465,7 +465,7 @@ void set_constraints(FILE *log,struct gmx_constr *constr,
   }
 }
 
-gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
+gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 			      t_topology *top,t_inputrec *ir)
 {
   int settle_type,j;
@@ -475,20 +475,20 @@ gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
   if (count_constraints(top,cr) > 0) {
     snew(constr,1);
 
-    constr->nflexcon = count_flexible_constraints(log,cr,ir,&top->idef);
+    constr->nflexcon = count_flexible_constraints(fplog,cr,ir,&top->idef);
 
     if (constr->nflexcon > 0)
-      please_cite(log,"Hess2002");
+      please_cite(fplog,"Hess2002");
     
     if (ir->eConstrAlg == estLINCS) {
-      please_cite(stdlog,"Hess97a");
+      please_cite(fplog,"Hess97a");
       constr->lincsd = init_lincsdata();
     }
 
     if (ir->eConstrAlg == estSHAKE) {
       if (constr->nflexcon)
 	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
-      please_cite(stdlog,"Ryckaert77a");
+      please_cite(fplog,"Ryckaert77a");
     }
 
     if (top->idef.il[F_SETTLE].nr > 0) {
@@ -499,7 +499,7 @@ gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
 	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
 		    settle_type,top->idef.il[F_SETTLE].iatoms[j]);
       }
-      please_cite(log,"Miyamoto92a");
+      please_cite(fplog,"Miyamoto92a");
     }
 
     constr->maxwarn = 999;
@@ -507,15 +507,17 @@ gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
     if (env) {
       constr->maxwarn = 0;
       sscanf(env,"%d",&constr->maxwarn);
-      fprintf(log,"Setting the maximum number of constraint warnings to %d\n",
-	      constr->maxwarn);
+      if (fplog)
+	fprintf(fplog,
+		"Setting the maximum number of constraint warnings to %d\n",
+		constr->maxwarn);
       if (MASTER(cr))
 	fprintf(stderr,
 		"Setting the maximum number of constraint warnings to %d\n",
 		constr->maxwarn);
     }
-    if (constr->maxwarn < 0)
-      fprintf(log,"maxwarn < 0, will not stop on constraint errors\n");
+    if (constr->maxwarn < 0 && fplog)
+      fprintf(fplog,"maxwarn < 0, will not stop on constraint errors\n");
     constr->warncount_lincs  = 0;
     constr->warncount_settle = 0;
   } else {
