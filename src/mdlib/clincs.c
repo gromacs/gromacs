@@ -518,7 +518,7 @@ gmx_lincsdata_t init_lincsdata()
   return li;
 }
 
-void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
+void init_lincs(FILE *fplog,t_idef *idef,int start,int homenr,
 		bool bDynamics,gmx_domdec_t *dd,
 		struct gmx_lincsdata *li)
 {
@@ -668,15 +668,17 @@ void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
 
     if (dc == NULL) {
       done_block(&at2con);
-      fprintf(log,"\nInitializing LINear Constraint Solver\n");
-      fprintf(log,"  number of constraints is %d\n",li->nc);
-      if (li->nc > 0)
-	fprintf(log,"  average number of constraints coupled to one constraint is %.1f\n",
-		(real)(li->ncc)/li->nc);
-      if (li->nflexcon)
-	fprintf(log,"  found %d flexible constraints\n",li->nflexcon);
-      fprintf(log,"\n");
-      fflush(log);
+      if (fplog) {
+	fprintf(fplog,"\nInitializing LINear Constraint Solver\n");
+	fprintf(fplog,"  number of constraints is %d\n",li->nc);
+	if (li->nc > 0)
+	  fprintf(fplog,"  average number of constraints coupled to one constraint is %.1f\n",
+		  (real)(li->ncc)/li->nc);
+	if (li->nflexcon)
+	  fprintf(fplog,"  found %d flexible constraints\n",li->nflexcon);
+	fprintf(fplog,"\n");
+	fflush(fplog);
+      }
     }
     if (debug)
       fprintf(debug,"Number of constraints is %d\n",li->nc);

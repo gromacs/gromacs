@@ -773,7 +773,7 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
   }
 }
 
-void init_pull(FILE *log,t_inputrec *ir,int nfile,t_filenm fnm[],
+void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
 	       rvec *x,t_atoms *atoms,matrix box,
 	       t_commrec *cr,int start,int end)
 {
@@ -790,20 +790,22 @@ void init_pull(FILE *log,t_inputrec *ir,int nfile,t_filenm fnm[],
   default:       pull->npbcdim = 3; break;
   }
 
-  fprintf(log,"\nWill apply %s COM pulling in geometry '%s'\n",
-	  EPULLTYPE(ir->ePull),EPULLGEOM(pull->eGeom));
-  if (pull->grp[0].nat > 0)
-    fprintf(log,"between a reference group and %d group%s\n",
-	    pull->ngrp,pull->ngrp==1 ? "" : "s");
-  else
-    fprintf(log,"with an absolute reference on %d group%s\n",
-	    pull->ngrp,pull->ngrp==1 ? "" : "s");
+  if (fplog) {
+    fprintf(fplog,"\nWill apply %s COM pulling in geometry '%s'\n",
+	    EPULLTYPE(ir->ePull),EPULLGEOM(pull->eGeom));
+    if (pull->grp[0].nat > 0)
+      fprintf(fplog,"between a reference group and %d group%s\n",
+	      pull->ngrp,pull->ngrp==1 ? "" : "s");
+    else
+      fprintf(fplog,"with an absolute reference on %d group%s\n",
+	      pull->ngrp,pull->ngrp==1 ? "" : "s");
+  }
 
   for(g=0; g<pull->ngrp+1; g++) {
     pgrp = &pull->grp[g];
     if (pgrp->nat > 0) {
       /* Set the indices */
-      init_pull_group_index(log,cr,start,end,
+      init_pull_group_index(fplog,cr,start,end,
 			    g,pgrp,pull->dim,atoms,ir->opts.nFreeze);
     }
   }      

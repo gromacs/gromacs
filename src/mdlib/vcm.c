@@ -294,14 +294,14 @@ void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max)
       ekcm *= 0.5*vcm->group_mass[g];
       Temp_cm = 2*ekcm/vcm->group_ndf[g];
       
-      if ((Temp_cm > Temp_Max) || debug)
+      if ((Temp_cm > Temp_Max) && fp)
 	fprintf(fp,"Large VCM(group %s): %12.5f, %12.5f, %12.5f, Temp-cm: %12.5e\n",
 		vcm->group_name[g],vcm->group_v[g][XX],
 		vcm->group_v[g][YY],vcm->group_v[g][ZZ],Temp_cm);
       
       if (vcm->mode == ecmANGULAR) {
 	ekrot = 0.5*iprod(vcm->group_j[g],vcm->group_w[g]);
-	if ((ekrot > 1) || debug) {
+	if ((ekrot > 1) && fp) {
 	  tm    = vcm->group_mass[g];
 	  fprintf(fp,"Group %s with mass %12.5e, Ekrot %12.5e Det(I) = %12.5e\n",
 		  vcm->group_name[g],tm,ekrot,det(vcm->group_i[g]));
