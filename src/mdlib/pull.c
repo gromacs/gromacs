@@ -215,9 +215,10 @@ void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
   case epullgDIST:
     /* Pull along the vector between the com's */
     if (ref[0] < 0 && !bWarned) {
+      if (stdlog)
 	fprintf(stdlog,"\nPull reference distance for group %d is negative (%f)\n",g,ref[0]);
-	fprintf(stderr,"\nPull reference distance for group %d is negative (%f)\n",g,ref[0]);
-	bWarned = TRUE;
+      fprintf(stderr,"\nPull reference distance for group %d is negative (%f)\n",g,ref[0]);
+      bWarned = TRUE;
     }
     drs = dnorm(dr);
     if (drs == 0) {
@@ -621,8 +622,11 @@ static real do_pull_pot(t_commrec *cr,int ePull,
 	pgrp->f_scal  = -pgrp->k*dev[0];
 	V            += 0.5*pgrp->k*sqr(dev[0]);
       } else {
+	ndr = 0;
+	for(m=0; m<DIM; m++)
+	  ndr += pgrp->vec[m]*dr[m];
 	pgrp->f_scal  = -pgrp->k;
-	V            += pgrp->k*dr[0];
+	V            += pgrp->k*ndr;
       }
       for(m=0; m<DIM; m++)
 	pgrp->f[m]    = pgrp->f_scal*pgrp->vec[m];
@@ -636,7 +640,6 @@ static real do_pull_pot(t_commrec *cr,int ePull,
       	  pgrp->f[m]  = -pgrp->k*pull->dim[m];
 	  V          += pgrp->k*dr[m]*pull->dim[m];
 	}
-	break;
       }
       break;
     }
