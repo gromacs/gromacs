@@ -126,7 +126,8 @@ int gmx_sorient(int argc,char *argv[])
     "theta1: the angle with the vector from the first atom of the solvent",
     "molecule to the midpoint between atoms 2 and 3.[BR]",
     "theta2: the angle with the normal of the solvent plane, defined by the",
-    "same three atoms.[BR]",
+    "same three atoms, or when the option [TT]-v23[tt] is set",
+    "the angle with the vector between atoms 2 and 3.[BR]",
     "The reference can be a set of atoms or",
     "the center of mass of a set of atoms. The group of solvent atoms should",
     "consist of 3 atoms per solvent molecule.",
@@ -140,11 +141,13 @@ int gmx_sorient(int argc,char *argv[])
     "of cos(theta1) and 3cos^2(theta2)-1 as a function of r.[PAR]"
   };
   
-  static bool bCom = FALSE,bPBC = FALSE;
+  static bool bCom = FALSE,bVec23=FALSE,bPBC = FALSE;
   static real rmin=0.0,rmax=0.5,binwidth=0.02,rbinw=0.02;
   t_pargs pa[] = {
     { "-com",  FALSE, etBOOL,  {&bCom},
       "Use the center of mass as the reference postion" },
+    { "-v23",  FALSE, etBOOL,  {&bVec23},
+      "Use the vector between atoms 2 and 3" },
     { "-rmin",  FALSE, etREAL, {&rmin}, "Minimum distance (nm)" },
     { "-rmax",  FALSE, etREAL, {&rmax}, "Maximum distance (nm)" },
     { "-cbin",  FALSE, etREAL, {&binwidth}, "Binwidth for the cosine" },
@@ -241,15 +244,23 @@ int gmx_sorient(int argc,char *argv[])
 	r2  = norm2(dx);
 	if (r2 < rcut2) {
 	  r = sqrt(r2);
-	  rvec_sub(x[sa1],x[sa0],dxh1);
-	  rvec_sub(x[sa2],x[sa0],dxh2);
-	  rvec_inc(dxh1,dxh2);
-	  svmul(1/r,dx,dx);
-	  unitv(dxh1,dxh1);
-	  inp = iprod(dx,dxh1);
-	  oprod(dxh1,dxh2,outer);
-	  unitv(outer,outer);
-	  outp = iprod(dx,outer);
+	  if (!bVec23) {
+	    /* Determine the normal to the plain */
+	    rvec_sub(x[sa1],x[sa0],dxh1);
+	    rvec_sub(x[sa2],x[sa0],dxh2);
+	    rvec_inc(dxh1,dxh2);
+	    svmul(1/r,dx,dx);
+	    unitv(dxh1,dxh1);
+	    inp = iprod(dx,dxh1);
+	    oprod(dxh1,dxh2,outer);
+	    unitv(outer,outer);
+	    outp = iprod(dx,outer);
+	  } else {
+	    /* Use the vector between the 2nd and 3rd atom */
+	    rvec_sub(x[sa2],x[sa1],dxh2);
+	    unitv(dxh2,dxh2);
+	    outp = iprod(dx,dxh2);
+	  }
 	  (histi1[(int)(invrbw*r)]) += inp;
 	  (histi2[(int)(invrbw*r)]) += 3*sqr(outp) - 1;
 	  (histn[(int)(invrbw*r)])++;
