@@ -38,6 +38,8 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -47,6 +49,7 @@
 #include "txtdump.h"
 #include "math.h"
 #include "assert.h"
+#include "splitter.h"
 
 typedef struct {
   int     nr;
@@ -509,7 +512,7 @@ static int mk_sblocks(FILE *fp,t_graph *g,t_sid sid[])
    */
   
   if (fp)
-    fprintf(fp,"Walking down the molecule graph to make shake-blocks\n");
+    fprintf(fp,"Walking down the molecule graph to make constraint-blocks\n");
 
   while (nW > 0) {
     /* Find the first white, this will allways be a larger
@@ -664,7 +667,7 @@ static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
   return nsid;
 }
 
-void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
+void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
 		 bool bSettle)
 {
   t_graph *g;
@@ -673,14 +676,14 @@ void gen_sblocks(bool bVerbose,int natoms,t_idef *idef,t_block *sblock,
   int     isid,nsid;
   
   g=mk_graph(idef,natoms,TRUE,bSettle);
-  if (bVerbose && debug)
+  if (debug)
     p_graph(debug,"Graaf Dracula",g);
   snew(sid,natoms);
   for(i=0; (i<natoms); i++) {
     sid[i].atom =  i;
     sid[i].sid  = -1;
   }
-  nsid=mk_sblocks(bVerbose,g,sid);
+  nsid=mk_sblocks(fp,g,sid);
 
   if (!nsid)
     return;
