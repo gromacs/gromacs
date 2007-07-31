@@ -1157,7 +1157,7 @@ static void add_simple(t_ns_buf *nsbuf,int nrj,atom_id cg_j,
 		       int icg,int jgid,t_block *cgs,t_excl bexcl[],
 		       int shift,t_forcerec *fr)
 {
-  if (nsbuf->ncg >= MAX_CG) {
+  if (nsbuf->nj >= MAX_CG) {
     put_in_list(bHaveVdW,ngid,md,icg,jgid,nsbuf->ncg,nsbuf->jcg,
 		cgs->index,/* cgs->a, */ bexcl,shift,fr,FALSE,TRUE,TRUE,FALSE);
     /* Reset buffer contents */
