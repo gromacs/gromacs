@@ -962,8 +962,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
       wallcycle_start(wcycle,ewcUPDATE);
       update(step,&ener[F_DVDL],inputrec,mdatoms,state,graph,f,buf,
-	     top,grps,shake_vir,cr,nrnb,sd,constr,edyn,bHaveConstr,bNEMD,
-	     TRUE,bFirstStep,pres);
+	     top,grps,shake_vir,cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
+	     bNEMD,TRUE,bFirstStep,pres);
       wallcycle_stop(wcycle,ewcUPDATE);
     } else {
       /* Need to unshift here */

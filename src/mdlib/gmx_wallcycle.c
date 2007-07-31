@@ -19,7 +19,7 @@ typedef struct gmx_wallcycle {
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
-  { "Run", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Comm. energies", "Test" };
+  { "Run", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
 
 /* variables for testing/debugging */
 static bool              wc_barrier=FALSE;
@@ -126,9 +126,14 @@ double wallcycle_lastcycle(gmx_wallcycle_t wc, int ewc)
   
   if (wc) {
     c = (double)wc[ewc].last;
-    if (ewc == ewcFORCE)
+    if (ewc == ewcFORCE) {
       /* Remove the PME mesh part from the force count */
       c -= (double)wc[ewcPMEMESH].last;
+    }
+    if (ewc == ewcUPDATE) {
+      /* Remove the constraint part from the force count */
+      c -= (double)wc[ewcCONSTR].last;
+    }
   } else {
     c = 0;
   }
@@ -157,6 +162,9 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
 
     /* Remove the PME mesh part from the force count */
     cycles[ewcFORCE] -= cycles[ewcPMEMESH];
+
+    /* Remove the constraint part from the update count */
+    cycles[ewcUPDATE] -= cycles[ewcCONSTR];
 
 #ifdef GMX_MPI    
     if (cr->nnodes > 1) {

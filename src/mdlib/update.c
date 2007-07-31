@@ -63,6 +63,7 @@
 #include "constr.h"
 #include "edsam.h"
 #include "pull.h"
+#include "gmx_wallcycle.h"
 
 typedef struct {
   real gdt;
@@ -625,6 +626,7 @@ void update(int          step,
             tensor       vir_part,
             t_commrec    *cr,
             t_nrnb       *nrnb,
+	    gmx_wallcycle_t wcycle,
 	    gmx_stochd_t sd,
 	    gmx_constr_t constr,
             t_edsamyn    *edyn,
@@ -742,11 +744,13 @@ void update(int          step,
     bEner = (do_per_step(step,inputrec->nstenergy) || bLastStep);
     if (constr) {
       /* Constrain the coordinates xprime */
+      wallcycle_start(wcycle,ewcCONSTR);
       constrain(NULL,bLog,bEner,constr,top,
 		inputrec,cr->dd,step,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,
 		dt,state->v,&vir_con,nrnb,TRUE);
+      wallcycle_stop(wcycle,ewcCONSTR);
     }
     where();
 
@@ -807,11 +811,13 @@ void update(int          step,
       
       if (constr) {
 	/* Constrain the coordinates xprime */
+	wallcycle_start(wcycle,ewcCONSTR);
 	constrain(NULL,bLog,bEner,constr,top,
 		  inputrec,cr->dd,step,md,
 		  state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,
 		  dt,NULL,NULL,nrnb,TRUE);
+	wallcycle_stop(wcycle,ewcCONSTR);
       }
     }
     
