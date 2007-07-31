@@ -38,6 +38,8 @@
 #endif
 
 #include <stdio.h>
+#include <string.h>
+
 #include "sysstuff.h"
 #include "macros.h"
 #include "smalloc.h"
@@ -47,6 +49,7 @@
 #include "invblock.h"
 #include "txtdump.h"
 #include "math.h"
+#include "splitter.h"
 
 typedef struct {
   int     nr;
