@@ -125,7 +125,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   char     **gnm;
   char     buf[256];
   t_mdebin *md;
-  int      i,j,ni,nj,n,k,kk;
+  int      i,j,ni,nj,n,k,kk,nc[2];
   bool     bBHAM,b14;
   
   bBHAM = (idef->functype[0] == F_BHAM);
@@ -187,9 +187,13 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       f_nre++;
     }
 
-  bConstr = (idef->il[F_CONSTR].nr > 0) || (idef->il[F_SETTLE].nr > 0);
+  nc[0] = idef->il[F_CONSTR].nr/3;
+  nc[1] = idef->il[F_SETTLE].nr*3/2;
+  if (PARTDECOMP(cr))
+    gmx_sumi(2,nc,cr);
+  bConstr = (nc[0]+nc[1] > 0);
   if (bConstr) {
-    if (ir->eConstrAlg == estLINCS) {
+    if (nc[0] > 0 && ir->eConstrAlg == estLINCS) {
       if (ir->eI == eiSD)
 	nCrmsd = 2;
       else
