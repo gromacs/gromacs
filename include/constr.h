@@ -119,11 +119,6 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
  *
  */
 
-extern int count_constraints(t_topology *top,t_commrec *cr);
-/* Returns the total number of constraints in the system,
- * unless cr=NULL, then returns -1.
- */
-
 extern gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
 				     t_topology *top,t_inputrec *ir);
 /* Initialize constraints stuff */

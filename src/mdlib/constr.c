@@ -314,17 +314,6 @@ real constr_rmsd(struct gmx_constr *constr,bool bSD2)
     return 0;
 }
 
-int count_constraints(t_topology *top,t_commrec *cr)
-{
-  int nc;
-  
-  nc = top->idef.il[F_SETTLE].nr*3/2 + top->idef.il[F_CONSTR].nr/3;
-  if (PAR(cr))
-    gmx_sumi(1,&nc,cr);
-
-  return nc;
-}
-
 static int count_flexible_constraints(FILE* log,
 				      t_commrec *cr,
 				      t_inputrec *ir,t_idef *idef)
@@ -338,7 +327,7 @@ static int count_flexible_constraints(FILE* log,
 	idef->iparams[idef->il[F_CONSTR].iatoms[i]].constr.dB == 0)
       nflexcon++;
   
-  if (PAR(cr))
+  if (PARTDECOMP(cr))
     gmx_sumi(1,&nflexcon,cr);
 
   if (nflexcon > 0) {
@@ -468,38 +457,51 @@ void set_constraints(FILE *log,struct gmx_constr *constr,
 gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 			      t_topology *top,t_inputrec *ir)
 {
-  int settle_type,j;
+  int  nc[2],settle_type,j;
   struct gmx_constr *constr;
   char *env;
 
-  if (count_constraints(top,cr) > 0) {
+  /* The number of normal constraints */
+  nc[0] = top->idef.il[F_CONSTR].nr/3;
+  /* The number of constraints handled by SETTLE */
+  nc[1] = top->idef.il[F_SETTLE].nr*3/2;
+  if (PARTDECOMP(cr))
+    gmx_sumi(2,nc,cr);
+
+  if (nc[0]+nc[1] > 0) {
     snew(constr,1);
 
-    constr->nflexcon = count_flexible_constraints(fplog,cr,ir,&top->idef);
-
-    if (constr->nflexcon > 0)
-      please_cite(fplog,"Hess2002");
-    
-    if (ir->eConstrAlg == estLINCS) {
-      please_cite(fplog,"Hess97a");
-      constr->lincsd = init_lincsdata();
-    }
-
-    if (ir->eConstrAlg == estSHAKE) {
-      if (constr->nflexcon)
-	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
-      please_cite(fplog,"Ryckaert77a");
-    }
-
-    if (top->idef.il[F_SETTLE].nr > 0) {
-      /* Check that we have only one settle type */
-      settle_type=top->idef.il[F_SETTLE].iatoms[0];
-      for (j=0; j<top->idef.il[F_SETTLE].nr; j+=2) {
-	if (top->idef.il[F_SETTLE].iatoms[j] != settle_type)
-	  gmx_fatal(FARGS,"More than one settle type (%d and %d)",
-		    settle_type,top->idef.il[F_SETTLE].iatoms[j]);
+    if (nc[0] == 0) {
+      constr->nflexcon = 0;
+    } else {
+      constr->nflexcon = count_flexible_constraints(fplog,cr,ir,&top->idef);
+      
+      if (constr->nflexcon > 0)
+	please_cite(fplog,"Hess2002");
+      
+      if (ir->eConstrAlg == estLINCS) {
+	please_cite(fplog,"Hess97a");
+	constr->lincsd = init_lincsdata();
       }
+      
+      if (ir->eConstrAlg == estSHAKE) {
+	if (constr->nflexcon)
+	  gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
+	please_cite(fplog,"Ryckaert77a");
+      }
+    }
+    
+    if (nc[1] > 0) {
       please_cite(fplog,"Miyamoto92a");
+      if (top->idef.il[F_SETTLE].nr > 0) {
+	/* Check that we have only one settle type */
+	settle_type=top->idef.il[F_SETTLE].iatoms[0];
+	for (j=0; j<top->idef.il[F_SETTLE].nr; j+=2) {
+	  if (top->idef.il[F_SETTLE].iatoms[j] != settle_type)
+	    gmx_fatal(FARGS,"More than one settle type (%d and %d)",
+		    settle_type,top->idef.il[F_SETTLE].iatoms[j]);
+	}
+      }
     }
 
     constr->maxwarn = 999;
