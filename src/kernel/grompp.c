@@ -1004,8 +1004,7 @@ int main (int argc, char *argv[])
   if (ir->ePBC==epbcXY && ir->nwall!=2)
     clear_rvec(state.box[ZZ]);
   
-  if ((ir->coulombtype == eelPPPM) || (ir->coulombtype == eelPME) || 
-      (ir->coulombtype == eelPMEUSER)|| (ir->coulombtype == eelEWALD)) {
+  if (EEL_FULL(ir->coulombtype)) {
     /* Calculate the optimal grid dimensions */
     copy_mat(state.box,box);
     if (ir->ePBC==epbcXY && ir->nwall==2)
