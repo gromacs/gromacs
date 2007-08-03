@@ -275,20 +275,38 @@ static void select_my_idef(FILE *log,t_idef *idef,int **multinr,t_commrec *cr)
 void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
 		  t_commrec *cr,t_topology *top)
 {
-  int    i,npp;
+  int    i,npp,n,nn;
   real   *capacity;
-  double tcap = 0;
+  double tcap = 0,cap;
   int    *multinr_cgs,**multinr_nre;
+  char   *cap_env;
 
   /* Time to setup the division of charge groups over processors */
   npp = cr->nnodes-cr->npmenodes;
   snew(capacity,npp);
-  for(i=0; (i<npp-1); i++) {
-    capacity[i] = 1.0/(double)npp;
-    tcap += capacity[i];
+  cap_env = getenv("GMX_CAPACITY");
+  if (cap_env == NULL) {
+    for(i=0; (i<npp-1); i++) {
+      capacity[i] = 1.0/(double)npp;
+      tcap += capacity[i];
+    }
+    /* Take care that the sum of capacities is 1.0 */
+    capacity[npp-1] = 1.0 - tcap;
+  } else {
+    tcap = 0;
+    nn = 0;
+    for(i=0; i<npp; i++) {
+      cap = 0;
+      sscanf(cap_env+nn,"%lf%n",&cap,&n);
+      if (cap == 0)
+	gmx_fatal(FARGS,"Incorrect entry or number of entries in GMX_CAPACITY='%s'",cap_env);
+      capacity[i] = cap;
+      tcap += cap;
+      nn += n;
+    }
+    for(i=0; i<npp; i++)
+      capacity[i] /= tcap;
   }
-  /* Take care that the sum of capacities is 1.0 */
-  capacity[npp-1] = 1.0 - tcap;
 
   snew(multinr_cgs,npp);
   snew(multinr_nre,F_NRE);
