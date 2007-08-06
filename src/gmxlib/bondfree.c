@@ -433,7 +433,7 @@ real water_pol(int nbonds,
       rvec_sub(x[aH2],x[aH1],dHH);
       rvec_sub(x[aD], x[aO], dOD);
       rvec_sub(x[aS], x[aD], dDS);
-      oprod(dOH1,dOH2,nW);
+      cprod(dOH1,dOH2,nW);
       
       /* Compute inverse length of normal vector 
        * (this one could be precomputed, but I'm too lazy now)
@@ -861,8 +861,8 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
   *t2 = pbc_rvec_sub(pbc,xk,xj,r_kj);			/*  3		*/
   *t3 = pbc_rvec_sub(pbc,xk,xl,r_kl);			/*  3		*/
 
-  oprod(r_ij,r_kj,m); 			/*  9 		*/
-  oprod(r_kj,r_kl,n);			/*  9		*/
+  cprod(r_ij,r_kj,m); 			/*  9 		*/
+  cprod(r_kj,r_kl,n);			/*  9		*/
   *cos_phi=cos_angle(m,n); 		/* 41 		*/
   phi=acos(*cos_phi); 			/* 10 		*/
   ipr=iprod(r_ij,n); 			/*  5 		*/

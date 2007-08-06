@@ -252,7 +252,7 @@ int gmx_sorient(int argc,char *argv[])
 	    svmul(1/r,dx,dx);
 	    unitv(dxh1,dxh1);
 	    inp = iprod(dx,dxh1);
-	    oprod(dxh1,dxh2,outer);
+	    cprod(dxh1,dxh2,outer);
 	    unitv(outer,outer);
 	    outp = iprod(dx,outer);
 	  } else {

@@ -89,7 +89,7 @@ static void calculate_normal(atom_id index[],rvec x[],rvec result,rvec center)
   rvec_sub(x[index[1]],x[index[0]],c1);    /* find two vectors */
   rvec_sub(x[index[2]],x[index[0]],c2);
   
-  oprod(c1,c2,result);                    /* take crossproduct between these */
+  cprod(c1,c2,result);                    /* take crossproduct between these */
 }
 
 /* calculate the angle and distance between the two groups */

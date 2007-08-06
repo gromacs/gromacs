@@ -351,7 +351,7 @@ static void constr_vsite3OUT(rvec xi,rvec xj,rvec xk,rvec x,
   
   pbc_rvec_sub(pbc,xj,xi,xij);
   pbc_rvec_sub(pbc,xk,xi,xik);
-  oprod(xij,xik,temp);
+  cprod(xij,xik,temp);
   /* 15 Flops */
   
   x[XX] = xi[XX] + a*xij[XX] + b*xik[XX] + c*temp[XX];

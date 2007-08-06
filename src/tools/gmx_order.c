@@ -387,11 +387,11 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 	   we can use the outer product of Cn-1->Cn and Cn+1->Cn, I hope */
 	rvec_sub(x1[a[index[i+1]+j]], x1[a[index[i]+j]], tmp1);
 	rvec_sub(x1[a[index[i-1]+j]], x1[a[index[i]+j]], tmp2);
-	oprod(tmp1, tmp2, Sx);
+	cprod(tmp1, tmp2, Sx);
 	svmul(1/norm(Sx), Sx, Sx);
 	
 	/* now we can get Sy from the outer product of Sx and Sz   */
-	oprod(Sz, Sx, Sy);
+	cprod(Sz, Sx, Sy);
 	svmul(1/norm(Sy), Sy, Sy);
 
 	/* the square of cosine of the angle between dist and the axis.

@@ -102,7 +102,7 @@ static void list_trn(char *fn)
 	  }
 	  for(i=5*j; (i<5*j+5); i++) {
 	    rvec_dec(x[i],xcm[j]);
-	    oprod(x[i],f[i],dx);
+	    cprod(x[i],f[i],dx);
 	    rvec_inc(torque[j],dx);
 	    rvec_inc(x[i],xcm[j]);
 	  }

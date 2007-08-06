@@ -162,7 +162,7 @@ int gmx_rotacf(int argc,char *argv[])
 	ak=index[3*i+2];
 	rvec_sub(x_s[ai],x_s[aj],xij);
 	rvec_sub(x_s[aj],x_s[ak],xjk);
-	oprod(xij,xjk,n);
+	cprod(xij,xjk,n);
 	for(m=0; (m<DIM); m++)
 	  c1[i][DIM*teller+m]=n[m];
       }

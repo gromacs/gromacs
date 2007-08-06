@@ -459,11 +459,11 @@ structure if needed */
         
         /* i' = unitv(k' x (r(atom2) - r(atom1))) */
         pbc_dx(&pbc,x[index[NDX_REF3][i]],x[index[NDX_REF2][i]],i1_mol);
-        oprod(i1_mol,rot[2],i2_mol);
+        cprod(i1_mol,rot[2],i2_mol);
         unitv(i2_mol,rot[0]);
       
         /* j' = k' x i' */
-        oprod(rot[2],rot[0],rot[1]);
+        cprod(rot[2],rot[0],rot[1]);
 
 
         /* set the point of reference */

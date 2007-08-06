@@ -144,14 +144,14 @@ real calc_cm(FILE *log,int natoms,real mass[],rvec x[],rvec v[],
   for(i=0; (i<natoms); i++) {
     m0=mass[i];
     tm+=m0;
-    oprod(x[i],v[i],a0);
+    cprod(x[i],v[i],a0);
     for(m=0; (m<DIM); m++) {
       xcm[m]+=m0*x[i][m]; /* c.o.m. position */
       vcm[m]+=m0*v[i][m]; /* c.o.m. velocity */
       acm[m]+=m0*a0[m];   /* rotational velocity around c.o.m. */
     }
   }
-  oprod(xcm,vcm,a0);
+  cprod(xcm,vcm,a0);
   for(m=0; (m<DIM); m++) {
     xcm[m]/=tm;
     vcm[m]/=tm;

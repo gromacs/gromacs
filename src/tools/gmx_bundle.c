@@ -332,7 +332,7 @@ int gmx_bundle(int argc,char *argv[])
 	unitv_no_table(va,va);
 	unitv_no_table(vb,vb);
 	fprintf(fkink," %6g",RAD2DEG*acos(iprod(va,vb)));
-	oprod(va,vb,vc);
+	cprod(va,vb,vc);
 	copy_rvec(bun.mid[i],vr);
 	vr[ZZ] = 0;
 	unitv_no_table(vr,vr);

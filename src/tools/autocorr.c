@@ -184,7 +184,7 @@ static void do_ac_core(int nframes,int nout,
 	  xj[m] = c1[j3+m];
 	  xk[m] = c1[jk3+m];
 	}
-	oprod(xj,xk,rr);
+	cprod(xj,xk,rr);
 	
 	corr[k] += iprod(rr,rr);
       }

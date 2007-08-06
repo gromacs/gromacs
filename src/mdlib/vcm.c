@@ -150,7 +150,7 @@ void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,
 
       if (vcm->mode == ecmANGULAR) {
 	/* Calculate angular momentum */
-	oprod(x[i],v[i],j0);
+	cprod(x[i],v[i],j0);
 	
 	for(m=0; (m<DIM); m++) {
 	  vcm->group_j[g][m] += m0*j0[m];
@@ -195,7 +195,7 @@ void do_stopcm_grp(FILE *fp,int start,int homenr,unsigned short *group_id,
 	  g = group_id[i];
 	/* Compute the correction to the velocity for each atom */
 	rvec_sub(x[i],vcm->group_x[g],dx);
-	oprod(vcm->group_w[g],dx,dv);
+	cprod(vcm->group_w[g],dx,dv);
 	rvec_dec(v[i],dv);
       }
     }
@@ -262,7 +262,7 @@ void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max)
 	  /* Subtract the center of mass contribution to the 
 	   * angular momentum 
 	   */
- 	  oprod(vcm->group_x[g],vcm->group_v[g],jcm);
+ 	  cprod(vcm->group_x[g],vcm->group_v[g],jcm);
 	  for(m=0; (m<DIM); m++)
 	    vcm->group_j[g][m] -= tm*jcm[m];
 	  

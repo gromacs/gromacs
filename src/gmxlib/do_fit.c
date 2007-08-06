@@ -182,8 +182,8 @@ void calc_fit_R(int ndim,int natoms,real *w_rls,rvec *xp,rvec *x,matrix R)
      * This insures that the conformation is not mirrored and
      * prevents problems with completely flat reference structures.
      */  
-    oprod(vh[0],vh[1],vh[2]);
-    oprod(vk[0],vk[1],vk[2]);
+    cprod(vh[0],vh[1],vh[2]);
+    cprod(vk[0],vk[1],vk[2]);
   } else if (ndim == 2) {
     /* Calculate the last eigenvector from the first one */
     vh[1][XX] = -vh[0][YY];

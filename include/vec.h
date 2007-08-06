@@ -84,7 +84,7 @@
   real norm2(rvec a)                               = | a |^2 ( = x*y*z )
   real norm(rvec a)                                = | a |
   double dnorm(dvec a)                             = | a |
-  void oprod(rvec a,rvec b,rvec c)                 c = a x b (outer product)
+  void cprod(rvec a,rvec b,rvec c)                 c = a x b (cross product)
   void dprod(rvec a,rvec b,rvec c)                 c = a * b (direct product)
   real cos_angle(rvec a,rvec b)
   real cos_angle_no_table(rvec a,rvec b)
@@ -509,7 +509,7 @@ static inline real cos_angle_no_table(const rvec a,const rvec b)
   return cos;
 }
 
-static inline void oprod(const rvec a,const rvec b,rvec c)
+static inline void cprod(const rvec a,const rvec b,rvec c)
 {
   c[XX]=a[YY]*b[ZZ]-a[ZZ]*b[YY];
   c[YY]=a[ZZ]*b[XX]-a[XX]*b[ZZ];

@@ -215,7 +215,7 @@ void calc_h_pos(int nht, rvec xa[], rvec xh[])
 
     rvec_sub(xAI,xAJ,rCC1);
     rvec_sub(xAI,xAK,rCC2);
-    oprod(rCC1,rCC2,rNN);
+    cprod(rCC1,rCC2,rNN);
     nn=norm(rNN);
     
     for(d=0; (d<DIM); d++) {
