@@ -418,9 +418,10 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	fprintf(debug,"\n");
       }
     }
-    gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means you %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s.",
+    gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means your %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s%s.",
 	      dd->sim_nodeid,nrecv_local,spac->nind_req,specat_type,
-	      specat_type,add_err);
+	      specat_type,add_err,
+	      dd->bDynLoadBal ? " or use the -rdd option of mdrun" : "");
   }
 
   if (debug)
@@ -519,7 +520,12 @@ int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 	  nhome++;
 	}
       } else {
-	/* We need to walk out of the home cell by nrec constraints */
+	/* We need the nrec constraints coupled to this constraint,
+	 * so we need to walk out of the home cell by nrec+1 atoms,
+	 * since already atom bg is not locally present.
+	 * Therefore we call walk_out with nrec recursions to go after
+	 * this first call.
+	 */
 	walk_out(con,bg,nrec,ia,dd->ga2la,TRUE,dc,dd->constraint_comm);
       }
     }
