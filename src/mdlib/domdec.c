@@ -1553,7 +1553,7 @@ static void distribute_cg(FILE *fplog,int step,
   sfree(tmp_nalloc);
 
   if (fplog) {
-    fprintf(fplog,"Charge group distribution:");
+    fprintf(fplog,"Charge group distribution at step %d:",step);
     for(i=0; i<dd->nnodes; i++)
       fprintf(fplog," %d",ma->ncg[i]);
     fprintf(fplog,"\n");
