@@ -516,7 +516,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     set_dd_parameters(stdlog,cr->dd,top_global,inputrec,fr);
 
-    dd_make_reverse_top(stdlog,cr->dd,top_global,vsite,
+    dd_make_reverse_top(stdlog,cr->dd,top_global,vsite,constr,
 			EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
 
     top = dd_init_local_top(top_global);
@@ -554,7 +554,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initialize constraints */
   if (constr) {
     if (!DOMAINDECOMP(cr))
-      set_constraints(stdlog,constr,top,inputrec,mdatoms,NULL);
+      set_constraints(constr,top,inputrec,mdatoms,NULL);
     bHaveConstr = TRUE;
   }
 

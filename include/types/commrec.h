@@ -66,12 +66,6 @@ typedef struct {
 typedef struct gmx_reverse_top *gmx_reverse_top_p_t;
 
 typedef struct {
-  /* The number of constraints in the whole system */
-  int  ncon_global;
-  /* The number of flexible constraints in the whole system */
-  int  nflexcon_global;
-  /* Index from global atom numbers to global constraints */
-  t_block at2con;
   /* A pointer to the global iatoms array for the constraints */
   t_iatom *iatoms;
   /* The fully local and connected constraints */

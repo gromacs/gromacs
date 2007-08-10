@@ -191,8 +191,6 @@ typedef struct gmx_domdec_comm {
 #define DD_FLAG_FW(d) (1<<(16+(d)*2))
 #define DD_FLAG_BW(d) (1<<(16+(d)*2+1))
 
-#define CG_ALLOC_SIZE     1000
-
 /* Cell permutation required to obtain consecutive charge groups
  * for neighbor searching.
  */
@@ -1473,7 +1471,7 @@ static void distribute_cg(FILE *fplog,int step,
     snew(tmp_nalloc,dd->nnodes);
     snew(tmp_ind,dd->nnodes);
     for(i=0; i<dd->nnodes; i++) {
-      tmp_nalloc[i] = (cgs->nr/(dd->nnodes*CG_ALLOC_SIZE) + 2)*CG_ALLOC_SIZE;
+      tmp_nalloc[i] = over_alloc_large(cgs->nr/dd->nnodes+1);
       snew(tmp_ind[i],tmp_nalloc[i]);
     }
   }
@@ -1531,7 +1529,7 @@ static void distribute_cg(FILE *fplog,int step,
     }
     i = dd_index(dd->nc,ind);
     if (ma->ncg[i] == tmp_nalloc[i]) {
-      tmp_nalloc[i] += CG_ALLOC_SIZE;
+      tmp_nalloc[i] = over_alloc_large(ma->ncg[i]+1);
       srenew(tmp_ind[i],tmp_nalloc[i]);
     }
     tmp_ind[i][ma->ncg[i]] = icg;
@@ -3496,19 +3494,19 @@ static void setup_dd_communication(FILE *fplog,int step,
 	}
 	if (r2 < r_comm2) {
 	  /* Make an index to the local charge groups */
-	  if (nsend >= ind->nalloc) {
-	    ind->nalloc += CG_ALLOC_SIZE;
+	  if (nsend+1 > ind->nalloc) {
+	    ind->nalloc = over_alloc_large(nsend+1);
 	    srenew(ind->index,ind->nalloc);
 	  }
-	  if (nsend >= comm->nalloc_int) {
-	    comm->nalloc_int += CG_ALLOC_SIZE;
+	  if (nsend+1 > comm->nalloc_int) {
+	    comm->nalloc_int = over_alloc_large(nsend+1);
 	    srenew(comm->buf_int,comm->nalloc_int);
 	  }
 	  ind->index[nsend] = cg;
 	  comm->buf_int[nsend] = index_gl[cg];
 	  ind->nsend[cell]++;
-	  if (nsend >= comm->nalloc_vr) {
-	    comm->nalloc_vr += CG_ALLOC_SIZE;
+	  if (nsend+1 > comm->nalloc_vr) {
+	    comm->nalloc_vr = over_alloc_large(nsend+1);
 	    srenew(comm->buf_vr,comm->nalloc_vr);
 	  }
 	  if (dd->ci[dim] == 0) {
@@ -3940,7 +3938,7 @@ void dd_partition_system(FILE         *fplog,
   if (top_global->idef.il[F_CONSTR].nr > 0) {
     dd->nat_tot_con =
       dd_make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
-				ir->nProjOrder);
+				constr,ir->nProjOrder);
   } else {
     dd->nat_tot_con = dd->nat_tot_vsite;
   }
@@ -3975,7 +3973,7 @@ void dd_partition_system(FILE         *fplog,
 		     mdatoms->nChargePerturbed,0,FALSE);
 
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
-    set_constraints(fplog,constr,top_global,ir,mdatoms,dd);
+    set_constraints(constr,top_global,ir,mdatoms,dd);
 
   if (ir->ePull != epullNO)
     /* Update the local pull groups */

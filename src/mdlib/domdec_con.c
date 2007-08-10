@@ -34,10 +34,6 @@ typedef struct gmx_domdec_specat_comm {
   int  vbuf2_nalloc;
 } gmx_domdec_specat_comm_t;
 
-#define SPECAT_ALLOC_SIZE     1000
-#define IATOM_ALLOC_SIZE      1000
-#define CONSTRAINT_ALLOC_SIZE 1000
-
 static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 			     int end,rvec *f,rvec *fshift)
 {
@@ -331,7 +327,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	}
 	if (ind >= 0) {
 	  if (i < n0 || !spac->bSendAtom[ind]) {
-	    if (spas->nsend >= spas->a_nalloc) {
+	    if (spas->nsend+1 > spas->a_nalloc) {
 	      spas->a_nalloc = over_alloc_large(spas->nsend+1);
 	      srenew(spas->a,spas->a_nalloc);
 	    }
@@ -340,7 +336,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	     */
 	    spas->a[spas->nsend] = ind;
 	    spac->bSendAtom[ind] = TRUE;
-	    if (spas->nsend >= spac->ibuf_nalloc) {
+	    if (spas->nsend+1 > spac->ibuf_nalloc) {
 	      spac->ibuf_nalloc = over_alloc_large(spas->nsend+1);
 	      srenew(spac->ibuf,spac->ibuf_nalloc);
 	    }
@@ -430,7 +426,8 @@ static int setup_specat_communication(gmx_domdec_t *dd,
   return nat_tot_specat;
 }
 
-static void walk_out(int con,int a,int nrec,const t_iatom *ia,
+static void walk_out(int con,int a,int nrec,
+		     const t_iatom *ia,const t_block *at2con,
 		     const gmx_ga2la_t *ga2la,bool bHomeConnect,
 		     gmx_domdec_constraints_t *dc,
 		     gmx_domdec_specat_comm_t *dcc)
@@ -439,8 +436,8 @@ static void walk_out(int con,int a,int nrec,const t_iatom *ia,
 
   if (dc->gc2lc[con] == -1) {
     /* Add this non-home constraint to the list */
-    if (dc->ncon >= dc->con_nalloc) {
-      dc->con_nalloc += CONSTRAINT_ALLOC_SIZE;
+    if (dc->ncon+1 > dc->con_nalloc) {
+      dc->con_nalloc = over_alloc_large(dc->ncon+1);
       srenew(dc->con,dc->con_nalloc);
       srenew(dc->con_nlocat,dc->con_nalloc);
     }
@@ -452,8 +449,8 @@ static void walk_out(int con,int a,int nrec,const t_iatom *ia,
   /* Check to not ask for the same atom more than once */
   if (dc->ga2la[a] == -1) {
     /* Add this non-home atom to the list */
-    if (dcc->nind_req >= dcc->ind_req_nalloc) {
-      dcc->ind_req_nalloc += SPECAT_ALLOC_SIZE;
+    if (dcc->nind_req+1 > dcc->ind_req_nalloc) {
+      dcc->ind_req_nalloc = over_alloc_large(dcc->nind_req+1);
       srenew(dcc->ind_req,dcc->ind_req_nalloc);
     }
     dcc->ind_req[dcc->nind_req++] = a;
@@ -462,8 +459,8 @@ static void walk_out(int con,int a,int nrec,const t_iatom *ia,
   }
 
   if (nrec > 0) {
-    for(i=dc->at2con.index[a]; i<dc->at2con.index[a+1]; i++) {
-      coni = dc->at2con.a[i];
+    for(i=at2con->index[a]; i<at2con->index[a+1]; i++) {
+      coni = at2con->a[i];
       if (coni != con) {
 	/* Walk further */
 	if (a == ia[coni*3+1])
@@ -471,15 +468,16 @@ static void walk_out(int con,int a,int nrec,const t_iatom *ia,
 	else
 	  b = ia[coni*3+1];
 	if (ga2la[b].cell != 0)
-	  walk_out(coni,b,nrec-1,ia,ga2la,FALSE,dc,dcc);
+	  walk_out(coni,b,nrec-1,ia,at2con,ga2la,FALSE,dc,dcc);
       }
     }
   }
 }
 
-int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
+int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,
+			      gmx_constr_t constr,int nrec)
 {
-  t_block at2con;
+  t_block *at2con;
   gmx_ga2la_t *ga2la;
   t_iatom *iap;
   int nhome,a,ag,bg,i,con;
@@ -488,7 +486,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 
   dc = dd->constraints;
 
-  at2con = dc->at2con;
+  at2con = atom2constraints(constr);
   ga2la  = dd->ga2la;
 
   dc->ncon = 0;
@@ -497,8 +495,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
     dd->constraint_comm->nind_req = 0;
   for(a=0; a<dd->nat_home; a++) {
     ag = dd->gatindex[a];
-    for(i=at2con.index[ag]; i<at2con.index[ag+1]; i++) {
-      con = at2con.a[i];
+    for(i=at2con->index[ag]; i<at2con->index[ag+1]; i++) {
+      con = at2con->a[i];
       iap = ia + con*3;
       if (ag == iap[1]) {
 	bg = iap[2];
@@ -508,8 +506,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
       if (ga2la[bg].cell == 0) {
 	/* Add this fully home constraint at the first atom */
 	if (ag < bg) {
-	  if (dc->ncon >= dc->con_nalloc) {
-	    dc->con_nalloc += CONSTRAINT_ALLOC_SIZE;
+	  if (dc->ncon+1 > dc->con_nalloc) {
+	    dc->con_nalloc = over_alloc_large(dc->ncon+1);
 	    srenew(dc->con,dc->con_nalloc);
 	    srenew(dc->con_nlocat,dc->con_nalloc);
 	  }
@@ -526,7 +524,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec)
 	 * Therefore we call walk_out with nrec recursions to go after
 	 * this first call.
 	 */
-	walk_out(con,bg,nrec,ia,dd->ga2la,TRUE,dc,dd->constraint_comm);
+	walk_out(con,bg,nrec,ia,at2con,dd->ga2la,TRUE,dc,dd->constraint_comm);
       }
     }
   }
@@ -577,8 +575,8 @@ int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
 	    /* Check to not ask for the same atom more than once */
 	    if (ga2la_specat[a] == -1) {
 	      /* Add this non-home atom to the list */
-	      if (spac->nind_req >= spac->ind_req_nalloc) {
-		spac->ind_req_nalloc += SPECAT_ALLOC_SIZE;
+	      if (spac->nind_req+1 > spac->ind_req_nalloc) {
+		spac->ind_req_nalloc = over_alloc_small(spac->nind_req+1);
 		srenew(spac->ind_req,spac->ind_req_nalloc);
 	      }
 	      spac->ind_req[spac->nind_req++] = a;
@@ -613,12 +611,11 @@ int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
 }
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-			     int natoms,t_idef *idef,t_block *cgs,
-			     bool bDynamics)
+			     int natoms,t_idef *idef,
+			     gmx_constr_t constr)
 {
-  int c,cg,cg0,cg1,a,a2;
   gmx_domdec_constraints_t *dc;
-  bool bInterCGConstraints;
+  int c,a;
 
   if (debug)
     fprintf(debug,"Begin init_domdec_constraints\n");
@@ -626,8 +623,6 @@ void init_domdec_constraints(gmx_domdec_t *dd,
   snew(dd->constraints,1);
   dc = dd->constraints;
 
-  dc->at2con = make_at2con(0,natoms,idef,bDynamics,
-			   &dc->ncon_global,&dc->nflexcon_global);
   dc->iatoms = idef->il[F_CONSTR].iatoms;
 
   snew(dc->gc2lc,idef->il[F_CONSTR].nr/3);
@@ -637,23 +632,8 @@ void init_domdec_constraints(gmx_domdec_t *dd,
   snew(dc->ga2la,natoms);
   for(a=0; a<natoms; a++)
     dc->ga2la[a] = -1;
-
-  bInterCGConstraints = FALSE;
-  for(cg=0; cg<cgs->nr && !bInterCGConstraints; cg++) {
-    cg0 = cgs->index[cg];
-    cg1 = cgs->index[cg+1];
-    for(a=cg0; a<cg1; a++)
-      for(c=dc->at2con.index[a]; c<dc->at2con.index[a+1]; c++) {
-	/* Single all constraints are stored for both atoms
-	 * we only need to check the second atom.
-	 */
-	a2 = dc->iatoms[3*dc->at2con.a[c]+2];
-	if (a2 < cg0 || a2 >= cg1)
-	  bInterCGConstraints = TRUE;
-      }
-  }
   
-  if (bInterCGConstraints)
+  if (inter_charge_group_constraints(constr))
     snew(dd->constraint_comm,1);
 }
 

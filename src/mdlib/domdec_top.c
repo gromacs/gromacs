@@ -209,7 +209,7 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
 
 void dd_make_reverse_top(FILE *fplog,
 			 gmx_domdec_t *dd,t_topology *top,
-			 gmx_vsite_t *vsite,
+			 gmx_vsite_t *vsite,gmx_constr_t constr,
 			 bool bDynamics,int eeltype)
 {
   int natoms,n_recursive_vsite,nexcl,a;
@@ -251,12 +251,10 @@ void dd_make_reverse_top(FILE *fplog,
   }
 
   if (top->idef.il[F_CONSTR].nr > 0) {
-    init_domdec_constraints(dd,natoms,&top->idef,&top->blocks[ebCGS],
-			    bDynamics);
-    if (dd->constraint_comm && fplog)
-      fprintf(fplog,"There are inter charge-group constraints,\n"
-	      "will communicate selected coordinates each lincs iteration\n");
+    init_domdec_constraints(dd,natoms,&top->idef,constr);
   }
+  if (fplog)
+    fprintf(fplog,"\n");
 }
 
 static inline void add_ifunc(int type,int nral,t_iatom *tiatoms,t_ilist *il)

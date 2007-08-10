@@ -872,23 +872,29 @@ to bond-constraints.</dd>
 
 <dt><h4>constraint_algorithm:</h4></dt>
 <dd><dl compact>
-<dt><b><!--Idx-->lincs<!--EIdx--></b></dt>
-<dd>LINear Constraint Solver. The accuracy in set with
+<dt><b><!--Idx-->LINCS<!--EIdx--></b></dt>
+<dd>LINear Constraint Solver.
+With domain decomposition the parallel version P-LINCS is used.
+The accuracy in set with
 <b>lincs_order</b>, which sets the number of matrices in the expansion
-for the matrix inversion, 4 is enough for a "normal" MD simulation, 8 is
-needed for BD with large time-steps. After the matrix inversion correction
-the algorithm does an iterative correction to compensate for lengthening
-due to rotation. The number of such iterations can be controlled with
-<b>lincs_iter</b>. The accuracy of the 
-constraints is printed to the log file every <b>nstlog</b> steps.
+for the matrix inversion.
+After the matrix inversion correction the algorithm does
+an iterative correction to compensate for lengthening due to rotation.
+The number of such iterations can be controlled with
+<b>lincs_iter</b>. The root mean square relative constraint deviation
+is printed to the log file every <b>nstlog</b> steps.
 If a bond rotates more than <b>lincs_warnangle</b> [degrees] in one step, 
 a warning will be printed both to the log file and to <TT>stderr</TT>. 
-Lincs should not be used with coupled angle constraints.</dd>
-<dt><b><!--Idx-->shake<!--EIdx--></b></dt>
-<dd>Shake is slower and less stable than Lincs, but does work with 
-angle constraints. 
+LINCS should not be used with coupled angle constraints.
+</dd>
+<dt><b><!--Idx-->SHAKE<!--EIdx--></b></dt>
+<dd>SHAKE is slightly slower and less stable than LINCS, but does work with 
+angle constraints.
 The relative tolerance is set with <b>shake_tol</b>, 0.0001 is a good value
-for "normal" MD. </dd>
+for "normal" MD. SHAKE does not support constraints between atoms
+on different nodes, thus it can not be used with domain decompositon
+when inter charge-group constraints are present.
+</dd>
 </dl></dd>
 <dt><h4>unconstrained_start:</h4></dt>
 <dd><dl compact>
@@ -901,17 +907,23 @@ and do not reset shells, useful for exact coninuation and reruns</dd>
 
 <A NAME="bond2">
 <dt><h4>shake_tol: (0.0001)</h4></dt>
-<dd>relative tolerance for shake</dd>
+<dd>relative tolerance for SHAKE</dd>
 <dt><h4>lincs_order: (4)</h4></dt>
-<dd>Highest order in the expansion of the constraint coupling matrix.</dd>
+<dd>Highest order in the expansion of the constraint coupling matrix.
+When constraints form triangles, an additional expansion of the same
+order is applied on top of the normal expansion only for the couplings
+within such triangles.
+For "normal" MD simulations an order of 4 usually suffices, 6 is
+needed for large time-steps with virtual sites or BD.
+For accurate energy minimization an order of 8 might be required.</dd>
 <dt><h4>lincs_iter: (1)</h4></dt>
-<dd>Number of iterations to correct for rotational lengthening in Lincs.
+<dd>Number of iterations to correct for rotational lengthening in LINCS.
 For normal runs a single step is sufficient, but for NVE
 runs where you want to conserve energy accurately you might want to increase
 it to 2, and for energy minimization with constraints it is sometimes necessary
 to use 4 or even 8 (double precision) iteration steps.
 <dt><h4>lincs_warnangle: </b>(30) [degrees]</h4></dt>
-<dd>maximum angle that a bond can rotate before Lincs will complain</dd>
+<dd>maximum angle that a bond can rotate before LINCS will complain</dd>
 
 <dt><h4>morse:</h4></dt>
 <dd><dl compact>
@@ -1421,8 +1433,8 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#run">init_step</A><br>
 <A HREF="#run">integrator</A><br>
 <A HREF="#ld">ld_seed</A><br>
-<A HREF="#bond2">lincs_order</A><br>
 <A HREF="#bond2">lincs_iter</A><br>
+<A HREF="#bond2">lincs_order</A><br>
 <A HREF="#bond2">lincs_warnangle</A><br>
 <A HREF="#bond2">morse</A><br>
 <A HREF="#em">nbfgscorr</A><br>

@@ -123,18 +123,18 @@ extern gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
 				     t_topology *top,t_inputrec *ir);
 /* Initialize constraints stuff */
 
-extern void set_constraints(FILE *log,
-			    gmx_constr_t constr,
+extern void set_constraints(gmx_constr_t constr,
 			    t_topology *top,
 			    t_inputrec *ir,
 			    t_mdatoms *md,
 			    gmx_domdec_t *dd);
 /* Set up all the local constraints for the node */
 
-extern t_block make_at2con(int start,int natoms,
-			   t_idef *idef,bool bDynamics,
-			   int *nconstraints,int *nflexiblecons);
-/* Allocates and makes the atom to constraint list */
+extern t_block *atom2constraints(gmx_constr_t constr);
+/* Returns the atom to constraints list */
+
+extern bool inter_charge_group_constraints(gmx_constr_t constr);
+/* Returns if there are inter charge group constraints */
 
 extern real *constr_rmsd_data(gmx_constr_t constr);
 /* Return the data for determining constraint RMS relative deviations.
@@ -150,12 +150,15 @@ extern real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
 extern real lincs_rmsd(gmx_lincsdata_t lincsd,bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
-gmx_lincsdata_t init_lincsdata();
-/* Allocates the lincs data struct */
+gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
+			   int nflexcon_global,t_block *at2con,
+			   bool bPLINCS,int nIter,int nProjOrder);
+/* Initializes and returns the lincs data struct */
 
-extern void init_lincs(FILE *log,t_idef *idef,int start,int homenr,
-		       bool bDynamics,gmx_domdec_t *dd,
-		       gmx_lincsdata_t li);
+extern void set_lincs(t_idef *idef,int start,int homenr,
+		      t_block *at2con,
+		      bool bDynamics,gmx_domdec_t *dd,
+		      gmx_lincsdata_t li);
 /* Initialize lincs stuff */
 
 extern void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);

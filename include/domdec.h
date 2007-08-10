@@ -27,7 +27,7 @@ extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 
 extern void dd_make_reverse_top(FILE *fplog,
 				gmx_domdec_t *dd,t_topology *top,
-				gmx_vsite_t *vsite,
+				gmx_vsite_t *vsite,gmx_constr_t constr,
 				bool bDynamics,int eeltype);
 
 extern int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z);
@@ -153,11 +153,12 @@ extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 
 extern int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
 
-extern int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,int nrec);
+extern int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,
+				     gmx_constr_t constr,int nrec);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
-				    int natoms,t_idef *idef,t_block *cgs,
-				    bool bDynamics);
+				    int natoms,t_idef *idef,
+				    gmx_constr_t constr);
 
 extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 

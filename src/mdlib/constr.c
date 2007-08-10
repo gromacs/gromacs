@@ -51,9 +51,12 @@
 #include "txtdump.h"
 #include "domdec.h"
 #include "pdbio.h"
+#include "partdec.h"
 
 typedef struct gmx_constr {
   int             nflexcon;     /* The number of flexible constraints */
+  t_block         at2con;       /* A list of atoms to constraints     */
+  bool            bInterCGcons; /* Are there inter charge-group con's */
   gmx_lincsdata_t lincsd;       /* LINCS data                         */
   int             nblocks;      /* The number of SHAKE blocks         */
   int             *sblock;      /* The SHAKE blocks                   */
@@ -314,37 +317,7 @@ real constr_rmsd(struct gmx_constr *constr,bool bSD2)
     return 0;
 }
 
-static int count_flexible_constraints(FILE* log,
-				      t_commrec *cr,
-				      t_inputrec *ir,t_idef *idef)
-{
-  int nflexcon,i;
-  
-  nflexcon = 0;
-  
-  for(i=0; i<idef->il[F_CONSTR].nr; i+=3)
-    if (idef->iparams[idef->il[F_CONSTR].iatoms[i]].constr.dA == 0 &&
-	idef->iparams[idef->il[F_CONSTR].iatoms[i]].constr.dB == 0)
-      nflexcon++;
-  
-  if (PARTDECOMP(cr))
-    gmx_sumi(1,&nflexcon,cr);
-
-  if (nflexcon > 0) {
-    fprintf(log,"There are %d flexible constraints\n",nflexcon);
-    if (ir->fc_stepsize == 0) {
-      fprintf(log,"WARNING: step size for flexible constraining = 0\n"
-	          "         All flexible constraints will be rigid.\n"
-	          "         Will try to keep all flexible constraints at their original length,\n"
-	          "         but the lengths may exhibit some drift.\n\n");
-      nflexcon = 0;
-    }
-  }
-  
-  return nflexcon;
-}
-
-void set_constraints(FILE *log,struct gmx_constr *constr,
+void set_constraints(struct gmx_constr *constr,
 		     t_topology *top,t_inputrec *ir,
 		     t_mdatoms *md,gmx_domdec_t *dd)
 {
@@ -367,8 +340,12 @@ void set_constraints(FILE *log,struct gmx_constr *constr,
   }
   if (ncons > 0 || (dd && dd->constraints)) {
     if (ir->eConstrAlg == estLINCS) {
-      init_lincs(stdlog,&top->idef,md->start,md->homenr,
-		 EI_DYNAMICS(ir->eI),dd,constr->lincsd);
+      set_lincs(&top->idef,md->start,md->homenr,&constr->at2con,
+		EI_DYNAMICS(ir->eI),dd,constr->lincsd);
+      if (dd == NULL) {
+	/* The atom to constraints list is no longer needed */
+	done_block(&constr->at2con);
+      }
       set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
     } 
     if (ir->eConstrAlg == estSHAKE) {
@@ -438,13 +415,13 @@ void set_constraints(FILE *log,struct gmx_constr *constr,
       constr->sblock[j++] = 3*ncons;
       
       if (j != (constr->nblocks+1)) {
-	fprintf(log,"bstart: %d\n",bstart);
-	fprintf(log,"j: %d, nblocks: %d, ncons: %d\n",
+	fprintf(stderr,"bstart: %d\n",bstart);
+	fprintf(stderr,"j: %d, nblocks: %d, ncons: %d\n",
 		j,constr->nblocks,ncons);
 	for(i=0; (i<ncons); i++)
-	  fprintf(log,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
+	  fprintf(stderr,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
 	for(j=0; (j<=constr->nblocks); j++)
-	  fprintf(log,"sblock[%3d]=%5d\n",j,(int)constr->sblock[j]);
+	  fprintf(stderr,"sblock[%3d]=%5d\n",j,(int)constr->sblock[j]);
 	gmx_fatal(FARGS,"DEATH HORROR: "
 		  "top->blocks[ebSBLOCKS] does not match idef->il[F_CONSTR]");
       }
@@ -454,10 +431,91 @@ void set_constraints(FILE *log,struct gmx_constr *constr,
   }
 }
 
+static bool interCGconstraints(t_block *cgs,t_block *at2con,t_iatom *iatoms)
+{
+  bool bInterCGConstraints;
+  int  cg,a0,a1,a,c,a2;
+
+  bInterCGConstraints = FALSE;
+  for(cg=0; cg<cgs->nr && !bInterCGConstraints; cg++) {
+    a0 = cgs->index[cg];
+    a1 = cgs->index[cg+1];
+    for(a=a0; a<a1; a++) {
+      for(c=at2con->index[a]; c<at2con->index[a+1]; c++) {
+	/* Single all constraints are stored for both atoms
+	 * we only need to check the second atom.
+	 */
+	a2 = iatoms[3*at2con->a[c]+2];
+	if (a2 < a0 || a2 >= a1)
+	  bInterCGConstraints = TRUE;
+      }
+    }
+  }
+
+  return bInterCGConstraints;
+}
+
+static t_block make_at2con(int start,int natoms,t_idef *idef,
+			   bool bDynamics,int *nflexiblecons)
+{
+  int *count,ncon,con,nflexcon,i,a;
+  t_iatom *ia;
+  t_block at2con;
+  bool bFlexCon;
+  
+  snew(count,natoms);
+  ncon = idef->il[F_CONSTR].nr/3;
+  ia   = idef->il[F_CONSTR].iatoms;
+  nflexcon = 0;
+  for(con=0; con<ncon; con++) {
+    bFlexCon = (idef->iparams[ia[0]].constr.dA == 0 &&
+		idef->iparams[ia[0]].constr.dB == 0);
+    if (bFlexCon)
+      nflexcon++;
+    if (bDynamics || !bFlexCon) {
+      for(i=1; i<3; i++) {
+	a = ia[i] - start;
+	count[a]++;
+      }
+    }
+    ia += 3;
+  }
+  *nflexiblecons = nflexcon;
+
+  at2con.nr = natoms;
+  at2con.nalloc_index = at2con.nr+1;
+  snew(at2con.index,at2con.nalloc_index);
+  at2con.index[0] = 0;
+  for(a=0; a<natoms; a++) {
+    at2con.index[a+1] = at2con.index[a] + count[a];
+    count[a] = 0;
+  }
+  at2con.nra = at2con.index[natoms];
+  at2con.nalloc_a = at2con.nra;
+  snew(at2con.a,at2con.nalloc_a);
+
+  ia   = idef->il[F_CONSTR].iatoms;
+  for(con=0; con<ncon; con++) {
+    bFlexCon = (idef->iparams[ia[0]].constr.dA == 0 &&
+		idef->iparams[ia[0]].constr.dB == 0);
+    if (bDynamics || !bFlexCon) {
+      for(i=1; i<3; i++) {
+	a = ia[i] - start;
+	at2con.a[at2con.index[a]+count[a]++] = con;
+      }
+    }
+    ia += 3;
+  }
+  
+  sfree(count);
+
+  return at2con;
+}
+
 gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 			      t_topology *top,t_inputrec *ir)
 {
-  int  nc[2],settle_type,j;
+  int  nc[2],settle_type,j,start,natoms;
   struct gmx_constr *constr;
   char *env;
 
@@ -474,14 +532,44 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
     if (nc[0] == 0) {
       constr->nflexcon = 0;
     } else {
-      constr->nflexcon = count_flexible_constraints(fplog,cr,ir,&top->idef);
+      if (PARTDECOMP(cr)) {
+	pd_at_range(cr,&start,&j);
+	natoms = start + j;
+      } else {
+	start  = 0;
+	natoms = top->atoms.nr;
+      }
+
+      constr->at2con = make_at2con(start,natoms,&top->idef,
+				   EI_DYNAMICS(ir->eI),&constr->nflexcon);
+      constr->bInterCGcons =
+	interCGconstraints(&top->blocks[ebCGS],&constr->at2con,
+			   top->idef.il[F_CONSTR].iatoms);
+
+      if (PARTDECOMP(cr))
+	gmx_sumi(1,&constr->nflexcon,cr);
       
-      if (constr->nflexcon > 0)
-	please_cite(fplog,"Hess2002");
+      if (constr->nflexcon > 0) {
+	if (fplog) {
+	  fprintf(fplog,"There are %d flexible constraints\n",
+		  constr->nflexcon);
+	  if (ir->fc_stepsize == 0) {
+	    fprintf(fplog,"WARNING: step size for flexible constraining = 0\n"
+		    "         All flexible constraints will be rigid.\n"
+		    "         Will try to keep all flexible constraints at their original length,\n"
+		    "         but the lengths may exhibit some drift.\n\n");
+	  }
+	  constr->nflexcon = 0;
+	}
+	if (constr->nflexcon > 0)
+	  please_cite(fplog,"Hess2002");
+      }
       
       if (ir->eConstrAlg == estLINCS) {
-	please_cite(fplog,"Hess97a");
-	constr->lincsd = init_lincsdata();
+	constr->lincsd = init_lincs(fplog,&top->idef,
+				    constr->nflexcon,&constr->at2con,
+				    DOMAINDECOMP(cr) && constr->bInterCGcons,
+				    ir->nLincsIter,ir->nProjOrder);
       }
       
       if (ir->eConstrAlg == estSHAKE) {
@@ -527,4 +615,14 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
   }
   
   return constr;
+}
+
+t_block *atom2constraints(gmx_constr_t constr)
+{
+  return &constr->at2con;
+}
+
+bool inter_charge_group_constraints(gmx_constr_t constr)
+{
+  return constr->bInterCGcons;
 }

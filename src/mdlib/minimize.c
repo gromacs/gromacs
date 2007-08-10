@@ -1601,7 +1601,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
   /* Initiate constraint stuff */
   constr = init_constraints(stdlog,cr,top,inputrec);
   if (constr) {
-    set_constraints(stdlog,constr,top,inputrec,mdatoms,
+    set_constraints(constr,top,inputrec,mdatoms,
 		    DOMAINDECOMP(cr) ? cr->dd : NULL);
     snew(xcf,state->natoms); 
   }

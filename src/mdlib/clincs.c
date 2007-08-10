@@ -41,6 +41,7 @@
 #include <math.h>
 #include "main.h"
 #include "constr.h"
+#include "copyrite.h"
 #include "physics.h"
 #include "vec.h"
 #include "pbc.h"
@@ -50,20 +51,28 @@
 #include "domdec.h"
 
 typedef struct gmx_lincsdata {
-  int  nc;       /* the number of constraints */
-  int  nc_alloc; /* the number we allocated memory for */
-  int  nflexcon; /* the number of flexible constraints */
-  int  ncc;      /* the number of constraint connections */
-  int  ncc_alloc;/* the number we allocated memory for */
-  real matlam;   /* the FE lambda value used for filling blc and blcc */
-  real *bllen0;  /* the reference distance in topology A */
-  real *ddist;   /* the reference distance in top B - the r.d. in top A */
-  int  *bla;     /* the atom pairs involved in the constraints */
-  real *blc;     /* 1/sqrt(invmass1 + invmass2) */
-  int  *blnr;    /* index into blbnb and blcc */
-  int  *blbnb;   /* list of bond connections */
-  real *blcc;    /* bond coupling coefficient matrix */
-  real *bllen;   /* the reference bond length */
+  int  ncg;         /* the global number of constraints */
+  int  ncg_flex;    /* the global number of flexible constraints */
+  int  ncg_triangle;/* the global number of constraints in triangles */
+  int  nIter;       /* the number of iterations */
+  int  nOrder;      /* the order of the matrix expansion */
+  int  nc;          /* the number of constraints */
+  int  nc_alloc;    /* the number we allocated memory for */
+  int  ncc;         /* the number of constraint connections */
+  int  ncc_alloc;   /* the number we allocated memory for */
+  real matlam;      /* the FE lambda value used for filling blc and blmf */
+  real *bllen0;     /* the reference distance in topology A */
+  real *ddist;      /* the reference distance in top B - the r.d. in top A */
+  int  *bla;        /* the atom pairs involved in the constraints */
+  real *blc;        /* 1/sqrt(invmass1 + invmass2) */
+  int  *blnr;       /* index into blbnb and blmf */
+  int  *blbnb;      /* list of constraint connections */
+  int  ntriangle;   /* the local number of constraints in triangles */
+  int  *triangle;   /* the list of triangle constraints */
+  int  *tri_bits;   /* the bits tell if the matrix element should be used */
+  int  ncc_triangle;/* the number of constraint connections in triangles */
+  real *blmf;       /* matrix of mass factors for constraint connections */
+  real *bllen;      /* the reference bond length */
   /* arrays for temporary storage in the LINCS algorithm */
   rvec *tmpv;
   real *tmpncc;
@@ -88,16 +97,81 @@ real lincs_rmsd(struct gmx_lincsdata *lincsd,bool bSD2)
     return 0;
 }
 
-static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
-		      struct gmx_lincsdata *lincsd,real *invmass,
-		      int nrec)
+static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
+				const real *blcc,
+				real *rhs1,real *rhs2,real *sol)
 {
-  int     b,i,j,k,n,it,rec;
+  int  nrec,rec,ncons,b,j,n,nr0,nr1;
+  real mvb,*swap;
+  int  ntriangle,tb,bits;
+  const int *blnr=lincsd->blnr,*blbnb=lincsd->blbnb;
+  const int *triangle=lincsd->triangle,*tri_bits=lincsd->tri_bits;
+
+  ncons     = lincsd->nc;
+  ntriangle = lincsd->ntriangle;
+  nrec      = lincsd->nOrder;
+
+  for(rec=0; rec<nrec; rec++) {
+    for(b=0; b<ncons; b++) {
+      mvb = 0;
+      for(n=blnr[b]; n<blnr[b+1]; n++) {
+	j = blbnb[n];
+	mvb = mvb + blcc[n]*rhs1[j];
+      }
+      rhs2[b] = mvb;
+      sol[b]  = sol[b] + mvb;
+    }
+    swap = rhs1;
+    rhs1 = rhs2;
+    rhs2 = swap;
+  } /* nrec*(ncons+2*nrtot) flops */
+
+  if (ntriangle > 0) {
+    /* Perform an extra nrec recursions for only the constraints
+     * involved in rigid triangles.
+     * In this way their accuracy should come close to those of the other
+     * constraints, since traingles of constraints can produce eigenvalues
+     * around 0.7, while the effective eigenvalue for bond constraints
+     * is around 0.4 (and 0.7*0.7=0.5).
+     */
+    /* We need to copy the temporary array, since only the elements
+     * for constraints involved in triangles are updated
+     * and then the pointers are swapped.
+     */
+    for(b=0; b<ncons; b++)
+      rhs2[b] = rhs1[b];
+    for(rec=0; rec<nrec; rec++) {
+      for(tb=0; tb<ntriangle; tb++) {
+	b    = triangle[tb];
+	bits = tri_bits[tb];
+	mvb = 0;
+	nr0 = blnr[b];
+	nr1 = blnr[b+1];
+	for(n=nr0; n<nr1; n++) {
+	  if (bits & (1<<(n-nr0))) {
+	    j = blbnb[n];
+	    mvb = mvb + blcc[n]*rhs1[j];
+	  }
+	}
+	rhs2[b] = mvb;
+	sol[b]  = sol[b] + mvb;
+      }
+      swap = rhs1;
+      rhs1 = rhs2;
+      rhs2 = swap;
+    } /* flops count is missing here */
+  }
+}
+
+static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
+		      struct gmx_lincsdata *lincsd,real *invmass)
+{
+  int     b,i,j,k,n;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
   rvec    dx;
   int     ncons,*bla,*blnr,*blbnb;
   rvec    *r;
-  real    *blc,*blcc,*blm,*rhs1,*rhs2,*sol,*swap;
+  real    *blc,*blmf,*blcc,*rhs1,*rhs2,*sol;
 
   ncons  = lincsd->nc;
   bla    = lincsd->bla;
@@ -105,8 +179,8 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
   blnr   = lincsd->blnr;
   blbnb  = lincsd->blbnb;
   blc    = lincsd->blc;
-  blcc   = lincsd->blcc;
-  blm    = lincsd->tmpncc;
+  blmf   = lincsd->blmf;
+  blcc   = lincsd->tmpncc;
   rhs1   = lincsd->tmp1;
   rhs2   = lincsd->tmp2;
   sol    = lincsd->tmp3;
@@ -132,7 +206,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
     j = bla[2*b+1];
     for(n=blnr[b]; n<blnr[b+1]; n++) {
       k = blbnb[n];
-      blm[n] = blcc[n]*(tmp0*r[k][0] + tmp1*r[k][1] + tmp2*r[k][2]); 
+      blcc[n] = blmf[n]*(tmp0*r[k][0] + tmp1*r[k][1] + tmp2*r[k][2]); 
     } /* 6 nr flops */
     mvb = blc[b]*(tmp0*(f[i][0] - f[j][0]) +
 		  tmp1*(f[i][1] - f[j][1]) +    
@@ -143,20 +217,8 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
   }
   /* Together: 23*ncons + 6*nrtot flops */
     
-  for(rec=0; rec<nrec; rec++) {
-    for(b=0; b<ncons; b++) {
-      mvb = 0;
-      for(n=blnr[b]; n<blnr[b+1]; n++) {
-	j = blbnb[n];
-	mvb = mvb + blm[n]*rhs1[j];
-      }
-      rhs2[b] = mvb;
-      sol[b] = sol[b] + mvb;
-    }
-    swap = rhs1;
-    rhs1 = rhs2;
-    rhs2 = swap;
-  } /* nrec*(ncons+2*nrtot) flops */
+  lincs_matrix_expand(lincsd,blcc,rhs1,rhs2,sol);
+  /* nrec*(ncons+2*nrtot) flops */
   
   for(b=0;b<ncons;b++) {
     i = bla[2*b];
@@ -179,17 +241,16 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
 		     struct gmx_lincsdata *lincsd,real *invmass,
 		     gmx_domdec_t *dd,
-		     int nit,int nrec,
 		     real wangle,int *warn,
 		     real invdt,rvec *v,
 		     bool bCalcVir,tensor rmdr)
 {
-  int     b,i,j,k,n,it,rec;
+  int     b,i,j,k,n,iter;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,len2,dlen2,wfac,lam;  
   rvec    dx;
   int     ncons,*bla,*blnr,*blbnb;
   rvec    *r;
-  real    *blc,*blcc,*bllen,*blm,*rhs1,*rhs2,*sol,*lambda,*swap;
+  real    *blc,*blmf,*bllen,*blcc,*rhs1,*rhs2,*sol,*lambda;
   int     *nlocat;
 
   ncons  = lincsd->nc;
@@ -198,9 +259,9 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
   blnr   = lincsd->blnr;
   blbnb  = lincsd->blbnb;
   blc    = lincsd->blc;
-  blcc   = lincsd->blcc;
+  blmf   = lincsd->blmf;
   bllen  = lincsd->bllen;
-  blm    = lincsd->tmpncc;
+  blcc   = lincsd->tmpncc;
   rhs1   = lincsd->tmp1;
   rhs2   = lincsd->tmp2;
   sol    = lincsd->tmp3;
@@ -221,7 +282,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
     }  
     for(b=0; b<ncons; b++) {
       for(n=blnr[b]; n<blnr[b+1]; n++) {
-	blm[n] = blcc[n]*iprod(r[b],r[blbnb[n]]);
+	blcc[n] = blmf[n]*iprod(r[b],r[blbnb[n]]);
       }
       pbc_dx(pbc,xp[bla[2*b]],xp[bla[2*b+1]],dx);
       mvb = blc[b]*(iprod(r[b],dx) - bllen[b]);
@@ -251,7 +312,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
       j = bla[2*b+1];
       for(n=blnr[b]; n<blnr[b+1]; n++) {
 	k = blbnb[n];
-	blm[n] = blcc[n]*(tmp0*r[k][0] + tmp1*r[k][1] + tmp2*r[k][2]); 
+	blcc[n] = blmf[n]*(tmp0*r[k][0] + tmp1*r[k][1] + tmp2*r[k][2]); 
       } /* 6 nr flops */
       mvb = blc[b]*(tmp0*(xp[i][0] - xp[j][0]) +
 		    tmp1*(xp[i][1] - xp[j][1]) +    
@@ -262,22 +323,10 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
     }
     /* Together: 26*ncons + 6*nrtot flops */
   }
-    
-  for(rec=0; rec<nrec; rec++) {
-    for(b=0; b<ncons; b++) {
-      mvb = 0;
-      for(n=blnr[b]; n<blnr[b+1]; n++) {
-	j = blbnb[n];
-	mvb = mvb + blm[n]*rhs1[j];
-      }
-      rhs2[b] = mvb;
-      sol[b] = sol[b] + mvb;
-    }
-    swap = rhs1;
-    rhs1 = rhs2;
-    rhs2 = swap;
-  } /* nrec*(ncons+2*nrtot) flops */
-  
+
+  lincs_matrix_expand(lincsd,blcc,rhs1,rhs2,sol);
+  /* nrec*(ncons+2*nrtot) flops */
+
   for(b=0; b<ncons; b++) {
     i = bla[2*b];
     j = bla[2*b+1];
@@ -305,7 +354,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
   wfac = cos(DEG2RAD*wangle);
   wfac = wfac*wfac;
 
-  for(it=0; it<nit; it++) {
+  for(iter=0; iter<lincsd->nIter; iter++) {
     if (dd && dd->constraints)
       /* Communicate the corrected non-local coordinates */
       dd_move_x_constraints(dd,box,xp,NULL);
@@ -328,21 +377,9 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
       sol[b]  = mvb;
     } /* 20*ncons flops */
     
-    for(rec=0; rec<nrec; rec++) {
-      for(b=0; b<ncons; b++) {
-	mvb = 0;
-	for(n=blnr[b]; n<blnr[b+1]; n++) {
-	  j = blbnb[n];
-	  mvb = mvb + blm[n]*rhs1[j];
-	}
-	rhs2[b] = mvb;
-	sol[b] = sol[b] + mvb;
-      }
-      swap = rhs1;
-      rhs1 = rhs2;
-      rhs2 = swap;
-    } /* nrec*(ncons+2*nrtot) flops */ 
-    
+    lincs_matrix_expand(lincsd,blcc,rhs1,rhs2,sol);
+    /* nrec*(ncons+2*nrtot) flops */
+
     for(b=0; b<ncons; b++) {
       i = bla[2*b];
       j = bla[2*b+1];
@@ -412,6 +449,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
 void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
 {
   int i,a1,a2,n,k,sign,center;
+  int end,nk,kk;
 
   for(i=0; (i<li->nc); i++) {
     a1 = li->bla[2*i];
@@ -419,7 +457,9 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
     li->blc[i] = invsqrt(invmass[a1] + invmass[a2]);
   }
 
-  /* Construct the coupling coefficient matrix blcc */
+  /* Construct the coupling coefficient matrix blmf */
+  li->ntriangle = 0;
+  li->ncc_triangle = 0;
   for(i=0; (i<li->nc); i++) {
     a1 = li->bla[2*i];
     a2 = li->bla[2*i+1];
@@ -429,77 +469,86 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
 	sign = -1;
       else
 	sign = 1;
-      if (a1 == li->bla[2*k] || a1 == li->bla[2*k+1])
+      if (a1 == li->bla[2*k] || a1 == li->bla[2*k+1]) {
 	center = a1;
-      else
+	end    = a2;
+      } else {
 	center = a2;
-      li->blcc[n] = sign*invmass[center]*li->blc[i]*li->blc[k];
+	end    = a1;
+      }
+      li->blmf[n] = sign*invmass[center]*li->blc[i]*li->blc[k];
+      if (li->ncg_triangle > 0) {
+	/* Look for constraint triangles */
+	for(nk=li->blnr[k]; (nk<li->blnr[k+1]); nk++) {
+	  kk = li->blbnb[nk];
+	  if (kk != i && kk != k &&
+	      (li->bla[2*kk] == end || li->bla[2*kk+1] == end)) {
+	    if (li->ntriangle == 0 || 
+		li->triangle[li->ntriangle-1] < i) {
+	      /* Add this constraint to the triangle list */
+	      li->triangle[li->ntriangle] = i;
+	      li->tri_bits[li->ntriangle] = 0;
+	      li->ntriangle++;
+	      if (li->blnr[i+1] - li->blnr[i] > sizeof(li->tri_bits[0])*8 - 1)
+		gmx_fatal(FARGS,"A constraint is connected to %d constraints, this is more than the %d allowed for constraints participating in triangles",
+			  li->blnr[i+1] - li->blnr[i],
+			  sizeof(li->tri_bits[0])*8-1);
+	    }
+	    li->tri_bits[li->ntriangle-1] |= (1<<(n-li->blnr[i]));
+	    li->ncc_triangle++;
+	  }
+	}
+      }
     }
+  }
+
+  if (debug) {
+    fprintf(debug,"Of the %d constraints %d participate in triangles\n",
+	    li->nc,li->ntriangle);
+    fprintf(debug,"There are %d couplings of which %d in triangles\n",
+	    li->ncc,li->ncc_triangle);
   }
 
   /* Set matlam, so we know with which lambda value the masses have been set */
   li->matlam = lambda;
 }
 
-t_block make_at2con(int start,int natoms,
-		    t_idef *idef,bool bDynamics,
-		    int *nconstraints,int *nflexiblecons)
+static int count_triangle_constraints(int ncon,t_iatom *ia,t_block *at2con)
 {
-  int *count,ncon,con,nflexcon,i,a;
-  t_iatom *ia;
-  t_block at2con;
-  bool bFlexCon;
-  
-  snew(count,natoms);
-  ncon = idef->il[F_CONSTR].nr/3;
-  ia   = idef->il[F_CONSTR].iatoms;
-  nflexcon = 0;
-  for(con=0; con<ncon; con++) {
-    bFlexCon = (idef->iparams[ia[0]].constr.dA == 0 &&
-		idef->iparams[ia[0]].constr.dB == 0);
-    if (bFlexCon)
-      nflexcon++;
-    if (bDynamics || !bFlexCon) {
-      for(i=1; i<3; i++) {
-	a = ia[i] - start;
-	count[a]++;
+  int  c0,a00,a01,n1,c1,a10,a11,ac1,n2,c2,a20,a21;
+  int  ncon_triangle;
+  bool bTriangle;
+
+  ncon_triangle = 0;
+  for(c0=0; c0<ncon; c0++) {
+    bTriangle = FALSE;
+    a00 = ia[c0*3+1];
+    a01 = ia[c0*3+2];
+    for(n1=at2con->index[a01]; n1<at2con->index[a01+1]; n1++) {
+      c1 = at2con->a[n1];
+      if (c1 != c0) {
+	a10 = ia[c1*3+1];
+	a11 = ia[c1*3+2];
+	if (a10 == a01)
+	  ac1 = a11;
+	else
+	  ac1 = a10;
+	for(n2=at2con->index[ac1]; n2<at2con->index[ac1+1]; n2++) {
+	  c2 = at2con->a[n2];
+	  if (c2 != c0 && c2 != c1) {
+	    a20 = ia[c2*3+1];
+	    a21 = ia[c2*3+2];
+	    if (a20 == a00 || a21 == a00)
+	      bTriangle = TRUE;
+	  }
+	}
       }
     }
-    ia += 3;
+    if (bTriangle)
+      ncon_triangle++;
   }
-  *nconstraints = ncon;
-  if (!bDynamics)
-    *nconstraints -= nflexcon;
-  *nflexiblecons = nflexcon;
 
-  at2con.nr = natoms;
-  at2con.nalloc_index = at2con.nr+1;
-  snew(at2con.index,at2con.nalloc_index);
-  at2con.index[0] = 0;
-  for(a=0; a<natoms; a++) {
-    at2con.index[a+1] = at2con.index[a] + count[a];
-    count[a] = 0;
-  }
-  at2con.nra = at2con.index[natoms];
-  at2con.nalloc_a = at2con.nra;
-  snew(at2con.a,at2con.nalloc_a);
-
-  ia   = idef->il[F_CONSTR].iatoms;
-  for(con=0; con<ncon; con++) {
-    bFlexCon = (idef->iparams[ia[0]].constr.dA == 0 &&
-		idef->iparams[ia[0]].constr.dB == 0);
-    if (bDynamics || !bFlexCon) {
-      for(i=1; i<3; i++) {
-	a = ia[i] - start;
-	at2con.a[at2con.index[a]+count[a]++] = con;
-      }
-    }
-    ia += 3;
-  }
-  
-  sfree(count);
-
-  return at2con;
+  return ncon_triangle;
 }
 
 static int int_comp(const void *a,const void *b)
@@ -507,23 +556,55 @@ static int int_comp(const void *a,const void *b)
   return (*(int *)a) - (*(int *)b);
 }
 
-#define CONCON_ALLOC_SIZE 1000
-
-gmx_lincsdata_t init_lincsdata()
+gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
+			   int nflexcon_global,t_block *at2con,
+			   int bPLINCS,int nIter,int nProjOrder)
 {
   struct gmx_lincsdata *li;
 
+  if (fplog)
+    fprintf(fplog,"\nInitializing%s LINear Constraint Solver\n",
+	    bPLINCS ? " Parallel" : "");
+
   snew(li,1);
+
+  li->ncg      = idef->il[F_CONSTR].nr/3;
+  li->ncg_flex = nflexcon_global;
+  li->ncg_triangle  = 
+    count_triangle_constraints(li->ncg,idef->il[F_CONSTR].iatoms,at2con);
+  
+  li->nIter  = nIter;
+  li->nOrder = nProjOrder;
+
+  if (!bPLINCS) {
+    please_cite(fplog,"Hess97a");
+  } else {
+    please_cite(fplog,"Hess97a");
+    please_cite(fplog,"Hess2007a");
+  }
+
+  if (fplog) {
+    fprintf(fplog,"The number of constraints is %d\n",li->ncg);
+    if (bPLINCS)
+      fprintf(fplog,"There are inter charge-group constraints,\n"
+	      "will communicate selected coordinates each lincs iteration\n");
+    if (li->ncg_triangle > 0)
+      fprintf(fplog,
+	      "%d constraints are involved in constraint triangles,\n"
+	      "will apply an additional matrix expansion of order %d for couplings\n"
+	      "between constraints inside triangles\n",
+	      li->ncg_triangle,li->nOrder);
+  }
   
   return li;
 }
 
-void init_lincs(FILE *fplog,t_idef *idef,int start,int homenr,
-		bool bDynamics,gmx_domdec_t *dd,
-		struct gmx_lincsdata *li)
+void set_lincs(t_idef *idef,int start,int homenr,
+	       t_block *at2con,
+	       bool bDynamics,gmx_domdec_t *dd,
+	       struct gmx_lincsdata *li)
 {
   gmx_domdec_constraints_t *dc;
-  t_block     at2con;
   t_iatom     *iatom;
   int         i,k,ncc_alloc,ni,con,cong,nconnect,concon;
   int         type,ag1,ag2,a1,a2;
@@ -535,16 +616,13 @@ void init_lincs(FILE *fplog,t_idef *idef,int start,int homenr,
   
   if (idef->il[F_CONSTR].nr > 0 || (dd && dd->constraints)) {
     if (debug)
-      fprintf(debug,"Initializing LINCS\n");
+      fprintf(debug,"Building the LINCS connectivity\n");
     if (dd == NULL) {
+      li->nc = li->ncg;
       dc = NULL;
-      /* Make atom-constraint connection list for temporary use */
-      at2con = make_at2con(start,homenr,idef,bDynamics,&li->nc,&li->nflexcon);
     } else {
       dc = dd->constraints;
-      at2con = dc->at2con;
       li->nc = dc->ncon;
-      li->nflexcon = dc->nflexcon_global;
     }
     
     if (li->nc > li->nc_alloc || li->nc_alloc == 0) {
@@ -560,6 +638,11 @@ void init_lincs(FILE *fplog,t_idef *idef,int start,int homenr,
       srenew(li->tmp2,li->nc_alloc);
       srenew(li->tmp3,li->nc_alloc);
       srenew(li->lambda,li->nc_alloc);
+      if (li->ncg_triangle > 0) {
+	/* This is allocating too much, but it is difficult too improve */
+	srenew(li->triangle,li->nc_alloc);
+	srenew(li->tri_bits,li->nc_alloc);
+      }
     }
     
     if (dc == NULL)
@@ -617,12 +700,12 @@ void init_lincs(FILE *fplog,t_idef *idef,int start,int homenr,
 	li->bla[2*con]   = a1;
 	li->bla[2*con+1] = a2;
 	/* Construct the constraint connection matrix blbnb */
-	for(k=at2con.index[ag1-start]; k<at2con.index[ag1-start+1]; k++) {
-	  concon = at2con.a[k];
+	for(k=at2con->index[ag1-start]; k<at2con->index[ag1-start+1]; k++) {
+	  concon = at2con->a[k];
 	  if (concon != cong &&
 	      (bLocal || dc->gc2lc[concon] != -1)) {
 	    if (nconnect >= ncc_alloc) {
-	      ncc_alloc += CONCON_ALLOC_SIZE;
+	      ncc_alloc = over_alloc_small(nconnect+1);
 	      srenew(li->blbnb,ncc_alloc);
 	    }
 	    if (dc == NULL)
@@ -631,12 +714,12 @@ void init_lincs(FILE *fplog,t_idef *idef,int start,int homenr,
 	      li->blbnb[nconnect++] = dc->gc2lc[concon];
 	  }
 	}
-	for(k=at2con.index[ag2-start]; k<at2con.index[ag2-start+1]; k++) {
-	  concon = at2con.a[k];
+	for(k=at2con->index[ag2-start]; k<at2con->index[ag2-start+1]; k++) {
+	  concon = at2con->a[k];
 	  if (concon != cong &&
 	      (bLocal || dc->gc2lc[concon] != -1)) {
-	    if (nconnect >= ncc_alloc) {
-	      ncc_alloc += CONCON_ALLOC_SIZE;
+	    if (nconnect+1 > ncc_alloc) {
+	      ncc_alloc = over_alloc_small(nconnect+1);
 	      srenew(li->blbnb,ncc_alloc);
 	    }
 	    if (dc == NULL)
@@ -659,29 +742,21 @@ void init_lincs(FILE *fplog,t_idef *idef,int start,int homenr,
     if (con != li->nc)
       gmx_fatal(FARGS,"Internal error in init_lincs, old (%d) and new (%d) constraint count don't match\n",li->nc,con);
     li->ncc = li->blnr[con];
+    if (dd == NULL) {
+      /* Since the matrix is static, we can free some memory */
+      ncc_alloc = li->ncc;
+      srenew(li->blbnb,ncc_alloc);
+    }
 
     if (ncc_alloc > li->ncc_alloc) {
       li->ncc_alloc = ncc_alloc;
-      srenew(li->blcc,li->ncc_alloc);
+      srenew(li->blmf,li->ncc_alloc);
       srenew(li->tmpncc,li->ncc_alloc);
     }
 
-    if (dc == NULL) {
-      done_block(&at2con);
-      if (fplog) {
-	fprintf(fplog,"\nInitializing LINear Constraint Solver\n");
-	fprintf(fplog,"  number of constraints is %d\n",li->nc);
-	if (li->nc > 0)
-	  fprintf(fplog,"  average number of constraints coupled to one constraint is %.1f\n",
-		  (real)(li->ncc)/li->nc);
-	if (li->nflexcon)
-	  fprintf(fplog,"  found %d flexible constraints\n",li->nflexcon);
-	fprintf(fplog,"\n");
-	fflush(fplog);
-      }
-    }
     if (debug)
-      fprintf(debug,"Number of constraints is %d\n",li->nc);
+      fprintf(debug,"Number of constraints is %d, couplings %d\n",
+	      li->nc,li->ncc);
   }
 }
 
@@ -768,14 +843,15 @@ static void cconerr(gmx_domdec_t *dd,
       count += nlocat[b];
     }
   }
-  
-  *ncons_loc = 0.5*count;
-  *ssd = 0.5*ssd2;
+
+  *ncons_loc = (nlocat ? 0.5 : 1)*count;
+  *ssd       = (nlocat ? 0.5 : 1)*ssd2;
   *max = ma;
   *imax = im;
 }
 
 static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
+		      t_block *at2con,
 		      char *name,bool bAll,rvec *x,matrix box)
 {
   char str[STRLEN];
@@ -796,8 +872,8 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
 	(bAll && i>=dd->nat_tot && dc->ga2la[dd->gatindex[i]]>=0)) {
       bPrint = (i < dd->nat_home);
       if (i>=dd->nat_tot) {
-	for(j=dc->at2con.index[dd->gatindex[i]+1]; j<dc->at2con.index[dd->gatindex[i]+1]; j++)
-	  bPrint = bPrint || (dc->gc2lc[dc->at2con.a[j]]>=0);
+	for(j=at2con->index[dd->gatindex[i]+1]; j<at2con->index[dd->gatindex[i]+1]; j++)
+	  bPrint = bPrint || (dc->gc2lc[at2con->a[j]]>=0);
       }
       if (bPrint)
 	fprintf(fp,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
@@ -836,11 +912,21 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
   
   bOK = TRUE;
 
-  if (lincsd->nc == 0 && dd==NULL)
-    return bOK;
-
   if (fplog == NULL)
     bLog = FALSE;
+
+  if (lincsd->nc == 0 && dd == NULL) {
+    if (bLog || bEner) {
+      lincsd->rmsd_data[0] = 0;
+      if (ir->eI == eiSD && v == NULL)
+	i = 2;
+      else
+	i = 1;
+      lincsd->rmsd_data[i] = 0;
+    }
+    
+    return bOK;
+  }
 
   /* We do not need full pbc when constraints do not cross charge groups,
    * i.e. when dd->constraint_comm==NULL
@@ -868,7 +954,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
 	lincsd->bllen[i] = lincsd->bllen0[i] + lambda*lincsd->ddist[i];
     }
     
-    if (lincsd->nflexcon) {
+    if (lincsd->ncg_flex) {
       /* Set the flexible constraint lengths to the old lengths */
       if (pbc_null) {
 	for(i=0; i<lincsd->nc; i++)
@@ -889,7 +975,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
 	      &ncons_loc,&p_ssd,&p_max,&p_imax);
     
     do_lincs(x,xprime,box,pbc_null,lincsd,md->invmass,dd,
-	     ir->nLincsIter,ir->nProjOrder,ir->LincsWarnAngle,&warn,
+	     ir->LincsWarnAngle,&warn,
 	     invdt,v,bCalcVir,rmdr);
 
     if (ir->efep != efepNO) {
@@ -948,19 +1034,21 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
       bOK = (p_max < 0.5);
     }
     
-    if (lincsd->nflexcon) {
+    if (lincsd->ncg_flex) {
       for(i=0; (i<lincsd->nc); i++)
 	if (lincsd->bllen0[i] == 0 && lincsd->ddist[i] == 0)
 	  lincsd->bllen[i] = 0;
     }
   } 
   else {
-    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,ir->nProjOrder);
+    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass);
   }
   
   /* count assuming nit=1 */
   inc_nrnb(nrnb,eNR_LINCS,lincsd->nc);
-  inc_nrnb(nrnb,eNR_LINCSMAT,(2+ir->nProjOrder)*lincsd->ncc);
+  inc_nrnb(nrnb,eNR_LINCSMAT,(2+lincsd->nOrder)*lincsd->ncc);
+  if (lincsd->ntriangle > 0)
+    inc_nrnb(nrnb,eNR_LINCSMAT,lincsd->nOrder*lincsd->ncc_triangle);
   if (v)
     inc_nrnb(nrnb,eNR_CONSTR_V,lincsd->nc*2);
   if (bCalcVir)
