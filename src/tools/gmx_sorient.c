@@ -138,7 +138,8 @@ int gmx_sorient(int argc,char *argv[])
     "[TT]-ro[tt]: <cos(theta1)> and <3cos^2(theta2)-1> as a function of the",
     "distance.[PAR]",
     "[TT]-co[tt]: the sum over all solvent molecules within distance r",
-    "of cos(theta1) and 3cos^2(theta2)-1 as a function of r.[PAR]"
+    "of cos(theta1) and 3cos^2(theta2)-1 as a function of r.[PAR]",
+    "[TT]-rc[tt]: the distribution of the solvent molecules as a function of r"
   };
   
   static bool bCom = FALSE,bVec23=FALSE,bPBC = FALSE;
@@ -162,7 +163,8 @@ int gmx_sorient(int argc,char *argv[])
     { efXVG, NULL,  "sori.xvg",  ffWRITE },
     { efXVG, "-no", "snor.xvg",  ffWRITE },
     { efXVG, "-ro", "sord.xvg",  ffWRITE },
-    { efXVG, "-co", "scum.xvg",  ffWRITE }
+    { efXVG, "-co", "scum.xvg",  ffWRITE },
+    { efXVG, "-rc", "scount.xvg",  ffWRITE }
   };
 #define NFILE asize(fnm)
 
@@ -259,7 +261,7 @@ int gmx_sorient(int argc,char *argv[])
 	    /* Use the vector between the 2nd and 3rd atom */
 	    rvec_sub(x[sa2],x[sa1],dxh2);
 	    unitv(dxh2,dxh2);
-	    outp = iprod(dx,dxh2);
+	    outp = iprod(dx,dxh2)/r;
 	  }
 	  (histi1[(int)(invrbw*r)]) += inp;
 	  (histi2[(int)(invrbw*r)]) += 3*sqr(outp) - 1;
@@ -336,6 +338,17 @@ int gmx_sorient(int argc,char *argv[])
     c1 += histi1[i]*normfac;
     c2 += histi2[i]*normfac;
     fprintf(fp,"%g %g %g\n",(i+1)*rbinw,c1,c2);
+  }
+  fclose(fp);
+
+  sprintf(str,"Solvent distribution");
+  fp=xvgropen(opt2fn("-rc",NFILE,fnm),str,"r (nm)","molecules/nm");
+  if (bPrintXvgrCodes())
+    fprintf(fp,"@ subtitle \"as a function of distance\"\n");
+  xvgr_legend(fp,2,legc);
+  normfac = 1.0/(rbinw*nf);
+  for(i=0; i<nrbin; i++) {
+    fprintf(fp,"%g %g\n",(i+0.5)*rbinw,histn[i]/normfac);
   }
   fclose(fp);
 
