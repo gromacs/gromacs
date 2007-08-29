@@ -61,6 +61,9 @@ static int cpp_debug  = 0;
 static int      ndef  = 0;
 static t_define *defs = NULL;
 
+/* enum used for handling ifdefs */
+enum { eifDEF, eifELSE, eifIGN, eifNR };
+
 typedef struct t_cpphandle {
   FILE     *fp;
   char     *fn;
@@ -171,6 +174,61 @@ int cpp_read_line(void **handlep,int n,char buf[])
     handle->line_nr++;
   }
   
+  /* #ifdef statement */
+  if (strstr(buf,"#ifdef") != NULL) {
+    if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifDEF)) {
+      handle->nifdef++;
+      srenew(handle->ifdefs,handle->nifdef);
+      handle->ifdefs[handle->nifdef-1] = eifIGN;
+    }
+    else {
+      snew(name,strlen(buf));
+      status = sscanf(buf,"%*s %s",name);
+      for(i=0; (i<ndef); i++) 
+	if (strcmp(defs[i].name,name) == 0) 
+	  break;
+      handle->nifdef++;
+      srenew(handle->ifdefs,handle->nifdef);
+      if (i < ndef)
+	handle->ifdefs[handle->nifdef-1] = eifDEF;
+      else
+	handle->ifdefs[handle->nifdef-1] = eifELSE;
+      sfree(name);
+    }
+    /* Don't print lines with ifdef, go on to the next */
+    return cpp_read_line(handlep,n,buf);
+  }
+  
+  /* #else statement */
+  if (strstr(buf,"#else") != NULL) {
+    if (handle->nifdef <= 0)
+      return eCPP_SYNTAX;
+    if (handle->ifdefs[handle->nifdef-1] == eifDEF)
+      handle->ifdefs[handle->nifdef-1] = eifELSE;
+    else if (handle->ifdefs[handle->nifdef-1] == eifELSE)
+      handle->ifdefs[handle->nifdef-1] = eifDEF;
+    
+    /* Don't print lines with else, go on to the next */
+    return cpp_read_line(handlep,n,buf);
+  }
+  
+  /* #endif statement */
+  if (strstr(buf,"#endif") != NULL) {
+    if (handle->nifdef <= 0)
+      return eCPP_SYNTAX;
+    handle->nifdef--;
+    
+    /* Don't print lines with endif, go on to the next */
+    return cpp_read_line(handlep,n,buf);
+  }
+
+  /* Check whether we're not ifdeffed out. The order of this statement
+     is important. It has to come after #ifdef, #else and #endif, but
+     anything else should be ignored. */
+  if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifDEF)) {
+    return cpp_read_line(handlep,n,buf);
+  }
+  
   /* Check for include statements */
   if (strstr(buf,"#include") != NULL) {
     len = -1;
@@ -249,6 +307,8 @@ int cpp_read_line(void **handlep,int n,char buf[])
   
   /* #undef statement */
   if (strstr(buf,"#undef") != NULL) {
+    snew(name,strlen(buf));
+    status = sscanf(buf,"%*s %s",name);
     for(i=0; (i<ndef); i++) {
       if (strcmp(defs[i].name,name) == 0) {
 	sfree(defs[i].name);
@@ -256,6 +316,7 @@ int cpp_read_line(void **handlep,int n,char buf[])
 	break;
       }
     }
+    sfree(name);
     for( ; (i<ndef-1); i++) {
       defs[i].name = defs[i+1].name;
       defs[i].def  = defs[i+1].def;
@@ -266,46 +327,10 @@ int cpp_read_line(void **handlep,int n,char buf[])
     return cpp_read_line(handlep,n,buf);
   }
   
-  /* #ifdef statement */
-  if (strstr(buf,"#ifdef") != NULL) {
-    snew(name,strlen(buf));
-    status = sscanf(buf,"%*s %s",name);
-    for(i=0; (i<ndef); i++) 
-      if (strcmp(defs[i].name,name) == 0) 
-	break;
-    handle->nifdef++;
-    srenew(handle->ifdefs,handle->nifdef);
-    handle->ifdefs[handle->nifdef-1] =  (i < ndef);
-    sfree(name);
-    
-    /* Don't print lines with ifdef, go on to the next */
-    return cpp_read_line(handlep,n,buf);
-  }
-  
-  /* #else statement */ 
-  if (strstr(buf,"#else") != NULL) {
-    handle->ifdefs[handle->nifdef-1] = !handle->ifdefs[handle->nifdef-1];
-    
-    /* Don't print lines with else, go on to the next */
-    return cpp_read_line(handlep,n,buf);
-  }
-  
-  /* #endif statement */
-  if (strstr(buf,"#endif") != NULL) {
-    handle->nifdef--;
-    
-    /* Don't print lines with endif, go on to the next */
-    return cpp_read_line(handlep,n,buf);
-  }
-
-  /* Check whether we're not ifdeffed out */
-  if ((handle->nifdef > 0) && !handle->ifdefs[handle->nifdef-1]) {
-    return cpp_read_line(handlep,n,buf);
-  }
-  
   /* Check whether we have any defines that need to be replaced. Note
      that we have to use a best fit algorithm, rather than first come
-     first go. */
+     first go. We do this by sorting the defines on length first, and
+     then on alphabetical order. */
   for(i=0; (i<ndef); i++) {
     if (defs[i].def) {
       nn  = 0;
