@@ -282,12 +282,12 @@ static void read_tables(FILE *fp,const char *fn,
   /* Check if the second column is close to minus the numerical
    * derivative of the first column.
    */
-  for(k=0; k<etiNR; k++) {
+  for(k=0; k<ntab; k++) {
     ssd[k] = 0;
     ns[k] = 0;
   }
   for(i=0; (i < nx-2); i++) {
-    for(k=0; k<etiNR; k++) {
+    for(k=0; k<ntab; k++) {
       v0 = yy[1+2*k][i];
       v1 = yy[1+2*k][i+1];
       f0 = yy[1+2*k+1][i];
@@ -300,7 +300,7 @@ static void read_tables(FILE *fp,const char *fn,
       }
     }
   }
-  for(k=0; k<etiNR; k++) {
+  for(k=0; k<ntab; k++) {
     if (ns[k] > 0) {
       ssd[k] /= ns[k];
       sprintf(buf,"For the %d non-zero entries for table %d in %s the forces deviate on average %d%% from the minus the numerical derivative of the potential\n",ns[k],k+1,libfn,(int)(100*ssd[k]+0.5));
