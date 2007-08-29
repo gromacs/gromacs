@@ -10,8 +10,9 @@ LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
 	protonate	luck		gmxdump				\
-	gmxcheck  	x2top		ffscan
+	gmxcheck  	x2top		ffscan		gmxcpp_test
 
+gmxcpp_test_SOURCES = gmxcpp.c gmxcpp.h gmxcpp_test.c
 
 grompp_SOURCES = \
 	topio.c 	toppush.c 	topcat.c 	topshake.c 	\
@@ -21,8 +22,8 @@ grompp_SOURCES = \
 	toputil.c	topdirs.c	grompp.c	add_par.h	\
 	topio.h		toputil.h	convparm.h	compute_io.h	\
 	sorting.h	topdirs.h	toppush.h	vsite_parm.h	\
-	readir.h	topcat.h	topexcl.h	topshake.h
-
+	readir.h	topcat.h	topexcl.h	topshake.h	\
+	pgutil.c
 
 tpbconv_SOURCES = \
 	readir.c	toputil.c	topdirs.c	add_par.c	\
