@@ -56,6 +56,7 @@
 #include "tpxio.h"
 #include "trnio.h"
 #include "txtdump.h"
+#include "gmxcpp.h"
 
 static void list_tpx(char *fn, bool bShowNumbers)
 {
@@ -111,6 +112,32 @@ static void list_tpx(char *fn, bool bShowNumbers)
 
   done_state(&state);
   sfree(f);
+}
+
+static void list_top(char *fn)
+{
+  int status,done;
+#define BUFLEN 256
+  char buf[BUFLEN];
+  void *handle;
+  char *cppopts[] = { NULL };
+
+  status = cpp_open_file(fn,&handle,cppopts);
+  if (status != 0) 
+    gmx_fatal(FARGS,cpp_error(&handle,status));
+  do {
+    status = cpp_read_line(&handle,BUFLEN,buf);
+    done = (status == eCPP_EOF);
+    if (!done) {
+      if (status != eCPP_OK)
+	gmx_fatal(FARGS,cpp_error(&handle,status));
+      else 
+	printf("%s\n",buf);
+    }
+  } while (!done);
+  status = cpp_close_file(&handle);
+  if (status != eCPP_OK) 
+    gmx_fatal(FARGS,cpp_error(&handle,status));
 }
 
 static void list_trn(char *fn)
@@ -283,12 +310,16 @@ int main(int argc,char *argv[])
     "a trajectory ([TT].trj[tt]/[TT].trr[tt]/[TT].xtc[tt]) or an energy",
     "file ([TT].ene[tt]/[TT].edr[tt]) and prints that to standard",
     "output in a readable format. This program is essential for",
-    "checking your run input file in case of problems.[PAR]"
+    "checking your run input file in case of problems.[PAR]",
+    "When requesting to dump a topology file the program will preprocess",
+    "the file and dump it after this. Note that you may need to explicitly",
+    "set the GMXLIB environment variable for this to work."
   };
   t_filenm fnm[] = {
     { efTPX, "-s", NULL, ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD },
     { efENX, "-e", NULL, ffOPTRD },
+    { efTOP, "-p", NULL, ffOPTRD }
   };
 #define NFILE asize(fnm)
 
@@ -313,6 +344,9 @@ int main(int argc,char *argv[])
   
   if (ftp2bSet(efENX,NFILE,fnm))
     list_ene(ftp2fn(efENX,NFILE,fnm));
+    
+  if (ftp2bSet(efTOP,NFILE,fnm))
+    list_top(ftp2fn(efTOP,NFILE,fnm));
     
   thanx(stderr);
 

@@ -57,9 +57,10 @@ typedef struct {
   char *def;
 } t_define;
 
-static int cpp_debug  = 0;
-static int      ndef  = 0;
-static t_define *defs = NULL;
+static int      ndef   = 0;
+static t_define *defs  = NULL;
+static int      nincl  = 0;
+static char     **incl = 0;
 
 /* enum used for handling ifdefs */
 enum { eifDEF, eifELSE, eifIGN, eifNR };
@@ -74,45 +75,6 @@ typedef struct t_cpphandle {
   int      *ifdefs;
   struct   t_cpphandle *child,*parent;
 } t_cpphandle;
-
-/* Open the file to be processed. The handle variable holds internal
-   info for the cpp emulator. Return integer status */
-int cpp_open_file(char *filenm,void **handle)
-{
-  t_cpphandle *cpp;
-  
-  snew(cpp,1);
-  *handle      = (void *)cpp;
-  cpp->fn      = strdup(filenm);
-  cpp->line_len= 0;
-  cpp->line    = NULL;
-  cpp->line_nr = 0;
-  cpp->nifdef  = 0;
-  cpp->ifdefs  = NULL;
-  cpp->child   = NULL;
-  cpp->parent  = NULL;
-  cpp->fp      = libopen(cpp->fn);
-  if (cpp->fp == NULL) {
-    switch(errno) {
-    case EINVAL:
-    default:
-      return eCPP_UNKNOWN;
-    }
-  }
-  
-  return eCPP_OK;
-}
-
-/* Turn debugging (printing to stderr) on or off. */
-extern void cpp_debug_on(void)
-{
-  cpp_debug = 1;
-}
-
-extern void cpp_debug_off(void)
-{
-  cpp_debug = 0;
-}
 
 static int def_comp(const void *a,const void *b)
 {
@@ -133,12 +95,121 @@ static void sort_defs()
   
   if (ndef > 0)
     qsort(defs,ndef,sizeof(defs[0]),def_comp);
-  if (cpp_debug) {
-    fprintf(stderr,"#defines:\n");
+  if (debug) {
+    fprintf(debug,"#defines:\n");
     for(i=0; (i<ndef); i++)
-      fprintf(stderr,"%s = %s\n",
+      fprintf(debug,"%s = %s\n",
 	      defs[i].name,defs[i].def ? defs[i].def : "(null)");
   }
+}
+
+static void add_include(char *include)
+{
+  int i;
+  
+  if (include == NULL)
+    return;
+    
+  for(i=0; (i<nincl); i++)
+    if (strcmp(incl[i],include) == 0)
+      break;
+  if (i == nincl) {
+    nincl++;
+    srenew(incl,nincl);
+    incl[nincl-1] = strdup(include);
+  }
+}
+
+static void add_define(char *define)
+{
+  int  i;
+  char *ptr,name[256];
+  
+  sscanf(define,"%s",name);
+  ptr = define + strlen(name);
+  
+  while ((*ptr != '\0') && isspace(*ptr))
+    ptr++;
+    
+  for(i=0; (i<ndef); i++) {
+    if (strcmp(defs[i].name,name) == 0) {
+      break;
+    }
+  }
+  if (i == ndef) {
+    ndef++;
+    srenew(defs,ndef);
+    i = ndef - 1;
+    defs[i].name = strdup(name);
+  }
+  else if (defs[i].def) {
+    if (debug)
+      fprintf(debug,"Overriding define %s\n",name);
+    sfree(defs[i].def);
+  }
+  if (strlen(ptr) > 0)
+    defs[i].def  = strdup(ptr);
+  else
+    defs[i].def  = NULL;
+  
+  sort_defs();
+}
+
+/* Open the file to be processed. The handle variable holds internal
+   info for the cpp emulator. Return integer status */
+int cpp_open_file(char *filenm,void **handle,char **cppopts)
+{
+  t_cpphandle *cpp;
+  char *buf;
+  int i;
+  
+  /* First process options, they might be necessary for opening files
+     (especially include statements). */  
+  i  = 0;
+  if (cppopts) {
+    while(cppopts[i]) {
+      if (strstr(cppopts[i],"-I") == cppopts[i])
+	add_include(cppopts[i]+2);
+      if (strstr(cppopts[i],"-D") == cppopts[i])
+	add_define(cppopts[i]+2);
+      i++;
+    }
+  }
+  if (debug)
+    fprintf(debug,"Added %d command line arguments",i);
+  
+  snew(cpp,1);
+  *handle      = (void *)cpp;
+  cpp->fn      = strdup(filenm);
+  cpp->line_len= 0;
+  cpp->line    = NULL;
+  cpp->line_nr = 0;
+  cpp->nifdef  = 0;
+  cpp->ifdefs  = NULL;
+  cpp->child   = NULL;
+  cpp->parent  = NULL;
+  i = 0;
+  while (((cpp->fp = fopen(cpp->fn,"r")) == NULL) && (i<nincl)) {
+    snew(buf,strlen(incl[i])+strlen(filenm)+2);
+    sprintf(buf,"%s/%s",incl[i],filenm);
+    sfree(cpp->fn);
+    cpp->fn = strdup(buf);
+    sfree(buf);
+    i++;
+  }
+  if (cpp->fp == NULL) {
+    sfree(cpp->fn);
+    cpp->fn = strdup(filenm);
+    cpp->fp = libopen(filenm);
+  }
+  if (cpp->fp == NULL) {
+    switch(errno) {
+    case EINVAL:
+    default:
+      return eCPP_UNKNOWN;
+    }
+  }
+  return eCPP_OK;
 }
 
 /* Return one whole line from the file into buf which holds at most n
@@ -248,11 +319,11 @@ int cpp_read_line(void **handlep,int n,char buf[])
     snew(inc_fn,len+1);
     strncpy(inc_fn,buf+i0,len);
     inc_fn[len] = '\0';
-    if (cpp_debug)
-      fprintf(stderr,"Going to open include file '%s' i0 = %d, strlen = %d\n",
+    if (debug)
+      fprintf(debug,"Going to open include file '%s' i0 = %d, strlen = %d\n",
 	      inc_fn,i0,len);
     /* Open include file and store it as a child in the handle structure */
-    status = cpp_open_file(inc_fn,(void *)&(handle->child));
+    status = cpp_open_file(inc_fn,(void *)&(handle->child),NULL);
     sfree(inc_fn);
     if (status != eCPP_OK) {
       handle->child = NULL;
@@ -268,40 +339,8 @@ int cpp_read_line(void **handlep,int n,char buf[])
   
   /* #define statement */
   if (strstr(buf,"#define") != NULL) {
-    snew(name,strlen(buf));
-    status = sscanf(buf,"%*s %s",name);
-    /* Locate the start of the definition bit */
-    ptr = strstr(buf,name);
-    while ((*ptr != '\0') && !isspace(*ptr))
-      ptr++;
-    while ((*ptr != '\0') && isspace(*ptr))
-      ptr++;
-    
-    for(i=0; (i<ndef); i++) {
-      if (strcmp(defs[i].name,name) == 0) {
-	break;
-      }
-    }
-    if (i == ndef) {
-      ndef++;
-      srenew(defs,ndef);
-      i = ndef - 1;
-      defs[i].name = strdup(name);
-    }
-    else if (defs[i].def) {
-      if (cpp_debug)
-	fprintf(stderr,"Overriding define %s\n",name);
-      sfree(defs[i].def);
-    }
-    if (strlen(ptr) > 0)
-      defs[i].def  = strdup(ptr);
-    else
-      defs[i].def  = NULL;
-	      
-    sort_defs(handle);
-    sfree(name);
-    
-    /* Don't print lines with define, go on to the next */
+    add_define(buf+8);
+  
     return cpp_read_line(handlep,n,buf);
   }
   
@@ -368,8 +407,8 @@ int cpp_close_file(void **handlep)
     return eCPP_INVALID_HANDLE;
   if (!handle->fp)
     return eCPP_FILE_NOT_OPEN;
-  if (cpp_debug)
-    fprintf(stderr,"Closing file %s\n",handle->fn);
+  if (debug)
+    fprintf(debug,"Closing file %s\n",handle->fn);
   fclose(handle->fp);
   
   if (0)switch(errno) {
@@ -382,8 +421,8 @@ int cpp_close_file(void **handlep)
   case EINTR:
     return eCPP_INTERRUPT;
   default:
-    if (cpp_debug)
-      fprintf(stderr,"Strange stuff closing file, errno = %d",errno);
+    if (debug)
+      fprintf(debug,"Strange stuff closing file, errno = %d",errno);
     return eCPP_UNKNOWN;
   }
   handle->fp = NULL;

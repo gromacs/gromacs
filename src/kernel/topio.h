@@ -49,12 +49,6 @@ typedef struct {
 extern real check_mol(t_atoms *atoms);
 /* Check mass and charge */
 
-extern void preprocess(char *infile, 
-		       char *outfile,
-		       char *cpp,
-		       char *define,
-		       char *include);
-
 extern char **do_top(bool         bVerbose,
 		     char         *topfile,
 		     char         *topppfile,

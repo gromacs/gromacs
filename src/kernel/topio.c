@@ -64,6 +64,7 @@
 #include "topcat.h"
 #include "topio.h"
 #include "topshake.h"
+#include "gmxcpp.h"
 
 #define CPPMARK  	'#'	/* mark from cpp			*/
 #define OPENDIR  	'['	/* starting sign for directive		*/
@@ -192,57 +193,70 @@ static void sum_q(t_atoms *atoms,int n,double *qt,double *qBt)
   }
 }
 
-  
-void preprocess(char *infile,char *outfile,
-		char *cpp,char *define,
-		char *include)
+static void preprocess(char *infile,char *outfile,
+		       char *cpp,char *define,char *include)
 {
-  char libdir[1024];
-  char *lib;
-  char command[2048];
-  int  error;
-
-  lib=getenv("GMXLIB");
-  if (lib!=NULL) {
-    strcpy(libdir,lib);
-  } 
-  else {
-    if(!get_libdir(libdir))
-      strcpy(libdir,GMXLIBDIR);
+  FILE *out;
+  int  n,status,len,done;
+  int  ncppopts=0;
+  char *cppadds[2];
+  char **cppopts  = NULL;
+  char *option[2] = { "-D","-I" };
+  char *nopt[2]   = { "define", "include" };
+  char *ptr,*rptr,*buf;
+  void *handle=NULL;
+  
+  cppadds[0] = define;
+  cppadds[1] = include;
+  for(n=0; (n<2); n++) {
+    if (cppadds[n]) {
+      ptr = cppadds[n];
+      while(*ptr != '\0') {
+	while((*ptr != '\0') && isspace(*ptr))
+	  ptr++;
+	rptr = ptr;
+	while((*rptr != '\0') && !isspace(*rptr))
+	  rptr++;
+	len = (rptr > ptr);
+	if (len > 2) {
+	  snew(buf,(len+1));
+	  strncpy(buf,ptr,len);
+	  if (strstr(ptr,option[n]) != ptr) {
+	    sprintf(warn_buf,"Malformed %s option %s",nopt[n],buf);
+	    warning(NULL);
+	  }
+	  else {
+	    srenew(cppopts,++ncppopts);
+	    cppopts[ncppopts-1] = strdup(buf);
+	  }
+	  sfree(buf);
+	}
+      }
+    }
   }
+  srenew(cppopts,++ncppopts);
+  cppopts[ncppopts-1] = NULL;
   
-  /* build the command line. Second output name is not supported 
-   * on OS X it seems, so we use redirection instead in that case.
-   */
-#ifdef __APPLE__
-  sprintf(command,"%s %s -I%s %s %s > %s",
-	  cpp,include,libdir,define,infile,outfile);
-#else
-  sprintf(command,"%s %s -I%s %s %s > %s",
-	  cpp,include,libdir,define,infile,outfile);
-#endif
-  
-  if (debug)
-    fprintf(debug,"Command line for cpp:\n\t%s\n",command);
-  
-  /* execute preprocessor */
-#ifdef GMX_NO_SYSTEM
-  error = 0;
-  printf("Warning-- No calls to system(3) supported on this platform.");
-  printf("Warning-- Skipping execution of 'system(\"%s\")'.",command);
-#else
-  error=system(command);
-#endif
-  if (error) {
-    if (error>0)
-      printf("cpp exit code: %d\n",error);
-    else if (error<0)
-      perror(cpp);
-    printf("Tried to execute: '%s'\n",command); 
-    printf("The '%s' command is defined in the .mdp file\n",cpp);
-    if (error<0)
-      gmx_fatal(FARGS,"cpp failed");
-  }
+  status = cpp_open_file(infile,&handle,cppopts);
+  if (status != 0) 
+    gmx_fatal(FARGS,cpp_error(&handle,status));
+  out = fopen(outfile,"w");
+  snew(buf,STRLEN);
+  do {
+    status = cpp_read_line(&handle,STRLEN,buf);
+    done = (status == eCPP_EOF);
+    if (!done) {
+      if (status != eCPP_OK)
+	gmx_fatal(FARGS,cpp_error(&handle,status));
+      else 
+	fprintf(out,"%s\n",buf);
+    }
+  } while (!done);
+  status = cpp_close_file(&handle);
+  if (status != eCPP_OK) 
+    gmx_fatal(FARGS,cpp_error(&handle,status));
+  fclose(out);
+  sfree(buf);
 }
 
 static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
@@ -618,7 +632,6 @@ char **do_top(bool         bVerbose,
   
   init_atomtype(atype);
 
-  if (bVerbose) printf("calling %s...\n",opts->cpp);
   if (topppfile)
     strcpy(tmpfile,topppfile);
   else {
@@ -884,4 +897,56 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
   free(link_arr);
   free(blink);
 } /* generate_qmexcl */ 
+
+static void preprocess2(char *infile,char *outfile,
+		char *cpp,char *define,
+		char *include)
+{
+  char libdir[1024];
+  char *lib;
+  char command[2048];
+  int  error;
+
+  lib=getenv("GMXLIB");
+  if (lib!=NULL) {
+    strcpy(libdir,lib);
+  } 
+  else {
+    if(!get_libdir(libdir))
+      strcpy(libdir,GMXLIBDIR);
+  }
+  
+  /* build the command line. Second output name is not supported 
+   * on OS X it seems, so we use redirection instead in that case.
+   */
+#ifdef __APPLE__
+  sprintf(command,"%s %s -I%s %s %s > %s",
+	  cpp,include,libdir,define,infile,outfile);
+#else
+  sprintf(command,"%s %s -I%s %s %s > %s",
+	  cpp,include,libdir,define,infile,outfile);
+#endif
+  
+  if (debug)
+    fprintf(debug,"Command line for cpp:\n\t%s\n",command);
+  
+  /* execute preprocessor */
+#ifdef GMX_NO_SYSTEM
+  error = 0;
+  printf("Warning-- No calls to system(3) supported on this platform.");
+  printf("Warning-- Skipping execution of 'system(\"%s\")'.",command);
+#else
+  error=system(command);
+#endif
+  if (error) {
+    if (error>0)
+      printf("cpp exit code: %d\n",error);
+    else if (error<0)
+      perror(cpp);
+    printf("Tried to execute: '%s'\n",command); 
+    printf("The '%s' command is defined in the .mdp file\n",cpp);
+    if (error<0)
+      gmx_fatal(FARGS,"cpp failed");
+  }
+}
 
