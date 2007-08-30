@@ -86,10 +86,8 @@ enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
-  snew(opts->title,STRLEN);
   snew(opts->include,STRLEN); 
   snew(opts->define,STRLEN);
-  snew(opts->SolventOpt,STRLEN);
 }
 
 static void _low_check(bool b,char *s,int *n)
@@ -470,9 +468,10 @@ void get_ir(char *mdparin,char *mdparout,
   snew(dumstr[1],STRLEN);
 
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
-  STYPE ("title",	opts->title,	NULL);
-  CTYPE ("Preprocessor - specify a full path if necessary.");
+  CTYPE ("Preprocessor information: use cpp syntax.");
+  CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/hoe");
   STYPE ("include",	opts->include,	NULL);
+  CTYPE ("e.g.: -DI_Want_Cookies -DMe_Too");
   STYPE ("define",	opts->define,	NULL);
     
   CCTYPE ("RUN CONTROL PARAMETERS");

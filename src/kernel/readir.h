@@ -54,10 +54,8 @@ typedef struct {
   real fourierspacing;
   int nprocs;
   int splitalg;
-  char *title;
   char *include;
   char *define;
-  char *SolventOpt;
   bool bGenVel;
   bool bGenPairs;
   real tempi;

@@ -260,10 +260,11 @@ new_status(char *topfile,char *topppfile,char *confin,
 		confin,state->natoms,topfile,sys->atoms.nr);
   else {
     /* make space for coordinates and velocities */
+    char title[STRLEN];
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
     init_state(state,state->natoms,0);
-    read_stx_conf(confin,opts->title,confat,state->x,state->v,state->box);
+    read_stx_conf(confin,title,confat,state->x,state->v,state->box);
 
     nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat);
     free_t_atoms(confat);
@@ -366,7 +367,7 @@ static void read_posres(t_params *pr, char *fn, int offset,
   t_atoms dumat;
   matrix box,invbox;
   int    natoms,npbcdim=0;
-  char   title[256];
+  char   title[STRLEN];
   int    i,ai,j,k;
   
   get_stx_coordnum(fn,&natoms);
