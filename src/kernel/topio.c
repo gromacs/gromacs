@@ -193,8 +193,7 @@ static void sum_q(t_atoms *atoms,int n,double *qt,double *qBt)
   }
 }
 
-static void preprocess(char *infile,char *outfile,
-		       char *cpp,char *define,char *include)
+static void preprocess(char *infile,char *outfile,char *define,char *include)
 {
   FILE *out;
   int  n,status,len,done;
@@ -639,7 +638,7 @@ char **do_top(bool         bVerbose,
     gmx_tmpnam(tmpfile);
     set_fatal_tmp_file(tmpfile);
   }
-  preprocess(topfile,tmpfile,opts->cpp,opts->define,opts->include);
+  preprocess(topfile,tmpfile,opts->define,opts->include);
 
   if (bVerbose) printf("processing topology...\n");
   title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,

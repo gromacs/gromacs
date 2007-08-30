@@ -55,7 +55,6 @@ typedef struct {
   int nprocs;
   int splitalg;
   char *title;
-  char *cpp;
   char *include;
   char *define;
   char *SolventOpt;

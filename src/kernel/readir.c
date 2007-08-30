@@ -87,7 +87,6 @@ enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
   snew(opts->title,STRLEN);
-  snew(opts->cpp,STRLEN); 
   snew(opts->include,STRLEN); 
   snew(opts->define,STRLEN);
   snew(opts->SolventOpt,STRLEN);
@@ -473,7 +472,6 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   STYPE ("title",	opts->title,	NULL);
   CTYPE ("Preprocessor - specify a full path if necessary.");
-  STYPE ("cpp",		opts->cpp,	"cpp");
   STYPE ("include",	opts->include,	NULL);
   STYPE ("define",	opts->define,	NULL);
     

@@ -764,7 +764,7 @@ int main (int argc, char *argv[])
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE;
   static bool bRmVSBds=TRUE,bCheckPairs=FALSE;
-  static int  i,maxwarn=10;
+  static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
     { "-v",       FALSE, etBOOL, {&bVerbose},
