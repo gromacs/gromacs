@@ -54,7 +54,7 @@
 #include "gstat.h"
 #include "trnio.h"
 
-static void dump_dih_trn(int nframes,int nangles,real **dih,char *fn)
+static void dump_dih_trn(int nframes,int nangles,real **dih,char *fn,real dt)
 {
   int    i,j,k,l,m,na,trn;
   rvec   *x;
@@ -81,7 +81,7 @@ static void dump_dih_trn(int nframes,int nangles,real **dih,char *fn)
 	}
       }
     }
-    fwrite_trn(trn,i,(real)i,0,box,na,x,NULL,NULL);
+    fwrite_trn(trn,i,(real)i*dt,0,box,na,x,NULL,NULL);
   }
   close_trn(trn);
   sfree(x);
@@ -260,7 +260,7 @@ int gmx_angle(int argc,char *argv[])
     fclose(out);
   }
   if (opt2bSet("-or",NFILE,fnm)) 
-    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm));
+    dump_dih_trn(nframes,nangles,dih,opt2fn("-or",NFILE,fnm),dt);
   
   if (bFrac) {
     sprintf(title,"Trans fraction: %s",grpname);
