@@ -334,29 +334,27 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
     get_a_line(in,line,STRLEN);
     bError=FALSE;
     bNextResidue=FALSE;
-    while (!bNextResidue) {
-      if (!get_header(line,header))
-	if (feof(in))
-	  bNextResidue=TRUE;
-	else
-	  bError=TRUE;
-      else {
-	bt=get_bt(header);
-	if ( bt!=NOTSET )
-	  bError=!read_bondeds(bt,in,line,&rrtp[nrtp]);
-	else
-	  if (strncasecmp("atoms",header,5)==0) 
-	    bError=!read_atoms(in,line,&(rrtp[nrtp]),tab,atype);
-	  else {
-	    if (!feof(in) && !get_header(line,header))
-	      bError=TRUE;
-	    bNextResidue=TRUE;
-	  }
+    do {
+      if (!get_header(line,header)) {
+	bError = TRUE;
+      } else {
+	bt = get_bt(header);
+	if (bt != NOTSET) {
+	  /* header is an bonded directive */
+	  bError = !read_bondeds(bt,in,line,&rrtp[nrtp]);
+	} else if (strncasecmp("atoms",header,5) == 0) {
+	  /* header is the atoms directive */
+	  bError = !read_atoms(in,line,&(rrtp[nrtp]),tab,atype);
+	} else {
+	  /* else header must be a residue name */
+	  bNextResidue = TRUE;
+	}
       }
       if (bError)
 	gmx_fatal(FARGS,"in .rtp file in residue %s at line:\n%s\n",
 		    rrtp[nrtp].resname,line);
-    }
+    } while (!feof(in) && !bNextResidue);
+
     if (rrtp[nrtp].natom == 0)
       gmx_fatal(FARGS,"No atoms found in .rtp file in residue %s\n",
 		  rrtp[nrtp].resname);
