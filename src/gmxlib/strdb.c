@@ -54,6 +54,7 @@ bool get_a_line(FILE *fp,char line[],int n)
  
   do {
     if (!fgets(line0,n+1,fp)) {
+      sfree(line0);
       return FALSE;
     }
     dum=strchr(line0,'\n');
