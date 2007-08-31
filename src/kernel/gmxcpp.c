@@ -244,7 +244,11 @@ int cpp_read_line(void **handlep,int n,char buf[])
     strcpy(handle->line,buf);
     handle->line_nr++;
   }
-  
+  /* Now we've read a line! */
+  if (debug) 
+    fprintf(debug,"%s : %4d : %s\n",handle->fn,handle->line_nr,buf);
+  set_warning_line(handle->fn,handle->line_nr);
+    
   /* #ifdef statement */
   if (strstr(buf,"#ifdef") != NULL) {
     if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifDEF)) {
@@ -449,7 +453,7 @@ char *cpp_error(void **handlep,int status)
   char buf[256];
   char *ecpp[] = {
     "OK", "File not found", "End of file", "Syntax error", "Interrupted",
-    "Invalid file handle",
+    "Invalid file handle", 
     "File not open", "Unknown error", "Error status out of range"
   };
   t_cpphandle *handle = (t_cpphandle *)*handlep;

@@ -193,17 +193,45 @@ static void sum_q(t_atoms *atoms,int n,double *qt,double *qBt)
   }
 }
 
-static void preprocess(char *infile,char *outfile,char *define,char *include)
+static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
 {
-  FILE *out;
-  int  n,status,len,done;
+  int i;
+  
+  *nb   = -1;
+  for(i=1; (i<eNBF_NR); i++)
+    if (strcasecmp(nb_str,enbf_names[i]) == 0)
+      *nb = i;
+  if (*nb == -1)
+    *nb = atoi(nb_str);
+  if ((*nb < 1) || (*nb >= eNBF_NR)) {
+    sprintf(warn_buf,"Invalid nonbond function selector '%s' using %s",
+	    nb_str,enbf_names[1]);
+    warning_error(NULL);
+    *nb = 1;
+  }
+  *comb = -1;
+  for(i=1; (i<eCOMB_NR); i++)
+    if (strcasecmp(comb_str,ecomb_names[i]) == 0)
+      *comb = i;
+  if (*comb == -1)
+    *comb = atoi(comb_str);
+  if ((*comb < 1) || (*comb >= eCOMB_NR)) {
+    sprintf(warn_buf,"Invalid combination rule selector '%s' using %s",
+	    comb_str,ecomb_names[1]);
+    warning_error(NULL);
+    *comb = 1;
+  }
+}
+
+static char **cpp_opts(char *define,char *include)
+{
+  int  n,len;
   int  ncppopts=0;
   char *cppadds[2];
   char **cppopts  = NULL;
   char *option[2] = { "-D","-I" };
   char *nopt[2]   = { "define", "include" };
   char *ptr,*rptr,*buf;
-  void *handle=NULL;
   
   cppadds[0] = define;
   cppadds[1] = include;
@@ -235,60 +263,12 @@ static void preprocess(char *infile,char *outfile,char *define,char *include)
   }
   srenew(cppopts,++ncppopts);
   cppopts[ncppopts-1] = NULL;
-  
-  status = cpp_open_file(infile,&handle,cppopts);
-  if (status != 0) 
-    gmx_fatal(FARGS,cpp_error(&handle,status));
-  out = fopen(outfile,"w");
-  snew(buf,STRLEN);
-  do {
-    status = cpp_read_line(&handle,STRLEN,buf);
-    done = (status == eCPP_EOF);
-    if (!done) {
-      if (status != eCPP_OK)
-	gmx_fatal(FARGS,cpp_error(&handle,status));
-      else 
-	fprintf(out,"%s\n",buf);
-    }
-  } while (!done);
-  status = cpp_close_file(&handle);
-  if (status != eCPP_OK) 
-    gmx_fatal(FARGS,cpp_error(&handle,status));
-  fclose(out);
-  sfree(buf);
+
+  return cppopts;  
 }
 
-static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
-{
-  int i;
-  
-  *nb   = -1;
-  for(i=1; (i<eNBF_NR); i++)
-    if (strcasecmp(nb_str,enbf_names[i]) == 0)
-      *nb = i;
-  if (*nb == -1)
-    *nb = atoi(nb_str);
-  if ((*nb < 1) || (*nb >= eNBF_NR)) {
-    sprintf(warn_buf,"Invalid nonbond function selector '%s' using %s",
-	    nb_str,enbf_names[1]);
-    warning_error(NULL);
-    *nb = 1;
-  }
-  *comb = -1;
-  for(i=1; (i<eCOMB_NR); i++)
-    if (strcasecmp(comb_str,ecomb_names[i]) == 0)
-      *comb = i;
-  if (*comb == -1)
-    *comb = atoi(comb_str);
-  if ((*comb < 1) || (*comb >= eCOMB_NR)) {
-    sprintf(warn_buf,"Invalid combination rule selector '%s' using %s",
-	    comb_str,ecomb_names[1]);
-    warning_error(NULL);
-    *comb = 1;
-  }
-}
-
-static char **read_topol(char        *infile,
+static char **read_topol(char *infile,char *outfile,
+			 char *define,char *include,
 			 t_symtab    *symtab,
 			 t_atomtype  *atype,
 			 int         *nrmols,
@@ -303,11 +283,11 @@ static char **read_topol(char        *infile,
 			 bool        bFEP,
 			 bool        bVerbose)
 {
-  FILE       *in;
+  FILE       *out;
   int        i,nb_funct,comb;
   char       *pline,**title=NULL;
-  int        curline;
-  char       curfile[STRLEN],line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
+  /* int        curline; */
+  char       /*curfile[STRLEN],*/line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
   char       genpairs[32];
   char       *dirstr,*dummy2;
   int        nrcopies,nmol,Nsim=0,nscan,ncombs,ncopy;
@@ -324,16 +304,21 @@ static char **read_topol(char        *infile,
   double     qt=0,qBt=0; /* total charge */
   t_bond_atomtype *batype;
   int        lastcg=-1;
+  /* File handling variables */
+  int        status,done;
+  void       *handle;
   
   /* open input and output file */
-  if ((in = fopen(infile,"r")) == NULL)
-    gmx_fatal(FARGS,"Could not open %s",infile);
-
+  status = cpp_open_file(infile,&handle,cpp_opts(define,include));
+  if (status != 0) 
+    gmx_fatal(FARGS,cpp_error(&handle,status));
+  if (outfile)
+    out = fopen(outfile,"w");
+  else
+    out = NULL;
   /* some local variables */
   DS_Init(&DS);			/* directive stack			 */
-  strcpy(curfile,infile);	/* filename    				 */
   nmol     = 0;			/* no molecules yet...			 */
-  curline  = 0;              	/* line number 				 */
   d        = d_invalid;         /* first thing should be a directive 	 */
   nbparam  = NULL;              /* The temporary non-bonded matrix       */
   pair     = NULL;              /* The temporary pair interaction matrix */
@@ -351,35 +336,40 @@ static char **read_topol(char        *infile,
   bReadDefaults = FALSE;
   bGenPairs     = FALSE;
   bReadMolType  = FALSE;
-  while (fgets2(line,STRLEN-2,in) != NULL) {
-    curline++;
+  
+  do {
+    status = cpp_read_line(&handle,STRLEN,line);
+    done = (status == eCPP_EOF);
+    if (!done) {
+      if (status != eCPP_OK)
+	gmx_fatal(FARGS,cpp_error(&handle,status));
+      else if (out)
+	fprintf(out,"%s\n",line);
+    }
+    
     pline = strdup(line);
-    if (!pline)
-      gmx_fatal(FARGS,"Empty line %d in input",curline);
     
     /* build one long line from several fragments */
-    while (continuing(line) && (fgets2(line,STRLEN-1,in) != NULL)) {
-      curline++;
+    while (continuing(line)) {
+      status = cpp_read_line(&handle,STRLEN,line);
+      done = (status == eCPP_EOF);
+      if (!done) {
+	if (status != eCPP_OK)
+	  gmx_fatal(FARGS,cpp_error(&handle,status));
+	else if (out)
+	  fprintf(out,"%s\n",line);
+      }
       srealloc(pline,strlen(pline)+strlen(line)+1);
       strcat(pline,line);
     }
-
+    
     /* skip trailing and leading spaces and comment text */
     strip_comment (pline);
     trim (pline);
-
+    
     /* if there is something left... */
     if ((int)strlen(pline) > 0) {
-      if (pline[0] == CPPMARK) {
-	/* A cpp-leftover on this line:
-	 * the file and line number for debug info
-	 */
-	if (sscanf ((pline+1),"%d %s",&curline,curfile) == 2) {
-	  /* Read file and linenumber ok, don't count the cpp mark  */
-	  curline--;
-	}
-      }
-      else if (pline[0] == OPENDIR) {
+      if (pline[0] == OPENDIR) {
 	/* A directive on this line: copy the directive 
 	 * without the brackets into dirstr, then
 	 * skip spaces and tabs on either side of directive
@@ -388,7 +378,7 @@ static char **read_topol(char        *infile,
 	if ((dummy2 = strchr (dirstr,CLOSEDIR)) != NULL)
 	  (*dummy2) = 0;
 	trim (dirstr);
-
+	
 	if ((newd = str2dir(dirstr)) == d_invalid) {
 	  sprintf(errbuf,"Invalid directive %s",dirstr);
 	  warning_error(errbuf);
@@ -404,7 +394,8 @@ static char **read_topol(char        *infile,
 	  else {
 	    /* we should print here which directives should have
 	       been present, and which actually are */
-	    gmx_fatal(FARGS,"Invalid order for directive %s, file \"%s\", line %d",dirstr,curfile,curline);
+	    gmx_fatal(FARGS,"%s\nInvalid order for directive %s",
+		      cpp_error(&handle,eCPP_SYNTAX),dir2str(newd));
 	    /* d = d_invalid; */
 	  }
 	}
@@ -415,16 +406,11 @@ static char **read_topol(char        *infile,
 	 * use a gigantic switch to decode,
          * if there is a valid directive!
 	 */
-	if (debug) {
-	  fprintf(debug,"%s : %4d : %s\n",curfile,curline,pline);
-	  fflush(debug);
-	}
-	set_warning_line(curfile,curline);
-	
 	switch (d) {
 	case d_defaults:
 	  if (bReadDefaults)
-	    gmx_fatal(FARGS,"Found a second defaults directive, file %s, line %d",curfile,curline);
+	    gmx_fatal(FARGS,"%s\nFound a second defaults directive.\n",
+		      cpp_error(&handle,eCPP_SYNTAX));
 	  bReadDefaults = TRUE;
 	  nscan = sscanf(pline,"%s%s%s%lf%lf%lf",
 			 nb_str,comb_str,genpairs,&fLJ,&fQQ,&fPOW);
@@ -479,16 +465,16 @@ static char **read_topol(char        *infile,
 	  push_nbt(d,nbparam,atype,pline,nb_funct);
 	  break;
 	  /*
-	case d_blocktype:
-	  nblock++;
-	  srenew(block,nblock);
-	  srenew(blockinfo,nblock);
-	  blk0=&(block[nblock-1]);
-	  bi0=&(blockinfo[nblock-1]);
-	  init_top(blk0);
-	  init_molinfo(bi0);
-	  push_molt(symtab,bi0,pline);
-	  break;
+	    case d_blocktype:
+	    nblock++;
+	    srenew(block,nblock);
+	    srenew(blockinfo,nblock);
+	    blk0=&(block[nblock-1]);
+	    bi0=&(blockinfo[nblock-1]);
+	    init_top(blk0);
+	    init_molinfo(bi0);
+	    push_molt(symtab,bi0,pline);
+	    break;
 	  */
 	case d_moleculetype: {
 	  if (!bReadMolType) {
@@ -566,7 +552,7 @@ static char **read_topol(char        *infile,
 	  if (mi0->atoms.nr == 0)
 	    gmx_fatal(FARGS,"Moleculetype %s contains no atoms",*mi0->name);
 	  fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
-		    mi0->nrexcl,pline);
+		  mi0->nrexcl,pline);
 	  sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
 	  if (!mi0->bProcessed) {
 	    generate_excl(mi0->nrexcl,
@@ -589,7 +575,13 @@ static char **read_topol(char        *infile,
     }
     sfree(pline);
     pline=NULL;
-  }
+  } while (!done);
+  status = cpp_close_file(&handle);
+  if (status != eCPP_OK) 
+    gmx_fatal(FARGS,cpp_error(&handle,status));
+  if (out)
+    fclose(out);
+  
   /* this is not very clean, but fixes core dump on empty system name */
   if(!title)
     title=put_symtab(symtab,"");
@@ -597,7 +589,6 @@ static char **read_topol(char        *infile,
     fprintf(stderr,"NOTE:\n  System has non-zero total charge: %e\n\n",qt);
   if (fabs(qBt) > 1e-4 && qBt != qt)
     fprintf(stderr,"NOTE:\n  State B has non-zero total charge: %e\n\n",qBt);
-  fclose (in);
   DS_Done (&DS);
   for(i=0; i<nmol; i++)
     done_block2(&(block2[i]));
@@ -606,7 +597,7 @@ static char **read_topol(char        *infile,
   
   *nsim=Nsim;
   *sims=Sims;
-
+  
   return title;
 }
 
@@ -626,22 +617,19 @@ char **do_top(bool         bVerbose,
 	      t_simsystem  **sims)
 {
   /* Tmpfile might contain a long path */
-  char tmpfile[32];
+  char *tmpfile;
   char **title;
   
   init_atomtype(atype);
 
   if (topppfile)
-    strcpy(tmpfile,topppfile);
-  else {
-    strcpy(tmpfile,"gromppXXXXXX");
-    gmx_tmpnam(tmpfile);
-    set_fatal_tmp_file(tmpfile);
-  }
-  preprocess(topfile,tmpfile,opts->define,opts->include);
+    tmpfile = topppfile;
+  else 
+    tmpfile = NULL;
 
   if (bVerbose) printf("processing topology...\n");
-  title=read_topol(tmpfile,symtab,atype,nrmols,molinfo,
+  title=read_topol(topfile,tmpfile,opts->define,opts->include,
+		   symtab,atype,nrmols,molinfo,
 		   plist,combination_rule,repulsion_power,
 		   opts->nshake,&ir->fudgeQQ,nsim,sims,ir->efep!=efepNO,
 		   bVerbose);
@@ -651,19 +639,13 @@ char **do_top(bool         bVerbose,
 	    " user supplied potential function may produce unwanted"
 	    " results");
   }
-  if (!topppfile) {
-    if (unlink(tmpfile) != 0)
-      perror ("Unable to remove temporary file");
-    unset_fatal_tmp_file(tmpfile);
-  }
-    
+  
   return title;
 }
 
 
-
 void generate_qmexcl(t_topology *sys,t_inputrec *ir)
-{
+  {
   /* generates the exclusions between the individual QM atoms, as
    * these interactions should be handled by the QM subroutines and
    * not by the gromacs routines 
