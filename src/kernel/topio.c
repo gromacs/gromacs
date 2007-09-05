@@ -244,7 +244,7 @@ static char **cpp_opts(char *define,char *include)
 	rptr = ptr;
 	while((*rptr != '\0') && !isspace(*rptr))
 	  rptr++;
-	len = (rptr > ptr);
+	len = (rptr - ptr);
 	if (len > 2) {
 	  snew(buf,(len+1));
 	  strncpy(buf,ptr,len);
@@ -257,6 +257,7 @@ static char **cpp_opts(char *define,char *include)
 	    cppopts[ncppopts-1] = strdup(buf);
 	  }
 	  sfree(buf);
+	  ptr = rptr;
 	}
       }
     }
