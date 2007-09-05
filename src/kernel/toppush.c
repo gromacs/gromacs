@@ -1167,7 +1167,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
        
        
       /* If only the A parameters were specified, copy them to the B state too */
-	  for( nread == nrfpA ; nread< nrfp ; nread++)
+	  for(nread=nrfpA ; nread<nrfp; nread++)
 	  {
 	    cc[nread] = cc[nread-nrfpA];
 	  }	
