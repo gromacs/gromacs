@@ -775,7 +775,7 @@ int main (int argc, char *argv[])
     { "-rmvsbds",FALSE, etBOOL, {&bRmVSBds},
       "Remove constant bonded interactions with virtual sites" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
-      "Number of warnings after which input processing stops" },
+      "Number of allowed warnings during input processing" },
     { "-check14", FALSE, etBOOL, {&bCheckPairs},
       "Remove 1-4 interactions without Van der Waals" },
     { "-renum",   FALSE, etBOOL, {&bRenum},

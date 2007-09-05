@@ -418,8 +418,9 @@ static void low_warning(const char *warn_err,const char *s)
     fprintf(stderr,"%s %d:\n%s\n",warn_err,nwarn,temp2);
   sfree(temp);
   sfree(temp2);
-  if (nwarn >= maxwarn)
-    gmx_fatal(FARGS,"Too many warnings, %s terminated",Program());
+  if (nwarn > maxwarn)
+    gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
+	      "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn,Program());
 }
 
 void warning(const char *s)
