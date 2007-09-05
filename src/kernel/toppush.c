@@ -1272,7 +1272,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		"             %s table number can not be perturbed %d!=%d",
 		get_warning_file(),get_warning_line(),
 		interaction_function[ftype].longname,
-		param.c[0],param.c[2]);
+		(int)(param.c[0]+0.5),(int)(param.c[2]+0.5));
 
   /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
   if (ftype==F_RBDIHS) {
