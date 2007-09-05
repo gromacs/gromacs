@@ -656,12 +656,15 @@ static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
     }
   }
   assert(k == nsid);
+  /* Removed 2007-09-04
   sblock->index[k+1] = natoms;
   for(k=0; (k<natoms); k++)
     if (sid[k].sid == -1)
       sblock->a[n++] = k;
   assert(n == natoms);
-  
+  */
+  sblock->nra = n;
+  sblock->index[k+1] = sblock->nra;
   sfree(ms);
   
   return nsid;

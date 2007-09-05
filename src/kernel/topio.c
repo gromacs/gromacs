@@ -285,9 +285,8 @@ static char **read_topol(char *infile,char *outfile,
 {
   FILE       *out;
   int        i,nb_funct,comb;
-  char       *pline,**title=NULL;
-  /* int        curline; */
-  char       /*curfile[STRLEN],*/line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
+  char       *pline=NULL,**title=NULL;
+  char       line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
   char       genpairs[32];
   char       *dirstr,*dummy2;
   int        nrcopies,nmol,Nsim=0,nscan,ncombs,ncopy;
@@ -345,236 +344,236 @@ static char **read_topol(char *infile,char *outfile,
 	gmx_fatal(FARGS,cpp_error(&handle,status));
       else if (out)
 	fprintf(out,"%s\n",line);
-    }
     
-    pline = strdup(line);
+      pline = strdup(line);
     
-    /* build one long line from several fragments */
-    while (continuing(line)) {
-      status = cpp_read_line(&handle,STRLEN,line);
-      done = (status == eCPP_EOF);
-      if (!done) {
+      /* build one long line from several fragments */
+      /*while (continuing(line)) {
+	status = cpp_read_line(&handle,STRLEN,line);
+	done = (status == eCPP_EOF);
+	if (!done) {
 	if (status != eCPP_OK)
-	  gmx_fatal(FARGS,cpp_error(&handle,status));
+	gmx_fatal(FARGS,cpp_error(&handle,status));
 	else if (out)
-	  fprintf(out,"%s\n",line);
-      }
-      srealloc(pline,strlen(pline)+strlen(line)+1);
-      strcat(pline,line);
-    }
-    
-    /* skip trailing and leading spaces and comment text */
-    strip_comment (pline);
-    trim (pline);
-    
-    /* if there is something left... */
-    if ((int)strlen(pline) > 0) {
-      if (pline[0] == OPENDIR) {
-	/* A directive on this line: copy the directive 
-	 * without the brackets into dirstr, then
-	 * skip spaces and tabs on either side of directive
-	 */
-	dirstr = strdup((pline+1));
-	if ((dummy2 = strchr (dirstr,CLOSEDIR)) != NULL)
-	  (*dummy2) = 0;
-	trim (dirstr);
-	
-	if ((newd = str2dir(dirstr)) == d_invalid) {
-	  sprintf(errbuf,"Invalid directive %s",dirstr);
-	  warning_error(errbuf);
+	fprintf(out,"%s\n",line);
 	}
-	else {
-	  /* Directive found */
-	  if (debug) 
-	    fprintf(debug,"found directive '%s'\n",dir2str(newd));
-	  if (DS_Check_Order (DS,newd)) {
-	    DS_Push (&DS,newd);
-	    d = newd;
-	  }
-	  else {
-	    /* we should print here which directives should have
-	       been present, and which actually are */
-	    gmx_fatal(FARGS,"%s\nInvalid order for directive %s",
-		      cpp_error(&handle,eCPP_SYNTAX),dir2str(newd));
-	    /* d = d_invalid; */
-	  }
+	srealloc(pline,strlen(pline)+strlen(line)+1);
+	strcat(pline,line);
 	}
-	sfree(dirstr);
-      }
-      else if (d != d_invalid) {
-	/* Not a directive, just a plain string 
-	 * use a gigantic switch to decode,
-         * if there is a valid directive!
-	 */
-	switch (d) {
-	case d_defaults:
-	  if (bReadDefaults)
-	    gmx_fatal(FARGS,"%s\nFound a second defaults directive.\n",
-		      cpp_error(&handle,eCPP_SYNTAX));
-	  bReadDefaults = TRUE;
-	  nscan = sscanf(pline,"%s%s%s%lf%lf%lf",
-			 nb_str,comb_str,genpairs,&fLJ,&fQQ,&fPOW);
-	  if (nscan < 2)
-	    too_few();
-	  else {
-	    bGenPairs = FALSE;
-	    fudgeLJ   = 1.0;
-	    *fudgeQQ  = 1.0;
-	    
-	    get_nbparm(nb_str,comb_str,&nb_funct,&comb);
-	    *combination_rule = comb;
-	    if (nscan >= 3) 
-	      bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
-	    if (nscan >= 4)
-	      fudgeLJ   = fLJ;
-	    if (nscan >= 5)
-	      *fudgeQQ  = fQQ;
-	    if (nscan >= 6)
-	      *reppow   = fPOW;
-	  }
-	  nb_funct = ifunc_index(d_nonbond_params,nb_funct);
+      */
+      /* skip trailing and leading spaces and comment text */
+      strip_comment (pline);
+      trim (pline);
+    
+      /* if there is something left... */
+      if ((int)strlen(pline) > 0) {
+	if (pline[0] == OPENDIR) {
+	  /* A directive on this line: copy the directive 
+	   * without the brackets into dirstr, then
+	   * skip spaces and tabs on either side of directive
+	   */
+	  dirstr = strdup((pline+1));
+	  if ((dummy2 = strchr (dirstr,CLOSEDIR)) != NULL)
+	    (*dummy2) = 0;
+	  trim (dirstr);
 	  
-	  break;
-	case d_atomtypes:
-	  push_at(symtab,atype,batype,pline,nb_funct,
-		  &nbparam,bGenPairs ? &pair : NULL);
-	  break;
-
-#define PUSHBT(nral) push_bt(d,plist,nral,batype->atomname,batype->nr,pline)
-	case d_bondtypes:
-	  PUSHBT(2);
-	  break;
-	case d_constrainttypes:
-	  PUSHBT(2);
-	  break;
-	case d_pairtypes:
-	  if (bGenPairs)
-	    push_nbt(d,pair,atype,pline,F_LJ14);
-	  else
-	    push_bt(d,plist,2,atype->atomname,atype->nr,pline);
-	  break;
-	case d_angletypes:
-	  PUSHBT(3);
-	  break;
-	case d_dihedraltypes:
-	  /* Special routine that can read both 2 and 4 atom dihedral definitions. */
-	  push_dihedraltype(d,plist,batype->atomname,batype->nr,pline);
-	  break;
-#undef PUSHBT
-	case d_nonbond_params:
-	  push_nbt(d,nbparam,atype,pline,nb_funct);
-	  break;
-	  /*
-	    case d_blocktype:
-	    nblock++;
-	    srenew(block,nblock);
-	    srenew(blockinfo,nblock);
-	    blk0=&(block[nblock-1]);
-	    bi0=&(blockinfo[nblock-1]);
-	    init_top(blk0);
-	    init_molinfo(bi0);
-	    push_molt(symtab,bi0,pline);
-	    break;
-	  */
-	case d_moleculetype: {
-	  if (!bReadMolType) {
-	    ncombs = atype->nr*(atype->nr+1)/2;
-	    generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
-	    ncopy = copy_nbparams(nbparam,nb_funct,&(plist[nb_funct]),
-				  atype->nr);
-	    fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
-	    free_nbparam(nbparam,atype->nr);
-   	    if (bGenPairs) {
-	      gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,comb,bVerbose);
-	      ncopy = copy_nbparams(pair,nb_funct,&(plist[F_LJ14]),
-				    atype->nr);
-	      fprintf(stderr,"Generated %d of the %d 1-4 parameter combinations\n",ncombs-ncopy,ncombs);
-	      free_nbparam(pair,atype->nr);
+	  if ((newd = str2dir(dirstr)) == d_invalid) {
+	    sprintf(errbuf,"Invalid directive %s",dirstr);
+	    warning_error(errbuf);
+	  }
+	  else {
+	    /* Directive found */
+	    if (debug) 
+	      fprintf(debug,"found directive '%s'\n",dir2str(newd));
+	    if (DS_Check_Order (DS,newd)) {
+	      DS_Push (&DS,newd);
+		d = newd;
 	    }
-	    /* Copy GBSA parameters to atomtype array */
+	    else {
+	      /* we should print here which directives should have
+		 been present, and which actually are */
+	      gmx_fatal(FARGS,"%s\nInvalid order for directive %s",
+			cpp_error(&handle,eCPP_SYNTAX),dir2str(newd));
+	      /* d = d_invalid; */
+	    }
+	  }
+	  sfree(dirstr);
+	}
+	else if (d != d_invalid) {
+	  /* Not a directive, just a plain string 
+	   * use a gigantic switch to decode,
+	   * if there is a valid directive!
+	   */
+	  switch (d) {
+	  case d_defaults:
+	    if (bReadDefaults)
+	      gmx_fatal(FARGS,"%s\nFound a second defaults directive.\n",
+			cpp_error(&handle,eCPP_SYNTAX));
+	    bReadDefaults = TRUE;
+	    nscan = sscanf(pline,"%s%s%s%lf%lf%lf",
+			   nb_str,comb_str,genpairs,&fLJ,&fQQ,&fPOW);
+	    if (nscan < 2)
+	      too_few();
+	    else {
+	      bGenPairs = FALSE;
+	      fudgeLJ   = 1.0;
+	      *fudgeQQ  = 1.0;
+	      
+	      get_nbparm(nb_str,comb_str,&nb_funct,&comb);
+	      *combination_rule = comb;
+	      if (nscan >= 3) 
+		bGenPairs = (strncasecmp(genpairs,"Y",1) == 0);
+	      if (nscan >= 4)
+		fudgeLJ   = fLJ;
+	      if (nscan >= 5)
+		*fudgeQQ  = fQQ;
+	      if (nscan >= 6)
+		*reppow   = fPOW;
+	    }
+	    nb_funct = ifunc_index(d_nonbond_params,nb_funct);
 	    
-	    bReadMolType = TRUE;
+	    break;
+	  case d_atomtypes:
+	    push_at(symtab,atype,batype,pline,nb_funct,
+		    &nbparam,bGenPairs ? &pair : NULL);
+	    break;
+	    
+#define PUSHBT(nral) push_bt(d,plist,nral,batype->atomname,batype->nr,pline)
+	  case d_bondtypes:
+	    PUSHBT(2);
+	    break;
+	  case d_constrainttypes:
+	    PUSHBT(2);
+	    break;
+	  case d_pairtypes:
+	    if (bGenPairs)
+	      push_nbt(d,pair,atype,pline,F_LJ14);
+	    else
+	      push_bt(d,plist,2,atype->atomname,atype->nr,pline);
+	      break;
+	  case d_angletypes:
+	    PUSHBT(3);
+	    break;
+	  case d_dihedraltypes:
+	    /* Special routine that can read both 2 and 4 atom dihedral definitions. */
+	    push_dihedraltype(d,plist,batype->atomname,batype->nr,pline);
+	    break;
+#undef PUSHBT
+	  case d_nonbond_params:
+	    push_nbt(d,nbparam,atype,pline,nb_funct);
+	    break;
+	    /*
+	      case d_blocktype:
+	      nblock++;
+	      srenew(block,nblock);
+	      srenew(blockinfo,nblock);
+	      blk0=&(block[nblock-1]);
+	      bi0=&(blockinfo[nblock-1]);
+	      init_top(blk0);
+	      init_molinfo(bi0);
+	      push_molt(symtab,bi0,pline);
+	      break;
+	    */
+	  case d_moleculetype: {
+	    if (!bReadMolType) {
+	      ncombs = atype->nr*(atype->nr+1)/2;
+	      generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
+	      ncopy = copy_nbparams(nbparam,nb_funct,&(plist[nb_funct]),
+				    atype->nr);
+	      fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
+	      free_nbparam(nbparam,atype->nr);
+	      if (bGenPairs) {
+		gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,comb,bVerbose);
+		ncopy = copy_nbparams(pair,nb_funct,&(plist[F_LJ14]),
+				      atype->nr);
+		fprintf(stderr,"Generated %d of the %d 1-4 parameter combinations\n",ncombs-ncopy,ncombs);
+		free_nbparam(pair,atype->nr);
+	      }
+	      /* Copy GBSA parameters to atomtype array */
+	      
+	      bReadMolType = TRUE;
+	    }
+	    
+	    push_molt(symtab,&nmol,molinfo,pline);
+	    srenew(block2,nmol);
+	    block2[nmol-1].nr=0;
+	    mi0=&((*molinfo)[nmol-1]);
+	    break;
 	  }
-
-	  push_molt(symtab,&nmol,molinfo,pline);
-	  srenew(block2,nmol);
-	  block2[nmol-1].nr=0;
-	  mi0=&((*molinfo)[nmol-1]);
-	  break;
-	}
-	case d_atoms: 
-	  push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline,&lastcg);
-	  break;
-	  
-	case d_pairs: 
-	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,
-		    bGenPairs,&bWarn_copy_A_B);
-	  break;
-	  
-	case d_vsites2:
-	case d_vsites3:
-	case d_vsites4:
-        case d_bonds:
-	case d_angles:
-	case d_constraints:
-	case d_settles:
-	case d_position_restraints:
-	case d_angle_restraints:
-	case d_angle_restraints_z:
-	case d_distance_restraints: 
-	case d_orientation_restraints:
-	case d_dihedral_restraints:
-	case d_dihedrals:
-	case d_polarization:
-	case d_water_polarization:
-	case d_thole_polarization:
-	  push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
-		    bGenPairs,&bWarn_copy_A_B);
-	  break;
-	case d_exclusions:
-	  if (!block2[nmol-1].nr)
-	    init_block2(&(block2[nmol-1]),mi0->atoms.nr);
-	  push_excl(pline,&(block2[nmol-1]));
-	  break;
-	case d_system: 
-	  trim(pline);
-	  title=put_symtab(symtab,pline);
-	  break;
-	case d_molecules: {
-	  int whichmol;
-
-	  push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies);
-	  mi0=&((*molinfo)[whichmol]);
-	  srenew(Sims,Nsim+1);
-	  Sims[Nsim].whichmol=whichmol;
-	  Sims[Nsim].nrcopies=nrcopies;
-	  Nsim++;
-	  if (mi0->atoms.nr == 0)
-	    gmx_fatal(FARGS,"Moleculetype %s contains no atoms",*mi0->name);
-	  fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
-		  mi0->nrexcl,pline);
-	  sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
-	  if (!mi0->bProcessed) {
-	    generate_excl(mi0->nrexcl,
-			  mi0->atoms.nr,
-			  mi0->plist,
-			  &(mi0->excls));
-	    merge_excl(&(mi0->excls),&(block2[whichmol]));
-	    done_block2(&(block2[whichmol]));
-	    make_shake(mi0->plist,&mi0->atoms,atype,nshake); 
-	    stupid_fill(&mi0->mols,mi0->atoms.nr,TRUE);
-	    mi0->bProcessed=TRUE;
+	  case d_atoms: 
+	    push_atom(symtab,&(mi0->cgs),&(mi0->atoms),atype,pline,&lastcg);
+	    break;
+	    
+	  case d_pairs: 
+	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,
+		      bGenPairs,&bWarn_copy_A_B);
+	    break;
+	    
+	  case d_vsites2:
+	  case d_vsites3:
+	  case d_vsites4:
+	  case d_bonds:
+	  case d_angles:
+	  case d_constraints:
+	  case d_settles:
+	  case d_position_restraints:
+	  case d_angle_restraints:
+	  case d_angle_restraints_z:
+	  case d_distance_restraints: 
+	  case d_orientation_restraints:
+	  case d_dihedral_restraints:
+	  case d_dihedrals:
+	  case d_polarization:
+	  case d_water_polarization:
+	  case d_thole_polarization:
+	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
+		      bGenPairs,&bWarn_copy_A_B);
+	    break;
+	  case d_exclusions:
+	    if (!block2[nmol-1].nr)
+	      init_block2(&(block2[nmol-1]),mi0->atoms.nr);
+	    push_excl(pline,&(block2[nmol-1]));
+	    break;
+	  case d_system: 
+	    trim(pline);
+	    title=put_symtab(symtab,pline);
+	    break;
+	  case d_molecules: {
+	    int whichmol;
+	    
+	    push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies);
+	    mi0=&((*molinfo)[whichmol]);
+	    srenew(Sims,Nsim+1);
+	    Sims[Nsim].whichmol=whichmol;
+	    Sims[Nsim].nrcopies=nrcopies;
+	    Nsim++;
+	    if (mi0->atoms.nr == 0)
+	      gmx_fatal(FARGS,"Moleculetype %s contains no atoms",*mi0->name);
+	    fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
+		    mi0->nrexcl,pline);
+	    sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
+	    if (!mi0->bProcessed) {
+	      generate_excl(mi0->nrexcl,
+			    mi0->atoms.nr,
+			    mi0->plist,
+			    &(mi0->excls));
+	      merge_excl(&(mi0->excls),&(block2[whichmol]));
+	      done_block2(&(block2[whichmol]));
+	      make_shake(mi0->plist,&mi0->atoms,atype,nshake); 
+	      stupid_fill(&mi0->mols,mi0->atoms.nr,TRUE);
+	      mi0->bProcessed=TRUE;
+	    }
+	    break;
 	  }
-	  break;
-	}
-	default:
-	  fprintf (stderr,"case: %d\n",d);
-	  invalid_case();
+	  default:
+	    fprintf (stderr,"case: %d\n",d);
+	    invalid_case();
+	  }
 	}
       }
+      sfree(pline);
+      pline=NULL;
     }
-    sfree(pline);
-    pline=NULL;
   } while (!done);
   status = cpp_close_file(&handle);
   if (status != eCPP_OK) 
