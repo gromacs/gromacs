@@ -90,6 +90,7 @@ char *fgets2(char *line, int n, FILE *stream)
   char *c;
   if (fgets(line,n,stream)==NULL) return NULL;
   if ((c=strchr(line,'\n'))!=NULL) *c=0;
+  if ((c=strchr(line,'\r'))!=NULL) *c=0;
   return line;
 }
 
