@@ -50,6 +50,26 @@
 #include "convparm.h"
 #include "names.h"
 
+static int round_check(real r,int limit,int ftype,char *name)
+{
+  int i;
+
+  if (r >= 0)
+    i = (int)(r + 0.5);
+  else
+    i = (int)(r - 0.5);
+
+  if (r-i > 0.01 || r-i < -0.01)
+    gmx_fatal(FARGS,"A non-integer value (%f) was supplied for '%s' in %s",
+	      r,name,interaction_function[ftype].longname);
+
+  if (i < limit)
+    gmx_fatal(FARGS,"Value of '%s' in %s is %d, which is smaller than the minimum of %d",
+	      name,interaction_function[ftype].longname,i,limit);
+
+  return i;
+}
+
 static void assign_param(t_functype ftype,t_iparams *new,
 			 real old[MAXFORCEPARAM],int comb,real reppow)
 {
@@ -82,9 +102,9 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_TABBONDSNC:
   case F_TABANGLES:
   case F_TABDIHS:
-    new->tab.kA    = old[0];
-    new->tab.table = old[1];
-    new->tab.kB    = old[2];
+    new->tab.table = round_check(old[0],0,ftype,"table index");
+    new->tab.kA    = old[1];
+    new->tab.kB    = old[3];
     break;
   case F_CROSS_BOND_BONDS:
     new->cross_bb.r1e=old[0];
@@ -201,11 +221,11 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_PDIHS:
   case F_ANGRES:
   case F_ANGRESZ:
-    new->pdihs.phiA=old[0];
-    new->pdihs.cpA =old[1];
-    new->pdihs.mult=old[2];
-    new->pdihs.phiB=old[3];
-    new->pdihs.cpB =old[4];
+    new->pdihs.phiA = old[0];
+    new->pdihs.cpA  = old[1];
+    new->pdihs.mult = round_check(old[2],1,ftype,"multiplicity");
+    new->pdihs.phiB = old[3];
+    new->pdihs.cpB  = old[4];
     break;
   case F_POSRES:
     new->posres.fcA[XX]   = old[0];
@@ -222,29 +242,27 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->posres.pos0B[ZZ] = old[11];
     break;
   case F_DISRES:
-    new->disres.label = old[0];
-    new->disres.type  = old[1];
+    new->disres.label = round_check(old[0],0,ftype,"label");
+    new->disres.type  = round_check(old[1],1,ftype,"type'");
     new->disres.low   = old[2];
     new->disres.up1   = old[3];
     new->disres.up2   = old[4];
     new->disres.kfac  = old[5];
     break;
   case F_ORIRES:
-    if (old[0] < 0)
-      gmx_fatal(FARGS,"Found experiment number for orientation restraints which is smaller than 1 (%d)",old[0]);
-    new->orires.ex    = old[0] - 1;
-    new->orires.label = old[1];
-    new->orires.power = old[2];
+    new->orires.ex    = round_check(old[0],1,ftype,"experiment");
+    new->orires.label = round_check(old[1],1,ftype,"label");
+    new->orires.power = round_check(old[2],0,ftype,"power");
     new->orires.c     = old[3];
     new->orires.obs   = old[4];
     new->orires.kfac  = old[5];
     break;
   case F_DIHRES:
-    new->dihres.label = old[0];
+    new->dihres.label = round_check(old[0],0,ftype,"label");
     new->dihres.phi   = old[1];
     new->dihres.dphi  = old[2];
     new->dihres.kfac  = old[3];
-    new->dihres.power = old[4];
+    new->dihres.power = round_check(old[4],0,ftype,"power");
     break;
   case F_RBDIHS:
     for (i=0; (i<NR_RBDIHS); i++) {

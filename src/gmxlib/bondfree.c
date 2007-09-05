@@ -1693,7 +1693,7 @@ real cross_bond_angle(int nbonds,
   return vtot;
 }
 
-static real bonded_tab(real kA,real kB,const bondedtable_t *table,real r,
+static real bonded_tab(const bondedtable_t *table,real kA,real kB,real r,
 		       real lambda,real *V,real *F)
 {
   real k,tabscale,*VFtab,rt,eps,eps2,Yt,Ft,Geps,Heps2,Fp,VV,FF;
@@ -1752,9 +1752,9 @@ real tab_bonds(int nbonds,
     dr2  = iprod(dx,dx);			/*   5		*/
     dr   = dr2*invsqrt(dr2);		        /*  10		*/
 
-    *dvdlambda += bonded_tab(forceparams[type].tab.kA,
+    *dvdlambda += bonded_tab(&fcd->bondtab[forceparams[type].tab.table],
+			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
-			     &fcd->bondtab[forceparams[type].tab.table],
 			     dr,lambda,&vbond,&fbond);  /*  22 */
 
     if (dr2 == 0.0)
@@ -1805,9 +1805,9 @@ real tab_angles(int nbonds,
     theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
 			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
   
-    *dvdlambda += bonded_tab(forceparams[type].tab.kA,
+    *dvdlambda += bonded_tab(&fcd->angletab[forceparams[type].tab.table],
+			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
-			     &fcd->angletab[forceparams[type].tab.table],
 			     theta,lambda,&va,&dVdt);  /*  22  */
     vtot += va;
     
@@ -1883,9 +1883,9 @@ real tab_dihs(int nbonds,
 		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84  */
 
     /* Hopefully phi+M_PI never results in values < 0 */
-    *dvdlambda += bonded_tab(forceparams[type].tab.kA,
+    *dvdlambda += bonded_tab(&fcd->dihtab[forceparams[type].tab.table],
+			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
-			     &fcd->dihtab[forceparams[type].tab.table],
 			     phi+M_PI,lambda,&vpd,&ddphi);
 		       
     vtot += vpd;

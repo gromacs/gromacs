@@ -162,7 +162,7 @@ typedef union
   struct {real low,up1,up2,kfac;int type,label;           } disres; 
   struct {real phi,dphi,kfac;int label,power;             } dihres;  
   struct {int  ex,power,label; real c,obs,kfac;           } orires;
-  struct {real kA;int table;real kB;                      } tab;
+  struct {int  table;real kA;real kB;                     } tab;
   struct {real buf[MAXFORCEPARAM];	  	          } generic; /* Conversion */
 } t_iparams;
 

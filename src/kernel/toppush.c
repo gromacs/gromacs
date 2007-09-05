@@ -1171,26 +1171,27 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		    "NOTE:\n  Some parameters specified explicitly in state A, but not B - copying A to B.\n\n");
 	    *bWarn_copy_A_B = FALSE;
 	  }
-       
-       
-      /* If only the A parameters were specified, copy them to the B state too */
-	  for( nread == nrfpA ; nread< nrfp ; nread++)
-	  {
-	    cc[nread] = cc[nread-nrfpA];
-	  }	
-	}
 	
-	/* If nread was 0 or EOF, no parameters were read => use defaults.
-	 * If nread was nrfpA we copied above so nread=nrfp.
-	 * If nread was nrfp we are cool.
-	 * Anything else is an error!
-	 */	
-	if (nread != 0 && nread != EOF && nread != nrfp)
-	{
-	     gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d for %s.",
-			nread,nrfpA,nrfp,interaction_function[ftype].longname);	
-	}
-	  
+	
+	/* If only the A parameters were specified, copy them to the B state */
+	/* The B-state parameters correspond to the first nrfpB
+	 * A-state parameters.
+	 */
+	for(j=0; (j<nrfpB); j++)
+	  cc[nread++] = cc[j];
+      }
+    
+    /* If nread was 0 or EOF, no parameters were read => use defaults.
+     * If nread was nrfpA we copied above so nread=nrfp.
+     * If nread was nrfp we are cool.
+     * Anything else is an error!
+     */	
+    if (nread != 0 && nread != EOF && nread != nrfp)
+      {
+	gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d for %s.",
+		  nread,nrfpA,nrfp,interaction_function[ftype].longname);	
+      }
+    
     for(j=0; (j<nread); j++)
       param.c[j]=cc[j];
       
@@ -1230,7 +1231,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	  if (bSwapParity)
 	    switch(ftype) {
 	    case F_VSITE3FAD:
-	      param.C0 = 360-param.C0;
+	      param.C0 = 360 - param.C0;
 	      break;
 	    case F_VSITE3OUT:
 	      param.C2 = -param.C2;
@@ -1248,19 +1249,30 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		  "using normal values",interaction_function[ftype].longname);
 	  warning(errbuf);
 	}
-	for(j=nrfpA; (j<nrfp); j++)
-	  param.c[j]=param.c[j-nrfpA];
+
+	/* The B-state parameters correspond to the first nrfpB
+	 * A-state parameters.
+	 */
+	for(j=0; (j<nrfpB); j++)
+	  param.c[nrfpA+j] = param.c[j];
       }
     }
   }
   
   if ((ftype==F_PDIHS || ftype==F_ANGRES || ftype==F_ANGRESZ)
-      && param.c[2]!=param.c[5])
+      && param.c[5]!=param.c[2])
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		"             %s multiplicity can not be perturbed %f!=%f",
 		get_warning_file(),get_warning_line(),
 		interaction_function[ftype].longname,
 		param.c[2],param.c[5]);
+
+  if (IS_TABULATED(ftype) && param.c[2]!=param.c[0])
+    gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+		"             %s table number can not be perturbed %d!=%d",
+		get_warning_file(),get_warning_line(),
+		interaction_function[ftype].longname,
+		param.c[0],param.c[2]);
 
   /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
   if (ftype==F_RBDIHS) {

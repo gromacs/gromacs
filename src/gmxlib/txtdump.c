@@ -626,8 +626,8 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
   case F_TABBONDSNC:
   case F_TABANGLES:
   case F_TABDIHS:
-    fprintf(fp,"kA=%15.8e, tab=%d, kB=%15.8e\n",
-	    iparams->tab.kA,iparams->tab.table,iparams->tab.kB);
+    fprintf(fp,"tab=%d, kA=%15.8e, kB=%15.8e\n",
+	    iparams->tab.table,iparams->tab.kA,iparams->tab.kB);
     break;
   case F_POLARIZATION:
     fprintf(fp,"alpha=%15.8e\n",iparams->polarize.alpha);
