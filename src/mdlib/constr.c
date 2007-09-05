@@ -542,9 +542,12 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 
       constr->at2con = make_at2con(start,natoms,&top->idef,
 				   EI_DYNAMICS(ir->eI),&constr->nflexcon);
-      constr->bInterCGcons =
-	interCGconstraints(&top->blocks[ebCGS],&constr->at2con,
-			   top->idef.il[F_CONSTR].iatoms);
+
+      if (DOMAINDECOMP(cr)) {
+	constr->bInterCGcons =
+	  interCGconstraints(&top->blocks[ebCGS],&constr->at2con,
+			     top->idef.il[F_CONSTR].iatoms);
+      }
 
       if (PARTDECOMP(cr))
 	gmx_sumi(1,&constr->nflexcon,cr);
