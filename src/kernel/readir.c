@@ -467,6 +467,11 @@ void get_ir(char *mdparin,char *mdparout,
   snew(dumstr[0],STRLEN);
   snew(dumstr[1],STRLEN);
 
+  REM_TYPE("title");
+  REM_TYPE("cpp");
+  REM_TYPE("domain-decomposition");
+  REPL_TYPE("unconstrained-start","continuation");
+
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   CTYPE ("Preprocessor information: use cpp syntax.");
   CTYPE ("e.g.: -I/home/joe/doe -I/home/mary/hoe");

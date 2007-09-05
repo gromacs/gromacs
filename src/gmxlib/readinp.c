@@ -101,10 +101,11 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
 	  else {
 	    /* Now finally something sensible */
 	    srenew(inp,++nin);
-	    inp[nin-1].count = 0;
-	    inp[nin-1].bSet  = FALSE;
-	    inp[nin-1].name  = strdup(lbuf);
-	    inp[nin-1].value = strdup(rbuf);
+	    inp[nin-1].count      = 0;
+	    inp[nin-1].bObsolete  = FALSE;
+	    inp[nin-1].bSet       = FALSE;
+	    inp[nin-1].name       = strdup(lbuf);
+	    inp[nin-1].value      = strdup(rbuf);
 	  }
 	}
       }
@@ -152,7 +153,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
 	fprintf(out,"%-24s\n",inp[i].name);
       else
 	fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
-     } else {
+    } else if (!inp[i].bObsolete) {
       sprintf(warn_buf,"Unknown left-hand '%s' in parameter file\n",
 	      inp[i].name);
       if (bHaltOnUnknown) {
@@ -165,6 +166,26 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
   fclose(out);
 
   check_warning_error(FARGS);
+}
+
+void replace_inp_entry(int ninp,t_inpfile *inp,const char *old,const char *new)
+{
+  int  i;
+  
+  for(i=0; (i<ninp); i++) {
+    if (strcasecmp_min(old,inp[i].name) == 0) {
+      if (new) {
+	fprintf(stderr,"Replacing old mdp entry '%s' by '%s'\n",
+		inp[i].name,new);
+	sfree(inp[i].name);
+	inp[i].name = strdup(new);
+      } else {
+	fprintf(stderr,"Removing old mdp entry '%s'\n",
+		inp[i].name);
+	inp[i].bObsolete = TRUE;
+      }
+    }
+  }
 }
 
 static int get_einp(int *ninp,t_inpfile **inp,const char *name)

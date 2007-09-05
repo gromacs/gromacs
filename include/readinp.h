@@ -45,6 +45,7 @@
 
 typedef struct {
   int  count;
+  bool bObsolete;
   bool bSet;
   char *name;
   char *value;
@@ -54,6 +55,9 @@ extern t_inpfile *read_inpfile(char *fn,int *ninp);
 
 extern void write_inpfile(char *fn,int ninp,t_inpfile inp[],
 			  bool bHaltOnUnknown);
+
+extern void replace_inp_entry(int ninp,t_inpfile *inp,
+			      const char *old,const char *new);
 
 extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def);
 
@@ -74,6 +78,8 @@ extern int get_eenum(int *ninp,t_inpfile **inp,const char *name,const char **def
 /* Here are some macros to extract data from the inp structures.
  * Elements that are  removed  from the list after reading
  */
+#define REM_TYPE(name)       replace_inp_entry(ninp,inp,name,NULL)
+#define REPL_TYPE(old,new)   replace_inp_entry(ninp,inp,old,new)
 #define STYPE(name,var,def)  if ((tmp=get_estr(&ninp,&inp,name,def)) != NULL) strcpy(var,tmp)
 #define ITYPE(name,var,def)  var=get_eint(&ninp,&inp,name,def)
 #define RTYPE(name,var,def)  var=get_ereal(&ninp,&inp,name,def)
