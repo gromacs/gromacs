@@ -52,7 +52,8 @@
 #include "vec.h"
 #include "index.h"
 
-#define MAXNAMES 20
+#define MAXNAMES 30
+#define NAME_LEN 30
 
 bool bCase=FALSE;
 
@@ -141,8 +142,8 @@ static int parse_names(char **string,int *n_names,char **names)
       while (isalnum_star((*string)[i])) {
 	names[*n_names][i]=(*string)[i];
 	i++;
-	if (i==5) {
-	  printf("Name to long: %d characters\n",i);	  
+	if (i > NAME_LEN) {
+	  printf("Name is too long, the maximum is %d characters\n",NAME_LEN);
 	  return 0;
 	}
       }
@@ -464,7 +465,6 @@ static void copy_group(int g,t_block *block,atom_id *nr,atom_id *index)
   
   i0=block->index[g];
   *nr=block->index[g+1]-i0;
-  /*  for (i=0; i<=*nr; i++)*/
   for (i=0; i<*nr; i++)
     index[i]=block->a[i0+i];
 }
@@ -505,14 +505,14 @@ static void split_group(t_atoms *atoms,int sel_nr,t_block *block,char ***gn,
 {
   char buf[STRLEN],*name;
   int i,nr;
-  atom_id a,n0,n1,max;
+  atom_id a,n0,n1;
 
   printf("Splitting group %d '%s' into %s\n",sel_nr,(*gn)[sel_nr],
 	 bAtom ? "atoms" : "residues");
   
-  max=block->nra;
   n0=block->index[sel_nr];
   n1=block->index[sel_nr+1];
+  srenew(block->a,block->nra+n1-n0);
   for (i=n0; i<n1; i++) {
     a=block->a[i];
     nr=atoms->atom[a].resnr;
@@ -529,10 +529,6 @@ static void split_group(t_atoms *atoms,int sel_nr,t_block *block,char ***gn,
 	sprintf(buf,"%s_%s_%d",(*gn)[sel_nr],name,nr+1);
       (*gn)[block->nr-1]=strdup(buf);
     }
-    if (block->nra == max) {
-      max+=20;
-      srenew(block->a,max);
-    }
     block->a[block->nra]=a;
     block->nra++;
   }
@@ -544,7 +540,7 @@ static int split_chain(t_atoms *atoms,rvec *x,
 {
   char    buf[STRLEN];
   int     j,nchain;
-  atom_id i,a,max,natoms,*start=NULL,*end=NULL,ca_start,ca_end;
+  atom_id i,a,natoms,*start=NULL,*end=NULL,ca_start,ca_end;
   rvec    vec;
 
   natoms=atoms->nr;
@@ -588,21 +584,17 @@ static int split_chain(t_atoms *atoms,rvec *x,
     printf("%d:%6u atoms (%u to %u)\n",
 	   j+1,end[j]-start[j]+1,start[j]+1,end[j]+1);
 
-  if (nchain>1) {
+  if (nchain > 1) {
+    srenew(block->a,block->nra+block->index[sel_nr+1]-block->index[sel_nr]);
     for (j=0; j<nchain; j++) {
       block->nr++;
       srenew(block->index,block->nr+1);
       srenew(*gn,block->nr);
       sprintf(buf,"%s_chain%d",(*gn)[sel_nr],j+1);
       (*gn)[block->nr-1]=strdup(buf);
-      max=block->nra;
       for (i=block->index[sel_nr]; i<block->index[sel_nr+1]; i++) {
 	a=block->a[i];
 	if ((a>=start[j]) && (a<=end[j])) {
-	  if (block->nra==max) {
-	    max+=20;
-	    srenew(block->a,max);
-	  }
 	  block->a[block->nra]=a;
 	  block->nra++;
 	}
@@ -632,7 +624,6 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
 			atom_id *nr,atom_id *index,char *gname)
 {
   static char **names, *ostring;
-  static int  namelen=5;
   static bool bFirst=TRUE;
   int         j,n_names,sel_nr1;
   atom_id     i,nr1,*index1;
@@ -642,7 +633,7 @@ static bool parse_entry(char **string,int natoms,t_atoms *atoms,
     bFirst=FALSE;
     snew(names,MAXNAMES);
     for (i=0; i<MAXNAMES; i++)
-      snew(names[i],namelen);
+      snew(names[i],NAME_LEN+1);
   }
 
   bRet=FALSE;
@@ -791,7 +782,6 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
 {
   static char **atnames, *ostring;
   static bool bFirst=TRUE;
-  static int  namelen=5;
   char inp_string[STRLEN],*string;
   char gname[STRLEN],gname1[STRLEN],gname2[STRLEN];
   int  i,i0,i1,sel_nr,sel_nr2,newgroup;
@@ -802,7 +792,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
     bFirst=FALSE;
     snew(atnames,MAXNAMES);
     for (i=0; i<MAXNAMES; i++)
-      snew(atnames[i],namelen);
+      snew(atnames[i],NAME_LEN+1);
   }
 
   string=NULL;
