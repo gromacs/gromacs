@@ -88,7 +88,9 @@ typedef struct
   t_ifunc *ifunc;	/* the function it self				*/
 } t_interaction_function;
 
-#define NRFP(ftype) (interaction_function[(ftype)].nrfpA+interaction_function[(ftype)].nrfpB)
+#define NRFPA(ftype) (interaction_function[(ftype)].nrfpA)
+#define NRFPB(ftype) (interaction_function[(ftype)].nrfpB)
+#define NRFP(ftype)  (NRFPA(ftype)+NRFPB(ftype))
 #define NRAL(ftype) (interaction_function[(ftype)].nratoms)
 
 #define IS_CHEMBOND(ftype) (interaction_function[(ftype)].nratoms==2 && interaction_function[(ftype)].flags & IF_CHEMBOND)

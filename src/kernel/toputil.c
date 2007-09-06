@@ -105,7 +105,7 @@ void pr_alloc (int extra, t_params *pr)
   
   /* get new space for arrays */
   if (extra < 0) 
-    gmx_fatal(FARGS,"Trying to make array < 0 bytes\n");
+    gmx_fatal(FARGS,"Trying to make array smaller.\n");
   if (extra == 0)
     return;
   if ((pr->nr == 0) && (pr->param != NULL)) {
