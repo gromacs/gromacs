@@ -180,7 +180,7 @@ void replace_inp_entry(int ninp,t_inpfile *inp,const char *old,const char *new)
 	sfree(inp[i].name);
 	inp[i].name = strdup(new);
       } else {
-	fprintf(stderr,"Removing old mdp entry '%s'\n",
+	fprintf(stderr,"Ignoring obsolete mdp entry '%s'\n",
 		inp[i].name);
 	inp[i].bObsolete = TRUE;
       }
