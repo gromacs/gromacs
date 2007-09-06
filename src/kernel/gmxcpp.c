@@ -383,7 +383,7 @@ int cpp_read_line(void **handlep,int n,char buf[])
 	ptr += strlen(defs[i].name);
       }
       if (nn > 0) {
-	len = strlen(buf) + nn*max(0,strlen(defs[i].def)-strlen(defs[i].name));
+	len = strlen(buf) + nn*max(4,4+strlen(defs[i].def)-strlen(defs[i].name));
 	snew(name,len);
 	ptr = buf;
 	while ((ptr2 = strstr(ptr,defs[i].name)) != NULL) {
