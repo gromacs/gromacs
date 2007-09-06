@@ -64,6 +64,7 @@
 #define MD_SEPPOT      (1<<7)
 #define MD_DLB         (1<<8)
 #define MD_CONFOUT     (1<<9)
+#define MD_NOGSTAT     (1<<10)
 
 
 enum {
@@ -154,7 +155,8 @@ extern void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 extern void global_stat(FILE *log,
 			t_commrec *cr,real ener[],
 			tensor fvir,tensor svir,rvec mu_tot,
-			t_inputrec *inputrec,t_groups *grps,
+			t_inputrec *inputrec,
+			t_groups *grps,bool bSumEkinhOld,
 			gmx_constr_t constr,
 			t_vcm *vcm,real *terminate);
 /* Communicate statistics over cr->mpi_comm_mysim */

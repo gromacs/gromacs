@@ -315,7 +315,7 @@ static real evaluate_energy(FILE *fplog, bool bVerbose,t_inputrec *inputrec,
   /* Communicate stuff when parallel */
   if (PAR(cr)) 
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,NULL,NULL,&terminate);
+		inputrec,grps,FALSE,NULL,NULL,&terminate);
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
   return ener[F_EPOT];
@@ -432,14 +432,14 @@ time_t do_cg(FILE *fplog,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,NULL,NULL,&terminate);
+		inputrec,grps,FALSE,NULL,NULL,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
 
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
+    upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 	       ener,state,state->box,shake_vir,
 	       force_vir,vir,pres,grps,mu_tot,NULL);
     
@@ -827,7 +827,7 @@ time_t do_cg(FILE *fplog,int nfile,t_filenm fnm[],
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
 		step,Epot0,sqrt(fnorm2/(3*state->natoms)),fmax,nfmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
+      upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
 		 force_vir,vir,pres,grps,mu_tot,NULL);
       do_log = do_per_step(step,inputrec->nstlog);
@@ -1051,14 +1051,14 @@ time_t do_lbfgs(FILE *fplog,int nfile,t_filenm fnm[],
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,NULL,NULL,&terminate);
+		inputrec,grps,FALSE,NULL,NULL,&terminate);
   where();
   
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
   
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
-    upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
+    upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 	       ener,state,state->box,shake_vir,
 	       force_vir,vir,pres,grps,mu_tot,NULL);
     
@@ -1465,7 +1465,7 @@ time_t do_lbfgs(FILE *fplog,int nfile,t_filenm fnm[],
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
 		step,Epot,fnorm/sqrt(3*state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
-      upd_mdebin(mdebin,NULL,mdatoms->tmass,step,(real)step,
+      upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
 		 force_vir,vir,pres,grps,mu_tot,NULL);
       do_log = do_per_step(step,inputrec->nstlog);
@@ -1727,7 +1727,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
     /* Communicat stuff when parallel  */
     if (PAR(cr))  
       global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
- 		  inputrec,grps,constr,NULL,&terminate); 
+ 		  inputrec,grps,FALSE,constr,NULL,&terminate); 
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
@@ -1746,7 +1746,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
       
       if (Epot[TRY] < Epot[Min]) {
 	/* Store the new (lower) energies  */
-	upd_mdebin(mdebin,NULL,mdatoms->tmass,count,(real)count,
+	upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,count,(real)count,
 		   ener,state,state->box,shake_vir, 
 		   force_vir,vir,pres,grps,mu_tot,constr);
 	print_ebin(fp_ene,TRUE,

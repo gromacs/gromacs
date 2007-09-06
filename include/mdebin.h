@@ -61,6 +61,7 @@ extern t_mdebin *init_mdebin(int fp_ene,
 /* Initiate MD energy bin and write header to energy file. */
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
+		       bool bSum,
 		       real tmass,int step,real time,
 		       real ener[],
 		       t_state *state,

@@ -353,6 +353,7 @@ static void copy_energy(real e[],real ecpy[])
 }
 
 void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
+		bool bSum,
 		real tmass,int step,real time,
 		real ener[],
 		t_state *state,
@@ -379,12 +380,12 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
    * the last timestep to match the trajectory frames.
    */
   copy_energy(ener,ecopy);
-  add_ebin(md->ebin,md->ie,f_nre,ecopy,step);
+  add_ebin(md->ebin,md->ie,f_nre,ecopy,bSum,step);
   if (nCrmsd) {
     crmsd[0] = constr_rmsd(constr,FALSE);
     if (nCrmsd > 1)
       crmsd[1] = constr_rmsd(constr,TRUE);
-    add_ebin_nosum(md->ebin,md->iconrmsd,nCrmsd,crmsd);
+    add_ebin(md->ebin,md->iconrmsd,nCrmsd,crmsd,FALSE,0);
   }
   if (bDynBox || grps->cosacc.cos_accel != 0) {
     if(bTricl) {
@@ -411,20 +412,20 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     /* This is pV (in kJ/mol) */  
     if(bTricl) {
       tricl_bs[8] = tricl_bs[6]*ener[F_PRES]/PRESFAC;
-      add_ebin(md->ebin,md->ib,NTRICLBOXS,tricl_bs,step);
+      add_ebin(md->ebin,md->ib,NTRICLBOXS,tricl_bs,bSum,step);
     } else {
       bs[5] = bs[3]*ener[F_PRES]/PRESFAC;
-      add_ebin(md->ebin,md->ib,NBOXS,bs,step);
+      add_ebin(md->ebin,md->ib,NBOXS,bs,bSum,step);
     }
   }  
   if (bConstr) {
-    add_ebin(md->ebin,md->isvir,9,svir[0],step);
-    add_ebin(md->ebin,md->ifvir,9,fvir[0],step);
+    add_ebin(md->ebin,md->isvir,9,svir[0],bSum,step);
+    add_ebin(md->ebin,md->ifvir,9,fvir[0],bSum,step);
   }
-  add_ebin(md->ebin,md->ivir,9,vir[0],step);
-  add_ebin(md->ebin,md->ipres,9,pres[0],step);
+  add_ebin(md->ebin,md->ivir,9,vir[0],bSum,step);
+  add_ebin(md->ebin,md->ipres,9,pres[0],bSum,step);
   tmp = (pres[ZZ][ZZ]-(pres[XX][XX]+pres[YY][YY])*0.5)*box[ZZ][ZZ];
-  add_ebin(md->ebin,md->isurft,1,&tmp,step);
+  add_ebin(md->ebin,md->isurft,1,&tmp,bSum,step);
   if (epc == epcPARRINELLORAHMAN) {
     tmp6[0] = state->boxv[XX][XX];
     tmp6[1] = state->boxv[YY][YY];
@@ -432,7 +433,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     tmp6[3] = state->boxv[YY][XX];
     tmp6[4] = state->boxv[ZZ][XX];
     tmp6[5] = state->boxv[ZZ][YY];
-    add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,step);
+    add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,bSum,step);
   } else if (epc == epcBERENDSEN || epc == epcISOTROPIC) {
     tmp6[0] = state->pcoupl_mu[XX][XX];
     tmp6[1] = state->pcoupl_mu[YY][YY];
@@ -440,12 +441,12 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     tmp6[3] = state->pcoupl_mu[YY][XX];
     tmp6[4] = state->pcoupl_mu[ZZ][XX];
     tmp6[5] = state->pcoupl_mu[ZZ][YY];
-    add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,step);
+    add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,bSum,step);
   }
-  add_ebin(md->ebin,md->imu,3,mu_tot,step);
+  add_ebin(md->ebin,md->imu,3,mu_tot,bSum,step);
 
   if (grps->cosacc.cos_accel != 0) {
-    add_ebin(md->ebin,md->ivcos,1,&(grps->cosacc.vcos),step);
+    add_ebin(md->ebin,md->ivcos,1,&(grps->cosacc.vcos),bSum,step);
     /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
     if(bTricl) 
       tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
@@ -453,7 +454,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     else 
       tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
 	       *bs[4]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
-    add_ebin(md->ebin,md->ivisc,1,&tmp,step);    
+    add_ebin(md->ebin,md->ivisc,1,&tmp,bSum,step);    
   }
   if (md->nE > 1) {
     n=0;
@@ -463,7 +464,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 	for(k=kk=0; (k<egNR); k++) 
 	  if (bEInd[k])
 	    eee[kk++]=grps->estat.ee[k][gid];
-	add_ebin(md->ebin,md->igrp[n],md->nEc,eee,step);
+	add_ebin(md->ebin,md->igrp[n],md->nEc,eee,bSum,step);
 	n++;
       }
     }
@@ -473,15 +474,15 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     snew(ttt,md->nTC);
   for(i=0; (i<md->nTC); i++)
     ttt[i]   = grps->tcstat[i].T;
-  add_ebin(md->ebin,md->itemp,md->nTC,ttt,step);
+  add_ebin(md->ebin,md->itemp,md->nTC,ttt,bSum,step);
   if (etc == etcNOSEHOOVER) {
     for(i=0; (i<md->nTC); i++)
       ttt[i] = state->nosehoover_xi[i];
-    add_ebin(md->ebin,md->itc,md->nTC,ttt,step);
+    add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
   } else if (etc == etcBERENDSEN || etc == etcYES) {
     for(i=0; (i<md->nTC); i++)
       ttt[i] = grps->tcstat[i].lambda;
-    add_ebin(md->ebin,md->itc,md->nTC,ttt,step);
+    add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
   }
   
   if (md->nU > 1) {
@@ -489,7 +490,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       snew(uuu,md->nU);
     for(i=0; (i<md->nU); i++)
       copy_rvec(grps->grpstat[i].u,uuu[i]);
-    add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],step);
+    add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],bSum,step);
   }
   if (fp_dgdl)
     fprintf(fp_dgdl,"%.4f %g\n",time,ener[F_DVDL]+ener[F_DVDLKIN]);

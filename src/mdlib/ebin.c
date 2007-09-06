@@ -83,7 +83,7 @@ int get_ebin_space(t_ebin *eb,int nener,char *enm[])
   return index;
 }
 
-void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
+void add_ebin(t_ebin *eb,int index,int nener,real ener[],bool bSum,int step)
 {
   int      i,m;
   double   e,sum,sigma,invmm,diff;
@@ -93,40 +93,30 @@ void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step)
     gmx_fatal(FARGS,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
 		__FILE__,__LINE__,index,nener,eb->nener);
     
-  m      = step;
-  if (m > 0) 
-    invmm = (1.0/(double)m)/((double)m+1.0);
-  else
-    invmm = 0.0;
-    
   eg=&(eb->e[index]);
-  
-  for(i=0; (i<nener); i++) {
-    /* Value for this component */
-    e      = ener[i];
-    
-    /* first update sigma, then sum */
-    eg[i].e    = e;
-    diff       = eg[i].esum - m*e;
-    eg[i].eav  += diff*diff*invmm;
-    eg[i].esum += e;
-  }
-}
 
-void add_ebin_nosum(t_ebin *eb,int index,int nener,real ener[])
-{
-  int      i;
-  t_energy *eg;
-  
-  if ((index+nener > eb->nener) || (index < 0))
-    gmx_fatal(FARGS,"%s-%d: Energies out of range: index=%d nener=%d maxener=%d",
-		__FILE__,__LINE__,index,nener,eb->nener);
+  if (bSum) {
+    m      = step;
+    if (m > 0) 
+      invmm = (1.0/(double)m)/((double)m+1.0);
+    else
+      invmm = 0.0;
     
-  eg=&(eb->e[index]);
-  
-  for(i=0; (i<nener); i++) {
-    /* Value for this component */
-    eg[i].e = ener[i];
+    for(i=0; (i<nener); i++) {
+      /* Value for this component */
+      e      = ener[i];
+      
+      /* first update sigma, then sum */
+      eg[i].e    = e;
+      diff       = eg[i].esum - m*e;
+      eg[i].eav  += diff*diff*invmm;
+      eg[i].esum += e;
+    }
+  } else {
+    for(i=0; (i<nener); i++) {
+      /* Value for this component */
+      eg[i].e = ener[i];
+    }
   }
 }
 

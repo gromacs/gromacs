@@ -64,14 +64,12 @@ extern int get_ebin_space(t_ebin *eb,int nener,char *enm[]);
  * calls to add_ebin.
  */
 
-extern void add_ebin(t_ebin *eb,int index,int nener,real ener[],int step);
+extern void add_ebin(t_ebin *eb,int index,int nener,real ener[],
+		     bool bSum,int step);
 /* Add nener reals (eg. energies, box-lengths, pressures) to the
  * energy bin at position index. 
- */
-
-extern void add_ebin_nosum(t_ebin *eb,int index,int nener,real ener[]);
-/* Same as add_ebin, but only stores the current values,
- * not the averages and fluctuations.
+ * If bSum is TRUE then the reals are also added to the sum
+ * and sum of squares.
  */
 
 extern void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,

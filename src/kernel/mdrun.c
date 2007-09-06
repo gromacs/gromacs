@@ -177,6 +177,7 @@ int main(int argc,char *argv[])
   static bool bCart        = FALSE;
   static bool bPPPME       = FALSE;
   static bool bDLB         = FALSE;
+  static bool bSumEner     = TRUE;
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
   static bool bSepPot      = FALSE;
@@ -216,6 +217,8 @@ int main(int argc,char *argv[])
       "HIDDENThe DD cell sizes in y" },
     { "-ddcsz",   FALSE, etSTR, {&ddcsz},
       "HIDDENThe DD cell sizes in z" },
+    { "-sum",     FALSE, etBOOL,{&bSumEner},
+      "Sum the energies at every step" },
     { "-v",       FALSE, etBOOL,{&bVerbose},  
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
@@ -286,6 +289,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bGlas     ? MD_GLAS       : 0);
   Flags = Flags | (bDLB      ? MD_DLB        : 0);
   Flags = Flags | (bConfout  ? MD_CONFOUT    : 0);
+  Flags = Flags | (!bSumEner ? MD_NOGSTAT    : 0);
 
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
