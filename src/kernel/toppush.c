@@ -1158,10 +1158,16 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 
     if (nread == nrfpA && nrfpB != 0)
       {
-	if (*bWarn_copy_A_B)
+	/* We only have to issue a warning if these atoms are perturbed! */
+	bPert = FALSE;
+	for(j=0; (j<nral); j++)
+	  bPert = bPert || PERTURBED(at->atom[param.a[j]]);
+
+	if (bPert && *bWarn_copy_A_B)
 	  {
-	    fprintf(stderr,
-		    "NOTE:\n  Some parameters specified explicitly in state A, but not B - copying A to B.\n\n");
+	    sprintf(errbuf,
+		    "Some parameters for bonded interaction involving perturbed atoms are specified explicitly in state A, but not B - copying A to B");
+	    warning(errbuf);
 	    *bWarn_copy_A_B = FALSE;
 	  }
        
