@@ -1396,8 +1396,8 @@ way to make use of the {\tt \#ifdef} option is as follows:
 ...\\
 \end{tt}}
 
-\subsection{Free energy calculations}
-\index{free energy calculations}
+\subsection{Topologies for free energy calculations}
+\index{free energy topologies}
 Free energy differences between two systems A and B can be calculated as
 described in \secref{fecalc}.
 The systems A and B are described by topologies
@@ -1409,6 +1409,48 @@ interactions. The parameters that can be perturbed are listed in
 Tables \ref{tab:topfile1}, \ref{tab:topfile2} and \ref{tab:topfile3}.
 The $\lambda$-dependence of the interactions is described
 in section \secref{feia}.
+Which bonded parameters are used, the one on the line of the bonded
+interaction definition, or the ones looked up on atom types
+in the bonded type lists, is explained in \tabref{topfe}.
+In most cases things should work intuitively.
+When the A and B atom types in a bonded interaction
+are not all identical and parameters are not present for the B-state,
+either on the line on in the bonded types,
+{\tt grompp} uses the A-state parameters and issues a warning.
+
+\begin{table}
+\centerline{
+\begin{tabular}{|c|cc|cc|cc|c|}
+\dline
+B-state atom types & \multicolumn{2}{c|}{parameters} & \multicolumn{4}{c|}{parameters in bonded types} & \\
+all indentical to      & \multicolumn{2}{c|}{on line} & \multicolumn{2}{c|}{A atom types} & \multicolumn{2}{c|}{B atom types} & message \\
+A-state atom types & A & B & A & B & A & B & \\
+\dline
+    & +AB & $-$ &  x  &  x  &     &     & \\
+    & +A  & +B  &  x  &  x  &     &     & \\
+yes & $-$ & $-$ &  -  &  -  &     &     & error \\
+    & $-$ & $-$ & +AB &  -  &     &     & \\
+    & $-$ & $-$ & +A  & +B  &     &     & \\
+\hline
+    & +AB & $-$ &  x  &  x  &  x  &  x  & warning \\
+    & +A  & +B  &  x  &  x  &  x  &  x  & \\
+    & $-$ & $-$ & $-$ & $-$ &  x  &  x  & error \\
+no  & $-$ & $-$ & +AB & $-$ & $-$ & $-$ & warning \\
+    & $-$ & $-$ & +A  & +B  & $-$ & $-$ & warning \\
+    & $-$ & $-$ & +A  &  *  & +B  & $-$ & \\
+    & $-$ & $-$ & +A  &  *  &  +  & +B  & \\
+\dline
+\end{tabular}
+}
+\caption{The bonded parameters that are used for free energy topologies,
+on the line of the bonded interaction definition or looked up
+in the bond types section based on atom types. A and B indicate the
+parameters used for state A and B respectively, + and $-$ indicate
+the (non-)presence of parameters in the topology, x indicates that
+the presence has no influence.}
+\label{tab:topfe}
+\end{table}
+
 Below is an example of a topology which changes from 200 propanols to
 200 pentanes using the \gromosv{96} force field.
 
@@ -1472,7 +1514,7 @@ Atoms that are not perturbed, {\tt PC2} and {\tt PC3}, do not need B parameter
 specifications, the B parameters will be copied from the A parameters.
 Bonded interactions between atoms that are not perturbed do not need B
 parameter specifications, here this is the case for the last bond.
-Topologies using the {\gromacs} force field need no bonded parameters at all,
+Topologies using the OPLS/AA force field need no bonded parameters at all,
 since both the A and B parameters are determined by the atom types.
 Non-bonded interactions involving one or two perturbed atoms use the 
 free-energy perturbation functional forms.
