@@ -58,7 +58,38 @@
 #include "txtdump.h"
 #include "gmxcpp.h"
 
-static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,char *topfn)
+static void dump_top(FILE *fp,t_topology *top,char *tpr)
+{
+  int i,j,k,*types;
+  
+  fprintf(fp,"; Topology generated from %s by program %s\n",tpr,Program());
+  fprintf(fp,"[ defaults ]\n 1 1 no 1.0 1.0\n\n");
+  fprintf(fp,"[ atomtypes ]\n");
+  fprintf(fp,";name  at.num    mass      charge ptype        c6        c12\n");
+  snew(types,top->atomtypes.nr);
+  for(i=0; (i<top->atomtypes.nr); i++) {
+    for(j=0; (j<top->atoms.nr) && (top->atoms.atom[j].type != i); j++)
+      ;
+    if (j<top->atoms.nr) {
+      types[i] = j;
+      fprintf(fp,"%5s  %4d   %8.4f   %8.4f  %2s  %8.3f  %8.3f\n",
+	      *(top->atoms.atomtype[j]),top->atomtypes.atomnumber[i],
+	      0.0,0.0,"A",0.0,0.0);
+    }
+  }
+  fprintf(fp,"[ nonbonded_params ]\n");
+  for(i=k=0; (i<top->idef.ntypes); i++) {
+    for(j=0; (j<top->idef.ntypes); j++,k++) {
+      fprintf(fp,"%12s  %12s  1  %12.5e  %12.5e\n",
+	      *(top->atoms.atomtype[types[i]]),
+	      *(top->atoms.atomtype[types[j]]),
+	      top->idef.iparams[k].lj.c12,top->idef.iparams[k].lj.c6);
+    }
+  }
+  sfree(types);
+}
+
+static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
 {
   FILE *gp;
   int         step,fp,indent,i,j,**gcount,atot;
@@ -75,48 +106,49 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,char *topfn)
 		 &state,tpx.bF ? f : NULL,
 		 tpx.bTop ? &top: NULL);
   
-  if (mdpfn) {
+  if (mdpfn && tpx.bIr) {
     gp = ffopen(mdpfn,"w");
     pr_inputrec(gp,0,NULL,&(ir),TRUE);
     fclose(gp);
   }
-  
-  if (available(stdout,&tpx,0,fn)) {
-    indent=0;
-    indent=pr_title(stdout,indent,fn);
-    pr_header(stdout,indent,"header",&(tpx));
-    
-    pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
-    pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
-    pr_rvecs(stdout,indent,"pcoupl_mu",tpx.bBox ? state.pcoupl_mu : NULL,DIM);
-    pr_reals(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
-    pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
-    pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
-    pr_rvecs(stdout,indent,"f",f,state.natoms);
-    pr_top(stdout,indent,"topology",&(top),bShowNumbers);
-  }
 
-  snew(gcount,egcNR);
-  for(i=0; (i<egcNR); i++) 
-    snew(gcount[i],top.atoms.grps[i].nr);
-  
-  for(i=0; (i<top.atoms.nr); i++) {
-    for(j=0; (j<egcNR); j++) 
-      gcount[j][top.atoms.atom[i].grpnr[j]]++;
-  }
-  printf("Group statistics\n");
-  for(i=0; (i<egcNR); i++) {
-    atot=0;
-    printf("%-12s: ",gtypes[i]);
-    for(j=0; (j<top.atoms.grps[i].nr); j++) {
-      printf("  %5d",gcount[i][j]);
-      atot+=gcount[i][j];
+  if (!mdpfn) {  
+    if (available(stdout,&tpx,0,fn)) {
+      indent=0;
+      indent=pr_title(stdout,indent,fn);
+      pr_header(stdout,indent,"header",&(tpx));
+      
+      pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
+      pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
+      pr_rvecs(stdout,indent,"pcoupl_mu",tpx.bBox ? state.pcoupl_mu : NULL,DIM);
+      pr_reals(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
+      pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
+      pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
+      pr_rvecs(stdout,indent,"f",f,state.natoms);
+      pr_top(stdout,indent,"topology",&(top),bShowNumbers);
     }
-    printf("  (total %d atoms)\n",atot);
-    sfree(gcount[i]);
+    
+    snew(gcount,egcNR);
+    for(i=0; (i<egcNR); i++) 
+      snew(gcount[i],top.atoms.grps[i].nr);
+    
+    for(i=0; (i<top.atoms.nr); i++) {
+      for(j=0; (j<egcNR); j++) 
+	gcount[j][top.atoms.atom[i].grpnr[j]]++;
+    }
+    printf("Group statistics\n");
+    for(i=0; (i<egcNR); i++) {
+      atot=0;
+      printf("%-12s: ",gtypes[i]);
+      for(j=0; (j<top.atoms.grps[i].nr); j++) {
+	printf("  %5d",gcount[i][j]);
+	atot+=gcount[i][j];
+      }
+      printf("  (total %d atoms)\n",atot);
+      sfree(gcount[i]);
+    }
+    sfree(gcount);
   }
-  sfree(gcount);
-
   done_state(&state);
   sfree(f);
 }
@@ -318,16 +350,15 @@ int main(int argc,char *argv[])
     "file ([TT].ene[tt]/[TT].edr[tt]) and prints that to standard",
     "output in a readable format. This program is essential for",
     "checking your run input file in case of problems.[PAR]",
-    "When requesting to dump a topology file the program will preprocess",
-    "the file and dump it after this. Note that you may need to explicitly",
-    "set the GMXLIB environment variable for this to work."
+    "When requesting to dump a topology file the program will dump",
+    "the processed topology, since not all original information is maintained",
+    "in tpr files."
   };
   t_filenm fnm[] = {
     { efTPX, "-s", NULL, ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD },
     { efENX, "-e", NULL, ffOPTRD },
-    { efMDP, "-om", NULL, ffOPTWR },
-    { efTOP, "-op", NULL, ffOPTWR }
+    { efMDP, "-om", NULL, ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -346,15 +377,11 @@ int main(int argc,char *argv[])
 
   if (ftp2bSet(efTPX,NFILE,fnm))
     list_tpx(ftp2fn(efTPX,NFILE,fnm),bShowNumbers,
-	     ftp2fn_null(efMDP,NFILE,fnm),
-	     ftp2fn_null(efTOP,NFILE,fnm));
+	     ftp2fn_null(efMDP,NFILE,fnm));
   else if (ftp2bSet(efTRX,NFILE,fnm)) 
     list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);
   else if (ftp2bSet(efENX,NFILE,fnm))
     list_ene(ftp2fn(efENX,NFILE,fnm));
-    
-  if (ftp2bSet(efTOP,NFILE,fnm))
-    list_top(ftp2fn(efTOP,NFILE,fnm));
     
   thanx(stderr);
 
