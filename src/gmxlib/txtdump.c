@@ -440,9 +440,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
   char *infbuf="inf";
   
   if (available(fp,ir,indent,title)) {
-    if (bMDPformat)
-      fprintf(fp,"title = %s\n",title);
-    else
+    if (!bMDPformat)
       indent=pr_title(fp,indent,title);
     PS("integrator",EI(ir->eI));
     PI("nsteps",ir->nsteps);
