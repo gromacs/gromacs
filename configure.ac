@@ -11,6 +11,7 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE(tar-ustar)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
+AM_PROG_AS
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
