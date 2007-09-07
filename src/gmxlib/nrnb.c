@@ -279,7 +279,7 @@ void print_nrnb(FILE *out, t_nrnb *nrnb)
 void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
 {
   nrnb->n[enr]+=inc;
-#ifdef DEBUG
+#ifdef DEBUG_NRNB
   printf("nrnb %15s(%2d) incremented with %8d from file %s line %d\n",
 	  nbdata[enr].name,enr,inc,file,line);
 #endif
