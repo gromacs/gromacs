@@ -198,7 +198,7 @@ void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype *atype)
     for(bb=0; (bb < F_NRE); bb++) {
       if ((interaction_function[bb].flags & IF_BTYPE) && (bb != F_MORSE)) {
 	nrharm  = mols[i].plist[bb].nr;
-	srenew(mols[i].plist[F_MORSE].param,nrmorse+nrharm);
+	pr_alloc(nrharm,&(mols[i].plist[F_MORSE]));
 	snew(bRemoveHarm,nrharm);
 	
 	/* Now loop over the harmonics, trying to convert them */
