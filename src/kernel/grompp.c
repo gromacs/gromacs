@@ -1130,11 +1130,11 @@ int main (int argc, char *argv[])
   }
   
   /* set parameters for virtual site construction */
-  nvsite=set_vsites(bVerbose, &sys->atoms, atype, msys.plist);
+  nvsite=set_vsites(bVerbose,NULL, &sys->atoms, &atype, msys.plist);
   /* now throw away all obsolete bonds, angles and dihedrals: */
   /* note: constraints are ALWAYS removed */
   if (nvsite)
-    clean_vsite_bondeds(msys.plist,sys->atoms.nr,bRmVSBds);
+    clean_vsite_bondeds(bVerbose,msys.plist,sys->atoms.nr,bRmVSBds);
   
   if (bRenum) 
     atype.nr=renum_atype(plist, sys, &atype, bVerbose);
