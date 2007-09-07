@@ -71,7 +71,8 @@ extern void pr_ilist(FILE *fp,int indent,const char *title,
 		     t_idef *idef,t_ilist *ilist, bool bShowNumbers);
 extern void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
 extern void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers);
-extern void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir);
+extern void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
+			bool bMDPformat);
 extern void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms, 
 		     bool bShownumbers);
 extern void pr_atomtypes(FILE *fp,int indent,const char *title,

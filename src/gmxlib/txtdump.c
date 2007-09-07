@@ -286,37 +286,39 @@ void pr_qm_opts(FILE *fp,int indent,const char *title,t_grpopts *opts)
   }
 }
 
-void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts)
+static void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts,
+			bool bMDPformat)
 {
   int i,m,j;
 
-  fprintf(out,"%s:\n",title);
+  if (!bMDPformat)
+    fprintf(out,"%s:\n",title);
   
   pr_indent(out,indent);
-  fprintf(out,"nrdf:\t");
+  fprintf(out,"nrdf%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10g",opts->nrdf[i]);
   fprintf(out,"\n");
   
   pr_indent(out,indent);
-  fprintf(out,"ref_t:\t");
+  fprintf(out,"ref_t%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10g",opts->ref_t[i]);
   fprintf(out,"\n");
   
   pr_indent(out,indent);
-  fprintf(out,"tau_t:\t");
+  fprintf(out,"tau_t%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10g",opts->tau_t[i]);
   fprintf(out,"\n");  
   
-  /* Pretty-print the imulated annealing info */
-   fprintf(out,"anneal:\t\t");
+  /* Pretty-print the simulated annealing info */
+  fprintf(out,"anneal%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10s",EANNEAL(opts->annealing[i]));
   fprintf(out,"\n");  
  
-  fprintf(out,"ann_npoints:\t");
+  fprintf(out,"ann_npoints%s",bMDPformat ? " = " : ":");
   for(i=0; (i<opts->ngtc); i++)
     fprintf(out,"  %10d",opts->anneal_npoints[i]);
   fprintf(out,"\n");  
@@ -360,24 +362,40 @@ void pr_grp_opts(FILE *out,int indent,const char *title,t_grpopts *opts)
   fflush(out);
 }
 
-static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos)
+static void pr_matrix(FILE *fp,int indent,const char *title,rvec *m,
+		      bool bMDPformat)
+{
+  if (bMDPformat)
+    fprintf(fp,"%-10s    = %g %g %g %g %g %g\n",title,
+	    m[XX][XX],m[YY][YY],m[ZZ][ZZ],m[XX][YY],m[XX][ZZ],m[YY][ZZ]);
+  else
+    pr_rvecs(fp,indent,title,m,DIM);
+}
+
+static void pr_cosine(FILE *fp,int indent,const char *title,t_cosines *cos,
+		      bool bMDPformat)
 {
   int j;
   
-  indent=pr_title(fp,indent,title);
-  (void) pr_indent(fp,indent);
-  fprintf(fp,"n = %d\n",cos->n);
-  if (cos->n > 0) {
-    (void) pr_indent(fp,indent+2);
-    fprintf(fp,"a =");
-    for(j=0; (j<cos->n); j++)
-      fprintf(fp," %e",cos->a[j]);
-    fprintf(fp,"\n");
-    (void) pr_indent(fp,indent+2);
-    fprintf(fp,"phi =");
-    for(j=0; (j<cos->n); j++)
-      fprintf(fp," %e",cos->phi[j]);
-    fprintf(fp,"\n");
+  if (bMDPformat) {
+    fprintf(fp,"%s = %d\n",title,cos->n);
+  }
+  else {
+    indent=pr_title(fp,indent,title);
+    (void) pr_indent(fp,indent);
+    fprintf(fp,"n = %d\n",cos->n);
+    if (cos->n > 0) {
+      (void) pr_indent(fp,indent+2);
+      fprintf(fp,"a =");
+      for(j=0; (j<cos->n); j++)
+	fprintf(fp," %e",cos->a[j]);
+      fprintf(fp,"\n");
+      (void) pr_indent(fp,indent+2);
+      fprintf(fp,"phi =");
+      for(j=0; (j<cos->n); j++)
+	fprintf(fp," %e",cos->phi[j]);
+      fprintf(fp,"\n");
+    }
   }
 }
 
@@ -415,12 +433,17 @@ static void pr_pull(FILE *fp,int indent,t_pull *pull)
     pr_pullgrp(fp,indent,g,&pull->grp[g]);
 }
 
-void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
+void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
+		 bool bMDPformat)
+
 {
   char *infbuf="inf";
   
   if (available(fp,ir,indent,title)) {
-    indent=pr_title(fp,indent,title);
+    if (bMDPformat)
+      fprintf(fp,"title = %s\n",title);
+    else
+      indent=pr_title(fp,indent,title);
     PS("integrator",EI(ir->eI));
     PI("nsteps",ir->nsteps);
     PI("init_step",ir->init_step);
@@ -455,11 +478,19 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PS("epc",EPCOUPLTYPE(ir->epc));
     PS("epctype",EPCOUPLTYPETYPE(ir->epct));
     PR("tau_p",ir->tau_p);
-    pr_rvecs(fp,indent,"ref_p",ir->ref_p,DIM);
-    pr_rvecs(fp,indent,"compress",ir->compress,DIM);
+    pr_matrix(fp,indent,"ref_p",ir->ref_p,bMDPformat);
+    pr_matrix(fp,indent,"compress",ir->compress,bMDPformat);
     PS("refcoord_scaling",EREFSCALINGTYPE(ir->refcoord_scaling));
-    pr_rvec(fp,indent,"posres_com",ir->posres_com,DIM,TRUE);
-    pr_rvec(fp,indent,"posres_comB",ir->posres_comB,DIM,TRUE);
+    if (bMDPformat)
+      fprintf(fp,"posres_com  = %g %g %g\n",ir->posres_com[XX],
+	      ir->posres_com[YY],ir->posres_com[ZZ]);
+    else
+      pr_rvec(fp,indent,"posres_com",ir->posres_com,DIM,TRUE);
+    if (bMDPformat)
+      fprintf(fp,"posres_comB = %g %g %g\n",ir->posres_comB[XX],
+	      ir->posres_comB[YY],ir->posres_comB[ZZ]);
+    else
+      pr_rvec(fp,indent,"posres_comB",ir->posres_comB,DIM,TRUE);
     PI("andersen_seed",ir->andersen_seed);
     PR("rlist",ir->rlist);
     PR("rtpi",ir->rtpi);
@@ -532,7 +563,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PR("bd_fric",ir->bd_fric);
     PI("ld_seed",ir->ld_seed);
     PR("cos_accel",ir->cos_accel);
-    pr_rvecs(fp,indent,"deform",ir->deform,DIM);
+    pr_matrix(fp,indent,"deform",ir->deform,bMDPformat);
     PI("userint1",ir->userint1);
     PI("userint2",ir->userint2);
     PI("userint3",ir->userint3);
@@ -541,23 +572,23 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir)
     PR("userreal2",ir->userreal2);
     PR("userreal3",ir->userreal3);
     PR("userreal4",ir->userreal4);
-    pr_grp_opts(fp,indent,"grpopts",&(ir->opts));
-    pr_cosine(fp,indent,"efield-x",&(ir->ex[XX]));
-    pr_cosine(fp,indent,"efield-xt",&(ir->et[XX]));
-    pr_cosine(fp,indent,"efield-y",&(ir->ex[YY]));
-    pr_cosine(fp,indent,"efield-yt",&(ir->et[YY]));
-    pr_cosine(fp,indent,"efield-z",&(ir->ex[ZZ]));
-    pr_cosine(fp,indent,"efield-zt",&(ir->et[ZZ]));
+    pr_grp_opts(fp,indent,"grpopts",&(ir->opts),bMDPformat);
+    pr_cosine(fp,indent,"efield-x",&(ir->ex[XX]),bMDPformat);
+    pr_cosine(fp,indent,"efield-xt",&(ir->et[XX]),bMDPformat);
+    pr_cosine(fp,indent,"efield-y",&(ir->ex[YY]),bMDPformat);
+    pr_cosine(fp,indent,"efield-yt",&(ir->et[YY]),bMDPformat);
+    pr_cosine(fp,indent,"efield-z",&(ir->ex[ZZ]),bMDPformat);
+    pr_cosine(fp,indent,"efield-zt",&(ir->et[ZZ]),bMDPformat);
     PS("bQMMM",BOOL(ir->bQMMM));
     PI("QMconstraints",ir->QMconstraints);
     PI("QMMMscheme",ir->QMMMscheme);
     PR("scalefactor",ir->scalefactor);
     pr_qm_opts(fp,indent,"qm_opts",&(ir->opts));
+  }
+}
 #undef PS
 #undef PR
 #undef PI
-  }
-}
 
 static void pr_harm(FILE *fp,t_iparams *iparams,char *r,char *kr)
 {
