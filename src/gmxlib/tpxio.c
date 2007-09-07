@@ -1426,12 +1426,12 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
       if (ir) {
 	do_inputrec(ir,bRead,file_version);
 	if (bRead && debug) 
-	  pr_inputrec(debug,0,"inputrec",ir);
+	  pr_inputrec(debug,0,"inputrec",ir,FALSE);
       }
       else {
 	do_inputrec  (&dum_ir,bRead,file_version);
 	if (bRead && debug) 
-	  pr_inputrec(debug,0,"inputrec",&dum_ir);
+	  pr_inputrec(debug,0,"inputrec",&dum_ir,FALSE);
 	done_inputrec(&dum_ir);
       }
       
@@ -1487,7 +1487,7 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     if (tpx.bIr && ir) {
       do_inputrec(ir,bRead,file_version);
       if (bRead && debug) 
-	pr_inputrec(debug,0,"inputrec",ir);
+	pr_inputrec(debug,0,"inputrec",ir,FALSE);
     }
   }
 
