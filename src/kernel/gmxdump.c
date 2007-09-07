@@ -81,7 +81,7 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,char *topfn)
     fclose(gp);
   }
   
-  if (available(stdout,&tpx,fn)) {
+  if (available(stdout,&tpx,0,fn)) {
     indent=0;
     indent=pr_title(stdout,indent,fn);
     pr_header(stdout,indent,"header",&(tpx));
