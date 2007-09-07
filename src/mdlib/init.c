@@ -95,7 +95,7 @@ void init_single(FILE *log,t_inputrec *inputrec,
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
   correct_state_entries(state,inputrec);
   
-  pr_inputrec(log,0,"Input Parameters",inputrec);
+  pr_inputrec(log,0,"Input Parameters",inputrec,FALSE);
 }
 
 static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile,
@@ -152,7 +152,7 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   /* Printing */
   if (list) {
     if (list&LIST_INPUTREC)
-      pr_inputrec(log,0,"parameters of the run",inputrec);
+      pr_inputrec(log,0,"parameters of the run",inputrec,FALSE);
     if (list&LIST_X)
       pr_rvecs(log,0,"box",state->box,DIM);
     if (list&LIST_V)
