@@ -50,9 +50,10 @@
 #include "topdirs.h"
 #include "symtab.h"
 #include "gmx_fatal.h"
+#include "convparm.h"
 
-
-void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
+void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype,
+		       t_idef *idef)
 {
   int   i,j,k=-1,nf;
   int   nr,nrfp;
@@ -62,31 +63,34 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
   /* Lean mean shortcuts */
   nr   = atype->nr;
   nrfp = NRFP(ftype);
-  snew(plist->param,nr*nr);
+  pr_alloc(nr*nr,plist);
   plist->nr=nr*nr;
   
   /* Fill the matrix with force parameters */
   switch(ftype) {
   case F_LJ:
     switch (comb) {
-    case eCOMB_GEOMETRIC:
+    case eCOMB_GEOMETRIC: 
       /* Gromos rules */
       for(i=k=0; (i<nr); i++)
-	for(j=0; (j<nr); j++,k++)
+	for(j=0; (j<nr); j++,k++) {
 	  for(nf=0; (nf<nrfp); nf++) {
 	    c = sqrt(atype->nb[i].c[nf] * atype->nb[j].c[nf]);
 	    plist->param[k].c[nf]      = c;
+	    plist->param[k].type = enter_params(idef,ftype,plist->param[k].c,
+						comb,12,0,TRUE);
 	  }
+	}
       break;
-    
     case eCOMB_ARITHMETIC:
       /* c0 and c1 are epsilon and sigma */
       for (i=k=0; (i < nr); i++)
 	for (j=0; (j < nr); j++,k++) {
 	  plist->param[k].c[0] = (atype->nb[i].C0+atype->nb[j].C0)*0.5;
 	  plist->param[k].c[1] = sqrt(atype->nb[i].C1*atype->nb[j].C1);
+	  plist->param[k].type = enter_params(idef,ftype,plist->param[k].c,
+					      comb,12,0,TRUE);
 	}
-      
       break;
     case eCOMB_GEOM_SIG_EPS:
       /* c0 and c1 are epsilon and sigma */
@@ -94,6 +98,8 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 	for (j=0; (j < nr); j++,k++) {
 	  plist->param[k].c[0] = sqrt(atype->nb[i].C0*atype->nb[j].C0);
 	  plist->param[k].c[1] = sqrt(atype->nb[i].C1*atype->nb[j].C1);
+	  plist->param[k].type = enter_params(idef,ftype,plist->param[k].c,
+					      comb,12,0,TRUE);
 	}
       
       break;
@@ -116,6 +122,8 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 	else
 	  plist->param[k].c[1] = 2.0/(1/bi+1/bj);
 	plist->param[k].c[2] = sqrt(atype->nb[i].c[2] * atype->nb[j].c[2]);
+	plist->param[k].type = enter_params(idef,ftype,plist->param[k].c,
+					    comb,12,0,TRUE);
       }
     
     break;
@@ -124,6 +132,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype *atype)
 	    interaction_function[ftype].longname);
     warning_error(errbuf);
   }
+  idef->atnr = atype->nr;
 }
 
 void push_at (t_symtab *symtab, t_atomtype *at, t_bond_atomtype *bat,
@@ -476,6 +485,7 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
 	}
       }
       /* Overwrite it! */
+      bt->param[i].type = b->type;
       for (j=0; (j < nrfp); j++)
 	bt->param[i].c[j] = b->c[j];
       bFound=TRUE;
@@ -486,6 +496,8 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
     pr_alloc (2,bt);
     
     /* fill the arrays up and down */
+    bt->param[bt->nr].type = b->type;
+    bt->param[bt->nr+1].type = b->type;
     for (j=0; (j < nrfp); j++) {
       bt->param[bt->nr].c[j]   = b->c[j];
       bt->param[bt->nr+1].c[j] = b->c[j];
@@ -494,6 +506,8 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
       bt->param[bt->nr].a[j]   = b->a[j];
       bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
     }
+    strcpy(bt->param[bt->nr].s,b->s);
+    strcpy(bt->param[bt->nr+1].s,b->s);
     bt->nr += 2;
   }
 }
@@ -558,6 +572,7 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
 	c[i] = 0.0;
     }
   }
+  p.type = DEF_PARAM_TYPE;
   for(i=0; (i<nral); i++)
     p.a[i]=name2index(alc[i],typenames,ntypes); 
   for(i=0; (i<nrfp); i++)
@@ -1055,8 +1070,6 @@ static bool default_params(int ftype,t_params bt[],
   return bFound;
 }
 
-
-
 void push_bondnow(t_params *bond, t_param *b)
 {
   int j;
@@ -1069,6 +1082,7 @@ void push_bondnow(t_params *bond, t_param *b)
   pr_alloc (1,bond);
 
   /* fill the arrays */
+  bond->type = b->type;
   for (j=0; (j < MAXFORCEPARAM); j++) 
     bond->param[bond->nr].c[j]   = b->c[j];
   for (j=0; (j < MAXATOMLIST); j++) 
@@ -1080,7 +1094,8 @@ void push_bondnow(t_params *bond, t_param *b)
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
 	       t_atoms *at,t_atomtype *atype,char *line,
-	       bool bBonded,bool bGenPairs,bool *bWarn_copy_A_B)
+	       bool bBonded,bool bGenPairs,bool *bWarn_copy_A_B,
+	       t_idef *idef)
 {
   const char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -1163,6 +1178,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		  aa[0],aa[0]+1,aa[0]+2);
   
   /* default force parameters  */
+  param.type = DEF_PARAM_TYPE;
   for(j=0; (j<MAXATOMLIST); j++)
     param.a[j] = aa[j]-1;
   for(j=0; (j<MAXFORCEPARAM); j++)

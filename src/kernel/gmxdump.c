@@ -58,8 +58,9 @@
 #include "txtdump.h"
 #include "gmxcpp.h"
 
-static void list_tpx(char *fn, bool bShowNumbers)
+static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,char *topfn)
 {
+  FILE *gp;
   int         step,fp,indent,i,j,**gcount,atot;
   real        t;
   t_state     state;
@@ -74,11 +75,17 @@ static void list_tpx(char *fn, bool bShowNumbers)
 		 &state,tpx.bF ? f : NULL,
 		 tpx.bTop ? &top: NULL);
   
-  indent=0;
-  if (available(stdout,&tpx,indent,fn)) {
+  if (mdpfn) {
+    gp = ffopen(mdpfn,"w");
+    pr_inputrec(gp,0,NULL,&(ir),TRUE);
+    fclose(gp);
+  }
+  
+  if (available(stdout,&tpx,fn)) {
+    indent=0;
     indent=pr_title(stdout,indent,fn);
     pr_header(stdout,indent,"header",&(tpx));
-    pr_inputrec(stdout,indent,"ir",&(ir));
+    
     pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
     pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
     pr_rvecs(stdout,indent,"pcoupl_mu",tpx.bBox ? state.pcoupl_mu : NULL,DIM);
@@ -319,7 +326,8 @@ int main(int argc,char *argv[])
     { efTPX, "-s", NULL, ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD },
     { efENX, "-e", NULL, ffOPTRD },
-    { efTOP, "-p", NULL, ffOPTRD }
+    { efMDP, "-om", NULL, ffOPTWR },
+    { efTOP, "-op", NULL, ffOPTWR }
   };
 #define NFILE asize(fnm)
 
@@ -336,13 +344,13 @@ int main(int argc,char *argv[])
 		    asize(desc),desc,0,NULL);
 
 
-  if (ftp2bSet(efTPX,NFILE,fnm)) 
-    list_tpx(ftp2fn(efTPX,NFILE,fnm),bShowNumbers);
-    
-  if (ftp2bSet(efTRX,NFILE,fnm)) 
+  if (ftp2bSet(efTPX,NFILE,fnm))
+    list_tpx(ftp2fn(efTPX,NFILE,fnm),bShowNumbers,
+	     ftp2fn_null(efMDP,NFILE,fnm),
+	     ftp2fn_null(efTOP,NFILE,fnm));
+  else if (ftp2bSet(efTRX,NFILE,fnm)) 
     list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);
-  
-  if (ftp2bSet(efENX,NFILE,fnm))
+  else if (ftp2bSet(efENX,NFILE,fnm))
     list_ene(ftp2fn(efENX,NFILE,fnm));
     
   if (ftp2bSet(efTOP,NFILE,fnm))
