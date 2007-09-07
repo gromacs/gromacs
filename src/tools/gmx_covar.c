@@ -61,6 +61,7 @@
 #include "matio.h"
 #include "eigio.h"
 #include "eigensolver.h"
+#include "physics.h"
 
 int gmx_covar(int argc,char *argv[])
 {
