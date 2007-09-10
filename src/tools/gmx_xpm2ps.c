@@ -105,7 +105,7 @@ void get_params(char *mpin,char *mpout,t_psrec *psr)
   static const char *colors[] = { "none", "black", "white", NULL };
   t_inpfile *inp;
   char      *tmp;
-  int       ninp;
+  int       ninp=0;
   
   if (mpin)
     inp = read_inpfile(mpin,&ninp);
