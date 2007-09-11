@@ -522,7 +522,7 @@ int gmx_eneconv(int argc,char *argv[])
 
       bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
 		(end  <0 || (end  >=0 && (t <= end  +GMX_REAL_EPS))) &&
-		(t < settime[i+1]-GMX_REAL_EPS));
+		(t < settime[i+1]-0.5*timestep));
 		
       if (bError)      
 	if ((end > 0) && (t > end+GMX_REAL_EPS)) {
