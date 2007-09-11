@@ -493,8 +493,10 @@ int gmx_trjcat(int argc,char *argv[])
      */
     t_corr=0;
     
-    if (n_append == -1)
+    if (n_append == -1) {
       trxout = open_trx(out_file,"w");
+      memset(&frout,0,sizeof(frout));
+    }
     else {
       /* Read file to find what is the last frame in it */
       if (!read_first_frame(&status,out_file,&fr,FLAGS))
@@ -505,98 +507,22 @@ int gmx_trjcat(int argc,char *argv[])
       lasttime = fr.time;
       bKeepLast = TRUE;
       trxout = open_trx(out_file,"a");
+      frout = fr;
     }
+    
     /* Lets stitch up some files */
     timestep = timest[0];
-    for(i=0; (i<nfile_in); i++) {
+    for(i=n_append+1; (i<nfile_in); i++) {
       /* Open next file */
-      
-      if (i != n_append) {
-	/* if we don't have a timestep in the current file, use the old one */
-	if ( timest[i] != 0 )
-	  timestep = timest[i];
-	
-	read_first_frame(&status,fnms[i],&fr,FLAGS);
-	if(!fr.bTime) {
-	  fr.time=0;
-	  fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
-	}
-	
-	if(cont_type[i]==TIME_EXPLICIT)
-	  t_corr=settime[i]-fr.time;
-	/* t_corr is the amount we want to change the time.
-	 * If the user has chosen not to change the time for
-	 * this part of the trajectory t_corr remains at 
-	 * the value it had in the last part, changing this
-	 * by the same amount.
-	 * If no value was given for the first trajectory part
-	 * we let the time start at zero, see the edit_files routine.
-	 */
-	
-	bNewFile=TRUE;
-
-	printf("\n");
-	if (lasttime != NOTSET)
-	  printf("lasttime %g\n", lasttime);
-	
-	do {
-	  /* copy the input frame to the output frame */
-	  frout=fr;
-	  /* set the new time by adding the correct calculated above */
-	  frout.time += t_corr; 
-	  /* quit if we have reached the end of what should be written */
-	  if((end > 0) && (frout.time > end+GMX_REAL_EPS)) {
-	    i=nfile_in;
-	  break;
-	  }
-	  
-	  /* determine if we should write this frame (dt is handled elsewhere) */
-	  if (bCat) /* write all frames of all files */ 
-	    bWrite = TRUE;
-	  else if ( bKeepLast ) /* write till last frame of this traj
-				   and skip first frame(s) of next traj */
-	    bWrite = ( frout.time > lasttime+0.5*timestep );
-	  else /* write till first frame of next traj */
-	    bWrite = ( frout.time < settime[i+1]-0.5*timestep );
-	  
-	  if( bWrite && frout.time >= begin ) {
-	    frame++;
-	    if (frame_out == -1)
-	      first_time = frout.time;
-	    lasttime = frout.time;
-	    if (dt==0 || bRmod(frout.time,first_time,dt)) {
-	      frame_out++;
-	      last_ok_t=frout.time;
-	      if(bNewFile) {
-		fprintf(stderr,"\nContinue writing frames from %s t=%g %s, "
-			"frame=%d      \n",
-			fnms[i],convert_time(frout.time),time_unit(),frame);
-		bNewFile=FALSE;
-	      }
-	      
-	      if (bIndex)
-		write_trxframe_indexed(trxout,&frout,isize,index);
-	      else
-		write_trxframe(trxout,&frout);
-	      if ( ((frame % 10) == 0) || (frame < 10) )
-		fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
-		      frame_out,convert_time(frout.time),time_unit());
-	    }
-	  }
-	} while( read_next_frame(status,&fr));
-	
-	close_trj(status);
-	
-	earliersteps+=step;	  
-	
-	/* set the next time from the last frame in previous file */
-	if(cont_type[i+1]==TIME_CONTINUE) {
-	  begin=frout.time;
+      /* set the next time from the last frame in previous file */
+      if (i > 0) {
+	if(cont_type[i]==TIME_CONTINUE) {
+	  begin =frout.time;
 	  begin += 0.5*timestep;
-	  settime[i+1]=frout.time;
-	  cont_type[i+1]=TIME_EXPLICIT;	  
+	  settime[i]=frout.time;
+	  cont_type[i]=TIME_EXPLICIT;	  
 	}
-	else if(cont_type[i+1]==TIME_LAST)
+	else if(cont_type[i]==TIME_LAST)
 	  begin=frout.time;
 	begin += 0.5*timestep;
 	/* Or, if the time in the next part should be changed by the
@@ -605,18 +531,95 @@ int gmx_trjcat(int argc,char *argv[])
 	 */
       
 	/* Or, if time is set explicitly, we check for overlap/gap */
-	if(cont_type[i+1]==TIME_EXPLICIT) 
-	  if( ( i+1 < nfile_in ) &&
-	      ( frout.time < settime[i+1]-1.5*timestep ) ) 
+	if(cont_type[i]==TIME_EXPLICIT) 
+	  if( ( i < nfile_in ) &&
+	      ( frout.time < settime[i]-1.5*timestep ) ) 
 	    fprintf(stderr, "WARNING: Frames around t=%f %s have a different "
 		    "spacing than the rest,\n"
 		    "might be a gap or overlap that couldn't be corrected "
 		    "automatically.\n",convert_time(frout.time),time_unit());
       }
+      
+      /* if we don't have a timestep in the current file, use the old one */
+      if ( timest[i] != 0 )
+	timestep = timest[i];
+      
+      read_first_frame(&status,fnms[i],&fr,FLAGS);
+      if(!fr.bTime) {
+	fr.time=0;
+	fprintf(stderr,"\nWARNING: Couldn't find a time in the frame.\n");
+      }
+      
+      if(cont_type[i]==TIME_EXPLICIT)
+	t_corr=settime[i]-fr.time;
+      /* t_corr is the amount we want to change the time.
+       * If the user has chosen not to change the time for
+       * this part of the trajectory t_corr remains at 
+       * the value it had in the last part, changing this
+       * by the same amount.
+       * If no value was given for the first trajectory part
+       * we let the time start at zero, see the edit_files routine.
+       */
+      
+      bNewFile=TRUE;
+      
+      printf("\n");
+      if (lasttime != NOTSET)
+	printf("lasttime %g\n", lasttime);
+      
+      do {
+	/* copy the input frame to the output frame */
+	frout=fr;
+	/* set the new time by adding the correct calculated above */
+	frout.time += t_corr; 
+	/* quit if we have reached the end of what should be written */
+	if((end > 0) && (frout.time > end+GMX_REAL_EPS)) {
+	  i=nfile_in;
+	  break;
+	}
+	
+	/* determine if we should write this frame (dt is handled elsewhere) */
+	if (bCat) /* write all frames of all files */ 
+	  bWrite = TRUE;
+	else if ( bKeepLast ) /* write till last frame of this traj
+				 and skip first frame(s) of next traj */
+	  bWrite = ( frout.time > lasttime+0.5*timestep );
+	else /* write till first frame of next traj */
+	  bWrite = ( frout.time < settime[i+1]-0.5*timestep );
+	
+	if( bWrite && (frout.time >= begin) ) {
+	  frame++;
+	  if (frame_out == -1)
+	    first_time = frout.time;
+	  lasttime = frout.time;
+	  if (dt==0 || bRmod(frout.time,first_time,dt)) {
+	    frame_out++;
+	    last_ok_t=frout.time;
+	    if(bNewFile) {
+	      fprintf(stderr,"\nContinue writing frames from %s t=%g %s, "
+		      "frame=%d      \n",
+		      fnms[i],convert_time(frout.time),time_unit(),frame);
+	      bNewFile=FALSE;
+	    }
+	    
+	    if (bIndex)
+	      write_trxframe_indexed(trxout,&frout,isize,index);
+	    else
+	      write_trxframe(trxout,&frout);
+	    if ( ((frame % 10) == 0) || (frame < 10) )
+	      fprintf(stderr," ->  frame %6d time %8.3f %s     \r",
+		      frame_out,convert_time(frout.time),time_unit());
+	  }
+	}
+      } while( read_next_frame(status,&fr));
+      
+      close_trj(status);
+      
+      earliersteps+=step;	  
     }
     if (trxout >= 0)
       close_trx(trxout);
-     
+    
     fprintf(stderr,"\nLast frame written was %d, time %f %s\n",
 	    frame,convert_time(last_ok_t),time_unit()); 
   }
