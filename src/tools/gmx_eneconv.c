@@ -383,7 +383,6 @@ static void update_last_ee(t_energy *lastee, int laststep,
     sfree(tmp);
 }
 
-
 int gmx_eneconv(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -520,10 +519,13 @@ int gmx_eneconv(int argc,char *argv[])
       fro->step = laststep + fr->step - startstep_file;
       t = tadjust + fr->t;
 
+      /*bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
+		(end  <0 || (end  >=0 && (t <= end  +GMX_REAL_EPS))) &&
+		(t < settime[i+1]-GMX_REAL_EPS));*/
       bWrite = ((begin<0 || (begin>=0 && (t >= begin-GMX_REAL_EPS))) && 
 		(end  <0 || (end  >=0 && (t <= end  +GMX_REAL_EPS))) &&
-		(t < settime[i+1]-GMX_REAL_EPS));
-		
+		(t < settime[i+1]-0.5*timestep));
+      
       if (bError)      
 	if ((end > 0) && (t > end+GMX_REAL_EPS)) {
 	  i = nfile;
