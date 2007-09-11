@@ -841,39 +841,6 @@ static void pbc_correct(rvec dx,matrix box,rvec hbox)
   }
 }
 
-static int low_is_hbond(int d,int a,int h,
-			rvec r_da,real rcut2,real ccut, 
-			rvec x[], bool bBox, matrix box,rvec hbox,
-			real *d_ha, real *ang,real d2)
-{
-  rvec r_dh,r_ha;
-  real ca;
-  
-  if (d2 == 0) {
-    rvec_sub(x[h],x[a],r_ha);
-    if (bBox) 
-      pbc_correct(r_ha,box,hbox);    
-    d2 = iprod(r_ha,r_ha);
-  }
-  
-  if ( d2 <= rcut2 ) {
-    rvec_sub(x[d],x[h],r_dh);
-    if (bBox)
-      pbc_correct(r_dh,box,hbox);
-    
-    ca = cos_angle(r_dh,r_da);
-    /* if angle is smaller, cos is larger */
-    if (ca >= ccut) {
-      *d_ha = sqrt(d2);
-      *ang = acos(ca);
-      return hbHB;
-    }
-    else
-      return hbDist;
-  }
-  return hbNo;
-}
-
 /* Added argument r2cut, changed contact and implemented 
  * use of second cut-off.
  * - Erik Marklund, June 29, 2006
@@ -885,8 +852,8 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
 		    bool bContact)
 {
   int  h,hh,id,ja,ihb;
-  rvec r_da;
-  real rc2,r2c2,d2;
+  rvec r_da,r_ha,r_dh;
+  real rc2,r2c2,rda2,rha2,ca;
   
   if (d == a)
     return hbNo;
@@ -895,34 +862,50 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
       ((ja = acceptor_index(&hb->a,grpa,a)) == NOTSET))
     return hbNo;
   
+  rc2  = rcut*rcut;
+  r2c2 = r2cut*r2cut;
+  
   rvec_sub(x[d],x[a],r_da);
   if (bBox) 
     pbc_correct(r_da,box,hbox);    
-  d2 = iprod(r_da,r_da);
-  rc2 = rcut*rcut;
-  r2c2 = r2cut*r2cut;  
+  rda2 = iprod(r_da,r_da);
+  
+  if (bContact) {
+    if (rda2 <= rc2)
+      return hbHB;
+    else if (rda2 < r2c2)
+      return hbDist;
+    else
+      return hbNo;
+  }
   *hhh = NOTSET;
-  if (d2 < rc2) {
-    if (bContact) 
-      return hbHB; /* Ok, it's not a hb, but it should be stored in h[].*/
-      /* return hbDist; */
+  
+  if (bDA && (rda2 > rc2))
+    return hbNo;
+  
+  for(h=0; (h < hb->d.nhydro[id]); h++) {
+    hh = hb->d.hydro[id][h];
+    rvec_sub(x[hh],x[a],r_ha);
+    if (bBox)
+      pbc_correct(r_da,box,hbox);
+    rha2 = iprod(r_ha,r_ha);
     
-    if (!bDA)
-      d2 = 0;
-    
-    for(h=0; (h < hb->d.nhydro[id]); h++) {
-      hh = hb->d.hydro[id][h];
-      ihb = low_is_hbond(d,a,hh,r_da,rc2,ccut,x,bBox,box,hbox,d_ha,ang,d2);
-      if (ihb == hbHB) {
-	*hhh = hh;
-	return ihb;
+    if (bDA || (!bDA && (rha2 <= rc2))) {
+      rvec_sub(x[d],x[hh],r_dh);
+      if (bBox)
+	pbc_correct(r_dh,box,hbox);
+  
+      ca = cos_angle(r_dh,r_da);
+      /* if angle is smaller, cos is larger */
+      if (ca >= ccut) {
+	*hhh  = hh;
+	*d_ha = sqrt(rha2);
+	*ang  = acos(ca);
+	return hbHB;
       }
     }
-    return hbDist;
   }
-  if (d2 < r2c2)
-    return hbDist;
-  return hbNo;
+  return hbDist;
 }
 
 /* Fixed previously undiscovered bug in the merge
