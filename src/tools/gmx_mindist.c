@@ -452,7 +452,7 @@ int gmx_mindist(int argc,char *argv[])
     { "-ng",       FALSE, etINT, {&ng},
       "Number of secondary groups to compute distance to a central group" },
   };
-  t_topology top;
+  t_topology *top=NULL;
   char       title[256];
   real       t;
   rvec       *x;
@@ -492,6 +492,8 @@ int gmx_mindist(int argc,char *argv[])
   
   if (!tpsfnm && !ndxfnm)
     gmx_fatal(FARGS,"You have to specify either the index file or a tpr file");
+  if ((resfnm || !ndxfnm) && !tpsfnm)
+    gmx_fatal(FARGS,"I need a tpr file to analyze all this.");
   
   if (bPBC) {
     ng = 1;
@@ -504,10 +506,11 @@ int gmx_mindist(int argc,char *argv[])
   snew(index,ng);
   snew(grpname,ng);
 
-  if (tpsfnm || !ndxfnm)
-    read_tps_conf(tpsfnm,title,&top,&x,NULL,box,FALSE);
-  
-  get_index(&top.atoms,ndxfnm,ng,gnx,index,grpname);
+  if (tpsfnm || resfnm || !ndxfnm) {
+    snew(top,1);
+    read_tps_conf(tpsfnm,title,top,&x,NULL,box,FALSE);
+  }
+  get_index(top ? &(top->atoms) : NULL,ndxfnm,ng,gnx,index,grpname);
 
   if (bMat && (ng == 1)) {
     ng = gnx[0];
@@ -526,16 +529,17 @@ int gmx_mindist(int argc,char *argv[])
   }
   
   if (resfnm) {
-    nres=find_residues(&top.atoms, gnx[0], index[0], &residues);
+    nres=find_residues(top ? &(top->atoms) : NULL, 
+		       gnx[0], index[0], &residues);
     if (debug) dump_res(debug, nres, residues, gnx[0], index[0]);
   }
     
   if (bPBC)
-    periodic_mindist_plot(trxfnm,distfnm,&top,gnx[0],index[0],bSplit);
+    periodic_mindist_plot(trxfnm,distfnm,top,gnx[0],index[0],bSplit);
   else
     dist_plot(trxfnm,atmfnm,distfnm,numfnm,resfnm,oxfnm,
-	      rcutoff,bMat,&top.atoms,ng,index,gnx,grpname,bSplit,
-	      !bMax, nres, residues);
+	      rcutoff,bMat,top ? &(top->atoms) : NULL,
+	      ng,index,gnx,grpname,bSplit,!bMax, nres, residues);
 
   do_view(distfnm,"-nxy");
   if (!bPBC)
