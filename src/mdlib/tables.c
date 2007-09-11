@@ -277,7 +277,7 @@ static void read_tables(FILE *fp,const char *fn,
 	bCont = FALSE;
   if (nx0 == nx) {
     if (fp)
-      fprintf(fp,"\nWARNINGAll elements in table %s are zero\n\n",libfn);
+      fprintf(fp,"\nNOTE: All elements in table %s are zero\n\n",libfn);
   }
   /* Check if the second column is close to minus the numerical
    * derivative of the first column.
