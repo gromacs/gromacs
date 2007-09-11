@@ -157,8 +157,8 @@ extern void global_stat(FILE *log,
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,
 			t_groups *grps,bool bSumEkinhOld,
-			gmx_constr_t constr,
-			t_vcm *vcm,real *terminate);
+			gmx_constr_t constr,t_vcm *vcm,
+			bool *bBNSB,real *terminate);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
 void write_traj(t_commrec *cr,

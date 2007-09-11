@@ -253,10 +253,10 @@ int gmx_vanhove(int argc,char *argv[])
     if (f % 100 == 0)
       fprintf(stderr,"\rProcessing frame %d",f);
     /* Scale all the configuration to the average box */
-    m_inv_lowerleft0(sbox[f],corr);
-    mmul_lowerleft0(avbox,corr,corr);
+    m_inv_ur0(sbox[f],corr);
+    mmul_ur0(avbox,corr,corr);
     for(i=0; i<isize; i++) {
-      mvmul_lowerleft0(corr,sx[f][i],sx[f][i]);
+      mvmul_ur0(corr,sx[f][i],sx[f][i]);
       if (f > 0) {
 	/* Correct for periodic jumps */
 	for(m=DIM-1; m>=0; m--) {

@@ -94,14 +94,14 @@
   
   matrix (3x3) operations:
     ! indicates that dest should not be the same as a, b or src
-    the _lowerleft0 varieties work on matrices that have only zeros
-    in the lowerleft part, such as box matrices, these varieties
+    the _ur0 varieties work on matrices that have only zeros
+    in the upper right part, such as box matrices, these varieties
     could produce less rounding errors, not due to the operations themselves,
     but because the compiler can easier recombine the operations
   void copy_mat(matrix a,matrix b)                 b = a
   void clear_mat(matrix a)			   a = 0
   void mmul(matrix a,matrix b,matrix dest)	!  dest = a . b
-  void mmul_lowerleft0(matrix a,matrix b,matrix dest) dest = a . b
+  void mmul_ur0(matrix a,matrix b,matrix dest)     dest = a . b
   void transpose(matrix src,matrix dest)	!  dest = src*
   void tmmul(matrix a,matrix b,matrix dest)	!  dest = a* . b
   void mtmul(matrix a,matrix b,matrix dest)	!  dest = a . b*
@@ -109,10 +109,11 @@
   void m_add(matrix a,matrix b,matrix dest)	   dest = a + b
   void m_sub(matrix a,matrix b,matrix dest)	   dest = a - b
   void msmul(matrix m1,real r1,matrix dest)	   dest = r1 * m1
-  void m_inv_lowerleft0(matrix src,matrix dest)    dest = src^-1
+  void m_inv_ur0(matrix src,matrix dest)           dest = src^-1
   void m_inv(matrix src,matrix dest)		!  dest = src^-1
   void mvmul(matrix a,rvec src,rvec dest)	!  dest = a . src
-  void mvmul_lowerleft0(matrix a,rvec src,rvec dest) dest = a . src
+  void mvmul_ur0(matrix a,rvec src,rvec dest)      dest = a . src
+  void tmvmul_ur0(matrix a,rvec src,rvec dest)     dest = a* . src
   real trace(matrix m)                             = trace(m)
 */
 
@@ -516,7 +517,7 @@ static inline void cprod(const rvec a,const rvec b,rvec c)
   c[ZZ]=a[XX]*b[YY]-a[YY]*b[XX];
 }
 
-static inline void mmul_lowerleft0(matrix a,matrix b,matrix dest)
+static inline void mmul_ur0(matrix a,matrix b,matrix dest)
 {
   dest[XX][XX]=a[XX][XX]*b[XX][XX];
   dest[XX][YY]=0.0;
@@ -629,7 +630,7 @@ static inline void msmul(matrix m1,real r1,matrix dest)
   dest[ZZ][ZZ]=r1*m1[ZZ][ZZ];
 }
 
-static inline void m_inv_lowerleft0(matrix src,matrix dest)
+static inline void m_inv_ur0(matrix src,matrix dest)
 {
   double tmp = src[XX][XX]*src[YY][YY]*src[ZZ][ZZ];
   if (gmx_within_tol(tmp,0.0,100*GMX_REAL_MIN))
@@ -678,11 +679,18 @@ static inline void mvmul(matrix a,const rvec src,rvec dest)
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
 }
 
-static inline void mvmul_lowerleft0(matrix a,const rvec src,rvec dest)
+static inline void mvmul_ur0(matrix a,const rvec src,rvec dest)
 {
   dest[ZZ]=a[ZZ][XX]*src[XX]+a[ZZ][YY]*src[YY]+a[ZZ][ZZ]*src[ZZ];
   dest[YY]=a[YY][XX]*src[XX]+a[YY][YY];
   dest[XX]=a[XX][XX]*src[XX];
+}
+
+static inline void tmvmul_ur0(matrix a,const rvec src,rvec dest)
+{
+  dest[XX]=a[XX][XX]*src[XX]+a[YY][XX]*src[YY]+a[ZZ][XX]*src[ZZ];
+  dest[YY]=                  a[YY][YY]*src[YY]+a[ZZ][YY]*src[ZZ];
+  dest[ZZ]=                                    a[ZZ][ZZ]*src[ZZ];
 }
 
 static inline void unitv(const rvec src,rvec dest)

@@ -6,6 +6,7 @@
 #include <time.h>
 #include <math.h>
 #include <string.h>
+#include <stdlib.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "vec.h"
@@ -173,8 +174,8 @@ typedef struct gmx_domdec_comm {
   /* Cycle counters */
   float cycl[ddCyclNr];
   int   cycl_n[ddCyclNr];
-  /* Flop counter */
-  bool bCountFlop;
+  /* Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
+  int eFlop;
   double flop;
   int    flop_n;
   /* Have we measured the load? */
@@ -1110,12 +1111,22 @@ static void set_tric_dir(gmx_domdec_t *dd,matrix box)
 
 static bool dd_have_load(gmx_domdec_comm_t *comm)
 {
-  return (comm->bCountFlop ? (comm->flop_n > 0) : (comm->cycl_n[ddCyclF] > 0));
+  return (comm->eFlop ? (comm->flop_n > 0) : (comm->cycl_n[ddCyclF] > 0));
 }
 
 static float dd_force_load(gmx_domdec_comm_t *comm)
 {
-  return (comm->bCountFlop ? comm->flop : comm->cycl[ddCyclF]);
+  float load;
+
+  if (comm->eFlop) {
+    load = comm->flop;
+    if (comm->eFlop > 1)
+      load *= 1.0 + (comm->eFlop - 1)*(0.1*rand()/RAND_MAX - 0.05);
+  } else {
+    load = comm->cycl[ddCyclF];
+  }
+
+  return load;
 }
 
 static void check_box_size(gmx_domdec_t *dd,matrix box)
@@ -2201,13 +2212,13 @@ static double force_flop_count(t_nrnb *nrnb)
 
 void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb)
 {
-  if (dd->comm->bCountFlop) {
+  if (dd->comm->eFlop) {
     dd->comm->flop -= force_flop_count(nrnb);
   }
 }
 void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb)
 {
-  if (dd->comm->bCountFlop) {
+  if (dd->comm->eFlop) {
     dd->comm->flop += force_flop_count(nrnb);
     dd->comm->flop_n++;
   }
@@ -3222,15 +3233,17 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   comm->distance_min = comm_distance_min;
 
   comm->bSendRecv2 = dd_nst_env(fplog,"GMX_DD_SENDRECV2",0);
-  comm->bCountFlop = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
+  comm->eFlop      = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
   comm->nstSortCG  = dd_nst_env(fplog,"GMX_DD_SORT",1);
   nstDDDump        = dd_nst_env(fplog,"GMX_DD_DUMP",0);
   nstDDDumpGrid    = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
   if (comm->bSendRecv2 && fplog)
     fprintf(fplog,"Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");
-  if (comm->bCountFlop) {
+  if (comm->eFlop) {
     if (fplog)
       fprintf(fplog,"Will load balance based on FLOP count\n");
+    if (comm->eFlop > 1)
+      srand(1+cr->nodeid);
     comm->bRecordLoad = TRUE;
   } else {
     comm->bRecordLoad = wallcycle_have_counter();

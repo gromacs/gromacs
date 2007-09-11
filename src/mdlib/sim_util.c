@@ -597,7 +597,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
   clear_mat(shake_vir);
   clear_mat(pres);
   update(step,&dvdlambda,inputrec,md,state,graph,
-	 NULL,state->x,top,grps,shake_vir,cr,nrnb,NULL,
+	 NULL,state->x,top,grps,shake_vir,NULL,cr,nrnb,NULL,
 	 NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
   if (EI_STATE_VELOCITY(inputrec->eI)) {
     for(i=start; (i<end); i++) {
@@ -619,7 +619,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
     clear_mat(shake_vir);
     clear_mat(pres);
     update(step,&dvdlambda,inputrec,md,state,graph,
-	   NULL,buf,top,grps,shake_vir,cr,nrnb,NULL,
+	   NULL,buf,top,grps,shake_vir,NULL,cr,nrnb,NULL,
 	   NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
     
     for(m=0; (m<4); m++)

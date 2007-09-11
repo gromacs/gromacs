@@ -436,13 +436,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
-  bool       bNoGStat,bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+  bool       bNoGStat,bNS,bBNSB,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
   t_vcm      *vcm;
+  int        ns_step=0,nns=0;
+  double     ns_s1=0,ns_s2=0;
+  matrix     scale_tot;
   t_trxframe rerun_fr;
   gmx_repl_ex_t *repl_ex=NULL;
   /* A boolean (disguised as a real) to terminate mdrun */  
@@ -549,17 +552,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       snew(f_global,state->natoms);
 
     setup_dd_grid(stdlog,cr->dd);
-
-    if (DDMASTER(cr->dd) && vsite && !ir->bContinuation)
-      construct_vsites(log,vsite,
-		       state_global->x,nrnb,ir->delta_t,NULL,
-		       &top_global->idef,ir->ePBC,TRUE,NULL,
-		       NULL,state_global->box);
-
-    dd_partition_system(stdlog,ir->init_step,cr,TRUE,
-			state_global,top_global,ir,
-			state,&f,&buf,mdatoms,top,fr,vsite,constr,
-			nrnb,wcycle,FALSE);
   } else {
     top = top_global;
     state = state_global;
@@ -568,6 +560,24 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     atoms2md(&top->atoms,ir,top->idef.il[F_ORIRES].nr,0,NULL,a0,a1-a0,
 	     mdatoms);
   }
+
+  if ((!DOMAINDECOMP(cr) || DDMASTER(cr->dd)) &&
+      vsite && !ir->bContinuation) {
+    /* Construct the virtual sites for the starting structure */
+    construct_vsites(log,vsite,
+		     state_global->x,nrnb,ir->delta_t,NULL,
+		     &top_global->idef,ir->ePBC,fr->bMolPBC,graph,
+		     DOMAINDECOMP(cr) ? NULL : cr,state_global->box);
+  }
+
+  if (DOMAINDECOMP(cr)) {
+    /* Distribute the charge groups over the nodes from the master node */
+    dd_partition_system(stdlog,ir->init_step,cr,TRUE,
+			state_global,top_global,ir,
+			state,&f,&buf,mdatoms,top,fr,vsite,constr,
+			nrnb,wcycle,FALSE);
+  }
+
   update_mdatoms(mdatoms,state->lambda);
 
   /* Initialize constraints */
@@ -608,9 +618,17 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     repl_ex = init_replica_exchange(log,cr->ms,state_global,ir,
 				    repl_ex_nst,repl_ex_seed);
   
-  if (bHaveConstr && !ir->bContinuation && !bRerunMD)
+  if (bHaveConstr && !ir->bContinuation && !bRerunMD) {
     do_shakefirst(log,constr,ir,mdatoms,state,buf,f,
 		  graph,cr,nrnb,grps,fr,top,edyn);
+
+    if (vsite)
+      construct_vsites(log,vsite,
+		       state_global->x,nrnb,ir->delta_t,NULL,
+		       &top_global->idef,ir->ePBC,fr->bMolPBC,graph,
+		       cr,state_global->box);
+  }
+
   debug_gmx();
 
   /* Compute initial EKin for all.. */
@@ -626,7 +644,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     GMX_MPE_LOG(ev_global_stat_start);
        
     global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		ir,grps,FALSE,constr,vcm,&terminate);
+		ir,grps,FALSE,constr,vcm,NULL,&terminate);
 
     GMX_MPE_LOG(ev_global_stat_finish);
   }
@@ -707,6 +725,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bLastStep = FALSE;
   bSumEkinhOld = FALSE,
   bExchanged = FALSE;
+  bBNSB = TRUE;
   step = ir->init_step;
   step_rel = 0;
 
@@ -761,15 +780,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	}
       }
       copy_mat(rerun_fr.box,state->box);
-      
-      /* for rerun MD always do Neighbour Searching */
-      bNS = ((ir->nstlist!=0) || bFirstStep);
-    } else {
-      /* Determine whether or not to do Neighbour Searching */
-      bNS = ((ir->nstlist && (step % ir->nstlist==0 || bExchanged))
-	     || bFirstStep);
     }
-    
+
     /* Stop Center of Mass motion */
     bStopCM = do_per_step(step,abs(ir->nstcomm));
 
@@ -781,25 +793,27 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       }
       copy_mat(boxcopy,state->box);
     }
-
-    if (vsite) {
-	wallcycle_start(wcycle,ewcVSITECONSTR);
-	if (graph) {
-	/* Following is necessary because the graph may get out of sync
-	 * with the coordinates if we only have every N'th coordinate set
-	 */
-	if (bRerunMD || bExchanged)
-	  mk_mshift(log,graph,fr->ePBC,state->box,state->x);
-	shift_self(graph,state->box,state->x);
+    
+    bNS = bFirstStep;
+    if (bRerunMD) {
+      /* for rerun MD always do Neighbour Searching */
+      if (ir->nstlist != 0)
+	bNS = TRUE;
+    } else {
+      /* Determine whether or not to do Neighbour Searching */
+      if (bExchanged || (ir->nstlist>0 && (step % ir->nstlist==0))) {
+	bNS = TRUE;
+      } else if (ir->nstlist == -1) {
+	bNS = bBNSB;
+	if (bNS) {
+	  ns_step = step;
+	  /* Initialize the cumulative coordinate scaling matrix */
+	  clear_mat(scale_tot);
+	  for(ii=0; ii<DIM; ii++)
+	    scale_tot[ii][ii] = 1.0;
+	}
       }
-      construct_vsites(log,vsite,state->x,nrnb,ir->delta_t,state->v,
-		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
-      
-      if (graph)
-	unshift_self(graph,state->box,state->x);
-      wallcycle_stop(wcycle,ewcVSITECONSTR);
-    }
-    debug_gmx();
+    } 
 
     if (bNS && !(bFirstStep && ir->bContinuation)) {
       bMasterState = FALSE;
@@ -982,13 +996,13 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
       wallcycle_start(wcycle,ewcUPDATE);
       update(step,&ener[F_DVDL],ir,mdatoms,state,graph,f,buf,
-	     top,grps,shake_vir,cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
+	     top,grps,shake_vir,scale_tot,
+	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
 	     bNEMD,TRUE,bFirstStep,pres);
       wallcycle_stop(wcycle,ewcUPDATE);
     } else {
       /* Need to unshift here */
-      if ((ir->ePBC == epbcXYZ) && (graph->nnodes > 0))
-	unshift_self(graph,state->box,state->x);
+      unshift_self(graph,state->box,state->x);
     }
 
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -996,6 +1010,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (!bOK && !bFFscan)
       gmx_fatal(FARGS,"Constraint error: Shake, Lincs or Settle could not solve the constrains");
+
+    if (vsite) {
+      wallcycle_start(wcycle,ewcVSITECONSTR);
+      if (graph)
+	shift_self(graph,state->box,state->x);
+      
+      construct_vsites(log,vsite,state->x,nrnb,ir->delta_t,state->v,
+		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+      
+      if (graph)
+	unshift_self(graph,state->box,state->x);
+      wallcycle_stop(wcycle,ewcVSITECONSTR);
+    }
 
     /* Non-equilibrium MD: this is parallellized, but only does communication
      * when there really is NEMD.
@@ -1038,6 +1065,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       bGotTermSignal = FALSE;
       bGotUsr1Signal = FALSE;
     }
+  
+    if (ir->nstlist == -1 && !bRerunMD) {
+      bBNSB = atoms_beyond_ns_buffer(ir,fr,&top->blocks[ebCGS],scale_tot,
+				     state->x);
+      if (bBNSB) {
+	nns++;
+	ns_s1 += step + 1 - ns_step;
+	ns_s2 += sqr(step + 1 - ns_step);
+      }
+    }
 
     if (PAR(cr) &&
 	(!bNoGStat || do_per_step(step,ir->nstlist) ||
@@ -1047,7 +1084,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        * This includes communication 
        */
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
-		  ir,grps,bSumEkinhOld,constr,vcm,&terminate);
+		  ir,grps,bSumEkinhOld,constr,vcm,
+		  ir->nstlist==-1 ? &bBNSB : NULL,&terminate);
 
       /* Correct for double counting energies, should be moved to 
        * global_stat 
@@ -1062,7 +1100,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     } else {
       bSumEkinhOld = TRUE;
     }
-      
+
     /* This is just for testing. Nothing is actually done to Ekin
      * since that would require extra communication.
      */
@@ -1289,10 +1327,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   finish_edsam(stdlog,top,ir,mdatoms,mdatoms->start,mdatoms->homenr,cr,
 	       edyn);
 
-  if (bShell_FlexCon) {
+  if (ir->nstlist == -1 && nns>0 && log) {
+    fprintf(log,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n\n",
+	    ns_s1/nns,sqrt(ns_s2/nns - sqr(ns_s1/nns)));
+  }
+
+  if (bShell_FlexCon && log) {
     fprintf(log,"Fraction of iterations that converged:           %.2f %%\n",
 	    (nconverged*100.0)/step_rel);
-    fprintf(log,"Average number of force evaluations per MD step: %.2f\n",
+    fprintf(log,"Average number of force evaluations per MD step: %.2f\n\n",
 	    tcount/step_rel);
   }
 

@@ -388,7 +388,7 @@ static void read_posres(t_params *pr, char *fn, int offset,
       clear_rvec(invbox[j]);
       invbox[j][j] = 1;
     }
-    m_inv_lowerleft0(invbox,invbox);
+    m_inv_ur0(invbox,invbox);
   }
   if (rc_scaling == erscCOM) {
     /* Determine the center of mass of the posres reference coordinates */

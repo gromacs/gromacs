@@ -70,15 +70,16 @@ void global_stat(FILE *log,
 		 t_inputrec *inputrec,
 		 t_groups *grps,bool bSumEkinhOld,
 		 gmx_constr_t constr,
-		 t_vcm *vcm,real *terminate)
+		 t_vcm *vcm,bool *bBNSB,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc0,*itc1;
-  int    iterminate,ie,ifv,isv,irmsd=0,imu=0,idedl,icm=0,imass=0,ica,inb=0;
+  int    ie,ifv,isv,irmsd=0,imu=0,idedl,icm=0,imass=0,ica,inb=0;
+  int    ibnsb,iterminate;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   int    j;
-  real   *rmsd_data;
+  real   *rmsd_data,rbnsb;
   double nb;
   
   if (rb==NULL) {
@@ -142,6 +143,10 @@ void global_stat(FILE *log,
     inb = add_bind(log,rb,1,&nb);
   }
   where();
+  if (bBNSB) {
+    rbnsb = *bBNSB ? 1.0 : 0.0;
+    ibnsb = add_binr(log,rb,1,&rbnsb);
+  }
   iterminate = add_binr(log,rb,1,terminate);
   
   /* Global sum it all */
@@ -184,6 +189,11 @@ void global_stat(FILE *log,
     extract_bind(rb,inb,1,&nb);
     if ((int)(nb + 0.5) != cr->dd->nbonded_global)
       dd_print_missing_interactions(log,cr,(int)(nb + 0.5));
+  }
+  where();
+  if (bBNSB) {
+    extract_binr(rb,ibnsb,1,&rbnsb);
+    *bBNSB = (rbnsb > 0);
   }
   where();
   extract_binr(rb,iterminate,1,terminate);
