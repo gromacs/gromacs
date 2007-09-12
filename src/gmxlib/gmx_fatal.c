@@ -417,8 +417,6 @@ static void low_warning(const char *warn_err,const char *s)
     fprintf(stderr,"%s %d:\n%s\n",warn_err,nwarn,temp2);
   sfree(temp);
   sfree(temp2);
-  if (nwarn >= maxwarn)
-    gmx_fatal(FARGS,"Too many warnings, %s terminated",Program());
 }
 
 void warning(const char *s)
@@ -432,19 +430,24 @@ void warning_error(const char *s)
   low_warning("ERROR",s);
 }
 
-void check_warning_error(int f_errno,const char *file,int line)
+void print_warn_num()
 {
-  if (nwarn_error > 0) {
-    gmx_fatal(f_errno,file,line,"There were %d errors in input file(s)",
-	      nwarn_error);
+  if (nwarn > maxwarn) {
+    gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
+	      "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn,Program());
+  } else if (nwarn > 0) {
+    fprintf(stderr,"\nThere %s %d warning%s\n",
+	    (nwarn==1) ? "was" : "were", nwarn, (nwarn==1) ? "" : "s");
   }
 }
 
-void print_warn_num(void)
+void check_warning_error(int f_errno,const char *file,int line)
 {
-  if (nwarn > 0)
-    fprintf(stderr,"There %s %d warning%s\n",
-	    (nwarn==1) ? "was" : "were", nwarn, (nwarn==1) ? "" : "s");
+  if (nwarn_error > 0) {
+    print_warn_num();
+    gmx_fatal(f_errno,file,line,"There were %d errors in input file(s)",
+	      nwarn_error);
+  }
 }
 
 void _too_few(const char *fn,int line)
@@ -579,7 +582,7 @@ void _gmx_error(const char *key,const char *msg,const char *file,int line)
   char *lines = "-------------------------------------------------------";
   
   cool_quote(tmpbuf,1023,&cqnum);
-  sprintf(buf,"%s\nProgram %s, %s\n"
+  sprintf(buf,"\n%s\nProgram %s, %s\n"
 	  "Source code file: %s, line: %d\n\n"
 	  "%s:\n%s\n%s\n\n%s\n",
 	  lines,ShortProgram(),GromacsVersion(),file,line,
