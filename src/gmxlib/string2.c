@@ -306,10 +306,14 @@ char *wrap_lines(const char *buf,int line_width, int indent,bool bIndentFirst)
 	  b2[i2++]=' ';
       }
     }
-    /* check if one word does not fit on the line */
-    bFitsOnLine = (i-i0 <= line_width);
+    /* If we are at the last newline, copy it */
+    if (buf[i]=='\n' && !buf[i+1]) {
+      b2[i2++] = buf[i++];
+    }
     /* if we're not at the end of the string */
     if (buf[i]) {
+      /* check if one word does not fit on the line */
+      bFitsOnLine = (i-i0 <= line_width);
       /* reset line counters to just after the space */
       i0 = lspace+1;
       i2 = l2space+1;
