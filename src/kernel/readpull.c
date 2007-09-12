@@ -86,7 +86,8 @@ static void init_pullgrp(t_pullgrp *pg,char *wbuf,
       clear_dvec(vec);
     } else {
       string2dvec(s_vec,vec);
-      if (eGeom == epullgDIR || eGeom == epullgCYL)
+      if (eGeom == epullgDIR || eGeom == epullgCYL || 
+	  (eGeom == epullgPOS && dnorm(vec) != 0))
 	/* Normalize the direction vector */
 	dsvmul(1/dnorm(vec),vec,vec);
     }
@@ -252,13 +253,17 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_block *grps,char **gnames)
 	  g > 0 && norm2(pgrp->vec) == 0)
 	gmx_fatal(FARGS,"pull_vec%d can not be zero with geometry %s",
 		  g,EPULLGEOM(pull->eGeom));
+      if ((pull->eGeom == epullgPOS) && pgrp->rate != 0 &&
+	  g > 0 && norm2(pgrp->vec) == 0)
+	gmx_fatal(FARGS,"pull_vec%d can not be zero with geometry %s and non-zero rate",
+		  g,EPULLGEOM(pull->eGeom));
       if (pull->eGeom == epullgCYL &&
 	  (pgrp->vec[XX] != 0 || pgrp->vec[YY] != 0))
 	gmx_fatal(FARGS,"With geometry %s pull_vec%d should have x and y components set to zero",EPULLGEOM(pull->eGeom),g);
     } else {
       if (g == 0) {
 	if (pull->eGeom == epullgCYL)
-	  gmx_fatal(FARGS, "Absolute reference groups are not support with geometry %s",EPULLGEOM(pull->eGeom));
+	  gmx_fatal(FARGS,"Absolute reference groups are not supported with geometry %s",EPULLGEOM(pull->eGeom));
       } else {
 	gmx_fatal(FARGS,"Pull group %d '%s' is empty",g,pgnames[g]);
       }
