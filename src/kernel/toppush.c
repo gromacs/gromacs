@@ -486,12 +486,14 @@ static void push_bondtype(t_params *bt,t_param *b,int nral,int ftype,
     pr_alloc (2,bt);
     
     /* fill the arrays up and down */
-    memcpy((char *) bt->param[bt->nr].c,  (char *) b->c,(size_t)sizeof(b->c));
-    memcpy((char *) bt->param[bt->nr].a,  (char *) b->a,(size_t)sizeof(b->a));
-    memcpy((char *) bt->param[bt->nr+1].c,(char *) b->c,(size_t)sizeof(b->c));
-    for (j=0; (j < nral); j++) 
+    for (j=0; (j < nrfp); j++) {
+      bt->param[bt->nr].c[j]   = b->c[j];
+      bt->param[bt->nr+1].c[j] = b->c[j];
+    }
+    for (j=0; (j<nral); j++) {
+      bt->param[bt->nr].a[j]   = b->a[j];
       bt->param[bt->nr+1].a[j] = b->a[nral-1-j];
-    
+    }
     bt->nr += 2;
   }
 }
@@ -515,7 +517,7 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
     "%*s%*s%*s%*s%*s%*s"
   };
   const char *formlf = "%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-  int      i,ft,ftype,nn,nrfp;
+  int      i,ft,ftype,nn,nrfp,nrfpA,nrfpB;
   char     f1[STRLEN];
   char     alc[MAXATOMLIST+1][20];
   /* One force parameter more, so we can check if we read too many */
@@ -534,18 +536,27 @@ void push_bt(directive d,t_params bt[],int nral,char ***typenames, int ntypes,ch
   ft    = atoi(alc[nral]);
   ftype = ifunc_index(d,ft);
   nrfp  = NRFP(ftype);
+  nrfpA = interaction_function[ftype].nrfpA;
+  nrfpB = interaction_function[ftype].nrfpB;
   strcpy(f1,formnl[nral]);
   strcat(f1,formlf);
   if ((nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11],&c[12])) 
       != nrfp) {
-    if (nn < interaction_function[ftype].nrfpA) {
+    if (nn == nrfpA) {
+      /* Copy the B-state from the A-state */
+      for(i=0; (i<nrfpB); i++)
+	c[nrfpA+i] = c[i];
+    } else {
+      if (nn < nrfpA) {
       warning_error("Not enough parameters");
-    } else if (nn > interaction_function[ftype].nrfpA && nn < nrfp) {
-      warning_error("Too many parameters or not enough parameters for topology B");
-    } else if (nn > nrfp)
-      warning_error("Too many parameters");
-    for( ; (nn<nrfp); nn++)
-      c[nn] = 0.0;
+      } else if (nn > nrfpA && nn < nrfp) {
+	warning_error("Too many parameters or not enough parameters for topology B");
+      } else if (nn > nrfp) {
+	warning_error("Too many parameters");
+      }
+      for(i=nn; (i<nrfp); i++)
+	c[i] = 0.0;
+    }
   }
   for(i=0; (i<nral); i++)
     p.a[i]=name2index(alc[i],typenames,ntypes); 
@@ -632,6 +643,8 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
   
   ftype = ifunc_index(d,ft);
   nrfp  = NRFP(ftype);
+  nrfpA = interaction_function[ftype].nrfpA;
+  nrfpB = interaction_function[ftype].nrfpB;
  
   strcpy(f1,formnl[nral]);
   strcat(f1,formlf[nrfp-1]);
@@ -639,8 +652,21 @@ void push_dihedraltype(directive d,t_params bt[],char ***typenames,int ntypes,ch
   /* Check number of parameters given */
   if ((nn=sscanf(line,f1,&c[0],&c[1],&c[2],&c[3],&c[4],&c[5],&c[6],&c[7],&c[8],&c[9],&c[10],&c[11]))
       != nrfp) {
-    for( ; (nn<nrfp); nn++)
-      c[nn] = 0.0;
+    if (nn == nrfpA) {
+      /* Copy the B-state from the A-state */
+      for(i=0; (i<nrfpB); i++)
+	c[nrfpA+i] = c[i];
+    } else {
+      if (nn < nrfpA) {
+      warning_error("Not enough parameters");
+      } else if (nn > nrfpA && nn < nrfp) {
+	warning_error("Too many parameters or not enough parameters for topology B");
+      } else if (nn > nrfp) {
+	warning_error("Too many parameters");
+      }
+      for(i=nn; (i<nrfp); i++)
+	c[i] = 0.0;
+    }
   }
   
   for(i=0; (i<4); i++) {
@@ -880,8 +906,7 @@ void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line)
   t_molinfo *newmol;
 
   if ((sscanf(line,"%s%d",type,&nrexcl)) != 2) {
-    too_few();
-    return;
+    warning_error("Expected a molecule type name and nrexcl");
   }
   
   /* Test if this atomtype overwrites another */
@@ -913,6 +938,9 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
   int      nral = NRAL(ftype);
   int      nrfp = interaction_function[ftype].nrfpA;
   int      nrfpB= interaction_function[ftype].nrfpB;
+
+  if ((!bB && nrfp == 0) || (bB && nrfpB == 0))
+    return TRUE;
 
   bFound=FALSE;
   if(bGenPairs) {
@@ -965,17 +993,23 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
 }
 
 
-static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype,
-			   t_param *p,bool bB)
+static bool default_params(int ftype,t_params bt[],
+			   t_atoms *at,t_atomtype *atype,
+			   t_param *p,bool bB,
+			   t_param **param_def)
 {
   int      i,j;
   bool     bFound;
   t_param  *pi=NULL;
   int      nr   = bt[ftype].nr;
   int      nral = NRAL(ftype);
-  int      nrfp = interaction_function[ftype].nrfpA;
+  int      nrfpA= interaction_function[ftype].nrfpA;
   int      nrfpB= interaction_function[ftype].nrfpB;
   int     *batype=atype->bondatomtype;
+
+  if ((!bB && nrfpA == 0) || (bB && nrfpB == 0))
+    return TRUE;
+
 
   /* We allow wildcards now. The first type (with or without wildcards) that
    * fits is used, so you should probably put the wildcarded bondtypes
@@ -1015,15 +1049,8 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
       bFound=(j==nral);
     }
   }
-  if (bB) {
-    if (nrfp+nrfpB > MAXFORCEPARAM)
-      gmx_incons("Too many force parameters");
-    for (j=0; (j < nrfpB); j++)
-      p->c[nrfp+j] = bFound ? pi->c[j] : 0.0;
-  }
-  else
-    for (j=0; (j < nrfp); j++)
-      p->c[j] = bFound ? pi->c[j] : 0.0;
+
+  *param_def = pi;
 
   return bFound;
 }
@@ -1032,6 +1059,8 @@ static bool default_params(int ftype,t_params bt[],t_atoms *at,t_atomtype *atype
 
 void push_bondnow(t_params *bond, t_param *b)
 {
+  int j;
+  
   if (debug) {
     fprintf(debug,"push_bondnow: nr = %d\n",bond->nr);
     fflush(debug);
@@ -1040,14 +1069,17 @@ void push_bondnow(t_params *bond, t_param *b)
   pr_alloc (1,bond);
 
   /* fill the arrays */
-  memcpy ((char *)&(bond->param[bond->nr]),(char *)b,(size_t)sizeof(t_param));
-
+  for (j=0; (j < MAXFORCEPARAM); j++) 
+    bond->param[bond->nr].c[j]   = b->c[j];
+  for (j=0; (j < MAXATOMLIST); j++) 
+    bond->param[bond->nr].a[j]   = b->a[j];
+  
   bond->nr++;
 }
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
 	       t_atoms *at,t_atomtype *atype,char *line,
-	       bool bBonded,bool bGenPairs,bool *bWarn_copy_A_B)
+	       bool bBonded,bool bGenPairs,bool bZero,bool *bWarn_copy_A_B)
 {
   const char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -1064,12 +1096,12 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     "%*s%*s%*s%*s%*s%*s"
   };
   const char *ccformat="%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf%lf";
-  int      nr,i,j,nrfp,nrfpA,nrfpB,nral,nread,ftype;
+  int      nr,i,j,nral,nread,ftype;
   char     format[STRLEN];
   /* One force parameter more, so we can check if we read too many */
   double   cc[MAXFORCEPARAM+1];
   int      aa[MAXATOMLIST+1];
-  t_param  param,paramB;
+  t_param  param,paramB,*param_def;
   bool     bFoundA,bFoundB,bDef,bPert,bSwapParity=FALSE;
   char  errbuf[256];
 
@@ -1077,6 +1109,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   nral  = NRAL(ftype);
   for(j=0; j<MAXATOMLIST; j++)
     aa[j]=NOTSET;
+  bDef = (NRFP(ftype) > 0);
+  
   nread = sscanf(line,aaformat[nral-1],
 		 &aa[0],&aa[1],&aa[2],&aa[3],&aa[4],&aa[5]);
   if (nread < nral) {
@@ -1137,17 +1171,22 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
    * studies, as determined by types!
    */
   if(bBonded) {
-    bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE);
-    bFoundB = default_params(ftype,bondtype,at,atype,&param,TRUE);
+    bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE,&param_def);
+    if (bFoundA) {
+      /* Copy the A-state and B-state default parameters */
+      for(j=0; (j<NRFPA(ftype)+NRFPB(ftype)); j++)
+	param.c[j] = param_def->c[j];
+    }
+    bFoundB = default_params(ftype,bondtype,at,atype,&param,TRUE,&param_def);
+    if (bFoundB) {
+      /* Copy only the B-state default parameters */
+      for(j=NRFPA(ftype); (j<NRFP(ftype)); j++)
+	param.c[j] = param_def->c[j];
+    }
   } else {
     bFoundA = default_nb_params(ftype,bondtype,at,&param,FALSE,bGenPairs);
     bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
   }
-  
-  nrfp = NRFP(ftype);
-  bDef = (nrfp > 0);
-  nrfpA=interaction_function[ftype].nrfpA;
-  nrfpB=interaction_function[ftype].nrfpB;
   
   if (nread > nral) {  
     strcpy(format,asformat[nral-1]);
@@ -1156,7 +1195,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     nread = sscanf(line,format,&cc[0],&cc[1],&cc[2],&cc[3],&cc[4],&cc[5],
 		   &cc[6],&cc[7],&cc[8],&cc[9],&cc[10],&cc[11],&cc[12]);
 
-    if (nread == nrfpA && nrfpB != 0)
+    if ((nread == NRFPA(ftype)) && (NRFPB(ftype) != 0))
       {
 	/* We only have to issue a warning if these atoms are perturbed! */
 	bPert = FALSE;
@@ -1170,31 +1209,32 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	    warning(errbuf);
 	    *bWarn_copy_A_B = FALSE;
 	  }
-       
-       
-      /* If only the A parameters were specified, copy them to the B state too */
-	  for(nread=nrfpA ; nread<nrfp; nread++)
-	  {
-	    cc[nread] = cc[nread-nrfpA];
-	  }	
-	}
 	
-	/* If nread was 0 or EOF, no parameters were read => use defaults.
-	 * If nread was nrfpA we copied above so nread=nrfp.
-	 * If nread was nrfp we are cool.
-	 * Anything else is an error!
-	 */	
-	if (nread != 0 && nread != EOF && nread != nrfp)
-	{
-	     gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d for %s.",
-			nread,nrfpA,nrfp,interaction_function[ftype].longname);	
-	}
-	  
+	/* If only the A parameters were specified, copy them to the B state */
+	/* The B-state parameters correspond to the first nrfpB
+	 * A-state parameters.
+	 */
+	for(j=0; (j<NRFPB(ftype)); j++)
+	  cc[nread++] = cc[j];
+      }
+    
+    /* If nread was 0 or EOF, no parameters were read => use defaults.
+     * If nread was nrfpA we copied above so nread=nrfp.
+     * If nread was nrfp we are cool.
+     * Anything else is an error!
+     */	
+    if ((nread != 0) && (nread != EOF) && (nread != NRFP(ftype)))
+      {
+	gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d for %s.",
+		  nread,NRFPA(ftype),NRFP(ftype),
+		  interaction_function[ftype].longname);	
+      }
+    
     for(j=0; (j<nread); j++)
       param.c[j]=cc[j];
       
     /* Check whether we have to use the defaults */
-    if (nread == nrfp)
+    if (nread == NRFP(ftype))
       bDef = FALSE;
   } 
   else
@@ -1207,9 +1247,9 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   if (bDef) {
     /* Use defaults */
 
-    if (nread > 0 && nread < nrfpA) {
+    if (nread > 0 && nread < NRFPA(ftype)) {
       /* Issue an error, do not use defaults */
-      sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",nrfpA);
+      sprintf(errbuf,"Not enough parameters, there should be at least %d (or 0 for defaults)",NRFPA(ftype));
       warning_error(errbuf);
     } else {
       if (nread == 0 || nread == EOF) {
@@ -1221,15 +1261,21 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	    if (bSwapParity)
 	      param.C1 = -1; /* flag to swap parity of vsite construction */
 	  } else {
-	    sprintf(errbuf,"No default %s types, using zeroes",
-		    interaction_function[ftype].longname);
-	    warning(errbuf);
+	    if (bZero) {
+	      sprintf(errbuf,"No default %s types, using zeroes",
+		      interaction_function[ftype].longname);
+	      warning(errbuf);
+	    } else {
+	      sprintf(errbuf,"No default %s types",
+		      interaction_function[ftype].longname);
+	      warning_error(errbuf);
+	    }
 	  }
 	} else
 	  if (bSwapParity)
 	    switch(ftype) {
 	    case F_VSITE3FAD:
-	      param.C0 = 360-param.C0;
+	      param.C0 = 360 - param.C0;
 	      break;
 	    case F_VSITE3OUT:
 	      param.C2 = -param.C2;
@@ -1247,14 +1293,12 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 		  "using normal values",interaction_function[ftype].longname);
 	  warning(errbuf);
 	}
-	for(j=nrfpA; (j<nrfp); j++)
-	  param.c[j]=param.c[j-nrfpA];
       }
     }
   }
   
   if ((ftype==F_PDIHS || ftype==F_ANGRES || ftype==F_ANGRESZ)
-      && param.c[2]!=param.c[5])
+      && param.c[5]!=param.c[2])
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 		"             %s multiplicity can not be perturbed %f!=%f",
 		get_warning_file(),get_warning_line(),
@@ -1264,7 +1308,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Dont add R-B dihedrals where all parameters are zero (no interaction) */
   if (ftype==F_RBDIHS) {
     nr=0;
-    for(i=0;i<nrfp;i++) {
+    for(i=0;i<NRFP(ftype);i++) {
       if(param.c[i]!=0)
 	nr++;
     }

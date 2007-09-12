@@ -377,7 +377,7 @@ static int num_real_atoms(t_topology *sys)
 
 
 static int *new_status(char *topfile,char *topppfile,char *confin,
-		       t_gromppopts *opts,t_inputrec *ir,
+		       t_gromppopts *opts,t_inputrec *ir,bool bZero,
 		       bool bGenVel,bool bVerbose,
 		       bool bSort,t_state *state,
 		       t_atomtype *atype,t_topology *sys,
@@ -397,7 +397,7 @@ static int *new_status(char *topfile,char *topppfile,char *confin,
   init_molinfo(msys);
   
   /* TOPOLOGY processing */
-  msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
+  msys->name=do_top(bVerbose,topfile,topppfile,opts,bZero,&(sys->symtab),
 		    plist,comb,reppow,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
   
   if (bCheckPairs)
@@ -952,8 +952,8 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE,bShuffle=FALSE;
-  static bool bRmVSBds=TRUE,bSort=FALSE,bCheckPairs=FALSE;
-  static int  i,nnodes=1,maxwarn=0;
+  static bool bRmVSBds=TRUE,bSort=FALSE,bCheckPairs=FALSE,bZero=FALSE;
+  static int  i,nnodes=1,maxwarn=10;
   static real fr_time=-1;
   static char *cap=NULL;
   t_pargs pa[] = {
@@ -975,6 +975,8 @@ int main (int argc, char *argv[])
       "Number of warnings after which input processing stops" },
     { "-check14", FALSE, etBOOL, {&bCheckPairs},
       "Remove 1-4 interactions without Van der Waals" },
+    { "-zero",    FALSE, etBOOL, {&bZero},
+      "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
       "Renumber atomtypes and minimize number of atomtypes" },
   };
@@ -1040,7 +1042,7 @@ int main (int argc, char *argv[])
   if (!fexist(fn)) 
     gmx_fatal(FARGS,"%s does not exist",fn);
   forward=new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-		     opts,ir,bGenVel,bVerbose,bSort,&state,
+		     opts,ir,bZero,bGenVel,bVerbose,bSort,&state,
 		     &atype,sys,&msys,plist,&comb,&reppow,
 		     bShuffle ? nnodes : 1,
 		     (opts->eDisre==edrEnsemble),opts->bMorse,
