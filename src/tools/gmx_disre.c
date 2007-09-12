@@ -439,7 +439,7 @@ static void init_dr_res(t_dr_result *dr,int ndr)
 
 static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
 			      int nsteps,t_topology *top,
-			      real max_dr,int nlevels)
+			      real max_dr,int nlevels,bool bThird)
 {
   FILE     *fp;
   int      iii,i,j,nra,nratoms,tp,ri,rj,n_res,index,nlabel,label;
@@ -495,7 +495,10 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
     
       ri = top->atoms.atom[ai].resnr;
       rj = top->atoms.atom[aj].resnr;
-      rav = pow(dr->aver_3[i]/nsteps,-1.0/3.0);
+      if (bThird)
+	rav = pow(dr->aver_3[i]/nsteps,-1.0/3.0);
+      else
+	rav = dr->aver1[i]/nsteps;
       if (debug)
 	fprintf(debug,"DR %d, atoms %d, %d, distance %g\n",i,ai,aj,rav);
       rviol = max(0,rav-top->idef.iparams[tp].disres.up1);
@@ -542,13 +545,16 @@ int gmx_disre(int argc,char *argv[])
   static int  ntop      = 0;
   static int  nlevels   = 20;
   static real max_dr    = 0;
+  static bool bThird    = TRUE;
   t_pargs pa[] = {
     { "-ntop", FALSE, etINT,  {&ntop},
       "Number of large violations that are stored in the log file every step" },
     { "-maxdr", FALSE, etREAL, {&max_dr},
       "Maximum distance violation in matrix output. If less than or equal to 0 the maximum will be determined by the data." },
     { "-nlevels", FALSE, etINT, {&nlevels},
-      "Number of levels in the matrix output" }
+      "Number of levels in the matrix output" },
+    { "-third", FALSE, etBOOL, {&bThird},
+      "Use inverse third power averaging or linear for matrix output" }
   };
   
   FILE        *out=NULL,*aver=NULL,*numv=NULL,*maxxv=NULL,*xvg=NULL;
@@ -754,7 +760,7 @@ int gmx_disre(int argc,char *argv[])
 		     &(top.atoms),xav,NULL,box);
     }
     dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nr,
-		      j,&top,max_dr,nlevels);
+		      j,&top,max_dr,nlevels,bThird);
     fclose(out);
     fclose(aver);
     fclose(numv);
