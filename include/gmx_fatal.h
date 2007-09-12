@@ -130,7 +130,9 @@ check_warning_error(int f_errno,const char *file,int line);
 
 void 
 print_warn_num(void);
-/* Print the total number of warnings, if larger than 0 */
+/* Print the total number of warnings, if larger than 0.
+ * Generates a fatal error when the number is larger than maxwarn.
+ */
   
 void 
 _too_few(const char *fn,int line);
