@@ -1073,14 +1073,13 @@ void push_bondnow(t_params *bond, t_param *b)
     bond->param[bond->nr].c[j]   = b->c[j];
   for (j=0; (j < MAXATOMLIST); j++) 
     bond->param[bond->nr].a[j]   = b->a[j];
-  strcpy(bond->param[bond->nr].s,b->s);
   
   bond->nr++;
 }
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
 	       t_atoms *at,t_atomtype *atype,char *line,
-	       bool bBonded,bool bGenPairs,bool *bWarn_copy_A_B)
+	       bool bBonded,bool bGenPairs,bool bZero,bool *bWarn_copy_A_B)
 {
   const char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -1263,9 +1262,15 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	    if (bSwapParity)
 	      param.C1 = -1; /* flag to swap parity of vsite construction */
 	  } else {
-	    sprintf(errbuf,"No default %s types, using zeroes",
-		    interaction_function[ftype].longname);
-	    warning(errbuf);
+	    if (bZero) {
+	      sprintf(errbuf,"No default %s types, using zeroes",
+		      interaction_function[ftype].longname);
+	      warning(errbuf);
+	    } else {
+	      sprintf(errbuf,"No default %s types",
+		      interaction_function[ftype].longname);
+	      warning_error(errbuf);
+	    }
 	  }
 	} else
 	  if (bSwapParity)

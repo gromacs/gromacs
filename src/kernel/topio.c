@@ -282,6 +282,7 @@ static char **read_topol(char *infile,char *outfile,
 			 int         *nsim,
 			 t_simsystem **sims,
 			 bool        bFEP,
+			 bool        bZero,
 			 bool        bVerbose)
 {
   FILE       *out;
@@ -507,7 +508,7 @@ static char **read_topol(char *infile,char *outfile,
 	    
 	  case d_pairs: 
 	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,
-		      bGenPairs,&bWarn_copy_A_B);
+		      bGenPairs,bZero,&bWarn_copy_A_B);
 	    break;
 	    
 	  case d_vsites2:
@@ -528,7 +529,7 @@ static char **read_topol(char *infile,char *outfile,
 	  case d_water_polarization:
 	  case d_thole_polarization:
 	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
-		      bGenPairs,&bWarn_copy_A_B);
+		      bGenPairs,bZero,&bWarn_copy_A_B);
 	    break;
 	  case d_exclusions:
 	    if (!block2[nmol-1].nr)
@@ -605,6 +606,7 @@ char **do_top(bool         bVerbose,
 	      char         *topfile,
 	      char         *topppfile,
 	      t_gromppopts *opts,
+	      bool         bZero,
 	      t_symtab     *symtab,
 	      t_params     plist[],
 	      int          *combination_rule,
@@ -632,7 +634,7 @@ char **do_top(bool         bVerbose,
 		   symtab,atype,nrmols,molinfo,
 		   plist,combination_rule,repulsion_power,
 		   opts->nshake,&ir->fudgeQQ,nsim,sims,ir->efep!=efepNO,
-		   bVerbose);
+		   bZero,bVerbose);
   if ((*combination_rule != eCOMB_GEOMETRIC) && 
       (ir->vdwtype == evdwUSER)) {
     warning("Using sigma/epsilon based combination rules with"

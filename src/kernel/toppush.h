@@ -74,7 +74,8 @@ extern void push_bondnow (t_params *bond, t_param *b);
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
 		      t_atoms *at,t_atomtype *atype,char *line,
-		      bool bBonded,bool bGenPairs,bool *bWarn_copy_A_B);
+		      bool bBonded,bool bGenPairs,
+		      bool bZero,bool *bWarn_copy_A_B);
 
 extern void push_mol(int nrmols,t_molinfo mols[],char *pline,
 		     int *whichmol,int *nrcopies);

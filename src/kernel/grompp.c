@@ -202,7 +202,7 @@ static int num_real_atoms(t_topology *sys)
 
 static void
 new_status(char *topfile,char *topppfile,char *confin,
-	   t_gromppopts *opts,t_inputrec *ir,
+	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
 	   bool bGenVel,bool bVerbose,t_state *state,
 	   t_atomtype *atype,t_topology *sys,
 	   t_molinfo *msys,t_params plist[],int *comb,real *reppow,
@@ -219,7 +219,7 @@ new_status(char *topfile,char *topppfile,char *confin,
   init_molinfo(msys);
   
   /* TOPOLOGY processing */
-  msys->name=do_top(bVerbose,topfile,topppfile,opts,&(sys->symtab),
+  msys->name=do_top(bVerbose,topfile,topppfile,opts,bZero,&(sys->symtab),
 		    plist,comb,reppow,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
   
   if (bCheckPairs)
@@ -764,7 +764,7 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE;
-  static bool bRmVSBds=TRUE,bCheckPairs=FALSE;
+  static bool bRmVSBds=TRUE,bCheckPairs=FALSE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
@@ -778,6 +778,8 @@ int main (int argc, char *argv[])
       "Number of allowed warnings during input processing" },
     { "-check14", FALSE, etBOOL, {&bCheckPairs},
       "Remove 1-4 interactions without Van der Waals" },
+    { "-zero",    FALSE, etBOOL, {&bZero},
+      "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
       "Renumber atomtypes and minimize number of atomtypes" },
   };
@@ -824,7 +826,7 @@ int main (int argc, char *argv[])
   if (!fexist(fn)) 
     gmx_fatal(FARGS,"%s does not exist",fn);
   new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
-	     opts,ir,bGenVel,bVerbose,&state,
+	     opts,ir,bZero,bGenVel,bVerbose,&state,
 	     atype,sys,&msys,plist,&comb,&reppow,
 	     (opts->eDisre==edrEnsemble),opts->bMorse,
 	     bCheckPairs,&nerror);
