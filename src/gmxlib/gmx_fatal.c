@@ -431,29 +431,24 @@ void warning_error(const char *s)
   low_warning("ERROR",s);
 }
 
-static void low_print_warn_num()
-{
-  if (nwarn > 0)
-    fprintf(stderr,"\nThere %s %d warning%s\n",
-	    (nwarn==1) ? "was" : "were", nwarn, (nwarn==1) ? "" : "s");
-}
-
-void check_warning_error(int f_errno,const char *file,int line)
-{
-  if (nwarn_error > 0) {
-    low_print_warn_num();
-    gmx_fatal(f_errno,file,line,"There were %d errors in input file(s)",
-	      nwarn_error);
-  }
-}
-
 void print_warn_num()
 {
   if (nwarn > maxwarn) {
     gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
 	      "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn,Program());
+  } else if (nwarn > 0) {
+    fprintf(stderr,"\nThere %s %d warning%s\n",
+	    (nwarn==1) ? "was" : "were", nwarn, (nwarn==1) ? "" : "s");
   }
-  low_print_warn_num();
+}
+
+void check_warning_error(int f_errno,const char *file,int line)
+{
+  if (nwarn_error > 0) {
+    print_warn_num();
+    gmx_fatal(f_errno,file,line,"There were %d errors in input file(s)",
+	      nwarn_error);
+  }
 }
 
 void _too_few(const char *fn,int line)
