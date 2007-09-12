@@ -523,22 +523,31 @@ AC_ARG_WITH(gsl,
  [  --without-gsl                 do not link to the GNU scientific library, prevents certain analysis tools from being built],,without_gsl=no)
 
 ######
-if test "$without_gsl" = "no"; then
-  AC_CHECK_LIB(gslcblas,main)
-  AC_CHECK_LIB(gsl,main)
+if test "$with_gsl" = "yes"; then
+  AC_CHECK_HEADERS([gsl/gsl_version.h],[
+# header found, check for libraries 
+  AC_CHECK_LIB(gslcblas,main,[
+# gslcblas library found, check main lib
+  AC_CHECK_LIB(gsl,main)])])
+#
 fi
 
 AC_ARG_WITH(xml,
- [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,without_xml2=no)
+ [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
  
 #########
 # Check for libxml2, but it is optional, so dont stop
 # if it isnt there.
-if test "$without_xml2" = "no"; then
-  AC_CHECK_LIB(xml2,main)
-  INCLUDES="$INCLUDES -I/usr/include/libxml2"
- fi
-
+if test "$with_xml" = "yes"; then
+   ac_save_CPPFLAGS="$CPPFLAGS"
+   CPPFLAGS="$ac_save_CPPFLAGS -I/usr/include/libxml2"
+   AC_CHECK_HEADERS([libxml/parser.h],AC_CHECK_LIB(xml2,main))
+   if test "$ac_cv_lib_xml2_main" = "yes"; then
+     INCLUDES="$INCLUDES -I/usr/include/libxml2"
+   fi
+# restore CPPFLAGS
+   CPPFLAGS="$ac_save_CPPFLAGS"
+fi
 
 #### 
 # And collect the f77 libs to the linker - on Solaris, f77 stuff must go first,
