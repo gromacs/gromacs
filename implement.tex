@@ -177,34 +177,32 @@ One of these, the implementation of the
 The most important other optimizations are described below.
 
 \subsection{Inner Loops for Water}
+\label{sec:waterloops}
 {\gromacs} users special inner loop to calculate non-bonded
 interactions for water molecules with other atoms, and yet
 another set of loops for interactions between pairs of
-water molecules. This very optimized loop assumes 
-a water model similar to
+water molecules. There highly optimized loops for two types of water models.
+For three site models similar to
 SPC~\cite{Berendsen81}, {\ie}:
 \begin{enumerate}
 \item   There are three atoms in the molecule.
+\item   The whole molecule is a single charge group.
 \item   The first atom has Lennard-Jones (\secref{lj}) and 
         coulomb (\secref{coul}) interactions.
 \item   Atoms two and three have only coulomb interactions, 
         and equal charges.
 \end{enumerate}
-
-The loop also works for the SPC/E~\cite{Berendsen87} and 
-TIP3P~\cite{Jorgensen83} water models. For more complicated molecules
-there is a general solvent loop assuming
-(note the order):
+These loops also works for the SPC/E~\cite{Berendsen87} and 
+TIP3P~\cite{Jorgensen83} water models.
+And for four site water models similar to TIP4P~\cite{Jorgensen83}:
 \begin{enumerate}
-\item   At the beginning of the molecule topology there is
-        an arbitrary number of atoms with Lennard-Jones and
-        coulomb interactions.
-\item   Then we have an arbitrary number of atoms with coulomb interactions only.
-\item   And finally there can be an arbitrary number of 
-        atoms with Lennard-Jones interactions only.
+\item   There are four atoms in the molecule.
+\item   The whole molecule is a single charge group.
+\item   The first atom has only Lennard-Jones (\secref{lj}) interactions.
+\item   Atoms two and three have only coulomb (\secref{coul}) interactions, 
+        and equal charges.
+\item   Atom four has only coulomb interactions.
 \end{enumerate}
-Note that this loop provides much less optimization than the water
-loop, but it is slightly better than the default routine.
 
 The gain of these implementations is that there are more floating point
 operations in a single loop, which implies that some compilers

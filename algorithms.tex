@@ -453,20 +453,39 @@ non-bonded forces must be calculated.  The pair list contains atoms
 $i$, a displacement vector for atom $i$, and all particles $j$ that
 are within \verb'rshort' of this particular image of atom $i$.  The
 list is updated every \verb'nstlist' steps, where \verb'nstlist' is
-typically 10 for the {\gromacs} forcefield and 5 for the \gromosv{96}
-forcefield.  There is an option to calculate the total non-bonded
+typically 10. There is an option to calculate the total non-bonded
 force on each particle due to all particle in a shell around the
 list-cutoff, {\ie} at a distance between \verb'rshort' and
 \verb'rlong'.  This force is calculated during the pair list update
 and  retained during \verb'nstlist' steps.
 
 To make the \normindex{neighbor list} all particles that are close
-({\ie} within the cutoff) to a given particle must be found.
+({\ie} within the neighbor list cutoff) to a given particle must be found.
 This searching, usually called neighbor searching (NS),
 involves periodic boundary conditions and determining the {\em image}
 (see \secref{pbc}). Without periodic boundary conditions a simple
 $O(N^2)$ algorithm must be used. With periodic boundary conditions
 a grid search can be used, which is $O(N)$.
+
+\ifthenelse{\equal{\gmxlite}{1}}{}{
+To completely avoid cut-off artifacts, the non-bonded potentials
+can be switched exactly to zero at some distance smaller
+than the neighbor list cut-off (there are several ways to do this
+in {\gromacs}, see \secref{mod_nb_int}).
+One then has a buffer with the size equal to the neighbor list
+cut-off minus the longest interaction cut-off.
+In this case one can also choose to let {\tt mdrun} only update
+the neighbor list when required. That is when one or more particles
+have moved more than half the buffer size from the center of geometry
+of the charge group they belong to (see \secref{chargegroup})
+as determined at the previous neighbor search.
+This option guarantees that their are no cut-off artifacts.
+Note that for larger systems this comes at a high computational cost,
+since the neighbor list update frequency will be determined
+by just one or two particles moving slightly beyond the half buffer length
+(which not even necessarily implies that the neighbor list is invalid),
+while 99.99\% of the particles are fine.
+} % Brace matches ifthenelse test for gmxlite
 
 \subsubsection{\swapindex{Simple}{search}}
 Due to \eqnsref{box_rot}{simplerc}, the vector $\rvij$
@@ -515,6 +534,7 @@ be the preferred box shape.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{Charge groups}
+\label{sec:chargegroup}
 Where applicable, neighbor searching is carried out on the basis of
 {\em charge groups}. A \swapindex{charge}{group} is a small set of
 nearby atoms with an integer net charge. Charge groups are defined in
@@ -541,6 +561,8 @@ electrostatics.
 Charge groups also provide a speed up of the neighbor search.
 The neighbor searching for a water system, for instance,
 is $3^2=9$ times faster when each molecule is treated as a charge group.
+Also the highly optimized water force loops (see \secref{waterloops})
+only work when all atoms in a water molecule form a single charge group.
 } % Brace matches ifthenelse test for gmxlite
 
 \subsection{Compute forces}
