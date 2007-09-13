@@ -965,7 +965,7 @@ _nb_kernel101_x86_64_sse2:
         ;# non-zero, do one more workunit
         jmp   .nb101_threadloop
 .nb101_end:
-	add rsp, 696
+
 	emms
 
 	mov eax, [rsp + nb101_nouter]
@@ -974,7 +974,8 @@ _nb_kernel101_x86_64_sse2:
 	mov rdx, [rbp + nb101_inneriter]
 	mov [rcx], eax
 	mov [rdx], ebx
-
+        add rsp, 696
+	
 
         pop r15
         pop r14

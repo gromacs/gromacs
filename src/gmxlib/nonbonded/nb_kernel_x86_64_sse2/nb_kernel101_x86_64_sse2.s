@@ -940,7 +940,6 @@ _nb_kernel101_x86_64_sse2.nb101_outerend:
         ## non-zero, do one more workunit
         jmp   _nb_kernel101_x86_64_sse2.nb101_threadloop
 _nb_kernel101_x86_64_sse2.nb101_end: 
-        addq $696,%rsp
         emms
 
         movl nb101_nouter(%rsp),%eax
@@ -949,7 +948,8 @@ _nb_kernel101_x86_64_sse2.nb101_end:
         movq nb101_inneriter(%rbp),%rdx
         movl %eax,(%rcx)
         movl %ebx,(%rdx)
-
+        addq $696,%rsp
+	
 
         pop %r15
         pop %r14
