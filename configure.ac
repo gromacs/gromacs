@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3.1, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3.2_pre, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -11,7 +11,6 @@ AC_CANONICAL_HOST
 AM_INIT_AUTOMAKE(tar-ustar)
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
-AM_PROG_AS
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
@@ -107,16 +106,7 @@ esac
 ### Altivec on powerpc (motorola)
 AC_ARG_ENABLE(ppc_altivec,
  [  --disable-ppc-altivec         don't build Altivec loops on PowerPC],,enable_ppc_altivec=undef)
-# Power3/4/5 running AIX does not support altivec. We identify this with vendor=IBM.
-# IBM powerpc 970 boxes run linux, and have vendor=unknown.
-if test "$enable_ppc_altivec" = "undef"; then
-  case "${host_cpu}-${host_vendor}" in
-    ppc*-ibm* | powerpc*-ibm*) enable_ppc_altivec=no ;;
-    ppc*-* | powerpc*-*) enable_ppc_altivec=yes ;; 
-    *) enable_ppc_altivec=no ;;
-  esac
-fi
-
+# Altivec checks are being done further down, after compiler has been detected.
 
 ### ia64 assembly code
 AC_ARG_ENABLE(ia64_asm,
@@ -270,6 +260,8 @@ if test "$enable_fortran" = "yes"; then
     AC_MSG_ERROR([No fortran compiler found])
   fi
 fi
+
+AM_PROG_AS( $CC )
 
 # if we are using mpi, also get an MPICC. We cannot set that in the PROG_CC macro
 # above, since autoconf checks that the created file can be executed. This would
@@ -726,6 +718,24 @@ fi
 #
 # Test altivec support.
 #
+if test "$enable_ppc_altivec" = "undef"; then
+  # Power3/4/5 running AIX does not support altivec. We identify this with vendor=IBM.
+  # IBM powerpc 970 boxes run linux, and have vendor=unknown.
+  case "${host_cpu}-${host_vendor}" in
+    ppc*-ibm* | powerpc*-ibm*) enable_ppc_altivec=no ;;
+    ppc*-* | powerpc*-*) enable_ppc_altivec=yes ;;
+    *) enable_ppc_altivec=no ;;
+  esac
+
+  if test "$enable_ppc_altivec" = "yes"; then
+    if $CC 2>&1 | grep 'IBM' > /dev/null 2>&1; then
+      AC_MSG_WARN([IBM compilers have Altivec bugs, disabled by default - use gcc instead!])
+      enable_ppc_altivec=no
+    fi
+  fi
+
+fi
+
 if test "$enable_ppc_altivec" = "yes"; then
   if test "$enable_float" = "no"; then
     AC_MSG_WARN([PowerPC Altivec loops can only be used in single precision - disabling])
