@@ -93,8 +93,8 @@ extern void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL);
 extern int read_nblist(FILE *in,FILE *out,int **mat,int natoms,bool bSymm);
 /* Returns total number of neighbors. If bSymm the matrix is symmetrized. */
 
-extern bool atoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
+extern int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 				   matrix scale_tot,rvec *x);
-/* Returns if atoms moved beyond the ns buffer and thus new ns is required */
+/* Returns the number of atoms that moved beyond the ns buffer */
 
 #endif	/* _ns_h */

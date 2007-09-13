@@ -2113,21 +2113,20 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   return nsearch;
 }
 
-bool atoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
+int natoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 			    matrix scale_tot,rvec *x)
 {
   int  cg0,cg1,cg,a0,a1,a,i,j;
   real rint,hbuf2,scale;
   rvec *cg_cm,cgsc;
   bool bIsotropic;
-  bool bBeyond;
+  int  nBeyond;
 
-  bBeyond = FALSE;
+  nBeyond = 0;
 
   rint = max(ir->rcoulomb,ir->rvdw);
-  if (ir->rlist <= rint)
-    gmx_fatal(FARGS,
-	      "The neighbor search buffer has zero or negative size: %f nm",
+  if (ir->rlist < rint)
+    gmx_fatal(FARGS,"The neighbor search buffer has negative size: %f nm",
 	      ir->rlist - rint);
 
   cg_cm = fr->cg_cm;
@@ -2135,25 +2134,23 @@ bool atoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
   cg0 = fr->cg0;
   cg1 = fr->hcg;
 
-  if (!DYNAMIC_BOX(*ir)) {
+  if (!EI_DYNAMICS(ir->eI) || !DYNAMIC_BOX(*ir)) {
     hbuf2 = sqr(0.5*(ir->rlist - rint));
     for(cg=cg0; cg<cg1; cg++) {
       a0 = cgs->index[cg];
       a1 = cgs->index[cg+1];
       for(a=a0; a<a1; a++) {
 	if (distance2(cg_cm[cg],x[a]) > hbuf2)
-	  bBeyond = TRUE;
+	  nBeyond++;
       }
     }
   } else {
-    if (ir->epc = epcPARRINELLORAHMAN)
-      gmx_fatal(FARGS,"Automated neighbor list updating frequency is not yet implemented for pcoupl = %s",epcoupl_names[epcPARRINELLORAHMAN]);
-
     bIsotropic = TRUE;
     scale = scale_tot[0][0];
     for(i=1; i<DIM; i++) {
-      /* With anisotropic scaling the minimum eigenvalue of the scaling matrix
-       * should be used for determining the buffer size.
+      /* With anisotropic scaling, the original spherical ns volumes become
+       * ellipsoids. To avoid costly transformations we use the minimum
+       * eigenvalue of the scaling matrix for determining the buffer size.
        * Since the lower half is 0, the eigenvalues are the diagonal elements.
        */
       scale = min(scale,scale_tot[i][i]);
@@ -2171,7 +2168,7 @@ bool atoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 	a1 = cgs->index[cg+1];
 	for(a=a0; a<a1; a++) {
 	  if (distance2(cgsc,x[a]) > hbuf2)
-	    bBeyond = TRUE;
+	    nBeyond++;
 	}
       }
     } else {
@@ -2185,11 +2182,11 @@ bool atoms_beyond_ns_buffer(t_inputrec *ir,t_forcerec *fr,t_block *cgs,
 	a1 = cgs->index[cg+1];
 	for(a=a0; a<a1; a++) {
 	  if (distance2(cgsc,x[a]) > hbuf2)
-	    bBeyond = TRUE;
+	    nBeyond++;
 	}
       }
     }
   }
 
-  return bBeyond;
+  return nBeyond;
 }

@@ -348,6 +348,14 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning(NULL);
   }
 
+  if (ir->nstlist == -1) {
+    sprintf(err_buf,
+	    "nstlist=-1 only works with switched or shifted potentials");
+    CHECK(!(EEL_NOCUT(ir->coulombtype) && EVDW_NOCUT(ir->vdwtype)));
+  }
+  sprintf(err_buf,"nstlist can not be smaller than -1");
+  CHECK(ir->nstlist < -1);
+
   if(ir->eI == eiLBFGS && (ir->coulombtype==eelCUT || ir->vdwtype==evdwCUT)) {
     sprintf(warn_buf,"For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
     warning(NULL);

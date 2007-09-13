@@ -70,7 +70,7 @@ void global_stat(FILE *log,
 		 t_inputrec *inputrec,
 		 t_groups *grps,bool bSumEkinhOld,
 		 gmx_constr_t constr,
-		 t_vcm *vcm,bool *bBNSB,real *terminate)
+		 t_vcm *vcm,int *nabnsb,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc0,*itc1;
@@ -143,8 +143,8 @@ void global_stat(FILE *log,
     inb = add_bind(log,rb,1,&nb);
   }
   where();
-  if (bBNSB) {
-    rbnsb = *bBNSB ? 1.0 : 0.0;
+  if (nabnsb) {
+    rbnsb = *nabnsb;
     ibnsb = add_binr(log,rb,1,&rbnsb);
   }
   iterminate = add_binr(log,rb,1,terminate);
@@ -191,9 +191,9 @@ void global_stat(FILE *log,
       dd_print_missing_interactions(log,cr,(int)(nb + 0.5));
   }
   where();
-  if (bBNSB) {
+  if (nabnsb) {
     extract_binr(rb,ibnsb,1,&rbnsb);
-    *bBNSB = (rbnsb > 0);
+    *nabnsb = (int)(rbnsb + 0.5);
   }
   where();
   extract_binr(rb,iterminate,1,terminate);

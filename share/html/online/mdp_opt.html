@@ -327,9 +327,35 @@ the last energies are always written</dd>
 <h3><!--Idx-->Neighbor searching<!--EIdx--></h3>
 <dl>
 <dt><h4>nstlist: (10) [steps]</h4></dt>
+<dd><dl compact>
+<dt><b>&gt 0</b></dt>
 <dd>Frequency to update the <!--Idx-->neighbor list<!--EIdx--> (and
 the long-range forces, when using twin-range cut-off's). When this is 0,
-the neighbor list is made only once.</dd>
+the neighbor list is made only once.
+With energy minimization the neighborlist will be updated for every
+energy evaluation when <b>nstlist</b> &gt 0</dd>.
+<dt><b>0</b></dt>
+<dd>The neighbor list is only constructed once and never updated.
+This is mainly useful for vacuum simulations in which all particles
+see each other.</dd>
+<dt><b>-1</b></dt>
+<dd>Automated update frequency.
+This can only be used with switched or shifted potentials where
+the cut-off can be smaller than <b>rlist</b>. One then has a buffer
+of size <b>rlist</b> minus the longest cut-off.
+The neighbor list is only updated when one or more particles have moved further
+than half the buffer size from the center of geometry of their charge group
+as determined at the previous neighbor search.
+Coordinate scaling due to pressure coupling or the <b>deform</b> option
+is taken into account.
+This option guarantees that their are no cut-off artifacts.
+But for larger systems this comes at a high computational cost,
+since the neighbor list update frequency will be determined
+by just one or two particles moving slightly beyond the half buffer length
+(which not even necessarily implies that the neighbor list is invalid),
+while 99.99% of the particles are fine.
+</dd>
+</dl></dd>
 
 <dt><h4>ns_type:</h4></dt>
 <dd><dl compact>

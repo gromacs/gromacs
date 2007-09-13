@@ -65,7 +65,7 @@ extern void update(int          step,
 		   t_topology   *top,
 		   t_groups     *grps,
 		   tensor       vir_part,
-		   matrix       scale_tot,
+		   matrix       *scale_tot,
 		   t_commrec    *cr,
 		   t_nrnb       *nrnb,
 		   gmx_wallcycle_t wcycle,
@@ -138,8 +138,8 @@ extern void calc_pres(int ePBC,int nwall,matrix box,
  */
 
 extern void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
-				   tensor box,tensor boxv,tensor M,
-				    bool bFirstStep);
+				    tensor box,tensor boxv,tensor M,
+				    matrix *scale_tot,bool bFirstStep);
   
 extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
 			     matrix mu);

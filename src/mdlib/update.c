@@ -576,7 +576,7 @@ static void deform_store(matrix box,const t_inputrec *ir,
   }
 }
 
-static void deform(int start,int homenr,rvec x[],matrix box,matrix scale_tot,
+static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
 		   const t_inputrec *ir,int step)
 {
   matrix new,invbox,mu;
@@ -611,8 +611,12 @@ static void deform(int start,int homenr,rvec x[],matrix box,matrix scale_tot,
     x[i][YY] = mu[YY][YY]*x[i][YY]+mu[ZZ][YY]*x[i][ZZ];
     x[i][ZZ] = mu[ZZ][ZZ]*x[i][ZZ];
   }
-  /* The transposes of the scaling matrices are stored: inverse order mult. */
-  mmul_ur0(scale_tot,mu,scale_tot);
+  if (*scale_tot) {
+    /* The transposes of the scaling matrices are stored,
+     * so we need to do matrix multiplication in the inverse order.
+     */
+    mmul_ur0(*scale_tot,mu,*scale_tot);
+  }
 }
 
 void update(int          step,
@@ -626,7 +630,7 @@ void update(int          step,
             t_topology   *top,
             t_groups     *grps,
             tensor       vir_part,
-	    matrix       scale_tot,
+	    matrix       *scale_tot,
             t_commrec    *cr,
             t_nrnb       *nrnb,
 	    gmx_wallcycle_t wcycle,
@@ -680,7 +684,7 @@ void update(int          step,
     }
     if (inputrec->epc == epcPARRINELLORAHMAN)
       parrinellorahman_pcoupl(inputrec,step,pres,
-			      state->box,state->boxv,M,bFirstStep);
+			      state->box,state->boxv,M,scale_tot,bFirstStep);
 
     /* Now do the actual update of velocities and positions */
     where();
@@ -854,10 +858,12 @@ void update(int          step,
     if (inputrec->epc == epcBERENDSEN) {
       berendsen_pscale(state->pcoupl_mu,state->box,start,homenr,state->x,
 		       md->cFREEZE,nrnb,inputrec->opts.nFreeze);
-      /* The transposes of the scaling matrices are stored,
-       * therefore we need to reverse the order in the multiplication.
-       */
-      mmul_ur0(scale_tot,state->pcoupl_mu,scale_tot);
+      if (scale_tot) {
+	/* The transposes of the scaling matrices are stored,
+	 * therefore we need to reverse the order in the multiplication.
+	 */
+	mmul_ur0(*scale_tot,state->pcoupl_mu,*scale_tot);
+      }
     } else if (inputrec->epc == epcPARRINELLORAHMAN) {
       /* The box velocities were updated in do_pr_pcoupl in the update
        * iteration, but we dont change the box vectors until we get here

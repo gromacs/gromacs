@@ -275,10 +275,20 @@ static real evaluate_energy(FILE *fplog, bool bVerbose,t_inputrec *inputrec,
 			    rvec *buf, real ener[], int count)
 {
   bool bNS;
+  int  nabnsb;
   tensor force_vir,shake_vir;
   real terminate=0;
-
-  bNS = (inputrec->nstlist > 0);
+  
+  bNS = FALSE;
+  if (inputrec->nstlist > 0 ||
+      (inputrec->eI == eiSteep && count == 0)) {
+    bNS = TRUE;
+  } else if (inputrec->nstlist == -1) {
+    nabnsb = natoms_beyond_ns_buffer(inputrec,fr,&top->blocks[ebCGS],NULL,x);
+    if (PAR(cr))
+      gmx_sumi(1,&nabnsb,cr);
+    bNS = (nabnsb > 0);
+  }
 
   if (vsite)
     construct_vsites(fplog,vsite,x,nrnb,1,NULL,&top->idef,
@@ -1660,41 +1670,10 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
 		0,NULL,NULL,nrnb,TRUE);
     }
     
-    if (vsite)
-      construct_vsites(fplog,vsite,pos[TRY],nrnb,1,NULL,&top->idef,
-		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
-    
-    /* Calc force & energy on new positions
-     * do_force always puts the charge groups in the box and shifts again
-     * We do not unshift, so molecules are always whole in steep.c
-     */
-    do_force(fplog,cr,inputrec,
- 	     count,nrnb,wcycle,top,grps,state->box,pos[TRY],
-	     force[TRY],buf,
-	     mdatoms,ener,fcd,
- 	     lambda,graph,
-	     TRUE,inputrec->nstlist>0 || count==0,FALSE,TRUE,fr,mu_tot,
-	     FALSE,0.0,NULL,NULL); 
-    
-    /* Spread the force on vsite particle to the other particles... */
-    if (vsite) 
-      spread_vsite_f(fplog,vsite,pos[TRY],force[TRY],fr->fshift,nrnb,
-		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-
-    if (vsite && fr->bEwald) 
-      spread_vsite_f(fplog,vsite,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		     fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-    
-    sum_lrforces(force[TRY],fr,mdatoms->start,mdatoms->homenr);
-
-    /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(fplog,inputrec,fr,count,mdatoms->nr,state->box,
-		  state->lambda,pres,vir,ener);
-    
-    /* Sum the potential energy terms from group contributions  */
-    sum_epot(&(inputrec->opts),grps,ener); 
-
-    ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+    Epot[TRY] = evaluate_energy(fplog,bVerbose,inputrec,top,grps,nrnb,wcycle,
+				vsite,fcd,cr,graph,mdatoms,fr,lambda,
+				mu_tot,state->box,pos[TRY],force[TRY],
+				buf,ener,count);
     
     if (MASTER(cr))
       print_ebin_header(fplog,count,count,lambda);
@@ -1719,20 +1698,10 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
 	for(m=0;(m<DIM);m++) 
 	  force[TRY][i][m] = (xcf[i][m] - pos[TRY][i][m])/constepsize;
     }
-
-    /* Clear stuff again  */
-    clear_mat(force_vir); 
-    clear_mat(shake_vir); 
-    
-    /* Communicat stuff when parallel  */
-    if (PAR(cr))  
-      global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
- 		  inputrec,grps,FALSE,constr,NULL,NULL,&terminate); 
     
     /* This is the new energy  */
     Fmax[TRY]=f_max(cr,cr->left,cr->right,cr->nnodes,&(inputrec->opts),mdatoms,
 		    force[TRY],&(nfmax[TRY]));
-    Epot[TRY]=ener[F_EPOT];
     if (count == 0)
       Epot[Min] = Epot[TRY]+1;
     

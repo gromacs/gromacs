@@ -436,16 +436,16 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
-  bool       bNoGStat,bNS,bBNSB,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+  bool       bNoGStat,bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
   t_vcm      *vcm;
-  int        ns_step=0,nns=0;
-  double     ns_s1=0,ns_s2=0;
-  matrix     scale_tot;
+  int        nabnsb,ns_step=0,nns=0;
+  double     ns_s1=0,ns_s2=0,ns_ab=0;
+  matrix     *scale_tot;
   t_trxframe rerun_fr;
   gmx_repl_ex_t *repl_ex=NULL;
   /* A boolean (disguised as a real) to terminate mdrun */  
@@ -587,8 +587,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     bHaveConstr = TRUE;
   }
 
-  init_edsam(stdlog,top,ir,mdatoms,mdatoms->start,mdatoms->homenr,cr,
-	     edyn);
+  init_edsam(stdlog,top,ir,mdatoms,mdatoms->start,mdatoms->homenr,cr,edyn);
   if (ed_constraints(edyn))
     bHaveConstr = TRUE;
     
@@ -687,6 +686,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(log,"\n");
   }
 
+  if (ir->nstlist == -1)
+    snew(scale_tot,1);
+  else
+    scale_tot = NULL;
+
   /* Write start time */
   start_t=print_date_and_time(log,cr->nodeid,"Started mdrun");
   wallcycle_start(wcycle,ewcRUN);
@@ -725,7 +729,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   bLastStep = FALSE;
   bSumEkinhOld = FALSE,
   bExchanged = FALSE;
-  bBNSB = TRUE;
+  nabnsb = 1;
   step = ir->init_step;
   step_rel = 0;
 
@@ -804,13 +808,19 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
       if (bExchanged || (ir->nstlist>0 && (step % ir->nstlist==0))) {
 	bNS = TRUE;
       } else if (ir->nstlist == -1) {
-	bNS = bBNSB;
+	bNS = (nabnsb > 0);
 	if (bNS) {
+	  if (debug)
+	    fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %d steps\n",nabnsb,step-ns_step);
+	  nns++;
+	  ns_s1 += step - ns_step;
+	  ns_s2 += sqr(step - ns_step);
+	  ns_ab += nabnsb;
 	  ns_step = step;
 	  /* Initialize the cumulative coordinate scaling matrix */
-	  clear_mat(scale_tot);
+	  clear_mat(*scale_tot);
 	  for(ii=0; ii<DIM; ii++)
-	    scale_tot[ii][ii] = 1.0;
+	    (*scale_tot)[ii][ii] = 1.0;
 	}
       }
     } 
@@ -1067,13 +1077,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
   
     if (ir->nstlist == -1 && !bRerunMD) {
-      bBNSB = atoms_beyond_ns_buffer(ir,fr,&top->blocks[ebCGS],scale_tot,
-				     state->x);
-      if (bBNSB) {
-	nns++;
-	ns_s1 += step + 1 - ns_step;
-	ns_s2 += sqr(step + 1 - ns_step);
-      }
+      nabnsb =
+	natoms_beyond_ns_buffer(ir,fr,&top->blocks[ebCGS],*scale_tot,state->x);
     }
 
     if (PAR(cr) &&
@@ -1085,7 +1090,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
        */
       global_stat(log,cr,ener,force_vir,shake_vir,mu_tot,
 		  ir,grps,bSumEkinhOld,constr,vcm,
-		  ir->nstlist==-1 ? &bBNSB : NULL,&terminate);
+		  ir->nstlist==-1 ? &nabnsb : NULL,&terminate);
 
       /* Correct for double counting energies, should be moved to 
        * global_stat 
@@ -1328,8 +1333,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	       edyn);
 
   if (ir->nstlist == -1 && nns>0 && log) {
-    fprintf(log,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n\n",
-	    ns_s1/nns,sqrt(ns_s2/nns - sqr(ns_s1/nns)));
+    fprintf(log,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n",ns_s1/nns,sqrt(ns_s2/nns - sqr(ns_s1/nns)));
+    fprintf(log,"Average number of atoms that crossed the half buffer length: %.1f\n\n",ns_ab/nns);
   }
 
   if (bShell_FlexCon && log) {
