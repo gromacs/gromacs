@@ -1262,9 +1262,8 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
 	      param.C1 = -1; /* flag to swap parity of vsite construction */
 	  } else {
 	    if (bZero) {
-	      sprintf(errbuf,"No default %s types, using zeroes",
+	      fprintf(stderr,"NOTE: No default %s types, using zeroes\n",
 		      interaction_function[ftype].longname);
-	      warning(errbuf);
 	    } else {
 	      sprintf(errbuf,"No default %s types",
 		      interaction_function[ftype].longname);
