@@ -1137,6 +1137,7 @@ void get_stx_coordnum(char *infile,int *natoms)
   t_trxframe fr;
 
   ftp=fn2ftp(infile);
+  range_check(ftp,0,efNR);
   switch (ftp) {
   case efGRO:
     get_coordnum(infile, natoms);
@@ -1172,7 +1173,8 @@ void get_stx_coordnum(char *infile,int *natoms)
     break;
   }
   default:
-    gmx_incons("Not supported in get_stx_coordnum");
+    gmx_fatal(FARGS,"File type %s not supported in get_stx_coordnum",
+	      ftp2ext(ftp));
   }
 }
 
