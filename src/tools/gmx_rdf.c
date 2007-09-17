@@ -124,19 +124,47 @@ static void check_box_c(matrix box)
 	      box[ZZ][XX],box[ZZ][YY],box[ZZ][ZZ]);
 }
 
+static void calc_comg(int is,int *coi,int *index,bool bMass,t_atom *atom,
+		      rvec *x,rvec *x_comg)
+{
+  int  c,i,d;
+  rvec xc;
+  real mtot,m;
+
+  if (bMass && atom==NULL)
+    gmx_fatal(FARGS,"No masses available while mass weighting was requested");
+
+  for(c=0; c<is; c++) {
+    clear_rvec(xc);
+    mtot = 0;
+    for(i=coi[c]; i<coi[c+1]; i++) {
+      if (bMass) {
+	m = atom[index[i]].m;
+	for(d=0; d<DIM; d++)
+	  xc[d] += m*x[index[i]][d];
+	mtot += m;
+      } else {
+	rvec_inc(xc,x[index[i]]);
+	mtot += 1.0;
+      }
+    }
+    svmul(1/mtot,xc,x_comg[c]);
+  }
+}
+
 static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 		   char *fnRDF,char *fnCNRDF, char *fnHQ,
-		   bool bCM,bool bXY,bool bPBC,bool bNormalize,
+		   bool bCM,char **rdft,bool bXY,bool bPBC,bool bNormalize,
 		   real cutoff,real binwidth,real fade,int ng)
 {
   FILE       *fp;
   int        status;
   char       outf1[STRLEN],outf2[STRLEN];
-  char       title[STRLEN];
+  char       title[STRLEN],gtitle[STRLEN];
   int        g,natoms,i,j,k,nbin,j0,j1,n,nframes;
   int        **count;
   char       **grpname;
-  int        *isize,isize_cm=0,nrdf=0,max_i;
+  int        *isize,isize_cm=0,nrdf=0,max_i,isize0,isize_g;
   atom_id    **index,*index_cm=NULL;
 #if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
   long long int *sum;
@@ -145,15 +173,18 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 #endif
   real       t,rmax2,cut2,r,r2,invbinw,normfac;
   real       segvol,spherevol,prev_spherevol,**rdf;
-  rvec       *x,xcom,dx,*x_i1,xi;
+  rvec       *x,dx,*x0=NULL,*x_i1,xi;
   real       *inv_segvol,invvol,invvol_sum,rho;
   bool       *bExcl,bTop,bNonSelfExcl;
   matrix     box,box_pbc;
   int        **npairs;
   atom_id    ix,jx,***pairs;
   t_topology *top=NULL;
-  t_block    *excl;
+  t_block    *excl,*mols=NULL;
+  t_atom     *atom=NULL;
   t_pbc      pbc;
+
+  int        *is=NULL,**coi=NULL,cur,mol,i1,res,a;
 
   excl=NULL;
   
@@ -169,10 +200,75 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   snew(index,ng+1);
   fprintf(stderr,"\nSelect a reference group and %d group%s\n",
 	  ng,ng==1?"":"s");
-  if (fnTPS)
+  if (fnTPS) {
     get_index(&(top->atoms),fnNDX,ng+1,isize,index,grpname);
-  else
+    atom = top->atoms.atom;
+  } else {
     rd_index(fnNDX,ng+1,isize,index,grpname);
+  }
+
+  if (rdft[0][0] != 'a') {
+    /* Split up all the groups in molecules or residues */
+    switch (rdft[0][0]) {
+    case 'm':
+      mols = &top->blocks[ebMOLS];
+      break;
+    case 'r':
+      atom = top->atoms.atom;
+      break;
+    default:
+      gmx_fatal(FARGS,"Unknown rdf option '%s'",rdft[0]);
+    }
+    snew(is,ng+1);
+    snew(coi,ng+1);
+    for(g=(bCM ? 1 : 0); g<ng+1; g++) {
+      snew(coi[g],isize[g]+1);
+      is[g] = 0;
+      cur = -1;
+      mol = 0;
+      for(i=0; i<isize[g]; i++) {
+	a = index[g][i];
+	if (rdft[0][0] == 'm') {
+	  /* Check if the molecule number has changed */
+	  i1 = mols->index[mol+1];
+	  while(a >= i1) {
+	    mol++;
+	    i1 = mols->index[mol+1];
+	  }
+	  if (mol != cur) {
+	    coi[g][is[g]++] = i;
+	    cur = mol;
+	  }
+	} else if (rdft[0][0] == 'r') {
+	  /* Check if the residue number has changed */
+	  res = atom[a].resnr;
+	  if (res != cur) {
+	    coi[g][is[g]++] = i;
+	    cur = res;
+	  }
+	}
+      }
+      coi[g][is[g]] = i;
+      srenew(coi[g],is[g]+1);
+      printf("Group '%s' of %d atoms consists of %d %s\n",
+	     grpname[g],isize[g],is[g],
+	     (rdft[0][0]=='m' ? "molecules" : "residues"));
+    }
+  }
+  
+  if (bCM) {
+    is[0] = 1;
+    snew(coi[0],is[0]+1);
+    coi[0][0] = 0;
+    coi[0][1] = isize[0];
+    isize0 = is[0];
+    snew(x0,isize0);
+  } else if (rdft[0][0] != 'a') {
+    isize0 = is[0];
+    snew(x0,isize0);
+  } else {
+    isize0 = isize[0];
+  }
   
   natoms=read_first_x(&status,fnTRX,&t,&x,box);
   if ( !natoms )
@@ -183,25 +279,12 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       gmx_fatal(FARGS,"Trajectory (%d atoms) does not match topology (%d atoms)",
 		  natoms,top->atoms.nr);
   /* check with index groups */
-  for (i=0; i<=ng; i++)
+  for (i=0; i<ng+1; i++)
     for (j=0; j<isize[i]; j++)
       if ( index[i][j] >= natoms )
 	gmx_fatal(FARGS,"Atom index (%d) in index group %s (%d atoms) larger "
-		    "than number of atoms in trajectory (%d atoms)",
-		    index[i][j],grpname[i],isize[i],natoms);
-  
-  if (bCM) {
-    /* move index[0] to index_cm and make 'dummy' index[0] */
-    isize_cm=isize[0];
-    snew(index_cm,isize_cm);
-    for(i=0; i<isize[0]; i++)
-      index_cm[i]=index[0][i];
-    isize[0]=1;
-    index[0][0]=natoms;
-    srenew(index[0],isize[0]);
-    /* make space for center of mass */
-    srenew(x,natoms+1);
-  }
+		  "than number of atoms in trajectory (%d atoms)",
+		  index[i][j],grpname[i],isize[i],natoms);
   
   /* initialize some handy things */
   copy_mat(box,box_pbc);
@@ -237,32 +320,35 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* make pairlist array for groups and exclusions */
     snew(pairs[g],isize[0]);
     snew(npairs[g],isize[0]);
-    for(i=0; i<isize[0]; i++) {
-      ix = index[0][i];
-      for(j=0; j < natoms; j++)
-	bExcl[j] = FALSE;
-      /* exclusions? */
-      if (excl)
-	for( j = excl->index[ix]; j < excl->index[ix+1]; j++)
-	  bExcl[excl->a[j]]=TRUE;
-      k = 0;
-      snew(pairs[g][i], isize[g+1]);
-      bNonSelfExcl = FALSE;
-      for(j=0; j<isize[g+1]; j++) {
-	jx = index[g+1][j];
-	if (!bExcl[jx])
-	  pairs[g][i][k++]=jx;
-	else if (ix != jx)
-	  /* Check if we have exclusions other than self exclusions */
-	  bNonSelfExcl = TRUE;
-      }
-      if (bNonSelfExcl) {
-	npairs[g][i]=k;
-	srenew(pairs[g][i],npairs[g][i]);
-      } else {
-	/* Save a LOT of memory and some cpu cycles */
-	npairs[g][i]=-1;
-	sfree(pairs[g][i]);
+    /* We can only have exclusions with atomic rdfs */
+    if (!(bCM || rdft[0][0] != 'a')) {
+      for(i=0; i<isize[0]; i++) {
+	ix = index[0][i];
+	for(j=0; j < natoms; j++)
+	  bExcl[j] = FALSE;
+	/* exclusions? */
+	if (excl)
+	  for( j = excl->index[ix]; j < excl->index[ix+1]; j++)
+	    bExcl[excl->a[j]]=TRUE;
+	k = 0;
+	snew(pairs[g][i], isize[g+1]);
+	bNonSelfExcl = FALSE;
+	for(j=0; j<isize[g+1]; j++) {
+	  jx = index[g+1][j];
+	  if (!bExcl[jx])
+	    pairs[g][i][k++]=jx;
+	  else if (ix != jx)
+	    /* Check if we have exclusions other than self exclusions */
+	    bNonSelfExcl = TRUE;
+	}
+	if (bNonSelfExcl) {
+	  npairs[g][i]=k;
+	  srenew(pairs[g][i],npairs[g][i]);
+	} else {
+	  /* Save a LOT of memory and some cpu cycles */
+	  npairs[g][i]=-1;
+	  sfree(pairs[g][i]);
+	}
       }
     }
   }
@@ -291,25 +377,29 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     invvol_sum += invvol;
 
     if (bCM) {
-      /* calculate centre of mass */
-      clear_rvec(xcom);
-      for(i=0; (i < isize_cm); i++) {
-	ix = index_cm[i];
-	rvec_inc(xcom,x[ix]);
-      }
-      /* store it in the first 'group' */
-      for(j=0; (j<DIM); j++)
-	x[index[0][0]][j] = xcom[j] / isize_cm;
+      /* Calculate center of mass of the whole group */
+      calc_comg(is[0],coi[0],index[0],TRUE           ,atom,x,x0);
+    } else if (rdft[0][0] != 'a') {
+      calc_comg(is[0],coi[0],index[0],rdft[0][6]=='m',atom,x,x0);
     }
 
     for(g=0; g<ng; g++) {
-      /* Copy the indexed coordinates to a continuous array */
-      for(i=0; i<isize[g+1]; i++)
-	copy_rvec(x[index[g+1][i]],x_i1[i]);
+      if (rdft[0][0] == 'a') {
+	/* Copy the indexed coordinates to a continuous array */
+	for(i=0; i<isize[g+1]; i++)
+	  copy_rvec(x[index[g+1][i]],x_i1[i]);
+      } else {
+	/* Calculate the COMs/COGs and store in x_i1 */
+	calc_comg(is[g+1],coi[g+1],index[g+1],rdft[0][6]=='m',atom,x,x_i1);
+      }
     
-      for(i=0; i<isize[0]; i++) {
-	copy_rvec(x[index[0][i]],xi);
-	if (npairs[g][i] >= 0)
+      for(i=0; i<isize0; i++) {
+	if (bCM || rdft[0][0] != 'a') {
+	  copy_rvec(x0[i],xi);
+	} else {
+	  copy_rvec(x[index[0][i]],xi);
+	}
+	if (rdft[0][0] == 'a' && npairs[g][i] >= 0) {
 	  /* Expensive loop, because of indexing */
 	  for(j=0; j<npairs[g][i]; j++) {
 	    jx=pairs[g][i][j];
@@ -325,9 +415,13 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	    if (r2>cut2 && r2<=rmax2)
 	      count[g][(int)(sqrt(r2)*invbinw)]++;
 	  }
-	else
+	} else {
 	  /* Cheaper loop, no exclusions */
-	  for(j=0; j<isize[g+1]; j++) {
+	  if (rdft[0][0] == 'a')
+	    isize_g = isize[g+1];
+	  else
+	    isize_g = is[g+1];
+	  for(j=0; j<isize_g; j++) {
 	    if (bPBC)
 	      pbc_dx(&pbc,xi,x_i1[j],dx);
 	    else
@@ -339,6 +433,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	    if (r2>cut2 && r2<=rmax2)
 	      count[g][(int)(sqrt(r2)*invbinw)]++;
 	  }
+	}
       }
     }
     nframes++;
@@ -370,7 +465,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   snew(rdf,ng);
   for(g=0; g<ng; g++) {
     /* We have to normalize by dividing by the number of frames */
-    normfac = 1.0/(nframes*invvol*isize[0]*isize[g+1]);
+    if (rdft[0][0] == 'a')
+      normfac = 1.0/(nframes*invvol*isize0*isize[g+1]);
+    else
+      normfac = 1.0/(nframes*invvol*isize0*is[g+1]);
       
     /* Do the normalization */
     nrdf = max(nbin-1,1+(2*fade/binwidth));
@@ -383,21 +481,30 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	if (bNormalize)
 	  rdf[g][i] = count[g][i]*inv_segvol[i]*normfac;
 	else
-	  rdf[g][i] = count[g][i];
+	  rdf[g][i] = count[g][i]/(isize0*nframes);
       }
     }
     for( ; (i<nrdf); i++)
       rdf[g][i] = 1.0;
   }
-    
-  fp=xvgropen(fnRDF,"Radial Distribution","r","");
+
+  if (rdft[0][0] == 'a') {
+    sprintf(gtitle,"Radial distribution");
+  } else {
+    sprintf(gtitle,"Radial distribution of %s %s",
+	    rdft[0][0]=='m' ? "molecule" : "residue",
+	    rdft[0][6]=='m' ? "COM" : "COG");
+  }
+  fp=xvgropen(fnRDF,gtitle,"r","");
   if (ng==1) {
     if (bPrintXvgrCodes())
-      fprintf(fp,"@ subtitle \"%s-%s\"\n",grpname[0],grpname[1]);
+      fprintf(fp,"@ subtitle \"%s%s - %s\"\n",
+	      grpname[0],bCM ? " COM" : "",grpname[1]);
   }
   else {
     if (bPrintXvgrCodes())
-      fprintf(fp,"@ subtitle \"reference %s\"\n",grpname[0]);
+      fprintf(fp,"@ subtitle \"reference %s%s\"\n",
+	      grpname[0],bCM ? " COM" : "");
     xvgr_legend(fp,ng,grpname+1);
   }
   for(i=0; (i<nrdf); i++) {
@@ -439,7 +546,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   }
   
   if (fnCNRDF) {  
-    normfac = 1.0/(isize[0]*nframes);
+    normfac = 1.0/(isize0*nframes);
     fp=xvgropen(fnCNRDF,"Cumulative Number RDF","r","number");
     if (ng==1) {
       if (bPrintXvgrCodes())
@@ -841,7 +948,17 @@ int gmx_rdf(int argc,char *argv[])
     "is around the center of mass of a set of particles.",
     "With both methods rdf's can also be calculated around axes parallel",
     "to the z-axis with option [TT]-xy[tt].[PAR]",
-    "If a run input file is supplied ([TT]-s[tt]), exclusions defined",
+    "The option [TT]-rdf[tt] sets the type of rdf to be computed.",
+    "Default is for atoms or particles, but one can also select center",
+    "of mass or geometry of molecules or residues. In all cases only",
+    "the atoms in the index groups are taken into account.",
+    "For molecules and/or the center of mass option a run input file",
+    "is required.",
+    "Other weighting than COM or COG can currently only be achieved",
+    "by providing a run input file with different masses.",
+    "Option [TT]-com[tt] also works in conjunction with [TT]-rdf[tt].[PAR]"
+    "If a run input file is supplied ([TT]-s[tt]) and [TT]-rdf[tt] is set",
+    "to [TT]atom[tt], exclusions defined",
     "in that file are taken into account when calculating the rdf.",
     "The option [TT]-cut[tt] is meant as an alternative way to avoid",
     "intramolecular peaks in the rdf plot.",
@@ -850,7 +967,8 @@ int gmx_rdf(int argc,char *argv[])
     "would eliminate all intramolecular contributions to the rdf.",
     "Note that all atoms in the selected groups are used, also the ones",
     "that don't have Lennard-Jones interactions.[PAR]",
-    "Option [TT]-cn[tt] produces the cumulative number rdf.[PAR]"
+    "Option [TT]-cn[tt] produces the cumulative number rdf,",
+    "i.e. the average number of particles within a distance r.[PAR]",
     "To bridge the gap between theory and experiment structure factors can",
     "be computed (option [TT]-sq[tt]). The algorithm uses FFT, the grid"
     "spacing of which is determined by option [TT]-grid[tt]."
@@ -859,15 +977,20 @@ int gmx_rdf(int argc,char *argv[])
   static real cutoff=0,binwidth=0.002,grid=0.05,fade=0.0,lambda=0.1,distance=10;
   static int  npixel=256,nlevel=20,ngroups=1;
   static real start_q=0.0, end_q=60.0, energy=12.0;
+
+  static char *rdft[]={ NULL, "atom", "mol_com", "mol_cog", "res_com", "res_cog", NULL };
+
   t_pargs pa[] = {
     { "-bin",      FALSE, etREAL, {&binwidth},
       "Binwidth (nm)" },
     { "-com",      FALSE, etBOOL, {&bCM},
       "RDF with respect to the center of mass of first group" },
+    { "-rdf",   FALSE, etENUM, {rdft}, 
+      "RDF type" },
     { "-pbc",      FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions for computing distances. Without PBC the maximum range will be three times the larges box edge." },
     { "-norm",     FALSE, etBOOL, {&bNormalize},
-      "Without normalization the amount of interactions is plotted as a function of distance, without taking volume or particle density into account" },
+      "Normalize for volume and density" },
     { "-xy",       FALSE, etBOOL, {&bXY},
       "Use only the x and y components of the distance" },
     { "-cut",      FALSE, etREAL, {&cutoff},
@@ -914,21 +1037,18 @@ int gmx_rdf(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
 
-  fnTPS = ftp2fn_null(efTPS,NFILE,fnm);
-  fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
-  /*  bSQ   = opt2bSet("-sq",NFILE,fnm) || opt2parg_bSet("-grid",NPA,pa); */
   bSQ   = opt2bSet("-sq",NFILE,fnm);
   bRDF  = opt2bSet("-o",NFILE,fnm) || !bSQ;
-  
-  if (bSQ) {
-    if (!fnTPS)
-      gmx_fatal(FARGS,"Need a tps file for calculating structure factors\n");
+  if (bSQ || bCM || rdft[0][0]=='m' || rdft[0][6]=='m') {
+    fnTPS = ftp2fn(efTPS,NFILE,fnm);
+  } else {
+    fnTPS = ftp2fn_null(efTPS,NFILE,fnm);
   }
-  else {
-    if (!fnTPS && !fnNDX)
-      gmx_fatal(FARGS,"Neither index file nor topology file specified\n"
-		  "             Nothing to do!");
-  }
+  fnNDX = ftp2fn_null(efNDX,NFILE,fnm);
+
+  if (!bSQ && (!fnTPS && !fnNDX))
+    gmx_fatal(FARGS,"Neither index file nor topology file specified\n"
+	      "Nothing to do!");
  
   if  (bSQ) 
    do_scattering_intensity(fnTPS,fnNDX,opt2fn("-sq",NFILE,fnm),ftp2fn(efTRX,NFILE,fnm),
@@ -938,7 +1058,7 @@ int gmx_rdf(int argc,char *argv[])
     do_rdf(fnNDX,fnTPS,ftp2fn(efTRX,NFILE,fnm),
 	   opt2fn("-o",NFILE,fnm),opt2fn_null("-cn",NFILE,fnm),
 	   opt2fn_null("-hq",NFILE,fnm),
-	   bCM,bXY,bPBC,bNormalize,cutoff,binwidth,fade,ngroups);
+	   bCM,rdft,bXY,bPBC,bNormalize,cutoff,binwidth,fade,ngroups);
 
   thanx(stderr);
   
