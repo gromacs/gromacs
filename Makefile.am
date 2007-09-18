@@ -24,6 +24,8 @@ install-exec-hook:
 	@echo "programs and unix manual pages, and possibly LD_LIBRARY_PATH"
 	@echo "or /etc/ld.so.conf if you are using dynamic libraries."
 	@echo ""
+	@echo "Please run \"make tests\" now to verify your installation."
+	@echo ""
 	@echo "If you want links to the executables in /usr/local/bin,"
 	@echo "you can issue \"make links\" now."
 
@@ -44,6 +46,11 @@ links:
 	for i in $$programs; do \
 	   (test ! -f $$i && $(LN_S) $(bindir)/$$i . ; exit 0); \
 	done
+
+tests:
+	(if test -d "gmxtest"; then cd "gmxtest"; ./gmxtest.pl all; cd ..; \
+	else echo "No gmxtest directory found. Please download and unpack it here.";\
+	fi)
 
 
 RPMARCH=`rpm --showrc | awk '/^build arch/ {print $$4}'`
