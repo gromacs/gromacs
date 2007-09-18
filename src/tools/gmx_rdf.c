@@ -254,6 +254,9 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	     grpname[g],isize[g],is[g],
 	     (rdft[0][0]=='m' ? "molecules" : "residues"));
     }
+  } else if (bCM) {
+    snew(is,1);
+    snew(coi,1);
   }
   
   if (bCM) {
