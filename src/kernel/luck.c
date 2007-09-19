@@ -42,7 +42,8 @@
 #include "string.h"
 #include "statutil.h"
 
-int main(int argc,char *argv[])
+int 
+main(int argc,char *argv[])
 {
   char quote[256];
   int  i,bc=0,bb=0;
@@ -65,5 +66,6 @@ int main(int argc,char *argv[])
   }
     
   thanx(stdout);
+  return 0;
 }
  

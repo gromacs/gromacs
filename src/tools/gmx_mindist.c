@@ -501,7 +501,7 @@ int gmx_mindist(int argc,char *argv[])
 
   if (tpsfnm || resfnm || !ndxfnm) {
     snew(top,1);
-    read_tps_conf(tpsfnm,title,&top,&x,NULL,box,FALSE);
+    read_tps_conf(tpsfnm,title,top,&x,NULL,box,FALSE);
   }
   get_index(top ? &(top->atoms) : NULL,ndxfnm,ng,gnx,index,grpname);
 

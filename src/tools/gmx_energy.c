@@ -139,6 +139,7 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   fprintf(stderr,"---------------------------------------------------------\n");
   
   snew(newnm,nre);
+  nlen = 0;
   for(i=0; (i<nre); i++) {
     newnm[i] = strdup(nm[i]);
     nlen = max(nlen,strlen(newnm[i]));

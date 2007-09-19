@@ -355,6 +355,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	      "Area (nm\\S2\\N)");
   xvgr_legend(fp,asize(flegend) - (bDGsol ? 0 : 1),flegend);
   vfile = opt2fn_null("-tv",nfile,fnm);
+  totmass = 0;
   if (vfile) {
     vp=xvgropen(vfile,"Volume and Density","Time (ps)","");
     xvgr_legend(vp,asize(vlegend),vlegend);
