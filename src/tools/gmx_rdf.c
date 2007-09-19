@@ -169,7 +169,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 #else
   double     *sum;
 #endif
-  real       t,rmax2,cut2,r,r2,invbinw,normfac;
+  real       t,rmax2,cut2,r,r2,invhbinw,normfac;
   real       segvol,spherevol,prev_spherevol,**rdf;
   rvec       *x,dx,*x0=NULL,*x_i1,xi;
   real       *inv_segvol,invvol,invvol_sum,rho;
@@ -290,9 +290,9 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* Make sure the z-height does not influence the cut-off */
     box_pbc[ZZ][ZZ] = 2*max(box[XX][XX],box[YY][YY]);
   }
-  rmax2   = 0.99*0.99*max_cutoff2(box_pbc);
-  nbin    = (int)(sqrt(rmax2) / binwidth) + 1;
-  invbinw = 1.0 / binwidth;
+  rmax2    = 0.99*0.99*max_cutoff2(box_pbc);
+  nbin     = (int)(sqrt(rmax2) * 2 / binwidth);
+  invhbinw = 2.0 / binwidth;
   cut2   = sqr(cutoff);
 
   snew(count,ng);
@@ -404,7 +404,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	    else 
 	      r2=iprod(dx,dx);
 	    if (r2>cut2 && r2<=rmax2)
-	      count[g][(int)(sqrt(r2)*invbinw)]++;
+	      count[g][(int)(sqrt(r2)*invhbinw)]++;
 	  }
 	} else {
 	  /* Cheaper loop, no exclusions */
@@ -422,7 +422,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	    else 
 	      r2=iprod(dx,dx);
 	    if (r2>cut2 && r2<=rmax2)
-	      count[g][(int)(sqrt(r2)*invbinw)]++;
+	      count[g][(int)(sqrt(r2)*invhbinw)]++;
 	  }
 	}
       }
@@ -439,10 +439,10 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   invvol = invvol_sum/nframes;
 
   /* Calculate volume of sphere segments or length of circle segments */
-  snew(inv_segvol,nbin);
+  snew(inv_segvol,(nbin+1)/2);
   prev_spherevol=0;
-  for(i=0; (i<nbin); i++) {
-    r = (i+1)*binwidth;
+  for(i=0; (i<(nbin+1)/2); i++) {
+    r = (i + 0.5)*binwidth;
     if (bXY) {
       spherevol=M_PI*r*r;
     } else {
@@ -462,17 +462,21 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       normfac = 1.0/(nframes*invvol*isize0*is[g+1]);
       
     /* Do the normalization */
-    nrdf = max(nbin-1,1+(2*fade/binwidth));
+    nrdf = max((nbin+1)/2,1+2*fade/binwidth);
     snew(rdf[g],nrdf);
-    for(i=0; (i<nbin-1); i++) {
-      r = (i+0.5)*binwidth;
+    for(i=0; i<(nbin+1)/2; i++) {
+      r = i*binwidth;
+      if (i == 0)
+	j = count[g][0];
+      else
+	j = count[g][i*2-1] + count[g][i*2];
       if ((fade > 0) && (r >= fade))
-	rdf[g][i] = 1+(count[g][i]*inv_segvol[i]*normfac-1)*exp(-16*sqr(r/fade-1));
+	rdf[g][i] = 1 + (j*inv_segvol[i]*normfac-1)*exp(-16*sqr(r/fade-1));
       else {
 	if (bNormalize)
-	  rdf[g][i] = count[g][i]*inv_segvol[i]*normfac;
+	  rdf[g][i] = j*inv_segvol[i]*normfac;
 	else
-	  rdf[g][i] = count[g][i]/(isize0*nframes);
+	  rdf[g][i] = j/(isize0*nframes);
       }
     }
     for( ; (i<nrdf); i++)
@@ -499,7 +503,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     xvgr_legend(fp,ng,grpname+1);
   }
   for(i=0; (i<nrdf); i++) {
-    fprintf(fp,"%10g", (i+0.5)*binwidth);
+    fprintf(fp,"%10g",i*binwidth);
     for(g=0; g<ng; g++)
       fprintf(fp," %10g",rdf[g][i]);
     fprintf(fp,"\n");
@@ -521,7 +525,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       Q = i*0.5;
       integrand[0] = 0;
       for(j=1; (j<nrdf); j++) {
-	r = (j+0.5)*binwidth;
+	r = j*binwidth;
 	integrand[j]  = (Q == 0) ? 1.0 : sin(Q*r)/(Q*r);
 	integrand[j] *= 4.0*M_PI*rho*r*r*(rdf[0][j]-1.0);
       }
@@ -549,11 +553,12 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
       xvgr_legend(fp,ng,grpname+1);
     }
     snew(sum,ng);
-    for(i=0; (i<nbin-1); i++) {
+    for(i=0; (i<=nbin/2); i++) {
       fprintf(fp,"%10g",i*binwidth);
       for(g=0; g<ng; g++) {
 	fprintf(fp," %10g",(real)((double)sum[g]*normfac));
-	sum[g] += count[g][i];
+	if (i*2+1 < nbin)
+	  sum[g] += count[g][i*2] + count[g][i*2+1];
       }
       fprintf(fp,"\n");
     }
