@@ -959,6 +959,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	*size = lsize;
 	size3 = *size * 3;
 	if (*size <= 9) {
+	    *precision = -1;
             return (xdr_vector(xdrs, (char *) fp, (unsigned int)size3, 
                     (unsigned int)sizeof(*fp), (xdrproc_t)xdr_float));
 	}
