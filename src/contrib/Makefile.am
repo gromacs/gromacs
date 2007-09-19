@@ -6,6 +6,9 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
 LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
+bin_PROGRAMS = \
+		mkyaw		copyrgt		addquote	my_dssp	\
+		gen_table	sigeps		g_anavel	
 
 EXTRA_DIST              = README  
 
