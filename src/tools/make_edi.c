@@ -1,17 +1,18 @@
 /*
  * $Id$
- *
+ * 
  *                This source code is part of
- *
+ * 
  *                 G   R   O   M   A   C   S
- *
+ * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
- *
- * The make_edi program was generously contributed by Oliver Lange, based
- * on the code from g_anaeig. You can reach him as olange@gwdg.de.
- *
+ *                        VERSION 3.3.2
+ * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
+ * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
+ * Copyright (c) 2001-2007, The GROMACS development team,
+ * check out http://www.gromacs.org for more information.
+
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
  * as published by the Free Software Foundation; either version 2
@@ -23,14 +24,14 @@
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
- *
+ * 
  * To help us fund GROMACS development, we humbly ask that you cite
  * the papers on the package - you can find them in the top README file.
- *
+ * 
  * For more info, check our website at http://www.gromacs.org
- *
+ * 
  * And Hey:
- * Gromacs Runs One Microsecond At Cannonball Speeds
+ * Groningen Machine for Chemical Simulation
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
