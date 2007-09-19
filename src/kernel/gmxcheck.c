@@ -210,7 +210,7 @@ void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
 	switch (ftype) {
 	case F_BONDS:
 	case F_G96BONDS:
-	  b0 = top->idef.iparams[type].harmonic.rA;
+	  b0 = sqrt(top->idef.iparams[type].harmonic.rA);
 	  break;
 	case F_MORSE:
 	  b0 = top->idef.iparams[type].morse.b0;
