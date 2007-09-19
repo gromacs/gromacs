@@ -638,7 +638,7 @@ bool read_next_frame(int status,t_trxframe *fr)
         }
       bRet = read_next_xtc(status,fr->natoms,&fr->step,&fr->time,fr->box,
 			   fr->x,&fr->prec,&bOK);
-      fr->bPrec = bRet;
+      fr->bPrec = (bRet && fr->prec > 0);
       fr->bStep = bRet;
       fr->bTime = bRet;
       fr->bX    = bRet;
@@ -740,7 +740,7 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
       fr->natoms = 0;
       printincomp(fr);
     } else {
-      fr->bPrec = TRUE;
+      fr->bPrec = (fr->prec > 0);
       fr->bStep = TRUE;
       fr->bTime = TRUE;
       fr->bX    = TRUE;
