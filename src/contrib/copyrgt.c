@@ -230,18 +230,26 @@ void cr_tex(char *fn)
 
 int main(int argc,char *argv[])
 {
-  int i;
+  FILE *fp;
+  int  i;
   char *fn,*p;
   
   for(i=1; (i<argc); i++) {
     fn=argv[i];
-    p=strrchr(fn,'.');
-    if ( strcmp(p,".tex")==0 )
-      cr_tex(fn);
-    else if ((strcmp(p,".c") == 0) || (strcmp(p,".h") == 0))
-      cr_c(fn);
+    if ((fp = fopen(fn,"r")) != NULL) {
+      fclose(fp);
+      p=strrchr(fn,'.');
+      if ( strcmp(p,".tex")==0 )
+	cr_tex(fn);
+      else if ((strcmp(p,".c") == 0) || (strcmp(p,".h") == 0))
+	cr_c(fn);
+      else
+	cr_other(fn);
+    }
+    else if (strcmp(fn,"-h") == 0) 
+      fprintf(stderr,"Usage: %s  filenames (either .c .h or .tex)\n",argv[0]);
     else
-      cr_other(fn);
+      fprintf(stderr,"No such file or directory %s\n",fn);
   }
   return 0;
 }
