@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3.2_pre, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3.2, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -525,7 +525,7 @@ if test "$with_gsl" = "yes"; then
 fi
 
 AC_ARG_WITH(xml,
- [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
+ [  --with-xml                    Link to the xml2 library, experimental],,with_xml=no)
  
 #########
 # Check for libxml2, but it is optional, so dont stop
