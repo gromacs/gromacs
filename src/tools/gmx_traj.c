@@ -111,8 +111,9 @@ static void average_data(rvec x[],rvec xav[],real *mass,
       for(d=0; d<DIM; d++)
 	xav[g][d] = sum[d]/mtot;
     } else {
+      /* mass=NULL, so these are forces: sum only (do not average) */
       for(d=0; d<DIM; d++)
-	xav[g][d] = sum[d]/isize[g];
+	xav[g][d] = sum[d];
     }
   }
 }
@@ -567,6 +568,9 @@ int gmx_traj(int argc,char *argv[])
     snew(isize,ngroups);
     snew(index,ngroups);
     for (i=0; i<ngroups; i++) {
+      if (index0[0][i] < 0 || index[0][i] >= mols->nr)
+	gmx_fatal(FARGS,"Molecule index (%d) is out of range (%d-%d)",
+		  index0[0][i]+1,1,mols->nr);
       isize[i] = atndx[index0[0][i]+1] - atndx[index0[0][i]];
       snew(index[i],isize[i]);
       for(j=0; j<isize[i]; j++)
