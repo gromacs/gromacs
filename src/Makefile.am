@@ -2,8 +2,8 @@
 # Note: Makefile is automatically generated from Makefile.in by the configure
 # script, and Makefile.in is automatically from Makefile.am by automake.
 
-SUBDIRS = gmxlib mdlib kernel tools ngmx contrib
-# don't do anything for the local directory
+SUBDIRS = gmxlib mdlib kernel tools ngmx
+# don't do anything for the contrib directory
 
 EXTRA_DIST = config.win
 
