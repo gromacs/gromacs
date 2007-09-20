@@ -7,10 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
+ *                        VERSION 3.3.2
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2007, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
  * 
  * If you want to redistribute modifications, please consider that
  * scientific software is very special. Version control is crucial -
- * bugs must be traceable. We will be happy to consider code forxd
+ * bugs must be traceable. We will be happy to consider code for
  * inclusion in the official distribution, but derived work must not
  * be called official GROMACS. Details are found in the README & COPYING
  * files - if they are missing, get the official version at www.gromacs.org.
@@ -31,7 +31,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * GROningen Mixture of Alchemy and Childrens' Stories
+ * Groningen Machine for Chemical Simulation
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
