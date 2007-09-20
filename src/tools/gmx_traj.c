@@ -111,8 +111,9 @@ static void average_data(rvec x[],rvec xav[],real *mass,
       for(d=0; d<DIM; d++)
 	xav[g][d] = sum[d]/mtot;
     } else {
+      /* mass=NULL, so these are forces: sum only (do not average) */
       for(d=0; d<DIM; d++)
-	xav[g][d] = sum[d]/isize[g];
+	xav[g][d] = sum[d];
     }
   }
 }
