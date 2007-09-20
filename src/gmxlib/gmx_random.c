@@ -33,6 +33,7 @@
  * And Hey:
  * Groningen Machine for Chemical Simulation
  */
+#ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
