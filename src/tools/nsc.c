@@ -918,8 +918,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
     printf("box %6d : atoms %4d-%4d    %5d\n",
 	   i, wkbox[i], wkbox[i+1]-1, wkbox[i+1]-wkbox[i]);
   for (i=0; i<nat; i++) {
-    iat = index[i];
-    printf("list place %5d by atom %7d\n", iat, wkatm[iat]);
+    printf("list place %5d by atom %7d\n", i, wkatm[i]);
   }
 #endif
 
@@ -1014,7 +1013,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 	  a = aisq*dotarea* (real) i_ac;
 	  area = area + a;
 	  if (mode & FLAG_ATOM_AREA) {
-	    atom_area[i_at] = a;
+	    atom_area[iat] = a;
 	  }
 	  if (mode & FLAG_DOTS) {
 	    for (l=0; l<n_dot; l++) {
