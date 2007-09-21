@@ -70,8 +70,10 @@ int gmx_densmap(int argc,char *argv[])
     "and can be converted to postscript with xpm2ps.",
     "[PAR]",
     "The default analysis is a 2-D number-density map for a selected",
-    "group of atoms in the x-z plane.",
+    "group of atoms in the x-y plane.",
     "The averaging direction can be changed with the option [TT]-aver[tt].",
+    "When [TT]-xmin[tt] and/or [TT]-xmax[tt] are set only atoms that are",
+    "within the limit(s) in the averaging direction are taken into account.",
     "The grid spacing is set with the option [TT]-bin[tt].",
     "When [TT]-n1[tt] or [TT]-n2[tt] is non-zero, the grid",
     "size is set by this option.",
@@ -95,7 +97,7 @@ int gmx_densmap(int argc,char *argv[])
     "with the option [TT]-dmax[tt]."
   };
   static int n1=0,n2=0;
-  static real bin=0.02,dmin=0,dmax=0,amax=0,rmax=0;
+  static real xmin=-1,xmax=-1,bin=0.02,dmin=0,dmax=0,amax=0,rmax=0;
   static bool bMirror=FALSE;
   static char *eaver[]={ NULL, "z", "y", "x", NULL };
   static char *eunit[]={ NULL, "nm-3", "nm-2", "count", NULL };
@@ -105,6 +107,10 @@ int gmx_densmap(int argc,char *argv[])
       "Grid size (nm)" },
     { "-aver", FALSE, etENUM, {eaver},
       "The direction to average over" },
+    { "-xmin", FALSE, etREAL, {&xmin},
+      "Minimum coordinate for averaging" },
+    { "-xmax", FALSE, etREAL, {&xmax},
+      "Maximum coordinate for averaging" },
     { "-n1", FALSE, etINT, {&n1},
       "Number of grid cells in the first direction" },
     { "-n2", FALSE, etINT, {&n2},
@@ -122,7 +128,7 @@ int gmx_densmap(int argc,char *argv[])
     { "-dmax", FALSE, etREAL, {&dmax},
       "Maximum density in output (0 means calculate it)"},
   };
-  bool       bRadial;
+  bool       bXmin,bXmax,bRadial;
   FILE       *fp;
   int        status;
   t_topology top;
@@ -130,7 +136,7 @@ int gmx_densmap(int argc,char *argv[])
   matrix     box;
   real       t,m,mtot;
   t_pbc      pbc;
-  int        c1=0,c2=0,natoms;
+  int        cav=0,c1=0,c2=0,natoms;
   char       **grpname,title[256],buf[STRLEN],*unit;
   int        i,j,k,l,ngrps,anagrp,*gnx=NULL,nindex,nradial=0,nfr,nmpower;
   atom_id    **ind=NULL,*index;
@@ -154,6 +160,8 @@ int gmx_densmap(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,npargs,pa,asize(desc),desc,0,NULL); 
    
+  bXmin = opt2parg_bSet("-xmin",npargs,pa);
+  bXmax = opt2parg_bSet("-xmax",npargs,pa);
   bRadial = (amax>0 || rmax>0);
   if (bRadial) {
     if (amax<=0 || rmax<=0)
@@ -194,9 +202,9 @@ int gmx_densmap(int argc,char *argv[])
   }
   
   switch (eaver[0][0]) {
-  case 'x': c1 = YY; c2 = ZZ; break;
-  case 'y': c1 = XX; c2 = ZZ; break;
-  case 'z': c1 = XX; c2 = YY; break;
+  case 'x': cav = XX; c1 = YY; c2 = ZZ; break;
+  case 'y': cav = YY; c1 = XX; c2 = ZZ; break;
+  case 'z': cav = ZZ; c1 = XX; c2 = YY; break;
   }
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box); 
@@ -235,17 +243,20 @@ int gmx_densmap(int argc,char *argv[])
 	invcellvol /= box[c1][c1]*box[c2][c2];
       for(i=0; i<nindex; i++) {
 	j = index[i];
-	m1 = x[j][c1]/box[c1][c1];
-	if (m1 >= 1)
-	  m1 -= 1;
-	if (m1 < 0)
-	  m1 += 1;
-	m2 = x[j][c2]/box[c2][c2];
-	if (m2 >= 1)
-	  m2 -= 1;
-	if (m2 < 0)
-	  m2 += 1;
-	grid[(int)(m1*n1)][(int)(m2*n2)] += invcellvol;
+	if ((!bXmin || x[j][cav] >= xmin) &&
+	    (!bXmax || x[j][cav] <= xmax)) {
+	  m1 = x[j][c1]/box[c1][c1];
+	  if (m1 >= 1)
+	    m1 -= 1;
+	  if (m1 < 0)
+	    m1 += 1;
+	  m2 = x[j][c2]/box[c2][c2];
+	  if (m2 >= 1)
+	    m2 -= 1;
+	  if (m2 < 0)
+	    m2 += 1;
+	  grid[(int)(m1*n1)][(int)(m2*n2)] += invcellvol;
+	}
       }
     } else {
       set_pbc(&pbc,box);
@@ -345,7 +356,15 @@ int gmx_densmap(int argc,char *argv[])
     }
   }
   
-  sprintf(buf,"%s number density map",grpname[anagrp]);
+  sprintf(buf,"%s number density",grpname[anagrp]);
+  if (!bRadial && (bXmin || bXmax)) {
+    if (!bXmax)
+      sprintf(buf+strlen(buf),", %c > %g nm",eaver[0][0],xmin);
+    else if (!bXmin)
+      sprintf(buf+strlen(buf),", %c < %g nm",eaver[0][0],xmax);
+    else
+      sprintf(buf+strlen(buf),", %c: %g - %g nm",eaver[0][0],xmin,xmax);
+  }
   fp = ffopen(ftp2fn(efXPM,NFILE,fnm),"w");
   write_xpm(fp,MAT_SPATIAL_X | MAT_SPATIAL_Y,buf,unit,
 	    bRadial ? "axial (nm)" : label[c1],bRadial ? "r (nm)" : label[c2],
