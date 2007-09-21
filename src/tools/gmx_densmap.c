@@ -356,7 +356,15 @@ int gmx_densmap(int argc,char *argv[])
     }
   }
   
-  sprintf(buf,"%s number density map",grpname[anagrp]);
+  sprintf(buf,"%s number density",grpname[anagrp]);
+  if (!bRadial && (bXmin || bXmax)) {
+    if (!bXmax)
+      sprintf(buf+strlen(buf),", %c > %g nm",eaver[0][0],xmin);
+    else if (!bXmin)
+      sprintf(buf+strlen(buf),", %c < %g nm",eaver[0][0],xmax);
+    else
+      sprintf(buf+strlen(buf),", %c: %g - %g nm",eaver[0][0],xmin,xmax);
+  }
   fp = ffopen(ftp2fn(efXPM,NFILE,fnm),"w");
   write_xpm(fp,MAT_SPATIAL_X | MAT_SPATIAL_Y,buf,unit,
 	    bRadial ? "axial (nm)" : label[c1],bRadial ? "r (nm)" : label[c2],
