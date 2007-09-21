@@ -53,6 +53,19 @@
 #include "gstat.h"
 #include "pbc.h"
 
+static void add_contact_time(int **ccount,int *ccount_nalloc,int t)
+{
+  int i;
+
+  if (t+2 >= *ccount_nalloc) {
+    srenew(*ccount,t+2);
+    for(i=*ccount_nalloc; i<t+2; i++)
+      (*ccount)[i] = 0;
+    *ccount_nalloc = t+2;
+  }
+  (*ccount)[t]++;
+}
+
 int gmx_dist(int argc,char *argv[])
 {
   static char *desc[] = {
@@ -61,12 +74,16 @@ int gmx_dist(int argc,char *argv[])
     "x, y and z components are plotted.[PAR]",
     "Or when [TT]-dist[tt] is set, print all the atoms in group 2 that are",
     "closer than a certain distance to the center of mass of group 1.[PAR]",
+    "With options [TT]-lt[tt] and [TT]-dist[tt] the number of contacts",
+    "of all atoms in group 2 that are closer than a certain distance",
+    "to the center of mass of group 1 are plotted as a function of the time",
+    "that the contact was continously present.[PAR]",
     "Other programs that calculate distances are [TT]g_mindist[tt]",
     "and [TT]g_bond[tt]."
   };
   
   t_topology *top=NULL;
-  real t,cut2,dist2;
+  real t,t0,cut2,dist2;
   rvec *x=NULL,*v=NULL,dx;
   matrix box;
   int status;
@@ -81,10 +98,12 @@ int gmx_dist(int argc,char *argv[])
   char    **grpname; /* the name of each group */
   rvec    *com;
   real    *mass;
-  FILE    *fp=NULL;
-  bool    bCutoff;
+  FILE    *fp=NULL,*fplt=NULL;
+  bool    bCutoff,bPrintDist,bLifeTime;
   t_pbc   pbc;
-
+  int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
+  char    buf[STRLEN];
+  
   char    *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
   static real cut=0;
@@ -100,6 +119,7 @@ int gmx_dist(int argc,char *argv[])
     { efTPX, NULL, NULL, ffREAD },
     { efNDX, NULL, NULL, ffOPTRD },
     { efXVG, NULL, "dist", ffOPTWR },
+    { efXVG, "-lt", "lifetime", ffOPTWR },
   };
 #define NFILE asize(fnm)
 
@@ -109,8 +129,10 @@ int gmx_dist(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   
-  bCutoff=opt2parg_bSet("-dist",NPA,pa);
-  cut2=cut*cut;
+  bCutoff = opt2parg_bSet("-dist",NPA,pa);
+  cut2 = cut*cut;
+  bLifeTime = opt2bSet("-lt",NFILE,fnm);
+  bPrintDist = (bCutoff && !bLifeTime);
   
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
   
@@ -137,6 +159,7 @@ int gmx_dist(int argc,char *argv[])
   }
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
+  t0 = t;
 
   if (max>=natoms)
     gmx_fatal(FARGS,"Atom number %d in an index group is larger than number of atoms in the trajectory (%d)\n",(int)max+1,natoms);
@@ -146,8 +169,11 @@ int gmx_dist(int argc,char *argv[])
     fp = xvgropen(ftp2fn(efXVG,NFILE,fnm),
 		  "Distance","Time (ps)","Distance (nm)");
     xvgr_legend(fp,4,leg);
-  } else
-    ngrps=1;
+  } else {
+    ngrps = 1;
+    if (bLifeTime)
+      snew(contact_time,isize[1]);
+  }
   
   do {
     /* initialisation for correct distance calculations */
@@ -181,11 +207,22 @@ int gmx_dist(int argc,char *argv[])
 	pbc_dx(&pbc,x[j],com[0],dx);
 	dist2 = norm2(dx);
 	if (dist2<cut2) {
-	  res=top->atoms.atom[j].resnr;
-	  fprintf(stdout,"\rt: %g  %d %s %d %s  %g (nm)\n",
-		  t,res+1,*top->atoms.resname[res],
-		  j+1,*top->atoms.atomname[j],sqrt(dist2));     
-	} 
+	  if (bPrintDist) {
+	    res=top->atoms.atom[j].resnr;
+	    fprintf(stdout,"\rt: %g  %d %s %d %s  %g (nm)\n",
+		    t,res+1,*top->atoms.resname[res],
+		    j+1,*top->atoms.atomname[j],sqrt(dist2));
+	  }
+	  if (bLifeTime)
+	    contact_time[i]++;
+	} else {
+	  if (bLifeTime) {
+	    if (contact_time[i]) {
+	      add_contact_time(&ccount,&ccount_nalloc,contact_time[i]-1);
+	      contact_time[i] = 0;
+	    }
+	  }
+	}
       }
     }
     
@@ -196,6 +233,27 @@ int gmx_dist(int argc,char *argv[])
     fclose(fp);
 
   close_trj(status);
+  
+  if (bCutoff && bLifeTime) {
+    /* Add the contacts still present in the last frame */
+    for(i=0; i<isize[1]; i++)
+      if (contact_time[i])
+	add_contact_time(&ccount,&ccount_nalloc,contact_time[i]-1);
+
+    sprintf(buf,"%s - %s within %g nm",
+	    grpname[0],grpname[1],cut);
+    fp = xvgropen(opt2fn("-lt",NFILE,fnm),
+		  buf,"Time (ps)","Number of contacts");
+    for(i=0; i<min(ccount_nalloc,teller-1); i++) {
+      /* Account for all subintervals of longer intervals */
+      sum = 0;
+      for(j=i; j<ccount_nalloc; j++)
+	sum += (j-i+1)*ccount[j];
+
+      fprintf(fp,"%10.3f %10.3f\n",i*(t-t0)/(teller-1),sum/(double)(teller-i));
+    }
+    fclose(fp);
+  }
   
   thanx(stderr);
   return 0;
