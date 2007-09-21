@@ -610,7 +610,7 @@ void _range_check(int n,int n_min,int n_max,const char *var,const char *file,int
       buf[0] = '\0';
     
     sprintf(buf+strlen(buf),"Variable %s has value %d. It should have been "
-	    "within [ %d .. %d ]\n%s",var,n,n_min,n_max,gmxuser);
+	    "within [ %d .. %d ]\n",var,n,n_min,n_max);
     
     _gmx_error("range",buf,file,line);
   }
