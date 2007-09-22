@@ -35,7 +35,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_trjconv.c	gmx_trjcat.c	gmx_trjorder.c	gmx_xpm2ps.c	\
 	gmx_editconf.c	gmx_genbox.c	gmx_genion.c	gmx_genconf.c	\
 	gmx_genpr.c	gmx_eneconv.c	gmx_wheel.c	\
-	addconf.c 	addconf.h	gmx_sdf.c	\
+	addconf.c 	addconf.h	\
 	calcpot.c 	calcpot.h 	edittop.c
 
 bin_PROGRAMS = \
