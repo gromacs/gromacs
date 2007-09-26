@@ -307,7 +307,7 @@ static char **read_topol(char *infile,char *outfile,
   int        lastcg=-1;
   /* File handling variables */
   int        status,done;
-  void       *handle;
+  gmx_cpp_t  handle;
   
   /* open input and output file */
   status = cpp_open_file(infile,&handle,cpp_opts(define,include));

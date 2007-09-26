@@ -158,7 +158,7 @@ static void list_top(char *fn)
   int status,done;
 #define BUFLEN 256
   char buf[BUFLEN];
-  void *handle;
+  gmx_cpp_t handle;
   char *cppopts[] = { NULL };
 
   status = cpp_open_file(fn,&handle,cppopts);
