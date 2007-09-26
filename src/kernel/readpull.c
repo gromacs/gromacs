@@ -195,7 +195,7 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
 
 void make_pull_groups(t_pull *pull,char **pgnames,t_block *grps,char **gnames)
 {
-  int  d,nchar,g,ig,i;
+  int  d,nchar,g,ig=-1,i;
   char *ptr,pulldim1[STRLEN];
   t_pullgrp *pgrp;
 
