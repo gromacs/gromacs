@@ -75,6 +75,7 @@
 #include "xvgr.h"
 #include "mdatoms.h"
 #include "gbutil.h"
+#include "ns.h"
 #include "gmx_wallcycle.h"
 
 static void sp_header(FILE *out,const char *minimizer,real ftol,int nsteps)
