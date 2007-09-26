@@ -622,10 +622,8 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 		  graph,cr,nrnb,grps,fr,top,edyn);
 
     if (vsite)
-      construct_vsites(log,vsite,
-		       state_global->x,nrnb,ir->delta_t,NULL,
-		       &top_global->idef,ir->ePBC,fr->bMolPBC,graph,
-		       cr,state_global->box);
+      construct_vsites(log,vsite,state->x,nrnb,ir->delta_t,NULL,
+		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
   }
 
   debug_gmx();
