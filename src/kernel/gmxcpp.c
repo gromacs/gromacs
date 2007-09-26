@@ -65,7 +65,7 @@ static char     **incl = 0;
 /* enum used for handling ifdefs */
 enum { eifDEF, eifELSE, eifIGN, eifNR };
 
-typedef struct t_cpphandle {
+typedef struct gmx_cpp {
   FILE     *fp;
   char     *fn;
   int      line_len;
@@ -73,8 +73,8 @@ typedef struct t_cpphandle {
   int      line_nr;
   int      nifdef;
   int      *ifdefs;
-  struct   t_cpphandle *child,*parent;
-} t_cpphandle;
+  struct   gmx_cpp *child,*parent;
+} gmx_cpp;
 
 static int def_comp(const void *a,const void *b)
 {
@@ -157,9 +157,9 @@ static void add_define(char *define)
 
 /* Open the file to be processed. The handle variable holds internal
    info for the cpp emulator. Return integer status */
-int cpp_open_file(char *filenm,void **handle,char **cppopts)
+int cpp_open_file(char *filenm,gmx_cpp_t *handle,char **cppopts)
 {
-  t_cpphandle *cpp;
+  gmx_cpp_t cpp;
   char *buf;
   int i;
   
@@ -217,9 +217,9 @@ int cpp_open_file(char *filenm,void **handle,char **cppopts)
    routine also does all the "intelligent" work like processing cpp
    directives and so on. Note that often the routine is called
    recursively and no cpp directives are printed. */
-int cpp_read_line(void **handlep,int n,char buf[])
+int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
 {
-  t_cpphandle *handle = (t_cpphandle *)*handlep;
+  gmx_cpp_t handle = (gmx_cpp_t)*handlep;
   int  i,i0,nn,len,status;
   char *inc_fn,*ptr,*ptr2,*name;
     
@@ -402,10 +402,10 @@ int cpp_read_line(void **handlep,int n,char buf[])
 }
 
 /* Close the file! Return integer status. */
-int cpp_close_file(void **handlep)
+int cpp_close_file(gmx_cpp_t *handlep)
 {
   int i;
-  t_cpphandle *handle = (t_cpphandle *)*handlep;
+  gmx_cpp_t handle = (gmx_cpp_t)*handlep;
   
   if (!handle)
     return eCPP_INVALID_HANDLE;
@@ -448,7 +448,7 @@ int cpp_close_file(void **handlep)
 
 /* Return a string containing the error message coresponding to status
    variable */
-char *cpp_error(void **handlep,int status)
+char *cpp_error(gmx_cpp_t *handlep,int status)
 {
   char buf[256];
   char *ecpp[] = {
@@ -456,7 +456,7 @@ char *cpp_error(void **handlep,int status)
     "Invalid file handle", 
     "File not open", "Unknown error", "Error status out of range"
   };
-  t_cpphandle *handle = (t_cpphandle *)*handlep;
+  gmx_cpp_t handle = (gmx_cpp_t)*handlep;
   
   if (!handle)
     return ecpp[eCPP_INVALID_HANDLE];
