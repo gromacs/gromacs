@@ -215,7 +215,7 @@ static void init_nblist(t_nblist *nl_sr,t_nblist *nl_lr,
         nl->gid         = NULL;
         nl->shift       = NULL;
         nl->jindex      = NULL;
-        nl->solvent_opt = solvent;
+        nl->nltype      = nltype;
         reallocate_nblist(nl);
         nl->jindex[0] = 0;
 #ifdef GMX_THREADS

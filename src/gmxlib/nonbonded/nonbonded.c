@@ -469,11 +469,11 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 	/* Update flop accounting */
 	
 	/* Outer loop in kernel */
-	if (nlist->solvent_opt==enlistWATER)
+	if (nlist->nltype==enlistWATER)
             {
 	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
             }
-	else if (nlist->solvent_opt==enlistWATERWATER)
+	else if (nlist->nltype==enlistWATERWATER)
             {
 	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
             }

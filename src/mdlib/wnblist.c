@@ -55,13 +55,13 @@
 
 static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
 {
-  int i,j,ci,cj0,cj1,aj,cj,nj;
+  int i,nii,ii,j,ci,cj0,cj1,aj,cj,nj;
   int ca1[DD_MAXCELL],np[DD_MAXCELL];
 
   if (nblist->nri > 0) {  
     fprintf(out,"il_name: %s  Solvent opt: %s\n",
             nrnb_str(nblist->il_code),
-            enlist_names[nblist->solvent_opt]);
+            enlist_names[nblist->nltype]);
     fprintf(out,"nri: %d  npair: %d\n",nblist->nri,nblist->nrj);
     if (dd) {
       for(ci=0; ci<dd->ncell; ci++)
@@ -88,13 +88,18 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
 	fprintf(out,"\n");
       }
     }
-    if (nDNL == 2) {
+    if (nDNL >= 2) {
       for(i=0; i<nblist->nri; i++) {
+	nii = 1;
+	if (nDNL >= 3 && nblist->nltype != enlistATOM)
+	  nii = 3;
 	nj = nblist->jindex[i+1] - nblist->jindex[i];
 	fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
 		glatnr(dd,nblist->iinr[i]),nblist->shift[i],nblist->gid[i],nj);
-	for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++)
-	  fprintf(out,"  j: %d\n",glatnr(dd,nblist->jjnr[j]));
+	for(ii=0; ii<nii; ii++)
+	  for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++)
+	    fprintf(out,"  i: %5d  j: %5d\n",
+		    glatnr(dd,nblist->iinr[i]+ii),glatnr(dd,nblist->jjnr[j]));
       }
     }
     fflush(out);

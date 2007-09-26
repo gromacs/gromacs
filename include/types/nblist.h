@@ -44,7 +44,7 @@ typedef struct
   int             icoul;        /* Coulomb loop type index for kernels   */
   int             ivdw;         /* VdW loop type index for kernels       */
   int             free_energy;  /* Free energy setting for this list     */
-  int             solvent_opt;  /* Atom, water, or water-water list      */
+  int             nltype;       /* Atom, water, or water-water list      */
 
   int             nri,maxnri;   /* Current/max number of i particles	 */
   int             nrj,maxnrj;   /* Current/max number of j particles	 */
