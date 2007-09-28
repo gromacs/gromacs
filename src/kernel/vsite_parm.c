@@ -555,7 +555,7 @@ int set_vsites(bool bVerbose,char *molname,t_atoms *atoms,t_atomtype *atype,
 	}
 	if (!bSet) {
 	  if (bVerbose && bFirst) {
-	    printf("Calculating parameters for virtual sites for\n");
+	    printf("Calculating parameters for virtual sites\n");
 	    bFirst=FALSE;
 	  }
 	  
