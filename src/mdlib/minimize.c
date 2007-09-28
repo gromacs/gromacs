@@ -2185,7 +2185,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	  a_tp1-a_tp0,bCharge ? "with" : "without");
 
   fprintf(stdlog,"\nWill insert %d times in each frame of %s\n",
-	  inputrec->nstlist,opt2fn("-rerun",nfile,fnm));
+	  nsteps,opt2fn("-rerun",nfile,fnm));
   
   if (!bCavity) {
     if (inputrec->nstlist > 1) {
