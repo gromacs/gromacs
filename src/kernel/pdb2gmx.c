@@ -545,9 +545,13 @@ int main(int argc, char *argv[])
     "G45a3  GROMOS96 45a3 Forcefield [BR]",
     "G53a5  GROMOS96 53a5 Forcefield [BR]",
     "G53a6  GROMOS96 53a6 Forcefield [BR]",
-    "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[BR]",
     "encads Encad all-atom force field, using scaled-down vacuum charges[BR]",
     "encadv Encad all-atom force field, using full solvent charges[PAR]",
+      
+    "Please note that the original 'gmx' force field based on Gromos87 is",
+    "deprecated and should not be used for any new simulations. If you really",
+    "know what you are doing you can still select it with the -ff option, but",
+    "we have removed it from the list of default selections.[PAR]",
       
     "The corresponding data files can be found in the library directory",
     "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
