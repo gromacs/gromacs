@@ -223,7 +223,7 @@ static void get_nbparm(char *nb_str,char *comb_str,int *nb,int *comb)
   }
 }
 
-static char **cpp_opts(char *define,char *include)
+static char **cpp_opts(char *define,char *include,char *infile)
 {
   int  n,len;
   int  ncppopts=0;
@@ -261,6 +261,14 @@ static char **cpp_opts(char *define,char *include)
 	}
       }
     }
+  }
+  if ((rptr=strrchr(infile,'/')) != NULL) {
+    ptr = strdup(infile);
+    ptr[(int)(rptr-infile)] = '\0';
+    srenew(cppopts,++ncppopts);
+    snew(cppopts[ncppopts-1],strlen(ptr)+4);
+    sprintf(cppopts[ncppopts-1],"-I%s",ptr);
+    sfree(ptr);
   }
   srenew(cppopts,++ncppopts);
   cppopts[ncppopts-1] = NULL;
@@ -310,7 +318,7 @@ static char **read_topol(char *infile,char *outfile,
   gmx_cpp_t  handle;
   
   /* open input and output file */
-  status = cpp_open_file(infile,&handle,cpp_opts(define,include));
+  status = cpp_open_file(infile,&handle,cpp_opts(define,include,infile));
   if (status != 0) 
     gmx_fatal(FARGS,cpp_error(&handle,status));
   if (outfile)
