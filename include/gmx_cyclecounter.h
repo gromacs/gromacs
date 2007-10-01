@@ -440,8 +440,8 @@ static inline gmx_cycles_t gmx_cycles_read(void)
 static inline gmx_cycles_t gmx_cycles_read(void)
 { 
     /* AIX compilers. Inline the calculation instead of using library functions */
-    timebasestruct_t t;
-    read_real_time(&t, TIMEBASE_SZ);
+    timebasestruct_t t1;
+    read_real_time(&t1, TIMEBASE_SZ);
     /* POWER returns real time (seconds + nanoseconds),
      * POWER_PC returns high/low 32 bits of a counter.
      */
