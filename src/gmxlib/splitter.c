@@ -146,7 +146,7 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist,
   
       if (ftype==F_VSITE2)
 	nvsite_constr=2;
-      else if(ftype==F_VSITE4FD)
+      else if(ftype==F_VSITE4FD || ftype==F_VSITE4FDN)
 	nvsite_constr=4;
       else
 	nvsite_constr=3;

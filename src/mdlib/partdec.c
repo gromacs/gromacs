@@ -406,7 +406,7 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 	/* The vsite and constructing atoms */
 	if (ftype==F_VSITE2)
 	  nconstr=2;
-	else if(ftype==F_VSITE4FD)
+	else if(ftype==F_VSITE4FDN || ftype==F_VSITE4FD)
 	  nconstr=4;
 	else
 	  nconstr=3;

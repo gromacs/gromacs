@@ -305,6 +305,9 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   case F_VSITE3OUT:
     f = 3; 
     break;
+  case F_VSITE4FDN:
+      f = 1;
+    break;
   default:
     bDih=FALSE;
   }
@@ -452,7 +455,7 @@ void print_bondeds(FILE *out,int natoms,directive d,
   t_symtab   stab;
   t_atomtype atype;
   int i;
-  
+    
   snew(atype.atom,natoms);
   snew(atype.atomname,natoms);
   open_symtab(&stab);

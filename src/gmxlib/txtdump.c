@@ -770,6 +770,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     break;
   case F_VSITE3OUT:
   case F_VSITE4FD:
+  case F_VSITE4FDN:
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
 	    iparams->vsite.a,iparams->vsite.b,iparams->vsite.c);
     break;

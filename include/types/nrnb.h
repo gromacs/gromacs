@@ -104,7 +104,8 @@ enum
     eNR_LINCSMAT,             eNR_SHAKE,                eNR_CONSTR_V,
     eNR_SHAKE_RIJ,            eNR_CONSTR_VIR,           eNR_SETTLE,
     eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
-    eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD, 
+    eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD,
+    eNR_VSITE4FDN,
     eNRNB
 };
 

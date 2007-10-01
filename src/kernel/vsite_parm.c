@@ -620,6 +620,68 @@ static bool calc_vsite4fd_param(t_param *param,
   return bError;
 }
 
+
+static bool 
+calc_vsite4fdn_param(t_param *param,
+                     int nrbond, t_mybonded *bonds,
+                     int nrang,  t_mybonded *angles)
+{
+    /* i = virtual site          |    ,k
+    * j = 1st bonded heavy atom | i-j-m
+    * k,l,m = 2nd bonded atoms  |    `l
+    */
+    
+    bool bError;
+    real bij,bjk,bjl,bjm,aijk,aijl,aijm;
+    real pk,pl,pm,a,b;
+    
+    bij = get_bond_length(nrbond, bonds, param->AI, param->AJ);
+    bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
+    bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
+    bjm = get_bond_length(nrbond, bonds, param->AJ, param->AM);
+    aijk= get_angle      (nrang, angles, param->AI, param->AJ, param->AK);
+    aijl= get_angle      (nrang, angles, param->AI, param->AJ, param->AL);
+    aijm= get_angle      (nrang, angles, param->AI, param->AJ, param->AM);
+
+    bError = (bij==NOTSET) || (bjk==NOTSET) || (bjl==NOTSET) || (bjm==NOTSET) ||
+        (aijk==NOTSET) || (aijl==NOTSET) || (aijm==NOTSET);
+    
+    if (!bError) {
+        
+        /* Calculate component of bond j-k along the direction i-j */
+        pk = -bjk*cos(aijk);
+
+        /* Calculate component of bond j-l along the direction i-j */
+        pl = -bjl*cos(aijl);
+
+        /* Calculate component of bond j-m along the direction i-j */
+        pm = -bjm*cos(aijm);
+        
+        if(fabs(pl)<1000*GMX_REAL_MIN || fabs(pm)<1000*GMX_REAL_MIN)
+        {
+            fprintf(stderr,"virtual site %d: angle ijk = %f, angle ijl = %f, angle ijm = %f\n",
+                    param->AI+1,RAD2DEG*aijk,RAD2DEG*aijl,RAD2DEG*aijm);
+            gmx_fatal(FARGS,"invalid construction in calc_vsite4fdn for atom %d: "
+                      "pl=%f, pm=%f\n",param->AI+1,pl,pm);
+        }
+        
+        a = pk/pl;
+        b = pk/pm;
+          
+        param->C0 = a;
+        param->C1 = b;
+        param->C2 = bij;
+        
+        if (debug)
+            fprintf(debug,"params for vsite4fdn %u: %g %g %g\n",
+                    param->AI+1,param->C0,param->C1,param->C2);
+    }
+    
+    return bError;
+}
+
+
+
 int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
 		t_params plist[])
 {
@@ -701,6 +763,11 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
 	      calc_vsite4fd_param(&(plist[ftype].param[i]), 
 				  nrbond, bonds, nrang, angles);
 	    break;
+	  case F_VSITE4FDN:
+          bERROR = 
+	      calc_vsite4fdn_param(&(plist[ftype].param[i]), 
+                               nrbond, bonds, nrang, angles);
+          break;
 	  default:
 	    gmx_fatal(FARGS,"Automatic parameter generation not supported "
 			"for %s atom %d",
@@ -829,8 +896,9 @@ static void clean_vsite_bonds(t_params *plist, t_pindex pindex[],
 	}
 	nvsite++;
 	bThisFD = ( (pindex[atom].ftype == F_VSITE3FD ) ||
-		    (pindex[atom].ftype == F_VSITE3FAD) ||
-		    (pindex[atom].ftype == F_VSITE4FD ) );
+                (pindex[atom].ftype == F_VSITE3FAD) ||
+                (pindex[atom].ftype == F_VSITE4FD ) ||
+                (pindex[atom].ftype == F_VSITE4FDN ) );
 	bThisOUT= ( (pindex[atom].ftype == F_VSITE3OUT) &&
 		    (interaction_function[cftype].flags & IF_CONSTRAINT) );
 	bAllFD = bAllFD && bThisFD;

@@ -363,7 +363,7 @@ static void constr_vsite3OUT(rvec xi,rvec xj,rvec xk,rvec x,
 }
 
 static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
-			  real a,real b,real c,t_pbc *pbc)
+                            real a,real b,real c,t_pbc *pbc)
 {
   rvec xij,xjk,xjl,temp;
   real d;
@@ -388,6 +388,46 @@ static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
   /* 6 Flops */
   
   /* TOTAL: 43 flops */
+}
+
+
+static void constr_vsite4FDN(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
+                             real a,real b,real c,t_pbc *pbc)
+{
+    rvec xij,xik,xil,ra,rb,temp;
+    real d;
+    
+    pbc_rvec_sub(pbc,xj,xi,xij);
+    pbc_rvec_sub(pbc,xk,xi,xik);
+    pbc_rvec_sub(pbc,xl,xi,xil);
+    /* 9 flops */
+
+    xik[XX] = a*xik[XX];
+    xik[YY] = a*xik[YY];
+    xik[ZZ] = a*xik[ZZ];
+    
+    xil[XX] = b*xil[XX];
+    xil[YY] = b*xil[YY];
+    xil[ZZ] = b*xil[ZZ];
+
+    /* 6 flops */
+
+    rvec_sub(xik,xij,ra);
+    rvec_sub(xil,xij,rb);
+    /* 6 flops */
+    
+    cprod(ra,rb,temp);
+    /* 9 flops */
+    
+    d=c*invsqrt(norm2(temp));
+    /* 5+5+1 flops */
+    
+    x[XX] = xi[XX] + d*temp[XX];
+    x[YY] = xi[YY] + d*temp[YY];
+    x[ZZ] = xi[ZZ] + d*temp[ZZ];
+    /* 6 Flops */
+    
+    /* TOTAL: 47 flops */
 }
 
 
@@ -518,6 +558,14 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	  constr_vsite4FD(x[ai],x[aj],x[ak],x[al],x[avsite],a1,b1,c1,
 			  pbc_null2);
 	  break;
+	case F_VSITE4FDN:
+        ak = ia[4];
+        al = ia[5];
+        b1 = ip[tp].vsite.b;
+        c1 = ip[tp].vsite.c;
+        constr_vsite4FDN(x[ai],x[aj],x[ak],x[al],x[avsite],a1,b1,c1,
+                        pbc_null2);
+        break;
 	default:
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
@@ -883,8 +931,8 @@ static void spread_vsite3OUT(t_iatom ia[],real a,real b,real c,
 }
 
 static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
-			     rvec x[],rvec f[],rvec fshift[],
-			     t_pbc *pbc,t_graph *g)
+                            rvec x[],rvec f[],rvec fshift[],
+                            t_pbc *pbc,t_graph *g)
 {
   real    d,invl,fproj,a1;
   rvec    xvi,xij,xjk,xjl,xix,fv,temp;
@@ -961,6 +1009,17 @@ static void spread_vsite4FD(t_iatom ia[],real a,real b,real c,
   /* TOTAL: 77 flops */
 }
 
+
+static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
+                             rvec x[],rvec f[],rvec fshift[],
+                             t_pbc *pbc,t_graph *g)
+{
+    gmx_fatal(FARGS,"Vsite4FDN spreading not yet implemented");
+
+}
+
+
+
 void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 		    rvec x[],rvec f[],rvec *fshift,
 		    t_nrnb *nrnb,t_idef *idef,
@@ -969,7 +1028,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 {
   real      a1,b1,c1;
   int       i,m,nra,nrd,tp,ftype;
-  int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD;
+  int       nd2,nd3,nd3FD,nd3FAD,nd3OUT,nd4FD,nd4FDN;
   t_iatom   *ia;
   t_iparams *ip;
   t_pbc     pbc,*pbc_null,*pbc_null2;
@@ -995,12 +1054,13 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 
   ip     = idef->iparams;
 
-  nd2    = 0;
-  nd3    = 0;
-  nd3FD  = 0;
-  nd3FAD = 0;
-  nd3OUT = 0;
-  nd4FD  = 0;
+  nd2        = 0;
+  nd3        = 0;
+  nd3FD      = 0;
+  nd3FAD     = 0;
+  nd3OUT     = 0;
+  nd4FD      = 0;
+  nd4FDN     = 0;
    
   /* this loop goes backwards to be able to build *
    * higher type vsites from lower types         */
@@ -1068,6 +1128,12 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 	  spread_vsite4FD(ia,a1,b1,c1,x,f,fshift,pbc_null2,g);
 	  nd4FD++;
 	  break;
+	case F_VSITE4FDN:
+        b1 = ip[tp].vsite.b;
+        c1 = ip[tp].vsite.c;
+        spread_vsite4FDN(ia,a1,b1,c1,x,f,fshift,pbc_null2,g);
+        nd4FDN++;
+        break;
 	default:
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
 		      ftype,__FILE__,__LINE__);
@@ -1081,12 +1147,13 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
     }
   }
   
-  inc_nrnb(nrnb,eNR_VSITE2,   nd2   );
-  inc_nrnb(nrnb,eNR_VSITE3,   nd3   );
-  inc_nrnb(nrnb,eNR_VSITE3FD, nd3FD );
-  inc_nrnb(nrnb,eNR_VSITE3FAD,nd3FAD);
-  inc_nrnb(nrnb,eNR_VSITE3OUT,nd3OUT);
-  inc_nrnb(nrnb,eNR_VSITE4FD, nd4FD );
+  inc_nrnb(nrnb,eNR_VSITE2,   nd2     );
+  inc_nrnb(nrnb,eNR_VSITE3,   nd3     );
+  inc_nrnb(nrnb,eNR_VSITE3FD, nd3FD   );
+  inc_nrnb(nrnb,eNR_VSITE3FAD,nd3FAD  );
+  inc_nrnb(nrnb,eNR_VSITE3OUT,nd3OUT  );
+  inc_nrnb(nrnb,eNR_VSITE4FD, nd4FD   );
+  inc_nrnb(nrnb,eNR_VSITE4FDN, nd4FDN );
 
   if (DOMAINDECOMP(cr)) {
     dd_move_f_vsites(cr->dd,f,fshift);
@@ -1132,7 +1199,8 @@ static int **get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
   t_iatom *ia;
   int  **vsite_pbc,*vsite_pbc_f;
 
-  snew(vsite_pbc,F_VSITE4FD-F_VSITE2+1);
+  snew(vsite_pbc,F_VSITE4FDN-F_VSITE2+1);
+  
   for(ftype=0; ftype<F_NRE; ftype++) {
     if (interaction_function[ftype].flags & IF_VSITE) {
       nral = NRAL(ftype);
@@ -1230,8 +1298,8 @@ gmx_vsite_t *init_vsite(t_commrec *cr,t_topology *top)
     vsite->vsite_pbc = get_vsite_pbc(vsite->n_vsite,&top->idef,top->atoms.atom,
 				     &top->blocks[ebCGS],a2cg);
     if (DOMAINDECOMP(cr)) {
-      snew(vsite->vsite_pbc_dd,F_VSITE4FD-F_VSITE2+1);
-      snew(vsite->vsite_pbc_dd_nalloc,F_VSITE4FD-F_VSITE2+1);
+      snew(vsite->vsite_pbc_dd,F_VSITE4FDN-F_VSITE2+1);
+      snew(vsite->vsite_pbc_dd_nalloc,F_VSITE4FDN-F_VSITE2+1);
     }
 
     if (PARTDECOMP(cr)) {

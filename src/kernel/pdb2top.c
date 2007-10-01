@@ -345,6 +345,7 @@ void write_top(FILE *out, char *pr,char *molname,
     print_bondeds(out,at->nr,d_vsites3,    F_VSITE3FAD,0,              plist);
     print_bondeds(out,at->nr,d_vsites3,    F_VSITE3OUT,0,              plist);
     print_bondeds(out,at->nr,d_vsites4,    F_VSITE4FD, 0,              plist);
+    print_bondeds(out,at->nr,d_vsites4,    F_VSITE4FDN, 0,             plist);
     
     if (pr)
       print_top_posre(out,pr);
@@ -739,7 +740,8 @@ void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 	  plist[F_VSITE3FD].nr +
 	  plist[F_VSITE3FAD].nr +
 	  plist[F_VSITE3OUT].nr +
-	  plist[F_VSITE4FD].nr );
+      plist[F_VSITE4FD].nr +
+      plist[F_VSITE4FDN].nr );
   
   print_sums(atoms, FALSE);
   

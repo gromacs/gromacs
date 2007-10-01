@@ -913,6 +913,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     break;
   case F_VSITE3OUT:
   case F_VSITE4FD: 
+  case F_VSITE4FDN: 
     do_real(iparams->vsite.a);
     do_real(iparams->vsite.b);
     do_real(iparams->vsite.c);

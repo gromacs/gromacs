@@ -519,15 +519,18 @@ static void add_vsites(t_params plist[], int vsite_type[],
 		       bSwapParity);
 	break;
       }
-      case F_VSITE4FD: {
-	if (nrheavies < 3) 
-	  gmx_fatal(FARGS,"Not enough heavy atoms (%d) for %s (min 4)",
-		      nrheavies+1,
-		      interaction_function[vsite_type[Hatoms[i]]].name);
-	add_vsite4_atoms(&plist[ftype],  
-		       Hatoms[0], Heavy, heavies[0], heavies[1], heavies[2]);
-	break;
-      }
+      case F_VSITE4FD: 
+      case F_VSITE4FDN:
+          if (nrheavies < 3) 
+          {
+              gmx_fatal(FARGS,"Not enough heavy atoms (%d) for %s (min 4)",
+                        nrheavies+1,
+                        interaction_function[vsite_type[Hatoms[i]]].name);
+          }
+          add_vsite4_atoms(&plist[ftype],  
+                           Hatoms[0], Heavy, heavies[0], heavies[1], heavies[2]);
+          break;
+      
       default:
 	gmx_fatal(FARGS,"can't use add_vsites for interaction function %s",
 		    interaction_function[vsite_type[Hatoms[i]]].name);
@@ -1309,6 +1312,7 @@ static bool is_vsite(int vsite_type)
   case F_VSITE3OUT:
   case F_VSITE3FAD:
   case F_VSITE4FD:
+  case F_VSITE4FDN:
     return TRUE;
   default:
     return FALSE;
@@ -1324,9 +1328,11 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
 {
 #define MAXATOMSPERRESIDUE 16
   int  i,j,k,i0,ni0,whatres,resnr,add_shift,ftype,nvsite,nadd;
+  int  ai,aj,ak,al;
   int  nrfound=0,needed,nrbonds,nrHatoms,Heavy,nrheavies,tpM,tpHeavy;
   int  Hatoms[4],heavies[4],bb;
   bool bWARNING,bAddVsiteParam,bFirstWater;
+  matrix tmpmat;
   bool *bResProcessed;
   real mHtot,mtot,fact,fact2;
   rvec rpar,rperp,temp;
@@ -1522,7 +1528,27 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  (*vsite_type)[i]=F_VSITE3FD;
 	  break;
 	case 4: /* --CH- (tert) */
-	  (*vsite_type)[i]=F_VSITE4FD;
+        /* The old type 4FD had stability issues, so 
+         * all new constructs should use 4FDN
+         */
+	  (*vsite_type)[i]=F_VSITE4FDN;
+        
+        /* Check parity of heavy atoms from coordinates */
+        ai = Heavy;
+        aj = heavies[0];
+        ak = heavies[1];
+        al = heavies[2];
+        rvec_sub((*x)[aj],(*x)[ai],tmpmat[0]);
+        rvec_sub((*x)[ak],(*x)[ai],tmpmat[1]);
+        rvec_sub((*x)[al],(*x)[ai],tmpmat[2]);
+        
+        if(det(tmpmat)>0)
+        {
+            /* swap parity */
+            heavies[1] = aj;
+            heavies[0] = ak;
+        }
+        
 	  break;
 	default: /* nrbonds != 2, 3 or 4 */
 	  bWARNING=TRUE;
@@ -1667,6 +1693,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
 #undef NMASS
 	} else
 	  bWARNING=TRUE;
+    
       }
       if (bWARNING)
 	fprintf(stderr,
