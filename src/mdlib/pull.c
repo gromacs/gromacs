@@ -154,7 +154,7 @@ static void apply_forces_grp(t_commrec *cr,
   for(i=0; i<pgrp->nat_loc; i++) {
     ii = pgrp->ind_loc[i];
     wmass = md->massT[ii];
-    if (pgrp->weight_loc > 0)
+    if (pgrp->weight_loc)
       wmass *= pgrp->weight_loc[i];
     
     for(m=0; m<DIM; m++)
@@ -343,7 +343,7 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
 
       switch (pull->eGeom) {
       case epullgDIST:
-	if (ref <= 0)
+	if (ref[0] <= 0)
 	  gmx_fatal(FARGS,"The pull constraint reference distance for group %d is <= 0 (%f)",g,ref);
 	
 	a = diprod(r_ij[g],r_ij[g]); 
