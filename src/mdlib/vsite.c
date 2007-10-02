@@ -394,7 +394,7 @@ static void constr_vsite4FD(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
 static void constr_vsite4FDN(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
                              real a,real b,real c,t_pbc *pbc)
 {
-    rvec xij,xik,xil,ra,rb,temp;
+    rvec xij,xik,xil,ra,rb,rja,rjb,rm;
     real d;
     
     pbc_rvec_sub(pbc,xj,xi,xij);
@@ -402,29 +402,29 @@ static void constr_vsite4FDN(rvec xi,rvec xj,rvec xk,rvec xl,rvec x,
     pbc_rvec_sub(pbc,xl,xi,xil);
     /* 9 flops */
 
-    xik[XX] = a*xik[XX];
-    xik[YY] = a*xik[YY];
-    xik[ZZ] = a*xik[ZZ];
+    ra[XX] = a*xik[XX];
+    ra[YY] = a*xik[YY];
+    ra[ZZ] = a*xik[ZZ];
     
-    xil[XX] = b*xil[XX];
-    xil[YY] = b*xil[YY];
-    xil[ZZ] = b*xil[ZZ];
+    rb[XX] = b*xil[XX];
+    rb[YY] = b*xil[YY];
+    rb[ZZ] = b*xil[ZZ];
 
     /* 6 flops */
 
-    rvec_sub(xik,xij,ra);
-    rvec_sub(xil,xij,rb);
+    rvec_sub(ra,xij,rja);
+    rvec_sub(rb,xij,rjb);
     /* 6 flops */
     
-    cprod(ra,rb,temp);
+    cprod(rja,rjb,rm);
     /* 9 flops */
     
-    d=c*invsqrt(norm2(temp));
+    d=c*invsqrt(norm2(rm));
     /* 5+5+1 flops */
     
-    x[XX] = xi[XX] + d*temp[XX];
-    x[YY] = xi[YY] + d*temp[YY];
-    x[ZZ] = xi[ZZ] + d*temp[ZZ];
+    x[XX] = xi[XX] + d*rm[XX];
+    x[YY] = xi[YY] + d*rm[YY];
+    x[ZZ] = xi[ZZ] + d*rm[ZZ];
     /* 6 Flops */
     
     /* TOTAL: 47 flops */
@@ -1014,8 +1014,127 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
                              rvec x[],rvec f[],rvec fshift[],
                              t_pbc *pbc,t_graph *g)
 {
-    gmx_fatal(FARGS,"Vsite4FDN spreading not yet implemented");
+    rvec xvi,xij,xik,xil,ra,rb,rja,rjb,rab,rm,rt;
+    rvec fv,fj,fk,fl;
+    real invrm,denom;
+    real cfx,cfy,cfz;
+    ivec di;
+    int  av,ai,aj,ak,al;
+    int  svi,sij,sik,sil;
 
+    av = ia[1];
+    ai = ia[2];
+    aj = ia[3];
+    ak = ia[4];
+    al = ia[5];
+
+    copy_rvec(f[av],fv);
+    
+    sij = pbc_rvec_sub(pbc,x[aj],x[ai],xij);
+    sik = pbc_rvec_sub(pbc,x[ak],x[ai],xik);
+    sil = pbc_rvec_sub(pbc,x[al],x[ai],xil);
+    /* 9 flops */
+    
+    ra[XX] = a*xik[XX];
+    ra[YY] = a*xik[YY];
+    ra[ZZ] = a*xik[ZZ];
+    
+    rb[XX] = b*xil[XX];
+    rb[YY] = b*xil[YY];
+    rb[ZZ] = b*xil[ZZ];
+    
+    /* 6 flops */
+    
+    rvec_sub(ra,xij,rja);
+    rvec_sub(rb,xij,rjb);
+    rvec_sub(rb,ra,rab);
+    /* 9 flops */
+    
+    cprod(rja,rjb,rm);
+    /* 9 flops */
+
+    invrm=invsqrt(norm2(rm));
+    denom=0.5*invrm*invrm;
+    /* 5+5+2 flops */
+    
+    cfx = c*invrm*fv[XX];
+    cfy = c*invrm*fv[YY];
+    cfz = c*invrm*fv[ZZ];
+    /* 6 Flops */
+
+    cprod(rm,rab,rt);
+    /* 9 flops */
+
+    rt[XX] *= denom;
+    rt[YY] *= denom;
+    rt[ZZ] *= denom;
+    /* 3flops */
+    
+    fj[XX] = (        -rm[XX]*rt[XX]) * cfx + (-rab[ZZ]-rm[XX]*rt[YY]) * cfy + ( rab[YY]-rm[XX]*rt[ZZ]) * cfz;
+    fj[YY] = ( rab[ZZ]-rm[YY]*rt[XX]) * cfx + (        -rm[YY]*rt[YY]) * cfy + (-rab[XX]-rm[YY]*rt[ZZ]) * cfz;
+    fj[ZZ] = (-rab[YY]-rm[ZZ]*rt[XX]) * cfx + ( rab[XX]-rm[ZZ]*rt[YY]) * cfy + (        -rm[ZZ]*rt[ZZ]) * cfz;
+    /* 30 flops */
+    
+    cprod(rjb,rm,rt);
+    /* 9 flops */
+
+    rt[XX] *= denom*a;
+    rt[YY] *= denom*a;
+    rt[ZZ] *= denom*a;
+    /* 3flops */
+    
+    fk[XX] = (          -rm[XX]*rt[XX]) * cfx + ( a*rjb[ZZ]-rm[XX]*rt[YY]) * cfy + (-a*rjb[YY]-rm[XX]*rt[ZZ]) * cfz;
+    fk[YY] = (-a*rjb[ZZ]-rm[YY]*rt[XX]) * cfx + (          -rm[YY]*rt[YY]) * cfy + ( a*rjb[XX]-rm[YY]*rt[ZZ]) * cfz;
+    fk[ZZ] = ( a*rjb[YY]-rm[ZZ]*rt[XX]) * cfx + (-a*rjb[XX]-rm[ZZ]*rt[YY]) * cfy + (          -rm[ZZ]*rt[ZZ]) * cfz;
+    /* 36 flops */
+    
+    cprod(rja,rm,rt);
+    /* 9 flops */
+    
+    rt[XX] *= denom*b;
+    rt[YY] *= denom*b;
+    rt[ZZ] *= denom*b;
+    /* 3flops */
+    
+    fl[XX] = (          -rm[XX]*rt[XX]) * cfx + (-b*rja[ZZ]-rm[XX]*rt[YY]) * cfy + ( b*rja[YY]-rm[XX]*rt[ZZ]) * cfz;
+    fl[YY] = ( b*rja[ZZ]-rm[YY]*rt[XX]) * cfx + (          -rm[YY]*rt[YY]) * cfy + (-b*rja[XX]-rm[YY]*rt[ZZ]) * cfz;
+    fl[ZZ] = (-b*rja[YY]-rm[ZZ]*rt[XX]) * cfx + ( b*rja[XX]-rm[ZZ]*rt[YY]) * cfy + (          -rm[ZZ]*rt[ZZ]) * cfz;
+    /* 36 flops */
+
+    f[ai][XX] += fv[XX] - fj[XX] - fk[XX] - fl[XX];
+    f[ai][YY] += fv[YY] - fj[YY] - fk[YY] - fl[YY];
+    f[ai][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ] - fl[ZZ];
+    rvec_inc(f[aj],fj);
+    rvec_inc(f[ak],fk);
+    rvec_inc(f[ak],fl);
+    /* 21 flops */
+
+    if (g) {
+        ivec_sub(SHIFT_IVEC(g,av),SHIFT_IVEC(g,ai),di);
+        svi = IVEC2IS(di);
+        ivec_sub(SHIFT_IVEC(g,aj),SHIFT_IVEC(g,ai),di);
+        sij = IVEC2IS(di);
+        ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,ai),di);
+        sik = IVEC2IS(di);
+        ivec_sub(SHIFT_IVEC(g,al),SHIFT_IVEC(g,ai),di);
+        sil = IVEC2IS(di);
+    } else if (pbc) {
+        svi = pbc_rvec_sub(pbc,x[av],x[ai],xvi);
+    } else {
+        svi = CENTRAL;
+    }
+    
+    if (fshift && (svi!=CENTRAL || sij!=CENTRAL || sik!=CENTRAL || sil!=CENTRAL)) {
+        rvec_dec(fshift[svi],fv);
+        fshift[CENTRAL][XX] += fv[XX] - fj[XX] - fk[XX] - fl[XX];
+        fshift[CENTRAL][YY] += fv[YY] - fj[YY] - fk[YY] - fl[YY];
+        fshift[CENTRAL][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ] - fl[ZZ];
+        rvec_inc(fshift[sij],fj);
+        rvec_inc(fshift[sik],fk);
+        rvec_inc(fshift[sil],fl);
+    }
+    
+    /* Total: 207 flops (Yuck!) */
 }
 
 
