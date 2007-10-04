@@ -50,15 +50,17 @@
 #define XTC_MAGIC 1995
 
 
-int xdr_real(XDR *xdrs,real *r)
+static int xdr_r2f(XDR *xdrs,real *r,bool bRead)
 {
 #ifdef GMX_DOUBLE
     float f;
     int   ret;
     
-    f=*r;
-    ret=xdr_float(xdrs,&f);
-    *r=f;
+    if (!bRead)
+      f = *r;
+    ret = xdr_float(xdrs,&f);
+    if (bRead)
+      *r = f;
     
     return ret;
 #else
@@ -104,7 +106,7 @@ void xtc_check_fat_err(char *str,bool bResult,char *file,int line)
 }
 
 static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time,
-		      bool *bOK)
+		      bool bRead,bool *bOK)
 {
   int result;
 
@@ -114,7 +116,7 @@ static int xtc_header(XDR *xd,int *magic,int *natoms,int *step,real *time,
   if (result)
     result=XTC_CHECK("step",   xdr_int(xd,step));    /* frame number    */
   if (result)
-    result=XTC_CHECK("time",   xdr_real(xd,time));   /* time            */
+    result=XTC_CHECK("time",   xdr_r2f(xd,time,bRead));   /* time */
   *bOK=(result!=0);
 
   return result;
@@ -132,8 +134,8 @@ static int xtc_coord(XDR *xd,int *natoms,matrix box,rvec *x,real *prec, bool bRe
   result=1;
   for(i=0; ((i<DIM) && result); i++)
     for(j=0; ((j<DIM) && result); j++)
-      result=XTC_CHECK("box",xdr_real(xd,&(box[i][j])));
-  
+      result=XTC_CHECK("box",xdr_r2f(xd,&(box[i][j]),bRead));
+
   if (!result)
       return result;
   
@@ -185,7 +187,7 @@ int write_xtc(int fp,
 
   xd = gmx_fio_getxdr(fp);
   /* write magic number and xtc identidier */
-  if (!xtc_header(xd,&magic_number,&natoms,&step,&time,&bDum))
+  if (!xtc_header(xd,&magic_number,&natoms,&step,&time,FALSE,&bDum))
     return 0;
     
   /* write data */
@@ -204,7 +206,7 @@ int read_first_xtc(int fp,int *natoms,int *step,real *time,
   xd = gmx_fio_getxdr(fp);
   
   /* read header and malloc x */
-  if ( !xtc_header(xd,&magic,natoms,step,time,bOK))
+  if ( !xtc_header(xd,&magic,natoms,step,time,TRUE,bOK))
     return 0;
     
   /* Check magic number */
@@ -229,7 +231,7 @@ int read_next_xtc(int fp,
   xd = gmx_fio_getxdr(fp);
   
   /* read header */
-  if (!xtc_header(xd,&magic,&n,step,time,bOK))
+  if (!xtc_header(xd,&magic,&n,step,time,TRUE,bOK))
     return 0;
   if (n>natoms)
     gmx_fatal(FARGS, "Frame contains more atoms (%d) than expected (%d)", 
