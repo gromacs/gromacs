@@ -564,9 +564,12 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if ((!DOMAINDECOMP(cr) || DDMASTER(cr->dd)) &&
       vsite && !ir->bContinuation) {
     /* Construct the virtual sites for the starting structure */
+    /* Since with DD we have not made molecule whole in the starting
+     * configuration, we need to do full pbc in construct_vsites.
+     */
     construct_vsites(log,vsite,
 		     state_global->x,nrnb,ir->delta_t,NULL,
-		     &top_global->idef,ir->ePBC,fr->bMolPBC,graph,
+		     &top_global->idef,ir->ePBC,ir->ePBC!=epbcNONE,graph,
 		     DOMAINDECOMP(cr) ? NULL : cr,state_global->box);
   }
 
