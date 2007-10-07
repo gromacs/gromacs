@@ -168,17 +168,17 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
   check_warning_error(FARGS);
 }
 
-void replace_inp_entry(int ninp,t_inpfile *inp,const char *old,const char *new)
+void replace_inp_entry(int ninp,t_inpfile *inp,const char *old_entry,const char *new_entry)
 {
   int  i;
   
   for(i=0; (i<ninp); i++) {
-    if (strcasecmp_min(old,inp[i].name) == 0) {
-      if (new) {
+    if (strcasecmp_min(old_entry,inp[i].name) == 0) {
+      if (new_entry) {
 	fprintf(stderr,"Replacing old mdp entry '%s' by '%s'\n",
-		inp[i].name,new);
+		inp[i].name,new_entry);
 	sfree(inp[i].name);
-	inp[i].name = strdup(new);
+	inp[i].name = strdup(new_entry);
       } else {
 	fprintf(stderr,"Ignoring obsolete mdp entry '%s'\n",
 		inp[i].name);

@@ -57,7 +57,7 @@ extern void write_inpfile(char *fn,int ninp,t_inpfile inp[],
 			  bool bHaltOnUnknown);
 
 extern void replace_inp_entry(int ninp,t_inpfile *inp,
-			      const char *old,const char *new);
+			      const char *old_entry,const char *new_entry);
 
 extern int get_eint(int *ninp,t_inpfile **inp,const char *name,int def);
 
