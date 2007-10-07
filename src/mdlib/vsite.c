@@ -317,8 +317,7 @@ static void constr_vsite3FD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,
   /* TOTAL: 34 flops */
 }
 
-static void constr_vsite3FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,
-			     t_pbc *pbc)
+static void constr_vsite3FAD(rvec xi,rvec xj,rvec xk,rvec x,real a,real b, t_pbc *pbc)
 {
   rvec xij,xjk,xp;
   real a1,b1,c1,invdij;
@@ -1022,6 +1021,7 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     int  av,ai,aj,ak,al;
     int  svi,sij,sik,sil;
 
+    /* DEBUG: check atom indices */
     av = ia[1];
     ai = ia[2];
     aj = ia[3];
@@ -1070,9 +1070,9 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     rt[ZZ] *= denom;
     /* 3flops */
     
-    fj[XX] = (        -rm[XX]*rt[XX]) * cfx + (-rab[ZZ]-rm[XX]*rt[YY]) * cfy + ( rab[YY]-rm[XX]*rt[ZZ]) * cfz;
-    fj[YY] = ( rab[ZZ]-rm[YY]*rt[XX]) * cfx + (        -rm[YY]*rt[YY]) * cfy + (-rab[XX]-rm[YY]*rt[ZZ]) * cfz;
-    fj[ZZ] = (-rab[YY]-rm[ZZ]*rt[XX]) * cfx + ( rab[XX]-rm[ZZ]*rt[YY]) * cfy + (        -rm[ZZ]*rt[ZZ]) * cfz;
+    fj[XX] = (        -rm[XX]*rt[XX]) * cfx + ( rab[ZZ]-rm[YY]*rt[XX]) * cfy + (-rab[YY]-rm[ZZ]*rt[XX]) * cfz;
+    fj[YY] = (-rab[ZZ]-rm[XX]*rt[YY]) * cfx + (        -rm[YY]*rt[YY]) * cfy + ( rab[XX]-rm[ZZ]*rt[YY]) * cfz;
+    fj[ZZ] = ( rab[YY]-rm[XX]*rt[ZZ]) * cfx + (-rab[XX]-rm[YY]*rt[ZZ]) * cfy + (        -rm[ZZ]*rt[ZZ]) * cfz;
     /* 30 flops */
     
     cprod(rjb,rm,rt);
@@ -1083,9 +1083,9 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     rt[ZZ] *= denom*a;
     /* 3flops */
     
-    fk[XX] = (          -rm[XX]*rt[XX]) * cfx + ( a*rjb[ZZ]-rm[XX]*rt[YY]) * cfy + (-a*rjb[YY]-rm[XX]*rt[ZZ]) * cfz;
-    fk[YY] = (-a*rjb[ZZ]-rm[YY]*rt[XX]) * cfx + (          -rm[YY]*rt[YY]) * cfy + ( a*rjb[XX]-rm[YY]*rt[ZZ]) * cfz;
-    fk[ZZ] = ( a*rjb[YY]-rm[ZZ]*rt[XX]) * cfx + (-a*rjb[XX]-rm[ZZ]*rt[YY]) * cfy + (          -rm[ZZ]*rt[ZZ]) * cfz;
+    fk[XX] = (          -rm[XX]*rt[XX]) * cfx + (-a*rjb[ZZ]-rm[YY]*rt[XX]) * cfy + ( a*rjb[YY]-rm[ZZ]*rt[XX]) * cfz;
+    fk[YY] = ( a*rjb[ZZ]-rm[XX]*rt[YY]) * cfx + (          -rm[YY]*rt[YY]) * cfy + (-a*rjb[XX]-rm[ZZ]*rt[YY]) * cfz;
+    fk[ZZ] = (-a*rjb[YY]-rm[XX]*rt[ZZ]) * cfx + ( a*rjb[XX]-rm[YY]*rt[ZZ]) * cfy + (          -rm[ZZ]*rt[ZZ]) * cfz;
     /* 36 flops */
     
     cprod(rja,rm,rt);
@@ -1096,9 +1096,9 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     rt[ZZ] *= denom*b;
     /* 3flops */
     
-    fl[XX] = (          -rm[XX]*rt[XX]) * cfx + (-b*rja[ZZ]-rm[XX]*rt[YY]) * cfy + ( b*rja[YY]-rm[XX]*rt[ZZ]) * cfz;
-    fl[YY] = ( b*rja[ZZ]-rm[YY]*rt[XX]) * cfx + (          -rm[YY]*rt[YY]) * cfy + (-b*rja[XX]-rm[YY]*rt[ZZ]) * cfz;
-    fl[ZZ] = (-b*rja[YY]-rm[ZZ]*rt[XX]) * cfx + ( b*rja[XX]-rm[ZZ]*rt[YY]) * cfy + (          -rm[ZZ]*rt[ZZ]) * cfz;
+    fl[XX] = (          -rm[XX]*rt[XX]) * cfx + ( b*rja[ZZ]-rm[YY]*rt[XX]) * cfy + (-b*rja[YY]-rm[ZZ]*rt[XX]) * cfz;
+    fl[YY] = (-b*rja[ZZ]-rm[XX]*rt[YY]) * cfx + (          -rm[YY]*rt[YY]) * cfy + ( b*rja[XX]-rm[ZZ]*rt[YY]) * cfz;
+    fl[ZZ] = ( b*rja[YY]-rm[XX]*rt[ZZ]) * cfx + (-b*rja[XX]-rm[YY]*rt[ZZ]) * cfy + (          -rm[ZZ]*rt[ZZ]) * cfz;
     /* 36 flops */
 
     f[ai][XX] += fv[XX] - fj[XX] - fk[XX] - fl[XX];
@@ -1106,7 +1106,7 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     f[ai][ZZ] += fv[ZZ] - fj[ZZ] - fk[ZZ] - fl[ZZ];
     rvec_inc(f[aj],fj);
     rvec_inc(f[ak],fk);
-    rvec_inc(f[ak],fl);
+    rvec_inc(f[al],fl);
     /* 21 flops */
 
     if (g) {
