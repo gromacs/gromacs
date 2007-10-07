@@ -246,7 +246,7 @@ static const t_nrnb_data nbdata[eNRNB] = {
     { "Virtual Site 3fad",             176 },
     { "Virtual Site 3out",             87  },
     { "Virtual Site 4fd",              110 }, 
-    { "Virtual Site 4fdn",             130 } 
+    { "Virtual Site 4fdn",             254 } 
 };
 
 
