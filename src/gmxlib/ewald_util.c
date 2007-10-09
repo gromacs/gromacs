@@ -87,7 +87,7 @@ real ewald_LRcorrection(FILE *fplog,
 			real *vdip,real *vcharge)
 {
   static  bool    bFirst=TRUE;
-  static  bool    bSumForces=FALSE;
+  bool    bSumForces=FALSE;
   int     i,i1,i2,j,k,m,iv,jv,q;
   atom_id *AA;
   double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
@@ -382,9 +382,10 @@ real ewald_LRcorrection(FILE *fplog,
   }
   if (bFirst) {
     gmx_sumi(1,&bSumForces,cr);
+    fr->bSumAllForces = bSumForces;
     bFirst = FALSE;
   }
-  if (bSumForces) {
+  if (fr->bSumAllForces) {
     /* This is necessary if molecules are split over processors. Should
        be optimized! */
     gmx_sum(nsb->natoms*DIM,fr->f_el_recip[0],cr);

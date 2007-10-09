@@ -828,6 +828,7 @@ void init_forcerec(FILE *fp,
   fr->bTwinRange = fr->rlistlong > fr->rlist;
   fr->bEwald     = (fr->eeltype==eelPME || fr->eeltype==eelPMEUSER || 
 		    fr->eeltype==eelEWALD);
+  fr->bSumAllForces = FALSE;
   fr->bvdwtab    = (fr->vdwtype != evdwCUT);
   
   fr->bcoultab   = (fr->eeltype != eelCUT) && !EEL_RF(fr->eeltype);

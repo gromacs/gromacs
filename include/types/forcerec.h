@@ -162,7 +162,7 @@ typedef struct {
   tensor vir_el_recip;
 
   /* PME/Ewald stuff */
-  bool bEwald;
+  bool bEwald,bSumAllForces;
   real ewaldcoeff;
 
   /* Virial Stuff */

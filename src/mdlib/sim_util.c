@@ -310,9 +310,19 @@ void do_force(FILE *fplog,t_commrec *cr,t_commrec *mcr,
   }
   if (bDoForces) {
     /* Reset PME/Ewald forces if necessary */
-    if (EEL_FULL(fr->eeltype)) 
-      clear_rvecs(homenr,fr->f_el_recip+start);
-    
+    if (EEL_FULL(fr->eeltype)) {
+      /* The variable fr->bSumAllForces will be set TRUE in
+	 ewald_LRcorrection if necessary.  This function has not been
+        called the first time we get here. However the first time
+        around the forces are zero anyway so it doesn't matter. Note
+        that this bit is necessary only when molecules are split over
+        processors.
+      */
+      if (fr->bSumAllForces)
+	clear_rvecs(mdatoms->nr,fr->f_el_recip);
+      else
+	clear_rvecs(homenr,fr->f_el_recip+start);
+    }
     /* Copy long range forces into normal buffers */
     if (fr->bTwinRange) {
       for(i=0; i<nsb->natoms; i++)
