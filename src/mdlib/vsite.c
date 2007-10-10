@@ -445,7 +445,8 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   t_pbc     pbc,*pbc_null,*pbc_null2;
   bool      bDomDec;
   int       *vsite_pbc,ishift;
-
+  rvec      reftmp,vtmp,rtmp;
+  
   bDomDec = cr && DOMAINDECOMP(cr);
 
   /* We only need to do pbc when we have inter-cg vsites */
@@ -562,8 +563,10 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
         al = ia[5];
         b1 = ip[tp].vsite.b;
         c1 = ip[tp].vsite.c;
+
         constr_vsite4FDN(x[ai],x[aj],x[ak],x[al],x[avsite],a1,b1,c1,
                         pbc_null2);
+
         break;
 	default:
 	  gmx_fatal(FARGS,"No such vsite type %d in %s, line %d",
@@ -1054,14 +1057,14 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     /* 9 flops */
 
     invrm=invsqrt(norm2(rm));
-    denom=0.5*invrm*invrm;
+    denom=invrm*invrm;
     /* 5+5+2 flops */
     
     cfx = c*invrm*fv[XX];
     cfy = c*invrm*fv[YY];
     cfz = c*invrm*fv[ZZ];
     /* 6 Flops */
-
+    
     cprod(rm,rab,rt);
     /* 9 flops */
 
@@ -1074,7 +1077,7 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     fj[YY] = (-rab[ZZ]-rm[XX]*rt[YY]) * cfx + (        -rm[YY]*rt[YY]) * cfy + ( rab[XX]-rm[ZZ]*rt[YY]) * cfz;
     fj[ZZ] = ( rab[YY]-rm[XX]*rt[ZZ]) * cfx + (-rab[XX]-rm[YY]*rt[ZZ]) * cfy + (        -rm[ZZ]*rt[ZZ]) * cfz;
     /* 30 flops */
-    
+        
     cprod(rjb,rm,rt);
     /* 9 flops */
 
@@ -1088,7 +1091,7 @@ static void spread_vsite4FDN(t_iatom ia[],real a,real b,real c,
     fk[ZZ] = (-a*rjb[YY]-rm[XX]*rt[ZZ]) * cfx + ( a*rjb[XX]-rm[YY]*rt[ZZ]) * cfy + (          -rm[ZZ]*rt[ZZ]) * cfz;
     /* 36 flops */
     
-    cprod(rja,rm,rt);
+    cprod(rm,rja,rt);
     /* 9 flops */
     
     rt[XX] *= denom*b;
