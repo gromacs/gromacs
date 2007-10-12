@@ -1702,7 +1702,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
      * (but see consistency check above, DvdS 990330) 
      */
 #ifdef NS5DB
-    fprintf(log,"icg=%5d, naaj=%5d\n",icg,naaj);
+    fprintf(log,"icg=%5d, naaj=%5d, cell %d %d %d\n",
+	    icg,naaj,cell_x,cell_y,cell_z);
 #endif
     /* Loop over shift vectors in three dimensions */
     for (tz=shp0[ZZ]; tz<=shp1[ZZ]; tz++) {
@@ -2068,6 +2069,11 @@ int search_neighbours(FILE *log,t_forcerec *fr,
       check_grid(debug,grid);
       print_grid(debug,grid);
     }
+  } else if (fr->n_tpi) {
+    /* Set the grid cell index for the test particle only.
+     * The cell to cg index is not corrected, but that does not matter.
+     */
+    fill_grid(log,NULL,ns->grid,box,fr->hcg-1,fr->hcg,fr->cg_cm);
   }
   debug_gmx();
   
