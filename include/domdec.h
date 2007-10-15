@@ -136,6 +136,7 @@ extern void dd_partition_system(FILE         *fplog,
  * else state_local is redistributed between the nodes.
  */
 
+void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog);
 
 /* In domdec_con.c */
 
@@ -170,7 +171,7 @@ extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
-extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,matrix box,real rc,
 			      t_forcerec *fr,gmx_vsite_t *vsite,
 			      t_topology *top,t_topology *ltop);
 

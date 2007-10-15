@@ -160,6 +160,9 @@ typedef struct {
   int  *index_gl;
   int  *cgindex;
   int  cg_nalloc;
+  /* Local atom to local cg index, only for special cases */
+  int  *la2lc;
+  int  la2lc_nalloc;
 
   /* The number of home atoms */
   int  nat_home;

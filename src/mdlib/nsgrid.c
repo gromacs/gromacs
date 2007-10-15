@@ -146,10 +146,10 @@ static void set_grid_sizes(matrix box,real rlist,
       else
 	grid->n[i] = 1;
       grid->cell_size[i] = size/grid->n[i];
-      grid->ncpddc[i] = grid->n[i];
+      grid->ncpddc[i] = 0;
     } else {
-      /* We use grid->ncpddc[i] != nc[i] such that all particles
-       * in one ns cell belong to one DD cell only.
+      /* We use grid->ncpddc[i] such that all particles
+       * in one ns cell belong to a single DD cell only.
        * We can then beforehand exclude certain ns grid cells
        * for non-home i-particles.
        */
@@ -476,16 +476,18 @@ void fill_grid(FILE *log,
       /* Determine the ns grid cell limits for this DD cell */
       for(d=0; d<DIM; d++) {
 	shift0[d] = dd->shift[cell][d];
-	if (grid->ncpddc[d] == grid->n[d]) {
+	if (grid->ncpddc[d] == 0) {
 	  b0[d] = 0;
 	  b1[d] = grid->n[d];
 	} else {
-	  b0[d] = shift0[d];
-	  b1[d] = b0[d] + 1;
-	  b0[d] *= grid->ncpddc[d];
-	  b1[d] *= grid->ncpddc[d];
-	  if (b1[d] > grid->n[d])
+	  if (shift0[d] == 0) {
+	    b0[d] = 0;
+	    b1[d] = grid->ncpddc[d];
+	  } else {
+	    /* shift = 1 */
+	    b0[d] = grid->ncpddc[d];
 	    b1[d] = grid->n[d];
+	  }
 	}
       }
 

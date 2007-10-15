@@ -7,6 +7,7 @@
 #include "domdec.h"
 #include "names.h"
 #include "network.h"
+#include "vec.h"
 
 
 typedef struct gmx_reverse_top {
@@ -363,14 +364,54 @@ static void add_vsite(gmx_domdec_t *dd,
   }
 }
 
-static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef,gmx_vsite_t *vsite)
+static void make_la2lc(gmx_domdec_t *dd)
+{
+  int *cgindex,*la2lc,cg,a;
+
+  cgindex = dd->cgindex;
+
+  if (dd->nat_tot > dd->la2lc_nalloc) {
+    dd->la2lc_nalloc = over_alloc_dd(dd->nat_tot);
+    snew(dd->la2lc,dd->la2lc_nalloc);
+  }
+  la2lc = dd->la2lc;
+
+  /* Make the local atom to local cg index */
+  for(cg=0; cg<dd->ncg_tot; cg++) {
+    for(a=cgindex[cg]; a<cgindex[cg+1]; a++) {
+      la2lc[a] = cg;
+    }
+  }
+}
+
+static int make_local_bondeds(gmx_domdec_t *dd,
+			      rvec *cg_cm,matrix box,real rc,
+			      t_idef *idef,gmx_vsite_t *vsite)
 {
   int nbonded_local,i,gat,j,ftype,nral,d,k,kc;
   int *index,*rtil,**vsite_pbc,*vsite_pbc_nalloc;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
-  bool bUse;
-  ivec shift_min;
+  bool bRCheck,bUse;
+  real rc2;
+  ivec rcheck,k_zero,k_plus;
   gmx_ga2la_t *ga2la;
+  int  *la2lc=NULL;
+
+  /* Do we need to check cg_cm distances when assigning bonded interactions? */
+  bRCheck = FALSE;
+  for(d=0; d<DIM; d++) {
+    /* Only need to check for dimensions with 2 cells and short box vector */
+    rcheck[d] = (dd->nc[d] == 2 && box[d][d]*dd->skew_fac[d] < 4*rc);
+    if (rcheck[d])
+      bRCheck = TRUE;
+    if (debug)
+      fprintf(debug,"bonded rcheck[%d] = %d\n",d,rcheck[d]);
+  }
+  if (bRCheck) {
+    make_la2lc(dd);
+    la2lc = dd->la2lc;
+  }
+  rc2 = rc*rc;
 
   if (vsite && vsite->vsite_pbc) {
     vsite_pbc        = vsite->vsite_pbc_dd;
@@ -403,24 +444,45 @@ static int make_local_bondeds(gmx_domdec_t *dd,t_idef *idef,gmx_vsite_t *vsite)
 	  add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc,vsite_pbc_nalloc);
 	j += 1 + nral + 2;
       } else {
+	/* Assign this bonded interaction to the local node
+	 * if we have all the atoms involved (local or communicated)
+	 * and the minimum cell shift in each dimension is zero,
+	 * for dimensions with 2 DD cell an extra check may be necessary.
+	 */
 	bUse = TRUE;
-	for(d=0; d<DIM; d++)
-	  shift_min[d] = 1;
+	clear_ivec(k_zero);
+	clear_ivec(k_plus);
 	for(k=1; k<=nral && bUse; k++) {
 	  ga2la = &dd->ga2la[iatoms[k]];
 	  kc = ga2la->cell;
-	  if (kc == -1) {
-	    /* We do not have this atom of this interaction locally */
+	  if (kc == -1 || kc >= dd->ncell) {
+	    /* We do not have this atom of this interaction locally,
+	     * or it comes from more than one cell away.
+	     */
 	    bUse = FALSE;
 	  } else {
 	    tiatoms[k] = ga2la->a;
-	    for(d=0; d<DIM; d++)
-	      if (dd->shift[kc][d] < shift_min[d])
-		shift_min[d] = dd->shift[kc][d];
+	    for(d=0; d<DIM; d++) {
+	      if (dd->shift[kc][d] == 0)
+		k_zero[d] = k;
+	      else
+		k_plus[d] = k;
+	    }
 	  }
 	}
-	bUse = (bUse && 
-		shift_min[XX]==0 && shift_min[YY]==0 && shift_min[ZZ]==0);
+	bUse = (bUse && k_zero[XX] && k_zero[YY] && k_zero[ZZ]);
+	if (bRCheck) {
+	  for(d=0; (d<DIM && bUse); d++) {
+	    /* Check if the cg_cm distance falls within the cut-off
+	     * to avoid possible multiple assignments of bonded interactions.
+	     */
+	    if (rcheck[d] && 
+		k_plus[d] &&
+		distance2(cg_cm[la2lc[tiatoms[k_zero[d]]]],
+			  cg_cm[la2lc[tiatoms[k_plus[d]]]]) >= rc2)
+	      bUse = FALSE;
+	  }
+	}
 	if (bUse) {
 	  /* Add this interaction to the local topology */
 	  add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
@@ -614,7 +676,7 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
   lcgs->nra   = dd->nat_tot;
 }
 
-void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,matrix box,real rc,
 		       t_forcerec *fr,gmx_vsite_t *vsite,
 		       t_topology *top,t_topology *ltop)
 {
@@ -631,7 +693,8 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 
   make_local_idef(dd,&top->idef,&ltop->idef);
 #else
-  dd->nbonded_local = make_local_bondeds(dd,&ltop->idef,vsite);
+  dd->nbonded_local = make_local_bondeds(dd,fr->cg_cm,box,rc,
+					 &ltop->idef,vsite);
 #endif
 
   nexcl = make_local_exclusions(dd,fr,&top->blocks[ebEXCLS],

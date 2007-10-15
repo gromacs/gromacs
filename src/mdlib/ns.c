@@ -1367,24 +1367,31 @@ static inline void get_dx_dd(int Nx,real gridx,real rc2,int xgi,real x,
 			     int *g0,int *g1,real *dcx2)
 {
   real dcx,tmp;
-  int  g_min,g_max,xgidiv;
+  int  g_min,g_max,shift_home;
 
   if (xgi < 0) {
     g_min = 0;
-    g_max = shift_max*ncpddc - 1;
+    g_max = Nx - 1;
     *g0   = 0;
     *g1   = -1;
   } else if (xgi >= Nx) {
-    g_min = Nx + shift_min*ncpddc;
+    g_min = 0;
     g_max = Nx - 1;
     *g0   = Nx;
     *g1   = Nx - 1;
   } else {
-    xgidiv = xgi/ncpddc;
-    g_min = (xgidiv + shift_min)*ncpddc;
-    g_max = (xgidiv + shift_max + 1)*ncpddc - 1;
-    g_min = max(g_min,0);
-    g_max = min(g_max,Nx-1);
+    if (ncpddc == 0) {
+      g_min = 0;
+      g_max = Nx - 1;
+    } else {
+      if (xgi < ncpddc) {
+	shift_home = 0;
+      } else {
+	shift_home = -1;
+      }
+      g_min = (shift_min == shift_home ? 0          : ncpddc);
+      g_max = (shift_max == shift_home ? ncpddc - 1 : Nx - 1);
+    }
     if (shift_min > 0) {
       *g0 = g_min;
       *g1 = g_min - 1;
