@@ -2153,6 +2153,8 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   cg_tp = top->blocks[ebCGS].nr - 1;
   a_tp0 = top->blocks[ebCGS].index[cg_tp];
   a_tp1 = top->blocks[ebCGS].index[cg_tp+1];
+  if (debug)
+    fprintf(debug,"TPI cg %d, atoms %d-%d\n",cg_tp,a_tp0,a_tp1);
   if (a_tp1 - a_tp0 > 1 &&
       (inputrec->rlist < inputrec->rcoulomb ||
        inputrec->rlist < inputrec->rvdw))
@@ -2448,7 +2450,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	}
 	
 	if (debug)
-	  fprintf(debug,"%7d %12.5e %12.5f %12.5f %12.5f\n",
+	  fprintf(debug,"TPI %7d %12.5e %12.5f %12.5f %12.5f\n",
 		  step,ener[F_EPOT],x_tp[XX],x_tp[YY],x_tp[ZZ]);
 
 	if (dump_pdb && ener[F_EPOT] <= dump_ener) {
