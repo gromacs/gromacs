@@ -252,8 +252,9 @@ static const ivec dd_cp1[dd_cp1n] = {{0,0,2}};
 
 static int nstDDDump,nstDDDumpGrid;
 
-/* Factor used to avoid problems due to rounding issues */
+/* Factors used to avoid problems due to rounding issues */
 #define DD_CELL_MARGIN       1.00001
+#define DD_CELL_MARGIN2      1.000005
 /* Factor to account for pressure scaling during nstlist steps */
 #define DD_PRES_SCALE_MARGIN 1.02
 
@@ -1403,7 +1404,11 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       i = dd->nc[dim] - 1;
       root->cell_f[i+1] = 1;
       root->cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
-      if (root->cell_size[i] < cellsize_limit_f)
+      /* For this check we should not use DD_CELL_MARGIN,
+       * but a slightly smaller factor,
+       * since rounding could get use below the limit.
+       */
+      if (root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
 	gmx_fatal(FARGS,"Step %d: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
 		  step,dim2char(dim),box[dim][dim],dd->skew_fac[dim],
 		  dd->nc[dim],comm->cellsize_limit);
