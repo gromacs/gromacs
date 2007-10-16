@@ -1566,11 +1566,15 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 
   set_tric_dir(dd,box);
 
-  if (dd->bDynLoadBal && DDMASTER(dd))
-    check_box_size(dd,box);
+  if (dd->bDynLoadBal) {
+    if (DDMASTER(dd))
+      check_box_size(dd,box);
 
-  if (dd->bDynLoadBal && !bMaster) {
-    set_dd_cell_sizes_dlb(dd,box,bDynamicBox,bUniform,step);
+    if (bMaster) {
+      set_dd_cell_sizes_slb(dd,box,bMaster,np);
+    } else {
+      set_dd_cell_sizes_dlb(dd,box,bDynamicBox,bUniform,step);
+    }
   } else {
     set_dd_cell_sizes_slb(dd,box,bMaster,np);
     realloc_comm_ind(dd,np);
