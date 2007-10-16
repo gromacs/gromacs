@@ -1530,18 +1530,26 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 
 static void realloc_comm_ind(gmx_domdec_t *dd,ivec npulse)
 {
-  int d;
+  int d,np,i;
   gmx_domdec_comm_dim_t *cd;
 
   for(d=0; d<dd->ndim; d++) {
     cd = &dd->comm->cd[d];
-    if (npulse[dd->dim[d]] > cd->np_nalloc) {
+    np = npulse[dd->dim[d]];
+    if (np > cd->np_nalloc) {
+      if (debug)
+	fprintf(debug,"(Re)allocing cd for %c to %d pulses\n",
+		dim2char(dd->dim[d]),np);
       if (DDMASTER(dd) && cd->np_nalloc > 0)
-	fprintf(stderr,"\nIncreasing the number of cell to communicate in dimension %c to %d for the first time\n",dim2char(dd->dim[d]),npulse[dd->dim[d]]);
-      cd->np_nalloc = npulse[dd->dim[d]];
-      srenew(cd->ind,cd->np_nalloc);
+	fprintf(stderr,"\nIncreasing the number of cell to communicate in dimension %c to %d for the first time\n",dim2char(dd->dim[d]),np);
+      srenew(cd->ind,np);
+      for(i=cd->np_nalloc; i<np; i++) {
+	cd->ind[i].index  = NULL;
+	cd->ind[i].nalloc = 0;
+      }
+      cd->np_nalloc = np;
     }
-    cd->np = npulse[dd->dim[d]];
+    cd->np = np;
   }
 }
 
@@ -1565,9 +1573,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
     set_dd_cell_sizes_dlb(dd,box,bDynamicBox,bUniform,step);
   } else {
     set_dd_cell_sizes_slb(dd,box,bMaster,np);
-    if (!bMaster) {
-      realloc_comm_ind(dd,np);
-    }
+    realloc_comm_ind(dd,np);
   }
 
   if (debug)
