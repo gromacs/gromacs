@@ -534,7 +534,7 @@ int gmx_trjconv(int argc,char *argv[])
     "are broken this will not work either.[BR]",
     "* [TT]whole[tt] only makes broken molecules whole.[PAR]",
     "Option [TT]-ur[tt] sets the unit cell representation for options",
-    "[TT]mol[tt], [TT]res[tt] and [TT]inbox[tt] of [TT]-pbc[tt].",
+    "[TT]mol[tt], [TT]res[tt] and [TT]atom[tt] of [TT]-pbc[tt].",
     "All three options give different results for triclinc boxes and",
     "identical results for rectangular boxes.",
     "[TT]rect[tt] is the ordinary brick shape.",
@@ -574,7 +574,7 @@ int gmx_trjconv(int argc,char *argv[])
   
   int pbc_enum;
   enum
-    { epSel,epNone, epComMol, epComRes, epInbox, epNojump, epCluster, epWhole, epNR };
+    { epSel,epNone, epComMol, epComRes, epComAtom, epNojump, epCluster, epWhole, epNR };
   static char *pbc_opt[epNR+1] = 
     { NULL, "none", "mol", "res", "atom", "nojump", "cluster", "whole", NULL };
   
@@ -682,7 +682,7 @@ int gmx_trjconv(int argc,char *argv[])
   int          ndrop=0,ncol,drop0=0,drop1=0,dropuse=0;
   double       **dropval;
   real         tshift=0,t0=-1,dt=0.001,prec;
-  bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bInBox,bNoJump,bCluster;
+  bool         bRmPBC,bPBCWhole,bPBCcomRes,bPBCcomMol,bPBCcomAtom,bNoJump,bCluster;
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
@@ -744,7 +744,7 @@ int gmx_trjconv(int argc,char *argv[])
     bPBCWhole  = pbc_enum==epWhole;
     bPBCcomRes = pbc_enum==epComRes;
     bPBCcomMol = pbc_enum==epComMol;
-    bInBox     = pbc_enum==epInbox;
+    bPBCcomAtom= pbc_enum==epComAtom;
     bNoJump    = pbc_enum==epNojump;
     bCluster   = pbc_enum==epCluster;
     unitcell_enum = nenum(unitcell_opt);
@@ -1166,7 +1166,7 @@ int gmx_trjconv(int argc,char *argv[])
 		center_x(ecenter,fr.x,fr.box,natoms,ncent,cindex);
 	    }
 
-	    if (bInBox) {
+	    if (bPBCcomAtom) {
 	      switch (unitcell_enum) {
 	      case euRect:
 		put_atoms_in_box(fr.box,natoms,fr.x);
