@@ -1615,6 +1615,18 @@ static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,int step)
   }
 }
 
+static void make_tric_corr_matrix(matrix box,matrix tcm)
+{
+  tcm[YY][XX] = -box[YY][XX]/box[YY][YY];
+  if (box[ZZ][ZZ] > 0) {
+    tcm[ZZ][XX] = -(box[ZZ][YY]*tcm[YY][XX] + box[ZZ][XX])/box[ZZ][ZZ];
+    tcm[ZZ][YY] = -box[ZZ][YY]/box[ZZ][ZZ];
+  } else {
+    tcm[ZZ][XX] = 0;
+    tcm[ZZ][YY] = 0;
+  }
+}
+
 static void distribute_cg(FILE *fplog,int step,
 			  matrix box,t_block *cgs,rvec pos[],
 			  gmx_domdec_t *dd)
@@ -1622,7 +1634,8 @@ static void distribute_cg(FILE *fplog,int step,
   gmx_domdec_master_t *ma;
   int **tmp_ind=NULL,*tmp_nalloc=NULL;
   int  i,icg,j,k,k0,k1,d;
-  rvec invbox,cg_cm;
+  matrix tcm;
+  rvec cg_cm;
   ivec ind;
   real nrcg,inv_ncg,pos_d;
   atom_id *cgindex;
@@ -1647,8 +1660,7 @@ static void distribute_cg(FILE *fplog,int step,
     ma->nat[i] = 0;
   }
 
-  for(d=0; (d<DIM); d++)
-    invbox[d] = divide(1,box[d][d]);
+  make_tric_corr_matrix(box,tcm);
 
   cgindex = cgs->index;
   
@@ -1672,9 +1684,11 @@ static void distribute_cg(FILE *fplog,int step,
     /* Put the charge group in the box and determine the cell index */
     for(d=DIM-1; d>=0; d--) {
       pos_d = cg_cm[d];
-      if (dd->tric_dir[d] && dd->nc[d] > 1)
+      if (dd->tric_dir[d] && dd->nc[d] > 1) {
+	/* Use triclinic coordintates for this dimension */
 	for(j=d+1; j<DIM; j++)
-	  pos_d -= cg_cm[j]*box[j][d]*invbox[j];
+	  pos_d += cg_cm[j]*tcm[j][d];
+      }
       while(pos_d >= box[d][d]) {
 	pos_d -= box[d][d];
 	rvec_dec(cg_cm,box[d]);
@@ -1992,7 +2006,8 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   bool bV,bSDX;
   ivec tric_dir,dev;
   real inv_ncg,pos_d;
-  rvec *cg_cm,invbox,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
+  matrix tcm;
+  rvec *cg_cm,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
   atom_id *cgindex;
   gmx_domdec_comm_t *comm;
 
@@ -2020,7 +2035,6 @@ static int dd_redistribute_cg(FILE *fplog,int step,
     } else {
       limitd[d] = dd->comm->cellsize_min[d];
     }
-    invbox[d] = divide(1,state->box[d][d]);
     cell_x0[d] = dd->cell_x0[d];
     cell_x1[d] = dd->cell_x1[d];
     c = dd->ci[d] - 1;
@@ -2036,6 +2050,8 @@ static int dd_redistribute_cg(FILE *fplog,int step,
     else
       tric_dir[d] = 0;
   }
+
+  make_tric_corr_matrix(state->box,tcm);
 
   cgindex = dd->cgindex;
 
@@ -2063,9 +2079,10 @@ static int dd_redistribute_cg(FILE *fplog,int step,
       if (dd->nc[d] > 1) {
 	/* Determine the location of this cg in lattice coordinates */
 	pos_d = cm_new[d];
-	if (tric_dir[d])
+	if (tric_dir[d]) {
 	  for(d2=d+1; d2<DIM; d2++)
-	    pos_d -= cm_new[d2]*state->box[d2][d]*invbox[d2];
+	    pos_d += cm_new[d2]*tcm[d2][d];
+	}
 	/* Put the charge group in the triclinic unit-cell */
 	if (pos_d >= cell_x1[d]) {
 	  if (pos_d >= limit1[d])
@@ -2261,7 +2278,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 	      pos_d = comm->buf_vr[buf_pos][dim2];
 	      if (tric_dir[dim2])
 		for(d3=dim2+1; d3<DIM; d3++)
-		  pos_d -= comm->buf_vr[buf_pos][d3]*state->box[d3][dim2]*invbox[d3];
+		  pos_d += comm->buf_vr[buf_pos][d3]*tcm[d3][dim2];
 	      if (pos_d >= cell_x1[dim2]) {
 		flag |= DD_FLAG_FW(d2);
 	      } else if (pos_d < cell_x0[dim2]) {
