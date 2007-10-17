@@ -642,7 +642,7 @@ static inline void m_inv_ur0(matrix src,matrix dest)
   dest[ZZ][XX] = (src[YY][XX]*src[ZZ][YY]*dest[YY][YY]
 		  - src[ZZ][XX])*dest[XX][XX]*dest[ZZ][ZZ];
   dest[YY][XX] = -src[YY][XX]*dest[XX][XX]*dest[YY][YY];
-  dest[ZZ][YY] = -src[ZZ][YY]*dest[YY][YY]*dest[YY][YY];
+  dest[ZZ][YY] = -src[ZZ][YY]*dest[YY][YY]*dest[ZZ][ZZ];
   dest[XX][YY] = 0.0;
   dest[XX][ZZ] = 0.0;
   dest[YY][ZZ] = 0.0;
