@@ -640,7 +640,9 @@ static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
       nsid--;
     }
   }
-
+  while ((nsid > 0) && (ms[nsid-1].sid == -1)) 
+    nsid--;
+    
   for(k=0; (k<natoms); k++) {
     sid[k].atom = k;
     sid[k].sid = -1;
