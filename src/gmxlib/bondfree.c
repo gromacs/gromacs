@@ -663,7 +663,8 @@ real bond_angle(const rvec xi,const rvec xj,const rvec xk,const t_pbc *pbc,
   *t1 = pbc_rvec_sub(pbc,xi,xj,r_ij);			/*  3		*/
   *t2 = pbc_rvec_sub(pbc,xk,xj,r_kj);			/*  3		*/
 
-  *costh=cos_angle(r_ij,r_kj);		/* 25		*/
+  *costh=cos_angle_non_linear(r_ij,r_kj);		/* 25		*/
+
   th=acos(*costh);			/* 10		*/
 					/* 41 TOTAL	*/
   return th;
@@ -944,7 +945,7 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 
   oprod(r_ij,r_kj,m); 			/*  9 		*/
   oprod(r_kj,r_kl,n);			/*  9		*/
-  *cos_phi=cos_angle(m,n); 		/* 41 		*/
+  *cos_phi=cos_angle_non_linear(m,n); 		/* 41 		*/
   phi=acos(*cos_phi); 			/* 10 		*/
   ipr=iprod(r_ij,n); 			/*  5 		*/
   (*sign)=(ipr<0.0)?-1.0:1.0;
@@ -1255,7 +1256,7 @@ static real low_angres(int nbonds,
       r_kl[ZZ] = 1;
     }
 
-    cos_phi = cos_angle(r_ij,r_kl);		/* 25		*/
+    cos_phi = cos_angle_non_linear(r_ij,r_kl);		/* 25		*/
     phi     = acos(cos_phi);                    /* 10           */
 
     *dvdlambda += dopdihs_min(forceparams[type].pdihs.cpA,
@@ -1530,7 +1531,7 @@ real g96bond_angle(const rvec xi,const rvec xj,const rvec xk,const t_pbc *pbc,
   *t1 = pbc_rvec_sub(pbc,xi,xj,r_ij);			/*  3		*/
   *t2 = pbc_rvec_sub(pbc,xk,xj,r_kj);			/*  3		*/
 
-  costh=cos_angle(r_ij,r_kj);		/* 25		*/
+  costh=cos_angle_non_linear(r_ij,r_kj);		/* 25		*/
 					/* 41 TOTAL	*/
   return costh;
 }
