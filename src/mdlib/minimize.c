@@ -2116,15 +2116,17 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   fr->ePBC = epbcXYZ;
   /* Determine the temperature for the Boltzmann weighting */
   temp = inputrec->opts.ref_t[0];
-  for(i=1; (i<inputrec->opts.ngtc); i++) {
-    if (inputrec->opts.ref_t[i] != temp) {
-      fprintf(fplog,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
-      fprintf(stderr,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
+  if (fplog) {
+    for(i=1; (i<inputrec->opts.ngtc); i++) {
+      if (inputrec->opts.ref_t[i] != temp) {
+	fprintf(fplog,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
+	fprintf(stderr,"\nWARNING: The temperatures of the different temperature coupling groups are not identical\n\n");
+      }
     }
+    fprintf(fplog,
+	    "\n  The temperature for test particle insertion is %.3f K\n\n",
+	    temp);
   }
-  fprintf(fplog,
-	  "\n  The temperature for test particle insertion is %.3f K\n\n",
-	  temp);
   beta = 1.0/(BOLTZ*temp);
 
   /* Number of insertions per frame */
@@ -2173,7 +2175,7 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 
   calc_cgcm(fplog,cg_tp,cg_tp+1,&(top->blocks[ebCGS]),state->x,fr->cg_cm);
   if (bCavity) {
-    if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist) {
+    if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog) {
       fprintf(fplog, "WARNING: Your TPI molecule is not centered at 0,0,0\n");
       fprintf(stderr,"WARNING: Your TPI molecule is not centered at 0,0,0\n");
     }
@@ -2183,21 +2185,25 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
       rvec_dec(x_mol[i],fr->cg_cm[cg_tp]);
   }
 
-  fprintf(stdlog,"\nWill insert %d atoms %s partial charges\n",
-	  a_tp1-a_tp0,bCharge ? "with" : "without");
-
-  fprintf(stdlog,"\nWill insert %d times in each frame of %s\n",
-	  nsteps,opt2fn("-rerun",nfile,fnm));
+  if (fplog) {
+    fprintf(fplog,"\nWill insert %d atoms %s partial charges\n",
+	    a_tp1-a_tp0,bCharge ? "with" : "without");
+    
+    fprintf(fplog,"\nWill insert %d times in each frame of %s\n",
+	    nsteps,opt2fn("-rerun",nfile,fnm));
+  }
   
   if (!bCavity) {
     if (inputrec->nstlist > 1) {
       if (drmax==0 && a_tp1-a_tp0==1) {
 	gmx_fatal(FARGS,"Re-using the neighborlist %d times for insertions of a single atom in a sphere of radius %f does not make sense",inputrec->nstlist,drmax);
       }
-      fprintf(stdlog,"Will use the same neighborlist for %d insertions in a sphere of radius %f\n",inputrec->nstlist,drmax);
+      if (fplog)
+	fprintf(fplog,"Will use the same neighborlist for %d insertions in a sphere of radius %f\n",inputrec->nstlist,drmax);
     }
   } else {
-    fprintf(stdlog,"Will insert randomly in a sphere of radius %f around the center of the cavity\n",drmax);
+    if (fplog)
+      fprintf(fplog,"Will insert randomly in a sphere of radius %f around the center of the cavity\n",drmax);
   }
 
   ngid = top->atoms.grps[egcENER].nr;
@@ -2498,9 +2504,11 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
   if (fp_tpi)
     fclose(fp_tpi);
 
-  fprintf(stdlog,"\n");
-  fprintf(stdlog,"  <V>  = %12.5e nm^3\n",V_all/frame);
-  fprintf(stdlog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
+  if (fplog) {
+    fprintf(fplog,"\n");
+    fprintf(fplog,"  <V>  = %12.5e nm^3\n",V_all/frame);
+    fprintf(fplog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
+  }
   
   sfree(sum_UgembU);
 
