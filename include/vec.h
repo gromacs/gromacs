@@ -485,6 +485,35 @@ static inline real cos_angle(const rvec a,const rvec b)
   return cos;
 }
 
+static inline real cos_angle_non_linear(const rvec a,const rvec b)
+{
+  /* 
+   *                  ax*bx + ay*by + az*bz
+   * cos-vec (a,b) =  ---------------------
+   *                      ||a|| * ||b||
+   */
+  real   cos;
+  int    m;
+  double aa,bb,ip,ipa,ipb; /* For accuracy these must be double! */
+  
+  ip=ipa=ipb=0.0;
+  for(m=0; (m<DIM); m++) {		/* 18		*/
+    aa   = a[m];
+    bb   = b[m];
+    ip  += aa*bb;
+    ipa += aa*aa;
+    ipb += bb*bb;
+  }
+  cos=ip*invsqrt(ipa*ipb);		/*  7		*/
+					/* 25 TOTAL	*/
+  if (cos >= 1.0) 
+    return  1.0-GMX_REAL_EPS; 
+  if (cos <=-1.0) 
+    return -1.0+GMX_REAL_EPS;
+  
+  return cos;
+}
+
 static inline real cos_angle_no_table(const rvec a,const rvec b)
 {
   /* This version does not need the invsqrt lookup table */
