@@ -1121,6 +1121,17 @@ static void clear_dd_indices(gmx_domdec_t *dd,int a_start)
     dd_clear_local_constraint_indices(dd);
 }
 
+static real grid_jump_limit(gmx_domdec_comm_t *comm,int dim_ind)
+{
+  /* The distance between the boundaries of cells at distance
+   * x+-1,y+-1 or y+-1,z+-1 is limited by the cut-off restrictions
+   * and by the fact that cells should not be shifted by more than
+   * half their size, such that cg's only shift by one cell
+   * at redecomposition.
+   */
+  return max(comm->cutoff_min,comm->cutoff/comm->cd[dim_ind].np);
+}
+
 static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
 {
   gmx_domdec_comm_t *comm;
@@ -1131,7 +1142,7 @@ static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
   
   for(d=1; d<dd->ndim; d++) {
     dim = dd->dim[d];
-    limit = comm->cutoff/comm->cd[d].np;
+    limit = grid_jump_limit(comm,d);
     bfac = box[dim][dim];
     if (dd->tric_dir[dim])
       bfac *= dd->skew_fac[dim];
@@ -1343,7 +1354,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 
       cellsize_limit_f  = comm->cellsize_limit/box[dim][dim];
       cellsize_limit_f *= DD_CELL_MARGIN;
-      dist_min_f        = comm->cutoff/(box[dim][dim]*dd->comm->cd[d].np);
+      dist_min_f        = grid_jump_limit(comm,d)/box[dim][dim];
       dist_min_f       *= DD_CELL_MARGIN;
       if (dd->tric_dir[dim]) {
 	cellsize_limit_f /= dd->skew_fac[dim];
@@ -1474,7 +1485,8 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
        * restrictions, but it does not hurt to check.
        */
       for(i=0; i<dd->nc[dim]; i++)
-	if (root->cell_f[i+1] - root->cell_f[i] < cellsize_limit_f)
+	if (root->cell_f[i+1] - root->cell_f[i] <
+	    cellsize_limit_f/DD_CELL_MARGIN)
 	  fprintf(stderr,
 		  "\nWARNING step %d: direction %c, cell %d too small: %f\n",
 		  step,dim2char(dim),i,
@@ -3382,7 +3394,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 {
   gmx_domdec_t *dd;
   gmx_domdec_comm_t *comm;
-  int  d,i,j,npulse;
+  int  d,i,j;
   char *warn="WARNING: Cycle counting is not supported on this architecture, will not use dynamic load balancing";
 
   if (fplog) {
@@ -3478,16 +3490,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
       fprintf(fplog,"Will not sort the charge groups\n");
   }
 
-  npulse = dd_nst_env(fplog,"GMX_DD_NPULSE",1);
-  comm->maxpulse = 1;
-  for(d=0; d<dd->ndim; d++) {
-    comm->cd[d].np = min(npulse,dd->nc[d]-1);
-    snew(comm->cd[d].ind,comm->cd[d].np);
-    comm->maxpulse = max(comm->maxpulse,comm->cd[d].np);
-  }
-
   comm->cutoff_min = comm_distance_min;
-
 
   return dd;
 }
@@ -3496,7 +3499,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 		       t_topology *top,t_inputrec *ir,t_forcerec *fr)
 {
   gmx_domdec_comm_t *comm;
-  int dim;
+  int dim,npulse;
 
   if (dd->pme_nodeid >= 0 && !EEL_PME(ir->coulombtype))
     gmx_fatal(FARGS,
@@ -3526,14 +3529,39 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   
   comm->bInterCGBondeds = (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
 
-  comm->cutoff       = max(fr->rlistlong,comm->cutoff_min);
+  comm->cutoff = max(fr->rlistlong,comm->cutoff_min);
   if (dd->bDynLoadBal) {
+    if ((comm->bInterCGBondeds || dd->vsite_comm || dd->constraint_comm)
+	&& comm->cutoff_min <= 0) {
+      comm->cutoff_min = comm->cutoff;
+    }
+    npulse = dd_nst_env(fplog,"GMX_DD_NPULSE",1);
+    if (comm->cutoff_min > 0 && comm->cutoff_min < comm->cutoff) {
+      /* We round down slightly here to avoid overhead due to the latency
+       * of extra communication calls when the cut-off would be only slightly
+       * longer than the cell size. Later cellsize_limit is determined,
+       * so we can not miss interaction due to this rounding.
+       */
+      npulse = (int)(0.96 + comm->cutoff/comm->cutoff_min);
+    }
+    comm->maxpulse = 1;
+    for(dim=0; dim<dd->ndim; dim++) {
+      comm->cd[dim].np = min(npulse,dd->nc[dim]-1);
+      snew(comm->cd[dim].ind,comm->cd[dim].np);
+      comm->maxpulse = max(comm->maxpulse,comm->cd[dim].np);
+    }
+
     comm->cellsize_limit = comm->cutoff/comm->maxpulse;
     comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_min);
-    if (DDMASTER(dd)) {
+    if (DDMASTER(dd) && fplog) {
       fprintf(fplog,"\nThe minimum size for domain decomposition cells is %g nm\n",comm->cellsize_limit);
       if (comm->bInterCGBondeds)
-	fprintf(fplog,"\nAtoms involved in bonded interactions should be within %g nm\n",comm->cellsize_limit);
+	fprintf(fplog,"\nAtoms involved in bonded interactions should be within %g nm\n",comm->cutoff_min);
+      if (dd->vsite_comm)
+	fprintf(fplog,"\nAtoms involved in virtual sites should be within %g nm\n",comm->cutoff_min);
+      if (dd->constraint_comm)
+	fprintf(fplog,"\nAtoms connected by %d constraints should be within %g nm\n",1+ir->nProjOrder,comm->cutoff_min);
+      fprintf(fplog,"\n");
     }
   }
 }
@@ -3634,8 +3662,10 @@ static void setup_dd_communication(FILE *fplog,int step,
   gmx_domdec_comm_t *comm;
   gmx_domdec_comm_dim_t *cd;
   gmx_domdec_ind_t *ind;
-  real r_comm2,r,r2,inv_ncg;
+  bool bTwoCut;
+  real r_comm2,r_scomm2,r_bcomm2,r,r2,rb2,inv_ncg,tric_sh;
   real corner[DIM][4],corner_round_0=0,corner_round_1[4];
+  real bcorner[DIM][4],bcorner_round_1[4];
   ivec tric_dist;
   rvec *cg_cm,*v_d,*v_0=NULL,*v_1=NULL,*recv_vr;
   real skew_fac2_d,skew_fac2_0=0,skew_fac2_1=0;
@@ -3657,9 +3687,15 @@ static void setup_dd_communication(FILE *fplog,int step,
 	tric_dist[dim_ind] = 1;
   }
 
+  bTwoCut = (dd->bGridJump && comm->bInterCGBondeds && dd->ndim > 1 &&
+	     dd->comm->cutoff_min < dd->comm->cutoff);
+
   dim0 = dd->dim[0];
   /* The first dimension is equal for all cells */
   corner[0][0] = dd->cell_x0[dim0];
+  if (bTwoCut) {
+    bcorner[0][0] = corner[0][0];
+  }
   if (dd->ndim >= 2) {
     dim1 = dd->dim[1];
     /* This cell row is only seen from the first row */
@@ -3670,7 +3706,12 @@ static void setup_dd_communication(FILE *fplog,int step,
       corner[1][1] = max(dd->cell_x0[dim1],comm->cell_d1[1][0]);
       if (comm->bInterCGBondeds) {
 	/* For the bonded distance we need the maximum */
-	corner[1][0] = corner[1][1];
+	if (bTwoCut) {
+	  bcorner[1][0] = corner[1][1];
+	  bcorner[1][1] = corner[1][1];
+	} else {
+	  corner[1][0]  = corner[1][1];
+	}
       }
     }
     /* Set the upper-right corner for rounding */
@@ -3692,8 +3733,12 @@ static void setup_dd_communication(FILE *fplog,int step,
 	}
 	if (comm->bInterCGBondeds) {
 	  /* For the bonded distance we need the maximum */
-	  for(j=0; j<4; j++)
-	    corner[2][j] = corner[2][1];
+	  for(j=0; j<4; j++) {
+	    if (bTwoCut)
+	      bcorner[2][j] = corner[2][1];
+	    else
+	      corner[2][j]  = corner[2][1];
+	  }
 	}
       }
       
@@ -3707,13 +3752,19 @@ static void setup_dd_communication(FILE *fplog,int step,
 	corner_round_1[0] = max(dd->cell_x1[dim1],comm->cell_d1[1][1]);
 	if (comm->bInterCGBondeds) {
 	  /* For the bonded distance we need the maximum */
-	  corner_round_1[3] = corner_round_1[0];
+	  if (bTwoCut) {
+	    bcorner_round_1[0] = corner_round_1[0];
+	    bcorner_round_1[3] = corner_round_1[0];
+	  } else {
+	    corner_round_1[3]  = corner_round_1[0];
+	  }
 	}
       }
     }
   }
 
-  r_comm2 = sqr(comm->cutoff);
+  r_comm2  = sqr(comm->cutoff);
+  r_bcomm2 = sqr(comm->cutoff_min);
 
   /* Triclinic stuff */
   if (dd->ndim >= 2) {
@@ -3761,29 +3812,51 @@ static void setup_dd_communication(FILE *fplog,int step,
 	}
 	ind->nsend[cell] = 0;
 	for(cg=cg0; cg<cg1; cg++) {
-	  r2 = 0;
+	  r2  = 0;
+	  rb2 = 0;
 	  if (tric_dist[dim_ind] == 0) {
-	    /* Rectangular box, easy */
+	    /* Rectangular direction, easy */
 	    r = cg_cm[cg][dim] - corner[dim_ind][cell];
 	    if (r > 0)
 	      r2 += r*r;
+	    if (bTwoCut) {
+	      r = cg_cm[cg][dim] - bcorner[dim_ind][cell];
+	      if (r > 0)
+		rb2 += r*r;
+	    }
 	    /* Rounding gives at most a 16% reduction in communicated atoms */
 	    if (dim_ind >= 1 && (celli == 1 || celli == 2)) {
 	      r = cg_cm[cg][dim0] - corner_round_0;
+	      /* This is the first dimension, so always r >= 0 */
 	      r2 += r*r;
+	      if (bTwoCut) {
+		rb2 += r*r;
+	      }
 	    }
 	    if (dim_ind == 2 && (celli == 2 || celli == 3)) {
 	      r = cg_cm[cg][dim1] - corner_round_1[cell];
 	      if (r > 0)
 		r2 += r*r;
+	      if (bTwoCut) {
+		r = cg_cm[cg][dim1] - bcorner_round_1[cell];
+		if (r > 0)
+		  rb2 += r*r;
+	      }
 	    }
 	  } else {
-	    /* Triclinic box, complicated */
+	    /* Triclinic direction, more complicated */
 	    r = cg_cm[cg][dim] - corner[dim_ind][cell];
+	    tric_sh = 0;
 	    for(i=dim+1; i<DIM; i++)
-	      r -= cg_cm[cg][i]*v_d[i][dim];
+	      tric_sh -= cg_cm[cg][i]*v_d[i][dim];
+	    r += tric_sh;
 	    if (r > 0)
 	      r2 += r*r*skew_fac2_d;
+	    if (bTwoCut) {
+	      r = cg_cm[cg][dim] - bcorner[dim_ind][cell] + tric_sh;
+	      if (r > 0)
+		rb2 += r*r*skew_fac2_d;
+	    }
 	    /* Rounding, conservative as the skew_fac multiplication
 	     * will slightly underestimate the distance.
 	     */
@@ -3792,16 +3865,26 @@ static void setup_dd_communication(FILE *fplog,int step,
 	      for(i=dim0+1; i<DIM; i++)
 		r -= cg_cm[cg][i]*v_0[i][dim0];
 	      r2 += r*r*skew_fac2_0;
+	      if (bTwoCut) {
+		rb2 += r*r*skew_fac2_0;
+	      }
 	    }
 	    if (dim_ind == 2 && (celli == 2 || celli == 3)) {
 	      r = cg_cm[cg][dim1] - corner_round_1[cell];
+	      tric_sh = 0;
 	      for(i=dim1+1; i<DIM; i++)
-		r -= cg_cm[cg][i]*v_1[i][dim1];
+		tric_sh -= cg_cm[cg][i]*v_1[i][dim1];
+	      r += tric_sh;
 	      if (r > 0)
 		r2 += r*r*skew_fac2_1;
+	      if (bTwoCut) {
+		r = cg_cm[cg][dim1] - bcorner_round_1[cell] + tric_sh;
+		if (r > 0)
+		  rb2 += r*r*skew_fac2_1;
+	      }
 	    }
 	  }
-	  if (r2 < r_comm2) {
+	  if (r2 < r_comm2 || (bTwoCut && rb2 < r_bcomm2)) {
 	    /* Make an index to the local charge groups */
 	    if (nsend+1 > ind->nalloc) {
 	      ind->nalloc = over_alloc_large(nsend+1);
@@ -4037,7 +4120,7 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
   }
 }
 
-static void dd_sort_state(gmx_domdec_t *dd,int ePBC,real cutoff,
+static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
 			  rvec *cgcm,t_forcerec *fr,t_state *state,
 			  int ncg_home_old)
 {
@@ -4301,7 +4384,7 @@ void dd_partition_system(FILE         *fplog,
     if (debug)
       fprintf(debug,"Step %d, sorting the %d home charge groups\n",
 	      step,dd->ncg_home);
-    dd_sort_state(dd,ir->ePBC,ir->rlist,fr->cg_cm,fr,state_local,ncg_home_old);
+    dd_sort_state(dd,ir->ePBC,fr->cg_cm,fr,state_local,ncg_home_old);
     /* Rebuild all the indices */
     cg0 = 0;
   }
