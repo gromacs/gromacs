@@ -619,6 +619,8 @@ void set_lincs(t_idef *idef,int start,int homenr,
       fprintf(debug,"Building the LINCS connectivity\n");
     if (dd == NULL) {
       li->nc = li->ncg;
+      if (!bDynamics)
+	li->nc -= li->ncg_flex;
       dc = NULL;
     } else {
       dc = dd->constraints;
@@ -858,7 +860,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
   FILE *fp;
   int i,j;
   gmx_domdec_constraints_t *dc;
-  bool bPrint;
+  bool bPrint=TRUE;
   
   dc = dd->constraints;
 
@@ -870,10 +872,14 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
   for(i=0; i<dd->nat_tot_con; i++) {
     if (i<dd->nat_home ||
 	(bAll && i>=dd->nat_tot && dc->ga2la[dd->gatindex[i]]>=0)) {
-      bPrint = (i < dd->nat_home);
-      if (i>=dd->nat_tot) {
-	for(j=at2con->index[dd->gatindex[i]+1]; j<at2con->index[dd->gatindex[i]+1]; j++)
-	  bPrint = bPrint || (dc->gc2lc[at2con->a[j]]>=0);
+      if (at2con) {
+	bPrint = (i < dd->nat_home);
+	if (i>=dd->nat_tot) {
+	  for(j=at2con->index[dd->gatindex[i]+1]; j<at2con->index[dd->gatindex[i]+1]; j++)
+	    bPrint = bPrint || (dc->gc2lc[at2con->a[j]]>=0);
+	}
+      } else {
+	bPrint = TRUE;
       }
       if (bPrint)
 	fprintf(fp,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
@@ -942,7 +948,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
   if (dd) {
     /* Communicate the coordinates required for the non-local constraints */
     dd_move_x_constraints(dd,box,x,xprime);
-    /*dump_conf(dd,lincsd,"con",TRUE,xprime,box);*/
+    /* dump_conf(dd,lincsd,NULL,"con",TRUE,xprime,box); */
   }
   if (bCoordinates) {
     if (ir->efep != efepNO) {
