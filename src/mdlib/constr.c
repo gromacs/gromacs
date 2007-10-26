@@ -557,12 +557,13 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 	  fprintf(fplog,"There are %d flexible constraints\n",
 		  constr->nflexcon);
 	  if (ir->fc_stepsize == 0) {
-	    fprintf(fplog,"WARNING: step size for flexible constraining = 0\n"
+	    fprintf(fplog,"\n"
+		    "WARNING: step size for flexible constraining = 0\n"
 		    "         All flexible constraints will be rigid.\n"
 		    "         Will try to keep all flexible constraints at their original length,\n"
 		    "         but the lengths may exhibit some drift.\n\n");
+	    constr->nflexcon = 0;
 	  }
-	  constr->nflexcon = 0;
 	}
 	if (constr->nflexcon > 0)
 	  please_cite(fplog,"Hess2002");
