@@ -61,6 +61,7 @@
 #include "pppm.h"
 #include "pme.h"
 #include "mdrun.h"
+#include "domdec.h"
 #include "partdec.h"
 #include "qmmm.h"
 #include "mpelogging.h"
@@ -1568,7 +1569,9 @@ void force(FILE       *fplog,   int        step,
 			    md->start,md->homenr,
 			    x,fr->f_el_recip,
 			    md->chargeA,md->chargeB,
-			    bSB ? boxs : box,cr,nrnb,
+			    bSB ? boxs : box,cr,
+			    DOMAINDECOMP(cr) ? dd_pme_maxshift(cr->dd) : 0,
+			    nrnb,
 			    fr->vir_el_recip,fr->ewaldcoeff,
 			    &Vlr,lambda,&dvdlambda,bGatherOnly);
         PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);

@@ -324,9 +324,9 @@ void do_force(FILE *fplog,t_commrec *cr,
       svmul(inputrec->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
     }
 
-    gmx_pme_send_x_q(cr,bBS ? boxs : box,x,NULL,NULL,
-		     mdatoms->nChargePerturbed,lambda,
-		     step >= inputrec->init_step+inputrec->nsteps);
+    gmx_pme_send_x(cr,bBS ? boxs : box,x,
+		   mdatoms->nChargePerturbed,lambda,
+		   step >= inputrec->init_step+inputrec->nsteps);
 
     GMX_MPE_LOG(ev_send_coordinates_finish);
     wallcycle_stop(wcycle,ewcPP_PMESENDX);

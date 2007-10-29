@@ -135,7 +135,6 @@ typedef struct gmx_pme {
   t_pmeatom *pmeatom;
   int  homenr_nalloc;
 
-  int  nnodes_comm;       /* The number of nodes to communicate with with DD */
   int  *node_dest;        /* The nodes to send x and q to with DD */
   int  *node_src;         /* The nodes to receive x and q from with DD */
   int  *count;            /* The number of atoms to send to each node */
@@ -148,11 +147,13 @@ typedef struct gmx_pme {
 
 #define CNBF_COORD    (1<<0)
 #define CNBF_CHARGE   (1<<1)
-#define CNBF_LASTSTEP (1<<2)
+#define CNBF_FEP      (1<<2)
+#define CNBF_LASTSTEP (1<<3)
 
 typedef struct gmx_pme_comm_n_box {
   int    natoms;
   matrix box;
+  int    maxshift;
   real   lambda;
   int    flags;
 } gmx_pme_comm_n_box_t;
@@ -196,7 +197,7 @@ static void pr_grid_dist(FILE *fp,char *title,t_fftgrid *grid)
         }
       }
           fprintf(fp,"%-12s  %5d  %5d\n",title,i,ntoti);
-    }
+  }
   fprintf(fp,"%d non zero elements in %s\n",ntot,title);
 }
 /* test */
@@ -496,17 +497,19 @@ static void pme_dd_sendrecv(gmx_pme_t pme,bool bBackward,int shift,
 #endif
 }
 
-static void dd_pmeredist_x_q(gmx_pme_t pme,
+static void dd_pmeredist_x_q(gmx_pme_t pme, int maxshift,
 			     int n, bool bX, rvec *x, real *charge, int *idxa)
 {
   int *commnode,*buf_index;
-  int i,nsend,local_pos,buf_pos,node,scount,rcount;
+  int nnodes_comm,i,nsend,local_pos,buf_pos,node,scount,rcount;
 
   commnode  = pme->node_dest;
   buf_index = pme->buf_index;
   
+  nnodes_comm = min(2*maxshift,pme->nnodes-1);
+
   nsend = 0;
-  for(i=0; i<pme->nnodes_comm; i++) {
+  for(i=0; i<nnodes_comm; i++) {
     buf_index[commnode[i]] = nsend;
     nsend += pme->count[commnode[i]];
   }
@@ -522,7 +525,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
     }
     
     pme->my_homenr = pme->count[pme->nodeid];
-    for(i=0; i<pme->nnodes_comm; i++) {
+    for(i=0; i<nnodes_comm; i++) {
       scount = pme->count[commnode[i]];
       /* Communicate the count */
       if (debug)
@@ -556,7 +559,7 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
   }
 
   buf_pos = 0;
-  for(i=0; i<pme->nnodes_comm; i++) {
+  for(i=0; i<nnodes_comm; i++) {
     scount = pme->count[commnode[i]];
     rcount = pme->rcount[i];
     if (scount > 0 || rcount > 0) {
@@ -576,17 +579,20 @@ static void dd_pmeredist_x_q(gmx_pme_t pme,
   }
 }
 
-static void dd_pmeredist_f(gmx_pme_t pme, int n, rvec *f,int *idxa)
+static void dd_pmeredist_f(gmx_pme_t pme, int maxshift,
+			   int n, rvec *f,int *idxa)
 {
   int *commnode,*buf_index;
-  int local_pos,buf_pos,i,scount,rcount,node;
+  int nnodes_comm,local_pos,buf_pos,i,scount,rcount,node;
 
   commnode  = pme->node_dest;
   buf_index = pme->buf_index;
 
+  nnodes_comm = min(2*maxshift,pme->nnodes-1);
+
   local_pos = pme->count[pme->nodeid];
   buf_pos = 0;
-  for(i=0; i<pme->nnodes_comm; i++) {
+  for(i=0; i<nnodes_comm; i++) {
     scount = pme->rcount[i];
     rcount = pme->count[commnode[i]];
     if (scount > 0 || rcount > 0) {
@@ -1184,69 +1190,26 @@ void make_bspline_moduli(splinevec bsp_mod,int nx,int ny,int nz,int order)
   sfree(bsp_data);
 }
 
-static void setup_coordinate_communication(t_commrec *cr,
-					   gmx_pme_t pme)
+static void setup_coordinate_communication(gmx_pme_t pme)
 {
-  static bool bFirst=TRUE;
-  int  npme,shmax,x,y,z,i,slab,dd_cx0,dd_cx1,fw,bw;
-  bool bPPnode;
+  int npme,n,i;
+  int fw,bw;
 
   npme = pme->nnodes;
 
-  /* This code assumes a uniform DD cell size in x direction
-   * and that particles are no further than one DD cell size
-   * out of their charge group home cell due to charge group size
-   * and diffusion between neighbor list updates.
-   */
-  shmax = 1;
-  for(x=0; x<cr->dd->nc[XX]; x++) {
-    dd_cx0 = x;
-    dd_cx1 = x + 1;
-    /* Add one DD cell size */
-    dd_cx0--;
-    dd_cx1++;
-    /* Now we multiply with npme, so the x range is 0 - dd_nx*npme */
-    dd_cx0 *= npme;
-    dd_cx1 *= npme;
-    for(y=0; y<cr->dd->nc[YY]; y++) {
-      for(z=0; z<cr->dd->nc[ZZ]; z++) {
-	slab = gmx_ddcoord2pmeslab(cr,x,y,z);
-	/* Check if we need to increase the maximum shift */
-	while (dd_cx1 > (slab + 1 + shmax)*cr->dd->nc[XX])
-	  shmax++;
-	while (dd_cx0 < (slab - shmax)*cr->dd->nc[XX])
-	  shmax++;
-      }
-    }
-  }
-
-  if (bFirst) {
-    if (debug)
-      fprintf(debug,
-	      "PME maximum node shift for coordinate communication: %d\n",
-	      shmax);
-    bFirst = FALSE;
-  }
-
-  /* Set the communication ids.
-   * We interleave forward and backward directions,
-   * as for large shifts often only one of the two will
-   * occur on each node and we can therefore avoid nodes waiting
-   * while other nodes are communicating.
-   */
-  pme->nnodes_comm = 0;
-  for(i=1; i<=shmax; i++) {
+  n = 0;
+  for(i=1; i<=npme/2; i++) {
     fw = (pme->nodeid + i) % npme;
     bw = (pme->nodeid - i + npme) % npme;
-    if (pme->nnodes_comm < npme - 1) {
-      pme->node_dest[pme->nnodes_comm] = fw;
-      pme->node_src[pme->nnodes_comm] = bw;
-      pme->nnodes_comm++;
+    if (n < npme - 1) {
+      pme->node_dest[n] = fw;
+      pme->node_src[n]  = bw;
+      n++;
     } 
-    if (pme->nnodes_comm < npme - 1) {
-      pme->node_dest[pme->nnodes_comm] = bw;
-      pme->node_src[pme->nnodes_comm] = fw;
-      pme->nnodes_comm++;
+    if (n < npme - 1) {
+      pme->node_dest[n] = bw;
+      pme->node_src[n]  = fw;
+      n++;
     }
   }
 }
@@ -1347,7 +1310,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     if (DOMAINDECOMP(cr)) {
       snew(pme->node_dest,pme->nnodes);
       snew(pme->node_src,pme->nnodes);
-      setup_coordinate_communication(cr,pme);
+      setup_coordinate_communication(pme);
     }
     snew(pme->count,pme->nnodes);
     snew(pme->rcount,pme->nnodes);
@@ -1432,9 +1395,9 @@ static void gmx_pme_send_x_q_wait(gmx_domdec_t *dd)
 #endif
 }
 
-void gmx_pme_send_x_q(t_commrec *cr, matrix box, rvec *x, 
-		      real *chargeA, real *chargeB,
-		      bool bFreeEnergy, real lambda, bool bLastStep)
+static void gmx_pme_send_q_x(t_commrec *cr, bool bX, matrix box, rvec *x,
+			     bool bFreeEnergy, real *chargeA, real *chargeB, 
+			     real lambda, int maxshift, bool bLastStep)
 {
   gmx_domdec_t *dd;
   gmx_pme_comm_n_box_t *cnb;
@@ -1453,13 +1416,17 @@ void gmx_pme_send_x_q(t_commrec *cr, matrix box, rvec *x,
 
   n = dd->nat_home;
   cnb->natoms = n;
-  copy_mat(box,cnb->box);
+  if (bX)
+    copy_mat(box,cnb->box);
+  cnb->maxshift = maxshift;
   cnb->lambda = lambda;
   cnb->flags = 0;
-  if (x)
+  if (bX)
     cnb->flags |= CNBF_COORD;
-  if (chargeA)
+  if (!bX)
     cnb->flags |= CNBF_CHARGE;
+  if (bFreeEnergy)
+    cnb->flags |= CNBF_FEP;
   if (bLastStep)
     cnb->flags |= CNBF_LASTSTEP;
 
@@ -1469,11 +1436,11 @@ void gmx_pme_send_x_q(t_commrec *cr, matrix box, rvec *x,
 	    dd->pme_nodeid,0,cr->mpi_comm_mysim,
 	    &dd->req_pme[dd->nreq_pme++]);
 
-  if (x)
+  if (bX) {
     MPI_Isend(x[0],n*sizeof(rvec),MPI_BYTE,
 	      dd->pme_nodeid,1,cr->mpi_comm_mysim,
 	      &dd->req_pme[dd->nreq_pme++]);
-  if (chargeA) {
+  } else {
     MPI_Isend(chargeA,n*sizeof(real),MPI_BYTE,
 	      dd->pme_nodeid,2,cr->mpi_comm_mysim,
 	      &dd->req_pme[dd->nreq_pme++]);
@@ -1493,6 +1460,22 @@ void gmx_pme_send_x_q(t_commrec *cr, matrix box, rvec *x,
 #endif
 }
 
+void gmx_pme_send_q(t_commrec *cr,
+		    bool bFreeEnergy, real *chargeA, real *chargeB,
+		    int maxshift)
+{
+  gmx_pme_send_q_x(cr,FALSE,NULL,NULL,bFreeEnergy,chargeA,chargeB,
+		   0,maxshift,FALSE);
+}
+
+void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
+		    bool bFreeEnergy, real lambda, bool bLastStep)
+{
+  gmx_pme_send_q_x(cr,TRUE,box,x,bFreeEnergy,NULL,NULL,
+		   lambda,0,bLastStep);
+}
+
+
 #ifdef GMX_MPI
 static int gmx_pme_recv_x_q(t_commrec *cr,
 			    int nmy_ddnodes,int *my_ddnodes,
@@ -1500,7 +1483,8 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
 			    MPI_Request *req, MPI_Status *stat,
 			    int *nalloc_natpp,
 			    rvec **x, real **chargeA, real **chargeB,
-			    bool bFreeEnergy,bool *bRealloc)
+			    int *maxshift,
+			    bool *bFreeEnergy,real *lambda,bool *bRealloc)
 {
   int  i,n=0,q,messages,sender;
   real *charge_pp;
@@ -1517,6 +1501,8 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
     MPI_Waitall(messages, req, stat);
     messages = 0;
 
+    *bFreeEnergy = (cnb[0].flags & CNBF_FEP);
+
     n = 0;
     for(sender=0; sender<nmy_ddnodes; sender++) {
       n += cnb[sender].natoms;
@@ -1527,11 +1513,13 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
 
       srenew(*x,*nalloc_natpp);
       srenew(*chargeA,*nalloc_natpp);
-      if (bFreeEnergy)
+      if (*bFreeEnergy)
 	srenew(*chargeB,*nalloc_natpp);
     }
 
     if (cnb[0].flags & CNBF_COORD) {
+      /* lambda is sent along with the coordinates */
+      *lambda = cnb[0].lambda;
       /* Receive the coordinates in place */
       i = 0;
       for(sender=0; sender<nmy_ddnodes; sender++) {
@@ -1545,8 +1533,10 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
     }
 
     if (cnb[0].flags & CNBF_CHARGE) {
+      /* maxshift is sent when the charges are sent */
+      *maxshift = cnb->maxshift;
       /* Receive the charges in place */
-      for(q=0; q<(bFreeEnergy ? 2 : 1); q++) {
+      for(q=0; q<(*bFreeEnergy ? 2 : 1); q++) {
 	if (q == 0)
 	  charge_pp = *chargeA;
 	else
@@ -1643,6 +1633,8 @@ int gmx_pmeonly(gmx_pme_t pme,
   real  *chargeA=NULL,*chargeB=NULL;
   int  nppnodes,receiver;
   int  nmy_ddnodes,*my_ddnodes;
+  int  maxshift=0;
+  real lambda=0;
   int  ind_start, ind_end;
   gmx_pme_comm_n_box_t *cnb;
   bool bRealloc;
@@ -1679,7 +1671,8 @@ int gmx_pmeonly(gmx_pme_t pme,
 #ifdef GMX_MPI
     /* Domain decomposition */
     n = gmx_pme_recv_x_q(cr,nmy_ddnodes,my_ddnodes,cnb,req,stat,&nalloc_natpp,
-			 &x_pp,&chargeA,&chargeB,pme->bFEP,&bRealloc);
+			 &x_pp,&chargeA,&chargeB,&maxshift,
+			 &pme->bFEP,&lambda,&bRealloc);
     if (bRealloc)
       srenew(f_pp,nalloc_natpp);
 #endif
@@ -1691,8 +1684,8 @@ int gmx_pmeonly(gmx_pme_t pme,
 
     cve.dvdlambda = 0;
     gmx_pme_do(pme,0,n,x_pp,f_pp,chargeA,chargeB,cnb[0].box,
-	       cr,nrnb,cve.vir,ewaldcoeff,
-	       &cve.energy,cnb[0].lambda,&cve.dvdlambda,
+	       cr,maxshift,nrnb,cve.vir,ewaldcoeff,
+	       &cve.energy,lambda,&cve.dvdlambda,
 	       bGatherOnly);
 
     wallcycle_stop(wcycle,ewcPMEMESH_SEP);
@@ -1743,7 +1736,7 @@ int gmx_pme_do(gmx_pme_t pme,
 	       rvec x[],        rvec f[],
 	       real *chargeA,   real *chargeB,
 	       matrix box,	t_commrec *cr,
-	       t_nrnb *nrnb,    
+	       int  maxshift,   t_nrnb *nrnb,    
 	       matrix vir,      real ewaldcoeff,
 	       real *energy,    real lambda, 
 	       real *dvdlambda, bool bGatherOnly)
@@ -1814,7 +1807,7 @@ int gmx_pme_do(gmx_pme_t pme,
       GMX_BARRIER(cr->mpi_comm_mysim);
       /* Redistribute x (only once) and qA or qB */
       if (DOMAINDECOMP(cr)) {
-	dd_pmeredist_x_q(pme, homenr, q==0, x, charge, gidx);
+	dd_pmeredist_x_q(pme, maxshift, homenr, q==0, x, charge, gidx);
       } else {
 	pmeredist(pme, TRUE, homenr, q==0, x+start, charge, gidx);
       }
@@ -1910,7 +1903,7 @@ int gmx_pme_do(gmx_pme_t pme,
   if (pme->nnodes > 1) {
     GMX_BARRIER(cr->mpi_comm_mysim);
     if (DOMAINDECOMP(cr)) {
-      dd_pmeredist_f(pme, homenr, f, gidx);
+      dd_pmeredist_f(pme, maxshift, homenr, f, gidx);
     } else {
       pmeredist(pme, FALSE, homenr, TRUE, f+start, NULL, gidx);
     }

@@ -536,10 +536,10 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc_dd(TRUE);
 
-    set_dd_parameters(stdlog,cr->dd,top_global,ir,fr);
-
     dd_make_reverse_top(stdlog,cr->dd,top_global,vsite,constr,
 			EI_DYNAMICS(ir->eI),ir->coulombtype);
+
+    set_dd_parameters(stdlog,cr->dd,top_global,ir,fr);
 
     top = dd_init_local_top(top_global);
 
@@ -785,6 +785,20 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	}
       }
       copy_mat(rerun_fr.box,state->box);
+
+      if (vsite) {
+	if (graph) {
+	  /* Following is necessary because the graph may get out of sync
+	   * with the coordinates if we only have every N'th coordinate set
+	   */
+	  mk_mshift(log,graph,fr->ePBC,state->box,state->x);
+	  shift_self(graph,state->box,state->x);
+	}
+	construct_vsites(log,vsite,state->x,nrnb,ir->delta_t,state->v,
+			 &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+	if (graph)
+	  unshift_self(graph,state->box,state->x);
+      }
     }
 
     /* Stop Center of Mass motion */

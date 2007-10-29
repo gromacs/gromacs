@@ -26,6 +26,17 @@ static int natoms_global;
 /* Static pointers only used for an error message */
 static t_topology *err_top_global,*err_top_local;
 
+static bool have_exclusion_forces(int eeltype)
+{
+  /* With Ewald or RF we need all exclusions exactly once
+   * to determine the correction forces for the exclusions.
+   * With cut-off electrostatics we don't care that exclusions
+   * beyond the cut-off can be missing or that some exclusions
+   * are present in more than one cell.
+   */
+  return (EEL_FULL(eeltype) || EEL_RF(eeltype));
+}
+
 void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 {
   int  ndiff_tot,sign,cl[F_NRE],n,ndiff,rest_global,rest_local;
@@ -231,7 +242,7 @@ void dd_make_reverse_top(FILE *fplog,
   
   nexcl = count_excls(&top->blocks[ebCGS],&top->blocks[ebEXCLS],
 		      &dd->n_intercg_excl);
-  if (EEL_FULL(eeltype)) {
+  if (have_exclusion_forces(eeltype)) {
     dd->nbonded_global += nexcl;
     if (dd->n_intercg_excl && fplog)
       fprintf(fplog,"There are %d inter charge-group exclusions,\n"
@@ -490,7 +501,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,
 }
 
 static int make_local_exclusions(gmx_domdec_t *dd,
-				 bool bRCheck,ivec rcheck,real rc,
+				 bool bRCheck,real rc,
 				 int *la2lc,rvec *cg_cm,
 				 t_forcerec *fr,t_block *excls,t_block *lexcls)
 {
@@ -575,7 +586,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,
 	    for(j=la0; j<la1; j++)
 	      lexcls->a[n++] = j;
 	  }
-	  count += ((la1 - la0)*(la1 - la0 + 1))/2;
+	  count += ((la1 - la0)*(la1 - la0 - 1))/2;
 	} else {
 	  /* We don't need exclusions for this cg */
 	  for(la=la0; la<la1; la++) {
@@ -669,11 +680,12 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
   lcgs->nra   = dd->nat_tot;
 }
 
-void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,matrix box,real rc,
+void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+		       matrix box,real rc,ivec npulse,
 		       t_forcerec *fr,gmx_vsite_t *vsite,
 		       t_topology *top,t_topology *ltop)
 {
-  bool bRCheck;
+  bool bUniqueExcl,bRCheck,bRCheck2;
   ivec rcheck;
   int  d,nexcl;
 
@@ -684,16 +696,36 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,matrix box,real rc,
   dd_make_local_cgs(dd,&ltop->blocks[ebCGS]);
 
   /* Do we need to check cg_cm distances when assigning bonded interactions? */
-  bRCheck = FALSE;
+  bRCheck  = FALSE;
+  bRCheck2 = FALSE;
   for(d=0; d<DIM; d++) {
-    /* Only need to check for dimensions with 2 cells and short box vector */
-    rcheck[d] = (dd->nc[d] == 2 && box[d][d]*dd->skew_fac[d] < 4*rc);
-    if (rcheck[d])
-      bRCheck = TRUE;
-    if (debug)
-      fprintf(debug,"bonded rcheck[%d] = %d\n",d,rcheck[d]);
+    /* Only need to check for dimensions with short box vectors */
+    if (dd->nc[d] > 1 &&  box[d][d]*dd->skew_fac[d] < 4*rc) {
+      rcheck[d] = (dd->nc[d] == 2);
+      if (rcheck[d]) {
+	bRCheck  = TRUE;
+	bRCheck2 = TRUE;
+      } else {
+	/* This check if for interactions between two atoms,
+	 * where we can allow interactions up to the cut-off,
+	 * instead of up to the smallest cell dimension.
+	 */
+	/* Here we could do a stricter check for npulse > 2,
+	 * but such cases will be extremely rare
+	 * and the current check avoids rounding issues.
+	 */
+	if (dd->nc[d] - 2 > npulse[d]) {
+	  bRCheck2 = TRUE;
+	}
+      }
+      if (debug)
+	fprintf(debug,"bonded rcheck[%d] = %d, bRCheck2 = %d\n",
+		d,rcheck[d],bRCheck2);
+    }
   }
-  if (bRCheck) {
+  if (!have_exclusion_forces(fr->eeltype))
+    bRCheck2 = FALSE;
+  if (bRCheck || bRCheck2) {
     make_la2lc(dd);
   }
 
@@ -707,13 +739,10 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,matrix box,real rc,
 					 &ltop->idef,vsite);
 #endif
 
-  nexcl = make_local_exclusions(dd,bRCheck,rcheck,rc,dd->la2lc,fr->cg_cm,
+  nexcl = make_local_exclusions(dd,bRCheck2,rc,dd->la2lc,fr->cg_cm,
 				fr,&top->blocks[ebEXCLS],
 				&ltop->blocks[ebEXCLS]);
-  /* With cut-off electrostatics we don't care that exclusions
-   * beyond the cut-off can be missing.
-   */
-  if (EEL_FULL(fr->eeltype))
+  if (have_exclusion_forces(fr->eeltype))
     dd->nbonded_local += nexcl;
   
   ltop->atoms     = top->atoms;

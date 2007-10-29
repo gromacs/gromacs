@@ -65,7 +65,7 @@ extern int gmx_pme_do(gmx_pme_t pme,
 		      rvec x[],        rvec f[],
 		      real chargeA[],  real chargeB[],
 		      matrix box,      t_commrec *cr,
-		      t_nrnb *nrnb,
+		      int  maxshift,   t_nrnb *nrnb,
 		      matrix lrvir,    real ewaldcoeff,
 		      real *energy,    real lambda,    
 		      real *dvdlambda, bool bGatherOnly);
@@ -86,10 +86,18 @@ extern int gmx_pmeonly(gmx_pme_t pme,
 extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
 			  int direction);
 
-/* The following two routines are for PME/PP node splitting: */
+/* The following three routines are for PME/PP node splitting: */
+extern void gmx_pme_send_q(t_commrec *cr,
+			   bool bFreeEnergy, real *chargeA, real *chargeB,
+			   int maxshift);
+
+extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
+			   bool bFreeEnergy, real lambda, bool bLastStep);
+
 extern void gmx_pme_send_x_q(t_commrec *cr,
 			     matrix box, rvec *x, 
-			     real *chargeA, real *chargeB, 
+			     real *chargeA, real *chargeB,
+			     int  maxshift,
 			     bool bFreeEnergy, real lambda,
 			     bool bLastStep);
 /* Send the particle coordinates and/or charges from the PP to the PME nodes

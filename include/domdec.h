@@ -40,6 +40,9 @@ extern void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 			    int *nmy_ddnodes,int **my_ddnodes);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
+extern int dd_pme_maxshift(gmx_domdec_t *dd);
+/* Returns the maximum shift for coordinate communication in PME */
+
 extern void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
 
 extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
@@ -171,7 +174,8 @@ extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
-extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,matrix box,real rc,
+extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
+			      matrix box,real rc,ivec npulse,
 			      t_forcerec *fr,gmx_vsite_t *vsite,
 			      t_topology *top,t_topology *ltop);
 
