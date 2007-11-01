@@ -159,7 +159,10 @@ real RF_excl_correction(FILE *log,const t_nsborder *nsb,
     *dvdlambda += -0.5*ec*(q2sumB - q2sumA);
   }
   if (bFirst) {
-    gmx_sumi(1,&bSumForces,cr);
+    if (PAR(cr))
+      gmx_sumi(1,&bSumForces,cr);
+    else 
+      bSumForces = FALSE;
     bFirst = FALSE;
   }
   if (bSumForces) {
