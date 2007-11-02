@@ -128,9 +128,12 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   bool *bE;
   int  n,k,kk,j,i,nsame,nind,nlen,nss;
   int  *set;
-  bool bEOF;
+  bool bEOF,bVerbose = TRUE;
   char *ptr,buf[STRLEN];
-  char **newnm;
+  char **newnm=NULL;
+  
+  if ((getenv("VERBOSE")) != NULL)
+    bVerbose = FALSE;
   
   fprintf(stderr,"\n");
   fprintf(stderr,"Select the terms you want from the following list by\n");
@@ -138,13 +141,12 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   fprintf(stderr,"End your selection with an empty line or a zero.\n");
   fprintf(stderr,"---------------------------------------------------------\n");
   
-  snew(newnm,nre);
   nlen = 0;
+  snew(newnm,nre);
   for(i=0; (i<nre); i++) {
     newnm[i] = strdup(nm[i]);
     nlen = max(nlen,strlen(newnm[i]));
   }
-  nlen = 0;
   kk = max(1,80/(nlen+4));
   sprintf(buf,"%%-3d %%-%ds ",nlen);
   for(k=0; (k<nre); ) {
@@ -152,11 +154,14 @@ static int *select_by_name(int nre,char *nm[],int *nset)
       /* Insert dashes in all the names */
       while ((ptr = strchr(newnm[k],' ')) != NULL)
 	*ptr='-';
-      fprintf(stderr,buf,k+1,newnm[k]);
+      if ( bVerbose ) 
+	fprintf(stderr,buf,k+1,newnm[k]);
     }
-    fprintf(stderr,"\n");
+    if ( bVerbose ) 
+      fprintf(stderr,"\n");
   }
-  fprintf(stderr,"\n");
+  if ( bVerbose ) 
+    fprintf(stderr,"\n");
   
   snew(bE,nre);
   
@@ -770,7 +775,8 @@ int gmx_energy(int argc,char *argv[])
     "Average and RMSD are calculated with full precision from the",
     "simulation (see printed manual). Drift is calculated by performing",
     "a LSQ fit of the data to a straight line. Total drift is drift",
-    "multiplied by total time.[PAR]",
+    "multiplied by total time. The term fluctuation gives the RMSD around",
+    "the LSQ fit.[PAR]",
     
     "When the [TT]-viol[tt] option is set, the time averaged",
     "violations are plotted and the running time-averaged and",
