@@ -1542,8 +1542,6 @@ static void set_pme_maxshift(gmx_domdec_t *dd,
      */
     xmin = comm->pme_xmin;
     xmax = comm->pme_xmax;
-    if (cell_f == NULL)
-      gmx_incons("cell_f=NULL was passed to set_pme_maxshift");
     if (dd->bDynLoadBal) {
       range = comm->cellsize_limit;
     } else {
@@ -1887,7 +1885,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	dd->cell_x0[dim1] = comm->cell_f0[d1]*box[dim1][dim1];
 	dd->cell_x1[dim1] = comm->cell_f1[d1]*box[dim1][dim1];
       }
-      comm->pme_maxshift = (int)(root->cell_f[pos++] + 0.5);
+      comm->pme_maxshift = (int)(cell_f_row[pos++] + 0.5);
     }
   }
   
@@ -3661,9 +3659,8 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   int dim,npulse;
 
   if (EEL_PME(ir->coulombtype)) {
-    if (!dd->bDynLoadBal)
-      set_slb_pme_dim_f(dd);
     set_pme_x_limits(dd);
+    set_slb_pme_dim_f(dd);
   } else {
     dd->comm->npmenodes = 0;
     if (dd->pme_nodeid >= 0)
