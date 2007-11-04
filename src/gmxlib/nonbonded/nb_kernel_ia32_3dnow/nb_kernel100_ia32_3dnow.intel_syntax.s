@@ -439,7 +439,7 @@ _nb_kernel100_ia32_3dnow:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb100_outerend
+        jz .nb100_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb100_n], esi
@@ -449,7 +449,7 @@ _nb_kernel100_ia32_3dnow:
         mov   ecx, [esp + nb100_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb100_end
+        jz .nb100_end
         ;# non-zero, do one more workunit
         jmp   .nb100_threadloop
 .nb100_end:
@@ -760,7 +760,7 @@ _nb_kernel100nf_ia32_3dnow:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb100nf_outerend
+        jz .nb100nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb100nf_n], esi
@@ -770,7 +770,7 @@ _nb_kernel100nf_ia32_3dnow:
         mov   ecx, [esp + nb100nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb100nf_end
+        jz .nb100nf_end
         ;# non-zero, do one more workunit
         jmp   .nb100nf_threadloop
 .nb100nf_end:

@@ -1950,7 +1950,7 @@ _nb_kernel134_ia32_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb134_outerend
+        jz .nb134_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb134_n], esi
@@ -1960,7 +1960,7 @@ _nb_kernel134_ia32_sse:
         mov   ecx, [esp + nb134_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb134_end
+        jz .nb134_end
         ;# non-zero, do one more workunit
         jmp   .nb134_threadloop
 .nb134_end:
@@ -2987,7 +2987,7 @@ _nb_kernel134nf_ia32_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb134nf_outerend
+        jz .nb134nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb134nf_n], esi
@@ -2997,7 +2997,7 @@ _nb_kernel134nf_ia32_sse:
         mov   ecx, [esp + nb134nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb134nf_end
+        jz .nb134nf_end
         ;# non-zero, do one more workunit
         jmp   .nb134nf_threadloop
 .nb134nf_end:

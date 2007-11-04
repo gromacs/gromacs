@@ -1523,7 +1523,7 @@ _nb_kernel112_ia32_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb112_outerend
+        jz .nb112_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb112_n], esi
@@ -1533,7 +1533,7 @@ _nb_kernel112_ia32_sse:
         mov   ecx, [esp + nb112_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb112_end
+        jz .nb112_end
         ;# non-zero, do one more workunit
         jmp   .nb112_threadloop
 .nb112_end:
@@ -2352,7 +2352,7 @@ _nb_kernel112nf_ia32_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb112nf_outerend
+        jz .nb112nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb112nf_n], esi
@@ -2362,7 +2362,7 @@ _nb_kernel112nf_ia32_sse:
         mov   ecx, [esp + nb112nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb112nf_end
+        jz .nb112nf_end
         ;# non-zero, do one more workunit
         jmp   .nb112nf_threadloop
 .nb112nf_end:

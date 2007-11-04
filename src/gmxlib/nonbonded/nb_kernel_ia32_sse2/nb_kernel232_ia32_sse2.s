@@ -2230,7 +2230,7 @@ _nb_kernel232_ia32_sse2.nb232_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel232_ia32_sse2.nb232_outerend
+        jz _nb_kernel232_ia32_sse2.nb232_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb232_n(%esp)
@@ -2240,7 +2240,7 @@ _nb_kernel232_ia32_sse2.nb232_outerend:
         movl  nb232_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel232_ia32_sse2.nb232_end
+        jz _nb_kernel232_ia32_sse2.nb232_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel232_ia32_sse2.nb232_threadloop
 _nb_kernel232_ia32_sse2.nb232_end: 
@@ -3680,7 +3680,7 @@ _nb_kernel232nf_ia32_sse2.nb232nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel232nf_ia32_sse2.nb232nf_outerend
+        jz _nb_kernel232nf_ia32_sse2.nb232nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb232nf_n(%esp)
@@ -3690,7 +3690,7 @@ _nb_kernel232nf_ia32_sse2.nb232nf_outerend:
         movl  nb232nf_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel232nf_ia32_sse2.nb232nf_end
+        jz _nb_kernel232nf_ia32_sse2.nb232nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel232nf_ia32_sse2.nb232nf_threadloop
 _nb_kernel232nf_ia32_sse2.nb232nf_end: 

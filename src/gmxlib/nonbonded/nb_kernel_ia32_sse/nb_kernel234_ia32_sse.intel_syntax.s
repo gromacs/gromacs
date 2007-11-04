@@ -2052,7 +2052,7 @@ _nb_kernel234_ia32_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb234_outerend
+        jz .nb234_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb234_n], esi
@@ -2062,7 +2062,7 @@ _nb_kernel234_ia32_sse:
         mov   ecx, [esp + nb234_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb234_end
+        jz .nb234_end
         ;# non-zero, do one more workunit
         jmp   .nb234_threadloop
 .nb234_end:
@@ -3232,7 +3232,7 @@ _nb_kernel234nf_ia32_sse:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb234nf_outerend
+        jz .nb234nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb234nf_n], esi
@@ -3242,7 +3242,7 @@ _nb_kernel234nf_ia32_sse:
         mov   ecx, [esp + nb234nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb234nf_end
+        jz .nb234nf_end
         ;# non-zero, do one more workunit
         jmp   .nb234nf_threadloop
 .nb234nf_end:

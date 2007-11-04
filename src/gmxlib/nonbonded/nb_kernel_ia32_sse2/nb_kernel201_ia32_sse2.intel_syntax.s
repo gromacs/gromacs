@@ -1073,7 +1073,7 @@ _nb_kernel201_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb201_outerend
+        jz .nb201_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb201_n], esi
@@ -1083,7 +1083,7 @@ _nb_kernel201_ia32_sse2:
         mov   ecx, [esp + nb201_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb201_end
+        jz .nb201_end
         ;# non-zero, do one more workunit
         jmp   .nb201_threadloop
 .nb201_end:
@@ -1753,7 +1753,7 @@ _nb_kernel201nf_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb201nf_outerend
+        jz .nb201nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb201nf_n], esi
@@ -1763,7 +1763,7 @@ _nb_kernel201nf_ia32_sse2:
         mov   ecx, [esp + nb201nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb201nf_end
+        jz .nb201nf_end
         ;# non-zero, do one more workunit
         jmp   .nb201nf_threadloop
 .nb201nf_end:

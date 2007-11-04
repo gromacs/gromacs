@@ -1531,7 +1531,7 @@ _nb_kernel313_ia32_sse2.nb313_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel313_ia32_sse2.nb313_outerend
+        jz _nb_kernel313_ia32_sse2.nb313_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb313_n(%esp)
@@ -1541,7 +1541,7 @@ _nb_kernel313_ia32_sse2.nb313_outerend:
         movl  nb313_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel313_ia32_sse2.nb313_end
+        jz _nb_kernel313_ia32_sse2.nb313_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel313_ia32_sse2.nb313_threadloop
 _nb_kernel313_ia32_sse2.nb313_end: 
@@ -2567,7 +2567,7 @@ _nb_kernel313nf_ia32_sse2.nb313nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel313nf_ia32_sse2.nb313nf_outerend
+        jz _nb_kernel313nf_ia32_sse2.nb313nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb313nf_n(%esp)
@@ -2577,7 +2577,7 @@ _nb_kernel313nf_ia32_sse2.nb313nf_outerend:
         movl  nb313nf_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel313nf_ia32_sse2.nb313nf_end
+        jz _nb_kernel313nf_ia32_sse2.nb313nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel313nf_ia32_sse2.nb313nf_threadloop
 _nb_kernel313nf_ia32_sse2.nb313nf_end: 

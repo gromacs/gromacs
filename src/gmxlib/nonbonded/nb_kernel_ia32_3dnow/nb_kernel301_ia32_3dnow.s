@@ -533,7 +533,7 @@ _nb_kernel301_ia32_3dnow.nb301_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel301_ia32_3dnow.nb301_outerend
+        jz _nb_kernel301_ia32_3dnow.nb301_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb301_n(%esp)
@@ -543,7 +543,7 @@ _nb_kernel301_ia32_3dnow.nb301_outerend:
         movl  nb301_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel301_ia32_3dnow.nb301_end
+        jz _nb_kernel301_ia32_3dnow.nb301_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel301_ia32_3dnow.nb301_threadloop
 _nb_kernel301_ia32_3dnow.nb301_end: 
@@ -932,7 +932,7 @@ _nb_kernel301nf_ia32_3dnow.nb301nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel301nf_ia32_3dnow.nb301nf_outerend
+        jz _nb_kernel301nf_ia32_3dnow.nb301nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb301nf_n(%esp)
@@ -942,7 +942,7 @@ _nb_kernel301nf_ia32_3dnow.nb301nf_outerend:
         movl  nb301nf_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel301nf_ia32_3dnow.nb301nf_end
+        jz _nb_kernel301nf_ia32_3dnow.nb301nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel301nf_ia32_3dnow.nb301nf_threadloop
 _nb_kernel301nf_ia32_3dnow.nb301nf_end: 

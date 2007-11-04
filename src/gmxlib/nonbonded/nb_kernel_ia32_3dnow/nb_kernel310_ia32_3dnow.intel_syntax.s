@@ -653,7 +653,7 @@ _nb_kernel310_ia32_3dnow:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb310_outerend
+        jz .nb310_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb310_n], esi
@@ -663,7 +663,7 @@ _nb_kernel310_ia32_3dnow:
         mov   ecx, [esp + nb310_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb310_end
+        jz .nb310_end
         ;# non-zero, do one more workunit
         jmp   .nb310_threadloop
 .nb310_end:
@@ -1136,7 +1136,7 @@ _nb_kernel310nf_ia32_3dnow:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb310nf_outerend
+        jz .nb310nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb310nf_n], esi
@@ -1146,7 +1146,7 @@ _nb_kernel310nf_ia32_3dnow:
         mov   ecx, [esp + nb310nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb310nf_end
+        jz .nb310nf_end
         ;# non-zero, do one more workunit
         jmp   .nb310nf_threadloop
 .nb310nf_end:

@@ -500,7 +500,7 @@ _nb_kernel111_ia32_3dnow.nb111_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel111_ia32_3dnow.nb111_outerend
+        jz _nb_kernel111_ia32_3dnow.nb111_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb111_n(%esp)
@@ -510,7 +510,7 @@ _nb_kernel111_ia32_3dnow.nb111_outerend:
         movl  nb111_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel111_ia32_3dnow.nb111_end
+        jz _nb_kernel111_ia32_3dnow.nb111_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel111_ia32_3dnow.nb111_threadloop
 _nb_kernel111_ia32_3dnow.nb111_end: 
@@ -869,7 +869,7 @@ _nb_kernel111nf_ia32_3dnow.nb111nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel111nf_ia32_3dnow.nb111nf_outerend
+        jz _nb_kernel111nf_ia32_3dnow.nb111nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb111nf_n(%esp)
@@ -879,7 +879,7 @@ _nb_kernel111nf_ia32_3dnow.nb111nf_outerend:
         movl  nb111nf_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel111nf_ia32_3dnow.nb111nf_end
+        jz _nb_kernel111nf_ia32_3dnow.nb111nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel111nf_ia32_3dnow.nb111nf_threadloop
 _nb_kernel111nf_ia32_3dnow.nb111nf_end: 

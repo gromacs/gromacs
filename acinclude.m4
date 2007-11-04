@@ -462,7 +462,7 @@ if test -z "$res" -o "$res" = "conftest.c:"; then
 else
 	ac_$2=no
 fi
-rm -f conftest*
+rm -rf conftest*
 ])
 if test "$ac_$2" = yes; then
 	:
@@ -488,7 +488,7 @@ if test -z "`$F77 $1 -c conftest.f `"; then
 else
 	ac_$2=no
 fi
-rm -f conftest*
+rm -rf conftest*
 ])
 if test "$ac_$2" = yes; then
 	:

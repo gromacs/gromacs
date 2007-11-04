@@ -616,7 +616,7 @@ _nb_kernel030_ia32_3dnow:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb030_outerend
+        jz .nb030_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb030_n], esi
@@ -626,7 +626,7 @@ _nb_kernel030_ia32_3dnow:
         mov   ecx, [esp + nb030_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb030_end
+        jz .nb030_end
         ;# non-zero, do one more workunit
         jmp   .nb030_threadloop
 .nb030_end:
@@ -1072,7 +1072,7 @@ _nb_kernel030nf_ia32_3dnow:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb030nf_outerend
+        jz .nb030nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb030nf_n], esi
@@ -1082,7 +1082,7 @@ _nb_kernel030nf_ia32_3dnow:
         mov   ecx, [esp + nb030nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb030nf_end
+        jz .nb030nf_end
         ;# non-zero, do one more workunit
         jmp   .nb030nf_threadloop
 .nb030nf_end:
