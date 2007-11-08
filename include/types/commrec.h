@@ -202,6 +202,16 @@ typedef struct {
 #define DUTY_PME (1<<1)
 
 typedef struct {
+  int      bUse;
+#ifdef GMX_MPI
+  MPI_Comm comm_intra;
+  int      rank_intra;
+  MPI_Comm comm_inter;
+#endif
+  
+} gmx_nodecomm_t;
+
+typedef struct {
   /* The nodids in one sim are numbered sequentially from 0.
    * All communication within some simulation should happen
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
@@ -213,7 +223,9 @@ typedef struct {
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
 #endif
-
+  
+  gmx_nodecomm_t nc;
+  
   /* For domain decomposition */
   gmx_domdec_t *dd;
 

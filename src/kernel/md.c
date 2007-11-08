@@ -175,6 +175,13 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
     cr->duty = (DUTY_PP | DUTY_PME);
   }
 
+  if (PAR(cr)) {
+    /* After possible communicator splitting in make_dd_communicators.
+     * we can set up the intra/inter node communication.
+     */
+    gmx_setup_nodecomm(stdlog,cr);
+  }
+
   wcycle = wallcycle_init(stdlog,cr);
 
   snew(inputrec,1);

@@ -44,6 +44,7 @@
 #include "network.h"
 #include "copyrite.h"
 #include "statutil.h"
+#include "ctype.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -335,6 +336,69 @@ int gmx_node_rank(void)
 #endif
 }
 
+void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
+{
+  gmx_nodecomm_t *nc;
+  int  n,rank,resultlen,hostnum,i,ng;
+  char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
+
+  /* Many MPI implementations do not optimize MPI_Allreduce
+   * (and probably also other global communication calls)
+   * for multi-core nodes connected by a network.
+   * We can optimize such communication by using one MPI call
+   * within each node and one between the nodes.
+   * For MVAPICH2 and Intel MPI this reduces the time for
+   * the global_stat communication by 25%
+   * for 2x2-core 3 GHz Woodcrest connected by mixed DDR/SDR Infiniband.
+   * B. Hess, November 2007
+   */
+
+  nc = &cr->nc;
+
+  nc->bUse = FALSE;
+  if (getenv("GMX_NO_NODECOMM") == NULL) {
+#ifdef GMX_MPI
+    MPI_Comm_size(cr->mpi_comm_mygroup,&n);
+    MPI_Comm_rank(cr->mpi_comm_mygroup,&rank);
+    MPI_Get_processor_name(mpi_hostname,&resultlen);
+    /* This procedure can only differentiate nodes with host names
+     * that end on unique numbers.
+     */
+    i = resultlen - 1;
+    while(i > 0 && isdigit(mpi_hostname[i-1]))
+      i--;
+    if (isdigit(mpi_hostname[i])) {
+      hostnum = atoi(mpi_hostname+i);
+    } else {
+      hostnum = 0;
+    }
+
+    /* The intra-node communicator, split on node number */
+    MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
+    MPI_Comm_rank(nc->comm_intra,&nc->rank_intra);
+    /* The inter-node communicator, split on rank_intra.
+     * We actually only need the one for rank=0,
+     * but it is easier to create them all.
+     */
+    MPI_Comm_split(cr->mpi_comm_mygroup,nc->rank_intra,rank,&nc->comm_inter);
+    /* Check if this really created two step communication */
+    MPI_Comm_size(nc->comm_inter,&ng);
+    if (ng > 1 && ng < n) {
+      nc->bUse = TRUE;
+      if (fplog)
+	fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
+      if (nc->comm_intra > 0)
+	MPI_Comm_free(&nc->comm_inter);
+    } else {
+      /* One group or all processes in a separate group, use normal summing */
+      MPI_Comm_free(&nc->comm_inter);
+      MPI_Comm_free(&nc->comm_intra);
+    }
+#endif
+    
+  }
+}
+
 int gmx_idle_send(void)
 {
   return 0;
@@ -463,9 +527,19 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
     nalloc = nr;
     srenew(buf,nalloc);
   }
-  MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mygroup);
-  for(i=0; i<nr; i++)
-    r[i] = buf[i];
+  if (cr->nc.bUse) {
+    /* Use two step summing */
+    MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->nc.comm_intra);
+    if (cr->nc.rank_intra == 0) {
+      /* Sum with the buffers reversed */
+      MPI_Allreduce(buf,r,nr,MPI_DOUBLE,MPI_SUM,cr->nc.comm_inter);
+    }
+    MPI_Bcast(r,nr,MPI_DOUBLE,0,cr->nc.comm_intra);
+  } else {
+    MPI_Allreduce(r,buf,nr,MPI_DOUBLE,MPI_SUM,cr->mpi_comm_mygroup);
+    for(i=0; i<nr; i++)
+      r[i] = buf[i];
+  }
 #else
   double *buf[2];
   int  NR,bufs,j,i,cur=0;
@@ -509,9 +583,19 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
     nalloc = nr;
     srenew(buf,nalloc);
   }
-  MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
-  for(i=0; i<nr; i++)
-    r[i] = buf[i];
+  if (cr->nc.bUse) {
+    /* Use two step summing */
+    MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->nc.comm_intra);
+    if (cr->nc.rank_intra == 0) {
+      /* Sum with the buffers reversed */
+      MPI_Allreduce(buf,r,nr,MPI_FLOAT,MPI_SUM,cr->nc.comm_inter);
+    }
+    MPI_Bcast(r,nr,MPI_FLOAT,0,cr->nc.comm_intra);
+  } else {
+    MPI_Allreduce(r,buf,nr,MPI_FLOAT,MPI_SUM,cr->mpi_comm_mygroup);
+    for(i=0; i<nr; i++)
+      r[i] = buf[i];
+  }
 #else
   float *buf[2];
   int  NR,bufs,j,i,cur=0;
@@ -555,9 +639,19 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
     nalloc = nr;
     srenew(buf,nalloc);
   }
-  MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
-  for(i=0; i<nr; i++)
-    r[i] = buf[i];
+  if (cr->nc.bUse) {
+    /* Use two step summing */
+    MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->nc.comm_intra);
+    if (cr->nc.rank_intra == 0) {
+      /* Sum with the buffers reversed */
+      MPI_Allreduce(buf,r,nr,MPI_INT,MPI_SUM,cr->nc.comm_inter);
+    }
+    MPI_Bcast(r,nr,MPI_INT,0,cr->nc.comm_intra);
+  } else {
+    MPI_Allreduce(r,buf,nr,MPI_INT,MPI_SUM,cr->mpi_comm_mygroup);
+    for(i=0; i<nr; i++)
+      r[i] = buf[i];
+  }
 #else
   int *buf[2];
   int  NR,bufs,j,i,cur=0;
