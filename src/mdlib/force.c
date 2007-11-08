@@ -525,6 +525,7 @@ check_solvent(FILE *                fp,
                 solvent_parameters[j].count);
     }
     
+    sfree(cgid);
     sfree(solvent_parameters);
     fr->solvent_opt = bestsol;
 }
