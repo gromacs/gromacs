@@ -143,6 +143,9 @@ extern int gmx_node_num(void);
 extern int gmx_node_rank(void);
 /* return the rank of the node */
 
+extern void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr);
+/* Sets up fast global communication for clusters with multi-core nodes */
+
 extern bool gmx_mpi_initialized(void);
 /* return TRUE when MPI_Init has been called.
  * return FALSE when MPI_Init has not been called OR
