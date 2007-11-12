@@ -267,7 +267,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
 	  break;
       handle->nifdef++;
       srenew(handle->ifdefs,handle->nifdef);
-      if ((bIfdef && (i < ndef)) || (bIfndef) && (i == ndef)) 
+      if ((bIfdef && (i < ndef)) || (bIfndef && (i == ndef))) 
 	handle->ifdefs[handle->nifdef-1] = eifTRUE;
       else
 	handle->ifdefs[handle->nifdef-1] = eifFALSE;
