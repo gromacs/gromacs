@@ -2352,10 +2352,9 @@ static void cg_move_error(FILE *fplog,
 			  real limitd,
 			  rvec cm_old,rvec cm_new,real pos_d)
 {
-  if (fplog) {
+  if (fplog)
     print_cg_move(fplog, dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
-    print_cg_move(stderr,dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
-  }
+  print_cg_move(stderr,dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
   gmx_fatal(FARGS,"A charge group move too far between two domain decomposition steps");
 }
 
