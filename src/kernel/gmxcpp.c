@@ -63,7 +63,7 @@ static int      nincl  = 0;
 static char     **incl = 0;
 
 /* enum used for handling ifdefs */
-enum { eifDEF, eifELSE, eifIGN, eifNR };
+enum { eifTRUE, eifFALSE, eifIGNORE, eifNR };
 
 typedef struct gmx_cpp {
   FILE     *fp;
@@ -222,7 +222,8 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   gmx_cpp_t handle = (gmx_cpp_t)*handlep;
   int  i,i0,nn,len,status;
   char *inc_fn,*ptr,*ptr2,*name;
-    
+  int  bIfdef,bIfndef;
+  
   if (!handle)
     return eCPP_INVALID_HANDLE;
   if (!handle->fp)
@@ -249,12 +250,14 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
     fprintf(debug,"%s : %4d : %s\n",handle->fn,handle->line_nr,buf);
   set_warning_line(handle->fn,handle->line_nr);
     
-  /* #ifdef statement */
-  if (strstr(buf,"#ifdef") != NULL) {
-    if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifDEF)) {
+  /* #ifdef or ifndef statement */
+  bIfdef  = (strstr(buf,"#ifdef") != NULL);
+  bIfndef = (strstr(buf,"#ifndef") != NULL);
+  if (bIfdef || bIfndef) {
+    if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE)) {
       handle->nifdef++;
       srenew(handle->ifdefs,handle->nifdef);
-      handle->ifdefs[handle->nifdef-1] = eifIGN;
+      handle->ifdefs[handle->nifdef-1] = eifIGNORE;
     }
     else {
       snew(name,strlen(buf));
@@ -264,13 +267,13 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
 	  break;
       handle->nifdef++;
       srenew(handle->ifdefs,handle->nifdef);
-      if (i < ndef)
-	handle->ifdefs[handle->nifdef-1] = eifDEF;
+      if ((bIfdef && (i < ndef)) || (bIfndef) && (i == ndef)) 
+	handle->ifdefs[handle->nifdef-1] = eifTRUE;
       else
-	handle->ifdefs[handle->nifdef-1] = eifELSE;
+	handle->ifdefs[handle->nifdef-1] = eifFALSE;
       sfree(name);
     }
-    /* Don't print lines with ifdef, go on to the next */
+    /* Don't print lines with ifdef or ifndef, go on to the next */
     return cpp_read_line(handlep,n,buf);
   }
   
@@ -278,10 +281,10 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   if (strstr(buf,"#else") != NULL) {
     if (handle->nifdef <= 0)
       return eCPP_SYNTAX;
-    if (handle->ifdefs[handle->nifdef-1] == eifDEF)
-      handle->ifdefs[handle->nifdef-1] = eifELSE;
-    else if (handle->ifdefs[handle->nifdef-1] == eifELSE)
-      handle->ifdefs[handle->nifdef-1] = eifDEF;
+    if (handle->ifdefs[handle->nifdef-1] == eifTRUE)
+      handle->ifdefs[handle->nifdef-1] = eifFALSE;
+    else if (handle->ifdefs[handle->nifdef-1] == eifFALSE)
+      handle->ifdefs[handle->nifdef-1] = eifTRUE;
     
     /* Don't print lines with else, go on to the next */
     return cpp_read_line(handlep,n,buf);
@@ -300,7 +303,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   /* Check whether we're not ifdeffed out. The order of this statement
      is important. It has to come after #ifdef, #else and #endif, but
      anything else should be ignored. */
-  if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifDEF)) {
+  if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE)) {
     return cpp_read_line(handlep,n,buf);
   }
   
