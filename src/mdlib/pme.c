@@ -1078,7 +1078,8 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
 
 
 void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
-		   int nz,rvec fractx[],ivec idx[],real charge[],int nr)
+		   int nz,rvec fractx[],ivec idx[],int nr,real charge[],
+		   bool bFreeEnergy)
 {
   /* construct splines for local atoms */
   int  i,j,k,l;
@@ -1086,7 +1087,11 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
   real *data,*ddata,*xptr;
 
   for(i=0; (i<nr); i++) {
-    if (charge[i] != 0.0) {
+    /* With free energy we do not use the charge check.
+     * In most cases this will be more efficient than calling make_bsplines
+     * twice, since usually more than half the particles have charges.
+     */
+    if (bFreeEnergy || charge[i] != 0.0) {
       xptr = fractx[i];
       for(j=0; (j<DIM); j++) {
 	dr  = xptr[j];
@@ -1373,7 +1378,7 @@ static void spread_on_grid(gmx_pme_t pme,
       
       /* make local bsplines  */
       make_bsplines(pme->theta,pme->dtheta,pme->pme_order,nx,ny,nz,
-		    pme->fractx,pme->idx,charge,pme->my_homenr);
+		    pme->fractx,pme->idx,pme->my_homenr,charge,pme->bFEP);
     }    
 
     /* put local atoms on grid. */
@@ -1828,6 +1833,8 @@ int gmx_pme_do(gmx_pme_t pme,
     GMX_MPE_LOG(ev_spread_on_grid_finish);
 
     if (!bGatherOnly) {
+      if (q == 0)
+	inc_nrnb(nrnb,eNR_WEIGHTS,DIM*pme->my_homenr);
       inc_nrnb(nrnb,eNR_SPREADQBSP,
 	       pme->pme_order*pme->pme_order*pme->pme_order*pme->my_homenr);
       
