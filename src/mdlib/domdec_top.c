@@ -34,7 +34,7 @@ static bool have_exclusion_forces(int eeltype)
    * beyond the cut-off can be missing or that some exclusions
    * are present in more than one cell.
    */
-  return (EEL_FULL(eeltype) || EEL_RF(eeltype));
+  return (EEL_FULL(eeltype) || (EEL_RF(eeltype) && eeltype!=eelRF_NEC));
 }
 
 void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
@@ -395,6 +395,25 @@ static void make_la2lc(gmx_domdec_t *dd)
   }
 }
 
+static real dd_dist_part2(ivec nc,rvec *cg_cm,const int *la2lc,int i,int j)
+{
+  real r2,rd;
+  int  d;
+  
+  r2 = 0;
+  /* For triclinic boxes the domain decomposition is restricted
+   * such that we can ignore directions with only one cell.
+   */
+  for(d=0; d<DIM; d++) {
+    if (nc[d] > 1) {
+      rd  = cg_cm[la2lc[i]][d] - cg_cm[la2lc[j]][d];
+      r2 += rd*rd;
+    }
+  }
+
+  return r2;
+}
+
 static int make_local_bondeds(gmx_domdec_t *dd,
 			      bool bRCheck,ivec rcheck,real rc,
 			      int *la2lc,rvec *cg_cm,
@@ -475,8 +494,8 @@ static int make_local_bondeds(gmx_domdec_t *dd,
 	     */
 	    if (rcheck[d] && 
 		k_plus[d] &&
-		distance2(cg_cm[la2lc[tiatoms[k_zero[d]]]],
-			  cg_cm[la2lc[tiatoms[k_plus[d]]]]) >= rc2)
+		dd_dist_part2(dd->nc,cg_cm,la2lc,
+			      tiatoms[k_zero[d]],tiatoms[k_plus[d]]) >= rc2)
 	      bUse = FALSE;
 	  }
 	}
@@ -566,8 +585,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,
 		  count++;
 	      } else if (jla >= jla0 && jla < jla1 &&
 			 (!bRCheck ||
-			  distance2(cg_cm[la2lc[la]],
-				    cg_cm[la2lc[jla]]) < rc2)) {
+			  dd_dist_part2(dd->nc,cg_cm,la2lc,la,jla) < rc2)) {
 		/* jla > la, since jla0 > la */
 		lexcls->a[n++] = jla;
 		count++;
