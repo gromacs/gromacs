@@ -919,7 +919,8 @@ void gather_f_bsplines(t_fftgrid *grid,matrix recipbox,
 
 
 void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
-		   int nz,rvec fractx[],ivec idx[],real charge[],int nr)
+		   int nz,rvec fractx[],ivec idx[],int nr,real charge[],
+		   bool bFreeEnergy)
 {
   /* construct splines for local atoms */
   int  i,j,k,l;
@@ -932,10 +933,12 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
 
   if( order == 4)
   {
-    for(i=0; (i<nr); i++)
-	{
-
-      if (charge[i] != 0.0) 
+    for(i=0; (i<nr); i++) {
+      /* With free energy we do not use the charge check.
+       * In most cases this will be more efficient than calling make_bsplines
+       * twice, since usually more than half the particles have charges.
+       */
+      if (bFreeEnergy || charge[i] != 0.0) 
 	  {
 
 	    drXX = fractx[i][XX];
@@ -1011,7 +1014,7 @@ void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
     /* general case, order != 4 */
     for(i=0; (i<nr); i++) 
 	{
-      if (charge[i] != 0.0) 
+      if (bFreeEnergy || charge[i] != 0.0) 
 	  {
         xptr = fractx[i];
         for(j=0; (j<DIM); j++) 
@@ -1205,7 +1208,8 @@ void spread_on_grid(FILE *logfile,
 		    t_fftgrid *grid,  int homenr,
 		    int pme_order,    rvec x[],
 		    real charge[],    matrix box,
-		    bool bGatherOnly, bool bHaveSplines)
+		    bool bGatherOnly, 
+		    bool bFreeEnergy, bool bHaveSplines)
 { 
   int nx,ny,nz,nx2,ny2,nz2,la2,la12;
   real *ptr;
@@ -1223,7 +1227,8 @@ void spread_on_grid(FILE *logfile,
       calc_idx(homenr,recipbox,x,fractx,idx,nx,ny,nz,nx2,ny2,nz2,nnx,nny,nnz);
       
       /* make local bsplines  */
-      make_bsplines(theta,dtheta,pme_order,nx,ny,nz,fractx,idx,charge,homenr);
+      make_bsplines(theta,dtheta,pme_order,nx,ny,nz,fractx,idx,homenr,charge,
+		    bFreeEnergy);
     }    
 
     /* put local atoms on grid. */
@@ -1325,7 +1330,7 @@ real do_pme(FILE *logfile,   bool bVerbose,
     /* Spread the charges on a grid */
     spread_on_grid(logfile,grid,my_homenr,ir->pme_order,
 		   x_tmp,q_tmp,box,bGatherOnly,
-		   q==0 ? FALSE : TRUE);
+		   bFreeEnergy,q==0 ? FALSE : TRUE);
 #ifdef USE_MPE
     MPE_Log_event( ev_spread_on_grid_finish, 0, "");
 #endif
