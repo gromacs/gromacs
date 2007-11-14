@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(GROMACS, 3.3.2, gmx-users@gromacs.org)
+AC_INIT(GROMACS, 3.3.3_pre1, gmx-users@gromacs.org)
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -344,7 +344,9 @@ AC_PROG_MAKE_SET
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 AC_SYS_LARGEFILE
-AC_FUNC_FSEEKO
+#
+# AC_FUNC_FSEEKO is buggy in autoconf-2.61
+ACX_FIXED_FUNC_FSEEKO
 
 
 
