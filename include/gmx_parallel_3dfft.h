@@ -47,14 +47,17 @@ gmx_parallel_3dfft_t;
  *  PPPM algorithms, and do allocate extra workspace whenever it might improve
  *  performance. 
  *
- *  \param pfft_setup  Pointer to parallel 3dfft setup structure, previously
- *                     allocated or with automatic storage.
- *  \param ngridx      Global number of grid cells in the x direction. Must be
- *                     divisible by the number of nodes.
- *  \param ngridy      Global number of grid cells in the y direction. Must be
- *                     divisible by the number of nodes.
- *  \param ngridz      Global number of grid cells in the z direction.
- *  \param comm        MPI communicator, must have been initialized. 
+ *  \param pfft_setup     Pointer to parallel 3dfft setup structure, previously
+ *                        allocated or with automatic storage.
+ *  \param ngridx         Global number of grid cells in the x direction. Must be
+ *                        divisible by the number of nodes.
+ *  \param ngridy         Global number of grid cells in the y direction. Must be
+ *                        divisible by the number of nodes.
+ *  \param ngridz         Global number of grid cells in the z direction.
+ *  \param comm           MPI communicator, must have been initialized. 
+ *  \param bReproducible  Try to avoid FFT timing optimizations and other stuff
+ *                        that could make results differ for two runs with
+ *                        identical input (reproducibility for debugging).
  *    
  *  \return 0 or a standard error code.
  */
@@ -64,7 +67,8 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            int                       ngridy,
                            int                       ngridz,
 						   int                       *node2slab,
-                           MPI_Comm                  comm);
+                           MPI_Comm                  comm,
+                           bool                      bReproducible);
                            
 
 

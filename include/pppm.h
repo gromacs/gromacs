@@ -49,7 +49,8 @@
 extern int gmx_pppm_init(FILE *log,      t_commrec *cr,
 			 bool bVerbose,
 			 bool bOld,      matrix box,
-			 char *ghatfn,   t_inputrec *ir);
+			 char *ghatfn,   t_inputrec *ir,
+                         bool bReproducible);
 /* Setup stuff for PPPM. 
  * Either reads a ghat function from file (when the file exists)
  * or generate a ghat function from scratch.

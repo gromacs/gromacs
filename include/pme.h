@@ -53,7 +53,7 @@ enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
 extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			t_inputrec *ir,int homenr,
-			bool bFreeEnergy);
+			bool bFreeEnergy, bool bReproducible);
 			
 extern int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata);
 /* Initialize and destroy the pme data structures resepectively.

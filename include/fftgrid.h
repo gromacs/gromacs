@@ -76,8 +76,9 @@ typedef struct {
 extern t_fftgrid *mk_fftgrid(int          nx,
                              int          ny,
                              int          nz,
-			     int          *node2slab,
-                             t_commrec *  cr);
+                             int          *node2slab,
+                             t_commrec *  cr,
+                             bool         bReproducible);
 
 /* Create an FFT grid (1 Dimensional), to be indexed by the INDEX macro 
  * Setup FFT plans and extract local sizes for the grid.
@@ -85,6 +86,8 @@ extern t_fftgrid *mk_fftgrid(int          nx,
  * If cr is non-NULL and cr->nnodes>1, a parallel grid and FFT will be created.
  * The node2slab array translates to node ids to slab indices,
  * when NULL the slab ids are assumed to be identical to the node ids.
+ * Set bReproducible to avoid FFTW timing and other optimizations that
+ * could affect reproducibility of simulations.
  */
 
 extern void pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid);

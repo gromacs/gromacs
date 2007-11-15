@@ -340,7 +340,9 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 {
   gmx_nodecomm_t *nc;
   int  n,rank,resultlen,hostnum,i,ng;
+#ifdef GMX_MPI
   char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
+#endif
 
   /* Many MPI implementations do not optimize MPI_Allreduce
    * (and probably also other global communication calls)
