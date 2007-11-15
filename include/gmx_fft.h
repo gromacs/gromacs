@@ -94,11 +94,27 @@ enum gmx_fft_direction
     GMX_FFT_COMPLEX_TO_REAL  /*!< Complex-to-real valued fft            */
 };
 
+/*! \brief Specifier for FFT flags. 
+ *
+ *  Some FFT libraries (FFTW, in particular) can do timings and other
+ *  tricks to try and optimize the FFT for the current architecture. However,
+ *  this can also lead to results that differ between consecutive runs with
+ *  identical input. 
+ *  To avoid this, the conservative flag will attempt to disable such
+ *  optimization, but there are no guarantees since we cannot control what
+ *  the FFT libraries do internally.
+ */
+enum gmx_fft_flag
+{
+    GMX_FFT_FLAG_NONE = 0,
+    GMX_FFT_FLAG_CONSERVATIVE = (1<<0)
+};
 
 /*! \brief Setup a 1-dimensional complex-to-complex transform 
  *
- *  \param fft  Pointer to opaque Gromacs FFT datatype
- *  \param nx   Length of transform 
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform 
+ *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
  *   
@@ -108,14 +124,16 @@ enum gmx_fft_direction
  */
 int
 gmx_fft_init_1d        (gmx_fft_t *       fft,
-                        int               nx);
+                        int               nx,
+                        enum gmx_fft_flag flags);
 
 
 
 /*! \brief Setup a 1-dimensional real-to-complex transform 
  *
- *  \param fft  Pointer to opaque Gromacs FFT datatype
- *  \param nx   Length of transform in real space
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform in real space
+ *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
  *   
@@ -125,15 +143,17 @@ gmx_fft_init_1d        (gmx_fft_t *       fft,
  */
 int
 gmx_fft_init_1d_real        (gmx_fft_t *       fft,
-                             int               nx);
+                             int               nx,
+                             enum gmx_fft_flag flags);
 
 
 
 /*! \brief Setup a 2-dimensional complex-to-complex transform 
  *
- *  \param fft  Pointer to opaque Gromacs FFT datatype
- *  \param nx   Length of transform in first dimension
- *  \param ny   Length of transform in second dimension
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform in first dimension
+ *  \param ny     Length of transform in second dimension
+ *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
  *   
@@ -144,14 +164,16 @@ gmx_fft_init_1d_real        (gmx_fft_t *       fft,
 int
 gmx_fft_init_2d        (gmx_fft_t *         fft,
                         int                 nx, 
-                        int                 ny);
+                        int                 ny,
+                        enum gmx_fft_flag   flags);
 
 
 /*! \brief Setup a 2-dimensional real-to-complex transform 
  *
- *  \param fft  Pointer to opaque Gromacs FFT datatype
- *  \param nx   Length of transform in first dimension
- *  \param ny   Length of transform in second dimension
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform in first dimension
+ *  \param ny     Length of transform in second dimension
+ *  \param flags  FFT options
  *
  *  The normal space is assumed to be real, while the values in
  *  frequency space are complex.
@@ -165,15 +187,17 @@ gmx_fft_init_2d        (gmx_fft_t *         fft,
 int
 gmx_fft_init_2d_real        (gmx_fft_t *         fft,
                              int                 nx, 
-                             int                 ny);
+                             int                 ny,
+                             enum gmx_fft_flag   flags);
 
 
 /*! \brief Setup a 3-dimensional complex-to-complex transform 
  *
- *  \param fft  Pointer to opaque Gromacs FFT datatype
- *  \param nx   Length of transform in first dimension
- *  \param ny   Length of transform in second dimension
- *  \param nz   Length of transform in third dimension
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform in first dimension
+ *  \param ny     Length of transform in second dimension
+ *  \param nz     Length of transform in third dimension
+ *  \param flags  FFT options
  *
  *  \return status - 0 or a standard error message.
  *   
@@ -185,15 +209,17 @@ int
 gmx_fft_init_3d        (gmx_fft_t *         fft,
                         int                 nx, 
                         int                 ny,
-                        int                 nz);
+                        int                 nz,
+                        enum gmx_fft_flag   flags);
 
 
 /*! \brief Setup a 3-dimensional real-to-complex transform 
  *
- *  \param fft  Pointer to opaque Gromacs FFT datatype
- *  \param nx   Length of transform in first dimension
- *  \param ny   Length of transform in second dimension
- *  \param nz   Length of transform in third dimension
+ *  \param fft    Pointer to opaque Gromacs FFT datatype
+ *  \param nx     Length of transform in first dimension
+ *  \param ny     Length of transform in second dimension
+ *  \param nz     Length of transform in third dimension
+ *  \param flags  FFT options
  *
  *  The normal space is assumed to be real, while the values in
  *  frequency space are complex.
@@ -208,7 +234,8 @@ int
 gmx_fft_init_3d_real   (gmx_fft_t *         fft,
                         int                 nx, 
                         int                 ny,
-                        int                 nz);
+                        int                 nz,
+                        enum gmx_fft_flag   flags);
 
 
 
