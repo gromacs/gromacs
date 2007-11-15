@@ -364,6 +364,19 @@ AC_CHECK_SIZEOF(long long int)
 
 
 #############
+# Make sure size_t can hold pointers.
+# On some Nec machines, you reportedly need to specify a flag for size_t to be 64 bits wide.
+#############
+AC_MSG_CHECKING([that size_t can hold pointers])
+AC_TRY_COMPILE([
+#include <stdlib.h>
+#include <stddef.h>
+],[int chk[sizeof(size_t)-sizeof(int *)+1];],AC_MSG_RESULT([yes]),[
+   AC_MSG_ERROR([size_t is smaller than int*. Check if your compiler needs a flag to make it 64 bit.])])
+
+
+
+#############
 # Check floating-point format and endian
 #############
 ACX_FLOAT_FORMAT
