@@ -56,7 +56,7 @@ gmx_fft_init_1d(gmx_fft_t *   pfft,
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1,*p2,*up1,*up2;
-    char *                 pc;
+    size_t                 pc;
     int                    i,j,k;
     
     if(pfft==NULL)
@@ -91,14 +91,16 @@ gmx_fft_init_1d(gmx_fft_t *   pfft,
     /* make unaligned pointers. 
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
+     *
+     * Do NOT use size_t, since that is 32 bytes on some NEC UX machines.
      */
-    pc = (void *)p1;
+    pc = (size_t)p1;
     pc += 8; 
-    up1 = (void *)pc;
+    up1 = (FFTWPREFIX(complex) *)pc;
     
-    pc = (void *)p2;
+    pc = (size_t)p2;
     pc += 8; 
-    up2 = (void *)pc;
+    up2 = (FFTWPREFIX(complex) *)pc;
     
     
     fft->plan[0][0][0] = FFTWPREFIX(plan_dft_1d)(nx,up1,up2,FFTW_BACKWARD,FFTW_MEASURE); 
@@ -146,8 +148,8 @@ gmx_fft_init_1d_real(gmx_fft_t *   pfft,
                      int           nx) 
 {
     gmx_fft_t              fft;
-    real            *p1,*p2,*up1,*up2;
-    char *                pc;
+    real                 *p1,*p2,*up1,*up2;
+    size_t                pc;
     int                   i,j,k;
 
     if(pfft==NULL)
@@ -182,13 +184,13 @@ gmx_fft_init_1d_real(gmx_fft_t *   pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc = (void *)p1;
+    pc = (size_t)p1;
     pc += 8; 
-    up1 = (void *)pc;
+    up1 = (real *)pc;
     
-    pc = (void *)p2;
+    pc = (size_t)p2;
     pc += 8; 
-    up2 = (void *)pc;
+    up2 = (real *)pc;
     
     
     fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)up1,up2,FFTW_MEASURE); 
@@ -239,7 +241,7 @@ gmx_fft_init_2d(gmx_fft_t *   pfft,
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1,*p2,*up1,*up2;
-    char *                 pc;
+    size_t                 pc;
     int                   i,j,k;
 
     if(pfft==NULL)
@@ -274,13 +276,13 @@ gmx_fft_init_2d(gmx_fft_t *   pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc = (void *)p1;
+    pc = (size_t)p1;
     pc += 8; 
-    up1 = (void *)pc;
+    up1 = (FFTWPREFIX(complex) *)pc;
     
-    pc = (void *)p2;
+    pc = (size_t)p2;
     pc += 8; 
-    up2 = (void *)pc;
+    up2 = (FFTWPREFIX(complex) *)pc;
     
     
     fft->plan[0][0][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up2,FFTW_BACKWARD,FFTW_MEASURE); 
@@ -331,7 +333,7 @@ gmx_fft_init_2d_real(gmx_fft_t *   pfft,
 {
     gmx_fft_t              fft;
     real            *p1,*p2,*up1,*up2;
-    char *                pc;
+    size_t                pc;
     int                   i,j,k;
 
     if(pfft==NULL)
@@ -366,13 +368,13 @@ gmx_fft_init_2d_real(gmx_fft_t *   pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a char pointer and force an offset of 8 bytes instead.
      */
-    pc = (void *)p1;
+    pc = (size_t)p1;
     pc += 8; 
-    up1 = (void *)pc;
+    up1 = (real *)pc;
     
-    pc = (void *)p2;
+    pc = (size_t)p2;
     pc += 8; 
-    up2 = (void *)pc;
+    up2 = (real *)pc;
     
     
     fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)up1,up2,FFTW_MEASURE); 
@@ -424,7 +426,7 @@ gmx_fft_init_3d(gmx_fft_t *   pfft,
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1,*p2,*up1,*up2;
-    char *                 pc;
+    size_t                 pc;
     int                   i,j,k;
 
     if(pfft==NULL)
@@ -459,13 +461,13 @@ gmx_fft_init_3d(gmx_fft_t *   pfft,
         * In double precision the actual complex datatype will be 16 bytes,
         * so go to a char pointer and force an offset of 8 bytes instead.
         */
-    pc = (void *)p1;
+    pc = (size_t)p1;
     pc += 8; 
-    up1 = (void *)pc;
+    up1 = (FFTWPREFIX(complex) *)pc;
     
-    pc = (void *)p2;
+    pc = (size_t)p2;
     pc += 8; 
-    up2 = (void *)pc;
+    up2 = (FFTWPREFIX(complex) *)pc;
     
     
     fft->plan[0][0][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up2,FFTW_BACKWARD,FFTW_MEASURE); 
@@ -517,7 +519,7 @@ gmx_fft_init_3d_real(gmx_fft_t *   pfft,
 {
     gmx_fft_t             fft;
     real            *p1,*p2,*up1,*up2;
-    char *                pc;
+    size_t                pc;
     int                   i,j,k;
 
     if(pfft==NULL)
@@ -552,13 +554,13 @@ gmx_fft_init_3d_real(gmx_fft_t *   pfft,
      * In double precision the actual complex datatype will be 16 bytes,
      * so go to a void pointer and force an offset of 8 bytes instead.
      */
-    pc = (void *)p1;
+    pc = (size_t)p1;
     pc += 8; 
-    up1 = (void *)pc;
+    up1 = (real *)pc;
     
-    pc = (void *)p2;
+    pc = (size_t)p2;
     pc += 8; 
-    up2 = (void *)pc;
+    up2 = (real *)pc;
     
     
     fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)up1,up2,FFTW_MEASURE); 
