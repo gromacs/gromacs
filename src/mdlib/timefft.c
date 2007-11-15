@@ -65,12 +65,12 @@ int main(int argc,char *argv[])
   double    *rt,*ct;
   t_fftgrid *g;
   t_commrec *cr;
-  static bool bOptFFT = FALSE;
+  static bool bReproducible = FALSE;
   static int  nnode    = 1;
   static int  nitfac  = 1;
   t_pargs pa[] = {
-    { "-opt",   FALSE, etBOOL, {&bOptFFT}, 
-      "Optimize FFT" },
+    { "-reproducible",   FALSE, etBOOL, {&bReproducible}, 
+      "Request binary reproducible results" },
     { "-np",    FALSE, etINT, {&nnode},
       "Number of NODEs" },
     { "-itfac", FALSE, etINT, {&nitfac},
@@ -111,7 +111,7 @@ int main(int argc,char *argv[])
       fprintf(stderr,"\r3D FFT (%s precision) %3d^3, niter %3d     ",
 	      (rsize == 8) ? "Double" : "Single",n,nit);
     
-    g  = mk_fftgrid(stdlog,(nnode > 1),n,n,n,bOptFFT);
+    g  = mk_fftgrid(stdlog,(nnode > 1),n,n,n,bReproducible);
 
     if (PAR(cr))
       start = time(NULL);

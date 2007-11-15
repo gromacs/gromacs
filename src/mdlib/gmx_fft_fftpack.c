@@ -1905,13 +1905,13 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
     *pfft = NULL;
 
     /* Create the X transform */
-    if( (rc = gmx_fft_init_1d(&fft,nx)) != 0)
+    if( (rc = gmx_fft_init_1d(&fft,nx,flags)) != 0)
     {
         return rc;
     }    
     
     /* Create Y transform as a link from X */
-    if( (rc=gmx_fft_init_1d(&(fft->next),ny)) != 0)
+    if( (rc=gmx_fft_init_1d(&(fft->next),ny,flags)) != 0)
     {
         free(fft);
         return rc;
@@ -1958,7 +1958,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     fftpack_cffti1(nx,fft->work,fft->ifac);
     
     /* Create real Y transform as a link from X */
-    if( (rc=gmx_fft_init_1d_real(&(fft->next),ny)) != 0)
+    if( (rc=gmx_fft_init_1d_real(&(fft->next),ny,flags)) != 0)
     {
         free(fft);
         return rc;
@@ -2008,7 +2008,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
 
     
     /* Create 2D Y/Z transforms as a link from X */
-    if( (rc=gmx_fft_init_2d(&(fft->next),ny,nz)) != 0)
+    if( (rc=gmx_fft_init_2d(&(fft->next),ny,nz,flags)) != 0)
     {
         free(fft);
         return rc;
@@ -2058,7 +2058,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     fftpack_cffti1(nx,fft->work,fft->ifac);
     
     /* Create 2D real Y/Z transform as a link from X */
-    if( (rc=gmx_fft_init_2d_real(&(fft->next),ny,nz)) != 0)
+    if( (rc=gmx_fft_init_2d_real(&(fft->next),ny,nz,flags)) != 0)
     {
         free(fft);
         return rc;

@@ -84,14 +84,16 @@ gmx_alloc_aligned(size_t size)
 t_fftgrid *mk_fftgrid(int          nx,
                       int          ny,
                       int          nz,
-		      int          *node2slab,
-                      t_commrec *  cr)
+                      int          *node2slab,
+                      t_commrec *  cr,
+                      bool         bReproducible)
 {
 /* parallel runs with non-parallel ffts haven't been tested yet */
   int           nnodes;
   int           localsize;
   t_fftgrid *   grid;
-  
+  int           flags;
+    
   nnodes = 1;
 #ifdef GMX_MPI
   if (cr && cr->nnodes > 1) {
@@ -133,7 +135,7 @@ t_fftgrid *mk_fftgrid(int          nx,
   {
 #ifdef GMX_MPI
       gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
-			      node2slab,cr->mpi_comm_mygroup);
+			      node2slab,cr->mpi_comm_mygroup,bReproducible);
           
       gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
                                 &(grid->pfft.local_x_start),                                
@@ -146,7 +148,8 @@ t_fftgrid *mk_fftgrid(int          nx,
   }
   else 
   {
-      gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz);
+      flags = bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : 0;
+      gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz,flags);
   }
   grid->ptr = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
   

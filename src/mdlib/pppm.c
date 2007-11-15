@@ -482,9 +482,10 @@ static real      ***ghat=NULL;
 static t_fftgrid *grid=NULL;
 
 int gmx_pppm_init(FILE *log,      t_commrec *cr,
-		  bool bVerbose,
-		  bool bOld,      matrix box,
-		  char *ghatfn,   t_inputrec *ir)
+                  bool bVerbose,
+                  bool bOld,      matrix box,
+                  char *ghatfn,   t_inputrec *ir,
+                  bool bReproducible)
 {
   int   nx,ny,nz,m,porder;
   ivec  grids;
@@ -572,7 +573,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
 #ifdef GMX_MPI
   cr->mpi_comm_mygroup=cr->mpi_comm_mysim;
 #endif
-  grid = mk_fftgrid(nx,ny,nz,NULL,cr);
+  grid = mk_fftgrid(nx,ny,nz,NULL,cr,bReproducible);
   
   return 0;
 }

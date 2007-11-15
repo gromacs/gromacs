@@ -293,7 +293,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 	gmx_fatal(FARGS,"Free energy with %s is not implemented",
 		  eel_names[fr->eeltype]);
       status = gmx_pppm_init(stdlog,cr,FALSE,TRUE,state->box,
-			     getenv("GMXGHAT"),inputrec);
+			     getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PPPM",status);
     }
@@ -317,7 +317,7 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
       }
       
       status = gmx_pme_init(pmedata,cr,inputrec,
-			    top ? top->atoms.nr : 0,nChargePerturbed);
+			    top ? top->atoms.nr : 0,nChargePerturbed,(Flags & MD_REPRODUCIBLE));
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PME",status);
     }

@@ -184,7 +184,8 @@ int main(int argc,char *argv[])
   static bool bGlas        = FALSE;
   static bool bIonize      = FALSE;
   static bool bConfout     = TRUE;
-  
+  static bool bReproducible = FALSE;
+    
   static int  npme=0;
   static int  nmultisim=0;
   static int  repl_ex_nst=0;
@@ -225,6 +226,8 @@ int main(int argc,char *argv[])
       "Write a compact log file" },
     { "-seppot", FALSE, etBOOL,{&bSepPot},
       "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
+    { "-reprod", FALSE, etBOOL,{&bReproducible},  
+      "Try to avoid optimizations that affect binary reproducibility" },      
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
@@ -284,13 +287,14 @@ int main(int argc,char *argv[])
     ed_open(NFILE,fnm,edyn,cr);
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
-  Flags = Flags | (bSepPot   ? MD_SEPPOT     : 0);
-  Flags = Flags | (bIonize   ? MD_IONIZE     : 0);
-  Flags = Flags | (bGlas     ? MD_GLAS       : 0);
-  Flags = Flags | (bDLB      ? MD_DLB        : 0);
-  Flags = Flags | (bConfout  ? MD_CONFOUT    : 0);
-  Flags = Flags | (!bSumEner ? MD_NOGSTAT    : 0);
-
+  Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
+  Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
+  Flags = Flags | (bGlas         ? MD_GLAS         : 0);
+  Flags = Flags | (bDLB          ? MD_DLB          : 0);
+  Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
+  Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
+  Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
+    
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);

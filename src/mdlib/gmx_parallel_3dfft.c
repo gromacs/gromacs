@@ -58,10 +58,14 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            int                       ngridy,
                            int                       ngridz,
 						   int                       *node2slab,
-                           MPI_Comm                  comm)
+                           MPI_Comm                  comm,
+                           bool                      bReproducible)
 {
     gmx_parallel_3dfft_t p;
     void *p0;
+    int  flags;
+    
+    flags = bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : 0;
     
     p = malloc(sizeof(struct gmx_parallel_3dfft));
     
@@ -92,8 +96,8 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     }
     
     /* initialize transforms */
-    if ( ( gmx_fft_init_1d(&(p->fft_x),ngridx) != 0 ) ||
-         ( gmx_fft_init_2d_real(&(p->fft_yz),ngridy,ngridz) != 0))
+    if ( ( gmx_fft_init_1d(&(p->fft_x),ngridx,flags) != 0 ) ||
+         ( gmx_fft_init_2d_real(&(p->fft_yz),ngridy,ngridz,flags) != 0))
     {
         free(p);
         return -1;

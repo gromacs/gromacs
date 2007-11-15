@@ -1239,8 +1239,9 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
 }
 
 int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
-		 t_inputrec *ir,int homenr,
-		 bool bFreeEnergy)
+                 t_inputrec *ir,int homenr,
+                 bool bFreeEnergy,
+                 bool bReproducible)
 {
   gmx_pme_t pme=NULL;
   
@@ -1337,9 +1338,9 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
   snew(pme->bsp_mod[YY],pme->nky);
   snew(pme->bsp_mod[ZZ],pme->nkz);
 
-  pme->gridA = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr);
+  pme->gridA = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr,bReproducible);
   if (bFreeEnergy)
-    pme->gridB = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr);
+    pme->gridB = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr,bReproducible);
   else
     pme->gridB = NULL;
   
