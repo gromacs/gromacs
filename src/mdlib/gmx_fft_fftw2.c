@@ -64,12 +64,17 @@ struct gmx_fft
 
 
 int
-gmx_fft_init_1d(gmx_fft_t *   pfft,
-                int           nx) 
+gmx_fft_init_1d(gmx_fft_t *        pfft,
+                int                nx,
+                enum gmx_fft_flag  flags) 
 {
     int i,j;
     gmx_fft_t           fft;
-    
+    int                    fftw_flags;
+
+    /* FFTW2 is slow to measure, so we do not use it */
+    fftw_flags = FFTW_ESTIMATE;    
+
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -83,10 +88,10 @@ gmx_fft_init_1d(gmx_fft_t *   pfft,
     }    
 
     
-    fft->single[0][0] = fftw_create_plan(nx,FFTW_BACKWARD,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->single[0][1] = fftw_create_plan(nx,FFTW_FORWARD,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->single[1][0] = fftw_create_plan(nx,FFTW_BACKWARD,FFTW_IN_PLACE|FFTW_ESTIMATE);
-    fft->single[1][1] = fftw_create_plan(nx,FFTW_FORWARD,FFTW_IN_PLACE|FFTW_ESTIMATE);
+    fft->single[0][0] = fftw_create_plan(nx,FFTW_BACKWARD,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->single[0][1] = fftw_create_plan(nx,FFTW_FORWARD,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->single[1][0] = fftw_create_plan(nx,FFTW_BACKWARD,FFTW_IN_PLACE|fftw_flags);
+    fft->single[1][1] = fftw_create_plan(nx,FFTW_FORWARD,FFTW_IN_PLACE|fftw_flags);
 
     
     fft->multi[0][0] = NULL;
@@ -120,11 +125,16 @@ gmx_fft_init_1d(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_1d_real(gmx_fft_t *   pfft,
-                     int           nx) 
+gmx_fft_init_1d_real(gmx_fft_t *        pfft,
+                     int                nx,
+                     enum gmx_fft_flag  flags) 
 {
     int i,j;
     gmx_fft_t             fft;
+    int                    fftw_flags;
+    
+    /* FFTW2 is slow to measure, so we do not use it */
+    fftw_flags = FFTW_ESTIMATE;    
     
     if(pfft==NULL)
     {
@@ -139,10 +149,10 @@ gmx_fft_init_1d_real(gmx_fft_t *   pfft,
     }    
  
  
-    fft->single[0][0] = rfftw_create_plan(nx,FFTW_COMPLEX_TO_REAL,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->single[0][1] = rfftw_create_plan(nx,FFTW_REAL_TO_COMPLEX,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->single[1][0] = rfftw_create_plan(nx,FFTW_COMPLEX_TO_REAL,FFTW_IN_PLACE|FFTW_ESTIMATE);
-    fft->single[1][1] = rfftw_create_plan(nx,FFTW_REAL_TO_COMPLEX,FFTW_IN_PLACE|FFTW_ESTIMATE);
+    fft->single[0][0] = rfftw_create_plan(nx,FFTW_COMPLEX_TO_REAL,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->single[0][1] = rfftw_create_plan(nx,FFTW_REAL_TO_COMPLEX,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->single[1][0] = rfftw_create_plan(nx,FFTW_COMPLEX_TO_REAL,FFTW_IN_PLACE|fftw_flags);
+    fft->single[1][1] = rfftw_create_plan(nx,FFTW_REAL_TO_COMPLEX,FFTW_IN_PLACE|fftw_flags);
 
     
     fft->multi[0][0] = NULL;
@@ -185,13 +195,19 @@ gmx_fft_init_1d_real(gmx_fft_t *   pfft,
 
 	    
 int
-gmx_fft_init_2d(gmx_fft_t *   pfft,
-                int           nx, 
-                int           ny) 
+gmx_fft_init_2d(gmx_fft_t *        pfft,
+                int                nx, 
+                int                ny,
+                enum gmx_fft_flag  flags) 
 {
     int i,j;
     gmx_fft_t             fft;
+    int                    fftw_flags;
+
     
+    /* FFTW2 is slow to measure, so we do not use it */
+    fftw_flags = FFTW_ESTIMATE;    
+
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -209,10 +225,10 @@ gmx_fft_init_2d(gmx_fft_t *   pfft,
     fft->single[1][0] = NULL;
     fft->single[1][1] = NULL;
         
-    fft->multi[0][0] = fftw2d_create_plan(nx,ny,FFTW_BACKWARD,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[0][1] = fftw2d_create_plan(nx,ny,FFTW_FORWARD,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][0] = fftw2d_create_plan(nx,ny,FFTW_BACKWARD,FFTW_IN_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][1] = fftw2d_create_plan(nx,ny,FFTW_FORWARD,FFTW_IN_PLACE|FFTW_ESTIMATE);
+    fft->multi[0][0] = fftw2d_create_plan(nx,ny,FFTW_BACKWARD,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[0][1] = fftw2d_create_plan(nx,ny,FFTW_FORWARD,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[1][0] = fftw2d_create_plan(nx,ny,FFTW_BACKWARD,FFTW_IN_PLACE|fftw_flags);
+    fft->multi[1][1] = fftw2d_create_plan(nx,ny,FFTW_FORWARD,FFTW_IN_PLACE|fftw_flags);
     
     for(i=0;i<2;i++)
     {
@@ -242,13 +258,19 @@ gmx_fft_init_2d(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_2d_real(gmx_fft_t *   pfft,
-                     int           nx, 
-                     int           ny) 
+gmx_fft_init_2d_real(gmx_fft_t *        pfft,
+                     int                nx, 
+                     int                ny,
+                     enum gmx_fft_flag  flags) 
 {
     int i,j;
     gmx_fft_t             fft;
+    int                    fftw_flags;
+
     
+    /* FFTW2 is slow to measure, so we do not use it */
+    fftw_flags = FFTW_ESTIMATE;    
+
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -267,10 +289,10 @@ gmx_fft_init_2d_real(gmx_fft_t *   pfft,
     fft->single[1][1] = NULL;
     
     
-    fft->multi[0][0] = rfftw2d_create_plan(nx,ny,FFTW_COMPLEX_TO_REAL,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[0][1] = rfftw2d_create_plan(nx,ny,FFTW_REAL_TO_COMPLEX,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][0] = rfftw2d_create_plan(nx,ny,FFTW_COMPLEX_TO_REAL,FFTW_IN_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][1] = rfftw2d_create_plan(nx,ny,FFTW_REAL_TO_COMPLEX,FFTW_IN_PLACE|FFTW_ESTIMATE);
+    fft->multi[0][0] = rfftw2d_create_plan(nx,ny,FFTW_COMPLEX_TO_REAL,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[0][1] = rfftw2d_create_plan(nx,ny,FFTW_REAL_TO_COMPLEX,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[1][0] = rfftw2d_create_plan(nx,ny,FFTW_COMPLEX_TO_REAL,FFTW_IN_PLACE|fftw_flags);
+    fft->multi[1][1] = rfftw2d_create_plan(nx,ny,FFTW_REAL_TO_COMPLEX,FFTW_IN_PLACE|fftw_flags);
     
 
     for(i=0;i<2;i++)
@@ -309,14 +331,20 @@ gmx_fft_init_2d_real(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_3d(gmx_fft_t *   pfft,
-                int           nx, 
-                int           ny,
-                int           nz) 
+gmx_fft_init_3d(gmx_fft_t *        pfft,
+                int                nx, 
+                int                ny,
+                int                nz,
+                enum gmx_fft_flag  flags) 
 {
     int i,j;
     gmx_fft_t             fft;
+    int                    fftw_flags;
+
     
+    /* FFTW2 is slow to measure, so we do not use it */
+    fftw_flags = FFTW_ESTIMATE;    
+
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -335,10 +363,10 @@ gmx_fft_init_3d(gmx_fft_t *   pfft,
     fft->single[1][1] = NULL;
     
     
-    fft->multi[0][0] = fftw3d_create_plan(nx,ny,nz,FFTW_BACKWARD,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[0][1] = fftw3d_create_plan(nx,ny,nz,FFTW_FORWARD,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][0] = fftw3d_create_plan(nx,ny,nz,FFTW_BACKWARD,FFTW_IN_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][1] = fftw3d_create_plan(nx,ny,nz,FFTW_FORWARD,FFTW_IN_PLACE|FFTW_ESTIMATE);
+    fft->multi[0][0] = fftw3d_create_plan(nx,ny,nz,FFTW_BACKWARD,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[0][1] = fftw3d_create_plan(nx,ny,nz,FFTW_FORWARD,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[1][0] = fftw3d_create_plan(nx,ny,nz,FFTW_BACKWARD,FFTW_IN_PLACE|fftw_flags);
+    fft->multi[1][1] = fftw3d_create_plan(nx,ny,nz,FFTW_FORWARD,FFTW_IN_PLACE|fftw_flags);
     
     
     for(i=0;i<2;i++)
@@ -370,14 +398,20 @@ gmx_fft_init_3d(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_3d_real(gmx_fft_t *   pfft,
-                     int           nx, 
-                     int           ny,
-                     int           nz) 
+gmx_fft_init_3d_real(gmx_fft_t *        pfft,
+                     int                nx, 
+                     int                ny,
+                     int                nz,
+                     enum gmx_fft_flag  flags) 
 {
     int i,j;
     gmx_fft_t            fft;
+    int                    fftw_flags;
+
     
+    /* FFTW2 is slow to measure, so we do not use it */
+    fftw_flags = FFTW_ESTIMATE;    
+
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -396,10 +430,10 @@ gmx_fft_init_3d_real(gmx_fft_t *   pfft,
     fft->single[1][1] = NULL;
     
     
-    fft->multi[0][0] = rfftw3d_create_plan(nx,ny,nz,FFTW_COMPLEX_TO_REAL,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[0][1] = rfftw3d_create_plan(nx,ny,nz,FFTW_REAL_TO_COMPLEX,FFTW_OUT_OF_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][0] = rfftw3d_create_plan(nx,ny,nz,FFTW_COMPLEX_TO_REAL,FFTW_IN_PLACE|FFTW_ESTIMATE);
-    fft->multi[1][1] = rfftw3d_create_plan(nx,ny,nz,FFTW_REAL_TO_COMPLEX,FFTW_IN_PLACE|FFTW_ESTIMATE);
+    fft->multi[0][0] = rfftw3d_create_plan(nx,ny,nz,FFTW_COMPLEX_TO_REAL,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[0][1] = rfftw3d_create_plan(nx,ny,nz,FFTW_REAL_TO_COMPLEX,FFTW_OUT_OF_PLACE|fftw_flags);
+    fft->multi[1][0] = rfftw3d_create_plan(nx,ny,nz,FFTW_COMPLEX_TO_REAL,FFTW_IN_PLACE|fftw_flags);
+    fft->multi[1][1] = rfftw3d_create_plan(nx,ny,nz,FFTW_REAL_TO_COMPLEX,FFTW_IN_PLACE|fftw_flags);
     
     
     for(i=0;i<2;i++)

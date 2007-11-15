@@ -51,22 +51,25 @@ struct gmx_fft
 
 
 int
-gmx_fft_init_1d(gmx_fft_t *   pfft,
-                int           nx) 
+gmx_fft_init_1d(gmx_fft_t *        pfft,
+                int                nx,
+                enum gmx_fft_flag  flags) 
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1,*p2,*up1,*up2;
     char *                 pc;
     int                    i,j,k;
+    int                    fftw_flags;
     
+    fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
+
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
         return EINVAL;
     }
     *pfft = NULL;
-    
-    
+        
     if( (fft = FFTWPREFIX(malloc)(sizeof(struct gmx_fft))) == NULL)
     {
         return ENOMEM;
@@ -101,14 +104,14 @@ gmx_fft_init_1d(gmx_fft_t *   pfft,
     up2 = (void *)pc;
     
     
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_1d)(nx,up1,up2,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_1d)(nx,up1,up2,FFTW_FORWARD,FFTW_MEASURE); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_1d)(nx,up1,up1,FFTW_BACKWARD,FFTW_MEASURE);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_1d)(nx,up1,up1,FFTW_FORWARD,FFTW_MEASURE);  
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_1d)(nx,p1,p2,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_1d)(nx,p1,p2,FFTW_FORWARD,FFTW_MEASURE); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_1d)(nx,p1,p1,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_1d)(nx,p1,p1,FFTW_FORWARD,FFTW_MEASURE); 
+    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_1d)(nx,up1,up2,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_1d)(nx,up1,up2,FFTW_FORWARD,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_1d)(nx,up1,up1,FFTW_BACKWARD,fftw_flags);  
+    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_1d)(nx,up1,up1,FFTW_FORWARD,fftw_flags);  
+    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_1d)(nx,p1,p2,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_1d)(nx,p1,p2,FFTW_FORWARD,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_1d)(nx,p1,p1,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_1d)(nx,p1,p1,FFTW_FORWARD,fftw_flags); 
 
 
     for(i=0;i<2;i++)
@@ -142,14 +145,18 @@ gmx_fft_init_1d(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_1d_real(gmx_fft_t *   pfft,
-                     int           nx) 
+gmx_fft_init_1d_real(gmx_fft_t *        pfft,
+                     int                nx,
+                     enum gmx_fft_flag  flags) 
 {
     gmx_fft_t              fft;
     real            *p1,*p2,*up1,*up2;
     void *                pc;
     int                   i,j,k;
-
+    int                    fftw_flags;
+    
+    fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
+    
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -191,15 +198,15 @@ gmx_fft_init_1d_real(gmx_fft_t *   pfft,
     up2 = (void *)pc;
     
     
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)up1,up2,FFTW_MEASURE); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,up1,(FFTWPREFIX(complex) *)up2,FFTW_MEASURE); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)up1,up1,FFTW_MEASURE);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,up1,(FFTWPREFIX(complex) *)up1,FFTW_MEASURE);  
+    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)up1,up2,fftw_flags); 
+    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,up1,(FFTWPREFIX(complex) *)up2,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)up1,up1,fftw_flags);  
+    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,up1,(FFTWPREFIX(complex) *)up1,fftw_flags);  
 
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)p1,p2,FFTW_MEASURE); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,p1,(FFTWPREFIX(complex) *)p2,FFTW_MEASURE); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)p1,p1,FFTW_MEASURE); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,p1,(FFTWPREFIX(complex) *)p1,FFTW_MEASURE); 
+    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)p1,p2,fftw_flags); 
+    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,p1,(FFTWPREFIX(complex) *)p2,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_1d)(nx,(FFTWPREFIX(complex) *)p1,p1,fftw_flags); 
+    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_1d)(nx,p1,(FFTWPREFIX(complex) *)p1,fftw_flags); 
 
 
     for(i=0;i<2;i++)
@@ -233,15 +240,19 @@ gmx_fft_init_1d_real(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_2d(gmx_fft_t *   pfft,
-                int           nx, 
-                int           ny) 
+gmx_fft_init_2d(gmx_fft_t *        pfft,
+                int                nx, 
+                int                ny,
+                enum gmx_fft_flag  flags) 
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1,*p2,*up1,*up2;
     char *                 pc;
     int                   i,j,k;
-
+    int                    fftw_flags;
+    
+    fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
+    
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -283,15 +294,15 @@ gmx_fft_init_2d(gmx_fft_t *   pfft,
     up2 = (void *)pc;
     
     
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up2,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up2,FFTW_FORWARD,FFTW_MEASURE); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up1,FFTW_BACKWARD,FFTW_MEASURE);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up1,FFTW_FORWARD,FFTW_MEASURE);  
+    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up2,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up2,FFTW_FORWARD,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up1,FFTW_BACKWARD,fftw_flags);  
+    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,up1,up1,FFTW_FORWARD,fftw_flags);  
 
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p2,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p2,FFTW_FORWARD,FFTW_MEASURE); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p1,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p1,FFTW_FORWARD,FFTW_MEASURE); 
+    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p2,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p2,FFTW_FORWARD,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p1,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_2d)(nx,ny,p1,p1,FFTW_FORWARD,fftw_flags); 
     
 
     for(i=0;i<2;i++)
@@ -325,15 +336,19 @@ gmx_fft_init_2d(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_2d_real(gmx_fft_t *   pfft,
-                     int           nx, 
-                     int           ny) 
+gmx_fft_init_2d_real(gmx_fft_t *        pfft,
+                     int                nx, 
+                     int                ny,
+                     enum gmx_fft_flag  flags) 
 {
     gmx_fft_t              fft;
     real            *p1,*p2,*up1,*up2;
     char *                pc;
     int                   i,j,k;
-
+    int                    fftw_flags;
+    
+    fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
+    
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -375,15 +390,15 @@ gmx_fft_init_2d_real(gmx_fft_t *   pfft,
     up2 = (void *)pc;
     
     
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)up1,up2,FFTW_MEASURE); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,up1,(FFTWPREFIX(complex) *)up2,FFTW_MEASURE); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)up1,up1,FFTW_MEASURE);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,up1,(FFTWPREFIX(complex) *)up1,FFTW_MEASURE);  
+    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)up1,up2,fftw_flags); 
+    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,up1,(FFTWPREFIX(complex) *)up2,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)up1,up1,fftw_flags);  
+    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,up1,(FFTWPREFIX(complex) *)up1,fftw_flags);  
     
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)p1,p2,FFTW_MEASURE); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,p1,(FFTWPREFIX(complex) *)p2,FFTW_MEASURE); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)p1,p1,FFTW_MEASURE); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,p1,(FFTWPREFIX(complex) *)p1,FFTW_MEASURE); 
+    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)p1,p2,fftw_flags); 
+    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,p1,(FFTWPREFIX(complex) *)p2,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_2d)(nx,ny,(FFTWPREFIX(complex) *)p1,p1,fftw_flags); 
+    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_2d)(nx,ny,p1,(FFTWPREFIX(complex) *)p1,fftw_flags); 
     
 
     for(i=0;i<2;i++)
@@ -417,16 +432,20 @@ gmx_fft_init_2d_real(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_3d(gmx_fft_t *   pfft,
-                int           nx, 
-                int           ny,
-                int           nz) 
+gmx_fft_init_3d(gmx_fft_t *        pfft,
+                int                nx, 
+                int                ny,
+                int                nz,
+                enum gmx_fft_flag  flags) 
 {
     gmx_fft_t              fft;
     FFTWPREFIX(complex)   *p1,*p2,*up1,*up2;
     char *                 pc;
     int                   i,j,k;
-
+    int                    fftw_flags;
+    
+    fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
+    
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -468,15 +487,15 @@ gmx_fft_init_3d(gmx_fft_t *   pfft,
     up2 = (void *)pc;
     
     
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up2,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up2,FFTW_FORWARD,FFTW_MEASURE); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up1,FFTW_BACKWARD,FFTW_MEASURE);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up1,FFTW_FORWARD,FFTW_MEASURE);  
+    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up2,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up2,FFTW_FORWARD,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up1,FFTW_BACKWARD,fftw_flags);  
+    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,up1,up1,FFTW_FORWARD,fftw_flags);  
 
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p2,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p2,FFTW_FORWARD,FFTW_MEASURE); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p1,FFTW_BACKWARD,FFTW_MEASURE); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p1,FFTW_FORWARD,FFTW_MEASURE); 
+    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p2,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p2,FFTW_FORWARD,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p1,FFTW_BACKWARD,fftw_flags); 
+    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_3d)(nx,ny,nz,p1,p1,FFTW_FORWARD,fftw_flags); 
     
 
     for(i=0;i<2;i++)
@@ -510,16 +529,20 @@ gmx_fft_init_3d(gmx_fft_t *   pfft,
 
 
 int
-gmx_fft_init_3d_real(gmx_fft_t *   pfft,
-                     int           nx, 
-                     int           ny,
-                     int           nz) 
+gmx_fft_init_3d_real(gmx_fft_t *        pfft,
+                     int                nx, 
+                     int                ny,
+                     int                nz,
+                     enum gmx_fft_flag  flags) 
 {
     gmx_fft_t             fft;
     real            *p1,*p2,*up1,*up2;
     char *                pc;
     int                   i,j,k;
-
+    int                    fftw_flags;
+    
+    fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
+    
     if(pfft==NULL)
     {
         gmx_fatal(FARGS,"Invalid opaque FFT datatype pointer.");
@@ -561,15 +584,15 @@ gmx_fft_init_3d_real(gmx_fft_t *   pfft,
     up2 = (void *)pc;
     
     
-    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)up1,up2,FFTW_MEASURE); 
-    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,up1,(FFTWPREFIX(complex) *)up2,FFTW_MEASURE); 
-    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)up1,up1,FFTW_MEASURE);  
-    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,up1,(FFTWPREFIX(complex) *)up1,FFTW_MEASURE);  
+    fft->plan[0][0][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)up1,up2,fftw_flags); 
+    fft->plan[0][0][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,up1,(FFTWPREFIX(complex) *)up2,fftw_flags); 
+    fft->plan[0][1][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)up1,up1,fftw_flags);  
+    fft->plan[0][1][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,up1,(FFTWPREFIX(complex) *)up1,fftw_flags);  
     
-    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)p1,p2,FFTW_MEASURE); 
-    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,p1,(FFTWPREFIX(complex) *)p2,FFTW_MEASURE); 
-    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)p1,p1,FFTW_MEASURE); 
-    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,p1,(FFTWPREFIX(complex) *)p1,FFTW_MEASURE); 
+    fft->plan[1][0][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)p1,p2,fftw_flags); 
+    fft->plan[1][0][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,p1,(FFTWPREFIX(complex) *)p2,fftw_flags); 
+    fft->plan[1][1][0] = FFTWPREFIX(plan_dft_c2r_3d)(nx,ny,nz,(FFTWPREFIX(complex) *)p1,p1,fftw_flags); 
+    fft->plan[1][1][1] = FFTWPREFIX(plan_dft_r2c_3d)(nx,ny,nz,p1,(FFTWPREFIX(complex) *)p1,fftw_flags); 
     
 
     for(i=0;i<2;i++)
