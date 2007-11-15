@@ -78,6 +78,7 @@ extern void spread_on_grid(FILE *logfile,
 			   t_fftgrid *grid, int homenr,
 			   int pme_order,   rvec x[],
 			   real charge[],   matrix box,      
-			   bool bGatherOnly,bool bHaveSplines);
+			   bool bGatherOnly,
+			   bool bFreeEnergy, bool bHaveSplines);
 
 #endif
