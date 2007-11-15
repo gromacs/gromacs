@@ -380,7 +380,7 @@ real ewald_LRcorrection(FILE *fplog,
 		L1*Vdipole[0]+lambda*Vdipole[1]);
     }
   }
-  if (bFirst) {
+  if (bFirst && (cr) && PAR(cr)) {
     gmx_sumi(1,&bSumForces,cr);
     fr->bSumAllForces = bSumForces;
     bFirst = FALSE;
