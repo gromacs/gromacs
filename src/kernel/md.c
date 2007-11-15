@@ -674,7 +674,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   } 
 
   if (MASTER(cr)) {
-    if (bHaveConstr && !ir->bContinuation)
+    if (constr && !ir->bContinuation)
       fprintf(log,
 	      "RMS relative constraint deviation after constraining: %.2e\n",
 	      constr_rmsd(constr,FALSE));
