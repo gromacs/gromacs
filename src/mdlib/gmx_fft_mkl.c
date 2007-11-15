@@ -78,7 +78,7 @@ struct gmx_fft
     int                real_fft;          /**< 1 if real FFT, otherwise 0   */
     DFTI_DESCRIPTOR *  inplace[3];        /**< in-place FFT                 */
     DFTI_DESCRIPTOR *  ooplace[4];        /**< out-of-place FFT             */
-    t_complex *    work;              /**< Enable out-of-place c2r FFT  */
+    t_complex *    work;                  /**< Enable out-of-place c2r FFT  */
 };
 
 
@@ -944,7 +944,7 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
         }
         else
         {
-            /* real-to-complex in Y dimension, in_data in out_data */
+            /* real-to-complex in Y dimension, in_data to out_data */
             status = DftiComputeForward(fft->ooplace[1],in_data,out_data);
             
             /* complex-to-complex in X dimension, in-place in out_data */
@@ -971,7 +971,7 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
             
             /* complex-to-real in Y dimension, from work to out_data */
             if ( status == 0 )
-                status = DftiComputeBackward(fft->ooplace[2],fft->work,out_data);
+                status = DftiComputeBackward(fft->ooplace[1],fft->work,out_data);
             
         }
     }
@@ -1124,7 +1124,7 @@ gmx_fft_3d_real(gmx_fft_t                  fft,
             
             /* complex-to-real in Z dimension, work to out_data */
             if ( status == 0 )
-                status = DftiComputeBackward(fft->ooplace[3],fft->work,out_data);
+                status = DftiComputeBackward(fft->ooplace[2],fft->work,out_data);
         }
     }
     
