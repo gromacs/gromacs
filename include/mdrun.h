@@ -65,6 +65,7 @@
 #define MD_DLB         (1<<8)
 #define MD_CONFOUT     (1<<9)
 #define MD_NOGSTAT     (1<<10)
+#define MD_REPRODUCIBLE (1<<11)
 
 
 enum {
