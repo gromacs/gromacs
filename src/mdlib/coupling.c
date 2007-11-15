@@ -223,7 +223,7 @@ void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
 	  maxchange=change;
       }
     
-    if(maxchange>0.01) 
+    if (maxchange > 0.01 && stdlog) 
       fprintf(stdlog,"\nStep %d  Warning: Pressure scaling more than 1%%.\n",
 	      step);
   }
@@ -330,7 +330,8 @@ void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
       mu[ZZ][ZZ]<0.99 || mu[ZZ][ZZ]>1.01) {
     sprintf(buf,"\nStep %d  Warning: pressure scaling more than 1%%, "
 	    "mu: %g %g %g\n",step,mu[XX][XX],mu[YY][YY],mu[ZZ][ZZ]);
-    fprintf(stdlog,"%s",buf);
+    if (stdlog)
+      fprintf(stdlog,"%s",buf);
     fprintf(stderr,"%s",buf);
   }
 }
