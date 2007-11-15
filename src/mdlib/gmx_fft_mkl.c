@@ -977,7 +977,7 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
             
             /* complex-to-real in Y dimension, from work to out_data */
             if ( status == 0 )
-                status = DftiComputeBackward(fft->ooplace[2],fft->work,out_data);
+                status = DftiComputeBackward(fft->ooplace[1],fft->work,out_data);
             
         }
     }
@@ -1130,7 +1130,7 @@ gmx_fft_3d_real(gmx_fft_t                  fft,
             
             /* complex-to-real in Z dimension, work to out_data */
             if ( status == 0 )
-                status = DftiComputeBackward(fft->ooplace[3],fft->work,out_data);
+                status = DftiComputeBackward(fft->ooplace[2],fft->work,out_data);
         }
     }
     
