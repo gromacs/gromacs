@@ -38,6 +38,7 @@ typedef struct gmx_shellfc {
   int     nshell_gl;       /* The number of shells in the system       */
   t_shell *shell_gl;       /* All the shells (for DD only)             */
   int     *shell_index_gl; /* Global shell index (for DD only)         */
+  bool    bInterCG;        /* Are there inter charge-group shells?     */
   int     nshell;          /* The number of local shells               */
   t_shell *shell;          /* The local shells                         */
   int     shell_nalloc;    /* The allocation size of shell             */
@@ -160,7 +161,6 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
   int         aS,aN=0; /* Shell and nucleus */
   int         bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_WATER_POL };
 #define NBT asize(bondtypes)
-  bool        bInterCG;
   t_iatom     *ia;
 
   if (PARTDECOMP(cr)) {
@@ -234,7 +234,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
   }
 
   /* Now fill the structures */
-  bInterCG = FALSE;
+  shfc->bInterCG = FALSE;
   ns=0;
   for(j=0; (j<NBT); j++) {
     ia=idef->il[bondtypes[j]].iatoms;
@@ -296,7 +296,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
 	}
 	if (at2cg[aS] != at2cg[aN]) {
 	  /* shell[nsi].bInterCG = TRUE; */
-	  bInterCG = TRUE;
+	  shfc->bInterCG = TRUE;
 	}
 
 	switch (bondtypes[j]) {
@@ -371,7 +371,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
 		     NULL,top->atoms.atom,TRUE);
     }
 
-    if (bInterCG) {
+    if (shfc->bInterCG) {
       if (fplog)
 	fprintf(fplog,"\nNOTE: there all shells that are connected to particles outside thier own charge group, will not predict shells positions during the run\n\n");
       shfc->bPredict = FALSE;
@@ -385,7 +385,9 @@ void make_local_shells(gmx_domdec_t *dd,t_mdatoms *md,
 		      struct gmx_shellfc *shfc)
 {
   t_shell *shell;
-  int nshell,i;
+  int *ind,nshell,i;
+  
+  ind = shfc->shell_index_gl;
 
   nshell = 0;
   shell  = shfc->shell; 
@@ -395,9 +397,15 @@ void make_local_shells(gmx_domdec_t *dd,t_mdatoms *md,
 	shfc->shell_nalloc = over_alloc_dd(nshell+1);
 	srenew(shell,shfc->shell_nalloc);
       }
-      shell[nshell] = shfc->shell_gl[shfc->shell_index_gl[dd->gatindex[i]]];
+      shell[nshell] = shfc->shell_gl[ind[dd->gatindex[i]]];
       shell[nshell].shell = i;
-      /* More is required here */
+      if (!shfc->bInterCG) {
+	shell[nshell].nucl1   = i + shell[nshell].nucl1 - shell[nshell].shell;
+	if (shell[nshell].nnucl > 1)
+	  shell[nshell].nucl2 = i + shell[nshell].nucl2 - shell[nshell].shell;
+	if (shell[nshell].nnucl > 2)
+	  shell[nshell].nucl3 = i + shell[nshell].nucl3 - shell[nshell].shell;
+      }
       if (shell[nshell].k < 1)
 	printf("node %d shell[%d/%d].k = %f\n",
 	       dd->sim_nodeid,nshell,dd->gatindex[i],shell[nshell].k);
@@ -759,11 +767,12 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 	  state->x[start+i][d] - state->v[start+i][d]*inputrec->delta_t;
     }
   }
-  
+
   /* Do a prediction of the shell positions */
-  if (shfc->bPredict && !bCont)
+  if (shfc->bPredict && !bCont) {
     predict_shells(fplog,state->x,state->v,inputrec->delta_t,nshell,shell,
 		   md->massT,NULL,bInit);
+  }
 
   /* do_force expected the charge groups to be in the box */
   if (graph)
@@ -924,9 +933,10 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
       if (nflexcon) {
 	/* Correct the velocities for the flexible constraints */
 	invdt = 1/inputrec->delta_t;
-	for(i=start; i<end; i++)
+	for(i=start; i<end; i++) {
 	  for(d=0; d<DIM; d++)
 	    state->v[i][d] += (pos[Try][i][d] - pos[Min][i][d])*invdt;
+	}
       }
       Min  = Try;
     } else {
