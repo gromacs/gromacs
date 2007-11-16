@@ -91,7 +91,7 @@ real ewald_LRcorrection(FILE *fplog,
   double  q2sumA,q2sumB,Vexcl,dvdl_excl; /* Necessary for precision */
   real    one_4pi_eps;
   real    v,vc,qiA,qiB,dr,dr2,rinv,fscal,enercorr;
-  real    VselfA,VselfB=0,Vcharge[2],Vdipole[2],rinv2,ewc=fr->ewaldcoeff;
+  real    VselfA,VselfB=0,Vcharge[2],Vdipole[2],rinv2,ewc=fr->ewaldcoeff,ewcdr;
   rvec    df,dx,mutot[2],dipcorrA,dipcorrB;
   rvec    *f=fr->f_el_recip;
   tensor  dxdf;
@@ -233,9 +233,22 @@ real ewald_LRcorrection(FILE *fplog,
 	    /* This is the code you would want instead if not using
 	     * tables: 
 	     */
-	      vc      = qqA*erf(ewc*dr)*rinv;
+	      ewcdr   = ewc*dr;
+	      vc      = qqA*erf(ewcdr)*rinv;
 	      Vexcl  += vc;
-	      fscal   = rinv2*(vc-2.0*qqA*ewc*isp*exp(-ewc*ewc*dr2));
+#ifdef GMX_DOUBLE
+	      /* Relative accuracy at R_ERF_R_INACC of 3e-10 */
+#define	      R_ERF_R_INACC 0.006
+#else
+              /* Relative accuracy at R_ERF_R_INACC of 2e-5 */
+#define	      R_ERF_R_INACC 0.1
+#endif
+	      if (ewcdr > R_ERF_R_INACC) {
+		fscal = rinv2*(vc - 2.0*qqA*ewc*isp*exp(-ewcdr*ewcdr));
+	      } else {
+		/* Use a fourth order series expansion for small ewcdr */
+		fscal = ewc*ewc*qqA*vr0*(2.0/3.0 - 0.4*ewcdr*ewcdr);
+	      }
 #endif
 	      /* The force vector is obtained by multiplication with the 
 	       * distance vector 
