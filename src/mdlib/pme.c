@@ -148,7 +148,7 @@ typedef struct gmx_pme {
 #define CNBF_COORD    (1<<0)
 #define CNBF_CHARGE   (1<<1)
 #define CNBF_FEP      (1<<2)
-#define CNBF_LASTSTEP (1<<3)
+#define CNBF_FINISH   (1<<3)
 
 typedef struct gmx_pme_comm_n_box {
   int    natoms;
@@ -1403,7 +1403,7 @@ static void gmx_pme_send_x_q_wait(gmx_domdec_t *dd)
 
 static void gmx_pme_send_q_x(t_commrec *cr, bool bX, matrix box, rvec *x,
 			     bool bFreeEnergy, real *chargeA, real *chargeB, 
-			     real lambda, int maxshift, bool bLastStep)
+			     real lambda, int maxshift)
 {
   gmx_domdec_t *dd;
   gmx_pme_comm_n_box_t *cnb;
@@ -1433,8 +1433,6 @@ static void gmx_pme_send_q_x(t_commrec *cr, bool bX, matrix box, rvec *x,
     cnb->flags |= CNBF_CHARGE;
   if (bFreeEnergy)
     cnb->flags |= CNBF_FEP;
-  if (bLastStep)
-    cnb->flags |= CNBF_LASTSTEP;
 
 #ifdef GMX_MPI
   /* Communicate bLastTime (0/1) via the MPI tag */
@@ -1470,17 +1468,25 @@ void gmx_pme_send_q(t_commrec *cr,
 		    bool bFreeEnergy, real *chargeA, real *chargeB,
 		    int maxshift)
 {
-  gmx_pme_send_q_x(cr,FALSE,NULL,NULL,bFreeEnergy,chargeA,chargeB,
-		   0,maxshift,FALSE);
+  gmx_pme_send_q_x(cr,FALSE,NULL,NULL,bFreeEnergy,chargeA,chargeB,0,maxshift);
 }
 
 void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-		    bool bFreeEnergy, real lambda, bool bLastStep)
+		    bool bFreeEnergy, real lambda)
 {
-  gmx_pme_send_q_x(cr,TRUE,box,x,bFreeEnergy,NULL,NULL,
-		   lambda,0,bLastStep);
+  gmx_pme_send_q_x(cr,TRUE,box,x,bFreeEnergy,NULL,NULL,lambda,0);
 }
 
+void gmx_pme_finish(t_commrec *cr)
+{
+  gmx_pme_comm_n_box_t cnb;
+  
+  cnb.flags = CNBF_FINISH;
+#ifdef GMX_MPI
+  MPI_Send(&cnb,sizeof(cnb),MPI_BYTE,
+	   cr->dd->pme_nodeid,0,cr->mpi_comm_mysim);
+#endif
+}
 
 #ifdef GMX_MPI
 static int gmx_pme_recv_x_q(t_commrec *cr,
@@ -1507,9 +1513,15 @@ static int gmx_pme_recv_x_q(t_commrec *cr,
     MPI_Waitall(messages, req, stat);
     messages = 0;
 
+    n = 0;
+
+    if (cnb[0].flags & CNBF_FINISH) {
+      /* We should stop, break out of the loop */
+      break;
+    }
+
     *bFreeEnergy = (cnb[0].flags & CNBF_FEP);
 
-    n = 0;
     for(sender=0; sender<nmy_ddnodes; sender++) {
       n += cnb[sender].natoms;
     }
@@ -1679,6 +1691,12 @@ int gmx_pmeonly(gmx_pme_t pme,
     n = gmx_pme_recv_x_q(cr,nmy_ddnodes,my_ddnodes,cnb,req,stat,&nalloc_natpp,
 			 &x_pp,&chargeA,&chargeB,&maxshift,
 			 &pme->bFEP,&lambda,&bRealloc);
+
+    if (cnb[0].flags & CNBF_FINISH) {
+      /* We should stop, break out of the loop */
+      break;
+    }
+
     if (bRealloc)
       srenew(f_pp,nalloc_natpp);
 #endif
@@ -1731,8 +1749,8 @@ int gmx_pmeonly(gmx_pme_t pme,
     /* Keep track of time step */
     step++;
     /* MPI_Barrier(cr->mpi_comm_mysim); */ /* 100 */
-  } /***** end of quasi-loop */
-  while (!(cnb[0].flags & CNBF_LASTSTEP));
+  } /***** end of quasi-loop, we stop with the break above */
+  while (TRUE);
 
   return 0;
 }

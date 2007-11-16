@@ -92,16 +92,9 @@ extern void gmx_pme_send_q(t_commrec *cr,
 			   int maxshift);
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
-			   bool bFreeEnergy, real lambda, bool bLastStep);
+			   bool bFreeEnergy, real lambda);
 
-extern void gmx_pme_send_x_q(t_commrec *cr,
-			     matrix box, rvec *x, 
-			     real *chargeA, real *chargeB,
-			     int  maxshift,
-			     bool bFreeEnergy, real lambda,
-			     bool bLastStep);
-/* Send the particle coordinates and/or charges from the PP to the PME nodes
- */
+extern void gmx_pme_finish(t_commrec *cr);
 
 extern void gmx_pme_receive_f(t_commrec *cr,
 			      rvec f[], matrix vir, 

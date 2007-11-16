@@ -1332,6 +1332,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   if (bRerunMD)
     close_trj(status);
+
+  if (!(cr->duty & DUTY_PME)) {
+    /* Tell the PME only node to finish */
+    gmx_pme_finish(cr);
+  }
 	  
   if (MASTER(cr)) {
     if (!bNoGStat) {
