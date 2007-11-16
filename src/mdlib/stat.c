@@ -150,6 +150,8 @@ void global_stat(FILE *log,
   iterminate = add_binr(log,rb,1,terminate);
   
   /* Global sum it all */
+  if (debug)
+    fprintf(debug,"Summing %d energies\n",rb->maxreal);
   sum_bin(rb,cr);
   where();
   
