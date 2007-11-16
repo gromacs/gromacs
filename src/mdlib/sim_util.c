@@ -406,7 +406,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     } 
     else {
       if (DOMAINDECOMP(cr))
-	clear_rvecs(cr->dd->nat_tot_vsite,f);
+	clear_rvecs(cr->dd->nat_tot,f);
       else
 	clear_rvecs(top->atoms.nr,f);
       clear_rvecs(SHIFTS,fr->fshift);

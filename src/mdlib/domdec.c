@@ -23,6 +23,7 @@
 #include "gmx_wallcycle.h"
 #include "mdrun.h"
 #include "nsgrid.h"
+#include "shellfc.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -110,7 +111,11 @@ typedef struct {
   int  ibuf_nalloc;
 } gmx_domdec_sort_t;
 
-#define DDSUMNAT 3
+/* This enum determines the order of the coordinates.
+ * ddnatHOME and ddnatZONE should be first and second,
+ * the others can be ordered as wanted.
+ */
+enum { ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR };
 
 typedef struct gmx_domdec_comm {
   /* The number of nodes doing PME (PP/PME or only PME) */
@@ -176,6 +181,9 @@ typedef struct gmx_domdec_comm {
   /* The number of cg's received from the direct neighbors */
   int  cell_ncg1[DD_MAXCELL];
 
+  /* The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
+  int  nat[ddnatNR];
+
   /* Communication buffer for general use */
   int  *buf_int;
   int  nalloc_int;
@@ -221,7 +229,7 @@ typedef struct gmx_domdec_comm {
   bool bFirstPrinted;
 
   /* Statistics */
-  double sum_nat[DDSUMNAT];
+  double sum_nat[ddnatNR-ddnatZONE];
   int    ndecomp;
 } gmx_domdec_comm_t;
 
@@ -317,8 +325,8 @@ int glatnr(gmx_domdec_t *dd,int i)
   if (dd == NULL) {
     atnr = i + 1;
   } else {
-    if (i >= dd->nat_tot_con)
-      gmx_fatal(FARGS,"glatnr called with %d, which is larger than the local number of atoms (%d)",i,dd->nat_tot_con);
+    if (i >= dd->comm->nat[ddnatNR-1])
+      gmx_fatal(FARGS,"glatnr called with %d, which is larger than the local number of atoms (%d)",i,dd->comm->nat[ddnatNR-1]);
     atnr = dd->gatindex[i] + 1;
   }
 
@@ -359,6 +367,17 @@ void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
       shift1[dim] += 1;
     }
   }
+}
+
+int dd_natoms_vsite(gmx_domdec_t *dd)
+{
+  return dd->comm->nat[ddnatVSITE];
+}
+
+void dd_get_constraint_range(gmx_domdec_t *dd,int *at_start,int *at_end)
+{
+  *at_start = dd->comm->nat[ddnatCON-1];
+  *at_end   = dd->comm->nat[ddnatCON];
 }
 
 void dd_sendrecv_int(const gmx_domdec_t *dd,
@@ -1049,13 +1068,13 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
   for(i=0; i<natoms; i++) {
     ii = dd->gatindex[i];
     resnr = atoms->atom[ii].resnr;
-    if (i < dd->nat_tot) {
+    if (i < dd->comm->nat[ddnatZONE]) {
       c = 0;
       while (i >= dd->cgindex[dd->ncg_cell[c+1]]) {
 	c++;
       }
       b = c;
-    } else if (i < dd->nat_tot_vsite) {
+    } else if (i < dd->comm->nat[ddnatVSITE]) {
       b = dd->ncell;
     } else {
       b = dd->ncell + 1;
@@ -3283,6 +3302,9 @@ static void make_pp_communicator(FILE *fplog,t_commrec *cr,int reorder)
   if (fplog)
     fprintf(fplog,"Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
 	    dd->rank,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
+  if (debug)
+    fprintf(debug,"Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
+	    dd->rank,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
   
   if (comm->bCartesianPP || cr->npmenodes > 0) {
     /* Reorder the ring or make the ring smaller */
@@ -4167,9 +4189,10 @@ static void setup_dd_communication(FILE *fplog,int step,
   dd->cgindex  = cgindex;
 
   dd->ncg_tot = ncg_cell[dd->ncell];
-  dd->nat_tot       = nat_tot;
-  dd->nat_tot_vsite = nat_tot;
-  dd->nat_tot_con   = nat_tot;
+  dd->nat_tot = nat_tot;
+  comm->nat[ddnatHOME] = dd->nat_home;
+  for(i=ddnatZONE; i<ddnatNR; i++)
+    comm->nat[i] = dd->nat_tot;
 
   if (debug) {
     fprintf(debug,"Finished setting up DD communication, cells:");
@@ -4400,60 +4423,81 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
 
 static void add_dd_statistics(gmx_domdec_t *dd)
 {
-  dd->comm->sum_nat[0] += (dd->nat_tot       - dd->nat_home);
-  dd->comm->sum_nat[1] += (dd->nat_tot_vsite - dd->nat_tot);
-  dd->comm->sum_nat[2] += (dd->nat_tot_con   - dd->nat_tot_vsite);
-  dd->comm->ndecomp++;
+  gmx_domdec_comm_t *comm;
+  int ddnat;
+
+  comm = dd->comm;
+
+  for(ddnat=ddnatZONE; ddnat<ddnatNR; ddnat++)
+    comm->sum_nat[ddnat-ddnatZONE] += (comm->nat[ddnat] - comm->nat[ddnat-1]);
+  comm->ndecomp++;
 }
 
 void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)
 {
   gmx_domdec_comm_t *comm;
-
+  int ddnat;
+  double av;
+  
   comm = cr->dd->comm;
 
-  gmx_sumd(DDSUMNAT,comm->sum_nat,cr);
+  gmx_sumd(ddnatNR-ddnatZONE,comm->sum_nat,cr);
   
-  if (fplog) {
-    fprintf(fplog,
-	    "DD av. #atoms communicated per step for force:  %d x %.1f\n",
-	    2,comm->sum_nat[0]/comm->ndecomp);
-    if (cr->dd->vsite_comm) {
+  if (fplog == NULL)
+    return;
+
+  for(ddnat=ddnatZONE; ddnat<ddnatNR; ddnat++) {
+    av = comm->sum_nat[ddnat-ddnatZONE]/comm->ndecomp;
+    switch(ddnat) {
+    case ddnatZONE:
       fprintf(fplog,
-	      "DD av. #atoms communicated per step for vsites: %d x %.1f\n",
-	      (EEL_PME(ir->coulombtype) || ir->coulombtype==eelEWALD) ? 3 : 2,
-	      comm->sum_nat[1]/comm->ndecomp);
+	      "DD av. #atoms communicated per step for force:  %d x %.1f\n",
+	      2,av);
+      break;
+    case ddnatVSITE:
+      if (cr->dd->vsite_comm) {
+	fprintf(fplog,
+		"DD av. #atoms communicated per step for vsites: %d x %.1f\n",
+		(EEL_PME(ir->coulombtype) || ir->coulombtype==eelEWALD) ? 3 : 2,
+		av);
+      }
+      break;
+    case ddnatCON:
+      if (cr->dd->constraint_comm) {
+	fprintf(fplog,
+		"DD av. #atoms communicated per step for LINCS:  %d x %.1f\n",
+		1 + ir->nLincsIter,av);
+      }
+      break;
+    default:
+      gmx_incons("Unknown type for DD statistics");
     }
-    if (cr->dd->constraint_comm) {
-      fprintf(fplog,
-	      "DD av. #atoms communicated per step for LINCS:  %d x %.1f\n",
-	      1 + ir->nLincsIter,comm->sum_nat[2]/comm->ndecomp);
-    }
-    fprintf(fplog,"\n");
   }
+  fprintf(fplog,"\n");
 }
 
-void dd_partition_system(FILE         *fplog,
-			 int          step,
-			 t_commrec    *cr,
-			 bool         bMasterState,
-			 t_state      *state_global,
-			 t_topology   *top_global,
-			 t_inputrec   *ir,
-			 t_state      *state_local,
-			 rvec         **f,
-			 rvec         **buf,
-			 t_mdatoms    *mdatoms,
-			 t_topology   *top_local,
-			 t_forcerec   *fr,
-			 gmx_vsite_t  *vsite,
-			 gmx_constr_t constr,
-			 t_nrnb       *nrnb,
+void dd_partition_system(FILE            *fplog,
+			 int             step,
+			 t_commrec       *cr,
+			 bool            bMasterState,
+			 t_state         *state_global,
+			 t_topology      *top_global,
+			 t_inputrec      *ir,
+			 t_state         *state_local,
+			 rvec            **f,
+			 rvec            **buf,
+			 t_mdatoms       *mdatoms,
+			 t_topology      *top_local,
+			 t_forcerec      *fr,
+			 gmx_vsite_t     *vsite,
+			 gmx_shellfc_t   shellfc,
+			 gmx_constr_t    constr,
+			 t_nrnb          *nrnb,
 			 gmx_wallcycle_t wcycle,
-			 bool         bVerbose)
+			 bool            bVerbose)
 {
   gmx_domdec_t *dd;
-  int  i,j,cg0=0,ncg_home_old=-1;
+  int  i,j,n,cg0=0,ncg_home_old=-1;
   bool bLogLoad;
   ivec ncells_old,np;
 
@@ -4585,21 +4629,34 @@ void dd_partition_system(FILE         *fplog,
   dd_make_local_top(fplog,dd,state_local->box,dd->comm->cutoff,np,fr,
 		    vsite,top_global,top_local);
 
-  if (top_global->idef.il[F_CONSTR].nr > 0) {
-    dd->nat_tot_con =
-      dd_make_local_constraints(dd,top_global->idef.il[F_CONSTR].iatoms,
-				constr,ir->nProjOrder);
-  } else {
-    dd->nat_tot_con = dd->nat_tot_vsite;
+  /* Set up the special atom communication */
+  n = dd->comm->nat[ddnatZONE];
+  for(i=ddnatZONE+1; i<ddnatNR; i++) {
+    switch(i) {
+    case ddnatVSITE:
+      if (vsite && vsite->n_intercg_vsite)
+	n = dd_make_local_vsites(dd,n,top_local->idef.il);
+      break;
+    case ddnatCON:
+      if (top_global->idef.il[F_CONSTR].nr > 0)
+	n = dd_make_local_constraints(dd,n,
+				      top_global->idef.il[F_CONSTR].iatoms,
+				      constr,ir->nProjOrder);
+      break;
+    default:
+      gmx_incons("Unknown special atom type setup");
+    }
+    dd->comm->nat[i] = n;
   }
+
   /* Make space for the extra coordinates for virtual site
    * or constraint communication.
    */
-  if (dd->nat_tot_con > state_local->nalloc)
-    dd_realloc_state(state_local,f,buf,dd->nat_tot_con);
+  if (dd->comm->nat[ddnatNR-1] > state_local->nalloc)
+    dd_realloc_state(state_local,f,buf,dd->comm->nat[ddnatNR-1]);
   if (EEL_FULL(fr->eeltype)) {
     if (vsite && vsite->n_intercg_vsite)
-      fr->f_el_recip_n = dd->nat_tot_vsite;
+      fr->f_el_recip_n = dd->comm->nat[ddnatVSITE];
     else
       fr->f_el_recip_n = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
     if (fr->f_el_recip_n > fr->f_el_recip_nalloc) {
@@ -4614,7 +4671,12 @@ void dd_partition_system(FILE         *fplog,
    */
   /* This call also sets the new number of home particles to dd->nat_home */
   atoms2md(&top_global->atoms,ir,top_global->idef.il[F_ORIRES].nr,
-	   dd->nat_tot_con,dd->gatindex,0,dd->nat_home,mdatoms);
+	   dd->comm->nat[ddnatCON],dd->gatindex,0,dd->nat_home,mdatoms);
+
+  if (shellfc) {
+    /* Make the local shell stuff, currently no communication is done */
+    make_local_shells(cr->dd,mdatoms,shellfc);
+  }
 
   if (!(cr->duty & DUTY_PME))
     /* Send the charges to our PME only node */
@@ -4642,7 +4704,8 @@ void dd_partition_system(FILE         *fplog,
 
   if (nstDDDump > 0 && step % nstDDDump == 0) {
     dd_move_x(dd,state_local->box,state_local->x,*buf);
-    write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,dd->nat_tot_vsite,
+    write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,
+		 dd->comm->nat[ddnatVSITE],
 		 state_local->x,state_local->box);
   }
 }

@@ -858,18 +858,20 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
 {
   char str[STRLEN];
   FILE *fp;
-  int i,j;
+  int  ac0,ac1,i,j;
   gmx_domdec_constraints_t *dc;
   bool bPrint=TRUE;
   
   dc = dd->constraints;
+
+  dd_get_constraint_range(dd,&ac0,&ac1);
 
   sprintf(str,"%s%d.pdb",name,dd->sim_nodeid);
   fp = ffopen(str,"w");
   fprintf(fp,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
 	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
 	  90.0,90.0,90.0);
-  for(i=0; i<dd->nat_tot_con; i++) {
+  for(i=0; i<ac1; i++) {
     if (i<dd->nat_home ||
 	(bAll && i>=dd->nat_tot && dc->ga2la[dd->gatindex[i]]>=0)) {
       if (at2con) {
@@ -917,9 +919,6 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
   bool  bOK;
   
   bOK = TRUE;
-
-  if (fplog == NULL)
-    bLog = FALSE;
 
   if (lincsd->nc == 0 && dd == NULL) {
     if (bLog || bEner) {

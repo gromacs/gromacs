@@ -25,6 +25,11 @@ extern bool dd_sort_cg(gmx_domdec_t *dd);
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 
+extern int dd_natoms_vsite(gmx_domdec_t *dd);
+
+extern void dd_get_constraint_range(gmx_domdec_t *dd,
+				    int *at_start,int *at_end);
+
 extern void dd_make_reverse_top(FILE *fplog,
 				gmx_domdec_t *dd,t_topology *top,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -115,24 +120,25 @@ extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
  * the correct virial from the single sum including f.
  */
 
-extern void dd_partition_system(FILE         *fplog,
-				int          step,
-				t_commrec    *cr,
-				bool         bMasterState,
-				t_state      *state_global,
-				t_topology   *top_global,
-				t_inputrec   *ir,
-				t_state      *state_local,
-				rvec         **f,
-				rvec         **buf,
-				t_mdatoms    *mdatoms,
-				t_topology   *top_local,
-				t_forcerec   *fr,
-				gmx_vsite_t  *vsite,
-				gmx_constr_t constr,
-				t_nrnb       *nrnb,
+extern void dd_partition_system(FILE            *fplog,
+				int             step,
+				t_commrec       *cr,
+				bool            bMasterState,
+				t_state         *state_global,
+				t_topology      *top_global,
+				t_inputrec      *ir,
+				t_state         *state_local,
+				rvec            **f,
+				rvec            **buf,
+				t_mdatoms       *mdatoms,
+				t_topology      *top_local,
+				t_forcerec      *fr,
+				gmx_vsite_t     *vsite,
+				gmx_shellfc_t   shellfc,
+				gmx_constr_t    constr,
+				t_nrnb          *nrnb,
 				gmx_wallcycle_t wcycle,
-				bool         bVerbose);
+				bool            bVerbose);
 /* Partition the system over the nodes.
  * step is only used for printing error messages.
  * If bMasterState==TRUE then state_global from the master node is used,
@@ -145,6 +151,8 @@ void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog);
 
 extern void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f,rvec *fshift);
 
+extern void dd_clear_f_vsites(gmx_domdec_t *dd,rvec *f);
+
 extern void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,
 				  rvec *x0,rvec *x1);
 /* Move x0 and also x1 if x1!=NULL */
@@ -155,9 +163,9 @@ extern void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
 
 extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 
-extern int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil);
+extern int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil);
 
-extern int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,
+extern int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
 				     gmx_constr_t constr,int nrec);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,

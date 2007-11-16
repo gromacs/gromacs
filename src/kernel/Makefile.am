@@ -72,17 +72,17 @@ x2top_SOURCES = \
 	x2top.h
 
 mdrun_SOURCES = \
-	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
-	ionize.c 	ionize.h 	xmdrun.h	\
-	do_gct.c 	relax_sh.c	repl_ex.c	repl_ex.h	\
+	glaasje.c 	glaasje.h 	gctio.c 	\
+	ionize.c 	ionize.h 	\
+	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	compute_io.c	compute_io.h		\
 	md.c		mdrun.c		genalg.c	genalg.h
 
 ffscan_SOURCES = \
 	ffscan.c	\
-	glaasje.c 	glaasje.h 	gctio.c 	init_sh.c 	\
+	glaasje.c 	glaasje.h 	gctio.c 	\
 	ionize.c 	ionize.h 	\
-	do_gct.c 	relax_sh.c	repl_ex.c	repl_ex.h	\
+	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	compute_io.c    compute_io.h   \
 	md.c		genalg.c
 

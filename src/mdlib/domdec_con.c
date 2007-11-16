@@ -32,10 +32,13 @@ typedef struct gmx_domdec_specat_comm {
   int  vbuf_nalloc;
   rvec *vbuf2;
   int  vbuf2_nalloc;
+  /* The range in the local buffer(s) for received atoms */
+  int  at_start;
+  int  at_end;
 } gmx_domdec_specat_comm_t;
 
 static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
-			     int end,rvec *f,rvec *fshift)
+			     rvec *f,rvec *fshift)
 {
   gmx_specatsend_t *spas;
   rvec *vbuf;
@@ -43,7 +46,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
   ivec vis;
   int  is;
   
-  n = end;
+  n = spac->at_end;
   for(d=dd->ndim-1; d>=0; d--) {
     if (dd->nc[dd->dim[d]] > 2) {
       /* Pulse the grid forward and backward */
@@ -94,11 +97,21 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 void dd_move_f_vsites(gmx_domdec_t *dd,rvec *f,rvec *fshift)
 {
   if (dd->vsite_comm)
-    dd_move_f_specat(dd,dd->vsite_comm,dd->nat_tot_vsite,f,fshift);
+    dd_move_f_specat(dd,dd->vsite_comm,f,fshift);
+}
+
+void dd_clear_f_vsites(gmx_domdec_t *dd,rvec *f)
+{
+  int i;
+
+  if (dd->vsite_comm) {
+    for(i=dd->vsite_comm->at_start; i<dd->vsite_comm->at_end; i++)
+      clear_rvec(f[i]);
+  }
 }
 
 static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
-			     matrix box,int start,rvec *x0,rvec *x1)
+			     matrix box,rvec *x0,rvec *x1)
 {
   gmx_specatsend_t *spas;
   rvec *x,*vbuf,*rbuf;
@@ -109,7 +122,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
   if (x1)
     nvec++;
 
-  n = start;
+  n = spac->at_start;
   for(d=0; d<dd->ndim; d++) {
     if (dd->nc[dd->dim[d]] > 2) {
       /* Pulse the grid forward and backward */
@@ -210,13 +223,13 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,rvec *x0,rvec *x1)
 {
   if (dd->constraint_comm)
-    dd_move_x_specat(dd,dd->constraint_comm,box,dd->nat_tot_vsite,x0,x1);
+    dd_move_x_specat(dd,dd->constraint_comm,box,x0,x1);
 }
 
 void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x)
 {
   if (dd->vsite_comm)
-    dd_move_x_specat(dd,dd->vsite_comm,box,dd->nat_tot,x,NULL);
+    dd_move_x_specat(dd,dd->vsite_comm,box,x,NULL);
 }
 
 void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
@@ -229,16 +242,20 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
   for(i=0; i<dc->ncon; i++)
     dc->gc2lc[dc->con[i]] = -1;
   
-  for(i=dd->nat_tot_vsite; i<dd->nat_tot_con; i++)
-    dc->ga2la[dd->gatindex[i]] = -1;
+  if (dd->constraint_comm) {
+    for(i=dd->constraint_comm->at_start; i<dd->constraint_comm->at_end; i++)
+      dc->ga2la[dd->gatindex[i]] = -1;
+  }
 }
 
 void dd_clear_local_vsite_indices(gmx_domdec_t *dd)
 {
   int i;
 
-  for(i=dd->nat_tot; i<dd->nat_tot_vsite; i++)
-    dd->ga2la_vsite[dd->gatindex[i]] = -1;
+  if (dd->vsite_comm) {
+    for(i=dd->vsite_comm->at_start; i<dd->vsite_comm->at_end; i++)
+      dd->ga2la_vsite[dd->gatindex[i]] = -1;
+  }
 }
 
 static int setup_specat_communication(gmx_domdec_t *dd,
@@ -427,6 +444,9 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	      dd->bDynLoadBal ? " or use the -rdd option of mdrun" : "");
   }
 
+  spac->at_start = at_start;
+  spac->at_end   = nat_tot_specat;
+  
   if (debug)
     fprintf(debug,"Done setup_specat_communication\n");
 
@@ -481,7 +501,7 @@ static void walk_out(int con,int a,int nrec,
   }
 }
 
-int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,
+int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
 			      gmx_constr_t constr,int nrec)
 {
   t_block *at2con;
@@ -489,7 +509,7 @@ int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,
   t_iatom *iap;
   int nhome,a,ag,bg,i,con;
   gmx_domdec_constraints_t *dc;
-  int nat_tot_con;
+  int at_end;
 
   dc = dd->constraints;
 
@@ -543,25 +563,24 @@ int dd_make_local_constraints(gmx_domdec_t *dd,t_iatom *ia,
 	    dd->constraint_comm ? dd->constraint_comm->nind_req : 0);
 
   if (dd->constraint_comm) {
-    nat_tot_con =
+    at_end =
       setup_specat_communication(dd,dd->constraint_comm,dd->constraints->ga2la,
-				 dd->nat_tot_vsite,2,"constraint",
-				 " or lincs-order");
+				 at_start,2,"constraint"," or lincs-order");
   } else {
-    nat_tot_con = dd->nat_tot_vsite;
+    at_end = at_start;
   }
 
-  return nat_tot_con;
+  return at_end;
 }
 
-int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
+int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
 {
   gmx_domdec_specat_comm_t *spac;
   int  *ga2la_specat;
   int  ftype,nral,i,j,gat,a;
   t_ilist *lilf;
   t_iatom *iatoms;
-  int  nat_tot_vsite;
+  int  at_end;
 
   spac         = dd->vsite_comm;
   ga2la_specat = dd->ga2la_vsite;
@@ -596,8 +615,8 @@ int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
     }
   }
 
-  nat_tot_vsite = setup_specat_communication(dd,dd->vsite_comm,ga2la_specat,
-					     dd->nat_tot,1,"vsite","");
+  at_end = setup_specat_communication(dd,dd->vsite_comm,ga2la_specat,
+				      at_start,1,"vsite","");
 
   /* Fill in the missing indices */
   for(ftype=0; ftype<F_NRE; ftype++) {
@@ -614,7 +633,7 @@ int dd_make_local_vsites(gmx_domdec_t *dd,t_ilist *lil)
     }
   }
 
-  return nat_tot_vsite;
+  return at_end;
 }
 
 void init_domdec_constraints(gmx_domdec_t *dd,

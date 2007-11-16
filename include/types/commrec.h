@@ -166,12 +166,8 @@ typedef struct {
 
   /* The number of home atoms */
   int  nat_home;
-  /* The total number of atoms in the neighbor search cells */
+  /* The total number of atoms: home and received zones */
   int  nat_tot;
-  /* The total number of atoms, including the extra ones for vsites */
-  int  nat_tot_vsite;
-  /* The total number of atoms, including the extra ones for constraints */
-  int  nat_tot_con;
   /* Index from the local atoms to the global atoms */
   int  *gatindex;
   int  gatindex_nalloc;

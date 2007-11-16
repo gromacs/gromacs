@@ -75,6 +75,7 @@
 #include "partdec.h"
 #include "coulomb.h"
 #include "constr.h"
+#include "shellfc.h"
 #include "compute_io.h"
 
 #ifdef GMX_MPI
@@ -466,11 +467,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
-  int         nshell,count,nconverged=0;
-  t_shell     *shells=NULL;
+  gmx_shellfc_t shellfc;
+  int         count,nconverged=0;
   real        timestep=0;
   double      tcount=0;
-  bool        bHaveConstr=FALSE,bShell_FlexCon,bIonize=FALSE,bGlas=FALSE;
+  bool        bHaveConstr=FALSE,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
   real        temp0,mu_aver=0,fmax;
   int         a0,a1,gnx,ii;
@@ -515,6 +516,11 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
   debug_gmx();
+
+  /* Check for polarizable models and flexible constraints */
+  shellfc = init_shell_flexcon(log,cr,
+			       top_global,n_flexible_constraints(constr),
+			       ir->bContinuation,state_global->x);
 
   if (PARTDECOMP(cr)) {
     pd_at_range(cr,&a0,&a1);
@@ -571,7 +577,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if ((!DOMAINDECOMP(cr) || DDMASTER(cr->dd)) &&
       vsite && !ir->bContinuation) {
     /* Construct the virtual sites for the starting structure */
-    /* Since with DD we have not made molecule whole in the starting
+    /* Since with DD we have not made molecules whole in the starting
      * configuration, we need to do full pbc in construct_vsites.
      */
     construct_vsites(log,vsite,
@@ -584,7 +590,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Distribute the charge groups over the nodes from the master node */
     dd_partition_system(stdlog,ir->init_step,cr,TRUE,
 			state_global,top_global,ir,
-			state,&f,&buf,mdatoms,top,fr,vsite,constr,
+			state,&f,&buf,mdatoms,top,fr,vsite,shellfc,constr,
 			nrnb,wcycle,FALSE);
   }
 
@@ -601,12 +607,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   if (ed_constraints(edyn))
     bHaveConstr = TRUE;
     
-  /* Check for polarizable models */
-  shells = init_shells(log,cr,&top->idef,mdatoms,&nshell);
-
-  /* Do we need to minimize at every MD step? */
-  bShell_FlexCon = (shells || n_flexible_constraints(constr) > 0);
-
   /* Initialize the essential dynamics sampling */
   do_first_edsam(stdlog,top,mdatoms,mdatoms->start,mdatoms->homenr,cr,
 		 state->x,state->box,edyn,bHaveConstr);
@@ -862,7 +862,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 	wallcycle_start(wcycle,ewcDOMDEC);
 	dd_partition_system(stdlog,step,cr,bMasterState,
 			    state_global,top_global,ir,
-			    state,&f,&buf,mdatoms,top,fr,vsite,constr,
+			    state,&f,&buf,mdatoms,top,fr,vsite,shellfc,constr,
 			    nrnb,wcycle,do_verbose);
 	wallcycle_stop(wcycle,ewcDOMDEC);
       }
@@ -895,15 +895,15 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 
     GMX_MPE_LOG(ev_timestep2);
 
-    if (bShell_FlexCon) {
+    if (shellfc) {
       /* Now is the time to relax the shells */
-      count=relax_shells(log,cr,bVerbose,bFFscan ? step+1 : step,
-			 ir,bNS,bStopCM,top,constr,ener,fcd,
-			 state,f,buf,mdatoms,
-			 nrnb,wcycle,graph,grps,
-			 nshell,shells,fr,t,mu_tot,
-			 state->natoms,&bConverged,vsite,
-			 fp_field);
+      count=relax_shell_flexcon(log,cr,bVerbose,bFFscan ? step+1 : step,
+				ir,bNS,bStopCM,top,constr,ener,fcd,
+				state,f,buf,mdatoms,
+				nrnb,wcycle,graph,grps,
+				shellfc,fr,t,mu_tot,
+				state->natoms,&bConverged,vsite,
+				fp_field);
       tcount+=count;
       
       if (bConverged)
@@ -1237,7 +1237,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     /* The coordinates (x) were unshifted in update */
-    if (bFFscan && (!bShell_FlexCon || bConverged))
+    if (bFFscan && (shellfc==NULL || bConverged))
       if (print_forcefield(log,ener,mdatoms->homenr,f,buf,xcopy,
 			   &(top->blocks[ebMOLS]),mdatoms->massT,pres)) {
 	if (gmx_parallel_env)
@@ -1292,7 +1292,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Remaining runtime */
     if (MULTIMASTER(cr) && do_verbose) {
-      if (bShell_FlexCon)
+      if (shellfc)
 	fprintf(stderr,"\n");
       print_time(stderr,start_t,step,ir);
     }
@@ -1305,13 +1305,14 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
 				    &(top_global->blocks[ebCGS]),state,
 				    step,t);
     if (bExchanged && PAR(cr)) {
-      if (DOMAINDECOMP(cr))
+      if (DOMAINDECOMP(cr)) {
 	dd_partition_system(stdlog,step,cr,TRUE,
 			    state_global,top_global,ir,
-			    state,&f,&buf,mdatoms,top,fr,vsite,constr,
+			    state,&f,&buf,mdatoms,top,fr,vsite,shellfc,constr,
 			    nrnb,wcycle,FALSE);
-      else
+      } else {
 	pd_distribute_state(cr,state);
+      }
     }
     
     bFirstStep = FALSE;
@@ -1359,7 +1360,7 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(log,"Average number of atoms that crossed the half buffer length: %.1f\n\n",ns_ab/nns);
   }
 
-  if (bShell_FlexCon && log) {
+  if (shellfc && log) {
     fprintf(log,"Fraction of iterations that converged:           %.2f %%\n",
 	    (nconverged*100.0)/step_rel);
     fprintf(log,"Average number of force evaluations per MD step: %.2f\n\n",

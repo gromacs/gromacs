@@ -59,38 +59,6 @@
  * neatly according to parts of the functionalisty
  */
  
-/* SHELL MD STUFF */
-typedef struct {
-  int     nnucl;
-  atom_id shell;	        /* The shell id				*/
-  atom_id nucl1,nucl2,nucl3;	/* The nuclei connected to the shell	*/
-  real    k;		        /* force constant		        */
-  real    k_1;		        /* 1 over force constant		*/
-  rvec    xold;
-  rvec    fold;
-  rvec    step;
-} t_shell;
-
-/* Initialization function */
-extern t_shell *init_shells(FILE *log,t_commrec *cr,
-			    t_idef *idef,t_mdatoms *md,int *nshell);
-
-/* Optimize shell positions */
-extern int relax_shells(FILE *log,t_commrec *cr,bool bVerbose,
-			int mdstep,t_inputrec *inputrec,bool bDoNS,bool bStopCM,
-			t_topology *top,gmx_constr_t constr,
-			real ener[],t_fcdata *fcd,
-			t_state *state,rvec f[],
-			rvec buf[],t_mdatoms *md,
-			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-			t_graph *graph,t_groups *grps,
-			int nshell,t_shell shells[],
-			t_forcerec *fr,
-			real t,rvec mu_tot,
-			int natoms,bool *bConverged,
-			gmx_vsite_t *vsite,
-			FILE *fp_field);
-
 /* GENERAL COUPLING THEORY (GCT) STUFF */
 enum { eoPres, eoEpot, eoVir, eoDist, eoMu, eoForce, eoFx, eoFy, eoFz,
        eoPx, eoPy, eoPz, 

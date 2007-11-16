@@ -139,12 +139,13 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
 {
   char fname[STRLEN],format[STRLEN];
   FILE *out;
-  int  i,ii,resnr;
+  int  dd_ac0=0,dd_ac1=0,i,ii,resnr;
 
   if (dd) {
     sprintf(fname,"%s_n%d.pdb",fn,dd->sim_nodeid);
+    dd_get_constraint_range(dd,&dd_ac0,&dd_ac1);
     start = 0;
-    homenr = dd->nat_tot_con;
+    homenr = dd_ac1;
   } else {
     sprintf(fname,"%s.pdb",fn);
   }
@@ -156,7 +157,7 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
   gmx_write_pdb_box(out,box);
   for(i=start; i<start+homenr; i++) {
     if (dd) {
-      if (i >= dd->nat_home && i < dd->nat_tot_vsite)
+      if (i >= dd->nat_home && i < dd_ac0)
 	continue;
       ii = dd->gatindex[i];
     } else {

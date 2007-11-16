@@ -88,6 +88,7 @@ readcomp.h \
 readinp.h \
 reorder.h \
 rmpbc.h \
+shellfc.h \
 shift.h \
 smalloc.h \
 sortwater.h \

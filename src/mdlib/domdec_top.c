@@ -13,7 +13,6 @@
 typedef struct gmx_reverse_top {
   int *index; /* Index for each atom into il    */
   int *il;    /* ftype|type|a0|...|an|ftype|... */
-  int n_intercg_vsite;
 } gmx_reverse_top_t;
 
 /* Code that only works for one moleculetype consisting of one charge group */
@@ -235,11 +234,6 @@ void dd_make_reverse_top(FILE *fplog,
 				     vsite ? vsite->vsite_pbc : NULL,
 				     &dd->nbonded_global);
 
-  if (vsite)
-    dd->reverse_top->n_intercg_vsite = vsite->n_intercg_vsite;
-  else
-    dd->reverse_top->n_intercg_vsite = 0;
-  
   nexcl = count_excls(&top->blocks[ebCGS],&top->blocks[ebEXCLS],
 		      &dd->n_intercg_excl);
   if (have_exclusion_forces(eeltype)) {
@@ -254,11 +248,11 @@ void dd_make_reverse_top(FILE *fplog,
   for(a=0; a<natoms; a++)
     dd->ga2la[a].cell = -1;
   
-  if (dd->reverse_top->n_intercg_vsite > 0) {
+  if (vsite && vsite->n_intercg_vsite > 0) {
     if (fplog)
       fprintf(fplog,"There are %d inter charge-group virtual sites,\n"
 	      "will an extra communication step for selected coordinates and forces\n",
-	      dd->reverse_top->n_intercg_vsite);
+	      vsite->n_intercg_vsite);
     init_domdec_vsites(dd,natoms);
   }
 
@@ -508,12 +502,6 @@ static int make_local_bondeds(gmx_domdec_t *dd,
 	j += 1 + nral;
       }
     }
-  }
-
-  if (dd->reverse_top->n_intercg_vsite) {
-    dd->nat_tot_vsite = dd_make_local_vsites(dd,idef->il);
-  } else {
-    dd->nat_tot_vsite = dd->nat_tot;
   }
 
   return nbonded_local;

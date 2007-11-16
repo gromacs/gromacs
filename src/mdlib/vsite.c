@@ -1167,8 +1167,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
   }
   
   if (DOMAINDECOMP(cr)) {
-    for(i=cr->dd->nat_tot; i<cr->dd->nat_tot_vsite; i++)
-      clear_rvec(f[i]);
+    dd_clear_f_vsites(cr->dd,f);
   } else if (vsite->bPDvsitecomm) {
   /* We only move forces here, and they are independent of shifts */
     move_vsite_f(vsite->vsitecomm,f,cr);
