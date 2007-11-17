@@ -61,6 +61,10 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     int                    i,j,k;
     int                    fftw_flags;
     
+#ifdef GMX_DISABLE_FFTW_MEASURE
+    flags |= GMX_FFT_FLAG_CONSERVATIVE;
+#endif
+    
     fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
 
     if(pfft==NULL)
@@ -154,6 +158,10 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     size_t                pc;
     int                   i,j,k;
     int                    fftw_flags;
+    
+#ifdef GMX_DISABLE_FFTW_MEASURE
+    flags |= GMX_FFT_FLAG_CONSERVATIVE;
+#endif
     
     fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
     
@@ -251,6 +259,10 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
     int                   i,j,k;
     int                    fftw_flags;
     
+#ifdef GMX_DISABLE_FFTW_MEASURE
+    flags |= GMX_FFT_FLAG_CONSERVATIVE;
+#endif
+    
     fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
     
     if(pfft==NULL)
@@ -346,6 +358,10 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     size_t                pc;
     int                   i,j,k;
     int                    fftw_flags;
+    
+#ifdef GMX_DISABLE_FFTW_MEASURE
+    flags |= GMX_FFT_FLAG_CONSERVATIVE;
+#endif
     
     fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
     
@@ -444,6 +460,10 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
     int                   i,j,k;
     int                    fftw_flags;
     
+#ifdef GMX_DISABLE_FFTW_MEASURE
+    flags |= GMX_FFT_FLAG_CONSERVATIVE;
+#endif
+    
     fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
     
     if(pfft==NULL)
@@ -540,6 +560,10 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     size_t                pc;
     int                   i,j,k;
     int                    fftw_flags;
+    
+#ifdef GMX_DISABLE_FFTW_MEASURE
+    flags |= GMX_FFT_FLAG_CONSERVATIVE;
+#endif
     
     fftw_flags = (flags & GMX_FFT_FLAG_CONSERVATIVE) ? FFTW_ESTIMATE : FFTW_MEASURE;    
     

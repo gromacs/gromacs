@@ -173,6 +173,14 @@ AC_ARG_WITH(fft,
                             [FFT library to use. fftw3 is default, fftpack built in.])],,
                              with_fft=fftw3)
 
+AC_ARG_ENABLE(fftw-measure,
+            [AC_HELP_STRING([--disable-fftw-measure],
+			    [Dont optimize FFTs. This produces binary exactly]
+                            [reproducible runs (as the -reprod flag to mdrun),]
+			    [and if you are using FFTW on x86 and specified its]
+			    [--enable-sse/sse2 flag (NOT default in FFTW!) the]
+			    [kernels used are close-to-optimal anyway.])],,
+			     enable_fftw_measure=yes)
 
 
 
@@ -485,8 +493,9 @@ Are you sure you don't want to use FFTW? It is free and much faster...])
 esac
 
 
-
-
+if test "$enable_fftw_measure" != "yes"; then
+   AC_DEFINE(GMX_DISABLE_FFTW_MEASURE,,[Do not optimize FFTW setups (not needed with SSE FFT kernels)])
+fi
 
 ######
 # check for xtc headers

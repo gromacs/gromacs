@@ -73,6 +73,8 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     int                    fftw_flags;
 
     /* FFTW2 is slow to measure, so we do not use it */
+    
+    /* If you change this, add an #ifndef for GMX_DISABLE_FFTW_MEASURE around it! */
     fftw_flags = FFTW_ESTIMATE;    
 
     if(pfft==NULL)
@@ -134,6 +136,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     int                    fftw_flags;
     
     /* FFTW2 is slow to measure, so we do not use it */
+    /* If you change this, add an #ifndef for GMX_DISABLE_FFTW_MEASURE around it! */
     fftw_flags = FFTW_ESTIMATE;    
     
     if(pfft==NULL)
@@ -206,6 +209,7 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
 
     
     /* FFTW2 is slow to measure, so we do not use it */
+    /* If you change this, add an #ifndef for GMX_DISABLE_FFTW_MEASURE around it! */
     fftw_flags = FFTW_ESTIMATE;    
 
     if(pfft==NULL)
@@ -269,6 +273,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
 
     
     /* FFTW2 is slow to measure, so we do not use it */
+    /* If you change this, add an #ifndef for GMX_DISABLE_FFTW_MEASURE around it! */
     fftw_flags = FFTW_ESTIMATE;    
 
     if(pfft==NULL)
@@ -343,6 +348,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
 
     
     /* FFTW2 is slow to measure, so we do not use it */
+    /* If you change this, add an #ifndef for GMX_DISABLE_FFTW_MEASURE around it! */
     fftw_flags = FFTW_ESTIMATE;    
 
     if(pfft==NULL)
@@ -410,6 +416,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
 
     
     /* FFTW2 is slow to measure, so we do not use it */
+    /* If you change this, add an #ifndef for GMX_DISABLE_FFTW_MEASURE around it! */
     fftw_flags = FFTW_ESTIMATE;    
 
     if(pfft==NULL)
