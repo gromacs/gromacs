@@ -19,7 +19,8 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	force.c  	ghat.c		init.c		\
 	mdatom.c	mdebin.c	minimize.c	\
 	mvxvf.c		ns.c		nsgrid.c	\
-	pme.c		pppm.c		fftgrid.c	\
+	pme.c		pme_pp.c	pppm.c		\
+	fftgrid.c	\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\

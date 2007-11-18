@@ -1257,7 +1257,7 @@ bool gmx_pmeonlynode(t_commrec *cr,int nodeid)
 }
 
 void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
-		     int *nmy_ddnodes,int **my_ddnodes)
+		     int *nmy_ddnodes,int **my_ddnodes,int *node_peer)
 {
   gmx_domdec_t *dd;
   int x,y,z;
@@ -1288,6 +1288,9 @@ void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
       }
     }
   }
+
+  /* The last PP-only node is the peer node */
+  *node_peer = (*my_ddnodes)[*nmy_ddnodes-1];
 
   if (debug) {
     fprintf(debug,"Receive coordinates from PP nodes:");

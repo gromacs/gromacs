@@ -86,20 +86,48 @@ extern int gmx_pmeonly(gmx_pme_t pme,
 extern void gmx_sum_qgrid(gmx_pme_t pme,t_commrec *cr,t_fftgrid *grid,
 			  int direction);
 
-/* The following three routines are for PME/PP node splitting: */
+
+/* The following three routines are for PME/PP node splitting in pme_pp.c */
+
+/* Abstract type for PME <-> PP communication */
+typedef struct gmx_pme_pp *gmx_pme_pp_t;
+
+extern gmx_pme_pp_t gmx_pme_pp_init(t_commrec *cr);
+/* Initialize the PME-only side of the PME <-> PP communication */
+
 extern void gmx_pme_send_q(t_commrec *cr,
 			   bool bFreeEnergy, real *chargeA, real *chargeB,
 			   int maxshift);
+/* Send the charges and maxshift to out PME-only node. */
 
 extern void gmx_pme_send_x(t_commrec *cr, matrix box, rvec *x,
 			   bool bFreeEnergy, real lambda);
+/* Send the coordinates to our PME-only node and request a PME calculation */
 
 extern void gmx_pme_finish(t_commrec *cr);
+/* Tell our PME-only node to finish */
 
 extern void gmx_pme_receive_f(t_commrec *cr,
 			      rvec f[], matrix vir, 
 			      real *energy, real *dvdlambda,
 			      float *pme_cycles);
 /* PP nodes receive the long range forces from the PME nodes */
+
+extern int gmx_pme_recv_q_x(gmx_pme_pp_t pme_pp,
+			    real **chargeA, real **chargeB,
+			    matrix box, rvec **x,rvec **f,
+			    int *maxshift,
+			    bool *bFreeEnergy,real *lambda);
+/* Receive charges and/or coordinates from the PP-only nodes.
+ * Returns the number of atoms, or -1 when the run is finished.
+ */
+
+extern void gmx_pme_send_force_vir_ener(gmx_pme_pp_t pme_pp,
+					rvec *f, matrix vir,
+					real energy, real dvdlambda,
+					float cycles,
+					bool bGotTermSignal,
+					bool bGotUsr1Signal);
+/* Send the PME mesh force, virial and energy to the PP-only nodes */
 
 #endif

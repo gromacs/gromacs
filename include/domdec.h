@@ -42,7 +42,7 @@ extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
 
 extern void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
-			    int *nmy_ddnodes,int **my_ddnodes);
+			    int *nmy_ddnodes,int **my_ddnodes,int *node_peer);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
 extern int dd_pme_maxshift(gmx_domdec_t *dd);
