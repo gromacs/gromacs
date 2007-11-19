@@ -169,6 +169,9 @@ void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 				       Flags & MD_DLB,ddcsx,ddcsy,ddcsz);
     
     make_dd_communicators(stdlog,cr,dd_node_order);
+
+    /* Set overallocation to avoid frequent reallocation of arrays */
+    set_over_alloc_dd(TRUE);
   } else {
     if (cr->npmenodes > 0)
       gmx_fatal(FARGS,
@@ -546,9 +549,6 @@ time_t do_md(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
   if (DOMAINDECOMP(cr)) {
-    /* Set overallocation to avoid frequent reallocation of arrays */
-    set_over_alloc_dd(TRUE);
-
     dd_make_reverse_top(stdlog,cr->dd,top_global,vsite,constr,
 			EI_DYNAMICS(ir->eI),ir->coulombtype);
 
