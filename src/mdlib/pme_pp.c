@@ -276,7 +276,6 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 
     if (cnb.flags & PMEF_CHARGE) {
       /* Receive the send counts from the other PP nodes */
-      nat_tot = 0;
       for(sender=0; sender<pme_pp->nnode; sender++) {
 	if (pme_pp->node[sender] == pme_pp->node_peer) {
 	  pme_pp->nat[sender] = cnb.natoms;
@@ -285,10 +284,13 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
 		    pme_pp->node[sender],0,
 		    pme_pp->mpi_comm_mysim,&pme_pp->req[messages++]);
 	}
-	nat_tot += pme_pp->nat[sender];
       }
       MPI_Waitall(messages, pme_pp->req, pme_pp->stat);
       messages = 0;
+
+      nat_tot = 0;
+      for(sender=0; sender<pme_pp->nnode; sender++)
+	nat_tot += pme_pp->nat[sender];
 
       if (nat_tot > pme_pp->nalloc) {
 	pme_pp->nalloc = over_alloc_dd(nat_tot);
