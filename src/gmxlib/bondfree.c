@@ -963,49 +963,50 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   /* 143 FLOPS */
   rvec f_i,f_j,f_k,f_l;
   rvec uvec,vvec,svec,dx_jl;
-  real ipr,nrkj,nrkj2;
+  real iprm,iprn,nrkj,nrkj2;
   real a,p,q;
   ivec jt,dt_ij,dt_kj,dt_lj;  
   
-  ipr   = iprod(m,m);		/*  5 	*/
-  nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
-  nrkj  = nrkj2*invsqrt(nrkj2);	/* 10	*/
-  a     = -ddphi*nrkj/ipr;	/* 11	*/
-  svmul(a,m,f_i);		/*  3	*/
-  ipr   = iprod(n,n);		/*  5	*/
-  a     = ddphi*nrkj/ipr;	/* 11	*/
-  svmul(a,n,f_l);		/*  3 	*/
-  p     = iprod(r_ij,r_kj);	/*  5	*/
-  p    /= nrkj2;		/* 10	*/
-  q     = iprod(r_kl,r_kj);	/*  5	*/
-  q    /= nrkj2;		/* 10	*/
-  svmul(p,f_i,uvec);		/*  3	*/
-  svmul(q,f_l,vvec);		/*  3	*/
-  rvec_sub(uvec,vvec,svec);	/*  3	*/
-  rvec_sub(f_i,svec,f_j);	/*  3	*/
-  rvec_add(f_l,svec,f_k);	/*  3	*/
-  rvec_inc(f[i],f_i);   	/*  3	*/
-  rvec_dec(f[j],f_j);   	/*  3	*/
-  rvec_dec(f[k],f_k);   	/*  3	*/
-  rvec_inc(f[l],f_l);   	/*  3	*/
-
-  if (g) {
-    copy_ivec(SHIFT_IVEC(g,j),jt);
-    ivec_sub(SHIFT_IVEC(g,i),jt,dt_ij);
-    ivec_sub(SHIFT_IVEC(g,k),jt,dt_kj);
-    ivec_sub(SHIFT_IVEC(g,l),jt,dt_lj);
-    t1=IVEC2IS(dt_ij);
-    t2=IVEC2IS(dt_kj);
-    t3=IVEC2IS(dt_lj);
-  }    
-  else
-    t3 = pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
+  iprm  = iprod(m,m);		/*  5 	*/
+  iprn  = iprod(n,n);		/*  5	*/
+  if ((iprm > GMX_REAL_EPS) && (iprn > GMX_REAL_EPS)) {
+    nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
+    nrkj  = nrkj2*invsqrt(nrkj2);	/* 10	*/
+    a     = -ddphi*nrkj/iprm;	/* 11	*/
+    svmul(a,m,f_i);		/*  3	*/
+    a     = ddphi*nrkj/iprn;	/* 11	*/
+    svmul(a,n,f_l);		/*  3 	*/
+    p     = iprod(r_ij,r_kj);	/*  5	*/
+    p    /= nrkj2;		/* 10	*/
+    q     = iprod(r_kl,r_kj);	/*  5	*/
+    q    /= nrkj2;		/* 10	*/
+    svmul(p,f_i,uvec);		/*  3	*/
+    svmul(q,f_l,vvec);		/*  3	*/
+    rvec_sub(uvec,vvec,svec);	/*  3	*/
+    rvec_sub(f_i,svec,f_j);	/*  3	*/
+    rvec_add(f_l,svec,f_k);	/*  3	*/
+    rvec_inc(f[i],f_i);   	/*  3	*/
+    rvec_dec(f[j],f_j);   	/*  3	*/
+    rvec_dec(f[k],f_k);   	/*  3	*/
+    rvec_inc(f[l],f_l);   	/*  3	*/
     
-  rvec_inc(fshift[t1],f_i);
-  rvec_dec(fshift[CENTRAL],f_j);
-  rvec_dec(fshift[t2],f_k);
-  rvec_inc(fshift[t3],f_l);
-  
+    if (g) {
+      copy_ivec(SHIFT_IVEC(g,j),jt);
+      ivec_sub(SHIFT_IVEC(g,i),jt,dt_ij);
+      ivec_sub(SHIFT_IVEC(g,k),jt,dt_kj);
+      ivec_sub(SHIFT_IVEC(g,l),jt,dt_lj);
+      t1=IVEC2IS(dt_ij);
+      t2=IVEC2IS(dt_kj);
+      t3=IVEC2IS(dt_lj);
+    }    
+    else
+      t3 = pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
+    
+    rvec_inc(fshift[t1],f_i);
+    rvec_dec(fshift[CENTRAL],f_j);
+    rvec_dec(fshift[t2],f_k);
+    rvec_inc(fshift[t3],f_l);
+  }
   /* 112 TOTAL 	*/
 }
 
