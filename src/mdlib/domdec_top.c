@@ -8,7 +8,7 @@
 #include "names.h"
 #include "network.h"
 #include "vec.h"
-
+#include "pbc.h"
 
 typedef struct gmx_reverse_top {
   int *index; /* Index for each atom into il    */
@@ -34,6 +34,93 @@ static bool have_exclusion_forces(int eeltype)
    * are present in more than one cell.
    */
   return (EEL_FULL(eeltype) || (EEL_RF(eeltype) && eeltype!=eelRF_NEC));
+}
+
+static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
+					    int natoms,t_idef *idef)
+{
+  gmx_reverse_top_t *rt;
+  int *assigned,*gatindex,ftype,ftype_j,nral,i,j,k,a0,a;
+  int nprint;
+  t_ilist *il;
+  t_iatom *ia;
+  bool bFound;
+  
+  rt = cr->dd->reverse_top;
+
+  snew(assigned,rt->index[natoms]);
+  
+  gatindex = cr->dd->gatindex;
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if ((interaction_function[ftype].flags & IF_BOND) || ftype == F_SETTLE) {
+      nral = NRAL(ftype);
+      il = &idef->il[ftype];
+      ia = il->iatoms;
+      for(i=0; i<il->nr; i+=1+nral) {
+	a0 = gatindex[ia[1]];
+	j = rt->index[a0];
+	bFound = FALSE;
+	while (j < rt->index[a0+1] && !bFound) {
+	  ftype_j = rt->il[j];
+	  /* Here we need to check if this interaction has not already
+	   * been assigned, since we could have multiply defined interactions.
+	   */
+	  if (ftype == ftype_j && ia[0] == rt->il[j+1] && assigned[j] == 0) {
+	    /* Check the atoms */
+	    bFound = TRUE;
+	    for(a=0; a<nral; a++) {
+	      if (gatindex[ia[1+a]] != rt->il[j+2+a])
+		bFound = FALSE;
+	    }
+	    if (bFound) {
+	      assigned[j] = 1;
+	    }
+	  }
+	  j += 2 + NRAL(ftype_j);
+	}
+	if (!bFound)
+	  gmx_fatal(FARGS,
+		    "Some interactions seem to be assigned multiple times\n");
+	ia += 1 + nral;
+      }
+    }
+  }
+
+  gmx_sumi(rt->index[natoms],assigned,cr);
+  
+  nprint = 10;
+  if (DDMASTER(cr->dd)) {
+    fprintf(fplog,
+	    "\nThe first %d missing interactions, except for exclusions:\n",
+	    nprint);
+    fprintf(stderr,
+	    "\nThe first %d missing interactions, except for exclusions:\n",
+	    nprint);
+  }
+  i = 0;
+  j = 0;
+  while (j < rt->index[natoms]) {
+    ftype = rt->il[j];
+    nral  = NRAL(ftype);
+    if (assigned[j] == 0) {
+      if (DDMASTER(cr->dd)) {
+	fprintf(fplog, "%20s atoms",interaction_function[ftype].longname);
+	fprintf(stderr,"%20s atoms",interaction_function[ftype].longname);
+	for(a=0; a<nral; a++) {
+	  fprintf(fplog, "%5d",rt->il[j+2+a]+1);
+	  fprintf(stderr,"%5d",rt->il[j+2+a]+1);
+	}
+	fprintf(fplog, "\n");
+	fprintf(stderr,"\n");
+      }
+      i++;
+      if (i >= nprint)
+	break;
+    }
+    j += 2 + nral;
+  }
+  
+  sfree(assigned);    
 }
 
 void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
@@ -93,7 +180,12 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
       fprintf(fplog,"%s\n",buf);
       fprintf(stderr,"%s\n",buf);
     }
+  }
 
+  print_missing_interaction_atoms(fplog,cr,err_top_global->atoms.nr,
+				  &err_top_local->idef);
+
+  if (DDMASTER(dd)) {
     if (sign == 1) {
       gmx_fatal(FARGS,"%d of the %d bonded interactions were evaluated multiple times. This can occur when the number of domain decomposition cell in a direction is 2 and a cell is not much larger than the cut-off length. The solution is to use 1 or 3 or more cells in such a direction.",
 		sign*ndiff_tot,cr->dd->nbonded_global);
@@ -132,7 +224,7 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int **vsite_pbc,
 				int *count,gmx_reverse_top_t *rt,
 				bool bAssign)
 {
-  int  ftype,nral,i,ind_at,j;
+  int  ftype,nral,i,j;
   t_ilist *il;
   t_iatom *ia;
   atom_id a;
@@ -145,16 +237,10 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int **vsite_pbc,
       nral = NRAL(ftype);
       il = &idef->il[ftype];
       ia  = il->iatoms;
-      if ((interaction_function[ftype].flags & IF_BOND) && nral > 2) {
-	/* Couple to the second atom in the interaction */
-	ind_at = 1;
-      } else {
-	/* Couple to the first atom in the interaction */
-	ind_at = 0;
-      }
       for(i=0; i<il->nr; i+=1+nral) {
 	ia = il->iatoms + i;
-	a = ia[1+ind_at];
+	/* Couple to the first atom in the interaction */
+	a = ia[1];
 	if (bAssign) {
 	  rt->il[rt->index[a]+count[a]] = ftype;
 	  for(j=0; j<1+nral; j++)
@@ -389,28 +475,22 @@ static void make_la2lc(gmx_domdec_t *dd)
   }
 }
 
-static real dd_dist_part2(ivec nc,rvec *cg_cm,const int *la2lc,int i,int j)
+static real dd_dist2(t_pbc *pbc_null,rvec *cg_cm,const int *la2lc,int i,int j)
 {
-  real r2,rd;
-  int  d;
-  
-  r2 = 0;
-  /* For triclinic boxes the domain decomposition is restricted
-   * such that we can ignore directions with only one cell.
-   */
-  for(d=0; d<DIM; d++) {
-    if (nc[d] > 1) {
-      rd  = cg_cm[la2lc[i]][d] - cg_cm[la2lc[j]][d];
-      r2 += rd*rd;
-    }
-  }
+  rvec dx;
 
-  return r2;
+  if (pbc_null) {
+    pbc_dx(pbc_null,cg_cm[la2lc[i]],cg_cm[la2lc[j]],dx);
+  } else {
+    rvec_sub(cg_cm[la2lc[i]],cg_cm[la2lc[j]],dx);
+  }
+  
+  return norm2(dx);
 }
 
 static int make_local_bondeds(gmx_domdec_t *dd,
 			      bool bRCheck,ivec rcheck,real rc,
-			      int *la2lc,rvec *cg_cm,
+			      int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
 			      t_idef *idef,gmx_vsite_t *vsite)
 {
   int nbonded_local,i,gat,j,ftype,nral,d,k,kc;
@@ -488,8 +568,8 @@ static int make_local_bondeds(gmx_domdec_t *dd,
 	     */
 	    if (rcheck[d] && 
 		k_plus[d] &&
-		dd_dist_part2(dd->nc,cg_cm,la2lc,
-			      tiatoms[k_zero[d]],tiatoms[k_plus[d]]) >= rc2)
+		dd_dist2(pbc_null,cg_cm,la2lc,
+			 tiatoms[k_zero[d]],tiatoms[k_plus[d]]) >= rc2)
 	      bUse = FALSE;
 	  }
 	}
@@ -509,7 +589,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,
 
 static int make_local_exclusions(gmx_domdec_t *dd,
 				 bool bRCheck,real rc,
-				 int *la2lc,rvec *cg_cm,
+				 int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
 				 t_forcerec *fr,t_block *excls,t_block *lexcls)
 {
   int  nicell,n,count,ic,jla0,jla1,jla,cg,la0,la1,la,a,i,j;
@@ -573,7 +653,7 @@ static int make_local_exclusions(gmx_domdec_t *dd,
 		  count++;
 	      } else if (jla >= jla0 && jla < jla1 &&
 			 (!bRCheck ||
-			  dd_dist_part2(dd->nc,cg_cm,la2lc,la,jla) < rc2)) {
+			  dd_dist2(pbc_null,cg_cm,la2lc,la,jla) < rc2)) {
 		/* jla > la, since jla0 > la */
 		lexcls->a[n++] = jla;
 		count++;
@@ -694,6 +774,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   bool bUniqueExcl,bRCheck,bRCheck2;
   ivec rcheck;
   int  d,nexcl;
+  t_pbc pbc,*pbc_null=NULL;
 
   if (debug)
     fprintf(debug,"Making local topology\n");
@@ -733,6 +814,12 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
     bRCheck2 = FALSE;
   if (bRCheck || bRCheck2) {
     make_la2lc(dd);
+    if (fr->bMolPBC) {
+      set_pbc_ss(&pbc,fr->ePBC,box,dd,TRUE);
+      pbc_null = &pbc;
+    } else {
+      pbc_null = NULL;
+    }
   }
 
 #ifdef ONE_MOLTYPE_ONE_CG
@@ -741,11 +828,12 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   make_local_idef(dd,&top->idef,&ltop->idef);
 #else
   dd->nbonded_local = make_local_bondeds(dd,
-					 bRCheck,rcheck,rc,dd->la2lc,fr->cg_cm,
+					 bRCheck,rcheck,rc,dd->la2lc,
+					 pbc_null,fr->cg_cm,
 					 &ltop->idef,vsite);
 #endif
 
-  nexcl = make_local_exclusions(dd,bRCheck2,rc,dd->la2lc,fr->cg_cm,
+  nexcl = make_local_exclusions(dd,bRCheck2,rc,dd->la2lc,pbc_null,fr->cg_cm,
 				fr,&top->blocks[ebEXCLS],
 				&ltop->blocks[ebEXCLS]);
   if (have_exclusion_forces(fr->eeltype))
