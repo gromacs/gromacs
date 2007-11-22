@@ -304,6 +304,10 @@ bool do_enx(int fp,t_enxframe *fr)
   }
   if (bRead && fr->nre>fr->e_alloc) {
     srenew(fr->ener,fr->nre);
+    for(i=fr->e_alloc; (i<fr->nre); i++) {
+      fr->ener[i].e = fr->ener[i].eav =
+	fr->ener[i].esum = fr->ener[i].e2sum = 0;
+    }
     fr->e_alloc = fr->nre;
   }
   for(i=0; i<fr->nre; i++) {
