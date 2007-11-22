@@ -39,6 +39,8 @@
 
 #include "typedefs.h"
 
+enum { econqCoord, econqDeriv, econqDeriv_FlexCon };
+
 extern int n_flexible_constraints(struct gmx_constr *constr);
 /* Returns the total number of flexible constraints in the system */
 
@@ -100,14 +102,17 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		      real lambda,real *dvdlambda,
 		      real dt,rvec *v,tensor *vir,
-		      t_nrnb *nrnb,bool bCoordinates);
+		      t_nrnb *nrnb,int econq);
 /*
- * When bCoordinates=TRUE constrains coordinates xprime using th
+ * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
  *
- * When bCoordinates=FALSE, calculates the components xprime in
+ * When econq=econqDeriv, calculates the components xprime in
  * the constraint directions and subtracts these components from min_proj.
  * So when min_proj=xprime, the constraint components are projected out.
+ *
+ * When econq=econqDeriv_FlexCon, the same is done as with econqDeriv,
+ * but only the components of the flexible constraints are stored.
  *
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *
@@ -172,7 +177,7 @@ extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    real lambda,real *dvdlambda,
 			    real invdt,rvec *v,
 			    bool bCalcVir,tensor rmdr,
-			    bool bCoordinates,
+			    int econ,
 			    t_nrnb *nrnb,
 			    int maxwarn,int *warncount);
 /* Returns if the constraining succeeded */

@@ -164,7 +164,8 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
 }
 
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
-		      struct gmx_lincsdata *lincsd,real *invmass)
+		      struct gmx_lincsdata *lincsd,real *invmass,
+		      int econq)
 {
   int     b,i,j,k,n;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
@@ -221,20 +222,24 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
   /* nrec*(ncons+2*nrtot) flops */
   
   for(b=0;b<ncons;b++) {
-    i = bla[2*b];
-    j = bla[2*b+1];
-    mvb = blc[b]*sol[b];
-    im1 = invmass[i];
-    im2 = invmass[j];
-    tmp0 = r[b][0]*mvb;
-    tmp1 = r[b][1]*mvb;
-    tmp2 = r[b][2]*mvb;
-    fp[i][0] -= tmp0*im1;
-    fp[i][1] -= tmp1*im1;
-    fp[i][2] -= tmp2*im1;
-    fp[j][0] += tmp0*im2;
-    fp[j][1] += tmp1*im2;
-    fp[j][2] += tmp2*im2;
+    /* With econqDeriv_FlexCon only use the flexible constraints */
+    if (econq != econqDeriv_FlexCon ||
+	(lincsd->bllen0[b] == 0 && lincsd->ddist[b] == 0)) {
+      i = bla[2*b];
+      j = bla[2*b+1];
+      mvb = blc[b]*sol[b];
+      im1 = invmass[i];
+      im2 = invmass[j];
+      tmp0 = r[b][0]*mvb;
+      tmp1 = r[b][1]*mvb;
+      tmp2 = r[b][2]*mvb;
+      fp[i][0] -= tmp0*im1;
+      fp[i][1] -= tmp1*im1;
+      fp[i][2] -= tmp2*im1;
+      fp[j][0] += tmp0*im2;
+      fp[j][1] += tmp1*im2;
+      fp[j][2] += tmp2*im2;
+    }
   } /* 16 ncons flops */
 }
 
@@ -907,7 +912,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
 		     real lambda,real *dvdlambda,
 		     real invdt,rvec *v,
 		     bool bCalcVir,tensor rmdr,
-		     bool bCoordinates,
+		     int econq,
 		     t_nrnb *nrnb,
 		     int maxwarn,int *warncount)
 {
@@ -949,7 +954,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     dd_move_x_constraints(dd,box,x,xprime);
     /* dump_conf(dd,lincsd,NULL,"con",TRUE,xprime,box); */
   }
-  if (bCoordinates) {
+  if (econq == econqCoord) {
     if (ir->efep != efepNO) {
       if (md->nMassPerturbed && lincsd->matlam != md->lambda) {
 	set_lincs_matrix(lincsd,md->invmass,md->lambda);
@@ -1046,7 +1051,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     }
   } 
   else {
-    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass);
+    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq);
   }
   
   /* count assuming nit=1 */

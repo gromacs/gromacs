@@ -206,7 +206,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,
 	       real dt,rvec *v,tensor *vir,
-	       t_nrnb *nrnb,bool bCoordinates)
+	       t_nrnb *nrnb,int econq)
 {
   bool    bOK;
   int     start,homenr;
@@ -235,7 +235,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,dd,
 			  x,xprime,min_proj,box,lambda,dvdlambda,
 			  invdt,v,vir!=NULL,rmdr,
-			  bCoordinates,nrnb,
+			  econq,nrnb,
 			  constr->maxwarn,&constr->warncount_lincs);
     if (!bOK && constr->maxwarn >= 0 && fplog)
       fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
@@ -243,7 +243,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   }
   
   if (constr->nblocks > 0) {
-    if (!bCoordinates)
+    if (econq != econqCoord)
       gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
 
     bOK = bshakef(stdlog,homenr,md->invmass,constr->nblocks,constr->sblock,
@@ -256,7 +256,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   
   settle  = &top->idef.il[F_SETTLE];
   if (settle->nr > 0) {
-    if (!bCoordinates)
+    if (econq != econqCoord)
 	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SETTLE");
 
     nsettle = settle->nr/2;

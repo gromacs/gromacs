@@ -756,7 +756,7 @@ void update(int          step,
 		inputrec,cr->dd,step,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,
-		dt,state->v,&vir_con,nrnb,TRUE);
+		dt,state->v,&vir_con,nrnb,econqCoord);
       wallcycle_stop(wcycle,ewcCONSTR);
     }
     where();
@@ -823,7 +823,7 @@ void update(int          step,
 		  inputrec,cr->dd,step,md,
 		  state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,
-		  dt,NULL,NULL,nrnb,TRUE);
+		  dt,NULL,NULL,nrnb,econqCoord);
 	wallcycle_stop(wcycle,ewcCONSTR);
       }
     }

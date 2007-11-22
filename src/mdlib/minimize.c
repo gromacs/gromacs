@@ -1668,7 +1668,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
       constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,top,		
 		inputrec,cr->dd,count,mdatoms,
 		pos[Min],pos[TRY],NULL,state->box,lambda,&dvdlambda,
-		0,NULL,NULL,nrnb,TRUE);
+		0,NULL,NULL,nrnb,econqCoord);
     }
     
     Epot[TRY] = evaluate_energy(fplog,bVerbose,inputrec,top,grps,nrnb,wcycle,
@@ -1692,7 +1692,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
       constrain(NULL,FALSE,FALSE,constr,top,
 		inputrec,cr->dd,count,mdatoms,
 		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,
-		0,NULL,NULL,nrnb,TRUE);
+		0,NULL,NULL,nrnb,econqCoord);
       
       /* Remove the forces working on the constraints */
       for(i=start; (i<end); i++)  
