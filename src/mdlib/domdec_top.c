@@ -786,12 +786,13 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   bRCheck  = FALSE;
   bRCheck2 = FALSE;
   for(d=0; d<DIM; d++) {
+    rcheck[d] = FALSE;
     /* Only need to check for dimensions with short box vectors */
     if (dd->nc[d] > 1 &&  box[d][d]*dd->skew_fac[d] < 4*rc) {
-      rcheck[d] = (dd->nc[d] == 2);
-      if (rcheck[d]) {
-	bRCheck  = TRUE;
-	bRCheck2 = TRUE;
+      if (dd->nc[d] == 2) {
+	rcheck[d] = TRUE;
+	bRCheck   = TRUE;
+	bRCheck2  = TRUE;
       } else {
 	/* This check if for interactions between two atoms,
 	 * where we can allow interactions up to the cut-off,
@@ -854,6 +855,14 @@ t_topology *dd_init_local_top(t_topology *top_global)
   int i;
   
   snew(top,1);
+
+  /* valgrind 3.2.3 complains if the ebEXCLS block is not zeroed here,
+   * but this is aleady done by the snew command above.
+   * I suspect a bug in valgrind 3.2.3 (B. Hess )
+   */
+  for(i=0; i<ebNR; i++)
+    memset(&top->blocks[i],0,sizeof(top->blocks[i]));
+
   top->idef = top_global->idef;
   for(i=0; i<F_NRE; i++) {
     top->idef.il[i].iatoms = NULL;
