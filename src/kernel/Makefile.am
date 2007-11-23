@@ -73,7 +73,7 @@ x2top_SOURCES = \
 
 mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	\
-	ionize.c 	ionize.h 	\
+	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
 	xutils.c	compute_io.c	compute_io.h		\
 	md.c		mdrun.c		genalg.c	genalg.h
