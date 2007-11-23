@@ -716,14 +716,18 @@ void get_ir(char *mdparin,char *mdparout,
     ir->ref_p[XX][YY] = dumdub[1][3];
     ir->ref_p[XX][ZZ] = dumdub[1][4];
     ir->ref_p[YY][ZZ] = dumdub[1][5];
+    if (ir->ref_p[XX][YY]!=0 && ir->ref_p[XX][ZZ]!=0 && ir->ref_p[YY][ZZ]) {
+      warning("All off-diagonal reference pressures are non-zero. Are you sure you want to apply a threefold shear stress?\n");
+    }
     ir->compress[XX][YY] = dumdub[0][3];
     ir->compress[XX][ZZ] = dumdub[0][4];
     ir->compress[YY][ZZ] = dumdub[0][5];
-    for(i=0; i<DIM; i++)
+    for(i=0; i<DIM; i++) {
       for(m=0; m<i; m++) {
 	ir->ref_p[i][m] = ir->ref_p[m][i];
 	ir->compress[i][m] = ir->compress[m][i];
       }
+    }
   } 
   
   if (ir->comm_mode == ecmNO)
