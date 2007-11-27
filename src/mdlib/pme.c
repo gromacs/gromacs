@@ -78,7 +78,6 @@
 #include "physics.h"
 #include "nrnb.h"
 #include "copyrite.h"
-#include "domdec.h"
 #include "gmx_wallcycle.h"
 #ifdef GMX_MPI
 #include <mpi.h>
