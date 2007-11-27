@@ -2,6 +2,7 @@
 #include <config.h>
 #endif
 
+#include <string.h>
 #include "typedefs.h"
 #include "smalloc.h"
 #include "domdec.h"
