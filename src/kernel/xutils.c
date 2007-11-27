@@ -331,7 +331,8 @@ static void scale_box(int natoms,rvec x[],matrix box)
   }
 }
 
-bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
+bool update_forcefield(FILE *fplog,
+		       int nfile,t_filenm fnm[],t_forcerec *fr,
 		       int natoms,rvec x[],matrix box)
 {
   static int ntry,ntried;
@@ -347,7 +348,7 @@ bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
 
     if (opt2bSet("-ga",nfile,fnm)) {
       /* Genetic algorithm time */
-      ga = init_ga(opt2fn("-ga",nfile,fnm),nparm,range);
+      ga = init_ga(fplog,opt2fn("-ga",nfile,fnm),nparm,range);
     }
     else {  
       /* Determine the grid size */
@@ -356,12 +357,12 @@ bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
 	ntry *= range[i].np;
       ntried = 0;
       
-      fprintf(stdlog,"Going to try %d different combinations of %d parameters\n",
+      fprintf(fplog,"Going to try %d different combinations of %d parameters\n",
 	      ntry,nparm);
     }
   }
   if (ga) {
-    update_ga(stdlog,range,ga);
+    update_ga(fplog,range,ga);
   }
   else {
     /* Increment the counter
@@ -377,7 +378,7 @@ bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
       }
     }
     if (i == nparm) {
-      fprintf(stdlog,"Finished with %d out of %d iterations\n",ntried+1,ntry);
+      fprintf(fplog,"Finished with %d out of %d iterations\n",ntried+1,ntry);
       return TRUE;
     }
   }

@@ -103,7 +103,8 @@ real calc_temp(real ekin,real nrdf)
     return 0;
 }
 
-void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
+void parrinellorahman_pcoupl(FILE *fplog,int step,
+			     t_inputrec *ir,tensor pres,
 			     tensor box,tensor boxv,tensor M,
 			     matrix *scale_tot,bool bFirstStep)
 {
@@ -223,8 +224,8 @@ void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
 	  maxchange=change;
       }
     
-    if (maxchange > 0.01 && stdlog) 
-      fprintf(stdlog,"\nStep %d  Warning: Pressure scaling more than 1%%.\n",
+    if (maxchange > 0.01 && fplog) 
+      fprintf(fplog,"\nStep %d  Warning: Pressure scaling more than 1%%.\n",
 	      step);
   }
   
@@ -249,7 +250,8 @@ void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
   }
 }
 
-void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
+void berendsen_pcoupl(FILE *fplog,int step,
+		      t_inputrec *ir,tensor pres,matrix box,
 		      matrix mu)
 {
   int    d,n;
@@ -330,8 +332,8 @@ void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
       mu[ZZ][ZZ]<0.99 || mu[ZZ][ZZ]>1.01) {
     sprintf(buf,"\nStep %d  Warning: pressure scaling more than 1%%, "
 	    "mu: %g %g %g\n",step,mu[XX][XX],mu[YY][YY],mu[ZZ][ZZ]);
-    if (stdlog)
-      fprintf(stdlog,"%s",buf);
+    if (fplog)
+      fprintf(fplog,"%s",buf);
     fprintf(stderr,"%s",buf);
   }
 }

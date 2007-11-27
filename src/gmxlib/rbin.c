@@ -58,26 +58,18 @@ void reset_bin(t_bin *b)
   b->nreal = 0;
 }
 
-int add_binr(FILE *log,t_bin *b,int nr,real r[])
+int add_binr(t_bin *b,int nr,real r[])
 {
 #define MULT 4
   int    i,rest,index;
   double *rbuf;
   
   if (b->nreal+nr > b->maxreal) {
-#ifdef DEBUG
-    fprintf(log,"Before: maxreal=%d, nr=%d, nreal=%d\n",
-	    b->maxreal,nr,b->nreal);
-#endif
     b->maxreal=b->nreal+nr;
     rest=b->maxreal % MULT;
     if (rest != 0)
       b->maxreal+=MULT-rest;
     srenew(b->rbuf,b->maxreal);
-#ifdef DEBUG
-    fprintf(log,"After: maxreal=%d, nr=%d, nreal=%d\n",
-	    b->maxreal,nr,b->nreal+nr);
-#endif
   }
   /* Copy pointer */
   rbuf=b->rbuf+b->nreal;
@@ -90,26 +82,18 @@ int add_binr(FILE *log,t_bin *b,int nr,real r[])
   return index;
 }
 
-int add_bind(FILE *log,t_bin *b,int nr,double r[])
+int add_bind(t_bin *b,int nr,double r[])
 {
 #define MULT 4
   int    i,rest,index;
   double *rbuf;
   
   if (b->nreal+nr > b->maxreal) {
-#ifdef DEBUG
-    fprintf(log,"Before: maxreal=%d, nr=%d, nreal=%d\n",
-	    b->maxreal,nr,b->nreal);
-#endif
     b->maxreal=b->nreal+nr;
     rest=b->maxreal % MULT;
     if (rest != 0)
       b->maxreal+=MULT-rest;
     srenew(b->rbuf,b->maxreal);
-#ifdef DEBUG
-    fprintf(log,"After: maxreal=%d, nr=%d, nreal=%d\n",
-	    b->maxreal,nr,b->nreal+nr);
-#endif
   }
   /* Copy pointer */
   rbuf=b->rbuf+b->nreal;

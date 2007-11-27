@@ -55,10 +55,16 @@
 
 static bool bDebug = FALSE;
 static char *fatal_tmp_file = NULL;
+static FILE *log_file = NULL;
 
 bool bDebugMode(void)
 {
   return bDebug;
+}
+
+void gmx_fatal_set_log_file(FILE *fp)
+{
+  log_file = fp;
 }
 
 void _where(const char *file,int line)
@@ -78,8 +84,8 @@ void _where(const char *file,int line)
   if (nskip >= 0) {
     /* Skip the first n occasions, this allows to see where it goes wrong */
     if (nwhere >= nskip) {
-      if (stdlog)
-	fp = stdlog;
+      if (log_file)
+	fp = log_file;
       else
 	fp = stderr;
       fprintf(fp,"WHERE %d, file %s - line %d\n",nwhere,file,line);
@@ -152,8 +158,8 @@ static int fatal_errno = 0;
 static void quit_gmx(const char *msg)
 {
   if (!fatal_errno) {
-    if (stdlog) 
-      fprintf(stdlog,"%s\n",msg);
+    if (log_file) 
+      fprintf(log_file,"%s\n",msg);
     fprintf(stderr,"%s\n",msg);
   }
   else {

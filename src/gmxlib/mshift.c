@@ -199,7 +199,7 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
   }
 }
 
-static int calc_start_end(t_graph *g,t_idef *idef,int natoms,
+static int calc_start_end(FILE *fplog,t_graph *g,t_idef *idef,int natoms,
 			  int nbond[])
 {
   int   i,nnb,nbtot;
@@ -228,16 +228,16 @@ static int calc_start_end(t_graph *g,t_idef *idef,int natoms,
     nbtot += nbond[i];
     nnb    = max(nnb,nbond[i]);
   }
-  if (stdlog) {
-    fprintf(stdlog,"Max number of connections per atom is %d\n",nnb);
-    fprintf(stdlog,"Total number of connections is %d\n",nbtot);
+  if (fplog) {
+    fprintf(fplog,"Max number of connections per atom is %d\n",nnb);
+    fprintf(fplog,"Total number of connections is %d\n",nbtot);
   }
   return nbtot;
 }
 
 
 
-static void compact_graph(t_graph *g)
+static void compact_graph(FILE *fplog,t_graph *g)
 {
   int i,j,n,max_nedge;
   atom_id *e;
@@ -254,14 +254,15 @@ static void compact_graph(t_graph *g)
   for(i=1; i<g->nnodes; i++) {
     g->edge[i] = g->edge[i-1] + g->nedge[i-1];
   }
-  if (stdlog) {
-    fprintf(stdlog,"Max number of graph edges per atom is %d\n",
+  if (fplog) {
+    fprintf(fplog,"Max number of graph edges per atom is %d\n",
 	    max_nedge);
-    fprintf(stdlog,"Total number of graph edges is %d\n",n);
+    fprintf(fplog,"Total number of graph edges is %d\n",n);
   }
 }
 
-t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
+t_graph *mk_graph(FILE *fplog,
+		  t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
 {
   t_graph *g;
   int     *nbond;
@@ -270,7 +271,7 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
   snew(g,1);
 
   snew(nbond,natoms);
-  nbtot = calc_start_end(g,idef,natoms,nbond);
+  nbtot = calc_start_end(fplog,g,idef,natoms,nbond);
   
   if (g->start >= g->end) {
     g->nnodes=0;
@@ -307,7 +308,7 @@ t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle)
       }
       
       /* Removed all the unused space from the edge array */
-      compact_graph(g);
+      compact_graph(fplog,g);
     }
     else {
       /* This is a special thing used in splitter.c to generate shake-blocks */

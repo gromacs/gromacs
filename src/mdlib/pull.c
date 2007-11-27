@@ -215,8 +215,6 @@ void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
   case epullgDIST:
     /* Pull along the vector between the com's */
     if (ref[0] < 0 && !bWarned) {
-      if (stdlog)
-	fprintf(stdlog,"\nPull reference distance for group %d is negative (%f)\n",g,ref[0]);
       fprintf(stderr,"\nPull reference distance for group %d is negative (%f)\n",g,ref[0]);
       bWarned = TRUE;
     }

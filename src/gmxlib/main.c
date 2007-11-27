@@ -57,11 +57,6 @@
 #define BUFSIZE	1024
 
 
-
-
-
-
-FILE *stdlog=NULL;
 int  gmx_parallel_env=0;
 
 static int get_nodeid(FILE *log,t_commrec *cr,
@@ -192,11 +187,12 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,char *name)
   sfree(ibuf);
 }
 
-void open_log(char *lognm,const t_commrec *cr,bool bMasterOnly)
+FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly)
 {
   int  len,testlen,pid;
   char buf[256],host[256];
   time_t t;
+  FILE *fp;
 
   debug_gmx();
   
@@ -231,10 +227,12 @@ void open_log(char *lognm,const t_commrec *cr,bool bMasterOnly)
   if (PAR(cr) && !bMasterOnly) {
     /* Since log always ends with '.log' let's use this info */
     par_fn(lognm,efLOG,cr,cr->ms!=NULL,buf,255);
-    stdlog = ffopen(buf,"w");
+    fp = ffopen(buf,"w");
   } else {
-    stdlog = ffopen(lognm,"w");
+    fp = ffopen(lognm,"w");
   }
+
+  gmx_fatal_set_log_file(fp);
   
   /* Get some machine parameters */
 #ifdef HAVE_UNISTD_H
@@ -252,19 +250,29 @@ void open_log(char *lognm,const t_commrec *cr,bool bMasterOnly)
   pid = 0;
 #endif
 
-  fprintf(stdlog,
+  fprintf(fp,
 	  "Log file opened on %s"
 	  "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
 	  ctime(&t),host,pid,cr->nodeid,cr->nnodes);
 
 #if (defined BUILD_MACHINE && defined BUILD_TIME && defined BUILD_USER) 
-  fprintf(stdlog,
+  fprintf(fp,
 	  "The Gromacs distribution was built %s by\n"
 	  "%s (%s)\n\n\n",BUILD_TIME,BUILD_USER,BUILD_MACHINE);
 #endif
 
-  fflush(stdlog);
+  fflush(fp);
   debug_gmx();
+
+  return fp;
+}
+
+void gmx_log_close(FILE *fp)
+{
+  if (fp) {
+    gmx_fatal_set_log_file(NULL);
+    fclose(fp);
+  }
 }
 
 static void comm_args(const t_commrec *cr,int *argc,char ***argv)

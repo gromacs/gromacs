@@ -147,7 +147,7 @@ void accumulate_u(t_commrec *cr,t_grpopts *opts,t_groups *grps)
     reset_bin(rb);
 
   for(g=0; (g<opts->ngacc); g++) 
-    add_binr(stdlog,rb,DIM,grps->grpstat[g].u);
+    add_binr(rb,DIM,grps->grpstat[g].u);
     
   sum_bin(rb,cr);
   

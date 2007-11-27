@@ -285,7 +285,7 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
  * based on their coordinates in the "dimension" direction.
  */
 				   
-extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
+extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
 		     ivec ddxyz,int dd_node_order,real rdd,
 		     char *ddcsx,char *ddcsy,char *ddcsz,
@@ -294,7 +294,8 @@ extern void mdrunner(t_commrec *cr,int nfile,t_filenm fnm[],
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
-extern void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
+extern void init_md(FILE *fplog,
+		    t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
 		    t_nrnb *nrnb,t_topology *top,
 		    gmx_stochd_t *stochd,gmx_constr_t *constr,

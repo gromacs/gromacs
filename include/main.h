@@ -45,16 +45,18 @@
 #include <stdio.h>
 #include "network.h"
 
-extern FILE *stdlog;
 extern int  gmx_parallel_env; /* 1 when running in a parallel environment,
 			       * so could also be 1 when mdrun was started
 			       * with: mpirun -np 1 
 			       */
 
-extern void open_log(char *fn,const t_commrec *cr,bool bMasterOnly);
+extern FILE *gmx_log_open(char *fn,const t_commrec *cr,bool bMasterOnly);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */
+
+extern void gmx_log_close(FILE *fp);
+/* Close the log file */
 
 extern void check_multi_int(FILE *log,const gmx_multisim_t *ms,
 			    int val,char *name);

@@ -44,7 +44,8 @@
 #include "typedefs.h"
 
 
-extern t_graph *mk_graph(t_idef *idef,int natoms,bool bShakeOnly,bool bSettle);
+extern t_graph *mk_graph(FILE *fplog,
+			 t_idef *idef,int natoms,bool bShakeOnly,bool bSettle);
 /* Build a graph from an idef description. The graph can be used
  * to generate mol-shift indices.
  * If bShakeOnly, only the connections in the shake list are used.

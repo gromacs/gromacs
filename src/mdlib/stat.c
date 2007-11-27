@@ -64,7 +64,7 @@
 #include "domdec.h"
 #include "constr.h"
 
-void global_stat(FILE *log,
+void global_stat(FILE *fplog,
 		 t_commrec *cr,real ener[],
 		 tensor fvir,tensor svir,rvec mu_tot,
 		 t_inputrec *inputrec,
@@ -94,60 +94,60 @@ void global_stat(FILE *log,
    * using the t_bin struct. 
    */
   where();
-  ie  = add_binr(log,rb,F_NRE,ener);
+  ie  = add_binr(rb,F_NRE,ener);
   where();
-  ifv = add_binr(log,rb,DIM*DIM,fvir[0]);
+  ifv = add_binr(rb,DIM*DIM,fvir[0]);
   where();
-  isv = add_binr(log,rb,DIM*DIM,svir[0]);
+  isv = add_binr(rb,DIM*DIM,svir[0]);
   where();
   if (constr) {
     rmsd_data = constr_rmsd_data(constr);
     if (rmsd_data)
-      irmsd = add_binr(log,rb,inputrec->eI==eiSD ? 3 : 2,rmsd_data);
+      irmsd = add_binr(rb,inputrec->eI==eiSD ? 3 : 2,rmsd_data);
   } else {
     rmsd_data = NULL;
   }
   if (!NEED_MUTOT(*inputrec)) {
-    imu = add_binr(log,rb,DIM,mu_tot);
+    imu = add_binr(rb,DIM,mu_tot);
     where();
   }
   for(j=0; (j<inputrec->opts.ngtc); j++) {
     if (bSumEkinhOld)
-      itc0[j]=add_binr(log,rb,DIM*DIM,grps->tcstat[j].ekinh_old[0]);
-    itc1[j]=add_binr(log,rb,DIM*DIM,grps->tcstat[j].ekinh[0]);
+      itc0[j]=add_binr(rb,DIM*DIM,grps->tcstat[j].ekinh_old[0]);
+    itc1[j]=add_binr(rb,DIM*DIM,grps->tcstat[j].ekinh[0]);
   }
   where();
-  idedl = add_binr(log,rb,1,&(grps->dekindl));
+  idedl = add_binr(rb,1,&(grps->dekindl));
   where();
   for(j=0; (j<egNR); j++)
-    inn[j]=add_binr(log,rb,grps->estat.nn,grps->estat.ee[j]);
+    inn[j]=add_binr(rb,grps->estat.nn,grps->estat.ee[j]);
   where();
   if (vcm) {
-    icm   = add_binr(log,rb,DIM*vcm->nr,vcm->group_p[0]);
+    icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
     where();
-    imass = add_binr(log,rb,vcm->nr,vcm->group_mass);
+    imass = add_binr(rb,vcm->nr,vcm->group_mass);
     where();
     if (vcm->mode == ecmANGULAR) {
-      icj   = add_binr(log,rb,DIM*vcm->nr,vcm->group_j[0]);
+      icj   = add_binr(rb,DIM*vcm->nr,vcm->group_j[0]);
       where();
-      icx   = add_binr(log,rb,DIM*vcm->nr,vcm->group_x[0]);
+      icx   = add_binr(rb,DIM*vcm->nr,vcm->group_x[0]);
       where();
-      ici   = add_binr(log,rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
+      ici   = add_binr(rb,DIM*DIM*vcm->nr,vcm->group_i[0][0]);
       where();
     }
   }
-  ica   = add_binr(log,rb,1,&(grps->cosacc.mvcos));
+  ica   = add_binr(rb,1,&(grps->cosacc.mvcos));
   where();
   if (DOMAINDECOMP(cr)) {
     nb = cr->dd->nbonded_local;
-    inb = add_bind(log,rb,1,&nb);
+    inb = add_bind(rb,1,&nb);
   }
   where();
   if (nabnsb) {
     rbnsb = *nabnsb;
-    ibnsb = add_binr(log,rb,1,&rbnsb);
+    ibnsb = add_binr(rb,1,&rbnsb);
   }
-  iterminate = add_binr(log,rb,1,terminate);
+  iterminate = add_binr(rb,1,terminate);
   
   /* Global sum it all */
   if (debug)
@@ -190,7 +190,7 @@ void global_stat(FILE *log,
   if (DOMAINDECOMP(cr)) {
     extract_bind(rb,inb,1,&nb);
     if ((int)(nb + 0.5) != cr->dd->nbonded_global)
-      dd_print_missing_interactions(log,cr,(int)(nb + 0.5));
+      dd_print_missing_interactions(fplog,cr,(int)(nb + 0.5));
   }
   where();
   if (nabnsb) {

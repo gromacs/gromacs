@@ -48,7 +48,7 @@ extern "C" {
 #include <stdio.h>
 #include <stdarg.h>
 #include <errno.h>
-  
+
 void 
 _where(const char *file,int line);
 #define where() _where(__FILE__,__LINE__)
@@ -86,6 +86,10 @@ gmx_fatal(int fatal_errno,const char *file,int line,const char *fmt,...);
 
 /* This include must not be moved upwards, to prevent compilation problems */  
 #include "typedefs.h"
+
+void
+gmx_fatal_set_log_file(FILE *fp);
+/* Set the log file for printing error messages */
 
 void 
 init_warning(int maxwarning);

@@ -594,7 +594,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
     fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
   clear_mat(shake_vir);
   clear_mat(pres);
-  update(step,&dvdlambda,inputrec,md,state,graph,
+  update(fplog,step,&dvdlambda,inputrec,md,state,graph,
 	 NULL,state->x,top,grps,shake_vir,NULL,cr,nrnb,NULL,
 	 NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
   if (EI_STATE_VELOCITY(inputrec->eI)) {
@@ -616,7 +616,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 	      step);
     clear_mat(shake_vir);
     clear_mat(pres);
-    update(step,&dvdlambda,inputrec,md,state,graph,
+    update(fplog,step,&dvdlambda,inputrec,md,state,graph,
 	   NULL,buf,top,grps,shake_vir,NULL,cr,nrnb,NULL,
 	   NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,pres);
     
@@ -957,7 +957,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   }
 }
 
-void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
+void init_md(FILE *fplog,t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
 	     t_nrnb *nrnb,t_topology *top,
 	     gmx_stochd_t *sd,gmx_constr_t *constr,
@@ -1018,10 +1018,10 @@ void init_md(t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_rvec(mu_tot);
 
   if (constr)
-    *constr = init_constraints(stdlog,cr,top,ir);
+    *constr = init_constraints(fplog,cr,top,ir);
 
   if (vcm)
-    *vcm = init_vcm(stdlog,&top->atoms,ir);
+    *vcm = init_vcm(fplog,&top->atoms,ir);
     
   debug_gmx();
 

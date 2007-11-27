@@ -54,7 +54,8 @@ typedef struct gmx_stochd *gmx_stochd_t;
 /* Initialize the stochastic dynamics struct */
 extern gmx_stochd_t init_stochd(int eI,int ngtc,real tau_t[],real dt,int seed);
 
-extern void update(int          step,
+extern void update(FILE         *fplog,
+		   int          step,
 		   real         *dvdlambda, /* FEP stuff */
 		   t_inputrec   *inputrec,  /* input record and box stuff	*/
 		   t_mdatoms    *md,
@@ -137,11 +138,13 @@ extern void calc_pres(int ePBC,int nwall,matrix box,
  * a long range correction based on Ewald/PPPM is made (see c-code)
  */
 
-extern void parrinellorahman_pcoupl(t_inputrec *ir,int step,tensor pres,
+extern void parrinellorahman_pcoupl(FILE *fplog,int step,
+				    t_inputrec *ir,tensor pres,
 				    tensor box,tensor boxv,tensor M,
 				    matrix *scale_tot,bool bFirstStep);
   
-extern void berendsen_pcoupl(t_inputrec *ir,int step,tensor pres,matrix box,
+extern void berendsen_pcoupl(FILE *fplog,int step,
+			     t_inputrec *ir,tensor pres,matrix box,
 			     matrix mu);
 
 

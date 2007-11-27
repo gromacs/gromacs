@@ -805,7 +805,7 @@ int gmx_trjconv(int argc,char *argv[])
       if ((ftp != efXTC) && (ftp != efTRN))
 	gmx_fatal(FARGS,"Can only use the sub option with output file types "
 		  "xtc and trr");
-      clust = cluster_index(opt2fn("-sub",NFILE,fnm));
+      clust = cluster_index(NULL,opt2fn("-sub",NFILE,fnm));
       
       /* Check for number of files disabled, as FOPEN_MAX is not the correct
        * number to check for. In my linux box it is only 16.

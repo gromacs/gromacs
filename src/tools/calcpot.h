@@ -34,12 +34,12 @@
  * Green Red Orange Magenta Azure Cyan Skyblue
  */
 	
-extern void init_calcpot(char *log,char *tpx,char *table,
-			 t_topology *top,t_inputrec *inputrec,t_commrec *cr,
-			 t_graph **graph,t_mdatoms **mdatoms,
-			 t_groups *grps,
-			 t_forcerec **fr,real **coulomb,
-			 matrix box,rvec **x);
+extern FILE *init_calcpot(char *log,char *tpx,char *table,
+			  t_topology *top,t_inputrec *inputrec,t_commrec *cr,
+			  t_graph **graph,t_mdatoms **mdatoms,
+			  t_groups *grps,
+			  t_forcerec **fr,real **coulomb,
+			  matrix box,rvec **x);
 
 extern void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
 		     t_inputrec *inputrec,t_topology *top,rvec x[],t_forcerec *fr,

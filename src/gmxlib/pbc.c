@@ -165,7 +165,7 @@ int guess_ePBC(matrix box)
   return ePBC;
 }
 
-static int correct_box_elem(tensor box,int v,int d)
+static int correct_box_elem(FILE *fplog,int step,tensor box,int v,int d)
 {
   int shift,maxshift=10;
 
@@ -173,22 +173,30 @@ static int correct_box_elem(tensor box,int v,int d)
 
   /* correct elem d of vector v with vector d */
   while (box[v][d] > BOX_MARGIN_CORRECT*box[d][d]) {
-    fprintf(stdlog,"Correcting invalid box:\n");
-    pr_rvecs(stdlog,0,"old box",box,DIM);
+    if (fplog) {
+      fprintf(fplog,"Step %d: correcting invalid box:\n",step);
+      pr_rvecs(fplog,0,"old box",box,DIM);
+    }
     rvec_dec(box[v],box[d]);
     shift--;
-    pr_rvecs(stdlog,0,"new box",box,DIM);
+    if (fplog) {
+      pr_rvecs(fplog,0,"new box",box,DIM);
+    }
     if (shift <= -maxshift)
       gmx_fatal(FARGS,
 		"Box was shifted at least %d times. Please see log-file.",
 		maxshift);
   } 
   while (box[v][d] < -BOX_MARGIN_CORRECT*box[d][d]) {
-    fprintf(stdlog,"Correcting invalid box:\n");
-    pr_rvecs(stdlog,0,"old box",box,DIM);
+    if (fplog) {
+      fprintf(fplog,"Step %d: correcting invalid box:\n",step);
+      pr_rvecs(fplog,0,"old box",box,DIM);
+    }
     rvec_inc(box[v],box[d]);
     shift++;
-    pr_rvecs(stdlog,0,"new box",box,DIM);
+    if (fplog) {
+      pr_rvecs(fplog,0,"new box",box,DIM);
+    }
     if (shift >= maxshift)
       gmx_fatal(FARGS,
 		"Box was shifted at least %d times. Please see log-file.",
@@ -198,15 +206,15 @@ static int correct_box_elem(tensor box,int v,int d)
   return shift;
 }
 
-bool correct_box(tensor box,t_graph *graph)
+bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph)
 {
   int  zy,zx,yx,i;
   bool bCorrected;
 
   /* check if the box still obeys the restrictions, if not, correct it */
-  zy = correct_box_elem(box,ZZ,YY);
-  zx = correct_box_elem(box,ZZ,XX);
-  yx = correct_box_elem(box,YY,XX);
+  zy = correct_box_elem(fplog,step,box,ZZ,YY);
+  zx = correct_box_elem(fplog,step,box,ZZ,XX);
+  yx = correct_box_elem(fplog,step,box,YY,XX);
   
   bCorrected = (zy || zx || yx);
 
@@ -657,15 +665,15 @@ void calc_shifts(matrix box,rvec shift_vec[])
   for(m = -D_BOX_Z; m <= D_BOX_Z; m++)
     for(l = -D_BOX_Y; l <= D_BOX_Y; l++) 
       for(k = -D_BOX_X; k <= D_BOX_X; k++,n++) {
-	test=XYZ2IS(k,l,m);
-	if (n != test) 
-	  fprintf(stdlog,"n=%d, test=%d\n",n,test);
+	test = XYZ2IS(k,l,m);
+	if (n != test)
+	  gmx_incons("inconsistent shift numbering");
 	for(d = 0; d < DIM; d++)
-	  shift_vec[n][d]=k*box[XX][d] + l*box[YY][d] + m*box[ZZ][d];
+	  shift_vec[n][d] = k*box[XX][d] + l*box[YY][d] + m*box[ZZ][d];
       }
 }
 
-void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
+void calc_cgcm(FILE *fplog,int cg0,int cg1,t_block *cgs,
 	       rvec pos[],rvec cg_cm[])
 {
   int  icg,k,k0,k1,d;
@@ -674,7 +682,7 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
   atom_id *cgindex;
   
 #ifdef DEBUG
-  fprintf(log,"Calculating centre of geometry for charge groups %d to %d\n",
+  fprintf(fplog,"Calculating centre of geometry for charge groups %d to %d\n",
 	  cg0,cg1);
 #endif
   cgindex = cgs->index;
@@ -701,7 +709,7 @@ void calc_cgcm(FILE *log,int cg0,int cg1,t_block *cgs,
   }
 }
 
-void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
+void put_charge_groups_in_box(FILE *fplog,int cg0,int cg1,
 			      int ePBC,matrix box,t_block *cgs,
 			      rvec pos[],rvec cg_cm[])
 			      
@@ -713,7 +721,7 @@ void put_charge_groups_in_box(FILE *log,int cg0,int cg1,
   bool bTric;
 
 #ifdef DEBUG
-  fprintf(log,"Putting cgs %d to %d in box\n",cg0,cg1);
+  fprintf(fplog,"Putting cgs %d to %d in box\n",cg0,cg1);
 #endif
   cgindex = cgs->index;
 

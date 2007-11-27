@@ -57,8 +57,8 @@ extern t_bin *mk_bin(void);
 extern void reset_bin(t_bin *b);
 /* Reset number of entries to zero */
 
-extern int add_binr(FILE *log,t_bin *b,int nr,real r[]);
-extern int add_bind(FILE *log,t_bin *b,int nr,double r[]);
+extern int add_binr(t_bin *b,int nr,real r[]);
+extern int add_bind(t_bin *b,int nr,double r[]);
 /* Add reals to the bin. Returns index */
 
 extern void sum_bin(t_bin *b,t_commrec *cr);

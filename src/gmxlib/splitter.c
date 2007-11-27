@@ -678,7 +678,7 @@ void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
   t_sid   *sid;
   int     isid,nsid;
   
-  g=mk_graph(idef,natoms,TRUE,bSettle);
+  g=mk_graph(NULL,idef,natoms,TRUE,bSettle);
   if (debug)
     p_graph(debug,"Graaf Dracula",g);
   snew(sid,natoms);

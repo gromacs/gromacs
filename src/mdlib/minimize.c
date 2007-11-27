@@ -1610,7 +1610,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
   clear_mat(pres); 
 
   /* Initiate constraint stuff */
-  constr = init_constraints(stdlog,cr,top,inputrec);
+  constr = init_constraints(fplog,cr,top,inputrec);
   if (constr) {
     set_constraints(constr,top,inputrec,mdatoms,
 		    DOMAINDECOMP(cr) ? cr->dd : NULL);

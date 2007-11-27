@@ -247,7 +247,8 @@ int main(int argc,char *argv[])
   unsigned long Flags;
   ivec     ddxyz;
   int      dd_node_order;
-  
+  FILE     *fplog;
+
   cr = init_par(&argc,&argv);
   snew(edyn,1);
 
@@ -273,14 +274,17 @@ int main(int argc,char *argv[])
   if (nmultisim > 1 && PAR(cr))
     init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 
-  if (MASTER(cr) || bSepPot)
-    open_log(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot);
+  if (MASTER(cr) || bSepPot) {
+    fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot);
+  } else {
+    fplog = NULL;
+  }
 
   if (MASTER(cr)) {
-    CopyRight(stdlog,argv[0]);
-    please_cite(stdlog,"Spoel2005a");
-    please_cite(stdlog,"Lindahl2001a");
-    please_cite(stdlog,"Berendsen95a");
+    CopyRight(fplog,argv[0]);
+    please_cite(fplog,"Spoel2005a");
+    please_cite(fplog,"Lindahl2001a");
+    please_cite(fplog,"Berendsen95a");
   }
   
   if (opt2bSet("-ei",NFILE,fnm)) 
@@ -299,7 +303,7 @@ int main(int argc,char *argv[])
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
-  mdrunner(cr,NFILE,fnm,bVerbose,bCompact,
+  mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
 	   ddxyz,dd_node_order,rdd,ddcsx,ddcsy,ddcsz,
 	   nstepout,edyn,repl_ex_nst,repl_ex_seed,Flags);
   
@@ -309,6 +313,8 @@ int main(int argc,char *argv[])
   if (MULTIMASTER(cr)) {
     thanx(stderr);
   }
+  
+  gmx_log_close(fplog);
   
   return 0;
 }

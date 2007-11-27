@@ -90,7 +90,7 @@ typedef struct {
   atom_id *inv_clust;
 } t_cluster_ndx;
 
-extern t_cluster_ndx *cluster_index(char *ndx);
+extern t_cluster_ndx *cluster_index(FILE *fplog,char *ndx);
   
 typedef struct {
   int n;

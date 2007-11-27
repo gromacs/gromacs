@@ -81,7 +81,7 @@ extern "C" {
   int guess_ePBC(matrix box);
   /* Guesses the type of periodic boundary conditions using the box */
 
-  extern bool correct_box(tensor box,t_graph *graph);
+  extern bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph);
   /* Checks for un-allowed box angles and corrects the box
    * and the integer shift vectors in the graph (if graph!=NULL) if necessary.
    * Returns TRUE when the box was corrected.

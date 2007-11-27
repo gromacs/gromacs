@@ -583,7 +583,8 @@ int gmx_disre(int argc,char *argv[])
   t_mdatoms   *mdatoms;
   t_pbc       pbc,*pbc_null;
   int         my_clust;
-  
+  FILE        *fplog;
+
   t_filenm fnm[] = {
     { efTPX, NULL, NULL, ffREAD },
     { efTRX, "-f", NULL, ffREAD },
@@ -605,7 +606,7 @@ int gmx_disre(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr,FALSE);
+  fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,FALSE);
   
   if (ntop)
     init5(ntop);
@@ -633,7 +634,7 @@ int gmx_disre(int argc,char *argv[])
     if (ir.bPeriodicMols)
       pbc_null = &pbc;
     else
-      g = mk_graph(&top.idef,top.atoms.nr,FALSE,FALSE);
+      g = mk_graph(fplog,&top.idef,top.atoms.nr,FALSE,FALSE);
   }
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
@@ -653,7 +654,7 @@ int gmx_disre(int argc,char *argv[])
     isize=0;
 
   ir.dr_tau=0.0;
-  init_disres(stdlog,top.idef.il[F_DISRES].nr,top.idef.il[F_DISRES].iatoms,
+  init_disres(fplog,top.idef.il[F_DISRES].nr,top.idef.il[F_DISRES].iatoms,
 	      top.idef.iparams,&ir,NULL,&fcd);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
@@ -661,7 +662,7 @@ int gmx_disre(int argc,char *argv[])
   
   init_dr_res(&dr,fcd.disres.nr);
   if (opt2bSet("-c",NFILE,fnm)) {
-    clust = cluster_index(opt2fn("-c",NFILE,fnm));
+    clust = cluster_index(fplog,opt2fn("-c",NFILE,fnm));
     snew(dr_clust,clust->clust->nr+1);
     for(i=0; (i<=clust->clust->nr); i++)
       init_dr_res(&dr_clust[i],fcd.disres.nr);
@@ -688,13 +689,13 @@ int gmx_disre(int argc,char *argv[])
 	 atoms->nr*sizeof(atoms->atomname[0]));
   memcpy(atoms->resname,top.atoms.resname,
 	 atoms->nres*sizeof(atoms->resname[0]));
-  mdatoms = init_mdatoms(stdlog,&top.atoms,ir.efep!=efepNO);
+  mdatoms = init_mdatoms(fplog,&top.atoms,ir.efep!=efepNO);
   atoms2md(&top.atoms,&ir,top.idef.il[F_ORIRES].nr,0,NULL,0,top.atoms.nr,
 	   mdatoms);
   update_mdatoms(mdatoms,lambda);
   fr      = mk_forcerec();
-  fprintf(stdlog,"Made forcerec\n");
-  init_forcerec(stdlog,fr,NULL,&ir,&top,cr,box,FALSE,NULL,NULL,NULL,FALSE);
+  fprintf(fplog,"Made forcerec\n");
+  init_forcerec(fplog,fr,NULL,&ir,&top,cr,box,FALSE,NULL,NULL,NULL,FALSE);
   init_nrnb(&nrnb);
   j=0;
   do {
@@ -710,12 +711,12 @@ int gmx_disre(int argc,char *argv[])
 	gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file. t = %8f\n",t);
       my_clust = clust->inv_clust[j];
       range_check(my_clust,0,clust->clust->nr);
-      check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
+      check_viol(fplog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
 		 x,f,fr,pbc_null,g,dr_clust,my_clust,isize,index,vvindex,&fcd);
     }
     else
-      check_viol(stdlog,cr,&(top.idef.il[F_DISRES]),
+      check_viol(fplog,cr,&(top.idef.il[F_DISRES]),
 		 top.idef.iparams,top.idef.functype,
 		 x,f,fr,pbc_null,g,&dr,0,isize,index,vvindex,&fcd);
     if (bPDB) {
@@ -746,12 +747,12 @@ int gmx_disre(int argc,char *argv[])
   close_trj(status);
 
   if (clust) {
-    dump_clust_stats(stdlog,fcd.disres.nr,&(top.idef.il[F_DISRES]),
+    dump_clust_stats(fplog,fcd.disres.nr,&(top.idef.il[F_DISRES]),
 		     top.idef.iparams,clust->clust,dr_clust,
 		     clust->grpname,isize,index);
   }
   else {
-    dump_stats(stdlog,j,fcd.disres.nr,&(top.idef.il[F_DISRES]),
+    dump_stats(fplog,j,fcd.disres.nr,&(top.idef.il[F_DISRES]),
 	       top.idef.iparams,&dr,isize,index,
 	       bPDB ? (&top.atoms) : NULL);
     if (bPDB) {
@@ -776,10 +777,10 @@ int gmx_disre(int argc,char *argv[])
   }
   thanx(stderr);
 
-  fclose(stdlog);
-  
   if (gmx_parallel_env)
     gmx_finalize(cr);
+
+  gmx_log_close(fplog);
   
   return 0;
 }

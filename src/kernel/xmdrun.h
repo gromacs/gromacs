@@ -165,7 +165,8 @@ typedef struct {
 } t_ffscan;
 
 
-extern bool update_forcefield(int nfile,t_filenm fnm[],t_forcerec *fr,
+extern bool update_forcefield(FILE *fplog,
+			      int nfile,t_filenm fnm[],t_forcerec *fr,
 			      int natoms,rvec x[],matrix box);
 /* Modify the parameters. Return TRUE when the scan is finished. */
 

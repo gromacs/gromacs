@@ -352,6 +352,7 @@ int gmx_genion(int argc, char *argv[])
   char        *grpname;
   bool        *bSet,bPDB;
   int         i,nw,nwa,nsa,nsalt,iqtot;
+  FILE        *fplog;
   t_filenm fnm[] = {
     { efTPX, NULL,  NULL,      ffREAD  },
     { efXVG, "-table","table", ffOPTRD },
@@ -378,9 +379,9 @@ int gmx_genion(int argc, char *argv[])
 
   snew(top,1);
   snew(cr,1);
-  init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
-	       opt2fn("-table",NFILE,fnm),top,&inputrec,cr,
-	       &graph,&mdatoms,&grps,&fr,&pot,box,&x);
+  fplog = init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
+		       opt2fn("-table",NFILE,fnm),top,&inputrec,cr,
+		       &graph,&mdatoms,&grps,&fr,&pot,box,&x);
   qtot = 0;
   for(i=0; (i<top->atoms.nr); i++)
     qtot += top->atoms.atom[i].q;
@@ -455,7 +456,7 @@ int gmx_genion(int argc, char *argv[])
   /* Now loop over the ions that have to be placed */
   do {
     if (!bRandom) {
-      calc_pot(stdlog,cr,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
+      calc_pot(fplog,cr,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
       if (bPDB || debug) {
 	char buf[STRLEN];
 	
@@ -489,9 +490,10 @@ int gmx_genion(int argc, char *argv[])
   sfree(top->atoms.pdbinfo);
   top->atoms.pdbinfo = NULL;
   write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,NULL,box);
-
   
   thanx(stderr);
+
+  gmx_log_close(fplog);
   
   return 0;
 }

@@ -452,11 +452,13 @@ static void dump_it_all(FILE *fp,char *title,
                         int natoms,rvec x[],rvec xp[],rvec v[],rvec f[])
 {
 #ifdef DEBUG
-  fprintf(fp,"%s\n",title);
-  pr_rvecs(fp,0,"x",x,natoms);
-  pr_rvecs(fp,0,"xp",xp,natoms);
-  pr_rvecs(fp,0,"v",v,natoms);
-  pr_rvecs(fp,0,"f",f,natoms);
+  if (fp) {
+    fprintf(fp,"%s\n",title);
+    pr_rvecs(fp,0,"x",x,natoms);
+    pr_rvecs(fp,0,"xp",xp,natoms);
+    pr_rvecs(fp,0,"v",v,natoms);
+    pr_rvecs(fp,0,"f",f,natoms);
+  }
 #endif
 }
 
@@ -619,7 +621,8 @@ static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
   }
 }
 
-void update(int          step,
+void update(FILE         *fplog,
+	    int          step,
             real         *dvdlambda,    /* FEP stuff */
             t_inputrec   *inputrec,      /* input record and box stuff	*/
             t_mdatoms    *md,
@@ -652,7 +655,7 @@ void update(int          step,
   
   if (bFirstStep) {
     if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
-      please_cite(stdlog,"Berendsen84a");
+      please_cite(fplog,"Berendsen84a");
 
     /* Set Berendsen tcoupl lambda's to 1, 
      * so runs without Berendsen coupling are not affected.
@@ -680,15 +683,15 @@ void update(int          step,
 	nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
 			  state->nosehoover_xi);
       if (inputrec->epc == epcBERENDSEN)
-	berendsen_pcoupl(inputrec,step,pres,state->box,state->pcoupl_mu);
+	berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
     }
     if (inputrec->epc == epcPARRINELLORAHMAN)
-      parrinellorahman_pcoupl(inputrec,step,pres,
+      parrinellorahman_pcoupl(fplog,step,inputrec,pres,
 			      state->box,state->boxv,M,scale_tot,bFirstStep);
 
     /* Now do the actual update of velocities and positions */
     where();
-    dump_it_all(stdlog,"Before update",
+    dump_it_all(fplog,"Before update",
 		state->natoms,state->x,xprime,state->v,force);
     if (inputrec->eI == eiMD) {
       if (grps->cosacc.cos_accel == 0)
@@ -728,7 +731,7 @@ void update(int          step,
     }
     where();
     inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
-    dump_it_all(stdlog,"After update",
+    dump_it_all(fplog,"After update",
 		state->natoms,state->x,xprime,state->v,force);
   }
 
@@ -761,7 +764,7 @@ void update(int          step,
     }
     where();
 
-    dump_it_all(stdlog,"After Shake",
+    dump_it_all(fplog,"After Shake",
 		state->natoms,state->x,xprime,state->v,force);
 
     /* Apply Essential Dynamics constraints when required.
@@ -772,7 +775,7 @@ void update(int          step,
 
     /* Apply Essential Dynamics constraints when required. */
     if (edyn->bEdsam)
-      do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
+      do_edsam(fplog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
                force,state->box,edyn,bDoUpdate);
 
     /* apply pull constraints when required. Act on xprime, the SHAKED
@@ -799,7 +802,7 @@ void update(int          step,
     where();
   } else if (edyn->bEdsam) {     
       /* no constraints but still edsam - yes, that can happen */
-    do_edsam(stdlog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
+    do_edsam(fplog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
  	     force,state->box,edyn,bDoUpdate);
   };  
   
@@ -846,7 +849,7 @@ void update(int          step,
 	copy_rvec(xprime[n],state->x[n]);
     }
   }
-  dump_it_all(stdlog,"After unshift",
+  dump_it_all(fplog,"After unshift",
 	      state->natoms,state->x,xprime,state->v,force);
   where();
 

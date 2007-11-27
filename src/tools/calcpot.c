@@ -187,11 +187,11 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
   }
   if (inputrec->ePBC != epbcNONE)
     calc_shifts(box,fr->shift_vec);
-  put_charge_groups_in_box(stdlog,0,top->blocks[ebCGS].nr,
+  put_charge_groups_in_box(logf,0,top->blocks[ebCGS].nr,
 			   fr->ePBC,box,&(top->blocks[ebCGS]),x,
 			   fr->cg_cm);
   if (graph)
-    mk_mshift(stdlog,graph,fr->ePBC,box,x);
+    mk_mshift(logf,graph,fr->ePBC,box,x);
   /* Do the actual neighbour searching and if twin range electrostatics
    * also do the calculation of long range forces and energies.
    */
@@ -214,12 +214,12 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
   low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
 }
 
-void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
-		  t_inputrec *inputrec,t_commrec *cr,
-		  t_graph **graph,t_mdatoms **mdatoms,
-		  t_groups *grps,
-		  t_forcerec **fr,real **pot,
-		  matrix box,rvec **x)
+FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
+		   t_inputrec *inputrec,t_commrec *cr,
+		   t_graph **graph,t_mdatoms **mdatoms,
+		   t_groups *grps,
+		   t_forcerec **fr,real **pot,
+		   matrix box,rvec **x)
 {
   real     t,t0,lam,lam0;
   bool     bNEMD,bSA;
@@ -231,11 +231,12 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   int      fp_ene,m;
   rvec     box_size;
   tensor   force_vir,shake_vir;
+  FILE     *fplog;
   
   /* Initiate */
   cr->nnodes = 1; cr->nodeid    = 0; cr->left   = 0; cr->right  = 1;
   cr->nthreads = 1 ; cr->threadid = 0;
-  open_log(log,cr,FALSE);
+  fplog = gmx_log_open(log,cr,FALSE);
 
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
@@ -244,22 +245,22 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 
   init_nrnb(&nrnb);
   snew(state,1);
-  init_single(stdlog,inputrec,tpx,top,state);
+  init_single(fplog,inputrec,tpx,top,state);
   clear_rvec(mutot);
-  init_md(cr,inputrec,&t,&t0,&lam,&lam0,
+  init_md(fplog,cr,inputrec,&t,&t0,&lam,&lam0,
 	  &nrnb,top,NULL,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL);
 
-  init_groups(stdlog,&top->atoms,&(inputrec->opts),grps);  
+  init_groups(fplog,&top->atoms,&(inputrec->opts),grps);  
 
-  *mdatoms = init_mdatoms(stdlog,&top->atoms,FALSE);
+  *mdatoms = init_mdatoms(fplog,&top->atoms,FALSE);
   atoms2md(&top->atoms,inputrec,0,0,NULL,0,top->atoms.nr,*mdatoms);
 
   if (inputrec->ePBC == epbcXYZ) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
-    *graph = mk_graph(&(top->idef),top->atoms.nr,FALSE,FALSE);
-    mk_mshift(stdlog,*graph,inputrec->ePBC,state->box,state->x);
+    *graph = mk_graph(fplog,&(top->idef),top->atoms.nr,FALSE,FALSE);
+    mk_mshift(fplog,*graph,inputrec->ePBC,state->box,state->x);
   } else {
     *graph = NULL;
   }
@@ -278,14 +279,14 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();
-  init_forcerec(stdlog,*fr,NULL,inputrec,top,cr,
+  init_forcerec(fplog,*fr,NULL,inputrec,top,cr,
 		state->box,FALSE,table,table,NULL,TRUE);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)
     box_size[m] = state->box[m][m];
   if (inputrec->ePBC != epbcNONE)
-    do_pbc_first(stdlog,state->box,*fr,*graph,state->x);
+    do_pbc_first(fplog,state->box,*fr,*graph,state->x);
 
   copy_mat(state->box,box);
   *x = state->x;
@@ -294,4 +295,6 @@ void init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   sfree(state);
 
   snew(*pot,top->atoms.nr);
+
+  return fplog;
 }

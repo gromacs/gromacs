@@ -122,7 +122,7 @@ static void copy2range(int D,real c[],t_range r[])
   }
 }
 
-t_genalg *init_ga(char *infile,int D,t_range range[])
+t_genalg *init_ga(FILE *fplog,char *infile,int D,t_range range[])
 {
   FILE     *fpin_ptr;
   t_genalg *ga;
@@ -173,16 +173,16 @@ t_genalg *init_ga(char *infile,int D,t_range range[])
     }
   }
 
-  fprintf(stdlog,"-----------------------------------------------\n");  
-  fprintf(stdlog,"Genetic algorithm parameters\n");
-  fprintf(stdlog,"-----------------------------------------------\n");  
-  fprintf(stdlog,"Number of variables:   %d\n",ga->D);
-  fprintf(stdlog,"Population size:       %d\n",ga->NP);   
-  fprintf(stdlog,"Strategy:              %s\n",strat[ga->strategy]);
-  fprintf(stdlog,"Weight factor:         %g\n",ga->FF);
-  fprintf(stdlog,"Crossing over factor:  %g\n",ga->CR);
-  fprintf(stdlog,"Random seed:           %d\n",ga->seed);
-  fprintf(stdlog,"-----------------------------------------------\n");  
+  fprintf(fplog,"-----------------------------------------------\n");  
+  fprintf(fplog,"Genetic algorithm parameters\n");
+  fprintf(fplog,"-----------------------------------------------\n");  
+  fprintf(fplog,"Number of variables:   %d\n",ga->D);
+  fprintf(fplog,"Population size:       %d\n",ga->NP);   
+  fprintf(fplog,"Strategy:              %s\n",strat[ga->strategy]);
+  fprintf(fplog,"Weight factor:         %g\n",ga->FF);
+  fprintf(fplog,"Crossing over factor:  %g\n",ga->CR);
+  fprintf(fplog,"Random seed:           %d\n",ga->seed);
+  fprintf(fplog,"-----------------------------------------------\n");  
   
   return ga;
 }

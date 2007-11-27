@@ -506,8 +506,7 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 	    ShortProgram(),noderank,nnodes);
   else
     fprintf(stderr,"Halting program %s\n",ShortProgram());
-  if (stdlog)
-    fclose(stdlog);
+
   thanx(stderr);
   MPI_Abort(MPI_COMM_WORLD,errorno);
   exit(1);

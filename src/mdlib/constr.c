@@ -173,7 +173,7 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
   fclose(out);
 }
 			     
-static void dump_confs(int step,t_atoms *atoms,
+static void dump_confs(FILE *fplog,int step,t_atoms *atoms,
 		       int start,int homenr,gmx_domdec_t *dd,
 		       rvec x[],rvec xprime[],matrix box)
 {
@@ -183,7 +183,8 @@ static void dump_confs(int step,t_atoms *atoms,
   write_constr_pdb(buf,"initial coordinates",atoms,start,homenr,dd,x,box);
   sprintf(buf,"step%dc",step);
   write_constr_pdb(buf,"coordinates after constraining",atoms,start,homenr,dd,xprime,box);
-  fprintf(stdlog,"Wrote pdb files with previous and current coordinates\n");
+  if (fplog)
+    fprintf(fplog,"Wrote pdb files with previous and current coordinates\n");
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
 }
 
@@ -246,7 +247,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     if (econq != econqCoord)
       gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
 
-    bOK = bshakef(stdlog,homenr,md->invmass,constr->nblocks,constr->sblock,
+    bOK = bshakef(fplog,homenr,md->invmass,constr->nblocks,constr->sblock,
 		  &top->idef,ir,box,x,xprime,nrnb,lambda,dvdlambda,
 		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
     if (!bOK && constr->maxwarn >= 0 && fplog)
@@ -264,7 +265,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     mH   = md->massT[settle->iatoms[1]+1];
     dOH  = top->idef.iparams[settle->iatoms[0]].settle.doh;
     dHH  = top->idef.iparams[settle->iatoms[0]].settle.dhh;
-    csettle(stdlog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
+    csettle(fplog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
 	    invdt,v[0],vir!=NULL,rmdr,&error);
     inc_nrnb(nrnb,eNR_SETTLE,nsettle);
     if (v != NULL)
@@ -297,7 +298,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   }
 
   if (!bOK && constr->maxwarn >= 0) 
-    dump_confs(step,&(top->atoms),start,homenr,dd,x,xprime,box);
+    dump_confs(fplog,step,&(top->atoms),start,homenr,dd,x,xprime,box);
 
   return bOK;
 }
@@ -372,7 +373,7 @@ void set_constraints(struct gmx_constr *constr,
        * and the atom numbers, really sorting a segment of the array!
        */
 #ifdef DEBUGIDEF 
-      pr_idef(stdlog,0,"Before Sort",idef);
+      pr_idef(fplog,0,"Before Sort",idef);
 #endif
       iatom=idef->il[F_CONSTR].iatoms;
       snew(sb,ncons);
@@ -400,7 +401,7 @@ void set_constraints(struct gmx_constr *constr,
 	for(m=0; (m<DIM); m++)
 	  iatom[m]=sb[i].iatom[m];
 #ifdef DEBUGIDEF
-      pr_idef(stdlog,0,"After Sort",idef);
+      pr_idef(fplog,0,"After Sort",idef);
 #endif
       
       j=0;

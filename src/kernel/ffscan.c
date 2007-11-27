@@ -116,6 +116,7 @@ int main(int argc,char *argv[])
 #define NPA asize(pa)
   unsigned  long Flags = 0;
   t_edsamyn edyn;
+  FILE      *fplog;
 
   ivec ddxyz = { 1,1,1 };
 
@@ -135,22 +136,24 @@ int main(int argc,char *argv[])
   if (ff.nmol < 1)
     gmx_fatal(FARGS,"Can not fit %d molecules",ff.nmol);
     
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr,FALSE);
+  fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,FALSE);
 
   if (MASTER(cr)) {
-    CopyRight(stdlog,argv[0]);
-    please_cite(stdlog,"Lindahl2001a");
-    please_cite(stdlog,"Berendsen95a");
+    CopyRight(fplog,argv[0]);
+    please_cite(fplog,"Lindahl2001a");
+    please_cite(fplog,"Berendsen95a");
   }
   
   set_ffvars(&ff);
   
   Flags = (Flags | MD_FFSCAN);
 
-  mdrunner(cr,NFILE,fnm,ff.bVerbose,FALSE,ddxyz,0,0,loadx,loady,loadz,1,
+  mdrunner(fplog,cr,NFILE,fnm,ff.bVerbose,FALSE,ddxyz,0,0,loadx,loady,loadz,1,
 	   &edyn,0,0,Flags);
   if (gmx_parallel_env)
     gmx_finalize(cr);
+
+  gmx_log_close(fplog);
 
   return 0;
 }
