@@ -1349,7 +1349,7 @@ _nb_kernel213_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb213_outerend
+        jz .nb213_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb213_n], esi
@@ -1359,7 +1359,7 @@ _nb_kernel213_ia32_sse2:
         mov   ecx, [esp + nb213_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb213_end
+        jz .nb213_end
         ;# non-zero, do one more workunit
         jmp   .nb213_threadloop
 .nb213_end:
@@ -2208,7 +2208,7 @@ _nb_kernel213nf_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb213nf_outerend
+        jz .nb213nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb213nf_n], esi
@@ -2218,7 +2218,7 @@ _nb_kernel213nf_ia32_sse2:
         mov   ecx, [esp + nb213nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb213nf_end
+        jz .nb213nf_end
         ;# non-zero, do one more workunit
         jmp   .nb213nf_threadloop
 .nb213nf_end:

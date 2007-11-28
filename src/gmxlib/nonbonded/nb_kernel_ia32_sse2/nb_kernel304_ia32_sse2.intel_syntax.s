@@ -2690,7 +2690,7 @@ _nb_kernel304_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb304_outerend
+        jz .nb304_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb304_n], esi
@@ -2700,7 +2700,7 @@ _nb_kernel304_ia32_sse2:
         mov   ecx, [esp + nb304_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb304_end
+        jz .nb304_end
         ;# non-zero, do one more workunit
         jmp   .nb304_threadloop
 .nb304_end:
@@ -4521,7 +4521,7 @@ _nb_kernel304nf_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb304nf_outerend
+        jz .nb304nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb304nf_n], esi
@@ -4531,7 +4531,7 @@ _nb_kernel304nf_ia32_sse2:
         mov   ecx, [esp + nb304nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb304nf_end
+        jz .nb304nf_end
         ;# non-zero, do one more workunit
         jmp   .nb304nf_threadloop
 .nb304nf_end:

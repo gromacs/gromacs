@@ -749,7 +749,7 @@ _nb_kernel310_ia32_sse2.nb310_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel310_ia32_sse2.nb310_outerend
+        jz _nb_kernel310_ia32_sse2.nb310_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb310_n(%esp)
@@ -759,7 +759,7 @@ _nb_kernel310_ia32_sse2.nb310_outerend:
         movl  nb310_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel310_ia32_sse2.nb310_end
+        jz _nb_kernel310_ia32_sse2.nb310_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel310_ia32_sse2.nb310_threadloop
 _nb_kernel310_ia32_sse2.nb310_end: 
@@ -1355,7 +1355,7 @@ _nb_kernel310nf_ia32_sse2.nb310nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel310nf_ia32_sse2.nb310nf_outerend
+        jz _nb_kernel310nf_ia32_sse2.nb310nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb310nf_n(%esp)
@@ -1365,7 +1365,7 @@ _nb_kernel310nf_ia32_sse2.nb310nf_outerend:
         movl  nb310nf_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel310nf_ia32_sse2.nb310nf_end
+        jz _nb_kernel310nf_ia32_sse2.nb310nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel310nf_ia32_sse2.nb310nf_threadloop
 _nb_kernel310nf_ia32_sse2.nb310nf_end: 

@@ -967,7 +967,7 @@ _nb_kernel430_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb430_outerend
+        jz .nb430_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb430_n], esi
@@ -977,7 +977,7 @@ _nb_kernel430_ia32_sse2:
         mov   ecx, [esp + nb430_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb430_end
+        jz .nb430_end
         ;# non-zero, do one more workunit
         jmp   .nb430_threadloop
 .nb430_end:
@@ -1678,7 +1678,7 @@ _nb_kernel430nf_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb430nf_outerend
+        jz .nb430nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb430nf_n], esi
@@ -1688,7 +1688,7 @@ _nb_kernel430nf_ia32_sse2:
         mov   ecx, [esp + nb430nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb430nf_end
+        jz .nb430nf_end
         ;# non-zero, do one more workunit
         jmp   .nb430nf_threadloop
 .nb430nf_end:

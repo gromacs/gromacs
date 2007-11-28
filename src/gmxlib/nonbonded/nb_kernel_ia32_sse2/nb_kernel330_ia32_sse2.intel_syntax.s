@@ -889,7 +889,7 @@ _nb_kernel330_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb330_outerend
+        jz .nb330_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb330_n], esi
@@ -899,7 +899,7 @@ _nb_kernel330_ia32_sse2:
         mov   ecx, [esp + nb330_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb330_end
+        jz .nb330_end
         ;# non-zero, do one more workunit
         jmp   .nb330_threadloop
 .nb330_end:
@@ -1559,7 +1559,7 @@ _nb_kernel330nf_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb330nf_outerend
+        jz .nb330nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb330nf_n], esi
@@ -1569,7 +1569,7 @@ _nb_kernel330nf_ia32_sse2:
         mov   ecx, [esp + nb330nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb330nf_end
+        jz .nb330nf_end
         ;# non-zero, do one more workunit
         jmp   .nb330nf_threadloop
 .nb330nf_end:

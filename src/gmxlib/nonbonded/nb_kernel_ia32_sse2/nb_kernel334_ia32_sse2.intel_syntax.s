@@ -3116,7 +3116,7 @@ _nb_kernel334_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb334_outerend
+        jz .nb334_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb334_n], esi
@@ -3126,7 +3126,7 @@ _nb_kernel334_ia32_sse2:
         mov   ecx, [esp + nb334_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb334_end
+        jz .nb334_end
         ;# non-zero, do one more workunit
         jmp   .nb334_threadloop
 .nb334_end:
@@ -5165,7 +5165,7 @@ _nb_kernel334nf_ia32_sse2:
 	;# esi already loaded with n
 	inc esi
         sub ecx, esi
-        jecxz .nb334nf_outerend
+        jz .nb334nf_outerend
 
         ;# not last, iterate outer loop once more!  
         mov [esp + nb334nf_n], esi
@@ -5175,7 +5175,7 @@ _nb_kernel334nf_ia32_sse2:
         mov   ecx, [esp + nb334nf_nri]
 	;# esi already loaded with n above
         sub   ecx, esi
-        jecxz .nb334nf_end
+        jz .nb334nf_end
         ;# non-zero, do one more workunit
         jmp   .nb334nf_threadloop
 .nb334nf_end:
