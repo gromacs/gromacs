@@ -582,7 +582,7 @@ real bond_angle(const rvec xi,const rvec xj,const rvec xk,const t_pbc *pbc,
   *t1 = pbc_rvec_sub(pbc,xi,xj,r_ij);			/*  3		*/
   *t2 = pbc_rvec_sub(pbc,xk,xj,r_kj);			/*  3		*/
 
-  *costh=cos_angle_non_linear(r_ij,r_kj);		/* 25		*/
+  *costh=cos_angle(r_ij,r_kj);		/* 25		*/
   th=acos(*costh);			/* 10		*/
 					/* 41 TOTAL	*/
   return th;
@@ -597,7 +597,7 @@ real angles(int nbonds,
 {
   int  i,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
-  real cos_theta,theta,dVdt,va,vtot;
+  real cos_theta,cos_theta2,theta,dVdt,va,vtot;
   ivec jt,dt_ij,dt_kj;
   
   vtot = 0.0;
@@ -617,17 +617,15 @@ real angles(int nbonds,
 			   theta,lambda,&va,&dVdt);  /*  21  */
     vtot += va;
     
-    {
+    cos_theta2 = sqr(cos_theta);
+    if (cos_theta2 < 1) {
       int  m;
-      real snt,st,sth;
+      real st,sth;
       real cik,cii,ckk;
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      snt=sin(theta);				/*  10		*/
-      if (fabs(snt) < 1e-12)
-	snt=1e-12;
-      st  = dVdt/snt;				/*  10		*/
+      st  = dVdt*invsqrt(1 - cos_theta2);	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
@@ -660,7 +658,7 @@ real angles(int nbonds,
       rvec_inc(fshift[t1],f_i);
       rvec_inc(fshift[CENTRAL],f_j);
       rvec_inc(fshift[t2],f_k);
-    }                                           /* 168 TOTAL	*/
+    }                                           /* 161 TOTAL	*/
   }
   return vtot;
 }
@@ -674,7 +672,8 @@ real urey_bradley(int nbonds,
 {
   int  i,m,ai,aj,ak,t1,t2,type,ki;
   rvec r_ij,r_kj,r_ik;
-  real cos_theta,theta,dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
+  real cos_theta,cos_theta2,theta;
+  real dVdt,va,vtot,kth,th0,kUB,r13,dr,dr2,vbond,fbond,fik;
   ivec jt,dt_ij,dt_kj,dt_ik;
   
   vtot = 0.0;
@@ -700,16 +699,14 @@ real urey_bradley(int nbonds,
 
     *dvdlambda += harmonic(kUB,kUB,r13,r13,dr,lambda,&vbond,&fbond); /*  19  */
 
-    {
-      real snt,st,sth;
+    cos_theta2 = sqr(cos_theta);                /*   1		*/
+    if (cos_theta2 < 1) {
+      real st,sth;
       real cik,cii,ckk;
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      snt=sin(theta);				/*  10		*/
-      if (fabs(snt) < 1e-12)
-	snt=1e-12;
-      st  = dVdt/snt;				/*  10		*/
+      st  = dVdt*invsqrt(1 - cos_theta2);	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
@@ -742,7 +739,7 @@ real urey_bradley(int nbonds,
       rvec_inc(fshift[t1],f_i);
       rvec_inc(fshift[CENTRAL],f_j);
       rvec_inc(fshift[t2],f_k);
-    }                                           /* 168 TOTAL	*/
+    }                                           /* 161 TOTAL	*/
     /* Time for the bond calculations */
     if (dr2 == 0.0)
       continue;
@@ -774,7 +771,7 @@ real quartic_angles(int nbonds,
 {
   int  i,j,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
-  real cos_theta,theta,dt,dVdt,va,dtp,c,vtot;
+  real cos_theta,cos_theta2,theta,dt,dVdt,va,dtp,c,vtot;
   ivec jt,dt_ij,dt_kj;
   
   vtot = 0.0;
@@ -802,17 +799,15 @@ real quartic_angles(int nbonds,
 
     vtot += va;
     
-    {
+    cos_theta2 = sqr(cos_theta);                /*   1		*/
+    if (cos_theta2 < 1) {
       int  m;
-      real snt,st,sth;
+      real st,sth;
       real cik,cii,ckk;
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      snt=sin(theta);				/*  10		*/
-      if (fabs(snt) < 1e-12)
-	snt=1e-12;
-      st  = dVdt/snt;				/*  10		*/
+      st  = dVdt*invsqrt(1 - cos_theta2);    	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
@@ -845,7 +840,7 @@ real quartic_angles(int nbonds,
       rvec_inc(fshift[t1],f_i);
       rvec_inc(fshift[CENTRAL],f_j);
       rvec_inc(fshift[t2],f_k);
-    }                                           /* 160 TOTAL	*/
+    }                                           /* 153 TOTAL	*/
   }
   return vtot;
 }
@@ -1176,9 +1171,9 @@ static real low_angres(int nbonds,
 {
   int  i,m,type,ai,aj,ak,al;
   int  t1,t2;
-  real phi,cos_phi,vid,vtot,dVdphi;
+  real phi,cos_phi,cos_phi2,vid,vtot,dVdphi;
   rvec r_ij,r_kl,f_i,f_k;
-  real st,sth,sin_phi,nrij2,nrkl2,c,cij,ckl;
+  real st,sth,nrij2,nrkl2,c,cij,ckl;
 
   ivec dt;  
   t2 = 0; /* avoid warning with gcc-3.3. It is never used uninitialized */
@@ -1212,46 +1207,46 @@ static real low_angres(int nbonds,
     
     vtot += vid;
 
-    sin_phi = sin(phi);			        /*  10		*/
-    if (fabs(sin_phi) < 1e-12)
-      sin_phi=1e-12;
-    st  = -dVdphi/sin_phi;		        /*  10		*/
-    sth = st*cos_phi;				/*   1		*/
-    nrij2 = iprod(r_ij,r_ij);			/*   5		*/
-    nrkl2 = iprod(r_kl,r_kl);                   /*   5          */
-    
-    c   = st*invsqrt(nrij2*nrkl2);		/*  11		*/ 
-    cij = sth/nrij2;				/*  10		*/
-    ckl = sth/nrkl2;				/*  10		*/
-    
-    for (m=0; m<DIM; m++) {			/*  18+18       */
-      f_i[m] = (c*r_kl[m]-cij*r_ij[m]);
-      f[ai][m] += f_i[m];
-      f[aj][m] -= f_i[m];
-      if (!bZAxis) {
-	f_k[m] = (c*r_ij[m]-ckl*r_kl[m]);
-	f[ak][m] += f_k[m];
-	f[al][m] -= f_k[m];
+    cos_phi2 = sqr(cos_phi);                    /*   1		*/
+    if (cos_phi2 < 1) {
+      st  = -dVdphi*invsqrt(1 - cos_phi2);      /*  12		*/
+      sth = st*cos_phi;				/*   1		*/
+      nrij2 = iprod(r_ij,r_ij);			/*   5		*/
+      nrkl2 = iprod(r_kl,r_kl);                 /*   5          */
+      
+      c   = st*invsqrt(nrij2*nrkl2);		/*  11		*/ 
+      cij = sth/nrij2;				/*  10		*/
+      ckl = sth/nrkl2;				/*  10		*/
+      
+      for (m=0; m<DIM; m++) {			/*  18+18       */
+	f_i[m] = (c*r_kl[m]-cij*r_ij[m]);
+	f[ai][m] += f_i[m];
+	f[aj][m] -= f_i[m];
+	if (!bZAxis) {
+	  f_k[m] = (c*r_ij[m]-ckl*r_kl[m]);
+	  f[ak][m] += f_k[m];
+	  f[al][m] -= f_k[m];
+	}
       }
-    }
-    
-    if (g) {
-      ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-      t1=IVEC2IS(dt);
-    }
-    rvec_inc(fshift[t1],f_i);
-    rvec_dec(fshift[CENTRAL],f_i);
-    if (!bZAxis) {
+      
       if (g) {
-	ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
-	t2=IVEC2IS(dt);
+	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+	t1=IVEC2IS(dt);
       }
-      rvec_inc(fshift[t2],f_k);
-      rvec_dec(fshift[CENTRAL],f_k);
+      rvec_inc(fshift[t1],f_i);
+      rvec_dec(fshift[CENTRAL],f_i);
+      if (!bZAxis) {
+	if (g) {
+	  ivec_sub(SHIFT_IVEC(g,ak),SHIFT_IVEC(g,al),dt);
+	  t2=IVEC2IS(dt);
+	}
+	rvec_inc(fshift[t2],f_k);
+	rvec_dec(fshift[CENTRAL],f_k);
+      }
     }
   }
 
-  return vtot;  /*  191 / 164 (bZAxis)  total  */
+  return vtot;  /*  184 / 157 (bZAxis)  total  */
 }
 
 real angres(int nbonds,
@@ -1475,7 +1470,7 @@ real g96bond_angle(const rvec xi,const rvec xj,const rvec xk,const t_pbc *pbc,
   *t1 = pbc_rvec_sub(pbc,xi,xj,r_ij);			/*  3		*/
   *t2 = pbc_rvec_sub(pbc,xk,xj,r_kj);			/*  3		*/
 
-  costh=cos_angle_non_linear(r_ij,r_kj);		/* 25		*/
+  costh=cos_angle(r_ij,r_kj); 		/* 25		*/
 					/* 41 TOTAL	*/
   return costh;
 }
@@ -1794,7 +1789,7 @@ real tab_angles(int nbonds,
 {
   int  i,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
-  real cos_theta,theta,dVdt,va,vtot;
+  real cos_theta,cos_theta2,theta,dVdt,va,vtot;
   ivec jt,dt_ij,dt_kj;
   
   vtot = 0.0;
@@ -1813,17 +1808,15 @@ real tab_angles(int nbonds,
 			     theta,lambda,&va,&dVdt);  /*  22  */
     vtot += va;
     
-    {
+    cos_theta2 = sqr(cos_theta);                /*   1		*/
+    if (cos_theta2 < 1) {
       int  m;
       real snt,st,sth;
       real cik,cii,ckk;
       real nrkj2,nrij2;
       rvec f_i,f_j,f_k;
       
-      snt=sin(theta);				/*  10		*/
-      if (fabs(snt) < 1e-12)
-	snt=1e-12;
-      st  = dVdt/snt;				/*  10		*/
+      st  = dVdt*invsqrt(1 - cos_theta2);	/*  12		*/
       sth = st*cos_theta;			/*   1		*/
 #ifdef DEBUG
       if (debug)
