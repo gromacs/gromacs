@@ -1554,7 +1554,7 @@ _nb_kernel202_ia32_sse.nb202_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel202_ia32_sse.nb202_outerend
+        jz _nb_kernel202_ia32_sse.nb202_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb202_n(%esp)
@@ -1564,7 +1564,7 @@ _nb_kernel202_ia32_sse.nb202_outerend:
         movl  nb202_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel202_ia32_sse.nb202_end
+        jz _nb_kernel202_ia32_sse.nb202_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel202_ia32_sse.nb202_threadloop
 _nb_kernel202_ia32_sse.nb202_end: 
@@ -2394,7 +2394,7 @@ _nb_kernel202nf_ia32_sse.nb202nf_updateouterdata:
         ## esi already loaded with n
         incl %esi
         subl %esi,%ecx
-        jecxz _nb_kernel202nf_ia32_sse.nb202nf_outerend
+        jz _nb_kernel202nf_ia32_sse.nb202nf_outerend
 
         ## not last, iterate outer loop once more!  
         movl %esi,nb202nf_n(%esp)
@@ -2404,7 +2404,7 @@ _nb_kernel202nf_ia32_sse.nb202nf_outerend:
         movl  nb202nf_nri(%esp),%ecx
         ## esi already loaded with n above
         subl  %esi,%ecx
-        jecxz _nb_kernel202nf_ia32_sse.nb202nf_end
+        jz _nb_kernel202nf_ia32_sse.nb202nf_end
         ## non-zero, do one more workunit
         jmp   _nb_kernel202nf_ia32_sse.nb202nf_threadloop
 _nb_kernel202nf_ia32_sse.nb202nf_end: 
