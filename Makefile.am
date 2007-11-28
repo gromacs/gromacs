@@ -48,8 +48,8 @@ links:
 	   (test ! -f $$i && $(LN_S) $(bindir)/$$i . ; exit 0); \
 	done
 tests:
-	(if test -d "test"; then cd "test"; ./gmxtest all; cd ..; \
-	else echo "No test directory found. Please download and unpack it here.";\
+	(if test -d "gmxtest"; then cd "gmxtest"; ./gmxtest.pl all; cd ..; \
+	else echo "No gmxtest directory found. Please download and unpack it here.";\
 	fi)
 
 RPMARCH=`rpm --showrc | awk '/^build arch/ {print $$4}'`
