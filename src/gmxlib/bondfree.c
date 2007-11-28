@@ -863,7 +863,7 @@ real dih_angle(const rvec xi,const rvec xj,const rvec xk,const rvec xl,
 
   cprod(r_ij,r_kj,m); 			/*  9 		*/
   cprod(r_kj,r_kl,n);			/*  9		*/
-  *cos_phi=cos_angle_non_linear(m,n); 		/* 41 		*/
+  *cos_phi=cos_angle(m,n); 		/* 41 		*/
   phi=acos(*cos_phi); 			/* 10 		*/
   ipr=iprod(r_ij,n); 			/*  5 		*/
   (*sign)=(ipr<0.0)?-1.0:1.0;
@@ -882,13 +882,14 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
   rvec f_i,f_j,f_k,f_l;
   rvec uvec,vvec,svec,dx_jl;
   real iprm,iprn,nrkj,nrkj2;
-  real a,p,q;
+  real a,p,q,toler;
   ivec jt,dt_ij,dt_kj,dt_lj;  
   
   iprm  = iprod(m,m);		/*  5 	*/
   iprn  = iprod(n,n);		/*  5	*/
-  if ((iprm > GMX_REAL_EPS) && (iprn > GMX_REAL_EPS)) {
-    nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
+  nrkj2 = iprod(r_kj,r_kj);	/*  5	*/
+  toler = nrkj2*GMX_REAL_EPS;
+  if ((iprm > toler) && (iprn > toler)) {
     nrkj  = nrkj2*invsqrt(nrkj2);	/* 10	*/
     a     = -ddphi*nrkj/iprm;	/* 11	*/
     svmul(a,m,f_i);		/*  3	*/
@@ -1199,7 +1200,7 @@ static real low_angres(int nbonds,
       r_kl[ZZ] = 1;
     }
 
-    cos_phi = cos_angle_non_linear(r_ij,r_kl);		/* 25		*/
+    cos_phi = cos_angle(r_ij,r_kl);		/* 25		*/
     phi     = acos(cos_phi);                    /* 10           */
 
     *dvdlambda += dopdihs_min(forceparams[type].pdihs.cpA,

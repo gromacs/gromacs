@@ -465,7 +465,7 @@ static inline real cos_angle(const rvec a,const rvec b)
    */
   real   cos;
   int    m;
-  double aa,bb,ip,ipa,ipb; /* For accuracy these must be double! */
+  double aa,bb,ip,ipab,ipa,ipb; /* For accuracy these must be double! */
   
   ip=ipa=ipb=0.0;
   for(m=0; (m<DIM); m++) {		/* 18		*/
@@ -475,7 +475,11 @@ static inline real cos_angle(const rvec a,const rvec b)
     ipa += aa*aa;
     ipb += bb*bb;
   }
-  cos=ip*invsqrt(ipa*ipb);		/*  7		*/
+  ipab = ipa*ipb;
+  if (ipab > ip*ip*GMX_REAL_EPS)
+    cos = ip*invsqrt(ipab);		/*  7		*/
+  else 
+    cos = 1;
 					/* 25 TOTAL	*/
   if (cos > 1.0) 
     return  1.0; 
@@ -505,7 +509,7 @@ static inline real cos_angle_non_linear(const rvec a,const rvec b)
     ipb += bb*bb;
   }
   ipab = ipa*ipb;
-  if (fabs(ipab) > GMX_REAL_EPS)
+  if (ipab > ip*ip*GMX_REAL_EPS)
     cos = ip*invsqrt(ipab);		/*  7		*/
   else 
     cos = 1;
