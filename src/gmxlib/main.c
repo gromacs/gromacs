@@ -314,7 +314,8 @@ t_commrec *init_multisystem(t_commrec *cr,int nfile,t_filenm fnm[],bool bParFn)
       /* Because of possible multiple extensions per type we must look 
        * at the actual file name 
        */
-      if ((is_output(&fnm[i]) || fnm[i].ftp == efTPX) && fnm[i].ftp != efLOG) {
+      if ((is_output(&fnm[i]) || fnm[i].ftp == efTPX ||
+	   strcmp(fnm[i].opt,"-rerun") == 0) && fnm[i].ftp != efLOG) {
 	ftp = fn2ftp(fnm[i].fns[0]);
 	par_fn(fnm[i].fns[0],ftp,mcr,buf,255);
 	sfree(fnm[i].fns[0]);
