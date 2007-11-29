@@ -1664,6 +1664,15 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
 	sfree(cell_x);
       }
     }
+    /* The following limitation is to avoid that a cell would receive
+     * some of its own home charge groups back over the periodic boundary.
+     * Double charge groups cause trouble with the global indices.
+     */
+    if (dd->nc[d] > 1 && np[d] >= dd->nc[d] && DDMASTER(dd)) {
+      gmx_fatal(FARGS,"The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d cells or increase the box size in this direction",
+		dim2char(d),box[d][d],dd->skew_fac[d],comm->cutoff,dd->nc[d],
+		dd->nc[d]);
+    }
   }
 
   if (comm->npmenodes)
