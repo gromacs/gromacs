@@ -588,7 +588,7 @@ void gmx_tmpnam(char *buf)
   case EEXIST:
     gmx_fatal(FARGS,"mkstemp created existing file",buf);
     break;
-  case EACCESS: 
+  case EACCES: 
     gmx_fatal(FARGS,"Permission denied for opening %s",buf);
     break;
   default:
