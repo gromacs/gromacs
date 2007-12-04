@@ -105,7 +105,7 @@ t_dlg *select_filter(t_x11 *x11,t_gmx *gmx)
   static char *ok="\"Ok\"";
   FILE   *tmp;
   t_dlg  *dlg;
-  char   tmpfile[32];
+  char   tmpfile[STRLEN];
   int    i,j,k,len,tlen,ht,ncol,nrow,x0;
 
   len=strlen(title);
@@ -128,7 +128,13 @@ t_dlg *select_filter(t_x11 *x11,t_gmx *gmx)
 #ifdef DEBUG
   fprintf(stderr,"file: %s\n",tmpfile);
 #endif
-  tmp=fopen(tmpfile,"w");
+  if ((tmp = fopen(tmpfile,"w")) == NULL) {
+    sprintf(tmpfile,"%ctmp%cfilterXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
+    gmx_tmpnam(tmpfile);
+  }
+  if ((tmp = fopen(tmpfile,"w")) == NULL) 
+    gmx_fatal(FARGS,"Can not open tmp file %s",tmpfile);
+  
   tlen=1+ncol*(1+len);
   fprintf(tmp,"grid %d %d {\n\n",tlen,ht);
 

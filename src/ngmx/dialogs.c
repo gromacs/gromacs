@@ -76,7 +76,13 @@ static void shell_comm(char *title,char *script,int nsleep)
   strcpy(tmp,"dialogXXXXXX");
   gmx_tmpnam(tmp);
   
-  tfil = ffopen(tmp,"w");
+  if ((tfil = fopen(tmp,"w")) == NULL) {
+    sprintf(tmp,"%stmp%sdialogXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
+    gmx_tmpnam(tmp);
+  }
+  if ((tfil = fopen(tmp,"w")) == NULL) 
+    gmx_fatal(FARGS,"Can not open tmp file %s",tmp);
+  
   fprintf(tfil,"%s\n",script);
   fprintf(tfil,"sleep %d\n",nsleep);
   fclose(tfil);

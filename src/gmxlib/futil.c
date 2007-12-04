@@ -52,21 +52,6 @@
 #include "smalloc.h"
 #include "statutil.h"
 
- 
-/* Native windows uses backslash path separators.
- * Cygwin and everybody else in the world use slash.
- * When reading the PATH environment variable, Unix separates entries
- * with colon, while windows uses semicolon.
- */
-#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
-#define DIR_SEPARATOR '\\'
-#define PATH_SEPARATOR ";"
-#else
-#define DIR_SEPARATOR '/'
-#define PATH_SEPARATOR ":"
-#endif
-
-
 typedef struct t_pstack {
   FILE   *fp;
   struct t_pstack *prev;
@@ -588,7 +573,7 @@ void gmx_tmpnam(char *buf)
     buf[i] = 'X';
   }
   /* mktemp is dangerous and we should use mkstemp instead, but 
-   * since windows doesnt support it we have to separate the the cases:
+   * since windows doesnt support it we have to separate the cases:
    */
 #if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
   fd = open(mktemp(buf),O_RDWR | O_EXCL | O_CREAT, S_IREAD | S_IWRITE );
@@ -596,10 +581,19 @@ void gmx_tmpnam(char *buf)
   fd = mkstemp(buf);
 #endif
 
-  if (fd == EINVAL)
-    gmx_fatal(FARGS,"Invalid template %s for mkstemp (source %s, line %d)",buf,__FILE__,__LINE__);
-  else if (fd == EEXIST)
-    gmx_fatal(FARGS,"mkstemp created existing file %s (source %s, line %d)",buf,__FILE__,__LINE__);
+  switch (fd) {
+  case EINVAL:
+    gmx_fatal(FARGS,"Invalid template %s for mkstemp",buf);
+    break;
+  case EEXIST:
+    gmx_fatal(FARGS,"mkstemp created existing file",buf);
+    break;
+  case EACCESS: 
+    gmx_fatal(FARGS,"Permission denied for opening %s",buf);
+    break;
+  default:
+    break;
+  }   
   close(fd);
   /* Buf should now be OK */
 }

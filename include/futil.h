@@ -44,6 +44,19 @@
 #include <stdio.h>
 #include "typedefs.h"
 
+/* Native windows uses backslash path separators.
+ * Cygwin and everybody else in the world use slash.
+ * When reading the PATH environment variable, Unix separates entries
+ * with colon, while windows uses semicolon.
+ */
+#if ((defined WIN32 || defined _WIN32 || defined WIN64 || defined _WIN64) && !defined __CYGWIN__ && !defined __CYGWIN32__)
+#define DIR_SEPARATOR '\\'
+#define PATH_SEPARATOR ";"
+#else
+#define DIR_SEPARATOR '/'
+#define PATH_SEPARATOR ":"
+#endif
+
 #ifdef CPLUSPLUS
 extern "C" { 
 #endif
