@@ -118,6 +118,10 @@ extern t_pargs *add_acf_pargs(int *npargs,t_pargs *pa);
 extern void cross_corr(int n,real f[],real g[],real corr[]);
 /* Simple minded cross correlation algorithm */
   
+extern real fit_acf(int ncorr,int fitfn,bool bVerbose,
+		    real tbeginfit,real tendfit,real dt,real c1[],real *fit);
+  /* Fit an ACF to a given function */
+  
 extern void do_autocorr(char *fn,char *title,int nframes,int nitem,real **c1,
 			real dt,unsigned long mode,bool bAver);
 /* Calls low_do_autocorr (see below). After calling add_acf_pargs */
@@ -424,7 +428,7 @@ extern void print_one (char *base,char *name,char *title, char *ylabel,
   /* Routines from g_hbond */
   extern void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 			   real sigma_ct[],real sigma_nt[],real sigma_kt[],
-			   real fit_start,real temp);
+			   real fit_start,real temp,real smooth_tail_start);
 			   
   extern void compute_derivative(int nn,real x[],real y[],real dydx[]);
 

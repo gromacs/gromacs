@@ -1352,9 +1352,27 @@ static real compute_weighted_rates(int n,real t[],real ct[],real nt[],
   return chi2;
 }
 
+static void smooth_tail(int n,real t[],real c[],real sigma_c[],real start)
+{
+  FILE *fp;
+  real e_1,fitparm[4];
+  int  i;
+  
+  e_1 = exp(-1);
+  for(i=0; (i<n); i++)
+    if (c[i] < e_1)
+      break;
+  if (i < n)
+    fitparm[0] = t[i];
+  else
+    fitparm[0] = 10;
+  fitparm[1] = 0.95;
+  do_lmfit(n,c,sigma_c,0,t,start,t[n-1],bDebugMode(),effnEXP2,fitparm,0);
+}
+
 void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 		  real sigma_ct[],real sigma_nt[],real sigma_kt[],
-		  real fit_start,real temp)
+		  real fit_start,real temp,real smooth_tail_start)
 {
   int    i0,i;
   real   k=1,kp=1,kow=1;
@@ -1362,6 +1380,11 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
   double tmp,sn2=0,sc2=0,sk2=0,scn=0,sck=0,snk=0;
   bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
   
+  if (smooth_tail_start >= 0) {
+    smooth_tail(n,t,ct,sigma_ct,smooth_tail_start);
+    smooth_tail(n,t,nt,sigma_nt,smooth_tail_start);
+    smooth_tail(n,t,kt,sigma_kt,smooth_tail_start);
+  }
   for(i0=0; (i0<n-2) && ((t[i0]-t[0]) < fit_start); i0++)
     ;
   if (i0 < n-2) { 
@@ -1462,7 +1485,8 @@ void compute_derivative(int nn,real x[],real y[],real dydx[])
    - Erik Marklund, May 31, 2006 */
 
 static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
-		    int nDump,bool bMerge,bool bContact,real fit_start,real temp)
+		    int nDump,bool bMerge,bool bContact,real fit_start,
+		    real temp,real smooth_tail_start)
 {
   FILE *fp;
   static char *leg[] = { "Ac\\sfin sys\\v{}\\z{}(t)", "Ac(t)", "Cc\\scontact,hb\\v{}\\z{}(t)", "-dAc\\sfs\\v{}\\z{}/dt" };
@@ -1622,7 +1646,7 @@ static void do_hbac(char *fn,t_hbdata *hb,real aver_nhb,real aver_dist,
   fclose(fp);
   
   analyse_corr(nn,hb->time,ct,ght,kt,NULL,NULL,NULL,
-	       fit_start,temp);
+	       fit_start,temp,smooth_tail_start);
   
   do_view(fn,NULL);
   sfree(rhbex);
@@ -1850,7 +1874,7 @@ int gmx_hbond(int argc,char *argv[])
   };
   
   static real acut=30, abin=1, rcut=0.35, rbin=0.005, rshell=-1;
-  static real maxnhb=0,fit_start=1,temp=298.15;
+  static real maxnhb=0,fit_start=1,temp=298.15,smooth_tail_start=-1;
   static bool bNitAcc=TRUE,bInsert=FALSE,bDA=TRUE,bMerge=TRUE;
   static int  nDump=0;
   static bool bContact=FALSE;
@@ -1879,6 +1903,8 @@ int gmx_hbond(int argc,char *argv[])
       "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
     { "-temp",  FALSE, etREAL, {&temp},
       "Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming" },
+    { "-smooth",FALSE, etREAL, {&smooth_tail_start},
+      "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
     { "-dump",  FALSE, etINT, {&nDump},
       "Dump the first N hydrogen bond ACFs in a single xvg file for debugging" },
     { "-max_hb",FALSE, etREAL, {&maxnhb},
@@ -2438,7 +2464,7 @@ int gmx_hbond(int argc,char *argv[])
       please_cite(stdout,"Spoel2006b");
     if (opt2bSet("-ac",NFILE,fnm)) 
       do_hbac(opt2fn("-ac",NFILE,fnm),hb,aver_nhb/max_nhb,aver_dist,nDump,
-	      bMerge,bContact,fit_start,temp);
+	      bMerge,bContact,fit_start,temp,smooth_tail_start);
     if (opt2bSet("-life",NFILE,fnm))
       do_hblife(opt2fn("-life",NFILE,fnm),hb,bMerge,bContact);
     if (opt2bSet("-hbm",NFILE,fnm)) {

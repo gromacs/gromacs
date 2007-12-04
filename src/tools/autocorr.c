@@ -502,8 +502,8 @@ void do_four_core(unsigned long mode,int nfour,int nf2,int nframes,
     c1[j] = csum[j]/(real)(nframes-j);
 }
 
-static real fit_acf(int ncorr,int fitfn,bool bVerbose,
-		    real tbeginfit,real tendfit,real dt,real c1[],real *fit)
+real fit_acf(int ncorr,int fitfn,bool bVerbose,
+	     real tbeginfit,real tendfit,real dt,real c1[],real *fit)
 {
   real    fitparm[3];
   real    tStart,tail_corr,sum,sumtot=0,ct_estimate,*sig;
@@ -525,17 +525,20 @@ static real fit_acf(int ncorr,int fitfn,bool bVerbose,
       ct_estimate += c1[i];
   ct_estimate *= dt/c1[0];
 
-  if (bPrint) printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
-		       0.0,dt*nf_int,sum);
-  if (bPrint) printf("COR: Relaxation times are computed as fit to an exponential:\n");
-  if (bPrint) printf("COR:   %s\n",longs_ffn[fitfn]);
-  if (bPrint) printf("COR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n",tbeginfit,min(ncorr*dt,tendfit));
+  if (bPrint) {
+    printf("COR: Correlation time (plain integral from %6.3f to %6.3f ps) = %8.5f ps\n", 
+	   0.0,dt*nf_int,sum);
+    printf("COR: Relaxation times are computed as fit to an exponential:\n");
+    printf("COR:   %s\n",longs_ffn[fitfn]);
+    printf("COR: Fit to correlation function from %6.3f ps to %6.3f ps, results in a\n",tbeginfit,min(ncorr*dt,tendfit));
+  }
   
   tStart = 0;
-  if (bPrint) printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
-		       "Fit from","Integral","Tail Value","Sum (ps)"," a1 (ps)",
-		     (nfp_ffn[fitfn]>=2) ? " a2 ()" : "",
-		     (nfp_ffn[fitfn]>=3) ? " a3 (ps)" : "");
+  if (bPrint) 
+    printf("COR:%11s%11s%11s%11s%11s%11s%11s\n",
+	   "Fit from","Integral","Tail Value","Sum (ps)"," a1 (ps)",
+	   (nfp_ffn[fitfn]>=2) ? " a2 ()" : "",
+	   (nfp_ffn[fitfn]>=3) ? " a3 (ps)" : "");
   if (tbeginfit > 0)
     jmax = 3;
   else
