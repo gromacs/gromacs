@@ -465,7 +465,7 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
 }
 
 static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
-			 bool bError,real fit_start)
+			 bool bError,real fit_start,real smooth_tail_start)
 {
   const real tol = 1e-8;
   real *kt;
@@ -486,12 +486,13 @@ static void luzar_correl(int nn,real *time,int nset,real **val,real temp,
 	d2 += sqr(kt[j] - val[3][j]);
       fprintf(debug,"RMS difference in derivatives is %g\n",sqrt(d2/nn));
     }
-    analyse_corr(nn,time,val[0],val[2],kt,NULL,NULL,NULL,fit_start,temp);
+    analyse_corr(nn,time,val[0],val[2],kt,NULL,NULL,NULL,fit_start,
+		 temp,smooth_tail_start);
     sfree(kt);
   }
   else if (nset == 6) {
     analyse_corr(nn,time,val[0],val[2],val[4],
-		 val[1],val[3],val[5],fit_start,temp);
+		 val[1],val[3],val[5],fit_start,temp,smooth_tail_start);
   }
   else {
     printf("Inconsistent input. I need c(t) sigma_c(t) n(t) sigma_n(t) K(t) sigma_K(t)\n");
@@ -700,7 +701,7 @@ int gmx_analyze(int argc,char *argv[])
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bIntegrate=FALSE,bRegression=FALSE,bLuzar=FALSE,bLuzarError=FALSE; 
   static int  nsets_in=1,d=1,nb_min=4,resol=10;
-  static real temp=298.15,fit_start=1;
+  static real temp=298.15,fit_start=1,smooth_tail_start=-1;
   
   /* must correspond to enum avbar* declared at beginning of file */
   static char *avbar_opt[avbarNR+1] = { 
@@ -738,6 +739,8 @@ int gmx_analyze(int argc,char *argv[])
       "Temperature for the Luzar hydrogen bonding kinetics analysis" },
     { "-fitstart", FALSE, etREAL, {&fit_start},
       "Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation" }, 
+    { "-smooth",FALSE, etREAL, {&smooth_tail_start},
+      "If >= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau)" },
     { "-nbmin",   FALSE, etINT, {&nb_min},
       "HIDDENMinimum number of blocks for block averaging" },
     { "-resol", FALSE, etINT, {&resol},
@@ -922,7 +925,7 @@ int gmx_analyze(int argc,char *argv[])
     regression_analysis(n,bXYdy,t,val);
 
   if (bLuzar) 
-    luzar_correl(n,t,nset,val,temp,bXYdy,fit_start);
+    luzar_correl(n,t,nset,val,temp,bXYdy,fit_start,smooth_tail_start);
     
   view_all(NFILE, fnm);
   
