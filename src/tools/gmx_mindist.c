@@ -156,7 +156,8 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
 static void calc_dist(real rcut, matrix box, rvec x[], 
 		      int nx1,int nx2, atom_id index1[], atom_id index2[],
 		      real *rmin, real *rmax, int *nmin, int *nmax,
-		      int *ixmin, int *jxmin, int *ixmax, int *jxmax)
+		      int *ixmin, int *jxmin, int *ixmax, int *jxmax,
+		      bool bPBC)
 {
   int     i,j,j0=0,j1;
   int     ix,jx;
@@ -175,7 +176,8 @@ static void calc_dist(real rcut, matrix box, rvec x[],
   rcut2=sqr(rcut);
   
   /* Must init pbc every step because of pressure coupling */
-  set_pbc(&pbc,box);
+  if (bPBC)
+    set_pbc(&pbc,box);
   if (index2) {
     j0=0;
     j1=nx2;
@@ -195,7 +197,10 @@ static void calc_dist(real rcut, matrix box, rvec x[],
     for(j=j0; (j < j1); j++) {
       jx=index3[j];
       if (ix != jx) {
-	pbc_dx(&pbc,x[ix],x[jx],dx);
+	if (bPBC)
+	  pbc_dx(&pbc,x[ix],x[jx],dx);
+	else
+	  rvec_sub(x[ix],x[jx],dx);
 	r2=iprod(dx,dx);
 	if (r2 < rmin2) {
 	  rmin2=r2;
@@ -222,7 +227,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
 	       char *nfile,char *rfile,char *xfile,
 	       real rcut,bool bMat,t_atoms *atoms,
 	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
-	       bool bMin, int nres, atom_id *residue)
+	       bool bMin, int nres, atom_id *residue,bool bPBC)
 {
   FILE         *atm,*dist,*num;
   int          trxout;
@@ -302,7 +307,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
     if (bMat) {
       if (ng == 1) {
 	calc_dist(rcut,box,x0,gnx[0],gnx[0],index[0],index[0],
-		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	fprintf(dist,"  %12e",bMin?dmin:dmax);
 	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
       }
@@ -310,7 +315,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
 	for(i=0; (i<ng-1); i++) {
 	  for(k=i+1; (k<ng); k++) {
 	    calc_dist(rcut,box,x0,gnx[i],gnx[k],index[i],index[k],
-		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	    fprintf(dist,"  %12e",bMin?dmin:dmax);
 	    if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
 	  }
@@ -320,14 +325,14 @@ void dist_plot(char *fn,char *afile,char *dfile,
     else {    
       for(i=1; (i<ng); i++) {
 	calc_dist(rcut,box,x0,gnx[0],gnx[i],index[0],index[i],
-		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	fprintf(dist,"  %12e",bMin?dmin:dmax);
 	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
 	if (nres) {
 	  for(j=0; j<nres; j++) {
 	    calc_dist(rcut,box,x0,residue[j+1]-residue[j],gnx[i],
 		      &(index[0][residue[j]]),index[i],
-		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2);
+		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	    mindres[i-1][j] = min(mindres[i-1][j],dmin);
 	    maxdres[i-1][j] = max(maxdres[i-1][j],dmax);
 	  }
@@ -435,7 +440,7 @@ int gmx_mindist(int argc,char *argv[])
     "The [TT]-pi[tt] option is very slow."
   };
   
-  static bool bMat=FALSE,bPBC=FALSE,bSplit=FALSE,bMax=FALSE;
+  static bool bMat=FALSE,bPI=FALSE,bSplit=FALSE,bMax=FALSE,bPBC=TRUE;
   static real rcutoff=0.6;
   static int  ng=1;
   t_pargs pa[] = {
@@ -445,12 +450,14 @@ int gmx_mindist(int argc,char *argv[])
       "Calculate *maximum* distance instead of minimum" },
     { "-d",      FALSE, etREAL, {&rcutoff},
       "Distance for contacts" },
-    { "-pi",     FALSE, etBOOL, {&bPBC},
+    { "-pi",     FALSE, etBOOL, {&bPI},
       "Calculate minimum distance with periodic images" },
     { "-split",  FALSE, etBOOL, {&bSplit},
       "Split graph where time is zero" },
     { "-ng",       FALSE, etINT, {&ng},
       "Number of secondary groups to compute distance to a central group" },
+    { "-pbc",    FALSE, etBOOL, {&bPBC},
+      "Take periodic boundary conditions into account" }
   };
   t_topology *top=NULL;
   char       title[256];
@@ -495,7 +502,7 @@ int gmx_mindist(int argc,char *argv[])
   if ((resfnm || !ndxfnm) && !tpsfnm)
     gmx_fatal(FARGS,"I need a tpr file to analyze all this.");
   
-  if (bPBC) {
+  if (bPI) {
     ng = 1;
     fprintf(stderr,"Choose a group for distance calculation\n");
   } 
@@ -534,12 +541,12 @@ int gmx_mindist(int argc,char *argv[])
     if (debug) dump_res(debug, nres, residues, gnx[0], index[0]);
   }
     
-  if (bPBC)
+  if (bPI)
     periodic_mindist_plot(trxfnm,distfnm,top,gnx[0],index[0],bSplit);
   else
     dist_plot(trxfnm,atmfnm,distfnm,numfnm,resfnm,oxfnm,
 	      rcutoff,bMat,top ? &(top->atoms) : NULL,
-	      ng,index,gnx,grpname,bSplit,!bMax, nres, residues);
+	      ng,index,gnx,grpname,bSplit,!bMax, nres, residues,bPBC);
 
   do_view(distfnm,"-nxy");
   if (!bPBC)
