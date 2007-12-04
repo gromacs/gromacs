@@ -599,7 +599,7 @@ int gmx_trjconv(int argc,char *argv[])
   static bool  bCenter=FALSE,bTer=FALSE;
   static int   skip_nr=1,ndec=3;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
-  static rvec  newbox = {0,0,0}, shift = {0,0,0};
+  static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
   static char  *exec_command=NULL;
   static real  dropunder=0,dropover=0;
 
@@ -624,6 +624,8 @@ int gmx_trjconv(int argc,char *argv[])
       "Center for -pbc and -center" },
     { "-box", FALSE, etRVEC, {newbox},
       "Size for new cubic box (default: read from input)" },
+    { "-trans", FALSE, etRVEC, {trans},
+      "All coordinates will be translated by trans. This can advantageously be combined with -pbc mol -ur compact." },
     { "-shift", FALSE, etRVEC, {shift},
       "All coordinates will be shifted by framenr*shift" },
     { "-fit",  FALSE, etENUM, {fit}, 
@@ -689,7 +691,7 @@ int gmx_trjconv(int argc,char *argv[])
   bool         bCopy,bDoIt,bIndex,bTDump,bSetTime,bTPS=FALSE,bDTset=FALSE;
   bool         bExec,bTimeStep=FALSE,bDumpFrame=FALSE,bSetPrec,bNeedPrec;
   bool         bHaveFirstFrame,bHaveNextFrame,bSetBox,bSetUR,bSplit=FALSE;
-  bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE;
+  bool         bSubTraj=FALSE,bDropUnder=FALSE,bDropOver=FALSE,bTrans=FALSE;
   bool         bWriteFrame,bSplitHere;
   char         *top_file,*in_file,*out_file=NULL,out_file2[256],*charpt;
   char         *outf_base=NULL,*outf_ext=NULL;
@@ -736,6 +738,7 @@ int gmx_trjconv(int argc,char *argv[])
     bTDump    = opt2parg_bSet("-dump", NPA, pa);
     bDropUnder= opt2parg_bSet("-dropunder", NPA, pa);
     bDropOver = opt2parg_bSet("-dropover", NPA, pa);
+    bTrans    = opt2parg_bSet("-trans",NPA,pa);
     bSplit    = (split_t != 0);
 
     /* parse enum options */    
@@ -1042,7 +1045,12 @@ int gmx_trjconv(int argc,char *argv[])
 	  for (m=0; m<DIM; m++)
 	    fr.box[m][m] = newbox[m];
 	}
-	
+
+	if (bTrans) {
+	  for(i=0; i<natoms; i++) 
+	    rvec_inc(fr.x[i],trans);
+	}
+		
 	if (bTDump) {
 	  /* determine timestep */
 	  if (t0 == -1) {
