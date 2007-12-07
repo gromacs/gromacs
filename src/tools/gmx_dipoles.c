@@ -251,8 +251,8 @@ static void print_cmap(char *cmap,t_gkrbin *gb,int *nlevels)
       gb->cmap[i][j] /= sum;
       hi = max(hi,gb->cmap[i][j]);
     }
-  snew(xaxis,gb->nx);
-  for(i=0; (i<gb->nx); i++)
+  snew(xaxis,gb->nx+1);
+  for(i=0; (i<gb->nx+1); i++)
     xaxis[i] = i*gb->spacing;
   snew(yaxis,gb->ny);
   for(j=0; (j<gb->ny); j++) {
@@ -262,7 +262,7 @@ static void print_cmap(char *cmap,t_gkrbin *gb,int *nlevels)
       yaxis[j] = 2.0*j/(gb->ny-1.0)-1.0;
   }
   out = fopen(cmap,"w");
-  write_xpm(out,MAT_SPATIAL_X,
+  write_xpm(out,0,
 	    "Dipole Orientation Distribution","Fraction","r (nm)",
 	    gb->bPhi ? "Phi" : "Cos alpha",
 	    gb->nx,gb->ny,xaxis,yaxis,
