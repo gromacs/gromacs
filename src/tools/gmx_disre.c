@@ -450,7 +450,6 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
   if (fn == NULL)
     return;
 
-  nratoms = top->atoms.nr;
   n_res = top->atoms.nres;
   snew(t_res,n_res);
   for(i=0; (i<n_res); i++)
@@ -458,11 +457,11 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
   snew(matrix,n_res);
   for(i=0; (i<n_res); i++) 
     snew(matrix[i],n_res);
+  nratoms = interaction_function[F_DISRES].nratoms;
   nra = (top->idef.il[F_DISRES].nr/(nratoms+1));
   snew(ptr,nra+1);
   index   = 0;
   nlabel  = 0;
-  nratoms = interaction_function[F_DISRES].nratoms;
   ptr[0]  = 0;
   snew(w_dr,ndr);
   for(i=0; (i<top->idef.il[F_DISRES].nr); i+=nratoms+1) {
