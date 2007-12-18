@@ -195,8 +195,9 @@ static int get_einp(int *ninp,t_inpfile **inp,const char *name)
 
 int get_eint(int *ninp,t_inpfile **inp,const char *name,int def)
 {
-  char buf[32];
+  char buf[32],*ptr;
   int  ii;
+  int  ret;
   
   ii=get_einp(ninp,inp,name);
   
@@ -206,14 +207,22 @@ int get_eint(int *ninp,t_inpfile **inp,const char *name,int def)
     
     return def;
   }
-  else 
-    return atoi((*inp)[ii].value);
+  else {
+    ret = strtol((*inp)[ii].value,&ptr,10);
+    if (ptr == (*inp)[ii].value) {
+      sprintf(warn_buf,"Right hand side '%s' for parameter '%s' in parameter file is not an integer value\n",(*inp)[ii].value,(*inp)[ii].name);
+      warning_error(NULL);
+    }
+
+    return ret;
+  }
 }
 
 real get_ereal(int *ninp,t_inpfile **inp,const char *name,real def)
 {
-  char buf[32];
+  char buf[32],*ptr;
   int  ii;
+  real ret;
   
   ii=get_einp(ninp,inp,name);
   
@@ -223,8 +232,15 @@ real get_ereal(int *ninp,t_inpfile **inp,const char *name,real def)
     
     return def;
   }
-  else 
-    return atof((*inp)[ii].value);
+  else {
+    ret = strtod((*inp)[ii].value,&ptr);
+    if (ptr == (*inp)[ii].value) {
+      sprintf(warn_buf,"Right hand side '%s' for parameter '%s' in parameter file is not a real value\n",(*inp)[ii].value,(*inp)[ii].name);
+      warning_error(NULL);
+    }
+
+    return ret;
+  }
 }
 
 char *get_estr(int *ninp,t_inpfile **inp,const char *name,char *def)
