@@ -116,6 +116,7 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
     if (available(stdout,&tpx,0,fn)) {
       indent=0;
       indent=pr_title(stdout,indent,fn);
+      pr_inputrec(stdout,0,"inputrec",tpx.bIr ? &(ir) : NULL,FALSE);
       pr_header(stdout,indent,"header",&(tpx));
       
       pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
