@@ -361,7 +361,7 @@ int main(int argc,char *argv[])
 #ifndef MY_DSSP
   FILE       *tapein;
 #endif
-  FILE       *ss,*acc,*fTArea;
+  FILE       *ss,*acc,*fTArea,*tmpf;
   char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
   char       *leg[] = { "Phobic", "Phylic" };
   t_topology top;
@@ -433,8 +433,25 @@ int main(int argc,char *argv[])
 
   strcpy(pdbfile,"ddXXXXXX");
   gmx_tmpnam(pdbfile);
+  if ((tmpf = fopen(pdbfile,"w")) == NULL) {
+    sprintf(pdbfile,"%ctmp%cfilterXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
+    gmx_tmpnam(pdbfile);
+    if ((tmpf = fopen(pdbfile,"w")) == NULL) 
+      gmx_fatal(FARGS,"Can not open tmp file %s",pdbfile);
+  }
+  else
+    fclose(tmpf);
+    
   strcpy(tmpfile,"ddXXXXXX");
   gmx_tmpnam(tmpfile);
+  if ((tmpf = fopen(tmpfile,"w")) == NULL) {
+    sprintf(tmpfile,"%ctmp%cfilterXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
+    gmx_tmpnam(tmpfile);
+    if ((tmpf = fopen(tmpfile,"w")) == NULL) 
+      gmx_fatal(FARGS,"Can not open tmp file %s",tmpfile);
+  }
+  else
+    fclose(tmpf);
   
 #ifdef MY_DSSP
   /* Open all files read-write */
