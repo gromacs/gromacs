@@ -130,6 +130,11 @@ if test "$enable_ia64_asm" = "yes"; then
 fi
 
 
+AC_ARG_ENABLE(bluegene,
+ [  --enable-bluegene-asm         build assembly intrinsics kernels on bluegene],,enable_bluegene=no)
+if test "$enable_bluegene" = "yes"; then
+  AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
+fi
 
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     
@@ -822,7 +827,7 @@ AM_CONDITIONAL([GMX_IA32_3DNOW],[test "$enable_ia32_3dnow" = "yes" -a "$enable_f
 AM_CONDITIONAL([GMX_PPC_ALTIVEC],[test "$enable_ppc_altivec" = "yes" -a "$enable_float" = "yes"])
 AM_CONDITIONAL([GMX_IA64_ASM_SINGLE],[test "$enable_ia64_asm" = "yes" -a "$enable_float" = "yes"])
 AM_CONDITIONAL([GMX_IA64_ASM_DOUBLE],[test "$enable_ia64_asm" = "yes" -a "$enable_float" = "no"])
-
+AM_CONDITIONAL([GMX_BLUEGENE],[test "$enable_bluegene" = "yes"])
 
 
 #############
@@ -925,6 +930,7 @@ AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_x86_64_sse2/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ppc_altivec/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia64_single/Makefile ])
 AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_ia64_double/Makefile ])
+AC_CONFIG_FILES([ src/gmxlib/nonbonded/nb_kernel_bluegene/Makefile ])
 AC_CONFIG_FILES([ include/Makefile ])
 AC_CONFIG_FILES([ include/types/Makefile ])
 AC_CONFIG_FILES([ src/mdlib/Makefile ])

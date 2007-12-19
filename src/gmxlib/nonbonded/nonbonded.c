@@ -98,7 +98,9 @@
 #include "nb_kernel_ia64_single/nb_kernel_ia64_single.h"
 #endif
 
-
+#ifdef GMX_BLUEGENE
+#include "nb_kernel_bluegene/nb_kernel_bluegene.h"
+#endif
 
 
 enum { TABLE_NONE, TABLE_COMBINED, TABLE_COUL, TABLE_VDW, TABLE_NR };
@@ -244,6 +246,10 @@ gmx_setup_kernels(FILE *fplog)
 #endif
     
 #endif /* precision */
+
+#ifdef GMX_BLUEGENE
+    nb_kernel_setup_bluegene(fplog,nb_kernel_list);
+#endif
 
 	if(fplog)
 	    fprintf(fplog,"\n\n");

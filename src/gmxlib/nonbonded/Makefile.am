@@ -42,11 +42,16 @@ if GMX_IA64_ASM_DOUBLE
   IA64_DOUBLE_OBJ = nb_kernel_ia64_double/libnb_kernel_ia64_double.la
 endif
 
+if GMX_BLUEGENE
+  BLUEGENE        = nb_kernel_bluegene
+  BLUEGENE_OBJ	  = nb_kernel_bluegene/libnb_kernel_bluegene.la
+endif
 
 
 SUBDIRS =       $(IA32_SSE)     $(IA32_SSE2)    $(IA32_3DNOW)           \
                 $(X86_64_SSE)   $(X86_64_SSE2)  $(PPC_ALTIVEC)          \
-                $(IA64_SINGLE)  $(IA64_DOUBLE)	nb_kernel
+                $(IA64_SINGLE)  $(IA64_DOUBLE)	$(BLUEGENE)    		\
+		nb_kernel
 
 
 # Convenience library for nonbonded interactions - not installed.
@@ -59,7 +64,7 @@ noinst_LTLIBRARIES = libnonbonded.la
 libnonbonded_la_LIBADD = \
         $(IA32_SSE_OBJ)         $(IA32_SSE2_OBJ)        $(IA32_3DNOW_OBJ)  \
         $(X86_64_SSE_OBJ)       $(X86_64_SSE2_OBJ)      $(PPC_ALTIVEC_OBJ) \
-        $(IA64_SINGLE_OBJ)      $(IA64_DOUBLE_OBJ)	\
+        $(IA64_SINGLE_OBJ)      $(IA64_DOUBLE_OBJ)	$(BLUEGENE_OBJ)	   \
 	nb_kernel/libnb_kernel.la			
 
 
