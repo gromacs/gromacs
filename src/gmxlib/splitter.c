@@ -751,7 +751,7 @@ void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
 void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
 	       int *multinr_cgs,int **multinr_nre)
 {
-  int     i,j,k,mj,atom,maxatom;
+  int     i,j,k,mj,atom,maxatom,sstart,send,bstart,nodeid;
   int     *multinr_shk;
   t_block sblock;
   int     *homeind;
@@ -792,13 +792,39 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
     
     multinr_shk[j] = mj+1;
   }
-  sfree(sblinv);
-  sfree(multinr_shk);
-
   homeind=home_index(nnodes,&(top->blocks[ebCGS]),multinr_cgs);
   
   for(j=0; (j<F_NRE); j++)
     split_force2(nnodes,homeind,&top->idef,&top->idef.il[j],multinr_nre[j]);
+
+  /* Now fill the sblock structure, it is used later on in the
+     constraint routines. */
+  nodeid = gmx_node_rank();
+  
+  sstart = (nodeid == 0) ? 0 : multinr_shk[nodeid-1];
+  send   = multinr_shk[nodeid];
+  if (send-sstart > top->blocks[ebSBLOCKS].nr)
+    srenew(top->blocks[ebSBLOCKS].index,send-sstart+1);
+  nra = 0;
+  for(j=sstart; (j<send); j++) {
+    top->blocks[ebSBLOCKS].index[j-sstart] = sblock.index[j];
+    nra += sblock.index[j+1]-sblock.index[j];
+  }
+  /* Extra index for index */
+  top->blocks[ebSBLOCKS].index[j-sstart] = sblock.index[j];
+  top->blocks[ebSBLOCKS].nr = (send-sstart);
+  
+  if (nra > top->blocks[ebSBLOCKS].nra)
+    srenew(top->blocks[ebSBLOCKS].a,nra);
+  nra = 0;
+  for(j=sstart; (j<send); j++) {
+    for(k=sblock.index[j]; (k<sblock.index[j+1]); k++)
+      top->blocks[ebSBLOCKS].a[nra++] = sblock.a[k];
+  }
+  top->blocks[ebSBLOCKS].nra = nra;
+  
+  sfree(sblinv);
+  sfree(multinr_shk);
   sfree(homeind);
 #ifndef MOL_BORDER
   done_block(&sblock);
