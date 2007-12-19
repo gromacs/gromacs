@@ -131,10 +131,9 @@ t_dlg *select_filter(t_x11 *x11,t_gmx *gmx)
   if ((tmp = fopen(tmpfile,"w")) == NULL) {
     sprintf(tmpfile,"%ctmp%cfilterXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
     gmx_tmpnam(tmpfile);
+    if ((tmp = fopen(tmpfile,"w")) == NULL) 
+      gmx_fatal(FARGS,"Can not open tmp file %s",tmpfile);
   }
-  if ((tmp = fopen(tmpfile,"w")) == NULL) 
-    gmx_fatal(FARGS,"Can not open tmp file %s",tmpfile);
-  
   tlen=1+ncol*(1+len);
   fprintf(tmp,"grid %d %d {\n\n",tlen,ht);
 
