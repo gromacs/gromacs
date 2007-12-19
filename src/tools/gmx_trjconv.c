@@ -257,7 +257,8 @@ static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
   
   calc_box_center(ecenter,box,box_center);
   set_pbc(&pbc,box);
-  
+  if (mols->nr <= 0) 
+    gmx_fatal(FARGS,"There are no molecule descriptions. I need a tpr file for this pbc option.");
   for(i=0; (i<mols->nr); i++) {
     /* calc COM */
     clear_rvec(com);
@@ -385,6 +386,24 @@ static void center_x(int ecenter,rvec x[],matrix box,int n,int nc,atom_id ci[])
   }
 }
 
+static void mk_filenm(char *base,char *ext,int ndigit,int file_nr,
+		      char out_file[])
+{
+  char nbuf[128];
+  int  nd=0,fnr;
+  
+  strcpy(out_file,base);
+  fnr = file_nr;
+  while(fnr > 0) {
+    fnr = fnr/10;
+    nd++;
+  }
+  if (nd < ndigit)
+    strncat(out_file,"00000000000",ndigit-nd);
+  sprintf(nbuf,"%d.",file_nr);
+  strcat(out_file,nbuf);
+  strcat(out_file,ext);
+}
 
 void check_trn(char *fn)
 {
@@ -597,7 +616,7 @@ int gmx_trjconv(int argc,char *argv[])
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
   static bool  bCenter=FALSE,bTer=FALSE;
-  static int   skip_nr=1,ndec=3;
+  static int   skip_nr=1,ndec=3,nzero=0;
   static real  tzero=0,delta_t=0,timestep=0,ttrunc=-1,tdump=-1,split_t=0;
   static rvec  newbox = {0,0,0}, shift = {0,0,0}, trans = {0,0,0};
   static char  *exec_command=NULL;
@@ -649,6 +668,8 @@ int gmx_trjconv(int argc,char *argv[])
       "Start writing new file when t MOD split = first time (%t)" },
     { "-sep", FALSE,  etBOOL, {&bSeparate},
       "Write each frame to a separate .gro, .g96 or .pdb file"},
+    { "-nzero", FALSE, etINT, {&nzero},
+      "Prepend file number in case you use the -sep flag with this number of zeroes" },
     { "-ter",  FALSE, etBOOL, {&bTer},
       "Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'" },
     { "-dropunder", FALSE, etREAL, {&dropunder},
@@ -718,7 +739,8 @@ int gmx_trjconv(int argc,char *argv[])
 		    0,NULL);
 
   top_file = ftp2fn(efTPS,NFILE,fnm);
-
+  init_top(&top);
+  
   /* Check command line */
   in_file=opt2fn("-f",NFILE,fnm);
   
@@ -1230,8 +1252,9 @@ int gmx_trjconv(int argc,char *argv[])
 		  frout.x[i][d] += outframe*shift[d];
 	  
 	    bSplitHere = bSplit && bRmod(fr.time,tzero, split_t);
-	    if (bSeparate || bSplitHere)
-	      sprintf(out_file2,"%s_%d%s",outf_base,file_nr,outf_ext);
+	    if (bSeparate || bSplitHere) 
+	      mk_filenm(outf_base,ftp2ext(ftp),nzero,file_nr,out_file2);
+	    
 	    switch(ftp) {
 	    case efTRJ:
 	    case efTRR:
