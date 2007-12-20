@@ -41,7 +41,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#table"><b>tables</b></A> (table-extension, energygrp_table)
 <li><A HREF="#ewald"><b>Ewald</b></A> (fourierspacing, fourier_nx, fourier_ny, fourier_nz, pme_order, ewald_rtol, ewald_geometry, epsilon_surface, optimize_fft)
 <li><A HREF="#tc"><b>Temperature coupling</b></A> (tcoupl, tc_grps, tau_t, ref_t)
-<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p)
+<li><A HREF="#pc"><b>Pressure coupling</b></A> (pcoupl, pcoupltype, tau_p, compressibility, ref_p, refcoord_scaling)
 <li><A HREF="#sa"><b>simulated annealing</b></A> (annealing, annealing_npoints, annealing_time, annealing_temp)
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
@@ -811,6 +811,15 @@ to have a box with constant height.</dd>
 For water at 1 atm and 300 K the compressibility is 4.5e-5 [bar<sup>-1</sup>].</dd>
 <dt><h4>ref_p: [bar]</h4></dt>
 <dd>reference pressure for coupling</dd>
+<dt><h4>refcoord_scaling:</h4></dt>
+<dt><b>no</b></dt>
+<dd>The reference coordinates for position restraints are not modified.</dd>
+<dt><b>all</b></dt>
+<dd>The reference coordinates are scaled with the scaling matrix of the pressure coupling.</dd>
+<dt><b>com</b></dt>
+<dd>Scale the center of mass of the reference coordinates with the scaling matrix of the pressure coupling. The vectors of each reference coordinate to the center of mass are not scaled. Only one COM is used, even when there are multiple molecules with position restraints. For calculating the COM of the reference coordinates in the starting configuration, periodic boundary conditions are not taken into account.
+</dd>
+</dl>
 
 </dl>
 
@@ -1068,7 +1077,7 @@ and <b>position</b></dd>
 <dd>the outer radius of the cylinder for geometry <b>cylinder</b></dd>
 <dt><h4>pull_constr_tol: (1e-6)</h4></dt>
 <dd>the relative constraint tolerance for constraint pulling</dd>
-<dt><h4>pull_start: (1) [nm]</h4></dt>
+<dt><h4>pull_start</h4></dt>
 <dd><dl compact>
 <dt><b>no</b></dt>
 <dd>do not modify <b>pull_init</b>
@@ -1485,6 +1494,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#nl">periodic_molecules</A><br>
 <A HREF="#ewald">pme_order</A><br>
 <A HREF="#pull">pull</A><br>
+<A HREF="#pc">refcoord_scaling</A><br>
 <A HREF="#pc">ref_p</A><br>
 <A HREF="#tc">ref_t</A><br>
 <A HREF="#el2">rcoulomb_switch</A><br>
