@@ -61,7 +61,7 @@ extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 
  
 extern void print_perf(FILE *out,double nodetime,double realtime,real runtime,
-		       t_nrnb *nrnb,int nprocs);
+		       t_nrnb *nrnb,int nprocs,bool bFlop);
 
 extern void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
 /* Print detailed load balancing info */

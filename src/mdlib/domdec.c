@@ -231,6 +231,13 @@ typedef struct gmx_domdec_comm {
   /* Statistics */
   double sum_nat[ddnatNR-ddnatZONE];
   int    ndecomp;
+  int    nload;
+  double load_step;
+  double load_sum;
+  double load_max;
+  ivec   load_lim;
+  double load_mdf;
+  double load_pme;
 } gmx_domdec_comm_t;
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
@@ -1489,9 +1496,9 @@ static void set_tric_dir(gmx_domdec_t *dd,matrix box)
   }
 }
 
-static bool dd_have_load(gmx_domdec_comm_t *comm)
+static int dd_load_count(gmx_domdec_comm_t *comm)
 {
-  return (comm->eFlop ? (comm->flop_n > 0) : (comm->cycl_n[ddCyclF] > 0));
+  return (comm->eFlop ? comm->flop_n : comm->cycl_n[ddCyclF]);
 }
 
 static float dd_force_load(gmx_domdec_comm_t *comm)
@@ -1714,7 +1721,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       if (bUniform) {
 	for(i=0; i<dd->nc[dim]; i++)
 	  root->cell_size[i] = 1.0/dd->nc[dim];
-      } else if (dd_have_load(comm)) {
+      } else if (dd_load_count(comm)) {
 	load_aver = comm->load[d].sum_m/dd->nc[dim];
 	for(i=0; i<dd->nc[dim]; i++) {
 	  /* Determine the relative imbalance of cell i */
@@ -2928,7 +2935,104 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
       }
     }
   }
+
+  if (DDMASTER(dd)) {
+    comm->nload      += dd_load_count(comm);
+    comm->load_step  += comm->cycl[ddCyclStep];
+    comm->load_sum   += comm->load[0].sum;
+    comm->load_max   += comm->load[0].max;
+    if (dd->bDynLoadBal) {
+      for(d=0; d<dd->ndim; d++) {
+	if (comm->load[0].flags & (1<<d))
+	  comm->load_lim[d]++;
+      }
+    }
+    if (bSepPME) {
+      comm->load_mdf += comm->load[0].mdf;
+      comm->load_pme += comm->load[0].pme;
+    }
+  }
 #endif
+}
+
+static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
+{
+  char  buf[STRLEN];
+  int   npp,npme,nnodes,d,limp;
+  float imbal,pme_f_ratio,lossf,lossp;
+  bool  bLim;
+  gmx_domdec_comm_t *comm;
+
+  comm = dd->comm;
+  if (DDMASTER(dd) && comm->nload > 0) {
+    npp    = dd->nnodes;
+    npme   = comm->npmenodes;
+    nnodes = npp + npme;
+    imbal = comm->load_max*npp/comm->load_sum - 1;
+    lossf = (comm->load_max*npp - comm->load_sum)/(comm->load_step*nnodes);
+    sprintf(buf,"Average load imbalance: %.1f %%\n",imbal*100);
+    fprintf(fplog,buf);
+    fprintf(stderr,"\n");
+    fprintf(stderr,buf);
+    sprintf(buf,"Part of the total run time spent waiting due to load imbalance: %.1f %%\n",lossf*100);
+    fprintf(fplog,buf);
+    fprintf(stderr,buf);
+    bLim = FALSE;
+    if (dd->bDynLoadBal) {
+      sprintf(buf,"Steps where the load balancing was limited by rdd:");
+      for(d=0; d<dd->ndim; d++) {
+	limp = (200*comm->load_lim[d]+1)/(2*comm->nload);
+	sprintf(buf+strlen(buf)," %c %d %%",dim2char(dd->dim[d]),limp);
+	if (limp >= 50)
+	  bLim = TRUE;
+      }
+      sprintf(buf+strlen(buf),"\n");
+      fprintf(fplog,buf);
+      fprintf(stderr,buf);
+    }
+    if (npme > 0) {
+      pme_f_ratio = comm->load_pme/comm->load_mdf;
+      lossp = (comm->load_pme -comm->load_mdf)/comm->load_step;
+      if (lossp <= 0)
+	lossp *= (float)npme/(float)nnodes;
+      else
+	lossp *= (float)npp/(float)nnodes;
+      sprintf(buf,"Average PME mesh/force load: %5.3f\n",pme_f_ratio);
+      fprintf(fplog,"%s",buf);
+      fprintf(stderr,"%s",buf);
+      sprintf(buf,"Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n",fabs(lossp)*100);
+      fprintf(fplog,"%s",buf);
+      fprintf(stderr,"%s",buf);
+    }
+    fprintf(fplog,"\n");
+    fprintf(stderr,"\n");
+
+    if (lossf >= 5) {
+      sprintf(buf,
+	      "NOTE: %.1f %% performance was lost due to load imbalance\n"
+	      "      in the domain decomposition.\n",lossf*100);
+      if (!dd->bDynLoadBal) {
+	sprintf(buf+strlen(buf),"      You might want to use dynamic load balancing (option -dlb.)\n");
+      } else if (bLim) {
+	sprintf(buf+strlen(buf),"      You might want to decrease the communication distance (option -rdd).\n");
+      }
+      fprintf(fplog,"%s\n",buf);
+      fprintf(stderr,"%s\n",buf);
+    }
+    if (npme > 0 && fabs(lossp) >= 0.05) {
+      sprintf(buf,
+	      "NOTE: %.1f %% performance was lost because the PME nodes\n"
+	      "      had %s work to do than the PP nodes.\n"
+	      "      You might want to %s the number of PME nodes\n"
+	      "      or %s the cut-off and the grid spacing.\n",
+	      fabs(lossp*100),
+	      (lossp < 0) ? "less"     : "more",
+	      (lossp < 0) ? "decrease" : "increase",
+	      (lossp < 0) ? "decrease" : "increase");
+      fprintf(fplog,"%s\n",buf);
+      fprintf(stderr,"%s\n",buf);
+    }
+  }
 }
 
 static float dd_vol_min(gmx_domdec_t *dd)
@@ -4486,6 +4590,9 @@ void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)
     }
   }
   fprintf(fplog,"\n");
+
+  if (comm->bRecordLoad)
+    print_dd_load_av(fplog,cr->dd);
 }
 
 void dd_partition_system(FILE            *fplog,
@@ -4516,7 +4623,7 @@ void dd_partition_system(FILE            *fplog,
   dd = cr->dd;
   
   /* Check if we have recorded loads on the nodes */
-  if (dd->comm->bRecordLoad && dd_have_load(dd->comm)) {
+  if (dd->comm->bRecordLoad && dd_load_count(dd->comm)) {
     /* Print load every nstlog, first and last step to the log file */
     bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
 		!dd->comm->bFirstPrinted ||

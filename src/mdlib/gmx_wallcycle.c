@@ -19,7 +19,7 @@ typedef struct gmx_wallcycle {
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
-  { "Run", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
+  { "Run", "Step", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
 
 /* variables for testing/debugging */
 static bool              wc_barrier=FALSE;
@@ -89,7 +89,7 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
       wc_depth++;
       if (ewc == ewcRUN)
 	wallcycle_all_start(ewc,cycle);
-      else if (wc_depth == 2) {
+      else if (wc_depth == 3) {
 	wallcycle_all_stop(ewc,cycle);
       }
     }
@@ -114,7 +114,7 @@ void wallcycle_stop(gmx_wallcycle_t wc, int ewc)
       wc_depth--;
       if (ewc == ewcRUN)
 	wallcycle_all_stop(ewc,cycle);
-      else if (wc_depth == 1)
+      else if (wc_depth == 2)
 	wallcycle_all_start(ewc,cycle);
     }
   }
@@ -225,7 +225,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     fprintf(fplog," Computing:         Nodes     Number     G-Cycles    Seconds     %c\n",'%');
     fprintf(fplog,"%s\n",myline);
     sum = 0;
-    for(i=ewcRUN+1; i<ewcNR; i++) {
+    for(i=ewcSTEP+1; i<ewcNR; i++) {
       print_cycles(fplog,c2t,wcn[i],
 		   (i==ewcPMEMESH_SEP || i==ewcPMEWAITCOMM) ? npme : npp,
 		   wc[i].n,cycles[i],tot);

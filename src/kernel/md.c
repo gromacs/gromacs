@@ -744,6 +744,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   while ((!bRerunMD && (step_rel <= ir->nsteps)) ||  
 	 (bRerunMD && bNotLastFrame)) {
 
+    wallcycle_start(wcycle,ewcSTEP);
+
     GMX_MPE_LOG(ev_timestep1);
 
     if (bRerunMD) {
@@ -1033,7 +1035,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
 	     bNEMD,TRUE,bFirstStep,pres);
       wallcycle_stop(wcycle,ewcUPDATE);
-    } else {
+    } else if (graph) {
       /* Need to unshift here */
       unshift_self(graph,state->box,state->x);
     }
@@ -1327,6 +1329,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       step++;
       step_rel++;
     }
+
+    wallcycle_stop(wcycle,ewcSTEP);
+    if (DOMAINDECOMP(cr) && wcycle)
+      dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcSTEP),ddCyclStep);
   }
   /* End of main MD loop */
   debug_gmx();

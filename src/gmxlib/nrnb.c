@@ -293,7 +293,7 @@ void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
 }
 
 void print_perf(FILE *out,double nodetime,double realtime,real runtime,
-		t_nrnb *nrnb,int nprocs)
+		t_nrnb *nrnb,int nprocs,bool bFlop)
 {
   int    i;
   double nbfs,mni,frac,tfrac,mflop,tflop;
@@ -319,20 +319,23 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
     fprintf(out,"No MEGA Flopsen this time\n");
     return;
   }
-  fprintf(out,"\n\tM E G A - F L O P S   A C C O U N T I N G\n\n");
+  if (bFlop)
+    fprintf(out,"\n\tM E G A - F L O P S   A C C O U N T I N G\n\n");
   if (nprocs > 1) 
   {
       nodetime = realtime;
       fprintf(out,"\tParallel run - timing based on wallclock.\n");
   }
 
-  fprintf(out,"   RF=Reaction-Field  FE=Free Energy  SCFE=Soft-Core/Free Energy\n");
-  fprintf(out,"   T=Tabulated        W3=SPC/TIP3p    W4=TIP4p (single or pairs)\n");
-  fprintf(out,"   NF=No Forces\n\n");
-  
-  fprintf(out," %-26s %16s %15s  %7s\n",
-	  "Computing:","M-Number","M-Flops","% Flops");
-  fprintf(out,"%s\n",myline);
+  if (bFlop) {
+    fprintf(out,"   RF=Reaction-Field  FE=Free Energy  SCFE=Soft-Core/Free Energy\n");
+    fprintf(out,"   T=Tabulated        W3=SPC/TIP3p    W4=TIP4p (single or pairs)\n");
+    fprintf(out,"   NF=No Forces\n\n");
+    
+    fprintf(out," %-26s %16s %15s  %7s\n",
+	    "Computing:","M-Number","M-Flops","% Flops");
+    fprintf(out,"%s\n",myline);
+  }
   mflop=0.0;
   tfrac=0.0;
   for(i=0; (i<eNRNB); i++) {
@@ -340,14 +343,16 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
     mflop += mni*nbdata[i].flop;
     frac   = 100.0*mni*nbdata[i].flop/tflop;
     tfrac += frac;
-    if (mni != 0)
+    if (bFlop && mni != 0)
       fprintf(out," %-26s %16.6f %15.3f  %6.1f\n",
 	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
   }
-  fprintf(out,"%s\n",myline);
-  fprintf(out," %-26s %16s %15.3f  %6.1f\n",
-	  "Total","",mflop,tfrac);
-  fprintf(out,"%s\n\n",myline);
+  if (bFlop) {
+    fprintf(out,"%s\n",myline);
+    fprintf(out," %-26s %16s %15.3f  %6.1f\n",
+	    "Total","",mflop,tfrac);
+    fprintf(out,"%s\n\n",myline);
+  }
   
   if ((nodetime > 0) && (realtime > 0)) {
     fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");

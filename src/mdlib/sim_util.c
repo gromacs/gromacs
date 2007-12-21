@@ -943,13 +943,14 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   if (MASTER(cr)) {
     runtime=inputrec->nsteps*inputrec->delta_t;
     if (bWriteStat) {
-      fprintf(stderr,"\n\n");
-      wallcycle_print(stderr,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
+      if (cr->nnodes == 1)
+	fprintf(stderr,"\n\n");
       print_perf(stderr,nodetime,realtime,runtime,&ntot,
-		 cr->nnodes-cr->npmenodes);
+		 cr->nnodes-cr->npmenodes,FALSE);
     }
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
-    print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes);
+    print_perf(fplog,nodetime,realtime,runtime,&ntot,cr->nnodes-cr->npmenodes,
+	       TRUE);
     if (PARTDECOMP(cr))
       pr_load(fplog,cr,nrnb_all);
     if (cr->nnodes > 1)
