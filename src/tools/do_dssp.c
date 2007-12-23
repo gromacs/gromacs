@@ -55,11 +55,6 @@
 #include "tpxio.h"
 #include "viewit.h"
 
-#ifdef MY_DSSP
-extern void dssp_main(bool bDoAcc, bool bVerbose);
-extern FILE *tapein, *tapeout;
-#endif
-		       
 static void strip_dssp(char *dsspfile,int nres,
 		       bool bPhobres[],real t,
 		       real *acc,FILE *fTArea,
@@ -67,9 +62,7 @@ static void strip_dssp(char *dsspfile,int nres,
 {
   static bool bFirst=TRUE;
   static char *ssbuf;
-#ifndef MY_DSSP
   FILE *tapeout;
-#endif
   static int xsize,frame;
   char buf[STRLEN+1];
   char SSTP;
@@ -77,9 +70,7 @@ static void strip_dssp(char *dsspfile,int nres,
   real iaccf,iaccb;
   t_xpmelmt c;
   
-#ifndef MY_DSSP
   tapeout=ffopen(dsspfile,"r");
-#endif
   
   /* Skip header */
   do {
@@ -138,9 +129,7 @@ static void strip_dssp(char *dsspfile,int nres,
   
   if (fTArea)
     fprintf(fTArea,"%10g  %10g  %10g\n",t,0.01*iaccb,0.01*iaccf);
-#ifndef MY_DSSP
   fclose(tapeout);
-#endif
 }
 
 bool *bPhobics(t_atoms *atoms)
@@ -308,23 +297,15 @@ void analyse_ss(char *outfile, t_matrix *mat, char *ss_string)
 int main(int argc,char *argv[])
 {
   static char *desc[] = {
-#ifdef MY_DSSP
-    "my_dssp ", 
-#else
     "do_dssp ", 
-#endif
     "reads a trajectory file and computes the secondary structure for",
     "each time frame ",
-#ifdef MY_DSSP
-    "using the dssp program.[PAR]",
-#else
     "calling the dssp program. If you do not have the dssp program,",
     "get it. do_dssp assumes that the dssp executable is",
     "/usr/local/bin/dssp. If this is not the case, then you should",
     "set an environment variable [BB]DSSP[bb] pointing to the dssp",
     "executable, e.g.: [PAR]",
     "[TT]setenv DSSP /opt/dssp/bin/dssp[tt][PAR]",
-#endif
     "The structure assignment for each residue and time is written to an",
     "[TT].xpm[tt] matrix file. This file can be visualized with for instance",
     "[TT]xv[tt] and can be converted to postscript with [TT]xpm2ps[tt].",
@@ -351,16 +332,8 @@ int main(int argc,char *argv[])
       "Secondary structures for structure count"}
   };
   
-#ifndef MY_DSSP
-  static char *bugs[] = { 
-    "The program is very slow"
-  };
-#endif
-  
   int        status;
-#ifndef MY_DSSP
   FILE       *tapein;
-#endif
   FILE       *ss,*acc,*fTArea,*tmpf;
   char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
   char       *leg[] = { "Phobic", "Phylic" };
@@ -379,12 +352,7 @@ int main(int argc,char *argv[])
   int        *average_area;
   real       **accr,*av_area, *norm_av_area;
   char       pdbfile[32],tmpfile[32],title[256];
-#ifdef MY_DSSP
-#define MAXBUF 1000000
-  char       inbuf[MAXBUF],outbuf[MAXBUF];
-#else
   char       dssp[256],*dptr;
-#endif
   
   t_filenm   fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD },
@@ -402,13 +370,7 @@ int main(int argc,char *argv[])
 
   CopyRight(stderr,argv[0]);
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW | PCA_TIME_UNIT | PCA_BE_NICE ,
-		    NFILE,fnm, asize(pa),pa, asize(desc),desc,
-#ifdef MY_DSSP
-		    0,NULL
-#else
-		    asize(bugs),bugs
-#endif
-		    );
+		    NFILE,fnm, asize(pa),pa, asize(desc),desc,0,NULL);
   fnSCount= opt2fn("-sc",NFILE,fnm);
   fnArea  = opt2fn_null("-a", NFILE,fnm);
   fnTArea = opt2fn_null("-ta",NFILE,fnm);
@@ -453,13 +415,6 @@ int main(int argc,char *argv[])
   else
     fclose(tmpf);
   
-#ifdef MY_DSSP
-  /* Open all files read-write */
-  tapein=ffopen(pdbfile,"wb+");
-  setvbuf(tapein,inbuf,_IOFBF,MAXBUF);
-  tapeout=ffopen(tmpfile,"wb+");
-  setvbuf(tapeout,outbuf,_IOFBF,MAXBUF);
-#else
   if ((dptr=getenv("DSSP")) == NULL)
     dptr="/usr/local/bin/dssp";
   if (!fexist(dptr))
@@ -469,7 +424,6 @@ int main(int argc,char *argv[])
 	  dptr,bDoAccSurf?"":"-na",pdbfile,tmpfile,bVerbose?"":"2> /dev/null");
   if (bVerbose)
     fprintf(stderr,"dssp cmd='%s'\n",dssp);
-#endif
   
   if (fnTArea) {
     fTArea=xvgropen(fnTArea,"Solvent Accessible Surface Area",
@@ -502,34 +456,22 @@ int main(int argc,char *argv[])
 	snew(accr[i],atoms->nres+10);
     }
     rm_pbc(&(top.idef),natoms,box,x,x);
-#ifndef MY_DSSP
     tapein=ffopen(pdbfile,"w");
-#endif
     write_pdbfile_indexed(tapein,NULL,atoms,x,box,0,-1,gnx,index);
-#ifdef MY_DSSP
-    rewind(tapein);
-    dssp_main(bDoAccSurf,bVerbose);
-    rewind(tapein);
-    rewind(tapeout);
-#else
     fclose(tapein);
 
 #ifdef GMX_NO_SYSTEM
     printf("Warning-- No calls to system(3) supported on this platform.");
     printf("Warning-- Skipping execution of 'system(\"%s\")'.", dssp);
+    exit(1);
 #else
     system(dssp);
 #endif
 
-#endif
     strip_dssp(tmpfile,nres,bPhbres,t,
 	       accr[nframe],fTArea,&mat,average_area);
-#ifdef MY_DSSP
-    rewind(tapeout);
-#else
     remove(tmpfile);
     remove(pdbfile);
-#endif
     nframe++;
   } while(read_next_x(status,&t,natoms,x,box));
   fprintf(stderr,"\n");
