@@ -17,12 +17,10 @@ EXTRA_PROGRAMS 	=  	sigeps 		copyrgt 	mkyaw 	\
 			prfn 		options 	hrefify \
 			mkice 		total 		hexamer \
 			optwat 		addquote 	do_shift \
-			g_anavel 	my_dssp 	anaf 	\
+			g_anavel  	anaf 	\
 			ehole 		pmetest 	gen_table
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
-
-my_dssp_SOURCES 	= my_dssp.c dsspcore.c
 
 total_SOURCES		= total.f
 
