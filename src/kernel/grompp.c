@@ -835,10 +835,11 @@ int main (int argc, char *argv[])
     pr_symtab(debug,0,"After new_status",&sys->symtab);
   
   nc = count_constraints(msys.plist);
-  if ((ir->eI == eiCG) && nc) {
+  if (ir->ePull == epullCONSTRAINT)
+    nc += ir->pull->ngrp;
+  if ((ir->eI == eiCG || ir->eI == eiLBFGS) && nc) {
     fprintf(stderr,
-	    "ERROR: can not do Conjugate Gradients with constraints (%d)\n",
-	    nc);
+	    "ERROR: Can not do %s with constraints (%d)\n",EI(ir->eI),nc);
     nerror++;
   }
   if (ir->bPeriodicMols && (ir->eConstrAlg == estSHAKE) && nc) {

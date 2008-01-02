@@ -122,8 +122,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   /* SHAKE / LINCS */
-  sprintf(err_buf,"constraints with Conjugate Gradients not implemented. Specify -DFLEXIBLE on the defines line in your mdp file");
-  CHECK((opts->nshake > 0) && (ir->eI == eiCG));
+  sprintf(err_buf,"Constraints with %s not implemented. Specify -DFLEXIBLE on the defines line in your mdp file",EI(ir->eI));
+  CHECK((opts->nshake > 0) && (ir->eI == eiCG || ir->eI == eiLBFGS));
 
   if ( (opts->nshake > 0) && (opts->bMorse) ) {
     sprintf(warn_buf,
@@ -1024,9 +1024,10 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
 }
 
 static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
-		      char **gnames,int nstcomm,int comm_mode)
+		      char **gnames,int nstcomm,int comm_mode,
+		      t_pull *pull)
 {
-  int     ai,aj,i,j,d,g,imin,jmin;
+  int     ai,aj,i,j,d,g,imin,jmin,nc;
   t_iatom *ia;
   int     *nrdf,*na_vcm,na_tot;
   double  *nrdf_vcm,nrdf_uc,n_sub;
@@ -1058,7 +1059,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
 	if (opts->nFreeze[g][d] == 0)
 	  nrdf[i] += 2; 
       opts->nrdf[atoms->atom[i].grpnr[egcTC]] += 0.5*nrdf[i];
-      nrdf_vcm[atoms->atom[i].grpnr[egcVCM]] += 0.5*nrdf[i];
+      nrdf_vcm[atoms->atom[i].grpnr[egcVCM]]  += 0.5*nrdf[i];
     }
   }
   ia=idef->il[F_CONSTR].iatoms;
@@ -1090,8 +1091,8 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
       nrdf[aj] -= jmin;
       opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5*imin;
       opts->nrdf[atoms->atom[aj].grpnr[egcTC]] -= 0.5*jmin;
-      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 0.5*imin;
-      nrdf_vcm[atoms->atom[aj].grpnr[egcVCM]] -= 0.5*jmin;
+      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]]  -= 0.5*imin;
+      nrdf_vcm[atoms->atom[aj].grpnr[egcVCM]]  -= 0.5*jmin;
     }
     ia += interaction_function[F_CONSTR].nratoms+1;
     i  += interaction_function[F_CONSTR].nratoms+1;
@@ -1106,6 +1107,40 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
     i+=2;
   }
 
+  if (pull) {
+    /* Correct nrdf for the COM constraints.
+     * We correct using the TC and VCM group of the first atom
+     * in the reference and pull group. If atoms in one pull group
+     * belong to different TC or VCM groups it is anyhow difficult
+     * to determine the optimal nrdf assignment.
+     */
+    if (pull->eGeom == epullgPOS) {
+      nc = 0;
+      for(i=0; i<DIM; i++) {
+	if (pull->dim[i])
+	  nc++;
+      }
+    } else {
+      nc = 1;
+    }
+    for(i=0; i<pull->ngrp; i++) {
+      imin = 2*nc;
+      if (pull->grp[0].nat > 0) {
+	ai = pull->grp[0].ind[0];
+	if (opts->nrdf[atoms->atom[ai].grpnr[egcTC]] > 1) {
+	  opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5;
+	  nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]]  -= 0.5;
+	  imin--;
+	}
+      }
+      ai = pull->grp[1+i].ind[0];
+      opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5*imin;
+      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]]  -= 0.5*imin;
+      if (opts->nrdf[atoms->atom[ai].grpnr[egcTC]] < 0)
+	gmx_fatal(FARGS,"Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative",gnames[atoms->grps[egcTC].nm_ind[atoms->atom[ai].grpnr[egcTC]]]);
+    }
+  }
+  
   if (nstcomm != 0) {
     /* Subtract 3 from the number of degrees of freedom in each vcm group
      * when com translation is removed and 6 when rotation is removed
@@ -1463,7 +1498,8 @@ void do_index(char *ndx,
 	       restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
-  calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode);
+  calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode,
+	    ir->ePull==epullCONSTRAINT ? ir->pull : NULL);
   if (v && NULL) {
     real fac,ntot=0;
     
