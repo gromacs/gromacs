@@ -433,8 +433,9 @@ static int check_close_parenthesis(FILE *fp,int r,
   return level_inc;
 }
 
-enum { espID, espPOS, espTYPE, espQ, espV, espF, espNR };
-const char *esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f" };
+enum { espID, espPOS, espTYPE, espQ, espV, espF, espMOLECULE, espNR };
+const char *esp_prop[espNR] = { "id", "pos", "type", "q", "v", "f",
+				"molecule" };
 
 static void read_espresso_conf(char *infile,
 			       t_atoms *atoms,rvec x[],rvec *v,matrix box)
@@ -445,7 +446,7 @@ static void read_espresso_conf(char *infile,
   int  natoms,level,npar,r,nprop,p,i,m;
   int  prop[32];
   double d;
-  bool bFoundParticles,bFoundProp,bFoundVariable;
+  bool bFoundParticles,bFoundProp,bFoundVariable,bMol;
 
   if (!symtab) {
     snew(symtab,1);
@@ -458,6 +459,7 @@ static void read_espresso_conf(char *infile,
   
   bFoundParticles = FALSE;
   bFoundVariable = FALSE;
+  bMol = FALSE;
   level = 0;
   while ((r=get_espresso_word(fp,word))) {
     if (level==1 && strcmp(word,"particles")==0 && !bFoundParticles) {
@@ -476,6 +478,8 @@ static void read_espresso_conf(char *infile,
 	if (!bFoundProp && word[0] != '}') {
 	  gmx_fatal(FARGS,"Can not read Espresso files with particle property '%s'",word);
 	}
+	if (bFoundProp && p == espMOLECULE)
+	  bMol = TRUE;
 	if (r == 3)
 	  level--;
       }
@@ -522,20 +526,32 @@ static void read_espresso_conf(char *infile,
 		r = get_espresso_word(fp,word);
 		/* not used */
 	      }
+	    case espMOLECULE:
+	      r = get_espresso_word(fp,word);
+	      atoms->atom[i].resnr = atoi(word);
 	      break;
 	    }
 	  }
-	  atoms->atom[i].resnr = i;
+	  /* Generate an atom name from the particle type */
 	  sprintf(buf,"T%d",atoms->atom[i].type);
 	  atoms->atomname[i] = put_symtab(symtab,buf);
-	  if (atoms->atom[i].type < 26) {
-	    sprintf(buf,"T%c",'A'+atoms->atom[i].type);
+	  if (bMol) {
+	    if (i == 0 || atoms->atom[i].resnr != atoms->atom[i-1].resnr) {
+	      atoms->resname[atoms->atom[i].resnr] = put_symtab(symtab,"MOL");
+	    }
 	  } else {
-	    sprintf(buf,"T%c%c",
-		    'A'+atoms->atom[i].type/26,'A'+atoms->atom[i].type%26);
-	  }
-	  atoms->resname[atoms->atom[i].resnr] = put_symtab(symtab,buf);
-	  
+	    /* Residue number is the atom number */
+	    atoms->atom[i].resnr = i;
+	    /* Generate an residue name from the particle type */
+	    if (atoms->atom[i].type < 26) {
+	      sprintf(buf,"T%c",'A'+atoms->atom[i].type);
+	    } else {
+	      sprintf(buf,"T%c%c",
+		      'A'+atoms->atom[i].type/26,'A'+atoms->atom[i].type%26);
+	    }
+	    atoms->resname[atoms->atom[i].resnr] = put_symtab(symtab,buf);
+	  }	  
+
 	  if (r == 3)
 	    level--;
 	  i++;
