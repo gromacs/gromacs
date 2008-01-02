@@ -132,6 +132,36 @@ static void print_data(FILE *fp,real time,rvec x[],real *mass,bool bCom,
     low_print_data(fp,time,x,isize[0],index[0],bDim);
 }
 
+static void write_trx_x(int status,t_trxframe *fr,real *mass,bool bCom,
+			int ngrps,int isize[],atom_id **index)
+{
+  static rvec *xav=NULL,*xavs=NULL;
+  static int *ind0=NULL;
+  int i;
+
+  fr->bV = FALSE;
+  fr->bF = FALSE;
+  if (bCom) {
+    if (xav==NULL) {
+      snew(xav,ngrps);
+      snew(xavs,fr->natoms);
+      snew(ind0,ngrps);
+      for(i=0; i<ngrps; i++)
+	ind0[i] = index[i][0];
+    }
+    average_data(fr->x,xav,mass,ngrps,isize,index);
+    /* Note that atom and residue names will be the ones of the first atom
+     * in each group.
+     */
+    for(i=0; i<ngrps; i++)
+      copy_rvec(xav[i],xavs[ind0[i]]);
+    fr->x = xavs;
+    write_trxframe_indexed(status,fr,ngrps,ind0);
+  } else {
+    write_trxframe_indexed(status,fr,isize[0],index[0]);
+  }
+}
+
 static void make_legend(FILE *fp,int ngrps,int isize,atom_id index[],
 			char **name,bool bCom,bool bMol,bool bDim[])
 {
@@ -479,12 +509,12 @@ int gmx_traj(int argc,char *argv[])
   t_topology top;
   real       *mass,time;
   char       title[STRLEN],*indexfn;
-  t_trxframe fr;
+  t_trxframe fr,frout;
   int        flags,nvhisto=0,*vhisto=NULL;
   rvec       *xtop,*xp=NULL;
   rvec       *sumxv=NULL,*sumv=NULL,*sumxf=NULL,*sumf=NULL;
   matrix     topbox;
-  int        status;
+  int        status,status_out=-1;
   int        i,j,n;
   int        nr_xfr,nr_vfr,nr_ffr;
   char       **grpname;
@@ -492,7 +522,8 @@ int gmx_traj(int argc,char *argv[])
   atom_id    **index0,**index;
   atom_id    *a,*atndx;
   t_block    *mols;
-  bool       bTop,bOX,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF,bDim[4],bDum[4],bVD;
+  bool       bTop,bOX,bOXT,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF;
+  bool       bDim[4],bDum[4],bVD;
   char       *box_leg[6] = { "XX", "YY", "ZZ", "YX", "ZX", "ZY" };
 
   t_filenm fnm[] = {
@@ -500,6 +531,7 @@ int gmx_traj(int argc,char *argv[])
     { efTPS, NULL, NULL, ffREAD },
     { efNDX, NULL, NULL, ffOPTRD },
     { efXVG, "-ox", "coord.xvg", ffOPTWR },
+    { efTRX, "-oxt","coord.xtc", ffOPTWR },
     { efXVG, "-ov", "veloc.xvg", ffOPTWR },
     { efXVG, "-of", "force.xvg", ffOPTWR },
     { efXVG, "-ob", "box.xvg",   ffOPTWR },
@@ -524,6 +556,7 @@ int gmx_traj(int argc,char *argv[])
 	    "Using center of mass.\n");
   
   bOX  = opt2bSet("-ox",NFILE,fnm);
+  bOXT = opt2bSet("-oxt",NFILE,fnm);
   bOV  = opt2bSet("-ov",NFILE,fnm);
   bOF  = opt2bSet("-of",NFILE,fnm);
   bOB  = opt2bSet("-ob",NFILE,fnm);
@@ -542,11 +575,10 @@ int gmx_traj(int argc,char *argv[])
   bDim[DIM] = bNorm;
 
   bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,topbox,
-		       bCom && (bOX || bOV || bOT || bEKT || bEKR));
+		       bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
   sfree(xtop);
   if ((bMol || bCV || bCF) && !bTop)
     gmx_fatal(FARGS,"Need a run input file for option -mol, -cv or -cf");
-  
 
   if (bMol)
     indexfn = ftp2fn(efNDX,NFILE,fnm);
@@ -594,6 +626,10 @@ int gmx_traj(int argc,char *argv[])
 		    bCom ? "Center of mass" : "Coordinate",
 		    xvgr_tlabel(),"Coordinate (nm)");
     make_legend(outx,ngroups,isize0[0],index0[0],grpname,bCom,bMol,bDim);
+  }
+  if (bOXT) {
+    flags = flags | TRX_READ_X;
+    status_out = open_trx(opt2fn("-oxt",NFILE,fnm),"w");
   }
   if (bOV) {
     flags = flags | TRX_READ_V;
@@ -688,6 +724,14 @@ int gmx_traj(int argc,char *argv[])
       
     if (bOX && fr.bX)
       print_data(outx,time,fr.x,mass,bCom,ngroups,isize,index,bDim);
+    if (bOXT && fr.bX) {
+      frout = fr;
+      if (!frout.bAtoms) {
+	frout.atoms  = &top.atoms;
+	frout.bAtoms = TRUE;
+      }
+      write_trx_x(status_out,&frout,mass,bCom,ngroups,isize,index);
+    }
     if (bOV && fr.bV)
       print_data(outv,time,fr.v,mass,bCom,ngroups,isize,index,bDim);
     if (bOF && fr.bF)
@@ -746,6 +790,7 @@ int gmx_traj(int argc,char *argv[])
   close_trj(status);
   
   if (bOX) fclose(outx);
+  if (bOXT) close_trx(status_out);
   if (bOV) fclose(outv);
   if (bOF) fclose(outf);
   if (bOB) fclose(outb);
