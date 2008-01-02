@@ -240,15 +240,23 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_block *grps,char **gnames)
       snew(pgrp->ind,pgrp->nat);
       for(i=0; i<pgrp->nat; i++)
 	pgrp->ind[i] = grps->a[grps->index[ig]+i];
+
       if (pull->eGeom == epullgCYL && g == 0 && pgrp->nweight > 0)
-	gmx_fatal(FARGS,"Weights are not supported for the reference group with cyclinder pulling");
+	gmx_fatal(FARGS,"Weights are not supported for the reference group with cylinder pulling");
       if (pgrp->nweight > 0 && pgrp->nweight != pgrp->nat)
 	gmx_fatal(FARGS,"Number of weights (%d) for pull group %d '%s' does not match the number of atoms (%d)",
 		  pgrp->nweight,g,pgnames[g],pgrp->nat);
-      if (pgrp->pbcatom > 0)
-	pgrp->pbcatom -= 1;
-      else
-	pgrp->pbcatom = pgrp->ind[(pgrp->nat-1)/2];
+
+      if (pgrp->nat == 1) {
+	/* No pbc is required for this group */
+	pgrp->pbcatom = -1;
+      } else {
+	if (pgrp->pbcatom > 0)
+	  pgrp->pbcatom -= 1;
+	else
+	  pgrp->pbcatom = pgrp->ind[(pgrp->nat-1)/2];
+      }
+
       if ((pull->eGeom == epullgDIR || pull->eGeom == epullgCYL) &&
 	  g > 0 && norm2(pgrp->vec) == 0)
 	gmx_fatal(FARGS,"pull_vec%d can not be zero with geometry %s",
