@@ -92,6 +92,7 @@ g_rdf|calculates radial distribution functions
 g_sdf|calculates solvent distribution functions
 g_sgangle|computes the angle and distance between two groups
 g_sorient|analyzes solvent orientation around solutes
+g_spol|analyzes solvent dipole orientation and polarization around solutes
 g_bundle|analyzes bundles of axes, e.g. helices
 g_disre|analyzes distance restraints
 g_clustsize|calculate size distributions of atomic clusters

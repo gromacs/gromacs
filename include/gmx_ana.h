@@ -158,6 +158,9 @@ int
 gmx_sorient(int argc,char *argv[]);
 
 int 
+gmx_spol(int argc,char *argv[]);
+
+int 
 gmx_spatial(int argc,char *argv[]);
 
 int 
