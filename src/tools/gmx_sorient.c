@@ -106,12 +106,14 @@ int gmx_sorient(int argc,char *argv[])
   FILE    *fp;
   int     i,j,p,sa0,sa1,sa2,n,ntot,nf,m,*hist1,*hist2,*histn,nbin1,nbin2,nrbin;
   real    *histi1,*histi2,invbw,invrbw;
+  double  sum1,sum2;
   int     *isize,nrefgrp,nrefat;
   atom_id **index;
   char    **grpname;
   real    inp,outp,two_pi,nav,normfac,rmin2,rmax2,rcut,rcut2,r2,r,mass,mtot;
   real    c1,c2;
   char    str[STRLEN];
+  bool    bTPS;
   rvec    xref,dx,dxh1,dxh2,outer;
   t_pbc   pbc;
   char    *legr[] = { "<cos(\\8q\\4\\s1\\N)>", 
@@ -174,14 +176,21 @@ int gmx_sorient(int argc,char *argv[])
   
   two_pi = 2/M_PI;
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,bCom);
+  bTPS = (opt2bSet("-s",NFILE,fnm) || !opt2bSet("-n",NFILE,fnm) || bCom);
+  if (bTPS) {
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,bCom);
+  }
 
   /* get index groups */
   printf("Select a group of reference particles and a solvent group:\n"); 
   snew(grpname,2);
   snew(index,2);
   snew(isize,2);
-  get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),2,isize,index,grpname);
+  if (bTPS) {
+    get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),2,isize,index,grpname);
+  } else {
+    get_index(NULL,ftp2fn(efNDX,NFILE,fnm),2,isize,index,grpname);
+  }
 
   if (bCom) {
     nrefgrp = 1;
@@ -211,9 +220,6 @@ int gmx_sorient(int argc,char *argv[])
 
   invrbw = 1/rbinw;
   
-  ntot = 0;
-  nf = 0;
-  
   snew(hist1,nbin1+1);
   snew(hist2,nbin2+1);
   nrbin = rcut/rbinw;
@@ -223,10 +229,17 @@ int gmx_sorient(int argc,char *argv[])
   snew(histi2,nrbin);
   snew(histn,nrbin);
 
+  ntot = 0;
+  nf = 0;
+  sum1 = 0;
+  sum2 = 0;
+
   /* start analysis of trajectory */
   do {
-    /* make molecules whole again */
-    rm_pbc(&top.idef,natoms,box,x,x);
+    if (bTPS) {
+      /* make molecules whole again */
+      rm_pbc(&top.idef,natoms,box,x,x);
+    }
     
     set_pbc(&pbc,box);
     n    = 0;
@@ -269,6 +282,8 @@ int gmx_sorient(int argc,char *argv[])
 	  if (r2>=rmin2 && r2<rmax2) {
 	    (hist1[(int)(invbw*(inp + 1))])++;
 	    (hist2[(int)(invbw*fabs(outp))])++;
+	    sum1 += inp;
+	    sum2 += outp;
 	     n++;
 	  }
 	}
@@ -290,8 +305,16 @@ int gmx_sorient(int argc,char *argv[])
   nav     = (real)ntot/(nrefgrp*nf);
   normfac = invbw/ntot;
   
-  fprintf(stderr,"Average number of molecules between %g and %g nm is %.1f\n",
+  fprintf(stderr,  "Average nr of molecules between %g and %g nm: %.1f\n",
 	  rmin,rmax,nav);
+  if (ntot > 0) {
+    sum1 /= ntot;
+    sum2 /= ntot;
+    fprintf(stderr,"Average cos(theta1)     between %g and %g nm: %6.3f\n",
+	    rmin,rmax,sum1);
+    fprintf(stderr,"Average 3cos2(theta2)-1 between %g and %g nm: %6.3f\n",
+	    rmin,rmax,sum2);
+  }
   
   sprintf(str,"Solvent orientation between %g and %g nm",rmin,rmax);
   fp=xvgropen(opt2fn("-o",NFILE,fnm), 
