@@ -66,14 +66,13 @@
 #include "gmx_wallcycle.h"
 
 typedef struct {
-  real gdt;
-  real eph;
-  real emh;
-  real em;
-  real b;
-  real c;
-  real d;
-  real vvcorr;
+  double gdt;
+  double eph;
+  double emh;
+  double em;
+  double b;
+  double c;
+  double d;
 } gmx_sd_const_t;
 
 typedef struct {
@@ -90,6 +89,7 @@ typedef struct gmx_stochd {
   real *bd_rf;
   /* SD stuff */
   gmx_sd_const_t *sdc;
+  bool bTwoStep;
   gmx_sd_sigma_t *sdsig;
   rvec *sd_V;
   int  sd_V_nalloc;
@@ -258,12 +258,13 @@ static void do_update_visc(int start,int homenr,double dt,
   }
 }
 
-gmx_stochd_t init_stochd(int eI,int ngtc,real tau_t[],real dt,int seed)
+gmx_stochd_t init_stochd(FILE *fplog,
+			 int eI,int ngtc,real tau_t[],real dt,int seed)
 {
   t_gmx_stochd *sd;
   gmx_sd_const_t *sdc;
   int  n;
-  real y;
+  real gdt_max,y;
 
   snew(sd,1);
 
@@ -277,13 +278,17 @@ gmx_stochd_t init_stochd(int eI,int ngtc,real tau_t[],real dt,int seed)
     snew(sd->sdsig,ngtc);
     
     sdc = sd->sdc;
+    gdt_max = 0;
     for(n=0; n<ngtc; n++) {
       sdc[n].gdt = dt/tau_t[n];
+      if (sdc[n].gdt > gdt_max)
+	gdt_max = sdc[n].gdt;
       sdc[n].eph = exp(sdc[n].gdt/2);
       sdc[n].emh = exp(-sdc[n].gdt/2);
       sdc[n].em  = exp(-sdc[n].gdt);
-      if(sdc[n].gdt >= 0.25) {
-	sdc[n].b = sdc[n].gdt*(sqr(sdc[n].eph)-1) - 4*sqr(sdc[n].eph-1);
+      if (sdc[n].gdt >= 0.05) {
+	sdc[n].b = sdc[n].gdt*(sdc[n].eph*sdc[n].eph - 1) 
+	  - 4*(sdc[n].eph - 1)*(sdc[n].eph - 1);
 	sdc[n].c = sdc[n].gdt - 3 + 4*sdc[n].emh - sdc[n].em;
 	sdc[n].d = 2 - sdc[n].eph - sdc[n].emh;
       } else {
@@ -293,27 +298,96 @@ gmx_stochd_t init_stochd(int eI,int ngtc,real tau_t[],real dt,int seed)
 	sdc[n].c = y*y*y*(2/3.0+y*(-1/2.0+y*(7/30.0+y*(-1/12.0+y*31/1260.0))));
 	sdc[n].d = y*y*(-1+y*y*(-1/12.0-y*y/360.0));
       }
-      /* The missing velocity correlation over one MD step */
-      sdc[n].vvcorr = 0.5*(1 - sdc[n].em);
       if(debug)
-	fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g  vvcorr %g\n",
-		n,sdc[n].b,sdc[n].c,sdc[n].d,sdc[n].vvcorr);
+	fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
+		n,sdc[n].b,sdc[n].c,sdc[n].d);
     }
+    /* The largest difference between the 1-step and 2-step SD schemes
+     * is of relative size (gdt/2)^2.
+     * Thus if (gdt/2)^2 is smaller than 1e-5 we can use a 1-step scheme
+     * without losing much accuracy.
+     */
+    sd->bTwoStep = (sqr(0.5*gdt_max) > 1e-5);
+    if (fplog)
+      fprintf(fplog,"Stochastic dynamics:\n"
+	      "  max(0.5*dt/tau_t)^2 = %.1e %s %.1e, using a %d-step SD integrator\n\n",
+	      sqr(0.5*gdt_max),
+	      sd->bTwoStep ? ">" : "<",
+	      1e-5,
+	      sd->bTwoStep ? 2 : 1);
   }
 
   return sd;
 }
 
-static void do_update_sd(t_gmx_stochd *sd,bool bFirstStep,
-			 int start,int homenr,
-                         rvec accel[],ivec nFreeze[],
-                         real invmass[],unsigned short ptype[],
-                         unsigned short cFREEZE[],unsigned short cACC[],
-                         unsigned short cTC[],
-                         rvec x[],rvec xprime[],rvec v[],rvec f[],
-			 rvec sd_X[],
-                         int ngtc,real tau_t[],real ref_t[],
-                         bool bFirstHalf)
+static void do_update_sd1(t_gmx_stochd *sd,bool bFirstStep,
+			  int start,int homenr,double dt,
+			  rvec accel[],ivec nFreeze[],
+			  real invmass[],unsigned short ptype[],
+			  unsigned short cFREEZE[],unsigned short cACC[],
+			  unsigned short cTC[],
+			  rvec x[],rvec xprime[],rvec v[],rvec f[],
+			  rvec sd_X[],
+			  int ngtc,real tau_t[],real ref_t[])
+{
+  gmx_sd_const_t *sdc;
+  gmx_sd_sigma_t *sig;
+  gmx_rng_t gaussrand;
+  real   kT;
+  int    gf=0,ga=0,gt=0;
+  real   ism,sd_V;
+  int    n,d;
+
+  sdc = sd->sdc;
+  sig = sd->sdsig;
+  if (homenr > sd->sd_V_nalloc) {
+    sd->sd_V_nalloc = over_alloc_dd(homenr);
+    srenew(sd->sd_V,sd->sd_V_nalloc);
+  }
+  gaussrand = sd->gaussrand;
+  
+  for(n=0; n<ngtc; n++) {
+    kT = BOLTZ*ref_t[n];
+    /* The mass is encounted for later, since this differs per atom */
+    sig[n].V  = sqrt(2*kT*(1 - sdc[n].em));
+  }
+
+  for(n=start; n<start+homenr; n++) {
+    ism = sqrt(invmass[n]);
+    if (cFREEZE)
+      gf  = cFREEZE[n];
+    if (cACC)
+      ga  = cACC[n];
+    if (cTC)
+      gt  = cTC[n];
+
+    for(d=0; d<DIM; d++) {
+      if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
+	sd_V = ism*sig[gt].V*gmx_rng_gaussian_table(gaussrand);
+	
+	v[n][d] = v[n][d]*sdc[gt].em 
+	  + (invmass[n]*f[n][d] + accel[ga][d])*tau_t[gt]*(1 - sdc[gt].em)
+	  + sd_V;
+
+	xprime[n][d] = x[n][d] + v[n][d]*dt;
+      } else {
+	v[n][d]      = 0.0;
+	xprime[n][d] = x[n][d];
+      }
+    }
+  }
+}
+
+static void do_update_sd2(t_gmx_stochd *sd,bool bFirstStep,
+			  int start,int homenr,
+			  rvec accel[],ivec nFreeze[],
+			  real invmass[],unsigned short ptype[],
+			  unsigned short cFREEZE[],unsigned short cACC[],
+			  unsigned short cTC[],
+			  rvec x[],rvec xprime[],rvec v[],rvec f[],
+			  rvec sd_X[],
+			  int ngtc,real tau_t[],real ref_t[],
+			  bool bFirstHalf)
 {
   gmx_sd_const_t *sdc;
   gmx_sd_sigma_t *sig;
@@ -327,7 +401,6 @@ static void do_update_sd(t_gmx_stochd *sd,bool bFirstStep,
   real   vn=0,Vmh,Xmh;
   real   ism;
   int    n,d;
-  unsigned long  jran;
 
   sdc = sd->sdc;
   sig = sd->sdsig;
@@ -380,7 +453,10 @@ static void do_update_sd(t_gmx_stochd *sd,bool bFirstStep,
 
         } else {
 
-          /* Correct the velocities for the constraints */
+          /* Correct the velocities for the constraints.
+	   * This operation introduces some inaccuracy,
+	   * since the velocity is determined from differences in coordinates.
+	   */
           v[n][d] = 
           (xprime[n][d] - x[n][d])/(tau_t[gt]*(sdc[gt].eph - sdc[gt].emh));  
 
@@ -414,7 +490,6 @@ static void do_update_bd(int start,int homenr,double dt,
   real   vn;
   real   invfr=0;
   int    n,d;
-  unsigned long  jran;
 
   if (friction_coefficient != 0) {
     invfr = 1.0/friction_coefficient;
@@ -708,16 +783,25 @@ void update(FILE         *fplog,
                        md->ptype,md->cTC,state->x,xprime,state->v,force,M,
                        state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
     } else if (inputrec->eI == eiSD) {
-      /* The SD update is done in 2 parts, because an extra constraint step
-       * is needed 
-       */
-      do_update_sd(sd,bFirstStep,start,homenr,
-                   inputrec->opts.acc,inputrec->opts.nFreeze,
-                   md->invmass,md->ptype,
-                   md->cFREEZE,md->cACC,md->cTC,
-                   state->x,xprime,state->v,force,state->sd_X,
-                   inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                   TRUE);
+      if (sd->bTwoStep) {
+	/* The SD update is done in 2 parts, because an extra constraint step
+	 * is needed 
+	 */
+	do_update_sd2(sd,bFirstStep,start,homenr,
+		      inputrec->opts.acc,inputrec->opts.nFreeze,
+		      md->invmass,md->ptype,
+		      md->cFREEZE,md->cACC,md->cTC,
+		      state->x,xprime,state->v,force,state->sd_X,
+		      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+		      TRUE);
+      } else {
+	do_update_sd1(sd,bFirstStep,start,homenr,dt,
+		      inputrec->opts.acc,inputrec->opts.nFreeze,
+		      md->invmass,md->ptype,
+		      md->cFREEZE,md->cACC,md->cTC,
+		      state->x,xprime,state->v,force,state->sd_X,
+		      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
+      }
     } else if (inputrec->eI == eiBD) {
       do_update_bd(start,homenr,dt,
                    inputrec->opts.nFreeze,md->invmass,md->ptype,
@@ -756,7 +840,7 @@ void update(FILE         *fplog,
       /* Constrain the coordinates xprime */
       wallcycle_start(wcycle,ewcCONSTR);
       constrain(NULL,bLog,bEner,constr,top,
-		inputrec,cr->dd,step,md,
+		inputrec,cr,step,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,
 		dt,state->v,&vir_con,nrnb,econqCoord);
@@ -777,12 +861,6 @@ void update(FILE         *fplog,
     if (edyn->bEdsam)
       do_edsam(fplog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
                force,state->box,edyn,bDoUpdate);
-
-    /* apply pull constraints when required. Act on xprime, the SHAKED
-       coordinates. Don't do anything to f */
-    if (inputrec->ePull == epullCONSTRAINT)
-      pull_constraint(inputrec->pull,state->x,xprime,state->v,vir_con,
-		      state->box,top,dt,inputrec->init_t+step*dt,md,cr);
 
     if (bDoUpdate) {
       if (inputrec->eI == eiSD) {
@@ -808,22 +886,22 @@ void update(FILE         *fplog,
   
   where();
   if (bDoUpdate) {
-    if (inputrec->eI == eiSD) {
+    if (inputrec->eI == eiSD && sd->bTwoStep) {
       /* The second part of the SD integration */
-      do_update_sd(sd,FALSE,start,homenr,
-		   inputrec->opts.acc,inputrec->opts.nFreeze,
-		   md->invmass,md->ptype,
-		   md->cFREEZE,md->cACC,md->cTC,
-		   state->x,xprime,state->v,force,state->sd_X,
-		   inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-		   FALSE);
+      do_update_sd2(sd,FALSE,start,homenr,
+		    inputrec->opts.acc,inputrec->opts.nFreeze,
+		    md->invmass,md->ptype,
+		    md->cFREEZE,md->cACC,md->cTC,
+		    state->x,xprime,state->v,force,state->sd_X,
+		    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+		    FALSE);
       inc_nrnb(nrnb, eNR_UPDATE, homenr);
       
       if (constr) {
 	/* Constrain the coordinates xprime */
 	wallcycle_start(wcycle,ewcCONSTR);
 	constrain(NULL,bLog,bEner,constr,top,
-		  inputrec,cr->dd,step,md,
+		  inputrec,cr,step,md,
 		  state->x,xprime,NULL,
 		  state->box,state->lambda,dvdlambda,
 		  dt,NULL,NULL,nrnb,econqCoord);

@@ -202,7 +202,7 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       struct gmx_constr *constr,
 	       t_topology *top,t_inputrec *ir,
-	       gmx_domdec_t *dd,
+	       t_commrec *cr,
 	       int step,t_mdatoms *md,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,
@@ -233,7 +233,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     
   where();
   if (constr->lincsd) {
-    bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,dd,
+    bOK = constrain_lincs(fplog,bLog,bEner,ir,step,constr->lincsd,md,cr->dd,
 			  x,xprime,min_proj,box,lambda,dvdlambda,
 			  invdt,v,vir!=NULL,rmdr,
 			  econq,nrnb,
@@ -280,7 +280,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	      "\nt = %.3f ps: Water molecule starting at atom %d can not be "
 	      "settled.\nCheck for bad contacts and/or reduce the timestep.\n",
 	      ir->init_t+step*ir->delta_t,
-	      glatnr(dd,settle->iatoms[error*2+1]));
+	      glatnr(cr->dd,settle->iatoms[error*2+1]));
       if (fplog)
 	fprintf(fplog,"%s",buf);
       fprintf(stderr,"%s",buf);
@@ -298,8 +298,13 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   }
 
   if (!bOK && constr->maxwarn >= 0) 
-    dump_confs(fplog,step,&(top->atoms),start,homenr,dd,x,xprime,box);
+    dump_confs(fplog,step,&(top->atoms),start,homenr,cr->dd,x,xprime,box);
 
+  if (econq == econqCoord && ir->ePull == epullCONSTRAINT) {
+    pull_constraint(ir->pull,x,xprime,v,*vir,
+		    box,top,dt,ir->init_t+step*ir->delta_t,md,cr);
+  }
+  
   return bOK;
 }
 
@@ -528,7 +533,7 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
   if (PARTDECOMP(cr))
     gmx_sumi(2,nc,cr);
 
-  if (nc[0]+nc[1] > 0) {
+  if (nc[0]+nc[1] > 0 || ir->ePull == epullCONSTRAINT) {
     snew(constr,1);
 
     if (nc[0] == 0) {

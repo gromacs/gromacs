@@ -53,6 +53,7 @@
 #include "pull.h"
 #include "xvgr.h"
 #include "names.h"
+#include "partdec.h"
 
 static void pull_print_x(FILE *out,t_pull *pull, real t) 
 {
@@ -246,9 +247,23 @@ void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
   }
 }
 
+void clear_pull_forces(t_pull *pull)
+{
+  int i;
+
+  /* Zeroing the forces is only required for constraint pulling.
+   * It can happen that multiple constraint steps need to be applied
+   * and therefore the constraint forces need to be accumulated.
+   */
+  for(i=0; i<1+pull->ngrp; i++) {
+    clear_dvec(pull->grp[i].f);
+    pull->grp[i].f_scal = 0;
+  }
+}
+
 /* Apply constraint using SHAKE */
 static void do_constraint(t_pull *pull, rvec *x, rvec *v,
-			  bool bVir, tensor vir,
+			  bool bMaster, tensor vir,
 			  matrix box, t_mdatoms *md, 
                           real dt, double t) 
 {
@@ -267,6 +282,7 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
 		      see Num. Recipes in C ed 2 p. 184 */
   dvec *dr;        /* correction for group i */
   dvec ref_dr;     /* correction for group j */
+  dvec f;          /* the pull force */
   dvec tmp,tmp3;
   t_pullgrp *pdyna,*pgrp,*pref;
 
@@ -494,17 +510,15 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
     /* select components of dr */
     for(m=0; m<DIM; m++)
       dr[g][m] *= pull->dim[m];
-    dsvmul(1.0/(pgrp->invtm*dt*dt),dr[g],pgrp->f);
+    dsvmul(1.0/(pgrp->invtm*dt*dt),dr[g],f);
+    dvec_inc(pgrp->f,f);
     switch (pull->eGeom) {
     case epullgDIST:
-      pgrp->f_scal = 0;
       for(m=0; m<DIM; m++)
-	pgrp->f_scal += r_ij[g][m]*pgrp->f[m];
-      pgrp->f_scal /= dnorm(r_ij[g]);
+	pgrp->f_scal += r_ij[g][m]*pgrp->f[m]/dnorm(r_ij[g]);
       break;
     case epullgDIR:
     case epullgCYL:
-      pgrp->f_scal = 0;
       for(m=0; m<DIM; m++)
 	pgrp->f_scal += pgrp->vec[m]*pgrp->f[m];
       break;
@@ -512,11 +526,11 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
       break;
     }
 
-    if (bVir) {
+    if (bMaster) {
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0; m<DIM; m++)
-	  vir[j][m] += 0.5*pull->grp[g].f[j]*r_ij[g][m];
+	  vir[j][m] += 0.5*f[j]*r_ij[g][m];
     }
 
     /* update the atom positions */
@@ -584,7 +598,7 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
 
 /* Pulling with a harmonic umbrella potential or constant force */
 static real do_pull_pot(t_commrec *cr,int ePull,
-			t_pull *pull, rvec *f, bool bVir, tensor vir, 
+			t_pull *pull, rvec *f, tensor vir, 
 			matrix box, t_mdatoms *md,
 			double t)
 {
@@ -642,7 +656,7 @@ static real do_pull_pot(t_commrec *cr,int ePull,
       break;
     }
     
-    if (bVir) {
+    if (MASTER(cr)) {
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0;m<DIM;m++)
@@ -653,7 +667,7 @@ static real do_pull_pot(t_commrec *cr,int ePull,
   /* Distribute forces over pulled groups */
   apply_forces(cr, pull, md, f);
 
-  return V;
+  return (MASTER(cr) ? V : 0.0);
 }
 
 real pull_potential(int ePull,t_pull *pull, rvec *x, rvec *f, tensor vir, 
@@ -662,7 +676,7 @@ real pull_potential(int ePull,t_pull *pull, rvec *x, rvec *f, tensor vir,
 {
   pull_calc_coms(cr,pull,md,x,NULL,box);
 
-  return do_pull_pot(cr,ePull,pull,f,MASTER(cr),vir,box,md,t);
+  return do_pull_pot(cr,ePull,pull,f,vir,box,md,t);
 }
 
 void pull_constraint(t_pull *pull, rvec *x, rvec *xp, rvec *v, tensor vir, 
@@ -772,12 +786,11 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
 }
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
-	       rvec *x,t_atoms *atoms,matrix box,
-	       t_commrec *cr,int start,int end)
+	       t_atoms *atoms,t_commrec *cr)
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
-  int       g;
+  int       g,start=0,end=0;
 
   pull = ir->pull;
 
@@ -799,6 +812,9 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
 	      pull->ngrp,pull->ngrp==1 ? "" : "s");
   }
 
+
+  if (PARTDECOMP(cr))
+    pd_at_range(cr,&start,&end);
   for(g=0; g<pull->ngrp+1; g++) {
     pgrp = &pull->grp[g];
     if (pgrp->nat > 0) {
@@ -820,8 +836,8 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
     }
   }
   
-  /* Only do I/O if we are the MASTER */
-  if (MASTER(cr)) {
+  /* Only do I/O when we are doing dynamics and if we are the MASTER */
+  if (EI_DYNAMICS(ir->eI) && MASTER(cr)) {
     if (pull->nstxout > 0) {
       pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE);
     }

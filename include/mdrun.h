@@ -189,19 +189,13 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		     t_topology *top,t_groups *grps,
 		     matrix box,rvec x[],rvec f[],rvec buf[],
+		     tensor vir_force,
 		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 		     real lambda,t_graph *graph,
 		     bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
-		     t_forcerec *fr, rvec mu_tot,
+		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn);
 
-extern void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr);
-		     
-extern void calc_virial(FILE *log,int start,int homenr,rvec x[],rvec f[],
-			tensor vir_part,tensor vir_el_recip,
-			t_graph *graph,matrix box,
-			t_nrnb *nrnb,const t_forcerec *fr);
-			
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 

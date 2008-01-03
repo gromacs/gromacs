@@ -601,7 +601,7 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
 
 static void init_adir(FILE *log,
 		      gmx_constr_t constr,t_topology *top,t_inputrec *ir,
-		      gmx_domdec_t *dd,int dd_ac1,
+		      t_commrec *cr,int dd_ac1,
 		      int step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
 		      rvec *f,rvec *acc_dir,matrix box,
@@ -616,7 +616,7 @@ static void init_adir(FILE *log,
   unsigned short *ptype;
   rvec   p,dx;
   
-  if (dd)
+  if (DOMAINDECOMP(cr))
     n = dd_ac1;
   else
     n = end - start;
@@ -644,10 +644,10 @@ static void init_adir(FILE *log,
       }
     }
   }
-  constrain(log,FALSE,FALSE,constr,top,ir,dd,step,md,
+  constrain(log,FALSE,FALSE,constr,top,ir,cr,step,md,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,econqCoord);
-  constrain(log,FALSE,FALSE,constr,top,ir,dd,step,md,
+  constrain(log,FALSE,FALSE,constr,top,ir,cr,step,md,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,econqCoord);
 
@@ -661,7 +661,7 @@ static void init_adir(FILE *log,
   }
 
   /* Project the acceleration on the old bond directions */
-  constrain(log,FALSE,FALSE,constr,top,ir,dd,step,md,
+  constrain(log,FALSE,FALSE,constr,top,ir,cr,step,md,
 	    x_old,xnew-start,acc_dir,box,
 	    lambda,dvdlambda,dt,NULL,NULL,nrnb,econqDeriv_FlexCon); 
 }
@@ -672,7 +672,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			t_topology *top,gmx_constr_t constr,
 			real ener[],t_fcdata *fcd,
 			t_state *state,rvec f[],
-			rvec buf[],t_mdatoms *md,
+			rvec buf[],tensor force_vir,
+			t_mdatoms *md,
 			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			t_graph *graph,t_groups *grps,
 			struct gmx_shellfc *shfc,
@@ -685,8 +686,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   int    nshell;
   t_shell *shell;
   rvec   *pos[2],*force[2],*acc_dir=NULL,*x_old=NULL;
-  real   Epot[2],df[2],Estore[F_NRE];
-  tensor vir_el_recip[2];
+  real   Epot[2],df[2];
   rvec   dx;
   real   sf_dir,invdt;
   real   ftol,xiH,xiS,dum=0;
@@ -783,15 +783,13 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
   do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,grps,
-	   state->box,state->x,force[Min],buf,md,ener,fcd,
+	   state->box,state->x,force[Min],buf,force_vir,md,ener,fcd,
 	   state->lambda,graph,
-	   TRUE,bDoNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
-  sum_lrforces(force[Min],fr,start,homenr);
-  copy_mat(fr->vir_el_recip,vir_el_recip[Min]);
+	   TRUE,bDoNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,t,fp_field,NULL);
 
   sf_dir = 0;
   if (nflexcon) {
-    init_adir(fplog,constr,top,inputrec,cr->dd,dd_ac1,mdstep,md,start,end,
+    init_adir(fplog,constr,top,inputrec,cr,dd_ac1,mdstep,md,start,end,
 	      shfc->x_old-start,state->x,state->x,force[Min],
 	      shfc->acc_dir-start,state->box,state->lambda,&dum,nrnb);
 
@@ -846,7 +844,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
      
     if (nflexcon) {
-      init_adir(fplog,constr,top,inputrec,cr->dd,dd_ac1,mdstep,md,start,end,
+      init_adir(fplog,constr,top,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
       
@@ -867,28 +865,9 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     /* Try the new positions */
     do_force(fplog,cr,inputrec,1,nrnb,wcycle,
-	     top,grps,state->box,pos[Try],force[Try],buf,md,ener,fcd,
-	     state->lambda,graph,
-	     TRUE,FALSE,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,NULL);
-    if (vsite) 
-      spread_vsite_f(fplog,vsite,pos[Try],force[Try],fr->fshift,nrnb,
-		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-      
-    /* Calculation of the virial must be done after vsites!    */
-    /* Question: Is it correct to do the PME forces after this? */
-    /*    calc_virial(fplog,START(nsb),HOMENR(nsb),pos[Try],force[Try],
-		my_vir[Try],pme_vir[Try],graph,state->box,nrnb,fr,FALSE);
-    */	  
-    /* Spread the LR force on virtual site to the other particles... 
-     * This is parallellized. MPI communication is performed
-     * if the constructing atoms aren't local.
-     */
-    if (vsite && fr->bEwald) 
-      spread_vsite_f(fplog,vsite,pos[Try],fr->f_el_recip,NULL,nrnb,
-		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-    
-    sum_lrforces(force[Try],fr,start,homenr);
-    copy_mat(fr->vir_el_recip,vir_el_recip[Try]);
+	     top,grps,state->box,pos[Try],force[Try],buf,force_vir,
+	     md,ener,fcd,state->lambda,graph,
+	     TRUE,FALSE,FALSE,TRUE,fr,vsite,mu_tot,FALSE,t,fp_field,NULL);
     
     if (gmx_debug_at) {
       pr_rvecs(debug,0,"RELAX: force[Min]",force[Min] + start,homenr);
@@ -896,7 +875,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     sf_dir = 0;
     if (nflexcon) {
-      init_adir(fplog,constr,top,inputrec,cr->dd,dd_ac1,mdstep,md,start,end,
+      init_adir(fplog,constr,top,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
 
@@ -944,6 +923,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
   }
   if (MASTER(cr) && !(*bConverged)) {
+    /* Note that the energies and virial are incorrect when not converged */
     fprintf(fplog,
 	    "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
 	    mdstep,number_steps,df[Min]);
@@ -958,9 +938,6 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
       rvec_dec(force[Min][i],fr->f_el_recip[i]);
   }
   memcpy(f,force[Min],nat*sizeof(f[0]));
-
-  /* CHECK VIRIAL */
-  copy_mat(vir_el_recip[Min],fr->vir_el_recip);
   
   memcpy(state->x,pos[Min],nat*sizeof(state->x[0]));
 

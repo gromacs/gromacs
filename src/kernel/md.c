@@ -353,6 +353,11 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
 
   if (cr->duty & DUTY_PP) {
+    if (inputrec->ePull != epullNO) {
+      /* Initialize pull code */
+      init_pull(fplog,inputrec,nfile,fnm,&top->atoms,cr);
+    }
+
     /* Now do whatever the user wants us to do (how flexible...) */
     switch (inputrec->eI) {
     case eiMD:
@@ -525,21 +530,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 			       top_global,n_flexible_constraints(constr),
 			       ir->bContinuation,state_global->x);
 
-  if (PARTDECOMP(cr)) {
-    pd_at_range(cr,&a0,&a1);
-  } else {
-    a0 = 0;
-    a1 = top_global->atoms.nr;
-  }
-
-  if (ir->ePull != epullNO) {
-    /* Initialize pull code */
-    init_pull(fplog,ir,nfile,fnm,
-	      state_global->x,&top_global->atoms,state_global->box,cr,a0,a1);
-    if (ir->ePull == epullCONSTRAINT)
-      bHaveConstr = TRUE;
-  }
-
   {
     double io = compute_io(ir,&top_global->atoms,mdebin->ebin->nener,1);
     if ((io > 2000) && MASTER(cr))
@@ -570,6 +560,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     state = state_global;
     f_global = f;
 
+    if (PARTDECOMP(cr)) {
+      pd_at_range(cr,&a0,&a1);
+    } else {
+      a0 = 0;
+      a1 = top_global->atoms.nr;
+    }
     atoms2md(&top->atoms,ir,top->idef.il[F_ORIRES].nr,0,NULL,a0,a1-a0,
 	     mdatoms);
   }
@@ -902,7 +898,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Now is the time to relax the shells */
       count=relax_shell_flexcon(fplog,cr,bVerbose,bFFscan ? step+1 : step,
 				ir,bNS,bStopCM,top,constr,ener,fcd,
-				state,f,buf,mdatoms,
+				state,f,buf,force_vir,mdatoms,
 				nrnb,wcycle,graph,grps,
 				shellfc,fr,t,mu_tot,
 				state->natoms,&bConverged,vsite,
@@ -918,9 +914,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * Check comments in sim_util.c
        */
       do_force(fplog,cr,ir,step,nrnb,wcycle,top,grps,
-	       state->box,state->x,f,buf,mdatoms,ener,fcd,
+	       state->box,state->x,f,buf,force_vir,mdatoms,ener,fcd,
 	       state->lambda,graph,
-	       TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,t,fp_field,edyn);
+	       TRUE,bNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,t,fp_field,edyn);
     }
 
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -943,34 +939,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
      * the update.
      * for RerunMD t is read from input trajectory
      */
-    if (vsite) {
-      wallcycle_start(wcycle,ewcVSITESPREAD);
-      spread_vsite_f(fplog,vsite,state->x,f,fr->fshift,nrnb,
-		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-      wallcycle_stop(wcycle,ewcVSITESPREAD);
-    }
-
-    GMX_MPE_LOG(ev_virial_start);
-    /* Calculation of the virial must be done after vsites!    */
-    /* Question: Is it correct to do the PME forces after this? */
-    calc_virial(fplog,mdatoms->start,mdatoms->homenr,state->x,f,
-		force_vir,fr->vir_el_recip,graph,state->box,nrnb,fr);
-    GMX_MPE_LOG(ev_virial_finish);
-
-    /* Spread the LR force on virtual sites to the other particles... 
-     * This is parallellized. MPI communication is performed
-     * if the constructing atoms aren't local.
-     */
-    if (vsite && fr->bEwald) {
-      wallcycle_start(wcycle,ewcVSITESPREAD);
-      spread_vsite_f(fplog,vsite,state->x,fr->f_el_recip,NULL,nrnb,
-		     &top->idef,fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-      wallcycle_stop(wcycle,ewcVSITESPREAD);
-    }
-
-    GMX_MPE_LOG(ev_sum_lrforces_start);
-    sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
-    GMX_MPE_LOG(ev_sum_lrforces_finish);
 
     GMX_MPE_LOG(ev_output_start);
 
@@ -999,19 +967,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     GMX_MPE_LOG(ev_output_finish);
 
     clear_mat(shake_vir);
-    
-    /* Afm and Umbrella type pulling happens before the update, 
-     * other types in update 
-     */
-    if (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F) {
-      ener[F_COM_PULL] =
-	pull_potential(ir->ePull,ir->pull,
-		       state->x,f,force_vir,state->box,
-		       top,ir->init_t+step*ir->delta_t,mdatoms,cr);
-      /* Avoid double counting */
-      if (!MASTER(cr))
-	ener[F_COM_PULL] = 0;
-    }
 
     if (bFFscan)
       clear_rvecs(state->natoms,buf);

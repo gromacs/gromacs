@@ -52,7 +52,8 @@
 typedef struct gmx_stochd *gmx_stochd_t;
 
 /* Initialize the stochastic dynamics struct */
-extern gmx_stochd_t init_stochd(int eI,int ngtc,real tau_t[],real dt,int seed);
+extern gmx_stochd_t init_stochd(FILE *fplog,
+				int eI,int ngtc,real tau_t[],real dt,int seed);
 
 extern void update(FILE         *fplog,
 		   int          step,
@@ -109,12 +110,6 @@ extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
  * node and stored in grps->cosacc.mvcos.
  */
 
-extern void init_sd_consts(int ngtc,real tau_t[],real dt);
-/* Initialization of the SD constants (obviously). */
-
-/* Routines from coupling.c to do with Temperature, Pressure and coupling
- * algorithms.
- */
 extern real run_aver(real old,real cur,int step,int nmem);
 
 extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt);

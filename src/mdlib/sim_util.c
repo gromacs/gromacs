@@ -226,15 +226,41 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 	    Ext[XX]/FIELDFAC,Ext[YY]/FIELDFAC,Ext[ZZ]/FIELDFAC);
 }
 
+static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
+			tensor vir_part,t_graph *graph,matrix box,
+			t_nrnb *nrnb,const t_forcerec *fr)
+{
+  int i,j;
+  tensor virtest;
+
+  /* The short-range virial from surrounding boxes */
+  clear_mat(vir_part);
+  calc_vir(fplog,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
+  inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
+  
+  /* Calculate partial virial, for local atoms only, based on short range. 
+   * Total virial is computed in global_stat, called from do_md 
+   */
+  f_calc_vir(fplog,start,start+homenr,x,f,vir_part,graph,box);
+  inc_nrnb(nrnb,eNR_VIRIAL,homenr);
+
+  /* Add wall contribution */
+  vir_part[ZZ][ZZ] += fr->vir_wall_zz;
+
+  if (debug)
+    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
+}
+
 void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      t_topology *top,t_groups *grps,
 	      matrix box,rvec x[],rvec f[],rvec buf[],
+	      tensor vir_force,
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 	      real lambda,t_graph *graph,
 	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
-	      t_forcerec *fr,rvec mu_tot,
+	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn)
 {
   static rvec box_size;
@@ -250,6 +276,8 @@ void do_force(FILE *fplog,t_commrec *cr,
   
   start  = mdatoms->start;
   homenr = mdatoms->homenr;
+
+  clear_mat(vir_force);
   
   if (PARTDECOMP(cr)) {
     pd_cg_range(cr,&cg0,&cg1);
@@ -411,6 +439,8 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
     GMX_BARRIER(cr->mpi_comm_mygroup);
   }
+  if (inputrec->ePull == epullCONSTRAINT)
+    clear_pull_forces(inputrec->pull);
 
   /* update QMMMrec, if necessary */
   if(fr->bQMMM)
@@ -456,74 +486,74 @@ void do_force(FILE *fplog,t_commrec *cr,
       wallcycle_stop(wcycle,ewcMOVEF);
       if (DOMAINDECOMP(cr) && wcycle)
 	dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcMOVEF),ddCyclMoveF);
-      /* In case of node-splitting, the PP nodes receive the long-range 
-       * forces, virial and energy from the PME nodes here 
-       */    
-#ifdef GMX_MPI       
-      if (!(cr->duty & DUTY_PME))
-      {
-	wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
-	d = 0;
-	gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d,
-			  &pme_cycles);
-	if (fr->bSepDVDL && do_per_step(step,inputrec->nstlog))
-	  fprintf(fplog,sepdvdlformat,"PME mesh",e,d);
-        ener[F_COUL_RECIP] += e;
-	ener[F_DVDL] += d;
-	if (wcycle)
-	  dd_cycles_add(cr->dd,pme_cycles,ddCyclPME);
-	wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
-      }
-#endif
     }
   }
-}
 
-void sum_lrforces(rvec f[],t_forcerec *fr,int start,int homenr)
-{
-  /* Now add the forces from the PME calculation. Since this only produces
-   * forces on the local atoms, this can be safely done after the
-   * communication step.
-   */
-  if (EEL_FULL(fr->eeltype)) {
-    if (fr->bDomDec)
-      sum_forces(0,fr->f_el_recip_n,f,fr->f_el_recip);
-    else
-      sum_forces(start,start+homenr,f,fr->f_el_recip);
-  }
-}
-
-void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
-		 tensor vir_part,tensor vir_el_recip,
-		 t_graph *graph,matrix box,
-		 t_nrnb *nrnb,const t_forcerec *fr)
-{
-  int i,j;
-  tensor virtest;
-
-  /* The short-range virial from surrounding boxes */
-  clear_mat(vir_part);
-  calc_vir(fplog,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
-  inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
-  
-  /* Calculate partial virial, for local atoms only, based on short range. 
-   * Total virial is computed in global_stat, called from do_md 
-   */
-  f_calc_vir(fplog,start,start+homenr,x,f,vir_part,graph,box);
-  inc_nrnb(nrnb,eNR_VIRIAL,homenr);
-
-  /* Add up virial if necessary */  
-  if (EEL_FULL(fr->eeltype) && (fr->eeltype != eelPPPM)) {
+  if (bDoForces) {
+    if (vsite) {
+      wallcycle_start(wcycle,ewcVSITESPREAD);
+      spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,
+		     &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+      wallcycle_stop(wcycle,ewcVSITESPREAD);
+    }
     
-    for(i=0; (i<DIM); i++) 
-      for(j=0; (j<DIM); j++) 
-	vir_part[i][j] += vir_el_recip[i][j];
+    /* Calculation of the virial must be done after vsites! */
+    calc_virial(fplog,mdatoms->start,mdatoms->homenr,x,f,
+		vir_force,graph,box,nrnb,fr);
   }
-  /* Add wall contribution */
-  vir_part[ZZ][ZZ] += fr->vir_wall_zz;
 
-  if (debug)
-    pr_rvecs(debug,0,"vir_part",vir_part,DIM);
+  if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F) {
+    /* Calculate the center of mass forces, this requires communication.
+     * The virial contribution is calculated directly,
+     * which is why we call pull_potential after calc_virial.
+     */
+    ener[F_COM_PULL] =
+      pull_potential(inputrec->ePull,inputrec->pull,
+		     x,f,vir_force,box,
+		     top,inputrec->init_t+step*inputrec->delta_t,mdatoms,cr);
+  }
+
+#ifdef GMX_MPI
+  if (PAR(cr) && !(cr->duty & DUTY_PME)) {
+    /* In case of node-splitting, the PP nodes receive the long-range 
+     * forces, virial and energy from the PME nodes here.
+     */    
+    wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
+    d = 0;
+    gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d,
+		      &pme_cycles);
+    if (fr->bSepDVDL && do_per_step(step,inputrec->nstlog))
+      fprintf(fplog,sepdvdlformat,"PME mesh",e,d);
+    ener[F_COUL_RECIP] += e;
+    ener[F_DVDL] += d;
+    if (wcycle)
+      dd_cycles_add(cr->dd,pme_cycles,ddCyclPME);
+    wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
+  }
+#endif
+
+  if (EEL_FULL(fr->eeltype) && bDoForces) {
+    if (vsite) {
+      /* Spread the mesh force on virtual sites to the other particles... 
+       * This is parallellized. MPI communication is performed
+       * if the constructing atoms aren't local.
+       */
+      wallcycle_start(wcycle,ewcVSITESPREAD);
+      spread_vsite_f(fplog,vsite,x,fr->f_el_recip,NULL,nrnb,
+		     &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
+      wallcycle_stop(wcycle,ewcVSITESPREAD);
+    }
+    /* Now add the forces, this is local */
+    if (fr->bDomDec) {
+      sum_forces(0,fr->f_el_recip_n,f,fr->f_el_recip);
+    } else {
+      sum_forces(start,start+homenr,f,fr->f_el_recip);
+    }
+    /* Add the mesh contribution to the virial */
+    m_add(vir_force,fr->vir_el_recip,vir_force);
+    if (debug)
+      pr_rvecs(debug,0,"vir_force",vir_force,DIM);
+  }
 }
 
 #ifdef NO_CLOCK 
@@ -1029,7 +1059,7 @@ void init_md(FILE *fplog,t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
   
   if (sd && (ir->eI == eiBD || ir->eI == eiSD))
-    *sd = init_stochd(ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
+    *sd = init_stochd(fplog,ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
 		      ir->ld_seed);
 }
 

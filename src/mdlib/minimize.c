@@ -301,26 +301,15 @@ static real evaluate_energy(FILE *fplog, bool bVerbose,t_inputrec *inputrec,
    */
   do_force(fplog,cr,inputrec,
 	   count,nrnb,wcycle,top,grps,box,x,f,
-	   buf,mdatoms,ener,fcd,
-	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
-     
-  /* Spread the force on vsite particle to the other particles... */
-  if (vsite) 
-    spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,box,cr); 
-      
-  if (vsite && fr->bEwald) 
-    spread_vsite_f(fplog,vsite,x,fr->f_el_recip,NULL,&nrnb[cr->nodeid],
-		   &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
-  
-  sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
+	   buf,force_vir,mdatoms,ener,fcd,
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
+	   mu_tot,FALSE,0.0,NULL,NULL);
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
   where();
 
   /* Clear stuff again */
-  clear_mat(force_vir);
   clear_mat(shake_vir);
       
   /* Communicate stuff when parallel */
@@ -390,7 +379,6 @@ time_t do_cg(FILE *fplog,int nfile,t_filenm fnm[],
   do_log = do_ene = do_x = do_f = TRUE;
   
   /* Clear some matrix variables */
-  clear_mat(force_vir);
   clear_mat(shake_vir);
   clear_mat(vir);
   clear_mat(pres);
@@ -413,20 +401,10 @@ time_t do_cg(FILE *fplog,int nfile,t_filenm fnm[],
    */
   do_force(fplog,cr,inputrec,0,nrnb,wcycle,
 	   top,grps,state->box,
-	   state->x,f,buf,mdatoms,ener,fcd,
-	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
+	   state->x,f,buf,force_vir,mdatoms,ener,fcd,
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
+	   mu_tot,FALSE,0.0,NULL,NULL);
   where();
-
-  /* Spread the force on vsite particle to the other particles... */
-  if (vsite)
-    spread_vsite_f(fplog,vsite,state->x,f,fr->fshift,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-
-  if (vsite && fr->bEwald) 
-    spread_vsite_f(fplog,vsite,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-  
-  sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(fplog,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
@@ -434,10 +412,6 @@ time_t do_cg(FILE *fplog,int nfile,t_filenm fnm[],
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
-  where();
-  
-  /* Clear var. */
-  clear_mat(force_vir);
   where();
   
   /* Communicat energies etc. */
@@ -1032,31 +1006,17 @@ time_t do_lbfgs(FILE *fplog,int nfile,t_filenm fnm[],
   neval++;
   do_force(fplog,cr,inputrec,0,nrnb,wcycle,
 	   top,grps,state->box,
-	   state->x,f,buf,mdatoms,ener,fcd,
-	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
+	   state->x,f,buf,force_vir,mdatoms,ener,fcd,
+	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
+	   mu_tot,FALSE,0.0,NULL,NULL);
   where();
   
-  /* Spread the force on vsite particle to the other particles... */
-  if (vsite)
-    spread_vsite_f(fplog,vsite,state->x,f,fr->fshift,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-
-  if (vsite && fr->bEwald) 
-    spread_vsite_f(fplog,vsite,state->x,fr->f_el_recip,NULL,nrnb,&top->idef,
-		   fr->ePBC,fr->bMolPBC,graph,state->box,cr);
-  
-  sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
-
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(fplog,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
 		pres,vir,ener);
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
-  where();
-  
-  /* Clear var. */
-  clear_mat(force_vir);
   where();
   
   /* Communicat energies etc. */
@@ -1604,7 +1564,6 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
   mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr);
   
   /* Clear some matrix variables  */
-  clear_mat(force_vir); 
   clear_mat(shake_vir); 
   clear_mat(vir); 
   clear_mat(pres); 
@@ -1666,7 +1625,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
     if (constr) {
       dvdlambda=0;
       constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,top,		
-		inputrec,cr->dd,count,mdatoms,
+		inputrec,cr,count,mdatoms,
 		pos[Min],pos[TRY],NULL,state->box,lambda,&dvdlambda,
 		0,NULL,NULL,nrnb,econqCoord);
     }
@@ -1690,7 +1649,7 @@ time_t do_steep(FILE *fplog,int nfile,t_filenm fnm[],
       
       dvdlambda=0;
       constrain(NULL,FALSE,FALSE,constr,top,
-		inputrec,cr->dd,count,mdatoms,
+		inputrec,cr,count,mdatoms,
 		pos[TRY],xcf,NULL,state->box,lambda,&dvdlambda,
 		0,NULL,NULL,nrnb,econqCoord);
       
@@ -1919,12 +1878,10 @@ time_t do_nm(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     
     bNS=TRUE;
     do_force(fplog,cr,inputrec,0,nrnb,wcycle,top,grps,
-             state->box,state->x,f,buf,mdatoms,ener,fcd,
-             lambda,graph,TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
+             state->box,state->x,f,buf,force_vir,mdatoms,ener,fcd,
+             lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
+	     mu_tot,FALSE,0.0,NULL,NULL);
     bNS=FALSE;
-    
-    sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
-
 
     /* Shift back the coordinates, since we're not calling update */
     if (graph)
@@ -1969,10 +1926,9 @@ time_t do_nm(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             
             do_force(fplog,cr,inputrec,2*(step*DIM+idum),
                      nrnb,wcycle,top,grps,
-                     state->box,state->x,fneg,buf,mdatoms,ener,fcd,
+                     state->box,state->x,fneg,buf,force_vir,mdatoms,ener,fcd,
 		     lambda,graph,
-		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
-	    sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
+		     TRUE,bNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,0.0,NULL,NULL);
 
             if (graph)
             {
@@ -1986,10 +1942,9 @@ time_t do_nm(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
             
             do_force(fplog,cr,inputrec,2*(step*DIM+idum)+1,
                      nrnb,wcycle,top,grps,
-                     state->box,state->x,fpos,buf,mdatoms,ener,fcd,
+                     state->box,state->x,fpos,buf,force_vir,mdatoms,ener,fcd,
 		     lambda,graph,
-		     TRUE,bNS,FALSE,TRUE,fr,mu_tot,FALSE,0.0,NULL,NULL);
-	    sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
+		     TRUE,bNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,0.0,NULL,NULL);
 	    
 	    if (graph)
             {
@@ -2402,14 +2357,12 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	cr->nnodes = 1;
 	do_force(fplog,cr,inputrec,
 		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
-		 buf,mdatoms,ener,fcd,
-		 lambda,NULL,bStateChanged,bNS,TRUE,FALSE,fr,mu_tot,
+		 buf,force_vir,mdatoms,ener,fcd,
+		 lambda,NULL,bStateChanged,bNS,TRUE,FALSE,fr,NULL,mu_tot,
 		 FALSE,t,NULL,NULL); 
 	cr->nnodes = nnodes;
 	bStateChanged = FALSE;
 	bNS = FALSE;
-
-	sum_lrforces(f,fr,mdatoms->start,mdatoms->homenr);
 
 	/* Calculate long range corrections to pressure and energy */
 	calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,lambda,

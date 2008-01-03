@@ -51,6 +51,9 @@
 extern void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
 				 dvec dr,dvec dev);
 
+/* Set the all the pull forces to zero */
+extern void clear_pull_forces(t_pull *pull);
+
 /* Determine the COM pull forces and add them to f, return the potential */
 extern real pull_potential(int ePull, t_pull *pull,
 			   rvec *x, rvec *f, tensor vir, 
@@ -77,12 +80,8 @@ extern void init_pull(FILE *log,
                       t_inputrec *ir, /* the inputrec */
                       int nfile,       
                       t_filenm fnm[], /* standard filename struct */
-                      rvec *x,        /* all coordinates */
                       t_atoms *atoms, /* masses of all atoms */
-                      matrix box,     
-                      t_commrec * cr, /* struct for communication info */
-		      int start,      /* for particle decomposition */ 
-		      int end
+                      t_commrec * cr  /* struct for communication info */
                       );
 
 /* Print the pull output (x and/or f) */
