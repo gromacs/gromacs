@@ -137,7 +137,8 @@ static at2vsitebond_t *make_at2vsitebond(int natoms,t_params plist[])
 
   snew(bVSI,natoms);
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_VSITE) {
+    if ((interaction_function[ftype].flags & IF_VSITE) &&
+	!(interaction_function[ftype].flags & IF_VSITEC)) {
       for(i=0; (i<plist[ftype].nr); i++) {
 	for(j=0; j<NRAL(ftype); j++)
 	  bVSI[plist[ftype].param[i].a[j]] = TRUE;
@@ -188,7 +189,8 @@ static at2vsitecon_t *make_at2vsitecon(int natoms,t_params plist[])
 
   snew(bVSI,natoms);
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_VSITE) {
+    if ((interaction_function[ftype].flags & IF_VSITE) &&
+	!(interaction_function[ftype].flags & IF_VSITEC)) {
       for(i=0; (i<plist[ftype].nr); i++) {
 	for(j=0; j<NRAL(ftype); j++)
 	  bVSI[plist[ftype].param[i].a[j]] = TRUE;
@@ -703,7 +705,8 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
   at2vb = make_at2vsitebond(atoms->nr,plist);
 
   for(ftype=0; (ftype<F_NRE); ftype++)
-    if (interaction_function[ftype].flags & IF_VSITE) {
+    if ((interaction_function[ftype].flags & IF_VSITE) &&
+	!(interaction_function[ftype].flags & IF_VSITEC)) {
       nrset=0;
       nvsite+=plist[ftype].nr;
       for(i=0; (i<plist[ftype].nr); i++) {
@@ -1210,7 +1213,7 @@ static void clean_vsite_dihs(t_params *plist, t_pindex pindex[],
 
 void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
 {
-  int i,k,nvsite,ftype,parnr;
+  int i,k,nvsite,ftype,vsite,parnr;
   int *vsite_type;
   t_pindex *pindex;
   at2vsitecon_t *at2vc;
@@ -1224,12 +1227,20 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
   for(ftype=0; ftype<F_NRE; ftype++)
     if (interaction_function[ftype].flags & IF_VSITE) {
       nvsite+=plist[ftype].nr;
-      for(i=0; i<plist[ftype].nr; i++)
-	if ( vsite_type[plist[ftype].param[i].AI] == NOTSET)
-	  vsite_type[plist[ftype].param[i].AI]=ftype;
+      i = 0;
+      while (i < plist[ftype].nr) {
+	vsite = plist[ftype].param[i].AI;
+	if ( vsite_type[vsite] == NOTSET)
+	  vsite_type[vsite] = ftype;
 	else
-	  gmx_fatal(FARGS,"multiple vsite constructions for atom %d",
-		      plist[ftype].param[i].AI+1);
+	  gmx_fatal(FARGS,"multiple vsite constructions for atom %d",vsite+1);
+	if (interaction_function[ftype].flags & IF_VSITEC) {
+	  while (i < plist[ftype].nr && plist[ftype].param[i].AI == vsite)
+	    i++;
+	} else {
+	  i++;
+	}
+      }
     }
   
   /* the rest only if we have virtual sites: */
@@ -1241,14 +1252,17 @@ void clean_vsite_bondeds(t_params *plist, int natoms, bool bRmVSiteBds)
     at2vc = make_at2vsitecon(natoms,plist);
 
     snew(pindex,natoms);
-    for(ftype=0; ftype<F_NRE; ftype++)
-      if (interaction_function[ftype].flags & IF_VSITE)
+    for(ftype=0; ftype<F_NRE; ftype++) {
+      if ((interaction_function[ftype].flags & IF_VSITE) &&
+	  !(interaction_function[ftype].flags & IF_VSITEC)) {
 	for (parnr=0; (parnr<plist[ftype].nr); parnr++) {
 	  k=plist[ftype].param[parnr].AI;
 	  pindex[k].ftype=ftype;
 	  pindex[k].parnr=parnr;
 	}
-    
+      }
+    }
+
     if (debug)
       for(i=0; i<natoms; i++)
 	fprintf(debug,"atom %d vsite_type %s\n",i, 

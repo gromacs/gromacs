@@ -539,6 +539,9 @@ static char **read_topol(char *infile,char *outfile,
 	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
 		      bGenPairs,bZero,&bWarn_copy_A_B);
 	    break;
+	  case d_vsitesc:
+	    push_bond_var_nat(d,plist,mi0->plist,&(mi0->atoms),atype,pline);
+	    break;
 	  case d_exclusions:
 	    if (!block2[nmol-1].nr)
 	      init_block2(&(block2[nmol-1]),mi0->atoms.nr);

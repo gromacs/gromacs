@@ -220,6 +220,7 @@ typedef struct {
   int  ld_seed;         /* Random seed for SD and BD                    */
   int  nwall;           /* The number of walls                          */
   int  wall_type;       /* The type of walls                            */
+  real wall_r_linpot;   /* The potentail is linear for r<=wall_r_linpot */
   int  wall_atomtype[2];/* The atom type for walls                      */
   real wall_density[2]; /* Number density for walls                     */
   real wall_ewald_zfac; /* Scaling factor for the box for Ewald         */

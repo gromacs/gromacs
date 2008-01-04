@@ -65,6 +65,9 @@
 
 #define   def_vsite(str,lstr,nra,nrpa)\
    {str,lstr,(nra),(nrpa),     0,IF_VSITE,                  -1, unimplemented}
+
+#define   def_vsitec(str,lstr,nra,nrpa)\
+   {str,lstr,(nra),(nrpa),     0,IF_VSITE | IF_VSITEC,      -1, unimplemented}
    
 #define     def_shk(str,lstr,nra,nrpa,nrpb)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_CONSTRAINT,             -1, unimplemented}
@@ -139,6 +142,8 @@ const t_interaction_function interaction_function[F_NRE]=
   def_vsite  ("VSITE3OUT","Virtual site 3out",4, 3                               ),
   def_vsite  ("VSITE4FD", "Virtual site 4fd", 5, 3                               ),
   def_vsite  ("VSITE4FDN","Virtual site 4fdn",5, 3                               ),
+  def_vsitec ("VSITECOG", "Virtual site COG", 2, 0                               ),
+  def_vsitec ("VSITECOM", "Virtual site COM", 2, 1                               ),
   def_nofc   ("COM_PULL", "COM Pull En."     ),
   def_nofc   ("EQM",      "Quantum En."      ),
   def_nofc   ("EPOT",     "Potential"        ),

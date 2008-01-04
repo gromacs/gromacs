@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 49;
+static const int tpx_version = 50;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 49;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 12;
+static const int tpx_generation = 13;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -145,10 +145,12 @@ static const t_ftupd ftupd[] = {
   { 22, F_ORIRESDEV         },
   { 26, F_DIHRES            },
   { 26, F_DIHRESVIOL        },
+  { 49, F_VSITE4FDN         },
+  { 50, F_VSITECOG          },
+  { 50, F_VSITECOM          },
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
-  { 46, F_ECONSERVED        },
-  { 49, F_VSITE4FDN         }
+  { 46, F_ECONSERVED        }
 };
 #define NFTUPD asize(ftupd)
 
@@ -645,6 +647,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     if (file_version >= 45) {
       do_int(ir->nwall);
       do_int(ir->wall_type);
+      if (file_version >= 50)
+	do_real(ir->wall_r_linpot);
+      else
+	ir->wall_r_linpot = -1;
       do_int(ir->wall_atomtype[0]);
       do_int(ir->wall_atomtype[1]);
       do_real(ir->wall_density[0]);
@@ -918,6 +924,11 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->vsite.a);
     do_real(iparams->vsite.b);
     do_real(iparams->vsite.c);
+    break;
+  case F_VSITECOG:
+    break;
+  case F_VSITECOM:
+    do_real(iparams->vsite.a);
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",

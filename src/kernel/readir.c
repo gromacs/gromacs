@@ -710,6 +710,7 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Number of walls, type, atom types, densities and box-z scale factor for Ewald");
   ITYPE ("nwall", ir->nwall, 0);
   EETYPE("wall_type",     ir->wall_type,   ewt_names, nerror, TRUE);
+  RTYPE ("wall_r_linpot", ir->wall_r_linpot, -1);
   STYPE ("wall_atomtype", wall_atomtype, NULL);
   STYPE ("wall_density",  wall_density,  NULL);
   RTYPE ("wall_ewald_zfac", ir->wall_ewald_zfac, 3);

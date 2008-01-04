@@ -149,6 +149,13 @@ int ifunc_index(directive d,int type)
           default:
               gmx_fatal(FARGS,"Invalid vsites4 type %d",type);
       }
+  case d_vsitesc:
+    switch (type) {
+    case 1:
+      return F_VSITECOG; 
+    case 2:
+      return F_VSITECOM; 
+    }
   case d_constraints:
   case d_constrainttypes:
     switch (type) {
@@ -258,6 +265,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_vsites2]),d_atoms,d_none);
     set_nec(&(necessary[d_vsites3]),d_atoms,d_none);
     set_nec(&(necessary[d_vsites4]),d_atoms,d_none);
+    set_nec(&(necessary[d_vsitesc]),d_atoms,d_none);
     set_nec(&(necessary[d_bonds]),d_atoms,d_none);
     set_nec(&(necessary[d_exclusions]),d_bonds,d_constraints,d_settles,d_none);
     set_nec(&(necessary[d_pairs]),d_atoms,d_none);

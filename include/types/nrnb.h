@@ -105,7 +105,7 @@ enum
     eNR_SHAKE_RIJ,            eNR_CONSTR_VIR,           eNR_SETTLE,
     eNR_VSITE2,               eNR_VSITE3,               eNR_VSITE3FD,
     eNR_VSITE3FAD,            eNR_VSITE3OUT,            eNR_VSITE4FD,
-    eNR_VSITE4FDN,
+    eNR_VSITE4FDN,            eNR_VSITECOG,             eNR_VSITECOM,
     eNRNB
 };
 

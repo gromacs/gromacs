@@ -774,6 +774,12 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
     fprintf(fp,"a=%15.8e, b=%15.8e, c=%15.8e\n",
 	    iparams->vsite.a,iparams->vsite.b,iparams->vsite.c);
     break;
+  case F_VSITECOG:
+    fprintf(fp,"\n");
+    break;
+  case F_VSITECOM:
+    fprintf(fp,"a=%15.8e\n",iparams->vsite.a);
+    break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",
 	      ftype,interaction_function[ftype].name,__FILE__,__LINE__);

@@ -1327,8 +1327,57 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   push_bondnow (&bond[ftype],&param);
 }
 
+void push_bond_var_nat(directive d,t_params bondtype[],t_params bond[],
+		       t_atoms *at,t_atomtype *atype,char *line)
+{
+  char *ptr;
+  int  ftype,j,n,ret,nj,a;
+  t_param param;
 
+  /* default force parameters  */
+  for(j=0; (j<MAXATOMLIST); j++)
+    param.a[j] = NOTSET;
+  for(j=0; (j<MAXFORCEPARAM); j++)
+    param.c[j] = 0.0;
 
+  ptr = line;
+  ret = sscanf(ptr,"%d%n",&a,&n);
+  ptr += n;
+  if (ret == 0)
+    gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+	      "             Expected an atom index in section \"%s\"",
+	      	get_warning_file(),get_warning_line(),
+	      dir2str(d));
+  
+  param.a[0] = a - 1;
+
+  ret = sscanf(ptr,"%d%n",&a,&n);
+  ptr += n;
+  ftype = ifunc_index(d,a);
+
+  nj = 0;
+  do {
+    ret = sscanf(ptr,"%d%n",&a,&n);
+    ptr += n;
+    if (ret > 0) {
+      param.a[1] = a - 1;
+      if (ftype == F_VSITECOM) {
+	/* Here we use the A-state mass as a parameter.
+	 * Note that the B-state mass has no influence.
+	 */
+	param.c[0] = at->atom[param.a[1]].m;
+      }
+      nj++;
+      /* Put the values in the appropriate arrays */
+      push_bondnow (&bond[ftype],&param);
+    }
+  } while (ret > 0);
+  if (nj == 0)
+    gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+	      "             Expected more than one atom index in section \"%s\"",
+	      get_warning_file(),get_warning_line(),
+	      dir2str(d));
+}
 
 void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
 		  int *nrcopies)
