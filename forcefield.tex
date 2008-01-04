@@ -1924,7 +1924,7 @@ types 3fd (normalized, in-plane) and 3out (non-normalized, out of
 plane). However, the amount of computation involved increases sharply
 along this list, so we strongly recommended using the first adequate
 virtual site type that will be sufficient for a certain purpose.
-\figref{vsites} gives an overview of the available virtual site constructions.
+\figref{vsites} depicts 6 of the available virtual site constructions.
 
 \begin{itemize}
 \item[{\bf\sf 2.}]As a linear combination of two atoms
@@ -2090,6 +2090,19 @@ virtual site type that will be sufficient for a certain purpose.
         \end{array}
 \eeq
 
+\item[{\bf\sf COG.}]The center of geometry of $N$ atoms:
+\beq
+        \vvis ~=~ \frac{1}{N} \sum_{i=1}^N \ve{r_i}
+\eeq
+The force is determined analogously.
+
+\item[{\bf\sf COM.}]The center of mass of $N$ atoms:
+\beq
+        \vvis ~=~ \sum_{i=1}^N m_i \ve{r_i} \left(\sum_{i=1}^N m_i \right)^{-1}
+\eeq
+The force is determined analogously.
+When in free-energy simulations the mass of particles is changed,
+only the mass of the A-state is used for the weights.
 
 \end{itemize}
 } % Brace matches ifthenelse test for gmxlite
