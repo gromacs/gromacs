@@ -2959,7 +2959,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
 {
   char  buf[STRLEN];
   int   npp,npme,nnodes,d,limp;
-  float imbal,pme_f_ratio,lossf,lossp;
+  float imbal,pme_f_ratio,lossf,lossp=0;
   bool  bLim;
   gmx_domdec_comm_t *comm;
 
