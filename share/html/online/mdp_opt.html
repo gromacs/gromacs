@@ -46,7 +46,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 <li><A HREF="#vel"><b>velocity generation</b></A> (gen_vel, gen_temp, gen_seed)
 <li><A HREF="#bond"><b>bonds</b></A> (constraints, constraint_algorithm, unconstrained_start, shake_tol, lincs_order, lincs_iter, lincs_warnangle, morse)
 <li><A HREF="#egexcl"><b>Energy group exclusions</b></A> (energygrp_excl)
-<li><A HREF="#walls"><b>Walls</b></A> (nwall, wall_type, wall_atomtype,
+<li><A HREF="#walls"><b>Walls</b></A> (nwall, wall_type, wall_r_linpot, wall_atomtype,
 wall_density, wall_ewald_zfac)
 <li><A HREF="#pull"><b>COM pulling</b></A> (pull, ...)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
@@ -1008,6 +1008,14 @@ where the first name is for a "normal" energy group and the second name
 is <tt>wall0</tt> or <tt>wall1</tt>,
 only the dispersion and repulsion columns are used</dd>
 </dl>
+<dt><h4>wall_r_linpot: -1 (nm)</h4></dt>
+<dd>Below this distance from the wall the potential is continued
+linearly and thus the force is constant. Setting this option to
+a postive value is especially useful for equilibration when some atoms
+are beyond a wall.
+When the value is &lt= 0 (&lt 0 for <b>wall_type=table</b>),
+a fatal error is generated when atoms are beyond a wall.
+</dd>
 <dt><h4>wall_atomtype:</h4></dt>
 <dd>the atom type name in the force field for each wall, this allows
 for independent tuning of the interaction of each atomtype with the walls</dd>
@@ -1531,6 +1539,7 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#walls">wall_atomtype</A><br>
 <A HREF="#walls">wall_density</A><br>
 <A HREF="#walls">wall_ewald_zfac</A><br>
+<A HREF="#walls">wall_r_linpot</A><br>
 <A HREF="#walls">wall_type</A><br>
 </multicol>
 

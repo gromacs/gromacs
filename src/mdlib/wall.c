@@ -50,13 +50,20 @@ void make_wall_tables(FILE *fplog,
   }
 }
 
+static void wall_error(int a,rvec *x,real r)
+{
+  gmx_fatal(FARGS,
+	    "An atom is beyond the wall: coordinates %f %f %f, distance %f",
+	    x[a][XX],x[a][YY],x[a][ZZ],r);
+}
+
 real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 	      rvec x[],rvec f[],real lambda,real Vlj[],t_nrnb *nrnb)
 {
   int  nwall,w,lam,i;
   int  ntw[2],at,ntype,ngid,ggid,*egp_flags,*type;
   real *nbfp,lamfac,fac_d[2],fac_r[2],Cd,Cr,Vtot,Fwall[2];
-  real box_zz,r,r1,r2,r4,Vd,Vr,V,Fd,Fr,F,vir_zz,dvdlambda;
+  real box_zz,r,mr,r1,r2,r4,Vd,Vr,V,Fd,Fr,F,vir_zz,dvdlambda;
   int  n0,nnn;
   real tabscale,*VFtab,rt,eps,eps2,Yt,Ft,Geps,Heps,Heps2,Fp,VV,FF;
   unsigned short *gid=md->cENER;
@@ -105,13 +112,19 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 	Cr = nbfp[ntw[w]+2*at+1];
 	if (!((Cd==0 && Cr==0) || egp_flags[ggid] & EGP_EXCL)) {
 	  if (w == 0) {
-	    r  = x[i][ZZ];
-	    r1 = 1/r;
+	    r = x[i][ZZ];
 	  } else {
-	    r  = x[i][ZZ] - box_zz;
-	    r1 = -1/r;
+	    r = box_zz - x[i][ZZ];
+	  }
+	  if (r < ir->wall_r_linpot) {
+	    mr = ir->wall_r_linpot - r;
+	    r  = ir->wall_r_linpot;
+	  } else {
+	    mr = 0;
 	  }
 	  if (ir->wall_type == ewtTABLE) {
+	    if (r < 0)
+	      wall_error(i,x,r);
 	    tab = &(fr->wall_tab[w][gid[i]]);
 	    tabscale = tab->scale;
 	    VFtab    = tab->tab;
@@ -148,22 +161,34 @@ real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
 	      Vr    = Cr*VV;
 	      Fr    = Cr*FF;
 	      V     = Vd + Vr;
-	      F     = -lamfac*(Fd + Fr)*tabscale*r1*r;
+	      F     = -lamfac*(Fd + Fr)*tabscale;
 	    }
 	  } else if (ir->wall_type == ewt93) {
+	    if (r <= 0)
+	      wall_error(i,x,r);
+	    r1 = 1/r;
 	    r2 = r1*r1;
 	    r4 = r2*r2;
 	    Vd = fac_d[w]*Cd*r2*r1;
 	    Vr = fac_r[w]*Cr*r4*r4*r1;
 	    V  = Vr - Vd;
-	    F  = lamfac*(9*Vr - 3*Vd)*r2*r;
+	    F  = lamfac*(9*Vr - 3*Vd)*r1;
 	  } else {
+	    if (r <= 0)
+	      wall_error(i,x,r);
+	    r1 = 1/r;
 	    r2 = r1*r1;
 	    r4 = r2*r2;
 	    Vd = fac_d[w]*Cd*r4;
 	    Vr = fac_r[w]*Cr*r4*r4*r2;
 	    V  = Vr - Vd;
-	    F  = lamfac*(10*Vr - 4*Vd)*r2*r;
+	    F  = lamfac*(10*Vr - 4*Vd)*r1;
+	  }
+	  if (mr > 0) {
+	    V += mr*F;
+	  }
+	  if (w == 1) {
+	    F = -F;
 	  }
 	  Vlj[ggid] += lamfac*V;
 	  Vtot      += V;
