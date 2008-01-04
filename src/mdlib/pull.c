@@ -731,11 +731,11 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
   bool bDomDec;
   gmx_ga2la_t *ga2la=NULL;
 
-  bDomDec = DOMAINDECOMP(cr);
+  bDomDec = (cr && DOMAINDECOMP(cr));
   if (bDomDec)
     ga2la = cr->dd->ga2la;
 
-  if (PAR(cr)) {
+  if (cr && PAR(cr)) {
     snew(pg->ind_loc,pg->nat);
     pg->nat_loc = 0;
     if (pg->weight)
@@ -751,7 +751,7 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
   wwmass = 0;
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
-    if (PAR(cr) && !bDomDec && ii >= start && ii < end)
+    if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
       pg->ind_loc[pg->nat_loc++] = ii;
     if (nFreeze) {
       for(d=0; d<DIM; d++)
@@ -767,6 +767,9 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
     wwmass += w*w*m;
   }
 
+  if (wmass == 0)
+    gmx_fatal(FARGS,"The total mass of pull group %d is zero",g);
+  
   if (nfreeze == 0) {
     pg->wscale = wmass/wwmass;
     pg->invtm  = 1.0/(pg->wscale*wmass);
@@ -786,7 +789,7 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
 }
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
-	       t_atoms *atoms,t_commrec *cr)
+	       t_atoms *atoms,t_commrec *cr,bool bOutFile)
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
@@ -813,7 +816,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   }
 
 
-  if (PARTDECOMP(cr))
+  if (cr && PARTDECOMP(cr))
     pd_at_range(cr,&start,&end);
   for(g=0; g<pull->ngrp+1; g++) {
     pgrp = &pull->grp[g];
@@ -837,7 +840,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   }
   
   /* Only do I/O when we are doing dynamics and if we are the MASTER */
-  if (EI_DYNAMICS(ir->eI) && MASTER(cr)) {
+  if (bOutFile) {
     if (pull->nstxout > 0) {
       pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE);
     }

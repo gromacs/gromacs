@@ -355,7 +355,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (cr->duty & DUTY_PP) {
     if (inputrec->ePull != epullNO) {
       /* Initialize pull code */
-      init_pull(fplog,inputrec,nfile,fnm,&top->atoms,cr);
+      init_pull(fplog,inputrec,nfile,fnm,&top->atoms,cr,
+		EI_DYNAMICS(inputrec->eI) && MASTER(cr));
     }
 
     /* Now do whatever the user wants us to do (how flexible...) */

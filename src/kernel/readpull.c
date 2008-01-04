@@ -291,6 +291,7 @@ void set_pull_init(t_inputrec *ir,t_atoms *atoms,rvec *x,matrix box,
   rvec      init;
   dvec      dr,dev;
 
+  init_pull(NULL,ir,0,NULL,atoms,NULL,FALSE);
   md = init_mdatoms(NULL,atoms,ir->efep);
   atoms2md(atoms,ir,0,0,NULL,0,atoms->nr,md);
   if (ir->efep)

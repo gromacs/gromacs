@@ -81,8 +81,9 @@ extern void init_pull(FILE *log,
                       int nfile,       
                       t_filenm fnm[], /* standard filename struct */
                       t_atoms *atoms, /* masses of all atoms */
-                      t_commrec * cr  /* struct for communication info */
-                      );
+                      t_commrec * cr, /* struct for communication info */
+                      bool bOutFile   /* open output files */
+		      );
 
 /* Print the pull output (x and/or f) */
 extern void pull_print_output(t_pull *pull, int step, real time);
