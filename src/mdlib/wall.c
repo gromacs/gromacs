@@ -53,7 +53,8 @@ void make_wall_tables(FILE *fplog,
 static void wall_error(int a,rvec *x,real r)
 {
   gmx_fatal(FARGS,
-	    "An atom is beyond the wall: coordinates %f %f %f, distance %f",
+	    "An atom is beyond the wall: coordinates %f %f %f, distance %f\n"
+	    "You might want to use the mdp option wall_r_linpot",
 	    x[a][XX],x[a][YY],x[a][ZZ],r);
 }
 
