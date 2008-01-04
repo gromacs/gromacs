@@ -1139,9 +1139,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Add force and shake contribution to the virial */
     m_add(force_vir,shake_vir,total_vir);
 
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(ir->opts),grps,ener);
-
     /* Calculate the amplitude of the cosine velocity profile */
     grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
 
@@ -1163,8 +1160,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Calculate pressure and apply LR correction if PPPM is used.
      * Use the box from last timestep since we already called update().
      */
-    calc_pres(fr->ePBC,ir->nwall,lastbox,ekin,total_vir,pres,
-	      (fr->eeltype==eelPPPM) ? ener[F_COUL_RECIP] : 0.0);
+    ener[F_PRES] = calc_pres(fr->ePBC,ir->nwall,lastbox,ekin,total_vir,pres,
+			     (fr->eeltype==eelPPPM)?ener[F_COUL_RECIP]:0.0);
     
     /* Calculate long range corrections to pressure and energy */
     if (bTCR || bFFscan)

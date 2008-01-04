@@ -797,8 +797,6 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
       sf_dir += md->massT[i]*norm2(shfc->acc_dir[i-start]);
   }
 
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(inputrec->opts),grps,ener);
   Epot[Min]=ener[F_EPOT];
 
   df[Min]=rms_force(cr,shfc->f[Min],nshell,shell,nflexcon,&sf_dir,&Epot[Min]);
@@ -883,8 +881,6 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
     }
 
-    /* Sum the potential energy terms from group contributions */
-    sum_epot(&(inputrec->opts),grps,ener);
     Epot[Try]=ener[F_EPOT]; 
     
     df[Try]=rms_force(cr,force[Try],nshell,shell,nflexcon,&sf_dir,&Epot[Try]);

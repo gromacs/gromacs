@@ -277,7 +277,7 @@ static real evaluate_energy(FILE *fplog, bool bVerbose,t_inputrec *inputrec,
 {
   bool bNS;
   int  nabnsb;
-  tensor force_vir,shake_vir;
+  tensor force_vir,shake_vir,pres;
   real terminate=0;
   
   bNS = FALSE;
@@ -305,19 +305,21 @@ static real evaluate_energy(FILE *fplog, bool bVerbose,t_inputrec *inputrec,
 	   lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
 	   mu_tot,FALSE,0.0,NULL,NULL);
 
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(inputrec->opts),grps,ener);
-  where();
-
-  /* Clear stuff again */
+  /* Clear the unused shake virial and pressure */
   clear_mat(shake_vir);
-      
+  clear_mat(pres);
+
+  /* Calculate long range corrections to pressure and energy */
+  calc_dispcorr(fplog,inputrec,fr,count,mdatoms->nr,box,lambda,
+		pres,force_vir,ener);
+
   /* Communicate stuff when parallel */
   if (PAR(cr)) 
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
 		inputrec,grps,FALSE,NULL,NULL,NULL,&terminate);
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
+
   return ener[F_EPOT];
 }
 
@@ -410,10 +412,6 @@ time_t do_cg(FILE *fplog,int nfile,t_filenm fnm[],
   calc_dispcorr(fplog,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
 		pres,vir,ener);
 
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(inputrec->opts),grps,ener);
-  where();
-  
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
@@ -1015,10 +1013,6 @@ time_t do_lbfgs(FILE *fplog,int nfile,t_filenm fnm[],
   calc_dispcorr(fplog,inputrec,fr,0,mdatoms->nr,state->box,state->lambda,
 		pres,vir,ener);
 
-  /* Sum the potential energy terms from group contributions */
-  sum_epot(&(inputrec->opts),grps,ener);
-  where();
-  
   /* Communicat energies etc. */
   if (PAR(cr)) 
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
@@ -2367,9 +2361,6 @@ time_t do_tpi(FILE *fplog,int nfile,t_filenm fnm[],
 	/* Calculate long range corrections to pressure and energy */
 	calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,lambda,
 		      pres,vir,ener);
-	
-	/* Sum the potential energy terms from group contributions  */
-	sum_epot(&(inputrec->opts),grps,ener);
 	
 	/* If the compiler doesn't optimize this check away
 	 * we catch the NAN energies.

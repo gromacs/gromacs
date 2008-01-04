@@ -56,7 +56,7 @@
  *
  */
 
-void calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
+real calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
 	       tensor pres,real Elr)
 {
   int  n,m;
@@ -93,6 +93,7 @@ void calc_pres(int ePBC,int nwall,matrix box,tensor ekin,tensor vir,
       pr_rvecs(debug,0,"PC: box ",box, DIM);
     }
   }
+  return trace(pres)/3.0;
 }
 
 real calc_temp(real ekin,real nrdf)

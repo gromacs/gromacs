@@ -251,6 +251,41 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
     pr_rvecs(debug,0,"vir_part",vir_part,DIM);
 }
 
+static real sum_v(int n,real v[])
+{
+  real t;
+  int  i;
+  
+  t = 0.0;
+  for(i=0; (i<n); i++)
+    t = t + v[i];
+    
+  return t;
+}
+
+static void sum_epot(t_grpopts *opts,t_groups *grps,real epot[])
+{
+  int i;
+
+  /* Accumulate energies */
+  epot[F_COUL_SR]  = sum_v(grps->estat.nn,grps->estat.ee[egCOULSR]);
+  epot[F_LJ]       = sum_v(grps->estat.nn,grps->estat.ee[egLJSR]);
+  epot[F_LJ14]     = sum_v(grps->estat.nn,grps->estat.ee[egLJ14]);
+  epot[F_COUL14]   = sum_v(grps->estat.nn,grps->estat.ee[egCOUL14]);
+  epot[F_COUL_LR] += sum_v(grps->estat.nn,grps->estat.ee[egCOULLR]);
+  epot[F_LJ_LR]   += sum_v(grps->estat.nn,grps->estat.ee[egLJLR]);
+/* lattice part of LR doesnt belong to any group
+ * and has been added earlier
+ */
+  epot[F_BHAM]     = sum_v(grps->estat.nn,grps->estat.ee[egBHAMSR]);
+  epot[F_BHAM_LR]  = sum_v(grps->estat.nn,grps->estat.ee[egBHAMLR]);
+
+  epot[F_EPOT] = 0;
+  for(i=0; (i<F_EPOT); i++)
+    if (i != F_DISRESVIOL && i != F_ORIRESDEV && i != F_DIHRESVIOL)
+      epot[F_EPOT] += epot[i];
+}
+
 void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -554,6 +589,9 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (debug)
       pr_rvecs(debug,0,"vir_force",vir_force,DIM);
   }
+
+  /* Sum the potential energy terms from group contributions */
+  sum_epot(&(inputrec->opts),grps,ener);
 }
 
 #ifdef NO_CLOCK 
@@ -825,15 +863,14 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
   real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
   int  m;
 
-  bCorrAll  = (ir->eDispCorr == edispcAllEner ||
-	       ir->eDispCorr == edispcAllEnerPres);
-  bCorrPres = (ir->eDispCorr == edispcEnerPres ||
-	       ir->eDispCorr == edispcAllEnerPres);
   ener[F_DISPCORR] = 0.0;
-  ener[F_PRES]     = trace(pres)/3.0;
-  dvdlambda        = 0.0;
 
   if (ir->eDispCorr != edispcNO) {
+    bCorrAll  = (ir->eDispCorr == edispcAllEner ||
+		 ir->eDispCorr == edispcAllEnerPres);
+    bCorrPres = (ir->eDispCorr == edispcEnerPres ||
+		 ir->eDispCorr == edispcAllEnerPres);
+
     if (bFirst)
       calc_enervirdiff(fplog,ir->eDispCorr,fr);
     
@@ -857,6 +894,7 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
     
     enerdiff = ninter*(dens*fr->enerdiffsix - fr->enershiftsix);
     ener[F_DISPCORR] += avcsix*enerdiff;
+    dvdlambda = 0.0;
     if (ir->efep != efepNO)
       dvdlambda += (fr->avcsix[1] - fr->avcsix[0])*enerdiff;
 
@@ -897,15 +935,15 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
 	fprintf(fplog,"Long Range LJ corr.: Epot %10g\n",ener[F_DISPCORR]);
     }
     bFirst = FALSE;
-  } 
 
-  if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
-    fprintf(fplog,sepdvdlformat,"Dispersion correction",
-	    ener[F_DISPCORR],dvdlambda);
-  
-  ener[F_EPOT] += ener[F_DISPCORR];
-  if (fr->efep != efepNO)
-    ener[F_DVDL] += dvdlambda;
+    if (fr->bSepDVDL && do_per_step(step,ir->nstlog))
+      fprintf(fplog,sepdvdlformat,"Dispersion correction",
+	      ener[F_DISPCORR],dvdlambda);
+    
+    ener[F_EPOT] += ener[F_DISPCORR];
+    if (fr->efep != efepNO)
+      ener[F_DVDL] += dvdlambda;
+  }
 }
 
 

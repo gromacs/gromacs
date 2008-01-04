@@ -263,39 +263,3 @@ real sum_ekin(bool bFirstStep,
 
   return T;
 }
-
-static real sum_v(int n,real v[])
-{
-  real t;
-  int  i;
-  
-  t=0.0;
-  
-  for(i=0; (i<n); i++)
-    t=t+v[i];
-    
-  return t;
-}
-
-void sum_epot(t_grpopts *opts,t_groups *grps,real epot[])
-{
-  int i;
-
-  /* Accumulate energies */
-  epot[F_COUL_SR]  = sum_v(grps->estat.nn,grps->estat.ee[egCOULSR]);
-  epot[F_LJ]       = sum_v(grps->estat.nn,grps->estat.ee[egLJSR]);
-  epot[F_LJ14]     = sum_v(grps->estat.nn,grps->estat.ee[egLJ14]);
-  epot[F_COUL14]   = sum_v(grps->estat.nn,grps->estat.ee[egCOUL14]);
-  epot[F_COUL_LR] += sum_v(grps->estat.nn,grps->estat.ee[egCOULLR]);
-  epot[F_LJ_LR]   += sum_v(grps->estat.nn,grps->estat.ee[egLJLR]);
-/* lattice part of LR doesnt belong to any group
- * and has been added earlier
- */
-  epot[F_BHAM]     = sum_v(grps->estat.nn,grps->estat.ee[egBHAMSR]);
-  epot[F_BHAM_LR]  = sum_v(grps->estat.nn,grps->estat.ee[egBHAMLR]);
-
-  epot[F_EPOT] = 0;
-  for(i=0; (i<F_EPOT); i++)
-    if (i != F_DISRESVIOL && i != F_ORIRESDEV && i != F_DIHRESVIOL)
-      epot[F_EPOT] += epot[i];
-}

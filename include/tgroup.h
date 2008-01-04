@@ -64,8 +64,6 @@ extern real sum_ekin(bool bFirstStep,
 /* Sum the group ekins into total ekin and calc temp per group,
  * return total temperature.
  */
-extern void sum_epot(t_grpopts *opts,t_groups *grps,real epot[]);
-/* Sum the epot from the group contributions */
 
 extern void update_grps(int start,int homenr,t_groups *grps,
 			t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
