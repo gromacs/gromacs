@@ -305,8 +305,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_VSITE3OUT:
   case F_VSITE4FD:
   case F_VSITE4FDN:
-  case F_VSITECOG:
-  case F_VSITECOM:
+  case F_VSITEN:
     new->vsite.a=old[0];
     new->vsite.b=old[1];
     new->vsite.c=old[2];

@@ -146,8 +146,7 @@ static const t_ftupd ftupd[] = {
   { 26, F_DIHRES            },
   { 26, F_DIHRESVIOL        },
   { 49, F_VSITE4FDN         },
-  { 50, F_VSITECOG          },
-  { 50, F_VSITECOM          },
+  { 50, F_VSITEN            },
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
   { 46, F_ECONSERVED        }
@@ -925,9 +924,7 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->vsite.b);
     do_real(iparams->vsite.c);
     break;
-  case F_VSITECOG:
-    break;
-  case F_VSITECOM:
+  case F_VSITEN:
     do_real(iparams->vsite.a);
     break;
   default:

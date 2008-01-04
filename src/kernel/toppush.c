@@ -1327,11 +1327,13 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   push_bondnow (&bond[ftype],&param);
 }
 
-void push_bond_var_nat(directive d,t_params bondtype[],t_params bond[],
-		       t_atoms *at,t_atomtype *atype,char *line)
+void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
+		  t_atoms *at,t_atomtype *atype,char *line)
 {
   char *ptr;
-  int  ftype,j,n,ret,nj,a;
+  int  type,ftype,j,n,ret,nj,a;
+  int  *atc=NULL;
+  double *weight=NULL,weight_tot;
   t_param param;
 
   /* default force parameters  */
@@ -1351,32 +1353,54 @@ void push_bond_var_nat(directive d,t_params bondtype[],t_params bond[],
   
   param.a[0] = a - 1;
 
-  ret = sscanf(ptr,"%d%n",&a,&n);
+  ret = sscanf(ptr,"%d%n",&type,&n);
   ptr += n;
-  ftype = ifunc_index(d,a);
+  ftype = ifunc_index(d,type);
 
+  weight_tot = 0;
   nj = 0;
   do {
     ret = sscanf(ptr,"%d%n",&a,&n);
     ptr += n;
     if (ret > 0) {
-      param.a[1] = a - 1;
-      if (ftype == F_VSITECOM) {
+      if (nj % 20 == 0) {
+	srenew(atc,nj+20);
+	srenew(weight,nj+20);
+      }
+      atc[nj] = a - 1;
+      if (type == 1) {
+	weight[nj] = 1;
+      } else {
 	/* Here we use the A-state mass as a parameter.
 	 * Note that the B-state mass has no influence.
 	 */
-	param.c[0] = at->atom[param.a[1]].m;
+	weight[nj] = at->atom[atc[nj]].m;
       }
+      weight_tot += weight[nj];
       nj++;
-      /* Put the values in the appropriate arrays */
-      push_bondnow (&bond[ftype],&param);
     }
   } while (ret > 0);
+
   if (nj == 0)
     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
 	      "             Expected more than one atom index in section \"%s\"",
 	      get_warning_file(),get_warning_line(),
 	      dir2str(d));
+
+  if (weight_tot == 0)
+     gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+	       "             The total mass of the construting atoms is zero",
+	       get_warning_file(),get_warning_line());
+
+  for(j=0; j<nj; j++) {
+    param.a[1] = atc[j];
+    param.c[0] = weight[j]/weight_tot;
+    /* Put the values in the appropriate arrays */
+    push_bondnow (&bond[ftype],&param);
+  }
+
+  sfree(atc);
+  sfree(weight);
 }
 
 void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,

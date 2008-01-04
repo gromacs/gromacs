@@ -62,12 +62,11 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 #define IF_NULL       0
 #define IF_BOND       1
 #define IF_VSITE      1<<1
-#define IF_VSITEC     1<<2
-#define IF_CONSTRAINT 1<<3
-#define IF_CHEMBOND   1<<4
-#define IF_BTYPE      1<<5
-#define IF_ATYPE      1<<6
-#define IF_TABULATED  1<<7
+#define IF_CONSTRAINT 1<<2
+#define IF_CHEMBOND   1<<3
+#define IF_BTYPE      1<<4
+#define IF_ATYPE      1<<5
+#define IF_TABULATED  1<<6
 /* These flags tell to some of the routines what can be done with this
  * item in the list.
  * With IF_BOND a bonded interaction will be calculated.
