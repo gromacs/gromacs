@@ -1927,11 +1927,11 @@ virtual site type that will be sufficient for a certain purpose.
 \figref{vsites} depicts 6 of the available virtual site constructions.
 The conceptually simplest construction types are linear combinations:
 \beq
-\vvis = \sum_{i=1}^N w_i \ve{r}_i
+\vvis = \sum_{i=1}^N w_i \, \ve{r}_i
 \eeq
 The force is then redistributed using the same weights:
 \beq
-\Fi = w_i \Fvis
+\Fi = w_i \, \Fvis
 \eeq
 
 The types of virtual sites supported in {\gromacs} are given in the list below.
@@ -2086,19 +2086,19 @@ constructed from ``particles'' that are simpler virtual sites.
         \end{array}
 \eeq
 
-\item[{\bf\sf COG.}]The center of geometry of $N$ atoms, this is a linear
-combinations with equal weights:
+\item[{\bf\sf N.}] A linear combination of $N$ atoms with relative
+weights $a_i$. The weight for atom $i$ is:
 \beq
-  w_i = \frac{1}{N}
+  w_i = a_i \left(\sum_{j=1}^N a_j \right)^{-1}
 \eeq
-\item[{\bf\sf COM.}]The center of mass of $N$ atoms, this is a linear
-combination with weights:
-\beq
-  w_i = m_i \left(\sum_{i=1}^N m_i \right)^{-1}
-\eeq
-where $m_i$ is the mass of constructing atom $i$.
-When in free-energy simulations the mass of particles is changed,
-only the mass of the A-state is used for the weights.
+There are three options for setting the weights:
+\begin{itemize}
+\item[COG] center of geometry: equal weights
+\item[COM] center of mass: $a_i$ is the mass of atom $i$;
+when in free-energy simulations the mass of the atom is changed,
+only the mass of the A-state is used for the weight
+\item[COW] center of weights: $a_i$ is defined by the user
+\end{itemize}
 
 \end{itemize}
 } % Brace matches ifthenelse test for gmxlite
