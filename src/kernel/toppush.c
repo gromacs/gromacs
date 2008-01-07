@@ -1368,13 +1368,28 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 	srenew(weight,nj+20);
       }
       atc[nj] = a - 1;
-      if (type == 1) {
+      switch (type) {
+      case 1:
 	weight[nj] = 1;
-      } else {
+	break;
+      case 2:
 	/* Here we use the A-state mass as a parameter.
 	 * Note that the B-state mass has no influence.
 	 */
 	weight[nj] = at->atom[atc[nj]].m;
+	break;
+      case 3:
+	weight[nj] = -1;
+	ret = sscanf(ptr,"%lf%n",&(weight[nj]),&n);
+	ptr += n;
+	if (weight[nj] < 0)
+	  gmx_fatal(FARGS,"[ file %s, line %d ]:\n"
+		    "             No weight or negative weight found for vsiten constructing atom %d (atom index %d)",
+		    get_warning_file(),get_warning_line(),
+		    nj+1,atc[nj]+1);
+	break;
+      default:
+	gmx_fatal(FARGS,"Unknown vsiten type %d",type);
       }
       weight_tot += weight[nj];
       nj++;

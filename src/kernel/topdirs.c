@@ -150,13 +150,7 @@ int ifunc_index(directive d,int type)
               gmx_fatal(FARGS,"Invalid vsites4 type %d",type);
       }
   case d_vsitesn:
-    switch (type) {
-    case 1:
-    case 2:
-      return F_VSITEN; 
-    default:
-      gmx_fatal(FARGS,"Invalid vsitesn type %d",type);
-    }
+    return F_VSITEN; 
   case d_constraints:
   case d_constrainttypes:
     switch (type) {
