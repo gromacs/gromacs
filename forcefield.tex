@@ -1925,39 +1925,35 @@ plane). However, the amount of computation involved increases sharply
 along this list, so we strongly recommended using the first adequate
 virtual site type that will be sufficient for a certain purpose.
 \figref{vsites} depicts 6 of the available virtual site constructions.
+The conceptually simplest construction types are linear combinations:
+\beq
+\vvis = \sum_{i=1}^N w_i \ve{r}_i
+\eeq
+The force is then redistributed using the same weights:
+\beq
+\Fi = w_i \Fvis
+\eeq
 
+The types of virtual sites supported in {\gromacs} are given in the list below.
+Constructing atoms in virtual sites can be virtual sites themselves, but
+only if they are higher in the list, i.e. virtual sites can be
+constructed from ``particles'' that are simpler virtual sites.
 \begin{itemize}
 \item[{\bf\sf 2.}]As a linear combination of two atoms
         (\figref{vsites} 2):
 \beq
-        \vvis ~=~ \ve{r}_i + a \rvij
+        w_i = 1 - a ~,~~ w_j = a
 \eeq
         In this case the virtual site is on the line through atoms $i$ and
-        $j$. The force on particles $i$ and $j$ due to the force on
-        the virtual site can be computed as:
-\beq
-        \begin{array}{lcr}
-        \Fi &=& (1-a)\Fvis      \\
-        \Fj &=& a\,\Fvis        \\
-        \end{array}
-\eeq
+        $j$.
 
 \item[{\bf\sf 3.}]As a linear combination of three atoms
         (\figref{vsites} 3):
 \beq
-        \vvis ~=~ \ve{r}_i + a \rvij + b \rvik
+        w_i = 1 - a - b ~,~~ w_j = a ~,~~ w_k = b
 \eeq
         In this case the virtual site is in the plane of the other three
 	particles.
-        The force on particles $i$, $j$ and $k$ due to the force on the virtual
-        site can be computed as:
-\beq
-        \begin{array}{lcr}
-        \Fi &=& (1-a-b)\Fvis    \\
-        \Fj &=& a\,\Fvis        \\
-        \Fk &=& b\,\Fvis        \\
-        \end{array}
-\eeq
 
 \item[{\bf\sf 3fd.}]In the plane of three atoms, with a fixed distance
         (\figref{vsites} 3fd):
@@ -2090,17 +2086,17 @@ virtual site type that will be sufficient for a certain purpose.
         \end{array}
 \eeq
 
-\item[{\bf\sf COG.}]The center of geometry of $N$ atoms:
+\item[{\bf\sf COG.}]The center of geometry of $N$ atoms, this is a linear
+combinations with equal weights:
 \beq
-        \vvis ~=~ \frac{1}{N} \sum_{i=1}^N \ve{r_i}
+  w_i = \frac{1}{N}
 \eeq
-The force is determined analogously.
-
-\item[{\bf\sf COM.}]The center of mass of $N$ atoms:
+\item[{\bf\sf COM.}]The center of mass of $N$ atoms, this is a linear
+combination with weights:
 \beq
-        \vvis ~=~ \sum_{i=1}^N m_i \ve{r_i} \left(\sum_{i=1}^N m_i \right)^{-1}
+  w_i = m_i \left(\sum_{i=1}^N m_i \right)^{-1}
 \eeq
-The force is determined analogously.
+where $m_i$ is the mass of constructing atom $i$.
 When in free-energy simulations the mass of particles is changed,
 only the mass of the A-state is used for the weights.
 
