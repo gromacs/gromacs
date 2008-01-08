@@ -581,11 +581,10 @@ gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
   li->nIter  = nIter;
   li->nOrder = nProjOrder;
 
-  if (!bPLINCS) {
-    please_cite(fplog,"Hess97a");
+  if (bPLINCS || li->ncg_triangle > 0) {
+    please_cite(fplog,"Hess2008a");
   } else {
     please_cite(fplog,"Hess97a");
-    please_cite(fplog,"Hess2007a");
   }
 
   if (fplog) {
