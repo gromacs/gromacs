@@ -365,7 +365,7 @@ static void swap_em_state(em_state_t *ems1,em_state_t *ems2)
   *ems2 = tmp;
 }
 
-static void copy_em_state_back(em_state_t *ems,t_state *state)
+static void copy_em_coords_back(em_state_t *ems,t_state *state)
 {
   int i;
 
@@ -586,6 +586,8 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
 
   ems->epot = ener[F_EPOT];
+  
+  get_f_max(cr,&(inputrec->opts),mdatoms,ems);
 }
 
 
@@ -676,8 +678,6 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	       TRUE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
   }
   where();
-  
-  get_f_max(cr,&(inputrec->opts),mdatoms,s_min);
 
   /* Calculate the norm of the force (take all CPUs into account) */
   fnorm = f_norm(cr,&(inputrec->opts),mdatoms,s_min->f);
@@ -862,7 +862,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
      *
      * If we already found a lower value we just skip this step and continue to the update.
      */
-    if(!foundlower) {
+    if (!foundlower) {
       nminstep=0;
 
       do {
@@ -892,7 +892,10 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 			vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,
 			-1,FALSE);
 	
-	p  = s_min->s.cg_p;
+	/* p does not change within a step, but since the domain decomposition
+	 * might change, we have to use cg_p of s_b here.
+	 */
+	p  = s_b->s.cg_p;
 	sf = s_b->f;
 	gpb=0;
 	for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++) {
@@ -903,16 +906,29 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	if (PAR(cr))
 	  gmx_sumd(1,&gpb,cr);
 	
+	if (debug)
+	  fprintf(debug,"CGE: EpotA %f EpotB %f EpotC %f gpb %f\n",
+		  s_a->epot,s_b->epot,s_c->epot,gpb);
 
 	/* Keep one of the intervals based on the value of the derivative at the new point */
-	if(gpb>0) {
+	if (gpb > 0) {
 	  /* Replace c endpoint with b */
-	  swap_em_state(s_c,s_b);
+	  swap_em_state(s_b,s_c);
+	  /* Setting s_b->epot here is necessary here, although this make s_b
+	   * inconsistent, but I don't know how to fix this B. Hess 2008-01-08
+	   * The code seems to work though.
+	   */
+	  s_b->epot = s_c->epot;
 	  c = b;
 	  gpc = gpb;
 	} else {
 	  /* Replace a endpoint with b */
-	  swap_em_state(s_a,s_b);
+	  swap_em_state(s_b,s_a);
+	  /* Setting s_b->epot here is necessary here, although this make s_b
+	   * inconsistent, but I don't know how to fix this B. Hess 2008-01-08
+	   * The code seems to work though.
+	   */
+	  s_b->epot = s_a->epot;
 	  a = b;
 	  gpa = gpb;
 	}
@@ -921,7 +937,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	 * Stop search as soon as we find a value smaller than the endpoints.
 	 * Never run more than 20 steps, no matter what.
 	 */
-	nminstep++; 
+	nminstep++;
       } while ((s_b->epot > s_a->epot || s_b->epot > s_c->epot) &&
 	       (nminstep < 20));     
       
@@ -945,20 +961,25 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
       /* Select min energy state of A & C, put the best in B.
        */
       if (s_c->epot < s_a->epot) {
-	/* Move state C to B */
+	if (debug)
+	  fprintf(debug,"CGE: C (%f) is lower than A (%f), moving C to B\n",
+		  s_c->epot,s_a->epot);
 	swap_em_state(s_b,s_c);
 	gpb = gpc;
 	b = c;
       } else {
-	/* Move state A to B */
+	if (debug)
+	  fprintf(debug,"CGE: A (%f) is lower than C (%f), moving A to B\n",
+		  s_a->epot,s_c->epot);
 	swap_em_state(s_b,s_a);
 	gpb = gpa;
 	b = a;
       }
       
     } else {
-      /* found lower */
-      /* Move state C to B */
+      if (debug)
+	fprintf(debug,"CGE: Found a lower energy %f, moving C to B\n",
+		s_c->epot);
       swap_em_state(s_b,s_c);
       gpb = gpc;
       b = c;
@@ -985,6 +1006,9 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
       sfm = s_min->f;
       tmp = 0;
       gf = 0;
+      /* This part of code is incorrect with DD,
+       * since the atom ordining in s_b and s_min might differ.
+       */
       for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++) {
 	if (mdatoms->cFREEZE)
 	  gf = mdatoms->cFREEZE[i];
@@ -1014,9 +1038,6 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     /* update positions */
     swap_em_state(s_min,s_b);
     gpa = gpb;
-    
-    /* Test whether the convergence criterion is met */
-    get_f_max(cr,&(inputrec->opts),mdatoms,s_min);
     
     /* Print it if necessary */
     if (MASTER(cr)) {
@@ -1073,7 +1094,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   }
   
   if (!PAR(cr)) {
-    copy_em_state_back(s_min,state_global);
+    copy_em_coords_back(s_min,state_global);
   }
 
   /* Print some stuff... */
@@ -1835,8 +1856,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
       /* Remove the forces working on the constraints */
       em_constrain_f(cr,constr,top,mdatoms,inputrec,count,s_try,ustep,nrnb);
     }
-    
-    get_f_max(cr,&(inputrec->opts),mdatoms,s_try);
+
     if (count == 0)
       s_min->epot = s_try->epot + 1;
     
@@ -1916,7 +1936,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
    * otherwise we have to do it explicitly.
    */
   if (!PAR(cr)) {
-    copy_em_state_back(s_min,state_global);
+    copy_em_coords_back(s_min,state_global);
   }
 
     /* Print some shit...  */
