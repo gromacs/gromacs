@@ -39,7 +39,7 @@ topol_DATA = \
 	flexwat-ferguson.itp		h2p4o13.itp	h2p8o25.itp	\
 	h2po4.itp	ions.itp	methanol.itp	spc.itp		\
 	spce.itp	tfe.itp		tip3p.itp	tip4p.itp	\
-	urea.itp	dgsolv.dat					\
+	urea.itp	dgsolv.dat	electroneg.dat			\
 	dec50.gro	dmso.gro	spc216.gro	tip4p.gro	\
 	urea+h2o.gro    f3c.itp						\
 	aminoacids.dat	atommass.dat	bromacs.dat	ca-shift.dat	\
@@ -50,7 +50,7 @@ topol_DATA = \
 	export.dlg	bonds.dlg	ss.map		ps.m2p		\
 	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
 	table6-9.xvg 	atom_nom.tbl	gromacs.dtd	tip5p.gro	\
-	tip5p.itp	sw.itp
+	tip5p.itp	sw.itp		eemprops.dat
 
 EXTRA_DIST = ${topol_DATA}
 
