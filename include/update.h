@@ -55,6 +55,9 @@ typedef struct gmx_stochd *gmx_stochd_t;
 extern gmx_stochd_t init_stochd(FILE *fplog,
 				int eI,int ngtc,real tau_t[],real dt,int seed);
 
+/* If necessay, add sd_X to the state */
+extern void sd_enlarge_state (gmx_stochd_t sd,t_state *state);
+
 extern void update(FILE         *fplog,
 		   int          step,
 		   real         *dvdlambda, /* FEP stuff */

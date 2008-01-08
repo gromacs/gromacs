@@ -1029,7 +1029,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 void init_md(FILE *fplog,t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
 	     t_nrnb *nrnb,t_topology *top,
-	     gmx_stochd_t *sd,gmx_constr_t *constr,
+	     gmx_stochd_t *sd,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,
 	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
@@ -1085,9 +1085,6 @@ void init_md(FILE *fplog,t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_mat(force_vir);
   clear_mat(shake_vir);
   clear_rvec(mu_tot);
-
-  if (constr)
-    *constr = init_constraints(fplog,cr,top,ir);
 
   if (vcm)
     *vcm = init_vcm(fplog,&top->atoms,ir);

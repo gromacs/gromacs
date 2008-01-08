@@ -2003,7 +2003,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   int      i,j,m,ngid;
   real     min_size;
   int      nsearch;
-  bool     bGrid,bSortCG;
+  bool     bGrid,bFilledHome;
   char     *ptr;
   bool     *i_egp_flags;
   int      start,end;
@@ -2039,8 +2039,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
   if (bGrid && bFillGrid) {
     grid = ns->grid;
-    bSortCG = (DOMAINDECOMP(cr) && dd_sort_cg(cr->dd));
-    if (!bSortCG) {
+    bFilledHome = (DOMAINDECOMP(cr) && dd_filled_nsgrid_home(cr->dd));
+    if (!bFilledHome) {
       grid_first(log,grid,cr->dd,fr->ePBC,box,fr->rlistlong,cgs->nr);
     } else {
       set_grid_ncg(grid,cgs->nr);
@@ -2058,7 +2058,8 @@ int search_neighbours(FILE *log,t_forcerec *fr,
 
     if (DOMAINDECOMP(cr)) {
       end = cgs->nr;
-      fill_grid(log,cr->dd,grid,box,bSortCG?cr->dd->ncg_home:0,end,fr->cg_cm);
+      fill_grid(log,cr->dd,grid,box,bFilledHome ? cr->dd->ncg_home : 0,end,
+		fr->cg_cm);
     } else {
       fill_grid(log,NULL,grid,box,fr->cg0,fr->hcg,fr->cg_cm);
       debug_gmx();

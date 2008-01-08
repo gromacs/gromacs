@@ -19,8 +19,13 @@ extern int glatnr(gmx_domdec_t *dd,int i);
  * When dd=NULL returns i+1.
  */
 
-extern bool dd_sort_cg(gmx_domdec_t *dd);
-/* Are the charge groups sorted this step */
+extern bool dd_filled_nsgrid_home(gmx_domdec_t *dd);
+/* Is the ns grid already filled with the home particles? */
+
+extern void dd_store_state(gmx_domdec_t *dd,t_state *state);
+/* Store the global cg indices of the home cgs in state,
+ * so it can be reset, even after a new DD partitioning.
+ */
 
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
 			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
@@ -123,7 +128,7 @@ extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
 extern void dd_partition_system(FILE            *fplog,
 				int             step,
 				t_commrec       *cr,
-				bool            bMasterState,
+                                bool            bMasterState,
 				t_state         *state_global,
 				t_topology      *top_global,
 				t_inputrec      *ir,

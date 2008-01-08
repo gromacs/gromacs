@@ -46,6 +46,7 @@
 #define STATE_HAS_X   (1<<0)
 #define STATE_HAS_V   (1<<1)
 #define STATE_HAS_SDX (1<<2)
+#define STATE_HAS_CGP (1<<3)
 
 typedef struct
 {
@@ -61,4 +62,10 @@ typedef struct
   rvec          *x;     /* the coordinates (natoms)                     */
   rvec          *v;     /* the velocities (natoms)                      */
   rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
+  rvec          *cg_p;  /* p vector for conjugate gradient minimization */
+  int           ddp_count; /* The DD partitioning count for this state  */
+  int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
+  int           ncg_gl; /* The number of local charge groups            */
+  int           *cg_gl; /* The global cg number of the local cgs        */
+  int           cg_gl_nalloc; /* Allocation size of cg_gl;              */
 } t_state;

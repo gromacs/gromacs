@@ -320,6 +320,14 @@ gmx_stochd_t init_stochd(FILE *fplog,
   return sd;
 }
 
+void sd_enlarge_state(t_gmx_stochd *sd,t_state *state)
+{
+  if (sd->bTwoStep && !(state->flags & STATE_HAS_SDX)) {
+    state->flags |= STATE_HAS_SDX;
+    snew(state->sd_X,state->nalloc);
+  }
+}
+
 static void do_update_sd1(t_gmx_stochd *sd,bool bFirstStep,
 			  int start,int homenr,double dt,
 			  rvec accel[],ivec nFreeze[],

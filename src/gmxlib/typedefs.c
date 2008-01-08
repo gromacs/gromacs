@@ -234,6 +234,13 @@ void init_state(t_state *state,int natoms,int ngtc)
     state->x = NULL;
     state->v = NULL;
   }
+  state->sd_X = NULL;
+  state->cg_p = NULL;
+
+  state->ddp_count = 0;
+  state->ddp_count_cg_gl = 0;
+  state->cg_gl = NULL;
+  state->cg_gl_nalloc = 0;
 }
 
 void done_state(t_state *state)
@@ -241,7 +248,11 @@ void done_state(t_state *state)
   if (state->nosehoover_xi) sfree(state->nosehoover_xi);
   if (state->x) sfree(state->x);
   if (state->v) sfree(state->v);
+  if (state->sd_X) sfree(state->sd_X);
+  if (state->cg_p) sfree(state->cg_p);
   state->nalloc = 0;
+  if (state->cg_gl) sfree(state->cg_gl);
+  state->cg_gl_nalloc = 0;
 }
 
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)

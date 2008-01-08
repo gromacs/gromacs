@@ -181,6 +181,9 @@ typedef struct {
 
   /* Communication stuff */
   gmx_domdec_comm_p_t comm;
+
+  /* The partioning count, to keep track of the state */
+  int ddp_count;
 } gmx_domdec_t;
 
 typedef struct gmx_partdec *gmx_partdec_p_t;

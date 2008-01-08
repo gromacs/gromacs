@@ -136,6 +136,13 @@ static void receive_inputrec(t_commrec *cr,
 #endif
 }
 
+typedef struct { 
+  gmx_integrator_t *func;
+} gmx_intp_t;
+
+/* The array should match the eI array in include/types/enums.h */
+const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi} };
+
 void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
 	      ivec ddxyz,int dd_node_order,real rdd,
@@ -160,6 +167,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   gmx_pme_t  *pmedata=NULL;
   time_t     start_t=0;
   gmx_vsite_t *vsite=NULL;
+  gmx_constr_t constr;
   int        i,m,nChargePerturbed=0,status,nalloc;
   char       *gro;
   gmx_wallcycle_t wcycle;
@@ -327,10 +335,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
   }
   
-  switch (inputrec->eI) {
-  case eiMD:
-  case eiSD:
-  case eiBD:
+  if (integrator[inputrec->eI].func == do_md) {
     /* Turn on signal handling on all nodes */
     /*
      * (A user signal from the PME nodes (if any)
@@ -346,10 +351,6 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	fprintf(debug,"Installing signal handler for SIGUSR1\n");
       signal(SIGUSR1,signal_handler);
     }
-    break;
-  default:
-    /* No signal handling */
-    break;
   }
 
   if (cr->duty & DUTY_PP) {
@@ -359,54 +360,26 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		EI_DYNAMICS(inputrec->eI) && MASTER(cr));
     }
 
-    /* Now do whatever the user wants us to do (how flexible...) */
-    switch (inputrec->eI) {
-    case eiMD:
-    case eiSD:
-    case eiBD:
-      start_t=do_md(fplog,cr,nfile,fnm,
-		    bVerbose,bCompact,
-		    ddxyz,ddcsx,ddcsy,ddcsz,
-		    vsite,
-		    nstepout,inputrec,grps,top,ener,fcd,state,f,buf,
-		    mdatoms,nrnb,wcycle,graph,edyn,fr,
-		    repl_ex_nst,repl_ex_seed,
-		    Flags);
-      break;
-    case eiCG:
-      start_t=do_cg(fplog,nfile,fnm,inputrec,top,grps,
-		    state,f,buf,mdatoms,ener,fcd,
-		    nrnb,wcycle,bVerbose,vsite,
-		    cr,graph,fr);
-      break;
-    case eiLBFGS:
-      start_t=do_lbfgs(fplog,nfile,fnm,inputrec,top,grps,
-		       state,f,buf,mdatoms,ener,fcd,
-		       nrnb,wcycle,bVerbose,vsite,
-		       cr,graph,fr);
-      break;
-    case eiSteep:
-      start_t=do_steep(fplog,nfile,fnm,inputrec,top,grps,
-		       state,f,buf,mdatoms,ener,fcd,
-		       nrnb,wcycle,bVerbose,vsite,
-		       cr,graph,fr);
-    break;
-    case eiNM:
-      start_t=do_nm(fplog,cr,nfile,fnm,
-		    bVerbose,bCompact,nstepout,inputrec,grps,
-		    top,ener,fcd,state,f,buf,
-		    mdatoms,nrnb,wcycle,vsite,graph,edyn,fr);
-      break;
-    case eiTPI:
-    case eiTPIC:
-      start_t=do_tpi(fplog,nfile,fnm,inputrec,top,grps,
-		     state,f,buf,mdatoms,ener,fcd,
-		     nrnb,wcycle,bVerbose,
-		     cr,graph,fr);
-      break;
-    default:
-      gmx_fatal(FARGS,"Invalid integrator (%d)...\n",inputrec->eI);
+    constr = init_constraints(fplog,cr,top,inputrec);
+
+    if (DOMAINDECOMP(cr)) {
+      dd_make_reverse_top(fplog,cr->dd,top,vsite,constr,
+			  EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
+
+      set_dd_parameters(fplog,cr->dd,top,inputrec,fr);
+     
+      setup_dd_grid(fplog,cr->dd);
     }
+
+    /* Now do whatever the user wants us to do (how flexible...) */
+    start_t = integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
+					    bVerbose,bCompact,
+					    vsite,constr,
+					    nstepout,inputrec,grps,top,
+					    ener,fcd,state,f,buf,
+					    mdatoms,nrnb,wcycle,graph,edyn,fr,
+					    repl_ex_nst,repl_ex_seed,
+					    Flags);
   } else {
     /* do PME only */
     gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);
@@ -436,8 +409,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
-	     ivec ddxyz,char *ddcsx,char *ddcsy,char *ddcsz,
-	     gmx_vsite_t *vsite,
+	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,t_inputrec *ir,t_groups *grps,
 	     t_topology *top_global,
 	     real ener[],t_fcdata *fcd,
@@ -472,7 +444,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_state    *state=NULL;
   rvec       *f_global=NULL;
   gmx_stochd_t sd=NULL;
-  gmx_constr_t constr=NULL;
 
   /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
@@ -521,9 +492,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initial values */
   init_md(fplog,cr,ir,&t,&t0,&state_global->lambda,&lam0,
-	  nrnb,top_global,&sd,&constr,
+	  nrnb,top_global,&sd,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
+  if (sd)
+    sd_enlarge_state(sd,state_global);
   debug_gmx();
 
   /* Check for polarizable models and flexible constraints */
@@ -540,10 +513,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   
   if (DOMAINDECOMP(cr)) {
+    /*
     dd_make_reverse_top(fplog,cr->dd,top_global,vsite,constr,
 			EI_DYNAMICS(ir->eI),ir->coulombtype);
 
     set_dd_parameters(fplog,cr->dd,top_global,ir,fr);
+    */
 
     top = dd_init_local_top(top_global);
 
@@ -555,7 +530,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (DDMASTER(cr->dd) && ir->nstfout)
       snew(f_global,state->natoms);
 
-    setup_dd_grid(fplog,cr->dd);
+    //setup_dd_grid(fplog,cr->dd);
   } else {
     top = top_global;
     state = state_global;

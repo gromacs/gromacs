@@ -143,8 +143,8 @@ typedef struct gmx_domdec_comm {
 
   /* Should we sort the cgs */
   int  nstSortCG;
-  bool bSortCG;
   gmx_domdec_sort_t *sort;
+  bool bFilled_nsgrid_home;
 
   /* Are there bonded interactions between charge groups? */
   bool bInterCGBondeds;
@@ -340,9 +340,27 @@ int glatnr(gmx_domdec_t *dd,int i)
   return atnr;
 }
 
-bool dd_sort_cg(gmx_domdec_t *dd)
+bool dd_filled_nsgrid_home(gmx_domdec_t *dd)
 {
-  return dd->comm->bSortCG;
+  return dd->comm->bFilled_nsgrid_home;
+}
+
+void dd_store_state(gmx_domdec_t *dd,t_state *state)
+{
+  int i;
+
+  if (state->ddp_count != dd->ddp_count)
+    gmx_incons("The state does not the domain decomposition state");
+
+  state->ncg_gl = dd->ncg_home;
+  if (state->ncg_gl > state->cg_gl_nalloc) {
+    state->cg_gl_nalloc = over_alloc_dd(state->ncg_gl);
+    srenew(state->cg_gl,state->cg_gl_nalloc);
+  }
+  for(i=0; i<state->ncg_gl; i++)
+    state->cg_gl[i] = dd->index_gl[i];
+  
+  state->ddp_count_cg_gl = dd->ddp_count;
 }
 
 void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
@@ -878,6 +896,8 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
     dd_collect_vec(dd,cgs,state_local->v,state->v);
   if (state_local->flags & STATE_HAS_SDX)
     dd_collect_vec(dd,cgs,state_local->sd_X,state->sd_X);
+  if (state_local->flags & STATE_HAS_CGP)
+    dd_collect_vec(dd,cgs,state_local->cg_p,state->cg_p);
 }
 
 static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
@@ -901,6 +921,8 @@ static void dd_realloc_state(t_state *state,rvec **f,rvec **buf,int nalloc)
     srenew(state->v,state->nalloc);
   if (state->flags & STATE_HAS_SDX)
     srenew(state->sd_X,state->nalloc);
+  if (state->flags & STATE_HAS_CGP)
+    srenew(state->cg_p,state->nalloc);
   
   srenew(*f,state->nalloc);
   srenew(*buf,state->nalloc);
@@ -973,6 +995,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_distribute_vec(dd,cgs,state->v,state_local->v);
   if (state_local->flags & STATE_HAS_SDX)
     dd_distribute_vec(dd,cgs,state->sd_X,state_local->sd_X);
+  if (state_local->flags & STATE_HAS_CGP)
+    dd_distribute_vec(dd,cgs,state->cg_p,state_local->cg_p);
 }
 
 static char dim2char(int dim)
@@ -1340,6 +1364,27 @@ static bool receive_vir_ener(t_commrec *cr)
   }
   
   return bReceive;
+}
+
+static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
+{
+  int nat,i,*ind,*cgindex,cg_gl;
+
+  ind = state->cg_gl;
+  cgindex = dd->cgindex;
+  nat = 0;
+  cgindex[0] = nat;
+  for(i=0; i<state->ncg_gl; i++) {
+    cgindex[i] = nat;
+    cg_gl = ind[i];
+    nat += gcgs_index[cg_gl+1] - gcgs_index[cg_gl];
+  }
+  cgindex[i] = nat;
+
+  dd->ncg_home = state->ncg_gl;
+  dd->nat_home = nat;
+
+  dd->bMasterHasAllCG = FALSE;
 }
 
 static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
@@ -2410,7 +2455,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   int  sbuf[2],rbuf[2];
   int  home_pos_cg,home_pos_at,ncg_stay_home,buf_pos;
   int  flag;
-  bool bV,bSDX;
+  bool bV,bSDX,bCGP;
   ivec tric_dir,dev;
   real inv_ncg,pos_d;
   matrix tcm;
@@ -2423,6 +2468,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 
   bV   = (state->flags & STATE_HAS_V);
   bSDX = (state->flags & STATE_HAS_SDX);
+  bCGP = (state->flags & STATE_HAS_CGP);
 
   if (dd->ncg_tot > comm->nalloc_int) {
     comm->nalloc_int = over_alloc_dd(dd->ncg_tot);
@@ -2575,6 +2621,8 @@ static int dd_redistribute_cg(FILE *fplog,int step,
     nvec++;
   if (bSDX)
     nvec++;
+  if (bCGP)
+    nvec++;
 
   /* Make sure the communication buffers are large enough */
   for(mc=0; mc<dd->ndim*2; mc++) {
@@ -2602,6 +2650,9 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   if (bSDX)
     compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
 			    nvec,vec++,state->sd_X,comm,bCompact);
+  if (bCGP)
+    compact_and_copy_vec_at(dd->ncg_home,move,cgindex,
+			    nvec,vec++,state->cg_p,comm,bCompact);
   
   if (bCompact) {
     compact_ind(dd->ncg_home,move,
@@ -2733,6 +2784,10 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 	if (bSDX) {
 	  for(i=0; i<nrcg; i++)
 	    copy_rvec(comm->buf_vr[buf_pos++],state->sd_X[home_pos_at+i]);
+	}
+	if (bCGP) {
+	  for(i=0; i<nrcg; i++)
+	    copy_rvec(comm->buf_vr[buf_pos++],state->cg_p[home_pos_at+i]);
 	}
 	home_pos_cg += 1;
 	home_pos_at += nrcg;
@@ -2966,7 +3021,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
   comm = dd->comm;
   if (DDMASTER(dd) && comm->nload > 0) {
     npp    = dd->nnodes;
-    npme   = comm->npmenodes;
+    npme   = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
     nnodes = npp + npme;
     imbal = comm->load_max*npp/comm->load_sum - 1;
     lossf = (comm->load_max*npp - comm->load_sum)/(comm->load_step*nnodes);
@@ -4509,6 +4564,8 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->v,vbuf);
   if (state->flags & STATE_HAS_SDX)
     order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->sd_X,vbuf);
+  if (state->flags & STATE_HAS_CGP)
+    order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->cg_p,vbuf);
   /* Reorder cgcm */
   order_vec_cg(dd->ncg_home,cgsort,cgcm,vbuf);
 
@@ -4617,7 +4674,7 @@ void dd_partition_system(FILE            *fplog,
 {
   gmx_domdec_t *dd;
   int  i,j,n,cg0=0,ncg_home_old=-1;
-  bool bLogLoad;
+  bool bLogLoad,bRedist,bSortCG;
   ivec ncells_old,np;
 
   dd = cr->dd;
@@ -4640,6 +4697,7 @@ void dd_partition_system(FILE            *fplog,
     }
   }
 
+  bRedist = FALSE;
   if (bMasterState) {
     get_cg_distribution(fplog,step,dd,
 			&top_global->blocks[ebCGS],
@@ -4658,18 +4716,47 @@ void dd_partition_system(FILE            *fplog,
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
     cg0 = 0;
+  } else if (state_local->ddp_count != dd->ddp_count) {
+    if (state_local->ddp_count > dd->ddp_count)
+      gmx_fatal(FARGS,"Internal inconsistency state_local->ddp_count (%d) > dd->ddp_count (%d)",state_local->ddp_count,dd->ddp_count);
+
+    if (state_local->ddp_count_cg_gl != state_local->ddp_count)
+      gmx_fatal(FARGS,"Internal inconsistency state_local->ddp_count_cg_gl (%d) != state_local->ddp_count (%d)",state_local->ddp_count_cg_gl,state_local->ddp_count);
+
+    /* Clear the old state */
+    clear_dd_indices(dd,0);
+
+    /* Build the new indices */
+    rebuild_cgindex(dd,top_global->blocks[ebCGS].index,state_local);
+    make_dd_indices(dd,top_global->blocks[ebCGS].index,0,fr);
+
+    /* Redetermine the cg COMs */
+    calc_cgcm(fplog,0,dd->ncg_home,
+	      &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
+    
+    inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
+
+    bRedist = dd->bDynLoadBal;
+  } else {
+    /* We have the full state, only redistribute the cgs */
+    bRedist = TRUE;
   }
 
-  set_dd_cell_sizes(dd,state_local->box,DYNAMIC_BOX(*ir),bMasterState,FALSE,
-		    step);
+  set_dd_cell_sizes(dd,state_local->box,DYNAMIC_BOX(*ir),
+		    bMasterState,FALSE,step);
   if (nstDDDumpGrid > 0 && step % nstDDDumpGrid == 0)
     write_dd_grid_pdb("dd_grid",step,dd,state_local->box);
 
   set_dd_ns_cell_sizes(dd,state_local->box,step);
-
-  dd->comm->bSortCG = (dd->comm->nstSortCG > 0 &&
-		       (bMasterState || (step % dd->comm->nstSortCG == 0)));
-  if (dd->comm->bSortCG) {
+  
+  if (dd->comm->nstSortCG > 0) {
+    bSortCG = (bMasterState ||
+	       (bRedist && (step % dd->comm->nstSortCG == 0)));
+  } else {
+    bSortCG = FALSE;
+  }
+  dd->comm->bFilled_nsgrid_home = bSortCG;
+  if (dd->comm->bFilled_nsgrid_home) {
     /* Initialize the ns grid */
     copy_ivec(fr->ns.grid->n,ncells_old);
     grid_first(fplog,fr->ns.grid,dd,fr->ePBC,state_local->box,fr->rlistlong,
@@ -4688,14 +4775,14 @@ void dd_partition_system(FILE            *fplog,
     }
   }
 
-  if (!bMasterState) {
+  if (bRedist) {
     cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->blocks[ebCGS],
 			     state_local,f,buf,fr,mdatoms,
-			     !dd->comm->bSortCG,nrnb);
+			     !bSortCG,nrnb);
     set_grid_ncg(fr->ns.grid,dd->ncg_home);
   }
 
-  if (dd->comm->bSortCG) {
+  if (bSortCG) {
     /* Sort the state on charge group position.
      * This enables exact restarts from this step.
      * It also improves performance by about 15% with larger numbers
@@ -4771,8 +4858,9 @@ void dd_partition_system(FILE            *fplog,
   /* Make space for the extra coordinates for virtual site
    * or constraint communication.
    */
-  if (dd->comm->nat[ddnatNR-1] > state_local->nalloc)
-    dd_realloc_state(state_local,f,buf,dd->comm->nat[ddnatNR-1]);
+  state_local->natoms = dd->comm->nat[ddnatNR-1];
+  if (state_local->natoms > state_local->nalloc)
+    dd_realloc_state(state_local,f,buf,state_local->natoms);
   if (EEL_FULL(fr->eeltype)) {
     if (vsite && vsite->n_intercg_vsite)
       fr->f_el_recip_n = dd->comm->nat[ddnatVSITE];
@@ -4827,4 +4915,7 @@ void dd_partition_system(FILE            *fplog,
 		 dd->comm->nat[ddnatVSITE],
 		 state_local->x,state_local->box);
   }
+
+  dd->ddp_count++;
+  state_local->ddp_count = dd->ddp_count;
 }

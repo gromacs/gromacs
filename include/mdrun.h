@@ -72,85 +72,49 @@ enum {
   ddnoSEL, ddnoINTERLEAVE, ddnoPP_PME, ddnoCARTESIAN, ddnoNR
 };
 
+typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
+				int nfile,t_filenm fnm[],
+				bool bVerbose,bool bCompact,
+				gmx_vsite_t *vsite,gmx_constr_t constr,
+				int stepout,
+				t_inputrec *inputrec,t_groups *grps,
+				t_topology *top,real ener[],t_fcdata *fcd,
+				t_state *state,rvec f[],
+				rvec buf[],t_mdatoms *mdatoms,
+				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+				t_graph *graph,t_edsamyn *edyn,
+				t_forcerec *fr,
+				int repl_ex_nst,int repl_ex_seed,
+				unsigned long Flags);
+
 /* ROUTINES from md.c */
-extern time_t do_md(FILE *log,t_commrec *cr,
-		    int nfile,t_filenm fnm[],
-		    bool bVerbose,bool bCompact,
-		    ivec ddxyz,char *ddcsx,char *ddcsy,char *ddcsz,
-		    gmx_vsite_t *vsite,int stepout,
-		    t_inputrec *inputrec,t_groups *grps,
-		    t_topology *top,real ener[],t_fcdata *fcd,
-		    t_state *state,rvec f[],
-		    rvec buf[],t_mdatoms *mdatoms,
-		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		    t_graph *graph,t_edsamyn *edyn,
-		    t_forcerec *fr,
-		    int repl_ex_nst,int repl_ex_seed,
-		    unsigned long Flags);
+
+extern gmx_integrator_t do_md;
 
 /* ROUTINES from minimize.c */
-extern time_t do_steep(FILE *log,int nfile,t_filenm fnm[],
-		       t_inputrec *inputrec,t_topology *top,
-		       t_groups *grps,
-		       t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       real ener[],t_fcdata *fcd,
-		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       bool bVerbose,gmx_vsite_t *vsite,
-		       t_commrec *cr,
-		       t_graph *graph,t_forcerec *fr);
-/* Do steepest descents EM or something like that! */
 
-extern time_t do_cg(FILE *log,int nfile,t_filenm fnm[],
-		    t_inputrec *inputrec,t_topology *top,
-		    t_groups *grps,
-		    t_state *state,rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		    real ener[],t_fcdata *fcd,
-		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		    bool bVerbose,gmx_vsite_t *vsite,
-		    t_commrec *cr,
-		    t_graph *graph,t_forcerec *fr);
-/* Do conjugate gradients EM! */
+extern gmx_integrator_t do_steep;
+/* Do steepest descents EM */
 
-extern time_t do_lbfgs(FILE *log,int nfile,t_filenm fnm[],
-		       t_inputrec *inputrec,t_topology *top,
-		       t_groups *grps,t_state *state,
-		       rvec grad[],rvec buf[],t_mdatoms *mdatoms,
-		       real ener[],t_fcdata *fcd,
-		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		       bool bVerbose,gmx_vsite_t *vsite,
-		       t_commrec *cr,
-		       t_graph *graph,t_forcerec *fr);
-/* Do conjugate gradients EM! */
+extern gmx_integrator_t do_cg;
+/* Do conjugate gradient EM */
 
+extern gmx_integrator_t do_lbfgs;
+/* Do conjugate gradient L-BFGS */
 
-extern time_t do_nm(FILE *log,t_commrec *cr,int nfile,t_filenm fnm[],
-		    bool bVerbose,bool bCompact,int stepout,
-		    t_inputrec *inputrec,t_groups *grps,
-		    t_topology *top,real ener[],t_fcdata *fcd,
-		    t_state *state,rvec f[],
-		    rvec buf[],t_mdatoms *mdatoms,
-		    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		    gmx_vsite_t *vsite,
-		    t_graph *graph,t_edsamyn *edyn,
-		    t_forcerec *fr);
+extern gmx_integrator_t do_nm;
 /* Do normal mode analysis */
 
-extern time_t do_tpi(FILE *log,int nfile,t_filenm fnm[], 
-		     t_inputrec *inputrec,t_topology *top, 
-		     t_groups *grps,
-		     t_state *state,rvec f[],rvec buf[],t_mdatoms *mdatoms, 
-		     real ener[],t_fcdata *fcd,
-		     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		     bool bVerbose,
-		     t_commrec *cr,t_graph *graph,
-		     t_forcerec *fr);
+extern gmx_integrator_t do_tpi;
 /* Do test particle insertion */
+
 
 /* ROUTINES from runner.c */
 extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 
 extern void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
+
 		     
 /* ROUTINES from stat.c */		
 extern void global_stat(FILE *log,
@@ -292,7 +256,7 @@ extern void init_md(FILE *fplog,
 		    t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
 		    t_nrnb *nrnb,t_topology *top,
-		    gmx_stochd_t *stochd,gmx_constr_t *constr,
+		    gmx_stochd_t *stochd,
 		    int nfile,t_filenm fnm[],
 		    int *fp_trn,int *fp_xtc,int *fp_ene,
 		    FILE **fp_dgdl,FILE **fp_field,
