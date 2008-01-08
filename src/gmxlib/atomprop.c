@@ -197,9 +197,9 @@ static void read_props(t_atomprop *ap,int eprop,double factor)
 
 void *get_atomprop(void) 
 {
-  char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat" };
-  double fac[epropNR] = { 1.0,    1.0,  418.4 };
-  double def[epropNR] = { 12.011, 0.14, 0.0 };
+  char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat" };
+  double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0 };
+  double def[epropNR] = { 12.011, 0.14, 0.0, 2.2 };
 
   t_atomprop *ap;
   int i;
