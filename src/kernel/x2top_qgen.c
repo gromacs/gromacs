@@ -317,129 +317,6 @@ static void qgen_calc_Jab(t_qgen *qgen,int nep,t_eemprops eep[])
   }
 }
 
-#ifdef HAVE_LIBGSL
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_sf.h>
-
-static double radius_function(const gsl_vector *v,void *params)
-{
-  t_qgen *qgen = (t_qgen *)params;
-  int    i,j;
-  double chisum,chiav,rms,qt;
-  real wij;
-  
-  for(i=0; (i<qgen->natom); i++) 
-    qgen->qq[i] = gsl_vector_get(v, i);
-  /*qgen_calc_Jab(qgen);  */
-
-  chisum = 0;
-  for(i=0; (i<qgen->natom); i++) {
-    qgen->chi[i] = qgen->chi0[i];
-    for(j=0; (j<qgen->natom); j++) 
-      qgen->chi[i] += qgen->Jab[i][j]*qgen->qq[j];
-    chisum += qgen->chi[i];
-  }
-  chiav = chisum/(qgen->natom);
-  rms = 0;
-  qt = 0;
-  for(i=0; (i<qgen->natom); i++) {
-    rms += sqr(qgen->chi[i]-chiav);
-    qt += qgen->qq[i];
-  }  
-  rms += sqr(qgen->qtotal - qt);
-  qgen->chiav = chiav;
-  
-  return rms;
-}
-
-static real optimize_radii(FILE *fp,t_qgen *qgen,int maxiter,real tol)
-{
-  real   size,d2;
-  int    iter   = 0;
-  int    status = 0;
-  int    i;
-
-  const gsl_multimin_fminimizer_type *T;
-  gsl_multimin_fminimizer *s;
-
-  gsl_vector *x,*dx;
-  gsl_multimin_function my_func;
-
-  my_func.f      = &radius_function;
-  my_func.n      = qgen->natom;
-  my_func.params = (void *) qgen;
-
-  /* Starting point */
-  x = gsl_vector_alloc (my_func.n);
-  for(i=0; (i<my_func.n); i++)
-    gsl_vector_set (x, i, qgen->qq[i]);
-  
-  /* Step size, different for each of the parameters */
-  dx = gsl_vector_alloc (my_func.n);
-  for(i=0; (i<my_func.n); i++)
-    gsl_vector_set (dx, i, 0.5*qgen->qq[i]);
-
-  T = gsl_multimin_fminimizer_nmsimplex;
-  s = gsl_multimin_fminimizer_alloc (T, my_func.n);
-
-  gsl_multimin_fminimizer_set (s, &my_func, x, dx);
-  gsl_vector_free (x);
-  gsl_vector_free (dx);
-
-  if (fp)
-    fprintf(fp,"%5s %12s %12s %12s\n","Iter","Size","RMS","<chi>");
-  
-  do  {
-    iter++;
-    status = gsl_multimin_fminimizer_iterate (s);
-    
-    if (status != 0)
-      gmx_fatal(FARGS,"Something went wrong in the iteration in minimizer %s",
-		gsl_multimin_fminimizer_name(s));
-    
-    d2     = gsl_multimin_fminimizer_minimum(s);
-    /*size   = gsl_multimin_fminimizer_size(s);
-    status = gsl_multimin_test_size(size,tol);
-    
-    if (status == GSL_SUCCESS)
-      if (fp) 
-	fprintf(fp,"Minimum found using %s\n",
-		gsl_multimin_fminimizer_name(s));
-    */  
-    if (fp) {
-      fprintf(fp,"%5d", iter);
-      fprintf(fp," %12.4e %12.4e %12.4e\n",size,d2,qgen->chiav);
-    }
-  }
-  while ((sqrt(d2) > tol) && (iter < maxiter));
-  
-  gsl_multimin_fminimizer_free (s);
-  
-  return d2;
-}
-
-static real quality_of_fit(real chi2,int N)
-{
-  return gsl_sf_gamma_inc_Q((N-2)/2.0,chi2/2.0);
-}
-
-#else
-static real optimize_radii(FILE *fp,t_qgen *qgen,int maxiter,real tol)
-{
-  fprintf(stderr,"This program needs the GNU scientific library to work.\n");
-  
-  return -1;
-}
-
-static real quality_of_fit(real chi2,int N)
-{
-  fprintf(stderr,"This program needs the GNU scientific library to work.\n");
-  
-  return -1;
-}
-
-#endif
-
 t_qgen *init_qgen(int nep,t_eemprops eep[],
 		  t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
 {
@@ -536,7 +413,7 @@ static void generate_charges_yang(int nep,t_eemprops eep[],
 static void generate_charges_sm(int nep,t_eemprops eep[],
 				t_atoms *atoms,rvec x[],t_params *bonds,
 				real tol,real fac,int maxiter,void *atomprop,
-				real qtotref,real muref)
+				real qtotref)
 {
   /* Use Rappe and Goddard derivative for now */
   t_qgen *qgen;
@@ -561,9 +438,6 @@ static void generate_charges_sm(int nep,t_eemprops eep[],
     rms = sqrt(rms/atoms->nr);
     iter++;
   } while ((rms > tol) && (iter < maxiter));
-  
-  mu = qgen_calc_dip(qgen);
-  printf("Dipole is %10g, should be %10g\n",mu,muref);
   
   if (iter < maxiter)
     printf("Converged to tolerance %g after %d iterations\n",tol,iter);
@@ -641,7 +515,7 @@ static void generate_charges_linear(t_atoms *atoms,rvec x[],t_params *bonds,
 void assign_charge_alpha(int alg,t_atoms *atoms,rvec x[],
 			 int nqa,t_q_alpha *qa,
 			 t_params *bonds,real tol,real fac,int maxiter,
-			 void *atomprop,real qtotref,real muref)
+			 void *atomprop,real qtotref)
 {
   int        i,nep;
   t_eemprops *eep;
@@ -672,7 +546,7 @@ void assign_charge_alpha(int alg,t_atoms *atoms,rvec x[],
       generate_charges_bultinck(nep,eep,atoms,x,bonds,tol,fac,maxiter,atomprop);
       break;
     case eqgSM:
-      generate_charges_sm(nep,eep,atoms,x,bonds,tol,fac,maxiter,atomprop,qtotref,muref);
+      generate_charges_sm(nep,eep,atoms,x,bonds,tol,fac,maxiter,atomprop,qtotref);
       break;
     default:
       gmx_fatal(FARGS,"Algorithm %d out of range in assign_charge_alpha",alg);

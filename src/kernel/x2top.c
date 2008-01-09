@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static real btol=0.1,qtol=1e-3,fac=5.0;
-  static real qtotref=0,muref=0;
+  static real qtotref=0;
   static int  nexcl = 3;
   static int  maxiter=100;
   static bool bRemoveDih = FALSE;
@@ -184,8 +184,6 @@ int main(int argc, char *argv[])
       "HIDDENTolerance for assigning charge generation algorithm" },
     { "-qtot",   FALSE, etREAL, {&qtotref},
       "HIDDENNet charge on molecule when generating a charge" },
-    { "-muref",  FALSE, etREAL, {&muref},
-      "HIDDENReference dipole of molecule when optimizing charges in the SM (Van der Spoel and Van Maaren) model" },
     { "-maxiter",FALSE, etINT, {&maxiter},
       "HIDDENMax number of iterations for charge generation algorithm" },
     { "-fac",    FALSE, etREAL, {&fac},
@@ -278,7 +276,7 @@ int main(int argc, char *argv[])
       alg--;
   }
   assign_charge_alpha(alg,atoms,x,nqa,qa,&(plist[F_BONDS]),qtol,fac,
-		      maxiter,atomprop,qtotref,muref);
+		      maxiter,atomprop,qtotref);
 
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);

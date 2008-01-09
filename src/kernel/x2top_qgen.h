@@ -45,6 +45,6 @@ enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, eqgSM, eqgNR };
 extern void assign_charge_alpha(int alg,t_atoms *atoms,rvec x[],
 				int nqa,t_q_alpha *qa,
 				t_params *bonds,real tol,real fac,int maxiter,
-				void *atomprop,real qtotref,real muref);
+				void *atomprop,real qtotref);
 
 #endif
