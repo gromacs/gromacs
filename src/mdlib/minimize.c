@@ -83,6 +83,7 @@ typedef struct {
   t_state s;
   rvec    *f;
   real    epot;
+  real    fnorm;
   real    fmax;
   int     a_fmax;
 } em_state_t;
@@ -141,18 +142,20 @@ static void print_converged(FILE *fp,const char *alg,real ftol,int count,bool bD
 #endif
 }
 
-static real f_max(t_commrec *cr,
-		  t_grpopts *opts,t_mdatoms *mdatoms,
-		  rvec *f,int *a_fmax)
+static void get_f_norm_max(t_commrec *cr,
+			   t_grpopts *opts,t_mdatoms *mdatoms,rvec *f,
+			   real *fnorm,real *fmax,int *a_fmax)
 {
+  double fnorm2,*sum;
   real fmax2,fmax2_0,fam;
-  int  la_fmax,start,end,i,m,gf;
+  int  la_max,a_max,start,end,i,m,gf;
 
   /* This routine finds the largest force and returns it.
    * On parallel machines the global max is taken.
    */
+  fnorm2 = 0;
   fmax2 = 0;
-  la_fmax = -1;
+  la_max = -1;
   gf = 0;
   start = mdatoms->start;
   end   = mdatoms->homenr + start;
@@ -163,79 +166,59 @@ static real f_max(t_commrec *cr,
       for(m=0; m<DIM; m++)
 	if (!opts->nFreeze[gf][m])
 	  fam += sqr(f[i][m]);
+      fnorm2 += fam;
       if (fam > fmax2) {
-	fmax2   = fam;
-	la_fmax = i;
+	fmax2  = fam;
+	la_max = i;
       }
     }
   } else {
     for(i=start; i<end; i++) {
       fam = norm2(f[i]);
+      fnorm2 += fam;
       if (fam > fmax2) {
-	fmax2   = fam;
-	la_fmax = i;
+	fmax2  = fam;
+	la_max = i;
       }
     }
   }
 
-  if (DOMAINDECOMP(cr)) {
-    *a_fmax = cr->dd->gatindex[la_fmax];
+  if (la_max >= 0 && DOMAINDECOMP(cr)) {
+    a_max = cr->dd->gatindex[la_max];
   } else {
-    *a_fmax = la_fmax;
+    a_max = la_max;
   }
-  if (cr->nnodes > 1) {
-    for(i=0; (i<cr->nnodes-1); i++) {
-      gmx_tx(cr,cr->left,(void *)&fmax2,sizeof(fmax2));
-      gmx_rx(cr,cr->right,(void *)&fmax2_0,sizeof(fmax2_0));
-      gmx_wait(cr->left,cr->right);
-      gmx_tx(cr,cr->left,(void *)a_fmax,sizeof(*a_fmax));
-      gmx_rx(cr,cr->right,(void *)&la_fmax,sizeof(la_fmax));
-      gmx_wait(cr->left,cr->right);
-      if (fmax2_0 > fmax2) {
-	fmax2   = fmax2_0;
-	*a_fmax = la_fmax;
+  if (PAR(cr)) {
+    snew(sum,2*cr->nnodes+1);
+    sum[2*cr->nodeid]   = fmax2;
+    sum[2*cr->nodeid+1] = a_max;
+    sum[2*cr->nnodes]   = fnorm2;
+    gmx_sumd(2*cr->nnodes+1,sum,cr);
+    fnorm2 = sum[2*cr->nnodes];
+    /* Determine the global maximum */
+    for(i=0; i<cr->nnodes; i++) {
+      if (sum[2*i] > fmax2) {
+	fmax2 = sum[2*i];
+	a_max = (int)(sum[2*i+1] + 0.5);
       }
     }
+    sfree(sum);
   }
-  
-  return sqrt(fmax2);
+
+  if (fnorm)
+    *fnorm = sqrt(fnorm2);
+  if (fmax)
+    *fmax  = sqrt(fmax2);
+  if (a_fmax)
+    *a_fmax = a_max;
 }
 
-static void get_f_max(t_commrec *cr,
-		      t_grpopts *opts,t_mdatoms *mdatoms,
-		      em_state_t *ems)
+static void set_f_norm_max(t_commrec *cr,
+			   t_grpopts *opts,t_mdatoms *mdatoms,
+			   em_state_t *ems)
 {
-  ems->fmax = f_max(cr,opts,mdatoms,ems->f,&ems->a_fmax);
+  get_f_norm_max(cr,opts,mdatoms,ems->f,&ems->fnorm,&ems->fmax,&ems->a_fmax);
 }
-
-static real f_norm(t_commrec *cr,
-		   t_grpopts *opts,t_mdatoms *mdatoms,rvec grad[])
-{
-  double fnorm2;
-  int    start,end,i,m,gf;
-
-  /* This routine returns the norm of the force */
-  fnorm2 = 0;
-
-  start = mdatoms->start;
-  end   = mdatoms->homenr + start;
-  if (mdatoms->cFREEZE) {
-    for(i=start; i<end; i++) {
-      gf = mdatoms->cFREEZE[i];
-      for(m=0; m<DIM; m++)
-	if (!opts->nFreeze[gf][m])
-	  fnorm2 += sqr(grad[i][m]); 
-    }
-  } else {
-    for(i=start; i<end; i++)
-      fnorm2 += norm2(grad[i]);
-  }
-  
-  if (PAR(cr))
-    gmx_sumd(1,&fnorm2,cr);
-
-  return sqrt(fnorm2); 
-} 
 
 void init_em(FILE *fplog,const char *title,
 	     t_commrec *cr,t_inputrec *ir,t_groups *grps,
@@ -492,7 +475,7 @@ static void em_constrain_f(t_commrec *cr,gmx_constr_t constr,
   snew(xcf,ems->s.natoms);
 
   /* Determine the forces working on the constraints */
-  get_f_max(cr,&(ir->opts),mdatoms,ems);
+  set_f_norm_max(cr,&(ir->opts),mdatoms,ems);
   constepsize = ustep/ems->fmax;
   do_x_step(cr,ems->s.natoms,ems->s.x,constepsize,ems->f,xcf);
   
@@ -587,9 +570,114 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 
   ems->epot = ener[F_EPOT];
   
-  get_f_max(cr,&(inputrec->opts),mdatoms,ems);
+  set_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
 }
 
+static double reorder_partsum(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
+			      t_topology *top,
+			      em_state_t *s_min,em_state_t *s_b)
+{
+  rvec *fm,*fb,*fmg;
+  t_atom *atom;
+  int ncg,*cg_gl,*index,c,cg,i,a0,a1,a,gf,m;
+  double partsum;
+
+  if (debug)
+    fprintf(debug,"Doing reorder_partsum\n");
+
+  fm = s_min->f;
+  fb = s_b->f;
+  atom = top->atoms.atom;
+
+  index = top->blocks[ebCGS].index;
+
+  /* Collect fm in a global vector fmg.
+   * This conflics with the spirit of domain decomposition,
+   * but to fully optimize this a much more complicated algorithm is required.
+   */
+  snew(fmg,top->atoms.nr);
+  
+  ncg   = s_min->s.ncg_gl;
+  cg_gl = s_min->s.cg_gl;
+  i = 0;
+  for(c=0; c<ncg; c++) {
+    cg = cg_gl[c];
+    a0 = index[cg];
+    a1 = index[cg+1];
+    for(a=a0; a<a1; a++) {
+      copy_rvec(fm[i],fmg[a]);
+      i++;
+    }
+  }
+  gmx_sum(top->atoms.nr*3,fmg[0],cr);
+
+  /* Now we will determine the part of the sum for the cgs in state s_b */
+  ncg   = s_b->s.ncg_gl;
+  cg_gl = s_b->s.cg_gl;
+  partsum = 0;
+  i = 0;
+  gf = 0;
+  for(c=0; c<ncg; c++) {
+    cg = cg_gl[c];
+    a0 = index[cg];
+    a1 = index[cg+1];
+    for(a=a0; a<a1; a++) {
+      if (mdatoms->cFREEZE)
+	gf = atom[i].grpnr[egcFREEZE];
+      for(m=0; m<DIM; m++) {
+	if (!opts->nFreeze[gf][m]) {
+	  partsum += (fb[i][m] - fmg[a][m])*fb[i][m];
+	}
+      }
+      i++;
+    }
+  }
+  
+  sfree(fmg);
+
+  return partsum;
+}
+
+static real pr_beta(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
+		    t_topology *top,
+		    em_state_t *s_min,em_state_t *s_b)
+{
+  rvec *fm,*fb;
+  double sum;
+  int  gf,i,m;
+
+  /* This is just the classical Polak-Ribiere calculation of beta;
+   * it looks a bit complicated since we take freeze groups into account,
+   * and might have to sum it in parallel runs.
+   */
+  
+  if (!DOMAINDECOMP(cr) ||
+      (s_min->s.ddp_count == cr->dd->ddp_count &&
+       s_b->s.ddp_count   == cr->dd->ddp_count)) {
+    fm = s_min->f;
+    fb = s_b->f;
+    sum = 0;
+    gf = 0;
+    /* This part of code can be incorrect with DD,
+     * since the atom ordering in s_b and s_min might differ.
+     */
+    for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++) {
+      if (mdatoms->cFREEZE)
+	gf = mdatoms->cFREEZE[i];
+      for(m=0; m<DIM; m++)
+	if (!opts->nFreeze[gf][m]) {
+	  sum += (fb[i][m] - fm[i][m])*fb[i][m];
+	} 
+    }
+  } else {
+    /* We need to reorder cgs while summing */
+    sum = reorder_partsum(cr,opts,mdatoms,top,s_min,s_b);
+  }
+  if (PAR(cr))
+    gmx_sumd(1,&sum,cr);
+
+  return sum/sqr(s_min->fnorm);
+}
 
 time_t do_cg(FILE *fplog,t_commrec *cr,
 	     int nfile,t_filenm fnm[],
@@ -611,15 +699,17 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   em_state_t *s_min,*s_a,*s_b,*s_c;
   t_topology *top;
   rvec   *f_global,*p,*sf,*sfm;
-  double gpa,gpb,gpc,tmp,sum[2],minstep,fnorm,fnorm2,fnorm2_old;
+  double gpa,gpb,gpc,tmp,sum[2],minstep;
+  real   fnormn;
   real   stepsize;	
   real   a,b,c,beta=0.0;
+  real   epot_repl=0;
   real   pnorm;
   t_mdebin   *mdebin;
   bool   bNS=TRUE,converged,foundlower;
   rvec   mu_tot;
   time_t start_t;
-  bool   do_log,do_ene,do_x,do_f;
+  bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
   tensor force_vir,shake_vir,vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
   int    fp_trn,fp_ene;
@@ -679,23 +769,20 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   }
   where();
 
-  /* Calculate the norm of the force (take all CPUs into account) */
-  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,s_min->f);
-  fnorm2 = fnorm*fnorm;
-
   /* Estimate/guess the initial stepsize */
-  stepsize = inputrec->em_stepsize/fnorm;
-
+  stepsize = inputrec->em_stepsize/s_min->fnorm;
  
   if (MASTER(cr)) {
     fprintf(stderr,"   F-max             = %12.5e on atom %d\n",
 	    s_min->fmax,s_min->a_fmax+1);
-    fprintf(stderr,"   F-Norm            = %12.5e\n",fnorm);
+    fprintf(stderr,"   F-Norm            = %12.5e\n",
+	    s_min->fnorm/sqrt(state_global->natoms));
     fprintf(stderr,"\n");
     /* and copy to the log file too... */
     fprintf(fplog,"   F-max             = %12.5e on atom %d\n",
 	    s_min->fmax,s_min->a_fmax+1);
-    fprintf(fplog,"   F-Norm            = %12.5e\n",fnorm);
+    fprintf(fplog,"   F-Norm            = %12.5e\n",
+	    s_min->fnorm/sqrt(state_global->natoms));
     fprintf(fplog,"\n");
   }  
   /* Start the loop over CG steps.		
@@ -733,7 +820,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
       gmx_sumd(1,&gpa,cr);
 
     /* Calculate the norm of the search vector */
-    pnorm=f_norm(cr,&(inputrec->opts),mdatoms,p);
+    get_f_norm_max(cr,&(inputrec->opts),mdatoms,p,&pnorm,NULL,NULL);
     
     /* Just in case stepsize reaches zero due to numerical precision... */
     if(stepsize<=0)	  
@@ -910,25 +997,17 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	  fprintf(debug,"CGE: EpotA %f EpotB %f EpotC %f gpb %f\n",
 		  s_a->epot,s_b->epot,s_c->epot,gpb);
 
+	epot_repl = s_b->epot;
+	
 	/* Keep one of the intervals based on the value of the derivative at the new point */
 	if (gpb > 0) {
 	  /* Replace c endpoint with b */
 	  swap_em_state(s_b,s_c);
-	  /* Setting s_b->epot here is necessary here, although this make s_b
-	   * inconsistent, but I don't know how to fix this B. Hess 2008-01-08
-	   * The code seems to work though.
-	   */
-	  s_b->epot = s_c->epot;
 	  c = b;
 	  gpc = gpb;
 	} else {
 	  /* Replace a endpoint with b */
 	  swap_em_state(s_b,s_a);
-	  /* Setting s_b->epot here is necessary here, although this make s_b
-	   * inconsistent, but I don't know how to fix this B. Hess 2008-01-08
-	   * The code seems to work though.
-	   */
-	  s_b->epot = s_a->epot;
 	  a = b;
 	  gpa = gpb;
 	}
@@ -938,10 +1017,10 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	 * Never run more than 20 steps, no matter what.
 	 */
 	nminstep++;
-      } while ((s_b->epot > s_a->epot || s_b->epot > s_c->epot) &&
+      } while ((epot_repl > s_a->epot || epot_repl > s_c->epot) &&
 	       (nminstep < 20));     
       
-      if (fabs(s_b->epot - s_min->epot) < fabs(s_min->epot)*GMX_REAL_EPS ||
+      if (fabs(epot_repl - s_min->epot) < fabs(s_min->epot)*GMX_REAL_EPS ||
 	  nminstep >= 20) {
 	/* OK. We couldn't find a significantly lower energy.
 	 * If beta==0 this was steepest descent, and then we give up.
@@ -990,45 +1069,14 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     if (nstcg && ((step % nstcg)==0)) 
       beta = 0.0;
     else {
-      fnorm2_old=fnorm2;
-      fnorm2=0;
-      
-      /* fnorm2_old cannot be zero, because then we would have converged
+      /* s_min->fnorm cannot be zero, because then we would have converged
        * and broken out.
        */
 
-      /* This is just the classical Polak-Ribiere calculation of beta;
-       * it looks a bit complicated since we take freeze groups into account,
-       * and might have to sum it in parallel runs.
-       */
-      
-      sf  = s_b->f;
-      sfm = s_min->f;
-      tmp = 0;
-      gf = 0;
-      /* This part of code is incorrect with DD,
-       * since the atom ordining in s_b and s_min might differ.
-       */
-      for(i=mdatoms->start; i<mdatoms->start+mdatoms->homenr; i++) {
-	if (mdatoms->cFREEZE)
-	  gf = mdatoms->cFREEZE[i];
-	for(m=0; m<DIM; m++)
-	  if (!inputrec->opts.nFreeze[gf][m]) {
-	    fnorm2 += sf[i][m]*sf[i][m];
-	    tmp += (sf[i][m] - sfm[i][m])*sf[i][m];
-	  } 
-      }
-      if (PAR(cr)) {
-	sum[0] = fnorm2;
-	sum[1] = tmp;
-	gmx_sumd(2,sum,cr);
-	fnorm2 = sum[0];
-	tmp    = sum[1];
-      }	
       /* Polak-Ribiere update.
        * Change to fnorm2/fnorm2_old for Fletcher-Reeves
        */
-      beta = tmp/fnorm2_old;
+      beta = pr_beta(cr,&inputrec->opts,mdatoms,top_global,s_min,s_b);
     }
     /* Limit beta to prevent oscillations */
     if (fabs(beta) > 5.0)
@@ -1044,7 +1092,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
       ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
       if(bVerbose)
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
-		step,s_min->epot,sqrt(fnorm2/(3*state_global->natoms)),
+		step,s_min->epot,s_min->fnorm/sqrt(state_global->natoms),
 		s_min->fmax,s_min->a_fmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
@@ -1082,7 +1130,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
      * we don't have to do it again, but otherwise print the final values.
      */
     if(!do_log) {
-      /* Write final value to log since we didn't do anythin last step */
+      /* Write final value to log since we didn't do anything the last step */
       print_ebin_header(fplog,step,step,s_min->s.lambda);
     }
     if (!do_ene || !do_log) {
@@ -1102,20 +1150,20 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
   
   /* Only write the trajectory if we didn't do it last step */
-  write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
+  write_traj(cr,fp_trn,TRUE,FALSE,(inputrec->nstfout>0),0,FALSE,0,
 	     top,step,(real)step,&s_min->s,state_global,s_min->f,f_global);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state_global->x,NULL,
 		   state_global->box);
   
-  fnorm = sqrt(fnorm2/(3*state_global->natoms));
+  fnormn = s_min->fnorm/sqrt(state_global->natoms);
   
   if (MASTER(cr)) {
-    print_converged(stderr,CG,inputrec->em_tol,step,converged,
-		    number_steps,s_min->epot,s_min->fmax,s_min->a_fmax,fnorm);
-    print_converged(fplog,CG,inputrec->em_tol,step,converged,
-		    number_steps,s_min->epot,s_min->fmax,s_min->a_fmax,fnorm);
+    print_converged(stderr,CG,inputrec->em_tol,step,converged,number_steps,
+		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
+    print_converged(fplog,CG,inputrec->em_tol,step,converged,number_steps,
+		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
     
     fprintf(fplog,"\nPerformed %d energy evaluations in total.\n",neval);
   }
@@ -1281,9 +1329,9 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   /* This is the starting energy */
   Epot=ener[F_EPOT];
   
-  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,f);
-  
-  fmax = f_max(cr,&(inputrec->opts),mdatoms,f,&nfmax);
+  fnorm = ems.fnorm;
+  fmax  = ems.fmax;
+  nfmax = ems.a_fmax;
   
   /* Set the initial step.
    * since it will be multiplied by the non-normalized search direction 
@@ -1294,12 +1342,12 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) {
     fprintf(stderr,"Using %d BFGS correction steps.\n\n",nmaxcorr);
     fprintf(stderr,"   F-max             = %12.5e on atom %d\n",fmax,nfmax+1);
-    fprintf(stderr,"   F-Norm            = %12.5e\n",fnorm);
+    fprintf(stderr,"   F-Norm            = %12.5e\n",fnorm/sqrt(state->natoms));
     fprintf(stderr,"\n");
     /* and copy to the log file too... */
     fprintf(fplog,"Using %d BFGS correction steps.\n\n",nmaxcorr);
     fprintf(fplog,"   F-max             = %12.5e on atom %d\n",fmax,nfmax+1);
-    fprintf(fplog,"   F-Norm            = %12.5e\n",fnorm);
+    fprintf(fplog,"   F-Norm            = %12.5e\n",fnorm/sqrt(state->natoms));
     fprintf(fplog,"\n");
   }   
   
@@ -1497,6 +1545,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 			step,FALSE);
 	EpotB = ems.epot;
 	
+	fnorm = ems.fnorm;
+	
 	for(gpb=0,i=0; i<n; i++) 
 	  gpb -= s[i]*fb[i];   /* f is negative gradient, thus the sign */
 	
@@ -1555,7 +1605,6 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	  for(i=0;i<n;i++)
 	    dx[point][i]=ff[i];
 	  /* Reset stepsize */
-	  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,f);
 	  stepsize = 1.0/fnorm;
 	  continue;
 	}
@@ -1671,16 +1720,14 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     stepsize=1.0;
     
     /* Test whether the convergence criterion is met */
-    fmax = f_max(cr,&(inputrec->opts),mdatoms,f,&nfmax);
-    
-    fnorm = f_norm(cr,&(inputrec->opts),mdatoms,f);
+    get_f_norm_max(cr,&(inputrec->opts),mdatoms,f,&fnorm,&fmax,&nfmax);
     
     /* Print it if necessary */
     if (MASTER(cr)) {
       ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
       if(bVerbose)
 	fprintf(stderr,"\rStep %d, Epot=%12.6e, Fnorm=%9.3e, Fmax=%9.3e (atom %d)\n",
-		step,Epot,fnorm/sqrt(3*state->natoms),fmax,nfmax+1);
+		step,Epot,fnorm/sqrt(state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
@@ -1735,13 +1782,11 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top->name, &(top->atoms),state->x,NULL,state->box);
   
-  fnorm=fnorm/sqrt(3*state->natoms);
-  
   if (MASTER(cr)) {
     print_converged(stderr,LBFGS,inputrec->em_tol,step,converged,
-		    number_steps,Epot,fmax,nfmax,fnorm);
+		    number_steps,Epot,fmax,nfmax,fnorm/sqrt(state->natoms));
     print_converged(fplog,LBFGS,inputrec->em_tol,step,converged,
-		    number_steps,Epot,fmax,nfmax,fnorm);
+		    number_steps,Epot,fmax,nfmax,fnorm/sqrt(state->natoms));
     
     fprintf(fplog,"\nPerformed %d energy evaluations in total.\n",neval);
   }
@@ -1775,7 +1820,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   rvec       *f_global;
   t_topology *top;
   real   stepsize,constepsize;
-  real   ustep,dvdlambda,fnorm;
+  real   ustep,dvdlambda,fnormn;
   int        fp_trn,fp_ene; 
   t_mdebin   *mdebin; 
   bool   bDone,bAbort,do_x,do_f; 
@@ -1945,7 +1990,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   write_traj(cr,fp_trn,TRUE,FALSE,inputrec->nstfout,0,FALSE,0,
 	     top,count,(real)count,&s_min->s,state_global,s_min->f,f_global);
 
-  fnorm = f_norm(cr,&(inputrec->opts),mdatoms,s_min->f);
+  fnormn = s_min->fnorm/sqrt(state_global->natoms);
 
   if (MASTER(cr)) {
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
@@ -1953,9 +1998,9 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		   state_global->x,NULL,state_global->box);
     
     print_converged(stderr,SD,inputrec->em_tol,count,bDone,nsteps,
-		    s_min->epot,s_min->fmax,s_min->a_fmax,fnorm);
+		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
     print_converged(fplog,SD,inputrec->em_tol,count,bDone,nsteps,
-		    s_min->epot,s_min->fmax,s_min->a_fmax,fnorm);
+		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
   }
 
   finish_em(fplog,cr,fp_trn,fp_ene);
@@ -1999,7 +2044,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     /* added with respect to mdrun */
     int        idum,jdum,kdum,row,col;
     real       der_range=10.0*sqrt(GMX_REAL_EPS);
-    real       fmax;
+    real       fnorm,fmax;
     real       dfdx;
     
     snew(fneg,top->atoms.nr);
@@ -2089,7 +2134,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 
   
     /* if forces not small, warn user */
-    fmax=f_max(cr,&(inputrec->opts),mdatoms,f,&nfmax);
+    get_f_norm_max(cr,&(inputrec->opts),mdatoms,f,&fnorm,&fmax,&nfmax);
     fprintf(stderr,"Maximum force:%12.5e\n",fmax);
     if (fmax > 1.0e-3) 
     {
