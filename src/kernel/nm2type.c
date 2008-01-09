@@ -58,7 +58,7 @@
 #include "toppush.h"
 #include "pdb2top.h"
 #include "topexcl.h"
-#include "x2top.h"
+#include "x2top_nm2type.h"
 
 t_nm2type *rd_nm2type(char *ff,int *nnm)
 {

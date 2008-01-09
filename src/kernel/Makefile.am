@@ -4,87 +4,80 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
-LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
+noinst_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la
 
+LDADD = $(noinst_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
+
+libgmxpreprocess@LIBSUFFIX@_la_LIBADD       =
+libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
+
+libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
+add_par.c	add_par.h	\
+compute_io.c	compute_io.h	\
+convparm.c 	convparm.h	\
+gen_ad.c 	gen_ad.h	\
+gen_vsite.c	gen_vsite.h	\
+genhydro.c	genhydro.h	\
+gmxcpp.c	gmxcpp.h	\
+h_db.c		h_db.h		\
+hackblock.c	hackblock.h	\
+hizzie.c	hizzie.h	\
+pdb2top.h	pdb2top.c	\
+pgutil.c	pgutil.h	\
+readir.c	readir.h	\
+readpull.c	\
+resall.c	resall.h	\
+sorting.c 	sorting.h	\
+specbond.c	specbond.h	\
+ter_db.c	ter_db.h	\
+tomorse.c	\
+topcat.c 	topcat.h	\
+topdirs.c	topdirs.h	\
+topexcl.c	topexcl.h	\
+topio.c 	topio.h		\
+toppush.c 	toppush.h	\
+topshake.c 	topshake.h	\
+toputil.c	toputil.h	\
+tpbcmp.c	tpbcmp.h	\
+vsite_parm.c	vsite_parm.h	\
+xlate.c		xlate.h		
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
 	protonate	luck		gmxdump				\
-	gmxcheck  	x2top		ffscan
+	gmxcheck	x2top 		ffscan
 
-gmxdump_SOURCES = gmxcpp.c gmxcpp.h gmxdump.c
+gmxdump_SOURCES = gmxdump.c
 
-grompp_SOURCES = \
-	topio.c 	toppush.c 	topcat.c 	topshake.c 	\
-	convparm.c 	tomorse.c	sorting.c 	compute_io.c	\
-	vsite_parm.c	readir.c  	readpull.c	\
-	add_par.c	topexcl.c	gmxcpp.h	gmxcpp.c	\
-	toputil.c	topdirs.c	grompp.c	add_par.h	\
-	topio.h		toputil.h	convparm.h	compute_io.h	\
-	sorting.h	topdirs.h	toppush.h	vsite_parm.h	\
-	readir.h	topcat.h	topexcl.h	topshake.h	\
-	pgutil.c
+grompp_SOURCES = grompp.c
 
-tpbconv_SOURCES = \
-	readir.c	toputil.c	topdirs.c	add_par.c	\
-	topexcl.c	tpbconv.c	add_par.h	toputil.h	\
-	topdirs.h	readir.h	topexcl.h	readpull.c
+tpbconv_SOURCES = tpbconv.c
 
-pdb2gmx_SOURCES = \
-	hizzie.c	xlate.c		specbond.c	ter_db.c	\
-	h_db.c		genhydro.c     	pdb2top.c 	gen_ad.c 	\
-	gen_vsite.c	pgutil.c	resall.c	hackblock.c	\
-	add_par.c	topexcl.c 	toputil.c	topdirs.c	\
-	pdb2gmx.c	gen_ad.h	add_par.h	h_db.h		\
-	pdb2top.h	resall.h	toputil.h	xlate.h		\
-	gen_vsite.h	hackblock.h	pgutil.h	ter_db.h	\
-	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
-	topexcl.h
+pdb2gmx_SOURCES = pdb2gmx.c
 
-#rtp2xml_SOURCES = \
-#	hizzie.c	xlate.c		specbond.c	ter_db.c	\
-#	h_db.c		genhydro.c     	pdb2top.c 	gen_ad.c 	\
-#	gen_dum.c	pgutil.c	resall.c	hackblock.c	\
-#	add_par.c	topexcl.c 	toputil.c	topdirs.c	\
-#	rtp2xml.c	gen_ad.h	add_par.h	h_db.h		\
-#	pdb2top.h	resall.h	toputil.h	xlate.h		\
-#	gen_dum.h	hackblock.h	pgutil.h	ter_db.h	\
-#	topdirs.h	genhydro.h	hizzie.h	specbond.h	\
-#	topexcl.h
+protonate_SOURCES = protonate.c
 
-protonate_SOURCES = \
-	hackblock.c	ter_db.c	h_db.c		genhydro.c	\
-	pgutil.c	resall.c	add_par.c	topexcl.c	\
-	toputil.c	topdirs.c	protonate.c	add_par.h	\
-	h_db.h		resall.h	toputil.h	hackblock.h	\
-	pgutil.h	ter_db.h	topdirs.h	topexcl.h
-
-gmxcheck_SOURCES = \
-	gmxcheck.c	tpbcmp.c	tpbcmp.h
+gmxcheck_SOURCES = gmxcheck.c
 
 x2top_SOURCES = \
-	toppush.c 	nm2type.c	pdb2top.c 	gen_ad.c 	\
-	gen_vsite.c	pgutil.c	resall.c	hackblock.c	\
-	add_par.c	topexcl.c	toputil.c	topdirs.c	\
-	x2top.c		add_par.h	gen_ad.h	pdb2top.h	\
-	resall.h	toputil.h	gen_vsite.h	hackblock.h	\
-	pgutil.h	topdirs.h	toppush.h	topexcl.h	\
-	x2top.h
+	x2top.c	\
+	x2top_qgen.c	x2top_qgen.h	\
+	x2top_matrix.c	x2top_matrix.h	\
+	x2top_core.c	x2top_core.h	\
+	nm2type.c	x2top_nm2type.h
 
 mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	\
 	ionize.c 	ionize.h 	xmdrun.h	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
-	xutils.c	compute_io.c	compute_io.h		\
-	md.c		mdrun.c		genalg.c	genalg.h
+	xutils.c	md.c		mdrun.c		genalg.c	genalg.h
 
 ffscan_SOURCES = \
 	ffscan.c	\
 	glaasje.c 	glaasje.h 	gctio.c 	\
 	ionize.c 	ionize.h 	\
 	do_gct.c 	repl_ex.c	repl_ex.h	\
-	xutils.c	compute_io.c    compute_io.h   \
-	md.c		genalg.c
+	xutils.c	md.c		genalg.c
 
 
 # shortcut to install only mdrun
@@ -98,5 +91,4 @@ install-mdrun: mdrun$(EXEEXT)
 	else :; fi 
 
 CLEANFILES = *~ \\\#*
-
 
