@@ -46,7 +46,7 @@ typedef struct {
   int    ncg_ideal;     /* The ideal number of cg's per cell    */
   ivec	 n;	        /* The dimension of the grid		*/
   int    ncells;	/* Total number of cells		*/
-  int    maxcells;	/* Max number of cells (when box grows)	*/
+  int    cells_nalloc;	/* Allocation size of index and nra    	*/
   ivec   ncpddc;        /* The number of cells per DD cell      */
   rvec   cell_size;     /* The size of the cells                */
   rvec   cell_offset;   /* The offset of the cell (0,0,0)       */
@@ -60,6 +60,7 @@ typedef struct {
   real   *dcx2;         /* Squared distance from atom to j-cell */
   real   *dcy2;         /* Squared distance from atom to j-cell */
   real   *dcz2;         /* Squared distance from atom to j-cell */
+  int    dc_nalloc;     /* Allocation size of dcx2, dyc2, dcz2  */
 } t_grid;
 
 #endif

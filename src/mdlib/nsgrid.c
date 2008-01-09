@@ -197,28 +197,6 @@ void init_grid(FILE *fplog,t_forcerec *fr,const gmx_domdec_t *dd,
   if (fplog)
     fprintf(fplog,"Grid: %d x %d x %d cells\n",
 	    grid->n[XX],grid->n[YY],grid->n[ZZ]);
-
-  grid->ncells   = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
-  grid->maxcells = 2*grid->ncells;
-  snew(grid->index,grid->maxcells);
-  snew(grid->nra,grid->maxcells);
-  if (dd) {
-    grid->nr       = 0;
-    grid->nr_alloc = 0;
-  } else {
-    grid->nr       = ncg;
-    grid->nr_alloc = grid->nr + 1;
-    snew(grid->cell_index,grid->nr_alloc);
-    snew(grid->a,grid->nr_alloc);
-  }
-
-  /* Allocate with double the initial size for box scaling */
-  snew(grid->dcx2,2*grid->n[XX]);
-  snew(grid->dcy2,2*grid->n[YY]);
-  snew(grid->dcz2,2*grid->n[ZZ]);
-
-  if (debug) 
-    fprintf(debug,"Succesfully allocated memory for grid pointers.");
 }
 
 void done_grid(t_grid *grid)
@@ -226,12 +204,16 @@ void done_grid(t_grid *grid)
   grid->nr      = 0;
   clear_ivec(grid->n);
   grid->ncells  = 0;
-  grid->maxcells= 0;
   sfree(grid->cell_index);
   sfree(grid->a);
   sfree(grid->index);
   sfree(grid->nra);
-  
+  grid->cells_nalloc = 0;
+  sfree(grid->dcx2);
+  sfree(grid->dcy2);
+  sfree(grid->dcz2);
+  grid->dc_nalloc = 0;
+
   if (debug) 
     fprintf(debug,"Succesfully freed memory for grid pointers.");
 }
@@ -282,7 +264,7 @@ void set_grid_ncg(t_grid *grid,int ncg)
 void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
 		int ePBC,matrix box,real rlistlong,int ncg)
 {
-  int    i,k,m,ncells;
+  int    i,m;
   ivec   cx;
 
   /* Must do this every step because other routines may override it. */
@@ -290,25 +272,25 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
 
   set_grid_sizes(box,rlistlong,dd,grid,ncg);
 
-  ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
+  grid->ncells = grid->n[XX]*grid->n[YY]*grid->n[ZZ];
 
-  if (grid->ncells != ncells) {
-    if (ncells > grid->maxcells) { 
-      srenew(grid->nra,ncells);
-      srenew(grid->index,ncells);
-      for(i=grid->maxcells; (i<ncells); i++) {
-	grid->nra[i] = 0;
-	grid->index[i] = 0;
-      }
-      if (fplog)
-	fprintf(fplog,"WARNING: your box is exploding! (ncells = %d)\n",
-		ncells);
-      grid->maxcells = ncells;
-    }
-    grid->ncells = ncells;
+  if (grid->ncells+1 > grid->cells_nalloc) { 
+    /* Allocate double the size so we have some headroom */
+    grid->cells_nalloc = 2*grid->ncells;
+    srenew(grid->nra,  grid->cells_nalloc+1);
+    srenew(grid->index,grid->cells_nalloc+1);
   }
   
-  for(i=0; (i<ncells); i++)
+  m = max(grid->n[XX],max(grid->n[YY],grid->n[ZZ]));
+  if (m > grid->dc_nalloc) {
+    /* Allocate with double the initial size for box scaling */
+    grid->dc_nalloc = 2*m;
+    srenew(grid->dcx2,grid->dc_nalloc);
+    srenew(grid->dcy2,grid->dc_nalloc);
+    srenew(grid->dcz2,grid->dc_nalloc);
+  }
+  
+  for(i=0; (i<grid->ncells); i++)
     grid->nra[i]=0;
   //for(i=0; i<grid->maxcells; i++)
   //  grid->index[i] = 10000*random();
