@@ -119,6 +119,8 @@ vsite.h \
 wgms.h \
 wman.h \
 writeps.h \
+x2top_qgen.h \
+x2top_eemprops.h \
 xdrf.h \
 xtcio.h \
 xvgr.h
