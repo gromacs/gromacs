@@ -736,7 +736,7 @@ int main (int argc, char *argv[])
   t_molinfo    msys;
   t_atomtype   *atype;
   t_inputrec   *ir;
-  int          natoms,nvsite,nc,comb;
+  int          natoms,nvsite,comb;
   t_params     *plist;
   t_state      state;
   matrix       box;
@@ -834,19 +834,19 @@ int main (int argc, char *argv[])
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
   
-  nc = count_constraints(msys.plist);
-  if (ir->ePull == epullCONSTRAINT)
-    nc += ir->pull->ngrp;
-  if ((ir->eI == eiCG || ir->eI == eiLBFGS) && nc) {
-    fprintf(stderr,
-	    "ERROR: Can not do %s with constraints (%d)\n",EI(ir->eI),nc);
-    nerror++;
-  }
-  if (ir->bPeriodicMols && (ir->eConstrAlg == estSHAKE) && nc) {
-    fprintf(stderr,
-	    "ERROR: can not do periodic molecules with %s, use %s\n",
-	    eshake_names[estSHAKE],eshake_names[estLINCS]);
-    nerror++;
+  if (count_constraints(msys.plist) && (ir->eConstrAlg == estSHAKE)) {
+    if (ir->eI == eiCG || ir->eI == eiLBFGS) {
+      fprintf(stderr,
+	      "ERROR: Can not do %s with %s, use %s\n",
+	      EI(ir->eI),eshake_names[estSHAKE],eshake_names[estLINCS]);
+      nerror++;
+    }
+    if (ir->bPeriodicMols) {
+      fprintf(stderr,
+	      "ERROR: can not do periodic molecules with %s, use %s\n",
+	      eshake_names[estSHAKE],eshake_names[estLINCS]);
+      nerror++;
+    }
   }
 
   /* If we are doing GBSA, check that we got the parameters we need */
@@ -890,7 +890,7 @@ int main (int argc, char *argv[])
   }
 
   if (nerror) {
-    print_warn_num();
+    print_warn_num(FALSE);
     
     gmx_fatal(FARGS,"There were %d error(s) processing your input",nerror);
   }
@@ -1041,7 +1041,7 @@ int main (int argc, char *argv[])
 
   state.lambda = ir->init_lambda;
   write_tpx_state(ftp2fn(efTPX,NFILE,fnm),0,ir->init_t,ir,&state,sys);
-  print_warn_num();
+  print_warn_num(TRUE);
   
   thanx(stderr);
   

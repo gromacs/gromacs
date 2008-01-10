@@ -218,7 +218,10 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   t_ilist *settle;
   int     nsettle;
   real    mO,mH,dOH,dHH;
-    
+
+  if (econq == econqForce && !EI_ENERGY_MINIMIZATION(ir->eI))
+    gmx_incons("constrain called for forces while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
+
   bOK = TRUE;
 
   start  = md->start;
@@ -257,36 +260,51 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   
   settle  = &top->idef.il[F_SETTLE];
   if (settle->nr > 0) {
-    if (econq != econqCoord)
-	gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SETTLE");
-
     nsettle = settle->nr/2;
     mO   = md->massT[settle->iatoms[1]];
     mH   = md->massT[settle->iatoms[1]+1];
     dOH  = top->idef.iparams[settle->iatoms[0]].settle.doh;
     dHH  = top->idef.iparams[settle->iatoms[0]].settle.dhh;
-    csettle(fplog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
-	    invdt,v[0],vir!=NULL,rmdr,&error);
-    inc_nrnb(nrnb,eNR_SETTLE,nsettle);
-    if (v != NULL)
-      inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
-    if (vir != NULL)
-      inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
+
+    switch (econq) {
+    case econqCoord:
+      csettle(fplog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
+	      invdt,v[0],vir!=NULL,rmdr,&error);
+      inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+      if (v != NULL)
+	inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);
+      if (vir != NULL)
+	inc_nrnb(nrnb,eNR_CONSTR_VIR,nsettle*3);
     
-    bOK = (error < 0);
-    if (!bOK && constr->maxwarn >= 0) {
-      char buf[256];
-      sprintf(buf,
-	      "\nt = %.3f ps: Water molecule starting at atom %d can not be "
-	      "settled.\nCheck for bad contacts and/or reduce the timestep.\n",
-	      ir->init_t+step*ir->delta_t,
-	      glatnr(cr->dd,settle->iatoms[error*2+1]));
-      if (fplog)
-	fprintf(fplog,"%s",buf);
-      fprintf(stderr,"%s",buf);
-      constr->warncount_settle++;
-      if (constr->warncount_settle > constr->maxwarn)
-	too_many_constraint_warnings(-1,constr->warncount_settle);
+      bOK = (error < 0);
+      if (!bOK && constr->maxwarn >= 0) {
+	char buf[256];
+	sprintf(buf,
+		"\nt = %.3f ps: Water molecule starting at atom %d can not be "
+		"settled.\nCheck for bad contacts and/or reduce the timestep.\n",
+		ir->init_t+step*ir->delta_t,
+		glatnr(cr->dd,settle->iatoms[error*2+1]));
+	if (fplog)
+	  fprintf(fplog,"%s",buf);
+	fprintf(stderr,"%s",buf);
+	constr->warncount_settle++;
+	if (constr->warncount_settle > constr->maxwarn)
+	  too_many_constraint_warnings(-1,constr->warncount_settle);
+	break;
+      case econqDeriv:
+      case econqForce:
+	settle_proj(fplog,nsettle,settle->iatoms,x,dOH,dHH,mO,mH,
+		    xprime,min_proj);
+
+	/* This is an overestimate */
+	inc_nrnb(nrnb,eNR_SETTLE,nsettle);
+	break;
+      case econqDeriv_FlexCon:
+	/* Nothing to do, since the are no flexible constraints in settles */
+	break;
+      default:
+	gmx_incons("Unknown constraint quantity for settle");
+      }
     }
   }
 

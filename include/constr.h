@@ -39,7 +39,11 @@
 
 #include "typedefs.h"
 
-enum { econqCoord, econqDeriv, econqDeriv_FlexCon };
+enum { econqCoord,         /* Constrain coordinates (mass weighted)     */ 
+       econqDeriv,         /* Constrain vel. or acc. (mass weighted)    */
+       econqDeriv_FlexCon, /* As econqDeriv, but only output flex. con. */
+       econqForce          /* Constrain forces (non mass-weighted)      */
+};
 
 extern int n_flexible_constraints(struct gmx_constr *constr);
 /* Returns the total number of flexible constraints in the system */
@@ -87,6 +91,13 @@ extern void csettle(FILE *log,
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
 		    int *xerror);
+
+extern void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
+			real dOH,real dHH,real invmO,real invmH,
+			rvec *der,rvec *derp);
+/* Analytical algorithm to subtract the components of derivatives
+ * of coordinates working on settle type constraint.
+ */
 
 extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 		   real dist2[],real xp[],real rij[],real m2[],real omega,

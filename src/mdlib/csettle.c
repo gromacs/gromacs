@@ -60,6 +60,90 @@ static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 #endif
 
 
+void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
+		 real dOH,real dHH,real invmO,real invmH,
+		 rvec *der,rvec *derp)
+{
+  /* Settle for projection out constraint components
+   * of derivatives of the coordinates.
+   * Berk Hess 2008-1-10
+   */
+
+  /* Initialized data */
+  static bool bFirst=TRUE;
+  static real imO,imH,invdOH,invdHH;
+  static matrix invmat;
+
+  matrix mat;
+  int i,m,ow1,hw2,hw3;
+  rvec roh2,roh3,rhh,dc,fc;
+
+  if (bFirst) {
+    if (fp)
+      fprintf(fp,"Going to use settle for derivatives (%d waters)\n",nsettle);
+
+    imO = invmO;
+    imH = invmH;
+
+    /* Construct the constraint coupling matrix */
+    mat[0][0] = imO + imH;
+    mat[0][1] = imO*(1 - 0.5*dHH*dHH/(dOH*dOH));
+    mat[0][2] = imH*0.5*dHH/dOH;
+    mat[1][1] = mat[0][0];
+    mat[1][2] = mat[0][2];
+    mat[2][2] = imH + imH;
+    mat[1][0] = mat[0][1];
+    mat[2][0] = mat[0][2];
+    mat[2][1] = mat[1][2];
+
+    m_inv(mat,invmat);
+
+    invdOH = 1/dOH;
+    invdHH = 1/dHH;
+
+    bFirst = FALSE;
+  }
+
+#ifdef PRAGMAS
+#pragma ivdep
+#endif
+  for (i=0; i<nsettle; i++) {
+    ow1 = iatoms[i*2+1];
+    hw2 = ow1 + 1;
+    hw3 = ow1 + 2;
+    
+    for(m=0; m<DIM; m++)
+      roh2[m] = (x[ow1][m] - x[hw2][m])*invdOH;
+    for(m=0; m<DIM; m++)
+      roh3[m] = (x[ow1][m] - x[hw3][m])*invdOH;
+    for(m=0; m<DIM; m++)
+      rhh [m] = (x[hw2][m] - x[hw3][m])*invdHH;
+    /* 18 flops */
+
+    clear_rvec(dc);
+    for(m=0; m<DIM; m++)
+      dc[0] += (der[ow1][m] - der[hw2][m])*roh2[m];
+    for(m=0; m<DIM; m++)
+      dc[1] += (der[ow1][m] - der[hw3][m])*roh3[m];
+    for(m=0; m<DIM; m++)
+      dc[2] += (der[hw2][m] - der[hw3][m])*rhh [m];
+    /* 27 flops */
+
+    /* Determine the correction forces */
+    mvmul(invmat,dc,fc);
+    /* 15 flops */
+
+    /* Subtract the corrections from derp */
+    for(m=0; m<DIM; m++) {
+      derp[ow1][m] -= imO*( fc[0]*roh2[m] + fc[1]*roh3[m]);
+      derp[hw2][m] -= imH*(-fc[0]*roh2[m] + fc[2]*rhh [m]);
+      derp[hw3][m] -= imH*(-fc[1]*roh3[m] - fc[2]*rhh [m]);
+    }
+    /* 45 flops */
+  }
+}
+
+
 /* Our local shake routine to be used when settle breaks down due to a zero determinant */
 static int xshake(real b4[], real after[], real dOH, real dHH, real mO, real mH) 
 {  

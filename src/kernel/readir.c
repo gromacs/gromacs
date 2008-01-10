@@ -122,9 +122,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   }
 
   /* SHAKE / LINCS */
-  sprintf(err_buf,"Constraints with %s not implemented. Specify -DFLEXIBLE on the defines line in your mdp file",EI(ir->eI));
-  CHECK((opts->nshake > 0) && (ir->eI == eiCG || ir->eI == eiLBFGS));
-
   if ( (opts->nshake > 0) && (opts->bMorse) ) {
     sprintf(warn_buf,
 	    "Using morse bond-potentials while constraining bonds is useless");
@@ -174,7 +171,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 
   if (ir->rlist == 0.0) {
     sprintf(err_buf,"can only have neighborlist cut-off zero (=infinite)\n"
-	    "with coulombtype = %s or coulombtype = %s"
+	    "with coulombtype = %s or coulombtype = %s "
 	    "and simple neighborsearch\n"
 	    "without periodic boundary conditions (pbc = %s) and\n"
 	    "rcoulomb and rvdw set to zero",
@@ -1738,18 +1735,16 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     (*nerror)++;
   }
 
-  if( (ir->eConstrAlg==estLINCS) && mol->plist[F_CONSTR].nr>0) {
+  if( (ir->eConstrAlg == estLINCS) && mol->plist[F_CONSTR].nr > 0) {
     /* If we have Lincs constraints: */
     if(ir->eI==eiMD && ir->etc==etcNO &&
        ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {
-      sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n"
-	      "You can safely ignore this if your system doesn't have any LINCS-constrained bonds;\n"
-	      "for water molecules we normally use the analytical SETTLE algorithm instead."); 
+      sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n");
       warning(NULL);
     }
     
-    if((ir->eI == eiSteep) && (ir->nLincsIter<4)) {
-      sprintf(warn_buf,"For minimization with LINCS constraints, lincs_iter should be 4 to 8.");
+    if ((ir->eI == eiCG || ir->eI == eiLBFGS) && (ir->nProjOrder<8)) {
+      sprintf(warn_buf,"For accurate %s with LINCS constraints, lincs_order should be 8 or more.",ei_names[ir->eI]);
       warning(NULL);
     }
   }

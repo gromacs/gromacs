@@ -303,9 +303,14 @@ void init_em(FILE *fplog,const char *title,
   update_mdatoms(mdatoms,state_global->lambda);
 
   if (constr) {
+    if (ir->eConstrAlg == estSHAKE && top_global->idef.il[F_CONSTR].nr > 0)
+      gmx_fatal(FARGS,"Can not do energy minimization with %s, use %s\n",
+		eshake_names[estSHAKE],eshake_names[estLINCS]);
+
     if (!DOMAINDECOMP(cr))
       set_constraints(constr,*top,ir,mdatoms,NULL);
 
+    /* Constrain the starting coordinates */
     dvdlambda=0;
     constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,*top,
 	      ir,cr,-1,mdatoms,
@@ -357,12 +362,15 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state)
 }
 
 static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
-		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2)
+		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
+		       gmx_constr_t constr,t_topology *top,t_nrnb *nrnb,
+		       int count)
 
 {
   t_state *s1,*s2;
   int  start,end,gf,i,m;
   rvec *x1,*x2;
+  real dvdlambda;
 
   s1 = &ems1->s;
   s2 = &ems2->s;
@@ -417,6 +425,14 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
       s2->cg_gl[i] = s1->cg_gl[i];
     s2->ddp_count_cg_gl = s1->ddp_count_cg_gl;
   }
+
+  if (constr) {
+    dvdlambda = 0;
+    constrain(NULL,TRUE,TRUE,constr,top,	
+	      ir,cr,count,md,
+	      s1->x,s2->x,NULL,s2->box,s2->lambda,
+	      &dvdlambda,0,NULL,NULL,nrnb,econqCoord);
+  }
 }
 
 static void do_x_step(t_commrec *cr,int n,rvec *x1,real a,rvec *f,rvec *x2)
@@ -461,34 +477,6 @@ static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
       f[i][m] = (x1[i][m] - x2[i][m])*a;
     }
   }
-}
-
-static void em_constrain_f(t_commrec *cr,gmx_constr_t constr,
-			   t_topology *top,t_mdatoms *mdatoms,
-			   t_inputrec *ir,int count,
-			   em_state_t *ems,real ustep,
-			   t_nrnb *nrnb)
-{
-  rvec *xcf;
-  real constepsize,dvdlambda;
-
-  snew(xcf,ems->s.natoms);
-
-  /* Determine the forces working on the constraints */
-  set_f_norm_max(cr,&(ir->opts),mdatoms,ems);
-  constepsize = ustep/ems->fmax;
-  do_x_step(cr,ems->s.natoms,ems->s.x,constepsize,ems->f,xcf);
-  
-  dvdlambda=0;
-  constrain(NULL,FALSE,FALSE,constr,top,
-	    ir,cr,count,mdatoms,
-	    ems->s.x,xcf,NULL,ems->s.box,ems->s.lambda,&dvdlambda,
-	    0,NULL,NULL,nrnb,econqCoord);
-  
-  /* Remove the forces working on the constraints */
-  do_x_sub(cr,ems->s.natoms,xcf,ems->s.x,1/constepsize,ems->f);
-
-  sfree(xcf);
 }
     
 static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
@@ -570,6 +558,14 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 
   ems->epot = ener[F_EPOT];
   
+  if (constr) {
+    /* Project out the constraint components of the force */
+    constrain(NULL,FALSE,FALSE,constr,top,
+	      inputrec,cr,count,mdatoms,
+	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,NULL,
+	      0,NULL,NULL,nrnb,econqForce);
+  }
+
   set_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
 }
 
@@ -761,7 +757,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 	       ener,&s_min->s,s_min->s.box,shake_vir,
-	       force_vir,vir,pres,grps,mu_tot,NULL);
+	       force_vir,vir,pres,grps,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,s_min->s.lambda);
     print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
@@ -891,7 +887,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     c = a + stepsize; /* reference position along line is zero */
     
     /* Take a trial step (new coords in s_c) */
-    do_em_step(cr,inputrec,mdatoms,s_min,c,s_min->s.cg_p,s_c);
+    do_em_step(cr,inputrec,mdatoms,s_min,c,s_min->s.cg_p,s_c,
+	       constr,top,nrnb,-1);
     
     neval++;
     /* Calculate energy for the trial step */
@@ -969,7 +966,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	  b = 0.5*(a+c);
 	
 	/* Take a trial step to this new point - new coords in s_b */
-	do_em_step(cr,inputrec,mdatoms,s_min,b,s_min->s.cg_p,s_b);
+	do_em_step(cr,inputrec,mdatoms,s_min,b,s_min->s.cg_p,s_b,
+		   constr,top,nrnb,-1);
 	
 	neval++;
 	/* Calculate energy for the trial step */
@@ -1097,7 +1095,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 		 ener,&s_min->s,s_min->s.box,shake_vir,
-		 force_vir,vir,pres,grps,mu_tot,NULL);
+		 force_vir,vir,pres,grps,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
@@ -1318,7 +1316,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 	       ener,state,state->box,shake_vir,
-	       force_vir,vir,pres,grps,mu_tot,NULL);
+	       force_vir,vir,pres,grps,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,state->lambda);
     print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
@@ -1731,7 +1729,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
 		 ener,state,state->box,shake_vir,
-		 force_vir,vir,pres,grps,mu_tot,NULL);
+		 force_vir,vir,pres,grps,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
@@ -1880,12 +1878,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     
     /* set new coordinates, except for first step */
     if (count > 0) {
-      do_em_step(cr,inputrec,mdatoms,s_min,stepsize,s_min->f,s_try);
-
-      constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,top,		
-		inputrec,cr,count,mdatoms,
-		s_min->s.x,s_try->s.x,NULL,s_min->s.box,s_min->s.lambda,
-		&dvdlambda,0,NULL,NULL,nrnb,econqCoord);
+      do_em_step(cr,inputrec,mdatoms,s_min,stepsize,s_min->f,s_try,
+		 constr,top,nrnb,count);
     }
     
     evaluate_energy(fplog,bVerbose,cr,
@@ -1896,11 +1890,6 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     
     if (MASTER(cr))
       print_ebin_header(fplog,count,count,s_try->s.lambda);
-    
-    if (constr) {
-      /* Remove the forces working on the constraints */
-      em_constrain_f(cr,constr,top,mdatoms,inputrec,count,s_try,ustep,nrnb);
-    }
 
     if (count == 0)
       s_min->epot = s_try->epot + 1;

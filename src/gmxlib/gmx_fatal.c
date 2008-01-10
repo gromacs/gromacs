@@ -437,9 +437,9 @@ void warning_error(const char *s)
   low_warning("ERROR",s);
 }
 
-void print_warn_num()
+void print_warn_num(bool bFatalError)
 {
-  if (nwarn > maxwarn) {
+  if (bFatalError && nwarn > maxwarn) {
     gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
 	      "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn,Program());
   } else if (nwarn > 0) {
@@ -451,7 +451,7 @@ void print_warn_num()
 void check_warning_error(int f_errno,const char *file,int line)
 {
   if (nwarn_error > 0) {
-    print_warn_num();
+    print_warn_num(FALSE);
     gmx_fatal(f_errno,file,line,"There %s %d error%s in input file(s)",
 	      (nwarn_error==1) ? "was" : "were",nwarn_error,
 	      (nwarn_error==1) ? ""    : "s");

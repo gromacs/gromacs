@@ -925,6 +925,7 @@ The relative tolerance is set with <b>shake_tol</b>, 0.0001 is a good value
 for "normal" MD. SHAKE does not support constraints between atoms
 on different nodes, thus it can not be used with domain decompositon
 when inter charge-group constraints are present.
+SHAKE also does not work with energy minimization.
 </dd>
 </dl></dd>
 <dt><h4>unconstrained_start:</h4></dt>
@@ -946,13 +947,12 @@ order is applied on top of the normal expansion only for the couplings
 within such triangles.
 For "normal" MD simulations an order of 4 usually suffices, 6 is
 needed for large time-steps with virtual sites or BD.
-For accurate energy minimization an order of 8 might be required.</dd>
+For accurate energy minimization an order of 8 or more might be required.</dd>
 <dt><h4>lincs_iter: (1)</h4></dt>
 <dd>Number of iterations to correct for rotational lengthening in LINCS.
 For normal runs a single step is sufficient, but for NVE
-runs where you want to conserve energy accurately you might want to increase
-it to 2, and for energy minimization with constraints it is sometimes necessary
-to use 4 or even 8 (double precision) iteration steps.
+runs where you want to conserve energy accurately or for accurate
+energy minimization you might want to increase it to 2.
 <dt><h4>lincs_warnangle: </b>(30) [degrees]</h4></dt>
 <dd>maximum angle that a bond can rotate before LINCS will complain</dd>
 
