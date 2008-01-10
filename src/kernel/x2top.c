@@ -82,11 +82,7 @@ int main(int argc, char *argv[])
     "from the input coordinates, the force constant are set with",
     "command line options."
     "The force fields supported currently are:[PAR]",
-    "G43a1  GROMOS96 43a1 Forcefield (official distribution)[PAR]",
     "oplsaa OPLS-AA/L all-atom force field (2001 aminoacid dihedrals)[PAR]",
-    "G43b1  GROMOS96 43b1 Vacuum Forcefield (official distribution)[PAR]",
-    "gmx    Gromacs Forcefield (a modified GROMOS87, see manual)[PAR]",
-    "G43a2  GROMOS96 43a2 Forcefield (development) (improved alkane dihedrals)[PAR]",
     "The corresponding data files can be found in the library directory",
     "with names like ffXXXX.YYY. Check chapter 5 of the manual for more",
     "information about file formats. By default the forcefield selection",
@@ -102,8 +98,6 @@ int main(int argc, char *argv[])
     "The atoms to atomtype translation table is incomplete (ffG43a1.n2t",
     "file in the $GMXLIB directory). Please extend it and send the results",
     "back to the GROMACS crew.[PAR]",
-    "Charges can be read in (when based on a QM calculation) or generated",
-    "using a variety of empirical algorithms (option [TT]-qgen[tt])."
   };
   FILE       *fp;
   t_params   plist[F_NRE];
