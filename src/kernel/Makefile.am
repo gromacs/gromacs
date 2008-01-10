@@ -40,7 +40,12 @@ topshake.c 	topshake.h	\
 toputil.c	toputil.h	\
 tpbcmp.c	tpbcmp.h	\
 vsite_parm.c	vsite_parm.h	\
-xlate.c		xlate.h		
+xlate.c		xlate.h		\
+x2top_qgen.c		\
+x2top_matrix.c	x2top_matrix.h	\
+x2top_core.c	x2top_core.h	\
+nm2type.c	x2top_nm2type.h	\
+x2top_eemprops.c
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
@@ -59,12 +64,7 @@ protonate_SOURCES = protonate.c
 
 gmxcheck_SOURCES = gmxcheck.c
 
-x2top_SOURCES = \
-	x2top.c	\
-	x2top_qgen.c	x2top_qgen.h	\
-	x2top_matrix.c	x2top_matrix.h	\
-	x2top_core.c	x2top_core.h	\
-	nm2type.c	x2top_nm2type.h
+x2top_SOURCES = x2top.c
 
 mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	\
