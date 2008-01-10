@@ -262,7 +262,6 @@ static void done_qgen(FILE *fp,t_atoms *atoms,t_qgen *qgen)
   sfree(qgen->chi);
   sfree(qgen->wj);
   sfree(qgen->qq);
-  sfree(qgen->x);
   for(i=0; (i<atoms->nr); i++) 
     sfree(qgen->Jab[i]);
   sfree(qgen->Jab);
@@ -285,7 +284,7 @@ static void generate_charges_yang(void *eem,t_atoms *atoms,rvec x[],
   iter = 0;
   do {
     qgen_calc_Jab(qgen,eem);
-    solve_q_eem(NULL,qgen,2.0);
+    solve_q_eem(debug,qgen,2.0);
     rms = 0;
     for(i=0; (i<atoms->nr); i++) {
       rms += sqr(qq[i] - qgen->qq[i]);
@@ -322,7 +321,7 @@ void generate_charges_sm(FILE *fp,
   iter = 0;
   do {
     qgen_calc_Jab(qgen,eem);
-    solve_q_eem(NULL,qgen,2.0);
+    solve_q_eem(fp,qgen,2.0);
     rms = 0;
     for(i=0; (i<atoms->nr); i++) {
       rms += sqr(qq[i] - qgen->qq[i]);

@@ -54,11 +54,13 @@ void mat_inv(FILE *fp,int n,double **a)
   if (fp) {
     fprintf(fp,"Inverting %d square matrix\n",n);
     test = alloc_matrix(n,n);  
-    for(j=0; (j<n); j++)  {
-      fprintf(fp,"%8.1f",a[i][j]);
-      test[i][j] = a[i][j];
+    for(i=0; (i<n); i++)  {
+      for(j=0; (j<n); j++)  {
+	fprintf(fp,"%8.1f",a[i][j]);
+	test[i][j] = a[i][j];
+      }
+      fprintf(fp,"\n");
     }
-    fprintf(fp,"\n");
   }
   snew(ipiv,n);
   lwork = n*n;
@@ -67,10 +69,10 @@ void mat_inv(FILE *fp,int n,double **a)
   info  = 0;
   F77_FUNC(dgetrf,DGETRF)(&n,&m,a[0],&lda,ipiv,&info);
   if (info != 0)
-    gmx_fatal(FARGS,"LU decomposition failed. Info = %d",info);
+    gmx_fatal(FARGS,"LU decomposition failed. Info = %d, n = %d",info,n);
   F77_FUNC(dgetri,DGETRI)(&n,a[0],&lda,ipiv,work,&lwork,&info);
   if (info != 0)
-    gmx_fatal(FARGS,"Matrix inversion failed. Info = %d",info);
+    gmx_fatal(FARGS,"Matrix inversion failed. Info = %d, n = %d",info,n);
     
   if (fp) {
     fprintf(fp,"And here is the result:\n");
