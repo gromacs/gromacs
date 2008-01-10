@@ -4,7 +4,7 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
-LDADD = ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
+LDADD = ../kernel/libgmxpreprocess@LIBSUFFIX@.la ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la
 
 
 EXTRA_DIST              = README  
@@ -13,11 +13,11 @@ EXTRA_DIST              = README
 # issue "make <program>" and copy the binary to the correct location yourself! 
 # Add new entries in Makefile.am!
 
-EXTRA_PROGRAMS 	=  	sigeps 		copyrgt 	mkyaw 	\
-			prfn 		options 	hrefify \
-			mkice 		total 		hexamer \
-			optwat 		addquote 	do_shift \
-			g_anavel  	anaf 	\
+EXTRA_PROGRAMS 	=  	sigeps 		copyrgt 	mkyaw 		\
+			prfn 		options 	hrefify 	\
+			mkice 		total 		hexamer 	\
+			optwat 		addquote 	do_shift 	\
+			g_anavel  	anaf 		tune_dip	\
 			ehole 		pmetest 	gen_table
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
