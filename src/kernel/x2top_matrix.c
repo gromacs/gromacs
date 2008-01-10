@@ -49,25 +49,17 @@ void mat_mult(FILE *fp,int n,int m,double **x,double **y,double **z)
 void mat_inv(FILE *fp,int n,double **a)
 {
   int i,j,m,lda,*ipiv,lwork,info;
-  double **test,**id,**b,*work;
-
-  test = alloc_matrix(n,n);  
-  b = alloc_matrix(n,n);
-  for(i=0; (i<n); i++) 
-    b[i][i] = 1.0;
-  if (fp)
+  double **test,**id,*work;
+  
+  if (fp) {
     fprintf(fp,"Inverting %d square matrix\n",n);
-  for(i=0; (i<n); i++) {
-    b[i][i] = 1;
+    test = alloc_matrix(n,n);  
     for(j=0; (j<n); j++)  {
-      if (fp) 
-	fprintf(fp,"%8.1f",a[i][j]);
+      fprintf(fp,"%8.1f",a[i][j]);
       test[i][j] = a[i][j];
     }
-    if (fp)
-      fprintf(fp,"\n");
+    fprintf(fp,"\n");
   }
-  /*  gaussj(a,n,b,n);*/
   snew(ipiv,n);
   lwork = n*n;
   snew(work,lwork);
@@ -88,15 +80,19 @@ void mat_inv(FILE *fp,int n,double **a)
       fprintf(fp,"\n");
     }
   }
-  id = alloc_matrix(n,n);
-  mat_mult(fp,n,n,test,a,id);
   if (fp) {
+    id = alloc_matrix(n,n);
+    mat_mult(fp,n,n,test,a,id);
     fprintf(fp,"And here is the product of A and Ainv\n");
     for(i=0; (i<n); i++) {
       for(j=0; (j<n); j++) 
 	fprintf(fp,"  %8.1e",id[i][j]);
       fprintf(fp,"\n");
     }
+    free_matrix(id,n);
+    free_matrix(test,n);
   }
+  sfree(ipiv);
+  sfree(work);
 }
 

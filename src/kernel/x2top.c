@@ -269,8 +269,20 @@ int main(int argc, char *argv[])
     else
       alg--;
   }
-  assign_charge_alpha(alg,atoms,x,nqa,qa,&(plist[F_BONDS]),qtol,fac,
-		      maxiter,atomprop,qtotref);
+  if (alg == eqgNone) {
+    if (nqa == atoms->nr) {
+      /* Use values from file */
+      for(i=0; (i<nqa); i++) {
+	atoms->atom[i].q  = get_qa_q(*atoms->atomname[i],nqa,qa);
+	atoms->atom[i].qB = get_qa_alpha(*atoms->atomname[i],nqa,qa);
+      }
+    }
+    else
+      gmx_fatal(FARGS,"Inconsistency between charge file (%d entries) and coordinate file (%d atoms)",nqa,atoms->nr);
+  }
+  else
+    assign_charge_alpha(alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
+			maxiter,atomprop,qtotref);
 
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);
