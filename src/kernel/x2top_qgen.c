@@ -63,7 +63,6 @@
 #include "atomprop.h"
 #include "grompp.h"
 #include "add_par.h"
-#include "gmx_random.h"
 #include "x2top_nm2type.h"
 #include "x2top_qgen.h"
 #include "x2top_matrix.h"
@@ -139,7 +138,6 @@ static void solve_q_eem(FILE *fp,t_qgen *qgen,real hardness_factor)
 
   n = qgen->natom+1;
   a = alloc_matrix(n,n);
-  b = alloc_matrix(n,n);
   for(i=0; (i<n-1); i++) {
     for(j=0; (j<n-1); j++) {
       a[i][j] = qgen->Jab[i][j];
@@ -152,10 +150,12 @@ static void solve_q_eem(FILE *fp,t_qgen *qgen,real hardness_factor)
     a[i][n-1] = -1;
   a[n-1][n-1] = 0;
 
-  for(i=0; (i<n); i++) 
-    for(j=0; (j<n); j++) 
-      b[i][j] = a[i][j];
-  
+  if (fp) {
+    b = alloc_matrix(n,n);
+    for(i=0; (i<n); i++) 
+      for(j=0; (j<n); j++) 
+	b[i][j] = a[i][j];
+  }
   mat_inv(fp,n,a);
   qtot = 0;  
   for(i=0; (i<n-1); i++) {
@@ -165,19 +165,22 @@ static void solve_q_eem(FILE *fp,t_qgen *qgen,real hardness_factor)
     }
     qtot += qgen->qq[i];
   }
-  chieq = 0;
-  for(i=0; (i<n-1); i++) {
-    qgen->chi[i] = 0;
-    for(j=0; (j<n-1); j++) {
-      qgen->chi[i] += b[i][j]*qgen->qq[j];
+  if (fp) {
+    chieq = 0;
+    for(i=0; (i<n-1); i++) {
+      qgen->chi[i] = 0;
+      for(j=0; (j<n-1); j++) {
+	qgen->chi[i] += b[i][j]*qgen->qq[j];
+      }
+      chieq += qgen->chi[i];
     }
-    chieq += qgen->chi[i];
+    qgen->chiav = chieq/qgen->natom;
+    free_matrix(b,n);
   }
-  qgen->chiav = chieq/qgen->natom;
+  
   if (fabs(qtot - qgen->qtotal) > 1e-3)
     fprintf(stderr,"qtot = %g, it should be %g\n",qtot,qgen->qtotal);
   free_matrix(a,n);
-  free_matrix(b,n);
 }
 
 static void qgen_calc_Jab(t_qgen *qgen,void *eem)
@@ -203,10 +206,8 @@ static void qgen_calc_Jab(t_qgen *qgen,void *eem)
 t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
 {
   t_qgen *qgen;
-  gmx_rng_t rng;
   int i,j;
   
-  rng = gmx_rng_init(17);
   snew(qgen,1);
   qgen->natom   = atoms->nr;
   qgen->eemtype = eemtype;
@@ -219,7 +220,6 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
   qgen->x = x;
   for(i=0; (i<atoms->nr); i++) {
     snew(qgen->Jab[i],atoms->nr);
-    qgen->qq[i] = 0.1*(gmx_rng_uniform_real(rng)-0.5);
     qgen->index[i] = eem_getindex(eem,
 				  *(atoms->resname[atoms->atom[i].resnr]),
 				  *(atoms->atomname[i]),qgen->eemtype);
@@ -262,6 +262,7 @@ static void done_qgen(FILE *fp,t_atoms *atoms,t_qgen *qgen)
   sfree(qgen->chi);
   sfree(qgen->wj);
   sfree(qgen->qq);
+  sfree(qgen->index);
   for(i=0; (i<atoms->nr); i++) 
     sfree(qgen->Jab[i]);
   sfree(qgen->Jab);
@@ -337,8 +338,8 @@ void generate_charges_sm(FILE *fp,
     else
       fprintf(fp,"Did not converge with %d iterations. RMS = %g\n",maxiter,rms);
   }
-  done_qgen(fp,atoms,qgen);
   sfree(qq);
+  done_qgen(fp,atoms,qgen);
   sfree(qgen);
 }
 

@@ -74,6 +74,7 @@ typedef struct {
   int     nmol,nparam;
   t_mymol *mymol;
   bool    bFitJ0,bFitChi0,bFitRadius;
+  real    J0_0,Chi0_0,R_0;
   void    *eem;
   void    *atomprop;
 } t_moldip;
@@ -112,7 +113,8 @@ static void print_mol(FILE *fp,t_mymol *mol)
   fprintf(fp,"\n");
 }
 
-t_moldip *read_moldip(char *fn,bool bFitJ0,bool bFitChi0,bool bFitRadius)
+t_moldip *read_moldip(char *fn,bool bFitJ0,bool bFitChi0,bool bFitRadius,
+		      real J0_0,real Chi0_0,real R_0)
 {
   char     **strings,buf[STRLEN];
   int      i,nstrings;
@@ -128,6 +130,7 @@ t_moldip *read_moldip(char *fn,bool bFitJ0,bool bFitChi0,bool bFitRadius)
       gmx_fatal(FARGS,"Error on line %d of %s",i+1,fn);
     init_mymol(&(md->mymol[i]),buf,dip);
   }
+  printf("Read %d sets of molecular coordinates and dipoles\n",nstrings);
   md->eem = read_eemprops(NULL);
   if (md->eem == NULL)
     gmx_fatal(FARGS,"Could not read eemprops.dat");
@@ -136,6 +139,9 @@ t_moldip *read_moldip(char *fn,bool bFitJ0,bool bFitChi0,bool bFitRadius)
   md->bFitJ0     = bFitJ0;
   md->bFitChi0   = bFitChi0;
   md->bFitRadius = bFitRadius;
+  md->J0_0       = J0_0;
+  md->Chi0_0     = Chi0_0;
+  md->R_0        = R_0;
   
   return md;
 }
@@ -174,30 +180,30 @@ static double dipole_function(const gsl_vector *v,void *params)
   for(i=0; (i<md->nparam); i++) {
     if (md->bFitJ0) {
       J0 = gsl_vector_get(v, k++);
-      if (J0 <= 0)
-	rms += sqr(J0);
+      if (J0 <= md->J0_0)
+	rms += sqr(J0-md->J0_0);
     }
     else
       J0 = lo_get_j00(md->eem,i,&wj,0);
     
     if (md->bFitChi0) {
       chi0 = gsl_vector_get(v, k++);
-      if (chi0 <= 0)
-	rms += sqr(chi0);
+      if (chi0 <= md->Chi0_0)
+	rms += sqr(chi0-md->Chi0_0);
     }
     else
       chi0 = eem_get_chi0(md->eem,i);
       
     if (md->bFitRadius) {
       radius = gsl_vector_get(v, k++);
-      if (radius <= 0)
-	rms += sqr(radius);
+      if (radius <= md->R_0)
+	rms += sqr(radius-md->R_0);
     }
     else
       radius = eem_get_radius(md->eem,i);
     eem_set_props(md->eem,i,J0,radius,chi0);
   }
-  
+    
   for(i=0; (i<md->nmol); i++) {
     generate_charges_sm(debug,md->eem,md->mymol[i].atoms,
 			md->mymol[i].x,1e-4,10000,md->atomprop,
@@ -211,7 +217,7 @@ static double dipole_function(const gsl_vector *v,void *params)
     }
   }
 
-  return rms;
+  return sqrt(rms/md->nmol);
 }
 
 static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
@@ -346,12 +352,25 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static int  maxiter=100;
   static real tol=1e-3;
+  static real J0_0=0,Chi0_0=0,R_0=0;
   static bool bFitJ0=TRUE,bFitChi0=TRUE,bFitRadius=FALSE;
   t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&tol},
       "Tolerance for convergence in optimization" },
     { "-maxiter",FALSE, etINT, {&maxiter},
-      "Max number of iterations for optimization" }
+      "Max number of iterations for optimization" },
+    { "-fitj0", FALSE, etBOOL, {&bFitJ0},
+      "Optimize dipoles by fitting J00" },
+    { "-j0",    FALSE, etREAL, {&J0_0},
+      "Minimum value that J0 can obtain in fitting" },
+    { "-fitChi0", FALSE, etBOOL, {&bFitChi0},
+      "Optimize dipoles by fiting Chi0" },
+    { "-chi0",    FALSE, etREAL, {&Chi0_0},
+      "Minimum value that Chi0 can obtain in fitting" },
+    { "-fitradius", FALSE, etBOOL, {&bFitRadius},
+      "Optimize dipole by fitting Radius" },
+    { "-r0",    FALSE, etREAL, {&R_0},
+      "Minimum value that Radius can obtain in fitting" }
   };
   t_moldip *md;
     
@@ -363,7 +382,8 @@ int main(int argc, char *argv[])
   if (!bFitJ0 && !bFitChi0 && !bFitRadius)
     gmx_fatal(FARGS,"Nothing to fit to!");
     		    
-  md = read_moldip(opt2fn("-f",NFILE,fnm),bFitJ0,bFitChi0,bFitRadius);
+  md = read_moldip(opt2fn("-f",NFILE,fnm),bFitJ0,bFitChi0,bFitRadius,
+		   J0_0,Chi0_0,R_0);
   
   (void) optimize_moldip(stdout,md,maxiter,tol,
 			 opt2fn("-o",NFILE,fnm),
