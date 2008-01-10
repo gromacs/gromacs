@@ -11,7 +11,8 @@ bin_SCRIPTS   = GMXRC GMXRC.csh GMXRC.bash      GMXRC.zsh
 
 # Distributed scripts
 dist_bin_SCRIPTS =   \
-	completion.csh  completion.bash completion.zsh			
+	completion.csh  completion.bash completion.zsh	\
+	demux.pl 	xplor2gmx.pl		
 
 
 # Scripts that will not be installed
