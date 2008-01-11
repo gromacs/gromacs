@@ -277,7 +277,7 @@ extern void low_ana_dih_trans(bool bTrans, char *fn_trans,
 
 
 
-extern void read_ang_dih(char *trj_fn,char *tpb_fn,
+extern void read_ang_dih(char *trj_fn,
 			 bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
 			 int maxangstat,int angstat[],
 			 int *nframes,real **time,

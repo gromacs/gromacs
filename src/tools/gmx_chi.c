@@ -1174,8 +1174,7 @@ int gmx_chi(int argc,char *argv[])
   snew(dih,ndih);
 
   /* COMPUTE ALL DIHEDRALS! */
-  read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efSTX,NFILE,fnm),
-	       FALSE,TRUE,FALSE,bPBC,1,&idum,
+  read_ang_dih(ftp2fn(efTRX,NFILE,fnm),FALSE,TRUE,FALSE,bPBC,1,&idum,
 	       &nf,&time,isize,index,&trans_frac,&aver_angle,dih);
   
   dt=(time[nf-1]-time[0])/(nf-1); /* might want this for corr or n. transit*/ 

@@ -148,7 +148,6 @@ int gmx_angle(int argc,char *argv[])
   real       *time,*trans_frac,*aver_angle;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,  ffREAD  },
-    { efTPS, NULL, NULL,  ffREAD  },
     { efNDX, NULL, "angle",  ffREAD  },
     { efXVG, "-od", "angdist",  ffWRITE },
     { efXVG, "-ov", "angaver",  ffOPTWR },
@@ -233,7 +232,7 @@ int gmx_angle(int argc,char *argv[])
   
   snew(angstat,maxangstat);
 
-  read_ang_dih(ftp2fn(efTRX,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),(mult == 3),
+  read_ang_dih(ftp2fn(efTRX,NFILE,fnm),(mult == 3),
 	       bALL || bCorr || bTrans || opt2bSet("-or",NFILE,fnm),
 	       bRb,bPBC,maxangstat,angstat,
 	       &nframes,&time,isize,index,&trans_frac,&aver_angle,dih);

@@ -648,7 +648,7 @@ void normalize_histo(int npoints,int histo[],real dx,real normhisto[])
     normhisto[i]=fac*histo[i];
 }
 
-void read_ang_dih(char *trj_fn,char *stx_fn,
+void read_ang_dih(char *trj_fn,
 		  bool bAngles,bool bSaveAll,bool bRb,bool bPBC,
 		  int maxangstat,int angstat[],
 		  int *nframes,real **time,
@@ -657,10 +657,9 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
 		  real **aver_angle,
 		  real *dih[])
 {
-  t_topology *top;
   t_pbc      *pbc;
-  int        ftp,i,angind,status,natoms,total,teller;
-  int        nangles,nat_trj,n_alloc;
+  int        i,angind,status,natoms,total,teller;
+  int        nangles,n_alloc;
   real       t,fraction,pifac,aa,angle;
   real       *angles[2];
   matrix     box;
@@ -668,22 +667,8 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
   int        cur=0;
 #define prev (1-cur)
   
-  /* Read topology */    
-  ftp     = fn2ftp(stx_fn);
-  if ((ftp == efTPR) || (ftp == efTPB) || (ftp == efTPA)) { 
-    top     = read_top(stx_fn);
-    natoms  = top->atoms.nr;
-  }
-  else {
-    top = NULL;
-    get_stx_coordnum(stx_fn,&natoms);
-  }
   snew(pbc,1);
-  nat_trj = read_first_x(&status,trj_fn,&t,&x,box);
-  
-  /* Check for consistency of topology and trajectory */
-  if (natoms < nat_trj)
-    fprintf(stderr,"WARNING! Topology has fewer atoms than trajectory\n");
+  natoms = read_first_x(&status,trj_fn,&t,&x,box);
   
   if (bAngles) {
     nangles=isize/3;
@@ -811,7 +796,7 @@ void read_ang_dih(char *trj_fn,char *stx_fn,
     
     /* Increment loop counter */
     teller++;
-  } while (read_next_x(status,&t,nat_trj,x,box));  
+  } while (read_next_x(status,&t,natoms,x,box));  
   close_trj(status); 
   
   sfree(x);
