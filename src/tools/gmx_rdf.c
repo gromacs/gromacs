@@ -311,9 +311,9 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* make pairlist array for groups and exclusions */
     snew(pairs[g],isize[0]);
     snew(npairs[g],isize[0]);
-    /* We can only have exclusions with atomic rdfs */
-    if (!(bCM || rdft[0][0] != 'a')) {
-      for(i=0; i<isize[0]; i++) {
+    for(i=0; i<isize[0]; i++) {
+      /* We can only have exclusions with atomic rdfs */
+      if (!(bCM || rdft[0][0] != 'a')) {
 	ix = index[0][i];
 	for(j=0; j < natoms; j++)
 	  bExcl[j] = FALSE;
@@ -340,6 +340,8 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	  npairs[g][i]=-1;
 	  sfree(pairs[g][i]);
 	}
+      } else {
+	npairs[g][i]=-1;
       }
     }
   }
