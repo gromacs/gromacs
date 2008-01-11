@@ -723,17 +723,29 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
 static void init_pull_group_index(FILE *log,t_commrec *cr,
 				  int start,int end,
 				  int g,t_pullgrp *pg,ivec pulldims,
-				  t_atoms *atoms,ivec nFreeze[])
+				  t_atoms *atoms,t_inputrec *ir)
 {
-  int i,ii,d,nfreeze,ndim;
-  real m,w;
-  double wmass,wwmass,buf[3];
+  int i,ii,d,nfrozen,ndim;
+  real m,w,mbd;
+  double wmass,buf[3];
   bool bDomDec;
   gmx_ga2la_t *ga2la=NULL;
+  t_atom *atom;
 
   bDomDec = (cr && DOMAINDECOMP(cr));
   if (bDomDec)
     ga2la = cr->dd->ga2la;
+
+  atom = atoms->atom;
+
+  if (EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD) {
+    /* There are no masses in the integrator.
+     * But we still want to have the correct mass-weighted COMs.
+     * So we store the real masses in the weights.
+     * We do not set nweight, so these weights do not end up in the tpx file.
+     */
+    snew(pg->weight,pg->nat);
+  }
 
   if (cr && PAR(cr)) {
     snew(pg->ind_loc,pg->nat);
@@ -746,45 +758,56 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
     pg->weight_loc = pg->weight;
   }
 
-  nfreeze = 0;
+  nfrozen = 0;
   wmass = 0;
-  wwmass = 0;
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
     if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
       pg->ind_loc[pg->nat_loc++] = ii;
-    if (nFreeze) {
+    if (ir->opts.nFreeze) {
       for(d=0; d<DIM; d++)
-	if (pulldims[d] && nFreeze[atoms->atom[ii].grpnr[egcFREEZE]][d])
-	  nfreeze++;
+	if (pulldims[d] && ir->opts.nFreeze[atom[ii].grpnr[egcFREEZE]][d])
+	  nfrozen++;
     }
-    m = atoms->atom[ii].m;
+    m = atom[ii].m;
     if (pg->weight)
       w = pg->weight[i];
     else
       w = 1;
+    if (EI_ENERGY_MINIMIZATION(ir->eI)) {
+      /* Move the mass to the weight */
+      w *= m;
+      m = 1;
+    } else if (ir->eI == eiBD) {
+      if (ir->bd_fric) {
+	mbd = ir->bd_fric*ir->delta_t;
+      } else {
+	mbd = ir->delta_t/ir->opts.tau_t[atom[ii].grpnr[egcTC]];
+      }
+      w *= m/mbd;
+      m = mbd;
+    }
     wmass += w*m;
-    wwmass += w*w*m;
   }
 
   if (wmass == 0)
     gmx_fatal(FARGS,"The total mass of pull group %d is zero",g);
   
-  if (nfreeze == 0) {
-    pg->wscale = wmass/wwmass;
-    pg->invtm  = 1.0/(pg->wscale*wmass);
+  if (nfrozen == 0) {
+    /* A value > 0 signals not frozen, it is updated later */
+    pg->invtm  = 1.0;
   } else {
     ndim = 0;
     for(d=0; d<DIM; d++)
       ndim += pulldims[d]*pg->nat;
-    if (nfreeze > 0 && nfreeze < ndim)
+    if (nfrozen > 0 && nfrozen < ndim)
       fprintf(log,
 	      "\nWARNING: In pull group %d some, but not all of the degrees of freedom\n"
 	      "         that are subject to pulling are frozen.\n"
 	      "         For pulling the whole group will be frozen.\n\n",
 	      g);
-    pg->wscale = 1.0;
     pg->invtm  = 0.0;
+    pg->wscale = 1.0;
   }
 }
 
@@ -822,8 +845,13 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
     pgrp = &pull->grp[g];
     if (pgrp->nat > 0) {
       /* Set the indices */
-      init_pull_group_index(fplog,cr,start,end,
-			    g,pgrp,pull->dim,atoms,ir->opts.nFreeze);
+      init_pull_group_index(fplog,cr,start,end,g,pgrp,pull->dim,atoms,ir);
+      if (PULL_CYL(pull) && pgrp->invtm == 0)
+	gmx_fatal(FARGS,"Can not have frozen atoms in a cylinder pull group");
+    } else {
+      /* Absolute reference, set the inverse mass to zero */
+      pgrp->invtm  = 0;
+      pgrp->wscale = 1;
     }
   }      
   
@@ -840,6 +868,8 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   }
   
   /* Only do I/O when we are doing dynamics and if we are the MASTER */
+  pull->out_x = NULL;
+  pull->out_f = NULL;
   if (bOutFile) {
     if (pull->nstxout > 0) {
       pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE);
@@ -848,4 +878,12 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
       pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,FALSE);
     }
   }
+}
+
+void finish_pull(FILE *fplog,t_pull *pull)
+{
+  if (pull->out_x)
+    fclose(pull->out_x);
+  if (pull->out_f)
+    fclose(pull->out_f);
 }

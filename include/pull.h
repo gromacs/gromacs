@@ -76,7 +76,7 @@ extern void dd_make_local_pull_groups(gmx_domdec_t *dd,
 
 /* get memory and initialize the fields of pull that still need it, and
    do runtype specific initialization */
-extern void init_pull(FILE *log,  
+extern void init_pull(FILE *fplog,  
                       t_inputrec *ir, /* the inputrec */
                       int nfile,       
                       t_filenm fnm[], /* standard filename struct */
@@ -84,6 +84,9 @@ extern void init_pull(FILE *log,
                       t_commrec * cr, /* struct for communication info */
                       bool bOutFile   /* open output files */
 		      );
+
+/* Close the pull output files */
+extern void finish_pull(FILE *fplog,t_pull *pull);
 
 /* Print the pull output (x and/or f) */
 extern void pull_print_output(t_pull *pull, int step, real time);

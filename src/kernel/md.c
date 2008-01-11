@@ -380,6 +380,9 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 					    mdatoms,nrnb,wcycle,graph,edyn,fr,
 					    repl_ex_nst,repl_ex_seed,
 					    Flags);
+
+    if (inputrec->ePull != epullNO)
+      finish_pull(fplog,inputrec->pull);
   } else {
     /* do PME only */
     gmx_pmeonly(*pmedata,cr,nrnb,wcycle,ewaldcoeff,FALSE);

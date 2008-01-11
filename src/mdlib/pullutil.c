@@ -195,12 +195,15 @@ static double get_cylinder_distance(rvec x, dvec com, matrix box) {
 static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 			     rvec *x,matrix box) 
 {
+  static dvec *dbuf=NULL;
   int g,i,ii,m,start,end;
-
   double dr,mass,weight,wmass,wwmass;
   dvec test;
   t_pullgrp *pref,*pdyna;
   gmx_ga2la_t *ga2la=NULL;
+
+  if (dbuf == NULL)
+    snew(dbuf,2*pull->ngrp);
 
   if (cr && DOMAINDECOMP(cr))
     ga2la = cr->dd->ga2la;
@@ -242,6 +245,23 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
 	}
       }
     }
+    copy_dvec(pdyna->x,dbuf[2*(g-1)]);
+    dbuf[2*(g-1)+1][0] = wmass;
+    dbuf[2*(g-1)+1][1] = wwmass;
+    dbuf[2*(g-1)+1][2] = 0;
+  }
+
+  if (cr && PAR(cr)) {
+    /* Sum the contributions over the nodes */
+    gmx_sumd(2*pull->ngrp*DIM,dbuf[0],cr);
+  }
+
+  for(g=1; g<1+pull->ngrp+1; g++) {
+    pdyna = &pull->dyna[g];
+
+    copy_dvec(dbuf[2*(g-1)],pdyna->x);
+    wmass   = dbuf[2*(g-1)+1][0];
+    wwmass  = dbuf[2*(g-1)+1][1];
 
     pdyna->wscale = wmass/wwmass;
     pdyna->invtm = 1.0/(pdyna->wscale*wmass);
@@ -263,7 +283,8 @@ void pull_calc_coms(t_commrec *cr,
   static rvec *rbuf=NULL;
   static dvec *dbuf=NULL;
   int  g,i,ii,m,npbcdim;
-  real wm;
+  real mass,w,wm;
+  double wmass,wwmass,invwmass;
   dvec com,comp;
   rvec *xx[2],x_pbc={0,0,0},dx;
   t_pullgrp *pgrp;
@@ -271,7 +292,7 @@ void pull_calc_coms(t_commrec *cr,
   if (rbuf == NULL)
     snew(rbuf,1+pull->ngrp);
   if (dbuf == NULL)
-    snew(dbuf,2*(1+pull->ngrp));
+    snew(dbuf,3*(1+pull->ngrp));
 
   npbcdim = pull->npbcdim;
 
@@ -281,16 +302,22 @@ void pull_calc_coms(t_commrec *cr,
     pgrp = &pull->grp[g];
     clear_dvec(com);
     clear_dvec(comp);
+    wmass  = 0;
+    wwmass = 0;
     if (!(g==0 && PULL_CYL(pull))) {
       if (pgrp->pbcatom >= 0) {
 	/* Set the pbc atom */
 	copy_rvec(rbuf[g],x_pbc);
       }
+      w = 1;
       for(i=0; i<pgrp->nat_loc; i++) {
 	ii = pgrp->ind_loc[i];
-	wm = md->massT[ii];
+	mass = md->massT[ii];
 	if (pgrp->weight_loc)
-	  wm *= pgrp->weight_loc[i];
+	  w = pgrp->weight_loc[i];
+	wm = w*mass;
+	wmass  += wm;
+	wwmass += wm*w;
 	if (pgrp->pbcatom == -1) {
 	  /* Sum the coordinates */
 	  for(m=0; m<DIM; m++)
@@ -315,38 +342,55 @@ void pull_calc_coms(t_commrec *cr,
 	}
       }
     }
-    copy_dvec(com,dbuf[g]);
+    copy_dvec(com,dbuf[2*g]);
+    dbuf[2*g+1][0] = wmass;
+    dbuf[2*g+1][1] = wwmass;
+    dbuf[2*g+1][2] = 0;
+
     if (xp)
-      copy_dvec(comp,dbuf[1+pull->ngrp+g]);
+      copy_dvec(comp,dbuf[2*(1+pull->ngrp)+g]);
   }
 
   if (cr && PAR(cr)) {
     /* Sum the contributions over the nodes */
-    gmx_sumd((xp ? 2 : 1)*(1+pull->ngrp)*DIM,dbuf[0],cr);
+    gmx_sumd((xp ? 3 : 2)*(1+pull->ngrp)*DIM,dbuf[0],cr);
   }
   
   for (g=0; g<1+pull->ngrp; g++) {
     pgrp = &pull->grp[g];
-    /* Divide by the total mass */
-    for(m=0; m<DIM; m++)
-      pgrp->x[m] = dbuf[g][m]*pgrp->wscale*pgrp->invtm;
-    if (pgrp->pbcatom >= 0) {
-      /* Add the location of the reference atom */
-      for(m=0; m<DIM; m++)
-	pgrp->x[m] += rbuf[g][m];
-    }
-    if (xp) {
+    if (pgrp->nat > 0) {
       /* Divide by the total mass */
+      wmass  = dbuf[2*g+1][0];
+      wwmass = dbuf[2*g+1][1];
+      invwmass = 1/wmass;
+      /* invtm==0 signals a frozen group, so then we should keep it zero */
+      if (pgrp->invtm > 0) {
+	pgrp->wscale = wmass/wwmass;
+	pgrp->invtm  = 1.0/(pgrp->wscale*wmass);
+      }
+      if (debug)
+	fprintf(debug,"pull group %d: wscale %f invtm %f\n",
+		g,pgrp->wscale,pgrp->invtm);
       for(m=0; m<DIM; m++)
-	pgrp->xp[m] = dbuf[1+pull->ngrp+g][m]*pgrp->wscale*pgrp->invtm;
+	pgrp->x[m] = dbuf[2*g][m]*invwmass;
       if (pgrp->pbcatom >= 0) {
 	/* Add the location of the reference atom */
 	for(m=0; m<DIM; m++)
-	  pgrp->xp[m] += rbuf[g][m];
+	  pgrp->x[m] += rbuf[g][m];
+      }
+      if (xp) {
+	/* Divide by the total mass */
+	for(m=0; m<DIM; m++)
+	  pgrp->xp[m] = dbuf[2*(1+pull->ngrp)+g][m]*invwmass;
+	if (pgrp->pbcatom >= 0) {
+	  /* Add the location of the reference atom */
+	  for(m=0; m<DIM; m++)
+	    pgrp->xp[m] += rbuf[g][m];
+	}
       }
     }
   }
-
+  
   if (PULL_CYL(pull)) {
     /* Calculate the COMs for the cyclinder reference groups */
     make_cyl_refgrps(cr,pull,md,x,box);
