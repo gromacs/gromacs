@@ -250,7 +250,7 @@ int gmx_angle(int argc,char *argv[])
 	for(j=0; (j<nangles); j++)
 	  if (bPBC) {
 	    real dd = dih[j][i];
-	    fprintf(out,"  %8.3f",atan2(cos(dd),sin(dd))*RAD2DEG);
+	    fprintf(out,"  %8.3f",atan2(sin(dd),cos(dd))*RAD2DEG);
 	  }
 	  else
 	    fprintf(out,"  %8.3f",dih[j][i]*RAD2DEG);
