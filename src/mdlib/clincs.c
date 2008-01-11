@@ -927,7 +927,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
   if (lincsd->nc == 0 && dd == NULL) {
     if (bLog || bEner) {
       lincsd->rmsd_data[0] = 0;
-      if (ir->eI == eiSD && v == NULL)
+      if (ir->eI == eiSD2 && v == NULL)
 	i = 2;
       else
 	i = 1;
@@ -1008,7 +1008,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
 	      &ncons_loc,&p_ssd,&p_max,&p_imax);
       lincsd->rmsd_data[0] = ncons_loc;
       /* Check if we are doing the second part of SD */
-      if (ir->eI == eiSD && v == NULL)
+      if (ir->eI == eiSD2 && v == NULL)
 	i = 2;
       else
 	i = 1;

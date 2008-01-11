@@ -1317,7 +1317,7 @@ void do_index(char *ndx,
   if (ir->eI != eiMD)
     ir->etc = etcNO;
   bSetTCpar = ir->etc ||
-    ir->eI==eiSD || ir->eI==eiBD || ir->eI==eiTPI || ir->eI==eiTPIC;
+    EI_SD(ir->eI) || ir->eI==eiBD || ir->eI==eiTPI || ir->eI==eiTPIC;
   do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
 	       restnm,bSetTCpar ? egrptpALL : egrptpALL_GENREST,bVerbose);
   nr=atoms->grps[egcTC].nr;
@@ -1670,7 +1670,7 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
 {
   char err_buf[256];
   int  i,m,npct;
-  real *mgrp,mt;
+  real gdt_max,*mgrp,mt;
   rvec acc;
 
   /* Generalized reaction field */  
@@ -1684,6 +1684,18 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
 	    " ref_t for temperature coupling should be > 0",
 	    eel_names[eelGRF]);
     CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
+  }
+    
+  if (ir->eI == eiSD) {
+    gdt_max = 0;
+    for(i=0; (i<ir->opts.ngtc); i++)
+      gdt_max = max(gdt_max,ir->delta_t/ir->opts.tau_t[i]);
+    if (0.5*gdt_max > 0.0015) {
+      set_warning_line(mdparin,-1);
+      sprintf(warn_buf,"The relative error with integrator %s is 0.5*delta_t/tau_t = %g, you might want to switch to integrator %s\n",
+	      ei_names[ir->eI],0.5*gdt_max,ei_names[eiSD2]);
+      warning(NULL);
+    }
   }
 
   clear_rvec(acc);

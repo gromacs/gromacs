@@ -194,7 +194,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   bConstr = (nc[0]+nc[1] > 0);
   if (bConstr) {
     if (nc[0] > 0 && ir->eConstrAlg == estLINCS) {
-      if (ir->eI == eiSD)
+      if (ir->eI == eiSD2)
 	nCrmsd = 2;
       else
 	nCrmsd = 1;

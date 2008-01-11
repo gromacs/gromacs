@@ -59,7 +59,7 @@ const char *ens_names[ensNR+1]=
 
 const char *ei_names[eiNR+1]=
 {
-  "md", "steep", "cg", "bd", "sd", "nm", "l-bfgs", "tpi", "tpic", NULL 
+  "md", "steep", "cg", "bd", "sd2", "nm", "l-bfgs", "tpi", "tpic", "sd", NULL 
 };
 
 const char *bool_names[BOOL_NR+1]=

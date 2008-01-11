@@ -110,15 +110,30 @@ topology, this is necessary to make
 <dd>A <!--Idx-->leap-frog<!--EIdx--> algorithm for integrating Newton's
 equations of motion.</dd>
 <dt><b>sd</b></dt>
-<dd> A leap-frog stochastic dynamics integrator. The temperature for
+<dd> An efficient leap-frog stochastic dynamics integrator. The temperature for
 one or more groups of atoms (<b><A HREF="#tc">tc_grps</A></b>)
 is set with <b><A HREF="#tc">ref_t</A></b> [K],
 the inverse friction constant for each group is set with
 <b><A HREF="#tc">tau_t</A></b> [ps]. The parameter <b><A HREF="#tc">tcoupl</A></b>
 is ignored.
 The random generator is initialized with <b><A HREF="#ld">ld_seed</A></b>.
+The relative error in the temperature with this integrator is
+0.5 <b>delta_t</b>/<b>tau_t</b>. With a high friction one should
+therefore use integrator <b>sd2</b>. When used as a thermostat,
+an appropriate value for <b>tau_t</b> is 2 ps, since this results
+in a friction that is lower than the internal friction of water,
+while it is high enough to remove excess heat
+(unless <b>cut-off</b> or <b>reaction-field</b> electrostatics is used).
 <b>NOTE:</b> temperature deviations decay twice as fast as with
 a Berendsen thermostat with the same <b>tau_t</b>.</dd>
+<dt><b>sd2</b></dt>
+<dd> An accurate leap-frog stochastic dynamics integrator.
+This integrator is equivalent to <b>sd</b>, except that it is accurate
+for any friction constant. Four Gaussian random number are required
+per integration step per degree of freedom. With constraints,
+coordinates needs to be constrained twice per integration step.
+Depending on the computational cost of the force calculation,
+this can take a significant part of the simulation time.
 <dt><b>bd</b></dt>
 <dd>An Euler integrator for Brownian or position Langevin dynamics, the
 velocity is the force divided by a friction coefficient 

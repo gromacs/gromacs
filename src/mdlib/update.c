@@ -89,7 +89,6 @@ typedef struct gmx_stochd {
   real *bd_rf;
   /* SD stuff */
   gmx_sd_const_t *sdc;
-  bool bTwoStep;
   gmx_sd_sigma_t *sdsig;
   rvec *sd_V;
   int  sd_V_nalloc;
@@ -264,7 +263,7 @@ gmx_stochd_t init_stochd(FILE *fplog,
   t_gmx_stochd *sd;
   gmx_sd_const_t *sdc;
   int  n;
-  real gdt_max,y;
+  real y;
 
   snew(sd,1);
 
@@ -273,16 +272,13 @@ gmx_stochd_t init_stochd(FILE *fplog,
 
   if (eI == eiBD) {
     snew(sd->bd_rf,ngtc);
-  } else if (eI == eiSD) {
+  } else if (EI_SD(eI)) {
     snew(sd->sdc,ngtc);
     snew(sd->sdsig,ngtc);
     
     sdc = sd->sdc;
-    gdt_max = 0;
     for(n=0; n<ngtc; n++) {
       sdc[n].gdt = dt/tau_t[n];
-      if (sdc[n].gdt > gdt_max)
-	gdt_max = sdc[n].gdt;
       sdc[n].eph = exp(sdc[n].gdt/2);
       sdc[n].emh = exp(-sdc[n].gdt/2);
       sdc[n].em  = exp(-sdc[n].gdt);
@@ -302,30 +298,9 @@ gmx_stochd_t init_stochd(FILE *fplog,
 	fprintf(debug,"SD const tc-grp %d: b %g  c %g  d %g\n",
 		n,sdc[n].b,sdc[n].c,sdc[n].d);
     }
-    /* The largest difference between the 1-step and 2-step SD schemes
-     * is of relative size (gdt/2)^2.
-     * Thus if (gdt/2)^2 is smaller than 1e-5 we can use a 1-step scheme
-     * without losing much accuracy.
-     */
-    sd->bTwoStep = (sqr(0.5*gdt_max) > 1e-5);
-    if (fplog)
-      fprintf(fplog,"Stochastic dynamics:\n"
-	      "  max(0.5*dt/tau_t)^2 = %.1e %s %.1e, using a %d-step SD integrator\n\n",
-	      sqr(0.5*gdt_max),
-	      sd->bTwoStep ? ">" : "<",
-	      1e-5,
-	      sd->bTwoStep ? 2 : 1);
   }
 
   return sd;
-}
-
-void sd_enlarge_state(t_gmx_stochd *sd,t_state *state)
-{
-  if (sd->bTwoStep && !(state->flags & STATE_HAS_SDX)) {
-    state->flags |= STATE_HAS_SDX;
-    snew(state->sd_X,state->nalloc);
-  }
 }
 
 static void do_update_sd1(t_gmx_stochd *sd,bool bFirstStep,
@@ -791,25 +766,23 @@ void update(FILE         *fplog,
                        md->ptype,md->cTC,state->x,xprime,state->v,force,M,
                        state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
     } else if (inputrec->eI == eiSD) {
-      if (sd->bTwoStep) {
+      do_update_sd1(sd,bFirstStep,start,homenr,dt,
+		    inputrec->opts.acc,inputrec->opts.nFreeze,
+		    md->invmass,md->ptype,
+		    md->cFREEZE,md->cACC,md->cTC,
+		    state->x,xprime,state->v,force,state->sd_X,
+		    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
+    } else if (inputrec->eI == eiSD2) {
 	/* The SD update is done in 2 parts, because an extra constraint step
 	 * is needed 
 	 */
-	do_update_sd2(sd,bFirstStep,start,homenr,
-		      inputrec->opts.acc,inputrec->opts.nFreeze,
-		      md->invmass,md->ptype,
-		      md->cFREEZE,md->cACC,md->cTC,
-		      state->x,xprime,state->v,force,state->sd_X,
-		      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-		      TRUE);
-      } else {
-	do_update_sd1(sd,bFirstStep,start,homenr,dt,
-		      inputrec->opts.acc,inputrec->opts.nFreeze,
-		      md->invmass,md->ptype,
-		      md->cFREEZE,md->cACC,md->cTC,
-		      state->x,xprime,state->v,force,state->sd_X,
-		      inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
-      }
+      do_update_sd2(sd,bFirstStep,start,homenr,
+		    inputrec->opts.acc,inputrec->opts.nFreeze,
+		    md->invmass,md->ptype,
+		    md->cFREEZE,md->cACC,md->cTC,
+		    state->x,xprime,state->v,force,state->sd_X,
+		    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+		    TRUE);
     } else if (inputrec->eI == eiBD) {
       do_update_bd(start,homenr,dt,
                    inputrec->opts.nFreeze,md->invmass,md->ptype,
@@ -871,7 +844,7 @@ void update(FILE         *fplog,
                force,state->box,edyn,bDoUpdate);
 
     if (bDoUpdate) {
-      if (inputrec->eI == eiSD) {
+      if (inputrec->eI == eiSD2) {
 	/* A correction factor eph is needed for the SD constraint force */
 	/* Here we can, unfortunately, not have proper corrections
 	 * for different friction constants, so we use the first one.
@@ -894,7 +867,7 @@ void update(FILE         *fplog,
   
   where();
   if (bDoUpdate) {
-    if (inputrec->eI == eiSD && sd->bTwoStep) {
+    if (inputrec->eI == eiSD2) {
       /* The second part of the SD integration */
       do_update_sd2(sd,FALSE,start,homenr,
 		    inputrec->opts.acc,inputrec->opts.nFreeze,

@@ -78,6 +78,11 @@ static void correct_state_entries(t_state *state,t_inputrec *ir)
     if (state->v == NULL)
       snew(state->v,state->nalloc);
   }
+  if (ir->eI == eiSD2) {
+    state->flags |= STATE_HAS_SDX;
+    if (state->sd_X == NULL)
+      snew(state->sd_X,state->nalloc);
+  }
 }
 
 void init_single(FILE *log,t_inputrec *inputrec,

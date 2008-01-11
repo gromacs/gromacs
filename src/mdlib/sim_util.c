@@ -1026,13 +1026,15 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   }
 }
 
-void init_md(FILE *fplog,t_commrec *cr,t_inputrec *ir,real *t,real *t0,
+void init_md(FILE *fplog,
+	     t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
 	     t_nrnb *nrnb,t_topology *top,
 	     gmx_stochd_t *sd,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,
-	     FILE **fp_dgdl,FILE **fp_field,t_mdebin **mdebin,t_groups *grps,
+	     FILE **fp_dgdl,FILE **fp_field,
+	     t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor shake_vir,rvec mu_tot,
 	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm)
 {
@@ -1058,6 +1060,15 @@ void init_md(FILE *fplog,t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   if(*bSimAnn) 
     update_annealing_target_temp(&(ir->opts),ir->init_t); 
 
+  *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
+  
+  if (sd && (ir->eI == eiBD || EI_SD(ir->eI)))
+    *sd = init_stochd(fplog,ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
+		      ir->ld_seed);
+
+  if (vcm)
+    *vcm = init_vcm(fplog,&top->atoms,ir);
+    
   init_nrnb(nrnb);
   
   if (nfile != -1) {
@@ -1086,15 +1097,6 @@ void init_md(FILE *fplog,t_commrec *cr,t_inputrec *ir,real *t,real *t0,
   clear_mat(shake_vir);
   clear_rvec(mu_tot);
 
-  if (vcm)
-    *vcm = init_vcm(fplog,&top->atoms,ir);
-    
   debug_gmx();
-
-  *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
-  
-  if (sd && (ir->eI == eiBD || ir->eI == eiSD))
-    *sd = init_stochd(fplog,ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
-		      ir->ld_seed);
 }
 

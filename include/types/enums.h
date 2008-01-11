@@ -93,14 +93,15 @@ enum {
 };
 
 enum {
-  eiMD, eiSteep, eiCG, eiBD, eiSD, eiNM, eiLBFGS, eiTPI, eiTPIC, eiNR
+  eiMD, eiSteep, eiCG, eiBD, eiSD2, eiNM, eiLBFGS, eiTPI, eiTPIC, eiSD, eiNR
 };
 
-#define EI_DYNAMICS(e) ((e) == eiMD || (e) == eiSD || (e) == eiBD)
+#define EI_SD(e) ((e) == eiSD || (e) == eiSD2)
+#define EI_DYNAMICS(e) ((e) == eiMD || EI_SD(e) || (e) == eiBD)
 #define EI_ENERGY_MINIMIZATION(e) ((e) == eiSteep || (e) == eiCG || (e) == eiLBFGS)
 #define EI_TPI(e) ((e) == eiTPI || (e) == eiTPIC)
 
-#define EI_STATE_VELOCITY(e) ((e) == eiMD || (e) == eiSD)
+#define EI_STATE_VELOCITY(e) ((e) == eiMD || EI_SD(e))
 
 enum {
   estLINCS, estSHAKE, estNR
