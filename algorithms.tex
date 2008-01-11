@@ -1375,13 +1375,24 @@ When $1/\xi_i$ is small compared to the time scales present in the system,
 the dynamics will be completely different from MD, but the sampling is
 still correct.
 
-{\gromacs} uses a complicated third-order leap-frog
-algorithm~\cite{Gunsteren88} to integrate equation (\ref{SDeq}).
-When constraints are present in the system,
-two constraint steps are performed per time step.
+In {\gromacs} there are two algorithm ot integrate equation (\ref{SDeq}).
+An efficient one, where the relative error in the temperature
+is $\frac{1}{2}\Delta t\, \xi$.
+And a more complex leap frog algorithm~\cite{Gunsteren88},
+which has third-order accuracy for any value of $\Delta t\, \xi$.
+In this complex algorithm four Gaussian random number are required
+per integration step per degree of freedom and with constraints the
+coordinates needs to be constrained twice per integration step.
+Depending on the computational cost of the force calculation,
+this can take a significant part of the simulation time.
 Exact continuation of a stochastic dynamics simulation is not possible,
-since apart from the coordinates and the velocities one random term of the
-previous step in required, however, the error will be very small.
+because the state of the random number generator is not stored.
+When using SD as a thermostat, an appropriate value for $\xi$ is 0.5 ps$^{-1}$,
+since this results in a friction that is lower than the internal friction
+of water, while it is high enough to remove excess heat
+(unless plain cut-off or reaction-field electrostatics is used).
+With this value of $\xi$ the efficient algorithm will usually be accurate
+enough.
 
 \section{\swapindex{Brownian}{Dynamics}}
 \label{sec:BD}
