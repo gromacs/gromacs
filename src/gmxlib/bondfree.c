@@ -912,9 +912,11 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
       t1=IVEC2IS(dt_ij);
       t2=IVEC2IS(dt_kj);
       t3=IVEC2IS(dt_lj);
-    }    
-    else
+    } else if (pbc) {
       t3 = pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
+    } else {
+      t3 = CENTRAL;
+    }
     
     rvec_inc(fshift[t1],f_i);
     rvec_dec(fshift[CENTRAL],f_j);
