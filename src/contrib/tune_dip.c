@@ -349,7 +349,8 @@ static real quality_of_fit(real chi2,int N)
 }
 
 #else
-static real optimize_moldip(FILE *fp,t_qgen *qgen,int maxiter,real tol)
+static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
+			    int reinit,real stepsize)
 {
   fprintf(stderr,"This program needs the GNU scientific library to work.\n");
   
