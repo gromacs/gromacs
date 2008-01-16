@@ -39,10 +39,10 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "gmx_fatal.h"
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#endif
 #include "macros.h"
 #include "tune_pol.h"
 
@@ -140,12 +140,6 @@ static const char *exml_names[exmlNR] = {
   "composition", "compname", "catom", "cname", "cnumber"
 };
 
-void fatal_error(char *str,char *val)
-{
-  fprintf(stderr,"Fatal: %s - %s\n",str,val);
-  exit(1);
-}
-
 static int find_elem(char *name,int nr,const char *names[])
 {
   int i;
@@ -185,7 +179,7 @@ static void set_miller(t_molprop *mp,char *milnm,int number,int nh)
     }
   }
   if (i == emlNR) 
-    fatal_error(">No such Miller type",milnm);
+    fatal_error("No such Miller type",milnm);
 }
 
 static void set_bosque(t_molprop *mp,char *bosnm,int number,int nh)
@@ -200,7 +194,7 @@ static void set_bosque(t_molprop *mp,char *bosnm,int number,int nh)
     }
   } 
   if (i == eelemNR) 
-    fatal_error(">No such Bosque type",bosnm);
+    fatal_error("No such Bosque type",bosnm);
 }
 
 static void copy_molprop(t_molprop *dst,t_molprop2 *src,int update_bm)
@@ -640,5 +634,24 @@ void write_molprops(char *fn,int npd,t_molprop pd[])
   if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
     fatal_error("Saving file",fn);
   xmlFreeDoc(doc);
+}
+#else
+
+int read_molprops(char *fn,t_molprop **pd,int update_bm)
+{
+  gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
+}
+
+void write_molprops(char *fn,int npd,t_molprop pd[])
+{
+  gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
+}
+
+#endif
+
+void fatal_error(char *str,char *val)
+{
+  fprintf(stderr,"Fatal: %s - %s\n",str,val);
+  exit(1);
 }
 
