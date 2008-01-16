@@ -71,10 +71,11 @@
 typedef struct {
   int  natom,eemtype;
   int  *index; /* In the Yang array */
-  real *chi,*chi0,*qq,*wj,qtotal;
+  int  *elem;
+  real *chi,*chi0,*rhs,*qq,*wj,qtotal;
   real **Jab;
   rvec *x;
-  real chiav;
+  real chieq;
 } t_qgen;
 
 static real coul_slater_slater(real w,real r)
@@ -101,23 +102,61 @@ static real coul_nucl_nucl(real w,real r)
   return 1/r;
 }
 
-static real calc_jab(rvec xi,rvec xj,real wi,real wj)
+static real calc_jab(rvec xi,rvec xj,real wi,real wj,int eemtype)
 {
   rvec dx;
   real r,wij;
-  real e0=0,e1=0,e2=0;
+  real eNN=0,eSS=0;
 
   rvec_sub(xi,xj,dx);
   r = norm(dx);
-  
-  e0 = coul_nucl_nucl(0,r);
-  if ((wi > 0) && (wj > 0)) {
-    wij = 2/(1/wi + 1/wj);  /* Dit kan geoptimaliseerd worden */
-    e1 = coul_slater_nucl(wij,r);
-    e2 = coul_slater_slater(wij,r);
+  if (r == 0)
+    gmx_fatal(FARGS,"Zero distance between atoms!\n");
+ 
+  switch (eemtype) {
+  case eqgBultinck:
+  case eqgSM1:
+    eNN = coul_nucl_nucl(0,r);
+    break;
+  case eqgSM2:
+  case eqgSM3:
+  case eqgSM4:
+    if ((wi > 0) && (wj > 0)) {
+      wij = 2*(wi + wj)/(wi*wj);
+      eSS = coul_slater_slater(wij,r);
+    }
+    else {
+      eNN = coul_nucl_nucl(0,r);
+    }
+    break;
+  case eqgYang:
+  default:
+    gmx_fatal(FARGS,"Can not treat algorithm %d yet in calc_jab",eemtype);
   }
 
-  return ONE_4PI_EPS0*(e0-2*e1+e2)/ELECTRONVOLT;
+  return ONE_4PI_EPS0*(eNN+eSS)/ELECTRONVOLT;
+}
+
+static real calc_j1(rvec xi,rvec xj,real wi,real wj,int eemtype)
+{
+  rvec dx;
+  real r,wij;
+  real eNN=0,eNS=0,eSN=0,eSS=0;
+
+  rvec_sub(xi,xj,dx);
+  r = norm(dx);
+  if (r == 0)
+    gmx_fatal(FARGS,"Zero distance between atoms!\n");
+  
+  if ((wi > 0) && (wj > 0)) {
+    wij = 2*(wi + wj)/(wi*wj); 
+    eSN = coul_slater_nucl(wj,r);
+    eSS = coul_slater_slater(wij,r);
+  }
+  else {
+    eNN = coul_nucl_nucl(0,r);
+  }
+  return ONE_4PI_EPS0*(eNN+eSN-eSS)/ELECTRONVOLT;
 }
 
 static real get_chi0(void *atomprop,char *resnm,char *name)
@@ -133,7 +172,7 @@ static real get_chi0(void *atomprop,char *resnm,char *name)
 
 static void solve_q_eem(FILE *fp,t_qgen *qgen,real hardness_factor)
 {
-  double **a,**b,qtot,chieq;
+  double **a,**b,qtot;
   int i,j,n,nn;
 
   n = qgen->natom+1;
@@ -156,34 +195,25 @@ static void solve_q_eem(FILE *fp,t_qgen *qgen,real hardness_factor)
       for(j=0; (j<n); j++) 
 	b[i][j] = a[i][j];
   }
-  mat_inv(fp,n,a);
+  matrix_invert(fp,n,a);
   qtot = 0;  
   for(i=0; (i<n-1); i++) {
     qgen->qq[i] = 0;
     for(j=0; (j<n-1); j++) {
-      qgen->qq[i] += -a[i][j]*qgen->chi0[j];
+      qgen->qq[i] += a[i][j]*qgen->rhs[j];
     }
     qtot += qgen->qq[i];
   }
-  if (fp) {
-    chieq = 0;
-    for(i=0; (i<n-1); i++) {
-      qgen->chi[i] = 0;
-      for(j=0; (j<n-1); j++) {
-	qgen->chi[i] += b[i][j]*qgen->qq[j];
-      }
-      chieq += qgen->chi[i];
-    }
-    qgen->chiav = chieq/qgen->natom;
-    free_matrix(b,n);
-  }
+  qgen->chieq = 0;
+  for(j=0; (j<n); j++) 
+    qgen->chieq += a[n-1][j]*qgen->rhs[j];
   
-  if (fabs(qtot - qgen->qtotal) > 1e-3)
+  if (fabs(qtot - qgen->qtotal) > 1e-2)
     fprintf(stderr,"qtot = %g, it should be %g\n",qtot,qgen->qtotal);
   free_matrix(a,n);
 }
 
-static void qgen_calc_Jab(t_qgen *qgen,void *eem)
+static void qgen_calc_Jab(t_qgen *qgen,void *eem,int eemtype)
 {
   int    i,j;
   double wi,wj;
@@ -192,12 +222,14 @@ static void qgen_calc_Jab(t_qgen *qgen,void *eem)
     qgen->Jab[i][i] = lo_get_j00(eem,qgen->index[i],&(qgen->wj[i]),qgen->qq[i]);
   }
   for(i=0; (i<qgen->natom); i++) {
-    wi = qgen->wj[i];
+    wi           =  qgen->wj[i];
+    qgen->rhs[i] = -qgen->chi0[i];
     for(j=0; (j<qgen->natom); j++) {
       if (i != j) {
 	wj = qgen->wj[j];
-	qgen->Jab[i][j] = qgen->Jab[j][i] = 
-	  calc_jab(qgen->x[i],qgen->x[j],wi,wj);
+	qgen->Jab[i][j] = calc_jab(qgen->x[i],qgen->x[j],wi,wj,qgen->eemtype);
+	if ((eemtype == eqgSM3) || (eemtype == eqgSM4))
+	  qgen->rhs[i] -= qgen->elem[j]*calc_j1(qgen->x[i],qgen->x[j],wi,wj,qgen->eemtype);
       }
     }
   }
@@ -212,6 +244,8 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
   qgen->natom   = atoms->nr;
   qgen->eemtype = eemtype;
   snew(qgen->chi0,atoms->nr);
+  snew(qgen->rhs,atoms->nr);
+  snew(qgen->elem,atoms->nr);
   snew(qgen->chi,atoms->nr);
   snew(qgen->Jab,atoms->nr);
   snew(qgen->wj,atoms->nr);
@@ -220,13 +254,14 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
   qgen->x = x;
   for(i=0; (i<atoms->nr); i++) {
     snew(qgen->Jab[i],atoms->nr);
-    qgen->index[i] = eem_getindex(eem,
-				  *(atoms->resname[atoms->atom[i].resnr]),
-				  *(atoms->atomname[i]),qgen->eemtype);
+    qgen->index[i] = eem_get_index(eem,
+				   *(atoms->resname[atoms->atom[i].resnr]),
+				   *(atoms->atomname[i]),qgen->eemtype);
+    qgen->elem[i] = eem_get_elem(eem,qgen->index[i]);
     if (qgen->index[i] == -1)
-      gmx_fatal(FARGS,"Can not find index for %s %s",
+      gmx_fatal(FARGS,"Can not find index for %s %s. Eemtype = %d",
 		*(atoms->resname[atoms->atom[i].resnr]),
-		*(atoms->atomname[i]));
+		*(atoms->atomname[i]),eemtype);
     qgen->chi0[i] = eem_get_chi0(eem,qgen->index[i]);
   }  
   
@@ -257,7 +292,7 @@ static void done_qgen(FILE *fp,t_atoms *atoms,t_qgen *qgen)
     }
   }
   if (fp)
-    fprintf(fp,"<chieq> = %10g\n",qgen->chiav);
+    fprintf(fp,"<chieq> = %10g\n",qgen->chieq);
   sfree(qgen->chi0);
   sfree(qgen->chi);
   sfree(qgen->wj);
@@ -284,7 +319,7 @@ static void generate_charges_yang(void *eem,t_atoms *atoms,rvec x[],
     qq[i] = qgen->qq[i];
   iter = 0;
   do {
-    qgen_calc_Jab(qgen,eem);
+    qgen_calc_Jab(qgen,eem,eqgYang);
     solve_q_eem(debug,qgen,2.0);
     rms = 0;
     for(i=0; (i<atoms->nr); i++) {
@@ -302,26 +337,26 @@ static void generate_charges_yang(void *eem,t_atoms *atoms,rvec x[],
   done_qgen(stdout,atoms,qgen);
 }
 
-void generate_charges_sm(FILE *fp,
+real generate_charges_sm(FILE *fp,
 			 void *eem,t_atoms *atoms,rvec x[],
 			 real tol,int maxiter,void *atomprop,
-			 real qtotref)
+			 real qtotref,int eemtype)
 {
   /* Use Rappe and Goddard derivative for now */
   t_qgen *qgen;
-  real   *qq;
+  real   *qq,chieq;
   int    i,iter;
   real   rms,mu;
   
   if (fp)
     fprintf(fp,"Generating charges using Van der Spoel & Van Maaren algorithm\n");
-  qgen = init_qgen(eem,atoms,atomprop,x,eqgSM);
+  qgen = init_qgen(eem,atoms,atomprop,x,eemtype);
   snew(qq,atoms->nr);
   for(i=0; (i<atoms->nr); i++)
     qq[i] = qgen->qq[i];
   iter = 0;
   do {
-    qgen_calc_Jab(qgen,eem);
+    qgen_calc_Jab(qgen,eem,eemtype);
     solve_q_eem(fp,qgen,2.0);
     rms = 0;
     for(i=0; (i<atoms->nr); i++) {
@@ -339,8 +374,11 @@ void generate_charges_sm(FILE *fp,
       fprintf(fp,"Did not converge with %d iterations. RMS = %g\n",maxiter,rms);
   }
   sfree(qq);
+  chieq = qgen->chieq;
   done_qgen(fp,atoms,qgen);
   sfree(qgen);
+  
+  return chieq;
 }
 
 static void generate_charges_bultinck(void *eem,t_atoms *atoms,rvec x[],
@@ -354,7 +392,7 @@ static void generate_charges_bultinck(void *eem,t_atoms *atoms,rvec x[],
   printf("Generating charges using Bultinck algorithm\n");
   qgen = init_qgen(eem,atoms,atomprop,x,eqgBultinck);
   
-  qgen_calc_Jab(qgen,eem);
+  qgen_calc_Jab(qgen,eem,eqgBultinck);
   solve_q_eem(NULL,qgen,2.0);
   
   done_qgen(stdout,atoms,qgen);
@@ -407,22 +445,22 @@ static void generate_charges_linear(t_atoms *atoms,rvec x[],t_params *bonds,
   sfree(chi0);
 }
 
-void assign_charge_alpha(int alg,t_atoms *atoms,rvec x[],
+void assign_charge_alpha(int eemtype,t_atoms *atoms,rvec x[],
 			 t_params *bonds,real tol,real fac,int maxiter,
 			 void *atomprop,real qtotref)
 {
   int  i;
   void *eem;
   
-  eem = read_eemprops(NULL);
+  eem = read_eemprops(NULL,-1);
   if (debug)
     write_eemprops(debug,eem);
   
-  if ((eem == NULL) && (alg > eqgLinear))
+  if ((eem == NULL) && (eemtype > eqgLinear))
     gmx_fatal(FARGS,"Nothing interesting in eemprops.dat");
     
   /* Generate charges */
-  switch (alg) {
+  switch (eemtype) {
   case eqgNone:
     for(i=0; (i<atoms->nr); i++) {
       atoms->atom[i].q  = atoms->atom[i].qB = 0;
@@ -439,11 +477,16 @@ void assign_charge_alpha(int alg,t_atoms *atoms,rvec x[],
     please_cite(stdout,"Bultinck2002a");
     generate_charges_bultinck(eem,atoms,x,tol,maxiter,atomprop);
     break;
-  case eqgSM:
-    generate_charges_sm(stdout,eem,atoms,x,tol,maxiter,atomprop,qtotref);
+  case eqgSM1:
+  case eqgSM2:
+  case eqgSM3:
+  case eqgSM4:
+    (void) generate_charges_sm(stdout,eem,atoms,x,tol,maxiter,atomprop,
+			       qtotref,eemtype);
     break;
   default:
-    gmx_fatal(FARGS,"Algorithm %d out of range in assign_charge_alpha",alg);
+    gmx_fatal(FARGS,"Algorithm %d out of range in assign_charge_alpha",
+	      eemtype);
   }
 }
 

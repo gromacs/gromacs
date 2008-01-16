@@ -25,7 +25,7 @@ void free_matrix(double **a,int n)
   sfree(a);
 }
 
-void mat_mult(FILE *fp,int n,int m,double **x,double **y,double **z)
+void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z)
 {
   int i,j,k;
   
@@ -46,7 +46,7 @@ void mat_mult(FILE *fp,int n,int m,double **x,double **y,double **z)
   }
 }
 
-void mat_inv(FILE *fp,int n,double **a)
+void matrix_invert(FILE *fp,int n,double **a)
 {
   int i,j,m,lda,*ipiv,lwork,info;
   double **test,**id,*work;
@@ -84,7 +84,7 @@ void mat_inv(FILE *fp,int n,double **a)
   }
   if (fp) {
     id = alloc_matrix(n,n);
-    mat_mult(fp,n,n,test,a,id);
+    matrix_multiply(fp,n,n,test,a,id);
     fprintf(fp,"And here is the product of A and Ainv\n");
     for(i=0; (i<n); i++) {
       for(j=0; (j<n); j++) 

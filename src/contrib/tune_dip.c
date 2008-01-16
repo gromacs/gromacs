@@ -7,10 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
+ *                        VERSION 3.3.99_development_20071104
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2006, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -31,13 +31,14 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * Groningen Machine for Chemical Simulation
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <ctype.h>
+#include <math.h>
 #include "maths.h"
 #include "macros.h"
 #include "copyrite.h"
@@ -57,23 +58,24 @@
 #include "names.h"
 #include "vec.h"
 #include "atomprop.h"
-#include "grompp.h"
+#include "xvgr.h"
+#include "viewit.h"
 #include "gmx_random.h"
+#include "gstat.h"
 #include "x2top_qgen.h"
 #include "x2top_eemprops.h"
 
 typedef struct {
   char    *molname;
-  real    dip_ref,qtotal,dip_obs;
+  real    dip_ref,qtotal,dip_obs,chieq;
   t_atoms *atoms;
   rvec    *x;
   matrix  box;
 } t_mymol; 
 
 typedef struct {
-  int     nmol,nparam;
+  int     nmol,nparam,eemtype;
   t_mymol *mymol;
-  bool    bFitJ0,bFitChi0,bFitRadius;
   real    J0_0,Chi0_0,R_0;
   void    *eem;
   void    *atomprop;
@@ -96,25 +98,69 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip)
 
   mymol->molname = strdup(fn);
   mymol->dip_ref = dip;
-  mymol->qtotal = 0;
+  mymol->qtotal  = 0;
 }
 
-static void print_mol(FILE *fp,t_mymol *mol)
+static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
 {
-  int i;
+  FILE   *xvgf;
+  double d2=0;
+  real   a,b,rms,sigma,error,aver;
+  int    i,j,nout;
+  t_lsq  lsq;
   
-  fprintf(fp,"Molecule %s, Dipole %6.2f, should be %6.2f\n",
-	  mol->molname,mol->dip_obs,mol->dip_ref);
-  fprintf(fp,"Res  Atom  q\n");
-  for(i=0; (i<mol->atoms->nr); i++)
-    fprintf(fp,"%-5s%-5s  %8.4f\n",
-	    *(mol->atoms->resname[mol->atoms->atom[i].resnr]),
-	    *(mol->atoms->atomname[i]),mol->atoms->atom[i].q);
-  fprintf(fp,"\n");
+  xvgf  = xvgropen(xvgfn,"Correlation between dipoles",
+		   "Experimental","Predicted");
+  fprintf(xvgf,"@ s0 linestyle 0\n");
+  fprintf(xvgf,"@ s0 symbol 1\n");
+  init_lsq(&lsq);
+  for(i=0; (i<nmol); i++) {
+    fprintf(logf,"Molecule %s, Dipole %6.2f, should be %6.2f <chi>: %6.2f\n",
+	    mol[i].molname,mol[i].dip_obs,mol[i].dip_ref,mol[i].chieq);
+    fprintf(xvgf,"%10g  %10g\n",mol[i].dip_ref,mol[i].dip_obs);
+    add_lsq(&lsq,mol[i].dip_ref,mol[i].dip_obs);
+    d2 += sqr(mol[i].dip_ref-mol[i].dip_obs);
+    fprintf(logf,"Res  Atom  q\n");
+    for(j=0; (j<mol[i].atoms->nr); j++)
+      fprintf(logf,"%-5s%-5s  %8.4f\n",
+	      *(mol[i].atoms->resname[mol[i].atoms->atom[j].resnr]),
+	      *(mol[i].atoms->atomname[j]),mol[i].atoms->atom[j].q);
+    fprintf(logf,"\n");
+  }
+  fclose(xvgf);
+  get_lsq_ab(&lsq,&a,&b);
+  rms = sqrt(d2/nmol);
+  printf("\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",nmol,a,b); 
+  printf("RMSD = %.2f D\n",rms);
+  aver = aver_lsq(&lsq);
+  sigma = rms/aver;
+  nout = 0;
+  fprintf(logf,"Overview of outliers\n");
+  fprintf(logf,"--------------------\n");
+  fprintf(logf,"%-20s  %12s  %12s  %12s\n",
+	  "Name","Predicted","Experimental","Deviation");
+  for(i=0; (i<nmol); i++) {
+    if ((mol[i].dip_ref > 0) && 
+	((mol[i].dip_obs/mol[i].dip_ref-1) > 2*sigma)) {
+      fprintf(logf,"%-20s  %12.3f  %12.3f  %12.3f\n",
+	      mol[i].molname,mol[i].dip_obs,mol[i].dip_ref,
+	      fabs(mol[i].dip_obs-mol[i].dip_ref));
+      nout ++;
+    }
+  }  
+  if (nout)
+    printf("There were %d outliers. See at the very bottom of the log file\n",
+	   nout);
+  else
+    fprintf(logf,"None! Well done.\n");
+  do_view(xvgfn,NULL);
+  fclose(logf);
+  
+  done_lsq(&lsq);
 }
 
-t_moldip *read_moldip(char *fn,bool bFitJ0,bool bFitChi0,bool bFitRadius,
-		      real J0_0,real Chi0_0,real R_0)
+t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
+		      real J0_0,real Chi0_0,real R_0,int eemtype)
 {
   char     **strings,buf[STRLEN];
   int      i,nstrings;
@@ -130,19 +176,23 @@ t_moldip *read_moldip(char *fn,bool bFitJ0,bool bFitChi0,bool bFitRadius,
       gmx_fatal(FARGS,"Error on line %d of %s",i+1,fn);
     init_mymol(&(md->mymol[i]),buf,dip);
   }
-  printf("Read %d sets of molecular coordinates and dipoles\n",nstrings);
-  md->eem = read_eemprops(NULL);
-  if (md->eem == NULL)
-    gmx_fatal(FARGS,"Could not read eemprops.dat");
-  md->nparam     = eem_getnumprops(md->eem);
+  fprintf(logf,"Read %d sets of molecule coordinates and dipoles\n",nstrings);
+  md->eem = read_eemprops(eem_fn,eemtype);
+  if ((md->eem == NULL) || ((md->nparam = eem_get_numprops(md->eem)) == 0))
+    gmx_fatal(FARGS,"Could not read %s, or file empty",
+	      eem_fn ? eem_fn : "eemprops.dat");
+  
   md->atomprop   = get_atomprop();
-  md->bFitJ0     = bFitJ0;
-  md->bFitChi0   = bFitChi0;
-  md->bFitRadius = bFitRadius;
+  md->eemtype    = eemtype;
   md->J0_0       = J0_0;
   md->Chi0_0     = Chi0_0;
   md->R_0        = R_0;
-  
+  fprintf(logf,"There are %d atom types in the input file %s:\n---\n",
+	  md->nparam,
+	  eem_fn ? eem_fn : "eemprops.dat");
+  write_eemprops(logf,md->eem);
+  fprintf(logf,"---\n\n");
+	  
   return md;
 }
 
@@ -178,23 +228,13 @@ static double dipole_function(const gsl_vector *v,void *params)
    */
   k=0;
   for(i=0; (i<md->nparam); i++) {
-    if (md->bFitJ0) {
-      J0 = gsl_vector_get(v, k++);
-      if (J0 <= md->J0_0)
-	rms += sqr(J0-md->J0_0);
-    }
-    else
-      J0 = lo_get_j00(md->eem,i,&wj,0);
-    
-    if (md->bFitChi0) {
-      chi0 = gsl_vector_get(v, k++);
-      if (chi0 <= md->Chi0_0)
-	rms += sqr(chi0-md->Chi0_0);
-    }
-    else
-      chi0 = eem_get_chi0(md->eem,i);
-      
-    if (md->bFitRadius) {
+    J0 = gsl_vector_get(v, k++);
+    if (J0 <= md->J0_0)
+      rms += sqr(J0-md->J0_0);
+    chi0 = gsl_vector_get(v, k++);
+    if (chi0 <= md->Chi0_0)
+      rms += sqr(chi0-md->Chi0_0);
+    if (md->eemtype != eqgSM1) {
       radius = gsl_vector_get(v, k++);
       if (radius <= md->R_0)
 	rms += sqr(radius-md->R_0);
@@ -205,9 +245,9 @@ static double dipole_function(const gsl_vector *v,void *params)
   }
     
   for(i=0; (i<md->nmol); i++) {
-    generate_charges_sm(debug,md->eem,md->mymol[i].atoms,
-			md->mymol[i].x,1e-4,10000,md->atomprop,
-			md->mymol[i].qtotal);
+    md->mymol[i].chieq = generate_charges_sm(debug,md->eem,md->mymol[i].atoms,
+					     md->mymol[i].x,1e-4,10000,md->atomprop,
+					     md->mymol[i].qtotal,md->eemtype);
     md->mymol[i].dip_obs = mymol_calc_dip(&(md->mymol[i]));
     rms += sqr(md->mymol[i].dip_obs - md->mymol[i].dip_ref);
     for(j=0; (j<md->mymol[i].atoms->nr); j++) {
@@ -221,9 +261,9 @@ static double dipole_function(const gsl_vector *v,void *params)
 }
 
 static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
-			    char *outfn,char *logfn)
+			    int reinit,real stepsize)
 {
-  FILE   *out;
+  FILE   *out,*xvg;
   real   size,d2,wj;
   int    iter   = 0;
   int    status = 0;
@@ -237,44 +277,41 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
   gsl_multimin_function my_func;
 
   my_func.f      = &dipole_function;
-  my_func.n      = md->nparam*(md->bFitJ0 + md->bFitChi0 + md->bFitRadius);
+  my_func.n      = md->nparam*2;
+  if (md->eemtype != eqgSM1)
+    my_func.n += md->nparam;
   my_func.params = (void *) md;
 
   /* Starting point */
   x = gsl_vector_alloc (my_func.n);
   /* Step size, different for each of the parameters */
   dx = gsl_vector_alloc (my_func.n);
-  k=0;
-  for(i=0; (i<md->nparam); i++) {
-    if (md->bFitJ0) {
-      J00 = lo_get_j00(md->eem,i,&wj,0);
-      gsl_vector_set (x, k, J00);
-      gsl_vector_set (dx, k++, 0.01*J00);
-    }
-    if (md->bFitChi0) {
-      chi0 = eem_get_chi0(md->eem,i);
-      gsl_vector_set (x, k, chi0);
-      gsl_vector_set (dx, k++, 0.01*chi0);
-    }
-    if (md->bFitRadius) {
-      radius = eem_get_radius(md->eem,i);
-      gsl_vector_set (x, k, radius);
-      gsl_vector_set (dx, k++, 0.01*radius);
-    }
-  }
-  
-  
   T = gsl_multimin_fminimizer_nmsimplex;
   s = gsl_multimin_fminimizer_alloc (T, my_func.n);
-
-  gsl_multimin_fminimizer_set (s, &my_func, x, dx);
-  gsl_vector_free (x);
-  gsl_vector_free (dx);
 
   if (fp)
     fprintf(fp,"%5s %12s %12s\n","Iter","Size","RMS");
   
-  do  {
+  do {
+    if ((iter == 0) || ((reinit > 0) && (iter % reinit) == 0)) {
+      k=0;
+      for(i=0; (i<md->nparam); i++) {
+	J00 = lo_get_j00(md->eem,i,&wj,0);
+	gsl_vector_set (x, k, J00);
+	gsl_vector_set (dx, k++, stepsize*J00);
+	chi0 = eem_get_chi0(md->eem,i);
+	gsl_vector_set (x, k, chi0);
+	gsl_vector_set (dx, k++, stepsize*chi0);
+	
+	if (md->eemtype != eqgSM1) {
+	  radius = eem_get_radius(md->eem,i);
+	  gsl_vector_set (x, k, radius);
+	  gsl_vector_set (dx, k++, stepsize*radius);
+	}
+      }
+      gsl_multimin_fminimizer_set (s, &my_func, x, dx);
+    }
+  
     iter++;
     status = gsl_multimin_fminimizer_iterate (s);
     
@@ -288,8 +325,8 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
     
     /*if (status == GSL_SUCCESS)
       if (fp) 
-	fprintf(fp,"Minimum found using %s\n",
-		gsl_multimin_fminimizer_name(s));
+      fprintf(fp,"Minimum found using %s\n",
+      gsl_multimin_fminimizer_name(s));
     */
     if (fp) {
       fprintf(fp,"%5d", iter);
@@ -298,18 +335,11 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
   }
   while (/*(status != GSL_SUCCESS) &&*/ (sqrt(d2) > tol) && (iter < maxiter));
   
+  gsl_vector_free (x);
+  gsl_vector_free (dx);
   gsl_multimin_fminimizer_free (s);
   
-  out = fopen(outfn,"w");
-  write_eemprops(out,md->eem);
-  fclose(out);
 
-  out = fopen(logfn,"w");
-  for(i=0; (i<md->nmol); i++) {
-    print_mol(out,&(md->mymol[i]));
-  }
-  fclose(out);
-    
   return d2;
 }
 
@@ -346,49 +376,66 @@ int main(int argc, char *argv[])
   
   t_filenm fnm[] = {
     { efDAT, "-f", "moldip",   ffREAD  },
+    { efDAT, "-d", "eemprops", ffOPTRD },
     { efDAT, "-o", "molprops", ffWRITE },
-    { efLOG, "-g", "tune_dip", ffWRITE },
+    { efLOG, "-g", "charges",  ffWRITE },
+    { efXVG, "-x", "dipcorr",  ffWRITE }
   };
 #define NFILE asize(fnm)
-  static int  maxiter=100;
+  static int  maxiter=100,reinit=0;
   static real tol=1e-3;
-  static real J0_0=0,Chi0_0=0,R_0=0;
-  static bool bFitJ0=TRUE,bFitChi0=TRUE,bFitRadius=FALSE;
+  static real J0_0=0,Chi0_0=0,R_0=0,step=0.01;
+  static char *qgen[] = { NULL, "SM1", "SM2", "SM3", "SM4", NULL };
   t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&tol},
       "Tolerance for convergence in optimization" },
     { "-maxiter",FALSE, etINT, {&maxiter},
       "Max number of iterations for optimization" },
-    { "-fitj0", FALSE, etBOOL, {&bFitJ0},
-      "Optimize dipoles by fitting J00" },
+    { "-reinit", FALSE, etINT, {&reinit},
+      "After this many iterations the search vectors are randomized again. A vlue of 0 means this is never done at all." },
+    { "-qgen",   FALSE, etENUM, {qgen},
+      "Algorithm used for charge generation" },
     { "-j0",    FALSE, etREAL, {&J0_0},
       "Minimum value that J0 can obtain in fitting" },
-    { "-fitChi0", FALSE, etBOOL, {&bFitChi0},
-      "Optimize dipoles by fiting Chi0" },
     { "-chi0",    FALSE, etREAL, {&Chi0_0},
       "Minimum value that Chi0 can obtain in fitting" },
-    { "-fitradius", FALSE, etBOOL, {&bFitRadius},
-      "Optimize dipole by fitting Radius" },
     { "-r0",    FALSE, etREAL, {&R_0},
-      "Minimum value that Radius can obtain in fitting" }
+      "Minimum value that Radius can obtain in fitting" },
+    { "-step",  FALSE, etREAL, {&step},
+      "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
   };
   t_moldip *md;
-    
+  int      eemtype;
+  FILE     *logf,*out;
+      
   CopyRight(stdout,argv[0]);
 
-  parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
+  parse_common_args(&argc,argv,PCA_CAN_VIEW,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-  if (!bFitJ0 && !bFitChi0 && !bFitRadius)
-    gmx_fatal(FARGS,"Nothing to fit to!");
-    		    
-  md = read_moldip(opt2fn("-f",NFILE,fnm),bFitJ0,bFitChi0,bFitRadius,
-		   J0_0,Chi0_0,R_0);
-  
-  (void) optimize_moldip(stdout,md,maxiter,tol,
-			 opt2fn("-o",NFILE,fnm),
-			 opt2fn("-g",NFILE,fnm));
+  eemtype = eqgSM1;
+  if (qgen[0]) {
+    eemtype = name2eemtype(qgen[0]);
+    if (eemtype == -1)
+      eemtype = eqgSM1;
+  }
+  if (eemtype > eqgSM3)
+    gmx_fatal(FARGS,"Only models SM1 and SM2 implemented so far");
     
+  logf = fopen(opt2fn("-g",NFILE,fnm),"w");
+  md = read_moldip(logf,opt2fn("-f",NFILE,fnm),opt2fn_null("-d",NFILE,fnm),
+		   J0_0,Chi0_0,R_0,eemtype);
+  
+  (void) optimize_moldip(stdout,md,maxiter,tol,reinit,step);
+  
+  print_mols(logf,opt2fn("-x",NFILE,fnm),md->nmol,md->mymol);
+
+  fclose(logf);
+  
+  out = fopen(opt2fn("-o",NFILE,fnm),"w");
+  write_eemprops(out,md->eem);
+  fclose(out);
+  
   thanx(stderr);
   
   return 0;

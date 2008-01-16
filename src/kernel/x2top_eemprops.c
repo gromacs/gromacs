@@ -78,10 +78,10 @@ typedef struct {
 } t_eemrecord;
 
 static char *eemtype_name[eqgNR] = { 
-  "None", "Linear", "Yang", "Bultinck", "SM" 
+  "None", "Linear", "Yang", "Bultinck", "SM1", "SM2", "SM3", "SM4" 
 };
 
-static int name2eemtype(char *name)
+int name2eemtype(char *name)
 {
   int i;
   
@@ -92,11 +92,11 @@ static int name2eemtype(char *name)
   return -1;
 }
 
-void *read_eemprops(char *fn)
+void *read_eemprops(char *fn,int eemtype)
 {
   t_eemrecord *eem=NULL;
-  char   buf[STRLEN],**strings;
-  int    i,n;
+  char   buf[STRLEN],**strings,*ptr;
+  int    i,n,nn=0;
   char   nmbuf[32],algbuf[32];
   int    elem,row;
   double J0,radius,chi0;
@@ -110,21 +110,29 @@ void *read_eemprops(char *fn)
     snew(eem,1);
     snew(eem->eep,n);
     for(i=0; (i<n); i++) {
-      if (sscanf(strings[i],"%s%s%d%d%lf%lf%lf",nmbuf,algbuf,&elem,&row,
-		 &J0,&radius,&chi0) != 7) 
-	gmx_fatal(FARGS,"Error in %s on line %d",buf,i+1);
-      eem->eep[i].name    = strdup(nmbuf);
-      if ((eem->eep[i].eemtype = name2eemtype(algbuf)) == -1)
-	gmx_fatal(FARGS,"Error in %s on line %d, unknown algorithm '%s'",
+      ptr = strings[i];
+      while (*ptr && isspace(*ptr))
+	ptr++;
+      if (((ptr) && (*ptr != ';')) &&
+	  (sscanf(strings[i],"%s%s%d%d%lf%lf%lf",nmbuf,algbuf,&elem,&row,
+		  &J0,&radius,&chi0) == 7))  {
+	if ((eem->eep[nn].eemtype = name2eemtype(algbuf)) == -1)
+	  fprintf(stderr,"Warning in %s on line %d, unknown algorithm '%s'\n",
 		  buf,i+1,algbuf);
-      eem->eep[i].elem    = elem;
-      eem->eep[i].row     = row;
-      eem->eep[i].J0      = J0;
-      eem->eep[i].radius  = radius;
-      eem->eep[i].chi0    = chi0;
+	else if ((eemtype == -1) || (eem->eep[nn].eemtype == eemtype)) {
+	  eem->eep[nn].name    = strdup(nmbuf);
+	  eem->eep[nn].elem    = elem;
+	  eem->eep[nn].row     = row;
+	  eem->eep[nn].J0      = J0;
+	  eem->eep[nn].radius  = radius;
+	  eem->eep[nn].chi0    = chi0;
+	  nn++;
+	}
+      }
     }
-    eem->nep = n;
+    eem->nep = nn;
   }
+    
   return eem;
 }
 
@@ -133,6 +141,7 @@ void write_eemprops(FILE *fp,void *eem)
   t_eemrecord *er = (t_eemrecord *) eem;
   int i;
   
+  fprintf(fp,"; Atom      Model   Nr  Row        J_aa         w_a       Chi_a\n");
   for(i=0; (i<er->nep); i++)
     fprintf(fp,"%-5s  %10s  %3d  %3d  %10.3f  %10.3f  %10.3f\n",
 	    er->eep[i].name,eemtype_name[er->eep[i].eemtype],
@@ -140,14 +149,14 @@ void write_eemprops(FILE *fp,void *eem)
 	    er->eep[i].radius,er->eep[i].chi0);
 }
 
-int eem_getnumprops(void *eem)
+int eem_get_numprops(void *eem)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   
   return er->nep;
 }
 
-int eem_getindex(void *eem,char *resname,char *aname,int eemtype)
+int eem_get_index(void *eem,char *resname,char *aname,int eemtype)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   int i;
@@ -171,7 +180,9 @@ real lo_get_j00(void *eem,int index,real *wj,real qH)
     else 
       *wj = 10*(3/(4*er->eep[index].radius));
   }
-  else if (er->eep[index].eemtype == eqgSM)
+  else if ((er->eep[index].eemtype == eqgSM2) || 
+	   (er->eep[index].eemtype == eqgSM3) ||
+	   (er->eep[index].eemtype == eqgSM4))
     *wj = 10.0/er->eep[index].radius;
   else
     *wj = 0;
@@ -181,7 +192,7 @@ real lo_get_j00(void *eem,int index,real *wj,real qH)
 
 real eem_get_j00(void *eem,char *resname,char *aname,real *wj,real qH,int eemtype)
 {
-  int k = eem_getindex(eem,resname,aname,eemtype);
+  int k = eem_get_index(eem,resname,aname,eemtype);
 
   return lo_get_j00(eem,k,wj,qH);
 }
@@ -202,6 +213,15 @@ real eem_get_radius(void *eem,int index)
   range_check(index,0,er->nep);
   
   return er->eep[index].radius;
+}
+
+real eem_get_elem(void *eem,int index)
+{
+  t_eemrecord *er = (t_eemrecord *) eem;
+  
+  range_check(index,0,er->nep);
+  
+  return er->eep[index].elem;
 }
 
 void eem_set_props(void *eem,int index,real J0,real radius,real chi0)

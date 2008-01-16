@@ -44,8 +44,8 @@ extern double **alloc_matrix(int n,int m);
 
 extern void free_matrix(double **a,int n);
 
-extern void mat_mult(FILE *fp,int n,int m,double **x,double **y,double **z);
+extern void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z);
 
-extern void mat_inv(FILE *fp,int n,double **a);
+extern void matrix_invert(FILE *fp,int n,double **a);
 
 #endif

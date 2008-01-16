@@ -41,20 +41,25 @@
 #include "grompp.h"
 	
 /* File argument maybe NULL, in which case the default eemprops.dat
- * is opened from the library.
+ * is opened from the library. If eemtype != -1 eemprops with eemtype
+ * equal to eemtype will be read.
  */
-extern void *read_eemprops(char *fn);
+extern void *read_eemprops(char *fn,int eemtype);
 
 extern void write_eemprops(FILE *fp,void *eem);
 
-extern int eem_getnumprops(void *eem);
+extern int name2eemtype(char *name);
 
-extern int eem_getindex(void *eem,char *resname,char *aname,int eemtype);
+extern int eem_get_numprops(void *eem);
+
+extern int eem_get_index(void *eem,char *resname,char *aname,int eemtype);
 
 extern real lo_get_j00(void *eem,int index,real *wj,real qH);
 
 extern real eem_get_j00(void *eem,char *resname,char *aname,
 			real *wj,real qH,int eemtype);
+
+extern real eem_get_elem(void *eem,int index);
 
 extern real eem_get_radius(void *eem,int index);
 

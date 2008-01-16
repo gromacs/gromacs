@@ -40,14 +40,15 @@
 #include <stdio.h>
 #include "grompp.h"
 	
-enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, eqgSM, eqgNR };
+enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, 
+       eqgSM1, eqgSM2, eqgSM3, eqgSM4, eqgNR };
 
-extern void generate_charges_sm(FILE *fp,void *eem,
+extern real generate_charges_sm(FILE *fp,void *eem,
 				t_atoms *atoms,rvec x[],
 				real tol,int maxiter,void *atomprop,
-				real qtotref);
+				real qtotref,int eemtype);
 
-extern void assign_charge_alpha(int alg,t_atoms *atoms,rvec x[],
+extern void assign_charge_alpha(int eemtype,t_atoms *atoms,rvec x[],
 				t_params *bonds,real tol,real fac,int maxiter,
 				void *atomprop,real qtotref);
 
