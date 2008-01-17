@@ -61,7 +61,7 @@ extern real eem_get_j00(void *eem,char *resname,char *aname,
 
 extern real eem_get_elem(void *eem,int index);
 
-extern real eem_get_radius(void *eem,int index);
+extern real eem_get_w(void *eem,int index);
 
 extern real eem_get_chi0(void *eem,int index);
 

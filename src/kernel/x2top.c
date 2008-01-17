@@ -277,7 +277,7 @@ int main(int argc, char *argv[])
       gmx_fatal(FARGS,"Inconsistency between charge file (%d entries) and coordinate file (%d atoms)",nqa,atoms->nr);
   }
   else
-    assign_charge_alpha(alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
+    assign_charge_alpha(molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
 			maxiter,atomprop,qtotref);
 
   /* Make Angles and Dihedrals */

@@ -76,7 +76,7 @@ typedef struct {
 typedef struct {
   int     nmol,nparam,eemtype;
   t_mymol *mymol;
-  real    J0_0,Chi0_0,R_0;
+  real    J0_0,Chi0_0,R_0,J0_1,Chi0_1,R_1,fc;
   void    *eem;
   void    *atomprop;
 } t_moldip;
@@ -130,8 +130,8 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
   fclose(xvgf);
   get_lsq_ab(&lsq,&a,&b);
   rms = sqrt(d2/nmol);
-  printf("\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",nmol,a,b); 
-  printf("RMSD = %.2f D\n",rms);
+  fprintf(logf,"\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",nmol,a,b); 
+  fprintf(logf,printf("RMSD = %.2f D\n",rms);
   aver = aver_lsq(&lsq);
   sigma = rms/aver;
   nout = 0;
@@ -160,7 +160,9 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
 }
 
 t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
-		      real J0_0,real Chi0_0,real R_0,int eemtype)
+		      real J0_0,real Chi0_0,real R_0,
+		      real J0_1,real Chi0_1,real R_1,
+		      real fc,int eemtype)
 {
   char     **strings,buf[STRLEN];
   int      i,nstrings;
@@ -187,6 +189,10 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   md->J0_0       = J0_0;
   md->Chi0_0     = Chi0_0;
   md->R_0        = R_0;
+  md->J0_1       = J0_1;
+  md->Chi0_1     = Chi0_1;
+  md->R_1        = R_1;
+  md->fc         = fc;
   fprintf(logf,"There are %d atom types in the input file %s:\n---\n",
 	  md->nparam,
 	  eem_fn ? eem_fn : "eemprops.dat");
@@ -218,7 +224,7 @@ static double dipole_function(const gsl_vector *v,void *params)
 {
   t_moldip *md = (t_moldip *) params;
   int      i,j,k;
-  double   chi0,radius,J0,rms,qt,qq;
+  double   chi0,w,J0,rms,qt,qq;
   real     wj;
   
   rms = 0;
@@ -229,23 +235,31 @@ static double dipole_function(const gsl_vector *v,void *params)
   k=0;
   for(i=0; (i<md->nparam); i++) {
     J0 = gsl_vector_get(v, k++);
-    if (J0 <= md->J0_0)
+    if (J0 < md->J0_0)
       rms += sqr(J0-md->J0_0);
+    if (J0 > md->J0_1)
+      rms += sqr(J0-md->J0_1);
     chi0 = gsl_vector_get(v, k++);
-    if (chi0 <= md->Chi0_0)
+    if (chi0 < md->Chi0_0)
       rms += sqr(chi0-md->Chi0_0);
+    if (chi0 > md->Chi0_1)
+      rms += sqr(chi0-md->Chi0_1);
     if (md->eemtype != eqgSM1) {
-      radius = gsl_vector_get(v, k++);
-      if (radius <= md->R_0)
-	rms += sqr(radius-md->R_0);
+      w = gsl_vector_get(v, k++);
+      if (w < md->R_0)
+	rms += sqr(w-md->R_0);
+      if (w > md->R_1)
+	rms += sqr(w-md->R_1);
     }
     else
-      radius = eem_get_radius(md->eem,i);
-    eem_set_props(md->eem,i,J0,radius,chi0);
+      w = eem_get_w(md->eem,i);
+    eem_set_props(md->eem,i,J0,w,chi0);
   }
-    
+  rms = rms*md->fc;
+  
   for(i=0; (i<md->nmol); i++) {
-    md->mymol[i].chieq = generate_charges_sm(debug,md->eem,md->mymol[i].atoms,
+    md->mymol[i].chieq = generate_charges_sm(debug,md->mymol[i].molname,
+					     md->eem,md->mymol[i].atoms,
 					     md->mymol[i].x,1e-4,10000,md->atomprop,
 					     md->mymol[i].qtotal,md->eemtype);
     md->mymol[i].dip_obs = mymol_calc_dip(&(md->mymol[i]));
@@ -268,7 +282,7 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
   int    iter   = 0;
   int    status = 0;
   int    i,k;
-  double J00,chi0,radius;
+  double J00,chi0,w;
   
   const gsl_multimin_fminimizer_type *T;
   gsl_multimin_fminimizer *s;
@@ -304,9 +318,9 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
 	gsl_vector_set (dx, k++, stepsize*chi0);
 	
 	if (md->eemtype != eqgSM1) {
-	  radius = eem_get_radius(md->eem,i);
-	  gsl_vector_set (x, k, radius);
-	  gsl_vector_set (dx, k++, stepsize*radius);
+	  w = eem_get_w(md->eem,i);
+	  gsl_vector_set (x, k, w);
+	  gsl_vector_set (dx, k++, stepsize*w);
 	}
       }
       gsl_multimin_fminimizer_set (s, &my_func, x, dx);
@@ -372,7 +386,10 @@ int main(int argc, char *argv[])
     "tune_dip read a series of molecules and corresponding experimental",
     "dipole moments from a file, and tunes parameters in an algorithm",
     "until the experimental dipole moments are reproduces by the",
-    "charge generating algorithm SM in the x2top program."
+    "charge generating algorithm SM in the x2top program.[PAR]",
+    "Minima and maxima for the parameters can be set, these are however",
+    "not strictly enforced, but rather they are penalized with a harmonic",
+    "function, for which the force constant can be set explicitly."
   };
   
   t_filenm fnm[] = {
@@ -386,6 +403,7 @@ int main(int argc, char *argv[])
   static int  maxiter=100,reinit=0;
   static real tol=1e-3;
   static real J0_0=0,Chi0_0=0,R_0=0,step=0.01;
+  static real J0_1=30,Chi0_1=30,R_1=1,fc=1.0;
   static char *qgen[] = { NULL, "SM1", "SM2", "SM3", "SM4", NULL };
   t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&tol},
@@ -402,6 +420,14 @@ int main(int argc, char *argv[])
       "Minimum value that Chi0 can obtain in fitting" },
     { "-r0",    FALSE, etREAL, {&R_0},
       "Minimum value that Radius can obtain in fitting" },
+    { "-j1",    FALSE, etREAL, {&J0_1},
+      "Maximum value that J0 can obtain in fitting" },
+    { "-chi1",    FALSE, etREAL, {&Chi0_1},
+      "Maximum value that Chi0 can obtain in fitting" },
+    { "-r1",    FALSE, etREAL, {&R_1},
+      "Maximum value that Radius can obtain in fitting" },
+    { "-fc",    FALSE, etREAL, {&fc},
+      "Force constant in the penalty function for going outside the borders given with the above six option." },
     { "-step",  FALSE, etREAL, {&step},
       "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
   };
@@ -425,7 +451,7 @@ int main(int argc, char *argv[])
     
   logf = fopen(opt2fn("-g",NFILE,fnm),"w");
   md = read_moldip(logf,opt2fn("-f",NFILE,fnm),opt2fn_null("-d",NFILE,fnm),
-		   J0_0,Chi0_0,R_0,eemtype);
+		   J0_0,Chi0_0,R_0,J0_1,Chi0_1,R_1,fc,eemtype);
   
   (void) optimize_moldip(stdout,md,maxiter,tol,reinit,step);
   

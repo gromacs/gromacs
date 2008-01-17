@@ -68,7 +68,7 @@
 typedef struct {
   char *name;
   int  eemtype,elem,row;
-  real J0,radius,chi0; 
+  real J0,w,chi0; 
   /* J0 in Yang & Sharp corresponds to n (eta) in Bultinck */
 } t_eemprops;
 
@@ -99,7 +99,7 @@ void *read_eemprops(char *fn,int eemtype)
   int    i,n,nn=0;
   char   nmbuf[32],algbuf[32];
   int    elem,row;
-  double J0,radius,chi0;
+  double J0,w,chi0;
   
   if (fn == NULL) 
     sprintf(buf,"eemprops.dat");
@@ -115,7 +115,7 @@ void *read_eemprops(char *fn,int eemtype)
 	ptr++;
       if (((ptr) && (*ptr != ';')) &&
 	  (sscanf(strings[i],"%s%s%d%d%lf%lf%lf",nmbuf,algbuf,&elem,&row,
-		  &J0,&radius,&chi0) == 7))  {
+		  &J0,&w,&chi0) == 7))  {
 	if ((eem->eep[nn].eemtype = name2eemtype(algbuf)) == -1)
 	  fprintf(stderr,"Warning in %s on line %d, unknown algorithm '%s'\n",
 		  buf,i+1,algbuf);
@@ -124,7 +124,7 @@ void *read_eemprops(char *fn,int eemtype)
 	  eem->eep[nn].elem    = elem;
 	  eem->eep[nn].row     = row;
 	  eem->eep[nn].J0      = J0;
-	  eem->eep[nn].radius  = radius;
+	  eem->eep[nn].w  = w;
 	  eem->eep[nn].chi0    = chi0;
 	  nn++;
 	}
@@ -140,13 +140,14 @@ void write_eemprops(FILE *fp,void *eem)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   int i;
-  
+
+  fprintf(fp,"; Electronegativity parameters. J_aa and Chi_a are in eV, w_a in nm\n");
   fprintf(fp,"; Atom      Model   Nr  Row        J_aa         w_a       Chi_a\n");
   for(i=0; (i<er->nep); i++)
-    fprintf(fp,"%-5s  %10s  %3d  %3d  %10.3f  %10.3f  %10.3f\n",
+    fprintf(fp,"%-5s  %10s  %3d  %3d  %10.4f  %10.4f  %10.4f\n",
 	    er->eep[i].name,eemtype_name[er->eep[i].eemtype],
 	    er->eep[i].elem,er->eep[i].row,er->eep[i].J0,
-	    er->eep[i].radius,er->eep[i].chi0);
+	    er->eep[i].w,er->eep[i].chi0);
 }
 
 int eem_get_numprops(void *eem)
@@ -176,14 +177,14 @@ real lo_get_j00(void *eem,int index,real *wj,real qH)
 
   if (er->eep[index].eemtype == eqgYang) {
     if (er->eep[index].elem == 1) 
-      *wj = 10*(3/(4*er->eep[index].radius)+qH);
+      *wj = (3/(4*er->eep[index].w)+10*qH);
     else 
-      *wj = 10*(3/(4*er->eep[index].radius));
+      *wj = (3/(4*er->eep[index].w));
   }
   else if ((er->eep[index].eemtype == eqgSM2) || 
 	   (er->eep[index].eemtype == eqgSM3) ||
 	   (er->eep[index].eemtype == eqgSM4))
-    *wj = 10.0/er->eep[index].radius;
+    *wj = 1.0/er->eep[index].w;
   else
     *wj = 0;
     
@@ -206,13 +207,13 @@ real eem_get_chi0(void *eem,int index)
   return er->eep[index].chi0;
 }
 
-real eem_get_radius(void *eem,int index)
+real eem_get_w(void *eem,int index)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   
   range_check(index,0,er->nep);
   
-  return er->eep[index].radius;
+  return er->eep[index].w;
 }
 
 real eem_get_elem(void *eem,int index)
@@ -224,13 +225,13 @@ real eem_get_elem(void *eem,int index)
   return er->eep[index].elem;
 }
 
-void eem_set_props(void *eem,int index,real J0,real radius,real chi0)
+void eem_set_props(void *eem,int index,real J0,real w,real chi0)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   
   range_check(index,0,er->nep);
   
-  er->eep[index].J0 = J0;
-  er->eep[index].radius = radius;
+  er->eep[index].J0   = J0;
+  er->eep[index].w    = w;
   er->eep[index].chi0 = chi0;
 }

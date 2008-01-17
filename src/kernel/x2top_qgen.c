@@ -337,7 +337,7 @@ static void generate_charges_yang(void *eem,t_atoms *atoms,rvec x[],
   done_qgen(stdout,atoms,qgen);
 }
 
-real generate_charges_sm(FILE *fp,
+real generate_charges_sm(FILE *fp,char *molname,
 			 void *eem,t_atoms *atoms,rvec x[],
 			 real tol,int maxiter,void *atomprop,
 			 real qtotref,int eemtype)
@@ -349,7 +349,7 @@ real generate_charges_sm(FILE *fp,
   real   rms,mu;
   
   if (fp)
-    fprintf(fp,"Generating charges using Van der Spoel & Van Maaren algorithm\n");
+    fprintf(fp,"Generating charges using Van der Spoel & Van Maaren algorithm for %s\n",molname);
   qgen = init_qgen(eem,atoms,atomprop,x,eemtype);
   snew(qq,atoms->nr);
   for(i=0; (i<atoms->nr); i++)
@@ -445,7 +445,8 @@ static void generate_charges_linear(t_atoms *atoms,rvec x[],t_params *bonds,
   sfree(chi0);
 }
 
-void assign_charge_alpha(int eemtype,t_atoms *atoms,rvec x[],
+void assign_charge_alpha(char *molname,
+			 int eemtype,t_atoms *atoms,rvec x[],
 			 t_params *bonds,real tol,real fac,int maxiter,
 			 void *atomprop,real qtotref)
 {
@@ -481,7 +482,7 @@ void assign_charge_alpha(int eemtype,t_atoms *atoms,rvec x[],
   case eqgSM2:
   case eqgSM3:
   case eqgSM4:
-    (void) generate_charges_sm(stdout,eem,atoms,x,tol,maxiter,atomprop,
+    (void) generate_charges_sm(molname,stdout,eem,atoms,x,tol,maxiter,atomprop,
 			       qtotref,eemtype);
     break;
   default:

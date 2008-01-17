@@ -43,12 +43,13 @@
 enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, 
        eqgSM1, eqgSM2, eqgSM3, eqgSM4, eqgNR };
 
-extern real generate_charges_sm(FILE *fp,void *eem,
+extern real generate_charges_sm(FILE *fp,char *molname,void *eem,
 				t_atoms *atoms,rvec x[],
 				real tol,int maxiter,void *atomprop,
 				real qtotref,int eemtype);
 
-extern void assign_charge_alpha(int eemtype,t_atoms *atoms,rvec x[],
+extern void assign_charge_alpha(char *molname,
+				int eemtype,t_atoms *atoms,rvec x[],
 				t_params *bonds,real tol,real fac,int maxiter,
 				void *atomprop,real qtotref);
 
