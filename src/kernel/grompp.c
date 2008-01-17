@@ -917,7 +917,7 @@ int main (int argc, char *argv[])
 	       ir->posres_com,ir->posres_comB);
   }
   
-  /* set parameters for virtual site construction */
+  /* set parameters for virtual site construction (not for vsiten) */
   nvsite=set_vsites(bVerbose, &sys->atoms, atype, msys.plist);
   /* now throw away all obsolete bonds, angles and dihedrals: */
   /* note: constraints are ALWAYS removed */
@@ -954,11 +954,9 @@ int main (int argc, char *argv[])
     pr_symtab(debug,0,"After convert_params",&sys->symtab);
 
   /* set ptype to VSite for virtual sites */
-  if (nvsite) {
-    set_vsites_ptype(bVerbose,&sys->idef,&sys->atoms);
-    if (debug)
-      pr_symtab(debug,0,"After virtual sites",&sys->symtab);
-  }
+  set_vsites_ptype(FALSE,&sys->idef,&sys->atoms);
+  if (debug)
+    pr_symtab(debug,0,"After virtual sites",&sys->symtab);
   /* Check velocity for virtual sites and shells */
   if (bGenVel) 
     check_vel(&sys->atoms,state.v);
