@@ -60,6 +60,7 @@
 #include "gen_ad.h"
 #include "topexcl.h"
 #include "vec.h"
+#include "x2top_eemprops.h"
 #include "x2top_nm2type.h"
 #include "x2top_core.h"
 #include "x2top_qgen.h"

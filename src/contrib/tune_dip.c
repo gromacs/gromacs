@@ -130,8 +130,9 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
   fclose(xvgf);
   get_lsq_ab(&lsq,&a,&b);
   rms = sqrt(d2/nmol);
-  fprintf(logf,"\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",nmol,a,b); 
-  fprintf(logf,printf("RMSD = %.2f D\n",rms);
+  fprintf(logf,"\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",
+	  nmol,a,b); 
+  fprintf(logf,"RMSD = %.2f D\n",rms);
   aver = aver_lsq(&lsq);
   sigma = rms/aver;
   nout = 0;
