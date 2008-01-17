@@ -56,38 +56,53 @@ int main(int argc,char *argv[])
   static char *desc[] = {
     "The mdrun program is the main computational chemistry engine",
     "within GROMACS. Obviously, it performs Molecular Dynamics simulations,",
-    "but it can also perform Brownian Dynamics and Langevin Dynamics",
-    "as well as Conjugate Gradient or Steepest Descents energy minimization.",
+    "but it can also perform Stochastic Dynamics, Energy Minimization,",
+    "test particle insertion or (re)calculation of energies.",
     "Normal mode analysis is another option. In this case mdrun",
     "builds a Hessian matrix from single conformation.",
     "For usual Normal Modes-like calculations, make sure that",
     "the structure provided is properly energy-minimised.",
-    "The generated matrix can be diagonalized by g_nmeig.[PAR]"
-    "The mdrun program reads the run input file ([TT]-s[tt]) and distributes the",
-    "topology over nodes if needed. The coordinates are passed",
-    "around, so that computations can begin.",
-    "First a neighborlist is made, then the forces are computed.",
-    "The forces are globally summed, and the velocities and",
-    "positions are updated. If necessary shake is performed to constrain",
-    "bond lengths and/or bond angles.",
-    "Temperature and Pressure can be controlled using weak coupling to a",
-    "bath.[PAR]",
-    "mdrun produces at least three output file, plus one log file",
-    "([TT]-g[tt]) per node.",
+    "The generated matrix can be diagonalized by g_nmeig.[PAR]",
+    "The mdrun program reads the run input file ([TT]-s[tt])",
+    "and distributes the topology over nodes if needed.",
+    "mdrun produces at least four output files.",
+    "A single log file ([TT]-g[tt]) is written, unless the option",
+    "[TT]-seppot[tt] is used, in which case each node writes a log file.",
     "The trajectory file ([TT]-o[tt]), contains coordinates, velocities and",
     "optionally forces.",
     "The structure file ([TT]-c[tt]) contains the coordinates and",
     "velocities of the last step.",
     "The energy file ([TT]-e[tt]) contains energies, the temperature,",
-    "pressure, etc, a lot of these things are also printed in the log file",
-    "of node 0.",
+    "pressure, etc, a lot of these things are also printed in the log file.",
     "Optionally coordinates can be written to a compressed trajectory file",
     "([TT]-x[tt]).[PAR]",
-    "When running in parallel with PVM or an old version of MPI the",
-    "[TT]-np[tt] option must be given to indicate the number of",
-    "nodes.[PAR]",
     "The option [TT]-dgdl[tt] is only used when free energy perturbation is",
     "turned on.[PAR]",
+    "When mdrun is started using MPI with more than 1 node, parallization",
+    "is used. By default domain decomposition is used, unless the [TT]-pd[tt]",
+    "option is set, which selects particle decomposition.[PAR]",
+    "With domain decomposition, the spatial decomposition can be set",
+    "with option [TT]-dd[tt]. By default mdrun selects a relatively",
+    "good decomposition.",
+    "When PME is used, separate nodes can be assigned to do only the PME",
+    "calculation; this is computationally more efficient starting from",
+    "about 12 nodes. The number of PME nodes is set with option",
+    "[TT]-npme[tt]. By default mdrun makes a guess for the number of PME",
+    "nodes when the number of nodes is 12 or larger or when the PME grid",
+    "x or y dimension is not divisible by the number of nodes, but the user",
+    "should optimize this. Performance statistics on this issue are written",
+    "at the end of the log file.",
+    "Dynamic load balancing can be turned on with the option [TT]-dlb[tt],"
+    "which can give a significant performance improvement,",
+    "especially for inhomogeneous systems. The only disadvantage of",
+    "dynamic load balancing is that runs are no longer binary reproducible,",
+    "but in most cases this is not important.",
+    "All distances required for bonded interactions should be within the",
+    "longest cut-off length and the smallest cell size,",
+    "if this is not the case mdrun terminates with an error message.",
+    "Option [TT]-rdd[tt] can be used to increase the allowed distance for",
+    "bonded interactions or also, when using dynamic load balancing,",
+    "to set the lower limit for the cell size.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated. Neighbor searching will be",
     "performed for every frame, unless [TT]nstlist[tt] is zero",
@@ -176,6 +191,7 @@ int main(int argc,char *argv[])
   /* Command line options ! */
   static bool bCart        = FALSE;
   static bool bPPPME       = FALSE;
+  static bool bPartDec     = FALSE;
   static bool bDLB         = FALSE;
   static bool bSumEner     = TRUE;
   static bool bVerbose     = FALSE;
@@ -186,26 +202,28 @@ int main(int argc,char *argv[])
   static bool bConfout     = TRUE;
   static bool bReproducible = FALSE;
     
-  static int  npme=0;
+  static int  npme=-1;
   static int  nmultisim=0;
   static int  repl_ex_nst=0;
   static int  repl_ex_seed=-1;
   static int  nstepout=100;
   static int  nthreads=1;
 
-  static rvec realddxyz={1,1,1};
+  static rvec realddxyz={0,0,0};
   static char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
   static real rdd=0.0;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
 
   static t_pargs pa[] = {
+    { "-pd",      FALSE, etBOOL,{&bPartDec},
+      "Use particle decompostion" },
     { "-dd",      FALSE, etRVEC,{&realddxyz},
-      "Domain decomposition grid, 1 is particle dec." },
+      "Domain decomposition grid" },
     { "-nt",      FALSE, etINT, {&nthreads},
       "Number of threads to start on each node" },
     { "-npme",    FALSE, etINT, {&npme},
-      "Number of separate nodes to be used for PME" },
+      "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
       "DD node order" },
     { "-rdd",     FALSE, etREAL, {&rdd},
@@ -294,6 +312,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
   Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
   Flags = Flags | (bGlas         ? MD_GLAS         : 0);
+  Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
   Flags = Flags | (bDLB          ? MD_DLB          : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);

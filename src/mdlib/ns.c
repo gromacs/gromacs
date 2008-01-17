@@ -1954,8 +1954,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
   
   if (fr->bGrid) {
     /* Grid search */
-    snew(ns->grid,1);
-    init_grid(fplog,fr,cr->dd,cgs->nr,box,ns->grid);
+    ns->grid = init_grid(fplog,fr);
     /* These lists are allocated in ns5_core */
     ns->nl_sr = NULL;
   } else {

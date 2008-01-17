@@ -26,17 +26,6 @@ static int natoms_global;
 /* Static pointers only used for an error message */
 static t_topology *err_top_global,*err_top_local;
 
-static bool have_exclusion_forces(int eeltype)
-{
-  /* With Ewald or RF we need all exclusions exactly once
-   * to determine the correction forces for the exclusions.
-   * With cut-off electrostatics we don't care that exclusions
-   * beyond the cut-off can be missing or that some exclusions
-   * are present in more than one cell.
-   */
-  return (EEL_FULL(eeltype) || (EEL_RF(eeltype) && eeltype!=eelRF_NEC));
-}
-
 static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
 					    int natoms,t_idef *idef)
 {
@@ -323,7 +312,7 @@ void dd_make_reverse_top(FILE *fplog,
 
   nexcl = count_excls(&top->blocks[ebCGS],&top->blocks[ebEXCLS],
 		      &dd->n_intercg_excl);
-  if (have_exclusion_forces(eeltype)) {
+  if (EEL_EXCL_FORCES(eeltype)) {
     dd->nbonded_global += nexcl;
     if (dd->n_intercg_excl && fplog)
       fprintf(fplog,"There are %d inter charge-group exclusions,\n"
@@ -812,7 +801,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 		d,rcheck[d],bRCheck2);
     }
   }
-  if (!have_exclusion_forces(fr->eeltype))
+  if (!EEL_EXCL_FORCES(fr->eeltype))
     bRCheck2 = FALSE;
   if (bRCheck || bRCheck2) {
     make_la2lc(dd);
@@ -838,7 +827,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   nexcl = make_local_exclusions(dd,bRCheck2,rc,dd->la2lc,pbc_null,fr->cg_cm,
 				fr,&top->blocks[ebEXCLS],
 				&ltop->blocks[ebEXCLS]);
-  if (have_exclusion_forces(fr->eeltype))
+  if (EEL_EXCL_FORCES(fr->eeltype))
     dd->nbonded_local += nexcl;
   
   ltop->atoms     = top->atoms;
@@ -871,4 +860,22 @@ t_topology *dd_init_local_top(t_topology *top_global)
   }
 
   return top;
+}
+
+t_state *dd_init_local_state(gmx_domdec_t *dd,t_state *state_global)
+{
+  int buf[2];
+  t_state *state;
+
+  if (DDMASTER(dd)) {
+    buf[0] = state_global->flags;
+    buf[1] = state_global->ngtc;
+  }
+  dd_bcast(dd,2*sizeof(int),buf);
+
+  snew(state,1);
+  init_state(state,0,buf[1]);
+  state->flags = buf[0];
+
+  return state;
 }

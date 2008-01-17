@@ -62,10 +62,11 @@
 #define MD_RERUN       (1<<4)
 #define MD_FFSCAN      (1<<6)
 #define MD_SEPPOT      (1<<7)
-#define MD_DLB         (1<<8)
-#define MD_CONFOUT     (1<<9)
-#define MD_NOGSTAT     (1<<10)
-#define MD_REPRODUCIBLE (1<<11)
+#define MD_PARTDEC     (1<<9)
+#define MD_DLB         (1<<10)
+#define MD_CONFOUT     (1<<11)
+#define MD_NOGSTAT     (1<<12)
+#define MD_REPRODUCIBLE (1<<13)
 
 
 enum {
@@ -217,6 +218,9 @@ extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       * returns the number of shifts over the ring to perform to calculate
       * all interactions.
       */
+
+extern void distribute_state(t_commrec *cr,t_state *state);
+/* Moves the state over the ring */
 
 extern void start_time(void);
 /* Start timing routines */

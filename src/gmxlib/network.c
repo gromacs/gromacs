@@ -513,6 +513,15 @@ void gmx_abort(int noderank,int nnodes,int errorno)
 #endif
 }
 
+void gmx_bcast(int nbytes,void *b,const t_commrec *cr)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_bast");
+#else
+  MPI_Bcast(b,nbytes,MPI_BYTE,MASTERRANK(cr),cr->mpi_comm_mygroup);
+#endif
+}
+
 void gmx_sumd(int nr,double r[],const t_commrec *cr)
 {
 #ifndef GMX_MPI

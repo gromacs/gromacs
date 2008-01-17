@@ -135,11 +135,19 @@ void ld_state(const t_commrec *cr,int src,t_state *state)
   blockrx(cr,src,state->box);
   blockrx(cr,src,state->boxv);
   blockrx(cr,src,state->pcoupl_mu);
-  nblockrx(cr,src,state->ngtc,state->nosehoover_xi);
-  if (!DOMAINDECOMP(cr)) {
-    nblockrx(cr,src,state->natoms,state->x);
-    nblockrx(cr,src,state->natoms,state->v);
+  if (!MASTER(cr)) {
+    snew(state->nosehoover_xi,state->ngtc);
+    state->nalloc = state->natoms;
+    snew(state->x,state->nalloc);
+    snew(state->v,state->nalloc);
+    if (state->flags & STATE_HAS_SDX)
+      snew(state->sd_X,state->nalloc);
   }
+  nblockrx(cr,src,state->ngtc,state->nosehoover_xi);
+  nblockrx(cr,src,state->natoms,state->x);
+  nblockrx(cr,src,state->natoms,state->v);
+  if (state->flags & STATE_HAS_SDX)
+    nblockrx(cr,src,state->natoms,state->sd_X);
 }
 
 static void ld_ilist(const t_commrec *cr,int src,t_ilist *ilist)
@@ -294,18 +302,6 @@ void ld_data(const t_commrec *cr,int left,int right,t_inputrec *inputrec,
   for (i=0; (i<ebNR); i++) 
     ld_block(cr,left,&top->blocks[i]);
   if (debug) fprintf(debug,"after ld_block\n");
-  if (!DOMAINDECOMP(cr) || !DDMASTER(cr->dd)) {
-    snew(state->nosehoover_xi,inputrec->opts.ngtc);
-    if (!DOMAINDECOMP(cr)) {
-      state->nalloc = top->atoms.nr;
-      snew(state->x,state->nalloc);
-      snew(state->v,state->nalloc);
-    } else {
-      state->nalloc = 0;
-    }
-  }
-  ld_state(cr,left,state);
-  if (debug) fprintf(debug,"after ld_state\n");
 }
 
 static void mv_grpopts(const t_commrec *cr,int dest,t_grpopts *g)
@@ -468,10 +464,10 @@ void mv_state(const t_commrec *cr,int dest,t_state *state)
   blocktx(cr,dest,state->boxv);
   blocktx(cr,dest,state->pcoupl_mu);
   nblocktx(cr,dest,state->ngtc,state->nosehoover_xi);
-  if (!DOMAINDECOMP(cr)) {
-    nblocktx(cr,dest,state->natoms,state->x);
-    nblocktx(cr,dest,state->natoms,state->v);
-  }
+  nblocktx(cr,dest,state->natoms,state->x);
+  nblocktx(cr,dest,state->natoms,state->v);
+  if (state->flags & STATE_HAS_SDX)
+    nblocktx(cr,dest,state->natoms,state->sd_X);
 }
 
 static void mv_ilist(const t_commrec *cr,int dest,t_ilist *ilist)
@@ -504,6 +500,4 @@ void mv_data(const t_commrec *cr,int left,int right,t_inputrec *inputrec,
   mv_idef(cr,right,&top->idef);
   for (i=0; (i<ebNR); i++) 
     mv_block(cr,right,&top->blocks[i]);
-  mv_state(cr,right,state);
 }
-

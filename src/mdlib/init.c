@@ -98,6 +98,15 @@ void init_single(FILE *log,t_inputrec *inputrec,
   pr_inputrec(log,0,"Input Parameters",inputrec,FALSE);
 }
 
+void distribute_state(t_commrec *cr,t_state *state)
+{
+  if (MASTER(cr))
+    mv_state(cr,cr->right,state);
+  ld_state(cr,cr->left,state);
+  if (!MASTER(cr))
+    mv_state(cr,cr->right,state);
+}
+
 static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile,
 				t_state *state_p)
 {
@@ -134,15 +143,15 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   char buf[256];
   
   if (MASTER(cr)) 
-    distribute_parallel(cr,cr->left,cr->right,tpxfile,
-			DOMAINDECOMP(cr) ? state : NULL);
+    distribute_parallel(cr,cr->left,cr->right,tpxfile,state);
     
     /* Read the actual data */
   ld_data(cr,cr->left,cr->right,inputrec,top,state);
-  if (cr->nodeid != 0)
+  if (!MASTER(cr))
     mv_data(cr,cr->left,cr->right,inputrec,top,state);
 
-  correct_state_entries(state,inputrec);
+  if (MASTER(cr))
+    correct_state_entries(state,inputrec);
 
   if (!EI_TPI(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */

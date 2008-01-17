@@ -86,6 +86,8 @@ enum {
   evdwCUT, evdwSWITCH, evdwSHIFT, evdwUSER, evdwENCADSHIFT, evdwNR
 };
 
+#define EEL_EXCL_FORCES(e) (EEL_FULL(e) || (EEL_RF(e) && (e) != eelRF_NEC))
+
 #define EVDW_NOCUT(e) ((e) == evdwSWITCH || (e) == evdwSHIFT || (e) == evdwENCADSHIFT)
 
 enum { 

@@ -99,21 +99,15 @@ static RETSIGTYPE signal_handler(int n)
   }
 }
 
-static void send_inputrec(t_commrec *cr,
-			  t_inputrec *inputrec,int nChargePerturbed)
+static void send_nchargeperturbed(t_commrec *cr,int nChargePerturbed)
 {
   int dest;
   
   if (MASTER(cr) && cr->npmenodes > 0) {
-    if (!EEL_PME(inputrec->coulombtype))
-      gmx_fatal(FARGS,"Separate PME nodes have been selected with %s electrostatics",EELTYPE(inputrec->coulombtype));
     for(dest=0; dest<cr->nnodes; dest++) {
       if (gmx_pmeonlynode(cr,dest)) {
 #ifdef GMX_MPI
 	/* dest is a PME only node */
-	/* Send the inputrec to a PME node */
-	MPI_Send(inputrec,sizeof(t_inputrec),MPI_BYTE,
-		 dest,0,cr->mpi_comm_mysim);
 	/* Tell if we need to do PME with free energy */
 	MPI_Send(&nChargePerturbed,sizeof(int),MPI_BYTE,
 		 dest,0,cr->mpi_comm_mysim);
@@ -123,17 +117,17 @@ static void send_inputrec(t_commrec *cr,
   }
 }
 
-static void receive_inputrec(t_commrec *cr,
-			     t_inputrec *inputrec,int *nChargePerturbed)
+static int receive_nchargeperturbed(t_commrec *cr)
 {
+  int nChargePerturbed=0;
+
 #ifdef GMX_MPI
-  MPI_Recv(inputrec,sizeof(t_inputrec),MPI_BYTE,
-	   0,0,cr->mpi_comm_mysim,
-	   MPI_STATUS_IGNORE);
-  MPI_Recv(nChargePerturbed,sizeof(int),MPI_BYTE,
+  MPI_Recv(&nChargePerturbed,sizeof(int),MPI_BYTE,
 	   0,0,cr->mpi_comm_mysim,
 	   MPI_STATUS_IGNORE);
 #endif
+
+  return nChargePerturbed;
 }
 
 typedef struct { 
@@ -153,6 +147,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   double     nodetime=0,realtime;
   t_inputrec *inputrec;
   t_state    *state=NULL;
+  matrix     box;
   rvec       *buf=NULL,*f=NULL;
   real       tmpr1,tmpr2;
   real       *ener=NULL;
@@ -172,9 +167,37 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *gro;
   gmx_wallcycle_t wcycle;
 
-  if ((ddxyz[XX]!=1 || ddxyz[YY]!=1 || ddxyz[ZZ]!=1)) {
+  snew(inputrec,1);
+  snew(top,1);
+  
+  if (bVerbose && MASTER(cr)) 
+    fprintf(stderr,"Getting Loaded...\n");
+  
+  if (PAR(cr)) {
+    /* The master thread on the master node reads from disk, 
+     * then distributes everything to the other processors.
+     */
+    snew(state,1);
+    init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
+		  inputrec,top,state,
+		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
+  } else {
+    /* Read a file for a single processor */
+    snew(state,1);
+    init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state);
+  }
+  if (MASTER(cr))
+    copy_mat(state->box,box);
+  if (PAR(cr))
+    gmx_bcast(sizeof(box),box,cr);
+    
+  if (bVerbose && MASTER(cr))
+    fprintf(stderr,"Loaded with Money\n\n");
+
+  if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
     cr->dd = init_domain_decomposition(fplog,cr,ddxyz,rdd,
-				       Flags & MD_DLB,ddcsx,ddcsy,ddcsz);
+				       Flags & MD_DLB,ddcsx,ddcsy,ddcsz,
+				       top,box,inputrec);
     
     make_dd_communicators(fplog,cr,dd_node_order);
 
@@ -196,43 +219,25 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   wcycle = wallcycle_init(fplog,cr);
 
-  snew(inputrec,1);
   snew(nrnb,1);
   if (cr->duty & DUTY_PP) {
     /* Initiate everything (snew sets to zero!) */
     snew(ener,F_NRE);
     snew(fcd,1);
-    snew(top,1);
     snew(grps,1);
-    snew(state,1);
 
-    if (bVerbose && MASTER(cr)) 
-      fprintf(stderr,"Getting Loaded...\n");
-    
-    if (PAR(cr)) {
-      /* The master thread on the master node reads from disk, 
-       * then dsitributes everything to the other processors.
-       */
-      init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
-		    inputrec,top,state,
-		    MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
-      
-      if (!(EI_TPI(inputrec->eI) || DOMAINDECOMP(cr))) {
-	split_system(fplog,inputrec,state,cr,top);
-      }
-    }
-    else {
-      /* Read a file for a single processor */
-      init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state);
-    }
-    
-    if (bVerbose && MASTER(cr))
-      fprintf(stderr,"Loaded with Money\n\n");
-    
     /* For domain decomposition we allocate dynamically
      * in dd_partition_system.
      */
     if (!DOMAINDECOMP(cr)) {
+      if (PAR(cr)) {
+	if (!MASTER(cr))
+	  snew(state,1);
+	distribute_state(cr,state);
+
+	if (!EI_TPI(inputrec->eI))
+	  split_system(fplog,inputrec,state,cr,top);
+      }
       snew(buf,top->atoms.nr);
       snew(f,top->atoms.nr);
     }
@@ -276,14 +281,14 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Initiate forcerecord */
     fr = mk_forcerec();
-    init_forcerec(fplog,fr,fcd,inputrec,top,cr,state->box,FALSE,
+    init_forcerec(fplog,fr,fcd,inputrec,top,cr,box,FALSE,
 		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
 		  opt2fn("-tableb",nfile,fnm),FALSE);
     fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
     
     /* Initialize QM-MM */
     if(fr->bQMMM)
-      init_QMMMrec(cr,state->box,top,inputrec,fr);
+      init_QMMMrec(cr,box,top,inputrec,fr);
     
     /* Initialize the mdatoms structure.
      * mdatoms is not filled with atom data,
@@ -295,8 +300,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     vsite = init_vsite(cr,top);
 
     /* Make molecules whole at start of run */
-    if (fr->ePBC != epbcNONE)  {
-      do_pbc_first(fplog,state->box,fr,graph,state->x);
+    if (fr->ePBC != epbcNONE && state)  {
+      do_pbc_first(fplog,box,fr,graph,state->x);
     }
 
     /* Initiate PPPM if necessary */
@@ -304,35 +309,38 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       if (mdatoms->nChargePerturbed)
 	gmx_fatal(FARGS,"Free energy with %s is not implemented",
 		  eel_names[fr->eeltype]);
-      status = gmx_pppm_init(fplog,cr,FALSE,TRUE,state->box,
+      status = gmx_pppm_init(fplog,cr,FALSE,TRUE,box,
 			     getenv("GMXGHAT"),inputrec, (Flags & MD_REPRODUCIBLE));
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PPPM",status);
     }
 
-    send_inputrec(cr,inputrec,mdatoms->nChargePerturbed);
+    if (EEL_PME(fr->eeltype)) {
+      send_nchargeperturbed(cr,mdatoms->nChargePerturbed);
+      ewaldcoeff = fr->ewaldcoeff;
+      pmedata = &fr->pmedata;
+    } else {
+      pmedata = NULL;
+    }
+  } else {
+    /* This is a PME only node */
+    
+    /* We don't need the state */
+    done_state(state);
+
+    nChargePerturbed = receive_nchargeperturbed(cr);
+    ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
+    snew(pmedata,1);
   }
 
-  /* Initiate PME if necessary */
-  /* either on all nodes (if epmePMEANDPP is TRUE) 
-   * or on dedicated PME nodes (if epmePMEONLY is TRUE) */
-  if (!(cr->duty & DUTY_PP) || EEL_PME(fr->eeltype)) {
-    if (cr->duty & DUTY_PME) {
-      if (cr->duty & DUTY_PP) {
-	ewaldcoeff = fr->ewaldcoeff;
-	pmedata = &fr->pmedata;
-	nChargePerturbed = mdatoms->nChargePerturbed;
-      } else {
-	receive_inputrec(cr,inputrec,&nChargePerturbed);
-	ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
-	snew(pmedata,1);
-      }
-      
-      status = gmx_pme_init(pmedata,cr,inputrec,
-			    top ? top->atoms.nr : 0,nChargePerturbed,(Flags & MD_REPRODUCIBLE));
-      if (status != 0)
-	gmx_fatal(FARGS,"Error %d initializing PME",status);
-    }
+  /* Initiate PME if necessary,
+   * either on all nodes or on dedicated PME nodes only. */
+  if (EEL_PME(inputrec->coulombtype) && cr->duty & DUTY_PME) {
+    status = gmx_pme_init(pmedata,cr,inputrec,
+			  top ? top->atoms.nr : 0,nChargePerturbed,
+			  (Flags & MD_REPRODUCIBLE));
+    if (status != 0)
+      gmx_fatal(FARGS,"Error %d initializing PME",status);
   }
   
   if (integrator[inputrec->eI].func == do_md) {
@@ -366,7 +374,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       dd_make_reverse_top(fplog,cr->dd,top,vsite,constr,
 			  EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
 
-      set_dd_parameters(fplog,cr->dd,top,inputrec,fr);
+      set_dd_parameters(fplog,cr->dd,top,inputrec,fr,box);
      
       setup_dd_grid(fplog,cr->dd);
     }
@@ -523,10 +531,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     top = dd_init_local_top(top_global);
 
-    snew(state,1);
-    init_state(state,0,state_global->ngtc);
-    state->natoms = state_global->natoms;
-    state->flags  = state_global->flags;
+    state = dd_init_local_state(cr->dd,state_global);
 
     if (DDMASTER(cr->dd) && ir->nstfout)
       snew(f_global,state->natoms);
@@ -933,7 +938,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       if (bLastStep && (Flags & MD_CONFOUT) && MASTER(cr) &&
 	  !bRerunMD && !bFFscan) {
 	/* x and v have been collected in write_traj */
-	fprintf(stderr,"Writing final coordinates.\n");
+	fprintf(stderr,"\nWriting final coordinates.\n");
 	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		       *top_global->name,&top_global->atoms,
 		       state_global->x,state_global->v,state->box);

@@ -167,11 +167,13 @@ static void set_grid_sizes(matrix box,real rlist,
   }
 }
 
-void init_grid(FILE *fplog,t_forcerec *fr,const gmx_domdec_t *dd,
-	       int ncg,matrix box,t_grid *grid)
+t_grid *init_grid(FILE *fplog,t_forcerec *fr)
 {
   int  d,m;
   char *ptr;   
+  t_grid *grid;
+
+  snew(grid,1);
 
   if (fr->ePBC == epbcXY && fr->nwall == 2)
     grid->ndim = 3;
@@ -189,14 +191,7 @@ void init_grid(FILE *fplog,t_forcerec *fr,const gmx_domdec_t *dd,
       gmx_fatal(FARGS,"The number of cg's per cell should be > 0");
   }
 
-  /* We pass NULL for dd, so we allocate grid cells for the whole system.
-   * This should be made dynamic.
-   */
-  set_grid_sizes(box,fr->rlistlong,NULL,grid,ncg);
-
-  if (fplog)
-    fprintf(fplog,"Grid: %d x %d x %d cells\n",
-	    grid->n[XX],grid->n[YY],grid->n[ZZ]);
+  return grid;
 }
 
 void done_grid(t_grid *grid)
@@ -279,6 +274,10 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
     grid->cells_nalloc = 2*grid->ncells;
     srenew(grid->nra,  grid->cells_nalloc+1);
     srenew(grid->index,grid->cells_nalloc+1);
+    
+    if (fplog)
+      fprintf(fplog,"Grid: %d x %d x %d cells\n",
+	      grid->n[XX],grid->n[YY],grid->n[ZZ]);
   }
   
   m = max(grid->n[XX],max(grid->n[YY],grid->n[ZZ]));

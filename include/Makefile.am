@@ -75,6 +75,7 @@ partdec.h \
 pbc.h \
 pdbio.h \
 pdebug.h \
+perf_est.h \
 physics.h \
 pme.h \
 pppm.h \

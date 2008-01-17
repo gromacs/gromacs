@@ -179,6 +179,9 @@ extern void gmx_sync_ring(const t_commrec *cr,
 			  int nodeid,int nnodes,int left,int right);
 /* Synchronise the ring... */
 
+extern void gmx_bcast(int nbytes,void *b,const t_commrec *cr);
+/* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */
+
 extern void gmx_sumi(int nr,int r[],const t_commrec *cr);
 /* Calculate the global sum of an array of ints */
 

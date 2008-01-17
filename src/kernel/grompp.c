@@ -74,6 +74,7 @@
 #include "calcgrid.h"
 #include "add_par.h"
 #include "enxio.h"
+#include "perf_est.h"
 #include "compute_io.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
@@ -1025,6 +1026,15 @@ int main (int argc, char *argv[])
 
   /*  reset_multinr(sys); */
   
+  if (EEL_PME(ir->coulombtype)) {
+    float ratio = pme_load_estimate(sys,ir,state.box);
+    fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
+    if (ratio > 0.5)
+      fprintf(stderr,
+	      "NOTE: The optimal PME mesh load is usually between 0.25 and 0.33:\n"
+	      "      you should probably increase the cut-off and the PME grid spacing\n");
+  }
+
   {
     double cio = compute_io(ir,&sys->atoms,F_NRE,1);
     sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);

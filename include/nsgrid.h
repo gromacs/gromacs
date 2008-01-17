@@ -40,8 +40,7 @@
 
 #include "typedefs.h"
 
-extern void init_grid(FILE *fplog,t_forcerec *fr,const gmx_domdec_t *dd,
-		      int ncg,matrix box,t_grid *grid);
+extern t_grid *init_grid(FILE *fplog,t_forcerec *fr);
 
 extern void done_grid(t_grid *grid);
 

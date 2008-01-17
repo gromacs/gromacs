@@ -61,10 +61,13 @@ extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       bool bDynLoadBal,
 					       char *sizex,
 					       char *sizey,
-					       char *sizez);
+					       char *sizez,
+					       t_topology *top,matrix box,
+					       t_inputrec *ir);
 
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
-			      t_topology *top,t_inputrec *ir,t_forcerec *fr);
+			      t_topology *top,t_inputrec *ir,t_forcerec *fr,
+			      matrix box);
 
 extern void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
@@ -124,6 +127,9 @@ extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
+
+extern void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data);
+/* Broadcasts nbytes bytes from the DD master nodes to all DD nodes */
 
 extern void dd_partition_system(FILE            *fplog,
 				int             step,
@@ -193,6 +199,8 @@ extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 			      t_topology *top,t_topology *ltop);
 
 extern t_topology *dd_init_local_top(t_topology *top_global);
+
+extern t_state *dd_init_local_state(gmx_domdec_t *dd,t_state *state_global);
 
 #endif	/* _domdec_h */
 
