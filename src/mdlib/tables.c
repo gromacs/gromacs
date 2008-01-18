@@ -220,7 +220,7 @@ static void copy2table(int n,int offset,int stride,
 }
 
 static void init_table(FILE *fp,int n,int nx0,
-		       real tabscale,t_tabledata *td,bool bAlloc)
+		       double tabscale,t_tabledata *td,bool bAlloc)
 {
   int i;
   
@@ -236,15 +236,123 @@ static void init_table(FILE *fp,int n,int nx0,
     td->x[i] = i/tabscale;
 }
 
+static void spline_forces(int nx,double h,double v[],bool bS3,bool bE3,
+			  double f[])
+{
+  int    start,end,i;
+  double v3,b_s,b_e,b;
+  double beta,*gamma;
+
+  /* Formulas can be found in:
+   * H.J.C. Berendsen, Simulating the Physical World, Cambridge 2007
+   */
+
+  if (nx < 4 && (bS3 || bE3))
+    gmx_fatal(FARGS,"Can not generate splines with third derivative boundary conditions with less than 4 (%d) points",nx);
+  
+  /* To make life easy we initially set the spacing to 1
+   * and correct for this at the end.
+   */
+  beta = 2;
+  if (bS3) {
+    /* Fit V''' at the start */
+    v3  = v[3] - 3*v[2] + 3*v[1] - v[0];
+    if (debug)
+      fprintf(debug,"The left third derivative is %g\n",v3/(h*h*h));
+    b_s = 2*(v[1] - v[0]) + v3/6;
+    start = 0;
+    
+    if (FALSE) {
+      /* Fit V'' at the start */
+      real v2;
+      
+      v2  = -v[3] + 4*v[2] - 5*v[1] + 2*v[0];
+      /* v2  = v[2] - 2*v[1] + v[0]; */
+      if (debug)
+	fprintf(debug,"The left second derivative is %g\n",v2/(h*h));
+      b_s = 3*(v[1] - v[0]) - v2/2;
+      start = 0;
+    }
+  } else {
+    b_s = 3*(v[2] - v[0]) + f[0]*h;
+    start = 1;
+  }
+  if (bE3) {
+    /* Fit V''' at the end */
+    v3  = v[nx-1] - 3*v[nx-2] + 3*v[nx-3] - v[nx-4];
+    if (debug)
+      fprintf(debug,"The right third derivative is %g\n",v3/(h*h*h));
+    b_e = 2*(v[nx-1] - v[nx-2]) + v3/6;
+    end = nx;
+  } else {
+    /* V'=0 at the end */
+    b_e = 3*(v[nx-1] - v[nx-3]) + f[nx-1]*h;
+    end = nx - 1;
+  }
+
+  snew(gamma,nx);
+  beta = (bS3 ? 1 : 4);
+
+  /* For V'' fitting */
+  /* beta = (bS3 ? 2 : 4); */
+
+  f[start] = b_s/beta;
+  for(i=start+1; i<end; i++) {
+    gamma[i] = 1/beta;
+    beta = 4 - gamma[i];
+    b    =  3*(v[i+1] - v[i-1]);
+    f[i] = (b - f[i-1])/beta;
+  }
+  gamma[end-1] = 1/beta;
+  beta = (bE3 ? 1 : 4) - gamma[end-1];
+  f[end-1] = (b_e - f[end-2])/beta;
+
+  for(i=end-1; i>=start; i--)
+    f[i] -= gamma[i+1]*f[i+1];
+  sfree(gamma);
+
+  /* Correct for the minus sign and the spacing */
+  for(i=start; i<end; i++)
+    f[i] = -f[i]/h;
+}
+
+static void set_forces(FILE *fp,int angle,
+		       int nx,double h,double v[],double f[],
+		       int table)
+{
+  int start,end;
+
+  if (angle == 2)
+    gmx_fatal(FARGS,
+	      "Force generation for dihedral tables is not (yet) implemented");
+
+  start = 0;
+  while (v[start] == 0)
+    start++;
+  
+  end = nx;
+  while(v[end-1] == 0)
+    end--;
+  if (end > nx - 2)
+    end = nx;
+  else
+    end++;
+
+  if (fp)
+    fprintf(fp,"Generating forces for table %d, boundary conditions: V''' at %g, %s at %g\n",
+	    table+1,start*h,end==nx ? "V'''" : "V'=0",(end-1)*h);
+  spline_forces(end-start,h,v+start,TRUE,end==nx,f+start);
+}
+
 static void read_tables(FILE *fp,const char *fn,
 			int ntab,int angle,t_tabledata td[])
 {
   const char *libfn;
   char buf[STRLEN];
-  double **yy=NULL,start,end,ssd[etiNR],v0,v1,f0,f1,numf,avf;
-  int  k,i,nx,nx0,ny,nny,ns[etiNR];
-  bool bCont;
-  real tabscale;
+  double **yy=NULL,start,end,ssd,v0,v1,f0,f1,numf,avf;
+  int  k,i,nx,nx0=0,ny,nny,ns;
+  bool bAllZero,bZeroV,bZeroF;
+  double tabscale;
 
   nny = 2*ntab+1;  
   libfn = low_libfn(fn,TRUE);
@@ -269,49 +377,69 @@ static void read_tables(FILE *fp,const char *fn,
   }
 
   tabscale = (nx-1)/(yy[0][nx-1] - yy[0][0]);
+  
+  if (fp) {
+    fprintf(fp,"Read user tables from %s with %d data points.\n",libfn,nx);
+    if (angle == 0)
+      fprintf(fp,"Tabscale = %g points/nm\n",tabscale);
+  }
 
-  bCont = TRUE;
-  for(nx0=0; bCont && (nx0 < nx); nx0++)
-    for(k=1; (k<ny); k++)
-      if (yy[k][nx0] != 0)
-	bCont = FALSE;
-  if (nx0 == nx) {
-    if (fp)
-      fprintf(fp,"\nNOTE: All elements in table %s are zero\n\n",libfn);
-  }
-  /* Check if the second column is close to minus the numerical
-   * derivative of the first column.
-   */
+  bAllZero = TRUE;
   for(k=0; k<ntab; k++) {
-    ssd[k] = 0;
-    ns[k] = 0;
-  }
-  for(i=0; (i < nx-2); i++) {
-    for(k=0; k<ntab; k++) {
-      v0 = yy[1+2*k][i];
-      v1 = yy[1+2*k][i+1];
-      f0 = yy[1+2*k+1][i];
-      f1 = yy[1+2*k+1][i+1];
-      if (v0 != 0 && v1 != 0 && f0 != 0 && f1 != 0) {
-	numf = -(v1 - v0)*tabscale;
-	avf  = 0.5*(f1 + f0);
-	ssd[k] += fabs(2*(numf - avf)/(numf + avf));
-	ns[k]++;
+    bZeroV = TRUE;
+    bZeroF = TRUE;
+    for(i=0; (i < nx); i++) {
+      if (yy[1+k*2][i] != 0) {
+	bZeroV = FALSE;
+	if (bAllZero) {
+	  bAllZero = FALSE;
+	  nx0 = i;
+	}
+      }
+      if (yy[1+k*2+1][i] != 0) {
+	bZeroF = FALSE;
+	if (bAllZero) {
+	  bAllZero = FALSE;
+	  nx0 = i;
+	}
+      }
+    }
+
+    if (!bZeroV && bZeroF) {
+      set_forces(fp,angle,nx,1/tabscale,yy[1+k*2],yy[1+k*2+1],k);
+    } else {
+      /* Check if the second column is close to minus the numerical
+       * derivative of the first column.
+       */
+      ssd = 0;
+      ns = 0;
+      for(i=0; (i < nx-1); i++) {
+	v0 = yy[1+2*k][i];
+	v1 = yy[1+2*k][i+1];
+	f0 = yy[1+2*k+1][i];
+	f1 = yy[1+2*k+1][i+1];
+	if (v0 != 0 && v1 != 0 && f0 != 0 && f1 != 0) {
+	  numf = -(v1 - v0)*tabscale;
+	  avf  = 0.5*(f1 + f0);
+	  ssd += fabs(2*(numf - avf)/(numf + avf));
+	  ns++;
+	}
+      }
+      if (ns > 0) {
+	ssd /= ns;
+	sprintf(buf,"For the %d non-zero entries for table %d in %s the forces deviate on average %d%% from the minus the numerical derivative of the potential\n",ns,k,libfn,(int)(100*ssd+0.5));
+	if (debug)
+	  fprintf(debug,"%s",buf);
+	if (ssd > 0.2) {
+	  if (fp)
+	    fprintf(fp,"\nWARNING: %s\n",buf);
+	  fprintf(stderr,"\nWARNING: %s\n",buf);
+	}
       }
     }
   }
-  for(k=0; k<ntab; k++) {
-    if (ns[k] > 0) {
-      ssd[k] /= ns[k];
-      sprintf(buf,"For the %d non-zero entries for table %d in %s the forces deviate on average %d%% from the minus the numerical derivative of the potential\n",ns[k],k+1,libfn,(int)(100*ssd[k]+0.5));
-      if (debug)
-	fprintf(debug,"%s",buf);
-      if (ssd[k] > 0.2) {
-	if (fp)
-	  fprintf(fp,"\nWARNING: %s\n",buf);
-	fprintf(stderr,"\nWARNING: %s\n",buf);
-      }
-    }
+  if (bAllZero && fp) {
+    fprintf(fp,"\nNOTE: All elements in table %s are zero\n\n",libfn);
   }
 
   for(k=0; (k<ntab); k++) {
@@ -325,12 +453,6 @@ static void read_tables(FILE *fp,const char *fn,
   for(i=0; (i<ny); i++)
     sfree(yy[i]);
   sfree(yy);
-  
-  if (fp) {
-    fprintf(fp,"Read user tables from %s with %d data points.\n",libfn,nx);
-    if (angle == 0)
-      fprintf(fp,"Tabscale = %g points/nm\n",tabscale);
-  }
 }
 
 static void done_tabledata(t_tabledata *td)
