@@ -2340,6 +2340,10 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   if (dump_pdb)
     sscanf(dump_pdb,"%lf",&dump_ener);
 
+  atoms2md(&top->atoms,inputrec,top->idef.il[F_ORIRES].nr,0,NULL,
+	   0,top->atoms.nr,mdatoms);
+  update_mdatoms(mdatoms,inputrec->init_lambda);
+
   /* Print to log file  */
   start_t=print_date_and_time(fplog,cr->nodeid,
 			      "Started Test Particle Insertion"); 
