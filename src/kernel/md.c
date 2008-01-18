@@ -315,8 +315,9 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	gmx_fatal(FARGS,"Error %d initializing PPPM",status);
     }
 
+    nChargePerturbed = mdatoms->nChargePerturbed;
     if (EEL_PME(fr->eeltype)) {
-      send_nchargeperturbed(cr,mdatoms->nChargePerturbed);
+      send_nchargeperturbed(cr,nChargePerturbed);
       ewaldcoeff = fr->ewaldcoeff;
       pmedata = &fr->pmedata;
     } else {
