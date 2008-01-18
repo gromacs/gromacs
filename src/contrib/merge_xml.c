@@ -148,12 +148,12 @@ static void clear_molprop(t_molprop *dst)
   dst->nexperiment = 0;
 }
 
-static void merge_doubles(int *np,t_molprop mp[])
+static void merge_doubles(int *np,t_molprop mp[],char *doubles)
 {
   int i,j,ndouble=0;
   FILE *fp;
   
-  fp = fopen("doubles.dat","w");
+  fp = fopen(doubles,"w");
   for(i=1; (i<*np); i++) {
     if (strcasecmp(mp[i].molname,mp[i-1].molname) == 0) {
       if (strcasecmp(mp[i].formula,mp[i-1].formula) == 0) {
@@ -200,7 +200,7 @@ static void dump_mp(int np,t_molprop mp[])
 }
 
 t_molprop *merge_xml(int argc,char *argv[],char *outf,
-		     char *sorted,int *nmolprop)
+		     char *sorted,char *doubles,int *nmolprop)
 {
   t_molprop *mp=NULL,*mpout=NULL;
   int       i,j,np,npout=0;
@@ -215,7 +215,7 @@ t_molprop *merge_xml(int argc,char *argv[],char *outf,
   }
   
   qsort(mpout,npout,sizeof(mp[0]),comp_mp);
-  merge_doubles(&npout,mpout);
+  merge_doubles(&npout,mpout,doubles);
       
   if (outf) {
     printf("There are %d entries to store in output file %s\n",npout,outf);

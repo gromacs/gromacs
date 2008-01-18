@@ -742,8 +742,8 @@ int main(int argc,char *argv[])
   t_molprop *mp=NULL;
   
   if (argc < 2) 
-    fatal_error("Please give names of database file!","");
-  mp = merge_xml(argc,argv,NULL,NULL,&np);
+    fatal_error("Please give names of database files!","");
+  mp = merge_xml(argc,argv,NULL,NULL,"double_dip.dat",&np);
     
   check_formula(np,mp);
   snew(w,np);

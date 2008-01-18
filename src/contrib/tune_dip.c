@@ -75,8 +75,9 @@ typedef struct {
 
 typedef struct {
   int     nmol,nparam,eemtype;
+  int     *index;
   t_mymol *mymol;
-  real    J0_0,Chi0_0,R_0,J0_1,Chi0_1,R_1,fc;
+  real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc;
   void    *eem;
   void    *atomprop;
 } t_moldip;
@@ -101,12 +102,14 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip)
   mymol->qtotal  = 0;
 }
 
-static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
+static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
+		       int eemtype,void *eem)
 {
   FILE   *xvgf;
   double d2=0;
   real   a,b,rms,sigma,error,aver;
-  int    i,j,nout;
+  int    i,j,nout,*elemcnt;
+  char   *resnm,*atomnm;
   t_lsq  lsq;
   
   xvgf  = xvgropen(xvgfn,"Correlation between dipoles",
@@ -114,6 +117,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
   fprintf(xvgf,"@ s0 linestyle 0\n");
   fprintf(xvgf,"@ s0 symbol 1\n");
   init_lsq(&lsq);
+  snew(elemcnt,109);
   for(i=0; (i<nmol); i++) {
     fprintf(logf,"Molecule %s, Dipole %6.2f, should be %6.2f <chi>: %6.2f\n",
 	    mol[i].molname,mol[i].dip_obs,mol[i].dip_ref,mol[i].chieq);
@@ -121,13 +125,22 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
     add_lsq(&lsq,mol[i].dip_ref,mol[i].dip_obs);
     d2 += sqr(mol[i].dip_ref-mol[i].dip_obs);
     fprintf(logf,"Res  Atom  q\n");
-    for(j=0; (j<mol[i].atoms->nr); j++)
-      fprintf(logf,"%-5s%-5s  %8.4f\n",
-	      *(mol[i].atoms->resname[mol[i].atoms->atom[j].resnr]),
-	      *(mol[i].atoms->atomname[j]),mol[i].atoms->atom[j].q);
+    for(j=0; (j<mol[i].atoms->nr); j++) {
+      resnm  = *(mol[i].atoms->resname[mol[i].atoms->atom[j].resnr]);
+      atomnm = *(mol[i].atoms->atomname[j]);
+      fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].atoms->atom[j].q);
+      elemcnt[eem_get_elem(eem,eem_get_index(eem,resnm,atomnm,eemtype))]++;
+    }
     fprintf(logf,"\n");
   }
   fclose(xvgf);
+  fprintf(logf,"Statistics over elements in the test set:\n");
+  fprintf(logf,"Element   Number\n");
+  for(i=0; (i<109); i++) {
+    if (elemcnt[i] > 0)
+      fprintf(logf,"%-10d%-8d\n",i,elemcnt[i]);
+  }
+  
   get_lsq_ab(&lsq,&a,&b);
   rms = sqrt(d2/nmol);
   fprintf(logf,"\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",
@@ -136,13 +149,13 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
   aver = aver_lsq(&lsq);
   sigma = rms/aver;
   nout = 0;
-  fprintf(logf,"Overview of outliers\n");
-  fprintf(logf,"--------------------\n");
+  fprintf(logf,"Overview of outliers (> 1.5 sigma)\n");
+  fprintf(logf,"----------------------------------\n");
   fprintf(logf,"%-20s  %12s  %12s  %12s\n",
 	  "Name","Predicted","Experimental","Deviation");
   for(i=0; (i<nmol); i++) {
     if ((mol[i].dip_ref > 0) && 
-	((mol[i].dip_obs/mol[i].dip_ref-1) > 2*sigma)) {
+	((mol[i].dip_obs/mol[i].dip_ref-1) > 1.5*sigma)) {
       fprintf(logf,"%-20s  %12.3f  %12.3f  %12.3f\n",
 	      mol[i].molname,mol[i].dip_obs,mol[i].dip_ref,
 	      fabs(mol[i].dip_obs-mol[i].dip_ref));
@@ -153,20 +166,19 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[])
     printf("There were %d outliers. See at the very bottom of the log file\n",
 	   nout);
   else
-    fprintf(logf,"None! Well done.\n");
+    printf("No outliers! Well done.\n");
   do_view(xvgfn,NULL);
-  fclose(logf);
   
   done_lsq(&lsq);
 }
 
 t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
-		      real J0_0,real Chi0_0,real R_0,
-		      real J0_1,real Chi0_1,real R_1,
+		      real J0_0,real Chi0_0,real w_0,
+		      real J0_1,real Chi0_1,real w_1,
 		      real fc,int eemtype)
 {
   char     **strings,buf[STRLEN];
-  int      i,nstrings;
+  int      i,n,nstrings;
   t_moldip *md;
   double   dip;
   
@@ -180,23 +192,32 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
     init_mymol(&(md->mymol[i]),buf,dip);
   }
   fprintf(logf,"Read %d sets of molecule coordinates and dipoles\n",nstrings);
-  md->eem = read_eemprops(eem_fn,eemtype);
-  if ((md->eem == NULL) || ((md->nparam = eem_get_numprops(md->eem)) == 0))
-    gmx_fatal(FARGS,"Could not read %s, or file empty",
+  md->eem = read_eemprops(eem_fn,-1);
+  
+  if ((md->eem == NULL) || ((md->nparam = eem_get_numprops(md->eem,eemtype)) == 0))
+    gmx_fatal(FARGS,"Could not read %s, or file does not contain the requested parameters",
 	      eem_fn ? eem_fn : "eemprops.dat");
   
+  snew(md->index,md->nparam);
+  n=0;
+  for(i=1; (i<109); i++) {
+    if ((md->index[n] = eem_get_elem_index(md->eem,i,eemtype)) != -1)
+      n++;
+  }
+  if (n != md->nparam)
+    gmx_fatal(FARGS,"Looking for the different elements, nparam = %d, n = %d",
+	      md->nparam,n);
   md->atomprop   = get_atomprop();
   md->eemtype    = eemtype;
   md->J0_0       = J0_0;
   md->Chi0_0     = Chi0_0;
-  md->R_0        = R_0;
+  md->w_0        = w_0;
   md->J0_1       = J0_1;
   md->Chi0_1     = Chi0_1;
-  md->R_1        = R_1;
+  md->w_1        = w_1;
   md->fc         = fc;
   fprintf(logf,"There are %d atom types in the input file %s:\n---\n",
-	  md->nparam,
-	  eem_fn ? eem_fn : "eemprops.dat");
+	  md->nparam,eem_fn ? eem_fn : "eemprops.dat");
   write_eemprops(logf,md->eem);
   fprintf(logf,"---\n\n");
 	  
@@ -247,14 +268,14 @@ static double dipole_function(const gsl_vector *v,void *params)
       rms += sqr(chi0-md->Chi0_1);
     if (md->eemtype != eqgSM1) {
       w = gsl_vector_get(v, k++);
-      if (w < md->R_0)
-	rms += sqr(w-md->R_0);
-      if (w > md->R_1)
-	rms += sqr(w-md->R_1);
+      if (w < md->w_0)
+	rms += sqr(w-md->w_0);
+      if (w > md->w_1)
+	rms += sqr(w-md->w_1);
     }
     else
       w = eem_get_w(md->eem,i);
-    eem_set_props(md->eem,i,J0,w,chi0);
+    eem_set_props(md->eem,md->index[i],J0,w,chi0);
   }
   rms = rms*md->fc;
   
@@ -275,8 +296,22 @@ static double dipole_function(const gsl_vector *v,void *params)
   return sqrt(rms/md->nmol);
 }
 
-static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
-			    int reinit,real stepsize)
+static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng)
+{
+  real r = gmx_rng_uniform_real(rng);
+  
+  x = x*(1-step+2*step*r);
+  if (x < x0)
+    return x0;
+  else if (x > x1)
+    return x1;
+  else
+    return x;
+}
+
+static real optimize_moldip(FILE *fp,FILE *logf,
+			    t_moldip *md,int maxiter,real tol,
+			    int reinit,real stepsize,int seed)
 {
   FILE   *out,*xvg;
   real   size,d2,wj;
@@ -284,6 +319,7 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
   int    status = 0;
   int    i,k;
   double J00,chi0,w;
+  gmx_rng_t rng;
   
   const gsl_multimin_fminimizer_type *T;
   gsl_multimin_fminimizer *s;
@@ -291,6 +327,8 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
   gsl_vector *x,*dx;
   gsl_multimin_function my_func;
 
+  rng = gmx_rng_init(seed);
+  
   my_func.f      = &dipole_function;
   my_func.n      = md->nparam*2;
   if (md->eemtype != eqgSM1)
@@ -308,23 +346,29 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
     fprintf(fp,"%5s %12s %12s\n","Iter","Size","RMS");
   
   do {
-    if ((iter == 0) || ((reinit > 0) && (iter % reinit) == 0)) {
+    if ((iter == 0) || ((reinit > 0) && ((iter % reinit) == 0))) {
       k=0;
       for(i=0; (i<md->nparam); i++) {
-	J00 = lo_get_j00(md->eem,i,&wj,0);
-	gsl_vector_set (x, k, J00);
+	J00 = lo_get_j00(md->eem,md->index[i],&wj,0);
+	J00 = guess_new_param(J00,stepsize,md->J0_0,md->J0_1,rng);
+       	gsl_vector_set (x, k, J00);
 	gsl_vector_set (dx, k++, stepsize*J00);
-	chi0 = eem_get_chi0(md->eem,i);
+	chi0 = eem_get_chi0(md->eem,md->index[i]);
+	chi0 = guess_new_param(chi0,stepsize,md->Chi0_0,md->Chi0_1,rng);
 	gsl_vector_set (x, k, chi0);
 	gsl_vector_set (dx, k++, stepsize*chi0);
 	
+	w = eem_get_w(md->eem,md->index[i]);
 	if (md->eemtype != eqgSM1) {
-	  w = eem_get_w(md->eem,i);
+	  w = guess_new_param(w,stepsize,md->w_0,md->w_1,rng);
 	  gsl_vector_set (x, k, w);
 	  gsl_vector_set (dx, k++, stepsize*w);
 	}
+	eem_set_props(md->eem,md->index[i],J00,w,chi0);
       }
       gsl_multimin_fminimizer_set (s, &my_func, x, dx);
+      if (0)
+	write_eemprops(logf,md->eem);
     }
   
     iter++;
@@ -336,19 +380,16 @@ static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
     
     d2     = gsl_multimin_fminimizer_minimum(s);
     size   = gsl_multimin_fminimizer_size(s);
-    status = gsl_multimin_test_size(size,tol);
+    /*    status = gsl_multimin_test_size(size,tol);
     
-    /*if (status == GSL_SUCCESS)
+    if (status == GSL_SUCCESS)
       if (fp) 
-      fprintf(fp,"Minimum found using %s\n",
-      gsl_multimin_fminimizer_name(s));
-    */
-    if (fp) {
-      fprintf(fp,"%5d", iter);
-      fprintf(fp," %12.4e %12.4e\n",size,d2);
-    }
-  }
-  while (/*(status != GSL_SUCCESS) &&*/ (sqrt(d2) > tol) && (iter < maxiter));
+	fprintf(fp,"Minimum found using %s\n",
+		gsl_multimin_fminimizer_name(s));
+    */    
+    if (fp) 
+      fprintf(fp,"%5d %12.4e %12.4e\n",iter,size,d2);
+  } while (/*(status != GSL_SUCCESS) && */(sqrt(d2) > tol) && (iter < maxiter));
   
   gsl_vector_free (x);
   gsl_vector_free (dx);
@@ -390,7 +431,10 @@ int main(int argc, char *argv[])
     "charge generating algorithm SM in the x2top program.[PAR]",
     "Minima and maxima for the parameters can be set, these are however",
     "not strictly enforced, but rather they are penalized with a harmonic",
-    "function, for which the force constant can be set explicitly."
+    "function, for which the force constant can be set explicitly.[PAR]",
+    "At every reinit step parameters are changed by a random amount within",
+    "the fraction set by step size, and within the boundaries given",
+    "by the minima and maxima."
   };
   
   t_filenm fnm[] = {
@@ -401,10 +445,10 @@ int main(int argc, char *argv[])
     { efXVG, "-x", "dipcorr",  ffWRITE }
   };
 #define NFILE asize(fnm)
-  static int  maxiter=100,reinit=0;
+  static int  maxiter=100,reinit=0,seed=1993;
   static real tol=1e-3;
-  static real J0_0=0,Chi0_0=0,R_0=0,step=0.01;
-  static real J0_1=30,Chi0_1=30,R_1=1,fc=1.0;
+  static real J0_0=0,Chi0_0=0,w_0=0,step=0.01;
+  static real J0_1=30,Chi0_1=30,w_1=1,fc=1.0;
   static char *qgen[] = { NULL, "SM1", "SM2", "SM3", "SM4", NULL };
   t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&tol},
@@ -419,18 +463,20 @@ int main(int argc, char *argv[])
       "Minimum value that J0 can obtain in fitting" },
     { "-chi0",    FALSE, etREAL, {&Chi0_0},
       "Minimum value that Chi0 can obtain in fitting" },
-    { "-r0",    FALSE, etREAL, {&R_0},
+    { "-w0",    FALSE, etREAL, {&w_0},
       "Minimum value that Radius can obtain in fitting" },
     { "-j1",    FALSE, etREAL, {&J0_1},
       "Maximum value that J0 can obtain in fitting" },
     { "-chi1",    FALSE, etREAL, {&Chi0_1},
       "Maximum value that Chi0 can obtain in fitting" },
-    { "-r1",    FALSE, etREAL, {&R_1},
+    { "-w1",    FALSE, etREAL, {&w_1},
       "Maximum value that Radius can obtain in fitting" },
     { "-fc",    FALSE, etREAL, {&fc},
       "Force constant in the penalty function for going outside the borders given with the above six option." },
     { "-step",  FALSE, etREAL, {&step},
-      "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." }
+      "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
+    { "-seed", FALSE, etINT, {&seed},
+      "Random number seed for reinit" }
   };
   t_moldip *md;
   int      eemtype;
@@ -452,11 +498,12 @@ int main(int argc, char *argv[])
     
   logf = fopen(opt2fn("-g",NFILE,fnm),"w");
   md = read_moldip(logf,opt2fn("-f",NFILE,fnm),opt2fn_null("-d",NFILE,fnm),
-		   J0_0,Chi0_0,R_0,J0_1,Chi0_1,R_1,fc,eemtype);
+		   J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,eemtype);
   
-  (void) optimize_moldip(stdout,md,maxiter,tol,reinit,step);
+  (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed);
   
-  print_mols(logf,opt2fn("-x",NFILE,fnm),md->nmol,md->mymol);
+  print_mols(logf,opt2fn("-x",NFILE,fnm),md->nmol,md->mymol,
+	     eemtype,md->eem);
 
   fclose(logf);
   

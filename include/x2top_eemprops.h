@@ -50,16 +50,18 @@ extern void write_eemprops(FILE *fp,void *eem);
 
 extern int name2eemtype(char *name);
 
-extern int eem_get_numprops(void *eem);
+extern int eem_get_numprops(void *eem,int eemtype);
 
 extern int eem_get_index(void *eem,char *resname,char *aname,int eemtype);
+
+extern int eem_get_elem_index(void *eem,int elem,int eemtype);
 
 extern real lo_get_j00(void *eem,int index,real *wj,real qH);
 
 extern real eem_get_j00(void *eem,char *resname,char *aname,
 			real *wj,real qH,int eemtype);
 
-extern real eem_get_elem(void *eem,int index);
+extern int eem_get_elem(void *eem,int index);
 
 extern real eem_get_w(void *eem,int index);
 

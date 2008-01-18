@@ -70,7 +70,7 @@
 
 typedef struct {
   int  natom,eemtype;
-  int  *index; /* In the Yang array */
+  int  *index; /* In the eemprops array */
   int  *elem;
   real *chi,*chi0,*rhs,*qq,*wj,qtotal;
   real **Jab;
@@ -189,12 +189,6 @@ static void solve_q_eem(FILE *fp,t_qgen *qgen,real hardness_factor)
     a[i][n-1] = -1;
   a[n-1][n-1] = 0;
 
-  if (fp) {
-    b = alloc_matrix(n,n);
-    for(i=0; (i<n); i++) 
-      for(j=0; (j<n); j++) 
-	b[i][j] = a[i][j];
-  }
   matrix_invert(fp,n,a);
   qtot = 0;  
   for(i=0; (i<n-1); i++) {
@@ -257,11 +251,11 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
     qgen->index[i] = eem_get_index(eem,
 				   *(atoms->resname[atoms->atom[i].resnr]),
 				   *(atoms->atomname[i]),qgen->eemtype);
-    qgen->elem[i] = eem_get_elem(eem,qgen->index[i]);
     if (qgen->index[i] == -1)
       gmx_fatal(FARGS,"Can not find index for %s %s. Eemtype = %d",
 		*(atoms->resname[atoms->atom[i].resnr]),
 		*(atoms->atomname[i]),eemtype);
+    qgen->elem[i] = eem_get_elem(eem,qgen->index[i]);
     qgen->chi0[i] = eem_get_chi0(eem,qgen->index[i]);
   }  
   
@@ -298,6 +292,8 @@ static void done_qgen(FILE *fp,t_atoms *atoms,t_qgen *qgen)
   sfree(qgen->wj);
   sfree(qgen->qq);
   sfree(qgen->index);
+  sfree(qgen->elem);
+  sfree(qgen->rhs);
   for(i=0; (i<atoms->nr); i++) 
     sfree(qgen->Jab[i]);
   sfree(qgen->Jab);
@@ -482,7 +478,7 @@ void assign_charge_alpha(char *molname,
   case eqgSM2:
   case eqgSM3:
   case eqgSM4:
-    (void) generate_charges_sm(molname,stdout,eem,atoms,x,tol,maxiter,atomprop,
+    (void) generate_charges_sm(stdout,molname,eem,atoms,x,tol,maxiter,atomprop,
 			       qtotref,eemtype);
     break;
   default:

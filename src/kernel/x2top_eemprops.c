@@ -150,11 +150,16 @@ void write_eemprops(FILE *fp,void *eem)
 	    er->eep[i].w,er->eep[i].chi0);
 }
 
-int eem_get_numprops(void *eem)
+int eem_get_numprops(void *eem,int eemtype)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
+  int i,n=0;
   
-  return er->nep;
+  for(i=0; (i<er->nep); i++) {
+    if (er->eep[i].eemtype == eemtype)
+      n++;
+  }
+  return n;
 }
 
 int eem_get_index(void *eem,char *resname,char *aname,int eemtype)
@@ -165,6 +170,17 @@ int eem_get_index(void *eem,char *resname,char *aname,int eemtype)
   for(i=0; (i<er->nep); i++) 
     if ((strstr(aname,er->eep[i].name) == aname) && 
 	(er->eep[i].eemtype == eemtype))
+      return i;
+  return -1;
+}
+
+int eem_get_elem_index(void *eem,int elem,int eemtype)
+{
+  t_eemrecord *er = (t_eemrecord *) eem;
+  int i;
+  
+  for(i=0; (i<er->nep); i++) 
+    if ((er->eep[i].elem == elem) && (er->eep[i].eemtype == eemtype))
       return i;
   return -1;
 }
@@ -216,7 +232,7 @@ real eem_get_w(void *eem,int index)
   return er->eep[index].w;
 }
 
-real eem_get_elem(void *eem,int index)
+int eem_get_elem(void *eem,int index)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   

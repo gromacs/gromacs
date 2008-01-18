@@ -135,6 +135,6 @@ extern char *mp_get_ref_prop(t_molprop *mp,char *prop,int index);
 
 
 extern t_molprop *merge_xml(int argc,char *argv[],char *outf,
-			    char *sorted,int *nmolprop);
+			    char *sorted,char *doubles,int *nmolprop);
 
 #endif
