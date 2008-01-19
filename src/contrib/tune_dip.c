@@ -296,11 +296,16 @@ static double dipole_function(const gsl_vector *v,void *params)
   return sqrt(rms/md->nmol);
 }
 
-static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng)
+static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng,
+			    bool bRandom)
 {
   real r = gmx_rng_uniform_real(rng);
   
-  x = x*(1-step+2*step*r);
+  if (bRandom) 
+    x = x0+(x1-x0)*r;
+  else
+    x = x*(1-step+2*step*r);
+
   if (x < x0)
     return x0;
   else if (x > x1)
@@ -311,13 +316,15 @@ static real guess_new_param(real x,real step,real x0,real x1,gmx_rng_t rng)
 
 static real optimize_moldip(FILE *fp,FILE *logf,
 			    t_moldip *md,int maxiter,real tol,
-			    int reinit,real stepsize,int seed)
+			    int reinit,real stepsize,int seed,
+			    bool bRandom)
 {
   FILE   *out,*xvg;
   real   size,d2,wj;
   int    iter   = 0;
   int    status = 0;
   int    i,k;
+  bool   bRand;
   double J00,chi0,w;
   gmx_rng_t rng;
   
@@ -348,19 +355,20 @@ static real optimize_moldip(FILE *fp,FILE *logf,
   do {
     if ((iter == 0) || ((reinit > 0) && ((iter % reinit) == 0))) {
       k=0;
+      bRand = bRandom && (iter == 0);
       for(i=0; (i<md->nparam); i++) {
 	J00 = lo_get_j00(md->eem,md->index[i],&wj,0);
-	J00 = guess_new_param(J00,stepsize,md->J0_0,md->J0_1,rng);
+	J00 = guess_new_param(J00,stepsize,md->J0_0,md->J0_1,rng,bRand);
        	gsl_vector_set (x, k, J00);
 	gsl_vector_set (dx, k++, stepsize*J00);
 	chi0 = eem_get_chi0(md->eem,md->index[i]);
-	chi0 = guess_new_param(chi0,stepsize,md->Chi0_0,md->Chi0_1,rng);
+	chi0 = guess_new_param(chi0,stepsize,md->Chi0_0,md->Chi0_1,rng,bRand);
 	gsl_vector_set (x, k, chi0);
 	gsl_vector_set (dx, k++, stepsize*chi0);
 	
 	w = eem_get_w(md->eem,md->index[i]);
 	if (md->eemtype != eqgSM1) {
-	  w = guess_new_param(w,stepsize,md->w_0,md->w_1,rng);
+	  w = guess_new_param(w,stepsize,md->w_0,md->w_1,rng,bRand);
 	  gsl_vector_set (x, k, w);
 	  gsl_vector_set (dx, k++, stepsize*w);
 	}
@@ -447,6 +455,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static int  maxiter=100,reinit=0,seed=1993;
   static real tol=1e-3;
+  static bool bRandom=FALSE;
   static real J0_0=0,Chi0_0=0,w_0=0,step=0.01;
   static real J0_1=30,Chi0_1=30,w_1=1,fc=1.0;
   static char *qgen[] = { NULL, "SM1", "SM2", "SM3", "SM4", NULL };
@@ -476,7 +485,9 @@ int main(int argc, char *argv[])
     { "-step",  FALSE, etREAL, {&step},
       "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
     { "-seed", FALSE, etINT, {&seed},
-      "Random number seed for reinit" }
+      "Random number seed for reinit" },
+    { "-random", FALSE, etBOOL, {&bRandom},
+      "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step only." }
   };
   t_moldip *md;
   int      eemtype;
@@ -500,7 +511,7 @@ int main(int argc, char *argv[])
   md = read_moldip(logf,opt2fn("-f",NFILE,fnm),opt2fn_null("-d",NFILE,fnm),
 		   J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,eemtype);
   
-  (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed);
+  (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed,bRandom);
   
   print_mols(logf,opt2fn("-x",NFILE,fnm),md->nmol,md->mymol,
 	     eemtype,md->eem);
