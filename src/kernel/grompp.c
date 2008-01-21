@@ -137,6 +137,27 @@ static void check_eg_vs_cg(t_atoms *atoms,t_block *cgblock)
   }  
 }
 
+static void check_cg_sizes(char *topfn,t_topology *sys)
+{
+  t_block *cgs;
+  int maxsize,cg;
+
+  cgs = &sys->blocks[ebCGS];
+  maxsize = 0;
+  for(cg=0; cg<cgs->nr; cg++)
+    maxsize = max(maxsize,cgs->index[cg+1]-cgs->index[cg]);
+ 
+  if (maxsize > 10) {
+    set_warning_line(topfn,-1);
+    sprintf(warn_buf,
+	    "The largest charge group contains %d atoms.\n"
+	    "Since atoms only see each other when the centers of geometry of the charge groups they belong to are within the cut-off distance, too large charge groups can lead to serious cut-off artifacts.\n"
+	    "For efficiency and accuracy, charge group should consist of a few atoms.\n"
+	    "For all-atom force fields use: CH3, CH2, CH, NH2 NH, OH, CO2, CO, etc.\n",
+	    maxsize);
+    warning(NULL);
+  }
+}
 
 static void check_pairs(int nrmols,t_molinfo mi[],int ntype,t_param *nb)
 {
@@ -965,6 +986,8 @@ int main (int argc, char *argv[])
   /* check masses */
   check_mol(&(sys->atoms));
   
+  check_cg_sizes(ftp2fn(efTOP,NFILE,fnm),sys);
+
   check_warning_error(FARGS);
 
   /* Now build the shakeblocks from the shakes */
