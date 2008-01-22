@@ -2273,10 +2273,13 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   static gmx_rng_t tpi_rand;
   FILE   *fp_tpi=NULL;
   char   *ptr,*dump_pdb,**leg,str[STRLEN],str2[STRLEN];
-  double dbl,dump_ener;
+  double dbl,dump_ener,*sum=NULL;
   bool   bCavity;
   int    nat_cavity=0,d;
   real   *mass_cavity=NULL,mass_tot;
+  int    nbin,nbin_new,ind;
+  double invbinw,*bin,refvolshift,logV,bUlogV;
+  char   *tpid_leg[2]={"direct","reweighted"};
 
   nnodes = cr->nnodes;
 
@@ -2464,6 +2467,14 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   clear_rvec(x_init);
   V_all = 0;
   VembU_all = 0;
+  
+  if (PAR(cr)) {
+    snew(sum,1+cr->nnodes);
+  }
+
+  invbinw = 10;
+  nbin = 10;
+  snew(bin,nbin);
 
   start_time();
 
@@ -2478,6 +2489,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      "minus the number of atoms to insert (%d)\n",
 	      rerun_fr.natoms,bCavity ? " minus one" : "",
 	      mdatoms->nr,a_tp1-a_tp0);
+
+  refvolshift = -log(det(rerun_fr.box));
   
   while (bNotLastFrame) {
     lambda = rerun_fr.lambda;
@@ -2490,6 +2503,9 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
     /* Copy the coordinates from the input trajectory */
     for(i=0; i<rerun_fr.natoms; i++)
       copy_rvec(rerun_fr.x[i],state->x[i]);
+      
+    V = det(rerun_fr.box);
+    logV = log(V);
 
     bStateChanged = TRUE;
     bNS = TRUE;
@@ -2648,6 +2664,23 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	  }
 	}
 	
+	if (embU == 0 || beta*ener[F_EPOT] > 50) {
+	  bin[0]++;
+	} else {
+	  ind = (int)((60 - (beta*ener[F_EPOT] + logV + refvolshift))*invbinw
+		      + 0.5);
+	  if (ind < 0)
+	    ind = 0;
+	  if (ind >= nbin) {
+	    nbin_new = ind + 10;
+	    srenew(bin,nbin_new);
+	    for(i=nbin; i<nbin_new; i++)
+	      bin[i] = 0;
+	    nbin = nbin_new;
+	  }
+	  bin[ind]++;
+	}
+
 	if (debug)
 	  fprintf(debug,"TPI %7d %12.5e %12.5f %12.5f %12.5f\n",
 		  step,ener[F_EPOT],x_tp[XX],x_tp[YY],x_tp[ZZ]);
@@ -2662,11 +2695,26 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 
     if (PAR(cr)) {
       /* When running in parallel sum the energies over the processes */
-      gmx_sumd(    1, &sum_embU,cr);
+      sum[0] = sum_embU;
+      for(i=0; i<cr->nnodes; i++)
+	sum[1+i] = 0;
+      sum[1+cr->nodeid] = nbin;
+      gmx_sumd(1+cr->nnodes,sum,cr);
       gmx_sumd(nener,sum_UgembU,cr);
+      sum_embU = sum[0];
+      nbin_new = 0;
+      for(i=0; i<cr->nnodes; i++) {
+	if ((int)(sum[1+i]+0.5) > nbin_new)
+	  nbin_new = (int)(sum[1+i]+0.5);
+      }
+      if (nbin_new > nbin) {
+	srenew(bin,nbin_new);
+	for(i=nbin; i<nbin_new; i++)
+	  bin[i] = 0;
+	nbin = nbin_new;
+      }
+      gmx_sumd(nbin,bin,cr);
     }
-      
-    V = det(rerun_fr.box);
 
     frame++;
     V_all += V;
@@ -2703,6 +2751,22 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
     fprintf(fplog,"  <mu> = %12.5e kJ/mol\n",-log(VembU_all/V_all)/beta);
   }
   
+  /* Write the Boltzmann factor histogram */
+  fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
+		    "TPI energy distribution",
+		    "\\8b\\4U + log(V/<V>)","count");
+  fprintf(fp_tpi,"@ subtitle \"number \\8b\\4U > 50: %9.3e\"\n",bin[0]);
+  xvgr_legend(fp_tpi,2,tpid_leg);
+  for(i=nbin-1; i>0; i--) {
+    bUlogV = -i/invbinw + 60 - refvolshift - log(V_all/frame);
+    fprintf(fp_tpi,"%6.2f %10d %12.5e\n",
+	    bUlogV,
+	    (int)(bin[i]+0.5),
+	    bin[i]*exp(-bUlogV)*V_all/VembU_all);
+  }
+  fclose(fp_tpi);
+  sfree(bin);
+
   sfree(sum_UgembU);
 
   return start_t;
