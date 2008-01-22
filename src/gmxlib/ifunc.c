@@ -139,7 +139,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_vsite  ("VSITE3OUT","Virtual site 3out",4, 3                               ),
   def_vsite  ("VSITE4FD", "Virtual site 4fd", 5, 3                               ),
   def_vsite  ("VSITE4FDN","Virtual site 4fdn",5, 3                               ),
-  def_vsite  ("VSITEN",   "Virtual site N",   2, 1                               ),
+  def_vsite  ("VSITEN",   "Virtual site N",   2, 2                               ),
   def_nofc   ("COM_PULL", "COM Pull En."     ),
   def_nofc   ("EQM",      "Quantum En."      ),
   def_nofc   ("EPOT",     "Potential"        ),

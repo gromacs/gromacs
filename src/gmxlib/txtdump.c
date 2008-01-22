@@ -775,7 +775,7 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->vsite.a,iparams->vsite.b,iparams->vsite.c);
     break;
   case F_VSITEN:
-    fprintf(fp,"a=%15.8e\n",iparams->vsite.a);
+    fprintf(fp,"n=%2d, a=%15.8e\n",iparams->vsiten.n,iparams->vsiten.a);
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",

@@ -1409,7 +1409,8 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 
   for(j=0; j<nj; j++) {
     param.a[1] = atc[j];
-    param.c[0] = weight[j]/weight_tot;
+    param.c[0] = nj;
+    param.c[1] = weight[j]/weight_tot;
     /* Put the values in the appropriate arrays */
     push_bondnow (&bond[ftype],&param);
   }

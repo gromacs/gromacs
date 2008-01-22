@@ -925,7 +925,8 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->vsite.c);
     break;
   case F_VSITEN:
-    do_real(iparams->vsite.a);
+    do_int (iparams->vsiten.n);
+    do_real(iparams->vsiten.a);
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d (%s) in %s line %d",

@@ -305,7 +305,6 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_VSITE3OUT:
   case F_VSITE4FD:
   case F_VSITE4FDN:
-  case F_VSITEN:
     new->vsite.a=old[0];
     new->vsite.b=old[1];
     new->vsite.c=old[2];
@@ -320,6 +319,10 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->vsite.d=old[3];
     new->vsite.e=old[4];
     new->vsite.f=old[5];
+    break;
+  case F_VSITEN:
+    new->vsiten.n = round_check(old[0],1,ftype,"number of atoms");
+    new->vsiten.a = old[1];
     break;
   default:
     gmx_fatal(FARGS,"unknown function type %d in %s line %d",
