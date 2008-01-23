@@ -389,7 +389,7 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
       nc->bUse = TRUE;
       if (fplog)
 	fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
-      if (nc->comm_intra > 0)
+      if (nc->rank_intra > 0)
 	MPI_Comm_free(&nc->comm_inter);
     } else {
       /* One group or all processes in a separate group, use normal summing */
