@@ -150,18 +150,23 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
 }
 
 static void reset_energies(t_grpopts *opts,t_groups *grp,
-			   t_forcerec *fr,bool bNS,real epot[])
+			   t_forcerec *fr,bool bNS,real epot[],
+			   bool bMaster)
 {
-  int   i,j;
+  bool bKeepLR;
+  int  i,j;
   
-  /* First reset all energy components but the Long Range, except in
-   * some special cases.
+  /* First reset all energy components, except for the long range terms
+   * on the master at non neighbor search steps, since the long range
+   * terms have already been summed at the last neighbor search step.
    */
-  for(i=0; (i<egNR); i++)
-    if (((i != egCOULLR) && (i != egLJLR)) ||
-	(fr->bTwinRange && bNS) || (!fr->bTwinRange))
+  bKeepLR = (fr->bTwinRange && !bNS && bMaster);
+  for(i=0; (i<egNR); i++) {
+    if (!(bKeepLR && (i == egCOULLR || i == egLJLR))) {
       for(j=0; (j<grp->estat.nn); j++)
-	grp->estat.ee[i][j]=0.0;
+	grp->estat.ee[i][j] = 0.0;
+    }
+  }
   
   /* Normal potential energy components */
   for(i=0; (i<=F_EPOT); i++)
@@ -272,8 +277,8 @@ static void sum_epot(t_grpopts *opts,t_groups *grps,real epot[])
   epot[F_LJ]       = sum_v(grps->estat.nn,grps->estat.ee[egLJSR]);
   epot[F_LJ14]     = sum_v(grps->estat.nn,grps->estat.ee[egLJ14]);
   epot[F_COUL14]   = sum_v(grps->estat.nn,grps->estat.ee[egCOUL14]);
-  epot[F_COUL_LR] += sum_v(grps->estat.nn,grps->estat.ee[egCOULLR]);
-  epot[F_LJ_LR]   += sum_v(grps->estat.nn,grps->estat.ee[egLJLR]);
+  epot[F_COUL_LR]  = sum_v(grps->estat.nn,grps->estat.ee[egCOULLR]);
+  epot[F_LJ_LR]    = sum_v(grps->estat.nn,grps->estat.ee[egLJLR]);
 /* lattice part of LR doesnt belong to any group
  * and has been added earlier
  */
@@ -419,7 +424,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
 
   /* Reset energies */
-  reset_energies(&(inputrec->opts),grps,fr,bNS,ener);    
+  reset_energies(&(inputrec->opts),grps,fr,bNS,ener,MASTER(cr));    
   if (bNS) {
     wallcycle_start(wcycle,ewcNS);
     

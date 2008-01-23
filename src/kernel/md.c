@@ -1055,14 +1055,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		  ir,grps,bSumEkinhOld,constr,vcm,
 		  ir->nstlist==-1 ? &nabnsb : NULL,&terminate);
 
-      /* Correct for double counting energies, should be moved to 
-       * global_stat 
-       */
-      if (fr->bTwinRange && !bNS) 
-	for(i=0; (i<grps->estat.nn); i++) {
-	  grps->estat.ee[egCOULLR][i] /= (cr->nnodes-cr->npmenodes);
-	  grps->estat.ee[egLJLR][i]   /= (cr->nnodes-cr->npmenodes);
-	}
       wallcycle_stop(wcycle,ewcMoveE);
       bSumEkinhOld = FALSE;
     } else {
