@@ -47,10 +47,17 @@
 
 
 
+
 #ifdef HAVE_FSEEKO
 #define gmx_fseek(A,B,C) fseeko(A,B,C)
 #define gmx_ftell(A) ftello(A)
 #define gmx_off_t off_t
+#ifndef _LARGEFILE_SOURCE
+#warning Declaring fseeko and ftello explicitly so as to bypass an autoconf 2.61 bug
+#warning If you have an incompatible declaration error please comment out the fseeko and ftello declarations just after this warning
+int fseeko(FILE *stream, off_t offset, int whence);
+off_t ftello(FILE *stream);
+#endif
 #else
 #define gmx_fseek(A,B,C) fseek(A,B,C)
 #define gmx_ftell(A) ftell(A)
