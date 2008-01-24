@@ -188,8 +188,11 @@ The temperature for the Boltzmann weighting is set with
 <b><A HREF="#tc">ref_t</A></b>, this should match the temperature
 of the simulation of the original trajectory.
 Dispersion correction is implemented correctly for tpi.
-All relevant quantities are written using the <tt>-tpi</tt> option
-of <tt>mdrun</tt>. No trajectory or energy file is written.
+All relevant quantities are written to the file specified with
+the <tt>-tpi</tt> option of <tt>mdrun</tt>.
+The distribution of insertion energies is written to the file specified with
+the <tt>-tpid</tt> option of <tt>mdrun</tt>.
+No trajectory or energy file is written.
 Parallel tpi gives identical results to single node tpi.
 </dd>
 <dt><b>tpic</b></dt>
@@ -940,7 +943,7 @@ The relative tolerance is set with <b>shake_tol</b>, 0.0001 is a good value
 for "normal" MD. SHAKE does not support constraints between atoms
 on different nodes, thus it can not be used with domain decompositon
 when inter charge-group constraints are present.
-SHAKE also does not work with energy minimization.
+SHAKE can not be used with energy minimization.
 </dd>
 </dl></dd>
 <dt><h4>unconstrained_start:</h4></dt>
@@ -962,7 +965,12 @@ order is applied on top of the normal expansion only for the couplings
 within such triangles.
 For "normal" MD simulations an order of 4 usually suffices, 6 is
 needed for large time-steps with virtual sites or BD.
-For accurate energy minimization an order of 8 or more might be required.</dd>
+For accurate energy minimization an order of 8 or more might be required.
+With domain decomposition, the cell size is limited by the distance
+spanned by <b>lincs_order</b>+1 constraints. When one wants to scale
+further than this limit, one can decrease <b>lincs_order</b> and increase
+<b>lincs_iter</b>, since the accuracy does not deteriorate
+when (1+<b>lincs_iter</b>)*<b>lincs_order</b> remains constant.</dd>
 <dt><h4>lincs_iter: (1)</h4></dt>
 <dd>Number of iterations to correct for rotational lengthening in LINCS.
 For normal runs a single step is sufficient, but for NVE

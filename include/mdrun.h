@@ -249,7 +249,7 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   
 extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
-		     ivec ddxyz,int dd_node_order,real rdd,
+		     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 		     char *ddcsx,char *ddcsy,char *ddcsz,
 		     int nstepout,
 		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,

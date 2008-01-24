@@ -180,6 +180,11 @@ extern void set_lincs(t_idef *idef,int start,int homenr,
 extern void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
+extern real constr_r_max(FILE *fplog,t_topology *top,t_inputrec *ir);
+/* Returns an estimate of the maximum distance between atoms
+ * required for LINCS.
+ */
+
 extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    t_inputrec *ir,
 			    int step,gmx_lincsdata_t lincsd,t_mdatoms *md,

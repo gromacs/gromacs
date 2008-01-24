@@ -537,6 +537,111 @@ static t_block make_at2con(int start,int natoms,t_idef *idef,
   return at2con;
 }
 
+static void constr_recur(t_block *at2con,t_idef *idef,bool bTopB,
+			 int at,int depth,int nc,int *path,
+			 real r0,real r1,real *r2max)
+{
+  int  c,con,a1;
+  bool bUse;
+  t_iatom *ia;
+  real len,rn0,rn1;
+
+  /* Loop over all constraints connected to this atom */
+  for(c=at2con->index[at]; c<at2con->index[at+1]; c++) {
+    con = at2con->a[c];
+    /* Do not walk over already used constraints */
+    bUse = TRUE;
+    for(a1=0; a1<depth; a1++) {
+      if (con == path[a1])
+	bUse = FALSE;
+    }
+    if (bUse) {
+      ia = &idef->il[F_CONSTR].iatoms[con*3];
+      /* Flexible constraints currently have length 0, which is incorrect */
+      if (!bTopB)
+	len = idef->iparams[ia[0]].constr.dA;
+      else
+	len = idef->iparams[ia[0]].constr.dB;
+      /* In the worst case the bond directions alternate */
+      if (nc % 2 == 0) {
+	rn0 = r0 + len;
+	rn1 = r1;
+      } else {
+	rn0 = r0;
+	rn1 = r1 + len;
+      }
+      /* Assume angles of 120 degrees between all bonds */
+      if (rn0*rn0 + rn1*rn1 + rn0*rn1 > *r2max) {
+	*r2max = rn0*rn0 + rn1*rn1 + r0*rn1;
+	if (debug) {
+	  fprintf(debug,"Found longer constraint distance: r0 %5.3f r1 %5.3f rmax %5.3f\n", rn0,rn1,sqrt(*r2max));
+	  for(a1=0; a1<depth; a1++)
+	    fprintf(debug," %d %5.3f",path[a1],idef->iparams[idef->il[F_CONSTR].iatoms[path[a1]*3]].constr.dA);
+	  fprintf(debug," %d %5.3f\n",con,len);
+	}
+      }
+      if (depth + 1 < nc) {
+	if (ia[1] == at)
+	  a1 = ia[2];
+	else
+	  a1 = ia[1];
+	/* Recursion */
+	path[depth] = con;
+	constr_recur(at2con,idef,bTopB,a1,depth+1,nc,path,rn0,rn1,r2max);
+	path[depth] = -1;
+      }
+    }
+  }
+}
+
+real constr_r_max(FILE *fplog,t_topology *top,t_inputrec *ir)
+{
+  int natoms,nflexcon,*path,at;
+  t_idef *idef;
+  t_block at2con;
+  real r0,r1,r2maxA,r2maxB,rmax,lam0,lam1;
+  
+  natoms = top->atoms.nr;
+  idef = &top->idef;
+  at2con = make_at2con(0,natoms,idef,EI_DYNAMICS(ir->eI),&nflexcon);
+  snew(path,1+ir->nProjOrder);
+  for(at=0; at<1+ir->nProjOrder; at++)
+    path[at] = -1;
+
+  r2maxA = 0;
+  for(at=0; at<natoms; at++) {
+    r0 = 0;
+    r1 = 0;
+    constr_recur(&at2con,idef,FALSE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxA);
+  }
+  if (ir->efep == efepNO) {
+    rmax = sqrt(r2maxA);
+  } else {
+    r2maxB = 0;
+    for(at=0; at<natoms; at++) {
+      r0 = 0;
+      r1 = 0;
+      constr_recur(&at2con,idef,TRUE,at,0,1+ir->nProjOrder,path,r0,r1,&r2maxB);
+    }
+    lam0 = ir->init_lambda;
+    if (EI_DYNAMICS(ir->eI))
+      lam0 += ir->init_step*ir->delta_lambda;
+    rmax = (1 - lam0)*sqrt(r2maxA) + lam0*sqrt(r2maxB);
+    if (EI_DYNAMICS(ir->eI)) {
+      lam1 = ir->init_lambda + (ir->init_step + ir->nsteps)*ir->delta_lambda;
+      rmax = max(rmax,(1 - lam1)*sqrt(r2maxA) + lam1*sqrt(r2maxB));
+    }
+  }
+
+  done_block(&at2con);
+  sfree(path);
+
+  if (fplog)
+    fprintf(fplog,"Maximum distance for %d constraints, at 120 deg. angles, all-trans: %.3f nm\n",1+ir->nProjOrder,rmax);
+
+  return rmax;
+}
+
 gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 			      t_topology *top,t_inputrec *ir)
 {

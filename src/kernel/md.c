@@ -139,7 +139,7 @@ const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do
 
 void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
-	      ivec ddxyz,int dd_node_order,real rdd,
+	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 	      char *ddcsx,char *ddcsy,char *ddcsz,
 	      int nstepout,t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 	      unsigned long Flags)
@@ -195,7 +195,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Loaded with Money\n\n");
 
   if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
-    cr->dd = init_domain_decomposition(fplog,cr,ddxyz,rdd,
+    cr->dd = init_domain_decomposition(fplog,cr,ddxyz,rdd,rconstr,
 				       Flags & MD_DLB,ddcsx,ddcsy,ddcsz,
 				       top,box,inputrec);
     

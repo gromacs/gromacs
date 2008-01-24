@@ -1009,9 +1009,9 @@ static char dim2char(int dim)
   char c='?';
 
   switch (dim) {
-  case XX: c = 'x'; break;
-  case YY: c = 'y'; break;
-  case ZZ: c = 'z'; break;
+  case XX: c = 'X'; break;
+  case YY: c = 'Y'; break;
+  case ZZ: c = 'Z'; break;
   default: gmx_fatal(FARGS,"Unknown dim %d",dim);
   }
 
@@ -3047,7 +3047,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
     fprintf(stderr,buf);
     bLim = FALSE;
     if (dd->bDynLoadBal) {
-      sprintf(buf,"Steps where the load balancing was limited by rdd:");
+      sprintf(buf,"Steps where the load balancing was limited by rdd or rcon:");
       for(d=0; d<dd->ndim; d++) {
 	limp = (200*comm->load_lim[d]+1)/(2*comm->nload);
 	sprintf(buf+strlen(buf)," %c %d %%",dim2char(dd->dim[d]),limp);
@@ -3082,7 +3082,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
       if (!dd->bDynLoadBal) {
 	sprintf(buf+strlen(buf),"      You might want to use dynamic load balancing (option -dlb.)\n");
       } else if (bLim) {
-	sprintf(buf+strlen(buf),"      You might want to decrease the communication distance (option -rdd).\n");
+	sprintf(buf+strlen(buf),"      You might want to decrease the communication distance (options -rdd and/or -rcon).\n");
       }
       fprintf(fplog,"%s\n",buf);
       fprintf(stderr,"%s\n",buf);
@@ -3792,6 +3792,11 @@ static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
   return npme;
 }
 
+static bool bMultiCGMols(t_topology *top)
+{
+  return (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
+}
+
 static int lcd(int n1,int n2)
 {
   int d,i;
@@ -3805,7 +3810,7 @@ static int lcd(int n1,int n2)
   return d;
 }
 
-static float comm_cost_est(gmx_domdec_t *dd,
+static float comm_cost_est(gmx_domdec_t *dd,real limit,
 			   matrix box,t_inputrec *ir,float pbcdxr,
 			   ivec nc)
 {
@@ -3834,7 +3839,7 @@ static float comm_cost_est(gmx_domdec_t *dd,
     bt[i] = box[i][i]*dd->skew_fac[i];
     nw[i] = nc[i]*dd->comm->cutoff/bt[i];
 
-    if (bt[i] < nc[i]*dd->comm->cutoff_min)
+    if (bt[i] < nc[i]*limit)
       return -1;
     
     /* When two dimensions are (nearly) equal, use more cells
@@ -3903,7 +3908,7 @@ static float comm_cost_est(gmx_domdec_t *dd,
   return comm_vol + cost_pbcdx + comm_vol_pme;
 }
 
-static void assign_factors(gmx_domdec_t *dd,
+static void assign_factors(gmx_domdec_t *dd,real limit,
 			   matrix box,t_inputrec *ir,float pbcdxr,
 			   int ndiv,int *div,int *mdiv,ivec try,ivec opt)
 {
@@ -3911,8 +3916,9 @@ static void assign_factors(gmx_domdec_t *dd,
   float ce;
 
   if (ndiv == 0) {
-    ce = comm_cost_est(dd,box,ir,pbcdxr,try);
-    if (ce >= 0 && (opt[XX] == 0 || ce < comm_cost_est(dd,box,ir,pbcdxr,opt)))
+    ce = comm_cost_est(dd,limit,box,ir,pbcdxr,try);
+    if (ce >= 0 && (opt[XX] == 0 ||
+		    ce < comm_cost_est(dd,limit,box,ir,pbcdxr,opt)))
       copy_ivec(try,opt);
 
     return;
@@ -3932,7 +3938,7 @@ static void assign_factors(gmx_domdec_t *dd,
 	try[ZZ] *= div[0];
       
       /* recurse */
-      assign_factors(dd,box,ir,pbcdxr,ndiv-1,div+1,mdiv+1,try,opt);
+      assign_factors(dd,limit,box,ir,pbcdxr,ndiv-1,div+1,mdiv+1,try,opt);
       
       for(i=0; i<mdiv[0]-x-y; i++)
 	try[ZZ] /= div[0];
@@ -3951,10 +3957,11 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
   int npp,ndiv,*div,*mdiv;
   bool bExcl_pbcdx;
   float pbcdxr;
+  real limit;
   ivec try;
   real cutoff_min_orig;
 
-  cutoff_min_orig = dd->comm->cutoff_min;
+  limit = dd->comm->cutoff_min;
 
   dd->comm->cutoff = max(max(ir->rlist,max(ir->rcoulomb,ir->rvdw)),
 			 dd->comm->cutoff_min);
@@ -3970,27 +3977,36 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
     dd->comm->npmenodes = 0;
   }
 
-  if (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr) {
+  if (bMultiCGMols(top)) {
     /* For Ewald exclusions pbc_dx is not called */
     bExcl_pbcdx =
       (EEL_EXCL_FORCES(ir->coulombtype) && !EEL_FULL(ir->coulombtype));
     pbcdxr = (double)n_bonded_dx(top,bExcl_pbcdx)/(double)top->atoms.nr;
     
-    if (dd->comm->cutoff_min <= 0) {
+    if (limit <= 0) {
       /* Here we should determine the minimum cell size from
        * the largest cg COG distance between atoms involved
-       * in bonded interactions and between atoms connected
-       * by #LINCS-iter + 1 constraints.
+       * in bonded interactions.
        */
-      /* Set lower limit for the cell size to half the cut-off
-       * plus a margin for pressure scaling and DLB.
-       */
-      dd->comm->cutoff_min = 1.1*dd->comm->cutoff/2;
+      /* Set lower limit for the cell size to half the cut-off */
+      limit = dd->comm->cutoff/2;
     }
+    /* Take the maximum of the bonded and constraint distance limit */
+    limit = max(limit,dd->comm->cellsize_limit);
   } else {
     /* Every molecule is a single charge group: no pbc required */
     pbcdxr = 0;
   }
+  /* Add a margin for DLB and/or pressure scaling */
+  if (dd->bDynLoadBal) {
+    limit *= 1.10;
+  } else if (ir->epc != epcNO) {
+    limit *= 1.05;
+  }
+
+  if (fplog)
+    fprintf(fplog,"Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm\n",npp,limit);
+
   if (debug)
     fprintf(debug,"Average nr of pbc_dx calls per atom %.2f\n",pbcdxr);
 
@@ -4001,16 +4017,13 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
   try[YY] = 1;
   try[ZZ] = 1;
   clear_ivec(nc);
-  assign_factors(dd,box,ir,pbcdxr,ndiv,div,mdiv,try,nc);
+  assign_factors(dd,limit,box,ir,pbcdxr,ndiv,div,mdiv,try,nc);
 
   sfree(div);
   sfree(mdiv);
 
   if (nc[XX] == 0)
-    gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %f nm",
-	      npp,dd->comm->cutoff_min);
-
-   dd->comm->cutoff_min = cutoff_min_orig;
+    gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %f nm",limit);
 }
 
 static int dd_nst_env(FILE *fplog,char *env_var,int def)
@@ -4033,7 +4046,7 @@ static int dd_nst_env(FILE *fplog,char *env_var,int def)
 }
 
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
-					real comm_distance_min,
+					real comm_distance_min,real rconstr,
 					bool bDynLoadBal,
 					char *sizex,char *sizey,char *sizez,
 					t_topology *top,matrix box,
@@ -4103,6 +4116,23 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   }
 
   comm->cutoff_min = comm_distance_min;
+  comm->cellsize_limit = comm->cutoff_min;
+  if (top->idef.il[F_CONSTR].nr > 0 && bMultiCGMols(top)) {
+    /* There is a cell size limit due to the constraints (LINCS) */
+    if (rconstr <= 0) {
+      rconstr = constr_r_max(fplog,top,ir);
+      if (fplog)
+	fprintf(fplog,
+		"Estimated maximum distance required for LINCS: %.3f nm\n",
+		rconstr);
+    } else {
+      if (fplog)
+	fprintf(fplog,
+		"User supplied maximum distance required for LINCS: %.3f nm\n",
+		rconstr);
+    }
+    comm->cellsize_limit = max(comm->cellsize_limit,rconstr);
+  }
 
   if (nc[XX] > 0) {
     copy_ivec(nc,dd->nc);
@@ -4206,7 +4236,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
    * or we use domain decomposition for each periodic dimension,
    * we do not need to take pbc into account for the bonded interactions.
    */
-  comm->bInterCGBondeds = (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
+  comm->bInterCGBondeds = bMultiCGMols(top);
   if (!comm->bInterCGBondeds ||
       (dd->nc[XX]>1 && dd->nc[YY]>1 && (dd->nc[ZZ]>1 || fr->ePBC==epbcXY)))
     fr->bMolPBC = FALSE;
@@ -4219,7 +4249,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   
   if (ir->eConstrAlg == estSHAKE && top->idef.il[F_CONSTR].nr > 0)
     gmx_fatal(FARGS,
-	      "%s is not supported (yet) with domain decomposition, use %s",
+	      "%s is not supported with domain decomposition, use %s",
 	      eshake_names[estSHAKE],eshake_names[estLINCS]);
 
   dd->ndim = 0;
@@ -4271,7 +4301,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
       comm->maxpulse = max(comm->maxpulse,comm->cd[d].np);
     }
 
-    comm->cellsize_limit = comm->cutoff/comm->maxpulse;
+    /* cellsize_limit is set for LINCS in init_domain_decomposition */
+    comm->cellsize_limit = max(comm->cellsize_limit,
+			       comm->cutoff/comm->maxpulse);
     comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_min);
     if (comm->cutoff_min <= 0) {
       comm->cutoff_min = comm->cellsize_limit;

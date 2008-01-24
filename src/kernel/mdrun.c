@@ -100,15 +100,19 @@ int main(int argc,char *argv[])
     "dynamic load balancing is that runs are no longer binary reproducible,",
     "but in most cases this is not important.",
     "All distances required for bonded interactions should be within the",
-    "longest cut-off length and the smallest cell size,",
-    "if this is not the case mdrun terminates with an error message.",
-    "Option [TT]-rdd[tt] can be used to increase the allowed distance for",
+    "the smallest cell size, if this is not the case mdrun terminates",
+    "with an error message. By default mdrun sets the minimum cell size to",
+    "half the cut-off distance.",
+    "Option [TT]-rdd[tt] can be used to set the allowed distance for",
     "bonded interactions or also, when using dynamic load balancing,",
     "to set the lower limit for the cell size.",
     "Atoms connected by NC constraints, where NC is the LINCS order plus 1,",
     "should not be beyond the smallest cell size. A error message is",
     "generated when this happens and the user should change the decomposition",
     "or decrease the LINCS order and increase the number of LINCS iterations.",
+    "By default mdrun estimates the minimum cell size required for LINCS",
+    "in a conservative fashion. For high parallization it can be useful",
+    "to set the distance rquired for LINCS with the option [TT]-rcon[tt].",
     "Finally the option [TT]-nosum[tt] can be used to only sum the energies",
     "at every neighbor search step. This can improve performance for highly",
     "parallel simulations, where this global communication step becomes",
@@ -224,7 +228,7 @@ int main(int argc,char *argv[])
   static rvec realddxyz={0,0,0};
   static char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-  static real rdd=0.0;
+  static real rdd=0.0,rconstr=0.0;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
 
   static t_pargs pa[] = {
@@ -240,6 +244,8 @@ int main(int argc,char *argv[])
       "DD node order" },
     { "-rdd",     FALSE, etREAL, {&rdd},
       "The minimum distance for DD communication (nm)" },
+    { "-rcon",    FALSE, etREAL, {&rconstr},
+      "Maximum distance for LINCS (nm), 0 is estimate" },
     { "-dlb",     FALSE, etBOOL, {&bDLB},
       "Use dynamic load balancing (only with DD)" },
     { "-ddcsx",   FALSE, etSTR, {&ddcsx},
@@ -335,7 +341,7 @@ int main(int argc,char *argv[])
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
   mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
-	   ddxyz,dd_node_order,rdd,ddcsx,ddcsy,ddcsz,
+	   ddxyz,dd_node_order,rdd,rconstr,ddcsx,ddcsy,ddcsz,
 	   nstepout,edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)
