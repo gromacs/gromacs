@@ -180,6 +180,9 @@ t_grid *init_grid(FILE *fplog,t_forcerec *fr)
   else
     grid->ndim = ePBC2npbcdim(fr->ePBC);
 
+  if (debug)
+    fprintf(debug,"Making ns grid in %d dimensions\n",grid->ndim);
+
   /* The ideal number of cg's per ns grid cell seems to be 10 */
   grid->ncg_ideal = 10;
   ptr = getenv("GMX_NSCELL_NCG");
@@ -190,6 +193,9 @@ t_grid *init_grid(FILE *fplog,t_forcerec *fr)
     if (grid->ncg_ideal <= 0)
       gmx_fatal(FARGS,"The number of cg's per cell should be > 0");
   }
+  if (debug)
+    fprintf(debug,"Set ncg_ideal to %d\n",grid->ncg_ideal);
+    
 
   return grid;
 }
