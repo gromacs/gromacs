@@ -191,7 +191,7 @@ int gmx_mdmat(int argc,char *argv[])
   int        isize;
   atom_id    *index;
   char       *grpname;
-  int        *rndx,*natm;
+  int        *rndx,*natm,prevres,newres;
   
   int        i,j,status,nres,natoms,nframes,it,trxnat;
   int        nr0;
@@ -226,14 +226,29 @@ int gmx_mdmat(int argc,char *argv[])
   snew(useatoms.atom,natoms);
   snew(useatoms.atomname,natoms);
     
-  useatoms.nres=0;
-  useatoms.resname=top.atoms.resname;
+  useatoms.nres = 0;
+  snew(useatoms.resname,natoms);
+  
+  prevres = top.atoms.atom[index[0]].resnr;
+  newres  = 0;
   for(i=0;(i<isize);i++) {
-    useatoms.atomname[i]=top.atoms.atomname[index[i]];
-    useatoms.atom[i].resnr=top.atoms.atom[index[i]].resnr;
-    useatoms.nres=max(useatoms.nres,useatoms.atom[i].resnr+1);
+    int ii = index[i];
+    useatoms.atomname[i]=top.atoms.atomname[ii];
+    if (top.atoms.atom[ii].resnr != prevres) {
+      prevres = top.atoms.atom[ii].resnr;
+      newres++;
+      useatoms.resname[i] = top.atoms.resname[prevres];
+      if (debug) {
+	fprintf(debug,"New residue: atom %5s %5s %6d, index entry %5d, newres %5d\n",
+		*(top.atoms.resname[top.atoms.atom[ii].resnr]),
+		*(top.atoms.atomname[ii]),
+		ii,i,newres);
+      }
+    }
+    useatoms.atom[i].resnr = newres;
   }
-  useatoms.nr=isize;
+  useatoms.nres = newres+1;
+  useatoms.nr = isize;
     
   rndx=res_ndx(&(useatoms));
   natm=res_natm(&(useatoms));
