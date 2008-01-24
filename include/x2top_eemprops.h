@@ -52,14 +52,13 @@ extern int name2eemtype(char *name);
 
 extern int eem_get_numprops(void *eem,int eemtype);
 
-extern int eem_get_index(void *eem,char *resname,char *aname,int eemtype);
+extern int eem_get_index(void *eem,char *aname,int eemtype);
 
 extern int eem_get_elem_index(void *eem,int elem,int eemtype);
 
-extern real lo_get_j00(void *eem,int index,real *wj,real qH);
+extern real lo_get_j00(void *eem,int index,real *wj,real q);
 
-extern real eem_get_j00(void *eem,char *resname,char *aname,
-			real *wj,real qH,int eemtype);
+extern real eem_get_j00(void *eem,char *aname,real *wj,real qH,int eemtype);
 
 extern int eem_get_elem(void *eem,int index);
 
@@ -67,6 +66,13 @@ extern real eem_get_w(void *eem,int index);
 
 extern real eem_get_chi0(void *eem,int index);
 
+extern char *eem_get_opts(void *eem,int index);
+
 extern void eem_set_props(void *eem,int index,real J0,real radius,real chi0);
+
+extern void *copy_eem(void *eem_dst,void *eem_src);
+/* Copies src to dst. If dst is NULL space is allocated. A pointer
+ * to dst is returned.
+ */
 
 #endif
