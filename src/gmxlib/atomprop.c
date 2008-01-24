@@ -104,7 +104,8 @@ static int get_prop_index(t_props *ap,t_aa_names *aan,
     }
     alen = dbcmp_len(atomnm, ap->atomnm[i]);
     if ( (alen > NOTFOUND) && (rlen > NOTFOUND)) {
-      if ( (alen>malen) && (rlen>mrlen) ) {
+      if ( ( (alen > malen) && (rlen >= mrlen)) ||
+	   ( (rlen > mrlen) && (alen >= malen) ) ) {
 	malen = alen;
 	mrlen = rlen;
 	j     = i;
@@ -150,7 +151,8 @@ static void add_prop(t_props *ap,t_aa_names *aan,
 	ap->bAvail[i] = FALSE;
       }
     }
-    
+    upstring(atomnm);
+    upstring(resnm);
     ap->atomnm[ap->nprop] = strdup(atomnm);
     ap->resnm[ap->nprop]  = strdup(resnm);
     j = ap->nprop;
@@ -197,16 +199,15 @@ static void read_props(t_atomprop *ap,int eprop,double factor)
 
 void *get_atomprop(void) 
 {
-  char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat" };
-  double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0 };
-  double def[epropNR] = { 12.011, 0.14, 0.0, 2.2 };
+  char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
+  double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0 };
+  double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
 
   t_atomprop *ap;
   int i;
   
-  fprintf(stdout,
-	  "WARNING: masses will be determined based on residue and atom names,\n"
-	  "         this can deviate from the real mass of the atom type\n");
+  printf("WARNING: masses will be determined based on residue and atom names,\n"
+	 "         this can deviate from the real mass of the atom type\n");
   
   snew(ap,1);
 
@@ -234,21 +235,31 @@ bool query_atomprop(void *atomprop,int eprop,char *resnm,char *atomnm,
 {
   t_atomprop *ap = (t_atomprop *) atomprop;
   int  i,j;
-  char *atomname;
+#define MAXQ 32
+  char atomname[MAXQ],resname[MAXQ];
   bool bExact;
   
+  if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1)) {
+    if (debug)
+      fprintf(debug,"WARNING: willonly compare first %d characters\n",
+	      MAXQ-1);
+  }
   if (isdigit(atomnm[0])) {
     /* put digit after atomname */
-    snew(atomname,strlen(atomnm)+1);
-    for (i=1; (i<strlen(atomnm)); i++)
+    for (i=1; (i<min(MAXQ-1,strlen(atomnm))); i++)
       atomname[i-1] = atomnm[i];
     atomname[i++] = atomnm[0];
     atomname[i]   = '\0';
   } 
-  else 
-    atomname = atomnm;
-
-  j = get_prop_index(&(ap->props[eprop]),ap->aan,resnm,atomname,&bExact);
+  else { 
+    strncpy(atomname,atomnm,MAXQ-1);
+  }
+  upstring(atomname);
+  strncpy(resname,resnm,MAXQ-1);
+  upstring(resname);
+  
+  j = get_prop_index(&(ap->props[eprop]),ap->aan,resname,
+		     atomname,&bExact);
   
   if (j >= 0) {
     *value = ap->props[eprop].value[j];
