@@ -74,7 +74,7 @@ typedef struct {
   real **cmap;
 } t_gkrbin;
 
-static t_gkrbin *mk_gkrbin(real radius,real rcmax,bool bPhi)
+static t_gkrbin *mk_gkrbin(real radius,real rcmax,bool bPhi,int ndegrees)
 {
   t_gkrbin *gb;
   char *ptr;
@@ -94,13 +94,13 @@ static t_gkrbin *mk_gkrbin(real radius,real rcmax,bool bPhi)
   if (rcmax == 0)
     gb->nx = gb->nelem;
   else
-    gb->nx      = 1 + rcmax/gb->spacing;
+    gb->nx = 1 + rcmax/gb->spacing;
   gb->radius  = radius;
   snew(gb->elem,gb->nelem);
   snew(gb->count,gb->nelem);
   
   snew(gb->cmap,gb->nx);
-  gb->ny = 101;
+  gb->ny = max(2,ndegrees);
   for(i=0; (i<gb->nx); i++)
     snew(gb->cmap[i],gb->ny);
   gb->bPhi = bPhi;
@@ -118,20 +118,22 @@ static void done_gkrbin(t_gkrbin **gb)
 
 static void add2gkr(t_gkrbin *gb,real r,real cosa,real phi)
 {
-  int index = gmx_nint(r/gb->spacing);
-  int cy;
+  int  cy,index = gmx_nint(r/gb->spacing);
+  real alpha;
+  
   if (index < gb->nelem) {
     gb->elem[index]  += cosa;
     gb->count[index] ++;
   }
   if (index < gb->nx) {
+    alpha = acos(cosa);
     if (gb->bPhi)
       cy = (M_PI+phi)*gb->ny/(2*M_PI);
     else
-      cy = ((1+cosa)*0.5*(gb->ny));
+      cy = (alpha*gb->ny)/M_PI;/*((1+cosa)*0.5*(gb->ny));*/
     cy = min(gb->ny-1,max(0,cy));
     if (debug)
-      fprintf(debug,"CY: %10f  %5d\n",cosa,cy);
+      fprintf(debug,"CY: %10f  %5d\n",alpha,cy);
     gb->cmap[index][cy] += 1;
   }
 }
@@ -229,28 +231,35 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
   }
 }
 
+static real normalize_cmap(t_gkrbin *gb)
+{
+  int    i,j;
+  double hi,vol;
+  
+  hi = 0;
+  for(i=0; (i<gb->nx); i++) {
+    vol = 4*M_PI*sqr(gb->spacing*i)*gb->spacing;
+    for(j=0; (j<gb->ny); j++) {
+      gb->cmap[i][j] /= vol;
+      hi = max(hi,gb->cmap[i][j]);
+    }
+  }
+  if (hi <= 0)
+    gmx_fatal(FARGS,"No data in the cmap");
+  return hi;  
+}
+
 static void print_cmap(char *cmap,t_gkrbin *gb,int *nlevels)
 {
   FILE   *out;
   int    i,j;
-  double sum,hi;
+  real   hi;
+  
   real   *xaxis,*yaxis;
   t_rgb  rlo = { 1, 1, 1 };
   t_rgb  rhi = { 0, 0, 0 };
   
-  sum = 0;
-  for(i=0; (i<gb->nx); i++)
-    for(j=0; (j<gb->ny); j++) 
-      sum += gb->cmap[i][j];
-  if (sum <= 0)
-    gmx_fatal(FARGS,"No data in the cmap");
-  printf("Sum over cmap is %g\n",sum);
-  hi = 0;
-  for(i=0; (i<gb->nx); i++)
-    for(j=0; (j<gb->ny); j++) {
-      gb->cmap[i][j] /= sum;
-      hi = max(hi,gb->cmap[i][j]);
-    }
+  hi = normalize_cmap(gb);
   snew(xaxis,gb->nx+1);
   for(i=0; (i<gb->nx+1); i++)
     xaxis[i] = i*gb->spacing;
@@ -259,12 +268,13 @@ static void print_cmap(char *cmap,t_gkrbin *gb,int *nlevels)
     if (gb->bPhi)
       yaxis[j] = (360.0*j)/(gb->ny-1.0)-180;
     else
-      yaxis[j] = 2.0*j/(gb->ny-1.0)-1.0;
+      yaxis[j] = (180.0*j)/(gb->ny-1.0);
+    /*2.0*j/(gb->ny-1.0)-1.0;*/
   }
   out = fopen(cmap,"w");
   write_xpm(out,0,
 	    "Dipole Orientation Distribution","Fraction","r (nm)",
-	    gb->bPhi ? "Phi" : "Cos alpha",
+	    gb->bPhi ? "Phi" : "Alpha",
 	    gb->nx,gb->ny,xaxis,yaxis,
 	    gb->cmap,0,hi,rlo,rhi,nlevels);
   fclose(out);
@@ -607,7 +617,7 @@ static void do_dip(t_topology *top,real volume,
 		   char *fnadip,  bool bPairs,
 		   char *corrtype,char *corf,
 		   bool bGkr,     char *gkrfn,
-		   bool bPhi,     int  *nlevels,
+		   bool bPhi,     int  *nlevels,  int ndegrees,
 		   int  ncos,     bool bPBC,
 		   char *cmap,    real rcmax,
 		   bool bQuad,    char *quadfn,
@@ -827,7 +837,7 @@ static void do_dip(t_topology *top,real volume,
     /*  rcut   = 0.7*sqrt(max_cutoff2(box)); */
     rcut   = 0.7*sqrt(sqr(box[XX][XX])+sqr(box[YY][YY])+sqr(box[ZZ][ZZ]));
 
-    gkrbin = mk_gkrbin(rcut,rcmax,bPhi); 
+    gkrbin = mk_gkrbin(rcut,rcmax,bPhi,ndegrees); 
   }
 
   /* Start while loop over frames */
@@ -1226,7 +1236,7 @@ int gmx_dipoles(int argc,char *argv[])
   static char *axtitle="Z";
   static int  nslices = 10;      /* nr of slices defined       */
   static int  skip=0,nFA=0,nFB=0,ncos=1;
-  static int  nlevels=20;
+  static int  nlevels=20,ndegrees=90;
   t_pargs pa[] = {
     { "-mu",       FALSE, etREAL, {&mu_aver},
       "dipole of a single molecule (in Debye)" },
@@ -1259,7 +1269,9 @@ int gmx_dipoles(int argc,char *argv[])
     { "-phi",      FALSE, etBOOL, {&bPhi},
       "Plot the 'torsion angle' defined as the rotation of the two dipole vectors around the distance vector between the two molecules in the xpm file from the -cmap option. By default the cosine of the angle between the dipoles is plotted." },
     { "-nlevels",  FALSE, etINT, {&nlevels},
-      "Number of colors in the cmap output" }
+      "Number of colors in the cmap output" },
+    { "-ndegrees", FALSE, etINT, {&ndegrees},
+      "Number of divisions on the y-axis in the camp output (for 180 degrees)" }
   };
   int          *gnx;
   int          nFF[2];
@@ -1352,7 +1364,7 @@ int gmx_dipoles(int argc,char *argv[])
 	 bPairs,corrtype[0],
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
-	 bPhi,    &nlevels,
+	 bPhi,    &nlevels,  ndegrees,
 	 ncos,    bPBC,
 	 opt2fn("-cmap",NFILE,fnm),rcmax,
 	 bQuad,   opt2fn("-q",NFILE,fnm),
