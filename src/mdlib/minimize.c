@@ -2462,7 +2462,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
     fp_tpi = xvgropen(opt2fn("-tpi",nfile,fnm),
 		      "TPI energies","Time (ps)",
 		      "(kJ mol\\S-1\\N) / (nm\\S3\\N)");
-    fprintf(fp_tpi,"@ subtitle \"f. are averages over one frame\"\n");
+    xvgr_subtitle(fp_tpi,"f. are averages over one frame");
     snew(leg,4+nener);
     e = 0;
     sprintf(str,"-kT log(<Ve\\S-\\8b\\4U\\N>/<V>)");
@@ -2773,8 +2773,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   fp_tpi = xvgropen(opt2fn("-tpid",nfile,fnm),
 		    "TPI energy distribution",
 		    "\\8b\\4U - log(V/<V>)","count");
-  fprintf(fp_tpi,"@ subtitle \"number \\8b\\4U > %g: %9.3e\"\n",
-	  bU_bin_limit,bin[0]);
+  sprintf(str,"number \\8b\\4U > %g: %9.3e",bU_bin_limit,bin[0]);
+  xvgr_subtitle(fp_tpi,str);
   xvgr_legend(fp_tpi,2,tpid_leg);
   for(i=nbin-1; i>0; i--) {
     bUlogV = -i/invbinw + bU_logV_bin_limit - refvolshift + log(V_all/frame);

@@ -84,6 +84,12 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *ya
   return xvgr;
 }
 
+void xvgr_subtitle(FILE *out,char *subtitle)
+{
+  if (bPrintXvgrCodes()) 
+    fprintf(out,"@ subtitle \"%s\"\n",subtitle);
+}
+
 void xvgr_view(FILE *out,real xmin,real ymin,real xmax,real ymax)
 {
   if (bPrintXvgrCodes()) 
