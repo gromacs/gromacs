@@ -44,7 +44,8 @@
 
 #include "index.h"
 
-enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropNR };
+enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement, 
+       epropNR };
 
 extern void *get_atomprop(void);
 /* Read database files with atomproperties */
