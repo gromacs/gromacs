@@ -234,7 +234,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   FILE     *fplog;
   
   /* Initiate */
-  cr->nnodes = 1; cr->nodeid    = 0; cr->left   = 0; cr->right  = 1;
+  cr->nnodes = 1; cr->nodeid    = 0;
   cr->nthreads = 1 ; cr->threadid = 0;
   fplog = gmx_log_open(log,cr,FALSE);
 
