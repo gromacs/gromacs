@@ -103,15 +103,21 @@ static RETSIGTYPE signal_handler(int n)
 static void send_nchargeperturbed(t_commrec *cr,int nChargePerturbed)
 {
   int dest;
-  
+
   if (MASTER(cr) && cr->npmenodes > 0) {
     for(dest=0; dest<cr->nnodes; dest++) {
       if (gmx_pmeonlynode(cr,dest)) {
+	if (debug)
+	  fprintf(debug,
+		  "Sending nChargePerturbed to pme node, rank %d -> %d\n",
+		  cr->dd->sim_nodeid,dest);
 #ifdef GMX_MPI
 	/* dest is a PME only node */
 	/* Tell if we need to do PME with free energy */
 	MPI_Send(&nChargePerturbed,sizeof(int),MPI_BYTE,
 		 dest,0,cr->mpi_comm_mysim);
+	if (debug)
+	  fprintf(debug,"Sent\n");
 #endif
       }
     }
@@ -123,9 +129,15 @@ static int receive_nchargeperturbed(t_commrec *cr)
   int nChargePerturbed=0;
 
 #ifdef GMX_MPI
+  if (debug)
+    fprintf(debug,
+	    "Receiving nChargePerturbed from the master node, rank %d <- %d\n",
+	    cr->dd->sim_nodeid,0);
   MPI_Recv(&nChargePerturbed,sizeof(int),MPI_BYTE,
 	   0,0,cr->mpi_comm_mysim,
 	   MPI_STATUS_IGNORE);
+  if (debug)
+    fprintf(debug,"Received\n");
 #endif
 
   return nChargePerturbed;
@@ -338,7 +350,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* Initiate PME if necessary,
    * either on all nodes or on dedicated PME nodes only. */
-  if (EEL_PME(inputrec->coulombtype) && cr->duty & DUTY_PME) {
+  if (EEL_PME(inputrec->coulombtype) && (cr->duty & DUTY_PME)) {
     status = gmx_pme_init(pmedata,cr,inputrec,
 			  top ? top->atoms.nr : 0,nChargePerturbed,
 			  (Flags & MD_REPRODUCIBLE));
