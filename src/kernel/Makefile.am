@@ -50,7 +50,7 @@ x2top_eemprops.c
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
 	protonate	luck		gmxdump				\
-	gmxcheck	x2top 		ffscan
+	gmxcheck	x2top
 
 gmxdump_SOURCES = gmxdump.c
 
