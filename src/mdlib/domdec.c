@@ -1233,7 +1233,7 @@ static int ddcoord2simnodeid(t_commrec *cr,int x,int y,int z)
   return nodeid;
 }
 
-static int dd_node2pmenode(t_commrec *cr,int nodeid)
+static int dd_simnode2pmenode(t_commrec *cr,int sim_nodeid)
 {
   gmx_domdec_t *dd;
   gmx_domdec_comm_t *comm;
@@ -1247,7 +1247,7 @@ static int dd_node2pmenode(t_commrec *cr,int nodeid)
   /* This assumes a uniform x domain decomposition grid cell size */
   if (comm->bCartesianPP_PME) {
 #ifdef GMX_MPI
-    MPI_Cart_coords(cr->mpi_comm_mysim,nodeid,DIM,coord);
+    MPI_Cart_coords(cr->mpi_comm_mysim,sim_nodeid,DIM,coord);
     if (coord[comm->cartpmedim] < dd->nc[comm->cartpmedim]) {
       /* This is a PP node */
       dd_cart_coord2pmecoord(dd,coord,coord_pme);
@@ -1255,23 +1255,23 @@ static int dd_node2pmenode(t_commrec *cr,int nodeid)
     }
 #endif
   } else if (comm->bCartesianPP) {
-    if (nodeid < dd->nnodes) {
-      pmenode = dd->nnodes + ddindex2pmeslab(dd,nodeid);
+    if (sim_nodeid < dd->nnodes) {
+      pmenode = dd->nnodes + ddindex2pmeslab(dd,sim_nodeid);
     }
   } else {
     /* This assumes DD cells with identical x coordinates
      * are numbered sequentially.
      */
     if (dd->comm->pmenodes == NULL) {
-      if (nodeid < dd->nnodes) {
+      if (sim_nodeid < dd->nnodes) {
 	/* The DD index equals the nodeid */
-	pmenode = dd->nnodes + ddindex2pmeslab(dd,nodeid);
+	pmenode = dd->nnodes + ddindex2pmeslab(dd,sim_nodeid);
       }
     } else {
       i = 0;
-      while (nodeid > dd->comm->pmenodes[i])
+      while (sim_nodeid > dd->comm->pmenodes[i])
 	i++;
-      if (nodeid < dd->comm->pmenodes[i])
+      if (sim_nodeid < dd->comm->pmenodes[i])
 	pmenode = dd->comm->pmenodes[i];
     }
   }
@@ -1279,12 +1279,12 @@ static int dd_node2pmenode(t_commrec *cr,int nodeid)
   return pmenode;
 }
 
-bool gmx_pmeonlynode(t_commrec *cr,int nodeid)
+bool gmx_pmeonlynode(t_commrec *cr,int sim_nodeid)
 {
   bool bPMEOnlyNode;
 
   if (DOMAINDECOMP(cr)) {
-    bPMEOnlyNode = (dd_node2pmenode(cr,nodeid) == -1);
+    bPMEOnlyNode = (dd_simnode2pmenode(cr,sim_nodeid) == -1);
   } else {
     bPMEOnlyNode = FALSE;
   }
@@ -1342,26 +1342,26 @@ static bool receive_vir_ener(t_commrec *cr)
   int  pmenode,coords[DIM],rank;
   bool bReceive;
 
-  pmenode = dd_node2pmenode(cr,cr->nodeid);
-
   bReceive = TRUE;
   if (cr->npmenodes < cr->dd->nnodes) {
     comm = cr->dd->comm;
     if (comm->bCartesianPP_PME) {
+      pmenode = dd_simnode2pmenode(cr,cr->dd->sim_nodeid);
 #ifdef GMX_MPI
-      MPI_Cart_coords(cr->mpi_comm_mysim,cr->nodeid,DIM,coords);
+      MPI_Cart_coords(cr->mpi_comm_mysim,cr->dd->sim_nodeid,DIM,coords);
       coords[comm->cartpmedim]++;
       if (coords[comm->cartpmedim] < cr->dd->nc[comm->cartpmedim]) {
 	MPI_Cart_rank(cr->mpi_comm_mysim,coords,&rank);
-	if (dd_node2pmenode(cr,rank) == pmenode) {
+	if (dd_simnode2pmenode(cr,rank) == pmenode) {
 	  /* This is not the last PP node for pmenode */
 	  bReceive = FALSE;
 	}
       }
 #endif  
     } else {
-      if (cr->nodeid+1 < cr->nnodes &&
-	  dd_node2pmenode(cr,cr->nodeid+1) == pmenode) {
+      pmenode = dd_simnode2pmenode(cr,cr->dd->sim_nodeid);
+      if (cr->dd->sim_nodeid+1 < cr->nnodes &&
+	  dd_simnode2pmenode(cr,cr->dd->sim_nodeid+1) == pmenode) {
 	/* This is not the last PP node for pmenode */
 	bReceive = FALSE;
       }
@@ -3423,8 +3423,10 @@ static void make_pp_communicator(FILE *fplog,t_commrec *cr,int reorder)
       rank = 0;
     MPI_Allreduce(&rank,&dd->masterrank,1,MPI_INT,MPI_SUM,comm->all);
   } else if (comm->bCartesianPP) {
-    /* The PP communicator is also the communicator for this simulation */
-    cr->mpi_comm_mysim = cr->mpi_comm_mygroup;
+    if (cr->npmenodes == 0) {
+      /* The PP communicator is also the communicator for this simulation */
+      cr->mpi_comm_mysim = cr->mpi_comm_mygroup;
+    }
     cr->nodeid = dd->rank;
 
     MPI_Cart_coords(comm->all,dd->rank,DIM,dd->ci);
@@ -3468,6 +3470,28 @@ static void make_pp_communicator(FILE *fplog,t_commrec *cr,int reorder)
   if (debug)
     fprintf(debug,"Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
 	    dd->rank,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
+}
+
+static void receive_ddindex2simnodeid(t_commrec *cr)
+{
+  gmx_domdec_t *dd;
+  
+  gmx_domdec_comm_t *comm;
+  int  *buf;
+
+  dd = cr->dd;
+  comm = dd->comm;
+
+  if (!comm->bCartesianPP_PME && comm->bCartesianPP) {
+    snew(comm->ddindex2simnodeid,dd->nnodes);
+    snew(buf,dd->nnodes);
+    if (cr->duty & DUTY_PP)
+      buf[dd_index(dd->nc,dd->ci)] = dd->sim_nodeid;
+    /* Communicate the ddindex to simulation nodeid index */
+    MPI_Allreduce(buf,comm->ddindex2simnodeid,dd->nnodes,MPI_INT,MPI_SUM,
+		  cr->mpi_comm_mysim);
+    sfree(buf);
+  }
 }
 
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
@@ -3527,13 +3551,13 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
      * which will usually be MPI_COMM_WORLD, unless have multisim.
      */
     cr->mpi_comm_mysim = comm_cart;
-    cr->nodeid = rank;
+    dd->sim_nodeid = rank;
 
-    MPI_Cart_coords(cr->mpi_comm_mysim,cr->nodeid,DIM,dd->ci);
+    MPI_Cart_coords(cr->mpi_comm_mysim,dd->sim_nodeid,DIM,dd->ci);
 
     if (fplog)
       fprintf(fplog,"Cartesian nodeid %d, coordinates %d %d %d\n\n",
-	      cr->nodeid,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
+	      cr->dd->sim_nodeid,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
     
     if (dd->ci[comm->cartpmedim] < dd->nc[comm->cartpmedim])
       cr->duty |= DUTY_PP;
@@ -3546,6 +3570,7 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
 		   cr->duty,
 		   dd_index(comm->ntot,dd->ci),
 		   &cr->mpi_comm_mygroup);
+    MPI_Comm_rank(cr->mpi_comm_mygroup,&cr->nodeid);
   } else {
     switch (dd_node_order) {
     case ddnoPP_PME:
@@ -3568,7 +3593,7 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
       gmx_fatal(FARGS,"Unknown dd_node_order=%d",dd_node_order);
     }
     
-    if (dd_node2pmenode(cr,cr->nodeid) == -1)
+    if (dd_simnode2pmenode(cr,cr->dd->sim_nodeid) == -1)
       cr->duty |= DUTY_PME;
     else
       cr->duty |= DUTY_PP;
@@ -3619,11 +3644,13 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
   if (cr->duty & DUTY_PP) {
     /* Copy or make a new PP communicator */
     make_pp_communicator(fplog,cr,CartReorder);
+  } else {
+    receive_ddindex2simnodeid(cr);
   }
   
   if (!(cr->duty & DUTY_PME)) {
     /* Set up the commnuication to our PME node */
-    dd->pme_nodeid = dd_node2pmenode(cr,cr->nodeid);
+    dd->pme_nodeid = dd_simnode2pmenode(cr,dd->sim_nodeid);
     dd->pme_receive_vir_ener = receive_vir_ener(cr);
     if (debug)
       fprintf(debug,"My pme_nodeid %d receive ener %d\n",
@@ -4138,10 +4165,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
        * we assign PME only nodes with 12 or more nodes,
        * or when the PME grid does not match the number of nodes.
        */
-      if (EEL_PME(ir->coulombtype) && cr->npmenodes < 0 && cr->nnodes > 2 &&
-	  (cr->nnodes >= 12 || ir->nkx % cr->nnodes || ir->nky % cr->nnodes)) {
+      if (EEL_PME(ir->coulombtype) && cr->npmenodes < 0 && 
+	  (cr->nnodes >= 12 ||
+	   ir->nkx % cr->nnodes || ir->nky % cr->nnodes)) {
 	cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
-      } else {
+      } else if (cr->npmenodes < 0) {
 	cr->npmenodes = 0;
       }
       
