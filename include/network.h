@@ -51,89 +51,6 @@
 #include "main.h"
 #include "gmx_fatal.h"
 
-#define LEFT     0          /* channel to the left processor  */
-#define RIGHT    1          /* channel to the right processor */
-
-#define record(rec)     &((rec)),sizeof(rec)
-#define array(arr,nr)   (arr),((nr)*sizeof((arr)[0]))
-#define arrayp(el,nr)   &((el)),((nr)*sizeof(el))
-/* 
- * These macro's can be used as shown in the following examples:
- *
- * int chan=1;
- * int nr;
- * struct {float x,y} coordinate;
- * int arr[10];
- *
- * gmx_rxs(chan,record(nr));		receive data in nr
- * gmx_txs(chan,record(coordinate));	sends data from coordinate
- * gmx_rxs(chan,array(arr,10));	sends an array of 10 elements
- * gmx_rxs(chan,arrayp(arr[3],4)); 	receives an array of 4 elements
- *					and stores it starting at element 3
- */
-
-/****************************************************** 
- *
- * Here are the communication routines to be called from GROMACS
- * programs!
- *
- * The following 9 routines MUST be overridden !!!!!!!!
- * (for parallel processing)
- *
- * For sequential processing dummies are in src/gmxlib/libnet.c
- *
- ******************************************************/
-extern void gmx_tx(const t_commrec *cr,int chan,void *buf,int bufsize);
-     /*
-      * Asynchronously sends bufsize bytes from the buffer pointed to by buf 
-      * over the communication channel, identified by chan. The buffer becomes 
-      * available after a successful call of gmx_tx_wait(chan).
-      */
-
-extern void gmx_tx_wait(int chan);
-     /*
-      * Waits until the asynchronous send operation associated with chan has 
-      * succeeded. This makes the buffer of the send operation available to 
-      * the sending process.
-      */
-
-extern void gmx_txs(const t_commrec *cr,int chan,void *buf,int bufsize);
-     /*
-      * Synchronously sends bufsize bytes from the buffer pointed to by buf to
-      * the processor/process identified by chan. This is implemented by a call
-      * to gmx_tx(chan,buf,bufsize), directly followed by a call to 
-      * gmx_tx_wait(chan), so the buffer is available after 
-      * gmx_txs() returns.
-      */
-
-extern void gmx_rx(const t_commrec *cr,int chan,void *buf,int bufsize);
-     /*
-      * Asynchronously receives bufsize bytes in the buffer pointed to by buf 
-      * from communication channel identified by chan. The buffer becomes 
-      * available after a successful call of gmx_rx_wait(chan).
-      */
-
-extern void gmx_rx_wait(int chan);
-     /*
-      * Waits until the asynchronous receive operation, associated with chan, 
-      * has succeeded. This makes the buffer of the receive operation 
-      * available to the receiving process.
-      */
-
-extern void gmx_rxs(const t_commrec *cr,int chan,void *buf,int bufsize);
-     /*
-      * Synchronously receives bufsize bytes from the buffer pointed to by 
-      * buf over the communication channel identified by chan. This is 
-      * implemented by a call to gmx_rx(chan,buf,bufsize), directly 
-      * followed by a call to gmx_rx_wait(chan), so the buffer is 
-      * available after gmx_rxs() returns.
-      */
-
-
-/* Check for pending messages */
-int 
-gmx_rx_probe(int nodeid);
-
 extern int gmx_setup(int *argc,char **argv,int *nnodes);
 /* Initializes the parallel communication, return the ID of the node */
 
@@ -151,33 +68,9 @@ extern bool gmx_mpi_initialized(void);
  * return FALSE when MPI_Init has not been called OR
  * when GROMACS was compiled without MPI support.
  */
-      
-extern void gmx_left_right(int nnodes,int nodeid,
-			   int *left,int *right);
-/* Get left and right proc id. */
 
-extern void gmx_stat(FILE *fp,char *msg);
-/* Prints a overview of the status of the network, useful for debugging. */
-
-extern void gmx_reset_idle(void);
-/* Reset the idle count */
-
-extern void gmx_tx_rx(const t_commrec *cr,
-		      int send_nodeid,void *send_buf,int send_bufsize,
-		      int rec_nodeid,void *rec_buf,int rec_bufsize);
-/* Communicate simultaneously left and right */
-		      
-extern void gmx_tx_rx_real(const t_commrec *cr,
-			   int send_nodeid,real *send_buf,int send_bufsize,
-			   int rec_nodeid,real *rec_buf,int rec_bufsize);
-/* Communicate simultaneously left and right, reals only */
-
-extern void gmx_wait(int send,int receive);
-/* Wait for communication to finish */
-
-extern void gmx_sync_ring(const t_commrec *cr,
-			  int nodeid,int nnodes,int left,int right);
-/* Synchronise the ring... */
+extern void gmx_barrier(const t_commrec *cr);
+/* Wait till all processes in cr->mpi_comm_mygroup have reached the barrier */
 
 extern void gmx_bcast(int nbytes,void *b,const t_commrec *cr);
 /* Broadcast nbytes bytes from the master to cr->mpi_comm_mygroup */

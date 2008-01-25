@@ -9,7 +9,6 @@ pkginclude_HEADERS = \
 3dview.h \
 assert.h \
 atomprop.h \
-block_tx.h \
 bondf.h \
 calcgrid.h \
 calch.h \

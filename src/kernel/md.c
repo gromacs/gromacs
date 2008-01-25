@@ -77,6 +77,7 @@
 #include "constr.h"
 #include "shellfc.h"
 #include "compute_io.h"
+#include "mvdata.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -207,6 +208,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (cr->npmenodes > 0)
       gmx_fatal(FARGS,
 		"Can only use seperate PME nodes with domain decomposition\n");
+    cr->npmenodes = 0;
     cr->duty = (DUTY_PP | DUTY_PME);
   }
 
@@ -233,7 +235,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       if (PAR(cr)) {
 	if (!MASTER(cr))
 	  snew(state,1);
-	distribute_state(cr,state);
+	bcast_state(cr,state,TRUE);
 
 	if (!EI_TPI(inputrec->eI))
 	  split_system(fplog,inputrec,state,cr,top);
@@ -1241,7 +1243,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 			    state,&f,&buf,mdatoms,top,fr,vsite,shellfc,constr,
 			    nrnb,wcycle,FALSE);
       } else {
-	pd_distribute_state(cr,state);
+	bcast_state(cr,state,FALSE);
       }
     }
     

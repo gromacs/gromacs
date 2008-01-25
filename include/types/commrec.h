@@ -216,7 +216,6 @@ typedef struct {
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
    */
   int nodeid,nnodes,npmenodes;
-  int left,right;
   int threadid,nthreads;
 #ifdef GMX_MPI
   MPI_Comm mpi_comm_mysim;

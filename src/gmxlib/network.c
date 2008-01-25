@@ -51,137 +51,6 @@
 #include "mpelogging.h"
 #endif
 
-#ifdef GMX_MPI
-static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
-#endif
-
-/* Try setting MPI_TEST when you experience unexplainable crashes, *
- * up til now these crashes have only occured with IRIX 6.5        */
-/* #define MPI_TEST */
-
-void gmx_tx(const t_commrec *cr,int nodeid,void *buf,int bufsize)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_tx"); 
-#else
-  int        tag,flag;
-  MPI_Status status;
-  
-#ifdef DEBUG
-  fprintf(stderr,"gmx_tx: nodeid=%d, buf=%x, bufsize=%d\n",
-	  nodeid,buf,bufsize);
-#endif
-#ifdef MPI_TEST
-  /* workaround for crashes encountered with MPI on IRIX 6.5 */
-  if (mpi_req_tx != MPI_REQUEST_NULL) {
-    MPI_Test(&mpi_req_tx,&flag,&status);
-    if (flag==FALSE) {
-      fprintf(stdlog,"gmx_tx called before previous send was complete: nodeid=%d, buf=%x, bufsize=%d\n",
-	      nodeid,buf,bufsize);
-      gmx_tx_wait(nodeid);
-    }
-  }
-#endif
-  tag = 0;
-  if (MPI_Isend(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mygroup,&mpi_req_tx) != 0)
-    gmx_comm("MPI_Isend Failed");
-#endif
-}
-
-void gmx_tx_wait(int nodeid)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_tx_wait");
-#else
-  MPI_Status  status;
-  int mpi_result;
-  
-  if ((mpi_result=MPI_Wait(&mpi_req_tx,&status)) != 0)
-    gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
-#endif
-}
-
-void gmx_txs(const t_commrec *cr,int nodeid,void *buf,int bufsize)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_txs");
-#else
-  int tag;
-
-#ifdef DEBUG
-  fprintf(stderr,"gmx_txs: nodeid=%d, buf=%x, bufsize=%d\n",
-	  nodeid,buf,bufsize);
-#endif
-  tag = 0;
-  if (MPI_Send(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mygroup) != 0)
-    gmx_comm("MPI_Send Failed");
-#endif
-}
-
-void gmx_rx(const t_commrec *cr,int nodeid,void *buf,int bufsize)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_rx");
-#else
-  int        tag;
-
-#ifdef DEBUG
-  fprintf(stderr,"gmx_rx: nodeid=%d, buf=%x, bufsize=%d\n",
-	  nodeid,buf,bufsize);
-#endif
-  tag = 0;
-  if (MPI_Irecv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mygroup, &mpi_req_rx) != 0 )
-    gmx_comm("MPI_Recv Failed");
-#endif
-}
-
-void gmx_rx_wait(int nodeid)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_rx_wait");
-#else
-  MPI_Status  status;
-  int mpi_result;
-  
-  if ((mpi_result=MPI_Wait(&mpi_req_rx,&status)) != 0)
-    gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
-#endif
-}
-
-int gmx_rx_probe(int nodeid)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_rx_probe");
-  return 0;
-#else
-  MPI_Status  status;
-  int mpi_result,flag=0;
-  
-  if ((mpi_result = MPI_Test(&mpi_req_rx,&flag,&status)) != MPI_SUCCESS)
-    gmx_fatal(FARGS,"MPI_Test: result=%d",mpi_result);
-    
-  return flag;
-#endif
-}
-
-void gmx_rxs(const t_commrec *cr,int nodeid,void *buf,int bufsize)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_rxs");
-#else
-  MPI_Status stat;
-  int        tag;
-
-#ifdef DEBUG
-  fprintf(stderr,"gmx_rxs: nodeid=%d, buf=%x, bufsize=%d\n",
-	  nodeid,buf,bufsize);
-#endif
-  tag = 0;
-  if (MPI_Recv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mygroup, &stat) != 0 )
-    gmx_comm("MPI_Recv Failed");
-#endif
-}
-
 bool gmx_mpi_initialized(void)
 {
   int n;
@@ -401,99 +270,13 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
   }
 }
 
-int gmx_idle_send(void)
-{
-  return 0;
-}
-
-int gmx_idle_rec(void)
-{
-  return 0;
-}
-
-void gmx_left_right(int nnodes,int nodeid,int *left,int *right)
-{
-  *left  = (nnodes+nodeid-1) % nnodes;
-  *right = (nodeid + 1) % nnodes;
-}
-
-void gmx_tx_rx(const t_commrec *cr,
-	       int send_nodeid,void *send_buf,int send_bufsize,
-	       int rec_nodeid,void *rec_buf,int rec_bufsize)
+void gmx_barrier(const t_commrec *cr)
 {
 #ifndef GMX_MPI
-  gmx_call("gmx_tx_rx");
+  gmx_call("gmx_barrier");
 #else
-  int tx_tag = 0,rx_tag = 0;
-  MPI_Status stat;
-  
-  MPI_Sendrecv(send_buf,send_bufsize,MPI_BYTE,RANK(cr,send_nodeid),tx_tag,
-	       rec_buf,rec_bufsize,MPI_BYTE,RANK(cr,rec_nodeid),rx_tag,
-	       cr->mpi_comm_mygroup,&stat);
+  MPI_Barrier(cr->mpi_comm_mygroup);
 #endif
-}
-		 
-void gmx_tx_rx_real(const t_commrec *cr,
-		    int send_nodeid,real *send_buf,int send_bufsize,
-		    int rec_nodeid,real *rec_buf,int rec_bufsize)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_tx_rx_real");
-#else
-  int tx_tag = 0,rx_tag = 0;
-  MPI_Status stat;
-#ifdef GMX_DOUBLE
-#define mpi_type MPI_DOUBLE
-#else
-#define mpi_type MPI_FLOAT
-#endif
-  
-  MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
-	       rec_buf,rec_bufsize,mpi_type,RANK(cr,rec_nodeid),rx_tag,
-	       cr->mpi_comm_mygroup,&stat);
-#undef mpi_type
-#endif
-}
-		 
-void gmx_wait(int left,int right)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_wait");
-#else
-  gmx_tx_wait(left);
-  gmx_rx_wait(right);
-#endif
-}
-
-void gmx_sync_ring(const t_commrec *cr,int nodeid,int nnodes,int left,int right)
-{
-#ifndef GMX_MPI
-  gmx_call("gmx_sync_ring");
-#else
-  int i;
-  int tag=0;
-
-  for (i=0; (i<nnodes); i++) {
-    if (nodeid == 0) {
-      gmx_txs(cr,right,&tag,sizeof(tag));
-      gmx_rxs(cr,left,&tag,sizeof(tag));
-    }
-    else {
-      gmx_rxs(cr,left,&tag,sizeof(tag));
-      gmx_txs(cr,right,&tag,sizeof(tag));
-    }
-  }
-#endif
-}
-
-void gmx_stat(FILE *fp,char *msg)
-{
-  fprintf(fp,"def_stat: %s (from %s, %d)\n",msg,__FILE__,__LINE__);
-}
-
-void gmx_reset_idle(void)
-{
-  ;
 }
 
 void gmx_abort(int noderank,int nnodes,int errorno)
@@ -527,8 +310,6 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumd");
 #else
-#define GMX_MPI_SUM
-#ifdef GMX_MPI_SUM
   static double *buf=NULL;
   static int nalloc=0;
   int i;
@@ -550,32 +331,6 @@ void gmx_sumd(int nr,double r[],const t_commrec *cr)
     for(i=0; i<nr; i++)
       r[i] = buf[i];
   }
-#else
-  double *buf[2];
-  int  NR,bufs,j,i,cur=0;
-#define next (1-cur)
-
-  bufs=nr*sizeof(buf[0][0]);
-  NR=nr;
-
-  snew(buf[0],NR);
-  snew(buf[1],NR);
-
-  for(i=0; (i<nr); i++)
-    buf[cur][i]=r[i];
-  for(j=0; (j<(cr->nnodes-cr->npmenodes-1)); j++) {
-    gmx_tx(cr->left,buf[cur],bufs);
-    gmx_rx(cr->right,buf[next],bufs);
-    gmx_tx_wait(cr->left);
-    gmx_rx_wait(cr->right);
-    for(i=0; (i<nr); i++)
-      r[i]+=buf[next][i];
-
-    cur=next;
-  }
-  sfree(buf[1]);
-  sfree(buf[0]);
-#endif
 #endif
 }
 
@@ -584,7 +339,6 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumf");
 #else
-#ifdef GMX_MPI_SUM
   static float *buf=NULL;
   static int nalloc=0;
   int i;
@@ -606,31 +360,6 @@ void gmx_sumf(int nr,float r[],const t_commrec *cr)
     for(i=0; i<nr; i++)
       r[i] = buf[i];
   }
-#else
-  float *buf[2];
-  int  NR,bufs,j,i,cur=0;
-#define next (1-cur)
-
-  bufs=nr*sizeof(float);
-  NR=nr;
-
-  snew(buf[0],NR);
-  snew(buf[1],NR);
-
-  for(i=0; (i<nr); i++)
-    buf[cur][i]=r[i];
-  for(j=0; (j<(cr->nnodes-cr->npmenodes-1)); j++) {
-    gmx_tx(cr,cr->left,buf[cur],bufs);
-    gmx_rx(cr,cr->right,buf[next],bufs);
-    gmx_wait(cr->left,cr->right);
-    for(i=0; (i<nr); i++)
-      r[i]+=buf[next][i];
-
-    cur=next;
-  }
-  sfree(buf[1]);
-  sfree(buf[0]);
-#endif
 #endif
 }
 
@@ -639,8 +368,6 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
 #ifndef GMX_MPI
   gmx_call("gmx_sumi");
 #else
-#define GMX_MPI_SUM
-#ifdef GMX_MPI_SUM
   static int *buf=NULL;
   static int nalloc=0;
   int i;
@@ -662,31 +389,6 @@ void gmx_sumi(int nr,int r[],const t_commrec *cr)
     for(i=0; i<nr; i++)
       r[i] = buf[i];
   }
-#else
-  int *buf[2];
-  int  NR,bufs,j,i,cur=0;
-#define next (1-cur)
-
-  bufs=nr*sizeof(int);
-  NR=nr;
-
-  snew(buf[0],NR);
-  snew(buf[1],NR);
-
-  for(i=0; (i<nr); i++)
-    buf[cur][i]=r[i];
-  for(j=0; (j<(cr->nnodes-cr->npmenodes-1)); j++) {
-    gmx_tx(cr,cr->left,buf[cur],bufs);
-    gmx_rx(cr,cr->right,buf[next],bufs);
-    gmx_wait(cr->left,cr->right);
-    for(i=0; (i<nr); i++)
-      r[i]+=buf[next][i];
-
-    cur=next;
-  }
-  sfree(buf[1]);
-  sfree(buf[0]);
-#endif
 #endif
 }
 

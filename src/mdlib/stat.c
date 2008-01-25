@@ -62,6 +62,7 @@
 #include "trnio.h"
 #include "statutil.h"
 #include "domdec.h"
+#include "partdec.h"
 #include "constr.h"
 
 void global_stat(FILE *fplog,
@@ -237,7 +238,7 @@ void write_traj(t_commrec *cr,
   t_block *cgs;
   int     i,j;
 
-#define MX(xvf) moveit(cr,cr->left,cr->right,#xvf,xvf)
+#define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
 
   if (DOMAINDECOMP(cr)) {
     cgs = &top_global->blocks[ebCGS];

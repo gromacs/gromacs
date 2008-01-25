@@ -98,60 +98,21 @@ void init_single(FILE *log,t_inputrec *inputrec,
   pr_inputrec(log,0,"Input Parameters",inputrec,FALSE);
 }
 
-void distribute_state(t_commrec *cr,t_state *state)
-{
-  if (MASTER(cr))
-    mv_state(cr,cr->right,state);
-  ld_state(cr,cr->left,state);
-  if (!MASTER(cr))
-    mv_state(cr,cr->right,state);
-}
-
-static void distribute_parallel(t_commrec *cr,int left,int right,char *tpxfile,
-				t_state *state_p)
-{
-  int         step;
-  real        t;
-  t_inputrec  inputrec;
-  t_topology  top;
-  t_state     *state;
-  int         npmenodes=0;
-  
-  if (state_p) {
-    state = state_p;
-  } else {
-    snew(state,1);
-  }
-
-  init_inputrec(&inputrec);
-  read_tpx_state(tpxfile,&step,&t,&inputrec,state,NULL,&top);
-
-  mv_data(cr,left,right,&inputrec,&top,state);
-  done_top(&top);
-  if (state_p == NULL) {
-    done_state(state);
-    sfree(state);
-  }
-  done_inputrec(&inputrec);
-}
-
 void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
 		   t_inputrec *inputrec,t_topology *top,
 		   t_state *state,
 		   int list)
 {
+  int  step;
+  real t;
   char buf[256];
   
-  if (MASTER(cr)) 
-    distribute_parallel(cr,cr->left,cr->right,tpxfile,state);
-    
-    /* Read the actual data */
-  ld_data(cr,cr->left,cr->right,inputrec,top,state);
-  if (!MASTER(cr))
-    mv_data(cr,cr->left,cr->right,inputrec,top,state);
-
-  if (MASTER(cr))
+  if (MASTER(cr)) {
+    init_inputrec(inputrec);
+    read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
     correct_state_entries(state,inputrec);
+  }
+  bcast_ir_top(cr,inputrec,top);
 
   if (!EI_TPI(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */

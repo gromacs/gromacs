@@ -59,76 +59,6 @@
 
 int  gmx_parallel_env=0;
 
-static int get_nodeid(FILE *log,t_commrec *cr,
-		      int left,int right,int *nodeid,int *nnodes)
-     /*
-      * The ring of nodes is only defined by the interconnection
-      * via the supplied communication channels (left and right). Thus
-      * it is not defined what the (hardware) node id's are in the
-      * ring. To be independent of the node id assignment (to allow
-      * node switching without modifying a node id) this routine
-      * determines the node id and the number of nodes. On entry
-      * nodeid needs to be set to an unique value in the system and nnodes
-      * needs to be set to the maximum number of nodes in the system.
-      * The lowest nodeid in the ring will then get the value 0 assigned. The
-      * rest is then assigned by incrementing node id's to the right
-      * until the ring is closed. The function returns 1 in case it succeeded
-      * in determining the values for nodeid and nnodes, else it returns 0. If
-      * the hardware does not implement a ring structure this will hang the
-      * system!
-      */
-{
-  int i,*nodeids=NULL,min_index,min_nodeid,send_nodeid,receive_nodeid;
-
-  *nnodes=0;
-  send_nodeid=*nodeid;
-  min_nodeid=send_nodeid;
-  min_index=*nnodes;
-  do {
-#ifdef DEBUGPAR
-    fprintf(log,"Sending: %d\n",send_nodeid);
-#endif
-    gmx_tx(cr,left,&send_nodeid,sizeof(send_nodeid));
-    gmx_rx(cr,right,&receive_nodeid,sizeof(receive_nodeid));
-    gmx_tx_wait(left);
-    gmx_rx_wait(right);
-#ifdef DEBUGPAR
-    fprintf(log,"Received: %d\n",receive_nodeid);
-#endif
-    if (send_nodeid<min_nodeid) {
-      min_nodeid=send_nodeid;
-      min_index=*nnodes;
-    }
-    srenew(nodeids,*nnodes+1);
-    nodeids[(*nnodes)++]=send_nodeid;
-    send_nodeid=receive_nodeid;
-  } while (receive_nodeid!=*nodeid);
-  
-#ifdef DEBUGPAR  
-  fprintf(log,"min_index=%d\n",min_index);
-  fprintf(log,"nnodes   =%d\n",*nnodes);
-  fprintf(log,"nodeid      =%d\n",*nodeid);
-#endif
-
-  for (i=min_index; (*nodeid)!=nodeids[i%(*nnodes)]; i++)
-    ;
-  (*nodeid)=(i-min_index+(*nnodes))%(*nnodes);
-#ifdef DEBUGPAR
-  fprintf(log,"min_index=%d\n",min_index);
-  fprintf(log,"nnodes   =%d\n",*nnodes);
-  fprintf(log,"nodeid      =%d\n",*nodeid);
-  for (i=0; i<(*nnodes); i++) {
-    fprintf(log,"%d translated %d --> %d",
-	    i,nodeids[i],(i-min_index+(*nnodes))%(*nnodes));
-    if (nodeids[i]==(*nodeid)) 
-      fprintf(log," *");
-    fprintf(log,"\n");
-  }
-#endif
-  sfree(nodeids);
-  return 1;
-}
-
 static void par_fn(char *base,int ftp,const t_commrec *cr,
 		   bool bUnderScore,
 		   char buf[],int bufsize)
@@ -198,28 +128,12 @@ FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly)
   
   /* Communicate the filename for logfile */
   if (cr->nnodes > 1 && !bMasterOnly) {
-    if (MASTER(cr)) {
+    if (MASTER(cr))
       len = strlen(lognm)+1;
-      gmx_txs(cr,cr->right,&len,sizeof(len));
-      gmx_rxs(cr,cr->left,&testlen,sizeof(testlen));
-      
-      debug_gmx();
-      
-      gmx_txs(cr,cr->right,lognm,len);
-      gmx_rxs(cr,cr->left,lognm,len);
-      if (len != testlen)
-	gmx_comm("Communication error on NODE 0!");
-      
-    }
-    else {
-      gmx_rxs(cr,cr->left,&len,sizeof(len));
-      debug_gmx();
-      
-      gmx_txs(cr,cr->right,&len,sizeof(len));
+    gmx_bcast(sizeof(len),&len,cr);
+    if (!MASTER(cr))
       snew(lognm,len+8);
-      gmx_rxs(cr,cr->left,lognm,len);
-      gmx_txs(cr,cr->right,lognm,len);
-    }
+    gmx_bcast(len*sizeof(*lognm),lognm,cr);
   }
   
   debug_gmx();
@@ -278,43 +192,24 @@ void gmx_log_close(FILE *fp)
 static void comm_args(const t_commrec *cr,int *argc,char ***argv)
 {
   int i,len;
-  char **argv_tmp=NULL,*buf;
+  
+  if ((cr) && PAR(cr))
+    gmx_bcast(sizeof(*argc),argc,cr);
   
   if (!MASTER(cr))
-    *argc=0;
-
-  if((cr) && PAR(cr))
-    gmx_sumi(1,argc,cr);
-  
-  if (!MASTER(cr))
-    snew(argv_tmp,*argc+1);
+    snew(*argv,*argc+1);
   fprintf(stderr,"NODEID=%d argc=%d\n",cr->nodeid,*argc);
   for(i=0; (i<*argc); i++) {
-    if (MASTER(cr)) {
+    if (MASTER(cr))
       len = strlen((*argv)[i])+1;
-      gmx_txs(cr,cr->right,&len,sizeof(len));
-      gmx_rxs(cr,cr->left,&len,sizeof(len));
-      gmx_txs(cr,cr->right,(*argv)[i],len);
-      snew(buf,len);
-      gmx_rxs(cr,cr->left,buf,len);
-      if (strcmp(buf,(*argv)[i]) != 0)
-	gmx_fatal(FARGS,"Communicating argv[%d]=%s\n",i,(*argv)[i]);
-      sfree(buf);
-    }
-    else {
-      gmx_rxs(cr,cr->left,&len,sizeof(len));
-      gmx_txs(cr,cr->right,&len,sizeof(len));
-      snew(argv_tmp[i],len);
-      gmx_rxs(cr,cr->left,argv_tmp[i],len);
-      gmx_txs(cr,cr->right,argv_tmp[i],len);
-    }
-  }
-  if (!MASTER(cr)) {
-    argv_tmp[*argc] = NULL;
-    *argv = argv_tmp;
+    gmx_bcast(sizeof(len),&len,cr);
+    if (!MASTER(cr))
+      snew((*argv)[i],len);
+    gmx_bcast(len*sizeof((*argv)[i][0]),(*argv)[i],cr);
   }
   debug_gmx();
 }
+
 void init_multisystem(t_commrec *cr,int nsim,
 		      int nfile,t_filenm fnm[],bool bParFn)
 {
@@ -356,7 +251,6 @@ void init_multisystem(t_commrec *cr,int nsim,
   cr->nodeid = cr->nodeid % nnodpersim;
   cr->nnodes = nnodpersim;
   if (PAR(cr)) {
-    gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
 #ifdef GMX_MPI
     MPI_Comm_split(MPI_COMM_WORLD,sim,cr->nodeid,&cr->mpi_comm_mysim);
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
@@ -429,27 +323,9 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     gmx_comm("(!PAR(cr) && (cr->nodeid != 0))");
   
   if (PAR(cr)) {
-    gmx_left_right(cr->nnodes,cr->nodeid,&cr->left,&cr->right);
 #ifdef GMX_MPI
     cr->mpi_comm_mysim = MPI_COMM_WORLD;
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-#endif
-#ifdef DEBUGPAR
-    fprintf(stderr,"Going to initialise network\n");
-#endif
-
-#ifndef USE_PVM3
-#ifdef DEBUGPAR
-    fprintf(stderr,"Initialised network\n");
-    fprintf(stderr,"Getting new node id's\n");
-#endif
-    if (get_nodeid(stderr,cr,cr->left,cr->right,&cr->nodeid,&cr->nnodes)==0)
-      gmx_comm("could not get nodeid & nnodes from ring topology");
-#ifdef DEBUGPAR
-    fprintf(stderr,"Got new node id's\n");
-    fprintf(stderr,"nnodes=%d, nodeid=%d\n",cr->nnodes,cr->nodeid);
-#endif
-
 #endif
   }
 

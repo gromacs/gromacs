@@ -39,7 +39,6 @@
 
 #include "typedefs.h"
 #include "xmdrun.h"
-#include "block_tx.h"
 #include "futil.h"
 #include "xvgr.h"
 #include "macros.h"
@@ -74,56 +73,38 @@ static int Name2eo(char *s)
   return res;
 }
 
-static void send_tcr(t_commrec *cr,int dest,t_coupl_rec *tcr)
-{
-  nblocktx(cr,dest,eoObsNR,tcr->ref_value);
-  blocktx(cr,dest,tcr->nLJ);
-  nblocktx(cr,dest,tcr->nLJ,tcr->tcLJ);
-  blocktx(cr,dest,tcr->nBU);
-  nblocktx(cr,dest,tcr->nBU,tcr->tcBU);
-  blocktx(cr,dest,tcr->nQ);
-  nblocktx(cr,dest,tcr->nQ,tcr->tcQ);
-  blocktx(cr,dest,tcr->nmemory);
-  blocktx(cr,dest,tcr->bInter);
-  blocktx(cr,dest,tcr->bVirial);
-  blocktx(cr,dest,tcr->combrule);
-}
+#define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
+#define nblock_bc(cr,nr,d) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr))
+#define   snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
 
-static void rec_tcr(t_commrec *cr,int src,t_coupl_rec *tcr)
+static void low_comm_tcr(t_commrec *cr,t_coupl_rec *tcr)
 {
-  nblockrx(cr,src,eoObsNR,tcr->ref_value);
+  nblock_bc(cr,eoObsNR,tcr->ref_value);
   
-  blockrx(cr,src,tcr->nLJ);
-  snew(tcr->tcLJ,tcr->nLJ);
-  nblockrx(cr,src,tcr->nLJ,tcr->tcLJ);
+  block_bc(cr,tcr->nLJ);
+  snew_bc(cr,tcr->tcLJ,tcr->nLJ);
+  nblock_bc(cr,tcr->nLJ,tcr->tcLJ);
   
-  blockrx(cr,src,tcr->nBU);
-  snew(tcr->tcBU,tcr->nBU);
-  nblockrx(cr,src,tcr->nBU,tcr->tcBU);
+  block_bc(cr,tcr->nBU);
+  snew_bc(cr,tcr->tcBU,tcr->nBU);
+  nblock_bc(cr,tcr->nBU,tcr->tcBU);
   
-  blockrx(cr,src,tcr->nQ);
-  snew(tcr->tcQ,tcr->nQ);
-  nblockrx(cr,src,tcr->nQ,tcr->tcQ);
+  block_bc(cr,tcr->nQ);
+  snew_bc(cr,tcr->tcQ,tcr->nQ);
+  nblock_bc(cr,tcr->nQ,tcr->tcQ);
   
-  blockrx(cr,src,tcr->nmemory);
-  blockrx(cr,src,tcr->bInter);
-  blockrx(cr,src,tcr->bVirial);
-  blockrx(cr,src,tcr->combrule);
+  block_bc(cr,tcr->nmemory);
+  block_bc(cr,tcr->bInter);
+  block_bc(cr,tcr->bVirial);
+  block_bc(cr,tcr->combrule);
 }
 
 void comm_tcr(FILE *log,t_commrec *cr,t_coupl_rec **tcr)
 {
-  t_coupl_rec shit;
-
-  if (MASTER(cr)) { 
-    send_tcr(cr,cr->left,*tcr);
-    rec_tcr(cr,cr->right,&shit);
-  }
-  else {
+  if (!MASTER(cr))
     snew(*tcr,1);
-    rec_tcr(cr,cr->right,*tcr);
-    send_tcr(cr,cr->left,*tcr);
-  }
+  
+  low_comm_tcr(cr,*tcr);
 } 
 
 static void clear_lj(t_coupl_LJ *tc)

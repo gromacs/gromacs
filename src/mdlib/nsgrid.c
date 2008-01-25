@@ -590,14 +590,14 @@ void mv_grid(t_commrec *cr,t_grid *grid)
   for(i=0; (i<cr->nnodes-1); i++) {
     start = cgindex[cur];
     nr    = cgindex[cur+1] - start;
-    gmx_tx(cr,cr->left,&(ci[start]),nr*sizeof(*ci));
+    gmx_tx(cr,GMX_LEFT,&(ci[start]),nr*sizeof(*ci));
     
     start = cgindex[next];
     nr    = cgindex[next+1] - start;
-    gmx_rx(cr,cr->right,&(ci[start]),nr*sizeof(*ci));
+    gmx_rx(cr,GMX_RIGHT,&(ci[start]),nr*sizeof(*ci));
     
-    gmx_tx_wait(cr->left);
-    gmx_rx_wait(cr->right);
+    gmx_tx_wait(GMX_LEFT);
+    gmx_rx_wait(GMX_RIGHT);
     
     cur=next;
   }

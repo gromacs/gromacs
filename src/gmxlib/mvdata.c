@@ -49,93 +49,116 @@
 #include "symtab.h"
 #include "vec.h"
 #include "tgroup.h"
-#include "block_tx.h"
 
-static char **ld_string(const t_commrec *cr,int src,t_symtab *symtab)
+#define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
+#define nblock_bc(cr,nr,d) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr))
+#define   snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
+
+static void bc_string(const t_commrec *cr,t_symtab *symtab,char ***s)
 {
-  int name;
+  int handle;
   
-  blockrx(cr,src,name);
-  return get_symtab_handle(symtab,name);
+  if (MASTER(cr)) {
+    handle = lookup_symtab(symtab,*s);
+  }
+  block_bc(cr,handle);
+  if (!MASTER(cr)) {
+    *s = get_symtab_handle(symtab,handle);
+  }
 }
 
-static int ld_strings(const t_commrec *cr,int src,t_symtab *symtab,char ****nm)
+static void bc_strings(const t_commrec *cr,t_symtab *symtab,int nr,char ****nm)
 {
-  int  i,nr;
+  int  i;
   int  *handle;
   char ***NM;
 
-  blockrx(cr,src,nr);
   snew(handle,nr);
-  nblockrx(cr,src,nr,handle);
+  if (MASTER(cr)) {
+    NM = *nm;
+    for(i=0; (i<nr); i++)
+      handle[i] = lookup_symtab(symtab,NM[i]);
+  }
+  nblock_bc(cr,nr,handle);
 
-  snew(*nm,nr);
-  NM=*nm;
-  for (i=0; (i<nr); i++) 
-    NM[i]=get_symtab_handle(symtab,handle[i]);
+  if (!MASTER(cr)) {
+    snew_bc(cr,*nm,nr);
+    NM = *nm;
+    for (i=0; (i<nr); i++) 
+      (*nm)[i] = get_symtab_handle(symtab,handle[i]);
+  }
   sfree(handle);
-
-  return nr;
 }
 
-static void ld_symtab(const t_commrec *cr,int src,t_symtab *symtab)
+static void bc_symtab(const t_commrec *cr,t_symtab *symtab)
 {
   int i,nr,len;
-  
-  blockrx(cr,src,symtab->nr);
-  nr=symtab->nr;
-  snew(symtab->symbuf,1);
-  symtab->symbuf->bufsize=nr;
-  snew(symtab->symbuf->buf,nr);
-  for (i=0; i<nr; i++)
-    {
-      blockrx(cr,src,len);
-      snew(symtab->symbuf->buf[i],len);
-      nblockrx(cr,src,len,symtab->symbuf->buf[i]);
-    }
+  t_symbuf *symbuf;
+
+  block_bc(cr,symtab->nr);
+  nr = symtab->nr;
+  snew_bc(cr,symtab->symbuf,1);
+  symbuf = symtab->symbuf;
+  symbuf->bufsize = nr;
+  snew_bc(cr,symbuf->buf,nr);
+  for (i=0; i<nr; i++) {
+    if (MASTER(cr))
+      len = strlen(symbuf->buf[i]) + 1;
+    block_bc(cr,len);
+    snew_bc(cr,symbuf->buf[i],len);
+    nblock_bc(cr,len,symbuf->buf[i]);
+  }
 }
 
-static void ld_grps(const t_commrec *cr,int src,t_grps grps[])
+static void bc_block(const t_commrec *cr,t_block *block)
+{
+  block_bc(cr,block->nr);
+  snew_bc(cr,block->index,block->nr+1);
+  nblock_bc(cr,block->nr+1,block->index);
+  block_bc(cr,block->nra);
+  if (block->nra) {
+    snew_bc(cr,block->a,block->nra);
+    nblock_bc(cr,block->nra,block->a);
+  }
+}
+
+static void bc_grps(const t_commrec *cr,t_grps grps[])
 {
   int i;
   
   for(i=0; (i<egcNR); i++) {
-    blockrx(cr,src,grps[i].nr);
-    snew(grps[i].nm_ind,grps[i].nr);
-    nblockrx(cr,src,grps[i].nr,grps[i].nm_ind);
-  }
-  for( ; (i<egcNR); i++) {
-    grps[i].nr=0;
-    grps[i].nm_ind=NULL;
+    block_bc(cr,grps[i].nr);
+    snew_bc(cr,grps[i].nm_ind,grps[i].nr);
+    nblock_bc(cr,grps[i].nr,grps[i].nm_ind);
   }
 }
 
-static void ld_atoms(const t_commrec *cr,int src,t_symtab *symtab,t_atoms *atoms)
+static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
 {
-  int atomnr,dummy;
+  int dummy;
 
-  blockrx(cr,src,atoms->nr);
-  snew(atoms->atom,atoms->nr);
-  nblockrx(cr,src,atoms->nr,atoms->atom);
-  atomnr=ld_strings(cr,src,symtab,&atoms->atomname);
-  if (atomnr != atoms->nr)
-    gmx_incons("Number of atoms to send around does not match");
-  atoms->nres=ld_strings(cr,src,symtab,&atoms->resname);
-  atoms->ngrpname=ld_strings(cr,src,symtab,&atoms->grpname);
+  block_bc(cr,atoms->nr);
+  snew_bc(cr,atoms->atom,atoms->nr);
+  nblock_bc(cr,atoms->nr,atoms->atom);
+  bc_strings(cr,symtab,atoms->nr,&atoms->atomname);
+  block_bc(cr,atoms->nres);
+  bc_strings(cr,symtab,atoms->nres,&atoms->resname);
+  block_bc(cr,atoms->ngrpname);
+  bc_strings(cr,symtab,atoms->ngrpname,&atoms->grpname);
   /* QMMM requires atomtypes to be known on all nodes as well */
-  dummy = ld_strings(cr,src,symtab,&atoms->atomtype);
-  ld_grps(cr,src,atoms->grps);
+  bc_strings(cr,symtab,atoms->nr,&atoms->atomtype);
+  bc_grps(cr,atoms->grps);
 }
 
-void ld_state(const t_commrec *cr,int src,t_state *state)
+void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
-  blockrx(cr,src,state->natoms);
-  blockrx(cr,src,state->ngtc);
-  blockrx(cr,src,state->flags);
-  blockrx(cr,src,state->box);
-  blockrx(cr,src,state->boxv);
-  blockrx(cr,src,state->pcoupl_mu);
-  if (!MASTER(cr)) {
+  block_bc(cr,state->natoms);
+  block_bc(cr,state->ngtc);
+  block_bc(cr,state->flags);
+  block_bc(cr,state->box);
+  block_bc(cr,state->boxv);
+  block_bc(cr,state->pcoupl_mu);
+  if (bAlloc && !MASTER(cr)) {
     snew(state->nosehoover_xi,state->ngtc);
     state->nalloc = state->natoms;
     snew(state->x,state->nalloc);
@@ -143,361 +166,163 @@ void ld_state(const t_commrec *cr,int src,t_state *state)
     if (state->flags & STATE_HAS_SDX)
       snew(state->sd_X,state->nalloc);
   }
-  nblockrx(cr,src,state->ngtc,state->nosehoover_xi);
-  nblockrx(cr,src,state->natoms,state->x);
-  nblockrx(cr,src,state->natoms,state->v);
+  nblock_bc(cr,state->ngtc,state->nosehoover_xi);
+  nblock_bc(cr,state->natoms,state->x);
+  nblock_bc(cr,state->natoms,state->v);
   if (state->flags & STATE_HAS_SDX)
-    nblockrx(cr,src,state->natoms,state->sd_X);
+    nblock_bc(cr,state->natoms,state->sd_X);
+  if (state->flags & STATE_HAS_CGP)
+    nblock_bc(cr,state->natoms,state->cg_p);
 }
 
-static void ld_ilist(const t_commrec *cr,int src,t_ilist *ilist)
+static void bc_ilist(const t_commrec *cr,t_ilist *ilist)
 {
-  blockrx(cr,src,ilist->nr);
-  snew(ilist->iatoms,ilist->nr);
-  nblockrx(cr,src,ilist->nr,ilist->iatoms);
+  block_bc(cr,ilist->nr);
+  snew_bc(cr,ilist->iatoms,ilist->nr);
+  nblock_bc(cr,ilist->nr,ilist->iatoms);
 }
 
-static void ld_idef(const t_commrec *cr,int src,t_idef *idef)
+static void bc_idef(const t_commrec *cr,t_idef *idef)
 {
   int i;
   
-  blockrx(cr,src,idef->ntypes);
-  blockrx(cr,src,idef->atnr);
-  snew(idef->functype,idef->ntypes);
-  snew(idef->iparams,idef->ntypes);
-  nblockrx(cr,src,idef->ntypes,idef->functype);
-  nblockrx(cr,src,idef->ntypes,idef->iparams);
+  block_bc(cr,idef->ntypes);
+  block_bc(cr,idef->atnr);
+  snew_bc(cr,idef->functype,idef->ntypes);
+  snew_bc(cr,idef->iparams,idef->ntypes);
+  nblock_bc(cr,idef->ntypes,idef->functype);
+  nblock_bc(cr,idef->ntypes,idef->iparams);
   for(i=0; (i<F_NRE); i++)
-    ld_ilist(cr,src,&idef->il[i]);
+    bc_ilist(cr,&idef->il[i]);
 }
 
-static void ld_grpopts(const t_commrec *cr,int src,t_grpopts *g)
+static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
 {
   int i,n;
   
-  blockrx(cr,src,g->ngtc);
-  blockrx(cr,src,g->ngacc);
-  blockrx(cr,src,g->ngfrz);
-  blockrx(cr,src,g->ngener);
-  snew(g->nrdf,g->ngtc);
-  snew(g->tau_t,g->ngtc);
-  snew(g->ref_t,g->ngtc);
-  snew(g->acc,g->ngacc);
-  snew(g->nFreeze,g->ngfrz);
-  snew(g->egp_flags,g->ngener*g->ngener);
+  block_bc(cr,g->ngtc);
+  block_bc(cr,g->ngacc);
+  block_bc(cr,g->ngfrz);
+  block_bc(cr,g->ngener);
+  snew_bc(cr,g->nrdf,g->ngtc);
+  snew_bc(cr,g->tau_t,g->ngtc);
+  snew_bc(cr,g->ref_t,g->ngtc);
+  snew_bc(cr,g->acc,g->ngacc);
+  snew_bc(cr,g->nFreeze,g->ngfrz);
+  snew_bc(cr,g->egp_flags,g->ngener*g->ngener);
 
-  nblockrx(cr,src,g->ngtc,g->nrdf);
-  nblockrx(cr,src,g->ngtc,g->tau_t);
-  nblockrx(cr,src,g->ngtc,g->ref_t);
-  nblockrx(cr,src,g->ngacc,g->acc);
-  nblockrx(cr,src,g->ngfrz,g->nFreeze);
-  nblockrx(cr,src,g->ngener*g->ngener,g->egp_flags);
-  snew(g->annealing,g->ngtc);
-  snew(g->anneal_npoints,g->ngtc);
-  snew(g->anneal_time,g->ngtc);
-  snew(g->anneal_temp,g->ngtc);
-  nblockrx(cr,src,g->ngtc,g->annealing);
-  nblockrx(cr,src,g->ngtc,g->anneal_npoints);
+  nblock_bc(cr,g->ngtc,g->nrdf);
+  nblock_bc(cr,g->ngtc,g->tau_t);
+  nblock_bc(cr,g->ngtc,g->ref_t);
+  nblock_bc(cr,g->ngacc,g->acc);
+  nblock_bc(cr,g->ngfrz,g->nFreeze);
+  nblock_bc(cr,g->ngener*g->ngener,g->egp_flags);
+  snew_bc(cr,g->annealing,g->ngtc);
+  snew_bc(cr,g->anneal_npoints,g->ngtc);
+  snew_bc(cr,g->anneal_time,g->ngtc);
+  snew_bc(cr,g->anneal_temp,g->ngtc);
+  nblock_bc(cr,g->ngtc,g->annealing);
+  nblock_bc(cr,g->ngtc,g->anneal_npoints);
   for(i=0;(i<g->ngtc); i++) {
     n = g->anneal_npoints[i];
     if (n > 0) {
-      snew(g->anneal_time[i],n);
-      snew(g->anneal_temp[i],n);
-      nblockrx(cr,src,n,g->anneal_time[i]);
-      nblockrx(cr,src,n,g->anneal_temp[i]);
+      snew_bc(cr,g->anneal_time[i],n);
+      snew_bc(cr,g->anneal_temp[i],n);
+      nblock_bc(cr,n,g->anneal_time[i]);
+      nblock_bc(cr,n,g->anneal_temp[i]);
     }
   }
 
   /* QMMM stuff, see inputrec */
-  blockrx(cr,src,g->ngQM);
-  snew(g->QMmethod,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->QMmethod);
-  snew(g->QMbasis,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->QMbasis);
-  snew(g->QMcharge,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->QMcharge);
-  snew(g->QMmult,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->QMmult);
-  snew(g->bSH,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->bSH);
-  snew(g->CASorbitals,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->CASorbitals);
-  snew(g->CASelectrons,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->CASelectrons);
-  snew(g->SAon,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->SAon);
-  snew(g->SAoff,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->SAoff);
-  snew(g->SAsteps,g->ngQM);
-  nblockrx(cr,src,g->ngQM,g->SAsteps);
+  block_bc(cr,g->ngQM);
+  snew_bc(cr,g->QMmethod,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->QMmethod);
+  snew_bc(cr,g->QMbasis,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->QMbasis);
+  snew_bc(cr,g->QMcharge,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->QMcharge);
+  snew_bc(cr,g->QMmult,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->QMmult);
+  snew_bc(cr,g->bSH,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->bSH);
+  snew_bc(cr,g->CASorbitals,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->CASorbitals);
+  snew_bc(cr,g->CASelectrons,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->CASelectrons);
+  snew_bc(cr,g->SAon,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->SAon);
+  snew_bc(cr,g->SAoff,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->SAoff);
+  snew_bc(cr,g->SAsteps,g->ngQM);
+  nblock_bc(cr,g->ngQM,g->SAsteps);
   /* end of QMMM stuff */
 }
 
-static void ld_cosines(const t_commrec *cr,int src,t_cosines *cs)
+static void bc_cosines(const t_commrec *cr,t_cosines *cs)
 {
-  blockrx(cr,src,cs->n);
-  snew(cs->a,cs->n);
-  snew(cs->phi,cs->n);
+  block_bc(cr,cs->n);
+  snew_bc(cr,cs->a,cs->n);
+  snew_bc(cr,cs->phi,cs->n);
   if (cs->n > 0) {
-    nblockrx(cr,src,cs->n,cs->a);
-    nblockrx(cr,src,cs->n,cs->phi);
+    nblock_bc(cr,cs->n,cs->a);
+    nblock_bc(cr,cs->n,cs->phi);
   }
 }
 
-static void ld_pullgrp(const t_commrec *cr,int src,t_pullgrp *pgrp)
+static void bc_pullgrp(const t_commrec *cr,t_pullgrp *pgrp)
 {
-  blockrx(cr,src,*pgrp);
+  block_bc(cr,*pgrp);
   if (pgrp->nat > 0) {
-    snew(pgrp->ind,pgrp->nat);
-    nblockrx(cr,src,pgrp->nat,pgrp->ind);
+    snew_bc(cr,pgrp->ind,pgrp->nat);
+    nblock_bc(cr,pgrp->nat,pgrp->ind);
   }
   if (pgrp->nweight > 0) {
-    snew(pgrp->ind,pgrp->nweight);
-    nblockrx(cr,src,pgrp->nweight,pgrp->weight);
+    snew_bc(cr,pgrp->ind,pgrp->nweight);
+    nblock_bc(cr,pgrp->nweight,pgrp->weight);
   }
 }
 
-static void ld_pull(const t_commrec *cr,int src,t_pull *pull)
+static void bc_pull(const t_commrec *cr,t_pull *pull)
 {
   int g;
 
-  blockrx(cr,src,*pull);
-  snew(pull->grp,pull->ngrp+1);
+  block_bc(cr,*pull);
+  snew_bc(cr,pull->grp,pull->ngrp+1);
   for(g=0; g<pull->ngrp+1; g++)
-    ld_pullgrp(cr,src,&pull->grp[g]);
+    bc_pullgrp(cr,&pull->grp[g]);
 }
 
-static void ld_inputrec(const t_commrec *cr,int src,t_inputrec *inputrec)
+static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
 {
   int i;
   
-  blockrx(cr,src,*inputrec);
-  ld_grpopts(cr,src,&(inputrec->opts));
+  block_bc(cr,*inputrec);
+  bc_grpopts(cr,&(inputrec->opts));
   if (inputrec->ePull != epullNO) {
-    snew(inputrec->pull,1);
-    ld_pull(cr,src,inputrec->pull);
+    snew_bc(cr,inputrec->pull,1);
+    bc_pull(cr,inputrec->pull);
   }
   for(i=0; (i<DIM); i++) {
-    ld_cosines(cr,src,&(inputrec->ex[i]));
-    ld_cosines(cr,src,&(inputrec->et[i]));
+    bc_cosines(cr,&(inputrec->ex[i]));
+    bc_cosines(cr,&(inputrec->et[i]));
   }
 }
 
-void ld_data(const t_commrec *cr,int left,int right,t_inputrec *inputrec,
-	     t_topology *top,t_state *state)
+void bcast_ir_top(const t_commrec *cr,t_inputrec *inputrec,t_topology *top)
 {
-  int i;
-  
-  if (debug) fprintf(debug,"in ld_data\n");
-  ld_inputrec(cr,left,inputrec);
-  if (debug) fprintf(debug,"after ld_inputrec\n");
-  ld_symtab(cr,left,&top->symtab);
-  if (debug) fprintf(debug,"after ld_symtab\n");
-  top->name=ld_string(cr,left,&top->symtab);
-  if (debug) fprintf(debug,"after ld_name\n");
-  ld_atoms(cr,left,&top->symtab,&top->atoms);
-  if (debug) fprintf(debug,"after ld_atoms\n");
-  ld_idef(cr,left,&top->idef);
-  if (debug) fprintf(debug,"after ld_idef\n");
+  int i; 
+  if (debug) fprintf(debug,"in bc_data\n");
+  bc_inputrec(cr,inputrec);
+  if (debug) fprintf(debug,"after bc_inputrec\n");
+  bc_symtab(cr,&top->symtab);
+  if (debug) fprintf(debug,"after bc_symtab\n");
+  bc_string(cr,&top->symtab,&top->name);
+  if (debug) fprintf(debug,"after bc_name\n");
+  bc_atoms(cr,&top->symtab,&top->atoms);
+  if (debug) fprintf(debug,"after bc_atoms\n");
+  bc_idef(cr,&top->idef);
+  if (debug) fprintf(debug,"after bc_idef\n");
   for (i=0; (i<ebNR); i++) 
-    ld_block(cr,left,&top->blocks[i]);
-  if (debug) fprintf(debug,"after ld_block\n");
-}
-
-static void mv_grpopts(const t_commrec *cr,int dest,t_grpopts *g)
-{
-  int i,n;
-  
-  blocktx(cr,dest,g->ngtc);
-  blocktx(cr,dest,g->ngacc);
-  blocktx(cr,dest,g->ngfrz);
-  blocktx(cr,dest,g->ngener);
-  nblocktx(cr,dest,g->ngtc,g->nrdf);
-  nblocktx(cr,dest,g->ngtc,g->tau_t);
-  nblocktx(cr,dest,g->ngtc,g->ref_t);
-  nblocktx(cr,dest,g->ngacc,g->acc);
-  nblocktx(cr,dest,g->ngfrz,g->nFreeze);
-  nblocktx(cr,dest,g->ngener*g->ngener,g->egp_flags);
-  nblocktx(cr,dest,g->ngtc,g->annealing);
-  nblocktx(cr,dest,g->ngtc,g->anneal_npoints);
-  for(i=0;(i<g->ngtc); i++) {
-    n = g->anneal_npoints[i];
-    if (n > 0) {
-      nblocktx(cr,dest,n,g->anneal_time[i]);
-      nblocktx(cr,dest,n,g->anneal_temp[i]);
-    }
-  }
-  /* QMMM stuff, see inputrec.h */
-  blocktx(cr,dest,g->ngQM);
-  nblocktx(cr,dest,g->ngQM,g->QMmethod);
-  nblocktx(cr,dest,g->ngQM,g->QMbasis);
-  nblocktx(cr,dest,g->ngQM,g->QMcharge);
-  nblocktx(cr,dest,g->ngQM,g->QMmult);
-  nblocktx(cr,dest,g->ngQM,g->bSH);
-  nblocktx(cr,dest,g->ngQM,g->CASorbitals);
-  nblocktx(cr,dest,g->ngQM,g->CASelectrons);
-  nblocktx(cr,dest,g->ngQM,g->SAon);
-  nblocktx(cr,dest,g->ngQM,g->SAoff);
-  nblocktx(cr,dest,g->ngQM,g->SAsteps);
-  /* end of QMMM stuff */
-}
-
-static void mv_cosines(const t_commrec *cr,int dest,t_cosines *cs)
-{
-  blocktx(cr,dest,cs->n);
-  if (cs->n > 0) {
-    nblocktx(cr,dest,cs->n,cs->a);
-    nblocktx(cr,dest,cs->n,cs->phi);
-  }
-}
-
-static void mv_pullgrp(const t_commrec *cr,int dest,t_pullgrp *pgrp)
-{
-  blocktx(cr,dest,*pgrp);
-  if (pgrp->nat > 0)
-    nblocktx(cr,dest,pgrp->nat,pgrp->ind);
-  if (pgrp->nweight > 0)
-    nblocktx(cr,dest,pgrp->nweight,pgrp->weight);
-}
-
-static void mv_pull(const t_commrec *cr,int dest,t_pull *pull)
-{
-  int g;
-
-  blocktx(cr,dest,*pull);
-  for(g=0; g<pull->ngrp+1; g++)
-    mv_pullgrp(cr,dest,&pull->grp[g]);
-}
-
-static void mv_inputrec(const t_commrec *cr,int dest,t_inputrec *inputrec)
-{
-  int i;
-  
-  blocktx(cr,dest,*inputrec);
-  mv_grpopts(cr,dest,&(inputrec->opts));
-  if (inputrec->ePull != epullNO)
-    mv_pull(cr,dest,inputrec->pull);
-  for(i=0; (i<DIM); i++) {
-    mv_cosines(cr,dest,&(inputrec->ex[i]));
-    mv_cosines(cr,dest,&(inputrec->et[i]));
-  }
-}
-
-static void mv_string(const t_commrec *cr,int dest,t_symtab *symtab,char **s)
-{
-  int handle;
-  
-  handle=lookup_symtab(symtab,s);
-  blocktx(cr,dest,handle);
-}
-
-static void mv_strings(const t_commrec *cr,int dest,t_symtab *symtab,int nr,
-                       char ***nm)
-{
-  int i;
-  int *handle;
-
-  snew(handle,nr);
-  for(i=0; (i<nr); i++)
-    handle[i]=lookup_symtab(symtab,nm[i]);
-  blocktx(cr,dest,nr);
-  nblocktx(cr,dest,nr,handle);
-  sfree(handle);
-}
-
-static void mv_symtab(const t_commrec *cr,int dest,t_symtab *symtab)
-{
-  int i,nr,len;
-  struct symbuf *symbuf;
-  
-  blocktx(cr,dest,symtab->nr);
-  nr=symtab->nr;
-  symbuf=symtab->symbuf;
-  while (symbuf!=NULL)
-    {
-      for (i=0; (i<symbuf->bufsize)&&(i<nr); i++)
-        {
-          len=strlen(symbuf->buf[i])+1;
-          blocktx(cr,dest,len);
-          nblocktx(cr,dest,len,symbuf->buf[i]);
-        }
-      nr-=i;
-      symbuf=symbuf->next;
-    }
-  if (nr != 0)
-    gmx_incons("Sending strings around the ring");
-}
-
-static void mv_grps(const t_commrec *cr,int dest,t_grps grps[])
-{
-  int i;
-  
-  for(i=0; (i<egcNR); i++) {
-    blocktx(cr,dest,grps[i].nr);
-    nblocktx(cr,dest,grps[i].nr,grps[i].nm_ind);
-  }
-}
-
-
-static void mv_atoms(const t_commrec *cr,int dest,t_symtab *symtab,t_atoms *atoms)
-{
-  int nr;
-  
-  nr=atoms->nr;
-  blocktx(cr,dest,nr);
-  nblocktx(cr,dest,nr,atoms->atom);
-  mv_strings(cr,dest,symtab,atoms->nr,atoms->atomname);
-  mv_strings(cr,dest,symtab,atoms->nres,atoms->resname);
-  mv_strings(cr,dest,symtab,atoms->ngrpname,atoms->grpname);
-  /* QMMM requires atomtypes to be know on all nodes */
-  mv_strings(cr,dest,symtab,atoms->nr,atoms->atomtype);
-
-  mv_grps(cr,dest,atoms->grps);
-}
-
-void mv_state(const t_commrec *cr,int dest,t_state *state)
-{
-  blocktx(cr,dest,state->natoms);
-  blocktx(cr,dest,state->ngtc);
-  blocktx(cr,dest,state->flags);
-  blocktx(cr,dest,state->box);
-  blocktx(cr,dest,state->boxv);
-  blocktx(cr,dest,state->pcoupl_mu);
-  nblocktx(cr,dest,state->ngtc,state->nosehoover_xi);
-  nblocktx(cr,dest,state->natoms,state->x);
-  nblocktx(cr,dest,state->natoms,state->v);
-  if (state->flags & STATE_HAS_SDX)
-    nblocktx(cr,dest,state->natoms,state->sd_X);
-}
-
-static void mv_ilist(const t_commrec *cr,int dest,t_ilist *ilist)
-{
-  blocktx(cr,dest,ilist->nr);
-  nblocktx(cr,dest,ilist->nr,ilist->iatoms);
-}
-
-static void mv_idef(const t_commrec *cr,int dest,t_idef *idef)
-{
-  int i;
-  
-  blocktx(cr,dest,idef->ntypes);
-  blocktx(cr,dest,idef->atnr);
-  nblocktx(cr,dest,idef->ntypes,idef->functype);
-  nblocktx(cr,dest,idef->ntypes,idef->iparams);
-  for(i=0; (i<F_NRE); i++)
-    mv_ilist(cr,dest,&idef->il[i]);
-}
-
-void mv_data(const t_commrec *cr,int left,int right,t_inputrec *inputrec,
-             t_topology *top,t_state *state)
-{
-  int i;
-  
-  mv_inputrec(cr,right,inputrec);
-  mv_symtab(cr,right,&top->symtab);
-  mv_string(cr,right,&top->symtab,top->name);
-  mv_atoms(cr,right,&top->symtab,&top->atoms);
-  mv_idef(cr,right,&top->idef);
-  for (i=0; (i<ebNR); i++) 
-    mv_block(cr,right,&top->blocks[i]);
+    bc_block(cr,&top->blocks[i]);
+  if (debug) fprintf(debug,"after bc_block\n");
 }

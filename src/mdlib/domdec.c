@@ -3468,12 +3468,6 @@ static void make_pp_communicator(FILE *fplog,t_commrec *cr,int reorder)
   if (debug)
     fprintf(debug,"Domain decomposition nodeid %d, coordinates %d %d %d\n\n",
 	    dd->rank,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
-  
-  if (comm->bCartesianPP || cr->npmenodes > 0) {
-    /* Reorder the ring or make the ring smaller */
-    cr->left  = (dd->rank - 1 + dd->nnodes) % dd->nnodes;
-    cr->right = (dd->rank + 1) % dd->nnodes;
-  }
 }
 
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,

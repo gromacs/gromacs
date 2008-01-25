@@ -90,18 +90,18 @@ static void move_construct_x(t_comm_vsites *vsitecomm, rvec x[], t_commrec *cr)
   
   /* send them off, and recieve from the right */
   if(vsitecomm->nprevconstr>0 || vsitecomm->nprevvsite>0)
-    gmx_tx(cr,cr->left,prevbuf,
+    gmx_tx(cr,GMX_LEFT,prevbuf,
 	   sizeof(rvec)*(vsitecomm->nprevconstr+vsitecomm->nprevvsite));
   
   if(vsitecomm->nnextconstr>0 || vsitecomm->nnextvsite>0)
-    gmx_rx(cr,cr->right,nextbuf,
+    gmx_rx(cr,GMX_RIGHT,nextbuf,
 	   sizeof(rvec)*(vsitecomm->nnextconstr+vsitecomm->nnextvsite));
   
   if(vsitecomm->nprevconstr>0 || vsitecomm->nprevvsite>0)
-    gmx_tx_wait(cr->left);
+    gmx_tx_wait(GMX_LEFT);
   
   if(vsitecomm->nnextconstr>0 || vsitecomm->nnextvsite>0)
-    gmx_rx_wait(cr->right);
+    gmx_rx_wait(GMX_RIGHT);
   
   /* Put them where they belong */
   for(i=0;i<vsitecomm->nnextconstr;i++)
@@ -137,16 +137,16 @@ static void move_vsite_xv(t_comm_vsites *vsitecomm, rvec x[], rvec v[],t_commrec
   
   /* send them off, and recieve from the right */
   if(vsitecomm->nnextvsite>0)
-    gmx_tx(cr,cr->right,nextbuf,sendsize);
+    gmx_tx(cr,GMX_RIGHT,nextbuf,sendsize);
   
   if(vsitecomm->nprevvsite>0)
-    gmx_rx(cr,cr->left,prevbuf,recvsize);
+    gmx_rx(cr,GMX_LEFT,prevbuf,recvsize);
   
   if(vsitecomm->nnextvsite>0)
-    gmx_tx_wait(cr->right);
+    gmx_tx_wait(GMX_RIGHT);
   
   if(vsitecomm->nprevvsite>0)
-    gmx_rx_wait(cr->left);
+    gmx_rx_wait(GMX_LEFT);
   
   /* Put them where they belong */
   for(i=0;i<vsitecomm->nprevvsite;i++)
@@ -169,17 +169,17 @@ static void move_vsite_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 
   /* off they go! - but only if there is something to send! */
   if(vsitecomm->nprevvsite>0)
-    gmx_tx(cr,cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevvsite);
+    gmx_tx(cr,GMX_LEFT,prevbuf,sizeof(rvec)*vsitecomm->nprevvsite);
 
   /* Get our share from the right, if there is anything to have */
   if(vsitecomm->nnextvsite>0)
-    gmx_rx(cr,cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextvsite);
+    gmx_rx(cr,GMX_RIGHT,nextbuf,sizeof(rvec)*vsitecomm->nnextvsite);
   
   if(vsitecomm->nprevvsite>0)
-    gmx_tx_wait(cr->left);
+    gmx_tx_wait(GMX_LEFT);
   
   if(vsitecomm->nnextvsite>0)
-    gmx_rx_wait(cr->right);
+    gmx_rx_wait(GMX_RIGHT);
 
   /* Put them where they belong */
   for(i=0;i<vsitecomm->nnextvsite;i++)
@@ -207,16 +207,16 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
   
   /* send them off, and recieve from the right */
   if(vsitecomm->nnextconstr>0)
-    gmx_tx(cr,cr->right,nextbuf,sizeof(rvec)*vsitecomm->nnextconstr);
+    gmx_tx(cr,GMX_RIGHT,nextbuf,sizeof(rvec)*vsitecomm->nnextconstr);
   
   if(vsitecomm->nprevconstr>0)
-    gmx_rx(cr,cr->left,prevbuf,sizeof(rvec)*vsitecomm->nprevconstr);
+    gmx_rx(cr,GMX_LEFT,prevbuf,sizeof(rvec)*vsitecomm->nprevconstr);
   
   if(vsitecomm->nnextconstr>0)
-    gmx_tx_wait(cr->right);
+    gmx_tx_wait(GMX_RIGHT);
 
   if(vsitecomm->nprevconstr>0)
-    gmx_rx_wait(cr->left);
+    gmx_rx_wait(GMX_LEFT);
   
   /* Add them where they belong */
   for(i=0;i<vsitecomm->nprevconstr;i++)

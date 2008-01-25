@@ -162,7 +162,7 @@ void init_gamess(t_commrec *cr,t_QMrec *qm, t_MMrec *mm){
 		eQMmethod_names[qm->QMmethod]); /* see enum.h */
       fclose(out);
     }
-    gmx_sync_ring(cr->nodeid,cr->nnodes,cr->left,cr->right);
+    gmx_barrier(cr);
     F77_FUNC(inigms,IMIGMS)();
   }
   else{ /* normal serial run */

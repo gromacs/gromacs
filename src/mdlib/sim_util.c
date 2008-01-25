@@ -405,7 +405,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (DOMAINDECOMP(cr)) {
       dd_move_x(cr->dd,box,x,buf);
     } else {
-      move_x(fplog,cr,cr->left,cr->right,x,nrnb);
+      move_x(fplog,cr,GMX_LEFT,GMX_RIGHT,x,nrnb);
     }
     /* When we don't need the total dipole we sum it in global_stat */
     if (NEED_MUTOT(*inputrec))
@@ -521,7 +521,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl)
 	  dd_move_f(cr->dd,fr->f_el_recip,buf,NULL);
       } else {
-	move_f(fplog,cr,cr->left,cr->right,f,buf,nrnb);
+	move_f(fplog,cr,GMX_LEFT,GMX_RIGHT,f,buf,nrnb);
       }
       wallcycle_stop(wcycle,ewcMOVEF);
       if (DOMAINDECOMP(cr) && wcycle)

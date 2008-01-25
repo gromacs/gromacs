@@ -43,6 +43,54 @@
 
 #include "vsite.h"
 
+#define GMX_LEFT     0          /* channel to the left processor  */
+#define GMX_RIGHT    1          /* channel to the right processor */
+
+/* These are the good old ring communication routines */
+
+extern void gmx_tx(const t_commrec *cr,int dir,void *buf,int bufsize);
+     /*
+      * Asynchronously sends bufsize bytes from the buffer pointed to by buf 
+      * over the communication channel, identified by chan. The buffer becomes 
+      * available after a successful call of gmx_tx_wait(dir).
+      */
+
+extern void gmx_tx_wait(int dir);
+     /*
+      * Waits until the asynchronous send operation associated with chan has 
+      * succeeded. This makes the buffer of the send operation available to 
+      * the sending process.
+      */
+
+extern void gmx_rx(const t_commrec *cr,int dir,void *buf,int bufsize);
+     /*
+      * Asynchronously receives bufsize bytes in the buffer pointed to by buf 
+      * from communication channel identified by chan. The buffer becomes 
+      * available after a successful call of gmx_rx_wait(chan).
+      */
+
+extern void gmx_rx_wait(int dir);
+     /*
+      * Waits until the asynchronous receive operation, associated with chan, 
+      * has succeeded. This makes the buffer of the receive operation 
+      * available to the receiving process.
+      */
+
+extern void gmx_left_right(int nnodes,int nodeid,
+			   int *left,int *right);
+/* Get left and right proc id. */
+
+extern void gmx_tx_rx(const t_commrec *cr,
+		      int send_dir,void *send_buf,int send_bufsize,
+		      int recv_dir,void *recv_buf,int recv_bufsize);
+/* Communicate simultaneously left and right */
+		      
+extern void gmx_tx_rx_real(const t_commrec *cr,
+			   int send_dir,real *send_buf,int send_bufsize,
+			   int recv_dir,real *recv_buf,int recv_bufsize);
+/* Communicate simultaneously left and right, reals only */
+
+
 extern int *pd_cgindex(const t_commrec *cr);
 
 extern int *pd_index(const t_commrec *cr);

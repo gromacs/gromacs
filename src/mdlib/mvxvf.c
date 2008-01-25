@@ -51,7 +51,6 @@
 #include "typedefs.h"
 #include "vec.h"
 #include "tgroup.h"
-#include "block_tx.h"
 #include "nrnb.h"
 #include "partdec.h"
 
@@ -93,12 +92,12 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
     if (bForward) {
       if (bSum)
 	gmx_tx_rx_real(cr,
-		       right,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       left, buf [index[prev]],HOMENRI(index,prev)*DIM);
+		       GMX_RIGHT,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       GMX_LEFT, buf [index[prev]],HOMENRI(index,prev)*DIM);
       else
 	gmx_tx_rx_real(cr,
-		       right,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       left, vecs[index[prev]],HOMENRI(index,prev)*DIM);
+		       GMX_RIGHT,vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       GMX_LEFT, vecs[index[prev]],HOMENRI(index,prev)*DIM);
       /* Wait for communication to end */
       gmx_wait(right,left);
     }
@@ -107,12 +106,12 @@ void move_rvecs(const t_commrec *cr,bool bForward,bool bSum,
     else {
       if (bSum)
 	gmx_tx_rx_real(cr,
-		       left, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       right,buf [index[next]],HOMENRI(index,next)*DIM);
+		       GMX_LEFT, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       GMX_RIGHT,buf [index[next]],HOMENRI(index,next)*DIM);
       else
 	gmx_tx_rx_real(cr,
-		       left, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
-		       right,vecs[index[next]],HOMENRI(index,next)*DIM);
+		       GMX_LEFT, vecs[index[cur ]],HOMENRI(index,cur )*DIM,
+		       GMX_RIGHT,vecs[index[next]],HOMENRI(index,next)*DIM);
       /* Wait for communication to end */
       gmx_wait(left,right);
     }
@@ -169,19 +168,19 @@ void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[])
     start = cgindex[cur];
     nr    = cgindex[cur+1] - start;
 
-    gmx_tx(cr,cr->left, cg_cm[start], nr*sizeof(cg_cm[0]));
+    gmx_tx(cr,GMX_LEFT, cg_cm[start], nr*sizeof(cg_cm[0]));
 #ifdef DEBUG
     fprintf(log,"move_cgcm: TX start=%d, nr=%d\n",start,nr);
 #endif    
     start = cgindex[next];
     nr    = cgindex[next+1] - start;
 
-    gmx_rx(cr,cr->right,cg_cm[start], nr*sizeof(cg_cm[0]));
+    gmx_rx(cr,GMX_RIGHT,cg_cm[start], nr*sizeof(cg_cm[0]));
 #ifdef DEBUG
     fprintf(log,"move_cgcm: RX start=%d, nr=%d\n",start,nr);
 #endif    
-    gmx_tx_wait(cr->left);
-    gmx_rx_wait(cr->right);
+    gmx_tx_wait(GMX_LEFT);
+    gmx_rx_wait(GMX_RIGHT);
 
     if (debug)
       fprintf(debug,"cgcm[0][XX] %f\n",cg_cm[0][XX]);

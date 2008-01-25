@@ -43,19 +43,18 @@
 
 #include "typedefs.h"
 
-extern void ld_data(const t_commrec *cr,int left,int right,
-		    t_inputrec *inputrec,
-		    t_topology *top,t_state *state);
+extern void bcast_ir_top(const t_commrec *cr,
+			 t_inputrec *inputrec,t_topology *top);
+/* Broadcasts ir and top from the master to all nodes in cr->mpi_comm_mygroup.
+ */
 
-extern void mv_data(const t_commrec *cr,int left,int right,
-		    t_inputrec *inputrec,
-		    t_topology *top,t_state *state);
+extern void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc);
+/* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
+ * The arrays in state are allocated when bAlloc is TRUE.
+ */
 
-extern void ld_state(const t_commrec *cr,int src,
-		     t_state *state);
 
-extern void mv_state(const t_commrec *cr,int dest,
-		     t_state *state);
+/* Routines for particle decomposition only in mvxvf.c */
 
 extern void move_cgcm(FILE *log,const t_commrec *cr,rvec cg_cm[]);
 		     

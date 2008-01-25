@@ -49,6 +49,7 @@
 #include "names.h"
 #include "mvdata.h"
 #include "domdec.h"
+#include "partdec.h"
 
 gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
 				     const gmx_multisim_t *ms,
@@ -255,68 +256,18 @@ static void scale_velocities(t_state *state,real fac)
       svmul(fac,state->v[i],state->v[i]);
 }
 
-static void broadcast_reals(const t_commrec *cr,int n,real *v)
-{
-#ifdef GMX_MPI
-  if (v)
-    MPI_Bcast(v,n*sizeof(real),MPI_BYTE,MASTERRANK(cr),
-	      cr->mpi_comm_mysim);
-#endif
-}
-
-static void broadcast_rvecs(const t_commrec *cr,int n,rvec *v)
-{
-#ifdef GMX_MPI
-  if (v)
-    MPI_Bcast(v[0],n*sizeof(rvec),MPI_BYTE,MASTERRANK(cr),
-	      cr->mpi_comm_mysim);
-#endif
-}
-
-static void broadcast_matrix(const t_commrec *cr,matrix m)
-{
-#ifdef GMX_MPI
-  MPI_Bcast(m[0],sizeof(matrix),MPI_BYTE,MASTERRANK(cr),
-	    cr->mpi_comm_mysim);
-#endif
-}
-
 static void pd_collect_state(const t_commrec *cr,t_state *state)
 {
   int shift;
   
   if (debug)
     fprintf(debug,"Collecting state before exchange\n");
-  
-  shift = cr->nnodes - cr->npmenodes - 1;
-  move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,state->x,NULL,shift,NULL);
+shift = cr->nnodes - cr->npmenodes - 1;
+  move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->x,NULL,shift,NULL);
   if (state->v)
-    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,state->v,NULL,shift,NULL);
+    move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->v,NULL,shift,NULL);
   if (state->sd_X)
-    move_rvecs(cr,FALSE,FALSE,cr->left,cr->right,state->sd_X,NULL,shift,NULL);
-}
-
-void pd_distribute_state(const t_commrec *cr,t_state *state)
-{
-  /* This code does seem to distribute the state,
-     but also seems to cause memory problems,
-     as after move_cgcm the cg's on the non-master nodes are corrupted
-  if (MASTER(cr))
-    mv_state(cr,cr->right,state);
-  else
-    ld_state(cr,cr->left,state);
-  if (cr->nodeid != cr->nnodes-1)
-    mv_state(cr,cr->right,state);
-  */
-
-  /* All array dimensions are already known on all nodes */
-  broadcast_matrix(cr,state->box);
-  broadcast_matrix(cr,state->box);
-  broadcast_matrix(cr,state->pcoupl_mu);
-  broadcast_reals(cr,state->ngtc,state->nosehoover_xi);
-  broadcast_rvecs(cr,state->natoms,state->x);
-  broadcast_rvecs(cr,state->natoms,state->v);
-  broadcast_rvecs(cr,state->natoms,state->sd_X);
+    move_rvecs(cr,FALSE,FALSE,GMX_LEFT,GMX_RIGHT,state->sd_X,NULL,shift,NULL);
 }
 
 static void print_ind(FILE *fplog,char *leg,int n,int *ind,bool *bEx)

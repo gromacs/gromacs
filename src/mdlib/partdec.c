@@ -51,6 +51,7 @@
 #include "splitter.h"
 
 typedef struct gmx_partdec {
+  int  neighbor[2];             /* The nodeids of left and right neighb */
   int  *cgindex;                /* The charge group boundaries,         */
 				/* size nnodes+1,                       */
                                 /* only allocated with particle decomp. */
@@ -65,6 +66,130 @@ typedef struct gmx_partdec {
 				/* This way is not necessary to shift   */
 				/* the coordinates over the entire ring */
 } gmx_partdec_t;
+
+#ifdef GMX_MPI
+static MPI_Request mpi_req_tx=MPI_REQUEST_NULL,mpi_req_rx;
+#endif
+
+void gmx_tx(const t_commrec *cr,int dir,void *buf,int bufsize)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_tx"); 
+#else
+  int        nodeid;
+  int        tag,flag;
+  MPI_Status status;
+
+  nodeid = cr->pd->neighbor[dir];
+  
+#ifdef DEBUG
+  fprintf(stderr,"gmx_tx: nodeid=%d, buf=%x, bufsize=%d\n",
+	  nodeid,buf,bufsize);
+#endif
+#ifdef MPI_TEST
+  /* workaround for crashes encountered with MPI on IRIX 6.5 */
+  if (mpi_req_tx != MPI_REQUEST_NULL) {
+    MPI_Test(&mpi_req_tx,&flag,&status);
+    if (flag==FALSE) {
+      fprintf(stdlog,"gmx_tx called before previous send was complete: nodeid=%d, buf=%x, bufsize=%d\n",
+	      nodeid,buf,bufsize);
+      gmx_tx_wait(nodeid);
+    }
+  }
+#endif
+  tag = 0;
+  if (MPI_Isend(buf,bufsize,MPI_BYTE,RANK(cr,nodeid),tag,cr->mpi_comm_mygroup,&mpi_req_tx) != 0)
+    gmx_comm("MPI_Isend Failed");
+#endif
+}
+
+void gmx_tx_wait(int dir)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_tx_wait");
+#else
+  MPI_Status  status;
+  int mpi_result;
+
+  if ((mpi_result=MPI_Wait(&mpi_req_tx,&status)) != 0)
+    gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
+#endif
+}
+
+void gmx_rx(const t_commrec *cr,int dir,void *buf,int bufsize)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_rx");
+#else
+  int nodeid;
+  int tag;
+
+  nodeid = cr->pd->neighbor[dir];
+#ifdef DEBUG
+  fprintf(stderr,"gmx_rx: nodeid=%d, buf=%x, bufsize=%d\n",
+	  nodeid,buf,bufsize);
+#endif
+  tag = 0;
+  if (MPI_Irecv( buf, bufsize, MPI_BYTE, RANK(cr,nodeid), tag, cr->mpi_comm_mygroup, &mpi_req_rx) != 0 )
+    gmx_comm("MPI_Recv Failed");
+#endif
+}
+
+void gmx_rx_wait(int nodeid)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_rx_wait");
+#else
+  MPI_Status  status;
+  int mpi_result;
+  
+  if ((mpi_result=MPI_Wait(&mpi_req_rx,&status)) != 0)
+    gmx_fatal(FARGS,"MPI_Wait: result=%d",mpi_result);
+#endif
+}
+
+void gmx_tx_rx_real(const t_commrec *cr,
+		    int send_dir,real *send_buf,int send_bufsize,
+		    int recv_dir,real *recv_buf,int recv_bufsize)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_tx_rx_real");
+#else
+  int send_nodeid,recv_nodeid;
+  int tx_tag = 0,rx_tag = 0;
+  MPI_Status stat;
+
+  send_nodeid = cr->pd->neighbor[send_dir];
+  recv_nodeid = cr->pd->neighbor[recv_dir];
+
+#ifdef GMX_DOUBLE
+#define mpi_type MPI_DOUBLE
+#else
+#define mpi_type MPI_FLOAT
+#endif
+  
+  MPI_Sendrecv(send_buf,send_bufsize,mpi_type,RANK(cr,send_nodeid),tx_tag,
+	       recv_buf,recv_bufsize,mpi_type,RANK(cr,recv_nodeid),rx_tag,
+	       cr->mpi_comm_mygroup,&stat);
+#undef mpi_type
+#endif
+}
+		 
+void gmx_wait(int dir_send,int dir_recv)
+{
+#ifndef GMX_MPI
+  gmx_call("gmx_wait");
+#else
+  gmx_tx_wait(dir_send);
+  gmx_rx_wait(dir_recv);
+#endif
+}
+
+static void set_left_right(t_commrec *cr)
+{
+  cr->pd->neighbor[GMX_LEFT]  = (cr->nnodes + cr->nodeid - 1) % cr->nnodes;
+  cr->pd->neighbor[GMX_RIGHT] = (cr->nodeid + 1) % cr->nnodes;
+}
 
 int *pd_cgindex(const t_commrec *cr)
 {
@@ -171,6 +296,9 @@ static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
   gmx_partdec_t *pd;
 
   snew(pd,1);
+  cr->pd = pd;
+
+  set_left_right(cr);
   
   if (cr->nnodes > 1) {
     if (multinr == NULL)
@@ -188,8 +316,6 @@ static void init_partdec(FILE *fp,t_commrec *cr,t_block *cgs,int *multinr,
     /*pd->shift = cr->nnodes-1;
       pd->bshift = 0;*/
   }
-
-  cr->pd = pd;
 }
 
 static void print_partdec(FILE *fp,char *title,int nnodes,gmx_partdec_t *pd)
@@ -387,7 +513,7 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
   gmx_partdec_t *pd;
 
 #define BUFLEN 100
-  
+
   pd = cr->pd;
 
   snew(idxprevvsite,BUFLEN);

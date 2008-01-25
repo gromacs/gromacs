@@ -219,9 +219,6 @@ extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       * all interactions.
       */
 
-extern void distribute_state(t_commrec *cr,t_state *state);
-/* Moves the state over the ring */
-
 extern void start_time(void);
 /* Start timing routines */
 

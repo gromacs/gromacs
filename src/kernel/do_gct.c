@@ -39,7 +39,6 @@
 
 #include "typedefs.h"
 #include "xmdrun.h"
-#include "block_tx.h"
 #include "futil.h"
 #include "xvgr.h"
 #include "macros.h"
@@ -340,30 +339,23 @@ void gprod(t_commrec *cr,int n,real f[])
    * such that after gprod f[i] = PROD_j=1,nprocs f[i][j]
    */
   static int  nbuf=0;
-  static real *buf[2] = { NULL, NULL };
-  int  i,j,cur=0;
-#define next (1-cur)
+  static real *buf=NULL;
+  int  i;
 
   if (n > nbuf) {
     nbuf = n;
-    srenew(buf[cur], nbuf);
-    srenew(buf[next],nbuf);
+    srenew(buf, nbuf);
   }
-  
-  for(j=0; (j<n); j++) 
-    buf[cur][j] = f[j];
-  
-  for(i=0; (i<cr->nnodes-1); i++) {
-    gmx_tx(cr,cr->left, array(buf[cur],n));
-    gmx_rx(cr,cr->right,array(buf[next],n));
-    gmx_wait(cr->left,cr->right);
-    /* Multiply f by factor read */
-    for(j=0; (j<n); j++)
-      f[j] *= buf[next][j];
-    /* Swap buffers */
-    cur = next;
-  }
-#undef next
+
+#ifdef GMX_MPI
+#ifdef GMX_DOUBLE
+  MPI_Allreduce(f,buf,n,MPI_DOUBLE,MPI_PROD,cr->mpi_comm_mygroup);
+#else
+  MPI_Allreduce(f,buf,n,MPI_FLOAT, MPI_PROD,cr->mpi_comm_mygroup);
+#endif
+  for(i=0; (i<n); i++) 
+    f[i] = buf[i];
+#endif
 }
 
 static void set_factor_matrix(int ntypes,real f[],real fmult,int ati,int atj)
