@@ -290,18 +290,9 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   char      **argv;
   int       i;
   
-  argv = *argv_ptr;
   snew(cr,1);
-  
-  cr->nnodes=1;
-  /* Get the number of nodes.
-   * This is useless for newer MPI versions.
-   */
-  for(i=0; (argv[i] != NULL); i++) {
-    if (strcmp(argv[i],"-np")==0) 
-      if (argv[i+1]!=NULL)
-	cr->nnodes=atoi(argv[i+1]);
-  }
+
+  argv = *argv_ptr;
   
 #ifdef GMX_MPI
   gmx_parallel_env = 1;
@@ -310,14 +301,16 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   if (getenv(GMX_CHECK_MPI_ENV) == NULL)
     gmx_parallel_env = 0;
 #endif
-  if (gmx_parallel_env)
+  if (gmx_parallel_env) {
     cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
-  else
+  } else {
+    cr->nnodes     = 1;
     cr->sim_nodeid = 0;
+  }
 #else
+  gmx_parallel_env = 0; 
   cr->sim_nodeid   = 0;
   cr->nnodes       = 1;
-  gmx_parallel_env = 0; 
 #endif
 
   if (!PAR(cr) && (cr->sim_nodeid != 0))
@@ -340,3 +333,18 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
   return cr;
 }
 
+t_commrec *init_cr_nopar(void)
+{
+  t_commrec *cr;
+
+  snew(cr,1);
+
+  cr->nnodes     = 1; 
+  cr->sim_nodeid = 0;
+  cr->nodeid     = 0;
+  cr->nthreads   = 1;
+  cr->threadid   = 0;
+  cr->duty       = (DUTY_PP | DUTY_PME);
+
+  return cr;
+}

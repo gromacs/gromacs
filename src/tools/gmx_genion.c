@@ -378,9 +378,8 @@ int gmx_genion(int argc, char *argv[])
     gmx_fatal(FARGS,"Negative number of ions to add?");
 
   snew(top,1);
-  snew(cr,1);
   fplog = init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
-		       opt2fn("-table",NFILE,fnm),top,&inputrec,cr,
+		       opt2fn("-table",NFILE,fnm),top,&inputrec,&cr,
 		       &graph,&mdatoms,&grps,&fr,&pot,box,&x);
   qtot = 0;
   for(i=0; (i<top->atoms.nr); i++)

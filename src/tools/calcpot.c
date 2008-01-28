@@ -51,6 +51,7 @@
 #include "ns.h"
 #include "txtdump.h"
 #include "mdatoms.h"
+#include "main.h"
 
 static void c_tabpot(real tabscale,   real VFtab[],
 		     int  nri,        int  iinr[],
@@ -215,7 +216,7 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
 }
 
 FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
-		   t_inputrec *inputrec,t_commrec *cr,
+		   t_inputrec *inputrec,t_commrec **cr,
 		   t_graph **graph,t_mdatoms **mdatoms,
 		   t_groups *grps,
 		   t_forcerec **fr,real **pot,
@@ -234,9 +235,8 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   FILE     *fplog;
   
   /* Initiate */
-  cr->nnodes = 1; cr->nodeid    = 0;
-  cr->nthreads = 1 ; cr->threadid = 0;
-  fplog = gmx_log_open(log,cr,FALSE);
+  *cr = init_cr_nopar();
+  fplog = gmx_log_open(log,*cr,FALSE);
 
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
@@ -247,7 +247,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   snew(state,1);
   init_single(fplog,inputrec,tpx,top,state);
   clear_rvec(mutot);
-  init_md(fplog,cr,inputrec,&t,&t0,&lam,&lam0,
+  init_md(fplog,*cr,inputrec,&t,&t0,&lam,&lam0,
 	  &nrnb,top,NULL,0,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,
 	  &mdebin,grps,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL);
@@ -279,7 +279,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();
-  init_forcerec(fplog,*fr,NULL,inputrec,top,cr,
+  init_forcerec(fplog,*fr,NULL,inputrec,top,*cr,
 		state->box,FALSE,table,table,NULL,TRUE);
 
   /* Remove periodicity */  

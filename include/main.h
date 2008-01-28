@@ -81,4 +81,8 @@ extern t_commrec *init_par(int *argc,char ***argv_ptr);
  * array of argument strings.
  */
 
+
+extern t_commrec *init_cr_nopar(void);
+/* Returns t_commrec for non-parallel functionality */
+
 #endif	/* _main_h */
