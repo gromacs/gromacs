@@ -4143,10 +4143,13 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     /* There is a cell size limit due to the constraints (LINCS) */
     if (rconstr <= 0) {
       rconstr = constr_r_max(fplog,top,ir);
-      if (fplog)
+      if (fplog) {
 	fprintf(fplog,
 		"Estimated maximum distance required for LINCS: %.3f nm\n",
 		rconstr);
+	if (rconstr > comm->cutoff_min)
+	  fprintf(fplog,"This distance will limit the DD cell size, you can override this with -rcon\n");
+      }
     } else {
       if (fplog)
 	fprintf(fplog,
@@ -4340,9 +4343,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
       if (comm->bInterCGBondeds)
 	fprintf(fplog,"\nAtoms involved in bonded interactions should be within %g nm\n",comm->cutoff_min);
       if (dd->vsite_comm)
-	fprintf(fplog,"\nAtoms involved in virtual sites should be within %g nm\n",comm->cutoff_min);
+	fprintf(fplog,"\nAtoms involved in virtual sites should be within %g nm\n",comm->cellsize_limit);
       if (dd->constraint_comm)
-	fprintf(fplog,"\nAtoms connected by %d constraints should be within %g nm\n",1+ir->nProjOrder,comm->cutoff_min);
+	fprintf(fplog,"\nAtoms connected by %d constraints should be within %g nm\n",1+ir->nProjOrder,comm->cellsize_limit);
       fprintf(fplog,"\n");
     }
   } else {
