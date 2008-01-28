@@ -870,7 +870,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
 
   dd_get_constraint_range(dd,&ac0,&ac1);
 
-  sprintf(str,"%s%d.pdb",name,dd->sim_nodeid);
+  sprintf(str,"%s_%d_%d_%d.pdb",name,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
   fp = ffopen(str,"w");
   fprintf(fp,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
 	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),

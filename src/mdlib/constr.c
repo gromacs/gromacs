@@ -134,18 +134,23 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount)
 }
 
 static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
-			     int start,int homenr,gmx_domdec_t *dd,
+			     int start,int homenr,t_commrec *cr,
 			     rvec x[],matrix box)
 {
   char fname[STRLEN],format[STRLEN];
   FILE *out;
   int  dd_ac0=0,dd_ac1=0,i,ii,resnr;
+  gmx_domdec_t *dd;
 
-  if (dd) {
-    sprintf(fname,"%s_n%d.pdb",fn,dd->sim_nodeid);
-    dd_get_constraint_range(dd,&dd_ac0,&dd_ac1);
-    start = 0;
-    homenr = dd_ac1;
+  dd = NULL;
+  if (PAR(cr)) {
+    sprintf(fname,"%s_n%d.pdb",fn,cr->sim_nodeid);
+    if (DOMAINDECOMP(cr)) {
+      dd = cr->dd;
+      dd_get_constraint_range(dd,&dd_ac0,&dd_ac1);
+      start = 0;
+      homenr = dd_ac1;
+    }
   } else {
     sprintf(fname,"%s.pdb",fn);
   }
@@ -174,15 +179,15 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
 }
 			     
 static void dump_confs(FILE *fplog,int step,t_atoms *atoms,
-		       int start,int homenr,gmx_domdec_t *dd,
+		       int start,int homenr,t_commrec *cr,
 		       rvec x[],rvec xprime[],matrix box)
 {
   char buf[256];
   
   sprintf(buf,"step%db",step);
-  write_constr_pdb(buf,"initial coordinates",atoms,start,homenr,dd,x,box);
+  write_constr_pdb(buf,"initial coordinates",atoms,start,homenr,cr,x,box);
   sprintf(buf,"step%dc",step);
-  write_constr_pdb(buf,"coordinates after constraining",atoms,start,homenr,dd,xprime,box);
+  write_constr_pdb(buf,"coordinates after constraining",atoms,start,homenr,cr,xprime,box);
   if (fplog)
     fprintf(fplog,"Wrote pdb files with previous and current coordinates\n");
   fprintf(stderr,"Wrote pdb files with previous and current coordinates\n");
@@ -316,7 +321,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   }
 
   if (!bOK && constr->maxwarn >= 0) 
-    dump_confs(fplog,step,&(top->atoms),start,homenr,cr->dd,x,xprime,box);
+    dump_confs(fplog,step,&(top->atoms),start,homenr,cr,x,xprime,box);
 
   if (econq == econqCoord && ir->ePull == epullCONSTRAINT) {
     pull_constraint(ir->pull,x,xprime,v,*vir,

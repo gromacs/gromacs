@@ -86,8 +86,6 @@ typedef struct gmx_domdec_comm *gmx_domdec_comm_p_t;
 typedef struct gmx_pme_comm_n_box *gmx_pme_comm_n_box_p_t;
 
 typedef struct {
-  int  sim_nodeid;
-
   /* The DD particle-particle nodes only */
   /* The communication setup within the communicator all
    * defined in dd->comm in domdec.c
@@ -215,8 +213,10 @@ typedef struct {
    * All communication within some simulation should happen
    * in mpi_comm_mysim, or its subset mpi_comm_mygroup.
    */
-  int nodeid,nnodes,npmenodes;
+  int sim_nodeid,nnodes,npmenodes;
   int threadid,nthreads;
+  /* The nodeid in the PP/PME, PP or PME group */
+  int nodeid;
 #ifdef GMX_MPI
   MPI_Comm mpi_comm_mysim;
   MPI_Comm mpi_comm_mygroup;
@@ -239,6 +239,7 @@ typedef struct {
 #define MASTERNODE(cr)     ((cr)->nodeid == 0)
 #define MASTERTHREAD(cr)   ((cr)->threadid == 0)
 #define MASTER(cr)         (MASTERNODE(cr) && MASTERTHREAD(cr))
+#define SIMMASTER(cr)      (MASTER(cr) && ((cr)->duty & DUTY_PP))
 #define NODEPAR(cr)        ((cr)->nnodes > 1)
 #define THREADPAR(cr)      ((cr)->nthreads > 1)
 #define PAR(cr)            (NODEPAR(cr) || THREADPAR(cr))

@@ -406,9 +406,6 @@ void make_local_shells(gmx_domdec_t *dd,t_mdatoms *md,
 	if (shell[nshell].nnucl > 2)
 	  shell[nshell].nucl3 = i + shell[nshell].nucl3 - shell[nshell].shell;
       }
-      if (shell[nshell].k < 1)
-	printf("node %d shell[%d/%d].k = %f\n",
-	       dd->sim_nodeid,nshell,dd->gatindex[i],shell[nshell].k);
       nshell++;
     }
   }

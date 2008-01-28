@@ -312,7 +312,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   bool   bFillGrid,bCalcCGCM,bBS;
   matrix boxs;
   real   e,d;
-  float  pme_cycles;
+  float  cycles_ppdpme,cycles_pme,cycles_force;
   
   start  = mdatoms->start;
   homenr = mdatoms->homenr;
@@ -411,8 +411,6 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (NEED_MUTOT(*inputrec))
       gmx_sumd(2*DIM,mu,cr);
     wallcycle_stop(wcycle,ewcMOVEX);
-    if (DOMAINDECOMP(cr) && wcycle)
-      dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcMOVEX),ddCyclMoveX);
   }
   for(i=0; i<2; i++)
     for(j=0;j<DIM;j++)
@@ -448,9 +446,13 @@ void do_force(FILE *fplog,t_commrec *cr,
     wallcycle_stop(wcycle,ewcNS);
   }
   
-  wallcycle_start(wcycle,ewcFORCE);
-  if (DOMAINDECOMP(cr))
-    dd_force_flop_start(cr->dd,nrnb);
+  if (DOMAINDECOMP(cr)) {
+    if (!(cr->duty & DUTY_PME)) {
+      wallcycle_start(wcycle,ewcPPDURINGPME);
+      dd_force_flop_start(cr->dd,nrnb);
+    }
+    wallcycle_start(wcycle,ewcFORCE);
+  }
 
   if (bDoForces) {
       /* Reset PME/Ewald forces if necessary */
@@ -496,11 +498,11 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Take long range contribution to free energy into account */
   ener[F_DVDL] += dvdl_lr;
 
-  wallcycle_stop(wcycle,ewcFORCE);
+  cycles_force = wallcycle_stop(wcycle,ewcFORCE);
   if (DOMAINDECOMP(cr)) {
     dd_force_flop_stop(cr->dd,nrnb);
     if (wcycle)
-      dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcFORCE),ddCyclF);
+      dd_cycles_add(cr->dd,cycles_force,ddCyclF);
   }
   
   if (bDoForces) {
@@ -524,8 +526,6 @@ void do_force(FILE *fplog,t_commrec *cr,
 	move_f(fplog,cr,GMX_LEFT,GMX_RIGHT,f,buf,nrnb);
       }
       wallcycle_stop(wcycle,ewcMOVEF);
-      if (DOMAINDECOMP(cr) && wcycle)
-	dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcMOVEF),ddCyclMoveF);
     }
   }
 
@@ -553,6 +553,11 @@ void do_force(FILE *fplog,t_commrec *cr,
 		     top,inputrec->init_t+step*inputrec->delta_t,mdatoms,cr);
   }
 
+  if (!(cr->duty & DUTY_PME)) {
+    cycles_ppdpme = wallcycle_stop(wcycle,ewcPPDURINGPME);
+    dd_cycles_add(cr->dd,cycles_ppdpme,ddCyclPPduringPME);
+  }
+
 #ifdef GMX_MPI
   if (PAR(cr) && !(cr->duty & DUTY_PME)) {
     /* In case of node-splitting, the PP nodes receive the long-range 
@@ -561,13 +566,13 @@ void do_force(FILE *fplog,t_commrec *cr,
     wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
     d = 0;
     gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d,
-		      &pme_cycles);
+		      &cycles_pme);
     if (fr->bSepDVDL && do_per_step(step,inputrec->nstlog))
       fprintf(fplog,sepdvdlformat,"PME mesh",e,d);
     ener[F_COUL_RECIP] += e;
     ener[F_DVDL] += d;
     if (wcycle)
-      dd_cycles_add(cr->dd,pme_cycles,ddCyclPME);
+      dd_cycles_add(cr->dd,cycles_pme,ddCyclPME);
     wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
   }
 #endif
@@ -995,7 +1000,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   wallcycle_sum(cr,wcycle,cycles);
 
   if (cr->nnodes > 1) {
-    if (MASTER(cr))
+    if (SIMMASTER(cr))
       snew(nrnb_all,cr->nnodes);
 #ifdef GMX_MPI
     MPI_Gather(nrnb,sizeof(t_nrnb),MPI_BYTE,
@@ -1006,14 +1011,14 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     nrnb_all = nrnb;
   }
     
-  if (MASTER(cr)) {
+  if (SIMMASTER(cr)) {
     for(i=0; (i<eNRNB); i++)
       ntot.n[i]=0;
     for(i=0; (i<cr->nnodes); i++)
       for(j=0; (j<eNRNB); j++)
 	ntot.n[j] += nrnb_all[i].n[j];
   }
-  if (MASTER(cr)) {
+  if (SIMMASTER(cr)) {
     runtime=inputrec->nsteps*inputrec->delta_t;
     if (bWriteStat) {
       if (cr->nnodes == 1)

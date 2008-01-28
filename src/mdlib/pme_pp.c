@@ -154,7 +154,7 @@ static void gmx_pme_send_q_x(t_commrec *cr, int flags,
 
   if (debug)
     fprintf(debug,"PP node %d sending to PME node %d: %d%s%s\n",
-	    dd->sim_nodeid,dd->pme_nodeid,n,
+	    cr->sim_nodeid,dd->pme_nodeid,n,
 	    flags & PP_PME_CHARGE ? " charges" : "",
 	    flags & PP_PME_COORD  ? " coordinates" : "");
 
@@ -378,7 +378,7 @@ static void receive_virial_energy(t_commrec *cr,
     if (debug)
       fprintf(debug,
 	      "PP node %d receiving from PME node %d: virial and energy\n",
-	      cr->dd->sim_nodeid,cr->dd->pme_nodeid);
+	      cr->sim_nodeid,cr->dd->pme_nodeid);
 #ifdef GMX_MPI
     MPI_Recv(&cve,sizeof(cve),MPI_BYTE,cr->dd->pme_nodeid,1,cr->mpi_comm_mysim,
 	     MPI_STATUS_IGNORE);

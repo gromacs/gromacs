@@ -77,7 +77,7 @@ extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v);
 extern void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
 			     t_state *state_local,t_state *state);
 
-enum { ddCyclStep, ddCyclMoveX, ddCyclF, ddCyclMoveF, ddCyclPME, ddCyclNr };
+enum { ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr };
 
 extern void dd_cycles_add(gmx_domdec_t *dd,float cycles,int ddCycl);
 /* Add the wallcycle count to the DD counter */

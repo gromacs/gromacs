@@ -19,7 +19,7 @@ typedef struct gmx_wallcycle {
 } gmx_wallcycle_t_t;
 
 static char *wcn[ewcNR] =
-  { "Run", "Step", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
+  { "Run", "Step", "PP during PME", "Domain decomp.", "Vsite constr.", "Send X to PME", "Comm. coord.", "Neighbor search", "Force", "Wait + Comm. F", "PME mesh", "PME mesh", "Wait + Comm. X/F", "Wait + Recv. PME F", "Vsite spread", "Write traj.", "Update", "Constraints", "Comm. energies", "Test" };
 
 /* variables for testing/debugging */
 static bool              wc_barrier=FALSE;
@@ -96,9 +96,9 @@ void wallcycle_start(gmx_wallcycle_t wc, int ewc)
   }
 }
 
-void wallcycle_stop(gmx_wallcycle_t wc, int ewc)
+double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 {
-  gmx_cycles_t cycle;
+  gmx_cycles_t cycle,last;
 
 #ifdef GMX_MPI
     if (wc_barrier)
@@ -107,8 +107,8 @@ void wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 
   if (wc) {
     cycle = gmx_cycles_read();
-    wc[ewc].last = cycle - wc[ewc].start;
-    wc[ewc].c += wc[ewc].last;
+    last = cycle - wc[ewc].start;
+    wc[ewc].c += last;
     wc[ewc].n++;
     if (wc_all) {
       wc_depth--;
@@ -118,27 +118,8 @@ void wallcycle_stop(gmx_wallcycle_t wc, int ewc)
 	wallcycle_all_start(ewc,cycle);
     }
   }
-}
 
-double wallcycle_lastcycle(gmx_wallcycle_t wc, int ewc)
-{
-  double c;
-  
-  if (wc) {
-    c = (double)wc[ewc].last;
-    if (ewc == ewcFORCE) {
-      /* Remove the PME mesh part from the force count */
-      c -= (double)wc[ewcPMEMESH].last;
-    }
-    if (ewc == ewcUPDATE) {
-      /* Remove the constraint part from the force count */
-      c -= (double)wc[ewcCONSTR].last;
-    }
-  } else {
-    c = 0;
-  }
-
-  return c;
+  return last;
 }
 
 void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
@@ -225,7 +206,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     fprintf(fplog," Computing:         Nodes     Number     G-Cycles    Seconds     %c\n",'%');
     fprintf(fplog,"%s\n",myline);
     sum = 0;
-    for(i=ewcSTEP+1; i<ewcNR; i++) {
+    for(i=ewcPPDURINGPME+1; i<ewcNR; i++) {
       print_cycles(fplog,c2t,wcn[i],
 		   (i==ewcPMEMESH_SEP || i==ewcPMEWAITCOMM) ? npme : npp,
 		   wc[i].n,cycles[i],tot);

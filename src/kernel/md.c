@@ -100,49 +100,6 @@ static RETSIGTYPE signal_handler(int n)
   }
 }
 
-static void send_nchargeperturbed(t_commrec *cr,int nChargePerturbed)
-{
-  int dest;
-
-  if (MASTER(cr) && cr->npmenodes > 0) {
-    for(dest=0; dest<cr->nnodes; dest++) {
-      if (gmx_pmeonlynode(cr,dest)) {
-	if (debug)
-	  fprintf(debug,
-		  "Sending nChargePerturbed to pme node, rank %d -> %d\n",
-		  cr->dd->sim_nodeid,dest);
-#ifdef GMX_MPI
-	/* dest is a PME only node */
-	/* Tell if we need to do PME with free energy */
-	MPI_Send(&nChargePerturbed,sizeof(int),MPI_BYTE,
-		 dest,0,cr->mpi_comm_mysim);
-	if (debug)
-	  fprintf(debug,"Sent\n");
-#endif
-      }
-    }
-  }
-}
-
-static int receive_nchargeperturbed(t_commrec *cr)
-{
-  int nChargePerturbed=0;
-
-#ifdef GMX_MPI
-  if (debug)
-    fprintf(debug,
-	    "Receiving nChargePerturbed from the master node, rank %d <- %d\n",
-	    cr->dd->sim_nodeid,0);
-  MPI_Recv(&nChargePerturbed,sizeof(int),MPI_BYTE,
-	   0,0,cr->mpi_comm_mysim,
-	   MPI_STATUS_IGNORE);
-  if (debug)
-    fprintf(debug,"Received\n");
-#endif
-
-  return nChargePerturbed;
-}
-
 typedef struct { 
   gmx_integrator_t *func;
 } gmx_intp_t;
@@ -176,14 +133,14 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   time_t     start_t=0;
   gmx_vsite_t *vsite=NULL;
   gmx_constr_t constr;
-  int        i,m,nChargePerturbed=0,status,nalloc;
+  int        i,m,nChargePerturbed=-1,status,nalloc;
   char       *gro;
   gmx_wallcycle_t wcycle;
 
   snew(inputrec,1);
   snew(top,1);
   
-  if (bVerbose && MASTER(cr)) 
+  if (bVerbose && SIMMASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
   
   if (PAR(cr)) {
@@ -193,18 +150,18 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     snew(state,1);
     init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
 		  inputrec,top,state,
-		  MASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
+		  SIMMASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
   } else {
     /* Read a file for a single processor */
     snew(state,1);
     init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state);
   }
-  if (MASTER(cr))
+  if (SIMMASTER(cr))
     copy_mat(state->box,box);
   if (PAR(cr))
     gmx_bcast(sizeof(box),box,cr);
     
-  if (bVerbose && MASTER(cr))
+  if (bVerbose && SIMMASTER(cr))
     fprintf(stderr,"Loaded with Money\n\n");
 
   if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
@@ -329,9 +286,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	gmx_fatal(FARGS,"Error %d initializing PPPM",status);
     }
 
-    nChargePerturbed = mdatoms->nChargePerturbed;
     if (EEL_PME(fr->eeltype)) {
-      send_nchargeperturbed(cr,nChargePerturbed);
       ewaldcoeff = fr->ewaldcoeff;
       pmedata = &fr->pmedata;
     } else {
@@ -343,19 +298,25 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* We don't need the state */
     done_state(state);
 
-    nChargePerturbed = receive_nchargeperturbed(cr);
     ewaldcoeff = calc_ewaldcoeff(inputrec->rcoulomb, inputrec->ewald_rtol);
     snew(pmedata,1);
   }
 
   /* Initiate PME if necessary,
    * either on all nodes or on dedicated PME nodes only. */
-  if (EEL_PME(inputrec->coulombtype) && (cr->duty & DUTY_PME)) {
-    status = gmx_pme_init(pmedata,cr,inputrec,
-			  top ? top->atoms.nr : 0,nChargePerturbed,
-			  (Flags & MD_REPRODUCIBLE));
-    if (status != 0)
-      gmx_fatal(FARGS,"Error %d initializing PME",status);
+  if (EEL_PME(inputrec->coulombtype)) {
+    if (cr->npmenodes > 0) {
+      if (SIMMASTER(cr))
+	nChargePerturbed = mdatoms->nChargePerturbed;
+      gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
+    }
+    if (cr->duty & DUTY_PME) {
+      status = gmx_pme_init(pmedata,cr,inputrec,
+			    top ? top->atoms.nr : 0,nChargePerturbed,
+			    (Flags & MD_REPRODUCIBLE));
+      if (status != 0)
+	gmx_fatal(FARGS,"Error %d initializing PME",status);
+    }
   }
   
   if (integrator[inputrec->eI].func == do_md) {
@@ -471,7 +432,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec       *f_global=NULL;
   gmx_stochd_t sd=NULL;
 
-  /* XMDRUN stuff: shell, general coupling etc. */
   bool        bFFscan;
   gmx_shellfc_t shellfc;
   int         count,nconverged=0;
@@ -486,7 +446,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_coupl_rec *tcr=NULL;
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
-  /* End of XMDRUN stuff */
+  double      cycles;
 
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN);
@@ -1263,9 +1223,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       step_rel++;
     }
 
-    wallcycle_stop(wcycle,ewcSTEP);
+    cycles = wallcycle_stop(wcycle,ewcSTEP);
     if (DOMAINDECOMP(cr) && wcycle)
-      dd_cycles_add(cr->dd,wallcycle_lastcycle(wcycle,ewcSTEP),ddCyclStep);
+      dd_cycles_add(cr->dd,cycles,ddCyclStep);
   }
   /* End of main MD loop */
   debug_gmx();

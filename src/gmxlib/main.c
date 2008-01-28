@@ -248,12 +248,13 @@ void init_multisystem(t_commrec *cr,int nsim,
 #endif
 
   /* Reduce the intra-simulation communication */
-  cr->nodeid = cr->nodeid % nnodpersim;
+  cr->sim_nodeid = cr->nodeid % nnodpersim;
   cr->nnodes = nnodpersim;
   if (PAR(cr)) {
 #ifdef GMX_MPI
-    MPI_Comm_split(MPI_COMM_WORLD,sim,cr->nodeid,&cr->mpi_comm_mysim);
+    MPI_Comm_split(MPI_COMM_WORLD,sim,cr->sim_nodeid,&cr->mpi_comm_mysim);
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+    cr->nodeid = cr->sim_nodeid;
 #endif
   }
 
@@ -261,7 +262,7 @@ void init_multisystem(t_commrec *cr,int nsim,
     fprintf(debug,"This is simulation %d",cr->ms->sim);
     if (PAR(cr))
       fprintf(debug,", local number of nodes %d, local nodeid %d",
-	      cr->nnodes,cr->nodeid);
+	      cr->nnodes,cr->sim_nodeid);
     fprintf(debug,"\n\n");
   }
 
@@ -310,17 +311,17 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     gmx_parallel_env = 0;
 #endif
   if (gmx_parallel_env)
-    cr->nodeid = gmx_setup(argc,argv,&cr->nnodes);
+    cr->sim_nodeid = gmx_setup(argc,argv,&cr->nnodes);
   else
-    cr->nodeid = 0;
+    cr->sim_nodeid = 0;
 #else
-  cr->nodeid   = 0;
-  cr->nnodes   = 1;
+  cr->sim_nodeid   = 0;
+  cr->nnodes       = 1;
   gmx_parallel_env = 0; 
 #endif
 
-  if (!PAR(cr) && (cr->nodeid != 0))
-    gmx_comm("(!PAR(cr) && (cr->nodeid != 0))");
+  if (!PAR(cr) && (cr->sim_nodeid != 0))
+    gmx_comm("(!PAR(cr) && (cr->sim_nodeid != 0))");
   
   if (PAR(cr)) {
 #ifdef GMX_MPI
@@ -328,6 +329,9 @@ t_commrec *init_par(int *argc,char ***argv_ptr)
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
 #endif
   }
+  cr->nodeid = cr->sim_nodeid;
+
+  cr->duty = (DUTY_PP | DUTY_PME);
 
   /* Communicate arguments if parallel */
   if (PAR(cr))

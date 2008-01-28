@@ -431,15 +431,16 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	fprintf(debug,"\n");
       }
     }
-    fprintf(stderr,"\nNode %d: Neighboring cells do not have atoms:",
-	    dd->sim_nodeid);
+    fprintf(stderr,"\nDD cell %d %d %d: Neighboring cells do not have atoms:",
+	    dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
     for(i=0; i<spac->nind_req; i++) {
       if (ga2la_specat[spac->ind_req[i]] < 0)
 	fprintf(stderr," %d",spac->ind_req[i]+1);
     }
     fprintf(stderr,"\n");
-    gmx_fatal(FARGS,"Node %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means your %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s%s.",
-	      dd->sim_nodeid,nrecv_local,spac->nind_req,specat_type,
+    gmx_fatal(FARGS,"DD cell %d %d %d could only obtain %d of the %d atoms that are connected via %ss from the neighboring cells. This probably means your %s lengths are too long compared to the domain decomposition cell size. Decrease the number of domain decomposition grid cells%s%s.",
+	      dd->ci[XX],dd->ci[YY],dd->ci[ZZ],
+	      nrecv_local,spac->nind_req,specat_type,
 	      specat_type,add_err,
 	      dd->bDynLoadBal ? " or use the -rdd option of mdrun" : "");
   }

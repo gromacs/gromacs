@@ -1409,8 +1409,7 @@ int gmx_pmeonly(gmx_pme_t pme,
 	       &energy,lambda,&dvdlambda,
 	       bGatherOnly);
 
-    wallcycle_stop(wcycle,ewcPMEMESH_SEP);
-    cycles = wallcycle_lastcycle(wcycle,ewcPMEMESH_SEP);
+    cycles = wallcycle_stop(wcycle,ewcPMEMESH_SEP);
 
     gmx_pme_send_force_vir_ener(pme_pp,
 				f_pp,vir,energy,dvdlambda,

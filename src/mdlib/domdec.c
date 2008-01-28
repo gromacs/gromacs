@@ -1084,15 +1084,18 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
 }
 
 static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
-			 gmx_domdec_t *dd,int natoms,
+			 t_commrec *cr,int natoms,
 			 rvec x[],matrix box)
 {
   char fname[STRLEN],format[STRLEN],format4[STRLEN];
   FILE *out;
   int  i,ii,resnr,c;
   real b;
+  gmx_domdec_t *dd;
 
-  sprintf(fname,"%s_%d_n%d.pdb",fn,step,dd->sim_nodeid);
+  dd = cr->dd;
+
+  sprintf(fname,"%s_%d_n%d.pdb",fn,step,cr->sim_nodeid);
 
   sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
   sprintf(format4,"%s%s\n",pdbformat4,"%6.2f%6.2f");
@@ -1346,9 +1349,9 @@ static bool receive_vir_ener(t_commrec *cr)
   if (cr->npmenodes < cr->dd->nnodes) {
     comm = cr->dd->comm;
     if (comm->bCartesianPP_PME) {
-      pmenode = dd_simnode2pmenode(cr,cr->dd->sim_nodeid);
+      pmenode = dd_simnode2pmenode(cr,cr->sim_nodeid);
 #ifdef GMX_MPI
-      MPI_Cart_coords(cr->mpi_comm_mysim,cr->dd->sim_nodeid,DIM,coords);
+      MPI_Cart_coords(cr->mpi_comm_mysim,cr->sim_nodeid,DIM,coords);
       coords[comm->cartpmedim]++;
       if (coords[comm->cartpmedim] < cr->dd->nc[comm->cartpmedim]) {
 	MPI_Cart_rank(cr->mpi_comm_mysim,coords,&rank);
@@ -1359,9 +1362,9 @@ static bool receive_vir_ener(t_commrec *cr)
       }
 #endif  
     } else {
-      pmenode = dd_simnode2pmenode(cr,cr->dd->sim_nodeid);
-      if (cr->dd->sim_nodeid+1 < cr->nnodes &&
-	  dd_simnode2pmenode(cr,cr->dd->sim_nodeid+1) == pmenode) {
+      pmenode = dd_simnode2pmenode(cr,cr->sim_nodeid);
+      if (cr->sim_nodeid+1 < cr->nnodes &&
+	  dd_simnode2pmenode(cr,cr->sim_nodeid+1) == pmenode) {
 	/* This is not the last PP node for pmenode */
 	bReceive = FALSE;
       }
@@ -2056,11 +2059,11 @@ static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,int step)
     if (dd->bDynLoadBal &&
 	(dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac[dim] <
 	dd->comm->cellsize_limit)
-      gmx_fatal(FARGS,"Step %d: The %c-size (%f) times the triclinic skew factor (%f) is smaller than the smallest allowed cell size (%f) for domain decomposition grid cell %d %d %d (node %d)",
+      gmx_fatal(FARGS,"Step %d: The %c-size (%f) times the triclinic skew factor (%f) is smaller than the smallest allowed cell size (%f) for domain decomposition grid cell %d %d %d",
 		step,dim2char(dim),
 		dd->cell_x1[dim] - dd->cell_x0[dim],dd->skew_fac[dim],
 		dd->comm->cellsize_limit,
-		dd->ci[XX],dd->ci[YY],dd->ci[ZZ],dd->sim_nodeid);
+		dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
   }
 
   /* Set the size of the ns grid,
@@ -2923,8 +2926,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
 	  }
 	}
 	if (bSepPME) {
-	  sbuf[pos++] = comm->cycl[ddCyclMoveX] + comm->cycl[ddCyclF] +
-	    comm->cycl[ddCyclMoveF];
+	  sbuf[pos++] = comm->cycl[ddCyclPPduringPME];
 	  sbuf[pos++] = comm->cycl[ddCyclPME];
 	}
       } else {
@@ -3437,7 +3439,7 @@ static void make_pp_communicator(FILE *fplog,t_commrec *cr,int reorder)
     snew(comm->ddindex2simnodeid,dd->nnodes);
     snew(buf,dd->nnodes);
     if (cr->duty & DUTY_PP)
-      buf[dd_index(dd->nc,dd->ci)] = dd->sim_nodeid;
+      buf[dd_index(dd->nc,dd->ci)] = cr->sim_nodeid;
     /* Communicate the ddindex to simulation nodeid index */
     MPI_Allreduce(buf,comm->ddindex2simnodeid,dd->nnodes,MPI_INT,MPI_SUM,
 		  cr->mpi_comm_mysim);
@@ -3486,10 +3488,12 @@ static void receive_ddindex2simnodeid(t_commrec *cr)
     snew(comm->ddindex2simnodeid,dd->nnodes);
     snew(buf,dd->nnodes);
     if (cr->duty & DUTY_PP)
-      buf[dd_index(dd->nc,dd->ci)] = dd->sim_nodeid;
+      buf[dd_index(dd->nc,dd->ci)] = cr->sim_nodeid;
+#ifdef GMX_MPI
     /* Communicate the ddindex to simulation nodeid index */
     MPI_Allreduce(buf,comm->ddindex2simnodeid,dd->nnodes,MPI_INT,MPI_SUM,
 		  cr->mpi_comm_mysim);
+#endif
     sfree(buf);
   }
 }
@@ -3551,26 +3555,25 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
      * which will usually be MPI_COMM_WORLD, unless have multisim.
      */
     cr->mpi_comm_mysim = comm_cart;
-    dd->sim_nodeid = rank;
+    cr->sim_nodeid = rank;
 
-    MPI_Cart_coords(cr->mpi_comm_mysim,dd->sim_nodeid,DIM,dd->ci);
+    MPI_Cart_coords(cr->mpi_comm_mysim,cr->sim_nodeid,DIM,dd->ci);
 
     if (fplog)
       fprintf(fplog,"Cartesian nodeid %d, coordinates %d %d %d\n\n",
-	      cr->dd->sim_nodeid,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
+	      cr->sim_nodeid,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
     
     if (dd->ci[comm->cartpmedim] < dd->nc[comm->cartpmedim])
-      cr->duty |= DUTY_PP;
+      cr->duty = DUTY_PP;
     if (cr->npmenodes == 0 ||
 	dd->ci[comm->cartpmedim] >= dd->nc[comm->cartpmedim])
-      cr->duty |= DUTY_PME;
+      cr->duty = DUTY_PME;
 
     /* Split the sim communicator into PP and PME only nodes */
     MPI_Comm_split(cr->mpi_comm_mysim,
 		   cr->duty,
 		   dd_index(comm->ntot,dd->ci),
 		   &cr->mpi_comm_mygroup);
-    MPI_Comm_rank(cr->mpi_comm_mygroup,&cr->nodeid);
   } else {
     switch (dd_node_order) {
     case ddnoPP_PME:
@@ -3593,16 +3596,17 @@ static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,
       gmx_fatal(FARGS,"Unknown dd_node_order=%d",dd_node_order);
     }
     
-    if (dd_simnode2pmenode(cr,cr->dd->sim_nodeid) == -1)
-      cr->duty |= DUTY_PME;
+    if (dd_simnode2pmenode(cr,cr->sim_nodeid) == -1)
+      cr->duty = DUTY_PME;
     else
-      cr->duty |= DUTY_PP;
+      cr->duty = DUTY_PP;
     
     /* Split the sim communicator into PP and PME only nodes */
     MPI_Comm_split(cr->mpi_comm_mysim,
 		   cr->duty,
 		   cr->nodeid,
 		   &cr->mpi_comm_mygroup);
+    MPI_Comm_rank(cr->mpi_comm_mygroup,&cr->nodeid);
   }
 #endif
 
@@ -3620,8 +3624,6 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
   dd = cr->dd;
   comm = dd->comm;
 
-  dd->sim_nodeid = cr->nodeid;
-
   copy_ivec(dd->nc,comm->ntot);
   
   comm->bCartesianPP = (dd_node_order == ddnoCARTESIAN);
@@ -3634,7 +3636,6 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
     split_communicator(fplog,cr,dd_node_order,CartReorder);
   } else {
     /* All nodes do PP and PME */
-    cr->duty |= (DUTY_PP | DUTY_PME);
 #ifdef GMX_MPI    
     /* We do not require separate communicators */
     cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
@@ -3650,7 +3651,7 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
   
   if (!(cr->duty & DUTY_PME)) {
     /* Set up the commnuication to our PME node */
-    dd->pme_nodeid = dd_simnode2pmenode(cr,dd->sim_nodeid);
+    dd->pme_nodeid = dd_simnode2pmenode(cr,cr->sim_nodeid);
     dd->pme_receive_vir_ener = receive_vir_ener(cr);
     if (debug)
       fprintf(debug,"My pme_nodeid %d receive ener %d\n",
@@ -5264,7 +5265,7 @@ void dd_partition_system(FILE            *fplog,
   }
 
   /*
-  write_dd_pdb("dd_home",step,"dump",&top_global->atoms,dd,dd->nat_home,
+  write_dd_pdb("dd_home",step,"dump",&top_global->atoms,cr,dd->nat_home,
 	       state_local->x,state_local->box);
   */
 
@@ -5350,7 +5351,7 @@ void dd_partition_system(FILE            *fplog,
 
   if (nstDDDump > 0 && step % nstDDDump == 0) {
     dd_move_x(dd,state_local->box,state_local->x,*buf);
-    write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,dd,
+    write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,cr,
 		 dd->comm->nat[ddnatVSITE],
 		 state_local->x,state_local->box);
   }
