@@ -305,9 +305,11 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initiate PME if necessary,
    * either on all nodes or on dedicated PME nodes only. */
   if (EEL_PME(inputrec->coulombtype)) {
+    if (mdatoms) {
+      nChargePerturbed = mdatoms->nChargePerturbed;
+    }
     if (cr->npmenodes > 0) {
-      if (SIMMASTER(cr))
-	nChargePerturbed = mdatoms->nChargePerturbed;
+      /* The PME only nodes need to know nChargePerturbed */
       gmx_bcast_sim(sizeof(nChargePerturbed),&nChargePerturbed,cr);
     }
     if (cr->duty & DUTY_PME) {
