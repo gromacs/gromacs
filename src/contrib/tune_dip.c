@@ -171,7 +171,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
 	(fabs(mol[i].dip_calc/mol[i].dip_exp-1) > 2*sigma)) {
       fprintf(logf,"%-20s  %12.3f  %12.3f  %12.3f\n",
 	      mol[i].molname,mol[i].dip_calc,mol[i].dip_exp,
-	      fabs(mol[i].dip_calc-mol[i].dip_exp));
+	      mol[i].dip_calc-mol[i].dip_exp);
       nout ++;
     }
   }  
