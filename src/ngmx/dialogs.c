@@ -77,7 +77,7 @@ static void shell_comm(char *title,char *script,int nsleep)
   gmx_tmpnam(tmp);
   
   if ((tfil = fopen(tmp,"w")) == NULL) {
-    sprintf(tmp,"%stmp%sdialogXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
+    sprintf(tmp,"%ctmp%cdialogXXXXXX",DIR_SEPARATOR,DIR_SEPARATOR);
     gmx_tmpnam(tmp);
   }
   if ((tfil = fopen(tmp,"w")) == NULL) 
