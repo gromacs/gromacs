@@ -718,16 +718,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   doexceptions();
 #endif
 
-  /* Extract Time info from arguments */
-  if (FF(PCA_CAN_BEGIN) && opt2parg_bSet("-b",npall,all_pa))
-    setTimeValue(TBEGIN,opt2parg_real("-b",npall,all_pa));
-
-  if (FF(PCA_CAN_END) && opt2parg_bSet("-e",npall,all_pa))
-    setTimeValue(TEND,opt2parg_real("-e",npall,all_pa));
-  
-  if (FF(PCA_CAN_DT) && opt2parg_bSet("-dt",npall,all_pa))
-    setTimeValue(TDELTA,opt2parg_real("-dt",npall,all_pa));
-  
   /* Set the nice level */
 #ifdef __sgi
   if (bGUI)
@@ -788,7 +778,17 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
       *all_pa[i].u.r *= timeinvfac;
     }
   }
+
+  /* Extract Time info from arguments */
+  if (FF(PCA_CAN_BEGIN) && opt2parg_bSet("-b",npall,all_pa))
+    setTimeValue(TBEGIN,opt2parg_real("-b",npall,all_pa));
+
+  if (FF(PCA_CAN_END) && opt2parg_bSet("-e",npall,all_pa))
+    setTimeValue(TEND,opt2parg_real("-e",npall,all_pa));
   
+  if (FF(PCA_CAN_DT) && opt2parg_bSet("-dt",npall,all_pa))
+    setTimeValue(TDELTA,opt2parg_real("-dt",npall,all_pa));
+ 
   /* clear memory */
   sfree(all_pa);
   
