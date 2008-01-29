@@ -82,7 +82,8 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
       bNeedToCopy=FALSE;
     } else if (bFirst) {
       fprintf(stderr,
-	      "\nWarning: can not make broken molecules whole without a run input file,\n         don't worry, mdrun doesn't write broken molecules\n\n");
+	      "\nWarning: if there are broken molecules in the trajectory file,\n"
+	      "         they can not be made whole without a run input file\n\n");
       bFirst=FALSE;
     }
   }
