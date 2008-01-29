@@ -35,6 +35,10 @@ extern int dd_natoms_vsite(gmx_domdec_t *dd);
 extern void dd_get_constraint_range(gmx_domdec_t *dd,
 				    int *at_start,int *at_end);
 
+extern real dd_cutoff(gmx_domdec_t *dd);
+
+extern real dd_cutoff_mbody(gmx_domdec_t *dd);
+
 extern int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z);
 /* Returns the pme slab for DD cell x,y,z */
 

@@ -161,7 +161,7 @@ typedef struct gmx_domdec_comm {
   real *pme_dim_f;
     
   /* The width of the communicated boundaries */
-  real cutoff_min;
+  real cutoff_mbody;
   real cutoff;
   /* The minimum cell size (including triclinic correction) */
   rvec cellsize_min;
@@ -1128,6 +1128,15 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
   fclose(out);
 }
 
+real dd_cutoff(gmx_domdec_t *dd)
+{
+  return dd->comm->cutoff;
+}
+
+real dd_cutoff_mbody(gmx_domdec_t *dd)
+{
+  return dd->comm->cutoff_mbody;
+}
 
 static void dd_cart_coord2pmecoord(gmx_domdec_t *dd,ivec coord,ivec coord_pme)
 {
@@ -1463,7 +1472,7 @@ static real grid_jump_limit(gmx_domdec_comm_t *comm,int dim_ind)
    * half their size, such that cg's only shift by one cell
    * at redecomposition.
    */
-  return max(comm->cutoff_min,comm->cutoff/comm->cd[dim_ind].np);
+  return max(comm->cutoff_mbody,comm->cutoff/comm->cd[dim_ind].np);
 }
 
 static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
@@ -3080,7 +3089,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
       if (!dd->bDynLoadBal) {
 	sprintf(buf+strlen(buf),"      You might want to use dynamic load balancing (option -dlb.)\n");
       } else if (bLim) {
-	sprintf(buf+strlen(buf),"      You might want to decrease the communication distance (options -rdd and/or -rcon).\n");
+	sprintf(buf+strlen(buf),"      You might want to decrease the cell size limit (options -rdd and/or -rcon).\n");
       }
       fprintf(fplog,"%s\n",buf);
       fprintf(stderr,"%s\n",buf);
@@ -3859,11 +3868,13 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,
 
     if (bt[i] < nc[i]*limit)
       return -1;
+  }
     
-    /* When two dimensions are (nearly) equal, use more cells
-     * for the smallest index, so the decomposition does not
-     * depend sensitively on the rounding of the box elements.
-     */
+  /* When two dimensions are (nearly) equal, use more cells
+   * for the smallest index, so the decomposition does not
+   * depend sensitively on the rounding of the box elements.
+   */
+  for(i=0; i<DIM; i++) {
     if (dd->comm->npmenodes == 0 || i != XX) {
       for(j=i+1; j<DIM; j++) {
 	if (fabs(bt[j] - bt[i]) < 0.01*bt[i] && nc[j] > nc[i])
@@ -3977,12 +3988,11 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
   float pbcdxr;
   real limit;
   ivec try;
-  real cutoff_min_orig;
 
-  limit = dd->comm->cutoff_min;
+  limit = dd->comm->cutoff_mbody;
 
   dd->comm->cutoff = max(max(ir->rlist,max(ir->rcoulomb,ir->rvdw)),
-			 dd->comm->cutoff_min);
+			 dd->comm->cutoff_mbody);
   dd->nc[XX] = 1;
   dd->nc[YY] = 1;
   dd->nc[ZZ] = 1;
@@ -4133,8 +4143,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
       fprintf(fplog,"Will not sort the charge groups\n");
   }
 
-  comm->cutoff_min = comm_distance_min;
-  comm->cellsize_limit = comm->cutoff_min;
+  comm->cutoff_mbody = comm_distance_min;
+  comm->cellsize_limit = comm->cutoff_mbody;
   if (top->idef.il[F_CONSTR].nr > 0 && bMultiCGMols(top)) {
     /* There is a cell size limit due to the constraints (LINCS) */
     if (rconstr <= 0) {
@@ -4143,7 +4153,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 	fprintf(fplog,
 		"Estimated maximum distance required for LINCS: %.3f nm\n",
 		rconstr);
-	if (rconstr > comm->cutoff_min)
+	if (rconstr > comm->cutoff_mbody)
 	  fprintf(fplog,"This distance will limit the DD cell size, you can override this with -rcon\n");
       }
     } else {
@@ -4291,20 +4301,21 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
     }
   }
 
-  comm->cutoff = max(fr->rlistlong,comm->cutoff_min);
+  comm->cutoff = max(fr->rlistlong,comm->cutoff_mbody);
   if (debug)
     fprintf(debug,"The DD cut-off is %f\n",comm->cutoff);
   if (dd->bDynLoadBal) {
     /* Determine the maximum number of communication pulses in one dimension */
+    comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
     npulse = dd_nst_env(fplog,"GMX_DD_NPULSE",1);
-    if (comm->cutoff_min > 0 && comm->cutoff_min < comm->cutoff) {
+    if (comm->cutoff_mbody > 0 && comm->cellsize_limit < comm->cutoff) {
       /* We round down slightly here to avoid overhead due to the latency
        * of extra communication calls when the cut-off would be only slightly
-       * longer than the cell size. Later cellsize_limit is determined,
+       * longer than the cell size. Later cellsize_limit is redetermined,
        * so we can not miss interaction due to this rounding.
        */
-      npulse = (int)(0.96 + comm->cutoff/comm->cutoff_min);
-    } else if (comm->cutoff_min <= 0) {
+      npulse = (int)(0.96 + comm->cutoff/comm->cellsize_limit);
+    } else if (comm->cutoff_mbody <= 0) {
       /* We need to set npulse allowing for some margin for load balacing */
       set_tric_dir(dd,box);
       for(d=0; d<dd->ndim; d++) {
@@ -4326,7 +4337,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
     /* cellsize_limit is set for LINCS in init_domain_decomposition */
     comm->cellsize_limit = max(comm->cellsize_limit,
 			       comm->cutoff/comm->maxpulse);
-    comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_min);
+    comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
     /* Set the minimum cell size for each DD dimension */
     for(d=0; d<dd->ndim; d++) {
       if (comm->cd[d].np*comm->cellsize_limit >= comm->cutoff) {
@@ -4335,8 +4346,8 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 	comm->cellsize_min[dd->dim[d]] = comm->cutoff/comm->cd[d].np;
       }
     }
-    if (comm->cutoff_min <= 0) {
-      comm->cutoff_min = comm->cellsize_limit;
+    if (comm->cutoff_mbody <= 0) {
+      comm->cutoff_mbody = comm->cellsize_limit;
     }
     if (DDMASTER(dd) && fplog) {
       fprintf(fplog,"The maximum number of communication pulses is:");
@@ -4344,8 +4355,10 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 	fprintf(fplog," %c %d",dim2char(dd->dim[d]),comm->cd[d].np);
       fprintf(fplog,"\n");
       fprintf(fplog,"The minimum size for domain decomposition cells is %g nm\n",comm->cellsize_limit);
-      if (comm->bInterCGBondeds)
-	fprintf(fplog,"\nAtoms involved in bonded interactions should be within %g nm\n",comm->cutoff_min);
+      if (comm->bInterCGBondeds) {
+	fprintf(fplog,"\nAtoms involved in two-body bonded interactions should be within %g nm\n",comm->cutoff);
+	fprintf(fplog,"\nAtoms involved in multi-body bonded interactions should be within %g nm\n",comm->cutoff_mbody);
+      }
       if (dd->vsite_comm)
 	fprintf(fplog,"\nAtoms involved in virtual sites should be within %g nm\n",comm->cellsize_limit);
       if (dd->constraint_comm)
@@ -4492,7 +4505,7 @@ static void setup_dd_communication(FILE *fplog,int step,
   }
 
   bTwoCut = (dd->bGridJump && comm->bInterCGBondeds && dd->ndim > 1 &&
-	     dd->comm->cutoff_min < dd->comm->cutoff);
+	     dd->comm->cutoff_mbody < dd->comm->cutoff);
 
   dim0 = dd->dim[0];
   /* The first dimension is equal for all cells */
@@ -4568,7 +4581,7 @@ static void setup_dd_communication(FILE *fplog,int step,
   }
 
   r_comm2  = sqr(comm->cutoff);
-  r_bcomm2 = sqr(comm->cutoff_min);
+  r_bcomm2 = sqr(comm->cutoff_mbody);
 
   /* Triclinic stuff */
   if (dd->ndim >= 2) {
