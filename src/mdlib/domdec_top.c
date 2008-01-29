@@ -115,9 +115,9 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
 
 void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 {
-  int  ndiff_tot,sign,cl[F_NRE],n,ndiff,rest_global,rest_local;
+  int  ndiff_tot,cl[F_NRE],n,ndiff,rest_global,rest_local;
   int  ftype,nral;
-  char *ts,buf[STRLEN];
+  char buf[STRLEN];
   gmx_domdec_t *dd;
 
   dd = cr->dd;
@@ -128,13 +128,6 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
   }
 
   ndiff_tot = local_count - dd->nbonded_global;
-  if (ndiff_tot >= 0) {
-    sign = 1;
-    ts = "more than once evaluated";
-  } else {
-    sign = -1;
-    ts = "missing";
-  }
 
   for(ftype=0; ftype<F_NRE; ftype++) {
     nral = NRAL(ftype);
@@ -144,8 +137,8 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
   gmx_sumi(F_NRE,cl,cr);
   
   if (DDMASTER(dd)) {
-    fprintf(fplog,"\nA list of %s interactions:\n",ts);
-    fprintf(stderr,"\nA list of %s interactions:\n",ts);
+    fprintf(fplog,"\nA list of missing interactions:\n");
+    fprintf(stderr,"\nA list of missing interactions:\n");
     rest_global = dd->nbonded_global;
     rest_local  = local_count;
     for(ftype=0; ftype<F_NRE; ftype++) {
@@ -154,8 +147,8 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 	n = err_top_global->idef.il[ftype].nr/(1+nral);
 	ndiff = cl[ftype] - n;
 	if (ndiff != 0) {
-	  sprintf(buf,"%20s of %6d %s %6d",
-		  interaction_function[ftype].longname,n,ts,sign*ndiff);
+	  sprintf(buf,"%20s of %6d missing %6d",
+		  interaction_function[ftype].longname,n,-ndiff);
 	  fprintf(fplog,"%s\n",buf);
 	  fprintf(stderr,"%s\n",buf);
 	}
@@ -166,7 +159,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     
     ndiff = rest_local - rest_global;
     if (ndiff != 0) {
-      sprintf(buf,"%20s of %6d %s %6d","exclusions",rest_global,ts,sign*ndiff);
+      sprintf(buf,"%20s of %6d missing %6d","exclusions",rest_global,-ndiff);
       fprintf(fplog,"%s\n",buf);
       fprintf(stderr,"%s\n",buf);
     }
@@ -176,12 +169,10 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 				  &err_top_local->idef);
 
   if (DDMASTER(dd)) {
-    if (sign == 1) {
-      gmx_fatal(FARGS,"%d of the %d bonded interactions were evaluated multiple times. This can occur when the number of domain decomposition cell in a direction is 2 and a cell is not much larger than the cut-off length. The solution is to use 1 or 3 or more cells in such a direction.",
-		sign*ndiff_tot,cr->dd->nbonded_global);
+    if (ndiff > 0) {
+      gmx_incons("One or more interactions were multiple assigned in the domain decompostion");
     } else {
-      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the cut-off distance",
-		sign*ndiff_tot,cr->dd->nbonded_global);
+      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the bonded cut-off distance",-ndiff_tot,cr->dd->nbonded_global);
     }
   }
 }
@@ -757,11 +748,11 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 }
 
 void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
-		       matrix box,real rc,ivec npulse,
+		       matrix box,real rc,rvec cellsize_min,ivec npulse,
 		       t_forcerec *fr,gmx_vsite_t *vsite,
 		       t_topology *top,t_topology *ltop)
 {
-  bool bUniqueExcl,bRCheck,bRCheck2;
+  bool bUniqueExcl,bRCheckMB,bRCheck2B;
   ivec rcheck;
   int  d,nexcl;
   t_pbc pbc,*pbc_null=NULL;
@@ -773,37 +764,31 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   dd_make_local_cgs(dd,&ltop->blocks[ebCGS]);
 
   /* Do we need to check cg_cm distances when assigning bonded interactions? */
-  bRCheck  = FALSE;
-  bRCheck2 = FALSE;
+  bRCheckMB  = FALSE;
+  bRCheck2B = FALSE;
   for(d=0; d<DIM; d++) {
     rcheck[d] = FALSE;
-    /* Only need to check for dimensions with short box vectors */
-    if (dd->nc[d] > 1 &&  box[d][d]*dd->skew_fac[d] < 4*rc) {
+    /* Only need to check for dimensions where the part of the box
+     * that is not communicated is smaller than the cut-off.
+     */
+    if (dd->nc[d] > 1 && (dd->nc[d] - npulse[d])*cellsize_min[d] < 2*rc) {
       if (dd->nc[d] == 2) {
 	rcheck[d] = TRUE;
-	bRCheck   = TRUE;
-	bRCheck2  = TRUE;
-      } else {
-	/* This check if for interactions between two atoms,
-	 * where we can allow interactions up to the cut-off,
-	 * instead of up to the smallest cell dimension.
-	 */
-	/* Here we could do a stricter check for npulse > 2,
-	 * but such cases will be extremely rare
-	 * and the current check avoids rounding issues.
-	 */
-	if (dd->nc[d] - 2 > npulse[d]) {
-	  bRCheck2 = TRUE;
-	}
+	bRCheckMB = TRUE;
       }
+      /* Check for interactions between two atoms,
+       * where we can allow interactions up to the cut-off,
+       * instead of up to the smallest cell dimension.
+       */
+      bRCheck2B = TRUE;
       if (debug)
-	fprintf(debug,"bonded rcheck[%d] = %d, bRCheck2 = %d\n",
-		d,rcheck[d],bRCheck2);
+	fprintf(debug,"bonded rcheck[%d] = %d, bRCheck2B = %d\n",
+		d,rcheck[d],bRCheck2B);
     }
   }
   if (!EEL_EXCL_FORCES(fr->eeltype))
-    bRCheck2 = FALSE;
-  if (bRCheck || bRCheck2) {
+    bRCheck2B = FALSE;
+  if (bRCheckMB || bRCheck2B) {
     make_la2lc(dd);
     if (fr->bMolPBC) {
       set_pbc_ss(&pbc,fr->ePBC,box,dd,TRUE);
@@ -819,12 +804,12 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   make_local_idef(dd,&top->idef,&ltop->idef);
 #else
   dd->nbonded_local = make_local_bondeds(dd,
-					 bRCheck,rcheck,rc,dd->la2lc,
+					 bRCheckMB,rcheck,rc,dd->la2lc,
 					 pbc_null,fr->cg_cm,
 					 &ltop->idef,vsite);
 #endif
 
-  nexcl = make_local_exclusions(dd,bRCheck2,rc,dd->la2lc,pbc_null,fr->cg_cm,
+  nexcl = make_local_exclusions(dd,bRCheck2B,rc,dd->la2lc,pbc_null,fr->cg_cm,
 				fr,&top->blocks[ebEXCLS],
 				&ltop->blocks[ebEXCLS]);
   if (EEL_EXCL_FORCES(fr->eeltype))

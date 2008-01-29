@@ -163,7 +163,7 @@ typedef struct gmx_domdec_comm {
   /* The width of the communicated boundaries */
   real cutoff_min;
   real cutoff;
-  /* The minimum cell size (including triclinic correction) without DLB */
+  /* The minimum cell size (including triclinic correction) */
   rvec cellsize_min;
   /* The lower limit for the DD cell size with DLB */
   real cellsize_limit;
@@ -1624,11 +1624,7 @@ static void set_pme_maxshift(gmx_domdec_t *dd,
      */
     xmin = comm->pme_xmin;
     xmax = comm->pme_xmax;
-    if (dd->bDynLoadBal) {
-      range = comm->cellsize_limit;
-    } else {
-      range = comm->cellsize_min[XX];
-    }
+    range = comm->cellsize_min[XX];
     /* Allow for atoms to be maximally half the cell size or cut-off
      * out of their DD cell.
      */
@@ -1679,12 +1675,13 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
 {
   gmx_domdec_comm_t *comm;
   int  d,j;
+  rvec cellsize_min;
   real *cell_x,cell_dx,cellsize;
 
   comm = dd->comm;
 
   for(d=0; d<DIM; d++) {
-    comm->cellsize_min[d] = box[d][d]*dd->skew_fac[d];
+    cellsize_min[d] = box[d][d]*dd->skew_fac[d];
     np[d] = 1;
     if (dd->nc[d] == 1 || comm->slb_frac[d] == NULL) {
       /* Uniform grid */
@@ -1699,7 +1696,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
       cellsize = cell_dx*dd->skew_fac[d];
       while (cellsize*np[d] < comm->cutoff)
 	np[d]++;
-      comm->cellsize_min[d] = cellsize;
+      cellsize_min[d] = cellsize;
     } else {
       /* Statically load balanced grid */
       /* Also when we are not doing a master distribution we determine
@@ -1718,7 +1715,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
 	cellsize = cell_dx*dd->skew_fac[d];
 	while (cellsize*np[d] < comm->cutoff)
 	  np[d]++;
-	comm->cellsize_min[d] = min(comm->cellsize_min[d],cellsize);
+	cellsize_min[d] = min(cellsize_min[d],cellsize);
       }
       if (!bMaster) {
 	dd->cell_x0[d] = cell_x[dd->ci[d]];
@@ -1736,6 +1733,9 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
 		dd->nc[d]);
     }
   }
+
+  if (!dd->bDynLoadBal)
+    copy_rvec(cellsize_min,comm->cellsize_min);
 
   if (comm->npmenodes)
     set_pme_maxshift(dd,comm->slb_frac[XX]==NULL,box,comm->pme_dim_f);
@@ -1794,7 +1794,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
 	}
       }
 
-      cellsize_limit_f  = comm->cellsize_limit/box[dim][dim];
+      cellsize_limit_f  = comm->cellsize_min[dim]/box[dim][dim];
       cellsize_limit_f *= DD_CELL_MARGIN;
       dist_min_f        = grid_jump_limit(comm,d)/box[dim][dim];
       dist_min_f       *= DD_CELL_MARGIN;
@@ -1864,7 +1864,7 @@ static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
       if (root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
 	gmx_fatal(FARGS,"Step %d: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
 		  step,dim2char(dim),box[dim][dim],dd->skew_fac[dim],
-		  dd->nc[dim],comm->cellsize_limit);
+		  dd->nc[dim],comm->cellsize_min[dim]);
 
       root->bLimited = (nmin > 0);
       
@@ -2058,11 +2058,11 @@ static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,int step)
     
     if (dd->bDynLoadBal &&
 	(dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac[dim] <
-	dd->comm->cellsize_limit)
+	dd->comm->cellsize_min[dim])
       gmx_fatal(FARGS,"Step %d: The %c-size (%f) times the triclinic skew factor (%f) is smaller than the smallest allowed cell size (%f) for domain decomposition grid cell %d %d %d",
 		step,dim2char(dim),
 		dd->cell_x1[dim] - dd->cell_x0[dim],dd->skew_fac[dim],
-		dd->comm->cellsize_limit,
+		dd->comm->cellsize_min[dim],
 		dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
   }
 
@@ -2493,11 +2493,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   }
 
   for(d=0; (d<DIM); d++) {
-    if (dd->bDynLoadBal) {
-      limitd[d] = dd->comm->cellsize_limit;
-    } else {
-      limitd[d] = dd->comm->cellsize_min[d];
-    }
+    limitd[d] = dd->comm->cellsize_min[d];
     cell_x0[d] = dd->cell_x0[d];
     cell_x1[d] = dd->cell_x1[d];
     c = dd->ci[d] - 1;
@@ -4331,6 +4327,14 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
     comm->cellsize_limit = max(comm->cellsize_limit,
 			       comm->cutoff/comm->maxpulse);
     comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_min);
+    /* Set the minimum cell size for each DD dimension */
+    for(d=0; d<dd->ndim; d++) {
+      if (comm->cd[d].np*comm->cellsize_limit >= comm->cutoff) {
+	comm->cellsize_min[dd->dim[d]] = comm->cellsize_limit;
+      } else {
+	comm->cellsize_min[dd->dim[d]] = comm->cutoff/comm->cd[d].np;
+      }
+    }
     if (comm->cutoff_min <= 0) {
       comm->cutoff_min = comm->cellsize_limit;
     }
@@ -5273,10 +5277,11 @@ void dd_partition_system(FILE            *fplog,
   */
 
   /* Extract a local topology from the global topology */
-  for(i=0; i<DIM; i++)
-    np[i] = dd->comm->cd[dd->dim[i]].np;
-  dd_make_local_top(fplog,dd,state_local->box,dd->comm->cutoff,np,fr,
-		    vsite,top_global,top_local);
+  for(i=0; i<dd->ndim; i++)
+    np[dd->dim[i]] = dd->comm->cd[i].np;
+  dd_make_local_top(fplog,dd,state_local->box,
+		    dd->comm->cutoff,dd->comm->cellsize_min,np,
+		    fr,vsite,top_global,top_local);
 
   /* Set up the special atom communication */
   n = dd->comm->nat[ddnatZONE];

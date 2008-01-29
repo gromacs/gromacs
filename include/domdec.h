@@ -35,11 +35,6 @@ extern int dd_natoms_vsite(gmx_domdec_t *dd);
 extern void dd_get_constraint_range(gmx_domdec_t *dd,
 				    int *at_start,int *at_end);
 
-extern void dd_make_reverse_top(FILE *fplog,
-				gmx_domdec_t *dd,t_topology *top,
-				gmx_vsite_t *vsite,gmx_constr_t constr,
-				bool bDynamics,int eeltype);
-
 extern int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z);
 /* Returns the pme slab for DD cell x,y,z */
 
@@ -192,10 +187,15 @@ extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 					  int local_count);
 
+extern void dd_make_reverse_top(FILE *fplog,
+				gmx_domdec_t *dd,t_topology *top,
+				gmx_vsite_t *vsite,gmx_constr_t constr,
+				bool bDynamics,int eeltype);
+
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
-			      matrix box,real rc,ivec npulse,
+			      matrix box,real rc,rvec cellsize_min,ivec npulse,
 			      t_forcerec *fr,gmx_vsite_t *vsite,
 			      t_topology *top,t_topology *ltop);
 
