@@ -69,8 +69,7 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
 	  j += 2 + NRAL(ftype_j);
 	}
 	if (!bFound)
-	  gmx_fatal(FARGS,
-		    "Some interactions seem to be assigned multiple times\n");
+	  gmx_incons("Some interactions seem to be assigned multiple times\n");
 	ia += 1 + nral;
       }
     }
@@ -172,7 +171,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     if (ndiff > 0) {
       gmx_incons("One or more interactions were multiple assigned in the domain decompostion");
     } else {
-      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the bonded cut-off distance",-ndiff_tot,cr->dd->nbonded_global);
+      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) (option -rdd) or the non-bonded cut-off distance (%g nm)",-ndiff_tot,cr->dd->nbonded_global,dd_cutoff_mbody(cr->dd),dd_cutoff(cr->dd));
     }
   }
 }
@@ -470,17 +469,24 @@ static real dd_dist2(t_pbc *pbc_null,rvec *cg_cm,const int *la2lc,int i,int j)
 }
 
 static int make_local_bondeds(gmx_domdec_t *dd,
-			      bool bRCheck,ivec rcheck,real rc,
+			      bool bRCheckMB,ivec rcheck,bool bRCheck2B,
+			      real rc,
 			      int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
 			      t_idef *idef,gmx_vsite_t *vsite)
 {
-  int nbonded_local,i,gat,j,ftype,nral,d,k,kc;
+  int ncell,nicell,ic,la0,la1,i,gat,j,ftype,nral,d,k,kc;
   int *index,*rtil,**vsite_pbc,*vsite_pbc_nalloc;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
   bool bUse;
   real rc2;
   ivec k_zero,k_plus;
   gmx_ga2la_t *ga2la;
+  gmx_domdec_ns_ranges_t *icell;
+  int nbonded_local;
+  
+  ncell  = dd->ncell;
+  nicell = dd->nicell;
+  icell  = dd->icell;
 
   rc2 = rc*rc;
 
@@ -500,67 +506,107 @@ static int make_local_bondeds(gmx_domdec_t *dd,
     idef->il[ftype].nr = 0;
   nbonded_local = 0;
   
-  for(i=0; i<dd->nat_tot; i++) {
-    /* Get the global atom number */
-    gat = dd->gatindex[i];
-    /* Check all interactions assigned to this atom */
-    j = index[gat];
-    while (j < index[gat+1]) {
-      ftype  = rtil[j++];
-      iatoms = rtil + j;
-      nral = NRAL(ftype);
-      if (interaction_function[ftype].flags & IF_VSITE) {
-	/* The vsite construction goes where the vsite itself is */
-	if (i < dd->nat_home)
-	  add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc,vsite_pbc_nalloc);
-	j += 1 + nral + 2;
-      } else {
-	/* Assign this bonded interaction to the local node
-	 * if we have all the atoms involved (local or communicated)
-	 * and the minimum cell shift in each dimension is zero,
-	 * for dimensions with 2 DD cell an extra check may be necessary.
-	 */
-	bUse = TRUE;
-	clear_ivec(k_zero);
-	clear_ivec(k_plus);
-	for(k=1; k<=nral && bUse; k++) {
-	  ga2la = &dd->ga2la[iatoms[k]];
-	  kc = ga2la->cell;
-	  if (kc == -1 || kc >= dd->ncell) {
-	    /* We do not have this atom of this interaction locally,
-	     * or it comes from more than one cell away.
+  for(ic=0; ic<ncell; ic++) {
+    la0 = dd->cgindex[dd->ncg_cell[ic]];
+    la1 = dd->cgindex[dd->ncg_cell[ic+1]];
+    for(i=la0; i<la1; i++) {
+      /* Get the global atom number */
+      gat = dd->gatindex[i];
+      /* Check all interactions assigned to this atom */
+      j = index[gat];
+      while (j < index[gat+1]) {
+	ftype  = rtil[j++];
+	iatoms = rtil + j;
+	nral = NRAL(ftype);
+	if (interaction_function[ftype].flags & IF_VSITE) {
+	  /* The vsite construction goes where the vsite itself is */
+	  if (i < dd->nat_home)
+	    add_vsite(dd,ftype,nral,i,iatoms,idef,vsite_pbc,vsite_pbc_nalloc);
+	  j += 1 + nral + 2;
+	} else {
+	  if (nral == 1) {
+	    /* Assign single-body interactions to the home cell */
+	    if (ic == 0) {
+	      bUse = TRUE;
+	      tiatoms[1] = i;
+	    } else {
+	      bUse = FALSE;
+	    }
+	  } else if (nral == 2) {
+	    /* This is a two-body interaction,
+	     * we can assign analogous to the non-bonded assignments.
 	     */
-	    bUse = FALSE;
+	    ga2la = &dd->ga2la[iatoms[2]];
+	    kc = ga2la->cell;
+	    if (kc == -1) {
+	      bUse = FALSE;
+	    } else {
+	      if (kc >= ncell)
+		kc -= ncell;
+	      /* Check zone interaction assignments */
+	      bUse = ((ic < nicell && ic <= kc &&
+		       icell[ic].j0 <= kc && kc < icell[ic].j1) ||
+		      (kc < nicell && ic >  kc &&
+		       icell[kc].j0 <= ic && ic < icell[kc].j1));
+	      if (bUse) {
+		tiatoms[1] = i;
+		tiatoms[2] = ga2la->a;
+		/* If necessary check the cgcm distance */
+		if (bRCheck2B && dd_dist2(pbc_null,cg_cm,la2lc,
+					  tiatoms[1],tiatoms[2]) >= rc2) {
+		  bUse = FALSE;
+		}
+	      }
+	    }
 	  } else {
-	    tiatoms[k] = ga2la->a;
-	    for(d=0; d<DIM; d++) {
-	      if (dd->shift[kc][d] == 0)
-		k_zero[d] = k;
-	      else
-		k_plus[d] = k;
+	    /* Assign this multi-body bonded interaction to the local node
+	     * if we have all the atoms involved (local or communicated)
+	     * and the minimum cell shift in each dimension is zero,
+	     * for dimensions with 2 DD cell an extra check may be necessary.
+	     */
+	    bUse = TRUE;
+	    clear_ivec(k_zero);
+	    clear_ivec(k_plus);
+	    for(k=1; k<=nral && bUse; k++) {
+	      ga2la = &dd->ga2la[iatoms[k]];
+	      kc = ga2la->cell;
+	      if (kc == -1 || kc >= dd->ncell) {
+		/* We do not have this atom of this interaction locally,
+		 * or it comes from more than one cell away.
+		 */
+		bUse = FALSE;
+	      } else {
+		tiatoms[k] = ga2la->a;
+		for(d=0; d<DIM; d++) {
+		  if (dd->shift[kc][d] == 0)
+		    k_zero[d] = k;
+		else
+		  k_plus[d] = k;
+		}
+	      }
+	    }
+	    bUse = (bUse && k_zero[XX] && k_zero[YY] && k_zero[ZZ]);
+	    if (bRCheckMB) {
+	      for(d=0; (d<DIM && bUse); d++) {
+		/* Check if the cg_cm distance falls within the cut-off
+		 * to avoid possible multiple assignments of bonded interactions.
+		 */
+		if (rcheck[d] && 
+		    k_plus[d] &&
+		    dd_dist2(pbc_null,cg_cm,la2lc,
+			     tiatoms[k_zero[d]],tiatoms[k_plus[d]]) >= rc2)
+		  bUse = FALSE;
+	      }
 	    }
 	  }
-	}
-	bUse = (bUse && k_zero[XX] && k_zero[YY] && k_zero[ZZ]);
-	if (bRCheck) {
-	  for(d=0; (d<DIM && bUse); d++) {
-	    /* Check if the cg_cm distance falls within the cut-off
-	     * to avoid possible multiple assignments of bonded interactions.
-	     */
-	    if (rcheck[d] && 
-		k_plus[d] &&
-		dd_dist2(pbc_null,cg_cm,la2lc,
-			 tiatoms[k_zero[d]],tiatoms[k_plus[d]]) >= rc2)
-	      bUse = FALSE;
+	  if (bUse) {
+	    /* Add this interaction to the local topology */
+	    add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
+	    /* Sum so we can check in global_stat if we have everything */
+	    nbonded_local++;
 	  }
+	  j += 1 + nral;
 	}
-	if (bUse) {
-	  /* Add this interaction to the local topology */
-	  add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
-	  /* Sum so we can check in global_stat if we have everything */
-	  nbonded_local++;
-	}
-	j += 1 + nral;
       }
     }
   }
@@ -752,7 +798,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 		       t_forcerec *fr,gmx_vsite_t *vsite,
 		       t_topology *top,t_topology *ltop)
 {
-  bool bUniqueExcl,bRCheckMB,bRCheck2B;
+  bool bUniqueExcl,bRCheckMB,bRCheck2B,bRCheckExcl;
   ivec rcheck;
   int  d,nexcl;
   t_pbc pbc,*pbc_null=NULL;
@@ -786,8 +832,14 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 		d,rcheck[d],bRCheck2B);
     }
   }
-  if (!EEL_EXCL_FORCES(fr->eeltype))
-    bRCheck2B = FALSE;
+  if (EEL_EXCL_FORCES(fr->eeltype)) {
+    bRCheckExcl = bRCheck2B;
+  } else {
+    /* If we don't have forces on exclusions,
+     * we don't care about exclusions being assigned mulitple times.
+     */
+    bRCheckExcl = FALSE;
+  }
   if (bRCheckMB || bRCheck2B) {
     make_la2lc(dd);
     if (fr->bMolPBC) {
@@ -804,12 +856,14 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   make_local_idef(dd,&top->idef,&ltop->idef);
 #else
   dd->nbonded_local = make_local_bondeds(dd,
-					 bRCheckMB,rcheck,rc,dd->la2lc,
+					 bRCheckMB,rcheck,bRCheck2B,rc,
+					 dd->la2lc,
 					 pbc_null,fr->cg_cm,
 					 &ltop->idef,vsite);
 #endif
 
-  nexcl = make_local_exclusions(dd,bRCheck2B,rc,dd->la2lc,pbc_null,fr->cg_cm,
+  nexcl = make_local_exclusions(dd,bRCheckExcl,
+				rc,dd->la2lc,pbc_null,fr->cg_cm,
 				fr,&top->blocks[ebEXCLS],
 				&ltop->blocks[ebEXCLS]);
   if (EEL_EXCL_FORCES(fr->eeltype))
