@@ -60,19 +60,33 @@
 #include "topexcl.h"
 #include "x2top_nm2type.h"
 
-t_nm2type *rd_nm2type(char *ff,int *nnm)
+typedef struct {
+  char   *elem,*type;
+  double m,alpha;
+  int    nbonds;
+  char   **bond;
+  double *blen;
+} t_nm2type;
+
+typedef struct {
+  int nr;
+  t_nm2type *nm2t;
+} x2top_nm2type;
+
+x2top_nm2t rd_nm2type(char *ff)
 {
-  FILE      *fp;
-  bool      bCont;
-  char      libfilename[128];
-  char      format[128],f1[128];
-  char      buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
-  int       i,nb,nnnm,line=1;
-  double    qq,mm,*blen;
-  t_nm2type *nm2t=NULL;
+  FILE       *fp;
+  bool       bCont;
+  char       libfilename[128];
+  char       format[128],f1[128];
+  char       buf[1024],elem[16],type[16],nbbuf[16],**newbuf;
+  int        i,nb,nnnm,line=1;
+  double     alpha,mm,*blen;
+  x2top_nm2type *nm2t;
   
   sprintf(libfilename,"%s.n2t",ff);
   fp = libopen(libfilename);
+  snew(nm2t,1);
   
   nnnm = 0;
   do {
@@ -82,10 +96,10 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
     if (bCont) {
       /* Remove comment */
       strip_comment(buf);
-      if (sscanf(buf,"%s%s%lf%lf%d",elem,type,&qq,&mm,&nb) == 5) {
+      if (sscanf(buf,"%s%s%lf%lf%d",elem,type,&alpha,&mm,&nb) == 5) {
 	/* If we can read the first four, there probably is more */
-	srenew(nm2t,nnnm+1);
-	snew(nm2t[nnnm].blen,nb);
+	srenew(nm2t->nm2t,nnnm+1);
+	snew(nm2t->nm2t[nnnm].blen,nb);
 	if (nb > 0) {
 	  snew(newbuf,nb);
 	  strcpy(format,"%*s%*s%*s%*s%*s");
@@ -93,7 +107,7 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
 	    /* Complicated format statement */
 	    strcpy(f1,format);
 	    strcat(f1,"%s%lf");
-	    if (sscanf(buf,f1,nbbuf,&(nm2t[nnnm].blen[i])) != 2)
+	    if (sscanf(buf,f1,nbbuf,&(nm2t->nm2t[nnnm].blen[i])) != 2)
 	      gmx_fatal(FARGS,"Error on line %d of %s",line,libfilename);
 	    newbuf[i] = strdup(nbbuf);
 	    strcat(format,"%*s%*s");
@@ -101,12 +115,12 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
 	}
 	else
 	  newbuf = NULL;
-	nm2t[nnnm].elem   = strdup(elem);
-	nm2t[nnnm].type   = strdup(type);
-	nm2t[nnnm].q      = qq;
-	nm2t[nnnm].m      = mm;
-	nm2t[nnnm].nbonds = nb;
-	nm2t[nnnm].bond   = newbuf;
+	nm2t->nm2t[nnnm].elem   = strdup(elem);
+	nm2t->nm2t[nnnm].type   = strdup(type);
+	nm2t->nm2t[nnnm].alpha  = alpha;
+	nm2t->nm2t[nnnm].m      = mm;
+	nm2t->nm2t[nnnm].nbonds = nb;
+	nm2t->nm2t[nnnm].bond   = newbuf;
 	nnnm++;
       }
       line++;
@@ -114,22 +128,25 @@ t_nm2type *rd_nm2type(char *ff,int *nnm)
   } while(bCont);
   fclose(fp);
   
-  *nnm = nnnm;
+  nm2t->nr = nnnm;
   
-  return nm2t;
+  return (x2top_nm2t) nm2t;
 }
 
-void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[])
+void dump_nm2type(FILE *fp,x2top_nm2t nm2t) 
 {
+  x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
   int i,j;
   
   fprintf(fp,"; nm2type database\n");
-  for(i=0; (i<nnm); i++) {
+  for(i=0; (i<nm2type->nr); i++) {
     fprintf(fp,"%-8s %-8s %8.4f %8.4f %-4d",
-	    nm2t[i].elem,nm2t[i].type,
-	    nm2t[i].q,nm2t[i].m,nm2t[i].nbonds);
-    for(j=0; (j<nm2t[i].nbonds); j++)
-      fprintf(fp," %-5s %6.4f",nm2t[i].bond[j],nm2t[i].blen[j]);
+	    nm2type->nm2t[i].elem,nm2type->nm2t[i].type,
+	    nm2type->nm2t[i].alpha,nm2type->nm2t[i].m,
+	    nm2type->nm2t[i].nbonds);
+    for(j=0; (j<nm2type->nm2t[i].nbonds); j++)
+      fprintf(fp," %-5s %6.4f",nm2type->nm2t[i].bond[j],
+	      nm2type->nm2t[i].blen[j]);
     fprintf(fp,"\n");
   }
 }
@@ -150,9 +167,10 @@ static int match_str(char *atom,char *template)
     return ematchNone;
 }
 
-int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
+int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 	    t_atomtype *atype,int *nbonds,t_params *bonds)
 {
+  x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
   int cur = 0;
 #define prev (1-cur)
   int i,j,k,m,n,nresolved,nb,maxbond,ai,aj,best,im,nqual[2][ematchNR];
@@ -198,9 +216,9 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
       nqual[prev][k] = 0;
     
     /* First check for names */  
-    for(k=0; (k<nnm); k++) {
-      if (nm2t[k].nbonds == nb) {
-	im = match_str(*atoms->atomname[i],nm2t[k].elem);
+    for(k=0; (k<nm2type->nr); k++) {
+      if (nm2type->nm2t[k].nbonds == nb) {
+	im = match_str(*atoms->atomname[i],nm2type->nm2t[k].elem);
 	if (im > ematchWild) {
 	  for(j=0; (j<ematchNR); j++) 
 	    nqual[cur][j] = 0;
@@ -209,7 +227,7 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
 	  for(m=0; (m<nb); m++) {
 	    aname_m = *atoms->atomname[bbb[m]];
 	    for(n=0; (n<nb); n++) {
-	      aname_n = nm2t[k].bond[n];
+	      aname_n = nm2type->nm2t[k].bond[n];
 	      match[m][n] = match_str(aname_m,aname_n);
 	    }
 	  }
@@ -250,9 +268,9 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
       }
     }
     if (best != -1) {
-      qq   = nm2t[best].q;
-      mm   = nm2t[best].m;
-      type = nm2t[best].type;
+      qq   = nm2type->nm2t[best].alpha;
+      mm   = nm2type->nm2t[best].m;
+      type = nm2type->nm2t[best].type;
       
       for(k=0; (k<atype->nr); k++) {
 	if (strcasecmp(*atype->atomname[k],type) == 0)
@@ -268,14 +286,14 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
 	atype->bondatomtype[k] = k; /* Set bond_atomtype identical to atomtype */
 	atype->atom[k].type  = k;
 	atype->atom[k].typeB = k;
-	atype->atom[k].q     = qq;
+	atype->atom[k].q     = 0;
 	atype->atom[k].qB    = qq;
 	atype->atom[k].m     = mm;
 	atype->atom[k].mB    = mm;
       }      
       atoms->atom[i].type  = k;
       atoms->atom[i].typeB = k;
-      atoms->atom[i].q  = qq;
+      atoms->atom[i].q  = 0;
       atoms->atom[i].qB = qq;
       atoms->atom[i].m  = mm;
       atoms->atom[i].mB = mm;
@@ -292,67 +310,26 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
     
   return nresolved;
 }
-     
-t_q_alpha *rd_q_alpha(char *fn,int *nr)
-/* Read file with charges and polarizabilities */
+
+bool is_bond(x2top_nm2t nm2t,char *ai,char *aj,real blen,real tol)
 {
-  FILE *fp;
-  int    n=0;
-  double q,alpha;
-  char   name[STRLEN];
-  char   line[STRLEN];
-  t_q_alpha *qa=NULL;
-  
-  fp = ffopen(fn,"r");
-  while (fgets2(line,STRLEN-1,fp) != NULL) {
-    strip_comment(line);
-    trim(line);
-    if (strlen(line) > 0) {
-      if (sscanf(line,"%s%lf%lf",name,&q,&alpha) == 3) {
-	srenew(qa,n+1);
-	qa[n].atom  = strdup(name);
-	qa[n].q     = q;
-	qa[n].alpha = alpha;
-	n++;
+  x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
+  int i,j,nn;
+    
+  for(i=0; (i<nm2type->nr); i++) {
+    nn = strlen(nm2type->nm2t[i].elem);
+    if (strlen(ai) >= nn)
+      if (strncasecmp(ai,nm2type->nm2t[i].elem,nn) == 0) {
+	for(j=0; (j<nm2type->nm2t[i].nbonds); j++) {
+	  if (((strncasecmp(aj,nm2type->nm2t[i].bond[j],1) == 0) ||
+	       (strcmp(nm2type->nm2t[i].bond[j],"*") == 0)) &&
+	      (fabs(blen-nm2type->nm2t[i].blen[j]) <= 
+	       tol*nm2type->nm2t[i].blen[j]))
+	    return TRUE;
+	}
       }
-      else 
-	fprintf(stderr,"Don't understand line '%s'\n",line);
-    }
   }
-  fclose(fp);
-  *nr = n;
-  return qa;
+  return FALSE;
 }
 
-void dump_q_alpha(FILE *fp,int nr,t_q_alpha qa[])
-/* Dump the database for debugging */
-{
-}
-
-double get_qa_q(char *atom,int nr,t_q_alpha qa[])
-/* Return the charge belonging to atom */
-{
-  int i;
-  
-  for(i=0; (i<nr); i++)
-    if (strcasecmp(atom,qa[i].atom) == 0)
-      return qa[i].q;
-      
-  gmx_fatal(FARGS,"Can not find charge for atom %s",atom);
-  
-  return 0;
-}
-
-double get_qa_alpha(char *atom,int nr,t_q_alpha qa[])
-/* Return the alpha belonging to atom */
-{
-  int i;
-  
-  for(i=0; (i<nr); i++)
-    if (strcasecmp(atom,qa[i].atom) == 0)
-      return qa[i].alpha;
-      
-  gmx_fatal(FARGS,"Can not find polarizability for atom %s",atom);
-  
-  return 0;
-}
+     

@@ -34,23 +34,25 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _x2top_qgen_h
-#define _x2top_qgen_h
+#ifndef _x2top_qalpha
+#define _x2top_qalpha_h
 	
 #include <stdio.h>
-#include "grompp.h"
-	
-enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, 
-       eqgSM1, eqgSM2, eqgSM3, eqgSM4, eqgNR };
 
-extern real generate_charges_sm(FILE *fp,char *molname,void *eem,
-				t_atoms *atoms,rvec x[],
-				real tol,int maxiter,void *atomprop,
-				real qtotref,int eemtype);
+typedef struct x2top_qalpha *x2top_qat;
+ 
+extern x2top_qat rd_q_alpha(char *fn);
+/* Read file with charges and polarizabilities */
 
-extern void assign_charges(char *molname,
-			   int eemtype,t_atoms *atoms,rvec x[],
-			   t_params *bonds,real tol,real fac,int maxiter,
-			   void *atomprop,real qtotref);
+extern void dump_q_alpha(FILE *fp,x2top_qat qat);
+/* Dump the database for debugging */
+
+extern double get_qa_q(char *atom,x2top_qat qat);
+/* Return the charge belonging to atom */
+
+extern double get_qa_alpha(char *atom,x2top_qat qat);
+/* Return the alpha belonging to atom */
+
+
 
 #endif

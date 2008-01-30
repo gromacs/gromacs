@@ -439,10 +439,10 @@ static void generate_charges_linear(t_atoms *atoms,rvec x[],t_params *bonds,
   sfree(chi0);
 }
 
-void assign_charge_alpha(char *molname,
-			 int eemtype,t_atoms *atoms,rvec x[],
-			 t_params *bonds,real tol,real fac,int maxiter,
-			 void *atomprop,real qtotref)
+void assign_charges(char *molname,
+		    int eemtype,t_atoms *atoms,rvec x[],
+		    t_params *bonds,real tol,real fac,int maxiter,
+		    void *atomprop,real qtotref)
 {
   int  i;
   void *eem;
@@ -476,7 +476,7 @@ void assign_charge_alpha(char *molname,
   case eqgSM2:
   case eqgSM3:
   case eqgSM4:
-    (void) generate_charges_sm(stdout,molname,eem,atoms,x,tol,maxiter,atomprop,
+    (void) generate_charges_sm(debug,molname,eem,atoms,x,tol,maxiter,atomprop,
 			       qtotref,eemtype);
     break;
   default:

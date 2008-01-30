@@ -39,7 +39,8 @@
 	
 #include <stdio.h>
 #include "grompp.h"
-	
+#include "x2top_nm2type.h"
+
 extern void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
 			     matrix box);
 			     
@@ -61,11 +62,16 @@ extern void reset_q(t_atoms *atoms);
 extern void print_rtp(char *filenm,char *title,t_atoms *atoms,
 		      t_params plist[],int cgnr[],int nbts,int bts[]);
 		      
-extern void mk_bonds(int nnm,t_nm2type nmt[],
+extern void mk_bonds(x2top_nm2t nmt,
 		     t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
 		     bool bPBC,matrix box,void *atomprop,real tol);
 		     
 extern t_atomtype *set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-				 int *nbonds,int nnm,t_nm2type nm2t[]);
+				 int *nbonds,x2top_nm2t nm2t);
 		     
+extern void add_shells(x2top_nm2t nm2t,t_atoms *atoms,
+		       t_atomtype *atype,
+		       t_params *bonds,t_params *pols,
+		       rvec **x,t_symtab *symtab);
+
 #endif

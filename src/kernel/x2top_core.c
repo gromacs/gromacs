@@ -57,6 +57,7 @@
 #include "names.h"
 #include "toppush.h"
 #include "pdb2top.h"
+#include "symtab.h"
 #include "gen_ad.h"
 #include "topexcl.h"
 #include "vec.h"
@@ -67,27 +68,7 @@
 #include "add_par.h"
 #include "gmx_random.h"
 
-static bool is_bond(int nnm,t_nm2type nmt[],char *ai,char *aj,real blen,
-		    real tol)
-{
-  int i,j,nn;
-    
-  for(i=0; (i<nnm); i++) {
-    nn = strlen(nmt[i].elem);
-    if (strlen(ai) >= nn)
-      if (strncasecmp(ai,nmt[i].elem,nn) == 0) {
-	for(j=0; (j<nmt[i].nbonds); j++) {
-	  if (((strncasecmp(aj,nmt[i].bond[j],1) == 0) ||
-	       (strcmp(nmt[i].bond[j],"*") == 0)) &&
-	      (fabs(blen-nmt[i].blen[j]) <= tol*nmt[i].blen[j]))
-	    return TRUE;
-	}
-      }
-  }
-  return FALSE;
-}
-
-void mk_bonds(int nnm,t_nm2type nmt[],
+void mk_bonds(x2top_nm2t nmt,
 	      t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
 	      bool bPBC,matrix box,void *atomprop,real tol)
 {
@@ -114,8 +95,8 @@ void mk_bonds(int nnm,t_nm2type nmt[],
 	rvec_sub(x[i],x[j],dx);
       
       dx1 = norm(dx);
-      if (is_bond(nnm,nmt,*atoms->atomname[i],*atoms->atomname[j],dx1,tol) ||
-	  is_bond(nnm,nmt,*atoms->atomname[j],*atoms->atomname[i],dx1,tol)) {
+      if (is_bond(nmt,*atoms->atomname[i],*atoms->atomname[j],dx1,tol) ||
+	  is_bond(nmt,*atoms->atomname[j],*atoms->atomname[i],dx1,tol)) {
 	b.AI = i;
 	b.AJ = j;
 	b.C0 = dx1;
@@ -155,14 +136,14 @@ int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot)
 }
 
 t_atomtype *set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-			  int *nbonds,int nnm,t_nm2type nm2t[])
+			  int *nbonds,x2top_nm2t nm2t)
 {
   t_atomtype *atype;
   int nresolved;
   
   snew(atype,1);
   snew(atoms->atomtype,atoms->nr);
-  nresolved = nm2type(nnm,nm2t,tab,atoms,atype,nbonds,bonds);
+  nresolved = nm2type(nm2t,tab,atoms,atype,nbonds,bonds);
   if (nresolved != atoms->nr)
     gmx_fatal(FARGS,"Could only find a forcefield type for %d out of %d atoms",
 	      nresolved,atoms->nr);
@@ -548,3 +529,62 @@ void reset_q(t_atoms *atoms)
     atoms->atom[i].qB = atoms->atom[i].q;
 }
 
+void add_shells(x2top_nm2t nm2t,t_atoms *atoms,
+		t_atomtype *atype,
+		t_params *bonds,t_params *pols,
+		rvec **x,t_symtab *symtab)
+{
+  int  i,j,iat,shell,atp,ns=0;
+  int  *renum;
+  char **ptr;
+  char buf[32];
+  t_param p;
+  
+  memset(&p,0,sizeof(p));
+  snew(renum,atoms->nr*2);
+  for(i=0; (i<atoms->nr); i++) {
+    atp = atoms->atom[i].type;
+    renum[i] = i+ns;
+    if (atype->atom[atp].qB != 0) {
+      ns++;
+      p.AI = renum[i];
+      p.AJ = renum[i]+1;
+      p.C0 = atype->atom[atp].qB;
+      push_bondnow(pols,&p);
+    }
+  }
+  shell = atype->nr - 1;
+  if (ns > 0) {
+    srenew(atoms->atom,atoms->nr+ns);
+    srenew(atoms->atomname,atoms->nr+ns);
+    srenew((*x),atoms->nr+ns);
+    for(i=atoms->nr; (i<atoms->nr+ns); i++) {
+      memset(&(atoms->atom[i]),0,sizeof(atoms->atom[i]));
+      atoms->atomname[i] = NULL;
+      clear_rvec((*x)[i]);
+    }
+    for(i=atoms->nr-1; (i>=0); i--) {
+      atoms->atom[renum[i]]     = atoms->atom[i];
+      atoms->atomname[renum[i]] = atoms->atomname[i];
+      copy_rvec((*x)[renum[i]],(*x)[i]);
+    }
+    for(i=0; (i<atoms->nr); i++) {
+      iat = renum[i];
+      for(j=iat+1; (j<renum[i+1]); j++) {
+	atoms->atom[j]      = atoms->atom[iat];
+	atoms->atom[iat].q  = 0;
+	atoms->atom[iat].qB = 0;
+	atoms->atom[j].m    = 0;
+	atoms->atom[j].mB   = 0;
+	atoms->atom[j].type = shell;
+	sprintf(buf,"S%s",*(atoms->atomname[iat]));
+	snew(ptr,1);
+	*ptr = strdup(buf);
+	atoms->atomname = *ptr;/*put_symtab(symtab,ptr);*/
+	copy_rvec((*x)[j],(*x)[iat]);
+      }
+    }
+  }
+  atoms->nr += ns;
+  sfree(renum);
+}

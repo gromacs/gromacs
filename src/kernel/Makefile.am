@@ -45,6 +45,7 @@ x2top_qgen.c		\
 x2top_matrix.c	x2top_matrix.h	\
 x2top_core.c	x2top_core.h	\
 nm2type.c	x2top_nm2type.h	\
+x2top_qalpha.h	x2top_qalpha.c	\
 x2top_eemprops.c
 
 bin_PROGRAMS = \

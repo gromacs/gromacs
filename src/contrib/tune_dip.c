@@ -66,18 +66,18 @@
 #include "x2top_eemprops.h"
 
 typedef struct {
-  char    *molname;
-  real    dip_exp,qtotal,dip_calc,chieq;
-  t_atoms *atoms;
-  rvec    *x;
-  matrix  box;
+  char       *molname;
+  real       dip_exp,qtotal,dip_calc,chieq;
+  t_topology top;
+  rvec       *x;
+  matrix     box;
 } t_mymol; 
 
 typedef struct {
   int     nmol,nparam,eemtype;
   int     *index;
   t_mymol *mymol;
-  real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc;
+  real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,qcmin;
   void    *eem;
   void    *atomprop;
 } t_moldip;
@@ -85,21 +85,26 @@ typedef struct {
 static bool init_mymol(t_mymol *mymol,char *fn,real dip,
 		       void *eem,int eemtype)
 {
-  int i,natoms;
+  int i,natoms,version,generation,step;
+  real t,lambda;
   char title[STRLEN];
   bool bSupport=TRUE;
+  t_tpxheader tpx;
   
   /* Read coordinates */
-  get_stx_coordnum(fn,&natoms); 
-  snew(mymol->atoms,1);
+  read_tpxheader(fn,&tpx,TRUE,&version,&generation);
+  init_top(&(mymol->top));
+  natoms = tpx.natoms;
   
   /* make space for all the atoms */
-  init_t_atoms(mymol->atoms,natoms,TRUE);
+  init_t_atoms(&(mymol->top.atoms),natoms,TRUE);
   snew(mymol->x,natoms);              
 
-  read_stx_conf(fn,title,mymol->atoms,mymol->x,NULL,mymol->box);
+  read_tpx(fn,&step,&t,&lambda,NULL,mymol->box,&natoms,
+	   mymol->x,NULL,NULL,&(mymol->top));
+
   for(i=0; (bSupport && (i<natoms)); i++)
-    if (eem_get_index(eem,*(mymol->atoms->atomname[i]),eemtype) == -1)
+    if (eem_get_index(eem,*(mymol->top.atoms.atomname[i]),eemtype) == -1)
       bSupport = FALSE;
       
   if (bSupport) {
@@ -108,8 +113,8 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,
     mymol->qtotal  = 0;
   }
   else {
-    /*free_t_atoms(mymol->atoms);
-      sfree(mymol->atoms);*/
+    /*free_t_atoms(mymol->top.atoms);
+      sfree(mymol->top.atoms);*/
     sfree(mymol->x);
   }
   return bSupport;
@@ -138,10 +143,10 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
     add_lsq(&lsq,mol[i].dip_exp,mol[i].dip_calc);
     d2 += sqr(mol[i].dip_exp-mol[i].dip_calc);
     fprintf(logf,"Res  Atom  q\n");
-    for(j=0; (j<mol[i].atoms->nr); j++) {
-      resnm  = *(mol[i].atoms->resname[mol[i].atoms->atom[j].resnr]);
-      atomnm = *(mol[i].atoms->atomname[j]);
-      fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].atoms->atom[j].q);
+    for(j=0; (j<mol[i].top.atoms.nr); j++) {
+      resnm  = *(mol[i].top.atoms.resname[mol[i].top.atoms.atom[j].resnr]);
+      atomnm = *(mol[i].top.atoms.atomname[j]);
+      fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].top.atoms.atom[j].q);
       elemcnt[eem_get_elem(eem,eem_get_index(eem,atomnm,eemtype))]++;
     }
     fprintf(logf,"\n");
@@ -188,7 +193,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
 t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
 		      real J0_0,real Chi0_0,real w_0,
 		      real J0_1,real Chi0_1,real w_1,
-		      real fc,int eemtype,bool bZero)
+		      real fc,real qcmin,int eemtype,bool bZero)
 {
   char     **strings,buf[STRLEN];
   int      i,n,nstrings;
@@ -239,6 +244,7 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   md->Chi0_1     = Chi0_1;
   md->w_1        = w_1;
   md->fc         = fc;
+  md->qcmin      = qcmin;
 	  
   return md;
 }
@@ -249,8 +255,8 @@ static real mymol_calc_dip(t_mymol *mol)
   rvec mu,mm;
   
   clear_rvec(mu);
-  for(i=0; (i<mol->atoms->nr); i++) {
-    svmul(mol->atoms->atom[i].q,mol->x[i],mm);
+  for(i=0; (i<mol->top.atoms.nr); i++) {
+    svmul(mol->top.atoms.atom[i].q,mol->x[i],mm);
     rvec_inc(mu,mm);
   }
   return norm(mu)*ENM2DEBYE;
@@ -258,25 +264,30 @@ static real mymol_calc_dip(t_mymol *mol)
 
 static real calc_moldip_deviation(t_moldip *md,void *eem)
 {
-  int i,j,h_index;
+  int i,j,h_index,c_index,this_index;
   double qq,rms=0;
   
   h_index = eem_get_elem_index(eem,1,md->eemtype);
+  c_index = eem_get_elem_index(eem,6,md->eemtype);
   
   for(i=0; (i<md->nmol); i++) {
     md->mymol[i].chieq = generate_charges_sm(debug,md->mymol[i].molname,
-					     eem,md->mymol[i].atoms,
+					     eem,&(md->mymol[i].top.atoms),
 					     md->mymol[i].x,1e-4,100,md->atomprop,
 					     md->mymol[i].qtotal,md->eemtype);
     md->mymol[i].dip_calc = mymol_calc_dip(&(md->mymol[i]));
-    for(j=0; (j<md->mymol[i].atoms->nr); j++) {
-      qq = md->mymol[i].atoms->atom[j].q;
-      if (fabs(qq) >= 1)
-	rms += (qq*qq-1);
-      if ((qq < 0) && 
-	  (eem_get_index(eem,*(md->mymol[i].atoms->atomname[j]),md->eemtype)
-	   == h_index))
-	rms += 1;
+    for(j=0; (j<md->mymol[i].top.atoms.nr); j++) {
+      qq = md->mymol[i].top.atoms.atom[j].q;
+      /*      if (fabs(qq) >= 1)
+	      rms += (qq*qq-1);*/
+      this_index = eem_get_index(eem,
+				 *(md->mymol[i].top.atoms.atomname[j]),
+				 md->eemtype);
+      if ((qq < 0) && (this_index == h_index))
+	rms += md->fc*sqr(qq);
+      if ((qq < md->qcmin) && (this_index == c_index))
+	rms += md->fc*sqr(qq-md->qcmin);
+      
     }
     rms += sqr(md->mymol[i].dip_calc - md->mymol[i].dip_exp);
   }
@@ -486,7 +497,8 @@ int main(int argc, char *argv[])
     "The absolut dipole moment of a molecule remains unchanged if all the",
     "atoms swap the sign of the charge. To prevent this kind of mirror",
     "effects a penalty of 0.1 is added to the square deviation ",
-    "if hydrogen atoms have a negative charge."
+    "if hydrogen atoms have a negative charge. Similarly a penalty is",
+    "added if carbon atoms have a charge less than -qcmin."
   };
   
   t_filenm fnm[] = {
@@ -498,7 +510,7 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static int  maxiter=100,reinit=0,seed=1993;
-  static real tol=1e-3,stol=1e-6;
+  static real tol=1e-3,stol=1e-6,qcmin=-1;
   static bool bRandom=FALSE,bZero=TRUE;
   static real J0_0=0,Chi0_0=0,w_0=0,step=0.01;
   static real J0_1=30,Chi0_1=30,w_1=1,fc=1.0;
@@ -528,6 +540,8 @@ int main(int argc, char *argv[])
       "Maximum value that Radius can obtain in fitting" },
     { "-fc",    FALSE, etREAL, {&fc},
       "Force constant in the penalty function for going outside the borders given with the above six option." },
+    { "-qcmin", FALSE, etREAL, {&qcmin},
+      "If the carbon charge is less than this number a penalty will be added to the RMS dipole." },
     { "-step",  FALSE, etREAL, {&step},
       "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
     { "-seed", FALSE, etINT, {&seed},
@@ -556,8 +570,10 @@ int main(int argc, char *argv[])
     gmx_fatal(FARGS,"Only models SM1 and SM2 implemented so far");
     
   logf = fopen(opt2fn("-g",NFILE,fnm),"w");
-  md = read_moldip(logf,opt2fn("-f",NFILE,fnm),opt2fn_null("-d",NFILE,fnm),
-		   J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,eemtype,bZero);
+  md = read_moldip(logf,opt2fn("-f",NFILE,fnm),
+		   opt2fn_null("-d",NFILE,fnm),
+		   J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
+		   fc,qcmin,eemtype,bZero);
   
   (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed,
 			 bRandom,stol);

@@ -40,45 +40,20 @@
 #include <stdio.h>
 #include "grompp.h"
 	
-typedef struct {
-  char   *elem,*type;
-  double q,m;
-  int    nbonds;
-  char   **bond;
-  double *blen;
-} t_nm2type;
+typedef struct x2top_nm2type *x2top_nm2t;
 
-extern t_nm2type *rd_nm2type(char *ff,int *nnm);
+extern x2top_nm2t rd_nm2type(char *ff);
 /* Read the name 2 type database. nnm is the number of entries 
  * ff is the force field.
  */
 
-extern void dump_nm2type(FILE *fp,int nnm,t_nm2type nm2t[]);
+extern void dump_nm2type(FILE *fp,x2top_nm2t nm2t);
 /* Dump the database for debugging. Can be reread by the program */
 
-extern int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
+extern int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 		   t_atomtype *atype,int *nbonds,t_params *bond);
 /* Try to determine the atomtype (force field dependent) for the atoms 
  * with help of the bond list 
  */
-
-typedef struct {
-  char *atom;
-  double q,alpha;
-} t_q_alpha;
-
-extern t_q_alpha *rd_q_alpha(char *fn,int *nr);
-/* Read file with charges and polarizabilities */
-
-extern void dump_q_alpha(FILE *fp,int nr,t_q_alpha qa[]);
-/* Dump the database for debugging */
-
-extern double get_qa_q(char *atom,int nr,t_q_alpha qa[]);
-/* Return the charge belonging to atom */
-
-extern double get_qa_alpha(char *atom,int nr,t_q_alpha qa[]);
-/* Return the alpha belonging to atom */
-
-
-
+extern bool is_bond(x2top_nm2t nmt,char *ai,char *aj,real blen,real tol);
 #endif

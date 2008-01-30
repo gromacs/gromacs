@@ -62,6 +62,7 @@
 #include "vec.h"
 #include "x2top_eemprops.h"
 #include "x2top_nm2type.h"
+#include "x2top_qalpha.h"
 #include "x2top_core.h"
 #include "x2top_qgen.h"
 #include "atomprop.h"
@@ -106,10 +107,10 @@ int main(int argc, char *argv[])
   t_atoms    *atoms;       /* list with all atoms */
   t_atomtype *atype;
   t_nextnb   nnb;
-  t_nm2type  *nm2t;
+  x2top_nm2t nm2t;
+  x2top_qat  qa;
   t_mols     mymol;
   void       *atomprop;
-  int        nnm;
   char       title[STRLEN],forcefield[32];
   rvec       *x;        /* coordinates? */
   int        *nbonds,*cgnr;
@@ -121,7 +122,6 @@ int main(int argc, char *argv[])
   real       mu;
   bool       bRTP,bTOP,bOPLS,bCharmm;
   t_symtab   symtab;
-  t_q_alpha  *qa=NULL;
   int        nqa=0;
   real       cutoff,qtot,mtot;
   char       rtp[STRLEN];
@@ -141,7 +141,7 @@ int main(int argc, char *argv[])
   static int  maxiter=100;
   static bool bRemoveDih = FALSE;
   static bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
-  static bool bPairs = TRUE, bPBC = TRUE;
+  static bool bPairs = TRUE, bPBC = TRUE, bPolarize = FALSE;
   static bool bUsePDBcharge = FALSE,bVerbose=FALSE;
   static char *molnm = "ICE";
   static char *ff = "select";
@@ -162,6 +162,8 @@ int main(int argc, char *argv[])
       "Remove dihedrals on the same bond as an improper" },
     { "-pairs",  FALSE, etBOOL, {&bPairs},
       "Output 1-4 interactions (pairs) in topology file" },
+    { "-pol",    FALSE, etBOOL, {&bPolarize},
+      "Output polarization terms for those atoms where alpha <> 0" },
     { "-name",   FALSE, etSTR,  {&molnm},
       "Name of your molecule" },
     { "-pbc",    FALSE, etBOOL, {&bPBC},
@@ -243,22 +245,23 @@ int main(int argc, char *argv[])
 
   read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,box);
 
-  nm2t = rd_nm2type(forcefield,&nnm);
-  printf("There are %d name to type translations\n",nnm);
-  if (debug)
-    dump_nm2type(debug,nnm,nm2t);
-  
+  nm2t = rd_nm2type(forcefield);
+  /*printf("There are %d name to type translations\n",nnm);*/
+  if (debug) {
+    dump_nm2type(debug,nm2t);
+  }
+      
   printf("Generating bonds from distances...\n");
   snew(nbonds,atoms->nr);
-  mk_bonds(nnm,nm2t,atoms,x,&(plist[F_BONDS]),nbonds,forcefield,
+  mk_bonds(nm2t,atoms,x,&(plist[F_BONDS]),nbonds,forcefield,
 	   bPBC,box,atomprop,btol);
 
   open_symtab(&symtab);
-  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nnm,nm2t);
+  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nm2t);
   
   /* Read charges */
   if (opt2bSet("-d",NFILE,fnm))
-    qa = rd_q_alpha(opt2fn("-d",NFILE,fnm),&nqa);
+    qa = rd_q_alpha(opt2fn("-d",NFILE,fnm));
 
   alg = eqgNone;
   if (qgen[0]) {
@@ -270,24 +273,29 @@ int main(int argc, char *argv[])
     if (nqa == atoms->nr) {
       /* Use values from file */
       for(i=0; (i<nqa); i++) {
-	atoms->atom[i].q  = get_qa_q(*atoms->atomname[i],nqa,qa);
-	atoms->atom[i].qB = get_qa_alpha(*atoms->atomname[i],nqa,qa);
+	atoms->atom[i].q  = get_qa_q(*atoms->atomname[i],qa);
+	atoms->atom[i].qB = get_qa_alpha(*atoms->atomname[i],qa);
       }
     }
     else
-      gmx_fatal(FARGS,"Inconsistency between charge file (%d entries) and coordinate file (%d atoms)",nqa,atoms->nr);
+      printf("Using zero charges\n");
   }
   else
-    assign_charge_alpha(molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
-			maxiter,atomprop,qtotref);
+    assign_charges(molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
+		   maxiter,atomprop,qtotref);
 
+  if (bPolarize)
+    add_shells(nm2t,atoms,atype,&(plist[F_BONDS]),&(plist[F_POLARIZATION]),
+	       &x,&symtab);
+      
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);
   printf("Generating angles and dihedrals from bonds...\n");
   init_nnb(&nnb,atoms->nr,5);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
-  gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,bAllDih,bRemoveDih,TRUE);
+  gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,
+	  bAllDih,bRemoveDih,TRUE);
   delete_shell_interactions(plist,atoms,atype,&nnb,excls);
   done_nnb(&nnb);
   mu = calc_dip(atoms,x);
@@ -296,11 +304,13 @@ int main(int argc, char *argv[])
     plist[F_LJ14].nr = 0;
   fprintf(stderr,
 	  "There are %4d %s dihedrals, %4d impropers, %4d angles\n"
-	  "          %4d pairs,     %4d bonds and  %4d atoms\n",
+	  "          %4d pairs,     %4d bonds and  %4d atoms\n"
+	  "          %4d polarizations\n",
 	  plist[F_PDIHS].nr, 
 	  bOPLS ? "Ryckaert-Bellemans" : "proper",
 	  plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-	  plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr);
+	  plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr,
+	  plist[F_POLARIZATION].nr);
 
   calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x,bPBC,box);
   
