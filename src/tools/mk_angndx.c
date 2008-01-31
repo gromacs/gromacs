@@ -68,23 +68,23 @@ static void fill_ft_ind(int FTYPE,int ft_ind[],t_idef *idef,char *grpnames[])
       ft_ind[i]=ind;
       switch (FTYPE) {
       case F_G96ANGLES:
-	sprintf(buf,"Theta=%.1f_%g",idef->iparams[i].harmonic.rA,
+	sprintf(buf,"Theta=%.1f_%.2f",idef->iparams[i].harmonic.rA,
 		idef->iparams[i].harmonic.krA);
 	break;
       case F_ANGLES:
-	sprintf(buf,"Theta=%.1f_%g",idef->iparams[i].harmonic.rA,
+	sprintf(buf,"Theta=%.1f_%.2f",idef->iparams[i].harmonic.rA,
 		idef->iparams[i].harmonic.krA);
 	break;
       case F_PDIHS:
-	sprintf(buf,"Phi=%.1f_%d_%g",idef->iparams[i].pdihs.phiA,
+	sprintf(buf,"Phi=%.1f_%d_%.2f",idef->iparams[i].pdihs.phiA,
 		idef->iparams[i].pdihs.mult,idef->iparams[i].pdihs.cpA);
 	break;
       case F_IDIHS:
-	sprintf(buf,"Xi=%.1f_%g",idef->iparams[i].harmonic.rA,
+	sprintf(buf,"Xi=%.1f_%.2f",idef->iparams[i].harmonic.rA,
 		idef->iparams[i].harmonic.krA);
 	break;
       case F_RBDIHS:
-	sprintf(buf,"RB-Dihs");
+	sprintf(buf,"RB-A1=%.2f",idef->iparams[i].rbdihs.rbcA[1]);
 	break;
       default:
 	gmx_fatal(FARGS,"kjdshfgkajhgajytgajtgasuyf");
@@ -98,21 +98,38 @@ static void fill_ft_ind(int FTYPE,int ft_ind[],t_idef *idef,char *grpnames[])
 }
 
 static void fill_ang(int FTYPE,int fac,
-		     int nr[],int *index[],int ft_ind[],t_idef *idef)
+		     int nr[],int *index[],int ft_ind[],t_topology *top,
+		     bool bNoH)
 {
   int     i,j,ft,fft,nr_fac;
+  bool    bUse;
+  t_idef  *idef;
+  t_atom  *atom;
   t_iatom *ia;
 
-  ia=idef->il[FTYPE].iatoms;
+
+  idef = &top->idef;
+  atom = top->atoms.atom;
+  ia = idef->il[FTYPE].iatoms;
+
   for(i=0; (i<idef->il[FTYPE].nr); ) {
     ft  = idef->functype[ia[0]];
     fft = ft_ind[ia[0]];
     if (fft == -1)
       gmx_incons("Routine fill_ang");
-    nr_fac=fac*nr[fft];
-    for(j=0; (j<fac); j++)
-      index[fft][nr_fac+j]=ia[j+1];
-    nr[fft]++;
+    bUse = TRUE;
+    if (bNoH) {
+      for(j=0; j<fac; j++) {
+	if (atom[ia[1+j]].m < 1.5)
+	  bUse = FALSE;
+      }
+    }
+    if (bUse) {
+      nr_fac=fac*nr[fft];
+      for(j=0; (j<fac); j++)
+	index[fft][nr_fac+j]=ia[j+1];
+      nr[fft]++;
+    }
     ia += interaction_function[ft].nratoms+1;
     i  += interaction_function[ft].nratoms+1;
   }
@@ -126,9 +143,12 @@ int main(int argc,char *argv[])
     "definitions of the angles, dihedrals etc."
   };
   static char *opt[] = { NULL, "angle", "g96-angle", "dihedral", "improper", "ryckaert-bellemans", "phi-psi", NULL };
+  static bool bH=TRUE;
   t_pargs pa[] = {
     { "-type", FALSE, etENUM, {opt},
-      "Type of angle" }
+      "Type of angle" },
+    { "-hyd", FALSE, etBOOL, {&bH},
+      "Include angles with atoms with mass < 1.5" }
   };
   
   FILE       *out;
@@ -191,17 +211,19 @@ int main(int argc,char *argv[])
     for(i=0; (i<nftype); i++)
       snew(index[i],nang*mult);
     
-    fill_ang(FTYPE,mult,nr,index,ft_ind,&(top->idef));
+    fill_ang(FTYPE,mult,nr,index,ft_ind,top,!bH);
 
     out=ftp2FILE(efNDX,NFILE,fnm,"w");
     for(i=0; (i<nftype); i++) {
-      fprintf(out,"[ %s ]\n",grpnames[i]);
-      for(j=0; (j<nr[i]*mult); j++) {
-	fprintf(out," %5d",index[i][j]+1);
-	if ((j % 12) == 11)
-	  fprintf(out,"\n");
+      if (nr[i] > 0) {
+	fprintf(out,"[ %s ]\n",grpnames[i]);
+	for(j=0; (j<nr[i]*mult); j++) {
+	  fprintf(out," %5d",index[i][j]+1);
+	  if ((j % 12) == 11)
+	    fprintf(out,"\n");
+	}
+	fprintf(out,"\n");
       }
-      fprintf(out,"\n");
     }
     fclose(out);
   }
