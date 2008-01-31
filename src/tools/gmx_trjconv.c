@@ -828,7 +828,8 @@ int gmx_trjconv(int argc,char *argv[])
     bIndex = (bIndex || bTPS);
     
     if (bTPS) {
-      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,bReset);
+      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,
+		    bReset || bPBCcomRes);
       atoms=&top.atoms;
       /* top_title is only used for gro and pdb,
        * the header in such a file is top_title t= ...
