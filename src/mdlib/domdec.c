@@ -152,9 +152,10 @@ typedef struct gmx_domdec_comm {
   gmx_domdec_sort_t *sort;
   bool bFilled_nsgrid_home;
 
-  /* Are there bonded interactions between charge groups? */
+  /* Are there bonded and multi-body interactions between charge groups? */
   bool bInterCGBondeds;
-  
+  bool bInterCGMultiBody;
+
   /* Cell sizes for static load balancing, first index cartesian */
   real **slb_frac;
   /* Cell sizes for determining the PME communication with SLB */
@@ -3819,11 +3820,6 @@ static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
   return npme;
 }
 
-static bool bMultiCGMols(t_topology *top)
-{
-  return (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
-}
-
 static int lcd(int n1,int n2)
 {
   int d,i;
@@ -3988,11 +3984,14 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
   float pbcdxr;
   real limit;
   ivec try;
+  gmx_domdec_comm_t *comm;
 
-  limit = dd->comm->cutoff_mbody;
+  comm = dd->comm;
 
-  dd->comm->cutoff = max(max(ir->rlist,max(ir->rcoulomb,ir->rvdw)),
-			 dd->comm->cutoff_mbody);
+  limit = comm->cutoff_mbody;
+
+  comm->cutoff = max(max(ir->rlist,max(ir->rcoulomb,ir->rvdw)),
+		     comm->cutoff_mbody);
   dd->nc[XX] = 1;
   dd->nc[YY] = 1;
   dd->nc[ZZ] = 1;
@@ -4000,18 +3999,18 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
 
   npp = nnodes_tot - npme;
   if (EEL_PME(ir->coulombtype)) {
-    dd->comm->npmenodes = (npme > 0 ? npme : npp);
+    comm->npmenodes = (npme > 0 ? npme : npp);
   } else {
-    dd->comm->npmenodes = 0;
+    comm->npmenodes = 0;
   }
 
-  if (bMultiCGMols(top)) {
+  if (comm->bInterCGBondeds) {
     /* For Ewald exclusions pbc_dx is not called */
     bExcl_pbcdx =
       (EEL_EXCL_FORCES(ir->coulombtype) && !EEL_FULL(ir->coulombtype));
     pbcdxr = (double)n_bonded_dx(top,bExcl_pbcdx)/(double)top->atoms.nr;
     
-    if (limit <= 0) {
+    if (comm->bInterCGMultiBody && limit <= 0) {
       /* Here we should determine the minimum cell size from
        * the largest cg COG distance between atoms involved
        * in bonded interactions.
@@ -4020,7 +4019,7 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
       limit = dd->comm->cutoff/2;
     }
     /* Take the maximum of the bonded and constraint distance limit */
-    limit = max(limit,dd->comm->cellsize_limit);
+    limit = max(limit,comm->cellsize_limit);
   } else {
     /* Every molecule is a single charge group: no pbc required */
     pbcdxr = 0;
@@ -4052,6 +4051,19 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
 
   if (nc[XX] == 0)
     gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %f nm",limit);
+}
+
+static int multi_body_bondeds_count(t_ilist *il)
+{
+  int  ftype,n;
+
+  n = 0;
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if ((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) > 2)
+      n += il[ftype].nr/(1 + NRAL(ftype));
+  }
+
+  return n;
 }
 
 static int dd_nst_env(FILE *fplog,char *env_var,int def)
@@ -4143,9 +4155,16 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
       fprintf(fplog,"Will not sort the charge groups\n");
   }
 
+  comm->bInterCGBondeds = (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
+  if (comm->bInterCGBondeds) {
+    comm->bInterCGMultiBody = (multi_body_bondeds_count(top->idef.il) > 0);
+  } else {
+    comm->bInterCGMultiBody = FALSE;
+  }
+
   comm->cutoff_mbody = comm_distance_min;
   comm->cellsize_limit = comm->cutoff_mbody;
-  if (top->idef.il[F_CONSTR].nr > 0 && bMultiCGMols(top)) {
+  if (top->idef.il[F_CONSTR].nr > 0 && comm->bInterCGBondeds) {
     /* There is a cell size limit due to the constraints (LINCS) */
     if (rconstr <= 0) {
       rconstr = constr_r_max(fplog,top,ir);
@@ -4243,8 +4262,10 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 		       matrix box)
 {
   gmx_domdec_comm_t *comm;
-  int d,dim,npulse,npulse_d;
+  int  d,dim,npulse,npulse_d;
   ivec np;
+  real limit;
+  char buf[64];
 
   if (EEL_PME(ir->coulombtype)) {
     set_pme_x_limits(dd);
@@ -4268,7 +4289,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
    * or we use domain decomposition for each periodic dimension,
    * we do not need to take pbc into account for the bonded interactions.
    */
-  comm->bInterCGBondeds = bMultiCGMols(top);
   if (!comm->bInterCGBondeds ||
       (dd->nc[XX]>1 && dd->nc[YY]>1 && (dd->nc[ZZ]>1 || fr->ePBC==epbcXY)))
     fr->bMolPBC = FALSE;
@@ -4354,17 +4374,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
       for(d=0; d<dd->ndim; d++)
 	fprintf(fplog," %c %d",dim2char(dd->dim[d]),comm->cd[d].np);
       fprintf(fplog,"\n");
-      fprintf(fplog,"The minimum size for domain decomposition cells is %g nm\n",comm->cellsize_limit);
-      if (comm->bInterCGBondeds) {
-	fprintf(fplog,"\nAtoms involved in two-body bonded interactions should be within %g nm\n",comm->cutoff);
-	fprintf(fplog,"\nAtoms involved in multi-body bonded interactions should be within %g nm\n",comm->cutoff_mbody);
-      }
-      if (dd->vsite_comm)
-	fprintf(fplog,"\nAtoms involved in virtual sites should be within %g nm\n",comm->cellsize_limit);
-      if (dd->constraint_comm)
-	fprintf(fplog,"\nAtoms connected by %d constraints should be within %g nm\n",1+ir->nProjOrder,comm->cellsize_limit);
+      fprintf(fplog,"The minimum size for domain decomposition cells is %.3f nm\n",comm->cellsize_limit);
       fprintf(fplog,"\n");
-    }
+   }
   } else {
     if (DDMASTER(dd) && fplog) {
       set_tric_dir(dd,box);
@@ -4378,8 +4390,38 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 	if (dd->nc[d] > 1)
 	  fprintf(fplog," %c %.2f nm",dim2char(d),dd->comm->cellsize_min[d]);
       }
-      fprintf(fplog,"\n");
+      fprintf(fplog,"\n\n");
     }
+  }
+
+  if ((comm->bInterCGBondeds || dd->vsite_comm || dd->constraint_comm) &&
+      DDMASTER(dd) && fplog) {
+    fprintf(fplog,"The maximum allowed distance for atoms involved in interactions is:\n");
+    if (dd->bDynLoadBal) {
+      limit = dd->comm->cellsize_limit;
+    } else {
+      if (DYNAMIC_BOX(*ir))
+	fprintf(fplog,"(these are initial values, they could change due to box deformation)\n");
+      limit = dd->comm->cellsize_min[XX];
+      for(d=1; d<DIM; d++)
+	limit = min(limit,dd->comm->cellsize_min[d]);
+    }
+    if (comm->bInterCGBondeds)
+      fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+	      "two-body bonded interactions","(-rdd)",comm->cutoff);
+    if (comm->bInterCGBondeds)
+      fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+	      "multi-body bonded interactions","(-rdd)",
+	      dd->bGridJump ? comm->cutoff_mbody : min(comm->cutoff,limit));
+    if (dd->vsite_comm)
+      fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+	      "virtual site constructions","(-rcon)",limit);
+    if (dd->constraint_comm) {
+      sprintf(buf,"atoms separated by up to %d constraints",1+ir->nProjOrder);
+      fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+	      buf,"(-rcon)",limit);
+    }
+    fprintf(fplog,"\n");
   }
 }
 
@@ -4504,7 +4546,7 @@ static void setup_dd_communication(FILE *fplog,int step,
 	tric_dist[dim_ind] = 1;
   }
 
-  bTwoCut = (dd->bGridJump && comm->bInterCGBondeds && dd->ndim > 1 &&
+  bTwoCut = (dd->bGridJump && comm->bInterCGMultiBody && dd->ndim > 1 &&
 	     dd->comm->cutoff_mbody < dd->comm->cutoff);
 
   dim0 = dd->dim[0];
@@ -4521,7 +4563,7 @@ static void setup_dd_communication(FILE *fplog,int step,
     corner[1][1] = dd->cell_x0[dim1];
     if (dd->bGridJump) {
       corner[1][1] = max(dd->cell_x0[dim1],comm->cell_d1[1][0]);
-      if (comm->bInterCGBondeds) {
+      if (comm->bInterCGMultiBody) {
 	/* For the bonded distance we need the maximum */
 	if (bTwoCut) {
 	  bcorner[1][0] = corner[1][1];
@@ -4548,7 +4590,7 @@ static void setup_dd_communication(FILE *fplog,int step,
 	    }
 	  }
 	}
-	if (comm->bInterCGBondeds) {
+	if (comm->bInterCGMultiBody) {
 	  /* For the bonded distance we need the maximum */
 	  for(j=0; j<4; j++) {
 	    if (bTwoCut)
@@ -4567,7 +4609,7 @@ static void setup_dd_communication(FILE *fplog,int step,
       corner_round_1[3] = dd->cell_x1[dim1];
       if (dd->bGridJump) {
 	corner_round_1[0] = max(dd->cell_x1[dim1],comm->cell_d1[1][1]);
-	if (comm->bInterCGBondeds) {
+	if (comm->bInterCGMultiBody) {
 	  /* For the bonded distance we need the maximum */
 	  if (bTwoCut) {
 	    bcorner_round_1[0] = corner_round_1[0];
