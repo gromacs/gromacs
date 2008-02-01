@@ -52,6 +52,7 @@
 #include "domdec.h"
 #include "pdbio.h"
 #include "partdec.h"
+#include "splitter.h"
 
 typedef struct gmx_constr {
   int             nflexcon;     /* The number of flexible constraints */
@@ -60,6 +61,9 @@ typedef struct gmx_constr {
   gmx_lincsdata_t lincsd;       /* LINCS data                         */
   int             nblocks;      /* The number of SHAKE blocks         */
   int             *sblock;      /* The SHAKE blocks                   */
+  int             sblock_nalloc;/* The allocation size of sblock      */
+  real            *lagr;        /* Lagrange multipliers for SHAKE     */
+  int             lagr_nalloc;  /* The allocation size of lagr        */
   int             maxwarn;      /* The maximum number of warnings     */
   int             warncount_lincs;
   int             warncount_settle;
@@ -256,7 +260,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
       gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
 
     bOK = bshakef(fplog,homenr,md->invmass,constr->nblocks,constr->sblock,
-		  &top->idef,ir,box,x,xprime,nrnb,lambda,dvdlambda,
+		  &top->idef,ir,box,x,xprime,nrnb,
+		  constr->lagr,lambda,dvdlambda,
 		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
     if (!bOK && constr->maxwarn >= 0 && fplog)
       fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
@@ -347,21 +352,134 @@ real constr_rmsd(struct gmx_constr *constr,bool bSD2)
     return 0;
 }
 
+static void make_shake_sblock_pd(struct gmx_constr *constr,
+				 t_idef *idef,t_mdatoms *md)
+{
+  int  i,j,m,ncons;
+  int  bstart,bnr;
+  t_block     sblocks;
+  t_sortblock *sb;
+  t_iatom     *iatom;
+  atom_id     *inv_sblock;
+
+  ncons = idef->il[F_CONSTR].nr/3;
+
+  init_block(&sblocks);
+  gen_sblocks(NULL,md->start,md->start+md->homenr,idef,&sblocks,FALSE);
+  
+  /*
+    bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
+    nblocks=blocks->multinr[idef->nodeid] - bstart;
+  */
+  bstart  = 0;
+  constr->nblocks = sblocks.nr;
+  if (debug) 
+    fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
+	    ncons,bstart,constr->nblocks);
+  
+  /* Calculate block number for each atom */
+  inv_sblock = make_invblock(&sblocks,md->nr);
+  
+  done_block(&sblocks);
+  
+  /* Store the block number in temp array and
+   * sort the constraints in order of the sblock number 
+   * and the atom numbers, really sorting a segment of the array!
+   */
+#ifdef DEBUGIDEF 
+  pr_idef(fplog,0,"Before Sort",idef);
+#endif
+  iatom=idef->il[F_CONSTR].iatoms;
+  snew(sb,ncons);
+  for(i=0; (i<ncons); i++,iatom+=3) {
+    for(m=0; (m<3); m++)
+      sb[i].iatom[m] = iatom[m];
+    sb[i].blocknr = inv_sblock[iatom[1]];
+  }
+  
+  /* Now sort the blocks */
+  if (debug) {
+    pr_sortblock(debug,"Before sorting",ncons,sb);
+    fprintf(debug,"Going to sort constraints\n");
+  }
+  
+  qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
+  
+  if (debug) {
+    fprintf(debug,"I used %d calls to pcomp\n",pcount);
+    pr_sortblock(debug,"After sorting",ncons,sb);
+  }
+  
+  iatom=idef->il[F_CONSTR].iatoms;
+  for(i=0; (i<ncons); i++,iatom+=3) 
+    for(m=0; (m<3); m++)
+      iatom[m]=sb[i].iatom[m];
+#ifdef DEBUGIDEF
+  pr_idef(fplog,0,"After Sort",idef);
+#endif
+  
+  j=0;
+  snew(constr->sblock,constr->nblocks+1);
+  bnr=-2;
+  for(i=0; (i<ncons); i++) {
+    if (sb[i].blocknr != bnr) {
+      bnr=sb[i].blocknr;
+      constr->sblock[j++]=3*i;
+    }
+  }
+  /* Last block... */
+  constr->sblock[j++] = 3*ncons;
+  
+  if (j != (constr->nblocks+1)) {
+    fprintf(stderr,"bstart: %d\n",bstart);
+    fprintf(stderr,"j: %d, nblocks: %d, ncons: %d\n",
+	    j,constr->nblocks,ncons);
+    for(i=0; (i<ncons); i++)
+      fprintf(stderr,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
+    for(j=0; (j<=constr->nblocks); j++)
+      fprintf(stderr,"sblock[%3d]=%5d\n",j,(int)constr->sblock[j]);
+    gmx_fatal(FARGS,"DEATH HORROR: "
+	      "sblocks does not match idef->il[F_CONSTR]");
+  }
+  sfree(sb);
+  sfree(inv_sblock);
+}
+
+static void make_shake_sblock_dd(struct gmx_constr *constr,
+				 t_ilist *ilcon,t_block *cgs,
+				 gmx_domdec_t *dd)
+{
+  int ncons,c,cg;
+  t_iatom *iatom;
+
+  if (dd->ncg_home+1 > constr->sblock_nalloc) {
+    constr->sblock_nalloc = over_alloc_dd(dd->ncg_home+1);
+    srenew(constr->sblock,constr->sblock_nalloc);
+  }
+  
+  ncons = ilcon->nr/3;
+  iatom = ilcon->iatoms;
+  constr->nblocks = 0;
+  cg = 0;
+  for(c=0; c<ncons; c++) {
+    if (c == 0 || iatom[1] >= cgs->index[cg+1]) {
+      constr->sblock[constr->nblocks++] = 3*c;
+      while (iatom[1] >= cgs->index[cg+1])
+	cg++;
+    }
+    iatom += 3;
+  }
+  constr->sblock[constr->nblocks] = 3*ncons;
+}
+
 void set_constraints(struct gmx_constr *constr,
 		     t_topology *top,t_inputrec *ir,
 		     t_mdatoms *md,gmx_domdec_t *dd)
 {
-  int  i,j,m,ncons;
-  t_idef *idef=&(top->idef);
-  int  bstart,bnr;
-  t_sortblock *sb;
-  t_block     *blocks=&(top->blocks[ebSBLOCKS]);
-  t_iatom     *iatom;
-  atom_id     *inv_sblock;
-  int  settle_type;
+  int  ncons;
 
   if (dd == NULL) {
-    ncons = idef->il[F_CONSTR].nr/3;
+    ncons = top->idef.il[F_CONSTR].nr/3;
   } else {
     if (dd->constraints)
       ncons = dd->constraints->ncon;
@@ -379,84 +497,16 @@ void set_constraints(struct gmx_constr *constr,
       set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
     } 
     if (ir->eConstrAlg == estSHAKE) {
-      if (constr->nblocks > 0)
-	gmx_fatal(FARGS,
-		  "Constraint reinitialization not implemented for shake");
-      
-      /*
-	bstart=(idef->nodeid > 0) ? blocks->multinr[idef->nodeid-1] : 0;
-	nblocks=blocks->multinr[idef->nodeid] - bstart;
-      */
-      bstart  = 0;
-      constr->nblocks = blocks->nr;
-      if (debug) 
-	fprintf(debug,"ncons: %d, bstart: %d, nblocks: %d\n",
-		ncons,bstart,constr->nblocks);
-      
-      /* Calculate block number for each atom */
-      inv_sblock = make_invblock(blocks,md->nr);
-      
-      /* Store the block number in temp array and
-       * sort the constraints in order of the sblock number 
-       * and the atom numbers, really sorting a segment of the array!
-       */
-#ifdef DEBUGIDEF 
-      pr_idef(fplog,0,"Before Sort",idef);
-#endif
-      iatom=idef->il[F_CONSTR].iatoms;
-      snew(sb,ncons);
-      for(i=0; (i<ncons); i++,iatom+=3) {
-	for(m=0; (m<3); m++)
-	  sb[i].iatom[m] = iatom[m];
-	sb[i].blocknr = inv_sblock[iatom[1]];
+      if (dd) {
+	make_shake_sblock_dd(constr,&top->idef.il[F_CONSTR],
+			     &top->blocks[ebCGS],dd);
+      } else {
+	make_shake_sblock_pd(constr,&top->idef,md);
       }
-      
-      /* Now sort the blocks */
-      if (debug) {
-	pr_sortblock(debug,"Before sorting",ncons,sb);
-	fprintf(debug,"Going to sort constraints\n");
+      if (ncons > constr->lagr_nalloc) {
+	constr->lagr_nalloc = over_alloc_dd(ncons);
+	srenew(constr->lagr,constr->lagr_nalloc);
       }
-      
-      qsort(sb,ncons,(size_t)sizeof(*sb),pcomp);
-      
-      if (debug) {
-	fprintf(debug,"I used %d calls to pcomp\n",pcount);
-	pr_sortblock(debug,"After sorting",ncons,sb);
-      }
-      
-      iatom=idef->il[F_CONSTR].iatoms;
-      for(i=0; (i<ncons); i++,iatom+=3) 
-	for(m=0; (m<DIM); m++)
-	  iatom[m]=sb[i].iatom[m];
-#ifdef DEBUGIDEF
-      pr_idef(fplog,0,"After Sort",idef);
-#endif
-      
-      j=0;
-      snew(constr->sblock,constr->nblocks+1);
-      bnr=-2;
-      for(i=0; (i<ncons); i++) {
-	if (sb[i].blocknr != bnr) {
-	  bnr=sb[i].blocknr;
-	  constr->sblock[j++]=3*i;
-	}
-      }
-      /* Last block... */
-      constr->sblock[j++] = 3*ncons;
-      
-      if (j != (constr->nblocks+1)) {
-	fprintf(stderr,"bstart: %d\n",bstart);
-	fprintf(stderr,"j: %d, nblocks: %d, ncons: %d\n",
-		j,constr->nblocks,ncons);
-	for(i=0; (i<ncons); i++)
-	  fprintf(stderr,"i: %5d  sb[i].blocknr: %5u\n",i,sb[i].blocknr);
-	for(j=0; (j<=constr->nblocks); j++)
-	  fprintf(stderr,"sblock[%3d]=%5d\n",j,(int)constr->sblock[j]);
-	gmx_fatal(FARGS,"DEATH HORROR: "
-		  "top->blocks[ebSBLOCKS] does not match idef->il[F_CONSTR]");
-      }
-      sfree(sb);
-      sfree(inv_sblock);
     }
   }
 }
@@ -712,9 +762,14 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
       }
       
       if (ir->eConstrAlg == estSHAKE) {
+	if (DOMAINDECOMP(cr) && constr->bInterCGcons)
+	  gmx_fatal(FARGS,"SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
+
 	if (constr->nflexcon)
 	  gmx_fatal(FARGS,"For this system also velocities and/or forces need to be constrained, this can not be done with SHAKE, you should select LINCS");
 	please_cite(fplog,"Ryckaert77a");
+	if (ir->bShakeSOR) 
+	  please_cite(fplog,"Barth95a");
       }
     }
     

@@ -224,7 +224,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Periodicity stuff */  
     if (inputrec->ePBC != epbcNONE && !inputrec->bPeriodicMols &&
 	!DOMAINDECOMP(cr)) {
-      graph = mk_graph(fplog,&(top->idef),top->atoms.nr,FALSE,FALSE);
+      graph = mk_graph(fplog,&(top->idef),0,top->atoms.nr,FALSE,FALSE);
       if (gmx_debug_at) 
 	p_graph(debug,"Initial graph",graph);
     }
@@ -349,8 +349,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     constr = init_constraints(fplog,cr,top,inputrec);
 
     if (DOMAINDECOMP(cr)) {
-      dd_make_reverse_top(fplog,cr->dd,top,vsite,constr,
-			  EI_DYNAMICS(inputrec->eI),inputrec->coulombtype);
+      dd_make_reverse_top(fplog,cr->dd,top,vsite,constr,inputrec);
 
       set_dd_parameters(fplog,cr->dd,top,inputrec,fr,box);
      

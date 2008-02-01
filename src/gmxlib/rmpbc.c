@@ -74,7 +74,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 	ngraph++;
 	srenew(mgraph,ngraph);
 	mgraph[n].natoms=natoms;
-	mgraph[n].gr=mk_graph(NULL,idef,natoms,FALSE,FALSE);
+	mgraph[n].gr=mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
       }
       mk_mshift(stdout,mgraph[n].gr,guess_ePBC(box),box,x);
       calc_shifts(box,sv);

@@ -4299,11 +4299,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
     gmx_fatal(FARGS,"ns type %s is not supported with domain decomposition",
 	      ens_names[ensSIMPLE]);
   
-  if (ir->eConstrAlg == estSHAKE && top->idef.il[F_CONSTR].nr > 0)
-    gmx_fatal(FARGS,
-	      "%s is not supported with domain decomposition, use %s",
-	      eshake_names[estSHAKE],eshake_names[estLINCS]);
-
   dd->ndim = 0;
   if (getenv("GMX_DD_ORDER_ZYX")) {
     /* Decomposition order z,y,x */
@@ -5395,7 +5390,7 @@ void dd_partition_system(FILE            *fplog,
 		   dd->comm->pme_maxshift);
 
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
-    set_constraints(constr,top_global,ir,mdatoms,dd);
+    set_constraints(constr,top_local,ir,mdatoms,dd);
 
   if (ir->ePull != epullNO)
     /* Update the local pull groups */

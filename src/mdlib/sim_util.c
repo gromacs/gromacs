@@ -451,8 +451,8 @@ void do_force(FILE *fplog,t_commrec *cr,
       wallcycle_start(wcycle,ewcPPDURINGPME);
       dd_force_flop_start(cr->dd,nrnb);
     }
-    wallcycle_start(wcycle,ewcFORCE);
   }
+  wallcycle_start(wcycle,ewcFORCE);
 
   if (bDoForces) {
       /* Reset PME/Ewald forces if necessary */

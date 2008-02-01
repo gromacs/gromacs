@@ -47,7 +47,8 @@ extern void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
  * Info is written to the file pointer fp.
  */
 
-extern void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
+extern void gen_sblocks(FILE *fp,int at_start,int at_end,
+			t_idef *idef,t_block *sblock,
 			bool bSettle);
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake
  * blocks including settles. You normally do not want this.

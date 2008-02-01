@@ -46,7 +46,6 @@
 #include "vec.h"
 #include "nrnb.h"
 #include "constr.h"
-#include "copyrite.h"
 
 
 static void pv(FILE *log,char *s,rvec x)
@@ -270,11 +269,9 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
 
 bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 	     t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
-	     t_nrnb *nrnb,real lambda,real *dvdlambda,
+	     t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
 	     real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError)
 {
-  static  bool bFirst=TRUE;
-  static  real *lagr;
   /* Stuff for successive overrelaxation */
   static  real delta=0.1;
   static  real omega=1.0;
@@ -288,13 +285,9 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 #ifdef DEBUG
   fprintf(log,"nblocks=%d, sblock[0]=%d\n",nblocks,sblock[0]);
 #endif
+
   ncons=idef->il[F_CONSTR].nr/3;
-  if (bFirst) {
-    if (ir->bShakeSOR) 
-      please_cite(log,"Barth95a");
-    snew(lagr,ncons);
-    bFirst=FALSE;
-  }
+
   for(i=0; i<ncons; i++)
     lagr[i] =0;
   

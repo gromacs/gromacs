@@ -62,11 +62,13 @@ void init_block(t_block *block)
 {
   int i;
 
-  block->nr    = 0;
-  block->nra   = 0;
-  snew(block->index,1);
-  block->index[0] = 0;
-  block->a     = NULL;
+  block->nr           = 0;
+  block->nra          = 0;
+  block->nalloc_index = 1;
+  snew(block->index,block->nalloc_index);
+  block->index[0]     = 0;
+  block->nalloc_a     = 0;
+  block->a            = NULL;
 }
 
 void init_atom(t_atoms *at)

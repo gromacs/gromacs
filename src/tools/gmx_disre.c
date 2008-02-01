@@ -633,7 +633,7 @@ int gmx_disre(int argc,char *argv[])
     if (ir.bPeriodicMols)
       pbc_null = &pbc;
     else
-      g = mk_graph(fplog,&top.idef,top.atoms.nr,FALSE,FALSE);
+      g = mk_graph(fplog,&top.idef,0,top.atoms.nr,FALSE,FALSE);
   }
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {

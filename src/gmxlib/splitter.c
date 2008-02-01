@@ -49,6 +49,7 @@
 #include "txtdump.h"
 #include "math.h"
 #include "assert.h"
+#include "network.h"
 #include "splitter.h"
 
 typedef struct {
@@ -579,7 +580,7 @@ static int ms_comp(const void *a, const void *b)
     return d;
 }
 
-static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
+static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
 		     t_block *sblock)
 {
   int  i,j,k,n,isid,ndel;
@@ -595,11 +596,11 @@ static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
   snew(ms,nsid);
 
   for(k=0; (k<nsid); k++) {
-    ms[k].first = natoms+1;
+    ms[k].first = at_end+1;
     ms[k].last  = -1;
     ms[k].sid   = k;
   }
-  for(i=0; (i<natoms); i++) {
+  for(i=at_start; (i<at_end); i++) {
     isid = sid[i].sid;
     if (isid >= 0) {
       ms[isid].first = min(ms[isid].first,sid[i].atom);
@@ -636,14 +637,16 @@ static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
     }
   }
 
-  for(k=0; (k<natoms); k++) {
+  for(k=at_start; (k<at_end); k++) {
     sid[k].atom = k;
     sid[k].sid = -1;
   }
   sblock->nr  = nsid;
-  sblock->nra = natoms;
-  srenew(sblock->a,sblock->nra);
-  srenew(sblock->index,sblock->nr+2);
+  sblock->nalloc_index = sblock->nr+1;
+  srenew(sblock->index,sblock->nalloc_index);
+  sblock->nra = at_end - at_start;
+  sblock->nalloc_a = sblock->nra;
+  srenew(sblock->a,sblock->nalloc_a);
   sblock->index[0] = 0;
   for(k=n=0; (k<nsid); k++) {
     sblock->index[k+1] = sblock->index[k] + ms[k].last - ms[k].first+1;
@@ -670,7 +673,8 @@ static int merge_sid(int i0,int natoms,int nsid,t_sid sid[],
   return nsid;
 }
 
-void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
+void gen_sblocks(FILE *fp,int at_start,int at_end,
+		 t_idef *idef,t_block *sblock,
 		 bool bSettle)
 {
   t_graph *g;
@@ -678,11 +682,11 @@ void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
   t_sid   *sid;
   int     isid,nsid;
   
-  g=mk_graph(NULL,idef,natoms,TRUE,bSettle);
+  g=mk_graph(NULL,idef,at_start,at_end,TRUE,bSettle);
   if (debug)
     p_graph(debug,"Graaf Dracula",g);
-  snew(sid,natoms);
-  for(i=0; (i<natoms); i++) {
+  snew(sid,at_end);
+  for(i=at_start; (i<at_end); i++) {
     sid[i].atom =  i;
     sid[i].sid  = -1;
   }
@@ -692,15 +696,15 @@ void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
     return;
     
   /* Now sort the shake blocks... */
-  qsort(sid,natoms,(size_t)sizeof(sid[0]),sid_comp);
+  qsort(sid+at_start,at_end-at_start,(size_t)sizeof(sid[0]),sid_comp);
   
   if (debug) {
     fprintf(debug,"Sorted shake block\n");
-    for(i=0; (i<natoms); i++) 
+    for(i=at_start; (i<at_end); i++) 
       fprintf(debug,"sid[%5d] = atom:%5d sid:%5d\n",i,sid[i].atom,sid[i].sid);
   }
   /* Now check how many are NOT -1, i.e. how many have to be shaken */
-  for(i0=0; (i0<natoms); i0++)
+  for(i0=at_start; (i0<at_end); i0++)
     if (sid[i0].sid > -1)
       break;
   
@@ -710,7 +714,7 @@ void gen_sblocks(FILE *fp,int natoms,t_idef *idef,t_block *sblock,
    * part of the shake block too. There may be cases where blocks overlap
    * and they will have to be merged.
    */
-  nsid = merge_sid(i0,natoms,nsid,sid,sblock);
+  nsid = merge_sid(i0,at_start,at_end,nsid,sid,sblock);
   /* Now sort the shake blocks again... */
   /*qsort(sid,natoms,(size_t)sizeof(sid[0]),sid_comp);*/
   

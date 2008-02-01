@@ -991,7 +991,7 @@ int main (int argc, char *argv[])
   check_warning_error(FARGS);
 
   /* Now build the shakeblocks from the shakes */
-  gen_sblocks(stdout,sys->atoms.nr,&(sys->idef),
+  gen_sblocks(stdout,0,sys->atoms.nr,&(sys->idef),
 	      &(sys->blocks[ebSBLOCKS]),FALSE);
   if (debug)
     pr_symtab(debug,0,"After gen_sblocks",&sys->symtab);

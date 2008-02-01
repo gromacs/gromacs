@@ -259,7 +259,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 
   if (inputrec->ePBC == epbcXYZ) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
-    *graph = mk_graph(fplog,&(top->idef),top->atoms.nr,FALSE,FALSE);
+    *graph = mk_graph(fplog,&(top->idef),0,top->atoms.nr,FALSE,FALSE);
     mk_mshift(fplog,*graph,inputrec->ePBC,state->box,state->x);
   } else {
     *graph = NULL;

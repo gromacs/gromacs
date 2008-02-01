@@ -194,7 +194,7 @@ extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 extern void dd_make_reverse_top(FILE *fplog,
 				gmx_domdec_t *dd,t_topology *top,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
-				bool bDynamics,int eeltype);
+				t_inputrec *ir);
 
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
