@@ -526,7 +526,7 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
       break;
     }
 
-    if (bMaster) {
+    if (vir && bMaster) {
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0; m<DIM; m++)
@@ -656,7 +656,7 @@ static real do_pull_pot(t_commrec *cr,int ePull,
       break;
     }
     
-    if (MASTER(cr)) {
+    if (vir && MASTER(cr)) {
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0;m<DIM;m++)
