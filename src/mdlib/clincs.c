@@ -165,7 +165,7 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
 
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 		      struct gmx_lincsdata *lincsd,real *invmass,
-		      int econq)
+		      int econq,real *dvdlambda)
 {
   int     b,i,j,k,n;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
@@ -185,6 +185,9 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
   rhs1   = lincsd->tmp1;
   rhs2   = lincsd->tmp2;
   sol    = lincsd->tmp3;
+
+  if (econq != econqForce)
+    dvdlambda = NULL;
 
   /* Compute normalized i-j vectors */
   if (pbc) {
@@ -239,6 +242,10 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
       fp[j][0] += tmp0*im2;
       fp[j][1] += tmp1*im2;
       fp[j][2] += tmp2*im2;
+      if (dvdlambda) {
+	/* This is only correct with forces and invmass=1 */
+	*dvdlambda -= mvb*lincsd->ddist[b];
+      }
     }
   } /* 16 ncons flops */
 }
@@ -1050,7 +1057,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     }
   } 
   else {
-    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq);
+    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq,dvdlambda);
   }
   
   /* count assuming nit=1 */

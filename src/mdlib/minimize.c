@@ -493,6 +493,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   bool bNS;
   int  nabnsb;
   tensor force_vir,shake_vir,pres;
+  real dvdl;
   real terminate=0;
   t_state *state;
   
@@ -560,10 +561,14 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   
   if (constr) {
     /* Project out the constraint components of the force */
+    dvdl = 0;
     constrain(NULL,FALSE,FALSE,constr,top,
 	      inputrec,cr,count,mdatoms,
-	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,NULL,
+	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
 	      0,NULL,NULL,nrnb,econqForce);
+    if (fr->bSepDVDL && fplog)
+      fprintf(fplog,sepdvdlformat,"Constraints",0.0,dvdl);
+    ener[F_DVDL] += dvdl;
   }
 
   set_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
