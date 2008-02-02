@@ -339,7 +339,7 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
   double      tcount=0;
   bool        bShell_FlexCon,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bExchanged;
-  real        temp0,mu_aver=0,fmax;
+  real        temp0,mu_aver=0,dvdl;
   int         gnx,ii;
   atom_id     *grpindex;
   char        *grpname;
@@ -724,12 +724,16 @@ time_t do_md(FILE *log,t_commrec *cr,t_commrec *mcr,int nfile,t_filenm fnm[],
     /* This is also parallellized, but check code in update.c */
     /* bOK = update(nsb->natoms,START(nsb),HOMENR(nsb),step,state->lambda,&ener[F_DVDL], */
     bOK = TRUE;
-    if (!bRerunMD || rerun_fr.bV || bForceUpdate)
-      update(nsb->natoms,START(nsb),HOMENR(nsb),step,&ener[F_DVDL],
+    if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
+      dvdl = 0;
+      update(nsb->natoms,START(nsb),HOMENR(nsb),step,&dvdl,
 	     inputrec,mdatoms,state,graph,f,vold,
 	     top,grps,shake_vir,cr,&mynrnb,edyn,&pulldata,bNEMD,
 	     TRUE,bFirstStep,NULL,pres);
-    else {
+      if (fr->bSepDVDL && log && do_log)
+	fprintf(log,sepdvdlformat,"Constraint",0.0,dvdl);
+      ener[F_DVDL] += dvdl;
+    } else {
       /* Need to unshift here */
       if ((inputrec->ePBC == epbcXYZ) && (graph->nnodes > 0))
 	unshift_self(graph,state->box,state->x);
