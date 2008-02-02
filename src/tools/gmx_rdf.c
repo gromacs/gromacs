@@ -180,7 +180,8 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   int        **npairs;
   atom_id    ix,jx,***pairs;
   t_topology *top=NULL;
-  t_block    *excl,*mols=NULL;
+  t_block    *mols=NULL;
+  t_blocka   *excl;
   t_atom     *atom=NULL;
   t_pbc      pbc;
 
@@ -193,7 +194,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     bTop=read_tps_conf(fnTPS,title,top,&x,NULL,box,TRUE);
     if (bTop && !bCM)
       /* get exclusions from topology */
-      excl=&(top->blocks[ebEXCLS]);
+      excl = &(top->excls);
   }
   snew(grpname,ng+1);
   snew(isize,ng+1);
@@ -211,7 +212,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     /* Split up all the groups in molecules or residues */
     switch (rdft[0][0]) {
     case 'm':
-      mols = &top->blocks[ebMOLS];
+      mols = &top->mols;
       break;
     case 'r':
       atom = top->atoms.atom;

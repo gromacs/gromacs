@@ -148,11 +148,11 @@ static void rvec2sprvec(rvec dipcart,rvec dipsp)
 
 
 void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
-	    int mindex[],atom_id ma[],rvec x[],rvec mu[],
+	    int mindex[],rvec x[],rvec mu[],
 	    matrix box,t_atom *atom,int *nAtom,bool bPBC)
 {
   static rvec *xcm[2] = { NULL, NULL};
-  int    gi,gj,aj,j0,j1,i,j,k,n,index,grp0,grp1;
+  int    gi,gj,j0,j1,i,j,k,n,index,grp0,grp1;
   real   qtot,q,r2,cosa,rr,phi;
   rvec   dx;
   t_pbc  pbc;
@@ -166,17 +166,16 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
       j0 = mindex[gi];
       
       if (nAtom[n] > 0)
-	copy_rvec(x[ma[j0+nAtom[n]-1]],xcm[n][i]);
+	copy_rvec(x[j0+nAtom[n]-1],xcm[n][i]);
       else {
 	j1 = mindex[gi+1];
 	clear_rvec(xcm[n][i]);
 	qtot = 0;
 	for(j=j0; j<j1; j++) {
-	  aj = ma[j];
-	  q = fabs(atom[aj].q);
+	  q = fabs(atom[j].q);
 	  qtot += q;
 	  for(k=0; k<DIM; k++)
-	    xcm[n][i][k] += q*x[aj][k];
+	    xcm[n][i][k] += q*x[j][k];
 	}
 	svmul(1/qtot,xcm[n][i],xcm[n][i]);
       }
@@ -383,8 +382,8 @@ static void neutralize_mols(int n,int *index,t_block *mols,t_atom *atom)
     mtot = 0;
     qtot = 0;
     for(a=a0; a<a1; a++) {
-      mtot += atom[mols->a[a]].m;
-      qtot += atom[mols->a[a]].q;
+      mtot += atom[a].m;
+      qtot += atom[a].q;
     }
     /* This check is only for the count print */
     if (fabs(qtot) > 0.01)
@@ -392,7 +391,7 @@ static void neutralize_mols(int n,int *index,t_block *mols,t_atom *atom)
     if (mtot > 0) {
       /* Remove the net charge at the center of mass */
       for(a=a0; a<a1; a++)
-	atom[mols->a[a]].q -= qtot*atom[mols->a[a]].m/mtot;
+	atom[a].q -= qtot*atom[a].m/mtot;
     }
   }
 
@@ -401,24 +400,22 @@ static void neutralize_mols(int n,int *index,t_block *mols,t_atom *atom)
 	   "will subtract their charge at their center of mass\n",ncharged);
 }
 
-static void mol_dip(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],rvec mu)
+static void mol_dip(int k0,int k1,rvec x[],t_atom atom[],rvec mu)
 {
-  int  k,kk,m;
+  int  k,m;
   real q;
   
   clear_rvec(mu);
   for(k=k0; (k<k1); k++) {
-    kk = ma[k];
-    q  = e2d(atom[kk].q);
+    q  = e2d(atom[k].q);
     for(m=0; (m<DIM); m++) 
-      mu[m] += q*x[kk][m];
+      mu[m] += q*x[k][m];
   }
 }
 
-static void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],
-		     rvec quad)
+static void mol_quad(int k0,int k1,rvec x[],t_atom atom[],rvec quad)
 {
-  int    i,k,kk,m,n,niter;
+  int    i,k,m,n,niter;
   real   q,r2,mass,masstot;
   rvec   com;          /* center of mass */
   rvec   r;            /* distance of atoms to center of mass */
@@ -438,8 +435,7 @@ static void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],
   clear_rvec(com);
   masstot = 0.0;
   for(k=k0; (k<k1); k++) {
-    kk       = ma[k];
-    mass     = atom[kk].m;
+    mass     = atom[k].m;
     masstot += mass;
     for(i=0; (i<DIM); i++)
       com[i] += mass*x[k][i];
@@ -457,8 +453,7 @@ static void mol_quad(int k0,int k1,atom_id ma[],rvec x[],t_atom atom[],
     for(n=0; (n<DIM); n++)
       inten[m][n] = 0;
   for(k=k0; (k<k1); k++) {       /* loop over atoms in a molecule */
-    kk = ma[k];
-    q  = (atom[kk].q)*100.0;
+    q  = (atom[k].q)*100.0;
     rvec_sub(x[k],com,r);
     r2 = iprod(r,r);
     for(m=0; (m<DIM); m++)
@@ -539,7 +534,7 @@ real calc_eps(double M_diff,double volume,double epsRF,double temp)
   return eps;
 }
 
-static void update_slab_dipoles(int k0,int k1,atom_id ma[],rvec x[],rvec mu,
+static void update_slab_dipoles(int k0,int k1,rvec x[],rvec mu,
 				int idim,int nslice,rvec slab_dipole[],
 				matrix box)
 {
@@ -547,7 +542,7 @@ static void update_slab_dipoles(int k0,int k1,atom_id ma[],rvec x[],rvec mu,
   real xdim=0;
   
   for(k=k0; (k<k1); k++) 
-    xdim += x[ma[k]][idim];
+    xdim += x[k][idim];
   xdim /= (k1-k0);
   k = ((int)(xdim*nslice/box[idim][idim] + nslice)) % nslice;
   rvec_inc(slab_dipole[k],mu);
@@ -710,7 +705,7 @@ static void do_dip(t_topology *top,real volume,
   }
   else {
     atom = top->atoms.atom;
-    mols = &(top->blocks[ebMOLS]);
+    mols = &(top->mols);
   }
   
   if (iVol == -1)
@@ -874,21 +869,19 @@ static void do_dip(t_topology *top,real volume,
       /* Begin loop of all molecules in frame */
       for(n=0; (n<ncos); n++) {
 	for(i=0; (i<gnx[n]); i++) {
-	  atom_id *index;
 	  int gi,ind0,ind1;
 	  
-	  index = mols->a;
 	  ind0  = mols->index[molindex[n][i]];
 	  ind1  = mols->index[molindex[n][i]+1];
 	  
-	  mol_dip(ind0,ind1,index,x,atom,dipole[i]);
+	  mol_dip(ind0,ind1,x,atom,dipole[i]);
 	  add_lsq(&mulsq,0,norm(dipole[i]));
 	  add_lsq(&muframelsq,0,norm(dipole[i]));
 	  if (bSlab) 
-	    update_slab_dipoles(ind0,ind1,index,x,
+	    update_slab_dipoles(ind0,ind1,x,
 				dipole[i],idim,nslices,slab_dipoles,box);
 	  if (bQuad) {
-	    mol_quad(ind0,ind1,index,x,atom,quad);
+	    mol_quad(ind0,ind1,x,atom,quad);
 	    for(m=0; (m<DIM); m++)
 	      add_lsq(&Qlsq[m],0,quad[m]);
 	  }
@@ -943,13 +936,13 @@ static void do_dip(t_topology *top,real volume,
 	    if (dip3d)
 	      fprintf(dip3d,"set arrow %d from %f, %f, %f to %f, %f, %f lt %d  # %d %d\n", 
 		      i+1,
-		      x[index[ind0]][XX],
-		      x[index[ind0]][YY],
-		      x[index[ind0]][ZZ],
-		      x[index[ind0]][XX]+dipole[i][XX]/25, 
-		      x[index[ind0]][YY]+dipole[i][YY]/25, 
-		      x[index[ind0]][ZZ]+dipole[i][ZZ]/25, 
-		      ncolour, index[ind0], i);
+		      x[ind0][XX],
+		      x[ind0][YY],
+		      x[ind0][ZZ],
+		      x[ind0][XX]+dipole[i][XX]/25, 
+		      x[ind0][YY]+dipole[i][YY]/25, 
+		      x[ind0][ZZ]+dipole[i][ZZ]/25, 
+		      ncolour, ind0, i);
 	  }
 	} /* End loop of all molecules in frame */
 	
@@ -981,7 +974,7 @@ static void do_dip(t_topology *top,real volume,
     }
     
     if (bGkr) {
-      do_gkr(gkrbin,ncos,gnx,molindex,mols->index,mols->a,x,dipole,box,
+      do_gkr(gkrbin,ncos,gnx,molindex,mols->index,x,dipole,box,
 	     atom,gkatom,bPBC);
     }
     
@@ -1174,12 +1167,12 @@ void atom2molindex(int *n,int *index,t_block *mols)
   i=0;
   while (i < *n) {
     m=0;
-    while(m < mols->nr && index[i] != mols->a[mols->index[m]])
+    while(m < mols->nr && index[i] != mols->index[m])
       m++;
     if (m == mols->nr)
       gmx_fatal(FARGS,"index[%d]=%d does not correspond to the first atom of a molecule",i+1,index[i]+1);
     for(j=mols->index[m]; j<mols->index[m+1]; j++) {
-      if (i >= *n || index[i] != mols->a[j])
+      if (i >= *n || index[i] != j)
 	gmx_fatal(FARGS,"The index group is not a set of whole molecules");
       i++;
     }
@@ -1351,8 +1344,8 @@ int gmx_dipoles(int argc,char *argv[])
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
             ncos,gnx,grpindex,grpname);
   for(k=0; (k<ncos); k++) {
-    atom2molindex(&gnx[k],grpindex[k],&(top->blocks[ebMOLS]));
-    neutralize_mols(gnx[k],grpindex[k],&(top->blocks[ebMOLS]),top->atoms.atom);
+    atom2molindex(&gnx[k],grpindex[k],&(top->mols));
+    neutralize_mols(gnx[k],grpindex[k],&(top->mols),top->atoms.atom);
   }
   nFF[0] = nFA;
   nFF[1] = nFB;

@@ -241,7 +241,7 @@ void write_traj(t_commrec *cr,
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
 
   if (DOMAINDECOMP(cr)) {
-    cgs = &top_global->blocks[ebCGS];
+    cgs = &top_global->cgs;
     if (bX || bXTC) dd_collect_vec(cr->dd,cgs,state_local->x,state_global->x);
     if (bV)         dd_collect_vec(cr->dd,cgs,state_local->v,state_global->v);
     if (bF)         dd_collect_vec(cr->dd,cgs,f_local,f_global);

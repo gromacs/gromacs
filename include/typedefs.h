@@ -123,11 +123,17 @@ extern void done_top(t_topology *top);
 extern void done_inputrec(t_inputrec *ir);
 extern void done_state(t_state *state);
 
-extern void stupid_fill(t_block *grp, int natom,bool bOneIndexGroup);
+extern void stupid_fill_block(t_block *grp, int natom,bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index
  * (0, 1, 2, .. natom-1)
  * If bOneIndexGroup, then all atoms are  lumped in one index group,
  * otherwise there is one atom per index entry
+ */
+
+extern void stupid_fill_blocka(t_blocka *grp, int natom);
+/* Fill a block structure with numbers identical to the index
+ * (0, 1, 2, .. natom-1)
+ * There is one atom per index entry
  */
 
 extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);

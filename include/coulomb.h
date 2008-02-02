@@ -62,7 +62,7 @@ extern real ewald_LRcorrection(FILE *fp,
 			       int start,int end,
 			       t_commrec *cr,t_forcerec *fr,
 			       real *chargeA,real *chargeB,
-			       t_block *excl,rvec x[],
+			       t_blocka *excl,rvec x[],
 			       matrix box,rvec mu_tot[],
 			       int ewald_geometry,real epsilon_surface,
 			       real lambda,real *dvdlambda,
@@ -79,7 +79,7 @@ extern void set_shift_consts(FILE *log,real r1,real rc,rvec box,
 
 extern real shift_LRcorrection(FILE *fp,int start,int natoms,
 			       t_commrec *cr,t_forcerec *fr,
-			       real charge[],t_block *excl,rvec x[],
+			       real charge[],t_blocka *excl,rvec x[],
 			       bool bOld,matrix box,matrix lrvir);
 /* Calculate the self energy and forces
  * when using long range electrostatics methods.

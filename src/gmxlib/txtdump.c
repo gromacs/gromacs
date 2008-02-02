@@ -854,6 +854,19 @@ static int pr_block_title(FILE *fp,int indent,const char *title,t_block *block)
       indent=pr_title(fp,indent,title);
       (void) pr_indent(fp,indent);
       (void) fprintf(fp,"nr=%d\n",block->nr);
+    }
+  return indent;
+}
+
+static int pr_blocka_title(FILE *fp,int indent,const char *title,t_blocka *block)
+{
+  int i;
+
+  if (available(fp,block,indent,title))
+    {
+      indent=pr_title(fp,indent,title);
+      (void) pr_indent(fp,indent);
+      (void) fprintf(fp,"nr=%d\n",block->nr);
       (void) pr_indent(fp,indent);
       (void) fprintf(fp,"nra=%d\n",block->nra);
     }
@@ -867,6 +880,22 @@ static void low_pr_block(FILE *fp,int indent,const char *title,t_block *block, b
   if (available(fp,block,indent,title))
     {
       indent=pr_block_title(fp,indent,title,block);
+      for (i=0; i<=block->nr; i++)
+        {
+          (void) pr_indent(fp,indent+INDENT);
+          (void) fprintf(fp,"%s->index[%d]=%u\n",
+			 title,bShowNumbers?i:-1,block->index[i]);
+        }
+    }
+}
+
+static void low_pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block, bool bShowNumbers)
+{
+  int i;
+  
+  if (available(fp,block,indent,title))
+    {
+      indent=pr_blocka_title(fp,indent,title,block);
       for (i=0; i<=block->nr; i++)
         {
           (void) pr_indent(fp,indent+INDENT);
@@ -899,6 +928,33 @@ void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNum
             end=block->index[i+1];
             size=pr_indent(fp,indent);
             if (end<=start)
+              size+=fprintf(fp,"%s[%d]=[]\n",title,i);
+            else
+              size+=fprintf(fp,"%s[%d]={%d..%d}\n",
+			    title,bShowNumbers?i:-1,
+			    bShowNumbers?start:-1,bShowNumbers?end-1:-1);
+            start=end;
+          }
+    }
+}
+
+void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowNumbers)
+{
+  int i,j,ok,size,start,end;
+  
+  if (available(fp,block,indent,title))
+    {
+      indent=pr_blocka_title(fp,indent,title,block);
+      start=0;
+      end=start;
+      if ((ok=(block->index[start]==0))==0)
+        (void) fprintf(fp,"block->index[%d] should be 0\n",start);
+      else
+        for (i=0; i<block->nr; i++)
+          {
+            end=block->index[i+1];
+            size=pr_indent(fp,indent);
+            if (end<=start)
               size+=fprintf(fp,"%s[%d]={",title,i);
             else
               size+=fprintf(fp,"%s[%d][%d..%d]={",
@@ -921,27 +977,7 @@ void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNum
         {
           (void) pr_indent(fp,indent);
           (void) fprintf(fp,"tables inconsistent, dumping complete tables:\n");
-          low_pr_block(fp,indent,title,block,bShowNumbers);
-        }
-    }
-}
-
-static void pr_blocks(FILE *fp,int indent,const char *title,
-                      t_block block[],int n,const char *block_names[], bool bShowNumbers)
-{
-  int i;
-  char s[STRLEN];
-  
-  if (available(fp,block,indent,title))
-    {
-      indent=pr_title_n(fp,indent,title,n);
-      for (i=0; i<n; i++)
-        {
-          if (block_names==NULL)
-            sprintf(s,"%s[%d]",title,i);
-          else
-            sprintf(s,"%s[%s]",title,block_names[i]);
-          pr_block(fp,indent,s,&(block[i]),bShowNumbers);
+          low_pr_blocka(fp,indent,title,block,bShowNumbers);
         }
     }
 }
@@ -1051,7 +1087,9 @@ void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNum
     (void) fprintf(fp,"name=\"%s\"\n",*(top->name));
     pr_atoms(fp,indent,"atoms",&(top->atoms),bShowNumbers);
     pr_atomtypes(fp,indent,"atomtypes",&(top->atomtypes),bShowNumbers);
-    pr_blocks(fp,indent,"blocks",top->blocks,ebNR,eblock_names, bShowNumbers);
+    pr_block(fp,indent,"cgs",&top->cgs, bShowNumbers);
+    pr_block(fp,indent,"mols",&top->mols, bShowNumbers);
+    pr_blocka(fp,indent,"excls",&top->excls, bShowNumbers);
     pr_idef(fp,indent,"idef",&top->idef,bShowNumbers);
   }
 }

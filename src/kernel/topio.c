@@ -573,7 +573,7 @@ static char **read_topol(char *infile,char *outfile,
 	      merge_excl(&(mi0->excls),&(block2[whichmol]));
 	      done_block2(&(block2[whichmol]));
 	      make_shake(mi0->plist,&mi0->atoms,atype,nshake); 
-	      stupid_fill(&mi0->mols,mi0->atoms.nr,TRUE);
+	      stupid_fill_block(&mi0->mols,mi0->atoms.nr,TRUE);
 	      mi0->bProcessed=TRUE;
 	    }
 	    break;
@@ -667,7 +667,7 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
     i,j,l,k=0,jmax,qm_max=0,qm_nr=0,nratoms=0,link_nr=0,link_max=0;
   atom_id 
     *qm_arr=NULL,*link_arr=NULL,a1,a2,a3,a4,ftype=0;
-  t_block 
+  t_blocka
     qmexcl;
   t_block2
     qmexcl2;
@@ -855,7 +855,7 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
 
   init_block2(&qmexcl2,sys->atoms.nr);
   b_to_b2(&qmexcl, &qmexcl2);
-  merge_excl(&(sys->blocks[ebEXCLS]),&qmexcl2);
+  merge_excl(&(sys->excls),&qmexcl2);
   done_block2(&qmexcl2);
 
   /* Finally, we also need to get rid of the pair interactions of the

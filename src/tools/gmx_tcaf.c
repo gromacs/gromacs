@@ -263,7 +263,7 @@ int gmx_tcaf(int argc,char *argv[])
   matrix     box;
   bool       bTPS,bTop; /* ,bCubic; */
   int        gnx;
-  atom_id    *index,*a=NULL,*atndx=NULL,at;
+  atom_id    *index,*atndx=NULL,at;
   char       *grpname;
   char       title[256];
   real       t0,t1,dt,m,mtot,sysmass,rho,sx,cx;
@@ -302,8 +302,7 @@ int gmx_tcaf(int argc,char *argv[])
   if (bMol) {
     if (!bTop)
       gmx_fatal(FARGS,"Need a topology to determine the molecules");
-    a     = top.blocks[ebMOLS].a;
-    atndx = top.blocks[ebMOLS].index;
+    atndx = top.mols.index;
   }
 
   if (bK34)
@@ -364,7 +363,7 @@ int gmx_tcaf(int argc,char *argv[])
 	clear_rvec(cm_mol);
 	mtot = 0;
 	for(j=0; j<atndx[index[i]+1] - atndx[index[i]]; j++) {
-	  at = a[atndx[index[i]]+j];
+	  at = atndx[index[i]] + j;
 	  m  = top.atoms.atom[at].m;
 	  mv_mol[XX] += m*fr.v[at][XX];
 	  mv_mol[YY] += m*fr.v[at][YY];

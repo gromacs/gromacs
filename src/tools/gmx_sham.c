@@ -282,7 +282,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   real    *delta;
   int     i,j,k,imin,len,index,d,*nbin,*bindex,bi;
   int     *nxyz,maxbox;
-  t_block *b;
+  t_blocka *b;
   bool    bOutside;
   unsigned int flags;
   t_rgb   rlo  = { 0, 0, 0 };

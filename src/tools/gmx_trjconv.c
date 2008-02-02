@@ -90,7 +90,7 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
   real    fac,Isq,min_dist2;
   rvec    dx,ddx,xtest,xrm,box_center;
   int     nmol,nmol_cl,imol_center;
-  atom_id *molind,*mola;
+  atom_id *molind;
   bool    *bMol,*bTmp;
   rvec    *m_com,*m_shift,m0;
   t_pbc   pbc;
@@ -102,9 +102,8 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
   set_pbc(&pbc,box);
     
   /* Convert atom index to molecular */
-  nmol   = top->blocks[ebMOLS].nr;
-  molind = top->blocks[ebMOLS].index;
-  mola   = top->blocks[ebMOLS].a;
+  nmol   = top->mols.nr;
+  molind = top->mols.index;
   snew(bMol,nmol);
   snew(m_com,nmol);
   snew(m_shift,nmol);
@@ -118,13 +117,13 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
     j0=0;
     j1=nmol-1;
     while (j0 < j1) {
-      if (ai < mola[molind[j0+1]]) 
+      if (ai < molind[j0+1]) 
 	j1 = j0;
-      else if (ai >= mola[molind[j1]]) 
+      else if (ai >= molind[j1]) 
 	j0 = j1;
       else {
 	jj = (j0+j1)/2;
-	if (ai < mola[molind[jj+1]]) 
+	if (ai < molind[jj+1]) 
 	  j1 = jj;
 	else
 	  j0 = jj;
@@ -139,15 +138,15 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
   imol_center = -1;
   for(i=0; (i<nmol); i++) {
     for(j=molind[i]; (j<molind[i+1]); j++) {
-      if (bMol[i] && !bTmp[mola[j]])
+      if (bMol[i] && !bTmp[j])
 	gmx_fatal(FARGS,"Molecule %d marked for clustering but not atom %d",
-		  i,mola[j]);
-      else if (!bMol[i] && bTmp[mola[j]])
+		  i+1,j+1);
+      else if (!bMol[i] && bTmp[j])
 	gmx_fatal(FARGS,"Atom %d marked for clustering but not molecule %d",
-		  mola[j],i);
+		  j+1,i+1);
       else if (bMol[i]) {
 	/* Compute center of geometry of molecule */
-	rvec_inc(m_com[i],x[mola[j]]);
+	rvec_inc(m_com[i],x[j]);
       }
     }
     if (bMol[i]) {
@@ -235,7 +234,7 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
   for(i=0; (i<nmol); i++) {
     if (bMol[i]) {
       for(j=molind[i]; (j<molind[i+1]); j++)
-	rvec_inc(x[mola[j]],m_shift[i]);
+	rvec_inc(x[j],m_shift[i]);
     }
   }
   sfree(bMol);
@@ -386,7 +385,7 @@ static void center_x(int ecenter,rvec x[],matrix box,int n,int nc,atom_id ci[])
   }
 }
 
-static void mk_filenm(char *base,char *ext,int ndigit,int file_nr,
+static void mk_filenm(char *base,const char *ext,int ndigit,int file_nr,
 		      char out_file[])
 {
   char nbuf[128];
@@ -1228,7 +1227,7 @@ int gmx_trjconv(int argc,char *argv[])
 	    }
 	    if (bPBCcomMol) {
 	      put_molecule_com_in_box(unitcell_enum,ecenter,
-				      &top.blocks[ebMOLS],
+				      &top.mols,
 				      natoms,atoms->atom,fr.box, fr.x);
 	    }
 	    /* Copy the input trxframe struct to the output trxframe struct */

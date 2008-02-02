@@ -188,9 +188,8 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
   }
   if (inputrec->ePBC != epbcNONE)
     calc_shifts(box,fr->shift_vec);
-  put_charge_groups_in_box(logf,0,top->blocks[ebCGS].nr,
-			   fr->ePBC,box,&(top->blocks[ebCGS]),x,
-			   fr->cg_cm);
+  put_charge_groups_in_box(logf,0,top->cgs.nr,fr->ePBC,box,&(top->cgs),
+			   x,fr->cg_cm);
   if (graph)
     mk_mshift(logf,graph,fr->ePBC,box,x);
   /* Do the actual neighbour searching and if twin range electrostatics
@@ -205,7 +204,7 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
     pot[i] = 0;
   if (debug) {
     pr_rvecs(debug,0,"x",x,mdatoms->nr);
-    pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
+    pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
   }
   /* electrostatics from any atom to atoms without LJ */
   low_calc_pot(logf,eNL_QQ,fr,x,mdatoms,pot);

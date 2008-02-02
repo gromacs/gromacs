@@ -4155,7 +4155,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
       fprintf(fplog,"Will not sort the charge groups\n");
   }
 
-  comm->bInterCGBondeds = (top->blocks[ebCGS].nr > top->blocks[ebMOLS].nr);
+  comm->bInterCGBondeds = (top->cgs.nr > top->mols.nr);
   if (comm->bInterCGBondeds) {
     comm->bInterCGMultiBody = (multi_body_bondeds_count(top->idef.il) > 0);
   } else {
@@ -5197,18 +5197,18 @@ void dd_partition_system(FILE            *fplog,
   bRedist = FALSE;
   if (bMasterState) {
     get_cg_distribution(fplog,step,dd,
-			&top_global->blocks[ebCGS],
+			&top_global->cgs,
 			state_global->box,state_global->x);
     
-    dd_distribute_state(dd,&top_global->blocks[ebCGS],
+    dd_distribute_state(dd,&top_global->cgs,
 			state_global,state_local,f,buf);
     
-    dd_make_local_cgs(dd,&top_local->blocks[ebCGS]);
+    dd_make_local_cgs(dd,&top_local->cgs);
 
     if (dd->ncg_home > fr->cg_nalloc)
       dd_realloc_fr_cg(fr,dd->ncg_home);
     calc_cgcm(fplog,0,dd->ncg_home,
-	      &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
+	      &top_local->cgs,state_local->x,fr->cg_cm);
     
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
@@ -5224,12 +5224,12 @@ void dd_partition_system(FILE            *fplog,
     clear_dd_indices(dd,0);
 
     /* Build the new indices */
-    rebuild_cgindex(dd,top_global->blocks[ebCGS].index,state_local);
-    make_dd_indices(dd,top_global->blocks[ebCGS].index,0,fr);
+    rebuild_cgindex(dd,top_global->cgs.index,state_local);
+    make_dd_indices(dd,top_global->cgs.index,0,fr);
 
     /* Redetermine the cg COMs */
     calc_cgcm(fplog,0,dd->ncg_home,
-	      &top_local->blocks[ebCGS],state_local->x,fr->cg_cm);
+	      &top_local->cgs,state_local->x,fr->cg_cm);
     
     inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
@@ -5273,7 +5273,7 @@ void dd_partition_system(FILE            *fplog,
   }
 
   if (bRedist) {
-    cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->blocks[ebCGS],
+    cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->cgs,
 			     state_local,f,buf,fr,mdatoms,
 			     !bSortCG,nrnb);
     set_grid_ncg(fr->ns.grid,dd->ncg_home);
@@ -5301,11 +5301,11 @@ void dd_partition_system(FILE            *fplog,
   }
 
   /* Setup up the communication and communicate the coordinates */
-  setup_dd_communication(fplog,step,dd,top_global->blocks[ebCGS].index,
+  setup_dd_communication(fplog,step,dd,top_global->cgs.index,
 			 state_local->box,fr);
   
   /* Set the indices */
-  make_dd_indices(dd,top_global->blocks[ebCGS].index,cg0,fr);
+  make_dd_indices(dd,top_global->cgs.index,cg0,fr);
 
   /* Set the charge group boundaries for neighbor searching */
   set_cg_boundaries(dd);

@@ -506,8 +506,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     if (inputrec->nstlist > 0) {
       bNS = TRUE;
     } else if (inputrec->nstlist == -1) {
-      nabnsb = natoms_beyond_ns_buffer(inputrec,fr,&top->blocks[ebCGS],NULL,
-				       ems->s.x);
+      nabnsb = natoms_beyond_ns_buffer(inputrec,fr,&top->cgs,NULL,ems->s.x);
       if (PAR(cr))
 	gmx_sumi(1,&nabnsb,cr);
       bNS = (nabnsb > 0);
@@ -590,7 +589,7 @@ static double reorder_partsum(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
   fb = s_b->f;
   atom = top->atoms.atom;
 
-  index = top->blocks[ebCGS].index;
+  index = top->cgs.index;
 
   /* Collect fm in a global vector fmg.
    * This conflics with the spirit of domain decomposition,
@@ -2394,9 +2393,9 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   wallcycle_start(wcycle,ewcRUN);
 
   /* The last charge group is the group to be inserted */
-  cg_tp = top->blocks[ebCGS].nr - 1;
-  a_tp0 = top->blocks[ebCGS].index[cg_tp];
-  a_tp1 = top->blocks[ebCGS].index[cg_tp+1];
+  cg_tp = top->cgs.nr - 1;
+  a_tp0 = top->cgs.index[cg_tp];
+  a_tp1 = top->cgs.index[cg_tp+1];
   if (debug)
     fprintf(debug,"TPI cg %d, atoms %d-%d\n",cg_tp,a_tp0,a_tp1);
   if (a_tp1 - a_tp0 > 1 &&
@@ -2415,7 +2414,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   }
   bRFExcl = (bCharge && EEL_RF(fr->eeltype) && fr->eeltype!=eelRF_NEC);
 
-  calc_cgcm(fplog,cg_tp,cg_tp+1,&(top->blocks[ebCGS]),state->x,fr->cg_cm);
+  calc_cgcm(fplog,cg_tp,cg_tp+1,&(top->cgs),state->x,fr->cg_cm);
   if (bCavity) {
     if (norm(fr->cg_cm[cg_tp]) > 0.5*inputrec->rlist && fplog) {
       fprintf(fplog, "WARNING: Your TPI molecule is not centered at 0,0,0\n");
@@ -2640,7 +2639,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	clear_mat(pres);
 	
 	/* Set the charge group center of mass of the test particle */
-	copy_rvec(x_init,fr->cg_cm[top->blocks[ebCGS].nr-1]);
+	copy_rvec(x_init,fr->cg_cm[top->cgs.nr-1]);
 
 	/* Calc energy (no forces) on new positions.
 	 * Since we only need the intermolecular energy

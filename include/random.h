@@ -51,7 +51,7 @@ extern real rando(int *seed);
  * random seed variable.
  */
 
-extern void grp_maxwell(t_block *grp,real tempi[],int nrdf[],int seed,
+extern void grp_maxwell(t_blocka *grp,real tempi[],int nrdf[],int seed,
 			t_atoms *atoms,rvec v[]);
 /* Generate for each group in grp a temperature.
  * When seed = -1, set the seed to make_seed.

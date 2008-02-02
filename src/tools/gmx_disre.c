@@ -362,7 +362,7 @@ static void dump_stats(FILE *log,int nsteps,int ndr,t_ilist *disres,
 }
 
 static void dump_clust_stats(FILE *fp,int ndr,t_ilist *disres,
-			     t_iparams ip[],t_block *clust,t_dr_result dr[],
+			     t_iparams ip[],t_blocka *clust,t_dr_result dr[],
 			     char *clust_name[],int isize,atom_id index[])
 {
   int    i,j,k,nra,mmm=0;

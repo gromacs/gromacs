@@ -310,7 +310,7 @@ static int select_residuenumbers(char **string,t_atoms *atoms,atom_id n1,
   return *nr;
 }
 
-static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_block *block,
+static bool atoms_from_residuenumbers(t_atoms *atoms,int group,t_blocka *block,
 				      atom_id *nr,atom_id *index,char *gname)
 {
   int i,j,j0,j1,resnr,nres;
@@ -434,7 +434,7 @@ static int select_residuenames(t_atoms *atoms,int n_names,char **names,
   return *nr;
 }
 
-static void copy2block(int n,atom_id *index,t_block *block)
+static void copy2block(int n,atom_id *index,t_blocka *block)
 {
   int i,n0;
 
@@ -459,7 +459,7 @@ static void make_gname(int n,char **names,char *gname)
   }
 }
 
-static void copy_group(int g,t_block *block,atom_id *nr,atom_id *index)
+static void copy_group(int g,t_blocka *block,atom_id *nr,atom_id *index)
 {
   int i,i0;
   
@@ -469,7 +469,7 @@ static void copy_group(int g,t_block *block,atom_id *nr,atom_id *index)
     index[i]=block->a[i0+i];
 }
 
-static void remove_group(int nr,int nr2,t_block *block,char ***gn)
+static void remove_group(int nr,int nr2,t_blocka *block,char ***gn)
 {
   int i,j,shift;
   char *name;
@@ -500,7 +500,7 @@ static void remove_group(int nr,int nr2,t_block *block,char ***gn)
   }
 }
 
-static void split_group(t_atoms *atoms,int sel_nr,t_block *block,char ***gn,
+static void split_group(t_atoms *atoms,int sel_nr,t_blocka *block,char ***gn,
 			bool bAtom)
 {
   char buf[STRLEN],*name;
@@ -536,7 +536,7 @@ static void split_group(t_atoms *atoms,int sel_nr,t_block *block,char ***gn,
 }
 
 static int split_chain(t_atoms *atoms,rvec *x,
-			int sel_nr,t_block *block,char ***gn)
+			int sel_nr,t_blocka *block,char ***gn)
 {
   char    buf[STRLEN];
   int     j,nchain;
@@ -620,7 +620,7 @@ static bool check_have_atoms(t_atoms *atoms, char *string)
 }
 
 static bool parse_entry(char **string,int natoms,t_atoms *atoms,
-			t_block *block,char ***gn,
+			t_blocka *block,char ***gn,
 			atom_id *nr,atom_id *index,char *gname)
 {
   static char **names, *ostring;
@@ -778,7 +778,7 @@ static void list_residues(t_atoms *atoms)
   printf("\n");
 }
 
-static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char ***gn, bool bVerbose)
+static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_blocka *block, char ***gn, bool bVerbose)
 {
   static char **atnames, *ostring;
   static bool bFirst=TRUE;
@@ -1008,7 +1008,7 @@ static void edit_index(int natoms, t_atoms *atoms,rvec *x,t_block *block, char *
   sfree(index2);
 }
 
-static int block2natoms(t_block *block)
+static int block2natoms(t_blocka *block)
 {
   int i, natoms;
   
@@ -1020,7 +1020,7 @@ static int block2natoms(t_block *block)
   return natoms;
 }
 
-void merge_blocks(t_block *dest, t_block *source)
+void merge_blocks(t_blocka *dest, t_blocka *source)
 {
   int     i,nra0,i0;
   
@@ -1079,7 +1079,7 @@ int main(int argc,char *argv[])
   t_atoms  *atoms;
   rvec     *x,*v;
   matrix   box;
-  t_block  *block,*block2;
+  t_blocka *block,*block2;
   char     **gnames,**gnames2;
   t_filenm fnm[] = {
     { efSTX, "-f", NULL,     ffOPTRD  },
@@ -1121,7 +1121,7 @@ int main(int argc,char *argv[])
   }
 
   /* read input file(s) */
-  block = new_block();
+  block = new_blocka();
   gnames = NULL;
   printf("Going to read %d old index file(s)\n",nndxin);
   if (nndxin) {

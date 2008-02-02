@@ -105,6 +105,23 @@ static void delete_from_block(t_block *block,int inr)
   
   for(i=0; (i<block->nr); i++) {
     for(j=block->index[i]; (j<block->index[i+1]); j++) {
+      if (j == inr) {
+	/* This atom has to go */
+	/* Change indices too */
+	for(i1=i+1; (i1<=block->nr); i1++)
+	  block->index[i1]--;
+      }
+    }
+  }
+}
+
+static void delete_from_blocka(t_blocka *block,int inr) 
+{
+  /* Update block data structure */
+  int i,i1,j1,j,k;
+  
+  for(i=0; (i<block->nr); i++) {
+    for(j=block->index[i]; (j<block->index[i+1]); j++) {
       k = block->a[j];
       if (k == inr) {
 	/* This atom has to go */
@@ -152,8 +169,9 @@ void delete_atom(t_topology *top,int inr)
   /* First remove bonds etc. */
   delete_from_interactions(&top->idef,inr);
   /* Now charge groups etc. */
-  for(k=0; (k<ebNR); k++)
-    delete_from_block(&(top->blocks[k]),inr);
+  delete_from_block(&(top->cgs),inr);
+  delete_from_block(&(top->mols),inr);
+  delete_from_blocka(&(top->excls),inr);
   /* Now from the atoms struct */
   delete_from_atoms(&top->atoms,inr);
   if (debug)

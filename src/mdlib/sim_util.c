@@ -326,7 +326,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (DOMAINDECOMP(cr))
       cg1 = cr->dd->ncg_tot;
     else
-      cg1 = top->blocks[ebCGS].nr;
+      cg1 = top->cgs.nr;
     if (fr->n_tpi > 0)
       cg1--;
   }
@@ -354,7 +354,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     if (bCalcCGCM) { 
       put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,box,
-			       &(top->blocks[ebCGS]),x,fr->cg_cm);
+			       &(top->cgs),x,fr->cg_cm);
       inc_nrnb(nrnb,eNR_CGCM,homenr);
       inc_nrnb(nrnb,eNR_RESETX,cg1-cg0);
     } 
@@ -363,7 +363,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     }
   } 
   else if (bCalcCGCM) {
-    calc_cgcm(fplog,cg0,cg1,&(top->blocks[ebCGS]),x,fr->cg_cm);
+    calc_cgcm(fplog,cg0,cg1,&(top->cgs),x,fr->cg_cm);
     inc_nrnb(nrnb,eNR_CGCM,homenr);
   }
   
@@ -372,7 +372,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       move_cgcm(fplog,cr,fr->cg_cm);
     }
     if (gmx_debug_at)
-      pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->blocks[ebCGS].nr);
+      pr_rvecs(debug,0,"cgcm",fr->cg_cm,top->cgs.nr);
   }
 
 #ifdef GMX_MPI
@@ -491,7 +491,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   /* Compute the forces */    
   force(fplog,step,fr,inputrec,&(top->idef),cr,nrnb,wcycle,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
-	x,f,ener,fcd,box,lambda,graph,&(top->blocks[ebEXCLS]),
+	x,f,ener,fcd,box,lambda,graph,&(top->excls),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 	

@@ -91,10 +91,10 @@ extern void done_block2(t_block2 *b2);
 
 extern void push_excl(char *line, t_block2 *b2);
 
-extern void merge_excl(t_block *excl, t_block2 *b2);
+extern void merge_excl(t_blocka *excl, t_block2 *b2);
 
-extern void b_to_b2(t_block *b, t_block2 *b2);
+extern void b_to_b2(t_blocka *b, t_block2 *b2);
 
-extern void b2_to_b(t_block2 *b2, t_block *b);
+extern void b2_to_b(t_block2 *b2, t_blocka *b);
 
 #endif	/* _toppush_h */

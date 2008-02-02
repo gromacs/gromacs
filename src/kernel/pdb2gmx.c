@@ -380,7 +380,7 @@ int pdbicomp(const void *a,const void *b)
 
 static void sort_pdbatoms(int nrtp,t_restp restp[],
 			  int natoms,t_atoms **pdbaptr,rvec **x,
-			  t_block *block,char ***gnames)
+			  t_blocka *block,char ***gnames)
 {
   t_atoms *pdba,*pdbnew;
   rvec **xnew;
@@ -642,7 +642,7 @@ int main(int argc, char *argv[])
   int        natom,nres;
   t_atoms    pdba_all,*pdba;
   t_atoms    *atoms;
-  t_block    *block;
+  t_blocka   *block;
   int        chain,nch,maxch,nwaterchain;
   t_pdbchain *pdb_ch;
   t_chain    *chains,*cc;
@@ -1037,7 +1037,7 @@ int main(int argc, char *argv[])
 		  bHisMan,bArgMan,bGlnMan,bRenameCys,angle,distance,&symtab);
 		  
     if (bSort) {
-      block = new_block();
+      block = new_blocka();
       snew(gnames,1);
       rename_pdbres(pdba,"CYS","CYSH",TRUE,&symtab);
       sort_pdbatoms(nrtp,restp,natom,&pdba,&x,block,&gnames);
@@ -1053,7 +1053,7 @@ int main(int argc, char *argv[])
       for(i=0; i < block->nr; i++)
 	sfree(gnames[i]);
       sfree(gnames);
-      done_block(block);
+      done_blocka(block);
     } else 
       fprintf(stderr,"WARNING: "
 	      "without sorting no check for duplicate atoms can be done\n");

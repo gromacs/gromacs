@@ -193,7 +193,7 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
   return grpbuf;
 }
 
-void make_pull_groups(t_pull *pull,char **pgnames,t_block *grps,char **gnames)
+void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
 {
   int  d,nchar,g,ig=-1,i;
   char *ptr,pulldim1[STRLEN];

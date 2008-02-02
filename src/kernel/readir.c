@@ -934,7 +934,7 @@ int search_string(char *s,int ng,char *gn[])
 }
 
 static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
-			 t_block *block,char *gnames[],
+			 t_blocka *block,char *gnames[],
 			 int gtype,int restnm,
 			 int grptp,bool bVerbose)
 {
@@ -1269,7 +1269,7 @@ void do_index(char *ndx,
 	      t_atoms    *atoms,bool bVerbose,
 	      t_inputrec *ir,t_idef *idef,rvec *v)
 {
-  t_block *grps;
+  t_blocka *grps;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
   int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
@@ -1629,7 +1629,7 @@ void do_index(char *ndx,
   for(i=0; (i<grps->nr); i++)
     sfree(gnames[i]);
   sfree(gnames);
-  done_block(grps);
+  done_blocka(grps);
   sfree(grps);
 
 }

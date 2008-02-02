@@ -70,7 +70,7 @@ static bool hbond(rvec x[],int i,int j,real distance)
   return (iprod(tmp,tmp) < tol);
 }
 
-static void chk_allhb(t_atoms *pdba,rvec x[],t_block *hb,
+static void chk_allhb(t_atoms *pdba,rvec x[],t_blocka *hb,
 		      bool donor[],bool accept[],real dist)
 {
   int i,j,k,ii,natom;
@@ -99,7 +99,7 @@ static void chk_allhb(t_atoms *pdba,rvec x[],t_block *hb,
   hb->nra = k;
 }
 
-static void pr_hbonds(FILE *fp,t_block *hb,t_atoms *pdba)
+static void pr_hbonds(FILE *fp,t_blocka *hb,t_atoms *pdba)
 {
   int i,j,k,j0,j1;
   
@@ -191,7 +191,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
   int  natom;
   int  i,j,nd,na,aj,hisnr,his0,type=-1;
   int  nd1,ne2,cg,cd2,ce1;
-  t_block *hb;
+  t_blocka *hb;
   real d;
   char *atomnm;
   
@@ -271,7 +271,7 @@ void set_histp(t_atoms *pdba,rvec *x,real angle,real dist){
       }
     }
   }
-  done_block(hb);
+  done_blocka(hb);
   sfree(hb);
   sfree(donor);
   sfree(acceptor);

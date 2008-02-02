@@ -147,7 +147,7 @@ extern void set_constraints(gmx_constr_t constr,
 			    gmx_domdec_t *dd);
 /* Set up all the local constraints for the node */
 
-extern t_block *atom2constraints(gmx_constr_t constr);
+extern t_blocka *atom2constraints(gmx_constr_t constr);
 /* Returns the atom to constraints list */
 
 extern bool inter_charge_group_constraints(gmx_constr_t constr);
@@ -168,12 +168,12 @@ extern real lincs_rmsd(gmx_lincsdata_t lincsd,bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
 gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
-			   int nflexcon_global,t_block *at2con,
+			   int nflexcon_global,t_blocka *at2con,
 			   bool bPLINCS,int nIter,int nProjOrder);
 /* Initializes and returns the lincs data struct */
 
 extern void set_lincs(t_idef *idef,int start,int homenr,
-		      t_block *at2con,
+		      t_blocka *at2con,
 		      bool bDynamics,gmx_domdec_t *dd,
 		      gmx_lincsdata_t li);
 /* Initialize lincs stuff */

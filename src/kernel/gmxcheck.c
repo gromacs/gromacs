@@ -93,7 +93,7 @@ static void tpx2system(FILE *fp,t_topology *top)
       nvsite++;
   }
   fprintf(fp,"A system of %d molecules (%d atoms) was simulated.\n",
-	  top->blocks[ebMOLS].nr,top->atoms.nr-nvsite);
+	  top->mols.nr,top->atoms.nr-nvsite);
   if (nvsite)
     fprintf(fp,"Virtual sites were used in some of the molecules.\n");
   fprintf(fp,"\n\n");
@@ -512,13 +512,13 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 
 void chk_ndx(char *fn)
 {
-  t_block *grps;
+  t_blocka *grps;
   char **grpname=NULL;
   int  i,j;
   
   grps = init_index(fn,&grpname);
   if (debug)
-    pr_block(debug,0,fn,grps,FALSE);
+    pr_blocka(debug,0,fn,grps,FALSE);
   else {
     printf("Contents of index file %s\n",fn);
     printf("--------------------------------------------------\n");
@@ -533,7 +533,7 @@ void chk_ndx(char *fn)
   for(i=0; (i<grps->nr); i++) 
     sfree(grpname[i]);
   sfree(grpname);
-  done_block(grps);
+  done_blocka(grps);
 }
 
 void chk_enx(char *fn)

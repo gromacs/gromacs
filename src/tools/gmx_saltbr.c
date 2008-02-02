@@ -62,7 +62,7 @@ t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
 {
   t_charge *cg=NULL;
   char     buf[32];
-  int      i,j,k,ncg,resnr,anr;
+  int      i,j,ncg,resnr,anr;
   real     qq;
 
   /* Find the charged groups */  
@@ -70,14 +70,13 @@ t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
   for(i=0; (i<cgs->nr); i++) {
     qq=0.0;
     for(j=cgs->index[i]; (j<cgs->index[i+1]); j++) {
-      k=cgs->a[j];
-      qq+=atoms->atom[k].q;
+      qq+=atoms->atom[j].q;
     }
     if (fabs(qq) > 1.0e-5) {
       srenew(cg,ncg+1);
       cg[ncg].q=qq;
       cg[ncg].cg=i;
-      anr=cgs->a[cgs->index[i]];
+      anr=cgs->index[i];
       resnr=atoms->atom[anr].resnr;
       sprintf(buf,"%s%d",*(atoms->resname[resnr]),resnr+1);
       cg[ncg].label=strdup(buf);
@@ -90,7 +89,7 @@ t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
     printf("CG: %10s Q: %6g  Atoms:",
 	   cg[i].label,cg[i].q);
     for(j=cgs->index[cg[i].cg]; (j<cgs->index[cg[i].cg+1]); j++)
-      printf(" %4u",cgs->a[j]);
+      printf(" %4u",j);
     printf("\n");
   }
   
@@ -118,14 +117,12 @@ real low_calc_dist(rvec xi,rvec xj,rvec box)
 
 real calc_dist(rvec x[],rvec box_size,t_block *cgs,int icg,int jcg)
 {
-  int  i,j,ai,aj;
+  int  i,j;
   real dd,mindist=1000;
   
   for(i=cgs->index[icg]; (i<cgs->index[icg+1]); i++) {
-    ai=cgs->a[i];
     for(j=cgs->index[jcg]; (j<cgs->index[jcg+1]); j++) {
-      aj=cgs->a[j];
-      dd=low_calc_dist(x[ai],x[aj],box_size);
+      dd=low_calc_dist(x[i],x[j],box_size);
       if (dd < mindist)
 	mindist=dd;
     }
@@ -189,7 +186,7 @@ int gmx_saltbr(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
   top=read_top(ftp2fn(efTPX,NFILE,fnm));
-  cg=mk_charge(&top->atoms,&(top->blocks[ebCGS]),&ncg);
+  cg=mk_charge(&top->atoms,&(top->cgs),&ncg);
   snew(cgdist,ncg);
   snew(nWithin,ncg);
   for(i=0; (i<ncg); i++) {
@@ -213,7 +210,7 @@ int gmx_saltbr(int argc,char *argv[])
 	srenew(cgdist[i][j],teller+1);
 	cgdist[i][j][teller]=
 	  calc_dist(x,box_size,
-		    &(top->blocks[ebCGS]),cg[i].cg,cg[j].cg);
+		    &(top->cgs),cg[i].cg,cg[j].cg);
 	if (cgdist[i][j][teller] < truncate)
 	  nWithin[i][j]=1;
       }

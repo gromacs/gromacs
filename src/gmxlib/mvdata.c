@@ -115,6 +115,13 @@ static void bc_block(const t_commrec *cr,t_block *block)
   block_bc(cr,block->nr);
   snew_bc(cr,block->index,block->nr+1);
   nblock_bc(cr,block->nr+1,block->index);
+}
+
+static void bc_blocka(const t_commrec *cr,t_blocka *block)
+{
+  block_bc(cr,block->nr);
+  snew_bc(cr,block->index,block->nr+1);
+  nblock_bc(cr,block->nr+1,block->index);
   block_bc(cr,block->nra);
   if (block->nra) {
     snew_bc(cr,block->a,block->nra);
@@ -322,7 +329,8 @@ void bcast_ir_top(const t_commrec *cr,t_inputrec *inputrec,t_topology *top)
   if (debug) fprintf(debug,"after bc_atoms\n");
   bc_idef(cr,&top->idef);
   if (debug) fprintf(debug,"after bc_idef\n");
-  for (i=0; (i<ebNR); i++) 
-    bc_block(cr,&top->blocks[i]);
+  bc_block(cr,&top->cgs);
+  bc_block(cr,&top->mols);
+  bc_blocka(cr,&top->excls);
   if (debug) fprintf(debug,"after bc_block\n");
 }

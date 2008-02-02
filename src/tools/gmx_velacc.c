@@ -82,7 +82,7 @@ int gmx_velacc(int argc,char *argv[])
   matrix     box;
   bool       bTPS,bTop=FALSE;
   int        gnx;
-  atom_id    *index,*a=NULL,*atndx=NULL,at;
+  atom_id    *index,*atndx=NULL,at;
   char       *grpname;
   char       title[256];
   real       t0,t1,m;
@@ -121,8 +121,7 @@ int gmx_velacc(int argc,char *argv[])
   if (bMol) {
     if (!bTop)
       gmx_fatal(FARGS,"Need a topology to determine the molecules");
-    a     = top.blocks[ebMOLS].a;
-    atndx = top.blocks[ebMOLS].index;
+    atndx = top.mols.index;
   }
   
   /* Correlation stuff */
@@ -146,7 +145,7 @@ int gmx_velacc(int argc,char *argv[])
       for(i=0; i<gnx; i++) {
 	clear_rvec(mv_mol);
 	for(j=0; j<atndx[index[i]+1] - atndx[index[i]]; j++) {
-	  at = a[atndx[index[i]]+j];
+	  at = atndx[index[i]] + j;
 	  m  = top.atoms.atom[at].m;
 	  mv_mol[XX] += m*fr.v[at][XX];
 	  mv_mol[YY] += m*fr.v[at][YY];

@@ -46,16 +46,15 @@
 #include "genalg.h"
 #include "random.h"
 
-real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[])
+real mol_dipole(int k0,int k1,rvec x[],real q[])
 {
-  int  k,kk,m;
+  int  k,m;
   rvec mu;
   
   clear_rvec(mu);
   for(k=k0; (k<k1); k++) {
-    kk = ma[k];
     for(m=0; (m<DIM); m++) 
-      mu[m] += q[kk]*x[kk][m];
+      mu[m] += q[k]*x[k][m];
   }
   return norm(mu);  /* Dipole moment of this molecule in e nm */
 }
@@ -72,7 +71,7 @@ real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,
   end   = md->homenr + start;  
   
   atom = top->atoms.atom;
-  mols = &(top->blocks[ebMOLS]);
+  mols = &(top->mols);
   /*
   clear_rvec(mu);
   for(i=start; (i<end); i++)
@@ -88,7 +87,7 @@ real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,
     mu_ave = 0.0;
     for(i=0; (i<gnx); i++) {
       int gi = grpindex[i];
-      mu_ave += mol_dipole(mols->index[gi],mols->index[gi+1],mols->a,x,q);
+      mu_ave += mol_dipole(mols->index[gi],mols->index[gi+1],x,q);
     }
     
     return(mu_ave/gnx);

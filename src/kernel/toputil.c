@@ -163,7 +163,7 @@ void init_molinfo(t_molinfo *mol)
   init_plist(mol->plist);
   init_block(&mol->cgs);
   init_block(&mol->mols);
-  init_block(&mol->excls);
+  init_blocka(&mol->excls);
   init_atom(&mol->atoms);
 }
 
@@ -359,9 +359,9 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
   fflush (out);
 }
 
-void print_block (FILE *out, char *szName, 
+void print_blocka(FILE *out, char *szName, 
 		  char *szIndex, char *szA,
-		  t_block *block)
+		  t_blocka *block)
 {
   int i,j;
   

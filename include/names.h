@@ -48,7 +48,6 @@
  * extra argument (the +1)
  * these should correspond to names.c and include/types/enums.h
  */
-extern const char *eblock_names[ebNR+1];
 extern const char *epbc_names[epbcNR+1];
 extern const char *etcoupl_names[etcNR+1];
 extern const char *epcoupl_names[epcNR+1];

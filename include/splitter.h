@@ -48,7 +48,7 @@ extern void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
  */
 
 extern void gen_sblocks(FILE *fp,int at_start,int at_end,
-			t_idef *idef,t_block *sblock,
+			t_idef *idef,t_blocka *sblock,
 			bool bSettle);
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake
  * blocks including settles. You normally do not want this.

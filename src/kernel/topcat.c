@@ -133,6 +133,26 @@ static void bondcat(t_params *dest,t_params *src,int copies,int nrstart,
 static void blockcat(t_block *dest,t_block *src,int copies, 
 		     int dnum,int snum)
 {
+  int i,j,l,nra,size;
+
+  if (src->nr) {
+    size=(dest->nr+copies*src->nr+1);
+    srenew(dest->index,size);
+  }
+
+  nra = dest->index[dest->nr];
+  for (l=dest->nr,j=0; (j<copies); j++) {
+    for (i=0; (i<src->nr); i++)
+      dest->index[l++] = nra + src->index[i];
+    nra += src->index[src->nr];
+  }
+  dest->nr += copies*src->nr;
+  dest->index[dest->nr] = nra;
+}
+
+static void blockacat(t_blocka *dest,t_blocka *src,int copies, 
+		      int dnum,int snum)
+{
   int i,j,l,size;
   int destnr  = dest->nr;
   int destnra = dest->nra;
@@ -221,7 +241,7 @@ static void top1_cat(t_molinfo *dest,t_molinfo *src,
   
   blockcat(&(dest->cgs),&(src->cgs),nrcopies,destnr,srcnr);
   blockcat(&(dest->mols),&(src->mols),nrcopies,destnr,srcnr);
-  blockcat(&(dest->excls),&(src->excls),nrcopies,destnr,srcnr);
+  blockacat(&(dest->excls),&(src->excls),nrcopies,destnr,srcnr);
 
   for (i=0; (i<F_NRE); i++) 
     bondcat(&dest->plist[i],&src->plist[i],
@@ -244,9 +264,9 @@ void topcat (t_molinfo *dest,int nsrc,t_molinfo src[],
 void mi2top(t_topology *dest,t_molinfo *src)
 {
   atomcat(&(dest->atoms),&(src->atoms),1);
-  blockcat(&(dest->blocks[ebCGS]),&(src->cgs),1,0,src->atoms.nr);
-  blockcat(&(dest->blocks[ebMOLS]),&(src->mols),1,0,src->atoms.nr);
-  blockcat(&(dest->blocks[ebEXCLS]),&(src->excls),1,0,src->atoms.nr);
+  blockcat(&(dest->cgs),&(src->cgs),1,0,src->atoms.nr);
+  blockcat(&(dest->mols),&(src->mols),1,0,src->atoms.nr);
+  blockacat(&(dest->excls),&(src->excls),1,0,src->atoms.nr);
   dest->name=src->name;
 }
 

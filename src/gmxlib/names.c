@@ -42,11 +42,6 @@
 
 /* note: these arrays should correspond to enums in include/types/enums.h */
 
-const char *eblock_names[ebNR+1]=
-{
-  "CGS","MOLS","SBLOCKS","EXCLS",NULL
-};
-
 const char *epbc_names[epbcNR+1]=
 {
   "xyz", "no", "xy", NULL

@@ -559,7 +559,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (ed_constraints(edyn))
     bHaveConstr = TRUE;
   
-  gnx = top->blocks[ebMOLS].nr;
+  gnx = top->mols.nr;
   snew(grpindex,gnx);
   for(i=0; (i<gnx); i++)
     grpindex[i] = i;
@@ -803,7 +803,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  bMasterState = TRUE;
       }
       if (DOMAINDECOMP(cr) && bMasterState)
-	dd_collect_state(cr->dd,&top_global->blocks[ebCGS],state,state_global);
+	dd_collect_state(cr->dd,&top_global->cgs,state,state_global);
       
       if (DOMAINDECOMP(cr)) {
 	/* Repartition the domain decomposition */
@@ -1008,7 +1008,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   
     if (ir->nstlist == -1 && !bRerunMD) {
       nabnsb =
-	natoms_beyond_ns_buffer(ir,fr,&top->blocks[ebCGS],*scale_tot,state->x);
+	natoms_beyond_ns_buffer(ir,fr,&top->cgs,*scale_tot,state->x);
     }
 
     if (PAR(cr) &&
@@ -1106,7 +1106,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* Calculate long range corrections to pressure and energy */
     if (bTCR || bFFscan)
-      set_avcsixtwelve(fplog,fr,&top_global->atoms,&top_global->blocks[ebEXCLS]);
+      set_avcsixtwelve(fplog,fr,&top_global->atoms,&top_global->excls);
       
     /* Calculate long range corrections to pressure and energy */
     calc_dispcorr(fplog,ir,fr,step,top_global->atoms.nr,
@@ -1136,7 +1136,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (shellfc==NULL || bConverged))
       if (print_forcefield(fplog,ener,mdatoms->homenr,f,buf,xcopy,
-			   &(top->blocks[ebMOLS]),mdatoms->massT,pres)) {
+			   &(top->mols),mdatoms->massT,pres)) {
 	if (gmx_parallel_env)
 	  gmx_finalize(cr);
 	fprintf(stderr,"\n");
@@ -1156,7 +1156,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       do_coupling(fplog,nfile,fnm,tcr,t,step,ener,fr,
 		  ir,MASTER(cr),
 		  mdatoms,&(top->idef),mu_aver,
-		  top->blocks[ebMOLS].nr,cr,
+		  top->mols.nr,cr,
 		  state->box,total_vir,pres,
 		  mu_tot,state->x,f,bConverged);
       debug_gmx();
@@ -1199,7 +1199,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 	do_per_step(step,repl_ex_nst))
       bExchanged = replica_exchange(fplog,cr,repl_ex,state_global,ener[F_EPOT],
-				    &(top_global->blocks[ebCGS]),state,
+				    &(top_global->cgs),state,
 				    step,t);
     if (bExchanged && PAR(cr)) {
       if (DOMAINDECOMP(cr)) {

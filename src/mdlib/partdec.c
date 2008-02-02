@@ -442,7 +442,7 @@ void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
   /* This computes which entities can be placed on processors */
   split_top(log,npp,top,capacity,multinr_cgs,multinr_nre);
   sfree(capacity);
-  init_partdec(log,cr,&(top->blocks[ebCGS]),multinr_cgs,&(top->idef));
+  init_partdec(log,cr,&(top->cgs),multinr_cgs,&(top->idef));
 
   /* This should be fine */
   /*split_idef(&(top->idef),cr->nnodes-cr->npmenodes);*/

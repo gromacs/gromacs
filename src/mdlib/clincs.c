@@ -525,7 +525,7 @@ void set_lincs_matrix(struct gmx_lincsdata *li,real *invmass,real lambda)
   li->matlam = lambda;
 }
 
-static int count_triangle_constraints(int ncon,t_iatom *ia,t_block *at2con)
+static int count_triangle_constraints(int ncon,t_iatom *ia,t_blocka *at2con)
 {
   int  c0,a00,a01,n1,c1,a10,a11,ac1,n2,c2,a20,a21;
   int  ncon_triangle;
@@ -569,7 +569,7 @@ static int int_comp(const void *a,const void *b)
 }
 
 gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
-			   int nflexcon_global,t_block *at2con,
+			   int nflexcon_global,t_blocka *at2con,
 			   int bPLINCS,int nIter,int nProjOrder)
 {
   struct gmx_lincsdata *li;
@@ -611,7 +611,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
 }
 
 void set_lincs(t_idef *idef,int start,int homenr,
-	       t_block *at2con,
+	       t_blocka *at2con,
 	       bool bDynamics,gmx_domdec_t *dd,
 	       struct gmx_lincsdata *li)
 {
@@ -864,7 +864,7 @@ static void cconerr(gmx_domdec_t *dd,
 }
 
 static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
-		      t_block *at2con,
+		      t_blocka *at2con,
 		      char *name,bool bAll,rvec *x,matrix box)
 {
   char str[STRLEN];

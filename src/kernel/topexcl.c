@@ -141,7 +141,7 @@ void __print_nnb(t_nextnb *nnb, char *s)
 }
 #endif
 
-void nnb2excl (t_nextnb *nnb, t_block *excl)
+void nnb2excl (t_nextnb *nnb, t_blocka *excl)
 {
   int i,j,j_index;
   int nre,nrx,nrs,nr_of_sortables;
@@ -200,7 +200,7 @@ void nnb2excl (t_nextnb *nnb, t_block *excl)
     sfree (s);
   }
   if (debug)
-    print_block(debug,"Exclusions","Atom","Excluded",excl);
+    print_blocka(debug,"Exclusions","Atom","Excluded",excl);
 }
 
 static void do_gen(int nrbonds,	       /* total number of bonds in s	*/
@@ -289,7 +289,7 @@ void gen_nnb(t_nextnb *nnb,t_params plist[])
   sfree(s);
 }
 
-void generate_excl (int nrexcl,int nratoms,t_params plist[],t_block *excl)
+void generate_excl (int nrexcl,int nratoms,t_params plist[],t_blocka *excl)
 {
   t_nextnb nnb;
 

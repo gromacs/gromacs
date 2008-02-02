@@ -173,7 +173,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
   }
 }
 
-static int count_excls(t_block *cgs,t_block *excls,int *n_intercg_excl)
+static int count_excls(t_block *cgs,t_blocka *excls,int *n_intercg_excl)
 {
   int n,n_inter,cg,at0,at1,at,excl,atj;
   
@@ -301,8 +301,7 @@ void dd_make_reverse_top(FILE *fplog,
 				     ir->eConstrAlg == estSHAKE,
 				     &dd->nbonded_global);
 
-  nexcl = count_excls(&top->blocks[ebCGS],&top->blocks[ebEXCLS],
-		      &dd->n_intercg_excl);
+  nexcl = count_excls(&top->cgs,&top->excls,&dd->n_intercg_excl);
   if (EEL_EXCL_FORCES(ir->coulombtype)) {
     dd->nbonded_global += nexcl;
     if (dd->n_intercg_excl && fplog)
@@ -673,7 +672,8 @@ static int make_local_bondeds_intracg(gmx_domdec_t *dd,
 static int make_local_exclusions(gmx_domdec_t *dd,
 				 bool bRCheck,real rc,
 				 int *la2lc,t_pbc *pbc_null,rvec *cg_cm,
-				 t_forcerec *fr,t_block *excls,t_block *lexcls)
+				 t_forcerec *fr,
+				 t_blocka *excls,t_blocka *lexcls)
 {
   int  nicell,n,count,ic,jla0,jla1,jla,cg,la0,la1,la,a,j,aj;
   gmx_ga2la_t *ga2la;
@@ -809,7 +809,6 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 {
   lcgs->nr    = dd->ncg_tot;
   lcgs->index = dd->cgindex;
-  lcgs->nra   = dd->nat_tot;
 }
 
 void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
@@ -826,13 +825,13 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
     fprintf(debug,"Making local topology\n");
 
   ltop->name  = top->name;
-  dd_make_local_cgs(dd,&ltop->blocks[ebCGS]);
+  dd_make_local_cgs(dd,&ltop->cgs);
 
   bRCheckMB   = FALSE;
   bRCheck2B   = FALSE;
   bRCheckExcl = FALSE;
 
-  if (top->blocks[ebCGS].nr == top->blocks[ebMOLS].nr) {
+  if (top->cgs.nr == top->mols.nr) {
     /* We don't need any checks, assign all interactions with local atoms */
 
     dd->nbonded_local = make_local_bondeds_intracg(dd,&ltop->idef,vsite);
@@ -887,8 +886,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 
   nexcl = make_local_exclusions(dd,bRCheckExcl,
 				rc,dd->la2lc,pbc_null,fr->cg_cm,
-				fr,&top->blocks[ebEXCLS],
-				&ltop->blocks[ebEXCLS]);
+				fr,&top->excls,&ltop->excls);
 
   if (EEL_EXCL_FORCES(fr->eeltype))
     dd->nbonded_local += nexcl;
@@ -908,13 +906,6 @@ t_topology *dd_init_local_top(t_topology *top_global)
   int i;
   
   snew(top,1);
-
-  /* valgrind 3.2.3 complains if the ebEXCLS block is not zeroed here,
-   * but this is aleady done by the snew command above.
-   * I suspect a bug in valgrind 3.2.3 (B. Hess )
-   */
-  for(i=0; i<ebNR; i++)
-    memset(&top->blocks[i],0,sizeof(top->blocks[i]));
 
   top->idef = top_global->idef;
   for(i=0; i<F_NRE; i++) {

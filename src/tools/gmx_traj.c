@@ -520,7 +520,7 @@ int gmx_traj(int argc,char *argv[])
   char       **grpname;
   int        *isize0,*isize;
   atom_id    **index0,**index;
-  atom_id    *a,*atndx;
+  atom_id    *atndx;
   t_block    *mols;
   bool       bTop,bOX,bOXT,bOV,bOF,bOB,bOT,bEKT,bEKR,bCV,bCF;
   bool       bDim[4],bDum[4],bVD;
@@ -593,8 +593,7 @@ int gmx_traj(int argc,char *argv[])
   get_index(&(top.atoms),indexfn,ngroups,isize0,index0,grpname);
   
   if (bMol) {
-    mols=&(top.blocks[ebMOLS]);
-    a = mols->a;
+    mols=&(top.mols);
     atndx = mols->index;
     ngroups = isize0[0];
     snew(isize,ngroups);
@@ -606,7 +605,7 @@ int gmx_traj(int argc,char *argv[])
       isize[i] = atndx[index0[0][i]+1] - atndx[index0[0][i]];
       snew(index[i],isize[i]);
       for(j=0; j<isize[i]; j++)
-	index[i][j] = a[atndx[index0[0][i]]+j];
+	index[i][j] = atndx[index0[0][i]] + j;
     }
   } else {
     isize = isize0;

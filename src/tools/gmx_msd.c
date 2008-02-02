@@ -114,7 +114,7 @@ t_corr *init_corr(int nrgrp,int type,int axis,real dim_factor,
   this->time = NULL;
   this->lsq  = NULL;
   if (bMol) {
-    this->nmol = top->blocks[ebMOLS].nr;
+    this->nmol = top->mols.nr;
     snew(this->mass,this->nmol);
     for(i=0; i<this->nmol; i++)
       this->mass[i] = 1;
@@ -250,7 +250,7 @@ static real calc1_norm(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
 
 static void calc_mol_com(t_block *mols,t_atoms *atoms,rvec *x,rvec *xa)
 {
-  int  mol,i,j,d;
+  int  mol,i,d;
   rvec xm;
   real m,mtot;
 
@@ -258,10 +258,9 @@ static void calc_mol_com(t_block *mols,t_atoms *atoms,rvec *x,rvec *xa)
     clear_rvec(xm);
     mtot = 0;
     for(i=mols->index[mol]; i<mols->index[mol+1]; i++) {
-      j = mols->a[i];
-      m = atoms->atom[j].m;
+      m = atoms->atom[i].m;
       for(d=0; d<DIM; d++)
-	xm[d] += m*x[j][d];
+	xm[d] += m*x[i][d];
       mtot += m;
     }
     svmul(1/mtot,xm,xa[mol]);
@@ -514,7 +513,7 @@ void corr_loop(t_corr *this,char *fn,t_topology *top,
 
     if (nmol) {
       /*rm_pbc(&top->idef,natoms,box,x[cur],x[cur]);*/
-      calc_mol_com(&top->blocks[ebMOLS],&top->atoms,x[cur],xa[cur]);
+      calc_mol_com(&top->mols,&top->atoms,x[cur],xa[cur]);
     }
     
     /* loop over all groups in index file */
@@ -554,7 +553,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
   snew(grpname,nrgrp);
     
   if (mol_file && !ndx_file) {
-    gnx[0] = top->blocks[ebMOLS].nr;
+    gnx[0] = top->mols.nr;
     snew(index[0],gnx[0]);
     grpname[0] = "Molecules";
     for(i=0; (i<gnx[0]); i++)

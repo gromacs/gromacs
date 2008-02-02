@@ -1010,7 +1010,7 @@ static void setexcl(int nri,atom_id ia[],t_block *excl,bool b,
 }
 */
 
-static void setexcl(atom_id start,atom_id end,t_block *excl,bool b,
+static void setexcl(atom_id start,atom_id end,t_blocka *excl,bool b,
 		    t_excl bexcl[])
 {
   atom_id i,k;
@@ -1254,8 +1254,8 @@ static int ns_simple_core(t_forcerec *fr,
   int      *cginfo;
   t_ns_buf *nsbuf;
   /* atom_id  *i_atoms; */
-  t_block  *cgs=&(top->blocks[ebCGS]);
-  t_block  *excl=&(top->blocks[ebEXCLS]);
+  t_block  *cgs=&(top->cgs);
+  t_blocka *excl=&(top->excls);
   rvec     b_inv;
   int      m;
   bool     bBox,bTriclinic,*i_egp_flags;
@@ -1472,7 +1472,7 @@ static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
 
   if (!bEvaluateNow) {  
     /* Put the long range particles in a list */
-    put_in_list(bHaveVdW,ngid,md,icg,jgid,nlr,lr,top->blocks[ebCGS].index,
+    put_in_list(bHaveVdW,ngid,md,icg,jgid,nlr,lr,top->cgs.index,
 		/* top->blocks[ebCGS].a, */ bexcl,shift,fr,
 		TRUE,bDoVdW,bDoCoul,bQMMM);
   }
@@ -1491,7 +1491,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr;
   int     *nlr_ljc,*nlr_one,*nsr;
   gmx_domdec_t *dd=NULL;
-  t_block *cgs=&(top->blocks[ebCGS]);
+  t_block *cgs=&(top->cgs);
   int     *cginfo=fr->cginfo;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
   ivec    sh0,sh1,shp0,shp1;
@@ -1657,7 +1657,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
         /* Skip this charge group if it is not a QM atom while making a
         * QM/MM neighbourlist
         */
-        if (md->bQM[cgs->a[i0]]==FALSE)
+        if (md->bQM[i0]==FALSE)
             continue; /* MM particle, go to next particle */ 
         
         /* Compute the number of charge groups that fall within the control
@@ -1701,7 +1701,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     i_egp_flags = fr->egp_flags + igid*ngid;
     
     /* Set the exclusions for the atoms in charge group icg using a bitmask */
-    setexcl(i0,cgs->index[icg+1],&top->blocks[ebEXCLS],TRUE,bexcl);
+    setexcl(i0,cgs->index[icg+1],&top->excls,TRUE,bexcl);
     
     ci2xyz(grid,icg,&cell_x,&cell_y,&cell_z);
 
@@ -1887,7 +1887,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
       }
     }
     /* setexcl(nri,i_atoms,&top->atoms.excl,FALSE,bexcl); */
-    setexcl(cgs->index[icg],cgs->index[icg+1],&top->blocks[ebEXCLS],FALSE,bexcl);
+    setexcl(cgs->index[icg],cgs->index[icg+1],&top->excls,FALSE,bexcl);
   }
   /* Perform any left over force calculations */
   for (nn=0; (nn<ngid); nn++) {
@@ -1986,7 +1986,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
   if (debug) 
     pr_ivec(debug,0,"bHaveVdW",ns->bHaveVdW,fr->ntype,TRUE);
 
-  ns_realloc_natoms(ns,cgs->nra);
+  ns_realloc_natoms(ns,cgs->index[cgs->nr]);
 }
 
 int search_neighbours(FILE *log,t_forcerec *fr,
@@ -1997,7 +1997,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       real lambda,real *dvdlambda,
                       bool bFillGrid,bool bDoForces)
 {
-  t_block  *cgs=&(top->blocks[ebCGS]);
+  t_block  *cgs=&(top->cgs);
   rvec     box_size;
   int      i,j,m,ngid;
   real     min_size;
@@ -2030,7 +2030,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
   }
 
   if (DOMAINDECOMP(cr))
-    ns_realloc_natoms(ns,cgs->nra);
+    ns_realloc_natoms(ns,cgs->index[cgs->nr]);
   debug_gmx();
   
   /* Reset the neighbourlists */

@@ -58,7 +58,7 @@ extern void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,
 
 extern real RF_excl_correction(FILE *fplog,
 			       const t_forcerec *fr,t_graph *g,
-			       const t_mdatoms *mdatoms,const t_block *excl,
+			       const t_mdatoms *mdatoms,const t_blocka *excl,
 			       rvec x[],rvec f[],rvec *fshift,const t_pbc *pbc,
 			       real lambda,real *dvdlambda);
 /* Calculate the reaction-field energy correction for this node:
@@ -123,7 +123,7 @@ extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 
 /* Compute the average C6 and C12 params for LJ corrections */
 extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
-			     const t_atoms *atoms,const t_block *excl);
+			     const t_atoms *atoms,const t_blocka *excl);
 
 extern void ns(FILE       *fplog,
 	       t_forcerec *fr,
@@ -162,7 +162,7 @@ extern void force(FILE         *fplog,
 		  matrix       box,
 		  real         lambda,
 		  t_graph      *graph,
-		  t_block      *excl,
+		  t_blocka     *excl,
 		  bool         bNBonly,
 		  bool         bDoForces,
 		  rvec         mu_tot[2],

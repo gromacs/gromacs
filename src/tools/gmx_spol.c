@@ -102,12 +102,12 @@ void atom2molindex(int *n,int *index,t_block *mols)
   i=0;
   while (i < *n) {
     m=0;
-    while(m < mols->nr && index[i] != mols->a[mols->index[m]])
+    while(m < mols->nr && index[i] != mols->index[m])
       m++;
     if (m == mols->nr)
       gmx_fatal(FARGS,"index[%d]=%d does not correspond to the first atom of a molecule",i+1,index[i]+1);
     for(j=mols->index[m]; j<mols->index[m+1]; j++) {
-      if (i >= *n || index[i] != mols->a[j])
+      if (i >= *n || index[i] != j)
 	gmx_fatal(FARGS,"The index group is not a set of whole molecules");
       i++;
     }
@@ -207,7 +207,7 @@ int gmx_spol(int argc,char *argv[])
     nrefat  = 1;
   }
 
-  atom2molindex(&(isize[1]),index[1],&(top->blocks[ebMOLS]));
+  atom2molindex(&(isize[1]),index[1],&(top->mols));
   srefat--;
 
   /* initialize reading trajectory:                         */
@@ -231,7 +231,7 @@ int gmx_spol(int argc,char *argv[])
   sinp  = 0;
   sdinp = 0;
 
-  molindex = top->blocks[ebMOLS].index;
+  molindex = top->mols.index;
   atom     = top->atoms.atom;
 
   /* start analysis of trajectory */

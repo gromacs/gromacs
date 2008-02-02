@@ -77,9 +77,9 @@ static bool gmx_ask_yesno(bool bASK)
     return FALSE;
 }
 
-t_block *new_block(void)
+t_blocka *new_blocka(void)
 {
-  t_block *block;
+  t_blocka *block;
 
   snew(block,1);
   snew(block->index,1);
@@ -87,7 +87,7 @@ t_block *new_block(void)
   return block;
 }
 
-void write_index(char *outf, t_block *b,char **gnames)
+void write_index(char *outf, t_blocka *b,char **gnames)
 {
   FILE *out;
   int  i,j,k;
@@ -106,7 +106,7 @@ void write_index(char *outf, t_block *b,char **gnames)
   fclose(out);
 }
 
-void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],const char *name)
+void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name)
 {
   int i;
 
@@ -123,14 +123,14 @@ void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],const char *name)
 
 /* compare index in `a' with group in `b' at `index', 
    when `index'<0 it is relative to end of `b' */
-static bool grp_cmp(t_block *b, int nra, atom_id a[], int index)
+static bool grp_cmp(t_blocka *b, int nra, atom_id a[], int index)
 {
   int i;
   
   if (index < 0)
     index = b->nr-1+index;
   if (index >= b->nr)
-    gmx_fatal(FARGS,"no such index group %d in t_block (nr=%d)",index,b->nr);
+    gmx_fatal(FARGS,"no such index group %d in t_blocka (nr=%d)",index,b->nr);
   /* compare sizes */
   if ( nra != b->index[index+1] - b->index[index] )
     return FALSE;
@@ -173,7 +173,7 @@ atom_id *mk_aid(t_atoms *atoms,eRestp restp[],eRestp res,int *nra,
 }
 
 static void analyse_other(eRestp Restp[],t_atoms *atoms,
-			  t_block *gb,char ***gn,bool bASK,bool bVerb)
+			  t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 {
   char **restp=NULL;
   char **attp=NULL;
@@ -250,7 +250,7 @@ static void analyse_other(eRestp Restp[],t_atoms *atoms,
 }
 
 static void analyse_prot(eRestp restp[],t_atoms *atoms,
-			 t_block *gb,char ***gn,bool bASK,bool bVerb)
+			 t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 {
   /* atomnames to be used in constructing index groups: */
   static const char *pnoh[]    = { "H" };
@@ -402,7 +402,7 @@ static void analyse_prot(eRestp restp[],t_atoms *atoms,
 }
 
 static void analyse_dna(eRestp restp[],t_atoms *atoms,
-			t_block *gb,char ***gn,bool bASK,bool bVerb)
+			t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 {
   if (bVerb)
     printf("Analysing DNA... (not really)\n");
@@ -449,7 +449,7 @@ void done_aa_names(t_aa_names **aan)
   *aan = NULL;
 }
 
-void analyse(t_atoms *atoms,t_block *gb,char ***gn,bool bASK,bool bVerb)
+void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,bool bASK,bool bVerb)
 {
   t_aa_names *aan;
   eRestp  *restp;
@@ -523,10 +523,10 @@ void check_index(char *gname,int n,atom_id index[],char *traj,int natoms)
 		gname ? gname : "Index",i+1, index[i]+1);
 }
 
-t_block *init_index(char *gfile, char ***grpname)
+t_blocka *init_index(char *gfile, char ***grpname)
 {
   FILE     *in;
-  t_block  *b;
+  t_blocka  *b;
   int      a,maxentries;
   int      i,j,ng;
   char     line[STRLEN],*pt,str[STRLEN];
@@ -680,7 +680,7 @@ static int qgroup(int *a, int ngrps, char **grpname)
   return aa;
 }
 
-static void rd_groups(t_block *grps,char **grpname,char *gnames[],
+static void rd_groups(t_blocka *grps,char **grpname,char *gnames[],
 		      int ngrps,int isize[],atom_id *index[],int grpnr[])
 {
   int i,j,gnr1;
@@ -713,7 +713,7 @@ void rd_index(char *statfile,int ngrps,int isize[],
 	      atom_id *index[],char *grpnames[])
 {
   char    **gnames;
-  t_block *grps;
+  t_blocka *grps;
   int     *grpnr;
   
   snew(grpnr,ngrps);
@@ -727,7 +727,7 @@ void rd_index_nrs(char *statfile,int ngrps,int isize[],
 		  atom_id *index[],char *grpnames[],int grpnr[])
 {
   char    **gnames;
-  t_block *grps;
+  t_blocka *grps;
   
   if (!statfile)
     gmx_fatal(FARGS,"No index file specified");
@@ -740,7 +740,7 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
 	       int isize[], atom_id *index[],char *grpnames[])
 {
   char    ***gnames;
-  t_block *grps = NULL; 
+  t_blocka *grps = NULL; 
   int     *grpnr;
   
   snew(grpnr,ngrps);
@@ -773,13 +773,13 @@ t_cluster_ndx *cluster_index(FILE *fplog,char *ndx)
 	  "There are %d clusters containing %d structures, highest framenr is %d\n",
 	  c->clust->nr,c->clust->nra,c->maxframe);
   if (debug) {
-    pr_block(debug,0,"clust",c->clust,TRUE);
+    pr_blocka(debug,0,"clust",c->clust,TRUE);
     for(i=0; (i<c->clust->nra); i++)
       if ((c->clust->a[i] < 0) || (c->clust->a[i] > c->maxframe))
 	gmx_fatal(FARGS,"Range check error for c->clust->a[%d] = %d\n"
 		  "should be within 0 and %d",i,c->clust->a[i],c->maxframe+1);
   }
-  c->inv_clust=make_invblock(c->clust,c->maxframe);
+  c->inv_clust=make_invblocka(c->clust,c->maxframe);
 	  
   return c;
 }

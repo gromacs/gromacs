@@ -48,4 +48,9 @@ extern atom_id *make_invblock(const t_block *block,int nr);
  * array, and therefore the dimension of the returned array
  */
 
+extern atom_id *make_invblocka(const t_blocka *block,int nr);
+/* Inverse the block structure. nr is the maximum entry in the inversed
+ * array, and therefore the dimension of the returned array
+ */
+
 #endif	/* _invblock_h */

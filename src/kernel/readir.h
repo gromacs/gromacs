@@ -111,7 +111,7 @@ extern char **read_pullparams(int *ninp_p,t_inpfile **inp,
 /* Reads the pull parameters, returns a list of the pull group names */
 
 extern void make_pull_groups(t_pull *pull,char **pgnames,
-			     t_block *grps,char **gnames);
+			     t_blocka *grps,char **gnames);
 /* Process the pull parameters after reading the index groups */
 
 extern void set_pull_init(t_inputrec *ir,t_atoms *atoms,rvec *x,matrix box,

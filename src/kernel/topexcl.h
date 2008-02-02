@@ -70,11 +70,11 @@ extern void gen_nnb(t_nextnb *nnb,t_params plist[]);
  * initiated using init_nnb.
  */
 
-extern void nnb2excl (t_nextnb *nnb, t_block *excl);
+extern void nnb2excl (t_nextnb *nnb, t_blocka *excl);
 /* generate exclusions from nnb */
 
 extern void generate_excl (int nrexcl, int nratoms,
-			   t_params plist[],t_block *excl);
+			   t_params plist[],t_blocka *excl);
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */

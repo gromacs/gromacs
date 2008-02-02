@@ -85,8 +85,35 @@ static atom_id *invind(int gnx,int natoms,atom_id index[])
   return inv;
 }
 
-static void reduce_block(atom_id invindex[],bool bKeep[],t_block *block,
-			 const char *name,bool bExcl)
+static void reduce_block(bool bKeep[],t_block *block,
+			 const char *name)
+{
+  atom_id *index;
+  int i,j,newi,newj;
+  
+  snew(index,block->nr);
+  
+  newi = newj = 0;
+  for(i=0; (i<block->nr); i++) {
+    for(j=block->index[i]; (j<block->index[i+1]); j++) {
+      if (bKeep[j]) {
+	newj++;
+      }
+    }
+    if (newj > index[newi]) {
+      newi++;
+      index[newi] = newj;
+    }
+  }
+  
+  fprintf(stderr,"Reduced block %8s from %6d to %6d index-, %6d to %6d a-entries\n",
+	  name,block->nr,newi,block->index[block->nr],newj);
+  block->index = index;
+  block->nr    = newi;
+}
+
+static void reduce_blocka(atom_id invindex[],bool bKeep[],t_blocka *block,
+			  const char *name)
 {
   atom_id *index,*a;
   int i,j,k,newi,newj;
@@ -96,18 +123,16 @@ static void reduce_block(atom_id invindex[],bool bKeep[],t_block *block,
   
   newi = newj = 0;
   for(i=0; (i<block->nr); i++) {
-    if (!bExcl || bKeep[i]) {
-      for(j=block->index[i]; (j<block->index[i+1]); j++) {
-	k = block->a[j];
-	if (bKeep[k]) {
-	  a[newj] = invindex[k];
-	  newj++;
-	}
+    for(j=block->index[i]; (j<block->index[i+1]); j++) {
+      k = block->a[j];
+      if (bKeep[k]) {
+	a[newj] = invindex[k];
+	newj++;
       }
-      if (newj > index[newi]) {
-	newi++;
-	index[newi] = newj;
-      }
+    }
+    if (newj > index[newi]) {
+      newi++;
+      index[newi] = newj;
     }
   }
   
@@ -209,8 +234,9 @@ static void reduce_topology_x(int gnx,atom_id index[],
   bKeep    = bKeepIt(gnx,top->atoms.nr,index);
   invindex = invind(gnx,top->atoms.nr,index);
   
-  for(i=0; (i<ebNR); i++)
-    reduce_block(invindex,bKeep,&(top->blocks[i]),eblock_names[i],FALSE);
+  reduce_block(bKeep,&(top->cgs),"cgs");
+  reduce_block(bKeep,&(top->mols),"mols");
+  reduce_blocka(invindex,bKeep,&(top->excls),"excls");
   reduce_rvec(gnx,index,x);
   reduce_rvec(gnx,index,v);
   reduce_atom(gnx,index,top->atoms.atom,top->atoms.atomname,

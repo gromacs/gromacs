@@ -217,13 +217,13 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     /* Topology needs charge groups and exclusions */
     snew(top,1);
     init_top(top);
-    stupid_fill(&(top->blocks[ebCGS]),natoms,FALSE);
+    stupid_fill_block(&(top->cgs),natoms,FALSE);
     memcpy(&(top->atoms),atoms,sizeof(*atoms));
-    stupid_fill(&(top->blocks[ebEXCLS]),natoms,FALSE);
+    stupid_fill_blocka(&(top->excls),natoms);
     top->atoms.grps[egcENER].nr = 1;
     
     /* Some nasty shortcuts */
-    cgs  = &(top->blocks[ebCGS]);
+    cgs  = &(top->cgs);
     
     top->idef.ntypes = 1;
     top->idef.nodeid = 0;
@@ -259,7 +259,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     printf("Neighborsearching with a cut-off of %g\n",rlong);
     init_forcerec(stdout,fr,ir,top,cr,md,box,FALSE,NULL,NULL,TRUE);*/
     fr->cg0 = 0;
-    fr->hcg = top->blocks[ebCGS].nr;
+    fr->hcg = top->cgs.nr;
     fr->nWatMol = 0;
     
     /* Prepare for neighboursearching */

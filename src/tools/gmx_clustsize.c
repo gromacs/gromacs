@@ -83,7 +83,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   t_tpxheader tpxh;
   t_topology  top;
   t_block *mols=NULL;
-  int     version,generation,sss,ii,jj,aii,ajj,nsame;
+  int     version,generation,sss,ii,jj,nsame;
   real    ttt,lll,temp,tfac;
   /* Cluster size distribution (matrix) */
   real    **cs_dist=NULL;
@@ -120,7 +120,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
       printf("Using molecules rather than atoms. Not reading index file %s\n",
 	     ndx);
     
-    mols = &(top.blocks[ebMOLS]);
+    mols = &(top.mols);
 
     /* Make dummy index */
     nindex = mols->nr;
@@ -174,13 +174,11 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	    if (bMol) {
 	      bSame = FALSE;
 	      for(ii=mols->index[ai]; !bSame && (ii<mols->index[ai+1]); ii++) {
-		aii = mols->a[ii];
 		for(jj=mols->index[aj]; !bSame && (jj<mols->index[aj+1]); jj++) {
-		  ajj   = mols->a[jj];
 		  if (bPBC)
-		    pbc_dx(&pbc,x[aii],x[ajj],dx);
+		    pbc_dx(&pbc,x[ii],x[jj],dx);
 		  else
-		    rvec_sub(x[aii],x[ajj],dx);
+		    rvec_sub(x[ii],x[jj],dx);
 		  dx2   = iprod(dx,dx);
 		  bSame = (dx2 < cut2);
 		}
@@ -271,7 +269,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
       if (clust_index[i] == max_clust_ind) {
 	if (bMol) {
 	  for(j=mols->index[i]; (j<mols->index[i+1]); j++)
-	    fprintf(fp,"%d\n",mols->a[j]+1);
+	    fprintf(fp,"%d\n",j+1);
 	}
 	else {
 	  fprintf(fp,"%d\n",index[i]+1);

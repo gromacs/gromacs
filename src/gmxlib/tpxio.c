@@ -1018,6 +1018,28 @@ static void do_idef(t_idef *idef,bool bRead, int file_version)
 
 static void do_block(t_block *block,bool bRead,int file_version)
 {
+  int  i,idum,dum_nra,*dum_a;
+  bool bDum=TRUE;
+
+  if (file_version < 44)
+    for(i=0; i<MAXNODES; i++)
+      do_int(idum);
+  do_int (block->nr);
+  do_int (dum_nra);
+  if (bRead) {
+    block->nalloc_index = block->nr+1;
+    snew(block->index,block->nalloc_index);
+  }
+  ndo_int(block->index,block->nr+1,bDum);
+  if (dum_nra > 0) {
+    snew(dum_a,dum_nra);
+    ndo_int(dum_a,dum_nra,bDum);
+    sfree(dum_a);
+  }
+}
+
+static void do_blocka(t_blocka *block,bool bRead,int file_version)
+{
   int  i,idum;
   bool bDum=TRUE;
 
@@ -1027,8 +1049,10 @@ static void do_block(t_block *block,bool bRead,int file_version)
   do_int (block->nr);
   do_int (block->nra);
   if (bRead) {
-    snew(block->index,block->nr+1);
-    snew(block->a,block->nra);
+    block->nalloc_index = block->nr+1;
+    snew(block->index,block->nalloc_index);
+    block->nalloc_a = block->nra;
+    snew(block->a,block->nalloc_a);
   }
   ndo_int(block->index,block->nr+1,bDum);
   ndo_int(block->a,block->nra,bDum);
@@ -1222,7 +1246,7 @@ static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
     } else
       c=' ';
     for(a=a0; a<a1; a++)
-      atoms->atom[mols->a[a]].chain=c;  
+      atoms->atom[a].chain=c;  
   }
   if (chain == 'B')
     for(a=0; a<atoms->nr; a++)
@@ -1232,7 +1256,8 @@ static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
 static void do_top(t_topology *top,bool bRead, int file_version)
 {
   int  i;
-  
+  t_blocka dumb;
+
   if (bRead)
     init_top(top);
   do_symtab(&(top->symtab),bRead);
@@ -1246,7 +1271,7 @@ static void do_top(t_topology *top,bool bRead, int file_version)
     pr_atoms(debug,0,"atoms",&top->atoms,TRUE);
 
   /* This used to be in the atoms struct */
-  do_block(&(top->blocks[ebEXCLS]),bRead,file_version);
+  do_blocka(&top->excls,bRead,file_version);
 
   do_atomtypes (&(top->atomtypes),bRead,&(top->symtab), file_version);
   if (bRead && debug) 
@@ -1255,16 +1280,27 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   /* Debug statements are inside do_idef */    
   do_idef  (&(top->idef),bRead,file_version);
     
-  for(i=0; (i<ebNR); i++) {
-    if (i != ebEXCLS) {
-      do_block(&(top->blocks[i]),bRead,file_version);
-      if (bRead && gmx_debug_at)
-	pr_block(debug,0,EBLOCKS(i),&(top->blocks[i]),TRUE);
-    }
+  do_block(&top->cgs,bRead,file_version);
+  if (bRead && gmx_debug_at)
+    pr_block(debug,0,"cgs",&top->cgs,TRUE);
+  do_block(&top->mols,bRead,file_version);
+  if (bRead && gmx_debug_at)
+    pr_block(debug,0,"mols",&top->mols,TRUE);
+
+  /* Here used to be the shake blocks */
+  if (!bRead) {
+    init_blocka(&dumb);
   }
+  do_blocka(&dumb,bRead,file_version);
+  if (dumb.nr > 0)
+    sfree(dumb.index);
+  if (dumb.nra > 0)
+    sfree(dumb.a);
+
+
   if (bRead) {
     close_symtab(&(top->symtab));
-    make_chain_identifiers(&(top->atoms),&(top->blocks[ebMOLS]));
+    make_chain_identifiers(&(top->atoms),&top->mols);
   }
 }
 

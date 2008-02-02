@@ -54,9 +54,6 @@ extern void check_index(char *gname,int n,atom_id index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
-t_block *init_index(char *gfile, char ***grpname);
-/* Lower level routine than the next */
-
 void rd_index(char *statfile,int ngrps,int isize[],
 	      atom_id *index[],char *grpnames[]);
 /* Assume the group file is generated, so the

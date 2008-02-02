@@ -230,6 +230,16 @@ static void cmp_block(FILE *fp,t_block *b1,t_block *b2,const char *s)
   fprintf(fp,"comparing block %s\n",s);
   sprintf(buf,"%s.nr",s);
   cmp_int(fp,buf,-1,b1->nr,b2->nr);
+} 
+
+static void cmp_blocka(FILE *fp,t_blocka *b1,t_blocka *b2,const char *s)
+{
+  int i,j,k;
+  char buf[32];
+  
+  fprintf(fp,"comparing blocka %s\n",s);
+  sprintf(buf,"%s.nr",s);
+  cmp_int(fp,buf,-1,b1->nr,b2->nr);
   sprintf(buf,"%s.nra",s);
   cmp_int(fp,buf,-1,b1->nra,b2->nra);
 } 
@@ -283,8 +293,9 @@ static void cmp_top(FILE *fp,t_topology *t1,t_topology *t2,real ftol)
   if (t2) {
     cmp_idef(fp,&(t1->idef),&(t2->idef),ftol);
     cmp_atoms(fp,&(t1->atoms),&(t2->atoms),ftol);
-    for(i=0; (i<ebNR); i++)
-      cmp_block(fp,&t1->blocks[i],&t2->blocks[i],EBLOCKS(i));
+    cmp_block(fp,&t1->cgs,&t2->cgs,"cgs");
+    cmp_block(fp,&t1->mols,&t2->mols,"mols");
+    cmp_blocka(fp,&t1->excls,&t2->excls,"excls");
   } else {
     cmp_idef(fp,&(t1->idef),NULL,ftol);
     cmp_atoms(fp,&(t1->atoms),NULL,ftol);

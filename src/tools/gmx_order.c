@@ -556,7 +556,7 @@ int gmx_order(int argc,char *argv[])
   t_topology *top;                	    /* topology 		  */ 
   atom_id   *index,             	    /* indices for a              */
             *a;                             /* atom numbers in each group */
-  t_block   *block;                         /* data from index file       */
+  t_blocka  *block;                         /* data from index file       */
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
     { efNDX, NULL, NULL,  ffREAD },    	    /* index file 		  */

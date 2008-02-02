@@ -49,7 +49,6 @@
 #include "txtdump.h"
 #include "math.h"
 #include "assert.h"
-#include "network.h"
 #include "splitter.h"
 
 typedef struct {
@@ -190,13 +189,13 @@ static int *home_index(int nnodes,t_block *cgs,int *multinr)
 {
   /* This routine determines the node id for each particle */
   int *hid;
-  int nodeid,j0,j1,j,k,ak;
+  int nodeid,j0,j1,j,k;
   
-  snew(hid,cgs->nra);
+  snew(hid,cgs->index[cgs->nr]);
   /* Initiate to -1 to make it possible to check afterwards,
    * all hid's should be set in the loop below
    */
-  for(k=0; (k<cgs->nra); k++)
+  for(k=0; (k<cgs->index[cgs->nr]); k++)
     hid[k]=-1;
     
   /* loop over nodes */
@@ -207,52 +206,17 @@ static int *home_index(int nnodes,t_block *cgs,int *multinr)
     /* j0 and j1 are the boundariesin the index array */
     for(j=j0; (j<j1); j++) {
       for(k=cgs->index[j]; (k<cgs->index[j+1]); k++) {
-	ak=cgs->a[k];
-	hid[ak]=nodeid;
+	hid[k]=nodeid;
       }
     }
   }
   /* Now verify that all hid's are not -1 */
-  for(k=0; (k<cgs->nra); k++)
+  for(k=0; (k<cgs->index[cgs->nr]); k++)
     if (hid[k] == -1)
-      gmx_fatal(FARGS,"hid[%d] = -1, cgs->nr = %d, cgs->nra = %d",
-		  k,cgs->nr,cgs->nra);
+      gmx_fatal(FARGS,"hid[%d] = -1, cgs->nr = %d, natoms = %d",
+		  k,cgs->nr,cgs->index[cgs->nr]);
   
   return hid;
-}
-
-static int max_index(int start,t_block *b)
-{
-  int k,k0,k1;
-  int mi=-1;
-
-  if (start < b->nr) {  
-    k0=b->index[start];
-    k1=b->index[start+1];
-    if (k1 > k0) {
-      mi=b->a[k0];
-      for(k=k0+1; (k<k1); k++)
-	mi=max(mi,b->a[k]);
-    }
-  }
-  return mi;
-}
-
-static int min_index(int start,t_block *b)
-{
-  int k,k0,k1;
-  int mi=INT_MAX;
-
-  if (start < b->nr) {  
-    k0=b->index[start];
-    k1=b->index[start+1];
-    if (k1 > k0) {
-      mi=b->a[k0];
-      for(k=k0+1; (k<k1); k++)
-	mi=min(mi,b->a[k]);
-    }
-  }
-  return mi;
 }
 
 typedef struct {
@@ -341,10 +305,10 @@ static t_border *mk_border(FILE *fp,int natom,atom_id *invcgs,
 }
 
 static void split_blocks(FILE *fp,int nnodes,
-			 t_block *cgs,t_block *sblock,real capacity[],
+			 t_block *cgs,t_blocka *sblock,real capacity[],
 			 int *multinr_cgs,int *multinr_shk)
 {
-  int      *maxatom;
+  int      natoms,*maxatom;
   int      i,ii,ai,b0,b1;
   int      nodeid,last_shk,nbor;
   t_border *border;
@@ -353,25 +317,27 @@ static void split_blocks(FILE *fp,int nnodes,
   bool    bSHK;
   atom_id *shknum,*cgsnum;
   
+  natoms = cgs->index[cgs->nr];
+
   if (debug) {
     pr_block(debug,0,"cgs",cgs,TRUE);
-    pr_block(debug,0,"sblock",sblock,TRUE);
+    pr_blocka(debug,0,"sblock",sblock,TRUE);
   }
 
-  shknum = make_invblock(sblock,cgs->nra+1);
-  cgsnum = make_invblock(cgs,cgs->nra+1);
-  border = mk_border(fp,cgs->nra,cgsnum,shknum,&nbor);
+  shknum = make_invblocka(sblock,natoms+1);
+  cgsnum = make_invblock(cgs,natoms+1);
+  border = mk_border(fp,natoms,cgsnum,shknum,&nbor);
 
   snew(maxatom,nnodes);
-  tload  = capacity[0]*cgs->nra;
+  tload  = capacity[0]*natoms;
   tcap   = 1.0;
   nodeid = 0;
   /* Start at bor is 1, to force the first block on the first processor */
-  for(i=0; (i<nbor) && (tload < cgs->nra); i++) {
+  for(i=0; (i<nbor) && (tload < natoms); i++) {
     if(i<(nbor-1)) 
       b1=border[i+1].atom;
     else
-      b1=cgs->nra;
+      b1=natoms;
 
     b0 = border[i].atom;
     
@@ -386,7 +352,7 @@ static void split_blocks(FILE *fp,int nnodes,
       
       /* Recompute target load */
       tload = b0 +
-	(cgs->nra-b0)*capacity[nodeid]/tcap;
+	(natoms-b0)*capacity[nodeid]/tcap;
 
       if (debug)
 	fprintf(debug,"tload: %g tcap: %g  nodeid: %d\n",tload,tcap,nodeid);
@@ -396,8 +362,8 @@ static void split_blocks(FILE *fp,int nnodes,
   while (nodeid < nnodes) {
     multinr_cgs[nodeid] = cgs->nr;
     /* Store atom number, see above */
-    multinr_shk[nodeid] = cgs->nra;
-    maxatom[nodeid]     = cgs->nra;
+    multinr_shk[nodeid] = natoms;
+    maxatom[nodeid]     = natoms;
     nodeid++;
   }
   if (nodeid != nnodes) {
@@ -581,7 +547,7 @@ static int ms_comp(const void *a, const void *b)
 }
 
 static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
-		     t_block *sblock)
+		     t_blocka *sblock)
 {
   int  i,j,k,n,isid,ndel;
   t_merge_sid *ms;
@@ -674,7 +640,7 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
 }
 
 void gen_sblocks(FILE *fp,int at_start,int at_end,
-		 t_idef *idef,t_block *sblock,
+		 t_idef *idef,t_blocka *sblock,
 		 bool bSettle)
 {
   t_graph *g;
@@ -752,12 +718,29 @@ void gen_sblocks(FILE *fp,int at_start,int at_end,
     fprintf(debug,"Done gen_sblocks\n");
 }
 
+static t_blocka block2blocka(t_block *block)
+{
+  t_blocka blocka;
+  int i;
+
+  blocka.nr = block->nr;
+  snew(blocka.index,blocka.nr+1);
+  for(i=0; i<=block->nr; i++)
+    blocka.index[i] = block->index[i];
+  blocka.nra = block->index[block->nr];
+  snew(blocka.a,blocka.nra);
+  for(i=0; i<=blocka.nra; i++)
+    blocka.a[i] = i;
+
+  return blocka;
+}
+
 void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
 	       int *multinr_cgs,int **multinr_nre)
 {
   int     i,j,k,mj,atom,maxatom,sstart,send,bstart,nodeid;
   int     *multinr_shk;
-  t_block sblock;
+  t_blocka sblock,shakeblock;
   int     *homeind;
   atom_id *sblinv;
   int ftype,nvsite_constr,nra,nrd;
@@ -774,17 +757,18 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
 #ifndef MOL_BORDER
   /* Make a special shake block that includes settles */
   init_block(&sblock);
-  gen_sblocks(fp,top->atoms.nr,&top->idef,&sblock,TRUE);
+  gen_sblocks(fp,0,top->atoms.nr,&top->idef,&sblock,TRUE);
 #else
-  sblock = top->blocks[ebMOLS];
+  sblock = block2blocka(&top->mols);
 #endif  
 
   snew(multinr_shk,nnodes);
-  split_blocks(fp,nnodes,&(top->blocks[ebCGS]),&sblock,capacity,
-	       multinr_cgs,multinr_shk);
+  split_blocks(fp,nnodes,&top->cgs,&sblock,capacity,multinr_cgs,multinr_shk);
   
   /* Now transform atom numbers to real inverted shake blocks */
-  sblinv = make_invblock(&(top->blocks[ebSBLOCKS]),top->atoms.nr+1);
+  gen_sblocks(fp,0,top->atoms.nr,&top->idef,&shakeblock,TRUE);
+  sblinv = make_invblocka(&shakeblock,top->atoms.nr+1);
+  done_blocka(shakeblock);
   for(j=0; (j<nnodes); j++) {
     atom = multinr_shk[j];
     mj   = NO_ATID;
@@ -796,42 +780,14 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
     
     multinr_shk[j] = mj+1;
   }
-  homeind=home_index(nnodes,&(top->blocks[ebCGS]),multinr_cgs);
+  homeind=home_index(nnodes,&top->cgs,multinr_cgs);
   
   for(j=0; (j<F_NRE); j++)
     split_force2(nnodes,homeind,&top->idef,&top->idef.il[j],multinr_nre[j]);
 
-  /* Now fill the sblock structure, it is used later on in the
-     constraint routines. */
-  nodeid = gmx_node_rank();
-  
-  sstart = (nodeid == 0) ? 0 : multinr_shk[nodeid-1];
-  send   = multinr_shk[nodeid];
-  if (send-sstart > top->blocks[ebSBLOCKS].nr)
-    srenew(top->blocks[ebSBLOCKS].index,send-sstart+1);
-  nra = 0;
-  for(j=sstart; (j<send); j++) {
-    top->blocks[ebSBLOCKS].index[j-sstart] = sblock.index[j];
-    nra += sblock.index[j+1]-sblock.index[j];
-  }
-  /* Extra index for index */
-  top->blocks[ebSBLOCKS].index[j-sstart] = sblock.index[j];
-  top->blocks[ebSBLOCKS].nr = (send-sstart);
-  
-  if (nra > top->blocks[ebSBLOCKS].nra)
-    srenew(top->blocks[ebSBLOCKS].a,nra);
-  nra = 0;
-  for(j=sstart; (j<send); j++) {
-    for(k=sblock.index[j]; (k<sblock.index[j+1]); k++)
-      top->blocks[ebSBLOCKS].a[nra++] = sblock.a[k];
-  }
-  top->blocks[ebSBLOCKS].nra = nra;
-  
   sfree(sblinv);
   sfree(multinr_shk);
   sfree(homeind);
-#ifndef MOL_BORDER
-  done_block(&sblock);
-#endif
+  done_blocka(&sblock);
 }
 

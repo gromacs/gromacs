@@ -26,7 +26,7 @@ int n_bonded_dx(t_topology *top,bool bExcl)
     }
   }
   if (bExcl)
-    ndx_excl = (top->blocks[ebEXCLS].nra - top->atoms.nr)/2;
+    ndx_excl = (top->excls.nra - top->atoms.nr)/2;
   else
     ndx_excl = 0;
 
@@ -76,7 +76,7 @@ float pme_load_estimate(t_topology *top,t_inputrec *ir,matrix box)
   fbond = 5.0;
 
   atom = top->atoms.atom;
-  cgs = &top->blocks[ebCGS];
+  cgs = &top->cgs;
   atnr = idef->atnr;
   nw   = 0;
   nqlj = 0;

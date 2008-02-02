@@ -54,7 +54,7 @@ extern void check_index(char *gname,int n,atom_id index[],
  * and traj (if traj=NULL, "the trajectory" is used).
  */
 
-t_block *init_index(char *gfile, char ***grpname);
+t_blocka *init_index(char *gfile, char ***grpname);
 /* Lower level routine than the next */
 
 void rd_index(char *statfile,int ngrps,int isize[],
@@ -84,10 +84,10 @@ void get_index(t_atoms *atoms, char *fnm, int ngrps,
  */ 
 
 typedef struct {
-  int     maxframe;
-  char    **grpname;
-  t_block *clust;
-  atom_id *inv_clust;
+  int      maxframe;
+  char     **grpname;
+  t_blocka *clust;
+  atom_id  *inv_clust;
 } t_cluster_ndx;
 
 extern t_cluster_ndx *cluster_index(FILE *fplog,char *ndx);
@@ -106,16 +106,16 @@ extern bool is_protein(t_aa_names *aan,char *resnm);
 extern void done_aa_names(t_aa_names **aan);
 /* Free memory. Pass address of the pointer youget from get_aa_names */
 
-extern t_block *new_block(void);
+extern t_blocka *new_blocka(void);
 /* allocate new block */
 
-extern void write_index(char *outf, t_block *b,char **gnames);
+extern void write_index(char *outf, t_blocka *b,char **gnames);
 /* Writes index blocks to outf (writes an indexfile) */
 
-void add_grp(t_block *b,char ***gnames,int nra,atom_id a[],const char *name);
+void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name);
 /* Ads group a with name name to block b and namelist gnames */ 
 
-extern void analyse(t_atoms *atoms,t_block *gb,char ***gn,
+extern void analyse(t_atoms *atoms,t_blocka *gb,char ***gn,
                     bool bASK,bool bVerb);
 /* Makes index groups gb with names gn for atoms in atoms.
  * bASK=FALSE gives default groups.

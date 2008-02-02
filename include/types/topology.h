@@ -38,11 +38,13 @@
 #endif
 
 typedef struct {
-  char  	  **name;		/* Name of the topology	       	*/
+  char  	**name;		/* Name of the topology	       	        */
   t_idef	idef;		/* The interaction function definition	*/
-  t_atoms	atoms;		/* The atoms		       	*/
-  t_atomtypes   atomtypes;      /* Atomtype properties                       */
-  t_block	blocks[ebNR];	/* The blocks		       	*/
+  t_atoms	atoms;		/* The atoms		       	        */
+  t_atomtypes   atomtypes;      /* Atomtype properties                  */
+  t_block       cgs;            /* The charge groups                    */
+  t_block       mols;           /* The molecules                        */
+  t_blocka      excls;          /* The exclusions                       */
   t_symtab	symtab;		/* The symbol table			*/
 } t_topology;
 

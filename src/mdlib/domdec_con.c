@@ -455,7 +455,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 }
 
 static void walk_out(int con,int a,int nrec,
-		     const t_iatom *ia,const t_block *at2con,
+		     const t_iatom *ia,const t_blocka *at2con,
 		     const gmx_ga2la_t *ga2la,bool bHomeConnect,
 		     gmx_domdec_constraints_t *dc,
 		     gmx_domdec_specat_comm_t *dcc)
@@ -505,7 +505,7 @@ static void walk_out(int con,int a,int nrec,
 int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
 			      gmx_constr_t constr,int nrec)
 {
-  t_block *at2con;
+  t_blocka *at2con;
   gmx_ga2la_t *ga2la;
   t_iatom *iap;
   int nhome,a,ag,bg,i,con;

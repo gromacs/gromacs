@@ -149,7 +149,7 @@ extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		    t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,
 		    real ener[]);
 
-extern real mol_dipole(int k0,int k1,atom_id ma[],rvec x[],real q[]);
+extern real mol_dipole(int k0,int k1,rvec x[],real q[]);
 /* Calculate total dipole for group of atoms */
 
 extern real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,

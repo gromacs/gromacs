@@ -84,7 +84,7 @@ void low_mspeed(real tempi,int nrdf,int nat,atom_id a[],
   }
 }
 
-void grp_maxwell(t_block *grp,real tempi[],int nrdf[],int seed,
+void grp_maxwell(t_blocka *grp,real tempi[],int nrdf[],int seed,
 		 t_atoms *atoms,rvec v[])
 {
   int i,s,n;

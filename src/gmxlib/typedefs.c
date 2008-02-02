@@ -63,6 +63,16 @@ void init_block(t_block *block)
   int i;
 
   block->nr           = 0;
+  block->nalloc_index = 1;
+  snew(block->index,block->nalloc_index);
+  block->index[0]     = 0;
+}
+
+void init_blocka(t_blocka *block)
+{
+  int i;
+
+  block->nr           = 0;
   block->nra          = 0;
   block->nalloc_index = 1;
   snew(block->index,block->nalloc_index);
@@ -108,8 +118,9 @@ void init_top (t_topology *top)
   top->name = NULL;
   init_atom (&(top->atoms));
   init_atomtypes(&(top->atomtypes));
-  for (i=0; (i<ebNR); i++)
-    init_block(&(top->blocks[i]));
+  init_block(&top->cgs);
+  init_block(&top->mols);
+  init_blocka(&top->excls);
   open_symtab(&top->symtab);
 }
 
@@ -118,22 +129,20 @@ void init_inputrec(t_inputrec *ir)
   memset(ir,0,(size_t)sizeof(*ir));
 }
 
-void stupid_fill(t_block *grp,int natom,bool bOneIndexGroup)
+void stupid_fill_block(t_block *grp,int natom,bool bOneIndexGroup)
 {
   int i;
 
-  snew(grp->a,natom);
-  for(i=0; (i<natom); i++)
-    grp->a[i]=i;
-  grp->nra=natom;
-  
   if (bOneIndexGroup) {
-    snew(grp->index,2);
+    grp->nalloc_index = 2;
+    snew(grp->index,grp->nalloc_index);
     grp->index[0]=0;
     grp->index[1]=natom;
     grp->nr=1;
   }
   else {
+    grp->nalloc_index = natom+1;
+    snew(grp->index,grp->nalloc_index);
     snew(grp->index,natom+1);
     for(i=0; (i<=natom); i++)
       grp->index[i]=i;
@@ -141,7 +150,31 @@ void stupid_fill(t_block *grp,int natom,bool bOneIndexGroup)
   }
 }
 
+void stupid_fill_blocka(t_blocka *grp,int natom)
+{
+  int i;
+
+  grp->nalloc_a = natom;
+  snew(grp->a,grp->nalloc_a);
+  for(i=0; (i<natom); i++)
+    grp->a[i]=i;
+  grp->nra=natom;
+  
+  grp->nalloc_index = natom;
+  snew(grp->index,grp->nalloc_index);
+  for(i=0; (i<=natom); i++)
+    grp->index[i]=i;
+  grp->nr=natom;
+}
+
 void done_block(t_block *block)
+{
+  block->nr    = 0;
+  sfree(block->index);
+  block->nalloc_index = 0;
+}
+
+void done_blocka(t_blocka *block)
 {
   block->nr    = 0;
   block->nra   = 0;
@@ -167,8 +200,9 @@ void done_top(t_topology *top)
   
   done_atom (&(top->atoms));
   done_symtab(&(top->symtab));
-  for (i=0; (i<ebNR); i++)
-    done_block(&(top->blocks[i]));
+  done_block(&(top->cgs));
+  done_block(&(top->mols));
+  done_blocka(&(top->excls));
 }
 
 void done_inputrec(t_inputrec *ir)

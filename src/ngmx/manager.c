@@ -269,7 +269,7 @@ bool ReadMonfile(char *fn,int *nbars, int *bars)
 
 static void reset_mols(t_block *mols,matrix box,rvec x[])
 {
-  int  i,aj,m0,m1,j,m;
+  int  i,m0,m1,j,m;
   rvec xcm,icm;
   real ix,iy,iz;
   
@@ -281,8 +281,7 @@ static void reset_mols(t_block *mols,matrix box,rvec x[])
     clear_rvec(icm);
     
     for(j=m0; (j<m1); j++) {
-      aj=mols->a[j];
-      rvec_inc(xcm,x[aj]);
+      rvec_inc(xcm,x[j]);
     }
     for(m=0; (m<DIM); m++)
       xcm[m]/=(m1-m0);
@@ -296,10 +295,9 @@ static void reset_mols(t_block *mols,matrix box,rvec x[])
     
     if ((ix != 0) || (iy != 0) || (iz != 0)) {
       for(j=m0; (j<m1); j++) {
-	aj=mols->a[j];
-	x[aj][XX]+=ix;
-	x[aj][YY]+=iy;
-	x[aj][ZZ]+=iz;
+	x[j][XX]+=ix;
+	x[j][YY]+=iy;
+	x[j][ZZ]+=iz;
       }
     }
   }
@@ -339,7 +337,7 @@ static bool step_man(t_manager *man,int *nat)
     }
     if (man->bPbc) {
       rm_pbc(&(man->top.idef),man->natom,man->box,man->x,man->x);
-      reset_mols(&(man->top.blocks[ebMOLS]),man->box,man->x);
+      reset_mols(&(man->top.mols),man->box,man->x);
     }
     ncount=0;
   }

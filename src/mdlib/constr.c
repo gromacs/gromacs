@@ -56,7 +56,7 @@
 
 typedef struct gmx_constr {
   int             nflexcon;     /* The number of flexible constraints */
-  t_block         at2con;       /* A list of atoms to constraints     */
+  t_blocka        at2con;       /* A list of atoms to constraints     */
   bool            bInterCGcons; /* Are there inter charge-group con's */
   gmx_lincsdata_t lincsd;       /* LINCS data                         */
   int             nblocks;      /* The number of SHAKE blocks         */
@@ -357,14 +357,14 @@ static void make_shake_sblock_pd(struct gmx_constr *constr,
 {
   int  i,j,m,ncons;
   int  bstart,bnr;
-  t_block     sblocks;
+  t_blocka    sblocks;
   t_sortblock *sb;
   t_iatom     *iatom;
   atom_id     *inv_sblock;
 
   ncons = idef->il[F_CONSTR].nr/3;
 
-  init_block(&sblocks);
+  init_blocka(&sblocks);
   gen_sblocks(NULL,md->start,md->start+md->homenr,idef,&sblocks,FALSE);
   
   /*
@@ -378,9 +378,9 @@ static void make_shake_sblock_pd(struct gmx_constr *constr,
 	    ncons,bstart,constr->nblocks);
   
   /* Calculate block number for each atom */
-  inv_sblock = make_invblock(&sblocks,md->nr);
+  inv_sblock = make_invblocka(&sblocks,md->nr);
   
-  done_block(&sblocks);
+  done_blocka(&sblocks);
   
   /* Store the block number in temp array and
    * sort the constraints in order of the sblock number 
@@ -492,14 +492,13 @@ void set_constraints(struct gmx_constr *constr,
 		EI_DYNAMICS(ir->eI),dd,constr->lincsd);
       if (dd == NULL) {
 	/* The atom to constraints list is no longer needed */
-	done_block(&constr->at2con);
+	done_blocka(&constr->at2con);
       }
       set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
     } 
     if (ir->eConstrAlg == estSHAKE) {
       if (dd) {
-	make_shake_sblock_dd(constr,&top->idef.il[F_CONSTR],
-			     &top->blocks[ebCGS],dd);
+	make_shake_sblock_dd(constr,&top->idef.il[F_CONSTR],&top->cgs,dd);
       } else {
 	make_shake_sblock_pd(constr,&top->idef,md);
       }
@@ -511,7 +510,7 @@ void set_constraints(struct gmx_constr *constr,
   }
 }
 
-static bool interCGconstraints(t_block *cgs,t_block *at2con,t_iatom *iatoms)
+static bool interCGconstraints(t_block *cgs,t_blocka *at2con,t_iatom *iatoms)
 {
   bool bInterCGConstraints;
   int  cg,a0,a1,a,c,a2;
@@ -535,12 +534,12 @@ static bool interCGconstraints(t_block *cgs,t_block *at2con,t_iatom *iatoms)
   return bInterCGConstraints;
 }
 
-static t_block make_at2con(int start,int natoms,t_idef *idef,
-			   bool bDynamics,int *nflexiblecons)
+static t_blocka make_at2con(int start,int natoms,t_idef *idef,
+			    bool bDynamics,int *nflexiblecons)
 {
   int *count,ncon,con,nflexcon,i,a;
-  t_iatom *ia;
-  t_block at2con;
+  t_iatom  *ia;
+  t_blocka at2con;
   bool bFlexCon;
   
   snew(count,natoms);
@@ -592,7 +591,7 @@ static t_block make_at2con(int start,int natoms,t_idef *idef,
   return at2con;
 }
 
-static void constr_recur(t_block *at2con,t_idef *idef,bool bTopB,
+static void constr_recur(t_blocka *at2con,t_idef *idef,bool bTopB,
 			 int at,int depth,int nc,int *path,
 			 real r0,real r1,real *r2max)
 {
@@ -652,8 +651,8 @@ static void constr_recur(t_block *at2con,t_idef *idef,bool bTopB,
 real constr_r_max(FILE *fplog,t_topology *top,t_inputrec *ir)
 {
   int natoms,nflexcon,*path,at;
-  t_idef *idef;
-  t_block at2con;
+  t_idef   *idef;
+  t_blocka at2con;
   real r0,r1,r2maxA,r2maxB,rmax,lam0,lam1;
   
   natoms = top->atoms.nr;
@@ -688,7 +687,7 @@ real constr_r_max(FILE *fplog,t_topology *top,t_inputrec *ir)
     }
   }
 
-  done_block(&at2con);
+  done_blocka(&at2con);
   sfree(path);
 
   if (fplog)
@@ -730,7 +729,7 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 
       if (DOMAINDECOMP(cr)) {
 	constr->bInterCGcons =
-	  interCGconstraints(&top->blocks[ebCGS],&constr->at2con,
+	  interCGconstraints(&top->cgs,&constr->at2con,
 			     top->idef.il[F_CONSTR].iatoms);
       }
 
@@ -811,7 +810,7 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
   return constr;
 }
 
-t_block *atom2constraints(gmx_constr_t constr)
+t_blocka *atom2constraints(gmx_constr_t constr)
 {
   return &constr->at2con;
 }

@@ -167,12 +167,12 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
     pd_cg_range(cr,&cg0,&cg1);
   } else {
     cg0 = 0;
-    cg1 = top->blocks[ebCGS].nr;
+    cg1 = top->cgs.nr;
   }
 
   atom = top->atoms.atom;
   idef = &top->idef;
-  cgindex = top->blocks[ebCGS].index;
+  cgindex = top->cgs.index;
   
   start = cgindex[cg0];
   end   = cgindex[cg1];
@@ -738,10 +738,10 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
       pd_cg_range(cr,&cg0,&cg1);
     } else {
       cg0 = 0;
-      cg1 = top->blocks[ebCGS].nr;
+      cg1 = top->cgs.nr;
     }
     put_charge_groups_in_box(fplog,cg0,cg1,fr->ePBC,state->box,
-			     &(top->blocks[ebCGS]),state->x,fr->cg_cm);
+			     &(top->cgs),state->x,fr->cg_cm);
     if (graph)
       mk_mshift(fplog,graph,fr->ePBC,state->box,state->x);
   }

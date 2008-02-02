@@ -145,7 +145,7 @@ check_solvent(FILE *                fp,
 	      int                   *cginfo)
 {
     const t_block *   cgs;
-    const t_block *   excl;
+    const t_blocka *  excl;
     const t_block *   mols;
     const t_atoms *   atoms;
     atom_id *         cgid;
@@ -186,9 +186,9 @@ check_solvent(FILE *                fp,
     } * solvent_parameters;
     
 
-    cgs  = &(top->blocks[ebCGS]);
-    excl = &(top->blocks[ebEXCLS]);
-    mols = &(top->blocks[ebMOLS]);
+    cgs  = &(top->cgs);
+    excl = &(top->excls);
+    mols = &(top->mols);
     
     atoms = &(top->atoms);
 
@@ -205,12 +205,12 @@ check_solvent(FILE *                fp,
     n_solvent_parameters = 0;
         
     /* Generate charge group number for all atoms */
-    cgid = make_invblock(cgs,cgs->nra);
+    cgid = make_invblock(cgs,cgs->index[cgs->nr]);
 
     /* Loop over molecules */
     if (debug)
         fprintf(debug,"There are %d molecules, %d charge groups and %d atoms\n",
-                mols->nr,cgs->nr,cgs->nra);
+                mols->nr,cgs->nr,cgs->index[cgs->nr]);
 
 
     /* Set a temporary "no solvent" flag everywhere */
@@ -248,7 +248,7 @@ check_solvent(FILE *                fp,
         
         for( j = j0+1 ; j<j1 && is_single_chargegroup ; j++ ) 
         {
-            if(cgid[mols->a[j]] != cgid[mols->a[j-1]])
+            if(cgid[j] != cgid[j-1])
             {
                 is_single_chargegroup = FALSE;
             }
@@ -344,7 +344,7 @@ check_solvent(FILE *                fp,
          */
 		for( j=0; j<nj ; j++)
 		{
-			aj = mols->a[j0+j];
+			aj = j0 + j;
 		    tmp_vdwtype[j] = top->atoms.atom[aj].type;
 			tmp_charge[j]  = top->atoms.atom[aj].q;
 		} 
@@ -376,7 +376,7 @@ check_solvent(FILE *                fp,
                 /* Congratulations! We have a matched solvent.
                 * Flag it with this type for later processing.
                 */
-	        aj = mols->a[j0];
+	        aj = j0;
 		SET_CGINFO_SOLOPT(cginfo[cgid[aj]],k);
                 (solvent_parameters[k].count)++;
             }
@@ -446,7 +446,7 @@ check_solvent(FILE *                fp,
                     solvent_parameters[n_solvent_parameters].charge[k]  = tmp_charge[k];
                 }
             }
-			aj = mols->a[j0];
+			aj = j0;
 	    
 	    SET_CGINFO_SOLOPT(cginfo[cgid[aj]],n_solvent_parameters);
             n_solvent_parameters++;
@@ -474,7 +474,7 @@ check_solvent(FILE *                fp,
                     solvent_parameters[n_solvent_parameters].charge[k]  = tmp_charge[k];
                 }
             }
-			aj = mols->a[j0];
+			aj = j0;
 	    SET_CGINFO_SOLOPT(cginfo[cgid[aj]],n_solvent_parameters);
             n_solvent_parameters++;
         }
@@ -535,14 +535,15 @@ check_solvent(FILE *                fp,
 static int *init_cginfo(FILE *fplog,const t_topology *top,
 			t_forcerec *fr,bool bNoSolvOpt)
 {
-  const t_block *cgs,*excl;
+  const t_block *cgs;
+  const t_blocka *excl;
   const t_atoms *atoms;
   int  *cginfo;
   int  cg,a0,a1,gid,ai,j,aj,excl_nalloc;
   bool *bExcl,bExclIntra,bExclInter;
   
-  cgs   = &top->blocks[ebCGS];
-  excl  = &top->blocks[ebEXCLS];
+  cgs   = &top->cgs;
+  excl  = &top->excls;
   atoms = &top->atoms;
 
   snew(cginfo,cgs->nr);
@@ -654,7 +655,7 @@ void update_forcerec(FILE *log,t_forcerec *fr,matrix box)
 }
 
 void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
-		      const t_atoms *atoms,const t_block *excl)
+		      const t_atoms *atoms,const t_blocka *excl)
 {
   int    i,j,tpi,tpj,j1,j2,k,n,nexcl,q;
 #if (defined SIZEOF_LONG_LONG_INT) && (SIZEOF_LONG_LONG_INT >= 8)    
@@ -945,8 +946,8 @@ void init_forcerec(FILE *fp,
   if (check_box(box))
     gmx_fatal(FARGS,check_box(box));
 
-  cgs            = &(top->blocks[ebCGS]);
-  mols           = &(top->blocks[ebMOLS]);
+  cgs            = &(top->cgs);
+  mols           = &(top->mols);
   idef           = &(top->idef);
   
   natoms         = top->atoms.nr;
@@ -1155,7 +1156,7 @@ void init_forcerec(FILE *fp,
 	    fr->rlist,fr->rcoulomb,fr->bBHAM ? "BHAM":"LJ",fr->rvdw);
   
   if (ir->eDispCorr != edispcNO)
-    set_avcsixtwelve(fp,fr,&top->atoms,&top->blocks[ebEXCLS]);
+    set_avcsixtwelve(fp,fr,&top->atoms,&top->excls);
 
   if (fr->bBHAM)
     set_bham_b_max(fp,fr,&top->atoms);
@@ -1321,12 +1322,12 @@ void init_forcerec(FILE *fp,
     pd_cg_range(cr,&fr->cg0,&fr->hcg);
   } else {
     fr->cg0 = 0;
-    fr->hcg = top->blocks[ebCGS].nr;
+    fr->hcg = top->cgs.nr;
   }
 
   /* Initialize neighbor search */
   init_ns(fp,cr,&fr->ns,
-	  fr,top->atoms.grps[egcENER].nr,&top->blocks[ebCGS],box);
+	  fr,top->atoms.grps[egcENER].nr,&top->cgs,box);
 
   if (cr->duty & DUTY_PP)
     gmx_setup_kernels(fp);
@@ -1424,7 +1425,7 @@ void force(FILE       *fplog,   int        step,
 	   real       epot[],   t_fcdata   *fcd,
 	   matrix     box,
 	   real       lambda,   t_graph    *graph,
-	   t_block    *excl,    
+	   t_blocka   *excl,    
 	   bool       bNBFonly, bool bDoForces,
 	   rvec       mu_tot[],
 	   bool       bGatherOnly,
@@ -1484,7 +1485,7 @@ void force(FILE       *fplog,   int        step,
 
   if (ir->nwall) {
     dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,grps->estat.ee[egLJSR],nrnb);
-    PRINT_SEPDVDL("Walls",0,dvdlambda);
+    PRINT_SEPDVDL("Walls",0.0,dvdlambda);
     epot[F_DVDL] += dvdlambda;
   }
 

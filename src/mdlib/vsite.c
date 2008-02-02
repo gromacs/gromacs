@@ -1509,12 +1509,12 @@ gmx_vsite_t *init_vsite(t_commrec *cr,t_topology *top)
   vsite->n_vsite = nvsite;
 
   /* Make an atom to charge group index */
-  a2cg = atom2cg(&top->blocks[ebCGS]);
+  a2cg = atom2cg(&top->cgs);
 
   vsite->n_intercg_vsite = count_intercg_vsite(&top->idef,a2cg);
   if (vsite->n_intercg_vsite) {
     vsite->vsite_pbc = get_vsite_pbc(vsite->n_vsite,&top->idef,top->atoms.atom,
-				     &top->blocks[ebCGS],a2cg);
+				     &top->cgs,a2cg);
     if (DOMAINDECOMP(cr)) {
       snew(vsite->vsite_pbc_dd,F_VSITEN-F_VSITE2+1);
       snew(vsite->vsite_pbc_dd_nalloc,F_VSITEN-F_VSITE2+1);

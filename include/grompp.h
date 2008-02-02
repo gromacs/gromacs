@@ -83,7 +83,7 @@ typedef struct {
   t_atoms       atoms;          /* Atoms                                */
   t_block       cgs;            /* Charge groups                        */
   t_block       mols;           /* Molecules                            */
-  t_block       excls;          /* Exclusions                           */
+  t_blocka      excls;          /* Exclusions                           */
   t_params      plist[F_NRE];   /* Parameters in old style              */
   
 } t_molinfo;

@@ -76,8 +76,8 @@ extern void done_mi(t_molinfo *mi);
 
 /* PRINTING */
 
-extern void print_block(FILE *out,char *szName,char *szIndex, 
-			char *szA,t_block *block);
+extern void print_blocka(FILE *out,char *szName,char *szIndex, 
+			 char *szA,t_blocka *block);
 
 extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr);
 

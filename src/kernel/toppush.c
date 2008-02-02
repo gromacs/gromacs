@@ -829,9 +829,7 @@ void push_cg(t_block *block, int *lastindex, int index, int a)
     block->nr++;
     srenew(block->index,block->nr+1);
   }
-  srenew(block->a,block->nra+1);
-  block->a[block->nra++]=a;
-  block->index[block->nr]=block->nra;
+  block->index[block->nr] = a + 1;
   *lastindex = index;
 }
 
@@ -1503,7 +1501,7 @@ void push_excl(char *line, t_block2 *b2)
   } while (n == 1);
 }
 
-void b_to_b2(t_block *b, t_block2 *b2)
+void b_to_b2(t_blocka *b, t_block2 *b2)
 {
   int     i;
   atom_id j,a;
@@ -1516,7 +1514,7 @@ void b_to_b2(t_block *b, t_block2 *b2)
     }
 }
 
-void b2_to_b(t_block2 *b2, t_block *b)
+void b2_to_b(t_block2 *b2, t_blocka *b)
 {
   int     i,nra;
   atom_id j;
@@ -1537,7 +1535,7 @@ static int icomp(const void *v1, const void *v2)
   return (*((atom_id *) v1))-(*((atom_id *) v2));
 }
 
-void merge_excl(t_block *excl, t_block2 *b2)
+void merge_excl(t_blocka *excl, t_block2 *b2)
 {
   int     i,k;
   atom_id j;
