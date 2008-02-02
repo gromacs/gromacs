@@ -440,7 +440,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   double      tcount=0;
   bool        bHaveConstr=FALSE,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
-  real        temp0,mu_aver=0,fmax;
+  real        temp0,mu_aver=0,dvdl;
   int         a0,a1,gnx,ii;
   atom_id     *grpindex;
   char        *grpname;
@@ -935,10 +935,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bOK = TRUE;
     if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
       wallcycle_start(wcycle,ewcUPDATE);
-      update(fplog,step,&ener[F_DVDL],ir,mdatoms,state,graph,f,buf,
+      dvdl = 0;
+      update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,
 	     top,grps,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
 	     bNEMD,TRUE,bFirstStep,pres);
+      if (fr->bSepDVDL && fplog && do_log)
+	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
+      ener[F_DVDL] += dvdl;
       wallcycle_stop(wcycle,ewcUPDATE);
     } else if (graph) {
       /* Need to unshift here */
