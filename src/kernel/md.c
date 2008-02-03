@@ -413,9 +413,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
-  bool       bNoGStat,bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+  bool       bGStat,bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bLastStep,bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
-	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState;
+	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState,bDoBerendsenCoupl;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
@@ -454,23 +454,29 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bIonize  = (Flags & MD_IONIZE);
   bGlas    = (Flags & MD_GLAS);
   bFFscan  = (Flags & MD_FFSCAN);
-  bNoGStat = (Flags & MD_NOGSTAT);
+  bGStat   = !(Flags & MD_NOGSTAT);
 
-  if (bNoGStat) {
-    if (EI_DYNAMICS(ir->eI) && ir->etc==etcNO && ir->epc==epcNO) {
+  if (!bGStat) {
+    if (EI_DYNAMICS(ir->eI) && 
+	(ir->etc == etcNO || ir->etc == etcBERENDSEN) &&
+	(ir->epc == epcNO || ir->epc == epcBERENDSEN)) {
       if (fplog)
 	fprintf(fplog,"\nWill not sum the energies at every step,\n"
 		"therefore the energy file does not contain exact averages and fluctuations.\n\n");
+      if (ir->etc != etcNO || ir->epc != epcNO) {
+	if (fplog)
+	  fprintf(fplog,"WARNING:\nThe Berendsen scaling will only be updated every nstlist (%d) steps\n\n",ir->nstlist);
+      }
       if (ir->comm_mode != ecmNO && ir->nstcomm != ir->nstlist) {
 	if (fplog)
-	  fprintf(fplog,"\nWARNING:\nBecause of the no energy summing option setting nstcomm (was %d) to nstlist (%d)\n\n",ir->nstcomm,ir->nstlist);
+	  fprintf(fplog,"WARNING:\nBecause of the no energy summing option setting nstcomm (was %d) to nstlist (%d)\n\n",ir->nstcomm,ir->nstlist);
       }
     } else {
-      char *warn="\nWARNING:\nNo energy summing can only be used with dynamics and without global temperature and pressure coupling, ignoring this option\n";
+      char *warn="\nWARNING:\nNo energy summing can only be used with dynamics and without extended ensemble temperature and pressure coupling, ignoring this option\n";
       fprintf(stderr,"%s\n",warn);
       if (fplog)
 	fprintf(fplog,"%s\n",warn);
-      bNoGStat = FALSE;
+      bGStat = TRUE;
     }
   }
 
@@ -936,10 +942,15 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (!bRerunMD || rerun_fr.bV || bForceUpdate) {
       wallcycle_start(wcycle,ewcUPDATE);
       dvdl = 0;
+      /* We can only do Berendsen coupling after we have summed the kinetic
+       * energy or virial. Since the happens in global_state after update,
+       * we should only do it at step % nstlist = 1 with bGStat=FALSE.
+       */
+      bDoBerendsenCoupl = (bGStat || ir->nstlist<=1 || step%ir->nstlist==1);
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,
 	     top,grps,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
-	     bNEMD,TRUE,bFirstStep,pres);
+	     bNEMD,TRUE,bDoBerendsenCoupl,bFirstStep,pres);
       if (fr->bSepDVDL && fplog && do_log)
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
       ener[F_DVDL] += dvdl;
@@ -1016,7 +1027,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (PAR(cr) &&
-	(!bNoGStat || do_per_step(step,ir->nstlist) ||
+	(bGStat || do_per_step(step,ir->nstlist) ||
 	 do_per_step(step,ir->nstenergy) || do_per_step(step,ir->nstlog))) {
       wallcycle_start(wcycle,ewcMoveE);
       /* Globally (over all NODEs) sum energy, virial etc. 
@@ -1047,8 +1058,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	ir->nsteps = (step/ir->nstxout + 1) * ir->nstxout - ir->init_step;
       else
 	ir->nsteps = step + 1 - ir->init_step;
-      if (PAR(cr) && bNoGStat) {
-	/* With bNoGStat we need to make sure that we terminate at
+      if (PAR(cr) && !bGStat) {
+	/* Without bGStat we need to make sure that we terminate at
 	 * a step where global_stat is called, i.e. a multiple of nstlist.
 	 */
 	int list_mod = (ir->nsteps+ir->init_step) % ir->nstlist;
@@ -1174,7 +1185,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr)) {
       bool do_ene,do_dr,do_or,do_dihr;
       
-      upd_mdebin(mdebin,fp_dgdl,!bNoGStat,
+      upd_mdebin(mdebin,fp_dgdl,bGStat,
 		 mdatoms->tmass,step_rel,t,ener,state,lastbox,
 		 shake_vir,force_vir,total_vir,pres,grps,mu_tot,constr);
       do_ene = do_per_step(step,ir->nstenergy) || bLastStep;
@@ -1244,7 +1255,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
 	  
   if (MASTER(cr)) {
-    if (!bNoGStat) {
+    if (bGStat) {
       print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
 		 eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(ir->opts));
       print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,fplog,step,step_rel,t,

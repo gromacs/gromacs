@@ -701,6 +701,7 @@ void update(FILE         *fplog,
 	    bool         bHaveConstr,
             bool         bNEMD,
 	    bool         bDoUpdate,
+	    bool         bDoBerendsenCoupl,
 	    bool         bFirstStep,
 	    tensor       pres)
 {
@@ -734,13 +735,13 @@ void update(FILE         *fplog,
   if (bDoUpdate) {
     clear_mat(M);
 
-    if (inputrec->etc==etcBERENDSEN)
+    if (inputrec->etc==etcBERENDSEN && bDoBerendsenCoupl)
       berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
     if (!bFirstStep) {
       if (inputrec->etc==etcNOSEHOOVER)
 	nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
 			  state->nosehoover_xi);
-      if (inputrec->epc == epcBERENDSEN)
+      if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl)
 	berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
     }
     if (inputrec->epc == epcPARRINELLORAHMAN)

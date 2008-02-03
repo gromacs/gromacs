@@ -124,7 +124,7 @@ int main(int argc,char *argv[])
     "at every neighbor search step. This can improve performance for highly",
     "parallel simulations, where this global communication step becomes",
     "the bottleneck. This option is currently not allowed when",
-    "a global thermostat or barostat is used.[PAR]",
+    "an extended ensemble thermostat or barostat is used.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated. Neighbor searching will be",
     "performed for every frame, unless [TT]nstlist[tt] is zero",

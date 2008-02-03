@@ -77,6 +77,7 @@ extern void update(FILE         *fplog,
 		   bool         bHaveConstr,
 		   bool         bNEMD,
 		   bool         bDoUpdate,
+		   bool         bDoBerendsenCoupl,
 		   bool         bFirstStep,
 		   tensor       pres);
 /* Return TRUE if OK, FALSE in case of Shake Error */
