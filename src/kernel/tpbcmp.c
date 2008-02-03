@@ -85,11 +85,15 @@ static void cmp_uc(FILE *fp,char *s,int index,unsigned char i1,unsigned char i2)
 
 static bool cmp_bool(FILE *fp, char *s, int index, bool b1, bool b2)
 {
+  b1 = b1 & TRUE;
+  b2 = b2 & TRUE;
   if (b1 != b2) {
     if (index != -1)
-      fprintf(fp,"%s[%d] (%s - %s)\n",s,index,bool_names[b1],bool_names[b2]);
+      fprintf(fp,"%s[%d] (%s - %s)\n",s,index,
+	      bool_names[b1],bool_names[b2]);
     else
-      fprintf(fp,"%s (%s - %s)\n",s,bool_names[b1],bool_names[b2]);
+      fprintf(fp,"%s (%s - %s)\n",s,
+	      bool_names[b1],bool_names[b2]);
   }
   return b1 && b2;
 }
@@ -597,19 +601,21 @@ void comp_trx(char *fn1, char *fn2, real ftol)
   fn[1]=fn2;
   fprintf(stderr,"Comparing trajectory files %s and %s\n",fn1,fn2);
   for (i=0; i<2; i++)
-    read_first_frame(&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
-
-  do {
-    comp_frame(stdout, &(fr[0]), &(fr[1]), ftol);
-    
-    for (i=0; i<2; i++)
-      b[i] = read_next_frame(status[i],&fr[i]);
-  } while (b[0] && b[1]);
+    b[i] = read_first_frame(&status[i],fn[i],&fr[i],TRX_READ_X|TRX_READ_V|TRX_READ_F);
   
-  for (i=0; i<2; i++) {
-    if (b[i] && !b[1-i])
-      fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn[i],fn[1-i]);
-    close_trj(status[i]);
+  if (b[0] && b[1]) { 
+    do {
+      comp_frame(stdout, &(fr[0]), &(fr[1]), ftol);
+      
+      for (i=0; i<2; i++)
+	b[i] = read_next_frame(status[i],&fr[i]);
+    } while (b[0] && b[1]);
+    
+    for (i=0; i<2; i++) {
+      if (b[i] && !b[1-i])
+	fprintf(stdout,"\nEnd of file on %s but not on %s\n",fn[i],fn[1-i]);
+      close_trj(status[i]);
+    }
   }
   if (!b[0] && !b[1])
     fprintf(stdout,"\nBoth files read correctly\n");
