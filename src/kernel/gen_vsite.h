@@ -39,11 +39,12 @@
 
 #include "typedefs.h"
 #include "grompp.h"
+#include "gpp_atomtype.h"
 #include "hackblock.h"
 
 /* stuff for pdb2gmx */
 
-extern void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype, 
+extern void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype, 
 		      t_atoms *at, t_symtab *symtab, rvec *x[], 
 		      t_params plist[], int *dummy_type[], int *cgnr[], 
 		      real mHmult, bool bVSiteAromatics, char *ff);

@@ -318,7 +318,7 @@ static real get_angle(int nrang, t_mybonded angles[],
   return angle;
 }
 
-static bool calc_vsite3_param(t_atomtype *atype,
+static bool calc_vsite3_param(t_atomtype atype,
 			      t_param *param, t_atoms *at,
 			      int nrbond, t_mybonded *bonds,
 			      int nrang,  t_mybonded *angles )
@@ -336,14 +336,15 @@ static bool calc_vsite3_param(t_atomtype *atype,
     int i;
     for (i=0; i<4; i++)
       fprintf(debug,"atom %u type %s ",
-	      param->a[i]+1,type2nm(at->atom[param->a[i]].type,atype));
+	      param->a[i]+1,
+	      get_atomtype_name(at->atom[param->a[i]].type,atype));
     fprintf(debug,"\n");
   }
   bXH3 = 
-    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MNH",3)==0) &&
-      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
-    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
-      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MCH3",4)==0) );
+    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MNH",3)==0) &&
+      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
+    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
+      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MCH3",4)==0) );
   
   bjk = get_bond_length(nrbond, bonds, param->AJ, param->AK);
   bjl = get_bond_length(nrbond, bonds, param->AJ, param->AL);
@@ -464,7 +465,7 @@ static bool calc_vsite3fad_param(t_param *param,
   return bError;
 }
 
-static bool calc_vsite3out_param(t_atomtype *atype,
+static bool calc_vsite3out_param(t_atomtype atype,
 				 t_param *param, t_atoms *at,
 				 int nrbond, t_mybonded *bonds,
 				 int nrang,  t_mybonded *angles)
@@ -484,14 +485,14 @@ static bool calc_vsite3out_param(t_atomtype *atype,
     int i;
     for (i=0; i<4; i++)
       fprintf(debug,"atom %u type %s ",
-	      param->a[i]+1,type2nm(at->atom[param->a[i]].type,atype));
+	      param->a[i]+1,get_atomtype_name(at->atom[param->a[i]].type,atype));
     fprintf(debug,"\n");
   }
   bXH3 = 
-    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MNH",3)==0) &&
-      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
-    ( (strncasecmp(type2nm(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
-      (strncasecmp(type2nm(at->atom[param->AL].type,atype),"MCH3",4)==0) );
+    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MNH",3)==0) &&
+      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MNH",3)==0) ) ||
+    ( (strncasecmp(get_atomtype_name(at->atom[param->AK].type,atype),"MCH3",4)==0) &&
+      (strncasecmp(get_atomtype_name(at->atom[param->AL].type,atype),"MCH3",4)==0) );
   
   /* check if construction parity must be swapped */  
   bSwapParity = ( param->C1 == -1 );
@@ -682,7 +683,7 @@ calc_vsite4fdn_param(t_param *param,
 
 
 
-int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype *atype,
+int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype atype,
 		t_params plist[])
 {
   int i,j,ftype;

@@ -19,6 +19,8 @@ gen_ad.c 	gen_ad.h	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
 gmxcpp.c	gmxcpp.h	\
+gpp_atomtype.c	gpp_atomtype.h	\
+gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\
 hackblock.c	hackblock.h	\
 hizzie.c	hizzie.h	\
@@ -30,7 +32,7 @@ resall.c	resall.h	\
 sorting.c 	sorting.h	\
 specbond.c	specbond.h	\
 ter_db.c	ter_db.h	\
-tomorse.c	\
+tomorse.c	gpp_tomorse.h	\
 topcat.c 	topcat.h	\
 topdirs.c	topdirs.h	\
 topexcl.c	topexcl.h	\

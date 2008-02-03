@@ -38,14 +38,11 @@
 #define _toputil_h
 
 #include "grompp.h"
+#include "gpp_atomtype.h"
 
 /* UTILITIES */
 
-extern int at2type(char *str, t_atomtype *at);
-
 extern int name2index(char *str, char ***typenames, int ntypes);
-
-extern char *type2nm(int nt, t_atomtype *at);
 
 extern void pr_alloc (int extra, t_params *pr);
 
@@ -54,10 +51,6 @@ extern void set_p_string(t_param *p,char *s);
 /* INITIATE */
 
 extern void init_plist(t_params plist[]);
-
-extern void init_atomtype (t_atomtype *at);
-
-extern void init_bond_atomtype (t_bond_atomtype *bat);
 
 extern void init_molinfo(t_molinfo *mol);
 
@@ -79,7 +72,7 @@ extern void done_mi(t_molinfo *mi);
 extern void print_blocka(FILE *out,char *szName,char *szIndex, 
 			 char *szA,t_blocka *block);
 
-extern void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr);
+extern void print_atoms(FILE *out,t_atomtype atype,t_atoms *at,int *cgnr);
 
 extern void print_bondeds(FILE *out,int natoms,directive d,
 			  int ftype,int fsubtype,t_params plist[]);

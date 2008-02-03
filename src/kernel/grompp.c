@@ -76,6 +76,8 @@
 #include "enxio.h"
 #include "perf_est.h"
 #include "compute_io.h"
+#include "gpp_atomtype.h"
+#include "gpp_tomorse.h"
 
 static int rm_interactions(int ifunc,int nrmols,t_molinfo mols[])
 {
@@ -159,41 +161,6 @@ static void check_cg_sizes(char *topfn,t_topology *sys)
   }
 }
 
-static void check_pairs(int nrmols,t_molinfo mi[],int ntype,t_param *nb)
-{
-  int      i,j,jj,k,ai,aj,taiA,tajA,taiB,tajB,bLJ;
-  t_params *p;
-  
-  for(i=0; (i<nrmols); i++) {
-    p = &(mi[i].plist[F_LJ14]);
-    for(j=jj=0; (j<p->nr); j++) {
-      /* Extract atom types and hence the index in the nbf matrix */
-      ai = p->param[j].a[0];
-      aj = p->param[j].a[1];
-      taiA = mi[i].atoms.atom[ai].type;
-      tajA = mi[i].atoms.atom[aj].type;
-      taiB = mi[i].atoms.atom[ai].typeB;
-      tajB = mi[i].atoms.atom[aj].typeB;
-      
-      bLJ  = FALSE;
-      for(k=0; (k<MAXFORCEPARAM); k++)
-	bLJ = bLJ || (((nb[taiA].c[k]*nb[tajA].c[k]) != 0) || 
-		      ((nb[taiB].c[k]*nb[tajB].c[k]) != 0));
-      if (bLJ) {
-	cp_param(&(p->param[jj]),&(p->param[j]));
-	jj++;
-      }
-      else if (debug) {
-	fprintf(debug,"Removed 1-4 interaction between atoms %d and %d (within mol %s)\n",
-		ai+1,aj+1,*(mi[i].name));
-      }
-    }
-    fprintf(stderr,"Removed %d 1-4 interactions for molecule %s\n",
-	    p->nr-jj,*(mi[i].name));
-    p->nr = jj;
-  }
-}
-
 static void check_vel(t_atoms *atoms,rvec v[])
 {
   int i;
@@ -226,10 +193,10 @@ static void
 new_status(char *topfile,char *topppfile,char *confin,
 	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
 	   bool bGenVel,bool bVerbose,t_state *state,
-	   t_atomtype *atype,t_topology *sys,
+	   t_atomtype atype,t_topology *sys,
 	   t_molinfo *msys,t_params plist[],int *comb,real *reppow,
 	   bool bEnsemble,bool bMorse,
-	   bool bCheckPairs,int *nerror)
+	   int *nerror)
 {
   t_molinfo   *molinfo=NULL;
   t_simsystem *Sims=NULL;
@@ -243,9 +210,6 @@ new_status(char *topfile,char *topppfile,char *confin,
   /* TOPOLOGY processing */
   msys->name=do_top(bVerbose,topfile,topppfile,opts,bZero,&(sys->symtab),
 		    plist,comb,reppow,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
-  
-  if (bCheckPairs)
-    check_pairs(nrmols,molinfo,atype->nr,atype->nb);
   
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
@@ -481,171 +445,7 @@ static void gen_posres(t_params *pr, char *fnA, char *fnB,
   }
 }
 
-static int search_atomtypes(t_atomtype *at,int *n,int typelist[],int thistype,
-			    t_param param[],int ftype)
-{
-  int i,nn,nrfp,j,k,found;
-
-  nn    = *n;
-  nrfp  = NRFP(ftype);
-
-  for(i=0; (i<nn); i++) 
-  {
-    if (typelist[i] == thistype)
-    {
-      /* This type number has already been added */
-      break;
-    }
-
-    /* Otherwise, check if the parameters are identical to any previously added type */
-    
-    found=1;
-    for(j=0;j<at->nr && found;j++) 
-    {
-      /* Check nonbonded parameters */
-      for(k=0;k<nrfp && found;k++) 
-      {
-        found=(param[at->nr*typelist[i]+j].c[k]==param[at->nr*thistype+j].c[k]);
-      }
-
-      /* Check radius, volume, surftens */
-      found = found && 
-          ((at->radius[typelist[i]] == at->radius[thistype]) &&
-           (at->vol[typelist[i]] == at->vol[thistype]) &&
-           (at->surftens[typelist[i]] == at->surftens[thistype]) &&	
-           (at->atomnumber[typelist[i]] ==	at->atomnumber[thistype]));
-    }
-    if (found)
-    {
-      break;
-    }
-  }
-  
-  if (i == nn) {
-    if (debug)
-      fprintf(debug,"Renumbering atomtype %d to %d\n",thistype,nn);
-    if (nn == at->nr)
-      gmx_fatal(FARGS,"Atomtype horror n = %d, %s, %d",nn,__FILE__,__LINE__);
-    typelist[nn]=thistype;
-    nn++;
-  }
-  *n = nn;
-  
-  return i;
-}
-
-static int renum_atype(t_params plist[],t_topology *top,int *wall_atomtype,
-		       t_atomtype *at,bool bVerbose)
-{
-  int      i,j,k,l,mi,mj,nat,nrfp,ftype;
-  t_param  *nbsnew;
-  int      *typelist;
-  real     *new_radius;
-  real     *new_vol;
-  real     *new_surftens;
-  int      *new_atomnumber;
-  
-  snew(typelist,at->nr);
-
-  if (bVerbose)
-    fprintf(stderr,"renumbering atomtypes...\n");
-
-  /* Since the bonded interactions have been assigned now,
-   * we want to reduce the number of atom types by merging 
-   * ones with identical nonbonded interactions, in addition
-   * to removing unused ones.
-   *
-   * With Generalized-Born electrostatics, or implicit solvent
-   * we also check that the atomtype radius, effective_volume
-   * and surface tension match.
-   *
-   * With QM/MM we also check that the atom numbers match
-   */
-  
-  /* Get nonbonded interaction type */
-  if (plist[F_LJ].nr > 0)
-    ftype=F_LJ;
-  else
-    ftype=F_BHAM;
-   
-  /* Renumber atomtypes by first making a list of which ones are actually used.
-   * We provide the list of nonbonded parameters so search_atomtypes
-   * can determine if two types should be merged. 
-   */    
-  nat=0;
-  for(i=0; (i<top->atoms.nr); i++) {
-    top->atoms.atom[i].type=
-      search_atomtypes(at,&nat,typelist,top->atoms.atom[i].type,
-		       plist[ftype].param,ftype);
-    top->atoms.atom[i].typeB=
-      search_atomtypes(at,&nat,typelist,top->atoms.atom[i].typeB,
-		       plist[ftype].param,ftype);
-  }
-
-  for(i=0; i<2; i++) {
-    if (wall_atomtype[i] >= 0)
-      wall_atomtype[i] = search_atomtypes(at,&nat,typelist,wall_atomtype[i],
-					  plist[ftype].param,ftype);
-  }
-
-  snew(new_radius,nat);
-  snew(new_vol,nat);
-  snew(new_surftens,nat);
-  snew(new_atomnumber,nat);  
-
-  /* We now have a list of unique atomtypes in typelist */
-
-  if (debug)
-    pr_ivec(debug,0,"typelist",typelist,nat,TRUE);
-    
-  /* Renumber nlist */ 
-  nbsnew = NULL;
-  snew(nbsnew,plist[ftype].nr);
-
-  nrfp  = NRFP(ftype);
-  
-  for(i=k=0; (i<nat); i++)
-  {
-    mi=typelist[i];
-    for(j=0; (j<nat); j++,k++) 
-    {
-      mj=typelist[j];
-      for(l=0; (l<nrfp); l++)
-      {
-        nbsnew[k].c[l]=plist[ftype].param[at->nr*mi+mj].c[l];
-      }
-    }  
-    new_radius[i]     = at->radius[mi];
-    new_vol[i]        = at->vol[mi];
-    new_surftens[i]   = at->surftens[mi];
-    new_atomnumber[i] = at->atomnumber[mi];
-  }
-  
-  for(i=0; (i<nat*nat); i++) {
-    for(l=0; (l<nrfp); l++)
-      plist[ftype].param[i].c[l]=nbsnew[i].c[l];
-  }
-  plist[ftype].nr=i;
-  
-  sfree(at->radius);
-  sfree(at->vol);
-  sfree(at->surftens);
-  sfree(at->atomnumber);
-  
-  at->radius     = new_radius;
-  at->vol        = new_vol;
-  at->surftens   = new_surftens;
-  at->atomnumber = new_atomnumber;
-  
-  at->nr=nat;
-
-  sfree(nbsnew);
-  sfree(typelist);
-  
-  return nat;
-}
-
-static void set_wall_atomtype(t_atomtype *at,t_gromppopts *opts,
+static void set_wall_atomtype(t_atomtype at,t_gromppopts *opts,
 			      t_inputrec *ir)
 {
   int i;
@@ -653,7 +453,7 @@ static void set_wall_atomtype(t_atomtype *at,t_gromppopts *opts,
   if (ir->nwall > 0)
     fprintf(stderr,"Searching the wall atom type(s)\n");
   for(i=0; i<ir->nwall; i++)
-    ir->wall_atomtype[i] = at2type(opts->wall_atomtype[i],at);
+    ir->wall_atomtype[i] = get_atomtype_type(opts->wall_atomtype[i],at);
 }
 
 static int count_constraints(t_params plist[])
@@ -756,7 +556,7 @@ int main (int argc, char *argv[])
   t_gromppopts *opts;
   t_topology   *sys;
   t_molinfo    msys;
-  t_atomtype   *atype;
+  t_atomtype   atype;
   t_inputrec   *ir;
   int          natoms,nvsite,comb;
   t_params     *plist;
@@ -764,7 +564,7 @@ int main (int argc, char *argv[])
   matrix       box;
   real         max_spacing,reppow;
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
-  int          nerror;
+  int          nerror,ntype;
   bool         bNeedVel,bGenVel;
   bool         have_radius,have_vol,have_surftens;
   bool         have_atomnumber;
@@ -786,7 +586,7 @@ int main (int argc, char *argv[])
 
   /* Command line options */
   static bool bVerbose=TRUE,bRenum=TRUE;
-  static bool bRmVSBds=TRUE,bCheckPairs=FALSE,bZero=FALSE;
+  static bool bRmVSBds=TRUE,bZero=FALSE;
   static int  i,maxwarn=0;
   static real fr_time=-1;
   t_pargs pa[] = {
@@ -798,8 +598,6 @@ int main (int argc, char *argv[])
       "Remove constant bonded interactions with virtual sites" },
     { "-maxwarn", FALSE, etINT,  {&maxwarn},
       "Number of allowed warnings during input processing" },
-    { "-check14", FALSE, etBOOL, {&bCheckPairs},
-      "Remove 1-4 interactions without Van der Waals" },
     { "-zero",    FALSE, etBOOL, {&bZero},
       "Set parameters for bonded interactions without defaults to zero instead of generating an error" },
     { "-renum",   FALSE, etBOOL, {&bRenum},
@@ -840,7 +638,7 @@ int main (int argc, char *argv[])
   snew(plist,F_NRE);
   init_plist(plist);
   snew(sys,1);
-  snew(atype,1);
+  atype = init_atomtype();
   if (debug)
     pr_symtab(debug,0,"Just opened",&sys->symtab);
     
@@ -851,7 +649,7 @@ int main (int argc, char *argv[])
 	     opts,ir,bZero,bGenVel,bVerbose,&state,
 	     atype,sys,&msys,plist,&comb,&reppow,
 	     (opts->eDisre==edrEnsemble),opts->bMorse,
-	     bCheckPairs,&nerror);
+	     &nerror);
   
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
@@ -873,12 +671,13 @@ int main (int argc, char *argv[])
 
   /* If we are doing GBSA, check that we got the parameters we need */
   have_radius=have_vol=have_surftens=TRUE;
-  for(i=0;i<atype->nr;i++) {
-    have_radius=have_radius && (atype->radius[i]>0);
-    have_vol=have_vol && (atype->vol[i]>0);
-    have_surftens=have_surftens && (atype->surftens[i]>=0);
+  ntype = get_atomtype_ntypes(atype);
+  for(i=0; (i<ntype); i++) {
+    have_radius   = have_radius && (get_atomtype_radius(i,atype) > 0);
+    have_vol      = have_vol && (get_atomtype_vol(i,atype) > 0);
+    have_surftens = have_surftens && (get_atomtype_surftens(i,atype) >= 0);
   }
-  if(!have_radius && ir->coulombtype==eelGB) {
+  if (!have_radius && ir->coulombtype==eelGB) {
     fprintf(stderr,"Can't do GB electrostatics; the forcefield is missing values for\n"
 		"atomtype radii, or they might be zero.");
     nerror++;
@@ -896,8 +695,8 @@ int main (int argc, char *argv[])
   
   /* If we are doing QM/MM, check that we got the atom numbers */
   have_atomnumber = TRUE;
-  for (i=0;i<atype->nr;i++) {
-    have_atomnumber = have_atomnumber && (atype->atomnumber[i]>=0);
+  for (i=0; i<ntype; i++) {
+    have_atomnumber = have_atomnumber && (get_atomtype_atomnumber(i,atype) >= 0);
   }
   if (!have_atomnumber && ir->bQMMM)
   {
@@ -947,30 +746,20 @@ int main (int argc, char *argv[])
     clean_vsite_bondeds(msys.plist,sys->atoms.nr,bRmVSBds);
   
   set_wall_atomtype(atype,opts,ir);
-  if (bRenum) 
-    atype->nr = renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
+  if (bRenum) {
+    renum_atype(plist, sys, ir->wall_atomtype, atype, bVerbose);
+    ntype = get_atomtype_ntypes(atype);
+  }
   
   /* Copy the atomtype data to the topology atomtype list */
-  sys->atomtypes.nr=atype->nr;
-  snew(sys->atomtypes.radius,atype->nr);
-  snew(sys->atomtypes.vol,atype->nr);
-  snew(sys->atomtypes.surftens,atype->nr);
-  snew(sys->atomtypes.atomnumber,atype->nr);
-
-
-  for(i=0;i<atype->nr;i++) {
-    sys->atomtypes.radius[i]=atype->radius[i];
-    sys->atomtypes.vol[i]=atype->vol[i];
-    sys->atomtypes.surftens[i]=atype->surftens[i];
-    sys->atomtypes.atomnumber[i] = atype->atomnumber[i];
-  }
+  copy_atomtype_atomtypes(atype,&(sys->atomtypes));
 
   if (debug)
     pr_symtab(debug,0,"After renum_atype",&sys->symtab);
 
   if (bVerbose) 
     fprintf(stderr,"converting bonded parameters...\n");
-  convert_params(atype->nr, plist, msys.plist, comb, reppow, &sys->idef);
+  convert_params(ntype, plist, msys.plist, comb, reppow, &sys->idef);
   
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);

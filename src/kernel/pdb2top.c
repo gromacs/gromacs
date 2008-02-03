@@ -157,7 +157,7 @@ choose_ff(char *forcefield, int maxlen)
 }
 
 
-static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype, 
+static int name2type(t_atoms *at, int **cgnr, t_atomtype atype, 
 		     t_restp restp[])
 {
   int     i,j,prevresnr,resnr,i0,prevcg,cg,curcg;
@@ -204,7 +204,8 @@ static int name2type(t_atoms *at, int **cgnr, t_atomtype *atype,
       j=search_jtype(&restp[resnr],name,bNterm);
       at->atom[i].type = restp[resnr].atom[j].type;
       at->atom[i].q    = restp[resnr].atom[j].q;
-      at->atom[i].m    = atype->atom[restp[resnr].atom[j].type].m;
+      at->atom[i].m    = get_atomtype_massA(restp[resnr].atom[j].type,
+					    atype);
       cg = restp[resnr].cgnr[j];
       if ( (cg != prevcg) || (resnr != prevresnr) )
 	curcg++;
@@ -320,7 +321,7 @@ void print_top_mols(FILE *out, char *title, char *water,
 
 void write_top(FILE *out, char *pr,char *molname,
 	       t_atoms *at,int bts[],t_params plist[],t_excls excls[],
-	       t_atomtype *atype,int *cgnr, int nrexcl)
+	       t_atomtype atype,int *cgnr, int nrexcl)
      /* NOTE: nrexcl is not the size of *excl! */
 {
   if (at && atype && cgnr) {
@@ -646,7 +647,7 @@ void get_hackblocks_rtp(t_hackblock **hb, t_restp **restp,
 }
 
 void pdb2top(FILE *top_file, char *posre_fn, char *molname,
-	     t_atoms *atoms, rvec **x, t_atomtype *atype, t_symtab *tab,
+	     t_atoms *atoms, rvec **x, t_atomtype atype, t_symtab *tab,
 	     int bts[], int nrtp, t_restp   rtp[],
 	     int nterpairs,t_hackblock **ntdb, t_hackblock **ctdb,
 	     int *rn, int *rc, bool bMissing,

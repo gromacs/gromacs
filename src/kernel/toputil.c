@@ -37,6 +37,7 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include "smalloc.h"
 #include "sysstuff.h"
 #include "macros.h"
@@ -47,43 +48,9 @@
 #include "toputil.h"
 #include "symtab.h"
 #include "gmx_fatal.h"
-#include <math.h>
+#include "gpp_atomtype.h"
 
 /* UTILITIES */
-
-int at2type(char *str,t_atomtype *at)
-{
-  int i;
-
-  for (i=0; (i<at->nr) && strcasecmp(str,*(at->atomname[i])); i++)
-    ;
-  if (i == at->nr) 
-    gmx_fatal(FARGS,"Atomtype '%s' not found!",str);
-  
-  return i;
-}
-
-
-int name2index(char *str, char ***typenames, int ntypes)
-{
-  int i;
-
-  for (i=0; (i<ntypes) && strcasecmp(str,*(typenames[i])); i++)
-    ;
-  if (i == ntypes) 
-    gmx_fatal(FARGS,"Bonded/nonbonded atom type '%s' not found!",str);
-  
-  return i;
-}
-
-
-char *type2nm(int nt, t_atomtype *at)
-{
-  if ((nt < 0) || (nt >= at->nr))
-    gmx_fatal(FARGS,"nt out of range: %d",nt);
-  
-  return *(at->atomname[nt]);
-}
 
 void set_p_string(t_param *p,char *s)
 {
@@ -122,28 +89,6 @@ void pr_alloc (int extra, t_params *pr)
     set_p_string(&(pr->param[i]),"");
   }
 }
-
-/* INIT STRUCTURES */
-
-void init_atomtype (t_atomtype *at)
-{
-  at->nr           = 0;
-  at->atom         = NULL;
-  at->atomname     = NULL;
-  at->nb           = NULL;
-  at->bondatomtype = NULL;
-  at->radius       = NULL;
-  at->vol          = NULL;
-  at->surftens     = NULL;
-  at->atomnumber   = NULL;
-}
-
-void init_bond_atomtype (t_bond_atomtype *bat)
-{
-  bat->nr   = 0;
-  bat->atomname = NULL;
-}
-
 
 void init_plist(t_params plist[])
 {
@@ -187,27 +132,10 @@ void done_mi(t_molinfo *mi)
 
 /* PRINTING STRUCTURES */
 
-void print_at (FILE * out, t_atomtype *at)
-{
-  int i;
-  t_atom     *atom = at->atom;
-  t_param    *nb   = at->nb;
-  
-  fprintf (out,"[ %s ]\n",dir2str(d_atomtypes));
-  fprintf (out,"; %6s  %8s  %8s  %8s  %12s  %12s\n",
-	   "type","mass","charge","particle","c6","c12");
-  for (i=0; (i<at->nr); i++) 
-    fprintf(out,"%8s  %8.3f  %8.3f  %8s  %12e  %12e\n",
-	    *(at->atomname[i]),atom[i].m,atom[i].q,"A",
-	    nb[i].C0,nb[i].C1);
-  
-  fprintf (out,"\n");
-}
-
-static void print_nbt (FILE *out,char *title,t_atomtype *at,
+static void print_nbt (FILE *out,char *title,t_atomtype at,
 		       int ftype,t_params *nbt)
 {
-  int f,i,j,k,l,nrfp;
+  int f,i,j,k,l,nrfp,ntype;
   
   if (ftype == F_LJ)
     f=1;
@@ -226,10 +154,11 @@ static void print_nbt (FILE *out,char *title,t_atomtype *at,
     fprintf (out,"\n");
     
     /* print non-bondtypes */
-    for (i=k=0; (i<at->nr); i++)
-      for(j=0; (j<at->nr); j++,k++) {
+    ntype = get_atomtype_ntypes(at);
+    for (i=k=0; (i<ntype); i++)
+      for(j=0; (j<ntype); j++,k++) {
 	fprintf (out,"%8s  %8s  %8d",
-		 *(at->atomname[i]),*(at->atomname[j]),f);
+		 get_atomtype_name(i,at),get_atomtype_name(f,at),f);
 	for(l=0; (l<nrfp); l++)
 	  fprintf (out,"  %12.5e",nbt->param[k].c[l]);
 	fprintf (out,"\n");
@@ -238,7 +167,7 @@ static void print_nbt (FILE *out,char *title,t_atomtype *at,
   fprintf (out,"\n");
 }
 
-void print_bt(FILE *out, directive d, t_atomtype *at,
+void print_bt(FILE *out, directive d, t_atomtype at,
 	      int ftype,int fsubtype,t_params plist[],
 	      bool bFullDih)
 {
@@ -341,10 +270,10 @@ void print_bt(FILE *out, directive d, t_atomtype *at,
     bSwapParity = (bt->param[i].C0==NOTSET) && (bt->param[i].C1==-1);
     if (!bDih)
       for (j=0; (j<nral); j++)
-	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[j]]));
+	fprintf (out,"%5s ",get_atomtype_name(bt->param[i].a[j],at));
     else 
       for(j=0; (j<2); j++)
-	fprintf (out,"%5s ",*(at->atomname[bt->param[i].a[dihp[f][j]]]));
+	fprintf (out,"%5s ",get_atomtype_name(bt->param[i].a[dihp[f][j]],at));
     fprintf (out,"%5d ", bSwapParity ? -f-1 : f+1);
 
     if (bt->param[i].s[0])
@@ -403,11 +332,11 @@ void print_excl(FILE *out, int natoms, t_excls excls[])
   }
 }
 
-void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
+void print_atoms(FILE *out,t_atomtype atype,t_atoms *at,int *cgnr)
 {
   int  i;
-  int  itype;
-  char *as;
+  int  tpA,tpB;
+  char *as,*tpnmA,*tpnmB;
   double qtot;
   
   as=dir2str(d_atoms);
@@ -424,20 +353,21 @@ void print_atoms(FILE *out,t_atomtype *atype,t_atoms *at,int *cgnr)
   if (at->nres) {
     /* if the information is present... */
     for (i=0; (i < at->nr); i++) {
-      itype=at->atom[i].type;
-      if ((itype < 0) || (itype > atype->nr))
-	gmx_fatal(FARGS,"itype = %d, i= %d in print_atoms",itype,i);
-	
+      tpA = at->atom[i].type;
+      if ((tpnmA = get_atomtype_name(tpA,atype)) == NULL)
+	gmx_fatal(FARGS,"tpA = %d, i= %d in print_atoms",tpA,i);
+      
       fprintf(out,"%6d %10s %6d %6s %6s %6d %10g %10g",
-	      i+1,*(atype->atomname[itype]),
-	      at->atom[i].resnr+1,  
+	      i+1,tpnmA,at->atom[i].resnr+1,  
 	      *(at->resname[at->atom[i].resnr]),
 	      *(at->atomname[i]),cgnr[i],
 	      at->atom[i].q,at->atom[i].m);
       if (PERTURBED(at->atom[i])) {
+	tpB = at->atom[i].typeB;
+	if ((tpnmB = get_atomtype_name(tpB,atype)) == NULL)
+	  gmx_fatal(FARGS,"tpB = %d, i= %d in print_atoms",tpB,i);
 	fprintf(out," %6s %10g %10g",
-		*(atype->atomname[at->atom[i].typeB]),
-		at->atom[i].qB,at->atom[i].mB);
+		tpnmB,at->atom[i].qB,at->atom[i].mB);
       }
       qtot += (double)at->atom[i].q;
       if ( fabs(qtot) < 4*GMX_REAL_EPS ) 
@@ -454,20 +384,24 @@ void print_bondeds(FILE *out,int natoms,directive d,
 {
   t_symtab   stab;
   t_atomtype atype;
+  t_param    *param;
+  t_atom     *a;
   int i;
     
-  snew(atype.atom,natoms);
-  snew(atype.atomname,natoms);
+  atype = init_atomtype();
+  snew(a,1);
+  snew(param,1);
   open_symtab(&stab);
   for (i=0; (i < natoms); i++) {
     char buf[12];
     sprintf(buf,"%4d",(i+1));
-    atype.atomname[i]=put_symtab(&stab,buf);
+    add_atomtype(atype,&stab,a,buf,param,0,0,0,0,0);
   }
-  print_bt(out,d,&atype,ftype,fsubtype,plist,TRUE);
+  print_bt(out,d,atype,ftype,fsubtype,plist,TRUE);
     
   done_symtab(&stab);
-  sfree(atype.atom);
-  sfree(atype.atomname);
+  sfree(a);
+  sfree(param);
+  done_atomtype(&atype);
 }
 

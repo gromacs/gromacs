@@ -65,6 +65,7 @@
 #include "topio.h"
 #include "topshake.h"
 #include "gmxcpp.h"
+#include "gpp_bond_atomtype.h"
 
 #define CPPMARK  	'#'	/* mark from cpp			*/
 #define OPENDIR  	'['	/* starting sign for directive		*/
@@ -279,7 +280,7 @@ static char **cpp_opts(char *define,char *include,char *infile)
 static char **read_topol(char *infile,char *outfile,
 			 char *define,char *include,
 			 t_symtab    *symtab,
-			 t_atomtype  *atype,
+			 t_atomtype  atype,
 			 int         *nrmols,
 			 t_molinfo   **molinfo,
 			 t_params    plist[],
@@ -311,7 +312,7 @@ static char **read_topol(char *infile,char *outfile,
   real       fudgeLJ=-1;    /* Multiplication factor to generate 1-4 from LJ */
   bool       bReadDefaults,bReadMolType,bGenPairs,bWarn_copy_A_B;
   double     qt=0,qBt=0; /* total charge */
-  t_bond_atomtype *batype;
+  t_bond_atomtype batype;
   int        lastcg=-1;
   /* File handling variables */
   int        status,done;
@@ -339,8 +340,7 @@ static char **read_topol(char *infile,char *outfile,
   
   bWarn_copy_A_B = bFEP;
 
-  snew(batype,1);
-  init_bond_atomtype(batype);
+  batype = init_bond_atomtype();
   /* parse the actual file */
   bReadDefaults = FALSE;
   bGenPairs     = FALSE;
@@ -448,27 +448,26 @@ static char **read_topol(char *infile,char *outfile,
 		    &nbparam,bGenPairs ? &pair : NULL);
 	    break;
 	    
-#define PUSHBT(nral) push_bt(d,plist,nral,batype->atomname,batype->nr,pline)
 	  case d_bondtypes:
-	    PUSHBT(2);
+	    push_bt(d,plist,2,NULL,batype,pline);
 	    break;
 	  case d_constrainttypes:
-	    PUSHBT(2);
+	    push_bt(d,plist,2,NULL,batype,pline);
 	    break;
 	  case d_pairtypes:
 	    if (bGenPairs)
 	      push_nbt(d,pair,atype,pline,F_LJ14);
 	    else
-	      push_bt(d,plist,2,atype->atomname,atype->nr,pline);
+	      push_bt(d,plist,2,atype,NULL,pline);
 	      break;
 	  case d_angletypes:
-	    PUSHBT(3);
+	    push_bt(d,plist,3,NULL,batype,pline);
 	    break;
 	  case d_dihedraltypes:
 	    /* Special routine that can read both 2 and 4 atom dihedral definitions. */
-	    push_dihedraltype(d,plist,batype->atomname,batype->nr,pline);
+	    push_dihedraltype(d,plist,batype,pline);
 	    break;
-#undef PUSHBT
+
 	  case d_nonbond_params:
 	    push_nbt(d,nbparam,atype,pline,nb_funct);
 	    break;
@@ -486,18 +485,19 @@ static char **read_topol(char *infile,char *outfile,
 	    */
 	  case d_moleculetype: {
 	    if (!bReadMolType) {
-	      ncombs = atype->nr*(atype->nr+1)/2;
+	      int ntype = get_atomtype_ntypes(atype);
+	      ncombs = (ntype*(ntype+1))/2;
 	      generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
 	      ncopy = copy_nbparams(nbparam,nb_funct,&(plist[nb_funct]),
-				    atype->nr);
+				    ntype);
 	      fprintf(stderr,"Generated %d of the %d non-bonded parameter combinations\n",ncombs-ncopy,ncombs);
-	      free_nbparam(nbparam,atype->nr);
+	      free_nbparam(nbparam,ntype);
 	      if (bGenPairs) {
 		gen_pairs(&(plist[nb_funct]),&(plist[F_LJ14]),fudgeLJ,comb,bVerbose);
 		ncopy = copy_nbparams(pair,nb_funct,&(plist[F_LJ14]),
-				      atype->nr);
+				      ntype);
 		fprintf(stderr,"Generated %d of the %d 1-4 parameter combinations\n",ncombs-ncopy,ncombs);
-		free_nbparam(pair,atype->nr);
+		free_nbparam(pair,ntype);
 	      }
 	      /* Copy GBSA parameters to atomtype array */
 	      
@@ -605,6 +605,9 @@ static char **read_topol(char *infile,char *outfile,
   for(i=0; i<nmol; i++)
     done_block2(&(block2[i]));
   free(block2);
+  
+  done_bond_atomtype(&batype);
+  
   *nrmols=nmol;
   
   *nsim=Nsim;
@@ -622,7 +625,7 @@ char **do_top(bool         bVerbose,
 	      t_params     plist[],
 	      int          *combination_rule,
 	      real         *repulsion_power,
-	      t_atomtype   *atype,
+	      t_atomtype   atype,
 	      int          *nrmols,
 	      t_molinfo    **molinfo,
 	      t_inputrec   *ir,
@@ -633,8 +636,6 @@ char **do_top(bool         bVerbose,
   char *tmpfile;
   char **title;
   
-  init_atomtype(atype);
-
   if (topppfile)
     tmpfile = topppfile;
   else 

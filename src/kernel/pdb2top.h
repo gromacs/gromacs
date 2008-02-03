@@ -70,7 +70,7 @@ extern void print_top_mols(FILE *out, char *title, char *water,
 
 extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    t_atoms *atoms,rvec **x,
-		    t_atomtype *atype,t_symtab *tab,
+		    t_atomtype atype,t_symtab *tab,
 		    int bts[],
 		    int nrtp, t_restp rtp[],
 		    int nterpairs, t_hackblock **ntdb, t_hackblock **ctdb,
@@ -88,7 +88,7 @@ extern void print_sums(t_atoms *atoms, bool bSystem);
 
 extern void write_top(FILE *out, char *pr,char *molname,
 		      t_atoms *at,int bts[],t_params plist[],t_excls excls[],
-		      t_atomtype *atype,int *cgnr, int nrexcl);
+		      t_atomtype atype,int *cgnr, int nrexcl);
 /* NOTE: nrexcl is not the size of *excl! */
 
 #endif	/* _pdb2top_h */

@@ -319,7 +319,7 @@ static double dipole_function(const gsl_vector *v,void *params)
       rms += sqr(chi0-md->Chi0_0);
     if (chi0 > md->Chi0_1)
       rms += sqr(chi0-md->Chi0_1);
-    if (md->eemtype != eqgSM1) {
+    if (md->eemtype != eqgSMp) {
       w = gsl_vector_get(v, k++);
       if (w < md->w_0)
 	rms += sqr(w-md->w_0);
@@ -378,7 +378,7 @@ static void optimize_moldip(FILE *fp,FILE *logf,
   
   my_func.f      = &dipole_function;
   my_func.n      = md->nparam*2;
-  if (md->eemtype != eqgSM1)
+  if (md->eemtype != eqgSMp)
     my_func.n += md->nparam;
   my_func.params = (void *) md;
 
@@ -410,7 +410,7 @@ static void optimize_moldip(FILE *fp,FILE *logf,
 	gsl_vector_set (dx, k++, stepsize*chi0);
 	
 	w = eem_get_w(md->eem,md->index[i]);
-	if (md->eemtype != eqgSM1) {
+	if (md->eemtype != eqgSMp) {
 	  w = guess_new_param(w,stepsize,md->w_0,md->w_1,rng,bRand);
 	  gsl_vector_set (x, k, w);
 	  gsl_vector_set (dx, k++, stepsize*w);
@@ -560,14 +560,14 @@ int main(int argc, char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-  eemtype = eqgSM1;
+  eemtype = eqgSMp;
   if (qgen[0]) {
     eemtype = name2eemtype(qgen[0]);
     if (eemtype == -1)
-      eemtype = eqgSM1;
+      eemtype = eqgSMp;
   }
-  if (eemtype > eqgSM3)
-    gmx_fatal(FARGS,"Only models SM1 and SM2 implemented so far");
+  if (eemtype > eqgSMps)
+    gmx_fatal(FARGS,"Only models SMp, SMs and SMps implemented so far");
     
   logf = fopen(opt2fn("-g",NFILE,fnm),"w");
   md = read_moldip(logf,opt2fn("-f",NFILE,fnm),

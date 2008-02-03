@@ -115,12 +115,10 @@ static real calc_jab(rvec xi,rvec xj,real wi,real wj,int eemtype)
  
   switch (eemtype) {
   case eqgBultinck:
-  case eqgSM1:
+  case eqgSMp:
     eNN = coul_nucl_nucl(0,r);
     break;
-  case eqgSM2:
-  case eqgSM3:
-  case eqgSM4:
+  case eqgSMs:
     if ((wi > 0) && (wj > 0)) {
       wij = 2*(wi + wj)/(wi*wj);
       eSS = coul_slater_slater(wij,r);
@@ -129,6 +127,9 @@ static real calc_jab(rvec xi,rvec xj,real wi,real wj,int eemtype)
       eNN = coul_nucl_nucl(0,r);
     }
     break;
+  case eqgSMps:
+  case eqgSMg:
+  case eqgSMpg:
   case eqgYang:
   default:
     gmx_fatal(FARGS,"Can not treat algorithm %d yet in calc_jab",eemtype);
@@ -222,8 +223,9 @@ static void qgen_calc_Jab(t_qgen *qgen,void *eem,int eemtype)
       if (i != j) {
 	wj = qgen->wj[j];
 	qgen->Jab[i][j] = calc_jab(qgen->x[i],qgen->x[j],wi,wj,qgen->eemtype);
-	if ((eemtype == eqgSM3) || (eemtype == eqgSM4))
-	  qgen->rhs[i] -= qgen->elem[j]*calc_j1(qgen->x[i],qgen->x[j],wi,wj,qgen->eemtype);
+	if ((eemtype == eqgSMps) || (eemtype == eqgSMpg))
+	  qgen->rhs[i] -= qgen->elem[j]*calc_j1(qgen->x[i],qgen->x[j],
+						wi,wj,qgen->eemtype);
       }
     }
   }
@@ -472,10 +474,11 @@ void assign_charges(char *molname,
     please_cite(stdout,"Bultinck2002a");
     generate_charges_bultinck(eem,atoms,x,tol,maxiter,atomprop);
     break;
-  case eqgSM1:
-  case eqgSM2:
-  case eqgSM3:
-  case eqgSM4:
+  case eqgSMp:
+  case eqgSMs:
+  case eqgSMps:
+  case eqgSMg:
+  case eqgSMpg:
     (void) generate_charges_sm(debug,molname,eem,atoms,x,tol,maxiter,atomprop,
 			       qtotref,eemtype);
     break;

@@ -85,26 +85,7 @@ typedef struct {
   t_block       mols;           /* Molecules                            */
   t_blocka      excls;          /* Exclusions                           */
   t_params      plist[F_NRE];   /* Parameters in old style              */
-  
 } t_molinfo;
-
-typedef struct {
-  int           nr;		/* The number of atomtypes		*/
-  t_atom	*atom;		/* Array of atoms			*/
-  char          ***atomname;	/* Names of the atomtypes		*/
-  t_param	*nb;		/* Nonbonded force default params	*/
-  int           *bondatomtype;  /* The bond_atomtype for each atomtype  */
-  real          *radius;        /* Radius for GBSA stuff                */
-  real          *vol;           /* Effective volume for GBSA            */
-  real          *surftens;      /* Surface tension with water, for GBSA */
-  int           *atomnumber;    /* Atomic number, used for QM/MM        */
-} t_atomtype;
-
-typedef struct {
-  int           nr;             /* Number of bond_atomtypes		*/
-  char          ***atomname;    /* Names of the bond_atomtypes		*/
-} t_bond_atomtype;
-
 
 typedef enum {
   d_defaults,
@@ -180,8 +161,6 @@ static char *ds[d_maxdir+1] = {
   "dihedral_restraints",
   "invalid"
   };
-
-extern void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype *atype);
 
 #endif	/* _grompp_h */
 

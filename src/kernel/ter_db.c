@@ -75,7 +75,7 @@ int find_kw(char *keyw)
 
 #define FATAL() gmx_fatal(FARGS,"Reading Termini Database: not enough items on line\n%s",line)
 
-static void read_atom(char *line, t_atom *a, t_atomtype *atype, int *cgnr)
+static void read_atom(char *line, t_atom *a, t_atomtype atype, int *cgnr)
 {
   int    i, n;
   char   type[12];
@@ -85,18 +85,18 @@ static void read_atom(char *line, t_atom *a, t_atomtype *atype, int *cgnr)
     gmx_fatal(FARGS,"Reading Termini Database: expected %d items of atom data in stead of %d on line\n%s", 3, i, line);
   a->m=m;
   a->q=q;
-  a->type=at2type(type,atype);
+  a->type=get_atomtype_type(type,atype);
   if ( sscanf(line+n,"%d", cgnr) != 1 )
     *cgnr = NOTSET;
 }
 
-static void print_atom(FILE *out,t_atom *a,t_atomtype *atype,char *newnm)
+static void print_atom(FILE *out,t_atom *a,t_atomtype atype,char *newnm)
 {
   fprintf(out,"\t%s\t%g\t%g\n",
-	  type2nm(a->type,atype),a->m,a->q);
+	  get_atomtype_name(a->type,atype),a->m,a->q);
 }
 
-static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype *atype) 
+static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype atype) 
 {
   FILE *out;
   int i,j,k,bt,nrepl,nadd,ndel;
@@ -159,7 +159,7 @@ static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype *aty
   fclose(out);
 }
 
-int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype *atype)
+int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype atype)
 {
   FILE       *in;
   char       inf[STRLEN],header[STRLEN],buf[STRLEN],line[STRLEN];

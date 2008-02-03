@@ -39,8 +39,9 @@
 
 #include "typedefs.h"
 #include "grompp.h"
+#include "gpp_atomtype.h"
 
-extern int set_vsites(bool bVerbose, t_atoms *atoms,  t_atomtype *atype,
+extern int set_vsites(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
 		      t_params plist[]);
 /* set parameters for vritual sites, return number of virtual sites */
 

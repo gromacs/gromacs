@@ -49,6 +49,7 @@
 #include "toputil.h"
 #include "convparm.h"
 #include "names.h"
+#include "gpp_atomtype.h"
 
 static int round_check(real r,int limit,int ftype,char *name)
 {

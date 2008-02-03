@@ -78,7 +78,7 @@ typedef struct {
 } t_eemrecord;
 
 static char *eemtype_name[eqgNR] = { 
-  "None", "Linear", "Yang", "Bultinck", "SM1", "SM2", "SM3", "SM4" 
+  "None", "Linear", "Yang", "Bultinck", "SMp", "SMs", "SMps", "SMg", "SMpg", 
 };
 
 int name2eemtype(char *name)
@@ -205,9 +205,10 @@ real lo_get_j00(void *eem,int index,real *wj,real q)
     else 
       *wj = (3/(4*er->eep[index].w));
   }
-  else if ((er->eep[index].eemtype == eqgSM2) || 
-	   (er->eep[index].eemtype == eqgSM3) ||
-	   (er->eep[index].eemtype == eqgSM4)) {
+  else if ((er->eep[index].eemtype == eqgSMs) || 
+	   (er->eep[index].eemtype == eqgSMps) ||
+	   (er->eep[index].eemtype == eqgSMg) ||
+	   (er->eep[index].eemtype == eqgSMpg)) {
     Z = er->eep[index].elem;
     *wj = 1.0/er->eep[index].w;
     /**wj = (Z-q)/(Z*er->eep[index].w);*/

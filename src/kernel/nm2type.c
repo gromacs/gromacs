@@ -168,16 +168,21 @@ static int match_str(char *atom,char *template)
 }
 
 int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
-	    t_atomtype *atype,int *nbonds,t_params *bonds)
+	    t_atomtype atype,int *nbonds,t_params *bonds)
 {
   x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
-  int cur = 0;
-#define prev (1-cur)
-  int i,j,k,m,n,nresolved,nb,maxbond,ai,aj,best,im,nqual[2][ematchNR];
-  int *bbb,*n_mask,*m_mask,**match,**quality;
-  char *aname_i,*aname_m,*aname_n,*type;
-  double qq,mm;
-      
+  int     cur = 0;
+#define   prev (1-cur)
+  int     i,j,k,m,n,nresolved,nb,maxbond;
+  int     ai,aj,best,im,nqual[2][ematchNR];
+  int     *bbb,*n_mask,*m_mask,**match,**quality;
+  char    *aname_i,*aname_m,*aname_n,*type;
+  double  alpha,mm;
+  t_atom  *atom;
+  t_param *param;
+  
+  snew(atom,1);
+  snew(param,1);
   maxbond = 0;
   for(i=0; (i<atoms->nr); i++) 
     maxbond = max(maxbond,nbonds[i]);
@@ -268,35 +273,25 @@ int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
       }
     }
     if (best != -1) {
-      qq   = nm2type->nm2t[best].alpha;
-      mm   = nm2type->nm2t[best].m;
-      type = nm2type->nm2t[best].type;
-      
-      for(k=0; (k<atype->nr); k++) {
-	if (strcasecmp(*atype->atomname[k],type) == 0)
-	  break;
+      alpha = nm2type->nm2t[best].alpha;
+      mm    = nm2type->nm2t[best].m;
+      type  = nm2type->nm2t[best].type;
+
+      if ((k = get_atomtype_type(type,atype)) == NOTSET) {
+	atom->type = atom->typeB = get_atomtype_ntypes(atype);
+	atom->qB = alpha;
+	atom->m = atom->mB = mm;
+	add_atomtype(atype,tab,atom,type,param,
+		     atom->type,0,0,0,0);
       }
-      if (k == atype->nr) {
-	/* New atomtype */
-	atype->nr++;
-	srenew(atype->atomname,atype->nr);
-	srenew(atype->atom,atype->nr);
-	srenew(atype->bondatomtype,atype->nr);
-	atype->atomname[k]   = put_symtab(tab,type);
-	atype->bondatomtype[k] = k; /* Set bond_atomtype identical to atomtype */
-	atype->atom[k].type  = k;
-	atype->atom[k].typeB = k;
-	atype->atom[k].q     = 0;
-	atype->atom[k].qB    = qq;
-	atype->atom[k].m     = mm;
-	atype->atom[k].mB    = mm;
-      }      
-      atoms->atom[i].type  = k;
-      atoms->atom[i].typeB = k;
-      atoms->atom[i].q  = 0;
-      atoms->atom[i].qB = qq;
-      atoms->atom[i].m  = mm;
-      atoms->atom[i].mB = mm;
+      else {
+	atoms->atom[i].type  = k;
+	atoms->atom[i].typeB = k;
+	atoms->atom[i].q  = 0;
+	atoms->atom[i].qB = alpha;
+	atoms->atom[i].m  = mm;
+	atoms->atom[i].mB = mm;
+      }
       nresolved++;
     }
     else {
@@ -306,8 +301,13 @@ int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
   }
   sfree(bbb);
   sfree(n_mask);
+  for(i=0; (i<maxbond); i++)
+    sfree(match[i]);
+  sfree(match);
   sfree(m_mask);
-    
+  sfree(atom);
+  sfree(param);
+      
   return nresolved;
 }
 

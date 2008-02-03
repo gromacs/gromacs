@@ -39,21 +39,22 @@
 
 #include "typedefs.h"
 #include "hackblock.h"
+#include "gpp_atomtype.h"
 #include "grompp.h"
 
 extern t_restp *search_rtp(char *key,int nrtp,t_restp rtp[]);
 /* Search for an entry in the rtp database */
 
-extern t_atomtype *read_atype(char *adb,t_symtab *tab);
+extern t_atomtype read_atype(char *adb,t_symtab *tab);
 /* read atom type database */
 
 extern int read_resall(char *resdb, int bts[], t_restp **rtp, 
-		       t_atomtype *atype, t_symtab *tab, bool *bAlldih, int *nrexcl,
+		       t_atomtype atype, t_symtab *tab, bool *bAlldih, int *nrexcl,
 		       bool *HH14, bool *bRemoveDih);
 /* read rtp database */
 
 extern void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[], 
-			 t_atomtype *atype, bool bAlldih, int nrexcl,
+			 t_atomtype atype, bool bAlldih, int nrexcl,
 			 bool HH14, bool remove_dih);
 /* write rtp database */
 

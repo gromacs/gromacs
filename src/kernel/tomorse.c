@@ -48,6 +48,8 @@
 #include "smalloc.h"
 #include "toputil.h"
 #include "gmx_fatal.h"
+#include "gpp_atomtype.h"
+#include "gpp_tomorse.h"
 
 typedef struct {
   char *ai,*aj;
@@ -170,7 +172,7 @@ static real search_e_diss(int n2m,t_2morse t2m[],char *ai,char *aj)
   }
 }
 
-void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype *atype)
+void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype atype)
 {
   int      n2m;
   t_2morse *t2m;
@@ -206,9 +208,10 @@ void convert_harmonics(int nrmols,t_molinfo mols[],t_atomtype *atype)
 	for(j=0; (j<nrharm); j++) {
 	  ni   = mols[i].plist[bb].param[j].AI;
 	  nj   = mols[i].plist[bb].param[j].AJ;
-	  edis = search_e_diss(n2m,t2m,
-			       *atype->atomname[mols[i].atoms.atom[ni].type],
-			       *atype->atomname[mols[i].atoms.atom[nj].type]);
+	  edis = 
+	    search_e_diss(n2m,t2m,
+			  get_atomtype_name(mols[i].atoms.atom[ni].type,atype),
+			  get_atomtype_name(mols[i].atoms.atom[nj].type,atype));
 	  if (edis != 0) {
 	    bRemoveHarm[j] = TRUE;
 	    b0   = mols[i].plist[bb].param[j].c[0];

@@ -31,47 +31,45 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
+ * Gromacs Runs On Most of All Computer Systems
  */
 
-#ifndef _x2top_h
-#define _x2top_h
-	
-#include <stdio.h>
-#include "grompp.h"
-#include "x2top_nm2type.h"
+#ifndef _gpp_bondatomtype_h
+#define _gpp_bondatomtype_h
 
-extern void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
-			     matrix box);
-			     
-extern void set_force_const(t_params plist[],real kb,real kt,real kp,
-			    bool bRound,bool bParam);
-			    
-extern int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot);
-
-extern real calc_dip(t_atoms *atoms,rvec x[]);
-
-extern void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
-				      t_atomtype atype,t_nextnb *nnb,
-				      t_excls excls[]);
-				      
-extern void dump_hybridization(FILE *fp,t_atoms *atoms,int nbonds[]);
-
-extern void reset_q(t_atoms *atoms);
-
-extern void print_rtp(char *filenm,char *title,t_atoms *atoms,
-		      t_params plist[],int cgnr[],int nbts,int bts[]);
-		      
-extern void mk_bonds(x2top_nm2t nmt,
-		     t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
-		     bool bPBC,matrix box,void *atomprop,real tol);
-		     
-extern t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-				int *nbonds,x2top_nm2t nm2t);
-		     
-extern void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
-		       t_atomtype atype,
-		       t_params *bonds,t_params *pols,
-		       rvec **x,t_symtab *symtab);
-
+#ifdef HAVE_CONFIG_H
+#include <config.h>
 #endif
+
+#include <stdio.h>
+#include "typedefs.h"
+#include "macros.h"
+
+typedef struct gpp_bondatomtype *t_bond_atomtype;
+
+extern int get_bond_atomtype_type(char *str,t_bond_atomtype at);
+/* Return atomtype corresponding to case-insensitive str
+   or NOTSET if not found */
+
+extern char *get_bond_atomtype_name(int nt, t_bond_atomtype at);
+/* Return name corresponding to atomtype nt, or NULL if not found */
+
+extern t_bond_atomtype init_bond_atomtype(void);
+/* Return a new atomtype structure */
+
+extern void done_bond_atomtype(t_bond_atomtype *at);
+/* Free the memory in the structure */
+
+extern void add_bond_atomtype(t_bond_atomtype at,t_symtab *tab,
+			      char *name);
+/* Add a complete new atom type to an existing atomtype structure */
+
+#endif	/* _gpp_bond_atomtype_h */
+
+
+
+
+
+
+
+

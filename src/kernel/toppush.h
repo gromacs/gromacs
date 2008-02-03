@@ -39,6 +39,8 @@
 
 #include "typedefs.h"
 #include "toputil.h"
+#include "gpp_atomtype.h"
+#include "gpp_bond_atomtype.h"
 
 typedef struct {
   int     nr;	/* The number of entries in the list 			*/
@@ -49,36 +51,37 @@ typedef struct {
 } t_block2;
 
 extern void generate_nbparams(int comb,int funct,t_params plist[],
-			      t_atomtype *atype);
+			      t_atomtype atype);
 			      
-extern void push_at (t_symtab *symtab,t_atomtype *at,t_bond_atomtype *bat,char *line,int nb_funct,
+extern void push_at (t_symtab *symtab,t_atomtype at,
+		     t_bond_atomtype bat,char *line,int nb_funct,
 		     t_nbparam ***nbparam,t_nbparam ***pair);
 
-extern void push_bt(directive d,t_params bt[], int nral, 
-		    char ***typenames, int ntypes, char *line);
+extern void push_bt(directive d,t_params bt[], int nral,
+		    t_atomtype at,t_bond_atomtype bat,char *line);
 
 extern void push_dihedraltype(directive d,t_params bt[],
-			      char ***typenames, int ntypes,char *line);
+			      t_bond_atomtype bat,char *line);
 
-extern void push_nbt(directive d,t_nbparam **nbt,t_atomtype *atype,
+extern void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
 		     char *plines,int nb_funct);
 
 extern void push_atom(t_symtab   *symtab, 
 		      t_block    *cgs,
 		      t_atoms    *at,
-		      t_atomtype *atype,
+		      t_atomtype atype,
 		      char       *line,
 		      int        *lastcg);
 
 extern void push_bondnow (t_params *bond, t_param *b);
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
-		      t_atoms *at,t_atomtype *atype,char *line,
+		      t_atoms *at,t_atomtype atype,char *line,
 		      bool bBonded,bool bGenPairs,
 		      bool bZero,bool *bWarn_copy_A_B);
 
 extern void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
-			 t_atoms *at,t_atomtype *atype,char *line);
+			 t_atoms *at,t_atomtype atype,char *line);
 
 extern void push_mol(int nrmols,t_molinfo mols[],char *pline,
 		     int *whichmol,int *nrcopies);

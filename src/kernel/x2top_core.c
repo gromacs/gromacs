@@ -67,6 +67,7 @@
 #include "grompp.h"
 #include "add_par.h"
 #include "gmx_random.h"
+#include "gpp_atomtype.h"
 
 void mk_bonds(x2top_nm2t nmt,
 	      t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
@@ -135,13 +136,13 @@ int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot)
   return cgnr;
 }
 
-t_atomtype *set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-			  int *nbonds,x2top_nm2t nm2t)
+t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
+			 int *nbonds,x2top_nm2t nm2t)
 {
-  t_atomtype *atype;
+  t_atomtype atype;
   int nresolved;
   
-  snew(atype,1);
+  atype = init_atomtype();
   snew(atoms->atomtype,atoms->nr);
   nresolved = nm2type(nm2t,tab,atoms,atype,nbonds,bonds);
   if (nresolved != atoms->nr)
@@ -149,7 +150,7 @@ t_atomtype *set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
 	      nresolved,atoms->nr);
   
   fprintf(stderr,"There are %d different atom types in your sample\n",
-	  atype->nr);
+	  get_atomtype_ntypes(atype));
     
   return atype;
 }
@@ -382,7 +383,7 @@ static void clean_thole(t_params *ps)
 }
 
 void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
-			       t_atomtype *atype,t_nextnb *nnb,
+			       t_atomtype atype,t_nextnb *nnb,
 			       t_excls excls[])
 {
   int atp,jtp,jid,i,j,k,l,m,ftype,nb,nra,npol=0;
@@ -400,7 +401,7 @@ void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
     for(j=0; (j<plist[ftype].nr); j++) {
       for(k=0; (k<nra); k++) {
 	atp = atoms->atom[p[j].a[k]].type;
-	if (strcasecmp(*atype->atomname[atp],"SHELL") == 0) {
+	if (get_atomtype_ptype(atp,atype) == eptShell) {
 	  bRemove[j] = TRUE;
 	  if (ftype == F_BONDS) {
 	    memcpy(&plist[F_POLARIZATION].param[npol],
@@ -427,8 +428,7 @@ void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
   /* now for all atoms */
   for (i=0; (i < atoms->nr); i++) {
     atp = atoms->atom[i].type;
-    if (strcasecmp(*atype->atomname[atp],"SHELL") == 0) {
-      
+    if (get_atomtype_ptype(atp,atype) == eptShell) {
       for(m=3; (m<=4); m++) {
 	/* for all fifth bonded atoms of atom i */
 	for (j=0; (j < nnb->nrexcl[i][m]); j++) {
@@ -436,7 +436,7 @@ void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
 	  /* store the 1st neighbour in nb */
 	  nb = nnb->a[i][m][j];
 	  jtp = atoms->atom[nb].type;
-	  if ((i != nb) && (strcasecmp(*atype->atomname[jtp],"SHELL") == 0)) {
+	  if ((i != nb) && (strcasecmp(get_atomtype_name(jtp,atype),"SHELL") == 0)) {
 	    srenew(excls[i].e,excls[i].nr+1);
 	    excls[i].e[excls[i].nr++] = nb;
 	    fprintf(stderr,"Excluding %d from %d\n",nb+1,i+1);
@@ -456,7 +456,7 @@ void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
       jid = nnb->a[i][1][j];
       atp = atoms->atom[jid].type;
     
-      if (strcasecmp(*atype->atomname[atp],"SHELL") == 0) {
+      if (get_atomtype_ptype(atp,atype) == eptShell) {
 	bHaveShell[i] = TRUE;
 	shell_index[i] = jid;
       }
@@ -529,62 +529,70 @@ void reset_q(t_atoms *atoms)
     atoms->atom[i].qB = atoms->atom[i].q;
 }
 
-void add_shells(x2top_nm2t nm2t,t_atoms *atoms,
-		t_atomtype *atype,
+void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
+		t_atomtype atype,
 		t_params *bonds,t_params *pols,
 		rvec **x,t_symtab *symtab)
 {
   int  i,j,iat,shell,atp,ns=0;
   int  *renum;
-  char **ptr;
   char buf[32];
   t_param p;
+  t_atom  *shell_atom;
+  t_atoms *newa;
+  rvec    *newx;
   
+  snew(shell_atom,1);
   memset(&p,0,sizeof(p));
-  snew(renum,atoms->nr*2);
-  for(i=0; (i<atoms->nr); i++) {
-    atp = atoms->atom[i].type;
+  snew(renum,(*atoms)->nr*2);
+  for(i=0; (i<(*atoms)->nr); i++) {
+    atp = (*atoms)->atom[i].type;
     renum[i] = i+ns;
-    if (atype->atom[atp].qB != 0) {
+    if (get_atomtype_qB(atp,atype) != 0) {
       ns++;
       p.AI = renum[i];
       p.AJ = renum[i]+1;
-      p.C0 = atype->atom[atp].qB;
+      p.C0 = get_atomtype_qB(atp,atype);
       push_bondnow(pols,&p);
     }
   }
-  shell = atype->nr - 1;
+  shell_atom->ptype = eptShell;
+  shell = add_atomtype(atype,symtab,shell_atom,"SHELL",&p,
+		       0,0,0,0,0);
+  
   if (ns > 0) {
-    srenew(atoms->atom,atoms->nr+ns);
-    srenew(atoms->atomname,atoms->nr+ns);
-    srenew((*x),atoms->nr+ns);
-    for(i=atoms->nr; (i<atoms->nr+ns); i++) {
-      memset(&(atoms->atom[i]),0,sizeof(atoms->atom[i]));
-      atoms->atomname[i] = NULL;
-      clear_rvec((*x)[i]);
+    snew(newa,1);
+    init_t_atoms(newa,(*atoms)->nr+ns,TRUE);
+    newa->nres = (*atoms)->nres;
+    snew(newx,(*atoms)->nr+ns);
+
+    for(i=0; (i<(*atoms)->nr); i++) {
+      newa->atom[renum[i]]     = (*atoms)->atom[i];
+      newa->atomname[renum[i]] = put_symtab(symtab,*(*atoms)->atomname[i]);
+      copy_rvec(newx[renum[i]],(*x)[i]);
     }
-    for(i=atoms->nr-1; (i>=0); i--) {
-      atoms->atom[renum[i]]     = atoms->atom[i];
-      atoms->atomname[renum[i]] = atoms->atomname[i];
-      copy_rvec((*x)[renum[i]],(*x)[i]);
+    for(i=0; (i<(*atoms)->nres); i++) {
+      newa->resname[i] = put_symtab(symtab,*(*atoms)->resname[i]);
     }
-    for(i=0; (i<atoms->nr); i++) {
+    
+    for(i=0; (i<(*atoms)->nr); i++) {
       iat = renum[i];
       for(j=iat+1; (j<renum[i+1]); j++) {
-	atoms->atom[j]      = atoms->atom[iat];
-	atoms->atom[iat].q  = 0;
-	atoms->atom[iat].qB = 0;
-	atoms->atom[j].m    = 0;
-	atoms->atom[j].mB   = 0;
-	atoms->atom[j].type = shell;
-	sprintf(buf,"S%s",*(atoms->atomname[iat]));
-	snew(ptr,1);
-	*ptr = strdup(buf);
-	atoms->atomname = *ptr;/*put_symtab(symtab,ptr);*/
+	newa->atom[j]       = (*atoms)->atom[iat];
+	newa->atom[iat].q   = 0;
+	newa->atom[iat].qB  = 0;
+	newa->atom[j].m     = 0;
+	newa->atom[j].mB    = 0;
+	newa->atom[j].type  = shell;
+	newa->atom[j].resnr = (*atoms)->atom[i].resnr;
+	sprintf(buf,"S%s",*((*atoms)->atomname[i]));
+	newa->atomname[j] = put_symtab(symtab,buf);
 	copy_rvec((*x)[j],(*x)[iat]);
       }
     }
+    *atoms = newa;
+    *x = newx;
   }
-  atoms->nr += ns;
   sfree(renum);
+  sfree(shell_atom);
 }

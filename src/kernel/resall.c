@@ -49,57 +49,49 @@
 #include "resall.h"
 #include "pgutil.h"
 
-t_atomtype *read_atype(char *adb,t_symtab *tab)
+t_atomtype read_atype(char *adb,t_symtab *tab)
 {
-#define MAXAT 5000
   FILE       *in;
   char       aadb[STRLEN];
   char       buf[STRLEN],name[STRLEN];
   double     m;
-  int        nratt;
-  t_atomtype *at;
-
+  int        nratt=0;
+  t_atomtype at;
+  t_atom     *a;
+  t_param    *nb;
+  
   sprintf(aadb,"%s.atp",adb);
-  in=libopen(aadb);
+  in = libopen(aadb);
+  at = init_atomtype();
+  snew(a,1);
+  snew(nb,1);
   
-  snew(at,1);
-  snew(at->atom,MAXAT);
-  snew(at->atomname,MAXAT);
-  
-  for(nratt=0; ; nratt++) {
-    if (nratt >= MAXAT)
-      gmx_fatal(FARGS,"nratt >= MAXAT(%d). Increase the latter",MAXAT);
-    if (feof(in))
-      break;
-
+  while(!feof(in)) {
     /* Skip blank or comment-only lines */
     do {
       fgets2(buf,STRLEN,in);
-      if(buf) {
+      if (buf) {
 	strip_comment(buf);
 	trim(buf);
       }
     } while (buf && strlen(buf)==0);
-
-    if(buf==NULL)
-      break;
     
-    if (sscanf(buf,"%s%lf",name,&m) != 2)
-      break;
-    set_at(&(at->atom[nratt]),m,0.0,nratt,0);
-    at->atomname[nratt]=put_symtab(tab,name);
-    fprintf(stderr,"\rAtomtype %d",nratt+1);
+    if ((buf != NULL) && (sscanf(buf,"%s%lf",name,&m) == 2)) {
+      a->m = m;
+      add_atomtype(at,tab,a,name,nb,0,0,0,0,0);
+      fprintf(stderr,"\rAtomtype %d",nratt+1);
+    }
   }
   fclose(in);
   fprintf(stderr,"\n");
-  at->nr=nratt;
   
   return at;
 }
 
-static void print_resatoms(FILE *out,t_atomtype *atype,t_restp *rtp)
+static void print_resatoms(FILE *out,t_atomtype atype,t_restp *rtp)
 {
   int j,tp;
+  char *tpnm;
   
   /* fprintf(out,"%5s\n",rtp->resname);
      fprintf(out,"%5d\n",rtp->natom); */
@@ -107,17 +99,17 @@ static void print_resatoms(FILE *out,t_atomtype *atype,t_restp *rtp)
   fprintf(out," [ atoms ]\n");
   
   for(j=0; (j<rtp->natom); j++) {
-    tp=rtp->atom[j].type;
-    if ((tp < 0) || (tp >= atype->nr))
-      gmx_fatal(FARGS,"tp (%d) out of range (0 .. %d)",tp,atype->nr);
+    tp = rtp->atom[j].type;
+    tpnm = get_atomtype_name(tp,atype);
+    if (tpnm == NULL)
+      gmx_fatal(FARGS,"Incorrect atomtype (%d)",tp);
     fprintf(out,"%6s%6s%8.3f%6d\n",
-	    *(rtp->atomname[j]),*(atype->atomname[tp]),
-	    rtp->atom[j].q,rtp->cgnr[j]);
+	    *(rtp->atomname[j]),tpnm,rtp->atom[j].q,rtp->cgnr[j]);
   }
 }
 
 static bool read_atoms(FILE *in,char *line,
-		       t_restp *r0,t_symtab *tab,t_atomtype *atype)
+		       t_restp *r0,t_symtab *tab,t_atomtype atype)
 {
   int    i,j,cg,maxentries;
   char   buf[256],buf1[256];
@@ -141,14 +133,12 @@ static bool read_atoms(FILE *in,char *line,
     r0->atomname[i]=put_symtab(tab,buf);
     r0->atom[i].q=q;
     r0->cgnr[i]=cg;
-    for(j=0; (j<atype->nr); j++)
-      if (strcasecmp(buf1,*(atype->atomname[j])) == 0)
-	break;
-    if (j == atype->nr)
+    j = get_atomtype_type(buf1,atype);
+    if (j == NOTSET)
       gmx_fatal(FARGS,"Atom type %s (residue %s) not found in atomtype "
 		  "database",buf1,r0->resname);
     r0->atom[i].type=j;
-    r0->atom[i].m=atype->atom[j].m;
+    r0->atom[i].m=get_atomtype_massA(j,atype);
     i++;
   }
   r0->natom=i;
@@ -247,7 +237,7 @@ void clear_t_restp(t_restp *rrtp)
 }
 
 int read_resall(char *ff, int bts[], t_restp **rtp, 
-		t_atomtype *atype, t_symtab *tab, bool *bAlldih, int *nrexcl,
+		t_atomtype atype, t_symtab *tab, bool *bAlldih, int *nrexcl,
 		bool *HH14, bool *bRemoveDih)
 {
   FILE      *in;
@@ -383,7 +373,7 @@ int read_resall(char *ff, int bts[], t_restp **rtp,
 }
 
 void print_resall(FILE *out, int bts[], int nrtp, t_restp rtp[],
-		  t_atomtype *atype, bool bAlldih, int nrexcl, 
+		  t_atomtype atype, bool bAlldih, int nrexcl, 
 		  bool HH14, bool bRemoveDih)
 {
   int i,bt;

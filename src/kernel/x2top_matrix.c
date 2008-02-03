@@ -49,7 +49,7 @@ void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z)
 void matrix_invert(FILE *fp,int n,double **a)
 {
   int i,j,m,lda,*ipiv,lwork,info;
-  double **test,**id,*work;
+  double **test=NULL,**id,*work;
   
   if (fp) {
     fprintf(fp,"Inverting %d square matrix\n",n);

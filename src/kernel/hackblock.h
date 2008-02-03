@@ -40,6 +40,7 @@
 #include "typedefs.h"
 #include "pdbio.h"
 #include "grompp.h"
+#include "gpp_atomtype.h"
 
 /* Used for reading .rtp/.tdb */
 /* ebtsBONDS must be the first, new types can be added to the end */
@@ -117,7 +118,7 @@ typedef struct {
   int         nah;
   t_symtab    tab;
   int         *rN, *rC;
-  t_atomtype  *atype;
+  t_atomtype  atype;
   /* protonated topology: */
   t_atoms     *patoms;
   /* unprotonated topology: */

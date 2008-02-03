@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
   t_params   plist[F_NRE];
   t_excls    *excls;
   t_atoms    *atoms;       /* list with all atoms */
-  t_atomtype *atype;
+  t_atomtype atype;
   t_nextnb   nnb;
   x2top_nm2t nm2t;
   x2top_qat  qa;
@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
   static char *molnm = "ICE";
   static char *ff = "select";
   static char *qgen[] = { NULL, "None", "Linear", "Yang", "Bultinck", 
-			  "SM1", "SM2", "SM3", "SM4", NULL };
+			  "SMp", "SMs", "SMps", "SMg", "SMgs", NULL };
   t_pargs pa[] = {
     { "-ff",     FALSE, etSTR, {&ff},
       "Select the force field for your simulation." },
@@ -256,13 +256,15 @@ int main(int argc, char *argv[])
   mk_bonds(nm2t,atoms,x,&(plist[F_BONDS]),nbonds,forcefield,
 	   bPBC,box,atomprop,btol);
 
+  /* Setting the atom types: this depends on the bonding */
   open_symtab(&symtab);
   atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nm2t);
   
-  /* Read charges */
+  /* Read charges and polarizabilities, if provided */
   if (opt2bSet("-d",NFILE,fnm))
     qa = rd_q_alpha(opt2fn("-d",NFILE,fnm));
 
+  /* Check which algorithm to use for charge generation */
   alg = eqgNone;
   if (qgen[0]) {
     alg = name2eemtype(qgen[0]); 
@@ -285,9 +287,9 @@ int main(int argc, char *argv[])
 		   maxiter,atomprop,qtotref);
 
   if (bPolarize)
-    add_shells(nm2t,atoms,atype,&(plist[F_BONDS]),&(plist[F_POLARIZATION]),
-	       &x,&symtab);
-      
+    add_shells(nm2t,&atoms,atype,&(plist[F_BONDS]),
+	       &(plist[F_POLARIZATION]),&x,&symtab);
+  
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);
   printf("Generating angles and dihedrals from bonds...\n");
@@ -296,7 +298,7 @@ int main(int argc, char *argv[])
   print_nnb(&nnb,"NNB");
   gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,
 	  bAllDih,bRemoveDih,TRUE);
-  delete_shell_interactions(plist,atoms,atype,&nnb,excls);
+  /*delete_shell_interactions(plist,atoms,atype,&nnb,excls);*/
   done_nnb(&nnb);
   mu = calc_dip(atoms,x);
   

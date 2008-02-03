@@ -51,6 +51,7 @@
 #include "index.h"
 #include "names.h"
 #include "futil.h"
+#include "gpp_atomtype.h"
 
 #define MAXNAME 32
 #define OPENDIR  	'['	/* starting sign for directive		*/
@@ -427,16 +428,15 @@ static int get_atype(int atom, t_atoms *at, int nrtp, t_restp rtp[],
   return type;
 }
 
-static int nm2type(char *name, t_atomtype *atype)
+static int vsite_nm2type(char *name, t_atomtype atype)
 {
-  int tp,j;
+  int tp;
   
-  tp=NOTSET;
-  for(j=0; (j < atype->nr) && (tp==NOTSET); j++)
-    if (strcasecmp(name,*(atype->atomname[j])) == 0)
-      tp=j;
-  if (tp==NOTSET)
-    gmx_fatal(FARGS,"Dummy mass type (%s) not found in atom type database",name);
+  tp = get_atomtype_type(name,atype);
+  if (tp == NOTSET)
+    gmx_fatal(FARGS,"Dummy mass type (%s) not found in atom type database",
+	      name);
+	      
   return tp;
 }
 
@@ -704,7 +704,7 @@ static void calc_vsite3_param(real xd,real yd,real xi,real yi,real xj,real yj,
 }
 
 
-static int gen_vsites_trp(t_atomtype *atype, rvec *newx[],
+static int gen_vsites_trp(t_atomtype atype, rvec *newx[],
 			t_atom *newatom[], char ***newatomname[], 
 			int *o2n[], int *newvsite_type[], int *newcgnr[],
 			t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
@@ -865,7 +865,7 @@ static int gen_vsites_trp(t_atomtype *atype, rvec *newx[],
   }
   
   /* get dummy mass type */
-  tpM=nm2type("MW",atype);
+  tpM=vsite_nm2type("MW",atype);
   /* make space for 2 masses: shift all atoms starting with CB */
   i0=ats[atCB];
   for(j=0; j<NMASS; j++)
@@ -954,7 +954,7 @@ static int gen_vsites_trp(t_atomtype *atype, rvec *newx[],
 }
 
 
-static int gen_vsites_tyr(t_atomtype *atype, rvec *newx[],
+static int gen_vsites_tyr(t_atomtype atype, rvec *newx[],
 			t_atom *newatom[], char ***newatomname[], 
 			int *o2n[], int *newvsite_type[], int *newcgnr[],
 			t_symtab *symtab, int *nadd, rvec x[], int *cgnr[],
@@ -1054,7 +1054,7 @@ static int gen_vsites_tyr(t_atomtype *atype, rvec *newx[],
   at->atom[ats[atHH]].m=at->atom[ats[atHH]].mB=0;
   
   /* get dummy mass type */
-  tpM=nm2type("MW",atype);
+  tpM=vsite_nm2type("MW",atype);
   /* make space for 1 mass: shift HH only */
   i0=ats[atHH];
   atM=i0+*nadd;
@@ -1321,7 +1321,7 @@ static bool is_vsite(int vsite_type)
 
 static char atomnamesuffix[] = "1234";
 
-void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype, 
+void do_vsites(int nrtp, t_restp rtp[], t_atomtype atype, 
 		t_atoms *at, t_symtab *symtab, rvec *x[], 
 		t_params plist[], int *vsite_type[], int *cgnr[], 
 		real mHmult, bool bVsiteAromatics, char *ff)
@@ -1514,7 +1514,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
 		  &nrbonds, &nrHatoms, Hatoms, &Heavy, &nrheavies, heavies);
       /* get Heavy atom type */
       tpHeavy=get_atype(Heavy,at,nrtp,rtp,aan);
-      strcpy(tpname,type2nm(tpHeavy,atype));
+      strcpy(tpname,get_atomtype_name(tpHeavy,atype));
 
       bWARNING=FALSE;
       bAddVsiteParam=TRUE;
@@ -1599,7 +1599,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
 	  (*vsite_type)[Hatoms[j]] = Hat_vsite_type[j];
 	/* get dummy mass type from first char of heavy atom type (N or C) */
 	
-	strcpy(nexttpname,type2nm(get_atype(heavies[0],at,nrtp,rtp,aan),atype));
+	strcpy(nexttpname,get_atomtype_name(get_atype(heavies[0],at,nrtp,rtp,aan),atype));
 	ch=get_dummymass_name(vsiteconflist,nvsiteconf,tpname,nexttpname);
 
 	if(ch==NULL) 
@@ -1607,7 +1607,7 @@ void do_vsites(int nrtp, t_restp rtp[], t_atomtype *atype,
 	else
 	  strcpy(name,ch);
 
-	tpM=nm2type(name,atype);
+	tpM=vsite_nm2type(name,atype);
 	/* make space for 2 masses: shift all atoms starting with 'Heavy' */
 #define NMASS 2
 	i0=Heavy;

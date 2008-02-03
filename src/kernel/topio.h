@@ -40,6 +40,7 @@
 #include "typedefs.h"
 #include "readir.h"
 #include "grompp.h"
+#include "gpp_atomtype.h"
 
 typedef struct {
   int whichmol;
@@ -58,7 +59,7 @@ extern char **do_top(bool         bVerbose,
 		     t_params     plist[],
 		     int          *combination_rule,
 		     real         *repulsion_power,
-		     t_atomtype   *atype,
+		     t_atomtype   atype,
 		     int          *nrmols,
 		     t_molinfo    **molinfo,
 		     t_inputrec   *ir,
