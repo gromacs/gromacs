@@ -70,6 +70,8 @@
 #include "add_par.h"
 #include "gmx_random.h"
 
+enum { edihNo, edihOne, edihAll, edihNR };
+
 int main(int argc, char *argv[])
 {
   static char *desc[] = {
@@ -118,18 +120,18 @@ int main(int argc, char *argv[])
   matrix     box;          /* box length matrix */
   int        natoms;       /* number of atoms in one molecule  */
   int        nres;         /* number of molecules? */
-  int        i,j,k,l,m,ndih,alg;
+  int        i,j,k,l,m,ndih,alg,dih;
   real       mu;
   bool       bRTP,bTOP,bOPLS,bCharmm;
   t_symtab   symtab;
   int        nqa=0;
   real       cutoff,qtot,mtot;
-  char       rtp[STRLEN];
+  char       *fn,rtp[STRLEN];
 
-  
   t_filenm fnm[] = {
     { efSTX, "-f", "conf", ffREAD  },
     { efTOP, "-o", "out",  ffOPTWR },
+    { efSTO, "-c", "out",  ffOPTWR },
     { efRTP, "-r", "out",  ffOPTWR },
     { efDAT, "-d", "qpol", ffOPTRD }
   };
@@ -137,16 +139,17 @@ int main(int argc, char *argv[])
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static real btol=0.1,qtol=1e-3,fac=5.0;
   static real qtotref=0;
-  static int  nexcl = 3;
+  static int  nexcl = 2;
   static int  maxiter=100;
-  static bool bRemoveDih = FALSE;
-  static bool bParam = TRUE, bH14 = TRUE,bAllDih = FALSE,bRound = TRUE;
+  static bool bRemoveDih = FALSE,bQsym = TRUE;
+  static bool bParam = TRUE, bH14 = TRUE,bRound = TRUE;
   static bool bPairs = TRUE, bPBC = TRUE, bPolarize = FALSE;
   static bool bUsePDBcharge = FALSE,bVerbose=FALSE;
   static char *molnm = "ICE";
   static char *ff = "select";
   static char *qgen[] = { NULL, "None", "Linear", "Yang", "Bultinck", 
 			  "SMp", "SMs", "SMps", "SMg", "SMgs", NULL };
+  static char *dihopt[] = { NULL, "No", "Single", "All", NULL };
   t_pargs pa[] = {
     { "-ff",     FALSE, etSTR, {&ff},
       "Select the force field for your simulation." },
@@ -156,14 +159,14 @@ int main(int argc, char *argv[])
       "Number of exclusions" },
     { "-H14",    FALSE, etBOOL, {&bH14}, 
       "Use 3rd neighbour interactions for hydrogen atoms" },
-    { "-alldih", FALSE, etBOOL, {&bAllDih}, 
-      "Generate all proper dihedrals" },
+    { "-dih",    FALSE, etSTR,  {dihopt}, 
+      "Which proper dihedrals to generate: none, one per rotatable bond, or all possible." },
     { "-remdih", FALSE, etBOOL, {&bRemoveDih}, 
       "Remove dihedrals on the same bond as an improper" },
     { "-pairs",  FALSE, etBOOL, {&bPairs},
       "Output 1-4 interactions (pairs) in topology file" },
     { "-pol",    FALSE, etBOOL, {&bPolarize},
-      "Output polarization terms for those atoms where alpha <> 0" },
+      "HIDDENOutput polarization terms for those atoms where alpha <> 0" },
     { "-name",   FALSE, etSTR,  {&molnm},
       "Name of your molecule" },
     { "-pbc",    FALSE, etBOOL, {&bPBC},
@@ -186,6 +189,8 @@ int main(int argc, char *argv[])
       "HIDDENMax number of iterations for charge generation algorithm" },
     { "-fac",    FALSE, etREAL, {&fac},
       "HIDDENNot yet understood factor for generating charges" },
+    { "-qsymm",  FALSE, etBOOL, {&bQsym},
+      "HIDDENSymmetrize the charges on methyl and NH3 groups." },
     { "-kb",    FALSE, etREAL, {&kb},
       "Bonded force constant (kJ/mol/nm^2)" },
     { "-kt",    FALSE, etREAL, {&kt},
@@ -211,7 +216,17 @@ int main(int argc, char *argv[])
   if ((qtol < 0) || (qtol > 1)) 
     gmx_fatal(FARGS,"Charge tolerance should be between 0 and 1 (not %g)",
 	      qtol);
-    
+  /* Check dihedral option */
+  dih = 0;
+  if (dihopt[dih] != NULL)
+    for(dih=1; (dih < asize(dihopt)); dih++)
+      if (strcasecmp(dihopt[0],dihopt[dih]) == 0)
+	break;
+  if ((dih == 0) || (dih == asize(dihopt)))
+    dih = edihNo;
+  else
+    dih--;
+  
   /* Read standard atom properties */
   atomprop = get_atomprop();
     
@@ -223,8 +238,9 @@ int main(int argc, char *argv[])
     sprintf(forcefield,"ff%s",ff);
   }
   sprintf(rtp,"%s.rtp",forcefield);
-  printf("Looking whether force field file %s exists\n",rtp);
-  fclose(libopen(rtp));
+  if ((fp = libopen(rtp)) == NULL) 
+    gmx_fatal(FARGS,"Force field file %s does not exist\n",rtp);
+  fclose(fp);
 
   bOPLS   = (strcmp(forcefield,"ffoplsaa") == 0);
   bCharmm = (strcmp(forcefield,"ffcharmm") == 0);
@@ -258,7 +274,8 @@ int main(int argc, char *argv[])
 
   /* Setting the atom types: this depends on the bonding */
   open_symtab(&symtab);
-  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nm2t);
+  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nm2t,
+			atomprop);
   
   /* Read charges and polarizabilities, if provided */
   if (opt2bSet("-d",NFILE,fnm))
@@ -282,28 +299,35 @@ int main(int argc, char *argv[])
     else
       printf("Using zero charges\n");
   }
-  else
+  else {
     assign_charges(molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
 		   maxiter,atomprop,qtotref);
-
-  if (bPolarize)
-    add_shells(nm2t,&atoms,atype,&(plist[F_BONDS]),
-	       &(plist[F_POLARIZATION]),&x,&symtab);
+    if (bQsym)
+      symmetrize_charges(atoms,atype,&(plist[F_BONDS]));
+  }
+  
   
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);
   printf("Generating angles and dihedrals from bonds...\n");
-  init_nnb(&nnb,atoms->nr,5);
+  init_nnb(&nnb,atoms->nr,nexcl+1);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
   gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,
-	  bAllDih,bRemoveDih,TRUE);
+	  (dih == edihAll),bRemoveDih,TRUE);
   /*delete_shell_interactions(plist,atoms,atype,&nnb,excls);*/
   done_nnb(&nnb);
+  
+  if (bPolarize)
+    add_shells(nm2t,&atoms,atype,plist,&x,&symtab,&excls);
+  
   mu = calc_dip(atoms,x);
   
   if (!bPairs)
     plist[F_LJ14].nr = 0;
+  if (dih == edihNo)
+    plist[F_PDIHS].nr = 0;
+    
   fprintf(stderr,
 	  "There are %4d %s dihedrals, %4d impropers, %4d angles\n"
 	  "          %4d pairs,     %4d bonds and  %4d atoms\n"
@@ -346,6 +370,10 @@ int main(int argc, char *argv[])
     print_rtp(ftp2fn(efRTP,NFILE,fnm),"Generated by x2top",
 	      atoms,plist,cgnr,asize(bts),bts);
   
+  if ((fn = opt2fn_null("-c",NFILE,fnm)) != NULL) {
+    sprintf(title,"%s processed by %s",molnm,ShortProgram());
+    write_sto_conf(fn,title,atoms,x,NULL,box);
+  }
   if (debug) {
     dump_hybridization(debug,atoms,nbonds);
   }

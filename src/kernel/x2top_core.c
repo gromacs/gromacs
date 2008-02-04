@@ -137,14 +137,14 @@ int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot)
 }
 
 t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-			 int *nbonds,x2top_nm2t nm2t)
+			 int *nbonds,x2top_nm2t nm2t,void *atomprop)
 {
   t_atomtype atype;
   int nresolved;
   
   atype = init_atomtype();
   snew(atoms->atomtype,atoms->nr);
-  nresolved = nm2type(nm2t,tab,atoms,atype,nbonds,bonds);
+  nresolved = nm2type(nm2t,tab,atoms,atype,nbonds,bonds,atomprop);
   if (nresolved != atoms->nr)
     gmx_fatal(FARGS,"Could only find a forcefield type for %d out of %d atoms",
 	      nresolved,atoms->nr);
@@ -530,21 +530,21 @@ void reset_q(t_atoms *atoms)
 }
 
 void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
-		t_atomtype atype,
-		t_params *bonds,t_params *pols,
-		rvec **x,t_symtab *symtab)
+		t_atomtype atype,t_params plist[],
+		rvec **x,t_symtab *symtab,t_excls **excls)
 {
-  int  i,j,iat,shell,atp,ns=0;
-  int  *renum;
-  char buf[32];
+  int     i,j,k,iat,shell,atp,ns=0;
+  int     *renum;
+  char    buf[32];
   t_param p;
   t_atom  *shell_atom;
   t_atoms *newa;
+  t_excls *newexcls;
   rvec    *newx;
   
   snew(shell_atom,1);
   memset(&p,0,sizeof(p));
-  snew(renum,(*atoms)->nr*2);
+  snew(renum,(*atoms)->nr*2+2);
   for(i=0; (i<(*atoms)->nr); i++) {
     atp = (*atoms)->atom[i].type;
     renum[i] = i+ns;
@@ -553,9 +553,10 @@ void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
       p.AI = renum[i];
       p.AJ = renum[i]+1;
       p.C0 = get_atomtype_qB(atp,atype);
-      push_bondnow(pols,&p);
+      push_bondnow(&(plist[F_POLARIZATION]),&p);
     }
   }
+  renum[(*atoms)->nr] = (*atoms)->nr + ns;
   shell_atom->ptype = eptShell;
   shell = add_atomtype(atype,symtab,shell_atom,"SHELL",&p,
 		       0,0,0,0,0);
@@ -563,13 +564,14 @@ void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
   if (ns > 0) {
     snew(newa,1);
     init_t_atoms(newa,(*atoms)->nr+ns,TRUE);
+    snew(newexcls,newa->nr);
     newa->nres = (*atoms)->nres;
-    snew(newx,(*atoms)->nr+ns);
+    snew(newx,newa->nr);
 
     for(i=0; (i<(*atoms)->nr); i++) {
       newa->atom[renum[i]]     = (*atoms)->atom[i];
       newa->atomname[renum[i]] = put_symtab(symtab,*(*atoms)->atomname[i]);
-      copy_rvec(newx[renum[i]],(*x)[i]);
+      copy_rvec((*x)[i],newx[renum[i]]);
     }
     for(i=0; (i<(*atoms)->nres); i++) {
       newa->resname[i] = put_symtab(symtab,*(*atoms)->resname[i]);
@@ -577,22 +579,86 @@ void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
     
     for(i=0; (i<(*atoms)->nr); i++) {
       iat = renum[i];
+      for(k=0; (k<(*excls)[i].nr); k++)
+	newexcls[iat].e[k] = (*excls)[i].e[k];
       for(j=iat+1; (j<renum[i+1]); j++) {
-	newa->atom[j]       = (*atoms)->atom[iat];
+	newa->atom[j]       = (*atoms)->atom[i];
 	newa->atom[iat].q   = 0;
 	newa->atom[iat].qB  = 0;
 	newa->atom[j].m     = 0;
 	newa->atom[j].mB    = 0;
 	newa->atom[j].type  = shell;
+	newa->atom[j].typeB = shell;
 	newa->atom[j].resnr = (*atoms)->atom[i].resnr;
-	sprintf(buf,"S%s",*((*atoms)->atomname[i]));
+	sprintf(buf,"Sh%s",*((*atoms)->atomname[i]));
 	newa->atomname[j] = put_symtab(symtab,buf);
-	copy_rvec((*x)[j],(*x)[iat]);
-      }
+	copy_rvec((*x)[i],newx[j]);
+	for(k=0; (k<(*excls)[i].nr); k++)
+	  newexcls[j].e[k] = (*excls)[i].e[k];      }
     }
     *atoms = newa;
+    sfree(*x);
     *x = newx;
+    *excls = newexcls;
+  }
+  for(i=0; (i<F_NRE); i++) {
+    if (i != F_POLARIZATION)
+      for(j=0; (j<plist[i].nr); j++) 
+	for(k=0; (k<NRAL(i)); k++) 
+	  plist[i].param[j].a[k] = renum[plist[i].param[j].a[k]];
   }
   sfree(renum);
   sfree(shell_atom);
+}
+
+static void lo_symmetrize_charges(t_atoms *atoms,t_atomtype atype,
+				  t_params *bonds,int atomnumber[4])
+{
+  int i,j,nh,ai,aj;
+  int hs[4];
+  double qaver;
+    
+  for(i=0; (i<atoms->nr); i++) {
+    nh = 0;
+    if (get_atomtype_atomnumber(atoms->atom[i].type,atype) == 
+	atomnumber[0]) {
+      hs[nh++] = i;
+      for(j=0; ((j<bonds->nr) && (nh < 4)); j++) {
+	ai = bonds->param[j].AI;
+	aj = bonds->param[j].AJ;
+	if ((ai == i) && 
+	    (get_atomtype_atomnumber(atoms->atom[aj].type,atype) == atomnumber[nh])) {
+	  hs[nh++] = aj;
+	}
+	else if ((aj == i) && 
+		 (get_atomtype_atomnumber(atoms->atom[ai].type,atype) == atomnumber[nh])) {
+	  hs[nh++] = ai; 
+	}
+      }
+      if (nh == 4) {
+	qaver = (atoms->atom[hs[1]].q + atoms->atom[hs[2]].q +
+		 atoms->atom[hs[3]].q)/3.0;
+	atoms->atom[hs[1]].q = atoms->atom[hs[2]].q =
+	  atoms->atom[hs[3]].q = qaver;
+      }
+    }
+  }
+}
+
+void symmetrize_charges(t_atoms *atoms,t_atomtype atype,
+			t_params *bonds)
+{
+  char **strings = NULL;
+  int i,nstrings;
+  int at[4];
+  
+  nstrings = get_file("symmetric-charges.dat",&strings);
+  for(i=0; (i<nstrings); i++) {
+    if (sscanf(strings[i],"%d%d%d%d",
+	       &at[0],&at[1],&at[2],&at[3]) == 4)
+      lo_symmetrize_charges(atoms,atype,bonds,at);
+    
+    sfree(strings[i]);
+  }
+  sfree(strings);
 }

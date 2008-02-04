@@ -51,7 +51,8 @@ extern void dump_nm2type(FILE *fp,x2top_nm2t nm2t);
 /* Dump the database for debugging. Can be reread by the program */
 
 extern int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
-		   t_atomtype atype,int *nbonds,t_params *bond);
+		   t_atomtype atype,int *nbonds,t_params *bond,
+		   void *atomprop);
 /* Try to determine the atomtype (force field dependent) for the atoms 
  * with help of the bond list 
  */

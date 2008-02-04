@@ -38,8 +38,9 @@
 #define _x2top_h
 	
 #include <stdio.h>
-#include "grompp.h"
+#include "typedefs.h"
 #include "x2top_nm2type.h"
+#include "gpp_atomtype.h"
 
 extern void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
 			     matrix box);
@@ -67,11 +68,14 @@ extern void mk_bonds(x2top_nm2t nmt,
 		     bool bPBC,matrix box,void *atomprop,real tol);
 		     
 extern t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-				int *nbonds,x2top_nm2t nm2t);
+				int *nbonds,x2top_nm2t nm2t,
+				void *atomprop);
 		     
 extern void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
-		       t_atomtype atype,
-		       t_params *bonds,t_params *pols,
-		       rvec **x,t_symtab *symtab);
+		       t_atomtype atype,t_params plist[],
+		       rvec **x,t_symtab *symtab,t_excls **excls);
+		       
+extern void symmetrize_charges(t_atoms *atoms,t_atomtype atype,
+			       t_params *bonds);
 
 #endif

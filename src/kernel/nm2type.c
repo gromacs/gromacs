@@ -58,6 +58,7 @@
 #include "toppush.h"
 #include "pdb2top.h"
 #include "topexcl.h"
+#include "atomprop.h"
 #include "x2top_nm2type.h"
 
 typedef struct {
@@ -168,7 +169,8 @@ static int match_str(char *atom,char *template)
 }
 
 int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
-	    t_atomtype atype,int *nbonds,t_params *bonds)
+	    t_atomtype atype,int *nbonds,t_params *bonds,
+	    void *atomprop)
 {
   x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
   int     cur = 0;
@@ -273,25 +275,31 @@ int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
       }
     }
     if (best != -1) {
+      real value;
+      int  atomnr;
+      
       alpha = nm2type->nm2t[best].alpha;
       mm    = nm2type->nm2t[best].m;
       type  = nm2type->nm2t[best].type;
-
+      if (query_atomprop(atomprop,epropElement,"???",
+			 nm2type->nm2t[best].elem,&value)) 
+	atomnr = gmx_nint(value);
+      else
+	atomnr = -1;
+	
       if ((k = get_atomtype_type(type,atype)) == NOTSET) {
-	atom->type = atom->typeB = get_atomtype_ntypes(atype);
 	atom->qB = alpha;
 	atom->m = atom->mB = mm;
-	add_atomtype(atype,tab,atom,type,param,
-		     atom->type,0,0,0,0);
+	k = add_atomtype(atype,tab,atom,type,param,
+			 atom->type,0,0,0,atomnr);
       }
-      else {
-	atoms->atom[i].type  = k;
-	atoms->atom[i].typeB = k;
-	atoms->atom[i].q  = 0;
-	atoms->atom[i].qB = alpha;
-	atoms->atom[i].m  = mm;
-	atoms->atom[i].mB = mm;
-      }
+      atoms->atom[i].type  = k;
+      atoms->atom[i].typeB = k;
+      atoms->atom[i].q  = 0;
+      atoms->atom[i].qB = alpha;
+      atoms->atom[i].m  = mm;
+      atoms->atom[i].mB = mm;
+      
       nresolved++;
     }
     else {
