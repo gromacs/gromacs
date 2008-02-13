@@ -97,9 +97,9 @@ char *check_box(matrix box)
   else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 2*BOX_MARGIN*box[XX][XX]) ||
 	   (fabs(box[ZZ][YY]) > 2*BOX_MARGIN*box[YY][YY]))
 #else
-  else if ((fabs(box[YY][XX]) > BOX_MARGIN*box[XX][XX]) ||
-	   (fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX]) ||
-	   (fabs(box[ZZ][YY]) > BOX_MARGIN*box[YY][YY]))
+  else if ((fabs(box[YY][XX]) > 2*BOX_MARGIN*box[XX][XX]) ||
+	   (fabs(box[ZZ][XX]) > 2*BOX_MARGIN*box[XX][XX]) ||
+	   (fabs(box[ZZ][YY]) > 2*BOX_MARGIN*box[YY][YY]))
 #endif
     ptr = "Triclinic box is too skewed.";
   else
