@@ -4324,23 +4324,27 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
   if (dd->bDynLoadBal) {
     /* Determine the maximum number of communication pulses in one dimension */
     comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
-    npulse = dd_nst_env(fplog,"GMX_DD_NPULSE",1);
-    if (comm->cutoff_mbody > 0 && comm->cellsize_limit < comm->cutoff) {
+    if (comm->cellsize_limit >= comm->cutoff) {
+      /* Only a single pulse is required */
+      npulse = 1;
+    } else if (comm->cutoff_mbody > 0) {
       /* We round down slightly here to avoid overhead due to the latency
        * of extra communication calls when the cut-off would be only slightly
        * longer than the cell size. Later cellsize_limit is redetermined,
-       * so we can not miss interaction due to this rounding.
+       * so we can not miss interactions due to this rounding.
        */
       npulse = (int)(0.96 + comm->cutoff/comm->cellsize_limit);
-    } else if (comm->cutoff_mbody <= 0) {
+    } else {
+      /* This env var can set the minimum for npulse */
+      npulse = dd_nst_env(fplog,"GMX_DD_NPULSE",1);
       /* We need to set npulse allowing for some margin for load balacing */
       set_tric_dir(dd,box);
       for(d=0; d<dd->ndim; d++) {
 	dim = dd->dim[d];
-	/* We allow for minimum margins of: 5%, 10% and 15% */
+	/* We allow for minimum margins of: 10%, 20% and 30% */
 	npulse_d =
 	  (int)(dd->nc[dim]*comm->cutoff/(box[dim][dim]*dd->skew_fac[dim]) +
-		(1 + d)*0.05 + 1);
+		(1 + d)*0.1 + 1);
 	npulse = max(npulse,npulse_d);
       }
     }
