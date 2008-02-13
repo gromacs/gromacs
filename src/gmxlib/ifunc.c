@@ -58,7 +58,7 @@
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CHEMBOND | IF_BTYPE,(ind),(func)}
 
 #define    def_bondt(str,lstr,nra,nrpa,nrpb,ind,func)\
-   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CHEMBOND | IF_BTYPE | IF_TABULATED,(ind),(func)}
+   {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CHEMBOND | IF_TABULATED,(ind),(func)}
 
 #define  def_bondnb(str,lstr,nra,nrpa,nrpb,ind,func)\
    {str,lstr,(nra),(nrpa),(nrpb),IF_BOND | IF_CHEMBOND,(ind),(func)}
