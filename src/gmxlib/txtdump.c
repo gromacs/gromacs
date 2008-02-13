@@ -928,7 +928,7 @@ void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNum
             end=block->index[i+1];
             size=pr_indent(fp,indent);
             if (end<=start)
-              size+=fprintf(fp,"%s[%d]=[]\n",title,i);
+              size+=fprintf(fp,"%s[%d]={}\n",title,i);
             else
               size+=fprintf(fp,"%s[%d]={%d..%d}\n",
 			    title,bShowNumbers?i:-1,

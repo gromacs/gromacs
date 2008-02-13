@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 50;
+static const int tpx_version = 51;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 50;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 13;
+static const int tpx_generation = 14;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -1025,13 +1025,15 @@ static void do_block(t_block *block,bool bRead,int file_version)
     for(i=0; i<MAXNODES; i++)
       do_int(idum);
   do_int (block->nr);
-  do_int (dum_nra);
+  if (file_version < 51)
+    do_int (dum_nra);
   if (bRead) {
     block->nalloc_index = block->nr+1;
     snew(block->index,block->nalloc_index);
   }
   ndo_int(block->index,block->nr+1,bDum);
-  if (dum_nra > 0) {
+
+  if (file_version < 51 && dum_nra > 0) {
     snew(dum_a,dum_nra);
     ndo_int(dum_a,dum_nra,bDum);
     sfree(dum_a);
@@ -1287,16 +1289,14 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   if (bRead && gmx_debug_at)
     pr_block(debug,0,"mols",&top->mols,TRUE);
 
-  /* Here used to be the shake blocks */
-  if (!bRead) {
-    init_blocka(&dumb);
+  if (file_version < 51) {
+    /* Here used to be the shake blocks */
+    do_blocka(&dumb,bRead,file_version);
+    if (dumb.nr > 0)
+      sfree(dumb.index);
+    if (dumb.nra > 0)
+      sfree(dumb.a);
   }
-  do_blocka(&dumb,bRead,file_version);
-  if (dumb.nr > 0)
-    sfree(dumb.index);
-  if (dumb.nra > 0)
-    sfree(dumb.a);
-
 
   if (bRead) {
     close_symtab(&(top->symtab));
@@ -1447,6 +1447,12 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   do_section(eitemBOX,bRead);
   if (tpx.bBox) {
     ndo_rvec(state->box,DIM);
+    if (file_version >= 51) {
+      ndo_rvec(state->box_rel,DIM);
+    } else {
+      /* We initialize box_rel after reading the inputrec */
+      clear_mat(state->box_rel);
+    }
     if (file_version >= 28) {
       ndo_rvec(state->boxv,DIM);
       ndo_rvec(state->pcoupl_mu,DIM);
@@ -1535,6 +1541,8 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
       do_inputrec(ir,bRead,file_version);
       if (bRead && debug) 
 	pr_inputrec(debug,0,"inputrec",ir,FALSE);
+      if (file_version < 51)
+	set_box_rel(ir,state);
     }
   }
 

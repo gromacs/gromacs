@@ -41,6 +41,7 @@
 #include "smalloc.h"
 #include "symtab.h"
 #include "vec.h"
+#include "pbc.h"
 #include <string.h>
 
 static bool bOverAllocDD=FALSE;
@@ -257,6 +258,7 @@ void init_state(t_state *state,int natoms,int ngtc)
   state->flags  = 0;
   state->lambda = 0;
   clear_mat(state->box);
+  clear_mat(state->box_rel);
   clear_mat(state->boxv);
   clear_mat(state->pcoupl_mu);
   for(i=0; i<DIM; i++)
@@ -289,6 +291,48 @@ void done_state(t_state *state)
   state->nalloc = 0;
   if (state->cg_gl) sfree(state->cg_gl);
   state->cg_gl_nalloc = 0;
+}
+
+#define PRESERVE_SHAPE(ir) ((ir).epc != epcNO && (ir).deform[XX][XX] == 0 && ((ir).epct == epctISOTROPIC || (ir).epct == epctSEMIISOTROPIC))
+
+static void do_box_rel(t_inputrec *ir,matrix box_rel,matrix b,bool bInit)
+{
+  int d,d2;
+
+  for(d=YY; d<=ZZ; d++) {
+    for(d2=XX; d2<=(ir->epct==epctSEMIISOTROPIC ? YY : ZZ); d2++) {
+      /* We need to check if this box component is deformed
+       * or if deformation of another component might cause
+       * changes in this component due to box corrections.
+       */
+      if (ir->deform[d][d2] == 0 &&
+	  !(d == ZZ && d2 == XX && ir->deform[d][YY] != 0 &&
+	    (b[YY][d2] != 0 || ir->deform[YY][d2] != 0))) {
+	if (bInit) {
+	  box_rel[d][d2] = b[d][d2]/b[XX][XX];
+	} else {
+	  b[d][d2] = b[XX][XX]*box_rel[d][d2];
+	}
+      }
+    }
+  }
+}
+
+void set_box_rel(t_inputrec *ir,t_state *state)
+{
+  /* Make sure the box obeys the restrictions before we fix the ratios */
+  correct_box(NULL,0,state->box,NULL);
+
+  clear_mat(state->box_rel);
+
+  if (PRESERVE_SHAPE(*ir))
+    do_box_rel(ir,state->box_rel,state->box,TRUE);
+}
+
+void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b)
+{
+  if (PRESERVE_SHAPE(*ir))
+    do_box_rel(ir,box_rel,b,FALSE);
 }
 
 void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)

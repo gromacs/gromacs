@@ -123,6 +123,12 @@ extern void done_top(t_topology *top);
 extern void done_inputrec(t_inputrec *ir);
 extern void done_state(t_state *state);
 
+extern void set_box_rel(t_inputrec *ir,t_state *state);
+/* Set state->box_rel used in mdrun to preserve the box shape */
+
+extern void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b);
+/* Preserve the box shape, b can be box or boxv */
+
 extern void stupid_fill_block(t_block *grp, int natom,bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index
  * (0, 1, 2, .. natom-1)

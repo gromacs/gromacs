@@ -746,7 +746,8 @@ void update(FILE         *fplog,
     }
     if (inputrec->epc == epcPARRINELLORAHMAN)
       parrinellorahman_pcoupl(fplog,step,inputrec,pres,
-			      state->box,state->boxv,M,scale_tot,bFirstStep);
+			      state->box,state->box_rel,state->boxv,
+			      M,scale_tot,bFirstStep);
 
     /* Now do the actual update of velocities and positions */
     where();
@@ -919,8 +920,8 @@ void update(FILE         *fplog,
     if (DEFORM(*inputrec))
       deform_store(state->box,inputrec,step,bFirstStep);
     if (inputrec->epc == epcBERENDSEN) {
-      berendsen_pscale(state->pcoupl_mu,state->box,start,homenr,state->x,
-		       md->cFREEZE,nrnb,inputrec->opts.nFreeze);
+      berendsen_pscale(inputrec,state->pcoupl_mu,state->box,state->box_rel,
+		       start,homenr,state->x,md->cFREEZE,nrnb);
       if (scale_tot) {
 	/* The transposes of the scaling matrices are stored,
 	 * therefore we need to reverse the order in the multiplication.
@@ -935,6 +936,8 @@ void update(FILE         *fplog,
       for(i=0;i<DIM;i++)
         for(m=0;m<=i;m++)
           state->box[i][m] += dt*state->boxv[i][m];
+
+      preserve_box_shape(inputrec,state->box_rel,state->box);
     }
     if (DEFORM(*inputrec))
       deform(start,homenr,state->x,state->box,scale_tot,inputrec,step);

@@ -163,6 +163,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
   block_bc(cr,state->ngtc);
   block_bc(cr,state->flags);
   block_bc(cr,state->box);
+  block_bc(cr,state->box_rel);
   block_bc(cr,state->boxv);
   block_bc(cr,state->pcoupl_mu);
   if (bAlloc && !MASTER(cr)) {

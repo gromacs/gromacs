@@ -55,6 +55,7 @@ typedef struct
   int           flags;  /* Flags telling which entries are present      */
   real          lambda; /* the free energy switching parameter          */
   matrix 	box;    /* box vector coordinates                      	*/
+  matrix 	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pcoupl_mu; /* for Berendsen pcoupl                      */
   real          *nosehoover_xi; /* for Nose-Hoover tcoupl (ngtc)        */

@@ -96,7 +96,7 @@ typedef struct {
 } gmx_domdec_load_t;
 
 typedef struct {
-  int  box;
+  int  nsc;
   int  ind_gl;
   int  ind;
 } gmx_cgsort_t;
@@ -986,12 +986,14 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
   if (DDMASTER(dd)) {
     state_local->lambda = state->lambda;
     copy_mat(state->box,state_local->box);
+    copy_mat(state->box_rel,state_local->box_rel);
     copy_mat(state->boxv,state_local->boxv);
     for(i=0; i<state_local->ngtc; i++)
       state_local->nosehoover_xi[i] = state->nosehoover_xi[i];
   }
   dd_bcast(dd,sizeof(real),&state_local->lambda);
   dd_bcast(dd,sizeof(state_local->box),state_local->box);
+  dd_bcast(dd,sizeof(state_local->box_rel),state_local->box_rel);
   dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
   dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->nosehoover_xi);
   if (dd->nat_home > state_local->nalloc)
@@ -4889,7 +4891,7 @@ static int comp_cgsort(const void *a,const void *b)
   cga = (gmx_cgsort_t *)a;
   cgb = (gmx_cgsort_t *)b;
 
-  comp = cga->box - cgb->box;
+  comp = cga->nsc - cgb->nsc;
   if (comp == 0) {
     comp = cga->ind_gl - cgb->ind_gl;
   }
@@ -4965,8 +4967,8 @@ static void ordered_sort(int nsort2,gmx_cgsort_t *sort2,
       sort1[i1++] = sort_new[i_new++];
     } else if (i_new == nsort_new) {
       sort1[i1++] = sort2[i2++];
-    } else if (sort2[i2].box < sort_new[i_new].box ||
-	       (sort2[i2].box == sort_new[i_new].box &&
+    } else if (sort2[i2].nsc < sort_new[i_new].nsc ||
+	       (sort2[i2].nsc == sort_new[i_new].nsc &&
 		sort2[i2].ind_gl < sort_new[i_new].ind_gl)) {
       sort1[i1++] = sort2[i2++];
     } else {
@@ -5004,7 +5006,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
       /* Check if this cg did not move to another node */
       cell_index = fr->ns.grid->cell_index[i];
       if (cell_index !=  4*fr->ns.grid->ncells) {
-	if (i >= ncg_home_old || cell_index != sort->sort1[i].box) {
+	if (i >= ncg_home_old || cell_index != sort->sort1[i].nsc) {
 	  /* This cg is new on this node or moved ns grid cell */
 	  if (nsort_new >= sort->sort_new_nalloc) {
 	    sort->sort_new_nalloc = over_alloc_dd(nsort_new+1);
@@ -5016,7 +5018,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
 	  sort_i = &(sort->sort2[nsort2++]);
 	}
 	/* Sort on the ns grid cell indices and the global topology index */
-	sort_i->box    = cell_index;
+	sort_i->nsc    = cell_index;
 	sort_i->ind_gl = dd->index_gl[i];
 	sort_i->ind    = i;
 	ncg_new++;
@@ -5032,10 +5034,10 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     ncg_new = 0;
     for(i=0; i<dd->ncg_home; i++) {
       /* Sort on the ns grid cell indices and the global topology index */
-      cgsort[i].box    = fr->ns.grid->cell_index[i];
+      cgsort[i].nsc    = fr->ns.grid->cell_index[i];
       cgsort[i].ind_gl = dd->index_gl[i];
       cgsort[i].ind    = i;
-      if (cgsort[i].box != 4*fr->ns.grid->ncells)
+      if (cgsort[i].nsc != 4*fr->ns.grid->ncells)
 	ncg_new++;
     }
     if (debug)
@@ -5086,7 +5088,7 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
 
   /* Copy the sorted ns cell indices back to the ns grid struct */
   for(i=0; i<dd->ncg_home; i++)
-    fr->ns.grid->cell_index[i] = cgsort[i].box;
+    fr->ns.grid->cell_index[i] = cgsort[i].nsc;
 
   dd->bMasterHasAllCG = FALSE;
 }

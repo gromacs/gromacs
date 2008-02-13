@@ -251,6 +251,8 @@ new_status(char *topfile,char *topppfile,char *confin,
     init_t_atoms(confat,state->natoms,FALSE);
     init_state(state,state->natoms,0);
     read_stx_conf(confin,title,confat,state->x,state->v,state->box);
+    /* This call fixes the box shape for runs with pressure scaling */
+    set_box_rel(ir,state);
 
     nmismatch=check_atom_names(topfile, confin, &(sys->atoms), confat);
     free_t_atoms(confat);
@@ -333,12 +335,18 @@ static void cont_status(char *slog,char *ener,
   if (bNeedVel && !bGenVel)
     state->v = fr.v;
   copy_mat(fr.box,state->box);
+  /* Set the relative box lengths for preserving the box shape.
+   * Note that this call can lead to differences in the last bit
+   * with respect to using tpbconv to create a tpx file.
+   */
+  set_box_rel(ir,state);
 
   fprintf(stderr,"Using frame at t = %g ps\n",fr.time);
   fprintf(stderr,"Starting time for run is %g ps\n",ir->init_t); 
   
   if ((ir->epc != epcNO  || ir->etc ==etcNOSEHOOVER) && ener) {
     get_enx_state(ener,fr.time,&sys->atoms,ir,state);
+    preserve_box_shape(ir,state->box_rel,state->boxv);
   }
 }
 

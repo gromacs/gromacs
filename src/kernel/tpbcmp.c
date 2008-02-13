@@ -513,6 +513,8 @@ static void comp_state(t_state *st1, t_state *st2,real ftol)
 
   fprintf(stdout,"comparing box\n");
   cmp_rvecs(stdout,"box",DIM,st1->box,st2->box,ftol);
+  fprintf(stdout,"comparing box_rel\n");
+  cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,ftol);
   fprintf(stdout,"comparing boxv\n");
   cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,ftol);
   fprintf(stdout,"comparing pcoupl_mu\n");

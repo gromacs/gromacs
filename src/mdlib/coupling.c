@@ -106,8 +106,8 @@ real calc_temp(real ekin,real nrdf)
 
 void parrinellorahman_pcoupl(FILE *fplog,int step,
 			     t_inputrec *ir,tensor pres,
-			     tensor box,tensor boxv,tensor M,
-			     matrix *scale_tot,bool bFirstStep)
+			     tensor box,tensor box_rel,tensor boxv,
+			     tensor M,matrix *scale_tot,bool bFirstStep)
 {
   /* This doesn't do any coordinate updating. It just
    * integrates the box vector equations from the calculated
@@ -230,6 +230,8 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
 	      step);
   }
   
+  preserve_box_shape(ir,box_rel,boxv);
+
   mtmul(boxv,box,t1);       /* t1=boxv * b' */
   for(d=0;d<DIM;d++)
     for(n=0;n<DIM;n++)
@@ -339,11 +341,13 @@ void berendsen_pcoupl(FILE *fplog,int step,
   }
 }
 
-void berendsen_pscale(matrix mu,
-		      matrix box,int start,int nr_atoms,
+void berendsen_pscale(t_inputrec *ir,matrix mu,
+		      matrix box,matrix box_rel,
+		      int start,int nr_atoms,
 		      rvec x[],unsigned short cFREEZE[],
-		      t_nrnb *nrnb,ivec nFreeze[])
+		      t_nrnb *nrnb)
 {
+  ivec   *nFreeze=ir->opts.nFreeze;
   int    n,d,g=0;
       
   /* Scale the positions */
@@ -364,6 +368,8 @@ void berendsen_pscale(matrix mu,
     box[d][YY] = mu[YY][YY]*box[d][YY]+mu[ZZ][YY]*box[d][ZZ];
     box[d][ZZ] = mu[ZZ][ZZ]*box[d][ZZ];
   }      
+
+  preserve_box_shape(ir,box_rel,box);
   
   /* (un)shifting should NOT be done after this,
    * since the box vectors might have changed

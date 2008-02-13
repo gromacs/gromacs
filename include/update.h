@@ -137,18 +137,20 @@ extern real calc_pres(int ePBC,int nwall,matrix box,
 
 extern void parrinellorahman_pcoupl(FILE *fplog,int step,
 				    t_inputrec *ir,tensor pres,
-				    tensor box,tensor boxv,tensor M,
-				    matrix *scale_tot,bool bFirstStep);
+				    tensor box,tensor box_rel,tensor boxv,
+				    tensor M,matrix *scale_tot,
+				    bool bFirstStep);
   
 extern void berendsen_pcoupl(FILE *fplog,int step,
 			     t_inputrec *ir,tensor pres,matrix box,
 			     matrix mu);
 
 
-extern void berendsen_pscale(matrix mu,
-			     matrix box,int start,int nr_atoms,
+extern void berendsen_pscale(t_inputrec *ir,matrix mu,
+			     matrix box,matrix box_rel,
+			     int start,int nr_atoms,
 			     rvec x[],unsigned short cFREEZE[],
-			     t_nrnb *nrnb,ivec nFreeze[]);
+			     t_nrnb *nrnb);
 
 extern void correct_ekin(FILE *log,int start,int end,rvec v[],
 			 rvec vcm,real mass[],real tmass,tensor ekin);

@@ -120,6 +120,7 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
       pr_header(stdout,indent,"header",&(tpx));
       
       pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
+      pr_rvecs(stdout,indent,"box_rel",tpx.bBox ? state.box_rel : NULL,DIM);
       pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
       pr_rvecs(stdout,indent,"pcoupl_mu",tpx.bBox ? state.pcoupl_mu : NULL,DIM);
       pr_reals(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);

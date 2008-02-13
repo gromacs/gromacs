@@ -125,6 +125,8 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
       pr_inputrec(log,0,"parameters of the run",inputrec,FALSE);
     if (list&LIST_X)
       pr_rvecs(log,0,"box",state->box,DIM);
+    if (list&LIST_X)
+      pr_rvecs(log,0,"box_rel",state->box_rel,DIM);
     if (list&LIST_V)
       pr_rvecs(log,0,"boxv",state->boxv,DIM);
     if (list&LIST_X)
