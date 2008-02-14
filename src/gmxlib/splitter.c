@@ -768,7 +768,7 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
   /* Now transform atom numbers to real inverted shake blocks */
   gen_sblocks(fp,0,top->atoms.nr,&top->idef,&shakeblock,TRUE);
   sblinv = make_invblocka(&shakeblock,top->atoms.nr+1);
-  done_blocka(shakeblock);
+  done_blocka(&shakeblock);
   for(j=0; (j<nnodes); j++) {
     atom = multinr_shk[j];
     mj   = NO_ATID;
