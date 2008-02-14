@@ -693,7 +693,7 @@ int gmx_analyze(int argc,char *argv[])
     "zero or negative value are ignored.[PAR]"
     
     "Option [TT]-luzar[tt] performs a Luzar & Chandler kinetics analysis",
-    "on output from [TT]g_hbond[TT]. The input file can be taken directly",
+    "on output from [TT]g_hbond[tt]. The input file can be taken directly",
     "from [TT]g_hbond -ac[tt], and then the same result should be produced."
   };
   static real tb=-1,te=-1,frac=0.5,filtlen=0,binwidth=0.1,aver_start=0;
