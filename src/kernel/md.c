@@ -110,7 +110,7 @@ const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do
 void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
 	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-	      char *ddcsx,char *ddcsy,char *ddcsz,
+	      real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
 	      int nstepout,t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
 	      unsigned long Flags)
 {
@@ -166,7 +166,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
     cr->dd = init_domain_decomposition(fplog,cr,ddxyz,rdd,rconstr,
-				       Flags & MD_DLB,ddcsx,ddcsy,ddcsz,
+				       Flags & MD_DLB,dlb_scale,
+				       ddcsx,ddcsy,ddcsz,
 				       top,box,inputrec);
     
     make_dd_communicators(fplog,cr,dd_node_order);
@@ -351,7 +352,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (DOMAINDECOMP(cr)) {
       dd_make_reverse_top(fplog,cr->dd,top,vsite,constr,inputrec);
 
-      set_dd_parameters(fplog,cr->dd,top,inputrec,fr,box);
+      set_dd_parameters(fplog,cr->dd,dlb_scale,top,inputrec,fr,box);
      
       setup_dd_grid(fplog,cr->dd);
     }
@@ -472,7 +473,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  fprintf(fplog,"WARNING:\nBecause of the no energy summing option setting nstcomm (was %d) to nstlist (%d)\n\n",ir->nstcomm,ir->nstlist);
       }
     } else {
-      char *warn="\nWARNING:\nNo energy summing can only be used with dynamics and without extended ensemble temperature and pressure coupling, ignoring this option\n";
+      char *warn="\nWARNING:\nNo energy summing can only be used with dynamics and without extended Hamiltonian temperature and pressure coupling, ignoring this option\n";
       fprintf(stderr,"%s\n",warn);
       if (fplog)
 	fprintf(fplog,"%s\n",warn);

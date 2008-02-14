@@ -99,6 +99,12 @@ int main(int argc,char *argv[])
     "especially for inhomogeneous systems. The only disadvantage of",
     "dynamic load balancing is that runs are no longer binary reproducible,",
     "but in most cases this is not important.",
+    "For regular atomistic simulations at low or medium parallelization",
+    "these are the only important options for domain decomposition.",
+    "In other cases, the options in the next section",
+    "could be essential for allowing a simulation to run or",
+    "to optimize performance.[PAR]",
+    "This section lists all options that affect the domain decomposition.",
     "All distances required for two-body bonded interactions should be within",
     "the non-bonded cut-off distance;",
     "all distances required for multi-body bonded interactions should be",
@@ -111,7 +117,7 @@ int main(int argc,char *argv[])
     "when [TT]-rdd[tt] is larger than the non-bonded cut-off.",
     "With dynamic load balancing option [TT]-rdd[tt] also sets",
     "the lower limit for the domain decomposition cell sizes.",
-    "When constraints are present, option [TT-rcon[tt] influences",
+    "When constraints are present, option [TT]-rcon[tt] influences",
     "the cell size limit as well.",
     "Atoms connected by NC constraints, where NC is the LINCS order plus 1,",
     "should not be beyond the smallest cell size. A error message is",
@@ -120,11 +126,19 @@ int main(int argc,char *argv[])
     "By default mdrun estimates the minimum cell size required for P-LINCS",
     "in a conservative fashion. For high parallelization it can be useful",
     "to set the distance required for P-LINCS with the option [TT]-rcon[tt].",
+    "The [TT]-dds[tt] option sets the minimum allowed x, y and/or z scaling",
+    "of the cells with dynamic load balancing. mdrun will ensure that",
+    "the cells can scale down by at least this factor. This option is used",
+    "for the automated spatial decomposition (when not using [TT]-dd[tt])",
+    "as well as for determining the number of grid pulses, which in turn",
+    "sets the minimum allowed cell size. Under certain circumstances",
+    "the value of [TT]-dds[tt] might need to be adjusted to account for",
+    "high or low spatial inhomogeneity of the system.",
     "Finally the option [TT]-nosum[tt] can be used to only sum the energies",
     "at every neighbor search step. This can improve performance for highly",
     "parallel simulations, where this global communication step becomes",
     "the bottleneck. This option is currently not allowed when",
-    "an extended ensemble thermostat or barostat is used.[PAR]",
+    "an extended Hamiltonian thermostat or barostat is used.[PAR]",
     "With [TT]-rerun[tt] an input trajectory can be given for which ",
     "forces and energies will be (re)calculated. Neighbor searching will be",
     "performed for every frame, unless [TT]nstlist[tt] is zero",
@@ -235,7 +249,7 @@ int main(int argc,char *argv[])
   static rvec realddxyz={0,0,0};
   static char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-  static real rdd=0.0,rconstr=0.0;
+  static real rdd=0.0,rconstr=0.0,dlb_scale=0.8;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
 
   static t_pargs pa[] = {
@@ -255,6 +269,8 @@ int main(int argc,char *argv[])
       "Maximum distance for P-LINCS (nm), 0 is estimate" },
     { "-dlb",     FALSE, etBOOL, {&bDLB},
       "Use dynamic load balancing (only with DD)" },
+    { "-dds",     FALSE, etREAL, {&dlb_scale},
+      "Minimum allowed dlb scaling of the DD cell size" },
     { "-ddcsx",   FALSE, etSTR, {&ddcsx},
       "HIDDENThe DD cell sizes in x" },
     { "-ddcsy",   FALSE, etSTR, {&ddcsy},
@@ -348,7 +364,7 @@ int main(int argc,char *argv[])
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
   mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
-	   ddxyz,dd_node_order,rdd,rconstr,ddcsx,ddcsy,ddcsz,
+	   ddxyz,dd_node_order,rdd,rconstr,dlb_scale,ddcsx,ddcsy,ddcsz,
 	   nstepout,edyn,repl_ex_nst,repl_ex_seed,Flags);
   
   if (gmx_parallel_env)

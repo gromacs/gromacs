@@ -58,14 +58,14 @@ extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       t_commrec *cr,ivec nc,
 					       real comm_distance_min,
 					       real rconstr,
-					       bool bDynLoadBal,
+					       bool bDynLoadBal,real dlb_scale,
 					       char *sizex,
 					       char *sizey,
 					       char *sizez,
 					       t_topology *top,matrix box,
 					       t_inputrec *ir);
 
-extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
+extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 			      t_topology *top,t_inputrec *ir,t_forcerec *fr,
 			      matrix box);
 

@@ -287,6 +287,9 @@ static int nstDDDump,nstDDDumpGrid;
 /* Factor to account for pressure scaling during nstlist steps */
 #define DD_PRES_SCALE_MARGIN 1.02
 
+/* Margin for setting up the DD grid */
+#define DD_GRID_MARGIN_PRES_SCALE 1.05
+
 #define DD_CELL_F_SIZE(dd,di) ((dd)->nc[(dd)->dim[(di)]]+1+(di)*2+1)
 
 
@@ -3057,7 +3060,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
     fprintf(stderr,buf);
     bLim = FALSE;
     if (dd->bDynLoadBal) {
-      sprintf(buf,"Steps where the load balancing was limited by rdd or rcon:");
+      sprintf(buf,"Steps where the load balancing was limited by -rdd, -rcon and/or -dds:");
       for(d=0; d<dd->ndim; d++) {
 	limp = (200*comm->load_lim[d]+1)/(2*comm->nload);
 	sprintf(buf+strlen(buf)," %c %d %%",dim2char(dd->dim[d]),limp);
@@ -3092,7 +3095,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
       if (!dd->bDynLoadBal) {
 	sprintf(buf+strlen(buf),"      You might want to use dynamic load balancing (option -dlb.)\n");
       } else if (bLim) {
-	sprintf(buf+strlen(buf),"      You might want to decrease the cell size limit (options -rdd and/or -rcon).\n");
+	sprintf(buf+strlen(buf),"      You might want to decrease the cell size limit (options -rdd, -rcon and/or -dds).\n");
       }
       fprintf(fplog,"%s\n",buf);
       fprintf(stderr,"%s\n",buf);
@@ -3977,16 +3980,22 @@ static void assign_factors(gmx_domdec_t *dd,real limit,
   }
 }
 
-static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
+static bool bConstrLimit(t_topology *top,gmx_domdec_comm_t *comm)
+{
+  return (top->idef.il[F_CONSTR].nr > 0 && comm->bInterCGBondeds);
+}
+
+static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,real dlb_scale,
 			    t_topology *top,matrix box,t_inputrec *ir,
 			    gmx_domdec_t *dd,ivec nc)
 {
-  int npp,ndiv,*div,*mdiv;
-  bool bExcl_pbcdx;
+  int npp,ndiv,*div,*mdiv,d;
+  bool bExcl_pbcdx,bC;
   float pbcdxr;
   real limit;
   ivec try;
   gmx_domdec_comm_t *comm;
+  char buf[STRLEN];
 
   comm = dd->comm;
 
@@ -4028,13 +4037,29 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
   }
   /* Add a margin for DLB and/or pressure scaling */
   if (dd->bDynLoadBal) {
-    limit *= 1.10;
+    if (dlb_scale >= 1.0)
+      gmx_fatal(FARGS,"The value for option -dds should be smaller than 1");
+    if (fplog)
+      fprintf(fplog,"Scaling the initial minimum size with 1/%g (option -dds) = %g\n",dlb_scale,1/dlb_scale);
+    limit /= dlb_scale;
   } else if (ir->epc != epcNO) {
-    limit *= 1.05;
+    if (fplog)
+      fprintf(fplog,"To account for pressure scaling, scaling the initial minimum size with %g\n",DD_GRID_MARGIN_PRES_SCALE);
+    limit *= DD_GRID_MARGIN_PRES_SCALE;
   }
 
-  if (fplog)
+  if (fplog) {
     fprintf(fplog,"Optimizing the DD grid for %d cells with a minimum initial size of %.3f nm\n",npp,limit);
+    if (limit > 0) {
+      fprintf(fplog,"The maximum allowed number of cells is:");
+      for(d=0; d<DIM; d++)
+	fprintf(fplog," %c %d",
+		dim2char(d),
+		(d == ZZ && ir->ePBC == epbcXY && ir->nwall < 2) ? 1 :
+		(int)(box[d][d]*dd->skew_fac[d]/limit));
+      fprintf(fplog,"\n");
+    }
+  }
 
   if (debug)
     fprintf(debug,"Average nr of pbc_dx calls per atom %.2f\n",pbcdxr);
@@ -4051,8 +4076,17 @@ static void optimize_ncells(FILE *fplog,int nnodes_tot,int npme,
   sfree(div);
   sfree(mdiv);
 
-  if (nc[XX] == 0)
-    gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %f nm",limit);
+  if (nc[XX] == 0) {
+    bC = (bConstrLimit(top,comm) && comm->cutoff_mbody < comm->cellsize_limit);
+    sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
+	    !bC ? "-rdd" : "-rcon",
+	    dd->bDynLoadBal ? " or -dds" : "",
+	    bC ? " or your LINCS settings" : "");
+    gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
+	      "%s\n"
+	      "Look in the log file for details on the domain decomposition",
+	      npp,limit,buf);
+  }
 }
 
 static int multi_body_bondeds_count(t_ilist *il)
@@ -4089,7 +4123,7 @@ static int dd_nst_env(FILE *fplog,char *env_var,int def)
 
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 					real comm_distance_min,real rconstr,
-					bool bDynLoadBal,
+					bool bDynLoadBal,real dlb_scale,
 					char *sizex,char *sizey,char *sizez,
 					t_topology *top,matrix box,
 					t_inputrec *ir)
@@ -4166,7 +4200,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 
   comm->cutoff_mbody = comm_distance_min;
   comm->cellsize_limit = comm->cutoff_mbody;
-  if (top->idef.il[F_CONSTR].nr > 0 && comm->bInterCGBondeds) {
+  if (bConstrLimit(top,comm)) {
     /* There is a cell size limit due to the constraints (LINCS) */
     if (rconstr <= 0) {
       rconstr = constr_r_max(fplog,top,ir);
@@ -4204,7 +4238,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 	cr->npmenodes = 0;
       }
       
-      optimize_ncells(fplog,cr->nnodes,cr->npmenodes,top,box,ir,dd,dd->nc);
+      optimize_ncells(fplog,cr->nnodes,cr->npmenodes,dlb_scale,
+		      top,box,ir,dd,dd->nc);
     }
     gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
     gmx_bcast(sizeof(dd->nc),dd->nc,cr);
@@ -4259,12 +4294,12 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   return dd;
 }
 
-void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
+void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 		       t_topology *top,t_inputrec *ir,t_forcerec *fr,
 		       matrix box)
 {
   gmx_domdec_comm_t *comm;
-  int  d,dim,npulse,npulse_d;
+  int  d,dim,npulse,npulse_d_max,npulse_d;
   ivec np;
   real limit;
   char buf[64];
@@ -4323,11 +4358,14 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
     fprintf(debug,"The DD cut-off is %f\n",comm->cutoff);
   if (dd->bDynLoadBal) {
     /* Determine the maximum number of communication pulses in one dimension */
+
     comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
+
+    /* Determine the maximum required number of grid pulses */
     if (comm->cellsize_limit >= comm->cutoff) {
       /* Only a single pulse is required */
       npulse = 1;
-    } else if (comm->cutoff_mbody > 0) {
+    } else if (comm->cellsize_limit > 0) {
       /* We round down slightly here to avoid overhead due to the latency
        * of extra communication calls when the cut-off would be only slightly
        * longer than the cell size. Later cellsize_limit is redetermined,
@@ -4335,19 +4373,28 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
        */
       npulse = (int)(0.96 + comm->cutoff/comm->cellsize_limit);
     } else {
-      /* This env var can set the minimum for npulse */
-      npulse = dd_nst_env(fplog,"GMX_DD_NPULSE",1);
-      /* We need to set npulse allowing for some margin for load balacing */
+      /* There is no cell size limit */
+      npulse = dd->ncell;
+    }
+
+    if (npulse > 1) {
+      /* See if we can do with less pulses, based on dlb_scale */
       set_tric_dir(dd,box);
+      npulse_d_max = 0;
       for(d=0; d<dd->ndim; d++) {
 	dim = dd->dim[d];
-	/* We allow for minimum margins of: 10%, 20% and 30% */
-	npulse_d =
-	  (int)(dd->nc[dim]*comm->cutoff/(box[dim][dim]*dd->skew_fac[dim]) +
-		(1 + d)*0.1 + 1);
-	npulse = max(npulse,npulse_d);
+	npulse_d     = (int)(1 + dd->nc[dim]*comm->cutoff
+			     /(box[dim][dim]*dd->skew_fac[dim]*dlb_scale));
+	npulse_d_max = max(npulse_d_max,npulse_d);
       }
+      npulse = min(npulse,npulse_d_max);
     }
+
+    /* This env var can override npulse */
+    d = dd_nst_env(fplog,"GMX_DD_NPULSE",0);
+    if (d > 0)
+      npulse = d;
+
     comm->maxpulse = 1;
     for(d=0; d<dd->ndim; d++) {
       comm->cd[d].np = min(npulse,dd->nc[dd->dim[d]]-1);
@@ -4376,8 +4423,16 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,
 	fprintf(fplog," %c %d",dim2char(dd->dim[d]),comm->cd[d].np);
       fprintf(fplog,"\n");
       fprintf(fplog,"The minimum size for domain decomposition cells is %.3f nm\n",comm->cellsize_limit);
-      fprintf(fplog,"\n");
-   }
+      fprintf(fplog,"The requested allowed shrink of DD cells (option -dds) is: %.2f\n",dlb_scale);
+      fprintf(fplog,"The allowed shrink of domain decomposition cells is:");
+      for(d=0; d<DIM; d++) {
+	if (dd->nc[d] > 1)
+	  fprintf(fplog," %c %.2f",
+		  dim2char(d),
+		  comm->cellsize_min[d]/(box[d][d]*dd->skew_fac[d]/dd->nc[d]));
+      }
+      fprintf(fplog,"\n\n");
+    }
   } else {
     if (DDMASTER(dd) && fplog) {
       set_tric_dir(dd,box);
