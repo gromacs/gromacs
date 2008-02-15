@@ -56,6 +56,7 @@ typedef struct {
   unsigned short typeB;		/* Atom type for Free Energy calc	*/
   int           ptype;		/* Particle type			*/
   int 		resnr;		/* Residue number			*/
+  int           atomnumber;     /* Atomic Number or NOTSET              */
   unsigned char grpnr[egcNR];   /* Group numbers			*/
   unsigned char chain;          /* chain identifier                     */
 } t_atom;

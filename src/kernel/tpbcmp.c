@@ -257,6 +257,7 @@ static void cmp_atom(FILE *fp,int index,t_atom *a1,t_atom *a2,real ftol)
     cmp_us(fp,"atom.type",index,a1->type,a2->type);
     cmp_us(fp,"atom.ptype",index,a1->ptype,a2->ptype);
     cmp_int(fp,"atom.resnr",index,a1->resnr,a2->resnr);
+    cmp_int(fp,"atom.atomnumber",index,a1->atomnumber,a2->atomnumber);
     cmp_real(fp,"atom.m",index,a1->m,a2->m,ftol);
     cmp_real(fp,"atom.q",index,a1->q,a2->q,ftol);
     cmp_us(fp,"atom.typeB",index,a1->typeB,a2->typeB);

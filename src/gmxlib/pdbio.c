@@ -49,9 +49,20 @@
 #include "vec.h"
 #include "copyrite.h"
 #include "futil.h"
+#include "atomprop.h"
 #include "physics.h"
 #include "pbc.h"
 	
+typedef struct {
+  int ai,aj;
+} gmx_conection_t;
+
+typedef struct {
+  int  nconect;
+  bool bSorted;
+  gmx_conection_t *conect;
+} gmx_conect_t;
+
 static const char *pdbtp[epdbNR]={
   "ATOM  ","HETATM", "ANISOU", "CRYST1",
   "COMPND", "MODEL", "ENDMDL", "TER", "HEADER", "TITLE", "REMARK",
@@ -265,16 +276,18 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   }
 }
 
-static int read_atom(t_symtab *symtab,char line[],int type,int natom,
+static int read_atom(t_symtab *symtab,void *atomprop,
+		     char line[],int type,int natom,
 		     t_atoms *atoms,rvec x[],bool bChange)
 {
   t_atom *atomn;
   int  j,k;
   char nc='\0';
-  char anr[12],anm[12],altloc,resnm[12],chain[12],resnr[12];
+  char anr[12],anm[12],anm_copy[12],altloc,resnm[12],chain[12],resnr[12];
   char xc[12],yc[12],zc[12],occup[12],bfac[12],pdbresnr[12];
   static char oldresnm[12],oldresnr[12];
-  int  newres;
+  int  newres,atomnumber;
+  real eval;
 
   if (natom>=atoms->nr)
     gmx_fatal(FARGS,"\nFound more atoms (%d) in pdb file than expected (%d)",
@@ -288,6 +301,27 @@ static int read_atom(t_symtab *symtab,char line[],int type,int natom,
   j++;
   for(k=0; (k<4); k++,j++) anm[k]=line[j];
   anm[k]=nc;
+  strcpy(anm_copy,anm);
+  atomnumber = NOTSET;
+  if (anm[0] != ' ') {
+    anm_copy[2] = nc;
+    if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+      atomnumber = gmx_nint(eval);
+    else {
+      anm_copy[1] = nc;
+      if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+	atomnumber = gmx_nint(eval);
+    }
+  }
+  if (atomnumber == NOTSET) {
+    k=0;
+    while ((k < strlen(anm)) && (isspace(anm[k]) || isdigit(anm[k])))
+      k++;
+    anm_copy[0] = anm[k];
+    anm_copy[1] = nc;
+    if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+      atomnumber = gmx_nint(eval);
+  }
   trim(anm);
   altloc=line[j];
   j++;
@@ -349,6 +383,7 @@ static int read_atom(t_symtab *symtab,char line[],int type,int natom,
     atomn->resnr=newres;
     atomn->m = 0.0;
     atomn->q = 0.0;
+    atomn->atomnumber = atomnumber;
   }
   x[natom][XX]=atof(xc)*0.1;
   x[natom][YY]=atof(yc)*0.1;
@@ -393,11 +428,71 @@ bool is_dummymass(char *nm)
   return FALSE;
 }
 
-int read_pdbfile(FILE *in,char *title,int *model_nr,
-		 t_atoms *atoms,rvec x[],matrix box,bool bChange)
+static void add_conection(gmx_conect_t *con,char *line)
 {
+  int n,ai,aj;
+  char format[32],form2[32];
+  
+  sprintf(form2,"%%*s");
+  sprintf(format,"%s%%d",form2);
+  if (sscanf(line,format,&ai) == 1) {
+    do {
+      strcat(form2,"%*s");
+      sprintf(format,"%s%%d",form2);
+      n = sscanf(line,format,&aj);
+      if (n == 1) {
+	srenew(con->conect,++con->nconect);
+	con->conect[con->nconect-1].ai = ai-1;
+	con->conect[con->nconect-1].aj = aj-1;
+      }
+    } while (n == 1);
+  }
+}
+
+void dump_conection(FILE *fp,gmx_conect conect)
+{
+  gmx_conect_t *gc = (gmx_conect_t *)conect;
+  int i;
+  
+  for(i=0; (i<gc->nconect); i++)
+    fprintf(fp,"%6s%5d%5d\n","CONECT",
+	    gc->conect[i].ai+1,gc->conect[i].aj+1);
+}
+
+gmx_conect init_gmx_conect()
+{
+  gmx_conect_t *gc;
+  
+  snew(gc,1);
+  
+  return (gmx_conect) gc;
+}
+
+bool is_conect(gmx_conect conect,int ai,int aj)
+{
+  gmx_conect_t *gc = (gmx_conect_t *)conect;
+  int i;
+  
+  /* if (!gc->bSorted) 
+     sort_conect(gc);*/
+     
+  for(i=0; (i<gc->nconect); i++) 
+    if (((gc->conect[i].ai == ai) &&
+	 (gc->conect[i].aj == aj)) ||
+	((gc->conect[i].aj == ai) &&
+	 (gc->conect[i].ai == aj)))
+      return TRUE;
+  return FALSE;
+}
+
+int read_pdbfile(FILE *in,char *title,int *model_nr,
+		 t_atoms *atoms,rvec x[],matrix box,bool bChange,
+		 gmx_conect conect)
+{
+  gmx_conect_t *gc = (gmx_conect_t *)conect;
   static t_symtab symtab;
   static bool bFirst=TRUE;
+  static void *atomprop=NULL;
   bool bCOMPND;
   bool bConnWarn = FALSE;
   char line[STRLEN+1];
@@ -413,6 +508,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 
   if (bFirst) {
     open_symtab(&symtab);
+    atomprop = get_atomprop();
     bFirst=FALSE;
   }
 
@@ -425,7 +521,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
     switch(line_type) {
     case epdbATOM:
     case epdbHETATM:
-      natom = read_atom(&symtab,line,line_type,natom,atoms,x,bChange);
+      natom = read_atom(&symtab,atomprop,line,line_type,natom,atoms,x,bChange);
       break;
       
     case epdbANISOU:
@@ -525,7 +621,9 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
       bStop=TRUE;
       break;
     case epdbCONECT:
-      if (!bConnWarn) {
+      if (gc) 
+	add_conection(gc,line);
+      else if (!bConnWarn) {
 	fprintf(stderr,"WARNING: all CONECT records are ignored\n");
 	bConnWarn = TRUE;
       }
@@ -553,11 +651,12 @@ void get_pdb_coordnum(FILE *in,int *natoms)
 }
 
 void read_pdb_conf(char *infile,char *title, 
-		   t_atoms *atoms,rvec x[],matrix box,bool bChange)
+		   t_atoms *atoms,rvec x[],matrix box,bool bChange,
+		   gmx_conect conect)
 {
   FILE *in;
   
   in = ffopen(infile,"r");
-  read_pdbfile(in,title,NULL,atoms,x,box,bChange);
+  read_pdbfile(in,title,NULL,atoms,x,box,bChange,conect);
   ffclose(in);
 }

@@ -991,9 +991,9 @@ static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
     for (i=0; i<n; i++) {
       (void) pr_indent(fp,indent);
       fprintf(fp,"%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
-	      "q=%12.5e, mB=%12.5e, qB=%12.5e, resnr=%5d} grpnrs=[",
+	      "q=%12.5e, mB=%12.5e, qB=%12.5e, resnr=%5d, atomnumber=%3d} grpnrs=[",
 	      title,i,atom[i].type,atom[i].typeB,ptype_str[atom[i].ptype],
-	      atom[i].m,atom[i].q,atom[i].mB,atom[i].qB,atom[i].resnr);
+	      atom[i].m,atom[i].q,atom[i].mB,atom[i].qB,atom[i].resnr,atom[i].atomnumber);
       for(j=0; (j<egcNR); j++)
 	fprintf(fp," %d",(int)atom[i].grpnr[j]);
       fprintf(fp," ]}\n");

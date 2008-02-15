@@ -541,7 +541,7 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
   atoms.pdbinfo=NULL;
   /* the other pointers in atoms should not be accessed if these are NULL */
   model_nr=NOTSET;
-  na=read_pdbfile(status, title, &model_nr, &atoms, fr->x, fr->box, TRUE);
+  na=read_pdbfile(status, title, &model_nr, &atoms, fr->x, fr->box, TRUE, NULL);
   if (nframes_read()==0)
     fprintf(stderr," '%s', %d atoms\n",title, fr->natoms);
   fr->bPrec = TRUE;

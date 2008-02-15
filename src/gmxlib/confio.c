@@ -1229,7 +1229,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efPDB:
   case efBRK:
   case efENT:
-    read_pdb_conf(infile, title, atoms, x, box, TRUE);
+    read_pdb_conf(infile, title, atoms, x, box, TRUE, NULL);
     break;
   case efESP:
     read_espresso_conf(infile,atoms,x,v,box);

@@ -45,6 +45,8 @@
 #include "typedefs.h"
 #include "symtab.h"
 
+typedef struct gmx_conect_t *gmx_conect;
+
 /* THE pdb format (for ATOM/HETATOM lines) */
 static char *pdbformat ="%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f";
 static char *pdbformat4="%-6s%5u %-4.4s %3.3s %c%4d    %8.3f%8.3f%8.3f";
@@ -85,14 +87,17 @@ extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
  * write ENDMDL when bEndmodel is TRUE */
   
 extern int read_pdbfile(FILE *in,char *title,int *model_nr,
-			t_atoms *atoms,rvec x[],matrix box,bool bChange);
-/* Function returns number of atoms found. */
+			t_atoms *atoms,rvec x[],matrix box,bool bChange,
+			gmx_conect conect);
+/* Function returns number of atoms found. gmx_conect structure may be NULL. */
 
 extern void read_pdb_conf(char *infile,char *title, 
-			  t_atoms *atoms,rvec x[],matrix box,bool bChange);
+			  t_atoms *atoms,rvec x[],matrix box,bool bChange,
+			  gmx_conect conect);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
- * Change atom names according to protein conventions if wanted
+ * Change atom names according to protein conventions if wanted.
+ * gmx_conect structure may be NULL.
  */
 
 extern void get_pdb_coordnum(FILE *in,int *natoms);
@@ -103,5 +108,13 @@ extern bool is_hydrogen(char *nm);
 
 extern bool is_dummymass(char *nm);
 /* Return whether atom nm is a dummy mass */
+
+/* Routines to handle CONECT records if they have been read in */
+extern void dump_conection(FILE *fp,gmx_conect conect);
+
+extern bool is_conect(gmx_conect conect,int ai,int aj);
+/* Return TRUE if there is a conection between the atoms */
+
+extern gmx_conect init_gmx_conect();
 
 #endif	/* _pdbio_h */
