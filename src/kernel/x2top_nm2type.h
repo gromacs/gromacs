@@ -42,7 +42,7 @@
 	
 typedef struct x2top_nm2type *x2top_nm2t;
 
-extern x2top_nm2t rd_nm2type(char *ff);
+extern x2top_nm2t rd_nm2type(char *ff,void *atomprop);
 /* Read the name 2 type database. nnm is the number of entries 
  * ff is the force field.
  */
@@ -56,5 +56,6 @@ extern int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 /* Try to determine the atomtype (force field dependent) for the atoms 
  * with help of the bond list 
  */
-extern bool is_bond(x2top_nm2t nmt,char *ai,char *aj,real blen,real tol);
+extern bool is_bond(x2top_nm2t nmt,t_atoms *atoms,int ai,int aj,
+		    real blen,real tol);
 #endif

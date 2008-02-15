@@ -40,9 +40,6 @@
 #include <stdio.h>
 #include "grompp.h"
 	
-enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, 
-       eqgSMp, eqgSMs, eqgSMps, eqgSMg, eqgSMpg, eqgNR };
-
 extern real generate_charges_sm(FILE *fp,char *molname,void *eem,
 				t_atoms *atoms,rvec x[],
 				real tol,int maxiter,void *atomprop,

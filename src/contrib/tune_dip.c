@@ -59,18 +59,29 @@
 #include "vec.h"
 #include "atomprop.h"
 #include "xvgr.h"
+#include "mdatoms.h"
+#include "force.h"
+#include "vsite.h"
+#include "shellfc.h"
 #include "viewit.h"
 #include "gmx_random.h"
+#include "gmx_wallcycle.h"
 #include "gstat.h"
 #include "x2top_qgen.h"
 #include "x2top_eemprops.h"
 
 typedef struct {
-  char       *molname;
-  real       dip_exp,qtotal,dip_calc,chieq;
-  t_topology top;
-  rvec       *x;
-  matrix     box;
+  char          *molname;
+  real          dip_exp,qtotal,dip_calc,chieq;
+  t_topology    top;
+  t_inputrec    ir;
+  gmx_shellfc_t shell;
+  t_mdatoms     *md;
+  t_forcerec    *fr;
+  gmx_vsite_t   *vs;
+  t_atoms       *polatoms;
+  rvec          *x,*f,*buf,*polx;
+  matrix        box;
 } t_mymol; 
 
 typedef struct {
@@ -80,12 +91,14 @@ typedef struct {
   real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,qcmin;
   void    *eem;
   void    *atomprop;
+  t_commrec *cr;
 } t_moldip;
 
 static bool init_mymol(t_mymol *mymol,char *fn,real dip,
-		       void *eem,int eemtype)
+		       void *eem,int eemtype,bool bPol,
+		       t_commrec *cr)
 {
-  int i,natoms,version,generation,step;
+  int i,j,natoms,version,generation,step;
   real t,lambda;
   char title[STRLEN];
   bool bSupport=TRUE;
@@ -100,7 +113,7 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,
   init_t_atoms(&(mymol->top.atoms),natoms,TRUE);
   snew(mymol->x,natoms);              
 
-  read_tpx(fn,&step,&t,&lambda,NULL,mymol->box,&natoms,
+  read_tpx(fn,&step,&t,&lambda,&(mymol->ir),mymol->box,&natoms,
 	   mymol->x,NULL,NULL,&(mymol->top));
 
   for(i=0; (bSupport && (i<natoms)); i++)
@@ -111,6 +124,37 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,
     mymol->molname = strdup(fn);
     mymol->dip_exp = dip;
     mymol->qtotal  = 0;
+    mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
+    
+    if (bPol) {
+      /* If we have polarization then we need to make a subset of
+	 atoms that does not include the shells */
+      snew(mymol->polatoms,1);
+      init_t_atoms(mymol->polatoms,natoms,TRUE);
+      mymol->vs = init_vsite(cr,&mymol->top);
+      snew(mymol->polx,natoms);
+      snew(mymol->f,natoms);
+      snew(mymol->buf,natoms);
+      for(i=j=0; (i<natoms); i++) {
+	if (mymol->top.atoms.atom[i].ptype != eptShell) {
+	  memcpy(&(mymol->polatoms->atom[j]),
+		 &(mymol->top.atoms.atom[i]),sizeof(t_atom));
+	  mymol->polatoms->atomname[j] = mymol->top.atoms.atomname[i];
+	  copy_rvec(mymol->x[i],mymol->polx[j]);
+	  j++;
+	}
+      }
+      mymol->shell = init_shell_flexcon(debug,cr,&mymol->top,0,
+					FALSE,mymol->x);
+      mymol->fr = mk_forcerec();
+      init_forcerec(debug,mymol->fr,NULL,&mymol->ir,&mymol->top,cr,
+		    mymol->box,FALSE,NULL,NULL,NULL, TRUE);
+    }
+    else {
+      mymol->polx = mymol->x;
+      mymol->polatoms = &(mymol->top.atoms);
+      mymol->shell = NULL;
+    }
   }
   else {
     /*free_t_atoms(mymol->top.atoms);
@@ -193,7 +237,8 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
 t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
 		      real J0_0,real Chi0_0,real w_0,
 		      real J0_1,real Chi0_1,real w_1,
-		      real fc,real qcmin,int eemtype,bool bZero)
+		      real fc,real qcmin,int eemtype,
+		      bool bZero,bool bPol)
 {
   char     **strings,buf[STRLEN];
   int      i,n,nstrings;
@@ -201,8 +246,10 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   double   dip;
   
   snew(md,1);
+  md->cr         = init_cr_nopar();
   /* Read the EEM parameters */
-  md->eem = read_eemprops(eem_fn,-1);
+  md->atomprop   = get_atomprop();
+  md->eem = read_eemprops(eem_fn,-1,md->atomprop);
   md->nparam = eem_get_numprops(md->eem,eemtype);
   if ((md->eem == NULL) || (md->nparam == 0))
     gmx_fatal(FARGS,"Could not read %s, or file does not contain the requested parameters",
@@ -220,7 +267,7 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
     if (sscanf(strings[i],"%s%lf",buf,&dip) != 2) 
       gmx_fatal(FARGS,"Error on line %d of %s",i+1,fn);
     if (bZero || (dip > 0)) {
-      if (init_mymol(&(md->mymol[n]),buf,dip,md->eem,eemtype))
+      if (init_mymol(&(md->mymol[n]),buf,dip,md->eem,eemtype,bPol,md->cr))
 	n++;
     }
   }
@@ -235,7 +282,6 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   if (n != md->nparam)
     gmx_fatal(FARGS,"Found only %d of the expected %d elements",
 	      n,md->nparam);
-  md->atomprop   = get_atomprop();
   md->eemtype    = eemtype;
   md->J0_0       = J0_0;
   md->Chi0_0     = Chi0_0;
@@ -245,7 +291,7 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   md->w_1        = w_1;
   md->fc         = fc;
   md->qcmin      = qcmin;
-	  
+  	  
   return md;
 }
 
@@ -264,17 +310,43 @@ static real mymol_calc_dip(t_mymol *mol)
 
 static real calc_moldip_deviation(t_moldip *md,void *eem)
 {
-  int i,j,h_index,c_index,this_index;
+  int    i,j,count,h_index,c_index,this_index;
   double qq,rms=0;
+  real   t = 0;
+  rvec   mu_tot = {0,0,0};
+  real   ener[F_NRE];
+  tensor force_vir={{0,0,0},{0,0,0},{0,0,0}};
+  t_nrnb my_nrnb;
+  gmx_wallcycle_t wcycle;
+  bool   bConverged;
+  
+  init_nrnb(&my_nrnb);
   
   h_index = eem_get_elem_index(eem,1,md->eemtype);
   c_index = eem_get_elem_index(eem,6,md->eemtype);
+  wcycle  = wallcycle_init(stdout,md->cr);
   
   for(i=0; (i<md->nmol); i++) {
-    md->mymol[i].chieq = generate_charges_sm(debug,md->mymol[i].molname,
-					     eem,&(md->mymol[i].top.atoms),
-					     md->mymol[i].x,1e-4,100,md->atomprop,
-					     md->mymol[i].qtotal,md->eemtype);
+    md->mymol[i].chieq = 
+      generate_charges_sm(debug,md->mymol[i].molname,
+			  eem,md->mymol[i].polatoms,
+			  md->mymol[i].polx,1e-4,100,md->atomprop,
+			  md->mymol[i].qtotal,md->eemtype);
+    /*Now optimize the shell positions */
+    if (md->mymol[i].shell) {
+      count = relax_shell_flexcon(debug,md->cr,FALSE,0,
+				  &(md->mymol[i].ir),TRUE,FALSE,
+				  &(md->mymol[i].top),NULL,ener,
+				  NULL,NULL,
+				  md->mymol[i].f,md->mymol[i].buf,
+				  force_vir,md->mymol[i].md,
+				  &my_nrnb,wcycle,NULL,NULL,
+				  md->mymol[i].shell,
+				  md->mymol[i].fr,
+				  t,mu_tot,
+				  md->mymol[i].top.atoms.nr,&bConverged,
+				  NULL,NULL);
+    }
     md->mymol[i].dip_calc = mymol_calc_dip(&(md->mymol[i]));
     for(j=0; (j<md->mymol[i].top.atoms.nr); j++) {
       qq = md->mymol[i].top.atoms.atom[j].q;
@@ -464,8 +536,10 @@ static real quality_of_fit(real chi2,int N)
 }
 
 #else
-static real optimize_moldip(FILE *fp,t_moldip *md,int maxiter,real tol,
-			    int reinit,real stepsize)
+static real optimize_moldip(FILE *fp,FILE *logf,
+			    t_moldip *md,int maxiter,real tol,
+			    int reinit,real stepsize,int seed,
+			    bool bRandom,real stol)
 {
   fprintf(stderr,"This program needs the GNU scientific library to work.\n");
   
@@ -514,7 +588,7 @@ int main(int argc, char *argv[])
   static bool bRandom=FALSE,bZero=TRUE;
   static real J0_0=0,Chi0_0=0,w_0=0,step=0.01;
   static real J0_1=30,Chi0_1=30,w_1=1,fc=1.0;
-  static char *qgen[] = { NULL, "SM1", "SM2", "SM3", "SM4", NULL };
+  static char *qgen[] = { NULL, "SMp", "SMpp", "SMs", "SMps", "SMg", "SMgs", NULL };
   t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&tol},
       "Tolerance for convergence in optimization" },
@@ -554,6 +628,7 @@ int main(int argc, char *argv[])
   t_moldip *md;
   int      eemtype;
   FILE     *logf,*out;
+  bool     bPol;
       
   CopyRight(stdout,argv[0]);
 
@@ -568,12 +643,13 @@ int main(int argc, char *argv[])
   }
   if (eemtype > eqgSMps)
     gmx_fatal(FARGS,"Only models SMp, SMs and SMps implemented so far");
-    
+  bPol = (eemtype == eqgSMpp) || (eemtype == eqgSMps) || 
+    (eemtype == eqgSMpg);
   logf = fopen(opt2fn("-g",NFILE,fnm),"w");
-  md = read_moldip(logf,opt2fn("-f",NFILE,fnm),
-		   opt2fn_null("-d",NFILE,fnm),
-		   J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-		   fc,qcmin,eemtype,bZero);
+  md   = read_moldip(logf,opt2fn("-f",NFILE,fnm),
+		     opt2fn_null("-d",NFILE,fnm),
+		     J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
+		     fc,qcmin,eemtype,bZero,bPol);
   
   (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed,
 			 bRandom,stol);

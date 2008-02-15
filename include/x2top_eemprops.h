@@ -40,15 +40,22 @@
 #include <stdio.h>
 #include "grompp.h"
 	
+enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, 
+       eqgSMp, eqgSMpp, eqgSMs, eqgSMps, eqgSMg, eqgSMpg, eqgNR };
+
 /* File argument maybe NULL, in which case the default eemprops.dat
  * is opened from the library. If eemtype != -1 eemprops with eemtype
  * equal to eemtype will be read.
  */
-extern void *read_eemprops(char *fn,int eemtype);
+extern void *read_eemprops(char *fn,int eemtype,void *atomprop);
 
 extern void write_eemprops(FILE *fp,void *eem);
 
 extern int name2eemtype(char *name);
+
+extern char *get_eemtype_name(int eem);
+
+extern char *get_eemtype_reference(int eem);
 
 extern int eem_get_numprops(void *eem,int eemtype);
 

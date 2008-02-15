@@ -13,9 +13,9 @@ double **alloc_matrix(int n,int m)
   
   /* There's always time for more pointer arithmetic! */
   snew(ptr,n);
-  snew(ptr0,n*n);
+  snew(ptr0,n*m);
   for(i=0; (i<n); i++) 
-    ptr[i] = ptr0 + i*n;
+    ptr[i] = ptr0 + i*m;
   return ptr;
 }
 
@@ -30,7 +30,8 @@ void matrix_multiply(FILE *fp,int n,int m,double **x,double **y,double **z)
   int i,j,k;
   
   if (fp)
-    fprintf(fp,"Multiplying %d x %d matrix with a %d x %d matrix\n",n,m,m,n);
+    fprintf(fp,"Multiplying %d x %d matrix with a %d x %d matrix\n",
+	    n,m,m,n);
   if (fp)
     for(i=0; (i<n); i++) {
       for(j=0; (j<m); j++) 

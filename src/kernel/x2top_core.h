@@ -34,11 +34,12 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _x2top_h
-#define _x2top_h
+#ifndef _x2top_core_h
+#define _x2top_core_h
 	
 #include <stdio.h>
 #include "typedefs.h"
+#include "pdbio.h"
 #include "x2top_nm2type.h"
 #include "gpp_atomtype.h"
 
@@ -48,8 +49,6 @@ extern void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
 extern void set_force_const(t_params plist[],real kb,real kt,real kp,
 			    bool bRound,bool bParam);
 			    
-extern int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot);
-
 extern real calc_dip(t_atoms *atoms,rvec x[]);
 
 extern void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
@@ -63,8 +62,8 @@ extern void reset_q(t_atoms *atoms);
 extern void print_rtp(char *filenm,char *title,t_atoms *atoms,
 		      t_params plist[],int cgnr[],int nbts,int bts[]);
 		      
-extern void mk_bonds(x2top_nm2t nmt,
-		     t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
+extern void mk_bonds(x2top_nm2t nmt,t_atoms *atoms,rvec x[],
+		     gmx_conect gc,t_params *bond,int nbond[],char *ff,
 		     bool bPBC,matrix box,void *atomprop,real tol);
 		     
 extern t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
@@ -76,6 +75,15 @@ extern void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
 		       rvec **x,t_symtab *symtab,t_excls **excls);
 		       
 extern void symmetrize_charges(t_atoms *atoms,t_atomtype atype,
-			       t_params *bonds);
+			       t_params *bonds,void *atomprop);
+
+enum { ecgGroup, ecgAtom, ecgNeutral, ecgNR };
+
+extern int *generate_charge_groups(int cgtp,t_atoms *atoms,t_atomtype atype,
+				   t_params *bonds,t_params *pols,
+				   bool bUsePDBcharge,real *qtot,real *mutot);
+
+extern void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
+				  t_atomtype type,rvec x[]);
 
 #endif

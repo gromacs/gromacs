@@ -42,6 +42,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "maths.h"
+#include "futil.h"
 #include "tune_pol.h"
 #include "vec.h"
 #include "x2top_matrix.h"
@@ -553,7 +554,7 @@ static void decompose_frag(FILE *fp,int bTrain,int np,t_molprop pd[])
       exit(1);
     }
   }
-  x = calloc(np,sizeof(x[0]));
+  snew(x,np);
   for(i=n=0; (i<np); i++) {
     if ((pd[i].weight > 0) && 
 	(mp_num_polar(&(pd[i])) > 0)) {
@@ -580,7 +581,7 @@ static void decompose_frag(FILE *fp,int bTrain,int np,t_molprop pd[])
   }
   matrix_multiply(fp,n,m,a,at,ata);
   matrix_invert(fp,m,ata);
-  atx = calloc(m,sizeof(atx[0]));
+  snew(atx,m);
   for(i=0; (i<m); i++) 
     for(j=0; (j<n); j++)
       atx[i] += at[i][j]*x[j];
@@ -734,7 +735,7 @@ static int read_dipoles(char *fn)
 
 int main(int argc,char *argv[])
 {
-  FILE  *fp;
+  FILE  *fp,*gp;
   int    i,j,np,nspoel,nbosque,ntot,nqm,nqqm,nqmtot=0;
   double fit1[eqmNR],test1[eqmNR];
   double fit2[eqmNR],test2[eqmNR];
@@ -795,7 +796,9 @@ int main(int argc,char *argv[])
   printf("There are %d Spoel atom types\n",eatNR);
   printf("--------------------------------------------------\n");
   
-  decompose_frag(NULL,0,np,mp);
+  gp = ffopen("tune_pol.log","w");
+  decompose_frag(gp,0,np,mp);
+  fclose(gp);
   calc_rmsd(0,fit2,test2,np,mp);
 
   if ((fp=fopen("molecules.tex","w")) == NULL)
@@ -809,8 +812,8 @@ int main(int argc,char *argv[])
   tabnum = 0;
   fclose(fp);
   
-  if ((fp=fopen("molecules-sup.tex","w")) == NULL)
-    exit(1);
+  fp = ffopen("molecules-sup.tex","w");
+
   dump_table2(fp,0,1,0,np,mp,0);
   tabnum++;
   dump_table4(fp,np,mp);

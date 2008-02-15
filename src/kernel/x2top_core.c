@@ -66,11 +66,12 @@
 #include "atomprop.h"
 #include "grompp.h"
 #include "add_par.h"
+#include "pdbio.h"
 #include "gmx_random.h"
 #include "gpp_atomtype.h"
 
-void mk_bonds(x2top_nm2t nmt,
-	      t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
+void mk_bonds(x2top_nm2t nmt,t_atoms *atoms,rvec x[],
+	      gmx_conect gc,t_params *bond,int nbond[],char *ff,
 	      bool bPBC,matrix box,void *atomprop,real tol)
 {
   t_param b;
@@ -78,6 +79,7 @@ void mk_bonds(x2top_nm2t nmt,
   t_pbc   pbc;
   rvec    dx;
   real    dx1;
+  bool    bBond;
   
   for(i=0; (i<MAXATOMLIST); i++)
     b.a[i] = -1;
@@ -96,8 +98,13 @@ void mk_bonds(x2top_nm2t nmt,
 	rvec_sub(x[i],x[j],dx);
       
       dx1 = norm(dx);
-      if (is_bond(nmt,*atoms->atomname[i],*atoms->atomname[j],dx1,tol) ||
-	  is_bond(nmt,*atoms->atomname[j],*atoms->atomname[i],dx1,tol)) {
+      
+      if (gc)
+	bBond = is_conect(gc,i,j);
+      else 
+	bBond = is_bond(nmt,atoms,i,j,dx1,tol);
+      
+      if (bBond) {
 	b.AI = i;
 	b.AJ = j;
 	b.C0 = dx1;
@@ -111,29 +118,6 @@ void mk_bonds(x2top_nm2t nmt,
     }
   }
   fprintf(stderr,"\ratom %d\n",i);
-}
-
-int *set_cgnr(t_atoms *atoms,bool bUsePDBcharge,real *qtot,real *mtot)
-{
-  int    i,n=1;
-  int    *cgnr;
-  double qt=0,mt=0;
-  
-  *qtot = *mtot = 0;
-  snew(cgnr,atoms->nr);
-  for(i=0; (i<atoms->nr); i++) {
-    if (atoms->pdbinfo && bUsePDBcharge)
-      atoms->atom[i].q = atoms->pdbinfo[i].bfac;
-    qt += atoms->atom[i].q;
-    *qtot += atoms->atom[i].q;
-    *mtot += atoms->atom[i].m;
-    cgnr[i] = n;
-    if (is_int(qt)) {
-      n++;
-      qt=0;
-    }
-  }
-  return cgnr;
 }
 
 t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
@@ -326,7 +310,7 @@ static int acomp(const void *a,const void *b)
   return (*aa - *ab);
 }
 
-void clean_excls(int nr,t_excls excls[])
+static void my_clean_excls(int nr,t_excls excls[])
 {
   int i,j,k;
   
@@ -445,7 +429,7 @@ void delete_shell_interactions(t_params plist[F_NRE],t_atoms *atoms,
       }
     }
   }
-  clean_excls(atoms->nr,excls);
+  my_clean_excls(atoms->nr,excls);
   pr_alloc(atoms->nr,&(plist[F_THOLE_POL]));
   npol = 0;
   snew(bHaveShell,atoms->nr);
@@ -529,11 +513,48 @@ void reset_q(t_atoms *atoms)
     atoms->atom[i].qB = atoms->atom[i].q;
 }
 
+static void add_excl(t_excls *excls,atom_id e)
+{
+  int i;
+  
+  for(i=0; (i<excls->nr); i++)
+    if (excls->e[i] == e)
+      return;
+  srenew(excls->e,excls->nr+1);
+  excls->e[excls->nr++] = e;
+}
+
+static void remove_excl(t_excls *excls, int remove)
+{
+  int i;
+
+  for(i=remove+1; i<excls->nr; i++)
+    excls->e[i-1] = excls->e[i];
+  
+  excls->nr--;
+}
+
+static void prune_excl(t_excls excls[],t_atoms *atoms,t_atomtype atype)
+{
+  int i,k,ak;
+  
+  for(i=0; (i<atoms->nr); i++) {
+    if (get_atomtype_ptype(atoms->atom[i].type,atype) != eptShell)
+      for(k=0; (k<excls[i].nr); ) {
+	ak = excls[i].e[k];
+	if (get_atomtype_ptype(atoms->atom[ak].type,atype) != eptShell)
+	  remove_excl(&(excls[i]),k);
+	else 
+	  k++;
+      }
+  }
+}
+
 void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
 		t_atomtype atype,t_params plist[],
 		rvec **x,t_symtab *symtab,t_excls **excls)
 {
-  int     i,j,k,iat,shell,atp,ns=0;
+  int     i,j,k,ai,aj,iat,shell,atp,ns=0;
   int     *renum;
   char    buf[32];
   t_param p;
@@ -552,7 +573,7 @@ void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
       ns++;
       p.AI = renum[i];
       p.AJ = renum[i]+1;
-      p.C0 = get_atomtype_qB(atp,atype);
+      p.C0 = 0.001*get_atomtype_qB(atp,atype);
       push_bondnow(&(plist[F_POLARIZATION]),&p);
     }
   }
@@ -562,25 +583,32 @@ void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
 		       0,0,0,0,0);
   
   if (ns > 0) {
+    /* Make new atoms and x arrays */
     snew(newa,1);
     init_t_atoms(newa,(*atoms)->nr+ns,TRUE);
-    snew(newexcls,newa->nr);
     newa->nres = (*atoms)->nres;
     snew(newx,newa->nr);
 
+    /* Make new exclusion array, and put the shells in it */
+    snew(newexcls,newa->nr);
+    for(j=0; (j<plist[F_POLARIZATION].nr); j++) {
+      ai = plist[F_POLARIZATION].param[j].AI;
+      aj = plist[F_POLARIZATION].param[j].AJ;
+      add_excl(&newexcls[ai],aj);
+      add_excl(&newexcls[aj],ai);
+    }
     for(i=0; (i<(*atoms)->nr); i++) {
       newa->atom[renum[i]]     = (*atoms)->atom[i];
       newa->atomname[renum[i]] = put_symtab(symtab,*(*atoms)->atomname[i]);
       copy_rvec((*x)[i],newx[renum[i]]);
     }
-    for(i=0; (i<(*atoms)->nres); i++) {
+    for(i=0; (i<(*atoms)->nres); i++) 
       newa->resname[i] = put_symtab(symtab,*(*atoms)->resname[i]);
-    }
     
     for(i=0; (i<(*atoms)->nr); i++) {
       iat = renum[i];
       for(k=0; (k<(*excls)[i].nr); k++)
-	newexcls[iat].e[k] = (*excls)[i].e[k];
+	add_excl(&(newexcls[iat]),renum[(*excls)[i].e[k]]);
       for(j=iat+1; (j<renum[i+1]); j++) {
 	newa->atom[j]       = (*atoms)->atom[i];
 	newa->atom[iat].q   = 0;
@@ -593,19 +621,41 @@ void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
 	sprintf(buf,"Sh%s",*((*atoms)->atomname[i]));
 	newa->atomname[j] = put_symtab(symtab,buf);
 	copy_rvec((*x)[i],newx[j]);
-	for(k=0; (k<(*excls)[i].nr); k++)
-	  newexcls[j].e[k] = (*excls)[i].e[k];      }
+	for(k=0; (k<(*excls)[i].nr); k++) {
+	  ai = j;
+	  aj = renum[(*excls)[i].e[k]];
+	  if (ai != aj) {
+	    add_excl(&(newexcls[ai]),aj);
+	    add_excl(&(newexcls[aj]),ai);
+	  }
+	}
+      }
     }
+    for(i=0; (i<(*atoms)->nr); i++) {
+      iat = renum[i];
+      for(j=iat+1; (j<renum[i+1]); j++) {
+	for(k=0; (k<newexcls[iat].nr); k++) {
+	  ai = j;
+	  aj = newexcls[iat].e[k];
+	  if (ai != aj) {
+	    add_excl(&(newexcls[ai]),aj);
+	    add_excl(&(newexcls[aj]),ai);
+	  }
+	}
+      }
+    }
+    prune_excl(newexcls,newa,atype);
     *atoms = newa;
     sfree(*x);
     *x = newx;
     *excls = newexcls;
-  }
-  for(i=0; (i<F_NRE); i++) {
-    if (i != F_POLARIZATION)
-      for(j=0; (j<plist[i].nr); j++) 
-	for(k=0; (k<NRAL(i)); k++) 
-	  plist[i].param[j].a[k] = renum[plist[i].param[j].a[k]];
+  
+    for(i=0; (i<F_NRE); i++) {
+      if (i != F_POLARIZATION)
+	for(j=0; (j<plist[i].nr); j++) 
+	  for(k=0; (k<NRAL(i)); k++) 
+	    plist[i].param[j].a[k] = renum[plist[i].param[j].a[k]];
+    }
   }
   sfree(renum);
   sfree(shell_atom);
@@ -646,19 +696,223 @@ static void lo_symmetrize_charges(t_atoms *atoms,t_atomtype atype,
 }
 
 void symmetrize_charges(t_atoms *atoms,t_atomtype atype,
-			t_params *bonds)
+			t_params *bonds,void *atomprop)
 {
   char **strings = NULL;
-  int i,nstrings;
+  char *db = "symmetric-charges.dat";
+  char elem[4][32];
+  real value;
+  int i,j,nstrings;
   int at[4];
   
-  nstrings = get_file("symmetric-charges.dat",&strings);
+  nstrings = get_file(db,&strings);
   for(i=0; (i<nstrings); i++) {
-    if (sscanf(strings[i],"%d%d%d%d",
-	       &at[0],&at[1],&at[2],&at[3]) == 4)
-      lo_symmetrize_charges(atoms,atype,bonds,at);
-    
+    if (sscanf(strings[i],"%s%s%s%s",
+	       elem[0],elem[1],elem[2],elem[3]) == 4) {
+      for(j=0; (j<4); j++) {
+	if (!query_atomprop(atomprop,epropElement,"???",elem[j],&value))
+	  break;
+	at[j] = gmx_nint(value);
+      }
+      if (j == 4)
+	lo_symmetrize_charges(atoms,atype,bonds,at);
+      else
+	fprintf(stderr,"Warning: invalid line %d in %s\n",i+1,db);
+    }
     sfree(strings[i]);
   }
   sfree(strings);
+}
+
+static int *generate_cg_neutral(t_atoms *atoms,bool bUsePDBcharge)
+{
+  int    i,n=1;
+  int    *cgnr;
+  double qt=0,mt=0;
+  
+  snew(cgnr,atoms->nr);
+  for(i=0; (i<atoms->nr); i++) {
+    if (atoms->pdbinfo && bUsePDBcharge)
+      atoms->atom[i].q = atoms->pdbinfo[i].bfac;
+    qt += atoms->atom[i].q;
+    cgnr[i] = n;
+    if (is_int(qt)) {
+      n++;
+      qt=0;
+    }
+  }
+  return cgnr;
+}
+
+static int *generate_cg_group(t_atoms *atoms,t_atomtype atype,
+			      t_params *bonds,t_params *pols)
+{
+  int    i,j,k,atn,ai,aj,ncg=1;
+  int    *cgnr;
+  bool   bMV;
+  int    monovalent[] = { 0, 1, 9, 17, 35, 53, 85 };
+#define nmv asize(monovalent)
+  double qaver;
+    
+  /* Assume that shells have atomnumber 0 */
+  snew(cgnr,atoms->nr);
+  for(i=0; (i<atoms->nr); i++) 
+    cgnr[i] = NOTSET;
+    
+  for(i=0; (i<atoms->nr); i++) {
+    atn = get_atomtype_atomnumber(atoms->atom[i].type,atype);
+    bMV = FALSE;
+    for(j=0; (j<nmv) && !bMV; j++)
+      bMV = (atn == monovalent[j]);
+    if (!bMV)
+      cgnr[i] = ncg++;
+  }
+  /* Rely on the notion that all H and other monovalent 
+     atoms are bound to something */
+  for(j=0; (j<bonds->nr); j++) {
+    ai  = bonds->param[j].AI;
+    aj  = bonds->param[j].AJ;
+    bMV = FALSE;
+    atn = get_atomtype_atomnumber(atoms->atom[ai].type,atype);
+    for(k=0; (k<nmv) && !bMV; k++)
+      bMV = (atn == monovalent[k]);
+    if (bMV) {
+      if (cgnr[aj] != NOTSET)
+	cgnr[ai] = cgnr[aj];
+      else
+	cgnr[ai] = cgnr[aj] = 1;
+    }
+    else {
+      bMV = FALSE;
+      atn = get_atomtype_atomnumber(atoms->atom[aj].type,atype);
+      for(k=0; (k<nmv) && !bMV; k++)
+	bMV = (atn == monovalent[k]);
+      if (bMV) {
+	cgnr[aj] = cgnr[ai];
+      }
+    }
+  }
+  /* Rely on the notion that all shells are bound to something */
+  for(j=0; (j<pols->nr); j++) {
+    ai = pols->param[j].AI;
+    aj = pols->param[j].AJ;
+    cgnr[aj] = cgnr[ai];
+  }
+  printf("There are %d charge groups\n",ncg);
+  ncg = 0;
+  for(i=0; (i<atoms->nr); i++) 
+    if (cgnr[i] == NOTSET) {
+      fprintf(stderr,"No charge group set for atom %s %d\n",
+	      *atoms->atomname[i],i);
+      ncg++;
+    }
+  if (ncg > 0)
+    gmx_fatal(FARGS,"Could not determine charge group for %d atoms",ncg);
+  return cgnr;
+}
+
+static int *generate_cg_atom(int natom)
+{
+  int i,*cgnr;
+  
+  snew(cgnr,natom);
+  for(i=0; (i<natom); i++)
+    cgnr[i] = i+1;
+    
+  return cgnr;
+}
+
+int *generate_charge_groups(int cgtp,
+			    t_atoms *atoms,t_atomtype atype,
+			    t_params *bonds,t_params *pols,
+			    bool bUsePDBcharge,real *qtot,real *mtot)
+{
+  int i,*cgnr = NULL;
+  
+  switch (cgtp) {
+  case ecgNeutral:
+    cgnr = generate_cg_neutral(atoms,bUsePDBcharge);
+    break;
+  case ecgGroup:
+    cgnr = generate_cg_group(atoms,atype,bonds,pols);
+    break;
+  case ecgAtom:
+    cgnr = generate_cg_atom(atoms->nr);
+    break;
+  default:
+    gmx_fatal(FARGS,"Invalid charge group generation type %d",cgtp);
+  }
+  for(i=0; (i<atoms->nr); i++) {
+    *qtot += atoms->atom[i].q;
+    *mtot += atoms->atom[i].m;
+  }  
+  return cgnr;
+}
+
+static int *cgnr_copy;
+static int *atomnumber;
+static int cg_comp(const void *a,const void *b)
+{
+  int *aa = (int *)a;
+  int *bb = (int *)b;
+  
+  int d = cgnr_copy[*aa] - cgnr_copy[*bb];
+  if (d == 0)
+    return atomnumber[*bb] - atomnumber[*aa];
+  else
+    return d;
+}
+
+
+void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
+			   t_atomtype atype,rvec x[])
+{
+  int    i,j,k,ri,*cg_renum,*ccgg,*inv_renum;
+  rvec   *rx;
+  t_atom *ra;
+  char   ***an;
+  
+  snew(cg_renum,atoms->nr);
+  snew(atomnumber,atoms->nr);
+  snew(rx,atoms->nr);
+  snew(ra,atoms->nr);
+  snew(an,atoms->nr);
+  for(i=0; (i<atoms->nr); i++) {
+    cg_renum[i] = i;
+    atomnumber[i] = get_atomtype_atomnumber(atoms->atom[i].type,atype);
+  }
+  cgnr_copy = cgnr;
+  qsort(cg_renum,atoms->nr,sizeof(cg_renum[0]),cg_comp);
+  if (debug)
+    for(i=0; (i<atoms->nr); i++)
+      fprintf(debug,"cg_renum[%d] = %d\n",i,cg_renum[i]);
+  snew(ccgg,atoms->nr);
+  for(i=0;(i<atoms->nr); i++) {
+    ri = cg_renum[i];
+    copy_rvec(x[ri],rx[i]);
+    memcpy(&(ra[i]),&(atoms->atom[ri]),sizeof(t_atom));
+    an[i] = atoms->atomname[ri];
+    ccgg[i] = cgnr[ri];
+  }
+  snew(inv_renum,atoms->nr);
+  for(i=0;(i<atoms->nr); i++) {
+    copy_rvec(rx[i],x[i]);
+    memcpy(&(atoms->atom[i]),&(ra[i]),sizeof(t_atom));
+    atoms->atomname[i] = an[i];
+    cgnr[i] = ccgg[i];
+    inv_renum[cg_renum[i]] = i;
+    
+  }
+  for(i=0; (i<F_NRE); i++) 
+    for(j=0; (j<plist[i].nr); j++) 
+      for(k=0; (k<NRAL(i)); k++) {
+	plist[i].param[j].a[k] = inv_renum[plist[i].param[j].a[k]];
+      }
+    
+  sfree(rx);
+  sfree(ra);
+  sfree(an);
+  sfree(cg_renum);
+  sfree(inv_renum);
+  sfree(ccgg);
 }

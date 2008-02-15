@@ -19,6 +19,8 @@ gen_ad.c 	gen_ad.h	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
 gmxcpp.c	gmxcpp.h	\
+gmx_elements.c	gmx_elements.h	\
+gmx_xml.c	gmx_xml.h	\
 gpp_atomtype.c	gpp_atomtype.h	\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\

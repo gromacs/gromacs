@@ -74,11 +74,17 @@ typedef struct {
 typedef struct {
   int        nep;
   t_eemprops *eep;
-  void       *ap;
 } t_eemrecord;
 
 static char *eemtype_name[eqgNR] = { 
-  "None", "Linear", "Yang", "Bultinck", "SMp", "SMs", "SMps", "SMg", "SMpg", 
+  "None", "Linear", "Yang", "Bultinck", 
+  "SMp", "SMpp", "SMs", "SMps", "SMg", "SMpg" 
+};
+
+static char *eemtype_ref[eqgNR] = { 
+  "None", "None", "Yang2006b", "Bultinck2002a",
+  "Spoel2008b", "Spoel2008b", "Spoel2008b", 
+  "Spoel2008b", "Spoel2008b", "Spoel2008b"
 };
 
 int name2eemtype(char *name)
@@ -92,7 +98,27 @@ int name2eemtype(char *name)
   return -1;
 }
 
-void *read_eemprops(char *fn,int eemtype)
+char *get_eemtype_name(int eem)
+{
+  int i;
+  
+  if ((eem >= 0) && (eem < eqgNR))
+    return eemtype_name[eem];
+    
+  return NULL;
+}
+
+char *get_eemtype_reference(int eem)
+{
+  int i;
+  
+  if ((eem >= 0) && (eem < eqgNR))
+    return eemtype_ref[eem];
+    
+  return NULL;
+}
+
+void *read_eemprops(char *fn,int eemtype,void *atomprop)
 {
   t_eemrecord *eem=NULL;
   char   buf[STRLEN],**strings,*ptr;
@@ -109,7 +135,6 @@ void *read_eemprops(char *fn,int eemtype)
   n  = get_file(buf,&strings);
   if (n > 0) {
     snew(eem,1);
-    eem->ap = get_atomprop();
     snew(eem->eep,n);
     for(i=0; (i<n); i++) {
       ptr = strings[i];
@@ -124,7 +149,7 @@ void *read_eemprops(char *fn,int eemtype)
 		  buf,i+1,algbuf);
 	else if ((eemtype == -1) || (eem->eep[nn].eemtype == eemtype)) {
 	  eem->eep[nn].name    = strdup(nmbuf);
-	  if (!query_atomprop(eem->ap,epropElement,"???",nmbuf,&value))
+	  if (!query_atomprop(atomprop,epropElement,"???",nmbuf,&value))
 	    gmx_fatal(FARGS,"Can not find element type for atom %s",nmbuf);
 	  eem->eep[nn].elem  = gmx_nint(value);
 	  eem->eep[nn].J0    = J0;
@@ -281,7 +306,6 @@ void *copy_eem(void *eem_dst,void *eem_src)
   
   if (dst == NULL) {
     snew(dst,1);
-    dst->ap  = src->ap;
     dst->nep = src->nep;
     snew(dst->eep,dst->nep);
     for(i=0; (i<dst->nep); i++) {

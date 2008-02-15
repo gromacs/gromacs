@@ -57,9 +57,12 @@
 #include "names.h"
 #include "toppush.h"
 #include "pdb2top.h"
+#include "pdbio.h"
 #include "gen_ad.h"
 #include "topexcl.h"
 #include "vec.h"
+#include "gmx_random.h"
+#include "gmx_elements.h"
 #include "x2top_eemprops.h"
 #include "x2top_nm2type.h"
 #include "x2top_qalpha.h"
@@ -68,9 +71,26 @@
 #include "atomprop.h"
 #include "grompp.h"
 #include "add_par.h"
-#include "gmx_random.h"
 
 enum { edihNo, edihOne, edihAll, edihNR };
+
+static int get_option(char **opts)
+{
+  int val = 0;
+  
+  if (!opts)
+    return NOTSET;
+  if (opts[val] != NULL)
+    for(val=1; (opts[val] != NULL); val++)
+      if (strcasecmp(opts[0],opts[val]) == 0)
+	break;
+  if (opts[val] == NULL)
+    val = 0;
+  else
+    val--;
+    
+  return val;
+}
 
 int main(int argc, char *argv[])
 {
@@ -120,18 +140,19 @@ int main(int argc, char *argv[])
   matrix     box;          /* box length matrix */
   int        natoms;       /* number of atoms in one molecule  */
   int        nres;         /* number of molecules? */
-  int        i,j,k,l,m,ndih,alg,dih;
+  int        i,j,k,l,m,ndih,alg,dih,cgtp;
   real       mu;
   bool       bRTP,bTOP,bOPLS,bCharmm;
   t_symtab   symtab;
   int        nqa=0;
   real       cutoff,qtot,mtot;
   char       *fn,rtp[STRLEN];
+  gmx_conect gc;
 
   t_filenm fnm[] = {
-    { efSTX, "-f", "conf", ffREAD  },
-    { efTOP, "-o", "out",  ffOPTWR },
-    { efSTO, "-c", "out",  ffOPTWR },
+    { efPDB, "-f", "conf", ffREAD  },
+    { efTOP, "-o", "out",  ffWRITE },
+    { efSTO, "-c", "out",  ffWRITE },
     { efRTP, "-r", "out",  ffOPTWR },
     { efDAT, "-d", "qpol", ffOPTRD }
   };
@@ -143,13 +164,14 @@ int main(int argc, char *argv[])
   static int  maxiter=100;
   static bool bRemoveDih = FALSE,bQsym = TRUE;
   static bool bParam = TRUE, bH14 = TRUE,bRound = TRUE;
-  static bool bPairs = TRUE, bPBC = TRUE, bPolarize = FALSE;
-  static bool bUsePDBcharge = FALSE,bVerbose=FALSE;
+  static bool bPairs = TRUE, bPBC = TRUE;
+  static bool bUsePDBcharge = FALSE,bVerbose=FALSE,bCONECT=TRUE;
   static char *molnm = "ICE";
   static char *ff = "select";
   static char *qgen[] = { NULL, "None", "Linear", "Yang", "Bultinck", 
-			  "SMp", "SMs", "SMps", "SMg", "SMgs", NULL };
+			  "SMp", "SMpp", "SMs", "SMps", "SMg", "SMpg", NULL };
   static char *dihopt[] = { NULL, "No", "Single", "All", NULL };
+  static char *cgopt[] = { NULL, "Group", "Atom", "Neutral", NULL };
   t_pargs pa[] = {
     { "-ff",     FALSE, etSTR, {&ff},
       "Select the force field for your simulation." },
@@ -165,12 +187,12 @@ int main(int argc, char *argv[])
       "Remove dihedrals on the same bond as an improper" },
     { "-pairs",  FALSE, etBOOL, {&bPairs},
       "Output 1-4 interactions (pairs) in topology file" },
-    { "-pol",    FALSE, etBOOL, {&bPolarize},
-      "HIDDENOutput polarization terms for those atoms where alpha <> 0" },
     { "-name",   FALSE, etSTR,  {&molnm},
       "Name of your molecule" },
     { "-pbc",    FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions." },
+    { "-conect", FALSE, etBOOL, {&bCONECT},
+      "Use CONECT records in the pdb file to signify bonds" },
     { "-pdbq",  FALSE, etBOOL, {&bUsePDBcharge},
       "Use the B-factor supplied in a pdb file for the atomic charges" },
     { "-btol",  FALSE, etREAL, {&btol},
@@ -191,6 +213,8 @@ int main(int argc, char *argv[])
       "HIDDENNot yet understood factor for generating charges" },
     { "-qsymm",  FALSE, etBOOL, {&bQsym},
       "HIDDENSymmetrize the charges on methyl and NH3 groups." },
+    { "-cgsort", FALSE, etSTR, {cgopt},
+      "HIDDENOption for assembling charge groups: based on Group (default, e.g. CH3 groups are kept together), Atom, or Neutral sections" },
     { "-kb",    FALSE, etREAL, {&kb},
       "Bonded force constant (kJ/mol/nm^2)" },
     { "-kt",    FALSE, etREAL, {&kt},
@@ -205,7 +229,7 @@ int main(int argc, char *argv[])
 		    asize(desc),desc,asize(bugs),bugs);
   /* Check the options */
   bRTP = opt2bSet("-r",NFILE,fnm);
-  bTOP = opt2bSet("-o",NFILE,fnm);
+  bTOP = TRUE;
   
   if (!bRTP && !bTOP)
     gmx_fatal(FARGS,"Specify at least one output file");
@@ -216,32 +240,28 @@ int main(int argc, char *argv[])
   if ((qtol < 0) || (qtol > 1)) 
     gmx_fatal(FARGS,"Charge tolerance should be between 0 and 1 (not %g)",
 	      qtol);
-  /* Check dihedral option */
-  dih = 0;
-  if (dihopt[dih] != NULL)
-    for(dih=1; (dih < asize(dihopt)); dih++)
-      if (strcasecmp(dihopt[0],dihopt[dih]) == 0)
-	break;
-  if ((dih == 0) || (dih == asize(dihopt)))
-    dih = edihNo;
-  else
-    dih--;
-  
+  /* Check command line options of type enum */
+  dih  = get_option(dihopt);
+  cgtp = get_option(cgopt);
+  alg  = get_option(qgen);
+    
   /* Read standard atom properties */
   atomprop = get_atomprop();
     
   /* Force field selection */
-  if(!strncmp(ff,"select",6)) {
+  if (!strncmp(ff,"select",6)) {
     /* Interactive forcefield selection */
     choose_ff(forcefield,sizeof(forcefield));
-  } else {
+  } 
+  else {
     sprintf(forcefield,"ff%s",ff);
   }
-  sprintf(rtp,"%s.rtp",forcefield);
-  if ((fp = libopen(rtp)) == NULL) 
-    gmx_fatal(FARGS,"Force field file %s does not exist\n",rtp);
-  fclose(fp);
-
+  if (0) {
+    sprintf(rtp,"%s.rtp",forcefield);
+    if ((fp = libopen(rtp)) == NULL) 
+      gmx_fatal(FARGS,"Force field file %s does not exist\n",rtp);
+    fclose(fp);
+  }
   bOPLS   = (strcmp(forcefield,"ffoplsaa") == 0);
   bCharmm = (strcmp(forcefield,"ffcharmm") == 0);
     
@@ -259,35 +279,36 @@ int main(int argc, char *argv[])
   init_t_atoms(atoms,natoms,TRUE);
   snew(x,natoms);              
 
-  read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,box);
-
-  nm2t = rd_nm2type(forcefield);
-  /*printf("There are %d name to type translations\n",nnm);*/
-  if (debug) {
+  if (bCONECT)
+    gc = init_gmx_conect();
+  else
+    gc = NULL;
+  read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,box,gc);
+  if (bCONECT && debug)
+    dump_conection(debug,gc);
+  
+  nm2t = rd_nm2type(forcefield,atomprop);
+  if (debug) 
     dump_nm2type(debug,nm2t);
-  }
-      
-  printf("Generating bonds from distances...\n");
+  
+  if (bVerbose)  
+    printf("Generating bonds from distances...\n");
   snew(nbonds,atoms->nr);
-  mk_bonds(nm2t,atoms,x,&(plist[F_BONDS]),nbonds,forcefield,
+  mk_bonds(nm2t,atoms,x,gc,&(plist[F_BONDS]),nbonds,forcefield,
 	   bPBC,box,atomprop,btol);
 
   /* Setting the atom types: this depends on the bonding */
   open_symtab(&symtab);
-  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nm2t,
-			atomprop);
-  
+  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nm2t,atomprop);
+  if (debug) 
+    dump_hybridization(debug,atoms,nbonds);
+  sfree(nbonds);
+
   /* Read charges and polarizabilities, if provided */
   if (opt2bSet("-d",NFILE,fnm))
     qa = rd_q_alpha(opt2fn("-d",NFILE,fnm));
 
   /* Check which algorithm to use for charge generation */
-  alg = eqgNone;
-  if (qgen[0]) {
-    alg = name2eemtype(qgen[0]); 
-    if (alg == -1)
-      alg = eqgNone;
-  }
   if (alg == eqgNone) {
     if (nqa == atoms->nr) {
       /* Use values from file */
@@ -303,48 +324,54 @@ int main(int argc, char *argv[])
     assign_charges(molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
 		   maxiter,atomprop,qtotref);
     if (bQsym)
-      symmetrize_charges(atoms,atype,&(plist[F_BONDS]));
+      symmetrize_charges(atoms,atype,&(plist[F_BONDS]),atomprop);
   }
-  
-  
+    
   /* Make Angles and Dihedrals */
   snew(excls,atoms->nr);
-  printf("Generating angles and dihedrals from bonds...\n");
-  init_nnb(&nnb,atoms->nr,nexcl+1);
+  if (bVerbose)
+    printf("Generating angles and dihedrals from bonds...\n");
+  init_nnb(&nnb,atoms->nr,nexcl);
   gen_nnb(&nnb,plist);
   print_nnb(&nnb,"NNB");
   gen_pad(&nnb,atoms,bH14,nexcl,plist,excls,NULL,
 	  (dih == edihAll),bRemoveDih,TRUE);
-  /*delete_shell_interactions(plist,atoms,atype,&nnb,excls);*/
+  generate_excls(&nnb,nexcl,excls);
   done_nnb(&nnb);
-  
-  if (bPolarize)
-    add_shells(nm2t,&atoms,atype,plist,&x,&symtab,&excls);
-  
-  mu = calc_dip(atoms,x);
   
   if (!bPairs)
     plist[F_LJ14].nr = 0;
   if (dih == edihNo)
     plist[F_PDIHS].nr = 0;
-    
-  fprintf(stderr,
-	  "There are %4d %s dihedrals, %4d impropers, %4d angles\n"
-	  "          %4d pairs,     %4d bonds and  %4d atoms\n"
-	  "          %4d polarizations\n",
-	  plist[F_PDIHS].nr, 
-	  bOPLS ? "Ryckaert-Bellemans" : "proper",
-	  plist[F_IDIHS].nr, plist[F_ANGLES].nr,
-	  plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr,
-	  plist[F_POLARIZATION].nr);
-
+  
+  if ((alg == eqgSMpp) || (alg == eqgSMps) ||(alg == eqgSMpg))
+    add_shells(nm2t,&atoms,atype,plist,&x,&symtab,&excls);
+  
+  mu = calc_dip(atoms,x);
+  
   calc_angles_dihs(&plist[F_ANGLES],&plist[F_PDIHS],x,bPBC,box);
   
   set_force_const(plist,kb,kt,kp,bRound,bParam);
 
-  cgnr = set_cgnr(atoms,bUsePDBcharge,&qtot,&mtot);
-  printf("Total charge is %g, total mass is %g, dipole is %g D\n",
-	 qtot,mtot,mu);
+  if ((cgnr = generate_charge_groups(cgtp,atoms,atype,
+				     &plist[F_BONDS],&plist[F_POLARIZATION],
+				     bUsePDBcharge,&qtot,&mtot)) == NULL)
+    gmx_fatal(FARGS,"Error generating charge groups");
+  /*  sort_on_charge_groups(cgnr,atoms,plist,atype,x);
+  */       
+  if (bVerbose) {
+    printf("There are %4d %s dihedrals, %4d impropers, %4d angles\n"
+	  "          %4d pairs,     %4d bonds and  %4d atoms\n"
+	   "          %4d polarizations\n",
+	   plist[F_PDIHS].nr, 
+	   bOPLS ? "Ryckaert-Bellemans" : "proper",
+	   plist[F_IDIHS].nr, plist[F_ANGLES].nr,
+	   plist[F_LJ14].nr, plist[F_BONDS].nr,atoms->nr,
+	   plist[F_POLARIZATION].nr);
+    
+    printf("Total charge is %g, total mass is %g, dipole is %g D\n",
+	   qtot,mtot,mu);
+  }
   if (bOPLS) {
     bts[2] = 3;
     bts[3] = 1;
@@ -357,26 +384,32 @@ int main(int argc, char *argv[])
   reset_q(atoms);
   
   if (bTOP) {    
-    fp = ftp2FILE(efTOP,NFILE,fnm,"w");
-    print_top_header(fp,ftp2fn(efTOP,NFILE,fnm),
-		     "Generated by x2top",TRUE, forcefield,1.0);
-    write_top(fp,NULL,mymol.name,atoms,bts,plist,excls,atype,
-	      cgnr,nexcl);
+    /* Write topology file */
+    fn = ftp2fn(efTOP,NFILE,fnm);
+    fp = ffopen(fn,"w");
+    print_top_header(fp,fn,"Generated by x2top",TRUE, forcefield,1.0);
+    write_top(fp,NULL,mymol.name,atoms,bts,plist,excls,atype,cgnr,nexcl);
     print_top_mols(fp,mymol.name,NULL,0,NULL,1,&mymol);
-    
     fclose(fp);
   }
-  if (bRTP)
+  if (bRTP) {
+    /* Write force field component */
+    snew(atoms->atomtype,atoms->nr);
+    for(i=0; (i<atoms->nr); i++)
+      atoms->atomtype[i] = put_symtab(&symtab,
+				      get_atomtype_name(atoms->atom[i].type,atype));
     print_rtp(ftp2fn(efRTP,NFILE,fnm),"Generated by x2top",
 	      atoms,plist,cgnr,asize(bts),bts);
-  
-  if ((fn = opt2fn_null("-c",NFILE,fnm)) != NULL) {
-    sprintf(title,"%s processed by %s",molnm,ShortProgram());
-    write_sto_conf(fn,title,atoms,x,NULL,box);
   }
-  if (debug) {
-    dump_hybridization(debug,atoms,nbonds);
+  /* Write coordinates */ 
+  sprintf(title,"%s processed by %s",molnm,ShortProgram());
+  write_sto_conf(opt2fn("-c",NFILE,fnm),title,atoms,x,NULL,box);
+
+  {
+    gmx_elements elem = gather_element_information(atomprop,nm2t);
+    write_gmx_elements("new.n2t",elem,FALSE);
   }
+    
   close_symtab(&symtab);
     
   thanx(stderr);

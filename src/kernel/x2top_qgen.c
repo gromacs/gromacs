@@ -132,7 +132,8 @@ static real calc_jab(rvec xi,rvec xj,real wi,real wj,int eemtype)
   case eqgSMpg:
   case eqgYang:
   default:
-    gmx_fatal(FARGS,"Can not treat algorithm %d yet in calc_jab",eemtype);
+    gmx_fatal(FARGS,"Can not treat algorithm %s yet in calc_jab",
+	      get_eemtype_name(eemtype));
   }
 
   return ONE_4PI_EPS0*(eNN+eSS)/ELECTRONVOLT;
@@ -252,9 +253,10 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
     snew(qgen->Jab[i],atoms->nr);
     qgen->index[i] = eem_get_index(eem,*(atoms->atomname[i]),qgen->eemtype);
     if (qgen->index[i] == -1)
-      gmx_fatal(FARGS,"Can not find index for %s %s. Eemtype = %d",
+      gmx_fatal(FARGS,"No electronegativity data for %s %s and algorithm %s",
 		*(atoms->resname[atoms->atom[i].resnr]),
-		*(atoms->atomname[i]),eemtype);
+		*(atoms->atomname[i]),
+		get_eemtype_name(eemtype));
     qgen->elem[i] = eem_get_elem(eem,qgen->index[i]);
     qgen->chi0[i] = eem_get_chi0(eem,qgen->index[i]);
   }  
@@ -449,7 +451,7 @@ void assign_charges(char *molname,
   int  i;
   void *eem;
   
-  eem = read_eemprops(NULL,-1);
+  eem = read_eemprops(NULL,-1,atomprop);
   if (debug)
     write_eemprops(debug,eem);
   
@@ -475,6 +477,7 @@ void assign_charges(char *molname,
     generate_charges_bultinck(eem,atoms,x,tol,maxiter,atomprop);
     break;
   case eqgSMp:
+  case eqgSMpp:
   case eqgSMs:
   case eqgSMps:
   case eqgSMg:
@@ -483,8 +486,8 @@ void assign_charges(char *molname,
 			       qtotref,eemtype);
     break;
   default:
-    gmx_fatal(FARGS,"Algorithm %d out of range in assign_charge_alpha",
-	      eemtype);
+    gmx_fatal(FARGS,"Algorithm %s out of range in assign_charge_alpha",
+	      get_eemtype_name(eemtype));
   }
 }
 
