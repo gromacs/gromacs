@@ -94,13 +94,13 @@ static int get_prop_index(t_props *ap,t_aa_names *aan,
   malen = NOTFOUND;
   mrlen = NOTFOUND;
   for(i=0; (i<ap->nprop); i++) {
-    if ( (strcmp(ap->resnm[i],"*")==0) ||
-	 (strcmp(ap->resnm[i],"???")==0) )
-      rlen=WILDCARD;
-    else if (strcmp(ap->resnm[i],"AAA")==0)
-      rlen=WILDPROT;
-    else {
-      rlen = dbcmp_len(resnm, ap->resnm[i]);
+    rlen = dbcmp_len(resnm, ap->resnm[i]);
+    if (rlen == NOTFOUND) {
+      if ( (strcmp(ap->resnm[i],"*")==0) ||
+	   (strcmp(ap->resnm[i],"???")==0) )
+	rlen=WILDCARD;
+      else if (strcmp(ap->resnm[i],"AAA")==0)
+	rlen=WILDPROT;
     }
     alen = dbcmp_len(atomnm, ap->atomnm[i]);
     if ( (alen > NOTFOUND) && (rlen > NOTFOUND)) {

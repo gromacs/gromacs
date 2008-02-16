@@ -299,7 +299,8 @@ int main(int argc, char *argv[])
 
   /* Setting the atom types: this depends on the bonding */
   open_symtab(&symtab);
-  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nm2t,atomprop);
+  atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),
+			nbonds,nm2t,atomprop);
   if (debug) 
     dump_hybridization(debug,atoms,nbonds);
   sfree(nbonds);

@@ -306,7 +306,14 @@ int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 	atomnr = gmx_nint(value);
       else
 	atomnr = -1;
-	
+      if (query_atomprop(atomprop,epropMass,"???",
+			 nm2type->nm2t[best].elem,&value)) 
+	mm = value;
+      else {
+	mm = 0;
+	fprintf(stderr,"Can not find a mass for element %s",
+		nm2type->nm2t[best].elem);
+      }
       if ((k = get_atomtype_type(type,atype)) == NOTSET) {
 	atom->qB = alpha;
 	atom->m = atom->mB = mm;
