@@ -241,7 +241,7 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
 		      bool bZero,bool bPol)
 {
   char     **strings,buf[STRLEN];
-  int      i,n,nstrings;
+  int      i,n,kk,nstrings;
   t_moldip *md;
   double   dip;
   
@@ -276,8 +276,8 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   snew(md->index,md->nparam);
   n=0;
   for(i=1; (i<109); i++) {
-    if ((md->index[n] = eem_get_elem_index(md->eem,i,eemtype)) != -1)
-      n++;
+    if ((kk = eem_get_elem_index(md->eem,i,eemtype)) != -1)
+      md->index[n++] = kk;
   }
   if (n != md->nparam)
     gmx_fatal(FARGS,"Found only %d of the expected %d elements",
