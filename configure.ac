@@ -578,9 +578,11 @@ AC_ARG_WITH(gsl,
 
 ######
 if test "$with_gsl" = "yes"; then
+  ac_save_LDFLAGS="$LDFLAGS"
   AC_CHECK_HEADERS([gsl/gsl_version.h],[
 # header found, check for libraries 
   AC_CHECK_LIB(gslcblas,main,[
+  LDFLAGS="$ac_save_LDFLAGS -lgslcblas"
 # gslcblas library found, check main lib
   AC_CHECK_LIB(gsl,main)])])
 #
