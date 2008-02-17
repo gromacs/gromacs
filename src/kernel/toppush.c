@@ -786,6 +786,7 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
 }
 
 static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
+			  int atomicnumber,
 			  int type,char *ctype,int ptype,
 			  int resnumber,int cgnumber,
 			  char *resname,char *name,real m0,real q0,
@@ -827,6 +828,7 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
   for(j=0; (j<egcNR); j++)
     at->atom[nr].grpnr[j] = -1;
   at->atom[nr].resnr = resnumber-1;
+  at->atom[nr].atomnumber = atomicnumber;
   at->atomname[nr] = put_symtab(symtab,name);
   at->atomtype[nr] = put_symtab(symtab,ctype);
   at->atomtypeB[nr] = put_symtab(symtab,ctypeB);
@@ -907,7 +909,8 @@ void push_atom(t_symtab *symtab,t_block *cgs,
   
   push_cg(cgs,lastcg,cgnumber,nr);
 
-  push_atom_now(symtab,at,atomnr,type,ctype,ptype,resnumber,cgnumber,
+  push_atom_now(symtab,at,atomnr,get_atomtype_atomnumber(type,atype),
+		type,ctype,ptype,resnumber,cgnumber,
 		resname,name,m0,q0,typeB,
 		typeB==type ? ctype : ctypeB,mB,qB);
 }
