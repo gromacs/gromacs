@@ -356,7 +356,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem)
 				 *(md->mymol[i].top.atoms.atomname[j]),
 				 md->eemtype);
       if ((qq < 0) && (this_index == h_index))
-	rms += md->fc*sqr(qq);
+	rms += md->fc*sqr(1-qq);
       if ((qq < md->qcmin) && (this_index == c_index))
 	rms += md->fc*sqr(qq-md->qcmin);
       
@@ -663,7 +663,7 @@ int main(int argc, char *argv[])
   write_eemprops(out,md->eem);
   fclose(out);
   
-  thanx(stderr);
+  thanx(stdout);
   
   return 0;
 }
