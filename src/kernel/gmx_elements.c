@@ -170,7 +170,7 @@ static void fill_elemrec(void *atomprop,
   if (query_atomprop(atomprop,epropMass,"???",eshort,&val))
     elem->mass = val;
   for(j=0; (j<eqgNR); j++) 
-    if ((nn = eem_get_index(eem,eshort,j)) != -1) {
+    if ((nn = eem_get_index(eem,atomnumber,j)) != -1) {
       elem->neemrec++;
       srenew(elem->eemrec,elem->neemrec);
       elem->eemrec[elem->neemrec-1].type = strdup(get_eemtype_name(j));

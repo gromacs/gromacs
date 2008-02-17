@@ -194,25 +194,26 @@ int eem_get_numprops(void *eem,int eemtype)
   return n;
 }
 
-int eem_get_index(void *eem,char *aname,int eemtype)
+int eem_get_index(void *eem,int atomicnumber,int eemtype)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   int i;
   
   for(i=0; (i<er->nep); i++) 
-    if ((strstr(aname,er->eep[i].name) == aname) && 
+    if ((er->eep[i].elem == atomicnumber) && 
 	(er->eep[i].eemtype == eemtype))
       return i;
   return -1;
 }
 
-int eem_get_elem_index(void *eem,int elem,int eemtype)
+int eem_get_elem_index(void *eem,int atomicnumber,int eemtype)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   int i;
   
   for(i=0; (i<er->nep); i++) 
-    if ((er->eep[i].elem == elem) && (er->eep[i].eemtype == eemtype))
+    if ((er->eep[i].elem == atomicnumber) && 
+	(er->eep[i].eemtype == eemtype))
       return i;
   return -1;
 }

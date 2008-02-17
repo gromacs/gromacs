@@ -251,7 +251,7 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
   qgen->x = x;
   for(i=0; (i<atoms->nr); i++) {
     snew(qgen->Jab[i],atoms->nr);
-    qgen->index[i] = eem_get_index(eem,*(atoms->atomname[i]),qgen->eemtype);
+    qgen->index[i] = eem_get_index(eem,atoms->atom[i].atomnumber,qgen->eemtype);
     if (qgen->index[i] == -1)
       gmx_fatal(FARGS,"No electronegativity data for %s %s and algorithm %s",
 		*(atoms->resname[atoms->atom[i].resnr]),

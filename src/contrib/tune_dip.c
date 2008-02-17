@@ -117,7 +117,7 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,
 	   mymol->x,NULL,NULL,&(mymol->top));
 
   for(i=0; (bSupport && (i<natoms)); i++)
-    if (eem_get_index(eem,*(mymol->top.atoms.atomname[i]),eemtype) == -1)
+    if (eem_get_index(eem,mymol->top.atoms.atom[i].atomnumber,eemtype) == -1)
       bSupport = FALSE;
       
   if (bSupport) {
@@ -191,7 +191,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
       resnm  = *(mol[i].top.atoms.resname[mol[i].top.atoms.atom[j].resnr]);
       atomnm = *(mol[i].top.atoms.atomname[j]);
       fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].top.atoms.atom[j].q);
-      elemcnt[eem_get_elem(eem,eem_get_index(eem,atomnm,eemtype))]++;
+      elemcnt[mol[i].top.atoms.atom[j].atomnumber]++;
     }
     fprintf(logf,"\n");
   }
@@ -352,9 +352,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem)
       qq = md->mymol[i].top.atoms.atom[j].q;
       /*      if (fabs(qq) >= 1)
 	      rms += (qq*qq-1);*/
-      this_index = eem_get_index(eem,
-				 *(md->mymol[i].top.atoms.atomname[j]),
-				 md->eemtype);
+      this_index = md->mymol[i].top.atoms.atom[j].atomnumber;
       if ((qq < 0) && (this_index == h_index))
 	rms += md->fc*sqr(1-qq);
       if ((qq < md->qcmin) && (this_index == c_index))

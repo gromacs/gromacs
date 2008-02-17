@@ -59,9 +59,9 @@ extern char *get_eemtype_reference(int eem);
 
 extern int eem_get_numprops(void *eem,int eemtype);
 
-extern int eem_get_index(void *eem,char *aname,int eemtype);
+extern int eem_get_index(void *eem,int atomicnumber,int eemtype);
 
-extern int eem_get_elem_index(void *eem,int elem,int eemtype);
+extern int eem_get_elem_index(void *eem,int atomicnumber,int eemtype);
 
 extern real lo_get_j00(void *eem,int index,real *wj,real q);
 
