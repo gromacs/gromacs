@@ -85,7 +85,7 @@ static void correct_state_entries(t_state *state,t_inputrec *ir)
   }
 }
 
-void init_single(FILE *log,t_inputrec *inputrec,
+void init_single(FILE *fplog,t_inputrec *inputrec,
 		 char *tpxfile,t_topology *top, 
                  t_state *state)
 {
@@ -94,8 +94,9 @@ void init_single(FILE *log,t_inputrec *inputrec,
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
   correct_state_entries(state,inputrec);
-  
-  pr_inputrec(log,0,"Input Parameters",inputrec,FALSE);
+
+  if (fplog)
+    pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
 }
 
 void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
