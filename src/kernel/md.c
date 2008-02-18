@@ -425,7 +425,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   double     ns_s1=0,ns_s2=0,ns_ab=0;
   matrix     *scale_tot;
   t_trxframe rerun_fr;
-  gmx_repl_ex_t *repl_ex=NULL;
+  gmx_repl_ex_t repl_ex=NULL;
   /* A boolean (disguised as a real) to terminate mdrun */  
   real       terminate=0;
 
@@ -1214,7 +1214,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bExchanged = FALSE;
     if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 	do_per_step(step,repl_ex_nst))
-      bExchanged = replica_exchange(fplog,cr,repl_ex,state_global,ener[F_EPOT],
+      bExchanged = replica_exchange(fplog,cr,repl_ex,state_global,ener,
 				    &(top_global->cgs),state,
 				    step,t);
     if (bExchanged && PAR(cr)) {

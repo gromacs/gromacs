@@ -39,31 +39,20 @@
 
 #include "typedefs.h"
 
-typedef struct {
-  int  repl;
-  int  nrepl;
-  bool bNPT;
-  real *temp;
-  real *pres;
-  int  *ind;
-  int  nst;
-  int  seed;
-  int  nattempt[2];
-  real *prob_sum;
-  int  *nexchange;
-} gmx_repl_ex_t;
+/* Abstract type for replica exchange */
+typedef struct gmx_repl_ex *gmx_repl_ex_t;
 
-extern gmx_repl_ex_t *init_replica_exchange(FILE *fplog,
-					    const gmx_multisim_t *ms,
-					    const t_state *state,
-					    const t_inputrec *ir,
-					    int nst,int init_seed);
+extern gmx_repl_ex_t init_replica_exchange(FILE *fplog,
+					   const gmx_multisim_t *ms,
+					   const t_state *state,
+					   const t_inputrec *ir,
+					   int nst,int init_seed);
 /* Should only be called on the master nodes */
 
 extern bool replica_exchange(FILE *fplog,
 			     const t_commrec *cr,
-			     gmx_repl_ex_t *re,
-			     t_state *state,real epot,
+			     gmx_repl_ex_t re,
+			     t_state *state,real *ener,
 			     t_block *cgs,t_state *state_local,
 			     int step,real time);
 /* Attempts replica exchange, should be called on all nodes.
@@ -73,7 +62,7 @@ extern bool replica_exchange(FILE *fplog,
  * but it does not redistribute the state over the nodes after exchange.
  */
 
-extern void print_replica_exchange_statistics(FILE *fplog,gmx_repl_ex_t *re);
+extern void print_replica_exchange_statistics(FILE *fplog,gmx_repl_ex_t re);
 /* Should only be called on the master nodes */
 
 extern void pd_distribute_state(const t_commrec *cr,t_state *state);
