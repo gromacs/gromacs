@@ -250,13 +250,11 @@ void init_multisystem(t_commrec *cr,int nsim,
   /* Reduce the intra-simulation communication */
   cr->sim_nodeid = cr->nodeid % nnodpersim;
   cr->nnodes = nnodpersim;
-  if (PAR(cr)) {
 #ifdef GMX_MPI
-    MPI_Comm_split(MPI_COMM_WORLD,sim,cr->sim_nodeid,&cr->mpi_comm_mysim);
-    cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
-    cr->nodeid = cr->sim_nodeid;
+  MPI_Comm_split(MPI_COMM_WORLD,sim,cr->sim_nodeid,&cr->mpi_comm_mysim);
+  cr->mpi_comm_mygroup = cr->mpi_comm_mysim;
+  cr->nodeid = cr->sim_nodeid;
 #endif
-  }
 
   if (debug) {
     fprintf(debug,"This is simulation %d",cr->ms->sim);
