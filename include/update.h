@@ -76,7 +76,6 @@ extern void update(FILE         *fplog,
 		   t_edsamyn    *edyn,
 		   bool         bHaveConstr,
 		   bool         bNEMD,
-		   bool         bDoUpdate,
 		   bool         bDoBerendsenCoupl,
 		   bool         bFirstStep,
 		   tensor       pres);

@@ -700,7 +700,6 @@ void update(FILE         *fplog,
             t_edsamyn    *edyn,
 	    bool         bHaveConstr,
             bool         bNEMD,
-	    bool         bDoUpdate,
 	    bool         bDoBerendsenCoupl,
 	    bool         bFirstStep,
 	    tensor       pres)
@@ -732,75 +731,73 @@ void update(FILE         *fplog,
 
   dt   = inputrec->delta_t;
   dt_1 = 1.0/dt;
-  if (bDoUpdate) {
-    clear_mat(M);
+  clear_mat(M);
 
-    if (inputrec->etc==etcBERENDSEN && bDoBerendsenCoupl)
-      berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
-    if (!bFirstStep) {
-      if (inputrec->etc==etcNOSEHOOVER)
-	nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
-			  state->nosehoover_xi);
-      if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl)
-	berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
-    }
-    if (inputrec->epc == epcPARRINELLORAHMAN)
-      parrinellorahman_pcoupl(fplog,step,inputrec,pres,
-			      state->box,state->box_rel,state->boxv,
-			      M,scale_tot,bFirstStep);
-
-    /* Now do the actual update of velocities and positions */
-    where();
-    dump_it_all(fplog,"Before update",
-		state->natoms,state->x,xprime,state->v,force);
-    if (inputrec->eI == eiMD) {
-      if (grps->cosacc.cos_accel == 0)
-        /* use normal version of update */
-        do_update_md(start,homenr,dt,
-		     grps->tcstat,grps->grpstat,state->nosehoover_xi,
-                     inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
-                     md->cFREEZE,md->cACC,md->cTC,
-		     state->x,xprime,state->v,force,M,
-                     bExtended);
-      else
-        do_update_visc(start,homenr,dt,
-		       grps->tcstat,md->invmass,state->nosehoover_xi,
-                       md->ptype,md->cTC,state->x,xprime,state->v,force,M,
-                       state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
-    } else if (inputrec->eI == eiSD) {
-      do_update_sd1(sd,bFirstStep,start,homenr,dt,
-		    inputrec->opts.acc,inputrec->opts.nFreeze,
-		    md->invmass,md->ptype,
-		    md->cFREEZE,md->cACC,md->cTC,
-		    state->x,xprime,state->v,force,state->sd_X,
-		    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
-    } else if (inputrec->eI == eiSD2) {
-	/* The SD update is done in 2 parts, because an extra constraint step
-	 * is needed 
-	 */
-      do_update_sd2(sd,bFirstStep,start,homenr,
-		    inputrec->opts.acc,inputrec->opts.nFreeze,
-		    md->invmass,md->ptype,
-		    md->cFREEZE,md->cACC,md->cTC,
-		    state->x,xprime,state->v,force,state->sd_X,
-		    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-		    TRUE);
-    } else if (inputrec->eI == eiBD) {
-      do_update_bd(start,homenr,dt,
-                   inputrec->opts.nFreeze,md->invmass,md->ptype,
-                   md->cFREEZE,md->cTC,
-                   state->x,xprime,state->v,force,
-                   inputrec->bd_fric,
-                   inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-                   sd->bd_rf,sd->gaussrand);
-    } else {
-      gmx_fatal(FARGS,"Don't know how to update coordinates");
-    }
-    where();
-    inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
-    dump_it_all(fplog,"After update",
-		state->natoms,state->x,xprime,state->v,force);
+  if (inputrec->etc==etcBERENDSEN && bDoBerendsenCoupl)
+    berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
+  if (!bFirstStep) {
+    if (inputrec->etc==etcNOSEHOOVER)
+      nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
+			state->nosehoover_xi);
+    if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl)
+      berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
   }
+  if (inputrec->epc == epcPARRINELLORAHMAN)
+    parrinellorahman_pcoupl(fplog,step,inputrec,pres,
+			    state->box,state->box_rel,state->boxv,
+			    M,scale_tot,bFirstStep);
+  
+  /* Now do the actual update of velocities and positions */
+  where();
+  dump_it_all(fplog,"Before update",
+	      state->natoms,state->x,xprime,state->v,force);
+  if (inputrec->eI == eiMD) {
+    if (grps->cosacc.cos_accel == 0)
+      /* use normal version of update */
+      do_update_md(start,homenr,dt,
+		   grps->tcstat,grps->grpstat,state->nosehoover_xi,
+		   inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
+		   md->cFREEZE,md->cACC,md->cTC,
+		   state->x,xprime,state->v,force,M,
+		   bExtended);
+    else
+      do_update_visc(start,homenr,dt,
+		     grps->tcstat,md->invmass,state->nosehoover_xi,
+		     md->ptype,md->cTC,state->x,xprime,state->v,force,M,
+		     state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
+  } else if (inputrec->eI == eiSD) {
+    do_update_sd1(sd,bFirstStep,start,homenr,dt,
+		  inputrec->opts.acc,inputrec->opts.nFreeze,
+		  md->invmass,md->ptype,
+		  md->cFREEZE,md->cACC,md->cTC,
+		  state->x,xprime,state->v,force,state->sd_X,
+		  inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t);
+  } else if (inputrec->eI == eiSD2) {
+    /* The SD update is done in 2 parts, because an extra constraint step
+     * is needed 
+     */
+    do_update_sd2(sd,bFirstStep,start,homenr,
+		  inputrec->opts.acc,inputrec->opts.nFreeze,
+		  md->invmass,md->ptype,
+		  md->cFREEZE,md->cACC,md->cTC,
+		  state->x,xprime,state->v,force,state->sd_X,
+		  inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+		  TRUE);
+  } else if (inputrec->eI == eiBD) {
+    do_update_bd(start,homenr,dt,
+		 inputrec->opts.nFreeze,md->invmass,md->ptype,
+		 md->cFREEZE,md->cTC,
+		 state->x,xprime,state->v,force,
+		 inputrec->bd_fric,
+		 inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+		 sd->bd_rf,sd->gaussrand);
+  } else {
+    gmx_fatal(FARGS,"Don't know how to update coordinates");
+  }
+  where();
+  inc_nrnb(nrnb, bExtended ? eNR_EXTUPDATE : eNR_UPDATE, homenr);
+  dump_it_all(fplog,"After update",
+	      state->natoms,state->x,xprime,state->v,force);
 
   /* 
    *  Steps (7C, 8C)
@@ -823,10 +820,10 @@ void update(FILE         *fplog,
       /* Constrain the coordinates xprime */
       wallcycle_start(wcycle,ewcCONSTR);
       constrain(NULL,bLog,bEner,constr,top,
-		inputrec,cr,step,md,
+		inputrec,cr,step,1,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,
-		dt,state->v,&vir_con,nrnb,econqCoord);
+		state->v,&vir_con,nrnb,econqCoord);
       wallcycle_stop(wcycle,ewcCONSTR);
     }
     where();
@@ -843,106 +840,100 @@ void update(FILE         *fplog,
     /* Apply Essential Dynamics constraints when required. */
     if (edyn->bEdsam)
       do_edsam(fplog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
-               force,state->box,edyn,bDoUpdate);
+               force,state->box,edyn,TRUE);
 
-    if (bDoUpdate) {
-      if (inputrec->eI == eiSD2) {
-	/* A correction factor eph is needed for the SD constraint force */
-	/* Here we can, unfortunately, not have proper corrections
-	 * for different friction constants, so we use the first one.
-	 */
-	for(i=0; i<DIM; i++)
-	  for(m=0; m<DIM; m++)
-	    vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
-      } else {
-	m_add(vir_part,vir_con,vir_part);
-      }
-      if (debug)
-	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
+    if (inputrec->eI == eiSD2) {
+      /* A correction factor eph is needed for the SD constraint force */
+      /* Here we can, unfortunately, not have proper corrections
+       * for different friction constants, so we use the first one.
+       */
+      for(i=0; i<DIM; i++)
+	for(m=0; m<DIM; m++)
+	  vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
+    } else {
+      m_add(vir_part,vir_con,vir_part);
     }
+    if (debug)
+      pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     where();
   } else if (edyn->bEdsam) {     
       /* no constraints but still edsam - yes, that can happen */
     do_edsam(fplog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
- 	     force,state->box,edyn,bDoUpdate);
+ 	     force,state->box,edyn,TRUE);
   };  
   
   where();
-  if (bDoUpdate) {
-    if (inputrec->eI == eiSD2) {
-      /* The second part of the SD integration */
-      do_update_sd2(sd,FALSE,start,homenr,
-		    inputrec->opts.acc,inputrec->opts.nFreeze,
-		    md->invmass,md->ptype,
-		    md->cFREEZE,md->cACC,md->cTC,
-		    state->x,xprime,state->v,force,state->sd_X,
-		    inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
-		    FALSE);
-      inc_nrnb(nrnb, eNR_UPDATE, homenr);
-      
-      if (constr) {
-	/* Constrain the coordinates xprime */
-	wallcycle_start(wcycle,ewcCONSTR);
-	constrain(NULL,bLog,bEner,constr,top,
-		  inputrec,cr,step,md,
-		  state->x,xprime,NULL,
-		  state->box,state->lambda,dvdlambda,
-		  dt,NULL,NULL,nrnb,econqCoord);
-	wallcycle_stop(wcycle,ewcCONSTR);
-      }
-    }
+  if (inputrec->eI == eiSD2) {
+    /* The second part of the SD integration */
+    do_update_sd2(sd,FALSE,start,homenr,
+		  inputrec->opts.acc,inputrec->opts.nFreeze,
+		  md->invmass,md->ptype,
+		  md->cFREEZE,md->cACC,md->cTC,
+		  state->x,xprime,state->v,force,state->sd_X,
+		  inputrec->opts.ngtc,inputrec->opts.tau_t,inputrec->opts.ref_t,
+		  FALSE);
+    inc_nrnb(nrnb, eNR_UPDATE, homenr);
     
-    /* We must always unshift here, also if we did not shake
-     * x was shifted in do_force */
-
-    if (graph && (graph->nnodes > 0)) {
-      unshift_x(graph,state->box,state->x,xprime);
-      if (TRICLINIC(state->box))
-	inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
-      else
-	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);    
-      for(n=start; (n<graph->start); n++)
-	copy_rvec(xprime[n],state->x[n]);
-      for(n=graph->start+graph->nnodes; (n<start+homenr); n++)
-	copy_rvec(xprime[n],state->x[n]);
-    } else {
-      for(n=start; (n<start+homenr); n++)
-	copy_rvec(xprime[n],state->x[n]);
+    if (constr) {
+      /* Constrain the coordinates xprime */
+      wallcycle_start(wcycle,ewcCONSTR);
+      constrain(NULL,bLog,bEner,constr,top,
+		inputrec,cr,step,1,md,
+		state->x,xprime,NULL,
+		state->box,state->lambda,dvdlambda,
+		NULL,NULL,nrnb,econqCoord);
+      wallcycle_stop(wcycle,ewcCONSTR);
     }
+  }
+  
+  /* We must always unshift here, also if we did not shake
+   * x was shifted in do_force */
+  
+  if (graph && (graph->nnodes > 0)) {
+    unshift_x(graph,state->box,state->x,xprime);
+    if (TRICLINIC(state->box))
+      inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
+    else
+      inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);    
+    for(n=start; (n<graph->start); n++)
+      copy_rvec(xprime[n],state->x[n]);
+    for(n=graph->start+graph->nnodes; (n<start+homenr); n++)
+      copy_rvec(xprime[n],state->x[n]);
+  } else {
+    for(n=start; (n<start+homenr); n++)
+      copy_rvec(xprime[n],state->x[n]);
   }
   dump_it_all(fplog,"After unshift",
 	      state->natoms,state->x,xprime,state->v,force);
   where();
 
-  if (bDoUpdate) {
-    update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,state->lambda,
-		bNEMD);
-    if (DEFORM(*inputrec))
-      deform_store(state->box,inputrec,step,bFirstStep);
-    if (inputrec->epc == epcBERENDSEN) {
-      berendsen_pscale(inputrec,state->pcoupl_mu,state->box,state->box_rel,
-		       start,homenr,state->x,md->cFREEZE,nrnb);
-      if (scale_tot) {
-	/* The transposes of the scaling matrices are stored,
-	 * therefore we need to reverse the order in the multiplication.
-	 */
-	mmul_ur0(*scale_tot,state->pcoupl_mu,*scale_tot);
-      }
-    } else if (inputrec->epc == epcPARRINELLORAHMAN) {
-      /* The box velocities were updated in do_pr_pcoupl in the update
-       * iteration, but we dont change the box vectors until we get here
-       * since we need to be able to shift/unshift above.
+  update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,state->lambda,
+	      bNEMD);
+  if (DEFORM(*inputrec))
+    deform_store(state->box,inputrec,step,bFirstStep);
+  if (inputrec->epc == epcBERENDSEN) {
+    berendsen_pscale(inputrec,state->pcoupl_mu,state->box,state->box_rel,
+		     start,homenr,state->x,md->cFREEZE,nrnb);
+    if (scale_tot) {
+      /* The transposes of the scaling matrices are stored,
+       * therefore we need to reverse the order in the multiplication.
        */
-      for(i=0;i<DIM;i++)
-        for(m=0;m<=i;m++)
-          state->box[i][m] += dt*state->boxv[i][m];
-
-      preserve_box_shape(inputrec,state->box_rel,state->box);
+      mmul_ur0(*scale_tot,state->pcoupl_mu,*scale_tot);
     }
-    if (DEFORM(*inputrec))
-      deform(start,homenr,state->x,state->box,scale_tot,inputrec,step);
-    where();
+  } else if (inputrec->epc == epcPARRINELLORAHMAN) {
+    /* The box velocities were updated in do_pr_pcoupl in the update
+     * iteration, but we dont change the box vectors until we get here
+     * since we need to be able to shift/unshift above.
+     */
+    for(i=0;i<DIM;i++)
+      for(m=0;m<=i;m++)
+	state->box[i][m] += dt*state->boxv[i][m];
+
+    preserve_box_shape(inputrec,state->box_rel,state->box);
   }
+  if (DEFORM(*inputrec))
+    deform(start,homenr,state->x,state->box,scale_tot,inputrec,step);
+  where();
 }
 
 

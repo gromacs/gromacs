@@ -313,9 +313,9 @@ void init_em(FILE *fplog,const char *title,
     /* Constrain the starting coordinates */
     dvdlambda=0;
     constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,*top,
-	      ir,cr,-1,mdatoms,
+	      ir,cr,-1,0,mdatoms,
 	      ems->s.x,ems->s.x,NULL,ems->s.box,ems->s.lambda,&dvdlambda,
-	      0,NULL,NULL,nrnb,econqCoord);
+	      NULL,NULL,nrnb,econqCoord);
   }
 
   if (MASTER(cr)) {
@@ -429,9 +429,9 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
   if (constr) {
     dvdlambda = 0;
     constrain(NULL,TRUE,TRUE,constr,top,	
-	      ir,cr,count,md,
+	      ir,cr,count,0,md,
 	      s1->x,s2->x,NULL,s2->box,s2->lambda,
-	      &dvdlambda,0,NULL,NULL,nrnb,econqCoord);
+	      &dvdlambda,NULL,NULL,nrnb,econqCoord);
   }
 }
 
@@ -562,9 +562,9 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     /* Project out the constraint components of the force */
     dvdl = 0;
     constrain(NULL,FALSE,FALSE,constr,top,
-	      inputrec,cr,count,mdatoms,
+	      inputrec,cr,count,0,mdatoms,
 	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
-	      0,NULL,NULL,nrnb,econqForce);
+	      NULL,NULL,nrnb,econqForce);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",0.0,dvdl);
     ener[F_DVDL] += dvdl;

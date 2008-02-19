@@ -212,10 +212,11 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       struct gmx_constr *constr,
 	       t_topology *top,t_inputrec *ir,
 	       t_commrec *cr,
-	       int step,t_mdatoms *md,
+	       int step,int delta_step,
+	       t_mdatoms *md,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,
-	       real dt,rvec *v,tensor *vir,
+	       rvec *v,tensor *vir,
 	       t_nrnb *nrnb,int econq)
 {
   bool    bOK;
@@ -223,7 +224,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   int     i,j;
   int     ncons,error;
   tensor  rmdr;
-  real    invdt,hdt_2;
+  real    invdt,hdt_2,t;
   t_ilist *settle;
   int     nsettle;
   real    mO,mH,dOH,dHH;
@@ -239,6 +240,13 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     invdt = 0;
   else
     invdt  = 1/ir->delta_t;
+
+  if (ir->efep != efepNO && EI_DYNAMICS(ir->eI)) {
+    /* Set the constraint lengths for the step at which this configuration
+     * is meant to be. The invmasses should not be changed.
+     */
+    lambda += delta_step*ir->delta_lambda;
+  }
 
   if (vir != NULL)
     clear_mat(rmdr);
@@ -329,8 +337,12 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     dump_confs(fplog,step,&(top->atoms),start,homenr,cr,x,xprime,box);
 
   if (econq == econqCoord && ir->ePull == epullCONSTRAINT) {
-    pull_constraint(ir->pull,x,xprime,v,*vir,
-		    box,top,dt,ir->init_t+step*ir->delta_t,md,cr);
+    if (EI_DYNAMICS(ir->eI)) {
+      t = ir->init_t + (step + delta_step)*ir->delta_t;
+    } else {
+      t = ir->init_t;
+    }
+    pull_constraint(ir->pull,x,xprime,v,*vir,box,top,ir->delta_t,t,md,cr);
   }
   
   return bOK;

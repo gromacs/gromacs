@@ -656,10 +656,9 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 		   t_edsamyn *edyn)
 {
   int    i,m,start,end,step;
-  tensor shake_vir,pres;
   double mass,tmass,vcm[4];
   real   dt=inputrec->delta_t;
-  real   dvdlambda=0;
+  real   dvdlambda;
 
   start = md->start;
   end   = md->homenr + start;
@@ -670,11 +669,13 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
   step = inputrec->init_step;
   if (fplog)
     fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
-  clear_mat(shake_vir);
-  clear_mat(pres);
-  update(fplog,step,&dvdlambda,inputrec,md,state,graph,
-	 NULL,state->x,top,grps,shake_vir,NULL,cr,nrnb,NULL,
-	 NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,FALSE,pres);
+  dvdlambda = 0;
+  constrain(NULL,TRUE,FALSE,constr,top,
+	    inputrec,cr,step,0,md,
+	    state->x,state->x,NULL,
+	    state->box,state->lambda,&dvdlambda,
+	    NULL,NULL,nrnb,econqCoord);
+
   if (EI_STATE_VELOCITY(inputrec->eI)) {
     for(i=start; (i<end); i++) {
       for(m=0; (m<DIM); m++) {
@@ -688,15 +689,15 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
     /* Shake the positions at t=-dt with the positions at t=0
      * as reference coordinates.
      */
-    step = inputrec->init_step - 1;
     if (fplog)
       fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
 	      step);
-    clear_mat(shake_vir);
-    clear_mat(pres);
-    update(fplog,step,&dvdlambda,inputrec,md,state,graph,
-	   NULL,buf,top,grps,shake_vir,NULL,cr,nrnb,NULL,
-	   NULL,constr,edyn,TRUE,FALSE,FALSE,FALSE,FALSE,pres);
+    dvdlambda = 0;
+    constrain(NULL,TRUE,FALSE,constr,top,
+	      inputrec,cr,step,-1,md,
+	      state->x,buf,NULL,
+	      state->box,state->lambda,&dvdlambda,
+	      state->v,NULL,nrnb,econqCoord);
     
     for(m=0; (m<4); m++)
       vcm[m] = 0;

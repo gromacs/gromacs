@@ -110,10 +110,11 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
 		      t_topology *top,
 		      t_inputrec *ir,
 		      t_commrec *cr,
-		      int step,t_mdatoms *md,
+		      int step,int delta_step,
+		      t_mdatoms *md,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		      real lambda,real *dvdlambda,
-		      real dt,rvec *v,tensor *vir,
+		      rvec *v,tensor *vir,
 		      t_nrnb *nrnb,int econq);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
@@ -125,6 +126,11 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
  *
  * When econq=econqDeriv_FlexCon, the same is done as with econqDeriv,
  * but only the components of the flexible constraints are stored.
+ *
+ * delta_step is used for determining the constraint reference lengths
+ * when lenA != lenB or will the pull code with a pulling rate.
+ * step + delta_step is the step at which the final configuration
+ * is meant to be; for update delta_step = 1.
  *
  * If v!=NULL also constrain v by adding the constraint corrections / dt.
  *

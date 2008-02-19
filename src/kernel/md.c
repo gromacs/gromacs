@@ -951,7 +951,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,
 	     top,grps,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
-	     bNEMD,TRUE,bDoBerendsenCoupl,bFirstStep,pres);
+	     bNEMD,bDoBerendsenCoupl,bFirstStep,pres);
       if (fr->bSepDVDL && fplog && do_log)
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
       ener[F_DVDL] += dvdl;
