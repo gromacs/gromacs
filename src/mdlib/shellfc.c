@@ -925,14 +925,9 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 	    mdstep,number_steps,df[Min]);
   }
 
-  /* Parallelise this one! */
-  if (EEL_FULL(fr->eeltype)) {
-    for(i=start; (i<end); i++)
-      rvec_dec(force[Min][i],fr->f_el_recip[i]);
-  }
-  memcpy(f,force[Min],nat*sizeof(f[0]));
-  
+  /* Copy back the coordinates and the forces */
   memcpy(state->x,pos[Min],nat*sizeof(state->x[0]));
+  memcpy(f,force[Min],nat*sizeof(f[0]));
 
   return count; 
 }
