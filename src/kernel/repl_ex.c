@@ -67,11 +67,11 @@ typedef struct gmx_repl_ex {
   int  *nexchange;
 } t_gmx_repl_ex;
 
-enum { ereUNINIT, ereTEMP, ereLAMBDA, ereNR };
-char *erename[ereNR] = { "uninitialized", "temperature", "lambda" };
+enum { ereTEMP, ereLAMBDA, ereNR };
+char *erename[ereNR] = { "temperature", "lambda" };
 
 static void repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
-			  struct gmx_repl_ex *re,int e,real q)
+			  struct gmx_repl_ex *re,int ere,real q)
 {
   real *qall;
   bool bDiff;
@@ -87,12 +87,12 @@ static void repl_quantity(FILE *fplog,const gmx_multisim_t *ms,
       bDiff = TRUE;
 
   if (bDiff) {
-    if (re->type != ereUNINIT) {
+    if (re->type >= 0 && re->type < ereNR) {
       gmx_fatal(FARGS,"For replica exchange both %s and %s differ",
-		erename[re->type],erename[e]);
+		erename[re->type],erename[ere]);
     } else {
       /* Set the replica exchange type and quantities */
-      re->type = e;
+      re->type = ere;
       snew(re->q,re->nrepl);
       for(s=0; s<ms->nsim; s++)
 	re->q[s] = qall[s];
@@ -142,14 +142,21 @@ gmx_repl_ex_t init_replica_exchange(FILE *fplog,
     }
   }
 
-  re->type = ereUNINIT;
-  /* Check for temperature */
-  repl_quantity(fplog,ms,re,ereTEMP,re->temp);
-  /* Check for free energy lambda */
-  if (ir->efep != efepNO)
-    repl_quantity(fplog,ms,re,ereLAMBDA,ir->init_lambda);
-
-  if (re->type == ereUNINIT)
+  re->type = -1;
+  for(i=0; i<ereNR; i++) {
+    switch (i) {
+    case ereTEMP:
+      repl_quantity(fplog,ms,re,i,re->temp);
+      break;
+    case ereLAMBDA:
+      if (ir->efep != efepNO)
+	repl_quantity(fplog,ms,re,i,ir->init_lambda);
+      break;
+    default:
+      gmx_incons("Unknown replica exchange quantity");
+    }
+  }
+  if (re->type == -1)
     gmx_fatal(FARGS,"The properties of the %d systems are all the same, there is nothing to exchange",re->nrepl);
 
   switch (re->type) {
@@ -396,7 +403,8 @@ static int get_replica_exchange(FILE *fplog,const gmx_multisim_t *ms,
 				int step,real time)
 {
   int  m,i,a,b;
-  real *Epot=NULL,*Vol=NULL,*dvdl=NULL,*prob,ediff,delta,dpV,betaA,betaB;
+  real *Epot=NULL,*Vol=NULL,*dvdl=NULL,*prob;
+  real ediff=0,delta=0,dpV=0,betaA=0,betaB=0;
   bool *bEx,bPrint;
   int  exchange;
 
