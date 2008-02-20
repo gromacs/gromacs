@@ -867,7 +867,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     do_f = do_per_step(step,inputrec->nstfout);
     
     write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	       top,step,(real)step,&s_min->s,state_global,s_min->f,f_global);
+	       top_global,step,(real)step,
+	       &s_min->s,state_global,s_min->f,f_global);
     
     /* Take a step downhill.
      * In theory, we should minimize the function along this direction.
@@ -1153,11 +1154,12 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   
   /* Only write the trajectory if we didn't do it last step */
   write_traj(cr,fp_trn,TRUE,FALSE,(inputrec->nstfout>0),0,FALSE,0,
-	     top,step,(real)step,&s_min->s,state_global,s_min->f,f_global);
+	     top_global,step,(real)step,
+	     &s_min->s,state_global,s_min->f,f_global);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		   *top->name, &(top->atoms),state_global->x,NULL,
-		   state_global->box);
+		   *top_global->name, &(top_global->atoms),
+		   state_global->x,NULL,state_global->box);
   
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
   
@@ -1981,7 +1983,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
   write_traj(cr,fp_trn,TRUE,FALSE,inputrec->nstfout,0,FALSE,0,
-	     top,count,(real)count,&s_min->s,state_global,s_min->f,f_global);
+	     top_global,count,(real)count,
+	     &s_min->s,state_global,s_min->f,f_global);
 
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
 
