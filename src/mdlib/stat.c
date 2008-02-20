@@ -242,9 +242,12 @@ void write_traj(t_commrec *cr,
 
   if (DOMAINDECOMP(cr)) {
     cgs = &top_global->cgs;
-    if (bX || bXTC) dd_collect_vec(cr->dd,cgs,state_local->x,state_global->x);
-    if (bV)         dd_collect_vec(cr->dd,cgs,state_local->v,state_global->v);
-    if (bF)         dd_collect_vec(cr->dd,cgs,f_local,f_global);
+    if (bX || bXTC) dd_collect_vec(cr->dd,cgs,state_local,
+				   state_local->x,state_global->x);
+    if (bV)         dd_collect_vec(cr->dd,cgs,state_local,
+				   state_local->v,state_global->v);
+    if (bF)         dd_collect_vec(cr->dd,cgs,state_local,
+				   f_local,f_global);
   } else if (cr->nnodes > 1) {
     if (bX || bXTC) MX(state_global->x);
     if (bV)         MX(state_global->v);

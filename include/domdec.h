@@ -71,9 +71,10 @@ extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 
 extern void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
-extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v);
+extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs_gl,
+			   t_state *state_local,rvec *lv,rvec *v);
 
-extern void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
+extern void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
 			     t_state *state_local,t_state *state);
 
 enum { ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr };

@@ -115,6 +115,9 @@ typedef struct {
   int  ncell;
   ivec shift[DD_MAXCELL];
 
+  /* Rotated PBC? */
+  bool bPBCRotate;
+
   /* Tells if the box is skewed for each of the three cartesian directions */
   ivec tric_dir;
   rvec skew_fac;
@@ -130,8 +133,6 @@ typedef struct {
 
   /* Only available on the master node */
   gmx_domdec_master_p_t ma;
-  /* Switch that tells if the master has the charge group distribution */
-  bool bMasterHasAllCG;
 
   /* Global atom number to interaction list */
   gmx_reverse_top_p_t reverse_top;

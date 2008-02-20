@@ -185,6 +185,9 @@ typedef struct gmx_domdec_comm {
   /* The maximum number of cells to communicate with in one dimension */
   int  maxpulse;
 
+  /* Which cg distribution is stored on the master node */
+  int master_cg_ddp_count;
+
   /* The number of cg's received from the direct neighbors */
   int  cell_ncg1[DD_MAXCELL];
 
@@ -795,10 +798,30 @@ static void dd_gatherv(gmx_domdec_t *dd,
 #endif
 }
 
-static void dd_collect_cg(gmx_domdec_t *dd)
+static void dd_collect_cg(gmx_domdec_t *dd,
+			  t_state *state_local,t_block *cgs_gl)
 {
   gmx_domdec_master_t *ma;
-  int buf2[2],*ibuf,i;
+  int buf2[2],*ibuf,i,ncg_home=0,*cg=NULL,nat_home=0;
+
+  if (state_local->ddp_count == dd->comm->master_cg_ddp_count) {
+    /* The master has the correct distribution */
+    return;
+  }
+
+  if (state_local->ddp_count == dd->ddp_count) {
+    ncg_home = dd->ncg_home;
+    cg       = dd->index_gl;
+    nat_home = dd->nat_home;
+  } else if (state_local->ddp_count_cg_gl == state_local->ddp_count) {
+    ncg_home = state_local->ncg_gl;
+    cg       = state_local->cg_gl;
+    nat_home = 0;
+    for(i=0; i<ncg_home; i++)
+      nat_home += cgs_gl->index[cg[i]+1] - cgs_gl->index[cg[i]];
+  } else {
+    gmx_incons("Attempted to collect a vector for a state for which the charge group distribution is unknown");
+  }
 
   ma = dd->ma;
 
@@ -840,19 +863,19 @@ static void dd_collect_cg(gmx_domdec_t *dd)
 	     DDMASTER(dd) ? ma->ibuf+dd->nnodes : NULL,
 	     DDMASTER(dd) ? ma->cg : NULL);
 
-  dd->bMasterHasAllCG = TRUE;
+  dd->comm->master_cg_ddp_count = state_local->ddp_count;
 }
 
-void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
+void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs_gl,t_state *state_local,
+		    rvec *lv,rvec *v)
 {
   gmx_domdec_master_t *ma;
   int  n,i,c,a,nalloc=0;
   rvec *buf=NULL;
 
-  ma = dd->ma;
+  dd_collect_cg(dd,state_local,cgs_gl);
 
-  if (!dd->bMasterHasAllCG)
-    dd_collect_cg(dd);
+  ma = dd->ma;
 
   if (!DDMASTER(dd)) {
 #ifdef GMX_MPI
@@ -864,7 +887,7 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
     n = DDMASTERRANK(dd);
     a = 0;
     for(i=ma->index[n]; i<ma->index[n+1]; i++)
-      for(c=cgs->index[ma->cg[i]]; c<cgs->index[ma->cg[i]+1]; c++)
+      for(c=cgs_gl->index[ma->cg[i]]; c<cgs_gl->index[ma->cg[i]+1]; c++)
 	copy_rvec(lv[a++],v[c]);
     
     for(n=0; n<dd->nnodes; n++) {
@@ -879,7 +902,7 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
 #endif
 	a = 0;
 	for(i=ma->index[n]; i<ma->index[n+1]; i++)
-	  for(c=cgs->index[ma->cg[i]]; c<cgs->index[ma->cg[i]+1]; c++)
+	  for(c=cgs_gl->index[ma->cg[i]]; c<cgs_gl->index[ma->cg[i]+1]; c++)
 	    copy_rvec(buf[a++],v[c]);
       }
     }
@@ -887,7 +910,7 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs,rvec *lv,rvec *v)
   }
 }
 
-void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
+void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
 		      t_state *state_local,t_state *state)
 {
   int i;
@@ -900,13 +923,13 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs,
     for(i=0; i<state_local->ngtc; i++)
       state->nosehoover_xi[i] = state_local->nosehoover_xi[i];
   }
-  dd_collect_vec(dd,cgs,state_local->x,state->x);
+  dd_collect_vec(dd,cgs_gl,state_local,state_local->x,state->x);
   if (state_local->flags & STATE_HAS_V)
-    dd_collect_vec(dd,cgs,state_local->v,state->v);
+    dd_collect_vec(dd,cgs_gl,state_local,state_local->v,state->v);
   if (state_local->flags & STATE_HAS_SDX)
-    dd_collect_vec(dd,cgs,state_local->sd_X,state->sd_X);
+    dd_collect_vec(dd,cgs_gl,state_local,state_local->sd_X,state->sd_X);
   if (state_local->flags & STATE_HAS_CGP)
-    dd_collect_vec(dd,cgs,state_local->cg_p,state->cg_p);
+    dd_collect_vec(dd,cgs_gl,state_local,state_local->cg_p,state->cg_p);
 }
 
 static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
@@ -1406,8 +1429,6 @@ static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
 
   dd->ncg_home = state->ncg_gl;
   dd->nat_home = nat;
-
-  dd->bMasterHasAllCG = FALSE;
 }
 
 static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
@@ -2285,8 +2306,6 @@ static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
     }
     fprintf(debug,"\n");
   }
-
-  dd->bMasterHasAllCG = TRUE;
 }
 
 static int compact_and_copy_vec_at(int ncg,int *move,
@@ -2844,8 +2863,6 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 
   dd->ncg_home = home_pos_cg;
   dd->nat_home = home_pos_at;
-
-  dd->bMasterHasAllCG = FALSE;
 
   if (debug)
     fprintf(debug,"Finished repartitioning\n");
@@ -5148,8 +5165,6 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
   /* Copy the sorted ns cell indices back to the ns grid struct */
   for(i=0; i<dd->ncg_home; i++)
     fr->ns.grid->cell_index[i] = cgsort[i].nsc;
-
-  dd->bMasterHasAllCG = FALSE;
 }
 
 static void add_dd_statistics(gmx_domdec_t *dd)
@@ -5477,4 +5492,6 @@ void dd_partition_system(FILE            *fplog,
 
   dd->ddp_count++;
   state_local->ddp_count = dd->ddp_count;
+  if (bMasterState)
+    dd->comm->master_cg_ddp_count = dd->ddp_count;
 }
