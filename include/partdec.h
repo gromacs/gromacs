@@ -90,6 +90,8 @@ extern void gmx_tx_rx_real(const t_commrec *cr,
 			   int recv_dir,real *recv_buf,int recv_bufsize);
 /* Communicate simultaneously left and right, reals only */
 
+extern void gmx_wait(int dir_send,int dir_recv);
+/* Wait for communication to finish */
 
 extern int *pd_cgindex(const t_commrec *cr);
 
