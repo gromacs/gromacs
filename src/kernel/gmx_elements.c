@@ -245,7 +245,7 @@ static void add_xml_element(xmlNodePtr myroot,t_elemrec *elem)
 
 void write_gmx_elements(char *fn,gmx_elements elem,bool bCompress)
 {
-  gmx_elements_t *elements = (gmx_elements_t *) elem;
+  Gmx_elements_t *elements = (gmx_elements_t *) elem;
   xmlDocPtr  doc;
   xmlDtdPtr  dtd;
   xmlNodePtr myroot;
@@ -277,4 +277,16 @@ void write_gmx_elements(char *fn,gmx_elements elem,bool bCompress)
     gmx_fatal(FARGS,"Saving file %s",fn);
   xmlFreeDoc(doc);
 }
+
+#else 
+
+void write_gmx_elements(char *fn,gmx_elements elem,bool bCompress)
+{
+  ;
+}
+gmx_elements gather_element_information(void *atomprop,
+					x2top_nm2t nm2t)
+{
+  ;
+} 
 #endif
