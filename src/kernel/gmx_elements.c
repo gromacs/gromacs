@@ -245,7 +245,7 @@ static void add_xml_element(xmlNodePtr myroot,t_elemrec *elem)
 
 void write_gmx_elements(char *fn,gmx_elements elem,bool bCompress)
 {
-  Gmx_elements_t *elements = (gmx_elements_t *) elem;
+  gmx_elements_t *elements = (gmx_elements_t *) elem;
   xmlDocPtr  doc;
   xmlDtdPtr  dtd;
   xmlNodePtr myroot;
