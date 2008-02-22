@@ -72,7 +72,7 @@
 
 typedef struct {
   char          *molname;
-  real          dip_exp,qtotal,dip_calc,chieq;
+  real          dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
   t_topology    top;
   t_inputrec    ir;
   gmx_shellfc_t shell;
@@ -94,7 +94,7 @@ typedef struct {
   t_commrec *cr;
 } t_moldip;
 
-static bool init_mymol(t_mymol *mymol,char *fn,real dip,
+static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
 		       void *eem,int eemtype,bool bPol,
 		       t_commrec *cr)
 {
@@ -123,6 +123,14 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,
   if (bSupport) {
     mymol->molname = strdup(fn);
     mymol->dip_exp = dip;
+    mymol->dip_err = dip_err;
+    if (dip_err > 0) {
+      mymol->dip_weight = sqr(1.0/dip_err);
+    }
+    else {
+      fprintf(stderr,"WARNING: Error for %s is %g, setting weight to zero\n",fn,dip_err);
+      mymol->dip_weight = 0;
+    }
     mymol->qtotal  = 0;
     mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
     
@@ -238,12 +246,12 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
 		      real J0_0,real Chi0_0,real w_0,
 		      real J0_1,real Chi0_1,real w_1,
 		      real fc,real qcmin,int eemtype,
-		      bool bZero,bool bPol)
+		      bool bZero,bool bPol,bool bWeighted)
 {
   char     **strings,buf[STRLEN];
   int      i,n,kk,nstrings;
   t_moldip *md;
-  double   dip;
+  double   dip,dip_err;
   
   snew(md,1);
   md->cr         = init_cr_nopar();
@@ -264,10 +272,11 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   nstrings = get_file(fn,&strings);
   snew(md->mymol,nstrings);
   for(i=n=0; (i<nstrings); i++) {
-    if (sscanf(strings[i],"%s%lf",buf,&dip) != 2) 
+    if (sscanf(strings[i],"%s%lf%lf",buf,&dip,&dip_err) != 3) 
       gmx_fatal(FARGS,"Error on line %d of %s",i+1,fn);
     if (bZero || (dip > 0)) {
-      if (init_mymol(&(md->mymol[n]),buf,dip,md->eem,eemtype,bPol,md->cr))
+      if (init_mymol(&(md->mymol[n]),buf,dip,bWeighted ? dip_err : 1,
+		     md->eem,eemtype,bPol,md->cr))
 	n++;
     }
   }
@@ -308,10 +317,10 @@ static real mymol_calc_dip(t_mymol *mol)
   return norm(mu)*ENM2DEBYE;
 }
 
-static real calc_moldip_deviation(t_moldip *md,void *eem)
+static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
 {
   int    i,j,count,h_index,c_index,this_index;
-  double qq,rms=0;
+  double qq,rr,rms=0,rms_nw=0;
   real   t = 0;
   rvec   mu_tot = {0,0,0};
   real   ener[F_NRE];
@@ -359,8 +368,11 @@ static real calc_moldip_deviation(t_moldip *md,void *eem)
 	rms += md->fc*sqr(qq-md->qcmin);
       
     }
-    rms += sqr(md->mymol[i].dip_calc - md->mymol[i].dip_exp);
+    rr      = sqr(md->mymol[i].dip_calc - md->mymol[i].dip_exp);
+    rms    += rr*md->mymol[i].dip_weight;
+    rms_nw += rr;
   }
+  *rms_noweight = rms_nw;
   return rms;
 }
 
@@ -373,6 +385,7 @@ static double dipole_function(const gsl_vector *v,void *params)
   t_moldip *md = (t_moldip *) params;
   int      i,k;
   double   chi0,w,J0,rms=0;
+  real     rms_nw;
   
   /* Set parameters in eem record. There is a penalty if parameters
    * go out of bounds as well.
@@ -400,7 +413,7 @@ static double dipole_function(const gsl_vector *v,void *params)
       w = eem_get_w(md->eem,i);
     eem_set_props(md->eem,md->index[i],J0,w,chi0);
   }
-  rms = rms*md->fc + calc_moldip_deviation(md,md->eem);
+  rms = rms*md->fc + calc_moldip_deviation(md,md->eem,&rms_nw);
   
   return sqrt(rms/md->nmol);
 }
@@ -429,7 +442,7 @@ static void optimize_moldip(FILE *fp,FILE *logf,
 			    bool bRandom,real stol)
 {
   FILE   *out,*xvg;
-  real   size,d2,d2_min,wj;
+  real   size,d2,d2_min,wj,rms_nw;
   void   *eem_min = NULL;
   int    iter   = 0;
   int    status = 0;
@@ -517,9 +530,9 @@ static void optimize_moldip(FILE *fp,FILE *logf,
   } while (/*(status != GSL_SUCCESS) && */(sqrt(d2) > tol) && (iter < maxiter));
 
   if (eem_min != NULL) {
-    d2 = calc_moldip_deviation(md,eem_min);
-    printf("Minimum value for RMSD during optimization: %10g\n",
-	   sqrt(d2/md->nmol));
+    d2 = calc_moldip_deviation(md,eem_min,&rms_nw);
+    fprintf(logf,"Minimum value for RMSD during optimization: %10g Weighted: %10g\n",
+	    sqrt(rms_nw/md->nmol),sqrt(d2/md->nmol));
     md->eem = copy_eem(md->eem,eem_min);
   }
     
@@ -583,7 +596,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static int  maxiter=100,reinit=0,seed=1993;
   static real tol=1e-3,stol=1e-6,qcmin=-1;
-  static bool bRandom=FALSE,bZero=TRUE;
+  static bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE;
   static real J0_0=0,Chi0_0=0,w_0=0,step=0.01;
   static real J0_1=30,Chi0_1=30,w_1=1,fc=1.0;
   static char *qgen[] = { NULL, "SMp", "SMpp", "SMs", "SMps", "SMg", "SMgs", NULL };
@@ -621,7 +634,9 @@ int main(int argc, char *argv[])
     { "-random", FALSE, etBOOL, {&bRandom},
       "Generate completely random starting parameters within the limits set by the options. This will be done at the very first step only." },
     { "-zero", FALSE, etBOOL, {&bZero},
-      "Use molecules with zero dipole in the fit as well" }
+      "Use molecules with zero dipole in the fit as well" },
+    { "-weight", FALSE, etBOOL, {&bWeighted},
+      "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." }
   };
   t_moldip *md;
   int      eemtype;
@@ -647,7 +662,7 @@ int main(int argc, char *argv[])
   md   = read_moldip(logf,opt2fn("-f",NFILE,fnm),
 		     opt2fn_null("-d",NFILE,fnm),
 		     J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-		     fc,qcmin,eemtype,bZero,bPol);
+		     fc,qcmin,eemtype,bZero,bPol,bWeighted);
   
   (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed,
 			 bRandom,stol);
