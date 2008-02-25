@@ -4391,7 +4391,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
       npulse = (int)(0.96 + comm->cutoff/comm->cellsize_limit);
     } else {
       /* There is no cell size limit */
-      npulse = dd->ncell;
+      npulse = max(dd->nc[XX],max(dd->nc[YY],dd->nc[ZZ]));
     }
 
     if (npulse > 1) {
