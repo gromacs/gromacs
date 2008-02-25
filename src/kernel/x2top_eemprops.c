@@ -177,7 +177,7 @@ void write_eemprops(FILE *fp,void *eem)
   fprintf(fp,"; Electronegativity parameters. J_aa and Chi_a are in eV, w_a in nm\n");
   fprintf(fp,"; Atom      Model        J_aa         w_a       Chi_a\n");
   for(i=0; (i<er->nep); i++)
-    fprintf(fp,"%-5s  %10s  %10.4f  %10.4f  %10.4f\n",
+    fprintf(fp,"%-5s  %10s  %10.4f  %10.5f  %10.4f\n",
 	    er->eep[i].name,eemtype_name[er->eep[i].eemtype],
 	    er->eep[i].J0,er->eep[i].w,er->eep[i].chi0);
 }

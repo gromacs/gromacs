@@ -88,7 +88,8 @@ typedef struct {
   int     nmol,nparam,eemtype;
   int     *index;
   t_mymol *mymol;
-  real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,qcmin;
+  real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc;
+  bool    bFixENH;
   void    *eem;
   void    *atomprop;
   t_commrec *cr;
@@ -100,7 +101,6 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
 {
   int i,j,natoms,version,generation,step;
   real t,lambda;
-  char title[STRLEN];
   bool bSupport=TRUE;
   t_tpxheader tpx;
   
@@ -177,7 +177,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
 {
   FILE   *xvgf;
   double d2=0;
-  real   a,b,rms,sigma,error,aver;
+  real   a,b,rms,sigma,aver;
   int    i,j,nout,*elemcnt;
   char   *resnm,*atomnm;
   t_lsq  lsq;
@@ -245,7 +245,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
 t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
 		      real J0_0,real Chi0_0,real w_0,
 		      real J0_1,real Chi0_1,real w_1,
-		      real fc,real qcmin,int eemtype,
+		      real fc,bool bFixENH,int eemtype,
 		      bool bZero,bool bPol,bool bWeighted)
 {
   char     **strings,buf[STRLEN];
@@ -299,8 +299,8 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   md->Chi0_1     = Chi0_1;
   md->w_1        = w_1;
   md->fc         = fc;
-  md->qcmin      = qcmin;
-  	  
+  md->bFixENH    = bFixENH;
+    	  
   return md;
 }
 
@@ -319,7 +319,7 @@ static real mymol_calc_dip(t_mymol *mol)
 
 static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
 {
-  int    i,j,count,h_index,c_index,this_index;
+  int    i,j,count,atomnr;
   double qq,rr,rms=0,rms_nw=0;
   real   t = 0;
   rvec   mu_tot = {0,0,0};
@@ -331,8 +331,6 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
   
   init_nrnb(&my_nrnb);
   
-  h_index = eem_get_elem_index(eem,1,md->eemtype);
-  c_index = eem_get_elem_index(eem,6,md->eemtype);
   wcycle  = wallcycle_init(stdout,md->cr);
   
   for(i=0; (i<md->nmol); i++) {
@@ -359,14 +357,12 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
     md->mymol[i].dip_calc = mymol_calc_dip(&(md->mymol[i]));
     for(j=0; (j<md->mymol[i].top.atoms.nr); j++) {
       qq = md->mymol[i].top.atoms.atom[j].q;
-      /*      if (fabs(qq) >= 1)
-	      rms += (qq*qq-1);*/
-      this_index = md->mymol[i].top.atoms.atom[j].atomnumber;
-      if ((qq < 0) && (this_index == h_index))
-	rms += md->fc*sqr(1-qq);
-      if ((qq < md->qcmin) && (this_index == c_index))
-	rms += md->fc*sqr(qq-md->qcmin);
-      
+      atomnr = md->mymol[i].top.atoms.atom[j].atomnumber;
+      if (((qq < 0) && (atomnr == 1)) || 
+	  ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) || 
+			(atomnr == 16) || (atomnr == 17) ||
+		        (atomnr == 35) || (atomnr == 53))))
+	rms += md->fc*sqr(qq);
     }
     rr      = sqr(md->mymol[i].dip_calc - md->mymol[i].dip_exp);
     rms    += rr*md->mymol[i].dip_weight;
@@ -397,11 +393,16 @@ static double dipole_function(const gsl_vector *v,void *params)
       rms += sqr(J0-md->J0_0);
     if (J0 > md->J0_1)
       rms += sqr(J0-md->J0_1);
-    chi0 = gsl_vector_get(v, k++);
-    if (chi0 < md->Chi0_0)
-      rms += sqr(chi0-md->Chi0_0);
-    if (chi0 > md->Chi0_1)
-      rms += sqr(chi0-md->Chi0_1);
+    if (!md->bFixENH || (eem_get_elem(md->eem,md->index[i]) != 1)) {
+      chi0 = gsl_vector_get(v, k++);
+      if (chi0 < md->Chi0_0)
+	rms += sqr(chi0-md->Chi0_0);
+      if (chi0 > md->Chi0_1)
+	rms += sqr(chi0-md->Chi0_1);
+    }
+    else 
+      chi0 = eem_get_chi0(md->eem,md->index[i]);
+    
     if (md->eemtype != eqgSMp) {
       w = gsl_vector_get(v, k++);
       if (w < md->w_0)
@@ -446,7 +447,7 @@ static void optimize_moldip(FILE *fp,FILE *logf,
   void   *eem_min = NULL;
   int    iter   = 0;
   int    status = 0;
-  int    i,k;
+  int    i,k,index;
   bool   bRand;
   double J00,chi0,w;
   gmx_rng_t rng;
@@ -463,6 +464,9 @@ static void optimize_moldip(FILE *fp,FILE *logf,
   my_func.n      = md->nparam*2;
   if (md->eemtype != eqgSMp)
     my_func.n += md->nparam;
+  /* Check whether we should fix the chi0 of H */
+  if (md->bFixENH)
+    my_func.n -= 1;
   my_func.params = (void *) md;
 
   /* Starting point */
@@ -483,22 +487,25 @@ static void optimize_moldip(FILE *fp,FILE *logf,
       k=0;
       bRand = bRandom && (iter == 0);
       for(i=0; (i<md->nparam); i++) {
-	J00 = lo_get_j00(md->eem,md->index[i],&wj,0);
+	index = md->index[i];
+	J00 = lo_get_j00(md->eem,index,&wj,0);
 	J00 = guess_new_param(J00,stepsize,md->J0_0,md->J0_1,rng,bRand);
        	gsl_vector_set (x, k, J00);
 	gsl_vector_set (dx, k++, stepsize*J00);
-	chi0 = eem_get_chi0(md->eem,md->index[i]);
-	chi0 = guess_new_param(chi0,stepsize,md->Chi0_0,md->Chi0_1,rng,bRand);
-	gsl_vector_set (x, k, chi0);
-	gsl_vector_set (dx, k++, stepsize*chi0);
 	
-	w = eem_get_w(md->eem,md->index[i]);
+	chi0 = eem_get_chi0(md->eem,index);
+	if (!md->bFixENH || (eem_get_elem(md->eem,index) != 1)) {
+	  chi0 = guess_new_param(chi0,stepsize,md->Chi0_0,md->Chi0_1,rng,bRand);
+	  gsl_vector_set (x, k, chi0);
+	  gsl_vector_set (dx, k++, stepsize*chi0);
+	}
+	w = eem_get_w(md->eem,index);
 	if (md->eemtype != eqgSMp) {
 	  w = guess_new_param(w,stepsize,md->w_0,md->w_1,rng,bRand);
 	  gsl_vector_set (x, k, w);
 	  gsl_vector_set (dx, k++, stepsize*w);
 	}
-	eem_set_props(md->eem,md->index[i],J00,w,chi0);
+	eem_set_props(md->eem,index,J00,w,chi0);
       }
       gsl_multimin_fminimizer_set (s, &my_func, x, dx);
       if (0)
@@ -581,9 +588,17 @@ int main(int argc, char *argv[])
     "by the minima and maxima.[PAR]",
     "The absolut dipole moment of a molecule remains unchanged if all the",
     "atoms swap the sign of the charge. To prevent this kind of mirror",
-    "effects a penalty of 0.1 is added to the square deviation ",
+    "effects a penalty is added to the square deviation ",
     "if hydrogen atoms have a negative charge. Similarly a penalty is",
-    "added if carbon atoms have a charge less than -qcmin."
+    "added if atoms from row VI or VII in the periodic table have a positive",
+    "charge. The penalty is equal to the force constant given on the command line",
+    "time the square of the charge.[PAR]",
+    "One of the electronegativities (chi) is redundant in the optimization,",
+    "only the relative values are meaningful.",
+    "Therefore by default we fix the value for hydrogen to what is written",
+    "in the eemprops.dat file (or whatever is given with the [tt]-d[TT] flag).",
+    "A suitable value would be 2.3, the original, value due to Pauling,",
+    "this can by overridden by setting the [tt]-nofixenh[TT] flag."
   };
   
   t_filenm fnm[] = {
@@ -595,8 +610,8 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static int  maxiter=100,reinit=0,seed=1993;
-  static real tol=1e-3,stol=1e-6,qcmin=-1;
-  static bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE;
+  static real tol=1e-3,stol=1e-6;
+  static bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE,bFixENH=TRUE;
   static real J0_0=0,Chi0_0=0,w_0=0,step=0.01;
   static real J0_1=30,Chi0_1=30,w_1=1,fc=1.0;
   static char *qgen[] = { NULL, "SMp", "SMpp", "SMs", "SMps", "SMg", "SMgs", NULL };
@@ -611,6 +626,8 @@ int main(int argc, char *argv[])
       "If reinit is -1 then a reinit will be done as soon as the simplex size is below this treshold." },
     { "-qgen",   FALSE, etENUM, {qgen},
       "Algorithm used for charge generation" },
+    { "-fixenh", FALSE, etBOOL, {&bFixENH},
+      "Electronegativity for hydrogen. Set to FALSE if you want this variable as well, but read the help text above." },
     { "-j0",    FALSE, etREAL, {&J0_0},
       "Minimum value that J0 can obtain in fitting" },
     { "-chi0",    FALSE, etREAL, {&Chi0_0},
@@ -625,8 +642,6 @@ int main(int argc, char *argv[])
       "Maximum value that Radius can obtain in fitting" },
     { "-fc",    FALSE, etREAL, {&fc},
       "Force constant in the penalty function for going outside the borders given with the above six option." },
-    { "-qcmin", FALSE, etREAL, {&qcmin},
-      "If the carbon charge is less than this number a penalty will be added to the RMS dipole." },
     { "-step",  FALSE, etREAL, {&step},
       "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
     { "-seed", FALSE, etINT, {&seed},
@@ -662,7 +677,7 @@ int main(int argc, char *argv[])
   md   = read_moldip(logf,opt2fn("-f",NFILE,fnm),
 		     opt2fn_null("-d",NFILE,fnm),
 		     J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-		     fc,qcmin,eemtype,bZero,bPol,bWeighted);
+		     fc,bFixENH,eemtype,bZero,bPol,bWeighted);
   
   (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed,
 			 bRandom,stol);
