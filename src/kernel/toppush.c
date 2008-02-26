@@ -106,7 +106,7 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype atype)
 	  ci1 = get_atomtype_nbparam(i,1,atype);
 	  cj1 = get_atomtype_nbparam(j,1,atype);
 	  plist->param[k].c[0] = sqrt(ci0*cj0);
-	  plist->param[k].c[1] = sqrt(ci1*ci1);
+	  plist->param[k].c[1] = sqrt(ci1*cj1);
 	}
       
       break;
