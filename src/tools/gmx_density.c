@@ -320,7 +320,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
 
   for (n =0; n < nr_grps; n++) {
     for (i = 0; i < *nslices; i++) {
-      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) * 1.66057 /
+      (*slDensity)[n][i] = (*slDensity)[n][i] * (*nslices) /
 	(nr_frames * box[axis][axis] * box[ax1][ax1] * box[ax2][ax2]);
     }
   }
