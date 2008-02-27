@@ -729,7 +729,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
    * when all particles involved with each shell are in the same cg.
    */
 
-  if (bDoNS && !DOMAINDECOMP(cr)) {
+  if (bDoNS && inputrec->ePBC != epbcNONE && !DOMAINDECOMP(cr)) {
     /* This is the only time where the coordinates are used
      * before do_force is called, which normally puts all
      * charge groups in the box.
