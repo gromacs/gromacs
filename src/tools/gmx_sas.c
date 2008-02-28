@@ -7,10 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
+ *                        VERSION 3.3.2
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2007, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * Groningen Machine for Chemical Simulation
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -390,18 +390,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if (debug)
       write_sto_conf("check.pdb","pbc check",atoms,x,NULL,box);
 
-    if (!bPBC)
-      retval = nsc_dclm(x[0],radius,nx[0],ndots,flag,&totarea,
-			&area,&totvolume,&surfacedots,&nsurfacedots);
-    else
-      retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
-			    &area,&totvolume,&surfacedots,&nsurfacedots,
-			    index[0],box);
-    /*else
-      retval = nsc_dclm2(x,radius,nx[0],index[0],ndots,flag,&totarea,
-			 &area,&totvolume,&surfacedots,&nsurfacedots,
-			 box);
-    */
+    retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
+			  &area,&totvolume,&surfacedots,&nsurfacedots,
+			  index[0],bPBC ? box : NULL);
     if (retval)
       gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
     
