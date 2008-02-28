@@ -206,16 +206,18 @@ void cmp_iparm_AB(FILE *fp,char *s,t_functype ft,t_iparams ip1,real ftol)
 static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol)
 {
   int i;
- 
+  char buf1[64],buf2[64];
+  
   fprintf(fp,"comparing idef\n");
   if (id2) {
     cmp_int(fp,"idef->ntypes",-1,id1->ntypes,id2->ntypes);
     cmp_int(fp,"idef->nodeid",   -1,id1->nodeid,id2->nodeid);
     cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
     for(i=0; (i<id1->ntypes); i++) {
-      cmp_int(fp,"idef->functype",
-	      i,(int)id1->functype[i],(int)id2->functype[i]);
-      cmp_iparm(fp,"idef->iparam",id1->functype[i],
+      sprintf(buf1,"idef->functype[%d]",i);
+      sprintf(buf2,"idef->iparam[%d]",i);
+      cmp_int(fp,buf1,i,(int)id1->functype[i],(int)id2->functype[i]);
+      cmp_iparm(fp,buf2,id1->functype[i],
 		id1->iparams[i],id2->iparams[i],ftol);
     }
     for(i=0; (i<F_NRE); i++)
