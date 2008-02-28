@@ -552,21 +552,9 @@ AC_CHECK_TYPES([bool])
 #####
 # Look for X
 AC_PATH_XTRA
-# try to find motif headers and libraries
-AC_FIND_MOTIF
-use_motif=no
-if test "$motif_libraries" != "no"; then
-  if test "$motif_includes" != "no"; then
-    GMXLIB_LIBOBJS="${GMXLIB_LIBOBJS} mgmx.lo widget.lo"
-    use_motif=yes
-  else
-    AC_MSG_NOTICE([Both libraries and includes are needed for Motif - disabling.])
-    motif_includes=no
-  fi
-fi
 if test "$no_x" != "yes"; then
   LIBS="$X_LIBS $LIBS $X_PRE_LIBS -lX11 $X_EXTRA_LIBS"
-  INCLUDES="$INCLUDES $X_CFLAGS $MOTIF_CFLAGS" 
+  INCLUDES="$INCLUDES $X_CFLAGS"
   AM_CONDITIONAL(USE_X11,true)
 else
   AM_CONDITIONAL(USE_X11,false)

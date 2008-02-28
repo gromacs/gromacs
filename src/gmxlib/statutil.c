@@ -478,25 +478,14 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 {
   static bool bHelp=FALSE,bHidden=FALSE,bQuiet=FALSE;
   static char *manstr[]      = { NULL, "no", "html", "tex", "nroff", "ascii", "completion", "py", "xml", "wiki", NULL };
-  static char *not_nicestr[] = { NULL, "0", "4", "10", "19", NULL };
-  static char *nicestr[]     = { NULL, "19", "10", "4", "0", NULL };
-  static char *not_npristr[] = { NULL, "0", "128", "100", "200", "250", NULL };
-  static char *npristr[]     = { NULL, "128", "250", "200", "100", "0", NULL };
   static int  nicelevel=0,mantp=0,npri=0,debug_level=0;
-  static bool bGUI=FALSE;
   static char *deffnm=NULL;
   static real tbegin=0,tend=0,tdelta=0;
        
   t_pargs *all_pa=NULL;
   
-  t_pargs motif_pa  = { "-X",    FALSE, etBOOL,  {&bGUI},
-		       "Use dialog box GUI to edit command line options" };
-  t_pargs npri_paX  = { "-npri", FALSE, etENUM,  {not_npristr},
-		       "Set non blocking priority" };
   t_pargs npri_pa   = { "-npri", FALSE, etINT,   {&npri},
 		       "HIDDEN Set non blocking priority (try 128)" };
-  t_pargs nice_paX  = { "-nice", FALSE, etENUM,  {not_nicestr}, 
-		       "Set the nicelevel" };
   t_pargs nice_pa   = { "-nice", FALSE, etINT,   {&nicelevel}, 
 		       "Set the nicelevel" };
   t_pargs deffnm_pa = { "-deffnm", FALSE, etSTR, {&deffnm}, 
@@ -567,21 +556,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
    */
   bPrint        = !FF(PCA_SILENT);
   
-  /* Check whether we should have GUI or not */
-#ifdef HAVE_MOTIF
-  bGUI = (getenv("GMXMOTIF") != NULL);
-  for(i=1; (i<*argc); i++) {
-    if (strcmp(argv[i],"-X") == 0)
-      bGUI = TRUE;
-    else if (strcmp(argv[i],"-noX") == 0)
-      bGUI = FALSE;
-  }
-  if (bGUI)
-    bQuiet = TRUE;
-#else
-  bGUI = FALSE;
-#endif
-
   set_program_name(argv[0]);
 
   /* Check ALL the flags ... */
@@ -590,12 +564,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
   
   for(i=npall=0; (i<NPCA_PA); i++)
     npall = add_parg(npall,all_pa,&(pca_pa[i]));
-
-#ifdef HAVE_MOTIF
-  /* Motif options */
-  if (!bGUI)
-    npall = add_parg(npall,all_pa,&motif_pa);
-#endif
 
 #ifdef __sgi
   envstr = getenv("GMXNPRIALL");
@@ -606,26 +574,12 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     if (envstr)
       npri=atoi(envstr);
   }
-  if (bGUI) {
-    if (npri)
-      npri_paX.u.c = npristr;
-    npall = add_parg(npall,all_pa,&npri_paX);
-  }
-  else
-    npall = add_parg(npall,all_pa,&npri_pa);
+  npall = add_parg(npall,all_pa,&npri_pa);
 #endif
 
-  if (bGUI) {
-    /* Automatic nice or scheduling options */
-    if (FF(PCA_BE_NICE)) 
-      nice_paX.u.c = nicestr;
-    npall = add_parg(npall,all_pa,&nice_paX);
-  }
-  else {
-    if (FF(PCA_BE_NICE)) 
-      nicelevel=19;
-    npall = add_parg(npall,all_pa,&nice_pa);
-  }
+  if (FF(PCA_BE_NICE)) 
+    nicelevel=19;
+  npall = add_parg(npall,all_pa,&nice_pa);
 
   if (FF(PCA_CAN_SET_DEFFNM)) 
     npall = add_parg(npall,all_pa,&deffnm_pa);   
@@ -684,17 +638,6 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 	    buf,__FILE__,__LINE__);
   }
 
-  /* Now we have parsed the command line arguments. If the user wants it
-   * we can now plop up a GUI dialog box to edit options.
-   */
-  if (bGUI) {
-#ifdef HAVE_MOTIF
-    gmx_gui(argc,argv,nfile,fnm,npall,all_pa,ndesc,desc,nbugs,bugs);
-#else
-    gmx_fatal(FARGS,"GROMACS compiled without MOTIF support - can't use X interface");
-#endif
-  }
-
   /* Now copy the results back... */
   for(i=0,k=npall-npargs; (i<npargs); i++,k++) 
     memcpy(&(pa[i]),&(all_pa[k]),(size_t)sizeof(pa[i]));
@@ -710,24 +653,12 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
 
   /* Set the nice level */
 #ifdef __sgi
-  if (bGUI)
-    if (npri)
-      sscanf(npristr[0],"%d",&npri);
-    else
-      sscanf(not_npristr[0],"%d",&npri);
   if (npri != 0 && !bExit) {
     (void) schedctl(MPTS_RTPRI,0,npri);
   }
-  else
 #endif 
 
 #ifdef HAVE_UNISTD_H
-    if (bGUI) {
-      if (FF(PCA_BE_NICE))
-	sscanf(nicestr[0],"%d",&nicelevel);
-      else
-	sscanf(not_nicestr[0],"%d",&nicelevel);
-    }
 
 #ifndef GMX_NO_NICE
   /* The some system, e.g. the catamount kernel on cray xt3 do not have nice(2). */
