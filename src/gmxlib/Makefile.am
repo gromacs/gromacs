@@ -59,7 +59,6 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
-	mgmx.c		widget.c	widget.h	\
 	gmx_system_xdr.c
 
 
