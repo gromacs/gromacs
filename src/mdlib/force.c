@@ -1284,6 +1284,7 @@ void force(FILE       *fplog,   int        step,
    */
   
   /* Check whether we need to do bondeds or correct for exclusions */
+  memset(&pbc,0,sizeof(pbc));
   if (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)) {
     if (graph) {
       shift_self(graph,box,x);
