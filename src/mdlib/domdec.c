@@ -1414,15 +1414,17 @@ static bool receive_vir_ener(t_commrec *cr)
 
 static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
 {
-  int nat,i,*ind,*cgindex,cg_gl;
+  int nat,i,*ind,*dd_cg_gl,*cgindex,cg_gl;
 
   ind = state->cg_gl;
-  cgindex = dd->cgindex;
+  dd_cg_gl = dd->index_gl;
+  cgindex  = dd->cgindex;
   nat = 0;
   cgindex[0] = nat;
   for(i=0; i<state->ncg_gl; i++) {
     cgindex[i] = nat;
     cg_gl = ind[i];
+    dd_cg_gl[i] = cg_gl;
     nat += gcgs_index[cg_gl+1] - gcgs_index[cg_gl];
   }
   cgindex[i] = nat;
