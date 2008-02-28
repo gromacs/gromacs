@@ -26,7 +26,7 @@ H1	N	CA	C	gd_29
 [ NH2 ]
 [ replace ]
 N		NL	14.0067	-0.66
-CA		CH1	13.019	-0.22
+CA		CH1	13.019	-0.22	0
 [ add ]
 2	4	H	N	CA	C
 	H	1.008	0.44
