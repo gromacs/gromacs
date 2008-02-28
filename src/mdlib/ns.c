@@ -1494,7 +1494,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   t_block *cgs=&(top->cgs);
   int     *cginfo=fr->cginfo;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
-  ivec    sh0,sh1,shp0,shp1;
+  ivec    sh0,sh1,shp;
   int     cell_x,cell_y,cell_z;
   int     d,tx,ty,tz,dx,dy,dz,cj;
 #ifdef ALLOW_OFFDIAG_LT_HALFDIAG
@@ -1631,16 +1631,16 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
     sh1[d] = 1;
     if (bDomDec && dd->nc[d] > 1) {
       /* With domain decomposition we don't need periodic shifts */
-      shp0[d] = 0;
-      shp1[d] = 0;
+      shp[d] = 0;
     } else {
-      shp0[d] = -1;
-      shp1[d] = 1;
+      if (d == XX && box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < rl2)
+	shp[d] = 2;
+      else
+	shp[d] = 1;
     }
   }
   if (fr->ePBC == epbcXY) {
-    shp0[ZZ] = 0;
-    shp1[ZZ] = 0;
+    shp[ZZ] = 0;
   }
 
   /* Loop over charge groups */
@@ -1713,7 +1713,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	    icg,naaj,cell_x,cell_y,cell_z);
 #endif
     /* Loop over shift vectors in three dimensions */
-    for (tz=shp0[ZZ]; tz<=shp1[ZZ]; tz++) {
+    for (tz=-shp[ZZ]; tz<=shp[ZZ]; tz++) {
       ZI = cgcm[icg][ZZ]+tz*box[ZZ][ZZ];
       /* Calculate range of cells in Z direction that have the shift tz */
       zgi = cell_z + tz*Nz;
@@ -1726,11 +1726,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 #endif
       if (dz0 > dz1)
 	continue;
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-      for (ty=-1+zsh_ty*tz; ty<=1+zsh_ty*tz; ty++) {
-#else
-      for (ty=shp0[YY]; ty<=shp1[YY]; ty++) {
-#endif 
+      for (ty=-shp[YY]; ty<=shp[YY]; ty++) {
 	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
 	if (bTriclinicY)
@@ -1745,11 +1741,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 #endif
 	if (dy0 > dy1)
 	  continue;
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-	for (tx=-1+zsh_tx*tz+ysh_tx*ty; tx<=1+zsh_tx*tz+ysh_tx*ty; tx++) {
-#else
-        for (tx=shp0[XX]; tx<=shp1[XX]; tx++) {
-#endif
+        for (tx=-shp[XX]; tx<=shp[XX]; tx++) {
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
 	  if (bTriclinicX)
@@ -2019,13 +2011,12 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     box_size[m] = box[m][m];
   
   if (fr->ePBC != epbcNONE) {
-    if (bGrid) {
-      if (sqr(fr->rlistlong) >= max_cutoff2(fr->ePBC,box))
-	gmx_fatal(FARGS,"One of the box vectors has become shorter than twice the cut-off length or one of the box diagonal elements has become smaller than the cut-off.");
-    } else {
+    if (sqr(fr->rlistlong) >= max_cutoff2(fr->ePBC,box))
+      gmx_fatal(FARGS,"One of the box vectors has become shorter than twice the cut-off length or box_yy-|box_zy| or box_zz has become smaller than the cut-off.");
+    if (!bGrid) {
       min_size = min(box_size[XX],min(box_size[YY],box_size[ZZ]));
       if (2*fr->rlistlong >= min_size)
-	gmx_fatal(FARGS,"One of the box lengths has become smaller than twice the cut-off length.");
+        gmx_fatal(FARGS,"One of the box diagonal elements has become smaller than twice the cut-off length.");
     }
   }
 

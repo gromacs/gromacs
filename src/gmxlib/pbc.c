@@ -118,26 +118,21 @@ char *check_box(matrix box)
 
 real max_cutoff2(int ePBC,matrix box)
 {
-  real min_hv2,min_diag;
+  real min_hv2,min_ss;
 
   /* Physical limitation of the cut-off
    * by half the length of the shortest box vector.
    */
-  min_hv2 = min(norm2(box[XX]),norm2(box[YY]));
-  if (ePBC != epbcXY)
-    min_hv2 = min(min_hv2,norm2(box[ZZ]));
-  min_hv2 *= 0.25;
+  min_hv2 = 0.25*min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
   
   /* Limitation to the smallest diagonal element due to optimizations:
-   * checking only linear combinations of single box-vectors
+   * checking only linear combinations of single box-vectors (2 in x)
    * in the grid search and pbc_dx is a lot faster
    * than checking all possible combinations.
    */
-  min_diag = min(box[XX][XX],box[YY][YY]);
-  if (ePBC != epbcXY)
-    min_diag = min(min_diag,box[ZZ][ZZ]);
+  min_ss = min(box[XX][XX],min(box[YY][YY]-fabs(box[ZZ][YY]),box[ZZ][ZZ]));
   
-  return min(min_hv2,min_diag*min_diag);
+  return min(min_hv2,min_ss*min_ss);
 }
 
 static bool bWarnedGuess=FALSE;
@@ -491,13 +486,13 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 	}
       }
     } else {
-    /* For triclinic boxes the performance difference between
-     * if/else and two while loops is negligible.
-     * However, the while version can cause extreme delays
-     * before a simulation crashes due to large forces which
-     * can cause unlimited displacements.
-     */
-      for(i=DIM-1; i>=0; i--) {
+      /* For triclinic boxes the performance difference between
+       * if/else and two while loops is negligible.
+       * However, the while version can cause extreme delays
+       * before a simulation crashes due to large forces which
+       * can cause unlimited displacements.
+       */
+      for(i=DIM-1; i>=1; i--) {
 	if (dx[i] > pbc->hbox_diag[i]) {
 	  for (j=i; j>=0; j--)
 	    dx[j] -= pbc->box[i][j];
@@ -507,7 +502,23 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 	    dx[j] += pbc->box[i][j];
 	  ishift[i]++;
 	}
-      } 
+      }
+      /* Allow 2 shifts in x */
+      if (dx[XX] > pbc->hbox_diag[XX]) {
+	dx[XX] -= pbc->fbox_diag[XX];
+	ishift[XX]--;
+	if (dx[XX] > pbc->hbox_diag[XX]) {
+	  dx[XX] -= pbc->fbox_diag[XX];
+	  ishift[XX]--;
+	}
+      } else if (dx[XX] <= pbc->mhbox_diag[XX]) {
+	dx[XX] += pbc->fbox_diag[XX];
+	ishift[XX]++;
+	if (dx[XX] <= pbc->mhbox_diag[XX]) {
+	  dx[XX] += pbc->fbox_diag[XX];
+	  ishift[XX]++;
+	}
+      }
     }
     /* dx is the distance in a rectangular box */
     copy_rvec(dx,dx_start);
