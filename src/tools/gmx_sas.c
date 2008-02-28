@@ -392,13 +392,13 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if (debug)
       write_sto_conf("check.pdb","pbc check",atoms,x,NULL,box);
 
-    if (!bPBC)
+    /*if (!bPBC)
       retval = nsc_dclm(x[0],radius,nx[0],ndots,flag,&totarea,
 			&area,&totvolume,&surfacedots,&nsurfacedots);
-    else
+			else*/
       retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
 			    &area,&totvolume,&surfacedots,&nsurfacedots,
-			    index[0],box);
+			    index[0],bPBC ? box : NULL);
     /*else
       retval = nsc_dclm2(x,radius,nx[0],index[0],ndots,flag,&totarea,
 			 &area,&totvolume,&surfacedots,&nsurfacedots,
