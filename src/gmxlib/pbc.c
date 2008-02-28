@@ -719,7 +719,10 @@ void put_charge_groups_in_box(FILE *fplog,int cg0,int cg1,
   real nrcg,inv_ncg;
   atom_id *cgindex;
   bool bTric;
-
+  
+  if (ePBC == epbcNONE) 
+    gmx_incons("Calling put_charge_groups_in_box for a system without PBC");
+  
 #ifdef DEBUG
   fprintf(fplog,"Putting cgs %d to %d in box\n",cg0,cg1);
 #endif
