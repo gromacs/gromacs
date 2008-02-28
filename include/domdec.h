@@ -206,7 +206,8 @@ extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 
 extern t_topology *dd_init_local_top(t_topology *top_global);
 
-extern t_state *dd_init_local_state(gmx_domdec_t *dd,t_state *state_global);
+extern void dd_init_local_state(gmx_domdec_t *dd,
+				t_state *state_global,t_state *local_state);
 
 #endif	/* _domdec_h */
 

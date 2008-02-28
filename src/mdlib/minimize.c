@@ -251,9 +251,6 @@ void init_em(FILE *fplog,const char *title,
 
   init_nrnb(nrnb);
     
-  clear_rvec(mu_tot);
-  calc_shifts(state_global->box,fr->shift_vec);
-
   if (DOMAINDECOMP(cr)) {
     if (vsite && DDMASTER(cr->dd)) {     
       construct_vsites(fplog,vsite,
@@ -262,9 +259,9 @@ void init_em(FILE *fplog,const char *title,
 		       DOMAINDECOMP(cr) ? NULL : cr,state_global->box);
     }
 
-    ems->s.flags = state_global->flags;
-
     *top = dd_init_local_top(top_global);
+
+    dd_init_local_state(cr->dd,state_global,&ems->s);
 
     /* Distribute the charge groups over the nodes from the master node */
     dd_partition_system(fplog,ir->init_step,cr,TRUE,
@@ -290,6 +287,9 @@ void init_em(FILE *fplog,const char *title,
     *top = top_global;
     *f_global = f;
   }
+
+  clear_rvec(mu_tot);
+  calc_shifts(ems->s.box,fr->shift_vec);
 
   if (PARTDECOMP(cr)) {
     pd_at_range(cr,&start,&homenr);

@@ -916,10 +916,10 @@ t_topology *dd_init_local_top(t_topology *top_global)
   return top;
 }
 
-t_state *dd_init_local_state(gmx_domdec_t *dd,t_state *state_global)
+void dd_init_local_state(gmx_domdec_t *dd,
+			 t_state *state_global,t_state *state_local)
 {
   int buf[2];
-  t_state *state;
 
   if (DDMASTER(dd)) {
     buf[0] = state_global->flags;
@@ -927,9 +927,6 @@ t_state *dd_init_local_state(gmx_domdec_t *dd,t_state *state_global)
   }
   dd_bcast(dd,2*sizeof(int),buf);
 
-  snew(state,1);
-  init_state(state,0,buf[1]);
-  state->flags = buf[0];
-
-  return state;
+  init_state(state_local,0,buf[1]);
+  state_local->flags = buf[0];
 }

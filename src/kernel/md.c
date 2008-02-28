@@ -507,7 +507,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (DOMAINDECOMP(cr)) {
     top = dd_init_local_top(top_global);
 
-    state = dd_init_local_state(cr->dd,state_global);
+    snew(state,1);
+    dd_init_local_state(cr->dd,state_global,state);
 
     if (DDMASTER(cr->dd) && ir->nstfout) {
       snew(f_global,state_global->natoms);
