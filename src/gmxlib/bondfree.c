@@ -1984,5 +1984,6 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     }
   }
   /* Copy the sum of violations for the distance restraints from fcd */
-  epot[F_DISRESVIOL] = fcd->disres.sumviol;
+  if (fcd)
+    epot[F_DISRESVIOL] = fcd->disres.sumviol;
 }
