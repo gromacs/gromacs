@@ -38,13 +38,8 @@
 #endif
 
 #define D_BOX_Z 1
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-#define D_BOX_Y 2
-#define D_BOX_X 2
-#else
 #define D_BOX_Y 1
-#define D_BOX_X 1
-#endif 
+#define D_BOX_X 2
 #define N_BOX_Z (2*D_BOX_Z+1)
 #define N_BOX_Y (2*D_BOX_Y+1)
 #define N_BOX_X (2*D_BOX_X+1)

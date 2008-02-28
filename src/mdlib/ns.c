@@ -1530,10 +1530,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   t_block *cgs=&(top->blocks[ebCGS]);
   unsigned short  *gid=md->cENER;
   /* atom_id *i_atoms,*cgsindex=cgs->index; */
-  int     tx,ty,tz,dx,dy,dz,cj;
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-  int zsh_ty,zsh_tx,ysh_tx;
-#endif
+  int     nxsh,tx,ty,tz,dx,dy,dz,cj;
   int     dx0,dx1,dy0,dy1,dz0,dz1;
   int     Nx,Ny,Nz,shift=-1,j,nrj,nns,nn=-1;
   real    gridx,gridy,gridz,grid_x,grid_y,grid_z;
@@ -1617,14 +1614,10 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   grid_y     = 1/gridy;
   grid_z     = 1/gridz;
 
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-  zsh_ty = floor(-box[ZZ][YY]/box[YY][YY]+0.5);
-  zsh_tx = floor(-box[ZZ][XX]/box[XX][XX]+0.5);
-  ysh_tx = floor(-box[YY][XX]/box[XX][XX]+0.5);
-  if (zsh_tx!=0 && ysh_tx!=0)
-    /* This could happen due to rounding, when both ratios are 0.5 */
-    ysh_tx = 0;
-#endif
+  if (box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < rl2)
+    nxsh = 2;
+  else
+    nxsh = 1;
 
   debug_gmx();
 
@@ -1717,21 +1710,13 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
       get_dx(Nz,gridz,grid_z,rl2,ZI,&dz0,&dz1,dcz2);
       if (dz0 > dz1)
 	continue;
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-      for (ty=-1+zsh_ty*tz; ty<=1+zsh_ty*tz; ty++) {
-#else
       for (ty=-1; ty<=1; ty++) {
-#endif 
 	YI = cgcm[icg][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
 	/* Calculate range of cells in Y direction that have the shift ty */
 	get_dx(Ny,gridy,grid_y,rl2,YI,&dy0,&dy1,dcy2);
 	if (dy0 > dy1)
 	  continue;
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG
-	for (tx=-1+zsh_tx*tz+ysh_tx*ty; tx<=1+zsh_tx*tz+ysh_tx*ty; tx++) {
-#else
-        for (tx=-1; tx<=1; tx++) {
-#endif
+        for (tx=-nxsh; tx<=nxsh; tx++) {
 	  XI = cgcm[icg][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
 	  /* Calculate range of cells in X direction that have the shift tx */
 	  get_dx(Nx,gridx,grid_x,rl2,XI,&dx0,&dx1,dcx2);
@@ -1949,13 +1934,12 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     box_size[m]=box[m][m];
   
   if (fr->ePBC != epbcNONE) {
-    if (bGrid) {
-      if (sqr(fr->rlistlong) >= max_cutoff2(box))
-	gmx_fatal(FARGS,"One of the box vectors has become shorter than twice the cut-off length or one of the box diagonal elements has become smaller than the cut-off.");
-    } else {
+    if (sqr(fr->rlistlong) >= max_cutoff2(box))
+      gmx_fatal(FARGS,"One of the box vectors has become shorter than twice the cut-off length or box_yy-|box_zy| or box_zz has become smaller than the cut-off.");
+    if (!bGrid) {
       min_size = min(box_size[XX],min(box_size[YY],box_size[ZZ]));
       if (2*fr->rlistlong >= min_size)
-	gmx_fatal(FARGS,"One of the box lengths has become smaller than twice the cut-off length.");
+        gmx_fatal(FARGS,"One of the box diagonal elements has become smaller than twice the cut-off length.");
     }
   }
 
