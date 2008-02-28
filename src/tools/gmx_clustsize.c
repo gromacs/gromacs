@@ -7,10 +7,10 @@
  * 
  *          GROningen MAchine for Chemical Simulations
  * 
- *                        VERSION 3.2.0
+ *                        VERSION 3.3.2
  * Written by David van der Spoel, Erik Lindahl, Berk Hess, and others.
  * Copyright (c) 1991-2000, University of Groningen, The Netherlands.
- * Copyright (c) 2001-2004, The GROMACS development team,
+ * Copyright (c) 2001-2007, The GROMACS development team,
  * check out http://www.gromacs.org for more information.
 
  * This program is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@
  * For more info, check our website at http://www.gromacs.org
  * 
  * And Hey:
- * Green Red Orange Magenta Azure Cyan Skyblue
+ * Groningen Machine for Chemical Simulation
  */
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -77,11 +77,11 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   t_pbc   pbc;
   char    *gname;
   char    timebuf[32];
-  bool    bSame;
+  bool    bSame,bTPRwarn=TRUE;
   /* Topology stuff */
   t_trxframe  fr;
   t_tpxheader tpxh;
-  t_topology  top;
+  t_topology  *top=NULL;
   t_block *mols=NULL;
   int     version,generation,sss,ii,jj,nsame;
   real    ttt,lll,temp,tfac;
@@ -99,17 +99,21 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   gp     = xvgropen(acl,"Average cluster size",timebuf,"#molecules");
   hp     = xvgropen(mcl,"Max cluster size",timebuf,"#molecules");
   tp     = xvgropen(tempf,"Temperature of largest cluster",timebuf,"T (K)");
+  
   if (!read_first_frame(&status,trx,&fr,TRX_NEED_X | TRX_READ_V))
     gmx_file(trx);
     
   natoms = fr.natoms;
   x      = fr.x;
-  read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
-  if (tpxh.natoms != natoms) 
-    gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
-	      tpxh.natoms,natoms);
-  read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,&top);
-  
+
+  if (tpr) {  
+    snew(top,1);
+    read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
+    if (tpxh.natoms != natoms) 
+      gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
+		tpxh.natoms,natoms);
+    read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,top);
+  }
   if (ndf <= -1)
     tfac = 1;
   else 
@@ -119,8 +123,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     if (ndx)
       printf("Using molecules rather than atoms. Not reading index file %s\n",
 	     ndx);
-    
-    mols = &(top.mols);
+    mols = &(top->mols);
 
     /* Make dummy index */
     nindex = mols->nr;
@@ -242,17 +245,25 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     }
     /* Analyse velocities, if present */
     if (fr.bV) {
-      v = fr.v;
-      /* Loop over clusters and for each cluster compute 1/2 m v^2 */
-      if (max_clust_ind >= 0) {
-	ekin = 0;
-	for(i=0; (i<nindex); i++) 
-	  if (clust_index[i] == max_clust_ind) {
-	    ai    = index[i];
-	    ekin += 0.5*top.atoms.atom[ai].m*iprod(v[ai],v[ai]);
-	  }
-	temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
-	fprintf(tp,"%14.6f  %10.3f\n",fr.time,temp);
+      if (!tpr) {
+	if (bTPRwarn) {
+	  printf("You need a tpr file to analyse temperatures\n");
+	  bTPRwarn = FALSE;
+	}
+      }
+      else {
+	v = fr.v;
+	/* Loop over clusters and for each cluster compute 1/2 m v^2 */
+	if (max_clust_ind >= 0) {
+	  ekin = 0;
+	  for(i=0; (i<nindex); i++) 
+	    if (clust_index[i] == max_clust_ind) {
+	      ai    = index[i];
+	      ekin += 0.5*top->atoms.atom[ai].m*iprod(v[ai],v[ai]);
+	    }
+	  temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
+	  fprintf(tp,"%10.3f  %10.3f\n",fr.time,temp);
+	}
       }
     }
     nframe++;
@@ -377,7 +388,7 @@ int gmx_clustsize(int argc,char *argv[])
       "RGB values for the color of the highest occupied cluster size" }
   };
 #define NPA asize(pa)
-  char       *fnTPS,*fnNDX;
+  char       *fnNDX,*fnTPR;
   bool       bSQ,bRDF;
   t_rgb      rgblo,rgbhi;
   
@@ -404,12 +415,16 @@ int gmx_clustsize(int argc,char *argv[])
   rgblo.r = rlo[XX],rgblo.g = rlo[YY],rgblo.b = rlo[ZZ];
   rgbhi.r = rhi[XX],rgbhi.g = rhi[YY],rgbhi.b = rhi[ZZ];
     
+  fnTPR = ftp2fn_null(efTPR,NFILE,fnm);
+  if (bMol && !fnTPR)
+    gmx_fatal(FARGS,"You need a tpr file for the -mol option");
+    
   clust_size(fnNDX,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),
 	     opt2fn("-ow",NFILE,fnm),
 	     opt2fn("-nc",NFILE,fnm),opt2fn("-ac",NFILE,fnm),
 	     opt2fn("-mc",NFILE,fnm),opt2fn("-hc",NFILE,fnm),
 	     opt2fn("-temp",NFILE,fnm),opt2fn("-mcn",NFILE,fnm),
-	     bMol,bPBC,ftp2fn(efTPR,NFILE,fnm),
+	     bMol,bPBC,fnTPR,
 	     cutoff,nskip,nlevels,rgblo,rgbhi,ndf);
 
   thanx(stderr);
