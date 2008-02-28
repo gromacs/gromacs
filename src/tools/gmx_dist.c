@@ -51,7 +51,6 @@
 #include "gmx_fatal.h"
 #include "futil.h"
 #include "gstat.h"
-#include "pbc.h"
 
 static void add_contact_time(int **ccount,int *ccount_nalloc,int t)
 {
@@ -100,17 +99,20 @@ int gmx_dist(int argc,char *argv[])
   real    *mass;
   FILE    *fp=NULL,*fplt=NULL;
   bool    bCutoff,bPrintDist,bLifeTime;
-  t_pbc   pbc;
+  t_pbc   *pbc;
   int     *contact_time=NULL,*ccount=NULL,ccount_nalloc=0,sum;
   char    buf[STRLEN];
   
   char    *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
   static real cut=0;
-
+  static bool bPBC=TRUE;
+  
   static t_pargs pa[] = {
     { "-dist",      FALSE, etREAL, {&cut},
       "Print all atoms in group 2 closer than dist to the center of mass of group 1" },
+    { "-pbc", FALSE, etBOOL, {&bPBC},
+      "Use periodic boundary conditions in distance calculations" }
   };
 #define NPA asize(pa)
 
@@ -174,13 +176,18 @@ int gmx_dist(int argc,char *argv[])
     if (bLifeTime)
       snew(contact_time,isize[1]);
   }
-  
+  if (bPBC)
+    snew(pbc,1);
+  else
+    pbc = NULL;
+    
   do {
     /* initialisation for correct distance calculations */
-    set_pbc(&pbc,box);
-    /* make molecules whole again */
-    rm_pbc(&top->idef,natoms,box,x,x);
-
+    if (bPBC) {
+      set_pbc(&pbc,box);
+      /* make molecules whole again */
+      rm_pbc(&top->idef,natoms,box,x,x);
+    }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
       for(d=0;(d<DIM);d++) {
@@ -196,7 +203,11 @@ int gmx_dist(int argc,char *argv[])
       /* write to output */
       fprintf(fp,"%12.7f ",t);
       for(g=0;(g<ngrps/2);g++) {
-	pbc_dx(&pbc,com[2*g],com[2*g+1],dx);
+	if (bPBC)
+	  pbc_dx(&pbc,com[2*g],com[2*g+1],dx);
+	else
+	  rvec_sub(com[2*g],com[2*g+1],dx);
+	
 	fprintf(fp,"%12.7f %12.7f %12.7f %12.7f",
 		norm(dx),dx[XX],dx[YY],dx[ZZ]);
       }
@@ -204,7 +215,11 @@ int gmx_dist(int argc,char *argv[])
     } else {
       for(i=0;(i<isize[1]);i++) { 
 	j=index[1][i];
-	pbc_dx(&pbc,x[j],com[0],dx);
+	if (bPBC)
+	  pbc_dx(&pbc,x[j],com[0],dx);
+	else
+	  rvec_sub(x[j],com[0],dx);
+	
 	dist2 = norm2(dx);
 	if (dist2<cut2) {
 	  if (bPrintDist) {
