@@ -1058,6 +1058,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   case efPDB:
   case efBRK:
   case efENT:
+  case efPQR:
     out=ffopen(outfile,"w");
     write_pdbfile_indexed(out, title, atoms, x, box, 0, -1, nindex, index);
     fclose(out);
