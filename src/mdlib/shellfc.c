@@ -917,9 +917,10 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   }
   if (MASTER(cr) && !(*bConverged)) {
     /* Note that the energies and virial are incorrect when not converged */
-    fprintf(fplog,
-	    "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
-	    mdstep,number_steps,df[Min]);
+    if (fplog)
+      fprintf(fplog,
+	      "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
+	      mdstep,number_steps,df[Min]);
     fprintf(stderr,
 	    "step %d: EM did not converge in %d iterations, RMS force %.3f\n",
 	    mdstep,number_steps,df[Min]);
