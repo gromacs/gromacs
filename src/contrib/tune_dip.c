@@ -79,8 +79,9 @@ typedef struct {
   t_mdatoms     *md;
   t_forcerec    *fr;
   gmx_vsite_t   *vs;
-  t_atoms       *polatoms;
-  rvec          *x,*f,*buf,*polx;
+  rvec          *x,*f,*buf;
+  t_state       state;
+  t_groups      grps;
   matrix        box;
 } t_mymol; 
 
@@ -116,10 +117,11 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
   read_tpx(fn,&step,&t,&lambda,&(mymol->ir),mymol->box,&natoms,
 	   mymol->x,NULL,NULL,&(mymol->top));
 
-  for(i=0; (bSupport && (i<natoms)); i++)
-    if (eem_get_index(eem,mymol->top.atoms.atom[i].atomnumber,eemtype) == -1)
-      bSupport = FALSE;
-      
+  for(i=0; (bSupport && (i<natoms)); i++) {
+    if ((mymol->top.atoms.atom[i].atomnumber > 0) || !bPol)
+      if (eem_get_index(eem,mymol->top.atoms.atom[i].atomnumber,eemtype) == -1)
+	bSupport = FALSE;
+  }
   if (bSupport) {
     mymol->molname = strdup(fn);
     mymol->dip_exp = dip;
@@ -132,42 +134,31 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
       mymol->dip_weight = 0;
     }
     mymol->qtotal  = 0;
-    mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
     
     if (bPol) {
       /* If we have polarization then we need to make a subset of
 	 atoms that does not include the shells */
-      snew(mymol->polatoms,1);
-      init_t_atoms(mymol->polatoms,natoms,TRUE);
       mymol->vs = init_vsite(cr,&mymol->top);
-      snew(mymol->polx,natoms);
       snew(mymol->f,natoms);
       snew(mymol->buf,natoms);
-      for(i=j=0; (i<natoms); i++) {
-	if (mymol->top.atoms.atom[i].ptype != eptShell) {
-	  memcpy(&(mymol->polatoms->atom[j]),
-		 &(mymol->top.atoms.atom[i]),sizeof(t_atom));
-	  mymol->polatoms->atomname[j] = mymol->top.atoms.atomname[i];
-	  copy_rvec(mymol->x[i],mymol->polx[j]);
-	  j++;
-	}
-      }
       mymol->shell = init_shell_flexcon(debug,cr,&mymol->top,0,
 					FALSE,mymol->x);
       mymol->fr = mk_forcerec();
       init_forcerec(debug,mymol->fr,NULL,&mymol->ir,&mymol->top,cr,
 		    mymol->box,FALSE,NULL,NULL,NULL, TRUE);
     }
-    else {
-      mymol->polx = mymol->x;
-      mymol->polatoms = &(mymol->top.atoms);
+    else 
       mymol->shell = NULL;
-    }
+    
+    init_state(&mymol->state,mymol->top.atoms.nr,1);
+    init_groups(NULL,&(mymol->top.atoms),&(mymol->ir.opts),&mymol->grps);
+    mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
   }
   else {
     /*free_t_atoms(mymol->top.atoms);
       sfree(mymol->top.atoms);*/
     sfree(mymol->x);
+    fprintf(stderr,"No support in eemprops.dat for %s\n",fn);
   }
   return bSupport;
 }
@@ -325,47 +316,49 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
   rvec   mu_tot = {0,0,0};
   real   ener[F_NRE];
   tensor force_vir={{0,0,0},{0,0,0},{0,0,0}};
-  t_nrnb my_nrnb;
+  t_nrnb   my_nrnb;
   gmx_wallcycle_t wcycle;
-  bool   bConverged;
+  bool     bConverged;
+  t_mymol *mymol;
   
   init_nrnb(&my_nrnb);
   
   wcycle  = wallcycle_init(stdout,md->cr);
   
   for(i=0; (i<md->nmol); i++) {
-    md->mymol[i].chieq = 
-      generate_charges_sm(debug,md->mymol[i].molname,
-			  eem,md->mymol[i].polatoms,
-			  md->mymol[i].polx,1e-4,100,md->atomprop,
-			  md->mymol[i].qtotal,md->eemtype);
+    mymol = &(md->mymol[i]);
+    mymol->chieq = 
+      generate_charges_sm(debug,mymol->molname,
+			  eem,&(mymol->top.atoms),
+			  mymol->x,1e-4,100,md->atomprop,
+			  mymol->qtotal,md->eemtype);
     /*Now optimize the shell positions */
-    if (md->mymol[i].shell) {
+    if (mymol->shell) {
+      atoms2md(&(mymol->top.atoms),&(mymol->ir),0,0,NULL,0,
+	       mymol->top.atoms.nr,mymol->md);
       count = relax_shell_flexcon(debug,md->cr,FALSE,0,
-				  &(md->mymol[i].ir),TRUE,FALSE,
-				  &(md->mymol[i].top),NULL,ener,
-				  NULL,NULL,
-				  md->mymol[i].f,md->mymol[i].buf,
-				  force_vir,md->mymol[i].md,
-				  &my_nrnb,wcycle,NULL,NULL,
-				  md->mymol[i].shell,
-				  md->mymol[i].fr,
-				  t,mu_tot,
-				  md->mymol[i].top.atoms.nr,&bConverged,
-				  NULL,NULL);
+				  &(mymol->ir),TRUE,FALSE,
+				  &(mymol->top),NULL,ener,
+				  NULL,&(mymol->state),
+				  mymol->f,mymol->buf,
+				  force_vir,mymol->md,
+				  &my_nrnb,wcycle,NULL,
+				  &(mymol->grps),mymol->shell,
+				  mymol->fr,t,mu_tot,
+				  mymol->top.atoms.nr,&bConverged,NULL,NULL);
     }
-    md->mymol[i].dip_calc = mymol_calc_dip(&(md->mymol[i]));
-    for(j=0; (j<md->mymol[i].top.atoms.nr); j++) {
-      qq = md->mymol[i].top.atoms.atom[j].q;
-      atomnr = md->mymol[i].top.atoms.atom[j].atomnumber;
+    mymol->dip_calc = mymol_calc_dip(&(md->mymol[i]));
+    for(j=0; (j<mymol->top.atoms.nr); j++) {
+      qq = mymol->top.atoms.atom[j].q;
+      atomnr = mymol->top.atoms.atom[j].atomnumber;
       if (((qq < 0) && (atomnr == 1)) || 
 	  ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) || 
 			(atomnr == 16) || (atomnr == 17) ||
 		        (atomnr == 35) || (atomnr == 53))))
 	rms += md->fc*sqr(qq);
     }
-    rr      = sqr(md->mymol[i].dip_calc - md->mymol[i].dip_exp);
-    rms    += rr*md->mymol[i].dip_weight;
+    rr      = sqr(mymol->dip_calc - mymol->dip_exp);
+    rms    += rr*mymol->dip_weight;
     rms_nw += rr;
   }
   *rms_noweight = rms_nw;
@@ -442,7 +435,6 @@ static void optimize_moldip(FILE *fp,FILE *logf,
 			    int reinit,real stepsize,int seed,
 			    bool bRandom,real stol)
 {
-  FILE   *out,*xvg;
   real   size,d2,d2_min,wj,rms_nw;
   void   *eem_min = NULL;
   int    iter   = 0;

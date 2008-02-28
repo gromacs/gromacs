@@ -119,6 +119,7 @@ static real calc_jab(rvec xi,rvec xj,real wi,real wj,int eemtype)
     eNN = coul_nucl_nucl(0,r);
     break;
   case eqgSMs:
+  case eqgSMps:
     if ((wi > 0) && (wj > 0)) {
       wij = 2*(wi + wj)/(wi*wj);
       eSS = coul_slater_slater(wij,r);
@@ -127,7 +128,6 @@ static real calc_jab(rvec xi,rvec xj,real wi,real wj,int eemtype)
       eNN = coul_nucl_nucl(0,r);
     }
     break;
-  case eqgSMps:
   case eqgSMg:
   case eqgSMpg:
   case eqgYang:
