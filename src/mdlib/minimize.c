@@ -375,6 +375,9 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
   s1 = &ems1->s;
   s2 = &ems2->s;
 
+  if (DOMAINDECOMP(cr) && s1->ddp_count != cr->dd->ddp_count)
+    gmx_incons("state mismatch in do_em_step");
+
   s2->flags = s1->flags;
 
   if (s2->nalloc != s1->nalloc) {
@@ -478,10 +481,28 @@ static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
     }
   }
 }
+
+static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
+				   t_topology *top_global,t_inputrec *ir,
+				   em_state_t *ems,rvec **buf,t_topology *top,
+				   t_mdatoms *mdatoms,t_forcerec *fr,
+				   gmx_vsite_t *vsite,gmx_constr_t constr,
+				   t_nrnb *nrnb,gmx_wallcycle_t wcycle)
+{
+  /* Repartition the domain decomposition */
+  wallcycle_start(wcycle,ewcDOMDEC);
+  dd_partition_system(fplog,step,cr,FALSE,
+		      NULL,top_global,ir,
+		      &ems->s,&ems->f,buf,
+		      mdatoms,top,fr,vsite,NULL,constr,
+		      nrnb,wcycle,FALSE);
+  dd_store_state(cr->dd,&ems->s);
+  wallcycle_stop(wcycle,ewcDOMDEC);
+}
     
 static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    t_state *state_global,t_topology *top_global,
-			    em_state_t *ems,rvec *buf,t_topology *top,
+			    em_state_t *ems,rvec **buf,t_topology *top,
 			    t_inputrec *inputrec,t_groups *grps,
 			    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			    gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -520,14 +541,9 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   if (DOMAINDECOMP(cr)) {
     if (bNS) {
       /* Repartition the domain decomposition */
-      wallcycle_start(wcycle,ewcDOMDEC);
-      dd_partition_system(fplog,count,cr,FALSE,
-			  state_global,top_global,inputrec,
-			  &ems->s,&ems->f,&buf,
-			  mdatoms,top,fr,vsite,NULL,constr,
-			  nrnb,wcycle,FALSE);
-      dd_store_state(cr->dd,&ems->s);
-      wallcycle_stop(wcycle,ewcDOMDEC);
+      em_dd_partition_system(fplog,count,cr,top_global,inputrec,
+			     ems,buf,top,mdatoms,fr,vsite,constr,
+			     nrnb,wcycle);
     }
   }
       
@@ -537,7 +553,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
    */
   do_force(fplog,cr,inputrec,
 	   count,nrnb,wcycle,top,grps,ems->s.box,ems->s.x,ems->f,
-	   buf,force_vir,mdatoms,ener,fcd,
+	   *buf,force_vir,mdatoms,ener,fcd,
 	   ems->s.lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
 	   mu_tot,FALSE,0.0,NULL,NULL);
 
@@ -752,7 +768,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
    * We do not unshift, so molecules are always whole in congrad.c
    */
   evaluate_energy(fplog,bVerbose,cr,
-		  state_global,top_global,s_min,buf,top,
+		  state_global,top_global,s_min,&buf,top,
 		  inputrec,grps,nrnb,wcycle,
 		  vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,-1,TRUE);
   where();
@@ -898,7 +914,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     neval++;
     /* Calculate energy for the trial step */
     evaluate_energy(fplog,bVerbose,cr,
-		    state_global,top_global,s_c,buf,top,
+		    state_global,top_global,s_c,&buf,top,
 		    inputrec,grps,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,-1,FALSE);
     
@@ -970,6 +986,13 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	if(b<=a || b>=c)
 	  b = 0.5*(a+c);
 	
+	if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count) {
+	  /* Reload the old state */
+	  em_dd_partition_system(fplog,-1,cr,top_global,inputrec,
+				 s_min,&buf,top,mdatoms,fr,vsite,constr,
+				 nrnb,wcycle);
+	}
+
 	/* Take a trial step to this new point - new coords in s_b */
 	do_em_step(cr,inputrec,mdatoms,s_min,b,s_min->s.cg_p,s_b,
 		   constr,top,nrnb,-1);
@@ -977,7 +1000,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	neval++;
 	/* Calculate energy for the trial step */
 	evaluate_energy(fplog,bVerbose,cr,
-			state_global,top_global,s_b,buf,top,
+			state_global,top_global,s_b,&buf,top,
 			inputrec,grps,nrnb,wcycle,
 			vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,
 			-1,FALSE);
@@ -1313,7 +1336,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   ems.s.x = state->x;
   ems.f = f;
   evaluate_energy(fplog,bVerbose,cr,
-		  state,top,&ems,buf,top,
+		  state,top,&ems,&buf,top,
 		  inputrec,grps,nrnb,wcycle,
 		  vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,-1,TRUE);
   where();
@@ -1466,7 +1489,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     ems.s.x = (rvec *)xc;
     ems.f   = (rvec *)fc;
     evaluate_energy(fplog,bVerbose,cr,
-		    state,top,&ems,buf,top,
+		    state,top,&ems,&buf,top,
 		    inputrec,grps,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,step,FALSE);
     EpotC = ems.epot;
@@ -1543,7 +1566,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	ems.s.x = (rvec *)xb;
 	ems.f   = (rvec *)fb;
 	evaluate_energy(fplog,bVerbose,cr,
-			state,top,&ems,buf,top,
+			state,top,&ems,&buf,top,
 			inputrec,grps,nrnb,wcycle,
 			vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,
 			step,FALSE);
@@ -1889,7 +1912,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     }
     
     evaluate_energy(fplog,bVerbose,cr,
-		    state_global,top_global,s_try,buf,top,
+		    state_global,top_global,s_try,&buf,top,
 		    inputrec,grps,nrnb,wcycle,
 		    vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,
 		    count,count==0);
@@ -1948,9 +1971,17 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		 top_global,count,(real)count,
 		 &s_min->s,state_global,s_min->f,f_global);
     } 
-    else
+    else {
       /* If energy is not smaller make the step smaller...  */
       ustep *= 0.5;
+
+      if (DOMAINDECOMP(cr) && s_min->s.ddp_count != cr->dd->ddp_count) {
+	/* Reload the old state */
+	em_dd_partition_system(fplog,count,cr,top_global,inputrec,
+			       s_min,&buf,top,mdatoms,fr,vsite,constr,
+			       nrnb,wcycle);
+      }
+    }
     
     /* Determine new step  */
     stepsize = ustep/s_min->fmax;
