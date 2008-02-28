@@ -555,12 +555,12 @@ int gmx_editconf(int argc, char *argv[])
   
   atomprop = get_atomprop();
   if (bMead && bGrasp) {
-    fprintf(stderr,"Incompatible options -mead and -grasp. Turning off -grasp\n");
+    printf("Incompatible options -mead and -grasp. Turning off -grasp\n");
     bGrasp = FALSE;
   }
-  if ((bMead || bGrasp) && (outftp != efPQR))
+  if (bGrasp && (outftp != efPDB))
     gmx_fatal(FARGS,"Output file should be a .pdb file"
-	      " when using the -mead option\n");
+	      " when using the -grasp option\n");
   if ((bMead || bGrasp) && !((fn2ftp(infile) == efTPR) || 
 			     (fn2ftp(infile) == efTPA) ||
 			     (fn2ftp(infile) == efTPB)))
