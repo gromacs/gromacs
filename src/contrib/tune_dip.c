@@ -136,8 +136,6 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
     mymol->qtotal  = 0;
     
     if (bPol) {
-      /* If we have polarization then we need to make a subset of
-	 atoms that does not include the shells */
       mymol->vs = init_vsite(cr,&mymol->top);
       snew(mymol->f,natoms);
       snew(mymol->buf,natoms);
@@ -150,7 +148,7 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
     else 
       mymol->shell = NULL;
     
-    init_state(&mymol->state,mymol->top.atoms.nr,1);
+    init_state(&mymol->state,natoms,1);
     init_groups(NULL,&(mymol->top.atoms),&(mymol->ir.opts),&mymol->grps);
     mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
   }
@@ -308,9 +306,44 @@ static real mymol_calc_dip(t_mymol *mol)
   return norm(mu)*ENM2DEBYE;
 }
 
+static void split_shell_charges(t_atoms *atoms,t_idef *idef)
+{
+  int i,k,tp,ai,aj;
+  real q,Z;
+  
+  for(k=0; (k<idef->il[F_POLARIZATION].nr); ) {
+    tp = idef->il[F_POLARIZATION].iatoms[k++];
+    ai = idef->il[F_POLARIZATION].iatoms[k++];
+    aj = idef->il[F_POLARIZATION].iatoms[k++];
+    if ((atoms->atom[ai].ptype == eptAtom) &&
+	(atoms->atom[aj].ptype == eptShell)) {
+      q = atoms->atom[ai].q;
+      Z = atoms->atom[ai].atomnumber;
+      atoms->atom[ai].q = Z;
+      atoms->atom[aj].q = q-Z;
+    }
+    else if ((atoms->atom[ai].ptype == eptAtom) &&
+	(atoms->atom[aj].ptype == eptShell)) {
+      q = atoms->atom[aj].q;
+      Z = atoms->atom[aj].atomnumber;
+      atoms->atom[aj].q = Z;
+      atoms->atom[ai].q = q-Z;
+    }
+    else
+      gmx_incons("Polarization entry does not have one atom and one shell");
+  }
+  q = 0;
+  for(i=0; (i<atoms->nr); i++) 
+    q += atoms->atom[i].q;
+  Z = gmx_nint(q);
+  if (fabs(q-Z) > 1e-3) {
+    gmx_fatal(FARGS,"Total charge in molecule is not zero, but %f",q-Z);
+  }
+}
+
 static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
 {
-  int    i,j,count,atomnr;
+  int    i,j,count,atomnr,eemtp;
   double qq,rr,rms=0,rms_nw=0;
   real   t = 0;
   rvec   mu_tot = {0,0,0};
@@ -320,7 +353,9 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
   gmx_wallcycle_t wcycle;
   bool     bConverged;
   t_mymol *mymol;
-  
+
+  eemtp = md->eemtype;
+    
   init_nrnb(&my_nrnb);
   
   wcycle  = wallcycle_init(stdout,md->cr);
@@ -331,9 +366,10 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
       generate_charges_sm(debug,mymol->molname,
 			  eem,&(mymol->top.atoms),
 			  mymol->x,1e-4,100,md->atomprop,
-			  mymol->qtotal,md->eemtype);
-    /*Now optimize the shell positions */
+			  mymol->qtotal,eemtp);
+    /* Now optimize the shell positions */
     if (mymol->shell) {
+      split_shell_charges(&(mymol->top.atoms),&(mymol->top.idef));
       atoms2md(&(mymol->top.atoms),&(mymol->ir),0,0,NULL,0,
 	       mymol->top.atoms.nr,mymol->md);
       count = relax_shell_flexcon(debug,md->cr,FALSE,0,

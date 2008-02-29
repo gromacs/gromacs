@@ -70,7 +70,7 @@
 
 typedef struct {
   int  natom,eemtype;
-  int  *index; /* In the eemprops array */
+  int  *eem_ndx; /* In the atoms, resp. eemprops arrays */
   int  *elem;
   real *chi,*chi0,*rhs,*qq,*wj,qtotal;
   real **Jab;
@@ -215,7 +215,7 @@ static void qgen_calc_Jab(t_qgen *qgen,void *eem,int eemtype)
   double wi,wj;
   
   for(i=0; (i<qgen->natom); i++) { 
-    qgen->Jab[i][i] = lo_get_j00(eem,qgen->index[i],&(qgen->wj[i]),qgen->qq[i]);
+    qgen->Jab[i][i] = lo_get_j00(eem,qgen->eem_ndx[i],&(qgen->wj[i]),qgen->qq[i]);
   }
   for(i=0; (i<qgen->natom); i++) {
     wi           =  qgen->wj[i];
@@ -235,30 +235,37 @@ static void qgen_calc_Jab(t_qgen *qgen,void *eem,int eemtype)
 t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
 {
   t_qgen *qgen;
-  int i,j;
+  int i,j,atm;
   
   snew(qgen,1);
-  qgen->natom   = atoms->nr;
   qgen->eemtype = eemtype;
-  snew(qgen->chi0,atoms->nr);
-  snew(qgen->rhs,atoms->nr);
-  snew(qgen->elem,atoms->nr);
-  snew(qgen->chi,atoms->nr);
-  snew(qgen->Jab,atoms->nr);
-  snew(qgen->wj,atoms->nr);
-  snew(qgen->index,atoms->nr);
-  snew(qgen->qq,atoms->nr);
-  qgen->x = x;
-  for(i=0; (i<atoms->nr); i++) {
-    snew(qgen->Jab[i],atoms->nr);
-    qgen->index[i] = eem_get_index(eem,atoms->atom[i].atomnumber,qgen->eemtype);
-    if (qgen->index[i] == -1)
-      gmx_fatal(FARGS,"No electronegativity data for %s %s and algorithm %s",
-		*(atoms->resname[atoms->atom[i].resnr]),
-		*(atoms->atomname[i]),
-		get_eemtype_name(eemtype));
-    qgen->elem[i] = eem_get_elem(eem,qgen->index[i]);
-    qgen->chi0[i] = eem_get_chi0(eem,qgen->index[i]);
+  for(i=j=0; (i<atoms->nr); i++) 
+    if (atoms->atom[i].ptype == eptAtom) 
+      qgen->natom++;
+  snew(qgen->chi0,qgen->natom);
+  snew(qgen->rhs,qgen->natom);
+  snew(qgen->elem,qgen->natom);
+  snew(qgen->chi,qgen->natom);
+  snew(qgen->Jab,qgen->natom);
+  snew(qgen->wj,qgen->natom);
+  snew(qgen->eem_ndx,qgen->natom);
+  snew(qgen->qq,qgen->natom);
+  snew(qgen->x,qgen->natom);
+  for(i=j=0; (i<atoms->nr); i++) {
+    if (atoms->atom[i].ptype == eptAtom) {
+      snew(qgen->Jab[j],qgen->natom);
+      qgen->eem_ndx[j] = eem_get_index(eem,atoms->atom[i].atomnumber,
+				       qgen->eemtype);
+      if (qgen->eem_ndx[j] == -1)
+	gmx_fatal(FARGS,"No electronegativity data for %s %s and algorithm %s",
+		  *(atoms->resname[atoms->atom[i].resnr]),
+		  *(atoms->atomname[j]),
+		  get_eemtype_name(eemtype));
+      qgen->elem[j] = eem_get_elem(eem,qgen->eem_ndx[j]);
+      qgen->chi0[j] = eem_get_chi0(eem,qgen->eem_ndx[j]);
+      copy_rvec(x[i],qgen->x[j]);
+      j++;
+    }
   }  
   
   return qgen;
@@ -266,25 +273,34 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
 
 static void done_qgen(FILE *fp,t_atoms *atoms,t_qgen *qgen) 
 {
-  int i,j;
+  int i,j,k,l;
   
   if (fp)
     fprintf(fp,"Res Atom   Nr           q         chi        chi0       weight\n");
-  for(i=0; (i<atoms->nr); i++) {
-    atoms->atom[i].q = qgen->qq[i];
-    if (fp)
-      fprintf(fp,"%4s%4s%5d  %10g  %10g  %10g  %10g\n",
-	      *(atoms->resname[atoms->atom[i].resnr]),
-	      *(atoms->atomname[i]),i+1,
-	      qgen->qq[i],qgen->chi[i],qgen->chi0[i],qgen->wj[i]);
+  for(i=j=0; (i<atoms->nr); i++) {
+    if (atoms->atom[i].ptype == eptAtom) {
+      atoms->atom[i].q = qgen->qq[j];
+      if (fp)
+	fprintf(fp,"%4s%4s%5d  %10g  %10g  %10g  %10g\n",
+		*(atoms->resname[atoms->atom[i].resnr]),
+		*(atoms->atomname[i]),i+1,
+		qgen->qq[j],qgen->chi[j],qgen->chi0[j],qgen->wj[j]);
+      j++;
+    }
   }
   if (0 && fp) {
     fprintf(fp,"Jab matrix:\n");
-    for(i=0; (i<atoms->nr); i++) {
-      for(j=0; (j<atoms->nr); j++) {
-	fprintf(fp,"  %6.2f",qgen->Jab[i][j]);
+    for(i=k=0; (i<atoms->nr); i++) {
+      if (atoms->atom[i].ptype == eptAtom) {      
+	for(j=l=0; (j<atoms->nr); j++) {
+	  if (atoms->atom[i].ptype == eptAtom) {
+	    fprintf(fp,"  %6.2f",qgen->Jab[k][l]);
+	    l++;
+	  }
+	}
+	k++;
+	fprintf(fp,"\n");
       }
-      fprintf(fp,"\n");
     }
   }
   if (fp)
@@ -293,11 +309,14 @@ static void done_qgen(FILE *fp,t_atoms *atoms,t_qgen *qgen)
   sfree(qgen->chi);
   sfree(qgen->wj);
   sfree(qgen->qq);
-  sfree(qgen->index);
+  sfree(qgen->eem_ndx);
   sfree(qgen->elem);
   sfree(qgen->rhs);
-  for(i=0; (i<atoms->nr); i++) 
-    sfree(qgen->Jab[i]);
+  sfree(qgen->x);
+  for(i=j=0; (i<atoms->nr); i++) 
+    if (atoms->atom[i].ptype == eptAtom) 
+      sfree(qgen->Jab[j++]);
+  
   sfree(qgen->Jab);
 }
 
@@ -343,23 +362,29 @@ real generate_charges_sm(FILE *fp,char *molname,
   /* Use Rappe and Goddard derivative for now */
   t_qgen *qgen;
   real   *qq,chieq;
-  int    i,iter;
+  int    i,j,iter;
   real   rms,mu;
   
   if (fp)
     fprintf(fp,"Generating charges using Van der Spoel & Van Maaren algorithm for %s\n",molname);
   qgen = init_qgen(eem,atoms,atomprop,x,eemtype);
   snew(qq,atoms->nr);
-  for(i=0; (i<atoms->nr); i++)
-    qq[i] = qgen->qq[i];
+  for(i=j=0; (i<atoms->nr); i++)
+    if (atoms->atom[i].ptype == eptShell) {
+      qq[j] = qgen->qq[j];
+      j++;
+    }
   iter = 0;
   do {
     qgen_calc_Jab(qgen,eem,eemtype);
     solve_q_eem(fp,qgen,2.0);
     rms = 0;
-    for(i=0; (i<atoms->nr); i++) {
-      rms += sqr(qq[i] - qgen->qq[i]);
-      qq[i] = qgen->qq[i];
+    for(i=j=0; (i<atoms->nr); i++) {
+      if (atoms->atom[i].ptype == eptShell) {
+	rms += sqr(qq[j] - qgen->qq[j]);
+	qq[j] = qgen->qq[j];
+	j++;
+      }
     }
     rms = sqrt(rms/atoms->nr);
     iter++;
