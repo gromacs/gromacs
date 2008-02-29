@@ -1614,7 +1614,7 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,int cg_index[],
   grid_y     = 1/gridy;
   grid_z     = 1/gridz;
 
-  if (box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < rl2)
+  if (box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < sqrt(rl2))
     nxsh = 2;
   else
     nxsh = 1;
