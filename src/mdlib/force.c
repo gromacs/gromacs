@@ -1232,7 +1232,7 @@ void force(FILE       *fplog,   int        step,
   bool    bDoEpot,bSepDVDL;
   rvec    box_size;
   real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
-  t_pbc   pbc;
+  t_pbc   pbc,pbc_posres;
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
 
   /* Reset box */
@@ -1285,6 +1285,7 @@ void force(FILE       *fplog,   int        step,
   
   /* Check whether we need to do bondeds or correct for exclusions */
   memset(&pbc,0,sizeof(pbc));
+  pbc_posres.ePBCDX = epbcdxNOPBC;
   if (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)) {
     if (graph) {
       shift_self(graph,box,x);
@@ -1293,8 +1294,14 @@ void force(FILE       *fplog,   int        step,
       else
 	inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
     }
-    if (fr->ePBC==epbcFULL || idef->il[F_POSRES].nr>0)
+    if (fr->ePBC == epbcFULL)
       set_pbc_ss(&pbc,box);
+    if (idef->il[F_POSRES].nr > 0 && fr->ePBC != epbcNONE) {
+      /* We can not use single shift pbc, since the position restraint
+       * coordinates are not guaranteed to be in the rectangular unit cell.
+       */
+      set_pbc(&pbc_posres,box);
+    }
     debug_gmx();
   }
   where();
@@ -1370,7 +1377,7 @@ void force(FILE       *fplog,   int        step,
   
   if (!bNBFonly) {
     calc_bonds(fplog,cr,mcr,
-	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
+	       idef,x,f,fr,&pbc,&pbc_posres,graph,epot,nrnb,lambda,md,
 	       opts->ngener,grps->estat.ee[egLJ14],grps->estat.ee[egCOUL14],
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();
