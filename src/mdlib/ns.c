@@ -1633,7 +1633,8 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
       /* With domain decomposition we don't need periodic shifts */
       shp[d] = 0;
     } else {
-      if (d == XX && box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < rl2)
+      if (d == XX &&
+	  box[XX][XX] - fabs(box[YY][XX]) - fabs(box[ZZ][XX]) < sqrt(rl2))
 	shp[d] = 2;
       else
 	shp[d] = 1;
