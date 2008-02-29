@@ -1536,11 +1536,19 @@ void force(FILE       *fplog,   int        step,
   }
   /* Check whether we need to do bondeds or correct for exclusions */
   if (fr->bMolPBC &&
-      (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)))
+      (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype))) {
+    /* Since all atoms are in the rectangular or triclinic unit-cell,
+     * only single box vector shifts (2 in x) are required.
+     */
     set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
+  }
   /* Check if we need to do position restraints */
-  if (idef->il[F_POSRES].nr > 0 && !bNBFonly)
-    set_pbc_ss(&pbc_posres,ir->ePBC,box,NULL,TRUE);
+  if (idef->il[F_POSRES].nr > 0 && !bNBFonly) {
+    /* We can not use single shift pbc, since the position restraint
+     * coordinates are not guaranteed to be in the rectangular unit cell.
+     */
+    set_pbc_ms(&pbc_posres,ir->ePBC,box);
+  }
   debug_gmx();
 
   where();

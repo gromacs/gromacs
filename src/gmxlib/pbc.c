@@ -407,6 +407,11 @@ void set_pbc(t_pbc *pbc,matrix box)
   low_set_pbc(pbc,guess_ePBC(box),box,NULL,FALSE);
 }
 
+void set_pbc_ms(t_pbc *pbc,int ePBC,matrix box)
+{
+  low_set_pbc(pbc,ePBC,box,NULL,FALSE);
+}
+
 t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
 		  gmx_domdec_t *dd,bool bSingleDir)
 {

@@ -91,11 +91,16 @@ extern "C" {
   /* Initiate the periodic boundary conditions.
    * pbc_dx will not use pbc and return the normal difference vector
    * when one or more of the diagonal elements of box is zero.
+   * The type of pbc is guessed from the box matrix.
    */
+
+  extern void set_pbc_ms(t_pbc *pbc,int ePBC,matrix box);
+  /* As set_pbc, but sets the pbc using ePBC */
+
   extern t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
 			   gmx_domdec_t *dd,bool bSingleDir);
-  /* As pbc_dx, but additionally sets that correct distances can be
-   * obtained using (combinations of) single box-vector shifts.
+  /* As set_pbc_ms, but additionally sets that correct distances can
+   * be obtained using (combinations of) single box-vector shifts.
    * In this case pbc_dx is slightly more efficient.
    * If dd!=NULL pbc is not used for directions
    * with dd->nc[i]==1 with bSingleDir==TRUE or
