@@ -4498,6 +4498,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     }
     fprintf(fplog,"\n");
   }
+
+  if (fplog)
+    fflush(fplog);
 }
 
 static void merge_cg_buffers(int ncell,
