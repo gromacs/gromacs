@@ -5440,14 +5440,14 @@ void dd_partition_system(FILE            *fplog,
   state_local->natoms = dd->comm->nat[ddnatNR-1];
   if (state_local->natoms > state_local->nalloc)
     dd_realloc_state(state_local,f,buf,state_local->natoms);
-  if (EEL_FULL(fr->eeltype)) {
+  if (fr->bF_NoVirSum) {
     if (vsite && vsite->n_intercg_vsite)
-      fr->f_el_recip_n = dd->comm->nat[ddnatVSITE];
+      fr->f_novirsum_n = dd->comm->nat[ddnatVSITE];
     else
-      fr->f_el_recip_n = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
-    if (fr->f_el_recip_n > fr->f_el_recip_nalloc) {
-      fr->f_el_recip_nalloc = over_alloc_dd(fr->f_el_recip_n);
-      srenew(fr->f_el_recip,fr->f_el_recip_nalloc);
+      fr->f_novirsum_n = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
+    if (fr->f_novirsum_n > fr->f_novirsum_nalloc) {
+      fr->f_novirsum_nalloc = over_alloc_dd(fr->f_novirsum_n);
+      srenew(fr->f_novirsum,fr->f_novirsum_nalloc);
     }
   }
 

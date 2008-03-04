@@ -1097,12 +1097,12 @@ real idihs(int nbonds,
 }
 
 
-static real posres(int nbonds,
-		   const t_iatom forceatoms[],const t_iparams forceparams[],
-		   const rvec x[],rvec f[],rvec fshift[],
-		   t_pbc *pbc,const t_graph *g,
-		   real lambda,real *dvdlambda,
-		   int refcoord_scaling,int ePBC,rvec comA,rvec comB)
+real posres(int nbonds,
+	    const t_iatom forceatoms[],const t_iparams forceparams[],
+	    const rvec x[],rvec f[],
+	    t_pbc *pbc,
+	    real lambda,real *dvdlambda,
+	    int refcoord_scaling,int ePBC,rvec comA,rvec comB)
 {
   int  i,ai,m,d,type,ki,npbcdim=0;
   const t_iparams *pr;
@@ -1120,7 +1120,6 @@ static real posres(int nbonds,
       }
     }
   }
-
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -1154,9 +1153,9 @@ static real posres(int nbonds,
 			     dx[m],lambda,&v,&fm);
       vtot += v;
       f[ai][m] += fm;
-      /* Position restraints should not contribute to the virial.
-       * We need to subtract this contribution !!!
-       * Needs to be implemented, but requires an extra virial matrix.
+      /* With refcoord_scaling == erscALL the position restraints
+       * contribute to the virial.
+       * This is not implemented yet !!!
        */
     }
   }
@@ -1902,7 +1901,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_idef *idef,
 		rvec x[],rvec f[],
 		t_forcerec *fr,
-		const t_pbc *pbc,t_pbc *pbc_posres,const t_graph *g,
+		const t_pbc *pbc,const t_graph *g,
 		real epot[],t_nrnb *nrnb,
 		real lambda,
 		const t_mdatoms *md,int ngrp,t_grp_ener *gener,
@@ -1939,26 +1938,19 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
   
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {
-    if (interaction_function[ftype].flags & IF_BOND && ftype!=F_CONNBONDS) {
+    if (interaction_function[ftype].flags & IF_BOND &&
+	!(ftype == F_CONNBONDS || ftype == F_POSRES)) {
       nbonds=idef->il[ftype].nr;
       if (nbonds > 0) {
 	ind = interaction_function[ftype].nrnb_ind;
 	nat = interaction_function[ftype].nratoms+1;
 	dvdl = 0;
 	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_A) {
-	  if (ftype != F_POSRES) {
-	    v =
-	      interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
-						idef->iparams,
-						(const rvec*)x,f,fr->fshift,
-						pbc_null,g,lambda,&dvdl,md,fcd);
-	  } else {
-	    v = posres(nbonds,idef->il[ftype].iatoms,
-		       idef->iparams,
-		       (const rvec*)x,f,fr->fshift,
-		       pbc_posres,g,lambda,&dvdl,
-		       fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
-	  }
+	  v =
+	    interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
+					      idef->iparams,
+					      (const rvec*)x,f,fr->fshift,
+					      pbc_null,g,lambda,&dvdl,md,fcd);
 	  if (bSepDVDL) {
 	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);

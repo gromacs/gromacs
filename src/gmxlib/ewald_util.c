@@ -93,7 +93,7 @@ real ewald_LRcorrection(FILE *fplog,
   real    v,vc,qiA,qiB,dr,dr2,rinv,fscal,enercorr;
   real    VselfA,VselfB=0,Vcharge[2],Vdipole[2],rinv2,ewc=fr->ewaldcoeff,ewcdr;
   rvec    df,dx,mutot[2],dipcorrA,dipcorrB;
-  rvec    *f=fr->f_el_recip;
+  rvec    *f=fr->f_novirsum;
   tensor  dxdf;
   real    vol = box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
   real    L1,dipole_coeff,qqA,qqB,qqL,vr0;

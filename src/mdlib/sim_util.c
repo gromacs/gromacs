@@ -62,6 +62,8 @@
 #include "physics.h"
 #include "main.h"
 #include "mdatoms.h"
+#include "force.h"
+#include "bondf.h"
 #include "pme.h"
 #include "pppm.h"
 #include "disre.h"
@@ -304,18 +306,20 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn)
 {
   static rvec box_size;
-  static real dvdl_lr = 0;
   int    cg0,cg1,i,j;
   int    start,homenr;
   static double mu[2*DIM]; 
   rvec   mu_tot_AB[2];
-  bool   bFillGrid,bCalcCGCM,bBS;
+  bool   bSepDVDL,bFillGrid,bCalcCGCM,bBS;
   matrix boxs;
-  real   e,d;
+  real   e,dvdl;
+  t_pbc  pbc_ms;
   float  cycles_ppdpme,cycles_pme,cycles_force;
   
   start  = mdatoms->start;
   homenr = mdatoms->homenr;
+
+  bSepDVDL = (fr->bSepDVDL && do_per_step(step,inputrec->nstlog));
 
   clear_mat(vir_force);
   
@@ -438,10 +442,12 @@ void do_force(FILE *fplog,t_commrec *cr,
     /* Do the actual neighbour searching and if twin range electrostatics
      * also do the calculation of long range forces and energies.
      */
-    dvdl_lr = 0; 
-
+    dvdl = 0; 
     ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,step,lambda,&dvdl_lr,bFillGrid,bDoForces);
+       cr,nrnb,step,lambda,&dvdl,bFillGrid,bDoForces);
+    if (bSepDVDL)
+      fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
+    ener[F_DVDL] += dvdl;
 
     wallcycle_stop(wcycle,ewcNS);
   }
@@ -456,13 +462,13 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   if (bDoForces) {
       /* Reset PME/Ewald forces if necessary */
-    if (EEL_FULL(fr->eeltype)) 
+    if (fr->bF_NoVirSum) 
     {
       GMX_BARRIER(cr->mpi_comm_mygroup);
       if (fr->bDomDec)
-	clear_rvecs(fr->f_el_recip_n,fr->f_el_recip);
+	clear_rvecs(fr->f_novirsum_n,fr->f_novirsum);
       else
-	clear_rvecs(homenr,fr->f_el_recip+start);
+	clear_rvecs(homenr,fr->f_novirsum+start);
       GMX_BARRIER(cr->mpi_comm_mygroup);
     }
     /* Copy long range forces into normal buffers */
@@ -488,16 +494,27 @@ void do_force(FILE *fplog,t_commrec *cr,
   if(fr->bQMMM)
     update_QMMMrec(cr,fr,x,mdatoms,box,top);
 
-  /* Compute the forces */    
+  if (!bNBFonly && top->idef.il[F_POSRES].nr > 0) {
+    /* Position restraints always require full pbc */
+    set_pbc_ms(&pbc_ms,inputrec->ePBC,box);
+    ener[F_POSRES] +=
+      posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
+	     top->idef.iparams,
+	     (const rvec*)x,fr->f_novirsum,
+	     inputrec->ePBC==epbcNONE ? NULL : &pbc_ms,lambda,&dvdl,
+	     fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
+    if (bSepDVDL)
+      fprintf(fplog,sepdvdlformat,
+	      interaction_function[F_POSRES].longname,0,dvdl);
+    ener[F_DVDL] += dvdl;
+  }
+  /* Compute the bonded and non-bonded forces */    
   force(fplog,step,fr,inputrec,&(top->idef),cr,nrnb,wcycle,grps,mdatoms,
 	top->atoms.grps[egcENER].nr,&(inputrec->opts),
 	x,f,ener,fcd,box,lambda,graph,&(top->excls),
 	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 	
-  /* Take long range contribution to free energy into account */
-  ener[F_DVDL] += dvdl_lr;
-
   cycles_force = wallcycle_stop(wcycle,ewcFORCE);
   if (DOMAINDECOMP(cr)) {
     dd_force_flop_stop(cr->dd,nrnb);
@@ -520,8 +537,9 @@ void do_force(FILE *fplog,t_commrec *cr,
       wallcycle_start(wcycle,ewcMOVEF);
       if (DOMAINDECOMP(cr)) {
 	dd_move_f(cr->dd,f,buf,fr->fshift);
+	/* Position restraint do not introduce inter-cg forces */
 	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl)
-	  dd_move_f(cr->dd,fr->f_el_recip,buf,NULL);
+	  dd_move_f(cr->dd,fr->f_novirsum,buf,NULL);
       } else {
 	move_f(fplog,cr,GMX_LEFT,GMX_RIGHT,f,buf,nrnb);
       }
@@ -543,7 +561,8 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
 
   if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F) {
-    /* Calculate the center of mass forces, this requires communication.
+    /* Calculate the center of mass forces, this requires communication,
+     * which is why pull_potential is called close to other communication.
      * The virial contribution is calculated directly,
      * which is why we call pull_potential after calc_virial.
      */
@@ -564,38 +583,40 @@ void do_force(FILE *fplog,t_commrec *cr,
      * forces, virial and energy from the PME nodes here.
      */    
     wallcycle_start(wcycle,ewcPP_PMEWAITRECVF);
-    d = 0;
-    gmx_pme_receive_f(cr,fr->f_el_recip,fr->vir_el_recip,&e,&d,
+    dvdl = 0;
+    gmx_pme_receive_f(cr,fr->f_novirsum,fr->vir_el_recip,&e,&dvdl,
 		      &cycles_pme);
-    if (fr->bSepDVDL && do_per_step(step,inputrec->nstlog))
-      fprintf(fplog,sepdvdlformat,"PME mesh",e,d);
+    if (bSepDVDL)
+      fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
     ener[F_COUL_RECIP] += e;
-    ener[F_DVDL] += d;
+    ener[F_DVDL] += dvdl;
     if (wcycle)
       dd_cycles_add(cr->dd,cycles_pme,ddCyclPME);
     wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
   }
 #endif
 
-  if (EEL_FULL(fr->eeltype) && bDoForces) {
+  if (bDoForces && fr->bF_NoVirSum) {
     if (vsite) {
       /* Spread the mesh force on virtual sites to the other particles... 
        * This is parallellized. MPI communication is performed
        * if the constructing atoms aren't local.
        */
       wallcycle_start(wcycle,ewcVSITESPREAD);
-      spread_vsite_f(fplog,vsite,x,fr->f_el_recip,NULL,nrnb,
+      spread_vsite_f(fplog,vsite,x,fr->f_novirsum,NULL,nrnb,
 		     &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
       wallcycle_stop(wcycle,ewcVSITESPREAD);
     }
     /* Now add the forces, this is local */
     if (fr->bDomDec) {
-      sum_forces(0,fr->f_el_recip_n,f,fr->f_el_recip);
+      sum_forces(0,fr->f_novirsum_n,f,fr->f_novirsum);
     } else {
-      sum_forces(start,start+homenr,f,fr->f_el_recip);
+      sum_forces(start,start+homenr,f,fr->f_novirsum);
     }
-    /* Add the mesh contribution to the virial */
-    m_add(vir_force,fr->vir_el_recip,vir_force);
+    if (EEL_FULL(fr->eeltype)) {
+      /* Add the mesh contribution to the virial */
+      m_add(vir_force,fr->vir_el_recip,vir_force);
+    }
     if (debug)
       pr_rvecs(debug,0,"vir_force",vir_force,DIM);
   }

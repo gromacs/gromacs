@@ -54,8 +54,7 @@ extern "C" {
 extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		       const t_idef *idef,
                        rvec x[],rvec f[],t_forcerec *fr,
-		       const t_pbc *pbc,t_pbc *pbc_posres,
-		       const t_graph *g,
+		       const t_pbc *pbc,const t_graph *g,
                        real epot[],t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,int ngrp,t_grp_ener *gener,
 		       t_fcdata *fcd,
@@ -79,6 +78,14 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
  *   return value:
  *	    the total potential energy (sum over epot).
  */
+
+extern real posres(int nbonds,
+		   const t_iatom forceatoms[],const t_iparams forceparams[],
+		   const rvec x[],rvec f[],
+		   t_pbc *pbc,
+		   real lambda,real *dvdlambda,
+		   int refcoord_scaling,int ePBC,rvec comA,rvec comB);
+/* Position restraints require a different pbc treatment from other bondeds */
 
 extern real bond_angle(const rvec xi,const rvec xj,const rvec xk,
 		       const t_pbc *pbc,

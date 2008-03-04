@@ -320,8 +320,8 @@ real shift_LRcorrection(FILE *fp,int start,int natoms,
 	   * distance vector 
 	   */
 	  svmul(fscal,dx,df);
-	  rvec_inc(fr->f_el_recip[k],df);
-	  rvec_dec(fr->f_el_recip[i],df);
+	  rvec_inc(fr->f_novirsum[k],df);
+	  rvec_dec(fr->f_novirsum[i],df);
 	  for(iv=0;iv<DIM;iv++)
 	      for(jv=0;jv<DIM;jv++)
 		  lr_vir[iv][jv]+=0.5*dx[iv]*df[jv];

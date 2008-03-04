@@ -1092,11 +1092,12 @@ void init_forcerec(FILE *fp,
     }
     snew(fr->fshift_twin,SHIFTS);
   }
-  if (EEL_FULL(fr->eeltype)) {
+  fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) || top->idef.il[F_POSRES].nr > 0);
+  if (fr->bF_NoVirSum) {
     if (!DOMAINDECOMP(cr)) {
-      fr->f_el_recip_n = natoms;
-      fr->f_el_recip_nalloc = fr->f_el_recip_n;
-      snew(fr->f_el_recip,fr->f_el_recip_nalloc);
+      fr->f_novirsum_n = natoms;
+      fr->f_novirsum_nalloc = fr->f_novirsum_n;
+      snew(fr->f_novirsum,fr->f_novirsum_nalloc);
     }
   }
   
@@ -1436,7 +1437,7 @@ void force(FILE       *fplog,   int        step,
   matrix  boxs;
   rvec    box_size;
   real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
-  t_pbc   pbc,pbc_posres;
+  t_pbc   pbc;
 #ifdef GMX_MPI
   double  t0=0.0, t1, t2, t3; /* time measurement for coarse load balancing */
 #endif
@@ -1542,13 +1543,6 @@ void force(FILE       *fplog,   int        step,
      */
     set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
   }
-  /* Check if we need to do position restraints */
-  if (idef->il[F_POSRES].nr > 0 && !bNBFonly) {
-    /* We can not use single shift pbc, since the position restraint
-     * coordinates are not guaranteed to be in the rectangular unit cell.
-     */
-    set_pbc_ms(&pbc_posres,ir->ePBC,box);
-  }
   debug_gmx();
 
   where();
@@ -1564,7 +1558,7 @@ void force(FILE       *fplog,   int        step,
     status = 0;
     switch (fr->eeltype) {
     case eelPPPM:
-      status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_el_recip,
+      status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_novirsum,
 			   md->chargeA,
 			   box_size,fr->phi,cr,md->start,md->homenr,
 			   nrnb,ir->pme_order,&Vlr);
@@ -1576,7 +1570,7 @@ void force(FILE       *fplog,   int        step,
 	wallcycle_start(wcycle,ewcPMEMESH);
         status = gmx_pme_do(fr->pmedata,
 			    md->start,md->homenr,
-			    x,fr->f_el_recip,
+			    x,fr->f_novirsum,
 			    md->chargeA,md->chargeB,
 			    bSB ? boxs : box,cr,
 			    DOMAINDECOMP(cr) ? dd_pme_maxshift(cr->dd) : 0,
@@ -1594,7 +1588,7 @@ void force(FILE       *fplog,   int        step,
       }
       break;
     case eelEWALD:
-      Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_el_recip,md->chargeA,md->chargeB,
+      Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_novirsum,md->chargeA,md->chargeB,
 		     box_size,cr,md->homenr,
 		     fr->vir_el_recip,fr->ewaldcoeff,
 		     lambda,&dvdlambda);
@@ -1653,7 +1647,7 @@ void force(FILE       *fplog,   int        step,
   if (!bNBFonly) {
     GMX_MPE_LOG(ev_calc_bonds_start);
     calc_bonds(fplog,cr->ms,
-	       idef,x,f,fr,&pbc,&pbc_posres,graph,epot,nrnb,lambda,md,
+	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
 	       opts->ngener,&grps->estat,
 	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
     debug_gmx();

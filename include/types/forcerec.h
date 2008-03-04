@@ -180,11 +180,16 @@ typedef struct {
   rvec *f_twin;
   rvec *fshift_twin;
 
+  /* Forces that should not enter into the virial summation:
+   * PPPM/PME/Ewald/posres
+   */
+  bool bF_NoVirSum;
+  int  f_novirsum_n;
+  int  f_novirsum_nalloc;
+  rvec *f_novirsum;
+
   /* Long-range forces and virial for PPPM/PME/Ewald */
   gmx_pme_t pmedata;
-  int       f_el_recip_n;
-  int       f_el_recip_nalloc;
-  rvec      *f_el_recip;
   tensor    vir_el_recip;
 
   /* PME/Ewald stuff */
