@@ -67,12 +67,17 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 #define IF_BTYPE      1<<4
 #define IF_ATYPE      1<<5
 #define IF_TABULATED  1<<6
+#define IF_LIMZERO    1<<7
 /* These flags tell to some of the routines what can be done with this
  * item in the list.
  * With IF_BOND a bonded interaction will be calculated.
  * With IF_BTYPE grompp can convert the bond to a Morse potential.
  * With IF_BTYPE or IF_ATYPE the bond/angle can be converted to
  * a constraint or used for vsite parameter determination by grompp.
+ * IF_LIMZERO indicates that for a bonded interaction the potential
+ * does goes to zero for large distances, thus if such an interaction
+ * it not assigned to any node by the domain decompostion, the simulation
+ * still continue, if mdrun has been told so.
  */
 typedef struct
 {

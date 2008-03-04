@@ -12,9 +12,10 @@
 #include "pbc.h"
 
 typedef struct gmx_reverse_top {
-  bool bConstr; /* Are constraint in this revserse top? */
-  int  *index;  /* Index for each atom into il          */
-  int  *il;     /* ftype|type|a0|...|an|ftype|...       */
+  bool bConstr; /* Are constraint in this revserse top?         */
+  bool bBCheck; /* All bonded interactions have to be assigned? */
+  int  *index;  /* Index for each atom into il                  */ 
+  int  *il;     /* ftype|type|a0|...|an|ftype|...               */
 } gmx_reverse_top_t;
 
 /* Static pointers only used for an error message */
@@ -36,7 +37,8 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
   
   gatindex = cr->dd->gatindex;
   for(ftype=0; ftype<F_NRE; ftype++) {
-    if ((interaction_function[ftype].flags & IF_BOND)
+    if (((interaction_function[ftype].flags & IF_BOND) &&
+	 (rt->bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO)))
 	|| ftype == F_SETTLE || (rt->bConstr && ftype == F_CONSTR)) {
       nral = NRAL(ftype);
       il = &idef->il[ftype];
@@ -136,7 +138,9 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     rest_global = dd->nbonded_global;
     rest_local  = local_count;
     for(ftype=0; ftype<F_NRE; ftype++) {
-      if ((interaction_function[ftype].flags & IF_BOND)
+      if (((interaction_function[ftype].flags & IF_BOND) &&
+	   (dd->reverse_top->bBCheck 
+	    || !(interaction_function[ftype].flags & IF_LIMZERO)))
 	  || ftype == F_SETTLE
 	  || (dd->reverse_top->bConstr && ftype == F_CONSTR)) {
 	nral = NRAL(ftype);
@@ -168,7 +172,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     if (ndiff_tot > 0) {
       gmx_incons("One or more interactions were multiple assigned in the domain decompostion");
     } else {
-      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) (option -rdd) or the non-bonded cut-off distance (%g nm)",-ndiff_tot,cr->dd->nbonded_global,dd_cutoff_mbody(cr->dd),dd_cutoff(cr->dd));
+      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) (option -rdd) or the non-bonded cut-off distance (%g nm), for pairs and tabulated bonds see also option -ddbc",-ndiff_tot,cr->dd->nbonded_global,dd_cutoff_mbody(cr->dd),dd_cutoff(cr->dd));
     }
   }
 }
@@ -242,7 +246,10 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int **vsite_pbc,
 	  /* We do not count vsites since they are always uniquely assigned
 	   * and can be assigned to multiple nodes with recursive vsites.
 	   */
-	  nint++;
+	  if (rt->bBCheck ||
+	      !(interaction_function[ftype].flags & IF_LIMZERO)) {
+	    nint++;
+	  }
 	  count[a] += 2 + nral;
 	}
       }
@@ -254,7 +261,8 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int **vsite_pbc,
 
 static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
 					   t_atom *atom,int **vsite_pbc,
-					   bool bConstr,int *nint)
+					   bool bConstr,
+					   bool bBCheck,int *nint)
 {
   int *count,i;
   gmx_reverse_top_t *rt;
@@ -263,7 +271,8 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
 
   /* Should we include constraints (for SHAKE) in rt? */
   rt->bConstr = bConstr;
-
+  rt->bBCheck = bBCheck;
+  
   /* Count the interactions */
   snew(count,natoms);
   low_make_reverse_top(idef,atom,vsite_pbc,count,rt,FALSE);
@@ -287,7 +296,7 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
 void dd_make_reverse_top(FILE *fplog,
 			 gmx_domdec_t *dd,t_topology *top,
 			 gmx_vsite_t *vsite,gmx_constr_t constr,
-			 t_inputrec *ir)
+			 t_inputrec *ir,bool bBCheck)
 {
   int natoms,n_recursive_vsite,nexcl,a;
 
@@ -299,7 +308,7 @@ void dd_make_reverse_top(FILE *fplog,
   dd->reverse_top = make_reverse_top(natoms,&top->idef,top->atoms.atom,
 				     vsite ? vsite->vsite_pbc : NULL,
 				     ir->eConstrAlg == estSHAKE,
-				     &dd->nbonded_global);
+				     bBCheck,&dd->nbonded_global);
 
   nexcl = count_excls(&top->cgs,&top->excls,&dd->n_intercg_excl);
   if (EEL_EXCL_FORCES(ir->coulombtype)) {
@@ -477,7 +486,7 @@ static int make_local_bondeds(gmx_domdec_t *dd,
   int ncell,nicell,ic,la0,la1,i,gat,j,ftype,nral,d,k,kc;
   int *index,*rtil,**vsite_pbc,*vsite_pbc_nalloc;
   t_iatom *iatoms,tiatoms[1+MAXATOMLIST];
-  bool bUse;
+  bool bBCheck,bUse;
   real rc2;
   ivec k_zero,k_plus;
   gmx_ga2la_t *ga2la;
@@ -498,8 +507,9 @@ static int make_local_bondeds(gmx_domdec_t *dd,
     vsite_pbc_nalloc = NULL;
   }
 
-  index = dd->reverse_top->index;
-  rtil  = dd->reverse_top->il;
+  index   = dd->reverse_top->index;
+  rtil    = dd->reverse_top->il;
+  bBCheck = dd->reverse_top->bBCheck;
 
   /* Clear the counts */
   for(ftype=0; ftype<F_NRE; ftype++)
@@ -603,7 +613,9 @@ static int make_local_bondeds(gmx_domdec_t *dd,
 	    /* Add this interaction to the local topology */
 	    add_ifunc(iatoms[0],nral,tiatoms,&idef->il[ftype]);
 	    /* Sum so we can check in global_stat if we have everything */
-	    nbonded_local++;
+	    if (bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO)) {
+	      nbonded_local++;
+	    }
 	  }
 	  j += 1 + nral;
 	}

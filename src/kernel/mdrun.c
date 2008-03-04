@@ -106,10 +106,12 @@ int main(int argc,char *argv[])
     "to optimize performance.[PAR]",
     "This section lists all options that affect the domain decomposition.",
     "All distances required for two-body bonded interactions should be within",
-    "the non-bonded cut-off distance;",
-    "all distances required for multi-body bonded interactions should be",
-    "within the smallest cell size. If this is not the case mdrun terminates",
-    "with an error message. By default mdrun sets the minimum cell size to",
+    "the non-bonded cut-off distance; all distances required for multi-body",
+    "bonded interactions should be within the smallest cell size.",
+    "If this is not the case mdrun terminates with an error message.",
+    "For pair interactions and tabulated bonds that do not generate",
+    "exclusions, this check can be turned off with the option -noddbc.",
+    "By default mdrun sets the minimum cell size to",
     "half the cut-off distance or the maximum distance required",
     "for constraints, whichever is larger.",
     "Option [TT]-rdd[tt] can be used to set the allowed distance for",
@@ -229,6 +231,7 @@ int main(int argc,char *argv[])
   static bool bCart        = FALSE;
   static bool bPPPME       = FALSE;
   static bool bPartDec     = FALSE;
+  static bool bDDBondCheck = TRUE;
   static bool bDLB         = FALSE;
   static bool bSumEner     = TRUE;
   static bool bVerbose     = FALSE;
@@ -263,6 +266,8 @@ int main(int argc,char *argv[])
       "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
       "DD node order" },
+    { "-ddbc",    FALSE, etBOOL, {&bDDBondCheck},
+      "Check for all bonded interactions with DD" },
     { "-rdd",     FALSE, etREAL, {&rdd},
       "The minimum distance for DD communication (nm)" },
     { "-rcon",    FALSE, etREAL, {&rconstr},

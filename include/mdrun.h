@@ -56,17 +56,18 @@
 #include "pull.h"
 #include "update.h"
 
-#define MD_GLAS        (1<<1)
-#define MD_POLARISE    (1<<2)
-#define MD_IONIZE      (1<<3)
-#define MD_RERUN       (1<<4)
-#define MD_FFSCAN      (1<<6)
-#define MD_SEPPOT      (1<<7)
-#define MD_PARTDEC     (1<<9)
-#define MD_DLB         (1<<10)
-#define MD_CONFOUT     (1<<11)
-#define MD_NOGSTAT     (1<<12)
-#define MD_REPRODUCIBLE (1<<13)
+#define MD_GLAS         (1<<1)
+#define MD_POLARISE     (1<<2)
+#define MD_IONIZE       (1<<3)
+#define MD_RERUN        (1<<4)
+#define MD_FFSCAN       (1<<6)
+#define MD_SEPPOT       (1<<7)
+#define MD_PARTDEC      (1<<9)
+#define MD_DDBONDCHECK  (1<<10)
+#define MD_DLB          (1<<11)
+#define MD_CONFOUT      (1<<12)
+#define MD_NOGSTAT      (1<<13)
+#define MD_REPRODUCIBLE (1<<14)
 
 
 enum {
