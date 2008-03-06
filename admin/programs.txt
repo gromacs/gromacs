@@ -65,6 +65,7 @@ g_mindist|calculates the minimum distance between two groups
 g_dist|calculates the distances between the centers of mass of two groups
 g_bond|calculates distances between atoms
 g_mdmat|calculates residue contact maps
+g_polystat|calculates static properties of polymers
 g_rmsdist|calculates atom pair distances averaged with power 2, -3 or -6
 END
 
@@ -72,6 +73,7 @@ HEAD|Mass distribution properties over time
 g_traj|plots x, v, f, box, temperature and rotational energy
 g_gyrate|calculates the radius of gyration
 g_msd|calculates mean square displacements
+g_polystat|calculates static properties of polymers
 g_rotacf|calculates the rotational correlation function for molecules
 g_vanhove|calculates Van Hove displacement functions
 END

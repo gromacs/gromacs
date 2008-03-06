@@ -119,6 +119,9 @@ int
 gmx_order(int argc,char *argv[]);
 
 int 
+gmx_polystat(int argc,char *argv[]);
+
+int 
 gmx_potential(int argc,char *argv[]);
 
 int 
