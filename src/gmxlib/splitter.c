@@ -724,11 +724,13 @@ static t_blocka block2blocka(t_block *block)
   int i;
 
   blocka.nr = block->nr;
-  snew(blocka.index,blocka.nr+1);
+  blocka.nalloc_index = blocka.nr + 1;
+  snew(blocka.index,blocka.nalloc_index);
   for(i=0; i<=block->nr; i++)
     blocka.index[i] = block->index[i];
   blocka.nra = block->index[block->nr];
-  snew(blocka.a,blocka.nra);
+  blocka.nalloc_a = blocka.nra;
+  snew(blocka.a,blocka.nalloc_a);
   for(i=0; i<=blocka.nra; i++)
     blocka.a[i] = i;
 
