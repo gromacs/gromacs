@@ -359,6 +359,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
   Flags = Flags | (bGlas         ? MD_GLAS         : 0);
   Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
+  Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
   Flags = Flags | (bDLB          ? MD_DLB          : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
