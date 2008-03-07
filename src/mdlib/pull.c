@@ -54,6 +54,7 @@
 #include "xvgr.h"
 #include "names.h"
 #include "partdec.h"
+#include "pbc.h"
 
 static void pull_print_x(FILE *out,t_pull *pull, real t) 
 {
