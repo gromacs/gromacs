@@ -117,6 +117,8 @@ double wallcycle_stop(gmx_wallcycle_t wc, int ewc)
       else if (wc_depth == 2)
 	wallcycle_all_start(ewc,cycle);
     }
+  } else {
+    last = 0;
   }
 
   return last;
