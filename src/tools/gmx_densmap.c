@@ -132,6 +132,7 @@ int gmx_densmap(int argc,char *argv[])
   FILE       *fp;
   int        status;
   t_topology top;
+  int        ePBC=-1;
   rvec       *x,xcom[2],direction,center,dx;
   matrix     box;
   real       t,m,mtot;
@@ -180,7 +181,8 @@ int gmx_densmap(int argc,char *argv[])
   }
   
   if (ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm))
-    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,bRadial);
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&x,NULL,box,
+		  bRadial);
   if (!bRadial) {
     ngrps = 1;
     fprintf(stderr,"\nSelect an analysis group\n");
@@ -259,7 +261,7 @@ int gmx_densmap(int argc,char *argv[])
 	}
       }
     } else {
-      set_pbc(&pbc,box);
+      set_pbc(&pbc,ePBC,box);
       for(i=0; i<2; i++) {
 	if (gnx[i] == 1) {
 	  /* One atom, just copy the coordinates */

@@ -191,7 +191,7 @@ void chk_forces(int frame,int natoms,rvec *f)
   }
 }
 
-void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
+void chk_bonds(t_topology *top,int ePBC,rvec *x,matrix box,real tol)
 {
   int  ftype,i,k,ai,aj,type;
   real b0,blen,deviation,devtot;
@@ -199,7 +199,7 @@ void chk_bonds(t_topology *top,rvec *x,matrix box,real tol)
   rvec dx;
 
   devtot = 0;
-  set_pbc(&pbc,box);  
+  set_pbc(&pbc,ePBC,box);  
   for(ftype=0; (ftype<F_NRE); ftype++) 
     if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND) {
       for(k=0; (k<top->idef.il[ftype].nr); ) {
@@ -313,7 +313,7 @@ void chk_trj(char *fn,char *tpr,real tol)
     }
     natoms=new_natoms;
     if (tpr) 
-      chk_bonds(&top,fr.x,fr.box,tol);
+      chk_bonds(&top,ir.ePBC,fr.x,fr.box,tol);
     if (fr.bX)
       chk_coords(j,natoms,fr.x,fr.box,1e5,tol);
     if (fr.bV)
@@ -363,6 +363,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   int       natom,i,j,k;
   char      title[STRLEN];
   t_topology top;
+  int       ePBC;
   t_atoms   *atoms;
   rvec      *x,*v;
   rvec      dx;
@@ -374,7 +375,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   void      *ap;
   
   fprintf(stderr,"Checking coordinate file %s\n",fn);
-  read_tps_conf(fn,title,&top,&x,&v,box,TRUE);
+  read_tps_conf(fn,title,&top,&ePBC,&x,&v,box,TRUE);
   atoms=&top.atoms;
   natom=atoms->nr;
   fprintf(stderr,"%d atoms in file\n",atoms->nr);
@@ -434,7 +435,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
     }
     done_atomprop(&ap);
     if (bB) 
-      set_pbc(&pbc,box);
+      set_pbc(&pbc,ePBC,box);
       
     bFirst=TRUE;
     for (i=0; (i<natom); i++) {

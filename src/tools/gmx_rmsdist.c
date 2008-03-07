@@ -57,14 +57,15 @@
 #include "futil.h"
 #include "matio.h"
 
-static void calc_dist(int nind,atom_id index[],rvec x[],matrix box,real **d)
+static void calc_dist(int nind,atom_id index[],rvec x[],int ePBC,matrix box,
+		      real **d)
 {
   int     i,j;
   real    *xi;
   rvec    dx;
   t_pbc   pbc;
 
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
   for(i=0; (i<nind-1); i++) {
     xi=x[index[i]];
     for(j=i+1; (j<nind); j++) {
@@ -74,7 +75,8 @@ static void calc_dist(int nind,atom_id index[],rvec x[],matrix box,real **d)
   }
 }
 
-static void calc_dist_tot(int nind,atom_id index[],rvec x[],matrix box,
+static void calc_dist_tot(int nind,atom_id index[],rvec x[],
+			  int ePBC,matrix box,
 			  real **d, real **dtot, real **dtot2,
 			  bool bNMR, real **dtot1_3, real **dtot1_6)
 {
@@ -84,7 +86,7 @@ static void calc_dist_tot(int nind,atom_id index[],rvec x[],matrix box,
   rvec    dx;
   t_pbc   pbc;
 
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
   for(i=0; (i<nind-1); i++) {
     xi=x[index[i]];
     for(j=i+1; (j<nind); j++) {
@@ -533,6 +535,7 @@ int gmx_rmsdist (int argc,char *argv[])
   real         t;
 
   t_topology   top;
+  int          ePBC;
   t_atoms      *atoms;
   matrix       box;
   rvec         *x;
@@ -600,7 +603,7 @@ int gmx_rmsdist (int argc,char *argv[])
   }
     
   /* get topology and index */
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&x,NULL,box,FALSE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&ePBC,&x,NULL,box,FALSE);
   atoms=&(top.atoms);
   
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
@@ -634,7 +637,7 @@ int gmx_rmsdist (int argc,char *argv[])
   }
 
   /*set box type*/
-  calc_dist(isize,index,x,box,d_r);
+  calc_dist(isize,index,x,ePBC,box,d_r);
   sfree(x);
 
   /*open output files*/
@@ -646,7 +649,7 @@ int gmx_rmsdist (int argc,char *argv[])
   natom=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   
   do {
-    calc_dist_tot(isize,index,x,box,d,dtot,dtot2,bNMR,dtot1_3,dtot1_6);
+    calc_dist_tot(isize,index,x,ePBC,box,d,dtot,dtot2,bNMR,dtot1_3,dtot1_6);
     
     rmsnow=rms_diff(isize,d,d_r);
     fprintf(fp,"%g  %g\n",t,rmsnow);

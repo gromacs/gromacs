@@ -1015,6 +1015,7 @@ int gmx_cluster(int argc,char *argv[])
   t_mat        *rms;
   real         *eigval;
   t_topology   top;
+  int          ePBC;
   t_atoms      useatoms;
   t_matrix     *readmat;
   real         *tmp;
@@ -1174,7 +1175,8 @@ int gmx_cluster(int argc,char *argv[])
   /* get input */
   if (bReadTraj) {
     /* don't read mass-database as masses (and top) are not used */
-    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&xtps,NULL,box,bAnalyze);
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&ePBC,&xtps,NULL,box,
+		  bAnalyze);
     
     fprintf(stderr,"\nSelect group for least squares fit%s:\n",
 	    bReadMat?"":" and RMSD calculation");

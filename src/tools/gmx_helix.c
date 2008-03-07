@@ -215,6 +215,7 @@ int gmx_helix(int argc,char *argv[])
   int        i,j,ai,m,nall,nbb,nca,teller,nSel=0;
   atom_id    *bbindex,*caindex,*allindex;
   t_topology *top;
+  int        ePBC;
   rvec       *x,*xref,*xav;
   real       t,lambda;
   real       rms,fac;
@@ -237,7 +238,7 @@ int gmx_helix(int argc,char *argv[])
   bRange=(opt2parg_bSet("-ahxstart",asize(pa),pa) &&
 	  opt2parg_bSet("-ahxend",asize(pa),pa));
 		        
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);
   
   natoms=read_first_x(&status,opt2fn("-f",NFILE,fnm),&t,&x,box);
 
@@ -291,7 +292,7 @@ int gmx_helix(int argc,char *argv[])
   do {
     if ((teller++ % 10) == 0)
       fprintf(stderr,"\rt=%.2f",t);
-    rm_pbc(&(top->idef),top->atoms.nr,box,x,x);
+    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x,x);
     
     calc_hxprops(nres,bb,x,box);
     if (bCheck)

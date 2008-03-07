@@ -516,7 +516,7 @@ void printmol(t_corr *this,char *fn,
  * fx and nx are file pointers to things like read_first_x and
  * read_next_x
  */
-int corr_loop(t_corr *this,char *fn,t_topology *top,
+int corr_loop(t_corr *this,char *fn,t_topology *top,int ePBC,
 	      bool bMol,int gnx[],atom_id *index[],
 	      t_calc_func *calc1,bool bTen,bool bRmCOMM,real dt,
 	      real t_pdb,rvec **x_pdb,matrix box_pdb)
@@ -612,7 +612,7 @@ int corr_loop(t_corr *this,char *fn,t_topology *top,
     }
 
     if (bMol)
-      rm_pbc(&top->idef,natoms,box,x[cur],x[cur]);
+      rm_pbc(&top->idef,ePBC,natoms,box,x[cur],x[cur]);
 
     if (bRmCOMM)
       remove_pbc(bMol,this->nmol,natoms,&top->atoms,xa[cur],xa[prev],box,com);
@@ -673,7 +673,8 @@ static void index_atom2mol(int *n,int *index,t_block *mols)
 			    
 void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
 	     char *pdb_file,real t_pdb,
-	     int nrgrp, t_topology *top,bool bTen,bool bMW,bool bRmCOMM,
+	     int nrgrp, t_topology *top,int ePBC,
+	     bool bTen,bool bMW,bool bRmCOMM,
 	     int type,real dim_factor,int axis,
 	     real dt,real beginfit,real endfit)
 {
@@ -700,7 +701,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
 		  beginfit,endfit);
   
   nat_trx =
-    corr_loop(msd,trx_file,top,mol_file ? gnx[0] : 0,gnx,index,
+    corr_loop(msd,trx_file,top,ePBC,mol_file ? gnx[0] : 0,gnx,index,
 	      (mol_file!=NULL) ? calc1_mol : (bMW ? calc1_mw : calc1_norm),
 	      bTen,bRmCOMM,dt,t_pdb,pdb_file ? &x : NULL,box);
   
@@ -855,6 +856,7 @@ int gmx_msd(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   t_topology  top;
+  int         ePBC;
   matrix      box;
   char        title[256];
   char        *trx_file, *tps_file, *ndx_file, *msd_file, *mol_file, *pdb_file;
@@ -908,13 +910,13 @@ int gmx_msd(int argc,char *argv[])
   if (bTen && type != NORMAL)
     gmx_fatal(FARGS,"Can only calculate the full tensor for 3D msd");
 
-  bTop = read_tps_conf(tps_file,title,&top,&xdum,NULL,box,bMW || bRmCOMM); 
+  bTop = read_tps_conf(tps_file,title,&top,&ePBC,&xdum,NULL,box,bMW||bRmCOMM); 
   if (mol_file && !bTop)
     gmx_fatal(FARGS,"Could not read a topology from %s. Try a tpr file instead.",
 		tps_file);
     
   do_corr(trx_file,ndx_file,msd_file,mol_file,pdb_file,t_pdb,ngroup,
-	  &top,bTen,bMW,bRmCOMM,type,dim_factor,axis,dt,beginfit,endfit);
+	  &top,ePBC,bTen,bMW,bRmCOMM,type,dim_factor,axis,dt,beginfit,endfit);
   
   view_all(NFILE, fnm);
   

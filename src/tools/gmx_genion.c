@@ -450,7 +450,7 @@ int gmx_genion(int argc, char *argv[])
   snew(v,top->atoms.nr);
   snew(top->atoms.pdbinfo,top->atoms.nr);
 
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,inputrec.ePBC,box);
 
   /* Now loop over the ions that have to be placed */
   do {

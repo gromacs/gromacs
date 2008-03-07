@@ -180,6 +180,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   int        **npairs;
   atom_id    ix,jx,***pairs;
   t_topology *top=NULL;
+  int        ePBC=-1;
   t_block    *mols=NULL;
   t_blocka   *excl;
   t_atom     *atom=NULL;
@@ -191,7 +192,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
   
   if (fnTPS) {
     snew(top,1);
-    bTop=read_tps_conf(fnTPS,title,top,&x,NULL,box,TRUE);
+    bTop=read_tps_conf(fnTPS,title,top,&ePBC,&x,NULL,box,TRUE);
     if (bTop && !bCM)
       /* get exclusions from topology */
       excl = &(top->excls);
@@ -371,12 +372,12 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
     copy_mat(box,box_pbc);
     if (bPBC) {
       if (top != NULL)
-	rm_pbc(&top->idef,natoms,box,x,x);
+	rm_pbc(&top->idef,ePBC,natoms,box,x,x);
       if (bXY) {
 	check_box_c(box);
 	clear_rvec(box_pbc[ZZ]);
       }
-      set_pbc(&pbc,box_pbc);
+      set_pbc(&pbc,ePBC,box_pbc);
 
       if (bXY)
 	/* Set z-size to 1 so we get the surface iso the volume */
@@ -880,6 +881,7 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
     char **grpname,title[STRLEN];
     atom_id **index;
     t_topology top;
+    int ePBC;
     t_trxframe fr;
     reduced_atom **red;
     structure_factor *sf;
@@ -893,7 +895,7 @@ do_scattering_intensity (char* fnTPS, char* fnNDX, char* fnXVG, char *fnTRX,
     sf->energy = energy;
 
     /* Read the topology informations */
-    read_tps_conf (fnTPS, title, &top, &xtop, NULL, box, TRUE);
+    read_tps_conf (fnTPS, title, &top, &ePBC, &xtop, NULL, box, TRUE);
     sfree (xtop);
     
     /* groups stuff... */

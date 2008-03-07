@@ -259,6 +259,7 @@ int gmx_tcaf(int argc,char *argv[])
   };
 
   t_topology top;
+  int        ePBC;
   t_trxframe fr;
   matrix     box;
   bool       bTPS,bTop; /* ,bCubic; */
@@ -296,7 +297,8 @@ int gmx_tcaf(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_VIEW | PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 
-  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,NULL,NULL,box,TRUE);
+  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,
+		     TRUE);
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
 
   if (bMol) {

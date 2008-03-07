@@ -338,6 +338,7 @@ int main(int argc,char *argv[])
   char       *fnSCount,*fnArea,*fnTArea,*fnAArea;
   char       *leg[] = { "Phobic", "Phylic" };
   t_topology top;
+  int        ePBC;
   t_atoms    *atoms;
   t_matrix   mat;
   int        nres,nr0,naccr;
@@ -377,7 +378,7 @@ int main(int argc,char *argv[])
   fnAArea = opt2fn_null("-aa",NFILE,fnm);
   bDoAccSurf=(fnArea || fnTArea || fnAArea);
   
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xp,NULL,box,FALSE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xp,NULL,box,FALSE);
   atoms=&(top.atoms);
   check_oo(atoms);
   bPhbres=bPhobics(atoms);
@@ -455,7 +456,7 @@ int main(int argc,char *argv[])
       for(i=naccr-10; i<naccr; i++)
 	snew(accr[i],atoms->nres+10);
     }
-    rm_pbc(&(top.idef),natoms,box,x,x);
+    rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
     tapein=ffopen(pdbfile,"w");
     write_pdbfile_indexed(tapein,NULL,atoms,x,box,0,-1,gnx,index);
     fclose(tapein);

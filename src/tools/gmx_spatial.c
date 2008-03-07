@@ -125,6 +125,7 @@ int gmx_spatial(int argc,char *argv[])
   double MINBIN[3];
   double MAXBIN[3];
   t_topology top;
+  int        ePBC;
   char       title[STRLEN];
   t_trxframe fr;
   rvec       *xtop,*shx[26];
@@ -162,7 +163,7 @@ int gmx_spatial(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_CAN_VIEW,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,TRUE);
   sfree(xtop);
 
   atoms=&(top.atoms);
@@ -211,8 +212,8 @@ int gmx_spatial(int argc,char *argv[])
 
     copy_mat(box,box_pbc);
     if (bPBC) {
-      rm_pbc(&top.idef,natoms,box,fr.x,fr.x);
-      set_pbc(&pbc,box_pbc);
+      rm_pbc(&top.idef,ePBC,natoms,box,fr.x,fr.x);
+      set_pbc(&pbc,ePBC,box_pbc);
     }
 
     for(i=0; i<nidx; i++) {

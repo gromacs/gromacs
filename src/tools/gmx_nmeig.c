@@ -215,7 +215,7 @@ int gmx_nmeig(int argc,char *argv[])
   FILE       *out;
   int        status,trjout;
   t_topology top;
-  t_inputrec ir;
+  int        ePBC;
   rvec       *top_x;
   matrix     box;
   real       *eigenvalues;
@@ -246,7 +246,7 @@ int gmx_nmeig(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&top_x,NULL,box,bM);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&top_x,NULL,box,bM);
 
   natoms = top.atoms.nr;
   ndim = DIM*natoms;

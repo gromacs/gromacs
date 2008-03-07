@@ -197,7 +197,7 @@ int main(int argc,char *argv[])
     break;
   }
 
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm),NULL);
 
   if (!bPP) {
     nftype=calc_nftype(FTYPE,&(top->idef));

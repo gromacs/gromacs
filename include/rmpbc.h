@@ -44,14 +44,16 @@
 
 #include "typedefs.h"
 	
-extern void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[]);
+extern void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],
+		   rvec x_s[]);
 /* Correct coordinates for atoms within every molecule for the periodic
  * boundary conditions such that every molecule is whole.
  * (note that mdrun only writes whole molecules)
  * x are the input coordinates, x_s the shifted coordinates where
  * the molecules are whole. x and x_s can be the same array.
  * natoms is the size of x and x_s and can be smaller than the number 
- * of atoms in idef, but should only contain complete molecules
+ * of atoms in idef, but should only contain complete molecules.
+ * When ePBC=-1, the type of pbc is guessed from the box matrix.
  */
 
 extern void rm_gropbc(t_atoms *atoms,rvec x[],matrix box);

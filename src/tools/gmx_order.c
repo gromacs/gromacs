@@ -67,7 +67,8 @@
 /* P.J. van Maaren, November 2005     Added tetrahedral stuff               */
 /****************************************************************************/
 
-static void find_nearest_neighbours(t_topology top,int natoms, matrix box,
+static void find_nearest_neighbours(t_topology top, int ePBC,
+				    int natoms, matrix box,
 				    rvec x[],int maxidx,atom_id index[], 
 				    real time,
 				    real *sgmean, real *skmean)
@@ -102,8 +103,8 @@ static void find_nearest_neighbours(t_topology top,int natoms, matrix box,
   snew(skmol,maxidx);
 
   /* Must init pbc every step because of pressure coupling */
-  set_pbc(&pbc,box);
-  rm_pbc(&(top.idef),natoms,box,x,x);
+  set_pbc(&pbc,ePBC,box);
+  rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
 
   nsgbin = 1 + 1/0.0005;
   snew(sgbin,nsgbin);
@@ -214,6 +215,7 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
 {
   FILE       *fpsg=NULL,*fpsk=NULL;
   t_topology top;
+  int        ePBC;
   char       title[STRLEN],fn[STRLEN],subtitle[STRLEN];
   int        status;
   int        natoms;
@@ -225,7 +227,7 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   char       **grpname;
   int        i,*isize,ng,nframes;
   
-  read_tps_conf(fnTPS,title,&top,&xtop,NULL,box,FALSE);
+  read_tps_conf(fnTPS,title,&top,&ePBC,&xtop,NULL,box,FALSE);
 
   ng = 1;
   /* get index groups */
@@ -248,7 +250,7 @@ static void calc_tetra_order_parm(char *fnNDX,char *fnTPS,char *fnTRX,
   /* loop over frames */
   nframes = 0;
   do {
-    find_nearest_neighbours(top,natoms,box,x,isize[0],index[0],t,
+    find_nearest_neighbours(top,ePBC,natoms,box,x,isize[0],index[0],t,
 			    &sg,&sk);
     fprintf(fpsg,"%f %f\n", t, sg);
     fprintf(fpsk,"%f %f\n", t, sk);
@@ -288,7 +290,7 @@ static void check_length(real length, int a, int b)
 
 void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
 		real ***slOrder, real *slWidth, int nslices, bool bSliced, 
-		bool bUnsat, t_topology *top, int ngrps, int axis)
+		bool bUnsat, t_topology *top, int ePBC, int ngrps, int axis)
 { 
   rvec *x0,          /* coordinates with pbc                           */
     *x1,             /* coordinates without pbc                        */
@@ -342,7 +344,7 @@ void calc_order(char *fn, atom_id *index, atom_id *a, rvec **order,
       *slWidth = box[axis][axis]/nslices;
     teller++;
     
-    rm_pbc(&(top->idef),top->atoms.nr,box,x0,x1);
+    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x1);
 
     /* Now loop over all groups. There are ngrps groups, the order parameter can
        be calculated for grp 1 to grp ngrps - 1. For each group, loop over all 
@@ -554,6 +556,7 @@ int gmx_order(int argc,char *argv[])
             i,
             axis=0;                         /* normal axis                */
   t_topology *top;                	    /* topology 		  */ 
+  int       ePBC;
   atom_id   *index,             	    /* indices for a              */
             *a;                             /* atom numbers in each group */
   t_blocka  *block;                         /* data from index file       */
@@ -619,7 +622,7 @@ int gmx_order(int argc,char *argv[])
     if (bUnsat)
       fprintf(stderr,"Taking carbons as unsaturated!\n");
     
-    top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
+    top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);     /* read topology file */
     
     block = init_index(ftp2fn(efNDX,NFILE,fnm),&grpname);
     index = block->index;                       /* get indices from t_block block */
@@ -631,7 +634,7 @@ int gmx_order(int argc,char *argv[])
     
     calc_order(ftp2fn(efTRX,NFILE,fnm), index, a, &order, 
 	       &slOrder, &slWidth, nslices, bSliced, bUnsat,
-	       top, ngrps, axis); 
+	       top, ePBC, ngrps, axis); 
     
     order_plot(order, slOrder, opt2fn("-o",NFILE,fnm), opt2fn("-os",NFILE,fnm), 
 	       opt2fn("-od",NFILE,fnm), ngrps, nslices, slWidth, bSzonly);

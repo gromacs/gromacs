@@ -700,9 +700,9 @@ int gmx_disre(int argc,char *argv[])
   do {
     if (ir.ePBC != epbcNONE) {
       if (ir.bPeriodicMols)
-	set_pbc(&pbc,box);
+	set_pbc(&pbc,ir.ePBC,box);
       else
-	rm_pbc(&top.idef,natoms,box,x,x);
+	rm_pbc(&top.idef,ir.ePBC,natoms,box,x,x);
     }
     
     if (clust) {

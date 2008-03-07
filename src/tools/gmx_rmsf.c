@@ -195,6 +195,7 @@ int gmx_rmsf(int argc,char *argv[])
   t_tpxheader  header;
   t_inputrec   ir;
   t_topology   top;
+  int          ePBC;
   t_atoms      *pdbatoms,*refatoms;
   bool         bCont;
 
@@ -246,7 +247,7 @@ int gmx_rmsf(int argc,char *argv[])
   devfn    = opt2fn_null("-od",NFILE,fnm);
   dirfn    = opt2fn_null("-dir",NFILE,fnm);
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xref,NULL,box,TRUE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xref,NULL,box,TRUE);
   snew(w_rls,top.atoms.nr);
 
   fprintf(stderr,"Select group(s) for root mean square calculation\n");
@@ -294,7 +295,7 @@ int gmx_rmsf(int argc,char *argv[])
   do {
     if (bFit) {
       /* Remove periodic boundary */
-      rm_pbc(&(top.idef),natom,box,x,x);
+      rm_pbc(&(top.idef),ePBC,natom,box,x,x);
       
       /* Set center of mass to zero */
       sub_xcm(x,isize,index,top.atoms.atom,xcm,FALSE);

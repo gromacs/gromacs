@@ -943,8 +943,8 @@ void init_forcerec(FILE *fp,
 
   fr->bDomDec = DOMAINDECOMP(cr);
 
-  if (check_box(box))
-    gmx_fatal(FARGS,check_box(box));
+  if (check_box(ir->ePBC,box))
+    gmx_fatal(FARGS,check_box(ir->ePBC,box));
 
   cgs            = &(top->cgs);
   mols           = &(top->mols);
@@ -1541,7 +1541,7 @@ void force(FILE       *fplog,   int        step,
     /* Since all atoms are in the rectangular or triclinic unit-cell,
      * only single box vector shifts (2 in x) are required.
      */
-    set_pbc_ss(&pbc,fr->ePBC,box,cr->dd,TRUE);
+    set_pbc_dd(&pbc,fr->ePBC,cr->dd,TRUE,box);
   }
   debug_gmx();
 

@@ -80,8 +80,8 @@ static real calc_isquared(int nmol,rvec m_com[],rvec m_shift[],rvec clust_com)
   return Isq;
 }
 
-static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
-			     atom_id index[],
+static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,int ePBC,
+			     rvec x[],atom_id index[],
 			     rvec clust_com,matrix box)
 {
   const   real tol=1e-3;
@@ -99,7 +99,7 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
   
   /* Initiate the pbc structure */
   memset(&pbc,0,sizeof(pbc));
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
     
   /* Convert atom index to molecular */
   nmol   = top->mols.nr;
@@ -245,7 +245,7 @@ static void calc_pbc_cluster(int ecenter,int nrefat,t_topology *top,rvec x[],
 static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
 				    t_block *mols,
 				    int natoms,t_atom atom[],
-				    matrix box,rvec x[])
+				    int ePBC,matrix box,rvec x[])
 {
   atom_id i,j;
   int     d;
@@ -255,7 +255,7 @@ static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
   t_pbc   pbc;
   
   calc_box_center(ecenter,box,box_center);
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
   if (mols->nr <= 0) 
     gmx_fatal(FARGS,"There are no molecule descriptions. I need a tpr file for this pbc option.");
   for(i=0; (i<mols->nr); i++) {
@@ -281,7 +281,7 @@ static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
       put_atoms_in_triclinic_unitcell(ecenter,box,1,&new_com);
       break;
     case euCompact:
-      put_atoms_in_compact_unitcell(ecenter,box,1,&new_com);
+      put_atoms_in_compact_unitcell(ePBC,ecenter,box,1,&new_com);
       break;
     }
     rvec_sub(new_com,com,shift);
@@ -298,7 +298,7 @@ static void put_molecule_com_in_box(int unitcell_enum,int ecenter,
 
 static void put_residue_com_in_box(int unitcell_enum,int ecenter,
 				   int natoms,t_atom atom[],
-				   matrix box,rvec x[])
+				   int ePBC,matrix box,rvec x[])
 {
   atom_id i, j, res_start, res_end, res_nat;
   int     d, presnr;
@@ -329,7 +329,7 @@ static void put_residue_com_in_box(int unitcell_enum,int ecenter,
 	put_atoms_in_triclinic_unitcell(ecenter,box,1,&new_com);
 	break;
       case euCompact:
-	put_atoms_in_compact_unitcell(ecenter,box,1,&new_com);
+	put_atoms_in_compact_unitcell(ePBC,ecenter,box,1,&new_com);
 	break;
       }
       rvec_sub(new_com,com,shift);
@@ -689,6 +689,7 @@ int gmx_trjconv(int argc,char *argv[])
   int          m,i,d,frame,outframe,natoms,nout,ncent,nre,newstep=0,model_nr;
 #define SKIP 10
   t_topology   top;
+  int          ePBC=-1;
   t_atoms      *atoms=NULL,useatoms;
   matrix       top_box;
   atom_id      *index,*cindex;
@@ -859,7 +860,7 @@ int gmx_trjconv(int argc,char *argv[])
     bIndex = (bIndex || bTPS);
     
     if (bTPS) {
-      read_tps_conf(top_file,top_title,&top,&xp,NULL,top_box,
+      read_tps_conf(top_file,top_title,&top,&ePBC,&xp,NULL,top_box,
 		    bReset || bPBCcomRes);
       atoms=&top.atoms;
       /* top_title is only used for gro and pdb,
@@ -934,7 +935,7 @@ int gmx_trjconv(int argc,char *argv[])
       /* Restore reference structure and set to origin, 
          store original location (to put structure back) */
       if (bRmPBC)
-	rm_pbc(&(top.idef),atoms->nr,top_box,xp,xp);
+	rm_pbc(&(top.idef),ePBC,atoms->nr,top_box,xp,xp);
       copy_rvec(xp[index[0]],x_shift);
       reset_x_ndim(nfitdim,ifit,ind_fit,atoms->nr,NULL,xp,w_rls);
       rvec_dec(x_shift,xp[index[0]]);
@@ -1110,14 +1111,14 @@ int gmx_trjconv(int argc,char *argv[])
 	else if (bCluster && bTPS) {
 	  rvec com;
 	  
-	  calc_pbc_cluster(ecenter,ifit,&top,fr.x,ind_fit,com,fr.box);
+	  calc_pbc_cluster(ecenter,ifit,&top,ePBC,fr.x,ind_fit,com,fr.box);
 	}
       
 	if (bPFit) {
 	  /* Now modify the coords according to the flags,
 	     for normal fit, this is only done for output frames */
 	  if (bRmPBC)
-	    rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
+	    rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
 	
 	  reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
 	  do_fit(natoms,w_rls,xp,fr.x);
@@ -1188,7 +1189,7 @@ int gmx_trjconv(int argc,char *argv[])
 		 for PFit we did this already! */
 	    
 	      if (bRmPBC)
-		rm_pbc(&(top.idef),natoms,fr.box,fr.x,fr.x);
+		rm_pbc(&(top.idef),ePBC,natoms,fr.box,fr.x,fr.x);
 	  
 	      if (bReset) {
 		reset_x_ndim(nfitdim,ifit,ind_fit,natoms,NULL,fr.x,w_rls);
@@ -1212,7 +1213,7 @@ int gmx_trjconv(int argc,char *argv[])
 		put_atoms_in_triclinic_unitcell(ecenter,fr.box,natoms,fr.x);
 		break;
 	      case euCompact:
-		warn = put_atoms_in_compact_unitcell(ecenter,fr.box,
+		warn = put_atoms_in_compact_unitcell(ePBC,ecenter,fr.box,
 						     natoms,fr.x);
 		if (warn && !bWarnCompact) {
 		  fprintf(stderr,"\n%s\n",warn);
@@ -1223,12 +1224,12 @@ int gmx_trjconv(int argc,char *argv[])
 	    }
 	    if (bPBCcomRes) {
 	      put_residue_com_in_box(unitcell_enum,ecenter,
-				     natoms,atoms->atom,fr.box,fr.x);
+				     natoms,atoms->atom,ePBC,fr.box,fr.x);
 	    }
 	    if (bPBCcomMol) {
 	      put_molecule_com_in_box(unitcell_enum,ecenter,
 				      &top.mols,
-				      natoms,atoms->atom,fr.box, fr.x);
+				      natoms,atoms->atom,ePBC,fr.box,fr.x);
 	    }
 	    /* Copy the input trxframe struct to the output trxframe struct */
 	    frout = fr;

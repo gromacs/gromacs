@@ -1732,7 +1732,7 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
   bool bTWIN;
   char *ptr;
   
-  ptr = check_box(box);
+  ptr = check_box(ir->ePBC,box);
   if (ptr) {
     fprintf(stderr,
 	    "ERROR: %s\n",ptr);

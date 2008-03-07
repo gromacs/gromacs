@@ -71,6 +71,7 @@ int main (int argc,char *argv[])
   char        *infile;
   char        *grpnm;
   t_topology  top;
+  int         ePBC;
   t_atoms     *atoms,*iatoms;
   t_protonate protdata;
   atom_id     *index;
@@ -95,7 +96,7 @@ int main (int argc,char *argv[])
 		    NFILE,fnm,0,NULL,asize(desc),desc,0,NULL);
   
   infile=opt2fn("-s",NFILE,fnm);
-  read_tps_conf(infile,title,&top,&x,NULL,box,FALSE);
+  read_tps_conf(infile,title,&top,&ePBC,&x,NULL,box,FALSE);
   atoms=&(top.atoms);
   printf("Select group to process:\n");
   get_index(atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nidx,&index,&grpnm);

@@ -93,7 +93,7 @@ static void calculate_normal(atom_id index[],rvec x[],rvec result,rvec center)
 }
 
 /* calculate the angle and distance between the two groups */
-static void calc_angle(rvec *box,rvec x[], atom_id index1[], 
+static void calc_angle(int ePBC,matrix box,rvec x[], atom_id index1[], 
 		       atom_id index2[], int gnx1, int gnx2,
 		       real *angle,      real *distance, 
 		       real *distance1,  real *distance2)
@@ -110,8 +110,7 @@ static void calc_angle(rvec *box,rvec x[], atom_id index1[],
     h1,h2,h3,h4,h5;  	/* temp. vectors */
   t_pbc pbc;
 
-  if (box)
-    set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
 
   switch(gnx1)
     {
@@ -183,7 +182,7 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
 		  char *d1file, char *d2file,
 		  atom_id index1[], int gnx1, char *grpn1,
 		  atom_id index2[], int gnx2, char *grpn2,
-		  t_topology *top,bool bPBC)
+		  t_topology *top,int ePBC)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
@@ -226,9 +225,9 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
     {
       teller++;
 
-      rm_pbc(&(top->idef),natoms,box,x0,x0);
+      rm_pbc(&(top->idef),ePBC,natoms,box,x0,x0);
       
-      calc_angle(bPBC ? box : NULL,x0,index1,index2,gnx1,gnx2,&angle,
+      calc_angle(ePBC,box,x0,index1,index2,gnx1,gnx2,&angle,
 		 &distance,&distance1,&distance2);
       
       fprintf(sg_angle,"%12g  %12g  %12g\n",t,angle,acos(angle)*180.0/M_PI);
@@ -254,7 +253,8 @@ void sgangle_plot(char *fn,char *afile,char *dfile,
   sfree(x0);
 }
 
-static void calc_angle_single(rvec *box,
+static void calc_angle_single(int ePBC,
+			      matrix box,
 			      rvec xzero[],
 			      rvec x[], 
 			      atom_id index1[],
@@ -280,7 +280,7 @@ static void calc_angle_single(rvec *box,
   rvec  h1,h2,h3,h4,h5;  	/* temp. vectors */ 
   
   if (box)
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,ePBC,box);
 
   switch(gnx1) {
   case 3:           /* group 1 defines plane */
@@ -341,7 +341,7 @@ void sgangle_plot_single(char *fn,char *afile,char *dfile,
 			 char *d1file, char *d2file,
 			 atom_id index1[], int gnx1, char *grpn1,
 			 atom_id index2[], int gnx2, char *grpn2,
-			 t_topology *top,bool bPBC)
+			 t_topology *top,int ePBC)
 {
   FILE         
     *sg_angle,           /* xvgr file with angles */
@@ -387,14 +387,14 @@ void sgangle_plot_single(char *fn,char *afile,char *dfile,
   do {
     teller++;
     
-    rm_pbc(&(top->idef),natoms,box,x0,x0);
+    rm_pbc(&(top->idef),ePBC,natoms,box,x0,x0);
     if (teller==1) {
       for(i=0;i<natoms;i++)
 	copy_rvec(x0[i],xzero[i]);
     }
     
     
-    calc_angle_single(bPBC ? box : NULL,
+    calc_angle_single(ePBC,box,
 		      xzero,x0,index1,index2,gnx1,gnx2,&angle,
 		      &distance,&distance1,&distance2);
     
@@ -449,11 +449,10 @@ int gmx_sgangle(int argc,char *argv[])
   char      *grpname[2];          		/* name of the two groups */
   int       gnx[2];               		/* size of the two groups */
   t_topology *top;                		/* topology 		*/ 
+  int       ePBC;
   atom_id   *index[2];            		
-  static bool bPBC=FALSE,bOne = FALSE, bZ=FALSE;
+  static bool bOne = FALSE, bZ=FALSE;
   t_pargs pa[] = {
-    { "-pbc", FALSE, etBOOL, {&bPBC},
-      "Use periodic boundary conditions" },
     { "-one", FALSE, etBOOL, {&bOne},
       "Only one group compute angle between vector at time zero and time t"},
     { "-z", FALSE, etBOOL, {&bZ},
@@ -478,7 +477,7 @@ int gmx_sgangle(int argc,char *argv[])
 		    NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
   
 
-  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);     /* read topology file */
 
   fna = opt2fn("-oa",NFILE,fnm);
   fnd = opt2fn_null("-od",NFILE,fnm);
@@ -494,7 +493,7 @@ int gmx_sgangle(int argc,char *argv[])
     sgangle_plot_single(ftp2fn(efTRX,NFILE,fnm), fna, fnd, fnd1, fnd2,
 			index[0],gnx[0],grpname[0],
 			index[0],gnx[0],grpname[0],
-			top,bPBC);
+			top,ePBC);
   }  else {
     rd_index(ftp2fn(efNDX,NFILE,fnm),bZ ? 1 : 2,gnx,index,grpname);
     if (!bZ)
@@ -507,7 +506,7 @@ int gmx_sgangle(int argc,char *argv[])
     sgangle_plot(ftp2fn(efTRX,NFILE,fnm), fna, fnd, fnd1, fnd2,
 		 index[0],gnx[0],grpname[0],
 		 index[1],gnx[1],grpname[1],
-		 top,bPBC);
+		 top,ePBC);
   }
 
   do_view(fna,"-nxy");     /* view xvgr file */

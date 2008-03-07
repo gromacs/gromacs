@@ -50,10 +50,9 @@
 #include "names.h"
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
-enum { epbcdxRECTANGULAR=1, epbcdxRECTANGULAR_SS, 
-       epbcdxTRICLINIC, epbcdxTRICLINIC_SS,
-       epbcdx1D_RECT_SS, epbcdx1D_TRIC_SS,
-       epbcdx2D_RECT_SS, epbcdx2D_TRIC_SS,
+enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC,
+       epbcdx2D_RECT, epbcdx2D_TRIC,
+       epbcdx1D_RECT, epbcdx1D_TRIC,
        epbcdxNOPBC, epbcdxUNSUPPORTED };
 
 /* Margin factor for error message and correction if the box is too skewed */
@@ -95,23 +94,26 @@ void dump_pbc(FILE *fp,t_pbc *pbc)
   }
 }
 
-char *check_box(matrix box)
+char *check_box(int ePBC,matrix box)
 {
   char *ptr;
 
-  if ((box[XX][YY]!=0) || (box[XX][ZZ]!=0) || (box[YY][ZZ]!=0))
+  if (ePBC == -1)
+    ePBC = guess_ePBC(box);
+
+  if (ePBC == epbcNONE)
+    return NULL;
+
+  if ((box[XX][YY]!=0) || (box[XX][ZZ]!=0) || (box[YY][ZZ]!=0)) {
     ptr = "Only triclinic boxes with the first vector parallel to the x-axis and the second vector in the xy-plane are supported.";
-#ifdef ALLOW_OFFDIAG_LT_HALFDIAG 
-  else if ((fabs(box[YY][XX])+fabs(box[ZZ][XX]) > 2*BOX_MARGIN*box[XX][XX]) ||
-	   (fabs(box[ZZ][YY]) > 2*BOX_MARGIN*box[YY][YY]))
-#else
-  else if ((fabs(box[YY][XX]) > BOX_MARGIN*box[XX][XX]) ||
-	   (fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX]) ||
-	   (fabs(box[ZZ][YY]) > BOX_MARGIN*box[YY][YY]))
-#endif
+  } else if (fabs(box[YY][XX]) > BOX_MARGIN*box[XX][XX] ||
+	     (ePBC != epbcXY &&
+	      (fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX] ||
+	       fabs(box[ZZ][YY]) > BOX_MARGIN*box[YY][YY]))) {
     ptr = "Triclinic box is too skewed.";
-  else
+  } else {
     ptr = NULL;
+  }
   
   return ptr;
 }
@@ -123,14 +125,20 @@ real max_cutoff2(int ePBC,matrix box)
   /* Physical limitation of the cut-off
    * by half the length of the shortest box vector.
    */
-  min_hv2 = 0.25*min(norm2(box[XX]),min(norm2(box[YY]),norm2(box[ZZ])));
+  min_hv2 = min(0.25*norm2(box[XX]),0.25*norm2(box[YY]));
+  if (ePBC != epbcXY)
+    min_hv2 = min(min_hv2,0.25*norm2(box[ZZ]));
   
   /* Limitation to the smallest diagonal element due to optimizations:
    * checking only linear combinations of single box-vectors (2 in x)
    * in the grid search and pbc_dx is a lot faster
    * than checking all possible combinations.
    */
-  min_ss = min(box[XX][XX],min(box[YY][YY]-fabs(box[ZZ][YY]),box[ZZ][ZZ]));
+  if (ePBC == epbcXY) {
+    min_ss = min(box[XX][XX],box[YY][YY]);
+  } else {
+    min_ss = min(box[XX][XX],min(box[YY][YY]-fabs(box[ZZ][YY]),box[ZZ][ZZ]));
+  }
   
   return min(min_hv2,min_ss*min_ss);
 }
@@ -156,6 +164,9 @@ int guess_ePBC(matrix box)
     }
     ePBC = epbcNONE;
   }
+
+  if (debug)
+    fprintf(debug,"Guessed pbc = %s from the box matrix\n",epbc_names[ePBC]);
 
   return ePBC;
 }
@@ -225,8 +236,7 @@ bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph)
   return bCorrected;
 }
 
-static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
-			ivec *dd_nc,bool bSingleShift)
+static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 {
   int  order[5]={0,-1,1,-2,2};
   int  ii,jj,kk,i,j,k,d,dd,jc,kc,npbcdim,shift;
@@ -235,12 +245,19 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
   rvec try,pos;
   bool bXY,bUse;
   char *ptr;
-  
+
   copy_mat(box,pbc->box);
   pbc->bLimitDistance = FALSE;
   pbc->max_cutoff2 = 0;
+  pbc->dim = -1;
 
-  ptr = check_box(box);
+  for(i=0; (i<DIM); i++) {
+    pbc->fbox_diag[i]  =  box[i][i];
+    pbc->hbox_diag[i]  =  pbc->fbox_diag[i]*0.5;
+    pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
+  }
+
+  ptr = check_box(ePBC,box);
   if (ePBC == epbcNONE) {
     pbc->ePBCDX = epbcdxNOPBC;
   } else if (ptr) {
@@ -251,60 +268,54 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
     pbc->bLimitDistance = TRUE;
     pbc->limit_distance2 = 0;
   } else {
-    bXY = (ePBC == epbcXY);
-    if (dd_nc || bXY) {
-      if (dd_nc && !bSingleShift)
-	gmx_fatal(FARGS,"Domain decomposition only supports single shifts");
-      npbcdim = 0;
-      for(i=0; i<DIM; i++) {
-	if ((dd_nc && (*dd_nc)[i] > 1) || (bXY && i==ZZ)) {
-	  bPBC[i] = 0;
-	} else {
-	  bPBC[i] = 1;
-	  npbcdim++;
-	}
-      }
-      switch (npbcdim) {
-      case 1:
-	pbc->ePBCDX = epbcdx1D_RECT_SS;
-	for(i=0; i<DIM; i++)
-	  if (bPBC[i])
-	    pbc->dim = i;
-	for(i=0; i<DIM; i++)
-	  if (i!=pbc->dim && pbc->box[pbc->dim][i]!=0)
-	    pbc->ePBCDX = epbcdx1D_TRIC_SS;
-	break;
-      case 2:
-	pbc->ePBCDX = epbcdx2D_RECT_SS;
-	for(i=0; i<DIM; i++)
-	  if (!bPBC[i])
-	    pbc->dim = i;
-	for(i=0; i<DIM; i++)
-	  if (i!=pbc->dim)
-	    for(j=0; j<DIM; j++)
-	      if (j!=i && pbc->box[i][j]!=0)
-		pbc->ePBCDX = epbcdx2D_TRIC_SS;
-	break;
-      default:
-	gmx_fatal(FARGS,"Incorrect number of pbc dimensions with DD: %d",
-		  npbcdim);
-      }
-    } else {
-      if (TRICLINIC(box)) {
-	pbc->ePBCDX =
-	  (bSingleShift ? epbcdxTRICLINIC_SS : epbcdxTRICLINIC);
+    npbcdim = 0;
+    for(i=0; i<DIM; i++) {
+      if ((dd_nc && (*dd_nc)[i] > 1) || (ePBC == epbcXY && i == ZZ)) {
+	bPBC[i] = 0;
       } else {
-	pbc->ePBCDX =
-	  (bSingleShift ? epbcdxRECTANGULAR_SS : epbcdxRECTANGULAR);
+	bPBC[i] = 1;
+	npbcdim++;
       }
     }
-    for(i=0; (i<DIM); i++) {
-      pbc->fbox_diag[i]  =  box[i][i];
-      pbc->hbox_diag[i]  =  pbc->fbox_diag[i]*0.5;
-      pbc->mhbox_diag[i] = -pbc->hbox_diag[i];
+    switch (npbcdim) {
+    case 1:
+      /* 1D pbc is not an mdp option and it is therefore only used
+       * with single shifts.
+       */
+      pbc->ePBCDX = epbcdx1D_RECT;
+      for(i=0; i<DIM; i++)
+	if (bPBC[i])
+	  pbc->dim = i;
+      for(i=0; i<pbc->dim; i++)
+	if (pbc->box[pbc->dim][i] != 0)
+	  pbc->ePBCDX = epbcdx1D_TRIC;
+      break;
+    case 2:
+      pbc->ePBCDX = epbcdx2D_RECT;
+      for(i=0; i<DIM; i++)
+	if (!bPBC[i])
+	  pbc->dim = i;
+      for(i=0; i<DIM; i++)
+	if (bPBC[i])
+	  for(j=0; j<i; j++)
+	    if (pbc->box[i][j] != 0)
+	      pbc->ePBCDX = epbcdx2D_TRIC;
+      break;
+    case 3:
+      if (TRICLINIC(box)) {
+	pbc->ePBCDX = epbcdxTRICLINIC;
+      } else {
+	pbc->ePBCDX = epbcdxRECTANGULAR;
+      }
+      break;
+    default:
+      gmx_fatal(FARGS,"Incorrect number of pbc dimensions with DD: %d",
+		npbcdim);
     }
     pbc->max_cutoff2 = max_cutoff2(ePBC,box);
-    if (pbc->ePBCDX == epbcdxTRICLINIC || pbc->ePBCDX == epbcdxTRICLINIC_SS) {
+
+    if (pbc->ePBCDX == epbcdxTRICLINIC ||
+	pbc->ePBCDX == epbcdx2D_TRIC) {
       if (debug) {
 	pr_rvecs(debug,0,"Box",box,DIM);
 	fprintf(debug,"max cutoff %.3f\n",sqrt(pbc->max_cutoff2));
@@ -316,11 +327,18 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
        */
       for(kk=0; kk<5; kk++) {
 	k = order[kk];
+	if (!bPBC[ZZ] && k != 0)
+	  continue;
 	for(jj=0; jj<5; jj++) {
 	  j = order[jj];
+	  if (!bPBC[YY] && j != 0)
+	    continue;
 	  for(ii=0; ii<3; ii++) {
 	    i = order[ii];
-	    if ((i!=0) || (j!=0) || (k!=0)) {
+	    if (!bPBC[XX] && i != 0)
+	      continue;
+	    /* A shift is only useful when it is trilinic */
+	    if (j != 0 || k != 0) {
 	      d2old = 0;
 	      d2new = 0;
 	      for(d=0; d<DIM; d++) {
@@ -328,10 +346,14 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
 		/* Choose the vector within the brick around 0,0,0 that
 		 * will become the shortest due to shift try.
 		 */
-		if (try[d] < 0)
-		  pos[d] = min( pbc->hbox_diag[d],-try[d]);
-		else
-		  pos[d] = max(-pbc->hbox_diag[d],-try[d]);
+		if (d == pbc->dim) {
+		  try[d] == 0;
+		} else {
+		  if (try[d] < 0)
+		    pos[d] = min( pbc->hbox_diag[d],-try[d]);
+		  else
+		    pos[d] = max(-pbc->hbox_diag[d],-try[d]);
+		}
 		d2old += sqr(pos[d]);
 		d2new += sqr(pos[d] + try[d]);
 	      }
@@ -402,18 +424,16 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,matrix box,
   }
 }
 
-void set_pbc(t_pbc *pbc,matrix box)
+void set_pbc(t_pbc *pbc,int ePBC,matrix box)
 {
-  low_set_pbc(pbc,guess_ePBC(box),box,NULL,FALSE);
+  if (ePBC == -1)
+    ePBC = guess_ePBC(box);
+
+  low_set_pbc(pbc,ePBC,NULL,box);
 }
 
-void set_pbc_ms(t_pbc *pbc,int ePBC,matrix box)
-{
-  low_set_pbc(pbc,ePBC,box,NULL,FALSE);
-}
-
-t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
-		  gmx_domdec_t *dd,bool bSingleDir)
+t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
+		  gmx_domdec_t *dd,bool bSingleDir,matrix box)
 {
   ivec nc2;
   int  npbcdim,i;
@@ -425,7 +445,7 @@ t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
     for(i=0; i<DIM; i++) {
       if (dd->nc[i] <= (bSingleDir ? 1 : 2)) {
 	nc2[i] = 1;
-	if (!(ePBC==epbcXY && i==ZZ))
+	if (!(ePBC == epbcXY && i == ZZ))
 	  npbcdim++;
       } else {
 	nc2[i] = dd->nc[i];
@@ -434,12 +454,121 @@ t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
   }
   
   if (npbcdim > 0)
-    low_set_pbc(pbc,ePBC,box,npbcdim<DIM ? &nc2 : NULL,TRUE);
+    low_set_pbc(pbc,ePBC,npbcdim<DIM ? &nc2 : NULL,box);
 
-  return (npbcdim>0 ? pbc : NULL);
+  return (npbcdim > 0 ? pbc : NULL);
 }
 
-int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
+void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
+{
+  int  i,j,is;
+  rvec dx_start,try;
+  real fb,d2min,d2try;
+
+  rvec_sub(x1,x2,dx);
+
+  switch (pbc->ePBCDX) {
+  case epbcdxRECTANGULAR:
+    for(i=0; i<DIM; i++) {
+      fb = pbc->fbox_diag[i];
+      while (dx[i] > pbc->hbox_diag[i]) {
+	dx[i] -= fb;
+      }
+      while (dx[i] <= pbc->mhbox_diag[i]) {
+	dx[i] += fb;
+      }
+    }
+    break;
+  case epbcdxTRICLINIC:
+    for(i=DIM-1; i>=0; i--) {
+      while (dx[i] > pbc->hbox_diag[i]) {
+	for (j=i; j>=0; j--)
+	  dx[j] -= pbc->box[i][j];
+      }
+      while (dx[i] <= pbc->mhbox_diag[i]) {
+	for (j=i; j>=0; j--)
+	  dx[j] += pbc->box[i][j];
+      }
+    }
+    /* dx is the distance in a rectangular box */
+    d2min = norm2(dx);
+    if (d2min > pbc->max_cutoff2) {
+      copy_rvec(dx,dx_start);
+      d2min = norm2(dx);
+      /* Now try all possible shifts, when the distance is within max_cutoff
+       * it must be the shortest possible distance.
+       */
+      i = 0;
+      while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
+	rvec_add(dx_start,pbc->tric_vec[i],try);
+	d2try = norm2(try);
+	if (d2try < d2min) {
+	  copy_rvec(try,dx);
+	  d2min = d2try;
+	}
+	i++;
+      }
+    }
+    break;
+  case epbcdx2D_RECT:
+    for(i=0; i<DIM; i++) {
+      if (i != pbc->dim) {
+	while (dx[i] > pbc->hbox_diag[i]) {
+	  dx[i] -= pbc->fbox_diag[i];
+	}
+	while (dx[i] <= pbc->mhbox_diag[i]) {
+	  dx[i] += pbc->fbox_diag[i];
+	}
+      }
+    }
+    break;
+  case epbcdx2D_TRIC:
+    d2min = 0;
+    for(i=DIM-1; i>=0; i--) {
+      if (i != pbc->dim) {
+	while (dx[i] > pbc->hbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] -= pbc->box[i][j];
+	}
+	while (dx[i] <= pbc->mhbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] += pbc->box[i][j];
+	}
+	d2min += dx[i]*dx[i];
+      }
+    }
+    if (d2min > pbc->max_cutoff2) {
+      copy_rvec(dx,dx_start);
+      d2min = norm2(dx);
+      /* Now try all possible shifts, when the distance is within max_cutoff
+       * it must be the shortest possible distance.
+       */
+      i = 0;
+      while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
+	rvec_add(dx_start,pbc->tric_vec[i],try);
+	d2try = 0;
+	for(i=DIM-1; i>=0; i--) {
+	  if (i != pbc->dim)
+	    d2try += try[i]*try[i];
+	}
+	if (d2try < d2min) {
+	  copy_rvec(try,dx);
+	  d2min = d2try;
+	}
+	i++;
+      }
+    }
+    break;
+  case epbcdxNOPBC:
+  case epbcdxUNSUPPORTED:
+    break;
+  default:
+    gmx_fatal(FARGS,"Internal error in pbc_dx, set_pbc has not been called");
+    break;
+  }
+}
+
+int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
   int  i,j,is;
   rvec dx_start,try;
@@ -453,51 +582,89 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
   case epbcdxRECTANGULAR:
     for(i=0; i<DIM; i++) {
       fb = pbc->fbox_diag[i];
-      while (dx[i] > pbc->hbox_diag[i]) {
-	    dx[i] -= fb;
-	    ishift[i]--;
-      }
-      while (dx[i] <= pbc->mhbox_diag[i]) {
-	    dx[i] += fb;
-	    ishift[i]++;
+      if (dx[i] > pbc->hbox_diag[i]) {
+	dx[i] -= fb;
+	ishift[i]--;
+      } else if (dx[i] <= pbc->mhbox_diag[i]) {
+	dx[i] += fb;
+	ishift[i]++;
       }
     }
     break;
-  case epbcdxRECTANGULAR_SS:
-    for(i=0; i<DIM; i++) {
-      fb = pbc->fbox_diag[i];
-      if (dx[i] > pbc->hbox_diag[i]) {
-  	    dx[i] -= fb;
-	    ishift[i]--;
-      } else if (dx[i] <= pbc->mhbox_diag[i]) {
-	    dx[i] += fb;
-	    ishift[i]++;
-      }
-    }  
-    break;
   case epbcdxTRICLINIC:
-  case epbcdxTRICLINIC_SS:
-    if (pbc->ePBCDX == epbcdxTRICLINIC) {
-      for(i=DIM-1; i>=0; i--) {
-	while (dx[i] > pbc->hbox_diag[i]) {
-	  for (j=i; j>=0; j--)
-	    dx[j] -= pbc->box[i][j];
-	  ishift[i]--;
+    /* For triclinic boxes the performance difference between
+     * if/else and two while loops is negligible.
+     * However, the while version can cause extreme delays
+     * before a simulation crashes due to large forces which
+     * can cause unlimited displacements.
+     * Also allowing multiple shifts would index fshift beyond bounds.
+     */
+    for(i=DIM-1; i>=1; i--) {
+      if (dx[i] > pbc->hbox_diag[i]) {
+	for (j=i; j>=0; j--)
+	  dx[j] -= pbc->box[i][j];
+	ishift[i]--;
+      } else if (dx[i] <= pbc->mhbox_diag[i]) {
+	for (j=i; j>=0; j--)
+	  dx[j] += pbc->box[i][j];
+	ishift[i]++;
+      }
+    }
+    /* Allow 2 shifts in x */
+    if (dx[XX] > pbc->hbox_diag[XX]) {
+      dx[XX] -= pbc->fbox_diag[XX];
+      ishift[XX]--;
+      if (dx[XX] > pbc->hbox_diag[XX]) {
+	dx[XX] -= pbc->fbox_diag[XX];
+	ishift[XX]--;
+      }
+    } else if (dx[XX] <= pbc->mhbox_diag[XX]) {
+      dx[XX] += pbc->fbox_diag[XX];
+      ishift[XX]++;
+      if (dx[XX] <= pbc->mhbox_diag[XX]) {
+	dx[XX] += pbc->fbox_diag[XX];
+	ishift[XX]++;
+      }
+    }
+    /* dx is the distance in a rectangular box */
+    d2min = norm2(dx);
+    if (d2min > pbc->max_cutoff2) {
+      copy_rvec(dx,dx_start);
+      copy_ivec(ishift,ishift_start);
+      d2min = norm2(dx);
+      /* Now try all possible shifts, when the distance is within max_cutoff
+       * it must be the shortest possible distance.
+       */
+      i = 0;
+      while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
+	rvec_add(dx_start,pbc->tric_vec[i],try);
+	d2try = norm2(try);
+	if (d2try < d2min) {
+	  copy_rvec(try,dx);
+	  ivec_add(ishift_start,pbc->tric_shift[i],ishift);
+	  d2min = d2try;
 	}
-	while (dx[i] <= pbc->mhbox_diag[i]) {
-	  for (j=i; j>=0; j--)
-	    dx[j] += pbc->box[i][j];
+	i++;
+      }
+    }
+    break;
+  case epbcdx2D_RECT:
+    for(i=0; i<DIM; i++) {
+      if (i != pbc->dim) {
+	if (dx[i] > pbc->hbox_diag[i]) {
+	  dx[i] -= pbc->fbox_diag[i];
+	  ishift[i]--;
+	} else if (dx[i] <= pbc->mhbox_diag[i]) {
+	  dx[i] += pbc->fbox_diag[i];
 	  ishift[i]++;
 	}
       }
-    } else {
-      /* For triclinic boxes the performance difference between
-       * if/else and two while loops is negligible.
-       * However, the while version can cause extreme delays
-       * before a simulation crashes due to large forces which
-       * can cause unlimited displacements.
-       */
-      for(i=DIM-1; i>=1; i--) {
+    }
+    break;
+  case epbcdx2D_TRIC:
+    d2min = 0;
+    for(i=DIM-1; i>=1; i--) {
+      if (i != pbc->dim) {
 	if (dx[i] > pbc->hbox_diag[i]) {
 	  for (j=i; j>=0; j--)
 	    dx[j] -= pbc->box[i][j];
@@ -507,7 +674,10 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 	    dx[j] += pbc->box[i][j];
 	  ishift[i]++;
 	}
+	d2min += dx[i]*dx[i];
       }
+    }
+    if (pbc->dim != XX) {
       /* Allow 2 shifts in x */
       if (dx[XX] > pbc->hbox_diag[XX]) {
 	dx[XX] -= pbc->fbox_diag[XX];
@@ -524,27 +694,33 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 	  ishift[XX]++;
 	}
       }
+      d2min += dx[XX]*dx[XX];
     }
-    /* dx is the distance in a rectangular box */
-    copy_rvec(dx,dx_start);
-    copy_ivec(ishift,ishift_start);
-    d2min = norm2(dx);
-    /* Now try all possible shifts, when the distance is within max_cutoff
-     * it must be the shortest possible distance.
-     */
-    i=0;
-    while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
-      rvec_add(dx_start,pbc->tric_vec[i],try);
-      d2try = norm2(try);
-      if (d2try < d2min) {
-	copy_rvec(try,dx);
-	ivec_add(ishift_start,pbc->tric_shift[i],ishift);
-	d2min = d2try;
+    if (d2min > pbc->max_cutoff2) {
+      copy_rvec(dx,dx_start);
+      copy_ivec(ishift,ishift_start);
+      d2min = norm2(dx);
+      /* Now try all possible shifts, when the distance is within max_cutoff
+       * it must be the shortest possible distance.
+       */
+      i = 0;
+      while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
+	rvec_add(dx_start,pbc->tric_vec[i],try);
+	d2try = 0;
+	for(i=DIM-1; i>=0; i--) {
+	  if (i != pbc->dim)
+	    d2try += try[i]*try[i];
+	}
+	if (d2try < d2min) {
+	  copy_rvec(try,dx);
+	  ivec_add(ishift_start,pbc->tric_shift[i],ishift);
+	  d2min = d2try;
+	}
+	i++;
       }
-      i++;
     }
     break;
-  case epbcdx1D_RECT_SS:
+  case epbcdx1D_RECT:
     i = pbc->dim;
     if (dx[i] > pbc->hbox_diag[i]) {
       dx[i] -= pbc->fbox_diag[i];
@@ -554,7 +730,7 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       ishift[i]++;
     }
     break;
-  case epbcdx1D_TRIC_SS:
+  case epbcdx1D_TRIC:
     i = pbc->dim;
     if (dx[i] > pbc->hbox_diag[i]) {
       rvec_dec(dx,pbc->box[i]);
@@ -564,44 +740,18 @@ int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       ishift[i]++;
     }
     break;
-  case epbcdx2D_RECT_SS:
-    for(i=0; i<DIM; i++)
-      if (i != pbc->dim) {
-	if (dx[i] > pbc->hbox_diag[i]) {
-	  dx[i] -= pbc->fbox_diag[i];
-	  ishift[i]--;
-	} else if (dx[i] <= pbc->mhbox_diag[i]) {
-	  dx[i] += pbc->fbox_diag[i];
-	  ishift[i]++;
-	}
-      }
-    break;
-  case epbcdx2D_TRIC_SS:
-    for(i=DIM-1; i>=0; i--) {
-      if (i != pbc->dim) {
-	while (dx[i] > pbc->hbox_diag[i]) {
-	  for (j=i; j>=0; j--)
-	    dx[j] -= pbc->box[i][j];
-	  ishift[i]--;
-	}
-	while (dx[i] <= pbc->mhbox_diag[i]) {
-	  for (j=i; j>=0; j--)
-	    dx[j] += pbc->box[i][j];
-	  ishift[i]++;
-	}
-      }
-    }
-    break;
   case epbcdxNOPBC:
   case epbcdxUNSUPPORTED:
     break;
   default:
-    gmx_fatal(FARGS,"Internal error in pbc_dx, set_pbc has not been called");
+    gmx_fatal(FARGS,"Internal error in pbc_dx_aiuc, set_pbc_dd or set_pbc has not been called");
     break;
   }
+
   is = IVEC2IS(ishift);
   if (debug)
     range_check(is,0,SHIFTS);
+
   return is; 
 }
 
@@ -1013,14 +1163,14 @@ void put_atoms_in_triclinic_unitcell(int ecenter,matrix box,
     }
 }
 
-char *put_atoms_in_compact_unitcell(int ecenter,matrix box,
+char *put_atoms_in_compact_unitcell(int ePBC,int ecenter,matrix box,
 				    int natoms,rvec x[])
 {
   t_pbc pbc;
   rvec box_center,dx;
   int  i;
 
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
   calc_box_center(ecenter,box,box_center);
   for(i=0; i<natoms; i++) {
     pbc_dx(&pbc,x[i],box_center,dx);

@@ -101,8 +101,8 @@ static void periodic_dist(matrix box,rvec x[],int n,atom_id index[],
 }
 
 static void periodic_mindist_plot(char *trxfn,char *outfn,
-				  t_topology *top,int n,atom_id index[],
-				  bool bSplit)
+				  t_topology *top,int ePBC,
+				  int n,atom_id index[],bool bSplit)
 {
   FILE   *out;
   char   *leg[5] = { "min per.","max int.","box1","box2","box3" };
@@ -129,7 +129,7 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   
   bFirst=TRUE;  
   do {
-    rm_pbc(&(top->idef),natoms,box,x,x);
+    rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
     periodic_dist(box,x,n,index,&rmin,&rmax,ind_min);
     if (rmin < rmint) {
       rmint = rmin;
@@ -153,7 +153,7 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
 	  index[ind_mini]+1,index[ind_minj]+1);
 }
 
-static void calc_dist(real rcut, matrix box, rvec x[], 
+static void calc_dist(real rcut, int ePBC, matrix box, rvec x[], 
 		      int nx1,int nx2, atom_id index1[], atom_id index2[],
 		      real *rmin, real *rmax, int *nmin, int *nmax,
 		      int *ixmin, int *jxmin, int *ixmax, int *jxmax,
@@ -177,7 +177,7 @@ static void calc_dist(real rcut, matrix box, rvec x[],
   
   /* Must init pbc every step because of pressure coupling */
   if (bPBC)
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,ePBC,box);
   if (index2) {
     j0=0;
     j1=nx2;
@@ -227,7 +227,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
 	       char *nfile,char *rfile,char *xfile,
 	       real rcut,bool bMat,t_atoms *atoms,
 	       int ng,atom_id *index[],int gnx[],char *grpn[],bool bSplit,
-	       bool bMin, int nres, atom_id *residue,bool bPBC)
+	       bool bMin, int nres, atom_id *residue,bool bPBC,int ePBC)
 {
   FILE         *atm,*dist,*num;
   int          trxout;
@@ -306,7 +306,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
     
     if (bMat) {
       if (ng == 1) {
-	calc_dist(rcut,box,x0,gnx[0],gnx[0],index[0],index[0],
+	calc_dist(rcut,ePBC,box,x0,gnx[0],gnx[0],index[0],index[0],
 		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	fprintf(dist,"  %12e",bMin?dmin:dmax);
 	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
@@ -314,7 +314,7 @@ void dist_plot(char *fn,char *afile,char *dfile,
       else {
 	for(i=0; (i<ng-1); i++) {
 	  for(k=i+1; (k<ng); k++) {
-	    calc_dist(rcut,box,x0,gnx[i],gnx[k],index[i],index[k],
+	    calc_dist(rcut,ePBC,box,x0,gnx[i],gnx[k],index[i],index[k],
 		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	    fprintf(dist,"  %12e",bMin?dmin:dmax);
 	    if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
@@ -324,13 +324,13 @@ void dist_plot(char *fn,char *afile,char *dfile,
     }
     else {    
       for(i=1; (i<ng); i++) {
-	calc_dist(rcut,box,x0,gnx[0],gnx[i],index[0],index[i],
+	calc_dist(rcut,ePBC,box,x0,gnx[0],gnx[i],index[0],index[i],
 		  &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	fprintf(dist,"  %12e",bMin?dmin:dmax);
 	if (num) fprintf(num,"  %8d",bMin?nmin:nmax);
 	if (nres) {
 	  for(j=0; j<nres; j++) {
-	    calc_dist(rcut,box,x0,residue[j+1]-residue[j],gnx[i],
+	    calc_dist(rcut,ePBC,box,x0,residue[j+1]-residue[j],gnx[i],
 		      &(index[0][residue[j]]),index[i],
 		      &dmin,&dmax,&nmin,&nmax,&min1,&min2,&max1,&max2,bPBC);
 	    mindres[i-1][j] = min(mindres[i-1][j],dmin);
@@ -460,6 +460,7 @@ int gmx_mindist(int argc,char *argv[])
       "Take periodic boundary conditions into account" }
   };
   t_topology *top=NULL;
+  int        ePBC=-1;
   char       title[256];
   real       t;
   rvec       *x;
@@ -515,7 +516,7 @@ int gmx_mindist(int argc,char *argv[])
 
   if (tpsfnm || resfnm || !ndxfnm) {
     snew(top,1);
-    read_tps_conf(tpsfnm,title,top,&x,NULL,box,FALSE);
+    read_tps_conf(tpsfnm,title,top,&ePBC,&x,NULL,box,FALSE);
   }
   get_index(top ? &(top->atoms) : NULL,ndxfnm,ng,gnx,index,grpname);
 
@@ -542,11 +543,11 @@ int gmx_mindist(int argc,char *argv[])
   }
     
   if (bPI)
-    periodic_mindist_plot(trxfnm,distfnm,top,gnx[0],index[0],bSplit);
+    periodic_mindist_plot(trxfnm,distfnm,top,ePBC,gnx[0],index[0],bSplit);
   else
     dist_plot(trxfnm,atmfnm,distfnm,numfnm,resfnm,oxfnm,
 	      rcutoff,bMat,top ? &(top->atoms) : NULL,
-	      ng,index,gnx,grpname,bSplit,!bMax, nres, residues,bPBC);
+	      ng,index,gnx,grpname,bSplit,!bMax, nres, residues,bPBC,ePBC);
 
   do_view(distfnm,"-nxy");
   if (!bPBC)

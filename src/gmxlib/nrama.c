@@ -75,7 +75,7 @@ static void calc_dihs(t_xrama *xr)
   real   cos_phi,sign;
   t_dih  *dd;
 
-  rm_pbc(xr->idef,xr->natoms,xr->box,xr->x,xr->x);
+  rm_pbc(xr->idef,xr->ePBC,xr->natoms,xr->box,xr->x,xr->x);
 
   for(i=0; (i<xr->ndih); i++) {
     dd=&(xr->dih[i]);
@@ -304,9 +304,10 @@ static void get_dih_props(t_xrama *xr,t_idef *idef,int mult)
 t_topology *init_rama(char *infile,char *topfile,t_xrama *xr,int mult)
 {
   t_topology *top;
+  int    ePBC;
   real   t;
 
-  top=read_top(topfile);
+  top=read_top(topfile,&xr->ePBC);
   
   /*get_dih2(xr,top->idef.functype,&(top->idef.bondeds),&(top->atoms));*/
   get_dih(xr,&(top->atoms));

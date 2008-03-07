@@ -94,6 +94,7 @@ int gmx_filter(int argc,char *argv[])
   char       *topfile,*lowfile,*highfile;
   bool       bTop=FALSE;
   t_topology top;
+  int        ePBC=-1;
   rvec       *xtop;
   matrix     topbox,*box,boxf;
   char       title[256],*grpname;
@@ -130,10 +131,10 @@ int gmx_filter(int argc,char *argv[])
   }
 
   if (topfile) {
-    bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,topbox,
-			 TRUE);
+    bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,
+			 &xtop,NULL,topbox,TRUE);
     if (bTop) {
-      rm_pbc(&(top.idef),top.atoms.nr,topbox,xtop,xtop);
+      rm_pbc(&(top.idef),ePBC,top.atoms.nr,topbox,xtop,xtop);
     }
   }
 
@@ -209,7 +210,7 @@ int gmx_filter(int argc,char *argv[])
 	  }
     }
     if (bTop) {
-      rm_pbc(&(top.idef),nat,box[nffr - 1],xn,xn);
+      rm_pbc(&(top.idef),ePBC,nat,box[nffr - 1],xn,xn);
     }
     if (bFit) {
       calc_xcm(xn,isize,index,top.atoms.atom,xcm,FALSE);

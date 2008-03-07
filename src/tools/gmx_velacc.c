@@ -78,6 +78,7 @@ int gmx_velacc(int argc,char *argv[])
   };
 
   t_topology top;
+  int        ePBC=-1;
   t_trxframe fr;
   matrix     box;
   bool       bTPS,bTop=FALSE;
@@ -113,7 +114,8 @@ int gmx_velacc(int argc,char *argv[])
   bTPS = bM || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
 
   if (bTPS) {
-    bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,NULL,NULL,box,TRUE);
+    bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,
+		       TRUE);
     get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
   } else
     rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);

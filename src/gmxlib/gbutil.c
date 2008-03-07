@@ -101,7 +101,7 @@ void orient(int natom,rvec *x,rvec *v, rvec angle,matrix box)
   real alfa=0,beta=0,gamma=0;
   t_pbc pbc;
 
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,-1,box);
 
   /*first i am going to look for the longest atom-atom distance*/
   longest=dist2(&pbc,x[0],x[1]);

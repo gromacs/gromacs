@@ -46,7 +46,7 @@
 #include "futil.h"
 #include "vec.h"	
 
-void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
+void rm_pbc(t_idef *idef,int ePBC,int natoms,matrix box,rvec x[],rvec x_s[])
 {
   typedef struct {
     int     natoms;
@@ -60,9 +60,12 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
   int    n,i;
   bool   bNeedToCopy;
 
+  if (ePBC == -1)
+    ePBC = guess_ePBC(box);
+
   bNeedToCopy = (x != x_s);
 
-  if (box[0][0]) {
+  if (ePBC != epbcNONE) {
     if (idef->ntypes!=-1) {
       n=-1;
       for(i=0; i<ngraph; i++)
@@ -76,7 +79,7 @@ void rm_pbc(t_idef *idef,int natoms,matrix box,rvec x[],rvec x_s[])
 	mgraph[n].natoms=natoms;
 	mgraph[n].gr=mk_graph(NULL,idef,0,natoms,FALSE,FALSE);
       }
-      mk_mshift(stdout,mgraph[n].gr,guess_ePBC(box),box,x);
+      mk_mshift(stdout,mgraph[n].gr,ePBC,box,x);
       calc_shifts(box,sv);
       shift_x(mgraph[n].gr,box,x,x_s);
       bNeedToCopy=FALSE;

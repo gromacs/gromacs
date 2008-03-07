@@ -70,6 +70,7 @@ typedef struct {
   rvec      *x;
   matrix    box;
   t_idef    *idef;
+  int       ePBC;
 } t_xrama;
 
 extern t_topology *init_rama(char *infile,char *topfile,t_xrama *xr,int mult);

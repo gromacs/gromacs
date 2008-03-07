@@ -231,8 +231,10 @@ extern void close_trj(int status);
 extern void rewind_trj(int status);
 /* Rewind trj file as opened with read_first_x */
 
-extern t_topology *read_top(char *fn);
-/* Extract a topology data structure from a topology file */
+extern t_topology *read_top(char *fn,int *ePBC);
+/* Extract a topology data structure from a topology file.
+ * If ePBC!=NULL *ePBC gives the pbc type.
+ */
 
 extern bool bDoView(void);
 /* Return TRUE when user requested viewing of the file */

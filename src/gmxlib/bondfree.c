@@ -60,7 +60,7 @@
 static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
 {
   if (pbc) {
-    return pbc_dx(pbc,xi,xj,dx);
+    return pbc_dx_aiuc(pbc,xi,xj,dx);
   }
   else {
     rvec_sub(xi,xj,dx);
@@ -1107,7 +1107,7 @@ real posres(int nbonds,
   int  i,ai,m,d,type,ki,npbcdim=0;
   const t_iparams *pr;
   real v,vtot,fm,*fc;
-  rvec comA_sc,comB_sc,posA,posB,dx;
+  rvec comA_sc,comB_sc,posA,posB,pos,dx;
 
   npbcdim = ePBC2npbcdim(ePBC);
   if (refcoord_scaling == erscCOM) {
@@ -1142,9 +1142,14 @@ real posres(int nbonds,
 	  posB[m] += comB_sc[m];
 	}
       }
+      pos[m] = (1 - lambda)*posA[m] + lambda*posB[m];
     }
-      
-    ki = pbc_rvec_sub(pbc,x[ai],posA,dx);
+
+    if (pbc) {
+      pbc_dx(pbc,x[ai],pos,dx);
+    } else {
+      rvec_sub(x[ai],pos,dx);
+    }
     
     v=0;
     for (m=0; (m<DIM); m++) {

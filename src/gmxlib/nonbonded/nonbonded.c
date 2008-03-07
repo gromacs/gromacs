@@ -633,7 +633,7 @@ do_nonbonded14(int ftype,int nbonds,
         else 
         {
             /* Apply full periodic boundary conditions */
-            shift_f = pbc_dx(pbc,x[ai],x[aj],dx);
+            shift_f = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
             r2 = norm2(dx);
         }
 

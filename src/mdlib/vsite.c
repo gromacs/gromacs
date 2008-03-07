@@ -232,7 +232,7 @@ static void move_construct_f(t_comm_vsites *vsitecomm, rvec f[], t_commrec *cr)
 static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
 {
   if (pbc) {
-    return pbc_dx(pbc,xi,xj,dx);
+    return pbc_dx_aiuc(pbc,xi,xj,dx);
   }
   else {
     rvec_sub(xi,xj,dx);
@@ -251,7 +251,7 @@ static void constr_vsite2(rvec xi,rvec xj,rvec x,real a,t_pbc *pbc)
   /* 1 flop */
   
   if (pbc) {
-    pbc_dx(pbc,xj,xi,dx);
+    pbc_dx_aiuc(pbc,xj,xi,dx);
     x[XX] = xi[XX] + a*dx[XX];
     x[YY] = xi[YY] + a*dx[YY];
     x[ZZ] = xi[ZZ] + a*dx[ZZ];
@@ -275,8 +275,8 @@ static void constr_vsite3(rvec xi,rvec xj,rvec xk,rvec x,real a,real b,
   /* 2 flops */
   
   if (pbc) {
-    pbc_dx(pbc,xj,xi,dxj);
-    pbc_dx(pbc,xk,xi,dxk);
+    pbc_dx_aiuc(pbc,xj,xi,dxj);
+    pbc_dx_aiuc(pbc,xk,xi,dxk);
     x[XX] = xi[XX] + a*dxj[XX] + b*dxk[XX];
     x[YY] = xi[YY] + a*dxj[YY] + b*dxk[YY];
     x[ZZ] = xi[ZZ] + a*dxj[ZZ] + b*dxk[ZZ];
@@ -447,7 +447,7 @@ static int constr_vsiten(t_iatom *ia, t_iparams ip[],
     ai = ia[i+2];
     a = ip[ia[i]].vsiten.a;
     if (pbc) {
-      pbc_dx(pbc,x[ai],x1,dx);
+      pbc_dx_aiuc(pbc,x[ai],x1,dx);
     } else {
       rvec_sub(x[ai],x1,dx);
     }
@@ -489,7 +489,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
-    pbc_null = set_pbc_ss(&pbc,ePBC,box,cr!=NULL ? cr->dd : NULL,FALSE);
+    pbc_null = set_pbc_dd(&pbc,ePBC,cr!=NULL ? cr->dd : NULL,FALSE,box);
   } else {
     pbc_null = NULL;
   }
@@ -611,7 +611,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 	}
 	if (pbc_atom >= 0) {
 	  /* Match the pbc of this vsite to the rest of its charge group */
-	  ishift = pbc_dx(pbc_null,x[avsite],x[pbc_atom],dx);
+	  ishift = pbc_dx_aiuc(pbc_null,x[avsite],x[pbc_atom],dx);
 	  if (ishift != CENTRAL)
 	    rvec_add(x[pbc_atom],dx,x[avsite]);
 	}
@@ -664,8 +664,8 @@ static void spread_vsite2(t_iatom ia[],real a,
     ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),di);
     sij = IVEC2IS(di);
   } else if (pbc) {
-    siv = pbc_dx(pbc,x[ai],x[av],dx);
-    sij = pbc_dx(pbc,x[ai],x[aj],dx);
+    siv = pbc_dx_aiuc(pbc,x[ai],x[av],dx);
+    sij = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
   } else {
     siv = CENTRAL;
     sij = CENTRAL;
@@ -712,9 +712,9 @@ static void spread_vsite3(t_iatom ia[],real a,real b,
     ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,ak),di);
     sik = IVEC2IS(di);
   } else if (pbc) {
-    siv = pbc_dx(pbc,x[ai],x[av],dx);
-    sij = pbc_dx(pbc,x[ai],x[aj],dx);
-    sik = pbc_dx(pbc,x[ai],x[ak],dx);
+    siv = pbc_dx_aiuc(pbc,x[ai],x[av],dx);
+    sij = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
+    sik = pbc_dx_aiuc(pbc,x[ai],x[ak],dx);
   } else {
     siv = CENTRAL;
     sij = CENTRAL;
@@ -1198,7 +1198,7 @@ static int spread_vsiten(t_iatom ia[],t_iparams ip[],
       ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,av),di);
       siv = IVEC2IS(di);
     } else if (pbc) {
-      siv = pbc_dx(pbc,x[ai],xv,dx);
+      siv = pbc_dx_aiuc(pbc,x[ai],xv,dx);
     } else {
       siv = CENTRAL;
     }
@@ -1235,7 +1235,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
-    pbc_null = set_pbc_ss(&pbc,ePBC,box,cr->dd,FALSE);
+    pbc_null = set_pbc_dd(&pbc,ePBC,cr->dd,FALSE,box);
   } else {
     pbc_null = NULL;
   }

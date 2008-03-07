@@ -614,6 +614,7 @@ int main(int argc,char *argv[])
     
     /*to read topology file*/
     t_topology top;
+    int        ePBC;
     t_topology tartop,oritop;
     matrix     tarbox,oribox;
     char       title[STRLEN];
@@ -689,7 +690,7 @@ int main(int argc,char *argv[])
                       &xref1,&edi_params.fitmas,&xav1,&edi_params.pcamas,&nvec1,&eignr1,&eigvec1,&eigval1);
 	   
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
-                       title,&top,&xtop,NULL,topbox,0);
+                       title,&top,&ePBC,&xtop,NULL,topbox,0);
     atoms=&top.atoms;
     
     

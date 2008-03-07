@@ -507,6 +507,7 @@ int gmx_traj(int argc,char *argv[])
   FILE       *outx=NULL,*outv=NULL,*outf=NULL,*outb=NULL,*outt=NULL;
   FILE       *outekt=NULL,*outekr=NULL;
   t_topology top;
+  int        ePBC;
   real       *mass,time;
   char       title[STRLEN],*indexfn;
   t_trxframe fr,frout;
@@ -574,7 +575,8 @@ int gmx_traj(int argc,char *argv[])
   bDim[ZZ] = bZ;
   bDim[DIM] = bNorm;
 
-  bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,topbox,
+  bTop = read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,
+		       &xtop,NULL,topbox,
 		       bCom && (bOX || bOXT || bOV || bOT || bEKT || bEKR));
   sfree(xtop);
   if ((bMol || bCV || bCF) && !bTop)
@@ -716,7 +718,7 @@ int gmx_traj(int argc,char *argv[])
     }
     
     if (fr.bX && bCom)
-      rm_pbc(&(top.idef),fr.natoms,fr.box,fr.x,fr.x);
+      rm_pbc(&(top.idef),ePBC,fr.natoms,fr.box,fr.x,fr.x);
 
     if (bVD && fr.bV) 
       update_histo(isize[0],index[0],fr.v,&nvhisto,&vhisto,binwidth);

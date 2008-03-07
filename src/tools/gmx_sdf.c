@@ -90,6 +90,7 @@ static void do_sdf(char *fnNDX,char *fnTPS,char *fnTRX, char *fnSDF,
   real       delta;
   atom_id    ix,jx;
   t_topology top;
+  int        ePBC=-1;
   t_pbc      pbc;
   bool       bTop=FALSE,bRefDone=FALSE,bInGroup=FALSE;
   char       title[STRLEN];
@@ -97,7 +98,7 @@ static void do_sdf(char *fnNDX,char *fnTPS,char *fnTRX, char *fnSDF,
 
   /* Read Topology */
   if (fnTPS) {
-    bTop=read_tps_conf(fnTPS,title,&top,&x,NULL,box,TRUE);
+    bTop=read_tps_conf(fnTPS,title,&top,&ePBC,&x,NULL,box,TRUE);
   }
   
 
@@ -332,8 +333,8 @@ structure if needed */
 
   do {
     /* Must init pbc every step because of pressure coupling */
-    set_pbc(&pbc,box);
-    rm_pbc(&top.idef,natoms,box,x,x);
+    set_pbc(&pbc,ePBC,box);
+    rm_pbc(&top.idef,ePBC,natoms,box,x,x);
 
 
     /* Dynamically build the ref tripels */

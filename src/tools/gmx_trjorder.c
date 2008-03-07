@@ -117,6 +117,7 @@ int gmx_trjorder(int argc,char *argv[])
   int        status,out;
   bool       bNShell,bPDBout;
   t_topology top;
+  int        ePBC;
   rvec       *x,xcom,dx;
   matrix     box;
   t_pbc      pbc;
@@ -140,7 +141,7 @@ int gmx_trjorder(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,TRUE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&x,NULL,box,TRUE);
   sfree(x);
 
   /* get index groups */
@@ -192,8 +193,8 @@ int gmx_trjorder(int argc,char *argv[])
     out = open_trx(opt2fn("-o",NFILE,fnm),"w");
   }
   do {
-    rm_pbc(&top.idef,natoms,box,x,x);
-    set_pbc(&pbc,box);
+    rm_pbc(&top.idef,ePBC,natoms,box,x,x);
+    set_pbc(&pbc,ePBC,box);
 
     if (bCOM) {
       totmass = 0;

@@ -89,7 +89,7 @@ static bool in_box(t_pbc *pbc,rvec x)
   
   calc_box_center(ecenterTRIC,pbc->box,box_center);
   
-  shift=pbc_dx(pbc,x,box_center,dx);
+  shift = pbc_dx_aiuc(pbc,x,box_center,dx);
   
   return (shift == CENTRAL);
 }
@@ -735,7 +735,7 @@ int gmx_genbox(int argc,char *argv[])
   
   /* add nmol_ins molecules of atoms_ins 
      in random orientation at random place */
-  set_pbc(&pbc,box);
+  set_pbc(&pbc,-1,box);
   if (bInsert) 
     title_ins = insert_mols(opt2fn("-ci",NFILE,fnm),nmol_ins,nmol_try,seed,
 			    &atoms,&x,&r,&pbc,box,atomprop,r_distance,r_shell);

@@ -300,7 +300,7 @@ real calc_orires_dev(const gmx_multisim_t *ms,
   for(fa=0; fa<nfa; fa+=3) {
     type = forceatoms[fa];
     if (pbc)
-      pbc_dx(pbc,x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
+      pbc_dx_aiuc(pbc,x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
     else
       rvec_sub(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
     mvmul(R,r_unrot,r);
@@ -459,7 +459,7 @@ real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
       ai    = forceatoms[fa+1];
       aj    = forceatoms[fa+2];
       if (pbc)
-	ki = pbc_dx(pbc,x[ai],x[aj],r);
+	ki = pbc_dx_aiuc(pbc,x[ai],x[aj],r);
       else
 	rvec_sub(x[ai],x[aj],r);
       r2    = norm2(r);

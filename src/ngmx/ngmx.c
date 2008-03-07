@@ -353,6 +353,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   int                  step,natom,nre,natom_trx;
   real                 t,lambda;
   t_topology           top;
+  int                  ePBC;
   matrix               box;
   t_trxframe           fr;
   int                  status;
@@ -361,8 +362,8 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   snew(gmx,1);
   snew(gmx->wd,1);
 
-  read_tpx(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,box,
-	   &natom,NULL,NULL,NULL,&top);
+  ePBC = read_tpx(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,box,
+		  &natom,NULL,NULL,NULL,&top);
 
   read_first_frame(&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_DONT_SKIP);
   close_trx(status);
@@ -395,7 +396,7 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
 
   /* The order of creating windows is important here! */
   /* Manager */
-  gmx->man  = init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,box);
+  gmx->man  = init_man(x11,gmx->wd->self,0,0,1,1,WHITE,BLACK,ePBC,box);
   gmx->logo = init_logo(x11,gmx->wd->self);
 
   /* Now put all windows in the proper place */

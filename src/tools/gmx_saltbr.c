@@ -168,6 +168,7 @@ int gmx_saltbr(int argc,char *argv[])
   int        nset[3]={0,0,0};
   
   t_topology *top;
+  int        ePBC;
   char       *buf;
   int        status,i,j,k,m,nnn,teller,ncg,n1,n2,n3,natoms;
   real       t,*time,qi,qj;
@@ -185,7 +186,7 @@ int gmx_saltbr(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
   
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);
   cg=mk_charge(&top->atoms,&(top->cgs),&ncg);
   snew(cgdist,ncg);
   snew(nWithin,ncg);
@@ -201,7 +202,9 @@ int gmx_saltbr(int argc,char *argv[])
   do {
     srenew(time,teller+1);
     time[teller]=t;
-      
+    
+    rm_pbc(&top->idef,ePBC,box,x,x);
+
     for(i=0; (i<DIM); i++)
       box_size[i]=box[i][i];
     

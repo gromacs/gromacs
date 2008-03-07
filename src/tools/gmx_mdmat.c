@@ -96,14 +96,14 @@ int *res_natm(t_atoms *atoms)
 
 static void calc_mat(int nres, int natoms, int rndx[],
 		     rvec x[], atom_id *index,
-		     real trunc, real **mdmat,int **nmat,matrix box)
+		     real trunc, real **mdmat,int **nmat,int ePBC,matrix box)
 {
   int i,j,resi,resj;
   real trunc2,r,r2;
   t_pbc pbc;
+  rvec ddx;
 
-  if (box)
-    set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
   trunc2=sqr(trunc);
   for(resi=0; (resi<nres); resi++)
     for(resj=0; (resj<nres); resj++)
@@ -112,13 +112,8 @@ static void calc_mat(int nres, int natoms, int rndx[],
     resi=rndx[i];
     for(j=i+1; (j<natoms); j++) {
       resj=rndx[j];
-      if (box) {
-	rvec ddx;
-	pbc_dx(&pbc,x[index[i]],x[index[j]],ddx);
-	r2 = iprod(ddx,ddx);
-      }
-      else
-	r2=distance2(x[index[i]],x[index[j]]);
+      pbc_dx(&pbc,x[index[i]],x[index[j]],ddx);
+      r2 = norm2(ddx);
       if ( r2 < trunc2 ) {
 	nmat[resi][j]++;
 	nmat[resj][i]++;
@@ -187,6 +182,7 @@ int gmx_mdmat(int argc,char *argv[])
 
   FILE       *out=NULL,*fp;
   t_topology top;
+  int        ePBC;
   t_atoms    useatoms;
   int        isize;
   atom_id    *index;
@@ -217,7 +213,7 @@ int gmx_mdmat(int argc,char *argv[])
   if ( bCalcN ) 
     fprintf(stderr,"Will calculate number of different contacts\n");
     
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&x,NULL,box,FALSE);
   
   fprintf(stderr,"Select group for analysis\n");
   get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&isize,&index,&grpname);
@@ -280,9 +276,9 @@ int gmx_mdmat(int argc,char *argv[])
   if (bFrames)
     out=opt2FILE("-frames",NFILE,fnm,"w");
   do {
-    rm_pbc(&top.idef,trxnat,box,x,x);
+    rm_pbc(&top.idef,ePBC,trxnat,box,x,x);
     nframes++;
-    calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat,box);
+    calc_mat(nres,natoms,rndx,x,index,truncate,mdmat,nmat,ePBC,box);
     for (i=0; (i<nres); i++)
       for (j=0; (j<natoms); j++)
 	if (nmat[i][j]) 

@@ -324,7 +324,8 @@ static bool step_man(t_manager *man,int *nat)
       put_atoms_in_triclinic_unitcell(ecenterDEF,man->box,man->natom,man->x);
       break;
     case esbTrunc:
-      warn = put_atoms_in_compact_unitcell(ecenterDEF,man->box,man->natom,man->x);
+      warn = put_atoms_in_compact_unitcell(man->molw->ePBC,ecenterDEF,man->box,
+					   man->natom,man->x);
       if (warn && !bWarn) {
 	fprintf(stderr,"\n%s\n",warn);
 	bWarn = TRUE;
@@ -336,7 +337,8 @@ static bool step_man(t_manager *man,int *nat)
       break;
     }
     if (man->bPbc) {
-      rm_pbc(&(man->top.idef),man->natom,man->box,man->x,man->x);
+      rm_pbc(&(man->top.idef),man->molw->ePBC,
+	     man->natom,man->box,man->x,man->x);
       reset_mols(&(man->top.mols),man->box,man->x);
     }
     ncount=0;
@@ -567,7 +569,7 @@ bool toggle_pbc (t_manager *man)
 t_manager *init_man(t_x11 *x11,Window Parent,
 		    int x,int y,int width,int height,
 		    unsigned long fg,unsigned long bg,
-		    matrix box)
+		    int ePBC,matrix box)
 {
   t_manager *man;
 
@@ -585,7 +587,7 @@ t_manager *init_man(t_x11 *x11,Window Parent,
 
   /* The order of creating windows is important for the stacking order */
   /* Mol Window */
-  man->molw=init_mw(x11,man->wd.self,0,0,1,1,WHITE,BLUE,box);
+  man->molw=init_mw(x11,man->wd.self,0,0,1,1,WHITE,BLUE,ePBC,box);
 
   /* Title Window */
   InitWin(&(man->title),0,0,1,1,0,NULL);

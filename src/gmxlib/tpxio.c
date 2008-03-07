@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 52;
+static const int tpx_version = 53;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -258,17 +258,22 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
     else
       ir->init_step=0;
 
-    do_int(ir->ePBC);
-    if ((file_version <= 15) && (ir->ePBC == 2))
-      ir->ePBC = epbcNONE;
-    if (file_version >= 45) {
-      do_int(ir->bPeriodicMols);
-    } else {
-      if (ir->ePBC == 2) {
-	ir->ePBC = epbcXYZ;
-	ir->bPeriodicMols = TRUE;
+    if (file_version < 53) {
+      /* The pbc info has been moved out of do_inputrec,
+       * since we always want it, also without reading the inputrec.
+       */
+      do_int(ir->ePBC);
+      if ((file_version <= 15) && (ir->ePBC == 2))
+	ir->ePBC = epbcNONE;
+      if (file_version >= 45) {
+	do_int(ir->bPeriodicMols);
       } else {
+	if (ir->ePBC == 2) {
+	  ir->ePBC = epbcXYZ;
+	  ir->bPeriodicMols = TRUE;
+	} else {
 	ir->bPeriodicMols = FALSE;
+	}
       }
     }
     do_int(ir->ns_type);
@@ -1397,9 +1402,9 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
   }
 }
 
-static void do_tpx(int fp,bool bRead,int *step,real *t,
-		   t_inputrec *ir,t_state *state,rvec *f,t_topology *top,
-		   bool bXVallocated)
+static int do_tpx(int fp,bool bRead,int *step,real *t,
+		  t_inputrec *ir,t_state *state,rvec *f,t_topology *top,
+		  bool bXVallocated)
 {
   t_tpxheader tpx;
   t_inputrec  dum_ir;
@@ -1408,7 +1413,9 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
   int         file_version,file_generation;
   int         i;
   rvec        *xptr,*vptr;
-  
+  int         ePBC;
+  bool        bPeriodicMols;
+
   if (!bRead) {
     tpx.natoms = state->natoms;
     tpx.ngtc   = state->ngtc;
@@ -1538,15 +1545,36 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
    *
    * 
    */
-  if((file_version>=26) && (file_generation<=tpx_generation)) {
+  ePBC = -1;
+  bPeriodicMols = FALSE;
+  if (file_version >= 26) {
     do_test(tpx.bIr,ir);
     do_section(eitemIR,bRead);
-    if (tpx.bIr && ir) {
-      do_inputrec(ir,bRead,file_version);
-      if (bRead && debug) 
-	pr_inputrec(debug,0,"inputrec",ir,FALSE);
-      if (file_version < 51)
-	set_box_rel(ir,state);
+    if (tpx.bIr) {
+      if (file_version >= 53) {
+	/* Removed the pbc info from do_inputrec, since we always want it */
+	if (!bRead) {
+	  ePBC          = ir->ePBC;
+	  bPeriodicMols = ir->bPeriodicMols;
+	}
+	do_int(ePBC);
+	do_int(bPeriodicMols);
+	if (bRead && ir) {
+	  ir->ePBC          = ePBC;
+	  ir->bPeriodicMols = bPeriodicMols;
+	}
+      }
+      if (file_generation <= tpx_generation && ir) {
+	do_inputrec(ir,bRead,file_version);
+	if (bRead && debug) 
+	  pr_inputrec(debug,0,"inputrec",ir,FALSE);
+	if (file_version < 51)
+	  set_box_rel(ir,state);
+	if (file_version < 53) {
+	  ePBC          = ir->ePBC;
+	  bPeriodicMols = ir->bPeriodicMols;
+	}
+      }
     }
   }
 
@@ -1554,6 +1582,8 @@ static void do_tpx(int fp,bool bRead,int *step,real *t,
     /* Reading old version without tcoupl state data: set it */
     init_gtc_state(state,ir->opts.ngtc);
   }
+
+  return ePBC;
 }
 
 /************************************************************
@@ -1619,12 +1649,13 @@ void read_tpx_state(char *fn,int *step,real *t,
   close_tpx(fp);
 }
 
-void read_tpx(char *fn,int *step,real *t,real *lambda,
-	      t_inputrec *ir, matrix box,int *natoms,
-	      rvec *x,rvec *v,rvec *f,t_topology *top)
+int read_tpx(char *fn,int *step,real *t,real *lambda,
+	     t_inputrec *ir, matrix box,int *natoms,
+	     rvec *x,rvec *v,rvec *f,t_topology *top)
 {
   int fp;
   t_state state;
+  int ePBC;
 
 #ifdef HAVE_LIBXML2
   if (fn2ftp(fn) == efXML) {
@@ -1632,6 +1663,7 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
     rvec *xx=NULL,*vv=NULL,*ff=NULL;
     
     read_xml(fn,step,t,lambda,ir,box,natoms,&xx,&vv,&ff,top);
+    ePBC = -1;
     for(i=0; (i<*natoms); i++) {
       if (xx) copy_rvec(xx[i],x[i]);
       if (vv) copy_rvec(vv[i],v[i]);
@@ -1646,7 +1678,7 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
     state.x = x;
     state.v = v;
     fp = open_tpx(fn,"r");
-    do_tpx(fp,TRUE,step,t,ir,&state,f,top,TRUE);
+    ePBC = do_tpx(fp,TRUE,step,t,ir,&state,f,top,TRUE);
     close_tpx(fp);
     *natoms = state.natoms;
     if (lambda) 
@@ -1659,6 +1691,8 @@ void read_tpx(char *fn,int *step,real *t,real *lambda,
 #ifdef HAVE_LIBXML2
   }
 #endif
+
+  return ePBC;
 }
 
 bool fn2bTPX(char *file)
@@ -1673,7 +1707,7 @@ bool fn2bTPX(char *file)
   }
 }
 
-bool read_tps_conf(char *infile,char *title,t_topology *top, 
+bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
 		   rvec **x,rvec **v,matrix box,bool bMass)
 {
   t_tpxheader  header;
@@ -1682,15 +1716,16 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,
   bool         bTop,bXNULL;
   void         *ap;
   
-  bTop=fn2bTPX(infile);
+  bTop = fn2bTPX(infile);
+  *ePBC = -1;
   if (bTop) {
     read_tpxheader(infile,&header,TRUE,&version,&generation);
     if (x)
       snew(*x,header.natoms);
     if (v)
       snew(*v,header.natoms);
-    read_tpx(infile,&step,&t,&lambda,NULL,box,&natoms,
-	     (x==NULL) ? NULL : *x,(v==NULL) ? NULL : *v,NULL,top);
+    *ePBC = read_tpx(infile,&step,&t,&lambda,NULL,box,&natoms,
+		     (x==NULL) ? NULL : *x,(v==NULL) ? NULL : *v,NULL,top);
     strcpy(title,*top->name);
   }
   else {

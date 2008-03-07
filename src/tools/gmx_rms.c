@@ -198,6 +198,7 @@ int gmx_rms (int argc,char *argv[])
   bool       bNorm,bAv,bFreq2,bFile2,bMat,bBond,bDelta,bMirror,bMass;
   bool       bFit,bReset;
   t_topology top;
+  int        ePBC;
   t_iatom    *iatom=NULL;
 
   matrix     box;
@@ -299,7 +300,7 @@ int gmx_rms (int argc,char *argv[])
     }
   }
   
-  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&xp,NULL,box,TRUE);
+  bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),buf,&top,&ePBC,&xp,NULL,box,TRUE);
   snew(w_rls,top.atoms.nr);
   snew(w_rms,top.atoms.nr);
 
@@ -378,7 +379,7 @@ int gmx_rms (int argc,char *argv[])
   }
   /* Prepare reference frame */
   if (bPBC)
-    rm_pbc(&(top.idef),top.atoms.nr,box,xp,xp);
+    rm_pbc(&(top.idef),ePBC,top.atoms.nr,box,xp,xp);
   if (bReset)
     reset_x(ifit,ind_fit,top.atoms.nr,NULL,xp,w_rls);
   if (bMirror) {
@@ -477,7 +478,7 @@ int gmx_rms (int argc,char *argv[])
   teller = 0;
   do {
     if (bPBC) 
-      rm_pbc(&(top.idef),natoms,box,x,x);
+      rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
     
     if (bReset)
       reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);
@@ -558,7 +559,7 @@ int gmx_rms (int argc,char *argv[])
     teller2 = 0;
     do {
       if (bPBC) 
-	rm_pbc(&(top.idef),natoms,box,x,x);
+	rm_pbc(&(top.idef),ePBC,natoms,box,x,x);
 
       if (bReset)
 	reset_x(ifit,ind_fit,natoms,NULL,x,w_rls);

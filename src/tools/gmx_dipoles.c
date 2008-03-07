@@ -149,7 +149,7 @@ static void rvec2sprvec(rvec dipcart,rvec dipsp)
 
 void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
 	    int mindex[],rvec x[],rvec mu[],
-	    matrix box,t_atom *atom,int *nAtom,bool bPBC)
+	    int ePBC,matrix box,t_atom *atom,int *nAtom)
 {
   static rvec *xcm[2] = { NULL, NULL};
   int    gi,gj,j0,j1,i,j,k,n,index,grp0,grp1;
@@ -181,8 +181,7 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
       }
     }
   }
-  if (bPBC)
-    set_pbc(&pbc,box);
+  set_pbc(&pbc,ePBC,box);
   grp0 = 0;
   grp1 = ncos-1;
   for(i=0; i<ngrp[grp0]; i++) {
@@ -192,10 +191,7 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
       gj   = molindex[grp1][j];
       if ((iprod(mu[gi],mu[gi]) > 0) && (iprod(mu[gj],mu[gj]) > 0)) {
 	/* Compute distance between molecules including PBC */
-	if (bPBC)
-	  pbc_dx(&pbc,xcm[grp0][i],xcm[grp1][j],dx);
-	else
-	  rvec_sub(xcm[grp0][i],xcm[grp1][j],dx);
+	pbc_dx(&pbc,xcm[grp0][i],xcm[grp1][j],dx);
 	rr = norm(dx);
 	
 	if (gb->bPhi) {
@@ -208,7 +204,7 @@ void do_gkr(t_gkrbin *gb,int ncos,int *ngrp,int *molindex[],
 	  copy_rvec(xcm[grp1][j],xk);
 	  rvec_add(xj,mu[gi],xi);
 	  rvec_add(xk,mu[gj],xl);
-	  phi = dih_angle(xi,xj,xk,xl,bPBC ? &pbc : NULL,
+	  phi = dih_angle(xi,xj,xk,xl,&pbc,
 			  r_ij,r_kj,r_kl,mm,nn, /* out */
 			  &cosa,&sign,&t1,&t2,&t3);
 	}
@@ -604,7 +600,7 @@ static void compute_avercos(int n,rvec dip[],real *dd,rvec axis,bool bPairs)
   axis[ZZ] = ddc3/n;
 }
 
-static void do_dip(t_topology *top,real volume,
+static void do_dip(t_topology *top,int ePBC,real volume,
 		   char *fn,
 		   char *out_mtot,char *out_eps,char *out_aver, 
 		   char *dipdist,
@@ -613,7 +609,7 @@ static void do_dip(t_topology *top,real volume,
 		   char *corrtype,char *corf,
 		   bool bGkr,     char *gkrfn,
 		   bool bPhi,     int  *nlevels,  int ndegrees,
-		   int  ncos,     bool bPBC,
+		   int  ncos,
 		   char *cmap,    real rcmax,
 		   bool bQuad,    char *quadfn,
 		   bool bMU,      char *mufn,
@@ -862,8 +858,7 @@ static void do_dip(t_topology *top,real volume,
 	M_av[m] = 0;
 	M_av2[m] = 0;
       }
-      if (bPBC)
-	rm_pbc(&(top->idef),natom,box,x,x);
+      rm_pbc(&(top->idef),ePBC,natom,box,x,x);
       
       init_lsq(&muframelsq);
       /* Begin loop of all molecules in frame */
@@ -974,8 +969,8 @@ static void do_dip(t_topology *top,real volume,
     }
     
     if (bGkr) {
-      do_gkr(gkrbin,ncos,gnx,molindex,mols->index,x,dipole,box,
-	     atom,gkatom,bPBC);
+      do_gkr(gkrbin,ncos,gnx,molindex,mols->index,x,dipole,ePBC,box,
+	     atom,gkatom);
     }
     
     if (bTotal) {
@@ -1224,7 +1219,7 @@ int gmx_dipoles(int argc,char *argv[])
   };
   static real mu_max=5, mu_aver=-1,rcmax=0;
   static real epsilonRF=0.0, temp=300;
-  static bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPBC=TRUE,bPhi=FALSE;
+  static bool bAverCorr=FALSE,bMolCorr=FALSE,bPairs=TRUE,bPhi=FALSE;
   static char *corrtype[]={NULL, "none", "mol", "molsep", "total", NULL};
   static char *axtitle="Z";
   static int  nslices = 10;      /* nr of slices defined       */
@@ -1247,8 +1242,6 @@ int gmx_dipoles(int argc,char *argv[])
       "Calculate |cos theta| between all pairs of molecules. May be slow" },
     { "-ncos",     FALSE, etINT, {&ncos},
       "Must be 1 or 2. Determines whether the <cos> is computed between all mole cules in one group, or between molecules in two different groups. This turns on the -gkr flag." }, 
-    { "-pbc",      FALSE, etBOOL,{&bPBC}, 
-      "Use periodic boundary conditions" },
     { "-axis",     FALSE, etSTR, {&axtitle}, 
       "Take the normal on the computational box in direction X, Y or Z." },
     { "-sl",       FALSE, etINT, {&nslices},
@@ -1293,6 +1286,7 @@ int gmx_dipoles(int argc,char *argv[])
   int     npargs;
   t_pargs *ppa;
   t_topology *top;
+  int     ePBC;
   int     k,step,natoms;
   real    t,lambda;
   matrix  box;
@@ -1335,8 +1329,8 @@ int gmx_dipoles(int argc,char *argv[])
   }
 
   snew(top,1);
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
-	   &natoms,NULL,NULL,NULL,top);
+  ePBC = read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
+		  &natoms,NULL,NULL,NULL,top);
   
   snew(gnx,ncos);
   snew(grpname,ncos);
@@ -1349,7 +1343,7 @@ int gmx_dipoles(int argc,char *argv[])
   }
   nFF[0] = nFA;
   nFF[1] = nFB;
-  do_dip(top,det(box),ftp2fn(efTRX,NFILE,fnm),
+  do_dip(top,ePBC,det(box),ftp2fn(efTRX,NFILE,fnm),
 	 opt2fn("-o",NFILE,fnm),opt2fn("-eps",NFILE,fnm),
 	 opt2fn("-a",NFILE,fnm),opt2fn("-d",NFILE,fnm),
 	 opt2fn_null("-cos",NFILE,fnm),
@@ -1358,7 +1352,7 @@ int gmx_dipoles(int argc,char *argv[])
 	 opt2fn("-c",NFILE,fnm),
 	 bGkr,    opt2fn("-g",NFILE,fnm),
 	 bPhi,    &nlevels,  ndegrees,
-	 ncos,    bPBC,
+	 ncos,
 	 opt2fn("-cmap",NFILE,fnm),rcmax,
 	 bQuad,   opt2fn("-q",NFILE,fnm),
 	 bMU,     opt2fn("-enx",NFILE,fnm),

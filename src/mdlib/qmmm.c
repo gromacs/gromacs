@@ -738,7 +738,7 @@ void update_QMMMrec(t_commrec *cr,
   
 
   /*  init_pbc(box);  needs to be called first, see pbc.h */
-  set_pbc(&pbc,box);
+  set_pbc_dd(&pbc,fr->ePBC,DOMAINDECOMP(cr) ? cr->dd : NULL,FALSE,box);
   /* only in standard (normal) QMMM we need the neighbouring MM
    * particles to provide a electric field of point charges for the QM
    * atoms.  
@@ -763,8 +763,8 @@ void update_QMMMrec(t_commrec *cr,
       for(i=0;i<QMMMlist_sr.nri;i++){
 	qm_i_particles[i].j     = QMMMlist_sr.iinr[i];
 	if(i){
-	  qm_i_particles[i].shift = pbc_dx(&pbc,x[QMMMlist_sr.iinr[0]],
-					   x[QMMMlist_sr.iinr[i]],dx);
+	  qm_i_particles[i].shift = pbc_dx_aiuc(&pbc,x[QMMMlist_sr.iinr[0]],
+						x[QMMMlist_sr.iinr[i]],dx);
 
 	}
 	/* However, since nri >= nrQMatoms, we do a quicksort, and throw
@@ -932,7 +932,8 @@ void update_QMMMrec(t_commrec *cr,
       qm = qr->qm[j];
       qm->shiftQM[0]=XYZ2IS(0,0,0);
       for(i=1;i<qm->nrQMatoms;i++){
-	qm->shiftQM[i] = pbc_dx(&pbc,x[qm->indexQM[0]],x[qm->indexQM[i]],dx);
+	qm->shiftQM[i] = pbc_dx_aiuc(&pbc,x[qm->indexQM[0]],x[qm->indexQM[i]],
+				     dx);
       }
       update_QMMM_coord(x,fr,qm,mm);    
     }

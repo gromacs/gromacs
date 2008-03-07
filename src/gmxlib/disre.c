@@ -153,7 +153,7 @@ void calc_disres_R_6(const gmx_multisim_t *ms,
       aj   = forceatoms[fa+2];
 
       if (pbc)
-	pbc_dx(pbc,x[ai],x[aj],dx);
+	pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
       else
 	rvec_sub(x[ai],x[aj],dx);
       rt2  = iprod(dx,dx);
@@ -320,7 +320,7 @@ real ta_disres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
 	aj   = forceatoms[fa+2];
 
 	if (pbc) 
-	  ki = pbc_dx(pbc,x[ai],x[aj],dx);
+	  ki = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
 	else
 	  rvec_sub(x[ai],x[aj],dx);
 	rt2 = iprod(dx,dx);

@@ -78,7 +78,7 @@ static void make_dist_leg(FILE *fp,int gnx,atom_id index[],t_atoms *atoms)
 static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
 		     int gnx,atom_id index[],
 		     real blen,real tol,bool bAver,
-		     t_topology *top,bool bAverDist)
+		     t_topology *top,int ePBC,bool bAverDist)
 {
 #define MAXTAB 1000
   FILE   *out,*outd=NULL;
@@ -119,7 +119,7 @@ static void do_bonds(FILE *log,char *fn,char *fbond,char *fdist,
   
   nframes=0;
   do {
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,ePBC,box);
     if (fdist)
       fprintf(outd," %8.4f",t);
     nframes++; /* count frames */
@@ -250,6 +250,7 @@ int gmx_bond(int argc,char *argv[])
   atom_id   *index;
   char      title[STRLEN];
   t_topology top;
+  int       ePBC=-1;
   rvec      *x;
   matrix    box;
 
@@ -272,7 +273,8 @@ int gmx_bond(int argc,char *argv[])
   else {
     fdist = opt2fn_null("-d",NFILE,fnm);
     if (fdist)
-      read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&x,NULL,box,FALSE);
+      read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&x,NULL,box,
+		    FALSE);
   }
   
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&gnx,&index,&grpname);
@@ -286,7 +288,7 @@ int gmx_bond(int argc,char *argv[])
     fp = NULL;
   
   do_bonds(fp,ftp2fn(efTRX,NFILE,fnm),opt2fn("-o",NFILE,fnm),fdist,gnx,index,
-	   blen,tol,bAver,&top,bAverDist);
+	   blen,tol,bAver,&top,ePBC,bAverDist);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn_null("-d",NFILE,fnm),"-nxy");

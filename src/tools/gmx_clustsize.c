@@ -82,6 +82,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   t_trxframe  fr;
   t_tpxheader tpxh;
   t_topology  *top=NULL;
+  int     ePBC=-1;
   t_block *mols=NULL;
   int     version,generation,sss,ii,jj,nsame;
   real    ttt,lll,temp,tfac;
@@ -112,7 +113,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     if (tpxh.natoms != natoms) 
       gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
 		tpxh.natoms,natoms);
-    read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,top);
+    ePBC = read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,top);
   }
   if (ndf <= -1)
     tfac = 1;
@@ -148,7 +149,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   do {
     if ((nskip == 0) || ((nskip > 0) && ((nframe % nskip) == 0))) {
       if (bPBC)
-	set_pbc(&pbc,fr.box);
+	set_pbc(&pbc,ePBC,fr.box);
       max_clust_size = 1;
       max_clust_ind  = -1;
       

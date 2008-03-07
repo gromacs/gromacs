@@ -496,7 +496,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   if (!bNBFonly && top->idef.il[F_POSRES].nr > 0) {
     /* Position restraints always require full pbc */
-    set_pbc_ms(&pbc_ms,inputrec->ePBC,box);
+    set_pbc(&pbc_ms,inputrec->ePBC,box);
     ener[F_POSRES] +=
       posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
 	     top->idef.iparams,

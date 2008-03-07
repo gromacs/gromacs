@@ -392,6 +392,7 @@ int gmx_confrms(int argc,char *argv[])
   FILE    *fp;
   char    title1[STRLEN],title2[STRLEN],*name1,*name2;
   t_topology *top1,*top2;
+  int     ePBC1,ePBC2;
   t_atoms *atoms1,*atoms2;
   int     warn=0;
   atom_id at;
@@ -423,7 +424,7 @@ int gmx_confrms(int argc,char *argv[])
   /* reading reference structure from first structure file */
   fprintf(stderr,"\nReading first structure file\n");
   snew(top1,1);
-  read_tps_conf(conf1file,title1,top1,&x1,&v1,box1,TRUE);
+  read_tps_conf(conf1file,title1,top1,&ePBC1,&x1,&v1,box1,TRUE);
   atoms1 = &(top1->atoms);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title1,atoms1->nr,atoms1->nres);
@@ -442,7 +443,7 @@ int gmx_confrms(int argc,char *argv[])
   /* reading second structure file */
   fprintf(stderr,"\nReading second structure file\n");
   snew(top2,1);
-  read_tps_conf(conf2file,title2,top2,&x2,&v2,box2,TRUE);
+  read_tps_conf(conf2file,title2,top2,&ePBC2,&x2,&v2,box2,TRUE);
   atoms2 = &(top2->atoms);
   fprintf(stderr,"%s\nContaining %d atoms in %d residues\n",
 	  title2,atoms2->nr,atoms2->nres);

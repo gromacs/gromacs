@@ -199,6 +199,7 @@ int gmx_bundle(int argc,char *argv[])
   FILE       *fkink=NULL,*fkinkr=NULL,*fkinkl=NULL;
   int        status,fpdb;
   t_topology top;
+  int        ePBC;
   rvec       *xtop;
   matrix     box;
   t_trxframe fr;
@@ -233,7 +234,7 @@ int gmx_bundle(int argc,char *argv[])
   parse_common_args(&argc,argv,PCA_CAN_TIME | PCA_TIME_UNIT | PCA_BE_NICE,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,TRUE);
 
   bKink = opt2bSet("-ok",NFILE,fnm) || opt2bSet("-okr",NFILE,fnm) 
     || opt2bSet("-okl",NFILE,fnm);
@@ -300,7 +301,7 @@ int gmx_bundle(int argc,char *argv[])
   read_first_frame(&status,ftp2fn(efTRX,NFILE,fnm),&fr,TRX_NEED_X); 
   
   do {
-    rm_pbc(&top.idef,fr.natoms,fr.box,fr.x,fr.x);
+    rm_pbc(&top.idef,ePBC,fr.natoms,fr.box,fr.x,fr.x);
     calc_axes(fr.x,top.atoms.atom,gnx,index,!bZ,&bun);
     t = convert_time(fr.time);
     fprintf(flen," %10g",t);

@@ -82,6 +82,7 @@ int gmx_dist(int argc,char *argv[])
   };
   
   t_topology *top=NULL;
+  int  ePBC;
   real t,t0,cut2,dist2;
   rvec *x=NULL,*v=NULL,dx;
   matrix box;
@@ -106,13 +107,10 @@ int gmx_dist(int argc,char *argv[])
   char    *leg[4] = { "|d|","d\\sx\\N","d\\sy\\N","d\\sz\\N" };
 
   static real cut=0;
-  static bool bPBC=TRUE;
   
   static t_pargs pa[] = {
     { "-dist",      FALSE, etREAL, {&cut},
-      "Print all atoms in group 2 closer than dist to the center of mass of group 1" },
-    { "-pbc", FALSE, etBOOL, {&bPBC},
-      "Use periodic boundary conditions in distance calculations" }
+      "Print all atoms in group 2 closer than dist to the center of mass of group 1" }
   };
 #define NPA asize(pa)
 
@@ -136,7 +134,7 @@ int gmx_dist(int argc,char *argv[])
   bLifeTime = opt2bSet("-lt",NFILE,fnm);
   bPrintDist = (bCutoff && !bLifeTime);
   
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);
   
   /* read index files */
   ngrps = 2;
@@ -176,17 +174,17 @@ int gmx_dist(int argc,char *argv[])
     if (bLifeTime)
       snew(contact_time,isize[1]);
   }
-  if (bPBC)
+  if (ePBC != epbcNONE)
     snew(pbc,1);
   else
     pbc = NULL;
     
   do {
     /* initialisation for correct distance calculations */
-    if (bPBC) {
-      set_pbc(&pbc,box);
+    if (pbc) {
+      set_pbc(pbc,ePBC,box);
       /* make molecules whole again */
-      rm_pbc(&top->idef,natoms,box,x,x);
+      rm_pbc(&top->idef,ePBC,natoms,box,x,x);
     }
     /* calculate center of masses */
     for(g=0;(g<ngrps);g++) {
@@ -203,8 +201,8 @@ int gmx_dist(int argc,char *argv[])
       /* write to output */
       fprintf(fp,"%12.7f ",t);
       for(g=0;(g<ngrps/2);g++) {
-	if (bPBC)
-	  pbc_dx(&pbc,com[2*g],com[2*g+1],dx);
+	if (pbc)
+	  pbc_dx(pbc,com[2*g],com[2*g+1],dx);
 	else
 	  rvec_sub(com[2*g],com[2*g+1],dx);
 	
@@ -215,8 +213,8 @@ int gmx_dist(int argc,char *argv[])
     } else {
       for(i=0;(i<isize[1]);i++) { 
 	j=index[1][i];
-	if (bPBC)
-	  pbc_dx(&pbc,x[j],com[0],dx);
+	if (pbc)
+	  pbc_dx(pbc,x[j],com[0],dx);
 	else
 	  rvec_sub(x[j],com[0],dx);
 	

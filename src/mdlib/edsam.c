@@ -844,7 +844,7 @@ void init_edsam(FILE *log,t_topology *top,t_inputrec *ir,
         edyn->edpar=NULL;
 }
 
-void do_first_edsam(FILE *log,t_topology *top,
+void do_first_edsam(FILE *log,t_topology *top,int ePBC,
                     t_mdatoms *md,int start,int homenr,t_commrec *cr,
                     rvec x[],matrix box, t_edsamyn *edyn,bool bHaveConstr) 
 {
@@ -869,7 +869,7 @@ void do_first_edsam(FILE *log,t_topology *top,
     
     /* remove pbc */
     snew(xdum,top->atoms.nr);
-    rm_pbc(&(top->idef),top->atoms.nr,box,x,xdum);
+    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x,xdum);
 
     /* fit starting positions to reference structure */
     snew(transvec,ned);
@@ -1593,7 +1593,7 @@ void free_t_remove_pbc_effect(struct t_remove_pbc_effect *p)
 } 
 
 
-void remove_pbc_effect(int ned,rvec *transvec_compact, matrix box,t_edpar *edi) {
+void remove_pbc_effect(int ePBC,int ned,rvec *transvec_compact, matrix box,t_edpar *edi) {
     
     bool bFirst;
     rvec null;
@@ -1613,7 +1613,7 @@ void remove_pbc_effect(int ned,rvec *transvec_compact, matrix box,t_edpar *edi) 
     loc = edi->local->remove_pbc_effect;
     
     if (bFirst)
-        set_pbc(&(loc->pbc),box);
+        set_pbc(&(loc->pbc),ePBC,box);
     for (i=0;i<DIM;i++)
         null[i]=0.0;
     for (i=0;i<ned;i++)
@@ -1744,7 +1744,7 @@ void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
     fitit(ned,loc->x,edi,loc->transvec,rotmat);
     
     rveccopy(ned, loc->transvec, loc->transvec_compact);
-    remove_pbc_effect(ned,loc->transvec_compact,box,edi); /*this is to remove virtual jumps in translational velocity due to periodic boundaries*/
+    remove_pbc_effect(ir->ePBC,ned,loc->transvec_compact,box,edi); /*this is to remove virtual jumps in translational velocity due to periodic boundaries*/
     if (bFirst) {
         copy_mat(rotmat, loc->old_rotmat);
         rveccopy(ned, loc->transvec_compact, loc->old_transvec);

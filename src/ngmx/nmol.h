@@ -43,7 +43,7 @@
 extern t_molwin *init_mw(t_x11 *x11,Window Parent,
 			 int x,int y,int width,int height,
 			 unsigned long fg,unsigned long bg,
-			 matrix box);
+			 int ePBC,matrix box);
 /* Create the molecule window using the x,y etc. */
 
 extern void map_mw(t_x11 *x11,t_molwin *mw);

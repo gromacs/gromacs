@@ -703,7 +703,7 @@ void read_ang_dih(char *trj_fn,
     (*time)[teller] = t;
 
     if (pbc)
-      set_pbc(pbc,box);
+      set_pbc(pbc,-1,box);
     
     if (bAngles) {
       calc_angles(stdout,pbc,isize,index,angles[cur],x);

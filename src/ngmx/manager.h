@@ -63,6 +63,7 @@ typedef struct {
   t_windata wd;			/* Mol window structure			*/
   bool      bShowHydrogen;	/* Show Hydrogens?			*/
   int       bond_type;		/* Show one of the above bondtypes      */
+  int       ePBC;               /* PBC type                             */
   int       boxtype;            /* Rectangular, Tric, TruncOct (display)*/
   int       realbox;            /* Property of the real box             */
 } t_molwin;
@@ -131,7 +132,8 @@ typedef struct {
 
 extern t_manager *init_man(t_x11 *x11,Window Parent,
 			   int x,int y,int width,int height,
-			   unsigned long fg,unsigned long bg,matrix box);
+			   unsigned long fg,unsigned long bg,
+			   int ePBC,matrix box);
 /* Initiate the display manager */
 
 extern void move_man(t_x11 *x11,t_manager *man,int width,int height);

@@ -219,7 +219,7 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,bool bSave,real minarea,bool bPBC,
+	      real qcut,bool bSave,real minarea,
 	      real dgs_default,bool bFindex)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
@@ -234,6 +234,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   rvec         *x;
   matrix       box;
   t_topology   *top;
+  int          ePBC;
   t_atoms      *atoms;
   bool         *bOut,*bPhobic;
   bool         bConnelly;
@@ -250,7 +251,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   bITP   = opt2bSet("-i",nfile,fnm);
   bResAt = opt2bSet("-or",nfile,fnm) || opt2bSet("-oa",nfile,fnm) || bITP;
 
-  top   = read_top(ftp2fn(efTPX,nfile,fnm));
+  top   = read_top(ftp2fn(efTPX,nfile,fnm),&ePBC);
   atoms = &(top->atoms);
   
   bDGsol = strcmp(*(atoms->atomtype[0]),"?") != 0;
@@ -376,8 +377,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     
   nfr=0;
   do {
-    if (bPBC)
-      rm_pbc(&top->idef,natoms,box,x,x);
+    rm_pbc(&top->idef,ePBC,natoms,box,x,x);
     
     bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
     if (bConnelly)
@@ -392,7 +392,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
     retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
 			  &area,&totvolume,&surfacedots,&nsurfacedots,
-			  index[0],bPBC ? box : NULL);
+			  index[0],ePBC,box);
     if (retval)
       gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
     
@@ -534,7 +534,7 @@ int gmx_sas(int argc,char *argv[])
   static int  ndots   = 24;
   static real qcut    = 0.2;
   static real minarea = 0.5, dgs_default=0;
-  static bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
+  static bool bSave   = TRUE,bFindex=FALSE;
   t_pargs pa[] = {
     { "-probe", FALSE, etREAL, {&solsize},
       "Radius of the solvent probe (nm)" },
@@ -546,8 +546,6 @@ int gmx_sas(int argc,char *argv[])
       "Determine from a group in the index file what are the hydrophobic atoms rather than from the charge" },
     { "-minarea", FALSE, etREAL, {&minarea},
       "The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help)" },
-    { "-pbc",     FALSE, etBOOL, {&bPBC},
-      "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
       "Output the protein to the connelly pdb file too" },
     { "-dgs",     FALSE, etREAL, {&dgs_default},
@@ -580,7 +578,7 @@ int gmx_sas(int argc,char *argv[])
 
   please_cite(stderr,"Eisenhaber95");
     
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default,bFindex);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,dgs_default,bFindex);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn_null("-or",NFILE,fnm),"-nxy");

@@ -119,6 +119,7 @@ int gmx_polystat(int argc,char *argv[])
 #define NFILE asize(fnm)
 
   t_topology *top;
+  int    ePBC;
   real   lambda;
   int    step,isize,*index,nmol,*molind,mol,nat_min=0,nat_max=0;
   char   *grpname;
@@ -146,8 +147,8 @@ int gmx_polystat(int argc,char *argv[])
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 		    
   snew(top,1);
-  read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
-	   &natoms,NULL,NULL,NULL,top);
+  ePBC = read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,NULL,box,
+		  &natoms,NULL,NULL,NULL,top);
   
   fprintf(stderr,"Select a group of polymer mainchain atoms:\n");
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
@@ -220,7 +221,7 @@ int gmx_polystat(int argc,char *argv[])
   sum_gyro_tot = 0;
   sum_pers_tot = 0;
   do {
-    rm_pbc(&(top->idef),natoms,box,x,x);
+    rm_pbc(&(top->idef),ePBC,natoms,box,x,x);
     
     sum_eed2 = 0;
     for(d=0; d<DIM; d++)

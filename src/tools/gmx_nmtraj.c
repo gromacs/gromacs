@@ -95,6 +95,7 @@ int gmx_nmtraj(int argc,char *argv[])
   
   int        out;
   t_topology top;
+  int        ePBC;
   t_atoms    *atoms;
   rvec       *xtop,*xref,*xav,*xout;
   int        nvec,*eignr=NULL;
@@ -134,7 +135,7 @@ int gmx_nmtraj(int argc,char *argv[])
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit,
 		    &xref,&bDMR,&xav,&bDMA,&nvec,&eignr,&eigvec,&eigval);
   
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,bDMA);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,bDMA);
 
   atoms=&top.atoms;
 

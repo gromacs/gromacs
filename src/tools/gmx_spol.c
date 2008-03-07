@@ -50,7 +50,7 @@
 #include "physics.h"
 
 static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
-			 atom_id index[],rvec xref,bool bPBC,matrix box)
+			 atom_id index[],rvec xref,int ePBC,matrix box)
 {
   const real tol=1e-4;
   bool  bChanged;
@@ -70,7 +70,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
   }
   svmul(1/mtot,xref,xref);
   /* Now check if any atom is more than half the box from the COM */
-  if (bPBC) {
+  if (ePBC != epbcNONE) {
     iter = 0;
     do {
       bChanged = FALSE;
@@ -166,7 +166,6 @@ int gmx_spol(int argc,char *argv[])
   t_pargs pa[] = {
     { "-com",  FALSE, etBOOL,  {&bCom},
       "Use the center of mass as the reference postion" },
-    { "-pbc",   FALSE, etBOOL, {&bPBC}, "Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules." },
     { "-refat",  FALSE, etINT, {&srefat},
       "The reference atom of the solvent molecule" },
     { "-rmin",  FALSE, etREAL, {&rmin}, "Maximum distance (nm)" },
@@ -237,11 +236,11 @@ int gmx_spol(int argc,char *argv[])
   /* start analysis of trajectory */
   do {
     /* make molecules whole again */
-    rm_pbc(&top->idef,natoms,box,x,x);
+    rm_pbc(&top->idef,ir->ePBC,natoms,box,x,x);
     
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,ir->ePBC,box);
     if (bCom)
-      calc_com_pbc(nrefat,top,x,&pbc,index[0],xref,bPBC,box);
+      calc_com_pbc(nrefat,top,x,&pbc,index[0],xref,ir->ePBC,box);
 
     for(m=0; m<isize[1]; m++) {
       mol = index[1][m];

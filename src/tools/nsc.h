@@ -66,7 +66,7 @@ extern int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 			real *value_of_area, real **at_area,
 			real *value_of_vol,
 			real **lidots, int *nu_dots,
-			atom_id index[],matrix box);
+			atom_id index[],int ePBC,matrix box);
 
 /* 
     User notes :

@@ -442,7 +442,7 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
 	     (is_aj[YY] != g->ishift[aj][YY]) ||
 	     (is_aj[ZZ] != g->ishift[aj][ZZ])) {
       if (gmx_debug_at) {
-	set_pbc(&pbc,box);
+	set_pbc(&pbc,-1,box);
 	pbc_dx(&pbc,x[g0+ai],x[g0+aj],dx);
 	fprintf(debug,"mk_grey: shifts for atom %d due to atom %d\n"
 		"are (%d,%d,%d), should be (%d,%d,%d)\n"

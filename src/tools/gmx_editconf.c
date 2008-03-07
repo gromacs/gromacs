@@ -580,7 +580,7 @@ int gmx_editconf(int argc, char *argv[])
   }
 
   if (bMead || bGrasp) {
-    top = read_top(infile);
+    top = read_top(infile,NULL);
     if (atoms.nr != top->atoms.nr)
       gmx_fatal(FARGS,"Atom numbers don't match (%d vs. %d)",
 		  atoms.nr,top->atoms.nr);
@@ -823,8 +823,8 @@ int gmx_editconf(int argc, char *argv[])
     printf("new box volume  :%7.2f               (nm^3)\n",det(box));
   }  
 
-  if (check_box(box))
-    printf("\nWARNING: %s\n",check_box(box));
+  if (check_box(epbcXYZ,box))
+    printf("\nWARNING: %s\n",check_box(epbcXYZ,box));
 
   if (bDist && btype[0][0]=='t')
   {

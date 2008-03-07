@@ -334,7 +334,7 @@ int gmx_dih(int argc,char *argv[])
   snew(xr,1);
   init_rama(ftp2fn(efTRX,NFILE,fnm),
 	    ftp2fn(efTPX,NFILE,fnm),xr,3);
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm),NULL);
 	       
   /* Brute force malloc, may be too big... */
   snew(dih,xr->ndih);

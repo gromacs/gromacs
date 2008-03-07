@@ -108,6 +108,7 @@ int gmx_covar(int argc,char *argv[])
   FILE       *out;
   int        status,trjout;
   t_topology top;
+  int        ePBC;
   t_atoms    *atoms;  
   rvec       *x,*xread,*xref,*xav,*xproj;
   matrix     box,zerobox;
@@ -160,7 +161,7 @@ int gmx_covar(int argc,char *argv[])
   xpmfile    = opt2fn_null("-xpm",NFILE,fnm);
   xpmafile   = opt2fn_null("-xpma",NFILE,fnm);
 
-  read_tps_conf(fitfile,str,&top,&xref,NULL,box,TRUE);
+  read_tps_conf(fitfile,str,&top,&ePBC,&xref,NULL,box,TRUE);
   atoms=&top.atoms;
 
   if (bFit) {
@@ -210,7 +211,7 @@ int gmx_covar(int argc,char *argv[])
 
   /* Prepare reference frame */
   if (bPBC)
-    rm_pbc(&(top.idef),atoms->nr,box,xref,xref);
+    rm_pbc(&(top.idef),ePBC,atoms->nr,box,xref,xref);
   if (bFit)
     reset_x(nfit,ifit,atoms->nr,NULL,xref,w_rls);
 
@@ -228,7 +229,7 @@ int gmx_covar(int argc,char *argv[])
     nframes0++;
     /* calculate x: a fitted struture of the selected atoms */
     if (bPBC)
-      rm_pbc(&(top.idef),nat,box,xread,xread);
+      rm_pbc(&(top.idef),ePBC,nat,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);
@@ -257,7 +258,7 @@ int gmx_covar(int argc,char *argv[])
     tend = t;
     /* calculate x: a (fitted) structure of the selected atoms */
     if (bPBC)
-      rm_pbc(&(top.idef),nat,box,xread,xread);
+      rm_pbc(&(top.idef),ePBC,nat,box,xread,xread);
     if (bFit) {
       reset_x(nfit,ifit,nat,NULL,xread,w_rls);
       do_fit(nat,w_rls,xref,xread);

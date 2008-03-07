@@ -97,6 +97,7 @@ int gmx_rotacf(int argc,char *argv[])
   unsigned long mode;
   real       t,t0,t1,dt;
   t_topology *top;
+  int        ePBC;
   t_filenm   fnm[] = {
     { efTRX, "-f", NULL,  ffREAD  },
     { efTPX, NULL, NULL,  ffREAD },
@@ -128,7 +129,7 @@ int gmx_rotacf(int argc,char *argv[])
     gmx_fatal(FARGS,"number of index elements not multiple of 2, "
 		"these can not be atom doublets\n");
   
-  top=read_top(ftp2fn(efTPX,NFILE,fnm));
+  top=read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);
   
   snew(c1,nvec);
   for (i=0; (i<nvec); i++)
@@ -150,7 +151,7 @@ int gmx_rotacf(int argc,char *argv[])
     t1 = t;
     
     /* Remove periodicity */
-    rm_pbc(&(top->idef),natoms,box,x,x_s);
+    rm_pbc(&(top->idef),ePBC,natoms,box,x,x_s);
     
     /* Compute crossproducts for all vectors, if triplets.
      * else, just get the vectors in case of doublets.

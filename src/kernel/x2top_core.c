@@ -87,7 +87,7 @@ void mk_bonds(x2top_nm2t nmt,t_atoms *atoms,rvec x[],
     b.c[i] = 0.0;
     
   if (bPBC)
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,-1,box);
   for(i=0; (i<atoms->nr); i++) {
     if ((i % 10) == 0)
       fprintf(stderr,"\ratom %d",i);
@@ -200,7 +200,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
   t_pbc  pbc;
 
   if (bPBC)
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,-1,box);
   if (debug)
     pr_rvecs(debug,0,"X2TOP",box,DIM);
   for(i=0; (i<ang->nr); i++) {

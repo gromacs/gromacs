@@ -563,7 +563,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bHaveConstr = TRUE;
     
   /* Initialize the essential dynamics sampling */
-  do_first_edsam(fplog,top,mdatoms,mdatoms->start,mdatoms->homenr,cr,
+  do_first_edsam(fplog,top,ir->ePBC,mdatoms,mdatoms->start,mdatoms->homenr,cr,
 		 state->x,state->box,edyn,bHaveConstr);
   if (ed_constraints(edyn))
     bHaveConstr = TRUE;

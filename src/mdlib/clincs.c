@@ -192,7 +192,7 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
   /* Compute normalized i-j vectors */
   if (pbc) {
     for(b=0; b<ncons; b++) {
-      pbc_dx(pbc,x[bla[2*b]],x[bla[2*b+1]],dx);
+      pbc_dx_aiuc(pbc,x[bla[2*b]],x[bla[2*b+1]],dx);
       unitv(dx,r[b]);
     }
   } else {
@@ -289,14 +289,14 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
   if (pbc) {
     /* Compute normalized i-j vectors */
     for(b=0; b<ncons; b++) {
-      pbc_dx(pbc,x[bla[2*b]],x[bla[2*b+1]],dx);
+      pbc_dx_aiuc(pbc,x[bla[2*b]],x[bla[2*b+1]],dx);
       unitv(dx,r[b]);
     }  
     for(b=0; b<ncons; b++) {
       for(n=blnr[b]; n<blnr[b+1]; n++) {
 	blcc[n] = blmf[n]*iprod(r[b],r[blbnb[n]]);
       }
-      pbc_dx(pbc,xp[bla[2*b]],xp[bla[2*b+1]],dx);
+      pbc_dx_aiuc(pbc,xp[bla[2*b]],xp[bla[2*b+1]],dx);
       mvb = blc[b]*(iprod(r[b],dx) - bllen[b]);
       rhs1[b] = mvb;
       sol[b]  = mvb;
@@ -374,7 +374,7 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
     for(b=0;b<ncons;b++) {
       len = bllen[b];
       if (pbc) {
-	pbc_dx(pbc,xp[bla[2*b]],xp[bla[2*b+1]],dx);
+	pbc_dx_aiuc(pbc,xp[bla[2*b]],xp[bla[2*b+1]],dx);
       } else {
 	rvec_sub(xp[bla[2*b]],xp[bla[2*b+1]],dx);
       }
@@ -796,8 +796,8 @@ static void lincs_warning(FILE *fplog,
     i = bla[2*b];
     j = bla[2*b+1];
     if (pbc) {
-      pbc_dx(pbc,x[i],x[j],v0);
-      pbc_dx(pbc,xprime[i],xprime[j],v1);
+      pbc_dx_aiuc(pbc,x[i],x[j],v0);
+      pbc_dx_aiuc(pbc,xprime[i],xprime[j],v1);
     } else {
       rvec_sub(x[i],x[j],v0);
       rvec_sub(xprime[i],xprime[j],v1);
@@ -837,7 +837,7 @@ static void cconerr(gmx_domdec_t *dd,
   count = 0;
   for(b=0;b<ncons;b++) {
     if (pbc) {
-      pbc_dx(pbc,x[bla[2*b]],x[bla[2*b+1]],dx);
+      pbc_dx_aiuc(pbc,x[bla[2*b]],x[bla[2*b+1]],dx);
     } else {
       rvec_sub(x[bla[2*b]],x[bla[2*b+1]],dx);
     }
@@ -951,7 +951,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step.
      */
-    pbc_null = set_pbc_ss(&pbc,ir->ePBC,box,dd,FALSE);
+    pbc_null = set_pbc_dd(&pbc,ir->ePBC,dd,FALSE,box);
   } else {
     pbc_null = NULL;
   }
@@ -975,7 +975,7 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
       if (pbc_null) {
 	for(i=0; i<lincsd->nc; i++)
 	  if (lincsd->bllen[i] == 0) {
-	    pbc_dx(pbc_null,x[lincsd->bla[2*i]],x[lincsd->bla[2*i+1]],dx);
+	    pbc_dx_aiuc(pbc_null,x[lincsd->bla[2*i]],x[lincsd->bla[2*i+1]],dx);
 	    lincsd->bllen[i] = norm(dx);
 	  }
       } else {

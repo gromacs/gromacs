@@ -96,7 +96,8 @@ void p_integrate(double *result, double data[], int ndata, double slWidth)
 void calc_potential(char *fn, atom_id **index, int gnx[], 
 		    double ***slPotential, double ***slCharge, 
 		    double ***slField, int *nslices, 
-		    t_topology *top, int axis, int nr_grps, double *slWidth,
+		    t_topology *top, int ePBC,
+		    int axis, int nr_grps, double *slWidth,
 		    double fudge_z, bool bSpherical, bool bCorrect)
 {
   rvec *x0;              /* coordinates without pbc */
@@ -155,7 +156,7 @@ void calc_potential(char *fn, atom_id **index, int gnx[],
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
     
-    rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
+    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
 
     /* calculate position of center of mass based on group 1 */
     calc_xcm(x0, gnx[0], index[0], top->atoms.atom, xcm, FALSE);
@@ -417,6 +418,7 @@ int gmx_potential(int argc,char *argv[])
   char      **grpname;            	    /* groupnames                 */
   int       *ngx;                           /* sizes of groups            */
   t_topology *top;                	    /* topology 		  */ 
+  int       ePBC;
   atom_id   **index;             	    /* indices for all groups     */
   t_filenm  fnm[] = {             	    /* files for g_order 	  */
     { efTRX, "-f", NULL,  ffREAD },    	    /* trajectory file 	          */
@@ -436,7 +438,7 @@ int gmx_potential(int argc,char *argv[])
   /* Calculate axis */
   axis = toupper(axtitle[0]) - 'X';
   
-  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);     /* read topology file */
 
   snew(grpname,ngrps);
   snew(index,ngrps);
@@ -447,7 +449,7 @@ int gmx_potential(int argc,char *argv[])
   
   calc_potential(ftp2fn(efTRX,NFILE,fnm), index, ngx, 
 		 &potential, &charge, &field,
-		 &nslices, top, axis, ngrps, &slWidth, fudge_z,
+		 &nslices, top, ePBC, axis, ngrps, &slWidth, fudge_z,
 		 bSpherical, bCorrect); 
 
   plot_potential(potential, charge, field, opt2fn("-o",NFILE,fnm),

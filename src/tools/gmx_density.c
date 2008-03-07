@@ -136,7 +136,8 @@ void center_coords(t_atoms *atoms,matrix box,rvec x0[],int axis)
 }
 
 void calc_electron_density(char *fn, atom_id **index, int gnx[], 
-			   real ***slDensity, int *nslices, t_topology *top, 
+			   real ***slDensity, int *nslices, t_topology *top,
+			   int ePBC,
 			   int axis, int nr_grps, real *slWidth, 
 			   t_electron eltab[], int nr,bool bCenter)
 {
@@ -181,7 +182,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
   
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
+    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -238,7 +239,7 @@ void calc_electron_density(char *fn, atom_id **index, int gnx[],
 }
 
 void calc_density(char *fn, atom_id **index, int gnx[], 
-		  real ***slDensity, int *nslices, t_topology *top, 
+		  real ***slDensity, int *nslices, t_topology *top, int ePBC,
 		  int axis, int nr_grps, real *slWidth, bool bCenter)
 {
   rvec *x0;              /* coordinates without pbc */
@@ -283,7 +284,7 @@ void calc_density(char *fn, atom_id **index, int gnx[],
   
   /*********** Start processing trajectory ***********/
   do {
-    rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
+    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
 
     if (bCenter)
       center_coords(&top->atoms,box,x0,axis);
@@ -418,6 +419,7 @@ int gmx_density(int argc,char *argv[])
   int  *ngx;             /* sizes of groups            */
   t_electron *el_tab;    /* tabel with nr. of electrons*/
   t_topology *top;       /* topology 		       */ 
+  int  ePBC;
   atom_id   **index;     /* indices for all groups     */
   int  i;
 
@@ -443,7 +445,7 @@ int gmx_density(int argc,char *argv[])
   /* Calculate axis */
   axis = toupper(axtitle[0]) - 'X';
   
-  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);     /* read topology file */
   if (dens_opt[0][0] == 'n') {
     for(i=0; (i<top->atoms.nr); i++)
       top->atoms.atom[i].m = 1;  
@@ -463,11 +465,11 @@ int gmx_density(int argc,char *argv[])
     fprintf(stderr,"Read %d atomtypes from datafile\n", nr_electrons);
 
     calc_electron_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, 
-			  &nslices, top, axis, ngrps, &slWidth, el_tab, 
+			  &nslices, top, ePBC, axis, ngrps, &slWidth, el_tab, 
 			  nr_electrons,bCenter);
   } else
     calc_density(ftp2fn(efTRX,NFILE,fnm),index, ngx, &density, &nslices, top, 
-		 axis, ngrps, &slWidth, bCenter); 
+		 ePBC, axis, ngrps, &slWidth, bCenter); 
   
   plot_density(density, opt2fn("-o",NFILE,fnm),
 	       nslices, ngrps, grpname, slWidth, dens_opt,

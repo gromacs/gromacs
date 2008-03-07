@@ -96,6 +96,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
 int gmx_sorient(int argc,char *argv[])
 {
   t_topology top;
+  int      ePBC;
   char     title[STRLEN];
   int      status;
   int      natoms;
@@ -178,7 +179,8 @@ int gmx_sorient(int argc,char *argv[])
 
   bTPS = (opt2bSet("-s",NFILE,fnm) || !opt2bSet("-n",NFILE,fnm) || bCom);
   if (bTPS) {
-    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,bCom);
+    read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,
+		  bCom);
   }
 
   /* get index groups */
@@ -238,10 +240,10 @@ int gmx_sorient(int argc,char *argv[])
   do {
     if (bTPS) {
       /* make molecules whole again */
-      rm_pbc(&top.idef,natoms,box,x,x);
+      rm_pbc(&top.idef,ePBC,natoms,box,x,x);
     }
     
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,ePBC,box);
     n    = 0;
     inp  = 0;
     outp = 0;

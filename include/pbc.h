@@ -67,9 +67,10 @@ extern "C" {
   extern void dump_pbc(FILE *fp,t_pbc *pbc);
   /* Dump the contents of the pbc structure to the file */
   
-  extern char *check_box(matrix box);
+  extern char *check_box(int ePBC,matrix box);
   /* Returns NULL if the box is supported by Gromacs.
    * Otherwise is returns a string with the problem.
+   * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
 
   extern real max_cutoff2(int ePBC,matrix box);
@@ -87,32 +88,26 @@ extern "C" {
    * Returns TRUE when the box was corrected.
    */
 
-  extern void set_pbc(t_pbc *pbc,matrix box);
+  extern void set_pbc(t_pbc *pbc,int ePBC,matrix box);
   /* Initiate the periodic boundary conditions.
    * pbc_dx will not use pbc and return the normal difference vector
-   * when one or more of the diagonal elements of box is zero.
-   * The type of pbc is guessed from the box matrix.
+   * when one or more of the diagonal elements of box are zero.
+   * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
 
-  extern void set_pbc_ms(t_pbc *pbc,int ePBC,matrix box);
-  /* As set_pbc, but sets the pbc using ePBC */
-
-  extern t_pbc *set_pbc_ss(t_pbc *pbc,int ePBC,matrix box,
-			   gmx_domdec_t *dd,bool bSingleDir);
-  /* As set_pbc_ms, but additionally sets that correct distances can
+  extern t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
+			   gmx_domdec_t *dd,bool bSingleDir,matrix box);
+  /* As set_pbc, but additionally sets that correct distances can
    * be obtained using (combinations of) single box-vector shifts.
-   * In this case pbc_dx is slightly more efficient.
+   * Should be used with pbc_dx_aiuc.
    * If dd!=NULL pbc is not used for directions
    * with dd->nc[i]==1 with bSingleDir==TRUE or
    * with dd->nc[i]<=2 with bSingleDir==FALSE.
-   * Returns pbc when corrections are needed, NULL otherwise.
+   * Returns pbc when pbc operations are required, NULL otherwise.
    */
 
-  extern int pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx);
+  extern void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx);
   /* Calculate the correct distance vector from x2 to x1 and put it in dx.
-   * Returns the ishift required to shift x1 at closest distance to x2;
-   * i.e. if 0<=ishift<SHIFTS then x1 - x2 + shift_vec[ishift] = dx
-   * (see calc_shifts below on how to obtain shift_vec)
    * set_pbc must be called before ever calling this routine.
    *
    * For triclinic boxes pbc_dx does not necessarily return the shortest
@@ -122,6 +117,16 @@ extern "C" {
    * pbc->limit_distance2 is always larger than max_cutoff2(box).
    * For the standard rhombic dodecahedron and truncated octahedron
    * pbc->bLimitDistance=FALSE and thus all distances are correct.
+   */
+
+  extern int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1,const rvec x2,rvec dx);
+  /* Calculate the correct distance vector from x2 to x1 and put it in dx,
+   * This function can only be used when all atoms are in the rectangular
+   * or triclinic unit-cell.
+   * Returns the ishift required to shift x1 at closest distance to x2;
+   * i.e. if 0<=ishift<SHIFTS then x1 - x2 + shift_vec[ishift] = dx
+   * (see calc_shifts below on how to obtain shift_vec)
+   * set_pbc_dd or set_pbc must be called before ever calling this routine.
    */
 
   extern bool image_rect(ivec xi,ivec xj,ivec box_size,
@@ -205,13 +210,14 @@ extern "C" {
    * box center as calculated by calc_box_center.
    */
 
-  extern char *put_atoms_in_compact_unitcell(int ecenter,matrix box,
+  extern char *put_atoms_in_compact_unitcell(int ePBC,int ecenter,matrix box,
 					     int natoms,rvec x[]);
   /* This puts ALL atoms at the closest distance for the center of the box
    * as calculated by calc_box_center.
    * Will return NULL is everything went ok and a warning string if not
    * all atoms could be placed in the unitcell. This can happen for some
    * triclinic unitcells, see the comment at pbc_dx above.
+   * When ePBC=-1, the type of pbc is guessed from the box matrix.
    */
   
 #ifdef CPLUSPLUS

@@ -531,7 +531,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 		 real *value_of_area, real **at_area,
 		 real *value_of_vol,
 		 real **lidots, int *nu_dots,
-		 atom_id index[],matrix box) 
+		 atom_id index[],int ePBC,matrix box) 
 {
   int iat, i, ii, iii, ix, iy, iz, ixe, ixs, iye, iys, ize, izs, i_ac;
   int jat, j, jj, jjj, jx, jy, jz;
@@ -583,7 +583,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 
   /* Added DvdS 2006-07-19 */
   if (box)
-    set_pbc(&pbc,box);
+    set_pbc(&pbc,ePBC,box);
   /* end */
     
   /* dimensions of atomic set, cell edge is 2*ra_max */

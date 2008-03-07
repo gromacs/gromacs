@@ -65,8 +65,8 @@
 
 void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
 		  real **slOrder, real *slWidth, int *nslices, 
-		  t_topology *top, int axis, bool bMicel, atom_id micel[], 
-		  int nmic)
+		  t_topology *top, int ePBC,
+		  int axis, bool bMicel, atom_id micel[], int nmic)
 {
   rvec *x0,              /* coordinates with pbc */
        dipole,           /* dipole moment due to one molecules */
@@ -125,7 +125,7 @@ void calc_h2order(char *fn, atom_id index[], int ngx, rvec **slDipole,
     *slWidth = box[axis][axis]/(*nslices);
     teller++;
     
-    rm_pbc(&(top->idef),top->atoms.nr,box,x0,x0);
+    rm_pbc(&(top->idef),ePBC,top->atoms.nr,box,x0,x0);
 
     if (bMicel)
       calc_xcm(x0, nmic, micel, top->atoms.atom, com, FALSE);
@@ -274,6 +274,7 @@ int gmx_h2order(int argc,char *argv[])
   int       ngx,                            /* nr. of atomsin sol group   */
             nmic;                           /* nr. of atoms in micelle    */
   t_topology *top;                	    /* topology 		  */ 
+  int       ePBC;
   atom_id    *index,             	    /* indices for solvent group  */
              *micelle;
   bool       bMicel =  FALSE;               /* think we're a micel        */
@@ -292,7 +293,7 @@ int gmx_h2order(int argc,char *argv[])
 		    fnm, asize(pa),pa,asize(desc),desc,asize(bugs),bugs);
   bMicel = opt2bSet("-nm",NFILE,fnm);
 
-  top = read_top(ftp2fn(efTPX,NFILE,fnm));     /* read topology file */
+  top = read_top(ftp2fn(efTPX,NFILE,fnm),&ePBC);   /* read topology file */
 
   rd_index(ftp2fn(efNDX,NFILE,fnm),1,&ngx,&index,&grpname); 
   
@@ -300,7 +301,7 @@ int gmx_h2order(int argc,char *argv[])
     rd_index(opt2fn("-nm",NFILE,fnm), 1, &nmic, &micelle, &micname);
 
   calc_h2order(ftp2fn(efTRX,NFILE,fnm), index, ngx, &slDipole, &slOrder, 
-	       &slWidth, &nslices, top, axis, bMicel, micelle, nmic); 
+	       &slWidth, &nslices, top, ePBC, axis, bMicel, micelle, nmic); 
 
   h2order_plot(slDipole, slOrder, opt2fn("-o",NFILE,fnm), nslices, 
 	       slWidth);

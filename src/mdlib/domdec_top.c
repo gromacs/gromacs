@@ -469,7 +469,7 @@ static real dd_dist2(t_pbc *pbc_null,rvec *cg_cm,const int *la2lc,int i,int j)
   rvec dx;
 
   if (pbc_null) {
-    pbc_dx(pbc_null,cg_cm[la2lc[i]],cg_cm[la2lc[j]],dx);
+    pbc_dx_aiuc(pbc_null,cg_cm[la2lc[i]],cg_cm[la2lc[j]],dx);
   } else {
     rvec_sub(cg_cm[la2lc[i]],cg_cm[la2lc[j]],dx);
   }
@@ -882,7 +882,7 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
     if (bRCheckMB || bRCheck2B) {
       make_la2lc(dd);
       if (fr->bMolPBC) {
-	set_pbc_ss(&pbc,fr->ePBC,box,dd,TRUE);
+	set_pbc_dd(&pbc,fr->ePBC,dd,TRUE,box);
 	pbc_null = &pbc;
       } else {
 	pbc_null = NULL;

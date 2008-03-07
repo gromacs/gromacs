@@ -63,8 +63,8 @@ extern void init_edsam(FILE *log,t_topology *top,t_inputrec *ir,
 		       t_mdatoms *md,int start,int homenr, t_commrec *cr,
 		       t_edsamyn *edyn);
 
-extern void do_first_edsam(FILE *log,t_topology *top,
-		t_mdatoms *md,int start,int homenr,t_commrec *cr,
+extern void do_first_edsam(FILE *log,t_topology *top,int ePBC,
+			   t_mdatoms *md,int start,int homenr,t_commrec *cr,
 			   rvec x[],matrix box, t_edsamyn *edyn,bool bHaveConstr);
 
 extern void finish_edsam(FILE *log,t_topology *top,t_inputrec *ir,

@@ -381,7 +381,8 @@ static void overlap(char *outfile,int natoms,
   fclose(out);
 }
 
-static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
+static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
+		    rvec *xtop,
 		    char *projfile,char *twodplotfile,char *threedplotfile,
 		    char *filterfile,int skip,
 		    char *extremefile,bool bExtrAll,real extreme,int nextr,
@@ -432,7 +433,7 @@ static void project(char *trajfile,t_topology *top,matrix topbox,rvec *xtop,
     do {
       if (nfr % skip == 0) {
 	if (top)
-	  rm_pbc(&(top->idef),nat,box,xread,xread);
+	  rm_pbc(&(top->idef),ePBC,nat,box,xread,xread);
 	if (nframes>=snew_size) {
 	  snew_size+=100;
 	  for(i=0; i<noutvec+1; i++)
@@ -822,6 +823,7 @@ int gmx_anaeig(int argc,char *argv[])
   FILE       *out;
   int        status,trjout;
   t_topology top;
+  int        ePBC=-1;
   t_atoms    *atoms=NULL;
   rvec       *xtop,*xref1,*xref2;
   bool       bDMR1,bDMA1,bDMR2,bDMA2;
@@ -968,9 +970,9 @@ int gmx_anaeig(int argc,char *argv[])
     bTop=FALSE;
   else {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),
-		       title,&top,&xtop,NULL,topbox,bM);
+		       title,&top,&ePBC,&xtop,NULL,topbox,bM);
     atoms=&top.atoms;
-    rm_pbc(&(top.idef),atoms->nr,topbox,xtop,xtop);
+    rm_pbc(&(top.idef),ePBC,atoms->nr,topbox,xtop,xtop);
     /* Fitting is only needed when we need to read a trajectory */ 
     if (bTraj) {
       if ((xref1==NULL) || (bM && bDMR1)) {
@@ -1118,7 +1120,7 @@ int gmx_anaeig(int argc,char *argv[])
     
   if (bProj)
     project(bTraj ? opt2fn("-f",NFILE,fnm) : NULL,
-	    bTop ? &top : NULL,topbox,xtop,
+	    bTop ? &top : NULL,ePBC,topbox,xtop,
 	    ProjOnVecFile,TwoDPlotFile,ThreeDPlotFile,FilterFile,skip,
 	    ExtremeFile,bFirstLastSet,max,nextr,atoms,natoms,index,
 	    bFit1,xref1,nfit,ifit,w_rls,
