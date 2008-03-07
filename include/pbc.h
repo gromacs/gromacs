@@ -128,6 +128,10 @@ extern "C" {
    * (see calc_shifts below on how to obtain shift_vec)
    * set_pbc_dd or set_pbc must be called before ever calling this routine.
    */
+  extern void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx);
+  /* As pbc_dx, but for double precision vectors.
+   * set_pbc must be called before ever calling this routine.
+   */
 
   extern bool image_rect(ivec xi,ivec xj,ivec box_size,
 			 real rlong2,int *shift,real *r2);

@@ -183,7 +183,7 @@ static void apply_forces(t_commrec *cr,
   }
 }
 
-void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
+void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 			  dvec dr,dvec dev)
 {
   static bool bWarned=FALSE;
@@ -199,7 +199,7 @@ void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
   else
     pref = &pull->grp[0];
   
-  pull_d_pbc_dx(pull->npbcdim, box, pgrp->x, pref->x, dr);
+  pbc_dx_d(pbc, pgrp->x, pref->x, dr);
   for(m=0; m<DIM; m++)
     dr[m] *= pull->dim[m];
   
@@ -240,7 +240,7 @@ void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
     break;
   case epullgPOS:
     /* Restrain to the location vec */
-    pull_d_pbc_dx(pull->npbcdim, box, pgrp->x, ref, dev);
+    pbc_dx_d(pbc, pgrp->x, ref, dev);
     for(m=0; m<DIM; m++)
       dev[m] *= pull->dim[m];
     break;
@@ -262,9 +262,9 @@ void clear_pull_forces(t_pull *pull)
 }
 
 /* Apply constraint using SHAKE */
-static void do_constraint(t_pull *pull, rvec *x, rvec *v,
+static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+			  rvec *x, rvec *v,
 			  bool bMaster, tensor vir,
-			  matrix box, t_mdatoms *md, 
                           real dt, double t) 
 {
 
@@ -312,7 +312,7 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
   for(g=1; g<1+pull->ngrp; g++) {
     if (PULL_CYL(pull))
       pref = &pull->dyna[g];
-    pull_d_pbc_dx(pull->npbcdim,box,pull->grp[g].x,pref->x,r_ij[g]);
+    pbc_dx_d(pbc,pull->grp[g].x,pref->x,r_ij[g]);
     if (pull->eGeom == epullgDIR) {
       /* Select the component along vec */
       a = 0;
@@ -336,8 +336,7 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
 	pref = &pull->grp[0];
 
       /* Get the current difference vector */
-      pull_d_pbc_dx(pull->npbcdim,box,
-		    rinew[g],rjnew[PULL_CYL(pull) ? g : 0],unc_ij);
+      pbc_dx_d(pbc,rinew[g],rjnew[PULL_CYL(pull) ? g : 0],unc_ij);
 
       /* Select components we want */
       for(m=0; m<DIM; m++)
@@ -416,8 +415,8 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
       /* DEBUG */
       if (debug) {
         j = (PULL_CYL(pull) ? g : 0);
-	pull_d_pbc_dx(pull->npbcdim, box, rinew[g], rjnew[j], tmp);
-        pull_d_pbc_dx(pull->npbcdim, box,    dr[g],   ref_dr, tmp3);
+	pbc_dx_d(pbc, rinew[g], rjnew[j], tmp);
+        pbc_dx_d(pbc, dr[g],    ref_dr,   tmp3);
         for(m=0; m<DIM; m++) {
           tmp[m]  *= pull->dim[m];
           tmp3[m] *= pull->dim[m];
@@ -453,8 +452,7 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
     for(g=1; g<1+pull->ngrp; g++) {
       pgrp = &pull->grp[g];
 
-      pull_d_pbc_dx(pull->npbcdim, box,
-		    rinew[g], rjnew[PULL_CYL(pull) ? g : 0],unc_ij);
+      pbc_dx_d(pbc, rinew[g], rjnew[PULL_CYL(pull) ? g : 0], unc_ij);
       for(m=0; m<DIM; m++)
         unc_ij[m] *= pull->dim[m];
 
@@ -598,9 +596,8 @@ static void do_constraint(t_pull *pull, rvec *x, rvec *v,
 
 /* Pulling with a harmonic umbrella potential or constant force */
 static real do_pull_pot(t_commrec *cr,int ePull,
-			t_pull *pull, rvec *f, tensor vir, 
-			matrix box, t_mdatoms *md,
-			double t)
+			t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+			rvec *f, tensor vir, double t)
 {
   int       g,j,m;
   dvec      dr,dev;
@@ -612,7 +609,7 @@ static real do_pull_pot(t_commrec *cr,int ePull,
   V = 0;
   for(g=1; g<1+pull->ngrp; g++) {
     pgrp = &pull->grp[g];
-    get_pullgrp_distance(pull,g,box,t,dr,dev);
+    get_pullgrp_distance(pull,pbc,g,t,dr,dev);
 
     switch (pull->eGeom) {
     case epullgDIST:
@@ -670,22 +667,22 @@ static real do_pull_pot(t_commrec *cr,int ePull,
   return (MASTER(cr) ? V : 0.0);
 }
 
-real pull_potential(int ePull,t_pull *pull, rvec *x, rvec *f, tensor vir, 
-		    matrix box, t_topology *top, double t,
-		    t_mdatoms *md, t_commrec *cr) 
+real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+		    t_commrec *cr, double t,
+		    rvec *x, rvec *f, tensor vir)
 {
-  pull_calc_coms(cr,pull,md,x,NULL,box);
+  pull_calc_coms(cr,pull,md,pbc,x,NULL);
 
-  return do_pull_pot(cr,ePull,pull,f,vir,box,md,t);
+  return do_pull_pot(cr,ePull,pull,md,pbc,f,vir,t);
 }
 
-void pull_constraint(t_pull *pull, rvec *x, rvec *xp, rvec *v, tensor vir, 
-		     matrix box, t_topology *top, real dt, double t,
-		     t_mdatoms *md, t_commrec *cr) 
+void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+		     t_commrec *cr, real dt, double t,
+		     rvec *x, rvec *xp, rvec *v, tensor vir)
 {
-  pull_calc_coms(cr,pull,md,x,xp,box);
+  pull_calc_coms(cr,pull,md,pbc,x,xp);
 
-  do_constraint(pull,xp,v,MASTER(cr),vir,box,md,dt,t);
+  do_constraint(pull,md,pbc,xp,v,MASTER(cr),vir,dt,t);
 }
 
 static void dd_make_local_pull_group(gmx_domdec_t *dd,

@@ -228,6 +228,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   t_ilist *settle;
   int     nsettle;
   real    mO,mH,dOH,dHH;
+  t_pbc   pbc;
 
   if (econq == econqForce && !EI_ENERGY_MINIMIZATION(ir->eI))
     gmx_incons("constrain called for forces while not doing energy minimization, can not do this while the LINCS and SETTLE constraint connection matrices are mass weighted");
@@ -342,7 +343,8 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     } else {
       t = ir->init_t;
     }
-    pull_constraint(ir->pull,x,xprime,v,*vir,box,top,ir->delta_t,t,md,cr);
+    set_pbc(&pbc,ir->ePBC,box);
+    pull_constraint(ir->pull,md,&pbc,cr,ir->delta_t,t,x,xprime,v,*vir);
   }
   
   return bOK;

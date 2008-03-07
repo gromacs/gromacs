@@ -313,7 +313,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   bool   bSepDVDL,bFillGrid,bCalcCGCM,bBS;
   matrix boxs;
   real   e,dvdl;
-  t_pbc  pbc_ms;
+  t_pbc  pbc;
   float  cycles_ppdpme,cycles_pme,cycles_force;
   
   start  = mdatoms->start;
@@ -496,12 +496,12 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   if (!bNBFonly && top->idef.il[F_POSRES].nr > 0) {
     /* Position restraints always require full pbc */
-    set_pbc(&pbc_ms,inputrec->ePBC,box);
+    set_pbc(&pbc,inputrec->ePBC,box);
     ener[F_POSRES] +=
       posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
 	     top->idef.iparams,
 	     (const rvec*)x,fr->f_novirsum,
-	     inputrec->ePBC==epbcNONE ? NULL : &pbc_ms,lambda,&dvdl,
+	     inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
 	     fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,
@@ -566,10 +566,11 @@ void do_force(FILE *fplog,t_commrec *cr,
      * The virial contribution is calculated directly,
      * which is why we call pull_potential after calc_virial.
      */
+    set_pbc(&pbc,inputrec->ePBC,box);
     ener[F_COM_PULL] =
-      pull_potential(inputrec->ePull,inputrec->pull,
-		     x,f,vir_force,box,
-		     top,inputrec->init_t+step*inputrec->delta_t,mdatoms,cr);
+      pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
+		     cr,inputrec->init_t+step*inputrec->delta_t,
+		     x,f,vir_force);
   }
 
   if (!(cr->duty & DUTY_PME)) {

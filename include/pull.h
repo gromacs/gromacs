@@ -48,25 +48,23 @@
    for mdrun to interface with the pull code */
 
 /* Get the distance to the reference and deviation for pull group g */
-extern void get_pullgrp_distance(t_pull *pull,int g,matrix box,double t,
+extern void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 				 dvec dr,dvec dev);
 
 /* Set the all the pull forces to zero */
 extern void clear_pull_forces(t_pull *pull);
 
 /* Determine the COM pull forces and add them to f, return the potential */
-extern real pull_potential(int ePull, t_pull *pull,
-			   rvec *x, rvec *f, tensor vir, 
-			   matrix box, t_topology *top, double t,
-			   t_mdatoms *md, t_commrec *cr);
+extern real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+			   t_commrec *cr, double t,
+			   rvec *x, rvec *f, tensor vir);
 
 /* Constrain the coordinates xp in the directions in x
  * and also constrain v when v!=NULL.
  */
-extern void pull_constraint(t_pull *pull, rvec *x, rvec *xp, rvec *v,
-			    tensor vir, matrix box, t_topology *top,
-			    real dt, double t,
-			    t_mdatoms *md, t_commrec *cr);
+extern void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+			    t_commrec *cr, real dt, double t,
+			    rvec *x, rvec *xp, rvec *v, tensor vir);
 
 /* Make a selection of the home atoms for all pull groups.
  * Should be called at every domain decomposition.
@@ -93,18 +91,13 @@ extern void pull_print_output(t_pull *pull, int step, real time);
 
 /* In pullutil.c */
 
-/* For triclinic boxes only correct for distances
- * shorter than half the smallest diagonal box element.
- */
-extern void pull_d_pbc_dx(int npbcdim,
-			  matrix box,const dvec x1, const dvec x2, dvec dx);
-
 /* Calculates centers of mass all pull groups */
 extern void pull_calc_coms(t_commrec *cr,
 			   t_pull *pull,   /* the pull group */
 			   t_mdatoms *md,  /* all atoms */
+			   t_pbc *pbc,
 			   rvec x[],       /* local coordinates */
-			   rvec *xp,       /* updated x, can be NULL */
-			   matrix box);    
+			   rvec *xp        /* updated x, can be NULL */
+			   );    
 
 #endif

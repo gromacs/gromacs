@@ -461,21 +461,20 @@ t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
 
 void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
-  int  i,j,is;
+  int  i,j;
   rvec dx_start,try;
-  real fb,d2min,d2try;
+  real d2min,d2try;
 
   rvec_sub(x1,x2,dx);
 
   switch (pbc->ePBCDX) {
   case epbcdxRECTANGULAR:
     for(i=0; i<DIM; i++) {
-      fb = pbc->fbox_diag[i];
       while (dx[i] > pbc->hbox_diag[i]) {
-	dx[i] -= fb;
+	dx[i] -= pbc->fbox_diag[i];
       }
       while (dx[i] <= pbc->mhbox_diag[i]) {
-	dx[i] += fb;
+	dx[i] += pbc->fbox_diag[i];
       }
     }
     break;
@@ -572,7 +571,7 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 {
   int  i,j,is;
   rvec dx_start,try;
-  real fb,d2min,d2try;
+  real d2min,d2try;
   ivec ishift,ishift_start;
 
   rvec_sub(x1,x2,dx);
@@ -581,12 +580,11 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
   switch (pbc->ePBCDX) {
   case epbcdxRECTANGULAR:
     for(i=0; i<DIM; i++) {
-      fb = pbc->fbox_diag[i];
       if (dx[i] > pbc->hbox_diag[i]) {
-	dx[i] -= fb;
+	dx[i] -=  pbc->fbox_diag[i];
 	ishift[i]--;
       } else if (dx[i] <= pbc->mhbox_diag[i]) {
-	dx[i] += fb;
+	dx[i] +=  pbc->fbox_diag[i];
 	ishift[i]++;
       }
     }
@@ -699,7 +697,6 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
     if (d2min > pbc->max_cutoff2) {
       copy_rvec(dx,dx_start);
       copy_ivec(ishift,ishift_start);
-      d2min = norm2(dx);
       /* Now try all possible shifts, when the distance is within max_cutoff
        * it must be the shortest possible distance.
        */
@@ -753,6 +750,75 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
     range_check(is,0,SHIFTS);
 
   return is; 
+}
+
+void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
+{
+  int  i,j,is;
+  dvec dx_start,try;
+  double d2min,d2try;
+
+  dvec_sub(x1,x2,dx);
+
+  switch (pbc->ePBCDX) {
+  case epbcdxRECTANGULAR:
+  case epbcdx2D_RECT:
+    for(i=0; i<DIM; i++) {
+      if (i != pbc->dim) {
+	while (dx[i] > pbc->hbox_diag[i]) {
+	  dx[i] -= pbc->fbox_diag[i];
+	}
+	while (dx[i] <= pbc->mhbox_diag[i]) {
+	  dx[i] += pbc->fbox_diag[i];
+	}
+      }
+    }
+    break;
+  case epbcdxTRICLINIC:
+  case epbcdx2D_TRIC:
+    d2min = 0;
+    for(i=DIM-1; i>=0; i--) {
+      if (i != pbc->dim) {
+	while (dx[i] > pbc->hbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] -= pbc->box[i][j];
+	}
+	while (dx[i] <= pbc->mhbox_diag[i]) {
+	  for (j=i; j>=0; j--)
+	    dx[j] += pbc->box[i][j];
+	}
+	d2min += dx[i]*dx[i];
+      }
+    }
+    if (d2min > pbc->max_cutoff2) {
+      copy_dvec(dx,dx_start);
+      /* Now try all possible shifts, when the distance is within max_cutoff
+       * it must be the shortest possible distance.
+       */
+      i = 0;
+      while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
+	for(j=0; j<DIM; j++)
+	  try[j] = dx_start[j] + pbc->tric_vec[i][j];
+	d2try = 0;
+	for(i=DIM-1; i>=0; i--) {
+	  if (i != pbc->dim)
+	    d2try += try[i]*try[i];
+	}
+	if (d2try < d2min) {
+	  copy_dvec(try,dx);
+	  d2min = d2try;
+	}
+	i++;
+      }
+    }
+    break;
+  case epbcdxNOPBC:
+  case epbcdxUNSUPPORTED:
+    break;
+  default:
+    gmx_fatal(FARGS,"Internal error in pbc_dx, set_pbc has not been called");
+    break;
+  }
 }
 
 bool image_rect(ivec xi,ivec xj,ivec box_size,real rlong2,int *shift,real *r2)
