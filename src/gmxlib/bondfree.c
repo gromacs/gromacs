@@ -1186,7 +1186,7 @@ real posres(int nbonds,
   int  i,ai,m,type,ki;
   const t_iparams *pr;
   real v,vtot,fm,*fc;
-  rvec dx;
+  rvec pos,dx;
 
   vtot = 0.0;
   for(i=0; (i<nbonds); ) {
@@ -1194,13 +1194,10 @@ real posres(int nbonds,
     ai   = forceatoms[i++];
     pr   = &forceparams[type];
     
-    /*
-    if (pbc == NULL)
-      rvec_sub(x[ai],forceparams[type].posres.pos0A,dx);
-    else
-    pbc_dx(pbc,x[ai],forceparams[type].posres.pos0A,dx);*/
-    
-    ki = pbc_rvec_sub(pbc,x[ai],forceparams[type].posres.pos0A,dx);
+    for (m=0; (m<DIM); m++)
+      pos[m] = (1 - lambda)*pr->posres.pos0A[m] + lambda*pr->posres.pos0B[m];
+
+    ki = pbc_rvec_sub(pbc,x[ai],pos,dx);
     
     v=0;
     for (m=0; (m<DIM); m++) {
