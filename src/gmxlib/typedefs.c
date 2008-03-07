@@ -206,6 +206,24 @@ void done_top(t_topology *top)
   done_blocka(&(top->excls));
 }
 
+static void done_pullgrp(t_pullgrp *pgrp)
+{
+  sfree(pgrp->ind);
+  sfree(pgrp->ind_loc);
+  sfree(pgrp->weight);
+  sfree(pgrp->weight_loc);
+}
+
+static void done_pull(t_pull *pull)
+{
+  int i;
+
+  for(i=0; i<pull->ngrp+1; i++) {
+    done_pullgrp(pull->grp);
+    done_pullgrp(pull->dyna);
+  }
+}
+
 void done_inputrec(t_inputrec *ir)
 {
   int m;
@@ -219,6 +237,10 @@ void done_inputrec(t_inputrec *ir)
 
   sfree(ir->opts.nrdf);
   sfree(ir->opts.ref_t);
+  sfree(ir->opts.annealing); 
+  sfree(ir->opts.anneal_npoints); 
+  sfree(ir->opts.anneal_time); 
+  sfree(ir->opts.anneal_temp); 
   sfree(ir->opts.tau_t);
   sfree(ir->opts.acc);
   sfree(ir->opts.nFreeze);
@@ -234,6 +256,11 @@ void done_inputrec(t_inputrec *ir)
   sfree(ir->opts.SAsteps);
   sfree(ir->opts.bOPT);
   sfree(ir->opts.bTS);
+
+  if (ir->pull) {
+    done_pull(ir->pull);
+    sfree(ir->pull);
+  }
 }
 
 void init_gtc_state(t_state *state,int ngtc)
