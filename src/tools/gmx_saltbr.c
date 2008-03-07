@@ -58,7 +58,7 @@ typedef struct {
   real q;
 } t_charge;
 
-t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
+static t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
 {
   t_charge *cg=NULL;
   char     buf[32];
@@ -96,38 +96,21 @@ t_charge *mk_charge(t_atoms *atoms,t_block *cgs,int *nncg)
   return cg;
 }
 
-real low_calc_dist(rvec xi,rvec xj,rvec box)
-{
-  int  m;
-  real d,dx,b,b2;
-  
-  d=0.0; 
-  for(m=0; (m<DIM); m++) {
-    dx=xi[m]-xj[m];
-    b=box[m];
-    b2=b*0.5;
-    if (dx <= -b2)
-      dx+=b;
-    else if (dx > b2)
-      dx-=b;
-    d+=dx*dx;
-  }
-  return d;
-}
-
-real calc_dist(rvec x[],rvec box_size,t_block *cgs,int icg,int jcg)
+static real calc_dist(t_pbc *pbc,rvec x[],t_block *cgs,int icg,int jcg)
 {
   int  i,j;
-  real dd,mindist=1000;
-  
+  rvec dx;
+  real d2,mindist2=1000;
+
   for(i=cgs->index[icg]; (i<cgs->index[icg+1]); i++) {
     for(j=cgs->index[jcg]; (j<cgs->index[jcg+1]); j++) {
-      dd=low_calc_dist(x[i],x[j],box_size);
-      if (dd < mindist)
-	mindist=dd;
+      pbc_dx(pbc,x[i],x[j],dx);
+      d2 = norm2(dx);
+      if (d2 < mindist2)
+	mindist2 = d2;
     }
   }
-  return sqrt(mindist);
+  return sqrt(mindist2);
 }
 
 int gmx_saltbr(int argc,char *argv[])
@@ -178,7 +161,8 @@ int gmx_saltbr(int argc,char *argv[])
   
   double     t0,dt;
   char       label[234];
-  rvec       *x,box_size;
+  t_pbc      pbc;
+  rvec       *x;
   matrix     box;
   
   CopyRight(stderr,argv[0]);
@@ -203,17 +187,13 @@ int gmx_saltbr(int argc,char *argv[])
     srenew(time,teller+1);
     time[teller]=t;
     
-    rm_pbc(&top->idef,ePBC,box,x,x);
-
-    for(i=0; (i<DIM); i++)
-      box_size[i]=box[i][i];
+    set_pbc(&pbc,ePBC,box);
     
     for(i=0; (i<ncg); i++) {
       for(j=i+1; (j<ncg); j++) {
 	srenew(cgdist[i][j],teller+1);
 	cgdist[i][j][teller]=
-	  calc_dist(x,box_size,
-		    &(top->cgs),cg[i].cg,cg[j].cg);
+	  calc_dist(&pbc,x,&(top->cgs),cg[i].cg,cg[j].cg);
 	if (cgdist[i][j][teller] < truncate)
 	  nWithin[i][j]=1;
       }
