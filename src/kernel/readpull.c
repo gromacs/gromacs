@@ -54,6 +54,7 @@
 #include "readir.h"
 #include "string.h"
 #include "mdatoms.h"
+#include "pbc.h"
 #include "pull.h"
 
 #define MAX_PULL_GROUPS 21
