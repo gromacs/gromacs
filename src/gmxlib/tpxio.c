@@ -1559,10 +1559,6 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
 	}
 	do_int(ePBC);
 	do_int(bPeriodicMols);
-	if (bRead && ir) {
-	  ir->ePBC          = ePBC;
-	  ir->bPeriodicMols = bPeriodicMols;
-	}
       }
       if (file_generation <= tpx_generation && ir) {
 	do_inputrec(ir,bRead,file_version);
@@ -1574,6 +1570,11 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
 	  ePBC          = ir->ePBC;
 	  bPeriodicMols = ir->bPeriodicMols;
 	}
+      }
+      if (bRead && ir && file_version >= 53) {
+	/* We need to do this after do_inputrec, since that initializes ir */
+	ir->ePBC          = ePBC;
+	ir->bPeriodicMols = bPeriodicMols;
       }
     }
   }
