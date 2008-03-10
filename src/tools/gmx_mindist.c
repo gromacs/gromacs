@@ -110,7 +110,7 @@ static void periodic_mindist_plot(char *trxfn,char *outfn,
   real   t;
   rvec   *x;
   matrix box;
-  int    natoms,ind_min[2],ind_mini=0,ind_minj=0;
+  int    natoms,ind_min[2]={0,0},ind_mini=0,ind_minj=0;
   real   r,rmin,rmax,rmint,tmint;
   bool   bFirst;
   
