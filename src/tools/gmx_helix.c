@@ -303,7 +303,7 @@ int gmx_helix(int argc,char *argv[])
       
       if (teller == 1) {
 	write_sto_conf(opt2fn("-cz",NFILE,fnm),"Helix fitted to Z-Axis",
-		       &(top->atoms),x,NULL,box);
+		       &(top->atoms),x,NULL,ePBC,box);
       }
             
       xf[efhRAD].val   = radius(xf[efhRAD].fp2,nca,caindex,x);
@@ -344,7 +344,7 @@ int gmx_helix(int argc,char *argv[])
     }
     write_sto_conf_indexed(opt2fn("-co",NFILE,fnm),
 			   "Weighted and Averaged conformation",
-			   &(top->atoms),xav,NULL,box,nall,allindex);
+			   &(top->atoms),xav,NULL,ePBC,box,nall,allindex);
   }
   
   for(i=0; (i<nres); i++) {

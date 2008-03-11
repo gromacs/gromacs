@@ -948,8 +948,9 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
    * i.e. when dd->constraint_comm==NULL
    */
   if ((dd || ir->bPeriodicMols) && !(dd && dd->constraint_comm==NULL)) {
-    /* This is wasting some CPU time as we now do this multiple times
-     * per MD step.
+    /* With pbc=screw the screw has been changed to a shift
+     * by the constraint coordinate communication routine,
+     * so that here we can use normal pbc.
      */
     pbc_null = set_pbc_dd(&pbc,ir->ePBC,dd,FALSE,box);
   } else {

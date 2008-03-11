@@ -274,8 +274,8 @@ int gmx_rmsf(int argc,char *argv[])
     init_t_atoms(refatoms,npdbatoms,TRUE);
     snew(pdbx,npdbatoms);
     /* Read coordinates twice */
-    read_stx_conf(opt2fn("-q",NFILE,fnm),title,pdbatoms,pdbx,NULL,pdbbox);
-    read_stx_conf(opt2fn("-q",NFILE,fnm),title,refatoms,pdbx,NULL,pdbbox);
+    read_stx_conf(opt2fn("-q",NFILE,fnm),title,pdbatoms,pdbx,NULL,NULL,pdbbox);
+    read_stx_conf(opt2fn("-q",NFILE,fnm),title,refatoms,pdbx,NULL,NULL,pdbbox);
   } else {
     pdbatoms  = &top.atoms;
     refatoms  = &top.atoms;
@@ -427,7 +427,7 @@ int gmx_rmsf(int argc,char *argv[])
     for(i=0; i<isize; i++)
       rvec_inc(xref[index[i]],xcm);
     write_sto_conf_indexed(opt2fn("-oq",NFILE,fnm),title,pdbatoms,pdbx,
-			   NULL,pdbbox,isize,index);
+			   NULL,ePBC,pdbbox,isize,index);
   }
   if (opt2bSet("-ox",NFILE,fnm)) {
     /* Misuse xref as a temporary array */
@@ -436,7 +436,7 @@ int gmx_rmsf(int argc,char *argv[])
 	xref[index[i]][d] = xcm[d] + xav[i*DIM + d];
     /* Write a pdb file with B-factors and optionally anisou records */
     write_sto_conf_indexed(opt2fn("-ox",NFILE,fnm),title,pdbatoms,xref,NULL,
-			   pdbbox,isize,index);
+			   ePBC,pdbbox,isize,index);
   }
   if (bAniso) { 
     correlate_aniso(opt2fn("-oc",NFILE,fnm),refatoms,pdbatoms);

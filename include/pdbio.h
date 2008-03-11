@@ -67,16 +67,19 @@ extern void set_pdb_wide_format(bool bSet);
 extern void pdb_use_ter(bool bSet);
 /* set read_pdbatoms to read upto 'TER' or 'ENDMDL' (default, bSet=FALSE) */
 
-extern void gmx_write_pdb_box(FILE *out,matrix box);
-/* write the box in the CRYST1 record */
+extern void gmx_write_pdb_box(FILE *out,int ePBC,matrix box);
+/* write the box in the CRYST1 record,
+ * with ePBC=-1 the pbc is guessed from the box
+ */
 
 extern void write_pdbfile_indexed(FILE *out,char *title,t_atoms *atoms,
-				  rvec x[],matrix box,char chain,
+				  rvec x[],int ePBC,matrix box,char chain,
 				  int model_nr,atom_id nindex,atom_id index[]);
 /* REALLY low level */
 
 extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
-			  rvec x[],matrix box,char chain,int model_nr);
+			  rvec x[],int ePBC,matrix box,char chain,
+			  int model_nr);
 /* Low level pdb file writing routine.
  * 
  *          ONLY FOR SPECIAL PURPOSES,
@@ -87,17 +90,19 @@ extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
  * write ENDMDL when bEndmodel is TRUE */
   
 extern int read_pdbfile(FILE *in,char *title,int *model_nr,
-			t_atoms *atoms,rvec x[],matrix box,bool bChange,
-			gmx_conect conect);
-/* Function returns number of atoms found. gmx_conect structure may be NULL. */
+			t_atoms *atoms,rvec x[],int *ePBC,matrix box,
+			bool bChange,gmx_conect conect);
+/* Function returns number of atoms found.
+ * ePBC and gmx_conect structure may be NULL.
+ */
 
 extern void read_pdb_conf(char *infile,char *title, 
-			  t_atoms *atoms,rvec x[],matrix box,bool bChange,
-			  gmx_conect conect);
+			  t_atoms *atoms,rvec x[],int *ePBC,matrix box,
+			  bool bChange,gmx_conect conect);
 /* Read a pdb file and extract ATOM and HETATM fields.
  * Read a box from the CRYST1 line, return 0 box when no CRYST1 is found.
  * Change atom names according to protein conventions if wanted.
- * gmx_conect structure may be NULL.
+ * ePBC and gmx_conect structure may be NULL.
  */
 
 extern void get_pdb_coordnum(FILE *in,int *natoms);

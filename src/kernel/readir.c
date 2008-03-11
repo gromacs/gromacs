@@ -1021,14 +1021,14 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   sfree(cbuf);
 }
 
-static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
-		      char **gnames,int nstcomm,int comm_mode,
-		      t_pull *pull)
+static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
 {
+  t_grpopts *opts;
+  t_pull  *pull;
   int     ai,aj,i,j,d,g,imin,jmin,nc;
   t_iatom *ia;
   int     *nrdf,*na_vcm,na_tot;
-  double  *nrdf_vcm,nrdf_uc,n_sub;
+  double  *nrdf_vcm,nrdf_uc,n_sub=0;
 
   /* Calculate nrdf. 
    * First calc 3xnr-atoms for each group
@@ -1037,6 +1037,8 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
    * Only atoms and nuclei contribute to the degrees of freedom...
    */
 
+  opts = &ir->opts;
+  
   /* Allocate one more for a possible rest group */
   snew(nrdf_vcm,atoms->grps[egcVCM].nr+1);
   snew(na_vcm,atoms->grps[egcVCM].nr+1);
@@ -1105,13 +1107,14 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
     i+=2;
   }
 
-  if (pull) {
+  if (ir->ePull == epullCONSTRAINT) {
     /* Correct nrdf for the COM constraints.
      * We correct using the TC and VCM group of the first atom
      * in the reference and pull group. If atoms in one pull group
      * belong to different TC or VCM groups it is anyhow difficult
      * to determine the optimal nrdf assignment.
      */
+    pull = ir->pull;
     if (pull->eGeom == epullgPOS) {
       nc = 0;
       for(i=0; i<DIM; i++) {
@@ -1139,14 +1142,14 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_grpopts *opts,
     }
   }
   
-  if (nstcomm != 0) {
+  if (ir->nstcomm != 0) {
     /* Subtract 3 from the number of degrees of freedom in each vcm group
      * when com translation is removed and 6 when rotation is removed
      * as well.
      */
-    switch (comm_mode) {
+    switch (ir->comm_mode) {
     case ecmLINEAR:
-      n_sub = 3;
+      n_sub = ndof_com(ir);
       break;
     case ecmANGULAR:
       n_sub = 6;
@@ -1496,8 +1499,8 @@ void do_index(char *ndx,
 	       restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
-  calc_nrdf(atoms,idef,&(ir->opts),gnames,ir->nstcomm,ir->comm_mode,
-	    ir->ePull==epullCONSTRAINT ? ir->pull : NULL);
+  calc_nrdf(atoms,idef,ir,gnames);
+
   if (v && NULL) {
     real fac,ntot=0;
     

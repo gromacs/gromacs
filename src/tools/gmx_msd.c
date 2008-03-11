@@ -445,7 +445,8 @@ static real calc1_mol(t_corr *this,int nx,atom_id index[],int nx0,rvec xc[],
 }
 
 void printmol(t_corr *this,char *fn,
-	      char *fn_pdb,int *molindex,t_topology *top,rvec *x,matrix box)
+	      char *fn_pdb,int *molindex,t_topology *top,
+	      rvec *x,int ePBC,matrix box)
 {
 #define NDIST 100
   FILE  *out,out_pdb;
@@ -508,7 +509,7 @@ void printmol(t_corr *this,char *fn,
       scale *= 10;
     for(i=0; i<top->atoms.nr; i++)
       pdbinfo[i].bfac *= scale;
-    write_sto_conf(fn_pdb,"molecular MSD",&top->atoms,x,NULL,box);
+    write_sto_conf(fn_pdb,"molecular MSD",&top->atoms,x,NULL,ePBC,box);
   }
 }
 
@@ -721,7 +722,7 @@ void do_corr(char *trx_file, char *ndx_file, char *msd_file, char *mol_file,
     }
     i = top->atoms.nr;
     top->atoms.nr = nat_trx;
-    printmol(msd,mol_file,pdb_file,index[0],top,x,box);
+    printmol(msd,mol_file,pdb_file,index[0],top,x,ePBC,box);
     top->atoms.nr = i;
   }
 

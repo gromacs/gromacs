@@ -47,7 +47,7 @@
 typedef struct {
   int    nr;                   /* Number of groups                    */
   int    mode;                 /* One of the enums above              */
-  bool   bXY;                  /* x and y correction only             */
+  bool   ndim;                 /* The number of dimensions for corr.  */
   real   *group_ndf;           /* Number of degrees of freedom        */
   rvec   *group_p;             /* Linear momentum per group           */
   rvec   *group_v;             /* Linear velocity per group           */

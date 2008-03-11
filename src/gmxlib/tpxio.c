@@ -1736,7 +1736,7 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
     snew(*x,natoms);
     if (v)
       snew(*v,natoms);
-    read_stx_conf(infile,title,&top->atoms,*x,(v==NULL) ? NULL : *v,box);
+    read_stx_conf(infile,title,&top->atoms,*x,(v==NULL) ? NULL : *v,ePBC,box);
     if (bXNULL) {
       sfree(*x);
       x = NULL;

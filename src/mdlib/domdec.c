@@ -530,12 +530,13 @@ void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
 
 void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
 {
-  int  ncell,nat_tot,n,d,p,i,j,cell;
+  int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
   int  *index,*cgindex;
   gmx_domdec_comm_t *comm;
   gmx_domdec_comm_dim_t *cd;
   gmx_domdec_ind_t *ind;
-  rvec shift,*rbuf;
+  rvec shift={0,0,0},*rbuf;
+  bool bPBC,bScrew;
 
   comm = dd->comm;
   
@@ -544,22 +545,47 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
   ncell = 1;
   nat_tot = dd->nat_home;
   for(d=0; d<dd->ndim; d++) {
+    bPBC   = (dd->ci[dd->dim[d]] == 0);
+    bScrew = (bPBC && dd->bScrewPBC && dd->dim[d] == XX);
+    if (bPBC)
+      copy_rvec(box[dd->dim[d]],shift);
     cd = &comm->cd[d];
     for(p=0; p<cd->np; p++) {
       ind = &cd->ind[p];
       index = ind->index;
       n = 0;
-      for(i=0; i<ind->nsend[ncell]; i++) {
-	if (dd->ci[dd->dim[d]] == 0) {
-	  /* We need to shift the coordinates */
-	  copy_rvec(box[dd->dim[d]],shift);
-	  for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
+      if (!bPBC) {
+	for(i=0; i<ind->nsend[ncell]; i++) {
+	  at0 = cgindex[index[i]];
+	  at1 = cgindex[index[i]+1];
+	  for(j=at0; j<at1; j++) {
+	    copy_rvec(x[j],buf[n]);
+	    n++;
+	  }
+	}
+      } else if (!bScrew) {
+	for(i=0; i<ind->nsend[ncell]; i++) {
+	  at0 = cgindex[index[i]];
+	  at1 = cgindex[index[i]+1];
+	  for(j=at0; j<at1; j++) {
+	    /* We need to shift the coordinates */
 	    rvec_add(x[j],shift,buf[n]);
 	    n++;
 	  }
-	} else {
-	  for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
-	    copy_rvec(x[j],buf[n]);
+	}
+      } else {
+	for(i=0; i<ind->nsend[ncell]; i++) {
+	  at0 = cgindex[index[i]];
+	  at1 = cgindex[index[i]+1];
+	  for(j=at0; j<at1; j++) {
+	    /* Shift x */
+	    buf[n][XX] = x[j][XX] + shift[XX];
+	    /* Rotate y and z 
+	     * This operation requires a special shift force treatment,
+	     * which is performed in calc_vir
+	     */
+	    buf[n][YY] = box[YY][YY] - x[j][YY];
+	    buf[n][ZZ] = box[ZZ][ZZ] - x[j][ZZ];
 	    n++;
 	  }
 	}
@@ -590,7 +616,7 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
 
 void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
 {
-  int  ncell,nat_tot,n,d,p,i,j,cell;
+  int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
   int  *index,*cgindex;
   gmx_domdec_comm_t *comm;
   gmx_domdec_comm_dim_t *cd;
@@ -598,6 +624,7 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
   rvec *sbuf;
   ivec vis;
   int  is;
+  bool bPBC,bScrew;
 
   comm = dd->comm;
   
@@ -609,6 +636,15 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
   ncell = dd->ncell/2;
   nat_tot = dd->nat_tot;
   for(d=dd->ndim-1; d>=0; d--) {
+    bPBC   = (dd->ci[dd->dim[d]] == 0);
+    bScrew = (bPBC && dd->bScrewPBC && dd->dim[d] == XX);
+    if (fshift == NULL && !bScrew)
+      bPBC = FALSE;
+    /* Determine which shift vector we need */
+    clear_ivec(vis);
+    vis[dd->dim[d]] = 1;
+    is = IVEC2IS(vis);
+
     cd = &comm->cd[d];
     for(p=cd->np-1; p>=0; p--) {
       ind = &cd->ind[p];
@@ -632,20 +668,38 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
       index = ind->index;
       /* Add the received forces */
       n = 0;
-      for(i=0; i<ind->nsend[ncell]; i++) {
-	if (fshift && dd->ci[dd->dim[d]] == 0) {
-	  clear_ivec(vis);
-	  vis[dd->dim[d]] = 1;
-	  is = IVEC2IS(vis);
-	  for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
+      if (!bPBC) {
+	for(i=0; i<ind->nsend[ncell]; i++) {
+	  at0 = cgindex[index[i]];
+	  at1 = cgindex[index[i]+1];
+	  for(j=at0; j<at1; j++) {
 	    rvec_inc(f[j],buf[n]);
+	    n++;
+	  }
+	} 
+      } else if (!bScrew) {
+	for(i=0; i<ind->nsend[ncell]; i++) {
+	  at0 = cgindex[index[i]];
+	  at1 = cgindex[index[i]+1];
+	  for(j=at0; j<at1; j++) {
 	    /* Add this force to the shift force */
 	    rvec_inc(fshift[is],buf[n]);
 	    n++;
 	  }
-	} else {
-	  for(j=cgindex[index[i]]; j<cgindex[index[i]+1]; j++) {
-	    rvec_inc(f[j],buf[n]);
+	}
+      } else {
+	for(i=0; i<ind->nsend[ncell]; i++) {
+	  at0 = cgindex[index[i]];
+	  at1 = cgindex[index[i]+1];
+	  for(j=at0; j<at1; j++) {
+	    if (fshift) {
+	      /* Add this force to the shift force */
+	      rvec_inc(fshift[is],buf[n]);
+	    }
+	    /* Rotate the force */
+	    f[j][XX] += buf[n][XX];
+	    f[j][YY] -= buf[n][YY];
+	    f[j][ZZ] -= buf[n][ZZ];
 	    n++;
 	  }
 	}
@@ -1080,7 +1134,7 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
     sprintf(fname,"%s_%d.pdb",fn,step);
     sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
     out = ffopen(fname,"w");
-    gmx_write_pdb_box(out,box);
+    gmx_write_pdb_box(out,dd->bScrewPBC ? epbcSCREW : epbcXYZ,box);
     a = 1;
     for(i=0; i<dd->nnodes; i++) {
       vol = dd->nnodes/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
@@ -1132,7 +1186,7 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
   out = ffopen(fname,"w");
 
   fprintf(out,"TITLE     %s\n",title);
-  gmx_write_pdb_box(out,box);
+  gmx_write_pdb_box(out,dd->bScrewPBC ? epbcSCREW : epbcXYZ,box);
   for(i=0; i<natoms; i++) {
     ii = dd->gatindex[i];
     resnr = atoms->atom[ii].resnr;
@@ -2128,6 +2182,18 @@ static void make_tric_corr_matrix(matrix box,matrix tcm)
   }
 }
 
+static void check_screw_box(matrix box)
+{
+  /* Mathematical limitation */
+  if (box[YY][XX] != 0 || box[ZZ][XX] != 0)
+    gmx_fatal(FARGS,"With screw pbc the unit cell can not have non-zero off-diagonal x-components");
+
+  /* Limitation due to the asymmetry of the eighth shell method */
+  if (box[ZZ][YY] != 0)
+    gmx_fatal(FARGS,"pbc=screw with non-zero box_zy is not supported");
+
+}
+
 static void distribute_cg(FILE *fplog,int step,
 			  matrix box,t_block *cgs,rvec pos[],
 			  gmx_domdec_t *dd)
@@ -2140,6 +2206,10 @@ static void distribute_cg(FILE *fplog,int step,
   ivec ind;
   real nrcg,inv_ncg,pos_d;
   atom_id *cgindex;
+  bool bScrew;
+
+  if (dd->bScrewPBC)
+    check_screw_box(box);
 
   ma = dd->ma;
 
@@ -2184,6 +2254,7 @@ static void distribute_cg(FILE *fplog,int step,
     }
     /* Put the charge group in the box and determine the cell index */
     for(d=DIM-1; d>=0; d--) {
+      bScrew = (dd->bScrewPBC && d == XX);
       pos_d = cg_cm[d];
       if (dd->tric_dir[d] && dd->nc[d] > 1) {
 	/* Use triclinic coordintates for this dimension */
@@ -2193,14 +2264,32 @@ static void distribute_cg(FILE *fplog,int step,
       while(pos_d >= box[d][d]) {
 	pos_d -= box[d][d];
 	rvec_dec(cg_cm,box[d]);
-	for(k=k0; (k<k1); k++)
+	if (bScrew) {
+	  cg_cm[YY] = box[YY][YY] - cg_cm[YY];
+	  cg_cm[ZZ] = box[ZZ][ZZ] - cg_cm[ZZ];
+	}
+	for(k=k0; (k<k1); k++) {
 	  rvec_dec(pos[k],box[d]);
+	  if (bScrew) {
+	    pos[k][YY] = box[YY][YY] - pos[k][YY];
+	    pos[k][ZZ] = box[ZZ][ZZ] - pos[k][ZZ];
+	  }
+	}
       }
       while(pos_d < 0) {
 	pos_d += box[d][d];
 	rvec_inc(cg_cm,box[d]);
-	for(k=k0; (k<k1); k++)
+	if (bScrew) {
+	  cg_cm[YY] = box[YY][YY] - cg_cm[YY];
+	  cg_cm[ZZ] = box[ZZ][ZZ] - cg_cm[ZZ];
+	}
+	for(k=k0; (k<k1); k++) {
 	  rvec_inc(pos[k],box[d]);
+	  if (bScrew) {
+	    pos[k][YY] = box[YY][YY] - pos[k][YY];
+	    pos[k][ZZ] = box[ZZ][ZZ] - pos[k][ZZ];
+	  }
+	}
       }
       /* This could be done more efficiently */
       ind[d] = 0;
@@ -2487,6 +2576,25 @@ static void cg_move_error(FILE *fplog,
   gmx_fatal(FARGS,"A charge group move too far between two domain decomposition steps");
 }
 
+static void rotate_state_atom(t_state *state,int a)
+{
+  /* Rotate the complete state; for a rectangular box only */
+  state->x[a][YY] = state->box[YY][YY] - state->x[a][YY];
+  state->x[a][ZZ] = state->box[ZZ][ZZ] - state->x[a][ZZ];
+  if (state->flags & STATE_HAS_V) {
+    state->v[a][YY] = -state->v[a][YY];
+    state->v[a][ZZ] = -state->v[a][ZZ];
+  }
+  if (state->flags & STATE_HAS_SDX) {
+    state->sd_X[a][YY] = -state->sd_X[a][YY];
+    state->sd_X[a][ZZ] = -state->sd_X[a][ZZ];
+  }
+  if (state->flags & STATE_HAS_CGP) {
+    state->cg_p[a][YY] = -state->cg_p[a][YY];
+    state->cg_p[a][ZZ] = -state->cg_p[a][ZZ];
+  }
+}
+
 static int dd_redistribute_cg(FILE *fplog,int step,
 			      gmx_domdec_t *dd,t_block *gcgs,
 			      t_state *state,rvec **f,rvec **buf,
@@ -2502,12 +2610,16 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   int  home_pos_cg,home_pos_at,ncg_stay_home,buf_pos;
   int  flag;
   bool bV,bSDX,bCGP;
+  bool bScrew;
   ivec tric_dir,dev;
   real inv_ncg,pos_d;
   matrix tcm;
   rvec *cg_cm,cell_x0,cell_x1,limitd,limit0,limit1,cm_new;
   atom_id *cgindex;
   gmx_domdec_comm_t *comm;
+
+  if (dd->bScrewPBC)
+    check_screw_box(state->box);
 
   comm  = dd->comm;
   cg_cm = fr->cg_cm;
@@ -2572,6 +2684,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 
     for(d=DIM-1; d>=0; d--) {
       if (dd->nc[d] > 1) {
+	bScrew = (dd->bScrewPBC && d == XX);
 	/* Determine the location of this cg in lattice coordinates */
 	pos_d = cm_new[d];
 	if (tric_dir[d]) {
@@ -2586,8 +2699,15 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 	  dev[d] = 1;
 	  if (dd->ci[d] == dd->nc[d] - 1) {
 	    rvec_dec(cm_new,state->box[d]);
-	    for(k=k0; (k<k1); k++)
+	    if (bScrew) {
+	      cm_new[YY] = state->box[YY][YY] - cm_new[YY];
+	      cm_new[ZZ] = state->box[ZZ][ZZ] - cm_new[ZZ];
+	    }
+	    for(k=k0; (k<k1); k++) {
 	      rvec_dec(state->x[k],state->box[d]);
+	      if (bScrew)
+		rotate_state_atom(state,k);
+	    }
 	  }
 	} else if (pos_d < cell_x0[d]) {
 	  if (pos_d < limit0[d])
@@ -2596,8 +2716,15 @@ static int dd_redistribute_cg(FILE *fplog,int step,
 	  dev[d] = -1;
 	  if (dd->ci[d] == 0) {
 	    rvec_inc(cm_new,state->box[d]);
-	    for(k=k0; (k<k1); k++)
+	    if (bScrew) {
+	      cm_new[YY] = state->box[YY][YY] - cm_new[YY];
+	      cm_new[ZZ] = state->box[ZZ][ZZ] - cm_new[ZZ];
+	    }
+	    for(k=k0; (k<k1); k++) {
 	      rvec_inc(state->x[k],state->box[d]);
+	      if (bScrew)
+		rotate_state_atom(state,k);
+	    }
 	  }
 	} else {
 	  dev[d] = 0;
@@ -3871,6 +3998,11 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,
    */
   float pbcdx_rect_fac = 0.1;
   float pbcdx_tric_fac = 0.2;
+
+  /* Check the DD algorithm restrictions */
+  if ((ir->ePBC == epbcXY && nc[ZZ] > 1) ||
+      (ir->ePBC == epbcSCREW && (nc[XX] == 1 || nc[YY] > 1 || nc[ZZ] > 1)))
+    return -1;
   
   /* Check if the triclinic requirements are met */
   for(i=0; i<DIM; i++) {
@@ -3977,10 +4109,6 @@ static void assign_factors(gmx_domdec_t *dd,real limit,
     for(i=0; i<x; i++)
       try[XX] *= div[0];
     for(y=mdiv[0]-x; y>=0; y--) {
-      /* Check for requirement of no DD in z */
-      if (ir->ePBC == epbcXY && ir->nwall < 2 && x + y != mdiv[0])
-	continue;
-
       for(i=0; i<y; i++)
 	try[YY] *= div[0];
       for(i=0; i<mdiv[0]-x-y; i++)
@@ -4140,6 +4268,33 @@ static int dd_nst_env(FILE *fplog,char *env_var,int def)
   return nst;
 }
 
+static void check_dd_restrictions(gmx_domdec_t *dd,t_inputrec *ir)
+{
+  switch (ir->ePBC) {
+  case epbcXYZ:
+    /* No restrictions */
+    break;
+  case epbcNONE:
+    gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",
+	      epbc_names[ir->ePBC]);
+    break;
+  case epbcXY:
+    if (ir->nwall<2 && dd->nc[ZZ]>1)
+      gmx_fatal(FARGS,"Can not do domain decomposition in the z-direction with pbc=%s,",epbc_names[ir->ePBC]);
+    break;
+  case epbcSCREW:
+    if (dd->nc[XX] == 1 || dd->nc[YY] > 1 || dd->nc[ZZ] > 1)
+      gmx_fatal(FARGS,"With pbc=%s can only do domain decomposition in the x-direction",epbc_names[ir->ePBC]);
+    break;
+  default:
+    gmx_incons("Unknown pbc type");
+  }
+
+  if (ir->ns_type == ensSIMPLE)
+    gmx_fatal(FARGS,"ns type %s is not supported with domain decomposition",
+	      ens_names[ir->ns_type]);
+}
+
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 					real comm_distance_min,real rconstr,
 					bool bDynLoadBal,real dlb_scale,
@@ -4162,6 +4317,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
   comm = dd->comm;
   snew(comm->cggl_flag,DIM*2);
   snew(comm->cgcm_state,DIM*2);
+
+  dd->bScrewPBC = (ir->ePBC == epbcSCREW);
 
   comm->bSendRecv2 = dd_nst_env(fplog,"GMX_DD_SENDRECV2",0);
   comm->eFlop      = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
@@ -4310,6 +4467,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     }
   }
 
+  if (DDMASTER(dd))
+    check_dd_restrictions(dd,ir);
+
   return dd;
 }
 
@@ -4333,12 +4493,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 		"Can not have separate PME nodes without PME electrostatics");
   }
 
-  if (ir->ePBC == epbcNONE)
-    gmx_fatal(FARGS,"pbc type %s is not supported with domain decomposition",
-	      epbc_names[epbcNONE]);
-  if (ir->ePBC!=epbcXYZ && ir->nwall<2 && dd->nc[ZZ]>1)
-    gmx_fatal(FARGS,"Can not do domain decomposition in the z-direction with pbc=%s,",epbc_names[ir->ePBC]);
-
   comm = dd->comm;
 
   /* If each molecule is a single charge group
@@ -4350,10 +4504,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     fr->bMolPBC = FALSE;
   else
     fr->bMolPBC = TRUE;
-
-  if (ir->ns_type == ensSIMPLE)
-    gmx_fatal(FARGS,"ns type %s is not supported with domain decomposition",
-	      ens_names[ensSIMPLE]);
   
   dd->ndim = 0;
   if (getenv("GMX_DD_ORDER_ZYX")) {
@@ -4599,7 +4749,7 @@ static void setup_dd_communication(FILE *fplog,int step,
   gmx_domdec_comm_t *comm;
   gmx_domdec_comm_dim_t *cd;
   gmx_domdec_ind_t *ind;
-  bool bTwoCut;
+  bool bTwoCut,bScrew;
   real r_comm2,r_scomm2,r_bcomm2,r,r2,rb2,inv_ncg,tric_sh;
   real corner[DIM][4],corner_round_0=0,corner_round_1[4];
   real bcorner[DIM][4],bcorner_round_1[4];
@@ -4728,6 +4878,8 @@ static void setup_dd_communication(FILE *fplog,int step,
     dim = dd->dim[dim_ind];
     cd = &comm->cd[dim_ind];
     
+    bScrew = (dd->bScrewPBC && dim == XX);
+
     v_d = comm->v[dim];
     skew_fac2_d = sqr(dd->skew_fac[dim]);
     
@@ -4841,6 +4993,10 @@ static void setup_dd_communication(FILE *fplog,int step,
 	    if (dd->ci[dim] == 0) {
 	      /* Correct cg_cm for pbc */
 	      rvec_add(cg_cm[cg],box[dim],comm->buf_vr[nsend]);
+	      if (bScrew) {
+		comm->buf_vr[nsend][YY] = box[YY][YY]-comm->buf_vr[nsend][YY];
+		comm->buf_vr[nsend][ZZ] = box[ZZ][ZZ]-comm->buf_vr[nsend][ZZ];
+	      }
 	    } else {
 	      copy_rvec(cg_cm[cg],comm->buf_vr[nsend]);
 	    }

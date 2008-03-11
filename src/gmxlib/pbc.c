@@ -51,9 +51,10 @@
 
 /* Skip 0 so we have more chance of detecting if we forgot to call set_pbc. */
 enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC,
-       epbcdx2D_RECT, epbcdx2D_TRIC,
-       epbcdx1D_RECT, epbcdx1D_TRIC,
-       epbcdxNOPBC, epbcdxUNSUPPORTED };
+       epbcdx2D_RECT,       epbcdx2D_TRIC,
+       epbcdx1D_RECT,       epbcdx1D_TRIC,
+       epbcdxSCREW_RECT,    epbcdxSCREW_TRIC,
+       epbcdxNOPBC,         epbcdxUNSUPPORTED };
 
 /* Margin factor for error message and correction if the box is too skewed */
 #define BOX_MARGIN         0.5010
@@ -64,9 +65,10 @@ int ePBC2npbcdim(int ePBC)
   int npbcdim=0;
 
   switch(ePBC) {
-  case epbcXYZ:  npbcdim = 3; break;
-  case epbcXY:   npbcdim = 2; break;
-  case epbcNONE: npbcdim = 0; break;
+  case epbcXYZ:   npbcdim = 3; break;
+  case epbcXY:    npbcdim = 2; break;
+  case epbcSCREW: npbcdim = 3; break;
+  case epbcNONE:  npbcdim = 0; break;
   default: gmx_fatal(FARGS,"Unknown ePBC=%d in ePBC2npbcdim",ePBC);
   }
 
@@ -104,8 +106,10 @@ char *check_box(int ePBC,matrix box)
   if (ePBC == epbcNONE)
     return NULL;
 
-  if ((box[XX][YY]!=0) || (box[XX][ZZ]!=0) || (box[YY][ZZ]!=0)) {
+  if ((box[XX][YY] != 0) || (box[XX][ZZ] != 0) || (box[YY][ZZ] != 0)) {
     ptr = "Only triclinic boxes with the first vector parallel to the x-axis and the second vector in the xy-plane are supported.";
+  } else if (ePBC == epbcSCREW && (box[YY][XX] != 0 || box[ZZ][XX] != 0)) {
+    ptr = "The unit cell can not have off-diagonal x-components with screw pbc";
   } else if (fabs(box[YY][XX]) > BOX_MARGIN*box[XX][XX] ||
 	     (ePBC != epbcXY &&
 	      (fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX] ||
@@ -236,6 +240,28 @@ bool correct_box(FILE *fplog,int step,tensor box,t_graph *graph)
   return bCorrected;
 }
 
+int ndof_com(t_inputrec *ir)
+{
+  int n=0;
+
+  switch (ir->ePBC) {
+  case epbcXYZ:
+  case epbcNONE:
+    n = 3;
+    break;
+  case epbcXY:
+    n = (ir->nwall == 0 ? 3 : 2);
+    break;
+  case epbcSCREW:
+    n = 1;
+    break;
+  default:
+    gmx_incons("Unknown pbc in calc_nrdf");
+  }
+
+  return n;
+}
+
 static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 {
   int  order[5]={0,-1,1,-2,2};
@@ -268,6 +294,11 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
     pbc->bLimitDistance = TRUE;
     pbc->limit_distance2 = 0;
   } else {
+    if (ePBC == epbcSCREW && dd_nc) {
+      /* This combinated should never appear here */
+      gmx_incons("low_set_pbc called with screw pbc and dd_nc != NULL");
+    }
+
     npbcdim = 0;
     for(i=0; i<DIM; i++) {
       if ((dd_nc && (*dd_nc)[i] > 1) || (ePBC == epbcXY && i == ZZ)) {
@@ -302,10 +333,20 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 	      pbc->ePBCDX = epbcdx2D_TRIC;
       break;
     case 3:
-      if (TRICLINIC(box)) {
-	pbc->ePBCDX = epbcdxTRICLINIC;
+      if (ePBC != epbcSCREW) {
+	if (TRICLINIC(box)) {
+	  pbc->ePBCDX = epbcdxTRICLINIC;
+	} else {
+	  pbc->ePBCDX = epbcdxRECTANGULAR;
+	}
       } else {
-	pbc->ePBCDX = epbcdxRECTANGULAR;
+	pbc->ePBCDX = (box[ZZ][YY]==0 ? epbcdxSCREW_RECT : epbcdxSCREW_TRIC);
+	if (pbc->ePBCDX == epbcdxSCREW_TRIC) {
+	  fprintf(stderr,
+		  "Screw pbc is not yet implemented for triclinic boxes.\n"
+		  "Can not fix pbc.\n");
+	  pbc->ePBCDX = epbcdxUNSUPPORTED;
+	}
       }
       break;
     default:
@@ -315,7 +356,8 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
     pbc->max_cutoff2 = max_cutoff2(ePBC,box);
 
     if (pbc->ePBCDX == epbcdxTRICLINIC ||
-	pbc->ePBCDX == epbcdx2D_TRIC) {
+	pbc->ePBCDX == epbcdx2D_TRIC ||
+	pbc->ePBCDX == epbcdxSCREW_TRIC) {
       if (debug) {
 	pr_rvecs(debug,0,"Box",box,DIM);
 	fprintf(debug,"max cutoff %.3f\n",sqrt(pbc->max_cutoff2));
@@ -441,6 +483,10 @@ t_pbc *set_pbc_dd(t_pbc *pbc,int ePBC,
   if (dd == NULL) {
     npbcdim = DIM;
   } else {
+    if (ePBC == epbcSCREW && dd->nc[XX] > 1) {
+      /* The rotation has been taken care of during coordinate communication */
+      ePBC = epbcXYZ;
+    }
     npbcdim = 0;
     for(i=0; i<DIM; i++) {
       if (dd->nc[i] <= (bSingleDir ? 1 : 2)) {
@@ -464,6 +510,7 @@ void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
   int  i,j;
   rvec dx_start,try;
   real d2min,d2try;
+  bool bRot;
 
   rvec_sub(x1,x2,dx);
 
@@ -555,6 +602,32 @@ void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 	  d2min = d2try;
 	}
 	i++;
+      }
+    }
+    break;
+  case epbcdxSCREW_RECT:
+    /* The shift definition requires x first */
+    bRot = FALSE;
+    while (dx[XX] > pbc->hbox_diag[XX]) {
+      dx[XX] -= pbc->fbox_diag[XX];
+      bRot = !bRot;
+    }
+    while (dx[XX] <= pbc->mhbox_diag[XX]) {
+      dx[XX] += pbc->fbox_diag[YY];
+      bRot = !bRot;
+    }
+    if (bRot) {
+      /* Rotate around the x-axis in the middle of the box */
+      dx[YY] = pbc->box[YY][YY] - x1[YY] - x2[YY];
+      dx[ZZ] = pbc->box[ZZ][ZZ] - x1[ZZ] - x2[ZZ];
+    }
+    /* Normal pbc for y and z */
+    for(i=YY; i<=ZZ; i++) {
+      while (dx[i] > pbc->hbox_diag[i]) {
+	dx[i] -= pbc->fbox_diag[i];
+      }
+      while (dx[i] <= pbc->mhbox_diag[i]) {
+	dx[i] += pbc->fbox_diag[i];
       }
     }
     break;
@@ -737,6 +810,31 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       ishift[i]++;
     }
     break;
+  case epbcdxSCREW_RECT:
+    /* The shift definition requires x first */
+    if (dx[XX] > pbc->hbox_diag[XX]) {
+      dx[XX] -= pbc->fbox_diag[XX];
+      ishift[XX]--;
+    } else if (dx[XX] <= pbc->mhbox_diag[XX]) {
+      dx[XX] += pbc->fbox_diag[XX];
+      ishift[XX]++;
+    }
+    if (ishift[XX] == 1 || ishift[XX] == -1) {
+      /* Rotate around the x-axis in the middle of the box */
+      dx[YY] = pbc->box[YY][YY] - x1[YY] - x2[YY];
+      dx[ZZ] = pbc->box[ZZ][ZZ] - x1[ZZ] - x2[ZZ];
+    }
+    /* Normal pbc for y and z */
+    for(i=YY; i<=ZZ; i++) {
+      if (dx[i] > pbc->hbox_diag[i]) {
+	dx[i] -= pbc->fbox_diag[i];
+	ishift[i]--;
+      } else if (dx[i] <= pbc->mhbox_diag[i]) {
+	dx[i] += pbc->fbox_diag[i];
+	ishift[i]++;
+      }
+    }
+    break;
   case epbcdxNOPBC:
   case epbcdxUNSUPPORTED:
     break;
@@ -754,9 +852,10 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
 
 void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
 {
-  int  i,j,is;
+  int  i,j;
   dvec dx_start,try;
   double d2min,d2try;
+  bool bRot;
 
   dvec_sub(x1,x2,dx);
 
@@ -809,6 +908,32 @@ void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
 	  d2min = d2try;
 	}
 	i++;
+      }
+    }
+    break;
+  case epbcdxSCREW_RECT:
+    /* The shift definition requires x first */
+    bRot = FALSE;
+    while (dx[XX] > pbc->hbox_diag[XX]) {
+      dx[XX] -= pbc->fbox_diag[XX];
+      bRot = !bRot;
+    }
+    while (dx[XX] <= pbc->mhbox_diag[XX]) {
+      dx[XX] += pbc->fbox_diag[YY];
+      bRot = !bRot;
+    }
+    if (bRot) {
+      /* Rotate around the x-axis in the middle of the box */
+      dx[YY] = pbc->box[YY][YY] - x1[YY] - x2[YY];
+      dx[ZZ] = pbc->box[ZZ][ZZ] - x1[ZZ] - x2[ZZ];
+    }
+    /* Normal pbc for y and z */
+    for(i=YY; i<=ZZ; i++) {
+      while (dx[i] > pbc->hbox_diag[i]) {
+	dx[i] -= pbc->fbox_diag[i];
+      }
+      while (dx[i] <= pbc->mhbox_diag[i]) {
+	dx[i] += pbc->fbox_diag[i];
       }
     }
     break;

@@ -250,7 +250,7 @@ new_status(char *topfile,char *topppfile,char *confin,
     snew(confat,1);
     init_t_atoms(confat,state->natoms,FALSE);
     init_state(state,state->natoms,0);
-    read_stx_conf(confin,title,confat,state->x,state->v,state->box);
+    read_stx_conf(confin,title,confat,state->x,state->v,NULL,state->box);
     /* This call fixes the box shape for runs with pressure scaling */
     set_box_rel(ir,state);
 
@@ -372,7 +372,7 @@ static void read_posres(t_params *pr, char *fn, int offset,
   snew(x,natoms);
   snew(v,natoms);
   init_t_atoms(&dumat,natoms,FALSE);
-  read_stx_conf(fn,title,&dumat,x,v,box);
+  read_stx_conf(fn,title,&dumat,x,v,NULL,box);
   
   npbcdim = ePBC2npbcdim(ePBC);
   clear_rvec(com);

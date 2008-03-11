@@ -235,14 +235,14 @@ static void calc_f_el(FILE *fp,int  start,int homenr,
 
 static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
 			tensor vir_part,t_graph *graph,matrix box,
-			t_nrnb *nrnb,const t_forcerec *fr)
+			t_nrnb *nrnb,const t_forcerec *fr,int ePBC)
 {
   int i,j;
   tensor virtest;
 
   /* The short-range virial from surrounding boxes */
   clear_mat(vir_part);
-  calc_vir(fplog,SHIFTS,fr->shift_vec,fr->fshift,vir_part);
+  calc_vir(fplog,SHIFTS,fr->shift_vec,fr->fshift,vir_part,ePBC==epbcSCREW,box);
   inc_nrnb(nrnb,eNR_VIRIAL,SHIFTS);
   
   /* Calculate partial virial, for local atoms only, based on short range. 
@@ -557,7 +557,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     
     /* Calculation of the virial must be done after vsites! */
     calc_virial(fplog,mdatoms->start,mdatoms->homenr,x,f,
-		vir_force,graph,box,nrnb,fr);
+		vir_force,graph,box,nrnb,fr,inputrec->ePBC);
   }
 
   if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F) {

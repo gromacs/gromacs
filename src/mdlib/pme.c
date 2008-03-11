@@ -1236,6 +1236,9 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     pme->nnodes = 1;
   }
 
+  if (ir->ePBC == epbcSCREW)
+    gmx_fatal(FARGS,"pme does not (yet) work with pbc = screw");
+
   pme->bFEP = ((ir->efep != efepNO) && bFreeEnergy);
   pme->nkx  = ir->nkx;
   pme->nky  = ir->nky;

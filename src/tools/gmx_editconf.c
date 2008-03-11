@@ -278,7 +278,7 @@ void pdb_legend(FILE *out,int natoms,int nres,t_atoms *atoms,rvec x[])
 	    bfac_min+ ((i-1.0)*(bfac_max-bfac_min)/10) );
   }
 }
-void visualize_images(char *fn,matrix box)
+void visualize_images(char *fn,int ePBC,matrix box)
 {
   t_atoms atoms;
   rvec    *img;
@@ -299,7 +299,7 @@ void visualize_images(char *fn,matrix box)
   }
   calc_triclinic_images(box,img+1);
 
-  write_sto_conf(fn,"Images",&atoms,img,NULL,box); 
+  write_sto_conf(fn,"Images",&atoms,img,NULL,ePBC,box); 
 
   free_t_atoms(&atoms);
   sfree(img);
@@ -512,6 +512,7 @@ int gmx_editconf(int argc, char *argv[])
   int        isize,ssize,tsize;
   atom_id    *index,*sindex,*tindex;
   rvec       *x,*v,gc,min,max,size;
+  int        ePBC;
   matrix     box;
   bool       bIndex,bSetSize,bSetAng,bCubic,bDist,bSetCenter;
   bool       bHaveV,bScale,bRho,bTranslate,bRotate,bCalcGeom,bCalcDiam;
@@ -571,7 +572,7 @@ int gmx_editconf(int argc, char *argv[])
   init_t_atoms(&atoms,natom,TRUE);
   snew(x,natom);
   snew(v,natom);
-  read_stx_conf(infile,title,&atoms,x,v,box);
+  read_stx_conf(infile,title,&atoms,x,v,&ePBC,box);
   printf("Read %d atoms\n",atoms.nr); 
   if (bVOL) {
     real vol = det(box);
@@ -633,7 +634,7 @@ int gmx_editconf(int argc, char *argv[])
     if (outftp != efPDB)
       gmx_fatal(FARGS,"Sorry, can only visualize box with a pdb file");
   } else if (visbox[0] == -1)
-    visualize_images("images.pdb",box);
+    visualize_images("images.pdb",ePBC,box);
 
   /* remove pbc */
   if (bRMPBC) 
@@ -850,7 +851,7 @@ int gmx_editconf(int argc, char *argv[])
     if (opt2bSet("-bf",NFILE,fnm))
       gmx_fatal(FARGS,"combination not implemented: -bf -n  or -bf -ndef");
     else
-      write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,box,
+      write_sto_conf_indexed(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box,
 			     isize,index); 
   }
   else {
@@ -879,7 +880,7 @@ int gmx_editconf(int argc, char *argv[])
 	for(i=0; (i<atoms.nr); i++) 
 	  atoms.atom[i].chain=label[0];
       }
-      write_pdbfile(out,title,&atoms,x,box,0,-1);
+      write_pdbfile(out,title,&atoms,x,ePBC,box,0,-1);
       if (bLegend)
 	pdb_legend(out,atoms.nr,atoms.nres,&atoms,x);
       if (visbox[0] > 0)
@@ -888,7 +889,7 @@ int gmx_editconf(int argc, char *argv[])
       fclose(out);
     }
     else
-      write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,box); 
+      write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box); 
   }
   done_atomprop(&atomprop);
 

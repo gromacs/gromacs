@@ -97,9 +97,15 @@ static void gromacs_name(char *name)
   }
 }
 
-void gmx_write_pdb_box(FILE *out,matrix box)
+void gmx_write_pdb_box(FILE *out,int ePBC,matrix box)
 {
   real alpha,beta,gamma;
+
+  if (ePBC == -1)
+    ePBC = guess_ePBC(box);
+
+  if (ePBC == epbcNONE)
+    return;
 
   if (norm2(box[YY])*norm2(box[ZZ])!=0)
     alpha = RAD2DEG*acos(cos_angle_no_table(box[YY],box[ZZ]));
@@ -114,13 +120,89 @@ void gmx_write_pdb_box(FILE *out,matrix box)
   else
     gamma = 90;
   fprintf(out,"REMARK    THIS IS A SIMULATION BOX\n");
-  fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
-	  10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),alpha,beta,gamma);
+  if (ePBC != epbcSCREW) {
+    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11s%4d\n",
+	    10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
+	    alpha,beta,gamma,"P 1",1);
+  } else {
+    /* Double the a-vector length and write the correct space group */
+    fprintf(out,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f %-11s%4d\n",
+	    20*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
+	    alpha,beta,gamma,"P 21 1 1",1);
+    
+  }
 }
 
+static void read_cryst1(char *line,int *ePBC,matrix box)
+{
+#define SG_SIZE 11
+  char sa[12],sb[12],sc[12],sg[SG_SIZE+1],ident;
+  double fa,fb,fc,alpha,beta,gamma,cosa,cosb,cosg,sing;
+  int  syma,symb,symc;
+  int  ePBC_file;
 
+  sscanf(line,"%*s%s%s%s%lf%lf%lf",sa,sb,sc,&alpha,&beta,&gamma);
+
+  ePBC_file = -1;
+  if (strlen(line) >= 55) {
+    strncpy(sg,line+55,SG_SIZE);
+    sg[SG_SIZE] = '\0';
+    ident = ' ';
+    syma  = 0;
+    symb  = 0;
+    symc  = 0;
+    sscanf(sg,"%c %d %d %d",&ident,&syma,&symb,&symc);
+    if (ident == 'P' && syma ==  1 && symb <= 1 && symc <= 1)
+      ePBC_file = (sc > 0 ? epbcXYZ : epbcXY);
+    if (ident == 'P' && syma == 21 && symb == 1 && symc == 1)
+      ePBC_file = epbcSCREW;
+  }
+  if (ePBC)
+    *ePBC = ePBC_file;
+
+  if (box) {
+    fa = atof(sa)*0.1;
+    fb = atof(sb)*0.1;
+    fc = atof(sc)*0.1;
+    if (ePBC_file == epbcSCREW) {
+      fa *= 0.5;
+    }
+    clear_mat(box);
+    box[XX][XX] = fa;
+    if ((alpha!=90.0) || (beta!=90.0) || (gamma!=90.0)) {
+      if (alpha != 90.0) {
+	cosa = cos(alpha*DEG2RAD);
+      } else {
+	cosa = 0;
+      }
+      if (beta != 90.0) {
+	cosb = cos(beta*DEG2RAD);
+      } else {
+	cosb = 0;
+      }
+      if (gamma != 90.0) {
+	cosg = cos(gamma*DEG2RAD);
+	sing = sin(gamma*DEG2RAD);
+      } else {
+	cosg = 0;
+	sing = 1;
+      }
+      box[YY][XX] = fb*cosg;
+      box[YY][YY] = fb*sing;
+      box[ZZ][XX] = fc*cosb;
+      box[ZZ][YY] = fc*(cosa - cosb*cosg)/sing;
+      box[ZZ][ZZ] = sqrt(fc*fc
+			 - box[ZZ][XX]*box[ZZ][XX] - box[ZZ][YY]*box[ZZ][YY]);
+    } else {
+      box[YY][YY] = fb;
+      box[ZZ][ZZ] = fc;
+    }
+  }
+}
+  
 void write_pdbfile_indexed(FILE *out,char *title,
-			   t_atoms *atoms,rvec x[],matrix box,char chain,
+			   t_atoms *atoms,rvec x[],
+			   int ePBC,matrix box,char chain,
 			   int model_nr, atom_id nindex, atom_id index[])
 {
   char resnm[6],nm[6],ch,pdbform[128],pukestring[100];
@@ -136,7 +218,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
     fprintf(out,"REMARK    As a result of, some programs may not like it\n");
   }
   if (box && ( norm2(box[XX]) || norm2(box[YY]) || norm2(box[ZZ]) ) ) {
-    gmx_write_pdb_box(out,box);
+    gmx_write_pdb_box(out,ePBC,box);
   }
   if (atoms->pdbinfo) {
     /* Check whether any occupancies are set, in that case leave it as is,
@@ -207,14 +289,15 @@ void write_pdbfile_indexed(FILE *out,char *title,
 }
 
 void write_pdbfile(FILE *out,char *title, t_atoms *atoms,rvec x[],
-		   matrix box,char chain,int model_nr)
+		   int ePBC,matrix box,char chain,int model_nr)
 {
   atom_id i,*index;
 
   snew(index,atoms->nr);
   for(i=0; i<atoms->nr; i++)
     index[i]=i;
-  write_pdbfile_indexed(out,title,atoms,x,box,chain,model_nr,atoms->nr,index);
+  write_pdbfile_indexed(out,title,atoms,x,ePBC,box,chain,model_nr,
+			atoms->nr,index);
   sfree(index);
 }
 
@@ -486,7 +569,7 @@ bool is_conect(gmx_conect conect,int ai,int aj)
 }
 
 int read_pdbfile(FILE *in,char *title,int *model_nr,
-		 t_atoms *atoms,rvec x[],matrix box,bool bChange,
+		 t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
 		 gmx_conect conect)
 {
   gmx_conect_t *gc = (gmx_conect_t *)conect;
@@ -496,13 +579,15 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   bool bCOMPND;
   bool bConnWarn = FALSE;
   char line[STRLEN+1];
-  char sa[12],sb[12],sc[12];
-  double fa,fb,fc,alpha,beta,gamma,cosa,cosb,cosg,sing;
   int  line_type;
   char *c,*d;
   int  natom;
   bool bStop=FALSE;
 
+  if (ePBC) {
+    /* Only assume pbc when there is a CRYST1 entry */
+    *ePBC = epbcNONE;
+  }
   if (box != NULL) 
     clear_mat(box);
 
@@ -529,43 +614,8 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 	read_anisou(line,natom,atoms);
       break;
 
-    case epdbCRYST1:      
-      if (box) {
-	sscanf(line,"%*s%s%s%s%lf%lf%lf",sa,sb,sc,&alpha,&beta,&gamma);
-	fa = atof(sa)*0.1;
-	fb = atof(sb)*0.1;
-	fc = atof(sc)*0.1;
-	clear_mat(box);
-	box[XX][XX] = fa;
-	if ((alpha!=90.0) || (beta!=90.0) || (gamma!=90.0)) {
-	  if (alpha != 90.0) {
-	    cosa = cos(alpha*DEG2RAD);
-	  } else {
-	    cosa = 0;
-	  }
-	  if (beta != 90.0) {
-	    cosb = cos(beta*DEG2RAD);
-	  } else {
-	    cosb = 0;
-	  }
-	  if (gamma != 90.0) {
-	    cosg = cos(gamma*DEG2RAD);
-	    sing = sin(gamma*DEG2RAD);
-	  } else {
-	    cosg = 0;
-	    sing = 1;
-	  }
-	  box[YY][XX] = fb*cosg;
-	  box[YY][YY] = fb*sing;
-	  box[ZZ][XX] = fc*cosb;
-	  box[ZZ][YY] = fc*(cosa - cosb*cosg)/sing;
-	  box[ZZ][ZZ] = sqrt(fc*fc
-			     -box[ZZ][XX]*box[ZZ][XX]-box[ZZ][YY]*box[ZZ][YY]);
-	} else {
-	  box[YY][YY] = fb;
-	  box[ZZ][ZZ] = fc;
-	}
-      }
+    case epdbCRYST1:
+      read_cryst1(line,ePBC,box);
       break;
 
     case epdbTITLE:
@@ -651,12 +701,12 @@ void get_pdb_coordnum(FILE *in,int *natoms)
 }
 
 void read_pdb_conf(char *infile,char *title, 
-		   t_atoms *atoms,rvec x[],matrix box,bool bChange,
+		   t_atoms *atoms,rvec x[],int *ePBC,matrix box,bool bChange,
 		   gmx_conect conect)
 {
   FILE *in;
   
   in = ffopen(infile,"r");
-  read_pdbfile(in,title,NULL,atoms,x,box,bChange,conect);
+  read_pdbfile(in,title,NULL,atoms,x,ePBC,box,bChange,conect);
   ffclose(in);
 }

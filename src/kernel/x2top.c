@@ -137,6 +137,7 @@ int main(int argc, char *argv[])
   rvec       *x;        /* coordinates? */
   int        *nbonds,*cgnr;
   int        bts[] = { 1,1,1,2 };
+  int        ePBC;
   matrix     box;          /* box length matrix */
   int        natoms;       /* number of atoms in one molecule  */
   int        nres;         /* number of molecules? */
@@ -283,7 +284,7 @@ int main(int argc, char *argv[])
     gc = init_gmx_conect();
   else
     gc = NULL;
-  read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,NULL,box,gc);
+  read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,&ePBC,box,FALSE,gc);
   if (bCONECT && debug)
     dump_conection(debug,gc);
   
@@ -404,7 +405,7 @@ int main(int argc, char *argv[])
   }
   /* Write coordinates */ 
   sprintf(title,"%s processed by %s",molnm,ShortProgram());
-  write_sto_conf(opt2fn("-c",NFILE,fnm),title,atoms,x,NULL,box);
+  write_sto_conf(opt2fn("-c",NFILE,fnm),title,atoms,x,NULL,ePBC,box);
 
   {
     gmx_elements elem = gather_element_information(atomprop,nm2t);

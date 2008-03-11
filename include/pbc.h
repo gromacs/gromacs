@@ -88,6 +88,9 @@ extern "C" {
    * Returns TRUE when the box was corrected.
    */
 
+  extern int ndof_com(t_inputrec *ir);
+  /* Returns the number of degrees of freedom of the center of mass */
+
   extern void set_pbc(t_pbc *pbc,int ePBC,matrix box);
   /* Initiate the periodic boundary conditions.
    * pbc_dx will not use pbc and return the normal difference vector

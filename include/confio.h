@@ -84,12 +84,12 @@ extern void write_hconf_p(FILE *out,char *title,t_atoms *atoms, int ndec,
  * v has one place more. */ 
 
 void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
-			    rvec x[],rvec *v,matrix box,
+			    rvec x[],rvec *v,int ePBC,matrix box,
 			    atom_id nindex,atom_id index[]);
 /* like write_sto_conf, but indexed */ 
 
 extern void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
-			   rvec x[],rvec *v, matrix box);
+			   rvec x[],rvec *v,int ePBC,matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
  * to an STO (.gro or .pdb) file */ 
 
@@ -97,8 +97,10 @@ extern void get_stx_coordnum (char *infile,int *natoms);
 /* read the number of atoms from an STX file */
 
 extern void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
-			  rvec x[],rvec *v, matrix box);
-/* read atoms, x, v and box from an STX file */
+			  rvec x[],rvec *v,int *ePBC,matrix box);
+/* Read atoms, x, v and box from an STX file.
+ * If ePBC!=NULL return the type of pbc in *ePBC or -1 if unknown.
+ */
 
 #ifdef CPLUSPLUS
 }

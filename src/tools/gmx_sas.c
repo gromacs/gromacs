@@ -125,7 +125,7 @@ void do_conect(char *fn,int n,rvec x[])
 }
 
 void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
-		   t_symtab *symtab,matrix box,bool bSave)
+		   t_symtab *symtab,int ePBC,matrix box,bool bSave)
 {
   static char *atomnm="DOT";
   static char *resnm ="DOT";
@@ -162,7 +162,7 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     }
     atoms->nr   = i0+ndots;
     atoms->nres = r0+1;
-    write_sto_conf(fn,title,atoms,xnew,NULL,box);
+    write_sto_conf(fn,title,atoms,xnew,NULL,ePBC,box);
     atoms->nres = r0;
     atoms->nr   = i0;
   }
@@ -185,7 +185,7 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
       aaa.pdbinfo[ii0].occup = 0.0;
     }
     aaa.nr = ndots;
-    write_sto_conf(fn,title,&aaa,xnew,NULL,box);
+    write_sto_conf(fn,title,&aaa,xnew,NULL,ePBC,box);
     do_conect(fn,ndots,xnew);
     free_t_atoms(&aaa);
   }
@@ -388,7 +388,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
       flag = flag | FLAG_VOLUME;
       
     if (debug)
-      write_sto_conf("check.pdb","pbc check",atoms,x,NULL,box);
+      write_sto_conf("check.pdb","pbc check",atoms,x,NULL,ePBC,box);
 
     retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
 			  &area,&totvolume,&surfacedots,&nsurfacedots,
@@ -399,7 +399,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     if (bConnelly)
       connelly_plot(ftp2fn(efPDB,nfile,fnm),
 		    nsurfacedots,surfacedots,x,atoms,
-		    &(top->symtab),box,bSave);
+		    &(top->symtab),ePBC,box,bSave);
     harea  = 0; 
     tarea  = 0;
     dgsolv = 0;

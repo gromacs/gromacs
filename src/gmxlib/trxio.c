@@ -148,7 +148,15 @@ void clear_trxframe(t_trxframe *fr,bool bFirst)
     fr->v      = NULL;
     fr->f      = NULL;
     clear_mat(fr->box);
+    fr->bPBC   = FALSE;
+    fr->ePBC   = -1;
   }
+}
+
+void set_trxframe_ePBC(t_trxframe *fr,int ePBC)
+{
+  fr->bPBC = (ePBC == -1);
+  fr->ePBC = ePBC;
 }
 
 int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
@@ -222,7 +230,7 @@ int write_trxframe_indexed(int fnum,t_trxframe *fr,int nind,atom_id *ind)
 			    fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
       write_pdbfile_indexed(gmx_fio_getfp(fnum),title,fr->atoms,
-			    fr->x,fr->box,0,fr->step,nind,ind);
+			    fr->x,-1,fr->box,0,fr->step,nind,ind);
     break;
   case efG87:
     write_gms(gmx_fio_getfp(fnum),nind,xout,fr->box);
@@ -296,7 +304,8 @@ int write_trxframe(int fnum,t_trxframe *fr)
 		    prec2ndec(prec),fr->x,fr->bV ? fr->v : NULL,fr->box);
     else
       write_pdbfile(gmx_fio_getfp(fnum),title,
-		    fr->atoms,fr->x,fr->box,0,fr->step);
+		    fr->atoms,fr->x,fr->bPBC ? fr->ePBC : -1,fr->box,
+		    0,fr->step);
     break;
   case efG87:
     write_gms(gmx_fio_getfp(fnum),fr->natoms,fr->x,fr->box);
@@ -532,7 +541,7 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
 static bool pdb_next_x(FILE *status,t_trxframe *fr)
 {
   t_atoms   atoms;
-  int       model_nr, na;
+  int       ePBC,model_nr,na;
   char      title[STRLEN],*time;
   double    dbl;
   
@@ -541,7 +550,8 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
   atoms.pdbinfo=NULL;
   /* the other pointers in atoms should not be accessed if these are NULL */
   model_nr=NOTSET;
-  na=read_pdbfile(status, title, &model_nr, &atoms, fr->x, fr->box, TRUE, NULL);
+  na=read_pdbfile(status,title,&model_nr,&atoms,fr->x,&ePBC,fr->box,TRUE,NULL);
+  set_trxframe_ePBC(fr,ePBC);
   if (nframes_read()==0)
     fprintf(stderr," '%s', %d atoms\n",title, fr->natoms);
   fr->bPrec = TRUE;

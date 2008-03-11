@@ -96,6 +96,9 @@ extern void clear_trxframe(t_trxframe *fr,bool bFirst);
  *                     and all data to zero.
  */
 
+extern void set_trxframe_ePBC(t_trxframe *fr,int ePBC);
+/* Set the type of periodic boundary conditions, ePBC=-1 is not set */
+
 extern int nframes_read(void);
 /* Returns the number of frames read from the trajectory */
 

@@ -302,7 +302,7 @@ bool bXor(bool b1,bool b2)
 }
 
 void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
-	      matrix box, bool bInsert,
+	      int ePBC, matrix box, bool bInsert,
 	      t_atoms *atoms_solvt,rvec *x_solvt,rvec *v_solvt,real *r_solvt,
 	      bool bVerbose,real rshell,int max_sol)
 {
@@ -325,6 +325,9 @@ void add_conf(t_atoms *atoms, rvec **x, rvec **v, real **r, bool bSrenew,
     return;
   }
   
+  if (ePBC == epbcSCREW)
+    gmx_fatal(FARGS,"Sorry, %s pbc is not yet supported",epbc_names[ePBC]);
+
   if (bVerbose)
     fprintf(stderr,"Calculating Overlap...\n");
   

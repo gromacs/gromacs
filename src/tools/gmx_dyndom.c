@@ -190,7 +190,7 @@ int gmx_dyndom(int argc,char *argv[])
   init_t_atoms(&atoms,natoms,TRUE);
   snew(x,natoms);
   snew(v,natoms);
-  read_stx_conf(opt2fn("-f",NFILE,fnm),title,&atoms,x,v,box);
+  read_stx_conf(opt2fn("-f",NFILE,fnm),title,&atoms,x,v,NULL,box);
   snew(xout,natoms);
   snew(vout,natoms);
   

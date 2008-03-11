@@ -163,7 +163,7 @@ static void write_constr_pdb(char *fn,char *title,t_atoms *atoms,
   out = ffopen(fname,"w");
 
   fprintf(out,"TITLE     %s\n",title);
-  gmx_write_pdb_box(out,box);
+  gmx_write_pdb_box(out,-1,box);
   for(i=start; i<start+homenr; i++) {
     if (dd) {
       if (i >= dd->nat_home && i < dd_ac0)

@@ -142,7 +142,7 @@ int gmx_genpr(int argc,char *argv[])
     snew(x,atoms->nr);
     snew(v,atoms->nr);
     fprintf(stderr,"\nReading structure file\n");
-    read_stx_conf(xfn,title,atoms,x,v,box);
+    read_stx_conf(xfn,title,atoms,x,v,NULL,box);
   }
   
   if (bFreeze) {

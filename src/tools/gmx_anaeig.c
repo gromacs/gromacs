@@ -586,7 +586,7 @@ static void project(char *trajfile,t_topology *top,int ePBC,matrix topbox,
       fprintf(out,"TER\n");
       fclose(out);
     } else
-      write_sto_conf(threedplotfile,str,&atoms,x,NULL,box); 
+      write_sto_conf(threedplotfile,str,&atoms,x,NULL,ePBC,box); 
     free_t_atoms(&atoms);
   }
   

@@ -56,6 +56,7 @@ typedef struct {
   int     index,cluster_id;
   t_atoms atoms;
   rvec    *x;
+  int     ePBC;
   matrix  box;
 } t_pdbfile;
 
@@ -71,7 +72,7 @@ static t_pdbfile *read_pdbf(char *fn)
   get_stx_coordnum (fn,&natoms);
   init_t_atoms(&(pdbf->atoms),natoms,FALSE);
   snew(pdbf->x,natoms);
-  read_stx_conf(fn,buf,&pdbf->atoms,pdbf->x,NULL,pdbf->box);
+  read_stx_conf(fn,buf,&pdbf->atoms,pdbf->x,NULL,&pdbf->ePBC,pdbf->box);
   fp = fopen(fn,"r");
   do {
     ptr = fgets2(buf,255,fp);

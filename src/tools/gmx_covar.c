@@ -246,7 +246,7 @@ int gmx_covar(int argc,char *argv[])
       xread[index[i]][d] = xav[i][d];
     }
   write_sto_conf_indexed(opt2fn("-av",NFILE,fnm),"Average structure",
-			 atoms,xread,NULL,zerobox,natoms,index);
+			 atoms,xread,NULL,epbcNONE,zerobox,natoms,index);
   sfree(xread);
 
   fprintf(stderr,"Constructing covariance matrix (%dx%d) ...\n",ndim,ndim);

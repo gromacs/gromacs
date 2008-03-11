@@ -44,7 +44,7 @@
 
 const char *epbc_names[epbcNR+1]=
 {
-  "xyz", "no", "xy", NULL
+  "xyz", "no", "xy", "screw", NULL
 };
 
 const char *ens_names[ensNR+1]=

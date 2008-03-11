@@ -466,7 +466,7 @@ int gmx_genion(int argc, char *argv[])
 	for(i=0; (i<top->atoms.nr); i++)
 	    top->atoms.pdbinfo[i].bfac = pot[i]*scale;
 	write_sto_conf(buf,"Potential calculated by genion",
-		       &top->atoms,x,v,box);
+		       &top->atoms,x,v,inputrec.ePBC,box);
 	bPDB = FALSE;
       }
     }
@@ -488,7 +488,8 @@ int gmx_genion(int argc, char *argv[])
   
   sfree(top->atoms.pdbinfo);
   top->atoms.pdbinfo = NULL;
-  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,NULL,box);
+  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,NULL,
+		 inputrec.ePBC,box);
   
   thanx(stderr);
 

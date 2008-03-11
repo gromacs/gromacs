@@ -74,5 +74,7 @@ typedef struct
   rvec *f;        /* forces (natoms)                  */
   bool bBox;
   matrix box;     /* the 3 box vectors                */
+  bool bPBC;
+  int  ePBC;      /* the type of pbc                  */
 } t_trxframe;
 

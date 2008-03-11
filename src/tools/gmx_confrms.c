@@ -579,8 +579,8 @@ int gmx_confrms(int argc,char *argv[])
     }
     fp=ffopen(outfile,"w");
     if (!bOne)
-      write_pdbfile(fp,title1,atoms1,x1,box1,0,1);
-    write_pdbfile(fp,title2,atoms2,x2,box2,0,bOne ? -1 : 2);
+      write_pdbfile(fp,title1,atoms1,x1,ePBC1,box1,0,1);
+    write_pdbfile(fp,title2,atoms2,x2,ePBC2,box2,0,bOne ? -1 : 2);
     fclose(fp);
     break;
   case efGRO:
@@ -600,7 +600,7 @@ int gmx_confrms(int argc,char *argv[])
       fprintf(stderr,
 	      "WARNING: cannot write the reference structure to %s file\n",
 	      ftp2ext(fn2ftp(outfile))); 
-    write_sto_conf(outfile,title2,atoms2,x2,v2,box2);
+    write_sto_conf(outfile,title2,atoms2,x2,v2,ePBC2,box2);
     break;
   }
   

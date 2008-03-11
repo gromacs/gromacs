@@ -128,7 +128,8 @@ int gmx_genconf(int argc, char *argv[])
   char    title[STRLEN];
   rvec    *x,*xx,*v;        /* coordinates? */
   real    t;
-  vec4    *xrot,*vrot;  
+  vec4    *xrot,*vrot;
+  int     ePBC;
   matrix  box,boxx;          /* box length matrix */
   rvec    shift;         
   int     natoms;       /* number of atoms in one molecule  */
@@ -201,7 +202,7 @@ int gmx_genconf(int argc, char *argv[])
    * to avoid complaints in read_stx_conf   *
    */
   atoms->nr = natoms;
-  read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,box);
+  read_stx_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,v,&ePBC,box);
 
   nres=atoms->nres;                /* nr of residues in one element? */
 
@@ -232,13 +233,23 @@ int gmx_genconf(int argc, char *argv[])
 	  for(l=0; (l<natoms); l++) {
 	    for(m=0; (m<DIM); m++) {
 	      if (bRandom) {
-		x[ndx+l][m]=xrot[l][m]+shift[m];
-		v[ndx+l][m]=vrot[l][m];
+		x[ndx+l][m] = xrot[l][m];
+		v[ndx+l][m] = vrot[l][m];
 	      }
 	      else {
-		x[ndx+l][m]=(bTRX ? xx[l][m] : x[l][m])+shift[m];
-		v[ndx+l][m]=v[l][m];
+		x[ndx+l][m] = (bTRX ? xx[l][m] : x[l][m]);
+		v[ndx+l][m] = v[l][m];
 	      }
+	    }
+	    if (ePBC == epbcSCREW && i % 2 == 1) {
+	      /* Rotate around x axis */
+	      for(m=YY; m<=ZZ; m++) {
+		x[ndx+l][m] = box[YY][m] + box[ZZ][m] - x[ndx+l][m];
+		v[ndx+l][m] = -v[ndx+l][m];
+	      }
+	    }
+	    for(m=0; (m<DIM); m++) {
+	      x[ndx+l][m] += shift[m];
 	    }
 	    atoms->atom[ndx+l].resnr=(bRenum ? nrdx:0) + atoms->atom[l].resnr;
 	    atoms->atomname[ndx+l]=atoms->atomname[l];
@@ -263,8 +274,12 @@ int gmx_genconf(int argc, char *argv[])
   svmul(nx,box[XX],box[XX]);
   svmul(ny,box[YY],box[YY]);
   svmul(nz,box[ZZ],box[ZZ]);
+  if (ePBC == epbcSCREW && nx % 2 == 0) {
+    /* With an even number of boxes in x we can forgot about the screw */
+    ePBC = epbcXYZ;
+  }
 
-  move_x(natoms*vol,x,box);          /* put atoms in box? */
+  /* move_x(natoms*vol,x,box); */          /* put atoms in box? */
 
   atoms->nr*=vol;
   atoms->nres*=vol;
@@ -276,7 +291,7 @@ int gmx_genconf(int argc, char *argv[])
   else if (opt2parg_bSet("-block",asize(pa),pa))
     mkcompact(0,atoms->nr/nmolat,nmolat,x,v,nblock,box);
   
-  write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,box);
+  write_sto_conf(opt2fn("-o",NFILE,fnm),title,atoms,x,v,ePBC,box);
   
   thanx(stderr);
   

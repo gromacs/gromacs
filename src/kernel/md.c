@@ -180,6 +180,10 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		"Can only use seperate PME nodes with domain decomposition\n");
     cr->npmenodes = 0;
     cr->duty = (DUTY_PP | DUTY_PME);
+
+    if (inputrec->ePBC == epbcSCREW)
+      gmx_fatal(FARGS,"pbc=%s is only implemented with domain decomposition",
+		epbc_names[inputrec->ePBC]);
   }
 
   if (PAR(cr)) {
@@ -918,7 +922,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	fprintf(stderr,"\nWriting final coordinates.\n");
 	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		       *top_global->name,&top_global->atoms,
-		       state_global->x,state_global->v,state->box);
+		       state_global->x,state_global->v,ir->ePBC,state->box);
 	debug_gmx();
       }
       wallcycle_stop(wcycle,ewcTRAJ);

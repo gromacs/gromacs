@@ -140,7 +140,7 @@ static bool HandleClient(t_x11 *x11,int ID,t_gmx *gmx)
   case IDDOEXPORT:
     write_sto_conf(gmx->confout,*gmx->man->top.name,
 		   &(gmx->man->top.atoms),
-		   gmx->man->x,NULL,gmx->man->box);
+		   gmx->man->x,NULL,gmx->man->molw->ePBC,gmx->man->box);
     break;
   case IDQUIT:
     show_mb(gmx,emQuit);

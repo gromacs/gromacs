@@ -319,7 +319,7 @@ static void remove_jump(matrix box,int natoms,rvec xp[],rvec x[])
 }
 
 static void write_pdb_bfac(char *fname,char *xname,
-			   char *title,t_atoms *atoms,matrix box,
+			   char *title,t_atoms *atoms,int ePBC,matrix box,
 			   int isize,atom_id *index,int nfr_x,rvec *x,
 			   int nfr_v,rvec *sum,
 			   bool bDim[],real scale_factor)
@@ -398,7 +398,7 @@ static void write_pdb_bfac(char *fname,char *xname,
       for(i=0; i<isize; i++)
 	atoms->pdbinfo[index[i]].bfac = sum[index[i]][onedim]*scale;
     }
-    write_sto_conf_indexed(fname,title,atoms,x,NULL,box,isize,index);
+    write_sto_conf_indexed(fname,title,atoms,x,NULL,ePBC,box,isize,index);
   }
 }
 
@@ -809,12 +809,12 @@ int gmx_traj(int argc,char *argv[])
   if (bCV)
     write_pdb_bfac(opt2fn("-cv",NFILE,fnm),
 		   opt2fn("-av",NFILE,fnm),"average velocity",&(top.atoms),
-		   topbox,isize[0],index[0],nr_xfr,sumxv,
+		   ePBC,topbox,isize[0],index[0],nr_xfr,sumxv,
 		   nr_vfr,sumv,bDim,scale);
   if (bCF)
     write_pdb_bfac(opt2fn("-cf",NFILE,fnm),
 		   opt2fn("-af",NFILE,fnm),"average force",&(top.atoms),
-		   topbox,isize[0],index[0],nr_xfr,sumxf,
+		   ePBC,topbox,isize[0],index[0],nr_xfr,sumxf,
 		   nr_ffr,sumf,bDim,scale);
 
   /* view it */

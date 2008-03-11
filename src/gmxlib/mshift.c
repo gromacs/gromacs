@@ -403,6 +403,46 @@ static void mk_1shift(int npbcdim,rvec hbox,rvec xi,rvec xj,int *mi,int *mj)
   }
 }
 
+static void mk_1shift_screw(matrix box,rvec hbox,
+			    rvec xi,rvec xj,int *mi,int *mj)
+{
+  /* Calculate periodicity for rectangular box... */
+  int  signi,m;
+  rvec dx;
+
+  if ((mi[XX] > 0 &&  mi[XX] % 2 == 1) ||
+      (mi[XX] < 0 && -mi[XX] % 2 == 1)) {
+    signi = -1;
+  } else {
+    signi =  1;
+  }
+
+  rvec_sub(xi,xj,dx);
+
+  if (dx[XX] < -hbox[XX])
+    mj[XX] = mi[XX] - 1;
+  else if (dx[XX] >= hbox[XX])
+    mj[XX] = mi[XX] + 1;
+  else
+    mj[XX] = mi[XX];
+  if (mj[XX] != mi[XX]) {
+    /* Rotate */
+    dx[YY] = xi[YY] - (box[YY][YY] + box[ZZ][YY] - xj[YY]);
+    dx[ZZ] = xi[ZZ] - (box[ZZ][ZZ]               - xj[ZZ]);
+  }
+  for(m=1; (m<DIM); m++) {
+    /* The signs are taken such that we can first shift x and rotate
+     * and then shift y and z.
+     */
+    if (dx[m] < -hbox[m])
+      mj[m] = mi[m] - signi;
+    else if (dx[m] >= hbox[m])
+      mj[m] = mi[m] + signi;
+    else
+      mj[m] = mi[m];
+  }
+}
+
 static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
 		   int npbcdim,matrix box,rvec x[],int *nerror)
 {
@@ -424,7 +464,9 @@ static int mk_grey(FILE *log,int nnodes,egCol egc[],t_graph *g,int *AtomI,
   for(j=0; (j<g->nedge[ai]); j++) {
     aj=g->edge[ai][j]-g0;
     /* If there is a white one, make it grey and set pbc */
-    if (bTriclinic)
+    if (g->bScrewPBC)
+      mk_1shift_screw(box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
+    else if (bTriclinic)
       mk_1shift_tric(npbcdim,box,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
     else
       mk_1shift(npbcdim,hbox,x[g0+ai],x[g0+aj],g->ishift[ai],is_aj);
@@ -479,6 +521,8 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
   int    fW,fG;			/* First of each category	*/
   int    nerror=0;
+
+  g->bScrewPBC = (ePBC == epbcSCREW);
 
   if (ePBC == epbcXY)
     npbcdim = 2;
@@ -568,32 +612,6 @@ void mk_mshift(FILE *log,t_graph *g,int ePBC,matrix box,rvec x[])
  *      A C T U A L   S H I F T   C O D E
  *
  ************************************************************/
- 
-static void shift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
-{
-  int tx,ty,tz;
-  
-  tx=(g->ishift[ai-g->start])[XX];
-  ty=(g->ishift[ai-g->start])[YY];
-  tz=(g->ishift[ai-g->start])[ZZ];
-
-  x_s[ai][XX]=x[ai][XX]+tx*box[XX][XX]+ty*box[YY][XX]+tz*box[ZZ][XX];
-  x_s[ai][YY]=x[ai][YY]+ty*box[YY][YY]+tz*box[ZZ][YY];
-  x_s[ai][ZZ]=x[ai][ZZ]+tz*box[ZZ][ZZ];
-}
- 
-static void unshift_atom(t_graph *g,matrix box,rvec x[],rvec x_s[],atom_id ai)
-{
-  int tx,ty,tz;
-  
-  tx=(g->ishift[ai-g->start])[XX];
-  ty=(g->ishift[ai-g->start])[YY];
-  tz=(g->ishift[ai-g->start])[ZZ];
-
-  x_s[ai][XX]=x[ai][XX]-tx*box[XX][XX]-ty*box[YY][XX]-tz*box[ZZ][XX];
-  x_s[ai][YY]=x[ai][YY]-ty*box[YY][YY]-tz*box[ZZ][YY];
-  x_s[ai][ZZ]=x[ai][ZZ]-tz*box[ZZ][ZZ];
-}
 
 void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
 {
@@ -606,7 +624,24 @@ void shift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
   gn=g->nnodes;
   is=g->ishift;
   
-  if(TRICLINIC(box)) {
+  if (g->bScrewPBC) {
+    for(i=0,j=g0; (i<gn); i++,j++) { 
+      tx=is[i][XX];
+      ty=is[i][YY];
+      tz=is[i][ZZ];
+      
+      if ((tx > 0 && tx % 2 == 1) ||
+	  (tx < 0 && -tx %2 == 1)) {
+	x_s[j][XX] = x[j][XX] + tx*box[XX][XX];
+	x_s[j][YY] = box[YY][YY] + box[ZZ][YY] - x[j][YY];
+	x_s[j][ZZ] = box[ZZ][ZZ]               - x[j][ZZ];
+      } else {
+	x_s[j][XX] = x[j][XX];
+      }
+      x_s[j][YY] = x[j][YY] + ty*box[YY][YY] + tz*box[ZZ][YY];
+      x_s[j][ZZ] = x[j][ZZ] + tz*box[ZZ][ZZ];
+    }
+  } else if (TRICLINIC(box)) {
      for(i=0,j=g0; (i<gn); i++,j++) { 
 	 tx=is[i][XX];
 	 ty=is[i][YY];
@@ -635,6 +670,9 @@ void shift_self(t_graph *g,matrix box,rvec x[])
   ivec *is;
   int      g0,gn;
   int      i,j,tx,ty,tz;
+
+  if (g->bScrewPBC)
+    gmx_incons("screw pbc not implemented for shift_self");
 
   g0=g->start;
   gn=g->nnodes;
@@ -673,6 +711,9 @@ void unshift_x(t_graph *g,matrix box,rvec x[],rvec x_s[])
   int      g0,gn;
   int      i,j,tx,ty,tz;
 
+  if (g->bScrewPBC)
+    gmx_incons("screw pbc not implemented for unshift_x");
+
   g0=g->start;
   gn=g->nnodes;
   is=g->ishift;
@@ -704,6 +745,9 @@ void unshift_self(t_graph *g,matrix box,rvec x[])
   ivec *is;
   int g0,gn;
   int i,j,tx,ty,tz;
+
+  if (g->bScrewPBC)
+    gmx_incons("screw pbc not implemented for unshift_self");
 
   g0=g->start;
   gn=g->nnodes;

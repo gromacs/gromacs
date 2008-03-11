@@ -115,8 +115,8 @@ typedef struct {
   int  ncell;
   ivec shift[DD_MAXCELL];
 
-  /* Rotated PBC? */
-  bool bPBCRotate;
+  /* Screw PBC? */
+  bool bScrewPBC;
 
   /* Tells if the box is skewed for each of the three cartesian directions */
   ivec tric_dir;

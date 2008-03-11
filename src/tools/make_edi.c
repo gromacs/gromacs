@@ -295,7 +295,7 @@ int read_conffile(char *confin,char *title,rvec *x[]) {
     init_t_atoms(&confat,natoms,FALSE);
     printf("init_t\n");
     snew(*x,natoms);
-    read_stx_conf(confin,title,&confat,*x,NULL,box);
+    read_stx_conf(confin,title,&confat,*x,NULL,NULL,box);
     return natoms;
 };   
 

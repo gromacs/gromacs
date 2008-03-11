@@ -1038,7 +1038,7 @@ static void write_conf(char *outfile, char *title, t_atoms *atoms,
 }
 
 void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms, 
-			    rvec x[],rvec *v,matrix box,
+			    rvec x[],rvec *v,int ePBC,matrix box,
 			    atom_id nindex,atom_id index[])
 {
   FILE       *out;
@@ -1076,7 +1076,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   case efENT:
   case efPQR:
     out=ffopen(outfile,"w");
-    write_pdbfile_indexed(out, title, atoms, x, box, 0, -1, nindex, index);
+    write_pdbfile_indexed(out,title,atoms,x,ePBC,box,0,-1,nindex,index);
     fclose(out);
     break;
   case efESP:
@@ -1095,7 +1095,7 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
 }
 
 void write_sto_conf(char *outfile, char *title,t_atoms *atoms, 
-		   rvec x[],rvec *v, matrix box)
+		   rvec x[],rvec *v,int ePBC,matrix box)
 {
   FILE       *out;
   int        ftp;
@@ -1129,7 +1129,7 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   case efBRK:
   case efENT:
     out=ffopen(outfile,"w");
-    write_pdbfile(out, title, atoms, x, box, 0, -1);
+    write_pdbfile(out, title, atoms, x, ePBC, box, 0, -1);
     fclose(out);
     break;
   case efESP:
@@ -1196,7 +1196,7 @@ void get_stx_coordnum(char *infile,int *natoms)
 }
 
 void read_stx_conf(char *infile, char *title,t_atoms *atoms, 
-		   rvec x[],rvec *v, matrix box)
+		   rvec x[],rvec *v,int *ePBC,matrix box)
 {
   FILE       *in;
   char       buf[256];
@@ -1210,6 +1210,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   else if (atoms->atom == NULL)
     gmx_mem("Uninitialized array atom");
   
+  if (ePBC)
+    *ePBC = -1;
+
   ftp=fn2ftp(infile);
   switch (ftp) {
   case efGRO:
@@ -1230,7 +1233,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efPDB:
   case efBRK:
   case efENT:
-    read_pdb_conf(infile, title, atoms, x, box, TRUE, NULL);
+    read_pdb_conf(infile, title, atoms, x, ePBC, box, TRUE, NULL);
     break;
   case efESP:
     read_espresso_conf(infile,atoms,x,v,box);
@@ -1239,7 +1242,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efTPB:
   case efTPA: 
     snew(top,1);
-    read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
+    i = read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
+    if (ePBC)
+      *ePBC = i;
     
     strcpy(title,*(top->name));
     /* Scalars */

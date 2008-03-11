@@ -129,8 +129,8 @@ int gmx_morph(int argc,char *argv[])
   snew(xx,nat1);
   snew(v,nat1);
   
-  read_stx_conf(opt2fn("-f1",NFILE,fnm),title,&atoms,x1,v,box);
-  read_stx_conf(opt2fn("-f2",NFILE,fnm),title,&atoms,x2,v,box);
+  read_stx_conf(opt2fn("-f1",NFILE,fnm),title,&atoms,x1,v,NULL,box);
+  read_stx_conf(opt2fn("-f2",NFILE,fnm),title,&atoms,x2,v,NULL,box);
 
   snew(mass,nat1);
   snew(index_all,nat1);

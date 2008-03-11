@@ -989,6 +989,8 @@ int gmx_trjconv(int argc,char *argv[])
     }
 
     if (bHaveFirstFrame) {
+      set_trxframe_ePBC(&fr,ePBC);
+
       natoms = fr.natoms;
       
       if (bSetTime)
@@ -1316,8 +1318,8 @@ int gmx_trjconv(int argc,char *argv[])
 		  model_nr = fr.step;
 		else
 		  model_nr++;
-		write_pdbfile(out,title,&useatoms,frout.x,frout.box,0,
-			      model_nr);
+		write_pdbfile(out,title,&useatoms,frout.x,
+			      frout.ePBC,frout.box,0,model_nr);
 		break;
 	      case efG96:
 		frout.title = title;

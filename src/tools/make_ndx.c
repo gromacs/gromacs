@@ -1078,6 +1078,7 @@ int main(int argc,char *argv[])
   int      i,j;
   t_atoms  *atoms;
   rvec     *x,*v;
+  int      ePBC;
   matrix   box;
   t_blocka *block,*block2;
   char     **gnames,**gnames2;
@@ -1112,7 +1113,7 @@ int main(int argc,char *argv[])
     snew(x,atoms->nr);
     snew(v,atoms->nr);
     fprintf(stderr,"\nReading structure file\n");
-    read_stx_conf(stxfile,title,atoms,x,v,box);
+    read_stx_conf(stxfile,title,atoms,x,v,&ePBC,box);
     natoms = atoms->nr;
     bNatoms=TRUE;
   } else {

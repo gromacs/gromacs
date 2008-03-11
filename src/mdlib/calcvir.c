@@ -58,9 +58,10 @@ static void upd_vir(rvec vir,real dvx,real dvy,real dvz)
   vir[ZZ]-=0.5*dvz;
 }
 
-void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir)
+void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir,
+	      bool bScrewPBC,matrix box)
 {
-  int      i;
+  int      i,isx;
   double   dvxx=0,dvxy=0,dvxz=0,dvyx=0,dvyy=0,dvyz=0,dvzx=0,dvzy=0,dvzz=0;
     
   for(i=0; (i<nxf); i++) {
@@ -75,6 +76,18 @@ void calc_vir(FILE *log,int nxf,rvec x[],rvec f[],tensor vir)
     dvzx+=x[i][ZZ]*f[i][XX];
     dvzy+=x[i][ZZ]*f[i][YY];
     dvzz+=x[i][ZZ]*f[i][ZZ];
+    
+    if (bScrewPBC) {
+      isx = IS2X(i);
+      /* We should correct all odd x-shifts, but the range of isx is -2 to 2 */
+      if (isx == 1 || isx == -1) {
+	dvyy += box[YY][YY]*f[i][YY];
+	dvyz += box[YY][YY]*f[i][ZZ];
+
+	dvzy += box[ZZ][ZZ]*f[i][YY];
+	dvzz += box[ZZ][ZZ]*f[i][ZZ];
+      }
+    }
   }
   
   upd_vir(vir[XX],dvxx,dvxy,dvxz);
@@ -223,10 +236,10 @@ void f_calc_vir(FILE *log,int i0,int i1,rvec x[],rvec f[],tensor vir,
      * Note the nifty pointer arithmetic...
      */
     if (start > i0) 
-      calc_vir(log,start-i0,x + i0,f + i0,vir);
+      calc_vir(log,start-i0,x + i0,f + i0,vir,FALSE,box);
     if (end < i1)
-      calc_vir(log,i1-end,x + end,f + end,vir);
+      calc_vir(log,i1-end,x + end,f + end,vir,FALSE,box);
   }
   else
-    calc_vir(log,i1-i0,x + i0,f + i0,vir);
+    calc_vir(log,i1-i0,x + i0,f + i0,vir,FALSE,box);
 }

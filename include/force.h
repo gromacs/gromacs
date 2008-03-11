@@ -49,7 +49,8 @@
 
 static char *sepdvdlformat="  %-30s V %12.5e  dVdl %12.5e\n";
 
-extern void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir);
+extern void calc_vir(FILE *fplog,int nxf,rvec x[],rvec f[],tensor vir,
+		     bool bScrewPBC,matrix box);
 /* Calculate virial for nxf atoms, and add it to vir */
 
 extern void f_calc_vir(FILE *fplog,int i0,int i1,rvec x[],rvec f[],tensor vir,

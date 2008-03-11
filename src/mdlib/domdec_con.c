@@ -45,6 +45,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
   int  n,n0,n1,d,dir,i;
   ivec vis;
   int  is;
+  bool bPBC,bScrew;
   
   n = spac->at_end;
   for(d=dd->ndim-1; d>=0; d--) {
@@ -60,23 +61,38 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 			f+n+n1,n0,vbuf              ,spas[0].nsend,
 			f+n   ,n1,vbuf+spas[0].nsend,spas[1].nsend);
       for(dir=0; dir<2; dir++) {
+	bPBC   = ((dir == 0 && dd->ci[dd->dim[d]] == 0) || 
+		  (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1));
+	bScrew = (bPBC && dd->bScrewPBC && dd->dim[d] == XX);
+
 	spas = &spac->spas[d][dir];
 	/* Sum the buffer into the required forces */
-	if (fshift &&
-	    ((dir == 0 && dd->ci[dd->dim[d]] == 0) || 
-	     (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1))) {
-	  clear_ivec(vis);
-	  vis[dd->dim[d]] = (dir==0 ? 1 : -1);
-	  is = IVEC2IS(vis);
+	if (!bPBC || (!bScrew && fshift == NULL)) {
 	  for(i=0; i<spas->nsend; i++) {
 	    rvec_inc(f[spas->a[i]],*vbuf);
-	    rvec_inc(fshift[is],*vbuf);
 	    vbuf++;
 	  }
 	} else {
-	  for(i=0; i<spas->nsend; i++) {
-	    rvec_inc(f[spas->a[i]],*vbuf);
-	    vbuf++;
+	  clear_ivec(vis);
+	  vis[dd->dim[d]] = (dir==0 ? 1 : -1);
+	  is = IVEC2IS(vis);
+	  if (!bScrew) {
+	    /* Sum and add to shift forces */
+	    for(i=0; i<spas->nsend; i++) {
+	      rvec_inc(f[spas->a[i]],*vbuf);
+	      rvec_inc(fshift[is],*vbuf);
+	      vbuf++;
+	    }
+	  } else {	    
+	    /* Rotate the forces */
+	    for(i=0; i<spas->nsend; i++) {
+	      f[spas->a[i]][XX] += (*vbuf)[XX];
+	      f[spas->a[i]][YY] -= (*vbuf)[YY];
+	      f[spas->a[i]][ZZ] -= (*vbuf)[ZZ];
+	      if (fshift)
+		rvec_inc(fshift[is],*vbuf);
+	      vbuf++;
+	    }
 	  }
 	}
       }
@@ -88,8 +104,19 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       dd_sendrecv_rvec(dd,d,ddForward,
 		       f+n,spas->nrecv,spac->vbuf,spas->nsend);
       /* Sum the buffer into the required forces */
-      for(i=0; i<spas->nsend; i++)
-	rvec_inc(f[spas->a[i]],spac->vbuf[i]);
+      if (dd->bScrewPBC && dd->dim[d] == XX &&
+	  (dd->ci[dd->dim[d]] == 0 || 
+	   dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1)) {
+	for(i=0; i<spas->nsend; i++) {
+	  /* Rotate the force */
+	  f[spas->a[i]][XX] += spac->vbuf[i][XX];
+	  f[spas->a[i]][YY] -= spac->vbuf[i][YY];
+	  f[spas->a[i]][ZZ] -= spac->vbuf[i][ZZ];
+	}
+      } else {
+	for(i=0; i<spas->nsend; i++)
+	  rvec_inc(f[spas->a[i]],spac->vbuf[i]);
+      }
     }
   }
 }
@@ -116,6 +143,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
   gmx_specatsend_t *spas;
   rvec *x,*vbuf,*rbuf;
   int  nvec,v,n,nn,ns0,ns1,nr0,nr1,nr,d,dir,i;
+  bool bPBC,bScrew=FALSE;
   rvec shift;
   
   nvec = 1;
@@ -128,27 +156,40 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       /* Pulse the grid forward and backward */
       vbuf = spac->vbuf;
       for(dir=0; dir<2; dir++) {
+	if (dir == 0 && dd->ci[dd->dim[d]] == 0) {
+	  bPBC   = TRUE;
+	  bScrew = (dd->dim[d] == XX);
+	  copy_rvec(box[dd->dim[d]],shift);
+	} else if (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1) {
+	  bPBC = TRUE;
+	  bScrew = (dd->dim[d] == XX);
+	  for(i=0; i<DIM; i++)
+	    shift[i] = -box[dd->dim[d]][i];
+	} else {
+	  bPBC = FALSE;
+	}
 	spas = &spac->spas[d][dir];
 	for(v=0; v<nvec; v++) {
 	  x = (v == 0 ? x0 : x1);
 	  /* Copy the required coordinates to the send buffer */
-	  if (dir == 0 &&
-	      dd->ci[dd->dim[d]] == 0) {
-	    copy_rvec(box[dd->dim[d]],shift);
+	  if (!bPBC) {
+	    /* Only copy */
+	    for(i=0; i<spas->nsend; i++) {
+	      copy_rvec(x[spas->a[i]],*vbuf);
+	      vbuf++;
+	    }
+	  } else if (!bScrew) {
+	    /* Shift coordinates */
 	    for(i=0; i<spas->nsend; i++) {
 	      rvec_add(x[spas->a[i]],shift,*vbuf);
 	      vbuf++;
 	    }
-	  } else if (dir == 1 &&
-		     dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1) {
-	    copy_rvec(box[dd->dim[d]],shift);
-	    for(i=0; i<spas->nsend; i++) {
-	      rvec_sub(x[spas->a[i]],shift,*vbuf);
-	      vbuf++;
-	    }
 	  } else {
+	    /* Shift and rotate coordinates */
 	    for(i=0; i<spas->nsend; i++) {
-	      copy_rvec(x[spas->a[i]],*vbuf);
+	      (*vbuf)[XX] =               x[spas->a[i]][XX] + shift[XX];
+	      (*vbuf)[YY] = box[YY][YY] - x[spas->a[i]][YY] + shift[YY];
+	      (*vbuf)[ZZ] = box[ZZ][ZZ] - x[spas->a[i]][ZZ] + shift[ZZ];
 	      vbuf++;
 	    }
 	  }
@@ -191,9 +232,22 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       vbuf = spac->vbuf;
       for(v=0; v<nvec; v++) {
 	x = (v == 0 ? x0 : x1);
-	for(i=0; i<spas->nsend; i++) {
-	  copy_rvec(x[spas->a[i]],*vbuf);
-	  vbuf++;
+	if (dd->bScrewPBC && dd->dim[d] == XX &&
+	    (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX]-1)) {
+	  /* Here we only perform the rotation, the rest of the pbc
+	   * is handled in the constraint or viste routines.
+	   */
+	  for(i=0; i<spas->nsend; i++) {
+	    (*vbuf)[XX] =               x[spas->a[i]][XX];
+	    (*vbuf)[YY] = box[YY][YY] - x[spas->a[i]][YY];
+	    (*vbuf)[ZZ] = box[ZZ][ZZ] - x[spas->a[i]][ZZ];
+	    vbuf++;
+	  }	  
+	} else {
+	  for(i=0; i<spas->nsend; i++) {
+	    copy_rvec(x[spas->a[i]],*vbuf);
+	    vbuf++;
+	  }
 	}
       }
       /* Send and receive the coordinates */

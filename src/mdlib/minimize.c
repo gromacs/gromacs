@@ -1182,7 +1182,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top_global->name, &(top_global->atoms),
-		   state_global->x,NULL,state_global->box);
+		   state_global->x,NULL,inputrec->ePBC,state_global->box);
   
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
   
@@ -1807,7 +1807,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		   *top->name, &(top->atoms),state->x,NULL,state->box);
+		   *top->name, &(top->atoms),state->x,NULL,
+		   inputrec->ePBC,state->box);
   
   if (MASTER(cr)) {
     print_converged(stderr,LBFGS,inputrec->em_tol,step,converged,
@@ -2022,7 +2023,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) {
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
 		   *top_global->name,&(top_global->atoms),
-		   state_global->x,NULL,state_global->box);
+		   state_global->x,NULL,inputrec->ePBC,state_global->box);
     
     print_converged(stderr,SD,inputrec->em_tol,count,bDone,nsteps,
 		    s_min->epot,s_min->fmax,s_min->a_fmax,fnormn);
@@ -2754,7 +2755,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	if (dump_pdb && ener[F_EPOT] <= dump_ener) {
 	  sprintf(str,"t%g_step%d.pdb",t,step);
 	  sprintf(str2,"t: %f step %d ener: %f",t,step,ener[F_EPOT]);
-	  write_sto_conf(str,str2,&(top->atoms),state->x,state->v,state->box);
+	  write_sto_conf(str,str2,&(top->atoms),state->x,state->v,
+			 inputrec->ePBC,state->box);
 	}
       }
     }

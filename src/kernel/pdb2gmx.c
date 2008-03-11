@@ -260,9 +260,10 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
   ffclose(fp);
 }
 
-int read_pdball(char *inf, char *outf,char *title,
-		t_atoms *atoms, rvec **x,matrix box, bool bRemoveH,
-		t_symtab *symtab,t_aa_names *aan,char *watres)
+static int read_pdball(char *inf, char *outf,char *title,
+		       t_atoms *atoms, rvec **x,
+		       int *ePBC,matrix box, bool bRemoveH,
+		       t_symtab *symtab,t_aa_names *aan,char *watres)
 /* Read a pdb file. (containing proteins) */
 {
   int  natom,new_natom,i;
@@ -272,7 +273,7 @@ int read_pdball(char *inf, char *outf,char *title,
   get_stx_coordnum(inf,&natom);
   init_t_atoms(atoms,natom,TRUE);
   snew(*x,natom);
-  read_stx_conf(inf,title,atoms,*x,NULL,box);
+  read_stx_conf(inf,title,atoms,*x,NULL,ePBC,box);
   if (bRemoveH) {
     new_natom=0;
     for(i=0; i<atoms->nr; i++)
@@ -305,7 +306,7 @@ int read_pdball(char *inf, char *outf,char *title,
     return 0;
 
   if (outf)
-    write_sto_conf(outf,title,atoms,*x,NULL,box);
+    write_sto_conf(outf,title,atoms,*x,NULL,*ePBC,box);
  
   return natom;
 }
@@ -651,6 +652,7 @@ int main(int argc, char *argv[])
   char       **incls;
   t_mols     *mols;
   char       **gnames;
+  int        ePBC;
   matrix     box;
   rvec       box_space;
   int        i,j,k,l,nrtp;
@@ -837,7 +839,7 @@ int main(int argc, char *argv[])
     watres = "HOH";
 
   natom = read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
-		      &pdba_all,&pdbx,box,bRemoveH,&symtab,aan,watres);
+		      &pdba_all,&pdbx,&ePBC,box,bRemoveH,&symtab,aan,watres);
   
   if (natom==0)
     gmx_fatal(FARGS,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));
@@ -1068,7 +1070,7 @@ int main(int argc, char *argv[])
 	sprintf(fn,"chain.pdb");
       else
 	sprintf(fn,"chain_%c.pdb",cc->chain);
-      write_sto_conf(fn,title,pdba,x,NULL,box);
+      write_sto_conf(fn,title,pdba,x,NULL,ePBC,box);
     }
 
     for(i=0; i<cc->nterpairs; i++) {
@@ -1120,7 +1122,7 @@ int main(int argc, char *argv[])
 		NULL,NULL,TRUE,FALSE);
     printf("Now there are %d residues with %d atoms\n",
 	   pdba->nres,pdba->nr);
-    if (debug) write_pdbfile(debug,title,pdba,x,box,0,0);
+    if (debug) write_pdbfile(debug,title,pdba,x,ePBC,box,0,0);
 
     if (debug)
       for(i=0; (i<natom); i++)
@@ -1211,7 +1213,7 @@ int main(int argc, char *argv[])
       else
 	sprintf(fn,"chain_%c.pdb",cc->chain);
       cool_quote(quote,255,NULL);
-      write_sto_conf(fn,quote,pdba,x,NULL,box);
+      write_sto_conf(fn,quote,pdba,x,NULL,ePBC,box);
     }
   }
   
@@ -1264,7 +1266,7 @@ int main(int argc, char *argv[])
   clear_rvec(box_space);
   if (box[0][0] == 0) 
     gen_box(0,atoms->nr,x,box,box_space,FALSE);
-  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),title,atoms,x,NULL,box);
+  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),title,atoms,x,NULL,ePBC,box);
 
   printf("\t\t--------- PLEASE NOTE ------------\n");
   printf("You have succesfully generated a topology from: %s.\n",

@@ -757,7 +757,7 @@ int gmx_disre(int argc,char *argv[])
     if (bPDB) {
       write_sto_conf(opt2fn("-q",NFILE,fnm),
 		     "Coloured by average violation in Angstrom",
-		     &(top.atoms),xav,NULL,box);
+		     &(top.atoms),xav,NULL,ir.ePBC,box);
     }
     dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nr,
 		      j,&top,max_dr,nlevels,bThird);
