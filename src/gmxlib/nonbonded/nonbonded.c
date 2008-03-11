@@ -645,7 +645,8 @@ do_nonbonded14(int ftype,int nbonds,
                         "at distance %.3f which is larger than the 1-4 table size %.3f nm\n", ai+1, aj+1, sqrt(r2), sqrt(rtab2));
                 fprintf(stderr,"These are ignored for the rest of the simulation\n");
 		fprintf(stderr,"This usually means your system is exploding,\n"
-			"if not, you should increase table-extension in your mdp file\n");
+			"if not, you should increase table-extension in your mdp file\n"
+			"or with user tables increase the table size\n");
                 bWarn = TRUE;
             }
             if (debug) 

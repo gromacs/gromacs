@@ -529,15 +529,24 @@ between neighbor list updates.</dd>
 <dt><b>User</b></dt> 
 <dd><a name="usertab"></a><tt>mdrun</tt> will now expect to find a file
 <tt>table.xvg</tt> with user-defined potential functions for
-repulsion, dispersion and Coulomb.  This file should contain 7
+repulsion, dispersion and Coulomb. When pair interactions are present,
+<tt>mdrun</tt> also expects to find a file <tt>tablep.xvg</tt> for
+the pair interactions. When the same interactions should be used
+for non-bonded and pair interactions the user can specify the same
+file name for both table files.
+These files should contain 7
 columns: the <tt>x</tt> value,
 <tt>f(x)</tt>, <tt>-f'(x)</tt>,
 <tt>g(x)</tt>, <tt>-g'(x)</tt>,
 <tt>h(x)</tt>, <tt>-h'(x)</tt>,
 where f(x) is the Coulomb function, g(x) the dispersion function
 and h(x) the repulsion function.
-The <tt>x</tt> values should run from 0 to the largest cut-off distance
-+ <b>table-extension</b> and should be uniformly spaced.
+When <b>vdwtype</b> is not set to <b>User</b> the values
+for g, -g', h and -h' are ignored.
+For the non-bonded interactions <tt>x</tt> values should run
+from 0 to the largest cut-off distance + <b>table-extension</b>
+and should be uniformly spaced. For the pair interactions the table
+length in the file will be used.
 The optimal spacing, which is used for non-user tables,
 is <tt>0.002</tt> [nm] when you run in single precision
 or <tt>0.0005</tt> [nm] when you run in double precision.
@@ -626,7 +635,9 @@ from the Encad simulation package.</dd>
 <dd>See <b><a href="#usertab">user</a></b> for <b>coulombtype</b>.
 The function value at <tt>x=0</tt> is not important. When you want to
 use LJ correction, make sure that <b>rvdw</b> corresponds to the
-cut-off in the user-defined function.</dd>
+cut-off in the user-defined function.
+When <b>coulombtype</b> is not set to <b>User</b> the values
+for f and -f' are ignored.</dd>
 </dl></dd>
 
 <dt><h4>rvdw_switch: (0) [nm]</h4></dt>
@@ -656,8 +667,9 @@ only</dd>
 <dd>Extension of the non-bonded potential lookup tables beyond the largest cut-off distance.
 The value should be large enough to account for charge group sizes
 and the diffusion between neighbor-list updates.
-This value also specifies the length of the lookup tables for
-the 1-4 interactions, which are always tabulated irrespective of the use of
+Without user defined potential the same table length is used
+for the lookup tables for the 1-4 interactions,
+which are always tabulated irrespective of the use of
 tables for the non-bonded interactions. </dd>
 
 <dt><h4>energygrp_table:</h4></dt>

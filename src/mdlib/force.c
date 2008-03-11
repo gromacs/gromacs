@@ -1270,9 +1270,9 @@ void init_forcerec(FILE *fp,
       }
     }
   }
-  if (bSep14tab && tabbfn)
+  if (bSep14tab)
     /* generate extra tables with plain Coulomb for 1-4 interactions only */
-    fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,ir->tabext,FALSE,TRUE);
+    fr->tab14 = make_tables(fp,fr,MASTER(cr),tabpfn,rtab,FALSE,TRUE);
   
   /* Wall stuff */
   fr->nwall = ir->nwall;
