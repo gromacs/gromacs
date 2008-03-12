@@ -76,31 +76,24 @@ typedef struct gmx_cpp {
   struct   gmx_cpp *child,*parent;
 } gmx_cpp;
 
-static int def_comp(const void *a,const void *b)
+static bool is_blank_end(char c)
 {
-  t_define *da = (t_define *)a;
-  t_define *db = (t_define *)b;
-  int len;
-  
-  len = strlen(db->name) - strlen(da->name);
-  if (len == 0)
-    return strcmp(da->name,db->name);
-  else
-    return len;
+  return (c == ' ' || c == '\t' || c == '\0' || c == '\n');
 }
 
-static void sort_defs()
+static char* strstrw(const char *buf,const char *word)
 {
-  int i;
-  
-  if (ndef > 0)
-    qsort(defs,ndef,sizeof(defs[0]),def_comp);
-  if (debug) {
-    fprintf(debug,"#defines:\n");
-    for(i=0; (i<ndef); i++)
-      fprintf(debug,"%s = %s\n",
-	      defs[i].name,defs[i].def ? defs[i].def : "(null)");
+  char *ptr;
+
+  ptr = strstr(buf,word);
+  if (ptr) {
+    /* Check if we did not find part of a longer word */
+    if ((ptr > buf && !is_blank_end(ptr[-1])) ||
+	!is_blank_end(ptr[strlen(word)]))
+      ptr = NULL;
   }
+
+  return ptr;
 }
 
 static void add_include(char *include)
@@ -151,8 +144,6 @@ static void add_define(char *define)
     defs[i].def  = strdup(ptr);
   else
     defs[i].def  = NULL;
-  
-  sort_defs();
 }
 
 /* Open the file to be processed. The handle variable holds internal
@@ -251,8 +242,8 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   set_warning_line(handle->fn,handle->line_nr);
     
   /* #ifdef or ifndef statement */
-  bIfdef  = (strstr(buf,"#ifdef") != NULL);
-  bIfndef = (strstr(buf,"#ifndef") != NULL);
+  bIfdef  = (strstrw(buf,"#ifdef") != NULL);
+  bIfndef = (strstrw(buf,"#ifndef") != NULL);
   if (bIfdef || bIfndef) {
     if ((handle->nifdef > 0) && (handle->ifdefs[handle->nifdef-1] != eifTRUE)) {
       handle->nifdef++;
@@ -278,7 +269,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   }
   
   /* #else statement */
-  if (strstr(buf,"#else") != NULL) {
+  if (strstrw(buf,"#else") != NULL) {
     if (handle->nifdef <= 0)
       return eCPP_SYNTAX;
     if (handle->ifdefs[handle->nifdef-1] == eifTRUE)
@@ -291,7 +282,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   }
   
   /* #endif statement */
-  if (strstr(buf,"#endif") != NULL) {
+  if (strstrw(buf,"#endif") != NULL) {
     if (handle->nifdef <= 0)
       return eCPP_SYNTAX;
     handle->nifdef--;
@@ -308,7 +299,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   }
   
   /* Check for include statements */
-  if (strstr(buf,"#include") != NULL) {
+  if (strstrw(buf,"#include") != NULL) {
     len = -1;
     i0  = 0;
     for(i=0; (i<strlen(buf)); i++) {
@@ -345,14 +336,14 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
   }
   
   /* #define statement */
-  if (strstr(buf,"#define") != NULL) {
+  if (strstrw(buf,"#define") != NULL) {
     add_define(buf+8);
   
     return cpp_read_line(handlep,n,buf);
   }
   
   /* #undef statement */
-  if (strstr(buf,"#undef") != NULL) {
+  if (strstrw(buf,"#undef") != NULL) {
     snew(name,strlen(buf));
     status = sscanf(buf,"%*s %s",name);
     for(i=0; (i<ndef); i++) {
@@ -381,7 +372,7 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
     if (defs[i].def) {
       nn  = 0;
       ptr = buf;
-      while ((ptr = strstr(ptr,defs[i].name)) != NULL) {
+      while ((ptr = strstrw(ptr,defs[i].name)) != NULL) {
 	nn++;
 	ptr += strlen(defs[i].name);
       }
@@ -389,10 +380,10 @@ int cpp_read_line(gmx_cpp_t *handlep,int n,char buf[])
 	len = strlen(buf) + nn*max(4,4+strlen(defs[i].def)-strlen(defs[i].name));
 	snew(name,len);
 	ptr = buf;
-	while ((ptr2 = strstr(ptr,defs[i].name)) != NULL) {
+	while ((ptr2 = strstrw(ptr,defs[i].name)) != NULL) {
 	  strncat(name,ptr,(int)(ptr2-ptr));
 	  strcat(name,defs[i].def);
-	  ptr = ptr2+strlen(defs[i].name)+1;
+	  ptr = ptr2 + strlen(defs[i].name);
 	}
 	strcat(name,ptr);
 	strcpy(buf,name);
