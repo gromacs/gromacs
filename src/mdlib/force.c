@@ -1237,8 +1237,8 @@ void init_forcerec(FILE *fp,
   }
   snew(fr->nblists,fr->nnblists);
 
+  rtab = fr->rlistlong + ir->tabext;
   if (bTab) {
-    rtab = fr->rlistlong + ir->tabext;
     /* make tables for ordinary interactions */
     if (bNormalnblists) {
       make_nbf_tables(fp,fr,rtab,cr,tabfn,NULL,NULL,&fr->nblists[0]);
