@@ -64,6 +64,7 @@
 #include "nb_kernel/nb_kernel.h"
 #include "nb_kernel/nb_kernel330.h"
 #include "nb_free_energy.h"
+#include "nb_generic.h"
 
 
 #ifdef GMX_PPC_ALTIVEC   
@@ -198,7 +199,16 @@ gmx_setup_kernels(FILE *fplog)
     
     for(i=0;i<eNR_NBKERNEL_NR;i++)
         nb_kernel_list[i] = NULL;
-    
+
+	if(getenv("GMX_NB_GENERIC") != NULL)
+    {
+        if(fplog)
+            fprintf(fplog,
+                    "Found environment variable GMX_NB_GENERIC.\n"
+                    "Disabling all interaction-specific nonbonded kernels.\n\n");
+        return;
+    }
+	
 	if(fplog)
 	    fprintf(fplog,"Configuring nonbonded kernels...\n");
 	
@@ -262,236 +272,244 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
                   t_nrnb *nrnb,real lambda,real *dvdlambda,
                   bool bLR,int nls,int eNL,bool bDoForces)
 {
-  t_nblist *      nlist;
-  real *          fshift;
-  int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
-  t_nblists       *nblists;
-  bool            bWater;
-  nb_kernel_t *   kernelptr;
-  FILE *          fp;
-  int             wateratoms;
-  int             nthreads = 1;
-  int             tabletype;
-  int             outeriter,inneriter;
-  real *          tabledata = NULL;
-
-  if(fr->solvent_opt == esolSPC)
+	t_nblist *      nlist;
+	real *          fshift;
+	int             n,n0,n1,i,i0,i1,nrnb_ind,sz;
+	t_nblists       *nblists;
+	bool            bWater;
+	nb_kernel_t *   kernelptr;
+	FILE *          fp;
+	int             wateratoms;
+	int             nthreads = 1;
+	int             tabletype;
+	int             outeriter,inneriter;
+	real *          tabledata = NULL;
+	
+	if(fr->solvent_opt == esolSPC)
     {
-    wateratoms = 3;
+		wateratoms = 3;
     }
-  else if(fr->solvent_opt == esolTIP4P)
+	else if(fr->solvent_opt == esolTIP4P)
     {
-    wateratoms = 4;
+		wateratoms = 4;
     }
-  else
+	else
     {
-    wateratoms = 1;
+		wateratoms = 1;
     }
-  
+	
     if (eNL >= 0) 
     {
-    i0 = eNL;
-    i1 = i0+1;
+		i0 = eNL;
+		i1 = i0+1;
     }
     else
     {
-    i0 = 0;
-    i1 = eNL_NR;
-  }
-  
-  if (nls >= 0) {
-    n0 = nls;
-    n1 = nls+1;
-  } else {
-    n0 = 0;
-    n1 = fr->nnblists;
-  }
-  
-  if(nb_kernel_list == NULL)
-    {
-      gmx_fatal(FARGS,"gmx_setup_kernels has not been called");
-    }
-  
-  if (bLR)
-    {
-    fshift = fr->fshift_twin[0];
-    }
-  else
-    {
-    fshift = fr->fshift[0];
-    }
-  
-  for(n=n0; (n<n1); n++) {
-    nblists = &fr->nblists[n];
-    for(i=i0; (i<i1); i++) {
-      outeriter = inneriter = 0;
-      
-      if (bLR) 
-	nlist = &(nblists->nlist_lr[i]);
-      else
-	nlist = &(nblists->nlist_sr[i]);
-      
-        if (nlist->nri > 0) 
-        {
-	nrnb_ind = nlist->il_code;
-
-            if(nrnb_ind==eNR_NBKERNEL_FREE_ENERGY)
-            {
-                /* generic free energy, use combined table */
-  	        tabledata = nblists->tab.tab;
-            }
-            else
-            {
-	        tabletype = nb_kernel_table[nrnb_ind];
-	      
-                /* normal kernels, not free energy */
-                if (!bDoForces)
-                    nrnb_ind += eNR_NBKERNEL_NR/2;
-                
-                if(tabletype == TABLE_COMBINED)
-                {
-                    tabledata = nblists->tab.tab;
-                }
-                else if(tabletype == TABLE_COUL)
-                {
-                    tabledata = nblists->coultab;
-                }
-                else if(tabletype == TABLE_VDW)
-                {
-                    tabledata = nblists->vdwtab;
-                }
-                else
-                {
-                    tabledata = NULL;
-                }
-            }
-            
-            nlist->count = 0;
-            
-            if(nlist->free_energy)
-            {
-                if(nlist->ivdw==2)
-                {
-                    gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
-                }
-                
-                gmx_nb_free_energy_kernel(nlist->icoul,
-                                          nlist->ivdw,
-                                          nlist->nri,
-                                          nlist->iinr,
-                                          nlist->jindex,
-                                          nlist->jjnr,
-                                          nlist->shift,
-                                          fr->shift_vec[0],
-                                          fshift,
-                                          nlist->gid,
-                                          x[0],
-                                          f[0],
-                                          mdatoms->chargeA,
-                                          mdatoms->chargeB,
-                                          fr->epsfac,
-                                          fr->k_rf,
-                                          fr->c_rf,
-                                          fr->ewaldcoeff,
-                                          egcoul,
-                                          mdatoms->typeA,
-                                          mdatoms->typeB,
-                                          fr->ntype,
-                                          fr->nbfp,
-                                          egnb,
-                                          nblists->tab.scale,
-                                          tabledata,
-                                          lambda,
-                                          dvdlambda,
-                                          fr->sc_alpha,
-					  fr->sc_power,
-                                          fr->sc_sigma6,
-                                          &outeriter,
-                                          &inneriter);
-            }
-            else
-            {
-	  /* Not free energy - call nonbonded kernel from function pointer */
-	  kernelptr = nb_kernel_list[nrnb_ind];
-	  
-                if(kernelptr == NULL)
-                {
-                    /* Call generic nonbonded kernel */
-                    /*
-                    gmx_nb_generic_kernel(nlist,
-                                          x,
-                                          fr,
-                                          f,
-                                          fshift,
-                                          mdatoms,
-                                          lambda,
-                                          dvdlambda,
-                                          egcoul,
-                                          egnb,
-                                          &(fr->tab.scale),
-                                          tabledata,
-                                          &nthreads,
-                                          &(nlist->count),
-                                          nlist->mtx,
-                                          &outeriter,
-                                          &inneriter);
-                     */
-	  }
-	  
-	  /* Call the appropriate nonbonded kernel function */
-	  (*kernelptr)( &(nlist->nri),
-			nlist->iinr,
-			nlist->jindex,
-			nlist->jjnr,
-			nlist->shift,
-			fr->shift_vec[0],
-			fshift,
-			nlist->gid,
-			x[0],
-			f[0],
-			mdatoms->chargeA,
-			&(fr->epsfac),
-			&(fr->k_rf),
-			&(fr->c_rf),
-			egcoul,
-			mdatoms->typeA,
-			&(fr->ntype),
-			fr->nbfp,
-			egnb,
-			&(nblists->tab.scale),
-			tabledata,
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			&nthreads,
-			&(nlist->count),
-			nlist->mtx,
-			&outeriter,
-			&inneriter,
-			NULL);
+		i0 = 0;
+		i1 = eNL_NR;
 	}
 	
-	/* Update flop accounting */
+	if (nls >= 0) 
+	{
+		n0 = nls;
+		n1 = nls+1;
+	}
+	else 
+	{
+		n0 = 0;
+		n1 = fr->nnblists;
+	}
 	
-	/* Outer loop in kernel */
-	if (nlist->nltype==enlistWATER)
-            {
-	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
-            }
-	else if (nlist->nltype==enlistWATERWATER)
-            {
-	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
-            }
-	else
-            {
-	  inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
-            }
-	/* inner loop in kernel */
-	inc_nrnb(nrnb,nrnb_ind,inneriter);
-      }
+	if(nb_kernel_list == NULL)
+    {
+		gmx_fatal(FARGS,"gmx_setup_kernels has not been called");
     }
-  }
+  
+	if (bLR)
+    {
+		fshift = fr->fshift_twin[0];
+    }
+	else
+    {
+		fshift = fr->fshift[0];
+    }
+  
+	for(n=n0; (n<n1); n++) 
+	{
+		nblists = &fr->nblists[n];
+		for(i=i0; (i<i1); i++) 
+		{
+			outeriter = inneriter = 0;
+      
+			if (bLR) 
+			{
+				nlist = &(nblists->nlist_lr[i]);
+			}
+			else
+			{
+				nlist = &(nblists->nlist_sr[i]);
+			}
+			
+			if (nlist->nri > 0) 
+			{
+				nrnb_ind = nlist->il_code;
+				
+				if(nrnb_ind==eNR_NBKERNEL_FREE_ENERGY)
+				{
+					/* generic free energy, use combined table */
+					tabledata = nblists->tab.tab;
+				}
+				else
+				{
+					tabletype = nb_kernel_table[nrnb_ind];
+					
+					/* normal kernels, not free energy */
+					if (!bDoForces)
+					{
+						nrnb_ind += eNR_NBKERNEL_NR/2;
+					}
+					
+					if(tabletype == TABLE_COMBINED)
+					{
+						tabledata = nblists->tab.tab;
+					}
+					else if(tabletype == TABLE_COUL)
+					{
+						tabledata = nblists->coultab;
+					}
+					else if(tabletype == TABLE_VDW)
+					{
+						tabledata = nblists->vdwtab;
+					}
+					else
+					{
+						tabledata = NULL;
+					}
+				}
+				
+				nlist->count = 0;
+				
+				if(nlist->free_energy)
+				{
+					if(nlist->ivdw==2)
+					{
+						gmx_fatal(FARGS,"Cannot do free energy Buckingham interactions.");
+					}
+					
+					gmx_nb_free_energy_kernel(nlist->icoul,
+											  nlist->ivdw,
+											  nlist->nri,
+											  nlist->iinr,
+											  nlist->jindex,
+											  nlist->jjnr,
+											  nlist->shift,
+											  fr->shift_vec[0],
+											  fshift,
+											  nlist->gid,
+											  x[0],
+											  f[0],
+											  mdatoms->chargeA,
+											  mdatoms->chargeB,
+											  fr->epsfac,
+											  fr->k_rf,
+											  fr->c_rf,
+											  fr->ewaldcoeff,
+											  egcoul,
+											  mdatoms->typeA,
+											  mdatoms->typeB,
+											  fr->ntype,
+											  fr->nbfp,
+											  egnb,
+											  nblists->tab.scale,
+											  tabledata,
+											  lambda,
+											  dvdlambda,
+											  fr->sc_alpha,
+											  fr->sc_power,
+											  fr->sc_sigma6,
+											  &outeriter,
+											  &inneriter);
+				}
+				else
+				{
+					/* Not free energy - call nonbonded kernel from function pointer */
+					kernelptr = nb_kernel_list[nrnb_ind];
+					
+					if(kernelptr == NULL)
+					{
+						/* Call a generic nonbonded kernel */
+						
+						/* If you want to hack/test your own interactions, do it in this routine,
+						 * and make sure it is called by setting the environment variable GMX_NB_GENERIC.
+						 */
+						gmx_nb_generic_kernel(nlist,
+											  fr,
+											  mdatoms,
+											  x[0],
+											  f[0],
+											  fshift,
+											  egcoul,
+											  egnb,
+											  nblists->tab.scale,
+											  tabledata,
+											  &outeriter,
+											  &inneriter);
+					}
+					
+					/* Call the appropriate nonbonded kernel function */
+					(*kernelptr)( &(nlist->nri),
+								 nlist->iinr,
+								 nlist->jindex,
+								 nlist->jjnr,
+								 nlist->shift,
+								 fr->shift_vec[0],
+								 fshift,
+								 nlist->gid,
+								 x[0],
+								 f[0],
+								 mdatoms->chargeA,
+								 &(fr->epsfac),
+								 &(fr->k_rf),
+								 &(fr->c_rf),
+								 egcoul,
+								 mdatoms->typeA,
+								 &(fr->ntype),
+								 fr->nbfp,
+								 egnb,
+								 &(nblists->tab.scale),
+								 tabledata,
+								 NULL,
+								 NULL,
+								 NULL,
+								 NULL,
+								 &nthreads,
+								 &(nlist->count),
+								 nlist->mtx,
+								 &outeriter,
+								 &inneriter,
+								 NULL);
+				}
+				
+				/* Update flop accounting */
+				
+				/* Outer loop in kernel */
+				if (nlist->nltype==enlistWATER)
+				{
+					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*outeriter);
+				}
+				else if (nlist->nltype==enlistWATERWATER)
+				{
+					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,wateratoms*wateratoms*outeriter);
+				}
+				else
+				{
+					inc_nrnb(nrnb,eNR_NBKERNEL_OUTER,outeriter);
+				}
+				/* inner loop in kernel */
+				inc_nrnb(nrnb,nrnb_ind,inneriter);
+			}
+		}
+	}
 }
 
 
@@ -702,7 +720,7 @@ do_nonbonded14(int ftype,int nbonds,
                                           eps,
                                           krf,
                                           crf,
-					  fr->ewaldcoeff,
+										  fr->ewaldcoeff,
                                           egcoul,
                                           typeA,
                                           typeB,
@@ -714,7 +732,7 @@ do_nonbonded14(int ftype,int nbonds,
                                           lambda,
                                           dvdlambda,
                                           fr->sc_alpha,
-					  fr->sc_power,
+										  fr->sc_power,
                                           fr->sc_sigma6,
                                           &outeriter,
                                           &inneriter);
