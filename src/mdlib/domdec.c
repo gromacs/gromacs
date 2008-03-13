@@ -5653,6 +5653,6 @@ void dd_partition_system(FILE            *fplog,
 
   dd->ddp_count++;
   state_local->ddp_count = dd->ddp_count;
-  if (bMasterState && !bSortCG)
-    dd->comm->master_cg_ddp_count = dd->ddp_count;
+  if (bMasterState)
+    dd->comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
 }
