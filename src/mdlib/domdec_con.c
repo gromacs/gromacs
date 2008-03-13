@@ -158,15 +158,16 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       for(dir=0; dir<2; dir++) {
 	if (dir == 0 && dd->ci[dd->dim[d]] == 0) {
 	  bPBC   = TRUE;
-	  bScrew = (dd->dim[d] == XX);
+	  bScrew = (dd->bScrewPBC && dd->dim[d] == XX);
 	  copy_rvec(box[dd->dim[d]],shift);
 	} else if (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1) {
 	  bPBC = TRUE;
-	  bScrew = (dd->dim[d] == XX);
+	  bScrew = (dd->bScrewPBC && dd->dim[d] == XX);
 	  for(i=0; i<DIM; i++)
 	    shift[i] = -box[dd->dim[d]][i];
 	} else {
 	  bPBC = FALSE;
+	  bScrew = FALSE;
 	}
 	spas = &spac->spas[d][dir];
 	for(v=0; v<nvec; v++) {

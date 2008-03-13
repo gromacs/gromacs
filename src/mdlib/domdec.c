@@ -682,6 +682,7 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
 	  at0 = cgindex[index[i]];
 	  at1 = cgindex[index[i]+1];
 	  for(j=at0; j<at1; j++) {
+	    rvec_inc(f[j],buf[n]);
 	    /* Add this force to the shift force */
 	    rvec_inc(fshift[is],buf[n]);
 	    n++;
@@ -692,14 +693,14 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
 	  at0 = cgindex[index[i]];
 	  at1 = cgindex[index[i]+1];
 	  for(j=at0; j<at1; j++) {
-	    if (fshift) {
-	      /* Add this force to the shift force */
-	      rvec_inc(fshift[is],buf[n]);
-	    }
 	    /* Rotate the force */
 	    f[j][XX] += buf[n][XX];
 	    f[j][YY] -= buf[n][YY];
 	    f[j][ZZ] -= buf[n][ZZ];
+	    if (fshift) {
+	      /* Add this force to the shift force */
+	      rvec_inc(fshift[is],buf[n]);
+	    }
 	    n++;
 	  }
 	}
