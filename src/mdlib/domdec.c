@@ -855,7 +855,7 @@ static void dd_gatherv(gmx_domdec_t *dd,
 static void dd_collect_cg(gmx_domdec_t *dd,
 			  t_state *state_local,t_block *cgs_gl)
 {
-  gmx_domdec_master_t *ma;
+  gmx_domdec_master_t *ma=NULL;
   int buf2[2],*ibuf,i,ncg_home=0,*cg=NULL,nat_home=0;
 
   if (state_local->ddp_count == dd->comm->master_cg_ddp_count) {
@@ -877,11 +877,10 @@ static void dd_collect_cg(gmx_domdec_t *dd,
     gmx_incons("Attempted to collect a vector for a state for which the charge group distribution is unknown");
   }
 
-  ma = dd->ma;
-
   buf2[0] = dd->ncg_home;
   buf2[1] = dd->nat_home;
   if (DDMASTER(dd)) {
+    ma = dd->ma;
     ibuf = ma->ibuf;
   } else {
     ibuf = NULL;
@@ -955,9 +954,10 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs_gl,t_state *state_local,
 		 n,dd->comm->all,MPI_STATUS_IGNORE);
 #endif
 	a = 0;
-	for(i=ma->index[n]; i<ma->index[n+1]; i++)
+	for(i=ma->index[n]; i<ma->index[n+1]; i++) {
 	  for(c=cgs_gl->index[ma->cg[i]]; c<cgs_gl->index[ma->cg[i]+1]; c++)
 	    copy_rvec(buf[a++],v[c]);
+	}
       }
     }
     sfree(buf);
@@ -5653,6 +5653,6 @@ void dd_partition_system(FILE            *fplog,
 
   dd->ddp_count++;
   state_local->ddp_count = dd->ddp_count;
-  if (bMasterState)
+  if (bMasterState && !bSortCG)
     dd->comm->master_cg_ddp_count = dd->ddp_count;
 }
