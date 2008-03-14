@@ -765,7 +765,7 @@ void update(FILE         *fplog,
 		     grps->tcstat,md->invmass,state->nosehoover_xi,
 		     md->ptype,md->cTC,state->x,xprime,state->v,force,M,
 		     state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
-  } else if (inputrec->eI == eiSD) {
+  } else if (inputrec->eI == eiSD1) {
     do_update_sd1(sd,bFirstStep,start,homenr,dt,
 		  inputrec->opts.acc,inputrec->opts.nFreeze,
 		  md->invmass,md->ptype,

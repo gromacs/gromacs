@@ -104,7 +104,7 @@ void global_stat(FILE *fplog,
   if (constr) {
     rmsd_data = constr_rmsd_data(constr);
     if (rmsd_data)
-      irmsd = add_binr(rb,inputrec->eI==eiSD ? 3 : 2,rmsd_data);
+      irmsd = add_binr(rb,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
   } else {
     rmsd_data = NULL;
   }
@@ -161,7 +161,7 @@ void global_stat(FILE *fplog,
   extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
   if (rmsd_data)
-    extract_binr(rb,irmsd,inputrec->eI==eiSD ? 3 : 2,rmsd_data);
+    extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
   if (!NEED_MUTOT(*inputrec))
     extract_binr(rb,imu,DIM,mu_tot);
   for(j=0; (j<inputrec->opts.ngtc); j++) {

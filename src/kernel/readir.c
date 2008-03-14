@@ -1689,7 +1689,7 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
     CHECK((ir->coulombtype == eelGRF) && (ir->opts.ref_t[0] <= 0));
   }
     
-  if (ir->eI == eiSD) {
+  if (ir->eI == eiSD1) {
     gdt_max = 0;
     for(i=0; (i<ir->opts.ngtc); i++)
       gdt_max = max(gdt_max,ir->delta_t/ir->opts.tau_t[i]);
