@@ -726,7 +726,10 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 
 	    /* Added DvdS 2006-07-19 */
 	    if (box) {
-	      rvec xxi = { xi, yi, zi };
+	      rvec xxi;
+	      xxi[XX] = xi;
+	      xxi[YY] = yi;
+	      xxi[ZZ] = zi;
 	      pbc_dx(&pbc,pco,xxi,ddx);
 	      dx = ddx[XX];
 	      dy = ddx[YY];
