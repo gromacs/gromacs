@@ -108,17 +108,17 @@ int gmx_spatial(int argc,char *argv[])
   static int iNAB=4;
 
   t_pargs pa[] = {
-    { "-pbc",      bPBC, etBOOL, {&bPBC},
+    { "-pbc",      FALSE, etBOOL, {&bPBC},
       "Use periodic boundary conditions for computing distances" },
-    { "-div",      bCALCDIV, etBOOL, {&bCALCDIV},
+    { "-div",      FALSE, etBOOL, {&bCALCDIV},
       "Calculate and apply the divisor for bin occupancies based on atoms/minimal cube size. Set as TRUE for visualization and as FALSE (-nodiv) to get accurate counts per frame" },
-    { "-ign",      iIGNOREOUTER, etINT, {&iIGNOREOUTER},
+    { "-ign",      FALSE, etINT, {&iIGNOREOUTER},
       "Do not display this number of outer cubes (positive values may reduce boundary speckles; -1 ensures outer surface is visible)" },
     /*    { "-cut",      bCUTDOWN, etBOOL, {&bCUTDOWN},*/
     /*      "Display a total cube that is of minimal size" }, */
-    { "-bin",      rBINWIDTH, etREAL, {&rBINWIDTH},
+    { "-bin",      FALSE, etREAL, {&rBINWIDTH},
       "Width of the bins in nm" },
-    { "-nab",      iNAB, etINT, {&iNAB},
+    { "-nab",      FALSE, etINT, {&iNAB},
       "Number of additional bins to ensure proper memory allocation" }
   };
 
