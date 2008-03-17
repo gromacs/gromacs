@@ -1821,9 +1821,9 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
      * Double charge groups cause trouble with the global indices.
      */
     if (dd->nc[d] > 1 && np[d] >= dd->nc[d] && DDMASTER(dd)) {
-      gmx_fatal(FARGS,"The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d cells or increase the box size in this direction",
+      gmx_fatal(FARGS,"The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
 		dim2char(d),box[d][d],dd->skew_fac[d],comm->cutoff,dd->nc[d],
-		dd->nc[d]);
+		dd->nc[d],dd->nnodes > dd->nc[d] ? "cells" : "processors");
     }
   }
 
@@ -4407,7 +4407,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
        * we assign PME only nodes with 12 or more nodes,
        * or when the PME grid does not match the number of nodes.
        */
-      if (EEL_PME(ir->coulombtype) && cr->npmenodes < 0 && 
+      if (EEL_PME(ir->coulombtype) && cr->npmenodes < 0 && cr->nnodes > 2 &&
 	  (cr->nnodes >= 12 ||
 	   ir->nkx % cr->nnodes || ir->nky % cr->nnodes)) {
 	cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
