@@ -50,7 +50,7 @@ IF YOU'RE NOT SURE ABOUT WHAT YOU'RE DOING, DON'T DO IT!
 wall_density, wall_ewald_zfac)
 <li><A HREF="#pull"><b>COM pulling</b></A> (pull, ...)
 <li><A HREF="#nmr"><b>NMR refinement</b></A> (disre, disre_weighting, disre_mixed, disre_fc, disre_tau, nstdisreout, orire, orire_fc, orire_tau, orire_fitgrp, nstorireout)
-<li><A HREF="#free"><b>Free Energy calculations</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_power, sc_sigma)
+<li><A HREF="#free"><b>Free Energy calculations</b></A> (free_energy, init_lambda, delta_lambda, sc_alpha, sc_power, sc_sigma, couple-moltype, couple-lambda0, couple-lambda1, couple-intramol)
 <li><A HREF="#neq"><b>Non-equilibrium MD</b></A> (acc_grps, accelerate, freezegrps, freezedim, cos_acceleration, deform)
 <li><A HREF="#ef"><b>Electric fields</b></A> (E_x, E_xt, E_y, E_yt, E_z, E_zt )
 <li><A HREF="#qmmm"><b>Mixed quantum/classical dynamics</b></A> (QMMM, QMMM-grps, QMMMscheme, QMmethod, QMbasis, QMcharge, Qmmult, CASorbitals, CASelectrons, SH)
@@ -1276,6 +1276,33 @@ only the values 1 and 2 are supported</dd>
 <dt><h4>sc_sigma: (0.3) [nm]</h4></dt>
 <dd>the soft-core sigma for particles which have a C6 or C12 parameter equal
 to zero</dd>
+<dt><h4>couple-moltype:</h4></dt>
+<dd>Here one can supply a molecule type (as defined in the topology)
+for calculating solvation or coupling free energies.
+<b>free_energy</b> has to be turned on.
+The Van der Waals interactions and/or charges in this molecule type can be
+turned on or off between lambda=0 and lambda=1, depending on the settings
+of <b>couple-lambda0</b> and <b>couple-lambda1</b>. If you want to decouple
+one of several copies of a molecule, you need to copy and rename
+the molecule definition in the topology.</dd>
+<dt><h4>couple-lambda0:</h4></dt>
+<dd><dl compact>
+<dt><b>vdw-q</b></dt>
+<dd>all interactions are on at lambda=0
+<dt><b>vdw</b></dt>
+<dd>the charges are zero (no Coulomb interactions) at lambda=0
+<dt><b>none</b></dt>
+<dd>the Van der Waals interactions are turned off and the charges are zero at lambda=0; soft-core interactions will be required to avoid singularities
+</dl>
+<dt><h4>couple-lambda1:</h4></dt>
+<dd> analogous to <b>couple-lambda1</b>, but for lambda=1
+<dt><h4>couple-intramol:</h4></dt>
+<dd><dl compact>
+<dt><b>no</b></dt>
+<dd>All intra-molecular non-bonded interactions for moleculetype <b>couple-moltype</b> are replaced by exclusions and explicit pair interactions. In this manner the decoupled state of the molecule corresponds to the proper vacuum state without periodicity effects.
+<dt><b>yes</b></dt>
+<dd>The intra-molecular Van der Waals and Coulomb interactions are also turned on/off. This can be useful for partitioning free-energies of relatively large molecules, where the intra-molecular non-bonded interactions might lead to kinetically trapped vacuum conformations.
+</dl>
 </dl>
 
 
@@ -1466,6 +1493,10 @@ reals to your subroutine. Check the inputrec definition in
 <A HREF="#bond">constraints</A><br>
 <A HREF="#neq">cos_acceleration</A><br>
 <A HREF="#el">coulombtype</A><br>
+<A HREF="#free">couple-intramol</A><br>
+<A HREF="#free">couple-lambda0</A><br>
+<A HREF="#free">couple-lambda1</A><br>
+<A HREF="#free">couple-moltype</A><br>
 <A HREF="#pp">define</A><br>
 <A HREF="#neq">deform</A><br>
 <A HREF="#free">delta_lambda</A><br>

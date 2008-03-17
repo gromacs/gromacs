@@ -184,7 +184,6 @@ typedef struct {
   real tabext;          /* Extension of the table beyond the cut-off,   *
 			 * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
-  real fudgeQQ;		/* Id. for 1-4 coulomb interactions		*/
   int  efep;   		/* free energy interpolation no/yes		*/
   real init_lambda;	/* initial value for perturbation variable	*/
   real delta_lambda;	/* change of lambda per time step (1/dt)	*/

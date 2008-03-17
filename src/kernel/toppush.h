@@ -77,7 +77,7 @@ extern void push_bondnow (t_params *bond, t_param *b);
 
 extern void push_bond(directive d,t_params bondtype[],t_params bond[],
 		      t_atoms *at,t_atomtype atype,char *line,
-		      bool bBonded,bool bGenPairs,
+		      bool bBonded,bool bGenPairs,real fudgeQQ,
 		      bool bZero,bool *bWarn_copy_A_B);
 
 extern void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
@@ -99,5 +99,20 @@ extern void merge_excl(t_blocka *excl, t_block2 *b2);
 extern void b_to_b2(t_blocka *b, t_block2 *b2);
 
 extern void b2_to_b(t_block2 *b2, t_blocka *b);
+
+extern int add_atomtype_decoupled(t_symtab *symtab,t_atomtype at,
+				  t_nbparam ***nbparam,t_nbparam ***pair);
+/* Add an atom type with all parameters set to zero (no interactions).
+ * Returns the atom type number.
+ */
+
+extern void convert_moltype_couple(t_molinfo *mol,int atomtype_decouple,
+				   real fudgeQQ,
+				   int couple_lam0,int couple_lam1,
+				   bool bCoupleIntra,
+				   int nb_funct,t_params *nbp);
+/* Setup mol such that the B-state has no interaction with the rest
+ * of the system, but full interaction with itself.
+ */
 
 #endif	/* _toppush_h */

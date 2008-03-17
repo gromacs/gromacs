@@ -286,7 +286,7 @@ static char **read_topol(char *infile,char *outfile,
 			 t_params    plist[],
 			 int         *combination_rule,
 			 real        *reppow,
-			 int         nshake,
+			 t_gromppopts *opts,
 			 real        *fudgeQQ,
 			 int         *nsim,
 			 t_simsystem **sims,
@@ -314,6 +314,7 @@ static char **read_topol(char *infile,char *outfile,
   double     qt=0,qBt=0; /* total charge */
   t_bond_atomtype batype;
   int        lastcg=-1;
+  int        dcatt=-1,nmol_couple;
   /* File handling variables */
   int        status,done;
   gmx_cpp_t  handle;
@@ -345,6 +346,7 @@ static char **read_topol(char *infile,char *outfile,
   bReadDefaults = FALSE;
   bGenPairs     = FALSE;
   bReadMolType  = FALSE;
+  nmol_couple = 0;
   
   do {
     status = cpp_read_line(&handle,STRLEN,line);
@@ -485,7 +487,13 @@ static char **read_topol(char *infile,char *outfile,
 	    */
 	  case d_moleculetype: {
 	    if (!bReadMolType) {
-	      int ntype = get_atomtype_ntypes(atype);
+	      int ntype;
+	      if (opts->couple_moltype &&
+		  (opts->couple_lam0 == ecouplamNONE ||
+		   opts->couple_lam1 == ecouplamNONE))
+		dcatt = add_atomtype_decoupled(symtab,atype,
+					       &nbparam,bGenPairs?&pair:NULL);
+	      ntype = get_atomtype_ntypes(atype);
 	      ncombs = (ntype*(ntype+1))/2;
 	      generate_nbparams(comb,nb_funct,&(plist[nb_funct]),atype);
 	      ncopy = copy_nbparams(nbparam,nb_funct,&(plist[nb_funct]),
@@ -516,7 +524,7 @@ static char **read_topol(char *infile,char *outfile,
 	    
 	  case d_pairs: 
 	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,FALSE,
-		      bGenPairs,bZero,&bWarn_copy_A_B);
+		      bGenPairs,*fudgeQQ,bZero,&bWarn_copy_A_B);
 	    break;
 	    
 	  case d_vsites2:
@@ -537,7 +545,7 @@ static char **read_topol(char *infile,char *outfile,
 	  case d_water_polarization:
 	  case d_thole_polarization:
 	    push_bond(d,plist,mi0->plist,&(mi0->atoms),atype,pline,TRUE,
-		      bGenPairs,bZero,&bWarn_copy_A_B);
+		      bGenPairs,*fudgeQQ,bZero,&bWarn_copy_A_B);
 	    break;
 	  case d_vsitesn:
 	    push_vsitesn(d,plist,mi0->plist,&(mi0->atoms),atype,pline);
@@ -552,7 +560,8 @@ static char **read_topol(char *infile,char *outfile,
 	    title=put_symtab(symtab,pline);
 	    break;
 	  case d_molecules: {
-	    int whichmol;
+	    int  whichmol;
+	    bool bCouple;
 	    
 	    push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies);
 	    mi0=&((*molinfo)[whichmol]);
@@ -560,6 +569,12 @@ static char **read_topol(char *infile,char *outfile,
 	    Sims[Nsim].whichmol=whichmol;
 	    Sims[Nsim].nrcopies=nrcopies;
 	    Nsim++;
+	    
+	    bCouple = (opts->couple_moltype &&
+		       strcmp(*(mi0->name),opts->couple_moltype) == 0);
+	    if (bCouple)
+	      nmol_couple += nrcopies;
+
 	    if (mi0->atoms.nr == 0)
 	      gmx_fatal(FARGS,"Moleculetype %s contains no atoms",*mi0->name);
 	    fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
@@ -572,7 +587,13 @@ static char **read_topol(char *infile,char *outfile,
 			    &(mi0->excls));
 	      merge_excl(&(mi0->excls),&(block2[whichmol]));
 	      done_block2(&(block2[whichmol]));
-	      make_shake(mi0->plist,&mi0->atoms,atype,nshake); 
+	      make_shake(mi0->plist,&mi0->atoms,atype,opts->nshake);
+	      if (bCouple) {
+		convert_moltype_couple(mi0,dcatt,*fudgeQQ,
+				       opts->couple_lam0,opts->couple_lam1,
+				       opts->bCoupleIntra,
+				       nb_funct,&(plist[nb_funct]));
+	      }
 	      stupid_fill_block(&mi0->mols,mi0->atoms.nr,TRUE);
 	      mi0->bProcessed=TRUE;
 	    }
@@ -593,6 +614,16 @@ static char **read_topol(char *infile,char *outfile,
     gmx_fatal(FARGS,cpp_error(&handle,status));
   if (out)
     fclose(out);
+
+  if (opts->couple_moltype) {
+    if (nmol_couple == 0) {
+      gmx_fatal(FARGS,"Did not find any molecules of type '%s' for coupling",
+		opts->couple_moltype);
+    } else {
+      fprintf(stderr,"Found %d copies of molecule type '%s' for coupling\n",
+	      nmol_couple,opts->couple_moltype);
+    }
+  }
   
   /* this is not very clean, but fixes core dump on empty system name */
   if(!title)
@@ -625,6 +656,7 @@ char **do_top(bool         bVerbose,
 	      t_params     plist[],
 	      int          *combination_rule,
 	      real         *repulsion_power,
+	      real         *fudgeQQ,
 	      t_atomtype   atype,
 	      int          *nrmols,
 	      t_molinfo    **molinfo,
@@ -645,8 +677,8 @@ char **do_top(bool         bVerbose,
   title=read_topol(topfile,tmpfile,opts->define,opts->include,
 		   symtab,atype,nrmols,molinfo,
 		   plist,combination_rule,repulsion_power,
-		   opts->nshake,&ir->fudgeQQ,nsim,sims,ir->efep!=efepNO,
-		   bZero,bVerbose);
+		   opts,fudgeQQ,nsim,sims,
+		   ir->efep!=efepNO,bZero,bVerbose);
   if ((*combination_rule != eCOMB_GEOMETRIC) && 
       (ir->vdwtype == evdwUSER)) {
     warning("Using sigma/epsilon based combination rules with"

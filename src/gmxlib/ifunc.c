@@ -111,8 +111,8 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bondedt ("TABDIHS", "Tab. Dih.",        4, 2, 2,  eNR_TABDIHS, tab_dihs     ),
   def_bondedz ("LJ14",     "LJ-14",           2, 2, 2,  eNR_NB14,   unimplemented ),
   def_nofc    ("COUL14",   "Coulomb-14"                                           ),
-  def_bondedz ("LJC14_A",  "LJC-14 A",        2, 2, 0,  eNR_NB14,   unimplemented ),
-  def_bondedz ("LJC_P_A",  "LJC Pairs A",     2, 0, 0,  eNR_NB14,   unimplemented ),
+  def_bondedz ("LJC14_Q",  "LJC-14 q",        2, 5, 0,  eNR_NB14,   unimplemented ),
+  def_bondedz ("LJC_NB",   "LJC Pairs NB",    2, 4, 0,  eNR_NB14,   unimplemented ),
   def_nb      ("LJ_SR",    "LJ (SR)",         2, 2                                ),
   def_nb      ("BHAM",     "Buck.ham (SR)",   2, 3                                ),
   def_nofc    ("LJ_LR",    "LJ (LR)"                                              ),
@@ -155,7 +155,8 @@ const t_interaction_function interaction_function[F_NRE]=
   def_nofc    ("TEMP",     "Temperature"      ),
   def_nofc    ("PRES",     "Pressure (bar)"   ),
   def_nofc    ("DV/DL",    "dVpot/dlambda"    ),
-  def_nofc    ("DK/DL",    "dEkin/dlambda"    )
+  def_nofc    ("DK/DL",    "dEkin/dlambda"    ),
+  def_nofc    ("DG/DL_CON","dG/dl constr."    )
 };
 
 bool have_interaction(t_idef *idef,int ftype)

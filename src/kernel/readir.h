@@ -45,15 +45,19 @@
 enum { eshNONE, eshHBONDS, eshALLBONDS, eshHANGLES, eshALLANGLES, eshNR };
 
 static const char *constraints[eshNR+1]    = { 
-    "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL 
-  };
+  "none", "h-bonds", "all-bonds", "h-angles", "all-angles", NULL 
+};
+
+enum { ecouplamVDWQ, ecouplamVDW, ecouplamNONE, ecouplamNR };
+
+static const char *couple_lam[ecouplamNR+1]    = { 
+  "vdw-q", "vdw", "none", NULL 
+};
 
 typedef struct {
   int warnings;
   int nshake;
   real fourierspacing;
-  int nprocs;
-  int splitalg;
   char *include;
   char *define;
   bool bGenVel;
@@ -66,6 +70,10 @@ typedef struct {
   bool bMorse;
   char *wall_atomtype[2];
   bool pull_start;
+  char *couple_moltype;
+  int  couple_lam0;
+  int  couple_lam1;
+  bool bCoupleIntra;
 } t_gromppopts;
 
 

@@ -1950,7 +1950,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	ind = interaction_function[ftype].nrnb_ind;
 	nat = interaction_function[ftype].nratoms+1;
 	dvdl = 0;
-	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_A) {
+	if (ftype < F_LJ14 || ftype > F_LJC_PAIRS_NB) {
 	  v =
 	    interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
 					      idef->iparams,

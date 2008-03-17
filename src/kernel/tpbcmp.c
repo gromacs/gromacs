@@ -220,6 +220,7 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol)
       cmp_iparm(fp,buf2,id1->functype[i],
 		id1->iparams[i],id2->iparams[i],ftol);
     }
+    cmp_real(fp,"fudgeQQ",-1,id1->fudgeQQ,id2->fudgeQQ,ftol);
     for(i=0; (i<F_NRE); i++)
       cmp_ilist(fp,i,&(id1->il[i]),&(id2->il[i]));
   } else {
@@ -450,7 +451,6 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->implicit_solvent",-1,ir1->implicit_solvent,ir2->implicit_solvent);
   cmp_int(fp,"inputrec->eDispCorr",-1,ir1->eDispCorr,ir2->eDispCorr);
   cmp_real(fp,"inputrec->shake_tol",-1,ir1->shake_tol,ir2->shake_tol,ftol);
-  cmp_real(fp,"inputrec->fudgeQQ",-1,ir1->fudgeQQ,ir2->fudgeQQ,ftol);
   cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);
   cmp_real(fp,"inputrec->init_lambda",-1,ir1->init_lambda,ir2->init_lambda,ftol);
   cmp_real(fp,"inputrec->delta_lambda",-1,ir1->delta_lambda,ir2->delta_lambda,ftol);

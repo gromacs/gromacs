@@ -81,7 +81,7 @@ static char *pcouplmu_nm[] = {
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
-static bool bConstr,bTricl,bDynBox;
+static bool bConstr,bConstrVir,bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
 
 t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
@@ -129,7 +129,25 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   bool     bBHAM,b14;
   
   bBHAM = (idef->functype[0] == F_BHAM);
-  b14   = (idef->il[F_LJ14].nr > 0 || idef->il[F_LJC14_A].nr > 0);
+  b14   = (idef->il[F_LJ14].nr > 0 || idef->il[F_LJC14_Q].nr > 0);
+
+  nc[0] = idef->il[F_CONSTR].nr/3;
+  nc[1] = idef->il[F_SETTLE].nr*3/2;
+  if (PARTDECOMP(cr))
+    gmx_sumi(2,nc,cr);
+  bConstr    = (nc[0]+nc[1] > 0);
+  bConstrVir = FALSE;
+  if (bConstr) {
+    if (nc[0] > 0 && ir->eConstrAlg == estLINCS) {
+      if (ir->eI == eiSD2)
+	nCrmsd = 2;
+      else
+	nCrmsd = 1;
+    }
+    bConstrVir = (getenv("GMX_CONSTRAINTVIR") != NULL);
+  } else {
+    nCrmsd = 0;
+  }
 
   for(i=0; i<F_NRE; i++) {
     bEner[i] = FALSE;
@@ -153,8 +171,12 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       bEner[i] = b14;
     else if (i == F_COUL14)
       bEner[i] = b14;
-    else if ((i == F_DVDL) || (i == F_DVDLKIN))
+    else if (i == F_LJC14_Q || i == F_LJC_PAIRS_NB)
+      bEner[i] = FALSE;
+    else if ((i == F_DVDL) || (i == F_DKDL))
       bEner[i] = (ir->efep != efepNO);
+    else if (i == F_DGDL_CON)
+      bEner[i] = (ir->efep != efepNO && bConstr);
     else if ((interaction_function[i].flags & IF_VSITE) ||
 	     (i == F_CONSTR) || (i == F_SETTLE))
       bEner[i] = FALSE;
@@ -167,9 +189,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       bEner[i] = (idef->il[F_DISRES].nr > 0);
     else if (i == F_ORIRESDEV)
       bEner[i] = (idef->il[F_ORIRES].nr > 0);
-    else if (i == F_CONNBONDS || 
-	     i == F_LJC14_A ||
-	     i == F_LJC_PAIRS_A)
+    else if (i == F_CONNBONDS)
       bEner[i] = FALSE;
     else if (i == F_COM_PULL)
       bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
@@ -187,22 +207,6 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
       f_nre++;
     }
 
-  nc[0] = idef->il[F_CONSTR].nr/3;
-  nc[1] = idef->il[F_SETTLE].nr*3/2;
-  if (PARTDECOMP(cr))
-    gmx_sumi(2,nc,cr);
-  bConstr = (nc[0]+nc[1] > 0);
-  if (bConstr) {
-    if (nc[0] > 0 && ir->eConstrAlg == estLINCS) {
-      if (ir->eI == eiSD2)
-	nCrmsd = 2;
-      else
-	nCrmsd = 1;
-    }
-    bConstr = (getenv("GMX_CONSTRAINTVIR") != NULL);
-  } else {
-    nCrmsd = 0;
-  }
   epc = ir->epc;
   bTricl = TRICLINIC(ir->compress) || TRICLINIC(ir->deform);
   bDynBox = DYNAMIC_BOX(*ir);
@@ -221,7 +225,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   if (bDynBox)
     md->ib    = get_ebin_space(md->ebin, bTricl ? NTRICLBOXS :
 			       NBOXS, bTricl ? tricl_boxs_nm : boxs_nm);
-  if (bConstr) {
+  if (bConstrVir) {
     md->isvir = get_ebin_space(md->ebin,asize(sv_nm),sv_nm);
     md->ifvir = get_ebin_space(md->ebin,asize(fv_nm),fv_nm);
   }
@@ -418,7 +422,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       add_ebin(md->ebin,md->ib,NBOXS,bs,bSum,step);
     }
   }  
-  if (bConstr) {
+  if (bConstrVir) {
     add_ebin(md->ebin,md->isvir,9,svir[0],bSum,step);
     add_ebin(md->ebin,md->ifvir,9,fvir[0],bSum,step);
   }
@@ -493,7 +497,8 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],bSum,step);
   }
   if (fp_dgdl)
-    fprintf(fp_dgdl,"%.4f %g\n",time,ener[F_DVDL]+ener[F_DVDLKIN]);
+    fprintf(fp_dgdl,"%.4f %g\n",
+	    time,ener[F_DVDL]+ener[F_DKDL]+ener[F_DGDL_CON]);
 }
 
 static void npr(FILE *log,int n,char c)
@@ -595,13 +600,13 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
 		nsteps,TRUE);      
 	fprintf(log,"\n");
       }
-      if (bConstr) {
+      if (bConstrVir) {
 	fprintf(log,"   Constraint Virial %s\n",kjm);
 	pr_ebin(log,md->ebin,md->isvir,9,3,mode,nsteps,FALSE);  
 	fprintf(log,"\n");
 	fprintf(log,"   Force Virial %s\n",kjm);
 	pr_ebin(log,md->ebin,md->ifvir,9,3,mode,nsteps,FALSE);  
-      fprintf(log,"\n");
+	fprintf(log,"\n");
       }
       fprintf(log,"   Total Virial %s\n",kjm);
       pr_ebin(log,md->ebin,md->ivir,9,3,mode,nsteps,FALSE);   

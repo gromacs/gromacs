@@ -48,6 +48,7 @@
 #include "toputil.h"
 #include "toppush.h"
 #include "topdirs.h"
+#include "readir.h"
 #include "symtab.h"
 #include "gmx_fatal.h"
 #include "gpp_atomtype.h"
@@ -140,6 +141,19 @@ void generate_nbparams(int comb,int ftype,t_params *plist,t_atomtype atype)
     sprintf(errbuf,"Invalid nonbonded type %s",
 	    interaction_function[ftype].longname);
     warning_error(errbuf);
+  }
+}
+
+static void realloc_nb_params(t_atomtype at,
+			      t_nbparam ***nbparam,t_nbparam ***pair)
+{
+  /* Add space in the non-bonded parameters matrix */
+  int atnr = get_atomtype_ntypes(at);
+  srenew(*nbparam,atnr);
+  snew((*nbparam)[atnr-1],atnr);
+  if (pair) {
+    srenew(*pair,atnr);
+    snew((*pair)[atnr-1],atnr);
   }
 }
 
@@ -428,13 +442,7 @@ void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
     gmx_fatal(FARGS,"Adding atomtype %s failed",type);
   else {  
     /* Add space in the non-bonded parameters matrix */
-    int atnr = get_atomtype_ntypes(at);
-    srenew(*nbparam,atnr);
-    snew((*nbparam)[atnr-1],atnr);
-    if (pair) {
-      srenew(*pair,atnr);
-      snew((*pair)[atnr-1],atnr);
-    }
+    realloc_nb_params(at,nbparam,pair);
   }
   sfree(atom);
   sfree(param);
@@ -729,7 +737,7 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
   
   /* Get the force parameters */
   nrfp = NRFP(ftype);
-  if (ftype == F_LJ14 || ftype == F_LJC14_A) {
+  if (ftype == F_LJ14) {
     n = sscanf(pline,form4,&c[0],&c[1],&c[2],&c[3]);
     if (n < 2) {
       too_few();
@@ -740,6 +748,13 @@ void push_nbt(directive d,t_nbparam **nbt,t_atomtype atype,
      */ 
     for(i=n; i<nrfp; i++)
       c[i] = c[i-2];
+  }
+  else if (ftype == F_LJC14_Q) {
+    n = sscanf(pline,form4,&c[0],&c[1],&c[2],&c[3]);
+    if (n < 4) {
+      too_few();
+      return;
+    }
   }
   else if (nrfp == 2) {
     if (sscanf(pline,form2,&c[0],&c[1]) != 2) {
@@ -945,7 +960,7 @@ void push_molt(t_symtab *symtab,int *nmol,t_molinfo **mol,char *line)
 }
 
 static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
-			      t_param *p,bool bB,bool bGenPairs)
+			      t_param *p,int c_start,bool bB,bool bGenPairs)
 {
   int      i,j,ti,tj,ntype;
   bool     bFound;
@@ -964,7 +979,7 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
      * time when we have 1000*1000 entries for e.g. OPLS...
      */
     ntype=sqrt(nr);
-    if(bB) {
+    if (bB) {
       ti=at->atom[p->a[0]].typeB;
       tj=at->atom[p->a[1]].typeB;
     } else {
@@ -994,15 +1009,15 @@ static bool default_nb_params(int ftype,t_params bt[],t_atoms *at,
       if (nrfp+nrfpB > MAXFORCEPARAM) {
 	gmx_incons("Too many force parameters");
       }
-      for (j=0; (j < nrfpB); j++)
+      for (j=c_start; (j < nrfpB); j++)
 	p->c[nrfp+j] = pi->c[j];
     }
     else
-      for (j=0; (j < nrfp); j++)
+      for (j=c_start; (j < nrfp); j++)
 	p->c[j] = pi->c[j];
   }
   else {
-    for (j=0; (j < nrfp); j++)
+    for (j=c_start; (j < nrfp); j++)
       p->c[j] = 0.0;
   }
   return bFound;
@@ -1108,7 +1123,8 @@ void push_bondnow(t_params *bond, t_param *b)
 
 void push_bond(directive d,t_params bondtype[],t_params bond[],
 	       t_atoms *at,t_atomtype atype,char *line,
-	       bool bBonded,bool bGenPairs,bool bZero,bool *bWarn_copy_A_B)
+	       bool bBonded,bool bGenPairs,real fudgeQQ,
+	       bool bZero,bool *bWarn_copy_A_B)
 {
   const char *aaformat[MAXATOMLIST]= {
     "%d%d",
@@ -1131,7 +1147,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   double   cc[MAXFORCEPARAM+1];
   int      aa[MAXATOMLIST+1];
   t_param  param,paramB,*param_def;
-  bool     bFoundA,bFoundB,bDef,bPert,bSwapParity=FALSE;
+  bool     bFoundA=FALSE,bFoundB=FALSE,bDef,bPert,bSwapParity=FALSE;
   char  errbuf[256];
 
   ftype = ifunc_index(d,1);
@@ -1199,7 +1215,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   /* Get force params for normal and free energy perturbation
    * studies, as determined by types!
    */
-  if(bBonded) {
+  if (bBonded) {
     bFoundA = default_params(ftype,bondtype,at,atype,&param,FALSE,&param_def);
     if (bFoundA) {
       /* Copy the A-state and B-state default parameters */
@@ -1212,10 +1228,23 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
       for(j=NRFPA(ftype); (j<NRFP(ftype)); j++)
 	param.c[j] = param_def->c[j];
     }
+  } else if (ftype == F_LJ14) {
+    bFoundA = default_nb_params(ftype, bondtype,at,&param,0,FALSE,bGenPairs);
+    bFoundB = default_nb_params(ftype, bondtype,at,&param,0,TRUE, bGenPairs);
+  } else if (ftype == F_LJC14_Q) {
+    param.c[0] = fudgeQQ;
+    /* Fill in the A-state charges as default parameters */
+    param.c[1] = at->atom[param.a[0]].q;
+    param.c[2] = at->atom[param.a[1]].q;
+    /* The default LJ parameters are the standard 1-4 parameters */
+    bFoundA = default_nb_params(F_LJ14,bondtype,at,&param,3,FALSE,bGenPairs);
+    bFoundB = TRUE;
+  } else if (ftype == F_LJC_PAIRS_NB) {
+    /* Defaults are not supported here */
+    bFoundA = FALSE;
+    bFoundB = TRUE;
   } else {
-    bFoundA = default_nb_params(ftype == F_LJC14_A ? F_LJ14 : ftype,
-				bondtype,at,&param,FALSE,bGenPairs);
-    bFoundB = default_nb_params(ftype,bondtype,at,&param,TRUE,bGenPairs);
+    gmx_incons("Unknown function type in push_bond");
   }
   
   if (nread > nral) {  
@@ -1251,9 +1280,11 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
     /* If nread was 0 or EOF, no parameters were read => use defaults.
      * If nread was nrfpA we copied above so nread=nrfp.
      * If nread was nrfp we are cool.
+     * For F_LJC14_Q we allow supplying fudgeQQ only.
      * Anything else is an error!
      */	
-    if ((nread != 0) && (nread != EOF) && (nread != NRFP(ftype)))
+    if ((nread != 0) && (nread != EOF) && (nread != NRFP(ftype)) &&
+	!(ftype == F_LJC14_Q && nread == 1))
       {
 	gmx_fatal(FARGS,"Incorrect number of parameters - found %d, expected %d or %d for %s.",
 		  nread,NRFPA(ftype),NRFP(ftype),
@@ -1449,7 +1480,7 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
 }
 
 void push_mol(int nrmols,t_molinfo mols[],char *pline,int *whichmol,
-		  int *nrcopies)
+	      int *nrcopies)
 {
   int  i,copies;
   char type[STRLEN];
@@ -1606,3 +1637,139 @@ void merge_excl(t_blocka *excl, t_block2 *b2)
   b2_to_b(b2,excl);
 }
 
+int add_atomtype_decoupled(t_symtab *symtab,t_atomtype at,
+			   t_nbparam ***nbparam,t_nbparam ***pair)
+{
+  t_atom  atom;
+  t_param param;
+  int     i,nr;
+
+  /* Define an atom type with all parameters set to zero (no interactions) */
+  atom.q = 0.0;
+  atom.m = 0.0;
+  /* Type for decoupled atoms could be anything,
+   * this should be changed automatically later when required.
+   */
+  atom.ptype = eptAtom;
+  for (i=0; (i<MAXFORCEPARAM); i++)
+    param.c[i] = 0.0;
+
+  nr = add_atomtype(at,symtab,&atom,"decoupled",&param,-1,0.0,0.0,0.0,0);
+
+  /* Add space in the non-bonded parameters matrix */
+  realloc_nb_params(at,nbparam,pair);
+
+  return nr;
+}
+
+static void convert_pairs_to_pairsQ(t_params *plist,
+				    real fudgeQQ,t_atoms *atoms)
+{
+  t_param *param;
+  int  i;
+  real v,w;
+
+  /* Copy the pair list to the pairQ list */
+  plist[F_LJC14_Q] = plist[F_LJ14];
+  /* Empty the pair list */
+  plist[F_LJ14].nr    = 0;
+  plist[F_LJ14].param = NULL;
+  param = plist[F_LJC14_Q].param;
+  for(i=0; i<plist[F_LJC14_Q].nr; i++) {
+    v = param[i].c[0];
+    w = param[i].c[1];
+    param[i].c[0] = fudgeQQ;
+    param[i].c[1] = atoms->atom[param[i].a[0]].q;
+    param[i].c[2] = atoms->atom[param[i].a[1]].q;
+    param[i].c[3] = v;
+    param[i].c[4] = w;
+  }
+}
+
+static void generate_LJCpairsNB(t_molinfo *mol,int nb_funct,t_params *nbp)
+{
+  int n,ntype,i,j,k;
+  t_atom *atom;
+  t_blocka *excl;
+  bool bExcl;
+  t_param param;
+
+  n = mol->atoms.nr;
+  atom = mol->atoms.atom;
+  
+  ntype = sqrt(nbp->nr);
+
+  for (i=0; i<MAXATOMLIST; i++) 
+    param.a[i] = NOTSET;
+  for (i=0; i<MAXFORCEPARAM; i++) 
+    param.c[i] = NOTSET;
+
+  /* Add a pair interaction for all non-excluded atom pairs */
+  excl = &mol->excls;
+  for(i=0; i<n; i++) {
+    for(j=i+1; j<n; j++) {
+      bExcl = FALSE;
+      for(k=excl->index[i]; k<excl->index[i+1]; k++) {
+	if (excl->a[k] == j)
+	  bExcl = TRUE;
+      }
+      if (!bExcl) {
+	if (nb_funct != F_LJ)
+	  gmx_fatal(FARGS,"Can only generate non-bonded pair interactions for Van der Waals type Lennard-Jones");
+	param.a[0] = i;
+	param.a[1] = j;
+	param.c[0] = atom[i].q;
+	param.c[1] = atom[j].q;
+	param.c[2] = nbp->param[ntype*atom[i].type+atom[j].type].c[0];
+	param.c[3] = nbp->param[ntype*atom[i].type+atom[j].type].c[1];
+	push_bondnow(&mol->plist[F_LJC_PAIRS_NB],&param);
+      }
+    }
+  }
+}
+
+static void set_excl_all(t_blocka *excl)
+{
+  int nat,i,j,k;
+
+  /* Get rid of the current exclusions and exclude all atom pairs */
+  nat = excl->nr;
+  excl->nra = nat*nat;
+  srenew(excl->a,excl->nra);
+  k = 0;
+  for(i=0; i<nat; i++) {
+    excl->index[i] = k;
+    for(j=0; j<nat; j++)
+      excl->a[k++] = j;
+  }
+  excl->index[nat] = k;
+}
+
+static void decouple_atoms(t_atoms *atoms,int atomtype_decouple,
+			   int couple_lam0,int couple_lam1)
+{
+  int i;
+
+  for(i=0; i<atoms->nr; i++) {
+    if (couple_lam0 != ecouplamVDWQ)
+      atoms->atom[i].q     = 0.0;
+    if (couple_lam0 == ecouplamNONE)
+      atoms->atom[i].type  = atomtype_decouple;
+    if (couple_lam1 != ecouplamVDWQ)
+      atoms->atom[i].qB    = 0.0;
+    if (couple_lam1 == ecouplamNONE)
+      atoms->atom[i].typeB = atomtype_decouple;
+  }
+}
+
+void convert_moltype_couple(t_molinfo *mol,int atomtype_decouple,real fudgeQQ,
+			    int couple_lam0,int couple_lam1,
+			    bool bCoupleIntra,int nb_funct,t_params *nbp)
+{
+  convert_pairs_to_pairsQ(mol->plist,fudgeQQ,&mol->atoms);
+  if (!bCoupleIntra) {
+    generate_LJCpairsNB(mol,nb_funct,nbp);
+    set_excl_all(&mol->excls);
+  }
+  decouple_atoms(&mol->atoms,atomtype_decouple,couple_lam0,couple_lam1);
+}

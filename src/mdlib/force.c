@@ -1030,7 +1030,7 @@ void init_forcerec(FILE *fp,
   /* Electrostatics */
   fr->epsilon_r  = ir->epsilon_r;
   fr->epsilon_rf = ir->epsilon_rf;
-  fr->fudgeQQ    = ir->fudgeQQ;
+  fr->fudgeQQ    = idef->fudgeQQ;
   fr->rcoulomb_switch = ir->rcoulomb_switch;
   fr->rcoulomb        = ir->rcoulomb;
 
@@ -1204,8 +1204,8 @@ void init_forcerec(FILE *fp,
 
   bTab = fr->bcoultab || fr->bvdwtab;
   bSep14tab = ((top->idef.il[F_LJ14].nr > 0 ||
-		top->idef.il[F_LJC14_A].nr > 0 ||
-		top->idef.il[F_LJC_PAIRS_A].nr > 0) &&
+		top->idef.il[F_LJC14_Q].nr > 0 ||
+		top->idef.il[F_LJC_PAIRS_NB].nr > 0) &&
 	       (!bTab || fr->eeltype!=eelCUT || fr->vdwtype!=evdwCUT));
   
   negp_pp = ir->opts.ngener - ir->nwall;

@@ -94,13 +94,11 @@ int ifunc_index(directive d,int type)
     if (type == 1 || (d == d_pairtypes && type == 2))
       return F_LJ14;
     else if (type == 2)
-      return F_LJC14_A;
-    else if (type == 3) {
-      if (d == d_pairtypes)
-	gmx_fatal(FARGS,"Can not have parameters for pair type %d",type);
-      return F_LJC_PAIRS_A;
-    } else
-      gmx_fatal(FARGS,"Invalid pair type %d",type);
+      return F_LJC14_Q;
+    else
+      gmx_fatal(FARGS,"Invalid pairs type %d",type);
+  case d_pairs_nb:
+    return F_LJC_PAIRS_NB;
   case d_dihedrals:
   case d_dihedraltypes:
     switch (type) {
@@ -264,6 +262,7 @@ void DS_Init(DirStack **DS)
     set_nec(&(necessary[d_bonds]),d_atoms,d_none);
     set_nec(&(necessary[d_exclusions]),d_bonds,d_constraints,d_settles,d_none);
     set_nec(&(necessary[d_pairs]),d_atoms,d_none);
+    set_nec(&(necessary[d_pairs_nb]),d_atoms,d_none);
     set_nec(&(necessary[d_angles]),d_atoms,d_none);
     set_nec(&(necessary[d_polarization]),d_atoms,d_none);
     set_nec(&(necessary[d_water_polarization]),d_atoms,d_none);

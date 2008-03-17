@@ -527,7 +527,7 @@ do_nonbonded14(int ftype,int nbonds,
     rvec      dx,x14[2],f14[2];
     int       i,ai,aj,itype;
     int       typeA[2]={0,0},typeB[2]={0,1};
-    real      chargeA[2],chargeB[2];
+    real      chargeA[2]={0,0},chargeB[2];
     int       gid,shift_vir,shift_f;
     int       j_index[] = { 0, 1 };
     int       i0=0,i1=1,i2=2;
@@ -536,7 +536,7 @@ do_nonbonded14(int ftype,int nbonds,
     int       nthreads = 1;
     int       count;
     real      krf,crf,tabscale;
-    int       ntype;
+    int       ntype=0;
     real      *nbfp=NULL;
     real      *egnb=NULL,*egcoul=NULL;
     t_nblist  tmplist;
@@ -558,16 +558,15 @@ do_nonbonded14(int ftype,int nbonds,
 
     switch (ftype) {
     case F_LJ14:
-    case F_LJC14_A:
-      ntype = 1;
+    case F_LJC14_Q:
       eps = fr->epsfac*fr->fudgeQQ;
+      ntype  = 1;
       egnb   = gener->ee[egLJ14];
       egcoul = gener->ee[egCOUL14];
       break;
-    case F_LJC_PAIRS_A:
-      ntype = fr->ntype;
-      nbfp = fr->nbfp;
+    case F_LJC_PAIRS_NB:
       eps = fr->epsfac;
+      ntype  = 1;
       egnb   = gener->ee[egLJSR];
       egcoul = gener->ee[egCOULSR];
       break;
@@ -581,7 +580,7 @@ do_nonbonded14(int ftype,int nbonds,
 
     krf = fr->k_rf;
     crf = fr->c_rf;
-    
+
     /* Determine the values for icoul/ivdw. */
     if (fr->bEwald) {
       icoul = 1;
@@ -632,13 +631,20 @@ do_nonbonded14(int ftype,int nbonds,
 	     ((md->nPerturbed && (md->bPerturbed[ai] || md->bPerturbed[aj])) ||
 	      iparams[itype].lj14.c6A != iparams[itype].lj14.c6B ||
 	      iparams[itype].lj14.c12A != iparams[itype].lj14.c12B));
-	case F_LJC14_A:
+	  chargeA[0] = md->chargeA[ai];
+	  chargeA[1] = md->chargeA[aj];
 	  nbfp = (real *)&(iparams[itype].lj14.c6A);
 	  break;
-	case F_LJC_PAIRS_A:
-	  /* We could also consider doing these with the real atom numbers */
-	  typeA[0] = md->typeA[ai];
-	  typeA[1] = md->typeA[aj];
+	case F_LJC14_Q:
+	  eps = fr->epsfac*iparams[itype].ljc14.fqq;
+	  chargeA[0] = iparams[itype].ljc14.qi;
+	  chargeA[1] = iparams[itype].ljc14.qj;
+	  nbfp = (real *)&(iparams[itype].ljc14.c6);
+	  break;
+	case F_LJC_PAIRS_NB:
+	  chargeA[0] = iparams[itype].ljcnb.qi;
+	  chargeA[1] = iparams[itype].ljcnb.qj;
+ 	  nbfp = (real *)&(iparams[itype].ljcnb.c6);
 	  break;
 	}
 
@@ -675,8 +681,6 @@ do_nonbonded14(int ftype,int nbonds,
         }
         else 
         {
-            chargeA[0] = md->chargeA[ai];
-            chargeA[1] = md->chargeA[aj];
             copy_rvec(x[ai],x14[0]);
             copy_rvec(x[aj],x14[1]);
             clear_rvec(f14[0]);
@@ -720,7 +724,7 @@ do_nonbonded14(int ftype,int nbonds,
                                           eps,
                                           krf,
                                           crf,
-										  fr->ewaldcoeff,
+					  fr->ewaldcoeff,
                                           egcoul,
                                           typeA,
                                           typeB,
@@ -732,7 +736,7 @@ do_nonbonded14(int ftype,int nbonds,
                                           lambda,
                                           dvdlambda,
                                           fr->sc_alpha,
-										  fr->sc_power,
+					  fr->sc_power,
                                           fr->sc_sigma6,
                                           &outeriter,
                                           &inneriter);

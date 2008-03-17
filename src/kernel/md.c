@@ -960,7 +960,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bNEMD,bDoBerendsenCoupl,bFirstStep,pres);
       if (fr->bSepDVDL && fplog && do_log)
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
-      ener[F_DVDL] += dvdl;
+      ener[F_DGDL_CON] += dvdl;
       wallcycle_stop(wcycle,ewcUPDATE);
     } else if (graph) {
       /* Need to unshift here */
@@ -1107,7 +1107,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Sum the kinetic energies of the groups & calc temp */
     ener[F_TEMP] = sum_ekin(bRerunMD,&(ir->opts),grps,ekin,
-			    &(ener[F_DVDLKIN]));
+			    &(ener[F_DKDL]));
     ener[F_EKIN] = trace(ekin);
 
     /* Calculate Temperature coupling parameters lambda and adjust

@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 53;
+static const int tpx_version = 54;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -74,7 +74,7 @@ static const int tpx_version = 53;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 15;
+static const int tpx_generation = 16;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -132,8 +132,8 @@ static const t_ftupd ftupd[] = {
   { 26, F_FOURDIHS          },
   { 26, F_PIDIHS            },
   { 43, F_TABDIHS           },
-  { 41, F_LJC14_A           },
-  { 41, F_LJC_PAIRS_A       },
+  { 41, F_LJC14_Q           },
+  { 41, F_LJC_PAIRS_NB      },
   { 32, F_BHAM_LR           },
   { 32, F_RF_EXCL           },
   { 32, F_COUL_RECIP        },
@@ -149,7 +149,8 @@ static const t_ftupd ftupd[] = {
   { 50, F_VSITEN            },
   { 46, F_COM_PULL          },
   { 20, F_EQM               },
-  { 46, F_ECONSERVED        }
+  { 46, F_ECONSERVED        },
+  { 54, F_DGDL_CON          }
 };
 #define NFTUPD asize(ftupd)
 
@@ -231,7 +232,8 @@ static void do_pull(t_pull *pull,bool bRead, int file_version)
     do_pullgrp(&pull->grp[g],bRead,file_version);
 }
 
-static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
+static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
+			real *fudgeQQ)
 {
   int  i,j,k,*tmp,idum=0; 
   bool bDum=TRUE;
@@ -457,7 +459,8 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version)
       do_real(rdum); 
 
     do_real(ir->shake_tol);
-    do_real(ir->fudgeQQ);
+    if (file_version < 54)
+      do_real(*fudgeQQ);
     do_int(ir->efep);
     if (file_version <= 14 && ir->efep > efepNO)
       ir->efep = efepYES;
@@ -834,11 +837,18 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     do_real(iparams->lj14.c6B);
     do_real(iparams->lj14.c12B);
     break;
-  case F_LJC14_A:
-    do_real(iparams->lj14.c6A);
-    do_real(iparams->lj14.c12A);
+  case F_LJC14_Q:
+    do_real(iparams->ljc14.fqq);
+    do_real(iparams->ljc14.qi);
+    do_real(iparams->ljc14.qj);
+    do_real(iparams->ljc14.c6);
+    do_real(iparams->ljc14.c12);
     break;
-  case F_LJC_PAIRS_A:
+  case F_LJC_PAIRS_NB:
+    do_real(iparams->ljcnb.qi);
+    do_real(iparams->ljcnb.qj);
+    do_real(iparams->ljcnb.c6);
+    do_real(iparams->ljcnb.c12);
     break;
   case F_PDIHS:
   case F_PIDIHS:
@@ -1004,6 +1014,8 @@ static void do_idef(t_idef *idef,bool bRead, int file_version)
     if (bRead && debug)
       pr_iparams(debug,idef->functype[i],&idef->iparams[i]);
   }
+  if (file_version >= 54)
+    do_real(idef->fudgeQQ);
   
   for(j=0; (j<F_NRE); j++) {
     bClear = FALSE;
@@ -1488,12 +1500,12 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
     do_section(eitemIR,bRead);
     if (tpx.bIr) {
       if (ir) {
-	do_inputrec(ir,bRead,file_version);
+	do_inputrec(ir,bRead,file_version,top ? &top->idef.fudgeQQ : NULL);
 	if (bRead && debug) 
 	  pr_inputrec(debug,0,"inputrec",ir,FALSE);
       }
       else {
-	do_inputrec  (&dum_ir,bRead,file_version);
+	do_inputrec(&dum_ir,bRead,file_version,top ? &top->idef.fudgeQQ :NULL);
 	if (bRead && debug) 
 	  pr_inputrec(debug,0,"inputrec",&dum_ir,FALSE);
 	done_inputrec(&dum_ir);
@@ -1561,7 +1573,7 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
 	do_int(bPeriodicMols);
       }
       if (file_generation <= tpx_generation && ir) {
-	do_inputrec(ir,bRead,file_version);
+	do_inputrec(ir,bRead,file_version,top ? &top->idef.fudgeQQ : NULL);
 	if (bRead && debug) 
 	  pr_inputrec(debug,0,"inputrec",ir,FALSE);
 	if (file_version < 51)

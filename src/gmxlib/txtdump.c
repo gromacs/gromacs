@@ -513,7 +513,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("gb_saltconc",ir->gb_saltconc);
     PS("implicit_solvent",EIMPLICITSOL(ir->implicit_solvent));
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
-    PR("fudgeQQ",ir->fudgeQQ);
     PS("free_energy",EFEPTYPE(ir->efep));
     PR("init_lambda",ir->init_lambda);
     PR("sc_alpha",ir->sc_alpha);
@@ -679,12 +678,16 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 	    iparams->lj14.c6A,iparams->lj14.c12A,
 	    iparams->lj14.c6B,iparams->lj14.c12B);
     break;
-  case F_LJC14_A:
-    fprintf(fp,"c6=%15.8e, c12=%15.8e\n",
-	    iparams->lj14.c6A,iparams->lj14.c12A);
+  case F_LJC14_Q:
+    fprintf(fp,"fqq=%15.8e, qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
+	    iparams->ljc14.fqq,
+	    iparams->ljc14.qi,iparams->ljc14.qj,
+	    iparams->ljc14.c6,iparams->ljc14.c12);
     break;
-  case F_LJC_PAIRS_A:
-    fprintf(fp,"\n");
+  case F_LJC_PAIRS_NB:
+    fprintf(fp,"qi=%15.8e, qj=%15.8e, c6=%15.8e, c12=%15.8e\n",
+	    iparams->ljcnb.qi,iparams->ljcnb.qj,
+	    iparams->ljcnb.c6,iparams->ljcnb.c12);
     break;
   case F_PDIHS:
   case F_ANGRES:
@@ -839,6 +842,8 @@ void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbe
 		     interaction_function[idef->functype[i]].name);
       pr_iparams(fp,idef->functype[i],&idef->iparams[i]);
     }
+    (void) pr_real(fp,indent,"fudgeQQ",idef->fudgeQQ);
+
     for(j=0; (j<F_NRE); j++)
       pr_ilist(fp,indent,interaction_function[j].longname,
 	       idef,&idef->il[j],bShowNumbers);

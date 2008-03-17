@@ -71,6 +71,23 @@ static int round_check(real r,int limit,int ftype,char *name)
   return i;
 }
 
+static void set_ljparams(int comb,real reppow,real v,real w,real *c6,real *c12)
+{
+  if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {
+    if (v >= 0) {
+      *c6  = 4*w*pow(v,6.0);
+      *c12 = 4*w*pow(v,reppow);
+    } else {
+      /* Interpret negative sigma as c6=0 and c12 with -sigma */
+      *c6  = 0;
+      *c12 = 4*w*pow(-v,reppow);
+    }
+  } else {
+    *c6  = v;
+    *c12 = w;
+  }
+}
+
 static void assign_param(t_functype ftype,t_iparams *new,
 			 real old[MAXFORCEPARAM],int comb,real reppow)
 {
@@ -176,48 +193,22 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->bham.c = old[2];
     break;
   case F_LJ14:
-  case F_LJC14_A:
-    if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {
-      if (old[0] >= 0) {
-	new->lj14.c6A  = 4*old[1]*pow(old[0],6.0);
-	new->lj14.c12A = 4*old[1]*pow(old[0],reppow);
-      } else {
-	new->lj14.c6A  = 0;
-	new->lj14.c12A = 4*old[1]*pow(-old[0],reppow);
-      }
-      if (ftype == F_LJ14) {
-	if (old[2] >= 0) {
-	  new->lj14.c6B  = 4*old[3]*pow(old[2],6.0);
-	  new->lj14.c12B = 4*old[3]*pow(old[2],reppow);
-	} else {
-	  new->lj14.c6B  = 0;
-	  new->lj14.c12B = 4*old[3]*pow(-old[2],reppow);
-	}
-      }
-    } else {
-      new->lj14.c6A  = old[0]; 
-      new->lj14.c12A = old[1];
-      if (ftype == F_LJ14) {
-	new->lj14.c6B  = old[2]; 
-	new->lj14.c12B = old[3];
-      }
-    }
+    set_ljparams(comb,reppow,old[0],old[1],&new->lj14.c6A,&new->lj14.c12A);
+    set_ljparams(comb,reppow,old[2],old[3],&new->lj14.c6B,&new->lj14.c12B);
     break;
-  case F_LJC_PAIRS_A:
+  case F_LJC14_Q:
+    new->ljc14.fqq = old[0];
+    new->ljc14.qi  = old[1];
+    new->ljc14.qj  = old[2];
+    set_ljparams(comb,reppow,old[3],old[4],&new->ljc14.c6,&new->ljc14.c12);
+    break;
+  case F_LJC_PAIRS_NB:
+    new->ljcnb.qi = old[0];
+    new->ljcnb.qj = old[1];
+    set_ljparams(comb,reppow,old[2],old[3],&new->ljcnb.c6,&new->ljcnb.c12);
     break;
   case F_LJ:
-    if (comb == eCOMB_ARITHMETIC || comb == eCOMB_GEOM_SIG_EPS) {
-      if (old[0] >= 0) {
-	new->lj.c6  = 4*old[1]*pow(old[0],6);
-	new->lj.c12 = 4*old[1]*pow(old[0],reppow);
-      } else {
-	new->lj.c6  = 0;
-	new->lj.c12 = 4*old[1]*pow(-old[0],reppow);
-      }
-    } else {
-      new->lj.c6  = old[0]; 
-      new->lj.c12 = old[1];
-    }
+    set_ljparams(comb,reppow,old[0],old[1],&new->lj.c6,&new->lj.c12);
     break;
   case F_PDIHS:
   case F_ANGRES:
@@ -410,7 +401,8 @@ static void new_interaction_list(t_ilist *ilist)
 }
 
 void convert_params(int atnr,t_params nbtypes[],
-		    t_params plist[],int comb,real reppow,t_idef *idef)
+		    t_params plist[],int comb,real reppow,real fudgeQQ,
+		    t_idef *idef)
 {
   int    i,j,maxtypes;
   unsigned long  flags;
@@ -448,4 +440,5 @@ void convert_params(int atnr,t_params nbtypes[],
       printf("# %10s:   %d\n",
 	     interaction_function[j].name,idef->il[j].nr/(1+NRAL(j)));
   }
+  idef->fudgeQQ = fudgeQQ;
 }

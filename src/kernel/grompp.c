@@ -194,7 +194,8 @@ new_status(char *topfile,char *topppfile,char *confin,
 	   t_gromppopts *opts,t_inputrec *ir,bool bZero,
 	   bool bGenVel,bool bVerbose,t_state *state,
 	   t_atomtype atype,t_topology *sys,
-	   t_molinfo *msys,t_params plist[],int *comb,real *reppow,
+	   t_molinfo *msys,t_params plist[],
+	   int *comb,real *reppow,real *fudgeQQ,
 	   bool bEnsemble,bool bMorse,
 	   int *nerror)
 {
@@ -209,7 +210,8 @@ new_status(char *topfile,char *topppfile,char *confin,
   
   /* TOPOLOGY processing */
   msys->name=do_top(bVerbose,topfile,topppfile,opts,bZero,&(sys->symtab),
-		    plist,comb,reppow,atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
+		    plist,comb,reppow,fudgeQQ,
+		    atype,&nrmols,&molinfo,ir,&Nsim,&Sims);
   
   if (bMorse)
     convert_harmonics(nrmols,molinfo,atype);
@@ -570,7 +572,7 @@ int main (int argc, char *argv[])
   t_params     *plist;
   t_state      state;
   matrix       box;
-  real         max_spacing,reppow;
+  real         max_spacing,reppow,fudgeQQ;
   char         fn[STRLEN],fnB[STRLEN],*mdparin;
   int          nerror,ntype;
   bool         bNeedVel,bGenVel;
@@ -655,7 +657,7 @@ int main (int argc, char *argv[])
     gmx_fatal(FARGS,"%s does not exist",fn);
   new_status(fn,opt2fn_null("-pp",NFILE,fnm),opt2fn("-c",NFILE,fnm),
 	     opts,ir,bZero,bGenVel,bVerbose,&state,
-	     atype,sys,&msys,plist,&comb,&reppow,
+	     atype,sys,&msys,plist,&comb,&reppow,&fudgeQQ,
 	     (opts->eDisre==edrEnsemble),opts->bMorse,
 	     &nerror);
   
@@ -767,7 +769,7 @@ int main (int argc, char *argv[])
 
   if (bVerbose) 
     fprintf(stderr,"converting bonded parameters...\n");
-  convert_params(ntype, plist, msys.plist, comb, reppow, &sys->idef);
+  convert_params(ntype, plist, msys.plist, comb, reppow, fudgeQQ, &sys->idef);
   
   if (debug)
     pr_symtab(debug,0,"After convert_params",&sys->symtab);

@@ -86,7 +86,6 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype at,int nshake)
   int          nb,b,i,j,ftype,ftype_a;
   bool         bFound;
   
-  p.type = DEF_PARAM_TYPE;
   if (nshake != eshNONE) {
     switch (nshake) {
     case eshHBONDS:

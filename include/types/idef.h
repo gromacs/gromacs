@@ -76,8 +76,8 @@ enum {
   F_TABDIHS,
   F_LJ14,
   F_COUL14,
-  F_LJC14_A,
-  F_LJC_PAIRS_A,
+  F_LJC14_Q,
+  F_LJC_PAIRS_NB,
   F_LJ,
   F_BHAM,
   F_LJ_LR,
@@ -120,7 +120,8 @@ enum {
   F_TEMP,
   F_PRES,
   F_DVDL,
-  F_DVDLKIN,
+  F_DKDL,
+  F_DGDL_CON,
   F_NRE		/* This number is for the total number of energies	*/
 };
   
@@ -146,6 +147,8 @@ typedef union
   struct {real a,alpha1,alpha2,rfac;                       } thole;
   struct {real c6,c12;				           } lj;
   struct {real c6A,c12A,c6B,c12B;		           } lj14;
+  struct {real fqq,qi,qj,c6,c12;	                   } ljc14;
+  struct {real qi,qj,c6,c12;		                   } ljcnb;
   /* Proper dihedrals can not have different multiplicity when
    * doing free energy calculations, because the potential would not
    * be periodic anymore.
@@ -204,6 +207,7 @@ typedef struct
   int atnr;
   t_functype *functype;
   t_iparams  *iparams;
+  real fudgeQQ;
 
   t_ilist il[F_NRE];
 } t_idef;

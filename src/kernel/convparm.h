@@ -41,6 +41,7 @@
 
 extern void convert_params(int atnr,t_params plist[],
 			   t_params nbtypes[],int comb,real reppow,
+			   real fudgeQQ,
 			   t_idef *idef);
 
 #endif	/* _convparm_h */

@@ -71,7 +71,7 @@
 static char tcgrps[STRLEN],tau_t[STRLEN],ref_t[STRLEN],
   acc[STRLEN],accgrps[STRLEN],freeze[STRLEN],frdim[STRLEN],
   energy[STRLEN],user1[STRLEN],user2[STRLEN],vcm[STRLEN],xtc_grps[STRLEN],
-  orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
+  couple_moltype[STRLEN],orirefitgrp[STRLEN],egptable[STRLEN],egpexcl[STRLEN],
   wall_atomtype[STRLEN],wall_density[STRLEN],deform[STRLEN],QMMM[STRLEN];
 static char **pull_grp;
 static char anneal[STRLEN],anneal_npoints[STRLEN],
@@ -756,6 +756,10 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("sc-alpha",ir->sc_alpha,0.0);
   ITYPE ("sc-power",ir->sc_power,0);
   RTYPE ("sc-sigma",ir->sc_sigma,0.3);
+  STYPE ("couple-moltype",  couple_moltype,  NULL);
+  EETYPE("couple-lambda0", opts->couple_lam0, couple_lam, nerror, TRUE);
+  EETYPE("couple-lambda1", opts->couple_lam1, couple_lam, nerror, TRUE);
+  EETYPE("couple-intramol", opts->bCoupleIntra, yesno_names, nerror, TRUE);
 
   /* Non-equilibrium MD stuff */  
   CCTYPE("Non-equilibrium MD stuff");
@@ -863,6 +867,19 @@ void get_ir(char *mdparin,char *mdparout,
   
   if (ir->comm_mode == ecmNO)
     ir->nstcomm = 0;
+
+  opts->couple_moltype = NULL;
+  if (strlen(couple_moltype) > 0) {
+    if (ir->efep != efepNO) {
+      opts->couple_moltype = strdup(couple_moltype);
+      if (opts->couple_lam0 == opts->couple_lam1)
+	warning("The lambda=0 and lambda=1 states for coupling are identical");
+      if (ir->eI == eiMD)
+	warning("For proper sampling with coupling, stochastic dynamics should be used");
+    } else {
+      warning("Can not couple a molecule with free_energy = no");
+    }
+  }
 
   do_wall_params(ir,wall_atomtype,wall_density,opts);
   

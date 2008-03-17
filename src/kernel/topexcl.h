@@ -78,4 +78,5 @@ extern void generate_excl (int nrexcl, int nratoms,
 /* Generate an exclusion block from bonds and constraints in
  * plist.
  */
+
 #endif	/* _topexcl_h */

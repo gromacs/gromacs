@@ -173,8 +173,9 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
   /* Normal potential energy components */
   for(i=0; (i<=F_EPOT); i++)
     epot[i] = 0.0;
-  epot[F_DVDL]    = 0.0;
-  epot[F_DVDLKIN] = 0.0;
+  epot[F_DVDL]     = 0.0;
+  epot[F_DKDL]     = 0.0;
+  epot[F_DGDL_CON] = 0.0;
 }
 
 /* 

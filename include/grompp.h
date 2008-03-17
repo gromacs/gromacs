@@ -55,9 +55,7 @@ typedef struct {
  * non-bonded parameter combinations, which will be copied to t_params.
  */
 
-#define DEF_PARAM_TYPE NOTSET
 typedef struct {
-  t_functype type;
   atom_id    a[MAXATOMLIST];	/* The atom list (eg. bonds: particle	*/
 				/* i = a[0] (AI), j = a[1] (AJ))	*/
   real 	     c[MAXFORCEPARAM];	/* Force parameters (eg. b0 = c[0])	*/
@@ -105,6 +103,7 @@ typedef enum {
   d_bonds,
   d_exclusions,
   d_pairs,
+  d_pairs_nb,
   d_angles,
   d_dihedrals,
   d_constraints,
@@ -144,6 +143,7 @@ static char *ds[d_maxdir+1] = {
   "bonds",
   "exclusions",
   "pairs",
+  "pairs_nb",
   "angles",
   "dihedrals",
   "constraints",
