@@ -24,6 +24,7 @@
 #include "mdrun.h"
 #include "nsgrid.h"
 #include "shellfc.h"
+#include "calcgrid.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
