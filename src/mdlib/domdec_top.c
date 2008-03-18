@@ -332,7 +332,7 @@ void dd_make_reverse_top(FILE *fplog,
   }
 
   if (top->idef.il[F_CONSTR].nr > 0) {
-    init_domdec_constraints(dd,natoms,&top->idef,constr);
+    init_domdec_constraints(dd,natoms,top,constr);
   }
   if (fplog)
     fprintf(fplog,"\n");

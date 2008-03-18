@@ -57,7 +57,6 @@
 typedef struct gmx_constr {
   int             nflexcon;     /* The number of flexible constraints */
   t_blocka        at2con;       /* A list of atoms to constraints     */
-  bool            bInterCGcons; /* Are there inter charge-group con's */
   gmx_lincsdata_t lincsd;       /* LINCS data                         */
   int             nblocks;      /* The number of SHAKE blocks         */
   int             *sblock;      /* The SHAKE blocks                   */
@@ -524,30 +523,6 @@ void set_constraints(struct gmx_constr *constr,
   }
 }
 
-static bool interCGconstraints(t_block *cgs,t_blocka *at2con,t_iatom *iatoms)
-{
-  bool bInterCGConstraints;
-  int  cg,a0,a1,a,c,a2;
-
-  bInterCGConstraints = FALSE;
-  for(cg=0; cg<cgs->nr && !bInterCGConstraints; cg++) {
-    a0 = cgs->index[cg];
-    a1 = cgs->index[cg+1];
-    for(a=a0; a<a1; a++) {
-      for(c=at2con->index[a]; c<at2con->index[a+1]; c++) {
-	/* Single all constraints are stored for both atoms
-	 * we only need to check the second atom.
-	 */
-	a2 = iatoms[3*at2con->a[c]+2];
-	if (a2 < a0 || a2 >= a1)
-	  bInterCGConstraints = TRUE;
-      }
-    }
-  }
-
-  return bInterCGConstraints;
-}
-
 static t_blocka make_at2con(int start,int natoms,t_idef *idef,
 			    bool bDynamics,int *nflexiblecons)
 {
@@ -741,12 +716,6 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
       constr->at2con = make_at2con(start,natoms,&top->idef,
 				   EI_DYNAMICS(ir->eI),&constr->nflexcon);
 
-      if (DOMAINDECOMP(cr)) {
-	constr->bInterCGcons =
-	  interCGconstraints(&top->cgs,&constr->at2con,
-			     top->idef.il[F_CONSTR].iatoms);
-      }
-
       if (PARTDECOMP(cr))
 	gmx_sumi(1,&constr->nflexcon,cr);
       
@@ -770,12 +739,12 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
       if (ir->eConstrAlg == estLINCS) {
 	constr->lincsd = init_lincs(fplog,&top->idef,
 				    constr->nflexcon,&constr->at2con,
-				    DOMAINDECOMP(cr) && constr->bInterCGcons,
+				    DOMAINDECOMP(cr) && cr->dd->bInterCGcons,
 				    ir->nLincsIter,ir->nProjOrder);
       }
       
       if (ir->eConstrAlg == estSHAKE) {
-	if (DOMAINDECOMP(cr) && constr->bInterCGcons)
+	if (DOMAINDECOMP(cr) && cr->dd->bInterCGcons)
 	  gmx_fatal(FARGS,"SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
 
 	if (constr->nflexcon)
@@ -829,7 +798,31 @@ t_blocka *atom2constraints(gmx_constr_t constr)
   return &constr->at2con;
 }
 
-bool inter_charge_group_constraints(gmx_constr_t constr)
+bool inter_charge_group_constraints(t_topology *top)
 {
-  return constr->bInterCGcons;
+  t_ilist *il;
+  t_block *cgs;
+  int  nat,*at2cg,cg,a,i;
+  bool bInterCG;
+
+  il = &top->idef.il[F_CONSTR];
+
+  if (il->nr == 0)
+    return FALSE;
+
+  nat = top->atoms.nr;
+  cgs = &top->cgs;
+  snew(at2cg,nat);
+  for(cg=0; cg<cgs->nr; cg++) {
+    for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++)
+      at2cg[a] = cg;
+  }
+  bInterCG = FALSE;
+  for(i=0; i<il->nr && !bInterCG; i+=3) {
+    if (at2cg[il->iatoms[i+1]] != at2cg[il->iatoms[i+2]])
+      bInterCG = TRUE;
+  }
+  sfree(at2cg);
+
+  return bInterCG;
 }

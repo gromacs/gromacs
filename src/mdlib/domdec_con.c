@@ -693,10 +693,11 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
 }
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-			     int natoms,t_idef *idef,
+			     int natoms,t_topology *top,
 			     gmx_constr_t constr)
 {
   gmx_domdec_constraints_t *dc;
+  t_ilist *il;
   int c,a;
 
   if (debug)
@@ -705,17 +706,18 @@ void init_domdec_constraints(gmx_domdec_t *dd,
   snew(dd->constraints,1);
   dc = dd->constraints;
 
-  dc->iatoms = idef->il[F_CONSTR].iatoms;
+  il = &top->idef.il[F_CONSTR];
+  dc->iatoms = il->iatoms;
 
-  snew(dc->gc2lc,idef->il[F_CONSTR].nr/3);
-  for(c=0; c<idef->il[F_CONSTR].nr/3; c++)
+  snew(dc->gc2lc,il->nr/3);
+  for(c=0; c<il->nr/3; c++)
     dc->gc2lc[c] = -1;
 
   snew(dc->ga2la,natoms);
   for(a=0; a<natoms; a++)
     dc->ga2la[a] = -1;
   
-  if (inter_charge_group_constraints(constr))
+  if (inter_charge_group_constraints(top))
     snew(dd->constraint_comm,1);
 }
 

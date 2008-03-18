@@ -37,11 +37,35 @@
 #include <config.h>
 #endif
 
-real calc_grid(FILE *fp,
-	       matrix box,real gr_sp,int *nx,int *ny,int *nz,int nnodes);
+extern real calc_grid(FILE *fp,
+		      matrix box,real gr_sp,
+		      int *nx,int *ny,int *nz,int nnodes);
 /* Sets the number of grid points for each zero n* to the first reasonable
  * number which gives a spacing equal to or smaller than gr_sp.
  * nx and ny should be divisible by nnodes, an error is generated when this
  * can not be achieved by calc_grid.
  * Returns the maximum grid spacing.
+ */
+
+extern bool compatible_pme_nx_ny(const t_inputrec *ir,int npme,
+				 int *nx,int *ny);
+/* Returns whether it could make a compatible grid.
+ * Returns *nx >= ir->nkx and *ny >= ir->nky that are divisible by npme
+ * and that do not contain inconvenient factors.
+ */
+
+extern void change_pme_grid(FILE *fplog,bool bStdErr,int npme,
+			    t_inputrec *ir,int nkx,int nky);
+/* Sets nkx and nky in ir.
+ * Prints messages to fplog (if not NULL) and to stderr (if bStdErr).
+ */
+
+extern real pme_grid_enlarge_limit();
+/* Returns how much nkx*nky*nkz is allowed to be increased by mdrun. */
+
+extern void make_compatible_pme_grid(FILE *fplog,bool bStdErr,int npme,
+				     t_inputrec *ir);
+/* Checks if the ir->nkx and ir->nky are divisible by npme.
+ * If this is not the case, they are made compatible
+ * when nkx*nky does not increase by more pme_grid_enlarge_limit.
  */

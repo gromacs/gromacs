@@ -156,7 +156,7 @@ extern void set_constraints(gmx_constr_t constr,
 extern t_blocka *atom2constraints(gmx_constr_t constr);
 /* Returns the atom to constraints list */
 
-extern bool inter_charge_group_constraints(gmx_constr_t constr);
+extern bool inter_charge_group_constraints(t_topology *top);
 /* Returns if there are inter charge group constraints */
 
 extern real *constr_rmsd_data(gmx_constr_t constr);

@@ -49,6 +49,9 @@ extern void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 			    int *nmy_ddnodes,int **my_ddnodes,int *node_peer);
 /* Returns the set of DD nodes that communicate with pme node cr->nodeid */
 
+extern void dd_set_tric_dir(gmx_domdec_t *dd,matrix box);
+/* Set the triclinic box information in dd */
+
 extern int dd_pme_maxshift(gmx_domdec_t *dd);
 /* Returns the maximum shift for coordinate communication in PME */
 
@@ -181,7 +184,7 @@ extern int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
 				     gmx_constr_t constr,int nrec);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
-				    int natoms,t_idef *idef,
+				    int natoms,t_topology *top,
 				    gmx_constr_t constr);
 
 extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
@@ -208,6 +211,17 @@ extern t_topology *dd_init_local_top(t_topology *top_global);
 
 extern void dd_init_local_state(gmx_domdec_t *dd,
 				t_state *state_global,t_state *local_state);
+
+/* In domdec_setup.h */
+
+extern void dd_check_pme_grid(FILE *fplog,bool bStdErr,int npme,
+			      t_inputrec *ir);
+
+extern void dd_choose_grid(FILE *fplog,
+			   t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
+			   t_topology *top,matrix box,real dlb_scale,
+			   real cellsize_limit,real cutoff_mbody,
+			   bool bInterCGBondeds,bool bInterCGMultiBody);
 
 #endif	/* _domdec_h */
 
