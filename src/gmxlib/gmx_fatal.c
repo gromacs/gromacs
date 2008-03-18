@@ -281,7 +281,7 @@ static void fatal_error(int f_errno,const char *fmt,...)
 	sval=va_arg(ap,char *);
 	bputs(msg,&len,sval,fld);
 	break;
-      default:
+     default:
 	break;
       }
     }
@@ -359,6 +359,9 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
       case 's':
 	sval=va_arg(ap,char *);
 	bputs(msg,&len,sval,fld);
+	break;
+      case '%':
+	bputc(msg,&len,*p);
 	break;
       default:
 	break;
