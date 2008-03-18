@@ -412,25 +412,36 @@ void dd_choose_grid(FILE *fplog,
 		    real cellsize_limit,real cutoff_mbody,
 		    bool bInterCGBondeds,bool bInterCGMultiBody)
 {
-  int nkx,nky;
+  int npme,nkx,nky;
 
   if (MASTER(cr)) {
     if (EEL_PME(ir->coulombtype)) {
-      /* With less than 12 nodes and no pme nodes,
-       * adapt the PME grid when it is not compatible.
-       */
-      if (cr->npmenodes <= 0 && cr->nnodes < 12) {
-	make_compatible_pme_grid(fplog,MASTER(cr),cr->nnodes,ir);
-      }
-      /* If the number of PME only node was not specified on the command line,
-       * we assign PME only nodes with 12 or more nodes,
-       * or when the PME grid does not match the number of nodes.
-       */
-      if (cr->npmenodes < 0 && cr->nnodes > 2 &&
-	  (cr->nnodes >= 12 || ir->nkx % cr->nnodes || ir->nky % cr->nnodes)) {
-	cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
-      } else if (cr->npmenodes < 0) {
-	cr->npmenodes = 0;
+      if (cr->npmenodes >= 0) {
+	/* Adapt the PME grid when it is not compatible. */
+	npme = (cr->npmenodes>0 ? cr->npmenodes : cr->nnodes);
+	make_compatible_pme_grid(fplog,MASTER(cr),npme,ir);
+	if (ir->nkx % npme || ir->nky % npme) {
+	  gmx_fatal(FARGS,"The number of fourier grid x (%d) and y (%d) points, is not a multiple of the number of nodes doing PME (%d), even when trying up to %d%% more grid points.",
+		    ir->nkx,ir->nky,npme,
+		    (int)(100*(pme_grid_enlarge_limit()-1)));
+	}
+      } else {
+	/* We need to choose the number of PME only nodes */
+	/* With less than 12 nodes we prefer no PME only nodes.
+	 * try to adapt the PME grid when it is not compatible.
+	 */
+	if (cr->nnodes < 12) {
+	  make_compatible_pme_grid(fplog,MASTER(cr),cr->nnodes,ir);
+	}
+	/* We assign PME only nodes with 12 or more nodes,
+	 * or when the PME grid does not match the number of nodes.
+	 */
+	if (cr->nnodes > 2 && (cr->nnodes >= 12 ||
+			       ir->nkx % cr->nnodes || ir->nky % cr->nnodes)) {
+	  cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
+	} else {
+	  cr->npmenodes = 0;
+	}
       }
     } else {
       if (cr->npmenodes < 0)
