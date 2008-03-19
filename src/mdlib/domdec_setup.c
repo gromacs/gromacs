@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include "domdec.h"
 #include "calcgrid.h"
+#include "network.h"
 #include "perf_est.h"
 #include "physics.h"
 #include "smalloc.h"
