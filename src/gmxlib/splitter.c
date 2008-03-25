@@ -609,10 +609,10 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
   }
   sblock->nr  = nsid;
   sblock->nalloc_index = sblock->nr+1;
-  srenew(sblock->index,sblock->nalloc_index);
+  snew(sblock->index,sblock->nalloc_index);
   sblock->nra = at_end - at_start;
   sblock->nalloc_a = sblock->nra;
-  srenew(sblock->a,sblock->nalloc_a);
+  snew(sblock->a,sblock->nalloc_a);
   sblock->index[0] = 0;
   for(k=n=0; (k<nsid); k++) {
     sblock->index[k+1] = sblock->index[k] + ms[k].last - ms[k].first+1;
