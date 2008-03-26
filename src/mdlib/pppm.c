@@ -573,7 +573,7 @@ int gmx_pppm_init(FILE *log,      t_commrec *cr,
 #ifdef GMX_MPI
   cr->mpi_comm_mygroup=cr->mpi_comm_mysim;
 #endif
-  grid = mk_fftgrid(nx,ny,nz,NULL,cr,bReproducible);
+  grid = mk_fftgrid(nx,ny,nz,NULL,NULL,cr,bReproducible);
   
   return 0;
 }

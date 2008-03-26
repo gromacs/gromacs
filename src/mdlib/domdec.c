@@ -24,7 +24,6 @@
 #include "mdrun.h"
 #include "nsgrid.h"
 #include "shellfc.h"
-#include "calcgrid.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -4046,8 +4045,6 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     copy_ivec(nc,dd->nc);
     if (cr->npmenodes == -1)
       cr->npmenodes = 0;
-    if (EEL_PME(ir->coulombtype))
-      make_compatible_pme_grid(fplog,MASTER(cr),cr->nnodes,ir);
   } else {
     /* We need to choose the optimal DD grid and possibly PME nodes */
     dd_choose_grid(fplog,cr,dd,ir,top,box,dlb_scale,

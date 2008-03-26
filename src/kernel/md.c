@@ -78,7 +78,6 @@
 #include "shellfc.h"
 #include "compute_io.h"
 #include "mvdata.h"
-#include "calcgrid.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -185,9 +184,6 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (inputrec->ePBC == epbcSCREW)
       gmx_fatal(FARGS,"pbc=%s is only implemented with domain decomposition",
 		epbc_names[inputrec->ePBC]);
-
-    if (PAR(cr) && EEL_PME(inputrec->coulombtype))
-      make_compatible_pme_grid(fplog,MASTER(cr),cr->nnodes,inputrec);
   }
 
   if (PAR(cr)) {

@@ -105,6 +105,13 @@ typedef struct {
   int atom,index;
 } t_pmeatom;
 
+typedef struct {
+  int snd0;
+  int snds;
+  int rcv0;
+  int rcvs;
+} pme_grid_comm_t;
+
 typedef struct gmx_pme {
   int  nodeid;             /* Our nodeid in mpi->mpi_comm */
   int  nnodes;             /* The number of nodes doing PME */
@@ -114,8 +121,8 @@ typedef struct gmx_pme {
 
   bool bFEP;               /* Compute Free energy contribution */
   int nleftbnd,nrightbnd;  /* The number of nodes to communicate with */
-  int *leftbnd,*rightbnd;  /* Size of left and right boundary */
   int *leftid,*rightid;
+  pme_grid_comm_t *leftc,*rightc;
   int my_homenr;
   int nkx,nky,nkz;         /* Grid dimensions */
   int pme_order;
@@ -150,6 +157,8 @@ typedef struct gmx_pme {
 extern RETSIGTYPE signal_handler(int n);
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE; 
+
+#define DEBUG
 
 /* #define SORTPME */
 
@@ -254,7 +263,7 @@ static void calc_idx(gmx_pme_t pme,rvec x[])
     fptr[XX] = tx - tix;
     fptr[YY] = ty - tiy;
     fptr[ZZ] = tz - tiz;   
-    
+
     idxptr[XX] = pme->nnx[tix];
     idxptr[YY] = pme->nny[tiy];
     idxptr[ZZ] = pme->nnz[tiz];
@@ -282,32 +291,21 @@ static void calc_idx(gmx_pme_t pme,rvec x[])
 }
 
 static void pme_calc_pidx(int npmenodes,
-			  int natoms,matrix box, rvec x[],int nx, int nnx[],
-			  int *pidx, int *gidx, int *count)
+			  int natoms,matrix box, rvec x[],
+			  int *pidx, int *count)
 {
-  int  i,j,jj;
-  int nx2;
+  int  i;
   int  tix;
-  int  irange, taskid;
   real *xptr,tx;
   real rxx,ryx,rzx;
   matrix recipbox;
     
 /* Calculate PME task index (pidx) for each grid index */
-  irange=1+(nx-1)/npmenodes;
-
-  taskid=0;
-  for(i=0; i<nx; i+=irange) {
-    jj=min((i+irange),nx);
-    for(j=i; (j<jj); j++) pidx[j]=taskid;
-    taskid++;
-  }
 
   /* Reset the count */
   for(i=0; i<npmenodes; i++)
     count[i] = 0;
 
-  nx2=2*nx;
   calc_recipbox(box,recipbox);
   rxx = recipbox[XX][XX];
   ryx = recipbox[YY][XX];
@@ -316,10 +314,14 @@ static void pme_calc_pidx(int npmenodes,
   for(i=0; (i<natoms); i++) {
     xptr   = x[i];
     /* Fractional coordinates along box vectors */
-    tx = nx2 + nx * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
-    tix = (int)(tx);
-    gidx[i] = pidx[nnx[tix]];
-    count[gidx[i]]++;
+    tx = npmenodes * ( xptr[XX] * rxx + xptr[YY] * ryx + xptr[ZZ] * rzx );
+    tix = (int)(tx + npmenodes) - npmenodes;
+    if (tix < 0)
+      tix += npmenodes;
+    else if (tix >= npmenodes)
+      tix -= npmenodes;
+    pidx[i] = tix;
+    count[tix]++;
   }
 }
 
@@ -596,16 +598,12 @@ static void dd_pmeredist_f(gmx_pme_t pme, int maxshift,
   }
 }
 
-static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_fftgrid *grid,
-			     int direction)
+static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_fftgrid *grid,int direction)
 {
-  static bool bFirst=TRUE;
-  static real *tmp;
+  static real *tmp=NULL;
   int b,i;
-  static int localsize;
-  static int maxproc;
-  int ny, la2r;
-  int bndsize;
+  int la12r,localsize;
+  pme_grid_comm_t *pgc;
   real *from, *to;
 #ifdef GMX_MPI
   MPI_Status stat;
@@ -614,50 +612,47 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_fftgrid *grid,
   GMX_MPE_LOG(ev_sum_qgrid_start);
   
 #ifdef GMX_MPI
-  if(bFirst) {
-    bFirst=FALSE;
-    localsize=grid->la12r*grid->pfft.local_nx;
-    if(!grid->workspace)
+
+  la12r      = grid->la12r;
+  localsize  = la12r*grid->pfft.local_nx;
+
+  if (grid->workspace) {
+    tmp = grid->workspace;
+  } else {
+    if (tmp == NULL)
       snew(tmp,localsize);
-    maxproc=grid->nx/grid->pfft.local_nx;
   }
-  /* NOTE: FFTW doesnt necessarily use all processors for the fft;
-     * above I assume that the ones that do have equal amounts of data.
-     * this is bad since its not guaranteed by fftw, but works for now...
-     * This will be fixed in the next release.
-     */
-  if (grid->workspace)
-    tmp=grid->workspace;
+
   if (direction  == GMX_SUM_QGRID_FORWARD) { 
     /* sum contributions to local grid */
-    ny=grid->ny;
-    la2r=grid->la2r;
     /* Send left boundaries */
     for(b=0; b<pme->nleftbnd; b++) {
-      bndsize = (pme->leftbnd[b+1] - pme->leftbnd[b])*ny*la2r;
-      from = grid->ptr + (pme->leftid[b] + 1)*localsize - bndsize;
-      to   = grid->ptr + (pme->nodeid    + 1)*localsize - bndsize;
-      MPI_Sendrecv(from,bndsize,mpi_type,
-		   pme->leftid[b],pme->nodeid,
-		   tmp,bndsize,mpi_type,pme->rightid[b],pme->rightid[b],
+      pgc = &pme->leftc[b];
+      from = grid->ptr + la12r*pgc->snd0;
+      to   = grid->ptr + la12r*pgc->rcv0;
+      MPI_Sendrecv(from,la12r*pgc->snds,mpi_type,
+		   pme->leftid[b], pme->nodeid,
+		   tmp, la12r*pgc->rcvs,mpi_type,
+		   pme->rightid[b],pme->rightid[b],
 		   pme->mpi_comm,&stat);
       GMX_MPE_LOG(ev_test_start); 
-      for(i=0; (i<bndsize); i++) {
+      for(i=0; (i<la12r*pgc->rcvs); i++) {
 	to[i] += tmp[i];
       }
     }
     GMX_MPE_LOG(ev_test_finish);
     /* Send right boundaries */
     for(b=0; b<pme->nrightbnd; b++) {
-      bndsize = (pme->rightbnd[b+1] - pme->rightbnd[b])*ny*la2r;
-      from = grid->ptr + (pme->rightid[b])*localsize;
-      to   = grid->ptr + (pme->nodeid    )*localsize;
-      MPI_Sendrecv(from,bndsize,mpi_type,
+      pgc = &pme->rightc[b];
+      from = grid->ptr + la12r*pgc->snd0;
+      to   = grid->ptr + la12r*pgc->rcv0;
+      MPI_Sendrecv(from,la12r*pgc->snds,mpi_type,
 		   pme->rightid[b],pme->nodeid,
-		   tmp,bndsize,mpi_type,pme->leftid[b],pme->leftid[b],
-		   pme->mpi_comm,&stat); 
-      GMX_MPE_LOG(ev_test_start);
-      for(i=0; (i<bndsize); i++) {
+		   tmp, la12r*pgc->rcvs,mpi_type,
+		   pme->leftid[b], pme->leftid[b],
+		   pme->mpi_comm,&stat);
+      GMX_MPE_LOG(ev_test_start); 
+      for(i=0; (i<la12r*pgc->rcvs); i++) {
 	to[i] += tmp[i];
       }
     }
@@ -665,26 +660,26 @@ static void gmx_sum_qgrid_dd(gmx_pme_t pme,t_fftgrid *grid,
   }
   else if (direction  == GMX_SUM_QGRID_BACKWARD) { 
     /* distribute local grid to all processors */
-    ny=grid->ny;
-    la2r=grid->la2r;
     /* Send right boundaries */
     for(b=0; b<pme->nrightbnd; b++) {
-      bndsize = (pme->rightbnd[b+1] - pme->rightbnd[b])*ny*la2r;
-      from = grid->ptr + (pme->nodeid    )*localsize;
-      to   = grid->ptr + (pme->rightid[b])*localsize;
-      MPI_Sendrecv(from,bndsize,mpi_type,
-		   pme->leftid[b],pme->nodeid,
-		   to,bndsize,mpi_type,pme->rightid[b],pme->rightid[b],
+      pgc = &pme->rightc[b];
+      from = grid->ptr + la12r*pgc->rcv0;
+      to   = grid->ptr + la12r*pgc->snd0;
+      MPI_Sendrecv(from,la12r*pgc->rcvs,mpi_type,
+		   pme->leftid[b], pme->nodeid,
+		   to,  la12r*pgc->snds,mpi_type,
+		   pme->rightid[b],pme->rightid[b],
 		   pme->mpi_comm,&stat);
     }
     /* Send left boundaries */
     for(b=0; b<pme->nleftbnd; b++) {
-      bndsize = (pme->leftbnd[b+1] - pme->leftbnd[b])*ny*la2r;
-      from = grid->ptr + (pme->nodeid    + 1)*localsize - bndsize;
-      to   = grid->ptr + (pme->leftid[b] + 1)*localsize - bndsize;
-      MPI_Sendrecv(from,bndsize,mpi_type,
+      pgc = &pme->leftc[b];
+      from = grid->ptr + la12r*pgc->rcv0;
+      to   = grid->ptr + la12r*pgc->snd0;
+      MPI_Sendrecv(from,la12r*pgc->rcvs,mpi_type,
 		   pme->rightid[b],pme->nodeid,
-		   to,bndsize,mpi_type,pme->leftid[b],pme->leftid[b],
+		   to,  la12r*pgc->snds,mpi_type,
+		   pme->leftid[b], pme->leftid[b],
 		   pme->mpi_comm,&stat);
     }
   }
@@ -767,29 +762,29 @@ static void spread_q_bsplines(gmx_pme_t pme,t_fftgrid *grid,real charge[],
 #ifdef GMX_MPI
   } else {
     localsize = grid->la12r*grid->pfft.local_nx;
-    ptr = grid->localptr;
+    ptr = grid->ptr + grid->la12r*grid->pfft.local_x_start;
     for (i=0; (i<localsize); i++)
       ptr[i] = 0;
     /* clear left boundary area */
     for(b=0; b<pme->nleftbnd; b++) {
-      bndsize = (pme->leftbnd[b+1] - pme->leftbnd[b])*grid->la12r;
-      ptr = grid->ptr + (pme->leftid[b] + 1)*localsize - bndsize;
+      ptr     = grid->ptr + pme->leftc[b].snd0*grid->la12r;
+      bndsize =             pme->leftc[b].snds*grid->la12r;
       for (i=0; (i<bndsize); i++)
 	ptr[i] = 0;
     }
     /* clear right boundary area */
     for(b=0; b<pme->nrightbnd; b++) {
-      bndsize = (pme->rightbnd[b+1] - pme->rightbnd[b])*grid->la12r;
-      ptr = grid->ptr + (pme->rightid[b])*localsize;
+      ptr     = grid->ptr + pme->rightc[b].snd0*grid->la12r;
+      bndsize =             pme->rightc[b].snds*grid->la12r;
       for (i=0; (i<bndsize); i++)
 	ptr[i] = 0;
     }
 #endif
   }
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
-  ii0   = pme->nnx+nx2+1-order/2;
-  jj0   = pme->nny+ny2+1-order/2;
-  kk0   = pme->nnz+nz2+1-order/2;
+  ii0   = pme->nnx + nx2 + 1 - order/2;
+  jj0   = pme->nny + ny2 + 1 - order/2;
+  kk0   = pme->nnz + nz2 + 1 - order/2;
   
   for(nn=0; (nn<nr); nn++) {
 #ifdef SORTPME
@@ -972,9 +967,9 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
   dthx  = pme->dtheta[XX];
   dthy  = pme->dtheta[YY];
   dthz  = pme->dtheta[ZZ];
-  ii0   = pme->nnx+nx2+1-order/2;
-  jj0   = pme->nny+ny2+1-order/2;
-  kk0   = pme->nnz+nz2+1-order/2;
+  ii0   = pme->nnx + nx2 + 1 - order/2;
+  jj0   = pme->nny + ny2 + 1 - order/2;
+  kk0   = pme->nnz + nz2 + 1 - order/2;
   
   rxx   = pme->recipbox[XX][XX];
   ryx   = pme->recipbox[YY][XX];
@@ -1053,7 +1048,7 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
 
 
 void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
-		   int nz,rvec fractx[],ivec idx[],int nr,real charge[],
+		   int nz,rvec fractx[],int nr,real charge[],
 		   bool bFreeEnergy)
 {
   /* construct splines for local atoms */
@@ -1213,6 +1208,14 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
   return 0;
 }
 
+bool pme_optimal_nnodes(int nkx,int nnodes)
+{
+  /* Maximum 2D FFT performance loss of 33% at nnodes = nkx/3 - 1
+   * Limit nkx/nnodes ratio at 2.5, 2D FFT performance loss of 20%
+   */
+  return (nnodes*5 <= nkx*2 || nnodes == nkx || nnodes == (nkx+1)/2);
+}
+
 int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
                  t_inputrec *ir,int homenr,
                  bool bFreeEnergy,
@@ -1220,7 +1223,9 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 {
   gmx_pme_t pme=NULL;
   
-  int b,d,i,totbnd;
+  int b,d,i,lbnd,rbnd,maxlr;
+  int *s2g;
+  pme_grid_comm_t *pgc;
 
   if (debug)
     fprintf(debug,"Creating PME data structures.\n");
@@ -1245,43 +1250,93 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
   pme->nkz  = ir->nkz;
   pme->pme_order   = ir->pme_order;
   pme->epsilon_r   = ir->epsilon_r;
-  
-  if (pme->nkx <= pme->pme_order ||
+
+  if (pme->nkx <= pme->pme_order*(pme->nnodes > 1 ? 2 : 1) ||
       pme->nky <= pme->pme_order ||
       pme->nkz <= pme->pme_order)
-    gmx_fatal(FARGS,
-	      "The pme grid dimensions need to be larger than pme_order (%d)",
-	      pme->pme_order);
+    gmx_fatal(FARGS,"The pme grid dimensions need to be larger than pme_order (%d) and in parallel larger than 2*pme_order for x",pme->pme_order);
 
   if (pme->nnodes > 1) {
 #ifdef GMX_MPI
     MPI_Type_contiguous(DIM, mpi_type, &rvec_mpi);
     MPI_Type_commit(&rvec_mpi);
 #endif
+    
+    if (!pme_optimal_nnodes(pme->nkx,pme->nnodes) && pme->nodeid == 0) {
+      fprintf(stderr,
+	      "\n"
+	      "NOTE: For optimal performance with #PME_nodes > grid_x/2.5, the number of PME nodes\n"
+	      "      should be equal to grid_x/2 (%d) or grid_x (%d), not %d\n"
+	      "\n",
+	      (pme->nkx+1)/2,pme->nkx,pme->nnodes);
+    }
+    if (2*pme->nnodes == pme->nkx+1 && pme->nodeid == 0) {
+      fprintf(stderr,
+	      "\n"
+	      "NOTE: For optimal performance with #PME_nodes = grid_x/2\n"
+	      "      PME grid_x should be even (currently %d)\n"
+	      "\n",
+	      pme->nkx);
+    }
 
-    d = pme->nkx/pme->nnodes;
-    /* The left boundary */
-    totbnd = ir->pme_order/2 - 1;
-    pme->nleftbnd = (totbnd + (d - 1))/d;
-    snew(pme->leftbnd,pme->nleftbnd+1);
-    pme->leftbnd[0] = 0;
-    for(b=0; b<pme->nleftbnd; b++) {
-      pme->leftbnd[b+1] = min(totbnd,pme->leftbnd[b] + d);
-    }
-    /* The right boundary */
-    totbnd = ir->pme_order - (ir->pme_order/2 - 1) - 1;
-    pme->nrightbnd = (totbnd + (d - 1))/d;
-    snew(pme->rightbnd,pme->nrightbnd+1);
-    pme->rightbnd[0] = 0;
-    for(b=0; b<pme->nrightbnd; b++) {
-      pme->rightbnd[b+1] = min(totbnd,pme->rightbnd[b] + d);
-    }
-    totbnd = max(pme->nleftbnd,pme->nrightbnd);
-    snew(pme->leftid,totbnd);
-    snew(pme->rightid,totbnd);
-    for(b=0; b<totbnd; b++) {
+    /* Determine the grid boundary communication sizes and nodes */
+    if (pme->nkx % pme->nnodes == 0)
+      lbnd = ir->pme_order/2 - 1;
+    else
+      lbnd = ir->pme_order - (ir->pme_order/2 - 1) - 1;
+    rbnd   = ir->pme_order - (ir->pme_order/2 - 1) - 1;
+    /* Round up */
+    pme->nleftbnd  = (lbnd*pme->nnodes + pme->nkx - 1)/pme->nkx;
+    pme->nrightbnd = (rbnd*pme->nnodes + pme->nkx - 1)/pme->nkx;
+    maxlr = max(pme->nleftbnd,pme->nrightbnd);
+    snew(pme->leftid, maxlr);
+    snew(pme->rightid,maxlr);
+    for(b=0; b<maxlr; b++) {
       pme->leftid[b]  = (pme->nodeid - (b + 1) + pme->nnodes) % pme->nnodes;
       pme->rightid[b] = (pme->nodeid + (b + 1)) % pme->nnodes;
+    }
+    snew(pme->leftc, pme->nleftbnd);
+    snew(pme->rightc,pme->nrightbnd);
+    snew(s2g,pme->nnodes+1);
+    for(i=0; i<pme->nnodes+1; i++) {
+      /* The definition of the grid position requires rounding up here */
+      s2g[i] = (i*pme->nkx + pme->nnodes - 1)/pme->nnodes;
+    }
+    /* The left boundary */
+    for(b=0; b<pme->nleftbnd; b++) {
+      pgc = &pme->leftc[b];
+      /* Send */
+      i = s2g[pme->nodeid];
+      if (pme->leftid[b] > pme->nodeid)
+	i += pme->nkx;
+      pgc->snd0 = max(i - lbnd,s2g[pme->leftid[b]]);
+      pgc->snds = min(i       ,s2g[pme->leftid[b]+1]) - pgc->snd0;
+      pgc->snds = max(pgc->snds,0);
+      /* Receive */
+      i = s2g[pme->rightid[b]];
+      if (pme->rightid[b] < pme->nodeid)
+	i += pme->nkx;
+      pgc->rcv0 = max(i - lbnd,s2g[pme->nodeid]);
+      pgc->rcvs = min(i       ,s2g[pme->nodeid+1]) - pgc->rcv0;
+      pgc->rcvs = max(pgc->rcvs,0);
+    }
+    /* The right boundary */
+    for(b=0; b<pme->nrightbnd; b++) {
+      pgc = &pme->rightc[b];
+      /* Send */
+      i = s2g[pme->nodeid+1];
+      if (pme->rightid[b] < pme->nodeid)
+	i -= pme->nkx;
+      pgc->snd0 = max(i       ,s2g[pme->rightid[b]]);
+      pgc->snds = min(i + rbnd,s2g[pme->rightid[b]+1]) - pgc->snd0;
+      pgc->snds = max(pgc->snds,0);
+      /* Receive */
+      i = s2g[pme->leftid[b]+1];
+      if (pme->leftid[b] > pme->nodeid)
+	i -= pme->nkx;
+      pgc->rcv0 = max(i       ,s2g[pme->nodeid]);
+      pgc->rcvs = min(i + rbnd,s2g[pme->nodeid+1]) - pgc->rcv0;
+      pgc->rcvs = max(pgc->rcvs,0);
     }
 
     if (debug) {
@@ -1299,6 +1354,8 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     snew(pme->count,pme->nnodes);
     snew(pme->rcount,pme->nnodes);
     snew(pme->buf_index,pme->nnodes);
+  } else {
+    s2g = NULL;
   }
 
   /* With domain decomposition we need nnx on the PP only nodes */
@@ -1316,12 +1373,17 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
   snew(pme->bsp_mod[YY],pme->nky);
   snew(pme->bsp_mod[ZZ],pme->nkz);
 
-  pme->gridA = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr,bReproducible);
+  pme->gridA = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,s2g,cr,
+			  bReproducible);
   if (bFreeEnergy)
-    pme->gridB = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,cr,bReproducible);
+    pme->gridB = mk_fftgrid(pme->nkx,pme->nky,pme->nkz,NULL,s2g,cr,
+			    bReproducible);
   else
     pme->gridB = NULL;
   
+  if (s2g)
+    sfree(s2g);
+
   make_bspline_moduli(pme->bsp_mod,pme->nkx,pme->nky,pme->nkz,pme->pme_order);
   
   if (pme->nnodes == 1) {
@@ -1357,7 +1419,7 @@ static void spread_on_grid(gmx_pme_t pme,
       
       /* make local bsplines  */
       make_bsplines(pme->theta,pme->dtheta,pme->pme_order,nx,ny,nz,
-		    pme->fractx,pme->idx,pme->my_homenr,charge,pme->bFEP);
+		    pme->fractx,pme->my_homenr,charge,pme->bFEP);
     }    
 
     /* put local atoms on grid. */
@@ -1445,15 +1507,10 @@ int gmx_pme_do(gmx_pme_t pme,
   real    *charge=NULL,vol;
   real    energy_AB[2];
   matrix  vir_AB[2];
-  static int  *pidx=NULL;
   static int  *gidx=NULL;  /* Grid index of particle, used for PME redist */
   static int  gidx_nalloc=0;
 
   if (pme->nnodes > 1) {
-    /* Allocate indices for sorting the atoms */
-    if (pidx == NULL)
-      snew(pidx,pme->nkx);
-    
     if (homenr > gidx_nalloc) {
       gidx_nalloc = over_alloc_dd(homenr);
       srenew(gidx,gidx_nalloc);
@@ -1497,7 +1554,7 @@ int gmx_pme_do(gmx_pme_t pme,
       pme->f_home = f;
     } else {
       pme_calc_pidx(pme->nnodes,homenr,box,x+start,
-		    pme->nkx,pme->nnx,pidx,gidx,pme->count);
+		    gidx,pme->count);
       where();
 
       GMX_BARRIER(cr->mpi_comm_mysim);
@@ -1530,7 +1587,11 @@ int gmx_pme_do(gmx_pme_t pme,
 	       pme->pme_order*pme->pme_order*pme->pme_order*pme->my_homenr);
       
       /* sum contributions to local grid from other nodes */
-      if (pme->nnodes > 1) {
+     if (pme->nnodes > 1) {
+#ifdef DEBUG
+       if (debug)
+	 pr_fftgrid(debug,"qgrid before dd sum",grid);
+#endif
         GMX_BARRIER(cr->mpi_comm_mysim);
 	gmx_sum_qgrid_dd(pme,grid,GMX_SUM_QGRID_FORWARD);
 	where();

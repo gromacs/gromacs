@@ -4,10 +4,10 @@
 
 #include <stdio.h>
 #include "domdec.h"
-#include "calcgrid.h"
 #include "network.h"
 #include "perf_est.h"
 #include "physics.h"
+#include "pme.h"
 #include "smalloc.h"
 #include "typedefs.h"
 #include "vec.h"
@@ -43,38 +43,8 @@ static bool fits_perf(FILE *fplog,
 		      t_inputrec *ir,matrix box,t_topology *top,
 		      int nnodes,int npme,float ratio)
 {
-  bool bFits;
-  int nkx,nky;
-  t_inputrec try;
-  float ratio_new;
-
-  bFits = FALSE;
-  if (ir->nkx % npme == 0 && ir->nky % npme == 0) {
-    bFits = ((double)npme/(double)nnodes > 0.95*ratio);
-  } else {
-    /* Try enlarging the PME grid */
-    if (compatible_pme_nx_ny(ir,npme,&nkx,&nky)) {
-      if (nkx*nky <= pme_grid_enlarge_limit()*ir->nkx*ir->nky) {
-	/* The computational cost of pme_load_estimate is order natoms,
-	 * so we should avoid calling it when possible.
-	 * The new ratio will always be larger than the old one,
-	 * so we might save time by first checking with the old ratio.
-	 */
-	if ((double)npme/(double)nnodes > 0.95*ratio) {
-	  try = *ir;
-	  try.nkx = nkx;
-	  try.nky = nky;
-	  ratio_new = pme_load_estimate(top,&try,box);
-	  bFits = ((double)npme/(double)nnodes > 0.95*ratio_new);
-	  if (bFits) {
-	    change_pme_grid(fplog,TRUE,npme,ir,nkx,nky);
-	  }
-	}
-      }
-    }
-  }
-
-  return bFits;
+  return ((double)npme/(double)nnodes > 0.95*ratio &&
+	  pme_optimal_nnodes(ir->nkx,npme));
 }
 
 static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
@@ -124,11 +94,10 @@ static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
     }
   }
   if (npme > nnodes/2) {
-    if (ir->nkx % nnodes || ir->nky % nnodes) {
-      gmx_fatal(FARGS,"Could not find an appropriate number of separate PME nodes that is a multiple of the fourier grid x (%d) and y (%d) points, even when trying up to %d%% more grid points.\n"
+    gmx_fatal(FARGS,"Could not find an appropriate number of separate PME nodes. i.e. >= %5f*#nodes (%d) and <= #nodes/2 (%d) and reasonable performance wise (grid_x=%d).\n"
 	      "Use the -npme option of mdrun or change the number of processors or the grid dimensions.",
-	      ir->nkx,ir->nky,(int)(100*(pme_grid_enlarge_limit()-1)));
-    }
+	      ratio,(int)(0.95*ratio*nnodes+0.5),nnodes/2,ir->nkx);
+    /* Keep the compiler happy */
     npme = 0;
   } else {
     if (fplog)
@@ -418,30 +387,14 @@ void dd_choose_grid(FILE *fplog,
   if (MASTER(cr)) {
     if (EEL_PME(ir->coulombtype)) {
       if (cr->npmenodes >= 0) {
-	/* Adapt the PME grid when it is not compatible. */
-	npme = (cr->npmenodes>0 ? cr->npmenodes : cr->nnodes);
-	make_compatible_pme_grid(fplog,MASTER(cr),npme,ir);
-	if (ir->nkx % npme || ir->nky % npme) {
-	  gmx_fatal(FARGS,"The number of fourier grid x (%d) and y (%d) points, is not a multiple of the number of nodes doing PME (%d), even when trying up to %d%% more grid points.",
-		    ir->nkx,ir->nky,npme,
-		    (int)(100*(pme_grid_enlarge_limit()-1)));
-	}
+	if (cr->nnodes <= 2 && cr->npmenodes > 0)
+	  gmx_fatal(FARGS,
+		    "Can not have separate PME nodes with 2 or less nodes");
       } else {
-	/* We need to choose the number of PME only nodes */
-	/* With less than 12 nodes we prefer no PME only nodes.
-	 * try to adapt the PME grid when it is not compatible.
-	 */
-	if (cr->nnodes < 12) {
-	  make_compatible_pme_grid(fplog,MASTER(cr),cr->nnodes,ir);
-	}
-	/* We assign PME only nodes with 12 or more nodes,
-	 * or when the PME grid does not match the number of nodes.
-	 */
-	if (cr->nnodes > 2 && (cr->nnodes >= 12 ||
-			       ir->nkx % cr->nnodes || ir->nky % cr->nnodes)) {
-	  cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
-	} else {
+	if (cr->nnodes < 12 && pme_optimal_nnodes(ir->nkx,cr->nnodes)) {
 	  cr->npmenodes = 0;
+	} else {
+	  cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
 	}
       }
     } else {

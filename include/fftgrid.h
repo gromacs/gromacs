@@ -62,7 +62,7 @@ typedef struct {
 
 typedef struct {
     real *                 ptr;
-    real *                 localptr;
+    bool                   bParallel;
     real *                 workspace;    
     int                    nx,ny,nz,la2r,la2c,la12r,la12c;
     int                    nptr,nxyz;
@@ -77,6 +77,7 @@ extern t_fftgrid *mk_fftgrid(int          nx,
                              int          ny,
                              int          nz,
                              int          *node2slab,
+			     int          *slab2grid_x,
                              t_commrec *  cr,
                              bool         bReproducible);
 
@@ -86,6 +87,8 @@ extern t_fftgrid *mk_fftgrid(int          nx,
  * If cr is non-NULL and cr->nnodes>1, a parallel grid and FFT will be created.
  * The node2slab array translates to node ids to slab indices,
  * when NULL the slab ids are assumed to be identical to the node ids.
+ * The slab2grid_x array determines which grid x-indices beling to which slab
+ * (array size nnodes+1), when NULL this is determined automatically.
  * Set bReproducible to avoid FFTW timing and other optimizations that
  * could affect reproducibility of simulations.
  */

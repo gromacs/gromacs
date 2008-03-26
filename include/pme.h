@@ -51,6 +51,11 @@ typedef real *splinevec[DIM];
 
 enum { GMX_SUM_QGRID_FORWARD, GMX_SUM_QGRID_BACKWARD };
 
+extern bool pme_optimal_nnodes(int nkx,int nnodes);
+/* Returns if nnodes is a reasoanble number of nodes,
+ * performance wise, for a PME grid with nkx grid points in x.
+ */
+
 extern int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
 			t_inputrec *ir,int homenr,
 			bool bFreeEnergy, bool bReproducible);

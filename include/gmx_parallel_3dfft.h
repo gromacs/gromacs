@@ -54,6 +54,8 @@ gmx_parallel_3dfft_t;
  *  \param ngridy         Global number of grid cells in the y direction. Must be
  *                        divisible by the number of nodes.
  *  \param ngridz         Global number of grid cells in the z direction.
+ *  \param node2slab      Node id to slab index array, can be NULL.
+ *  \param slab2grid_x    Slab index to grid_x array (nnodes+1), can be NULL.
  *  \param comm           MPI communicator, must have been initialized. 
  *  \param bReproducible  Try to avoid FFT timing optimizations and other stuff
  *                        that could make results differ for two runs with
@@ -67,6 +69,7 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            int                       ngridy,
                            int                       ngridz,
 						   int                       *node2slab,
+						   int                       *slab2grid_x,
                            MPI_Comm                  comm,
                            bool                      bReproducible);
                            

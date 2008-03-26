@@ -34,6 +34,12 @@
 #include "gmxcomplex.h"
 #include "gmx_fatal.h"
 
+typedef struct {
+    int             *sdisps;
+    int             *scounts;
+    int             *rdisps;
+    int             *rcounts;
+} alltoallv_t;
 
 struct gmx_parallel_3dfft 
 {
@@ -47,21 +53,49 @@ struct gmx_parallel_3dfft
     gmx_fft_t       fft_x;
     t_complex *     work;
     t_complex *     work2;
-	int             *node2slab;
+    int             *node2slab;
+    int             *slab2grid_x;
+    int             *slab2grid_y;
+    alltoallv_t     *aav;
     MPI_Comm        comm;
 };
 
+static int *copy_int_array(int n,int *src)
+{
+    int *dest,i;
+
+    dest = malloc(n*sizeof(int));
+    for(i=0; i<n; i++)
+        dest[i] = src[i];
+
+    return dest;
+}
+
+static int *make_slab2grid(int nnodes,int ngrid)
+{
+    int *s2g,i;
+
+    s2g = malloc((nnodes+1)*sizeof(int));
+    for(i=0; i<nnodes+1; i++) {
+        /* We always round up */
+        s2g[i] = (i*ngrid + nnodes - 1)/nnodes;
+    }
+
+    return s2g;
+}
 
 int
 gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
                            int                       ngridx,
                            int                       ngridy,
                            int                       ngridz,
-						   int                       *node2slab,
+                           int                       *node2slab,
+                           int                       *slab2grid_x,
                            MPI_Comm                  comm,
                            bool                      bReproducible)
 {
     gmx_parallel_3dfft_t p;
+    int  nxy_n;
     void *p0;
     int  flags;
     
@@ -77,24 +111,40 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
     p->nz  = ngridz;
     p->nzc = ngridz/2 + 1;
 
-	p->node2slab = node2slab;
-
-	MPI_Comm_rank( comm , &(p->local_slab) );
-	if (p->node2slab)
-		p->local_slab = p->node2slab[p->local_slab];
-		
-
+    MPI_Comm_rank( comm , &(p->local_slab) );
+    
     MPI_Comm_dup( comm , &(p->comm) );
 
     MPI_Comm_size( p->comm , &p->nnodes);
 
-    /* Check stuff */
-    if ( (ngridx % p->nnodes ) != 0 || (ngridy % p->nnodes ) )
-    {
-        gmx_fatal(FARGS,"nx (%d) and ny (%d) must be divisible by the number of nodes (%d).",
-                  ngridx,ngridy,p->nnodes);
+    if (node2slab)
+        p->node2slab = copy_int_array(p->nnodes,node2slab);
+    else
+        p->node2slab = NULL;
+
+    if (p->node2slab)
+        p->local_slab = p->node2slab[p->local_slab];
+        
+    MPI_Comm_dup( comm , &(p->comm) );
+
+    MPI_Comm_size( p->comm , &p->nnodes);
+
+    if (slab2grid_x)
+        p->slab2grid_x = copy_int_array(p->nnodes+1,slab2grid_x);
+    else
+        p->slab2grid_x = make_slab2grid(p->nnodes,p->nx);
+    p->slab2grid_y     = make_slab2grid(p->nnodes,p->ny);
+
+    if (node2slab || p->nx % p->nnodes || p->ny % p->nnodes) {
+        p->aav = malloc(sizeof(alltoallv_t));
+        p->aav->sdisps  = malloc(p->nnodes*sizeof(int));
+        p->aav->scounts = malloc(p->nnodes*sizeof(int));
+        p->aav->rdisps  = malloc(p->nnodes*sizeof(int));
+        p->aav->rcounts = malloc(p->nnodes*sizeof(int));
+    } else {
+        p->aav  = NULL;
     }
-    
+
     /* initialize transforms */
     if ( ( gmx_fft_init_1d(&(p->fft_x),ngridx,flags) != 0 ) ||
          ( gmx_fft_init_2d_real(&(p->fft_yz),ngridy,ngridz,flags) != 0))
@@ -102,11 +152,15 @@ gmx_parallel_3dfft_init   (gmx_parallel_3dfft_t *    pfft_setup,
         free(p);
         return -1;
     }
-    
-    p0 =  malloc(sizeof(real)*2*(p->nzc)*(p->ny)*(p->nx)/p->nnodes+32);
+
+    /* Round up */
+    nxy_n = p->nnodes*((p->nx + p->nnodes - 1)/p->nnodes)*
+                      ((p->ny + p->nnodes - 1)/p->nnodes);
+
+    p0 = malloc(sizeof(real)*2*(p->nzc)*nxy_n + 32);
     p->work  = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
 
-    p0 = malloc(sizeof(real)*2*(p->nzc)*(p->ny)*(p->nx)/p->nnodes);
+    p0 = malloc(sizeof(real)*2*(p->nzc)*nxy_n);
     p->work2 = (void *) (((size_t) p0 + 32) & (~((size_t) 31)));
     
     if(p->work == NULL || p->work2 == NULL)
@@ -134,11 +188,15 @@ gmx_parallel_3dfft_limits(gmx_parallel_3dfft_t      pfft_setup,
                           int *                     local_y_start,
                           int *                     local_ny)
 {
-    *local_nx = pfft_setup->nx / pfft_setup->nnodes;
-    *local_ny = pfft_setup->ny / pfft_setup->nnodes;
-    
-    *local_x_start = pfft_setup->local_slab* (*local_nx);
-    *local_y_start = pfft_setup->local_slab* (*local_ny);    
+    int slab;
+
+    slab = pfft_setup->local_slab;
+
+    *local_x_start = pfft_setup->slab2grid_x[slab];
+    *local_y_start = pfft_setup->slab2grid_y[slab];
+
+    *local_nx = pfft_setup->slab2grid_x[slab+1] - (*local_x_start);
+    *local_ny = pfft_setup->slab2grid_y[slab+1] - (*local_y_start);
     
     return 0;
 }
@@ -150,18 +208,20 @@ gmx_parallel_transpose_xy(t_complex *   data,
                           t_complex *   work,
                           int           nx,
                           int           ny,
-                          int           local_x_start,
-                          int           local_nx,
-                          int           local_y_start,
-                          int           local_ny,
+                          int           local_slab,
+                          int           *s2x,
+                          int           *s2y,
                           int           nzc,
-						  int           nnodes,
-						  int           *node2slab,
+                          int           nnodes,
+                          int           *node2slab,
+                          alltoallv_t   *aav,
                           MPI_Comm      comm)
 {
-    static int *counts=NULL,*disps=NULL,nalloc=0;
     int     i,j;
-    int     blocksize;
+    int     local_nx,local_ny,blocksize,slab;
+    
+    local_nx = s2x[local_slab+1] - s2x[local_slab];
+    local_ny = s2y[local_slab+1] - s2y[local_slab];
     
     /* A: Do a local transpose to get data continuous for communication.
     *     We can use NULL for the workarray since we do it out-of-place.
@@ -169,42 +229,40 @@ gmx_parallel_transpose_xy(t_complex *   data,
     gmx_fft_transpose_2d_nelem(data,work,local_nx,ny,nzc,NULL);
     
     /* B: Parallel communication, exchange data blocks. */
-    blocksize = local_nx*local_ny*nzc*2;
-	if (node2slab == NULL) {
-		MPI_Alltoall(work,
-					 blocksize,
-					 GMX_MPI_REAL,
-					 data,
-					 blocksize,
-					 GMX_MPI_REAL,
-					 comm);
-	} else {
-		if (nnodes > nalloc) {
-			nalloc = nnodes;
-			counts = realloc(counts,nalloc*sizeof(int));
-			disps  = realloc(disps, nalloc*sizeof(int));
-		}
-		for(i=0; i<nnodes; i++) {
-			counts[i] = blocksize;
-			disps[i]  = node2slab[i]*blocksize;
-		}
-		MPI_Alltoallv(work,
-					  counts,disps,
-					  GMX_MPI_REAL,
-					  data,
-					  counts,disps,
-					  GMX_MPI_REAL,
-					  comm);
-	}
+    if (aav == NULL) {
+        blocksize = local_nx*local_ny*nzc*2;
+        MPI_Alltoall(work,
+                     blocksize,
+                     GMX_MPI_REAL,
+                     data,
+                     blocksize,
+                     GMX_MPI_REAL,
+                     comm);
+    } else {
+        for(i=0; i<nnodes; i++) {
+            slab = (node2slab ? node2slab[i] : i);
+            aav->sdisps [i] =                s2y[slab] *local_nx*nzc*2;
+            aav->scounts[i] = (s2y[slab+1] - s2y[slab])*local_nx*nzc*2;
+            aav->rdisps [i] = local_ny*               s2x[slab] *nzc*2;
+            aav->rcounts[i] = local_ny*(s2x[slab+1] - s2x[slab])*nzc*2;
+        }
+        MPI_Alltoallv(work,
+                      aav->scounts,aav->sdisps,
+                      GMX_MPI_REAL,
+                      data,
+                      aav->rcounts,aav->rdisps,
+                      GMX_MPI_REAL,
+                      comm);
+    }
         
     /* C: Copy entire blocks into place, so we have YXZ. */
     for(j=0;j<local_ny;j++)
     {
         for(i=0;i<nnodes;i++)
         {
-            memcpy(work+j*nx*nzc+i*local_nx*nzc,
-                   data+i*local_nx*local_ny*nzc+j*local_nx*nzc,
-                   local_nx*nzc*sizeof(t_complex));
+            memcpy(work + j*nx*nzc + s2x[i]*nzc,
+                   data + s2x[i]*local_ny*nzc + j*(s2x[i+1] - s2x[i])*nzc,
+                   (s2x[i+1] - s2x[i])*nzc*sizeof(t_complex));
         }
     }
     return 0;
@@ -260,8 +318,8 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
 
     if(dir == GMX_FFT_REAL_TO_COMPLEX)
     {
-        rdata = in_data;
-        cdata = out_data;
+        rdata =      (real *)in_data  + local_x_start*ny*nzr;
+        cdata = (t_complex *)out_data + local_x_start*ny*nzc;
         
         /* Perform nx local 2D real-to-complex FFTs in the yz slices.
          * When the input data is "embedded" for 3D-in-place transforms, this
@@ -282,18 +340,20 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
                                   work,
                                   nx,
                                   ny,
-                                  local_x_start,
-                                  local_nx,
-                                  local_y_start,
-                                  local_ny,
+                                  pfft_setup->local_slab,
+                                  pfft_setup->slab2grid_x,
+                                  pfft_setup->slab2grid_y,
                                   nzc,
-								  pfft_setup->nnodes,
-								  pfft_setup->node2slab,
+                                  pfft_setup->nnodes,
+                                  pfft_setup->node2slab,
+                                  pfft_setup->aav,
                                   pfft_setup->comm);
 
         /* Transpose from temporary work array in order YXZ to
          * the output array in order YZX. 
          */ 
+        /* output cdata changes when nx or ny not divisible by nnodes */
+        cdata = (t_complex *)out_data + local_y_start*nx*nzc;
         for(j=0;j<local_ny;j++)
         {
             gmx_fft_transpose_2d(work  + j*nzc*nx,
@@ -322,15 +382,15 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
     }
     else if(dir == GMX_FFT_COMPLEX_TO_REAL)
     {
-        cdata = in_data;
-        rdata = out_data;
+        cdata = (t_complex *)in_data  + local_y_start*nx*nzc;
+        rdata =      (real *)out_data + local_x_start*ny*nzr;
         
         /* If we are working in-place it doesn't matter that we destroy
          * input data. Otherwise we use an extra temporary workspace array.
          */
         if(in_data == out_data)
         {
-            ctmp = in_data;
+            ctmp = cdata;
         }
         else
         {
@@ -364,18 +424,23 @@ gmx_parallel_3dfft(gmx_parallel_3dfft_t    pfft_setup,
                                  nx);
         }
         
+        if(in_data == out_data)
+        {
+            /* output cdata changes when nx or ny not divisible by nnodes */
+           ctmp = (t_complex *)in_data + local_x_start*ny*nzc;
+        }
         gmx_parallel_transpose_xy(work,
                                   ctmp,
                                   ny,
                                   nx,
-                                  local_y_start,
-                                  local_ny,
-                                  local_x_start,
-                                  local_nx,
+                                  pfft_setup->local_slab,
+                                  pfft_setup->slab2grid_y,
+                                  pfft_setup->slab2grid_x,
                                   nzc,
-								  pfft_setup->nnodes,
-								  pfft_setup->node2slab,
-								  pfft_setup->comm);
+                                  pfft_setup->nnodes,
+                                  pfft_setup->node2slab,
+                                  pfft_setup->aav,
+                                  pfft_setup->comm);
         
         
         /* Perform nx local 2D complex-to-real FFTs in the yz slices.
@@ -438,7 +503,16 @@ gmx_parallel_3dfft_destroy(gmx_parallel_3dfft_t    pfft_setup)
 {
     gmx_fft_destroy(pfft_setup->fft_x);
     gmx_fft_destroy(pfft_setup->fft_yz);
-    
+
+    free(pfft_setup->slab2grid_x);
+    free(pfft_setup->slab2grid_y);
+    if (pfft_setup->aav) {
+        free(pfft_setup->aav->sdisps);
+        free(pfft_setup->aav->scounts);
+        free(pfft_setup->aav->rdisps);
+        free(pfft_setup->aav->rcounts);
+        free(pfft_setup->aav);
+    }
     free(pfft_setup->work);
     
     return 0;

@@ -45,6 +45,7 @@
 #include "futil.h"
 #include "smalloc.h"
 #include "futil.h"
+#include "macros.h"
 #include "network.h"
 #include "fftgrid.h"
 #include "gmx_fft.h"
@@ -85,6 +86,7 @@ t_fftgrid *mk_fftgrid(int          nx,
                       int          ny,
                       int          nz,
                       int          *node2slab,
+		      int          *slab2grid_x,
                       t_commrec *  cr,
                       bool         bReproducible)
 {
@@ -100,14 +102,15 @@ t_fftgrid *mk_fftgrid(int          nx,
     MPI_Comm_size(cr->mpi_comm_mygroup,&nnodes);
   }
 #endif
-  
+ 
   snew(grid,1);
   grid->nx   = nx;
   grid->ny   = ny;
   grid->nz   = nz;
   grid->nxyz = nx*ny*nz;
+  grid->bParallel = (nnodes > 1);
   
-  if (nnodes > 1)
+  if (grid->bParallel)
   {
       grid->la2r = (nz/2+1)*2;
   }
@@ -120,7 +123,7 @@ t_fftgrid *mk_fftgrid(int          nx,
 
   grid->la12r = ny*grid->la2r;
   
-  if (nnodes > 1)
+  if (grid->bParallel)
   {
       grid->la12c = nx*grid->la2c;
   }
@@ -131,11 +134,12 @@ t_fftgrid *mk_fftgrid(int          nx,
   
   grid->nptr = nx*ny*grid->la2c*2;
 
-  if (nnodes > 1) 
+  if (grid->bParallel) 
   {
 #ifdef GMX_MPI
       gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
-			      node2slab,cr->mpi_comm_mygroup,bReproducible);
+			      node2slab,slab2grid_x,cr->mpi_comm_mygroup,
+			      bReproducible);
           
       gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
                                 &(grid->pfft.local_x_start),                                
@@ -153,18 +157,17 @@ t_fftgrid *mk_fftgrid(int          nx,
   }
   grid->ptr = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
   
-  grid->localptr=NULL;
 #ifdef GMX_MPI
-  if (nnodes > 1 && debug) 
+  if (grid->bParallel && debug) 
   {
     print_parfft(debug,"Plan", &grid->pfft);
   }
-  if (nnodes > 1)
+  if (grid->bParallel)
   {
-      int localsize;
-      grid->localptr=grid->ptr+grid->la12r*grid->pfft.local_x_start;
-      localsize = grid->la12c*2*grid->pfft.local_ny_after_transpose;
-      grid->workspace = gmx_alloc_aligned(localsize*sizeof(*(grid->workspace)));
+      int maxlocalsize;
+      maxlocalsize = max(grid->la2c *2*grid->pfft.local_nx*ny,
+			 grid->la12c*2*grid->pfft.local_ny_after_transpose);
+      grid->workspace = gmx_alloc_aligned(maxlocalsize*sizeof(*(grid->workspace)));
   }
   else
   {
@@ -180,20 +183,25 @@ t_fftgrid *mk_fftgrid(int          nx,
 void 
 pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
 {
-  int     i,j,k,l,ntot=0;
+  int     i,j,k,index_x,index_xy,ntot=0;
   int     nx,ny,nz,nx2,ny2,nz2,la12,la2;
   real *  ptr;
 
   /* Unpack structure */
   unpack_fftgrid(grid,&nx,&ny,&nz,&nx2,&ny2,&nz2,&la2,&la12,TRUE,&ptr);
-  l=0;
-  for(i=0; (i<nx); i++)
-    for(j=0; (j<ny); j++) 
-      for(k=0; (k<nz); k++,l++)
-	if (ptr[l] != 0) {
-	  fprintf(fp,"%-12s  %5d  %5d  %5d  %12.5e\n",title,i,j,k,ptr[l]);
+  for(i=0; (i<nx); i++) {
+    index_x = la12*i;
+    for(j=0; (j<ny); j++) {
+      index_xy = index_x + la2*j;
+      for(k=0; (k<nz); k++) {
+	if (ptr[index_xy+k] != 0) {
+	  fprintf(fp,"%-12s  %5d  %5d  %5d  %12.5e\n",
+		  title,i,j,k,ptr[index_xy+k]);
 	  ntot++;
 	}
+      }
+    }
+  }
   fprintf(fp,"%d non zero elements in %s\n",ntot,title);
 }
 
@@ -203,7 +211,6 @@ void done_fftgrid(t_fftgrid *grid)
     sfree(grid->ptr);
     grid->ptr = NULL;
   }
-  grid->localptr=NULL;
  
   if (grid->workspace) {
       sfree(grid->workspace);
@@ -216,12 +223,12 @@ void gmxfft3D(t_fftgrid *grid,int dir,t_commrec *cr)
 {
   void *tmp;
 
-  if (grid->localptr) 
+  if (grid->bParallel) 
   {
 #ifdef GMX_MPI
     if( dir == GMX_FFT_REAL_TO_COMPLEX || dir == GMX_FFT_COMPLEX_TO_REAL )
     {
-      gmx_parallel_3dfft(grid->mpi_fft_setup,dir,grid->localptr,grid->localptr);
+      gmx_parallel_3dfft(grid->mpi_fft_setup,dir,grid->ptr,grid->ptr);
     }
     else
     {
