@@ -300,7 +300,10 @@ static void pme_calc_pidx(int npmenodes,
   real rxx,ryx,rzx;
   matrix recipbox;
     
-/* Calculate PME task index (pidx) for each grid index */
+  /* Calculate PME task index (pidx) for each grid index.
+   * Here we always assign equally sized slabs to each node
+   * for load balancing reasons (the PME grid spacing is not used).
+   */
 
   /* Reset the count */
   for(i=0; i<npmenodes; i++)
@@ -310,7 +313,7 @@ static void pme_calc_pidx(int npmenodes,
   rxx = recipbox[XX][XX];
   ryx = recipbox[YY][XX];
   rzx = recipbox[ZZ][XX];
-/* Calculate grid index in x-dimension */
+  /* Calculate the node index in x-dimension */
   for(i=0; (i<natoms); i++) {
     xptr   = x[i];
     /* Fractional coordinates along box vectors */
@@ -1208,12 +1211,46 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
   return 0;
 }
 
-bool pme_optimal_nnodes(int nkx,int nnodes)
+int pme_inconvenient_nnodes(int nkx,int nky,int nnodes)
 {
-  /* Maximum 2D FFT performance loss of 33% at nnodes = nkx/3 - 1
-   * Limit nkx/nnodes ratio at 2.5, 2D FFT performance loss of 20%
+  int   nnx,nny;
+  float imbal;
+  int   ret;
+
+  ret = 0;
+  if (nnodes > nkx && nnodes > nky) {
+    /* This is probably always bad */
+    ret = 2;
+  } else if (2*nnodes > nkx && nnodes != nkx) {
+    /* This is inconvenient for the grid overlap communication */
+    ret = 1;
+  } 
+
+  /* Determine the maximum number of grid slabs per PME node */
+  nnx = (nkx + nnodes - 1)/nnodes;
+  nny = (nky + nnodes - 1)/nnodes;
+  /* Estimate the FFT + solve_pme load imbalance.
+   * Imbalance in x for 2D FFT.
+   * Imbalance in y for 1D FFT + solve_pme.
+   * x and y imbalance affect the performance roughly equally.
    */
-  return (nnodes*5 <= nkx*2 || nnodes == nkx || nnodes == (nkx+1)/2);
+  imbal = (nnx*nnodes/(float)nkx + nny*nnodes/(float)nky)*0.5 - 1;
+  if (debug)
+    fprintf(debug,"PME load imbalance estimate for npme=%d: %f\n",
+	    nnodes,imbal);
+
+  /* The cost of charge spreading and force gathering (which is always
+   * load balanced) is usually 1-2 times more than FFT+solve_pme.
+   * So we compare the imbalance to (a rough guess of) the performance gain
+   * in spreading and gathering with respect to one node less.
+   */
+  if (imbal > 2.0/nnodes) {
+    ret = max(ret,2);
+  } else if (imbal > 1.0/nnodes) {
+    ret = max(ret,1);
+  }
+
+  return ret;
 }
 
 int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
@@ -1262,21 +1299,19 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     MPI_Type_commit(&rvec_mpi);
 #endif
     
-    if (!pme_optimal_nnodes(pme->nkx,pme->nnodes) && pme->nodeid == 0) {
+    /* Note that the charge spreading and force gathering, which usually
+     * takes about the same amount of time as FFT+solve_pme, is always fully
+     * load balanced (unless the charge distribution is inhomogeneous).
+     */
+
+    if (pme_inconvenient_nnodes(pme->nkx,pme->nky,pme->nnodes) &&
+	pme->nodeid == 0) {
       fprintf(stderr,
 	      "\n"
-	      "NOTE: For optimal performance with #PME_nodes > grid_x/2.5, the number of PME nodes\n"
-	      "      should be equal to grid_x/2 (%d) or grid_x (%d), not %d\n"
+	      "NOTE: For optimal PME load balancing at high parallelization\n"
+	      "      PME grid_x (%d) and grid_y (%d) should be divisible by #PME_nodes (%d)\n"
 	      "\n",
-	      (pme->nkx+1)/2,pme->nkx,pme->nnodes);
-    }
-    if (2*pme->nnodes == pme->nkx+1 && pme->nodeid == 0) {
-      fprintf(stderr,
-	      "\n"
-	      "NOTE: For optimal performance with #PME_nodes = grid_x/2\n"
-	      "      PME grid_x should be even (currently %d)\n"
-	      "\n",
-	      pme->nkx);
+	      pme->nkx,pme->nky,pme->nnodes);
     }
 
     /* Determine the grid boundary communication sizes and nodes */

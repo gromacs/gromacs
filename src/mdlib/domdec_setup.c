@@ -44,7 +44,7 @@ static bool fits_perf(FILE *fplog,
 		      int nnodes,int npme,float ratio)
 {
   return ((double)npme/(double)nnodes > 0.95*ratio &&
-	  pme_optimal_nnodes(ir->nkx,npme));
+	  pme_inconvenient_nnodes(ir->nkx,ir->nky,npme) <= 1);
 }
 
 static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
@@ -94,9 +94,9 @@ static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
     }
   }
   if (npme > nnodes/2) {
-    gmx_fatal(FARGS,"Could not find an appropriate number of separate PME nodes. i.e. >= %5f*#nodes (%d) and <= #nodes/2 (%d) and reasonable performance wise (grid_x=%d).\n"
+    gmx_fatal(FARGS,"Could not find an appropriate number of separate PME nodes. i.e. >= %5f*#nodes (%d) and <= #nodes/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
 	      "Use the -npme option of mdrun or change the number of processors or the grid dimensions.",
-	      ratio,(int)(0.95*ratio*nnodes+0.5),nnodes/2,ir->nkx);
+	      ratio,(int)(0.95*ratio*nnodes+0.5),nnodes/2,ir->nkx,ir->nky);
     /* Keep the compiler happy */
     npme = 0;
   } else {
@@ -196,7 +196,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
       }
     }
   }
-  /* Normalize of the number of PP nodes */
+  /* Normalize by the number of PP nodes */
   comm_vol /= npp;
 
   /* Determine the largest volume that a PME only needs to communicate */
@@ -207,7 +207,7 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     } else {
       comm_vol_pme = 1.0 - lcd(nc[XX],npme)/(double)npme;
     }
-    /* Normalize the number of PME only nodes */
+    /* Normalize by the number of PME only nodes */
     comm_vol_pme /= npme;
   }
 
@@ -391,7 +391,8 @@ void dd_choose_grid(FILE *fplog,
 	  gmx_fatal(FARGS,
 		    "Can not have separate PME nodes with 2 or less nodes");
       } else {
-	if (cr->nnodes < 12 && pme_optimal_nnodes(ir->nkx,cr->nnodes)) {
+	if (cr->nnodes < 12 &&
+	    pme_inconvenient_nnodes(ir->nkx,ir->nky,cr->nnodes) == 0) {
 	  cr->npmenodes = 0;
 	} else {
 	  cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
