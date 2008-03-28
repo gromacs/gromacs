@@ -361,7 +361,7 @@ This is mainly useful for vacuum simulations in which all particles
 see each other.</dd>
 <dt><b>-1</b></dt>
 <dd>Automated update frequency.
-This can only be used with switched or shifted potentials where
+This can only be used with switched, shifted or user potentials where
 the cut-off can be smaller than <b>rlist</b>. One then has a buffer
 of size <b>rlist</b> minus the longest cut-off.
 The neighbor list is only updated when one or more particles have moved further
@@ -370,7 +370,7 @@ as determined at the previous neighbor search.
 Coordinate scaling due to pressure coupling or the <b>deform</b> option
 is taken into account.
 This option guarantees that their are no cut-off artifacts.
-But for larger systems this comes at a high computational cost,
+But for larger systems this can come at a high computational cost,
 since the neighbor list update frequency will be determined
 by just one or two particles moving slightly beyond the half buffer length
 (which not even necessarily implies that the neighbor list is invalid),
@@ -495,7 +495,7 @@ because only for that value the force vanishes at the cut-off.
 to accommodate for the size of charge groups and diffusion
 between neighbor list updates. This, and the fact that table lookups
 are used instead of analytical functions make <b>Reaction-Field-zero</b>
-slower than normal reaction-field.</dd>
+computationally more expensive than normal reaction-field.</dd>
 
 <dt><b>Reaction-Field-nec</b></dt>
 <dd>The same as <b>Reaction-Field</b>, but implemented as in
