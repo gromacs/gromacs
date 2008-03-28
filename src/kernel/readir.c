@@ -284,13 +284,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
    * provide accurate energy conservation.
    */
   if (EEL_NOCUT(ir->coulombtype)) {
-    if (!EEL_PME(ir->coulombtype) && !EEL_RF(ir->coulombtype)) {
+    if (EEL_SWITCHED(ir->coulombtype)) {
       sprintf(err_buf,
 	      "With coulombtype = %s rcoulomb_switch must be < rcoulomb",
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb_switch >= ir->rcoulomb);
     }
-  } else if (EEL_RF(ir->coulombtype)) {
+  } else if (ir->coulombtype == eelCUT || EEL_RF(ir->coulombtype)) {
     sprintf(err_buf,"With coulombtype = %s, rcoulomb must be >= rlist",
 	    eel_names[ir->coulombtype]);
     CHECK(ir->rlist > ir->rcoulomb);
@@ -331,13 +331,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     CHECK(ir->wall_ewald_zfac < 2);
   }
 
-  if ((ir->vdwtype == evdwSWITCH) || (ir->vdwtype == evdwSHIFT) || (ir->vdwtype == evdwENCADSHIFT) )
-  {
+  if (EVDW_SWITCHED(ir->vdwtype)) {
     sprintf(err_buf,"With vdwtype = %s rvdw_switch must be < rvdw",
 	    evdw_names[ir->vdwtype]);
     CHECK(ir->rvdw_switch >= ir->rvdw);
-  } else {
-    sprintf(err_buf,"With vdwtype = %s,rvdw must be >= rlist",evdw_names[ir->vdwtype]);
+  } else if (ir->vdwtype == evdwCUT) {
+    sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
   if (EEL_NOCUT(ir->coulombtype) && (ir->rlist <= ir->rcoulomb)) {
