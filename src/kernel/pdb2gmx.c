@@ -63,6 +63,7 @@
 #include "gbutil.h"
 #include "genhydro.h"
 #include "readinp.h"
+#include "atomprop.h"
 #include "xlate.h"
 #include "specbond.h"
 #include "index.h"
@@ -263,7 +264,8 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
 static int read_pdball(char *inf, char *outf,char *title,
 		       t_atoms *atoms, rvec **x,
 		       int *ePBC,matrix box, bool bRemoveH,
-		       t_symtab *symtab,t_aa_names *aan,char *watres)
+		       t_symtab *symtab,t_aa_names *aan,char *watres,
+		       void *atomprop)
 /* Read a pdb file. (containing proteins) */
 {
   int  natom,new_natom,i;
@@ -274,6 +276,8 @@ static int read_pdball(char *inf, char *outf,char *title,
   init_t_atoms(atoms,natom,TRUE);
   snew(*x,natom);
   read_stx_conf(inf,title,atoms,*x,NULL,ePBC,box);
+  if (fn2ftp(inf) == efPDB)
+    get_pdb_atomnumber(atoms,atomprop);
   if (bRemoveH) {
     new_natom=0;
     for(i=0; i<atoms->nr; i++)
@@ -676,7 +680,8 @@ int main(int argc, char *argv[])
   real       mHmult=0;
   bool       bAlldih,HH14,bRemoveDih;
   int        nrexcl;
-
+  void       *atomprop;
+  
   t_filenm   fnm[] = { 
     { efSTX, "-f", "eiwit.pdb", ffREAD  },
     { efSTO, "-o", "conf",      ffWRITE },
@@ -837,9 +842,11 @@ int main(int argc, char *argv[])
     watres = "HO5";
   else
     watres = "HOH";
-
+    
+  atomprop = get_atomprop();
   natom = read_pdball(opt2fn("-f",NFILE,fnm),opt2fn_null("-q",NFILE,fnm),title,
-		      &pdba_all,&pdbx,&ePBC,box,bRemoveH,&symtab,aan,watres);
+		      &pdba_all,&pdbx,&ePBC,box,bRemoveH,&symtab,aan,watres,
+		      atomprop);
   
   if (natom==0)
     gmx_fatal(FARGS,"No atoms found in pdb file %s\n",opt2fn("-f",NFILE,fnm));

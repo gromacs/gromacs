@@ -65,6 +65,7 @@ typedef struct {
   int  type;                    /* PDB record name                      */
   int  atomnr;                  /* PDB atom number                      */
   char altloc;                  /* Alternate location indicator         */
+  char atomnm[6];               /* True atom name including spaces      */
   char pdbresnr[6];             /* PDB res number                       */
   real occup;                   /* Occupancy                            */
   real bfac;                    /* B-factor                             */

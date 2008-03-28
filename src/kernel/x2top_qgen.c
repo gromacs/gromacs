@@ -90,6 +90,43 @@ static real coul_slater_slater(real w,real r)
   return (1/r)*(1 - (1+a*r_w+b*r_w2+c*r_w3)*exp(-r_w));
 }
 
+#define Power(x, y)     (pow((double)(x), (double)(y)))
+#define Pi              3.14159265358979323846264
+#define E               2.71828182845904523536029
+
+static double J_1sa1sa_1sa1sa(double r,double xi)
+{
+
+  return (1.*Power(E,3.*r*xi) + Power(E,1.*r*xi)*
+       (-1. - 1.375*r*xi - 0.75*Power(r,2)*Power(xi,2) - 
+	0.16666666666666666*Power(r,3)*Power(xi,3)))/(Power(E,3.*r*xi)*r); 
+}
+
+static double J_2sa2sa_2sa2sa(double r,double xi)
+{
+
+  return (-0.9999999999999998 - 1.63671875*r*xi -
+      1.2734374999999998*Power(r,2)*Power(xi,2) -
+      0.6197916666666665*Power(r,3)*Power(xi,3) -
+      0.20833333333333337*Power(r,4)*Power(xi,4) -
+      0.05000000000000002*Power(r,5)*Power(xi,5) -
+      0.008333333333333337*Power(r,6)*Power(xi,6) -
+      0.0007936507936507946*Power(r,7)*Power(xi,7) +
+      Power(E,2.*r*xi)*(0.9999999999999998 +
+         1.5501637768927252e-16*Power(r,2)*Power(xi,2) -
+	 2.9065570816738596e-17*Power(r,3)*Power(xi,3)))/(Power(E,2.*r*xi)*r);
+}
+
+static double J_1sa1sa_2sa2sa(double r,double xi)
+{
+
+  return (-1. + 1.*Power(E,2.*r*xi) - 1.5625*r*xi - 
+      1.1249999999999998*Power(r,2)*Power(xi,2) - 
+      0.4791666666666667*Power(r,3)*Power(xi,3) - 
+      0.125*Power(r,4)*Power(xi,4) - 
+      0.016666666666666666*Power(r,5)*Power(xi,5))/(Power(E,2.*r*xi)*r);
+}
+
 static real coul_slater_nucl(real w,real r) 
 {
   real r_w  = r/w;

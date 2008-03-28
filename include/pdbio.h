@@ -89,6 +89,9 @@ extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
  * override chain-identifiers with chain when chain>0
  * write ENDMDL when bEndmodel is TRUE */
   
+extern void get_pdb_atomnumber(t_atoms *atoms,void *atomprop);
+/* Routine to extract atomic numbers from the atom names */
+
 extern int read_pdbfile(FILE *in,char *title,int *model_nr,
 			t_atoms *atoms,rvec x[],int *ePBC,matrix box,
 			bool bChange,gmx_conect conect);

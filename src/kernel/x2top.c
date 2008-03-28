@@ -285,6 +285,7 @@ int main(int argc, char *argv[])
   else
     gc = NULL;
   read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,&ePBC,box,FALSE,gc);
+  get_pdb_atomnumber(atoms,atomprop);
   if (bCONECT && debug)
     dump_conection(debug,gc);
   

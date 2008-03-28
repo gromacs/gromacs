@@ -359,7 +359,44 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   }
 }
 
-static int read_atom(t_symtab *symtab,void *atomprop,
+void get_pdb_atomnumber(t_atoms *atoms,void *atomprop)
+{
+  int  i,k,atomnumber;
+  char anm[6],anm_copy[6];
+  char nc='\0';
+  real eval;
+  
+  if (!atoms->pdbinfo) {
+    gmx_incons("Trying to deduce atomnumbers when no pdb information is present");
+  }
+  for(i=0; (i<atoms->nr); i++) {
+    strcpy(anm,*atoms->atomname[i]);
+    strcpy(anm_copy,*atoms->atomname[i]);
+    atomnumber = NOTSET;
+    if (anm[0] != ' ') {
+      anm_copy[2] = nc;
+      if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+	atomnumber = gmx_nint(eval);
+      else {
+	anm_copy[1] = nc;
+	if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+	  atomnumber = gmx_nint(eval);
+      }
+    }
+    if (atomnumber == NOTSET) {
+      k=0;
+      while ((k < strlen(anm)) && (isspace(anm[k]) || isdigit(anm[k])))
+	k++;
+      anm_copy[0] = anm[k];
+      anm_copy[1] = nc;
+      if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+	atomnumber = gmx_nint(eval);
+    }
+    atoms->atom[i].atomnumber = atomnumber;
+  }
+}
+
+static int read_atom(t_symtab *symtab,
 		     char line[],int type,int natom,
 		     t_atoms *atoms,rvec x[],bool bChange)
 {
@@ -370,7 +407,6 @@ static int read_atom(t_symtab *symtab,void *atomprop,
   char xc[12],yc[12],zc[12],occup[12],bfac[12],pdbresnr[12];
   static char oldresnm[12],oldresnr[12];
   int  newres,atomnumber;
-  real eval;
 
   if (natom>=atoms->nr)
     gmx_fatal(FARGS,"\nFound more atoms (%d) in pdb file than expected (%d)",
@@ -386,25 +422,6 @@ static int read_atom(t_symtab *symtab,void *atomprop,
   anm[k]=nc;
   strcpy(anm_copy,anm);
   atomnumber = NOTSET;
-  if (anm[0] != ' ') {
-    anm_copy[2] = nc;
-    if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
-      atomnumber = gmx_nint(eval);
-    else {
-      anm_copy[1] = nc;
-      if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
-	atomnumber = gmx_nint(eval);
-    }
-  }
-  if (atomnumber == NOTSET) {
-    k=0;
-    while ((k < strlen(anm)) && (isspace(anm[k]) || isdigit(anm[k])))
-      k++;
-    anm_copy[0] = anm[k];
-    anm_copy[1] = nc;
-    if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
-      atomnumber = gmx_nint(eval);
-  }
   trim(anm);
   altloc=line[j];
   j++;
@@ -476,6 +493,7 @@ static int read_atom(t_symtab *symtab,void *atomprop,
     atoms->pdbinfo[natom].atomnr=atoi(anr);
     atoms->pdbinfo[natom].altloc=altloc;
     strcpy(atoms->pdbinfo[natom].pdbresnr,pdbresnr);
+    strcpy(atoms->pdbinfo[natom].atomnm,anm_copy);
     atoms->pdbinfo[natom].bfac=atof(bfac);
     atoms->pdbinfo[natom].occup=atof(occup);
   }
@@ -575,7 +593,6 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
   gmx_conect_t *gc = (gmx_conect_t *)conect;
   static t_symtab symtab;
   static bool bFirst=TRUE;
-  static void *atomprop=NULL;
   bool bCOMPND;
   bool bConnWarn = FALSE;
   char line[STRLEN+1];
@@ -593,7 +610,6 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
 
   if (bFirst) {
     open_symtab(&symtab);
-    atomprop = get_atomprop();
     bFirst=FALSE;
   }
 
@@ -606,7 +622,7 @@ int read_pdbfile(FILE *in,char *title,int *model_nr,
     switch(line_type) {
     case epdbATOM:
     case epdbHETATM:
-      natom = read_atom(&symtab,atomprop,line,line_type,natom,atoms,x,bChange);
+      natom = read_atom(&symtab,line,line_type,natom,atoms,x,bChange);
       break;
       
     case epdbANISOU:
