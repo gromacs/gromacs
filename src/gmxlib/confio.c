@@ -683,12 +683,11 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
 {
   static t_symtab *symtab=NULL;
   char   name[6];
-  char   line[STRLEN+1];
+  char   line[STRLEN+1],*ptr;
   char   buf[256];
-  char   format[30];
   double x1,y1,z1,x2,y2,z2;
   rvec   xmin,xmax;
-  int    natoms,i,m,resnr,newres,oldres,ddist;
+  int    natoms,i,m,resnr,newres,oldres,ddist,c;
   bool   bFirst,bVel;
   char   *p1,*p2;
   
@@ -732,17 +731,10 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
       if (p1 == NULL)
 	gmx_fatal(FARGS,"A coordinate in file %s does not contain a '.'",infile);
       p2=strchr(&p1[1],'.');
-      if (p1 || p2)
-	ddist=p2-p1;
-      else
-	ddist=8;
-      if (ddist<0)
-	ddist=8;
-      if (ddist>30)
-	ddist=30;
-      sprintf(format,"%%%dlf%%%dlf%%%dlf",ddist,ddist,ddist);
-      /* this will be something like "%8lf%8lf%8lf" */
-      *ndec = ddist-5;
+      if (p2 == NULL)
+	gmx_fatal(FARGS,"A coordinate in file %s does not contain a '.'",infile);
+      ddist = p2 - p1;
+      *ndec = ddist - 5;
     }
     
     /* residue number*/
@@ -769,29 +761,36 @@ static bool get_w_conf(FILE *in, char *infile, char *title,
     /* eventueel controle atomnumber met i+1 */
 
     /* coordinates (start after residue shit) */
-    /* 'format' was built previously */
-    if (sscanf (line+20,format,&x1,&y1,&z1) != 3) {
-      too_few();
-    }
-    else {
-      x[i][XX]=x1;
-      x[i][YY]=y1;
-      x[i][ZZ]=z1;
+    ptr = line + 20;
+    /* Read fixed format */
+    for(m=0; m<DIM; m++) {
+      for(c=0; (c<ddist && ptr[0]); c++) {
+	buf[c] = ptr[0];
+	ptr++;
+      }
+      buf[c] = '\0';
+      if (sscanf (buf,"%lf",&x1) != 1) {
+	too_few();
+      } else {
+	x[i][m] = x1;
+      }
     }
 
     /* velocities (start after residues and coordinates) */
-    /* 'format' was built previously */
     if (v) {
-      if (sscanf (line+20+(3*ddist),format,&x1,&y1,&z1) != 3) {
-	v[i][XX] = 0.0;
-	v[i][YY] = 0.0;
-	v[i][ZZ] = 0.0;
-      }
-      else {
-	v[i][XX]=x1;
-	v[i][YY]=y1;
-	v[i][ZZ]=z1;
-	bVel = TRUE;
+      /* Read fixed format */
+      for(m=0; m<DIM; m++) {
+	for(c=0; (c<ddist && ptr[0]); c++) {
+	  buf[c] = ptr[0];
+	  ptr++;
+	}
+	buf[c] = '\0';
+	if (sscanf (buf,"%lf",&x1) != 1) {
+	  v[i][m] = 0;
+	} else {
+	  v[i][m] = x1;
+	  bVel = TRUE;
+	}
       }
     }
   }
