@@ -28,37 +28,8 @@
 
 \chapter{Interaction function and force field\index{force-field}}
 \label{ch:ff}
-A force field is built up from two distinct components:
-\begin{itemize}
-\item The set of equations (called the {\em
-\swapindex{potential}{function}s}) used to generate the potential
-energies and their derivatives, the forces.
-\item The parameters used in this set of equations
-\end{itemize}
-Within one set of equations various sets of parameters can be
-used. Care must be taken that the combination of equations and
-parameters form a consistent set. It is in general dangerous to make
-{\em ad hoc} changes in a subset of parameters, because the various
-contributions to the total force are usually interdependent.
-
-{\gromacs} {\gmxver} includes several force fields, and additional ones
-are available on the website. If you don't know which one to select
-we recommend Gromos96 for united-atom setups and OPLS-AA/L for all-atom
-parameters. The {\gromacs} forcefields is mainly included for historical
-reasons; it is based on
-\gromosv{87}~\cite{biomos}\index{gromos-87},
-with a small modification concerning the interaction between
-water-oxygens and carbon atoms~\cite{Buuren93b,Mark94}, as well as 10
-extra atom types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}.
-\ifthenelse{\equal{\gmxlite}{1}}{}{
-However, the user is free to make her own modifications (beware!).
-This will be explained in details in \chref{top}, which deals
-with the {\bf Topology}. The organization of the force field files
-is described in \secref{fforganization}.
-} % Brace matches ifthenelse test for gmxlite
-
 To accommodate the potential functions used
-in some popular force fields, {\gromacs} offers a choice of functions,
+in some popular force fields (see \ref{sec:ff}), {\gromacs} offers a choice of functions,
 both for non-bonded interaction and for dihedral interactions. They
 are described in the appropriate subsections.
 
@@ -2439,7 +2410,7 @@ Since the interpolation is entirely local a this will
 improve the scaling in most cases.
 
 %
-% Temporarily removed since I'm not sure about the state of the testlr 
+% Temporarily removed since I am not sure about the state of the testlr 
 % program...
 %
 %It is possible to test the accuracy of your settings using the program 
@@ -2462,18 +2433,62 @@ improve the scaling in most cases.
 } % Brace matches ifthenelse test for gmxlite
 
 
-\ifthenelse{\equal{\gmxlite}{1}}{}{
-\section{\swapindex{All-hydrogen}{force-field}}
-The {\gromacs} all-hydrogen force-field is almost identical to the normal
-{\gromacs} forcefield, since the extra hydrogens have no Lennard-Jones
-interaction and zero charge. The only differences are in the bond angle
-and improper dihedral angle terms. This forcefield is only useful when
-you need the exact hydrogen positions, for instance for distance
-restraints derived from NMR measurements.
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-\section{\gromosv{96} notes}
+\section{Force field\index{force-field}}
+\label{sec:ff}
+A force field is built up from two distinct components:
+\begin{itemize}
+\item The set of equations (called the {\em
+    \swapindex{potential}{function}s}) used to generate the potential
+  energies and their derivatives, the forces. These are described in
+  detail in the previous chapter.
+\item The parameters used in this set of equations. These are not
+  given in this manual, but in the data files corresponding to your
+  {\gromacs} distribution.
+\end{itemize}
+Within one set of equations various sets of parameters can be
+used. Care must be taken that the combination of equations and
+parameters form a consistent set. It is in general dangerous to make
+{\em ad hoc} changes in a subset of parameters, because the various
+contributions to the total force are usually interdependent. This
+means in principle that every change should be documented, verified by
+comparison to experimental data and published in a peer-reviewd
+journal before it can be used.
 
-\subsection{The \gromosv{96} force field\index{gromos-96 force field}}
+{\gromacs} {\gmxver} includes several force fields, and additional
+ones are available on the website. If you do not know which one to
+select we recommend Gromos96 for united-atom setups and OPLS-AA/L for
+all-atom parameters. That said, we describe the availabe options in
+some detail.
+
+\subsection{GROMOS87\index{gromos-87 force field}}
+The \gromosv{87} suite of programs and corresponding force
+field\cite{biomos} formed the basis for the development of {\gromacs}
+in the early 1990s.  The original GROMOS87 force field is not
+available in {\gromacs}. In previous versions ($<$ 3.3.2) there used
+to be the so-called {\gromacs} force field which was based on
+\gromosv{87}~\cite{biomos}\index{gromos-87}, with a small modification
+concerning the interaction between water-oxygens and carbon
+atoms~\cite{Buuren93b,Mark94}, as well as 10 extra atom
+types~\cite{Jorgensen83,Buuren93a,Buuren93b,Mark94,Liu95}. Whenever
+using this force field, please cite the above references, and do not
+call it {\gromacs} force field, instead name it
+\gromosv{87}~\cite{biomos} with corrections as detailed
+in~\cite{Buuren93b,Mark94}.
+
+\subsubsection{\swapindex{All-hydrogen}{force-field}}
+The {\gromacs} all-hydrogen force-field is almost identical to the
+normal {\gromacs} forcefield, since the extra hydrogens have no
+Lennard-Jones interaction and zero charge. The only differences are in
+the bond angle and improper dihedral angle terms. This forcefield is
+only useful when you need the exact hydrogen positions, for instance
+for distance restraints derived from NMR measurements. When citing
+this force field please read the previous paragraph.
+
+\subsection{\gromosv{96}\index{gromos-96 force field}}
 {\gromacs} supports the \gromosv{96} force fields~\cite{gromos96}.
 All parameters for the 43a1, 43a2 (development, improved alkane
 dihedrals) and 43b1 (vacuum) force fields are included.  All standard
@@ -2506,7 +2521,7 @@ of 1.4 nm, so be sure to use a Lennard-Jones cutoff of at least 1.4.
 A larger cutoff is possible, because the Lennard-Jones potential and forces
 are almost zero beyond 1.4 nm.
 
-\subsection{\gromosv{96} files}\index{gromos-96 files}\index{files,
+\subsubsection{\gromosv{96} files}\index{gromos-96 files}\index{files,
 gromos|see{gromos-96 files}}
 {\gromacs} can read and write \gromosv{96} coordinate and trajectory files.
 These files should have the extension {\tt .g96}.
@@ -2533,4 +2548,11 @@ See the \gromosv{96} manual~\cite{gromos96} for a complete description
 of the blocks. Note that all {\gromacs} programs can read compressed
 (.Z) or gzipped (.gz) files.
 
-} % Brace matches ifthenelse test for gmxlite
+\subsection{OPLS/AA\index{OPLS/AA force field}}
+
+\subsection{Amber\index{Amber force field}}
+
+\subsection{CHARMM\index{Charmm force field}}
+
+\subsection{Martini\index{Martini force field}}
+
