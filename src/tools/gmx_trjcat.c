@@ -507,20 +507,25 @@ int gmx_trjcat(int argc,char *argv[])
       
       /* set the next time from the last frame in previous file */
       if (i > 0) {
-	if(cont_type[i]==TIME_CONTINUE) {
-	  begin =frout.time;
-	  begin += 0.5*timestep;
-	  settime[i]=frout.time;
-	  cont_type[i]=TIME_EXPLICIT;	  
+	if (frame_out >= 0) {
+	  if(cont_type[i]==TIME_CONTINUE) {
+	    begin =frout.time;
+	    begin += 0.5*timestep;
+	    settime[i]=frout.time;
+	    cont_type[i]=TIME_EXPLICIT;	  
+	  }
+	  else if(cont_type[i]==TIME_LAST) {
+	    begin=frout.time;
+	    begin += 0.5*timestep;
+	  }
+	  /* Or, if the time in the next part should be changed by the
+	   * same amount, start at half a timestep from the last time
+	   * so we dont repeat frames.
+	   */
+	  /* I don't understand the comment above, but for all the cases
+	   * I tried the code seems to work properly. B. Hess 2008-4-2.
+	   */
 	}
-	else if(cont_type[i]==TIME_LAST)
-	  begin=frout.time;
-	begin += 0.5*timestep;
-	/* Or, if the time in the next part should be changed by the
-	 * same amount, start at half a timestep from the last time
-	 * so we dont repeat frames.
-	 */
-      
 	/* Or, if time is set explicitly, we check for overlap/gap */
 	if(cont_type[i]==TIME_EXPLICIT) 
 	  if( ( i < nfile_in ) &&
