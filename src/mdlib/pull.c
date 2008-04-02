@@ -514,12 +514,12 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     switch (pull->eGeom) {
     case epullgDIST:
       for(m=0; m<DIM; m++)
-	pgrp->f_scal += r_ij[g][m]*pgrp->f[m]/dnorm(r_ij[g]);
+	pgrp->f_scal += r_ij[g][m]*f[m]/dnorm(r_ij[g]);
       break;
     case epullgDIR:
     case epullgCYL:
       for(m=0; m<DIM; m++)
-	pgrp->f_scal += pgrp->vec[m]*pgrp->f[m];
+	pgrp->f_scal += pgrp->vec[m]*f[m];
       break;
     case epullgPOS:
       break;
