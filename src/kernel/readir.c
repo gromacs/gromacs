@@ -283,7 +283,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
    * means the interaction is zero outside rcoulomb, but it helps to
    * provide accurate energy conservation.
    */
-  if (EEL_NOCUT(ir->coulombtype)) {
+  if (EEL_ZERO_AT_CUTOFF(ir->coulombtype)) {
     if (EEL_SWITCHED(ir->coulombtype)) {
       sprintf(err_buf,
 	      "With coulombtype = %s rcoulomb_switch must be < rcoulomb",
@@ -339,11 +339,12 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"With vdwtype = %s, rvdw must be >= rlist",evdw_names[ir->vdwtype]);
     CHECK(ir->rlist > ir->rvdw);
   }
-  if (EEL_NOCUT(ir->coulombtype) && (ir->rlist <= ir->rcoulomb)) {
+  if ((EEL_SWITCHED(ir->coulombtype) || ir->coulombtype == eelRF_ZERO)
+      && (ir->rlist <= ir->rcoulomb)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb.");
     warning(NULL);
   }
-  if (EVDW_NOCUT(ir->vdwtype) && (ir->rlist <= ir->rvdw)) {
+  if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlist <= ir->rvdw)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rvdw.");
     warning(NULL);
   }
@@ -351,7 +352,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (ir->nstlist == -1) {
     sprintf(err_buf,
 	    "nstlist=-1 only works with switched or shifted potentials");
-    CHECK(!(EEL_NOCUT(ir->coulombtype) && EVDW_NOCUT(ir->vdwtype)));
+    CHECK(!(EEL_ZERO_AT_CUTOFF(ir->coulombtype) &&
+	    EVDW_ZERO_AT_CUTOFF(ir->vdwtype)));
   }
   sprintf(err_buf,"nstlist can not be smaller than -1");
   CHECK(ir->nstlist < -1);
