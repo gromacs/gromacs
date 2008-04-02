@@ -2784,6 +2784,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
       for(e=0; e<nener; e++)
 	fprintf(fp_tpi," %12.5e",sum_UgembU[e]/nsteps);
       fprintf(fp_tpi,"\n");
+      fflush(fp_tpi);
     }
 
     bNotLastFrame = read_next_frame(status,&rerun_fr);
