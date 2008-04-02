@@ -694,7 +694,7 @@ int gmx_disre(int argc,char *argv[])
   update_mdatoms(mdatoms,lambda);
   fr      = mk_forcerec();
   fprintf(fplog,"Made forcerec\n");
-  init_forcerec(fplog,fr,NULL,&ir,&top,cr,box,FALSE,NULL,NULL,NULL,FALSE);
+  init_forcerec(fplog,fr,NULL,&ir,&top,cr,box,FALSE,NULL,NULL,NULL,FALSE,-1);
   init_nrnb(&nrnb);
   j=0;
   do {

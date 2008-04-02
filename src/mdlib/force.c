@@ -930,7 +930,8 @@ void init_forcerec(FILE *fp,
 		   const char *tabfn,
 		   const char *tabpfn,
 		   const char *tabbfn,
-		   bool       bNoSolvOpt)
+		   bool       bNoSolvOpt,
+		   real       print_force)
 {
   int     i,j,m,natoms,ngrp,negp_pp,negptable,egi,egj;
   real    q,zsq,nrdf,T,rtab;
@@ -1325,6 +1326,8 @@ void init_forcerec(FILE *fp,
     fr->cg0 = 0;
     fr->hcg = top->cgs.nr;
   }
+
+  fr->print_force = print_force;
 
   /* Initialize neighbor search */
   init_ns(fp,cr,&fr->ns,

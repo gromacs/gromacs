@@ -279,7 +279,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   /* Initiate forcerecord */
   *fr = mk_forcerec();
   init_forcerec(fplog,*fr,NULL,inputrec,top,*cr,
-		state->box,FALSE,table,table,NULL,TRUE);
+		state->box,FALSE,table,table,NULL,TRUE,-1);
 
   /* Remove periodicity */  
   for(m=0; (m<DIM); m++)

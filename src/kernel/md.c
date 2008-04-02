@@ -112,6 +112,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 	      real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
 	      int nstepout,t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
+	      real pforce,
 	      unsigned long Flags)
 {
   double     nodetime=0,realtime;
@@ -259,7 +260,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     fr = mk_forcerec();
     init_forcerec(fplog,fr,fcd,inputrec,top,cr,box,FALSE,
 		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
-		  opt2fn("-tableb",nfile,fnm),FALSE);
+		  opt2fn("-tableb",nfile,fnm),FALSE,pforce);
     fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
     
     /* Initialize QM-MM */

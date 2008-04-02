@@ -242,7 +242,9 @@ typedef struct {
   /* QM-MM neighborlists */
   t_nblist QMMMlist_sr;
   t_nblist QMMMlist_lr; /* not needed, one QMMM list suffices */
- 
+
+  /* Limit for printing large forces, negative is don't print */
+  real print_force;
 
   /* User determined parameters, copied from the inputrec */
   int  userint1;

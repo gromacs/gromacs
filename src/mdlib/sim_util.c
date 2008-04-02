@@ -294,6 +294,22 @@ static void sum_epot(t_grpopts *opts,t_groups *grps,real epot[])
       epot[F_EPOT] += epot[i];
 }
 
+static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
+			       int step,real pforce,rvec *x,rvec *f)
+{
+  int  i;
+  real pf2,fn2;
+
+  pf2 = sqr(pforce);
+  for(i=md->start; i<md->start+md->homenr; i++) {
+    fn2 = norm2(f[i]);
+    if (fn2 >= pf2) {
+      fprintf(fp,"step %d  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
+	      step,glatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
+    }
+  }
+}
+
 void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -625,6 +641,9 @@ void do_force(FILE *fplog,t_commrec *cr,
 
   /* Sum the potential energy terms from group contributions */
   sum_epot(&(inputrec->opts),grps,ener);
+
+  if (fr->print_force >= 0 && bDoForces)
+    print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
 }
 
 #ifdef NO_CLOCK 

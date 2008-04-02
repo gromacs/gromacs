@@ -251,6 +251,7 @@ extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		     real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
 		     int nstepout,
 		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
+		     real pforce,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 

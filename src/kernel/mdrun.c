@@ -193,7 +193,13 @@ int main(int argc,char *argv[])
     "Finally some experimental algorithms can be tested when the",
     "appropriate options have been given. Currently under",
     "investigation are: polarizability, glass simulations",
-    "and X-Ray bombardments.[PAR]",
+    "and X-Ray bombardments.",
+    "[PAR]",
+    "The option [TT]-pforce[tt] is useful when you suspect a simulation",
+    "crashes due to too large forces. With this option coordinates and",
+    "forces of atoms with a force larger than a certain value will",
+    "be printed to stderr.",
+    "[PAR]",
     "When mdrun receives a TERM signal, it will set nsteps to the current",
     "step plus one. When mdrun receives a USR1 signal, it will set nsteps",
     "to the next multiple of nstxout after the current step.",
@@ -257,7 +263,7 @@ int main(int argc,char *argv[])
   static rvec realddxyz={0,0,0};
   static char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
-  static real rdd=0.0,rconstr=0.0,dlb_scale=0.8;
+  static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
 
   static t_pargs pa[] = {
@@ -293,8 +299,10 @@ int main(int argc,char *argv[])
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
       "Write a compact log file" },
-    { "-seppot", FALSE, etBOOL,{&bSepPot},
+    { "-seppot", FALSE, etBOOL, {&bSepPot},
       "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
+    { "-pforce", FALSE, etREAL, {&pforce},
+      "Print all forces larger than this (kJ/mol nm)" },
     { "-reprod", FALSE, etBOOL,{&bReproducible},  
       "Try to avoid optimizations that affect binary reproducibility" },      
     { "-multi",   FALSE, etINT,{&nmultisim}, 
@@ -377,7 +385,7 @@ int main(int argc,char *argv[])
   
   mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
 	   ddxyz,dd_node_order,rdd,rconstr,dlb_scale,ddcsx,ddcsy,ddcsz,
-	   nstepout,edyn,repl_ex_nst,repl_ex_seed,Flags);
+	   nstepout,edyn,repl_ex_nst,repl_ex_seed,pforce,Flags);
   
   if (gmx_parallel_env)
     gmx_finalize(cr);

@@ -112,11 +112,13 @@ extern void init_forcerec(FILE       *fplog,
 			  const char *tabfn,
 			  const char *tabpfn,
 			  const char *tabbfn,
-			  bool       bNoSolvOpt);
+			  bool       bNoSolvOpt,
+			  real       print_force);
 /* The Force rec struct must be created with mk_forcerec 
  * The booleans have the following meaning:
  * bSetQ:    Copy the charges [ only necessary when they change ]
  * bMolEpot: Use the free energy stuff per molecule
+ * print_force >= 0: print forces for atoms with force >= print_force
  */
  
 extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
