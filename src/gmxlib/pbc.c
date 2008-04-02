@@ -57,8 +57,8 @@ enum { epbcdxRECTANGULAR=1, epbcdxTRICLINIC,
        epbcdxNOPBC,         epbcdxUNSUPPORTED };
 
 /* Margin factor for error message and correction if the box is too skewed */
-#define BOX_MARGIN         0.5010
-#define BOX_MARGIN_CORRECT 0.5005
+#define BOX_MARGIN         1.0010
+#define BOX_MARGIN_CORRECT 1.0005
 
 int ePBC2npbcdim(int ePBC)
 {
@@ -110,10 +110,10 @@ char *check_box(int ePBC,matrix box)
     ptr = "Only triclinic boxes with the first vector parallel to the x-axis and the second vector in the xy-plane are supported.";
   } else if (ePBC == epbcSCREW && (box[YY][XX] != 0 || box[ZZ][XX] != 0)) {
     ptr = "The unit cell can not have off-diagonal x-components with screw pbc";
-  } else if (fabs(box[YY][XX]) > BOX_MARGIN*box[XX][XX] ||
+  } else if (fabs(box[YY][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
 	     (ePBC != epbcXY &&
-	      (fabs(box[ZZ][XX]) > BOX_MARGIN*box[XX][XX] ||
-	       fabs(box[ZZ][YY]) > BOX_MARGIN*box[YY][YY]))) {
+	      (fabs(box[ZZ][XX]) > BOX_MARGIN*0.5*box[XX][XX] ||
+	       fabs(box[ZZ][YY]) > BOX_MARGIN*0.5*box[YY][YY]))) {
     ptr = "Triclinic box is too skewed.";
   } else {
     ptr = NULL;
@@ -182,7 +182,7 @@ static int correct_box_elem(FILE *fplog,int step,tensor box,int v,int d)
   shift = 0;
 
   /* correct elem d of vector v with vector d */
-  while (box[v][d] > BOX_MARGIN_CORRECT*box[d][d]) {
+  while (box[v][d] > BOX_MARGIN_CORRECT*0.5*box[d][d]) {
     if (fplog) {
       fprintf(fplog,"Step %d: correcting invalid box:\n",step);
       pr_rvecs(fplog,0,"old box",box,DIM);
@@ -197,7 +197,7 @@ static int correct_box_elem(FILE *fplog,int step,tensor box,int v,int d)
 		"Box was shifted at least %d times. Please see log-file.",
 		maxshift);
   } 
-  while (box[v][d] < -BOX_MARGIN_CORRECT*box[d][d]) {
+  while (box[v][d] < -BOX_MARGIN_CORRECT*0.5*box[d][d]) {
     if (fplog) {
       fprintf(fplog,"Step %d: correcting invalid box:\n",step);
       pr_rvecs(fplog,0,"old box",box,DIM);
@@ -399,7 +399,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 		d2old += sqr(pos[d]);
 		d2new += sqr(pos[d] + try[d]);
 	      }
-	      if (d2new < 0.999*d2old) {
+	      if (BOX_MARGIN*d2new < d2old) {
 		if (j < -1 || j > 1 || k < -1 || k > 1) {
 		  /* Check if there is a single shift vector
 		   * that decreases this distance even more.
@@ -414,7 +414,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 		  for(d=0; d<DIM; d++)
 		    d2new_c += sqr(pos[d] + try[d] 
 				   - jc*box[YY][d] - kc*box[ZZ][d]);
-		  if (d2new_c > d2new) {
+		  if (d2new_c > BOX_MARGIN*d2new) {
 		    /* Reject this shift vector, as there is no a priori limit
 		     * to the number of shifts that decrease distances.
 		     */
@@ -431,7 +431,7 @@ static void low_set_pbc(t_pbc *pbc,int ePBC,ivec *dd_nc,matrix box)
 		      d2new_c = 0;
 		      for(d=0; d<DIM; d++)
 			d2new_c += sqr(pos[d] + try[d] - shift*box[dd][d]);
-		      if (d2new_c <= d2new)
+		      if (d2new_c <= BOX_MARGIN*d2new)
 			bUse = FALSE;
 		    }
 		  }
