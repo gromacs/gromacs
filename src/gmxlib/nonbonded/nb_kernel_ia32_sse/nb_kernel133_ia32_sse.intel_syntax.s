@@ -947,7 +947,7 @@ _nb_kernel133_ia32_sse:
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	;# xmm0=rinv, xmm4=rsq
 
-	#; LJ table interaction
+				;# LJ table interaction
 	mulps xmm4, xmm0
 	mulps  xmm4, [esp + nb133_tsc] ;# rtab
 	
@@ -2032,7 +2032,7 @@ _nb_kernel133nf_ia32_sse:
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	;# xmm0=rinv, xmm4=rsq
 
-	#; LJ table interaction
+	;# LJ table interaction
 	mulps xmm4, xmm0
 	mulps  xmm4, [esp + nb133nf_tsc] ;# rtab
 	

@@ -899,7 +899,7 @@ _nb_kernel133_x86_64_sse:
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	;# xmm0=rinv, xmm4=rsq
 
-	#; LJ table interaction
+	;# LJ table interaction
 	mulps xmm4, xmm0
 	mulps  xmm4, [rsp + nb133_tsc] ;# rtab
 	
@@ -2001,7 +2001,7 @@ _nb_kernel133nf_x86_64_sse:
 	mulps xmm1, xmm2	
 	mulps xmm0, xmm1	;# xmm0=rinv, xmm4=rsq
 
-	#; LJ table interaction
+	;# LJ table interaction
 	mulps xmm4, xmm0
 	mulps  xmm4, [rsp + nb133nf_tsc] ;# rtab
 	
