@@ -321,7 +321,7 @@ int main(int argc,char *argv[])
       "HIDDENFrequency of writing the remaining runtime" }
   };
   t_edsamyn *edyn;
-  unsigned long Flags;
+  unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
   FILE     *fplog;
@@ -332,9 +332,13 @@ int main(int argc,char *argv[])
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
 
-  parse_common_args(&argc,argv,
-		    PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_BE_NICE |
-		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
+  PCA_Flags = (PCA_KEEP_ARGS | PCA_NOEXIT_ON_ARGS | PCA_CAN_SET_DEFFNM
+	       | (MASTER(cr) ? 0 : PCA_QUIET));
+  /* Only run niced when not running in parallel */
+  if (!gmx_parallel_env)
+    PCA_Flags |= PCA_BE_NICE;
+
+  parse_common_args(&argc,argv,PCA_Flags,
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL);
 
   dd_node_order = nenum(ddno_opt);
