@@ -74,7 +74,7 @@ static void correct_state_entries(t_state *state,t_inputrec *ir)
   if (state->x == NULL)
     snew(state->x,state->nalloc);
   if (EI_DYNAMICS(ir->eI)) {
-    state->flags = STATE_HAS_V;
+    state->flags |= STATE_HAS_V;
     if (state->v == NULL)
       snew(state->v,state->nalloc);
   }
