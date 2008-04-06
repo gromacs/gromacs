@@ -37,7 +37,7 @@
 %define .globl		global
 ;# NASM only wants 'dword', not 'dword ptr'.
 %define ptr
-.equiv          .equiv                  2
+%macro .equiv                  2
    %1 equ %2
 %endmacro
 ; .endif                   # End of NASM-specific block
