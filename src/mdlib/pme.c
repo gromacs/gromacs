@@ -158,8 +158,6 @@ extern RETSIGTYPE signal_handler(int n);
 
 volatile bool bGotTermSignal = FALSE, bGotUsr1Signal = FALSE; 
 
-#define DEBUG
-
 /* #define SORTPME */
 
 static void pr_grid_dist(FILE *fp,char *title,t_fftgrid *grid)
