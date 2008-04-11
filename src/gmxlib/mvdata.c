@@ -167,19 +167,21 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
   block_bc(cr,state->boxv);
   block_bc(cr,state->pcoupl_mu);
   if (bAlloc && !MASTER(cr)) {
-    snew(state->nosehoover_xi,state->ngtc);
+    snew(state->nosehoover_xi, state->ngtc);
+    snew(state->nosehoover_ixi,state->ngtc);
     state->nalloc = state->natoms;
     snew(state->x,state->nalloc);
     snew(state->v,state->nalloc);
-    if (state->flags & STATE_HAS_SDX)
+    if (state->flags & (1<<estSDX))
       snew(state->sd_X,state->nalloc);
   }
   nblock_bc(cr,state->ngtc,state->nosehoover_xi);
+  nblock_bc(cr,state->ngtc,state->nosehoover_ixi);
   nblock_bc(cr,state->natoms,state->x);
   nblock_bc(cr,state->natoms,state->v);
-  if (state->flags & STATE_HAS_SDX)
+  if (state->flags & (1<<estSDX))
     nblock_bc(cr,state->natoms,state->sd_X);
-  if (state->flags & STATE_HAS_CGP)
+  if (state->flags & (1<<estCGP))
     nblock_bc(cr,state->natoms,state->cg_p);
 }
 

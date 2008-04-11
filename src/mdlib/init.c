@@ -65,23 +65,47 @@ static char *int_title(char *title,int nodeid,char buf[], int size)
   return buf;
 }
 
-static void correct_state_entries(t_state *state,t_inputrec *ir)
+static void set_state_entries(t_state *state,t_inputrec *ir)
 {
   /* The entries in the state in the tpx file might not correspond
    * with what is needed, so we correct this here.
    */
-  state->flags = STATE_HAS_X;
+  state->flags = 0;
+  /* This should correspond to the number in src/gmxlib/gmx_random.c */
+  state->nrng  = 624;
+  if (ir->efep != efepNO)
+    state->flags |= (1<<estLAMBDA);
+  state->flags |= (1<<estX);
   if (state->x == NULL)
     snew(state->x,state->nalloc);
   if (EI_DYNAMICS(ir->eI)) {
-    state->flags |= STATE_HAS_V;
+    state->flags |= (1<<estV);
     if (state->v == NULL)
       snew(state->v,state->nalloc);
   }
   if (ir->eI == eiSD2) {
-    state->flags |= STATE_HAS_SDX;
-    if (state->sd_X == NULL)
+    state->flags |= (1<<estSDX);
+    if (state->sd_X == NULL) {
+      /* sd_X is not stored in the tpx file, so we need to allocate it */
       snew(state->sd_X,state->nalloc);
+    }
+  }
+  if (ir->eI == eiCG)
+    state->flags |= (1<<estCGP);
+  if (EI_SD(ir->eI) || ir->eI == eiBD) {
+    state->flags |= (1<<estLD_RNG) | (1<<estLD_RNGI);
+    snew(state->ld_rng,state->nrng);
+  }
+  if (ir->ePBC != epbcNONE) {
+    state->flags |= (1<<estBOX);
+    if (PRESERVE_SHAPE(*ir))
+      state->flags |= (1<<estBOX_REL);
+    if (ir->epc == epcPARRINELLORAHMAN)
+      state->flags |= (1<<estBOXV);
+    if (ir->epc == epcBERENDSEN)
+      state->flags |= (1<<estPC_MU);
+    if (ir->etc == etcNOSEHOOVER)
+      state->flags |= ((1<<estNH_XI) | (1<<estNH_IXI));
   }
 }
 
@@ -93,7 +117,7 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
   real        t;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-  correct_state_entries(state,inputrec);
+  set_state_entries(state,inputrec);
 
   if (fplog)
     pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
@@ -111,7 +135,7 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   if (MASTER(cr)) {
     init_inputrec(inputrec);
     read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-    correct_state_entries(state,inputrec);
+    set_state_entries(state,inputrec);
   }
   bcast_ir_top(cr,inputrec,top);
 

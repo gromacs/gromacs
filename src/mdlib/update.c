@@ -303,7 +303,17 @@ gmx_stochd_t init_stochd(FILE *fplog,
   return sd;
 }
 
-static void do_update_sd1(t_gmx_stochd *sd,bool bFirstStep,
+void get_stochd_state(t_gmx_stochd *sd,t_state *state)
+{
+  gmx_rng_get_state(sd->gaussrand,state->ld_rng,&state->ld_rngi);
+}
+
+void set_stochd_state(t_gmx_stochd *sd,t_state *state)
+{
+  gmx_rng_set_state(sd->gaussrand,state->ld_rng,state->ld_rngi);
+}
+
+static void do_update_sd1(t_gmx_stochd *sd,
 			  int start,int homenr,double dt,
 			  rvec accel[],ivec nFreeze[],
 			  real invmass[],unsigned short ptype[],
@@ -702,6 +712,7 @@ void update(FILE         *fplog,
             bool         bNEMD,
 	    bool         bDoBerendsenCoupl,
 	    bool         bFirstStep,
+	    bool         bStateFromTPX,
 	    tensor       pres)
 {
   bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
@@ -735,13 +746,11 @@ void update(FILE         *fplog,
 
   if (inputrec->etc==etcBERENDSEN && bDoBerendsenCoupl)
     berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
-  if (!bFirstStep) {
-    if (inputrec->etc==etcNOSEHOOVER)
+  if (inputrec->etc==etcNOSEHOOVER && !(bFirstStep && bStateFromTPX))
       nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
-			state->nosehoover_xi);
-    if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl)
-      berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
-  }
+			state->nosehoover_xi,state->nosehoover_ixi);
+  if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl && !bFirstStep)
+    berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
   if (inputrec->epc == epcPARRINELLORAHMAN)
     parrinellorahman_pcoupl(fplog,step,inputrec,pres,
 			    state->box,state->box_rel,state->boxv,
@@ -766,7 +775,7 @@ void update(FILE         *fplog,
 		     md->ptype,md->cTC,state->x,xprime,state->v,force,M,
 		     state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
   } else if (inputrec->eI == eiSD1) {
-    do_update_sd1(sd,bFirstStep,start,homenr,dt,
+    do_update_sd1(sd,start,homenr,dt,
 		  inputrec->opts.acc,inputrec->opts.nFreeze,
 		  md->invmass,md->ptype,
 		  md->cFREEZE,md->cACC,md->cTC,
@@ -776,7 +785,7 @@ void update(FILE         *fplog,
     /* The SD update is done in 2 parts, because an extra constraint step
      * is needed 
      */
-    do_update_sd2(sd,bFirstStep,start,homenr,
+    do_update_sd2(sd,bFirstStep && bStateFromTPX,start,homenr,
 		  inputrec->opts.acc,inputrec->opts.nFreeze,
 		  md->invmass,md->ptype,
 		  md->cFREEZE,md->cACC,md->cTC,

@@ -112,10 +112,10 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 	      real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
 	      int nstepout,t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
-	      real pforce,
+	      real pforce,real cpt_period,real max_hours,
 	      unsigned long Flags)
 {
-  double     nodetime=0,realtime;
+  double     nodetime=0,realtime,t;
   t_inputrec *inputrec;
   t_state    *state=NULL;
   matrix     box;
@@ -135,6 +135,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   gmx_vsite_t *vsite=NULL;
   gmx_constr_t constr;
   int        i,m,nChargePerturbed=-1,status,nalloc;
+  int        nnodes_cpt,npme_cpt;
+  ivec       dd_nc_cpt;
   char       *gro;
   gmx_wallcycle_t wcycle;
 
@@ -157,6 +159,20 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     snew(state,1);
     init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state);
   }
+
+  if (opt2bSet("-cpi",nfile,fnm)) {
+    if (SIMMASTER(cr)) {
+      /* Read the state from the checkpoint file */
+      read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,cr,&i,&t,
+		      &nnodes_cpt,dd_nc_cpt,&npme_cpt,state);
+    }
+    if (PAR(cr))
+      gmx_bcast(sizeof(i),&i,cr);
+    inputrec->bContinuation = TRUE;
+    inputrec->init_step += i;
+    inputrec->nsteps    -= i;
+  }
+
   if (SIMMASTER(cr))
     copy_mat(state->box,box);
   if (PAR(cr))
@@ -371,6 +387,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 					    ener,fcd,state,f,buf,
 					    mdatoms,nrnb,wcycle,graph,edyn,fr,
 					    repl_ex_nst,repl_ex_seed,
+					    cpt_period,max_hours,
 					    Flags);
 
     if (inputrec->ePull != epullNO)
@@ -413,16 +430,20 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
+	     real cpt_period,real max_hours,
 	     unsigned long Flags)
 {
   t_mdebin   *mdebin;
   int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel;
+  char       *fn_cpt;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
   bool       bGStat,bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
-             bFirstStep,bLastStep,bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
-	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bMasterState,bDoBerendsenCoupl;
+             bFirstStep,bStateFromTPX,bLastStep;
+  bool       bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
+	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
+  bool       bMasterState,bDoBerendsenCoupl;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
@@ -432,8 +453,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   matrix     *scale_tot;
   t_trxframe rerun_fr;
   gmx_repl_ex_t repl_ex=NULL;
-  /* A boolean (disguised as a real) to terminate mdrun */  
-  real       terminate=0;
+  int        nchkpt=1;
+  /* Booleans (disguised as a reals) to checkpoint and terminate mdrun */  
+  real       chkpt=0,terminate=0,terminate_now=0;
 
   t_topology *top;
   t_state    *state=NULL;
@@ -493,8 +515,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Initial values */
   init_md(fplog,cr,ir,&t,&t0,&state_global->lambda,&lam0,
 	  nrnb,top_global,&sd,
-	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fp_dgdl,&fp_field,&mdebin,grps,
+	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
+	  &fp_dgdl,&fp_field,&mdebin,grps,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
+
   debug_gmx();
 
   /* Check for polarizable models and flexible constraints */
@@ -556,6 +580,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   update_mdatoms(mdatoms,state->lambda);
 
+  if (sd && opt2bSet("-cpi",nfile,fnm)) {
+    /* Set the random state if we read a checkpoint file */
+    set_stochd_state(sd,state);
+  }
+
   /* Initialize constraints */
   if (constr) {
     if (!DOMAINDECOMP(cr))
@@ -611,7 +640,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     GMX_MPE_LOG(ev_global_stat_start);
        
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		ir,grps,FALSE,constr,vcm,NULL,&terminate);
+		ir,grps,FALSE,constr,vcm,NULL,NULL,&terminate);
 
     GMX_MPE_LOG(ev_global_stat_finish);
   }
@@ -694,6 +723,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   /* loop over MD steps or if rerunMD to end of input trajectory */
   bFirstStep = TRUE;
+  /* Skip the first Nose-Hoover integration when we get the state from tpx */
+  bStateFromTPX = !opt2bSet("-cpi",nfile,fnm);
   bLastStep = FALSE;
   bSumEkinhOld = FALSE,
   bExchanged = FALSE;
@@ -701,8 +732,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   step = ir->init_step;
   step_rel = 0;
 
-  while ((!bRerunMD && (step_rel <= ir->nsteps)) ||  
-	 (bRerunMD && bNotLastFrame)) {
+  bLastStep = (!bRerunMD && step_rel > ir->nsteps);
+  while (!bLastStep || (bRerunMD && bNotLastFrame)) {
 
     wallcycle_start(wcycle,ewcSTEP);
 
@@ -723,9 +754,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       t = t0 + step*ir->delta_t;
     }
     
-    do_log = do_per_step(step,ir->nstlog) || bLastStep;
-    do_verbose = bVerbose && (step % stepout == 0 || bLastStep);
-
     if (ir->efep != efepNO) {
       if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
 	state->lambda = rerun_fr.lambda;
@@ -808,6 +836,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	}
       }
     } 
+
+    if (terminate_now == 1 || (terminate_now == -1 && bNS))
+      bLastStep = TRUE;
+
+    do_log = do_per_step(step,ir->nstlog) || bLastStep;
+    do_verbose = bVerbose && (step % stepout == 0 || bLastStep);
 
     if (bNS && !(bFirstStep && ir->bContinuation)) {
       bMasterState = FALSE;
@@ -906,18 +940,27 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     GMX_MPE_LOG(ev_output_start);
 
-    bX   = (do_per_step(step,ir->nstxout) || bLastStep);
-    bV   = (do_per_step(step,ir->nstvout) || bLastStep);
-    bF   = (do_per_step(step,ir->nstfout));
-    bXTC = (do_per_step(step,ir->nstxtcout));
+    bX   = do_per_step(step,ir->nstxout);
+    bV   = do_per_step(step,ir->nstvout);
+    bF   = do_per_step(step,ir->nstfout);
+    bXTC = do_per_step(step,ir->nstxtcout);
+    if (bNS || bLastStep) {
+      bCPT = (chkpt > 0 || bLastStep);
+      chkpt = 0;
+    } else {
+      bCPT = FALSE;
+    }
 
-    if (bX || bV || bF || bXTC) {
+    if (bX || bV || bF || bXTC || bCPT) {
       wallcycle_start(wcycle,ewcTRAJ);
-      write_traj(cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,
-		 top_global,step,t,state,state_global,f,f_global);
+      if (sd && bCPT)
+	get_stochd_state(sd,state);
+      write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,fn_cpt,bCPT,
+		 top_global,ir->eI,step,t,state,state_global,f,f_global);
       debug_gmx();
 
-      if (bLastStep && (Flags & MD_CONFOUT) && MASTER(cr) &&
+      if (bLastStep && step_rel == ir->nsteps &&
+	  (Flags & MD_CONFOUT) && MASTER(cr) &&
 	  !bRerunMD && !bFFscan) {
 	/* x and v have been collected in write_traj */
 	fprintf(stderr,"\nWriting final coordinates.\n");
@@ -958,7 +1001,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,
 	     top,grps,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
-	     bNEMD,bDoBerendsenCoupl,bFirstStep,pres);
+	     bNEMD,bDoBerendsenCoupl,bFirstStep,bStateFromTPX,pres);
       if (fr->bSepDVDL && fplog && do_log)
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
       ener[F_DGDL_CON] += dvdl;
@@ -1010,28 +1053,48 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bStopCM && !bFFscan && !bRerunMD)
       calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
 		   state->x,state->v,vcm);
-
+    
     /* Check whether everything is still allright */    
     if (bGotTermSignal || bGotUsr1Signal) {
-      if (bGotTermSignal)
+      if (bGotTermSignal || ir->nstlist == 0)
 	terminate = 1;
       else
 	terminate = -1;
-      fprintf(fplog,"\n\nReceived the %s signal\n\n",
-	      bGotTermSignal ? "TERM" : "USR1");
-      fflush(fplog);
-      if (MASTER(cr)) {
-	fprintf(stderr,"\n\nReceived the %s signal\n\n",
-	      bGotTermSignal ? "TERM" : "USR1");
-	fflush(stderr);
+      if (!PAR(cr))
+	terminate_now = terminate;
+      if (fplog) {
+	fprintf(fplog,
+		"\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+		bGotTermSignal ? "TERM" : "USR1",terminate==-1 ? "NS " : "");
+	fflush(fplog);
       }
+      fprintf(stderr,
+	      "\n\nReceived the %s signal, stopping at the next %sstep\n\n",
+	      bGotTermSignal ? "TERM" : "USR1",terminate==-1 ? "NS " : "");
+      fflush(stderr);
       bGotTermSignal = FALSE;
       bGotUsr1Signal = FALSE;
+    } else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
+	       (max_hours > 0 && (time(NULL) - start_t) > max_hours*24*60.0*0.99) &&
+	       terminate == 0) {
+      /* Signal to terminate the run */
+      terminate = (ir->nstlist == 0 ? 1 : -1);
+      if (!PAR(cr))
+	terminate_now = terminate;
+     if (fplog)
+	fprintf(fplog,"\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
+      fprintf(stderr, "\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
     }
-  
+    
     if (ir->nstlist == -1 && !bRerunMD) {
-      nabnsb =
-	natoms_beyond_ns_buffer(ir,fr,&top->cgs,*scale_tot,state->x);
+      nabnsb = natoms_beyond_ns_buffer(ir,fr,&top->cgs,*scale_tot,state->x);
+    }
+
+    if (MASTER(cr) && (cpt_period <= 0 || 
+		       time(NULL) - start_t >= nchkpt*cpt_period*60.0)) {
+      if (chkpt == 0)
+	nchkpt++;
+      chkpt = 1;
     }
 
     if (PAR(cr) &&
@@ -1041,9 +1104,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
        */
+      if (MASTER(cr))
+	terminate = terminate_now;
       global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
 		  ir,grps,bSumEkinhOld,constr,vcm,
-		  ir->nstlist==-1 ? &nabnsb : NULL,&terminate);
+		  ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
 
       wallcycle_stop(wcycle,ewcMoveE);
       bSumEkinhOld = FALSE;
@@ -1059,34 +1124,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		   state->v,vcm->group_p[0],
 		   mdatoms->massT,mdatoms->tmass,ekin);
     
-    if ((terminate != 0) && (step - ir->init_step < ir->nsteps)) {
-      if (terminate<0 && ir->nstxout)
-	/* this is the USR1 signal and we are writing x to trr, 
-	   stop at next x frame in trr */
-	ir->nsteps = (step/ir->nstxout + 1) * ir->nstxout - ir->init_step;
-      else
-	ir->nsteps = step + 1 - ir->init_step;
-      if (PAR(cr) && !bGStat) {
-	/* Without bGStat we need to make sure that we terminate at
-	 * a step where global_stat is called, i.e. a multiple of nstlist.
-	 */
-	int list_mod = (ir->nsteps+ir->init_step) % ir->nstlist;
-	if (list_mod > 0)
-	  ir->nsteps += ir->nstlist - list_mod;
-      }
-      fprintf(fplog,"\nSetting nsteps to %d, last step is %d\n\n",
-	      ir->nsteps,ir->init_step+ir->nsteps);
-      fflush(fplog);
-      if (MASTER(cr)) {
-	fprintf(stderr,"\nSetting nsteps to %d, last step is %d\n\n",
-		ir->nsteps,ir->init_step+ir->nsteps);
-	fflush(stderr);
-      }
-      /* erase the terminate signal */
-      terminate = 0;
-    }
-      
-     /* Do center of mass motion removal */
+    /* Do center of mass motion removal */
     if (bStopCM && !bFFscan && !bRerunMD) {
       check_cm_grp(fplog,vcm,1);
       do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
@@ -1141,7 +1179,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (ir->etc == etcNOSEHOOVER)
       ener[F_ECONSERVED] =
 	ener[F_ETOT] + nosehoover_energy(&(ir->opts),grps,
-					 state->nosehoover_xi);
+					 state->nosehoover_xi,
+					 state->nosehoover_ixi);
 
     /* Check for excessively large energies */
     if (bIonize) {
@@ -1196,10 +1235,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       upd_mdebin(mdebin,fp_dgdl,bGStat,
 		 mdatoms->tmass,step_rel,t,ener,state,lastbox,
 		 shake_vir,force_vir,total_vir,pres,grps,mu_tot,constr);
-      do_ene = do_per_step(step,ir->nstenergy) || bLastStep;
-      do_dr  = do_per_step(step,ir->nstdisreout) || bLastStep;
-      do_or  = do_per_step(step,ir->nstorireout) || bLastStep;
-      do_dihr= do_per_step(step,ir->nstdihreout) || bLastStep;
+      do_ene = do_per_step(step,ir->nstenergy);
+      do_dr  = do_per_step(step,ir->nstdisreout);
+      do_or  = do_per_step(step,ir->nstorireout);
+      do_dihr= do_per_step(step,ir->nstdihreout);
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?fplog:NULL,
 		 step,step_rel,t,
 		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(ir->opts));

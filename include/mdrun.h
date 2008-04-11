@@ -87,6 +87,7 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_graph *graph,t_edsamyn *edyn,
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
+				real cpt_period,real max_hours,
 				unsigned long Flags);
 
 /* ROUTINES from md.c */
@@ -125,17 +126,18 @@ extern void global_stat(FILE *log,
 			t_inputrec *inputrec,
 			t_groups *grps,bool bSumEkinhOld,
 			gmx_constr_t constr,t_vcm *vcm,
-			int *nabnsb,real *terminate);
+			int *nabnsb,real *chkpt,real *terminate);
 /* Communicate statistics over cr->mpi_comm_mysim */
 
-void write_traj(t_commrec *cr,
+void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_trn,bool bX,bool bV,bool bF,
 		int fp_xtc,bool bXTC,int xtc_prec,
+		char *fn_cpt,bool bCPT,
 		t_topology *top_global,
-		int step,real t,
+		int eIntegrator,int step,double t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global);
-/* Routine that writes frames to trn and xtc.
+/* Routine that writes frames to trn, xtc and/or checkpoint.
  * Data is collected to the master node only when necessary.
  */
 
@@ -251,7 +253,7 @@ extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		     real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
 		     int nstepout,
 		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
-		     real pforce,
+		     real pforce,real cpt_period,real max_hours,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
 
@@ -261,7 +263,7 @@ extern void init_md(FILE *fplog,
 		    t_nrnb *nrnb,t_topology *top,
 		    gmx_stochd_t *stochd,
 		    int nfile,t_filenm fnm[],
-		    int *fp_trn,int *fp_xtc,int *fp_ene,
+		    int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
 		    FILE **fp_dgdl,FILE **fp_field,
 		    t_mdebin **mdebin,t_groups *grps,
 		    tensor force_vir,tensor shake_vir,

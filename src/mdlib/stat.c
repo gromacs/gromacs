@@ -64,6 +64,8 @@
 #include "domdec.h"
 #include "partdec.h"
 #include "constr.h"
+#include "checkpoint.h"
+#include "mdrun.h"
 
 void global_stat(FILE *fplog,
 		 t_commrec *cr,real ener[],
@@ -71,12 +73,13 @@ void global_stat(FILE *fplog,
 		 t_inputrec *inputrec,
 		 t_groups *grps,bool bSumEkinhOld,
 		 gmx_constr_t constr,
-		 t_vcm *vcm,int *nabnsb,real *terminate)
+		 t_vcm *vcm,int *nabnsb,
+		 real *chkpt,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc0,*itc1;
   int    ie,ifv,isv,irmsd=0,imu=0,idedl,icm=0,imass=0,ica,inb=0;
-  int    ibnsb=-1,iterminate;
+  int    ibnsb=-1,ichkpt,iterminate;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   int    j;
@@ -148,6 +151,8 @@ void global_stat(FILE *fplog,
     rbnsb = *nabnsb;
     ibnsb = add_binr(rb,1,&rbnsb);
   }
+  if (chkpt)
+    ichkpt   = add_binr(rb,1,chkpt);
   iterminate = add_binr(rb,1,terminate);
   
   /* Global sum it all */
@@ -199,6 +204,8 @@ void global_stat(FILE *fplog,
     *nabnsb = (int)(rbnsb + 0.5);
   }
   where();
+  if (chkpt)
+    extract_binr(rb,ichkpt,1,chkpt);
   extract_binr(rb,iterminate,1,terminate);
   where();
 
@@ -224,11 +231,12 @@ static void moveit(t_commrec *cr,
 	     xx,NULL,(cr->nnodes-cr->npmenodes)-1,NULL);
 }
 
-void write_traj(t_commrec *cr,
+void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_trn,bool bX,bool bV,bool bF,
 		int fp_xtc,bool bXTC,int xtc_prec,
+		char *fn_cpt,bool bCPT,
 		t_topology *top_global,
-		int step,real t,
+		int eIntegrator,int step,double t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global)
 {
@@ -242,28 +250,39 @@ void write_traj(t_commrec *cr,
 
   if (DOMAINDECOMP(cr)) {
     cgs = &top_global->cgs;
-    if (bX || bXTC) dd_collect_vec(cr->dd,cgs,state_local,
-				   state_local->x,state_global->x);
-    if (bV)         dd_collect_vec(cr->dd,cgs,state_local,
-				   state_local->v,state_global->v);
+    if (bCPT) {
+      dd_collect_state(cr->dd,cgs,state_local,state_global);
+    } else {
+      if (bX || bXTC) dd_collect_vec(cr->dd,cgs,state_local,
+				     state_local->x,state_global->x);
+      if (bV)         dd_collect_vec(cr->dd,cgs,state_local,
+				     state_local->v,state_global->v);
+    }
     if (bF)         dd_collect_vec(cr->dd,cgs,state_local,
 				   f_local,f_global);
   } else if (cr->nnodes > 1) {
+    if (bCPT)
+      gmx_fatal(FARGS,
+		"Checkpointing is not supported for particle decomposition");
     if (bX || bXTC) MX(state_global->x);
     if (bV)         MX(state_global->v);
     if (bF)         MX(f_global);
   }
 
   if (MASTER(cr)) {
-   atoms = &top_global->atoms;
-   if (bX || bV || bF) {
+    if (bCPT) {
+      write_checkpoint(fn_cpt,fplog,cr,eIntegrator,step,t,state_global);
+    }
+
+    atoms = &top_global->atoms;
+    if (bX || bV || bF) {
       fwrite_trn(fp_trn,step,t,state_local->lambda,
 		 state_local->box,atoms->nr,
 		 bX ? state_global->x : NULL,
 		 bV ? state_global->v : NULL,
 		 bF ? f_global : NULL);
       gmx_fio_flush(fp_trn);
-    }
+    }      
     if (bXTC) {
       if (nxtc == -1) {
 	nxtc = 0;

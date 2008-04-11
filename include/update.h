@@ -55,6 +55,12 @@ typedef struct gmx_stochd *gmx_stochd_t;
 extern gmx_stochd_t init_stochd(FILE *fplog,
 				int eI,int ngtc,real tau_t[],real dt,int seed);
 
+/* Store the random state from sd in state */
+extern void get_stochd_state(gmx_stochd_t sd,t_state *state);
+
+/* Set the random in sd from state */
+extern void set_stochd_state(gmx_stochd_t sd,t_state *state);
+
 extern void update(FILE         *fplog,
 		   int          step,
 		   real         *dvdlambda, /* FEP stuff */
@@ -78,6 +84,7 @@ extern void update(FILE         *fplog,
 		   bool         bNEMD,
 		   bool         bDoBerendsenCoupl,
 		   bool         bFirstStep,
+		   bool         bStateFromTPX,
 		   tensor       pres);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
@@ -115,10 +122,11 @@ extern real run_aver(real old,real cur,int step,int nmem);
 extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
 
 extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
-			      real xi[]);
+			      real xi[],double ixi[]);
 /* Compute temperature scaling. For Nose-Hoover it is done in update. */
 
-extern real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi);
+extern real nosehoover_energy(t_grpopts *opts,t_groups *grps,
+			      real *xi,double *ixi);
 /* Returns the Nose-Hoover contribution to the conserved energy */
 
 /* Set reference temp for simulated annealing at time t*/

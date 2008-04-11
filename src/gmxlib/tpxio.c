@@ -1451,6 +1451,7 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
     *t            = tpx.t;
     state->flags  = 0;
     state->lambda = tpx.lambda;
+    /* The init_state calls initialize the Nose-Hoover xi integrals to zero */
     if (bXVallocated) {
       xptr = state->x;
       vptr = state->v;
@@ -1528,7 +1529,7 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
   do_section(eitemX,bRead);
   if (tpx.bX) {
     if (bRead) {
-      state->flags |= STATE_HAS_X;
+      state->flags |= (1<<estX);
       if (!bXVallocated)
 	snew(state->x,state->nalloc);
     }
@@ -1539,7 +1540,7 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
   do_section(eitemV,bRead);
   if (tpx.bV) {
     if (bRead) {
-      state->flags |= STATE_HAS_V;
+      state->flags |= (1<<estV);
       if (!bXVallocated)
 	snew(state->v,state->nalloc);
     }

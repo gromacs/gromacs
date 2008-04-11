@@ -66,6 +66,7 @@ extern void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool
 extern void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n);
 extern void pr_rvecs_len(FILE *fp,int indent,const char *title,rvec vec[],int n);
 extern void pr_reals(FILE *fp,int indent,const char *title,real vec[],int n);
+extern void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n);
 extern void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNumbers);
 extern void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowNumbers);
 extern void pr_ilist(FILE *fp,int indent,const char *title,

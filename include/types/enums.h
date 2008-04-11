@@ -106,7 +106,7 @@ enum {
 #define EI_STATE_VELOCITY(e) ((e) == eiMD || EI_SD(e))
 
 enum {
-  estLINCS, estSHAKE, estNR
+  econtLINCS, econtSHAKE, econtNR
 };
 
 enum {

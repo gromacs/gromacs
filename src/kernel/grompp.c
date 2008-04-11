@@ -664,17 +664,17 @@ int main (int argc, char *argv[])
   if (debug)
     pr_symtab(debug,0,"After new_status",&sys->symtab);
   
-  if (count_constraints(msys.plist) && (ir->eConstrAlg == estSHAKE)) {
+  if (count_constraints(msys.plist) && (ir->eConstrAlg == econtSHAKE)) {
     if (ir->eI == eiCG || ir->eI == eiLBFGS) {
       fprintf(stderr,
 	      "ERROR: Can not do %s with %s, use %s\n",
-	      EI(ir->eI),eshake_names[estSHAKE],eshake_names[estLINCS]);
+	      EI(ir->eI),econstr_names[econtSHAKE],econstr_names[econtLINCS]);
       nerror++;
     }
     if (ir->bPeriodicMols) {
       fprintf(stderr,
 	      "ERROR: can not do periodic molecules with %s, use %s\n",
-	      eshake_names[estSHAKE],eshake_names[estLINCS]);
+	      econstr_names[econtSHAKE],econstr_names[econtLINCS]);
       nerror++;
     }
   }

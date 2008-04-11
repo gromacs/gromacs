@@ -43,27 +43,38 @@
  * Currently the random seeds for SD and BD are missing.
  */
 
-#define STATE_HAS_X   (1<<0)
-#define STATE_HAS_V   (1<<1)
-#define STATE_HAS_SDX (1<<2)
-#define STATE_HAS_CGP (1<<3)
+/* These enums are used in flags as (1<<est...).
+ * The order of these enums should not be changed,
+ * since that affects the checkpoint (.cpt) file format.
+ */
+enum { estLAMBDA,
+       estBOX, estBOX_REL, estBOXV, estPC_MU, estNH_XI,  estNH_IXI,
+       estX,   estV,       estSDX,  estCGP,   estLD_RNG, estLD_RNGI,
+       estNR };
+
+/* The names of the state entries, defined in src/gmxib/checkpoint.c */
+extern const char *est_names[estNR];
 
 typedef struct
 {
   int           natoms;
   int           ngtc;
+  int           nrng;
   int           flags;  /* Flags telling which entries are present      */
   real          lambda; /* the free energy switching parameter          */
   matrix 	box;    /* box vector coordinates                      	*/
   matrix 	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pcoupl_mu; /* for Berendsen pcoupl                      */
-  real          *nosehoover_xi; /* for Nose-Hoover tcoupl (ngtc)        */
+  real          *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
+  double        *nosehoover_ixi; /* for Nose-Hoover tcoupl (ngtc)       */
   int           nalloc; /* Allocation size for x, v and sd_x when !=NULL*/
   rvec          *x;     /* the coordinates (natoms)                     */
   rvec          *v;     /* the velocities (natoms)                      */
   rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
   rvec          *cg_p;  /* p vector for conjugate gradient minimization */
+  unsigned int  *ld_rng; /* RNG random state                            */
+  int           ld_rngi; /* RNG index                                   */
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
   int           ncg_gl; /* The number of local charge groups            */

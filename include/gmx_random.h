@@ -96,6 +96,30 @@ void
 gmx_rng_destroy(gmx_rng_t rng);
 
 
+/*! \brief Get the state of a RNG
+ *
+ *  This routine stores the random state in mt and mti, mt should have
+ *  a size of at least 624, mt of 1.
+ *
+ *  \param rng Handle to random number generator previously returned by
+ *		       gmx_rng_init() or gmx_rng_init_array().
+ */
+void
+gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt,int *mti);
+
+
+/*! \brief Set the state of a RNG
+ *
+ *  This routine sets the random state from mt and mti, mt should have
+ *  a size of at least 624.
+ *
+ *  \param rng Handle to random number generator previously returned by
+ *		       gmx_rng_init() or gmx_rng_init_array().
+ */
+void
+gmx_rng_set_state(gmx_rng_t rng, unsigned int *mt,int mti);
+
+
 /*! \brief Random 32-bit integer from a uniform distribution
  *
  *  This routine returns a random integer from the random number generator

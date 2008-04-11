@@ -971,16 +971,24 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
     copy_mat(state_local->box,state->box);
     copy_mat(state_local->boxv,state->boxv);
     copy_mat(state_local->pcoupl_mu,state->pcoupl_mu);
-    for(i=0; i<state_local->ngtc; i++)
-      state->nosehoover_xi[i] = state_local->nosehoover_xi[i];
+    for(i=0; i<state_local->ngtc; i++) {
+      state->nosehoover_xi[i]  = state_local->nosehoover_xi[i];
+      state->nosehoover_ixi[i] = state_local->nosehoover_ixi[i];
+    }
   }
   dd_collect_vec(dd,cgs_gl,state_local,state_local->x,state->x);
-  if (state_local->flags & STATE_HAS_V)
+  if (state_local->flags & (1<<estV))
     dd_collect_vec(dd,cgs_gl,state_local,state_local->v,state->v);
-  if (state_local->flags & STATE_HAS_SDX)
+  if (state_local->flags & (1<<estSDX))
     dd_collect_vec(dd,cgs_gl,state_local,state_local->sd_X,state->sd_X);
-  if (state_local->flags & STATE_HAS_CGP)
+  if (state_local->flags & (1<<estCGP))
     dd_collect_vec(dd,cgs_gl,state_local,state_local->cg_p,state->cg_p);
+  if (state_local->flags & (1<<estLD_RNG))
+    dd_gather(dd,state->nrng*sizeof(state->ld_rng[0]),
+	      state_local->ld_rng,state->ld_rng);
+  if (state_local->flags & (1<<estLD_RNG))
+    dd_gather(dd,sizeof(state->ld_rng[0]),
+	      &state_local->ld_rngi,&state->ld_rngi);
 }
 
 static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
@@ -1000,11 +1008,11 @@ static void dd_realloc_state(t_state *state,rvec **f,rvec **buf,int nalloc)
 
   state->nalloc = over_alloc_dd(nalloc);
   srenew(state->x,state->nalloc);
-  if (state->flags & STATE_HAS_V)
+  if (state->flags & (1<<estV))
     srenew(state->v,state->nalloc);
-  if (state->flags & STATE_HAS_SDX)
+  if (state->flags & (1<<estSDX))
     srenew(state->sd_X,state->nalloc);
-  if (state->flags & STATE_HAS_CGP)
+  if (state->flags & (1<<estCGP))
     srenew(state->cg_p,state->nalloc);
   
   srenew(*f,state->nalloc);
@@ -1076,11 +1084,11 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
   if (dd->nat_home > state_local->nalloc)
     dd_realloc_state(state_local,f,buf,dd->nat_home);
   dd_distribute_vec(dd,cgs,state->x,state_local->x);
-  if (state_local->flags & STATE_HAS_V)
+  if (state_local->flags & (1<<estV))
     dd_distribute_vec(dd,cgs,state->v,state_local->v);
-  if (state_local->flags & STATE_HAS_SDX)
+  if (state_local->flags & (1<<estSDX))
     dd_distribute_vec(dd,cgs,state->sd_X,state_local->sd_X);
-  if (state_local->flags & STATE_HAS_CGP)
+  if (state_local->flags & (1<<estCGP))
     dd_distribute_vec(dd,cgs,state->cg_p,state_local->cg_p);
 }
 
@@ -2578,15 +2586,15 @@ static void rotate_state_atom(t_state *state,int a)
   /* Rotate the complete state; for a rectangular box only */
   state->x[a][YY] = state->box[YY][YY] - state->x[a][YY];
   state->x[a][ZZ] = state->box[ZZ][ZZ] - state->x[a][ZZ];
-  if (state->flags & STATE_HAS_V) {
+  if (state->flags & (1<<estV)) {
     state->v[a][YY] = -state->v[a][YY];
     state->v[a][ZZ] = -state->v[a][ZZ];
   }
-  if (state->flags & STATE_HAS_SDX) {
+  if (state->flags & (1<<estSDX)) {
     state->sd_X[a][YY] = -state->sd_X[a][YY];
     state->sd_X[a][ZZ] = -state->sd_X[a][ZZ];
   }
-  if (state->flags & STATE_HAS_CGP) {
+  if (state->flags & (1<<estCGP)) {
     state->cg_p[a][YY] = -state->cg_p[a][YY];
     state->cg_p[a][ZZ] = -state->cg_p[a][ZZ];
   }
@@ -2621,9 +2629,9 @@ static int dd_redistribute_cg(FILE *fplog,int step,
   comm  = dd->comm;
   cg_cm = fr->cg_cm;
 
-  bV   = (state->flags & STATE_HAS_V);
-  bSDX = (state->flags & STATE_HAS_SDX);
-  bCGP = (state->flags & STATE_HAS_CGP);
+  bV   = (state->flags & (1<<estV));
+  bSDX = (state->flags & (1<<estSDX));
+  bCGP = (state->flags & (1<<estCGP));
 
   if (dd->ncg_tot > comm->nalloc_int) {
     comm->nalloc_int = over_alloc_dd(dd->ncg_tot);
@@ -4927,11 +4935,11 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
 
   /* Reorder the state */
   order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->x,vbuf);
-  if (state->flags & STATE_HAS_V)
+  if (state->flags & (1<<estV))
     order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->v,vbuf);
-  if (state->flags & STATE_HAS_SDX)
+  if (state->flags & (1<<estSDX))
     order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->sd_X,vbuf);
-  if (state->flags & STATE_HAS_CGP)
+  if (state->flags & (1<<estCGP))
     order_vec_atom(dd->ncg_home,dd->cgindex,cgsort,state->cg_p,vbuf);
   /* Reorder cgcm */
   order_vec_cg(dd->ncg_home,cgsort,cgcm,vbuf);

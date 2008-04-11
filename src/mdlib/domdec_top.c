@@ -307,7 +307,7 @@ void dd_make_reverse_top(FILE *fplog,
 
   dd->reverse_top = make_reverse_top(natoms,&top->idef,top->atoms.atom,
 				     vsite ? vsite->vsite_pbc : NULL,
-				     ir->eConstrAlg == estSHAKE,
+				     ir->eConstrAlg == econtSHAKE,
 				     bBCheck,&dd->nbonded_global);
 
   nexcl = count_excls(&top->cgs,&top->excls,&dd->n_intercg_excl);

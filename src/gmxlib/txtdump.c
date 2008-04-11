@@ -231,6 +231,19 @@ void pr_reals(FILE *fp,int indent,const char *title,real *vec,int n)
   }
 }
 
+void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n)
+{
+  int i;
+    
+  if (available(fp,vec,indent,title)) {  
+    (void) pr_indent(fp,indent);
+    (void) fprintf(fp,"%s:\t",title);
+    for(i=0; i<n; i++)
+      fprintf(fp,"  %10g",vec[i]);
+    (void) fprintf(fp,"\n");
+  }
+}
+
 void pr_energies(FILE *fp,int indent,const char *title,t_energy *e,int n)
 {
   int i;
@@ -552,7 +565,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("nstcgsteep",ir->nstcgsteep);
     PI("nbfgscorr",ir->nbfgscorr);
 
-    PS("ConstAlg",ESHAKETYPE(ir->eConstrAlg));
+    PS("ConstAlg",ECONSTRTYPE(ir->eConstrAlg));
     PR("shake_tol",ir->shake_tol);
     PI("lincs_order",ir->nProjOrder);
     PR("lincs_warnangle",ir->LincsWarnAngle);

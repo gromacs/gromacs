@@ -131,8 +131,8 @@ void too_many_constraint_warnings(int eConstrAlg,int warncount)
 	    "If you know what you are doing you can %s"
 	    "set the environment variable GMX_MAXCONSTRWARN to -1,\n"
 	    "but normally it is better to fix the problem",
-	    (eConstrAlg == estLINCS) ? "LINCS" : "SETTLE",warncount,
-	    (eConstrAlg == estLINCS) ?
+	    (eConstrAlg == econtLINCS) ? "LINCS" : "SETTLE",warncount,
+	    (eConstrAlg == econtLINCS) ?
 	    "adjust the lincs warning threshold in your mdp file\nor " : "\n");
 }
 
@@ -260,7 +260,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 			  constr->maxwarn,&constr->warncount_lincs);
     if (!bOK && constr->maxwarn >= 0 && fplog)
       fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
-	      eshake_names[estLINCS],step);
+	      econstr_names[econtLINCS],step);
   }
   
   if (constr->nblocks > 0) {
@@ -273,7 +273,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
     if (!bOK && constr->maxwarn >= 0 && fplog)
       fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
-	      eshake_names[estSHAKE],step);
+	      econstr_names[econtSHAKE],step);
   }
   
   settle  = &top->idef.il[F_SETTLE];
@@ -500,7 +500,7 @@ void set_constraints(struct gmx_constr *constr,
       ncons = 0;
   }
   if (ncons > 0 || (dd && dd->constraints)) {
-    if (ir->eConstrAlg == estLINCS) {
+    if (ir->eConstrAlg == econtLINCS) {
       set_lincs(&top->idef,md->start,md->homenr,&constr->at2con,
 		EI_DYNAMICS(ir->eI),dd,constr->lincsd);
       if (dd == NULL) {
@@ -509,7 +509,7 @@ void set_constraints(struct gmx_constr *constr,
       }
       set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
     } 
-    if (ir->eConstrAlg == estSHAKE) {
+    if (ir->eConstrAlg == econtSHAKE) {
       if (dd) {
 	make_shake_sblock_dd(constr,&top->idef.il[F_CONSTR],&top->cgs,dd);
       } else {
@@ -736,14 +736,14 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 	  please_cite(fplog,"Hess2002");
       }
       
-      if (ir->eConstrAlg == estLINCS) {
+      if (ir->eConstrAlg == econtLINCS) {
 	constr->lincsd = init_lincs(fplog,&top->idef,
 				    constr->nflexcon,&constr->at2con,
 				    DOMAINDECOMP(cr) && cr->dd->bInterCGcons,
 				    ir->nLincsIter,ir->nProjOrder);
       }
       
-      if (ir->eConstrAlg == estSHAKE) {
+      if (ir->eConstrAlg == econtSHAKE) {
 	if (DOMAINDECOMP(cr) && cr->dd->bInterCGcons)
 	  gmx_fatal(FARGS,"SHAKE is not supported with domain decomposition and constraint that cross charge group boundaries, use LINCS");
 

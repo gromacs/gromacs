@@ -401,7 +401,8 @@ void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
   }
 }
 
-void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real xi[])
+void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+		       real xi[],double ixi[])
 {
   real  Qinv;
   int   i;
@@ -414,12 +415,12 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,real xi[])
       Qinv=0.0;
     reft = max(0.0,opts->ref_t[i]);
     oldxi = xi[i];
-    xi[i] += dt*Qinv*(grps->tcstat[i].Th - reft);
-    grps->tcstat[i].integral_xi += dt*(oldxi + xi[i])*0.5;
+    xi[i]  += dt*Qinv*(grps->tcstat[i].Th - reft);
+    ixi[i] += dt*(oldxi + xi[i])*0.5;
   }
 }
 
-real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi)
+real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi,double *ixi)
 {
   int  i,nd;
   real ener_nh;
@@ -429,7 +430,7 @@ real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi)
     nd = opts->nrdf[i];
     if (nd > 0)
       ener_nh += (sqr(xi[i]*opts->tau_t[i]/(2*M_PI))*0.5 +
-		  grps->tcstat[i].integral_xi)*nd*BOLTZ*max(opts->ref_t[i],0);
+		  ixi[i])*nd*BOLTZ*max(opts->ref_t[i],0);
   }
 
   return ener_nh;

@@ -87,7 +87,7 @@ const char *evdw_names[evdwNR+1] = {
   "Cut-off", "Switch", "Shift", "User", "Encad-shift", NULL
 };
 
-const char *eshake_names[estNR+1] = {
+const char *econstr_names[econtNR+1] = {
   "Lincs", "Shake", NULL
 };
 

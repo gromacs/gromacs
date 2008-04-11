@@ -815,7 +815,7 @@ static void lincs_warning(FILE *fplog,
     }
   }
   if (*warncount > maxwarn)
-    too_many_constraint_warnings(estLINCS,*warncount);
+    too_many_constraint_warnings(econtLINCS,*warncount);
 }
 
 static void cconerr(gmx_domdec_t *dd,

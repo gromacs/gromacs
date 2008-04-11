@@ -1085,7 +1085,7 @@ void init_md(FILE *fplog,
 	     t_nrnb *nrnb,t_topology *top,
 	     gmx_stochd_t *sd,
 	     int nfile,t_filenm fnm[],
-	     int *fp_trn,int *fp_xtc,int *fp_ene,
+	     int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
 	     FILE **fp_dgdl,FILE **fp_field,
 	     t_mdebin **mdebin,t_groups *grps,
 	     tensor force_vir,tensor shake_vir,rvec mu_tot,
@@ -1130,6 +1130,7 @@ void init_md(FILE *fplog,
       if (ir->nstxtcout > 0)
 	*fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm),"w");
       *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
+      *fn_cpt = opt2fn("-cpo",nfile,fnm);
       if ((fp_dgdl != NULL) && ir->efep!=efepNO)
 	*fp_dgdl =
 	  xvgropen(opt2fn("-dgdl",nfile,fnm),

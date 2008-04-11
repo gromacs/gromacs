@@ -58,11 +58,6 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
   for(i=0; (i<ngtc); i++) {
     tcstat[i].T = 0;
     clear_mat(tcstat[i].ekin);
-    /* Set the conserved quantity for Nose-Hoover to zero.
-     * This means there will be jumps in this quantity when
-     * continuing a simulation.
-     */
-    tcstat[i].integral_xi = 0;
   }
 }
 

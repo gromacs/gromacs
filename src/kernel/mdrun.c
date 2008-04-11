@@ -200,9 +200,19 @@ int main(int argc,char *argv[])
     "forces of atoms with a force larger than a certain value will",
     "be printed to stderr.",
     "[PAR]",
+    "Checkpoints containing the complete state of the system are written",
+    "at regular intervals (option [TT]-cpt[tt]) to the file [TT]-cpo[tt],",
+    "unless option [TT]-cpt[tt] is set to -1.",
+    "A simulation can be continued by reading the full state from file",
+    "with option [TT]-cpi[tt].",
+    "[PAR]",
+    "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
+    "file is written at the first neighbor search step where the run time",
+    "exceeds [TT]-maxh[tt]*0.99 hours.",
+    "[PAR]",
     "When mdrun receives a TERM signal, it will set nsteps to the current",
-    "step plus one. When mdrun receives a USR1 signal, it will set nsteps",
-    "to the next multiple of nstxout after the current step.",
+    "step plus one. When mdrun receives a USR1 signal, it will stop after",
+    "the next neighbor search step (with nstlist=0 at the next step).",
     "In both cases all the usual output will be written to file.",
     "When running with MPI, a signal to one of the mdrun processes",
     "is sufficient, this signal should not be sent to mpirun or",
@@ -213,6 +223,8 @@ int main(int argc,char *argv[])
     { efTPX, NULL,      NULL,       ffREAD },
     { efTRN, "-o",      NULL,       ffWRITE },
     { efXTC, "-x",      NULL,       ffOPTWR },
+    { efCPT, "-cpi",    NULL,       ffOPTRD },
+    { efCPT, "-cpo",    NULL,       ffOPTWR },
     { efSTO, "-c",      "confout",  ffWRITE },
     { efENX, "-e",      "ener",     ffWRITE },
     { efLOG, "-g",      "md",       ffWRITE },
@@ -265,6 +277,7 @@ int main(int argc,char *argv[])
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
   static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
+  static real cpt_period=15.0,max_hours=-1;
 
   static t_pargs pa[] = {
     { "-pd",      FALSE, etBOOL,{&bPartDec},
@@ -299,12 +312,16 @@ int main(int argc,char *argv[])
       "Be loud and noisy" },
     { "-compact", FALSE, etBOOL,{&bCompact},  
       "Write a compact log file" },
-    { "-seppot", FALSE, etBOOL, {&bSepPot},
+    { "-seppot",  FALSE, etBOOL, {&bSepPot},
       "Write separate V and dVdl terms for each interaction type and node to the log file(s)" },
-    { "-pforce", FALSE, etREAL, {&pforce},
+    { "-pforce",  FALSE, etREAL, {&pforce},
       "Print all forces larger than this (kJ/mol nm)" },
-    { "-reprod", FALSE, etBOOL,{&bReproducible},  
-      "Try to avoid optimizations that affect binary reproducibility" },      
+    { "-reprod",  FALSE, etBOOL,{&bReproducible},  
+      "Try to avoid optimizations that affect binary reproducibility" },
+    { "-cpt",     FALSE, etREAL, {&cpt_period},
+      "Checkpoint interval (minutes)" },
+    { "-maxh",   FALSE, etREAL, {&max_hours},
+      "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
       "Do multiple simulations in parallel" },
     { "-replex",  FALSE, etINT, {&repl_ex_nst}, 
@@ -389,7 +406,8 @@ int main(int argc,char *argv[])
   
   mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
 	   ddxyz,dd_node_order,rdd,rconstr,dlb_scale,ddcsx,ddcsy,ddcsz,
-	   nstepout,edyn,repl_ex_nst,repl_ex_seed,pforce,Flags);
+	   nstepout,edyn,repl_ex_nst,repl_ex_seed,pforce,
+	   cpt_period,max_hours,Flags);
   
   if (gmx_parallel_env)
     gmx_finalize(cr);

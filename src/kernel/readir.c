@@ -131,7 +131,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   sprintf(err_buf,"shake_tol must be > 0 instead of %g while using shake",
 	  ir->shake_tol);
   CHECK(((ir->shake_tol <= 0.0) && (opts->nshake>0) && 
-	 (ir->eConstrAlg == estSHAKE)));
+	 (ir->eConstrAlg == econtSHAKE)));
      
   /* PBC/WALLS */
   sprintf(err_buf,"walls only work with pbc=%s",epbc_names[epbcXY]);
@@ -679,7 +679,7 @@ void get_ir(char *mdparin,char *mdparout,
   CCTYPE ("OPTIONS FOR BONDS");
   EETYPE("constraints",	opts->nshake,	constraints, nerror, TRUE);
   CTYPE ("Type of constraint algorithm");
-  EETYPE("constraint-algorithm",  ir->eConstrAlg, eshake_names, nerror, TRUE);
+  EETYPE("constraint-algorithm",  ir->eConstrAlg, econstr_names, nerror, TRUE);
   CTYPE ("Do not constrain the start configuration");
   EETYPE("continuation", ir->bContinuation, yesno_names, nerror, TRUE);
   CTYPE ("Use successive overrelaxation to reduce the number of shake iterations");
@@ -1760,7 +1760,7 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     (*nerror)++;
   }  
 
-  if( (ir->eConstrAlg==estSHAKE) && 
+  if( (ir->eConstrAlg==econtSHAKE) && 
       (mol->plist[F_CONSTR].nr > 0) && 
       (ir->shake_tol <= 0.0) ) {
     fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
@@ -1768,10 +1768,10 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     (*nerror)++;
   }
 
-  if( (ir->eConstrAlg == estLINCS) && mol->plist[F_CONSTR].nr > 0) {
+  if( (ir->eConstrAlg == econtLINCS) && mol->plist[F_CONSTR].nr > 0) {
     /* If we have Lincs constraints: */
     if(ir->eI==eiMD && ir->etc==etcNO &&
-       ir->eConstrAlg==estLINCS && ir->nLincsIter==1) {
+       ir->eConstrAlg==econtLINCS && ir->nLincsIter==1) {
       sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n");
       warning(NULL);
     }

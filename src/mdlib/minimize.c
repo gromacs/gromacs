@@ -239,7 +239,7 @@ void init_em(FILE *fplog,const char *title,
 
   state_global->ngtc = 0;
   if (ir->eI == eiCG) {
-    state_global->flags |= STATE_HAS_CGP;
+    state_global->flags |= (1<<estCGP);
     snew(state_global->cg_p,state_global->nalloc);
   }
 
@@ -303,9 +303,9 @@ void init_em(FILE *fplog,const char *title,
   update_mdatoms(mdatoms,state_global->lambda);
 
   if (constr) {
-    if (ir->eConstrAlg == estSHAKE && top_global->idef.il[F_CONSTR].nr > 0)
+    if (ir->eConstrAlg == econtSHAKE && top_global->idef.il[F_CONSTR].nr > 0)
       gmx_fatal(FARGS,"Can not do energy minimization with %s, use %s\n",
-		eshake_names[estSHAKE],eshake_names[estLINCS]);
+		econstr_names[econtSHAKE],econstr_names[econtLINCS]);
 
     if (!DOMAINDECOMP(cr))
       set_constraints(constr,*top,ir,mdatoms,NULL);
@@ -384,7 +384,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     s2->nalloc = s1->nalloc;
     srenew(s2->x,s1->nalloc);
     srenew(ems2->f,  s1->nalloc);
-    if (s2->flags & STATE_HAS_CGP)
+    if (s2->flags & (1<<estCGP))
       srenew(s2->cg_p,  s1->nalloc);
   }
   
@@ -409,7 +409,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     }
   }
 
-  if (s2->flags & STATE_HAS_CGP) {
+  if (s2->flags & (1<<estCGP)) {
     /* Copy the CG p vector */
     x1 = s1->cg_p;
     x2 = s2->cg_p;
@@ -568,7 +568,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   /* Communicate stuff when parallel */
   if (PAR(cr)) 
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		inputrec,grps,FALSE,NULL,NULL,NULL,&terminate);
+		inputrec,grps,FALSE,NULL,NULL,NULL,NULL,&terminate);
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
 
@@ -708,6 +708,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	     t_graph *graph,t_edsamyn *edyn,
 	     t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
+	     real cpt_period,real max_hours,
 	     unsigned long Flags)
 {
   const char *CG="Polak-Ribiere Conjugate Gradients";
@@ -722,7 +723,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   real   epot_repl=0;
   real   pnorm;
   t_mdebin   *mdebin;
-  bool   bNS=TRUE,converged,foundlower;
+  bool   converged,foundlower;
   rvec   mu_tot;
   time_t start_t;
   bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
@@ -882,8 +883,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	       top_global,step,(real)step,
+    write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
+	       top_global,inputrec->eI,step,(double)step,
 	       &s_min->s,state_global,s_min->f,f_global);
     
     /* Take a step downhill.
@@ -1176,8 +1177,9 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
   
   /* Only write the trajectory if we didn't do it last step */
-  write_traj(cr,fp_trn,TRUE,FALSE,(inputrec->nstfout>0),0,FALSE,0,
-	     top_global,step,(real)step,
+  write_traj(fplog,cr,fp_trn,TRUE,FALSE,(inputrec->nstfout>0),
+	     0,FALSE,0,NULL,FALSE,
+	     top_global,inputrec->eI,step,(real)step,
 	     &s_min->s,state_global,s_min->f,f_global);
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
@@ -1217,6 +1219,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		t_graph *graph,t_edsamyn *edyn,
 		t_forcerec *fr,
 		int repl_ex_nst,int repl_ex_seed,
+		real cpt_period,real max_hours,
 		unsigned long Flags)
 {
   static char *LBFGS="Low-Memory BFGS Minimizer";
@@ -1229,7 +1232,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   real   diag,Epot0,Epot,EpotA,EpotB,EpotC;
   real   dgdx,dgdg,sq,yr,beta;
   t_mdebin   *mdebin;
-  bool   bNS=TRUE,converged,first;
+  bool   converged,first;
   rvec   mu_tot;
   real   fnorm,fmax;
   time_t start_t;
@@ -1402,8 +1405,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     do_x = do_per_step(step,inputrec->nstxout);
     do_f = do_per_step(step,inputrec->nstfout);
     
-    write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	       top,step,(real)step,state,state,f,f);
+    write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
+	       top,inputrec->eI,step,(real)step,state,state,f,f);
 
     /* Do the linesearching in the direction dx[point][0..(n-1)] */
     
@@ -1802,8 +1805,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
   
   /* Only write the trajectory if we didn't do it last step */
-  write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-	     top,step,(real)step,state,state,f,f);
+  write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
+	     top,inputrec->eI,step,(real)step,state,state,f,f);
 
   if (MASTER(cr))
     write_sto_conf(ftp2fn(efSTO,nfile,fnm),
@@ -1841,6 +1844,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		t_graph *graph,t_edsamyn *edyn,
 		t_forcerec *fr,
 		int repl_ex_nst,int repl_ex_seed,
+		real cpt_period,real max_hours,
 		unsigned long Flags)
 { 
   const char *SD="Steepest Descents";
@@ -1968,8 +1972,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
       /* Write to trn, if necessary */
       do_x = do_per_step(steps_accepted,inputrec->nstxout);
       do_f = do_per_step(steps_accepted,inputrec->nstfout);
-      write_traj(cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,
-		 top_global,count,(real)count,
+      write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
+		 top_global,inputrec->eI,count,(real)count,
 		 &s_min->s,state_global,s_min->f,f_global);
     } 
     else {
@@ -2014,8 +2018,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     /* Print some shit...  */
   if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
-  write_traj(cr,fp_trn,TRUE,FALSE,inputrec->nstfout,0,FALSE,0,
-	     top_global,count,(real)count,
+  write_traj(fplog,cr,fp_trn,TRUE,FALSE,inputrec->nstfout,0,FALSE,0,NULL,FALSE,
+	     top_global,inputrec->eI,count,(real)count,
 	     &s_min->s,state_global,s_min->f,f_global);
 
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
@@ -2053,6 +2057,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     t_graph *graph,t_edsamyn *edyn,
 	     t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
+	     real cpt_period,real max_hours,
 	     unsigned long Flags)
 {
     t_mdebin   *mdebin;
@@ -2319,6 +2324,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      t_graph *graph,t_edsamyn *edyn,
 	      t_forcerec *fr,
 	      int repl_ex_nst,int repl_ex_seed,
+	      real cpt_period,real max_hours,
 	      unsigned long Flags)
 {
   const char *TPI="Test Particle Insertion"; 

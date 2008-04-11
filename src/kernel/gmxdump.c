@@ -360,6 +360,7 @@ int main(int argc,char *argv[])
     { efTPX, "-s", NULL, ffOPTRD },
     { efTRX, "-f", NULL, ffOPTRD },
     { efENX, "-e", NULL, ffOPTRD },
+    { efCPT, NULL, NULL, ffOPTRD },
     { efMDP, "-om", NULL, ffOPTWR }
   };
 #define NFILE asize(fnm)
@@ -384,6 +385,8 @@ int main(int argc,char *argv[])
     list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);
   else if (ftp2bSet(efENX,NFILE,fnm))
     list_ene(ftp2fn(efENX,NFILE,fnm));
+  else if (ftp2bSet(efCPT,NFILE,fnm))
+    list_checkpoint(ftp2fn(efCPT,NFILE,fnm),stdout);
     
   thanx(stderr);
 

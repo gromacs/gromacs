@@ -47,7 +47,6 @@ typedef struct {
   tensor  ekinh_old;	/* Kinetic energy at old half step */
   tensor  ekin; 	/* Kinetic energy at full step     */
   real    lambda;       /* Berendsen coupling lambda       */
-  double  integral_xi;  /* For determining the conserved quantity with N-H */
 } t_grp_tcstat;
 
 typedef struct {

@@ -109,6 +109,30 @@ gmx_rng_destroy(gmx_rng_t rng)
 }
 
 
+void
+gmx_rng_get_state(gmx_rng_t rng, unsigned int *mt,int *mti)
+{
+  int i;
+
+  for(i=0; i<RNG_N; i++) {
+    mt[i] = rng->mt[i];
+  }
+  *mti = rng->mti;
+}
+
+
+void
+gmx_rng_set_state(gmx_rng_t rng,  unsigned int *mt,int mti)
+{
+  int i;
+
+  for(i=0; i<RNG_N; i++) {
+    rng->mt[i] = mt[i];
+  }
+  rng->mti = mti;
+}
+
+
 unsigned int
 gmx_rng_make_seed(void)
 {

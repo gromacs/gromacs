@@ -269,11 +269,15 @@ void init_gtc_state(t_state *state,int ngtc)
 
   state->ngtc = ngtc;
   if (state->ngtc > 0) {
-    snew(state->nosehoover_xi,state->ngtc);
-    for(i=0; i<state->ngtc; i++)
-      state->nosehoover_xi[i] = 0.0;
+    snew(state->nosehoover_xi, state->ngtc);
+    snew(state->nosehoover_ixi,state->ngtc);
+    for(i=0; i<state->ngtc; i++) {
+      state->nosehoover_xi[i]  = 0.0;
+      state->nosehoover_ixi[i] = 0.0;
+    }
   } else {
-    state->nosehoover_xi = NULL;
+    state->nosehoover_xi  = NULL;
+    state->nosehoover_ixi = NULL;
   }
 }
 
@@ -319,8 +323,6 @@ void done_state(t_state *state)
   if (state->cg_gl) sfree(state->cg_gl);
   state->cg_gl_nalloc = 0;
 }
-
-#define PRESERVE_SHAPE(ir) ((ir).epc != epcNO && (ir).deform[XX][XX] == 0 && ((ir).epct == epctISOTROPIC || (ir).epct == epctSEMIISOTROPIC))
 
 static void do_box_rel(t_inputrec *ir,matrix box_rel,matrix b,bool bInit)
 {

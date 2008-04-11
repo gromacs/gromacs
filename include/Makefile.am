@@ -13,6 +13,7 @@ bondf.h \
 calcgrid.h \
 calch.h \
 calcmu.h \
+checkpoint.h \
 confio.h \
 constr.h \
 copyrite.h \

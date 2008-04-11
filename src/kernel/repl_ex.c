@@ -294,6 +294,35 @@ static void exchange_reals(const gmx_multisim_t *ms,int b,real *v,int n)
   }
 }
 
+static void exchange_doubles(const gmx_multisim_t *ms,int b,double *v,int n)
+{
+  double *buf;
+  int  i;
+
+  if (v) {
+    snew(buf,n);
+#ifdef GMX_MPI
+    /*
+    MPI_Sendrecv(v,  n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+		 buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+		 ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+    */
+    {
+      MPI_Request mpi_req;
+
+      MPI_Isend(v,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+		ms->mpi_comm_masters,&mpi_req);
+      MPI_Recv(buf,n*sizeof(double),MPI_BYTE,MSRANK(ms,b),0,
+	       ms->mpi_comm_masters,MPI_STATUS_IGNORE);
+      MPI_Wait(&mpi_req,MPI_STATUS_IGNORE);
+    }
+#endif
+    for(i=0; i<n; i++)
+      v[i] = buf[i];
+    sfree(buf);
+  }
+}
+
 static void exchange_rvecs(const gmx_multisim_t *ms,int b,rvec *v,int n)
 {
   rvec *buf;
@@ -331,6 +360,7 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
   exchange_rvecs(ms,b,state->boxv,DIM);
   exchange_rvecs(ms,b,state->pcoupl_mu,DIM);
   exchange_reals(ms,b,state->nosehoover_xi,state->ngtc);
+  exchange_doubles(ms,b,state->nosehoover_ixi,state->ngtc);
   exchange_rvecs(ms,b,state->x,state->natoms);
   exchange_rvecs(ms,b,state->v,state->natoms);
   exchange_rvecs(ms,b,state->sd_X,state->natoms);
