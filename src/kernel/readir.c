@@ -1782,6 +1782,12 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     }
   }
 
+  if (ir->LincsWarnAngle > 90.0) {
+    sprintf(warn_buf,"lincs-warnangle can not be larger than 90 degrees, setting it to 90.\n");
+    warning(NULL);
+    ir->LincsWarnAngle = 90.0;
+  }
+
   if (ir->ePBC != epbcNONE) {
     if (ir->nstlist == 0) {
       warning("With nstlist=0 atoms are only put into the box at step 0, therefore drifting atoms might cause the simulation to crash.");
