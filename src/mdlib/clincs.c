@@ -382,9 +382,10 @@ static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
       dlen2 = 2*len2 - norm2(dx);
       if (dlen2 < wfac*len2 && (nlocat==NULL || nlocat[b]))
 	*warn = b;
-      if (dlen2 < 0)
-	dlen2 = 0;
-      mvb = blc[b]*(len - dlen2*invsqrt(dlen2));
+      if (dlen2 > 0)
+	mvb = blc[b]*(len - dlen2*invsqrt(dlen2));
+      else
+	mvb = blc[b]*len;
       rhs1[b] = mvb;
       sol[b]  = mvb;
     } /* 20*ncons flops */
