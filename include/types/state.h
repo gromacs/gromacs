@@ -73,8 +73,8 @@ typedef struct
   rvec          *v;     /* the velocities (natoms)                      */
   rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
   rvec          *cg_p;  /* p vector for conjugate gradient minimization */
-  unsigned int  *ld_rng; /* RNG random state                            */
-  int           ld_rngi; /* RNG index                                   */
+  unsigned int  *ld_rng;  /* RNG random state                           */
+  int           *ld_rngi; /* RNG index                                  */
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
   int           ncg_gl; /* The number of local charge groups            */

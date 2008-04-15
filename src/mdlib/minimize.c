@@ -267,7 +267,7 @@ void init_em(FILE *fplog,const char *title,
     dd_partition_system(fplog,ir->init_step,cr,TRUE,
 			state_global,top_global,ir,
 			&ems->s,&ems->f,buf,mdatoms,*top,
-			fr,vsite,FALSE,constr,
+			fr,vsite,NULL,constr,
 			nrnb,NULL,FALSE);
     dd_store_state(cr->dd,&ems->s);
     

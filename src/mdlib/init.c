@@ -52,6 +52,7 @@
 #include "statutil.h"
 #include "names.h"
 #include "calcgrid.h"
+#include "gmx_random.h"
 
 #define BUFSIZE	256
 
@@ -65,14 +66,12 @@ static char *int_title(char *title,int nodeid,char buf[], int size)
   return buf;
 }
 
-static void set_state_entries(t_state *state,t_inputrec *ir)
+static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 {
   /* The entries in the state in the tpx file might not correspond
    * with what is needed, so we correct this here.
    */
   state->flags = 0;
-  /* This should correspond to the number in src/gmxlib/gmx_random.c */
-  state->nrng  = 624;
   if (ir->efep != efepNO)
     state->flags |= (1<<estLAMBDA);
   state->flags |= (1<<estX);
@@ -90,11 +89,17 @@ static void set_state_entries(t_state *state,t_inputrec *ir)
       snew(state->sd_X,state->nalloc);
     }
   }
-  if (ir->eI == eiCG)
+  if (ir->eI == eiCG) {
     state->flags |= (1<<estCGP);
+  }
   if (EI_SD(ir->eI) || ir->eI == eiBD) {
-    state->flags |= (1<<estLD_RNG) | (1<<estLD_RNGI);
-    snew(state->ld_rng,state->nrng);
+    /* This will be correct later with DD */
+    state->nrng  = nnodes*gmx_rng_n();
+    state->flags |= ((1<<estLD_RNG) | (1<<estLD_RNGI));
+    snew(state->ld_rng,nnodes*state->nrng);
+    snew(state->ld_rngi,nnodes);
+  } else {
+    state->nrng = 0;
   }
   if (ir->ePBC != epbcNONE) {
     state->flags |= (1<<estBOX);
@@ -117,7 +122,7 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
   real        t;
   
   read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-  set_state_entries(state,inputrec);
+  set_state_entries(state,inputrec,1);
 
   if (fplog)
     pr_inputrec(fplog,0,"Input Parameters",inputrec,FALSE);
@@ -135,7 +140,10 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   if (MASTER(cr)) {
     init_inputrec(inputrec);
     read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
-    set_state_entries(state,inputrec);
+    /* When we will be doing domain decomposition with separate PME nodes
+     * the rng entries will be too large, we correct for this later.
+     */
+    set_state_entries(state,inputrec,cr->nnodes);
   }
   bcast_ir_top(cr,inputrec,top);
 

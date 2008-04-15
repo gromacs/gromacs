@@ -78,6 +78,7 @@
 #include "shellfc.h"
 #include "compute_io.h"
 #include "mvdata.h"
+#include "checkpoint.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -867,10 +868,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (MASTER(cr) && do_log && !bFFscan)
       print_ebin_header(fplog,step,t,state->lambda);
 
-    /* Set values for invmass etc. This routine not parallellized, but hardly
-     * ever used, only when doing free energy calculations.
-     */
-    if(ir->efep != efepNO)
+    if (ir->efep != efepNO)
       update_mdatoms(mdatoms,state->lambda); 
     
     clear_mat(force_vir);

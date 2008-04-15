@@ -38,6 +38,11 @@ struct gmx_rng {
 
 
 
+int
+gmx_rng_n(void)
+{
+  return RNG_N;
+}
 
 
 gmx_rng_t 

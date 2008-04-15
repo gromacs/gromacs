@@ -305,12 +305,12 @@ gmx_stochd_t init_stochd(FILE *fplog,
 
 void get_stochd_state(t_gmx_stochd *sd,t_state *state)
 {
-  gmx_rng_get_state(sd->gaussrand,state->ld_rng,&state->ld_rngi);
+  gmx_rng_get_state(sd->gaussrand,state->ld_rng,state->ld_rngi);
 }
 
 void set_stochd_state(t_gmx_stochd *sd,t_state *state)
 {
-  gmx_rng_set_state(sd->gaussrand,state->ld_rng,state->ld_rngi);
+  gmx_rng_set_state(sd->gaussrand,state->ld_rng,state->ld_rngi[0]);
 }
 
 static void do_update_sd1(t_gmx_stochd *sd,

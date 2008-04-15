@@ -10,6 +10,7 @@
 #include "network.h"
 #include "vec.h"
 #include "pbc.h"
+#include "gmx_random.h"
 
 typedef struct gmx_reverse_top {
   bool bConstr; /* Are constraint in this revserse top?         */
@@ -941,4 +942,22 @@ void dd_init_local_state(gmx_domdec_t *dd,
 
   init_state(state_local,0,buf[1]);
   state_local->flags = buf[0];
+
+  /* With Langevin Dynamics we need to make proper storage space
+   * in the global and local state for the random numbers.
+   */
+  if (state_local->flags & (1<<estLD_RNG)) {
+    if (DDMASTER(dd)) {
+      state_global->nrng = dd->nnodes*gmx_rng_n();
+      srenew(state_global->ld_rng,state_global->nrng);
+    }
+    state_local->nrng = gmx_rng_n();
+    snew(state_local->ld_rng,state_local->nrng);
+  }
+  if (state_local->flags & (1<<estLD_RNGI)) {
+    if (DDMASTER(dd)) {
+      srenew(state_global->ld_rngi,dd->nnodes);
+    }
+    snew(state_local->ld_rngi,1);
+  }
 }

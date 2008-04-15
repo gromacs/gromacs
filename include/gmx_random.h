@@ -10,8 +10,6 @@
 #include <stdio.h>
 #include <types/simple.h>
 
-
-
 /*! \brief Abstract datatype for a random number generator
  *
  * This is a handle to the full state of a random number generator. 
@@ -20,6 +18,15 @@
  */
 typedef struct gmx_rng *
 gmx_rng_t;
+
+
+/*! \brief Returns the size of the RNG integer data structure
+ *
+ * Returns the size of the RNG integer data structure.
+ * \threadsafe Yes.
+ */
+int
+gmx_rng_n(void);
 
 
 /*! \brief Create a new RNG, seeded from a single integer.

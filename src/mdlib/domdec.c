@@ -984,11 +984,11 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
   if (state_local->flags & (1<<estCGP))
     dd_collect_vec(dd,cgs_gl,state_local,state_local->cg_p,state->cg_p);
   if (state_local->flags & (1<<estLD_RNG))
-    dd_gather(dd,state->nrng*sizeof(state->ld_rng[0]),
+    dd_gather(dd,state_local->nrng*sizeof(state->ld_rng[0]),
 	      state_local->ld_rng,state->ld_rng);
-  if (state_local->flags & (1<<estLD_RNG))
-    dd_gather(dd,sizeof(state->ld_rng[0]),
-	      &state_local->ld_rngi,&state->ld_rngi);
+  if (state_local->flags & (1<<estLD_RNGI))
+    dd_gather(dd,sizeof(state->ld_rngi[0]),
+	      state_local->ld_rngi,state->ld_rngi);
 }
 
 static void dd_realloc_fr_cg(t_forcerec *fr,int nalloc)
@@ -1090,6 +1090,12 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_distribute_vec(dd,cgs,state->sd_X,state_local->sd_X);
   if (state_local->flags & (1<<estCGP))
     dd_distribute_vec(dd,cgs,state->cg_p,state_local->cg_p);
+  if (state_local->flags & (1<<estLD_RNG))
+    dd_scatter(dd,state_local->nrng*sizeof(state_local->ld_rng[0]),
+	       state->ld_rng,state_local->ld_rng);
+  if (state_local->flags & (1<<estLD_RNGI))
+    dd_scatter(dd,sizeof(state_local->ld_rngi[0]),
+	       state->ld_rngi,state_local->ld_rngi);
 }
 
 static char dim2char(int dim)

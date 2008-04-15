@@ -43,15 +43,25 @@
 
 #include "typedefs.h"
 
+/* Write a checkpoint to fn */
 extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int step,double t,
 			     t_state *state);
 
+/* Read a checkpoint from fn for run contiunation.
+ * Generates a fatal error on size mismatch.
+ */
 extern void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 			    int *step,double *t,
 			    int *nnodes,ivec dd_nc,int *npme,
 			    t_state *state);
 
+/* Read the state from checkpoint file.
+ * Arrays in state that are NULL are allocated.
+ */
+extern void read_checkpoint_state(char *fn,int *step,double *t,t_state *state);
+
+/* Print the complete contents of checkpoint file fn to out */
 extern void list_checkpoint(char *fn,FILE *out);
 
 #endif
