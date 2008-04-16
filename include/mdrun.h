@@ -68,6 +68,7 @@
 #define MD_CONFOUT      (1<<12)
 #define MD_NOGSTAT      (1<<13)
 #define MD_REPRODUCIBLE (1<<14)
+#define MD_READ_RNG     (1<<15)
 
 
 enum {

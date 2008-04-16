@@ -120,13 +120,13 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
 
   nf = n;
   res = xdr_int(xd,&nf);
-  if (nf != n && list == NULL)
+  if (nf != n && list == NULL && v != NULL)
     gmx_fatal(FARGS,"Count mismatch for state entry %s, code count is %d, file count is %d\n",est_names[ecpt],n,nf);
   dt = dtc;
   res = xdr_int(xd,&dt);
   if (dt != dtc)
     gmx_fatal(FARGS,"Type mismatch for state entry %s, code type is %s, file type is %s\n",est_names[ecpt],ecpdt_names[dtc],ecpdt_names[dt]);
-  if (list || !(sflags & (1<<ecpt))) {
+  if (list || !(sflags & (1<<ecpt)) || v == NULL) {
     snew(va,nf);
     vp = va;
   } else {
@@ -294,7 +294,7 @@ static int do_cpt_header(XDR *xd,bool bRead,
   do_cpt_int(xd,"integrator"        ,eIntegrator,list);
   do_cpt_int(xd,"step"              ,step       ,list);
   do_cpt_double(xd,"t"              ,t          ,list);
-  do_cpt_int(xd,"#nodes"            ,nnodes     ,list);
+  do_cpt_int(xd,"#PP-nodes"         ,nnodes     ,list);
   idum = 1;
   do_cpt_int(xd,"dd_nc[x]",dd_nc ? &(dd_nc[0]) : &idum,list);
   do_cpt_int(xd,"dd_nc[y]",dd_nc ? &(dd_nc[1]) : &idum,list);
@@ -307,10 +307,20 @@ static int do_cpt_header(XDR *xd,bool bRead,
 
 static int do_cpt_state(XDR *xd,bool bRead,
 			int fflags,int nppnodes,t_state *state,
-			FILE *list)
+			bool bRNG,FILE *list)
 {
   int  sflags;
+  int  **rng_p,**rngi_p;
   int  i;
+
+  if (bRNG) {
+    rng_p  = (int **)&state->ld_rng;
+    rngi_p = &state->ld_rngi;
+  } else {
+    /* Do not read the RNG data */
+    rng_p  = NULL;
+    rngi_p = NULL;
+  }
 
   sflags = state->flags;
   for(i=0; i<estNR; i++) {
@@ -326,8 +336,8 @@ static int do_cpt_state(XDR *xd,bool bRead,
       case estX:      do_cpte_rvecs (xd,i,sflags,state->natoms,&state->x,list); break;
       case estV:      do_cpte_rvecs (xd,i,sflags,state->natoms,&state->v,list); break;
       case estSDX:    do_cpte_rvecs (xd,i,sflags,state->natoms,&state->sd_X,list); break;
-      case estLD_RNG: do_cpte_ints  (xd,i,sflags,state->nrng,(int **)&state->ld_rng,list); break;
-      case estLD_RNGI: do_cpte_ints (xd,i,sflags,nppnodes,&state->ld_rngi,list); break;
+      case estLD_RNG: do_cpte_ints  (xd,i,sflags,state->nrng,rng_p,list); break;
+      case estLD_RNGI: do_cpte_ints (xd,i,sflags,nppnodes,rngi_p,list); break;
       default:
 	gmx_fatal(FARGS,"Unknown state entry %d",i);
       }
@@ -348,18 +358,21 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
   char *fprog;
   char *ftime;
   time_t now;
-  int nnodes;
+  int  nppnodes,npmenodes;
   char buf[1024];
 
   if (PAR(cr)) {
     if (DOMAINDECOMP(cr)) {
-      nnodes = cr->dd->nnodes;
+      nppnodes  = cr->dd->nnodes;
+      npmenodes = cr->npmenodes;
     } else {
-      nnodes = cr->nnodes;
+      nppnodes  = cr->nnodes;
+      npmenodes = 0;
       gmx_fatal(FARGS,"write_checkpoint not supported with particle decomposition");
     }
   } else {
-    nnodes = 1;
+    nppnodes  = 1;
+    npmenodes = 0;
   }
 
   if (fexist(fn)) {
@@ -383,11 +396,11 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
   fp = gmx_fio_open(fn,"w");
   do_cpt_header(gmx_fio_getxdr(fp),FALSE,
 		&version,&btime,&buser,&bmach,&fprog,&ftime,
-		&eIntegrator,&step,&t,&nnodes,
-		DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&cr->npmenodes,
+		&eIntegrator,&step,&t,&nppnodes,
+		DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
 		&state->natoms,&state->ngtc,&state->flags,NULL);
   do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,
-	       cr->nnodes-cr->npmenodes,state,NULL);
+	       nppnodes,state,TRUE,NULL);
   gmx_fio_close(fp);
 
   sfree(ftime);
@@ -444,24 +457,34 @@ static void check_build_match(FILE *fplog,
   }
 }
 
-void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
-		     int *step,double *t,
-		     int *nnodes,ivec dd_nc,int *npme,
+bool read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
+		     int eIntegrator,int *step,double *t,
 		     t_state *state)
 {
   int  fp;
   char *version,*btime,*buser,*bmach,*fprog,*ftime;
-  int  eIntegrator;
+  int  nppnodes,npmenodes,eIntegrator_f,nppnodes_f,npmenodes_f;
+  ivec dd_nc_f;
   int  natoms,ngtc,fflags;
+  bool bRNG;
+  int  d;
+  char *int_warn=
+    "WARNING: The checkpoint file was generator with integrator %s,\n"
+    "         while the simulation uses integrator %s\n\n";
+  char *sd_note=
+    "NOTE: The checkpoint file was for %d nodes doing SD,\n"
+    "      while the simulation uses %d SD nodes,\n"
+    "      continuation will be exact, except for the random state\n\n";
 
   if (PARTDECOMP(cr))
     gmx_fatal(FARGS,
 	      "read_checkpoint not supported with particle decomposition");
 
+
   fp = gmx_fio_open(fn,"r");
   do_cpt_header(gmx_fio_getxdr(fp),TRUE,
 		&version,&btime,&buser,&bmach,&fprog,&ftime,
-		&eIntegrator,step,t,nnodes,dd_nc,npme,
+		&eIntegrator_f,step,t,&nppnodes_f,dd_nc_f,&npmenodes_f,
 		&natoms,&ngtc,&fflags,NULL);
 
   if (cr == NULL || MASTER(cr)) {
@@ -487,17 +510,51 @@ void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
   if (ngtc != state->ngtc) {
     gmx_fatal(FARGS,"Checkpoint file is for a system of %d T-coupling groups, while the current system consists of %d T-coupling groups",ngtc,state->ngtc);
   }
+  if (eIntegrator_f != eIntegrator) {
+    if (MASTER(cr))
+      fprintf(stderr,int_warn,EI(eIntegrator_f),EI(eIntegrator));
+    if (fplog)
+      fprintf(fplog,int_warn,EI(eIntegrator_f),EI(eIntegrator));
+  }
+
+  if (DOMAINDECOMP(cr)) {
+    if (cr->npmenodes < 0 && cr->nnodes == nppnodes_f + npmenodes_f)
+      cr->npmenodes = npmenodes_f;
+    if (cr->npmenodes >= 0) {
+      nppnodes = cr->nnodes - cr->npmenodes;
+      for(d=0; d<DIM; d++) {
+	if (dd_nc[d] == 0)
+	  dd_nc[d] = dd_nc_f[d];
+      }
+    } else {
+      /* The number of PP nodes has not been set yet */
+      nppnodes = -1;
+    }
+  } else {
+    nppnodes  = cr->nnodes;
+    npmenodes = 0;
+  }
+
+
+  bRNG = TRUE;
   if (fflags != state->flags) {
     if (MASTER(cr))
       fprintf(stderr,
 	      "WARNING: The checkpoint state entries do not match the simulation,\n"
-	      "         see the log file for details\n");
+	      "         see the log file for details\n\n");
     print_flag_mismatch(fplog,state->flags,fflags);
+  } else if (eIntegrator = eiSD2 && nppnodes != nppnodes_f) {
+    bRNG = FALSE;
+    if (MASTER(cr))
+      fprintf(stderr,sd_note,nppnodes_f,nppnodes);
+    if (fplog)
+      fprintf(fplog ,sd_note,nppnodes_f,nppnodes);
   } else {
     if (MASTER(cr))
       check_build_match(fplog,version,btime,buser,bmach,fprog);
   }
-  do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,(*nnodes)-(*npme),state,NULL);
+  do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,nppnodes_f,state,bRNG,
+	       NULL);
   gmx_fio_close(fp);
 
   sfree(fprog);
@@ -505,6 +562,8 @@ void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
   sfree(btime);
   sfree(buser);
   sfree(bmach);
+
+  return bRNG;
 }
 
 void read_checkpoint_state(char *fn,int *step,double *t,t_state *state)
@@ -512,15 +571,16 @@ void read_checkpoint_state(char *fn,int *step,double *t,t_state *state)
   int  fp;
   char *version,*btime,*buser,*bmach,*fprog,*ftime;
   int  eIntegrator;
-  int  nnodes,npme;
+  int  nppnodes,npme;
   ivec dd_nc;
 
   fp = gmx_fio_open(fn,"r");
   do_cpt_header(gmx_fio_getxdr(fp),TRUE,
 		&version,&btime,&buser,&bmach,&fprog,&ftime,
-		&eIntegrator,step,t,&nnodes,dd_nc,&npme,
+		&eIntegrator,step,t,&nppnodes,dd_nc,&npme,
 		&state->natoms,&state->ngtc,&state->flags,NULL);
-  do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,nnodes-npme,state,NULL);
+  do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,nppnodes,state,TRUE,
+	       NULL);
   gmx_fio_close(fp);
 
   sfree(fprog);
@@ -534,7 +594,7 @@ void list_checkpoint(char *fn,FILE *out)
 {
   int  fp;
   char *version,*btime,*buser,*bmach,*fprog,*ftime;
-  int  eIntegrator,step,nnodes,npme;
+  int  eIntegrator,step,nppnodes,npme;
   double t;
   ivec dd_nc;
   t_state state;
@@ -546,9 +606,10 @@ void list_checkpoint(char *fn,FILE *out)
   fp = gmx_fio_open(fn,"r");
   do_cpt_header(gmx_fio_getxdr(fp),TRUE,
 		&version,&btime,&buser,&bmach,&fprog,&ftime,
-		&eIntegrator,&step,&t,&nnodes,dd_nc,&npme,
+		&eIntegrator,&step,&t,&nppnodes,dd_nc,&npme,
 		&state.natoms,&state.ngtc,&state.flags,out);
-  do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,nnodes-npme,&state,out);
+  do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,nppnodes-npme,&state,TRUE,
+	       out);
   gmx_fio_close(fp);
 
   done_state(&state);

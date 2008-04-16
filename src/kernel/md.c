@@ -136,10 +136,9 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   gmx_vsite_t *vsite=NULL;
   gmx_constr_t constr;
   int        i,m,nChargePerturbed=-1,status,nalloc;
-  int        nnodes_cpt,npme_cpt;
-  ivec       dd_nc_cpt;
   char       *gro;
   gmx_wallcycle_t wcycle;
+  bool       bReadRNG;
 
   snew(inputrec,1);
   snew(top,1);
@@ -160,18 +159,26 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     snew(state,1);
     init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state);
   }
+  if (!EEL_PME(inputrec->coulombtype)) {
+    cr->npmenodes = 0;
+  }
 
   if (opt2bSet("-cpi",nfile,fnm)) {
     if (SIMMASTER(cr)) {
       /* Read the state from the checkpoint file */
-      read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,cr,&i,&t,
-		      &nnodes_cpt,dd_nc_cpt,&npme_cpt,state);
+      bReadRNG =
+	read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,cr,ddxyz,
+			inputrec->eI,&i,&t,state);
     }
-    if (PAR(cr))
+    if (PAR(cr)) {
       gmx_bcast(sizeof(i),&i,cr);
+      gmx_bcast(sizeof(bReadRNG),&bReadRNG,cr);
+    }
     inputrec->bContinuation = TRUE;
     inputrec->init_step += i;
     inputrec->nsteps    -= i;
+    if (bReadRNG)
+      Flags |= MD_READ_RNG;
   }
 
   if (SIMMASTER(cr))
@@ -193,10 +200,6 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Set overallocation to avoid frequent reallocation of arrays */
     set_over_alloc_dd(TRUE);
   } else {
-    if (cr->npmenodes > 0)
-      gmx_fatal(FARGS,
-		"Can only use seperate PME nodes with domain decomposition\n");
-    cr->npmenodes = 0;
     cr->duty = (DUTY_PP | DUTY_PME);
 
     if (inputrec->ePBC == epbcSCREW)
@@ -581,7 +584,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   update_mdatoms(mdatoms,state->lambda);
 
-  if (sd && opt2bSet("-cpi",nfile,fnm)) {
+  if (sd && (Flags & MD_READ_RNG)) {
     /* Set the random state if we read a checkpoint file */
     set_stochd_state(sd,state);
   }
@@ -838,7 +841,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     } 
 
-    if (terminate_now == 1 || (terminate_now == -1 && bNS))
+    if (terminate_now > 0 || (terminate_now < 0 && bNS))
       bLastStep = TRUE;
 
     do_log = do_per_step(step,ir->nstlog) || bLastStep;
@@ -1102,11 +1105,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
        */
-      if (MASTER(cr))
-	terminate = terminate_now;
       global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
 		  ir,grps,bSumEkinhOld,constr,vcm,
 		  ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
+      if (terminate != 0) {
+	terminate_now = terminate;
+	terminate = 0;
+      }
 
       wallcycle_stop(wcycle,ewcMoveE);
       bSumEkinhOld = FALSE;
