@@ -79,7 +79,7 @@ void global_stat(FILE *fplog,
   static t_bin *rb=NULL; 
   static int   *itc0,*itc1;
   int    ie,ifv,isv,irmsd=0,imu=0,idedl,icm=0,imass=0,ica,inb=0;
-  int    ibnsb=-1,ichkpt,iterminate;
+  int    ibnsb=-1,ichkpt=-1,iterminate;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
   int    j;
