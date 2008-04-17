@@ -823,7 +823,7 @@ int gmx_energy(int argc,char *argv[])
     "the energies must both be calculated from the same trajectory."
     
   };
-  static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE;
+  static bool bSum=FALSE,bFee=FALSE,bAll=FALSE,bFluct=FALSE,bUni=TRUE;
   static bool bDp=FALSE,bMutot=FALSE,bOrinst=FALSE,bOvec=FALSE;
   static int  skip=0,nmol=1,ndf=3;
   static real reftemp=300.0,ezero=0;
@@ -840,6 +840,8 @@ int gmx_energy(int argc,char *argv[])
       "Print energies in high precision" },
     { "-mutot",FALSE, etBOOL, {&bMutot},
       "Compute the total dipole moment from the components" },
+    { "-uni", FALSE, etBOOL, {&bUni},
+      "Skip non-uniformly spaced frames" },
     { "-skip", FALSE, etINT,  {&skip},
       "Skip number of frames between data points" },
     { "-aver", FALSE, etBOOL, {&bAll},
@@ -876,6 +878,8 @@ int gmx_energy(int argc,char *argv[])
   int        cur=0;
 #define NEXT (1-cur)
   int        nre,teller,teller_disre,firststep,oldstep;
+  int        interval,ninterval,ninterval_min;
+  bool       bSkipUni;
   int        nor=0,nex=0,norfr=0,enx_i=0;
   real       oldt;
   real       *bounds,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
@@ -1094,6 +1098,9 @@ int gmx_energy(int argc,char *argv[])
   bFoundOld    = FALSE;
   oldstep      = 0;
   oldt         = 0;
+  interval     = 0;
+  ninterval    = 0;
+  ninterval_min= 3;
   do {
     /* This loop searches for the first frame (when -b option is given), 
      * or when this has been found it reads just one energy frame
@@ -1134,6 +1141,13 @@ int gmx_energy(int argc,char *argv[])
 		(sqr(oldee[i].esum - (oldstep-firststep)*fr->ener[i].e)/
 		 ((oldstep-firststep)*(fr->step+1-firststep)));
 	    }
+	} else {
+	  if (bUni && ninterval < ninterval_min) {
+	    if (frame[cur].step - frame[NEXT].step != interval)
+	      ninterval = 0;
+	    interval = frame[cur].step - frame[NEXT].step;
+	    ninterval++;
+	  }
 	}
       }
       /*
@@ -1199,7 +1213,9 @@ int gmx_energy(int argc,char *argv[])
       /* 
        * Printing time, only when we do not want to skip frames
        */
-      if ((!skip) || ((teller % skip) == 0)) {
+      bSkipUni = (bUni && ninterval >= ninterval_min && 
+		  (fr->step - firststep) % interval != 0);
+      if (!bSkipUni && (!skip || teller % skip == 0)) {
 	if (bDisRe) {
 	  /*******************************************
 	   * D I S T A N C E   R E S T R A I N T S  
@@ -1278,7 +1294,8 @@ int gmx_energy(int argc,char *argv[])
 	  }
 	}
       }
-      teller++;
+      if (!bSkipUni)
+	teller++;
     }
   } while (bCont && (timecheck == 0));
   
