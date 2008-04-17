@@ -844,8 +844,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (terminate_now > 0 || (terminate_now < 0 && bNS))
       bLastStep = TRUE;
 
-    do_log = do_per_step(step,ir->nstlog) || bLastStep;
-    do_verbose = bVerbose && (step % stepout == 0 || bLastStep);
+    do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
+    do_verbose = bVerbose && (step % stepout == 0 || bFirstStep || bLastStep);
 
     if (bNS && !(bFirstStep && ir->bContinuation)) {
       bMasterState = FALSE;
@@ -1099,8 +1099,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (PAR(cr) &&
-	(bGStat || do_per_step(step,ir->nstlist) ||
-	 do_per_step(step,ir->nstenergy) || do_per_step(step,ir->nstlog))) {
+	(bGStat || bNS || do_per_step(step,ir->nstenergy) || bCPT || do_log)) {
       wallcycle_start(wcycle,ewcMoveE);
       /* Globally (over all NODEs) sum energy, virial etc. 
        * This includes communication 
@@ -1238,7 +1237,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       upd_mdebin(mdebin,fp_dgdl,bGStat,
 		 mdatoms->tmass,step_rel,t,ener,state,lastbox,
 		 shake_vir,force_vir,total_vir,pres,grps,mu_tot,constr);
-      do_ene = do_per_step(step,ir->nstenergy);
+      do_ene = do_per_step(step,ir->nstenergy) || bCPT || bFirstStep || bLastStep;
       do_dr  = do_per_step(step,ir->nstdisreout);
       do_or  = do_per_step(step,ir->nstorireout);
       do_dihr= do_per_step(step,ir->nstdihreout);
