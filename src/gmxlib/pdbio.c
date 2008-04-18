@@ -370,8 +370,8 @@ void get_pdb_atomnumber(t_atoms *atoms,void *atomprop)
     gmx_incons("Trying to deduce atomnumbers when no pdb information is present");
   }
   for(i=0; (i<atoms->nr); i++) {
-    strcpy(anm,*atoms->atomname[i]);
-    strcpy(anm_copy,*atoms->atomname[i]);
+    strcpy(anm,atoms->pdbinfo[i].atomnm);
+    strcpy(anm_copy,atoms->pdbinfo[i].atomnm);
     atomnumber = NOTSET;
     if (anm[0] != ' ') {
       anm_copy[2] = nc;
@@ -393,6 +393,8 @@ void get_pdb_atomnumber(t_atoms *atoms,void *atomprop)
 	atomnumber = gmx_nint(eval);
     }
     atoms->atom[i].atomnumber = atomnumber;
+    if (debug)
+      fprintf(debug,"Atomnumber for atom '%s' is %d\n",anm,atomnumber);
   }
 }
 
