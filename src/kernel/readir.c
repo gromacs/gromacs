@@ -257,9 +257,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     ir->epsilon_rf = ir->epsilon_r;
     ir->epsilon_r  = 1.0;
   }
-  
-  sprintf(err_buf,"epsilon_r must be >= 0 instead of %g\n",ir->epsilon_r);
-  CHECK(ir->epsilon_r < 0);
+
+  if (getenv("GALACTIC_DYNAMICS") == NULL) {  
+    sprintf(err_buf,"epsilon_r must be >= 0 instead of %g\n",ir->epsilon_r);
+    CHECK(ir->epsilon_r < 0);
+  }
   
   if (EEL_RF(ir->coulombtype)) {
     /* reaction field (at the cut-off) */
