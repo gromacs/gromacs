@@ -21,7 +21,6 @@ libmd@LIBSUFFIX@_la_SOURCES = \
 	mvxvf.c		ns.c		nsgrid.c	\
 	perf_est.c	\
 	pme.c		pme_pp.c	pppm.c		\
-	fftgrid.c	\
 	partdec.c	pull.c 		pullutil.c	\
 	rf_util.c	shakef.c	sim_util.c	\
 	shellfc.c	stat.c 		\
