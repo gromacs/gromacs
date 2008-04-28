@@ -57,6 +57,7 @@
 #include "trnio.h"
 #include "txtdump.h"
 #include "gmxcpp.h"
+#include "checkpoint.h"
 
 static void dump_top(FILE *fp,t_topology *top,char *tpr)
 {
