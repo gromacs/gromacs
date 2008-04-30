@@ -52,6 +52,7 @@
 #include "xtcio.h"
 #include "pdbio.h"
 #include "confio.h"
+#include "checkpoint.h"
 #include "wgms.h"
 #include <math.h>
 
@@ -622,6 +623,9 @@ bool read_next_frame(int status,t_trxframe *fr)
     case efTRR:
         bRet = gmx_next_frame(status,fr);
         break;
+    case efCPT:
+      /* Checkpoint files can not contain mulitple frames */
+      break;
     case efG96:
       read_g96_conf(gmx_fio_getfp(status),NULL,fr);
       bRet = (fr->natoms > 0);
@@ -715,6 +719,10 @@ int read_first_frame(int *status,char *fn,t_trxframe *fr,int flags)
   {
   case efTRJ:
   case efTRR:
+    break;
+  case efCPT:
+    read_checkpoint_trxframe(fp,fr);
+    bFirst = FALSE;
     break;
   case efG96:
     /* Can not rewind a compressed file, so open it twice */

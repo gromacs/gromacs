@@ -68,14 +68,14 @@ enum { eftASC, eftBIN, eftXDR, eftGEN, eftNR };
  */
 static const int trxs[]={
 #ifdef USE_XDR 
-  efXTC, efTRR, 
+  efXTC, efTRR, efCPT,
 #endif
   efTRJ, efGRO, efG96, efPDB, efG87 };
 #define NTRXS asize(trxs)
 
 static const int trns[]={ 
 #ifdef USE_XDR
-  efTRR, 
+  efTRR, efCPT,
 #endif
   efTRJ };
 #define NTRNS asize(trns)
@@ -143,7 +143,7 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
   { eftASC, ".gct", "gct",    "-f", "General coupling stuff"                 },
   { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb", NTRXS, trxs },
-  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj",          NTRNS, trns },
+  { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj cpt",      NTRNS, trns },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
   { eftBIN, ".trj", "traj",   NULL, "Trajectory file (architecture specific)"         },
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
