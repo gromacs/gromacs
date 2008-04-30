@@ -173,6 +173,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (PAR(cr)) {
       gmx_bcast(sizeof(i),&i,cr);
       gmx_bcast(sizeof(bReadRNG),&bReadRNG,cr);
+      gmx_bcast(DIM*sizeof(ddxyz[0]),ddxyz,cr);
     }
     inputrec->bContinuation = TRUE;
     inputrec->init_step += i;
