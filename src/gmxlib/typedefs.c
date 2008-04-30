@@ -286,6 +286,7 @@ void init_state(t_state *state,int natoms,int ngtc)
   int i;
 
   state->natoms = natoms;
+  state->nrng   = 0;
   state->flags  = 0;
   state->lambda = 0;
   clear_mat(state->box);
