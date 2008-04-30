@@ -11,11 +11,13 @@
 #include "gmxfio.h"
 #include "xdrf.h"
 #include "statutil.h"
+#include "txtdump.h"
+#include "vec.h"
 #include "checkpoint.h"
 
 #define CPT_MAGIC 171817
 
-static const cpt_version = 1;
+static const int cpt_version = 1;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -106,7 +108,7 @@ static void do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
     sfree(va);
 }
 
-static do_cpte_real(XDR *xd,int ecpt,int sflags,real *r,FILE *list)
+static void do_cpte_real(XDR *xd,int ecpt,int sflags,real *r,FILE *list)
 {
   do_cpte_reals(xd,ecpt,sflags,1,&r,list);
 }
@@ -138,7 +140,7 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
 		   (unsigned int)sizeof(int),(xdrproc_t)xdr_int);
   
   if (list)
-    pr_ivec(list,0,est_names[ecpt],vp,nf);
+    pr_ivec(list,0,est_names[ecpt],vp,nf,TRUE);
   if (va)
     sfree(va);
 }
@@ -423,6 +425,19 @@ static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)
   }
 }
 
+static void check_int(FILE *fplog,char *type,int p,int f,bool *mm)
+{
+  if (p != f) {
+    if (fplog) {
+      fprintf(fplog,"  %s mismatch,\n",type);
+      fprintf(fplog,"    current program: %d\n",p);
+      fprintf(fplog,"    checkpoint file: %d\n",f);
+      fprintf(fplog,"\n");
+    }
+    *mm = TRUE;
+  }
+}
+
 static void check_string(FILE *fplog,char *type,char *p,char *f,bool *mm)
 {
   if (strcmp(p,f) != 0) {
@@ -436,19 +451,32 @@ static void check_string(FILE *fplog,char *type,char *p,char *f,bool *mm)
   }
 }
 
-static void check_build_match(FILE *fplog,
-			      char *version,
-			      char *btime,char *buser,char *bmach,
-			      char *fprog)
+static void check_match(FILE *fplog,
+			char *version,
+			char *btime,char *buser,char *bmach,char *fprog,
+			t_commrec *cr,int npp_f,int npme_f,
+			ivec dd_nc,ivec dd_nc_f)
 {
+  int  npp;
   bool mm;
 
   mm = FALSE;
+
   check_string(fplog,"Version"     ,VERSION      ,version,&mm);
   check_string(fplog,"Build time"  ,BUILD_TIME   ,btime  ,&mm);
   check_string(fplog,"Build user"  ,BUILD_USER   ,buser  ,&mm);
   check_string(fplog,"Build time"  ,BUILD_MACHINE,bmach  ,&mm);
   check_string(fplog,"Program name",Program()    ,fprog  ,&mm);
+
+  npp = cr->nnodes - cr->npmenodes;
+  check_int   (fplog,"#PP-nodes"   ,npp          ,npp_f      ,&mm);
+  if (npp == npp_f) {
+    check_int (fplog,"#PME-nodes"  ,cr->npmenodes,npme_f     ,&mm);
+    check_int (fplog,"#DD-cells[x]",dd_nc[XX]    ,dd_nc_f[XX],&mm);
+    check_int (fplog,"#DD-cells[y]",dd_nc[YY]    ,dd_nc_f[YY],&mm);
+    check_int (fplog,"#DD-cells[z]",dd_nc[ZZ]    ,dd_nc_f[ZZ],&mm);
+  }
+
   if (mm) {
     if (fplog)
       fprintf(fplog,"Continuation is exact, but is not guaranteed to be binary identical\n\n");
@@ -463,7 +491,7 @@ bool read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
 {
   int  fp;
   char *version,*btime,*buser,*bmach,*fprog,*ftime;
-  int  nppnodes,npmenodes,eIntegrator_f,nppnodes_f,npmenodes_f;
+  int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
   ivec dd_nc_f;
   int  natoms,ngtc,fflags;
   bool bRNG;
@@ -473,7 +501,7 @@ bool read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
     "         while the simulation uses integrator %s\n\n";
   char *sd_note=
     "NOTE: The checkpoint file was for %d nodes doing SD,\n"
-    "      while the simulation uses %d SD nodes,\n"
+   "      while the simulation uses %d SD nodes,\n"
     "      continuation will be exact, except for the random state\n\n";
 
   if (PARTDECOMP(cr))
@@ -517,24 +545,18 @@ bool read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
       fprintf(fplog,int_warn,EI(eIntegrator_f),EI(eIntegrator));
   }
 
-  if (DOMAINDECOMP(cr)) {
-    if (cr->npmenodes < 0 && cr->nnodes == nppnodes_f + npmenodes_f)
-      cr->npmenodes = npmenodes_f;
-    if (cr->npmenodes >= 0) {
-      nppnodes = cr->nnodes - cr->npmenodes;
-      for(d=0; d<DIM; d++) {
-	if (dd_nc[d] == 0)
-	  dd_nc[d] = dd_nc_f[d];
-      }
-    } else {
-      /* The number of PP nodes has not been set yet */
-      nppnodes = -1;
+  if (cr->npmenodes < 0 && cr->nnodes == nppnodes_f + npmenodes_f)
+    cr->npmenodes = npmenodes_f;
+  if (cr->npmenodes >= 0) {
+    nppnodes = cr->nnodes - cr->npmenodes;
+    for(d=0; d<DIM; d++) {
+      if (dd_nc[d] == 0)
+	dd_nc[d] = dd_nc_f[d];
     }
   } else {
-    nppnodes  = cr->nnodes;
-    npmenodes = 0;
+    /* The number of PP nodes has not been set yet */
+    nppnodes = -1;
   }
-
 
   bRNG = TRUE;
   if (fflags != state->flags) {
@@ -543,15 +565,17 @@ bool read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
 	      "WARNING: The checkpoint state entries do not match the simulation,\n"
 	      "         see the log file for details\n\n");
     print_flag_mismatch(fplog,state->flags,fflags);
-  } else if (eIntegrator = eiSD2 && nppnodes != nppnodes_f) {
-    bRNG = FALSE;
-    if (MASTER(cr))
-      fprintf(stderr,sd_note,nppnodes_f,nppnodes);
-    if (fplog)
-      fprintf(fplog ,sd_note,nppnodes_f,nppnodes);
   } else {
+    if (eIntegrator == eiSD2 && nppnodes != nppnodes_f) {
+      bRNG = FALSE;
+      if (MASTER(cr))
+	fprintf(stderr,sd_note,nppnodes_f,nppnodes);
+      if (fplog)
+	fprintf(fplog ,sd_note,nppnodes_f,nppnodes);
+    }
     if (MASTER(cr))
-      check_build_match(fplog,version,btime,buser,bmach,fprog);
+      check_match(fplog,version,btime,buser,bmach,fprog,
+		  cr,nppnodes_f,npmenodes_f,dd_nc,dd_nc_f);
   }
   do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,nppnodes_f,state,bRNG,
 	       NULL);
@@ -566,28 +590,74 @@ bool read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
   return bRNG;
 }
 
-void read_checkpoint_state(char *fn,int *step,double *t,t_state *state)
+static void low_read_checkpoint_state(int fp,
+				      int *step,double *t,t_state *state,
+				      bool bReadRNG)
 {
-  int  fp;
   char *version,*btime,*buser,*bmach,*fprog,*ftime;
   int  eIntegrator;
   int  nppnodes,npme;
   ivec dd_nc;
 
-  fp = gmx_fio_open(fn,"r");
   do_cpt_header(gmx_fio_getxdr(fp),TRUE,
 		&version,&btime,&buser,&bmach,&fprog,&ftime,
 		&eIntegrator,step,t,&nppnodes,dd_nc,&npme,
 		&state->natoms,&state->ngtc,&state->flags,NULL);
-  do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,nppnodes,state,TRUE,
+  do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,nppnodes,state,bReadRNG,
 	       NULL);
-  gmx_fio_close(fp);
 
   sfree(fprog);
   sfree(ftime);
   sfree(btime);
   sfree(buser);
   sfree(bmach);
+}
+
+void read_checkpoint_state(char *fn,int *step,double *t,t_state *state)
+{
+  int  fp;
+
+  fp = gmx_fio_open(fn,"r");
+  low_read_checkpoint_state(fp,step,t,state,TRUE);
+  gmx_fio_close(fp);
+}
+
+void read_checkpoint_trxframe(int fp,t_trxframe *fr)
+{
+  t_state state;
+  int step;
+  double t;
+
+  init_state(&state,0,0);
+
+  low_read_checkpoint_state(fp,&step,&t,&state,FALSE);
+
+  fr->natoms  = state.natoms;
+  fr->bTitle  = FALSE;
+  fr->bStep   = TRUE;
+  fr->step    = step;
+  fr->bTime   = TRUE;
+  fr->time    = t;
+  fr->bLambda = TRUE;
+  fr->lambda  = state.lambda;
+  fr->bAtoms  = FALSE;
+  fr->bX      = (state.flags & estX);
+  if (fr->bX) {
+    fr->x     = state.x;
+    state.x   = NULL;
+  }
+  fr->bV      = (state.flags & estV);
+  if (fr->bV) {
+    fr->v     = state.v;
+    state.v   = NULL;
+  }
+  fr->bF      = FALSE;
+  fr->bBox    = (state.flags & estBOX);
+  if (fr->bBox) {
+    copy_mat(state.box,fr->box);
+  }
+
+  done_state(&state);
 }
 
 void list_checkpoint(char *fn,FILE *out)
@@ -598,6 +668,7 @@ void list_checkpoint(char *fn,FILE *out)
   double t;
   ivec dd_nc;
   t_state state;
+
   int  indent;
   int  i;
 
