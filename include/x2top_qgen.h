@@ -43,11 +43,11 @@
 extern real generate_charges_sm(FILE *fp,char *molname,void *eem,
 				t_atoms *atoms,rvec x[],
 				real tol,int maxiter,void *atomprop,
-				real qtotref,int eemtype);
+				real qtotref,int eemtype,real hardness);
 
 extern void assign_charges(char *molname,
 			   int eemtype,t_atoms *atoms,rvec x[],
 			   t_params *bonds,real tol,real fac,int maxiter,
-			   void *atomprop,real qtotref);
+			   void *atomprop,real qtotref,real hardness);
 
 #endif

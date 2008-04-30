@@ -40,7 +40,7 @@
 #include <stdio.h>
 #include "grompp.h"
 	
-enum { eqgNone, eqgLinear, eqgYang, eqgBultinck, 
+enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
        eqgSMp, eqgSMpp, eqgSMs, eqgSMps, eqgSMg, eqgSMpg, eqgNR };
 
 /* File argument maybe NULL, in which case the default eemprops.dat
@@ -63,9 +63,9 @@ extern int eem_get_index(void *eem,int atomicnumber,int eemtype);
 
 extern int eem_get_elem_index(void *eem,int atomicnumber,int eemtype);
 
-extern real lo_get_j00(void *eem,int index,real *wj,real q);
+extern int eem_get_row(void *eem,int index);
 
-extern real eem_get_j00(void *eem,char *aname,real *wj,real qH,int eemtype);
+extern real eem_get_j00(void *eem,int index,real *wj,real q);
 
 extern int eem_get_elem(void *eem,int index);
 

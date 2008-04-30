@@ -66,7 +66,7 @@
 
 typedef struct {
   char *name,*opts;
-  int  eemtype,elem;
+  int  eemtype,elem,row;
   real J0,w,chi0; 
   /* J0 in Yang & Sharp corresponds to n (eta) in Bultinck */
 } t_eemprops;
@@ -76,15 +76,22 @@ typedef struct {
   t_eemprops *eep;
 } t_eemrecord;
 
-static char *eemtype_name[eqgNR] = { 
-  "None", "Linear", "Yang", "Bultinck", 
-  "SMp", "SMpp", "SMs", "SMps", "SMg", "SMpg" 
-};
+typedef struct {
+  char *name,*ref;
+  bool bWeight;
+} t_eemtype_props;
 
-static char *eemtype_ref[eqgNR] = { 
-  "None", "None", "Yang2006b", "Bultinck2002a",
-  "Spoel2008b", "Spoel2008b", "Spoel2008b", 
-  "Spoel2008b", "Spoel2008b", "Spoel2008b"
+static t_eemtype_props eemtype_props[eqgNR] = { 
+  { "None",     "None",	         FALSE },   
+  { "Yang", 	"Yang2006b",     TRUE },    
+  { "Bultinck", "Bultinck2002a", FALSE },
+  { "Rappe",    "Rappe1991a",	 TRUE },  
+  { "SMp", 	"Spoel2008b",	 FALSE },    
+  { "SMpp", 	"Spoel2008b",    FALSE },
+  { "SMs", 	"Spoel2008b",    TRUE },
+  { "SMps", 	"Spoel2008b",    TRUE },
+  { "SMg", 	"Spoel2008b",    TRUE },
+  { "SMpg", 	"Spoel2008b",    TRUE }
 };
 
 int name2eemtype(char *name)
@@ -92,7 +99,7 @@ int name2eemtype(char *name)
   int i;
   
   for(i=0; (i<eqgNR); i++) {
-    if (strcasecmp(name,eemtype_name[i]) == 0)
+    if (strcasecmp(name,eemtype_props[i].name) == 0)
       return i;
   }
   return -1;
@@ -103,7 +110,7 @@ char *get_eemtype_name(int eem)
   int i;
   
   if ((eem >= 0) && (eem < eqgNR))
-    return eemtype_name[eem];
+    return eemtype_props[eem].name;
     
   return NULL;
 }
@@ -113,7 +120,7 @@ char *get_eemtype_reference(int eem)
   int i;
   
   if ((eem >= 0) && (eem < eqgNR))
-    return eemtype_ref[eem];
+    return eemtype_props[eem].ref;
     
   return NULL;
 }
@@ -124,7 +131,7 @@ void *read_eemprops(char *fn,int eemtype,void *atomprop)
   char   buf[STRLEN],**strings,*ptr;
   int    i,n,narg,nn=0;
   char   nmbuf[32],algbuf[32],optbuf[32];
-  int    elem;
+  int    elem,row;
   real   value;
   double J0,w,chi0;
   
@@ -143,7 +150,7 @@ void *read_eemprops(char *fn,int eemtype,void *atomprop)
       optbuf[0] = '\0';
       if (((ptr) && (*ptr != ';')) &&
 	  ((narg = sscanf(strings[i],"%s%s%lf%lf%lf%s",nmbuf,algbuf,
-			  &J0,&w,&chi0,optbuf)) >= 5))  {
+			  &J0,&chi0,&w,optbuf)) >= 4))  {
 	if ((eem->eep[nn].eemtype = name2eemtype(algbuf)) == -1)
 	  fprintf(stderr,"Warning in %s on line %d, unknown algorithm '%s'\n",
 		  buf,i+1,algbuf);
@@ -151,10 +158,33 @@ void *read_eemprops(char *fn,int eemtype,void *atomprop)
 	  eem->eep[nn].name    = strdup(nmbuf);
 	  if (!query_atomprop(atomprop,epropElement,"???",nmbuf,&value))
 	    gmx_fatal(FARGS,"Can not find element type for atom %s",nmbuf);
-	  eem->eep[nn].elem  = gmx_nint(value);
+	  elem = gmx_nint(value);
+	  eem->eep[nn].elem  = elem;
+	  /* Compute which row in the periodic table is this element */
+	  if (elem <= 2)
+	    row = 1;
+	  else if (elem <= 10)
+	    row = 2;
+	  else if (elem <= 18)
+	    row = 3;
+	  else if (elem <= 36)
+	    row = 4;
+	  else if (elem <= 54)
+	    row = 5;
+	  else if (elem <= 86)
+	    row = 6;
+	  else
+	    row = 7;
+
+	  eem->eep[nn].row   = row;
 	  eem->eep[nn].J0    = J0;
-	  eem->eep[nn].w     = w;
 	  eem->eep[nn].chi0  = chi0;
+	  
+	  if (narg > 4)
+	    eem->eep[nn].w     = w;
+	  else
+	    eem->eep[nn].w     = 0;
+	  
 	  if (strlen(optbuf) > 0)
 	    eem->eep[nn].opts = strdup(optbuf);
 	  else
@@ -169,17 +199,66 @@ void *read_eemprops(char *fn,int eemtype,void *atomprop)
   return eem;
 }
 
+static void write_eemprops_header(FILE *fp,int eemtype)
+{
+  switch (eemtype) {
+  case eqgYang:
+    fprintf(fp,";\n");
+    fprintf(fp,"; Parameters for Yang & Sharp, JCTC 2 (2006) 1152\n");
+    fprintf(fp,"; Atom      Model    J_aa (eV)  chi_a (eV)    R_a (A)\n");
+    break;
+  case eqgRappe:
+    fprintf(fp,";\n");
+    fprintf(fp,"; Parameters for Rappe & Goddard, JPC 95 (1991) 3358\n");
+    fprintf(fp,"; Atom      Model    J_aa (eV)  chi_a (eV) z_a (1/au)\n");
+    break;
+  case eqgBultinck:
+    fprintf(fp,";\n");
+    fprintf(fp,"; Parameters for Bultinck et al., JPCA 106 (2002) 7887\n");
+    fprintf(fp,"; J_aa equals Hardness, this is multiplied by 2 in x2top.\n");
+    fprintf(fp,"; Atom      Model    J_aa (eV) chi_a (eV)\n");
+    break;
+  
+  case eqgSMp:
+  case eqgSMpp:
+    fprintf(fp,";\n");
+    fprintf(fp,"; Parameters for van Maaren & van der Spoel\n");
+    fprintf(fp,"; Atom      Model   J_aa (eV)  chi_a (eV)\n");
+    break;
+  case eqgSMg:
+  case eqgSMpg:
+  case eqgSMs:
+  case eqgSMps:
+    fprintf(fp,";\n");
+    fprintf(fp,"; Parameters for van Maaren & van der Spoel\n");
+    fprintf(fp,"; Atom      Model   J_aa (eV)  chi_a (eV)  z_a (1/nm)\n");
+    break;
+  default:
+    break;
+  }
+}
+
 void write_eemprops(FILE *fp,void *eem)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
+  double w;
   int i;
 
-  fprintf(fp,"; Electronegativity parameters. J_aa and Chi_a are in eV, w_a in nm\n");
-  fprintf(fp,"; Atom      Model        J_aa         w_a       Chi_a\n");
-  for(i=0; (i<er->nep); i++)
-    fprintf(fp,"%-5s  %10s  %10.4f  %10.5f  %10.4f\n",
-	    er->eep[i].name,eemtype_name[er->eep[i].eemtype],
-	    er->eep[i].J0,er->eep[i].w,er->eep[i].chi0);
+  fprintf(fp,"; Parameters for electronegativity algorithms. This file is used by x2top.\n");
+  fprintf(fp,"; Note that parameters may have different meaning and different units.\n");
+  for(i=0; (i<er->nep); i++) {
+    if ((i == 0) || 
+	((i > 0) && (er->eep[i].eemtype != er->eep[i-1].eemtype)))
+      write_eemprops_header(fp,er->eep[i].eemtype);
+    w = er->eep[i].w;
+    fprintf(fp,"%-5s  %10s  %10.4f  %10.5f",
+	    er->eep[i].name,eemtype_props[er->eep[i].eemtype].name,
+	    er->eep[i].J0,er->eep[i].chi0);
+    if (eemtype_props[er->eep[i].eemtype].bWeight)
+      fprintf(fp,"  %10.5f\n",w);
+    else
+      fprintf(fp,"\n");
+  }
 }
 
 int eem_get_numprops(void *eem,int eemtype)
@@ -218,38 +297,58 @@ int eem_get_elem_index(void *eem,int atomicnumber,int eemtype)
   return -1;
 }
 
-real lo_get_j00(void *eem,int index,real *wj,real q)
+int eem_get_row(void *eem,int index)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
-  int Z;
-  
-  range_check(index,0,er->nep);
 
+  range_check(index,0,er->nep);
+  
+  return er->eep[index].row;
+}
+
+real eem_get_j00(void *eem,int index,real *wj,real q)
+{
+  t_eemrecord *er = (t_eemrecord *) eem;
+  double Ra,zeta,zeta0,j0;
+
+  /* Bohr is in nm */
+#define BOHR  (0.052917)
+  /* Weird fudge factor lamba, see Rappe & Goddard, JPC 95 (1991) p.3358 */
+#define lambda 0.4913
+
+  range_check(index,0,er->nep);
+  j0 = er->eep[index].J0;
   if (er->eep[index].eemtype == eqgYang) {
-    if (er->eep[index].elem == 1) 
-      *wj = (3/(4*er->eep[index].w)+10*q);
-    else 
-      *wj = (3/(4*er->eep[index].w));
+    /* Convert Ra from Angstrom to au */
+    Ra = er->eep[index].w/(10*BOHR);
+    if (er->eep[index].elem == 1) {
+      zeta0 = (3/(4*Ra));
+      j0    = (1+q/zeta0)*j0;
+      zeta  = zeta0 /*+ q*/;
+    }
+    else {
+      zeta = lambda*(2*er->eep[index].row+1)/(2*Ra);
+    }
+    *wj = zeta/BOHR;
+  }
+  else if (er->eep[index].eemtype == eqgRappe) {
+    zeta = er->eep[index].w;
+    if (er->eep[index].elem == 1) {
+      j0 = (1+q/zeta)*j0;
+      /*zeta += q;*/
+    }
+    *wj = zeta/BOHR;
   }
   else if ((er->eep[index].eemtype == eqgSMs) || 
 	   (er->eep[index].eemtype == eqgSMps) ||
 	   (er->eep[index].eemtype == eqgSMg) ||
 	   (er->eep[index].eemtype == eqgSMpg)) {
-    Z = er->eep[index].elem;
-    *wj = 1.0/er->eep[index].w;
-    /**wj = (Z-q)/(Z*er->eep[index].w);*/
+    *wj = er->eep[index].w;
   }
   else
     *wj = 0;
     
-  return er->eep[index].J0;
-}
-
-real eem_get_j00(void *eem,char *aname,real *wj,real qH,int eemtype)
-{
-  int k = eem_get_index(eem,aname,eemtype);
-
-  return lo_get_j00(eem,k,wj,qH);
+  return j0;
 }
 
 char *eem_get_opts(void *eem,int index)

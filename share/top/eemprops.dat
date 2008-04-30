@@ -1,14 +1,42 @@
-H 	  Yang 	  	13.8904   0.0371 	 4.498  	
-C 	  Yang 	  	10.126 	  0.0759 	 5.723  	
-N 	  Yang 	 	11.76 	  0.0715 	 8.599  	
-O 	  Yang 	        13.364 	  0.0669 	 8.961  	
-F 	  Yang 	  	14.498 	  0.0706 	 6.374  	
-S 	  Yang 		 8.972 	  0.0947 	 6.268  	
-Cl        Yang 		 9.892 	  0.0994 	 5.464  	
-Br 	  Yang 		 8.85 	  0.1141 	 5.790  	
-I 	  Yang 		 7.524 	  0.1333 	 5.622  	
-H 	  Bultinck 	17.95 	  0.0 	 1.00  	
-C 	  Bultinck  	 9.00 	  0.0 	 5.25  	
-N 	  Bultinck 	 9.39 	  0.0 	 8.80  	
-O 	  Bultinck 	14.34 	  0.0 	 14.72  	
-F 	  Bultinck 	19.77 	  0.0 	 15.00  	
+; Parameters for electronegativity algorithms. This file is used by x2top.
+; Note that parameters may have different meaning and different units.
+;
+; Parameters for Yang & Sharp, JCTC 2 (2006) 1152
+; Atom      Model    J_aa (eV)  chi_a (eV)  R_a (A)
+H            Yang     13.8904     4.49800     0.37100
+C            Yang     10.1260     5.72300     0.75900
+N            Yang     11.7600     8.59900     0.71500
+O            Yang     13.3640     8.96100     0.66900
+F            Yang     14.4980     6.37400     0.70600
+S            Yang      8.9720     6.26800     0.94700
+CL           Yang      9.8920     5.46400     0.99400
+BR           Yang      8.8500     5.79000     1.14100
+I            Yang      7.5240     5.62200     1.33300
+;
+; Parameters for Bultinck et al., JPCA 106 (2002) 7887
+; J_aa equals Hardness, this is multiplied by 2 in x2top.
+; Atom      Model    J_aa (eV)  chi_a (eV)
+H        Bultinck     17.9500     1.00000
+C        Bultinck      9.0000     5.25000
+N        Bultinck      9.3900     8.80000
+O        Bultinck     14.3400    14.72000
+F        Bultinck     19.7700    15.00000
+;
+; Parameters for Rappe & Goddard, JPC 95 (1991) 3358
+; Atom      Model    J_aa (eV)  chi_a (eV) z_a (1/au)
+H           Rappe     13.8904     4.52800     1.06980
+LI          Rappe      4.7720     3.00600     0.41740
+C           Rappe     10.1260     5.34300     0.85630
+N           Rappe     11.7600     6.89900     0.90890
+O           Rappe     13.3640     8.74100     0.97150
+F           Rappe     14.9480    10.87400     0.92060
+NA          Rappe      4.5920     2.84300     0.43640
+SI          Rappe      6.9740     4.16800     0.77370
+P           Rappe      8.0000     5.46300     0.82570
+S           Rappe      8.9720     6.92800     0.86900
+CL          Rappe      9.8920     8.56400     0.91540
+K           Rappe      3.8400     2.42100     0.45240
+BR          Rappe      8.8500     7.79000     1.02530
+RB          Rappe      3.6920     2.33100     0.51620
+I           Rappe      7.5240     6.82200     1.07260
+CS          Rappe      3.4220     2.18300     0.56630

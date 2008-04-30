@@ -19,7 +19,6 @@ gen_ad.c 	gen_ad.h	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
 gmxcpp.c	gmxcpp.h	\
-gmx_elements.c	gmx_elements.h	\
 gmx_xml.c	gmx_xml.h	\
 gpp_atomtype.c	gpp_atomtype.h	\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
@@ -31,6 +30,7 @@ pgutil.c	pgutil.h	\
 readir.c	readir.h	\
 readpull.c	\
 resall.c	resall.h	\
+slater_S_integrals.c	slater_S_integrals.h	\
 sorting.c 	sorting.h	\
 specbond.c	specbond.h	\
 ter_db.c	ter_db.h	\

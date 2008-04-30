@@ -175,7 +175,7 @@ static void fill_elemrec(void *atomprop,
       srenew(elem->eemrec,elem->neemrec);
       elem->eemrec[elem->neemrec-1].type = strdup(get_eemtype_name(j));
       elem->eemrec[elem->neemrec-1].ref  = strdup(get_eemtype_reference(j));
-      elem->eemrec[elem->neemrec-1].J0   = lo_get_j00(eem,nn,&wj,0);
+      elem->eemrec[elem->neemrec-1].J0   = eem_get_j00(eem,nn,&wj,0);
       elem->eemrec[elem->neemrec-1].w    = wj;
       elem->eemrec[elem->neemrec-1].chi0 = eem_get_chi0(eem,nn);
     }

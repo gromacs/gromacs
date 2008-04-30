@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static real btol=0.1,qtol=1e-3,fac=5.0;
-  static real qtotref=0;
+  static real qtotref=0,hardness=1;
   static int  nexcl = 2;
   static int  maxiter=100;
   static bool bRemoveDih = FALSE,bQsym = TRUE;
@@ -169,7 +169,7 @@ int main(int argc, char *argv[])
   static bool bUsePDBcharge = FALSE,bVerbose=FALSE,bCONECT=TRUE;
   static char *molnm = "ICE";
   static char *ff = "select";
-  static char *qgen[] = { NULL, "None", "Linear", "Yang", "Bultinck", 
+  static char *qgen[] = { NULL, "None", "Yang", "Bultinck", "Rappe", 
 			  "SMp", "SMpp", "SMs", "SMps", "SMg", "SMpg", NULL };
   static char *dihopt[] = { NULL, "No", "Single", "All", NULL };
   static char *cgopt[] = { NULL, "Group", "Atom", "Neutral", NULL };
@@ -208,6 +208,8 @@ int main(int argc, char *argv[])
       "HIDDENTolerance for assigning charge generation algorithm" },
     { "-qtot",   FALSE, etREAL, {&qtotref},
       "HIDDENNet charge on molecule when generating a charge" },
+    { "-hardness",FALSE, etREAL, {&hardness},
+      "Hardness (factor before J00). By default this is 2 for Bultinck and 1 otherwise, but by setting it explcitly here you can override the default" },
     { "-maxiter",FALSE, etINT, {&maxiter},
       "HIDDENMax number of iterations for charge generation algorithm" },
     { "-fac",    FALSE, etREAL, {&fac},
@@ -324,8 +326,13 @@ int main(int argc, char *argv[])
       printf("Using zero charges\n");
   }
   else {
+    /* Hardness */
+    if (!opt2parg_bSet("-hardness",asize(pa),pa) &&
+	(alg  == eqgBultinck))
+      hardness = 2;
+    
     assign_charges(molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
-		   maxiter,atomprop,qtotref);
+		   maxiter,atomprop,qtotref,hardness);
     if (bQsym)
       symmetrize_charges(atoms,atype,&(plist[F_BONDS]),atomprop);
   }
@@ -360,8 +367,8 @@ int main(int argc, char *argv[])
 				     &plist[F_BONDS],&plist[F_POLARIZATION],
 				     bUsePDBcharge,&qtot,&mtot)) == NULL)
     gmx_fatal(FARGS,"Error generating charge groups");
-  /*  sort_on_charge_groups(cgnr,atoms,plist,atype,x);
-  */       
+  sort_on_charge_groups(cgnr,atoms,plist,atype,x);
+         
   if (bVerbose) {
     printf("There are %4d %s dihedrals, %4d impropers, %4d angles\n"
 	  "          %4d pairs,     %4d bonds and  %4d atoms\n"
@@ -408,11 +415,6 @@ int main(int argc, char *argv[])
   sprintf(title,"%s processed by %s",molnm,ShortProgram());
   write_sto_conf(opt2fn("-c",NFILE,fnm),title,atoms,x,NULL,ePBC,box);
 
-  {
-    gmx_elements elem = gather_element_information(atomprop,nm2t);
-    write_gmx_elements("new.n2t",elem,FALSE);
-  }
-    
   close_symtab(&symtab);
     
   thanx(stderr);

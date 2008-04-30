@@ -143,7 +143,7 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
 					FALSE,mymol->x);
       mymol->fr = mk_forcerec();
       init_forcerec(debug,mymol->fr,NULL,&mymol->ir,&mymol->top,cr,
-		    mymol->box,FALSE,NULL,NULL,NULL, TRUE);
+		    mymol->box,FALSE,NULL,NULL,NULL, TRUE,-1);
     }
     else 
       mymol->shell = NULL;
@@ -208,13 +208,13 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   aver = aver_lsq(&lsq);
   sigma = rms/aver;
   nout = 0;
-  fprintf(logf,"Overview of outliers (> 2 sigma)\n");
+  fprintf(logf,"Overview of outliers (> 3 sigma)\n");
   fprintf(logf,"----------------------------------\n");
   fprintf(logf,"%-20s  %12s  %12s  %12s\n",
 	  "Name","Predicted","Experimental","Deviation");
   for(i=0; (i<nmol); i++) {
     if ((mol[i].dip_exp > 0) && 
-	(fabs(mol[i].dip_calc/mol[i].dip_exp-1) > 2*sigma)) {
+	(fabs(mol[i].dip_calc-mol[i].dip_exp) > 3*sigma)) {
       fprintf(logf,"%-20s  %12.3f  %12.3f  %12.3f\n",
 	      mol[i].molname,mol[i].dip_calc,mol[i].dip_exp,
 	      mol[i].dip_calc-mol[i].dip_exp);
@@ -366,7 +366,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
       generate_charges_sm(debug,mymol->molname,
 			  eem,&(mymol->top.atoms),
 			  mymol->x,1e-4,100,md->atomprop,
-			  mymol->qtotal,eemtp);
+			  mymol->qtotal,eemtp,1.0);
     /* Now optimize the shell positions */
     if (mymol->shell) {
       split_shell_charges(&(mymol->top.atoms),&(mymol->top.idef));
@@ -516,7 +516,7 @@ static void optimize_moldip(FILE *fp,FILE *logf,
       bRand = bRandom && (iter == 0);
       for(i=0; (i<md->nparam); i++) {
 	index = md->index[i];
-	J00 = lo_get_j00(md->eem,index,&wj,0);
+	J00 = eem_get_j00(md->eem,index,&wj,0);
 	J00 = guess_new_param(J00,stepsize,md->J0_0,md->J0_1,rng,bRand);
        	gsl_vector_set (x, k, J00);
 	gsl_vector_set (dx, k++, stepsize*J00);
