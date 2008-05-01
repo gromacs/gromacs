@@ -313,7 +313,8 @@ real eem_get_j00(void *eem,int index,real *wj,real q)
 
   /* Bohr is in nm */
 #define BOHR  (0.052917)
-  /* Weird fudge factor lamba, see Rappe & Goddard, JPC 95 (1991) p.3358 */
+  /* Weird fudge factor lamba, see Rappe & Goddard, 
+     JPC 95 (1991) p.3358 */
 #define lambda 0.4913
 
   range_check(index,0,er->nep);
@@ -335,7 +336,6 @@ real eem_get_j00(void *eem,int index,real *wj,real q)
     zeta = er->eep[index].w;
     if (er->eep[index].elem == 1) {
       j0 = (1+q/zeta)*j0;
-      /*zeta += q;*/
     }
     *wj = zeta/BOHR;
   }
@@ -343,7 +343,11 @@ real eem_get_j00(void *eem,int index,real *wj,real q)
 	   (er->eep[index].eemtype == eqgSMps) ||
 	   (er->eep[index].eemtype == eqgSMg) ||
 	   (er->eep[index].eemtype == eqgSMpg)) {
-    *wj = er->eep[index].w;
+    zeta = er->eep[index].w*BOHR;
+    if (er->eep[index].elem == 1) {
+      j0 = (1+q/zeta)*j0;
+    }
+    *wj = zeta/BOHR;
   }
   else
     *wj = 0;

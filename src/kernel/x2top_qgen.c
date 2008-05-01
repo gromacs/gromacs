@@ -94,8 +94,10 @@ static real calc_jab(rvec xi,rvec xj,real wi,real wj,
   r = norm(dx);
   if (r == 0)
     gmx_fatal(FARGS,"Zero distance between atoms!\n");
-  range_check(rowi,1,SLATER_MAX);
-  range_check(rowj,1,SLATER_MAX);
+  rowi--;
+  rowj--;
+  range_check(rowi,0,SLATER_MAX);
+  range_check(rowj,0,SLATER_MAX);
   switch (eemtype) {
   case eqgBultinck:
   case eqgSMp:
@@ -103,11 +105,11 @@ static real calc_jab(rvec xi,rvec xj,real wi,real wj,
     break;
   case eqgSMs:
   case eqgSMps:
-    eSS = Slater_SS[rowi-1][rowj-1](r,wi,wj);
+    eSS = Slater_SS[rowi][rowj](r,wi,wj);
     break;
   case eqgRappe:
   case eqgYang:
-    eSS = Slater_SS[rowi-1][rowj-1](r,wi,wj);
+    eSS = Slater_SS[rowi][rowj](r,wi,wj);
     break;
   case eqgSMg:
   case eqgSMpg:
@@ -128,15 +130,17 @@ static real calc_j1(rvec xi,rvec xj,real wi,real wj,
   real r;
   real eNN=0,eNS=0,eSN=0,eSS=0;
 
-  range_check(rowi,1,SLATER_MAX);
-  range_check(rowj,1,SLATER_MAX);
+  rowi--;
+  rowj--;
+  range_check(rowi,0,SLATER_MAX);
+  range_check(rowj,0,SLATER_MAX);
   rvec_sub(xi,xj,dx);
   r = norm(dx);
   if (r == 0)
     gmx_fatal(FARGS,"Zero distance between atoms!\n");
   
-  eSN = Slater_NS[rowj-1](r,wj);
-  eSS = Slater_SS[rowi-1][rowj-1](r,wi,wj);
+  eSN = Slater_NS[rowj](r,wj);
+  eSS = Slater_SS[rowi][rowj](r,wi,wj);
   
   return ONE_4PI_EPS0*(eNN+eSN-eSS)/ELECTRONVOLT;
 }
@@ -238,6 +242,14 @@ t_qgen *init_qgen(void *eem,t_atoms *atoms,void *atomprop,rvec *x,int eemtype)
 		  get_eemtype_name(eemtype));
       qgen->elem[j] = eem_get_elem(eem,qgen->eem_ndx[j]);
       qgen->row[j]  = eem_get_row(eem,qgen->eem_ndx[j]);
+      if (qgen->row[j] > SLATER_MAX) {
+	if (debug)
+	  fprintf(debug,"Can not handle higher slaters than %d for atom %s %s\n",
+		  SLATER_MAX,
+		  *(atoms->resname[atoms->atom[i].resnr]),
+		  *(atoms->atomname[j]));
+	qgen->row[j] = SLATER_MAX;
+      }
       qgen->chi0[j] = eem_get_chi0(eem,qgen->eem_ndx[j]);
       copy_rvec(x[i],qgen->x[j]);
       j++;
@@ -300,7 +312,7 @@ static void done_qgen(FILE *fp,t_atoms *atoms,t_qgen *qgen)
 }
 
 static void generate_charges_yang_rappe(void *eem,t_atoms *atoms,rvec x[],
-					real tol,int maxiter,void *atomprop,
+					real tol,int maxiter,void *atomprop,real qtotref,
 					int eqg,real hardness)
 {
   /* Use Rappe and Goddard derivative for now */
@@ -343,7 +355,6 @@ real generate_charges_sm(FILE *fp,char *molname,
 			 real qtotref,int eemtype,
 			 real hardness)
 {
-  /* Use Rappe and Goddard derivative for now */
   t_qgen *qgen;
   real   *qq,chieq;
   int    i,j,iter;
@@ -364,7 +375,7 @@ real generate_charges_sm(FILE *fp,char *molname,
     solve_q_eem(fp,qgen,hardness);
     rms = 0;
     for(i=j=0; (i<atoms->nr); i++) {
-      if (atoms->atom[i].ptype == eptShell) {
+      if (atoms->atom[i].ptype != eptShell) {
 	rms += sqr(qq[j] - qgen->qq[j]);
 	qq[j] = qgen->qq[j];
 	j++;
@@ -382,7 +393,7 @@ real generate_charges_sm(FILE *fp,char *molname,
   }
   sfree(qq);
   chieq = qgen->chieq;
-  done_qgen(fp,atoms,qgen);
+  done_qgen(stdout,atoms,qgen);
   sfree(qgen);
   
   return chieq;
@@ -431,8 +442,9 @@ void assign_charges(char *molname,
     break;
   case eqgYang:
   case eqgRappe:
-    generate_charges_yang_rappe(eem,atoms,x,tol,maxiter,atomprop,eemtype,
-				hardness);
+    generate_charges_yang_rappe(eem,atoms,x,tol,maxiter,
+				atomprop,qtotref,
+				eemtype,hardness);
     break;
   case eqgBultinck:
     generate_charges_bultinck(eem,atoms,x,tol,maxiter,atomprop,
@@ -444,7 +456,8 @@ void assign_charges(char *molname,
   case eqgSMps:
   case eqgSMg:
   case eqgSMpg:
-    (void) generate_charges_sm(debug,molname,eem,atoms,x,tol,maxiter,atomprop,
+    (void) generate_charges_sm(debug,molname,eem,atoms,x,
+			       tol,maxiter,atomprop,
 			       qtotref,eemtype,hardness);
     break;
   default:
