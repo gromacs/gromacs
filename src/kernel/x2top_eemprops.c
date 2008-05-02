@@ -429,6 +429,7 @@ void *copy_eem(void *eem_dst,void *eem_src)
     dst->eep[i].J0      = src->eep[i].J0;
     dst->eep[i].w       = src->eep[i].w;
     dst->eep[i].chi0    = src->eep[i].chi0;
+    dst->eep[i].row     = src->eep[i].row;
   }
   return dst;
 }
