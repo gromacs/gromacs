@@ -162,7 +162,7 @@ nma_sparse_hessian(gmx_sparsematrix_t *     sparse_hessian,
     fprintf(stderr,"\nDiagonalizing to find eigenvectors 1 through %d...\n",neig);
     fflush(stderr);
         
-    sparse_eigensolver(sparse_hessian,neig,eigenvalues,eigenvectors,100000);
+    sparse_eigensolver(sparse_hessian,neig,eigenvalues,eigenvectors,10000000);
 
     /* Scale output eigenvectors */
     if (bM && eigenvectors!=NULL)

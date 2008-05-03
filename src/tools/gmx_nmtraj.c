@@ -79,15 +79,18 @@ int gmx_nmtraj(int argc,char *argv[])
         " the first six normal modes are the translational and rotational degrees of freedom." 
     };
 
-    static int  out_eignr=7;
-    static real amplitude=0.25;
+    static real refamplitude=0.25;
     static int  nframes=30;
     static real temp=300.0;
+    static char *eignrvec = "7";
+    static char *phasevec  = "0.0";
+    
     t_pargs pa[] =
     {
-        { "-eignr",     FALSE, etINT,  {&out_eignr}, "Eigenvector to use (first is 1)" },
+        { "-eignr",     FALSE, etSTR,  {&eignrvec}, "String of eigenvectors to use (first is 1)" },
+        { "-phases",    FALSE, etSTR,  {&phasevec}, "String of phases (default is 0.0)" },
         { "-temp",      FALSE, etREAL, {&temp},      "Temperature in Kelvin" },
-        { "-amplitude", FALSE, etREAL, {&amplitude}, "Amplitude for modes with eigenvalue<=0" },
+        { "-amplitude", FALSE, etREAL, {&refamplitude}, "Amplitude for modes with eigenvalue<=0" },
         { "-nframes",   FALSE, etINT,  {&nframes},   "Number of frames to generate" }
     };
     
@@ -103,9 +106,10 @@ int gmx_nmtraj(int argc,char *argv[])
   rvec       **eigvec=NULL;
   matrix     box;
   int        natoms;
-  int        i,j,d,s,v;
+  int        i,j,k,kmode,d,s,v;
   bool       bDMR,bDMA,bFit;
   char *     indexfile;
+  
   char *     grpname;
   real *     eigval;
   int        neigval;
@@ -113,12 +117,18 @@ int gmx_nmtraj(int argc,char *argv[])
   real *     invsqrtm;
   char       title[STRLEN];
   real       fraction;
-  int        out_eigidx;
-  real       out_eigval;
-  rvec *     out_eigvec;
+  int        *out_eigidx;
+  real       *out_eigval;
+  rvec *     this_eigvec;
   real       omega,Ekin,sum,m,vel;
   bool       found;
-
+  int        nmodes,nphases;
+  int        *imodes;
+  real       *amplitude;
+  real       *phases;
+  real       dum;
+  char       *p,*pe;  
+    
   t_filenm fnm[] = 
   { 
       { efTPS, NULL,    NULL,          ffREAD },
@@ -137,6 +147,56 @@ int gmx_nmtraj(int argc,char *argv[])
   
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,bDMA);
 
+  /* Find vectors and phases */
+  
+  /* first find number of args in string */
+  nmodes=0;
+  p=eignrvec;
+  while(*p!=0)
+  {
+      dum=strtod(p,&pe);
+      p=pe;
+      nmodes++;
+  }
+
+  snew(imodes,nmodes);
+  p=eignrvec;
+  for(i=0;i<nmodes;i++)
+  {
+      imodes[i]=strtol(p,&pe,10);
+  }
+    
+  /* Now read phases */
+  nphases=0;
+  p=phasevec;
+  while(*p!=0)
+  {
+      dum=strtod(p,&pe);
+      p=pe;
+      nphases++;
+  }
+  if(nphases>nmodes)
+  {
+      gmx_fatal(FARGS,"More phases than eigenvector indices specified.\n");
+  }
+    
+  snew(phases,nmodes);
+  p=phasevec;
+  for(i=0;i<nphases;i++)
+  {
+      phases[i]=strtod(p,&pe);
+  }
+
+  if(nmodes>nphases)
+  {
+      printf("Warning: Setting phase of last %d modes to zero...\n",nmodes-nphases);
+  }
+    
+  for(i=nphases;i<nmodes;i++)
+  {
+      phases[i]=0;
+  }
+        
   atoms=&top.atoms;
 
   if(atoms->nr != natoms)
@@ -148,22 +208,23 @@ int gmx_nmtraj(int argc,char *argv[])
   for(i=0;i<natoms;i++)
       dummy[i]=i;
 
-  /* Find the eigenvalue/vector to match our select one */
-  out_eigidx = 0;
-  found      = FALSE;
+  /* Find the eigenvalue/vector to match our select one */ 
+  snew(out_eigidx,nmodes);
+  for(i=0;i<nmodes;i++)
+    out_eigidx[i]=-1;
   
-  while(found==FALSE && out_eigidx<nvec)
+  for(i=0;i<nvec;i++)
   {
-      if( (out_eignr-1) == eignr[out_eigidx] )
-          found = TRUE;
-      else
-          out_eigidx++;
+      for(j=0;j<nmodes;j++)
+      {
+          if(imodes[j]==eignr[i])
+              out_eigidx[j]=i;
+      }
   }
-
-  if(!found)
-  {
-      gmx_fatal(FARGS,"Eigenvector #%d not found in input files.\n",out_eignr);
-  }
+    for(i=0;i<nmodes;i++)
+        if(out_eigidx[i]==-1)
+            gmx_fatal(FARGS,"Could not find mode %d in eigenvector file.\n",imodes[i]);
+    
   
   snew(invsqrtm,natoms);
   
@@ -179,78 +240,83 @@ int gmx_nmtraj(int argc,char *argv[])
   }
 
   snew(xout,natoms);
+  snew(amplitude,nmodes);
 
-  out_eigval = eigval[out_eigidx];
-  out_eigvec = eigvec[out_eigidx];
-  
-  if(out_eigval<0)
-      out_eigval = 0;
-
-  
-  if( (out_eignr >= 7) && (out_eigval > 0))
+  for(i=0;i<nmodes;i++)
   {
-      /* Derive amplitude from temperature and eigenvalue if we can */
-      
-      /* Convert eigenvalue to angular frequency, in units s^(-1) */
-      omega = sqrt(out_eigval*1.0E21/(AVOGADRO*AMU));
-      
-      /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
-      * The velocity is thus:
-      * 
-      * v = A*omega*cos(omega*t)*eigenvec.
-      *
-      * And the average kinetic energy the integral of mass*v*v/2 over a
-      * period:
-      *
-      * (1/4)*mass*A*omega*eigenvec
-      *
-      * For t =2*pi*n, all energy will be kinetic, and v=A*omega*eigenvec.
-      * The kinetic energy will be sum(0.5*mass*v*v) if we temporarily set A to 1.
-      */
-      Ekin = 0;
-      for(i=0;i<natoms;i++)
+      kmode = out_eigidx[i];
+      this_eigvec=eigvec[kmode];
+	  
+      if( (kmode >= 7) && (eigval[kmode] > 0))
       {
-          m = atoms->atom[i].m;
-          for(d=0;d<DIM;d++)
+          /* Derive amplitude from temperature and eigenvalue if we can */
+          
+          /* Convert eigenvalue to angular frequency, in units s^(-1) */
+          omega = sqrt(eigval[kmode]*1.0E21/(AVOGADRO*AMU));
+		  
+          /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
+           * The velocity is thus:
+           * 
+           * v = A*omega*cos(omega*t)*eigenvec.
+           *
+           * And the average kinetic energy the integral of mass*v*v/2 over a
+           * period:
+           *
+           * (1/4)*mass*A*omega*eigenvec
+           *
+           * For t =2*pi*n, all energy will be kinetic, and v=A*omega*eigenvec.
+           * The kinetic energy will be sum(0.5*mass*v*v) if we temporarily set A to 1.
+           */
+          
+          Ekin = 0;
+          for(j=0;j<natoms;j++)
           {
-              vel   = omega*out_eigvec[i][d];
-              Ekin += 0.25*m*vel*vel;
+              m = atoms->atom[j].m;
+              for(d=0;d<DIM;d++)
+              {
+                  vel   = omega*this_eigvec[j][d];
+                  Ekin += 0.25*m*vel*vel;
+              }
           }
+          /* Convert Ekin from amu*(nm/s)^2 to J.
+           * This will also be proportional to A^2 
+           */   
+          Ekin *= AMU*1E-18;
+          
+          /* Set the amplitude so the energy is kT/2 */
+          amplitude[i] = sqrt(0.5*BOLTZMANN*temp/Ekin);
       }
-      /* Convert Ekin from amu*(nm/s)^2 to J.
-       * This will also be proportional to A^2 
-       */   
-      Ekin *= AMU*1E-18;
-      
-      /* Set the amplitude so the energy is kT/2 */
-      amplitude = sqrt(0.5*BOLTZMANN*temp/Ekin);
   }
-      
-      
-  fprintf(stderr,"Generation normal mode trajectory A=%g...\n",amplitude);
-
+    
   out=open_trx(ftp2fn(efTRX,NFILE,fnm),"w");
-  
-  /* Write a sine oscillation around the average structure, 
-   * modulated by the eigenvector with selected amplitude.
-   */
-  
-  for(i=0;i<nframes;i++)
-  {
-      fraction = (real)i/(real)nframes;
-      for(j=0;j<natoms;j++)
-      {
-          for(d=0;d<DIM;d++)
-          {
-              xout[j][d] = xav[j][d] + amplitude*sin(2*M_PI*fraction)*out_eigvec[j][d];
-          }
-      }
-      write_trx(out,natoms,dummy,atoms,i,(real)i/(real)nframes,box,xout,NULL);      
-  }
-  
-  fprintf(stderr,"\n");
-  close_trx(out);
-  
-  return 0;
+    
+    /* Write a sine oscillation around the average structure, 
+     * modulated by the eigenvector with selected amplitude.
+     */
+
+    for(i=0;i<nframes;i++)
+    {
+        fraction = (real)i/(real)nframes;
+        for(k=0;k<nmodes;k++)
+        {
+            kmode=out_eigidx[k];
+            this_eigvec=eigvec[kmode];
+
+            for(j=0;j<natoms;j++)
+            {
+                for(d=0;d<DIM;d++)
+                {
+                    xout[j][d] = xav[j][d] + amplitude[k]*sin(2*M_PI*fraction)*this_eigvec[j][d];
+                }
+            }
+        }
+        write_trx(out,natoms,dummy,atoms,i,(real)i/(real)nframes,box,xout,NULL);      
+    }    
+    
+    fprintf(stderr,"\n");
+    close_trx(out);
+    
+    return 0;
 }
   
+

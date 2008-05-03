@@ -213,7 +213,7 @@ static void get_f_norm_max(t_commrec *cr,
     *a_fmax = a_max;
 }
 
-static void set_f_norm_max(t_commrec *cr,
+static void get_state_f_norm_max(t_commrec *cr,
 			   t_grpopts *opts,t_mdatoms *mdatoms,
 			   em_state_t *ems)
 {
@@ -586,7 +586,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     ener[F_DVDL] += dvdl;
   }
 
-  set_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
+  get_state_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
 }
 
 static double reorder_partsum(t_commrec *cr,t_grpopts *opts,t_mdatoms *mdatoms,
@@ -1176,8 +1176,18 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   if (MASTER(cr))
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
   
-  /* Only write the trajectory if we didn't do it last step */
-  write_traj(fplog,cr,fp_trn,TRUE,FALSE,(inputrec->nstfout>0),
+	/* IMPORTANT!
+	 * For accurate normal mode calculation it is imperative that we
+	 * store the last conformation into the full precision binary trajectory
+	 .
+	 *
+	 * However, we should only do it if we did NOT already write this step
+	 * above (which we did if do_x or do_f was true).
+	 */  
+	do_x = !do_per_step(step,inputrec->nstxout);
+    do_f = !do_per_step(step,inputrec->nstfout);
+
+	write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,
 	     0,FALSE,0,NULL,FALSE,
 	     top_global,inputrec->eI,step,(real)step,
 	     &s_min->s,state_global,s_min->f,f_global);
@@ -1266,7 +1276,9 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   
   xx = (real *)state->x;
   ff = (real *)f;
-  
+
+	printf("x0: %20.12g %20.12g %20.12g\n",xx[0],xx[1],xx[2]);
+
   snew(p,n); 
   snew(lastx,n); 
   snew(lastf,n); 
@@ -1343,7 +1355,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		  inputrec,grps,nrnb,wcycle,
 		  vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,-1,TRUE);
   where();
-  
+	
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
@@ -1804,8 +1816,17 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   if (MASTER(cr))
     fprintf(stderr,"\nwriting lowest energy coordinates.\n");
   
-  /* Only write the trajectory if we didn't do it last step */
-  write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
+	/* IMPORTANT!
+	 * For accurate normal mode calculation it is imperative that we
+	 * store the last conformation into the full precision binary trajectory
+	 .
+	 *
+	 * However, we should only do it if we did NOT already write this step
+	 * above (which we did if do_x or do_f was true).
+	 */  
+	do_x = !do_per_step(step,inputrec->nstxout);
+    do_f = !do_per_step(step,inputrec->nstfout);
+	write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
 	     top,inputrec->eI,step,(real)step,state,state,f,f);
 
   if (MASTER(cr))
@@ -2050,8 +2071,8 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,
 	     t_inputrec *inputrec,t_groups *grps,
-	     t_topology *top,real ener[],t_fcdata *fcd,
-	     t_state *state,rvec f[],
+	     t_topology *top_global,real ener[],t_fcdata *fcd,
+	     t_state *state_global,rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	     t_graph *graph,t_edsamyn *edyn,
@@ -2061,29 +2082,39 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     unsigned long Flags)
 {
     t_mdebin   *mdebin;
-    int        fp_ene,step;
+	const char *NM = "Normal Mode Analysis";
+    int        fp_ene,step,i;
     time_t     start_t;
-    real       t,lambda,t0,lam0;
+	rvec       *f_global;
+    t_topology *top;
+	real       t,lambda,t0,lam0;
     bool       bNS;
     tensor     force_vir;
-    int        nfmax;
+    int        nfmax,count;
     rvec       mu_tot;
     rvec       *fneg,*fpos;
     bool       bSparse; /* use sparse matrix storage format */
     size_t     sz;
     gmx_sparsematrix_t * sparse_matrix = NULL;
     real *     full_matrix             = NULL;
-    
+	em_state_t *   state_work;
+	
     /* added with respect to mdrun */
     int        idum,jdum,kdum,row,col;
     real       der_range=10.0*sqrt(GMX_REAL_EPS);
     real       fnorm,fmax;
     real       dfdx;
     
-    snew(fneg,top->atoms.nr);
-    snew(fpos,top->atoms.nr);
-    
-    /* end nmrun differences */
+	state_work = init_em_state();
+
+	/* Init em and store the local state in state_minimum */
+	init_em(fplog,NM,cr,inputrec,grps,
+			state_global,top_global,state_work,&top,f,&buf,&f_global,
+			nrnb,mu_tot,fr,graph,mdatoms,vsite,constr,
+			nfile,fnm,NULL,&fp_ene,&mdebin);
+	
+    snew(fneg,top_global->atoms.nr);
+    snew(fpos,top_global->atoms.nr);
     
 #ifndef GMX_DOUBLE
     fprintf(stderr,
@@ -2104,9 +2135,9 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
         fprintf(stderr,"Non-cutoff electrostatics used, forcing full Hessian format.\n");
         bSparse = FALSE;
     }
-    else if(top->atoms.nr < 1000)
+    else if(top_global->atoms.nr < 1000)
     {
-        fprintf(stderr,"Small system size (N=%d), using full Hessian format.\n",top->atoms.nr);
+        fprintf(stderr,"Small system size (N=%d), using full Hessian format.\n",top_global->atoms.nr);
         bSparse = FALSE;
     }
     else
@@ -2115,10 +2146,10 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
         bSparse = TRUE;
     }
     
-    sz = DIM*top->atoms.nr;
+    sz = DIM*top_global->atoms.nr;
     
     fprintf(stderr,"Allocating Hessian memory...\n\n");
-    
+
     if(bSparse)
     {
         sparse_matrix=gmx_sparsematrix_init(sz);
@@ -2137,9 +2168,6 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     
     init_nrnb(nrnb);
     
-    fp_ene=-1;
-    mdebin=init_mdebin(fp_ene,grps,&(top->atoms),&(top->idef),inputrec,cr);
-    
     where();
     
     /* Write start time and temperature */
@@ -2147,32 +2175,25 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     wallcycle_start(wcycle,ewcRUN);
     if (MASTER(cr)) 
     {
-        fprintf(stderr,"starting normal mode calculation '%s'\n%d steps.\n\n",*(top->name),
-                top->atoms.nr);
+        fprintf(stderr,"starting normal mode calculation '%s'\n%d steps.\n\n",*(top_global->name),
+                top_global->atoms.nr);
     }
     
-    /* Call do_force once to make pairlist */
-    clear_mat(force_vir);
-    
-    bNS=TRUE;
-    do_force(fplog,cr,inputrec,0,nrnb,wcycle,top,grps,
-             state->box,state->x,f,buf,force_vir,mdatoms,ener,fcd,
-             lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
-	     mu_tot,FALSE,0.0,NULL,NULL);
-    bNS=FALSE;
+	count = 0;
+    evaluate_energy(fplog,bVerbose,cr,
+					state_global,top_global,state_work,&buf,top,
+					inputrec,grps,nrnb,wcycle,
+					vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,
+					count,count==0);
+	count++;
+    /* if forces are not small, warn user */
+    get_state_f_norm_max(cr,&(inputrec->opts),mdatoms,state_work);
 
-    /* Shift back the coordinates, since we're not calling update */
-    if (graph)
-        unshift_self(graph,state->box,state->x);
-
-  
-    /* if forces not small, warn user */
-    get_f_norm_max(cr,&(inputrec->opts),mdatoms,f,&fnorm,&fmax,&nfmax);
-    fprintf(stderr,"Maximum force:%12.5e\n",fmax);
-    if (fmax > 1.0e-3) 
+    fprintf(stderr,"Maximum force:%12.5e\n",state_work->fmax);
+    if (state_work->fmax > 1.0e-3) 
     {
         fprintf(stderr,"Maximum force probably not small enough to");
-        fprintf(stderr," ensure that you are in a \nenergy well. ");
+        fprintf(stderr," ensure that you are in an \nenergy well. ");
         fprintf(stderr,"Be aware that negative eigenvalues may occur");
         fprintf(stderr," when the\nresulting matrix is diagonalized.\n");
     }
@@ -2188,7 +2209,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 
     /* fudge nr of steps to nr of atoms */
     
-    inputrec->nsteps=top->atoms.nr;
+    inputrec->nsteps=top_global->atoms.nr;
 
     for (step=0; (step<inputrec->nsteps); step++) 
     {
@@ -2196,40 +2217,36 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
         for (idum=0; (idum<DIM); idum++) 
         {
             row = DIM*step+idum;
+			
+			state_work->s.x[step][idum] -= der_range;
             
-            state->x[step][idum] = state->x[step][idum]-der_range;
+			evaluate_energy(fplog,bVerbose,cr,
+							state_global,top_global,state_work,&buf,top,
+							inputrec,grps,nrnb,wcycle,
+							vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,
+							count,count==0);
+			count++;
+			
+			for ( i=0 ; i < top_global->atoms.nr ; i++ )
+			{
+				copy_rvec ( state_work->f[i] , fneg[i] );
+			}
+			
+			state_work->s.x[step][idum] += 2*der_range;
             
-            clear_mat(force_vir);
-            
-            do_force(fplog,cr,inputrec,2*(step*DIM+idum),
-                     nrnb,wcycle,top,grps,
-                     state->box,state->x,fneg,buf,force_vir,mdatoms,ener,fcd,
-		     lambda,graph,
-		     TRUE,bNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,0.0,NULL,NULL);
+			evaluate_energy(fplog,bVerbose,cr,
+							state_global,top_global,state_work,&buf,top,
+							inputrec,grps,nrnb,wcycle,
+							vsite,constr,fcd,graph,mdatoms,fr,mu_tot,ener,
+							count,count==0);
+			count++;
 
-            if (graph)
-            {
-                /* Shift back the coordinates, since we're not calling update */
-                unshift_self(graph,state->box,state->x);
-            }
-            
-            state->x[step][idum] = state->x[step][idum]+2.0*der_range;
-            
-            clear_mat(force_vir);
-            
-            do_force(fplog,cr,inputrec,2*(step*DIM+idum)+1,
-                     nrnb,wcycle,top,grps,
-                     state->box,state->x,fpos,buf,force_vir,mdatoms,ener,fcd,
-		     lambda,graph,
-		     TRUE,bNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,0.0,NULL,NULL);
-	    
-	    if (graph)
-            {
-                /* Shift back the coordinates, since we're not calling update */
-                unshift_self(graph,state->box,state->x);
-            }
-            
-            for (jdum=0; (jdum<top->atoms.nr); jdum++) 
+			for ( i=0 ; i < top_global->atoms.nr ; i++ )
+			{
+				copy_rvec ( state_work->f[i] , fpos[i] );
+			}
+						
+            for (jdum=0; (jdum<top_global->atoms.nr); jdum++) 
             {
                 for (kdum=0; (kdum<DIM); kdum++) 
                 {
@@ -2249,7 +2266,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
             }
             
             /* x is restored to original */
-            state->x[step][idum] = state->x[step][idum]-der_range;
+			state_work->s.x[step][idum] -= der_range;
             
             if (bVerbose && fplog)
                 fflush(fplog);            
@@ -2257,7 +2274,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
         /* write progress */
         if (MASTER(cr) && bVerbose) 
         {
-            fprintf(stderr,"\rFinished step %d out of %d",step+1,top->atoms.nr); 
+            fprintf(stderr,"\rFinished step %d out of %d",step+1,top_global->atoms.nr); 
             fflush(stderr);
         }
     }
@@ -2267,15 +2284,9 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     if (MASTER(cr)) 
     {
         print_ebin(-1,FALSE,FALSE,FALSE,FALSE,fplog,step,step,t,eprAVER,
-                   FALSE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
+                   FALSE,mdebin,fcd,&(top_global->atoms),&(inputrec->opts));
         print_ebin(-1,FALSE,FALSE,FALSE,FALSE,fplog,step,step,t,eprRMS,
-                   FALSE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
-    }
-    
-    if (vsite) {
-      /* Construct vsite particles, for last output frame */
-      construct_vsites(fplog,vsite,state->x,nrnb,inputrec->delta_t,state->v,
-		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+                   FALSE,mdebin,fcd,&(top_global->atoms),&(inputrec->opts));
     }
       
     fprintf(stderr,"\n\nWriting Hessian...\n");

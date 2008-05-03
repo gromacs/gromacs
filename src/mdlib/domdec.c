@@ -3652,6 +3652,7 @@ static void receive_ddindex2simnodeid(t_commrec *cr)
   dd = cr->dd;
   comm = dd->comm;
 
+#ifdef GMX_MPI
   if (!comm->bCartesianPP_PME && comm->bCartesianPP) {
     snew(comm->ddindex2simnodeid,dd->nnodes);
     snew(buf,dd->nnodes);
@@ -3664,6 +3665,7 @@ static void receive_ddindex2simnodeid(t_commrec *cr)
 #endif
     sfree(buf);
   }
+#endif
 }
 
 static void split_communicator(FILE *fplog,t_commrec *cr,int dd_node_order,

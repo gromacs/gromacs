@@ -106,7 +106,11 @@ void read_eigenvectors(char *file,int *natoms,bool *bFit,
   }
   
   snew(x,*natoms);
-  snew_size=0;
+  snew_size=10;
+  snew(*eignr,snew_size);
+  snew(*eigval,snew_size);
+  snew(*eigvec,snew_size);
+	
   *nvec=0;
   while (fread_trnheader(status,&head,&bOK)) 
   {
