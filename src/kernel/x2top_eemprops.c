@@ -67,7 +67,7 @@
 typedef struct {
   char *name,*opts;
   int  eemtype,elem,row;
-  real J0,w,chi0; 
+  real J0,Ra,zeta,chi0; 
   /* J0 in Yang & Sharp corresponds to n (eta) in Bultinck */
 } t_eemprops;
 
@@ -86,12 +86,12 @@ static t_eemtype_props eemtype_props[eqgNR] = {
   { "Yang", 	"Yang2006b",     TRUE },    
   { "Bultinck", "Bultinck2002a", FALSE },
   { "Rappe",    "Rappe1991a",	 TRUE },  
-  { "SMp", 	"Spoel2008b",	 FALSE },    
-  { "SMpp", 	"Spoel2008b",    FALSE },
-  { "SMs", 	"Spoel2008b",    TRUE },
-  { "SMps", 	"Spoel2008b",    TRUE },
-  { "SMg", 	"Spoel2008b",    TRUE },
-  { "SMpg", 	"Spoel2008b",    TRUE }
+  { "SMp", 	"Maaren2008a",	 FALSE },    
+  { "SMpp", 	"Maaren2008a",    FALSE },
+  { "SMs", 	"Maaren2008a",    TRUE },
+  { "SMps", 	"Maaren2008a",    TRUE },
+  { "SMg", 	"Maaren2008a",    TRUE },
+  { "SMpg", 	"Maaren2008a",    TRUE }
 };
 
 int name2eemtype(char *name)
@@ -133,7 +133,7 @@ void *read_eemprops(char *fn,int eemtype,void *atomprop)
   char   nmbuf[32],algbuf[32],optbuf[32];
   int    elem,row;
   real   value;
-  double J0,w,chi0;
+  double J0,w,chi0,zeta;
   
   if (fn == NULL) 
     sprintf(buf,"eemprops.dat");
@@ -180,10 +180,37 @@ void *read_eemprops(char *fn,int eemtype,void *atomprop)
 	  eem->eep[nn].J0    = J0;
 	  eem->eep[nn].chi0  = chi0;
 	  
-	  if (narg > 4)
-	    eem->eep[nn].w     = w;
-	  else
-	    eem->eep[nn].w     = 0;
+	  if (narg > 4) {
+	    /* Bohr is in nm */
+#define BOHR  (0.052917)
+	    /* Weird fudge factor lamba, see Rappe & Goddard, 
+	       JPC 95 (1991) p.3358 */
+#define lambda 0.4913
+	    eem->eep[nn].Ra = 0;
+	    switch (eem->eep[nn].eemtype) {
+	    case eqgYang:
+	      /* Convert Ra from Angstrom to au */
+	      eem->eep[nn].Ra = w;
+	      w = w/(10*BOHR);
+	      if (eem->eep[nn].elem == 1) 
+		zeta = (3/(4*w));
+	      else 
+		zeta = lambda*(2*row+1)/(2*w);
+	      eem->eep[nn].zeta = zeta/BOHR;
+	      break;
+	    case eqgRappe:
+	      eem->eep[nn].zeta = w/BOHR;
+	      break;
+	    case eqgSMs:
+	    case eqgSMps:
+	    case eqgSMg:
+	    case eqgSMpg:
+	      eem->eep[nn].zeta = w;
+	      break;
+	    default:
+	      eem->eep[nn].zeta = 0;
+	    }
+	  }
 	  
 	  if (strlen(optbuf) > 0)
 	    eem->eep[nn].opts = strdup(optbuf);
@@ -222,7 +249,7 @@ static void write_eemprops_header(FILE *fp,int eemtype)
   case eqgSMp:
   case eqgSMpp:
     fprintf(fp,";\n");
-    fprintf(fp,"; Parameters for van Maaren & van der Spoel\n");
+    fprintf(fp,"; Parameters for Van Maaren & Van der Spoel\n");
     fprintf(fp,"; Atom      Model   J_aa (eV)  chi_a (eV)\n");
     break;
   case eqgSMg:
@@ -230,7 +257,7 @@ static void write_eemprops_header(FILE *fp,int eemtype)
   case eqgSMs:
   case eqgSMps:
     fprintf(fp,";\n");
-    fprintf(fp,"; Parameters for van Maaren & van der Spoel\n");
+    fprintf(fp,"; Parameters for Van Maaren & Van der Spoel\n");
     fprintf(fp,"; Atom      Model   J_aa (eV)  chi_a (eV)  z_a (1/nm)\n");
     break;
   default:
@@ -250,12 +277,23 @@ void write_eemprops(FILE *fp,void *eem)
     if ((i == 0) || 
 	((i > 0) && (er->eep[i].eemtype != er->eep[i-1].eemtype)))
       write_eemprops_header(fp,er->eep[i].eemtype);
-    w = er->eep[i].w;
     fprintf(fp,"%-5s  %10s  %10.4f  %10.5f",
 	    er->eep[i].name,eemtype_props[er->eep[i].eemtype].name,
 	    er->eep[i].J0,er->eep[i].chi0);
-    if (eemtype_props[er->eep[i].eemtype].bWeight)
+    if (eemtype_props[er->eep[i].eemtype].bWeight) {
+      w = er->eep[i].zeta;
+      switch (er->eep[i].eemtype)  {
+      case eqgRappe:
+	w = w*BOHR;
+	break;
+      case eqgYang:
+	w = er->eep[i].Ra;
+	break;
+      default:
+	break;
+      }
       fprintf(fp,"  %10.5f\n",w);
+    }
     else
       fprintf(fp,"\n");
   }
@@ -306,53 +344,22 @@ int eem_get_row(void *eem,int index)
   return er->eep[index].row;
 }
 
-real eem_get_j00(void *eem,int index,real *wj,real q)
+real eem_get_j00(void *eem,int index)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
-  double Ra,zeta,zeta0,j0;
-
-  /* Bohr is in nm */
-#define BOHR  (0.052917)
-  /* Weird fudge factor lamba, see Rappe & Goddard, 
-     JPC 95 (1991) p.3358 */
-#define lambda 0.4913
 
   range_check(index,0,er->nep);
-  j0 = er->eep[index].J0;
-  if (er->eep[index].eemtype == eqgYang) {
-    /* Convert Ra from Angstrom to au */
-    Ra = er->eep[index].w/(10*BOHR);
-    if (er->eep[index].elem == 1) {
-      zeta0 = (3/(4*Ra));
-      j0    = (1+q/zeta0)*j0;
-      zeta  = zeta0 /*+ q*/;
-    }
-    else {
-      zeta = lambda*(2*er->eep[index].row+1)/(2*Ra);
-    }
-    *wj = zeta/BOHR;
-  }
-  else if (er->eep[index].eemtype == eqgRappe) {
-    zeta = er->eep[index].w;
-    if (er->eep[index].elem == 1) {
-      j0 = (1+q/zeta)*j0;
-    }
-    *wj = zeta/BOHR;
-  }
-  else if ((er->eep[index].eemtype == eqgSMs) || 
-	   (er->eep[index].eemtype == eqgSMps) ||
-	   (er->eep[index].eemtype == eqgSMg) ||
-	   (er->eep[index].eemtype == eqgSMpg)) {
-    zeta = er->eep[index].w*BOHR;
-    if (er->eep[index].elem == 1) {
-      j0 = (1+q/zeta)*j0;
-    }
-    *wj = zeta/BOHR;
-  }
-  else
-    *wj = 0;
-    
-  return j0;
+  
+  return er->eep[index].J0;
+}
+
+real eem_get_zeta(void *eem,int index)
+{
+  t_eemrecord *er = (t_eemrecord *) eem;
+
+  range_check(index,0,er->nep);
+  
+  return er->eep[index].zeta;
 }
 
 char *eem_get_opts(void *eem,int index)
@@ -373,15 +380,6 @@ real eem_get_chi0(void *eem,int index)
   return er->eep[index].chi0;
 }
 
-real eem_get_w(void *eem,int index)
-{
-  t_eemrecord *er = (t_eemrecord *) eem;
-  
-  range_check(index,0,er->nep);
-  
-  return er->eep[index].w;
-}
-
 int eem_get_elem(void *eem,int index)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
@@ -391,14 +389,14 @@ int eem_get_elem(void *eem,int index)
   return er->eep[index].elem;
 }
 
-void eem_set_props(void *eem,int index,real J0,real w,real chi0)
+void eem_set_props(void *eem,int index,real J0,real zeta,real chi0)
 {
   t_eemrecord *er = (t_eemrecord *) eem;
   
   range_check(index,0,er->nep);
   
   er->eep[index].J0   = J0;
-  er->eep[index].w    = w;
+  er->eep[index].zeta = zeta;
   er->eep[index].chi0 = chi0;
 }
 
@@ -427,7 +425,8 @@ void *copy_eem(void *eem_dst,void *eem_src)
     dst->eep[i].eemtype = src->eep[i].eemtype;
     dst->eep[i].elem    = src->eep[i].elem;
     dst->eep[i].J0      = src->eep[i].J0;
-    dst->eep[i].w       = src->eep[i].w;
+    dst->eep[i].zeta    = src->eep[i].zeta;
+    dst->eep[i].Ra      = src->eep[i].Ra;
     dst->eep[i].chi0    = src->eep[i].chi0;
     dst->eep[i].row     = src->eep[i].row;
   }

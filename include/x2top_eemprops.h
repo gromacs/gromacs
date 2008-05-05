@@ -65,17 +65,17 @@ extern int eem_get_elem_index(void *eem,int atomicnumber,int eemtype);
 
 extern int eem_get_row(void *eem,int index);
 
-extern real eem_get_j00(void *eem,int index,real *wj,real q);
+extern real eem_get_j00(void *eem,int index);
+
+extern real eem_get_zeta(void *eem,int index);
 
 extern int eem_get_elem(void *eem,int index);
-
-extern real eem_get_w(void *eem,int index);
 
 extern real eem_get_chi0(void *eem,int index);
 
 extern char *eem_get_opts(void *eem,int index);
 
-extern void eem_set_props(void *eem,int index,real J0,real radius,real chi0);
+extern void eem_set_props(void *eem,int index,real J0,real zeta,real chi0);
 
 extern void *copy_eem(void *eem_dst,void *eem_src);
 /* Copies src to dst. If dst is NULL space is allocated. A pointer

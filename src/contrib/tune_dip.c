@@ -67,6 +67,7 @@
 #include "gmx_random.h"
 #include "gmx_wallcycle.h"
 #include "gstat.h"
+#include "../kernel/slater_S_integrals.h"
 #include "x2top_qgen.h"
 #include "x2top_eemprops.h"
 
@@ -86,11 +87,11 @@ typedef struct {
 } t_mymol; 
 
 typedef struct {
-  int     nmol,nparam,eemtype;
+  int     nmol,nparam,eemtype,slater_max;
   int     *index;
   t_mymol *mymol;
-  real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc;
-  bool    bFixENH;
+  real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,hfac,hfac0;
+  bool    bFixENH,bOptHfac;
   void    *eem;
   void    *atomprop;
   t_commrec *cr;
@@ -162,7 +163,7 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
 }
 
 static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
-		       int eemtype,void *eem)
+		       int eemtype,void *eem,real hfac)
 {
   FILE   *xvgf;
   double d2=0;
@@ -204,7 +205,9 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   rms = sqrt(d2/nmol);
   fprintf(logf,"\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",
 	  nmol,a,b); 
-  fprintf(logf,"RMSD = %.2f D\n",rms);
+  fprintf(logf,"RMSD = %.3f D\n",rms);
+  fprintf(logf,"hfac = %g\n",hfac);
+  
   aver = aver_lsq(&lsq);
   sigma = rms/aver;
   nout = 0;
@@ -235,7 +238,8 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
 		      real J0_0,real Chi0_0,real w_0,
 		      real J0_1,real Chi0_1,real w_1,
 		      real fc,bool bFixENH,int eemtype,
-		      bool bZero,bool bPol,bool bWeighted)
+		      bool bZero,bool bPol,bool bWeighted,
+		      bool bOptHfac,real hfac,int slater_max)
 {
   char     **strings,buf[STRLEN];
   int      i,n,kk,nstrings;
@@ -289,7 +293,11 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   md->w_1        = w_1;
   md->fc         = fc;
   md->bFixENH    = bFixENH;
-    	  
+  md->hfac       = hfac;	  
+  md->hfac0      = hfac;	  
+  md->bOptHfac   = bOptHfac;
+  md->slater_max = slater_max;
+  
   return md;
 }
 
@@ -366,7 +374,8 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
       generate_charges_sm(debug,mymol->molname,
 			  eem,&(mymol->top.atoms),
 			  mymol->x,1e-4,100,md->atomprop,
-			  mymol->qtotal,eemtp,1.0);
+			  mymol->qtotal,eemtp,md->hfac,
+			  md->slater_max);
     /* Now optimize the shell positions */
     if (mymol->shell) {
       split_shell_charges(&(mymol->top.atoms),&(mymol->top.idef));
@@ -409,7 +418,7 @@ static double dipole_function(const gsl_vector *v,void *params)
 {
   t_moldip *md = (t_moldip *) params;
   int      i,k;
-  double   chi0,w,J0,rms=0;
+  double   chi0,zeta,J0,rms=0;
   real     rms_nw;
   
   /* Set parameters in eem record. There is a penalty if parameters
@@ -433,15 +442,22 @@ static double dipole_function(const gsl_vector *v,void *params)
       chi0 = eem_get_chi0(md->eem,md->index[i]);
     
     if (md->eemtype != eqgSMp) {
-      w = gsl_vector_get(v, k++);
-      if (w < md->w_0)
-	rms += sqr(w-md->w_0);
-      if (w > md->w_1)
-	rms += sqr(w-md->w_1);
+      zeta = gsl_vector_get(v, k++);
+      if (zeta < md->w_0)
+	rms += sqr(zeta-md->w_0);
+      if (zeta > md->w_1)
+	rms += sqr(zeta-md->w_1);
     }
     else
-      w = eem_get_w(md->eem,i);
-    eem_set_props(md->eem,md->index[i],J0,w,chi0);
+      zeta = eem_get_zeta(md->eem,i);
+    eem_set_props(md->eem,md->index[i],J0,zeta,chi0);
+  }
+  if (md->bOptHfac) {
+    md->hfac = gsl_vector_get(v, k++);
+    if (md->hfac >  md->hfac0) 
+      rms += 100*sqr(md->hfac - md->hfac0);
+    else if (md->hfac < -md->hfac0)
+      rms += 100*sqr(md->hfac + md->hfac0);
   }
   rms = rms*md->fc + calc_moldip_deviation(md,md->eem,&rms_nw);
   
@@ -477,7 +493,7 @@ static void optimize_moldip(FILE *fp,FILE *logf,
   int    status = 0;
   int    i,k,index;
   bool   bRand;
-  double J00,chi0,w;
+  double J00,chi0,zeta;
   gmx_rng_t rng;
   
   const gsl_multimin_fminimizer_type *T;
@@ -492,6 +508,9 @@ static void optimize_moldip(FILE *fp,FILE *logf,
   my_func.n      = md->nparam*2;
   if (md->eemtype != eqgSMp)
     my_func.n += md->nparam;
+  /* Check whether we have to optimize the fudge factor for J00 H */
+  if (md->hfac != 0)
+    my_func.n++;
   /* Check whether we should fix the chi0 of H */
   if (md->bFixENH)
     my_func.n -= 1;
@@ -513,10 +532,14 @@ static void optimize_moldip(FILE *fp,FILE *logf,
     if ((iter == 0) || ((reinit > 0) && ((iter % reinit) == 0)) ||
 	((reinit == -1) && (size < stol))) {
       k=0;
+      if (md->bOptHfac) {
+	gsl_vector_set(x, k, md->hfac);
+	gsl_vector_set(dx, k++, stepsize*md->hfac);
+      }
       bRand = bRandom && (iter == 0);
       for(i=0; (i<md->nparam); i++) {
 	index = md->index[i];
-	J00 = eem_get_j00(md->eem,index,&wj,0);
+	J00 = eem_get_j00(md->eem,index);
 	J00 = guess_new_param(J00,stepsize,md->J0_0,md->J0_1,rng,bRand);
        	gsl_vector_set (x, k, J00);
 	gsl_vector_set (dx, k++, stepsize*J00);
@@ -527,13 +550,13 @@ static void optimize_moldip(FILE *fp,FILE *logf,
 	  gsl_vector_set (x, k, chi0);
 	  gsl_vector_set (dx, k++, stepsize*chi0);
 	}
-	w = eem_get_w(md->eem,index);
+	zeta = eem_get_zeta(md->eem,index);
 	if (md->eemtype != eqgSMp) {
-	  w = guess_new_param(w,stepsize,md->w_0,md->w_1,rng,bRand);
-	  gsl_vector_set (x, k, w);
-	  gsl_vector_set (dx, k++, stepsize*w);
+	  zeta = guess_new_param(zeta,stepsize,md->w_0,md->w_1,rng,bRand);
+	  gsl_vector_set (x, k, zeta);
+	  gsl_vector_set (dx, k++, stepsize*zeta);
 	}
-	eem_set_props(md->eem,index,J00,w,chi0);
+	eem_set_props(md->eem,index,J00,zeta,chi0);
       }
       gsl_multimin_fminimizer_set (s, &my_func, x, dx);
       if (0)
@@ -637,10 +660,10 @@ int main(int argc, char *argv[])
     { efXVG, "-x", "dipcorr",  ffWRITE }
   };
 #define NFILE asize(fnm)
-  static int  maxiter=100,reinit=0,seed=1993;
+  static int  maxiter=100,reinit=0,seed=1993,slater_max=SLATER_MAX;
   static real tol=1e-3,stol=1e-6;
-  static bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE,bFixENH=TRUE;
-  static real J0_0=0,Chi0_0=0,w_0=0,step=0.01;
+  static bool bRandom=FALSE,bZero=TRUE,bWeighted=TRUE,bFixENH=TRUE,bOptHfac=FALSE;
+  static real J0_0=0,Chi0_0=0,w_0=0,step=0.01,hfac=0;
   static real J0_1=30,Chi0_1=30,w_1=1,fc=1.0;
   static char *qgen[] = { NULL, "SMp", "SMpp", "SMs", "SMps", "SMg", "SMgs", NULL };
   t_pargs pa[] = {
@@ -679,7 +702,13 @@ int main(int argc, char *argv[])
     { "-zero", FALSE, etBOOL, {&bZero},
       "Use molecules with zero dipole in the fit as well" },
     { "-weight", FALSE, etBOOL, {&bWeighted},
-      "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." }
+      "Perform a weighted fit, by using the errors in the dipoles presented in the input file. This may or may not improve convergence." },
+    { "-hfac",  FALSE, etREAL, {&hfac},
+      "Fudge factor to scale the J00 of hydrogen by (1 + hfac * qH). Default hfac is 0, means no fudging." },
+    { "-opthfac",  FALSE, etBOOL, {&bOptHfac},
+      "Optimize the fudge factor to scale the J00 of hydrogen (see above). If set, then [TT]-hfac[tt] set the absolute value of the largest hfac. Above this, a penalty is incurred." },
+    { "-slater_max", FALSE, etINT, {&slater_max},
+      "Largest Slater function to be used when optimizing EEM props" }
   };
   t_moldip *md;
   int      eemtype;
@@ -705,13 +734,16 @@ int main(int argc, char *argv[])
   md   = read_moldip(logf,opt2fn("-f",NFILE,fnm),
 		     opt2fn_null("-d",NFILE,fnm),
 		     J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,
-		     fc,bFixENH,eemtype,bZero,bPol,bWeighted);
+		     fc,bFixENH,eemtype,bZero,bPol,bWeighted,
+		     bOptHfac,hfac,slater_max);
   
   (void) optimize_moldip(stdout,logf,md,maxiter,tol,reinit,step,seed,
 			 bRandom,stol);
   
   print_mols(logf,opt2fn("-x",NFILE,fnm),md->nmol,md->mymol,
-	     eemtype,md->eem);
+	     eemtype,md->eem,md->hfac);
+  fprintf(logf,"Optimized parameters\n");
+  write_eemprops(logf,md->eem);
 
   fclose(logf);
   

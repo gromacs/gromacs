@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
   bool       bRTP,bTOP,bOPLS,bCharmm;
   t_symtab   symtab;
   int        nqa=0;
-  real       cutoff,qtot,mtot;
+  real       cutoff,qtot,mtot,hardness=1;
   char       *fn,rtp[STRLEN];
   gmx_conect gc;
 
@@ -160,7 +160,7 @@ int main(int argc, char *argv[])
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
   static real btol=0.1,qtol=1e-3,fac=5.0;
-  static real qtotref=0,hardness=1;
+  static real qtotref=0;
   static int  nexcl = 2;
   static int  maxiter=100;
   static bool bRemoveDih = FALSE,bQsym = TRUE;
@@ -208,8 +208,6 @@ int main(int argc, char *argv[])
       "HIDDENTolerance for assigning charge generation algorithm" },
     { "-qtot",   FALSE, etREAL, {&qtotref},
       "HIDDENNet charge on molecule when generating a charge" },
-    { "-hardness",FALSE, etREAL, {&hardness},
-      "Hardness (factor before J00). By default this is 2 for Bultinck and 1 otherwise, but by setting it explcitly here you can override the default" },
     { "-maxiter",FALSE, etINT, {&maxiter},
       "HIDDENMax number of iterations for charge generation algorithm" },
     { "-fac",    FALSE, etREAL, {&fac},
@@ -327,12 +325,11 @@ int main(int argc, char *argv[])
   }
   else {
     /* Hardness */
-    if (!opt2parg_bSet("-hardness",asize(pa),pa) &&
-	(alg  == eqgBultinck))
+    if (alg  == eqgBultinck)
       hardness = 2;
     
-    assign_charges(molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
-		   maxiter,atomprop,qtotref,hardness);
+    generate_charges(stdout,molnm,alg,atoms,x,&(plist[F_BONDS]),qtol,fac,
+		     maxiter,atomprop,qtotref,hardness);
     if (bQsym)
       symmetrize_charges(atoms,atype,&(plist[F_BONDS]),atomprop);
   }
