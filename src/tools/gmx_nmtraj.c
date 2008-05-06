@@ -246,14 +246,14 @@ int gmx_nmtraj(int argc,char *argv[])
   {
       kmode = out_eigidx[i];
       this_eigvec=eigvec[kmode];
-	  
+                         
       if( (kmode >= 7) && (eigval[kmode] > 0))
       {
           /* Derive amplitude from temperature and eigenvalue if we can */
           
           /* Convert eigenvalue to angular frequency, in units s^(-1) */
           omega = sqrt(eigval[kmode]*1.0E21/(AVOGADRO*AMU));
-		  
+          
           /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
            * The velocity is thus:
            * 
@@ -269,12 +269,12 @@ int gmx_nmtraj(int argc,char *argv[])
            */
           
           Ekin = 0;
-          for(j=0;j<natoms;j++)
+          for(i=0;i<natoms;i++)
           {
-              m = atoms->atom[j].m;
+              m = atoms->atom[i].m;
               for(d=0;d<DIM;d++)
               {
-                  vel   = omega*this_eigvec[j][d];
+                  vel   = omega*this_eigvec[i][d];
                   Ekin += 0.25*m*vel*vel;
               }
           }
@@ -293,7 +293,7 @@ int gmx_nmtraj(int argc,char *argv[])
     /* Write a sine oscillation around the average structure, 
      * modulated by the eigenvector with selected amplitude.
      */
-
+    
     for(i=0;i<nframes;i++)
     {
         fraction = (real)i/(real)nframes;
@@ -306,7 +306,7 @@ int gmx_nmtraj(int argc,char *argv[])
             {
                 for(d=0;d<DIM;d++)
                 {
-                    xout[j][d] = xav[j][d] + amplitude[k]*sin(2*M_PI*fraction)*this_eigvec[j][d];
+		  xout[j][d] = xav[j][d] + amplitude[k]*sin(2*M_PI*(fraction+phases[k]/360.0))*this_eigvec[j][d];
                 }
             }
         }
