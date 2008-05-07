@@ -92,7 +92,7 @@ int qnd_hbonds(int natom,rvec x[],matrix box)
   
   snew(pbc,1);
   
-  set_pbc(pbc,box);
+  set_pbc(pbc,epbcXYZ,box);
   cut2 = sqr(0.35);
   ccut = cos(30*DEG2RAD);
   if ((natom % 3) != 0) 
@@ -147,7 +147,7 @@ int main(int argc, char *argv[])
     { efSTO, "-o", NULL, ffWRITE }
   };
 #define NFILE asize(fnm)
-  int  i,iout,now,natom;
+  int  i,iout,now,natom,epbc;
   rvec *xin,*vin,*xout,*vout;
   matrix box;
   t_atoms atoms,aout;
@@ -164,7 +164,7 @@ int main(int argc, char *argv[])
   init_t_atoms(&atoms,natom,TRUE);
   snew(xin,natom);
   snew(vin,natom);
-  read_stx_conf(infile,title,&atoms,xin,vin,box);
+  read_stx_conf(infile,title,&atoms,xin,vin,&epbc,box);
   printf("Read %d atoms\n",atoms.nr); 
   if (bHB) 
     printf("There are %d hbonds\n",qnd_hbonds(atoms.nr,xin,box));
@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
       }
       aout.nr = iout;
       fprintf(stderr,"iout = %d\n",iout);
-      write_sto_conf(outfile,"Gravity Sucks",&aout,xout,vout,box); 
+      write_sto_conf(outfile,"Gravity Sucks",&aout,xout,vout,epbc,box); 
       close_symtab(&tab);
     }
   }
