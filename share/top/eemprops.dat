@@ -3,16 +3,25 @@
 ;
 ; Parameters for Yang & Sharp, JCTC 2 (2006) 1152
 ; Atom      Model    J_aa (eV)  chi_a (eV)  R_a (A)
-H            Yang     13.8904     4.49800     0.37100
-C            Yang     10.1260     5.72300     0.75900
-N            Yang     11.7600     8.59900     0.71500
-O            Yang     13.3640     8.96100     0.66900
-F            Yang     14.4980     6.37400     0.70600
-S            Yang      8.9720     6.26800     0.94700
-CL           Yang      9.8920     5.46400     0.99400
-BR           Yang      8.8500     5.79000     1.14100
-I            Yang      7.5240     5.62200     1.33300
-;
+H       Yang     13.8904     4.4980    0.3710  
+Li      Yang      4.7720     3.0060    1.5570  
+C       Yang     10.1260     5.7230    0.7590  
+N       Yang     11.7600     8.5990    0.7150  
+O       Yang     13.3640     8.9610    0.6690  
+F       Yang     14.4980     6.3740    0.7060  
+Na      Yang      4.5920     2.8430    2.0850  
+Si      Yang      6.9740     4.1680    1.1760  
+P       Yang      8.0000     5.4630    1.1020  
+S       Yang      8.9720     6.2680    0.9470  
+Cl      Yang      9.8920     5.4640    0.9940  
+K       Yang      3.8400     2.4210    2.5860  
+Br      Yang      8.8500     5.7900    1.1410  
+Rb      Yang      3.6920     2.3310    2.7700  
+I       Yang      7.5240     5.6220    1.3330  
+Cs      Yang      3.4220     2.1830    2.9840  
+	  
+;	  
+
 ; Parameters for Bultinck et al., JPCA 106 (2002) 7887
 ; J_aa equals Hardness, this is multiplied by 2 in x2top.
 ; Atom      Model    J_aa (eV)  chi_a (eV)
