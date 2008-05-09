@@ -57,7 +57,7 @@ void matrix_invert(FILE *fp,int n,double **a)
     test = alloc_matrix(n,n);  
     for(i=0; (i<n); i++)  {
       for(j=0; (j<n); j++)  {
-	fprintf(fp,"%8.1f",a[i][j]);
+	fprintf(fp,"%8.3f",a[i][j]);
 	test[i][j] = a[i][j];
       }
       fprintf(fp,"\n");
