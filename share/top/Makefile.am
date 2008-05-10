@@ -14,7 +14,7 @@ topol_DATA = \
 	ffG43a1-c.tdb	ffG43a1-n.tdb	ffG43a2.itp	ffG43a2nb.itp	\
 	ffG43a2bon.itp	ffG43a2.atp	ffG43a2.hdb	ffG43a2.rtp	\
 	ffG43a2-c.tdb	ffG43a2-n.tdb	ffgmx.ddb	ffgmx2.ddb	\
-	ffG43a1.ddb	ffG43a2.ddb	\			\
+	ffG43a1.ddb	ffG43a2.ddb	\
 	ffG45a3-c.tdb  	ffG45a3.atp    	ffG45a3.hdb    	ffG45a3.rtp	\
 	ffG45a3nb.itp	ffG45a3-n.tdb  	ffG45a3.ddb    	ffG45a3.itp	\
 	ffG45a3bon.itp							\
