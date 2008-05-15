@@ -252,6 +252,11 @@ static void calc_virial(FILE *fplog,int start,int homenr,rvec x[],rvec f[],
   f_calc_vir(fplog,start,start+homenr,x,f,vir_part,graph,box);
   inc_nrnb(nrnb,eNR_VIRIAL,homenr);
 
+  /* Add position restraint contribution */
+  for(i=0; i<DIM; i++) {
+    vir_part[i][i] += fr->vir_diag_posres[i];
+  }
+
   /* Add wall contribution */
   vir_part[ZZ][ZZ] += fr->vir_wall_zz;
 
@@ -502,6 +507,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	clear_rvecs(top->atoms.nr,f);
       clear_rvecs(SHIFTS,fr->fshift);
     }
+    clear_rvec(fr->vir_diag_posres);
     GMX_BARRIER(cr->mpi_comm_mygroup);
   }
   if (inputrec->ePull == epullCONSTRAINT)
@@ -517,7 +523,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     ener[F_POSRES] +=
       posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
 	     top->idef.iparams,
-	     (const rvec*)x,fr->f_novirsum,
+	     (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
 	     inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
 	     fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
     if (bSepDVDL)

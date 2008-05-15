@@ -60,7 +60,7 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		       t_fcdata *fcd,
 		       int step,bool bSepDVDL);
 /* 
- * The function calc_bonds() caluclates all bonded force interactions.
+ * The function calc_bonds() calculates all bonded force interactions.
  * The "bonds" are specified as follows:
  *   int nbonds
  *	    the total number of bonded interactions.
@@ -81,7 +81,7 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 
 extern real posres(int nbonds,
 		   const t_iatom forceatoms[],const t_iparams forceparams[],
-		   const rvec x[],rvec f[],
+		   const rvec x[],rvec f[],rvec vir_diag,
 		   t_pbc *pbc,
 		   real lambda,real *dvdlambda,
 		   int refcoord_scaling,int ePBC,rvec comA,rvec comB);

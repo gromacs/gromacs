@@ -1099,7 +1099,7 @@ real idihs(int nbonds,
 
 real posres(int nbonds,
 	    const t_iatom forceatoms[],const t_iparams forceparams[],
-	    const rvec x[],rvec f[],
+	    const rvec x[],rvec f[],rvec vir_diag,
 	    t_pbc *pbc,
 	    real lambda,real *dvdlambda,
 	    int refcoord_scaling,int ePBC,rvec comA,rvec comB)
@@ -1107,16 +1107,18 @@ real posres(int nbonds,
   int  i,ai,m,d,type,ki,npbcdim=0;
   const t_iparams *pr;
   real v,vtot,fm,*fc;
-  rvec comA_sc,comB_sc,posA,posB,pos,dx;
+  real posA,posB,ref=0;
+  rvec comA_sc,comB_sc,rdist,dpdl,pos,dx;
 
   npbcdim = ePBC2npbcdim(ePBC);
+
   if (refcoord_scaling == erscCOM) {
     clear_rvec(comA_sc);
     clear_rvec(comB_sc);
     for(m=0; m<npbcdim; m++) {
-      for(d=0; d<=m; d++) {
-	comA_sc[d] += comA[m]*pbc->box[m][d];
-	comB_sc[d] += comB[m]*pbc->box[m][d];
+      for(d=m; d<npbcdim; d++) {
+	comA_sc[m] += comA[d]*pbc->box[d][m];
+	comB_sc[m] += comB[d]*pbc->box[d][m];
       }
     }
   }
@@ -1128,21 +1130,43 @@ real posres(int nbonds,
     pr   = &forceparams[type];
     
     for(m=0; m<DIM; m++) {
-      posA[m] = forceparams[type].posres.pos0A[m];
-      posB[m] = forceparams[type].posres.pos0B[m];
+      posA = forceparams[type].posres.pos0A[m];
+      posB = forceparams[type].posres.pos0B[m];
       if (m < npbcdim) {
-	if (refcoord_scaling == erscALL) {
-	  posA[m] *= pbc->box[m][m];
-	  for(d=0; d<m; d++) {
-	    posA[d] += forceparams[type].posres.pos0A[m]*pbc->box[m][d];
-	    posB[d] += forceparams[type].posres.pos0B[m]*pbc->box[m][d];
+	switch (refcoord_scaling) {
+	case erscNO:
+	  ref      = 0;
+	  rdist[m] = (1 - lambda)*posA + lambda*posB;
+	  dpdl[m]  = posB - posA;
+	  break;
+	case erscALL:
+	  /* Box relative coordinates are stored for dimensions with pbc */
+	  posA *= pbc->box[m][m];
+	  posB *= pbc->box[m][m];
+	  for(d=m+1; d<npbcdim; d++) {
+	    posA += forceparams[type].posres.pos0A[d]*pbc->box[d][m];
+	    posB += forceparams[type].posres.pos0B[d]*pbc->box[d][m];
 	  }
-	} else if (refcoord_scaling == erscCOM) {
-	  posA[m] += comA_sc[m];
-	  posB[m] += comB_sc[m];
+	  ref      = (1 - lambda)*posA + lambda*posB;
+	  rdist[m] = 0;
+	  dpdl[m]  = posB - posA;
+	  break;
+	case erscCOM:
+	  ref      = (1 - lambda)*comA_sc[m] + lambda*comB_sc[m];
+	  rdist[m] = (1 - lambda)*posA + lambda*posB;
+	  dpdl[m]  = comB_sc[m] - comA_sc[m] + posB - posA;
+	  break;
 	}
+      } else {
+	ref      = (1 - lambda)*posA + lambda*posB;
+	rdist[m] = 0;
+	dpdl[m]  = posB - posA;
       }
-      pos[m] = (1 - lambda)*posA[m] + lambda*posB[m];
+
+      /* We do pbc_dx with ref+rdist,
+       * since with only ref we can be up to half a box vector wrong.
+       */
+      pos[m] = ref + rdist[m];
     }
 
     if (pbc) {
@@ -1150,18 +1174,16 @@ real posres(int nbonds,
     } else {
       rvec_sub(x[ai],pos,dx);
     }
-    
+
     v=0;
     for (m=0; (m<DIM); m++) {
       *dvdlambda += harmonic(pr->posres.fcA[m],pr->posres.fcB[m],
-			     0,posB[m]-posA[m],
-			     dx[m],lambda,&v,&fm);
+			     0,dpdl[m],dx[m],lambda,&v,&fm);
       vtot += v;
       f[ai][m] += fm;
-      /* With refcoord_scaling == erscALL the position restraints
-       * contribute to the virial.
-       * This is not implemented yet !!!
-       */
+
+      /* Here we correct for the pbc_dx which included rdist */
+      vir_diag[m] -= 0.5*(dx[m] + rdist[m])*fm;
     }
   }
 

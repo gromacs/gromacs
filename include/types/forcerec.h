@@ -198,6 +198,7 @@ typedef struct {
 
   /* Virial Stuff */
   rvec *fshift;
+  rvec vir_diag_posres;
   real vir_wall_zz;
 
   /* Free energy stuff */
