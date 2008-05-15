@@ -1065,7 +1065,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
   
   for(i=0; i<atoms->grps[egcTC].nr; i++)
     opts->nrdf[i] = 0;
-  for(i=0; i<atoms->grps[egcVCM].nr; i++)
+  for(i=0; i<atoms->grps[egcVCM].nr+1; i++)
     nrdf_vcm[i] = 0;
 
   snew(nrdf,atoms->nr);
@@ -1181,7 +1181,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
     
     for(i=0; i<atoms->grps[egcTC].nr; i++) {
       /* Count the number of atoms of TC group i for every VCM group */
-      for(j=0; j<atoms->grps[egcVCM].nr; j++)
+      for(j=0; j<atoms->grps[egcVCM].nr+1; j++)
 	na_vcm[j] = 0;
       na_tot = 0;
       for(ai=0; ai<atoms->nr; ai++)
@@ -1193,12 +1193,21 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
        * group present in this TC group.
        */
       nrdf_uc = opts->nrdf[i];
+      if (debug) {
+	fprintf(debug,"T-group[%d] nrdf_uc = %g, n_sub = %g\n",
+		i,nrdf_uc,n_sub);
+      }
       opts->nrdf[i] = 0;
-      for(j=0; j<atoms->grps[egcVCM].nr; j++)
+      for(j=0; j<atoms->grps[egcVCM].nr+1; j++) {
 	if (nrdf_vcm[j] > n_sub) {
 	  opts->nrdf[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
 	    (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
 	}
+	if (debug) {
+	  fprintf(debug,"  nrdf_vcm[%d] = %g, nrdf = %g\n",
+		  j,nrdf_vcm[j],opts->nrdf[i]);
+	}
+      }
     }
   }
   for(i=0; (i<atoms->grps[egcTC].nr); i++) {
