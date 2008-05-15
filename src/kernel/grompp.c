@@ -833,7 +833,7 @@ int main (int argc, char *argv[])
     if ((ir->coulombtype == eelPPPM) && (max_spacing > 0.1)) {
       set_warning_line(mdparin,-1);
       sprintf(warn_buf,"Grid spacing larger then 0.1 while using PPPM.");
-      warning(NULL);
+      warning_note(NULL);
     }
   }
 
@@ -846,16 +846,15 @@ int main (int argc, char *argv[])
     float ratio = pme_load_estimate(sys,ir,state.box);
     fprintf(stderr,"Estimate for the relative computational load of the PME mesh part: %.2f\n",ratio);
     if (ratio > 0.5)
-      fprintf(stderr,
-	      "NOTE: The optimal PME mesh load is usually between 0.25 and 0.33:\n"
-	      "      you should probably increase the cut-off and the PME grid spacing\n");
+      warning_note("The optimal PME mesh load is usually between 0.25 and 0.33,\n"
+		   "you should probably increase the cut-off and the PME grid spacing\n");
   }
 
   {
     double cio = compute_io(ir,&sys->atoms,F_NRE,1);
     sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
     if (cio > 2000)
-      warning(NULL);
+      warning_note(NULL);
     else
       printf("%s\n",warn_buf);
   }

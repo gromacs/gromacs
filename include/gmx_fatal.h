@@ -116,14 +116,27 @@ void
 warning(const char *s);
 /* Issue a warning, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn (local) is incremented.
+ * are printed, nwarn_warn (local) is incremented.
+ * A fatal error will be generated after processing the input
+ * when nwarn_warn is larger than maxwarning passed to init_warning.
+ * So warning should only be called for issues that should be resolved,
+ * otherwise warning_note should be called.
+ */
+
+void 
+warning_note(const char *s);
+/* Issue a note, with the string s. If s == NULL, then warn_buf
+ * will be printed instead. The file and line set by set_warning_line
+ * are printed, nwarn_note (local) is incremented.
+ * This is for issues which could be a problem for some systems,
+ * but 100% ok for other systems.
  */
 
 void 
 warning_error(const char *s);
 /* Issue an error, with the string s. If s == NULL, then warn_buf
  * will be printed instead. The file and line set by set_warning_line
- * are printed, nwarn and nwarn_error (local) are incremented.
+ * are printed, nwarn_error (local) is incremented.
  */
  
 void 

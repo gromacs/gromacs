@@ -376,7 +376,8 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
   _gmx_error("fatal",msg,file,line);
 }
 
-static int  nwarn       = 0;
+static int  nwarn_note  = 0;
+static int  nwarn_warn  = 0;
 static int  nwarn_error = 0;
 static int  maxwarn     = 10;
 static int  lineno      = 1;
@@ -386,7 +387,8 @@ char   warn_buf[1024]   = "";
 void init_warning(int maxwarning)
 {
   maxwarn     = maxwarning;
-  nwarn       = 0;
+  nwarn_note  = 0;
+  nwarn_warn  = 0;
   nwarn_error = 0;
 }
 
@@ -408,7 +410,7 @@ const char *get_warning_file()
   return filenm;
 }
 
-static void low_warning(const char *warn_err,const char *s)
+static void low_warning(const char *wtype,int n,const char *s)
 {
 #define indent 2 
   char linenobuf[32], *temp, *temp2;
@@ -428,33 +430,48 @@ static void low_warning(const char *warn_err,const char *s)
   temp2 = wrap_lines(temp,78-indent,indent,FALSE);
   if (strlen(filenm) > 0)
     fprintf(stderr,"%s %d [file %s, line %s]:\n%s\n",
-	    warn_err,nwarn,filenm,linenobuf,temp2);
+	    wtype,n,filenm,linenobuf,temp2);
   else
-    fprintf(stderr,"%s %d:\n%s\n",warn_err,nwarn,temp2);
+    fprintf(stderr,"%s %d:\n%s\n",wtype,n,temp2);
   sfree(temp);
   sfree(temp2);
 }
 
 void warning(const char *s)
 {
-  nwarn++;
-  low_warning("WARNING",s);
+  nwarn_warn++;
+  low_warning("WARNING",nwarn_warn,s);
+}
+
+void warning_note(const char *s)
+{
+  nwarn_note++;
+  low_warning("NOTE",nwarn_note,s);
 }
 
 void warning_error(const char *s)
 {
   nwarn_error++;
-  low_warning("ERROR",s);
+  low_warning("ERROR",nwarn_error,s);
+}
+
+static void print_warn_count(char *type,int n)
+{
+  if (n > 0) {
+    fprintf(stderr,"\nThere %s %d %s%s\n",
+	    (n==1) ? "was" : "were", n, type, (n==1) ? "" : "s");
+  }
 }
 
 void print_warn_num(bool bFatalError)
 {
-  if (bFatalError && nwarn > maxwarn) {
+  print_warn_count("note",nwarn_note);
+
+  print_warn_count("warning",nwarn_warn);
+
+  if (bFatalError && nwarn_warn > maxwarn) {
     gmx_fatal(FARGS,"Too many warnings (%d), %s terminated.\n"
-	      "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn,Program());
-  } else if (nwarn > 0) {
-    fprintf(stderr,"\nThere %s %d warning%s\n",
-	    (nwarn==1) ? "was" : "were", nwarn, (nwarn==1) ? "" : "s");
+	      "If you are sure all warnings are harmless, use the -maxwarn option.",nwarn_warn,Program());
   }
 }
 

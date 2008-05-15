@@ -197,7 +197,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 
   if ((ir->eI == eiMD) && (ir->ePBC == epbcNONE)) {
     if ((ir->nstcomm == 0) || (ir->comm_mode != ecmANGULAR))
-      warning("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You probably should set comm_mode = ANGULAR.");
+      warning_note("Tumbling and or flying ice-cubes: We are not removing rotation around center of mass in a non-periodic system. You should probably set comm_mode = ANGULAR.");
   }
   
   sprintf(err_buf,"Free-energy not implemented for Ewald and PPPM");
@@ -210,10 +210,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	&& (ir->ns_type == ensSIMPLE));
   
   /* PRESSURE COUPLING */
-  if(ir->epc == epcISOTROPIC) {
+  if (ir->epc == epcISOTROPIC) {
     ir->epc = epcBERENDSEN;
-    fprintf(stderr,"Note: Old option for pressure coupling given: "
-	           "changing \"Isotropic\" to \"Berendsen\"\n"); 
+    warning_note("Old option for pressure coupling given: "
+		 "changing \"Isotropic\" to \"Berendsen\"\n"); 
   }
   
   if (ir->epc != epcNO) {
@@ -238,8 +238,8 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   /* TEMPERATURE COUPLING */
   if(ir->etc == etcYES) {
     ir->etc = etcBERENDSEN;
-    fprintf(stderr,"Note: Old option for temperature coupling given: "
-	           "changing \"yes\" to \"Berendsen\"\n");
+    warning_note("Old option for temperature coupling given: "
+		 "changing \"yes\" to \"Berendsen\"\n");
   }
   
   if((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL ) 
@@ -344,11 +344,11 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if ((EEL_SWITCHED(ir->coulombtype) || ir->coulombtype == eelRF_ZERO)
       && (ir->rlist <= ir->rcoulomb)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rcoulomb.");
-    warning(NULL);
+    warning_note(NULL);
   }
   if (EVDW_SWITCHED(ir->vdwtype) && (ir->rlist <= ir->rvdw)) {
     sprintf(warn_buf,"For energy conservation with switch/shift potentials, rlist should be 0.1 to 0.3 nm larger than rvdw.");
-    warning(NULL);
+    warning_note(NULL);
   }
 
   if (ir->nstlist == -1) {
@@ -360,14 +360,13 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   sprintf(err_buf,"nstlist can not be smaller than -1");
   CHECK(ir->nstlist < -1);
 
-  if(ir->eI == eiLBFGS && (ir->coulombtype==eelCUT || ir->vdwtype==evdwCUT)) {
-    sprintf(warn_buf,"For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
-    warning(NULL);
+  if (ir->eI == eiLBFGS && (ir->coulombtype==eelCUT || ir->vdwtype==evdwCUT)
+     && ir->rvdw != 0) {
+    warning("For efficient BFGS minimization, use switch/shift/pme instead of cut-off.");
   }
 
-  if(ir->eI == eiLBFGS && ir->nbfgscorr<=0) {
-    sprintf(warn_buf,"Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
-    warning(NULL);
+  if (ir->eI == eiLBFGS && ir->nbfgscorr <= 0) {
+    warning("Using L-BFGS with nbfgscorr<=0 just gets you steepest descent.");
   }
 
   /* FREE ENERGY */
@@ -854,7 +853,7 @@ void get_ir(char *mdparin,char *mdparout,
     ir->ref_p[XX][YY] = dumdub[1][3];
     ir->ref_p[XX][ZZ] = dumdub[1][4];
     ir->ref_p[YY][ZZ] = dumdub[1][5];
-    if (ir->ref_p[XX][YY]!=0 && ir->ref_p[XX][ZZ]!=0 && ir->ref_p[YY][ZZ]) {
+    if (ir->ref_p[XX][YY]!=0 && ir->ref_p[XX][ZZ]!=0 && ir->ref_p[YY][ZZ]!=0) {
       warning("All off-diagonal reference pressures are non-zero. Are you sure you want to apply a threefold shear stress?\n");
     }
     ir->compress[XX][YY] = dumdub[0][3];
@@ -1011,8 +1010,9 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
       gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
 		atoms->nr-ntot,title);
     } else if (grptp == egrptpPART) {
-      fprintf(stderr,"NOTE: %d atoms are not part of any of the %s groups\n",
+      sprintf(warn_buf,"%d atoms are not part of any of the %s groups\n",
 	      atoms->nr-ntot,title);
+      warning_note(NULL);
     }
     /* Assign all atoms currently unassigned to a rest group */
     for(j=0; (j<atoms->nr); j++) {
@@ -1454,7 +1454,7 @@ void do_index(char *ndx,
 	    else {
 	      fprintf(stderr,"%9.1f      %5.1f\n",ir->opts.anneal_time[i][j],ir->opts.anneal_temp[i][j]);
 	      if(fabs(ir->opts.anneal_temp[i][j]-ir->opts.anneal_temp[i][0])>GMX_REAL_EPS)
-		fprintf(stderr,"Note: There is a temperature jump when your annealing loops back.\n");
+		warning_note("There is a temperature jump when your annealing loops back.\n");
 	    }
 	  }
 	} 
@@ -1717,7 +1717,7 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
       set_warning_line(mdparin,-1);
       sprintf(warn_buf,"The relative error with integrator %s is 0.5*delta_t/tau_t = %g, you might want to switch to integrator %s\n",
 	      ei_names[ir->eI],0.5*gdt_max,ei_names[eiSD2]);
-      warning(NULL);
+      warning_note(NULL);
     }
   }
 
@@ -1775,12 +1775,12 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     if(ir->eI==eiMD && ir->etc==etcNO &&
        ir->eConstrAlg==econtLINCS && ir->nLincsIter==1) {
       sprintf(warn_buf,"For energy conservation with LINCS, lincs_iter should be 2 or larger.\n");
-      warning(NULL);
+      warning_note(NULL);
     }
     
     if ((ir->eI == eiCG || ir->eI == eiLBFGS) && (ir->nProjOrder<8)) {
       sprintf(warn_buf,"For accurate %s with LINCS constraints, lincs_order should be 8 or more.",ei_names[ir->eI]);
-      warning(NULL);
+      warning_note(NULL);
     }
   }
 
