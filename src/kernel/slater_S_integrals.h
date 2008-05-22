@@ -6,7 +6,7 @@ typedef double t_slater_SS_func(double rij,double xii,double xij);
 
 typedef double t_slater_NS_func(double rij,double xii);
 
-#define SLATER_MAX 4
+#define SLATER_MAX 6
 
 extern t_slater_SS_func (*Slater_SS[SLATER_MAX][SLATER_MAX]);
 

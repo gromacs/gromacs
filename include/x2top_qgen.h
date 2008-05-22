@@ -50,7 +50,7 @@ extern int generate_charges_sm(FILE *fp,void *eem,
 
 extern int generate_charges(FILE *fp,char *molname,
 			    int eemtype,t_atoms *atoms,rvec x[],
-			    real tol,real fac,int maxiter,
+			    real tol,int maxiter,
 			    void *atomprop,real qtotref,real hfac);
 
 extern void qgen_message(FILE *fp,int eQGEN);

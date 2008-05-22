@@ -146,7 +146,7 @@ int main(int argc, char *argv[])
   bool       bRTP,bTOP,bOPLS,bCharmm;
   t_symtab   symtab;
   int        nqa=0;
-  real       cutoff,qtot,mtot,hardness=1;
+  real       cutoff,qtot,mtot;
   char       *fn,rtp[STRLEN];
   gmx_conect gc;
 
@@ -159,8 +159,8 @@ int main(int argc, char *argv[])
   };
 #define NFILE asize(fnm)
   static real scale = 1.1, kb = 4e5,kt = 400,kp = 5;
-  static real btol=0.1,qtol=1e-3,fac=5.0;
-  static real qtotref=0;
+  static real btol=0.1,qtol=1e-3;
+  static real qtotref=0,hfac=0;
   static int  nexcl = 2;
   static int  maxiter=100;
   static bool bRemoveDih = FALSE,bQsym = TRUE;
@@ -210,8 +210,8 @@ int main(int argc, char *argv[])
       "HIDDENNet charge on molecule when generating a charge" },
     { "-maxiter",FALSE, etINT, {&maxiter},
       "HIDDENMax number of iterations for charge generation algorithm" },
-    { "-fac",    FALSE, etREAL, {&fac},
-      "HIDDENNot yet understood factor for generating charges" },
+    { "-hfac",    FALSE, etREAL, {&hfac},
+      "HIDDENFudge factor for SMx algorithms that modulates J00 for hydrogen atoms by multiplying it by (1 + hfac*qH). This hack is originally due to Rappe & Goddard." },
     { "-qsymm",  FALSE, etBOOL, {&bQsym},
       "HIDDENSymmetrize the charges on methyl and NH3 groups." },
     { "-cgsort", FALSE, etSTR, {cgopt},
@@ -329,12 +329,8 @@ int main(int argc, char *argv[])
     }
   }
   else {
-    /* Hardness */
-    if (alg  == eqgBultinck)
-      hardness = 2;
-    
-    eQGEN = generate_charges(stdout,molnm,alg,atoms,x,qtol,fac,
-			     maxiter,atomprop,qtotref,hardness);
+    eQGEN = generate_charges(stdout,molnm,alg,atoms,x,qtol,
+			     maxiter,atomprop,qtotref,hfac);
   }
   /* Check whether our charges are OK, quit otherwise */
   if (eQGEN != eQGEN_OK) {

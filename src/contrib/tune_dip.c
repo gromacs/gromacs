@@ -371,8 +371,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
   for(i=0; (i<md->nmol); i++) {
     mymol = &(md->mymol[i]);
     mymol->chieq = 
-      generate_charges_sm(debug,mymol->molname,
-			  eem,&(mymol->top.atoms),
+      generate_charges_sm(debug,eem,&(mymol->top.atoms),
 			  mymol->x,1e-4,100,md->atomprop,
 			  mymol->qtotal,eemtp,md->hfac,
 			  md->slater_max);

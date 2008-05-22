@@ -74,6 +74,7 @@ typedef struct {
 	int  natom,eemtype,slater_max;
 	int  *eem_ndx; /* In the atoms, resp. eemprops arrays */
 	int  *elem,*row;
+	bool bWarned;
 	real *chi0,*rhs,*qq,*j00,*wj,qtotal,chieq,hfac;
 	real **Jab;
 	rvec *x;
@@ -186,20 +187,20 @@ static void solve_q_eem(FILE *fp,t_qgen *qgen,real hardness_factor)
 static void qgen_update_J00(t_qgen *qgen,void *eem,int eemtype)
 {
 	int    i,j;
-	double wi,wj,j0,qq;
+	double wi,wj,j0,j00,hj0,qq;
 	double zetaH = 1.0698;
   
 	for(i=0; (i<qgen->natom); i++) { 
 		j0  = qgen->j00[i];
-
+		
 		/* Bohr is in nm */
 #define BOHR  (0.052917)
 		if (eem_get_elem(eem,qgen->eem_ndx[i]) == 1) {
 			qq = qgen->qq[i];
-			/* qq = max(-1,min(1,qq));
-			   qgen->qq[i] = qq; */
 			switch (eemtype) {
 			case eqgYang:
+				j0 = (1+qq/zetaH)*j0;
+				break;
 			case eqgRappe:
 				j0 = (1+qq/zetaH)*j0;
 				break;
@@ -213,7 +214,11 @@ static void qgen_update_J00(t_qgen *qgen,void *eem,int eemtype)
 				break;
 			}
 		}
-		qgen->Jab[i][i] = j0;
+		if (debug && (j0 < 0) && !qgen->bWarned) {
+			fprintf(debug,"WARNING: J00 = %g for atom %d. The equations will be instable.\n",j0,i+1);
+			qgen->bWarned = TRUE;
+		}
+		qgen->Jab[i][i] = max(0,j0);
 	}
 }
 
@@ -222,8 +227,8 @@ static void qgen_debug(FILE *fp,t_qgen *qgen)
 	int i;
 	
 	for(i=0; (i<qgen->natom); i++) {
-		fprintf(fp,"QGEN: i: %2d J0: %8g q: %8g\n",
-				i,qgen->Jab[i][i],qgen->qq[i]);
+		fprintf(fp,"QGEN: i: %2d chi0: %8g J0: %8g q: %8g\n",
+				i+1,qgen->chi0[i],qgen->Jab[i][i],qgen->qq[i]);
 	}
 }
 
@@ -457,7 +462,7 @@ static int generate_charges_bultinck(FILE *fp,
 
 int generate_charges(FILE *fp,char *molname,
 					 int eemtype,t_atoms *atoms,rvec x[],
-					 real tol,real fac,int maxiter,
+					 real tol,int maxiter,
 					 void *atomprop,real qtotref,real hfac)
 {
 	int  i,eQGEN;
