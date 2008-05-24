@@ -7,7 +7,7 @@
 #define Pi              3.14159265358979323846264
 #define E               2.71828182845904523536029
 
-static double Slater_1S_1S(double rij,double xii,double xij)
+static double Slater_1S_1S(double rij,double xij,double xii)
 {
   double S;
 
@@ -29,7 +29,7 @@ static double Slater_1S_1S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_1S_2S(double rij,double xii,double xij)
+static double Slater_1S_2S(double rij,double xij,double xii)
 {
   double S;
 
@@ -62,7 +62,7 @@ static double Slater_1S_2S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_1S_3S(double rij,double xii,double xij)
+static double Slater_1S_3S(double rij,double xij,double xii)
 {
   double S;
 
@@ -110,7 +110,7 @@ static double Slater_1S_3S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_1S_4S(double rij,double xii,double xij)
+static double Slater_1S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -176,7 +176,7 @@ static double Slater_1S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_1S_5S(double rij,double xii,double xij)
+static double Slater_1S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -279,7 +279,7 @@ static double Slater_1S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_1S_6S(double rij,double xii,double xij)
+static double Slater_1S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -428,7 +428,7 @@ static double Slater_1S_6S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_2S_2S(double rij,double xii,double xij)
+static double Slater_2S_2S(double rij,double xij,double xii)
 {
   double S;
 
@@ -472,7 +472,7 @@ static double Slater_2S_2S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_2S_3S(double rij,double xii,double xij)
+static double Slater_2S_3S(double rij,double xij,double xii)
 {
   double S;
 
@@ -535,7 +535,7 @@ static double Slater_2S_3S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_2S_4S(double rij,double xii,double xij)
+static double Slater_2S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -622,7 +622,7 @@ static double Slater_2S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_2S_5S(double rij,double xii,double xij)
+static double Slater_2S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -756,7 +756,7 @@ static double Slater_2S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_2S_6S(double rij,double xii,double xij)
+static double Slater_2S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -952,7 +952,7 @@ double Slater_2S_1S(double rij,double xii,double xij)
   return Slater_1S_2S(rij,xij,xii);
 }
 
-static double Slater_3S_3S(double rij,double xii,double xij)
+static double Slater_3S_3S(double rij,double xij,double xii)
 {
   double S;
 
@@ -1047,7 +1047,7 @@ static double Slater_3S_3S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_3S_4S(double rij,double xii,double xij)
+static double Slater_3S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -1173,7 +1173,7 @@ static double Slater_3S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_3S_5S(double rij,double xii,double xij)
+static double Slater_3S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -1351,7 +1351,7 @@ static double Slater_3S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_3S_6S(double rij,double xii,double xij)
+static double Slater_3S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -1600,7 +1600,7 @@ double Slater_3S_2S(double rij,double xii,double xij)
   return Slater_2S_3S(rij,xij,xii);
 }
 
-static double Slater_4S_4S(double rij,double xii,double xij)
+static double Slater_4S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -1753,7 +1753,7 @@ static double Slater_4S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_4S_5S(double rij,double xii,double xij)
+static double Slater_4S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -1964,7 +1964,7 @@ static double Slater_4S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_4S_6S(double rij,double xii,double xij)
+static double Slater_4S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -2256,7 +2256,7 @@ double Slater_4S_3S(double rij,double xii,double xij)
   return Slater_3S_4S(rij,xij,xii);
 }
 
-static double Slater_5S_5S(double rij,double xii,double xij)
+static double Slater_5S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -2528,7 +2528,7 @@ static double Slater_5S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double Slater_5S_6S(double rij,double xii,double xij)
+static double Slater_5S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -2887,7 +2887,7 @@ double Slater_5S_4S(double rij,double xii,double xij)
   return Slater_4S_5S(rij,xij,xii);
 }
 
-static double Slater_6S_6S(double rij,double xii,double xij)
+static double Slater_6S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3328,7 +3328,7 @@ double Slater_6S_5S(double rij,double xii,double xij)
   return Slater_5S_6S(rij,xij,xii);
 }
 
-static double DSlater_1S_1S(double rij,double xii,double xij)
+static double DSlater_1S_1S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3354,7 +3354,7 @@ static double DSlater_1S_1S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_1S_2S(double rij,double xii,double xij)
+static double DSlater_1S_2S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3390,7 +3390,7 @@ static double DSlater_1S_2S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_1S_3S(double rij,double xii,double xij)
+static double DSlater_1S_3S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3443,7 +3443,7 @@ static double DSlater_1S_3S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_1S_4S(double rij,double xii,double xij)
+static double DSlater_1S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3514,7 +3514,7 @@ static double DSlater_1S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_1S_5S(double rij,double xii,double xij)
+static double DSlater_1S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3632,7 +3632,7 @@ static double DSlater_1S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_1S_6S(double rij,double xii,double xij)
+static double DSlater_1S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3804,7 +3804,7 @@ static double DSlater_1S_6S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_2S_2S(double rij,double xii,double xij)
+static double DSlater_2S_2S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3853,7 +3853,7 @@ static double DSlater_2S_2S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_2S_3S(double rij,double xii,double xij)
+static double DSlater_2S_3S(double rij,double xij,double xii)
 {
   double S;
 
@@ -3923,7 +3923,7 @@ static double DSlater_2S_3S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_2S_4S(double rij,double xii,double xij)
+static double DSlater_2S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -4026,7 +4026,7 @@ static double DSlater_2S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_2S_5S(double rij,double xii,double xij)
+static double DSlater_2S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -4181,7 +4181,7 @@ static double DSlater_2S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_2S_6S(double rij,double xii,double xij)
+static double DSlater_2S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -4400,7 +4400,7 @@ double DSlater_2S_1S(double rij,double xii,double xij)
   return DSlater_1S_2S(rij,xij,xii);
 }
 
-static double DSlater_3S_3S(double rij,double xii,double xij)
+static double DSlater_3S_3S(double rij,double xij,double xii)
 {
   double S;
 
@@ -4502,7 +4502,7 @@ static double DSlater_3S_3S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_3S_4S(double rij,double xii,double xij)
+static double DSlater_3S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -4640,7 +4640,7 @@ static double DSlater_3S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_3S_5S(double rij,double xii,double xij)
+static double DSlater_3S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -4838,7 +4838,7 @@ static double DSlater_3S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_3S_6S(double rij,double xii,double xij)
+static double DSlater_3S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -5105,7 +5105,7 @@ double DSlater_3S_2S(double rij,double xii,double xij)
   return DSlater_2S_3S(rij,xij,xii);
 }
 
-static double DSlater_4S_4S(double rij,double xii,double xij)
+static double DSlater_4S_4S(double rij,double xij,double xii)
 {
   double S;
 
@@ -5277,7 +5277,7 @@ static double DSlater_4S_4S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_4S_5S(double rij,double xii,double xij)
+static double DSlater_4S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -5513,7 +5513,7 @@ static double DSlater_4S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_4S_6S(double rij,double xii,double xij)
+static double DSlater_4S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -5835,7 +5835,7 @@ double DSlater_4S_3S(double rij,double xii,double xij)
   return DSlater_3S_4S(rij,xij,xii);
 }
 
-static double DSlater_5S_5S(double rij,double xii,double xij)
+static double DSlater_5S_5S(double rij,double xij,double xii)
 {
   double S;
 
@@ -6139,7 +6139,7 @@ static double DSlater_5S_5S(double rij,double xii,double xij)
   return S;
 }
 
-static double DSlater_5S_6S(double rij,double xii,double xij)
+static double DSlater_5S_6S(double rij,double xij,double xii)
 {
   double S;
 
@@ -6533,7 +6533,7 @@ double DSlater_5S_4S(double rij,double xii,double xij)
   return DSlater_4S_5S(rij,xij,xii);
 }
 
-static double DSlater_6S_6S(double rij,double xii,double xij)
+static double DSlater_6S_6S(double rij,double xij,double xii)
 {
   double S;
 
