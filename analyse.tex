@@ -891,7 +891,7 @@ plotted in \figref{wheel}.
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Membrane Related Items
 
 \section{Interface related items}
-{\tt g\_order, g\_density, g\_potential, g\_coord}\\
+{\tt g\_order, g\_density, g\_potential, g\_traj}\\
 When simulating molecules with long carbon tails, it can be
 interesting to calculate their average orientation. There are several
 flavors of order parameters, most of which are related. The program
@@ -932,10 +932,9 @@ charge density, giving the electric field, and the electric field,
 giving the potential. Charge density, field and potential are written
 to {\tt xvgr-}input files.
 
-The program {\tt \normindex{g\_coord}} is a very simple analysis program. All it
-does is print the coordinates of selected atoms to three files,
-containing respectively the {\em x-, y-} and {\em z-}coordinates of
-those atoms. It can also calculate the center of mass of one or more
+The program {\tt \normindex{g\_traj}} is a very simple analysis program. All it
+does is print the coordinates, velocities or forces of selected atoms.
+It can also calculate the center of mass of one or more
 molecules and print the coordinates of the center of mass to three
 files. By itself, this is probably not a very useful analysis, but
 having the coordinates of selected molecules or atoms can be very
