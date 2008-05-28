@@ -2,6 +2,22 @@
 # This is a script to create all the configuration files when
 # you compile from the CVS source. You should NOT use it to
 # compile the distribution.
+#
+# Step 1 - check if the necessary tools appear to be there.
+#          Ideally we should check versions too, which we don't...
+if ! autoconf --version | grep GNU >/dev/null 2>&1; then
+    echo "Cannot find GNU autoconf! Exiting..."
+    exit 0
+fi
+if ! automake --version | grep GNU >/dev/null 2>&1; then
+    echo "Cannot find GNU automake! Exiting..."
+    exit 0
+fi
+if ! libtool --version | grep GNU >/dev/null 2>&1; then
+    echo "Cannot find GNU libtool! Exiting..."
+    exit 0
+fi
+
 aclocal
 # fix for OSX producing debug directories; replace rm -f with rm -rf in built-in scripts
 cat aclocal.m4 | sed -e 's/rm="rm -f"/rm="rm -rf"/' | sed -e 's/rm -f /rm -rf /' > aclocal.tmp && mv aclocal.tmp aclocal.m4
