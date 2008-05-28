@@ -94,7 +94,7 @@ static void calc_com_pbc(int nrefat,t_topology *top,rvec x[],t_pbc *pbc,
   }
 }
 
-void atom2molindex(int *n,int *index,t_block *mols)
+void spol_atom2molindex(int *n,int *index,t_block *mols)
 {
   int nmol,i,j,m;
 
@@ -206,7 +206,7 @@ int gmx_spol(int argc,char *argv[])
     nrefat  = 1;
   }
 
-  atom2molindex(&(isize[1]),index[1],&(top->mols));
+  spol_atom2molindex(&(isize[1]),index[1],&(top->mols));
   srefat--;
 
   /* initialize reading trajectory:                         */

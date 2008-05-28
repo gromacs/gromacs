@@ -1154,7 +1154,7 @@ static void do_dip(t_topology *top,int ePBC,real volume,
     done_gkrbin(&gkrbin);
 }
 
-void atom2molindex(int *n,int *index,t_block *mols)
+void dipole_atom2molindex(int *n,int *index,t_block *mols)
 {
   int nmol,i,j,m;
 
@@ -1338,7 +1338,7 @@ int gmx_dipoles(int argc,char *argv[])
   get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),
             ncos,gnx,grpindex,grpname);
   for(k=0; (k<ncos); k++) {
-    atom2molindex(&gnx[k],grpindex[k],&(top->mols));
+    dipole_atom2molindex(&gnx[k],grpindex[k],&(top->mols));
     neutralize_mols(gnx[k],grpindex[k],&(top->mols),top->atoms.atom);
   }
   nFF[0] = nFA;
