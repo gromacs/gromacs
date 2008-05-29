@@ -594,6 +594,9 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("epsilon_surface", ir->epsilon_surface, 0.0);
   EETYPE("optimize_fft",ir->bOptFFT,  yesno_names, nerror, TRUE);
 
+  CCTYPE("IMPLICIT SOLVENT ALGORITHM");
+  EETYPE("implicit_solvent", ir->implicit_solvent, eis_names, nerror, TRUE);
+	
   CCTYPE ("GENERALIZED BORN ELECTROSTATICS"); 
   CTYPE ("Algorithm for calculating Born radii");
   EETYPE("gb_algorithm", ir->gb_algorithm, egb_names, nerror, TRUE);
@@ -602,12 +605,18 @@ void get_ir(char *mdparin,char *mdparout,
   CTYPE ("Cutoff for Born radii calculation; the contribution from atoms");
   CTYPE ("between rlist and rgbradii is updated every nstlist steps");
   RTYPE ("rgbradii",  ir->rgbradii, 2.0);
+  CTYPE ("Dielectric coefficient of the implicit solvent");
+  RTYPE ("gb_epsilon_solvent",ir->gb_epsilon_solvent, 80.0);	
   CTYPE ("Salt concentration in M for Generalized Born models");
   RTYPE ("gb_saltconc",  ir->gb_saltconc, 0.0); 
-
-  CCTYPE("IMPLICIT SOLVENT (for use with Generalized Born electrostatics)");
-  EETYPE("implicit_solvent", ir->implicit_solvent, eis_names, nerror, TRUE);
-  
+  CTYPE ("Scaling factors used in the OBC GB model. Default values are OBC(II)");
+  RTYPE ("gb_obc_alpha", ir->gb_obc_alpha, 1.0);
+  RTYPE ("gb_obc_beta", ir->gb_obc_beta, 0.8);
+  RTYPE ("gb_obc_gamma", ir->gb_obc_gamma, 4.85);	
+  CTYPE ("Surface tension (kJ/mol/nm^2) for the SA (nonpolar surface) part of GBSA");
+  CTYPE ("The default value (2.092) corresponds to 0.005 kcal/mol/Angstrom^2.");
+  RTYPE ("sa_surface_tension", ir->sa_surface_tension, 2.092);
+		 
   /* Coupling stuff */
   CCTYPE ("OPTIONS FOR WEAK COUPLING ALGORITHMS");
   CTYPE ("Temperature coupling");

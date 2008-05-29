@@ -172,17 +172,22 @@ typedef struct {
   real rcoulomb;        /* Coulomb cutoff (nm)		                */
   real epsilon_r;       /* relative dielectric constant                 */ 
   real epsilon_rf;      /* relative dielectric constant of the RF       */ 
+  int  implicit_solvent;/* No (=explicit water), or GBSA solvent models */
   int  gb_algorithm;    /* Algorithm to use for calculation Born radii  */
   int  nstgbradii;      /* Frequency of updating Generalized Born radii */
   real rgbradii;        /* Cutoff for GB radii calculation              */
   real gb_saltconc;     /* Salt concentration (M) for GBSA models       */
+  real gb_epsilon_solvent; /* dielectric coeff. of implicit solvent     */
+  real gb_obc_alpha;    /* 1st scaling factor for Bashford-Case GB      */
+  real gb_obc_beta;     /* 2nd scaling factor for Bashford-Case GB      */
+  real gb_obc_gamma;    /* 3rd scaling factor for Bashford-Case GB      */
+  real sa_surface_tension; /* Energy factor for SA part of GBSA */
   int  vdwtype;         /* Type of Van der Waals treatment              */
   real rvdw_switch;     /* Van der Waals switch range start (nm)        */
-  real rvdw;		/* Van der Waals cutoff (nm)		        */
-  int  implicit_solvent;/* No (=explicit water), or GBSA solvent models */
+  real rvdw;		    /* Van der Waals cutoff (nm)		        */
   int  eDispCorr;       /* Perform Long range dispersion corrections    */
   real tabext;          /* Extension of the table beyond the cut-off,   *
-			 * as well as the table length for 1-4 interac. */
+		 	             * as well as the table length for 1-4 interac. */
   real shake_tol;	/* tolerance for shake				*/
   int  efep;   		/* free energy interpolation no/yes		*/
   real init_lambda;	/* initial value for perturbation variable	*/
@@ -190,19 +195,19 @@ typedef struct {
   real sc_alpha;        /* free energy soft-core parameter              */
   int  sc_power;        /* lambda power for soft-core interactions      */
   real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
-  real dr_fc;		/* force constant for ta_disre			*/
+  real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/
   int  nstdisreout;     /* frequency of writing pair distances to enx   */ 
-  real dr_tau;		/* time constant for memory function in disres 	*/
-  real orires_fc;	/* force constant for orientational restraints  */
-  real orires_tau;	/* time constant for memory function in orires 	*/
+  real dr_tau;		    /* time constant for memory function in disres 	*/
+  real orires_fc;	    /* force constant for orientational restraints  */
+  real orires_tau;	    /* time constant for memory function in orires 	*/
   int  nstorireout;     /* frequency of writing tr(SD) to enx           */ 
   real dihre_fc;        /* force constant for dihedral restraints	*/
   int  nstdihreout;     /* frequency of writing dihedrals to enx        */ 
   real dihre_tau;       /* time constant for memory function in dihres 	*/
-  real em_stepsize;	/* The stepsize for updating			*/
-  real em_tol;		/* The tolerance				*/
+  real em_stepsize;	    /* The stepsize for updating			*/
+  real em_tol;		    /* The tolerance				*/
   int  niter;           /* Number of iterations for convergence of      */
                         /* steepest descent in relax_shells             */
   real fc_stepsize;     /* Stepsize for directional minimization        */

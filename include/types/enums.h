@@ -162,14 +162,14 @@ enum {
   eannNO, eannSINGLE, eannPERIODIC, eannNR 
 };
 
-/* Algorithms for calculating GB radii */
-enum { 
-  egbSTILL, egbKARPLUS, egbNR 
-};
-
 /* Implicit solvent algorithms */
 enum { 
-  eisNO, eisLCPO, eisNR 
+	eisNO, eisGBSA, eisNR 
+};
+
+/* Algorithms for calculating GB radii */
+enum { 
+  egbSTILL, egbOBC, egbNR 
 };
 
 /* Wall types */

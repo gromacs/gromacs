@@ -520,11 +520,17 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     else
       PS("epsilon_rf",infbuf);
     PR("tabext",ir->tabext);
+    PS("implicit_solvent",EIMPLICITSOL(ir->implicit_solvent));
     PS("gb_algorithm",EGBALGORITHM(ir->gb_algorithm));
+    PR("gb_epsilon_solvent",ir->gb_epsilon_solvent);
     PI("nstgbradii",ir->nstgbradii);
     PR("rgbradii",ir->rgbradii);
     PR("gb_saltconc",ir->gb_saltconc);
-    PS("implicit_solvent",EIMPLICITSOL(ir->implicit_solvent));
+    PR("gb_obc_alpha",ir->gb_obc_alpha);
+    PR("gb_obc_beta",ir->gb_obc_beta);
+    PR("gb_obc_gamma",ir->gb_obc_gamma);
+    PR("sa_surface_tension",ir->sa_surface_tension);
+	  
     PS("DispCorr",EDISPCORR(ir->eDispCorr));
     PS("free_energy",EFEPTYPE(ir->efep));
     PR("init_lambda",ir->init_lambda);

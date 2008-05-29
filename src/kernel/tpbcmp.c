@@ -445,10 +445,17 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_real(fp,"inputrec->epsilon_rf",-1,ir1->epsilon_rf,ir2->epsilon_rf,ftol);
   cmp_real(fp,"inputrec->tabext",-1,ir1->tabext,ir2->tabext,ftol);
   cmp_int(fp,"inputrec->gb_algorithm",-1,ir1->gb_algorithm,ir2->gb_algorithm);
+  cmp_real(fp,"inputrec->gb_epsilon_solvent",-1,ir1->gb_epsilon_solvent,ir2->gb_epsilon_solvent,ftol);
   cmp_int(fp,"inputrec->nstgbradii",-1,ir1->nstgbradii,ir2->nstgbradii);
   cmp_real(fp,"inputrec->rgbradii",-1,ir1->rgbradii,ir2->rgbradii,ftol);
   cmp_real(fp,"inputrec->gb_saltconc",-1,ir1->gb_saltconc,ir2->gb_saltconc,ftol);
   cmp_int(fp,"inputrec->implicit_solvent",-1,ir1->implicit_solvent,ir2->implicit_solvent);
+  cmp_real(fp,"inputrec->gb_obc_alpha",-1,ir1->gb_obc_alpha,ir2->gb_obc_alpha,ftol);
+  cmp_real(fp,"inputrec->gb_obc_beta",-1,ir1->gb_obc_beta,ir2->gb_obc_beta,ftol);
+  cmp_real(fp,"inputrec->gb_obc_gamma",-1,ir1->gb_obc_gamma,ir2->gb_obc_gamma,ftol);
+  cmp_real(fp,"inputrec->sa_surface_tension",-1,ir1->sa_surface_tension,ir2->sa_surface_tension,ftol);
+  	
+	
   cmp_int(fp,"inputrec->eDispCorr",-1,ir1->eDispCorr,ir2->eDispCorr);
   cmp_real(fp,"inputrec->shake_tol",-1,ir1->shake_tol,ir2->shake_tol,ftol);
   cmp_int(fp,"inputrec->efep",-1,ir1->efep,ir2->efep);

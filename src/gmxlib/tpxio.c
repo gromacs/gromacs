@@ -63,7 +63,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 54;
+static const int tpx_version = 55;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -359,12 +359,30 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_int(ir->implicit_solvent);
     } else {
       ir->gb_algorithm=egbSTILL;
-      ir->nstgbradii=0;
-      ir->rgbradii=0;
+      ir->nstgbradii=1;
+      ir->rgbradii=1.0;
       ir->gb_saltconc=0;
       ir->implicit_solvent=eisNO;
     }
+	if(file_version>=55)
+	{
+		do_real(ir->gb_epsilon_solvent);
+		do_real(ir->gb_obc_alpha);
+		do_real(ir->gb_obc_beta);
+		do_real(ir->gb_obc_gamma);
+		do_real(ir->sa_surface_tension);
+	}
+	else
+	{
+		/* Better use sensible values than insane (0.0) ones... */
+		ir->gb_epsilon_solvent = 80;
+		ir->gb_obc_alpha       = 1.0;
+		ir->gb_obc_beta        = 0.8;
+		ir->gb_obc_gamma       = 4.85;
+		ir->sa_surface_tension = 2.092;
+	}
 
+	  
     do_int(ir->nkx); 
     do_int(ir->nky); 
     do_int(ir->nkz);

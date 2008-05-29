@@ -687,21 +687,6 @@ int main (int argc, char *argv[])
     have_vol      = have_vol && (get_atomtype_vol(i,atype) > 0);
     have_surftens = have_surftens && (get_atomtype_surftens(i,atype) >= 0);
   }
-  if (!have_radius && ir->coulombtype==eelGB) {
-    fprintf(stderr,"Can't do GB electrostatics; the forcefield is missing values for\n"
-		"atomtype radii, or they might be zero.");
-    nerror++;
-  }
-  if(!have_vol && ir->gb_algorithm==egbKARPLUS) {
-    fprintf(stderr,"Can't calculate Karplus Born radii; the forcefield is missing values\n"
-		" for atomtype effective volumes, or they might be zero.");
-    nerror++;
-  }
-  if(!have_surftens && ir->implicit_solvent!=eisNO) {
-    fprintf(stderr,"Can't do implicit solvent; the forcefield is missing values\n"
-		" for atomtype surface tension.");
-    nerror++;
-  }
   
   /* If we are doing QM/MM, check that we got the atom numbers */
   have_atomnumber = TRUE;

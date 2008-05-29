@@ -157,12 +157,12 @@ const char *eann_names[eannNR+1] = {
   "No", "Single", "Periodic", NULL
 };
 
-const char *egb_names[egbNR+1] = {
-  "Still", "Karplus", NULL
+const char *eis_names[eisNR+1] = {
+	"No", "GBSA", NULL
 };
 
-const char *eis_names[eisNR+1] = {
-  "No", "LCPO", NULL
+const char *egb_names[egbNR+1] = {
+  "Still", "OBC", NULL
 };
 
 const char *ewt_names[ewtNR+1] = {
