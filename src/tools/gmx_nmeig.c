@@ -229,6 +229,7 @@ int gmx_nmeig(int argc,char *argv[])
   real       value;
   real       factor_gmx_to_omega2;
   real       factor_omega_to_wavenumber;
+  t_commrec  *cr;
   
   real *                 full_hessian   = NULL;
   gmx_sparsematrix_t *   sparse_hessian = NULL;
@@ -242,8 +243,12 @@ int gmx_nmeig(int argc,char *argv[])
   }; 
 #define NFILE asize(fnm) 
 
-  CopyRight(stderr,argv[0]); 
-  parse_common_args(&argc,argv,PCA_BE_NICE,
+	cr = init_par(&argc,&argv);
+
+	if(MASTER(cr))
+		CopyRight(stderr,argv[0]); 
+	
+  parse_common_args(&argc,argv,PCA_BE_NICE | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,asize(desc),desc,0,NULL); 
 
   read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&top_x,NULL,box,bM);

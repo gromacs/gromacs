@@ -142,6 +142,117 @@ eigensolver(real *   a,
 }
 
 
+#ifdef GMX_MPI_NOT
+void 
+sparse_parallel_eigensolver(gmx_sparsematrix_t *    A,
+							int                     neig,
+							real *                  eigenvalues,
+							real *                  eigenvectors,
+							int                     maxiter)
+{
+    int      iwork[80];
+    int      iparam[11];
+    int      ipntr[11];
+    real *   resid;
+    real *   workd;
+    real *   workl;
+    real *   v;
+    int      n;
+    int      ido,info,lworkl,i,ncv,dovec;
+    real     abstol;
+    int *    select;
+    int      iter;
+    int      nnodes,rank;
+
+	MPI_Comm_size( MPI_COMM_WORLD, &nnodes );
+	MPI_Comm_rank( MPI_COMM_WORLD, &rank );
+	
+    if(eigenvectors != NULL)
+        dovec = 1;
+    else
+        dovec = 0;
+    
+    n   = A->nrow;
+    ncv = 2*neig;
+    
+    if(ncv>n)
+        ncv=n;
+    
+    for(i=0;i<11;i++)
+        iparam[i]=ipntr[i]=0;
+	
+	iparam[0] = 1;       /* Don't use explicit shifts */
+	iparam[2] = maxiter; /* Max number of iterations */
+	iparam[6] = 1;       /* Standard symmetric eigenproblem */
+    
+	lworkl = ncv*(8+ncv);
+    snew(resid,n);
+    snew(workd,(3*n+4));
+    snew(workl,lworkl);
+    snew(select,ncv);
+    snew(v,n*ncv);
+	
+    /* Use machine tolerance - roughly 1e-16 in double precision */
+    abstol = 0;
+    
+ 	ido = info = 0;
+    fprintf(stderr,"Calculation Ritz values and Lanczos vectors, max %d iterations...\n",maxiter);
+    
+    iter = 1;
+	do {
+#ifdef GMX_DOUBLE
+		F77_FUNC(pdsaupd,PDSAUPD)(&ido, "I", &n, "SA", &neig, &abstol, 
+								  resid, &ncv, v, &n, iparam, ipntr, 
+								  workd, iwork, workl, &lworkl, &info);
+#else
+		F77_FUNC(pssaupd,PSSAUPD)(&ido, "I", &n, "SA", &neig, &abstol, 
+								  resid, &ncv, v, &n, iparam, ipntr, 
+								  workd, iwork, workl, &lworkl, &info);
+#endif
+        if(ido==-1 || ido==1)
+            gmx_sparsematrix_vector_multiply(A,workd+ipntr[0]-1, workd+ipntr[1]-1);
+        
+        fprintf(stderr,"\rIteration %4d: %3d out of %3d Ritz values converged.",iter++,iparam[4],neig);
+	} while(info==0 && (ido==-1 || ido==1));
+	
+    fprintf(stderr,"\n");
+	if(info==1)
+    {
+	    gmx_fatal(FARGS,
+                  "Maximum number of iterations (%d) reached in Arnoldi\n"
+                  "diagonalization, but only %d of %d eigenvectors converged.\n",
+                  maxiter,iparam[4],neig);
+    }
+	else if(info!=0)
+    {
+        gmx_fatal(FARGS,"Unspecified error from Arnoldi diagonalization:%d\n",info);
+    }
+	
+	info = 0;
+	/* Extract eigenvalues and vectors from data */
+    fprintf(stderr,"Calculating eigenvalues and eigenvectors...\n");
+    
+#ifdef GMX_DOUBLE
+    F77_FUNC(pdseupd,PDSEUPD)(&dovec, "A", select, eigenvalues, eigenvectors, 
+							  &n, NULL, "I", &n, "SA", &neig, &abstol, 
+							  resid, &ncv, v, &n, iparam, ipntr, 
+							  workd, workl, &lworkl, &info);
+#else
+    F77_FUNC(psseupd,PSSEUPD)(&dovec, "A", select, eigenvalues, eigenvectors, 
+							  &n, NULL, "I", &n, "SA", &neig, &abstol, 
+							  resid, &ncv, v, &n, iparam, ipntr, 
+							  workd, workl, &lworkl, &info);
+#endif
+	
+    sfree(v);
+    sfree(resid);
+    sfree(workd);
+    sfree(workl);  
+    sfree(select);    
+}
+#endif
+
+
 void 
 sparse_eigensolver(gmx_sparsematrix_t *    A,
                    int                     neig,
@@ -162,6 +273,15 @@ sparse_eigensolver(gmx_sparsematrix_t *    A,
     int *    select;
     int      iter;
     
+#ifdef GMX_MPI_NOT
+	MPI_Comm_size( MPI_COMM_WORLD, &n );
+	if(n > 1)
+	{
+		sparse_parallel_eigensolver(A,neig,eigenvalues,eigenvectors,maxiter);
+		return;
+	}
+#endif
+	
     if(eigenvectors != NULL)
         dovec = 1;
     else
