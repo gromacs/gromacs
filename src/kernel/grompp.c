@@ -155,7 +155,7 @@ static void check_cg_sizes(char *topfn,t_topology *sys)
 	    "The largest charge group contains %d atoms.\n"
 	    "Since atoms only see each other when the centers of geometry of the charge groups they belong to are within the cut-off distance, too large charge groups can lead to serious cut-off artifacts.\n"
 	    "For efficiency and accuracy, charge group should consist of a few atoms.\n"
-	    "For all-atom force fields use: CH3, CH2, CH, NH2 NH, OH, CO2, CO, etc.\n",
+	    "For all-atom force fields use: CH3, CH2, CH, NH2, NH, OH, CO2, CO, etc.\n",
 	    maxsize);
     warning(NULL);
   }
@@ -853,10 +853,12 @@ int main (int argc, char *argv[])
   {
     double cio = compute_io(ir,&sys->atoms,F_NRE,1);
     sprintf(warn_buf,"This run will generate roughly %.0f Mb of data",cio);
-    if (cio > 2000)
+    if (cio > 2000) {
+      set_warning_line(mdparin,-1);
       warning_note(NULL);
-    else
+    } else {
       printf("%s\n",warn_buf);
+    }
   }
     
   if (bVerbose) 
