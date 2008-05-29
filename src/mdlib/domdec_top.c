@@ -13,7 +13,7 @@
 #include "gmx_random.h"
 
 typedef struct gmx_reverse_top {
-  bool bConstr; /* Are constraint in this revserse top?         */
+  bool bConstr; /* Are there constraint in this revserse top?   */
   bool bBCheck; /* All bonded interactions have to be assigned? */
   int  *index;  /* Index for each atom into il                  */ 
   int  *il;     /* ftype|type|a0|...|an|ftype|...               */
@@ -21,6 +21,20 @@ typedef struct gmx_reverse_top {
 
 /* Static pointers only used for an error message */
 static t_topology *err_top_global,*err_top_local;
+
+static int nral_rt(int ftype)
+{
+  /* Returns the number of atom entries for il in gmx_reverse_top_t */
+  int nral;
+
+  nral = NRAL(ftype);
+  if (interaction_function[ftype].flags & IF_VSITE) {
+    /* With vsites the reverse topology contains two extra entries for PBC */
+    nral += 2;
+  }
+
+  return nral;
+}
 
 static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
 					    int natoms,t_idef *idef)
@@ -39,6 +53,7 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
   gatindex = cr->dd->gatindex;
   for(ftype=0; ftype<F_NRE; ftype++) {
     if (((interaction_function[ftype].flags & IF_BOND) &&
+	 !(interaction_function[ftype].flags & IF_VSITE) &&
 	 (rt->bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO)))
 	|| ftype == F_SETTLE || (rt->bConstr && ftype == F_CONSTR)) {
       nral = NRAL(ftype);
@@ -64,7 +79,7 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
 	      assigned[j] = 1;
 	    }
 	  }
-	  j += 2 + NRAL(ftype_j);
+	  j += 2 + nral_rt(ftype_j);
 	}
 	if (!bFound)
 	  gmx_incons("Some interactions seem to be assigned multiple times\n");
@@ -89,7 +104,8 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
   while (j < rt->index[natoms]) {
     ftype = rt->il[j];
     nral  = NRAL(ftype);
-    if (assigned[j] == 0) {
+    if (assigned[j] == 0 &&
+	!(interaction_function[ftype].flags & IF_VSITE)) {
       if (DDMASTER(cr->dd)) {
 	fprintf(fplog, "%20s atoms",interaction_function[ftype].longname);
 	fprintf(stderr,"%20s atoms",interaction_function[ftype].longname);
@@ -104,7 +120,7 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
       if (i >= nprint)
 	break;
     }
-    j += 2 + nral;
+    j += 2 + nral_rt(ftype);
   }
   
   sfree(assigned);    
@@ -242,7 +258,6 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int **vsite_pbc,
 	    rt->il[rt->index[a]+count[a]+2+nral+1] =
 	      (vsite_pbc ? vsite_pbc[ftype-F_VSITE2][i/(1+nral)] : -2);
 	  }
-	  count[a] += 2 + nral + 2;
 	} else {
 	  /* We do not count vsites since they are always uniquely assigned
 	   * and can be assigned to multiple nodes with recursive vsites.
@@ -251,8 +266,8 @@ static int low_make_reverse_top(t_idef *idef,t_atom *atom,int **vsite_pbc,
 	      !(interaction_function[ftype].flags & IF_LIMZERO)) {
 	    nint++;
 	  }
-	  count[a] += 2 + nral;
 	}
+	count[a] += 2 + nral_rt(ftype);
       }
     }
   }
