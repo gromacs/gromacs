@@ -73,6 +73,7 @@ int main(int argc,char *argv[])
   };
   
   t_topology top;
+  int        ePBC;
   char       title[STRLEN];
   t_trxframe fr;
   rvec       *xtop;
@@ -100,7 +101,7 @@ int main(int argc,char *argv[])
    * whether the topology was found and could be read
    */
   
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&xtop,NULL,box,TRUE);
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,TRUE);
   sfree(xtop);
 
   n=n-1; /* Our enumeration started on 1, but C starts from 0 */
