@@ -1799,6 +1799,7 @@ static void dump_hbmap(t_hbdata *hb,
   FILE *fp,*fplog;
   int  ddd,hhh,aaa,i,j,k,m,grp;
   char ds[32],hs[32],as[32];
+  bool first;
   
   fp = opt2FILE("-hbn",nfile,fnm,"w");
   if (opt2bSet("-g",nfile,fnm)) {
@@ -1831,11 +1832,13 @@ static void dump_hbmap(t_hbdata *hb,
 	  fprintf(fp,"\n");
 	}
       }
+      first = TRUE;
       fprintf(fp,"[ acceptors_%s ]",grpnames[grp]);
       for (i=0; (i<hb->a.nra); i++) {
 	if (hb->a.grp[i] == grp) { 
-	  fprintf(fp,(i%15)?" ":"\n");
+	  fprintf(fp,(i%15 && !first)?" ":"\n");
 	  fprintf(fp," %4u",hb->a.acc[i]+1);
+	  first = FALSE;
 	}
       }
       fprintf(fp,"\n");
