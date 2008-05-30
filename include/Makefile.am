@@ -122,6 +122,7 @@ wman.h \
 writeps.h \
 x2top_qgen.h \
 x2top_eemprops.h \
+x2top_matrix.h \
 xdrf.h \
 xtcio.h \
 xvgr.h
