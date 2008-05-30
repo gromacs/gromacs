@@ -66,6 +66,7 @@ char *hxtypenames[NRHXTYPES]=
 
 enum { gr0,  gr1,    grI,  grNR };
 enum { hbNo, hbDist, hbHB, hbNR, hbR2}; 
+enum { noDA, ACC, DON, DA, INGROUP};
   
 static char *grpnames[grNR] = {"0","1","I" };
 
@@ -81,7 +82,9 @@ static bool bDebug = FALSE;
 #define ISHB(h)   (((h) & 2) == 2)
 #define ISDIST(h) (((h) & 1) == 1)
 #define ISDIST2(h) (((h) & 4) == 4)
-
+#define ISACC(h)  (((h) & 1) == 1)
+#define ISDON(h)  (((h) & 2) == 2)
+#define ISINGRP(h) (((h) & 4) == 4)
 
 typedef struct {
   int nr;
@@ -388,6 +391,26 @@ static char *mkatomname(t_atoms *atoms,int i)
   return buf;
 }
 
+static void gen_datable(atom_id *index, int isize, unsigned char *datable, int natoms){
+  /* Generates table of all atoms and sets the ingroup bit for atoms in index[] */
+  int i;
+
+  for (i=0; i<isize; i++){
+    if (index[i] >= natoms)
+      gmx_fatal(FARGS,"Atom has index %d larger than number of atoms %d.",index[i],natoms);
+    datable[index[i]] |= INGROUP;
+  }
+}
+
+static void clear_datable_grp(unsigned char *datable, int size){
+  /* Clears group information from the table */
+  int i;
+  const char mask = !(char)INGROUP;
+  if (size > 0)
+    for (i=size-1;i--;) /* Slightly faster, potentially dangerous */
+      datable[i] &= mask;
+}
+
 static void add_acc(t_acceptors *a,int ia,int grp)
 {
   if (a->nra >= a->max_nra) {
@@ -402,17 +425,19 @@ static void add_acc(t_acceptors *a,int ia,int grp)
 static void search_acceptors(t_topology *top,int isize, 
 			     atom_id *index,t_acceptors *a,int grp,
 			     bool bNitAcc,
-			     bool bContact,bool bDoIt)
+			     bool bContact,bool bDoIt, unsigned char *datable)
 {
-  int i;
+  int i,n;
   
-  for (i=0; (i<top->atoms.nr); i++) {
-    if (bDoIt) {
+  if (bDoIt) {
+    for (i=0; (i<isize); i++) {
+      n = index[i];
       if ((bContact ||
-	   (((*top->atoms.atomname[i])[0] == 'O') || 
-	    (bNitAcc && ((*top->atoms.atomname[i])[0] == 'N')))) &&
-	  in_list(i,isize,index)) {
-	add_acc(a,i,grp);
+	   (((*top->atoms.atomname[n])[0] == 'O') || 
+	    (bNitAcc && ((*top->atoms.atomname[n])[0] == 'N')))) &&
+	  ISINGRP(datable[n])) {
+	datable[n] |= ACC; /* set the atom's acceptor flag in datable. */
+	add_acc(a,n,grp);
       }
     }
   }
@@ -473,45 +498,60 @@ static void add_h2d(int id,int ih,t_donors *ddd)
   }
 }
   
-static void add_dh(t_donors *ddd,int id,int ih,int grp)
+static void add_dh(t_donors *ddd,int id,int ih,int grp, unsigned char *datable)
 {
   int i;
+
+  if (ISDON(datable[id]) || !datable) {
+    if (ddd->dptr[id] == NOTSET) { /* New donor */
+      i = ddd->nrd;
+      ddd->dptr[id] = i;
+    } else 
+      i = ddd->dptr[id];
   
-  for(i=0; (i<ddd->nrd); i++) 
-    if (ddd->don[i] == id) {
-      add_h2d(i,ih,ddd);
-      break;
-    }
-  if (i == ddd->nrd) {
-    if (ddd->nrd >= ddd->max_nrd) {
-      ddd->max_nrd += 128;
-      srenew(ddd->don,ddd->max_nrd);
-      srenew(ddd->nhydro,ddd->max_nrd);
-      srenew(ddd->hydro,ddd->max_nrd);
-      srenew(ddd->nhbonds,ddd->max_nrd);
-      srenew(ddd->grp,ddd->max_nrd);
-    }
-    ddd->don[ddd->nrd] = id;
-    ddd->nhydro[ddd->nrd] = 0;
-    ddd->grp[ddd->nrd] = grp;
-    add_h2d(ddd->nrd,ih,ddd);
-    ddd->nrd++;
-  }
+    if (i == ddd->nrd) {
+      if (ddd->nrd >= ddd->max_nrd) {
+	ddd->max_nrd += 128;
+	srenew(ddd->don,ddd->max_nrd);
+	srenew(ddd->nhydro,ddd->max_nrd);
+	srenew(ddd->hydro,ddd->max_nrd);
+	srenew(ddd->nhbonds,ddd->max_nrd);
+	srenew(ddd->grp,ddd->max_nrd);
+      }
+      ddd->don[ddd->nrd] = id;
+      ddd->nhydro[ddd->nrd] = 0;
+      ddd->grp[ddd->nrd] = grp;
+      ddd->nrd++;
+    } else
+      ddd->don[i] = id;
+    add_h2d(i,ih,ddd);
+  } else
+    if (datable)
+      printf("Warning: Atom %d is not in the d/a-table!\n", id);
 }
 
 static void search_donors(t_topology *top, int isize, atom_id *index,
-			  t_donors *ddd,int grp,bool bContact,bool bDoIt)
+			  t_donors *ddd,int grp,bool bContact,bool bDoIt,
+			  unsigned char *datable)
 {
-  int        i,j,nra;
+  int        i,j,nra,n;
   t_functype func_type;
   t_ilist    *interaction;
   atom_id    nr1,nr2;
   bool       stop;
-  
+
+  if (!ddd->dptr) {
+    snew(ddd->dptr,top->atoms.nr);
+    for(i=0; (i<top->atoms.nr); i++)
+      ddd->dptr[i] = NOTSET;
+  }
+
   if (bContact) {
     if (bDoIt)
-      for(i=0; (i<isize); i++) 
-	add_dh(ddd,index[i],-1,grp);
+      for(i=0; (i<isize); i++) {
+	datable[index[i]] |= DON;
+	add_dh(ddd,index[i],-1,grp,datable);
+      }
   }
   else {
     for(func_type=0; (func_type < F_NRE); func_type++) {
@@ -528,11 +568,15 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
 	if (func_type == F_SETTLE) {
 	  nr1=interaction->iatoms[i+1];
 	  
-	  if (in_list(nr1,  isize,index)) {
-	    if (in_list(nr1+1,isize,index))
-	      add_dh(ddd,nr1,nr1+1,grp);
-	    if (in_list(nr1+2,isize,index))
-	      add_dh(ddd,nr1,nr1+2,grp);
+	  if (ISINGRP(datable[nr1])) {
+	    if (ISINGRP(datable[nr1+1])) {
+	      datable[nr1] |= DON;
+	      add_dh(ddd,nr1,nr1+1,grp,datable);
+	    }
+	    if (ISINGRP(datable[nr1+2])) {
+	      datable[nr1] |= DON;
+	      add_dh(ddd,nr1,nr1+2,grp,datable);
+	    }
 	  }
 	} 
 	else if (IS_CHEMBOND(func_type)) {
@@ -542,12 +586,15 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
 	    if ((*top->atoms.atomname[nr1][0] == 'H') && 
 		((*top->atoms.atomname[nr2][0] == 'O') ||
 		 (*top->atoms.atomname[nr2][0] == 'N')) &&
-		in_list(nr1,isize,index) && in_list(nr2,isize,index))
-	      add_dh(ddd,nr2,nr1,grp);
+		ISINGRP(datable[nr1]) && ISINGRP(datable[nr2])) {
+	      datable[nr2] |= DON;
+	      add_dh(ddd,nr2,nr1,grp,datable);
+	    }
 	  }
 	}
       }
     }
+#ifdef SAFEVSITES
     for(func_type=0; func_type < F_NRE; func_type++) {
       interaction=&top->idef.il[func_type];
       for(i=0; i < interaction->nr; 
@@ -568,18 +615,16 @@ static void search_donors(t_topology *top, int isize, atom_id *index,
 		stop=TRUE;
 	    if ( !stop && ( ( *top->atoms.atomname[nr2][0] == 'O') ||
 			    ( *top->atoms.atomname[nr2][0] == 'N') ) &&
-		 in_list(nr1,isize,index) && in_list(nr2,isize,index) )
-	      add_dh(ddd,nr2,nr1,grp);
+		 ISINGRP(datable[nr1]) && ISINGRP(datable[nr2])) {
+	      datable[nr2] |= DON;
+	      add_dh(ddd,nr2,nr1,grp,datable);
+	    }
 	  }
 	}
       }
     }
+#endif
   }
-  snew(ddd->dptr,top->atoms.nr);
-  for(i=0; (i<top->atoms.nr); i++)
-    ddd->dptr[i] = NOTSET;
-  for(i=0; (i<ddd->nrd); i++)
-    ddd->dptr[ddd->don[i]] = i;
 }
 
 static t_gridcell ***init_grid(bool bBox,rvec box[],real rcut,ivec ngrid)
@@ -853,7 +898,8 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
   int  h,hh,id,ja,ihb;
   rvec r_da,r_ha,r_dh;
   real rc2,r2c2,rda2,rha2,ca;
-  
+  bool HAinrange = FALSE; /* If !bDA. Needed for returning hbDist in a correct way. */
+
   if (d == a)
     return hbNo;
 
@@ -884,27 +930,35 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
   
   for(h=0; (h < hb->d.nhydro[id]); h++) {
     hh = hb->d.hydro[id][h];
-    rvec_sub(x[hh],x[a],r_ha);
+    if (!bDA) {
+      rvec_sub(x[hh],x[a],r_ha);
+      if (bBox)
+	pbc_correct(r_ha,box,hbox);
+      rha2 = iprod(r_ha,r_ha);
+    }
     if (bBox)
       pbc_correct(r_da,box,hbox);
-    rha2 = iprod(r_ha,r_ha);
     
     if (bDA || (!bDA && (rha2 <= rc2))) {
       rvec_sub(x[d],x[hh],r_dh);
       if (bBox)
 	pbc_correct(r_dh,box,hbox);
-  
+      if (!bDA)
+	HAinrange = TRUE;
       ca = cos_angle(r_dh,r_da);
       /* if angle is smaller, cos is larger */
       if (ca >= ccut) {
 	*hhh  = hh;
-	*d_ha = sqrt(rha2);
+	*d_ha = sqrt(bDA?rda2:rha2);
 	*ang  = acos(ca);
 	return hbHB;
       }
     }
   }
-  return hbDist;
+  if (bDA || (!bDA && HAinrange))
+    return hbDist;
+  else
+    return hbNo;
 }
 
 /* Fixed previously undiscovered bug in the merge
@@ -982,7 +1036,7 @@ static void merge_hb(t_hbdata *hb,bool bTwo, bool bContact)
       ia = hb->a.acc[j];
       jj = hb->d.dptr[ia];
       if ((id != ia) && (ii != NOTSET) && (jj != NOTSET) &&
-	  (!bTwo || (bTwo && (hb->d.grp[id] != hb->a.grp[ia])))) {
+	  (!bTwo || (bTwo && (hb->d.grp[i] != hb->a.grp[j])))) {
 	hb0 = hb->hbmap[i][j];
 	hb1 = hb->hbmap[jj][ii];
 	if (hb0 && hb1 && ISHB(hb0->history[0]) && ISHB(hb1->history[0])) {
@@ -1509,6 +1563,7 @@ static void dump_hbmap(t_hbdata *hb,
   FILE *fp,*fplog;
   int  ddd,hhh,aaa,i,j,k,m,grp;
   char ds[32],hs[32],as[32];
+  bool first;
   
   fp = opt2FILE("-hbn",nfile,fnm,"w");
   if (opt2bSet("-g",nfile,fnm)) {
@@ -1532,17 +1587,23 @@ static void dump_hbmap(t_hbdata *hb,
       - Erik Marklund, May 29, 2006
      */
     if (!bContact) {
-      fprintf(fp,"[ donors_hydrogens_%s ]",grpnames[grp]);
+      fprintf(fp,"[ donors_hydrogens_%s ]\n",grpnames[grp]);
       for (i=0; (i<hb->d.nrd); i++) {
-	for(j=0; (j<hb->d.nhydro[i]); j++)
-	  fprintf(fp," %4u %4u",hb->d.don[i]+1,
-		  hb->d.hydro[i][j]+1);
-	fprintf(fp,"\n");
+	if (hb->d.grp[i] == grp) { 
+	  for(j=0; (j<hb->d.nhydro[i]); j++)
+	    fprintf(fp," %4u %4u",hb->d.don[i]+1,
+		    hb->d.hydro[i][j]+1);
+	  fprintf(fp,"\n");
+	}
       }
+      first = TRUE;
       fprintf(fp,"[ acceptors_%s ]",grpnames[grp]);
       for (i=0; (i<hb->a.nra); i++) {
-	fprintf(fp,(i%15)?" ":"\n");
-	fprintf(fp," %4u",hb->a.acc[i]+1);
+	if (hb->a.grp[i] == grp) { 
+	  fprintf(fp,(i%15 && !first)?" ":"\n");
+	  fprintf(fp," %4u",hb->a.acc[i]+1);
+	  first = FALSE;
+	}
       }
       fprintf(fp,"\n");
     }
@@ -1755,6 +1816,7 @@ int gmx_hbond(int argc,char *argv[])
   t_gridcell ***grid;
   t_ncell    *icell,*jcell,*kcell;
   ivec       ngrid;
+  unsigned char        *datable;
     
   CopyRight(stdout,argv[0]);
 
@@ -1812,7 +1874,7 @@ int gmx_hbond(int argc,char *argv[])
       int dd = index[0][i];
       int hh = index[0][i+1];
       int aa = index[0][i+2];
-      add_dh (&hb->d,dd,hh,i);
+      add_dh (&hb->d,dd,hh,i,datable);
       add_acc(&hb->a,aa,i);
       /* Should this be here ? */
       snew(hb->d.dptr,top.atoms.nr);
@@ -1867,21 +1929,26 @@ int gmx_hbond(int argc,char *argv[])
   }
   
   /* search donors and acceptors in groups */
+  snew(datable, top.atoms.nr);
   for (i=0; (i<grNR); i++)
     if ( ((i==gr0) && !bSelected ) ||
 	 ((i==gr1) && bTwo ) ||
 	 ((i==grI) && bInsert ) ) {
+      gen_datable(index[i],isize[i],datable,top.atoms.nr);
       if (bContact) {
 	search_acceptors(&top,isize[i],index[i],&hb->a,i,
-			 bNitAcc,TRUE,(bTwo && (i==gr0)) || !bTwo);
+			 bNitAcc,TRUE,(bTwo && (i==gr0)) || !bTwo, datable);
 	search_donors   (&top,isize[i],index[i],&hb->d,i,
-			 TRUE,(bTwo && (i==gr1)) || !bTwo);
+			 TRUE,(bTwo && (i==gr1)) || !bTwo, datable);
       }
       else {
-	search_acceptors(&top,isize[i],index[i],&hb->a,i,bNitAcc,FALSE,TRUE);
-	search_donors   (&top,isize[i],index[i],&hb->d,i,FALSE,TRUE);
+	search_acceptors(&top,isize[i],index[i],&hb->a,i,bNitAcc,FALSE,TRUE, datable);
+	search_donors   (&top,isize[i],index[i],&hb->d,i,FALSE,TRUE, datable);
       }
+      if (bTwo)
+	clear_datable_grp(datable,top.atoms.nr);
     }
+  sfree(datable);
   printf("Found %d donors and %d acceptors\n",hb->d.nrd,hb->a.nra);
   /*if (bSelected)
     snew(donors[gr0D], dons[gr0D].nrd);*/
