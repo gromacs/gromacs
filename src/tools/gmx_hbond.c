@@ -1038,7 +1038,7 @@ static void merge_hb(t_hbdata *hb,bool bTwo, bool bContact)
       ia = hb->a.acc[j];
       jj = hb->d.dptr[ia];
       if ((id != ia) && (ii != NOTSET) && (jj != NOTSET) &&
-	  (!bTwo || (bTwo && (hb->d.grp[id] != hb->a.grp[ia])))) {
+	  (!bTwo || (bTwo && (hb->d.grp[i] != hb->a.grp[j])))) {
 	hb0 = hb->hbmap[i][j];
 	hb1 = hb->hbmap[jj][ii];
 	if (hb0 && hb1 && ISHB(hb0->history[0]) && ISHB(hb1->history[0])) {
