@@ -407,7 +407,7 @@ static void clear_datable_grp(unsigned char *datable, int size){
   int i;
   const char mask = !(char)INGROUP;
   if (size > 0)
-    for (i=size-1;i--;) /* Slightly faster, potentially dangerous */
+    for (i=0;i<size;i++)
       datable[i] &= mask;
 }
 
