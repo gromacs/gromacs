@@ -127,6 +127,9 @@ gmx_polystat(int argc,char *argv[]);
 int 
 gmx_potential(int argc,char *argv[]);
 
+int
+gmx_principal(int argc,char *argv[]);
+
 int 
 gmx_rama(int argc,char *argv[]);
 

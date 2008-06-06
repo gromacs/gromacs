@@ -197,7 +197,7 @@ int gmx_gyrate(int argc,char *argv[])
     { efTPS, NULL,   NULL,       ffREAD },
     { efNDX, NULL,   NULL,       ffOPTRD },
     { efXVG, NULL,   "gyrate",   ffWRITE }, 
-    { efXVG, "-acf", "moi-acf",  ffOPTWR }
+    { efXVG, "-acf", "moi-acf",  ffOPTWR },
   }; 
 #define NFILE asize(fnm) 
   int     npargs;

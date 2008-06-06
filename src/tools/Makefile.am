@@ -25,7 +25,7 @@ libgmxana@LIBSUFFIX@_la_SOURCES = \
 	gmx_enemat.c	gmx_energy.c	gmx_lie.c	gmx_filter.c	\
 	gmx_gyrate.c	gmx_h2order.c	gmx_hbond.c	gmx_helix.c	\
 	gmx_mindist.c	gmx_msd.c	gmx_morph.c	gmx_nmeig.c	\
-	gmx_nmens.c	gmx_order.c	 \
+	gmx_nmens.c	gmx_order.c	gmx_principal.c \
 	gmx_polystat.c	gmx_potential.c	gmx_rama.c	\
 	gmx_rdf.c	gmx_rms.c	gmx_rmsdist.c	gmx_rmsf.c	\
 	gmx_rotacf.c	gmx_saltbr.c	gmx_sas.c	gmx_sdf.c	\
@@ -48,7 +48,7 @@ bin_PROGRAMS = \
 	g_analyze   	g_anaeig    	g_angle     	g_bond      	\
 	g_bundle    	g_chi       	g_cluster   	g_confrms   	\
 	g_covar     	g_density   	g_densmap       g_dih       	\
-	g_dielectric 	g_helixorient 	\
+	g_dielectric 	g_helixorient 	g_principal \
 	g_dipoles   	g_disre     	g_dist      	g_dyndom    	\
 	g_enemat    	g_energy    	g_lie       	g_filter    	\
 	g_gyrate    	g_h2order   	g_hbond     	g_helix     	\
