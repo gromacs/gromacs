@@ -39,9 +39,6 @@ extern real dd_cutoff(gmx_domdec_t *dd);
 
 extern real dd_cutoff_mbody(gmx_domdec_t *dd);
 
-extern int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z);
-/* Returns the pme slab for DD cell x,y,z */
-
 extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
 

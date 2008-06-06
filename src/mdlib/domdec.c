@@ -1,3 +1,6 @@
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+ */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -117,6 +120,15 @@ typedef struct {
  */
 enum { ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR };
 
+typedef struct
+{
+    int dim;      /* The dimension                                          */
+    int nslab;    /* The number of PME slabs in this dimension              */
+    int *pp_min;  /* The minimum pp node location, size nslab               */
+    int *pp_max;  /* The maximum pp node location,size nslab                */
+    int maxshift; /* The maximum shift for coordinate redistribution in PME */
+} gmx_ddpme_t;
+
 typedef struct gmx_domdec_comm {
   /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
    * unless stated otherwise.
@@ -131,9 +143,7 @@ typedef struct gmx_domdec_comm {
   int  *pmenodes;          /* size npmenodes                         */
   int  *ddindex2simnodeid; /* size npmenodes, only with bCartesianPP
 			    * but with bCartesianPP_PME              */
-  int  *pme_xmin;          /* size npmenodes                         */
-  int  *pme_xmax;          /* size npmenodes                         */
-  int  pme_maxshift;
+    gmx_ddpme_t ddpme[2];
 
   /* The DD particle-particle nodes only */
   /* The communication setup within the communicator all */
@@ -1243,44 +1253,44 @@ static void dd_cart_coord2pmecoord(gmx_domdec_t *dd,ivec coord,ivec coord_pme)
     nc + (coord[dd->comm->cartpmedim]*(ntot - nc) + (ntot - nc)/2)/nc;
 }
 
-static int low_ddindex2pmeslab(int ndd,int npme,int ddindex)
+static int low_ddindex2pmeindex(int ndd,int npme,int ddindex)
 {
-  /* We add cr->npmenodes/2 to obtain an even distribution */
-  return (ddindex*npme + npme/2)/ndd;
+    /* We add cr->npmenodes/2 to obtain an even distribution */
+    return (ddindex*npme + npme/2)/ndd;
 }
 
-static int ddindex2pmeslab(const gmx_domdec_t *dd,int ddindex)
+static int ddindex2pmeindex(const gmx_domdec_t *dd,int ddindex)
 {
-  return low_ddindex2pmeslab(dd->nnodes,dd->comm->npmenodes,ddindex);
+    return low_ddindex2pmeindex(dd->nnodes,dd->comm->npmenodes,ddindex);
 }
 
-static int cr_ddindex2pmeslab(const t_commrec *cr,int ddindex)
+static int cr_ddindex2pmeindex(const t_commrec *cr,int ddindex)
 {
-  return low_ddindex2pmeslab(cr->dd->nnodes,cr->npmenodes,ddindex);
+    return low_ddindex2pmeindex(cr->dd->nnodes,cr->npmenodes,ddindex);
 }
 
 static int *dd_pmenodes(t_commrec *cr)
 {
-  int *pmenodes;
-  int n,i,p0,p1;
-
-  snew(pmenodes,cr->npmenodes);
-  n = 0;
-  for(i=0; i<cr->dd->nnodes; i++) {
-    p0 = cr_ddindex2pmeslab(cr,i);
-    p1 = cr_ddindex2pmeslab(cr,i+1);
-    if (i+1 == cr->dd->nnodes || p1 > p0) {
-      if (debug)
-	fprintf(debug,"pmenode[%d] = %d\n",n,i+1+n);
-      pmenodes[n] = i + 1 + n;
-      n++;
+    int *pmenodes;
+    int n,i,p0,p1;
+    
+    snew(pmenodes,cr->npmenodes);
+    n = 0;
+    for(i=0; i<cr->dd->nnodes; i++) {
+        p0 = cr_ddindex2pmeindex(cr,i);
+        p1 = cr_ddindex2pmeindex(cr,i+1);
+        if (i+1 == cr->dd->nnodes || p1 > p0) {
+            if (debug)
+                fprintf(debug,"pmenode[%d] = %d\n",n,i+1+n);
+            pmenodes[n] = i + 1 + n;
+            n++;
+        }
     }
-  }
 
-  return pmenodes;
+    return pmenodes;
 }
 
-int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z)
+static int gmx_ddcoord2pmeindex(t_commrec *cr,int x,int y,int z)
 {
   gmx_domdec_t *dd;
   ivec coords,coords_pme,nc;
@@ -1303,7 +1313,7 @@ int gmx_ddcoord2pmeslab(t_commrec *cr,int x,int y,int z)
   coords[XX] = x;
   coords[YY] = y;
   coords[ZZ] = z;
-  slab = ddindex2pmeslab(dd,dd_index(dd->nc,coords));
+  slab = ddindex2pmeindex(dd,dd_index(dd->nc,coords));
 
   return slab;
 }
@@ -1329,7 +1339,7 @@ static int ddcoord2simnodeid(t_commrec *cr,int x,int y,int z)
       nodeid = comm->ddindex2simnodeid[ddindex];
     } else {
       if (comm->pmenodes) {
-	nodeid = ddindex + gmx_ddcoord2pmeslab(cr,x,y,z);
+	nodeid = ddindex + gmx_ddcoord2pmeindex(cr,x,y,z);
       } else {
 	nodeid = ddindex;
       }
@@ -1362,7 +1372,7 @@ static int dd_simnode2pmenode(t_commrec *cr,int sim_nodeid)
 #endif
   } else if (comm->bCartesianPP) {
     if (sim_nodeid < dd->nnodes) {
-      pmenode = dd->nnodes + ddindex2pmeslab(dd,sim_nodeid);
+      pmenode = dd->nnodes + ddindex2pmeindex(dd,sim_nodeid);
     }
   } else {
     /* This assumes DD cells with identical x coordinates
@@ -1371,7 +1381,7 @@ static int dd_simnode2pmenode(t_commrec *cr,int sim_nodeid)
     if (dd->comm->pmenodes == NULL) {
       if (sim_nodeid < dd->nnodes) {
 	/* The DD index equals the nodeid */
-	pmenode = dd->nnodes + ddindex2pmeslab(dd,sim_nodeid);
+	pmenode = dd->nnodes + ddindex2pmeindex(dd,sim_nodeid);
       }
     } else {
       i = 0;
@@ -1424,7 +1434,7 @@ void get_pme_ddnodes(t_commrec *cr,int pmenodeid,
 	    (*my_ddnodes)[(*nmy_ddnodes)++] = ddcoord2simnodeid(cr,x,y,z);
 	} else {
 	  /* The slab corresponds to the nodeid in the PME group */
-	  if (gmx_ddcoord2pmeslab(cr,x,y,z) == pmenodeid)
+	  if (gmx_ddcoord2pmeindex(cr,x,y,z) == pmenodeid)
 	    (*my_ddnodes)[(*nmy_ddnodes)++] = ddcoord2simnodeid(cr,x,y,z);
 	}
       }
@@ -1672,91 +1682,101 @@ static float dd_force_load(gmx_domdec_comm_t *comm)
   return load;
 }
 
-static void set_pme_x_limits(gmx_domdec_t *dd)
+static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
+                       int dim,int nslab)
 {
-  gmx_domdec_comm_t *comm;
-  int  nslab,slab,i;
-  ivec xyz;
-
-  comm = dd->comm;
-
-  nslab = dd->comm->npmenodes;
-  snew(comm->pme_xmin,nslab);
-  snew(comm->pme_xmax,nslab);
-  for(i=0; i<nslab; i++) {
-    comm->pme_xmin[i] = dd->nc[XX] - 1;
-    comm->pme_xmax[i] = 0;
-  }
-  for(i=0; i<dd->nnodes; i++) {
-    slab = ddindex2pmeslab(dd,i);
-    ddindex2xyz(dd->nc,i,xyz);
-    if (xyz[XX] < comm->pme_xmin[slab])
-      comm->pme_xmin[slab] = xyz[XX];
-    if (xyz[XX] > comm->pme_xmax[slab])
-      comm->pme_xmax[slab] = xyz[XX];
-  }
+    int	 slab,nso,i;
+    ivec xyz;
+    
+    ddpme->dim	 = dim;
+    ddpme->nslab = nslab;
+    nso = dd->comm->npmenodes/nslab;
+    /* Determine for each PME slab the PP locacation range for dimension dim */
+    snew(ddpme->pp_min,nslab);
+    snew(ddpme->pp_max,nslab);
+    for(slab=0; slab<nslab; slab++) {
+        ddpme->pp_min[slab] = dd->nc[dim] - 1;
+        ddpme->pp_max[slab] = 0;
+    }
+    for(i=0; i<dd->nnodes; i++) {
+        ddindex2xyz(dd->nc,i,xyz);
+        /* For y only use our y/z slab.
+         * This assumes that the PME x grid size matches the DD grid size.
+         */
+        if (dim == XX || xyz[YY] == dd->ci[YY]) {
+            slab = ddindex2pmeindex(dd,i);
+            if (dim == XX) {
+                slab /= nso;
+            } else {
+                slab = slab % nslab;
+            }
+            ddpme->pp_min[slab] = min(ddpme->pp_min[slab],xyz[dim]);
+            ddpme->pp_max[slab] = max(ddpme->pp_max[slab],xyz[dim]);
+        }
+    }
 }
 
 int dd_pme_maxshift(gmx_domdec_t *dd)
 {
-  return dd->comm->pme_maxshift;
+    return dd->comm->ddpme[0].maxshift;
 }
 
-static void set_pme_maxshift(gmx_domdec_t *dd,
-			     bool bUniform,matrix box,real *cell_f)
+static void set_pme_maxshift(gmx_domdec_t *dd,int dimind,gmx_ddpme_t *ddpme,
+                             bool bUniform,matrix box,real *cell_f)
 {
-  gmx_domdec_comm_t *comm;
-  int  pd,ns,nc,s;
-  int  *xmin,*xmax;
-  real range,limit;
-  int  sh;
-
-  comm = dd->comm;
-  ns = comm->npmenodes;
-  nc = dd->nc[XX];
-
-  if (dd->dim[0] != XX) {
-    /* First decomposition is not along x: the worst situation */
-    sh = ns/2;
-  } else if (ns <= 3 || (bUniform && ns == nc)) {
-    /* The optimal situation */
-    sh = 1;
-  } else {
-    /* We need to check for all pme nodes which nodes they
-     * could possibly need to communicate with.
-     */
-    xmin = comm->pme_xmin;
-    xmax = comm->pme_xmax;
-    range = comm->cellsize_min[XX];
-    /* Allow for atoms to be maximally half the cell size or cut-off
-     * out of their DD cell.
-     */
-    range  = 0.5*min(range,comm->cutoff)/dd->skew_fac[XX];
-    range /= box[XX][XX];
-    /* Avoid unlucky rounding at exactly 0.5 */
-    range *= 0.999;
-
-    sh = 1;
-    for(s=0; s<ns; s++) {
-      limit = cell_f[xmin[s]] - range;
-      while (sh+1 < ns &&
-	     ((s-(sh+1) >= 0  && cell_f[xmax[s-(sh+1)   ]+1]     > limit) ||
-	      (s-(sh+1) <  0  && cell_f[xmax[s-(sh+1)+ns]+1] - 1 > limit))) {
-	sh++;
-      }
-      limit = cell_f[xmax[s]+1] + range;
-      while (sh+1 < ns &&
-	     ((s+(sh+1) <  ns && cell_f[xmin[s+(sh+1)   ]  ]     < limit) ||
-	      (s+(sh+1) >= ns && cell_f[xmin[s+(sh+1)-ns]  ] + 1 < limit))) {
-	sh++;
-      }
+    gmx_domdec_comm_t *comm;
+    int  dim,nc,ns,s;
+    int  *xmin,*xmax;
+    real range,lim;
+    int  sh;
+    
+    comm = dd->comm;
+    dim = ddpme->dim;
+    nc  = dd->nc[dim];
+    ns  = ddpme->nslab;
+    
+    if (dd->dim[dimind] != dim) {
+        /* PP decomposition is not along dim: the worst situation */
+        sh = ns/2;
+    } else if (ns <= 3 || (bUniform && ns == nc)) {
+        /* The optimal situation */
+        sh = 1;
+    } else {
+        /* We need to check for all pme nodes which nodes they
+         * could possibly need to communicate with.
+         */
+        xmin = ddpme->pp_min;
+        xmax = ddpme->pp_max;
+        range = comm->cellsize_min[dim];
+        /* Allow for atoms to be maximally half the cell size or cut-off
+         * out of their DD cell.
+         */
+        range  = 0.5*min(range,comm->cutoff)/dd->skew_fac[dim];
+        range /= box[dim][dim];
+        /* Avoid unlucky rounding at exactly 0.5 */
+        range *= 0.999;
+        
+        sh = 1;
+        for(s=0; s<ns; s++) {
+            lim = cell_f[xmin[s]] - range;
+            while (sh+1 < ns &&
+                   ((s-(sh+1) >= 0  && cell_f[xmax[s-(sh+1)   ]+1]     > lim) ||
+                    (s-(sh+1) <  0  && cell_f[xmax[s-(sh+1)+ns]+1] - 1 > lim))) {
+                    sh++;
+                }
+            lim = cell_f[xmax[s]+1] + range;
+            while (sh+1 < ns &&
+                   ((s+(sh+1) <  ns && cell_f[xmin[s+(sh+1)   ]  ]     < lim) ||
+                    (s+(sh+1) >= ns && cell_f[xmin[s+(sh+1)-ns]  ] + 1 < lim))) {
+                sh++;
+            }
+        }
     }
-  }
-  
-  comm->pme_maxshift = sh;
-
-  if (debug)
-    fprintf(debug,"PME slab communication range is %d\n",comm->pme_maxshift);
+    
+    ddpme->maxshift = sh;
+    
+    if (debug)
+        fprintf(debug,"PME slab communication range is %d\n",ddpme->maxshift);
 }
 
 static void check_box_size(gmx_domdec_t *dd,matrix box)
@@ -1774,7 +1794,7 @@ static void check_box_size(gmx_domdec_t *dd,matrix box)
 }
 
 static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
-				  ivec np)
+                                  ivec np)
 {
   gmx_domdec_comm_t *comm;
   int  d,j;
@@ -1840,283 +1860,318 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
   if (!dd->bDynLoadBal)
     copy_rvec(cellsize_min,comm->cellsize_min);
 
-  if (comm->npmenodes)
-    set_pme_maxshift(dd,comm->slb_frac[XX]==NULL,box,comm->pme_dim_f);
+  if (comm->npmenodes) {
+      set_pme_maxshift(dd,0,&comm->ddpme[0],
+                       comm->slb_frac[XX]==NULL,box,comm->pme_dim_f);
+  }
+}
+
+static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
+                                       int d,int dim,gmx_domdec_root_t *root,
+                                       matrix box,bool bDynamicBox,
+                                       bool bUniform,int step)
+{
+    gmx_domdec_comm_t *comm;
+    int  d1,i,j,pos,nmin,nmin_old;
+    bool bLimLo,bLimHi;
+    real load_aver,load_i,imbalance,change;
+    real cellsize_limit_f,dist_min_f,fac,space,halfway;
+    real change_max = 0.05;
+    real relax = 0.5;
+
+    comm = dd->comm;
+
+    /* Store the original boundaries */
+    for(i=0; i<dd->nc[dim]+1; i++) {
+        root->old_cell_f[i] = root->cell_f[i];
+    }
+    if (bUniform) {
+        for(i=0; i<dd->nc[dim]; i++) {
+            root->cell_size[i] = 1.0/dd->nc[dim];
+        }
+    } else if (dd_load_count(comm)) {
+        load_aver = comm->load[d].sum_m/dd->nc[dim];
+        for(i=0; i<dd->nc[dim]; i++) {
+            /* Determine the relative imbalance of cell i */
+            load_i = comm->load[d].load[i*comm->load[d].nload+2];
+            imbalance = (load_i - load_aver)/load_aver;
+            /* Determine the change of the cell size using underrelaxation */
+            change = -relax*imbalance;
+            /* Limit the amount of scaling */
+            if (change > change_max) {
+                change = change_max;
+            } else if (change < -change_max) {
+                change = -change_max;
+            }
+            /* Set the optimal cell size */
+            root->cell_size[i] *= 1 + change;
+        }
+    }
+    
+    cellsize_limit_f  = comm->cellsize_min[dim]/box[dim][dim];
+    cellsize_limit_f *= DD_CELL_MARGIN;
+    dist_min_f        = grid_jump_limit(comm,d)/box[dim][dim];
+    dist_min_f       *= DD_CELL_MARGIN;
+    if (dd->tric_dir[dim]) {
+        cellsize_limit_f /= dd->skew_fac[dim];
+        dist_min_f       /= dd->skew_fac[dim];
+    }
+    if (bDynamicBox && d > 0) {
+        dist_min_f *= DD_PRES_SCALE_MARGIN;
+    }
+    if (d > 0 && !bUniform) {
+        /* Make sure that the grid is not shifted too much */
+        for(i=1; i<dd->nc[dim]; i++) {
+            root->bound_min[i] = root->cell_f_max0[i-1] + dist_min_f;
+            space = root->cell_f[i] - (root->cell_f_max0[i-1] + dist_min_f);
+            if (space > 0) {
+                root->bound_min[i] += 0.5*space;
+            }
+            root->bound_max[i] = root->cell_f_min1[i] - dist_min_f;
+            space = root->cell_f[i] - (root->cell_f_min1[i] - dist_min_f);
+            if (space < 0) {
+                root->bound_max[i] += 0.5*space;
+            }
+            if (debug) {
+                fprintf(debug,
+                        "dim %d boundary %d %.3f < %.3f < %.3f < %.3f < %.3f\n",
+                        d,i,
+                        root->cell_f_max0[i-1] + dist_min_f,
+                        root->bound_min[i],root->cell_f[i],root->bound_max[i],
+                        root->cell_f_min1[i] - dist_min_f);
+            }
+        }
+    }
+    
+    for(i=0; i<dd->nc[dim]; i++) {
+        root->bCellMin[i] = FALSE;
+    }
+    nmin = 0;
+    do {
+        nmin_old = nmin;
+        /* We need the total for normalization */
+        fac = 0;
+        for(i=0; i<dd->nc[dim]; i++) {
+            if (root->bCellMin[i] == FALSE) {
+                fac += root->cell_size[i];
+            }
+        }
+        fac = (1 - nmin*dist_min_f)/fac;
+        /* Determine the cell boundaries */
+        root->cell_f[0] = 0;
+        for(i=0; i<dd->nc[dim]; i++) {
+            if (root->bCellMin[i] == FALSE) {
+                root->cell_size[i] *= fac;
+                if (root->cell_size[i] < cellsize_limit_f) {
+                    root->bCellMin[i] = TRUE;
+                    root->cell_size[i] = cellsize_limit_f;
+                    nmin++;
+                }
+            }
+            root->cell_f[i+1] = root->cell_f[i] + root->cell_size[i];
+        }
+    } while (nmin > nmin_old);
+    
+    /* Set the last boundary to exactly 1 */
+    i = dd->nc[dim] - 1;
+    root->cell_f[i+1] = 1;
+    root->cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
+    /* For this check we should not use DD_CELL_MARGIN,
+     * but a slightly smaller factor,
+     * since rounding could get use below the limit.
+     */
+    if (root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
+        gmx_fatal(FARGS,"Step %d: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
+                  step,dim2char(dim),box[dim][dim],dd->skew_fac[dim],
+                  dd->nc[dim],comm->cellsize_min[dim]);
+    
+    root->bLimited = (nmin > 0);
+    
+    if (!bUniform) {
+        /* Check if the boundary did not displace more than halfway
+         * each of the cells it bounds, as this could cause problems,
+         * especially when the differences between cell sizes are large.
+         * If changes are applied, they will not make cells smaller
+         * than the cut-off, as we check all the boundaries which
+         * might be affected by a change and if the old state was ok,
+         * the cells will at most be shrunk back to their old size.
+         */
+        for(i=1; i<dd->nc[dim]; i++) {
+            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
+            if (root->cell_f[i] < halfway) {
+                root->cell_f[i] = halfway;
+                /* Check if the change also causes shifts of the next boundaries */
+                for(j=i+1; j<dd->nc[dim]; j++) {
+                    if (root->cell_f[j] < root->cell_f[j-1] + cellsize_limit_f)
+                        root->cell_f[j] =  root->cell_f[j-1] + cellsize_limit_f;
+                }
+            }
+            halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i+1]);
+            if (root->cell_f[i] > halfway) {
+                root->cell_f[i] = halfway;
+                /* Check if the change also causes shifts of the next boundaries */
+                for(j=i-1; j>=1; j--) {
+                    if (root->cell_f[j] > root->cell_f[j+1] - cellsize_limit_f)
+                        root->cell_f[j] = root->cell_f[j+1] - cellsize_limit_f;
+                }
+            }
+        }
+    }
+    
+    if (d > 0) {
+        /* Take care of the staggering of the cell boundaries */
+        if (bUniform) {
+            for(i=0; i<dd->nc[dim]; i++) {
+                root->cell_f_max0[i] = root->cell_f[i];
+                root->cell_f_min1[i] = root->cell_f[i+1];
+            }
+        } else {
+            for(i=1; i<dd->nc[dim]; i++) {
+                bLimLo = (root->cell_f[i] < root->bound_min[i]);
+                bLimHi = (root->cell_f[i] > root->bound_max[i]);
+                if (bLimLo && bLimHi) {
+                    /* Both limits violated, try the best we can */
+                    root->cell_f[i] = 0.5*(root->bound_min[i] + root->bound_max[i]);
+                } else if (bLimLo) {
+                    root->cell_f[i] = root->bound_min[i];
+                } else if (bLimHi) {
+                    root->cell_f[i] = root->bound_max[i];
+                }
+                if (bLimLo || bLimHi)
+                    root->bLimited = TRUE;
+            }
+        }
+    }
+    /* After the checks above, the cells should obey the cut-off
+     * restrictions, but it does not hurt to check.
+     */
+    for(i=0; i<dd->nc[dim]; i++)
+        if (root->cell_f[i+1] - root->cell_f[i] <
+            cellsize_limit_f/DD_CELL_MARGIN)
+            fprintf(stderr,
+                    "\nWARNING step %d: direction %c, cell %d too small: %f\n",
+                    step,dim2char(dim),i,
+                    (root->cell_f[i+1] - root->cell_f[i])
+                    *box[dim][dim]*dd->skew_fac[dim]);
+    
+    pos = dd->nc[dim] + 1;
+    /* Store the cell boundaries of the lower dimensions at the end */
+    for(d1=0; d1<d; d1++) {
+        root->cell_f[pos++] = comm->cell_f0[d1];
+        root->cell_f[pos++] = comm->cell_f1[d1];
+    }
+    
+    if (d == 0 && comm->npmenodes > 0) {
+        /* The master determines the maximum shift for
+         * the coordinate communication between separate PME nodes.
+         */
+        set_pme_maxshift(dd,d,&comm->ddpme[d],
+                         bUniform,box,root->cell_f);
+    }
+    root->cell_f[pos++] = comm->ddpme[0].maxshift;
+}    
+
+static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
+                                         int d,int dim,real *cell_f_row,
+                                         matrix box)
+{
+    gmx_domdec_comm_t *comm;
+    int d1,dim1,pos;
+
+    comm = dd->comm;
+
+#ifdef GMX_MPI
+    /* Each node would only need to know two fractions,
+     * but it is probably cheaper to broadcast the whole array.
+     */
+    MPI_Bcast(cell_f_row,DD_CELL_F_SIZE(dd,d)*sizeof(real),MPI_BYTE,
+              0,comm->mpi_comm_load[d]);
+#endif
+    /* Copy the fractions for this dimension from the buffer */
+    comm->cell_f0[d] = cell_f_row[dd->ci[dim]  ];
+    comm->cell_f1[d] = cell_f_row[dd->ci[dim]+1];
+    pos = dd->nc[dim] + 1;
+    for(d1=0; d1<=d; d1++) {
+        if (d1 < d) {
+            /* Copy the cell fractions of the lower dimensions */
+            comm->cell_f0[d1] = cell_f_row[pos++];
+            comm->cell_f1[d1] = cell_f_row[pos++];
+        }
+        /* Set the cell dimensions */
+        dim1 = dd->dim[d1];
+        dd->cell_x0[dim1] = comm->cell_f0[d1]*box[dim1][dim1];
+        dd->cell_x1[dim1] = comm->cell_f1[d1]*box[dim1][dim1];
+    }
+    /* Convert the communicated shift from float to int */
+    comm->ddpme[0].maxshift = (int)(cell_f_row[pos++] + 0.5);
 }
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
-				  bool bUniform,int step)
+                                  bool bUniform,int step)
 {
-  gmx_domdec_comm_t *comm;
-  gmx_domdec_root_t *root=NULL;
-  int  d,d1,dim,dim1,i,j,pos,nmin,nmin_old;
-  bool bRowMember,bRowRoot,bLimLo,bLimHi;
-  real load_aver,load_i,imbalance,change;
-  real cellsize_limit_f,dist_min_f,fac,space,halfway;
-  real *cell_f_row;
-  real change_max = 0.05;
-  real relax = 0.5;
+    gmx_domdec_comm_t *comm;
+    int d,dim,d1;
+    bool bRowMember,bRowRoot;
+    real *cell_f_row;
 
-  comm = dd->comm;
-
-  for(d=0; d<dd->ndim; d++) {
-    dim = dd->dim[d];
-    bRowMember = TRUE;
-    bRowRoot = TRUE;
-    for(d1=d; d1<dd->ndim; d1++) {
-      if (dd->ci[dd->dim[d1]] > 0) {
-	if (d1 > d)
-	  bRowMember = FALSE;
-	bRowRoot = FALSE;
-      }
+    comm = dd->comm;
+    
+    for(d=0; d<dd->ndim; d++) {
+        dim = dd->dim[d];
+        bRowMember = TRUE;
+        bRowRoot = TRUE;
+        for(d1=d; d1<dd->ndim; d1++) {
+            if (dd->ci[dd->dim[d1]] > 0) {
+                if (d1 > d) {
+                    bRowMember = FALSE;
+                }
+                bRowRoot = FALSE;
+            }
+        }
+        if (bRowMember) {
+            if (bRowRoot) {
+                set_dd_cell_sizes_dlb_root(dd,d,dim,comm->root[d],
+                                           box,bDynamicBox,bUniform,step);
+                cell_f_row = comm->root[d]->cell_f;
+            } else {
+                cell_f_row = comm->cell_f_row;
+            }
+            distribute_dd_cell_sizes_dlb(dd,d,dim,cell_f_row,box);
+        }
     }
     
-    if (bRowRoot) {
-      root = comm->root[d];
-      /* Store the original boundaries */
-      for(i=0; i<dd->nc[dim]+1; i++)
-	root->old_cell_f[i] = root->cell_f[i];
-      if (bUniform) {
-	for(i=0; i<dd->nc[dim]; i++)
-	  root->cell_size[i] = 1.0/dd->nc[dim];
-      } else if (dd_load_count(comm)) {
-	load_aver = comm->load[d].sum_m/dd->nc[dim];
-	for(i=0; i<dd->nc[dim]; i++) {
-	  /* Determine the relative imbalance of cell i */
-	  load_i = comm->load[d].load[i*comm->load[d].nload+2];
-	  imbalance = (load_i - load_aver)/load_aver;
-	  /* Determine the change of the cell size using underrelaxtion */
-	  change = -relax*imbalance;
-	  /* Limit the amount of scaling */
-	  if (change > change_max)
-	    change = change_max;
-	  else if (change < -change_max)
-	    change = -change_max;
-	  /* Set the optimal cell size */
-	  root->cell_size[i] *= 1 + change;
-	}
-      }
-
-      cellsize_limit_f  = comm->cellsize_min[dim]/box[dim][dim];
-      cellsize_limit_f *= DD_CELL_MARGIN;
-      dist_min_f        = grid_jump_limit(comm,d)/box[dim][dim];
-      dist_min_f       *= DD_CELL_MARGIN;
-      if (dd->tric_dir[dim]) {
-	cellsize_limit_f /= dd->skew_fac[dim];
-	dist_min_f       /= dd->skew_fac[dim];
-      }
-      if (bDynamicBox && d > 0)
-	dist_min_f *= DD_PRES_SCALE_MARGIN;
-
-      if (d > 0 && !bUniform) {
-	/* Make sure that the grid is not shifted too much */
-	for(i=1; i<dd->nc[dim]; i++) {
-	  root->bound_min[i] = root->cell_f_max0[i-1] + dist_min_f;
-	  space = root->cell_f[i] - (root->cell_f_max0[i-1] + dist_min_f);
-	  if (space > 0)
-	    root->bound_min[i] += 0.5*space;
-	  root->bound_max[i] = root->cell_f_min1[i] - dist_min_f;
-	  space = root->cell_f[i] - (root->cell_f_min1[i] - dist_min_f);
-	  if (space < 0)
-	    root->bound_max[i] += 0.5*space;
-	  if (debug)
-	    fprintf(debug,
-		    "dim %d boundary %d %.3f < %.3f < %.3f < %.3f < %.3f\n",
-		    d,i,
-		    root->cell_f_max0[i-1] + dist_min_f,
-		    root->bound_min[i],root->cell_f[i],root->bound_max[i],
-		    root->cell_f_min1[i] - dist_min_f);
-	}
-      }
-
-      for(i=0; i<dd->nc[dim]; i++)
-	root->bCellMin[i] = FALSE;
-      nmin = 0;
-      do {
-	nmin_old = nmin;
-	/* We need the total for normalization */
-	fac = 0;
-	for(i=0; i<dd->nc[dim]; i++) {
-	  if (root->bCellMin[i] == FALSE)
-	    fac += root->cell_size[i];
-	}
-	fac = (1 - nmin*dist_min_f)/fac;
-	/* Determine the cell boundaries */
-	root->cell_f[0] = 0;
-	for(i=0; i<dd->nc[dim]; i++) {
-	  if (root->bCellMin[i] == FALSE) {
-	    root->cell_size[i] *= fac;
-	    if (root->cell_size[i] < cellsize_limit_f) {
-	      root->bCellMin[i] = TRUE;
-	      root->cell_size[i] = cellsize_limit_f;
-	      nmin++;
-	    }
-	  }
-	  root->cell_f[i+1] = root->cell_f[i] + root->cell_size[i];
-	}
-      } while (nmin > nmin_old);
-
-      /* Set the last boundary to exactly 1 */
-      i = dd->nc[dim] - 1;
-      root->cell_f[i+1] = 1;
-      root->cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
-      /* For this check we should not use DD_CELL_MARGIN,
-       * but a slightly smaller factor,
-       * since rounding could get use below the limit.
-       */
-      if (root->cell_size[i] < cellsize_limit_f*DD_CELL_MARGIN2/DD_CELL_MARGIN)
-	gmx_fatal(FARGS,"Step %d: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
-		  step,dim2char(dim),box[dim][dim],dd->skew_fac[dim],
-		  dd->nc[dim],comm->cellsize_min[dim]);
-
-      root->bLimited = (nmin > 0);
-      
-      if (!bUniform) {
-	/* Check if the boundary did not displace more than halfway
-	 * each of the cells it bounds, as this could cause problems,
-	 * especially when the differences between cell sizes are large.
-	 * If changes are applied, they will not make cells smaller
-	 * than the cut-off, as we check all the boundaries which
-	 * might be affected by a change and if the old state was ok,
-	 * the cells will at most be shrunk back to their old size.
-	 */
-	for(i=1; i<dd->nc[dim]; i++) {
-	  halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
-	  if (root->cell_f[i] < halfway) {
-	    root->cell_f[i] = halfway;
-	    /* Check if the change also causes shifts of the next boundaries */
-	    for(j=i+1; j<dd->nc[dim]; j++) {
-	      if (root->cell_f[j] < root->cell_f[j-1] + cellsize_limit_f)
-		root->cell_f[j] =  root->cell_f[j-1] + cellsize_limit_f;
-	    }
-	  }
-	  halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i+1]);
-	  if (root->cell_f[i] > halfway) {
-	    root->cell_f[i] = halfway;
-	    /* Check if the change also causes shifts of the next boundaries */
-	    for(j=i-1; j>=1; j--) {
-	      if (root->cell_f[j] > root->cell_f[j+1] - cellsize_limit_f)
-		root->cell_f[j] = root->cell_f[j+1] - cellsize_limit_f;
-	    }
-	  }
-	}
-      }
-
-      if (d > 0) {
-	/* Take care of the staggering of the cell boundaries */
-	if (bUniform) {
-	  for(i=0; i<dd->nc[dim]; i++) {
-	    root->cell_f_max0[i] = root->cell_f[i];
-	    root->cell_f_min1[i] = root->cell_f[i+1];
-	  }
-	} else {
-	  for(i=1; i<dd->nc[dim]; i++) {
-	    bLimLo = (root->cell_f[i] < root->bound_min[i]);
-	    bLimHi = (root->cell_f[i] > root->bound_max[i]);
-	    if (bLimLo && bLimHi) {
-	      /* Both limits violated, try the best we can */
-	      root->cell_f[i] = 0.5*(root->bound_min[i] + root->bound_max[i]);
-	    } else if (bLimLo) {
-	      root->cell_f[i] = root->bound_min[i];
-	    } else if (bLimHi) {
-	      root->cell_f[i] = root->bound_max[i];
-	    }
-	    if (bLimLo || bLimHi)
-	      root->bLimited = TRUE;
-	  }
-	}
-      }
-      /* After the checks above, the cells should obey the cut-off
-       * restrictions, but it does not hurt to check.
-       */
-      for(i=0; i<dd->nc[dim]; i++)
-	if (root->cell_f[i+1] - root->cell_f[i] <
-	    cellsize_limit_f/DD_CELL_MARGIN)
-	  fprintf(stderr,
-		  "\nWARNING step %d: direction %c, cell %d too small: %f\n",
-		  step,dim2char(dim),i,
-		  (root->cell_f[i+1] - root->cell_f[i])
-		  *box[dim][dim]*dd->skew_fac[dim]);
-    
-      pos = dd->nc[dim] + 1;
-      /* Store the cell boundaries of the lower dimensions at the end */
-      for(d1=0; d1<d; d1++) {
-	root->cell_f[pos++] = comm->cell_f0[d1];
-	root->cell_f[pos++] = comm->cell_f1[d1];
-      }
-      
-      if (d == 0 && comm->npmenodes > 0) {
-	/* The master determines the maximum shift for
-	 * the coordinate communication between separate PME nodes.
-	 */
-	set_pme_maxshift(dd,bUniform,box,root->cell_f);
-      }
-      root->cell_f[pos++] = comm->pme_maxshift;
+    /* Set the dimensions for which no DD is used */
+    for(dim=0; dim<DIM; dim++) {
+        if (dd->nc[dim] == 1) {
+            dd->cell_x0[dim] = 0;
+            dd->cell_x1[dim] = box[dim][dim];
+        }
     }
-
-    if (bRowMember) {
-      if (bRowRoot)
-	cell_f_row = root->cell_f;
-      else
-	cell_f_row = comm->cell_f_row;
-#ifdef GMX_MPI
-      /* Each node would only need to know two fractions,
-       * but it is probably cheaper to broadcast the whole array.
-       */
-      MPI_Bcast(cell_f_row,DD_CELL_F_SIZE(dd,d)*sizeof(real),MPI_BYTE,
-		0,dd->comm->mpi_comm_load[d]);
-#endif
-      /* Copy the fractions for this dimension from the buffer */
-      comm->cell_f0[d] = cell_f_row[dd->ci[dim]  ];
-      comm->cell_f1[d] = cell_f_row[dd->ci[dim]+1];
-      pos = dd->nc[dim] + 1;
-      for(d1=0; d1<=d; d1++) {
-	if (d1 < d) {
-	  /* Copy the cell fractions of the lower dimensions */
-	  comm->cell_f0[d1] = cell_f_row[pos++];
-	  comm->cell_f1[d1] = cell_f_row[pos++];
-	}
-	/* Set the cell dimensions */
-	dim1 = dd->dim[d1];
-	dd->cell_x0[dim1] = comm->cell_f0[d1]*box[dim1][dim1];
-	dd->cell_x1[dim1] = comm->cell_f1[d1]*box[dim1][dim1];
-      }
-      comm->pme_maxshift = (int)(cell_f_row[pos++] + 0.5);
-    }
-  }
-  
-  /* Set the dimensions for which no DD is used */
-  for(dim=0; dim<DIM; dim++) {
-    if (dd->nc[dim] == 1) {
-      dd->cell_x0[dim] = 0;
-      dd->cell_x1[dim] = box[dim][dim];
-    }
-  }
 }
 
 static void realloc_comm_ind(gmx_domdec_t *dd,ivec npulse)
 {
-  int d,np,i;
-  gmx_domdec_comm_dim_t *cd;
-
-  for(d=0; d<dd->ndim; d++) {
-    cd = &dd->comm->cd[d];
-    np = npulse[dd->dim[d]];
-    if (np > cd->np_nalloc) {
-      if (debug)
-	fprintf(debug,"(Re)allocing cd for %c to %d pulses\n",
-		dim2char(dd->dim[d]),np);
-      if (DDMASTER(dd) && cd->np_nalloc > 0)
-	fprintf(stderr,"\nIncreasing the number of cell to communicate in dimension %c to %d for the first time\n",dim2char(dd->dim[d]),np);
-      srenew(cd->ind,np);
-      for(i=cd->np_nalloc; i<np; i++) {
-	cd->ind[i].index  = NULL;
-	cd->ind[i].nalloc = 0;
-      }
-      cd->np_nalloc = np;
+    int d,np,i;
+    gmx_domdec_comm_dim_t *cd;
+    
+    for(d=0; d<dd->ndim; d++) {
+        cd = &dd->comm->cd[d];
+        np = npulse[dd->dim[d]];
+        if (np > cd->np_nalloc) {
+            if (debug)
+                fprintf(debug,"(Re)allocing cd for %c to %d pulses\n",
+                        dim2char(dd->dim[d]),np);
+            if (DDMASTER(dd) && cd->np_nalloc > 0)
+                fprintf(stderr,"\nIncreasing the number of cell to communicate in dimension %c to %d for the first time\n",dim2char(dd->dim[d]),np);
+            srenew(cd->ind,np);
+            for(i=cd->np_nalloc; i<np; i++) {
+                cd->ind[i].index  = NULL;
+                cd->ind[i].nalloc = 0;
+            }
+            cd->np_nalloc = np;
+        }
+        cd->np = np;
     }
-    cd->np = np;
-  }
 }
 
 
@@ -3798,12 +3853,22 @@ void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order)
   
   comm->bCartesianPP = (dd_node_order == ddnoCARTESIAN);
   comm->bCartesianPP_PME = FALSE;
-
+  
+  /* Reorder the nodes by default. This might change the MPI ranks.
+   * Real reordering is only supported on very few architectures,
+   * Blue Gene is one of them.
+   */
   CartReorder = (getenv("GMX_NO_CART_REORDER") == NULL);
 
   if (cr->npmenodes > 0) {
     /* Split the communicator into a PP and PME part */
     split_communicator(fplog,cr,dd_node_order,CartReorder);
+    if (comm->bCartesianPP_PME) {
+      /* We (possibly) reordered the nodes in split_communicator,
+       * so it is no longer required in make_pp_communicator.
+       */
+      CartReorder = FALSE;
+    }
   } else {
     /* All nodes do PP and PME */
 #ifdef GMX_MPI    
@@ -4130,17 +4195,17 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
   real limit;
   char buf[64];
 
-  if (EEL_PME(ir->coulombtype)) {
-    set_pme_x_limits(dd);
-    set_slb_pme_dim_f(dd);
-  } else {
-    dd->comm->npmenodes = 0;
-    if (dd->pme_nodeid >= 0)
-      gmx_fatal(FARGS,
-		"Can not have separate PME nodes without PME electrostatics");
-  }
-
   comm = dd->comm;
+
+  if (EEL_PME(ir->coulombtype)) {
+      init_ddpme(dd,&comm->ddpme[0],XX,comm->npmenodes);
+      init_ddpme(dd,&comm->ddpme[1],YY,1);
+      set_slb_pme_dim_f(dd);
+  } else {
+      comm->npmenodes = 0;
+      if (dd->pme_nodeid >= 0)
+          gmx_fatal(FARGS,"Can not have separate PME nodes without PME electrostatics");
+  }
 
   /* If each molecule is a single charge group
    * or we use domain decomposition for each periodic dimension,
@@ -5267,11 +5332,12 @@ void dd_partition_system(FILE            *fplog,
     make_local_shells(cr->dd,mdatoms,shellfc);
   }
 
-  if (!(cr->duty & DUTY_PME))
-    /* Send the charges to our PME only node */
-    gmx_pme_send_q(cr,mdatoms->nChargePerturbed,
-		   mdatoms->chargeA,mdatoms->chargeB,
-		   dd->comm->pme_maxshift);
+  if (!(cr->duty & DUTY_PME)) {
+      /* Send the charges to our PME only node */
+      gmx_pme_send_q(cr,mdatoms->nChargePerturbed,
+                     mdatoms->chargeA,mdatoms->chargeB,
+                     dd->comm->ddpme[0].maxshift);
+  }
 
   if (dd->constraints || top_global->idef.il[F_SETTLE].nr>0)
     set_constraints(constr,top_local,ir,mdatoms,dd);
