@@ -47,6 +47,7 @@
 #include "gmx_fatal.h"
 #include "txtdump.h"
 #include "nrnb.h"
+#include "copyrite.h"
 
 /* 
  * This file implements temperature and pressure coupling algorithms:
@@ -375,6 +376,23 @@ void berendsen_pscale(t_inputrec *ir,matrix mu,
    * since the box vectors might have changed
    */
   inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
+}
+
+void berendsen_tcoupl_init(t_groups *grps,t_inputrec *ir,
+			   FILE *fplog)
+{
+  int i;
+
+  if ((ir->etc==etcBERENDSEN) || (ir->epc==epcBERENDSEN)) {
+    please_cite(fplog,"Berendsen84a");
+  }
+  
+  /* Set Berendsen tcoupl lambda's to 1, 
+   * so runs without Berendsen coupling are not affected.
+   */
+  for(i=0; i<ir->opts.ngtc; i++) {
+    grps->tcstat[i].lambda = 1.0;
+  }
 }
 
 void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt)

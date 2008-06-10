@@ -722,17 +722,6 @@ void update(FILE         *fplog,
   matrix           M;
   tensor           vir_con;
   
-  if (bFirstStep) {
-    if ((inputrec->etc==etcBERENDSEN) || (inputrec->epc==epcBERENDSEN))
-      please_cite(fplog,"Berendsen84a");
-
-    /* Set Berendsen tcoupl lambda's to 1, 
-     * so runs without Berendsen coupling are not affected.
-     */
-    for(i=0; i<inputrec->opts.ngtc; i++)
-      grps->tcstat[i].lambda = 1.0;
-  }
-
   start  = md->start;
   homenr = md->homenr;
 

@@ -1116,18 +1116,23 @@ void init_md(FILE *fplog,
     if(ir->opts.annealing[i]!=eannNO)
       *bSimAnn = TRUE;
   }
-  if(*bSimAnn) 
-    update_annealing_target_temp(&(ir->opts),ir->init_t); 
+  if (*bSimAnn) {
+    update_annealing_target_temp(&(ir->opts),ir->init_t);
+  }
 
   *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
   
-  if (sd && (ir->eI == eiBD || EI_SD(ir->eI)))
+  if (sd && (ir->eI == eiBD || EI_SD(ir->eI))) {
     *sd = init_stochd(fplog,ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
 		      ir->ld_seed);
+  }
 
-  if (vcm)
+  if (vcm) {
     *vcm = init_vcm(fplog,&top->atoms,ir);
-    
+  }
+   
+  berendsen_tcoupl_init(grps,ir,fplog);
+ 
   init_nrnb(nrnb);
   
   if (nfile != -1) {
