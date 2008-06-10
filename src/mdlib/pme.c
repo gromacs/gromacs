@@ -149,6 +149,7 @@ typedef struct {
     rvec *fractx;            /* Fractional coordinate relative to the
                               * lower cell boundary 
                               */
+    bool bClearF;
 } pme_atomcomm_t;
 
 typedef struct gmx_pme {
@@ -978,7 +979,7 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
 }
 
 void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
-                       bool bClear,pme_atomcomm_t *atc,real scale)
+                       bool bClearF,pme_atomcomm_t *atc,real scale)
 {
     /* sum forces for local particles */  
     int     nn,n,*i0,*j0,*k0,*ii0,*jj0,*kk0,ithx,ithy,ithz;
@@ -1011,11 +1012,15 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
     rzy   = pme->recipbox[ZZ][YY];
     rzz   = pme->recipbox[ZZ][ZZ];
     
+    if (!atc->bClearF) {
+        bClearF = FALSE;
+    }
+
     for(nn=0; (nn<atc->n); nn++) {
         n = nn;
         qn      = scale*atc->q[n];
         
-        if (bClear) {
+        if (bClearF) {
             atc->f[n][XX] = 0;
             atc->f[n][YY] = 0;
             atc->f[n][ZZ] = 0;
@@ -1279,7 +1284,8 @@ int pme_inconvenient_nnodes(int nkx,int nky,int nnodes)
   return ret;
 }
 
-static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,bool bSpread)
+static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
+                          bool bSpread,bool bClearF)
 {
     int lbnd,rbnd,maxlr,b,i;
     int nn,nk;
@@ -1294,6 +1300,7 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,bool bSpread)
 
     atc->bSpread   = bSpread;
     atc->pme_order = pme->pme_order;
+    atc->bClearF   = bClearF;
 }
 
 static void init_overlap_comm(gmx_pme_t pme,pme_overlap_t *ol)
@@ -1413,7 +1420,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     pme->epsilon_r   = ir->epsilon_r;
     
     /* Use atc[0] for spreading */
-    init_atomcomm(pme,&pme->atc[0],TRUE);
+    init_atomcomm(pme,&pme->atc[0],TRUE,!(cr->duty & DUTY_PP));
     
     if (pme->nkx <= pme->pme_order*(pme->nnodes > 1 ? 2 : 1) ||
         pme->nky <= pme->pme_order ||
