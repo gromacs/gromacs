@@ -174,9 +174,16 @@ typedef union
 
 typedef int t_functype;
 
+/*
+ * The nonperturbed/perturbed interactions are now separated (sorted) in the
+ * ilist, such that the first 0..(nr_nonperturbed-1) ones are exactly that, and 
+ * the remaining ones from nr_nonperturbed..(nr-1) are perturbed bonded 
+ * interactions.
+ */
 typedef struct
 {
   int nr;
+  int nr_nonperturbed;
   t_iatom *iatoms;
   int nalloc;
 } t_ilist;
