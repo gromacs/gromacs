@@ -311,7 +311,9 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	break;
       case econqDeriv:
       case econqForce:
-	settle_proj(fplog,nsettle,settle->iatoms,x,dOH,dHH,mO,mH,
+	settle_proj(fplog,nsettle,settle->iatoms,x,dOH,dHH,
+		    md->invmass[settle->iatoms[1]],
+		    md->invmass[settle->iatoms[1]+1],
 		    xprime,min_proj);
 
 	/* This is an overestimate */
