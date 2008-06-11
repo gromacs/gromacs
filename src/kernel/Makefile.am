@@ -19,8 +19,7 @@ gen_ad.c 	gen_ad.h	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
 gmxcpp.c	gmxcpp.h	\
-gmx_xml.c	gmx_xml.h	\
-gpp_atomtype.c	gpp_atomtype.h	\
+gpp_atomtype.c		\
 gpp_bond_atomtype.c	gpp_bond_atomtype.h	\
 h_db.c		h_db.h		\
 hackblock.c	hackblock.h	\
@@ -30,7 +29,6 @@ pgutil.c	pgutil.h	\
 readir.c	readir.h	\
 readpull.c	\
 resall.c	resall.h	\
-slater_S_integrals.c	slater_S_integrals.h	\
 sorting.c 	sorting.h	\
 specbond.c	specbond.h	\
 ter_db.c	ter_db.h	\
@@ -44,13 +42,7 @@ topshake.c 	topshake.h	\
 toputil.c	toputil.h	\
 tpbcmp.c	tpbcmp.h	\
 vsite_parm.c	vsite_parm.h	\
-xlate.c		xlate.h		\
-x2top_qgen.c		\
-x2top_matrix.c		\
-x2top_core.c	x2top_core.h	\
-nm2type.c	x2top_nm2type.h	\
-x2top_qalpha.h	x2top_qalpha.c	\
-x2top_eemprops.c
+xlate.c		xlate.h	
 
 bin_PROGRAMS = \
 	grompp		mdrun		tpbconv	  	pdb2gmx		\
@@ -69,7 +61,7 @@ protonate_SOURCES = protonate.c
 
 gmxcheck_SOURCES = gmxcheck.c
 
-x2top_SOURCES = x2top.c
+x2top_SOURCES = x2top.c nm2type.c x2top.h
 
 mdrun_SOURCES = \
 	glaasje.c 	glaasje.h 	gctio.c 	\
