@@ -106,6 +106,7 @@ sysstuff.h \
 tags.h \
 tgroup.h \
 tgroup.h \
+topsort.h \
 tpxio.h \
 transfer.h \
 trnio.h \

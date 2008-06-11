@@ -11,12 +11,14 @@
 #include "vec.h"
 #include "pbc.h"
 #include "gmx_random.h"
+#include "topsort.h"
 
 typedef struct gmx_reverse_top {
   bool bConstr; /* Are there constraint in this revserse top?   */
   bool bBCheck; /* All bonded interactions have to be assigned? */
   int  *index;  /* Index for each atom into il                  */ 
   int  *il;     /* ftype|type|a0|...|an|ftype|...               */
+  int  ilsort;  /* The sorting state of bondeds for free energy */
 } gmx_reverse_top_t;
 
 /* Static pointers only used for an error message */
@@ -305,6 +307,21 @@ static gmx_reverse_top_t *make_reverse_top(int natoms,t_idef *idef,
   *nint = low_make_reverse_top(idef,atom,vsite_pbc,count,rt,TRUE);
 
   sfree(count);
+
+  switch (idef->ilsort) {
+  case ilsortUNKNOWN:
+    gmx_incons("idef->ilsort is unknown");
+    break;
+  case ilsortNO_FE:
+    rt->ilsort = ilsortNO_FE;
+    break;
+  case ilsortFE_UNSORTED:
+  case ilsortFE_SORTED:
+    rt->ilsort = ilsortFE_UNSORTED;
+    break;
+  default:
+    gmx_fatal(FARGS,"Unkown ilsort = %d",idef->ilsort);
+  }
 
   return rt;
 }
@@ -910,6 +927,12 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 					   dd->la2lc,
 					   pbc_null,fr->cg_cm,
 					   &ltop->idef,vsite);
+  }
+
+  if (dd->reverse_top->ilsort == ilsortNO_FE) {
+    ltop->idef.ilsort = ilsortNO_FE;
+  } else {
+    gmx_sort_ilist_fe(&ltop->idef);
   }
 
   nexcl = make_local_exclusions(dd,bRCheckExcl,

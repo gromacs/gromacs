@@ -50,7 +50,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	rando.c		random.c	gmx_random.c	rbin.c		\
 	readinp.c	replace.c	rmpbc.c		shift_util.c	\
 	sortwater.c	smalloc.c	statutil.c	\
-	strdb.c		string2.c	symtab.c	tpxio.c		\
+	strdb.c		string2.c	symtab.c	\
+	topsort.c	tpxio.c		\
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\

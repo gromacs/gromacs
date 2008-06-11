@@ -73,6 +73,7 @@
 #include "mpelogging.h"
 #include "domdec.h"
 #include "partdec.h"
+#include "topsort.h"
 #include "coulomb.h"
 #include "constr.h"
 #include "shellfc.h"
@@ -236,6 +237,11 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	if (!EI_TPI(inputrec->eI))
 	  split_system(fplog,inputrec,state,cr,top);
       }
+
+      if (top->idef.ilsort != ilsortNO_FE) {
+	gmx_sort_ilist_fe(&top->idef);
+      }
+
       snew(buf,top->atoms.nr);
       snew(f,top->atoms.nr);
     }

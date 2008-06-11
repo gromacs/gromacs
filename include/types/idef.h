@@ -207,6 +207,10 @@ typedef struct
  *	identifier is an index in a params[] and functype[] array.
  */
 
+enum {
+  ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
+};
+
 typedef struct
 {
   int ntypes;
@@ -217,6 +221,7 @@ typedef struct
   real fudgeQQ;
 
   t_ilist il[F_NRE];
+  int ilsort;
 } t_idef;
 
 /*

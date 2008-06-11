@@ -203,8 +203,10 @@ static void bc_idef(const t_commrec *cr,t_idef *idef)
   nblock_bc(cr,idef->ntypes,idef->functype);
   nblock_bc(cr,idef->ntypes,idef->iparams);
   block_bc(cr,idef->fudgeQQ);
-  for(i=0; (i<F_NRE); i++)
+  for(i=0; (i<F_NRE); i++) {
     bc_ilist(cr,&idef->il[i]);
+  }
+  block_bc(cr,idef->ilsort);
 }
 
 static void bc_grpopts(const t_commrec *cr,t_grpopts *g)

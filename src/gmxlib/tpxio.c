@@ -52,6 +52,7 @@
 #include "futil.h"
 #include "filenm.h"
 #include "gmxfio.h"
+#include "topsort.h"
 #include "tpxio.h"
 #include "txtdump.h"
 #include "confio.h"
@@ -1049,6 +1050,11 @@ static void do_idef(t_idef *idef,bool bRead, int file_version)
     if (bRead && gmx_debug_at)
       pr_ilist(debug,0,interaction_function[j].longname,
 	       idef,&idef->il[j],TRUE);  }
+  
+  if (bRead) {
+    /* We have not checked the sorting */
+    idef->ilsort = ilsortUNKNOWN;
+  }
 }
 
 static void do_block(t_block *block,bool bRead,int file_version)
@@ -1610,9 +1616,17 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
     }
   }
 
-  if (bRead && state->ngtc == 0 && tpx.bIr && ir) {
-    /* Reading old version without tcoupl state data: set it */
-    init_gtc_state(state,ir->opts.ngtc);
+  if (bRead && tpx.bIr && ir) {
+    /* Check for perturbed bonded interactions */
+    gmx_analyze_ilist_fe(&top->idef,ir);
+    if (ir->efep == efepNO) {
+      /* There are no perturbed interactions */
+      top->idef.ilsort = ilsortNO_FE;
+    }
+    if (state->ngtc == 0) {
+      /* Reading old version without tcoupl state data: set it */
+      init_gtc_state(state,ir->opts.ngtc);
+    }
   }
 
   return ePBC;
