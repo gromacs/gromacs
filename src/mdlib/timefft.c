@@ -51,6 +51,8 @@
 #include "gmx_parallel_3dfft.h"
 #endif
 
+#include "fftgrid.h"
+
 
 int main(int argc,char *argv[])
 {
@@ -88,7 +90,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
-  open_log(ftp2fn(efLOG,NFILE,fnm),cr);
+  gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,1);
 
   snew(niter,NNN);
   snew(ct,NNN);
@@ -111,15 +113,15 @@ int main(int argc,char *argv[])
       fprintf(stderr,"\r3D FFT (%s precision) %3d^3, niter %3d     ",
 	      (rsize == 8) ? "Double" : "Single",n,nit);
     
-    g  = mk_fftgrid(stdlog,(nnode > 1),n,n,n,bReproducible);
+    g  = mk_fftgrid(n,n,n,NULL,NULL,cr,bReproducible);
 
     if (PAR(cr))
       start = time(NULL);
     else
       start_time();
     for(j=0; (j<nit); j++) {
-      gmxfft3D(g,FFTW_FORWARD,cr);
-      gmxfft3D(g,FFTW_BACKWARD,cr);
+      gmxfft3D(g,GMX_FFT_REAL_TO_COMPLEX,cr);
+      gmxfft3D(g,GMX_FFT_COMPLEX_TO_REAL,cr);
     }
     if (PAR(cr)) 
       rt[i] = time(NULL)-start;
