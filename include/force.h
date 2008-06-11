@@ -46,6 +46,7 @@
 #include "pbc.h"
 #include "network.h"
 #include "tgroup.h"
+#include "vsite.h"
 
 static char *sepdvdlformat="  %-30s V %12.5e  dVdl %12.5e\n";
 
@@ -127,6 +128,39 @@ extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 /* Compute the average C6 and C12 params for LJ corrections */
 extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 			     const t_atoms *atoms,const t_blocka *excl);
+/* The state has changed */
+#define GMX_FORCE_STATECHANGED (1<<0)
+/* Do neighbor searching */
+#define GMX_FORCE_NS           (1<<1)
+/* Calculate bonded energies/forces */
+#define GMX_FORCE_BONDED       (1<<2)
+/* Calculate non-bonded energies/forces */
+#define GMX_FORCE_NONBONDED    (1<<3)
+/* Calculate forces (not only energies) */
+#define GMX_FORCE_FORCES       (1<<4)
+/* Normally one want all energy terms and forces */
+#define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
+
+extern void do_force(FILE *log,t_commrec *cr,
+		     t_inputrec *inputrec,
+		     int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
+		     t_topology *top,t_groups *grps,
+		     matrix box,rvec x[],rvec f[],rvec buf[],
+		     tensor vir_force,
+		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
+		     real lambda,t_graph *graph,
+		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
+		     real t,FILE *field,t_edsamyn *edyn,
+		     int flags);
+/* Communicate coordinates (if parallel).
+ * Do neighbor searching (if necessary).
+ * Calculate forces.
+ * Communicate forces (if parallel).
+ * Spread forces for vsites (if present).
+ *
+ * f is always required.
+ * buf is only required with GMX_FORCE_FORCES
+ */
 
 extern void ns(FILE       *fplog,
 	       t_forcerec *fr,
@@ -146,31 +180,28 @@ extern void ns(FILE       *fplog,
 	       bool       bDoForces);
 /* Call the neighborsearcher */
 
-extern void force(FILE         *fplog,  
-		  int          step,
-		  t_forcerec   *fr,
-		  t_inputrec   *ir,
-		  t_idef       *idef,
-		  t_commrec    *cr,
-		  t_nrnb       *nrnb,
-		  gmx_wallcycle_t wcycle,
-		  t_groups     *grps,
-		  t_mdatoms    *md,
-		  int          ngener,
-		  t_grpopts    *opts,
-		  rvec         x[],
-		  rvec         f[],    
-		  real         epot[], 
-		  t_fcdata     *fcd,
-		  matrix       box,
-		  real         lambda,
-		  t_graph      *graph,
-		  t_blocka     *excl,
-		  bool         bNBonly,
-		  bool         bDoForces,
-		  rvec         mu_tot[2],
-		  bool         bGatherOnly,
-		  t_edsamyn    *edyn);
+extern void do_force_lowlevel(FILE         *fplog,  
+			      int          step,
+			      t_forcerec   *fr,
+			      t_inputrec   *ir,
+			      t_idef       *idef,
+			      t_commrec    *cr,
+			      t_nrnb       *nrnb,
+			      gmx_wallcycle_t wcycle,
+			      t_groups     *grps,
+			      t_mdatoms    *md,
+			      int          ngener,
+			      t_grpopts    *opts,
+			      rvec         x[],
+			      rvec         f[],    
+			      real         epot[], 
+			      t_fcdata     *fcd,
+			      matrix       box,
+			      real         lambda,
+			      t_graph      *graph,
+			      t_blocka     *excl,
+			      rvec         mu_tot[2],
+			      int          flags);
 /* Call all the force routines */
 
 

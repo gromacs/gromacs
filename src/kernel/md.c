@@ -916,7 +916,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       do_force(fplog,cr,ir,step,nrnb,wcycle,top,grps,
 	       state->box,state->x,f,buf,force_vir,mdatoms,ener,fcd,
 	       state->lambda,graph,
-	       TRUE,bNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,t,fp_field,edyn);
+	       fr,vsite,mu_tot,t,fp_field,edyn,
+	       GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
+	       GMX_FORCE_ALLFORCES);
     }
 
     GMX_BARRIER(cr->mpi_comm_mygroup);

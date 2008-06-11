@@ -554,8 +554,9 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   do_force(fplog,cr,inputrec,
 	   count,nrnb,wcycle,top,grps,ems->s.box,ems->s.x,ems->f,
 	   *buf,force_vir,mdatoms,ener,fcd,
-	   ems->s.lambda,graph,TRUE,bNS,FALSE,TRUE,fr,vsite,
-	   mu_tot,FALSE,0.0,NULL,NULL);
+	   ems->s.lambda,graph,fr,vsite,mu_tot,0.0,NULL,NULL,
+	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
+	   (bNS ? GMX_FORCE_NS : 0));
 
   /* Clear the unused shake virial and pressure */
   clear_mat(shake_vir);
@@ -2705,8 +2706,10 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	do_force(fplog,cr,inputrec,
 		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
 		 buf,force_vir,mdatoms,ener,fcd,
-		 lambda,NULL,bStateChanged,bNS,TRUE,FALSE,fr,NULL,mu_tot,
-		 FALSE,t,NULL,NULL); 
+		 lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,
+		 GMX_FORCE_NONBONDED |
+		 (bNS ? GMX_FORCE_NS : 0) |
+		 (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
 	cr->nnodes = nnodes;
 	bStateChanged = FALSE;
 	bNS = FALSE;

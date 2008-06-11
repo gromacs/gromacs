@@ -153,18 +153,6 @@ extern void print_time(FILE *out,time_t start,int step,t_inputrec *ir);
 
 extern time_t print_date_and_time(FILE *log,int pid,char *title);
 
-extern void do_force(FILE *log,t_commrec *cr,
-		     t_inputrec *inputrec,
-		     int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		     t_topology *top,t_groups *grps,
-		     matrix box,rvec x[],rvec f[],rvec buf[],
-		     tensor vir_force,
-		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
-		     real lambda,t_graph *graph,
-		     bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
-		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-		     bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn);
-
 extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 

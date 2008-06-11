@@ -782,7 +782,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,grps,
 	   state->box,state->x,force[Min],buf,force_vir,md,ener,fcd,
 	   state->lambda,graph,
-	   TRUE,bDoNS,FALSE,TRUE,fr,vsite,mu_tot,FALSE,t,fp_field,NULL);
+	   fr,vsite,mu_tot,t,fp_field,NULL,
+	   GMX_FORCE_ALLFORCES | (bDoNS ? GMX_FORCE_NS : 0));
 
   sf_dir = 0;
   if (nflexcon) {
@@ -862,7 +863,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     do_force(fplog,cr,inputrec,1,nrnb,wcycle,
 	     top,grps,state->box,pos[Try],force[Try],buf,force_vir,
 	     md,ener,fcd,state->lambda,graph,
-	     TRUE,FALSE,FALSE,TRUE,fr,vsite,mu_tot,FALSE,t,fp_field,NULL);
+	     fr,vsite,mu_tot,t,fp_field,NULL,
+	     GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES);
     
     if (gmx_debug_at) {
       pr_rvecs(debug,0,"RELAX: force[Min]",force[Min] + start,homenr);

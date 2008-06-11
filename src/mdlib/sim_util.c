@@ -323,16 +323,16 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      tensor vir_force,
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 	      real lambda,t_graph *graph,
-	      bool bStateChanged,bool bNS,bool bNBFonly,bool bDoForces,
 	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-	      bool bGatherOnly,real t,FILE *field,t_edsamyn *edyn)
+	      real t,FILE *field,t_edsamyn *edyn,
+	      int flags)
 {
   static rvec box_size;
   int    cg0,cg1,i,j;
   int    start,homenr;
   static double mu[2*DIM]; 
   rvec   mu_tot_AB[2];
-  bool   bSepDVDL,bFillGrid,bCalcCGCM,bBS;
+  bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS,bDoForces;
   matrix boxs;
   real   e,dvdl;
   t_pbc  pbc;
@@ -357,8 +357,11 @@ void do_force(FILE *fplog,t_commrec *cr,
       cg1--;
   }
 
-  bFillGrid = (bNS && bStateChanged);
-  bCalcCGCM = (bFillGrid && !DOMAINDECOMP(cr));
+  bStateChanged = (flags & GMX_FORCE_STATECHANGED);
+  bNS           = (flags & GMX_FORCE_NS);
+  bFillGrid     = (bNS && bStateChanged);
+  bCalcCGCM     = (bFillGrid && !DOMAINDECOMP(cr));
+  bDoForces     = (flags & GMX_FORCE_FORCES);
 
   if (bStateChanged) {
     update_forcerec(fplog,fr,box);
@@ -517,7 +520,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   if(fr->bQMMM)
     update_QMMMrec(cr,fr,x,mdatoms,box,top);
 
-  if (!bNBFonly && top->idef.il[F_POSRES].nr > 0) {
+  if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0) {
     /* Position restraints always require full pbc */
     set_pbc(&pbc,inputrec->ePBC,box);
     ener[F_POSRES] +=
@@ -532,11 +535,16 @@ void do_force(FILE *fplog,t_commrec *cr,
     ener[F_DVDL] += dvdl;
   }
   /* Compute the bonded and non-bonded forces */    
-  force(fplog,step,fr,inputrec,&(top->idef),cr,nrnb,wcycle,grps,mdatoms,
-	top->atoms.grps[egcENER].nr,&(inputrec->opts),
-	x,f,ener,fcd,box,lambda,graph,&(top->excls),
-	bNBFonly,bDoForces,mu_tot_AB,bGatherOnly,edyn);
+  do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
+		    cr,nrnb,wcycle,grps,mdatoms,
+		    top->atoms.grps[egcENER].nr,&(inputrec->opts),
+		    x,f,ener,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
+		    flags);
   GMX_BARRIER(cr->mpi_comm_mygroup);
+
+  if (edyn) {
+    do_flood(fplog,cr,x,f,edyn,step);
+  }
 	
   cycles_force = wallcycle_stop(wcycle,ewcFORCE);
   if (DOMAINDECOMP(cr)) {

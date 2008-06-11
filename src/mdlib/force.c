@@ -1419,21 +1419,19 @@ void ns(FILE *fp,
   GMX_MPE_LOG(ev_ns_finish);
 }
 
-void force(FILE       *fplog,   int        step,
-	   t_forcerec *fr,      t_inputrec *ir,
-	   t_idef     *idef,    t_commrec  *cr,
-	   t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
-	   t_groups   *grps,    t_mdatoms  *md,
-	   int        ngener,   t_grpopts  *opts,
-	   rvec       x[],      rvec       f[],
-	   real       epot[],   t_fcdata   *fcd,
-	   matrix     box,
-	   real       lambda,   t_graph    *graph,
-	   t_blocka   *excl,    
-	   bool       bNBFonly, bool bDoForces,
-	   rvec       mu_tot[],
-	   bool       bGatherOnly,
-	   t_edsamyn  *edyn)
+void do_force_lowlevel(FILE       *fplog,   int        step,
+		       t_forcerec *fr,      t_inputrec *ir,
+		       t_idef     *idef,    t_commrec  *cr,
+		       t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
+		       t_groups   *grps,    t_mdatoms  *md,
+		       int        ngener,   t_grpopts  *opts,
+		       rvec       x[],      rvec       f[],
+		       real       epot[],   t_fcdata   *fcd,
+		       matrix     box,
+		       real       lambda,   t_graph    *graph,
+		       t_blocka   *excl,    
+		       rvec       mu_tot[],
+		       int        flags)
 {
   int     i,nit,status;
   bool    bDoEpot,bSepDVDL,bSB;
@@ -1495,9 +1493,10 @@ void force(FILE       *fplog,   int        step,
 
   where();
   do_nonbonded(cr,fr,x,f,md,
-	  fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
-	  grps->estat.ee[egCOULSR],box_size,nrnb,
-	  lambda,&dvdlambda,FALSE,-1,-1,bDoForces);
+	       fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
+	       grps->estat.ee[egCOULSR],box_size,nrnb,
+	       lambda,&dvdlambda,FALSE,-1,-1,
+	       flags & GMX_FORCE_FORCES);
   where();
 
 #ifdef GMX_MPI
@@ -1540,7 +1539,8 @@ void force(FILE       *fplog,   int        step,
   }
   /* Check whether we need to do bondeds or correct for exclusions */
   if (fr->bMolPBC &&
-      (!bNBFonly || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype))) {
+      ((flags & GMX_FORCE_BONDED)
+       || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype))) {
     /* Since all atoms are in the rectangular or triclinic unit-cell,
      * only single box vector shifts (2 in x) are required.
      */
@@ -1579,7 +1579,7 @@ void force(FILE       *fplog,   int        step,
 			    DOMAINDECOMP(cr) ? dd_pme_maxshift(cr->dd) : 0,
 			    nrnb,
 			    fr->vir_el_recip,fr->ewaldcoeff,
-			    &Vlr,lambda,&dvdlambda,bGatherOnly);
+			    &Vlr,lambda,&dvdlambda,FALSE);
         PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
 	wallcycle_stop(wcycle,ewcPMEMESH);
       } 
@@ -1647,7 +1647,7 @@ void force(FILE       *fplog,   int        step,
     print_nrnb(debug,nrnb); 
   debug_gmx();
   
-  if (!bNBFonly) {
+  if (flags & GMX_FORCE_BONDED) {
     GMX_MPE_LOG(ev_calc_bonds_start);
     calc_bonds(fplog,cr->ms,
 	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
@@ -1675,7 +1675,6 @@ void force(FILE       *fplog,   int        step,
 
   if (debug) 
     pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
-  do_flood(fplog,cr,x,f,edyn,step);
 
   GMX_MPE_LOG(ev_force_finish);
 }
