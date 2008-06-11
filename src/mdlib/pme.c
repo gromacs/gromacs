@@ -149,7 +149,6 @@ typedef struct {
     rvec *fractx;            /* Fractional coordinate relative to the
                               * lower cell boundary 
                               */
-    bool bClearF;
 } pme_atomcomm_t;
 
 typedef struct gmx_pme {
@@ -444,9 +443,9 @@ static void pmeredist(gmx_pme_t pme, bool forw,
             sidx[i] = sdispls[i];
         for(i=0; (i<n); i++) {
             ii = DIM*sidx[idxa[i]];
-            x_f[i][XX] = buf[ii+XX];
-            x_f[i][YY] = buf[ii+YY];
-            x_f[i][ZZ] = buf[ii+ZZ];
+            x_f[i][XX] += buf[ii+XX];
+            x_f[i][YY] += buf[ii+YY];
+            x_f[i][ZZ] += buf[ii+ZZ];
             sidx[idxa[i]]++;
         }
     }
@@ -606,11 +605,11 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
     node = atc->pd[i];
     if (node == pme->nodeid) {
       /* Copy from the local force array */
-      copy_rvec(atc->f[local_pos],f[i]);
+      rvec_inc(f[i],atc->f[local_pos]);
       local_pos++;
     } else {
       /* Copy from the receive buffer */
-      copy_rvec(pme->bufv[buf_index[node]],f[i]);
+      rvec_inc(f[i],pme->bufv[buf_index[node]]);
       buf_index[node]++;
     }
   }
@@ -1011,10 +1010,6 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
     rzx   = pme->recipbox[ZZ][XX];
     rzy   = pme->recipbox[ZZ][YY];
     rzz   = pme->recipbox[ZZ][ZZ];
-    
-    if (!atc->bClearF) {
-        bClearF = FALSE;
-    }
 
     for(nn=0; (nn<atc->n); nn++) {
         n = nn;
@@ -1284,8 +1279,7 @@ int pme_inconvenient_nnodes(int nkx,int nky,int nnodes)
   return ret;
 }
 
-static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
-                          bool bSpread,bool bClearF)
+static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,bool bSpread)
 {
     int lbnd,rbnd,maxlr,b,i;
     int nn,nk;
@@ -1300,7 +1294,6 @@ static void init_atomcomm(gmx_pme_t pme,pme_atomcomm_t *atc,
 
     atc->bSpread   = bSpread;
     atc->pme_order = pme->pme_order;
-    atc->bClearF   = bClearF;
 }
 
 static void init_overlap_comm(gmx_pme_t pme,pme_overlap_t *ol)
@@ -1420,7 +1413,7 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
     pme->epsilon_r   = ir->epsilon_r;
     
     /* Use atc[0] for spreading */
-    init_atomcomm(pme,&pme->atc[0],TRUE,!(cr->duty & DUTY_PP));
+    init_atomcomm(pme,&pme->atc[0],TRUE);
     
     if (pme->nkx <= pme->pme_order*(pme->nnodes > 1 ? 2 : 1) ||
         pme->nky <= pme->pme_order ||
@@ -1625,7 +1618,8 @@ int gmx_pme_do(gmx_pme_t pme,
     real    *charge=NULL,vol;
     real    energy_AB[2];
     matrix  vir_AB[2];
-    
+    bool    bClearF;
+
     if (pme->nnodes > 1) {
         atc = &pme->atc[0];
         atc->npd = homenr;
@@ -1770,7 +1764,12 @@ int gmx_pme_do(gmx_pme_t pme,
         GMX_MPE_LOG(ev_gather_f_bsplines_start);
         
         where();
-        gather_f_bsplines(pme,grid,q==0,&pme->atc[0],
+        /* If are running without parallelization,
+         * atc->f is the actual force array, not a buffer,
+         * therefore we should not clear it.
+         */
+        bClearF = (q == 0 && pme->ndecompdim > 0);
+        gather_f_bsplines(pme,grid,bClearF,&pme->atc[0],
                           pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
         where();
         
