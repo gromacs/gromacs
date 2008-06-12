@@ -38,6 +38,7 @@
 #define _pdb2top_h
 
 #include "typedefs.h"
+#include "grompp.h"
 #include "toputil.h"
 #include "hackblock.h"
 
@@ -49,11 +50,6 @@ typedef struct {
   int  res1,res2;
   char *a1,*a2;
 } t_ssbond;
-
-typedef struct {
-  char *name;
-  int  nr;
-} t_mols;
 
 void
 choose_ff(char *ff,int maxlen);

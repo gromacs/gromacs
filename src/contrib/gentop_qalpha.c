@@ -55,11 +55,11 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
-#include "topexcl.h"
-#include "x2top_nm2type.h"
-#include "x2top_qalpha.h"
+//#include "toppush.h"
+//#include "pdb2top.h"
+//#include "topexcl.h"
+#include "gentop_nm2type.h"
+#include "gentop_qalpha.h"
 
 typedef struct {
   char *atom;
@@ -69,9 +69,9 @@ typedef struct {
 typedef struct {
   int nr;
   t_qalpha *qa;
-} x2top_qalpha;
+} gentop_qalpha;
 
-x2top_qat rd_q_alpha(char *fn)
+gentop_qat rd_q_alpha(char *fn)
 /* Read file with charges and polarizabilities */
 {
   FILE *fp;
@@ -79,7 +79,7 @@ x2top_qat rd_q_alpha(char *fn)
   double q,alpha;
   char   name[STRLEN];
   char   line[STRLEN];
-  x2top_qalpha *qa=NULL;
+  gentop_qalpha *qa=NULL;
   
   snew(qa,1);
   fp = ffopen(fn,"r");
@@ -101,18 +101,18 @@ x2top_qat rd_q_alpha(char *fn)
   fclose(fp);
   qa->nr = n;
   
-  return (x2top_qat) qa;
+  return (gentop_qat) qa;
 }
 
-void dump_q_alpha(FILE *fp,x2top_qat qat)
+void dump_q_alpha(FILE *fp,gentop_qat qat)
 /* Dump the database for debugging */
 {
 }
 
-double get_qa_q(char *atom,x2top_qat qat)
+double get_qa_q(char *atom,gentop_qat qat)
 /* Return the charge belonging to atom */
 {
-  x2top_qalpha *qa = (x2top_qalpha *) qat;
+  gentop_qalpha *qa = (gentop_qalpha *) qat;
   int i;
   
   for(i=0; (i<qa->nr); i++)
@@ -124,10 +124,10 @@ double get_qa_q(char *atom,x2top_qat qat)
   return 0;
 }
 
-double get_qa_alpha(char *atom,x2top_qat qat)
+double get_qa_alpha(char *atom,gentop_qat qat)
 /* Return the alpha belonging to atom */
 {
-  x2top_qalpha *qa = (x2top_qalpha *) qat;
+  gentop_qalpha *qa = (gentop_qalpha *) qat;
   int i;
   
   for(i=0; (i<qa->nr); i++)

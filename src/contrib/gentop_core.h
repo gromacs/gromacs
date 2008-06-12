@@ -34,13 +34,14 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _x2top_core_h
-#define _x2top_core_h
+#ifndef _gentop_core_h
+#define _gentop_core_h
 	
 #include <stdio.h>
 #include "typedefs.h"
 #include "pdbio.h"
-#include "x2top_nm2type.h"
+#include "gentop_nm2type.h"
+#include "gpp_nextnb.h"
 #include "gpp_atomtype.h"
 
 extern void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
@@ -62,15 +63,15 @@ extern void reset_q(t_atoms *atoms);
 extern void print_rtp(char *filenm,char *title,t_atoms *atoms,
 		      t_params plist[],int cgnr[],int nbts,int bts[]);
 		      
-extern void mk_bonds(x2top_nm2t nmt,t_atoms *atoms,rvec x[],
+extern void mk_bonds(gentop_nm2t nmt,t_atoms *atoms,rvec x[],
 		     gmx_conect gc,t_params *bond,int nbond[],char *ff,
 		     bool bPBC,matrix box,void *atomprop,real tol);
 		     
 extern t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-				int *nbonds,x2top_nm2t nm2t,
+				int *nbonds,gentop_nm2t nm2t,
 				void *atomprop);
 		     
-extern void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
+extern void add_shells(gentop_nm2t nm2t,t_atoms **atoms,
 		       t_atomtype atype,t_params plist[],
 		       rvec **x,t_symtab *symtab,t_excls **excls);
 		       

@@ -57,7 +57,7 @@
 #include "names.h"
 #include "toppush.h"
 #include "pdb2top.h"
-#include "topexcl.h"
+#include "gpp_nextnb.h"
 #include "gpp_atomtype.h"
 #include "x2top.h"
 

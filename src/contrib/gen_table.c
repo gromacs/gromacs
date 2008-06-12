@@ -42,6 +42,7 @@
 #include "vec.h"
 #include "statutil.h"
 #include "coulomb.h"
+#include "slater_integrals.h"
 
 enum { mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
 
@@ -55,7 +56,7 @@ static double erf1(double x)
   return (2/sqrt(M_PI))*exp(-x*x);
 }
 
-void do_hard(FILE *fp,int pts_nm,double efac,double delta)
+static void do_hard(FILE *fp,int pts_nm,double efac,double delta)
 {
   int    i,k,imax;
   double x,vr,vr2,vc,vc2;
@@ -83,51 +84,7 @@ void do_hard(FILE *fp,int pts_nm,double efac,double delta)
 
 }
 
-real coul_slater_slater(real w,real r)
-{
-  const real a = 11.0/16.0;
-  const real b =  3.0/16.0;
-  const real c =  1.0/48.0;
-  real r_w  = r/w;
-  real r_w2 = r_w*r_w;
-  real r_w3 = r_w2*r_w;
-  
-  return (1/r)*(1 - (1+a*r_w+b*r_w2+c*r_w3)*exp(-r_w));
-}
-
-real coul_slater_nucl(real w,real r) 
-{
-  real r_w  = r/w;
-  
-  return (1/r)*(1-(1+0.5*r_w)*exp(-r_w));
-}
-
-real coul_nucl_nucl(real w,real r)
-{
-  return 1/r;
-}
-
-void plot_slater(char *sl_fn)
-{
-  FILE *fp;
-  int i;
-  real r;
-  real e0;
-  real e1,e2,e3,w1=0.01,w2=0.05,w3=0.1;
-  
-  fp = ffopen(sl_fn,"w");
-  for(i=5; (i<100); i++) {
-    r = i*0.01;
-    e0 = coul_nucl_nucl(0,r);
-    e1 = e0 - 2*coul_slater_nucl(w1,r) + coul_slater_slater(w1,r);
-    e2 = e0 - 2*coul_slater_nucl(w2,r) + coul_slater_slater(w2,r);
-    e3 = e0 - 2*coul_slater_nucl(w3,r) + coul_slater_slater(w3,r);
-    fprintf(fp,"%10g  %10g  %10g  %10g\n",r,e1,e2,e3);
-  }
-  fclose(fp);
-}
-
-void do_AB1(FILE *fp,int eel,int pts_nm,int ndisp,int nrep)
+static void do_AB1(FILE *fp,int eel,int pts_nm,int ndisp,int nrep)
 {
   int    i,k,imax;
   double myfac[3] = { 1, -1, 1 };
@@ -157,10 +114,10 @@ void do_AB1(FILE *fp,int eel,int pts_nm,int ndisp,int nrep)
   }
 }
 
-void lo_do_ljc(double r,
-	       double *vc,double *fc,
-	       double *vd,double *fd,
-	       double *vr,double *fr)
+static void lo_do_ljc(double r,
+		      double *vc,double *fc,
+		      double *vd,double *fd,
+		      double *vr,double *fr)
 {
   double r2,r_6,r_12;
   
@@ -179,11 +136,11 @@ void lo_do_ljc(double r,
 }
 
 /* use with coulombtype = user */
-void lo_do_ljc_pme(double r,
-		   double rcoulomb, double ewald_rtol,
-		   double *vc,double *fc,
-		   double *vd,double *fd,
-		   double *vr,double *fr)
+static void lo_do_ljc_pme(double r,
+			  double rcoulomb, double ewald_rtol,
+			  double *vc,double *fc,
+			  double *vd,double *fd,
+			  double *vr,double *fr)
 {
   double r2,r_6,r_12;
   double isp= 0.564189583547756;
@@ -207,10 +164,10 @@ void lo_do_ljc_pme(double r,
   *fr  = 12.0*(*vr)/r;
 }
 
-void lo_do_guillot(double r,double xi, double xir,
-			    double *vc,double *fc,
-			    double *vd,double *fd,
-			    double *vr,double *fr)
+static void lo_do_guillot(double r,double xi, double xir,
+			  double *vc,double *fc,
+			  double *vd,double *fd,
+			  double *vr,double *fr)
 {
   double qO     = -0.888;
   double qOd    =  0.226;
@@ -301,10 +258,10 @@ void lo_do_guillot_maple(double r,double xi,double xir,
   *vr2  = 1.0/sqrt(M_PI)/(xir*xir)*exp(-r*r/(xir*xir)/4.0)+4.0/sqrt(M_PI)*exp(-r*r/(xir*xir)/4.0)/(r*r)+4.0*erfc(r/xir/2.0)/(r*r*r)*xir;
 }
 
-void lo_do_GG(double r,double xi,double xir,
-	      double *vc,double *fc,
-	      double *vd,double *fd,
-	      double *vr,double *fr)
+static void lo_do_GG(double r,double xi,double xir,
+		     double *vc,double *fc,
+		     double *vd,double *fd,
+		     double *vr,double *fr)
 {
   double qO     = -0.888;
   double qOd    =  0.226;
@@ -583,53 +540,47 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
   }
 }
 
-typedef real (coul_func(real,real));
-
 static void do_Slater(const char *file,int eel,int pts_nm,
-		      double rc,double rtol,double w1,double w2)
+		      double rc,double rtol,int nrow1,int nrow2,
+		      double w1,double w2)
 {
   FILE *fp=NULL;
   static char buf[256];
-  static char *atype[]   = { "N", "S" };
-  coul_func *cf[] = { coul_nucl_nucl, coul_slater_nucl, 
-		     coul_slater_nucl, coul_slater_slater }; 
   int    i,j,k,l,kl,m,i0,imax;
-  double r,vc,fc,vd,fd,vr,fr,ww[4];
-#define atypemax asize(atype)
-  /* For Guillot2001a we have four types: HW, OW, HWd and OWd. */
+  double r,vc,fc,vd,fd,vr,fr;
   
-  ww[0] = w1;
-  ww[1] = ww[2] = (w1+w2)/2;
-  ww[3] = w2;
-  for (k=0; (k<atypemax); k++)                    
-    for (l=0; (l<atypemax); l++) {
-      kl = k*atypemax + l;
-      for (j=0;(j<2);j++) 
-	for(m=j; (m<2); m++) { 
-	  sprintf(buf,"table_%s%d_%s%d.xvg",atype[k],j,atype[l],m);
-	  
-	  printf("Writing %s\n",buf);
-	  
-	  fp = ffopen(buf,"w");
-	  
-	  imax = 3*pts_nm;
-	  for(i=0; (i<=imax); i++) {
-	    r     = i*(1.0/pts_nm);
-	    /* Avoid very large numbers */
-	    if (r < 0.04) {
-	      vc = fc = vd = fd = vr = fr = 0;
-	    }
-	    else { 
-	      vc = cf[kl](ww[kl],r);
-	      fc = 0;
-	      fprintf(fp,"%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
-		      r,vc,fc,vd,fd,vr,fr);
-	    
-	    }
-	  }
-	  fclose(fp);
-	}
+  sprintf(buf,"table_%d-%g_%d-%g.xvg",nrow1,w1,nrow2,w2);
+  printf("Writing %s\n",buf);
+  fp = ffopen(buf,"w");
+
+  vd = fd = vr = fr = 0;	  
+  imax = 3*pts_nm;
+  for(i=0; (i<=imax); i++) {
+    r  = i*(1.0/pts_nm);
+    vc = fc = 0;    
+    if ((w1 == 0) && (w2 == 0)) {
+      if (r > 0) {
+	vc = 1/r;
+	fc = 1/sqr(r);
+      }
     }
+    else if ((w1 == 0) && (w2 != 0)) {
+      vc = Nuclear_SS(r,nrow2,w2);
+      fc = DNuclear_SS(r,nrow2,w2);
+    }
+    else if ((w2 == 0) && (w1 != 0)) {
+      vc = Nuclear_SS(r,nrow1,w1);
+      fc = DNuclear_SS(r,nrow1,w1);
+    }
+    else {
+      vc = Coulomb_SS(r,nrow1,nrow2,w1,w2);
+      fc = DCoulomb_SS(r,nrow1,nrow2,w1,w2);
+    }
+    
+    fprintf(fp,"%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
+	    r,vc,fc,vd,fd,vr,fr);
+  }
+  fclose(fp);
 }
 
 static void do_ljc(FILE *fp,int eel,int pts_nm,real rc,real rtol)
@@ -807,14 +758,20 @@ int main(int argc,char *argv[])
     "using new tables with an older GROMACS version. This is because in the",
     "old version the second derevative of the potential was specified",
     "whereas in the new version the first derivative of the potential",
-    "is used instead." 
+    "is used instead.[PAR]",
+    "For Slater interactions four parameters must be passed: the 1/Width",
+    "and the row number of the element. The interactions are computed analytically",
+    "which may be slow due to the fact that arbitraray precision arithmetic is",
+    "needed. If the width of one of the Slater is zero a Nucleus-Slater interaction",
+    "will be generated." 
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
   /*  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL }; */
   static char *model[]   = { NULL, "ljc", "gg", "guillot2001a", "slater", 
 			     NULL };
   static real delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
-  static real w1=0.05,w2=0.05;
+  static real w1=20,w2=20;
+  static int  nrow1=1,nrow2=1;
   static int  nrep       = 12;
   static int  ndisp      = 6;
   static int  pts_nm     = 500;
@@ -829,10 +786,14 @@ int main(int argc,char *argv[])
       "Width of the Gaussian diffuse charge of the G&G model" },
     { "-xir",   FALSE, etREAL, {&xir},
       "Width of erfc(z)/z repulsion of the G&G model (z=0.5 rOO/xir)" },
-    { "-w1",   FALSE, etREAL, {&w1},
-      "Width of the first Slater charge" },
-    { "-w2",   FALSE, etREAL, {&w2},
-      "Width of the second Slater charge" },
+    { "-z1",   FALSE, etREAL, {&w1},
+      "1/Width of the first Slater charge (unit 1/nm)" },
+    { "-z2",   FALSE, etREAL, {&w2},
+      "1/Width of the second Slater charge (unit 1/nm)" },
+    { "-nrow1",   FALSE, etINT, {&nrow1},
+      "Row number for the first Slater charge" },
+    { "-nrow2",   FALSE, etINT, {&nrow2},
+      "Row number for the first Slater charge" },
     { "-m",      FALSE, etENUM, {model},
       "Model for the tables" },
     { "-resol",  FALSE, etINT,  {&pts_nm},
@@ -900,7 +861,7 @@ int main(int argc,char *argv[])
     do_guillot2001a(fn,eel,pts_nm,rc,rtol,xi,xir);
     break;
   case mSlater:
-    do_Slater(fn,eel,pts_nm,rc,rtol,w1,w2);
+    do_Slater(fn,eel,pts_nm,rc,rtol,nrow1,nrow2,w1,w2);
     break;
   case mGuillot_Maple:
     fprintf(fp, "#\n# Table Guillot_Maple: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);

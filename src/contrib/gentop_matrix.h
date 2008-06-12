@@ -34,8 +34,8 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _x2top_matrix_h
-#define _x2top_matrix_h
+#ifndef _gentop_matrix_h
+#define _gentop_matrix_h
 	
 #include <stdio.h>
 #include "grompp.h"

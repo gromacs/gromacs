@@ -49,7 +49,7 @@
 #include "pbc.h"
 #include "toputil.h"
 #include "topio.h"
-#include "topexcl.h"
+#include "gpp_nextnb.h"
 #include "symtab.h"
 #include "macros.h"
 #include "gmx_fatal.h"

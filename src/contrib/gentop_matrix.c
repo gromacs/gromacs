@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "typedefs.h"
 #include "smalloc.h"
-#include "x2top_matrix.h"
+#include "gentop_matrix.h"
 #include "gmx_lapack.h"
 
 /*extern void gaussj(double **a,int n,double **b,int m);*/

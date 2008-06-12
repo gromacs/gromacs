@@ -40,7 +40,7 @@
 #include "typedefs.h"
 #include "toputil.h"
 #include "topio.h"
-#include "topexcl.h"
+#include "gpp_nextnb.h"
 #include "resall.h"
 
 extern void generate_excls(t_nextnb *nnb, int nrexcl, t_excls excls[]);

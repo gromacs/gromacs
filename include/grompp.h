@@ -85,6 +85,20 @@ typedef struct {
   t_params      plist[F_NRE];   /* Parameters in old style              */
 } t_molinfo;
 
+typedef struct {
+  char *name;
+  int  nr;
+} t_mols;
+
+extern void print_top_comment(FILE *out,char *filename,char *title,bool bITP);
+
+extern void print_top_header(FILE *out,char *filename,char *title,bool bITP, 
+			     char *ff,real mHmult);
+
+extern void print_top_mols(FILE *out, char *title, char *water,
+			   int nincl, char **incls,
+			   int nmol, t_mols *mols);
+
 typedef enum {
   d_defaults,
   d_atomtypes,

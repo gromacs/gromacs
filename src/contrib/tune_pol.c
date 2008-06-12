@@ -45,7 +45,7 @@
 #include "futil.h"
 #include "tune_pol.h"
 #include "vec.h"
-#include "x2top_matrix.h"
+#include "gentop_matrix.h"
 
 static int tabnum = 0;
 static int toler  = 5;  /* Tolerance in % */

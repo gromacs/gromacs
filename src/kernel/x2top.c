@@ -57,7 +57,7 @@
 #include "toppush.h"
 #include "pdb2top.h"
 #include "gen_ad.h"
-#include "topexcl.h"
+#include "gpp_nextnb.h"
 #include "vec.h"
 #include "x2top.h"
 #include "atomprop.h"

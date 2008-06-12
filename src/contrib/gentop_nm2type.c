@@ -55,11 +55,11 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
-#include "topexcl.h"
+//#include "toppush.h"
+//#include "pdb2top.h"
+//#include "topexcl.h"
 #include "atomprop.h"
-#include "x2top_nm2type.h"
+#include "gentop_nm2type.h"
 
 typedef struct {
   char   *elem,*type;
@@ -73,9 +73,9 @@ typedef struct {
 typedef struct {
   int nr;
   t_nm2type *nm2t;
-} x2top_nm2type;
+} gentop_nm2type;
 
-x2top_nm2t rd_nm2type(char *ff,void *atomprop)
+gentop_nm2t rd_nm2type(char *ff,void *atomprop)
 {
   FILE       *fp;
   bool       bCont;
@@ -85,7 +85,7 @@ x2top_nm2t rd_nm2type(char *ff,void *atomprop)
   int        i,nb,nnnm,line=1;
   real       eval;
   double     alpha,*blen;
-  x2top_nm2type *nm2t;
+  gentop_nm2type *nm2t;
   
   sprintf(libfilename,"%s.n2t",ff);
   fp = libopen(libfilename);
@@ -146,12 +146,12 @@ x2top_nm2t rd_nm2type(char *ff,void *atomprop)
   
   nm2t->nr = nnnm;
   
-  return (x2top_nm2t) nm2t;
+  return (gentop_nm2t) nm2t;
 }
 
-void dump_nm2type(FILE *fp,x2top_nm2t nm2t) 
+void dump_nm2type(FILE *fp,gentop_nm2t nm2t) 
 {
-  x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
+  gentop_nm2type *nm2type = (gentop_nm2type *) nm2t;
   int i,j;
   
   fprintf(fp,"; nm2type database\n");
@@ -185,11 +185,11 @@ static int match_str(char *atom,char *template)
     return ematchNone;
 }
 
-int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
+int nm2type(gentop_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 	    t_atomtype atype,int *nbonds,t_params *bonds,
 	    void *atomprop)
 {
-  x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
+  gentop_nm2type *nm2type = (gentop_nm2type *) nm2t;
   int     cur = 0;
 #define   prev (1-cur)
   int     i,j,k,m,n,nresolved,nb,maxbond;
@@ -346,10 +346,10 @@ int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
   return nresolved;
 }
 
-bool is_bond(x2top_nm2t nm2t,t_atoms *atoms,int ai,int aj,
+bool is_bond(gentop_nm2t nm2t,t_atoms *atoms,int ai,int aj,
 	     real blen,real tol)
 {
-  x2top_nm2type *nm2type = (x2top_nm2type *) nm2t;
+  gentop_nm2type *nm2type = (gentop_nm2type *) nm2t;
   int i,j,nn;
   int ani,anj,an2;
     

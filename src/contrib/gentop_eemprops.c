@@ -55,14 +55,14 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
-#include "gen_ad.h"
-#include "topexcl.h"
+//#include "toppush.h"
+//#include "pdb2top.h"
+//#include "gen_ad.h"
+//#include "topexcl.h"
 #include "atomprop.h"
 #include "grompp.h"
-#include "x2top_qgen.h"
-#include "x2top_eemprops.h"
+#include "gentop_qgen.h"
+#include "gentop_eemprops.h"
 
 typedef struct {
   char *name,*opts;
@@ -242,7 +242,7 @@ static void write_eemprops_header(FILE *fp,int eemtype)
   case eqgBultinck:
     fprintf(fp,";\n");
     fprintf(fp,"; Parameters for Bultinck et al., JPCA 106 (2002) 7887\n");
-    fprintf(fp,"; J_aa equals Hardness, this is multiplied by 2 in x2top.\n");
+    fprintf(fp,"; J_aa equals Hardness, this is multiplied by 2 in gentop.\n");
     fprintf(fp,"; Atom      Model    J_aa (eV) chi_a (eV)\n");
     break;
   
@@ -271,7 +271,7 @@ void write_eemprops(FILE *fp,void *eem)
   double w;
   int i;
 
-  fprintf(fp,"; Parameters for electronegativity algorithms. This file is used by x2top.\n");
+  fprintf(fp,"; Parameters for electronegativity algorithms. This file is used by gentop.\n");
   fprintf(fp,"; Note that parameters may have different meaning and different units.\n");
   for(i=0; (i<er->nep); i++) {
     if ((i == 0) || 

@@ -34,28 +34,29 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _x2top_nm2type_h
-#define _x2top_nm2type_h
+#ifndef _gentop_nm2type_h
+#define _gentop_nm2type_h
 	
 #include <stdio.h>
 #include "grompp.h"
+#include "gpp_atomtype.h"
 	
-typedef struct x2top_nm2type *x2top_nm2t;
+typedef struct gentop_nm2type *gentop_nm2t;
 
-extern x2top_nm2t rd_nm2type(char *ff,void *atomprop);
+extern gentop_nm2t rd_nm2type(char *ff,void *atomprop);
 /* Read the name 2 type database. nnm is the number of entries 
  * ff is the force field.
  */
 
-extern void dump_nm2type(FILE *fp,x2top_nm2t nm2t);
+extern void dump_nm2type(FILE *fp,gentop_nm2t nm2t);
 /* Dump the database for debugging. Can be reread by the program */
 
-extern int nm2type(x2top_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
+extern int nm2type(gentop_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 		   t_atomtype atype,int *nbonds,t_params *bond,
 		   void *atomprop);
 /* Try to determine the atomtype (force field dependent) for the atoms 
  * with help of the bond list 
  */
-extern bool is_bond(x2top_nm2t nmt,t_atoms *atoms,int ai,int aj,
+extern bool is_bond(gentop_nm2t nmt,t_atoms *atoms,int ai,int aj,
 		    real blen,real tol);
 #endif

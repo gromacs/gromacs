@@ -34,23 +34,23 @@
  * Gallium Rubidium Oxygen Manganese Argon Carbon Silicon
  */
 
-#ifndef _x2top_qalpha
-#define _x2top_qalpha_h
+#ifndef _gentop_qalpha
+#define _gentop_qalpha_h
 	
 #include <stdio.h>
 
-typedef struct x2top_qalpha *x2top_qat;
+typedef struct gentop_qalpha *gentop_qat;
  
-extern x2top_qat rd_q_alpha(char *fn);
+extern gentop_qat rd_q_alpha(char *fn);
 /* Read file with charges and polarizabilities */
 
-extern void dump_q_alpha(FILE *fp,x2top_qat qat);
+extern void dump_q_alpha(FILE *fp,gentop_qat qat);
 /* Dump the database for debugging */
 
-extern double get_qa_q(char *atom,x2top_qat qat);
+extern double get_qa_q(char *atom,gentop_qat qat);
 /* Return the charge belonging to atom */
 
-extern double get_qa_alpha(char *atom,x2top_qat qat);
+extern double get_qa_alpha(char *atom,gentop_qat qat);
 /* Return the alpha belonging to atom */
 
 

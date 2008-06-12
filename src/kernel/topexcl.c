@@ -42,7 +42,7 @@
 #include "smalloc.h"
 #include "macros.h"
 /* #define DEBUG_NNB */
-#include "topexcl.h"
+#include "gpp_nextnb.h"
 #include "toputil.h"
 
 typedef struct {

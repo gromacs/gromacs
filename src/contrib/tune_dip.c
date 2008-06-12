@@ -67,9 +67,9 @@
 #include "gmx_random.h"
 #include "gmx_wallcycle.h"
 #include "gstat.h"
-#include "../kernel/slater_S_integrals.h"
-#include "x2top_qgen.h"
-#include "x2top_eemprops.h"
+#include "slater_integrals.h"
+#include "gentop_qgen.h"
+#include "gentop_eemprops.h"
 
 typedef struct {
   char          *molname;
@@ -629,7 +629,7 @@ int main(int argc, char *argv[])
     "tune_dip read a series of molecules and corresponding experimental",
     "dipole moments from a file, and tunes parameters in an algorithm",
     "until the experimental dipole moments are reproduces by the",
-    "charge generating algorithm SM in the x2top program.[PAR]",
+    "charge generating algorithm SM in the gentop program.[PAR]",
     "Minima and maxima for the parameters can be set, these are however",
     "not strictly enforced, but rather they are penalized with a harmonic",
     "function, for which the force constant can be set explicitly.[PAR]",

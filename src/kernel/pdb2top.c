@@ -48,7 +48,7 @@
 #include "futil.h"
 #include "gmx_fatal.h"
 #include "pdb2top.h"
-#include "topexcl.h"
+#include "gpp_nextnb.h"
 #include "topdirs.h"
 #include "toputil.h"
 #include "h_db.h"

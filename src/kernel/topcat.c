@@ -42,6 +42,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "macros.h"
+#include "grompp.h"
 #include "topio.h"
 #include "toputil.h"
 #include "toppush.h"

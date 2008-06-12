@@ -55,22 +55,22 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-#include "toppush.h"
-#include "pdb2top.h"
+//#include "toppush.h"
+//#include "pdb2top.h"
 #include "symtab.h"
-#include "gen_ad.h"
-#include "topexcl.h"
+//#include "gen_ad.h"
+//#include "topexcl.h"
 #include "vec.h"
-#include "x2top_nm2type.h"
-#include "x2top_core.h"
+#include "gentop_nm2type.h"
+#include "gentop_core.h"
 #include "atomprop.h"
 #include "grompp.h"
-#include "add_par.h"
+//#include "add_par.h"
 #include "pdbio.h"
 #include "gmx_random.h"
 #include "gpp_atomtype.h"
 
-void mk_bonds(x2top_nm2t nmt,t_atoms *atoms,rvec x[],
+void mk_bonds(gentop_nm2t nmt,t_atoms *atoms,rvec x[],
 	      gmx_conect gc,t_params *bond,int nbond[],char *ff,
 	      bool bPBC,matrix box,void *atomprop,real tol)
 {
@@ -121,7 +121,7 @@ void mk_bonds(x2top_nm2t nmt,t_atoms *atoms,rvec x[],
 }
 
 t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-			 int *nbonds,x2top_nm2t nm2t,void *atomprop)
+			 int *nbonds,gentop_nm2t nm2t,void *atomprop)
 {
   t_atomtype atype;
   int nresolved;
@@ -202,7 +202,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
   if (bPBC)
     set_pbc(&pbc,-1,box);
   if (debug)
-    pr_rvecs(debug,0,"X2TOP",box,DIM);
+    pr_rvecs(debug,0,"GENTOP",box,DIM);
   for(i=0; (i<ang->nr); i++) {
     ai = ang->param[i].AI;
     aj = ang->param[i].AJ;
@@ -210,7 +210,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
     th = RAD2DEG*bond_angle(x[ai],x[aj],x[ak],bPBC ? &pbc : NULL,
 			    r_ij,r_kj,&costh,&t1,&t2);
     if (debug)
-      fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
+      fprintf(debug,"GENTOP: ai=%3d aj=%3d ak=%3d r_ij=%8.3f r_kj=%8.3f th=%8.3f\n",
 	      ai,aj,ak,norm(r_ij),norm(r_kj),th);
     ang->param[i].C0 = th;
   }
@@ -222,7 +222,7 @@ void calc_angles_dihs(t_params *ang,t_params *dih,rvec x[],bool bPBC,
     ph = RAD2DEG*dih_angle(x[ai],x[aj],x[ak],x[al],bPBC ? & pbc : NULL,
 			   r_ij,r_kj,r_kl,m,n,&cosph,&sign,&t1,&t2,&t3);
     if (debug)
-      fprintf(debug,"X2TOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
+      fprintf(debug,"GENTOP: ai=%3d aj=%3d ak=%3d al=%3d r_ij=%8.3f r_kj=%8.3f r_kl=%8.3f ph=%8.3f\n",
 	      ai,aj,ak,al,norm(r_ij),norm(r_kj),norm(r_kl),ph);
     dih->param[i].C0 = ph;
   }
@@ -550,7 +550,7 @@ static void prune_excl(t_excls excls[],t_atoms *atoms,t_atomtype atype)
   }
 }
 
-void add_shells(x2top_nm2t nm2t,t_atoms **atoms,
+void add_shells(gentop_nm2t nm2t,t_atoms **atoms,
 		t_atomtype atype,t_params plist[],
 		rvec **x,t_symtab *symtab,t_excls **excls)
 {

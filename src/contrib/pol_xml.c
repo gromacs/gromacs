@@ -40,11 +40,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "gmx_fatal.h"
+#include "macros.h"
+#include "tune_pol.h"
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
 #include <libxml/tree.h>
-#include "macros.h"
-#include "tune_pol.h"
 
 extern int xmlDoValidityCheckingDefaultValue;
 	
