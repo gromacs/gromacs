@@ -10,6 +10,7 @@
 static bool ip_pert(int ftype,t_iparams *ip)
 {
     bool bPert;
+    int  i;
 
     if (NRFPB(ftype) == 0)
     {
@@ -32,6 +33,37 @@ static bool ip_pert(int ftype,t_iparams *ip)
     case F_ANGRESZ:
         bPert = (ip->pdihs.phiA != ip->pdihs.phiB ||
                  ip->pdihs.cpA  != ip->pdihs.cpB);
+        break;
+    case F_RBDIHS:
+        bPert = FALSE;
+        for(i=0; i<NR_RBDIHS; i++)
+        {
+            if (ip->rbdihs.rbcA[i] != ip->rbdihs.rbcB[i])
+            {
+                bPert = TRUE;
+            }
+        }
+        break;
+    case F_TABBONDS:
+    case F_TABBONDSNC:
+    case F_TABANGLES:
+    case F_TABDIHS:
+        bPert = (ip->tab.kA != ip->tab.kB);
+        break;
+    case F_POSRES:
+        bPert = FALSE;
+        for(i=0; i<DIM; i++)
+        {
+            if (ip->posres.pos0A[i] != ip->posres.pos0B[i] ||
+                ip->posres.fcA[i]   != ip->posres.fcB[i])
+            {
+                bPert = TRUE;
+            }
+        }
+        break;
+    case F_LJ14:
+        bPert = (ip->lj14.c6A  != ip->lj14.c6B ||
+                 ip->lj14.c12A != ip->lj14.c12B);
         break;
     default:
         bPert = FALSE;
@@ -106,7 +138,7 @@ void gmx_sort_ilist_fe(t_idef *idef)
             nral  = NRAL(ftype);
             ic = 0;
             ib = 0;
-            i = 0;
+            i  = 0;
             while (i < ilist->nr)
             {
                 /* The first element of ia gives the type */
@@ -133,12 +165,12 @@ void gmx_sort_ilist_fe(t_idef *idef)
                 }
             }
             /* Now we now the number of non-perturbed interactions */
-            ilist->nr_nonperturbed = i;
+            ilist->nr_nonperturbed = ic;
             
             /* Copy the buffer with perturbed interactions to the ilist */
             for(a=0; a<ib; a++)
             {
-                iatoms[i++] = iabuf[a++];
+                iatoms[ic++] = iabuf[a];
             }
 
             if (debug)
