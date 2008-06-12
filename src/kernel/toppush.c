@@ -157,6 +157,27 @@ static void realloc_nb_params(t_atomtype at,
   }
 }
 
+static void copy_B_from_A(int ftype,double *c)
+{
+  int nrfpA,nrfpB,i;
+
+  nrfpA = NRFPA(ftype);
+  nrfpB = NRFPB(ftype);
+
+  /* Copy the B-state from the A-state */
+  if (interaction_function[ftype].flags & IF_TABULATED) {
+    /* The only case where the first B parameter does not correspond
+     * to the first A parameter.
+     */
+    c[2] = c[1];
+  } else {
+    /* Copy the B parameters from the first nrfpB A parameters */
+    for(i=0; (i<nrfpB); i++) {
+      c[nrfpA+i] = c[i];
+    }
+  }
+}
+
 void push_at (t_symtab *symtab, t_atomtype at, t_bond_atomtype bat,
 	      char *line,int nb_funct,
 	      t_nbparam ***nbparam,t_nbparam ***pair)
@@ -557,8 +578,7 @@ void push_bt(directive d,t_params bt[],int nral,
       != nrfp) {
     if (nn == nrfpA) {
       /* Copy the B-state from the A-state */
-      for(i=0; (i<nrfpB); i++)
-	c[nrfpA+i] = c[i];
+      copy_B_from_A(ftype,c);
     } else {
       if (nn < nrfpA) {
       warning_error("Not enough parameters");
@@ -672,8 +692,7 @@ void push_dihedraltype(directive d,t_params bt[],
       != nrfp) {
     if (nn == nrfpA) {
       /* Copy the B-state from the A-state */
-      for(i=0; (i<nrfpB); i++)
-	c[nrfpA+i] = c[i];
+      copy_B_from_A(ftype,c);
     } else {
       if (nn < nrfpA) {
       warning_error("Not enough parameters");
