@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-  
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -1446,36 +1447,37 @@ static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
 			 rvec x[],rvec box_size,t_nrnb *nrnb,
 			 real lambda,real *dvdlambda,
 			 t_groups *grps,bool bDoVdW,bool bDoCoul,
-			 bool bEvaluateNow,bool bHaveVdW[],bool bDoForces, bool bQMMM)
+			 bool bEvaluateNow,bool bHaveVdW[],bool bDoForces)
 {
-    /* if bQMMM, no forces should be computed, they are already
-    * accounted for in the normal neighbour searching 
-    */
     int n,i;
     t_nblist *nl;
-
-  for(n=0; n<fr->nnblists; n++) {
-    for(i=0; (i<eNL_NR); i++) {
-      nl = &fr->nblists[n].nlist_lr[i];
-      if ((nl->nri > nl->maxnri-32) || bEvaluateNow) {
-	close_neighbor_list(fr,TRUE,n,i);
-	/* Evaluate the energies and forces */
-	do_nonbonded(cr,fr,x,fr->f_twin,md,
-		     grps->estat.ee[fr->bBHAM ? egBHAMLR : egLJLR],
-		     grps->estat.ee[egCOULLR],box_size,
-		     nrnb,lambda,dvdlambda,TRUE,n,i,bDoForces);
-        
-	reset_neighbor_list(fr,TRUE,n,i);
-      }
+    
+    for(n=0; n<fr->nnblists; n++)
+    {
+        for(i=0; (i<eNL_NR); i++)
+        {
+            nl = &fr->nblists[n].nlist_lr[i];
+            if ((nl->nri > nl->maxnri-32) || bEvaluateNow)
+            {
+                close_neighbor_list(fr,TRUE,n,i);
+                /* Evaluate the energies and forces */
+                do_nonbonded(cr,fr,x,fr->f_twin,md,
+                             grps->estat.ee[fr->bBHAM ? egBHAMLR : egLJLR],
+                             grps->estat.ee[egCOULLR],box_size,
+                             nrnb,lambda,dvdlambda,TRUE,n,i,bDoForces);
+                
+                reset_neighbor_list(fr,TRUE,n,i);
+            }
+        }
     }
-  }
-
-  if (!bEvaluateNow) {  
-    /* Put the long range particles in a list */
-    put_in_list(bHaveVdW,ngid,md,icg,jgid,nlr,lr,top->cgs.index,
-		/* top->blocks[ebCGS].a, */ bexcl,shift,fr,
-		TRUE,bDoVdW,bDoCoul,bQMMM);
-  }
+    
+    if (!bEvaluateNow)
+    {  
+        /* Put the long range particles in a list */
+        /* Since do_longrange is never called for QMMM, bQMMM is FALSE */
+        put_in_list(bHaveVdW,ngid,md,icg,jgid,nlr,lr,top->cgs.index,
+                    bexcl,shift,fr,TRUE,bDoVdW,bDoCoul,FALSE);
+    }
 }
 
 static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
@@ -1824,28 +1826,28 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 			      nl_sr[jgid][nsr[jgid]++]=jjcg;
 			    } else if (r2 < rm2) {
 			      if (nlr_ljc[jgid] >= MAX_CG) {
-				do_longrange(cr,top,fr,ngid,md,icg,jgid,
-					     nlr_ljc[jgid],
-					     nl_lr_ljc[jgid],bexcl,shift,x,
-					     box_size,nrnb,
-					     lambda,dvdlambda,grps,
-					     TRUE,TRUE,FALSE,
-					     bHaveVdW,bDoForces,bMakeQMMMnblist);
-				nlr_ljc[jgid]=0;
+                      do_longrange(cr,top,fr,ngid,md,icg,jgid,
+                                   nlr_ljc[jgid],
+                                   nl_lr_ljc[jgid],bexcl,shift,x,
+                                   box_size,nrnb,
+                                   lambda,dvdlambda,grps,
+                                   TRUE,TRUE,FALSE,
+                                   bHaveVdW,bDoForces);
+                      nlr_ljc[jgid]=0;
 			      }
 			      nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
 			    } else {
-			      if (nlr_one[jgid] >= MAX_CG) {
-				do_longrange(cr,top,fr,ngid,md,icg,jgid,
-					     nlr_one[jgid],
-					     nl_lr_one[jgid],bexcl,shift,x,
-					     box_size,nrnb,
-					     lambda,dvdlambda,grps,
-					     rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
-					     bHaveVdW,bDoForces,bMakeQMMMnblist);
-				nlr_one[jgid]=0;
-			      }
-			      nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
+                    if (nlr_one[jgid] >= MAX_CG) {
+                        do_longrange(cr,top,fr,ngid,md,icg,jgid,
+                                     nlr_one[jgid],
+                                     nl_lr_one[jgid],bexcl,shift,x,
+                                     box_size,nrnb,
+                                     lambda,dvdlambda,grps,
+                                     rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
+                                     bHaveVdW,bDoForces);
+                        nlr_one[jgid]=0;
+                    }
+                    nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
 			    }
 			  }
 			}
@@ -1860,21 +1862,21 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
 	  for(nn=0; (nn<ngid); nn++) {
 	    if (nsr[nn] > 0)
 	      put_in_list(bHaveVdW,ngid,md,icg,nn,nsr[nn],nl_sr[nn],
-			  cgs->index, /* cgsatoms, */ bexcl,
-			  shift,fr,FALSE,TRUE,TRUE,bMakeQMMMnblist);
+                      cgs->index, /* cgsatoms, */ bexcl,
+                      shift,fr,FALSE,TRUE,TRUE,bMakeQMMMnblist);
 	    
 	    if (nlr_ljc[nn] > 0) 
 	      do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
-			   nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-			   lambda,dvdlambda,grps,TRUE,TRUE,FALSE,
-			   bHaveVdW,bDoForces,bMakeQMMMnblist);
+                       nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
+                       lambda,dvdlambda,grps,TRUE,TRUE,FALSE,
+                       bHaveVdW,bDoForces);
 	    
 	    if (nlr_one[nn] > 0) 
-	      do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_one[nn],
-			   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
-			   lambda,dvdlambda,grps,
-			   rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
-			   bHaveVdW,bDoForces,bMakeQMMMnblist);
+            do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_one[nn],
+                         nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
+                         lambda,dvdlambda,grps,
+                         rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
+                         bHaveVdW,bDoForces);
 	  }
 	}
       }
@@ -1884,16 +1886,17 @@ static int ns5_core(FILE *log,t_commrec *cr,t_forcerec *fr,
   }
   /* Perform any left over force calculations */
   for (nn=0; (nn<ngid); nn++) {
-    if (rm2 > rs2)
+    if (rm2 > rs2) {
       do_longrange(cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
                    nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-                   lambda,dvdlambda,grps,TRUE,TRUE,TRUE,bHaveVdW,bDoForces,
-                   bMakeQMMMnblist);
-    if (rl2 > rm2)
+                   lambda,dvdlambda,grps,TRUE,TRUE,TRUE,bHaveVdW,bDoForces);
+    }
+    if (rl2 > rm2) {
       do_longrange(cr,top,fr,0,md,icg,nn,nlr_one[nn],
-		   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
-		   lambda,dvdlambda,grps,rvdw_lt_rcoul,rcoul_lt_rvdw,
-		   TRUE,bHaveVdW,bDoForces,bMakeQMMMnblist);
+                   nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
+                   lambda,dvdlambda,grps,rvdw_lt_rcoul,rcoul_lt_rvdw,
+                   TRUE,bHaveVdW,bDoForces);
+    }
   }
   debug_gmx();
   
