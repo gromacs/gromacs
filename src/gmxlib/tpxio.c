@@ -1619,10 +1619,7 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
   if (bRead && tpx.bIr && ir) {
     /* Check for perturbed bonded interactions */
     gmx_analyze_ilist_fe(&top->idef,ir);
-    if (ir->efep == efepNO) {
-      /* There are no perturbed interactions */
-      top->idef.ilsort = ilsortNO_FE;
-    }
+
     if (state->ngtc == 0) {
       /* Reading old version without tcoupl state data: set it */
       init_gtc_state(state,ir->opts.ngtc);
