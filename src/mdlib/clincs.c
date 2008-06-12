@@ -808,7 +808,8 @@ static void lincs_warning(FILE *fplog,
     cosine = iprod(v0,v1)/(d0*d1);
     if (cosine < wfac) {
       sprintf(buf," %6d %6d  %5.1f  %8.4f %8.4f    %8.4f\n",
-	      glatnr(dd,i),glatnr(dd,j),RAD2DEG*acos(cosine),d0,d1,bllen[b]);
+	      ddglatnr(dd,i),ddglatnr(dd,j),
+	      RAD2DEG*acos(cosine),d0,d1,bllen[b]);
       fprintf(stderr,buf);
       if (fplog)
 	fprintf(fplog,buf);
@@ -897,7 +898,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
       }
       if (bPrint)
 	fprintf(fp,"%-6s%5u  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
-		"ATOM",glatnr(dd,i),"C","ALA",' ',i+1,
+		"ATOM",ddglatnr(dd,i),"C","ALA",' ',i+1,
 		10*x[i][XX],10*x[i][YY],10*x[i][ZZ],
 		1.0,i<dd->nat_tot ? 0.0 : 1.0);
     }
@@ -905,8 +906,8 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
   if (bAll) {
     for(i=0; i<li->nc; i++)
       fprintf(fp,"CONECT%5d%5d\n",
-	      glatnr(dd,li->bla[2*i]),
-	      glatnr(dd,li->bla[2*i+1]));
+	      ddglatnr(dd,li->bla[2*i]),
+	      ddglatnr(dd,li->bla[2*i+1]));
   }
   fclose(fp);
 }
@@ -1009,8 +1010,8 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
       fprintf(fplog,"   Rel. Constraint Deviation:  RMS         MAX     between atoms\n");
       fprintf(fplog,"       Before LINCS          %.6f    %.6f %6d %6d\n",
 	      sqrt(p_ssd/ncons_loc),p_max,
-	      glatnr(dd,lincsd->bla[2*p_imax]),
-	      glatnr(dd,lincsd->bla[2*p_imax+1]));
+	      ddglatnr(dd,lincsd->bla[2*p_imax]),
+	      ddglatnr(dd,lincsd->bla[2*p_imax+1]));
     }
     if (bLog || bEner) {
       cconerr(dd,lincsd->nc,lincsd->bla,lincsd->bllen,xprime,pbc_null,
@@ -1027,8 +1028,8 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     if (bLog && fplog && lincsd->nc > 0) {
       fprintf(fplog,"        After LINCS          %.6f    %.6f %6d %6d\n\n",
 	      sqrt(p_ssd/ncons_loc),p_max,
-	      glatnr(dd,lincsd->bla[2*p_imax]),
-	      glatnr(dd,lincsd->bla[2*p_imax+1]));
+	      ddglatnr(dd,lincsd->bla[2*p_imax]),
+	      ddglatnr(dd,lincsd->bla[2*p_imax+1]));
     }
     
     if (warn > 0) {
@@ -1040,8 +1041,8 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
 		"rms %.6f, max %.6f (between atoms %d and %d)\n",
 		step,ir->init_t+step*ir->delta_t,
 		sqrt(p_ssd/ncons_loc),p_max,
-		glatnr(dd,lincsd->bla[2*p_imax]),
-		glatnr(dd,lincsd->bla[2*p_imax+1]));
+		ddglatnr(dd,lincsd->bla[2*p_imax]),
+		ddglatnr(dd,lincsd->bla[2*p_imax+1]));
 	if (fplog)
 	  fprintf(fplog,"%s",buf);
 	fprintf(stderr,"%s",buf);

@@ -1652,7 +1652,9 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
     calc_bonds(fplog,cr->ms,
 	       idef,x,f,fr,&pbc,graph,epot,nrnb,lambda,md,
 	       opts->ngener,&grps->estat,
-	       fcd,step,fr->bSepDVDL && do_per_step(step,ir->nstlog));    
+	       fcd,
+	       DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+	       fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
     debug_gmx();
     GMX_MPE_LOG(ev_calc_bonds_finish);
   }

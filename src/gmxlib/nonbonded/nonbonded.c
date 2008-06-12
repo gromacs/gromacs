@@ -514,13 +514,14 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 
 
 real 
-do_nonbonded14(int ftype,int nbonds,
-	       const t_iatom iatoms[],const t_iparams iparams[],
-               const rvec x[],rvec f[],rvec fshift[],
-               const t_pbc *pbc,const t_graph *g,
-               real lambda,real *dvdlambda,
-               const t_mdatoms *md,
-               const t_forcerec *fr,int ngrp,t_grp_ener *gener)
+do_listed_vdw_q(int ftype,int nbonds,
+		const t_iatom iatoms[],const t_iparams iparams[],
+		const rvec x[],rvec f[],rvec fshift[],
+		const t_pbc *pbc,const t_graph *g,
+		real lambda,real *dvdlambda,
+		const t_mdatoms *md,
+		const t_forcerec *fr,int ngrp,t_grp_ener *gener,
+		int *global_atom_index)
 {
     static    bool bWarn=FALSE;
     real      eps,r2,*tab,rtab2=0;
@@ -666,7 +667,10 @@ do_nonbonded14(int ftype,int nbonds,
             if (!bWarn) 
             {
                 fprintf(stderr,"Warning: 1-4 interaction between %d and %d "
-                        "at distance %.3f which is larger than the 1-4 table size %.3f nm\n", ai+1, aj+1, sqrt(r2), sqrt(rtab2));
+                        "at distance %.3f which is larger than the 1-4 table size %.3f nm\n", 
+			glatnr(global_atom_index,ai),
+			glatnr(global_atom_index,aj),
+			sqrt(r2), sqrt(rtab2));
                 fprintf(stderr,"These are ignored for the rest of the simulation\n");
 		fprintf(stderr,"This usually means your system is exploding,\n"
 			"if not, you should increase table-extension in your mdp file\n"
@@ -677,7 +681,9 @@ do_nonbonded14(int ftype,int nbonds,
 	      fprintf(debug,"%8f %8f %8f\n%8f %8f %8f\n1-4 (%d,%d) interaction not within cut-off! r=%g. Ignored",
 		      x[ai][XX],x[ai][YY],x[ai][ZZ],
 		      x[aj][XX],x[aj][YY],x[aj][ZZ],
-		      (int)ai+1,(int)aj+1,sqrt(r2));
+		      glatnr(global_atom_index,ai),
+		      glatnr(global_atom_index,aj),
+		      sqrt(r2));
         }
         else 
         {

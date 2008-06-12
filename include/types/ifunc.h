@@ -46,7 +46,8 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
                      const rvec x[],rvec f[],rvec fshift[],
 		     const t_pbc *pbc,const t_graph *g,
 		     real lambda,real *dvdlambda,
-		     const t_mdatoms *md,t_fcdata *fcd);
+		     const t_mdatoms *md,t_fcdata *fcd,
+		     int *ddgatindex);
 
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[] 
@@ -57,6 +58,9 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
  * assumed to be such that no calculation of PBC is necessary,
  * If pbc!=NULL a full PBC calculation is performed.
  * If g!=NULL it is used for determining the shift forces.
+ * With domain decomposition ddgatindex can be used for getting global
+ * atom numbers for warnings and error messages.
+ * ddgatindex is NULL when domain decomposition is not used.
  */
 
 #define IF_NULL       0

@@ -301,7 +301,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 		"\nt = %.3f ps: Water molecule starting at atom %d can not be "
 		"settled.\nCheck for bad contacts and/or reduce the timestep.\n",
 		ir->init_t+step*ir->delta_t,
-		glatnr(cr->dd,settle->iatoms[error*2+1]));
+		ddglatnr(cr->dd,settle->iatoms[error*2+1]));
 	if (fplog)
 	  fprintf(fplog,"%s",buf);
 	fprintf(stderr,"%s",buf);

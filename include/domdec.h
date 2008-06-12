@@ -12,7 +12,7 @@
 #include <mpi.h>
 #endif
 
-extern int glatnr(gmx_domdec_t *dd,int i);
+extern int ddglatnr(gmx_domdec_t *dd,int i);
 /* Returns the global topology atom number belonging to local atom index i.
  * This function is intended for writing ascii output
  * and returns atom numbers starting at 1.

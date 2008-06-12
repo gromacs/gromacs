@@ -95,11 +95,15 @@ static void write_nblist(FILE *out,gmx_domdec_t *dd,t_nblist *nblist,int nDNL)
 	  nii = 3;
 	nj = nblist->jindex[i+1] - nblist->jindex[i];
 	fprintf(out,"i: %d shift: %d gid: %d nj: %d\n",
-		glatnr(dd,nblist->iinr[i]),nblist->shift[i],nblist->gid[i],nj);
-	for(ii=0; ii<nii; ii++)
-	  for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++)
+		ddglatnr(dd,nblist->iinr[i]),
+		nblist->shift[i],nblist->gid[i],nj);
+	for(ii=0; ii<nii; ii++) {
+	  for(j=nblist->jindex[i]; (j<nblist->jindex[i+1]); j++) {
 	    fprintf(out,"  i: %5d  j: %5d\n",
-		    glatnr(dd,nblist->iinr[i]+ii),glatnr(dd,nblist->jjnr[j]));
+		    ddglatnr(dd,nblist->iinr[i]+ii),
+		    ddglatnr(dd,nblist->jjnr[j]));
+	  }
+	}
       }
     }
     fflush(out);

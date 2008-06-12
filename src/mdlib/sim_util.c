@@ -310,7 +310,7 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
     fn2 = norm2(f[i]);
     if (fn2 >= pf2) {
       fprintf(fp,"step %d  atom %6d  x %8.3f %8.3f %8.3f  force %12.5e\n",
-	      step,glatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
+	      step,ddglatnr(cr->dd,i),x[i][XX],x[i][YY],x[i][ZZ],sqrt(fn2));
     }
   }
 }

@@ -57,6 +57,19 @@
 #include "nonbonded.h"
 #include "mdrun.h"
 
+int glatnr(int *global_atom_index,int i)
+{
+    int atnr;
+
+    if (global_atom_index == NULL) {
+        atnr = i + 1;
+    } else {
+        atnr = global_atom_index[i] + 1;
+    }
+
+    return atnr;
+}
+
 static int pbc_rvec_sub(const t_pbc *pbc,const rvec xi,const rvec xj,rvec dx)
 {
   if (pbc) {
@@ -86,7 +99,8 @@ real morse_bonds(int nbonds,
 		 const rvec x[],rvec f[],rvec fshift[],
 		 const t_pbc *pbc,const t_graph *g,
 		 real lambda,real *dvdl,
-		 const t_mdatoms *md,t_fcdata *fcd)
+		 const t_mdatoms *md,t_fcdata *fcd,
+		 int *global_atom_index)
 {
   const real one=1.0;
   const real two=2.0;
@@ -140,7 +154,8 @@ real cubic_bonds(int nbonds,
 		 const rvec x[],rvec f[],rvec fshift[],
 		 const t_pbc *pbc,const t_graph *g,
 		 real lambda,real *dvdl,
-		 const t_mdatoms *md,t_fcdata *fcd)
+		 const t_mdatoms *md,t_fcdata *fcd,
+		 int *global_atom_index)
 {
   const real three = 3.0;
   const real two   = 2.0;
@@ -196,7 +211,8 @@ real FENE_bonds(int nbonds,
 		const rvec x[],rvec f[],rvec fshift[],
 		const t_pbc *pbc,const t_graph *g,
 		real lambda,real *dvdl,
-		const t_mdatoms *md,t_fcdata *fcd)
+		const t_mdatoms *md,t_fcdata *fcd,
+		int *global_atom_index)
 {
   const real half=0.5;
   const real one=1.0;
@@ -226,7 +242,9 @@ real FENE_bonds(int nbonds,
     if (dr2 >= bm2)
       gmx_fatal(FARGS,
 		"r^2 (%f) >= bm^2 (%f) in FENE bond between atoms %d and %d",
-		dr2,bm2,ai+1,aj+1);
+		dr2,bm2,
+		glatnr(global_atom_index,ai),
+		glatnr(global_atom_index,aj));
       
     omdr2obm2  = one - dr2/bm2;
     
@@ -282,7 +300,8 @@ real bonds(int nbonds,
 	   const rvec x[],rvec f[],rvec fshift[],
 	   const t_pbc *pbc,const t_graph *g,
 	   real lambda,real *dvdlambda,
-	   const t_mdatoms *md,t_fcdata *fcd)
+	   const t_mdatoms *md,t_fcdata *fcd,
+	   int *global_atom_index)
 {
   int  i,m,ki,ai,aj,type;
   real dr,dr2,fbond,vbond,fij,vtot;
@@ -336,7 +355,8 @@ real polarize(int nbonds,
 	      const rvec x[],rvec f[],rvec fshift[],
 	      const t_pbc *pbc,const t_graph *g,
 	      real lambda,real *dvdlambda,
-	      const t_mdatoms *md,t_fcdata *fcd)
+	      const t_mdatoms *md,t_fcdata *fcd,
+	      int *global_atom_index)
 {
   int  i,m,ki,ai,aj,type;
   real dr,dr2,fbond,vbond,fij,vtot,ksh;
@@ -350,7 +370,7 @@ real polarize(int nbonds,
     aj   = forceatoms[i++];
     ksh  = sqr(md->chargeA[aj])*ONE_4PI_EPS0/forceparams[type].polarize.alpha;
     if (debug)
-      fprintf(debug,"POL: ai = %d aj = %d ksh = %.3f\n",ai,aj,ksh);
+      fprintf(debug,"POL: local ai = %d aj = %d ksh = %.3f\n",ai,aj,ksh);
   
     ki   = pbc_rvec_sub(pbc,x[ai],x[aj],dx);	/*   3 		*/
     dr2  = iprod(dx,dx);			/*   5		*/
@@ -384,7 +404,8 @@ real water_pol(int nbonds,
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
-	       const t_mdatoms *md,t_fcdata *fcd)
+	       const t_mdatoms *md,t_fcdata *fcd,
+	       int *global_atom_index)
 {
   /* This routine implements anisotropic polarizibility for water, through
    * a shell connected to a dummy with spring constant that differ in the
@@ -542,7 +563,8 @@ real thole_pol(int nbonds,
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
-	       const t_mdatoms *md,t_fcdata *fcd)
+	       const t_mdatoms *md,t_fcdata *fcd,
+	       int *global_atom_index)
 {
   /* Interaction between two pairs of particles with opposite charge */
   int i,type,a1,da1,a2,da2;
@@ -593,7 +615,8 @@ real angles(int nbonds,
 	    const rvec x[],rvec f[],rvec fshift[],
 	    const t_pbc *pbc,const t_graph *g,
 	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,t_fcdata *fcd)
+	    const t_mdatoms *md,t_fcdata *fcd,
+	    int *global_atom_index)
 {
   int  i,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
@@ -668,7 +691,8 @@ real urey_bradley(int nbonds,
 		  const rvec x[],rvec f[],rvec fshift[],
 		  const t_pbc *pbc,const t_graph *g,
 		  real lambda,real *dvdlambda,
-		  const t_mdatoms *md,t_fcdata *fcd)
+		  const t_mdatoms *md,t_fcdata *fcd,
+		  int *global_atom_index)
 {
   int  i,m,ai,aj,ak,t1,t2,type,ki;
   rvec r_ij,r_kj,r_ik;
@@ -767,7 +791,8 @@ real quartic_angles(int nbonds,
 		    const rvec x[],rvec f[],rvec fshift[],
 		    const t_pbc *pbc,const t_graph *g,
 		    real lambda,real *dvdlambda,
-		    const t_mdatoms *md,t_fcdata *fcd)
+		    const t_mdatoms *md,t_fcdata *fcd,
+		    int *global_atom_index)
 {
   int  i,j,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
@@ -953,7 +978,7 @@ real dopdihs(real cpA,real cpB,real phiA,real phiB,int mult,
 }
 
 static real dopdihs_min(real cpA,real cpB,real phiA,real phiB,int mult,
-		       real phi,real lambda,real *V,real *F)
+			real phi,real lambda,real *V,real *F)
      /* similar to dopdihs, except for a minus sign  *
       * and a different treatment of mult/phi0       */
 {
@@ -984,7 +1009,8 @@ real pdihs(int nbonds,
 	   const rvec x[],rvec f[],rvec fshift[],
 	   const t_pbc *pbc,const t_graph *g,
 	   real lambda,real *dvdlambda,
-	   const t_mdatoms *md,t_fcdata *fcd)
+	   const t_mdatoms *md,t_fcdata *fcd,
+	   int *global_atom_index)
 {
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
@@ -1029,7 +1055,8 @@ real idihs(int nbonds,
 	   const rvec x[],rvec f[],rvec fshift[],
 	   const t_pbc *pbc,const t_graph *g,
 	   real lambda,real *dvdlambda,
-	   const t_mdatoms *md,t_fcdata *fcd)
+	   const t_mdatoms *md,t_fcdata *fcd,
+	   int *global_atom_index)
 {
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
@@ -1282,7 +1309,8 @@ real angres(int nbonds,
 	    const rvec x[],rvec f[],rvec fshift[],
 	    const t_pbc *pbc,const t_graph *g,
 	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,t_fcdata *fcd)
+	    const t_mdatoms *md,t_fcdata *fcd,
+	    int *global_atom_index)
 {
   return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
 		    lambda,dvdlambda,FALSE);
@@ -1293,7 +1321,8 @@ real angresz(int nbonds,
 	     const rvec x[],rvec f[],rvec fshift[],
 	     const t_pbc *pbc,const t_graph *g,
 	     real lambda,real *dvdlambda,
-	     const t_mdatoms *md,t_fcdata *fcd)
+	     const t_mdatoms *md,t_fcdata *fcd,
+	     int *global_atom_index)
 {
   return low_angres(nbonds,forceatoms,forceparams,x,f,fshift,pbc,g,
 		    lambda,dvdlambda,TRUE);
@@ -1305,7 +1334,8 @@ real unimplemented(int nbonds,
 		   const rvec x[],rvec f[],rvec fshift[],
 		   const t_pbc *pbc,const t_graph *g,
 		   real lambda,real *dvdlambda,
-		   const t_mdatoms *md,t_fcdata *fcd)
+		   const t_mdatoms *md,t_fcdata *fcd,
+		   int *global_atom_index)
 {
   gmx_impl("*** you are using a not implemented function");
 
@@ -1317,7 +1347,8 @@ real rbdihs(int nbonds,
 	    const rvec x[],rvec f[],rvec fshift[],
 	    const t_pbc *pbc,const t_graph *g,
 	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,t_fcdata *fcd)
+	    const t_mdatoms *md,t_fcdata *fcd,
+	    int *global_atom_index)
 {
   const real c0=0.0,c1=1.0,c2=2.0,c3=3.0,c4=4.0,c5=5.0;
   int  type,ai,aj,ak,al,i,j;
@@ -1444,7 +1475,8 @@ real g96bonds(int nbonds,
 	      const rvec x[],rvec f[],rvec fshift[],
 	      const t_pbc *pbc,const t_graph *g,
 	      real lambda,real *dvdlambda,
-	      const t_mdatoms *md,t_fcdata *fcd)
+	      const t_mdatoms *md,t_fcdata *fcd,
+	      int *global_atom_index)
 {
   int  i,m,ki,ai,aj,type;
   real dr2,fbond,vbond,fij,vtot;
@@ -1508,7 +1540,8 @@ real g96angles(int nbonds,
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
-	       const t_mdatoms *md,t_fcdata *fcd)
+	       const t_mdatoms *md,t_fcdata *fcd,
+	       int *global_atom_index)
 {
   int  i,ai,aj,ak,type,m,t1,t2;
   rvec r_ij,r_kj;
@@ -1574,7 +1607,8 @@ real cross_bond_bond(int nbonds,
 		     const rvec x[],rvec f[],rvec fshift[],
 		     const t_pbc *pbc,const t_graph *g,
 		     real lambda,real *dvdlambda,
-		     const t_mdatoms *md,t_fcdata *fcd)
+		     const t_mdatoms *md,t_fcdata *fcd,
+		     int *global_atom_index)
 {
   /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
    * pp. 842-847
@@ -1644,7 +1678,8 @@ real cross_bond_angle(int nbonds,
 		      const rvec x[],rvec f[],rvec fshift[],
 		      const t_pbc *pbc,const t_graph *g,
 		      real lambda,real *dvdlambda,
-		      const t_mdatoms *md,t_fcdata *fcd)
+		      const t_mdatoms *md,t_fcdata *fcd,
+		      int *global_atom_index)
 {
   /* Potential from Lawrence and Skimmer, Chem. Phys. Lett. 372 (2003)
    * pp. 842-847
@@ -1760,7 +1795,8 @@ real tab_bonds(int nbonds,
 	       const rvec x[],rvec f[],rvec fshift[],
 	       const t_pbc *pbc,const t_graph *g,
 	       real lambda,real *dvdlambda,
-	       const t_mdatoms *md,t_fcdata *fcd)
+	       const t_mdatoms *md,t_fcdata *fcd,
+	       int *global_atom_index)
 {
   int  i,m,ki,ai,aj,type;
   real dr,dr2,fbond,vbond,fij,vtot;
@@ -1813,7 +1849,8 @@ real tab_angles(int nbonds,
 		const rvec x[],rvec f[],rvec fshift[],
 		const t_pbc *pbc,const t_graph *g,
 		real lambda,real *dvdlambda,
-		const t_mdatoms *md,t_fcdata *fcd)
+		const t_mdatoms *md,t_fcdata *fcd,
+		int *global_atom_index)
 {
   int  i,ai,aj,ak,t1,t2,type;
   rvec r_ij,r_kj;
@@ -1887,7 +1924,8 @@ real tab_dihs(int nbonds,
 	      const rvec x[],rvec f[],rvec fshift[],
 	      const t_pbc *pbc,const t_graph *g,
 	      real lambda,real *dvdlambda,
-	      const t_mdatoms *md,t_fcdata *fcd)
+	      const t_mdatoms *md,t_fcdata *fcd,
+	      int *global_atom_index)
 {
   int  i,type,ai,aj,ak,al;
   int  t1,t2,t3;
@@ -1932,8 +1970,8 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		real epot[],t_nrnb *nrnb,
 		real lambda,
 		const t_mdatoms *md,int ngrp,t_grp_ener *gener,
-		t_fcdata *fcd,
-		int step,bool bSepDVDL)
+		t_fcdata *fcd,int *global_atom_index,
+		bool bPrintSepPot,int step)
 {
   int    ftype,nbonds,ind,nat;
   real   v,dvdl;
@@ -1944,7 +1982,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
   else
     pbc_null = NULL;
 
-  if (bSepDVDL)
+  if (bPrintSepPot)
     fprintf(fplog,"Step %d: bonded V and dVdl for this node\n",step);
 
 #ifdef DEBUG
@@ -1977,19 +2015,20 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	    interaction_function[ftype].ifunc(nbonds,idef->il[ftype].iatoms,
 					      idef->iparams,
 					      (const rvec*)x,f,fr->fshift,
-					      pbc_null,g,lambda,&dvdl,md,fcd);
-	  if (bSepDVDL) {
+					      pbc_null,g,lambda,&dvdl,md,fcd,
+					      global_atom_index);
+	  if (bPrintSepPot) {
 	    fprintf(fplog,"  %-23s #%4d  V %12.5e  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,nbonds/nat,v,dvdl);
 	  }
 	} else {
-	  v = do_nonbonded14(ftype,nbonds,idef->il[ftype].iatoms,
-			     idef->iparams,
-			     (const rvec*)x,f,fr->fshift,
-			     pbc_null,g,
-			     lambda,&dvdl,
-			     md,fr,ngrp,gener);
-	  if (bSepDVDL) {
+	  v = do_listed_vdw_q(ftype,nbonds,idef->il[ftype].iatoms,
+			      idef->iparams,
+			      (const rvec*)x,f,fr->fshift,
+			      pbc_null,g,
+			      lambda,&dvdl,
+			      md,fr,ngrp,gener,global_atom_index);
+	  if (bPrintSepPot) {
 	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,
 		    interaction_function[F_COUL14].longname,nbonds/nat,dvdl);

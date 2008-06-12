@@ -51,14 +51,21 @@ extern "C" {
 #include "nrnb.h"
 #include "pbc.h"
 
+extern int glatnr(int *global_atom_index,int i);
+/* Returns the global topology atom number belonging to local atom index i.
+ * This function is intended for writing ascii output
+ * and returns atom numbers starting at 1.
+ * When global_atom_index=NULL returns i+1.
+ */
+
 extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		       const t_idef *idef,
                        rvec x[],rvec f[],t_forcerec *fr,
 		       const t_pbc *pbc,const t_graph *g,
                        real epot[],t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,int ngrp,t_grp_ener *gener,
-		       t_fcdata *fcd,
-		       int step,bool bSepDVDL);
+		       t_fcdata *fcd,int *ddgatindex,
+		       bool bPrintSepPot,int step);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
  * The "bonds" are specified as follows:
@@ -75,6 +82,12 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
  *     t_idef.
  *   real epot[NR_F]
  *     total potential energy split up over the function types.
+ *   int *ddgatindex
+ *     global atom number indices, should be NULL when not using DD.
+ *   bool bPrintSepPot
+ *     if TRUE print local potential and dVdlambda for each bonded type.
+ *   int step
+ *     used with bPrintSepPot
  *   return value:
  *	    the total potential energy (sum over epot).
  */

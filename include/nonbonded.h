@@ -52,13 +52,17 @@ do_nonbonded(t_commrec *cr,t_forcerec *fr,
              t_nrnb *nrnb,real lambda,real *dvdlambda,
              bool bLR,int nls,int eNL,bool bDoForces);
 
+/* Calculate VdW/charge pair interactions (usually 1-4 interactions).
+ * global_atom_index is only passed for printing error messages.
+ */
 real
-do_nonbonded14(int ftype,int nbonds,
-	       const t_iatom iatoms[],const t_iparams iparams[],
-               const rvec x[],rvec f[],rvec fshift[],
-               const t_pbc *pbc,const t_graph *g,
-               real lambda,real *dvdlambda,
-               const t_mdatoms *md,
-               const t_forcerec *fr,int ngrp,t_grp_ener *gener);
+do_listed_vdw_q(int ftype,int nbonds,
+		const t_iatom iatoms[],const t_iparams iparams[],
+		const rvec x[],rvec f[],rvec fshift[],
+		const t_pbc *pbc,const t_graph *g,
+		real lambda,real *dvdlambda,
+		const t_mdatoms *md,
+		const t_forcerec *fr,int ngrp,t_grp_ener *gener,
+		int *global_atom_index);
 
 #endif

@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  */
 
 #ifdef HAVE_CONFIG_H
@@ -344,18 +344,18 @@ static int ddcoord2ddnodeid(gmx_domdec_t *dd,ivec c)
   return ddnodeid;
 }
 
-int glatnr(gmx_domdec_t *dd,int i)
+int ddglatnr(gmx_domdec_t *dd,int i)
 {
   int atnr;
-
+  
   if (dd == NULL) {
-    atnr = i + 1;
+      atnr = i + 1;
   } else {
-    if (i >= dd->comm->nat[ddnatNR-1])
-      gmx_fatal(FARGS,"glatnr called with %d, which is larger than the local number of atoms (%d)",i,dd->comm->nat[ddnatNR-1]);
-    atnr = dd->gatindex[i] + 1;
+      if (i >= dd->comm->nat[ddnatNR-1])
+          gmx_fatal(FARGS,"glatnr called with %d, which is larger than the local number of atoms (%d)",i,dd->comm->nat[ddnatNR-1]);
+      atnr = dd->gatindex[i] + 1;
   }
-
+  
   return atnr;
 }
 
@@ -2610,36 +2610,38 @@ static void clear_and_mark_ind(int ncg,int *move,
 }
 
 static void print_cg_move(FILE *fplog,
-			  gmx_domdec_t *dd,int step,int cg,int dim,int dir,
-			  real limitd,
-			  rvec cm_old,rvec cm_new,real pos_d)
+                          gmx_domdec_t *dd,int step,int cg,int dim,int dir,
+                          real limitd,
+                          rvec cm_old,rvec cm_new,real pos_d)
 {
   fprintf(fplog,"\nStep %d:\n",step);
   fprintf(fplog,"The charge group starting at atom %d moved than the distance allowed by the domain decomposition (%f) in direction %c\n",
-	  glatnr(dd,dd->cgindex[cg]),limitd,dim2char(dim));
+          ddglatnr(dd,dd->cgindex[cg]),limitd,dim2char(dim));
   fprintf(fplog,"distance out of cell %f\n",
-	  dir==1 ? pos_d - dd->cell_x1[dim] : pos_d - dd->cell_x0[dim]);
+          dir==1 ? pos_d - dd->cell_x1[dim] : pos_d - dd->cell_x0[dim]);
   fprintf(fplog,"Old coordinates: %8.3f %8.3f %8.3f\n",
-	  cm_old[XX],cm_old[YY],cm_old[ZZ]);
+          cm_old[XX],cm_old[YY],cm_old[ZZ]);
   fprintf(fplog,"New coordinates: %8.3f %8.3f %8.3f\n",
-	  cm_new[XX],cm_new[YY],cm_new[ZZ]);
+          cm_new[XX],cm_new[YY],cm_new[ZZ]);
   fprintf(fplog,"Old cell boundaries in direction %c: %8.3f %8.3f\n",
-	  dim2char(dim),
-	  dd->comm->old_cell_x0[dim],dd->comm->old_cell_x1[dim]);
+          dim2char(dim),
+          dd->comm->old_cell_x0[dim],dd->comm->old_cell_x1[dim]);
   fprintf(fplog,"New cell boundaries in direction %c: %8.3f %8.3f\n",
-	  dim2char(dim),
-	  dd->cell_x0[dim],dd->cell_x1[dim]);
+          dim2char(dim),
+          dd->cell_x0[dim],dd->cell_x1[dim]);
 }
 
 static void cg_move_error(FILE *fplog,
-			  gmx_domdec_t *dd,int step,int cg,int dim,int dir,
-			  real limitd,
-			  rvec cm_old,rvec cm_new,real pos_d)
+                          gmx_domdec_t *dd,int step,int cg,int dim,int dir,
+                          real limitd,
+                          rvec cm_old,rvec cm_new,real pos_d)
 {
-  if (fplog)
-    print_cg_move(fplog, dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
-  print_cg_move(stderr,dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
-  gmx_fatal(FARGS,"A charge group move too far between two domain decomposition steps");
+    if (fplog)
+    {
+        print_cg_move(fplog, dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
+    }
+    print_cg_move(stderr,dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
+    gmx_fatal(FARGS,"A charge group move too far between two domain decomposition steps");
 }
 
 static void rotate_state_atom(t_state *state,int a)
