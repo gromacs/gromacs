@@ -185,7 +185,7 @@ static void check_viol(FILE *log,t_commrec *cr,
     
     ener=interaction_function[F_DISRES].ifunc(n,&forceatoms[i],forceparams,
 					      (const rvec*)x,f,fr->fshift,
-					      pbc,g,lam,&dvdl,NULL,fcd);
+					      pbc,g,lam,&dvdl,NULL,fcd,NULL);
     viol = fcd->disres.sumviol;
     
     if (viol > 0) {
