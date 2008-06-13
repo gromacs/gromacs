@@ -60,6 +60,7 @@
 #include "mtxio.h"
 #include "sparsematrix.h"
 #include "physics.h"
+#include "main.h"
 
 static void
 nma_full_hessian(real *           hess,
