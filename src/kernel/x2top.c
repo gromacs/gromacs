@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
   t_params   plist[F_NRE];
   t_excls    *excls;
   t_atoms    *atoms;       /* list with all atoms */
-  t_atomtype *atype;
+  t_atomtype atype;
   t_nextnb   nnb;
   t_nm2type  *nm2t;
   t_mols     mymol;
