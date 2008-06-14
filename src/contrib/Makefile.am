@@ -14,7 +14,7 @@ EXTRA_DIST              = README
 # Add new entries in Makefile.am!
 #extra_PROGRAMS  =       prfn	mkice	total	hexamer 	optwat do_shift g_anavel anaf pmetest
 
-noinst_PROGRAMS 	=  	copyrgt 	mkyaw 		\
+EXTRA_PROGRAMS 	=  	copyrgt 	mkyaw 		\
 			options 	hrefify 	\
 			addquote 	tune_dip	\
 			ehole 		gen_table	\
