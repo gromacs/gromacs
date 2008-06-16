@@ -482,6 +482,8 @@ void get_ir(char *mdparin,char *mdparout,
   REM_TYPE("cpp");
   REM_TYPE("domain-decomposition");
   REPL_TYPE("unconstrained-start","continuation");
+  REM_TYPE("dihre-tau");
+  REM_TYPE("nstdihreout");
 
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   CTYPE ("Preprocessor information: use cpp syntax.");
@@ -752,12 +754,9 @@ void get_ir(char *mdparin,char *mdparout,
   STYPE ("orire-fitgrp",orirefitgrp,    NULL);
   CTYPE ("Output frequency for trace(SD) and S to energy file");
   ITYPE ("nstorireout", ir->nstorireout, 100);
-  CTYPE ("Dihedral angle restraints: No, Simple or Ensemble");
-  EETYPE("dihre",       opts->eDihre,   edisre_names, nerror, TRUE);
+  CTYPE ("Dihedral angle restraints: No or Yes");
+  EETYPE("dihre",       opts->bDihre,   yesno_names, nerror, TRUE);
   RTYPE ("dihre-fc",	ir->dihre_fc,	1000.0);
-  RTYPE ("dihre-tau",	ir->dihre_tau,	0.0);
-  CTYPE ("Output frequency for dihedral values to energy file");
-  ITYPE ("nstdihreout", ir->nstdihreout, 100);
 
   /* Free energy stuff */
   CCTYPE ("Free energy control stuff");

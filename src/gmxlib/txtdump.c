@@ -561,8 +561,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PR("nstorireout",ir->nstorireout);
 
     PR("dihre-fc",ir->dihre_fc);
-    PR("dihre-tau",ir->dihre_tau);
-    PR("nstdihreout",ir->nstdihreout);
     
     PR("em_stepsize",ir->em_stepsize);
     PR("em_tol",ir->em_tol);

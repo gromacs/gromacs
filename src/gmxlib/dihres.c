@@ -56,35 +56,10 @@ void init_dihres(FILE *fplog,int nfa,const t_iatom forceatoms[],
 		 const t_iparams ip[],
 		 const t_inputrec *ir,t_fcdata *fcd)
 {
-  int fa;
-  t_dihresdata *dd;
-
+  fcd->dihre_fc = ir->dihre_fc;
   
-  dd = &(fcd->dihres);
-  
-  dd->dihre_fc        = ir->dihre_fc;
-  dd->dihre_tau       = ir->dihre_tau;
-  if (dd->dihre_tau == 0.0) {
-    dd->ETerm = 0.0;
-  } else {
-    dd->ETerm = exp(-(ir->delta_t/ir->dihre_tau));
-  }
-  dd->ETerm1 = 1.0 - dd->ETerm;
-  dd->exp_min_t_tau = 1.0;
-  
-  dd->nr = 0;
-  for(fa=0; fa<nfa; fa+=5)
-    if (fa==0 || 
-	ip[forceatoms[fa-5]].dihres.label != ip[forceatoms[fa]].dihres.label)
-      dd->nr++;
-  dd->ndih = nfa/(interaction_function[F_DIHRES].nratoms+1);
-  snew(dd->diht,dd->ndih);
-  snew(dd->dihav,dd->ndih);
-  
-  if (dd->ndih > 0) {
-    fprintf(fplog,
-	    "There are %d dihedral restraints involving %d atom quartets\n",
-	    dd->nr,dd->ndih);
+  if (fplog) {
+    fprintf(fplog,"There are %d dihedral restraints\n",nfa/(1+NRAL(F_DIHRES)));
   }
 }
 
@@ -99,7 +74,7 @@ real ta_dihres(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
   real phi0,phi,ddphi,ddp,dp,dp2,dphi,kfac,cos_phi,sign,d2r,fc;
   rvec r_ij,r_kj,r_kl,m,n;
   
-  fc  = fcd->dihres.dihre_fc;
+  fc  = fcd->dihre_fc;
   d2r = DEG2RAD;
   k   = 0;
   for(i=0; (i<nfa); ) {

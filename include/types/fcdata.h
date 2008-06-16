@@ -87,23 +87,6 @@ typedef struct {
   real   *eig;        /* Eigenvalues/vectors, for output only (nex x 12)    */
 } t_oriresdata;
 
-/* Dihedral restraining stuff */
-typedef struct {
-  real dihre_fc;        /* Force constant for dihres,                       
-			 * which is multiplied by a (possibly)              
-			 * different factor for each restraint            */
-  real dihre_tau;	/* Time constant for dihres		               */
-
-  real ETerm;         /* multiplication factor for time averaging         */
-  real ETerm1;        /* 1 - ETerm1                                       */
-  real exp_min_t_tau; /* Factor for slowly switching on the force         */
-  int  nr;            /* The number of dihedral restraints                */
-  int  ndih;          /* The number of dihedral restraint pairs           */
-  real *diht;         /* The calculated instantaneous dihedrals (npr)     */
-  real *dihav;        /* The calculated time averaged dihedrals (npr)     */
-  real RMSviol;       /* The root-mean-square of violations (degrees)     */  
-} t_dihresdata;
-
 /* 
  * Data struct used in the force calculation routines
  * for storing the tables for bonded interactions and
@@ -118,5 +101,5 @@ typedef struct {
 
   t_disresdata disres;
   t_oriresdata orires;
-  t_dihresdata dihres;
+  real         dihre_fc;
 } t_fcdata;

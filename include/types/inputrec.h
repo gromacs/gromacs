@@ -204,8 +204,6 @@ typedef struct {
   real orires_tau;	    /* time constant for memory function in orires 	*/
   int  nstorireout;     /* frequency of writing tr(SD) to enx           */ 
   real dihre_fc;        /* force constant for dihedral restraints	*/
-  int  nstdihreout;     /* frequency of writing dihedrals to enx        */ 
-  real dihre_tau;       /* time constant for memory function in dihres 	*/
   real em_stepsize;	    /* The stepsize for updating			*/
   real em_tol;		    /* The tolerance				*/
   int  niter;           /* Number of iterations for convergence of      */

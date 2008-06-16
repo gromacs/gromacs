@@ -528,7 +528,7 @@ void print_ebin_header(FILE *log,int steps,real time,real lamb)
 	  "Step","Time","Lambda",steps,time,lamb);
 }
 
-void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,bool bDihR,
+void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 		FILE *log,int step,int nsteps,real time,int mode,bool bCompact,
 		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts)
 {

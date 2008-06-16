@@ -226,7 +226,7 @@ new_status(char *topfile,char *topppfile,char *confin,
     if (bVerbose && i)
       fprintf(stderr,"removed %d orientation restraints\n",i);
   }
-  if (opts->eDihre == edrNone) {
+  if (opts->bDihre == FALSE) {
     i = rm_interactions(F_DIHRES,nrmols,molinfo);
     if (bVerbose && i)
       fprintf(stderr,"removed %d dihedral restraints\n",i);

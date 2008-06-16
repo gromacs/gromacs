@@ -1241,7 +1241,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Output stuff */
     if (MASTER(cr)) {
-      bool do_ene,do_dr,do_or,do_dihr;
+      bool do_ene,do_dr,do_or;
       
       upd_mdebin(mdebin,fp_dgdl,bGStat,
 		 mdatoms->tmass,step_rel,t,ener,state,lastbox,
@@ -1249,8 +1249,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       do_ene = do_per_step(step,ir->nstenergy) || bCPT || bFirstStep || bLastStep;
       do_dr  = do_per_step(step,ir->nstdisreout);
       do_or  = do_per_step(step,ir->nstorireout);
-      do_dihr= do_per_step(step,ir->nstdihreout);
-      print_ebin(fp_ene,do_ene,do_dr,do_or,do_dihr,do_log?fplog:NULL,
+      print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,
 		 step,step_rel,t,
 		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(ir->opts));
       if (ir->ePull != epullNO)
@@ -1314,9 +1313,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  
   if (MASTER(cr)) {
     if (bGStat) {
-      print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
+      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
 		 eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(ir->opts));
-      print_ebin(fp_ene,FALSE,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
+      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
 		 eprRMS,FALSE,mdebin,fcd,&(top->atoms),&(ir->opts));
     }
     close_enx(fp_ene);

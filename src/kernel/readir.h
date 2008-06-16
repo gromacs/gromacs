@@ -66,7 +66,7 @@ typedef struct {
   int  seed;
   int  eDisre;
   bool bOrire;
-  int  eDihre;
+  bool bDihre;
   bool bMorse;
   char *wall_atomtype[2];
   bool pull_start;

@@ -782,7 +782,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	       force_vir,vir,pres,grps,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,s_min->s.lambda);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
   }
   where();
@@ -1130,7 +1130,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
 	print_ebin_header(fplog,step,step,s_min->s.lambda);
-      print_ebin(fp_ene,do_ene,FALSE,FALSE,FALSE,
+      print_ebin(fp_ene,do_ene,FALSE,FALSE,
 		 do_log ? fplog : NULL,step,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
     }
@@ -1163,7 +1163,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     }
     if (!do_ene || !do_log) {
       /* Write final energy file entries */
-      print_ebin(fp_ene,!do_ene,FALSE,FALSE,FALSE,
+      print_ebin(fp_ene,!do_ene,FALSE,FALSE,
 		 !do_log ? fplog : NULL,step,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
     }
@@ -1364,7 +1364,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	       force_vir,vir,pres,grps,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,state->lambda);
-    print_ebin(fp_ene,TRUE,FALSE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
+    print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
   }
   where();
@@ -1779,7 +1779,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
 	print_ebin_header(fplog,step,step,state->lambda);
-      print_ebin(fp_ene,do_ene,FALSE,FALSE,FALSE,
+      print_ebin(fp_ene,do_ene,FALSE,FALSE,
 		 do_log ? fplog : NULL,step,step,step,eprNORMAL,
 		 TRUE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
     }
@@ -1809,7 +1809,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   if(!do_log) /* Write final value to log since we didn't do anythin last step */
     print_ebin_header(fplog,step,step,state->lambda);
   if(!do_ene || !do_log) /* Write final energy file entries */
-    print_ebin(fp_ene,!do_ene,FALSE,FALSE,FALSE,
+    print_ebin(fp_ene,!do_ene,FALSE,FALSE,
 	       !do_log ? fplog : NULL,step,step,step,eprNORMAL,
 	       TRUE,mdebin,fcd,&(top->atoms),&(inputrec->opts));
   
@@ -1966,7 +1966,6 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,inputrec->nstdisreout),
 		   do_per_step(steps_accepted,inputrec->nstorireout),
-		   do_per_step(steps_accepted,inputrec->nstdihreout),
 		   fplog,count,count,count,eprNORMAL,TRUE,
 		   mdebin,fcd,&(top->atoms),&(inputrec->opts));
 	fflush(fplog);
@@ -2284,9 +2283,9 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     
     if (MASTER(cr)) 
     {
-        print_ebin(-1,FALSE,FALSE,FALSE,FALSE,fplog,step,step,t,eprAVER,
+        print_ebin(-1,FALSE,FALSE,FALSE,fplog,step,step,t,eprAVER,
                    FALSE,mdebin,fcd,&(top_global->atoms),&(inputrec->opts));
-        print_ebin(-1,FALSE,FALSE,FALSE,FALSE,fplog,step,step,t,eprRMS,
+        print_ebin(-1,FALSE,FALSE,FALSE,fplog,step,step,t,eprRMS,
                    FALSE,mdebin,fcd,&(top_global->atoms),&(inputrec->opts));
     }
       

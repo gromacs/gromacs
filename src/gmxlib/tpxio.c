@@ -517,14 +517,14 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       ir->orires_tau = 0;
       ir->nstorireout = 0;
     }
-    if(file_version >=26) {
+    if(file_version >= 26) {
       do_real(ir->dihre_fc);
-      do_real(ir->dihre_tau);
-      do_int(ir->nstdihreout);
+      rdum = 0.0;
+      do_real(rdum);
+      idum = 100;
+      do_int(idum);
     } else {
       ir->dihre_fc=0;
-      ir->dihre_tau=0;
-      ir->nstdihreout=0;
     }
 
     do_real(ir->em_stepsize); 
