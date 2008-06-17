@@ -51,13 +51,14 @@ extern "C" {
 extern void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
 			const t_iparams ip[],
 			rvec x[],const t_atoms *atoms,const t_inputrec *ir,
-			const gmx_multisim_t *ms,t_oriresdata *od);
+			const gmx_multisim_t *ms,t_oriresdata *od,
+			t_state *state);
 /* Initializes all the orientation restraint stuff in *od */
 
 extern real calc_orires_dev(const gmx_multisim_t *ms,
 			    int nfa,const t_iatom fa[],const t_iparams ip[],
 			    const t_mdatoms *md,const rvec x[],
-			    const t_pbc *pbc,t_fcdata *fcd);
+			    const t_pbc *pbc,t_fcdata *fcd,history_t *hist);
 /* 
  * Calculates the time averaged D matrices, the S matrix for each experiment.
  * Returns the weighted RMS deviation of the orientation restraints.
@@ -75,6 +76,9 @@ extern void print_orires_log(FILE *log,t_oriresdata *od);
 
 extern t_ifunc orires;
 /* Does only the orientation restraint force calculation */
+
+extern void update_orires_history(t_fcdata *fcd,history_t *hist);
+/* Copy the new time averages that have been calculated in calc_orires_dev */
 
 #ifdef CPLUSPLUS
 }

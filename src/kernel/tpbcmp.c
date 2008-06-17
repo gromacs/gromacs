@@ -656,8 +656,8 @@ static void cmp_disres(t_enxframe *fr1,t_enxframe *fr2,real ftol)
     sprintf(bav,"step %d: disre rav",fr1->step);
     sprintf(bt, "step %d: disre  rt",fr1->step);
     for(i=0; (i<fr1->ndisre); i++) {
-      cmp_real(stdout,bav,i,fr1->rav[i],fr2->rav[i],ftol);
-      cmp_real(stdout,bt,i,fr1->rt[i],fr2->rt[i],ftol);
+      cmp_real(stdout,bav,i,fr1->disre_rm3tav[i],fr2->disre_rm3tav[i],ftol);
+      cmp_real(stdout,bt ,i,fr1->disre_rt[i]    ,fr2->disre_rt[i]    ,ftol);
     }
   }
 }

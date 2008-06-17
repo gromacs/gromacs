@@ -323,10 +323,10 @@ void list_ene(char *fn)
 		 enm[i],fr->ener[i].e,fr->ener[i].eav,fr->ener[i].esum);
       }
       if (fr->ndisre > 0) {
-	printf("Distance restraint %8s  %8s\n","r(t)","< r >");
+	printf("Distance restraint %8s  %8s\n","r(t)","<r^-3>^-3");
 	for(i=0; i<fr->ndisre; i++) {
-	  rav=pow(fr->rav[i],minthird);
-	  printf("%17d  %8.4f  %8.4f\n",i,fr->rt[i],rav);
+	  rav=pow(fr->disre_rm3tav[i],minthird);
+	  printf("%17d  %8.4f  %8.4f\n",i,fr->disre_rt[i],rav);
 	}
       }
       for(b=0; b<fr->nblock; b++)

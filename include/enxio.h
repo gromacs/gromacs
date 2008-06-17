@@ -75,22 +75,22 @@ external "C" {
   };
 
   typedef struct {
-    real     t;	       /* Timestamp of this frame		           */
-    int      step;     /* MD step				           */
-    int      nre;      /* Number of energies			           */
-    int      ndisre;   /* Number of distance restraints	                   */
-    int      nblock;   /* Number of following energy blocks                */
-    int      *nr;      /* Number of things in additional blocks (nblock)   */
-    int      e_size;   /* Size (in bytes) of energies		           */
-    int      d_size;   /* Size (in bytes) of disre blocks	           */
-    int      nr_alloc; /* Allocated size of nr and block                   */
-    int      e_alloc;  /* Allocated size (in elements) of ener             */
-    int      d_alloc;  /* Allocated size (in elements) of rav and rt       */
-    int      *b_alloc; /* Allocated size (in elements) of each block       */
-    t_energy *ener;    /* The energies                                     */
-    real     *rav;     /* Time averaged data for distance restraints       */
-    real     *rt;      /* Instantaneous data for distance restraints       */
-    real     **block;  /* Additional energy blocks ( nblock x b_alloc[b])  */
+    real     t;	            /* Timestamp of this frame		              */
+    int      step;          /* MD step				              */
+    int      nre;           /* Number of energies			      */
+    int      ndisre;        /* Number of distance restraints	              */
+    int      nblock;        /* Number of following energy blocks              */
+    int      *nr;           /* Number of things in additional blocks (nblock) */
+    int      e_size;        /* Size (in bytes) of energies		      */
+    int      d_size;        /* Size (in bytes) of disre blocks	              */
+    int      nr_alloc;      /* Allocated size of nr and block                 */
+    int      e_alloc;       /* Allocated size (in elements) of ener           */
+    int      d_alloc;       /* Allocated size (in elements) of rav and rt     */
+    int      *b_alloc;      /* Allocated size (in elements) of each block     */
+    t_energy *ener;         /* The energies                                   */
+    real     *disre_rm3tav; /* Time averaged data for distance restraints     */
+    real     *disre_rt;     /* Instantaneous data for distance restraints     */
+    real     **block;       /* Additional energy blocks (nblock x b_alloc[b]) */
   } t_enxframe;
 
   /* 

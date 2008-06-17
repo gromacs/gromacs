@@ -1226,7 +1226,7 @@ int gmx_energy(int argc,char *argv[])
 	      snew(violaver,fr->ndisre);
 	    
 	    /* Subtract bounds from distances, to calculate violations */
-	    calc_violations(fr->rt,fr->rav,
+	    calc_violations(fr->disre_rt,fr->disre_rm3tav,
 			    nbounds,pair,bounds,violaver,&sumt,&sumaver);
 
 	    fprintf(out,"  %8.4f  %8.4f\n",sumaver,sumt);
@@ -1234,8 +1234,10 @@ int gmx_energy(int argc,char *argv[])
 	      print1(fp_pairs,bDp,fr->t);
 	      for(i=0; (i<nset); i++) {
 		sss=set[i];
-		fprintf(fp_pairs,"  %8.4f",mypow(fr->rav[sss],minthird));
-		fprintf(fp_pairs,"  %8.4f",fr->rt[sss]);
+		fprintf(fp_pairs,"  %8.4f",
+			mypow(fr->disre_rm3tav[sss],minthird));
+		fprintf(fp_pairs,"  %8.4f",
+			fr->disre_rt[sss]);
 	      }
 	      fprintf(fp_pairs,"\n");
 	    }

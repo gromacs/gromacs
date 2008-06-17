@@ -559,12 +559,12 @@ int gmx_eneconv(int argc,char *argv[])
 	  }
 	}
 	/* Copy restraint stuff */
-	fro->ndisre = fr->ndisre;
-	fro->rav    = fr->rav;
-	fro->rt     = fr->rt;
-	fro->nblock = fr->nblock;
-	fro->nr     = fr->nr;
-	fro->block  = fr->block;
+	fro->ndisre       = fr->ndisre;
+	fro->disre_rm3tav = fr->disre_rm3tav;
+	fro->disre_rt     = fr->disre_rt;
+	fro->nblock       = fr->nblock;
+	fro->nr           = fr->nr;
+	fro->block        = fr->block;
 	
 	do_enx(out,fro);
 	if (noutfr % 1000 == 0)

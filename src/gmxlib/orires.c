@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-  
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -49,466 +50,645 @@
 #include "pbc.h"
 
 void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
-		 const t_iparams ip[],
-		 rvec xref[],const t_atoms *atoms,const t_inputrec *ir,
-		 const gmx_multisim_t *ms,t_oriresdata *od)
+                 const t_iparams ip[],
+                 rvec xref[],const t_atoms *atoms,const t_inputrec *ir,
+                 const gmx_multisim_t *ms,t_oriresdata *od,
+                 t_state *state)
 {
-  int    i,j,d,ex,nr,*nr_ex;
-  double mtot;
-  rvec   com;
+    int    i,j,d,ex,nr,*nr_ex;
+    double mtot;
+    rvec   com;
+    
+    od->fc  = ir->orires_fc;
+    od->nex = 0;
+    od->S   = NULL;
 
-  od->fc  = ir->orires_fc;
-  od->nex = 0;
-  od->S   = NULL;
-
-  if (ir->orires_tau > 0)
-    od->edt = exp(-ir->delta_t/ir->orires_tau);
-  else
-    od->edt = 0;
-  od->edt1 = 1 - od->edt;
-  od->exp_min_t_tau = 1.0;
-  od->nr = nfa/3;
-  
-  if (od->nr == 0)
-    return;
-
-  nr_ex = NULL;
-
-  for(i=0; i<nfa; i+=3) {
-    ex = ip[forceatoms[i]].orires.ex;
-    if (ex >= od->nex) {
-      srenew(nr_ex,ex+1);
-      for(j=od->nex; j<ex+1; j++)
-	nr_ex[j] = 0;
-      od->nex = ex+1;
+    od->nr = nfa/3;
+    if (od->nr == 0)
+    {
+        return;
     }
-    nr_ex[ex]++;
-  }
-  snew(od->S,od->nex);
-  /* When not doing time averaging, the instaneous and time averaged data
-   * are indentical and the pointers can point to the same memory.
-   */
-  snew(od->Dinsl,od->nr);
-  if (ms)
-    snew(od->Dins,od->nr);
-  else
-    od->Dins = od->Dinsl;
-  if (ir->orires_tau == 0)
-    od->Dtav = od->Dins;
-  else
-    snew(od->Dtav,od->nr);
-  snew(od->oinsl,od->nr);
-  if (ms)
-    snew(od->oins,od->nr);
-  else
-    od->oins = od->oinsl;
-  if (ir->orires_tau == 0)
-    od->otav = od->oins;
-  else
-    snew(od->otav,od->nr);
-  snew(od->tmp,od->nex);
-  snew(od->TMP,od->nex);
-  for(ex=0; ex<od->nex; ex++) {
-    snew(od->TMP[ex],5);
-    for(i=0; i<5; i++)
-      snew(od->TMP[ex][i],5);
-  }
-
-  od->nref = 0;
-  for(i=0; i<atoms->nr; i++)
-    if (atoms->atom[i].grpnr[egcORFIT] == 0)
-      od->nref++;
-  snew(od->mref,od->nref);
-  snew(od->xref,od->nref);
-  snew(od->xtmp,od->nref);
-
-  snew(od->eig,od->nex*12);
-
-  /* Determine the reference structure on the master node.
-   * Copy it to the other nodes after checking multi compatibility,
-   * so we are sure the subsystems match before copying.
-   */
-  clear_rvec(com);
-  mtot = 0.0;
-  j = 0;
-  for(i=0; i<atoms->nr; i++) {
-    if (atoms->atom[i].grpnr[egcORFIT] == 0) {
-      /* Not correct for free-energy with changing masses */
-      od->mref[j] = atoms->atom[i].m;
-      if (ms==NULL || MASTERSIM(ms)) {
-	copy_rvec(xref[i],od->xref[j]);
-	for(d=0; d<DIM; d++)
-	  com[d] += od->mref[j]*xref[i][d];
-      }
-      mtot += od->mref[j];
-      j++;
+    
+    nr_ex = NULL;
+    
+    for(i=0; i<nfa; i+=3)
+    {
+        ex = ip[forceatoms[i]].orires.ex;
+        if (ex >= od->nex)
+        {
+            srenew(nr_ex,ex+1);
+            for(j=od->nex; j<ex+1; j++)
+            {
+                nr_ex[j] = 0;
+            }
+            od->nex = ex+1;
+        }
+        nr_ex[ex]++;
     }
-  }
-  svmul(1.0/mtot,com,com);
-  if (ms==NULL || MASTERSIM(ms))
-    for(j=0; j<od->nref; j++)
-      rvec_dec(od->xref[j],com);
-  
-  fprintf(fplog,"Found %d orientation experiments\n",od->nex);
-  for(i=0; i<od->nex; i++)
-    fprintf(fplog,"  experiment %d has %d restraints\n",i+1,nr_ex[i]);
+    snew(od->S,od->nex);
+    /* When not doing time averaging, the instaneous and time averaged data
+     * are indentical and the pointers can point to the same memory.
+     */
+    snew(od->Dinsl,od->nr);
+    if (ms)
+    {
+        snew(od->Dins,od->nr);
+    }
+    else
+    {
+        od->Dins = od->Dinsl;
+    }
 
-  sfree(nr_ex);
+    if (ir->orires_tau == 0)
+    {
+        od->Dtav = od->Dins;
+        od->edt  = 0.0;
+        od->edt1 = 1.0;
+    }
+    else
+    {
+        snew(od->Dtav,od->nr);
+        od->edt  = exp(-ir->delta_t/ir->orires_tau);
+        od->edt1 = 1.0 - od->edt;
 
-  fprintf(fplog,"  the fit group consists of %d atoms and has total mass %g\n",
-	  od->nref,mtot);
-  
-  if (ms) {
-    fprintf(fplog,"  the orientation restraints are ensemble averaged over %d systems\n",ms->nsim);
+        /* Extend the state with the orires history */
+        state->flags |= (1<<estORIRE_INITF);
+        state->hist.orire_initf = 1;
+        state->flags |= (1<<estORIRE_DTAV);
+        state->hist.norire_Dtav = od->nr*5;
+        snew(state->hist.orire_Dtav,state->hist.norire_Dtav);
+    }
 
-    check_multi_int(fplog,ms,od->nr,
-		    "the number of orientation restraints");
-    check_multi_int(fplog,ms,od->nref,
-		    "the number of fit atoms for orientation restraining");
-    check_multi_int(fplog,ms,ir->nsteps,"nsteps");
-    /* Copy the reference coordinates from the master to the other nodes */
-    gmx_sum_sim(DIM*od->nref,od->xref[0],ms);
-  }
-
-  please_cite(fplog,"Hess2003");
+    snew(od->oinsl,od->nr);
+    if (ms)
+    {
+        snew(od->oins,od->nr);
+    }
+    else
+    {
+        od->oins = od->oinsl;
+    }
+    if (ir->orires_tau == 0) {
+        od->otav = od->oins;
+    }
+    else
+    {
+        snew(od->otav,od->nr);
+    }
+    snew(od->tmp,od->nex);
+    snew(od->TMP,od->nex);
+    for(ex=0; ex<od->nex; ex++)
+    {
+        snew(od->TMP[ex],5);
+        for(i=0; i<5; i++)
+        {
+            snew(od->TMP[ex][i],5);
+        }
+    }
+    
+    od->nref = 0;
+    for(i=0; i<atoms->nr; i++)
+    {
+        if (atoms->atom[i].grpnr[egcORFIT] == 0)
+        {
+            od->nref++;
+        }
+    }
+    snew(od->mref,od->nref);
+    snew(od->xref,od->nref);
+    snew(od->xtmp,od->nref);
+    
+    snew(od->eig,od->nex*12);
+    
+    /* Determine the reference structure on the master node.
+     * Copy it to the other nodes after checking multi compatibility,
+     * so we are sure the subsystems match before copying.
+     */
+    clear_rvec(com);
+    mtot = 0.0;
+    j = 0;
+    for(i=0; i<atoms->nr; i++)
+    {
+        if (atoms->atom[i].grpnr[egcORFIT] == 0)
+        {
+            /* Not correct for free-energy with changing masses */
+            od->mref[j] = atoms->atom[i].m;
+            if (ms==NULL || MASTERSIM(ms))
+            {
+                copy_rvec(xref[i],od->xref[j]);
+                for(d=0; d<DIM; d++)
+                {
+                    com[d] += od->mref[j]*xref[i][d];
+                }
+            }
+            mtot += od->mref[j];
+            j++;
+        }
+    }
+    svmul(1.0/mtot,com,com);
+    if (ms==NULL || MASTERSIM(ms))
+    {
+        for(j=0; j<od->nref; j++)
+        {
+            rvec_dec(od->xref[j],com);
+        }
+    }
+    
+    fprintf(fplog,"Found %d orientation experiments\n",od->nex);
+    for(i=0; i<od->nex; i++)
+    {
+        fprintf(fplog,"  experiment %d has %d restraints\n",i+1,nr_ex[i]);
+    }
+    
+    sfree(nr_ex);
+    
+    fprintf(fplog,"  the fit group consists of %d atoms and has total mass %g\n",
+            od->nref,mtot);
+    
+    if (ms)
+    {
+        fprintf(fplog,"  the orientation restraints are ensemble averaged over %d systems\n",ms->nsim);
+        
+        check_multi_int(fplog,ms,od->nr,
+                        "the number of orientation restraints");
+        check_multi_int(fplog,ms,od->nref,
+                        "the number of fit atoms for orientation restraining");
+        check_multi_int(fplog,ms,ir->nsteps,"nsteps");
+        /* Copy the reference coordinates from the master to the other nodes */
+        gmx_sum_sim(DIM*od->nref,od->xref[0],ms);
+    }
+    
+    please_cite(fplog,"Hess2003");
 }
 
 void diagonalize_orires_tensors(t_oriresdata *od)
 {
-  int           ex,i,j,nrot,ord[DIM],t;
-  matrix        S,TMP;
-  static double **M=NULL,*eig,**v;
-  
-  if (M == NULL) {
-    snew(M,DIM);
-    for(i=0; i<DIM; i++)
-      snew(M[i],DIM);
-    snew(eig,DIM);
-    snew(v,DIM);
-    for(i=0; i<DIM; i++)
-      snew(v[i],DIM);
-  }
-  
-  for(ex=0; ex<od->nex; ex++) {
-    /* Rotate the S tensor back to the reference frame */
-    mmul(od->R,od->S[ex],TMP);
-    mtmul(TMP,od->R,S);
-    for(i=0; i<DIM; i++)
-      for(j=0; j<DIM; j++)
-	M[i][j] = S[i][j];
+    int           ex,i,j,nrot,ord[DIM],t;
+    matrix        S,TMP;
+    static double **M=NULL,*eig,**v;
     
-    jacobi(M,DIM,eig,v,&nrot);
-    
-    for(i=0; i<DIM; i++)
-      ord[i] = i;
-    for(i=0; i<DIM; i++)
-      for(j=i+1; j<DIM; j++)
-	if (sqr(eig[ord[j]]) > sqr(eig[ord[i]])) {
-	  t = ord[i];
-	  ord[i] = ord[j];
-	  ord[j] = t;
-	}
-    
-    for(i=0; i<DIM; i++)
-      od->eig[ex*12 + i] = eig[ord[i]];
-    for(i=0; i<DIM; i++)
-      for(j=0; j<DIM; j++)
-	od->eig[ex*12 + 3 + 3*i + j] = v[j][ord[i]];
-  }
+    if (M == NULL)
+    {
+        snew(M,DIM);
+        for(i=0; i<DIM; i++)
+        {
+            snew(M[i],DIM);
+        }
+        snew(eig,DIM);
+        snew(v,DIM);
+        for(i=0; i<DIM; i++)
+        {
+            snew(v[i],DIM);
+        }
+    }
+
+    for(ex=0; ex<od->nex; ex++)
+    {
+        /* Rotate the S tensor back to the reference frame */
+        mmul(od->R,od->S[ex],TMP);
+        mtmul(TMP,od->R,S);
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                M[i][j] = S[i][j];
+            }
+        }
+        
+        jacobi(M,DIM,eig,v,&nrot);
+        
+        for(i=0; i<DIM; i++)
+        {
+            ord[i] = i;
+        }
+        for(i=0; i<DIM; i++)
+        {
+            for(j=i+1; j<DIM; j++)
+            {
+                if (sqr(eig[ord[j]]) > sqr(eig[ord[i]]))
+                {
+                    t = ord[i];
+                    ord[i] = ord[j];
+                    ord[j] = t;
+                }
+            }
+        }
+            
+        for(i=0; i<DIM; i++)
+        {
+            od->eig[ex*12 + i] = eig[ord[i]];
+        }
+        for(i=0; i<DIM; i++)
+        {
+            for(j=0; j<DIM; j++)
+            {
+                od->eig[ex*12 + 3 + 3*i + j] = v[j][ord[i]];
+            }
+        }
+    }
 }
 
 void print_orires_log(FILE *log,t_oriresdata *od)
 {
-  int  ex,i;
-  real *eig;      
-
-  diagonalize_orires_tensors(od);
+    int  ex,i;
+    real *eig;      
     
-  for(ex=0; ex<od->nex; ex++) {
-    eig = od->eig + ex*12;
-    fprintf(log,"  Orientation experiment %d:\n",ex+1);
-    fprintf(log,"    order parameter: %g\n",eig[0]);
-    for(i=0; i<DIM; i++)
-      fprintf(log,"    eig: %6.3f   %6.3f %6.3f %6.3f\n",
-	      (eig[0] != 0) ? eig[i]/eig[0] : eig[i],
-	      eig[DIM+i*DIM+XX],
-	      eig[DIM+i*DIM+YY],
-	      eig[DIM+i*DIM+ZZ]);
-    fprintf(log,"\n");
-  }
+    diagonalize_orires_tensors(od);
+    
+    for(ex=0; ex<od->nex; ex++)
+    {
+        eig = od->eig + ex*12;
+        fprintf(log,"  Orientation experiment %d:\n",ex+1);
+        fprintf(log,"    order parameter: %g\n",eig[0]);
+        for(i=0; i<DIM; i++)
+        {
+            fprintf(log,"    eig: %6.3f   %6.3f %6.3f %6.3f\n",
+                    (eig[0] != 0) ? eig[i]/eig[0] : eig[i],
+                    eig[DIM+i*DIM+XX],
+                    eig[DIM+i*DIM+YY],
+                    eig[DIM+i*DIM+ZZ]);
+        }
+        fprintf(log,"\n");
+    }
 }
 
 real calc_orires_dev(const gmx_multisim_t *ms,
-		     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-		     const t_mdatoms *md,const rvec x[],const t_pbc *pbc,
-		     t_fcdata *fcd)
+                     int nfa,const t_iatom forceatoms[],const t_iparams ip[],
+                     const t_mdatoms *md,const rvec x[],const t_pbc *pbc,
+                     t_fcdata *fcd,history_t *hist)
 {
-  int          fa,d,i,j,type,ex,nref;
-  real         edt,edt1,invn,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
-  tensor       *S,R,TMP;
-  rvec5        *Dinsl,*Dins,*Dtav,*rhs;
-  real         *mref,***T;
-  double       mtot;
-  rvec         *xref,*xtmp,com,r_unrot,r;
-  t_oriresdata *od;
-  bool         bTAV;
-  const real   two_thr=2.0/3.0;
-
-  od = &(fcd->orires);
-
-  bTAV = (od->edt != 0);
-  edt  = od->edt;
-  edt1 = od->edt1;
-  S    = od->S;
-  Dinsl= od->Dinsl;
-  Dins = od->Dins;
-  Dtav = od->Dtav;
-  T    = od->TMP;
-  rhs  = od->tmp;
-  nref = od->nref;
-  mref = od->mref;
-  xref = od->xref;
-  xtmp = od->xtmp;
-  
-  od->exp_min_t_tau *= edt;
-
-  if (ms)
-    invn = 1.0/ms->nsim;
-  else
-    invn = 1.0;
-
-  clear_rvec(com);
-  mtot = 0;
-  j=0;
-  for(i=0; i<md->nr; i++)
-    if (md->cORF[i] == 0) {
-      copy_rvec(x[i],xtmp[j]);
-      mref[j] = md->massT[i];
-      for(d=0; d<DIM; d++)
-	com[d] += mref[j]*xref[j][d];
-      mtot += mref[j];
-      j++;
+    int          fa,d,i,j,type,ex,nref;
+    real         edt,edt1,invn,pfac,r2,invr,corrfac,weight,wsv2,sw,dev;
+    tensor       *S,R,TMP;
+    rvec5        *Dinsl,*Dins,*Dtav,*rhs;
+    real         *mref,***T;
+    double       mtot;
+    rvec         *xref,*xtmp,com,r_unrot,r;
+    t_oriresdata *od;
+    bool         bTAV;
+    const real   two_thr=2.0/3.0;
+    
+    od = &(fcd->orires);
+    
+    bTAV = (od->edt != 0);
+    edt  = od->edt;
+    edt1 = od->edt1;
+    S    = od->S;
+    Dinsl= od->Dinsl;
+    Dins = od->Dins;
+    Dtav = od->Dtav;
+    T    = od->TMP;
+    rhs  = od->tmp;
+    nref = od->nref;
+    mref = od->mref;
+    xref = od->xref;
+    xtmp = od->xtmp;
+    
+    if (bTAV)
+    {
+        od->exp_min_t_tau = hist->orire_initf*edt;
+        
+        /* Correction factor to correct for the lack of history
+         * at short times.
+         */
+        corrfac = 1.0/(1.0 - od->exp_min_t_tau);
     }
-  svmul(1.0/mtot,com,com);
-  for(j=0; j<nref; j++)
-    rvec_dec(xtmp[j],com);
-  /* Calculate the rotation matrix to rotate x to the reference orientation */
-  calc_fit_R(DIM,nref,mref,xref,xtmp,R);
-  copy_mat(R,od->R);
-
-  d = 0;
-  for(fa=0; fa<nfa; fa+=3) {
-    type = forceatoms[fa];
-    if (pbc)
-      pbc_dx_aiuc(pbc,x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
     else
-      rvec_sub(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
-    mvmul(R,r_unrot,r);
-    r2   = norm2(r);
-    invr = invsqrt(r2);
-    /* Calculate the prefactor for the D tensor, this includes the factor 3! */
-    pfac = ip[type].orires.c*invr*invr*3;
-    for(i=0; i<ip[type].orires.power; i++)
-      pfac *= invr;
-    Dinsl[d][0] = pfac*(2*r[0]*r[0] + r[1]*r[1] - r2);
-    Dinsl[d][1] = pfac*(2*r[0]*r[1]);
-    Dinsl[d][2] = pfac*(2*r[0]*r[2]);
-    Dinsl[d][3] = pfac*(2*r[1]*r[1] + r[0]*r[0] - r2);
-    Dinsl[d][4] = pfac*(2*r[1]*r[2]);
+    {
+        corrfac = 1.0;
+    }
 
     if (ms)
-      for(i=0; i<5; i++)
-	Dins[d][i] = Dinsl[d][i]*invn;
+    {
+        invn = 1.0/ms->nsim;
+    }
+    else
+    {
+        invn = 1.0;
+    }
     
-    d++;
-  }
-  
-  if (ms)
-    gmx_sum_sim(5*od->nr,Dins[0],ms);
-  
-  /* Correction factor to correct for the lack of history for short times */
-  corrfac = 1.0/(1.0-od->exp_min_t_tau);
-  
-  /* Calculate the order tensor S for each experiment via optimization */
-  for(ex=0; ex<od->nex; ex++)
-    for(i=0; i<5; i++) {
-      rhs[ex][i] = 0;
-      for(j=0; j<=i; j++)
-	T[ex][i][j] = 0;
+    clear_rvec(com);
+    mtot = 0;
+    j=0;
+    for(i=0; i<md->nr; i++)
+    {
+        if (md->cORF[i] == 0)
+        {
+            copy_rvec(x[i],xtmp[j]);
+            mref[j] = md->massT[i];
+            for(d=0; d<DIM; d++)
+            {
+                com[d] += mref[j]*xref[j][d];
+            }
+            mtot += mref[j];
+            j++;
+        }
     }
-  d = 0;
-  for(fa=0; fa<nfa; fa+=3) {
-    if (bTAV)
-      for(i=0; i<5; i++)
-	Dtav[d][i] = edt*Dtav[d][i] + edt1*Dins[d][i];
+    svmul(1.0/mtot,com,com);
+    for(j=0; j<nref; j++)
+    {
+        rvec_dec(xtmp[j],com);
+    }
+    /* Calculate the rotation matrix to rotate x to the reference orientation */
+    calc_fit_R(DIM,nref,mref,xref,xtmp,R);
+    copy_mat(R,od->R);
+    
+    d = 0;
+    for(fa=0; fa<nfa; fa+=3)
+    {
+        type = forceatoms[fa];
+        if (pbc)
+        {
+            pbc_dx_aiuc(pbc,x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
+        }
+        else
+        {
+            rvec_sub(x[forceatoms[fa+1]],x[forceatoms[fa+2]],r_unrot);
+        }
+        mvmul(R,r_unrot,r);
+        r2   = norm2(r);
+        invr = invsqrt(r2);
+        /* Calculate the prefactor for the D tensor, this includes the factor 3! */
+        pfac = ip[type].orires.c*invr*invr*3;
+        for(i=0; i<ip[type].orires.power; i++)
+        {
+            pfac *= invr;
+        }
+        Dinsl[d][0] = pfac*(2*r[0]*r[0] + r[1]*r[1] - r2);
+        Dinsl[d][1] = pfac*(2*r[0]*r[1]);
+        Dinsl[d][2] = pfac*(2*r[0]*r[2]);
+        Dinsl[d][3] = pfac*(2*r[1]*r[1] + r[0]*r[0] - r2);
+        Dinsl[d][4] = pfac*(2*r[1]*r[2]);
+        
+        if (ms)
+        {
+            for(i=0; i<5; i++)
+            {
+                Dins[d][i] = Dinsl[d][i]*invn;
+            }
+        }
 
-    type   = forceatoms[fa];
-    ex     = ip[type].orires.ex;
-    weight = ip[type].orires.kfac;
-    /* Calculate the vector rhs and half the matrix T for the 5 equations */
-    for(i=0; i<5; i++) {
-      rhs[ex][i] += Dtav[d][i]*ip[type].orires.obs*weight;
-      for(j=0; j<=i; j++)
-	T[ex][i][j] += Dtav[d][i]*Dtav[d][j]*weight;
+        d++;
     }
-    d++;
-  }
-  /* Now we have all the data we can calculate S */
-  for(ex=0; ex<od->nex; ex++) {
-    /* Correct corrfac and copy one half of T to the other half */
-    for(i=0; i<5; i++) {
-      rhs[ex][i]  *= corrfac;
-      T[ex][i][i] *= sqr(corrfac);
-      for(j=0; j<i; j++) {
-	T[ex][i][j] *= sqr(corrfac);
-	T[ex][j][i]  = T[ex][i][j];
-      }
-    }
-    m_inv_gen(T[ex],5,T[ex]);
-    /* Calculate the orientation tensor S for this experiment */
-    S[ex][0][0] = 0;
-    S[ex][0][1] = 0;
-    S[ex][0][2] = 0;
-    S[ex][1][1] = 0;
-    S[ex][1][2] = 0;
-    for(i=0; i<5; i++) {
-      S[ex][0][0] += 1.5*T[ex][0][i]*rhs[ex][i];
-      S[ex][0][1] += 1.5*T[ex][1][i]*rhs[ex][i];
-      S[ex][0][2] += 1.5*T[ex][2][i]*rhs[ex][i];
-      S[ex][1][1] += 1.5*T[ex][3][i]*rhs[ex][i];
-      S[ex][1][2] += 1.5*T[ex][4][i]*rhs[ex][i];
-    }
-    S[ex][1][0] = S[ex][0][1];
-    S[ex][2][0] = S[ex][0][2];
-    S[ex][2][1] = S[ex][1][2];
-    S[ex][2][2] = -S[ex][0][0] - S[ex][1][1];
-  }
   
-  wsv2 = 0;
-  sw   = 0;
-  
-  d = 0;
-  for(fa=0; fa<nfa; fa+=3) {
-    type = forceatoms[fa];
-    ex = ip[type].orires.ex;
-
-    od->otav[d] = two_thr*
-      corrfac*(S[ex][0][0]*Dtav[d][0] + S[ex][0][1]*Dtav[d][1] +
-	       S[ex][0][2]*Dtav[d][2] + S[ex][1][1]*Dtav[d][3] +
-	       S[ex][1][2]*Dtav[d][4]);
-    if (bTAV)
-      od->oins[d] = two_thr*(S[ex][0][0]*Dins[d][0] + S[ex][0][1]*Dins[d][1] +
-			     S[ex][0][2]*Dins[d][2] + S[ex][1][1]*Dins[d][3] +
-			     S[ex][1][2]*Dins[d][4]);
     if (ms)
-      /* When ensemble averaging is used recalculate the local orientation
-       * for output to the energy file.
-       */
-      od->oinsl[d] = two_thr*
-	(S[ex][0][0]*Dinsl[d][0] + S[ex][0][1]*Dinsl[d][1] +
-	 S[ex][0][2]*Dinsl[d][2] + S[ex][1][1]*Dinsl[d][3] +
-	 S[ex][1][2]*Dinsl[d][4]);
+    {
+        gmx_sum_sim(5*od->nr,Dins[0],ms);
+    }
+   
+    /* Calculate the order tensor S for each experiment via optimization */
+    for(ex=0; ex<od->nex; ex++)
+    {
+        for(i=0; i<5; i++)
+        {
+            rhs[ex][i] = 0;
+            for(j=0; j<=i; j++)
+            {
+                T[ex][i][j] = 0;
+            }
+        }
+    }
+    d = 0;
+    for(fa=0; fa<nfa; fa+=3)
+    {
+        if (bTAV)
+        {
+            /* Here we update Dtav in t_fcdata using the data in history_t.
+             * Thus the results stay correct when this routine
+             * is called multiple times.
+             */
+            for(i=0; i<5; i++)
+            {
+                Dtav[d][i] = edt*hist->orire_Dtav[d*5+i] + edt1*Dins[d][i];
+            }
+        }
+        
+        type   = forceatoms[fa];
+        ex     = ip[type].orires.ex;
+        weight = ip[type].orires.kfac;
+        /* Calculate the vector rhs and half the matrix T for the 5 equations */
+        for(i=0; i<5; i++) {
+            rhs[ex][i] += Dtav[d][i]*ip[type].orires.obs*weight;
+            for(j=0; j<=i; j++)
+            {
+                T[ex][i][j] += Dtav[d][i]*Dtav[d][j]*weight;
+            }
+        }
+        d++;
+    }
+    /* Now we have all the data we can calculate S */
+    for(ex=0; ex<od->nex; ex++)
+    {
+        /* Correct corrfac and copy one half of T to the other half */
+        for(i=0; i<5; i++)
+        {
+            rhs[ex][i]  *= corrfac;
+            T[ex][i][i] *= sqr(corrfac);
+            for(j=0; j<i; j++)
+            {
+                T[ex][i][j] *= sqr(corrfac);
+                T[ex][j][i]  = T[ex][i][j];
+            }
+        }
+        m_inv_gen(T[ex],5,T[ex]);
+        /* Calculate the orientation tensor S for this experiment */
+        S[ex][0][0] = 0;
+        S[ex][0][1] = 0;
+        S[ex][0][2] = 0;
+        S[ex][1][1] = 0;
+        S[ex][1][2] = 0;
+        for(i=0; i<5; i++)
+        {
+            S[ex][0][0] += 1.5*T[ex][0][i]*rhs[ex][i];
+            S[ex][0][1] += 1.5*T[ex][1][i]*rhs[ex][i];
+            S[ex][0][2] += 1.5*T[ex][2][i]*rhs[ex][i];
+            S[ex][1][1] += 1.5*T[ex][3][i]*rhs[ex][i];
+            S[ex][1][2] += 1.5*T[ex][4][i]*rhs[ex][i];
+        }
+        S[ex][1][0] = S[ex][0][1];
+        S[ex][2][0] = S[ex][0][2];
+        S[ex][2][1] = S[ex][1][2];
+        S[ex][2][2] = -S[ex][0][0] - S[ex][1][1];
+    }
     
-    dev = od->otav[d] - ip[type].orires.obs;
+    wsv2 = 0;
+    sw   = 0;
     
-    wsv2 += ip[type].orires.kfac*sqr(dev);
-    sw   += ip[type].orires.kfac;
+    d = 0;
+    for(fa=0; fa<nfa; fa+=3)
+    {
+        type = forceatoms[fa];
+        ex = ip[type].orires.ex;
+        
+        od->otav[d] = two_thr*
+            corrfac*(S[ex][0][0]*Dtav[d][0] + S[ex][0][1]*Dtav[d][1] +
+                     S[ex][0][2]*Dtav[d][2] + S[ex][1][1]*Dtav[d][3] +
+                     S[ex][1][2]*Dtav[d][4]);
+        if (bTAV)
+        {
+            od->oins[d] = two_thr*(S[ex][0][0]*Dins[d][0] + S[ex][0][1]*Dins[d][1] +
+                                   S[ex][0][2]*Dins[d][2] + S[ex][1][1]*Dins[d][3] +
+                                   S[ex][1][2]*Dins[d][4]);
+        }
+        if (ms)
+        {
+            /* When ensemble averaging is used recalculate the local orientation
+             * for output to the energy file.
+             */
+            od->oinsl[d] = two_thr*
+                (S[ex][0][0]*Dinsl[d][0] + S[ex][0][1]*Dinsl[d][1] +
+                 S[ex][0][2]*Dinsl[d][2] + S[ex][1][1]*Dinsl[d][3] +
+                 S[ex][1][2]*Dinsl[d][4]);
+        }
+        
+        dev = od->otav[d] - ip[type].orires.obs;
+        
+        wsv2 += ip[type].orires.kfac*sqr(dev);
+        sw   += ip[type].orires.kfac;
+        
+        d++;
+    }
+    od->rmsdev = sqrt(wsv2/sw);
     
-    d++;
-  }
-  od->rmsdev = sqrt(wsv2/sw);
-  
-  /* Rotate the S matrices back, so we get the correct grad(tr(S D)) */
-  for(ex=0; ex<od->nex; ex++) {
-    tmmul(R,S[ex],TMP);
-    mmul(TMP,R,S[ex]);
-  }
-
-  return od->rmsdev;
-  
-  /* Approx. 120*nfa/3 flops */
+    /* Rotate the S matrices back, so we get the correct grad(tr(S D)) */
+    for(ex=0; ex<od->nex; ex++)
+    {
+        tmmul(R,S[ex],TMP);
+        mmul(TMP,R,S[ex]);
+    }
+    
+    return od->rmsdev;
+    
+    /* Approx. 120*nfa/3 flops */
 }
 
 real orires(int nfa,const t_iatom forceatoms[],const t_iparams ip[],
-	    const rvec x[],rvec f[],rvec fshift[],
-	    const t_pbc *pbc,const t_graph *g,
-	    real lambda,real *dvdlambda,
-	    const t_mdatoms *md,t_fcdata *fcd,
-	    int *global_atom_index)
+            const rvec x[],rvec f[],rvec fshift[],
+            const t_pbc *pbc,const t_graph *g,
+            real lambda,real *dvdlambda,
+            const t_mdatoms *md,t_fcdata *fcd,
+            int *global_atom_index)
 {
-  atom_id      ai,aj;
-  int          fa,d,i,type,ex,power,ki=CENTRAL;
-  ivec         dt;
-  real         r2,invr,invr2,fc,smooth_fc,dev,devins,pfac;
-  rvec         r,Sr,fij;
-  real         vtot;
-  const t_oriresdata *od;
-  bool         bTAV;
-
-  vtot = 0;
-  od = &(fcd->orires);
-
-  if (od->fc != 0) {
-    bTAV = (od->edt != 0);
-
-    /* Smoothly switch on the restraining when time averaging is used */
-    smooth_fc = od->fc*(1.0 - od->exp_min_t_tau);
+    atom_id      ai,aj;
+    int          fa,d,i,type,ex,power,ki=CENTRAL;
+    ivec         dt;
+    real         r2,invr,invr2,fc,smooth_fc,dev,devins,pfac;
+    rvec         r,Sr,fij;
+    real         vtot;
+    const t_oriresdata *od;
+    bool         bTAV;
     
-    d = 0;
-    for(fa=0; fa<nfa; fa+=3) {
-      type  = forceatoms[fa];
-      ai    = forceatoms[fa+1];
-      aj    = forceatoms[fa+2];
-      if (pbc)
-	ki = pbc_dx_aiuc(pbc,x[ai],x[aj],r);
-      else
-	rvec_sub(x[ai],x[aj],r);
-      r2    = norm2(r);
-      invr  = invsqrt(r2);
-      invr2 = invr*invr;
-      ex    = ip[type].orires.ex;
-      power = ip[type].orires.power;
-      fc    = smooth_fc*ip[type].orires.kfac;
-      dev   = od->otav[d] - ip[type].orires.obs;
-      
-      /* NOTE: there is no real potential when time averaging is applied */
-      vtot += 0.5*fc*sqr(dev);
-      
-      if (bTAV) {
-	/* Calculate the force as the sqrt of tav times instantaneous */
-	devins = od->oins[d] - ip[type].orires.obs;
-	if (dev*devins <= 0)
-	  dev = 0;
-	else {
-	  dev = sqrt(dev*devins);
-	  if (devins < 0)
-	    dev = -dev;
-	}
-      }
-      
-      pfac  = fc*ip[type].orires.c*invr2;
-      for(i=0; i<power; i++)
-	pfac *= invr;
-      mvmul(od->S[ex],r,Sr);
-      for(i=0; i<DIM; i++)
-	fij[i] = -pfac*dev*(4*Sr[i] - 2*(2+power)*invr2*iprod(Sr,r)*r[i]);
-      
-      if (g) {
-	ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
-	ki=IVEC2IS(dt);
-      }
+    vtot = 0;
+    od = &(fcd->orires);
+    
+    if (od->fc != 0)
+    {
+        bTAV = (od->edt != 0);
 
-      for(i=0; i<DIM; i++) {
-	f[ai][i]           += fij[i];
-	f[aj][i]           -= fij[i];
-	fshift[ki][i]      += fij[i];
-	fshift[CENTRAL][i] -= fij[i];
-      }
-      d++;
+        smooth_fc = od->fc;
+        if (bTAV)
+        {
+            /* Smoothly switch on the restraining when time averaging is used */
+            smooth_fc *= (1.0 - od->exp_min_t_tau);
+        }
+        
+        d = 0;
+        for(fa=0; fa<nfa; fa+=3)
+        {
+            type  = forceatoms[fa];
+            ai    = forceatoms[fa+1];
+            aj    = forceatoms[fa+2];
+            if (pbc)
+            {
+                ki = pbc_dx_aiuc(pbc,x[ai],x[aj],r);
+            }
+            else
+            {
+                rvec_sub(x[ai],x[aj],r);
+            }
+            r2    = norm2(r);
+            invr  = invsqrt(r2);
+            invr2 = invr*invr;
+            ex    = ip[type].orires.ex;
+            power = ip[type].orires.power;
+            fc    = smooth_fc*ip[type].orires.kfac;
+            dev   = od->otav[d] - ip[type].orires.obs;
+            
+            /* NOTE:
+             * there is no real potential when time averaging is applied
+             */
+            vtot += 0.5*fc*sqr(dev);
+            
+            if (bTAV)
+            {
+                /* Calculate the force as the sqrt of tav times instantaneous */
+                devins = od->oins[d] - ip[type].orires.obs;
+                if (dev*devins <= 0)
+                {
+                    dev = 0;
+                }
+                else
+                {
+                    dev = sqrt(dev*devins);
+                    if (devins < 0)
+                    {
+                        dev = -dev;
+                    }
+                }
+            }
+            
+            pfac  = fc*ip[type].orires.c*invr2;
+            for(i=0; i<power; i++)
+            {
+                pfac *= invr;
+            }
+            mvmul(od->S[ex],r,Sr);
+            for(i=0; i<DIM; i++)
+            {
+                fij[i] =
+                    -pfac*dev*(4*Sr[i] - 2*(2+power)*invr2*iprod(Sr,r)*r[i]);
+            }
+            
+            if (g)
+            {
+                ivec_sub(SHIFT_IVEC(g,ai),SHIFT_IVEC(g,aj),dt);
+                ki=IVEC2IS(dt);
+            }
+            
+            for(i=0; i<DIM; i++)
+            {
+                f[ai][i]           += fij[i];
+                f[aj][i]           -= fij[i];
+                fshift[ki][i]      += fij[i];
+                fshift[CENTRAL][i] -= fij[i];
+            }
+            d++;
+        }
     }
-  }
-  
-  return vtot;
-  
-  /* Approx. 80*nfa/3 flops */
+    
+    return vtot;
+    
+    /* Approx. 80*nfa/3 flops */
+}
+
+void update_orires_history(t_fcdata *fcd,history_t *hist)
+{
+    t_oriresdata *od;
+    int pair,i;
+    
+    od = &(fcd->orires);
+    if (od->edt != 0)
+    {
+        /* Copy the new time averages that have been calculated
+         *  in calc_orires_dev.
+         */
+        hist->orire_initf = od->exp_min_t_tau;
+        for(pair=0; pair<od->nr; pair++)
+        {
+            for(i=0; i<5; i++)
+            {
+                hist->orire_Dtav[pair*5+i] = od->Dtav[pair][i];
+            }
+        }
+    }
 }

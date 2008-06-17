@@ -319,7 +319,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      t_topology *top,t_groups *grps,
-	      matrix box,rvec x[],rvec f[],rvec buf[],
+	      matrix box,rvec x[],history_t *hist,
+	      rvec f[],rvec buf[],
 	      tensor vir_force,
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 	      real lambda,t_graph *graph,
@@ -538,7 +539,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
 		    cr,nrnb,wcycle,grps,mdatoms,
 		    top->atoms.grps[egcENER].nr,&(inputrec->opts),
-		    x,f,ener,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
+		    x,hist,f,ener,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
 		    flags);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
@@ -600,8 +601,7 @@ void do_force(FILE *fplog,t_commrec *cr,
     set_pbc(&pbc,inputrec->ePBC,box);
     ener[F_COM_PULL] =
       pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
-		     cr,inputrec->init_t+step*inputrec->delta_t,
-		     x,f,vir_force);
+		     cr,t,x,f,vir_force);
   }
 
   if (!(cr->duty & DUTY_PME)) {

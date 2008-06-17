@@ -542,13 +542,13 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
   
   switch (mode) {
   case eprNORMAL:
-    fr.t          = time;
-    fr.step       = step;
-    fr.nre        = (bEne) ? md->ebin->nener : 0;
-    fr.ener       = md->ebin->e;
-    fr.ndisre     = bDR ? fcd->disres.npr : 0;
-    fr.rav        = fcd->disres.rav;
-    fr.rt         = fcd->disres.rt;
+    fr.t            = time;
+    fr.step         = step;
+    fr.nre          = (bEne) ? md->ebin->nener : 0;
+    fr.ener         = md->ebin->e;
+    fr.ndisre       = bDR ? fcd->disres.npair : 0;
+    fr.disre_rm3tav = fcd->disres.rm3tav;
+    fr.disre_rt     = fcd->disres.rt;
     /* Optional additional blocks */
     for(i=0; i<enxNR; i++)
       nr[i] = 0;

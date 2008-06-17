@@ -128,7 +128,7 @@ const t_interaction_function interaction_function[F_NRE]=
   def_bonded  ("THOLE",    "Thole Pol.",      4, 3, 0,  eNR_THOLE,  thole_pol     ),
   def_bonded  ("POSRES",   "Position Rest.",  1, 3, 3,  eNR_POSRES, unimplemented ),
   def_bonded  ("DISRES",   "Dis. Rest.",      2, 6, 0,  eNR_DISRES, ta_disres     ),
-  def_nofc    ("DRVIOL",   "D. R. Viol. (nm)"                                     ),    
+  def_nofc    ("DRVIOL",   "D.R.Viol. (nm)"                                       ),    
   def_bonded  ("ORIRES",   "Orient. Rest.",   2, 6, 0,  eNR_ORIRES, orires        ),
   def_nofc    ("ORDEV",    "Ori. R. RMSD"                                         ),  
   def_bonded  ("ANGRES",   "Angle Rest.",     4, 3, 3,  eNR_ANGRES, angres        ),

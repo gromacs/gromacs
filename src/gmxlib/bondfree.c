@@ -1964,8 +1964,8 @@ real tab_dihs(int nbonds,
 
 void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		const t_idef *idef,
-		rvec x[],rvec f[],
-		t_forcerec *fr,
+		rvec x[],history_t *hist,
+		rvec f[],t_forcerec *fr,
 		const t_pbc *pbc,const t_graph *g,
 		real epot[],t_nrnb *nrnb,
 		real lambda,
@@ -1991,15 +1991,18 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 #endif
   
   /* Do pre force calculation stuff which might require communication */
-  if (idef->il[F_ORIRES].nr)
+  if (idef->il[F_ORIRES].nr) {
     epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
 					idef->il[F_ORIRES].iatoms,
 					idef->iparams,md,(const rvec*)x,
-					pbc_null,fcd);
-  if (idef->il[F_DISRES].nr)
+					pbc_null,fcd,hist);
+  }
+  if (idef->il[F_DISRES].nr) {
     calc_disres_R_6(ms,idef->il[F_DISRES].nr,
 		    idef->il[F_DISRES].iatoms,
-		    idef->iparams,(const rvec*)x,pbc_null,fcd);
+		    idef->iparams,(const rvec*)x,pbc_null,
+		    fcd,hist);
+  }
   
   /* Loop over all bonded force types to calculate the bonded forces */
   for(ftype=0; (ftype<F_NRE); ftype++) {

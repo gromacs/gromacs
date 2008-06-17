@@ -511,6 +511,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    t_forcerec *fr, rvec mu_tot,
 			    real ener[],int count,bool bFirst)
 {
+  real t;
   bool bNS;
   int  nabnsb;
   tensor force_vir,shake_vir,pres;
@@ -518,6 +519,9 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   real terminate=0;
   t_state *state;
   
+  /* Set the time to the initial time, the time does not change during EM */
+  t = inputrec->init_t;
+
   if (bFirst ||
       (DOMAINDECOMP(cr) && ems->s.ddp_count < cr->dd->ddp_count)) {
     /* This the first state or an old state used before the last ns */
@@ -552,9 +556,9 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
    * We do not unshift, so molecules are always whole in congrad.c
    */
   do_force(fplog,cr,inputrec,
-	   count,nrnb,wcycle,top,grps,ems->s.box,ems->s.x,ems->f,
-	   *buf,force_vir,mdatoms,ener,fcd,
-	   ems->s.lambda,graph,fr,vsite,mu_tot,0.0,NULL,NULL,
+	   count,nrnb,wcycle,top,grps,ems->s.box,ems->s.x,&ems->s.hist,
+	   ems->f,*buf,force_vir,mdatoms,ener,fcd,
+	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
 	   (bNS ? GMX_FORCE_NS : 0));
 
@@ -583,7 +587,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
 	      NULL,NULL,nrnb,econqForce);
     if (fr->bSepDVDL && fplog)
-      fprintf(fplog,sepdvdlformat,"Constraints",0.0,dvdl);
+      fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
     ener[F_DVDL] += dvdl;
   }
 
@@ -2703,8 +2707,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	/* Make do_force do a single node fore calculation */
 	cr->nnodes = 1;
 	do_force(fplog,cr,inputrec,
-		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,f,
-		 buf,force_vir,mdatoms,ener,fcd,
+		 step,nrnb,wcycle,top,grps,rerun_fr.box,state->x,&state->hist,
+		 f,buf,force_vir,mdatoms,ener,fcd,
 		 lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,
 		 GMX_FORCE_NONBONDED |
 		 (bNS ? GMX_FORCE_NS : 0) |

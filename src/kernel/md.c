@@ -163,13 +163,37 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (!EEL_PME(inputrec->coulombtype)) {
     cr->npmenodes = 0;
   }
+  
+  /* NMR restraints must be initialized before read_checkpoint,
+   * since with time averaging the history is added to t_state.
+   * For proper consistency check we therefore need to extend
+   * t_state here.
+   * So the PME-only nodes (if present) will also initialize
+   * the distance restraints.
+   */
+  snew(fcd,1);
+
+  /* Distance Restraints */
+  init_disres(fplog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
+	      top->idef.iparams,inputrec,cr->ms,fcd,state);
+  
+  if (top->idef.il[F_ORIRES].nr) {
+    if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
+      gmx_fatal(FARGS,"Orientation restraints do not work with domain decomposition");
+    } else {
+      /* Orientation restraints */
+      init_orires(fplog,
+		  top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
+		  top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
+		  &(fcd->orires),state);
+    }
+  }
 
   if (opt2bSet("-cpi",nfile,fnm)) {
     if (SIMMASTER(cr)) {
       /* Read the state from the checkpoint file */
-      bReadRNG =
-	read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,cr,ddxyz,
-			inputrec->eI,&i,&t,state);
+      read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,cr,ddxyz,
+		      inputrec->eI,&i,&t,state,&bReadRNG);
     }
     if (PAR(cr)) {
       gmx_bcast(sizeof(i),&i,cr);
@@ -179,14 +203,17 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     inputrec->bContinuation = TRUE;
     inputrec->init_step += i;
     inputrec->nsteps    -= i;
-    if (bReadRNG)
+    if (bReadRNG) {
       Flags |= MD_READ_RNG;
+    }
   }
 
-  if (SIMMASTER(cr))
+  if (SIMMASTER(cr)) {
     copy_mat(state->box,box);
-  if (PAR(cr))
+  }
+  if (PAR(cr)) {
     gmx_bcast(sizeof(box),box,cr);
+  }
     
   if (bVerbose && SIMMASTER(cr))
     fprintf(stderr,"Loaded with Money\n\n");
@@ -222,7 +249,6 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (cr->duty & DUTY_PP) {
     /* Initiate everything (snew sets to zero!) */
     snew(ener,F_NRE);
-    snew(fcd,1);
     snew(grps,1);
 
     /* For domain decomposition we allocate dynamically
@@ -262,21 +288,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	p_graph(debug,"Initial graph",graph);
     }
     else
+    {
       graph = NULL;
-    
-    /* Distance Restraints */
-    init_disres(fplog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
-		top->idef.iparams,inputrec,cr->ms,fcd);
-    
-    if (top->idef.il[F_ORIRES].nr) {
-      if (DOMAINDECOMP(cr))
-	gmx_fatal(FARGS,"Orientation restraints do not work with domain decomposition");
-      else
-	/* Orientation restraints */
-	init_orires(fplog,
-		    top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-		    top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
-		    &(fcd->orires));
     }
     
     /* Dihedral Restraints */
@@ -920,7 +933,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * Check comments in sim_util.c
        */
       do_force(fplog,cr,ir,step,nrnb,wcycle,top,grps,
-	       state->box,state->x,f,buf,force_vir,mdatoms,ener,fcd,
+	       state->box,state->x,&state->hist,
+	       f,buf,force_vir,mdatoms,ener,fcd,
 	       state->lambda,graph,
 	       fr,vsite,mu_tot,t,fp_field,edyn,
 	       GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
@@ -1008,7 +1022,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * we should only do it at step % nstlist = 1 with bGStat=FALSE.
        */
       bDoBerendsenCoupl = (bGStat || ir->nstlist<=1 || step%ir->nstlist==1);
-      update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,
+      update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
 	     top,grps,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
 	     bNEMD,bDoBerendsenCoupl,bFirstStep,bStateFromTPX,pres);

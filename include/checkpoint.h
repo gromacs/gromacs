@@ -51,13 +51,14 @@ extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 /* Read a checkpoint from fn for run contiunation.
  * Generates a fatal error on size mismatch.
  */
-extern bool read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
+extern void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
 			    int eIntegrator,int *step,double *t,
-			    t_state *state);
+			    t_state *state,bool *bReadRNG);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.
- * The return value indicates if the RNG random state was read.
+ * If bReadRNG=TRUE a RNG state compatible with the current
+ * number of nodes was read.
  */
 extern void read_checkpoint_state(char *fn,int *step,double *t,t_state *state);
 

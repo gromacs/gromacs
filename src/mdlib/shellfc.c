@@ -780,7 +780,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
   do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,grps,
-	   state->box,state->x,force[Min],buf,force_vir,md,ener,fcd,
+	   state->box,state->x,&state->hist,
+	   force[Min],buf,force_vir,md,ener,fcd,
 	   state->lambda,graph,
 	   fr,vsite,mu_tot,t,fp_field,NULL,
 	   GMX_FORCE_ALLFORCES | (bDoNS ? GMX_FORCE_NS : 0));
@@ -861,7 +862,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     /* Try the new positions */
     do_force(fplog,cr,inputrec,1,nrnb,wcycle,
-	     top,grps,state->box,pos[Try],force[Try],buf,force_vir,
+	     top,grps,state->box,pos[Try],&state->hist,
+	     force[Try],buf,force_vir,
 	     md,ener,fcd,state->lambda,graph,
 	     fr,vsite,mu_tot,t,fp_field,NULL,
 	     GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES);

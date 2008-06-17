@@ -63,6 +63,8 @@
 #include "constr.h"
 #include "edsam.h"
 #include "pull.h"
+#include "disre.h"
+#include "orires.h"
 #include "gmx_wallcycle.h"
 
 typedef struct {
@@ -698,6 +700,7 @@ void update(FILE         *fplog,
             t_graph      *graph,  
             rvec         force[],        /* forces on home particles */
 	    rvec         xprime[],       /* buffer for x for update  */
+	    t_fcdata     *fcd,
             t_topology   *top,
             t_groups     *grps,
             tensor       vir_part,
@@ -724,6 +727,14 @@ void update(FILE         *fplog,
   
   start  = md->start;
   homenr = md->homenr;
+  
+  /* We need to update the NMR restraint history when time averaging is used */
+  if (state->flags & (1<<estDISRE_RM3TAV)) {
+    update_disres_history(fcd,&state->hist);
+  }
+  if (state->flags & (1<<estORIRE_DTAV)) {
+    update_orires_history(fcd,&state->hist);
+  }
 
   bExtended =
     (inputrec->etc == etcNOSEHOOVER) ||
@@ -733,24 +744,28 @@ void update(FILE         *fplog,
   dt_1 = 1.0/dt;
   clear_mat(M);
 
-  if (inputrec->etc==etcBERENDSEN && bDoBerendsenCoupl)
+  if (inputrec->etc==etcBERENDSEN && bDoBerendsenCoupl) {
     berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
-  if (inputrec->etc==etcNOSEHOOVER && !(bFirstStep && bStateFromTPX))
-      nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
-			state->nosehoover_xi,state->nosehoover_ixi);
-  if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl && !bFirstStep)
+  }
+  if (inputrec->etc==etcNOSEHOOVER && !(bFirstStep && bStateFromTPX)) {
+    nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
+		      state->nosehoover_xi,state->nosehoover_ixi);
+  }
+  if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl && !bFirstStep) {
     berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
-  if (inputrec->epc == epcPARRINELLORAHMAN)
+  }
+  if (inputrec->epc == epcPARRINELLORAHMAN) {
     parrinellorahman_pcoupl(fplog,step,inputrec,pres,
 			    state->box,state->box_rel,state->boxv,
 			    M,scale_tot,bFirstStep);
+  }
   
   /* Now do the actual update of velocities and positions */
   where();
   dump_it_all(fplog,"Before update",
 	      state->natoms,state->x,xprime,state->v,force);
   if (inputrec->eI == eiMD) {
-    if (grps->cosacc.cos_accel == 0)
+    if (grps->cosacc.cos_accel == 0) {
       /* use normal version of update */
       do_update_md(start,homenr,dt,
 		   grps->tcstat,grps->grpstat,state->nosehoover_xi,
@@ -758,11 +773,12 @@ void update(FILE         *fplog,
 		   md->cFREEZE,md->cACC,md->cTC,
 		   state->x,xprime,state->v,force,M,
 		   bExtended);
-    else
+    } else {
       do_update_visc(start,homenr,dt,
 		     grps->tcstat,md->invmass,state->nosehoover_xi,
 		     md->ptype,md->cTC,state->x,xprime,state->v,force,M,
 		     state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
+    }
   } else if (inputrec->eI == eiSD1) {
     do_update_sd1(sd,start,homenr,dt,
 		  inputrec->opts.acc,inputrec->opts.nFreeze,

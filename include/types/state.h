@@ -50,10 +50,22 @@
 enum { estLAMBDA,
        estBOX, estBOX_REL, estBOXV, estPC_MU, estNH_XI,  estNH_IXI,
        estX,   estV,       estSDX,  estCGP,   estLD_RNG, estLD_RNGI,
+       estDISRE_INITF, estDISRE_RM3TAV,
+       estORIRE_INITF, estORIRE_DTAV,
        estNR };
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
 extern const char *est_names[estNR];
+
+typedef struct
+{
+  real disre_initf;    /* The scaling factor for initializing the time av. */
+  int  ndisrepairs;    /* The number of distance restraints                */
+  real *disre_rm3tav;  /* The r^-3 time averaged pair distances            */
+  real orire_initf;    /* The scaling factor for initializing the time av. */
+  int  norire_Dtav;    /* The number of matrix element in dtav (npair*5)   */
+  real *orire_Dtav;    /* The time averaged orientation tensors            */
+} history_t;
 
 typedef struct
 {
@@ -73,8 +85,12 @@ typedef struct
   rvec          *v;     /* the velocities (natoms)                      */
   rvec          *sd_X;  /* random part of the x update for stoch. dyn.  */
   rvec          *cg_p;  /* p vector for conjugate gradient minimization */
+
   unsigned int  *ld_rng;  /* RNG random state                           */
   int           *ld_rngi; /* RNG index                                  */
+
+  history_t     hist;   /* Time history for restraints                  */
+
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
   int           ncg_gl; /* The number of local charge groups            */

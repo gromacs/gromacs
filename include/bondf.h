@@ -60,7 +60,8 @@ extern int glatnr(int *global_atom_index,int i);
 
 extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		       const t_idef *idef,
-                       rvec x[],rvec f[],t_forcerec *fr,
+                       rvec x[],history_t *hist,
+		       rvec f[],t_forcerec *fr,
 		       const t_pbc *pbc,const t_graph *g,
                        real epot[],t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,int ngrp,t_grp_ener *gener,

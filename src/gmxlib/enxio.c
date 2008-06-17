@@ -52,8 +52,8 @@ void free_enxframe(t_enxframe *fr)
   if (fr->e_alloc)
     sfree(fr->ener);
   if (fr->d_alloc) {
-    sfree(fr->rav);
-    sfree(fr->rt);
+    sfree(fr->disre_rm3tav);
+    sfree(fr->disre_rt);
   }
   for(b=0; b<fr->nblock; b++)
     sfree(fr->block[b]);
@@ -266,8 +266,8 @@ bool do_enx(int fp,t_enxframe *fr)
   bRead = gmx_fio_getread(fp);
   if (!bRead) {  
     fr->e_size = fr->nre*sizeof(fr->ener[0].e)*4;
-    fr->d_size = fr->ndisre*(sizeof(fr->rav[0]) + 
-			   sizeof(fr->rt[0]));
+    fr->d_size = fr->ndisre*(sizeof(fr->disre_rm3tav[0]) + 
+			     sizeof(fr->disre_rt[0]));
   }
   gmx_fio_select(fp);
 
@@ -328,13 +328,13 @@ bool do_enx(int fp,t_enxframe *fr)
   }
   if (fr->ndisre) {
     if (bRead && fr->ndisre>fr->d_alloc) {
-      srenew(fr->rav,fr->ndisre);
-      srenew(fr->rt,fr->ndisre);
+      srenew(fr->disre_rm3tav,fr->ndisre);
+      srenew(fr->disre_rt,fr->ndisre);
       fr->d_alloc = fr->ndisre;
     }
-    ndo_real(fr->rav,fr->ndisre,bOK1);
+    ndo_real(fr->disre_rm3tav,fr->ndisre,bOK1);
     bOK = bOK && bOK1;
-    ndo_real(fr->rt,fr->ndisre,bOK1);
+    ndo_real(fr->disre_rt,fr->ndisre,bOK1);
     bOK = bOK && bOK1;
   }
   for(block=0; block<fr->nblock; block++) {

@@ -50,20 +50,27 @@ extern "C" {
 
 void init_disres(FILE *fplog,int nbonds,const t_iatom *forceatoms,
 		 const t_iparams *ip,const t_inputrec *ir,
-		 const gmx_multisim_t *ms,t_fcdata *fcd);
+		 const gmx_multisim_t *ms,
+		 t_fcdata *fcd,t_state *state);
 /* Initiate *fcd data, must be called once, nbonds is the number 
- * of iatoms in the ilist of the idef struct
+ * of iatoms in the ilist of the idef struct.
+ * When time averaging is used, the history is initialized in state,
+ * unless it was read before from a checkpoint file.
  */
 
 extern void calc_disres_R_6(const gmx_multisim_t *ms,
 			    int nfa,const t_iatom *fa,const t_iparams ip[],
-			    const rvec *x,const t_pbc *pbc,t_fcdata *fcd);
+			    const rvec *x,const t_pbc *pbc,
+			    t_fcdata *fcd,history_t *hist);
 /* Calculates r and r^-3 (inst. and time averaged) for all pairs
  * and the ensemble averaged r^-6 (inst. and time averaged) for all restraints
  */
 
 extern t_ifunc ta_disres;
 /* Calculate the distance restraint forces, return the potential */
+
+extern void update_disres_history(t_fcdata *fcd,history_t *hist);
+/* Copy the new time averages that have been calculated in calc_disres_R_6 */
 
 #ifdef CPLUSPLUS
 }

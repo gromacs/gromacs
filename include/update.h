@@ -70,6 +70,7 @@ extern void update(FILE         *fplog,
 		   t_graph      *graph,	
 		   rvec         force[],    /* forces on home particles */
 		   rvec         xprime[],   /* buffer for x for update  */
+		   t_fcdata     *fcd,
 		   t_topology   *top,
 		   t_groups     *grps,
 		   tensor       vir_part,

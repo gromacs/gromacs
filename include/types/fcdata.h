@@ -51,14 +51,14 @@ typedef struct {
   real ETerm;         /* multiplication factor for time averaging         */
   real ETerm1;        /* 1 - ETerm1                                       */
   real exp_min_t_tau; /* Factor for slowly switching on the force         */
-  int  nr;            /* The number of distance restraints                */
-  int  npr;           /* The number of distance restraint pairs           */
+  int  nres;          /* The number of distance restraints                */
+  int  npair;         /* The number of distance restraint pairs           */
   real sumviol;       /* The sum of violations                            */
   real *rt;           /* The calculated instantaneous distance (npr)      */
-  real *rav;          /* The calculated time averaged distance (npr)      */
+  real *rm3tav;       /* The calculated time averaged distance (npr)      */
   real *Rtl_6;        /* The calculated instantaneous r^-6 (nr)           */
   real *Rt_6;         /* The calculated inst. ens. averaged r^-6 (nr)     */
-  real *Rav_6;        /* The calculated time and ens. averaged r^-6 (nr)  */
+  real *Rtav_6;       /* The calculated time and ens. averaged r^-6 (nr)  */
 } t_disresdata;
 
 /* Orientation restraining stuff */
@@ -74,7 +74,7 @@ typedef struct {
   rvec *xref;         /* The reference coordinates for the fit (nref)       */
   rvec *xtmp;         /* Temporary array for fitting (nref)                 */
   matrix R;           /* Rotation matrix to rotate to the reference coor.   */
-  tensor *S;          /* Array of order tensors for each expiriment (nexp)  */
+  tensor *S;          /* Array of order tensors for each experiment (nexp)  */
   rvec5  *Dinsl;      /* The order matrix D for all restraints (nr x 5)     */
   rvec5  *Dins;       /* The ensemble averaged D (nr x 5)                   */
   rvec5  *Dtav;       /* The time and ensemble averaged D (nr x 5)          */

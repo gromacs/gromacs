@@ -171,7 +171,7 @@ static void check_viol(FILE *log,t_commrec *cr,
 	     (forceparams[forceatoms[i+n]].disres.label == label));
     
     calc_disres_R_6(cr->ms,n,&forceatoms[i],forceparams,
-		    (const rvec*)x,pbc,fcd);
+		    (const rvec*)x,pbc,fcd,NULL);
 
     if (fcd->disres.Rt_6[0] <= 0) 
       gmx_fatal(FARGS,"ndr = %d, rt_6 = %f",ndr,fcd->disres.Rt_6[0]);
@@ -654,17 +654,17 @@ int gmx_disre(int argc,char *argv[])
 
   ir.dr_tau=0.0;
   init_disres(fplog,top.idef.il[F_DISRES].nr,top.idef.il[F_DISRES].iatoms,
-	      top.idef.iparams,&ir,NULL,&fcd);
+	      top.idef.iparams,&ir,NULL,&fcd,NULL);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
   
-  init_dr_res(&dr,fcd.disres.nr);
+  init_dr_res(&dr,fcd.disres.nres);
   if (opt2bSet("-c",NFILE,fnm)) {
     clust = cluster_index(fplog,opt2fn("-c",NFILE,fnm));
     snew(dr_clust,clust->clust->nr+1);
     for(i=0; (i<=clust->clust->nr); i++)
-      init_dr_res(&dr_clust[i],fcd.disres.nr);
+      init_dr_res(&dr_clust[i],fcd.disres.nres);
   }
   else {	
     out =xvgropen(opt2fn("-ds",NFILE,fnm),
@@ -746,12 +746,12 @@ int gmx_disre(int argc,char *argv[])
   close_trj(status);
 
   if (clust) {
-    dump_clust_stats(fplog,fcd.disres.nr,&(top.idef.il[F_DISRES]),
+    dump_clust_stats(fplog,fcd.disres.nres,&(top.idef.il[F_DISRES]),
 		     top.idef.iparams,clust->clust,dr_clust,
 		     clust->grpname,isize,index);
   }
   else {
-    dump_stats(fplog,j,fcd.disres.nr,&(top.idef.il[F_DISRES]),
+    dump_stats(fplog,j,fcd.disres.nres,&(top.idef.il[F_DISRES]),
 	       top.idef.iparams,&dr,isize,index,
 	       bPDB ? (&top.atoms) : NULL);
     if (bPDB) {
@@ -759,7 +759,7 @@ int gmx_disre(int argc,char *argv[])
 		     "Coloured by average violation in Angstrom",
 		     &(top.atoms),xav,NULL,ir.ePBC,box);
     }
-    dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nr,
+    dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nres,
 		      j,&top,max_dr,nlevels,bThird);
     fclose(out);
     fclose(aver);
