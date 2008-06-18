@@ -628,24 +628,13 @@ void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 }
 
 /* Static variables for the deform algorithm */
-static int step_store;
-static matrix box_store;
+static int    deformref_step;
+static matrix deformref_box;
 
-static void deform_store(matrix box,const t_inputrec *ir,
-			 int step,bool bFirstStep)
+void set_deform_reference_box(int step,matrix box)
 {
-  if (bFirstStep ||
-      ir->init_step+step == ir->nsteps ||
-      (do_per_step(step,ir->nstxout)
-       && (do_per_step(step,ir->nstvout) || ir->eI == eiBD))) {
-    /* Store the structure, so we can avoid rounding problems
-     * during slow deformation.
-     * We need to store the structure again at steps from which
-     * exact restarts can be performed.
-     */
-    step_store = step;
-    copy_mat(box,box_store);
-  }
+  deformref_step = step;
+  copy_mat(box,deformref_box);
 }
 
 static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
@@ -655,23 +644,27 @@ static void deform(int start,int homenr,rvec x[],matrix box,matrix *scale_tot,
   real   elapsed_time;
   int    i,j;  
 
-  elapsed_time = (step + 1 - step_store)*ir->delta_t;
+  elapsed_time = (step + 1 - deformref_step)*ir->delta_t;
   copy_mat(box,new);
-  for(i=0; i<DIM; i++)
-    for(j=0; j<DIM; j++)
+  for(i=0; i<DIM; i++) {
+    for(j=0; j<DIM; j++) {
       if (ir->deform[i][j] != 0) {
-	new[i][j] = box_store[i][j] + elapsed_time*ir->deform[i][j];
+	new[i][j] = deformref_box[i][j] + elapsed_time*ir->deform[i][j];
       }
+    }
+  }
   /* We correct the off-diagonal elements,
    * which can grow indefinitely during shearing,
    * so the shifts do not get messed up.
    */
   for(i=1; i<DIM; i++) {
     for(j=i-1; j>=0; j--) {
-      while (new[i][j] - box[i][j] > 0.5*new[j][j])
+      while (new[i][j] - box[i][j] > 0.5*new[j][j]) {
 	rvec_dec(new[i],new[j]);
-      while (new[i][j] - box[i][j] < -0.5*new[j][j])
+      }
+      while (new[i][j] - box[i][j] < -0.5*new[j][j]) {
 	rvec_inc(new[i],new[j]);
+      }
     }
   }
   m_inv_ur0(box,invbox);
@@ -713,18 +706,14 @@ void update(FILE         *fplog,
             t_edsamyn    *edyn,
 	    bool         bHaveConstr,
             bool         bNEMD,
-	    bool         bFirstStep,
-	    bool         bStateFromTPX)
+	    bool         bInitStep)
 {
-  bool             bInitStep;
   bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
   double           dt;
   real             dt_1;
   int              start,homenr,i,n,m,g;
   matrix           pcoupl_mu,M;
   tensor           vir_con;
-
-  bInitStep = (bFirstStep && bStateFromTPX);
   
   start  = md->start;
   homenr = md->homenr;
@@ -938,8 +927,7 @@ void update(FILE         *fplog,
 
   update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,state->lambda,
 	      bNEMD);
-  if (DEFORM(*inputrec))
-    deform_store(state->box,inputrec,step,bFirstStep);
+
   if (inputrec->epc == epcBERENDSEN) {
     berendsen_pscale(inputrec,pcoupl_mu,state->box,state->box_rel,
 		     start,homenr,state->x,md->cFREEZE,nrnb);
@@ -960,8 +948,9 @@ void update(FILE         *fplog,
 
     preserve_box_shape(inputrec,state->box_rel,state->box);
   }
-  if (DEFORM(*inputrec))
+  if (DEFORM(*inputrec)) {
     deform(start,homenr,state->x,state->box,scale_tot,inputrec,step);
+  }
   where();
 }
 

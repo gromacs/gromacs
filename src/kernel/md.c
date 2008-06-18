@@ -188,6 +188,11 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		  &(fcd->orires),state);
     }
   }
+  
+  if (DEFORM(*inputrec)) {
+    /* Store the deform reference box before reading the checkpoint */
+    set_deform_reference_box(inputrec->init_step,state->box);
+  }
 
   if (opt2bSet("-cpi",nfile,fnm)) {
     if (SIMMASTER(cr)) {
@@ -1025,7 +1030,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
 	     top,grps,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
-	     bNEMD,bFirstStep,bStateFromTPX);
+	     bNEMD,bFirstStep && bStateFromTPX);
       if (fr->bSepDVDL && fplog && do_log) {
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
       }

@@ -61,6 +61,11 @@ extern void get_stochd_state(gmx_stochd_t sd,t_state *state);
 /* Set the random in sd from state */
 extern void set_stochd_state(gmx_stochd_t sd,t_state *state);
 
+/* Store the box at step step
+ * as a reference state for simulations with box deformation.
+ */
+extern void set_deform_reference_box(int step,matrix box);
+
 extern void update(FILE         *fplog,
 		   int          step,
 		   real         *dvdlambda, /* FEP stuff */
@@ -83,8 +88,7 @@ extern void update(FILE         *fplog,
 		   t_edsamyn    *edyn,
 		   bool         bHaveConstr,
 		   bool         bNEMD,
-		   bool         bFirstStep,
-		   bool         bStateFromTPX);
+		   bool         bInitStep);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
 extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
