@@ -304,8 +304,16 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
 	      eel_names[ir->coulombtype]);
       CHECK(ir->rcoulomb > ir->rlist);
     } else {
-      sprintf(err_buf,"With coulombtype = %s, rcoulomb must be equal to rlist",
-	      eel_names[ir->coulombtype]);
+      if (ir->coulombtype == eelPME) {
+	sprintf(err_buf,
+		"With coulombtype = %s, rcoulomb must be equal to rlist\n"
+		"If you want optimal energy conservation or exact integration use %s",
+		eel_names[ir->coulombtype],eel_names[eelPMESWITCH]);
+      } else { 
+	sprintf(err_buf,
+		"With coulombtype = %s, rcoulomb must be equal to rlist",
+		eel_names[ir->coulombtype]);
+      }
       CHECK(ir->rcoulomb != ir->rlist);
     }
   }
