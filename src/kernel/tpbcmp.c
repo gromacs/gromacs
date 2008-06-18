@@ -519,14 +519,18 @@ static void comp_state(t_state *st1, t_state *st2,real ftol)
 {
   int i;
 
+  fprintf(stdout,"comparing flags\n");
+  cmp_int(stdout,"flags",-1,st1->flags,st2->flags);
   fprintf(stdout,"comparing box\n");
   cmp_rvecs(stdout,"box",DIM,st1->box,st2->box,ftol);
   fprintf(stdout,"comparing box_rel\n");
   cmp_rvecs(stdout,"box_rel",DIM,st1->box_rel,st2->box_rel,ftol);
   fprintf(stdout,"comparing boxv\n");
   cmp_rvecs(stdout,"boxv",DIM,st1->boxv,st2->boxv,ftol);
-  fprintf(stdout,"comparing pcoupl_mu\n");
-  cmp_rvecs(stdout,"pcoupl_mu",DIM,st1->pcoupl_mu,st2->pcoupl_mu,ftol);
+  if (st1->flags & (1<<estPRES_PREV)) {
+    fprintf(stdout,"comparing prev_pres\n");
+    cmp_rvecs(stdout,"pres_prev",DIM,st1->pres_prev,st2->pres_prev,ftol);
+  }
   cmp_int(stdout,"ngtc",-1,st1->ngtc,st2->ngtc);
   if (st1->ngtc == st2->ngtc) {
     for(i=0; i<st1->ngtc; i++)

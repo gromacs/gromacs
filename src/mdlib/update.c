@@ -373,7 +373,7 @@ static void do_update_sd1(t_gmx_stochd *sd,
   }
 }
 
-static void do_update_sd2(t_gmx_stochd *sd,bool bFirstStep,
+static void do_update_sd2(t_gmx_stochd *sd,bool bInitStep,
 			  int start,int homenr,
 			  rvec accel[],ivec nFreeze[],
 			  real invmass[],unsigned short ptype[],
@@ -433,7 +433,7 @@ static void do_update_sd2(t_gmx_stochd *sd,bool bFirstStep,
       if((ptype[n] != eptVSite) && (ptype[n] != eptShell) && !nFreeze[gf][d]) {
         if (bFirstHalf) {
 
-          if (bFirstStep)
+          if (bInitStep)
             sd_X[n][d] = ism*sig[gt].X*gmx_rng_gaussian_table(gaussrand);
 
           Vmh = sd_X[n][d]*sdc[gt].d/(tau_t[gt]*sdc[gt].c) 
@@ -713,17 +713,18 @@ void update(FILE         *fplog,
             t_edsamyn    *edyn,
 	    bool         bHaveConstr,
             bool         bNEMD,
-	    bool         bDoBerendsenCoupl,
 	    bool         bFirstStep,
-	    bool         bStateFromTPX,
-	    tensor       pres)
+	    bool         bStateFromTPX)
 {
+  bool             bInitStep;
   bool             bExtended,bLastStep,bLog=FALSE,bEner=FALSE;
   double           dt;
   real             dt_1;
   int              start,homenr,i,n,m,g;
-  matrix           M;
+  matrix           pcoupl_mu,M;
   tensor           vir_con;
+
+  bInitStep = (bFirstStep && bStateFromTPX);
   
   start  = md->start;
   homenr = md->homenr;
@@ -742,22 +743,36 @@ void update(FILE         *fplog,
 
   dt   = inputrec->delta_t;
   dt_1 = 1.0/dt;
+
+  clear_mat(pcoupl_mu);
+  for(i=0; i<DIM; i++) {
+    pcoupl_mu[i][i] = 1.0;
+  }
   clear_mat(M);
 
-  if (inputrec->etc==etcBERENDSEN && bDoBerendsenCoupl) {
+  /* We can always tcoupl, even if we did not sum the energies
+   * the previous step, since grps->tcstat[i].Th is only updated
+   * when the energies have been summed.
+   */
+  if (inputrec->etc == etcBERENDSEN) {
     berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
   }
-  if (inputrec->etc==etcNOSEHOOVER && !(bFirstStep && bStateFromTPX)) {
+  if (inputrec->etc == etcNOSEHOOVER && !bInitStep) {
     nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
 		      state->nosehoover_xi,state->nosehoover_ixi);
   }
-  if (inputrec->epc == epcBERENDSEN && bDoBerendsenCoupl && !bFirstStep) {
-    berendsen_pcoupl(fplog,step,inputrec,pres,state->box,state->pcoupl_mu);
+  /* We can always pcoupl, even if we did not sum the energies
+   * the previous step, since state->pres_prev is only updated
+   * when the energies have been summed.
+   */
+  if (inputrec->epc == epcBERENDSEN && !bInitStep) {
+    berendsen_pcoupl(fplog,step,inputrec,state->pres_prev,state->box,
+		     pcoupl_mu);
   }
   if (inputrec->epc == epcPARRINELLORAHMAN) {
-    parrinellorahman_pcoupl(fplog,step,inputrec,pres,
+    parrinellorahman_pcoupl(fplog,step,inputrec,state->pres_prev,
 			    state->box,state->box_rel,state->boxv,
-			    M,scale_tot,bFirstStep);
+			    M,scale_tot,bInitStep);
   }
   
   /* Now do the actual update of velocities and positions */
@@ -790,7 +805,7 @@ void update(FILE         *fplog,
     /* The SD update is done in 2 parts, because an extra constraint step
      * is needed 
      */
-    do_update_sd2(sd,bFirstStep && bStateFromTPX,start,homenr,
+    do_update_sd2(sd,bInitStep,start,homenr,
 		  inputrec->opts.acc,inputrec->opts.nFreeze,
 		  md->invmass,md->ptype,
 		  md->cFREEZE,md->cACC,md->cTC,
@@ -926,13 +941,13 @@ void update(FILE         *fplog,
   if (DEFORM(*inputrec))
     deform_store(state->box,inputrec,step,bFirstStep);
   if (inputrec->epc == epcBERENDSEN) {
-    berendsen_pscale(inputrec,state->pcoupl_mu,state->box,state->box_rel,
+    berendsen_pscale(inputrec,pcoupl_mu,state->box,state->box_rel,
 		     start,homenr,state->x,md->cFREEZE,nrnb);
     if (scale_tot) {
       /* The transposes of the scaling matrices are stored,
        * therefore we need to reverse the order in the multiplication.
        */
-      mmul_ur0(*scale_tot,state->pcoupl_mu,*scale_tot);
+      mmul_ur0(*scale_tot,pcoupl_mu,*scale_tot);
     }
   } else if (inputrec->epc == epcPARRINELLORAHMAN) {
     /* The box velocities were updated in do_pr_pcoupl in the update

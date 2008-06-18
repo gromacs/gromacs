@@ -48,8 +48,8 @@
  * since that affects the checkpoint (.cpt) file format.
  */
 enum { estLAMBDA,
-       estBOX, estBOX_REL, estBOXV, estPC_MU, estNH_XI,  estNH_IXI,
-       estX,   estV,       estSDX,  estCGP,   estLD_RNG, estLD_RNGI,
+       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estNH_IXI,
+       estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
        estORIRE_INITF, estORIRE_DTAV,
        estNR };
@@ -77,7 +77,7 @@ typedef struct
   matrix 	box;    /* box vector coordinates                      	*/
   matrix 	box_rel; /* Relitaive box vectors to preserve shape    	*/
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
-  matrix        pcoupl_mu; /* for Berendsen pcoupl                      */
+  matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
   real          *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *nosehoover_ixi; /* for Nose-Hoover tcoupl (ngtc)       */
   int           nalloc; /* Allocation size for x, v and sd_x when !=NULL*/

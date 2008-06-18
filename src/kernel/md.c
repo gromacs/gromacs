@@ -467,7 +467,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
              bFirstStep,bStateFromTPX,bLastStep;
   bool       bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
-  bool       bMasterState,bDoBerendsenCoupl;
+  bool       bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
@@ -510,22 +510,23 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bGStat   = !(Flags & MD_NOGSTAT);
 
   if (!bGStat) {
-    if (EI_DYNAMICS(ir->eI) && 
-	(ir->etc == etcNO || ir->etc == etcBERENDSEN) &&
-	(ir->epc == epcNO || ir->epc == epcBERENDSEN)) {
-      if (fplog)
+    if (EI_DYNAMICS(ir->eI)) {
+      if (fplog) {
 	fprintf(fplog,"\nWill not sum the energies at every step,\n"
 		"therefore the energy file does not contain exact averages and fluctuations.\n\n");
+      }
       if (ir->etc != etcNO || ir->epc != epcNO) {
-	if (fplog)
-	  fprintf(fplog,"WARNING:\nThe Berendsen scaling will only be updated every nstlist (%d) steps\n\n",ir->nstlist);
+	if (fplog) {
+	  fprintf(fplog,"WARNING:\nThe temperature and/or pressure for scaling will only be updated every nstlist (%d) steps\n\n",ir->nstlist);
+	}
       }
       if (ir->comm_mode != ecmNO && ir->nstcomm != ir->nstlist) {
-	if (fplog)
+	if (fplog) {
 	  fprintf(fplog,"WARNING:\nBecause of the no energy summing option setting nstcomm (was %d) to nstlist (%d)\n\n",ir->nstcomm,ir->nstlist);
+	}
       }
     } else {
-      char *warn="\nWARNING:\nNo energy summing can only be used with dynamics and without extended Hamiltonian temperature and pressure coupling, ignoring this option\n";
+      char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
       fprintf(stderr,"%s\n",warn);
       if (fplog)
 	fprintf(fplog,"%s\n",warn);
@@ -968,7 +969,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bV   = do_per_step(step,ir->nstvout);
     bF   = do_per_step(step,ir->nstfout);
     bXTC = do_per_step(step,ir->nstxtcout);
-    if (bNS || bLastStep) {
+    if ((bNS || bLastStep) && step > ir->init_step && !bRerunMD) {
       bCPT = (chkpt > 0 || bLastStep);
       chkpt = 0;
     } else {
@@ -1021,13 +1022,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * energy or virial. Since the happens in global_state after update,
        * we should only do it at step % nstlist = 1 with bGStat=FALSE.
        */
-      bDoBerendsenCoupl = (bGStat || ir->nstlist<=1 || step%ir->nstlist==1);
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
 	     top,grps,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
-	     bNEMD,bDoBerendsenCoupl,bFirstStep,bStateFromTPX,pres);
-      if (fr->bSepDVDL && fplog && do_log)
+	     bNEMD,bFirstStep,bStateFromTPX);
+      if (fr->bSepDVDL && fplog && do_log) {
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
+      }
       ener[F_DGDL_CON] += dvdl;
       wallcycle_stop(wcycle,ewcUPDATE);
     } else if (graph) {
@@ -1121,107 +1122,107 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       chkpt = 1;
     }
 
-    if (PAR(cr) &&
-	(bGStat || bNS || do_per_step(step,ir->nstenergy) || bCPT || do_log)) {
-      wallcycle_start(wcycle,ewcMoveE);
-      /* Globally (over all NODEs) sum energy, virial etc. 
-       * This includes communication 
+    if (bGStat || bNS || do_per_step(step,ir->nstenergy) || bCPT || do_log) {
+      if (PAR(cr)) {
+	wallcycle_start(wcycle,ewcMoveE);
+	/* Globally (over all NODEs) sum energy, virial etc. 
+	 * This includes communication 
+	 */
+	global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
+		    ir,grps,bSumEkinhOld,constr,vcm,
+		    ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
+	if (terminate != 0) {
+	  terminate_now = terminate;
+	  terminate = 0;
+	}
+	
+	wallcycle_stop(wcycle,ewcMoveE);
+	bSumEkinhOld = FALSE;
+      } else {
+	bSumEkinhOld = TRUE;
+      }
+
+      /* This is just for testing. Nothing is actually done to Ekin
+       * since that would require extra communication.
        */
-      global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		  ir,grps,bSumEkinhOld,constr,vcm,
-		  ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
-      if (terminate != 0) {
-	terminate_now = terminate;
-	terminate = 0;
+      if (!bNEMD && debug && (vcm->nr > 0)) {
+	correct_ekin(debug,mdatoms->start,mdatoms->start+mdatoms->homenr,
+		     state->v,vcm->group_p[0],
+		     mdatoms->massT,mdatoms->tmass,ekin);
       }
-
-      wallcycle_stop(wcycle,ewcMoveE);
-      bSumEkinhOld = FALSE;
-    } else {
-      bSumEkinhOld = TRUE;
-    }
-
-    /* This is just for testing. Nothing is actually done to Ekin
-     * since that would require extra communication.
-     */
-    if (!bNEMD && debug && (vcm->nr > 0))
-      correct_ekin(debug,mdatoms->start,mdatoms->start+mdatoms->homenr,
-		   state->v,vcm->group_p[0],
-		   mdatoms->massT,mdatoms->tmass,ekin);
     
-    /* Do center of mass motion removal */
-    if (bStopCM && !bFFscan && !bRerunMD) {
-      check_cm_grp(fplog,vcm,1);
-      do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
-		    state->x,state->v,vcm);
-      inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
-      /*
-      calc_vcm_grp(fplog,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
-      check_cm_grp(fplog,vcm);
-      do_stopcm_grp(fplog,START(nsb),HOMENR(nsb),x,v,vcm);
-      check_cm_grp(fplog,vcm);
-      */
-    }
-    
-    /* Add force and shake contribution to the virial */
-    m_add(force_vir,shake_vir,total_vir);
-
-    /* Calculate the amplitude of the cosine velocity profile */
-    grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
-
-    /* Sum the kinetic energies of the groups & calc temp */
-    ener[F_TEMP] = sum_ekin(bRerunMD,&(ir->opts),grps,ekin,
-			    &(ener[F_DKDL]));
-    ener[F_EKIN] = trace(ekin);
-
-    /* Calculate Temperature coupling parameters lambda and adjust
-     * target temp when doing simulated annealing
-     */
-    /*
-    if(ir->etc==etcBERENDSEN)
-      berendsen_tcoupl(&(ir->opts),grps,ir->delta_t);
-    else if(ir->etc==etcNOSEHOOVER)
-      nosehoover_tcoupl(&(ir->opts),grps,ir->delta_t);
-    */
-
-    /* Calculate pressure and apply LR correction if PPPM is used.
-     * Use the box from last timestep since we already called update().
-     */
-    ener[F_PRES] = calc_pres(fr->ePBC,ir->nwall,lastbox,ekin,total_vir,pres,
-			     (fr->eeltype==eelPPPM)?ener[F_COUL_RECIP]:0.0);
-    
-    /* Calculate long range corrections to pressure and energy */
-    if (bTCR || bFFscan)
-      set_avcsixtwelve(fplog,fr,&top_global->atoms,&top_global->excls);
+      /* Do center of mass motion removal */
+      if (bStopCM && !bFFscan && !bRerunMD) {
+	check_cm_grp(fplog,vcm,1);
+	do_stopcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms->cVCM,
+		      state->x,state->v,vcm);
+	inc_nrnb(nrnb,eNR_STOPCM,mdatoms->homenr);
+	/*
+	  calc_vcm_grp(fplog,START(nsb),HOMENR(nsb),mdatoms->massT,x,v,vcm);
+	  check_cm_grp(fplog,vcm);
+	  do_stopcm_grp(fplog,START(nsb),HOMENR(nsb),x,v,vcm);
+	  check_cm_grp(fplog,vcm);
+	*/
+      }
       
-    /* Calculate long range corrections to pressure and energy */
-    calc_dispcorr(fplog,ir,fr,step,top_global->atoms.nr,
-		  lastbox,state->lambda,
-		  pres,total_vir,ener);
+      /* Add force and shake contribution to the virial */
+      m_add(force_vir,shake_vir,total_vir);
+      
+      /* Calculate the amplitude of the cosine velocity profile */
+      grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
+      
+      /* Sum the kinetic energies of the groups & calc temp */
+      ener[F_TEMP] = sum_ekin(bRerunMD,&(ir->opts),grps,ekin,
+			      &(ener[F_DKDL]));
+      ener[F_EKIN] = trace(ekin);
+      
+      /* Calculate pressure and apply LR correction if PPPM is used.
+       * Use the box from last timestep since we already called update().
+       */
+      ener[F_PRES] = calc_pres(fr->ePBC,ir->nwall,lastbox,ekin,total_vir,pres,
+			       (fr->eeltype==eelPPPM)?ener[F_COUL_RECIP]:0.0);
+      
+      /* Calculate long range corrections to pressure and energy */
+      if (bTCR || bFFscan)
+	set_avcsixtwelve(fplog,fr,&top_global->atoms,&top_global->excls);
+      
+      /* Calculate long range corrections to pressure and energy */
+      calc_dispcorr(fplog,ir,fr,step,top_global->atoms.nr,
+		    lastbox,state->lambda,
+		    pres,total_vir,ener);
+      
+      ener[F_ETOT] = ener[F_EPOT] + ener[F_EKIN];
+      
+      if (ir->etc == etcNOSEHOOVER)
+	ener[F_ECONSERVED] =
+	  ener[F_ETOT] + nosehoover_energy(&(ir->opts),grps,
+					   state->nosehoover_xi,
+					   state->nosehoover_ixi);
+      
+      if ((state->flags & (1<<estPRES_PREV)) &&
+	  (bGStat || ir->nstlist<=1 || step%ir->nstlist==0)) {
+	/* Store the pressure in t_state for pressure coupling
+	 * at the next MD step.
+	 */
+	copy_mat(pres,state->pres_prev);
+      }
 
-    ener[F_ETOT] = ener[F_EPOT] + ener[F_EKIN];
-
-    if (ir->etc == etcNOSEHOOVER)
-      ener[F_ECONSERVED] =
-	ener[F_ETOT] + nosehoover_energy(&(ir->opts),grps,
-					 state->nosehoover_xi,
-					 state->nosehoover_ixi);
-
-    /* Check for excessively large energies */
-    if (bIonize) {
+      /* Check for excessively large energies */
+      if (bIonize) {
 #ifdef GMX_DOUBLE
-      real etot_max = 1e200;
+	real etot_max = 1e200;
 #else
-      real etot_max = 1e30;
+	real etot_max = 1e30;
 #endif
-      if (fabs(ener[F_ETOT]) > etot_max) {
-	fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
-	break;
+	if (fabs(ener[F_ETOT]) > etot_max) {
+	  fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+	  break;
+	}
       }
     }
-
+    
     /* The coordinates (x) were unshifted in update */
-    if (bFFscan && (shellfc==NULL || bConverged))
+    if (bFFscan && (shellfc==NULL || bConverged)) {
       if (print_forcefield(fplog,ener,mdatoms->homenr,f,buf,xcopy,
 			   &(top->mols),mdatoms->massT,pres)) {
 	if (gmx_parallel_env)
@@ -1229,6 +1230,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	fprintf(stderr,"\n");
 	exit(0);
       }
+    }
     
     if (bTCR) {
       /* Only do GCT when the relaxation of shells (minimization) has converged,

@@ -292,9 +292,7 @@ void init_state(t_state *state,int natoms,int ngtc)
   clear_mat(state->box);
   clear_mat(state->box_rel);
   clear_mat(state->boxv);
-  clear_mat(state->pcoupl_mu);
-  for(i=0; i<DIM; i++)
-    state->pcoupl_mu[i][i] = 1.0;
+  clear_mat(state->pres_prev);
   init_gtc_state(state,ngtc);
   state->nalloc = state->natoms;
   if (state->nalloc > 0) {

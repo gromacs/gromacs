@@ -28,7 +28,7 @@ const char *ecpdt_names[ecpdtNR] = { "int", "float", "double" };
 const char *est_names[estNR]=
 {
     "FE-lambda",
-    "box", "box-rel", "box-v", "pcoupl-mu",
+    "box", "box-rel", "box-v", "pres_prev",
     "nosehoover-xi", "nosehoover-xi-integral",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
@@ -415,7 +415,7 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOX:    do_cpte_matrix(xd,i,sflags,state->box,list); break;
             case estBOX_REL:do_cpte_matrix(xd,i,sflags,state->box_rel,list); break;
             case estBOXV:   do_cpte_matrix(xd,i,sflags,state->boxv,list); break;
-            case estPC_MU:  do_cpte_matrix(xd,i,sflags,state->pcoupl_mu,list); break;
+            case estPRES_PREV: do_cpte_matrix(xd,i,sflags,state->pres_prev,list); break;
             case estNH_XI:  do_cpte_reals (xd,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
             case estNH_IXI: do_cpte_doubles(xd,i,sflags,state->ngtc,&state->nosehoover_ixi,list); break;
             case estX:      do_cpte_rvecs (xd,i,sflags,state->natoms,&state->x,list); break;

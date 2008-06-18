@@ -165,7 +165,7 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
   block_bc(cr,state->box);
   block_bc(cr,state->box_rel);
   block_bc(cr,state->boxv);
-  block_bc(cr,state->pcoupl_mu);
+  block_bc(cr,state->pres_prev);
   if (bAlloc && !MASTER(cr)) {
     snew(state->nosehoover_xi, state->ngtc);
     snew(state->nosehoover_ixi,state->ngtc);

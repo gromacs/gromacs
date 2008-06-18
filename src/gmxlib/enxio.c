@@ -418,13 +418,6 @@ void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
 	find_energy(boxvel_nm[i],nre,enm,fr);
     }
     fprintf(stderr,"\nREAD %d BOX VELOCITIES FROM %s\n\n",npcoupl,fn);
-  } else if (ir->epc == epcBERENDSEN || ir->epc == epcISOTROPIC) {
-    clear_mat(state->pcoupl_mu);
-    for(i=0; i<npcoupl; i++) {
-      state->pcoupl_mu[ind0[i]][ind1[i]] =
-	find_energy(pcouplmu_nm[i],nre,enm,fr);
-    }
-    fprintf(stderr,"\nREAD %d PRESSURE COUPLING MU'S FROM %s\n\n",npcoupl,fn);
   }
 
   if (ir->etc == etcNOSEHOOVER) {

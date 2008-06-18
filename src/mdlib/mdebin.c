@@ -73,11 +73,6 @@ static char *boxvel_nm[] = {
   "Box-Vel-YX", "Box-Vel-ZX", "Box-Vel-ZY"
 };
 
-static char *pcouplmu_nm[] = {
-  "Pcoupl-Mu-XX", "Pcoupl-Mu-YY", "Pcoupl-Mu-ZZ",
-  "Pcoupl-Mu-YX", "Pcoupl-Mu-ZX", "Pcoupl-Mu-ZY"
-};
-
 #define NBOXS asize(boxs_nm)
 #define NTRICLBOXS asize(tricl_boxs_nm)
 
@@ -234,8 +229,6 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
   md->isurft = get_ebin_space(md->ebin,asize(surft_nm),surft_nm);
   if (epc == epcPARRINELLORAHMAN) {
     md->ipc  = get_ebin_space(md->ebin,bTricl ? 6 : 3,boxvel_nm);
-  } else if (epc == epcBERENDSEN || epc == epcISOTROPIC) {
-    md->ipc = get_ebin_space(md->ebin,bTricl ? 6 : 3,pcouplmu_nm);
   }
   md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
   if (grps->cosacc.cos_accel != 0) {
@@ -437,14 +430,6 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     tmp6[3] = state->boxv[YY][XX];
     tmp6[4] = state->boxv[ZZ][XX];
     tmp6[5] = state->boxv[ZZ][YY];
-    add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,bSum,step);
-  } else if (epc == epcBERENDSEN || epc == epcISOTROPIC) {
-    tmp6[0] = state->pcoupl_mu[XX][XX];
-    tmp6[1] = state->pcoupl_mu[YY][YY];
-    tmp6[2] = state->pcoupl_mu[ZZ][ZZ];
-    tmp6[3] = state->pcoupl_mu[YY][XX];
-    tmp6[4] = state->pcoupl_mu[ZZ][XX];
-    tmp6[5] = state->pcoupl_mu[ZZ][YY];
     add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,bSum,step);
   }
   add_ebin(md->ebin,md->imu,3,mu_tot,bSum,step);

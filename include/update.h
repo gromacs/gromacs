@@ -83,10 +83,8 @@ extern void update(FILE         *fplog,
 		   t_edsamyn    *edyn,
 		   bool         bHaveConstr,
 		   bool         bNEMD,
-		   bool         bDoBerendsenCoupl,
 		   bool         bFirstStep,
-		   bool         bStateFromTPX,
-		   tensor       pres);
+		   bool         bStateFromTPX);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
 extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,

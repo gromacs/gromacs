@@ -980,7 +980,7 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
     state->lambda = state_local->lambda;
     copy_mat(state_local->box,state->box);
     copy_mat(state_local->boxv,state->boxv);
-    copy_mat(state_local->pcoupl_mu,state->pcoupl_mu);
+    copy_mat(state_local->pres_prev,state->pres_prev);
     for(i=0; i<state_local->ngtc; i++) {
       state->nosehoover_xi[i]  = state_local->nosehoover_xi[i];
       state->nosehoover_ixi[i] = state_local->nosehoover_ixi[i];

@@ -103,14 +103,18 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
   }
   if (ir->ePBC != epbcNONE) {
     state->flags |= (1<<estBOX);
-    if (PRESERVE_SHAPE(*ir))
+    if (PRESERVE_SHAPE(*ir)) {
       state->flags |= (1<<estBOX_REL);
-    if (ir->epc == epcPARRINELLORAHMAN)
+    }
+    if (ir->epc == epcPARRINELLORAHMAN) {
       state->flags |= (1<<estBOXV);
-    if (ir->epc == epcBERENDSEN)
-      state->flags |= (1<<estPC_MU);
-    if (ir->etc == etcNOSEHOOVER)
+    }
+    if (ir->epc != epcNO) {
+      state->flags |= (1<<estPRES_PREV);
+    }
+    if (ir->etc == etcNOSEHOOVER) {
       state->flags |= ((1<<estNH_XI) | (1<<estNH_IXI));
+    }
   }
 }
 

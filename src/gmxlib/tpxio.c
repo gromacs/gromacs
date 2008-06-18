@@ -1502,8 +1502,10 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
       clear_mat(state->box_rel);
     }
     if (file_version >= 28) {
+      matrix mdum;
       ndo_rvec(state->boxv,DIM);
-      ndo_rvec(state->pcoupl_mu,DIM);
+      clear_mat(mdum);
+      ndo_rvec(mdum,DIM);
     }
   }
   

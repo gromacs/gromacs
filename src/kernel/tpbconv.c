@@ -280,7 +280,7 @@ int main (int argc, char *argv[])
     "[BB]WARNING: this tpx file is not fully functional[bb].",
     "[BB]3rd.[bb] by setting the charges of a specified group",
     "to zero. This is useful when doing free energy estimates",
-    "using the LIE (Linear Interactio Energy) method."
+    "using the LIE (Linear Interaction Energy) method."
   };
 
   char         *top_fn,*frame_fn;
@@ -353,9 +353,15 @@ int main (int argc, char *argv[])
   run_step   = 0;
 
   if (bTraj) {
-    bNeedEner = (ir->epc != epcNO || ir->etc == etcNOSEHOOVER);
+    bNeedEner = (ir->epc == epcPARRINELLORAHMAN || ir->etc == etcNOSEHOOVER);
     bReadEner = (bNeedEner && ftp2bSet(efENX,NFILE,fnm));
     bScanEner = (bReadEner && !bTime);
+    
+    if (ir->epc != epcNO || EI_SD(ir->eI) || ir->eI == eiBD) {
+      fprintf(stderr,"NOTE: The simulation uses pressure coupling and/or stochastic dynamics.\n"
+	      "tpbconv can not provide binary identical continuation.\n"
+	      "If you want that, supply a checkpoint file to mdrun\n\n");
+    }
 
     frame_fn = ftp2fn(efTRN,NFILE,fnm);
     fprintf(stderr,
@@ -441,8 +447,10 @@ int main (int argc, char *argv[])
       if (bReadEner) {
 	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&top.atoms,ir,&state);
       } else {
-	fprintf(stderr,"\nWARNING: The simulation uses pressure and/or Nose-Hoover temperature coupling,\n"
-		"         the continuation will only be exact when an energy file is supplied\n\n");
+	fprintf(stderr,"\nWARNING: The simulation uses %s temperature and/or %s pressure coupling,\n"
+		"         the continuation will only be exact when an energy file is supplied\n\n",
+		ETCOUPLTYPE(etcNOSEHOOVER),
+		EPCOUPLTYPE(epcPARRINELLORAHMAN));
       }
     }
   } 
