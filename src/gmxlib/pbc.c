@@ -593,9 +593,10 @@ void pbc_dx(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
 	rvec_add(dx_start,pbc->tric_vec[i],try);
 	d2try = 0;
-	for(i=DIM-1; i>=0; i--) {
-	  if (i != pbc->dim)
-	    d2try += try[i]*try[i];
+	for(j=0; j<DIM; j++) {
+	  if (j != pbc->dim) {
+	    d2try += try[j]*try[j];
+	  }
 	}
 	if (d2try < d2min) {
 	  copy_rvec(try,dx);
@@ -777,9 +778,10 @@ int pbc_dx_aiuc(const t_pbc *pbc,const rvec x1, const rvec x2, rvec dx)
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
 	rvec_add(dx_start,pbc->tric_vec[i],try);
 	d2try = 0;
-	for(i=DIM-1; i>=0; i--) {
-	  if (i != pbc->dim)
-	    d2try += try[i]*try[i];
+	for(j=0; j<DIM; j++) {
+	  if (j != pbc->dim) {
+	    d2try += try[j]*try[j];
+	  }
 	}
 	if (d2try < d2min) {
 	  copy_rvec(try,dx);
@@ -896,12 +898,14 @@ void pbc_dx_d(const t_pbc *pbc,const dvec x1, const dvec x2, dvec dx)
        */
       i = 0;
       while ((d2min > pbc->max_cutoff2) && (i < pbc->ntric_vec)) {
-	for(j=0; j<DIM; j++)
+	for(j=0; j<DIM; j++) {
 	  try[j] = dx_start[j] + pbc->tric_vec[i][j];
+	}
 	d2try = 0;
-	for(i=DIM-1; i>=0; i--) {
-	  if (i != pbc->dim)
-	    d2try += try[i]*try[i];
+	for(j=0; j<DIM; j++) {
+	  if (j != pbc->dim) {
+	    d2try += try[j]*try[j];
+	  }
 	}
 	if (d2try < d2min) {
 	  copy_dvec(try,dx);
