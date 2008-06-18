@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * $Id$
  * 
@@ -158,7 +158,8 @@ typedef struct gmx_pme {
 #ifdef GMX_MPI
     MPI_Comm mpi_comm;
 #endif
-    
+
+    bool bPPnode;            /* Node also does particle-particle forces */
     bool bFEP;               /* Compute Free energy contribution */
     int nkx,nky,nkz;         /* Grid dimensions */
     int pme_order;
@@ -574,7 +575,8 @@ static void dd_pmeredist_x_q(gmx_pme_t pme, int maxshift,
 
 static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
                            int maxshift,
-                           int n, rvec *f)
+                           int n, rvec *f,
+                           bool bAddF)
 {
   int *commnode,*buf_index;
   int nnodes_comm,local_pos,buf_pos,i,scount,rcount,node;
@@ -600,19 +602,45 @@ static void dd_pmeredist_f(gmx_pme_t pme, pme_atomcomm_t *atc,
     buf_pos   += rcount;
   }
 
-  local_pos = 0;
-  for(i=0; i<n; i++) {
-    node = atc->pd[i];
-    if (node == pme->nodeid) {
-      /* Copy from the local force array */
-      rvec_inc(f[i],atc->f[local_pos]);
-      local_pos++;
-    } else {
-      /* Copy from the receive buffer */
-      rvec_inc(f[i],pme->bufv[buf_index[node]]);
-      buf_index[node]++;
+    local_pos = 0;
+    if (bAddF)
+    {
+        for(i=0; i<n; i++)
+        {
+            node = atc->pd[i];
+            if (node == pme->nodeid)
+            {
+                /* Add from the local force array */
+                rvec_inc(f[i],atc->f[local_pos]);
+                local_pos++;
+            }
+            else
+            {
+                /* Add from the receive buffer */
+                rvec_inc(f[i],pme->bufv[buf_index[node]]);
+                buf_index[node]++;
+            }
+        }
     }
-  }
+    else
+    {
+        for(i=0; i<n; i++)
+        {
+            node = atc->pd[i];
+            if (node == pme->nodeid)
+            {
+                /* Copy from the local force array */
+                copy_rvec(atc->f[local_pos],f[i]);
+                local_pos++;
+            }
+            else
+            {
+                /* Copy from the receive buffer */
+                copy_rvec(pme->bufv[buf_index[node]],f[i]);
+                buf_index[node]++;
+            }
+        }
+    }
 }
 
 static void gmx_sum_qgrid_dd(pme_overlap_t *ol,t_fftgrid *grid,int direction)
@@ -1396,9 +1424,11 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
 #endif
+        pme->bPPnode = (cr->duty & DUTY_PP);
     } else {
         pme->ndecompdim = 0;
         pme->nnodes = 1;
+        pme->bPPnode = TRUE;
     }
     
     if (ir->ePBC == epbcSCREW) {
@@ -1782,7 +1812,7 @@ int gmx_pme_do(gmx_pme_t pme,
     if (pme->nnodes > 1) {
         GMX_BARRIER(cr->mpi_comm_mysim);
         if (DOMAINDECOMP(cr)) {
-            dd_pmeredist_f(pme, &pme->atc[0], maxshift, homenr, f);
+            dd_pmeredist_f(pme,&pme->atc[0],maxshift,homenr,f,pme->bPPnode);
         } else {
             pmeredist(pme, FALSE, homenr, TRUE, f+start, NULL, &pme->atc[0]);
         }
