@@ -1183,6 +1183,7 @@ the constant force in [kJ mol<sup>-1</sup> nm<sup>-1</sup>].</dd>
 <dt><h4>pull_kB1: (0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4></dt>
 <dd>As <b>pull_k1</b>, but for state B. This is only used when
 <A HREF="#free"><b>free_energy</b></A> is turned on.
+The force constant is then (1 - lambda)*<b>pull_k1</b> + lambda*<b>pull_kB1</b>.
 </dl>
 
 <A NAME="nmr"><br>
