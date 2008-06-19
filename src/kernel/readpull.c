@@ -144,10 +144,11 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
   
   snew(pull->grp,pull->ngrp+1);
 
-  if (pull->eGeom == epullgPOS)
+  if (pull->eGeom == epullgPOS) {
     ndim = 3;
-  else
+  } else {
     ndim = 1;
+  }
 
   /* pull group options */
   CTYPE("Group name, weight (default all 1), vector, init, rate (nm/ps), kJ/(mol*nm^2)");
@@ -167,14 +168,14 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
       STYPE(buf,              VecTemp[i], "0.0 0.0 0.0");
       sprintf(buf,"pull_init%d",i);
       STYPE(buf,              init, ndim==1 ? init_def1 : init_def3);
-      clear_dvec(vec);
       nscan = sscanf(init,"%lf %lf %lf",&vec[0],&vec[1],&vec[2]);
       if (nscan != ndim) {
 	fprintf(stderr,"ERROR: %s should have %d components\n",buf,ndim);
 	nerror++;
       }
-      for(m=0; m<DIM; m++)
-	pgrp->init[m] = vec[m];
+      for(m=0; m<DIM; m++) {
+	pgrp->init[m] = (m<ndim ? vec[m] : 0.0);
+      }
       sprintf(buf,"pull_rate%d",i);
       RTYPE(buf,              pgrp->rate, 0.0);
       sprintf(buf,"pull_k%d",i);
