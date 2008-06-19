@@ -515,6 +515,16 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_cosines(fp,"et",ir1->et,ir2->et,ftol);
 }
 
+static void comp_pull_AB(FILE *fp,t_pull *pull,real ftol)
+{
+  int i;
+
+  for(i=0; i<pull->ngrp+1; i++) {
+    fprintf(fp,"comparing pull group %d\n",i);
+    cmp_real(fp,"pullgrp->k",-1,pull->grp[i].k,pull->grp[i].kB,ftol);
+  }
+}
+
 static void comp_state(t_state *st1, t_state *st2,real ftol)
 {
   int i;
@@ -566,10 +576,14 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
     cmp_top(stdout,&top[0],&top[1],ftol);
     comp_state(&state[0],&state[1],ftol);
   } else {
-    if (ir[0].efep == efepNO)
+    if (ir[0].efep == efepNO) {
       fprintf(stdout,"inputrec->efep = %s\n",efep_names[ir[0].efep]);
-    else
+    } else {
+      if (ir[0].ePull != epullNO) {
+	comp_pull_AB(stdout,ir->pull,ftol);
+      }
       cmp_top(stdout,&top[0],NULL,ftol);
+    }
   }
 }
 

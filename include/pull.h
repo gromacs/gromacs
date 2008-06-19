@@ -55,9 +55,9 @@ extern void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 extern void clear_pull_forces(t_pull *pull);
 
 /* Determine the COM pull forces and add them to f, return the potential */
-extern real pull_potential(int ePull, t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-			   t_commrec *cr, double t,
-			   rvec *x, rvec *f, tensor vir);
+extern real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
+			   t_commrec *cr, double t, real lambda,
+			   rvec *x, rvec *f, tensor vir, real *dvdlambda);
 
 /* Constrain the coordinates xp in the directions in x
  * and also constrain v when v!=NULL.

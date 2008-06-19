@@ -136,18 +136,13 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord)
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces_grp(t_commrec *cr,
-			     t_pullgrp *pgrp, t_mdatoms * md, rvec * f,
-			     dvec f_pull, int sign)
+static void apply_forces_grp(t_pullgrp *pgrp, t_mdatoms * md,
+			     gmx_ga2la_t *ga2la,
+			     dvec f_pull, int sign, rvec *f)
 {
   int i,ii,m,start,end;
   double wmass,inv_wm;
-  gmx_ga2la_t *ga2la=NULL;
 
-  if (DOMAINDECOMP(cr))
-    ga2la = cr->dd->ga2la;
-  else
-    ga2la = NULL;
   start = md->start;
   end   = md->homenr + start;
 
@@ -165,20 +160,20 @@ static void apply_forces_grp(t_commrec *cr,
 }
 
 /* Apply forces in a mass weighted fashion */
-static void apply_forces(t_commrec *cr,
-			 t_pull * pull, t_mdatoms * md, rvec * f)
+static void apply_forces(t_pull * pull, t_mdatoms * md, gmx_ga2la_t *ga2la,
+			 rvec *f)
 {
   int i;
   t_pullgrp *pgrp;
 
   for(i=1; i<pull->ngrp+1; i++) {
     pgrp = &(pull->grp[i]);
-    apply_forces_grp(cr,pgrp,md,f,pgrp->f,1);
+    apply_forces_grp(pgrp,md,ga2la,pgrp->f,1,f);
     if (pull->grp[0].nat) {
       if (PULL_CYL(pull)) {
-	apply_forces_grp(cr,&(pull->dyna[i]),md,f,pgrp->f,-1);
+	apply_forces_grp(&(pull->dyna[i]),md,ga2la,pgrp->f,-1,f);
       } else {
-	apply_forces_grp(cr,&(pull->grp[0]),md,f,pgrp->f,-1);
+	apply_forces_grp(&(pull->grp[0]),md,ga2la,pgrp->f,-1,f);
       }
     }
   }
@@ -596,32 +591,38 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 }
 
 /* Pulling with a harmonic umbrella potential or constant force */
-static real do_pull_pot(t_commrec *cr,int ePull,
-			t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-			rvec *f, tensor vir, double t)
+static void do_pull_pot(int ePull,
+			t_pull *pull, t_pbc *pbc, double t, real lambda,
+			real *V, tensor vir, real *dVdl)
 {
   int       g,j,m;
   dvec      dr,dev;
   double    ndr,invdr;
-  real      V;
+  real      k,dkdl;
   t_pullgrp *pgrp;
 
   /* loop over the groups that are being pulled */
-  V = 0;
+  *V    = 0;
+  *dVdl = 0;
   for(g=1; g<1+pull->ngrp; g++) {
     pgrp = &pull->grp[g];
     get_pullgrp_distance(pull,pbc,g,t,dr,dev);
+    
+    k    = (1.0 - lambda)*pgrp->k + lambda*pgrp->kB;
+    dkdl = pgrp->kB - pgrp->k;
 
     switch (pull->eGeom) {
     case epullgDIST:
       ndr   = dnorm(dr);
       invdr = 1/ndr;
       if (ePull == epullUMBRELLA) {
-	pgrp->f_scal  = -pgrp->k*dev[0];
-	V            += 0.5*pgrp->k*sqr(dev[0]);
+	pgrp->f_scal  =       -k*dev[0];
+	*V           += 0.5*   k*sqr(dev[0]);
+	*dVdl        += 0.5*dkdl*sqr(dev[0]);
       } else {
-	pgrp->f_scal  = -pgrp->k;
-	V            += pgrp->k*ndr;
+	pgrp->f_scal  =   -k;
+	*V           +=    k*ndr;
+	*dVdl        += dkdl*ndr;
       }
       for(m=0; m<DIM; m++)
 	pgrp->f[m]    = pgrp->f_scal*dr[m]*invdr;
@@ -629,14 +630,17 @@ static real do_pull_pot(t_commrec *cr,int ePull,
     case epullgDIR:
     case epullgCYL:
       if (ePull == epullUMBRELLA) {
-	pgrp->f_scal  = -pgrp->k*dev[0];
-	V            += 0.5*pgrp->k*sqr(dev[0]);
+	pgrp->f_scal  =       -k*dev[0];
+	*V           += 0.5*   k*sqr(dev[0]);
+	*dVdl        += 0.5*dkdl*sqr(dev[0]);
       } else {
 	ndr = 0;
-	for(m=0; m<DIM; m++)
+	for(m=0; m<DIM; m++) {
 	  ndr += pgrp->vec[m]*dr[m];
-	pgrp->f_scal  = -pgrp->k;
-	V            += pgrp->k*ndr;
+	}
+	pgrp->f_scal  =   -k;
+	*V           +=    k*ndr;
+	*dVdl        += dkdl*ndr;
       }
       for(m=0; m<DIM; m++)
 	pgrp->f[m]    = pgrp->f_scal*pgrp->vec[m];
@@ -644,37 +648,45 @@ static real do_pull_pot(t_commrec *cr,int ePull,
     case epullgPOS:
       for(m=0; m<DIM; m++) {
 	if (ePull == epullUMBRELLA) {
-	  pgrp->f[m]  = -pgrp->k*dev[m];
-	  V          += 0.5*pgrp->k*sqr(dev[m]);
+	  pgrp->f[m]  =       -k*dev[m];
+	  *V         += 0.5*   k*sqr(dev[m]);
+	  *dVdl      += 0.5*dkdl*sqr(dev[m]);
 	} else {
-      	  pgrp->f[m]  = -pgrp->k*pull->dim[m];
-	  V          += pgrp->k*dr[m]*pull->dim[m];
+      	  pgrp->f[m]  =   -k*pull->dim[m];
+	  *V         +=    k*dr[m]*pull->dim[m];
+	  *dVdl      += dkdl*dr[m]*pull->dim[m];
 	}
       }
       break;
     }
     
-    if (vir && MASTER(cr)) {
+    if (vir) {
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0;m<DIM;m++)
 	  vir[j][m] += 0.5*pgrp->f[j]*dr[m];
     }
   }
-
-  /* Distribute forces over pulled groups */
-  apply_forces(cr, pull, md, f);
-
-  return (MASTER(cr) ? V : 0.0);
 }
 
 real pull_potential(int ePull,t_pull *pull, t_mdatoms *md, t_pbc *pbc,
-		    t_commrec *cr, double t,
-		    rvec *x, rvec *f, tensor vir)
+		    t_commrec *cr, double t, real lambda,
+		    rvec *x, rvec *f, tensor vir, real *dvdlambda)
 {
+  real V,dVdl;
+
   pull_calc_coms(cr,pull,md,pbc,x,NULL);
 
-  return do_pull_pot(cr,ePull,pull,md,pbc,f,vir,t);
+  do_pull_pot(ePull,pull,pbc,t,lambda,&V,MASTER(cr) ? vir : NULL,&dVdl);
+
+  /* Distribute forces over pulled groups */
+  apply_forces(pull, md, DOMAINDECOMP(cr) ? cr->dd->ga2la : NULL, f);
+
+  if (MASTER(cr)) {
+    *dvdlambda += dVdl;
+  }
+
+  return (MASTER(cr) ? V : 0.0);
 }
 
 void pull_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,

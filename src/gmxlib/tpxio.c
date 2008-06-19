@@ -64,7 +64,7 @@
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 55;
+static const int tpx_version = 56;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -213,6 +213,11 @@ static void do_pullgrp(t_pullgrp *pgrp,bool bRead, int file_version)
   do_rvec(pgrp->init);
   do_real(pgrp->rate);
   do_real(pgrp->k);
+  if (file_version >= 56) {
+    do_real(pgrp->kB);
+  } else {
+    pgrp->kB = pgrp->k;
+  }
 }
 
 static void do_pull(t_pull *pull,bool bRead, int file_version)
@@ -519,10 +524,10 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     }
     if(file_version >= 26) {
       do_real(ir->dihre_fc);
-      rdum = 0.0;
-      do_real(rdum);
-      idum = 100;
-      do_int(idum);
+      if (file_version < 56) {
+	do_real(rdum);
+	do_int(idum);
+      }
     } else {
       ir->dihre_fc=0;
     }
@@ -1502,10 +1507,11 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
       clear_mat(state->box_rel);
     }
     if (file_version >= 28) {
-      matrix mdum;
       ndo_rvec(state->boxv,DIM);
-      clear_mat(mdum);
-      ndo_rvec(mdum,DIM);
+      if (file_version < 56) {
+	matrix mdum;
+	ndo_rvec(mdum,DIM);
+      }
     }
   }
   

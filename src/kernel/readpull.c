@@ -179,6 +179,8 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
       RTYPE(buf,              pgrp->rate, 0.0);
       sprintf(buf,"pull_k%d",i);
       RTYPE(buf,              pgrp->k, 0.0);
+      sprintf(buf,"pull_kB%d",i);
+      RTYPE(buf,              pgrp->kB, 0.0);
     }
   }
   

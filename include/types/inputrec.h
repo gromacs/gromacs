@@ -99,6 +99,7 @@ typedef struct {
   rvec       init;     /* Initial reference displacement */
   real       rate;     /* Rate of motion (nm/ps) */
   real       k;        /* force constant */
+  real       kB;       /* force constant for state B */
   real       wscale;   /* scaling factor for the weights: sum w m/sum w w m */
   real       invtm;    /* inverse total mass of the group: 1/wscale sum w m */
   dvec       x;        /* center of mass before update */

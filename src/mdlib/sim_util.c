@@ -599,9 +599,13 @@ void do_force(FILE *fplog,t_commrec *cr,
      * which is why we call pull_potential after calc_virial.
      */
     set_pbc(&pbc,inputrec->ePBC,box);
+    dvdl = 0; 
     ener[F_COM_PULL] =
       pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
-		     cr,t,x,f,vir_force);
+		     cr,t,lambda,x,f,vir_force,&dvdl);
+    if (bSepDVDL)
+      fprintf(fplog,sepdvdlformat,"Com pull",ener[F_COM_PULL],dvdl);
+    ener[F_DVDL] += dvdl;
   }
 
   if (!(cr->duty & DUTY_PME)) {

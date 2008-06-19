@@ -428,6 +428,7 @@ static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
   pr_rvec(fp,indent,"init",pg->init,DIM,TRUE);
   PR("rate",pg->rate);
   PR("k",pg->k);
+  PR("kB",pg->kB);
 }
 
 static void pr_pull(FILE *fp,int indent,t_pull *pull)

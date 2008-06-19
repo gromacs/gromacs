@@ -717,13 +717,18 @@ Decreasing this will give a more accurate direct sum,
 but then you need more wave vectors for the reciprocal sum.</dd>
 
 <dt><h4>ewald_geometry: (3d)</h4></dt>
-<dd>The geometry to use for Ewald summations. <b>3d</b> means the sum is performed
-in all three dimensions. If your system has a slab geometry in the x-y plane you can 
-try to increase box z dimension and use the <b>3dc</b> geometry. The reciprocal sum
-is still performed in 3d, but a force and potential correction applied in the z 
-dimension to produce a pseudo-2d summation. In the future there might also be a true
-<b>2d</b> option, but this is not working yet.</dd>
-
+<dd><dl compact>
+<dt><b>3d</b></dt>
+<dd>The Ewald sum is performed in all three dimensions.</dd>
+<dt><b>3dc</b></dt>
+<dd>The reciprocal sum is still performed in 3d,
+but a force and potential correction applied in the z 
+dimension to produce a pseudo-2d summation.
+If your system has a slab geometry in the x-y plane you can 
+try to increase the z-dimension of the box (a box height of 3 times
+the slab height is usually ok)
+and use this option.</dd>
+</dl></dd>
 
 <dt><h4>epsilon_surface: (0)</h4></dt>
 <dd>This controls the dipole correction to the Ewald summation in 3d. The
@@ -1175,6 +1180,9 @@ except for geometry <b>position</b> which uses a vector.</dd>
 constant in [kJ mol<sup>-1</sup> nm<sup>-2</sup>]. For constant force pulling
 this is the force constant of the linear potential, and thus minus (!)
 the constant force in [kJ mol<sup>-1</sup> nm<sup>-1</sup>].</dd>
+<dt><h4>pull_kB1: (0) [kJ mol<sup>-1</sup> nm<sup>-2</sup>] / [kJ mol<sup>-1</sup> nm<sup>-1</sup>]</h4></dt>
+<dd>As <b>pull_k1</b>, but for state B. This is only used when
+<A HREF="#free"><b>free_energy</b></A> is turned on.
 </dl>
 
 <A NAME="nmr"><br>
