@@ -50,9 +50,11 @@
 #include "vec.h"
 #include "tgroup.h"
 
-#define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
-#define nblock_bc(cr,nr,d) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr))
-#define   snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
+#define   block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
+#define  nblock_bc(cr,nr,d) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr))
+#define    snew_bc(cr,d,nr) { if (!MASTER(cr)) snew((d),(nr)); }
+/* Dirty macro with bAlloc not as an argument */
+#define nblock_abc(cr,nr,d) { if (bAlloc) snew((d),(nr)); nblock_bc(cr,(nr),(d)); }
 
 static void bc_string(const t_commrec *cr,t_symtab *symtab,char ***s)
 {
@@ -159,30 +161,51 @@ static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
 
 void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
+  int i;
+
+  if (MASTER(cr)) {
+    bAlloc = FALSE;
+  }
+
   block_bc(cr,state->natoms);
   block_bc(cr,state->ngtc);
   block_bc(cr,state->flags);
-  block_bc(cr,state->box);
-  block_bc(cr,state->box_rel);
-  block_bc(cr,state->boxv);
-  block_bc(cr,state->pres_prev);
-  if (bAlloc && !MASTER(cr)) {
-    snew(state->nosehoover_xi, state->ngtc);
-    snew(state->nosehoover_ixi,state->ngtc);
+  if (bAlloc) {
     state->nalloc = state->natoms;
-    snew(state->x,state->nalloc);
-    snew(state->v,state->nalloc);
-    if (state->flags & (1<<estSDX))
-      snew(state->sd_X,state->nalloc);
   }
-  nblock_bc(cr,state->ngtc,state->nosehoover_xi);
-  nblock_bc(cr,state->ngtc,state->nosehoover_ixi);
-  nblock_bc(cr,state->natoms,state->x);
-  nblock_bc(cr,state->natoms,state->v);
-  if (state->flags & (1<<estSDX))
-    nblock_bc(cr,state->natoms,state->sd_X);
-  if (state->flags & (1<<estCGP))
-    nblock_bc(cr,state->natoms,state->cg_p);
+  for(i=0; i<estNR; i++) {
+    if (state->flags & (1<<i)) {
+      switch (i) {
+      case estLAMBDA:  block_bc(cr,state->lambda); break;
+      case estBOX:     block_bc(cr,state->box); break;
+      case estBOX_REL: block_bc(cr,state->box_rel); break;
+      case estBOXV:    block_bc(cr,state->boxv); break;
+      case estPRES_PREV: block_bc(cr,state->pres_prev); break;
+      case estNH_XI:   nblock_abc(cr,state->ngtc,state->nosehoover_xi); break;
+      case estNH_IXI:  nblock_abc(cr,state->ngtc,state->nosehoover_ixi); break;
+      case estX:       nblock_abc(cr,state->natoms,state->x); break;
+      case estV:       nblock_abc(cr,state->natoms,state->v); break;
+      case estSDX:     nblock_abc(cr,state->natoms,state->sd_X); break;
+      case estCGP:     nblock_abc(cr,state->natoms,state->cg_p); break;
+      case estLD_RNG:  break;
+      case estLD_RNGI: break;
+      case estDISRE_INITF: block_bc(cr,state->hist.disre_initf); break;
+      case estDISRE_RM3TAV:
+	block_bc(cr,state->hist.ndisrepairs);
+	nblock_abc(cr,state->hist.ndisrepairs,state->hist.disre_rm3tav);
+	break;
+      case estORIRE_INITF: block_bc(cr,state->hist.orire_initf); break;
+      case estORIRE_DTAV:
+	block_bc(cr,state->hist.norire_Dtav);
+	nblock_abc(cr,state->hist.norire_Dtav,state->hist.orire_Dtav);
+	break;
+      default:
+	gmx_fatal(FARGS,
+		  "Communication is not implemented for %s in bcast_state",
+		  est_names[i]);
+      }
+    }
+  }
 }
 
 static void bc_ilist(const t_commrec *cr,t_ilist *ilist)
