@@ -244,9 +244,21 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
       hostnum = 0;
     }
 
+    if (debug) {
+      fprintf(debug,
+	      "In gmx_setup_nodecomm: splitting communicator of size %d\n",
+	      n);
+      fprintf(debug,"In gmx_setup_nodecomm: hostname '%s', hostnum %d\n",
+	      mpi_hostname,hostnum);
+    }
+
     /* The intra-node communicator, split on node number */
     MPI_Comm_split(cr->mpi_comm_mygroup,hostnum,rank,&nc->comm_intra);
     MPI_Comm_rank(nc->comm_intra,&nc->rank_intra);
+    if (debug) {
+      fprintf(debug,"In gmx_setup_nodecomm: node rank %d rank_intra %d\n",
+	      rank,nc->rank_intra);
+    }
     /* The inter-node communicator, split on rank_intra.
      * We actually only need the one for rank=0,
      * but it is easier to create them all.
