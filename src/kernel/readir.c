@@ -1489,11 +1489,6 @@ void do_index(char *ndx,
 
   if (ir->ePull != epullNO) {
     make_pull_groups(ir->pull,pull_grp,grps,gnames);
-    if (ir->efep == efepNO) {
-      for(i=0; i<ir->pull->ngrp+1; i++) {
-	ir->pull->grp[i].kB = ir->pull->grp[i].k;
-      }
-    }
   }
 
   nacc = str_nelem(acc,MAXPTR,ptr1);
