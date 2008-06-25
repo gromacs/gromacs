@@ -287,7 +287,7 @@ int main(int argc,char *argv[])
     { "-dd",      FALSE, etRVEC,{&realddxyz},
       "Domain decomposition grid, 0 is optimize" },
     { "-nt",      FALSE, etINT, {&nthreads},
-      "Number of threads to start on each node" },
+      "HIDDENNumber of threads to start on each node" },
     { "-npme",    FALSE, etINT, {&npme},
       "Number of separate nodes to be used for PME, -1 is guess" },
     { "-ddorder", FALSE, etENUM, {ddno_opt},
