@@ -807,11 +807,12 @@ $x$ is the distance in nanometers, for distances beyond the table length
 cause {\tt mdrun} to quit with an error message
 \\{\bf angles}:
 $x$ is the angle in degrees, the table should go from
-0 up to and including 180 degrees
+0 up to and including 180 degrees, the derivative is taken in degrees
 \\{\bf dihedrals}:
 $x$ is the dihedral angle in degrees, the table should go from
 -180 up to and including 180 degrees,
-the IUPAC/IUB convention is used, i.e. zero is cis
+the IUPAC/IUB convention is used, i.e. zero is cis,
+the derivative is taken in degrees
 } % Brace matches ifthenelse test for gmxlite
 
 \section{Restraints}
@@ -897,6 +898,8 @@ V_{ar}(\ve{r}_i,\ve{r}_j) = k_{ar}(1 - \cos(n (\theta - \theta_0))
 \eeq
 A multiplicity ($n$) of 2 is useful when you do not want to distinguish
 between parallel and anti-parallel vectors.
+The equilibrium angle $\theta$ should be between 0 and 180 degrees
+for multiplicity 1 and between 0 and 90 degrees for multiplicity 2.
 
 
 \subsection{\swapindex{Dihedral}{restraint}s}
@@ -1541,9 +1544,8 @@ For tabulated bonded interactions only the force constant can interpolated:
 The \normindex{Coulomb} interaction between two particles 
 of which the charge varies with $\LAM$ is:
 \bea
-V_c &=& \frac{f}{\epsrf \rij}\left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]     \\
-\dvdl{V_c}&=& \frac{f}{\epsrf \rij}\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
-                        (q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
+V_c &=& \frac{f}{\epsrf \rij}\left[\LL q_i^A q_j^A + \LAM\, q_i^B q_j^B\right] \\
+\dvdl{V_c}&=& \frac{f}{\epsrf \rij}\left[- q_i^A q_j^A + q_i^B q_j^B\right]
 \eea
 where $f = \frac{1}{4\pi \varepsilon_0} = 138.935\,485$ (see \chref{defunits})
 
@@ -1552,10 +1554,9 @@ The coulomb interaction including a reaction field, between two particles
 of which the charge varies with $\LAM$ is:
 \bea
 V_c     &=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
-        \left[(\LL q_i^A+\LAM q_i^B)\cdot(\LL q_j^A+\LAM q_i^B)\right]  \\
-\dvdl{V_c}&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]\cdot\nonumber\\
-        &~&\left[(q_j^B-q_j^A)(\LL q_i^A+\LAM q_i^B)\,+\,
-                        (q_i^B-q_i^A)(\LL q_j^A+\LAM q_j^B)\right]
+             \left[\LL q_i^A q_j^A + \LAM\, q_i^B q_j^B\right] \\
+\dvdl{V_c}&=& f\left[\frac{1}{\rij} + k_{rf}~ \rij^2 -c_{rf}\right]
+               \left[- q_i^A q_j^A + q_i^B q_j^B\right]
 \eea
 {\bf Note} that the constants $k_{rf}$ and $c_{rf}$ are 
 defined using the dielectric 
@@ -1565,8 +1566,8 @@ constant $\epsrf$ of the medium (see \secref{coulrf}).
 For the \normindex{Lennard-Jones} interaction between two particles 
 of which the {\em atom type} varies with $\LAM$ we can write:
 \bea
-V_{LJ}  &=&     \frac{(\LL C_{12}^A + \LAM C_{12}^B)}{\rij^{12}} -
-                \frac{\LL C_6^A + \LAM C_6^B}{\rij^6}   \\
+V_{LJ}  &=&     \frac{(\LL C_{12}^A + \LAM\, C_{12}^B)}{\rij^{12}} -
+                \frac{\LL C_6^A + \LAM\, C_6^B}{\rij^6}   \\
 \dvdl{V_{LJ}}&=&\frac{C_{12}^B - C_{12}^A}{\rij^{12}} -
                 \frac{C_6^B - C_6^A}{\rij^6}
 \eea
