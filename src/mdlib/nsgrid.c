@@ -126,7 +126,16 @@ static void set_grid_sizes(matrix box,real rlist,
 	   * displacement of opposing DD cell corners.
 	   */
 	  /* Without rouding we would need to add box[j][i]*radd/box[j][j]); */
+	  /* Determine the shift for the corners of the triclinic box */
 	  add_tric = dd_cell_size[j]*box[j][i]/box[j][j];
+	  if (dd && dd->ndim == 1 && j == ZZ) {
+	    /* With 1D domain decomposition the cg's are not in
+	     * the triclinic box, but trilinic x-y and rectangular y-z.
+	     * Therefore we need to add the shift from the trilinic
+	     * corner to the corner at y=0.
+	     */
+	    add_tric += -box[YY][XX]*box[ZZ][YY]/box[YY][YY];
+	  }
 	  if (box[j][i] < 0) {
 	    grid->cell_offset[i] += add_tric;
 	    size -= add_tric;
