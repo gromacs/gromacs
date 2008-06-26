@@ -75,8 +75,10 @@ static void do_cpt_double(XDR *xd,char *desc,double *f,FILE *list)
     }
 }
 
-static void do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
-                          FILE *list)
+enum { ecprREAL, ecprRVEC, ecprMATRIX };
+
+static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
+                              FILE *list,int erealtype)
 {
     bool_t res=0;
 #ifndef GMX_DOUBLE
@@ -85,6 +87,8 @@ static void do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
     int  dtc=ecpdtDOUBLE;
 #endif
     real *vp,*va=NULL;
+    float  *vf;
+    double *vd;
     int  nf,dt,i;
     
     nf = n;
@@ -116,18 +120,60 @@ static void do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
     }
     if (dt == ecpdtFLOAT)
     {
-        res = xdr_vector(xd,(char *)vp,nf,
-                         (unsigned int)sizeof(real),(xdrproc_t)xdr_float);
+        if (dtc == ecpdtFLOAT)
+        {
+            vf = (float *)vp;
+        }
+        else
+        {
+            snew(vf,nf);
+        }
+        res = xdr_vector(xd,(char *)vf,nf,
+                         (unsigned int)sizeof(float),(xdrproc_t)xdr_float);
+        if (dtc != ecpdtFLOAT)
+        {
+            for(i=0; i<nf; i++)
+            {
+                vp[i] = vf[i];
+            }
+            sfree(vf);
+        }
     }
     else
     {
-        res = xdr_vector(xd,(char *)vp,nf,
-                         (unsigned int)sizeof(real),(xdrproc_t)xdr_double);
+        if (dtc == ecpdtDOUBLE)
+        {
+            vd = (double *)vp;
+        }
+        else
+        {
+            snew(vd,nf);
+        }
+        res = xdr_vector(xd,(char *)vd,nf,
+                         (unsigned int)sizeof(double),(xdrproc_t)xdr_double);
+        if (dtc != ecpdtDOUBLE)
+        {
+            for(i=0; i<nf; i++)
+            {
+                vp[i] = vd[i];
+            }
+            sfree(vd);
+        }
     }
     
     if (list)
     {
-        pr_reals(list,0,est_names[ecpt],vp,nf);
+        switch (erealtype)
+        {
+        case ecprREAL:
+            pr_reals(list,0,est_names[ecpt],vp,nf);
+            break;
+        case ecprRVEC:
+            pr_rvecs(list,0,est_names[ecpt],(rvec *)vp,nf/3);
+            break;
+        default:
+            gmx_incons("Unknown checkpoint real type");
+        }
     }
     if (va)
     {
@@ -135,9 +181,15 @@ static void do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
     }
 }
 
+static void do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
+                          FILE *list)
+{
+    do_cpte_reals_low(xd,ecpt,sflags,n,v,list,ecprREAL);
+}
+
 static void do_cpte_real(XDR *xd,int ecpt,int sflags,real *r,FILE *list)
 {
-    do_cpte_reals(xd,ecpt,sflags,1,&r,list);
+    do_cpte_reals_low(xd,ecpt,sflags,1,&r,list,ecprREAL);
 }
 
 static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
@@ -226,7 +278,7 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
         vp = *v;
     }
     res = xdr_vector(xd,(char *)vp,nf,
-                     (unsigned int)sizeof(real),(xdrproc_t)xdr_double);
+                     (unsigned int)sizeof(double),(xdrproc_t)xdr_double);
     
     if (list)
     {
@@ -241,94 +293,26 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
 static void do_cpte_rvecs(XDR *xd,int ecpt,int sflags,int n,rvec **v,
                           FILE *list)
 {
-    bool_t res=0;
-#ifndef GMX_DOUBLE
-    int  dtc=ecpdtFLOAT;
-#else
-    int  dtc=ecpdtDOUBLE;
-#endif
-    rvec *vp,*va=NULL;
-    int  nf,dt,i;
-    
-    nf = 3*n;
-    res = xdr_int(xd,&nf);
-    if (list == NULL && nf != 3*n)
-    {
-        gmx_fatal(FARGS,"Count mismatch for state entry %s, code count is %d, file count is %d\n",est_names[ecpt],3*n,nf);
-    }
-    dt = dtc;
-    res = xdr_int(xd,&dt);
-    if (dt != dtc)
-    {
-        fprintf(stderr,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",est_names[ecpt],
-                dtc==ecpdtFLOAT ? "float" : "double",
-                dt ==ecpdtFLOAT ? "float" : "double");
-    }
-    if (list || !(sflags & (1<<ecpt)))
-    {
-        snew(va,nf/3);
-        vp = va;
-    }
-    else
-    {
-    if (*v == NULL)
-    {
-        snew(*v,nf/3);
-    }
-    vp = *v;
-    }
-    if (dt == ecpdtFLOAT)
-    {
-        res = xdr_vector(xd,(char *)(vp[0]),nf,
-                         (unsigned int)sizeof(real),(xdrproc_t)xdr_float);
-    }
-    else
-    {
-        res = xdr_vector(xd,(char *)(vp[0]),nf,
-                         (unsigned int)sizeof(real),(xdrproc_t)xdr_double);
-    }
-    
-    if (list)
-    {
-        pr_rvecs(list,0,est_names[ecpt],vp,nf/3);
-    }
-    if (va)
-    {
-        sfree(va);
-    }
+    do_cpte_reals_low(xd,ecpt,sflags,n*DIM,(real **)v,list,ecprRVEC);
 }
 
 static void do_cpte_matrix(XDR *xd,int ecpt,int sflags,matrix v,FILE *list)
 {
-    bool_t res=0;
-#ifndef GMX_DOUBLE
-    int  dtc=ecpdtFLOAT;
-#else
-    int  dtc=ecpdtDOUBLE;
-#endif
-    int  n,dt,i;
+    real *vr;
+    int  i,j;
 
-    n = 9;
-    res = xdr_int(xd,&n);
-    dt = dtc;
-    res = xdr_int(xd,&dt);
-    if (dt != dtc)
-    {
-        fprintf(stderr,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",est_names[ecpt],
-                dtc==ecpdtFLOAT ? "float" : "double",
-                dt ==ecpdtFLOAT ? "float" : "double");
-    }
-    if (dt == ecpdtFLOAT)
-    {
-        res = xdr_vector(xd,(char *)(v[0]),n,
-                         (unsigned int)sizeof(real),(xdrproc_t)xdr_float);
-    }
-    else
-    {
-        res = xdr_vector(xd,(char *)(v[0]),n,
-                         (unsigned int)sizeof(real),(xdrproc_t)xdr_double);
-    }
+    snew(vr,DIM*DIM);
+    do_cpte_reals_low(xd,ecpt,sflags,DIM*DIM,&vr,NULL,ecprMATRIX);
 
+    for(i=0; i<DIM; i++)
+    {
+        for(j=0; j<DIM; j++)
+        {
+            v[i][j] = vr[i*DIM+j];
+        }
+    }
+    sfree(vr);
+    
     if (list)
     {
         pr_rvecs(list,0,est_names[ecpt],v,DIM);
@@ -659,19 +643,22 @@ void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
             fprintf(fplog,int_warn,EI(eIntegrator_f),EI(eIntegrator));
         }
     }
-    
-    if (cr->npmenodes < 0 && cr->nnodes == nppnodes_f + npmenodes_f)
+
+    if (cr->nnodes == nppnodes_f + npmenodes_f)
     {
-        cr->npmenodes = npmenodes_f;
-    }
-    if (cr->npmenodes >= 0)
-    {
-        nppnodes = cr->nnodes - cr->npmenodes;
-        for(d=0; d<DIM; d++)
+        if (cr->npmenodes < 0)
         {
-            if (dd_nc[d] == 0)
+            cr->npmenodes = npmenodes_f;
+        }
+        nppnodes = cr->nnodes - cr->npmenodes;
+        if (nppnodes == nppnodes_f)
+        {
+            for(d=0; d<DIM; d++)
             {
-                dd_nc[d] = dd_nc_f[d];
+                if (dd_nc[d] == 0)
+                {
+                    dd_nc[d] = dd_nc_f[d];
+                }
             }
         }
     }
@@ -774,20 +761,20 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     fr->bLambda = TRUE;
     fr->lambda  = state.lambda;
     fr->bAtoms  = FALSE;
-    fr->bX      = (state.flags & estX);
+    fr->bX      = (state.flags & (1<<estX));
     if (fr->bX)
     {
         fr->x     = state.x;
         state.x   = NULL;
     }
-    fr->bV      = (state.flags & estV);
+    fr->bV      = (state.flags & (1<<estV));
     if (fr->bV)
     {
         fr->v     = state.v;
         state.v   = NULL;
     }
     fr->bF      = FALSE;
-    fr->bBox    = (state.flags & estBOX);
+    fr->bBox    = (state.flags & (1<<estBOX));
     if (fr->bBox)
     {
         copy_mat(state.box,fr->box);
