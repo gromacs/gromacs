@@ -77,11 +77,12 @@ void set_shift_consts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
   Vol     =(box[XX]*box[YY]*box[ZZ]);
   FourPi_V=4.0*M_PI/Vol;
 
-  if(debug)
-      fprintf(log,"Constants for short-range and fourier stuff:\n"
+  if (debug) {
+      fprintf(debug,"Constants for short-range and fourier stuff:\n"
 	      "r1 = %10.3f,  rc = %10.3f\n"
 	      "A  = %10.3e,  B  = %10.3e,  C  = %10.3e, FourPi_V = %10.3e\n",
 	      r1,rc,A,B,C,FourPi_V);
+  }
 
   /* Constants derived by Mathematica */
   c1 = -40*rc*rc    + 50*rc*r1    - 16*r1*r1;
@@ -91,10 +92,11 @@ void set_shift_consts(FILE *log,real r1,real rc,rvec box,t_forcerec *fr)
   c5 = -c2;
   c6 = -5*rc*rc*r1  +  7*rc*r1*r1 - 2*r1*r1*r1;
 
-  if(debug)
-      fprintf(log,"c1 = %10.3e,  c2 = %10.3e,  c3 = %10.3e\n"
+  if (debug) {
+      fprintf(debug,"c1 = %10.3e,  c2 = %10.3e,  c3 = %10.3e\n"
 	      "c4 = %10.3e,  c5 = %10.3e,  c6 = %10.3e,  N0 = %10.3e\n",
 	      c1,c2,c3,c4,c5,c6,N0);
+  }
     
   One_4pi = 1.0/(4.0*M_PI);
 }
