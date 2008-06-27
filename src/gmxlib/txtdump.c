@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -100,6 +101,46 @@ void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNu
         {
           (void) pr_indent(fp,indent);
           (void) fprintf(fp,"%s[%d]=%d\n",title,bShowNumbers?i:-1,vec[i]);
+        }
+    }
+}
+
+void pr_ivec_block(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNumbers)
+{
+    int i,j;
+    
+    if (available(fp,vec,indent,title))
+    {
+        indent=pr_title_n(fp,indent,title,n);
+        i = 0;
+        while (i < n)
+        {
+            j = i+1;
+            while (j < n && vec[j] == vec[j-1]+1)
+            {
+                j++;
+            }
+            /* Print consecutive groups of 3 or more as blocks */
+            if (j - i < 3)
+            {
+                while(i < j)
+                {
+                    (void) pr_indent(fp,indent);
+                    (void) fprintf(fp,"%s[%d]=%d\n",
+                                   title,bShowNumbers?i:-1,vec[i]);
+                    i++;
+                }
+            }
+            else
+            {
+                (void) pr_indent(fp,indent);
+                (void) fprintf(fp,"%s[%d - %d] = %d - %d\n",
+                               title,
+                               bShowNumbers?i:-1,
+                               bShowNumbers?j-1:-1,
+                               vec[i],vec[j-1]); 
+                i = j;
+            }
         }
     }
 }
@@ -421,7 +462,7 @@ static void pr_pullgrp(FILE *fp,int indent,int g,t_pullgrp *pg)
   pr_indent(fp,indent);
   fprintf(fp,"pull_group %d:\n",g);
   indent += 2;
-  pr_ivec(fp,indent,"atom",pg->ind,pg->nat,TRUE);
+  pr_ivec_block(fp,indent,"atom",pg->ind,pg->nat,TRUE);
   pr_rvec(fp,indent,"weight",pg->weight,pg->nweight,TRUE);
   PI("pbcatom",pg->pbcatom);
   pr_rvec(fp,indent,"vec",pg->vec,DIM,TRUE);
