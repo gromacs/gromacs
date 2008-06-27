@@ -210,6 +210,7 @@ void write_pdbfile_indexed(FILE *out,char *title,
   int  resnr,type;
   real occup,bfac;
   bool bOccup;
+  int  nlongname=0;
 
   bromacs(pukestring,99);
   fprintf(out,"TITLE     %s\n",(title && title[0])?title:pukestring);
@@ -267,8 +268,15 @@ void write_pdbfile_indexed(FILE *out,char *title,
 	strcpy(pdbform,pdbformat);
       else {
 	strcpy(pdbform,pdbformat4);
-	if (strlen(nm)>4)
-	  fprintf(stderr,"WARNING: Writing out atom name (%s) longer than 4 characters to .pdb file\n",nm);
+	if (strlen(nm) > 4) {
+	  int maxwln=20;
+	  if (nlongname < maxwln) {
+	    fprintf(stderr,"WARNING: Writing out atom name (%s) longer than 4 characters to .pdb file\n",nm);
+	  } else if (nlongname == maxwln) {
+	    fprintf(stderr,"WARNING: More than %d long atom names, will not write more warnings\n",maxwln);
+	  }
+	  nlongname++;
+	}
       }
       strcat(pdbform,"%6.2f%6.2f\n");
     }
