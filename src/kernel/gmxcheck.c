@@ -372,7 +372,7 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
   bool      bV,bX,bB,bFirst,bOut;
   real      r2,ekin,temp1,temp2,dist2,vdwfac2,bonlo2,bonhi2;
   real      *atom_vdw;
-  void      *ap;
+  gmx_atomprop_t aps;
   
   fprintf(stderr,"Checking coordinate file %s\n",fn);
   read_tps_conf(fn,title,&top,&ePBC,&x,&v,box,TRUE);
@@ -424,16 +424,16 @@ void chk_tps(char *fn, real vdw_fac, real bon_lo, real bon_hi)
 	    "relative to sum of Van der Waals distance:\n",
 	    vdw_fac,bon_lo,bon_hi);
     snew(atom_vdw,natom);
-    ap = get_atomprop();
+    aps = gmx_atomprop_init();
     for (i=0; (i<natom); i++) {
-      (void) query_atomprop(ap,epropVDW,*(atoms->resname[atoms->atom[i].resnr]),
-			    *(atoms->atomname[i]),&(atom_vdw[i]));
+      gmx_atomprop_query(aps,epropVDW,*(atoms->resname[atoms->atom[i].resnr]),
+			 *(atoms->atomname[i]),&(atom_vdw[i]));
       if (debug) fprintf(debug,"%5d %4s %4s %7g\n",i+1,
 			 *(atoms->resname[atoms->atom[i].resnr]),
 			 *(atoms->atomname[i]),
 			 atom_vdw[i]);
     }
-    done_atomprop(&ap);
+    gmx_atomprop_destroy(aps);
     if (bB) 
       set_pbc(&pbc,ePBC,box);
       

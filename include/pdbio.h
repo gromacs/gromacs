@@ -44,6 +44,7 @@
 #include "sysstuff.h"
 #include "typedefs.h"
 #include "symtab.h"
+#include "atomprop.h"
 
 typedef struct gmx_conect_t *gmx_conect;
 
@@ -89,7 +90,7 @@ extern void write_pdbfile(FILE *out,char *title,t_atoms *atoms,
  * override chain-identifiers with chain when chain>0
  * write ENDMDL when bEndmodel is TRUE */
   
-extern void get_pdb_atomnumber(t_atoms *atoms,void *atomprop);
+extern void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps);
 /* Routine to extract atomic numbers from the atom names */
 
 extern int read_pdbfile(FILE *in,char *title,int *model_nr,

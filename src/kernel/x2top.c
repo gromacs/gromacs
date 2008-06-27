@@ -128,7 +128,7 @@ static int get_atype(char *nm)
 
 void mk_bonds(int nnm,t_nm2type nmt[],
 	      t_atoms *atoms,rvec x[],t_params *bond,int nbond[],char *ff,
-	      bool bPBC,matrix box,void *atomprop)
+	      bool bPBC,matrix box,gmx_atomprop_t aps)
 {
   t_param b;
   int     i,j;
@@ -395,7 +395,7 @@ int main(int argc, char *argv[])
   t_nextnb   nnb;
   t_nm2type  *nm2t;
   t_mols     mymol;
-  void       *atomprop;
+  gmx_atomprop_t aps;
   int        nnm;
   char       title[STRLEN],forcefield[32];
   rvec       *x;        /* coordinates? */
@@ -466,7 +466,7 @@ int main(int argc, char *argv[])
   if (!bRTP && !bTOP)
     gmx_fatal(FARGS,"Specify at least one output file");
 
-  atomprop = get_atomprop();
+  aps = gmx_atomprop_init();
     
   if(!strncmp(ff,"select",6)) {
     /* Interactive forcefield selection */
@@ -511,7 +511,7 @@ int main(int argc, char *argv[])
   printf("Generating bonds from distances...\n");
   snew(nbonds,atoms->nr);
   mk_bonds(nnm,nm2t,atoms,x,&(plist[F_BONDS]),nbonds,forcefield,
-	   bPBC,box,atomprop);
+	   bPBC,box,aps);
 
   open_symtab(&symtab);
   atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),nbonds,nnm,nm2t);
