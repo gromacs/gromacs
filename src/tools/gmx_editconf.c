@@ -78,17 +78,18 @@ typedef struct {
 } t_simlist;
 static char *pdbtp[epdbNR]={"ATOM  ","HETATM"};
 
-real calc_mass(t_atoms *atoms,bool bGetMass,void *atomprop)
+real calc_mass(t_atoms *atoms,bool bGetMass,gmx_atomprop_t aps)
 {
   real tmass;
   int i;
 
   tmass = 0;
   for(i=0; (i<atoms->nr); i++) {
-    if (bGetMass)
-      (void) query_atomprop(atomprop,epropMass,
-			    *atoms->resname[atoms->atom[i].resnr], 
-			    *atoms->atomname[i],&(atoms->atom[i].m));
+    if (bGetMass) {
+      gmx_atomprop_query(aps,epropMass,
+			 *atoms->resname[atoms->atom[i].resnr], 
+			 *atoms->atomname[i],&(atoms->atom[i].m));
+    }
     tmass += atoms->atom[i].m;
   }
   
@@ -501,7 +502,6 @@ int gmx_editconf(int argc, char *argv[])
 #define NPA asize(pa)
 
   FILE       *out;
-  void       *atomprop;
   char       *infile,*outfile,title[STRLEN];
   int        outftp,natom,i,j,n_bfac,itype,ntype;
   double     *bfac=NULL,c6,c12;
@@ -517,6 +517,7 @@ int gmx_editconf(int argc, char *argv[])
   bool       bIndex,bSetSize,bSetAng,bCubic,bDist,bSetCenter;
   bool       bHaveV,bScale,bRho,bTranslate,bRotate,bCalcGeom,bCalcDiam;
   real       xs,ys,zs,xcent,ycent,zcent,diam=0,mass=0,d,vdw;
+  gmx_atomprop_t aps;
   t_filenm fnm[] = {
     { efSTX, "-f",    NULL,    ffREAD },
     { efNDX, "-n",    NULL,    ffOPTRD },
@@ -554,7 +555,8 @@ int gmx_editconf(int argc, char *argv[])
     outfile = ftp2fn(efSTO,NFILE,fnm);
   outftp  = fn2ftp(outfile);
   
-  atomprop = get_atomprop();
+  aps = gmx_atomprop_init();
+
   if (bMead && bGrasp) {
     printf("Incompatible options -mead and -grasp. Turning off -grasp\n");
     bGrasp = FALSE;
@@ -589,9 +591,9 @@ int gmx_editconf(int argc, char *argv[])
     for(i=0; (i<atoms.nr); i++) {
       /* Determine the Van der Waals radius from the force field */
       if (bReadVDW) {
-	if (!query_atomprop(atomprop,epropVDW,
-			    *top->atoms.resname[top->atoms.atom[i].resnr],
-			    *top->atoms.atomname[i],&vdw))
+	if (!gmx_atomprop_query(aps,epropVDW,
+				*top->atoms.resname[top->atoms.atom[i].resnr],
+				*top->atoms.atomname[i],&vdw))
 	  vdw = rvdw;
       }
       else {
@@ -669,7 +671,7 @@ int gmx_editconf(int argc, char *argv[])
   }
   
   if (bRho || bOrient)
-    mass = calc_mass(&atoms,!fn2bTPX(infile),atomprop);
+    mass = calc_mass(&atoms,!fn2bTPX(infile),aps);
   
   if (bOrient) {
     atom_id *index;
@@ -891,7 +893,7 @@ int gmx_editconf(int argc, char *argv[])
     else
       write_sto_conf(outfile,title,&atoms,x,bHaveV?v:NULL,ePBC,box); 
   }
-  done_atomprop(&atomprop);
+  gmx_atomprop_destroy(aps);
 
   do_view(outfile,NULL);
     

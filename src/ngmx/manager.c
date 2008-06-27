@@ -174,7 +174,7 @@ static void hide_label(t_x11 *x11,t_manager *man,int x,int y)
 
 void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
 {
-  void         *atomprop;
+  gmx_atomprop_t aps;
   char         buf[256],quote[256];
   t_tpxheader  sh;
   t_atoms      *at;
@@ -213,8 +213,8 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   sprintf(buf,"%s: %s",*man->top.name,quote);
   man->title.text = strdup(buf);
   man->view       = init_view(man->box);
-  at        = &(man->top.atoms);
-  atomprop  = get_atomprop();
+  at  = &(man->top.atoms);
+  aps = gmx_atomprop_init();
   for(i=0; (i<man->natom); i++) {
     char *aname=*(at->atomname[i]);
     int  resnr=at->atom[i].resnr;
@@ -225,12 +225,12 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
     man->bHydro[i]=(toupper(aname[0])=='H');
     if ( man->bHydro[i] )
       man->vdw[i]=0;
-    else if (!query_atomprop(atomprop,epropVDW,
-			     *(at->resname[resnr]),aname,
-			     &(man->vdw[i])))
+    else if (!gmx_atomprop_query(aps,epropVDW,
+				 *(at->resname[resnr]),aname,
+				 &(man->vdw[i])))
       man->vdw[i] = 0;
   }
-  done_atomprop(&atomprop);
+  gmx_atomprop_destroy(aps);
   add_bpl(man,&(man->top.idef),bB);
   for(i=0; (i<man->natom); i++)
     if (!bB[i]) 

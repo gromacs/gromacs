@@ -65,18 +65,18 @@ extern void print_rtp(char *filenm,char *title,t_atoms *atoms,
 		      
 extern void mk_bonds(gentop_nm2t nmt,t_atoms *atoms,rvec x[],
 		     gmx_conect gc,t_params *bond,int nbond[],char *ff,
-		     bool bPBC,matrix box,void *atomprop,real tol);
+		     bool bPBC,matrix box,gmx_atomprop_t aps,real tol);
 		     
 extern t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
 				int *nbonds,gentop_nm2t nm2t,
-				void *atomprop);
+				gmx_atomprop_t aps);
 		     
 extern void add_shells(gentop_nm2t nm2t,t_atoms **atoms,
 		       t_atomtype atype,t_params plist[],
 		       rvec **x,t_symtab *symtab,t_excls **excls);
 		       
 extern void symmetrize_charges(t_atoms *atoms,t_atomtype atype,
-			       t_params *bonds,void *atomprop);
+			       t_params *bonds,gmx_atomprop_t aps);
 
 enum { ecgGroup, ecgAtom, ecgNeutral, ecgNR };
 

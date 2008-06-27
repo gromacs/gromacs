@@ -93,7 +93,7 @@ typedef struct {
   real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,hfac,hfac0;
   bool    bFixENH,bOptHfac;
   void    *eem;
-  void    *atomprop;
+  gmx_atomprop_t aps;
   t_commrec *cr;
 } t_moldip;
 
@@ -249,7 +249,7 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   snew(md,1);
   md->cr         = init_cr_nopar();
   /* Read the EEM parameters */
-  md->atomprop   = get_atomprop();
+  md->atomprop   = gmx_atomprop_init();
   md->eem = read_eemprops(eem_fn,-1,md->atomprop);
   md->nparam = eem_get_numprops(md->eem,eemtype);
   if ((md->eem == NULL) || (md->nparam == 0))

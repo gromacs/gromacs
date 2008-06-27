@@ -44,19 +44,25 @@
 
 #include "index.h"
 
+/* Abstract type for the atom property database */
+typedef struct gmx_atomprop *gmx_atomprop_t;
+
 enum { epropMass, epropVDW, epropDGsol, epropElectroneg, epropElement, 
        epropNR };
 
-extern void *get_atomprop(void);
-/* Read database files with atomproperties */
+extern gmx_atomprop_t gmx_atomprop_init(void);
+/* Initializes and returns the atom properties struct */
 
-extern void done_atomprop(void **atomprop);
+extern void gmx_atomprop_destroy(gmx_atomprop_t aps);
 /* Get rid of memory after use */
 
-extern bool query_atomprop(void *atomprop,int eprop,char *resnm,char *atomnm,
-			   real *value);
+extern bool gmx_atomprop_query(gmx_atomprop_t aps,
+			       int eprop,char *resnm,char *atomnm,
+			       real *value);
 /* Extract a value from the database. Returns TRUE on succes,
  * FALSE otherwise. In the latter case, value is a deafult value.
+ * The first time this function is called for this property
+ * the database will be read.
  */
 
 #endif

@@ -125,7 +125,7 @@ char *get_eemtype_reference(int eem)
   return NULL;
 }
 
-void *read_eemprops(char *fn,int eemtype,void *atomprop)
+void *read_eemprops(char *fn,int eemtype,gmx_atomprop_t aps)
 {
   t_eemrecord *eem=NULL;
   char   buf[STRLEN],**strings,*ptr;
@@ -156,7 +156,7 @@ void *read_eemprops(char *fn,int eemtype,void *atomprop)
 		  buf,i+1,algbuf);
 	else if ((eemtype == -1) || (eem->eep[nn].eemtype == eemtype)) {
 	  eem->eep[nn].name    = strdup(nmbuf);
-	  if (!query_atomprop(atomprop,epropElement,"???",nmbuf,&value))
+	  if (!gmx_atomprop_query(aps,epropElement,"???",nmbuf,&value))
 	    gmx_fatal(FARGS,"Can not find element type for atom %s",nmbuf);
 	  elem = gmx_nint(value);
 	  eem->eep[nn].elem  = elem;

@@ -228,7 +228,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   char         *vlegend[] = { "Volume (nm\\S3\\N)", "Density (g/l)" };
   char         *vfile;
   real         t;
-  void         *atomprop=NULL;
+  gmx_atomprop_t aps=NULL;
   int          status,ndefault;
   int          i,j,ii,nfr,natoms,flag,nsurfacedots,res;
   rvec         *x;
@@ -262,7 +262,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     printf("In case you use free energy of solvation predictions:\n");
     please_cite(stdout,"Eisenberg86a");
   }
-  atomprop = get_atomprop();
+
+  aps = gmx_atomprop_init();
   
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
 			   &t,&x,box))==0)
@@ -298,9 +299,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   /* Get a Van der Waals radius for each atom */
   ndefault = 0;
   for(i=0; (i<natoms); i++) {
-    if (!query_atomprop(atomprop,epropVDW,
-			*(top->atoms.resname[top->atoms.atom[i].resnr]),
-			*(top->atoms.atomname[i]),&radius[i]))
+    if (!gmx_atomprop_query(aps,epropVDW,
+			    *(top->atoms.resname[top->atoms.atom[i].resnr]),
+			    *(top->atoms.atomname[i]),&radius[i]))
       ndefault++;
     /* radius[i] = calc_radius(*(top->atoms.atomname[i])); */
     radius[i] += solsize;
@@ -335,9 +336,9 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 	nphobic++;
     }
     if (bDGsol)
-      if (!query_atomprop(atomprop,epropDGsol,
-			  *(atoms->resname[atoms->atom[ii].resnr]),
-			  *(atoms->atomtype[ii]),&(dgs_factor[i])))
+      if (!gmx_atomprop_query(aps,epropDGsol,
+			      *(atoms->resname[atoms->atom[ii].resnr]),
+			      *(atoms->atomtype[ii]),&(dgs_factor[i])))
 	dgs_factor[i] = dgs_default;
     if (debug)
       fprintf(debug,"Atom %5d %5s-%5s: q= %6.3f, r= %6.3f, dgsol= %6.3f, hydrophobic= %s\n",
@@ -348,8 +349,6 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   }
   fprintf(stderr,"%d out of %d atoms were classified as hydrophobic\n",
 	  nphobic,nx[1]);
-  
-  done_atomprop(&atomprop);
   
   fp=xvgropen(opt2fn("-o",nfile,fnm),"Solvent Accessible Surface","Time (ps)",
 	      "Area (nm\\S2\\N)");
@@ -363,11 +362,14 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
     for(i=0; (i<nx[0]); i++) {
       real mm;
       ii = index[0][i];
+      /*
       if (!query_atomprop(atomprop,epropMass,
 			  *(top->atoms.resname[top->atoms.atom[ii].resnr]),
 			  *(top->atoms.atomname[ii]),&mm))
 	ndefault++;
       totmass += mm;
+      */
+      totmass += top->atoms.atom[ii].m;
     }
     if (ndefault)
       fprintf(stderr,"WARNING: Using %d default masses for density calculation, which most likely are inaccurate\n",ndefault);
@@ -375,6 +377,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   else
     vp = NULL;
     
+  gmx_atomprop_destroy(aps);
+
   nfr=0;
   do {
     rm_pbc(&top->idef,ePBC,natoms,box,x,x);

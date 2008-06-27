@@ -72,7 +72,7 @@
 
 void mk_bonds(gentop_nm2t nmt,t_atoms *atoms,rvec x[],
 	      gmx_conect gc,t_params *bond,int nbond[],char *ff,
-	      bool bPBC,matrix box,void *atomprop,real tol)
+	      bool bPBC,matrix box,gmx_atomprop_t aps,real tol)
 {
   t_param b;
   int     i,j;
@@ -121,14 +121,14 @@ void mk_bonds(gentop_nm2t nmt,t_atoms *atoms,rvec x[],
 }
 
 t_atomtype set_atom_type(t_symtab *tab,t_atoms *atoms,t_params *bonds,
-			 int *nbonds,gentop_nm2t nm2t,void *atomprop)
+			 int *nbonds,gentop_nm2t nm2t,gmx_atomprop_t aps)
 {
   t_atomtype atype;
   int nresolved;
   
   atype = init_atomtype();
   snew(atoms->atomtype,atoms->nr);
-  nresolved = nm2type(nm2t,tab,atoms,atype,nbonds,bonds,atomprop);
+  nresolved = nm2type(nm2t,tab,atoms,atype,nbonds,bonds,aps);
   if (nresolved != atoms->nr)
     gmx_fatal(FARGS,"Could only find a forcefield type for %d out of %d atoms",
 	      nresolved,atoms->nr);
@@ -696,7 +696,7 @@ static void lo_symmetrize_charges(t_atoms *atoms,t_atomtype atype,
 }
 
 void symmetrize_charges(t_atoms *atoms,t_atomtype atype,
-			t_params *bonds,void *atomprop)
+			t_params *bonds,gmx_atomprop_t aps)
 {
   char **strings = NULL;
   char *db = "symmetric-charges.dat";
@@ -710,7 +710,7 @@ void symmetrize_charges(t_atoms *atoms,t_atomtype atype,
     if (sscanf(strings[i],"%s%s%s%s",
 	       elem[0],elem[1],elem[2],elem[3]) == 4) {
       for(j=0; (j<4); j++) {
-	if (!query_atomprop(atomprop,epropElement,"???",elem[j],&value))
+	if (!gmx_atomprop_query(aps,epropElement,"???",elem[j],&value))
 	  break;
 	at[j] = gmx_nint(value);
       }

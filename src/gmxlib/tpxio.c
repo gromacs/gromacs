@@ -1765,7 +1765,7 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
   real         t,lambda;
   int          natoms,step,i,version,generation;
   bool         bTop,bXNULL;
-  void         *ap;
+  gmx_atomprop_t aps;
   
   bTop = fn2bTPX(infile);
   *ePBC = -1;
@@ -1792,19 +1792,19 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
       x = NULL;
     }
     if (bMass) {
-      ap = get_atomprop();
+      aps = gmx_atomprop_init();
       for(i=0; (i<natoms); i++)
-	if (!query_atomprop(ap,epropMass,
-			    *top->atoms.resname[top->atoms.atom[i].resnr],
-			    *top->atoms.atomname[i],
-			    &(top->atoms.atom[i].m))) {
+	if (!gmx_atomprop_query(aps,epropMass,
+				*top->atoms.resname[top->atoms.atom[i].resnr],
+				*top->atoms.atomname[i],
+				&(top->atoms.atom[i].m))) {
 	  if (debug) 
 	    fprintf(debug,"Can not find mass for atom %s %d %s, setting to 1\n",
 		    *top->atoms.resname[top->atoms.atom[i].resnr],
 		    top->atoms.atom[i].resnr+1,
 		    *top->atoms.atomname[i]);
 	}
-      done_atomprop(&ap);
+      gmx_atomprop_destroy(aps);
     }
     top->idef.ntypes=-1;
   }

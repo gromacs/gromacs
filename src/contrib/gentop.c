@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
   gentop_nm2t nm2t;
   gentop_qat  qa;
   t_mols     mymol;
-  void       *atomprop;
+  gmx_atomprop_t aps;
   char       title[STRLEN],forcefield[32];
   rvec       *x;        /* coordinates? */
   int        *nbonds,*cgnr;
@@ -249,7 +249,7 @@ int main(int argc, char *argv[])
   alg  = get_option(qgen);
     
   /* Read standard atom properties */
-  atomprop = get_atomprop();
+  aps = gmx_atomprop_init();
     
   /* Force field selection */
   if (!strncmp(ff,"select",6)) {
@@ -287,11 +287,11 @@ int main(int argc, char *argv[])
   else
     gc = NULL;
   read_pdb_conf(opt2fn("-f",NFILE,fnm),title,atoms,x,&ePBC,box,FALSE,gc);
-  get_pdb_atomnumber(atoms,atomprop);
+  get_pdb_atomnumber(atoms,aps);
   if (bCONECT && debug)
     dump_conection(debug,gc);
   
-  nm2t = rd_nm2type(forcefield,atomprop);
+  nm2t = rd_nm2type(forcefield,aps);
   if (debug) 
     dump_nm2type(debug,nm2t);
   
@@ -299,12 +299,12 @@ int main(int argc, char *argv[])
     printf("Generating bonds from distances...\n");
   snew(nbonds,atoms->nr);
   mk_bonds(nm2t,atoms,x,gc,&(plist[F_BONDS]),nbonds,forcefield,
-	   bPBC,box,atomprop,btol);
+	   bPBC,box,aps,btol);
 
   /* Setting the atom types: this depends on the bonding */
   open_symtab(&symtab);
   atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),
-			nbonds,nm2t,atomprop);
+			nbonds,nm2t,aps);
   if (debug) 
     dump_hybridization(debug,atoms,nbonds);
   sfree(nbonds);
@@ -332,7 +332,7 @@ int main(int argc, char *argv[])
   }
   else {
     eQGEN = generate_charges(stdout,molnm,alg,atoms,x,qtol,
-			     maxiter,atomprop,qtotref,hfac);
+			     maxiter,aps,qtotref,hfac);
   }
   /* Check whether our charges are OK, quit otherwise */
   if (eQGEN != eQGEN_OK) {
@@ -340,7 +340,7 @@ int main(int argc, char *argv[])
   }
   else {
     if (bQsym) 
-      symmetrize_charges(atoms,atype,&(plist[F_BONDS]),atomprop);
+      symmetrize_charges(atoms,atype,&(plist[F_BONDS]),aps);
     
     /* Make Angles and Dihedrals */
     snew(excls,atoms->nr);

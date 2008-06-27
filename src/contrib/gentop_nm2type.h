@@ -38,12 +38,13 @@
 #define _gentop_nm2type_h
 	
 #include <stdio.h>
+#include "atomprop.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
 	
 typedef struct gentop_nm2type *gentop_nm2t;
 
-extern gentop_nm2t rd_nm2type(char *ff,void *atomprop);
+extern gentop_nm2t rd_nm2type(char *ff,gmx_atomprop_t aps);
 /* Read the name 2 type database. nnm is the number of entries 
  * ff is the force field.
  */
@@ -53,7 +54,7 @@ extern void dump_nm2type(FILE *fp,gentop_nm2t nm2t);
 
 extern int nm2type(gentop_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 		   t_atomtype atype,int *nbonds,t_params *bond,
-		   void *atomprop);
+		   gmx_atomprop_t aps);
 /* Try to determine the atomtype (force field dependent) for the atoms 
  * with help of the bond list 
  */

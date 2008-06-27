@@ -38,6 +38,7 @@
 #define _gentop_eemprops_h
 	
 #include <stdio.h>
+#include "atomprop.h"
 #include "grompp.h"
 	
 enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
@@ -47,7 +48,7 @@ enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
  * is opened from the library. If eemtype != -1 eemprops with eemtype
  * equal to eemtype will be read.
  */
-extern void *read_eemprops(char *fn,int eemtype,void *atomprop);
+extern void *read_eemprops(char *fn,int eemtype,gmx_atomprop_t aps);
 
 extern void write_eemprops(FILE *fp,void *eem);
 

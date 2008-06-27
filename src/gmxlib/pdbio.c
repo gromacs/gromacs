@@ -367,7 +367,7 @@ static void read_anisou(char line[],int natom,t_atoms *atoms)
   }
 }
 
-void get_pdb_atomnumber(t_atoms *atoms,void *atomprop)
+void get_pdb_atomnumber(t_atoms *atoms,gmx_atomprop_t aps)
 {
   int  i,k,atomnumber;
   char anm[6],anm_copy[6];
@@ -383,11 +383,11 @@ void get_pdb_atomnumber(t_atoms *atoms,void *atomprop)
     atomnumber = NOTSET;
     if (anm[0] != ' ') {
       anm_copy[2] = nc;
-      if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+      if (gmx_atomprop_query(aps,epropElement,"???",anm_copy,&eval))
 	atomnumber = gmx_nint(eval);
       else {
 	anm_copy[1] = nc;
-	if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+	if (gmx_atomprop_query(aps,epropElement,"???",anm_copy,&eval))
 	  atomnumber = gmx_nint(eval);
       }
     }
@@ -397,7 +397,7 @@ void get_pdb_atomnumber(t_atoms *atoms,void *atomprop)
 	k++;
       anm_copy[0] = anm[k];
       anm_copy[1] = nc;
-      if (query_atomprop(atomprop,epropElement,"???",anm_copy,&eval))
+      if (gmx_atomprop_query(aps,epropElement,"???",anm_copy,&eval))
 	atomnumber = gmx_nint(eval);
     }
     atoms->atom[i].atomnumber = atomnumber;

@@ -75,7 +75,7 @@ typedef struct {
   t_nm2type *nm2t;
 } gentop_nm2type;
 
-gentop_nm2t rd_nm2type(char *ff,void *atomprop)
+gentop_nm2t rd_nm2type(char *ff,gmx_atomprop_t aps)
 {
   FILE       *fp;
   bool       bCont;
@@ -116,7 +116,7 @@ gentop_nm2t rd_nm2type(char *ff,void *atomprop)
 	    newbuf[i] = strdup(nbbuf);
 	    if (strcmp(newbuf[i],"*") == 0)
 	      nm2t->nm2t[nnnm].atomnr[i] = NOTSET;
-	    else if (query_atomprop(atomprop,epropElement,"???",newbuf[i],&eval))
+	    else if (gmx_atomprop_query(aps,epropElement,"???",newbuf[i],&eval))
 	      nm2t->nm2t[nnnm].atomnr[i] = gmx_nint(eval);
 	    else
 	      gmx_fatal(FARGS,"Invalid element '%s' on line %d in file %s\n",
@@ -126,7 +126,7 @@ gentop_nm2t rd_nm2type(char *ff,void *atomprop)
 	}
 	else
 	  newbuf = NULL;
-	if (query_atomprop(atomprop,epropElement,"???",elem,&eval)) {
+	if (gmx_atomprop_query(aps,epropElement,"???",elem,&eval)) {
 	  nm2t->nm2t[nnnm].atomnumber = gmx_nint(eval);
 	  nm2t->nm2t[nnnm].elem    = strdup(elem);
 	  nm2t->nm2t[nnnm].type    = strdup(type);
@@ -187,7 +187,7 @@ static int match_str(char *atom,char *template)
 
 int nm2type(gentop_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
 	    t_atomtype atype,int *nbonds,t_params *bonds,
-	    void *atomprop)
+	    gmx_atomprop_t aps)
 {
   gentop_nm2type *nm2type = (gentop_nm2type *) nm2t;
   int     cur = 0;
@@ -301,12 +301,12 @@ int nm2type(gentop_nm2t nm2t,t_symtab *tab,t_atoms *atoms,
       
       alpha = nm2type->nm2t[best].alpha;
       type  = nm2type->nm2t[best].type;
-      if (query_atomprop(atomprop,epropElement,"???",
+      if (gmx_atomprop_query(aps,epropElement,"???",
 			 nm2type->nm2t[best].elem,&value)) 
 	atomnr = gmx_nint(value);
       else
 	atomnr = -1;
-      if (query_atomprop(atomprop,epropMass,"???",
+      if (gmx_atomprop_query(aps,epropMass,"???",
 			 nm2type->nm2t[best].elem,&value)) 
 	mm = value;
       else {
