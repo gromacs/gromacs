@@ -784,7 +784,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 	   force[Min],buf,force_vir,md,ener,fcd,
 	   state->lambda,graph,
 	   fr,vsite,mu_tot,t,fp_field,NULL,
-	   GMX_FORCE_ALLFORCES | (bDoNS ? GMX_FORCE_NS : 0));
+	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
+	   (bDoNS ? GMX_FORCE_NS : 0));
 
   sf_dir = 0;
   if (nflexcon) {
