@@ -228,7 +228,7 @@ gmx_atomprop_t gmx_atomprop_init(void)
   return aps;
 }
 
-static void *set_prop(struct gmx_atomprop *aps,int eprop) 
+static void set_prop(struct gmx_atomprop *aps,int eprop) 
 {
   char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
   double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0 };
