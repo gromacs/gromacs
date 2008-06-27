@@ -353,7 +353,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
       switch (pull->eGeom) {
       case epullgDIST:
 	if (ref[0] <= 0)
-	  gmx_fatal(FARGS,"The pull constraint reference distance for group %d is <= 0 (%f)",g,ref);
+	  gmx_fatal(FARGS,"The pull constraint reference distance for group %d is <= 0 (%f)",g,ref[0]);
 	
 	a = diprod(r_ij[g],r_ij[g]); 
 	b = diprod(unc_ij,r_ij[g])*2;
@@ -737,7 +737,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 {
   int i,ii,d,nfrozen,ndim;
   real m,w,mbd;
-  double tmass,wmass;
+  double tmass,wmass,wwmass;
   bool bDomDec;
   gmx_ga2la_t *ga2la=NULL;
   t_atom *atom;
@@ -754,7 +754,9 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
      * So we store the real masses in the weights.
      * We do not set nweight, so these weights do not end up in the tpx file.
      */
-    snew(pg->weight,pg->nat);
+    if (pg->nweight == 0) {
+      snew(pg->weight,pg->nat);
+    }
   }
 
   if (cr && PAR(cr)) {
@@ -769,8 +771,9 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   }
 
   nfrozen = 0;
-  tmass = 0;
-  wmass = 0;
+  tmass  = 0;
+  wmass  = 0;
+  wwmass = 0;
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
     if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
@@ -785,7 +788,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
     } else {
       m = (1 - ir->init_lambda)*atom[ii].m + ir->init_lambda*atom[ii].mB;
     }
-    if (pg->weight) {
+    if (pg->nweight > 0) {
       w = pg->weight[i];
     } else {
       w = 1;
@@ -794,6 +797,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
       /* Move the mass to the weight */
       w *= m;
       m = 1;
+      pg->weight[i] = w;
     } else if (ir->eI == eiBD) {
       if (ir->bd_fric) {
 	mbd = ir->bd_fric*ir->delta_t;
@@ -802,22 +806,24 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
       }
       w *= m/mbd;
       m = mbd;
+      pg->weight[i] = w;
     }
-    tmass += m;
-    wmass += w*m;
+    tmass  += m;
+    wmass  += m*w;
+    wwmass += m*w*w;
   }
 
+  if (wmass == 0) {
+    gmx_fatal(FARGS,"The total%s mass of pull group %d is zero",
+	      pg->weight ? " weighted" : "",g);
+  }
   if (fplog) {
     fprintf(fplog,
 	    "Pull group %d: %5d atoms, mass %9.3f",g,pg->nat,tmass);
     if (pg->weight || EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD) {
-      fprintf(fplog,", weighted mass %9.3f",wmass);
+      fprintf(fplog,", weighted mass %9.3f",wmass*wmass/wwmass);
     }
     fprintf(fplog,"\n");
-  }
-  if (wmass == 0) {
-    gmx_fatal(FARGS,"The total%s mass of pull group %d is zero",
-	      pg->weight ? " weighted" : "",g);
   }
   
   if (nfrozen == 0) {
