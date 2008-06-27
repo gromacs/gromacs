@@ -279,6 +279,8 @@ void gmx_atomprop_destroy(struct gmx_atomprop *aps)
   }
 
   done_aa_names(&aps->aan);
+
+  sfree(aps);
 }
 
 bool gmx_atomprop_query(struct gmx_atomprop *aps,
