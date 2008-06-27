@@ -730,14 +730,14 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
     dd_make_local_pull_group(dd,&pull->grp[g],md);
 }
 
-static void init_pull_group_index(FILE *log,t_commrec *cr,
+static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 				  int start,int end,
 				  int g,t_pullgrp *pg,ivec pulldims,
 				  t_atoms *atoms,t_inputrec *ir)
 {
   int i,ii,d,nfrozen,ndim;
   real m,w,mbd;
-  double wmass,buf[3];
+  double tmass,wmass;
   bool bDomDec;
   gmx_ga2la_t *ga2la=NULL;
   t_atom *atom;
@@ -769,6 +769,7 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
   }
 
   nfrozen = 0;
+  tmass = 0;
   wmass = 0;
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
@@ -779,11 +780,16 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
 	if (pulldims[d] && ir->opts.nFreeze[atom[ii].grpnr[egcFREEZE]][d])
 	  nfrozen++;
     }
-    m = atom[ii].m;
-    if (pg->weight)
+    if (ir->efep == efepNO) {
+      m = atom[ii].m;
+    } else {
+      m = (1 - ir->init_lambda)*atom[ii].m + ir->init_lambda*atom[ii].mB;
+    }
+    if (pg->weight) {
       w = pg->weight[i];
-    else
+    } else {
       w = 1;
+    }
     if (EI_ENERGY_MINIMIZATION(ir->eI)) {
       /* Move the mass to the weight */
       w *= m;
@@ -797,11 +803,22 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
       w *= m/mbd;
       m = mbd;
     }
+    tmass += m;
     wmass += w*m;
   }
 
-  if (wmass == 0)
-    gmx_fatal(FARGS,"The total mass of pull group %d is zero",g);
+  if (fplog) {
+    fprintf(fplog,
+	    "Pull group %d: %5d atoms, mass %9.3f",g,pg->nat,tmass);
+    if (pg->weight || EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD) {
+      fprintf(fplog,", weighted mass %9.3f",wmass);
+    }
+    fprintf(fplog,"\n");
+  }
+  if (wmass == 0) {
+    gmx_fatal(FARGS,"The total%s mass of pull group %d is zero",
+	      pg->weight ? " weighted" : "",g);
+  }
   
   if (nfrozen == 0) {
     /* A value > 0 signals not frozen, it is updated later */
@@ -810,12 +827,13 @@ static void init_pull_group_index(FILE *log,t_commrec *cr,
     ndim = 0;
     for(d=0; d<DIM; d++)
       ndim += pulldims[d]*pg->nat;
-    if (nfrozen > 0 && nfrozen < ndim)
-      fprintf(log,
+    if (fplog && nfrozen > 0 && nfrozen < ndim) {
+      fprintf(fplog,
 	      "\nWARNING: In pull group %d some, but not all of the degrees of freedom\n"
 	      "         that are subject to pulling are frozen.\n"
 	      "         For pulling the whole group will be frozen.\n\n",
 	      g);
+    }
     pg->invtm  = 0.0;
     pg->wscale = 1.0;
   }
