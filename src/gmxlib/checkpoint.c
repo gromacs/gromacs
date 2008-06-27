@@ -299,20 +299,11 @@ static void do_cpte_rvecs(XDR *xd,int ecpt,int sflags,int n,rvec **v,
 static void do_cpte_matrix(XDR *xd,int ecpt,int sflags,matrix v,FILE *list)
 {
     real *vr;
-    int  i,j;
 
-    snew(vr,DIM*DIM);
+    vr = (real *)&(v[0][0]);
     do_cpte_reals_low(xd,ecpt,sflags,DIM*DIM,&vr,NULL,ecprMATRIX);
-
-    for(i=0; i<DIM; i++)
-    {
-        for(j=0; j<DIM; j++)
-        {
-            v[i][j] = vr[i*DIM+j];
-        }
-    }
-    sfree(vr);
     
+
     if (list)
     {
         pr_rvecs(list,0,est_names[ecpt],v,DIM);
