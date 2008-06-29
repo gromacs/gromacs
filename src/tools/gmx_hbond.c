@@ -932,6 +932,7 @@ static int is_hbond(t_hbdata *hb,int grpd,int grpa,int d,int a,
   
   for(h=0; (h < hb->d.nhydro[id]); h++) {
     hh = hb->d.hydro[id][h];
+    rha2 = rc2+1;
     if (!bDA) {
       rvec_sub(x[hh],x[a],r_ha);
       if (bBox)
@@ -1457,7 +1458,7 @@ void analyse_corr(int n,real t[],real ct[],real nt[],real kt[],
 {
   int    i0,i;
   real   k=1,kp=1,kow=1;
-  real   Q,chi22,chi2,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt,sigma_k,sigma_kp,ddg;
+  real   Q=0,chi22,chi2,dg,dgp,tau_hb,dtau,tau_rlx,e_1,dt,sigma_k,sigma_kp,ddg;
   double tmp,sn2=0,sc2=0,sk2=0,scn=0,sck=0,snk=0;
   bool   bError = (sigma_ct != NULL) && (sigma_nt != NULL) && (sigma_kt != NULL);
   
@@ -2100,6 +2101,10 @@ int gmx_hbond(int argc,char *argv[])
   snew(grpnames,grNR);
   snew(index,grNR);
   snew(isize,grNR);
+  /* Make Donor-Acceptor table */
+  snew(datable, top.atoms.nr);
+  gen_datable(index[0],isize[0],datable,top.atoms.nr);
+  
   if (bSelected) {
     /* analyze selected hydrogen bonds */
     printf("Select group with selected atoms:\n");
@@ -2138,13 +2143,10 @@ int gmx_hbond(int argc,char *argv[])
     if (bTwo) {
       printf("Checking for overlap in atoms between %s and %s\n",
 	     grpnames[0],grpnames[1]);
-      snew(datable, top.atoms.nr);
-      gen_datable(index[0],isize[0],datable,top.atoms.nr);
       for (i=0; i<isize[1];i++)
 	if (ISINGRP(datable[index[1][i]]))
 	  gmx_fatal(FARGS,"Partial overlap between groups '%s' and '%s'",
 		    grpnames[0],grpnames[1]);
-      free(datable);
       /*
       printf("Checking for overlap in atoms between %s and %s\n",
 	     grpnames[0],grpnames[1]);
@@ -2164,6 +2166,7 @@ int gmx_hbond(int argc,char *argv[])
       fprintf(stderr,"Calculating %s in %s (%d atoms)\n",
 	      bContact?"contacts":"hydrogen bonds",grpnames[0],isize[0]);
   }
+  sfree(datable);
   if (bInsert) {
     printf("Specify group for insertion analysis:\n");
     get_index(&(top.atoms),ftp2fn_null(efNDX,NFILE,fnm),
