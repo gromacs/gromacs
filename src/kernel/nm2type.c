@@ -253,8 +253,8 @@ int nm2type(int nnm,t_nm2type nm2t[],t_symtab *tab,t_atoms *atoms,
       }
     }
     if (best != -1) {
-      int  atomnr;
-      real alpha;
+      int  atomnr=0;
+      real alpha=0;
 	
       qq   = nm2t[best].q;
       mm   = nm2t[best].m;
