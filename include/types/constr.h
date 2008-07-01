@@ -46,4 +46,7 @@ typedef struct gmx_lincsdata *gmx_lincsdata_t;
 /* Abstract type for constraints */
 typedef struct gmx_constr *gmx_constr_t;
 
+/* Abstract type for essential dynamics that is defined only in edsam.c */
+typedef struct gmx_edsam *gmx_edsam_t;
+
 #endif
