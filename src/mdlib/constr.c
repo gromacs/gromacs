@@ -66,6 +66,7 @@ typedef struct gmx_constr {
   int             maxwarn;      /* The maximum number of warnings     */
   int             warncount_lincs;
   int             warncount_settle;
+  gmx_edsam_t     ed;           /* The essential dynamics data        */
 } t_gmx_constr;
 
 typedef struct {
@@ -338,14 +339,20 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   if (!bOK && constr->maxwarn >= 0) 
     dump_confs(fplog,step,&(top->atoms),start,homenr,cr,x,xprime,box);
 
-  if (econq == econqCoord && ir->ePull == epullCONSTRAINT) {
-    if (EI_DYNAMICS(ir->eI)) {
-      t = ir->init_t + (step + delta_step)*ir->delta_t;
-    } else {
-      t = ir->init_t;
-    }
-    set_pbc(&pbc,ir->ePBC,box);
-    pull_constraint(ir->pull,md,&pbc,cr,ir->delta_t,t,x,xprime,v,*vir);
+  if (econq == econqCoord) {
+      if (ir->ePull == epullCONSTRAINT) {
+        if (EI_DYNAMICS(ir->eI)) {
+              t = ir->init_t + (step + delta_step)*ir->delta_t;
+          } else {
+              t = ir->init_t;
+          }
+          set_pbc(&pbc,ir->ePBC,box);
+          pull_constraint(ir->pull,md,&pbc,cr,ir->delta_t,t,x,xprime,v,*vir);
+      }
+      if (constr->ed && delta_step > 0) {
+        /* apply the essential dynamcs constraints here */
+        do_edsam(top,ir,step,md,cr,xprime,box,constr->ed);
+      }
   }
   
   return bOK;
@@ -523,6 +530,10 @@ void set_constraints(struct gmx_constr *constr,
       }
     }
   }
+  
+  /* Make a selection of the local atoms for essential dynamics */
+  if (constr->ed && dd)
+    dd_make_local_ed_indices(dd,constr->ed,md);
 }
 
 static t_blocka make_at2con(int start,int natoms,t_idef *idef,
@@ -688,7 +699,7 @@ real constr_r_max(FILE *fplog,t_topology *top,t_inputrec *ir)
 }
 
 gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
-			      t_topology *top,t_inputrec *ir)
+			      t_topology *top,t_inputrec *ir, gmx_edsam_t ed,t_state *state)
 {
   int  nc[2],settle_type,j,start,natoms;
   struct gmx_constr *constr;
@@ -701,7 +712,7 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
   if (PARTDECOMP(cr))
     gmx_sumi(2,nc,cr);
 
-  if (nc[0]+nc[1] > 0 || ir->ePull == epullCONSTRAINT) {
+  if (nc[0]+nc[1] > 0 || ir->ePull == epullCONSTRAINT || ed != NULL) {
     snew(constr,1);
 
     if (nc[0] == 0) {
@@ -788,6 +799,13 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
       fprintf(fplog,"maxwarn < 0, will not stop on constraint errors\n");
     constr->warncount_lincs  = 0;
     constr->warncount_settle = 0;
+    
+    /* Initialize the essential dynamics sampling.
+     * Put the pointer to the ED struct in constr */
+    constr->ed = ed;
+    if (ed != NULL) {
+      init_edsam(top,ir,cr,ed,state->x,state->box);
+    }
   } else {
     constr = NULL;
   }
