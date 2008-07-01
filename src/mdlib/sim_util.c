@@ -325,7 +325,7 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
 	      real lambda,t_graph *graph,
 	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
-	      real t,FILE *field,t_edsamyn *edyn,
+	      real t,FILE *field,gmx_edsam_t ed,
 	      int flags)
 {
   static rvec box_size;
@@ -543,8 +543,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 		    flags);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
-  if (edyn) {
-    do_flood(fplog,cr,x,f,edyn,step);
+  if (ed) {
+    do_flood(fplog,cr,x,f,ed,step);
   }
 	
   cycles_force = wallcycle_stop(wcycle,ewcFORCE);
@@ -712,8 +712,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 		   t_inputrec *inputrec,t_mdatoms *md,
 		   t_state *state,rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-		   t_groups *grps,t_forcerec *fr,t_topology *top,
-		   t_edsamyn *edyn)
+		   t_groups *grps,t_forcerec *fr,t_topology *top)
 {
   int    i,m,start,end,step;
   double mass,tmass,vcm[4];
