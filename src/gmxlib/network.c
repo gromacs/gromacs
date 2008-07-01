@@ -84,8 +84,32 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
 
 
 #ifdef USE_MPE
-  /* MPE logging routines */
-  /* get event IDs from MPE: */  
+  /* MPE logging routines. Get event IDs from MPE: */
+  /* General events */
+  ev_timestep1               = MPE_Log_get_event_number( );
+  ev_timestep2               = MPE_Log_get_event_number( );
+  ev_force_start             = MPE_Log_get_event_number( );
+  ev_force_finish            = MPE_Log_get_event_number( );
+  ev_do_fnbf_start           = MPE_Log_get_event_number( );
+  ev_do_fnbf_finish          = MPE_Log_get_event_number( );
+  ev_ns_start                = MPE_Log_get_event_number( );
+  ev_ns_finish               = MPE_Log_get_event_number( );
+  ev_calc_bonds_start        = MPE_Log_get_event_number( );
+  ev_calc_bonds_finish       = MPE_Log_get_event_number( );
+  ev_global_stat_start       = MPE_Log_get_event_number( );
+  ev_global_stat_finish      = MPE_Log_get_event_number( );
+  ev_virial_start            = MPE_Log_get_event_number( );
+  ev_virial_finish           = MPE_Log_get_event_number( );
+  
+  /* Shift related events */
+  ev_shift_start             = MPE_Log_get_event_number( );
+  ev_shift_finish            = MPE_Log_get_event_number( );
+  ev_unshift_start           = MPE_Log_get_event_number( );
+  ev_unshift_finish          = MPE_Log_get_event_number( );
+  ev_mk_mshift_start         = MPE_Log_get_event_number( );
+  ev_mk_mshift_finish        = MPE_Log_get_event_number( );
+  
+  /* PME related events */
   ev_pme_start               = MPE_Log_get_event_number( );
   ev_pme_finish              = MPE_Log_get_event_number( );
   ev_spread_on_grid_start    = MPE_Log_get_event_number( );
@@ -98,30 +122,16 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   ev_solve_pme_finish        = MPE_Log_get_event_number( );
   ev_gather_f_bsplines_start = MPE_Log_get_event_number( );
   ev_gather_f_bsplines_finish= MPE_Log_get_event_number( );
-  ev_timestep1               = MPE_Log_get_event_number( );
-  ev_timestep2               = MPE_Log_get_event_number( );
-  ev_force_start             = MPE_Log_get_event_number( );
-  ev_force_finish            = MPE_Log_get_event_number( );
-  ev_do_fnbf_start           = MPE_Log_get_event_number( );
-  ev_do_fnbf_finish          = MPE_Log_get_event_number( );
   ev_reduce_start            = MPE_Log_get_event_number( );
   ev_reduce_finish           = MPE_Log_get_event_number( );
   ev_rscatter_start          = MPE_Log_get_event_number( );
   ev_rscatter_finish         = MPE_Log_get_event_number( );
   ev_alltoall_start          = MPE_Log_get_event_number( );
   ev_alltoall_finish         = MPE_Log_get_event_number( );
-  ev_ns_start                = MPE_Log_get_event_number( );
-  ev_ns_finish               = MPE_Log_get_event_number( );
-  ev_calc_bonds_start        = MPE_Log_get_event_number( );
-  ev_calc_bonds_finish       = MPE_Log_get_event_number( );
   ev_pmeredist_start         = MPE_Log_get_event_number( );
   ev_pmeredist_finish        = MPE_Log_get_event_number( );
   ev_init_pme_start          = MPE_Log_get_event_number( );      
   ev_init_pme_finish         = MPE_Log_get_event_number( );
-  ev_global_stat_start       = MPE_Log_get_event_number( );
-  ev_global_stat_finish      = MPE_Log_get_event_number( );
-  ev_shift_start             = MPE_Log_get_event_number( );
-  ev_shift_finish            = MPE_Log_get_event_number( );
   ev_send_coordinates_start  = MPE_Log_get_event_number( );
   ev_send_coordinates_finish = MPE_Log_get_event_number( );
   ev_update_fr_start         = MPE_Log_get_event_number( );
@@ -134,43 +144,66 @@ int gmx_setup(int *argc,char **argv,int *nnodes)
   ev_output_finish           = MPE_Log_get_event_number( ); 
   ev_sum_lrforces_start      = MPE_Log_get_event_number( ); 
   ev_sum_lrforces_finish     = MPE_Log_get_event_number( ); 
-  ev_virial_start            = MPE_Log_get_event_number( );
-  ev_virial_finish           = MPE_Log_get_event_number( );
   ev_sort_start              = MPE_Log_get_event_number( );
   ev_sort_finish             = MPE_Log_get_event_number( );
   ev_sum_qgrid_start         = MPE_Log_get_event_number( );
   ev_sum_qgrid_finish        = MPE_Log_get_event_number( );
+  
+  /* Essential dynamics related events */
+  ev_edsam_start             = MPE_Log_get_event_number( );
+  ev_edsam_finish            = MPE_Log_get_event_number( );
+  ev_get_coords_start        = MPE_Log_get_event_number( );
+  ev_get_coords_finish       = MPE_Log_get_event_number( );
+  ev_ed_apply_cons_start     = MPE_Log_get_event_number( );
+  ev_ed_apply_cons_finish    = MPE_Log_get_event_number( );
+  ev_fit_to_reference_start  = MPE_Log_get_event_number( );
+  ev_fit_to_reference_finish = MPE_Log_get_event_number( );
+  
   /* describe events: */
   if ( mpi_my_rank == 0 ) 
   {
+    /* General events */
+    MPE_Describe_state(ev_timestep1,               ev_timestep2,                "timestep START",  "magenta" );
+    MPE_Describe_state(ev_force_start,             ev_force_finish,             "force",           "cornflower blue" );
+    MPE_Describe_state(ev_do_fnbf_start,           ev_do_fnbf_finish,           "do_fnbf",         "navy" );
+    MPE_Describe_state(ev_ns_start,                ev_ns_finish,                "neighbor search", "tomato" );
+    MPE_Describe_state(ev_calc_bonds_start,        ev_calc_bonds_finish,        "bonded forces",   "slate blue" );
+    MPE_Describe_state(ev_global_stat_start,       ev_global_stat_finish,       "global stat",     "firebrick3");
+    MPE_Describe_state(ev_update_fr_start,         ev_update_fr_finish,         "update forcerec", "goldenrod");
+    MPE_Describe_state(ev_clear_rvecs_start,       ev_clear_rvecs_finish,       "clear rvecs",     "bisque");
+    MPE_Describe_state(ev_update_start,            ev_update_finish,            "update",          "cornsilk");
+    MPE_Describe_state(ev_output_start,            ev_output_finish,            "output",          "black");
+    MPE_Describe_state(ev_virial_start,            ev_virial_finish,            "calc_virial",     "thistle4");
+    
+    /* PME related events */
     MPE_Describe_state(ev_pme_start,               ev_pme_finish,               "doing PME",       "grey" );
     MPE_Describe_state(ev_spread_on_grid_start,    ev_spread_on_grid_finish,    "spread",          "dark orange" );   
     MPE_Describe_state(ev_sum_qgrid_start,         ev_sum_qgrid_finish,         "sum qgrid",       "slate blue");
     MPE_Describe_state(ev_gmxfft3d_start,          ev_gmxfft3d_finish,          "fft3d",           "snow2" );   
     MPE_Describe_state(ev_solve_pme_start,         ev_solve_pme_finish,         "solve PME",       "indian red" );   
     MPE_Describe_state(ev_gather_f_bsplines_start, ev_gather_f_bsplines_finish, "bsplines",        "light sea green" );   
-    MPE_Describe_state(ev_timestep1,               ev_timestep2,                "timestep START",  "magenta" );
-    MPE_Describe_state(ev_force_start,             ev_force_finish,             "force",           "cornflower blue" );
-    MPE_Describe_state(ev_do_fnbf_start,           ev_do_fnbf_finish,           "do_fnbf",         "navy" );
     MPE_Describe_state(ev_reduce_start,            ev_reduce_finish,            "reduce",          "cyan1" );
     MPE_Describe_state(ev_rscatter_start,          ev_rscatter_finish,          "rscatter",        "cyan3" );
     MPE_Describe_state(ev_alltoall_start,          ev_alltoall_finish,          "alltoall",        "LightCyan4" );
-    MPE_Describe_state(ev_ns_start,                ev_ns_finish,                "neighbor search", "tomato" );
-    MPE_Describe_state(ev_calc_bonds_start,        ev_calc_bonds_finish,        "bonded forces",   "slate blue" );
     MPE_Describe_state(ev_pmeredist_start,         ev_pmeredist_finish,         "pmeredist",       "thistle" );
     MPE_Describe_state(ev_init_pme_start,          ev_init_pme_finish,          "init PME",        "snow4");
-    MPE_Describe_state(ev_global_stat_start,       ev_global_stat_finish,       "global stat",     "firebrick3");
-    MPE_Describe_state(ev_shift_start,             ev_shift_finish,             "shift",           "orange");
     MPE_Describe_state(ev_send_coordinates_start,  ev_send_coordinates_finish,  "send_coordinates","blue");
-    MPE_Describe_state(ev_update_fr_start,         ev_update_fr_finish,         "update forcerec", "goldenrod");
-    MPE_Describe_state(ev_clear_rvecs_start,       ev_clear_rvecs_finish,       "clear rvecs",     "bisque");
-    MPE_Describe_state(ev_update_start,            ev_update_finish,            "update",          "cornsilk");
-    MPE_Describe_state(ev_output_start,            ev_output_finish,            "output",          "black");
     MPE_Describe_state(ev_sum_lrforces_start,      ev_sum_lrforces_finish,      "sum_LRforces",    "lime green");
-    MPE_Describe_state(ev_virial_start,            ev_virial_finish,            "calc_virial",     "thistle4");
     MPE_Describe_state(ev_sort_start,              ev_sort_finish,              "sort pme atoms",  "brown");
     MPE_Describe_state(ev_sum_qgrid_start,         ev_sum_qgrid_finish,         "sum charge grid", "medium orchid");
-    }
+    
+    /* Shift related events */
+    MPE_Describe_state(ev_shift_start,             ev_shift_finish,             "shift",           "orange");
+    MPE_Describe_state(ev_unshift_start,           ev_unshift_finish,           "unshift",         "dark orange");    
+    MPE_Describe_state(ev_mk_mshift_start,         ev_mk_mshift_finish,         "mk_mshift",       "maroon");
+        
+    /* Essential dynamics related events */
+    MPE_Describe_state(ev_edsam_start,             ev_edsam_finish,             "EDSAM",           "deep sky blue");
+    MPE_Describe_state(ev_get_coords_start,        ev_get_coords_finish,        "ED get coords",   "steel blue");
+    MPE_Describe_state(ev_ed_apply_cons_start,     ev_ed_apply_cons_finish,     "ED apply constr", "forest green");
+    MPE_Describe_state(ev_fit_to_reference_start,  ev_fit_to_reference_finish,  "ED fit to ref",   "lavender");
+       
+  }
   MPE_Init_log();
 #endif
   
@@ -496,6 +529,7 @@ void gmx_finalize(const t_commrec *cr)
    */
   if (debug)
     fprintf(debug,"Will call MPI_Finalize now\n");
+
   ret = MPI_Finalize();
   if (debug)
     fprintf(debug,"Return code from MPI_Finalize = %d\n",ret);
