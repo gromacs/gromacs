@@ -48,7 +48,6 @@ Note: by default the starting MD structure will be taken as origin of the first
 expansion cycle for radius expansion. If <tt>-ori</tt> is specified, you will be able
 to read in a structure file that defines an external origin.<p><tt>-radcon</tt>: perform acceptance radius contraction along selected eigenvectors
 towards a target structure specified with <tt>-tar</tt>.NOTE: each eigenvector can be selected only once. <p><tt>-outfrq</tt>: frequency (in steps) of writing out projections etc.<p>
-<tt>-logfrq</tt>: frequency (in steps) of writing out statistics to log file.<p>
 <tt>-slope</tt>: minimal slope in acceptance radius expansion. A new expansion
 cycle will be started if the spontaneous increase of the radius (in nm/step)
 is less than the value specified.<p><tt>-maxedsteps</tt>: maximum number of steps per cycle in radius expansion
@@ -129,7 +128,6 @@ the output file and write them with your texteditor into the .<a href="edi.html"
 <TR><TD ALIGN=RIGHT> <b><tt>-radcon</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for acceptance radius contraction </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-flood</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Indices of eigenvectors for flooding </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-outfrq</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> freqency (in steps) of writing output in .<a href="edo.html">edo</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-logfrq</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>100</tt> </TD><TD> frequency (in steps) of writing to log </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-slope</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> minimal slope in acceptance radius expamsion </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-maxedsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> max nr of steps per cycle </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-deltaF0</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   150</tt> </TD><TD> target destabilization energy  - used for flooding </TD></TD>
