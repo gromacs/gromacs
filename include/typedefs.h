@@ -77,7 +77,6 @@ extern "C" {
 #include <types/shellfc.h>
 #include <types/constr.h>
 #include <types/matrix.h>
-#include <types/edsams.h>
 
 /* 
  * Memory (re)allocation can be VERY slow, especially with some
