@@ -85,7 +85,7 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_state *state,rvec f[],
 				rvec buf[],t_mdatoms *mdatoms,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-				t_graph *graph,t_edsamyn *edyn,
+				t_graph *graph,gmx_edsam_t ed,
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
@@ -226,8 +226,7 @@ extern void do_shakefirst(FILE *log,gmx_constr_t constr,
 			  t_inputrec *inputrec,t_mdatoms *md,
 			  t_state *state,rvec buf[],rvec f[],
 			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			  t_groups *grps,t_forcerec *fr,t_topology *top,
-			  t_edsamyn *edyn);
+			  t_groups *grps,t_forcerec *fr,t_topology *top);
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,
@@ -241,7 +240,7 @@ extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 		     real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
 		     int nstepout,
-		     t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
+		     gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
 		     real pforce,real cpt_period,real max_hours,
 		     unsigned long Flags);
 /* Driver routine, that calls the different methods */
