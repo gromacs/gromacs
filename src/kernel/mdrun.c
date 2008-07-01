@@ -339,14 +339,13 @@ int main(int argc,char *argv[])
     { "-stepout", FALSE, etINT, {&nstepout},
       "HIDDENFrequency of writing the remaining runtime" }
   };
-  t_edsamyn *edyn;
+  gmx_edsam_t  ed;
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
   FILE     *fplog;
 
   cr = init_par(&argc,&argv);
-  snew(edyn,1);
 
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
@@ -388,8 +387,12 @@ int main(int argc,char *argv[])
     please_cite(fplog,"Berendsen95a");
   }
   
-  if (opt2bSet("-ei",NFILE,fnm)) 
-    ed_open(NFILE,fnm,edyn,cr);
+  /* Essential dynamics */
+  if (opt2bSet("-ei",NFILE,fnm)) {
+    /* Open input and output files, allocate space for ED data structure */
+    ed = ed_open(NFILE,fnm,cr);
+  } else
+    ed=NULL;
     
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
@@ -408,7 +411,7 @@ int main(int argc,char *argv[])
   
   mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
 	   ddxyz,dd_node_order,rdd,rconstr,dlb_scale,ddcsx,ddcsy,ddcsz,
-	   nstepout,edyn,repl_ex_nst,repl_ex_seed,pforce,
+	   nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
 	   cpt_period,max_hours,Flags);
   
   if (gmx_parallel_env)
