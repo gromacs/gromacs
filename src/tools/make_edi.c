@@ -63,16 +63,60 @@
 #include "rmpbc.h"
 #include "txtdump.h"
 #include "eigio.h"
-#include "edsam.h"
 #include "index.h" 
 
-void make_t_edx(t_edx *edx, int natoms, rvec *pos, atom_id index[]) {
+
+typedef struct
+{ 
+    real        deltaF0;
+    bool        bHarmonic;
+    real        tau;
+    real        deltaF;
+    real        kT; 
+    real        constEfl;
+    real        alpha2; 
+} t_edflood;
+
+
+/* This type is for the average, reference, target, and origin structure   */
+typedef struct edix
+{
+    int         nr;             /* number of atoms this structure contains */
+    int         *anrs;          /* atom index numbers                      */
+    rvec        *x;             /* positions                               */
+    real        *sqrtm;         /* sqrt of the masses used for mass-
+                                 * weighting of analysis                   */
+} t_edix;
+
+
+typedef struct edipar
+{
+    int         nini;           /* total Nr of atoms                    */
+    bool        fitmas;         /* true if trans fit with cm            */
+    bool        pcamas;         /* true if mass-weighted PCA            */
+    int         presteps;       /* number of steps to run without any   
+                                 *    perturbations ... just monitoring */
+    int         outfrq;         /* freq (in steps) of writing to edo    */
+    int         maxedsteps;     /* max nr of steps per cycle            */
+    struct edix sref;           /* reference positions, to these fitting
+                                 * will be done                         */
+    struct edix sav;            /* average positions                    */
+    struct edix star;           /* target positions                     */
+    struct edix sori;           /* origin positions                     */
+    real        slope;          /* minimal slope in acceptance radexp   */
+    int         ned;            /* Nr of atoms in essdyn buffer         */
+    t_edflood   flood;          /* parameters especially for flooding   */
+} t_edipar;
+
+
+
+void make_t_edx(struct edix *edx, int natoms, rvec *pos, atom_id index[]) {
   edx->nr=natoms;
   edx->anrs=index;
   edx->x=pos;
 }
 
-void write_t_edx(FILE *fp, t_edx edx, char *comment) {
+void write_t_edx(FILE *fp, struct edix edx, char *comment) {
  /*here we copy only the pointers into the t_edx struct
   no data is copied and edx.box is ignored  */
  int i;
@@ -244,17 +288,17 @@ void write_eigvec(FILE* fp, int natoms, int eig_list[], rvec** eigvecs,int nvec,
 /*enum referring to the different lists of eigenvectors*/
 enum { evLINFIX, evLINACC, evFLOOD, evRADFIX, evRADACC, evRADCON , evMON,  evEND };
 #define oldMAGIC 666
-#define MAGIC 668
+#define MAGIC 669
 
 
-void write_the_whole_thing(FILE* fp, t_edpar *edpars, rvec** eigvecs, int nvec, int *eig_listen[], real* evStepList[]) {
+void write_the_whole_thing(FILE* fp, t_edipar *edpars, rvec** eigvecs, int nvec, int *eig_listen[], real* evStepList[]) {
 /* write edi-file */
 
     /*Header*/
     fprintf(fp,"#MAGIC\n %d \n#NINI\n %d\n#FITMAS\n %d\n#ANALYSIS_MAS\n %d\n",
         MAGIC,edpars->nini,edpars->fitmas,edpars->pcamas);
-    fprintf(fp,"#OUTFRQ\n %d\n#LOGFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
-        edpars->outfrq,edpars->logfrq,edpars->maxedsteps,edpars->slope);
+    fprintf(fp,"#OUTFRQ\n %d\n#MAXLEN\n %d\n#SLOPECRIT\n %f\n",
+        edpars->outfrq,edpars->maxedsteps,edpars->slope);
     fprintf(fp,"#PRESTEPS\n %d\n#DELTA_F0\n %f\n#INIT_DELTA_F\n %f\n#TAU\n %f\n#EFL_NULL\n %f\n#ALPHA2\n %f\n#KT\n %f\n#HARMONIC\n %d\n",
         edpars->presteps,edpars->flood.deltaF0,edpars->flood.deltaF,edpars->flood.tau,edpars->flood.constEfl,edpars->flood.alpha2,edpars->flood.kT,edpars->flood.bHarmonic);
     
@@ -358,13 +402,13 @@ static real *scan_vecparams(char *str,char * par, int nvecs)
 }    
 
 
-void init_edx(t_edx *edx) {
+void init_edx(struct edix *edx) {
   edx->nr=0;
   snew(edx->x,1);
   snew(edx->anrs,1);
 };
 
-void filter2edx(t_edx *edx,int nindex, atom_id index[],int ngro, atom_id igro[],rvec *x,char* structure) {
+void filter2edx(struct edix *edx,int nindex, atom_id index[],int ngro, atom_id igro[],rvec *x,char* structure) {
 /* filter2edx copies coordinates from x to edx which are given in index
 */
   
@@ -382,7 +426,7 @@ void filter2edx(t_edx *edx,int nindex, atom_id index[],int ngro, atom_id igro[],
    };
 };
 
-void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,t_edx *edx,int nfit,
+void get_structure(t_atoms *atoms,char *IndexFile,char *StructureFile,struct edix *edx,int nfit,
                     atom_id ifit[],int natoms, atom_id index[]) {
 
 
@@ -450,7 +494,6 @@ int main(int argc,char *argv[])
       "towards a target structure specified with [TT]-tar[tt]."
       "NOTE: each eigenvector can be selected only once. [PAR]"
       "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc.[PAR]",
-      "[TT]-logfrq[tt]: frequency (in steps) of writing out statistics to log file.[PAR]",
       "[TT]-slope[tt]: minimal slope in acceptance radius expansion. A new expansion",
       "cycle will be started if the spontaneous increase of the radius (in nm/step)",
       "is less than the value specified.[PAR]" 
@@ -515,7 +558,7 @@ int main(int argc,char *argv[])
     /* Save all the params in this struct and then save it in an edi file.
     * ignoring fields nmass,massnrs,mass,tmass,nfit,fitnrs,edo
     */
-    static t_edpar edi_params;     
+    static t_edipar edi_params;     
     
     static int  first=1,last=8,skip=1,nextr=2;
     static real max=0.0;
@@ -556,8 +599,6 @@ int main(int argc,char *argv[])
         "Indices of eigenvectors for acceptance radius contraction" },
     { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
         "freqency (in steps) of writing output in .edo file" },
-    { "-logfrq", FALSE, etINT, {&edi_params.logfrq},
-        "frequency (in steps) of writing to log" },
     { "-slope", FALSE, etREAL, { &edi_params.slope},
         "minimal slope in acceptance radius expamsion"},
     { "-maxedsteps", FALSE, etINT, {&edi_params.maxedsteps},
@@ -604,7 +645,7 @@ int main(int argc,char *argv[])
     int        nfit;
     int ev_class; /* parameter _class i.e. evMON, evRADFIX etc. */
     int nvecs;
-    real *eigval1; /* in V3.3 this is parameter of read_eigenvectors */
+    real *eigval1=NULL; /* in V3.3 this is parameter of read_eigenvectors */
     
     char       *EdiFile;
     char       *TargetFile;
@@ -632,7 +673,7 @@ int main(int argc,char *argv[])
     { efEDI, "-o", "sam", ffWRITE }
     };
 #define NFILE asize(fnm)
-    edi_params.outfrq=100; edi_params.logfrq=100; edi_params.slope=0.0; edi_params.maxedsteps=0;
+    edi_params.outfrq=100; edi_params.slope=0.0; edi_params.maxedsteps=0;
     CopyRight(stderr,argv[0]);
     parse_common_args(&argc,argv, 0 ,
                       NFILE,fnm,NPA,pa,asize(desc),desc,0,NULL);
