@@ -703,7 +703,6 @@ void update(FILE         *fplog,
 	    gmx_wallcycle_t wcycle,
 	    gmx_stochd_t sd,
 	    gmx_constr_t constr,
-            t_edsamyn    *edyn,
 	    bool         bHaveConstr,
             bool         bNEMD,
 	    bool         bInitStep)
@@ -828,8 +827,6 @@ void update(FILE         *fplog,
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
-  prepare_edsam(step,start,homenr,cr,xprime,edyn);
-  
   if (bHaveConstr) {
     bLastStep = (step == inputrec->init_step+inputrec->nsteps);
     bLog  = (do_per_step(step,inputrec->nstlog) || bLastStep || (step < 0));
@@ -849,17 +846,6 @@ void update(FILE         *fplog,
     dump_it_all(fplog,"After Shake",
 		state->natoms,state->x,xprime,state->v,force);
 
-    /* Apply Essential Dynamics constraints when required.
-     * Note that the reported ED and pull forces can be off
-     * with SD and BD with high friction, as the forces
-     * are no longer proportional to positional differences.
-     */
-
-    /* Apply Essential Dynamics constraints when required. */
-    if (edyn->bEdsam)
-      do_edsam(fplog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
-               force,state->box,edyn,TRUE);
-
     if (inputrec->eI == eiSD2) {
       /* A correction factor eph is needed for the SD constraint force */
       /* Here we can, unfortunately, not have proper corrections
@@ -874,11 +860,7 @@ void update(FILE         *fplog,
     if (debug)
       pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     where();
-  } else if (edyn->bEdsam) {     
-      /* no constraints but still edsam - yes, that can happen */
-    do_edsam(fplog,top,inputrec,step,md,start,homenr,cr,xprime,state->x,
- 	     force,state->box,edyn,TRUE);
-  };  
+  }
   
   where();
   if (inputrec->eI == eiSD2) {
