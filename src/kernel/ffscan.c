@@ -115,7 +115,7 @@ int main(int argc,char *argv[])
   };
 #define NPA asize(pa)
   unsigned  long Flags = 0;
-  t_edsamyn edyn;
+  gmx_edsam_t ed=NULL;
   FILE      *fplog;
 
   ivec ddxyz = { 1,1,1 };
@@ -123,7 +123,8 @@ int main(int argc,char *argv[])
   cr = init_par(&argc,&argv);
   
   ff.bVerbose = ff.bVerbose && MASTER(cr);
-  edyn.bEdsam=FALSE;
+  snew(ed,1);
+  ed->eEDtype=eEDnone;
   
   if (MASTER(cr))
     CopyRight(stderr,argv[0]);
@@ -150,7 +151,7 @@ int main(int argc,char *argv[])
 
   mdrunner(fplog,cr,NFILE,fnm,ff.bVerbose,FALSE,
 	   ddxyz,0,0,0,loadx,loady,loadz,1,
-	   &edyn,0,0,Flags);
+	   ed,0,0,Flags);
   if (gmx_parallel_env)
     gmx_finalize(cr);
 
