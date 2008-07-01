@@ -22,7 +22,6 @@ make_edi
 .BI "-radcon" " string "
 .BI "-flood" " string "
 .BI "-outfrq" " int "
-.BI "-logfrq" " int "
 .BI "-slope" " real "
 .BI "-maxedsteps" " int "
 .BI "-deltaF0" " real "
@@ -132,12 +131,6 @@ towards a target structure specified with
 
 .B -outfrq
 : frequency (in steps) of writing out projections etc.
-
-
-
-.B -logfrq
-: frequency (in steps) of writing out statistics to log file.
-
 
 
 .B -slope
@@ -282,9 +275,6 @@ the output file and write them with your texteditor into the .edi file under DEL
 
 .BI "-outfrq"  " int" " 100" 
  freqency (in steps) of writing output in .edo file
-
-.BI "-logfrq"  " int" " 100" 
- frequency (in steps) of writing to log
 
 .BI "-slope"  " real" "      0" 
  minimal slope in acceptance radius expamsion
