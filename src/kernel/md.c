@@ -113,7 +113,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
 	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
 	      real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
-	      int nstepout,t_edsamyn *edyn,int repl_ex_nst,int repl_ex_seed,
+	      int nstepout,gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
 	      real pforce,real cpt_period,real max_hours,
 	      unsigned long Flags)
 {
@@ -397,7 +397,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		EI_DYNAMICS(inputrec->eI) && MASTER(cr));
     }
 
-    constr = init_constraints(fplog,cr,top,inputrec);
+    constr = init_constraints(fplog,cr,top,inputrec,ed,state);
 
     if (DOMAINDECOMP(cr)) {
       dd_make_reverse_top(fplog,cr->dd,top,vsite,constr,inputrec,
@@ -414,7 +414,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 					    vsite,constr,
 					    nstepout,inputrec,grps,top,
 					    ener,fcd,state,f,buf,
-					    mdatoms,nrnb,wcycle,graph,edyn,fr,
+					    mdatoms,nrnb,wcycle,graph,ed,fr,
 					    repl_ex_nst,repl_ex_seed,
 					    cpt_period,max_hours,
 					    Flags);
@@ -457,7 +457,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     t_state *state_global,rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	     t_graph *graph,t_edsamyn *edyn,t_forcerec *fr,
+	     t_graph *graph,gmx_edsam_t ed,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags)
@@ -622,16 +622,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bHaveConstr = TRUE;
   }
 
-  init_edsam(fplog,top,ir,mdatoms,mdatoms->start,mdatoms->homenr,cr,edyn);
-  if (ed_constraints(edyn))
-    bHaveConstr = TRUE;
-    
-  /* Initialize the essential dynamics sampling */
-  do_first_edsam(fplog,top,ir->ePBC,mdatoms,mdatoms->start,mdatoms->homenr,cr,
-		 state->x,state->box,edyn,bHaveConstr);
-  if (ed_constraints(edyn))
-    bHaveConstr = TRUE;
-  
   gnx = top->mols.nr;
   snew(grpindex,gnx);
   for(i=0; (i<gnx); i++)
@@ -645,10 +635,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (repl_ex_nst > 0 && MASTER(cr))
     repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
 				    repl_ex_nst,repl_ex_seed);
-  
+
   if (bHaveConstr && !ir->bContinuation && !bRerunMD) {
     do_shakefirst(fplog,constr,ir,mdatoms,state,buf,f,
-		  graph,cr,nrnb,grps,fr,top,edyn);
+		  graph,cr,nrnb,grps,fr,top);
 
     if (vsite)
       construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
@@ -942,7 +932,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	       state->box,state->x,&state->hist,
 	       f,buf,force_vir,mdatoms,ener,fcd,
 	       state->lambda,graph,
-	       fr,vsite,mu_tot,t,fp_field,edyn,
+	       fr,vsite,mu_tot,t,fp_field,ed,
 	       GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
 	       GMX_FORCE_ALLFORCES);
     }
@@ -1029,7 +1019,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        */
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
 	     top,grps,shake_vir,scale_tot,
-	     cr,nrnb,wcycle,sd,constr,edyn,bHaveConstr,
+	     cr,nrnb,wcycle,sd,constr,bHaveConstr,
 	     bNEMD,bFirstStep && bStateFromTPX);
       if (fr->bSepDVDL && fplog && do_log) {
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
@@ -1350,10 +1340,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
   debug_gmx();
   
-  /* clean up edsam stuff, no effect if edyn->bEdsam == FALSE */
-  finish_edsam(fplog,top,ir,mdatoms,mdatoms->start,mdatoms->homenr,cr,
-	       edyn);
-
   if (ir->nstlist == -1 && nns>0 && fplog) {
     fprintf(fplog,"Average neighborlist lifetime: %.1f steps, std.dev.: %.1f steps\n",ns_s1/nns,sqrt(ns_s2/nns - sqr(ns_s1/nns)));
     fprintf(fplog,"Average number of atoms that crossed the half buffer length: %.1f\n\n",ns_ab/nns);
