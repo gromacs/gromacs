@@ -743,6 +743,65 @@ static inline int _mod(int a,int b,char *file,int line)
   return a % b;
 }
 
+/* Math on multidimensional rvecs, used e.g. in edsam.c */
+static void m_rvecsub(int dim, rvec *a, rvec *b, rvec *c) 
+{
+    /* c = a-b */
+    int i;
+
+    for (i=0; i<dim; i++)
+        rvec_sub(a[i], b[i], c[i]);
+}
+
+
+static void m_rvecadd(int dim, rvec *a, rvec *b, rvec *c)
+{
+    /* c = a+b */
+    int i;
+
+    for (i=0; i<dim; i++)
+        rvec_add(a[i], b[i], c[i]);
+}
+
+
+static real m_rvecnorm(int dim, rvec *a)
+{
+    /* c = a+b */
+    int i;
+    real sum=0;
+
+    for (i=0; i<dim; i++)
+        sum += norm2(a[i]);
+
+    return sqrt(sum);
+}
+
+
+static void m_rvecsmul(int dim, real s, rvec *a)
+{
+    int i;
+
+    for (i=0; i<dim; i++)
+        svmul(s, a[i], a[i]);
+} 
+
+
+static void m_rvec_to_one(int dim, rvec *a)
+{
+    m_rvecsmul(dim, 1.0/m_rvecnorm(dim,a), a);
+}
+
+
+static void m_rveccopy(int dim, rvec *a, rvec *b)
+{
+    /* b = a */
+    int i;
+
+    for (i=0; i<dim; i++)
+        copy_rvec(a[i],b[i]);
+} 
+
+
 #define divide(a,b) _divide((a),(b),__FILE__,__LINE__)
 #define mod(a,b)    _mod((a),(b),__FILE__,__LINE__)
 
