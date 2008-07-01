@@ -85,7 +85,6 @@ extern void update(FILE         *fplog,
 		   gmx_wallcycle_t wcycle,
 		   gmx_stochd_t sd,
 		   gmx_constr_t constr,
-		   t_edsamyn    *edyn,
 		   bool         bHaveConstr,
 		   bool         bNEMD,
 		   bool         bInitStep);
