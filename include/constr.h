@@ -143,7 +143,8 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
  */
 
 extern gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
-				     t_topology *top,t_inputrec *ir);
+				     t_topology *top,t_inputrec *ir, 
+				     gmx_edsam_t ed,t_state *state);
 /* Initialize constraints stuff */
 
 extern void set_constraints(gmx_constr_t constr,
