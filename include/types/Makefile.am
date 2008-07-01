@@ -5,7 +5,7 @@
 pkgincludetypesdir = ${pkgincludedir}/types
 
 pkgincludetypes_HEADERS = \
-	atoms.h    	edsams.h  	forcerec.h  	ifunc.h		\
+	atoms.h    	forcerec.h  	ifunc.h		\
 	mdatom.h  	simple.h	block.h    	constr.h	\
 	energy.h  	graph.h     	inputrec.h  	nblist.h 	\
 	ns.h 		nsgrid.h    	symtab.h	commrec.h	\
