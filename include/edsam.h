@@ -41,40 +41,24 @@
 #include <config.h>
 #endif
 
-#include "types/edsams.h"
 
-/* this function has to be called before the (LINCS, SHAKE, etc. ) constraints are applied */
-extern void prepare_edsam(int step, int start, int homenr, t_commrec *cr, rvec x[],t_edsamyn *edyn);
+extern void do_edsam(t_topology *top,t_inputrec *ir,int step,t_mdatoms *md,
+                     t_commrec *cr,rvec xs[],matrix box,gmx_edsam_t ed);
+/* Essential dynamics constraints, called from constrain() */
 
-/* this function implements the edsam, constraints and the .edo monitoring functionality */
-extern void do_edsam(FILE *log,t_topology *top,t_inputrec *ir,int step,
-		     t_mdatoms *md,int start,int homenr, t_commrec *cr,
-                     rvec x[],rvec xold[],rvec f[],matrix box,
-                     t_edsamyn *edyn,bool bHave_force);
+extern gmx_edsam_t ed_open(int nfile,t_filenm fnm[],t_commrec *cr);
+/* Sets the ED input/output filenames, opens output (.edo) file */
 
-extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], t_edsamyn *edyn, int step);
-extern void ed_open(int nfile,t_filenm fnm[],t_edsamyn *edyn, t_commrec *cr);
+extern void init_edsam(t_topology *top,t_inputrec *ir,t_commrec *cr,
+                       gmx_edsam_t ed, rvec x[], matrix box);
+/* Init routine for ED and flooding. Calls init_edi in a loop for every .edi-cycle 
+ * contained in the input file, creates a NULL terminated list of t_edpar structures */
 
-/* return value is 1 if constraints are switched on, 0 otherwise */
-int 
-ed_constraints(t_edsamyn *edyn);
-
-extern void init_edsam(FILE *log,t_topology *top,t_inputrec *ir,
-		       t_mdatoms *md,int start,int homenr, t_commrec *cr,
-		       t_edsamyn *edyn);
-
-extern void do_first_edsam(FILE *log,t_topology *top,int ePBC,
-			   t_mdatoms *md,int start,int homenr,t_commrec *cr,
-			   rvec x[],matrix box, t_edsamyn *edyn,bool bHaveConstr);
-
-extern void finish_edsam(FILE *log,t_topology *top,t_inputrec *ir,
-		t_mdatoms *md,int start,int homenr,t_commrec *cr,
-			 t_edsamyn *edyn);
+extern void dd_make_local_ed_indices(gmx_domdec_t *dd, gmx_edsam_t ed,t_mdatoms *md);
+/* Make a selection of the home atoms for the ED groups. 
+ * Should be called at every domain decomposition. */
+ 
+extern void do_flood(FILE *log, t_commrec *cr, rvec x[],rvec force[], gmx_edsam_t ed, int step);
+/* Flooding - called from do_force() */
 
 #endif	/* _edsam_h */
-
-
-
-
-
-
