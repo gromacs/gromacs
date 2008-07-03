@@ -2746,7 +2746,7 @@ void do_edsam(t_topology  *top,   /* Local topology  */
     real    dt,dt_1,dt_2;
     struct t_do_edsam *buf;
     t_edpar *edi;
-    real    rmsdev;        /* RMSD from reference structure prior to applying the constraints */
+    real    rmsdev=-1;        /* RMSD from reference structure prior to applying the constraints */
 
 
 #ifdef DEBUGPRINT
