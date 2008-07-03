@@ -55,7 +55,7 @@ typedef struct {
 } t_mdebin;
 
 extern t_mdebin *init_mdebin(int fp_ene,
-			     const t_groups *grps,const t_atoms *atoms,
+			     const t_atoms *atoms,
 			     const t_idef *idef,const t_inputrec *ir,
 			     t_commrec *cr);
 /* Initiate MD energy bin and write header to energy file. */

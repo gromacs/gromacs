@@ -253,7 +253,7 @@ extern void init_md(FILE *fplog,
 		    int nfile,t_filenm fnm[],
 		    int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
 		    FILE **fp_dgdl,FILE **fp_field,
-		    t_mdebin **mdebin,t_groups *grps,
+		    t_mdebin **mdebin,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
 		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm);

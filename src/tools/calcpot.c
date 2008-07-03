@@ -247,8 +247,8 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
   init_single(fplog,inputrec,tpx,top,state);
   clear_rvec(mutot);
   init_md(fplog,*cr,inputrec,&t,&t0,&lam,&lam0,
-	  &nrnb,top,NULL,0,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
-	  &mdebin,grps,force_vir,
+	  &nrnb,top,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
+	  &mdebin,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL);
 
   init_groups(fplog,&top->atoms,&(inputrec->opts),grps);  

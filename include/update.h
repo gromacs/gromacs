@@ -121,9 +121,6 @@ extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 
 extern real run_aver(real old,real cur,int step,int nmem);
 
-extern void berendsen_tcoupl_init(t_groups *grps,t_inputrec *ir,
-				  FILE *fplog);
-
 extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
 
 extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,

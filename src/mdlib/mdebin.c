@@ -79,7 +79,7 @@ static char *boxvel_nm[] = {
 static bool bConstr,bConstrVir,bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
 
-t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
+t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
 		      const t_idef *idef,const t_inputrec *ir,
 		      t_commrec *cr)
 {
@@ -231,7 +231,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_groups *grps,const t_atoms *atoms,
     md->ipc  = get_ebin_space(md->ebin,bTricl ? 6 : 3,boxvel_nm);
   }
   md->imu    = get_ebin_space(md->ebin,asize(mu_nm),mu_nm);
-  if (grps->cosacc.cos_accel != 0) {
+  if (ir->cos_accel != 0) {
     md->ivcos = get_ebin_space(md->ebin,asize(vcos_nm),vcos_nm);
     md->ivisc = get_ebin_space(md->ebin,asize(visc_nm),visc_nm);
   }

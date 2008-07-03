@@ -546,7 +546,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   init_md(fplog,cr,ir,&t,&t0,&state_global->lambda,&lam0,
 	  nrnb,top_global,&sd,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
-	  &fp_dgdl,&fp_field,&mdebin,grps,
+	  &fp_dgdl,&fp_field,&mdebin,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
 
   debug_gmx();

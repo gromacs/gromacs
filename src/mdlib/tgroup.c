@@ -102,10 +102,16 @@ void init_groups(FILE *log,t_atoms *atoms,t_grpopts *opts,t_groups *grps)
 #endif
   snew(grps->tcstat,opts->ngtc);
   init_grptcstat(opts->ngtc,grps->tcstat);
+   /* Set Berendsen tcoupl lambda's to 1, 
+   * so runs without Berendsen coupling are not affected.
+   */
+  for(i=0; i<opts->ngtc; i++) {
+    grps->tcstat[i].lambda = 1.0;
+  }
   
   snew(grps->grpstat,opts->ngacc);
   init_grpstat(log,atoms,opts->ngacc,grps->grpstat);
-  
+ 
   init_grpener(log,opts->ngener,&grps->estat);
 }
 

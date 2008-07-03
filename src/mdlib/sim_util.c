@@ -74,6 +74,7 @@
 #include "xvgr.h"
 #include "trnio.h"
 #include "xtcio.h"
+#include "copyrite.h"
 
 #include "mpelogging.h"
 #include "domdec.h"
@@ -1104,7 +1105,7 @@ void init_md(FILE *fplog,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
 	     FILE **fp_dgdl,FILE **fp_field,
-	     t_mdebin **mdebin,t_groups *grps,
+	     t_mdebin **mdebin,
 	     tensor force_vir,tensor shake_vir,rvec mu_tot,
 	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm)
 {
@@ -1142,7 +1143,9 @@ void init_md(FILE *fplog,
     *vcm = init_vcm(fplog,&top->atoms,ir);
   }
    
-  berendsen_tcoupl_init(grps,ir,fplog);
+  if (ir->etc == etcBERENDSEN && EI_DYNAMICS(ir->eI)) {
+    please_cite(fplog,"Berendsen84a");
+  }
  
   init_nrnb(nrnb);
   
@@ -1162,10 +1165,11 @@ void init_md(FILE *fplog,
 	*fp_field = xvgropen(opt2fn("-field",nfile,fnm),
 			     "Applied electric field","Time (ps)",
 			     "E (V/nm)");
-    } else
+    } else {
       *fp_ene = -1;
+    }
 
-    *mdebin = init_mdebin(*fp_ene,grps,&(top->atoms),&(top->idef),ir,cr);
+    *mdebin = init_mdebin(*fp_ene,&(top->atoms),&(top->idef),ir,cr);
   }
   
   /* Initiate variables */  
