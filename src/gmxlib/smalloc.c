@@ -78,7 +78,7 @@ static void log_action(int bMal,char *what,char *file,int line,
 }
 #endif
 
-void *save_malloc(char *name,char *file,int line,int size)
+void *save_malloc(char *name,char *file,int line,unsigned size)
 {
   void *p;
   
@@ -89,7 +89,7 @@ void *save_malloc(char *name,char *file,int line,int size)
     {
       if ((p=malloc(size))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "malloc for %s (%d bytes, file %s, line %d)",
+		  "Not enough memory. Failed to malloc %u bytes for %s\n(called from file %s, line %d)",
 		  name,size,file,line);
       (void) memset(p,0,size);
     }
@@ -114,14 +114,12 @@ void *save_calloc(char *name,char *file,int line,
          a broken calloc, e.g. in -lgmalloc on cray xt3. */
       if ((p=malloc((size_t)nelem*(size_t)elsize))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "calloc for %s (nelem=%d, elsize=%d, file %s"
-		  ", line %d)",name,nelem,elsize,file,line);
+		  "Not enough memory. Failed to calloc %u elements of size %u for %s\n(called from file %s, line %d)",nelem,elsize,name,file,line);
       memset(p, 0,(size_t) (nelem * elsize));
 #else
       if ((p=calloc((size_t)nelem,(size_t)elsize))==NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "calloc for %s (nelem=%d, elsize=%d, file %s"
-		  ", line %d)",name,nelem,elsize,file,line);
+		  "Not enough memory. Failed to calloc %u elements of size %u for %s\n(called from file %s, line %d)",nelem,elsize,name,file,line);
 #endif
     }
 #ifdef DEBUG
@@ -130,9 +128,11 @@ void *save_calloc(char *name,char *file,int line,
   return p;
 }
 
-void *save_realloc(char *name,char *file,int line,void *ptr,unsigned size)
+void *save_realloc(char *name,char *file,int line,void *ptr,
+		   unsigned nelem,unsigned elsize)
 {
   void *p;
+  unsigned long size = nelem*elsize;
   
   p=NULL;
   if (size==0)
@@ -143,10 +143,10 @@ void *save_realloc(char *name,char *file,int line,void *ptr,unsigned size)
 	p=malloc((size_t)size); 
       else 
 	p=realloc(ptr,(size_t)size);
-      if (p==NULL) 
+      if (p == NULL) 
         gmx_fatal(errno,__FILE__,__LINE__,
-		  "realloc for %s (%d bytes, file %s, line %d, %s=0x%8x)",
-		  name,size,file,line,name,ptr);
+		  "Not enough memory. Failed to realloc %u bytes for %s, %s=%x\n(called from file %s, line %d)",
+		  size,name,name,ptr,file,line);
     }
 #ifdef DEBUG
   log_action(1,name,file,line,1,size,p);

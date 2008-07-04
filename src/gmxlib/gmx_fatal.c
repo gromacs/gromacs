@@ -338,6 +338,13 @@ void gmx_fatal(int f_errno,const char *file,int line,const char *fmt,...)
 	for(index=0; (index<(int)strlen(ibuf)); index++)
 	  bputc(msg,&len,ibuf[index]);
 	break;
+      case 'u':
+	ival=va_arg(ap,unsigned);
+	sprintf(ifmt,"%%%du",fld);
+	sprintf(ibuf,ifmt,ival);
+	for(index=0; (index<(int)strlen(ibuf)); index++)
+	  bputc(msg,&len,ibuf[index]);
+	break;
       case 'f':
 	dval=va_arg(ap,double);
 	sprintf(ifmt,"%%%df",fld);

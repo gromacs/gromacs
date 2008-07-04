@@ -111,23 +111,23 @@
 #define snew(ptr,nelem) (ptr)=save_calloc(#ptr,__FILE__,__LINE__,\
 			(nelem),sizeof(*(ptr)))
 #define srenew(ptr,nelem) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
-			(ptr),(nelem)*sizeof(*(ptr)))
+			(ptr),(nelem),sizeof(*(ptr)))
 #define smalloc(ptr,size) (ptr)=save_malloc(#ptr,__FILE__,__LINE__,size)
 #define scalloc(ptr,nelem,elsize)\
 		(ptr)=save_calloc(#ptr,__FILE__,__LINE__,nelem,elsize)
 #define srealloc(ptr,size) (ptr)=save_realloc(#ptr,__FILE__,__LINE__,\
-			(ptr),size)
+			(ptr),size,1)
 #define sfree(ptr) save_free(#ptr,__FILE__,__LINE__,(ptr))
 
 #ifdef CPLUSPLUS 
 extern "C" { 
 #endif
 
-void *save_malloc(char *name,char *file,int line,int size); 
+void *save_malloc(char *name,char *file,int line,unsigned size); 
 void *save_calloc(char *name,char *file,int line,
 		  unsigned nelem,unsigned elsize); 
 void *save_realloc(char *name,char *file,int line,
-		   void *ptr,unsigned size);
+		   void *ptr,unsigned nelem,unsigned elsize);
 void save_free(char *name,char *file,int line, void *ptr);
 unsigned maxavail(void);
 unsigned memavail(void);
