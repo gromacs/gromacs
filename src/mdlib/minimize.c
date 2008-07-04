@@ -331,7 +331,7 @@ void init_em(FILE *fplog,const char *title,
   }
 
   /* Init bin for energy stuff */
-  *mdebin = init_mdebin(*fp_ene,grps,
+  *mdebin = init_mdebin(*fp_ene,
 			&top_global->atoms,&top_global->idef,ir,cr); 
 }
 
