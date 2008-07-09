@@ -86,14 +86,18 @@ typedef struct {
   bool    *bTS;
 } t_grpopts;
 
+enum { epgrppbcNONE, epgrppbcREFAT, epgrppbcCOS };
+
 typedef struct {
   int        nat;      /* Number of atoms in the pull group */
   atom_id    *ind;     /* The global atoms numbers */
   int        nat_loc;  /* Number of local pull atoms */
+  int        nalloc_loc; /* Allocation size for ind_loc and weight_loc */ 
   atom_id    *ind_loc; /* Local pull indices */
   int        nweight;  /* The number of weights (0 or nat) */
   real       *weight;  /* Weights (use all 1 when weight==NULL) */
   real       *weight_loc; /* Weights for the local indices */
+  int        epgrppbc; /* The type of pbc for this pull group, see enum above */
   atom_id    pbcatom;  /* The reference atom for pbc (global number) */
   rvec       vec;      /* The pull vector, direction or position */
   rvec       init;     /* Initial reference displacement */
@@ -119,6 +123,8 @@ typedef struct {
   int        nstfout;     /* Output frequency for pull f */
   int        ePBC;        /* the boundary conditions */
   int        npbcdim;     /* do pbc in dims 0 <= dim < npbcdim */
+  bool       bRefAt;      /* do we need reference atoms for a group COM ? */
+  int        cosdim;      /* dimension for cosine weighting, -1 if none */
   t_pullgrp  *grp;        /* groups to pull/restrain/etc/ */
   t_pullgrp  *dyna;       /* dynamic groups for use with local constraints */
   FILE       *out_x;      /* output file for pull data */

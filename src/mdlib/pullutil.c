@@ -108,14 +108,19 @@ static void pull_set_pbcatoms(t_commrec *cr, t_pull *pull,
 			      t_mdatoms *md, rvec *x,
 			      rvec *x_pbc)
 {
-  int g,n;
-  
+  int g,n,m;
+
   n = 0;
   for(g=0; g<1+pull->ngrp; g++) {
     if ((g==0 && PULL_CYL(pull)) || pull->grp[g].pbcatom == -1) {
       clear_rvec(x_pbc[g]);
     } else {
       pull_set_pbcatom(cr,&pull->grp[g],md,x,x_pbc[g]);
+      for(m=0; m<DIM; m++) {
+	if (pull->dim[m] == 0) {
+	  x_pbc[g][m] = 0.0;
+	}
+      }
       n++;
     }
   }
@@ -230,6 +235,17 @@ static void make_cyl_refgrps(t_commrec *cr,t_pull *pull,t_mdatoms *md,
   }
 }
 
+static double atan2_0_2pi(double y,double x)
+{
+  double a;
+
+  a = atan2(y,x);
+  if (a < 0) {
+    a += 2.0*M_PI;
+  }
+  return a;
+}
+
 /* calculates center of mass of selection index from all coordinates x */
 void pull_calc_coms(t_commrec *cr,
 		    t_pull *pull, t_mdatoms *md, t_pbc *pbc,
@@ -238,18 +254,32 @@ void pull_calc_coms(t_commrec *cr,
   static rvec *rbuf=NULL;
   static dvec *dbuf=NULL;
   int  g,i,ii,m;
-  real mass,w,wm;
+  real mass,w,wm,twopi_box;
   double wmass,wwmass,invwmass;
   dvec com,comp;
+  double cm,sm,cmp,smp,ccm,csm,ssm,csw,snw;
   rvec *xx[2],x_pbc={0,0,0},dx;
   t_pullgrp *pgrp;
 
-  if (rbuf == NULL)
+  if (rbuf == NULL) {
     snew(rbuf,1+pull->ngrp);
-  if (dbuf == NULL)
+  }
+  if (dbuf == NULL) {
     snew(dbuf,3*(1+pull->ngrp));
+  }
 
-  pull_set_pbcatoms(cr,pull,md,x,rbuf);
+  if (pull->bRefAt) {
+    pull_set_pbcatoms(cr,pull,md,x,rbuf);
+  }
+
+  if (pull->cosdim >= 0) {
+    for(m=pull->cosdim+1; m<pull->npbcdim; m++) {
+      if (pbc->box[m][pull->cosdim] != 0) {
+	gmx_fatal(FARGS,"Can not do cosine weighting for trilinic dimensions");
+      }
+    }
+    twopi_box = 2.0*M_PI/pbc->box[pull->cosdim][pull->cosdim];
+  }
   
   for (g=0; g<1+pull->ngrp; g++) {
     pgrp = &pull->grp[g];
@@ -257,8 +287,15 @@ void pull_calc_coms(t_commrec *cr,
     clear_dvec(comp);
     wmass  = 0;
     wwmass = 0;
+    cm  = 0;
+    sm  = 0;
+    cmp = 0;
+    smp = 0;
+    ccm = 0;
+    csm = 0;
+    ssm = 0;
     if (!(g==0 && PULL_CYL(pull))) {
-      if (pgrp->pbcatom >= 0) {
+      if (pgrp->epgrppbc == epgrppbcREFAT) {
 	/* Set the pbc atom */
 	copy_rvec(rbuf[g],x_pbc);
       }
@@ -266,79 +303,129 @@ void pull_calc_coms(t_commrec *cr,
       for(i=0; i<pgrp->nat_loc; i++) {
 	ii = pgrp->ind_loc[i];
 	mass = md->massT[ii];
-	if (pgrp->weight_loc)
-	  w = pgrp->weight_loc[i];
-	wm = w*mass;
-	wmass  += wm;
-	wwmass += wm*w;
-	if (pgrp->pbcatom == -1) {
-	  /* Sum the coordinates */
-	  for(m=0; m<DIM; m++)
-	    com[m] += wm*x[ii][m];
-	} else {
-	  /* Sum the difference with the reference atom */
-	  pbc_dx(pbc,x[ii],x_pbc,dx);
-	  for(m=0; m<DIM; m++)
-	    com[m] += wm*dx[m];
-	}
-	if (xp) {
-	  if (pgrp->pbcatom == -1) {
-	    /* Sum the coordinates */
+	if (pgrp->epgrppbc != epgrppbcCOS) {
+	  if (pgrp->weight_loc) {
+	    w = pgrp->weight_loc[i];
+	  }
+	  wm = w*mass;
+	  wmass  += wm;
+	  wwmass += wm*w;
+	  if (pgrp->epgrppbc == epgrppbcNONE) {
+	    /* Plain COM: sum the coordinates */
 	    for(m=0; m<DIM; m++)
-	      comp[m] += wm*xp[ii][m];
+	      com[m]    += wm*x[ii][m];
+	    if (xp) {
+	      for(m=0; m<DIM; m++)
+		comp[m] += wm*xp[ii][m];
+	    }
 	  } else {
 	    /* Sum the difference with the reference atom */
-	    pbc_dx(pbc,xp[ii],x_pbc,dx);
+	    pbc_dx(pbc,x[ii],x_pbc,dx);
 	    for(m=0; m<DIM; m++)
-	      comp[m] += wm*dx[m];
+	      com[m]    += wm*dx[m];
+	    if (xp) {
+	      pbc_dx(pbc,xp[ii],x_pbc,dx);
+	      for(m=0; m<DIM; m++)
+		comp[m] += wm*dx[m];
+	    }
 	  }
+	} else {
+	  /* Determine cos and sin sums */
+	  csw = cos(x[ii][pull->cosdim]*twopi_box);
+	  snw = sin(x[ii][pull->cosdim]*twopi_box);
+	  cm  += csw*mass;
+	  sm  += snw*mass;
+	  ccm += csw*csw*mass;
+	  csm += csw*snw*mass;
+	  ssm += snw*snw*mass;
+
+	  if (xp) {
+	    csw = cos(xp[ii][pull->cosdim]*twopi_box);
+	    snw = sin(xp[ii][pull->cosdim]*twopi_box);
+	    cmp += csw*mass;
+	    smp += snw*mass;
+ 	  }
 	}
       }
     }
-    copy_dvec(com,dbuf[2*g]);
-    dbuf[2*g+1][0] = wmass;
-    dbuf[2*g+1][1] = wwmass;
-    dbuf[2*g+1][2] = 0;
 
-    if (xp)
-      copy_dvec(comp,dbuf[2*(1+pull->ngrp)+g]);
+    /* Copy local sums to a buffer for global summing */
+    switch (pgrp->epgrppbc) {
+    case epgrppbcNONE:
+    case epgrppbcREFAT:
+      copy_dvec(com,dbuf[g*3]);
+      copy_dvec(comp,dbuf[g*3+1]);
+      dbuf[g*3+2][0] = wmass;
+      dbuf[g*3+2][1] = wwmass;
+      dbuf[g*3+2][2] = 0;
+      break;
+    case epgrppbcCOS:
+      dbuf[g*3  ][0] = cm;
+      dbuf[g*3  ][1] = sm;
+      dbuf[g*3  ][2] = 0;
+      dbuf[g*3+1][0] = ccm;
+      dbuf[g*3+1][1] = csm;
+      dbuf[g*3+1][2] = ssm;
+      dbuf[g*3+2][0] = cmp;
+      dbuf[g*3+2][1] = smp;
+      dbuf[g*3+2][2] = 0;
+      break;
+    }
   }
 
   if (cr && PAR(cr)) {
     /* Sum the contributions over the nodes */
-    gmx_sumd((xp ? 3 : 2)*(1+pull->ngrp)*DIM,dbuf[0],cr);
+    gmx_sumd((1+pull->ngrp)*3*DIM,dbuf[0],cr);
   }
   
   for (g=0; g<1+pull->ngrp; g++) {
     pgrp = &pull->grp[g];
     if (pgrp->nat > 0) {
-      /* Divide by the total mass */
-      wmass  = dbuf[2*g+1][0];
-      wwmass = dbuf[2*g+1][1];
-      invwmass = 1/wmass;
-      /* invtm==0 signals a frozen group, so then we should keep it zero */
-      if (pgrp->invtm > 0) {
+      if (pgrp->epgrppbc != epgrppbcCOS) {
+	/* Determine the inverse mass */
+	wmass  = dbuf[g*3+2][0];
+	wwmass = dbuf[g*3+2][1];
+	invwmass = 1/wmass;
+	/* invtm==0 signals a frozen group, so then we should keep it zero */
+	if (pgrp->invtm > 0) {
+	  pgrp->wscale = wmass/wwmass;
+	  pgrp->invtm  = 1.0/(pgrp->wscale*wmass);
+	}
+	/* Divide by the total mass */
+	for(m=0; m<DIM; m++) {
+	  pgrp->x[m]    = dbuf[g*3  ][m]*invwmass;
+	  if (xp) {
+	    pgrp->xp[m] = dbuf[g*3+1][m]*invwmass;
+	  }
+	  if (pgrp->epgrppbc == epgrppbcREFAT) {
+	    pgrp->x[m]    += rbuf[g][m];
+	    if (xp) {
+	      pgrp->xp[m] += rbuf[g][m];
+	    }
+	  }
+	}
+      } else {
+	/* Determine the optimal location of the cosine weight */
+	csw = dbuf[g*3][0];
+	snw = dbuf[g*3][1];
+	pgrp->x[pull->cosdim] = atan2_0_2pi(snw,csw)/twopi_box;
+	/* Set the weights for the local atoms */
+	wmass = sqrt(csw*csw + snw*snw);
+	wwmass = (dbuf[g*3+1][0]*csw*csw + dbuf[g*3+1][1]*csw*snw + dbuf[g*3+1][2]*snw*snw)/(wmass*wmass);
 	pgrp->wscale = wmass/wwmass;
 	pgrp->invtm  = 1.0/(pgrp->wscale*wmass);
-      }
-      if (debug)
-	fprintf(debug,"pull group %d: wscale %f invtm %f\n",
-		g,pgrp->wscale,pgrp->invtm);
-      for(m=0; m<DIM; m++)
-	pgrp->x[m] = dbuf[2*g][m]*invwmass;
-      if (pgrp->pbcatom >= 0) {
-	/* Add the location of the reference atom */
-	for(m=0; m<DIM; m++)
-	  pgrp->x[m] += rbuf[g][m];
-      }
-      if (xp) {
-	/* Divide by the total mass */
-	for(m=0; m<DIM; m++)
-	  pgrp->xp[m] = dbuf[2*(1+pull->ngrp)+g][m]*invwmass;
-	if (pgrp->pbcatom >= 0) {
-	  /* Add the location of the reference atom */
-	  for(m=0; m<DIM; m++)
-	    pgrp->xp[m] += rbuf[g][m];
+	/* Set the weights for the local atoms */
+	csw *= pgrp->invtm;
+	snw *= pgrp->invtm;
+	for(i=0; i<pgrp->nat_loc; i++) {
+	  ii = pgrp->ind_loc[i];
+	  pgrp->weight_loc[i] = csw*cos(twopi_box*x[ii][pull->cosdim]) +
+				snw*sin(twopi_box*x[ii][pull->cosdim]);
+	}
+	if (xp) {
+	  csw = dbuf[g*3+2][0];
+	  snw = dbuf[g*3+2][1];
+	  pgrp->xp[pull->cosdim] = atan2_0_2pi(snw,csw)/twopi_box;
 	}
       }
     }

@@ -255,10 +255,14 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
 	/* No pbc is required for this group */
 	pgrp->pbcatom = -1;
       } else {
-	if (pgrp->pbcatom > 0)
+	if (pgrp->pbcatom > 0) {
 	  pgrp->pbcatom -= 1;
-	else
+	} else if (pgrp->pbcatom == 0) {
 	  pgrp->pbcatom = pgrp->ind[(pgrp->nat-1)/2];
+	} else {
+	  /* Use cosine weighting */
+	  pgrp->pbcatom = -1;
+	}
       }
 
       if ((pull->eGeom == epullgDIR || pull->eGeom == epullgCYL) &&

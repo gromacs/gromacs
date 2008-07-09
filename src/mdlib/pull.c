@@ -64,8 +64,11 @@ static void pull_print_x(FILE *out,t_pull *pull, real t)
 
   for (g=0; g<1+pull->ngrp; g++) {
     if (pull->grp[g].nat > 0) {
-      for(m=0; m<DIM; m++)
-	fprintf(out,"\t%f",pull->grp[g].x[m]);
+      for(m=0; m<DIM; m++) {
+	if (pull->dim[m]) {
+	  fprintf(out,"\t%f",pull->grp[g].x[m]);
+	}
+      }
     }
   }
   fprintf(out,"\n");
@@ -711,9 +714,17 @@ static void dd_make_local_pull_group(gmx_domdec_t *dd,
       ii = ga2la[pg->ind[i]].a;
       if (ii < md->start+md->homenr) {
 	/* This is a home atom, add it to the local pull group */
+	if (pg->nat_loc >= pg->nalloc_loc) {
+	  pg->nalloc_loc = over_alloc_dd(pg->nat_loc+1);
+	  srenew(pg->ind_loc,pg->nalloc_loc);
+	  if (pg->epgrppbc == epgrppbcCOS || pg->weight) {
+	    srenew(pg->weight_loc,pg->nalloc_loc);
+	  }
+	}
 	pg->ind_loc[pg->nat_loc] = ii;
-	if (pg->weight)
+	if (pg->weight) {
 	  pg->weight_loc[pg->nat_loc] = pg->weight[i];
+	}
 	pg->nat_loc++;
       }
     }
@@ -760,14 +771,18 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   }
 
   if (cr && PAR(cr)) {
-    snew(pg->ind_loc,pg->nat);
-    pg->nat_loc = 0;
-    if (pg->weight)
-      snew(pg->weight_loc,pg->nat);
+    pg->nat_loc    = 0;
+    pg->nalloc_loc = 0;
+    pg->ind_loc    = NULL;
+    pg->weight_loc = NULL;
   } else {
     pg->nat_loc = pg->nat;
     pg->ind_loc = pg->ind;
-    pg->weight_loc = pg->weight;
+    if (pg->epgrppbc == epgrppbcCOS) {
+      snew(pg->weight_loc,pg->nat);
+    } else {
+      pg->weight_loc = pg->weight;
+    }
   }
 
   nfrozen = 0;
@@ -823,6 +838,9 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
     if (pg->weight || EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD) {
       fprintf(fplog,", weighted mass %9.3f",wmass*wmass/wwmass);
     }
+    if (pg->epgrppbc == epgrppbcCOS) {
+      fprintf(fplog,", cosine weighting will be used");
+    }
     fprintf(fplog,"\n");
   }
   
@@ -850,7 +868,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
-  int       g,start=0,end=0;
+  int       g,start=0,end=0,m;
 
   pull = ir->pull;
 
@@ -873,15 +891,40 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   }
 
 
-  if (cr && PARTDECOMP(cr))
+  if (cr && PARTDECOMP(cr)) {
     pd_at_range(cr,&start,&end);
+  }
+  pull->bRefAt = FALSE;
+  pull->cosdim = -1;
   for(g=0; g<pull->ngrp+1; g++) {
     pgrp = &pull->grp[g];
+    pgrp->epgrppbc = epgrppbcNONE;
     if (pgrp->nat > 0) {
+      /* Determine if we need to take PBC into account for calculating
+       * the COM's of the pull groups.
+       */
+      for(m=0; m<pull->npbcdim; m++) {
+	if (pull->dim[m] && pgrp->nat > 1) {
+	  if (pgrp->pbcatom >= 0) {
+	    pgrp->epgrppbc = epgrppbcREFAT;
+	    pull->bRefAt   = TRUE;
+	  } else {
+	    if (pgrp->weight) {
+	      gmx_fatal(FARGS,"Pull groups can not have relative weights and cosine weighting at same time");
+	    }
+	    pgrp->epgrppbc = epgrppbcCOS;
+	    if (pull->cosdim >= 0 && pull->cosdim != m) {
+	      gmx_fatal(FARGS,"Can only use cosine weighting with pulling in one dimension (use mdp option pull_dim)");
+	    }
+	    pull->cosdim = m;
+	  }
+	}
+      }
       /* Set the indices */
       init_pull_group_index(fplog,cr,start,end,g,pgrp,pull->dim,atoms,ir);
-      if (PULL_CYL(pull) && pgrp->invtm == 0)
+      if (PULL_CYL(pull) && pgrp->invtm == 0) {
 	gmx_fatal(FARGS,"Can not have frozen atoms in a cylinder pull group");
+      }
     } else {
       /* Absolute reference, set the inverse mass to zero */
       pgrp->invtm  = 0;
