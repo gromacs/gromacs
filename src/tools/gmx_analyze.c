@@ -297,7 +297,14 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
   int    s,i,j;
   double blav,var;
   char   **leg;
-  real   *tbs,*ybs,rtmp,dens,*fitsig,twooe,tau1_est,fitparm[4];
+  real   *tbs,*ybs,rtmp,dens,*fitsig,twooe,tau1_est,tau_sig;
+  real   fitparm[4];
+
+  if (n < 4) {
+    fprintf(stdout,"The number of points is smaller than 4, can not make an error estimate\n");
+
+    return;
+  }
 
   fp = xvgropen(eefile,"Error estimates","Block size (time)","Error estimate");
   if (bPrintXvgrCodes())
@@ -353,7 +360,18 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
     do {
       i++;
       tau1_est = tbs[i];
-    } while (ybs[i] > twooe*tau1_est && tau1_est*nb_min < (n-1)*dt);
+    } while (i < nbs - 1 && (ybs[i] > ybs[i+1] || ybs[i] > twooe*tau1_est));
+
+    if (ybs[0] > ybs[1]) {
+      fprintf(stdout,"Data set %d has strange time correlations:\n"
+	      "the std. error using single points is larger than that of blocks of 2 points\n"
+	      "The error estimate might be inaccurate, check the fit\n",
+	      s+1);
+      /* Use the total time as tau for the fitting weights */
+      tau_sig = (n - 1)*dt;
+    } else {
+      tau_sig = tau1_est;
+    }
 
     if (debug)
       fprintf(debug,"set %d tau1 estimate %f\n",s+1,tau1_est);
@@ -362,42 +380,66 @@ static void estimate_error(char *eefile,int nb_min,int resol,int n,int nset,
      * also taking the density of points into account.
      */
     for(i=0; i<nbs; i++) {
-      if (i == 0)
+      if (i == 0) {
 	dens = tbs[1]/tbs[0] - 1;
-      else if (i == nbs-1)
+      } else if (i == nbs-1) {
 	dens = tbs[nbs-1]/tbs[nbs-2] - 1;
-      else
+      } else {
 	dens = 0.5*(tbs[i+1]/tbs[i-1] - 1);
-      fitsig[i] = sqrt((tau1_est + tbs[i])/dens);
+      }
+      fitsig[i] = sqrt((tau_sig + tbs[i])/dens);
     }
 
     if (!bSingleExpFit) {
       fitparm[0] = tau1_est;
       fitparm[1] = 0.95;
-      fitparm[2] = min(20*tau1_est,(n-1)*dt);
+      /* We set the initial guess for tau2
+       * to halfway between tau1_est and the total time (on log scale).
+       */
+      fitparm[2] = sqrt(tau1_est*(n-1)*dt);
       do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,0);
       fitparm[3] = 1-fitparm[1];
     }
     if (bSingleExpFit || fitparm[0]<0 || fitparm[2]<0 || fitparm[1]<0
 	|| (fitparm[1]>1 && !bAllowNegLTCorr) || fitparm[2]>(n-1)*dt) {
       if (!bSingleExpFit) {
-	if (fitparm[2]>(n-1)*dt)
+	if (fitparm[2] > (n-1)*dt) {
 	  fprintf(stdout,
 		  "Warning: tau2 is longer than the length of the data (%g)\n"
 		  "         the statistics might be bad\n",
 		  (n-1)*dt);
-	else
+	} else {
 	  fprintf(stdout,"a fitted parameter is negative\n");
+	}
 	fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
 		sig[s]*anal_ee_inf(fitparm,n*dt),
 		fitparm[1],fitparm[0],fitparm[2]);
-	fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
+	/* Do a fit with tau2 fixed at the total time.
+	 * One could also choose any other large value for tau2.
+	 */
+	fitparm[0] = tau1_est;
+	fitparm[1] = 0.95;
+	fitparm[2] = (n-1)*dt;
+	fprintf(stderr,"Will fix tau2 at the total time: %g\n",fitparm[2]);
+	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,4);
+	fitparm[3] = 1-fitparm[1];
       }
-      fitparm[0] = tau1_est;
-      fitparm[1] = 1;
-      fitparm[2] = 0;
-      do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
-      fitparm[3] = 1-fitparm[1];
+      if (bSingleExpFit || fitparm[0]<0 || fitparm[1]<0
+	  || (fitparm[1]>1 && !bAllowNegLTCorr)) {
+	if (!bSingleExpFit) {
+	  fprintf(stdout,"a fitted parameter is negative\n");
+	  fprintf(stdout,"invalid fit:  e.e. %g  a %g  tau1 %g  tau2 %g\n",
+		  sig[s]*anal_ee_inf(fitparm,n*dt),
+		  fitparm[1],fitparm[0],fitparm[2]);
+	}
+	/* Do a single exponential fit */
+	fprintf(stderr,"Will use a single exponential fit for set %d\n",s+1);
+	fitparm[0] = tau1_est;
+	fitparm[1] = 1.0;
+	fitparm[2] = 0.0;
+	do_lmfit(nbs,ybs,fitsig,0,tbs,0,dt*n,bDebugMode(),effnERREST,fitparm,6);
+	fitparm[3] = 1-fitparm[1];
+      }
     }
     fprintf(stdout,"Set %3d:  err.est. %g  a %g  tau1 %g  tau2 %g\n",
 	    s+1,sig[s]*anal_ee_inf(fitparm,n*dt),
