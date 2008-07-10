@@ -176,17 +176,28 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Distance Restraints */
   init_disres(fplog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
 	      top->idef.iparams,inputrec,cr->ms,fcd,state);
-  
-  if (top->idef.il[F_ORIRES].nr) {
-    if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
-      gmx_fatal(FARGS,"Orientation restraints do not work with domain decomposition");
-    } else {
-      /* Orientation restraints */
-      init_orires(fplog,
-		  top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-		  top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
-		  &(fcd->orires),state);
+  if (fcd->disres.nres > 0 && PAR(cr) && !(Flags & MD_PARTDEC)) {
+    /* Temporary check, will be removed when disre is implemented with DD */
+    char *notestr="NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
+    if (fcd->disres.dr_tau != 0 || fcd->disres.nres != fcd->disres.npair) {
+      gmx_fatal(FARGS,"Distance restraint with time averaging or multiple pairs per restraint do not work (yet) with domain decomposition, use particle deomposition (mdrun option -pd)");
     }
+    if (MASTER(cr))
+      fprintf(stderr,"\n%s\n\n",notestr);
+    if (fplog)
+      fprintf(fplog,"%s\n",notestr);
+  }
+
+  if (top->idef.il[F_ORIRES].nr) {
+    /* Temporary check, will be removed when orire is implemented with DD */
+    if (PAR(cr) && !(Flags & MD_PARTDEC)) {
+      gmx_fatal(FARGS,"Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+    }
+    /* Orientation restraints */
+    init_orires(fplog,
+		top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
+		top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
+		&(fcd->orires),state);
   }
   
   if (DEFORM(*inputrec)) {
