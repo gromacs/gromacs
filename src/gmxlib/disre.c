@@ -132,9 +132,9 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
     
     if (dd->npair > 0)
     {
-        fprintf(fplog,
-                "There are %d distance restraints involving %d atom pairs\n",
-                dd->nres,dd->npair);
+        if (fplog) {
+            fprintf(fplog,"There are %d distance restraints involving %d atom pairs\n",dd->nres,dd->npair);
+        }
         if (ms)
         {
             check_multi_int(fplog,ms,fcd->disres.nres,
