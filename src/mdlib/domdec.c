@@ -130,133 +130,133 @@ typedef struct
 } gmx_ddpme_t;
 
 typedef struct gmx_domdec_comm {
-  /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
-   * unless stated otherwise.
-   */
-
-  /* The number of nodes doing PME (PP/PME or only PME) */
-  int  npmenodes;
-  /* The communication setup including the PME only nodes */
-  bool bCartesianPP_PME;
-  ivec ntot;
-  int  cartpmedim;
-  int  *pmenodes;          /* size npmenodes                         */
-  int  *ddindex2simnodeid; /* size npmenodes, only with bCartesianPP
-			    * but with bCartesianPP_PME              */
-    gmx_ddpme_t ddpme[2];
-
-  /* The DD particle-particle nodes only */
-  /* The communication setup within the communicator all */
-#ifdef GMX_MPI
-  MPI_Comm all;
-#endif
-  bool bCartesianPP;
-  int  *ddindex2ddnodeid; /* size npmenode, only with bCartesianPP_PME */
-
-  /* How to communicate for constraints and vsites */
-  bool bSendRecv2;
-
-  /* Should we sort the cgs */
-  int  nstSortCG;
-  gmx_domdec_sort_t *sort;
-  bool bFilled_nsgrid_home;
-
-  /* Are there bonded and multi-body interactions between charge groups? */
-  bool bInterCGBondeds;
-  bool bInterCGMultiBody;
-
-  /* Cell sizes for static load balancing, first index cartesian */
-  real **slb_frac;
-  /* Cell sizes for determining the PME communication with SLB */
-  real *pme_dim_f;
+    /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
+     * unless stated otherwise.
+     */
     
-  /* The width of the communicated boundaries */
-  real cutoff_mbody;
-  real cutoff;
-  /* The minimum cell size (including triclinic correction) */
-  rvec cellsize_min;
-  /* The lower limit for the DD cell size with DLB */
-  real cellsize_limit;
-
-  /* Orthogonal vectors for triclinic cells, Cartesian index */
-  rvec v[DIM][DIM];
-
-  /* The old location of the cell boundaries, to check cg displacements */
-  rvec old_cell_x0;
-  rvec old_cell_x1;
-
-  /* The cell boundaries of neighboring cells for dynamic load balancing */
-  real **cell_d1;
-  real ***cell_d2;
-
-  /* The coordinate/force communication setup and indices */
-  gmx_domdec_comm_dim_t cd[DIM];
-  /* The maximum number of cells to communicate with in one dimension */
-  int  maxpulse;
-
-  /* Which cg distribution is stored on the master node */
-  int master_cg_ddp_count;
-
-  /* The number of cg's received from the direct neighbors */
-  int  cell_ncg1[DD_MAXCELL];
-
-  /* The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
-  int  nat[ddnatNR];
-
-  /* Communication buffer for general use */
-  int  *buf_int;
-  int  nalloc_int;
-
-  /* Communication buffers only used with multiple grid pulses */
-  int  *buf_int2;
-  int  nalloc_int2;
-  rvec *buf_vr2;
-  int  nalloc_vr2;
-
-  /* Communication buffers for local redistribution */
-  int  **cggl_flag;
-  int  cggl_flag_nalloc[DIM*2];
-  rvec **cgcm_state;
-  int  cgcm_state_nalloc[DIM*2];
-  rvec *buf_vr;
-  int  nalloc_vr;
-
-  /* Cell sizes for dynamic load balancing */
-  gmx_domdec_root_t **root;
-  real *cell_f_row;
-  real cell_f0[DIM];
-  real cell_f1[DIM];
-  real cell_f_max0[DIM];
-  real cell_f_min1[DIM];
-
-  /* Stuff for load communication */
-  bool bRecordLoad;
-  gmx_domdec_load_t *load;
+    /* The number of nodes doing PME (PP/PME or only PME) */
+    int  npmenodes;
+    /* The communication setup including the PME only nodes */
+    bool bCartesianPP_PME;
+    ivec ntot;
+    int  cartpmedim;
+    int  *pmenodes;          /* size npmenodes                         */
+    int  *ddindex2simnodeid; /* size npmenodes, only with bCartesianPP
+                              * but with bCartesianPP_PME              */
+    gmx_ddpme_t ddpme[2];
+    
+    /* The DD particle-particle nodes only */
+    /* The communication setup within the communicator all */
 #ifdef GMX_MPI
-  MPI_Comm *mpi_comm_load;
+    MPI_Comm all;
 #endif
-  /* Cycle counters */
-  float cycl[ddCyclNr];
-  int   cycl_n[ddCyclNr];
-  /* Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
-  int eFlop;
-  double flop;
-  int    flop_n;
-  /* Have we measured the load? */
-  bool bHaveLoad;
-  /* Have we printed the load at least once? */
-  bool bFirstPrinted;
-
-  /* Statistics */
-  double sum_nat[ddnatNR-ddnatZONE];
-  int    ndecomp;
-  int    nload;
-  double load_step;
-  double load_sum;
-  double load_max;
-  ivec   load_lim;
-  double load_mdf;
-  double load_pme;
+    bool bCartesianPP;
+    int  *ddindex2ddnodeid; /* size npmenode, only with bCartesianPP_PME */
+    
+    /* How to communicate for constraints and vsites */
+    bool bSendRecv2;
+    
+    /* Should we sort the cgs */
+    int  nstSortCG;
+    gmx_domdec_sort_t *sort;
+    bool bFilled_nsgrid_home;
+    
+    /* Are there bonded and multi-body interactions between charge groups? */
+    bool bInterCGBondeds;
+    bool bInterCGMultiBody;
+    
+    /* Cell sizes for static load balancing, first index cartesian */
+    real **slb_frac;
+    /* Cell sizes for determining the PME communication with SLB */
+    real *pme_dim_f;
+    
+    /* The width of the communicated boundaries */
+    real cutoff_mbody;
+    real cutoff;
+    /* The minimum cell size (including triclinic correction) */
+    rvec cellsize_min;
+    /* The lower limit for the DD cell size with DLB */
+    real cellsize_limit;
+    
+    /* Orthogonal vectors for triclinic cells, Cartesian index */
+    rvec v[DIM][DIM];
+    
+    /* The old location of the cell boundaries, to check cg displacements */
+    rvec old_cell_x0;
+    rvec old_cell_x1;
+    
+    /* The cell boundaries of neighboring cells for dynamic load balancing */
+    real **cell_d1;
+    real ***cell_d2;
+    
+    /* The coordinate/force communication setup and indices */
+    gmx_domdec_comm_dim_t cd[DIM];
+    /* The maximum number of cells to communicate with in one dimension */
+    int  maxpulse;
+    
+    /* Which cg distribution is stored on the master node */
+    int master_cg_ddp_count;
+    
+    /* The number of cg's received from the direct neighbors */
+    int  cell_ncg1[DD_MAXCELL];
+    
+    /* The atom counts, the range for each type t is nat[t-1] <= at < nat[t] */
+    int  nat[ddnatNR];
+    
+    /* Communication buffer for general use */
+    int  *buf_int;
+    int  nalloc_int;
+    
+    /* Communication buffers only used with multiple grid pulses */
+    int  *buf_int2;
+    int  nalloc_int2;
+    rvec *buf_vr2;
+    int  nalloc_vr2;
+    
+    /* Communication buffers for local redistribution */
+    int  **cggl_flag;
+    int  cggl_flag_nalloc[DIM*2];
+    rvec **cgcm_state;
+    int  cgcm_state_nalloc[DIM*2];
+    rvec *buf_vr;
+    int  nalloc_vr;
+    
+    /* Cell sizes for dynamic load balancing */
+    gmx_domdec_root_t **root;
+    real *cell_f_row;
+    real cell_f0[DIM];
+    real cell_f1[DIM];
+    real cell_f_max0[DIM];
+    real cell_f_min1[DIM];
+    
+    /* Stuff for load communication */
+    bool bRecordLoad;
+    gmx_domdec_load_t *load;
+#ifdef GMX_MPI
+    MPI_Comm *mpi_comm_load;
+#endif
+    /* Cycle counters */
+    float cycl[ddCyclNr];
+    int   cycl_n[ddCyclNr];
+    /* Flop counter (0=no,1=yes,2=with (eFlop-1)*5% noise */
+    int eFlop;
+    double flop;
+    int    flop_n;
+    /* Have we measured the load? */
+    bool bHaveLoad;
+    /* Have we printed the load at least once? */
+    bool bFirstPrinted;
+    
+    /* Statistics */
+    double sum_nat[ddnatNR-ddnatZONE];
+    int    ndecomp;
+    int    nload;
+    double load_step;
+    double load_sum;
+    double load_max;
+    ivec   load_lim;
+    double load_mdf;
+    double load_pme;
 } gmx_domdec_comm_t;
 
 /* The size per charge group of the cggl_flag buffer in gmx_domdec_comm_t */
@@ -299,7 +299,7 @@ static int nstDDDump,nstDDDumpGrid;
 /* Factor to account for pressure scaling during nstlist steps */
 #define DD_PRES_SCALE_MARGIN 1.02
 
-#define DD_CELL_F_SIZE(dd,di) ((dd)->nc[(dd)->dim[(di)]]+1+(di)*2+1)
+#define DD_CELL_F_SIZE(dd,di) ((dd)->nc[(dd)->dim[(di)]]+1+(di)*2+1+(di))
 
 
 /*
@@ -1690,6 +1690,12 @@ static void init_ddpme(gmx_domdec_t *dd,gmx_ddpme_t *ddpme,
     
     ddpme->dim	 = dim;
     ddpme->nslab = nslab;
+
+    if (nslab <= 1)
+    {
+        return;
+    }
+
     nso = dd->comm->npmenodes/nslab;
     /* Determine for each PME slab the PP locacation range for dimension dim */
     snew(ddpme->pp_min,nslab);
@@ -2142,7 +2148,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         root->cell_f[pos++] = comm->cell_f1[d1];
     }
     
-    if (d == 0 && comm->npmenodes > 0)
+    if (comm->npmenodes > 0 && d <= 1)
     {
         /* The master determines the maximum shift for
          * the coordinate communication between separate PME nodes.
@@ -2151,6 +2157,10 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                          bUniform,box,root->cell_f);
     }
     root->cell_f[pos++] = comm->ddpme[0].maxshift;
+    if (d >= 1)
+    {
+        root->cell_f[pos++] = comm->ddpme[1].maxshift;
+    }
 }    
 
 static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
@@ -2188,6 +2198,10 @@ static void distribute_dd_cell_sizes_dlb(gmx_domdec_t *dd,
     }
     /* Convert the communicated shift from float to int */
     comm->ddpme[0].maxshift = (int)(cell_f_row[pos++] + 0.5);
+    if (d >= 1)
+    {
+        comm->ddpme[1].maxshift = (int)(cell_f_row[pos++] + 0.5);
+    }
 }
 
 static void set_dd_cell_sizes_dlb(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
