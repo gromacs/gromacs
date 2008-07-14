@@ -406,7 +406,7 @@ static int sid_comp(const void *a,const void *b)
 }
 
 static int mk_grey(int nnodes,egCol egc[],t_graph *g,int *AtomI,
-		   t_sid sid[])
+		   int maxsid,t_sid sid[])
 {
   int  j,ng,ai,aj,g0;
 
@@ -424,6 +424,8 @@ static int mk_grey(int nnodes,egCol egc[],t_graph *g,int *AtomI,
       egc[aj] = egcolGrey;
 
       /* Check whether this one has been set before... */
+      range_check(aj+g0,0,maxsid);
+      range_check(ai+g0,0,maxsid);
       if (sid[aj+g0].sid != -1) 
 	gmx_fatal(FARGS,"sid[%d]=%d, sid[%d]=%d, file %s, line %d",
 		    ai,sid[ai+g0].sid,aj,sid[aj+g0].sid,__FILE__,__LINE__);
@@ -451,7 +453,7 @@ static int first_colour(int fC,egCol Col,t_graph *g,egCol egc[])
   return -1;
 }
 
-static int mk_sblocks(FILE *fp,t_graph *g,t_sid sid[])
+static int mk_sblocks(FILE *fp,t_graph *g,int maxsid,t_sid sid[])
 {
   int    ng,nnodes;
   int    nW,nG,nB;		/* Number of Grey, Black, White	*/
@@ -491,6 +493,7 @@ static int mk_sblocks(FILE *fp,t_graph *g,t_sid sid[])
     
     /* Make the first white node grey, and set the block number */
     egc[fW]        = egcolGrey;
+    range_check(fW+g0,0,maxsid);
     sid[fW+g0].sid = nblock++;
     nG++;
     nW--;
@@ -514,7 +517,7 @@ static int mk_sblocks(FILE *fp,t_graph *g,t_sid sid[])
       /* Make all the neighbours of this black node grey
        * and set their block number
        */
-      ng=mk_grey(nnodes,egc,g,&fG,sid);
+      ng=mk_grey(nnodes,egc,g,&fG,maxsid,sid);
       /* ng is the number of white nodes made grey */
       nG+=ng;
       nW-=ng;
@@ -568,7 +571,8 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
   }
   for(i=at_start; (i<at_end); i++) {
     isid = sid[i].sid;
-    if (isid >= 0) {
+    range_check(isid,-1,nsid);
+    if (nsid >= 0) {
       ms[isid].first = min(ms[isid].first,sid[i].atom);
       ms[isid].last  = max(ms[isid].last,sid[i].atom);
     }
@@ -617,7 +621,9 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
   for(k=n=0; (k<nsid); k++) {
     sblock->index[k+1] = sblock->index[k] + ms[k].last - ms[k].first+1;
     for(j=ms[k].first; (j<=ms[k].last); j++) {
+      range_check(n,0,sblock->nra);
       sblock->a[n++] = j;
+      range_check(j,0,at_end);
       if (sid[j].sid == -1)
 	sid[j].sid = k;
       else 
@@ -633,7 +639,7 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
   assert(n == natoms);
   */
   sblock->nra = n;
-  sblock->index[k+1] = sblock->nra;
+  assert(sblock->index[k] == sblock->nra);
   sfree(ms);
   
   return nsid;
@@ -656,7 +662,7 @@ void gen_sblocks(FILE *fp,int at_start,int at_end,
     sid[i].atom =  i;
     sid[i].sid  = -1;
   }
-  nsid=mk_sblocks(fp,g,sid);
+  nsid=mk_sblocks(fp,g,at_end,sid);
 
   if (!nsid)
     return;
@@ -731,7 +737,7 @@ static t_blocka block2blocka(t_block *block)
   blocka.nra = block->index[block->nr];
   blocka.nalloc_a = blocka.nra;
   snew(blocka.a,blocka.nalloc_a);
-  for(i=0; i<=blocka.nra; i++)
+  for(i=0; i<blocka.nra; i++)
     blocka.a[i] = i;
 
   return blocka;
