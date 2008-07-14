@@ -975,7 +975,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bV   = do_per_step(step,ir->nstvout);
     bF   = do_per_step(step,ir->nstfout);
     bXTC = do_per_step(step,ir->nstxtcout);
-    if ((bNS || bLastStep) && step > ir->init_step && !bRerunMD) {
+    if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD &&
+	(!PAR(cr) || DOMAINDECOMP(cr))) {
       bCPT = (chkpt > 0 || bLastStep);
       chkpt = 0;
     } else {
