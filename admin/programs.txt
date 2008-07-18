@@ -120,7 +120,8 @@ END
 HEAD|Protein specific analysis
 do_dssp|assigns secondary structure and calculates solvent accessible surface area
 g_chi|calculates everything you want to know about chi and other dihedrals
-g_helix|calculates everything you want to know about helices
+g_helix|calculates basic properties of alpha helices
+g_helixorient|calculates local rise/bending/rotation/orientation inside helices
 g_rama|computes Ramachandran plots
 xrama|shows animated Ramachandran plots
 wheel|plots helical wheels
