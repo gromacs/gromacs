@@ -46,7 +46,7 @@ extern "C"
  * gmx_types.h /Erik 2005-12-10
  */
 
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__)) && \
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
      (defined(__i386__) || defined(__x86_64__)))
 /* x86 or x86-64 with GCC inline assembly */
 typedef unsigned long long 
@@ -180,7 +180,7 @@ gmx_cycles_t;
  *       one when later linking to the library it might happen that the 
  *       library supports cyclecounters but not the headers, or vice versa.
  */  
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__)) && \
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
      (defined(__i386__) || defined(__x86_64__)))
 static __inline__ int gmx_cycles_have_counter(void)
 { 
@@ -314,7 +314,7 @@ static int gmx_cycles_have_counter(void)
 *  the difference between two gmx_cycles_t values returned from this 
 *  routine.
 */
-#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__)) && \
+#if ((defined(__GNUC__) || defined(__INTEL_COMPILER) || defined(__PATHSCALE__) || defined(__PGIC__)) && \
      (defined(__i386__) || defined(__x86_64__)))
 static __inline__ gmx_cycles_t gmx_cycles_read(void)
 { 
