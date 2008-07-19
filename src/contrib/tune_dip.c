@@ -93,7 +93,7 @@ typedef struct {
   real    J0_0,Chi0_0,w_0,J0_1,Chi0_1,w_1,fc,hfac,hfac0;
   bool    bFixENH,bOptHfac;
   void    *eem;
-  gmx_atomprop_t aps;
+  gmx_atomprop_t atomprop;
   t_commrec *cr;
 } t_moldip;
 

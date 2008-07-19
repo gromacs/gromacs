@@ -1,5 +1,4 @@
-/* slater_S_int2.h (c) 2008 Paul J. van Maaren and David van der Spoel
- * Use the functions by indexing with the Slater index - 1
+/* slater_integrals.h (c) 2008 Paul J. van Maaren and David van der Spoel
  */
 
 #define SLATER_MAX 5
