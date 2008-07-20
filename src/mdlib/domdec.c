@@ -3430,7 +3430,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
     fprintf(fplog,"\n");
     fprintf(stderr,"\n");
 
-    if (lossf >= 5) {
+    if (lossf >= 0.05) {
       sprintf(buf,
 	      "NOTE: %.1f %% performance was lost due to load imbalance\n"
 	      "      in the domain decomposition.\n",lossf*100);
