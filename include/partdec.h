@@ -114,4 +114,7 @@ extern void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
 extern bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 				  t_comm_vsites *vsitecomm);
 
+extern t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global);
+/* Generate a local state struct from the global one */
+
 #endif

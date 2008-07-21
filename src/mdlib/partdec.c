@@ -49,6 +49,7 @@
 #include "ns.h"
 #include "partdec.h"
 #include "splitter.h"
+#include "gmx_random.h"
 
 typedef struct gmx_partdec {
   int  neighbor[2];             /* The nodeids of left and right neighb */
@@ -622,4 +623,39 @@ bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,
 
   return found;
 #undef BUFLEN
+}
+
+t_state *partdec_init_local_state(t_commrec *cr,t_state *state_global)
+{
+  t_state *state_local;
+
+  snew(state_local,1);
+
+  /* Copy all the contents */
+  *state_local = *state_global;
+
+  /* With stochastic dynamics we need local storage for the random state */
+  if (state_local->flags & (1<<estLD_RNG)) {
+    state_local->nrng = gmx_rng_n();
+    snew(state_local->ld_rng,state_local->nrng);
+#ifdef GMX_MPI
+    MPI_Scatter(state_global->ld_rng,
+		state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+		state_local->ld_rng ,
+		state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+		MASTERRANK(cr),cr->mpi_comm_mygroup);
+#endif
+  }
+  if (state_local->flags & (1<<estLD_RNGI)) {
+    snew(state_local->ld_rngi,1);
+#ifdef GMX_MPI
+    MPI_Scatter(state_global->ld_rngi,
+		sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+		state_local->ld_rngi,
+		sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+		MASTERRANK(cr),cr->mpi_comm_mygroup);
+#endif
+  }
+
+  return state_local;
 }

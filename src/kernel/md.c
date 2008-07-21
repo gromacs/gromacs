@@ -208,7 +208,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (opt2bSet("-cpi",nfile,fnm)) {
     if (SIMMASTER(cr)) {
       /* Read the state from the checkpoint file */
-      read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,cr,ddxyz,
+      read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
+		      cr,Flags & MD_PARTDEC,ddxyz,
 		      inputrec->eI,&i,&t,state,&bReadRNG);
     }
     if (PAR(cr)) {
@@ -586,7 +587,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
   } else {
     top = top_global;
-    state = state_global;
+    state = partdec_init_local_state(cr,state_global);
     f_global = f;
 
     if (PARTDECOMP(cr)) {
@@ -975,8 +976,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bV   = do_per_step(step,ir->nstvout);
     bF   = do_per_step(step,ir->nstfout);
     bXTC = do_per_step(step,ir->nstxtcout);
-    if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD &&
-	(!PAR(cr) || DOMAINDECOMP(cr))) {
+    if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD) {
       bCPT = (chkpt > 0 || bLastStep);
       chkpt = 0;
     } else {
@@ -985,8 +985,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (bX || bV || bF || bXTC || bCPT) {
       wallcycle_start(wcycle,ewcTRAJ);
-      if (sd && bCPT)
+      if (sd && bCPT) {
 	get_stochd_state(sd,state);
+      }
       write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,fn_cpt,bCPT,
 		 top_global,ir->eI,step,t,state,state_global,f,f_global);
       debug_gmx();
