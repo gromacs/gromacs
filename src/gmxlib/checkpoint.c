@@ -436,7 +436,6 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
         {
             nppnodes  = cr->nnodes;
             npmenodes = 0;
-            gmx_fatal(FARGS,"write_checkpoint not supported with particle decomposition");
         }
     }
     else
@@ -531,7 +530,7 @@ static void check_string(FILE *fplog,char *type,char *p,char *f,bool *mm)
 static void check_match(FILE *fplog,
                         char *version,
                         char *btime,char *buser,char *bmach,char *fprog,
-                        t_commrec *cr,int npp_f,int npme_f,
+                        t_commrec *cr,bool bPartDecomp,int npp_f,int npme_f,
                         ivec dd_nc,ivec dd_nc_f)
 {
     int  npp;
@@ -547,6 +546,12 @@ static void check_match(FILE *fplog,
     
     npp = cr->nnodes - cr->npmenodes;
     check_int   (fplog,"#PP-nodes"   ,npp          ,npp_f      ,&mm);
+    if (bPartDecomp)
+    {
+        dd_nc[XX] = 1;
+        dd_nc[YY] = 1;
+        dd_nc[ZZ] = 1;
+    }
     if (npp == npp_f)
     {
         check_int (fplog,"#PME-nodes"  ,cr->npmenodes,npme_f     ,&mm);
@@ -566,7 +571,8 @@ static void check_match(FILE *fplog,
     }
 }
 
-void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
+void read_checkpoint(char *fn,FILE *fplog,
+                     t_commrec *cr,bool bPartDecomp,ivec dd_nc,
                      int eIntegrator,int *step,double *t,
                      t_state *state,bool *bReadRNG)
 {
@@ -635,7 +641,11 @@ void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
         }
     }
 
-    if (cr->nnodes == nppnodes_f + npmenodes_f)
+    if (bPartDecomp)
+    {
+        nppnodes = cr->nnodes;
+    }
+    else if (cr->nnodes == nppnodes_f + npmenodes_f)
     {
         if (cr->npmenodes < 0)
         {
@@ -687,7 +697,7 @@ void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
         if (MASTER(cr))
         {
             check_match(fplog,version,btime,buser,bmach,fprog,
-                        cr,nppnodes_f,npmenodes_f,dd_nc,dd_nc_f);
+                        cr,bPartDecomp,nppnodes_f,npmenodes_f,dd_nc,dd_nc_f);
         }
     }
     do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,nppnodes_f,state,*bReadRNG,

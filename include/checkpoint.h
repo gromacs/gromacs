@@ -51,7 +51,8 @@ extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 /* Read a checkpoint from fn for run contiunation.
  * Generates a fatal error on size mismatch.
  */
-extern void read_checkpoint(char *fn,FILE *fplog,t_commrec *cr,ivec dd_nc,
+extern void read_checkpoint(char *fn,FILE *fplog,
+			    t_commrec *cr,bool bPartDec,ivec dd_nc,
 			    int eIntegrator,int *step,double *t,
 			    t_state *state,bool *bReadRNG);
 
