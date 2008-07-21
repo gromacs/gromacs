@@ -95,7 +95,7 @@ extern t_forcetable make_tables(FILE *fp,const t_forcerec *fr,
  * to .xvg files
  */
  
-extern bondedtable_t make_bonded_table(FILE *fplog,char *fn,bool angle);
+extern bondedtable_t make_bonded_table(FILE *fplog,char *fn,int angle);
 /* Return a table for bonded interactions,
  * angle should be: bonds 0, angles 1, dihedrals 2
  */
