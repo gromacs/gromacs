@@ -88,35 +88,6 @@ extern void dd_force_flop_start(gmx_domdec_t *dd,t_nrnb *nrnb);
 extern void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb);
 /* Stop the force flop count */
 
-enum {
-  ddForward,ddBackward
-};
-
-extern void dd_sendrecv_int(const gmx_domdec_t *dd,
-			    int ddim,int direction,
-			    int *buf_s,int n_s,
-			    int *buf_r,int n_r);
-
-extern void dd_sendrecv_rvec(const gmx_domdec_t *dd,
-			     int ddim,int direction,
-			     rvec *buf_s,int n_s,
-			     rvec *buf_r,int n_r);
-/* Move data (int/rvec) one cell in decomposition dimension ddim
- * over the DD grid.
- * For direction see the enum above.
- */
-
-extern void dd_sendrecv2_rvec(const gmx_domdec_t *dd,
-			      int ddim,
-			      rvec *buf_s_fw,int n_s_fw,
-			      rvec *buf_r_fw,int n_r_fw,
-			      rvec *buf_s_bw,int n_s_bw,
-			      rvec *buf_r_bw,int n_r_bw);
-/* Move data (rvec) forward and backward 
- * one cell in decomposition dimension ddim over the DD grid.
- * If possible, this is done simultaneously.
- */
-
 extern void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[]);
 /* buf should should have size natoms (of the whole system)
  * although in most cases far less will be used.
@@ -128,9 +99,6 @@ extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
-
-extern void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data);
-/* Broadcasts nbytes bytes from the DD master nodes to all DD nodes */
 
 extern void dd_partition_system(FILE            *fplog,
 				int             step,

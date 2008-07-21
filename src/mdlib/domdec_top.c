@@ -6,6 +6,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "domdec.h"
+#include "domdec_network.h"
 #include "names.h"
 #include "network.h"
 #include "vec.h"

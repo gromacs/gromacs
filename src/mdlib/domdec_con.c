@@ -6,6 +6,7 @@
 #include "vec.h"
 #include "constr.h"
 #include "domdec.h"
+#include "domdec_network.h"
 
 typedef struct {
   int nsend;
@@ -101,7 +102,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       spas = &spac->spas[d][0];
       n -= spas->nrecv;
       /* Send and receive the coordinates */
-      dd_sendrecv_rvec(dd,d,ddForward,
+      dd_sendrecv_rvec(dd,d,dddirForward,
 		       f+n,spas->nrecv,spac->vbuf,spas->nsend);
       /* Sum the buffer into the required forces */
       if (dd->bScrewPBC && dd->dim[d] == XX &&
@@ -253,12 +254,12 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
       }
       /* Send and receive the coordinates */
       if (nvec == 1) {
-	dd_sendrecv_rvec(dd,d,ddBackward,
+	dd_sendrecv_rvec(dd,d,dddirBackward,
 			 spac->vbuf,spas->nsend,x0+n,spas->nrecv);
       } else {
 	/* Communicate both vectors in one buffer */
 	rbuf = spac->vbuf2;
-	dd_sendrecv_rvec(dd,d,ddBackward,
+	dd_sendrecv_rvec(dd,d,dddirBackward,
 			 spac->vbuf,2*spas->nsend,rbuf,2*spas->nrecv);
 	/* Split the buffer into the two vectors */
 	nr = spas[0].nrecv;
@@ -343,7 +344,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
       ndir = 1;
     for(dir=0; dir<ndir; dir++) {
       /* Communicate the number of indices */
-      dd_sendrecv_int(dd,d,dir==0 ? ddForward : ddBackward,
+      dd_sendrecv_int(dd,d,dir==0 ? dddirForward : dddirBackward,
 		      nsend,2,spac->nreq[d][dir],2);
       nr = spac->nreq[d][dir][1];
       if (nlast+nr > spac->ind_req_nalloc) {
@@ -351,7 +352,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	srenew(spac->ind_req,spac->ind_req_nalloc);
       }
       /* Communicate the indices */
-      dd_sendrecv_int(dd,d,dir==0 ? ddForward : ddBackward,
+      dd_sendrecv_int(dd,d,dir==0 ? dddirForward : dddirBackward,
 		      spac->ind_req,nsend[1],spac->ind_req+nlast,nr);
       nlast += nr;
     }
@@ -426,7 +427,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	spac->bSendAtom[spas->a[i]] = FALSE;
       /* Send and receive the number of indices to communicate */
       nsend[1] = spas->nsend;
-      dd_sendrecv_int(dd,d,dir==0 ? ddBackward : ddForward,
+      dd_sendrecv_int(dd,d,dir==0 ? dddirBackward : dddirForward,
 		      nsend,2,buf,2);
       if (debug) {
 	fprintf(debug,"Send to node %d, %d (%d) indices, "
@@ -446,7 +447,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	srenew(dd->gatindex,dd->gatindex_nalloc);
       }
       /* Send and receive the indices */
-      dd_sendrecv_int(dd,d,dir==0 ? ddBackward : ddForward,
+      dd_sendrecv_int(dd,d,dir==0 ? dddirBackward : dddirForward,
 		      spac->ibuf,spas->nsend,
 		      dd->gatindex+nat_tot_specat,spas->nrecv);
       nat_tot_specat += spas->nrecv;

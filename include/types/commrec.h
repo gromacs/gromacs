@@ -91,6 +91,12 @@ typedef struct {
    * defined in dd->comm in domdec.c
    */
   int  nnodes;
+#ifdef GMX_MPI
+  MPI_Comm mpi_comm_all;
+#endif
+  /* Use MPI_Sendrecv communication instead of non-blocking calls */
+  bool bSendRecv2;
+  /* The local DD cell index and rank */
   ivec ci;
   int  rank;
   ivec master_ci;

@@ -21,6 +21,7 @@ coulomb.h \
 dihre.h \
 disre.h \
 domdec.h \
+domdec_network.h \
 do_fit.h \
 ebin.h \
 edsam.h \
