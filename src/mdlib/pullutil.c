@@ -254,7 +254,7 @@ void pull_calc_coms(t_commrec *cr,
   static rvec *rbuf=NULL;
   static dvec *dbuf=NULL;
   int  g,i,ii,m;
-  real mass,w,wm,twopi_box;
+  real mass,w,wm,twopi_box=0;
   double wmass,wwmass,invwmass;
   dvec com,comp;
   double cm,sm,cmp,smp,ccm,csm,ssm,csw,snw;
