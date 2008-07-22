@@ -1,7 +1,5 @@
-/* slater_integrals.h (c) 2008 Paul J. van Maaren and David van der Spoel
- */
-
-#define SLATER_MAX 5
+/* slater_integrals.cpp (c) 2008 Paul J. van Maaren and David van der Spoel */
+#define SLATER_MAX 6
 
 #ifdef __cplusplus
 extern "C"
