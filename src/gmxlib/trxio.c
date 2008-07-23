@@ -542,6 +542,7 @@ static int xyz_first_x(FILE *status, real *t, rvec **x, matrix box)
 static bool pdb_next_x(FILE *status,t_trxframe *fr)
 {
   t_atoms   atoms;
+  matrix    boxpdb;
   int       ePBC,model_nr,na;
   char      title[STRLEN],*time;
   double    dbl;
@@ -551,14 +552,17 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
   atoms.pdbinfo=NULL;
   /* the other pointers in atoms should not be accessed if these are NULL */
   model_nr=NOTSET;
-  na=read_pdbfile(status,title,&model_nr,&atoms,fr->x,&ePBC,fr->box,TRUE,NULL);
+  na=read_pdbfile(status,title,&model_nr,&atoms,fr->x,&ePBC,boxpdb,TRUE,NULL);
   set_trxframe_ePBC(fr,ePBC);
   if (nframes_read()==0)
     fprintf(stderr," '%s', %d atoms\n",title, fr->natoms);
   fr->bPrec = TRUE;
   fr->prec = 10000;
   fr->bX = TRUE;
-  fr->bBox = fr->box[XX][XX] == 0;
+  fr->bBox = (boxpdb[XX][XX] != 0.0);
+  if (fr->bBox) {
+    copy_mat(boxpdb,fr->box);
+  }
   
   if (model_nr!=NOTSET) {
     fr->bStep = TRUE;
@@ -578,7 +582,7 @@ static bool pdb_next_x(FILE *status,t_trxframe *fr)
     else
       fr->time=(real)nframes_read();
   }
-  if (na==0) {
+  if (na == 0) {
     return FALSE;
   } else { 
     if (na != fr->natoms)
