@@ -764,7 +764,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   step = ir->init_step;
   step_rel = 0;
 
-  bLastStep = (!bRerunMD && step_rel > ir->nsteps);
+  bLastStep = (bRerunMD || step_rel > ir->nsteps);
   while (!bLastStep || (bRerunMD && bNotLastFrame)) {
 
     wallcycle_start(wcycle,ewcSTEP);
