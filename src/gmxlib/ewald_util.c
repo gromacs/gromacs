@@ -367,8 +367,8 @@ real ewald_LRcorrection(FILE *fplog,
     enercorr = *vcharge + *vdip - VselfA - Vexcl;
    } else {
     VselfB = ewc*one_4pi_eps*q2sumB/sqrt(M_PI);
-    *vcharge = L1*Vcharge[0]+lambda*Vcharge[1];
-    *vdip    = L1*Vdipole[0]+lambda*Vdipole[1];
+    *vcharge = L1*Vcharge[0] + lambda*Vcharge[1];
+    *vdip    = L1*Vdipole[0] + lambda*Vdipole[1];
     enercorr = *vcharge + *vdip - (L1*VselfA + lambda*VselfB) - Vexcl;
     *dvdlambda += Vdipole[1] + Vcharge[1] - VselfB
       - (Vdipole[0] + Vcharge[0] - VselfA) - dvdl_excl;
@@ -383,9 +383,10 @@ real ewald_LRcorrection(FILE *fplog,
     if (MASTER(cr)) {
       fprintf(debug,"Total charge correction: Vcharge=%g\n",
 	      L1*Vcharge[0]+lambda*Vcharge[1]);
-      if (epsilon_surface>0)
+      if (epsilon_surface > 0 || ewald_geometry == eewg3DC) {
 	fprintf(debug,"Total dipole correction: Vdipole=%g\n",
 		L1*Vdipole[0]+lambda*Vdipole[1]);
+      }
     }
   }
     
