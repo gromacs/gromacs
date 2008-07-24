@@ -48,6 +48,12 @@ extern void bcast_ir_top(const t_commrec *cr,
 /* Broadcasts ir and top from the master to all nodes in cr->mpi_comm_mygroup.
  */
 
+extern void bcast_state_setup(const t_commrec *cr,t_state *state);
+/* Broadcasts the state sizes and flags
+ * from the master to all nodes in cr->mpi_comm_mygroup.
+ * The arrays are not broadcasted.
+ */
+
 extern void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc);
 /* Broadcasts state from the master to all nodes in cr->mpi_comm_mygroup.
  * The arrays in state are allocated when bAlloc is TRUE.

@@ -446,7 +446,12 @@ void please_cite(FILE *fp,char *key)
       "B. J. Palmer",
       "Transverse-current autocorrelation-function calculations of the shear viscosity for molecular liquids",
       "Phys. Rev. E",
-      49, 1994, "359-366" }
+      49, 1994, "359-366" },
+    { "Bussi2007a",
+      "G. Bussi, D. Donadio and M. Parrinello",
+      "Canonical sampling through velocity rescaling",
+      "J. Chem. Phys.",
+      126, 2007, "014101" }
   };
 #define NSTR (int)asize(citedb)
   

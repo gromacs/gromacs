@@ -270,14 +270,14 @@ void init_gtc_state(t_state *state,int ngtc)
   state->ngtc = ngtc;
   if (state->ngtc > 0) {
     snew(state->nosehoover_xi, state->ngtc);
-    snew(state->nosehoover_ixi,state->ngtc);
+    snew(state->therm_integral,state->ngtc);
     for(i=0; i<state->ngtc; i++) {
       state->nosehoover_xi[i]  = 0.0;
-      state->nosehoover_ixi[i] = 0.0;
+      state->therm_integral[i] = 0.0;
     }
   } else {
     state->nosehoover_xi  = NULL;
-    state->nosehoover_ixi = NULL;
+    state->therm_integral = NULL;
   }
 }
 

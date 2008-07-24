@@ -360,7 +360,7 @@ static void exchange_state(const gmx_multisim_t *ms,int b,t_state *state)
   exchange_rvecs(ms,b,state->boxv,DIM);
   exchange_rvecs(ms,b,state->pres_prev,DIM);
   exchange_reals(ms,b,state->nosehoover_xi,state->ngtc);
-  exchange_doubles(ms,b,state->nosehoover_ixi,state->ngtc);
+  exchange_doubles(ms,b,state->therm_integral,state->ngtc);
   exchange_rvecs(ms,b,state->x,state->natoms);
   exchange_rvecs(ms,b,state->v,state->natoms);
   exchange_rvecs(ms,b,state->sd_X,state->natoms);

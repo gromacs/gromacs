@@ -47,13 +47,13 @@
 #include "network.h"
 #include "force.h"
 #include "pull.h"
+#include "gmx_random.h"
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_stochd *gmx_stochd_t;
 
 /* Initialize the stochastic dynamics struct */
-extern gmx_stochd_t init_stochd(FILE *fplog,
-				int eI,int ngtc,real tau_t[],real dt,int seed);
+extern gmx_stochd_t init_stochd(FILE *fplog,t_inputrec *ir);
 
 /* Store the random state from sd in state */
 extern void get_stochd_state(gmx_stochd_t sd,t_state *state);
@@ -130,6 +130,14 @@ extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
 extern real nosehoover_energy(t_grpopts *opts,t_groups *grps,
 			      real *xi,double *ixi);
 /* Returns the Nose-Hoover contribution to the conserved energy */
+
+extern void vrescale_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+			    double therm_integral[],
+			    gmx_rng_t rng);
+/* Compute temperature scaling. For V-rescale it is done in update. */
+
+extern real vrescale_energy(t_grpopts *opts,double therm_integral[]);
+/* Returns the V-rescale contribution to the conserved energy */
 
 /* Set reference temp for simulated annealing at time t*/
 extern void update_annealing_target_temp(t_grpopts *opts,real t); 

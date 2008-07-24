@@ -189,7 +189,8 @@ t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
     else if (i == F_COM_PULL)
       bEner[i] = (ir->ePull == epullUMBRELLA || ir->ePull == epullCONST_F);
     else if (i == F_ECONSERVED)
-      bEner[i] = (ir->etc == etcNOSEHOOVER && ir->epc == epcNO);
+      bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
+		  ir->epc == epcNO);
     else
       bEner[i] = (idef->il[i].nr > 0);
   }

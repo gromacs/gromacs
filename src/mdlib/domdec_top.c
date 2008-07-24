@@ -986,7 +986,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
    * in the global and local state for the random numbers.
    */
   if (state_local->flags & (1<<estLD_RNG)) {
-    if (DDMASTER(dd)) {
+    if (DDMASTER(dd) && state_global->nrngi > 1) {
       state_global->nrng = dd->nnodes*gmx_rng_n();
       srenew(state_global->ld_rng,state_global->nrng);
     }
@@ -994,7 +994,7 @@ void dd_init_local_state(gmx_domdec_t *dd,
     snew(state_local->ld_rng,state_local->nrng);
   }
   if (state_local->flags & (1<<estLD_RNGI)) {
-    if (DDMASTER(dd)) {
+    if (DDMASTER(dd) && state_global->nrngi > 1) {
       srenew(state_global->ld_rngi,dd->nnodes);
     }
     snew(state_local->ld_rngi,1);

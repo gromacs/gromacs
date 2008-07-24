@@ -258,7 +258,7 @@ particle is calculated as mass/<b><A HREF="#tc">tau_t</A></b>.</dd>
 for stochastic and Brownian dynamics.
 When <b>ld_seed</b> is set to -1, the seed is calculated as
 <tt>(time() + getpid()) % 1000000</tt>.
-When running on multiple processors, each processor uses a seed equal
+When running BD or SD on multiple processors, each processor uses a seed equal
 to <b>ld_seed</b> plus the processor number.</dd>
 </dl>
 
@@ -770,6 +770,13 @@ ensemble. The reference temperature and coupling groups are selected
 as above, but in this case <b>tau_t</b> [ps] controls the period
 of the temperature fluctuations at equilibrium, which is slightly
 different from a relaxation time.</dd>
+<dt><b>v-rescale</b></dt>
+<dd>Temperature coupling using velocity rescaling with a stochastic term
+(JCP 126, 014101).
+This thermostat is similar to Berendsen coupling, with the same scaling
+using <b>tau_t</b>, but the stochastic term ensures that a proper
+canonical ensemble is generated. The random seed is set with
+<b><A HREF="#ld">ld_seed</A></b>.
 </dl></dd>
 
 <dt><h4>tc_grps:</h4></dt>

@@ -48,7 +48,7 @@
  * since that affects the checkpoint (.cpt) file format.
  */
 enum { estLAMBDA,
-       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estNH_IXI,
+       estBOX, estBOX_REL, estBOXV, estPRES_PREV, estNH_XI,  estTC_INT,
        estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
        estORIRE_INITF, estORIRE_DTAV,
@@ -72,6 +72,7 @@ typedef struct
   int           natoms;
   int           ngtc;
   int           nrng;
+  int           nrngi;
   int           flags;  /* Flags telling which entries are present      */
   real          lambda; /* the free energy switching parameter          */
   matrix 	box;    /* box vector coordinates                      	*/
@@ -79,7 +80,7 @@ typedef struct
   matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
   real          *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
-  double        *nosehoover_ixi; /* for Nose-Hoover tcoupl (ngtc)       */
+  double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
   int           nalloc; /* Allocation size for x, v and sd_x when !=NULL*/
   rvec          *x;     /* the coordinates (natoms)                     */
   rvec          *v;     /* the velocities (natoms)                      */

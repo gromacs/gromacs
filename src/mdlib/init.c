@@ -92,12 +92,17 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
   if (ir->eI == eiCG) {
     state->flags |= (1<<estCGP);
   }
-  if (EI_SD(ir->eI) || ir->eI == eiBD) {
-    /* This will be correct later with DD */
-    state->nrng  = nnodes*gmx_rng_n();
+  if (EI_SD(ir->eI) || ir->eI == eiBD || ir->etc == etcVRESCALE) {
+    state->nrng  = gmx_rng_n();
+    state->nrngi = 1;
+    if (EI_SD(ir->eI) || ir->eI == eiBD) {
+      /* This will be correct later with DD */
+      state->nrng  *= nnodes;
+      state->nrngi *= nnodes;
+    }
     state->flags |= ((1<<estLD_RNG) | (1<<estLD_RNGI));
-    snew(state->ld_rng,nnodes*state->nrng);
-    snew(state->ld_rngi,nnodes);
+    snew(state->ld_rng, state->nrng);
+    snew(state->ld_rngi,state->nrngi);
   } else {
     state->nrng = 0;
   }
@@ -113,7 +118,10 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
       state->flags |= (1<<estPRES_PREV);
     }
     if (ir->etc == etcNOSEHOOVER) {
-      state->flags |= ((1<<estNH_XI) | (1<<estNH_IXI));
+      state->flags |= (1<<estNH_XI);
+    }
+    if (ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) {
+      state->flags |= (1<<estTC_INT);
     }
   }
 }
@@ -151,7 +159,7 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   }
   bcast_ir_top(cr,inputrec,top);
 
-  if (!EI_TPI(inputrec->eI)) {
+  if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */
     inputrec->ld_seed += cr->nodeid;
   }

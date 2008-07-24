@@ -1134,17 +1134,21 @@ void init_md(FILE *fplog,
 
   *bNEMD = (ir->opts.ngacc > 1) || (norm(ir->opts.acc[0]) > 0);
   
-  if (sd && (ir->eI == eiBD || EI_SD(ir->eI))) {
-    *sd = init_stochd(fplog,ir->eI,ir->opts.ngtc,ir->opts.tau_t,ir->delta_t,
-		      ir->ld_seed);
+  if (sd && (ir->eI == eiBD || EI_SD(ir->eI) || ir->etc == etcVRESCALE)) {
+    *sd = init_stochd(fplog,ir);
   }
 
   if (vcm) {
     *vcm = init_vcm(fplog,&top->atoms,ir);
   }
    
-  if (ir->etc == etcBERENDSEN && EI_DYNAMICS(ir->eI)) {
-    please_cite(fplog,"Berendsen84a");
+  if (EI_DYNAMICS(ir->eI)) {
+    if (ir->etc == etcBERENDSEN) {
+      please_cite(fplog,"Berendsen84a");
+    }
+    if (ir->etc == etcVRESCALE) {
+      please_cite(fplog,"Bussi2007a");
+    }
   }
  
   init_nrnb(nrnb);

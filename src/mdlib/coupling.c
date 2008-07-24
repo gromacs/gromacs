@@ -47,6 +47,7 @@
 #include "gmx_fatal.h"
 #include "txtdump.h"
 #include "nrnb.h"
+#include "gmx_random.h"
 
 /* 
  * This file implements temperature and pressure coupling algorithms:
@@ -435,7 +436,53 @@ real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi,double *ixi)
 
   return ener_nh;
 }
- 
+
+void vrescale_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+		     double therm_integral[],
+		     gmx_rng_t rng)
+{
+  int    i;
+  real   Ek,Ek_ref1,Ek_ref,dEk_Beren,dEk_stoch,dEk; 
+
+  for(i=0; (i<opts->ngtc); i++) {
+    Ek = trace(grps->tcstat[i].ekinh);
+    
+    if ((opts->tau_t[i] > 0) && (Ek > 0.0)) {
+      Ek_ref1   = 0.5*opts->ref_t[i]*BOLTZ;
+      Ek_ref    = Ek_ref1*opts->nrdf[i];
+      dEk_Beren = (Ek_ref - Ek)*dt/opts->tau_t[i];
+      dEk_stoch = 2*sqrt(Ek*Ek_ref1*dt/opts->tau_t[i])*gmx_rng_gaussian_table(rng);
+      dEk       = dEk_Beren + dEk_stoch;
+      if (Ek + dEk <= 0) {
+	grps->tcstat[i].lambda = 0.0;
+      } else {
+	grps->tcstat[i].lambda = sqrt((Ek + dEk)/Ek);
+      }
+      therm_integral[i] -= dEk;
+
+      if (debug) {
+	fprintf(debug,"TC: group %d: Ekr %g, Ek %g, dEk %g + %g, Lambda: %g\n",
+		i,Ek_ref,Ek,dEk_Beren,dEk_stoch,grps->tcstat[i].lambda);
+      }
+    } else {
+       grps->tcstat[i].lambda = 1.0;
+    }
+  }
+}
+
+real vrescale_energy(t_grpopts *opts,double therm_integral[])
+{
+  int i;
+  real ener;
+
+  ener = 0;
+  for(i=0; i<opts->ngtc; i++) {
+    ener += therm_integral[i];
+  }
+  
+  return ener;
+}
+
 /* set target temperatures if we are annealing */
 void update_annealing_target_temp(t_grpopts *opts,real t)
 {

@@ -259,28 +259,31 @@ static void do_update_visc(int start,int homenr,double dt,
   }
 }
 
-gmx_stochd_t init_stochd(FILE *fplog,
-			 int eI,int ngtc,real tau_t[],real dt,int seed)
+gmx_stochd_t init_stochd(FILE *fplog,t_inputrec *ir)
 {
   t_gmx_stochd *sd;
   gmx_sd_const_t *sdc;
-  int  n;
+  int  ngtc,n;
   real y;
 
   snew(sd,1);
 
-  /* Initiate random number generator for langevin type dynamics */
-  sd->gaussrand = gmx_rng_init(seed);
+  /* Initiate random number generator for langevin type dynamics,
+   * for BD, SD or velocity rescaling temperature coupling.
+   */
+  sd->gaussrand = gmx_rng_init(ir->ld_seed);
 
-  if (eI == eiBD) {
+  ngtc = ir->opts.ngtc;
+
+  if (ir->eI == eiBD) {
     snew(sd->bd_rf,ngtc);
-  } else if (EI_SD(eI)) {
+  } else if (EI_SD(ir->eI)) {
     snew(sd->sdc,ngtc);
     snew(sd->sdsig,ngtc);
     
     sdc = sd->sdc;
     for(n=0; n<ngtc; n++) {
-      sdc[n].gdt = dt/tau_t[n];
+      sdc[n].gdt = ir->delta_t/ir->opts.tau_t[n];
       sdc[n].eph = exp(sdc[n].gdt/2);
       sdc[n].emh = exp(-sdc[n].gdt/2);
       sdc[n].em  = exp(-sdc[n].gdt);
@@ -742,12 +745,20 @@ void update(FILE         *fplog,
    * the previous step, since grps->tcstat[i].Th is only updated
    * when the energies have been summed.
    */
-  if (inputrec->etc == etcBERENDSEN) {
+  switch (inputrec->etc) {
+  case etcNO:
+    break;
+  case etcBERENDSEN:
     berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
-  }
-  if (inputrec->etc == etcNOSEHOOVER && !bInitStep) {
+    break;
+  case etcNOSEHOOVER:
     nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
-		      state->nosehoover_xi,state->nosehoover_ixi);
+		      state->nosehoover_xi,state->therm_integral);
+    break;
+  case etcVRESCALE:
+    vrescale_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
+		    state->therm_integral,sd->gaussrand);
+    break;
   }
   /* We can always pcoupl, even if we did not sum the energies
    * the previous step, since state->pres_prev is only updated

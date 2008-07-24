@@ -269,23 +269,25 @@ void write_traj(FILE *fplog,t_commrec *cr,
       if (state_local->flags & (1<<estX))   MX(state_global->x);
       if (state_local->flags & (1<<estV))   MX(state_global->v);
       if (state_local->flags & (1<<estSDX)) MX(state_global->sd_X);
-      if (state_local->flags & (1<<estLD_RNG)) {
+      if (state_global->nrngi > 1) {
+	if (state_local->flags & (1<<estLD_RNG)) {
 #ifdef GMX_MPI
-	MPI_Gather(state_local->ld_rng ,
-		   state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
-		   state_global->ld_rng,
-		   state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
-		   MASTERRANK(cr),cr->mpi_comm_mygroup);
+	  MPI_Gather(state_local->ld_rng ,
+		     state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+		     state_global->ld_rng,
+		     state_local->nrng*sizeof(state_local->ld_rng[0]),MPI_BYTE,
+		     MASTERRANK(cr),cr->mpi_comm_mygroup);
 #endif
-      }
-      if (state_local->flags & (1<<estLD_RNGI)) {
+	}
+	if (state_local->flags & (1<<estLD_RNGI)) {
 #ifdef GMX_MPI
-	MPI_Gather(state_local->ld_rngi,
-		   sizeof(state_local->ld_rngi[0]),MPI_BYTE,
-		   state_global->ld_rngi,
-		   sizeof(state_local->ld_rngi[0]),MPI_BYTE,
-		   MASTERRANK(cr),cr->mpi_comm_mygroup);
+	  MPI_Gather(state_local->ld_rngi,
+		     sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+		     state_global->ld_rngi,
+		     sizeof(state_local->ld_rngi[0]),MPI_BYTE,
+		     MASTERRANK(cr),cr->mpi_comm_mygroup);
 #endif
+	}
       }
     } else {
       if (bX || bXTC) MX(state_global->x);

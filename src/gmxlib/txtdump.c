@@ -134,7 +134,7 @@ void pr_ivec_block(FILE *fp,int indent,const char *title,int vec[],int n, bool b
             else
             {
                 (void) pr_indent(fp,indent);
-                (void) fprintf(fp,"%s[%d - %d] = %d - %d\n",
+                (void) fprintf(fp,"%s[%d,...,%d] = {%d,...,%d}\n",
                                title,
                                bShowNumbers?i:-1,
                                bShowNumbers?j-1:-1,

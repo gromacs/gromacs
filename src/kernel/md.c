@@ -271,10 +271,13 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* For domain decomposition we allocate dynamically
      * in dd_partition_system.
      */
-    if (!DOMAINDECOMP(cr)) {
+    if (DOMAINDECOMP(cr)) {
+      bcast_state_setup(cr,state);
+    } else {
       if (PAR(cr)) {
-	if (!MASTER(cr))
+	if (!MASTER(cr)) {
 	  snew(state,1);
+	}
 	bcast_state(cr,state,TRUE);
 
 	if (!EI_TPI(inputrec->eI))
@@ -1123,10 +1126,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       nabnsb = natoms_beyond_ns_buffer(ir,fr,&top->cgs,*scale_tot,state->x);
     }
 
-    if (MASTER(cr) && (cpt_period <= 0 || 
-		       time(NULL) - start_t >= nchkpt*cpt_period*60.0)) {
-      if (chkpt == 0)
+    if (MASTER(cr) && (cpt_period >= 0 &&
+		       (cpt_period == 0 || 
+			time(NULL) - start_t >= nchkpt*cpt_period*60.0))) {
+      if (chkpt == 0) {
 	nchkpt++;
+      }
       chkpt = 1;
     }
 
@@ -1201,11 +1206,21 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       
       ener[F_ETOT] = ener[F_EPOT] + ener[F_EKIN];
       
-      if (ir->etc == etcNOSEHOOVER)
+      switch (ir->etc) {
+      case etcNO:
+      case etcBERENDSEN:
+	break;
+      case etcNOSEHOOVER:
 	ener[F_ECONSERVED] =
 	  ener[F_ETOT] + nosehoover_energy(&(ir->opts),grps,
 					   state->nosehoover_xi,
-					   state->nosehoover_ixi);
+					   state->therm_integral);
+	break;
+      case etcVRESCALE:
+	ener[F_ECONSERVED] =
+	  ener[F_ETOT] + vrescale_energy(&(ir->opts),state->therm_integral);
+	break;
+      }
       
       if ((state->flags & (1<<estPRES_PREV)) &&
 	  (bGStat || ir->nstlist<=1 || step%ir->nstlist==0)) {

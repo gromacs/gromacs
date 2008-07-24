@@ -159,17 +159,24 @@ static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
   bc_grps(cr,atoms->grps);
 }
 
+void bcast_state_setup(const t_commrec *cr,t_state *state)
+{
+  block_bc(cr,state->natoms);
+  block_bc(cr,state->ngtc);
+  block_bc(cr,state->nrng);
+  block_bc(cr,state->nrngi);
+  block_bc(cr,state->flags);
+}
+
 void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 {
   int i;
 
+  bcast_state_setup(cr,state);
+
   if (MASTER(cr)) {
     bAlloc = FALSE;
   }
-
-  block_bc(cr,state->natoms);
-  block_bc(cr,state->ngtc);
-  block_bc(cr,state->flags);
   if (bAlloc) {
     state->nalloc = state->natoms;
   }
@@ -182,13 +189,13 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
       case estBOXV:    block_bc(cr,state->boxv); break;
       case estPRES_PREV: block_bc(cr,state->pres_prev); break;
       case estNH_XI:   nblock_abc(cr,state->ngtc,state->nosehoover_xi); break;
-      case estNH_IXI:  nblock_abc(cr,state->ngtc,state->nosehoover_ixi); break;
+      case estTC_INT:  nblock_abc(cr,state->ngtc,state->therm_integral); break;
       case estX:       nblock_abc(cr,state->natoms,state->x); break;
       case estV:       nblock_abc(cr,state->natoms,state->v); break;
       case estSDX:     nblock_abc(cr,state->natoms,state->sd_X); break;
       case estCGP:     nblock_abc(cr,state->natoms,state->cg_p); break;
-      case estLD_RNG:  break;
-      case estLD_RNGI: break;
+      case estLD_RNG:  if (state->nrngi == 1) nblock_abc(cr,state->natoms,state->ld_rng); break;
+      case estLD_RNGI: if (state->nrngi == 1) nblock_abc(cr,state->natoms,state->ld_rngi); break;
       case estDISRE_INITF: block_bc(cr,state->hist.disre_initf); break;
       case estDISRE_RM3TAV:
 	block_bc(cr,state->hist.ndisrepairs);

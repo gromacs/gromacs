@@ -289,8 +289,8 @@ static const ivec dd_cp1[dd_cp1n] = {{0,0,2}};
 static int nstDDDump,nstDDDumpGrid;
 
 /* Factors used to avoid problems due to rounding issues */
-#define DD_CELL_MARGIN       1.00001
-#define DD_CELL_MARGIN2      1.000005
+#define DD_CELL_MARGIN       1.0001
+#define DD_CELL_MARGIN2      1.00005
 /* Factor to account for pressure scaling during nstlist steps */
 #define DD_PRES_SCALE_MARGIN 1.02
 
@@ -1001,9 +1001,9 @@ void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs_gl,t_state *state_local,
 
 
 void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
-		      t_state *state_local,t_state *state)
+                      t_state *state_local,t_state *state)
 {
-    int i;
+    int est,i;
     
     if (DDMASTER(dd))
     {
@@ -1014,14 +1014,14 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
         for(i=0; i<state_local->ngtc; i++)
         {
             state->nosehoover_xi[i]  = state_local->nosehoover_xi[i];
-            state->nosehoover_ixi[i] = state_local->nosehoover_ixi[i];
+            state->therm_integral[i] = state_local->therm_integral[i];
         }
     }
-    for(i=estX; i<estNR; i++)
+    for(est=estX; est<estNR; est++)
     {
-        if (state_local->flags & (1<<i))
+        if (state_local->flags & (1<<est))
         {
-            switch (i) {
+            switch (est) {
             case estX:
                 dd_collect_vec(dd,cgs_gl,state_local,state_local->x,state->x);
                 break;
@@ -1035,12 +1035,35 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
                 dd_collect_vec(dd,cgs_gl,state_local,state_local->cg_p,state->cg_p);
                 break;
             case estLD_RNG:
-                dd_gather(dd,state_local->nrng*sizeof(state->ld_rng[0]),
-                          state_local->ld_rng,state->ld_rng);
+                if (state->nrngi == 1)
+                {
+                    if (DDMASTER(dd))
+                    {
+                        for(i=0; i<state_local->nrng; i++)
+                        {
+                            state->ld_rng[i] = state_local->ld_rng[i];
+                        }
+                    }
+                }
+                else
+                {
+                    dd_gather(dd,state_local->nrng*sizeof(state->ld_rng[0]),
+                              state_local->ld_rng,state->ld_rng);
+                }
                 break;
             case estLD_RNGI:
-                dd_gather(dd,sizeof(state->ld_rngi[0]),
-                          state_local->ld_rngi,state->ld_rngi);
+                if (state->nrngi == 1)
+                {
+                   if (DDMASTER(dd))
+                    {
+                        state->ld_rngi[0] = state_local->ld_rngi[0];
+                    } 
+                }
+                else
+                {
+                    dd_gather(dd,sizeof(state->ld_rngi[0]),
+                              state_local->ld_rngi,state->ld_rngi);
+                }
                 break;
             case estDISRE_INITF:
             case estDISRE_RM3TAV:
@@ -1217,8 +1240,8 @@ static void dd_distribute_vec(gmx_domdec_t *dd,t_block *cgs,rvec *v,rvec *lv)
 }
 
 static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
-				t_state *state,t_state *state_local,
-				rvec **f,rvec **buf)
+                                t_state *state,t_state *state_local,
+                                rvec **f,rvec **buf)
 {
     int  i;
     
@@ -1230,7 +1253,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
         copy_mat(state->boxv,state_local->boxv);
         for(i=0; i<state_local->ngtc; i++)
         {
-            state_local->nosehoover_xi[i] = state->nosehoover_xi[i];
+            state_local->nosehoover_xi[i]  = state->nosehoover_xi[i];
+            state_local->therm_integral[i] = state->therm_integral[i];
         }
     }
     dd_bcast(dd,sizeof(real),&state_local->lambda);
@@ -1238,6 +1262,8 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
     dd_bcast(dd,sizeof(state_local->box_rel),state_local->box_rel);
     dd_bcast(dd,sizeof(state_local->boxv),state_local->boxv);
     dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->nosehoover_xi);
+    dd_bcast(dd,state_local->ngtc*sizeof(real),state_local->therm_integral);
+
     if (dd->nat_home > state_local->nalloc)
     {
         dd_realloc_state(state_local,f,buf,dd->nat_home);
@@ -1260,12 +1286,30 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
                 dd_distribute_vec(dd,cgs,state->cg_p,state_local->cg_p);
                 break;
             case estLD_RNG:
-                dd_scatter(dd,state_local->nrng*sizeof(state_local->ld_rng[0]),
-                           state->ld_rng,state_local->ld_rng);
+                if (state->nrngi == 1)
+                {
+                    dd_bcastc(dd,
+                              state_local->nrng*sizeof(state_local->ld_rng[0]),
+                              state->ld_rng,state_local->ld_rng);
+                }
+                else
+                {
+                    dd_scatter(dd,
+                               state_local->nrng*sizeof(state_local->ld_rng[0]),
+                               state->ld_rng,state_local->ld_rng);
+                }
                 break;
             case estLD_RNGI:
-                dd_scatter(dd,sizeof(state_local->ld_rngi[0]),
-                           state->ld_rngi,state_local->ld_rngi);
+                if (state->nrngi == 1)
+                {
+                    dd_bcastc(dd,sizeof(state_local->ld_rngi[0]),
+                              state->ld_rngi,state_local->ld_rngi);
+                }
+                else
+                {
+                     dd_scatter(dd,sizeof(state_local->ld_rngi[0]),
+                               state->ld_rngi,state_local->ld_rngi);
+                }   
                 break;
             case estDISRE_INITF:
             case estDISRE_RM3TAV:
@@ -3182,7 +3226,7 @@ static int dd_redistribute_cg(FILE *fplog,int step,
     int  sbuf[2],rbuf[2];
     int  home_pos_cg,home_pos_at,ncg_stay_home,buf_pos;
     int  flag;
-    bool bV,bSDX,bCGP;
+    bool bV=FALSE,bSDX=FALSE,bCGP=FALSE;
     bool bScrew;
     ivec tric_dir,dev;
     real inv_ncg,pos_d;

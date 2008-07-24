@@ -29,7 +29,7 @@ const char *est_names[estNR]=
 {
     "FE-lambda",
     "box", "box-rel", "box-v", "pres_prev",
-    "nosehoover-xi", "nosehoover-xi-integral",
+    "nosehoover-xi", "thermostat-integral",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
     "orire_initf", "orire_Dtav"
@@ -360,7 +360,7 @@ static int do_cpt_header(XDR *xd,bool bRead,
 }
 
 static int do_cpt_state(XDR *xd,bool bRead,
-                        int fflags,int nppnodes,t_state *state,
+                        int fflags,t_state *state,
                         bool bReadRNG,FILE *list)
 {
     int  sflags;
@@ -392,12 +392,12 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estBOXV:   do_cpte_matrix(xd,i,sflags,state->boxv,list); break;
             case estPRES_PREV: do_cpte_matrix(xd,i,sflags,state->pres_prev,list); break;
             case estNH_XI:  do_cpte_reals (xd,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
-            case estNH_IXI: do_cpte_doubles(xd,i,sflags,state->ngtc,&state->nosehoover_ixi,list); break;
+            case estTC_INT: do_cpte_doubles(xd,i,sflags,state->ngtc,&state->therm_integral,list); break;
             case estX:      do_cpte_rvecs (xd,i,sflags,state->natoms,&state->x,list); break;
             case estV:      do_cpte_rvecs (xd,i,sflags,state->natoms,&state->v,list); break;
             case estSDX:    do_cpte_rvecs (xd,i,sflags,state->natoms,&state->sd_X,list); break;
             case estLD_RNG: do_cpte_ints  (xd,i,sflags,state->nrng,rng_p,list); break;
-            case estLD_RNGI: do_cpte_ints (xd,i,sflags,nppnodes,rngi_p,list); break;
+            case estLD_RNGI: do_cpte_ints (xd,i,sflags,state->nrngi,rngi_p,list); break;
             case estDISRE_INITF:  do_cpte_real (xd,i,sflags,&state->hist.disre_initf,list); break;
             case estDISRE_RM3TAV: do_cpte_reals(xd,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
             case estORIRE_INITF:  do_cpte_real (xd,i,sflags,&state->hist.orire_initf,list); break;
@@ -471,8 +471,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
                   &eIntegrator,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
                   &state->natoms,&state->ngtc,&state->flags,NULL);
-    do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,
-                 nppnodes,state,TRUE,NULL);
+    do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL);
     gmx_fio_close(fp);
     
     sfree(ftime);
@@ -700,8 +699,7 @@ void read_checkpoint(char *fn,FILE *fplog,
                         cr,bPartDecomp,nppnodes_f,npmenodes_f,dd_nc,dd_nc_f);
         }
     }
-    do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,nppnodes_f,state,*bReadRNG,
-                 NULL);
+    do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,state,*bReadRNG,NULL);
     gmx_fio_close(fp);
     
     sfree(fprog);
@@ -724,8 +722,7 @@ static void low_read_checkpoint_state(int fp,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,step,t,&nppnodes,dd_nc,&npme,
                   &state->natoms,&state->ngtc,&state->flags,NULL);
-    do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,nppnodes,state,bReadRNG,
-                 NULL);
+    do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
     
     sfree(fprog);
     sfree(ftime);
@@ -803,8 +800,7 @@ void list_checkpoint(char *fn,FILE *out)
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&step,&t,&nppnodes,dd_nc,&npme,
                   &state.natoms,&state.ngtc,&state.flags,out);
-    do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,nppnodes-npme,&state,TRUE,
-                 out);
+    do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
     gmx_fio_close(fp);
     
     done_state(&state);
