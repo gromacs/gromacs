@@ -5,6 +5,7 @@
 #include <config.h>
 #endif
 
+#include <string.h>
 #include "domdec_network.h"
 
 #ifdef GMX_MPI
@@ -151,6 +152,18 @@ void dd_bcast(gmx_domdec_t *dd,int nbytes,void *data)
 {
 #ifdef GMX_MPI
     MPI_Bcast(data,nbytes,MPI_BYTE,
+              DDMASTERRANK(dd),dd->mpi_comm_all);
+#endif
+}
+
+void dd_bcastc(gmx_domdec_t *dd,int nbytes,void *src,void *dest)
+{
+    if (DDMASTER(dd))
+    {
+        memcpy(dest,src,nbytes);
+    }
+#ifdef GMX_MPI
+    MPI_Bcast(dest,nbytes,MPI_BYTE,
               DDMASTERRANK(dd),dd->mpi_comm_all);
 #endif
 }

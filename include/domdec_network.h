@@ -58,6 +58,10 @@ dd_sendrecv2_rvec(const gmx_domdec_t *dd,
 extern void
 dd_bcast(gmx_domdec_t *dd,int nbytes,void *data);
 
+/* Copies src to dest on the master node and then broadcasts */
+extern void
+dd_bcastc(gmx_domdec_t *dd,int nbytes,void *src,void *dest);
+
 extern void
 dd_scatter(gmx_domdec_t *dd,int nbytes,void *src,void *dest);
 
