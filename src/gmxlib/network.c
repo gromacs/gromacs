@@ -241,7 +241,7 @@ int gmx_node_rank(void)
 void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
 {
   gmx_nodecomm_t *nc;
-  int  n,rank,resultlen,hostnum,i,ng;
+  int  n,rank,resultlen,hostnum,i,ng,ni;
 #ifdef GMX_MPI
   char mpi_hostname[MPI_MAX_PROCESSOR_NAME];
 #endif
@@ -299,7 +299,8 @@ void gmx_setup_nodecomm(FILE *fplog,t_commrec *cr)
     MPI_Comm_split(cr->mpi_comm_mygroup,nc->rank_intra,rank,&nc->comm_inter);
     /* Check if this really created two step communication */
     MPI_Comm_size(nc->comm_inter,&ng);
-    if (ng > 1 && ng < n) {
+    MPI_Comm_size(nc->comm_intra,&ni);
+    if ((ng > 1 && ng < n) || (ni > 1 && ni < n) ) {
       nc->bUse = TRUE;
       if (fplog)
 	fprintf(fplog,"Using two step summing over %d groups of on average %.1f processes\n\n",ng,(real)n/(real)ng);
