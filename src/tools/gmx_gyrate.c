@@ -213,8 +213,10 @@ int gmx_gyrate(int argc,char *argv[])
   if (bACF && nmol!=1)
     gmx_fatal(FARGS,"Can only do acf with nmol=1");
   bRot = bRot || bMOI || bACF;
-  //  if (nz > 0)
-  //  bMOI = TRUE;
+  /*
+    if (nz > 0)
+    bMOI = TRUE;
+  */
   if (bRot) {
     printf("Will rotate system along principal axes\n"); 
     snew(moi_trans,DIM);

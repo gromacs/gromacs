@@ -69,7 +69,7 @@ static void do_sdf(char *fnNDX,char *fnTPS,char *fnTRX, char *fnSDF,
   int        ng,natoms,i,j,k,l,X,Y,Z,lc,dest;
   ivec       nbin;
   int        ***count;
-  //real       ***sdf;
+  /* real       ***sdf; */
   real       sdf,min_sdf=1e10,max_sdf=0;
   char       **grpname;
   int        *isize;

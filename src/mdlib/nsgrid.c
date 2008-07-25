@@ -304,10 +304,9 @@ void grid_first(FILE *fplog,t_grid *grid,gmx_domdec_t *dd,
     srenew(grid->dcz2,grid->dc_nalloc);
   }
   
-  for(i=0; (i<grid->ncells); i++)
-    grid->nra[i]=0;
-  //for(i=0; i<grid->maxcells; i++)
-  //  grid->index[i] = 10000*random();
+  for(i=0; (i<grid->ncells); i++) {
+    grid->nra[i] = 0;
+  }
 
   set_grid_ncg(grid,ncg);
 }

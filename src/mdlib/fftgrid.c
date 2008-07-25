@@ -207,15 +207,15 @@ pr_fftgrid(FILE *fp,char *title,t_fftgrid *grid)
 
 void done_fftgrid(t_fftgrid *grid)
 {
-//memory can't be freed because it is allocated by gmx_alloc_aligned
+  /* memory can't be freed because it is allocated by gmx_alloc_aligned */
   if (grid->ptr) {
-    //sfree(grid->ptr);
+    /* sfree(grid->ptr); */
     grid->ptr = NULL;
   }
  
   if (grid->workspace) {
-      //sfree(grid->workspace);
-      grid->workspace=NULL;
+    /* sfree(grid->workspace); */
+    grid->workspace=NULL;
   }
 }
 
