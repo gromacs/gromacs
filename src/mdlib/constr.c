@@ -563,7 +563,10 @@ void set_constraints(struct gmx_constr *constr,
     fprintf(debug,"Local number of normal constraints: %d\n",ncons);
   }
 
-  if (ncons > 0) {
+  /* With DD we might also need to call LINCS with ncons=0 for communicating
+   * coordinates to other nodes that do have constraints.
+   */
+  if (ncons > 0 || (dd && dd->constraints)) {
     if (ir->eConstrAlg == econtLINCS) {
       if (dd) {
 	if (dd->constraints) {
