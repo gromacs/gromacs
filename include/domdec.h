@@ -139,6 +139,8 @@ extern void dd_move_x_constraints(gmx_domdec_t *dd,matrix box,
 
 extern void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x);
 
+extern int *dd_constraints_nlocalatoms(gmx_domdec_t *dd);
+
 extern void dd_clear_local_constraint_indices(gmx_domdec_t *dd);
 
 extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
@@ -146,7 +148,8 @@ extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 extern int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil);
 
 extern int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
-				     gmx_constr_t constr,int nrec);
+				     gmx_constr_t constr,int nrec,
+				     t_ilist *il_local);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
 				    int natoms,t_topology *top,

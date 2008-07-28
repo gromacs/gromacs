@@ -55,18 +55,18 @@
 #include "splitter.h"
 
 typedef struct gmx_constr {
-  int             nflexcon;     /* The number of flexible constraints */
-  t_blocka        at2con;       /* A list of atoms to constraints     */
-  gmx_lincsdata_t lincsd;       /* LINCS data                         */
-  int             nblocks;      /* The number of SHAKE blocks         */
-  int             *sblock;      /* The SHAKE blocks                   */
-  int             sblock_nalloc;/* The allocation size of sblock      */
-  real            *lagr;        /* Lagrange multipliers for SHAKE     */
-  int             lagr_nalloc;  /* The allocation size of lagr        */
-  int             maxwarn;      /* The maximum number of warnings     */
+  int             nflexcon;      /* The number of flexible constraints    */
+  t_blocka        at2con_global; /* A global list of atoms to constraints */
+  gmx_lincsdata_t lincsd;        /* LINCS data                            */
+  int             nblocks;       /* The number of SHAKE blocks            */
+  int             *sblock;       /* The SHAKE blocks                      */
+  int             sblock_nalloc; /* The allocation size of sblock         */
+  real            *lagr;         /* Lagrange multipliers for SHAKE        */
+  int             lagr_nalloc;   /* The allocation size of lagr           */
+  int             maxwarn;       /* The maximum number of warnings        */
   int             warncount_lincs;
   int             warncount_settle;
-  gmx_edsam_t     ed;           /* The essential dynamics data        */
+  gmx_edsam_t     ed;            /* The essential dynamics data           */
 } t_gmx_constr;
 
 typedef struct {
@@ -494,48 +494,6 @@ static void make_shake_sblock_dd(struct gmx_constr *constr,
   constr->sblock[constr->nblocks] = 3*ncons;
 }
 
-void set_constraints(struct gmx_constr *constr,
-		     t_topology *top,t_inputrec *ir,
-		     t_mdatoms *md,gmx_domdec_t *dd)
-{
-  int  ncons;
-
-  if (dd == NULL) {
-    ncons = top->idef.il[F_CONSTR].nr/3;
-  } else {
-    if (dd->constraints)
-      ncons = dd->constraints->ncon;
-    else
-      ncons = 0;
-  }
-  if (ncons > 0 || (dd && dd->constraints)) {
-    if (ir->eConstrAlg == econtLINCS) {
-      set_lincs(&top->idef,md->start,md->homenr,&constr->at2con,
-		EI_DYNAMICS(ir->eI),dd,constr->lincsd);
-      if (dd == NULL) {
-	/* The atom to constraints list is no longer needed */
-	done_blocka(&constr->at2con);
-      }
-      set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
-    } 
-    if (ir->eConstrAlg == econtSHAKE) {
-      if (dd) {
-	make_shake_sblock_dd(constr,&top->idef.il[F_CONSTR],&top->cgs,dd);
-      } else {
-	make_shake_sblock_pd(constr,&top->idef,md);
-      }
-      if (ncons > constr->lagr_nalloc) {
-	constr->lagr_nalloc = over_alloc_dd(ncons);
-	srenew(constr->lagr,constr->lagr_nalloc);
-      }
-    }
-  }
-  
-  /* Make a selection of the local atoms for essential dynamics */
-  if (constr->ed && dd)
-    dd_make_local_ed_indices(dd,constr->ed,md);
-}
-
 static t_blocka make_at2con(int start,int natoms,t_idef *idef,
 			    bool bDynamics,int *nflexiblecons)
 {
@@ -591,6 +549,57 @@ static t_blocka make_at2con(int start,int natoms,t_idef *idef,
   sfree(count);
 
   return at2con;
+}
+
+void set_constraints(struct gmx_constr *constr,
+		     t_topology *top,t_inputrec *ir,
+		     t_mdatoms *md,gmx_domdec_t *dd)
+{
+  int  ncons,nflexcon,a0,a1;
+  t_blocka a2c,*at2con;
+
+  ncons = top->idef.il[F_CONSTR].nr/3;
+  if (debug) {
+    fprintf(debug,"Local number of normal constraints: %d\n",ncons);
+  }
+
+  if (ncons > 0) {
+    if (ir->eConstrAlg == econtLINCS) {
+      if (dd) {
+	if (dd->constraints) {
+	  dd_get_constraint_range(dd,&a0,&a1);
+	} else {
+	  a1 = dd->nat_home;
+	}
+	a2c = make_at2con(0,a1,&top->idef,EI_DYNAMICS(ir->eI),&nflexcon);
+	at2con = &a2c;
+      } else {
+	at2con = &constr->at2con_global;
+      }
+      set_lincs(&top->idef,md->start,md->homenr,at2con,
+		EI_DYNAMICS(ir->eI),dd,constr->lincsd);
+
+      /* The global or local atom to constraints list is no longer needed */
+      done_blocka(at2con);
+
+      set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
+    } 
+    if (ir->eConstrAlg == econtSHAKE) {
+      if (dd) {
+	make_shake_sblock_dd(constr,&top->idef.il[F_CONSTR],&top->cgs,dd);
+      } else {
+	make_shake_sblock_pd(constr,&top->idef,md);
+      }
+      if (ncons > constr->lagr_nalloc) {
+	constr->lagr_nalloc = over_alloc_dd(ncons);
+	srenew(constr->lagr,constr->lagr_nalloc);
+      }
+    }
+  }
+  
+  /* Make a selection of the local atoms for essential dynamics */
+  if (constr->ed && dd)
+    dd_make_local_ed_indices(dd,constr->ed,md);
 }
 
 static void constr_recur(t_blocka *at2con,t_idef *idef,bool bTopB,
@@ -726,8 +735,9 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
 	natoms = top->atoms.nr;
       }
 
-      constr->at2con = make_at2con(start,natoms,&top->idef,
-				   EI_DYNAMICS(ir->eI),&constr->nflexcon);
+      constr->at2con_global =
+	make_at2con(start,natoms,&top->idef,
+		    EI_DYNAMICS(ir->eI),&constr->nflexcon);
 
       if (PARTDECOMP(cr))
 	gmx_sumi(1,&constr->nflexcon,cr);
@@ -751,7 +761,7 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
       
       if (ir->eConstrAlg == econtLINCS) {
 	constr->lincsd = init_lincs(fplog,&top->idef,
-				    constr->nflexcon,&constr->at2con,
+				    constr->nflexcon,&constr->at2con_global,
 				    DOMAINDECOMP(cr) && cr->dd->bInterCGcons,
 				    ir->nLincsIter,ir->nProjOrder);
       }
@@ -813,9 +823,9 @@ gmx_constr_t init_constraints(FILE *fplog,t_commrec *cr,
   return constr;
 }
 
-t_blocka *atom2constraints(gmx_constr_t constr)
+t_blocka *atom2constraints_global(gmx_constr_t constr)
 {
-  return &constr->at2con;
+  return &constr->at2con_global;
 }
 
 bool inter_charge_group_constraints(t_topology *top)

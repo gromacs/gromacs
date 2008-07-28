@@ -6648,11 +6648,13 @@ void dd_partition_system(FILE            *fplog,
             }
             break;
         case ddnatCON:
-            if (top_global->idef.il[F_CONSTR].nr > 0)
+            if (dd->bInterCGcons)
             {
+                /* Only for inter-cg constraints we need special code */
                 n = dd_make_local_constraints(dd,n,
                                               top_global->idef.il[F_CONSTR].iatoms,
-                                              constr,ir->nProjOrder);
+                                              constr,ir->nProjOrder,
+                                              &top_local->idef.il[F_CONSTR]);
             }
             break;
         default:
@@ -6708,7 +6710,7 @@ void dd_partition_system(FILE            *fplog,
                        dd->comm->ddpme[0].maxshift);
     }
     
-    if (dd->constraints || top_global->idef.il[F_SETTLE].nr > 0)
+    if (constr)
     {
         set_constraints(constr,top_local,ir,mdatoms,dd);
     }

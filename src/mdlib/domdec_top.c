@@ -341,7 +341,7 @@ void dd_make_reverse_top(FILE *fplog,
 
   dd->reverse_top = make_reverse_top(natoms,&top->idef,top->atoms.atom,
 				     vsite ? vsite->vsite_pbc : NULL,
-				     ir->eConstrAlg == econtSHAKE,
+				     !dd->bInterCGcons,
 				     bBCheck,&dd->nbonded_global);
 
   nexcl = count_excls(&top->cgs,&top->excls,&dd->n_intercg_excl);
@@ -365,7 +365,7 @@ void dd_make_reverse_top(FILE *fplog,
     init_domdec_vsites(dd,natoms);
   }
 
-  if (top->idef.il[F_CONSTR].nr > 0) {
+  if (dd->bInterCGcons) {
     init_domdec_constraints(dd,natoms,top,constr);
   }
   if (fplog)

@@ -38,6 +38,19 @@ typedef struct gmx_domdec_specat_comm {
   int  at_end;
 } gmx_domdec_specat_comm_t;
 
+typedef struct gmx_domdec_constraints {
+  /* The fully local and connected constraints */
+  int  ncon;
+  /* The global constraint number, only required for clearing gc_req */
+  int  *con_gl;
+  int  *con_nlocat;
+  int  con_nalloc;
+  /* Boolean that tells if a global constraint index has been requested */
+  char *gc_req;
+  /* Global to local communicated constraint atom only index */
+  int  *ga2la;
+} gmx_domdec_constraints_t;
+
 static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 			     rvec *f,rvec *fshift)
 {
@@ -288,6 +301,15 @@ void dd_move_x_vsites(gmx_domdec_t *dd,matrix box,rvec *x)
     dd_move_x_specat(dd,dd->vsite_comm,box,x,NULL);
 }
 
+int *dd_constraints_nlocalatoms(gmx_domdec_t *dd)
+{
+  if (dd->constraints) {
+    return dd->constraints->con_nlocat;
+  } else {
+    return NULL;
+  }
+}
+
 void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
 {
   gmx_domdec_constraints_t *dc;
@@ -295,12 +317,14 @@ void dd_clear_local_constraint_indices(gmx_domdec_t *dd)
   
   dc = dd->constraints;
   
-  for(i=0; i<dc->ncon; i++)
-    dc->gc2lc[dc->con[i]] = -1;
+  for(i=0; i<dc->ncon; i++) {
+    dc->gc_req[dc->con_gl[i]] = 0;
+  }
   
   if (dd->constraint_comm) {
-    for(i=dd->constraint_comm->at_start; i<dd->constraint_comm->at_end; i++)
+    for(i=dd->constraint_comm->at_start; i<dd->constraint_comm->at_end; i++) {
       dc->ga2la[dd->gatindex[i]] = -1;
+    }
   }
 }
 
@@ -514,20 +538,39 @@ static void walk_out(int con,int a,int nrec,
 		     const t_iatom *ia,const t_blocka *at2con,
 		     const gmx_ga2la_t *ga2la,bool bHomeConnect,
 		     gmx_domdec_constraints_t *dc,
-		     gmx_domdec_specat_comm_t *dcc)
+		     gmx_domdec_specat_comm_t *dcc,
+		     t_ilist *il_local)
 {
   int i,coni,b;
 
-  if (dc->gc2lc[con] == -1) {
+  if (dc->gc_req[con] == 0) {
     /* Add this non-home constraint to the list */
     if (dc->ncon+1 > dc->con_nalloc) {
       dc->con_nalloc = over_alloc_large(dc->ncon+1);
-      srenew(dc->con,dc->con_nalloc);
+      srenew(dc->con_gl,dc->con_nalloc);
       srenew(dc->con_nlocat,dc->con_nalloc);
     }
-    dc->con[dc->ncon] = con;
+    dc->con_gl[dc->ncon] = con;
     dc->con_nlocat[dc->ncon] = (bHomeConnect ? 1 : 0);
-    dc->gc2lc[con] = dc->ncon;
+    dc->gc_req[con] = 1;
+    if (il_local->nr + 3 > il_local->nalloc) {
+      il_local->nalloc = over_alloc_dd(il_local->nr+3);
+      srenew(il_local->iatoms,il_local->nalloc);
+    }
+    il_local->iatoms[il_local->nr++] = ia[con*3];
+    /* The following indexing code can probably be optizimed */
+    if (ga2la[ia[con*3+1]].cell == 0) {
+      il_local->iatoms[il_local->nr++] = ga2la[ia[con*3+1]].a;
+    } else {
+      /* We set this index later */
+      il_local->iatoms[il_local->nr++] = -ia[con*3+1] - 1;
+    }
+    if (ga2la[ia[con*3+2]].cell == 0) {
+      il_local->iatoms[il_local->nr++] = ga2la[ia[con*3+2]].a;
+    } else {
+      /* We set this index later */
+      il_local->iatoms[il_local->nr++] = -ia[con*3+2] - 1;
+    }
     dc->ncon++;
   }
   /* Check to not ask for the same atom more than once */
@@ -547,36 +590,41 @@ static void walk_out(int con,int a,int nrec,
       coni = at2con->a[i];
       if (coni != con) {
 	/* Walk further */
-	if (a == ia[coni*3+1])
+	if (a == ia[coni*3+1]) {
 	  b = ia[coni*3+2];
-	else
+	} else {
 	  b = ia[coni*3+1];
-	if (ga2la[b].cell != 0)
-	  walk_out(coni,b,nrec-1,ia,at2con,ga2la,FALSE,dc,dcc);
+	}
+	if (ga2la[b].cell != 0) {
+	  walk_out(coni,b,nrec-1,ia,at2con,ga2la,FALSE,dc,dcc,il_local);
+	}
       }
     }
   }
 }
 
 int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
-			      gmx_constr_t constr,int nrec)
+			      gmx_constr_t constr,int nrec,
+			      t_ilist *il_local)
 {
   t_blocka *at2con;
   gmx_ga2la_t *ga2la;
   t_iatom *iap;
-  int nhome,a,ag,bg,i,con;
+  int nhome,a,ag,bg,bl,i,con;
   gmx_domdec_constraints_t *dc;
-  int at_end;
+  int at_end,*ga2la_specat,j;
 
   dc = dd->constraints;
 
-  at2con = atom2constraints(constr);
+  at2con = atom2constraints_global(constr);
   ga2la  = dd->ga2la;
 
-  dc->ncon = 0;
+  dc->ncon     = 0;
+  il_local->nr = 0;
   nhome = 0;
-  if (dd->constraint_comm)
+  if (dd->constraint_comm) {
     dd->constraint_comm->nind_req = 0;
+  }
   for(a=0; a<dd->nat_home; a++) {
     ag = dd->gatindex[a];
     for(i=at2con->index[ag]; i<at2con->index[ag+1]; i++) {
@@ -592,12 +640,19 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
 	if (ag < bg) {
 	  if (dc->ncon+1 > dc->con_nalloc) {
 	    dc->con_nalloc = over_alloc_large(dc->ncon+1);
-	    srenew(dc->con,dc->con_nalloc);
+	    srenew(dc->con_gl,dc->con_nalloc);
 	    srenew(dc->con_nlocat,dc->con_nalloc);
 	  }
-	  dc->con[dc->ncon] = con;
+	  dc->con_gl[dc->ncon] = con;
 	  dc->con_nlocat[dc->ncon] = 2;
-	  dc->gc2lc[con] = dc->ncon;
+	  if (il_local->nr + 3 > il_local->nalloc) {
+	    il_local->nalloc = over_alloc_dd(il_local->nr + 3);
+	    srenew(il_local->iatoms,il_local->nalloc);
+	  }
+	  bl = ga2la[bg].a;
+	  il_local->iatoms[il_local->nr++] = iap[0];
+	  il_local->iatoms[il_local->nr++] = (ag == iap[1] ? a  : bl);
+	  il_local->iatoms[il_local->nr++] = (ag == iap[1] ? bl : a );
 	  dc->ncon++;
 	  nhome++;
 	}
@@ -608,7 +663,8 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
 	 * Therefore we call walk_out with nrec recursions to go after
 	 * this first call.
 	 */
-	walk_out(con,bg,nrec,ia,at2con,dd->ga2la,TRUE,dc,dd->constraint_comm);
+	walk_out(con,bg,nrec,ia,at2con,dd->ga2la,TRUE,dc,dd->constraint_comm,
+		 il_local);
       }
     }
   }
@@ -623,6 +679,16 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
     at_end =
       setup_specat_communication(dd,dd->constraint_comm,dd->constraints->ga2la,
 				 at_start,2,"constraint"," or lincs-order");
+    
+    /* Fill in the missing indices */
+    ga2la_specat = dd->constraints->ga2la;
+    for(i=0; i<il_local->nr; i+=3) {
+      iap = il_local->iatoms + i;
+      for(j=1; j<3; j++) {
+	if (iap[j] < 0)
+	  iap[j] = ga2la_specat[-iap[j]-1];
+      }
+    }
   } else {
     at_end = at_start;
   }
@@ -698,8 +764,7 @@ void init_domdec_constraints(gmx_domdec_t *dd,
 			     gmx_constr_t constr)
 {
   gmx_domdec_constraints_t *dc;
-  t_ilist *il;
-  int c,a;
+  int ncon,c,a;
 
   if (debug)
     fprintf(debug,"Begin init_domdec_constraints\n");
@@ -707,19 +772,18 @@ void init_domdec_constraints(gmx_domdec_t *dd,
   snew(dd->constraints,1);
   dc = dd->constraints;
 
-  il = &top->idef.il[F_CONSTR];
-  dc->iatoms = il->iatoms;
-
-  snew(dc->gc2lc,il->nr/3);
-  for(c=0; c<il->nr/3; c++)
-    dc->gc2lc[c] = -1;
+  ncon = top->idef.il[F_CONSTR].nr/3;
+  snew(dc->gc_req,ncon);
+  for(c=0; c<ncon; c++) {
+    dc->gc_req[c] = 0;
+  }
 
   snew(dc->ga2la,natoms);
-  for(a=0; a<natoms; a++)
+  for(a=0; a<natoms; a++) {
     dc->ga2la[a] = -1;
-  
-  if (inter_charge_group_constraints(top))
-    snew(dd->constraint_comm,1);
+  }
+
+  snew(dd->constraint_comm,1);
 }
 
 void init_domdec_vsites(gmx_domdec_t *dd,int natoms)

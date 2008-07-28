@@ -154,8 +154,8 @@ extern void set_constraints(gmx_constr_t constr,
 			    gmx_domdec_t *dd);
 /* Set up all the local constraints for the node */
 
-extern t_blocka *atom2constraints(gmx_constr_t constr);
-/* Returns the atom to constraints list */
+extern t_blocka *atom2constraints_global(gmx_constr_t constr);
+/* Returns the atom to constraints list for the whole system */
 
 extern bool inter_charge_group_constraints(t_topology *top);
 /* Returns if there are inter charge group constraints */

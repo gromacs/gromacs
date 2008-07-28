@@ -65,19 +65,7 @@ typedef struct {
 
 typedef struct gmx_reverse_top *gmx_reverse_top_p_t;
 
-typedef struct {
-  /* A pointer to the global iatoms array for the constraints */
-  t_iatom *iatoms;
-  /* The fully local and connected constraints */
-  int  ncon;
-  int  *con;
-  int  *con_nlocat;
-  int  con_nalloc;
-  /* Global to local constraint index */
-  int  *gc2lc;
-  /* Global to local communicated constraint atom only index */
-  int  *ga2la;
-} gmx_domdec_constraints_t;
+typedef struct gmx_domdec_constraints *gmx_domdec_constraints_p_t;
 
 typedef struct gmx_domdec_specat_comm *gmx_domdec_specat_comm_p_t;
 
@@ -156,7 +144,7 @@ typedef struct {
   gmx_domdec_specat_comm_p_t vsite_comm;
 
   /* Constraint stuff */
-  gmx_domdec_constraints_t *constraints;
+  gmx_domdec_constraints_p_t constraints;
   gmx_domdec_specat_comm_p_t constraint_comm;
 
   /* The charge group boundaries for the cells */
