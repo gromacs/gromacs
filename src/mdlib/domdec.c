@@ -2748,6 +2748,7 @@ static void distribute_cg(FILE *fplog,int step,
     ma = dd->ma;
     
     /* Set the cell boundaries */
+    dd_set_tric_dir(dd,box);
     set_dd_cell_sizes_slb(dd,box,TRUE,npulse);
     
     if (tmp_ind == NULL)
