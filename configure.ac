@@ -8,7 +8,7 @@ AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
 
-AM_INIT_AUTOMAKE(tar-ustar)
+AM_INIT_AUTOMAKE()
 AC_PREFIX_DEFAULT(/usr/local/gromacs)
 
 AM_CONFIG_HEADER(src/config.h)
@@ -131,7 +131,7 @@ fi
 
 
 AC_ARG_ENABLE(bluegene,
- [  --enable-bluegene-asm         build assembly intrinsics kernels on bluegene],,enable_bluegene=no)
+ [  --enable-bluegene         build assembly intrinsics kernels on bluegene],,enable_bluegene=no)
 if test "$enable_bluegene" = "yes"; then
   AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
 fi

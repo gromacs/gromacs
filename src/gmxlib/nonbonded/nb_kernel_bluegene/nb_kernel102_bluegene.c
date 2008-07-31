@@ -54,10 +54,10 @@
 #undef NB_KERNEL
 #define NB_KERNEL nb_kernel102_bluegene
 
-#include "nb_kernel_w3w3.h"
+#include "nb_kernel_w3w3_bluegene.h"
 
 #define NO_FORCE 1
 #undef NB_KERNEL
 #define NB_KERNEL nb_kernel102nf_bluegene
 
-#include "nb_kernel_w3w3.h"
+#include "nb_kernel_w3w3_bluegene.h"

@@ -30,6 +30,7 @@
 
 /* Include Bluegene kernel headers in local directory */
 #include "nb_kernel010_bluegene.h"
+#include "nb_kernel020_bluegene.h"
 #include "nb_kernel030_bluegene.h"
 #include "nb_kernel100_bluegene.h"
 #include "nb_kernel101_bluegene.h"
@@ -41,6 +42,11 @@
 #include "nb_kernel112_bluegene.h"
 #include "nb_kernel113_bluegene.h"
 #include "nb_kernel114_bluegene.h"
+#include "nb_kernel120_bluegene.h"
+#include "nb_kernel121_bluegene.h"
+#include "nb_kernel122_bluegene.h"
+#include "nb_kernel123_bluegene.h"
+#include "nb_kernel124_bluegene.h"
 #include "nb_kernel130_bluegene.h"
 #include "nb_kernel131_bluegene.h"
 #include "nb_kernel132_bluegene.h"
@@ -56,6 +62,11 @@
 #include "nb_kernel212_bluegene.h"
 #include "nb_kernel213_bluegene.h"
 #include "nb_kernel214_bluegene.h"
+#include "nb_kernel220_bluegene.h"
+#include "nb_kernel221_bluegene.h"
+#include "nb_kernel222_bluegene.h"
+#include "nb_kernel223_bluegene.h"
+#include "nb_kernel224_bluegene.h"
 #include "nb_kernel230_bluegene.h"
 #include "nb_kernel231_bluegene.h"
 #include "nb_kernel232_bluegene.h"
@@ -71,6 +82,11 @@
 #include "nb_kernel312_bluegene.h"
 #include "nb_kernel313_bluegene.h"
 #include "nb_kernel314_bluegene.h"
+#include "nb_kernel320_bluegene.h"
+#include "nb_kernel321_bluegene.h"
+#include "nb_kernel322_bluegene.h"
+#include "nb_kernel323_bluegene.h"
+#include "nb_kernel324_bluegene.h"
 #include "nb_kernel330_bluegene.h"
 #include "nb_kernel331_bluegene.h"
 #include "nb_kernel332_bluegene.h"
@@ -78,8 +94,8 @@
 #include "nb_kernel334_bluegene.h"
 #include "nb_kernel400_bluegene.h"
 #include "nb_kernel410_bluegene.h"
+#include "nb_kernel420_bluegene.h"
 #include "nb_kernel430_bluegene.h"
-
 
 
 
@@ -93,7 +109,6 @@
 
 #include "../nb_kerneltype.h"
 #include "nb_kernel_bluegene.h"
-#include "nb_kernel_bluegene_test_asm.h"
 
 
 static nb_kernel_t *

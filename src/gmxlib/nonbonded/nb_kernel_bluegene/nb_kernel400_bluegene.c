@@ -54,10 +54,10 @@
 #undef NB_KERNEL
 #define NB_KERNEL nb_kernel400_bluegene
 
-#include "nb_kernel_gen.h"
+#include "nb_kernel_gen_bluegene.h"
 
 #define NO_FORCE 1
 #undef NB_KERNEL
 #define NB_KERNEL nb_kernel400nf_bluegene
 
-#include "nb_kernel_gen.h"
+#include "nb_kernel_gen_bluegene.h"
