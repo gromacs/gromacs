@@ -2934,7 +2934,6 @@ static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
         {
             ma->ibuf[i] = ma->ncg[i]*sizeof(int);
             ma->ibuf[dd->nnodes+i] = ma->index[i]*sizeof(int);
-            printf("counts: %d displ: %d\n",ma->ibuf[i],ma->ibuf[dd->nnodes+i]);
         }
     }
     
