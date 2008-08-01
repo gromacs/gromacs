@@ -160,7 +160,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     snew(state,1);
     init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state);
   }
-  if (!EEL_PME(inputrec->coulombtype)) {
+  if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)) {
     cr->npmenodes = 0;
   }
   
@@ -698,7 +698,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   } 
 
   if (MASTER(cr)) {
-    if (constr && !ir->bContinuation)
+    if (constr && !ir->bContinuation && ir->eConstrAlg == econtLINCS)
       fprintf(fplog,
 	      "RMS relative constraint deviation after constraining: %.2e\n",
 	      constr_rmsd(constr,FALSE));
