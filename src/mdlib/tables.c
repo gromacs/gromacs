@@ -532,7 +532,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
     A_3=A/3.0;
     B_4=B/4.0;
   }
-  if (debug) { fprintf(debug,"Further\n"); fflush(debug); }
+  if (debug) { fprintf(debug,"Setting up tables\n"); fflush(debug); }
     
 #ifdef DEBUG_SWITCH
   fp=xvgropen("switch.xvg","switch","r","s");
