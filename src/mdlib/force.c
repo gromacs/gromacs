@@ -1390,8 +1390,10 @@ void ns(FILE *fp,
   if (bFirst) {
     ptr=getenv("DUMPNL");
     if (ptr) {
-      nDNL=atoi(ptr);
-      fprintf(fp,"nDNL = %d\n",nDNL);  
+      nDNL = atoi(ptr);
+      if (fp) {
+	fprintf(fp,"nDNL = %d\n",nDNL);  
+      }
     } else
       nDNL=0;
     /* Allocate memory for the neighbor lists */
