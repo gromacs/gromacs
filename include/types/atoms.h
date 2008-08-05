@@ -42,13 +42,6 @@ enum {
 };
 /* The particle type */
  
-enum {
-  egcTC,    egcENER,   egcACC, egcFREEZE, 
-  egcUser1, egcUser2,  egcVCM, egcXTC,
-  egcORFIT, egcQMMM,
-  egcNR 
-};
-
 typedef struct {
   real 		m,q;		/* Mass and charge			*/
   real 		mB,qB;		/* Mass and charge for Free Energy calc */
@@ -57,7 +50,6 @@ typedef struct {
   int           ptype;		/* Particle type			*/
   int 		resnr;		/* Residue number			*/
   int           atomnumber;     /* Atomic Number or NOTSET              */
-  unsigned char grpnr[egcNR];   /* Group numbers			*/
   unsigned char chain;          /* chain identifier                     */
 } t_atom;
 
@@ -92,9 +84,6 @@ typedef struct {
   int		nres;		/* Nr of residue names			*/
   char		***resname; 	/* Array of pointers to residue names 	*/
 				/* use: (*(resname[i]))	       	*/
-  int           ngrpname;        /* Number of groupnames                 */
-  char          ***grpname;	/* Names of the groups		        */
-  t_grps        grps[egcNR];    /* Groups of things                     */
   t_pdbinfo     *pdbinfo;       /* PDB Information, such as aniso. Bfac */
 } t_atoms;
 

@@ -88,28 +88,46 @@ void init_atom(t_atoms *at)
 
   at->nr       = 0;
   at->nres     = 0;
-  at->ngrpname = 0;
   at->atom     = NULL;
   at->resname  = NULL;
   at->atomname = NULL;
   at->atomtype = NULL;
   at->atomtypeB= NULL;
-  at->grpname  = NULL;
   at->pdbinfo  = NULL;
-  for(i=0; (i<egcNR); i++) {
-    at->grps[i].nr=0;
-    at->grps[i].nm_ind=NULL;
-  }
 }
 
 void init_atomtypes(t_atomtypes *at)
 {
-  int i;
-  
   at->nr = 0;
   at->radius = NULL;
   at->vol = NULL;
   at->atomnumber = NULL;
+}
+
+void init_groups(gmx_groups_t *groups)
+{
+  int g;
+
+  groups->ngrpname = 0;
+  groups->grpname  = NULL;
+  for(g=0; (g<egcNR); g++) {
+    groups->grps[g].nm_ind = NULL;
+    groups->ngrpnr[g] = 0;
+    groups->grpnr[g]  = NULL;
+  }
+
+}
+
+void init_mtop(gmx_mtop_t *mtop)
+{
+  mtop->name = NULL;
+  mtop->nmoltype = 0;
+  mtop->moltype = NULL;
+  mtop->nmolblock = 0;
+  mtop->molblock = NULL;
+  init_groups(&mtop->groups);
+  init_block(&mtop->mols);
+  open_symtab(&mtop->symtab);
 }
 
 void init_top (t_topology *top)
@@ -168,6 +186,24 @@ void stupid_fill_blocka(t_blocka *grp,int natom)
   grp->nr=natom;
 }
 
+void copy_blocka(const t_blocka *src,t_blocka *dest)
+{
+  int i;
+
+  dest->nr = src->nr;
+  dest->nalloc_index = dest->nr + 1;
+  snew(dest->index,dest->nalloc_index);
+  for(i=0; i<dest->nr+1; i++) {
+    dest->index[i] = src->index[i];
+  }
+  dest->nra = src->nra;
+  dest->nalloc_a = dest->nra + 1;
+  snew(dest->a,dest->nalloc_a);
+  for(i=0; i<dest->nra+1; i++) {
+    dest->a[i] = src->a[i];
+  }
+}
+
 void done_block(t_block *block)
 {
   block->nr    = 0;
@@ -193,6 +229,54 @@ void done_atom (t_atoms *at)
   sfree(at->atom);
   sfree(at->resname);
   sfree(at->atomname);
+}
+
+void done_moltype(gmx_moltype_t *molt)
+{
+  int f;
+  
+  done_atom(&molt->atoms);
+  done_block(&molt->cgs);
+  done_blocka(&molt->excls);
+
+  for(f=0; f<F_NRE; f++) {
+    sfree(molt->ilist[f].iatoms);
+    molt->ilist[f].nalloc = 0;
+  }
+}
+
+void done_molblock(gmx_molblock_t *molb)
+{
+  if (molb->nposres_xA > 0) {
+    molb->nposres_xA = 0;
+    free(molb->posres_xA);
+  }
+  if (molb->nposres_xB > 0) {
+    molb->nposres_xB = 0;
+    free(molb->posres_xB);
+  }
+}
+
+void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab)
+{
+  int i;
+
+  if (bDoneSymtab) {
+    done_symtab(&mtop->symtab);
+  }
+
+  sfree(mtop->ffparams.functype);
+  sfree(mtop->ffparams.iparams);
+
+  for(i=0; i<mtop->nmoltype; i++) {
+    done_moltype(&mtop->moltype[i]);
+  }
+  sfree(mtop->moltype);
+  for(i=0; i<mtop->nmolblock; i++) {
+    done_molblock(&mtop->molblock[i]);
+  }
+  sfree(mtop->molblock);
+  done_block(&mtop->mols);
 }
 
 void done_top(t_topology *top)
@@ -367,26 +451,30 @@ void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo)
 {
   atoms->nr=natoms;
   atoms->nres=0;
-  atoms->ngrpname=0;
   snew(atoms->atomname,natoms);
   atoms->atomtype=NULL;
   atoms->atomtypeB=NULL;
   snew(atoms->resname,natoms);
   snew(atoms->atom,natoms);
-  snew(atoms->grpname,natoms+2);
   if (bPdbinfo)
     snew(atoms->pdbinfo,natoms);
   else
     atoms->pdbinfo=NULL;
 }
 
-void free_t_atoms(t_atoms *atoms)
+void free_t_atoms(t_atoms *atoms,bool bFreeNames)
 {
   int i;
 
-  for(i=0; i<atoms->nr; i++) {
-    sfree(*atoms->atomname[i]);
-    *atoms->atomname[i]=NULL;
+  if (bFreeNames) {
+    for(i=0; i<atoms->nr; i++) {
+      sfree(*atoms->atomname[i]);
+      *atoms->atomname[i]=NULL;
+    }
+    for(i=0; i<atoms->nres; i++) {
+      sfree(*atoms->resname[i]);
+      *atoms->resname[i]=NULL;
+    }
   }
   sfree(atoms->atomname);
   /* Do we need to free atomtype and atomtypeB as well ? */
@@ -397,4 +485,3 @@ void free_t_atoms(t_atoms *atoms)
   atoms->nr=0; 
   atoms->nres=0;
 }     
-

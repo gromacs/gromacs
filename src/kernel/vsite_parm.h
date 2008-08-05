@@ -45,7 +45,7 @@ extern int set_vsites(bool bVerbose, t_atoms *atoms,  t_atomtype atype,
 		      t_params plist[]);
 /* set parameters for vritual sites, return number of virtual sites */
 
-extern void set_vsites_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms);
+extern void set_vsites_ptype(bool bVerbose,  gmx_moltype_t *molt);
 /* set ptype to VSite for virtual sites */
 
 extern void clean_vsite_bondeds(t_params *ps, int natoms, bool bRmVSiteBds);

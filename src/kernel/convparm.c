@@ -242,7 +242,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
     new->disres.kfac  = old[5];
     break;
   case F_ORIRES:
-    new->orires.ex    = round_check(old[0],1,ftype,"experiment");
+    new->orires.ex    = round_check(old[0],1,ftype,"experiment") - 1;
     new->orires.label = round_check(old[1],1,ftype,"label");
     new->orires.power = round_check(old[2],0,ftype,"power");
     new->orires.c     = old[3];
@@ -322,7 +322,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
   }
 }
 
-static int enter_params(t_idef *idef, t_functype ftype,
+static int enter_params(gmx_ffparams_t *ffparams, t_functype ftype,
 			real forceparams[MAXFORCEPARAM],int comb,real reppow,
 			int start,bool bAppend)
 {
@@ -331,22 +331,23 @@ static int enter_params(t_idef *idef, t_functype ftype,
   
   assign_param(ftype,&new,forceparams,comb,reppow);
   if (!bAppend) {
-    for (type=start; (type<idef->ntypes); type++) {
-      if (idef->functype[type]==ftype) {
-	if (memcmp(&new,&idef->iparams[type],(size_t)sizeof(new)) == 0)
+    for (type=start; (type<ffparams->ntypes); type++) {
+      if (ffparams->functype[type]==ftype) {
+	if (memcmp(&new,&ffparams->iparams[type],(size_t)sizeof(new)) == 0)
 	  return type;
       }
     }
   }
-  else
-    type=idef->ntypes;
+  else {
+    type = ffparams->ntypes;
+  }
   if (debug)
-    fprintf(debug,"copying new to idef->iparams[%d] (ntypes=%d)\n",
-	    type,idef->ntypes);
-  memcpy(&idef->iparams[type],&new,(size_t)sizeof(new));
+    fprintf(debug,"copying new to ffparams->iparams[%d] (ntypes=%d)\n",
+	    type,ffparams->ntypes);
+  memcpy(&ffparams->iparams[type],&new,(size_t)sizeof(new));
   
-  idef->ntypes++;
-  idef->functype[type]=ftype;
+  ffparams->ntypes++;
+  ffparams->functype[type]=ftype;
 
   return type;
 }
@@ -365,30 +366,31 @@ static void append_interaction(t_ilist *ilist,
 }
 
 static void enter_function(t_params *p,t_functype ftype,int comb,real reppow,
-                           t_idef *idef,int *maxtypes,bool bNB,bool bAppend)
+                           gmx_ffparams_t *ffparams,t_ilist *il,
+			   int *maxtypes,
+			   bool bNB,bool bAppend)
 {
   int     k,type,nr,nral,delta,start;
-  t_ilist *il;
   
-  il    = &(idef->il[ftype]);
-  start = idef->ntypes;
+  start = ffparams->ntypes;
   nr    = p->nr;
-  nral  = NRAL(ftype);
-  delta = nr*(nral+1);
-  srenew(il->iatoms,il->nr+delta);
   
   for (k=0; k<nr; k++) {
-    if (*maxtypes <= idef->ntypes) {
+    if (*maxtypes <= ffparams->ntypes) {
       *maxtypes += 1000;
-      srenew(idef->functype,*maxtypes);
-      srenew(idef->iparams, *maxtypes);
+      srenew(ffparams->functype,*maxtypes);
+      srenew(ffparams->iparams, *maxtypes);
       if (debug) 
 	fprintf(debug,"%s, line %d: srenewed idef->functype and idef->iparams to %d\n",
 		__FILE__,__LINE__,*maxtypes);
     }
-    type = enter_params(idef,ftype,p->param[k].c,comb,reppow,start,bAppend);
-    if (!bNB)
+    type = enter_params(ffparams,ftype,p->param[k].c,comb,reppow,start,bAppend);
+    if (!bNB) {
+      nral  = NRAL(ftype);
+      delta = nr*(nral+1);
+      srenew(il->iatoms,il->nr+delta);
       append_interaction(il,type,nral,p->param[k].a);
+    }
   }
 }
 
@@ -401,44 +403,50 @@ static void new_interaction_list(t_ilist *ilist)
 }
 
 void convert_params(int atnr,t_params nbtypes[],
-		    t_params plist[],int comb,real reppow,real fudgeQQ,
-		    t_idef *idef)
+		    t_molinfo *mi,int comb,real reppow,real fudgeQQ,
+		    gmx_mtop_t *mtop)
 {
-  int    i,j,maxtypes;
+  int    i,j,maxtypes,mt;
   unsigned long  flags;
+  gmx_ffparams_t *ffp;
+  gmx_moltype_t *molt;
+  t_params *plist;
 
   maxtypes=0;
   
-  idef->ntypes   = 0;
-  idef->atnr     = atnr;
-  idef->nodeid   = 0;  
-  idef->functype = NULL;
-  idef->iparams  = NULL;
-  for(i=0; (i<F_NRE); i++) {
-    idef->il[i].nr=0;
-    idef->il[i].iatoms=NULL;
-  }
-  enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb,reppow,idef,
-		 &maxtypes,TRUE,TRUE);
-  enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,  comb,reppow,idef,
-		 &maxtypes,TRUE,TRUE);
-  enter_function(&(plist[F_POSRES]),(t_functype)F_POSRES,comb,reppow,idef,
-		 &maxtypes,FALSE,TRUE);
+  ffp = &mtop->ffparams;
+  ffp->ntypes   = 0;
+  ffp->atnr     = atnr;
+  ffp->functype = NULL;
+  ffp->iparams  = NULL;
 
-  for(i=0; (i<F_NRE); i++) {
-    flags = interaction_function[i].flags;
-    if ((i != F_LJ) && (i != F_BHAM) && (i != F_POSRES) &&
-	((flags & IF_BOND) || (flags & IF_VSITE) || (flags & IF_CONSTRAINT)))
-      enter_function(&(plist[i]),(t_functype)i,comb,reppow,idef,
-		     &maxtypes,FALSE,FALSE);
+  enter_function(&(nbtypes[F_LJ]),  (t_functype)F_LJ,    comb,reppow,ffp,NULL,
+		 &maxtypes,TRUE,TRUE);
+  enter_function(&(nbtypes[F_BHAM]),(t_functype)F_BHAM,  comb,reppow,ffp,NULL,
+		 &maxtypes,TRUE,TRUE);
+
+  for(mt=0; mt<mtop->nmoltype; mt++) {
+    molt = &mtop->moltype[mt];
+    for(i=0; (i<F_NRE); i++) {
+      molt->ilist[i].nr     = 0;
+      molt->ilist[i].iatoms = NULL;
+      
+      plist = mi[mt].plist;
+
+      flags = interaction_function[i].flags;
+      if ((i != F_LJ) && (i != F_BHAM) && ((flags & IF_BOND) ||
+					   (flags & IF_VSITE) ||
+					   (flags & IF_CONSTRAINT))) {
+	enter_function(&(plist[i]),(t_functype)i,comb,reppow,
+		       ffp,&molt->ilist[i],
+		       &maxtypes,FALSE,(i == F_POSRES));
+      }
+    }
   }
-  if (debug)
+  if (debug) {
     fprintf(debug,"%s, line %d: There are %d functypes in idef\n",
-	    __FILE__,__LINE__,idef->ntypes);
-  for(j=0; (j<F_NRE); j++) {
-    if (idef->il[j].nr > 0)
-      printf("# %10s:   %d\n",
-	     interaction_function[j].name,idef->il[j].nr/(1+NRAL(j)));
+	    __FILE__,__LINE__,ffp->ntypes);
   }
-  idef->fudgeQQ = fudgeQQ;
+
+  ffp->fudgeQQ = fudgeQQ;
 }

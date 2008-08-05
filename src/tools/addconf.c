@@ -50,6 +50,7 @@
 #include "mdatoms.h"
 #include "nrnb.h"
 #include "ns.h"
+#include "mtop_util.h"
 
 static real box_margin;
 
@@ -176,8 +177,6 @@ static void combine_atoms(t_atoms *ap,t_atoms *as,
     ac->atom[i].type  = 0;
     ac->atom[i].typeB = 0;
     ac->atom[i].ptype = eptAtom;
-    for(j=0; j<egcNR; j++)
-      ac->atom[i].grpnr[j] = 0;
   }
 
   /* Return values */
@@ -192,6 +191,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 	       matrix box,rvec x[],t_atoms *atoms,real rlong)
 {
   static bool bFirst = TRUE;
+  static gmx_mtop_t *mtop;
   static t_topology *top;
   static t_mdatoms  *md;
   static t_block    *cgs;
@@ -201,6 +201,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   static t_groups   *grps;
   static int        *cg_index;
 
+  gmx_moltype_t *molt;
+  gmx_ffparams_t *ffp;
   int        i,m,natoms;
   ivec       *nFreeze;
   rvec       box_size;
@@ -215,23 +217,28 @@ void do_nsgrid(FILE *fp,bool bVerbose,
       cg_index[i]=i;
     
     /* Topology needs charge groups and exclusions */
-    snew(top,1);
-    init_top(top);
-    stupid_fill_block(&(top->cgs),natoms,FALSE);
-    memcpy(&(top->atoms),atoms,sizeof(*atoms));
-    stupid_fill_blocka(&(top->excls),natoms);
-    top->atoms.grps[egcENER].nr = 1;
-    
+    snew(mtop,1);
+    init_mtop(mtop);
+    mtop->natoms = natoms;
+    mtop->nmoltype = 1;
+    snew(mtop->moltype,mtop->nmoltype);
+    molt = &mtop->moltype[0];
+    molt->name  = mtop->name;
+    molt->atoms = *atoms;
+    stupid_fill_block(&molt->cgs,mtop->natoms,FALSE);
+    stupid_fill_blocka(&molt->excls,natoms);
+  
+    ffp->ntypes = 1;
+    ffp->atnr   = 1;
+    snew(ffp->functype,1);
+    snew(ffp->iparams,1);
+    ffp->iparams[0].lj.c6  = 1;
+    ffp->iparams[0].lj.c12 = 1;
+
+    top = gmx_mtop_generate_local_top(mtop,ir);
+
     /* Some nasty shortcuts */
     cgs  = &(top->cgs);
-    
-    top->idef.ntypes = 1;
-    top->idef.nodeid = 0;
-    top->idef.atnr   = 1;
-    snew(top->idef.functype,1);
-    snew(top->idef.iparams,1);
-    top->idef.iparams[0].lj.c6  = 1;
-    top->idef.iparams[0].lj.c12 = 1;
 
     /* inputrec structure */
     snew(ir,1);
@@ -244,8 +251,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     /* mdatoms structure */
     snew(nFreeze,2);
     snew(md,1);
-    md = init_mdatoms(fp,atoms,FALSE);
-    atoms2md(atoms,ir,0,0,NULL,0,top->atoms.nr,md);
+    md = init_mdatoms(fp,mtop,FALSE);
+    atoms2md(mtop,ir,0,NULL,0,top->atoms.nr,md);
     sfree(nFreeze);
 
     /* forcerec structure */
@@ -274,7 +281,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   /* Init things dependent on parameters */  
   ir->rlist = ir->rcoulomb = ir->rvdw = rlong;
   printf("Neighborsearching with a cut-off of %g\n",rlong);
-  init_forcerec(stdout,fr,NULL,ir,top,cr,box,FALSE,NULL,NULL,NULL,TRUE,-1);
+  init_forcerec(stdout,fr,NULL,ir,mtop,cr,box,FALSE,NULL,NULL,NULL,TRUE,-1);
   if (debug)
     pr_forcerec(debug,fr,cr);
 		
@@ -286,7 +293,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   
   /* Do the actual neighboursearching */
   init_neighbor_list(fp,fr,md->homenr);
-  search_neighbours(fp,fr,x,box,top,grps,cr,&nrnb,md,lambda,&dvdlambda,
+  search_neighbours(fp,fr,x,box,top,
+		    &mtop->groups,grps,cr,&nrnb,md,lambda,&dvdlambda,
 		    TRUE,FALSE);
 
   if (debug)

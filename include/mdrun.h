@@ -81,11 +81,11 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
 				int stepout,
 				t_inputrec *inputrec,t_groups *grps,
-				t_topology *top,real ener[],t_fcdata *fcd,
+				gmx_mtop_t *mtop,real ener[],t_fcdata *fcd,
 				t_state *state,rvec f[],
 				rvec buf[],t_mdatoms *mdatoms,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-				t_graph *graph,gmx_edsam_t ed,
+				gmx_edsam_t ed,
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
@@ -119,6 +119,9 @@ extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 extern void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 
+extern void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,t_forcerec *fr,
+			      gmx_mtop_t *mtop,rvec x[]);
+
 		     
 /* ROUTINES from stat.c */		
 extern void global_stat(FILE *log,
@@ -134,7 +137,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_trn,bool bX,bool bV,bool bF,
 		int fp_xtc,bool bXTC,int xtc_prec,
 		char *fn_cpt,bool bCPT,
-		t_topology *top_global,
+		gmx_mtop_t *top_global,
 		int eIntegrator,int step,double t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global);
@@ -157,7 +160,7 @@ extern void nstop_cm(FILE *log,t_commrec *cr,
 		     int start,int nr_atoms,real mass[],rvec x[],rvec v[]);
 
 extern void finish_run(FILE *log,t_commrec *cr,char *confout,
-		       t_topology *top, t_inputrec *inputrec,
+		       t_inputrec *inputrec,
 		       t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		       double nodetime,double realtime,int step,
 		       bool bWriteStat);
@@ -182,7 +185,7 @@ extern void check_nnodes_top(char *fn,t_topology *top);
 /* Reset the tpr file to work with one node if necessary */
 
 extern void init_single(FILE *log,
-                        t_inputrec *inputrec, char *tpbfile, t_topology *top,
+                        t_inputrec *inputrec, char *tpbfile, gmx_mtop_t *mtop,
 			t_state *state);
      /*
       * Allocates space for the topology (top), the coordinates x, the
@@ -191,7 +194,7 @@ extern void init_single(FILE *log,
       */
 
 extern void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
-			  t_inputrec *inputrec,t_topology *top,
+			  t_inputrec *inputrec,gmx_mtop_t *mtop,
 			  t_state *state,
 			  int list);
      /*
@@ -248,7 +251,7 @@ extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 extern void init_md(FILE *fplog,
 		    t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 		    real *lambda,real *lam0,
-		    t_nrnb *nrnb,t_topology *top,
+		    t_nrnb *nrnb,gmx_mtop_t *mtop,
 		    gmx_stochd_t *stochd,
 		    int nfile,t_filenm fnm[],
 		    int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,

@@ -58,6 +58,7 @@
 #include "filenm.h"
 #include "statutil.h"
 #include "pbc.h"
+#include "mtop_util.h"
 
 #define CHAR_SHIFT 24
 
@@ -938,16 +939,10 @@ int gro_first_x_or_v(FILE *status,t_trxframe *fr)
   return fr->natoms;
 }
 
-void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
-			   int nx,atom_id index[], int pr,
-			   rvec *x,rvec *v,matrix box)
+static void make_hconf_format(int pr,bool bVel,char format[])
 {
-  char resnm[6],nm[6],format[100];
-  int  ai,i,resnr,l,vpr;
+  int l,vpr;
 
-  bromacs(format,99);
-  fprintf (out,"%s\n",(title && title[0])?title:format);
-  fprintf (out,"%5d\n",nx);
   /* build format string for printing, 
      something like "%8.3f" for x and "%8.4f" for v */
   if (pr<0)
@@ -956,11 +951,51 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
     pr=30;
   l=pr+5;
   vpr=pr+1;
-  if (v)
+  if (bVel)
     sprintf(format,"%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df\n",
 	    l,pr,l,pr,l,pr,l,vpr,l,vpr,l,vpr);
   else
     sprintf(format,"%%%d.%df%%%d.%df%%%d.%df\n",l,pr,l,pr,l,pr);
+
+}
+
+static void write_hconf_box(FILE *out,int pr,matrix box)
+{
+  char format[100];
+  int l;
+
+  if (pr<5) 
+    pr=5;
+  l=pr+5;
+  
+  if (box[XX][YY] || box[XX][ZZ] || box[YY][XX] || box[YY][ZZ] ||
+      box[ZZ][XX] || box[ZZ][YY]) {
+    sprintf(format,"%%%d.%df%%%d.%df%%%d.%df"
+	    "%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df\n",
+	    l,pr,l,pr,l,pr,l,pr,l,pr,l,pr,l,pr,l,pr,l,pr);
+    fprintf(out,format,
+	    box[XX][XX],box[YY][YY],box[ZZ][ZZ],
+	    box[XX][YY],box[XX][ZZ],box[YY][XX],
+	    box[YY][ZZ],box[ZZ][XX],box[ZZ][YY]);
+  } else {
+    sprintf(format,"%%%d.%df%%%d.%df%%%d.%df\n",l,pr,l,pr,l,pr);
+    fprintf(out,format,
+	    box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+  }
+}
+
+void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
+			   int nx,atom_id index[], int pr,
+			   rvec *x,rvec *v,matrix box)
+{
+  char resnm[6],nm[6],format[100];
+  int  ai,i,resnr;
+
+  bromacs(format,99);
+  fprintf (out,"%s\n",(title && title[0])?title:format);
+  fprintf (out,"%5d\n",nx);
+
+  make_hconf_format(pr,v!=NULL,format);
   
   for (i=0; (i<nx); i++) {
     ai=index[i];
@@ -985,24 +1020,44 @@ void write_hconf_indexed_p(FILE *out,char *title,t_atoms *atoms,
 	      x[ai][XX], x[ai][YY], x[ai][ZZ]);
   }
 
-  if (pr<5) 
-    pr=5;
-  l=pr+5;
+  write_hconf_box(out,pr,box);
+
+  fflush(out);
+}
+
+static void write_hconf_mtop(FILE *out,char *title,gmx_mtop_t *mtop,
+			     int pr,
+			     rvec *x,rvec *v,matrix box)
+{
+  char format[100];
+  int  i,resnr;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom;
+  char *atomname,*resname;
+
+  bromacs(format,99);
+  fprintf (out,"%s\n",(title && title[0])?title:format);
+  fprintf (out,"%5d\n",mtop->natoms);
+
+  make_hconf_format(pr,v!=NULL,format);
   
-  if (box[XX][YY] || box[XX][ZZ] || box[YY][XX] || box[YY][ZZ] ||
-      box[ZZ][XX] || box[ZZ][YY]) {
-    sprintf(format,"%%%d.%df%%%d.%df%%%d.%df"
-	    "%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df%%%d.%df\n",
-	    l,pr,l,pr,l,pr,l,pr,l,pr,l,pr,l,pr,l,pr,l,pr);
-    fprintf(out,format,
-	    box[XX][XX],box[YY][YY],box[ZZ][ZZ],
-	    box[XX][YY],box[XX][ZZ],box[YY][XX],
-	    box[YY][ZZ],box[ZZ][XX],box[ZZ][YY]);
-  } else {
-    sprintf(format,"%%%d.%df%%%d.%df%%%d.%df\n",l,pr,l,pr,l,pr);
-    fprintf(out,format,
-	    box[XX][XX],box[YY][YY],box[ZZ][ZZ]);
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
+    gmx_mtop_atomloop_all_names(aloop,&atomname,&resnr,&resname);
+
+    fprintf(out,"%5d%-5.5s%5.5s%5d",
+	    (resnr+1)%100000,resname,atomname,(i+1)%100000);
+    /* next fprintf uses built format string */
+    if (v)
+      fprintf(out,format,
+	      x[i][XX], x[i][YY], x[i][ZZ], v[i][XX],v[i][YY],v[i][ZZ]);
+    else
+      fprintf(out,format,
+	      x[i][XX], x[i][YY], x[i][ZZ]);
   }
+
+  write_hconf_box(out,pr,box);
+
   fflush(out);
 }
 
@@ -1146,6 +1201,33 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
   }
 }
 
+void write_sto_conf_mtop(char *outfile, char *title,gmx_mtop_t *mtop,
+			 rvec x[],rvec *v,int ePBC,matrix box)
+{
+  int  ftp;
+  FILE *out;
+  t_atoms atoms;
+
+  ftp=fn2ftp(outfile);
+  switch (ftp) {
+  case efGRO:
+    out = ffopen(outfile,"w");
+    write_hconf_mtop(out,title,mtop,3,x,v,box);
+    fclose(out);
+    break;
+  default:
+    /* This is a brute force approach which requires a lot of memory.
+     * We should implement mtop versions of all writing routines.
+     */
+    atoms = gmx_mtop_global_atoms(mtop);
+    
+    write_sto_conf(outfile,title,&atoms,x,v,ePBC,box);
+    
+    done_atom(&atoms);
+    break;
+  }
+}
+
 void get_stx_coordnum(char *infile,int *natoms)
 {
   FILE *in;
@@ -1199,7 +1281,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
 {
   FILE       *in;
   char       buf[256];
-  t_topology *top;
+  gmx_mtop_t *mtop;
   t_trxframe fr;
   int        i,ftp,natoms,i1;
   real       d,r1,r2;
@@ -1240,59 +1322,23 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   case efTPR:
   case efTPB:
   case efTPA: 
-    snew(top,1);
-    i = read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,top);
+    snew(mtop,1);
+    i = read_tpx(infile,&i1,&r1,&r2,NULL,box,&natoms,x,v,NULL,mtop);
     if (ePBC)
       *ePBC = i;
     
-    strcpy(title,*(top->name));
-    /* Scalars */
-    atoms->nr       = top->atoms.nr;
-    atoms->nres     = top->atoms.nres;
-    atoms->ngrpname = top->atoms.ngrpname;
-    
-    /* Arrays */
-    if (!atoms->atom)
-      snew(atoms->atom,atoms->nr);
-    if (!atoms->atomname)
-      snew(atoms->atomname,atoms->nr);
-    if (!atoms->atomtype)
-      snew(atoms->atomtype,atoms->nr);
-    if (!atoms->atomtypeB)
-      snew(atoms->atomtypeB,atoms->nr);
-    for(i=0; (i<atoms->nr); i++) {
-      atoms->atom[i]      = top->atoms.atom[i];
-      atoms->atomname[i]  = top->atoms.atomname[i];
-      atoms->atomtype[i]  = top->atoms.atomtype[i];
-      atoms->atomtypeB[i] = top->atoms.atomtypeB[i];
+    strcpy(title,*(mtop->name));
 
-    }
+    /* Free possibly allocated memory */
+    done_atom(atoms);
     
-    if (!atoms->resname)
-      snew(atoms->resname,atoms->nres);
-    for(i=0; (i<atoms->nres); i++) 
-      atoms->resname[i] = top->atoms.resname[i];
+    *atoms = gmx_mtop_global_atoms(mtop);
     
-    if (!atoms->grpname)
-      snew(atoms->grpname,atoms->ngrpname);
-    for(i=0; (i<atoms->ngrpname); i++) 
-      atoms->grpname[i] = top->atoms.grpname[i];
-      
-    for(i=0; (i<egcNR); i++) {
-      atoms->grps[i].nr = top->atoms.grps[i].nr;
-      if (atoms->grps[i].nr > 0) {
-	snew(atoms->grps[i].nm_ind,atoms->grps[i].nr);
-	memcpy(atoms->grps[i].nm_ind,top->atoms.grps[i].nm_ind,
-	       atoms->grps[i].nr*sizeof(atoms->grps[i].nm_ind[0]));
-      }
-    }
-      
-    /* Ignore exclusions */
+    done_mtop(mtop,FALSE);
+    sfree(mtop);
     
     break;
   default:
     gmx_incons("Not supported in read_stx_conf");
   }
 }
-
-

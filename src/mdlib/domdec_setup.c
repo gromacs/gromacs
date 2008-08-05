@@ -40,21 +40,21 @@ static int factorize(int n,int **fac,int **mfac)
 }
 
 static bool fits_perf(FILE *fplog,
-		      t_inputrec *ir,matrix box,t_topology *top,
+		      t_inputrec *ir,matrix box,gmx_mtop_t *mtop,
 		      int nnodes,int npme,float ratio)
 {
   return ((double)npme/(double)nnodes > 0.95*ratio &&
 	  pme_inconvenient_nnodes(ir->nkx,ir->nky,npme) <= 1);
 }
 
-static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
+static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
 		      int nnodes)
 {
   float ratio;
   int  npme,nkx,nky,ndiv,*div,*mdiv,ldiv;
   t_inputrec try;
 
-  ratio = pme_load_estimate(top,ir,box);
+  ratio = pme_load_estimate(mtop,ir,box);
 
   if (fplog)
     fprintf(fplog,"Guess for relative PME load: %.2f\n",ratio);
@@ -69,7 +69,7 @@ static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
   while (npme <= nnodes/3) {
     if (nnodes % npme == 0) {
       /* Note that fits_perf may change the PME grid */
-      if (fits_perf(fplog,ir,box,top,nnodes,npme,ratio))
+      if (fits_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
 	break;
     }
     npme++;
@@ -87,7 +87,7 @@ static int guess_npme(FILE *fplog,t_topology *top,t_inputrec *ir,matrix box,
        */
       if (ldiv <= 3 + (int)(pow(nnodes-npme,1.0/3.0) + 0.5)) {
 	/* Note that fits_perf may change the PME grid */
-	if (fits_perf(fplog,ir,box,top,nnodes,npme,ratio))
+	if (fits_perf(fplog,ir,box,mtop,nnodes,npme,ratio))
 	  break;
       }
       npme++;
@@ -274,7 +274,7 @@ static void assign_factors(gmx_domdec_t *dd,
 
 static void optimize_ncells(FILE *fplog,
 			    int nnodes_tot,int npme_only,real dlb_scale,
-			    t_topology *top,matrix box,t_inputrec *ir,
+			    gmx_mtop_t *mtop,matrix box,t_inputrec *ir,
 			    gmx_domdec_t *dd,
 			    real cellsize_limit,real cutoff_mbody,
 			    bool bInterCGBondeds,bool bInterCGMultiBody,
@@ -306,7 +306,7 @@ static void optimize_ncells(FILE *fplog,
     /* For Ewald exclusions pbc_dx is not called */
     bExcl_pbcdx =
       (EEL_EXCL_FORCES(ir->coulombtype) && !EEL_FULL(ir->coulombtype));
-    pbcdxr = (double)n_bonded_dx(top,bExcl_pbcdx)/(double)top->atoms.nr;
+    pbcdxr = (double)n_bonded_dx(mtop,bExcl_pbcdx)/(double)mtop->natoms;
     
     if (bInterCGMultiBody && limit <= 0) {
       /* Here we should determine the minimum cell size from
@@ -378,7 +378,7 @@ static void optimize_ncells(FILE *fplog,
 
 void dd_choose_grid(FILE *fplog,
 		    t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
-		    t_topology *top,matrix box,real dlb_scale,
+		    gmx_mtop_t *mtop,matrix box,real dlb_scale,
 		    real cellsize_limit,real cutoff_mbody,
 		    bool bInterCGBondeds,bool bInterCGMultiBody)
 {
@@ -395,7 +395,7 @@ void dd_choose_grid(FILE *fplog,
 	    pme_inconvenient_nnodes(ir->nkx,ir->nky,cr->nnodes) == 0) {
 	  cr->npmenodes = 0;
 	} else {
-	  cr->npmenodes = guess_npme(fplog,top,ir,box,cr->nnodes);
+	  cr->npmenodes = guess_npme(fplog,mtop,ir,box,cr->nnodes);
 	}
       }
     } else {
@@ -404,7 +404,7 @@ void dd_choose_grid(FILE *fplog,
     }
     
     optimize_ncells(fplog,cr->nnodes,cr->npmenodes,dlb_scale,
-		    top,box,ir,dd,
+		    mtop,box,ir,dd,
 		    cellsize_limit,cutoff_mbody,
 		    bInterCGBondeds,bInterCGMultiBody,
 		    dd->nc);

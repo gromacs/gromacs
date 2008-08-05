@@ -43,9 +43,9 @@
 
 #include "typedefs.h"
 
-extern void bcast_ir_top(const t_commrec *cr,
-			 t_inputrec *inputrec,t_topology *top);
-/* Broadcasts ir and top from the master to all nodes in cr->mpi_comm_mygroup.
+extern void bcast_ir_mtop(const t_commrec *cr,
+			 t_inputrec *inputrec,gmx_mtop_t *mtop);
+/* Broadcasts ir and mtop from the master to all nodes in cr->mpi_comm_mygroup.
  */
 
 extern void bcast_state_setup(const t_commrec *cr,t_state *state);

@@ -14,7 +14,7 @@
 
 void make_wall_tables(FILE *fplog,
 		      const t_inputrec *ir,const char *tabfn,
-		      const t_atoms *atoms,
+		      const gmx_groups_t *groups,
 		      t_forcerec *fr)
 {
   int  w,negp_pp,egp,i,j;
@@ -23,7 +23,7 @@ void make_wall_tables(FILE *fplog,
   t_forcetable *tab;
 
   negp_pp = ir->opts.ngener - ir->nwall;
-  nm_ind  = atoms->grps[egcENER].nm_ind;
+  nm_ind  = groups->grps[egcENER].nm_ind;
 
   fprintf(fplog,"Reading user tables for %d energy groups with %d walls\n",
 	  negp_pp,ir->nwall);
@@ -37,8 +37,8 @@ void make_wall_tables(FILE *fplog,
 	tab = &fr->wall_tab[w][egp];
 	sprintf(buf,"%s",tabfn);
 	sprintf(buf + strlen(tabfn) - strlen(ftp2ext(efXVG)) - 1,"_%s_%s.%s",
-		*atoms->grpname[nm_ind[egp]],
-		*atoms->grpname[nm_ind[negp_pp+w]],
+		*groups->grpname[nm_ind[egp]],
+		*groups->grpname[nm_ind[negp_pp+w]],
 		ftp2ext(efXVG));
 	*tab = make_tables(fplog,fr,FALSE,buf,0,TRUE,FALSE);
 	/* Since wall have no charge, we can compress the table */

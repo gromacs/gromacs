@@ -102,7 +102,7 @@ extern void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK, int *versi
  */
 
 extern void write_tpx_state(char *fn,int step,real t,
-			    t_inputrec *ir,t_state *state,t_topology *top);
+			    t_inputrec *ir,t_state *state,gmx_mtop_t *mtop);
 /* Write a file, and close it again. 
  * If fn == NULL, an efTPA file will be written to stdout (which
  * will not be closed afterwards)
@@ -110,15 +110,20 @@ extern void write_tpx_state(char *fn,int step,real t,
 
 extern void read_tpx_state(char *fn,int *step,real *t,
 			   t_inputrec *ir,t_state *state,rvec *f,
-			   t_topology *top);
+			   gmx_mtop_t *mtop);
 extern int read_tpx(char *fn,int *step,real *t,real *lambda,
 		    t_inputrec *ir,matrix box,int *natoms,
-		    rvec *x,rvec *v,rvec *f,t_topology *top);
+		    rvec *x,rvec *v,rvec *f,gmx_mtop_t *mtop);
 /* Read a file, and close it again. 
  * If fn == NULL, an efTPA file will be read from stdin (which
  * will not be closed afterwards)
  * Returns ir->ePBC, if it could be read from the file.
  */
+
+extern int read_tpx_top(char *fn,int *step,real *t,real *lambda,
+			t_inputrec *ir, matrix box,int *natoms,
+			rvec *x,rvec *v,rvec *f,t_topology *top);
+/* As read_tpx, but for the old t_topology struct */
 
 extern bool fn2bTPX(char *file);
 /* return if *file is one of the TPX file types */ 

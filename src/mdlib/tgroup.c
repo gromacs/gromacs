@@ -50,6 +50,7 @@
 #include "smalloc.h"
 #include "update.h"
 #include "rbin.h"
+#include "mtop_util.h"
 
 static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 { 
@@ -62,19 +63,24 @@ static void init_grptcstat(int ngtc,t_grp_tcstat tcstat[])
 }
 
 static void init_grpstat(FILE *log,
-			 t_atoms *atoms,int ngacc,t_grp_acc gstat[])
+			 gmx_mtop_t *mtop,int ngacc,t_grp_acc gstat[])
 {
+  gmx_groups_t *groups;
+  gmx_mtop_atomloop_all_t aloop;
   int    i,grp;
+  t_atom *atom;
 
   if (ngacc > 0) {
-    for(i=0; (i<atoms->nr); i++) {
-      grp = atoms->atom[i].grpnr[egcACC];
+    groups = &mtop->groups;
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
+      grp = ggrpnr(groups,egcACC,i);
       if ((grp < 0) && (grp >= ngacc))
 	gmx_incons("Input for acceleration groups wrong");
       gstat[grp].nat++;
       /* This will not work for integrator BD */
-      gstat[grp].mA += atoms->atom[i].m;
-      gstat[grp].mB += atoms->atom[i].mB;
+      gstat[grp].mA += atom->m;
+      gstat[grp].mB += atom->mB;
     }
   }
 }
@@ -93,7 +99,7 @@ static void init_grpener(FILE *log,int ngener,t_grp_ener *estat)
   }
 }
 
-void init_groups(FILE *log,t_atoms *atoms,t_grpopts *opts,t_groups *grps)
+void init_t_groups(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,t_groups *grps)
 {
   int i;
 #ifdef DEBUG
@@ -110,7 +116,7 @@ void init_groups(FILE *log,t_atoms *atoms,t_grpopts *opts,t_groups *grps)
   }
   
   snew(grps->grpstat,opts->ngacc);
-  init_grpstat(log,atoms,opts->ngacc,grps->grpstat);
+  init_grpstat(log,mtop,opts->ngacc,grps->grpstat);
  
   init_grpener(log,opts->ngener,&grps->estat);
 }

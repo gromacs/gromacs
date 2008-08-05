@@ -48,10 +48,9 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 
-void init_disres(FILE *fplog,int nbonds,const t_iatom *forceatoms,
-		 const t_iparams *ip,const t_inputrec *ir,
-		 const gmx_multisim_t *ms,
-		 t_fcdata *fcd,t_state *state);
+extern void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
+			t_inputrec *ir,const t_commrec *cr,bool bPartDecomp,
+			t_fcdata *fcd,t_state *state);
 /* Initiate *fcd data, must be called once, nbonds is the number 
  * of iatoms in the ilist of the idef struct.
  * When time averaging is used, the history is initialized in state,

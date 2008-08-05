@@ -55,6 +55,7 @@
 #include "names.h"
 #include "partdec.h"
 #include "pbc.h"
+#include "mtop_util.h"
 
 static void pull_print_x(FILE *out,t_pull *pull, real t) 
 {
@@ -744,20 +745,20 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
 static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 				  int start,int end,
 				  int g,t_pullgrp *pg,ivec pulldims,
-				  t_atoms *atoms,t_inputrec *ir)
+				  gmx_mtop_t *mtop,t_inputrec *ir)
 {
   int i,ii,d,nfrozen,ndim;
   real m,w,mbd;
   double tmass,wmass,wwmass;
   bool bDomDec;
   gmx_ga2la_t *ga2la=NULL;
+  gmx_groups_t *groups;
   t_atom *atom;
 
   bDomDec = (cr && DOMAINDECOMP(cr));
-  if (bDomDec)
+  if (bDomDec) {
     ga2la = cr->dd->ga2la;
-
-  atom = atoms->atom;
+  }
 
   if (EI_ENERGY_MINIMIZATION(ir->eI) || ir->eI == eiBD) {
     /* There are no masses in the integrator.
@@ -785,17 +786,20 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
     }
   }
 
+  groups = &mtop->groups;
+
   nfrozen = 0;
   tmass  = 0;
   wmass  = 0;
   wwmass = 0;
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
+    atom = gmx_mtop_atom_global(mtop,ii);
     if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
       pg->ind_loc[pg->nat_loc++] = ii;
     if (ir->opts.nFreeze) {
       for(d=0; d<DIM; d++)
-	if (pulldims[d] && ir->opts.nFreeze[atom[ii].grpnr[egcFREEZE]][d])
+	if (pulldims[d] && ir->opts.nFreeze[ggrpnr(groups,egcFREEZE,ii)][d])
 	  nfrozen++;
     }
     if (ir->efep == efepNO) {
@@ -817,7 +821,11 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
       if (ir->bd_fric) {
 	mbd = ir->bd_fric*ir->delta_t;
       } else {
-	mbd = ir->delta_t/ir->opts.tau_t[atom[ii].grpnr[egcTC]];
+	if (groups->grpnr[egcTC] == NULL) {
+	  mbd = ir->delta_t/ir->opts.tau_t[0];
+	} else {
+	  mbd = ir->delta_t/ir->opts.tau_t[groups->grpnr[egcTC][ii]];
+	}
       }
       w *= m/mbd;
       m = mbd;
@@ -864,7 +872,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 }
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
-	       t_atoms *atoms,t_commrec *cr,bool bOutFile)
+	       gmx_mtop_t *mtop,t_commrec *cr,bool bOutFile)
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
@@ -921,7 +929,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
 	}
       }
       /* Set the indices */
-      init_pull_group_index(fplog,cr,start,end,g,pgrp,pull->dim,atoms,ir);
+      init_pull_group_index(fplog,cr,start,end,g,pgrp,pull->dim,mtop,ir);
       if (PULL_CYL(pull) && pgrp->invtm == 0) {
 	gmx_fatal(FARGS,"Can not have frozen atoms in a cylinder pull group");
       }

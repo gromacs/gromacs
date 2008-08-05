@@ -187,7 +187,7 @@ void connelly_plot(char *fn,int ndots,real dots[],rvec x[],t_atoms *atoms,
     aaa.nr = ndots;
     write_sto_conf(fn,title,&aaa,xnew,NULL,ePBC,box);
     do_conect(fn,ndots,xnew);
-    free_t_atoms(&aaa);
+    free_t_atoms(&aaa,FALSE);
   }
   sfree(xnew);
 }

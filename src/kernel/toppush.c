@@ -859,8 +859,6 @@ static void push_atom_now(t_symtab *symtab,t_atoms *at,int atomnr,
   at->atom[nr].qB    = qB;
   at->atom[nr].mB    = mB;
   
-  for(j=0; (j<egcNR); j++)
-    at->atom[nr].grpnr[j] = -1;
   at->atom[nr].resnr = resnumber-1;
   at->atom[nr].atomnumber = atomicnumber;
   at->atomname[nr] = put_symtab(symtab,name);

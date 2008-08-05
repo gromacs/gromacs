@@ -63,6 +63,7 @@
 #include "enxio.h"
 #include "tpxio.h"
 #include "names.h"
+#include "mtop_util.h"
 
 typedef struct {
   int bStep;
@@ -84,16 +85,20 @@ typedef struct {
   float bBox;
 } t_fr_time;
 
-static void tpx2system(FILE *fp,t_topology *top)
+static void tpx2system(FILE *fp,gmx_mtop_t *mtop)
 {
-  int i,nvsite=0;
+  int i,nmol,nvsite=0;
+  gmx_mtop_atomloop_block_t aloop;
+  t_atom *atom;
+
   fprintf(fp,"\\subsection{Simulation system}\n");
-  for(i=0; (i<top->atoms.nr); i++) {
-    if (top->atoms.atom[i].ptype == eptVSite)
-      nvsite++;
+  aloop = gmx_mtop_atomloop_block_init(mtop);
+  while(gmx_mtop_atomloop_block_next(aloop,&atom,&nmol)) {
+    if (atom->ptype == eptVSite)
+      nvsite += nmol;
   }
   fprintf(fp,"A system of %d molecules (%d atoms) was simulated.\n",
-	  top->mols.nr,top->atoms.nr-nvsite);
+	  mtop->mols.nr,mtop->natoms-nvsite);
   if (nvsite)
     fprintf(fp,"Virtual sites were used in some of the molecules.\n");
   fprintf(fp,"\n\n");
@@ -131,14 +136,14 @@ static void tpx2methods(char *tpx,char *tex)
   t_tpxheader sh;
   t_inputrec  ir;
   t_state     state;
-  t_topology  top;
+  gmx_mtop_t  mtop;
   int         i,step;
   real        t;
 
-  read_tpx_state(tpx,&step,&t,&ir,&state,NULL,&top);
+  read_tpx_state(tpx,&step,&t,&ir,&state,NULL,&mtop);
   fp=fopen(tex,"w");
   fprintf(fp,"\\section{Methods}\n");
-  tpx2system(fp,&top);
+  tpx2system(fp,&mtop);
   tpx2params(fp,&ir);
   fclose(fp);
 }
@@ -246,12 +251,13 @@ void chk_trj(char *fn,char *tpr,real tol)
   real         rdum,t,tt,old_t1,old_t2,prec;
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   int          status,step;
-  t_topology   top;
+  gmx_mtop_t   mtop;
+  t_topology   *top;
   t_state      state;
   t_inputrec   ir;
   
   if (tpr) {
-    read_tpx_state(tpr,&step,&t,&ir,&state,NULL,&top);
+    read_tpx_state(tpr,&step,&t,&ir,&state,NULL,&mtop);
   }
   new_natoms = -1;
   natoms = -1;  
@@ -312,8 +318,10 @@ void chk_trj(char *fn,char *tpr,real tol)
       }
     }
     natoms=new_natoms;
-    if (tpr) 
-      chk_bonds(&top,ir.ePBC,fr.x,fr.box,tol);
+    if (tpr) {
+      top = gmx_mtop_generate_local_top(&mtop,&ir);
+      chk_bonds(top,ir.ePBC,fr.x,fr.box,tol);
+    }
     if (fr.bX)
       chk_coords(j,natoms,fr.x,fr.box,1e5,tol);
     if (fr.bV)

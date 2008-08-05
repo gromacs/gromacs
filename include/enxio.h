@@ -122,7 +122,8 @@ external "C" {
   extern bool do_enx(int fp_ene,t_enxframe *fr);
   /* Reads enx_frames, memory in fr is (re)allocated if necessary */
 
-  extern void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
+  extern void get_enx_state(char *fn, real t,
+			    gmx_groups_t *groups, t_inputrec *ir,
 			    t_state *state);
   /*
    * Reads state variables from enx file fn at time t.

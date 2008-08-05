@@ -377,7 +377,7 @@ static real find_energy(char *name, int nre, char **enm, t_enxframe *fr)
 }
 
 
-void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
+void get_enx_state(char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
 		   t_state *state)
 {
   /* Should match the names in mdebin.c */
@@ -422,8 +422,8 @@ void get_enx_state(char *fn, real t, t_atoms *atoms, t_inputrec *ir,
 
   if (ir->etc == etcNOSEHOOVER) {
     for(i=0; i<state->ngtc; i++) {
-      ni=atoms->grps[egcTC].nm_ind[i];
-      sprintf(buf,"Xi-%s",*(atoms->grpname[ni]));
+      ni = groups->grps[egcTC].nm_ind[i];
+      sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
       state->nosehoover_xi[i] = find_energy(buf,nre,enm,fr);
     }
     fprintf(stderr,"\nREAD %d NOSE-HOOVER Xi's FROM %s\n\n",state->ngtc,fn);

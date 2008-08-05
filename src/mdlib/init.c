@@ -127,13 +127,13 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
 }
 
 void init_single(FILE *fplog,t_inputrec *inputrec,
-		 char *tpxfile,t_topology *top, 
+		 char *tpxfile,gmx_mtop_t *mtop, 
                  t_state *state)
 {
   int         step;
   real        t;
   
-  read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
+  read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,mtop);
   set_state_entries(state,inputrec,1);
 
   if (fplog)
@@ -141,7 +141,7 @@ void init_single(FILE *fplog,t_inputrec *inputrec,
 }
 
 void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
-		   t_inputrec *inputrec,t_topology *top,
+		   t_inputrec *inputrec,gmx_mtop_t *mtop,
 		   t_state *state,
 		   int list)
 {
@@ -151,13 +151,13 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   
   if (MASTER(cr)) {
     init_inputrec(inputrec);
-    read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,top);
+    read_tpx_state(tpxfile,&step,&t,inputrec,state,NULL,mtop);
     /* When we will be doing domain decomposition with separate PME nodes
      * the rng entries will be too large, we correct for this later.
      */
     set_state_entries(state,inputrec,cr->nnodes);
   }
-  bcast_ir_top(cr,inputrec,top);
+  bcast_ir_mtop(cr,inputrec,mtop);
 
   if (inputrec->eI == eiBD || EI_SD(inputrec->eI)) {
     /* Make sure the random seeds are different on each node */
@@ -175,11 +175,11 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
     if (list&LIST_V)
       pr_rvecs(log,0,"boxv",state->boxv,DIM);
     if (list&LIST_X)
-      pr_rvecs(log,0,int_title("x",0,buf,255),state->x,top->atoms.nr);
+      pr_rvecs(log,0,int_title("x",0,buf,255),state->x,state->natoms);
     if (list&LIST_V)
-      pr_rvecs(log,0,int_title("v",0,buf,255),state->v,top->atoms.nr);
+      pr_rvecs(log,0,int_title("v",0,buf,255),state->v,state->natoms);
     if (list&LIST_TOP)
-      pr_top(log,0,int_title("topology",cr->nodeid,buf,255),top,TRUE);
+      pr_mtop(log,0,int_title("topology",cr->nodeid,buf,255),mtop,TRUE);
     fflush(log);
   }
 }

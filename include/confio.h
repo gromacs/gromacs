@@ -54,9 +54,6 @@ extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
-extern void free_t_atoms(t_atoms *atoms);
-/* free all the arrays and set the nr and nres to 0 */
-
 int read_g96_conf(FILE *fp,char *infile,t_trxframe *fr);
 /* read a Gromos96 coordinate or trajectory file,                       *
  * returns the number of atoms                                          *
@@ -92,6 +89,10 @@ extern void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
 			   rvec x[],rvec *v,int ePBC,matrix box);
 /* write atoms, x, v (if .gro and not NULL) and box (if not NULL) 
  * to an STO (.gro or .pdb) file */ 
+
+extern void write_sto_conf_mtop(char *outfile, char *title,gmx_mtop_t *mtop,
+				rvec x[],rvec *v,int ePBC,matrix box);
+/* As write_sto_conf, but uses a gmx_mtop_t struct */
 
 extern void get_stx_coordnum (char *infile,int *natoms);
 /* read the number of atoms from an STX file */

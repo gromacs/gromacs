@@ -63,7 +63,6 @@
 #include "topdirs.h"
 #include "gpp_nextnb.h"
 #include "topio.h"
-#include "topcat.h"
 #include "topshake.h"
 #include "gmxcpp.h"
 #include "gpp_bond_atomtype.h"
@@ -150,36 +149,43 @@ static void gen_pairs(t_params *nbs,t_params *pairs,real fudge, int comb, bool b
   }
 }
 
-real check_mol(t_atoms *atoms)
+double check_mol(gmx_mtop_t *mtop)
 {
   char    buf[256];
-  int     i,rn,pt;
-  real    q,m;
+  int     i,mb,nmol,rn,pt;
+  double  q;
+  real    m;
+  t_atoms *atoms;
 
   /* Check mass and charge */
   q=0.0;
-  for (i=0; (i<atoms->nr); i++) {
-    q += atoms->atom[i].q;
-    m  = atoms->atom[i].m;
-    pt = atoms->atom[i].ptype;
-    /* If the particle is an atom or a nucleus it must have a mass,
-     * else, if it is a shell, a vsite or a bondshell it can have mass zero
-     */
-    if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus))) {
-      rn=atoms->atom[i].resnr;
-      sprintf(buf,"atom %s (Res %s-%d) has mass %g\n",
-	      *(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
-      warning_error(buf);
-    } else 
-      if ((m!=0) && (pt == eptVSite)) {
+
+  for(mb=0; mb<mtop->nmoltype; mb++) {
+    atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
+    nmol  = mtop->molblock[mb].nmol;
+    for (i=0; (i<atoms->nr); i++) {
+      q += nmol*atoms->atom[i].q;
+      m  = atoms->atom[i].m;
+      pt = atoms->atom[i].ptype;
+      /* If the particle is an atom or a nucleus it must have a mass,
+       * else, if it is a shell, a vsite or a bondshell it can have mass zero
+       */
+      if ((m <= 0.0) && ((pt == eptAtom) || (pt == eptNucleus))) {
 	rn=atoms->atom[i].resnr;
-	sprintf(buf,"virtual site %s (Res %s-%d) has non-zero mass %g\n"
-		"     Check your topology.\n",
+	sprintf(buf,"atom %s (Res %s-%d) has mass %g\n",
 		*(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
 	warning_error(buf);
-	/* The following statements make LINCS break! */
-	/* atoms->atom[i].m=0; */
-      }
+      } else 
+	if ((m!=0) && (pt == eptVSite)) {
+	  rn=atoms->atom[i].resnr;
+	  sprintf(buf,"virtual site %s (Res %s-%d) has non-zero mass %g\n"
+		  "     Check your topology.\n",
+		  *(atoms->atomname[i]),*(atoms->resname[rn]),rn+1,m);
+	  warning_error(buf);
+	  /* The following statements make LINCS break! */
+	  /* atoms->atom[i].m=0; */
+	}
+    }
   }
   return q;
 }
@@ -289,8 +295,8 @@ static char **read_topol(char *infile,char *outfile,
 			 real        *reppow,
 			 t_gromppopts *opts,
 			 real        *fudgeQQ,
-			 int         *nsim,
-			 t_simsystem **sims,
+			 int         *nmolblock,
+			 gmx_molblock_t **molblock,
 			 bool        bFEP,
 			 bool        bZero,
 			 bool        bVerbose)
@@ -301,9 +307,9 @@ static char **read_topol(char *infile,char *outfile,
   char       line[STRLEN],errbuf[256],comb_str[256],nb_str[256];
   char       genpairs[32];
   char       *dirstr,*dummy2;
-  int        nrcopies,nmol,Nsim=0,nscan,ncombs,ncopy;
+  int        nrcopies,nmol,nmolb=0,nscan,ncombs,ncopy;
   double     fLJ,fQQ,fPOW;
-  t_simsystem *Sims=NULL;
+  gmx_molblock_t *molb=NULL;
   t_topology *block=NULL;
   t_molinfo  *mi0=NULL;
   DirStack   *DS;
@@ -566,10 +572,10 @@ static char **read_topol(char *infile,char *outfile,
 	    
 	    push_mol(nmol,*molinfo,pline,&whichmol,&nrcopies);
 	    mi0=&((*molinfo)[whichmol]);
-	    srenew(Sims,Nsim+1);
-	    Sims[Nsim].whichmol=whichmol;
-	    Sims[Nsim].nrcopies=nrcopies;
-	    Nsim++;
+	    srenew(molb,nmolb+1);
+	    molb[nmolb].type = whichmol;
+	    molb[nmolb].nmol = nrcopies;
+	    nmolb++;
 	    
 	    bCouple = (opts->couple_moltype &&
 		       strcmp(*(mi0->name),opts->couple_moltype) == 0);
@@ -646,8 +652,8 @@ static char **read_topol(char *infile,char *outfile,
   
   *nrmols=nmol;
   
-  *nsim=Nsim;
-  *sims=Sims;
+  *nmolblock = nmolb;
+  *molblock  = molb;
   
   return title;
 }
@@ -666,8 +672,8 @@ char **do_top(bool         bVerbose,
 	      int          *nrmols,
 	      t_molinfo    **molinfo,
 	      t_inputrec   *ir,
-	      int          *nsim,
-	      t_simsystem  **sims)
+	      int          *nmolblock,
+	      gmx_molblock_t **molblock)
 {
   /* Tmpfile might contain a long path */
   char *tmpfile;
@@ -682,7 +688,7 @@ char **do_top(bool         bVerbose,
   title=read_topol(topfile,tmpfile,opts->define,opts->include,
 		   symtab,atype,nrmols,molinfo,
 		   plist,combination_rule,repulsion_power,
-		   opts,fudgeQQ,nsim,sims,
+		   opts,fudgeQQ,nmolblock,molblock,
 		   ir->efep!=efepNO,bZero,bVerbose);
   if ((*combination_rule != eCOMB_GEOMETRIC) && 
       (ir->vdwtype == evdwUSER)) {
@@ -695,8 +701,11 @@ char **do_top(bool         bVerbose,
 }
 
 
-void generate_qmexcl(t_topology *sys,t_inputrec *ir)
-  {
+static void generate_qmexcl_moltype(gmx_moltype_t *molt,unsigned char *grpnr,
+				    t_inputrec *ir)
+{
+  /* This routine expects molt->ilist to be of size F_NRE and ordered. */
+
   /* generates the exclusions between the individual QM atoms, as
    * these interactions should be handled by the QM subroutines and
    * not by the gromacs routines 
@@ -728,12 +737,12 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
   /* we first search for all the QM atoms and put them in an array 
    */
   for(j=0;j<jmax;j++){
-    for(i=0;i<sys->atoms.nr;i++){
+    for(i=0;i<molt->atoms.nr;i++){
       if(qm_nr>=qm_max){
 	qm_max += 100;
 	srenew(qm_arr,qm_max);
       }
-      if(sys->atoms.atom[i].grpnr[egcQMMM]==j){
+      if(grpnr[i] == j){
 	qm_arr[qm_nr++] = i;
       }
     }
@@ -743,8 +752,8 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
    * the qm_arr to change the elements corresponding to the QM atoms
    * to TRUE.  
    */
-  snew(bQMMM,sys->atoms.nr);
-  for (i=0;i<sys->atoms.nr;i++)
+  snew(bQMMM,molt->atoms.nr);
+  for (i=0;i<molt->atoms.nr;i++)
     bQMMM[i]=FALSE;
   for (i=0;i<qm_nr;i++)
     bQMMM[qm_arr[i]]=TRUE;
@@ -760,11 +769,11 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
    * be rewritten at this poitn without any problem. 25-9-2002 */
   
   /* first check weter we already have CONNBONDS: */
-  if (sys->idef.il[F_CONNBONDS].nr != 0){
+  if (molt->ilist[F_CONNBONDS].nr != 0){
     fprintf(stderr,"nr. of CONNBONDS present already: %d\n",
-	    sys->idef.il[F_CONNBONDS].nr/3);
-    ftype = sys->idef.il[F_CONNBONDS].iatoms[0];
-    k = sys->idef.il[F_CONNBONDS].nr;
+	    molt->ilist[F_CONNBONDS].nr/3);
+    ftype = molt->ilist[F_CONNBONDS].iatoms[0];
+    k = molt->ilist[F_CONNBONDS].nr;
   }
   /* now we delete all bonded interactions, except the ones describing
    * a chemical bond. These are converted to CONNBONDS
@@ -774,37 +783,37 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
       continue;
     nratoms = interaction_function[i].nratoms;
     j = 0;
-    while (j<sys->idef.il[i].nr){
+    while (j<molt->ilist[i].nr){
       bexcl = FALSE;
       switch (nratoms){
       case 2:
-	a1 = sys->idef.il[i].iatoms[j+1];
-	a2 = sys->idef.il[i].iatoms[j+2];
+	a1 = molt->ilist[i].iatoms[j+1];
+	a2 = molt->ilist[i].iatoms[j+2];
 	bexcl = (bQMMM[a1] && bQMMM[a2]);
 	/* a bonded beteen two QM atoms will be copied to the
   	 * CONNBONDS list, for reasons mentioned above 
 	 */
 	if(bexcl && i<F_ANGLES){
-	  srenew(sys->idef.il[F_CONNBONDS].iatoms,k+3);
-	  sys->idef.il[F_CONNBONDS].nr         += 3; 
-	  sys->idef.il[F_CONNBONDS].iatoms[k++] = ftype;
-	  sys->idef.il[F_CONNBONDS].iatoms[k++] = a1;
-	  sys->idef.il[F_CONNBONDS].iatoms[k++] = a2;
+	  srenew(molt->ilist[F_CONNBONDS].iatoms,k+3);
+	  molt->ilist[F_CONNBONDS].nr         += 3; 
+	  molt->ilist[F_CONNBONDS].iatoms[k++] = ftype;
+	  molt->ilist[F_CONNBONDS].iatoms[k++] = a1;
+	  molt->ilist[F_CONNBONDS].iatoms[k++] = a2;
 	}
 	break;
       case 3:
-	a1 = sys->idef.il[i].iatoms[j+1];
-	a2 = sys->idef.il[i].iatoms[j+2];
-	a3 = sys->idef.il[i].iatoms[j+3];
+	a1 = molt->ilist[i].iatoms[j+1];
+	a2 = molt->ilist[i].iatoms[j+2];
+	a3 = molt->ilist[i].iatoms[j+3];
 	bexcl = ((bQMMM[a1] && bQMMM[a2]) ||
 		 (bQMMM[a1] && bQMMM[a3]) ||
 		 (bQMMM[a2] && bQMMM[a3]));
 	break;
       case 4:
-	a1 = sys->idef.il[i].iatoms[j+1];
-	a2 = sys->idef.il[i].iatoms[j+2];
-	a3 = sys->idef.il[i].iatoms[j+3];
-	a4 = sys->idef.il[i].iatoms[j+4];
+	a1 = molt->ilist[i].iatoms[j+1];
+	a2 = molt->ilist[i].iatoms[j+2];
+	a3 = molt->ilist[i].iatoms[j+3];
+	a4 = molt->ilist[i].iatoms[j+4];
 	bexcl = ((bQMMM[a1] && bQMMM[a2] && bQMMM[a3]) ||
 		 (bQMMM[a1] && bQMMM[a2] && bQMMM[a4]) ||
 		 (bQMMM[a1] && bQMMM[a3] && bQMMM[a4]) ||
@@ -817,9 +826,9 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
 	/* since the interaction involves QM atoms, these should be
          * removed from the MM ilist 
 	 */
-	sys->idef.il[i].nr -= (nratoms+1);
-	for (l=j;l<sys->idef.il[i].nr;l++)
-	  sys->idef.il[i].iatoms[l] = sys->idef.il[i].iatoms[l+(nratoms+1)];  
+	molt->ilist[i].nr -= (nratoms+1);
+	for (l=j;l<molt->ilist[i].nr;l++)
+	  molt->ilist[i].iatoms[l] = molt->ilist[i].iatoms[l+(nratoms+1)];  
       } else {
 	j += nratoms+1; /* the +1 is for the functype */
       }
@@ -831,15 +840,12 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
    * linkatoms interaction with the QMatoms and would be counted
    * twice.  */
  
-  
-    
-
   for(i=0;i<F_NRE;i++){
     if(IS_CHEMBOND(i)){
       j=0;
-      while(j<sys->idef.il[i].nr){
-	a1 = sys->idef.il[i].iatoms[j+1];
-	a2 = sys->idef.il[i].iatoms[j+2];
+      while(j<molt->ilist[i].nr){
+	a1 = molt->ilist[i].iatoms[j+1];
+	a2 = molt->ilist[i].iatoms[j+2];
 	if((bQMMM[a1] && !bQMMM[a2])||(!bQMMM[a1] && bQMMM[a2])){
 	  if(link_nr>=link_max){
 	    link_max += 10;
@@ -855,15 +861,15 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
       }
     }
   }   
-  snew(blink,sys->atoms.nr);   
-  for (i=0;i<sys->atoms.nr;i++)
+  snew(blink,molt->atoms.nr);   
+  for (i=0;i<molt->atoms.nr;i++)
     blink[i]=FALSE;
   for (i=0;i<link_nr;i++)
     blink[link_arr[i]]=TRUE;
   /* creating the exclusion block for the QM atoms. Each QM atom has
    * as excluded elements all the other QMatoms (and itself).
    */
-  qmexcl.nr = sys->atoms.nr;
+  qmexcl.nr = molt->atoms.nr;
   qmexcl.nra = qm_nr*(qm_nr+link_nr)+link_nr*qm_nr; 
   snew(qmexcl.index,qmexcl.nr+1);
   snew(qmexcl.a,qmexcl.nra);
@@ -891,9 +897,9 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
   /* and merging with the exclusions already present in sys.
    */
 
-  init_block2(&qmexcl2,sys->atoms.nr);
+  init_block2(&qmexcl2,molt->atoms.nr);
   b_to_b2(&qmexcl, &qmexcl2);
-  merge_excl(&(sys->excls),&qmexcl2);
+  merge_excl(&(molt->excls),&qmexcl2);
   done_block2(&qmexcl2);
 
   /* Finally, we also need to get rid of the pair interactions of the
@@ -904,10 +910,10 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
   for (i=F_LJ14;i<F_COUL14;i++){
     nratoms = interaction_function[i].nratoms;
     j = 0;
-    while (j<sys->idef.il[i].nr){
+    while (j<molt->ilist[i].nr){
       bexcl = FALSE;
-      a1 = sys->idef.il[i].iatoms[j+1];
-      a2 = sys->idef.il[i].iatoms[j+2];
+      a1 = molt->ilist[i].iatoms[j+1];
+      a2 = molt->ilist[i].iatoms[j+2];
       bexcl = ((bQMMM[a1] && bQMMM[a2])||
 	       (blink[a1] && bQMMM[a2])||
 	       (bQMMM[a1] && blink[a2]));
@@ -915,9 +921,9 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
 	/* since the interaction involves QM atoms, these should be
          * removed from the MM ilist 
 	 */
-	sys->idef.il[i].nr -= (nratoms+1);
-	for (k=j;k<sys->idef.il[i].nr;k++)
-	  sys->idef.il[i].iatoms[k] = sys->idef.il[i].iatoms[k+(nratoms+1)];  
+	molt->ilist[i].nr -= (nratoms+1);
+	for (k=j;k<molt->ilist[i].nr;k++)
+	  molt->ilist[i].iatoms[k] = molt->ilist[i].iatoms[k+(nratoms+1)];  
       } else {
 	j += nratoms+1; /* the +1 is for the functype */
       }
@@ -930,3 +936,74 @@ void generate_qmexcl(t_topology *sys,t_inputrec *ir)
   free(blink);
 } /* generate_qmexcl */ 
 
+void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir)
+{
+  /* This routine expects molt->molt[m].ilist to be of size F_NRE and ordered.
+   */
+
+  unsigned char *grpnr;
+  int mb,mol,nat_mol,i;
+  gmx_molblock_t *molb;
+  bool bQMMM;
+
+  grpnr = sys->groups.grpnr[egcQMMM];
+  if (grpnr == NULL) {
+    gmx_fatal(FARGS,"Can not handle a QMMM system which is fully QM");
+  }
+
+  for(mb=0; mb<sys->nmolblock; mb++) {
+    molb = &sys->molblock[mb];
+    nat_mol = sys->moltype[molb->type].atoms.nr;
+    for(mol=0; mol<molb->nmol; mol++) {
+      bQMMM = FALSE;
+      for(i=0; i<nat_mol; i++) {
+	if (grpnr[i] < ir->opts.ngQM) {
+	  bQMMM = TRUE;
+	}
+      }
+      if (bQMMM) {
+	if (molb->nmol > 1) {
+	  /* We need to split this molblock */
+	  if (mol > 0) {
+	    /* Split the molblock at this molecule */
+	    sys->nmolblock++;
+	    srenew(sys->molblock,sys->nmolblock);
+	    for(i=mb; i<sys->nmolblock-1; i++) {
+	      sys->molblock[i+1] = sys->molblock[i];
+	    }
+	    sys->molblock[mb  ].nmol  = mol;
+	    sys->molblock[mb+1].nmol -= mol;
+	    mb++;
+	    molb = &sys->molblock[mb];
+	  }
+	  if (molb->nmol > 1) {
+	    /* Split the molblock after this molecule */
+	    sys->nmolblock++;
+	    srenew(sys->molblock,sys->nmolblock);
+	    for(i=mb; i<sys->nmolblock-1; i++) {
+	      sys->molblock[i+1] = sys->molblock[i];
+	    }
+	    sys->molblock[mb  ].nmol  = 1;
+	    sys->molblock[mb+1].nmol -= 1;
+	  }
+
+	  /* Add a moltype for the QMMM molecule */
+	  sys->nmoltype++;
+	  srenew(sys->moltype,sys->nmoltype);
+	  /* Copy the moltype struct */
+	  sys->moltype[sys->nmoltype-1] = sys->moltype[molb->type];
+	  /* Copy the exclusions to a new array, since this is the only
+	   * thing that needs to be modified for QMMM.
+	   */
+	  copy_blocka(&sys->moltype[molb->type     ].excls,
+		      &sys->moltype[sys->nmoltype-1].excls);
+	  /* Set the molecule type for the QMMM molblock */
+	  molb->type = sys->nmoltype - 1;
+	}
+	
+	generate_qmexcl_moltype(&sys->moltype[molb->type],grpnr,ir);
+      }
+      grpnr += nat_mol;
+    }
+  }
+}

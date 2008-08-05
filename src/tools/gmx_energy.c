@@ -56,6 +56,7 @@
 #include "physics.h"
 #include "tpxio.h"
 #include "viewit.h"
+#include "mtop_util.h"
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
@@ -233,7 +234,8 @@ static int *select_by_name(int nre,char *nm[],int *nset)
 static void get_orires_parms(char *topnm,
 			     int *nor,int *nex,int **label,real **obs)
 {
-  t_topology top;
+  gmx_mtop_t mtop;
+  t_topology *top;
   t_inputrec ir;
   t_iparams  *ip;
   int        natoms,i;
@@ -242,13 +244,14 @@ static void get_orires_parms(char *topnm,
   int        nb;
   matrix     box;
 
-  read_tpx(topnm,&i,&t,&t,&ir,box,&natoms,NULL,NULL,NULL,&top);
+  read_tpx(topnm,&i,&t,&t,&ir,box,&natoms,NULL,NULL,NULL,&mtop);
+  top = gmx_mtop_generate_local_top(&mtop,&ir);
 
-  ip       = top.idef.iparams;
-  iatom    = top.idef.il[F_ORIRES].iatoms;
+  ip       = top->idef.iparams;
+  iatom    = top->idef.il[F_ORIRES].iatoms;
   
   /* Count how many distance restraint there are... */
-  nb = top.idef.il[F_ORIRES].nr;
+  nb = top->idef.il[F_ORIRES].nr;
   if (nb == 0)
     gmx_fatal(FARGS,"No orientation restraints in topology!\n");
   
@@ -269,6 +272,8 @@ static void get_orires_parms(char *topnm,
 int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
 	       t_topology *top,t_inputrec *ir)
 {
+  gmx_mtop_t mtop;
+  t_topology *ltop;
   t_functype *functype;
   t_iparams  *ip;
   int        natoms,i,j,k,type,ftype,natom;
@@ -279,7 +284,10 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   int        nb,label1;
   matrix     box;
 
-  read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,top);
+  read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,&mtop);
+  ltop = gmx_mtop_generate_local_top(&mtop,ir);
+  *top = *ltop;
+  sfree(ltop);
 
   functype = top->idef.functype;
   ip       = top->idef.iparams;

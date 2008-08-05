@@ -64,6 +64,7 @@
 #include "gmx_fatal.h"
 #include "typedefs.h"
 #include <stdlib.h>
+#include "mtop_util.h"
 
 
 /* declarations of the interfaces to the QM packages. The _SH indicate
@@ -301,12 +302,12 @@ t_MMrec *mk_MMrec(void){
 } /* mk_MMrec */
 
 static void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray, 
-		       t_topology *top, t_inputrec *ir)
+		       gmx_mtop_t *mtop, t_inputrec *ir)
 {
   /* fills the t_QMrec struct of QM group grpnr 
    */
-  int
-    i;
+  int i;
+  t_atom *atom;
 
 
   qm->nrQMatoms = nr;
@@ -319,10 +320,9 @@ static void init_QMrec(int grpnr, t_QMrec *qm,int nr, int *atomarray,
 
   snew(qm->atomicnumberQM,nr);
   for (i=0;i<qm->nrQMatoms;i++){
-    qm->nelectrons       +=  
-      top->atomtypes.atomnumber[top->atoms.atom[qm->indexQM[i]].type];
-    qm->atomicnumberQM[i] = 
-      top->atomtypes.atomnumber[top->atoms.atom[qm->indexQM[i]].type];
+    gmx_mtop_atomnr_to_atom(mtop,qm->indexQM[i],&atom);
+    qm->nelectrons       += mtop->atomtypes.atomnumber[atom->type];
+    qm->atomicnumberQM[i] = mtop->atomtypes.atomnumber[atom->type];
   }
   qm->QMcharge       = ir->opts.QMcharge[grpnr];
   qm->multiplicity   = ir->opts.QMmult[grpnr];
@@ -429,7 +429,7 @@ t_QMMMrec *mk_QMMMrec(void)
 
 void init_QMMMrec(t_commrec *cr,
 		  matrix box,
-		  t_topology *top,
+		  gmx_mtop_t *mtop,
 		  t_inputrec *ir,
 		  t_forcerec *fr)
 {
@@ -439,13 +439,16 @@ void init_QMMMrec(t_commrec *cr,
    * simply contains true/false for QM and MM (the other) atoms.
    */
 
-  atom_id   *qm_arr=NULL,dummy,ai,aj;
-  int       qm_max=0,qm_nr=0,i,j,jmax,k,l,nrdum=0;
+  gmx_groups_t *groups;
+  atom_id   *qm_arr=NULL,vsite,ai,aj;
+  int       qm_max=0,qm_nr=0,i,j,jmax,k,l,i_mol,nrvsite2=0;
   t_QMMMrec *qr;
   t_MMrec   *mm;
   t_iatom   *iatoms;
   real      c12au,c6au;
-  t_atoms   *atoms;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom    *atom;
+  gmx_moltype_t *moltype;
 
   c6au  = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,6)); 
   c12au = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,12)); 
@@ -454,10 +457,6 @@ void init_QMMMrec(t_commrec *cr,
   /* Make a local copy of the QMMMrec */
   qr = fr->qr;
 
-  /* make a local copy of the VSITE2 (used to be DUMMY2) iatoms array 
-   */
-  iatoms = top->idef.il[F_VSITE2].iatoms;
-  nrdum  = top->idef.il[F_VSITE2].nr;
   /* bQMMM[..] is an array containing TRUE/FALSE for atoms that are
    * QM/not QM. We first set all elemenst at false. Afterwards we use
    * the qm_arr (=MMrec->indexQM) to changes the elements
@@ -482,7 +481,7 @@ void init_QMMMrec(t_commrec *cr,
   else
     qr->nrQMlayers = 1; 
 
-  atoms = &top->atoms;
+  groups = &mtop->groups;
 
   /* there are jmax groups of QM atoms. In case of multiple QM groups
    * I assume that the users wants to do ONIOM. However, maybe it
@@ -493,13 +492,15 @@ void init_QMMMrec(t_commrec *cr,
   snew(qr->qm,jmax);
   for(j=0;j<jmax;j++){
     /* new layer */
-    for (i=0;i<atoms->nr;i++){
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
       if(qm_nr >= qm_max){
 	qm_max += 1000;
 	srenew(qm_arr,qm_max);
       }
-      if((atoms->atom[i].grpnr[egcQMMM]==j &&
-	  top->atomtypes.atomnumber[atoms->atom[i].type])){ /* hack for tip4p */
+      if((ggrpnr(groups,egcQMMM,i)==j &&
+	  mtop->atomtypes.atomnumber[atom->type])){ 
+	/* hack for tip4p */
 	qm_arr[qm_nr++]=i;
       }
     }
@@ -517,17 +518,21 @@ void init_QMMMrec(t_commrec *cr,
        * purpose. If all atoms defining the current Link Atom (Dummy2)
        * are part of the current QM layer it needs to be removed from
        * qm_arr[].  */
-      
-      for(k=0;k<nrdum;k+=4){
-	dummy=iatoms[k+1]; /* the dummy */
+   
+      gmx_mtop_atomloop_all_moltype(aloop,&moltype,&i_mol);
+      nrvsite2 = moltype->ilist[F_VSITE2].nr;
+      iatoms   = moltype->ilist[F_VSITE2].iatoms;
+
+      for(k=0;k<nrvsite2;k+=4){
+	vsite=iatoms[k+1]; /* the dummy */
 	ai=iatoms[k+2]; /* the atoms that construct */
 	aj=iatoms[k+3]; /* the dummy */
-	if (atoms->atom[dummy].grpnr[egcQMMM] < atoms->grps[egcQMMM].nr-1) {
+	if (ggrpnr(groups,egcQMMM,vsite) < groups->grps[egcQMMM].nr-1) {
 	  /* this dummy link atom needs to be removed from the qm_arr
 	   * before making the QMrec of this layer!  
 	   */
 	  for(i=0;i<qm_nr;i++){
-	    if(qm_arr[i]==dummy){
+	    if(qm_arr[i]==vsite){
 	      /* drop the element */
 	      for(l=i;l<qm_nr;l++){
 		qm_arr[l]=qm_arr[l+1];
@@ -541,42 +546,40 @@ void init_QMMMrec(t_commrec *cr,
 
       /* store QM atoms in this layer in the QMrec and initialise layer 
        */
-      init_QMrec(j,qr->qm[j],qm_nr,qm_arr,top,ir);
+      init_QMrec(j,qr->qm[j],qm_nr,qm_arr,mtop,ir);
       
       /* we now store the LJ C6 and C12 parameters in QM rec in case
        * we need to do an optimization 
        */
       if(qr->qm[j]->bOPT || qr->qm[j]->bTS){
 	for(i=0;i<qm_nr;i++){
-	  qr->qm[j]->c6[i]  =  C6(fr->nbfp,top->idef.atnr,
-				 atoms->atom[i].type,
-				  atoms->atom[i].type)/c6au;
-	  qr->qm[j]->c12[i] = C12(fr->nbfp,top->idef.atnr,
-				 atoms->atom[i].type,
-				  atoms->atom[i].type)/c12au;
+	  qr->qm[j]->c6[i]  =  C6(fr->nbfp,mtop->ffparams.atnr,
+				  atom->type,atom->type)/c6au;
+	  qr->qm[j]->c12[i] = C12(fr->nbfp,mtop->ffparams.atnr,
+				  atom->type,atom->type)/c12au;
 	}
       }
       /* now we check for frontier QM atoms. These occur in pairs that
        * construct the dummy
        */
-      for(k=0;k<nrdum;k+=4){
-	dummy=iatoms[k+1]; /* the dummy */
+      for(k=0;k<nrvsite2;k+=4){
+	vsite=iatoms[k+1]; /* the dummy */
 	ai=iatoms[k+2]; /* the atoms that construct */
 	aj=iatoms[k+3]; /* the dummy */
-	if(atoms->atom[ai].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
-	   (atoms->atom[aj].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1))){
+	if(ggrpnr(groups,egcQMMM,ai) < (groups->grps[egcQMMM].nr-1) &&
+	   (ggrpnr(groups,egcQMMM,aj) >= (groups->grps[egcQMMM].nr-1))){
 	  /* mark ai as frontier atom */
 	  for(i=0;i<qm_nr;i++){
-	    if( (qm_arr[i]==ai) || (qm_arr[i]==dummy) ){
+	    if( (qm_arr[i]==ai) || (qm_arr[i]==vsite) ){
 	      qr->qm[j]->frontatoms[i]=TRUE;
 	    }
 	  }
 	}
-	else if(atoms->atom[aj].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
-		(atoms->atom[ai].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1))){
+	else if(ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
+		(ggrpnr(groups,egcQMMM,ai) >= (groups->grps[egcQMMM].nr-1))){
 	  /* mark aj as frontier atom */
 	  for(i=0;i<qm_nr;i++){
-	    if( (qm_arr[i]==aj) || (qm_arr[i]==dummy)){
+	    if( (qm_arr[i]==aj) || (qm_arr[i]==vsite)){
 	      qr->qm[j]->frontatoms[i]=TRUE;
 	    }
 	  }
@@ -592,21 +595,21 @@ void init_QMMMrec(t_commrec *cr,
      * the innerloops from doubly counting the electostatic QM MM interaction
      */
     for (k=0;k<qm_nr;k++){
-      atoms->atom[qm_arr[k]].q = 0.0;
-      atoms->atom[qm_arr[k]].qB = 0.0;
+      gmx_mtop_atomnr_to_atom(mtop,qm_arr[k],&atom);
+      atom->q  = 0.0;
+      atom->qB = 0.0;
     } 
     qr->qm[0] = mk_QMrec();
     /* store QM atoms in the QMrec and initialise
      */
-    init_QMrec(0,qr->qm[0],qm_nr,qm_arr,top,ir);
+    init_QMrec(0,qr->qm[0],qm_nr,qm_arr,mtop,ir);
     if(qr->qm[0]->bOPT || qr->qm[0]->bTS){
       for(i=0;i<qm_nr;i++){
-	qr->qm[0]->c6[i]  =  C6(fr->nbfp,top->idef.atnr,
-				atoms->atom[i].type,
-				atoms->atom[i].type)/c6au;
-	qr->qm[0]->c12[i] = C12(fr->nbfp,top->idef.atnr,
-				atoms->atom[i].type,
-				atoms->atom[i].type)/c12au;
+	gmx_mtop_atomnr_to_atom(mtop,qm_arr[i],&atom);
+	qr->qm[0]->c6[i]  =  C6(fr->nbfp,mtop->ffparams.atnr,
+				atom->type,atom->type)/c6au;
+	qr->qm[0]->c12[i] = C12(fr->nbfp,mtop->ffparams.atnr,
+				atom->type,atom->type)/c12au;
       }
       
     }
@@ -615,35 +618,37 @@ void init_QMMMrec(t_commrec *cr,
 
     /* find frontier atoms and mark them true in the frontieratoms array.
      */
-    for(k=0;k<nrdum;k+=4){
-      dummy=iatoms[k+1]; /* the dummy */
-      ai=iatoms[k+2];    /* the atoms that construct */
-      aj=iatoms[k+3];    /* the dummy */
-      if(atoms->atom[ai].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
-	 (atoms->atom[aj].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1))){
+    for(i=0;i<qm_nr;i++) {
+      gmx_mtop_atomnr_to_moltype(mtop,qm_arr[i],&moltype,&i_mol);
+      nrvsite2 = moltype->ilist[F_VSITE2].nr;
+      iatoms   = moltype->ilist[F_VSITE2].iatoms;
+      
+      for(k=0;k<nrvsite2;k+=4){
+	vsite=iatoms[k+1]; /* the dummy */
+	ai=iatoms[k+2];    /* the atoms that construct */
+	aj=iatoms[k+3];    /* the dummy */
+	if(ggrpnr(groups,egcQMMM,ai) < (groups->grps[egcQMMM].nr-1) &&
+	   (ggrpnr(groups,egcQMMM,aj) >= (groups->grps[egcQMMM].nr-1))){
 	/* mark ai as frontier atom */
-	for(i=0;i<qm_nr;i++){
-	  if ( (qm_arr[i]==ai) || (qm_arr[i]==dummy) ){
+	  if ( (qm_arr[i]==ai) || (qm_arr[i]==vsite) ){
 	    qr->qm[0]->frontatoms[i]=TRUE;
 	  }
 	}
-      }
-      else if(atoms->atom[aj].grpnr[egcQMMM]<(atoms->grps[egcQMMM].nr-1) &&
-	      (atoms->atom[ai].grpnr[egcQMMM]>=(atoms->grps[egcQMMM].nr-1)))
-      {
-	/* mark aj as frontier atom */
-	for(i=0;i<qm_nr;i++){
-	  if ( (qm_arr[i]==aj) || (qm_arr[i]==dummy) ){
-	    qr->qm[0]->frontatoms[i]=TRUE;
+	else if(ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
+		(ggrpnr(groups,egcQMMM,ai) >=(groups->grps[egcQMMM].nr-1)))
+	  {
+	    /* mark aj as frontier atom */
+	    if ( (qm_arr[i]==aj) || (qm_arr[i]==vsite) ){
+	      qr->qm[0]->frontatoms[i]=TRUE;
+	    }
 	  }
-	}
       }
     }
-    
+      
     /* MM rec creation */
     mm               = mk_MMrec(); 
     mm->scalefactor  = ir->scalefactor;
-    mm->nrMMatoms    = (atoms->nr)-(qr->qm[0]->nrQMatoms); /* rest of the atoms */
+    mm->nrMMatoms    = (mtop->natoms)-(qr->qm[0]->nrQMatoms); /* rest of the atoms */
     qr->mm           = mm;
   } else {/* ONIOM */
     /* MM rec creation */    

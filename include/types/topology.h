@@ -37,6 +37,59 @@
 #include <config.h>
 #endif
 
+enum {
+  egcTC,    egcENER,   egcACC, egcFREEZE, 
+  egcUser1, egcUser2,  egcVCM, egcXTC,
+  egcORFIT, egcQMMM,
+  egcNR 
+};
+
+typedef struct {
+  char          **name;         /* Name of the molecule type  	        */
+  t_atoms	atoms;		/* The atoms		       	        */
+  t_ilist       ilist[F_NRE];
+  t_block       cgs;            /* The charge groups                    */
+  t_blocka      excls;          /* The exclusions                       */
+} gmx_moltype_t;
+
+typedef struct {
+  int           type;           /* The molcule type index in mtop.moltype */
+  int           nmol;           /* The number of molecules in this block  */
+  int           natoms_mol;     /* The number of atoms in one molecule    */
+  int           nposres_xA;     /* The number of posres coords for top A  */
+  rvec          *posres_xA;     /* The posres coords for top A            */
+  int           nposres_xB;     /* The number of posres coords for top B  */
+  rvec          *posres_xB;     /* The posres coords for top B            */
+} gmx_molblock_t;
+
+typedef struct {
+  t_grps         grps[egcNR];   /* Groups of things                     */
+  int            ngrpname;      /* Number of groupnames                 */
+  char           ***grpname;	/* Names of the groups		        */
+  int            ngrpnr[egcNR];
+  unsigned char  *grpnr[egcNR]; /* Group numbers or NULL		*/
+} gmx_groups_t;
+
+/* This macro gives the group number of group type egc for atom i.
+ * This macro is useful, since the grpnr pointers are NULL
+ * for group types that have all entries 0.
+ */
+#define ggrpnr(groups,egc,i) ((groups)->grpnr[egc] ? (groups)->grpnr[egc][i] : 0)
+
+typedef struct {
+  char           **name;	/* Name of the topology	       	        */
+  gmx_ffparams_t ffparams;
+  int            nmoltype;
+  gmx_moltype_t  *moltype;
+  int            nmolblock;
+  gmx_molblock_t *molblock;
+  int            natoms;
+  t_atomtypes    atomtypes;     /* Atomtype properties                  */
+  t_block        mols;          /* The molecules                        */
+  gmx_groups_t   groups;
+  t_symtab	 symtab;        /* The symbol table			*/
+} gmx_mtop_t;
+
 typedef struct {
   char  	**name;		/* Name of the topology	       	        */
   t_idef	idef;		/* The interaction function definition	*/

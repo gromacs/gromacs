@@ -39,9 +39,8 @@
 
 #include "typedefs.h"
 
-extern void convert_params(int atnr,t_params plist[],
-			   t_params nbtypes[],int comb,real reppow,
-			   real fudgeQQ,
-			   t_idef *idef);
+extern void convert_params(int atnr,t_params nbtypes[],
+			   t_molinfo *mi,int comb,real reppow,real fudgeQQ,
+			   gmx_mtop_t *mtop);
 
 #endif	/* _convparm_h */

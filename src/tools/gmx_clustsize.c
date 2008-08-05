@@ -62,6 +62,7 @@
 #include "pme.h"
 #include "gstat.h"
 #include "matio.h"
+#include "mtop_util.h"
 
 static void clust_size(char *ndx,char *trx,char *xpm,
 		       char *xpmw,char *ncl,char *acl, 
@@ -81,9 +82,10 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   /* Topology stuff */
   t_trxframe  fr;
   t_tpxheader tpxh;
-  t_topology  *top=NULL;
+  gmx_mtop_t *mtop=NULL;
   int     ePBC=-1;
   t_block *mols=NULL;
+  t_atom  *atom;
   int     version,generation,sss,ii,jj,nsame;
   real    ttt,lll,temp,tfac;
   /* Cluster size distribution (matrix) */
@@ -108,12 +110,12 @@ static void clust_size(char *ndx,char *trx,char *xpm,
   x      = fr.x;
 
   if (tpr) {  
-    snew(top,1);
+    snew(mtop,1);
     read_tpxheader(tpr,&tpxh,TRUE,&version,&generation);
     if (tpxh.natoms != natoms) 
       gmx_fatal(FARGS,"tpr (%d atoms) and xtc (%d atoms) do not match!",
 		tpxh.natoms,natoms);
-    ePBC = read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,top);
+    ePBC = read_tpx(tpr,&sss,&ttt,&lll,NULL,NULL,&natoms,NULL,NULL,NULL,mtop);
   }
   if (ndf <= -1)
     tfac = 1;
@@ -124,7 +126,7 @@ static void clust_size(char *ndx,char *trx,char *xpm,
     if (ndx)
       printf("Using molecules rather than atoms. Not reading index file %s\n",
 	     ndx);
-    mols = &(top->mols);
+    mols = &(mtop->mols);
 
     /* Make dummy index */
     nindex = mols->nr;
@@ -260,7 +262,8 @@ static void clust_size(char *ndx,char *trx,char *xpm,
 	  for(i=0; (i<nindex); i++) 
 	    if (clust_index[i] == max_clust_ind) {
 	      ai    = index[i];
-	      ekin += 0.5*top->atoms.atom[ai].m*iprod(v[ai],v[ai]);
+	      gmx_mtop_atomnr_to_atom(mtop,ai,&atom);
+	      ekin += 0.5*atom->m*iprod(v[ai],v[ai]);
 	    }
 	  temp = (ekin*2.0)/(3.0*tfac*max_clust_size*BOLTZ);
 	  fprintf(tp,"%10.3f  %10.3f\n",fr.time,temp);

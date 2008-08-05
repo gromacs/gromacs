@@ -28,6 +28,7 @@
 #include "mdrun.h"
 #include "nsgrid.h"
 #include "shellfc.h"
+#include "mtop_util.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -151,6 +152,9 @@ typedef struct gmx_domdec_comm {
     bool bCartesianPP;
     int  *ddindex2ddnodeid; /* size npmenode, only with bCartesianPP_PME */
     
+    /* The global charge groups */
+    t_block cgs_gl;
+
     /* Should we sort the cgs */
     int  nstSortCG;
     gmx_domdec_sort_t *sort;
@@ -369,6 +373,11 @@ int ddglatnr(gmx_domdec_t *dd,int i)
     }
     
     return atnr;
+}
+
+t_block *dd_charge_groups_global(gmx_domdec_t *dd)
+{
+    return &dd->comm->cgs_gl;
 }
 
 bool dd_filled_nsgrid_home(gmx_domdec_t *dd)
@@ -792,11 +801,12 @@ static void dd_move_cellx(gmx_domdec_t *dd,matrix box)
 }
 
 static void dd_collect_cg(gmx_domdec_t *dd,
-                          t_state *state_local,t_block *cgs_gl)
+                          t_state *state_local)
 {
     gmx_domdec_master_t *ma=NULL;
     int buf2[2],*ibuf,i,ncg_home=0,*cg=NULL,nat_home=0;
-    
+    t_block *cgs_gl;
+
     if (state_local->ddp_count == dd->comm->master_cg_ddp_count)
     {
         /* The master has the correct distribution */
@@ -811,6 +821,8 @@ static void dd_collect_cg(gmx_domdec_t *dd,
     } 
     else if (state_local->ddp_count_cg_gl == state_local->ddp_count)
     {
+        cgs_gl = &dd->comm->cgs_gl;
+
         ncg_home = state_local->ncg_gl;
         cg       = state_local->cg_gl;
         nat_home = 0;
@@ -873,13 +885,14 @@ static void dd_collect_cg(gmx_domdec_t *dd,
     dd->comm->master_cg_ddp_count = state_local->ddp_count;
 }
 
-static void dd_collect_vec_sendrecv(gmx_domdec_t *dd,t_block *cgs_gl,
+static void dd_collect_vec_sendrecv(gmx_domdec_t *dd,
                                     rvec *lv,rvec *v)
 {
     gmx_domdec_master_t *ma;
     int  n,i,c,a,nalloc=0;
     rvec *buf=NULL;
-    
+    t_block *cgs_gl;
+
     ma = dd->ma;
     
     if (!DDMASTER(dd))
@@ -890,6 +903,8 @@ static void dd_collect_vec_sendrecv(gmx_domdec_t *dd,t_block *cgs_gl,
 #endif
     } else {
         /* Copy the master coordinates to the global array */
+        cgs_gl = &dd->comm->cgs_gl;
+
         n = DDMASTERRANK(dd);
         a = 0;
         for(i=ma->index[n]; i<ma->index[n+1]; i++)
@@ -945,13 +960,14 @@ static void get_commbuffer_counts(gmx_domdec_t *dd,
     }
 }
 
-static void dd_collect_vec_gatherv(gmx_domdec_t *dd,t_block *cgs_gl,
+static void dd_collect_vec_gatherv(gmx_domdec_t *dd,
                                    rvec *lv,rvec *v)
 {
     gmx_domdec_master_t *ma;
     int  *rcounts=NULL,*disps=NULL;
     int  n,i,c,a;
     rvec *buf=NULL;
+    t_block *cgs_gl;
     
     ma = dd->ma;
     
@@ -966,6 +982,8 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,t_block *cgs_gl,
 
     if (DDMASTER(dd))
     {
+        cgs_gl = &dd->comm->cgs_gl;
+
         a = 0;
         for(n=0; n<dd->nnodes; n++)
         {
@@ -980,27 +998,27 @@ static void dd_collect_vec_gatherv(gmx_domdec_t *dd,t_block *cgs_gl,
     }
 }
 
-void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs_gl,t_state *state_local,
-                    rvec *lv,rvec *v)
+void dd_collect_vec(gmx_domdec_t *dd,
+                    t_state *state_local,rvec *lv,rvec *v)
 {
     gmx_domdec_master_t *ma;
     int  n,i,c,a,nalloc=0;
     rvec *buf=NULL;
     
-    dd_collect_cg(dd,state_local,cgs_gl);
+    dd_collect_cg(dd,state_local);
 
     if (dd->nnodes <= GMX_DD_NNODES_SENDRECV)
     {
-        dd_collect_vec_sendrecv(dd,cgs_gl,lv,v);
+        dd_collect_vec_sendrecv(dd,lv,v);
     }
     else
     {
-        dd_collect_vec_gatherv(dd,cgs_gl,lv,v);
+        dd_collect_vec_gatherv(dd,lv,v);
     }
 }
 
 
-void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
+void dd_collect_state(gmx_domdec_t *dd,
                       t_state *state_local,t_state *state)
 {
     int est,i;
@@ -1023,16 +1041,16 @@ void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
         {
             switch (est) {
             case estX:
-                dd_collect_vec(dd,cgs_gl,state_local,state_local->x,state->x);
+                dd_collect_vec(dd,state_local,state_local->x,state->x);
                 break;
             case estV:
-                dd_collect_vec(dd,cgs_gl,state_local,state_local->v,state->v);
+                dd_collect_vec(dd,state_local,state_local->v,state->v);
                 break;
             case estSDX:
-                dd_collect_vec(dd,cgs_gl,state_local,state_local->sd_X,state->sd_X);
+                dd_collect_vec(dd,state_local,state_local->sd_X,state->sd_X);
                 break;
             case estCGP:
-                dd_collect_vec(dd,cgs_gl,state_local,state_local->cg_p,state->cg_p);
+                dd_collect_vec(dd,state_local,state_local->cg_p,state->cg_p);
                 break;
             case estLD_RNG:
                 if (state->nrngi == 1)
@@ -1427,13 +1445,15 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
     }
 }
 
-static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
+static void write_dd_pdb(char *fn,int step,char *title,
+                         gmx_mtop_t *mtop,
                          t_commrec *cr,int natoms,
                          rvec x[],matrix box)
 {
     char fname[STRLEN],format[STRLEN],format4[STRLEN];
     FILE *out;
     int  i,ii,resnr,c;
+    char *atomname,*resname;
     real b;
     gmx_domdec_t *dd;
     
@@ -1451,7 +1471,7 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
     for(i=0; i<natoms; i++)
     {
         ii = dd->gatindex[i];
-        resnr = atoms->atom[ii].resnr;
+        gmx_mtop_atominfo_global(mtop,ii,&atomname,&resnr,&resname);
         if (i < dd->comm->nat[ddnatZONE])
         {
             c = 0;
@@ -1469,9 +1489,9 @@ static void write_dd_pdb(char *fn,int step,char *title,t_atoms *atoms,
         {
             b = dd->ncell + 1;
         }
-        fprintf(out,strlen(*atoms->atomname[ii])<4 ? format : format4,
+        fprintf(out,strlen(atomname)<4 ? format : format4,
                 "ATOM",(ii+1)%100000,
-                *atoms->atomname[ii],*atoms->resname[resnr],' ',(resnr+1)%10000,
+                atomname,resname,' ',(resnr+1)%10000,
                 10*x[i][XX],10*x[i][YY],10*x[i][ZZ],1.0,b);
     }
     fprintf(out,"TER\n");
@@ -4874,20 +4894,27 @@ static void set_slb_pme_dim_f(gmx_domdec_t *dd)
     comm->pme_dim_f[dd->nc[XX]] = 1;
 }
 
-static int multi_body_bondeds_count(t_ilist *il)
+static int multi_body_bondeds_count(gmx_mtop_t *mtop)
 {
-    int  ftype,n;
+    int n,nmol,ftype;
+    gmx_mtop_ilistloop_t iloop;
+    t_ilist *il;
     
     n = 0;
-    for(ftype=0; ftype<F_NRE; ftype++)
+    iloop = gmx_mtop_ilistloop_init(mtop);
+    while (gmx_mtop_ilistloop_next(iloop,&il,&nmol))
     {
-        if ((interaction_function[ftype].flags & IF_BOND) && NRAL(ftype) > 2)
+        for(ftype=0; ftype<F_NRE; ftype++)
         {
-            n += il[ftype].nr/(1 + NRAL(ftype));
+            if ((interaction_function[ftype].flags & IF_BOND) &&
+                NRAL(ftype) >  2)
+            {
+                n += nmol*il->nr/(1 + NRAL(ftype));
+            }
         }
-    }
-    
-    return n;
+  }
+
+  return n;
 }
 
 static int dd_nst_env(FILE *fplog,char *env_var,int def)
@@ -4982,7 +5009,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
                                         real comm_distance_min,real rconstr,
                                         bool bDynLoadBal,real dlb_scale,
                                         char *sizex,char *sizey,char *sizez,
-                                        t_topology *top,matrix box,
+                                        gmx_mtop_t *mtop,matrix box,
                                         t_inputrec *ir)
 {
     gmx_domdec_t *dd;
@@ -5077,17 +5104,17 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
         }
     }
     
-    comm->bInterCGBondeds = (top->cgs.nr > top->mols.nr);
+    comm->bInterCGBondeds = (ncg_mtop(mtop) > mtop->mols.nr);
     if (comm->bInterCGBondeds)
     {
-        comm->bInterCGMultiBody = (multi_body_bondeds_count(top->idef.il) > 0);
+        comm->bInterCGMultiBody = (multi_body_bondeds_count(mtop) > 0);
     }
     else
     {
         comm->bInterCGMultiBody = FALSE;
     }
     
-    dd->bInterCGcons = inter_charge_group_constraints(top);
+    dd->bInterCGcons = inter_charge_group_constraints(mtop);
     
     comm->cutoff_mbody = comm_distance_min;
     comm->cellsize_limit = comm->cutoff_mbody;
@@ -5096,7 +5123,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
         /* There is a cell size limit due to the constraints (LINCS) */
         if (rconstr <= 0)
         {
-            rconstr = constr_r_max(fplog,top,ir);
+            rconstr = constr_r_max(fplog,mtop,ir);
             if (fplog)
             {
                 fprintf(fplog,
@@ -5131,7 +5158,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     else
     {
         /* We need to choose the optimal DD grid and possibly PME nodes */
-        dd_choose_grid(fplog,cr,dd,ir,top,box,dlb_scale,
+        dd_choose_grid(fplog,cr,dd,ir,mtop,box,dlb_scale,
                        comm->cellsize_limit,comm->cutoff_mbody,
                        comm->bInterCGBondeds,comm->bInterCGMultiBody);
     }
@@ -5207,14 +5234,16 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     {
         check_dd_restrictions(dd,ir);
         
-        dd->ma = init_gmx_domdec_master_t(dd,top->cgs.nr,top->atoms.nr);
+        dd->ma = init_gmx_domdec_master_t(dd,ncg_mtop(mtop),mtop->natoms);
     }
     
+    comm->cgs_gl = gmx_mtop_global_cgs(mtop);
+
     return dd;
 }
 
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
-                       t_topology *top,t_inputrec *ir,t_forcerec *fr,
+                       t_inputrec *ir,t_forcerec *fr,
                        matrix box)
 {
     gmx_domdec_comm_t *comm;
@@ -6416,7 +6445,7 @@ void dd_partition_system(FILE            *fplog,
                          t_commrec       *cr,
                          bool            bMasterState,
                          t_state         *state_global,
-                         t_topology      *top_global,
+                         gmx_mtop_t      *top_global,
                          t_inputrec      *ir,
                          t_state         *state_local,
                          rvec            **f,
@@ -6432,12 +6461,15 @@ void dd_partition_system(FILE            *fplog,
                          bool            bVerbose)
 {
     gmx_domdec_t *dd;
+    t_block *cgs_gl;
     int  i,j,n,cg0=0,ncg_home_old=-1;
     bool bLogLoad,bRedist,bSortCG;
     ivec ncells_old,np;
     
     dd = cr->dd;
     
+    cgs_gl = &dd->comm->cgs_gl;
+
     /* Check if we have recorded loads on the nodes */
     if (dd->comm->bRecordLoad && dd_load_count(dd->comm))
     {
@@ -6466,11 +6498,10 @@ void dd_partition_system(FILE            *fplog,
     bRedist = FALSE;
     if (bMasterState)
     {
-        get_cg_distribution(fplog,step,dd,
-                            &top_global->cgs,
+        get_cg_distribution(fplog,step,dd,cgs_gl,
                             state_global->box,state_global->x);
         
-        dd_distribute_state(dd,&top_global->cgs,
+        dd_distribute_state(dd,cgs_gl,
                             state_global,state_local,f,buf);
         
         dd_make_local_cgs(dd,&top_local->cgs);
@@ -6502,8 +6533,8 @@ void dd_partition_system(FILE            *fplog,
         clear_dd_indices(dd,0);
         
         /* Build the new indices */
-        rebuild_cgindex(dd,top_global->cgs.index,state_local);
-        make_dd_indices(dd,top_global->cgs.index,0,fr);
+        rebuild_cgindex(dd,cgs_gl->index,state_local);
+        make_dd_indices(dd,cgs_gl->index,0,fr);
         
         /* Redetermine the cg COMs */
         calc_cgcm(fplog,0,dd->ncg_home,
@@ -6565,7 +6596,7 @@ void dd_partition_system(FILE            *fplog,
     
     if (bRedist)
     {
-        cg0 = dd_redistribute_cg(fplog,step,dd,&top_global->cgs,
+        cg0 = dd_redistribute_cg(fplog,step,dd,cgs_gl,
                                  state_local,f,buf,fr,mdatoms,
                                  !bSortCG,nrnb);
         set_grid_ncg(fr->ns.grid,dd->ncg_home);
@@ -6600,11 +6631,11 @@ void dd_partition_system(FILE            *fplog,
     }
     
     /* Setup up the communication and communicate the coordinates */
-    setup_dd_communication(fplog,step,dd,top_global->cgs.index,
+    setup_dd_communication(fplog,step,dd,cgs_gl->index,
                            state_local->box,fr);
     
     /* Set the indices */
-    make_dd_indices(dd,top_global->cgs.index,cg0,fr);
+    make_dd_indices(dd,cgs_gl->index,cg0,fr);
     
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(dd);
@@ -6652,8 +6683,7 @@ void dd_partition_system(FILE            *fplog,
             if (dd->bInterCGcons)
             {
                 /* Only for inter-cg constraints we need special code */
-                n = dd_make_local_constraints(dd,n,
-                                              top_global->idef.il[F_CONSTR].iatoms,
+                n = dd_make_local_constraints(dd,n,top_global,
                                               constr,ir->nProjOrder,
                                               &top_local->idef.il[F_CONSTR]);
             }
@@ -6694,13 +6724,13 @@ void dd_partition_system(FILE            *fplog,
      * between nat_tot and nat_tot_con.
      */
     /* This call also sets the new number of home particles to dd->nat_home */
-    atoms2md(&top_global->atoms,ir,top_global->idef.il[F_ORIRES].nr,
+    atoms2md(top_global,ir,
              dd->comm->nat[ddnatCON],dd->gatindex,0,dd->nat_home,mdatoms);
     
     if (shellfc)
     {
         /* Make the local shell stuff, currently no communication is done */
-        make_local_shells(cr->dd,mdatoms,shellfc);
+        make_local_shells(cr,mdatoms,shellfc);
     }
     
     if (!(cr->duty & DUTY_PME))
@@ -6736,7 +6766,7 @@ void dd_partition_system(FILE            *fplog,
     if (nstDDDump > 0 && step % nstDDDump == 0)
     {
         dd_move_x(dd,state_local->box,state_local->x,*buf);
-        write_dd_pdb("dd_dump",step,"dump",&top_global->atoms,cr,
+        write_dd_pdb("dd_dump",step,"dump",top_global,cr,
                      dd->comm->nat[ddnatVSITE],
                      state_local->x,state_local->box);
     }

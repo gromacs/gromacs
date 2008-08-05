@@ -80,6 +80,7 @@
 #include "compute_io.h"
 #include "mvdata.h"
 #include "checkpoint.h"
+#include "mtop_util.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -125,9 +126,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   real       tmpr1,tmpr2;
   real       *ener=NULL;
   t_nrnb     *nrnb;
-  t_topology *top=NULL;
+  gmx_mtop_t *mtop=NULL;
   t_groups   *grps=NULL;
-  t_graph    *graph=NULL;
   t_mdatoms  *mdatoms=NULL;
   t_forcerec *fr=NULL;
   t_fcdata   *fcd=NULL;
@@ -142,7 +142,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bool       bReadRNG;
 
   snew(inputrec,1);
-  snew(top,1);
+  snew(mtop,1);
   
   if (bVerbose && SIMMASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
@@ -153,12 +153,12 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     snew(state,1);
     init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
-		  inputrec,top,state,
+		  inputrec,mtop,state,
 		  SIMMASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
   } else {
     /* Read a file for a single processor */
     snew(state,1);
-    init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),top,state);
+    init_single(fplog,inputrec,ftp2fn(efTPX,nfile,fnm),mtop,state);
   }
   if (!EEL_PME(inputrec->coulombtype) || (Flags & MD_PARTDEC)) {
     cr->npmenodes = 0;
@@ -173,31 +173,17 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
    */
   snew(fcd,1);
 
-  /* Distance Restraints */
-  init_disres(fplog,top->idef.il[F_DISRES].nr,top->idef.il[F_DISRES].iatoms,
-	      top->idef.iparams,inputrec,cr->ms,fcd,state);
-  if (fcd->disres.nres > 0 && PAR(cr) && !(Flags & MD_PARTDEC)) {
-    /* Temporary check, will be removed when disre is implemented with DD */
-    char *notestr="NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
-    if (fcd->disres.dr_tau != 0 || fcd->disres.nres != fcd->disres.npair) {
-      gmx_fatal(FARGS,"Distance restraint with time averaging or multiple pairs per restraint do not work (yet) with domain decomposition, use particle deomposition (mdrun option -pd)");
-    }
-    if (MASTER(cr))
-      fprintf(stderr,"\n%s\n\n",notestr);
-    if (fplog)
-      fprintf(fplog,"%s\n",notestr);
-  }
+  /* This needs to be called before read_checkpoint to extend the state */
+  init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
 
-  if (top->idef.il[F_ORIRES].nr) {
-    /* Temporary check, will be removed when orire is implemented with DD */
+  if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0) {
     if (PAR(cr) && !(Flags & MD_PARTDEC)) {
       gmx_fatal(FARGS,"Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
     }
     /* Orientation restraints */
-    init_orires(fplog,
-		top->idef.il[F_ORIRES].nr,top->idef.il[F_ORIRES].iatoms,
-		top->idef.iparams,state->x,&top->atoms,inputrec,cr->ms,
-		&(fcd->orires),state);
+    if (MASTER(cr)) {
+      init_orires(fplog,mtop,state->x,inputrec,cr->ms,&(fcd->orires),state);
+    }
   }
   
   if (DEFORM(*inputrec)) {
@@ -239,7 +225,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     cr->dd = init_domain_decomposition(fplog,cr,ddxyz,rdd,rconstr,
 				       Flags & MD_DLB,dlb_scale,
 				       ddcsx,ddcsy,ddcsz,
-				       top,box,inputrec);
+				       mtop,box,inputrec);
     
     make_dd_communicators(fplog,cr,dd_node_order);
 
@@ -279,66 +265,49 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  snew(state,1);
 	}
 	bcast_state(cr,state,TRUE);
-
-	if (!EI_TPI(inputrec->eI))
-	  split_system(fplog,inputrec,state,cr,top);
       }
 
-      if (top->idef.ilsort != ilsortNO_FE) {
-	gmx_sort_ilist_fe(&top->idef);
-      }
-
-      snew(buf,top->atoms.nr);
-      snew(f,top->atoms.nr);
+      snew(buf,mtop->natoms);
+      snew(f,mtop->natoms);
     }
     
-    /* Index numbers for parallellism... */
-    top->idef.nodeid = cr->nodeid;
-    
     /* Group stuff (energies etc) */
-    init_groups(fplog,&top->atoms,&(inputrec->opts),grps);
+    init_t_groups(fplog,mtop,&(inputrec->opts),grps);
     /* Copy the cos acceleration to the groups struct */
     grps->cosacc.cos_accel = inputrec->cos_accel;
     
-    /* Periodicity stuff */  
-    if (inputrec->ePBC != epbcNONE && !inputrec->bPeriodicMols &&
-	!DOMAINDECOMP(cr)) {
-      graph = mk_graph(fplog,&(top->idef),0,top->atoms.nr,FALSE,FALSE);
-      if (gmx_debug_at) 
-	p_graph(debug,"Initial graph",graph);
-    }
-    else
-    {
-      graph = NULL;
-    }
-    
     /* Dihedral Restraints */
-    init_dihres(fplog,top->idef.il[F_DIHRES].nr,top->idef.il[F_DIHRES].iatoms,
-		top->idef.iparams,inputrec,fcd);
+    if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0) {
+      init_dihres(fplog,mtop,inputrec,fcd);
+    }
     
     /* Initiate forcerecord */
     fr = mk_forcerec();
-    init_forcerec(fplog,fr,fcd,inputrec,top,cr,box,FALSE,
+    init_forcerec(fplog,fr,fcd,inputrec,mtop,cr,box,FALSE,
 		  opt2fn("-table",nfile,fnm),opt2fn("-tablep",nfile,fnm),
 		  opt2fn("-tableb",nfile,fnm),FALSE,pforce);
     fr->bSepDVDL = ((Flags & MD_SEPPOT) == MD_SEPPOT);
     
     /* Initialize QM-MM */
     if(fr->bQMMM)
-      init_QMMMrec(cr,box,top,inputrec,fr);
+      init_QMMMrec(cr,box,mtop,inputrec,fr);
     
     /* Initialize the mdatoms structure.
      * mdatoms is not filled with atom data,
      * as this can not be done now with domain decomposition.
      */
-    mdatoms = init_mdatoms(fplog,&top->atoms,inputrec->efep!=efepNO);
+    mdatoms = init_mdatoms(fplog,mtop,inputrec->efep!=efepNO);
     
     /* Initialize the virtual site communication */
-    vsite = init_vsite(cr,top);
+    vsite = init_vsite(mtop,cr);
+
+    calc_shifts(box,fr->shift_vec);
 
     /* Make molecules whole at start of run */
-    if (fr->ePBC != epbcNONE && state)  {
-      do_pbc_first(fplog,box,fr,graph,state->x);
+    if (fr->ePBC != epbcNONE && state && !inputrec->bContinuation)  {
+      if (MASTER(cr)) {
+	do_pbc_first_mtop(fplog,inputrec->ePBC,box,fr,mtop,state->x);
+      }
     }
 
     /* Initiate PPPM if necessary */
@@ -380,7 +349,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
     if (cr->duty & DUTY_PME) {
       status = gmx_pme_init(pmedata,cr,inputrec,
-			    top ? top->atoms.nr : 0,nChargePerturbed,
+			    mtop ? mtop->natoms : 0,nChargePerturbed,
 			    (Flags & MD_REPRODUCIBLE));
       if (status != 0)
 	gmx_fatal(FARGS,"Error %d initializing PME",status);
@@ -408,17 +377,17 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (cr->duty & DUTY_PP) {
     if (inputrec->ePull != epullNO) {
       /* Initialize pull code */
-      init_pull(fplog,inputrec,nfile,fnm,&top->atoms,cr,
+      init_pull(fplog,inputrec,nfile,fnm,mtop,cr,
 		EI_DYNAMICS(inputrec->eI) && MASTER(cr));
     }
 
-    constr = init_constraints(fplog,cr,top,inputrec,ed,state);
+    constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
 
     if (DOMAINDECOMP(cr)) {
-      dd_make_reverse_top(fplog,cr->dd,top,vsite,constr,inputrec,
+      dd_make_reverse_top(fplog,cr->dd,mtop,vsite,constr,inputrec,
 			  Flags & MD_DDBONDCHECK);
 
-      set_dd_parameters(fplog,cr->dd,dlb_scale,top,inputrec,fr,box);
+      set_dd_parameters(fplog,cr->dd,dlb_scale,inputrec,fr,box);
      
       setup_dd_grid(fplog,cr->dd);
     }
@@ -427,9 +396,9 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     start_t = integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
 					    bVerbose,bCompact,
 					    vsite,constr,
-					    nstepout,inputrec,grps,top,
+					    nstepout,inputrec,grps,mtop,
 					    ener,fcd,state,f,buf,
-					    mdatoms,nrnb,wcycle,graph,ed,fr,
+					    mdatoms,nrnb,wcycle,ed,fr,
 					    repl_ex_nst,repl_ex_seed,
 					    cpt_period,max_hours,
 					    Flags);
@@ -456,7 +425,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
    * if rerunMD, don't write last frame again 
    */
   finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
-	     top,inputrec,nrnb,wcycle,nodetime,realtime,inputrec->nsteps,
+	     inputrec,nrnb,wcycle,nodetime,realtime,inputrec->nsteps,
 	     EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
   
   /* Does what it says */  
@@ -467,12 +436,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
 	     int stepout,t_inputrec *ir,t_groups *grps,
-	     t_topology *top_global,
+	     gmx_mtop_t *top_global,
 	     real ener[],t_fcdata *fcd,
 	     t_state *state_global,rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	     t_graph *graph,gmx_edsam_t ed,t_forcerec *fr,
+	     gmx_edsam_t ed,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
 	     unsigned long Flags)
@@ -505,8 +474,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_state    *state=NULL;
   rvec       *f_global=NULL;
   gmx_stochd_t sd=NULL;
+  t_graph    *graph=NULL;
 
   bool        bFFscan;
+  gmx_groups_t *groups;
   gmx_shellfc_t shellfc;
   int         count,nconverged=0;
   real        timestep=0;
@@ -557,6 +528,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (bRerunMD || bFFscan)
     ir->nstxtcout = 0;
 
+  groups = &top_global->groups;
+
   /* Initial values */
   init_md(fplog,cr,ir,&t,&t0,&state_global->lambda,&lam0,
 	  nrnb,top_global,&sd,
@@ -567,12 +540,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Check for polarizable models and flexible constraints */
-  shellfc = init_shell_flexcon(fplog,cr,
+  shellfc = init_shell_flexcon(fplog,
 			       top_global,n_flexible_constraints(constr),
-			       ir->bContinuation,state_global->x);
+			       (ir->bContinuation || 
+				(DOMAINDECOMP(cr) && !MASTER(cr))) ?
+			       NULL : state_global->x);
 
   {
-    double io = compute_io(ir,&top_global->atoms,mdebin->ebin->nener,1);
+    double io = compute_io(ir,top_global->natoms,groups,mdebin->ebin->nener,1);
     if ((io > 2000) && MASTER(cr))
       fprintf(stderr,
 	      "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
@@ -589,18 +564,35 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       snew(f_global,state_global->natoms);
     }
   } else {
-    top = top_global;
+    if (PAR(cr)) {
+      /* Initialize the particle decomposition and split the topology */
+      top = split_system(fplog,top_global,ir,cr);
+
+      pd_cg_range(cr,&fr->cg0,&fr->hcg);
+      pd_at_range(cr,&a0,&a1);
+    } else {
+      top = gmx_mtop_generate_local_top(top_global,ir);
+
+      a0 = 0;
+      a1 = top_global->natoms;
+    }
+
     state = partdec_init_local_state(cr,state_global);
     f_global = f;
 
-    if (PARTDECOMP(cr)) {
-      pd_at_range(cr,&a0,&a1);
-    } else {
-      a0 = 0;
-      a1 = top_global->atoms.nr;
+    atoms2md(top_global,ir,0,NULL,a0,a1-a0,mdatoms);
+
+    if (vsite) {
+      set_vsite_top(vsite,top,cr);
     }
-    atoms2md(&top->atoms,ir,top->idef.il[F_ORIRES].nr,0,NULL,a0,a1-a0,
-	     mdatoms);
+
+    if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
+      graph = mk_graph(fplog,&(top->idef),0,top->atoms.nr,FALSE,FALSE);
+    }
+
+    if (shellfc) {
+      make_local_shells(cr,mdatoms,shellfc);
+    }
   }
 
   if ((!DOMAINDECOMP(cr) || DDMASTER(cr->dd)) &&
@@ -609,10 +601,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* Since with DD we have not made molecules whole in the starting
      * configuration, we need to do full pbc in construct_vsites.
      */
-    construct_vsites(fplog,vsite,
-		     state_global->x,nrnb,ir->delta_t,NULL,
-		     &top_global->idef,ir->ePBC,ir->ePBC!=epbcNONE,graph,
-		     DOMAINDECOMP(cr) ? NULL : cr,state_global->box);
+    construct_vsites_mtop(fplog,vsite,
+			  state_global->x,nrnb,ir->delta_t,
+			  top_global,ir->ePBC,
+			  DOMAINDECOMP(cr) ? NULL : cr,state_global->box);
   }
 
   if (DOMAINDECOMP(cr)) {
@@ -657,7 +649,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (vsite)
       construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
-		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+		       top->idef.iparams,top->idef.il,
+		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
   }
 
   debug_gmx();
@@ -827,7 +820,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  shift_self(graph,state->box,state->x);
 	}
 	construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,state->v,
-			 &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+			 top->idef.iparams,top->idef.il,
+			 fr->ePBC,fr->bMolPBC,graph,cr,state->box);
 	if (graph)
 	  unshift_self(graph,state->box,state->x);
       }
@@ -886,7 +880,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  bMasterState = TRUE;
       }
       if (DOMAINDECOMP(cr) && bMasterState)
-	dd_collect_state(cr->dd,&top_global->cgs,state,state_global);
+	dd_collect_state(cr->dd,state,state_global);
       
       if (DOMAINDECOMP(cr)) {
 	/* Repartition the domain decomposition */
@@ -929,7 +923,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       count=relax_shell_flexcon(fplog,cr,bVerbose,bFFscan ? step+1 : step,
 				ir,bNS,bStopCM,top,constr,ener,fcd,
 				state,f,buf,force_vir,mdatoms,
-				nrnb,wcycle,graph,grps,
+				nrnb,wcycle,graph,groups,grps,
 				shellfc,fr,t,mu_tot,
 				state->natoms,&bConverged,vsite,
 				fp_field);
@@ -943,7 +937,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(fplog,cr,ir,step,nrnb,wcycle,top,grps,
+      do_force(fplog,cr,ir,step,nrnb,wcycle,top,groups,grps,
 	       state->box,state->x,&state->hist,
 	       f,buf,force_vir,mdatoms,ener,fcd,
 	       state->lambda,graph,
@@ -1000,9 +994,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  !bRerunMD && !bFFscan) {
 	/* x and v have been collected in write_traj */
 	fprintf(stderr,"\nWriting final coordinates.\n");
-	write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		       *top_global->name,&top_global->atoms,
-		       state_global->x,state_global->v,ir->ePBC,state->box);
+	write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
+			    *top_global->name,top_global,
+			    state_global->x,state_global->v,
+			    ir->ePBC,state->box);
 	debug_gmx();
       }
       wallcycle_stop(wcycle,ewcTRAJ);
@@ -1059,7 +1054,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	shift_self(graph,state->box,state->x);
       
       construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,state->v,
-		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+		       top->idef.iparams,top->idef.il,
+		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
       
       if (graph)
 	unshift_self(graph,state->box,state->x);
@@ -1196,11 +1192,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 			       (fr->eeltype==eelPPPM)?ener[F_COUL_RECIP]:0.0);
       
       /* Calculate long range corrections to pressure and energy */
-      if (bTCR || bFFscan)
-	set_avcsixtwelve(fplog,fr,&top_global->atoms,&top_global->excls);
+      if (bTCR || bFFscan) {
+	set_avcsixtwelve(fplog,fr,top_global);
+      }
       
       /* Calculate long range corrections to pressure and energy */
-      calc_dispcorr(fplog,ir,fr,step,top_global->atoms.nr,
+      calc_dispcorr(fplog,ir,fr,step,top_global->natoms,
 		    lastbox,state->lambda,
 		    pres,total_vir,ener);
       
@@ -1290,7 +1287,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       do_or  = do_per_step(step,ir->nstorireout);
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,
 		 step,step_rel,t,
-		 eprNORMAL,bCompact,mdebin,fcd,&(top->atoms),&(ir->opts));
+		 eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
       if (ir->ePull != epullNO)
 	pull_print_output(ir->pull,step,t);
 
@@ -1310,8 +1307,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 	do_per_step(step,repl_ex_nst))
       bExchanged = replica_exchange(fplog,cr,repl_ex,state_global,ener,
-				    &(top_global->cgs),state,
-				    step,t);
+				    state,step,t);
     if (bExchanged && PAR(cr)) {
       if (DOMAINDECOMP(cr)) {
 	dd_partition_system(fplog,step,cr,TRUE,
@@ -1353,9 +1349,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (MASTER(cr)) {
     if (bGStat) {
       print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
-		 eprAVER,FALSE,mdebin,fcd,&(top->atoms),&(ir->opts));
+		 eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
       print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
-		 eprRMS,FALSE,mdebin,fcd,&(top->atoms),&(ir->opts));
+		 eprRMS,FALSE,mdebin,fcd,groups,&(ir->opts));
     }
     close_enx(fp_ene);
     if (ir->nstxtcout)

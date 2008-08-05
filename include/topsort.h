@@ -11,8 +11,8 @@ extern "C" {
 
 #include "typedefs.h"
 
-  /* Analyze the idef and set idef->ilsort */
-  extern void gmx_analyze_ilist_fe(t_idef *idef,t_inputrec *ir);
+  /* Returns if the are bonded interactions for free energy calculations */
+  extern bool gmx_mtop_bondeds_free_energy(gmx_mtop_t *mtop);
 
   /* Sort all the bonded ilists in idef to have the perturbed ones at the end
    * and set nr_nr_nonperturbed in ilist.

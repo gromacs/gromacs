@@ -362,8 +362,8 @@ void init_gmx(t_x11 *x11,char *program,int nfile,t_filenm fnm[])
   snew(gmx,1);
   snew(gmx->wd,1);
 
-  ePBC = read_tpx(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,box,
-		  &natom,NULL,NULL,NULL,&top);
+  ePBC = read_tpx_top(ftp2fn(efTPX,nfile,fnm),&step,&t,&lambda,NULL,box,
+		      &natom,NULL,NULL,NULL,&top);
 
   read_first_frame(&status,ftp2fn(efTRX,nfile,fnm),&fr,TRX_DONT_SKIP);
   close_trx(status);

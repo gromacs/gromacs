@@ -336,6 +336,7 @@ int gmx_genion(int argc, char *argv[])
     { "-neutral", FALSE, etBOOL, {&bNeutral},
       "This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated." }
   };
+  gmx_mtop_t  *mtop;
   t_topology  *top;
   t_inputrec  inputrec;
   t_commrec   *cr;
@@ -377,9 +378,10 @@ int gmx_genion(int argc, char *argv[])
   if ((p_num<0) || (n_num<0))
     gmx_fatal(FARGS,"Negative number of ions to add?");
 
+  snew(mtop,1);
   snew(top,1);
   fplog = init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
-		       opt2fn("-table",NFILE,fnm),top,&inputrec,&cr,
+		       opt2fn("-table",NFILE,fnm),mtop,top,&inputrec,&cr,
 		       &graph,&mdatoms,&grps,&fr,&pot,box,&x);
   qtot = 0;
   for(i=0; (i<top->atoms.nr); i++)
@@ -455,7 +457,7 @@ int gmx_genion(int argc, char *argv[])
   /* Now loop over the ions that have to be placed */
   do {
     if (!bRandom) {
-      calc_pot(fplog,cr,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
+      calc_pot(fplog,cr,mtop,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
       if (bPDB || debug) {
 	char buf[STRLEN];
 	

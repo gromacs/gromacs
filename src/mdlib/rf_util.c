@@ -222,3 +222,41 @@ void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,real Rc,real Temp,
     }
   }
 }
+
+void init_generalized_rf(FILE *fplog,
+			 const gmx_mtop_t *mtop,const t_inputrec *ir,
+			 t_forcerec *fr)
+{
+  int  mb,i,j;
+  real q,zsq,nrdf,T;
+  const gmx_moltype_t *molt;
+  const t_block *cgs;
+
+  if (ir->efep != efepNO && fplog) {
+    fprintf(fplog,"\nWARNING: the generalized reaction field constants are determined from topology A only\n\n");
+  }
+  zsq = 0.0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molt = &mtop->moltype[mtop->molblock[mb].type];
+    cgs  = &molt->cgs;
+    for(i=0; (i<cgs->nr); i++) {
+      q = 0;
+      for(j=cgs->index[i]; (j<cgs->index[i+1]); j++) {
+	q += molt->atoms.atom[j].q;
+      }
+      zsq += mtop->molblock[mb].nmol*q*q;
+    }
+    fr->zsquare = zsq;
+  }
+  
+  T    = 0.0;
+  nrdf = 0.0;
+  for(i=0; (i<ir->opts.ngtc); i++) {
+    nrdf += ir->opts.nrdf[i];
+    T    += (ir->opts.nrdf[i] * ir->opts.ref_t[i]);
+  }
+  if (nrdf == 0) {
+    gmx_fatal(FARGS,"No degrees of freedom!");
+  }
+  fr->temp   = T/nrdf;
+}

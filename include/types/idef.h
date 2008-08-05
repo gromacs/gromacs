@@ -207,6 +207,15 @@ typedef struct
  *	identifier is an index in a params[] and functype[] array.
  */
 
+typedef struct
+{
+  int        ntypes;
+  int        atnr;
+  t_functype *functype;
+  t_iparams  *iparams;
+  real       fudgeQQ;
+} gmx_ffparams_t;
+
 enum {
   ilsortUNKNOWN, ilsortNO_FE, ilsortFE_UNSORTED, ilsortFE_SORTED
 };
@@ -214,11 +223,12 @@ enum {
 typedef struct
 {
   int ntypes;
-  int nodeid;
   int atnr;
   t_functype *functype;
   t_iparams  *iparams;
   real fudgeQQ;
+  t_iparams  *iparams_posres;
+  int iparams_posres_nalloc;
 
   t_ilist il[F_NRE];
   int ilsort;

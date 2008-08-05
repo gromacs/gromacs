@@ -48,22 +48,27 @@
 #include "main.h"
 #include "copyrite.h"
 #include "pbc.h"
+#include "mtop_util.h"
 
-void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
-                 const t_iparams ip[],
-                 rvec xref[],const t_atoms *atoms,const t_inputrec *ir,
+void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
+                 rvec xref[],
+                 const t_inputrec *ir,
                  const gmx_multisim_t *ms,t_oriresdata *od,
                  t_state *state)
 {
-    int    i,j,d,ex,nr,*nr_ex;
+    int    i,j,d,ex,nmol,nr,*nr_ex;
     double mtot;
     rvec   com;
-    
+    gmx_mtop_ilistloop_t iloop;
+    t_ilist *il;
+    gmx_mtop_atomloop_all_t aloop;
+    t_atom *atom;
+
     od->fc  = ir->orires_fc;
     od->nex = 0;
     od->S   = NULL;
 
-    od->nr = nfa/3;
+    od->nr = gmx_mtop_ftype_count(mtop,F_ORIRES);
     if (od->nr == 0)
     {
         return;
@@ -71,19 +76,23 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
     
     nr_ex = NULL;
     
-    for(i=0; i<nfa; i+=3)
+    iloop = gmx_mtop_ilistloop_init(mtop);
+    while (gmx_mtop_ilistloop_next(iloop,&il,&nmol))
     {
-        ex = ip[forceatoms[i]].orires.ex;
-        if (ex >= od->nex)
+        for(i=0; i<il[F_ORIRES].nr; i+=3)
         {
-            srenew(nr_ex,ex+1);
-            for(j=od->nex; j<ex+1; j++)
+            ex = mtop->ffparams.iparams[il[F_ORIRES].iatoms[i]].orires.ex;
+            if (ex >= od->nex)
             {
-                nr_ex[j] = 0;
+                srenew(nr_ex,ex+1);
+                for(j=od->nex; j<ex+1; j++)
+                {
+                    nr_ex[j] = 0;
             }
-            od->nex = ex+1;
+                od->nex = ex+1;
+            }
+            nr_ex[ex]++;
         }
-        nr_ex[ex]++;
     }
     snew(od->S,od->nex);
     /* When not doing time averaging, the instaneous and time averaged data
@@ -147,9 +156,9 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
     }
     
     od->nref = 0;
-    for(i=0; i<atoms->nr; i++)
+    for(i=0; i<mtop->natoms; i++)
     {
-        if (atoms->atom[i].grpnr[egcORFIT] == 0)
+        if (ggrpnr(&mtop->groups,egcORFIT,i) == 0)
         {
             od->nref++;
         }
@@ -167,12 +176,14 @@ void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
     clear_rvec(com);
     mtot = 0.0;
     j = 0;
-    for(i=0; i<atoms->nr; i++)
+    aloop = gmx_mtop_atomloop_all_init(mtop);
+    while(gmx_mtop_atomloop_all_next(aloop,&i,&atom))
     {
-        if (atoms->atom[i].grpnr[egcORFIT] == 0)
+        if (mtop->groups.grpnr[egcORFIT] == NULL ||
+            mtop->groups.grpnr[egcORFIT][i] == 0)
         {
             /* Not correct for free-energy with changing masses */
-            od->mref[j] = atoms->atom[i].m;
+            od->mref[j] = atom->m;
             if (ms==NULL || MASTERSIM(ms))
             {
                 copy_rvec(xref[i],od->xref[j]);
@@ -329,6 +340,12 @@ real calc_orires_dev(const gmx_multisim_t *ms,
     const real   two_thr=2.0/3.0;
     
     od = &(fcd->orires);
+
+    if (od->nr == 0)
+    {
+        /* This means that this is not the master node */
+        gmx_fatal(FARGS,"Orientation restraints are only supported on the master node, use less processors");
+    }
     
     bTAV = (od->edt != 0);
     edt  = od->edt;

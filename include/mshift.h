@@ -52,6 +52,14 @@ extern t_graph *mk_graph(FILE *fplog,
  * If bShakeOnly, only the connections in the shake list are used.
  * If bSettle && bShakeOnly the settles are used too.
  */
+
+extern void mk_graph_ilist(FILE *fplog,
+			   t_ilist *ilist,int at_start,int at_end,
+			   bool bShakeOnly,bool bSettle,
+			   t_graph *g);
+/* As mk_graph, but takes t_ilist iso t_idef and does not allocate g */
+
+
 extern void done_graph(t_graph *g);
 /* Free the memory in g */
  

@@ -107,8 +107,9 @@ extern void pd_cg_range(const t_commrec *cr,int *cg0,int *cg1);
 extern void pd_at_range(const t_commrec *cr,int *at0,int *at1);
 /* Get the range for the home particles */
 
-extern void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
-			 t_commrec *cr,t_topology *top);
+extern t_topology *split_system(FILE *log,
+				gmx_mtop_t *mtop,t_inputrec *inputrec,
+				t_commrec *cr);
 /* Split the system over N processors. */
 
 extern bool setup_parallel_vsites(t_idef *idef,t_commrec *cr,

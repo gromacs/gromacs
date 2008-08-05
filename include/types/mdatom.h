@@ -49,6 +49,7 @@ typedef struct {
   int           nPerturbed;
   int           nMassPerturbed;
   int           nChargePerturbed;
+  bool          bOrires;
   real          *massA,*massB,*massT,*invmass;
   real          *chargeA,*chargeB;
   bool          *bPerturbed;

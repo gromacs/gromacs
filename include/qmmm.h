@@ -18,7 +18,7 @@ extern t_QMMMrec *mk_QMMMrec(void);
 
 extern void init_QMMMrec(t_commrec *cr,
 			 matrix box,
-			 t_topology *top,
+			 gmx_mtop_t *mtop,
 			 t_inputrec *ir,
 			 t_forcerec *fr);
 

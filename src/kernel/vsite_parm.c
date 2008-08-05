@@ -795,34 +795,32 @@ int set_vsites(bool bVerbose, t_atoms *atoms, t_atomtype atype,
   return nvsite;
 }
 
-void set_vsites_ptype(bool bVerbose, t_idef *idef, t_atoms *atoms)
+void set_vsites_ptype(bool bVerbose, gmx_moltype_t *molt)
 {
-  int i,ftype;
-  int nra,nrd,tp;
+  int ftype,i;
+  int nra,nrd;
+  t_ilist *il;
   t_iatom *ia,avsite;
   
   if (bVerbose)
     fprintf(stderr,"Setting particle type to V for virtual sites\n");
   if (debug)
     fprintf(stderr,"checking %d functypes\n",F_NRE);
-  for(ftype=0; (ftype<F_NRE); ftype++) {
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    il = &molt->ilist[ftype];
     if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
-      nrd    = idef->il[ftype].nr;
-      ia     = idef->il[ftype].iatoms;
+      nrd    = il->nr;
+      ia     = il->iatoms;
       
       if (debug && nrd)
 	fprintf(stderr,"doing %d %s virtual sites\n",
 		(nrd / (nra+1)),interaction_function[ftype].longname);
       
       for(i=0; (i<nrd); ) {
-	tp   = ia[0];
-	if (ftype != idef->functype[tp])
-	  gmx_incons("function type error in set_vsites_ptype");
-	
 	/* The virtual site */
 	avsite = ia[1];
-	atoms->atom[avsite].ptype=eptVSite;
+	molt->atoms.atom[avsite].ptype = eptVSite;
 	
 	i  += nra+1;
 	ia += nra+1;

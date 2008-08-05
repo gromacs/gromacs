@@ -142,9 +142,10 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
  *
  */
 
-extern gmx_constr_t init_constraints(FILE *log,t_commrec *cr,
-				     t_topology *top,t_inputrec *ir, 
-				     gmx_edsam_t ed,t_state *state);
+extern gmx_constr_t init_constraints(FILE *log,
+				     gmx_mtop_t *mtop,t_inputrec *ir, 
+				     gmx_edsam_t ed,t_state *state,
+				     t_commrec *cr);
 /* Initialize constraints stuff */
 
 extern void set_constraints(gmx_constr_t constr,
@@ -154,10 +155,10 @@ extern void set_constraints(gmx_constr_t constr,
 			    gmx_domdec_t *dd);
 /* Set up all the local constraints for the node */
 
-extern t_blocka *atom2constraints_global(gmx_constr_t constr);
-/* Returns the atom to constraints list for the whole system */
+extern t_blocka *atom2constraints_moltype(gmx_constr_t constr);
+/* Returns the an arry of atom to constraints lists for the moltypes */
 
-extern bool inter_charge_group_constraints(t_topology *top);
+extern bool inter_charge_group_constraints(gmx_mtop_t *mtop);
 /* Returns if there are inter charge group constraints */
 
 extern real *constr_rmsd_data(gmx_constr_t constr);
@@ -174,7 +175,7 @@ extern real *lincs_rmsd_data(gmx_lincsdata_t lincsd);
 extern real lincs_rmsd(gmx_lincsdata_t lincsd,bool bSD2);
 /* Return the RMSD of the constraint, bSD2 selects the second SD step */
 
-gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
+gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 			   int nflexcon_global,t_blocka *at2con,
 			   bool bPLINCS,int nIter,int nProjOrder);
 /* Initializes and returns the lincs data struct */
@@ -188,7 +189,7 @@ extern void set_lincs(t_idef *idef,int start,int homenr,
 extern void set_lincs_matrix(gmx_lincsdata_t li,real *invmass,real lambda);
 /* Sets the elements of the LINCS constraint coupling matrix */
 
-extern real constr_r_max(FILE *fplog,t_topology *top,t_inputrec *ir);
+extern real constr_r_max(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir);
 /* Returns an estimate of the maximum distance between atoms
  * required for LINCS.
  */

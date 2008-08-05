@@ -319,7 +319,8 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	      t_topology *top,t_groups *grps,
+	      t_topology *top,
+	      gmx_groups_t *groups,t_groups *grps,
 	      matrix box,rvec x[],history_t *hist,
 	      rvec f[],rvec buf[],
 	      tensor vir_force,
@@ -336,7 +337,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   rvec   mu_tot_AB[2];
   bool   bSepDVDL,bStateChanged,bNS,bFillGrid,bCalcCGCM,bBS,bDoForces;
   matrix boxs;
-  real   e,dvdl;
+  real   e,v,dvdl;
   t_pbc  pbc;
   float  cycles_ppdpme,cycles_pme,cycles_force;
   
@@ -470,7 +471,7 @@ void do_force(FILE *fplog,t_commrec *cr,
      * also do the calculation of long range forces and energies.
      */
     dvdl = 0; 
-    ns(fplog,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,
+    ns(fplog,fr,x,f,box,groups,grps,&(inputrec->opts),top,mdatoms,
        cr,nrnb,step,lambda,&dvdl,bFillGrid,bDoForces);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
@@ -525,21 +526,23 @@ void do_force(FILE *fplog,t_commrec *cr,
   if ((flags & GMX_FORCE_BONDED) && top->idef.il[F_POSRES].nr > 0) {
     /* Position restraints always require full pbc */
     set_pbc(&pbc,inputrec->ePBC,box);
-    ener[F_POSRES] +=
-      posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
-	     top->idef.iparams,
-	     (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
-	     inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
-	     fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
-    if (bSepDVDL)
+    v = posres(top->idef.il[F_POSRES].nr,top->idef.il[F_POSRES].iatoms,
+	       top->idef.iparams_posres,
+	       (const rvec*)x,fr->f_novirsum,fr->vir_diag_posres,
+	       inputrec->ePBC==epbcNONE ? NULL : &pbc,lambda,&dvdl,
+	       fr->rc_scaling,fr->ePBC,fr->posres_com,fr->posres_comB);
+    if (bSepDVDL) {
       fprintf(fplog,sepdvdlformat,
-	      interaction_function[F_POSRES].longname,0,dvdl);
-    ener[F_DVDL] += dvdl;
+	      interaction_function[F_POSRES].longname,v,dvdl);
+    }
+    ener[F_POSRES] += v;
+    ener[F_DVDL]   += dvdl;
+    inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
   }
   /* Compute the bonded and non-bonded forces */    
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
 		    cr,nrnb,wcycle,grps,mdatoms,
-		    top->atoms.grps[egcENER].nr,&(inputrec->opts),
+		    groups->grps[egcENER].nr,&(inputrec->opts),
 		    x,hist,f,ener,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
 		    flags);
   GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -1042,8 +1045,51 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
     fprintf(fplog,"Done rmpbc\n");
 }
 
+void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,t_forcerec *fr,
+		       gmx_mtop_t *mtop,rvec x[])
+{
+  t_graph *graph;
+  int mb,as,mol;
+  gmx_molblock_t *molb;
+
+  if (fplog)
+    fprintf(fplog,"Removing pbc first time\n");
+
+  calc_shifts(box,fr->shift_vec);
+
+  snew(graph,1);
+  as = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    if (molb->natoms_mol == 1) {
+      /* Just one atom in the molecule, no PBC required */
+      as += molb->nmol*molb->natoms_mol;
+    } else {
+      /* Pass NULL iso fplog to avoid graph prints for each molecule type */
+      mk_graph_ilist(NULL,mtop->moltype[molb->type].ilist,
+		     0,molb->natoms_mol,FALSE,FALSE,graph);
+      
+      for(mol=0; mol<molb->nmol; mol++) {
+	mk_mshift(fplog,graph,ePBC,box,x+as);
+	
+	shift_self(graph,box,x+as);
+	/* By doing an extra mk_mshift the molecules that are broken
+	 * because they were e.g. imported from another software
+	 * will be made whole again. Such are the healing powers
+	 * of GROMACS.
+	 */
+	mk_mshift(fplog,graph,ePBC,box,x+as);
+	
+	as += molb->natoms_mol;
+      }
+      done_graph(graph);
+    }
+  }
+  sfree(graph);
+}
+
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,
-		t_topology *top,t_inputrec *inputrec,
+		t_inputrec *inputrec,
 		t_nrnb nrnb[],gmx_wallcycle_t wcycle,
 		double nodetime,double realtime,int step,
 		bool bWriteStat)
@@ -1100,7 +1146,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 void init_md(FILE *fplog,
 	     t_commrec *cr,t_inputrec *ir,real *t,real *t0,
 	     real *lambda,real *lam0,
-	     t_nrnb *nrnb,t_topology *top,
+	     t_nrnb *nrnb,gmx_mtop_t *mtop,
 	     gmx_stochd_t *sd,
 	     int nfile,t_filenm fnm[],
 	     int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
@@ -1139,7 +1185,7 @@ void init_md(FILE *fplog,
   }
 
   if (vcm) {
-    *vcm = init_vcm(fplog,&top->atoms,ir);
+    *vcm = init_vcm(fplog,&mtop->groups,ir);
   }
    
   if (EI_DYNAMICS(ir->eI)) {
@@ -1173,7 +1219,7 @@ void init_md(FILE *fplog,
       *fp_ene = -1;
     }
 
-    *mdebin = init_mdebin(*fp_ene,&(top->atoms),&(top->idef),ir,cr);
+    *mdebin = init_mdebin(*fp_ene,mtop,ir);
   }
   
   /* Initiate variables */  

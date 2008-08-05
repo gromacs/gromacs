@@ -59,7 +59,7 @@ typedef struct {
   char   **group_name;         /* These two are copies to pointers in */
 } t_vcm;
 
-t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir);
+t_vcm *init_vcm(FILE *fp,gmx_groups_t *groups,t_inputrec *ir);
 
 /* Do a per group center of mass things */
 extern void calc_vcm_grp(FILE *fp,int start,int homenr,t_mdatoms *md,

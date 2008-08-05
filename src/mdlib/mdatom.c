@@ -42,25 +42,28 @@
 #include "smalloc.h"
 #include "main.h"
 #include "qmmm.h"
+#include "mtop_util.h"
 
 #define ALMOST_ZERO 1e-30
 
-t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
+t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy)
 {
-  int    i,g;
+  int    mb,a,g,nmol;
   double tmA,tmB;
   t_atom *atom;
   t_mdatoms *md;
-  
+  gmx_mtop_atomloop_all_t aloop;
+  t_ilist *ilist;
+
   snew(md,1);
 
   md->bVCMgrps = FALSE;
   tmA = 0.0;
   tmB = 0.0;
-  for(i=0; i<atoms->nr; i++) {
-    atom = &atoms->atom[i];
 
-    if (atom->grpnr[egcVCM] > 0)
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  while(gmx_mtop_atomloop_all_next(aloop,&a,&atom)) {
+    if (ggrpnr(&mtop->groups,egcVCM,a) > 0)
       md->bVCMgrps = TRUE;
     
     if (bFreeEnergy && PERTURBED(*atom)) {
@@ -83,23 +86,32 @@ t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy)
 	    "There are %d atoms and %d charges for free energy perturbation\n",
 	    md->nPerturbed,md->nChargePerturbed);
 
+  md->bOrires = gmx_mtop_ftype_count(mtop,F_ORIRES);
+
   return md;
 }
 
-void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
+void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
 	      int nindex,int *index,
 	      int start,int homenr,
 	      t_mdatoms *md)
 {
-  int       i,g;
+  t_atoms   *atoms_mol;
+  int       i,g,ag,as,ae,molb;
   real      mA,mB,fac;
   t_atom    *atom;
   t_grpopts *opts;
+  gmx_groups_t *groups;
+  gmx_molblock_t *molblock;
 
   opts = &ir->opts;
 
+  groups = &mtop->groups;
+
+  molblock = mtop->molblock;
+
   if (index == NULL) {
-    md->nr = atoms->nr;
+    md->nr = mtop->natoms;
   } else {
     md->nr = nindex;
   }
@@ -135,7 +147,7 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
       srenew(md->cFREEZE,md->nalloc);
     if (md->bVCMgrps)
       srenew(md->cVCM,md->nalloc);
-    if (norires)
+    if (md->bOrires)
       srenew(md->cORF,md->nalloc);
     if (md->nPerturbed)
       srenew(md->bPerturbed,md->nalloc);
@@ -151,13 +163,25 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
   }
 
   for(i=0; (i<md->nr); i++) {
-    if (index == NULL)
-      atom = &atoms->atom[i];
-    else
-      atom = &atoms->atom[index[i]];
+    if (index == NULL) {
+      ag = i;
+      gmx_mtop_atomnr_to_atom(mtop,ag,&atom);
+    } else {
+      ag   = index[i];
+      molb = -1;
+      ae   = 0;
+      do {
+	molb++;
+	as = ae;
+	ae = as + molblock[molb].nmol*molblock[molb].natoms_mol;
+      } while (ag >= ae);
+      atoms_mol = &mtop->moltype[molblock[molb].type].atoms;
+      atom = &atoms_mol->atom[(ag - as) % atoms_mol->nr];
+    }
 
-    if (md->cFREEZE)
-      md->cFREEZE[i]	= atom->grpnr[egcFREEZE];
+    if (md->cFREEZE) {
+      md->cFREEZE[i]	= groups->grpnr[egcFREEZE][ag];
+    }
     if (EI_ENERGY_MINIMIZATION(ir->eI)) {
       mA = 1.0;
       mB = 1.0;
@@ -169,7 +193,7 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
 	mA = ir->bd_fric*ir->delta_t;
 	mB = ir->bd_fric*ir->delta_t;
       } else {
-	fac = ir->delta_t/opts->tau_t[atom->grpnr[egcTC]];
+	fac = ir->delta_t/opts->tau_t[md->cTC ? groups->grpnr[egcTC][ag] : 0];
 	mA = atom->m*fac;
 	mB = atom->mB*fac;
       }
@@ -183,7 +207,7 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
     }
     md->massT[i]	= mA;
     if (mA == 0.0) {
-      md->invmass[i] = 0;
+      md->invmass[i]    = 0;
     } else if (md->cFREEZE) {
       g = md->cFREEZE[i];
       if (opts->nFreeze[g][XX] && opts->nFreeze[g][YY] && opts->nFreeze[g][ZZ])
@@ -206,22 +230,24 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
     }
     md->ptype[i]	= atom->ptype;
     if (md->cTC)
-      md->cTC[i]	= atom->grpnr[egcTC];
-    md->cENER[i]	= atom->grpnr[egcENER];
+      md->cTC[i]	= groups->grpnr[egcTC][ag];
+    md->cENER[i]	=
+      (groups->grpnr[egcENER] ? groups->grpnr[egcENER][ag] : 0);
     if (md->cACC)
-      md->cACC[i]	= atom->grpnr[egcACC];
+      md->cACC[i]	= groups->grpnr[egcACC][ag];
     if (md->cVCM)
-      md->cVCM[i]      	= atom->grpnr[egcVCM];
+      md->cVCM[i]     	= groups->grpnr[egcVCM][ag];
     if (md->cORF)
-      md->cORF[i]      	= atom->grpnr[egcORFIT];
+      md->cORF[i]     	= groups->grpnr[egcORFIT][ag];
 
     if (md->cU1)
-      md->cU1[i]      	= atom->grpnr[egcUser1];
+      md->cU1[i]     	= groups->grpnr[egcUser1][ag];
     if (md->cU2)
-      md->cU2[i]      	= atom->grpnr[egcUser2];
+      md->cU2[i]     	= groups->grpnr[egcUser2][ag];
 
     if (ir->bQMMM) {
-      if (atom->grpnr[egcQMMM] < atoms->grps[egcQMMM].nr-1) {
+      if (groups->grpnr[egcQMMM] == 0 || 
+	  groups->grpnr[egcQMMM][ag] < groups->grps[egcQMMM].nr-1) {
 	md->bQM[i]      = TRUE;
       } else {
 	md->bQM[i]      = FALSE;
@@ -236,17 +262,17 @@ void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
 
 void update_mdatoms(t_mdatoms *md,real lambda)
 {
-  int    i,end;
+  int    al,end;
   real   L1=1.0-lambda;
   
   end=md->nr;
 
   if (md->nMassPerturbed) {
-    for(i=0; (i<end); i++) {
-      if (md->bPerturbed[i]) {
-	md->massT[i] = L1*md->massA[i] + lambda*md->massB[i];
-	if (md->invmass[i] > 1.1*ALMOST_ZERO)
-	  md->invmass[i] = 1.0/md->massT[i];
+    for(al=0; (al<end); al++) {
+      if (md->bPerturbed[al]) {
+	md->massT[al] = L1*md->massA[al]+ lambda*md->massB[al];
+	if (md->invmass[al] > 1.1*ALMOST_ZERO)
+	  md->invmass[al] = 1.0/md->massT[al];
       }
     }
     md->tmass = L1*md->tmassA + lambda*md->tmassB;

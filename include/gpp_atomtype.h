@@ -96,7 +96,7 @@ extern int add_atomtype(t_atomtype at,t_symtab *tab,
 extern void print_at (FILE * out, t_atomtype at);
 /* Print an atomtype record to a text file */
 
-extern void renum_atype(t_params plist[],t_topology *top,
+extern void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 			int *wall_atomtype,
 			t_atomtype at,bool bVerbose);
 			

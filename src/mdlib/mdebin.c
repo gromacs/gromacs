@@ -79,9 +79,9 @@ static char *boxvel_nm[] = {
 static bool bConstr,bConstrVir,bTricl,bDynBox;
 static int  f_nre=0,epc,etc,nCrmsd;
 
-t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
-		      const t_idef *idef,const t_inputrec *ir,
-		      t_commrec *cr)
+t_mdebin *init_mdebin(int fp_ene,
+		      const gmx_mtop_t *mtop,
+		      const t_inputrec *ir)
 {
   char *ener_nm[F_NRE];
   static char *vir_nm[] = {
@@ -117,23 +117,25 @@ t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
     "1/Viscosity (SI)"
   };
   static   char   **grpnms;
+  const gmx_groups_t *groups;
   char     **gnm;
   char     buf[256];
   t_mdebin *md;
-  int      i,j,ni,nj,n,k,kk,nc[2];
+  int      i,j,ni,nj,n,k,kk,ncon,nset;
   bool     bBHAM,b14;
   
-  bBHAM = (idef->functype[0] == F_BHAM);
-  b14   = (idef->il[F_LJ14].nr > 0 || idef->il[F_LJC14_Q].nr > 0);
+  groups = &mtop->groups;
 
-  nc[0] = idef->il[F_CONSTR].nr/3;
-  nc[1] = idef->il[F_SETTLE].nr*3/2;
-  if (PARTDECOMP(cr))
-    gmx_sumi(2,nc,cr);
-  bConstr    = (nc[0]+nc[1] > 0);
+  bBHAM = (mtop->ffparams.functype[0] == F_BHAM);
+  b14   = (gmx_mtop_ftype_count(mtop,F_LJ14) > 0 ||
+	   gmx_mtop_ftype_count(mtop,F_LJC14_Q) > 0);
+
+  ncon = gmx_mtop_ftype_count(mtop,F_CONSTR);
+  nset = gmx_mtop_ftype_count(mtop,F_SETTLE);
+  bConstr    = (ncon > 0 || nset > 0);
   bConstrVir = FALSE;
   if (bConstr) {
-    if (nc[0] > 0 && ir->eConstrAlg == econtLINCS) {
+    if (ncon > 0 && ir->eConstrAlg == econtLINCS) {
       if (ir->eI == eiSD2)
 	nCrmsd = 2;
       else
@@ -181,9 +183,9 @@ t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
     else if (i == F_DISPCORR)
       bEner[i] = (ir->eDispCorr != edispcNO);
     else if (i == F_DISRESVIOL)
-      bEner[i] = (idef->il[F_DISRES].nr > 0);
+      bEner[i] = (gmx_mtop_ftype_count(mtop,F_DISRES) > 0);
     else if (i == F_ORIRESDEV)
-      bEner[i] = (idef->il[F_ORIRES].nr > 0);
+      bEner[i] = (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0);
     else if (i == F_CONNBONDS)
       bEner[i] = FALSE;
     else if (i == F_COM_PULL)
@@ -192,10 +194,8 @@ t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
       bEner[i] = ((ir->etc == etcNOSEHOOVER || ir->etc == etcVRESCALE) &&
 		  ir->epc == epcNO);
     else
-      bEner[i] = (idef->il[i].nr > 0);
+      bEner[i] = (gmx_mtop_ftype_count(mtop,i) > 0);
   }
-  if (PAR(cr))
-    gmx_sumi(F_NRE,bEner,cr);
 
   for(i=0; i<F_NRE; i++)
     if (bEner[i]) {
@@ -256,7 +256,7 @@ t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
     if (bEInd[i])
       md->nEc++;
       
-  n=atoms->grps[egcENER].nr;
+  n=groups->grps[egcENER].nr;
   md->nEg=n;
   md->nE=(n*(n+1))/2;
   snew(md->igrp,md->nE);
@@ -265,14 +265,14 @@ t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
     snew(gnm,md->nEc);
     for(k=0; (k<md->nEc); k++)
       snew(gnm[k],STRLEN);
-    for(i=0; (i<atoms->grps[egcENER].nr); i++) {
-      ni=atoms->grps[egcENER].nm_ind[i];
-      for(j=i; (j<atoms->grps[egcENER].nr); j++) {
-	nj=atoms->grps[egcENER].nm_ind[j];
+    for(i=0; (i<groups->grps[egcENER].nr); i++) {
+      ni=groups->grps[egcENER].nm_ind[i];
+      for(j=i; (j<groups->grps[egcENER].nr); j++) {
+	nj=groups->grps[egcENER].nm_ind[j];
 	for(k=kk=0; (k<egNR); k++) {
 	  if (bEInd[k]) {
 	    sprintf(gnm[kk],"%s:%s-%s",egrp_nm[k],
-		    *(atoms->grpname[ni]),*(atoms->grpname[nj]));
+		    *(groups->grpname[ni]),*(groups->grpname[nj]));
 	    kk++;
 	  }
 	}
@@ -288,41 +288,41 @@ t_mdebin *init_mdebin(int fp_ene,const t_atoms *atoms,
       gmx_incons("Number of energy terms wrong");
   }
   
-  md->nTC=atoms->grps[egcTC].nr;
+  md->nTC=groups->grps[egcTC].nr;
   snew(grpnms,md->nTC);
   for(i=0; (i<md->nTC); i++) {
-    ni=atoms->grps[egcTC].nm_ind[i];
-    sprintf(buf,"T-%s",*(atoms->grpname[ni]));
+    ni=groups->grps[egcTC].nm_ind[i];
+    sprintf(buf,"T-%s",*(groups->grpname[ni]));
     grpnms[i]=strdup(buf);
   }
   md->itemp=get_ebin_space(md->ebin,md->nTC,grpnms);
   if (etc == etcNOSEHOOVER) {
     for(i=0; (i<md->nTC); i++) {
-      ni=atoms->grps[egcTC].nm_ind[i];
-      sprintf(buf,"Xi-%s",*(atoms->grpname[ni]));
+      ni=groups->grps[egcTC].nm_ind[i];
+      sprintf(buf,"Xi-%s",*(groups->grpname[ni]));
       grpnms[i]=strdup(buf);
     }
     md->itc=get_ebin_space(md->ebin,md->nTC,grpnms);
   } else  if (etc == etcBERENDSEN || etc == etcYES) {
     for(i=0; (i<md->nTC); i++) {
-      ni=atoms->grps[egcTC].nm_ind[i];
-      sprintf(buf,"Lamb-%s",*(atoms->grpname[ni]));
+      ni=groups->grps[egcTC].nm_ind[i];
+      sprintf(buf,"Lamb-%s",*(groups->grpname[ni]));
       grpnms[i]=strdup(buf);
     }
     md->itc=get_ebin_space(md->ebin,md->nTC,grpnms);
   }
   sfree(grpnms);
   
-  md->nU=atoms->grps[egcACC].nr;
+  md->nU=groups->grps[egcACC].nr;
   if (md->nU > 1) {
     snew(grpnms,3*md->nU);
     for(i=0; (i<md->nU); i++) {
-      ni=atoms->grps[egcACC].nm_ind[i];
-      sprintf(buf,"Ux-%s",*(atoms->grpname[ni]));
+      ni=groups->grps[egcACC].nm_ind[i];
+      sprintf(buf,"Ux-%s",*(groups->grpname[ni]));
       grpnms[3*i+XX]=strdup(buf);
-      sprintf(buf,"Uy-%s",*(atoms->grpname[ni]));
+      sprintf(buf,"Uy-%s",*(groups->grpname[ni]));
       grpnms[3*i+YY]=strdup(buf);
-      sprintf(buf,"Uz-%s",*(atoms->grpname[ni]));
+      sprintf(buf,"Uz-%s",*(groups->grpname[ni]));
       grpnms[3*i+ZZ]=strdup(buf);
     }
     md->iu=get_ebin_space(md->ebin,3*md->nU,grpnms);
@@ -516,7 +516,8 @@ void print_ebin_header(FILE *log,int steps,real time,real lamb)
 
 void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 		FILE *log,int step,int nsteps,real time,int mode,bool bCompact,
-		t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts)
+		t_mdebin *md,t_fcdata *fcd,
+		gmx_groups_t *groups,t_grpopts *opts)
 {
   static char **grpnms=NULL;
   static char *kjm="(kJ/mol)";
@@ -571,7 +572,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
     for(i=0;i<opts->ngtc;i++)
       if(opts->annealing[i]!=eannNO)
 	fprintf(log,"Current ref_t for group %s: %8.1f\n",
-		*(atoms->grpname[atoms->grps[egcTC].nm_ind[i]]),opts->ref_t[i]);
+		*(groups->grpname[groups->grps[egcTC].nm_ind[i]]),opts->ref_t[i]);
   
     if (mode==eprNORMAL && fcd->orires.nr>0)
       print_orires_log(log,&(fcd->orires));
@@ -609,10 +610,10 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 	  snew(grpnms,md->nE);
 	  n=0;
 	  for(i=0; (i<md->nEg); i++) {
-	    ni=atoms->grps[egcENER].nm_ind[i];
+	    ni=groups->grps[egcENER].nm_ind[i];
 	    for(j=i; (j<md->nEg); j++) {
-	      nj=atoms->grps[egcENER].nm_ind[j];
-	      sprintf(buf,"%s-%s",*(atoms->grpname[ni]),*(atoms->grpname[nj]));
+	      nj=groups->grps[egcENER].nm_ind[j];
+	      sprintf(buf,"%s-%s",*(groups->grpname[ni]),*(groups->grpname[nj]));
 	      grpnms[n++]=strdup(buf);
 	    }
 	  }
@@ -637,8 +638,8 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 	fprintf(log,"%15s   %12s   %12s   %12s\n",
 		"Group","Ux","Uy","Uz");
 	for(i=0; (i<md->nU); i++) {
-	  ni=atoms->grps[egcACC].nm_ind[i];
-	  fprintf(log,"%15s",*atoms->grpname[ni]);
+	  ni=groups->grps[egcACC].nm_ind[i];
+	  fprintf(log,"%15s",*groups->grpname[ni]);
 	  pr_ebin(log,md->ebin,md->iu+3*i,3,3,mode,nsteps,FALSE);
 	}
 	fprintf(log,"\n");

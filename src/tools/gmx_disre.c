@@ -61,6 +61,7 @@
 #include "mdrun.h"
 #include "names.h"
 #include "matio.h"
+#include "mtop_util.h"
 
 typedef struct {
   int n;
@@ -559,8 +560,9 @@ int gmx_disre(int argc,char *argv[])
   FILE        *out=NULL,*aver=NULL,*numv=NULL,*maxxv=NULL,*xvg=NULL;
   t_tpxheader header;
   t_inputrec  ir;
-  t_topology  top;
+  gmx_mtop_t  mtop;
   rvec        *xtop;
+  t_topology  *top;
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
   t_fcdata    fcd;
@@ -613,7 +615,7 @@ int gmx_disre(int argc,char *argv[])
   read_tpxheader(ftp2fn(efTPX,NFILE,fnm),&header,FALSE,NULL,NULL);
   snew(xtop,header.natoms);
   read_tpx(ftp2fn(efTPX,NFILE,fnm),&step,&t,&lambda,&ir,
-	   box,&ntopatoms,xtop,NULL,NULL,&top);
+	   box,&ntopatoms,xtop,NULL,NULL,&mtop);
   bPDB = opt2bSet("-q",NFILE,fnm);
   if (bPDB) {
     snew(xav,ntopatoms);
@@ -622,10 +624,17 @@ int gmx_disre(int argc,char *argv[])
     for(kkk=0; (kkk<ntopatoms); kkk++) {
       w_rls[kkk] = 1;
       ind_fit[kkk] = kkk;
-    }   
-    if (top.atoms.pdbinfo == NULL)
-      snew(top.atoms.pdbinfo,ntopatoms);
+    }
+    
+    snew(atoms,1);
+    *atoms = gmx_mtop_global_atoms(&mtop);
+    
+    if (atoms->pdbinfo == NULL) {
+      snew(atoms->pdbinfo,atoms->nr);
+    }
   } 
+
+  top = gmx_mtop_generate_local_top(&mtop,&ir);
 
   g = NULL;
   pbc_null = NULL;
@@ -633,7 +642,7 @@ int gmx_disre(int argc,char *argv[])
     if (ir.bPeriodicMols)
       pbc_null = &pbc;
     else
-      g = mk_graph(fplog,&top.idef,0,top.atoms.nr,FALSE,FALSE);
+      g = mk_graph(fplog,&top->idef,0,top->atoms.nr,FALSE,FALSE);
   }
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
@@ -653,8 +662,7 @@ int gmx_disre(int argc,char *argv[])
     isize=0;
 
   ir.dr_tau=0.0;
-  init_disres(fplog,top.idef.il[F_DISRES].nr,top.idef.il[F_DISRES].iatoms,
-	      top.idef.iparams,&ir,NULL,&fcd,NULL);
+  init_disres(fplog,&mtop,&ir,NULL,FALSE,&fcd,NULL);
 
   natoms=read_first_x(&status,ftp2fn(efTRX,NFILE,fnm),&t,&x,box);
   snew(f,5*natoms);
@@ -677,24 +685,11 @@ int gmx_disre(int argc,char *argv[])
 		   "Largest Violation","Time (ps)","nm");
   }
 
-  snew(atoms,1);
-  atoms->nr=top.atoms.nr;
-  atoms->nres=top.atoms.nres;
-  snew(atoms->atomname,atoms->nr);
-  snew(atoms->resname,atoms->nres);
-  snew(atoms->atom,atoms->nr);
-  memcpy(atoms->atom,top.atoms.atom,atoms->nr*sizeof(atoms->atom[0]));
-  memcpy(atoms->atomname,top.atoms.atomname,
-	 atoms->nr*sizeof(atoms->atomname[0]));
-  memcpy(atoms->resname,top.atoms.resname,
-	 atoms->nres*sizeof(atoms->resname[0]));
-  mdatoms = init_mdatoms(fplog,&top.atoms,ir.efep!=efepNO);
-  atoms2md(&top.atoms,&ir,top.idef.il[F_ORIRES].nr,0,NULL,0,top.atoms.nr,
-	   mdatoms);
+  atoms2md(&mtop,&ir,0,NULL,0,mtop.natoms,mdatoms);
   update_mdatoms(mdatoms,lambda);
   fr      = mk_forcerec();
   fprintf(fplog,"Made forcerec\n");
-  init_forcerec(fplog,fr,NULL,&ir,&top,cr,box,FALSE,NULL,NULL,NULL,FALSE,-1);
+  init_forcerec(fplog,fr,NULL,&ir,&mtop,cr,box,FALSE,NULL,NULL,NULL,FALSE,-1);
   init_nrnb(&nrnb);
   j=0;
   do {
@@ -702,7 +697,7 @@ int gmx_disre(int argc,char *argv[])
       if (ir.bPeriodicMols)
 	set_pbc(&pbc,ir.ePBC,box);
       else
-	rm_pbc(&top.idef,ir.ePBC,natoms,box,x,x);
+	rm_pbc(&top->idef,ir.ePBC,natoms,box,x,x);
     }
     
     if (clust) {
@@ -710,22 +705,22 @@ int gmx_disre(int argc,char *argv[])
 	gmx_fatal(FARGS,"There are more frames in the trajectory than in the cluster index file. t = %8f\n",t);
       my_clust = clust->inv_clust[j];
       range_check(my_clust,0,clust->clust->nr);
-      check_viol(fplog,cr,&(top.idef.il[F_DISRES]),
-		 top.idef.iparams,top.idef.functype,
+      check_viol(fplog,cr,&(top->idef.il[F_DISRES]),
+		 top->idef.iparams,top->idef.functype,
 		 x,f,fr,pbc_null,g,dr_clust,my_clust,isize,index,vvindex,&fcd);
     }
     else
-      check_viol(fplog,cr,&(top.idef.il[F_DISRES]),
-		 top.idef.iparams,top.idef.functype,
+      check_viol(fplog,cr,&(top->idef.il[F_DISRES]),
+		 top->idef.iparams,top->idef.functype,
 		 x,f,fr,pbc_null,g,&dr,0,isize,index,vvindex,&fcd);
     if (bPDB) {
-      reset_x(top.atoms.nr,ind_fit,top.atoms.nr,NULL,x,w_rls);
-      do_fit(top.atoms.nr,w_rls,x,x);
+      reset_x(atoms->nr,ind_fit,atoms->nr,NULL,x,w_rls);
+      do_fit(atoms->nr,w_rls,x,x);
       if (j == 0) {
 	/* Store the first frame of the trajectory as 'characteristic'
 	 * for colouring with violations.
 	 */
-	for(kkk=0; (kkk<top.atoms.nr); kkk++)
+	for(kkk=0; (kkk<atoms->nr); kkk++)
 	  copy_rvec(x[kkk],xav[kkk]);
       }
     }
@@ -746,21 +741,21 @@ int gmx_disre(int argc,char *argv[])
   close_trj(status);
 
   if (clust) {
-    dump_clust_stats(fplog,fcd.disres.nres,&(top.idef.il[F_DISRES]),
-		     top.idef.iparams,clust->clust,dr_clust,
+    dump_clust_stats(fplog,fcd.disres.nres,&(top->idef.il[F_DISRES]),
+		     top->idef.iparams,clust->clust,dr_clust,
 		     clust->grpname,isize,index);
   }
   else {
-    dump_stats(fplog,j,fcd.disres.nres,&(top.idef.il[F_DISRES]),
-	       top.idef.iparams,&dr,isize,index,
-	       bPDB ? (&top.atoms) : NULL);
+    dump_stats(fplog,j,fcd.disres.nres,&(top->idef.il[F_DISRES]),
+	       top->idef.iparams,&dr,isize,index,
+	       bPDB ? atoms : NULL);
     if (bPDB) {
       write_sto_conf(opt2fn("-q",NFILE,fnm),
 		     "Coloured by average violation in Angstrom",
-		     &(top.atoms),xav,NULL,ir.ePBC,box);
+		     atoms,xav,NULL,ir.ePBC,box);
     }
     dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nres,
-		      j,&top,max_dr,nlevels,bThird);
+		      j,top,max_dr,nlevels,bThird);
     fclose(out);
     fclose(aver);
     fclose(numv);

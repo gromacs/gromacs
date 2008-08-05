@@ -2130,19 +2130,24 @@ void ns_realloc_natoms(gmx_ns_t *ns,int natoms)
 }
 
 void init_ns(FILE *fplog,const t_commrec *cr,
-             gmx_ns_t *ns,t_forcerec *fr,int ngid,const t_block *cgs,
+             gmx_ns_t *ns,t_forcerec *fr,
+             const gmx_mtop_t *mtop,
              matrix box)
 {
-    int  icg,nr_in_cg,maxcg,i,j,jcg;
+    int  mt,icg,nr_in_cg,maxcg,i,j,jcg,ngid;
+    t_block *cgs;
     char *ptr;
     
     /* Compute largest charge groups size (# atoms) */
     nr_in_cg=1;
-    for (icg=0; (icg < cgs->nr); icg++)
-    {
-        nr_in_cg=max(nr_in_cg,(int)(cgs->index[icg+1]-cgs->index[icg]));
+    for(mt=0; mt<mtop->nmoltype; mt++) {
+        cgs = &mtop->moltype[mt].cgs;
+        for (icg=0; (icg < cgs->nr); icg++)
+        {
+            nr_in_cg=max(nr_in_cg,(int)(cgs->index[icg+1]-cgs->index[icg]));
+        }
     }
-    
+
     /* Verify whether largest charge group is <= max cg.
      * This is determined by the type of the local exclusion type 
      * Exclusions are stored in bits. (If the type is not large
@@ -2155,6 +2160,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
                   nr_in_cg,maxcg);
     }
     
+    ngid = mtop->groups.grps[egcENER].nr;
     snew(ns->bExcludeAlleg,ngid);
     for(i=0; i<ngid; i++) {
         ns->bExcludeAlleg[i] = TRUE;
@@ -2207,12 +2213,17 @@ void init_ns(FILE *fplog,const t_commrec *cr,
     if (debug) 
         pr_ivec(debug,0,"bHaveVdW",ns->bHaveVdW,fr->ntype,TRUE);
     
-    ns_realloc_natoms(ns,cgs->index[cgs->nr]);
+    if (!DOMAINDECOMP(cr))
+    {
+        /* This could be reduced with particle decomposition */
+        ns_realloc_natoms(ns,mtop->natoms);
+    }
 }
 
 int search_neighbours(FILE *log,t_forcerec *fr,
                       rvec x[],matrix box,
-                      t_topology *top,t_groups *grps,
+                      t_topology *top,
+                      gmx_groups_t *groups,t_groups *grps,
                       t_commrec *cr,
                       t_nrnb *nrnb,t_mdatoms *md,
                       real lambda,real *dvdlambda,
@@ -2226,15 +2237,15 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     bool     bGrid,bFilledHome;
     char     *ptr;
     bool     *i_egp_flags;
-    int      start,end;
+    int      cg_start,cg_end,start,end;
     gmx_ns_t *ns;
     t_grid   *grid;
     
     ns = &fr->ns;
-    
+
     /* Set some local variables */
     bGrid = fr->bGrid;
-    ngid = top->atoms.grps[egcENER].nr;
+    ngid = groups->grps[egcENER].nr;
     
     for(m=0; (m<DIM); m++)
     {

@@ -593,6 +593,7 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     if (ir->ePull != epullNO)
       pr_pull(fp,indent,ir->pull);
 
+    PS("disre",EDISRETYPE(ir->eDisre));
     PS("disre_weighting",EDISREWEIGHTING(ir->eDisreWeighting));
     PS("disre_mixed",BOOL(ir->bDisreMixed));
     PR("dr_fc",ir->dr_fc);
@@ -846,40 +847,61 @@ void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams)
 }
 
 void pr_ilist(FILE *fp,int indent,const char *title,
-	      t_idef *idef,t_ilist *ilist, bool bShowNumbers)
+              t_functype *functype,t_ilist *ilist, bool bShowNumbers)
 {
-  int i,j,k,type,ftype;
-  t_iatom *iatoms;
-
-  if (available(fp,ilist,indent,title))
+    int i,j,k,type,ftype;
+    t_iatom *iatoms;
+    
+    if (available(fp,ilist,indent,title) && ilist->nr > 0)
     {  
-      indent=pr_title(fp,indent,title);
-      (void) pr_indent(fp,indent);
-      fprintf(fp,"nr: %d\n",ilist->nr);
-      if (ilist->nr > 0) {
-	(void) pr_indent(fp,indent);
-	fprintf(fp,"iatoms:\n");
-	iatoms=ilist->iatoms;
-	for (i=j=0; i<ilist->nr;) {
+        indent=pr_title(fp,indent,title);
+        (void) pr_indent(fp,indent);
+        fprintf(fp,"nr: %d\n",ilist->nr);
+        if (ilist->nr > 0) {
+            (void) pr_indent(fp,indent);
+            fprintf(fp,"iatoms:\n");
+            iatoms=ilist->iatoms;
+            for (i=j=0; i<ilist->nr;) {
 #ifndef DEBUG
-	  (void) pr_indent(fp,indent+INDENT);
-	  type=*(iatoms++);
-	  ftype=idef->functype[type];
-	  (void) fprintf(fp,"%d type=%d (%s)",
-			 bShowNumbers?j:-1,bShowNumbers?type:-1,
-			 interaction_function[ftype].name);
-	  j++;
-	  for (k=0; k<interaction_function[ftype].nratoms; k++)
-	    (void) fprintf(fp," %u",*(iatoms++));
-	  (void) fprintf(fp,"\n");
-	  i+=1+interaction_function[ftype].nratoms;
+                (void) pr_indent(fp,indent+INDENT);
+                type=*(iatoms++);
+                ftype=functype[type];
+                (void) fprintf(fp,"%d type=%d (%s)",
+                               bShowNumbers?j:-1,bShowNumbers?type:-1,
+                               interaction_function[ftype].name);
+                j++;
+                for (k=0; k<interaction_function[ftype].nratoms; k++)
+                    (void) fprintf(fp," %u",*(iatoms++));
+                (void) fprintf(fp,"\n");
+                i+=1+interaction_function[ftype].nratoms;
 #else
-	  fprintf(fp,"%5d%5d\n",i,iatoms[i]);
-	  i++;
+                fprintf(fp,"%5d%5d\n",i,iatoms[i]);
+                i++;
 #endif
-	}
-      }
+            }
+        }
     }
+}
+
+void pr_ffparams(FILE *fp,int indent,const char *title,
+                 gmx_ffparams_t *ffparams,
+                 bool bShowNumbers)
+{
+  int i,j;
+  
+  indent=pr_title(fp,indent,title);
+  (void) pr_indent(fp,indent);
+  (void) fprintf(fp,"atnr=%d\n",ffparams->atnr);
+  (void) pr_indent(fp,indent);
+  (void) fprintf(fp,"ntypes=%d\n",ffparams->ntypes);
+  for (i=0; i<ffparams->ntypes; i++) {
+      (void) pr_indent(fp,indent+INDENT);
+      (void) fprintf(fp,"functype[%d]=%s, ",
+                     bShowNumbers?i:-1,
+                     interaction_function[ffparams->functype[i]].name);
+      pr_iparams(fp,ffparams->functype[i],&ffparams->iparams[i]);
+  }
+  (void) pr_real(fp,indent,"fudgeQQ",ffparams->fudgeQQ);
 }
 
 void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers)
@@ -890,8 +912,6 @@ void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbe
     indent=pr_title(fp,indent,title);
     (void) pr_indent(fp,indent);
     (void) fprintf(fp,"atnr=%d\n",idef->atnr);
-    (void) pr_indent(fp,indent);
-    (void) fprintf(fp,"nodeid=%d\n",idef->nodeid);
     (void) pr_indent(fp,indent);
     (void) fprintf(fp,"ntypes=%d\n",idef->ntypes);
     for (i=0; i<idef->ntypes; i++) {
@@ -905,7 +925,7 @@ void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbe
 
     for(j=0; (j<F_NRE); j++)
       pr_ilist(fp,indent,interaction_function[j].longname,
-	       idef,&idef->il[j],bShowNumbers);
+               idef->functype,&idef->il[j],bShowNumbers);
   }
 }
 
@@ -1046,38 +1066,6 @@ void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowN
     }
 }
 
-static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
-{
-  int i,j;
-  
-  if (available(fp,atom,indent,title)) {  
-    indent=pr_title_n(fp,indent,title,n);
-    for (i=0; i<n; i++) {
-      (void) pr_indent(fp,indent);
-      fprintf(fp,"%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
-	      "q=%12.5e, mB=%12.5e, qB=%12.5e, resnr=%5d, atomnumber=%3d} grpnrs=[",
-	      title,i,atom[i].type,atom[i].typeB,ptype_str[atom[i].ptype],
-	      atom[i].m,atom[i].q,atom[i].mB,atom[i].qB,atom[i].resnr,atom[i].atomnumber);
-      for(j=0; (j<egcNR); j++)
-	fprintf(fp," %d",(int)atom[i].grpnr[j]);
-      fprintf(fp," ]}\n");
-    }
-  }
-}
-
-static void pr_grps(FILE *fp,int indent,const char *title,t_grps grps[],int ngrp,
-		    char **grpname[], bool bShowNumbers)
-{
-  int i,j;
-  
-  for(i=0; (i<ngrp); i++) {
-    fprintf(fp,"%s[%d] nr=%d, name=[",title,bShowNumbers?i:-1,grps[i].nr);
-    for(j=0; (j<grps[i].nr); j++)
-      fprintf(fp," %s",*(grpname[grps[i].nm_ind[j]]));
-    fprintf(fp,"]\n");
-  }
-}
-
 static void pr_strings(FILE *fp,int indent,const char *title,char ***nm,int n, bool bShowNumbers)
 {
   int i;
@@ -1111,6 +1099,89 @@ static void pr_strings2(FILE *fp,int indent,const char *title,
     }
 }
 
+static void pr_atom(FILE *fp,int indent,const char *title,t_atom *atom,int n)
+{
+  int i,j;
+  
+  if (available(fp,atom,indent,title)) {  
+    indent=pr_title_n(fp,indent,title,n);
+    for (i=0; i<n; i++) {
+      (void) pr_indent(fp,indent);
+      fprintf(fp,"%s[%6d]={type=%3d, typeB=%3d, ptype=%8s, m=%12.5e, "
+	      "q=%12.5e, mB=%12.5e, qB=%12.5e, resnr=%5d, atomnumber=%3d}\n",
+	      title,i,atom[i].type,atom[i].typeB,ptype_str[atom[i].ptype],
+	      atom[i].m,atom[i].q,atom[i].mB,atom[i].qB,atom[i].resnr,atom[i].atomnumber);
+    }
+  }
+}
+
+static void pr_grps(FILE *fp,int indent,const char *title,t_grps grps[],int ngrp,
+		    char **grpname[], bool bShowNumbers)
+{
+    int i,j;
+
+  for(i=0; (i<ngrp); i++) {
+    fprintf(fp,"%s[%d] nr=%d, name=[",title,bShowNumbers?i:-1,grps[i].nr);
+    for(j=0; (j<grps[i].nr); j++)
+      fprintf(fp," %s",*(grpname[grps[i].nm_ind[j]]));
+    fprintf(fp,"]\n");
+  }
+}
+
+static void pr_groups(FILE *fp,int indent,const char *title,
+                      gmx_groups_t *groups,
+                      bool bShowNumbers)
+{
+    int grpnr[egcNR];
+    int nat_max,i,g;
+
+    pr_grps(fp,indent,"grp",groups->grps,egcNR,groups->grpname,bShowNumbers);
+    pr_strings(fp,indent,"grpname",groups->grpname,groups->ngrpname,bShowNumbers);
+
+    (void) pr_indent(fp,indent);
+    fprintf(fp,"groups          ");
+    for(g=0; g<egcNR; g++)
+    {
+       printf(" %5.5s",gtypes[g]);
+    }
+    printf("\n");
+
+    (void) pr_indent(fp,indent);
+    fprintf(fp,"allocated       ");
+    nat_max = 0;
+    for(g=0; g<egcNR; g++)
+    {
+        printf(" %5d",groups->ngrpnr[g]);
+        nat_max = max(nat_max,groups->ngrpnr[g]);
+    }
+    printf("\n");
+
+    if (nat_max == 0)
+    {
+        (void) pr_indent(fp,indent);
+        fprintf(fp,"groupnr[%5s] =","*");
+        for(g=0; g<egcNR; g++)
+        {
+            fprintf(fp,"  %3d ",0);
+        }
+        fprintf(fp,"\n");
+    }
+    else
+    {
+        for(i=0; i<nat_max; i++)
+        {
+            (void) pr_indent(fp,indent);
+            fprintf(fp,"groupnr[%5d] =",i);
+            for(g=0; g<egcNR; g++)
+            {
+                fprintf(fp,"  %3d ",
+                        groups->grpnr[g] ? groups->grpnr[g][i] : 0);
+            }
+            fprintf(fp,"\n");
+        }
+    }
+}
+
 void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms, 
 	      bool bShownumbers)
 {
@@ -1118,11 +1189,9 @@ void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms,
     {
       indent=pr_title(fp,indent,title);
       pr_atom(fp,indent,"atom",atoms->atom,atoms->nr);
-      pr_grps(fp,indent,"grp",atoms->grps,egcNR,atoms->grpname,bShownumbers);
       pr_strings(fp,indent,"atom",atoms->atomname,atoms->nr,bShownumbers);
       pr_strings2(fp,indent,"type",atoms->atomtype,atoms->atomtypeB,atoms->nr,bShownumbers);
       pr_strings(fp,indent,"residue",atoms->resname,atoms->nres,bShownumbers);
-      pr_strings(fp,indent,"grpname",atoms->grpname,atoms->ngrpname,bShownumbers);
     }
 }
 
@@ -1141,6 +1210,70 @@ void pr_atomtypes(FILE *fp,int indent,const char *title,t_atomtypes *atomtypes,
               atomtypes->surftens[i],atomtypes->atomnumber[i]);
     }
   }
+}
+
+static void pr_moltype(FILE *fp,int indent,char *title,
+                       gmx_moltype_t *molt,int n,
+                       gmx_ffparams_t *ffparams,
+                       bool bShowNumbers)
+{
+    int j;
+
+    indent = pr_title_n(fp,indent,title,n);
+    (void) pr_indent(fp,indent);
+    (void) fprintf(fp,"name=\"%s\"\n",*(molt->name));
+    pr_atoms(fp,indent,"atoms",&(molt->atoms),bShowNumbers);
+    pr_block(fp,indent,"cgs",&molt->cgs, bShowNumbers);
+    pr_blocka(fp,indent,"excls",&molt->excls, bShowNumbers);
+    for(j=0; (j<F_NRE); j++) {
+        pr_ilist(fp,indent,interaction_function[j].longname,
+                 ffparams->functype,&molt->ilist[j],bShowNumbers);
+    }
+}
+
+static void pr_molblock(FILE *fp,int indent,char *title,
+                        gmx_molblock_t *molb,int n,
+                        gmx_moltype_t *molt,
+                        bool bShowNumbers)
+{
+    indent = pr_title_n(fp,indent,title,n);
+    (void) pr_indent(fp,indent);
+    (void) fprintf(fp,"%-20s = %d \"%s\"\n",
+                   "moltype",molb->type,*(molt[molb->type].name));
+    pr_int(fp,indent,"#molecules",molb->nmol);
+    pr_int(fp,indent,"#atoms_mol",molb->natoms_mol);
+    pr_int(fp,indent,"#posres_xA",molb->nposres_xA);
+    if (molb->nposres_xA > 0) {
+        pr_rvecs(fp,indent,"posres_xA",molb->posres_xA,molb->nposres_xA);
+    }
+    pr_int(fp,indent,"#posres_xB",molb->nposres_xB);
+    if (molb->nposres_xB > 0) {
+        pr_rvecs(fp,indent,"posres_xB",molb->posres_xB,molb->nposres_xB);
+    }
+}
+
+void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
+             bool bShowNumbers)
+{
+    int mt,mb;
+
+    if (available(fp,mtop,indent,title)) {
+        indent=pr_title(fp,indent,title);
+        (void) pr_indent(fp,indent);
+        (void) fprintf(fp,"name=\"%s\"\n",*(mtop->name));
+        pr_int(fp,indent,"#atoms",mtop->natoms);
+        for(mb=0; mb<mtop->nmolblock; mb++) {
+            pr_molblock(fp,indent,"molblock",&mtop->molblock[mb],mb,
+                        mtop->moltype,bShowNumbers);
+        }
+        pr_ffparams(fp,indent,"ffparams",&(mtop->ffparams),bShowNumbers);
+        pr_atomtypes(fp,indent,"atomtypes",&(mtop->atomtypes),bShowNumbers);
+        for(mt=0; mt<mtop->nmoltype; mt++) {
+            pr_moltype(fp,indent,"moltype",&mtop->moltype[mt],mt,
+                       &mtop->ffparams,bShowNumbers);
+        }
+        pr_groups(fp,indent,"groups",&mtop->groups,bShowNumbers);
+    }
 }
 
 void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers)

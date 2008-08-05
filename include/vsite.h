@@ -56,23 +56,34 @@ typedef struct {
 } t_comm_vsites;
 
 typedef struct {
-  int  n_vsite;             /* The number of virtual sites             */
-  int  n_intercg_vsite;     /* The number of inter charge group vsites */
-  int  **vsite_pbc;         /* The pbc atoms for intercg vsites        */
-  int  **vsite_pbc_dd;      /* The pbc atoms with DD                   */
-  int  *vsite_pbc_dd_nalloc;
-  bool bPDvsitecomm;        /* Do we need vsite communication with PD? */
-  t_comm_vsites *vsitecomm; /* The PD vsite communication struct       */
+  int  n_intercg_vsite;       /* The number of inter charge group vsites */
+  int  nvsite_pbc_molt;       /* The array size of vsite_pbc_molt        */
+  int  ***vsite_pbc_molt;     /* The pbc atoms for intercg vsites        */
+  int  **vsite_pbc_loc;       /* The local pbc atoms                     */
+  int  *vsite_pbc_loc_nalloc;
+  bool bPDvsitecomm;          /* Do we need vsite communication with PD? */
+  t_comm_vsites *vsitecomm;   /* The PD vsite communication struct       */
 } gmx_vsite_t;
 
 extern void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 			     rvec x[],t_nrnb *nrnb,
-			     real dt,rvec v[],t_idef *idef,
+			     real dt,rvec v[],
+			     t_iparams ip[],t_ilist ilist[],
 			     int ePBC,bool bMolPBC,t_graph *graph,
 			     t_commrec *cr,matrix box);
-/* Create positions of vsite atoms based on surrounding atoms.
+/* Create positions of vsite atoms based on surrounding atoms
+ * for the local system.
  */
- 
+
+void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
+			   rvec x[],t_nrnb *nrnb,
+			   real dt,
+			   gmx_mtop_t *mtop,
+			   int ePBC,t_commrec *cr,matrix box);
+/* Create positions of vsite atoms based on surrounding atoms
+ * for the whole system.
+ */
+
 extern void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
 			   rvec x[],rvec f[],rvec *fshift,
 			   t_nrnb *nrnb,t_idef *idef,
@@ -82,9 +93,14 @@ extern void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
  * If fshift!=NULL also update the shift forces.
  */
 
-extern gmx_vsite_t *init_vsite(t_commrec *cr,t_topology *top);
+extern gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
 /* Initialize the virtual site struct,
  * returns NULL when there are no virtual sites.
+ */
+
+extern void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_commrec *cr);
+/* Set some vsite data for runs without domain decomposition.
+ * Should be called once after init_vsite, before calling other routines.
  */
 
 #endif

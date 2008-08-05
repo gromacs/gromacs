@@ -55,6 +55,5 @@ typedef struct {
 } t_graph;
 
 
-
 #define SHIFT_IVEC(g,i) ((g)->ishift[(i)-(g)->start])
 

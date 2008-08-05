@@ -48,9 +48,9 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 
-extern void init_orires(FILE *fplog,int nfa,const t_iatom forceatoms[],
-			const t_iparams ip[],
-			rvec x[],const t_atoms *atoms,const t_inputrec *ir,
+extern void init_orires(FILE *fplog,const gmx_mtop_t *mtop,
+			rvec x[],
+			const t_inputrec *ir,
 			const gmx_multisim_t *ms,t_oriresdata *od,
 			t_state *state);
 /* Initializes all the orientation restraint stuff in *od */

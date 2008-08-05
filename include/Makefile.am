@@ -63,6 +63,7 @@ mdebin.h \
 mdrun.h \
 mpelogging.h \
 mshift.h \
+mtop_util.h\
 mtxio.h \
 mvdata.h \
 names.h \

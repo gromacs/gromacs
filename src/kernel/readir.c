@@ -57,6 +57,7 @@
 #include "network.h"
 #include "vec.h"
 #include "pbc.h"
+#include "mtop_util.h"
 
 #define MAXPTR 254
 #define NOGID  255
@@ -83,6 +84,7 @@ static char efield_x[STRLEN],efield_xt[STRLEN],efield_y[STRLEN],
   efield_yt[STRLEN],efield_z[STRLEN],efield_zt[STRLEN];
 
 enum { egrptpALL, egrptpALL_GENREST, egrptpPART, egrptpONE };
+
 
 void init_ir(t_inputrec *ir, t_gromppopts *opts)
 {
@@ -453,20 +455,20 @@ static void do_wall_params(t_inputrec *ir,
   }
 }
 
-static void add_wall_energrps(t_atoms *atoms,int nwall,t_symtab *symtab)
+static void add_wall_energrps(gmx_groups_t *groups,int nwall,t_symtab *symtab)
 {
   int  i;
-  t_grps *groups;
+  t_grps *grps;
   char str[STRLEN];
   
   if (nwall > 0) {
-    srenew(atoms->grpname,atoms->ngrpname+nwall);
-    groups = &(atoms->grps[egcENER]);
-    srenew(groups->nm_ind,groups->nr+nwall);
+    srenew(groups->grpname,groups->ngrpname+nwall);
+    grps = &(groups->grps[egcENER]);
+    srenew(grps->nm_ind,grps->nr+nwall);
     for(i=0; i<nwall; i++) {
       sprintf(str,"wall%d",i);
-      atoms->grpname[atoms->ngrpname] = put_symtab(symtab,str);
-      groups->nm_ind[groups->nr++] = atoms->ngrpname++;
+      groups->grpname[groups->ngrpname] = put_symtab(symtab,str);
+      grps->nm_ind[grps->nr++] = groups->ngrpname++;
     }
   }
 }
@@ -745,7 +747,7 @@ void get_ir(char *mdparin,char *mdparout,
   /* Refinement */
   CCTYPE("NMR refinement stuff");
   CTYPE ("Distance restraints type: No, Simple or Ensemble");
-  EETYPE("disre",       opts->eDisre,   edisre_names, nerror, TRUE);
+  EETYPE("disre",       ir->eDisre,     edisre_names, nerror, TRUE);
   CTYPE ("Force weighting of pairs in one distance restraint: Conservative or Equal");
   EETYPE("disre-weighting", ir->eDisreWeighting, edisreweighting_names, nerror, TRUE);
   CTYPE ("Use sqrt of the time averaged times the instantaneous violation");
@@ -968,31 +970,32 @@ int search_string(char *s,int ng,char *gn[])
   return -1;
 }
 
-static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
+static void do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
 			 t_blocka *block,char *gnames[],
 			 int gtype,int restnm,
 			 int grptp,bool bVerbose)
 {
   unsigned short *cbuf;
-  t_grps *groups=&(atoms->grps[gtype]);
+  t_grps *grps=&(groups->grps[gtype]);
   int    i,j,gid,aj,ognr,ntot=0;
   const char *title;
+  bool   bRest;
 
   if (debug)
     fprintf(debug,"Starting numbering %d groups of type %d\n",ng,gtype);
   
   title = gtypes[gtype];
     
-  snew(cbuf,atoms->nr);
-  for(i=0; (i<atoms->nr); i++)
+  snew(cbuf,natoms);
+  for(i=0; (i<natoms); i++)
     cbuf[i]=NOGID;
   
-  snew(groups->nm_ind,ng+1); /* +1 for possible rest group */
+  snew(grps->nm_ind,ng+1); /* +1 for possible rest group */
   for(i=0; (i<ng); i++) {
     /* Lookup the group name in the block structure */
     gid = search_string(ptrs[i],block->nr,gnames);
     if ((grptp != egrptpONE) || (i == 0))
-      groups->nm_ind[groups->nr++]=gid;
+      grps->nm_ind[grps->nr++]=gid;
     if (debug) 
       fprintf(debug,"Found gid %d for group %s\n",gid,ptrs[i]);
     
@@ -1001,7 +1004,7 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
       aj=block->a[j];
       
       /* Range checking */
-      if ((aj < 0) || (aj >= atoms->nr)) 
+      if ((aj < 0) || (aj >= natoms)) 
 	gmx_fatal(FARGS,"Invalid atom number %d in indexfile",aj);
 	
       /* Lookup up the old group number */
@@ -1021,50 +1024,68 @@ static void do_numbering(t_atoms *atoms,int ng,char *ptrs[],
   }
   
   /* Now check whether we have done all atoms */
-  if (ntot != atoms->nr) {
+  bRest = FALSE;
+  if (ntot != natoms) {
     if (grptp == egrptpALL) {
       gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
-		atoms->nr-ntot,title);
+		natoms-ntot,title);
     } else if (grptp == egrptpPART) {
       sprintf(warn_buf,"%d atoms are not part of any of the %s groups\n",
-	      atoms->nr-ntot,title);
+	      natoms-ntot,title);
       warning_note(NULL);
     }
     /* Assign all atoms currently unassigned to a rest group */
-    for(j=0; (j<atoms->nr); j++) {
-      if (cbuf[j] == NOGID)
-	cbuf[j] = groups->nr;
+    for(j=0; (j<natoms); j++) {
+      if (cbuf[j] == NOGID) {
+	cbuf[j] = grps->nr;
+	bRest = TRUE;
+      }
     }
     if (grptp != egrptpPART) {
       if (bVerbose)
 	fprintf(stderr,
 		"Making dummy/rest group for %s containing %d elements\n",
-		title,atoms->nr-ntot);
+		title,natoms-ntot);
       /* Add group name "rest" */ 
-      groups->nm_ind[groups->nr] = restnm;
+      grps->nm_ind[grps->nr] = restnm;
       
       /* Assign the rest name to all atoms not currently assigned to a group */
-      for(j=0; (j<atoms->nr); j++) {
+      for(j=0; (j<natoms); j++) {
 	if (cbuf[j] == NOGID)
-	  cbuf[j] = groups->nr;
+	  cbuf[j] = grps->nr;
       }
-      groups->nr++;
+      grps->nr++;
     }
   }
-  for(j=0; (j<atoms->nr); j++) 
-    atoms->atom[j].grpnr[gtype]=cbuf[j];
+
+  if (grps->nr == 1) {
+    groups->ngrpnr[gtype] = 0;
+    groups->grpnr[gtype]  = NULL;
+  } else {
+    groups->ngrpnr[gtype] = natoms;
+    snew(groups->grpnr[gtype],natoms);
+    for(j=0; (j<natoms); j++) {
+      groups->grpnr[gtype][j] = cbuf[j];
+    }
+  }
   
   sfree(cbuf);
 }
 
-static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
+static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
 {
   t_grpopts *opts;
+  gmx_groups_t *groups;
   t_pull  *pull;
-  int     ai,aj,i,j,d,g,imin,jmin,nc;
+  int     natoms,ai,aj,i,j,d,g,imin,jmin,nc;
   t_iatom *ia;
   int     *nrdf,*na_vcm,na_tot;
   double  *nrdf_vcm,nrdf_uc,n_sub=0;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom  *atom;
+  int     mb,mol,as;
+  gmx_molblock_t *molb;
+  gmx_moltype_t *molt;
 
   /* Calculate nrdf. 
    * First calc 3xnr-atoms for each group
@@ -1075,72 +1096,88 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
 
   opts = &ir->opts;
   
+  groups = &mtop->groups;
+  natoms = mtop->natoms;
+
   /* Allocate one more for a possible rest group */
-  snew(nrdf_vcm,atoms->grps[egcVCM].nr+1);
-  snew(na_vcm,atoms->grps[egcVCM].nr+1);
+  snew(nrdf_vcm,groups->grps[egcVCM].nr+1);
+  snew(na_vcm,groups->grps[egcVCM].nr+1);
   
-  for(i=0; i<atoms->grps[egcTC].nr; i++)
+  for(i=0; i<groups->grps[egcTC].nr; i++)
     opts->nrdf[i] = 0;
-  for(i=0; i<atoms->grps[egcVCM].nr+1; i++)
+  for(i=0; i<groups->grps[egcVCM].nr+1; i++)
     nrdf_vcm[i] = 0;
 
-  snew(nrdf,atoms->nr);
-  for(i=0; i<atoms->nr; i++) {
+  snew(nrdf,natoms);
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
     nrdf[i] = 0;
-    if ((atoms->atom[i].ptype == eptAtom) ||
-	(atoms->atom[i].ptype == eptNucleus)) {
-      g = atoms->atom[i].grpnr[egcFREEZE];
+    if (atom->ptype == eptAtom || atom->ptype == eptNucleus) {
+      g = ggrpnr(groups,egcFREEZE,i);
       /* Double count nrdf for particle i */
-      for(d=0; d<DIM; d++)
-	if (opts->nFreeze[g][d] == 0)
-	  nrdf[i] += 2; 
-      opts->nrdf[atoms->atom[i].grpnr[egcTC]] += 0.5*nrdf[i];
-      nrdf_vcm[atoms->atom[i].grpnr[egcVCM]]  += 0.5*nrdf[i];
+      for(d=0; d<DIM; d++) {
+	if (opts->nFreeze[g][d] == 0) {
+	  nrdf[i] += 2;
+	}
+      }
+      opts->nrdf[ggrpnr(groups,egcTC,i)] += 0.5*nrdf[i];
+      nrdf_vcm[ggrpnr(groups,egcVCM,i)]  += 0.5*nrdf[i];
     }
   }
-  ia=idef->il[F_CONSTR].iatoms;
-  for(i=0; (i<idef->il[F_CONSTR].nr); ) {
-    /* Subtract degrees of freedom for the constraints,
-     * if the particles still have degrees of freedom left.
-     * If one of the particles is a vsite or a shell, then all
-     * constraint motion will go there, but since they do not
-     * contribute to the constraints the degrees of freedom do not
-     * change.
-     */
-    ai=ia[1];
-    aj=ia[2];
-    if (((atoms->atom[ai].ptype == eptNucleus) ||
-	 (atoms->atom[ai].ptype == eptAtom)) &&
-	((atoms->atom[aj].ptype == eptNucleus) ||
-	 (atoms->atom[aj].ptype == eptAtom))) {
-      if (nrdf[ai] > 0) 
-	jmin = 1;
-      else
-	jmin = 2;
-      if (nrdf[aj] > 0)
-	imin = 1;
-      else
-	imin = 2;
-      imin = min(imin,nrdf[ai]);
-      jmin = min(jmin,nrdf[aj]);
-      nrdf[ai] -= imin;
-      nrdf[aj] -= jmin;
-      opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5*imin;
-      opts->nrdf[atoms->atom[aj].grpnr[egcTC]] -= 0.5*jmin;
-      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]]  -= 0.5*imin;
-      nrdf_vcm[atoms->atom[aj].grpnr[egcVCM]]  -= 0.5*jmin;
+
+  as = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    molt = &mtop->moltype[molb->type];
+    atom = molt->atoms.atom;
+    for(mol=0; mol<molb->nmol; mol++) {
+      ia = molt->ilist[F_CONSTR].iatoms;
+      for(i=0; i<molt->ilist[F_CONSTR].nr; ) {
+	/* Subtract degrees of freedom for the constraints,
+	 * if the particles still have degrees of freedom left.
+	 * If one of the particles is a vsite or a shell, then all
+	 * constraint motion will go there, but since they do not
+	 * contribute to the constraints the degrees of freedom do not
+	 * change.
+	 */
+	ai = as + ia[1];
+	aj = as + ia[2];
+	if (((atom[ia[1]].ptype == eptNucleus) ||
+	     (atom[ia[1]].ptype == eptAtom)) &&
+	    ((atom[ia[2]].ptype == eptNucleus) ||
+	     (atom[ia[2]].ptype == eptAtom))) {
+	  if (nrdf[ai] > 0) 
+	    jmin = 1;
+	  else
+	    jmin = 2;
+	  if (nrdf[aj] > 0)
+	    imin = 1;
+	  else
+	    imin = 2;
+	  imin = min(imin,nrdf[ai]);
+	  jmin = min(jmin,nrdf[aj]);
+	  nrdf[ai] -= imin;
+	  nrdf[aj] -= jmin;
+	  opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5*imin;
+	  opts->nrdf[ggrpnr(groups,egcTC,aj)] -= 0.5*jmin;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5*imin;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,aj)]  -= 0.5*jmin;
+	}
+	ia += interaction_function[F_CONSTR].nratoms+1;
+	i  += interaction_function[F_CONSTR].nratoms+1;
+      }
+      ia = molt->ilist[F_SETTLE].iatoms;
+      for(i=0; i<molt->ilist[F_SETTLE].nr; ) {
+	/* Subtract 1 dof from every atom in the SETTLE */
+	for(ai=as+ia[1]; ai<as+ia[1]+3; ai++) {
+	  opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 1;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 1;
+	}
+	ia += 2;
+	i  += 2;
+      }
+      as += molt->atoms.nr;
     }
-    ia += interaction_function[F_CONSTR].nratoms+1;
-    i  += interaction_function[F_CONSTR].nratoms+1;
-  }
-  ia=idef->il[F_SETTLE].iatoms;
-  for(i=0; i<idef->il[F_SETTLE].nr; ) {
-    for(ai=ia[1]; ai<ia[1]+3; ai++) {
-      opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 1;
-      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]] -= 1;
-    }
-    ia+=2;
-    i+=2;
   }
 
   if (ir->ePull == epullCONSTRAINT) {
@@ -1163,18 +1200,20 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
     for(i=0; i<pull->ngrp; i++) {
       imin = 2*nc;
       if (pull->grp[0].nat > 0) {
+	/* Subtract 1/2 dof from the reference group */
 	ai = pull->grp[0].ind[0];
-	if (opts->nrdf[atoms->atom[ai].grpnr[egcTC]] > 1) {
-	  opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5;
-	  nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]]  -= 0.5;
+	if (opts->nrdf[ggrpnr(groups,egcTC,ai)] > 1) {
+	  opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5;
+	  nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5;
 	  imin--;
 	}
       }
+      /* Subtract 1/2 dof from the pulled group */
       ai = pull->grp[1+i].ind[0];
-      opts->nrdf[atoms->atom[ai].grpnr[egcTC]] -= 0.5*imin;
-      nrdf_vcm[atoms->atom[ai].grpnr[egcVCM]]  -= 0.5*imin;
-      if (opts->nrdf[atoms->atom[ai].grpnr[egcTC]] < 0)
-	gmx_fatal(FARGS,"Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative",gnames[atoms->grps[egcTC].nm_ind[atoms->atom[ai].grpnr[egcTC]]]);
+      opts->nrdf[ggrpnr(groups,egcTC,ai)] -= 0.5*imin;
+      nrdf_vcm[ggrpnr(groups,egcVCM,ai)]  -= 0.5*imin;
+      if (opts->nrdf[ggrpnr(groups,egcTC,ai)] < 0)
+	gmx_fatal(FARGS,"Center of mass pulling constraints caused the number of degrees of freedom for temperature coupling group %s to be negative",gnames[groups->grps[egcTC].nm_ind[ggrpnr(groups,egcTC,ai)]]);
     }
   }
   
@@ -1195,14 +1234,14 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
       gmx_incons("Checking comm_mode");
     }
     
-    for(i=0; i<atoms->grps[egcTC].nr; i++) {
+    for(i=0; i<groups->grps[egcTC].nr; i++) {
       /* Count the number of atoms of TC group i for every VCM group */
-      for(j=0; j<atoms->grps[egcVCM].nr+1; j++)
+      for(j=0; j<groups->grps[egcVCM].nr+1; j++)
 	na_vcm[j] = 0;
       na_tot = 0;
-      for(ai=0; ai<atoms->nr; ai++)
-	if (atoms->atom[ai].grpnr[egcTC] == i) {
-	  na_vcm[atoms->atom[ai].grpnr[egcVCM]]++;
+      for(ai=0; ai<natoms; ai++)
+	if (ggrpnr(groups,egcTC,ai) == i) {
+	  na_vcm[ggrpnr(groups,egcVCM,ai)]++;
 	  na_tot++;
 	}
       /* Correct for VCM removal according to the fraction of each VCM
@@ -1214,7 +1253,7 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
 		i,nrdf_uc,n_sub);
       }
       opts->nrdf[i] = 0;
-      for(j=0; j<atoms->grps[egcVCM].nr+1; j++) {
+      for(j=0; j<groups->grps[egcVCM].nr+1; j++) {
 	if (nrdf_vcm[j] > n_sub) {
 	  opts->nrdf[i] += nrdf_uc*((double)na_vcm[j]/(double)na_tot)*
 	    (nrdf_vcm[j] - n_sub)/nrdf_vcm[j];
@@ -1226,12 +1265,12 @@ static void calc_nrdf(t_atoms *atoms,t_idef *idef,t_inputrec *ir,char **gnames)
       }
     }
   }
-  for(i=0; (i<atoms->grps[egcTC].nr); i++) {
+  for(i=0; (i<groups->grps[egcTC].nr); i++) {
     if (opts->nrdf[i] < 0)
       opts->nrdf[i] = 0;
     fprintf(stderr,
 	    "Number of degrees of freedom in T-Coupling group %s is %.2f\n",
-	    gnames[atoms->grps[egcTC].nm_ind[i]],opts->nrdf[i]);
+	    gnames[groups->grps[egcTC].nm_ind[i]],opts->nrdf[i]);
   }
   
   sfree(nrdf);
@@ -1275,29 +1314,32 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
   sfree(t);
 }
 
-static bool do_egp_flag(t_inputrec *ir,t_atoms *atoms,char ***gnames,
+static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 			char *option,char *val,int flag)
 {
   int  nelem,i,j,k,nr;
   char *names[MAXPTR];
+  char ***gnames;
   bool bSet;
+
+  gnames = groups->grpname;
 
   nelem = str_nelem(val,MAXPTR,names);
   if (nelem % 2 != 0)
     gmx_fatal(FARGS,"The number of groups for %s is odd",option);
-  nr=atoms->grps[egcENER].nr;
+  nr = groups->grps[egcENER].nr;
   bSet = FALSE;
   for(i=0; i<nelem/2; i++) {
     j = 0;
     while ((j < nr) &&
-	   strcasecmp(names[2*i],*(gnames[atoms->grps[egcENER].nm_ind[j]])))
+	   strcasecmp(names[2*i],*(gnames[groups->grps[egcENER].nm_ind[j]])))
       j++;
     if (j == nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
 		  names[2*i],option);
     k = 0;
     while ((k < nr) &&
-	   strcasecmp(names[2*i+1],*(gnames[atoms->grps[egcENER].nm_ind[k]])))
+	   strcasecmp(names[2*i+1],*(gnames[groups->grps[egcENER].nm_ind[k]])))
       k++;
     if (k==nr)
       gmx_fatal(FARGS,"%s in %s is not an energy group\n",
@@ -1313,11 +1355,15 @@ static bool do_egp_flag(t_inputrec *ir,t_atoms *atoms,char ***gnames,
 }
 
 void do_index(char *ndx,
-	      t_symtab   *symtab,
-	      t_atoms    *atoms,bool bVerbose,
-	      t_inputrec *ir,t_idef *idef,rvec *v)
+	      gmx_mtop_t *mtop,
+	      bool bVerbose,
+	      t_inputrec *ir,rvec *v)
 {
   t_blocka *grps;
+  gmx_groups_t *groups;
+  int     natoms;
+  t_symtab *symtab;
+  t_atoms atoms_all;
   char    warnbuf[STRLEN],**gnames;
   int     nr,ntcg,ntau_t,nref_t,nacc,nofg,nSA,nSA_points,nSA_time,nSA_temp;
   int     nacg,nfreeze,nfrdim,nenergy,nvcm,nuser;
@@ -1336,24 +1382,27 @@ void do_index(char *ndx,
     snew(grps,1);
     snew(grps->index,1);
     snew(gnames,1);
-    analyse(atoms,grps,&gnames,FALSE,TRUE);
+    atoms_all = gmx_mtop_global_atoms(mtop);
+    analyse(&atoms_all,grps,&gnames,FALSE,TRUE);
+    free_t_atoms(&atoms_all,FALSE);
   } else {
     grps = init_index(ndx,&gnames);
   }
   
-  snew(atoms->grpname,grps->nr+1);
+  groups = &mtop->groups;
+  natoms = mtop->natoms;
+  symtab = &mtop->symtab;
+
+  snew(groups->grpname,grps->nr+1);
   
-  for(i=0; (i<grps->nr); i++)
-    atoms->grpname[i]=put_symtab(symtab,gnames[i]);
-  atoms->grpname[i]=put_symtab(symtab,"rest");
+  for(i=0; (i<grps->nr); i++) {
+    groups->grpname[i] = put_symtab(symtab,gnames[i]);
+  }
+  groups->grpname[i] = put_symtab(symtab,"rest");
   restnm=i;
   srenew(gnames,grps->nr+1);
-  gnames[restnm]=*(atoms->grpname[i]);
-  atoms->ngrpname=grps->nr+1;
-  
-  for(i=0; (i<atoms->nr); i++)
-    for(j=0; (j<egcNR); j++)
-      atoms->atom[i].grpnr[j]=NOGID;
+  gnames[restnm] = *(groups->grpname[i]);
+  groups->ngrpname = grps->nr+1;
 
   ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
@@ -1366,10 +1415,10 @@ void do_index(char *ndx,
     ir->etc = etcNO;
   bSetTCpar = ir->etc ||
     EI_SD(ir->eI) || ir->eI==eiBD || ir->eI==eiTPI || ir->eI==eiTPIC;
-  do_numbering(atoms,ntcg,ptr3,grps,gnames,egcTC,
+  do_numbering(natoms,groups,ntcg,ptr3,grps,gnames,egcTC,
 	       restnm,bSetTCpar ? egrptpALL : egrptpALL_GENREST,bVerbose);
-  nr=atoms->grps[egcTC].nr;
-  ir->opts.ngtc=nr;
+  nr = groups->grps[egcTC].nr;
+  ir->opts.ngtc = nr;
   snew(ir->opts.nrdf,nr);
   snew(ir->opts.tau_t,nr);
   snew(ir->opts.ref_t,nr);
@@ -1463,9 +1512,9 @@ void do_index(char *ndx,
 	/* Print out some summary information, to make sure we got it right */
 	for(i=0,k=0;i<nr;i++) {
 	  if(ir->opts.annealing[i]!=eannNO) {
-	    j=atoms->grps[egcTC].nm_ind[i];
+	    j = groups->grps[egcTC].nm_ind[i];
 	    fprintf(stderr,"Simulated annealing for group %s: %s, %d timepoints\n",
-		    *(atoms->grpname[j]),eann_names[ir->opts.annealing[i]],
+		    *(groups->grpname[j]),eann_names[ir->opts.annealing[i]],
 		    ir->opts.anneal_npoints[i]);
 	    fprintf(stderr,"Time (ps)   Temperature (K)\n");
 	    /* All terms except the last one */
@@ -1496,9 +1545,9 @@ void do_index(char *ndx,
   if (nacg*DIM != nacc)
     gmx_fatal(FARGS,"Invalid Acceleration input: %d groups and %d acc. values",
 		nacg,nacc);
-  do_numbering(atoms,nacg,ptr2,grps,gnames,egcACC,
+  do_numbering(natoms,groups,nacg,ptr2,grps,gnames,egcACC,
 	       restnm,egrptpALL_GENREST,bVerbose);
-  nr=atoms->grps[egcACC].nr;
+  nr = groups->grps[egcACC].nr;
   snew(ir->opts.acc,nr);
   ir->opts.ngacc=nr;
   
@@ -1514,9 +1563,9 @@ void do_index(char *ndx,
   if (nfrdim != DIM*nfreeze)
     gmx_fatal(FARGS,"Invalid Freezing input: %d groups and %d freeze values",
 		nfreeze,nfrdim);
-  do_numbering(atoms,nfreeze,ptr2,grps,gnames,egcFREEZE,
+  do_numbering(natoms,groups,nfreeze,ptr2,grps,gnames,egcFREEZE,
 	       restnm,egrptpALL_GENREST,bVerbose);
-  nr=atoms->grps[egcFREEZE].nr;
+  nr = groups->grps[egcFREEZE].nr;
   ir->opts.ngfrz=nr;
   snew(ir->opts.nFreeze,nr);
   for(i=k=0; (i<nfreeze); i++)
@@ -1535,16 +1584,16 @@ void do_index(char *ndx,
       ir->opts.nFreeze[i][j]=0;
   
   nenergy=str_nelem(energy,MAXPTR,ptr1);
-  do_numbering(atoms,nenergy,ptr1,grps,gnames,egcENER,
+  do_numbering(natoms,groups,nenergy,ptr1,grps,gnames,egcENER,
 	       restnm,egrptpALL_GENREST,bVerbose);
-  add_wall_energrps(atoms,ir->nwall,symtab);
-  ir->opts.ngener=atoms->grps[egcENER].nr;
+  add_wall_energrps(groups,ir->nwall,symtab);
+  ir->opts.ngener = groups->grps[egcENER].nr;
   nvcm=str_nelem(vcm,MAXPTR,ptr1);
-  do_numbering(atoms,nvcm,ptr1,grps,gnames,egcVCM,
+  do_numbering(natoms,groups,nvcm,ptr1,grps,gnames,egcVCM,
 	       restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
-  calc_nrdf(atoms,idef,ir,gnames);
+  calc_nrdf(mtop,ir,gnames);
 
   if (v && NULL) {
     real fac,ntot=0;
@@ -1552,27 +1601,27 @@ void do_index(char *ndx,
     /* Must check per group! */
     for(i=0; (i<ir->opts.ngtc); i++) 
       ntot += ir->opts.nrdf[i];
-    if (ntot != (DIM*atoms->nr)) {
-      fac = sqrt(ntot/(DIM*atoms->nr));
+    if (ntot != (DIM*natoms)) {
+      fac = sqrt(ntot/(DIM*natoms));
       if (bVerbose)
 	fprintf(stderr,"Scaling velocities by a factor of %.3f to account for constraints\n"
 		"and removal of center of mass motion\n",fac);
-      for(i=0; (i<atoms->nr); i++)
+      for(i=0; (i<natoms); i++)
 	svmul(fac,v[i],v[i]);
     }
   }
   
   nuser=str_nelem(user1,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser1,
+  do_numbering(natoms,groups,nuser,ptr1,grps,gnames,egcUser1,
 	       restnm,egrptpALL_GENREST,bVerbose);
   nuser=str_nelem(user2,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcUser2,
+  do_numbering(natoms,groups,nuser,ptr1,grps,gnames,egcUser2,
 	       restnm,egrptpALL_GENREST,bVerbose);
   nuser=str_nelem(xtc_grps,MAXPTR,ptr1);
-  do_numbering(atoms,nuser,ptr1,grps,gnames,egcXTC,
+  do_numbering(natoms,groups,nuser,ptr1,grps,gnames,egcXTC,
 	       restnm,egrptpONE,bVerbose);
   nofg = str_nelem(orirefitgrp,MAXPTR,ptr1);
-  do_numbering(atoms,nofg,ptr1,grps,gnames,egcORFIT,
+  do_numbering(natoms,groups,nofg,ptr1,grps,gnames,egcORFIT,
 	       restnm,egrptpALL_GENREST,bVerbose);
 
   /* QMMM input processing */
@@ -1584,7 +1633,7 @@ void do_index(char *ndx,
 	      " and %d methods\n",nQMg,nQMbasis,nQMmethod);
   }
   /* group rest, if any, is always MM! */
-  do_numbering(atoms,nQMg,ptr1,grps,gnames,egcQMMM,
+  do_numbering(natoms,groups,nQMg,ptr1,grps,gnames,egcQMMM,
                restnm,egrptpALL_GENREST,bVerbose);
   nr = nQMg; /*atoms->grps[egcQMMM].nr;*/
   ir->opts.ngQM = nQMg;
@@ -1647,22 +1696,20 @@ void do_index(char *ndx,
 
   if (bVerbose)
     for(i=0; (i<egcNR); i++) {
-      fprintf(stderr,"%-16s has %d element(s):",gtypes[i],atoms->grps[i].nr); 
-      for(j=0; (j<atoms->grps[i].nr); j++)
-	fprintf(stderr," %s",*(atoms->grpname[atoms->grps[i].nm_ind[j]]));
+      fprintf(stderr,"%-16s has %d element(s):",gtypes[i],groups->grps[i].nr); 
+      for(j=0; (j<groups->grps[i].nr); j++)
+	fprintf(stderr," %s",*(groups->grpname[groups->grps[i].nm_ind[j]]));
       fprintf(stderr,"\n");
     }
 
-  nr=atoms->grps[egcENER].nr;
+  nr = groups->grps[egcENER].nr;
   snew(ir->opts.egp_flags,nr*nr);
 
-  bExcl = do_egp_flag(ir,atoms,atoms->grpname,
-		      "energygrp_excl",egpexcl,EGP_EXCL);
+  bExcl = do_egp_flag(ir,groups,"energygrp_excl",egpexcl,EGP_EXCL);
   if (bExcl && EEL_FULL(ir->coulombtype))
     warning("Can not exclude the lattice Coulomb energy between energy groups");
 
-  bTable = do_egp_flag(ir,atoms,atoms->grpname,
-		       "energygrp_table",egptable,EGP_TABLE);
+  bTable = do_egp_flag(ir,groups,"energygrp_table",egptable,EGP_TABLE);
   if (bTable && !(ir->vdwtype == evdwUSER) && 
       !(ir->coulombtype == eelUSER) &&!(ir->coulombtype == eelPMEUSER))
     gmx_fatal(FARGS,"Can only have energy group pair tables in combination with user tables for VdW and/or Coulomb");
@@ -1684,19 +1731,21 @@ void do_index(char *ndx,
 
 
 
-static void check_disre(t_topology *sys)
+static void check_disre(gmx_mtop_t *mtop)
 {
+  gmx_ffparams_t *ffparams;
   t_functype *functype;
   t_iparams  *ip;
   int i,ndouble,ftype;
   int label,old_label;
   
-  if (sys->idef.il[F_DISRES].nr) {
-    functype  = sys->idef.functype;
-    ip        = sys->idef.iparams;
+  if (gmx_mtop_ftype_count(mtop,F_DISRES) > 0) {
+    ffparams  = &mtop->ffparams;
+    functype  = ffparams->functype;
+    ip        = ffparams->iparams;
     ndouble   = 0;
     old_label = -1;
-    for(i=0; i<sys->idef.ntypes; i++) {
+    for(i=0; i<ffparams->ntypes; i++) {
       ftype = functype[i];
       if (ftype == F_DISRES) {
 	label = ip[i].disres.label;
@@ -1709,17 +1758,20 @@ static void check_disre(t_topology *sys)
     }
     if (ndouble>0)
       gmx_fatal(FARGS,"Found %d double distance restraint indices,\n"
-		  "probably the parameters for multiple pairs in one restraint "
-		  "are not identical\n",ndouble);
+		"probably the parameters for multiple pairs in one restraint "
+		"are not identical\n",ndouble);
   }
 }
 
-void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
+void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 {
   char err_buf[256];
   int  i,m,npct;
+  bool bAcc;
   real gdt_max,*mgrp,mt;
   rvec acc;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom;
 
   /* Generalized reaction field */  
   if (ir->opts.ngtc == 0) {
@@ -1746,35 +1798,45 @@ void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,int *nerror)
     }
   }
 
-  clear_rvec(acc);
-  snew(mgrp,sys->atoms.grps[egcACC].nr);
-  for(i=0; (i<sys->atoms.nr); i++) 
-    mgrp[sys->atoms.atom[i].grpnr[egcACC]] += sys->atoms.atom[i].m;
-  mt=0.0;
-  for(i=0; (i<sys->atoms.grps[egcACC].nr); i++) {
-    for(m=0; (m<DIM); m++)
-      acc[m]+=ir->opts.acc[i][m]*mgrp[i];
-    mt+=mgrp[i];
-  }
+  bAcc = FALSE;
   for(m=0; (m<DIM); m++) {
     if (fabs(acc[m]) > 1e-6) {
-      char *dim[DIM] = { "X", "Y", "Z" };
-      fprintf(stderr,
-	      "Net Acceleration in %s direction, will %s be corrected\n",
-	      dim[m],ir->nstcomm != 0 ? "" : "not");
-      if (ir->nstcomm != 0) {
-	acc[m]/=mt;
-	for (i=0; (i<sys->atoms.grps[egcACC].nr); i++)
-	  ir->opts.acc[i][m]-=acc[m];
-      }
+      bAcc = TRUE;
     }
   }
-  sfree(mgrp);
+  if (bAcc) {
+    clear_rvec(acc);
+    snew(mgrp,sys->groups.grps[egcACC].nr);
+    aloop = gmx_mtop_atomloop_all_init(sys);
+    while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
+      mgrp[ggrpnr(&sys->groups,egcACC,i)] += atom->m;
+    }
+    mt = 0.0;
+    for(i=0; (i<sys->groups.grps[egcACC].nr); i++) {
+      for(m=0; (m<DIM); m++)
+	acc[m] += ir->opts.acc[i][m]*mgrp[i];
+      mt += mgrp[i];
+    }
+    for(m=0; (m<DIM); m++) {
+      if (fabs(acc[m]) > 1e-6) {
+	char *dim[DIM] = { "X", "Y", "Z" };
+	fprintf(stderr,
+		"Net Acceleration in %s direction, will %s be corrected\n",
+		dim[m],ir->nstcomm != 0 ? "" : "not");
+	if (ir->nstcomm != 0) {
+	  acc[m]/=mt;
+	  for (i=0; (i<sys->groups.grps[egcACC].nr); i++)
+	    ir->opts.acc[i][m] -= acc[m];
+	}
+      }
+    }
+    sfree(mgrp);
+  }
 
   check_disre(sys);
 }
 
-void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
+void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror)
 {
   real min_size,rlong;
   bool bTWIN;
@@ -1787,15 +1849,13 @@ void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror)
     (*nerror)++;
   }  
 
-  if( (ir->eConstrAlg==econtSHAKE) && 
-      (mol->plist[F_CONSTR].nr > 0) && 
-      (ir->shake_tol <= 0.0) ) {
+  if (ir->eConstrAlg == econtSHAKE && bConstr && ir->shake_tol <= 0.0) {
     fprintf(stderr,"ERROR: shake_tol must be > 0 instead of %g\n",
 	    ir->shake_tol);
     (*nerror)++;
   }
 
-  if( (ir->eConstrAlg == econtLINCS) && mol->plist[F_CONSTR].nr > 0) {
+  if( (ir->eConstrAlg == econtLINCS) && bConstr) {
     /* If we have Lincs constraints: */
     if(ir->eI==eiMD && ir->etc==etcNO &&
        ir->eConstrAlg==econtLINCS && ir->nLincsIter==1) {

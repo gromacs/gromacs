@@ -201,12 +201,6 @@ typedef struct {
   rvec vir_diag_posres;
   real vir_wall_zz;
 
-  /* Free energy stuff */
-  int     nmol;
-  atom_id *mol_nr;
-  real    *mol_epot;
-  int     nstcalc;
-  
   /* Non bonded Parameter lists */
   int  ntype; /* Number of atom types */
   bool bBHAM;

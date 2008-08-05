@@ -52,6 +52,7 @@
 #include "names.h"
 #include "tpxio.h"
 #include "enxio.h"
+#include "mtop_util.h"
 
 static void cmp_int(FILE *fp,char *s,int index,int i1,int i2)
 {
@@ -211,7 +212,6 @@ static void cmp_idef(FILE *fp,t_idef *id1,t_idef *id2,real ftol)
   fprintf(fp,"comparing idef\n");
   if (id2) {
     cmp_int(fp,"idef->ntypes",-1,id1->ntypes,id2->ntypes);
-    cmp_int(fp,"idef->nodeid",   -1,id1->nodeid,id2->nodeid);
     cmp_int(fp,"idef->atnr",  -1,id1->atnr,id2->atnr);
     for(i=0; (i<id1->ntypes); i++) {
       sprintf(buf1,"idef->functype[%d]",i);
@@ -266,10 +266,6 @@ static void cmp_atom(FILE *fp,int index,t_atom *a1,t_atom *a2,real ftol)
     cmp_us(fp,"atom.typeB",index,a1->typeB,a2->typeB);
     cmp_real(fp,"atom.mB",index,a1->mB,a2->mB,ftol);
     cmp_real(fp,"atom.qB",index,a1->qB,a2->qB,ftol);
-    for(i=0; (i<egcNR); i++) {
-      sprintf(buf,"atom.grpnr(%d)",i);
-      cmp_uc(fp,buf,index,a1->grpnr[i],a2->grpnr[i]);
-    }
   } else {
     cmp_us(fp,"atom.type",index,a1->type,a1->typeB);
     cmp_real(fp,"atom.m",index,a1->m,a1->mB,ftol);
@@ -476,7 +472,8 @@ static void cmp_inputrec(FILE *fp,t_inputrec *ir1,t_inputrec *ir2,real ftol)
   cmp_int(fp,"inputrec->ePull",-1,ir1->ePull,ir2->ePull);
   if (ir1->ePull == ir2->ePull && ir1->ePull != epullNO)
     cmp_pull(fp,ir1->pull,ir2->pull,ftol);
-
+  
+  cmp_int(fp,"inputrec->eDisre",-1,ir1->eDisre,ir2->eDisre);
   cmp_real(fp,"inputrec->dr_fc",-1,ir1->dr_fc,ir2->dr_fc,ftol);
   cmp_int(fp,"inputrec->eDisreWeighting",-1,ir1->eDisreWeighting,ir2->eDisreWeighting);
   cmp_int(fp,"inputrec->bDisreMixed",-1,ir1->bDisreMixed,ir2->bDisreMixed);
@@ -562,6 +559,7 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
   t_tpxheader sh[2];
   t_inputrec  ir[2];
   t_state     state[2];
+  gmx_mtop_t  mtop[2];
   t_topology  top[2];
   int         i,step;
   real        t;
@@ -569,10 +567,16 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
   ff[0]=fn1;
   ff[1]=fn2;
   for(i=0; i<(fn2 ? 2 : 1); i++) {
-    read_tpx_state(ff[i],&step,&t,&(ir[i]),&state[i],NULL,&(top[i]));
+    read_tpx_state(ff[i],&step,&t,&(ir[i]),&state[i],NULL,&(mtop[i]));
   }
   if (fn2) {
     cmp_inputrec(stdout,&ir[0],&ir[1],ftol);
+    /* Convert gmx_mtop_t to t_topology.
+     * We should implement direct mtop comparison,
+     * but it might be useful to keep t_topology comparison as an option.
+     */
+    top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
+    top[1] = gmx_mtop_t_to_t_topology(&mtop[1]);
     cmp_top(stdout,&top[0],&top[1],ftol);
     comp_state(&state[0],&state[1],ftol);
   } else {
@@ -582,6 +586,11 @@ void comp_tpx(char *fn1,char *fn2,real ftol)
       if (ir[0].ePull != epullNO) {
 	comp_pull_AB(stdout,ir->pull,ftol);
       }
+      /* Convert gmx_mtop_t to t_topology.
+       * We should implement direct mtop comparison,
+       * but it might be useful to keep t_topology comparison as an option.
+       */
+      top[0] = gmx_mtop_t_to_t_topology(&mtop[0]);
       cmp_top(stdout,&top[0],NULL,ftol);
     }
   }

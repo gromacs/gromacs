@@ -152,11 +152,36 @@ static void bc_atoms(const t_commrec *cr,t_symtab *symtab,t_atoms *atoms)
   bc_strings(cr,symtab,atoms->nr,&atoms->atomname);
   block_bc(cr,atoms->nres);
   bc_strings(cr,symtab,atoms->nres,&atoms->resname);
-  block_bc(cr,atoms->ngrpname);
-  bc_strings(cr,symtab,atoms->ngrpname,&atoms->grpname);
   /* QMMM requires atomtypes to be known on all nodes as well */
   bc_strings(cr,symtab,atoms->nr,&atoms->atomtype);
-  bc_grps(cr,atoms->grps);
+}
+
+static void bc_groups(const t_commrec *cr,t_symtab *symtab,
+		      int natoms,gmx_groups_t *groups)
+{
+  int dummy;
+  int g,n;
+
+  bc_grps(cr,groups->grps);
+  block_bc(cr,groups->ngrpname);
+  bc_strings(cr,symtab,groups->ngrpname,&groups->grpname);
+  for(g=0; g<egcNR; g++) {
+    if (MASTER(cr)) {
+      if (groups->grpnr[g]) {
+	n = natoms;
+      } else {
+	n = 0;
+      }
+    }
+    block_bc(cr,n);
+    if (n == 0) {
+      groups->grpnr[g] = NULL;
+    } else {
+      snew_bc(cr,groups->grpnr[g],n);
+      nblock_bc(cr,n,groups->grpnr[g]);
+    }
+  }
+  if (debug) fprintf(debug,"after bc_groups\n");
 }
 
 void bcast_state_setup(const t_commrec *cr,t_state *state)
@@ -215,17 +240,40 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
   }
 }
 
-static void bc_ilist(const t_commrec *cr,t_ilist *ilist)
+static void bc_ilists(const t_commrec *cr,t_ilist *ilist)
 {
-  block_bc(cr,ilist->nr);
-  snew_bc(cr,ilist->iatoms,ilist->nr);
-  nblock_bc(cr,ilist->nr,ilist->iatoms);
+  int ftype;
+
+  /* Here we only communicate the non-zero length ilists */
+  if (MASTER(cr)) {
+    for(ftype=0; ftype<F_NRE; ftype++) {
+      if (ilist[ftype].nr > 0) {
+	block_bc(cr,ftype);
+	block_bc(cr,ilist[ftype].nr);
+	nblock_bc(cr,ilist[ftype].nr,ilist[ftype].iatoms);
+      }
+    }
+    ftype = -1;
+    block_bc(cr,ftype);
+  } else {
+    for(ftype=0; ftype<F_NRE; ftype++) {
+      ilist[ftype].nr = 0;
+    }
+    do {
+      block_bc(cr,ftype);
+      if (ftype >= 0) {
+	block_bc(cr,ilist[ftype].nr);
+	snew_bc(cr,ilist[ftype].iatoms,ilist[ftype].nr);
+	nblock_bc(cr,ilist[ftype].nr,ilist[ftype].iatoms);
+      }
+    } while (ftype >= 0);
+  }
+
+  if (debug) fprintf(debug,"after bc_ilists\n");
 }
 
 static void bc_idef(const t_commrec *cr,t_idef *idef)
 {
-  int i;
-  
   block_bc(cr,idef->ntypes);
   block_bc(cr,idef->atnr);
   snew_bc(cr,idef->functype,idef->ntypes);
@@ -233,10 +281,21 @@ static void bc_idef(const t_commrec *cr,t_idef *idef)
   nblock_bc(cr,idef->ntypes,idef->functype);
   nblock_bc(cr,idef->ntypes,idef->iparams);
   block_bc(cr,idef->fudgeQQ);
-  for(i=0; (i<F_NRE); i++) {
-    bc_ilist(cr,&idef->il[i]);
-  }
+  bc_ilists(cr,idef->il);
   block_bc(cr,idef->ilsort);
+}
+
+static void bc_ffparams(const t_commrec *cr,gmx_ffparams_t *ffp)
+{
+  int i;
+  
+  block_bc(cr,ffp->ntypes);
+  block_bc(cr,ffp->atnr);
+  snew_bc(cr,ffp->functype,ffp->ntypes);
+  snew_bc(cr,ffp->iparams,ffp->ntypes);
+  nblock_bc(cr,ffp->ntypes,ffp->functype);
+  nblock_bc(cr,ffp->ntypes,ffp->iparams);
+  block_bc(cr,ffp->fudgeQQ);
 }
 
 static void bc_grpopts(const t_commrec *cr,t_grpopts *g)
@@ -351,22 +410,66 @@ static void bc_inputrec(const t_commrec *cr,t_inputrec *inputrec)
   }
 }
 
-void bcast_ir_top(const t_commrec *cr,t_inputrec *inputrec,t_topology *top)
+static void bc_moltype(const t_commrec *cr,t_symtab *symtab,
+		       gmx_moltype_t *moltype)
+{
+  bc_string(cr,symtab,&moltype->name);
+  bc_atoms(cr,symtab,&moltype->atoms);
+  if (debug) fprintf(debug,"after bc_atoms\n");
+
+  bc_ilists(cr,moltype->ilist);
+  bc_block(cr,&moltype->cgs);
+  bc_blocka(cr,&moltype->excls);
+}
+
+static void bc_molblock(const t_commrec *cr,gmx_molblock_t *molb)
+{
+  bool bAlloc=TRUE;
+  
+  block_bc(cr,molb->type);
+  block_bc(cr,molb->nmol);
+  block_bc(cr,molb->natoms_mol);
+  block_bc(cr,molb->nposres_xA);
+  if (molb->nposres_xA > 0) {
+    snew_bc(cr,molb->posres_xA,molb->nposres_xA);
+    nblock_bc(cr,molb->nposres_xA*DIM,molb->posres_xA[0]);
+  }
+  block_bc(cr,molb->nposres_xB);
+  if (molb->nposres_xB > 0) {
+    snew_bc(cr,molb->posres_xB,molb->nposres_xB);
+    nblock_bc(cr,molb->nposres_xB*DIM,molb->posres_xB[0]);
+  }
+  if (debug) fprintf(debug,"after bc_molblock\n");
+}
+
+void bcast_ir_mtop(const t_commrec *cr,t_inputrec *inputrec,gmx_mtop_t *mtop)
 {
   int i; 
   if (debug) fprintf(debug,"in bc_data\n");
   bc_inputrec(cr,inputrec);
   if (debug) fprintf(debug,"after bc_inputrec\n");
-  bc_symtab(cr,&top->symtab);
+  bc_symtab(cr,&mtop->symtab);
   if (debug) fprintf(debug,"after bc_symtab\n");
-  bc_string(cr,&top->symtab,&top->name);
+  bc_string(cr,&mtop->symtab,&mtop->name);
   if (debug) fprintf(debug,"after bc_name\n");
-  bc_atoms(cr,&top->symtab,&top->atoms);
-  if (debug) fprintf(debug,"after bc_atoms\n");
-  bc_idef(cr,&top->idef);
-  if (debug) fprintf(debug,"after bc_idef\n");
-  bc_block(cr,&top->cgs);
-  bc_block(cr,&top->mols);
-  bc_blocka(cr,&top->excls);
-  if (debug) fprintf(debug,"after bc_block\n");
+
+  bc_ffparams(cr,&mtop->ffparams);
+
+  block_bc(cr,mtop->nmoltype);
+  snew_bc(cr,mtop->moltype,mtop->nmoltype);
+  for(i=0; i<mtop->nmoltype; i++) {
+    bc_moltype(cr,&mtop->symtab,&mtop->moltype[i]);
+  }
+
+  block_bc(cr,mtop->nmolblock);
+  snew_bc(cr,mtop->molblock,mtop->nmolblock);
+  for(i=0; i<mtop->nmolblock; i++) {
+    bc_molblock(cr,&mtop->molblock[i]);
+  }
+
+  block_bc(cr,mtop->natoms);
+  /* communication for mtop->atomtypes is missing here */
+
+  bc_block(cr,&mtop->mols);
+  bc_groups(cr,&mtop->symtab,mtop->natoms,&mtop->groups);
 }

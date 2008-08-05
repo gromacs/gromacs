@@ -44,8 +44,8 @@
 #include "typedefs.h"
 #include "network.h"
 
-extern void init_groups(FILE *log,t_atoms *atoms,t_grpopts *opts,
-			t_groups *grps);
+extern void init_t_groups(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
+			  t_groups *grps);
 /* Allocate memory and set the grpnr array. */
 
 extern void done_groups(t_groups *grps);

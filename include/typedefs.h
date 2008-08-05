@@ -113,13 +113,20 @@ extern int over_alloc_dd(int n);
 extern void init_block(t_block *block);
 extern void init_blocka(t_blocka *block);
 extern void init_atom (t_atoms *at);
+extern void init_mtop(gmx_mtop_t *mtop);
 extern void init_top (t_topology *top);
 extern void init_inputrec(t_inputrec *ir);
 extern void init_gtc_state(t_state *state,int ngtc);
 extern void init_state(t_state *state,int natoms,int ngtc);
+
+extern void copy_blocka(const t_blocka *src,t_blocka *dest);
+
 extern void done_block(t_block *block);
 extern void done_blocka(t_blocka *block);
 extern void done_atom (t_atoms *at);
+extern void done_moltype(gmx_moltype_t *molt);
+extern void done_molblock(gmx_molblock_t *molb);
+  extern void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab);
 extern void done_top(t_topology *top);
 extern void done_inputrec(t_inputrec *ir);
 extern void done_state(t_state *state);
@@ -147,8 +154,11 @@ extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
-extern void free_t_atoms(t_atoms *atoms);
+extern void free_t_atoms(t_atoms *atoms,bool bFreeNames);
 /* free all the arrays and set the nr and nres to 0 */
+
+extern t_atoms *mtop2atoms(gmx_mtop_t *mtop);
+/* generate a t_atoms struct for the system from gmx_mtop_t */ 
 
 #ifdef CPLUSPLUS
 }

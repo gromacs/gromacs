@@ -349,13 +349,14 @@ static int search_atomtypes(t_atomtype at,int *n,int typelist[],
   return i;
 }
 
-void renum_atype(t_params plist[],t_topology *top,
+void renum_atype(t_params plist[],gmx_mtop_t *mtop,
 		int *wall_atomtype,
 		t_atomtype at,bool bVerbose)
 {
   gpp_atomtype *ga = (gpp_atomtype *) at;
   
-  int      i,j,k,l,mi,mj,nat,nrfp,ftype,ntype;
+  int      i,j,k,l,molt,mi,mj,nat,nrfp,ftype,ntype;
+  t_atoms  *atoms;
   t_param  *nbsnew;
   int      *typelist;
   real     *new_radius;
@@ -392,13 +393,16 @@ void renum_atype(t_params plist[],t_topology *top,
    * can determine if two types should be merged. 
    */    
   nat=0;
-  for(i=0; (i<top->atoms.nr); i++) {
-    top->atoms.atom[i].type=
-      search_atomtypes(at,&nat,typelist,top->atoms.atom[i].type,
-		       plist[ftype].param,ftype);
-    top->atoms.atom[i].typeB=
-      search_atomtypes(at,&nat,typelist,top->atoms.atom[i].typeB,
-		       plist[ftype].param,ftype);
+  for(molt=0; molt<mtop->nmoltype; molt++) {
+    atoms = &mtop->moltype[molt].atoms;
+    for(i=0; (i<atoms->nr); i++) {
+      atoms->atom[i].type =
+	search_atomtypes(at,&nat,typelist,atoms->atom[i].type,
+			 plist[ftype].param,ftype);
+      atoms->atom[i].typeB=
+	search_atomtypes(at,&nat,typelist,atoms->atom[i].typeB,
+			 plist[ftype].param,ftype);
+    }
   }
 
   for(i=0; i<2; i++) {
@@ -445,7 +449,7 @@ void renum_atype(t_params plist[],t_topology *top,
       plist[ftype].param[i].c[l]=nbsnew[i].c[l];
   }
   plist[ftype].nr=i;
-  top->idef.atnr = nat;
+  mtop->ffparams.atnr = nat;
   
   sfree(ga->radius);
   sfree(ga->vol);

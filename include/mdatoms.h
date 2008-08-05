@@ -43,9 +43,9 @@
 
 #include "typedefs.h"
 
-extern t_mdatoms *init_mdatoms(FILE *fp,t_atoms *atoms,bool bFreeEnergy);
+extern t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy);
 
-extern void atoms2md(t_atoms *atoms,t_inputrec *ir,int norires,
+extern void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,		     
 		     int nindex,int *index,
 		     int start,int homenr,
 		     t_mdatoms *md);

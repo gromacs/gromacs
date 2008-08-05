@@ -92,11 +92,10 @@ static void add_gbond(t_graph *g,atom_id a0,atom_id a1)
   }
 }
 
-static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
+static void mk_igraph(t_graph *g,int ftype,t_ilist *il,
 		      int at_start,int at_end)
 {
   t_iatom *ia;
-  t_iatom tp;
   int     i,j,np;
   int     end;
 
@@ -105,8 +104,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 
   i = 0;
   while (i < end) {
-    tp = ftype[ia[0]];
-    np = interaction_function[tp].nratoms;
+    np = interaction_function[ftype].nratoms;
     
     if (ia[1] >= at_start && ia[1] < at_end) {
       if (ia[np] >= at_end)
@@ -117,7 +115,7 @@ static void mk_igraph(t_graph *g,t_functype ftype[],t_ilist *il,
 		  "not match the first %d atoms of the run input file.\n"
 		  "You can make a matching run input file with tpbconv.",
 		  at_end,at_end);
-      if (tp == F_SETTLE) {
+      if (ftype == F_SETTLE) {
 	/* Bond all the atoms in the settle */
 	add_gbond(g,ia[1],ia[1]+1);
 	add_gbond(g,ia[1],ia[1]+2);
@@ -164,20 +162,19 @@ void p_graph(FILE *log,char *title,t_graph *g)
   fflush(log);
 }
 
-static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
+static void calc_1se(t_graph *g,int ftype,t_ilist *il,
 		     int nbond[],int at_start,int at_end)
 {
-  int     k,nratoms,tp,end,j;
+  int     k,nratoms,end,j;
   t_iatom *ia,iaa;
 
   end=il->nr;
 
   ia=il->iatoms;
   for(j=0; (j<end); j+=nratoms+1,ia+=nratoms+1) {
-    tp      = ftype[ia[0]];
-    nratoms = interaction_function[tp].nratoms;
+    nratoms = interaction_function[ftype].nratoms;
     
-    if (tp == F_SETTLE) {
+    if (ftype == F_SETTLE) {
       iaa          = ia[1];
       if (iaa >= at_start && iaa < at_end) {
 	nbond[iaa]   += 2;
@@ -200,7 +197,7 @@ static void calc_1se(t_graph *g,t_ilist *il,t_functype ftype[],
   }
 }
 
-static int calc_start_end(FILE *fplog,t_graph *g,t_idef *idef,
+static int calc_start_end(FILE *fplog,t_graph *g,t_ilist il[],
 			  int at_start,int at_end,
 			  int nbond[])
 {
@@ -214,13 +211,13 @@ static int calc_start_end(FILE *fplog,t_graph *g,t_idef *idef,
    */
   for(i=0; (i<F_NRE); i++)
     if (interaction_function[i].flags & IF_CHEMBOND)
-      calc_1se(g,&idef->il[i],idef->functype,nbond,at_start,at_end);
+      calc_1se(g,i,&il[i],nbond,at_start,at_end);
   /* Then add all the other interactions in fixed lists, but first
    * check to see what's there already.
    */
   for(i=0; (i<F_NRE); i++) {
     if (!(interaction_function[i].flags & IF_CHEMBOND)) {
-      calc_1se(g,&idef->il[i],idef->functype,nbond,at_start,at_end);
+      calc_1se(g,i,&il[i],nbond,at_start,at_end);
     }
   }
   
@@ -263,18 +260,16 @@ static void compact_graph(FILE *fplog,t_graph *g)
   }
 }
 
-t_graph *mk_graph(FILE *fplog,
-		  t_idef *idef,int at_start,int at_end,
-		  bool bShakeOnly,bool bSettle)
+void mk_graph_ilist(FILE *fplog,
+		    t_ilist *ilist,int at_start,int at_end,
+		    bool bShakeOnly,bool bSettle,
+		    t_graph *g)
 {
-  t_graph *g;
   int     *nbond;
   int     i,nbtot;
-  
-  snew(g,1);
 
   snew(nbond,at_end);
-  nbtot = calc_start_end(fplog,g,idef,at_start,at_end,nbond);
+  nbtot = calc_start_end(fplog,g,ilist,at_start,at_end,nbond);
   
   if (g->start >= g->end) {
     g->nnodes=0;
@@ -300,13 +295,13 @@ t_graph *mk_graph(FILE *fplog,
        */
       for(i=0; (i<F_NRE); i++)
 	if (interaction_function[i].flags & IF_CHEMBOND)
-	  mk_igraph(g,idef->functype,&(idef->il[i]),at_start,at_end);
+	  mk_igraph(g,i,&(ilist[i]),at_start,at_end);
       /* Then add all the other interactions in fixed lists, but first
        * check to see what's there already.
        */
       for(i=0; (i<F_NRE); i++) {
 	if (!(interaction_function[i].flags & IF_CHEMBOND)) {
-	  mk_igraph(g,idef->functype,&(idef->il[i]),at_start,at_end);
+	  mk_igraph(g,i,&(ilist[i]),at_start,at_end);
 	}
       }
       
@@ -315,9 +310,9 @@ t_graph *mk_graph(FILE *fplog,
     }
     else {
       /* This is a special thing used in splitter.c to generate shake-blocks */
-      mk_igraph(g,idef->functype,&(idef->il[F_CONSTR]),at_start,at_end);
+      mk_igraph(g,F_CONSTR,&(ilist[F_CONSTR]),at_start,at_end);
       if (bSettle)
-	mk_igraph(g,idef->functype,&(idef->il[F_SETTLE]),at_start,at_end);
+	mk_igraph(g,F_SETTLE,&(ilist[F_SETTLE]),at_start,at_end);
     }
     g->nbound=0;
     for(i=0; (i<g->nnodes); i++)
@@ -331,7 +326,18 @@ t_graph *mk_graph(FILE *fplog,
   g->egc = NULL;
 
   sfree(nbond);
-  
+}
+
+t_graph *mk_graph(FILE *fplog,
+		  t_idef *idef,int at_start,int at_end,
+		  bool bShakeOnly,bool bSettle)
+{
+  t_graph *g;
+
+  snew(g,1);
+
+  mk_graph_ilist(fplog,idef->il,at_start,at_end,bShakeOnly,bSettle,g);
+
   return g;
 }
 

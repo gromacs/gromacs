@@ -570,11 +570,13 @@ static int int_comp(const void *a,const void *b)
   return (*(int *)a) - (*(int *)b);
 }
 
-gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
+gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 			   int nflexcon_global,t_blocka *at2con,
 			   int bPLINCS,int nIter,int nProjOrder)
 {
   struct gmx_lincsdata *li;
+  int mb;
+  gmx_moltype_t *molt;
 
   if (fplog)
     fprintf(fplog,"\nInitializing%s LINear Constraint Solver\n",
@@ -582,10 +584,18 @@ gmx_lincsdata_t init_lincs(FILE *fplog,t_idef *idef,
 
   snew(li,1);
 
-  li->ncg      = idef->il[F_CONSTR].nr/3;
+  li->ncg      = gmx_mtop_ftype_count(mtop,F_CONSTR);
   li->ncg_flex = nflexcon_global;
-  li->ncg_triangle  = 
-    count_triangle_constraints(li->ncg,idef->il[F_CONSTR].iatoms,at2con);
+
+  li->ncg_triangle = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molt = &mtop->moltype[mtop->molblock[mb].type];
+    li->ncg_triangle +=
+      mtop->molblock[mb].nmol*
+      count_triangle_constraints(molt->ilist[F_CONSTR].nr/3,
+				 molt->ilist[F_CONSTR].iatoms,
+				 &at2con[mtop->molblock[mb].type]);
+  }
   
   li->nIter  = nIter;
   li->nOrder = nProjOrder;
@@ -630,16 +640,9 @@ void set_lincs(t_idef *idef,int start,int homenr,
     if (debug) {
       fprintf(debug,"Building the LINCS connectivity\n");
     }
-    if (dd) {
-      li->nc = idef->il[F_CONSTR].nr/3;
-    } else {
-      li->nc = li->ncg;
-      if (!bDynamics)
-	li->nc -= li->ncg_flex;
-    }
     
-    if (li->nc > li->nc_alloc || li->nc_alloc == 0) {
-      li->nc_alloc = over_alloc_dd(li->nc);
+    if (idef->il[F_CONSTR].nr/3 > li->nc_alloc || li->nc_alloc == 0) {
+      li->nc_alloc = over_alloc_dd(idef->il[F_CONSTR].nr/3);
       srenew(li->bllen0,li->nc_alloc);
       srenew(li->ddist,li->nc_alloc);
       srenew(li->bla,2*li->nc_alloc);
@@ -714,9 +717,12 @@ void set_lincs(t_idef *idef,int start,int homenr,
 	con++;
       }
     }
-    if (con != li->nc) {
-      gmx_fatal(FARGS,"Internal error in set_lincs, old (%d) and new (%d) constraint count don't match\n",li->nc,con);
-    }
+
+    /* This is the real number of constraints,
+     * without dynamics the flexible constraints are not present.
+     */
+    li->nc = con;
+
     li->ncc = li->blnr[con];
     if (dd == NULL) {
       /* Since the matrix is static, we can free some memory */

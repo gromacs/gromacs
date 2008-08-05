@@ -54,10 +54,10 @@ typedef struct {
   int    *igrp;
 } t_mdebin;
 
-extern t_mdebin *init_mdebin(int fp_ene,
-			     const t_atoms *atoms,
-			     const t_idef *idef,const t_inputrec *ir,
-			     t_commrec *cr);
+extern t_mdebin
+*init_mdebin(int fp_ene,
+	     const gmx_mtop_t *mtop,
+	     const t_inputrec *ir);
 /* Initiate MD energy bin and write header to energy file. */
 
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
@@ -79,7 +79,8 @@ extern void print_ebin_header(FILE *log,int steps,real time,real lamb);
 extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 		       FILE *log,int step,int nsteps,real time,
 		       int mode,bool bCompact,
-		       t_mdebin *md,t_fcdata *fcd,t_atoms *atoms, t_grpopts *opts);
+		       t_mdebin *md,t_fcdata *fcd,
+		       gmx_groups_t *groups,t_grpopts *opts);
 
 #endif	/* _mdebin_h */
 

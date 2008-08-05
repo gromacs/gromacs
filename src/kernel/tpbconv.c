@@ -54,6 +54,7 @@
 #include "copyrite.h"
 #include "futil.h"
 #include "vec.h"
+#include "mtop_util.h"
 
 #define RANGECHK(i,n) if ((i)>=(n)) gmx_fatal(FARGS,"Your index file contains atomnumbers (e.g. %d)\nthat are larger than the number of atoms in the tpr file (%d)",(i),(n))
 
@@ -225,39 +226,64 @@ static void reduce_ilist(atom_id invindex[],bool bKeep[],
 }
 
 static void reduce_topology_x(int gnx,atom_id index[],
-			      t_topology *top,rvec x[],rvec v[])
+			      gmx_mtop_t *mtop,rvec x[],rvec v[])
 {
+  t_topology top;
   bool    *bKeep;
   atom_id *invindex;
   int     i;
   
-  bKeep    = bKeepIt(gnx,top->atoms.nr,index);
-  invindex = invind(gnx,top->atoms.nr,index);
+  top = gmx_mtop_t_to_t_topology(mtop); 
+  bKeep    = bKeepIt(gnx,top.atoms.nr,index);
+  invindex = invind(gnx,top.atoms.nr,index);
   
-  reduce_block(bKeep,&(top->cgs),"cgs");
-  reduce_block(bKeep,&(top->mols),"mols");
-  reduce_blocka(invindex,bKeep,&(top->excls),"excls");
+  reduce_block(bKeep,&(top.cgs),"cgs");
+  reduce_block(bKeep,&(top.mols),"mols");
+  reduce_blocka(invindex,bKeep,&(top.excls),"excls");
   reduce_rvec(gnx,index,x);
   reduce_rvec(gnx,index,v);
-  reduce_atom(gnx,index,top->atoms.atom,top->atoms.atomname,
-	      &(top->atoms.nres),top->atoms.resname);
+  reduce_atom(gnx,index,top.atoms.atom,top.atoms.atomname,
+	      &(top.atoms.nres),top.atoms.resname);
 
   for(i=0; (i<F_NRE); i++) {
-    reduce_ilist(invindex,bKeep,&(top->idef.il[i]),
+    reduce_ilist(invindex,bKeep,&(top.idef.il[i]),
 		 interaction_function[i].nratoms,
 		 interaction_function[i].name);
   }
     
-  top->atoms.nr = gnx;
+  top.atoms.nr = gnx;
+
+  mtop->nmoltype = 1;
+  snew(mtop->moltype,mtop->nmoltype);
+  mtop->moltype[0].name  = mtop->name;
+  mtop->moltype[0].atoms = top.atoms;
+  for(i=0; i<F_NRE; i++) {
+    mtop->moltype[0].ilist[i] = top.idef.il[i];
+  }
+  mtop->moltype[0].atoms = top.atoms;
+  mtop->moltype[0].cgs   = top.cgs;
+  mtop->moltype[0].excls = top.excls;
+
+  mtop->nmolblock = 1;
+  snew(mtop->molblock,mtop->nmolblock);
+  mtop->molblock[0].type       = 0;
+  mtop->molblock[0].nmol       = 1;
+  mtop->molblock[0].natoms_mol = top.atoms.nr;
+  mtop->molblock[0].nposres_xA = 0;
+  mtop->molblock[0].nposres_xB = 0;
+  
+  mtop->natoms                 = top.atoms.nr;
 }
 
-static void zeroq(int n,atom_id index[],t_topology *top)
+static void zeroq(int n,atom_id index[],gmx_mtop_t *mtop)
 {
-  int i;
+  int mt,i;
   
-  for(i=0; (i<n); i++) {
-    top->atoms.atom[index[i]].q = 0;
-    top->atoms.atom[index[i]].qB = 0;
+  for(mt=0; mt<mtop->nmoltype; mt++) {
+    for(i=0; (i<mtop->moltype[mt].atoms.nr); i++) {
+      mtop->moltype[mt].atoms.atom[index[i]].q = 0;
+      mtop->moltype[mt].atoms.atom[index[i]].qB = 0;
+    }
   }
 }
 
@@ -289,7 +315,8 @@ int main (int argc, char *argv[])
   int          i,frame,run_step,nsteps_org;
   real         run_t,state_t;
   bool         bOK,bTraj,bFrame,bUse,bTime,bSel,bNeedEner,bReadEner,bScanEner;
-  t_topology   top;
+  gmx_mtop_t   mtop;
+  t_atoms      atoms;
   t_inputrec   *ir,*irnew=NULL;
   t_gromppopts *gopts;
   t_state      state;
@@ -343,7 +370,7 @@ int main (int argc, char *argv[])
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
   snew(ir,1);
-  read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&top);
+  read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&mtop);
   
   if (ir->bContinuation != bContinuation)
     fprintf(stderr,"Modifying ir->bContinuation to %s\n",
@@ -384,10 +411,10 @@ int main (int argc, char *argv[])
     while (bFrame) {
       bFrame = fread_trnheader(fp,&head,&bOK);
       if (bOK && frame == 0) {
-	if (top.atoms.nr != head.natoms) 
+	if (mtop.natoms != head.natoms) 
 	  gmx_fatal(FARGS,"Number of atoms in Topology (%d) "
 		      "is not the same as in Trajectory (%d)\n",
-		      top.atoms.nr,head.natoms);
+		      mtop.natoms,head.natoms);
 	snew(newx,head.natoms);
 	snew(newv,head.natoms);
       }
@@ -445,7 +472,7 @@ int main (int argc, char *argv[])
 
     if (bNeedEner) {
       if (bReadEner) {
-	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&top.atoms,ir,&state);
+	get_enx_state(ftp2fn(efENX,NFILE,fnm),run_t,&mtop.groups,ir,&state);
       } else {
 	fprintf(stderr,"\nWARNING: The simulation uses %s temperature and/or %s pressure coupling,\n"
 		"         the continuation will only be exact when an energy file is supplied\n\n",
@@ -484,7 +511,8 @@ int main (int argc, char *argv[])
     ir->init_step = run_step;
     
     if (ftp2bSet(efNDX,NFILE,fnm) || !bTraj) {
-      get_index(&top.atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
+      atoms = gmx_mtop_global_atoms(&mtop);
+      get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 		&gnx,&index,&grpname);
       if (!bZeroQ) {
 	bSel = (gnx != state.natoms);
@@ -496,11 +524,11 @@ int main (int argc, char *argv[])
       if (bSel) {
 	fprintf(stderr,"Will write subset %s of original tpx containing %d "
 		"atoms\n",grpname,gnx);
-	reduce_topology_x(gnx,index,&top,state.x,state.v);
+	reduce_topology_x(gnx,index,&mtop,state.x,state.v);
 	state.natoms = gnx;
       } 
       else if (bZeroQ) {
-	zeroq(gnx,index,&top);
+	zeroq(gnx,index,&mtop);
 	fprintf(stderr,"Zero-ing charges for group %s\n",grpname);
       }
       else
@@ -512,7 +540,7 @@ int main (int argc, char *argv[])
 	    ir->init_step,ir->nsteps);
     fprintf(stderr,"                                 time %10.3f and length %10.3f ps\n",
 	    state_t,ir->nsteps*ir->delta_t);
-    write_tpx_state(opt2fn("-o",NFILE,fnm),0,state_t,ir,&state,&top);
+    write_tpx_state(opt2fn("-o",NFILE,fnm),0,state_t,ir,&state,&mtop);
   }
   else
     printf("You've simulated long enough. Not writing tpr file\n");

@@ -235,33 +235,31 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_trn,bool bX,bool bV,bool bF,
 		int fp_xtc,bool bXTC,int xtc_prec,
 		char *fn_cpt,bool bCPT,
-		t_topology *top_global,
+		gmx_mtop_t *top_global,
 		int eIntegrator,int step,double t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global)
 {
   static int  nxtc=-1;
   static rvec *xxtc=NULL;
-  t_atoms *atoms;
-  t_block *cgs;
   int     i,j;
+  gmx_groups_t *groups;
 
 #define MX(xvf) moveit(cr,GMX_LEFT,GMX_RIGHT,#xvf,xvf)
 
   if (DOMAINDECOMP(cr)) {
-    cgs = &top_global->cgs;
     if (bCPT) {
-      dd_collect_state(cr->dd,cgs,state_local,state_global);
+      dd_collect_state(cr->dd,state_local,state_global);
     } else {
       if (bX || bXTC) {
-	dd_collect_vec(cr->dd,cgs,state_local,state_local->x,state_global->x);
+	dd_collect_vec(cr->dd,state_local,state_local->x,state_global->x);
       }
       if (bV) {
-        dd_collect_vec(cr->dd,cgs,state_local,state_local->v,state_global->v);
+        dd_collect_vec(cr->dd,state_local,state_local->v,state_global->v);
       }
     }
     if (bF) {
-      dd_collect_vec(cr->dd,cgs,state_local,f_local,f_global);
+      dd_collect_vec(cr->dd,state_local,f_local,f_global);
     }
   } else if (cr->nnodes > 1) {
     /* Particle decomposition */
@@ -301,30 +299,30 @@ void write_traj(FILE *fplog,t_commrec *cr,
       write_checkpoint(fn_cpt,fplog,cr,eIntegrator,step,t,state_global);
     }
 
-    atoms = &top_global->atoms;
     if (bX || bV || bF) {
       fwrite_trn(fp_trn,step,t,state_local->lambda,
-		 state_local->box,atoms->nr,
+		 state_local->box,top_global->natoms,
 		 bX ? state_global->x : NULL,
 		 bV ? state_global->v : NULL,
 		 bF ? f_global : NULL);
       gmx_fio_flush(fp_trn);
     }      
     if (bXTC) {
+      groups = &top_global->groups;
       if (nxtc == -1) {
 	nxtc = 0;
-	for(i=0; (i<atoms->nr); i++)
-	  if (atoms->atom[i].grpnr[egcXTC] == 0)
+	for(i=0; (i<top_global->natoms); i++)
+	  if (ggrpnr(groups,egcXTC,i) == 0)
 	    nxtc++;
-	if (nxtc != atoms->nr)
+	if (nxtc != top_global->natoms)
 	  snew(xxtc,nxtc);
       }
-      if (nxtc == atoms->nr) {
+      if (nxtc == top_global->natoms) {
 	xxtc = state_global->x;
       } else {
 	j = 0;
-	for(i=0; (i<atoms->nr); i++)
-	  if (atoms->atom[i].grpnr[egcXTC] == 0)
+	for(i=0; (i<top_global->natoms); i++)
+	  if (ggrpnr(groups,egcXTC,i) == 0)
 	    copy_rvec(state_global->x[i],xxtc[j++]);
       }
       if (write_xtc(fp_xtc,nxtc,step,t,state_local->box,xxtc,xtc_prec) == 0)

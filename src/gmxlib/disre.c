@@ -52,18 +52,25 @@
 #include "copyrite.h"
 #include "disre.h"
 #include "main.h"
+#include "mtop_util.h"
 
-void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
-                 const t_iparams ip[],
-                 const t_inputrec *ir,const gmx_multisim_t *ms,
+void init_disres(FILE *fplog,const gmx_mtop_t *mtop,
+                 t_inputrec *ir,const t_commrec *cr,bool bPartDecomp,
                  t_fcdata *fcd,t_state *state)
 {
-    int          fa;
+    int          fa,nmol;
+    t_iparams    *ip;
     t_disresdata *dd;
     history_t    *hist;
+    gmx_mtop_ilistloop_t iloop;
+    t_ilist      *il;
     
-    if (nfa == 0)
+    dd = &(fcd->disres);
+
+    if (gmx_mtop_ftype_count(mtop,F_DISRES) == 0)
     {
+        dd->nres = 0;
+
         return;
     }
     
@@ -72,11 +79,16 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
         fprintf(fplog,"Initializing the distance restraints\n");
     }
     
-    dd = &(fcd->disres);
-    
     dd->dr_weighting = ir->eDisreWeighting;
     dd->dr_fc        = ir->dr_fc;
-    dd->dr_tau       = ir->dr_tau;
+    if (EI_DYNAMICS(ir->eI))
+    {
+        dd->dr_tau   = ir->dr_tau;
+    }
+    else
+    {
+        dd->dr_tau   = 0.0;
+    }
     if (dd->dr_tau == 0.0)
     {
         dd->dr_bMixed = FALSE;
@@ -89,15 +101,53 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
     }
     dd->ETerm1        = 1.0 - dd->ETerm;
     
-    dd->nres = 0;
-    for(fa=0; fa<nfa; fa+=3)
-    {
-        if (fa==0 || ip[forceatoms[fa-3]].disres.label != ip[forceatoms[fa]].disres.label)
+    ip = mtop->ffparams.iparams;
+
+    dd->nres  = 0;
+    dd->npair = 0;
+    iloop = gmx_mtop_ilistloop_init(mtop);
+    while (gmx_mtop_ilistloop_next(iloop,&il,&nmol)) {
+        for(fa=0; fa<il[F_DISRES].nr; fa+=3)
         {
-            dd->nres++;
+            if (fa==0 ||
+                ip[il[F_DISRES].iatoms[fa-3]].disres.label !=
+                ip[il[F_DISRES].iatoms[fa  ]].disres.label)
+            {
+                dd->nres += nmol;
+            }
+            dd->npair++;
         }
     }
-    dd->npair = nfa/(interaction_function[F_DISRES].nratoms+1);
+
+    if (PAR(cr) && !bPartDecomp)
+    {
+        /* Temporary check, will be removed when disre is implemented with DD */
+        char *notestr="NOTE: atoms involved in distance restraints should be within the longest cut-off distance, if this is not the case mdrun generates a fatal error, in that case use particle decomposition (mdrun option -pd)";
+        
+        if (MASTER(cr))
+            fprintf(stderr,"\n%s\n\n",notestr);
+        if (fplog)
+            fprintf(fplog,"%s\n",notestr);
+
+        if (dd->dr_tau != 0 || ir->eDisre == edrEnsemble || cr->ms != NULL ||
+            dd->nres != dd->npair)
+        {
+            gmx_fatal(FARGS,"Time or ensemble averaged or multiple pair distance restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
+        }
+        if (ir->nstdisreout != 0)
+        {
+            if (fplog)
+            {
+                fprintf(fplog,"\nWARNING: Can not write distance restraint data to energy file with domain decomposition\n\n");
+            }
+            if (MASTER(cr))
+            {
+                fprintf(stderr,"\nWARNING: Can not write distance restraint data to energy file with domain decomposition\n");
+            }
+            ir->nstdisreout = 0;
+        }
+    }
+
     snew(dd->rt,dd->npair);
     
     if (dd->dr_tau != 0.0)
@@ -121,7 +171,7 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
      */
     snew(dd->Rt_6,2*dd->nres);
     dd->Rtav_6 = &(dd->Rt_6[dd->nres]);
-    if (ms)
+    if (cr->ms)
     {
         snew(dd->Rtl_6,dd->nres);
     }
@@ -135,9 +185,9 @@ void init_disres(FILE *fplog,int nfa,const t_iatom forceatoms[],
         if (fplog) {
             fprintf(fplog,"There are %d distance restraints involving %d atom pairs\n",dd->nres,dd->npair);
         }
-        if (ms)
+        if (cr->ms)
         {
-            check_multi_int(fplog,ms,fcd->disres.nres,
+            check_multi_int(fplog,cr->ms,fcd->disres.nres,
                             "the number of distance restraints");
         }
         please_cite(fplog,"Tropp80a");

@@ -45,34 +45,38 @@
 #include "vec.h"
 #include "gmx_random.h"
 #include "random.h"
+#include "mtop_util.h"
 
-
-void low_mspeed(real tempi,int nrdf,int nat,atom_id a[],
-		t_atoms *atoms,rvec v[], gmx_rng_t rng)
+static void low_mspeed(real tempi,
+		       gmx_mtop_t *mtop,rvec v[], gmx_rng_t rng)
 {
-  int  i,j,m;
+  int  i,m,nrdf;
   real boltz,sd;
   real ekin,temp,mass,scal;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom;
 
   boltz=BOLTZ*tempi;
   ekin=0.0;
-  for (i=0; (i<nat); i++) {
-    j=a[i];
-    mass=atoms->atom[j].m;
+  nrdf=0;
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
+    mass = atom->m;
     if (mass > 0) {
       sd=sqrt(boltz/mass);
       for (m=0; (m<DIM); m++) {
-	v[j][m]=sd*gmx_rng_gaussian_real(rng);
-	ekin+=0.5*mass*v[j][m]*v[j][m];
+	v[i][m]=sd*gmx_rng_gaussian_real(rng);
+	ekin += 0.5*mass*v[i][m]*v[i][m];
       }
+      nrdf += DIM;
     }
   }
   temp=(2.0*ekin)/(nrdf*BOLTZ);
   if (temp > 0) {
     scal=sqrt(tempi/temp);
-    for(i=0; (i<nat); i++)
+    for(i=0; (i<mtop->natoms); i++)
       for(m=0; (m<DIM); m++)
-	v[a[i]][m]*=scal;
+	v[i][m]*=scal;
   }
   fprintf(stderr,"Velocities were taken from a Maxwell distribution at %g K\n",
 	  tempi);
@@ -84,49 +88,21 @@ void low_mspeed(real tempi,int nrdf,int nat,atom_id a[],
   }
 }
 
-void grp_maxwell(t_blocka *grp,real tempi[],int nrdf[],int seed,
-		 t_atoms *atoms,rvec v[])
-{
-  int i,s,n;
-  gmx_rng_t rng;
-  bool bFirst=TRUE;
-
-  if(bFirst) {
-    bFirst=FALSE;
-    rng = gmx_rng_init(seed);
-  }
-
-  for(i=0; (i<grp->nr); i++) {
-    s=grp->index[i];
-    n=grp->index[i+1]-s;
-    low_mspeed(tempi[i],nrdf[i],n,&(grp->a[s]),atoms,v,rng);
-  }
-  gmx_rng_destroy(rng);
-}
-
-
-void maxwell_speed(real tempi,int nrdf,int seed,t_atoms *atoms, rvec v[])
+void maxwell_speed(real tempi,int seed,gmx_mtop_t *mtop, rvec v[])
 {
   atom_id *dummy;
   int     i;
   gmx_rng_t rng;
-  bool bFirst=TRUE;
   
   if (seed == -1) {
     seed = make_seed();
     fprintf(stderr,"Using random seed %d for generating velocities\n",seed);
   }
+  
+  rng = gmx_rng_init(seed);
 
-  if(bFirst) {
-    bFirst=FALSE;
-    rng = gmx_rng_init(seed);
-  }
+  low_mspeed(tempi,mtop,v,rng);
 
-  snew(dummy,atoms->nr);
-  for(i=0; (i<atoms->nr); i++)
-    dummy[i]=i;
-  low_mspeed(tempi,nrdf,atoms->nr,dummy,atoms,v,rng);
-  sfree(dummy);
   gmx_rng_destroy(rng);
 }
 

@@ -202,6 +202,7 @@ typedef struct {
   real sc_alpha;        /* free energy soft-core parameter              */
   int  sc_power;        /* lambda power for soft-core interactions      */
   real sc_sigma;        /* free energy soft-core sigma when c6 or c12=0 */
+  int  eDisre;          /* Type of distance restraining                 */
   real dr_fc;		    /* force constant for ta_disre			*/
   int  eDisreWeighting; /* type of weighting of pairs in one restraints	*/
   bool bDisreMixed;     /* Use comb of time averaged and instan. viol's	*/

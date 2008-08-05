@@ -48,9 +48,7 @@ extern "C" {
 #include "sysstuff.h"
 #include "typedefs.h"
 
-void init_dihres(FILE *fplog,int nbonds,const t_iatom forceatoms[],
-		 const t_iparams ip[],
-		 const t_inputrec *ir,t_fcdata *fcd);
+  void init_dihres(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,t_fcdata *fcd);
 
 
 extern t_ifunc ta_dihres;

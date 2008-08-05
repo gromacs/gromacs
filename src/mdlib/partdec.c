@@ -50,6 +50,7 @@
 #include "partdec.h"
 #include "splitter.h"
 #include "gmx_random.h"
+#include "mtop_util.h"
 
 typedef struct gmx_partdec {
   int  neighbor[2];             /* The nodeids of left and right neighb */
@@ -399,14 +400,16 @@ static void select_my_idef(FILE *log,t_idef *idef,int **multinr,t_commrec *cr)
     select_my_ilist(log,&idef->il[i],multinr[i],cr);
 }
 
-void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
-		  t_commrec *cr,t_topology *top)
+t_topology *split_system(FILE *log,
+			 gmx_mtop_t *mtop,t_inputrec *inputrec,
+			 t_commrec *cr)
 {
   int    i,npp,n,nn;
   real   *capacity;
   double tcap = 0,cap;
   int    *multinr_cgs,**multinr_nre;
   char   *cap_env;
+  t_topology *top;
 
   /* Time to setup the division of charge groups over processors */
   npp = cr->nnodes-cr->npmenodes;
@@ -435,6 +438,9 @@ void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
       capacity[i] /= tcap;
   }
 
+  /* Convert the molecular topology to a fully listed topology */
+  top = gmx_mtop_generate_local_top(mtop,inputrec);
+
   snew(multinr_cgs,npp);
   snew(multinr_nre,F_NRE);
   for(i=0; i<F_NRE; i++)
@@ -460,6 +466,8 @@ void split_system(FILE *log,t_inputrec *inputrec,t_state *state,
   
   if (log)
     print_partdec(log,"Workload division",cr->nnodes,cr->pd);
+
+  return top;
 }
 
 static void create_vsitelist(int nindex, int *list,

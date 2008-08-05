@@ -106,10 +106,10 @@ static int min_nodeid(int nr,atom_id list[],int hid[])
   return minnodeid;
 }
 
-static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist,
+static void split_force2(int nnodes,int hid[],int ftype,t_ilist *ilist,
 			 int *multinr)
 {
-  int     i,j,k,type,ftype,nodeid,nratoms,tnr;
+  int     i,j,k,type,nodeid,nratoms,tnr;
   int     nvsite_constr,tmpid;
   t_iatom ai;
   t_sf    *sf;
@@ -121,7 +121,6 @@ static void split_force2(int nnodes,int hid[],t_idef *idef,t_ilist *ilist,
    */
   for (i=0; i<ilist->nr; i+=(1+nratoms)) {
     type    = ilist->iatoms[i];
-    ftype   = idef->functype[type];
     nratoms = interaction_function[ftype].nratoms;
 
     if (ftype == F_CONSTR) {
@@ -774,6 +773,7 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
   split_blocks(fp,nnodes,&top->cgs,&sblock,capacity,multinr_cgs,multinr_shk);
   
   /* Now transform atom numbers to real inverted shake blocks */
+  init_blocka(&shakeblock);
   gen_sblocks(fp,0,top->atoms.nr,&top->idef,&shakeblock,TRUE);
   sblinv = make_invblocka(&shakeblock,top->atoms.nr+1);
   done_blocka(&shakeblock);
@@ -791,7 +791,7 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
   homeind=home_index(nnodes,&top->cgs,multinr_cgs);
   
   for(j=0; (j<F_NRE); j++)
-    split_force2(nnodes,homeind,&top->idef,&top->idef.il[j],multinr_nre[j]);
+    split_force2(nnodes,homeind,j,&top->idef.il[j],multinr_nre[j]);
 
   sfree(sblinv);
   sfree(multinr_shk);

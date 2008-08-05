@@ -302,7 +302,7 @@ void visualize_images(char *fn,int ePBC,matrix box)
 
   write_sto_conf(fn,"Images",&atoms,img,NULL,ePBC,box); 
 
-  free_t_atoms(&atoms);
+  free_t_atoms(&atoms,FALSE);
   sfree(img);
 }
 

@@ -5,14 +5,14 @@
 #include "typedefs.h"
  
 /* Initialization function, also predicts the initial shell postions.
- * With domain decomposition the prediction is for the global x.
+ * If x!=NULL, the shells are predict for the global coordinates x.
  */
-extern gmx_shellfc_t init_shell_flexcon(FILE *log,t_commrec *cr,
-					t_topology *top,int nflexcon,
-					bool bContinuation,rvec *x);
+extern gmx_shellfc_t init_shell_flexcon(FILE *log,
+					gmx_mtop_t *mtop,int nflexcon,
+					rvec *x);
 
 /* Get the local shell with domain decomposition */
-extern void make_local_shells(gmx_domdec_t *dd,t_mdatoms *md,
+extern void make_local_shells(t_commrec *cr,t_mdatoms *md,
 			      gmx_shellfc_t shfc);
 
 /* Optimize shell positions */
@@ -25,7 +25,8 @@ extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
 			       rvec buf[],tensor force_vir,
 			       t_mdatoms *md,
 			       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-			       t_graph *graph,t_groups *grps,
+			       t_graph *graph,
+			       gmx_groups_t *groups,t_groups *grps,
 			       gmx_shellfc_t shfc,
 			       t_forcerec *fr,
 			       real t,rvec mu_tot,

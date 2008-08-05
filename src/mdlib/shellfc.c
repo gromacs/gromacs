@@ -20,6 +20,7 @@
 #include "physics.h"
 #include "copyrite.h"
 #include "shellfc.h"
+#include "mtop_util.h"
 
 
 typedef struct {
@@ -74,11 +75,12 @@ static void pr_shell(FILE *fplog,int ns,t_shell s[])
 
 static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
 			   int ns,t_shell s[],
-			   real mass[],t_atom *atom,bool bInit)
+			   real mass[],gmx_mtop_t *mtop,bool bInit)
 {
   int  i,m,s1,n1,n2,n3;
   real dt_1,dt_2,dt_3,fudge,tm,m1,m2,m3;
   rvec *ptr;
+  t_atom *atom;
   
   /* We introduce a fudge factor for performance reasons: with this choice
    * the initial force on the shells is about a factor of two lower than 
@@ -132,9 +134,12 @@ static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
 	m3 = mass[n3];
       } else {
 	/* Not the correct masses with FE, but it is just a prediction... */
-	m1 = atom[n1].m;
-	m2 = atom[n2].m;
-	m3 = atom[n3].m;
+	gmx_mtop_atomnr_to_atom(mtop,n1,&atom);
+	m1 = atom->m;
+	gmx_mtop_atomnr_to_atom(mtop,n2,&atom);
+	m2 = atom->m;
+	gmx_mtop_atomnr_to_atom(mtop,n3,&atom);
+	m3 = atom->m;
       }
       tm = dt_1/(m1+m2+m3);
       for(m=0; (m<DIM); m++)
@@ -146,40 +151,42 @@ static void predict_shells(FILE *fplog,rvec x[],rvec v[],real dt,
   }
 }
 
-gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
-				 t_topology *top,int nflexcon,
-				 bool bContinuation,rvec *x)
+gmx_shellfc_t init_shell_flexcon(FILE *fplog,
+				 gmx_mtop_t *mtop,int nflexcon,
+				 rvec *x)
 {
   struct gmx_shellfc *shfc;
   t_shell     *shell;
   int         *shell_index,*at2cg;
   t_atom      *atom;
-  t_idef      *idef;
-  int         n[eptNR],ns,nsi,nshell,nshell_tot;
-  int         cg0,cg1,*cgindex,start,end,cg,i,j,type,ftype,nra;
+  int         n[eptNR],ns,nshell,nsi;
+  int         i,j,nmol,type,mb,mt,a_offset,cg,mol,ftype,nra;
   real        qS,alpha;
   int         aS,aN=0; /* Shell and nucleus */
   int         bondtypes[] = { F_BONDS, F_HARMONIC, F_CUBICBONDS, F_POLARIZATION, F_WATER_POL };
 #define NBT asize(bondtypes)
   t_iatom     *ia;
-
-  if (PARTDECOMP(cr)) {
-    pd_cg_range(cr,&cg0,&cg1);
-  } else {
-    cg0 = 0;
-    cg1 = top->cgs.nr;
-  }
-
-  atom = top->atoms.atom;
-  idef = &top->idef;
-  cgindex = top->cgs.index;
-  
-  start = cgindex[cg0];
-  end   = cgindex[cg1];
+  gmx_mtop_atomloop_all_t aloop;
+  gmx_ffparams_t *ffparams;
+  gmx_molblock_t *molb;
+  gmx_moltype_t *molt;
+  t_block     *cgs;
 
   /* Count number of shells, and find their indices */
-  for(i=0; (i<eptNR); i++)
-    n[i]=0;
+  for(i=0; (i<eptNR); i++) {
+    n[i] = 0;
+  }
+  snew(shell_index,mtop->natoms);
+
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  while (gmx_mtop_atomloop_all_next(aloop,&i,&atom)) {
+    if (atom->ptype == eptShell) {
+      shell_index[i] = n[atom->ptype];
+    }
+    n[atom->ptype]++;
+  }
+  
+  /*
   snew(shell_index,end-start);
   snew(at2cg,end-start);
   nsi = 0;
@@ -191,147 +198,168 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
       at2cg[i-start] = cg;
     }
   }
-  if (nsi != n[eptShell])
-    gmx_fatal(FARGS,"Your number of shells %d is not equal to the number of shells %d",
-		nsi,n[eptShell]);
+  */
 
   if (fplog) {
     /* Print the number of each particle type */  
-    for(i=0; (i<eptNR); i++)
-      if (n[i]!=0)
+    for(i=0; (i<eptNR); i++) {
+      if (n[i] != 0) {
 	fprintf(fplog,"There are: %d %ss\n",n[i],ptype_str[i]);
+      }
+    }
   }
   
-  ns      = n[eptShell];
-  nshell  = ns;
+  nshell = n[eptShell];
 
-  nshell_tot = ns;
-  if (PARTDECOMP(cr))
-    gmx_sumi(1,&nshell_tot,cr);
+  if (nshell == 0 && nflexcon == 0) {
+    sfree(shell_index);
 
-  if (nshell_tot == 0 && nflexcon == 0)
     return NULL;
+  }
 
   snew(shfc,1);
   shfc->nflexcon = nflexcon;
 
-  if (nshell_tot == 0)
-    return shfc;
+  if (nshell == 0) {
+    sfree(shell_index);
 
-  snew(shell,ns);
+    return shfc;
+  }
+
+  snew(shell,nshell);
   shfc->nflexcon = nflexcon;
   
   /* Initiate the shell structures */    
-  for(i=0; (i<ns); i++) {
-    shell[i].shell=NO_ATID;
-    shell[i].nnucl=0;
-    shell[i].nucl1=NO_ATID;
-    shell[i].nucl2=NO_ATID;
-    shell[i].nucl3=NO_ATID;
+  for(i=0; (i<nshell); i++) {
+    shell[i].shell = NO_ATID;
+    shell[i].nnucl = 0;
+    shell[i].nucl1 = NO_ATID;
+    shell[i].nucl2 = NO_ATID;
+    shell[i].nucl3 = NO_ATID;
     /* shell[i].bInterCG=FALSE; */
-    shell[i].k_1=0;
-    shell[i].k=0;
+    shell[i].k_1   = 0;
+    shell[i].k     = 0;
   }
+
+  ffparams = &mtop->ffparams;
 
   /* Now fill the structures */
   shfc->bInterCG = FALSE;
-  ns=0;
-  for(j=0; (j<NBT); j++) {
-    ia=idef->il[bondtypes[j]].iatoms;
-    for(i=0; (i<idef->il[bondtypes[j]].nr); ) {
-      type  = ia[0];
-      ftype = idef->functype[type];
-      nra   = interaction_function[ftype].nratoms;
-      
-      /* Check whether we have a bond with a shell */
-      aS = NO_ATID;
-      
-      switch (bondtypes[j]) {
-      case F_BONDS:
-      case F_HARMONIC:
-      case F_CUBICBONDS:
-      case F_POLARIZATION:
-	if (atom[ia[1]].ptype == eptShell) {
-	  aS = ia[1];
-	  aN = ia[2];
-	}
-	else if (atom[ia[2]].ptype == eptShell) {
-	  aS = ia[2];
-	  aN = ia[1];
-	}
-	break;
-      case F_WATER_POL:
-	aN    = ia[4];  /* Dummy */
-	aS    = ia[5];  /* Shell */
-	break;
-      default:
-	gmx_fatal(FARGS,"Death Horror: %s, %d",__FILE__,__LINE__);
-      }
-      
-      if (aS != NO_ATID) {	  
-	qS = atom[aS].q;
-	
-	/* Check whether one of the particles is a shell... */
-	nsi = shell_index[aS-start];
-	if ((nsi < 0) || (nsi >= nshell))
-	  gmx_fatal(FARGS,"nsi is %d should be within 0 - %d. aS = %d",
-		    nsi,nshell,aS);
-	if (shell[nsi].shell == NO_ATID) {
-	  shell[nsi].shell = aS;
-	  ns ++;
-	}
-	else if (shell[nsi].shell != aS)
-	  gmx_fatal(FARGS,"Weird stuff in %s, %d",__FILE__,__LINE__);
-	
-	if      (shell[nsi].nucl1 == NO_ATID) {
-	  shell[nsi].nucl1 = aN;
-	} else if (shell[nsi].nucl2 == NO_ATID) {
-	  shell[nsi].nucl2 = aN;
-	} else if (shell[nsi].nucl3 == NO_ATID) {
-	  shell[nsi].nucl3 = aN;
-	} else {
-	  if (fplog)
-	    pr_shell(fplog,ns,shell);
-	  gmx_fatal(FARGS,"Can not handle more than three bonds per shell\n");
-	}
-	if (at2cg[aS] != at2cg[aN]) {
-	  /* shell[nsi].bInterCG = TRUE; */
-	  shfc->bInterCG = TRUE;
-	}
+  ns = 0;
+  a_offset = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    molt = &mtop->moltype[molb->type];
 
-	switch (bondtypes[j]) {
-	case F_BONDS:
-	case F_HARMONIC:
-	  shell[nsi].k    += idef->iparams[type].harmonic.krA;
-	  break;
-	case F_CUBICBONDS:
-	  shell[nsi].k    += idef->iparams[type].cubic.kb;
-	  break;
-	case F_POLARIZATION:
-	  if (qS != atom[aS].qB)
-	    gmx_fatal(FARGS,"polarize can not be used with qA != qB");
-	  shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
-	    idef->iparams[type].polarize.alpha;
-	  break;
-	case F_WATER_POL:
-	  if (qS != atom[aS].qB)
-	    gmx_fatal(FARGS,"water_pol can not be used with qA != qB");
-	  alpha          = (idef->iparams[type].wpol.al_x+
-			    idef->iparams[type].wpol.al_y+
-			    idef->iparams[type].wpol.al_z)/3.0;
-	  shell[nsi].k  += sqr(qS)*ONE_4PI_EPS0/alpha;
-	  break;
-	default:
-	  gmx_fatal(FARGS,"Death Horror: %s, %d",__FILE__,__LINE__);
-	}
-	shell[nsi].nnucl++;
+    cgs = &molt->cgs;
+    snew(at2cg,molt->atoms.nr);
+    for(cg=0; cg<cgs->nr; cg++) {
+      for(i=cgs->index[cg]; i<cgs->index[cg+1]; i++) {
+	at2cg[i] = cg;
       }
-      ia += nra+1;
-      i  += nra+1;
     }
-  }
 
-  sfree(at2cg);
+    atom = molt->atoms.atom;
+    for(mol=0; mol<molb->nmol; mol++) {
+      for(j=0; (j<NBT); j++) {
+	ia = molt->ilist[bondtypes[j]].iatoms;
+	for(i=0; (i<molt->ilist[bondtypes[j]].nr); ) {
+	  type  = ia[0];
+	  ftype = ffparams->functype[type];
+	  nra   = interaction_function[ftype].nratoms;
+	  
+	  /* Check whether we have a bond with a shell */
+	  aS = NO_ATID;
+	  
+	  switch (bondtypes[j]) {
+	  case F_BONDS:
+	  case F_HARMONIC:
+	  case F_CUBICBONDS:
+	  case F_POLARIZATION:
+	    if (atom[ia[1]].ptype == eptShell) {
+	      aS = ia[1];
+	      aN = ia[2];
+	    }
+	    else if (atom[ia[2]].ptype == eptShell) {
+	      aS = ia[2];
+	      aN = ia[1];
+	    }
+	    break;
+	  case F_WATER_POL:
+	    aN    = ia[4];  /* Dummy */
+	    aS    = ia[5];  /* Shell */
+	    break;
+	  default:
+	    gmx_fatal(FARGS,"Death Horror: %s, %d",__FILE__,__LINE__);
+	  }
+	  
+	  if (aS != NO_ATID) {	  
+	    qS = atom[aS].q;
+	    
+	    /* Check whether one of the particles is a shell... */
+	    nsi = shell_index[a_offset+aS];
+	    if ((nsi < 0) || (nsi >= nshell))
+	      gmx_fatal(FARGS,"nsi is %d should be within 0 - %d. aS = %d",
+			nsi,nshell,aS);
+	    if (shell[nsi].shell == NO_ATID) {
+	      shell[nsi].shell = a_offset + aS;
+	      ns ++;
+	    }
+	    else if (shell[nsi].shell != a_offset+aS)
+	      gmx_fatal(FARGS,"Weird stuff in %s, %d",__FILE__,__LINE__);
+	    
+	    if      (shell[nsi].nucl1 == NO_ATID) {
+	      shell[nsi].nucl1 = a_offset + aN;
+	    } else if (shell[nsi].nucl2 == NO_ATID) {
+	      shell[nsi].nucl2 = a_offset + aN;
+	    } else if (shell[nsi].nucl3 == NO_ATID) {
+	      shell[nsi].nucl3 = a_offset + aN;
+	    } else {
+	      if (fplog)
+		pr_shell(fplog,ns,shell);
+	      gmx_fatal(FARGS,"Can not handle more than three bonds per shell\n");
+	    }
+	    if (at2cg[aS] != at2cg[aN]) {
+	      /* shell[nsi].bInterCG = TRUE; */
+	      shfc->bInterCG = TRUE;
+	    }
+	    
+	    switch (bondtypes[j]) {
+	    case F_BONDS:
+	    case F_HARMONIC:
+	      shell[nsi].k    += ffparams->iparams[type].harmonic.krA;
+	      break;
+	    case F_CUBICBONDS:
+	      shell[nsi].k    += ffparams->iparams[type].cubic.kb;
+	      break;
+	    case F_POLARIZATION:
+	      if (qS != atom[aS].qB)
+		gmx_fatal(FARGS,"polarize can not be used with qA != qB");
+	      shell[nsi].k    += sqr(qS)*ONE_4PI_EPS0/
+		ffparams->iparams[type].polarize.alpha;
+	      break;
+	    case F_WATER_POL:
+	      if (qS != atom[aS].qB)
+		gmx_fatal(FARGS,"water_pol can not be used with qA != qB");
+	      alpha          = (ffparams->iparams[type].wpol.al_x+
+				ffparams->iparams[type].wpol.al_y+
+				ffparams->iparams[type].wpol.al_z)/3.0;
+	      shell[nsi].k  += sqr(qS)*ONE_4PI_EPS0/alpha;
+	      break;
+	    default:
+	      gmx_fatal(FARGS,"Death Horror: %s, %d",__FILE__,__LINE__);
+	    }
+	    shell[nsi].nnucl++;
+	  }
+	  ia += nra+1;
+	  i  += nra+1;
+	}
+      }
+      a_offset += molt->atoms.nr;
+    }
+    /* Done with this molecule type */
+    sfree(at2cg);
+  }
   
   /* Verify whether it's all correct */
   if (ns != nshell)
@@ -346,13 +374,7 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
   
   shfc->nshell_gl      = ns;
   shfc->shell_gl       = shell;
-  if (DOMAINDECOMP(cr)) {
-    shfc->shell_index_gl = shell_index;
-  } else {
-    shfc->nshell         = ns;
-    shfc->shell          = shell;
-    sfree(shell_index);
-  }
+  shfc->shell_index_gl = shell_index;
 
   shfc->bPredict   = (getenv("GMX_NOPREDICT") == NULL);
   shfc->bForceInit = FALSE;
@@ -366,9 +388,9 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
   }
 
   if (shfc->bPredict) {
-    if (!bContinuation && (!DOMAINDECOMP(cr) || MASTER(cr))) {
+    if (x) {
       predict_shells(fplog,x,NULL,0,shfc->nshell_gl,shfc->shell_gl,
-		     NULL,top->atoms.atom,TRUE);
+		     NULL,mtop,TRUE);
     }
 
     if (shfc->bInterCG) {
@@ -381,23 +403,44 @@ gmx_shellfc_t init_shell_flexcon(FILE *fplog,t_commrec *cr,
   return shfc;
 }
 
-void make_local_shells(gmx_domdec_t *dd,t_mdatoms *md,
-		      struct gmx_shellfc *shfc)
+void make_local_shells(t_commrec *cr,t_mdatoms *md,
+		       struct gmx_shellfc *shfc)
 {
   t_shell *shell;
-  int *ind,nshell,i;
-  
+  int a0,a1,*ind,nshell,i;
+  gmx_domdec_t *dd=NULL;
+
+  if (PAR(cr)) {
+    if (DOMAINDECOMP(cr)) {
+      dd = cr->dd;
+      a0 = 0;
+      a1 = dd->nat_home;
+    } else {
+      pd_at_range(cr,&a0,&a1);
+    }
+  } else {
+    /* Single node: we need all shells, just copy the pointer */
+    shfc->nshell = shfc->nshell_gl;
+    shfc->shell  = shfc->shell_gl;
+    
+    return;
+  }
+
   ind = shfc->shell_index_gl;
 
   nshell = 0;
   shell  = shfc->shell; 
-  for(i=0; i<dd->nat_home; i++) {
+  for(i=a0; i<a1; i++) {
     if (md->ptype[i] == eptShell) {
       if (nshell+1 > shfc->shell_nalloc) {
 	shfc->shell_nalloc = over_alloc_dd(nshell+1);
 	srenew(shell,shfc->shell_nalloc);
       }
-      shell[nshell] = shfc->shell_gl[ind[dd->gatindex[i]]];
+      if (dd) {
+	shell[nshell] = shfc->shell_gl[ind[dd->gatindex[i]]];
+      } else {
+	shell[nshell] = shfc->shell_gl[ind[i]];
+      }
       shell[nshell].shell = i;
       if (!shfc->bInterCG) {
 	shell[nshell].nucl1   = i + shell[nshell].nucl1 - shell[nshell].shell;
@@ -672,7 +715,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			rvec buf[],tensor force_vir,
 			t_mdatoms *md,
 			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-			t_graph *graph,t_groups *grps,
+			t_graph *graph,
+			gmx_groups_t *groups,t_groups *grps,
 			struct gmx_shellfc *shfc,
 			t_forcerec *fr,
 			real t,rvec mu_tot,
@@ -779,7 +823,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   if (gmx_debug_at) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,grps,
+  do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,groups,grps,
 	   state->box,state->x,&state->hist,
 	   force[Min],buf,force_vir,md,ener,fcd,
 	   state->lambda,graph,
@@ -839,7 +883,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   for(count=1; (!(*bConverged) && (count < number_steps)); count++) {
     if (vsite)
       construct_vsites(fplog,vsite,pos[Min],nrnb,inputrec->delta_t,state->v,
-		       &top->idef,fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+		       top->idef.iparams,top->idef.il,
+		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
      
     if (nflexcon) {
       init_adir(fplog,constr,top,inputrec,cr,dd_ac1,mdstep,md,start,end,
@@ -863,7 +908,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     /* Try the new positions */
     do_force(fplog,cr,inputrec,1,nrnb,wcycle,
-	     top,grps,state->box,pos[Try],&state->hist,
+	     top,groups,grps,state->box,pos[Try],&state->hist,
 	     force[Try],buf,force_vir,
 	     md,ener,fcd,state->lambda,graph,
 	     fr,vsite,mu_tot,t,fp_field,NULL,

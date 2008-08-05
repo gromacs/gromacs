@@ -50,6 +50,7 @@
 #include "pbc.h"
 #include "domdec.h"
 #include "partdec.h"
+#include "mtop_util.h"
 
 /* Communication buffers */
 
@@ -467,7 +468,8 @@ static int constr_vsiten(t_iatom *ia, t_iparams ip[],
 
 void construct_vsites(FILE *log,gmx_vsite_t *vsite,
 		      rvec x[],t_nrnb *nrnb,
-		      real dt,rvec *v,t_idef *idef,
+		      real dt,rvec *v,
+		      t_iparams ip[],t_ilist ilist[],
 		      int ePBC,bool bMolPBC,t_graph *graph,
 		      t_commrec *cr,matrix box)
 {
@@ -476,7 +478,6 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   int       i,inc,ii,nra,nr,tp,ftype;
   t_iatom   avsite,ai,aj,ak,al,pbc_atom;
   t_iatom   *ia;
-  t_iparams *ip;
   t_pbc     pbc,*pbc_null,*pbc_null2;
   bool      bDomDec;
   int       *vsite_pbc,ishift;
@@ -485,7 +486,7 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
   bDomDec = cr && DOMAINDECOMP(cr);
 
   /* We only need to do pbc when we have inter-cg vsites */
-  if ((bDomDec || bMolPBC) && vsite->n_intercg_vsite) {
+  if (ePBC != epbcNONE && (bDomDec || bMolPBC) && vsite->n_intercg_vsite) {
     /* This is wasting some CPU time as we now do this multiple times
      * per MD step. But how often do we have vsites with full pbc?
      */
@@ -510,32 +511,31 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
       shift_self(graph,box,x);
   }
 
-  ip     = idef->iparams;
-  if (v)
+  if (v) {
     inv_dt = 1.0/dt;
-  else
+  } else {
     inv_dt = 1.0;
+  }
 
   pbc_null2 = NULL;
   for(ftype=0; (ftype<F_NRE); ftype++) {
     if (interaction_function[ftype].flags & IF_VSITE) {
       nra    = interaction_function[ftype].nratoms;
-      nr     = idef->il[ftype].nr;
-      ia     = idef->il[ftype].iatoms;
+      nr     = ilist[ftype].nr;
+      ia     = ilist[ftype].iatoms;
 
       if (pbc_null) {
-	if (bDomDec)
-	  vsite_pbc = vsite->vsite_pbc_dd[ftype-F_VSITE2];
-	else
-	  vsite_pbc = vsite->vsite_pbc[ftype-F_VSITE2];
+	vsite_pbc = vsite->vsite_pbc_loc[ftype-F_VSITE2];
       } else {
 	vsite_pbc = NULL;
       }
       
       for(i=0; (i<nr); ) {
 	tp   = ia[0];
+	/*
 	if (ftype != idef->functype[tp]) 
 	  gmx_incons("Function types for vsites wrong");
+	*/
 	
 	/* The vsite and constructing atoms */
 	avsite = ia[1];
@@ -678,6 +678,29 @@ static void spread_vsite2(t_iatom ia[],real a,
   }
 
   /* TOTAL: 13 flops */
+}
+
+void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
+			   rvec x[],t_nrnb *nrnb,
+			   real dt,
+			   gmx_mtop_t *mtop,
+			   int ePBC,t_commrec *cr,matrix box)
+{
+  int as,mb,mol;
+  gmx_molblock_t *molb;
+  gmx_moltype_t  *molt;
+
+  as = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    molt = &mtop->moltype[molb->type]; 
+    for(mol=0; mol<molb->nmol; mol++) {
+      construct_vsites(log,vsite,x+as,nrnb,dt,NULL,
+		       mtop->ffparams.iparams,molt->ilist,
+		       ePBC,TRUE,NULL,cr,box);
+      as += molt->atoms.nr;
+    }
+  }
 }
 
 static void spread_vsite3(t_iatom ia[],real a,real b,
@@ -1268,10 +1291,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
       ia     = idef->il[ftype].iatoms;
 
       if (pbc_null) {
-	if (DOMAINDECOMP(cr))
-	  vsite_pbc = vsite->vsite_pbc_dd[ftype-F_VSITE2];
-	else
-	  vsite_pbc = vsite->vsite_pbc[ftype-F_VSITE2];
+	vsite_pbc = vsite->vsite_pbc_loc[ftype-F_VSITE2];
       } else {
 	vsite_pbc = NULL;
       }
@@ -1365,35 +1385,57 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
   }
 }
 
-static int count_intercg_vsite(t_idef *idef,int *a2cg)
+static int *atom2cg(t_block *cgs)
 {
-  int  ftype,nral,i,cg,a;
+  int *a2cg,cg,i;
+  
+  snew(a2cg,cgs->index[cgs->nr]);
+  for(cg=0; cg<cgs->nr; cg++) {
+    for(i=cgs->index[cg]; i<cgs->index[cg+1]; i++)
+      a2cg[i] = cg;
+  }
+  
+  return a2cg;
+}
+
+static int count_intercg_vsite(gmx_mtop_t *mtop)
+{
+  int  mb,mt,ftype,nral,i,cg,a;
+  gmx_molblock_t *molb;
+  gmx_moltype_t *molt;
+  int  *a2cg;
   t_ilist *il;
   t_iatom *ia;
   int  n_intercg_vsite;
 
   n_intercg_vsite = 0;
-  for(ftype=0; ftype<F_NRE; ftype++) {
-    if (interaction_function[ftype].flags & IF_VSITE) {
-      nral = NRAL(ftype);
-      il = &idef->il[ftype];
-      ia  = il->iatoms;
-      for(i=0; i<il->nr; i+=1+nral) {
-	cg = a2cg[ia[1+i]];
-	for(a=1; a<nral; a++) {
-	  if (a2cg[ia[1+a]] != cg) {
-	    n_intercg_vsite++;
-	    break;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    molt = &mtop->moltype[molb->type];
+    a2cg = atom2cg(&molt->cgs);
+    for(ftype=0; ftype<F_NRE; ftype++) {
+      if (interaction_function[ftype].flags & IF_VSITE) {
+	nral = NRAL(ftype);
+	il = &molt->ilist[ftype];
+	ia  = il->iatoms;
+	for(i=0; i<il->nr; i+=1+nral) {
+	  cg = a2cg[ia[1+i]];
+	  for(a=1; a<nral; a++) {
+	    if (a2cg[ia[1+a]] != cg) {
+	      n_intercg_vsite += molb->nmol;
+	      break;
+	    }
 	  }
 	}
       }
     }
+    sfree(a2cg);
   }
 
   return n_intercg_vsite;
 }
 
-static int **get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
+static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,t_atom *atom,
 			   t_block *cgs,int *a2cg)
 {
   int  ftype,nral,i,j,vsi,vsite,cg_v,cg_c,a,nc3=0;
@@ -1406,7 +1448,7 @@ static int **get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
   for(ftype=0; ftype<F_NRE; ftype++) {
     if (interaction_function[ftype].flags & IF_VSITE) {
       nral = NRAL(ftype);
-      il = &idef->il[ftype];
+      il = &ilist[ftype];
       ia  = il->iatoms;
 
       snew(vsite_pbc[ftype-F_VSITE2],il->nr/(1+nral));
@@ -1424,7 +1466,7 @@ static int **get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
 	/* Check if constructing atoms are outside the vsite's cg */
 	nc3 = 0;
 	if (ftype == F_VSITEN) {
-	  nc3 = 3*idef->iparams[ia[i]].vsiten.n;
+	  nc3 = 3*iparams[ia[i]].vsiten.n;
 	  for(j=0; j<nc3; j+=3) {
 	    if (a2cg[ia[i+j+2]] != cg_v)
 	      vsite_pbc_f[vsi] = -1;
@@ -1474,51 +1516,58 @@ static int **get_vsite_pbc(int nvsite,t_idef *idef,t_atom *atom,
   return vsite_pbc;
 }
 
-static int *atom2cg(t_block *cgs)
-{
-  int *a2cg,cg,i;
-  
-  snew(a2cg,cgs->index[cgs->nr]);
-  for(cg=0; cg<cgs->nr; cg++) {
-    for(i=cgs->index[cg]; i<cgs->index[cg+1]; i++)
-      a2cg[i] = cg;
-  }
-  
-  return a2cg;
-}
-
-gmx_vsite_t *init_vsite(t_commrec *cr,t_topology *top)
+gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr)
 {
   int nvsite,i;
   int *a2cg,cg;
   gmx_vsite_t *vsite;
+  int mt;
+  gmx_moltype_t *molt;
   
   /* check if there are vsites */
   nvsite = 0;
   for(i=0; i<F_NRE; i++) {
-    if (interaction_function[i].flags & IF_VSITE)
-      nvsite += top->idef.il[i].nr;
+    if (interaction_function[i].flags & IF_VSITE) {
+      nvsite += gmx_mtop_ftype_count(mtop,i);
+    }
   }
-  if (PAR(cr) && !DOMAINDECOMP(cr))
-    gmx_sumi(1,&nvsite,cr);
 
-  if (nvsite == 0)
+  if (nvsite == 0) {
     return NULL;
+  }
 
   snew(vsite,1);
-  vsite->n_vsite = nvsite;
+
+  vsite->n_intercg_vsite = count_intercg_vsite(mtop);
+
+  if (vsite->n_intercg_vsite > 0 && DOMAINDECOMP(cr)) {
+    vsite->nvsite_pbc_molt = mtop->nmoltype;
+    snew(vsite->vsite_pbc_molt,vsite->nvsite_pbc_molt);
+    for(mt=0; mt<mtop->nmoltype; mt++) {
+      molt = &mtop->moltype[mt];
+      /* Make an atom to charge group index */
+      a2cg = atom2cg(&molt->cgs);
+      vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop->ffparams.iparams,
+						molt->ilist,molt->atoms.atom,
+						&molt->cgs,a2cg);
+      sfree(a2cg);
+    }
+  }
+  
+  return vsite;
+}
+
+void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_commrec *cr)
+{
+  int *a2cg;
 
   /* Make an atom to charge group index */
   a2cg = atom2cg(&top->cgs);
 
-  vsite->n_intercg_vsite = count_intercg_vsite(&top->idef,a2cg);
-  if (vsite->n_intercg_vsite) {
-    vsite->vsite_pbc = get_vsite_pbc(vsite->n_vsite,&top->idef,top->atoms.atom,
-				     &top->cgs,a2cg);
-    if (DOMAINDECOMP(cr)) {
-      snew(vsite->vsite_pbc_dd,F_VSITEN-F_VSITE2+1);
-      snew(vsite->vsite_pbc_dd_nalloc,F_VSITEN-F_VSITE2+1);
-    }
+  if (vsite->n_intercg_vsite > 0) {
+    vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
+					 top->idef.il,top->atoms.atom,
+					 &top->cgs,a2cg);
 
     if (PARTDECOMP(cr)) {
       snew(vsite->vsitecomm,1);
@@ -1528,6 +1577,4 @@ gmx_vsite_t *init_vsite(t_commrec *cr,t_topology *top)
   }
 
   sfree(a2cg);
-  
-  return vsite;
 }

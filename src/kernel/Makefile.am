@@ -33,7 +33,6 @@ sorting.c 	sorting.h	\
 specbond.c	specbond.h	\
 ter_db.c	ter_db.h	\
 tomorse.c	gpp_tomorse.h	\
-topcat.c 	topcat.h	\
 topdirs.c	topdirs.h	\
 topexcl.c	topexcl.h	\
 topio.c 	topio.h		\

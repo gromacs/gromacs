@@ -39,6 +39,8 @@ typedef struct gmx_domdec_specat_comm {
 } gmx_domdec_specat_comm_t;
 
 typedef struct gmx_domdec_constraints {
+  int  *molb_con_offset;
+  int  *molb_ncon_mol;
   /* The fully local and connected constraints */
   int  ncon;
   /* The global constraint number, only required for clearing gc_req */
@@ -534,55 +536,57 @@ static int setup_specat_communication(gmx_domdec_t *dd,
   return nat_tot_specat;
 }
 
-static void walk_out(int con,int a,int nrec,
+static void walk_out(int con,int con_offset,int a,int offset,int nrec,
 		     const t_iatom *ia,const t_blocka *at2con,
 		     const gmx_ga2la_t *ga2la,bool bHomeConnect,
 		     gmx_domdec_constraints_t *dc,
 		     gmx_domdec_specat_comm_t *dcc,
 		     t_ilist *il_local)
 {
-  int i,coni,b;
+  int a1_gl,a2_gl,i,coni,b;
 
-  if (dc->gc_req[con] == 0) {
+  if (dc->gc_req[con_offset+con] == 0) {
     /* Add this non-home constraint to the list */
     if (dc->ncon+1 > dc->con_nalloc) {
       dc->con_nalloc = over_alloc_large(dc->ncon+1);
       srenew(dc->con_gl,dc->con_nalloc);
       srenew(dc->con_nlocat,dc->con_nalloc);
     }
-    dc->con_gl[dc->ncon] = con;
+    dc->con_gl[dc->ncon] = con_offset + con;
     dc->con_nlocat[dc->ncon] = (bHomeConnect ? 1 : 0);
-    dc->gc_req[con] = 1;
+    dc->gc_req[con_offset+con] = 1;
     if (il_local->nr + 3 > il_local->nalloc) {
       il_local->nalloc = over_alloc_dd(il_local->nr+3);
       srenew(il_local->iatoms,il_local->nalloc);
     }
     il_local->iatoms[il_local->nr++] = ia[con*3];
+    a1_gl = offset + ia[con*3+1];
+    a2_gl = offset + ia[con*3+2];
     /* The following indexing code can probably be optizimed */
-    if (ga2la[ia[con*3+1]].cell == 0) {
-      il_local->iatoms[il_local->nr++] = ga2la[ia[con*3+1]].a;
+    if (ga2la[a1_gl].cell == 0) {
+      il_local->iatoms[il_local->nr++] = ga2la[a1_gl].a;
     } else {
       /* We set this index later */
-      il_local->iatoms[il_local->nr++] = -ia[con*3+1] - 1;
+      il_local->iatoms[il_local->nr++] = -a1_gl - 1;
     }
-    if (ga2la[ia[con*3+2]].cell == 0) {
-      il_local->iatoms[il_local->nr++] = ga2la[ia[con*3+2]].a;
+    if (ga2la[a2_gl].cell == 0) {
+      il_local->iatoms[il_local->nr++] = ga2la[a2_gl].a;
     } else {
       /* We set this index later */
-      il_local->iatoms[il_local->nr++] = -ia[con*3+2] - 1;
+      il_local->iatoms[il_local->nr++] = -a2_gl - 1;
     }
     dc->ncon++;
   }
   /* Check to not ask for the same atom more than once */
-  if (dc->ga2la[a] == -1) {
+  if (dc->ga2la[offset+a] == -1) {
     /* Add this non-home atom to the list */
     if (dcc->nind_req+1 > dcc->ind_req_nalloc) {
       dcc->ind_req_nalloc = over_alloc_large(dcc->nind_req+1);
       srenew(dcc->ind_req,dcc->ind_req_nalloc);
     }
-    dcc->ind_req[dcc->nind_req++] = a;
+    dcc->ind_req[dcc->nind_req++] = offset + a;
     /* Temporarily mark with -2, we get the index later */
-    dc->ga2la[a] = -2;
+    dc->ga2la[offset+a] = -2;
   }
 
   if (nrec > 0) {
@@ -595,28 +599,31 @@ static void walk_out(int con,int a,int nrec,
 	} else {
 	  b = ia[coni*3+1];
 	}
-	if (ga2la[b].cell != 0) {
-	  walk_out(coni,b,nrec-1,ia,at2con,ga2la,FALSE,dc,dcc,il_local);
+	if (ga2la[offset+b].cell != 0) {
+	  walk_out(coni,con_offset,b,offset,nrec-1,ia,at2con,ga2la,FALSE,
+		   dc,dcc,il_local);
 	}
       }
     }
   }
 }
 
-int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
+int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
+			      gmx_mtop_t *mtop,
 			      gmx_constr_t constr,int nrec,
 			      t_ilist *il_local)
 {
-  t_blocka *at2con;
+  t_blocka *at2con_mt,*at2con;
   gmx_ga2la_t *ga2la;
-  t_iatom *iap;
-  int nhome,a,ag,bg,bl,i,con;
+  gmx_molblock_t *molb;
+  t_iatom *ia,*iap;
+  int nhome,a,a_gl,a_mol,b_lo,offset,mb,molnr,b_mol,i,con,con_offset;
   gmx_domdec_constraints_t *dc;
   int at_end,*ga2la_specat,j;
 
   dc = dd->constraints;
 
-  at2con = atom2constraints_global(constr);
+  at2con_mt = atom2constraints_moltype(constr);
   ga2la  = dd->ga2la;
 
   dc->ncon     = 0;
@@ -626,45 +633,61 @@ int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
     dd->constraint_comm->nind_req = 0;
   }
   for(a=0; a<dd->nat_home; a++) {
-    ag = dd->gatindex[a];
-    for(i=at2con->index[ag]; i<at2con->index[ag+1]; i++) {
-      con = at2con->a[i];
-      iap = ia + con*3;
-      if (ag == iap[1]) {
-	bg = iap[2];
-      } else {
-	bg = iap[1];
-      }
-      if (ga2la[bg].cell == 0) {
-	/* Add this fully home constraint at the first atom */
-	if (ag < bg) {
-	  if (dc->ncon+1 > dc->con_nalloc) {
-	    dc->con_nalloc = over_alloc_large(dc->ncon+1);
-	    srenew(dc->con_gl,dc->con_nalloc);
-	    srenew(dc->con_nlocat,dc->con_nalloc);
-	  }
-	  dc->con_gl[dc->ncon] = con;
-	  dc->con_nlocat[dc->ncon] = 2;
-	  if (il_local->nr + 3 > il_local->nalloc) {
-	    il_local->nalloc = over_alloc_dd(il_local->nr + 3);
-	    srenew(il_local->iatoms,il_local->nalloc);
-	  }
-	  bl = ga2la[bg].a;
-	  il_local->iatoms[il_local->nr++] = iap[0];
-	  il_local->iatoms[il_local->nr++] = (ag == iap[1] ? a  : bl);
-	  il_local->iatoms[il_local->nr++] = (ag == iap[1] ? bl : a );
-	  dc->ncon++;
-	  nhome++;
+    a_gl = dd->gatindex[a];
+
+    gmx_mtop_atomnr_to_molblock_ind(mtop,a_gl,&mb,&molnr,&a_mol);
+    molb = &mtop->molblock[mb];
+
+    if (mtop->moltype[molb->type].ilist[F_CONSTR].nr > 0) {
+      /* Calculate the global constraint number offset for the molecule.
+       * This is only required for the global index to make sure
+       * that we use each constraint only once.
+       */
+      con_offset = dc->molb_con_offset[mb] + molnr*dc->molb_ncon_mol[mb];
+
+      ia = mtop->moltype[molb->type].ilist[F_CONSTR].iatoms;
+      /* The global atom number offset for this molecule */
+      offset = a_gl - a_mol;
+      at2con = &at2con_mt[molb->type];
+      for(i=at2con->index[a_mol]; i<at2con->index[a_mol+1]; i++) {
+	con = at2con->a[i];
+	iap = ia + con*3;
+	if (a_mol == iap[1]) {
+	  b_mol = iap[2];
+	} else {
+	  b_mol = iap[1];
 	}
-      } else {
-	/* We need the nrec constraints coupled to this constraint,
-	 * so we need to walk out of the home cell by nrec+1 atoms,
-	 * since already atom bg is not locally present.
-	 * Therefore we call walk_out with nrec recursions to go after
-	 * this first call.
-	 */
-	walk_out(con,bg,nrec,ia,at2con,dd->ga2la,TRUE,dc,dd->constraint_comm,
-		 il_local);
+	if (ga2la[offset + b_mol].cell == 0) {
+	  /* Add this fully home constraint at the first atom */
+	  if (a_mol < b_mol) {
+	    if (dc->ncon+1 > dc->con_nalloc) {
+	      dc->con_nalloc = over_alloc_large(dc->ncon+1);
+	      srenew(dc->con_gl,dc->con_nalloc);
+	      srenew(dc->con_nlocat,dc->con_nalloc);
+	    }
+	    dc->con_gl[dc->ncon] = con_offset + con;
+	    dc->con_nlocat[dc->ncon] = 2;
+	    if (il_local->nr + 3 > il_local->nalloc) {
+	      il_local->nalloc = over_alloc_dd(il_local->nr + 3);
+	      srenew(il_local->iatoms,il_local->nalloc);
+	    }
+	    b_lo = ga2la[offset + b_mol].a;
+	    il_local->iatoms[il_local->nr++] = iap[0];
+	    il_local->iatoms[il_local->nr++] = (a_gl == iap[1] ? a    : b_lo);
+	    il_local->iatoms[il_local->nr++] = (a_gl == iap[1] ? b_lo : a   );
+	    dc->ncon++;
+	    nhome++;
+	  }
+	} else {
+	  /* We need the nrec constraints coupled to this constraint,
+	   * so we need to walk out of the home cell by nrec+1 atoms,
+	   * since already atom bg is not locally present.
+	   * Therefore we call walk_out with nrec recursions to go after
+	   * this first call.
+	   */
+	  walk_out(con,con_offset,b_mol,offset,nrec,
+		   ia,at2con,dd->ga2la,TRUE,dc,dd->constraint_comm,il_local);
+	}
       }
     }
   }
@@ -760,19 +783,31 @@ int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil)
 }
 
 void init_domdec_constraints(gmx_domdec_t *dd,
-			     int natoms,t_topology *top,
+			     int natoms,gmx_mtop_t *mtop,
 			     gmx_constr_t constr)
 {
   gmx_domdec_constraints_t *dc;
-  int ncon,c,a;
+  gmx_molblock_t *molb;
+  int mb,ncon,c,a;
 
-  if (debug)
+  if (debug) {
     fprintf(debug,"Begin init_domdec_constraints\n");
+  }
 
   snew(dd->constraints,1);
   dc = dd->constraints;
 
-  ncon = top->idef.il[F_CONSTR].nr/3;
+  snew(dc->molb_con_offset,mtop->nmolblock);
+  snew(dc->molb_ncon_mol,mtop->nmolblock);
+
+  ncon = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    dc->molb_con_offset[mb] = ncon;
+    dc->molb_ncon_mol[mb]   = mtop->moltype[molb->type].ilist[F_CONSTR].nr/3;
+    ncon += molb->nmol*dc->molb_ncon_mol[mb];
+  }
+
   snew(dc->gc_req,ncon);
   for(c=0; c<ncon; c++) {
     dc->gc_req[c] = 0;

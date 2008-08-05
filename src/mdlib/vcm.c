@@ -47,7 +47,7 @@
 #include "network.h"
 #include "pbc.h"
  
-t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir)
+t_vcm *init_vcm(FILE *fp,gmx_groups_t *groups,t_inputrec *ir)
 {
   t_vcm *vcm;
   int   g;
@@ -62,7 +62,7 @@ t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir)
 	      epbc_names[ir->ePBC]);
 
   if (vcm->mode != ecmNO) {
-    vcm->nr = atoms->grps[egcVCM].nr;
+    vcm->nr = groups->grps[egcVCM].nr;
     /* Allocate one extra for a possible rest group */
     if (vcm->mode == ecmANGULAR) {
       snew(vcm->group_j,vcm->nr+1);
@@ -86,8 +86,7 @@ t_vcm *init_vcm(FILE *fp,t_atoms *atoms,t_inputrec *ir)
 	    " mass motion removal:\n");
     }
     for(g=0; (g<vcm->nr); g++) {
-      vcm->group_name[g] = 
-	*atoms->grpname[atoms->grps[egcVCM].nm_ind[g]];
+      vcm->group_name[g] = *groups->grpname[groups->grps[egcVCM].nm_ind[g]];
       if (fp)
 	fprintf(fp,"%3d:  %s\n",g,vcm->group_name[g]);
     }

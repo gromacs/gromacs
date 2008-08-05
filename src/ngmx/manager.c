@@ -198,8 +198,8 @@ void set_file(t_x11 *x11,t_manager *man,char *trajectory,char *status)
   snew(man->szLab,sh.natoms);
   snew(man->bHydro,sh.natoms);
   snew(bB,sh.natoms);
-  read_tpx(status,&(man->step),&(man->time),&rdum,NULL,man->box,
-	   &man->natom,NULL,NULL,NULL,&man->top);
+  read_tpx_top(status,&(man->step),&(man->time),&rdum,NULL,man->box,
+	       &man->natom,NULL,NULL,NULL,&man->top);
   
   man->natom=
     read_first_x(&man->status,trajectory,&(man->time),&(man->x),man->box);

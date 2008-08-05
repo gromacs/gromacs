@@ -74,11 +74,16 @@ extern void calc_rffac(FILE *fplog,int eel,real eps_r,real eps_rf,
 		       real *kappa,real *krf,real *crf);
 /* Determine the reaction-field constants */
 
+extern void init_generalized_rf(FILE *fplog,
+				const gmx_mtop_t *mtop,const t_inputrec *ir,
+				t_forcerec *fr);
+/* Initialize the generalized reaction field parameters */
+
 
 /* In wall.c */
 extern void make_wall_tables(FILE *fplog,
 			     const t_inputrec *ir,const char *tabfn,
-			     const t_atoms *atoms,
+			     const gmx_groups_t *groups,
 			     t_forcerec *fr);
 
 extern real do_walls(t_inputrec *ir,t_forcerec *fr,matrix box,t_mdatoms *md,
@@ -106,7 +111,7 @@ extern void init_forcerec(FILE       *fplog,
 			  t_forcerec *fr,   
 			  t_fcdata   *fcd,
 			  const t_inputrec *ir,   
-			  const t_topology *top,
+			  const gmx_mtop_t *mtop,
 			  const t_commrec  *cr,
 			  matrix     box,
 			  bool       bMolEpot,
@@ -127,7 +132,8 @@ extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 
 /* Compute the average C6 and C12 params for LJ corrections */
 extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
-			     const t_atoms *atoms,const t_blocka *excl);
+			     const gmx_mtop_t *mtop);
+
 /* The state has changed */
 #define GMX_FORCE_STATECHANGED (1<<0)
 /* Do neighbor searching */
@@ -144,7 +150,8 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,
 		     int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-		     t_topology *top,t_groups *grps,
+		     t_topology *top,
+		     gmx_groups_t *groups,t_groups *grps,
 		     matrix box,rvec x[],history_t *hist,
 		     rvec f[],rvec buf[],
 		     tensor vir_force,
@@ -168,6 +175,7 @@ extern void ns(FILE       *fplog,
 	       rvec       x[],
 	       rvec       f[],
 	       matrix     box,
+	       gmx_groups_t *groups,
 	       t_groups   *grps,
 	       t_grpopts  *opts,
 	       t_topology *top,

@@ -99,13 +99,14 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
   rvec        *f=NULL;
   t_inputrec  ir;
   t_tpxheader tpx;
-  t_topology  top;
+  gmx_mtop_t  mtop;
+  gmx_groups_t *groups;
   read_tpxheader(fn,&tpx,TRUE,NULL,NULL);
 
   read_tpx_state(fn,&step,&t,
 		 tpx.bIr  ? &ir : NULL,
 		 &state,tpx.bF ? f : NULL,
-		 tpx.bTop ? &top: NULL);
+		 tpx.bTop ? &mtop: NULL);
   
   if (mdpfn && tpx.bIr) {
     gp = ffopen(mdpfn,"w");
@@ -118,8 +119,12 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
       indent=0;
       indent=pr_title(stdout,indent,fn);
       pr_inputrec(stdout,0,"inputrec",tpx.bIr ? &(ir) : NULL,FALSE);
+      
+      indent = 0;
       pr_header(stdout,indent,"header",&(tpx));
       
+      pr_mtop(stdout,indent,"topology",&(mtop),bShowNumbers);
+
       pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
       pr_rvecs(stdout,indent,"box_rel",tpx.bBox ? state.box_rel : NULL,DIM);
       pr_rvecs(stdout,indent,"boxv",tpx.bBox ? state.boxv : NULL,DIM);
@@ -127,23 +132,26 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
       pr_reals(stdout,indent,"nosehoover_xi",state.nosehoover_xi,state.ngtc);
       pr_rvecs(stdout,indent,"x",tpx.bX ? state.x : NULL,state.natoms);
       pr_rvecs(stdout,indent,"v",tpx.bV ? state.v : NULL,state.natoms);
-      pr_rvecs(stdout,indent,"f",f,state.natoms);
-      pr_top(stdout,indent,"topology",&(top),bShowNumbers);
+      if (state,tpx.bF) {
+	pr_rvecs(stdout,indent,"f",f,state.natoms);
+      }
     }
     
+    groups = &mtop.groups;
+
     snew(gcount,egcNR);
     for(i=0; (i<egcNR); i++) 
-      snew(gcount[i],top.atoms.grps[i].nr);
+      snew(gcount[i],groups->grps[i].nr);
     
-    for(i=0; (i<top.atoms.nr); i++) {
+    for(i=0; (i<mtop.natoms); i++) {
       for(j=0; (j<egcNR); j++) 
-	gcount[j][top.atoms.atom[i].grpnr[j]]++;
+	gcount[j][ggrpnr(groups,j,i)]++;
     }
     printf("Group statistics\n");
     for(i=0; (i<egcNR); i++) {
       atot=0;
       printf("%-12s: ",gtypes[i]);
-      for(j=0; (j<top.atoms.grps[i].nr); j++) {
+      for(j=0; (j<groups->grps[i].nr); j++) {
 	printf("  %5d",gcount[i][j]);
 	atot+=gcount[i][j];
       }

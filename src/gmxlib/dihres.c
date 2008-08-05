@@ -51,15 +51,18 @@
 #include "copyrite.h"
 #include "disre.h"
 #include "main.h"
+#include "mtop_util.h"
 
-void init_dihres(FILE *fplog,int nfa,const t_iatom forceatoms[],
-		 const t_iparams ip[],
-		 const t_inputrec *ir,t_fcdata *fcd)
+void init_dihres(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,t_fcdata *fcd)
 {
+  int count;
+
   fcd->dihre_fc = ir->dihre_fc;
-  
-  if (fplog) {
-    fprintf(fplog,"There are %d dihedral restraints\n",nfa/(1+NRAL(F_DIHRES)));
+
+  count = gmx_mtop_ftype_count(mtop,F_DIHRES);
+
+  if (fplog && count) {
+    fprintf(fplog,"There are %d dihedral restraints\n",count);
   }
 }
 

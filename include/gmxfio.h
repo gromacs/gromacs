@@ -195,6 +195,17 @@ extern void unset_comment(void);
       do_write((void *)&(item[i]),1,eioINT,buf,__FILE__,__LINE__));\
   }\
 }
+
+#define ndo_nuchar(item,n,bOK)  {\
+  bOK=TRUE;\
+  for(i=0; (i<n); i++) {\
+    char buf[128];\
+    sprintf(buf,"%s[%d]",#item,i);\
+    bOK = bOK && (bRead ?\
+      do_read ((void *)&(item[i]),1,eioNUCHAR,buf,__FILE__,__LINE__):\
+      do_write((void *)&(item[i]),1,eioNUCHAR,buf,__FILE__,__LINE__));\
+  }\
+}
   
 #define ndo_rvec(item,n)      (bRead ?\
   do_read ((void *)(item),n,eioNRVEC,(#item),__FILE__,__LINE__) :\

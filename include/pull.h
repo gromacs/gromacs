@@ -78,7 +78,7 @@ extern void init_pull(FILE *fplog,
                       t_inputrec *ir, /* the inputrec */
                       int nfile,       
                       t_filenm fnm[], /* standard filename struct */
-                      t_atoms *atoms, /* masses of all atoms */
+		      gmx_mtop_t *mtop, /* the topology of the whole system */
                       t_commrec * cr, /* struct for communication info */
                       bool bOutFile   /* open output files */
 		      );

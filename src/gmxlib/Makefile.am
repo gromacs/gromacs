@@ -43,8 +43,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	filenm.c	futil.c		gbutil.c	\
 	gmxfio.c	ifunc.c		index.c		cinvsqrtdata.c	\
 	invblock.c	macros.c	orires.c	sparsematrix.c  \
-	main.c		maths.c		matio.c		mtxio.c		\
-	mshift.c	mvdata.c	names.c		\
+	main.c		maths.c		matio.c		mshift.c	\
+	mtop_util.c	mtxio.c		mvdata.c	names.c		\
 	network.c	nrama.c		nrjac.c		nrnb.c		\
 	pargs.c		pbc.c		pdbio.c		princ.c		\
 	rando.c		random.c	gmx_random.c	rbin.c		\

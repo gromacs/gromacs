@@ -19,6 +19,9 @@ extern int ddglatnr(gmx_domdec_t *dd,int i);
  * When dd=NULL returns i+1.
  */
 
+extern t_block *dd_charge_groups_global(gmx_domdec_t *dd);
+/* Return a block struct for the charge groups of the whole system */
+
 extern bool dd_filled_nsgrid_home(gmx_domdec_t *dd);
 /* Is the ns grid already filled with the home particles? */
 
@@ -62,19 +65,19 @@ extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       char *sizex,
 					       char *sizey,
 					       char *sizez,
-					       t_topology *top,matrix box,
+					       gmx_mtop_t *mtop,matrix box,
 					       t_inputrec *ir);
 
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
-			      t_topology *top,t_inputrec *ir,t_forcerec *fr,
+			      t_inputrec *ir,t_forcerec *fr,
 			      matrix box);
 
 extern void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
-extern void dd_collect_vec(gmx_domdec_t *dd,t_block *cgs_gl,
+extern void dd_collect_vec(gmx_domdec_t *dd,
 			   t_state *state_local,rvec *lv,rvec *v);
 
-extern void dd_collect_state(gmx_domdec_t *dd,t_block *cgs_gl,
+extern void dd_collect_state(gmx_domdec_t *dd,
 			     t_state *state_local,t_state *state);
 
 enum { ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr };
@@ -105,7 +108,7 @@ extern void dd_partition_system(FILE            *fplog,
 				t_commrec       *cr,
                                 bool            bMasterState,
 				t_state         *state_global,
-				t_topology      *top_global,
+				gmx_mtop_t      *top_global,
 				t_inputrec      *ir,
 				t_state         *state_local,
 				rvec            **f,
@@ -147,12 +150,13 @@ extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 
 extern int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil);
 
-extern int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,t_iatom *ia,
+extern int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
+				     gmx_mtop_t *mtop,
 				     gmx_constr_t constr,int nrec,
 				     t_ilist *il_local);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
-				    int natoms,t_topology *top,
+				    int natoms,gmx_mtop_t *mtop,
 				    gmx_constr_t constr);
 
 extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
@@ -164,7 +168,7 @@ extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
 					  int local_count);
 
 extern void dd_make_reverse_top(FILE *fplog,
-				gmx_domdec_t *dd,t_topology *top,
+				gmx_domdec_t *dd,gmx_mtop_t *mtop,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
 				t_inputrec *ir,bool bBCheck);
 
@@ -173,9 +177,9 @@ extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 			      matrix box,real rc,rvec cellsize_min,ivec npulse,
 			      t_forcerec *fr,gmx_vsite_t *vsite,
-			      t_topology *top,t_topology *ltop);
+			      gmx_mtop_t *top,t_topology *ltop);
 
-extern t_topology *dd_init_local_top(t_topology *top_global);
+extern t_topology *dd_init_local_top(gmx_mtop_t *top_global);
 
 extern void dd_init_local_state(gmx_domdec_t *dd,
 				t_state *state_global,t_state *local_state);
@@ -187,7 +191,7 @@ extern void dd_check_pme_grid(FILE *fplog,bool bStdErr,int npme,
 
 extern void dd_choose_grid(FILE *fplog,
 			   t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
-			   t_topology *top,matrix box,real dlb_scale,
+			   gmx_mtop_t *mtop,matrix box,real dlb_scale,
 			   real cellsize_limit,real cutoff_mbody,
 			   bool bInterCGBondeds,bool bInterCGMultiBody);
 

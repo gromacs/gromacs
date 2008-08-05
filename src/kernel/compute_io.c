@@ -41,10 +41,10 @@
 #include <stdlib.h>
 #include "typedefs.h"
 
-double compute_io(t_inputrec *ir,t_atoms *atoms,int nrener,int nrepl)
+double compute_io(t_inputrec *ir,int natoms,gmx_groups_t *groups,
+		  int nrener,int nrepl)
 {
   int nsteps = ir->nsteps;
-  int natoms = atoms->nr;
   int i,nxtcatoms=0;
   int nstx=0,nstv=0,nstf=0,nste=0,nstlog=0,nstxtc=0,nfep=0;
   double cio;
@@ -56,9 +56,10 @@ double compute_io(t_inputrec *ir,t_atoms *atoms,int nrener,int nrepl)
   if (ir->nstfout > 0)
     nstf = (1 + nsteps) / ir->nstfout;
   if (ir->nstxtcout > 0) {
-    for(i=0; i<natoms; i++)
-      if (atoms->atom[i].grpnr[egcXTC] == 0)
+    for(i=0; i<natoms; i++) {
+      if (groups->grpnr[egcXTC] == NULL || groups->grpnr[egcXTC][i] == 0)
 	nxtcatoms++;
+    }
     nstxtc = (1 + nsteps) / ir->nstxtcout;
   }
   if (ir->nstlog > 0)

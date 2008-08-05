@@ -42,12 +42,7 @@
 #include "grompp.h"
 #include "gpp_atomtype.h"
 
-typedef struct {
-  int whichmol;
-  int nrcopies;
-} t_simsystem;
-
-extern real check_mol(t_atoms *atoms);
+extern double check_mol(gmx_mtop_t *mtop);
 /* Check mass and charge */
 
 extern char **do_top(bool         bVerbose,
@@ -64,11 +59,12 @@ extern char **do_top(bool         bVerbose,
 		     int          *nrmols,
 		     t_molinfo    **molinfo,
 		     t_inputrec   *ir,
-		     int          *nsim,
-		     t_simsystem  **sims);
+		     int          *nmolblock,
+		     gmx_molblock_t **molblock);
 
 
+/* This routine expects sys->molt[m].ilist to be of size F_NRE and ordered. */
 void 
-generate_qmexcl(t_topology *sys,t_inputrec *ir);
+generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir);
 
 #endif	/* _topio_h */

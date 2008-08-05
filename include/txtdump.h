@@ -70,7 +70,7 @@ extern void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n);
 extern void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNumbers);
 extern void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowNumbers);
 extern void pr_ilist(FILE *fp,int indent,const char *title,
-		     t_idef *idef,t_ilist *ilist, bool bShowNumbers);
+		     t_functype *functype,t_ilist *ilist, bool bShowNumbers);
 extern void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
 extern void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers);
 extern void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
@@ -79,6 +79,8 @@ extern void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms,
 		     bool bShownumbers);
 extern void pr_atomtypes(FILE *fp,int indent,const char *title,
 			 t_atomtypes *atomtypes,bool bShowNumbers);
+extern void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
+		    bool bShowNumbers);
 extern void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers);
 /*
  * This routine prints out a (human) readable representation of 

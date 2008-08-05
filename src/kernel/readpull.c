@@ -288,7 +288,7 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
   }
 }
 
-void set_pull_init(t_inputrec *ir,t_atoms *atoms,rvec *x,matrix box,
+void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
 		   bool bStart)
 {
   t_mdatoms *md;
@@ -300,9 +300,9 @@ void set_pull_init(t_inputrec *ir,t_atoms *atoms,rvec *x,matrix box,
   rvec      init;
   dvec      dr,dev;
 
-  init_pull(NULL,ir,0,NULL,atoms,NULL,FALSE);
-  md = init_mdatoms(NULL,atoms,ir->efep);
-  atoms2md(atoms,ir,0,0,NULL,0,atoms->nr,md);
+  init_pull(NULL,ir,0,NULL,mtop,NULL,FALSE);
+  md = init_mdatoms(NULL,mtop,ir->efep);
+  atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
   if (ir->efep)
     update_mdatoms(md,ir->init_lambda);
   

@@ -59,12 +59,13 @@
 #include "atomprop.h"
 #include "copyrite.h"
 #include "vec.h"
+#include "mtop_util.h"
 #ifdef HAVE_LIBXML2
 #include "xmlio.h"
 #endif
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 56;
+static const int tpx_version = 57;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -75,7 +76,7 @@ static const int tpx_version = 56;
  * to the end of the tpx file, so we can just skip it if we only
  * want the topology.
  */
-static const int tpx_generation = 16;
+static const int tpx_generation = 17;
 
 /* This number should be the most recent backwards incompatible version 
  * I.e., if this number is 9, we cannot read tpx version 9 with this code.
@@ -502,6 +503,9 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
       do_real(ir->sc_sigma);
     else
       ir->sc_sigma = 0.3;
+    if (file_version >= 57) {
+      do_int(ir->eDisre); 
+    }
     do_int(ir->eDisreWeighting); 
     if (file_version < 22) {
       if (ir->eDisreWeighting == 0)
@@ -976,16 +980,19 @@ void do_iparams(t_functype ftype,t_iparams *iparams,bool bRead, int file_version
     unset_comment();
 }
 
-static void do_ilist(t_ilist *ilist,bool bRead,char *name,int file_version)
+static void do_ilist(t_ilist *ilist,bool bRead,int file_version,
+		     int ftype)
 {
-  int  i,idum;
+  int  i,k,idum;
   bool bDum=TRUE;
   
-  if (!bRead)
-    set_comment(name);
-  if (file_version < 44)
+  if (!bRead) {
+    set_comment(interaction_function[ftype].name);
+  }
+  if (file_version < 44) {
     for(i=0; i<MAXNODES; i++)
       do_int(idum);
+  }
   do_int (ilist->nr);
   if (bRead)
     snew(ilist->iatoms,ilist->nr);
@@ -994,52 +1001,63 @@ static void do_ilist(t_ilist *ilist,bool bRead,char *name,int file_version)
     unset_comment();
 }
 
-static void do_idef(t_idef *idef,bool bRead, int file_version)
+static void do_ffparams(gmx_ffparams_t *ffparams,
+			bool bRead, int file_version)
 {
-  int i,j,k,renum[F_NRE];
-  bool bDum=TRUE,bClear;
-  
-  do_int(idef->atnr);
-  do_int(idef->nodeid);
-  do_int(idef->ntypes);
+  int  idum,i,j,k;
+  bool bDum=TRUE;
+
+  do_int(ffparams->atnr);
+  if (file_version < 57) {
+    do_int(idum);
+  }
+  do_int(ffparams->ntypes);
   if (bRead && debug)
-    fprintf(debug,"idef->atnr = %d, nodeid = %d, ntypes = %d\n",
-	    idef->atnr,idef->nodeid,idef->ntypes);
+    fprintf(debug,"ffparams->atnr = %d, ntypes = %d\n",
+	    ffparams->atnr,ffparams->ntypes);
   if (bRead) {
-    snew(idef->functype,idef->ntypes);
-    snew(idef->iparams,idef->ntypes);
+    snew(ffparams->functype,ffparams->ntypes);
+    snew(ffparams->iparams,ffparams->ntypes);
   }
   /* Read/write all the function types */
-  ndo_int(idef->functype,idef->ntypes,bDum);
+  ndo_int(ffparams->functype,ffparams->ntypes,bDum);
   if (bRead && debug)
-    pr_ivec(debug,0,"functype",idef->functype,idef->ntypes,TRUE);
-    
+    pr_ivec(debug,0,"functype",ffparams->functype,ffparams->ntypes,TRUE);
+
+  if (file_version >= 57) {
+    do_real(ffparams->fudgeQQ);
+  }
+
   /* Check whether all these function types are supported by the code.
    * In practice the code is backwards compatible, which means that the
    * numbering may have to be altered from old numbering to new numbering
    */
-  for (i=0; (i<idef->ntypes); i++) {
+  for (i=0; (i<ffparams->ntypes); i++) {
     if (bRead)
       /* Loop over file versions */
       for (k=0; (k<NFTUPD); k++)
 	/* Compare the read file_version to the update table */
 	if ((file_version < ftupd[k].fvnr) && 
-	    (idef->functype[i] >= ftupd[k].ftype)) {
-	  idef->functype[i] += 1;
+	    (ffparams->functype[i] >= ftupd[k].ftype)) {
+	  ffparams->functype[i] += 1;
 	  if (debug) {
 	    fprintf(debug,"Incrementing function type %d to %d (due to %s)\n",
-		    i,idef->functype[i],
+		    i,ffparams->functype[i],
 		    interaction_function[ftupd[k].ftype].longname);
 	    fflush(debug);
 	  }
 	}
     
-    do_iparams(idef->functype[i],&idef->iparams[i],bRead,file_version);
+    do_iparams(ffparams->functype[i],&ffparams->iparams[i],bRead,file_version);
     if (bRead && debug)
-      pr_iparams(debug,idef->functype[i],&idef->iparams[i]);
+      pr_iparams(debug,ffparams->functype[i],&ffparams->iparams[i]);
   }
-  if (file_version >= 54)
-    do_real(idef->fudgeQQ);
+}
+
+static void do_ilists(t_ilist *ilist,bool bRead, int file_version)
+{
+  int i,j,k,renum[F_NRE];
+  bool bDum=TRUE,bClear;
   
   for(j=0; (j<F_NRE); j++) {
     bClear = FALSE;
@@ -1048,18 +1066,29 @@ static void do_idef(t_idef *idef,bool bRead, int file_version)
 	if ((file_version < ftupd[k].fvnr) && (j == ftupd[k].ftype))
 	  bClear = TRUE;
     if (bClear) {
-      idef->il[j].nr = 0;
-      idef->il[j].iatoms = NULL;
-    } else
-      do_ilist(&idef->il[j],bRead,interaction_function[j].name,file_version);
+      ilist[j].nr = 0;
+      ilist[j].iatoms = NULL;
+    } else {
+      do_ilist(&ilist[j],bRead,file_version,j);
+    }
+    /*
     if (bRead && gmx_debug_at)
       pr_ilist(debug,0,interaction_function[j].longname,
-	       idef,&idef->il[j],TRUE);  }
-  
-  if (bRead) {
-    /* We have not checked the sorting */
-    idef->ilsort = ilsortUNKNOWN;
+	       functype,&ilist[j],TRUE);
+    */
   }
+}
+
+static void do_idef(gmx_ffparams_t *ffparams,gmx_moltype_t *molt,
+		    bool bRead, int file_version)
+{
+  do_ffparams(ffparams,bRead,file_version);
+    
+  if (file_version >= 54) {
+    do_real(ffparams->fudgeQQ);
+  }
+
+  do_ilists(molt->ilist,bRead,file_version);
 }
 
 static void do_block(t_block *block,bool bRead,int file_version)
@@ -1106,7 +1135,8 @@ static void do_blocka(t_blocka *block,bool bRead,int file_version)
   ndo_int(block->a,block->nra,bDum);
 }
 
-static void do_atom(t_atom *atom,int ngrp,bool bRead, int file_version)
+static void do_atom(t_atom *atom,int ngrp,bool bRead, int file_version,
+		    gmx_groups_t *groups,int atnr)
 { 
   int i,myngrp;
   
@@ -1128,11 +1158,18 @@ static void do_atom(t_atom *atom,int ngrp,bool bRead, int file_version)
     myngrp = 9;
   else
     myngrp = ngrp;
-  
-  do_nuchar(atom->grpnr,myngrp);
-  for(i=myngrp; (i<ngrp); i++)
-    atom->grpnr[i] = 0;
-  
+
+  if (file_version < 57) {
+    unsigned char uchar[egcNR];
+    do_nuchar(uchar,myngrp);
+    for(i=myngrp; (i<ngrp); i++) {
+      uchar[i] = 0;
+    }
+    /* Copy the old data format to the groups struct */
+    for(i=0; i<ngrp; i++) {
+      groups->grpnr[i][atnr] = uchar[i];
+    }
+  }
 }
 
 static void do_grps(int ngrp,t_grps grps[],bool bRead, int file_version)
@@ -1183,24 +1220,35 @@ static void do_strstr(int nstr,char ***nm,bool bRead,t_symtab *symtab)
     do_symstr(&(nm[j]),bRead,symtab);
 }
 
-static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab, int file_version)
+static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab,
+		     int file_version,
+		     gmx_groups_t *groups)
 {
   int i;
   
   do_int(atoms->nr);
   do_int(atoms->nres);
-  do_int(atoms->ngrpname);
+  if (file_version < 57) {
+    do_int(groups->ngrpname);
+    for(i=0; i<egcNR; i++) {
+      groups->ngrpnr[i] = atoms->nr;
+      snew(groups->grpnr[i],groups->ngrpnr[i]);
+    }
+  }
   if (bRead) {
     snew(atoms->atom,atoms->nr);
     snew(atoms->atomname,atoms->nr);
     snew(atoms->atomtype,atoms->nr);
     snew(atoms->atomtypeB,atoms->nr);
     snew(atoms->resname,atoms->nres);
-    snew(atoms->grpname,atoms->ngrpname);
+    if (file_version < 57) {
+      snew(groups->grpname,groups->ngrpname);
+    }
     atoms->pdbinfo = NULL;
   }
-  for(i=0; (i<atoms->nr); i++)
-    do_atom(&atoms->atom[i],egcNR,bRead, file_version);
+  for(i=0; (i<atoms->nr); i++) {
+    do_atom(&atoms->atom[i],egcNR,bRead, file_version,groups,i);
+  }
   do_strstr(atoms->nr,atoms->atomname,bRead,symtab);
   if (bRead && (file_version <= 20)) {
     for(i=0; i<atoms->nr; i++) {
@@ -1212,9 +1260,40 @@ static void do_atoms(t_atoms *atoms,bool bRead,t_symtab *symtab, int file_versio
     do_strstr(atoms->nr,atoms->atomtypeB,bRead,symtab);
   }
   do_strstr(atoms->nres,atoms->resname,bRead,symtab);
-  do_strstr(atoms->ngrpname,atoms->grpname,bRead,symtab);
+
+  if (file_version < 57) {
+    do_strstr(groups->ngrpname,groups->grpname,bRead,symtab);
   
-  do_grps(egcNR,atoms->grps,bRead,file_version);
+    do_grps(egcNR,groups->grps,bRead,file_version);
+  }
+}
+
+static void do_groups(gmx_groups_t *groups,
+		      bool bRead,t_symtab *symtab,
+		      int file_version)
+{
+  int  g,n,i;
+  bool bDum=TRUE;
+
+  do_grps(egcNR,groups->grps,bRead,file_version);
+  do_int(groups->ngrpname);
+  if (bRead) {
+    snew(groups->grpname,groups->ngrpname);
+  }
+  do_strstr(groups->ngrpname,groups->grpname,bRead,symtab);
+  for(g=0; g<egcNR; g++) {
+    do_int(groups->ngrpnr[g]);
+    if (groups->ngrpnr[g] == 0) {
+      if (bRead) {
+	groups->grpnr[g] = NULL;
+      }
+    } else {
+      if (bRead) {
+	snew(groups->grpnr[g],groups->ngrpnr[g]);
+      }
+      ndo_nuchar(groups->grpnr[g],groups->ngrpnr[g],bDum);
+    }
+  }
 }
 
 static void do_atomtypes(t_atomtypes *atomtypes,bool bRead,
@@ -1305,39 +1384,220 @@ static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
       atoms->atom[a].chain=' ';
 }
   
-static void do_top(t_topology *top,bool bRead, int file_version)
+static void do_moltype(gmx_moltype_t *molt,bool bRead,t_symtab *symtab,
+		       int file_version,
+		       gmx_groups_t *groups)
 {
-  int  i;
+  int i;
+
+  if (file_version >= 57) {
+    do_symstr(&(molt->name),bRead,symtab);
+  }
+
+  do_atoms(&molt->atoms, bRead, symtab, file_version, groups);
+
+  if (bRead && gmx_debug_at) {
+    pr_atoms(debug,0,"atoms",&molt->atoms,TRUE);
+  }
+  
+  if (file_version >= 57) {
+    do_ilists(molt->ilist,bRead,file_version);
+
+    do_block(&molt->cgs,bRead,file_version);
+    if (bRead && gmx_debug_at) {
+      pr_block(debug,0,"cgs",&molt->cgs,TRUE);
+    }
+  }
+
+  /* This used to be in the atoms struct */
+  do_blocka(&molt->excls, bRead, file_version);
+}
+
+static void do_molblock(gmx_molblock_t *molb,bool bRead,int file_version)
+{
+  int i;
+
+  do_int(molb->type);
+  do_int(molb->nmol);
+  do_int(molb->natoms_mol);
+  /* Position restraint coordinates */
+  do_int(molb->nposres_xA);
+  if (molb->nposres_xA > 0) {
+    if (bRead) {
+      snew(molb->posres_xA,molb->nposres_xA);
+    }
+    ndo_rvec(molb->posres_xA,molb->nposres_xA);
+  }
+  do_int(molb->nposres_xB);
+  if (molb->nposres_xB > 0) {
+    if (bRead) {
+      snew(molb->posres_xB,molb->nposres_xB);
+    }
+    ndo_rvec(molb->posres_xB,molb->nposres_xB);
+  }
+
+}
+
+static t_block mtop_mols(gmx_mtop_t *mtop)
+{
+  int mb,m,a,mol;
+  t_block mols;
+
+  mols.nr = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    mols.nr += mtop->molblock[mb].nmol;
+  }
+  mols.nalloc_index = mols.nr + 1;
+  snew(mols.index,mols.nalloc_index);
+
+  a = 0;
+  m = 0;
+  mols.index[m] = a;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    for(mol=0; mol<mtop->molblock[mb].nmol; mol++) {
+      a += mtop->molblock[mb].natoms_mol;
+      m++;
+      mols.index[m] = a;
+    }
+  }
+  
+  return mols;
+}
+
+static void add_posres_molblock(gmx_mtop_t *mtop)
+{
+  t_ilist *il;
+  int am,i,mol,a;
+  bool bFE;
+  gmx_molblock_t *molb;
+  t_iparams *ip;
+
+  il = &mtop->moltype[0].ilist[F_POSRES];
+  if (il->nr == 0) {
+    return;
+  }
+  am = 0;
+  bFE = FALSE;
+  for(i=0; i<il->nr; i+=2) {
+    ip = &mtop->ffparams.iparams[il->iatoms[i]];
+    am = max(am,il->iatoms[i+1]);
+    if (ip->posres.pos0B[XX] != ip->posres.pos0A[XX] ||
+	ip->posres.pos0B[YY] != ip->posres.pos0A[YY] ||
+	ip->posres.pos0B[ZZ] != ip->posres.pos0A[ZZ]) {
+      bFE = TRUE;
+    }
+  }
+  /* Make the posres coordinate block end at a molecule end */
+  mol = 0;
+  while(am >= mtop->mols.index[mol+1]) {
+    mol++;
+  }
+  molb = &mtop->molblock[0];
+  molb->nposres_xA = mtop->mols.index[mol+1];
+  snew(molb->posres_xA,molb->nposres_xA);
+  if (bFE) {
+    molb->nposres_xB = molb->nposres_xA;
+    snew(molb->posres_xB,molb->nposres_xB);
+  } else {
+    molb->nposres_xB = 0;
+  }
+  for(i=0; i<il->nr; i+=2) {
+    ip = &mtop->ffparams.iparams[il->iatoms[i]];
+    a  = il->iatoms[i+1];
+    molb->posres_xA[a][XX] = ip->posres.pos0A[XX];
+    molb->posres_xA[a][YY] = ip->posres.pos0A[YY];
+    molb->posres_xA[a][ZZ] = ip->posres.pos0A[ZZ];
+    if (bFE) {
+      molb->posres_xB[a][XX] = ip->posres.pos0B[XX];
+      molb->posres_xB[a][YY] = ip->posres.pos0B[YY];
+      molb->posres_xB[a][ZZ] = ip->posres.pos0B[ZZ];
+    }
+  }
+}
+
+static void do_mtop(gmx_mtop_t *mtop,bool bRead, int file_version)
+{
+  int  mt,mb,i;
   t_blocka dumb;
 
   if (bRead)
-    init_top(top);
-  do_symtab(&(top->symtab),bRead);
+    init_mtop(mtop);
+  do_symtab(&(mtop->symtab),bRead);
   if (bRead && debug) 
-    pr_symtab(debug,0,"symtab",&top->symtab);
+    pr_symtab(debug,0,"symtab",&mtop->symtab);
   
-  do_symstr(&(top->name),bRead,&(top->symtab));
+  do_symstr(&(mtop->name),bRead,&(mtop->symtab));
   
-  do_atoms (&(top->atoms),bRead,&(top->symtab), file_version);
-  if (bRead && gmx_debug_at) 
-    pr_atoms(debug,0,"atoms",&top->atoms,TRUE);
+  if (file_version >= 57) {
+    do_ffparams(&mtop->ffparams,bRead,file_version);
 
-  /* This used to be in the atoms struct */
-  do_blocka(&top->excls,bRead,file_version);
+    do_int(mtop->nmoltype);
+  } else {
+    mtop->nmoltype = 1;
+  }
+  if (bRead) {
+    snew(mtop->moltype,mtop->nmoltype);
+    if (file_version < 57) {
+      mtop->moltype[0].name = mtop->name;
+    }
+  }
+  for(mt=0; mt<mtop->nmoltype; mt++) {
+    do_moltype(&mtop->moltype[mt],bRead,&mtop->symtab,file_version,
+	       &mtop->groups);
+  }
 
-  do_atomtypes (&(top->atomtypes),bRead,&(top->symtab), file_version);
+  if (file_version >= 57) {
+    do_int(mtop->nmolblock);
+  } else {
+    mtop->nmolblock = 1;
+  }
+  if (bRead) {
+    snew(mtop->molblock,mtop->nmolblock);
+  }
+  if (file_version >= 57) {
+    for(mb=0; mb<mtop->nmolblock; mb++) {
+      do_molblock(&mtop->molblock[mb],bRead,file_version);
+    }
+    do_int(mtop->natoms);
+  } else {
+    mtop->molblock[0].type = 0;
+    mtop->molblock[0].nmol = 1;
+    mtop->molblock[0].natoms_mol = mtop->moltype[0].atoms.nr;
+    mtop->molblock[0].nposres_xA = 0;
+    mtop->molblock[0].nposres_xB = 0;
+  }
+
+  do_atomtypes (&(mtop->atomtypes),bRead,&(mtop->symtab), file_version);
   if (bRead && debug) 
-    pr_atomtypes(debug,0,"atomtypes",&top->atomtypes,TRUE);
+    pr_atomtypes(debug,0,"atomtypes",&mtop->atomtypes,TRUE);
 
-  /* Debug statements are inside do_idef */    
-  do_idef  (&(top->idef),bRead,file_version);
-    
-  do_block(&top->cgs,bRead,file_version);
-  if (bRead && gmx_debug_at)
-    pr_block(debug,0,"cgs",&top->cgs,TRUE);
-  do_block(&top->mols,bRead,file_version);
-  if (bRead && gmx_debug_at)
-    pr_block(debug,0,"mols",&top->mols,TRUE);
+  if (file_version < 57) {
+    /* Debug statements are inside do_idef */    
+    do_idef (&mtop->ffparams,&mtop->moltype[0],bRead,file_version);
+    mtop->natoms = mtop->moltype[0].atoms.nr;
+  }
+
+  if (file_version >= 57) {
+    do_groups(&mtop->groups,bRead,&(mtop->symtab),file_version);
+  }
+
+  if (file_version < 57) {
+    do_block(&mtop->moltype[0].cgs,bRead,file_version);
+    if (bRead && gmx_debug_at) {
+      pr_block(debug,0,"cgs",&mtop->moltype[0].cgs,TRUE);
+    }
+    do_block(&mtop->mols,bRead,file_version);
+    /* Add the posres coordinates to the molblock */
+    add_posres_molblock(mtop);
+  }
+  if (bRead) {
+    if (file_version >= 57) {
+      mtop->mols = mtop_mols(mtop);
+    }
+    if (gmx_debug_at) { 
+      pr_block(debug,0,"mols",&mtop->mols,TRUE);
+    }
+  }
 
   if (file_version < 51) {
     /* Here used to be the shake blocks */
@@ -1349,8 +1609,7 @@ static void do_top(t_topology *top,bool bRead, int file_version)
   }
 
   if (bRead) {
-    close_symtab(&(top->symtab));
-    make_chain_identifiers(&(top->atoms),&top->mols);
+    close_symtab(&(mtop->symtab));
   }
 }
 
@@ -1444,12 +1703,12 @@ static void do_tpxheader(int fp,bool bRead,t_tpxheader *tpx, bool TopOnlyOK, int
 }
 
 static int do_tpx(int fp,bool bRead,int *step,real *t,
-		  t_inputrec *ir,t_state *state,rvec *f,t_topology *top,
+		  t_inputrec *ir,t_state *state,rvec *f,gmx_mtop_t *mtop,
 		  bool bXVallocated)
 {
   t_tpxheader tpx;
   t_inputrec  dum_ir;
-  t_topology  dum_top;
+  gmx_mtop_t  dum_top;
   bool        TopOnlyOK,bDum=TRUE;
   int         file_version,file_generation;
   int         i;
@@ -1464,7 +1723,7 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
     tpx.t      = *t;
     tpx.lambda = state->lambda;
     tpx.bIr  = (ir       != NULL);
-    tpx.bTop = (top      != NULL);
+    tpx.bTop = (mtop     != NULL);
     tpx.bX   = (state->x != NULL);
     tpx.bV   = (state->v != NULL);
     tpx.bF   = (f        != NULL);
@@ -1533,12 +1792,12 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
     do_section(eitemIR,bRead);
     if (tpx.bIr) {
       if (ir) {
-	do_inputrec(ir,bRead,file_version,top ? &top->idef.fudgeQQ : NULL);
+	do_inputrec(ir,bRead,file_version,mtop ? &mtop->ffparams.fudgeQQ : NULL);
 	if (bRead && debug) 
 	  pr_inputrec(debug,0,"inputrec",ir,FALSE);
       }
       else {
-	do_inputrec(&dum_ir,bRead,file_version,top ? &top->idef.fudgeQQ :NULL);
+	do_inputrec(&dum_ir,bRead,file_version,mtop ? &mtop->ffparams.fudgeQQ :NULL);
 	if (bRead && debug) 
 	  pr_inputrec(debug,0,"inputrec",&dum_ir,FALSE);
 	done_inputrec(&dum_ir);
@@ -1547,14 +1806,14 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
     }
   }
   
-  do_test(tpx.bTop,top);
+  do_test(tpx.bTop,mtop);
   do_section(eitemTOP,bRead);
   if (tpx.bTop) {
-    if (top)
-      do_top(top,bRead, file_version);
-    else {
-      do_top(&dum_top,bRead,file_version);
-      done_top(&dum_top);
+    if (mtop) {
+      do_mtop(mtop,bRead, file_version);
+    } else {
+      do_mtop(&dum_top,bRead,file_version);
+      done_mtop(&dum_top,TRUE);
     }
   }
   do_test(tpx.bX,state->x);  
@@ -1606,7 +1865,7 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
 	do_int(bPeriodicMols);
       }
       if (file_generation <= tpx_generation && ir) {
-	do_inputrec(ir,bRead,file_version,top ? &top->idef.fudgeQQ : NULL);
+	do_inputrec(ir,bRead,file_version,mtop ? &mtop->ffparams.fudgeQQ : NULL);
 	if (bRead && debug) 
 	  pr_inputrec(debug,0,"inputrec",ir,FALSE);
 	if (file_version < 51)
@@ -1625,12 +1884,18 @@ static int do_tpx(int fp,bool bRead,int *step,real *t,
   }
 
   if (bRead && tpx.bIr && ir) {
-    /* Check for perturbed bonded interactions */
-    gmx_analyze_ilist_fe(&top->idef,ir);
-
     if (state->ngtc == 0) {
       /* Reading old version without tcoupl state data: set it */
       init_gtc_state(state,ir->opts.ngtc);
+    }
+    if (file_version < 57) {
+      if (tpx.bTop && mtop) {
+	if (mtop->moltype[0].ilist[F_DISRES].nr > 0) {
+	  ir->eDisre = edrSimple;
+	} else {
+	  ir->eDisre = edrNone;
+	}
+      }
     }
   }
 
@@ -1672,7 +1937,7 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
 }
 
 void write_tpx_state(char *fn,int step,real t,
-		     t_inputrec *ir,t_state *state,t_topology *top)
+		     t_inputrec *ir,t_state *state,gmx_mtop_t *mtop)
 {
   int fp;
 
@@ -1683,7 +1948,7 @@ void write_tpx_state(char *fn,int step,real t,
   else {
 #endif
     fp = open_tpx(fn,"w");
-    do_tpx(fp,FALSE,&step,&t,ir,state,NULL,top,FALSE);
+    do_tpx(fp,FALSE,&step,&t,ir,state,NULL,mtop,FALSE);
     close_tpx(fp);
 #ifdef HAVE_LIBXML2
   }
@@ -1691,18 +1956,18 @@ void write_tpx_state(char *fn,int step,real t,
 }
 
 void read_tpx_state(char *fn,int *step,real *t,
-		    t_inputrec *ir,t_state *state,rvec *f,t_topology *top)
+		    t_inputrec *ir,t_state *state,rvec *f,gmx_mtop_t *mtop)
 {
   int fp;
 
   fp = open_tpx(fn,"r");
-  do_tpx(fp,TRUE,step,t,ir,state,f,top,FALSE);
+  do_tpx(fp,TRUE,step,t,ir,state,f,mtop,FALSE);
   close_tpx(fp);
 }
 
 int read_tpx(char *fn,int *step,real *t,real *lambda,
 	     t_inputrec *ir, matrix box,int *natoms,
-	     rvec *x,rvec *v,rvec *f,t_topology *top)
+	     rvec *x,rvec *v,rvec *f,gmx_mtop_t *mtop)
 {
   int fp;
   t_state state;
@@ -1713,7 +1978,8 @@ int read_tpx(char *fn,int *step,real *t,real *lambda,
     int  i;
     rvec *xx=NULL,*vv=NULL,*ff=NULL;
     
-    read_xml(fn,step,t,lambda,ir,box,natoms,&xx,&vv,&ff,top);
+    gmx_fatal(FARGS,"The XML tpx writing code is not up to date");
+    /* read_xml(fn,step,t,lambda,ir,box,natoms,&xx,&vv,&ff,mtop); */
     ePBC = -1;
     for(i=0; (i<*natoms); i++) {
       if (xx) copy_rvec(xx[i],x[i]);
@@ -1729,7 +1995,7 @@ int read_tpx(char *fn,int *step,real *t,real *lambda,
     state.x = x;
     state.v = v;
     fp = open_tpx(fn,"r");
-    ePBC = do_tpx(fp,TRUE,step,t,ir,&state,f,top,TRUE);
+    ePBC = do_tpx(fp,TRUE,step,t,ir,&state,f,mtop,TRUE);
     close_tpx(fp);
     *natoms = state.natoms;
     if (lambda) 
@@ -1742,6 +2008,21 @@ int read_tpx(char *fn,int *step,real *t,real *lambda,
 #ifdef HAVE_LIBXML2
   }
 #endif
+
+  return ePBC;
+}
+
+int read_tpx_top(char *fn,int *step,real *t,real *lambda,
+		 t_inputrec *ir, matrix box,int *natoms,
+		 rvec *x,rvec *v,rvec *f,t_topology *top)
+{
+  gmx_mtop_t mtop;
+  t_topology *ltop;
+  int ePBC;
+
+  ePBC = read_tpx(fn,step,t,lambda,ir,box,natoms,x,v,f,&mtop);
+  
+  *top = gmx_mtop_t_to_t_topology(&mtop);
 
   return ePBC;
 }
@@ -1765,6 +2046,8 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
   real         t,lambda;
   int          natoms,step,i,version,generation;
   bool         bTop,bXNULL;
+  gmx_mtop_t   *mtop;
+  t_topology   *topconv;
   gmx_atomprop_t aps;
   
   bTop = fn2bTPX(infile);
@@ -1775,9 +2058,13 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
       snew(*x,header.natoms);
     if (v)
       snew(*v,header.natoms);
+    snew(mtop,1);
     *ePBC = read_tpx(infile,&step,&t,&lambda,NULL,box,&natoms,
-		     (x==NULL) ? NULL : *x,(v==NULL) ? NULL : *v,NULL,top);
+		     (x==NULL) ? NULL : *x,(v==NULL) ? NULL : *v,NULL,mtop);
+    *top = gmx_mtop_t_to_t_topology(mtop);
+    sfree(mtop);
     strcpy(title,*top->name);
+    make_chain_identifiers(&top->atoms,&top->mols);
   }
   else {
     get_stx_coordnum(infile,&natoms);

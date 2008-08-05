@@ -53,6 +53,7 @@
 #include "gmx_fatal.h"
 #include "network.h"
 #include "vec.h"
+#include "mtop_util.h"
 
 /* used for npri */
 #ifdef __sgi
@@ -286,8 +287,8 @@ t_topology *read_top(char *fn,int *ePBC)
   t_topology *top;
 
   snew(top,1);
-  epbc = read_tpx(fn,&step,&t,&lambda,NULL,NULL,
-		  &natoms,NULL,NULL,NULL,top);
+  epbc = read_tpx_top(fn,&step,&t,&lambda,NULL,NULL,
+		      &natoms,NULL,NULL,NULL,top);
   if (ePBC)
     *ePBC = epbc;
 

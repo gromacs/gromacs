@@ -52,6 +52,7 @@
 #include "txtdump.h"
 #include "mdatoms.h"
 #include "main.h"
+#include "mtop_util.h"
 
 static void c_tabpot(real tabscale,   real VFtab[],
 		     int  nri,        int  iinr[],
@@ -162,7 +163,8 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
   fprintf(log,"There were %d interactions\n",nlist->nrj);
 }
 
-void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
+void calc_pot(FILE *logf,t_commrec *cr,
+	      gmx_mtop_t *mtop,t_groups *grps,
 	      t_inputrec *inputrec,t_topology *top,rvec x[],t_forcerec *fr,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
@@ -196,7 +198,7 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
    * also do the calculation of long range forces and energies.
    */
   
-  ns(logf,fr,x,f,box,grps,&(inputrec->opts),top,mdatoms,cr,
+  ns(logf,fr,x,f,box,&mtop->groups,grps,&(inputrec->opts),top,mdatoms,cr,
      &nrnb,0,lam,&dum,TRUE,FALSE);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
@@ -214,13 +216,15 @@ void calc_pot(FILE *logf,t_commrec *cr,t_groups *grps,
   low_calc_pot(logf,eNL_VDWQQ,fr,x,mdatoms,pot);
 }
 
-FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
+FILE *init_calcpot(char *log,char *tpx,char *table,
+		   gmx_mtop_t *mtop,t_topology *top,
 		   t_inputrec *inputrec,t_commrec **cr,
 		   t_graph **graph,t_mdatoms **mdatoms,
 		   t_groups *grps,
 		   t_forcerec **fr,real **pot,
 		   matrix box,rvec **x)
 {
+  t_topology *ltop;
   real     t,t0,lam,lam0;
   bool     bNEMD,bSA;
   int      traj=0,xtc_traj=0;
@@ -244,17 +248,21 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
 
   init_nrnb(&nrnb);
   snew(state,1);
-  init_single(fplog,inputrec,tpx,top,state);
+  init_single(fplog,inputrec,tpx,mtop,state);
   clear_rvec(mutot);
   init_md(fplog,*cr,inputrec,&t,&t0,&lam,&lam0,
-	  &nrnb,top,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
+	  &nrnb,mtop,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
 	  &mdebin,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL);
 
-  init_groups(fplog,&top->atoms,&(inputrec->opts),grps);  
+  init_groups(fplog,&mtop->groups,&(inputrec->opts),grps);  
 
-  *mdatoms = init_mdatoms(fplog,&top->atoms,FALSE);
-  atoms2md(&top->atoms,inputrec,0,0,NULL,0,top->atoms.nr,*mdatoms);
+  ltop = gmx_mtop_generate_local_top(mtop,inputrec);
+  *top = *ltop;
+  sfree(ltop);
+
+  *mdatoms = init_mdatoms(fplog,mtop,FALSE);
+  atoms2md(mtop,inputrec,0,NULL,0,top->atoms.nr,*mdatoms);
 
   if (inputrec->ePBC == epbcXYZ) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
@@ -278,7 +286,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,t_topology *top,
     
   /* Initiate forcerecord */
   *fr = mk_forcerec();
-  init_forcerec(fplog,*fr,NULL,inputrec,top,*cr,
+  init_forcerec(fplog,*fr,NULL,inputrec,mtop,*cr,
 		state->box,FALSE,table,table,NULL,TRUE,-1);
 
   /* Remove periodicity */  

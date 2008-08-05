@@ -74,44 +74,29 @@ static bool ip_pert(int ftype,t_iparams *ip)
     return bPert;
 }
 
-void gmx_analyze_ilist_fe(t_idef *idef,t_inputrec *ir)
+bool gmx_mtop_bondeds_free_energy(gmx_mtop_t *mtop)
 {
-    int  ftype,nral,i;
-    t_iparams *iparams;
-    t_ilist *ilist;
-    t_iatom *iatoms;
+    gmx_ffparams_t *ffparams;
+    int  i,ftype;
     bool bPert;
+
+    ffparams = &mtop->ffparams;
     
-    if (ir->efep == efepNO)
-    {
-      /* There are no perturbed interactions */
-      idef->ilsort = ilsortNO_FE;
-
-      return;
-    }
-
-    iparams = idef->iparams;
-
+    /* Loop over all the function types and compare the A/B parameters */
     bPert = FALSE;
-    for(ftype=0; ftype<F_NRE; ftype++)
+    for(i=0; i<ffparams->ntypes; i++)
     {
+        ftype = ffparams->functype[i];
         if (interaction_function[ftype].flags & IF_BOND)
         {
-            ilist = &idef->il[ftype];
-            iatoms = ilist->iatoms;
-            nral  = NRAL(ftype);
-            for(i=0; i<ilist->nr; i+=1+nral)
+            if (ip_pert(ftype,&ffparams->iparams[i]))
             {
-                /* The first element of ia gives the type */
-                if (ip_pert(ftype,&iparams[iatoms[i]]))
-                {
-                    bPert = TRUE;
-                }
+                bPert = TRUE;
             }
         }
     }
 
-    idef->ilsort = (bPert ? ilsortFE_UNSORTED : ilsortNO_FE);
+    return (bPert ? ilsortFE_UNSORTED : ilsortNO_FE);
 }
 
 void gmx_sort_ilist_fe(t_idef *idef)

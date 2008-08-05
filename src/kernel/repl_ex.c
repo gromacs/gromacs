@@ -548,7 +548,7 @@ static void write_debug_x(t_state *state)
 
 bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
 		      t_state *state,real *ener,
-		      t_block *cgs,t_state *state_local,
+		      t_state *state_local,
 		      int step,real time)
 {
   gmx_multisim_t *ms;
@@ -573,7 +573,7 @@ bool replica_exchange(FILE *fplog,const t_commrec *cr,struct gmx_repl_ex *re,
   if (bExchanged) {
     if (PAR(cr)) {
       if (DOMAINDECOMP(cr))
-	dd_collect_state(cr->dd,cgs,state_local,state);
+	dd_collect_state(cr->dd,state_local,state);
       else
 	pd_collect_state(cr,state);
     }

@@ -64,7 +64,6 @@ typedef struct {
   bool bGenPairs;
   real tempi;
   int  seed;
-  int  eDisre;
   bool bOrire;
   bool bDihre;
   bool bMorse;
@@ -87,10 +86,10 @@ extern void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror);
 extern int search_string(char *s,int ng,char *gn[]);
 /* Returns the index of string s in the index groups */
 
-extern void double_check(t_inputrec *ir,matrix box,t_molinfo *mol,int *nerror);
+extern void double_check(t_inputrec *ir,matrix box,bool bConstr,int *nerror);
 /* Do more checks */
 
-extern void triple_check(char *mdparin,t_inputrec *ir,t_topology *sys,
+extern void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,
 			 int *nerror);
 /* Do even more checks */
 
@@ -103,9 +102,9 @@ extern void get_ir(char *mdparin,char *mdparout,
  */
  
 extern void do_index(char *ndx,
-		     t_symtab   *symtab,
-		     t_atoms    *atoms,bool bVerbose,
-		     t_inputrec *ir,t_idef *idef,
+		     gmx_mtop_t *mtop,
+		     bool bVerbose,
+		     t_inputrec *ir,
 		     rvec *v);
 /* Read the index file and assign grp numbers to atoms.
  * If v is not NULL, the velocities will be scaled to the correct number
@@ -122,7 +121,7 @@ extern void make_pull_groups(t_pull *pull,char **pgnames,
 			     t_blocka *grps,char **gnames);
 /* Process the pull parameters after reading the index groups */
 
-extern void set_pull_init(t_inputrec *ir,t_atoms *atoms,rvec *x,matrix box,
+extern void set_pull_init(t_inputrec *ir,gmx_mtop_t *mtop,rvec *x,matrix box,
 			  bool bStart);
 /* Prints the initial pull group distances in x.
  * If bStart adds the distance to the initial reference location.
