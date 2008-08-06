@@ -1800,6 +1800,17 @@ static bool receive_vir_ener(t_commrec *cr)
     return bReceive;
 }
 
+static void set_ncg_cell_home(gmx_domdec_t *dd)
+{
+    int i;
+
+    dd->ncg_cell[0] = 0;
+    for(i=1; i<dd->ncell+1; i++)
+    {
+        dd->ncg_cell[i] = dd->ncg_home;
+    }
+}
+
 static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
 {
     int nat,i,*ind,*dd_cg_gl,*cgindex,cg_gl;
@@ -1820,6 +1831,8 @@ static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
     
     dd->ncg_home = state->ncg_gl;
     dd->nat_home = nat;
+
+    set_ncg_cell_home(dd);
 }
 
 static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
@@ -1840,7 +1853,12 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
     cell_ncg1  = dd->comm->cell_ncg1;
     index_gl   = dd->index_gl;
     gatindex   = dd->gatindex;
-    
+
+    if (cell2cg[1] != dd->ncg_home)
+    {
+        gmx_incons("dd->ncg_cell is not up to date");
+    }
+  
     cginfo_global = fr->cginfo_global;
     cginfo        = fr->cginfo;
     
@@ -1874,6 +1892,79 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
             }
             cginfo[cg] = cginfo_global[cg_gl];
         }
+    }
+}
+
+static void check_ga2la_consistency(gmx_domdec_t *dd,int natoms_tot,
+                                    char *where)
+{
+    int nerr,ngl,i,a;
+    int *have;
+
+    nerr = 0;
+
+    if (TRUE)
+    {
+        snew(have,natoms_tot);
+        for(a=0; a<dd->nat_tot; a++)
+        {
+            if (have[dd->gatindex[a]] > 0)
+            {
+                fprintf(stderr,"DD node %d: global atom %d occurs twice: index %d and %d\n",dd->rank,dd->gatindex[a]+1,have[dd->gatindex[a]],a+1);
+            }
+            else
+            {
+                have[dd->gatindex[a]] = a + 1;
+            }
+        }
+        sfree(have);
+    }
+
+    snew(have,dd->nat_tot);
+
+    ngl  = 0;
+    for(i=0; i<natoms_tot; i++)
+    {
+        if (dd->ga2la[i].cell >= 0)
+        {
+            a = dd->ga2la[i].a;
+            if (a >= dd->nat_tot)
+            {
+                fprintf(stderr,"DD node %d: global atom %d marked as local atom %d, which is larger than nat_tot (%d)\n",dd->rank,i+1,a+1,dd->nat_tot);
+                nerr++;
+            }
+            else
+            {
+                have[a] = 1;
+                if (dd->gatindex[a] != i)
+                {
+                    fprintf(stderr,"DD node %d: global atom %d marked as local atom %d, which has global atom index %d\n",dd->rank,i+1,a+1,dd->gatindex[a]+1);
+                    nerr++;
+                }
+            }
+            ngl++;
+        }
+    }
+    if (ngl != dd->nat_tot)
+    {
+        fprintf(stderr,
+                "DD node %d, %s: %d global atom indices, %d local atoms\n",
+                dd->rank,where,ngl,dd->nat_tot);
+    }
+    for(a=0; a<dd->nat_tot; a++)
+    {
+        if (have[a] == 0)
+        {
+            fprintf(stderr,
+                    "DD node %d, %s: local atom %d, global %d has no global index\n",
+                    dd->rank,where,a+1,dd->gatindex[a]+1);
+        }
+    }
+    sfree(have);
+
+    if (nerr > 0) {
+        gmx_fatal(FARGS,"DD node %d, %s: %d atom index inconsistencies",
+                  dd->rank,where,nerr);
     }
 }
 
@@ -6614,11 +6705,7 @@ void dd_partition_system(FILE            *fplog,
         /* Fill the ns grid with the home cell,
          * so we can sort with the indices.
          */
-        dd->ncg_cell[0] = 0;
-        for(i=1; i<dd->ncell+1; i++)
-        {
-            dd->ncg_cell[i] = dd->ncg_home;
-        }
+        set_ncg_cell_home(dd);
         fill_grid(fplog,dd,fr->ns.grid,state_local->box,0,dd->ncg_home,fr->cg_cm);
         
         if (debug)
@@ -6783,4 +6870,7 @@ void dd_partition_system(FILE            *fplog,
          */
         dd->comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
     }
+
+    /* If you suspect corrupted indices, uncomment the next line */
+    /* check_ga2la_consistency(dd,top_global->natoms,"after partitioning"); */
 }
