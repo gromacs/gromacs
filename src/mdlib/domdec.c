@@ -502,7 +502,8 @@ void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[])
                         n++;
                     }
                 }
-            } else if (!bScrew)
+            }
+            else if (!bScrew)
             {
                 for(i=0; i<ind->nsend[ncell]; i++)
                 {
@@ -2986,10 +2987,10 @@ static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
 }
 
 static int compact_and_copy_vec_at(int ncg,int *move,
-				   int *cgindex,
-				   int nvec,int vec,
-				   rvec *src,gmx_domdec_comm_t *comm,
-				   bool bCompact)
+                                   int *cgindex,
+                                   int nvec,int vec,
+                                   rvec *src,gmx_domdec_comm_t *comm,
+                                   bool bCompact)
 {
     int m,icg,i,i0,i1,nrcg;
     int home_pos;
@@ -4909,7 +4910,7 @@ static int multi_body_bondeds_count(gmx_mtop_t *mtop)
             if ((interaction_function[ftype].flags & IF_BOND) &&
                 NRAL(ftype) >  2)
             {
-                n += nmol*il->nr/(1 + NRAL(ftype));
+                n += nmol*il[ftype].nr/(1 + NRAL(ftype));
             }
         }
   }
