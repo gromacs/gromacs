@@ -1753,7 +1753,8 @@ real cross_bond_angle(int nbonds,
   return vtot;
 }
 
-static real bonded_tab(const bondedtable_t *table,real kA,real kB,real r,
+static real bonded_tab(char *type,int table_nr,
+		       const bondedtable_t *table,real kA,real kB,real r,
 		       real lambda,real *V,real *F)
 {
   real k,tabscale,*VFtab,rt,eps,eps2,Yt,Ft,Geps,Heps2,Fp,VV,FF;
@@ -1767,9 +1768,10 @@ static real bonded_tab(const bondedtable_t *table,real kA,real kB,real r,
   
   rt    = r*tabscale;
   n0    = rt;
-  if (n0 >= table->n)
-    gmx_fatal(FARGS,"A tabulated bonded interaction is out of the table range: r %f, between table indices %d and %d, table length %d",
-	      r,n0,n0+1,table->n);
+  if (n0 >= table->n) {
+    gmx_fatal(FARGS,"A tabulated %s interaction table number %d is out of the table range: r %f, between table indices %d and %d, table length %d",
+	      type,table_nr,r,n0,n0+1,table->n);
+  }
   eps   = rt - n0;
   eps2  = eps*eps;
   nnn   = 4*n0;
@@ -1798,7 +1800,7 @@ real tab_bonds(int nbonds,
 	       const t_mdatoms *md,t_fcdata *fcd,
 	       int *global_atom_index)
 {
-  int  i,m,ki,ai,aj,type;
+  int  i,m,ki,ai,aj,type,table;
   real dr,dr2,fbond,vbond,fij,vtot;
   rvec dx;
   ivec dt;
@@ -1813,7 +1815,10 @@ real tab_bonds(int nbonds,
     dr2  = iprod(dx,dx);			/*   5		*/
     dr   = dr2*invsqrt(dr2);		        /*  10		*/
 
-    *dvdlambda += bonded_tab(&fcd->bondtab[forceparams[type].tab.table],
+    table = forceparams[type].tab.table;
+
+    *dvdlambda += bonded_tab("bond",table,
+			     &fcd->bondtab[table],
 			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
 			     dr,lambda,&vbond,&fbond);  /*  22 */
@@ -1852,7 +1857,7 @@ real tab_angles(int nbonds,
 		const t_mdatoms *md,t_fcdata *fcd,
 		int *global_atom_index)
 {
-  int  i,ai,aj,ak,t1,t2,type;
+  int  i,ai,aj,ak,t1,t2,type,table;
   rvec r_ij,r_kj;
   real cos_theta,cos_theta2,theta,dVdt,va,vtot;
   ivec jt,dt_ij,dt_kj;
@@ -1866,8 +1871,11 @@ real tab_angles(int nbonds,
     
     theta  = bond_angle(x[ai],x[aj],x[ak],pbc,
 			r_ij,r_kj,&cos_theta,&t1,&t2);	/*  41		*/
+
+    table = forceparams[type].tab.table;
   
-    *dvdlambda += bonded_tab(&fcd->angletab[forceparams[type].tab.table],
+    *dvdlambda += bonded_tab("angle",table,
+			     &fcd->angletab[table],
 			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
 			     theta,lambda,&va,&dVdt);  /*  22  */
@@ -1927,7 +1935,7 @@ real tab_dihs(int nbonds,
 	      const t_mdatoms *md,t_fcdata *fcd,
 	      int *global_atom_index)
 {
-  int  i,type,ai,aj,ak,al;
+  int  i,type,ai,aj,ak,al,table;
   int  t1,t2,t3;
   rvec r_ij,r_kj,r_kl,m,n;
   real phi,cos_phi,sign,ddphi,vpd,vtot;
@@ -1943,8 +1951,11 @@ real tab_dihs(int nbonds,
     phi=dih_angle(x[ai],x[aj],x[ak],x[al],pbc,r_ij,r_kj,r_kl,m,n,
 		  &cos_phi,&sign,&t1,&t2,&t3);			/*  84  */
 
+    table = forceparams[type].tab.table;
+
     /* Hopefully phi+M_PI never results in values < 0 */
-    *dvdlambda += bonded_tab(&fcd->dihtab[forceparams[type].tab.table],
+    *dvdlambda += bonded_tab("dihedral",table,
+			     &fcd->dihtab[table],
 			     forceparams[type].tab.kA,
 			     forceparams[type].tab.kB,
 			     phi+M_PI,lambda,&vpd,&ddphi);
