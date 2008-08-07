@@ -231,7 +231,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   int     i,j;
   int     ncons,error;
   tensor  rmdr;
-  real    invdt,hdt_2,t;
+  real    invdt,vir_fac,t;
   t_ilist *settle;
   int     nsettle;
   real    mO,mH,dOH,dHH;
@@ -337,10 +337,23 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
   }
 
   if (vir != NULL) {
-    hdt_2 = 0.5/(ir->delta_t*ir->delta_t);
+    switch (econq) {
+    case econqCoord:
+      vir_fac = 0.5/(ir->delta_t*ir->delta_t);
+      break;
+    case econqDeriv:
+      /* Assume that these are velocities */
+      vir_fac = 0.5/ir->delta_t;
+      break;
+    case econqForce:
+      vir_fac = -0.5;
+      break;
+    default:
+      gmx_incons("Unsupported constraint quantity for virial");
+    }
     for(i=0; i<DIM; i++)
       for(j=0; j<DIM; j++)
-	(*vir)[i][j] = hdt_2*rmdr[i][j];
+	(*vir)[i][j] = vir_fac*rmdr[i][j];
   }
 
   if (!bOK && constr->maxwarn >= 0) 
