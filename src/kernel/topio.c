@@ -582,10 +582,13 @@ static char **read_topol(char *infile,char *outfile,
 	    if (bCouple)
 	      nmol_couple += nrcopies;
 
-	    if (mi0->atoms.nr == 0)
-	      gmx_fatal(FARGS,"Moleculetype %s contains no atoms",*mi0->name);
-	    fprintf(stderr,"Excluding %d bonded neighbours for %s\n",
-		    mi0->nrexcl,pline);
+	    if (mi0->atoms.nr == 0) {
+	      gmx_fatal(FARGS,"Molecule type '%s' contains no atoms",
+			*mi0->name);
+	    }
+	    fprintf(stderr,
+		    "Excluding %d bonded neighbours molecule type '%s'\n",
+		    mi0->nrexcl,*mi0->name);
 	    sum_q(&mi0->atoms,nrcopies,&qt,&qBt);
 	    if (!mi0->bProcessed) {
 	      generate_excl(mi0->nrexcl,
