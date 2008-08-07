@@ -207,10 +207,11 @@ void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL)
   int  n,i;
   
   if (fp == NULL) {
-    if (PAR(cr))
+    if (PAR(cr)) {
       sprintf(buf,"nlist_n%d.txt",cr->nodeid);
-    else
-      sprintf(buf,"nlist._txt",cr->nodeid);
+    } else {
+      sprintf(buf,"nlist.txt");
+    }
     fp = ffopen(buf,"w");
   }
   fprintf(fp,"%s\n",header);
