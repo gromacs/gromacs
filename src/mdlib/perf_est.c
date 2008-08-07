@@ -49,7 +49,7 @@ int n_bonded_dx(gmx_mtop_t *mtop,bool bExcl)
 float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
 {
   t_atom *atom;
-  int  mb,nmol,atnr,cg,a,i,ncqlj,ncq,nclj;
+  int  mb,nmol,atnr,cg,a,a0,ncqlj,ncq,nclj;
   bool bBHAM,bLJcut,bWater,bQ,bLJ;
   double nw,nqlj,nq,nlj,cost_bond,cost_pp,cost_spread,cost_fft;
   float fq,fqlj,flj,fljtab,fqljw,fqw,fqspread,ffft,fbond;
@@ -97,15 +97,16 @@ float pme_load_estimate(gmx_mtop_t *mtop,t_inputrec *ir,matrix box)
       ncqlj = 0;
       ncq   = 0;
       nclj  = 0;
+      a0    = a;
       while (a < molt->cgs.index[cg+1]) {
 	bQ  = (atom[a].q != 0 || atom[a].qB != 0);
 	bLJ = (iparams[(atnr+1)*atom[a].type].lj.c6  != 0 ||
 	       iparams[(atnr+1)*atom[a].type].lj.c12 != 0);
 	/* This if this atom fits into water optimization */
-	if (!((i == 0 &&  bQ &&  bLJ) ||
-	      (i == 1 &&  bQ && !bLJ) ||
-	      (i == 2 &&  bQ && !bLJ && atom[a].q == atom[a-1].q) ||
-	      (i == 3 && !bQ &&  bLJ)))
+	if (!((a == a0   &&  bQ &&  bLJ) ||
+	      (a == a0+1 &&  bQ && !bLJ) ||
+	      (a == a0+2 &&  bQ && !bLJ && atom[a].q == atom[a-1].q) ||
+	      (a == a0+3 && !bQ &&  bLJ)))
 	  bWater = FALSE;
 	if (bQ && bLJ) {
 	  ncqlj++;
