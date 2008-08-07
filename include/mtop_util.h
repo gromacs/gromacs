@@ -64,8 +64,8 @@ gmx_mtop_atomnr_to_moltype(const gmx_mtop_t *mtop,int atnr_global,
  * belonging to atnr_global.
  */
 extern void
-gmx_mtop_atomnr_to_molblock(const gmx_mtop_t *mtop,int atnr_global,
-			    int *molb,int *molnr,int *atnr_mol);
+gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_t *mtop,int atnr_global,
+				int *molb,int *molnr,int *atnr_mol);
 
 /* Returns atom name, global resnr and residue name  of atom atnr_global */
 extern void
