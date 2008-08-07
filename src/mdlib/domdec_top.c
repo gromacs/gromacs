@@ -55,12 +55,15 @@ static int nral_rt(int ftype)
   return nral;
 }
 
-#ifdef HAVE_TO_UPDATE
-static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
-					    gmx_mtop_t *mtop,t_idef *idef)
+static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
+					  gmx_reverse_top_t *rt,
+					  char *moltypename,
+					  gmx_reverse_ilist_t *ril,
+					  int a_offset,int nat_mol,int nmol,
+					  t_idef *idef)
 {
-  gmx_reverse_top_t *rt;
-  int *assigned,*gatindex,ftype,ftype_j,nral,i,j,k,a0,a;
+  int nril_mol,*assigned,*gatindex;
+  int ftype,ftype_j,nral,i,j_mol,j,k,a0,a0_mol,mol,a,a_gl;
   int nprint;
   t_ilist *il;
   t_iatom *ia;
@@ -68,7 +71,8 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
   
   rt = cr->dd->reverse_top;
 
-  snew(assigned,rt->index[natoms]);
+  nril_mol = ril->index[nat_mol];
+  snew(assigned,nmol*nril_mol);
   
   gatindex = cr->dd->gatindex;
   for(ftype=0; ftype<F_NRE; ftype++) {
@@ -80,26 +84,32 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
       il = &idef->il[ftype];
       ia = il->iatoms;
       for(i=0; i<il->nr; i+=1+nral) {
-	a0 = gatindex[ia[1]];
-	j = rt->index[a0];
+	a0     = gatindex[ia[1]];
+	mol    = (a0 - a_offset)/nat_mol;
+	a0_mol = (a0 - a_offset) - mol*nat_mol;
+	j_mol  = ril->index[a0_mol];
 	bFound = FALSE;
-	while (j < rt->index[a0+1] && !bFound) {
-	  ftype_j = rt->il[j];
+	while (j_mol < ril->index[a0_mol+1] && !bFound) {
+	  j = mol*nril_mol + j_mol;
+	  ftype_j = ril->il[j_mol];
 	  /* Here we need to check if this interaction has not already
 	   * been assigned, since we could have multiply defined interactions.
 	   */
-	  if (ftype == ftype_j && ia[0] == rt->il[j+1] && assigned[j] == 0) {
+	  if (ftype == ftype_j && ia[0] == ril->il[j_mol+1] &&
+	      assigned[j] == 0) {
 	    /* Check the atoms */
 	    bFound = TRUE;
 	    for(a=0; a<nral; a++) {
-	      if (gatindex[ia[1+a]] != rt->il[j+2+a])
+	      if (gatindex[ia[1+a]] !=
+		  a_offset + mol*nat_mol + ril->il[j_mol+2+a]) {
 		bFound = FALSE;
+	      }
 	    }
 	    if (bFound) {
 	      assigned[j] = 1;
 	    }
 	  }
-	  j += 2 + nral_rt(ftype_j);
+	  j_mol += 2 + nral_rt(ftype_j);
 	}
 	if (!bFound)
 	  gmx_incons("Some interactions seem to be assigned multiple times\n");
@@ -108,44 +118,80 @@ static void print_missing_interaction_atoms(FILE *fplog,t_commrec *cr,
     }
   }
 
-  gmx_sumi(rt->index[natoms],assigned,cr);
+  gmx_sumi(nmol*nril_mol,assigned,cr);
   
   nprint = 10;
   if (DDMASTER(cr->dd)) {
+    fprintf(fplog, "\nMolecule type '%s'\n",moltypename);
+    fprintf(stderr,"\nMolecule type '%s'\n",moltypename);
     fprintf(fplog,
-	    "\nThe first %d missing interactions, except for exclusions:\n",
+	    "the first %d missing interactions, except for exclusions:\n",
 	    nprint);
     fprintf(stderr,
-	    "\nThe first %d missing interactions, except for exclusions:\n",
+	    "the first %d missing interactions, except for exclusions:\n",
 	    nprint);
   }
   i = 0;
-  j = 0;
-  while (j < rt->index[natoms]) {
-    ftype = rt->il[j];
-    nral  = NRAL(ftype);
-    if (assigned[j] == 0 &&
-	!(interaction_function[ftype].flags & IF_VSITE)) {
-      if (DDMASTER(cr->dd)) {
-	fprintf(fplog, "%20s atoms",interaction_function[ftype].longname);
-	fprintf(stderr,"%20s atoms",interaction_function[ftype].longname);
-	for(a=0; a<nral; a++) {
-	  fprintf(fplog, "%5d",rt->il[j+2+a]+1);
-	  fprintf(stderr,"%5d",rt->il[j+2+a]+1);
+  for(mol=0; mol<nmol; mol++) {
+    j_mol = 0;
+    while (j_mol < nril_mol) {
+      ftype = ril->il[j_mol];
+      nral  = NRAL(ftype);
+      j = mol*nril_mol + j_mol;
+      if (assigned[j] == 0 &&
+	  !(interaction_function[ftype].flags & IF_VSITE)) {
+	if (DDMASTER(cr->dd)) {
+	  fprintf(fplog, "%20s atoms",interaction_function[ftype].longname);
+	  fprintf(stderr,"%20s atoms",interaction_function[ftype].longname);
+	  for(a=0; a<nral; a++) {
+	    fprintf(fplog, "%5d",ril->il[j_mol+2+a]+1);
+	    fprintf(stderr,"%5d",ril->il[j_mol+2+a]+1);
+	  }
+	  while (a < 4) {
+	    fprintf(fplog, "     ");
+	    fprintf(stderr,"     ");
+	    a++;
+	  }
+	  fprintf(fplog, " global");
+	  fprintf(stderr," global");
+	  for(a=0; a<nral; a++) {
+	    fprintf(fplog, "%6d",a_offset+mol*nat_mol+ril->il[j_mol+2+a]+1);
+	    fprintf(stderr,"%6d",a_offset+mol*nat_mol+ril->il[j_mol+2+a]+1);
+	  }
+	  fprintf(fplog, "\n");
+	  fprintf(stderr,"\n");
 	}
-	fprintf(fplog, "\n");
-	fprintf(stderr,"\n");
+	i++;
+	if (i >= nprint)
+	  break;
       }
-      i++;
-      if (i >= nprint)
-	break;
+      j_mol += 2 + nral_rt(ftype);
     }
-    j += 2 + nral_rt(ftype);
   }
-  
+    
   sfree(assigned);    
 }
-#endif
+
+static void print_missing_interactions_atoms(FILE *fplog,t_commrec *cr,
+					     gmx_mtop_t *mtop,t_idef *idef)
+{
+  int mb,a_offset;
+  gmx_molblock_t *molb;
+  gmx_reverse_top_t *rt;
+
+  rt = cr->dd->reverse_top;
+
+  a_offset = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    print_missing_interactions_mb(fplog,cr,rt,
+				  *(mtop->moltype[molb->type].name),
+				  &rt->ril_mt[molb->type],
+				  a_offset,molb->natoms_mol,molb->nmol,
+				  idef);
+    a_offset += molb->nmol*molb->natoms_mol;
+  }
+}
 
 void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
 {
@@ -203,10 +249,8 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     }
   }
 
-#ifdef HAVE_TO_UPDATE
-  print_missing_interaction_atoms(fplog,cr,err_top_global,
-				  &err_top_local->idef);
-#endif
+  print_missing_interactions_atoms(fplog,cr,err_top_global,
+				   &err_top_local->idef);
 
   if (DDMASTER(dd)) {
     if (ndiff_tot > 0) {
@@ -420,6 +464,19 @@ void dd_make_reverse_top(FILE *fplog,
 				     vsite ? vsite->vsite_pbc_molt : NULL,
 				     !dd->bInterCGcons,
 				     bBCheck,&dd->nbonded_global);
+  
+  if (dd->reverse_top->ril_mt_tot_size >= 200000 &&
+      mtop->mols.nr > 1 &&
+      mtop->nmolblock == 1 && mtop->molblock[0].nmol == 1) {
+    /* mtop comes from a pre Gromacs 4 tpr file */
+    char *note="NOTE: The tpr file used for this simulation is in an old format, for less memory usage and possibly more performance create a new tpr file with an up to date version of grompp";
+    if (fplog) {
+      fprintf(fplog,"\n%s\n\n",note);
+    }
+    if (DDMASTER(dd)) {
+      fprintf(stderr,"\n%s\n\n",note);
+    }
+  }
 
   nexcl = 0;
   dd->n_intercg_excl = 0;
@@ -1039,8 +1096,9 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   int  d,nexcl;
   t_pbc pbc,*pbc_null=NULL;
 
-  if (debug)
-    fprintf(debug,"Making local topology\n");
+  if (debug) {
+    fprintf(debug,"Making local topology, rc = %g\n",rc);
+  }
 
   ltop->name  = mtop->name;
   dd_make_local_cgs(dd,&ltop->cgs);
