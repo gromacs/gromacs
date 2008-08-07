@@ -49,6 +49,7 @@
 #include "mdrun.h"
 #include "nrnb.h"
 #include "domdec.h"
+#include "mtop_util.h"
 
 typedef struct gmx_lincsdata {
   int  ncg;         /* the global number of constraints */

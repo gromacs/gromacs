@@ -51,6 +51,7 @@
 #include "names.h"
 #include "orires.h"
 #include "constr.h"
+#include "mtop_util.h"
 
 static bool bEInd[egNR] = { TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE };
 

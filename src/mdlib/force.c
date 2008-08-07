@@ -67,6 +67,7 @@
 #include "qmmm.h"
 #include "mpelogging.h"
 #include "copyrite.h"
+#include "mtop_util.h"
 
 t_forcerec *mk_forcerec(void)
 {
