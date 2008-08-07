@@ -794,7 +794,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
   wwmass = 0;
   for(i=0; i<pg->nat; i++) {
     ii = pg->ind[i];
-    atom = gmx_mtop_atom_global(mtop,ii);
+    gmx_mtop_atomnr_to_atom(mtop,ii,&atom);
     if (cr && PAR(cr) && !bDomDec && ii >= start && ii < end)
       pg->ind_loc[pg->nat_loc++] = ii;
     if (ir->opts.nFreeze) {
@@ -803,9 +803,9 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 	  nfrozen++;
     }
     if (ir->efep == efepNO) {
-      m = atom[ii].m;
+      m = atom->m;
     } else {
-      m = (1 - ir->init_lambda)*atom[ii].m + ir->init_lambda*atom[ii].mB;
+      m = (1 - ir->init_lambda)*atom->m + ir->init_lambda*atom->mB;
     }
     if (pg->nweight > 0) {
       w = pg->weight[i];
