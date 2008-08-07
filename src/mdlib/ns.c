@@ -59,6 +59,7 @@
 #include "gmx_fatal.h"
 #include "nrnb.h"
 #include "txtdump.h"
+#include "mtop_util.h"
 
 #include "domdec.h"
 
@@ -2134,7 +2135,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
              const gmx_mtop_t *mtop,
              matrix box)
 {
-    int  mt,icg,nr_in_cg,maxcg,i,j,jcg,ngid;
+    int  mt,icg,nr_in_cg,maxcg,i,j,jcg,ngid,ncg;
     t_block *cgs;
     char *ptr;
     
@@ -2187,8 +2188,9 @@ void init_ns(FILE *fplog,const t_commrec *cr,
         {
             snew(ns->ns_buf[i],SHIFTS);
         }
-        snew(ns->simple_aaj,2*ncg_mtop(mtop));
-        for(jcg=0; (jcg<cgs->nr); jcg++)
+        ncg = ncg_mtop(mtop);
+        snew(ns->simple_aaj,2*ncg);
+        for(jcg=0; (jcg<ncg); jcg++)
         {
             ns->simple_aaj[jcg] = jcg;
             ns->simple_aaj[jcg+cgs->nr] = jcg;
