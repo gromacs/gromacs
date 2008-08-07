@@ -232,5 +232,17 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     fprintf(fplog,"%s\n",myline);
     print_cycles(fplog,c2t,"Total",nnodes,0,tot,tot);
     fprintf(fplog,"%s\n",myline);
+
+    if (cycles[ewcMoveE] > tot*0.05) {
+      sprintf(buf,
+	      "NOTE: %.1f %% of the run time was spent communicating energies,\n"
+              "      you might want to use the -nosum option of mdrun\n",
+	      (int)(100*cycles[ewcMoveE]/tot+0.5));
+      if (fplog) {
+	fprintf(fplog,"\n%s\n",buf);
+      }
+      /* Only the sim master calls this function, so always print to stderr */
+      fprintf(stderr,"\n%s\n",buf);
+    }
   }
 }
