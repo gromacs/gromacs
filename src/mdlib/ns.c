@@ -2187,7 +2187,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
         {
             snew(ns->ns_buf[i],SHIFTS);
         }
-        snew(ns->simple_aaj,2*cgs->nr);
+        snew(ns->simple_aaj,2*ncg_mtop(mtop));
         for(jcg=0; (jcg<cgs->nr); jcg++)
         {
             ns->simple_aaj[jcg] = jcg;
