@@ -1942,10 +1942,13 @@ void write_tpx_state(char *fn,int step,real t,
   int fp;
 
 #ifdef HAVE_LIBXML2
-  if (fn2ftp(fn) == efXML)
+  if (fn2ftp(fn) == efXML) {
+    gmx_incons("The XML tpx i/o code is not up to date");
+    /*
     write_xml(fn,*top->name,ir,state->box,state->natoms,
 	      state->x,state->v,NULL,1,&top->atoms,&top->idef);
-  else {
+    */
+  } else {
 #endif
     fp = open_tpx(fn,"w");
     do_tpx(fp,FALSE,&step,&t,ir,state,NULL,mtop,FALSE);

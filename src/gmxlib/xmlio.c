@@ -387,6 +387,8 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
   tcptr = add_xml_child(irptr,exmlTCOUPLING);
   add_xml_char(tcptr,"algorithm",etcoupl_names[ir->etc]);
   
+  gmx_incons("The XML inputrec i/o code is not up to date");
+  /*
   if (ir->opts.ngtc != atoms->grps[egcTC].nr)
     gmx_incons("Inconsistency in number of temperature coupling groups");
   for(i=0; (i<ir->opts.ngtc); i++) {
@@ -395,6 +397,7 @@ static void add_xml_inputrec(xmlNodePtr parent,t_inputrec *ir,t_atoms *atoms)
     add_xml_real(tcparm,"t-ref",ir->opts.ref_t[i]);
     add_xml_real(tcparm,"tau-t",ir->opts.tau_t[i]);
   }
+  */
   
   pcptr = add_xml_child(irptr,exmlPCOUPLING);
   add_xml_char(pcptr,"algorithm",epcoupl_names[ir->epc]);
