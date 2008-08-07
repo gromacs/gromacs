@@ -7,6 +7,7 @@
 #include "constr.h"
 #include "domdec.h"
 #include "domdec_network.h"
+#include "mtop_util.h"
 
 typedef struct {
   int nsend;
