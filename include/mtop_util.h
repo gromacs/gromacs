@@ -67,10 +67,6 @@ extern void
 gmx_mtop_atomnr_to_molblock(const gmx_mtop_t *mtop,int atnr_global,
 			    int *molb,int *molnr,int *atnr_mol);
 
-/* Returns a pointer to the t_atom struct of atom atnr_global */
-extern t_atom *
-gmx_mtop_atom_global(const gmx_mtop_t *mtop,int atnr_global);
-
 /* Returns atom name, global resnr and residue name  of atom atnr_global */
 extern void
 gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,

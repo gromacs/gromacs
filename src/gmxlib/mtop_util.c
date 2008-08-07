@@ -34,7 +34,7 @@ void gmx_mtop_atomnr_to_atom(const gmx_mtop_t *mtop,int atnr_global,
 
     if (atnr_global < 0 || atnr_global >= mtop->natoms)
     {
-        gmx_fatal(FARGS,"gmx_mtop_atomnr_to_moltype was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
+        gmx_fatal(FARGS,"gmx_mtop_atomnr_to_atom was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
                   atnr_global,0,mtop->natoms-1);
     }
     
@@ -104,30 +104,6 @@ void gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_t *mtop,int atnr_global,
     *molb  = mb;
     *molnr = (atnr_global - a_start) / mtop->molblock[mb].natoms_mol;
     *atnr_mol = atnr_global - a_start - (*molnr)*mtop->molblock[mb].natoms_mol;
-}
-
-t_atom *gmx_mtop_atom_global(const gmx_mtop_t *mtop,int atnr_global)
-{
-    int mb,a_start,a_end;
-    t_atoms *atoms;
-
-    if (atnr_global < 0 || atnr_global >= mtop->natoms)
-    {
-        gmx_fatal(FARGS,"gmx_mtop_atom_global was called with atnr_global=%d which is not in the atom range of this system (%d-%d)",
-                  atnr_global,0,mtop->natoms-1);
-    }
-    
-    mb = -1;
-    a_end = 0;
-    do
-    {
-        mb++;
-        a_start = a_end;
-        a_end = a_start + mtop->molblock[mb].nmol*mtop->molblock[mb].natoms_mol;
-    }
-    while (atnr_global >= a_end);
-    
-    return &atoms->atom[(atnr_global - a_start) % atoms->nr];
 }
 
 void gmx_mtop_atominfo_global(const gmx_mtop_t *mtop,int atnr_global,
