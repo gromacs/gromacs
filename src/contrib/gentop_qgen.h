@@ -46,7 +46,7 @@ extern int generate_charges_sm(FILE *fp,void *eem,
 			       t_atoms *atoms,rvec x[],
 			       real tol,int maxiter,void *atomprop,
 			       real qtotref,int eemtype,real hfac,
-			       int slater_max);
+			       int slater_max,real *chieq);
 
 extern int generate_charges(FILE *fp,char *molname,
 			    int eemtype,t_atoms *atoms,rvec x[],

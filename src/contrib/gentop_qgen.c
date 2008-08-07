@@ -463,10 +463,11 @@ int generate_charges_sm(FILE *fp,
 						void *eem,t_atoms *atoms,rvec x[],
 						real tol,int maxiter,void *atomprop,
 						real qtotref,int eemtype,
-						real hfac,int slater_max)
+						real hfac,int slater_max,
+						real *chieq)
 {
 	t_qgen *qgen;
-	real   *qq,chieq;
+	real   *qq;
 	int    i,j,iter,eQGEN;
 	real   rms,mu;
   
@@ -510,7 +511,8 @@ int generate_charges_sm(FILE *fp,
 			fprintf(fp,"Did not converge within %d iterations. RMS = %g\n",
 					maxiter,rms);
 	}
-    
+    *chieq = qgen->chieq;
+	
 	qgen_done(fp,atoms,qgen,eQGEN);
 	sfree(qgen);
 	sfree(qq);
@@ -547,6 +549,8 @@ int generate_charges(FILE *fp,char *molname,
 {
 	int  i,eQGEN;
 	void *eem;
+	real chieq;
+	
 	bool bConverged = FALSE;
 	
 	eem = read_eemprops(NULL,-1,atomprop);
@@ -570,7 +574,7 @@ int generate_charges(FILE *fp,char *molname,
 	else
 		eQGEN = generate_charges_sm(fp,eem,atoms,x,
 									tol,maxiter,atomprop,
-									qtotref,eemtype,hfac,SLATER_MAX);
+									qtotref,eemtype,hfac,SLATER_MAX,&chieq);
 
 	return eQGEN;
 }

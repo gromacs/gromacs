@@ -73,6 +73,7 @@
 
 typedef struct {
   char          *molname;
+  bool          bSupport;
   real          dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
   t_topology    top;
   t_inputrec    ir;
@@ -97,7 +98,7 @@ typedef struct {
   t_commrec *cr;
 } t_moldip;
 
-static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
+static void init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
 		       void *eem,int eemtype,bool bPol,
 		       t_commrec *cr)
 {
@@ -118,48 +119,36 @@ static bool init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
   read_tpx(fn,&step,&t,&lambda,&(mymol->ir),mymol->box,&natoms,
 	   mymol->x,NULL,NULL,&(mymol->top));
 
-  for(i=0; (bSupport && (i<natoms)); i++) {
-    if ((mymol->top.atoms.atom[i].atomnumber > 0) || !bPol)
-      if (eem_get_index(eem,mymol->top.atoms.atom[i].atomnumber,eemtype) == -1)
-	bSupport = FALSE;
-  }
-  if (bSupport) {
-    mymol->molname = strdup(fn);
-    mymol->dip_exp = dip;
-    mymol->dip_err = dip_err;
-    if (dip_err > 0) {
-      mymol->dip_weight = sqr(1.0/dip_err);
-    }
-    else {
-      fprintf(stderr,"WARNING: Error for %s is %g, setting weight to zero\n",fn,dip_err);
-      mymol->dip_weight = 0;
-    }
-    mymol->qtotal  = 0;
-    
-    if (bPol) {
-      mymol->vs = init_vsite(cr,&mymol->top);
-      snew(mymol->f,natoms);
-      snew(mymol->buf,natoms);
-      mymol->shell = init_shell_flexcon(debug,cr,&mymol->top,0,
-					FALSE,mymol->x);
-      mymol->fr = mk_forcerec();
-      init_forcerec(debug,mymol->fr,NULL,&mymol->ir,&mymol->top,cr,
-		    mymol->box,FALSE,NULL,NULL,NULL, TRUE,-1);
-    }
-    else 
-      mymol->shell = NULL;
-    
-    init_state(&mymol->state,natoms,1);
-    init_groups(NULL,&(mymol->top.atoms),&(mymol->ir.opts),&mymol->grps);
-    mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
+  mymol->molname = strdup(fn);
+  mymol->bSupport = TRUE;
+  mymol->dip_exp = dip;
+  mymol->dip_err = dip_err;
+  if (dip_err > 0) {
+    mymol->dip_weight = sqr(1.0/dip_err);
   }
   else {
-    /*free_t_atoms(mymol->top.atoms);
-      sfree(mymol->top.atoms);*/
-    sfree(mymol->x);
-    fprintf(stderr,"No support in eemprops.dat for %s\n",fn);
+    fprintf(stderr,"WARNING: Error for %s is %g, setting weight to zero\n",
+	    fn,dip_err);
+    mymol->dip_weight = 0;
   }
-  return bSupport;
+  mymol->qtotal  = 0;
+  
+  if (bPol) {
+    mymol->vs = init_vsite(cr,&mymol->top);
+    snew(mymol->f,natoms);
+    snew(mymol->buf,natoms);
+    mymol->shell = init_shell_flexcon(debug,cr,&mymol->top,0,
+				      FALSE,mymol->x);
+    mymol->fr = mk_forcerec();
+    init_forcerec(debug,mymol->fr,NULL,&mymol->ir,&mymol->top,cr,
+		  mymol->box,FALSE,NULL,NULL,NULL, TRUE,-1);
+  }
+  else 
+    mymol->shell = NULL;
+  
+  init_state(&mymol->state,natoms,1);
+  init_groups(NULL,&(mymol->top.atoms),&(mymol->ir.opts),&mymol->grps);
+  mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
 }
 
 static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
@@ -168,7 +157,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   FILE   *xvgf;
   double d2=0;
   real   a,b,rms,sigma,aver;
-  int    i,j,nout,*elemcnt;
+  int    i,j,n,nout;
   char   *resnm,*atomnm;
   t_lsq  lsq;
   
@@ -177,34 +166,29 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   fprintf(xvgf,"@ s0 linestyle 0\n");
   fprintf(xvgf,"@ s0 symbol 1\n");
   init_lsq(&lsq);
-  snew(elemcnt,109);
-  for(i=0; (i<nmol); i++) {
-    fprintf(logf,"Molecule %s, Dipole %6.2f, should be %6.2f <chi>: %6.2f\n",
-	    mol[i].molname,mol[i].dip_calc,mol[i].dip_exp,mol[i].chieq);
-    fprintf(xvgf,"%10g  %10g\n",mol[i].dip_exp,mol[i].dip_calc);
-    add_lsq(&lsq,mol[i].dip_exp,mol[i].dip_calc);
-    d2 += sqr(mol[i].dip_exp-mol[i].dip_calc);
-    fprintf(logf,"Res  Atom  q\n");
-    for(j=0; (j<mol[i].top.atoms.nr); j++) {
-      resnm  = *(mol[i].top.atoms.resname[mol[i].top.atoms.atom[j].resnr]);
-      atomnm = *(mol[i].top.atoms.atomname[j]);
-      fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].top.atoms.atom[j].q);
-      elemcnt[mol[i].top.atoms.atom[j].atomnumber]++;
+  for(i=n=0; (i<nmol); i++) {
+    if (mol[i].bSupport) {
+      fprintf(logf,"Molecule %d: %s. Dipole %6.2f, should be %6.2f <chi>: %6.2f\n",
+	      n+1,mol[i].molname,mol[i].dip_calc,mol[i].dip_exp,mol[i].chieq);
+      fprintf(xvgf,"%10g  %10g\n",mol[i].dip_exp,mol[i].dip_calc);
+      add_lsq(&lsq,mol[i].dip_exp,mol[i].dip_calc);
+      d2 += sqr(mol[i].dip_exp-mol[i].dip_calc);
+      fprintf(logf,"Res  Atom  q\n");
+      for(j=0; (j<mol[i].top.atoms.nr); j++) {
+	resnm  = *(mol[i].top.atoms.resname[mol[i].top.atoms.atom[j].resnr]);
+	atomnm = *(mol[i].top.atoms.atomname[j]);
+	fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].top.atoms.atom[j].q);
+      }
+      fprintf(logf,"\n");
+      n++;
     }
-    fprintf(logf,"\n");
   }
   fclose(xvgf);
-  fprintf(logf,"Statistics over elements in the test set:\n");
-  fprintf(logf,"Element   Number\n");
-  for(i=0; (i<109); i++) {
-    if (elemcnt[i] > 0)
-      fprintf(logf,"%-10d%-8d\n",i,elemcnt[i]);
-  }
   
   get_lsq_ab(&lsq,&a,&b);
-  rms = sqrt(d2/nmol);
+  rms = sqrt(d2/n);
   fprintf(logf,"\nStatistics: fit of %d dipoles Dpred = %.3f Dexp + %3f\n",
-	  nmol,a,b); 
+	  n,a,b); 
   fprintf(logf,"RMSD = %.3f D\n",rms);
   fprintf(logf,"hfac = %g\n",hfac);
   
@@ -216,7 +200,8 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   fprintf(logf,"%-20s  %12s  %12s  %12s\n",
 	  "Name","Predicted","Experimental","Deviation");
   for(i=0; (i<nmol); i++) {
-    if ((mol[i].dip_exp > 0) && 
+    if (mol[i].bSupport &&
+	(mol[i].dip_exp > 0) && 
 	(fabs(mol[i].dip_calc-mol[i].dip_exp) > 3*sigma)) {
       fprintf(logf,"%-20s  %12.3f  %12.3f  %12.3f\n",
 	      mol[i].molname,mol[i].dip_calc,mol[i].dip_exp,
@@ -232,6 +217,76 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   do_view(xvgfn,NULL);
   
   done_lsq(&lsq);
+}
+
+static void check_data_suffiency(FILE *logf,
+				 int *nmol,t_mymol mol[],int minimum_data,
+				 void *eem,int eemtype,bool bPol)
+{
+  int *elemcnt,i,j;
+  int *remove,nremove;
+  int nelem,nsupported = *nmol;
+  
+  snew(elemcnt,109);
+  snew(remove,109);
+  for(i=0; (i<*nmol); i++) {
+    mol[i].bSupport = TRUE;
+    for(j=0; (mol[i].bSupport && (j<mol[i].top.atoms.nr)); j++) {
+      if ((mol[i].top.atoms.atom[j].atomnumber > 0) || !bPol)
+	if (eem_get_index(eem,mol[i].top.atoms.atom[j].atomnumber,eemtype) == -1)
+	  mol[i].bSupport = FALSE;
+    }
+    if (mol[i].bSupport) {
+      for(j=0; (j<mol[i].top.atoms.nr); j++) {
+	elemcnt[mol[i].top.atoms.atom[j].atomnumber]++;
+      }
+    }
+    else
+      nsupported--;
+  }
+  nremove = 0;
+  do {
+    for(i=0; (i<109); i++) {
+      if ((elemcnt[i] > 0) && (elemcnt[i] < minimum_data)) {
+	fprintf(logf,"Not enough support in data set for optimizing element %d\n",i);
+	remove[i] = 1;
+	nremove++;
+      }
+    }
+    if (nremove > 0) {
+      for(i=0; (i<*nmol); i++) {
+	if (mol[i].bSupport) {
+	  for(j=0; (j<mol[i].top.atoms.nr); j++) {
+	    if (remove[mol[i].top.atoms.atom[j].atomnumber]) 
+	      break;
+	  }
+	  if (j<mol[i].top.atoms.nr) {
+	    elemcnt[mol[i].top.atoms.atom[j].atomnumber]--;
+	  }
+	  mol[i].bSupport = FALSE;
+	  nsupported--;
+	}
+      }
+    }
+  } while (nremove > 0);
+  if (logf) {
+    nelem = 0;
+    for(i=0; (i<109); i++) {
+      if (elemcnt[i] > 0)
+	nelem++;
+    }
+    fprintf(logf,"%d molecules out of %d were discarded because they contain unsupported\n elements.",*nmol-nsupported,*nmol);
+    fprintf(logf," This leaves %d supported elements in %d molecules:\n",
+	    nelem,nsupported);
+    for(i=0; (i<109); i++) {
+      if (elemcnt[i] > 0)
+	fprintf(logf,"%-3d   %-d\n",i,elemcnt[i]);
+    }
+    fprintf(logf,"\n");
+    fflush(logf);
+  }
+  sfree(elemcnt);
+  sfree(remove);
 }
 
 t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
@@ -268,13 +323,18 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
     if (sscanf(strings[i],"%s%lf%lf",buf,&dip,&dip_err) != 3) 
       gmx_fatal(FARGS,"Error on line %d of %s",i+1,fn);
     if (bZero || (dip > 0)) {
-      if (init_mymol(&(md->mymol[n]),buf,dip,bWeighted ? dip_err : 1,
-		     md->eem,eemtype,bPol,md->cr))
-	n++;
+      init_mymol(&(md->mymol[n]),buf,dip,bWeighted ? dip_err : 1,
+		 md->eem,eemtype,bPol,md->cr);
+      n++;
     }
   }
+  fprintf(logf,"Read %d sets of molecule coordinates and dipoles\n",nstrings);
+  if (!bZero)
+    fprintf(logf,"of these %d were discarded because of zero dipole.\n\n",
+	    nstrings-n);
   md->nmol = n;
-  fprintf(logf,"Read %d sets of molecule coordinates and dipoles\n",md->nmol);
+  check_data_suffiency(logf,&md->nmol,md->mymol,6,md->eem,eemtype,bPol);
+  
   snew(md->index,md->nparam);
   n=0;
   for(i=1; (i<109); i++) {
@@ -352,7 +412,7 @@ static void split_shell_charges(t_atoms *atoms,t_idef *idef)
 static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
 {
   int    i,j,count,atomnr,eemtp;
-  double qq,rr,rms=0,rms_nw=0;
+  double qq,rr,rms=0,rms_nw=0,rmsq;
   real   t = 0;
   rvec   mu_tot = {0,0,0};
   real   ener[F_NRE];
@@ -361,7 +421,8 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
   gmx_wallcycle_t wcycle;
   bool     bConverged;
   t_mymol *mymol;
-
+  int     eQ;
+  
   eemtp = md->eemtype;
     
   init_nrnb(&my_nrnb);
@@ -370,11 +431,15 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
   
   for(i=0; (i<md->nmol); i++) {
     mymol = &(md->mymol[i]);
-    mymol->chieq = 
-      generate_charges_sm(debug,eem,&(mymol->top.atoms),
-			  mymol->x,1e-4,100,md->atomprop,
-			  mymol->qtotal,eemtp,md->hfac,
-			  md->slater_max);
+    if (!mymol->bSupport)
+      continue;
+    eQ = generate_charges_sm(debug,eem,&(mymol->top.atoms),
+			     mymol->x,1e-4,100,md->atomprop,
+			     mymol->qtotal,eemtp,md->hfac,
+			     md->slater_max,&(mymol->chieq));
+    if (eQ != eQGEN_OK)
+      qgen_message(stderr,eQ);
+      
     /* Now optimize the shell positions */
     if (mymol->shell) {
       split_shell_charges(&(mymol->top.atoms),&(mymol->top.idef));
@@ -398,14 +463,18 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
       if (((qq < 0) && (atomnr == 1)) || 
 	  ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) || 
 			(atomnr == 16) || (atomnr == 17) ||
-		        (atomnr == 35) || (atomnr == 53))))
-	rms += md->fc*sqr(qq);
+		        (atomnr == 35) || (atomnr == 53)))) {
+	rmsq    = md->fc*fabs(qq);
+	rms    += rmsq;
+	rms_nw += rmsq;
+      }
     }
     rr      = sqr(mymol->dip_calc - mymol->dip_exp);
     rms    += rr*mymol->dip_weight;
     rms_nw += rr;
   }
   *rms_noweight = rms_nw;
+  
   return rms;
 }
 
@@ -691,7 +760,7 @@ int main(int argc, char *argv[])
     { "-w1",    FALSE, etREAL, {&w_1},
       "Maximum value that Radius can obtain in fitting" },
     { "-fc",    FALSE, etREAL, {&fc},
-      "Force constant in the penalty function for going outside the borders given with the above six option." },
+      "Force constant in the penalty function for going outside the borders given with the above six options." },
     { "-step",  FALSE, etREAL, {&step},
       "Step size in parameter optimization. Is used as a fraction of the starting value, should be less than 10%. At each reinit step the step size is updated." },
     { "-seed", FALSE, etINT, {&seed},

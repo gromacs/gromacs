@@ -32,13 +32,14 @@ nodist_tune_pol_SOURCES	= tune_pol.c tune_pol.h pol_xml.c \
 			gentop_matrix.c	gentop_matrix.h	\
 			poldata.c merge_xml.c
 
-nodist_tune_dip_SOURCES 	= tune_dip.c 	gentop_qgen.c	\
-			gentop_matrix.c	gentop_matrix.h	\
-			gentop_core.c	gentop_core.h	\
-			gentop_nm2type.c gentop_nm2type.h	\
-			gentop_qalpha.h	gentop_qalpha.c	\
-			gentop_eemprops.c gentop_eemprops.h\
-			slater_integrals.cpp slater_integrals.h	\
+nodist_tune_dip_SOURCES 	= tune_dip.c 	\
+			gentop_matrix.c		gentop_matrix.h	\
+			gentop_core.c		gentop_core.h	\
+			gentop_nm2type.c 	gentop_nm2type.h	\
+			gentop_qalpha.h		gentop_qalpha.c	\
+			gentop_qgen.c 		gentop_qgen.h \
+			gentop_eemprops.c 	gentop_eemprops.h\
+			slater_integrals.cpp 	slater_integrals.h	\
 			slater_low.h \
 			DSlater_1S_1S.cpp DSlater_1S_2S.cpp DSlater_1S_3S.cpp \
 			DSlater_1S_4S.cpp DSlater_1S_5S.cpp DSlater_1S_6S.cpp \
