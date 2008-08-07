@@ -166,7 +166,8 @@ static void lincs_matrix_expand(const struct gmx_lincsdata *lincsd,
 
 static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
 		      struct gmx_lincsdata *lincsd,real *invmass,
-		      int econq,real *dvdlambda)
+		      int econq,real *dvdlambda,
+		      bool bCalcVir,tensor rmdf)
 {
   int     b,i,j,k,n;
   real    tmp0,tmp1,tmp2,im1,im2,mvb,rlen,len,wfac,lam;  
@@ -249,6 +250,23 @@ static void do_lincsp(rvec *x,rvec *f,rvec *fp,t_pbc *pbc,
       }
     }
   } /* 16 ncons flops */
+
+  if (bCalcVir) {
+    /* Constraint virial,
+     * determines sum r_bond x delta f,
+     * where delta f is the constraint correction
+     * of the quantity that is being constrained.
+     */
+    for(b=0; b<ncons; b++) {
+      mvb = lincsd->bllen[b]*blc[b]*sol[b];
+      for(i=0; i<DIM; i++) {
+	tmp1 = mvb*r[b][i];
+	for(j=0; j<DIM; j++) {
+	  rmdf[i][j] += tmp1*r[b][j];
+	}
+      }
+    } /* 23 ncons flops */
+  }
 }
 
 static void do_lincs(rvec *x,rvec *xp,matrix box,t_pbc *pbc,
@@ -1016,7 +1034,8 @@ bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,
     }
   } 
   else {
-    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq,dvdlambda);
+    do_lincsp(x,xprime,min_proj,pbc_null,lincsd,md->invmass,econq,dvdlambda,
+	      bCalcVir,rmdr);
   }
   
   /* count assuming nit=1 */
