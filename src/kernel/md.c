@@ -310,7 +310,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	!(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols)) {
       /* Make molecules whole at start of run */
       if (fr->ePBC != epbcNONE)  {
-	do_pbc_first_mtop(fplog,inputrec->ePBC,box,fr,mtop,state->x);
+	do_pbc_first_mtop(fplog,inputrec->ePBC,box,mtop,state->x);
       }
       if (vsite) {
 	/* Correct initial vsite positions are required

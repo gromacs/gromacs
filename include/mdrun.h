@@ -119,7 +119,7 @@ extern bool optRerunMDset (int nfile, t_filenm fnm[]);
 extern void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 
-extern void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,t_forcerec *fr,
+extern void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
 			      gmx_mtop_t *mtop,rvec x[]);
 
 		     

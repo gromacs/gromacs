@@ -1045,7 +1045,7 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
     fprintf(fplog,"Done rmpbc\n");
 }
 
-void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,t_forcerec *fr,
+void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
 		       gmx_mtop_t *mtop,rvec x[])
 {
   t_graph *graph;
@@ -1054,8 +1054,6 @@ void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,t_forcerec *fr,
 
   if (fplog)
     fprintf(fplog,"Removing pbc first time\n");
-
-  calc_shifts(box,fr->shift_vec);
 
   snew(graph,1);
   as = 0;
