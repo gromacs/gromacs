@@ -112,9 +112,7 @@
 ???  Mt   268.00000  
 
 ; Proteins
-; 'AAA' matches any protein residue name
 ; all hydrogen masses for proteins are added to the heavy atoms
-AAA H    0.0
 ; set all dummy masses to zero: the masses are now in the atoms
 AAA MN1  0.0
 AAA MN2  0.0
