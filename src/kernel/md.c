@@ -303,10 +303,21 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     calc_shifts(box,fr->shift_vec);
 
-    /* Make molecules whole at start of run */
-    if (fr->ePBC != epbcNONE && state && !inputrec->bContinuation)  {
-      if (MASTER(cr)) {
+    /* With periodic molecules the charge groups should be whole at start up
+     * and the virtual sites should not be far from their proper positions.
+     */
+    if (!inputrec->bContinuation && MASTER(cr) &&
+	!(inputrec->ePBC != epbcNONE && inputrec->bPeriodicMols)) {
+      /* Make molecules whole at start of run */
+      if (fr->ePBC != epbcNONE)  {
 	do_pbc_first_mtop(fplog,inputrec->ePBC,box,fr,mtop,state->x);
+      }
+      if (vsite) {
+	/* Correct initial vsite positions are required
+	 * for the initial distribution in the domain decomposition
+	 * and for the initial shell prediction.
+	 */
+	construct_vsites_mtop(fplog,vsite,mtop,state->x);
       }
     }
 
@@ -583,7 +594,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     atoms2md(top_global,ir,0,NULL,a0,a1-a0,mdatoms);
 
     if (vsite) {
-      set_vsite_top(vsite,top,cr);
+      set_vsite_top(vsite,top,mdatoms,cr);
     }
 
     if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
@@ -593,18 +604,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (shellfc) {
       make_local_shells(cr,mdatoms,shellfc);
     }
-  }
-
-  if ((!DOMAINDECOMP(cr) || DDMASTER(cr->dd)) &&
-      vsite && !ir->bContinuation) {
-    /* Construct the virtual sites for the starting structure */
-    /* Since with DD we have not made molecules whole in the starting
-     * configuration, we need to do full pbc in construct_vsites.
-     */
-    construct_vsites_mtop(fplog,vsite,
-			  state_global->x,nrnb,ir->delta_t,
-			  top_global,ir->ePBC,
-			  DOMAINDECOMP(cr) ? NULL : cr,state_global->box);
   }
 
   if (DOMAINDECOMP(cr)) {
@@ -647,10 +646,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     do_shakefirst(fplog,constr,ir,mdatoms,state,buf,f,
 		  graph,cr,nrnb,grps,fr,top);
 
-    if (vsite)
+    if (vsite) {
       construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
 		       top->idef.iparams,top->idef.il,
 		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
+    }
   }
 
   debug_gmx();

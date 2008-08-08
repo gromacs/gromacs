@@ -495,20 +495,22 @@ void construct_vsites(FILE *log,gmx_vsite_t *vsite,
     pbc_null = NULL;
   }
 
-  if (bDomDec) {
-    dd_move_x_vsites(cr->dd,box,x);
-  } else if (vsite->bPDvsitecomm) {
-    /* I'm not sure whether the periodicity and shift are guaranteed
-     * to be consistent between different nodes when running e.g. polymers
-     * in parallel. In this special case we thus unshift/shift,
-     * but only when necessary. This is to make sure the coordinates
-     * we move don't end up a box away...
-     */
-    if (graph)
-      unshift_self(graph,box,x);
-    move_construct_x(vsite->vsitecomm,x,cr);
-    if (graph)
-      shift_self(graph,box,x);
+  if (cr) {
+    if (bDomDec) {
+      dd_move_x_vsites(cr->dd,box,x);
+    } else if (vsite->bPDvsitecomm) {
+      /* I'm not sure whether the periodicity and shift are guaranteed
+       * to be consistent between different nodes when running e.g. polymers
+       * in parallel. In this special case we thus unshift/shift,
+       * but only when necessary. This is to make sure the coordinates
+       * we move don't end up a box away...
+       */
+      if (graph)
+	unshift_self(graph,box,x);
+      move_construct_x(vsite->vsitecomm,x,cr);
+      if (graph)
+	shift_self(graph,box,x);
+    }
   }
 
   if (v) {
@@ -681,10 +683,7 @@ static void spread_vsite2(t_iatom ia[],real a,
 }
 
 void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
-			   rvec x[],t_nrnb *nrnb,
-			   real dt,
-			   gmx_mtop_t *mtop,
-			   int ePBC,t_commrec *cr,matrix box)
+			   gmx_mtop_t *mtop,rvec x[])
 {
   int as,mb,mol;
   gmx_molblock_t *molb;
@@ -695,9 +694,9 @@ void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
     molb = &mtop->molblock[mb];
     molt = &mtop->moltype[molb->type]; 
     for(mol=0; mol<molb->nmol; mol++) {
-      construct_vsites(log,vsite,x+as,nrnb,dt,NULL,
+      construct_vsites(log,vsite,x+as,NULL,0.0,NULL,
 		       mtop->ffparams.iparams,molt->ilist,
-		       ePBC,TRUE,NULL,cr,box);
+		       epbcNONE,TRUE,NULL,NULL,NULL);
       as += molt->atoms.nr;
     }
   }
@@ -1435,7 +1434,8 @@ static int count_intercg_vsite(gmx_mtop_t *mtop)
   return n_intercg_vsite;
 }
 
-static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,t_atom *atom,
+static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
+			   t_atom *atom,t_mdatoms *md,
 			   t_block *cgs,int *a2cg)
 {
   int  ftype,nral,i,j,vsi,vsite,cg_v,cg_c,a,nc3=0;
@@ -1486,7 +1486,8 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,t_atom *atom,
 	     * store the first non-vsite atom of the vsite cg
 	     */
 	    for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
-	      if (atom[a].ptype != eptVSite) {
+	      if ((atom && atom[a].ptype != eptVSite) ||
+		  (md   && md->ptype[a]  != eptVSite)) {
 		vsite_pbc_f[vsi] = a;
 		if (gmx_debug_at)
 		  fprintf(debug,"vsite %d match pbc with atom %d\n",
@@ -1548,16 +1549,22 @@ gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr)
       /* Make an atom to charge group index */
       a2cg = atom2cg(&molt->cgs);
       vsite->vsite_pbc_molt[mt] = get_vsite_pbc(mtop->ffparams.iparams,
-						molt->ilist,molt->atoms.atom,
+						molt->ilist,
+						molt->atoms.atom,NULL,
 						&molt->cgs,a2cg);
       sfree(a2cg);
     }
+
+    snew(vsite->vsite_pbc_loc_nalloc,F_VSITEN-F_VSITE2+1);
+    snew(vsite->vsite_pbc_loc       ,F_VSITEN-F_VSITE2+1);
   }
-  
+
+
   return vsite;
 }
 
-void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_commrec *cr)
+void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_mdatoms *md,
+		   t_commrec *cr)
 {
   int *a2cg;
 
@@ -1566,7 +1573,7 @@ void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_commrec *cr)
 
   if (vsite->n_intercg_vsite > 0) {
     vsite->vsite_pbc_loc = get_vsite_pbc(top->idef.iparams,
-					 top->idef.il,top->atoms.atom,
+					 top->idef.il,NULL,md,
 					 &top->cgs,a2cg);
 
     if (PARTDECOMP(cr)) {

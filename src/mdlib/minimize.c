@@ -253,14 +253,6 @@ void init_em(FILE *fplog,const char *title,
   init_nrnb(nrnb);
 
   if (DOMAINDECOMP(cr)) {
-    if (vsite && DDMASTER(cr->dd)) {     
-      construct_vsites_mtop(fplog,vsite,
-			    state_global->x,nrnb,ir->delta_t,
-			    top_global,
-			    ir->ePBC,
-			    DOMAINDECOMP(cr) ? NULL : cr,state_global->box);
-    }
-
     *top = dd_init_local_top(top_global);
 
     dd_init_local_state(cr->dd,state_global,&ems->s);
@@ -298,10 +290,6 @@ void init_em(FILE *fplog,const char *title,
     }
     *f_global = f;
 
-    if (vsite) {
-      set_vsite_top(vsite,*top,cr);
-    }
-
     if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
       *graph = mk_graph(fplog,&((*top)->idef),0,(*top)->atoms.nr,FALSE,FALSE);
     } else {
@@ -321,6 +309,10 @@ void init_em(FILE *fplog,const char *title,
   }
   atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
   update_mdatoms(mdatoms,state_global->lambda);
+
+  if (vsite && !DOMAINDECOMP(cr)) {
+    set_vsite_top(vsite,*top,mdatoms,cr);
+  }
 
   if (constr) {
     if (ir->eConstrAlg == econtSHAKE &&

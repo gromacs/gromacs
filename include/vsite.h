@@ -76,12 +76,10 @@ extern void construct_vsites(FILE *log,gmx_vsite_t *vsite,
  */
 
 void construct_vsites_mtop(FILE *log,gmx_vsite_t *vsite,
-			   rvec x[],t_nrnb *nrnb,
-			   real dt,
-			   gmx_mtop_t *mtop,
-			   int ePBC,t_commrec *cr,matrix box);
+			   gmx_mtop_t *mtop,rvec x[]);
 /* Create positions of vsite atoms based on surrounding atoms
  * for the whole system.
+ * This function assumes that all molecules are whole.
  */
 
 extern void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
@@ -98,7 +96,8 @@ extern gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
  * returns NULL when there are no virtual sites.
  */
 
-extern void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_commrec *cr);
+extern void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_mdatoms *md,
+			  t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.
  */
