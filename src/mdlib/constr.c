@@ -875,7 +875,7 @@ gmx_constr_t init_constraints(FILE *fplog,
   constr->ed = ed;
   if (ed != NULL) {
     gmx_fatal(FARGS,"init_edsam needs to be updated");
-    /* init_edsam(top,ir,cr,ed,state->x,state->box); */
+    init_edsam(mtop,ir,cr,ed,state->x,state->box);
   }
 
   constr->warn_mtop = mtop;

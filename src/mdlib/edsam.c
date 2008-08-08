@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *  
  * $Id$
  * 
  *                This source code is part of
@@ -54,6 +55,7 @@
 #include "physics.h"
 #include "rmpbc.h"
 #include "nrjac.h"
+#include "mtop_util.h"
 #include "edsam.h"
 #include "mpelogging.h"
 
@@ -1399,14 +1401,14 @@ static void broadcast_ed_data(t_commrec *cr, gmx_edsam_t ed, int numedis)
 
 
 /* init-routine called for every *.edi-cycle, initialises t_edpar structure */
-static void init_edi(t_topology *top,t_inputrec *ir,
-        t_commrec *cr,gmx_edsam_t ed,t_edpar *edi) 
+static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
+                     t_commrec *cr,gmx_edsam_t ed,t_edpar *edi) 
 {
     int  i;
     rvec transvec;
     real totalmass = 0.0;
     rvec com;
-
+    t_atom *atom;
 
     /* NOTE Init_edi is executed on the master process only 
      * The initialized data sets are then transmitted to the
@@ -1424,9 +1426,14 @@ static void init_edi(t_topology *top,t_inputrec *ir,
     for (i = 0; i < edi->sref.nr; i++)
     {
         if (edi->fitmas)
-            edi->sref.m[i] = top->atoms.atom[edi->sref.anrs[i]].m;
+        {
+            gmx_mtop_atomnr_to_atom(mtop,edi->sref.anrs[i],&atom);
+            edi->sref.m[i] = atom->m;
+        }
         else
+        {
             edi->sref.m[i] = 1.0;
+        }
         totalmass += edi->sref.m[i];
     }
     edi->sref.mtot = totalmass;
@@ -1437,11 +1444,16 @@ static void init_edi(t_topology *top,t_inputrec *ir,
     snew(edi->sav.m    , edi->sav.nr );
     for (i = 0; i < edi->sav.nr; i++)
     {
-        edi->sav.m[i] = top->atoms.atom[edi->sav.anrs[i]].m;
+        gmx_mtop_atomnr_to_atom(mtop,edi->sref.anrs[i],&atom);
+        edi->sav.m[i] = atom->m;
         if (edi->pcamas)
-            edi->sav.sqrtm[i] = sqrt(top->atoms.atom[edi->sav.anrs[i]].m);
+        {
+            edi->sav.sqrtm[i] = sqrt(atom->m);
+        }
         else
+        {
             edi->sav.sqrtm[i] = 1.0;
+        }
     }
 
     /* put reference structure in origin */
@@ -2599,7 +2611,7 @@ static int ed_constraints(bool edtype, t_edpar *edi)
 }
 
 
-void init_edsam(t_topology  *top,    /* global topology                    */
+void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
                 t_inputrec  *ir,     /* input record                       */
                 t_commrec   *cr,     /* communication record               */
                 gmx_edsam_t ed,      /* contains all ED data               */
@@ -2636,7 +2648,7 @@ void init_edsam(t_topology  *top,    /* global topology                    */
     {
         snew(ed->edpar,1);
         /* Read the whole edi file at once: */
-        read_edi_file(ed,ed->edpar,top->atoms.nr);
+        read_edi_file(ed,ed->edpar,mtop->natoms);
 
         /* Initialization for every ED/flooding dataset */
         /* Flooding uses one edi dataset per flooding vector,
@@ -2646,7 +2658,7 @@ void init_edsam(t_topology  *top,    /* global topology                    */
         edi=ed->edpar;
         while(edi != NULL)
         {
-            init_edi(top,ir,cr,ed,edi);
+            init_edi(mtop,ir,cr,ed,edi);
             edi=edi->next_edi;
             numedis++;
         }
@@ -2656,10 +2668,12 @@ void init_edsam(t_topology  *top,    /* global topology                    */
      * not before dd_partition_system which is called after init_edsam */
     if (MASTER(cr))
     {
-        /* Remove pbc, make molecule(s) whole */
-        snew(x_pbc , top->atoms.nr);
-        m_rveccopy(top->atoms.nr,x,x_pbc);
-        rm_pbc(&(top->idef),ir->ePBC,top->atoms.nr,box,x_pbc,x_pbc);
+        /* Remove pbc, make molecule whole.
+         * When ir->bContinuation=TRUE this has already been done, but ok.
+         */
+        snew(x_pbc,mtop->natoms);
+        m_rveccopy(mtop->natoms,x,x_pbc);
+        do_pbc_first_mtop(NULL,ir->ePBC,box,mtop,x_pbc);
 
         /* Reset pointer to first ED data set which contains the actual ED data */
         edi=ed->edpar;
