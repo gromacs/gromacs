@@ -60,9 +60,6 @@
 #include "copyrite.h"
 #include "vec.h"
 #include "mtop_util.h"
-#ifdef HAVE_LIBXML2
-#include "xmlio.h"
-#endif
 
 /* This number should be increased whenever the file format changes! */
 static const int tpx_version = 57;
@@ -1922,18 +1919,9 @@ void read_tpxheader(char *fn,t_tpxheader *tpx, bool TopOnlyOK,int *file_version,
 {
   int fp;
 
-#ifdef HAVE_LIBXML2
-  if (fn2ftp(fn) == efXML) {
-    gmx_fatal(FARGS,"read_tpxheader called with filename %s",fn);
-  }
-  else {
-#endif
-    fp = open_tpx(fn,"r");
-    do_tpxheader(fp,TRUE,tpx,TopOnlyOK,file_version,file_generation);
-    close_tpx(fp);
-#ifdef HAVE_LIBXML2
-  }
-#endif
+  fp = open_tpx(fn,"r");
+  do_tpxheader(fp,TRUE,tpx,TopOnlyOK,file_version,file_generation);
+  close_tpx(fp);
 }
 
 void write_tpx_state(char *fn,int step,real t,
@@ -1941,21 +1929,9 @@ void write_tpx_state(char *fn,int step,real t,
 {
   int fp;
 
-#ifdef HAVE_LIBXML2
-  if (fn2ftp(fn) == efXML) {
-    gmx_incons("The XML tpx i/o code is not up to date");
-    /*
-    write_xml(fn,*top->name,ir,state->box,state->natoms,
-	      state->x,state->v,NULL,1,&top->atoms,&top->idef);
-    */
-  } else {
-#endif
-    fp = open_tpx(fn,"w");
-    do_tpx(fp,FALSE,&step,&t,ir,state,NULL,mtop,FALSE);
-    close_tpx(fp);
-#ifdef HAVE_LIBXML2
-  }
-#endif
+  fp = open_tpx(fn,"w");
+  do_tpx(fp,FALSE,&step,&t,ir,state,NULL,mtop,FALSE);
+  close_tpx(fp);
 }
 
 void read_tpx_state(char *fn,int *step,real *t,
@@ -1976,41 +1952,19 @@ int read_tpx(char *fn,int *step,real *t,real *lambda,
   t_state state;
   int ePBC;
 
-#ifdef HAVE_LIBXML2
-  if (fn2ftp(fn) == efXML) {
-    int  i;
-    rvec *xx=NULL,*vv=NULL,*ff=NULL;
-    
-    gmx_fatal(FARGS,"The XML tpx writing code is not up to date");
-    /* read_xml(fn,step,t,lambda,ir,box,natoms,&xx,&vv,&ff,mtop); */
-    ePBC = -1;
-    for(i=0; (i<*natoms); i++) {
-      if (xx) copy_rvec(xx[i],x[i]);
-      if (vv) copy_rvec(vv[i],v[i]);
-      if (ff) copy_rvec(ff[i],f[i]);
-    }
-    if (xx) sfree(xx);
-    if (vv) sfree(vv);
-    if (ff) sfree(ff);
-  }
-  else {
-#endif
-    state.x = x;
-    state.v = v;
-    fp = open_tpx(fn,"r");
-    ePBC = do_tpx(fp,TRUE,step,t,ir,&state,f,mtop,TRUE);
-    close_tpx(fp);
-    *natoms = state.natoms;
-    if (lambda) 
-      *lambda = state.lambda;
-    if (box) 
-      copy_mat(state.box,box);
-    state.x = NULL;
-    state.v = NULL;
-    done_state(&state);
-#ifdef HAVE_LIBXML2
-  }
-#endif
+  state.x = x;
+  state.v = v;
+  fp = open_tpx(fn,"r");
+  ePBC = do_tpx(fp,TRUE,step,t,ir,&state,f,mtop,TRUE);
+  close_tpx(fp);
+  *natoms = state.natoms;
+  if (lambda) 
+    *lambda = state.lambda;
+  if (box) 
+    copy_mat(state.box,box);
+  state.x = NULL;
+  state.v = NULL;
+  done_state(&state);
 
   return ePBC;
 }
