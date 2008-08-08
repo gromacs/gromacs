@@ -937,6 +937,8 @@ int gmx_anaeig(int argc,char *argv[])
   }
   
   if (bVec2) {
+    if (!Vec2File)
+      gmx_fatal(FARGS,"Need a second eigenvector file to do this analysis.");
     read_eigenvectors(Vec2File,&neig2,&bFit2,
 		      &xref2,&bDMR2,&xav2,&bDMA2,&nvec2,&eignr2,&eigvec2,&eigval2);
     
