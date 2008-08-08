@@ -70,12 +70,14 @@
 #include "slater_integrals.h"
 #include "gentop_qgen.h"
 #include "gentop_eemprops.h"
+#include "mtop_util.h"
 
 typedef struct {
   char          *molname;
   bool          bSupport;
   real          dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
-  t_topology    top;
+  gmx_mtop_t    mtop;
+  t_topology    *ltop;
   t_inputrec    ir;
   gmx_shellfc_t shell;
   t_mdatoms     *md;
@@ -109,15 +111,15 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
   
   /* Read coordinates */
   read_tpxheader(fn,&tpx,TRUE,&version,&generation);
-  init_top(&(mymol->top));
   natoms = tpx.natoms;
+  snew(mymol->x,natoms);              
   
   /* make space for all the atoms */
-  init_t_atoms(&(mymol->top.atoms),natoms,TRUE);
-  snew(mymol->x,natoms);              
-
+  /*init_t_atoms(&(mymol->top->atoms),natoms,TRUE);*/
+  init_mtop(&mymol->mtop);
   read_tpx(fn,&step,&t,&lambda,&(mymol->ir),mymol->box,&natoms,
-	   mymol->x,NULL,NULL,&(mymol->top));
+	   mymol->x,NULL,NULL,&mymol->mtop);
+  mymol->ltop = gmx_mtop_generate_local_top(&mymol->mtop,&(mymol->ir));
 
   mymol->molname = strdup(fn);
   mymol->bSupport = TRUE;
@@ -134,21 +136,20 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
   mymol->qtotal  = 0;
   
   if (bPol) {
-    mymol->vs = init_vsite(cr,&mymol->top);
+    mymol->vs = init_vsite(&mymol->mtop,cr);
     snew(mymol->f,natoms);
     snew(mymol->buf,natoms);
-    mymol->shell = init_shell_flexcon(debug,cr,&mymol->top,0,
-				      FALSE,mymol->x);
+    mymol->shell = init_shell_flexcon(debug,&mymol->mtop,0,mymol->x);
     mymol->fr = mk_forcerec();
-    init_forcerec(debug,mymol->fr,NULL,&mymol->ir,&mymol->top,cr,
+    init_forcerec(debug,mymol->fr,NULL,&mymol->ir,&mymol->mtop,cr,
 		  mymol->box,FALSE,NULL,NULL,NULL, TRUE,-1);
   }
   else 
     mymol->shell = NULL;
   
   init_state(&mymol->state,natoms,1);
-  init_groups(NULL,&(mymol->top.atoms),&(mymol->ir.opts),&mymol->grps);
-  mymol->md = init_mdatoms(debug,&(mymol->top.atoms),FALSE);
+  init_t_groups(NULL,&mymol->mtop,&(mymol->ir.opts),&mymol->grps);
+  mymol->md = init_mdatoms(debug,&mymol->mtop,FALSE);
 }
 
 static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
@@ -174,10 +175,10 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
       add_lsq(&lsq,mol[i].dip_exp,mol[i].dip_calc);
       d2 += sqr(mol[i].dip_exp-mol[i].dip_calc);
       fprintf(logf,"Res  Atom  q\n");
-      for(j=0; (j<mol[i].top.atoms.nr); j++) {
-	resnm  = *(mol[i].top.atoms.resname[mol[i].top.atoms.atom[j].resnr]);
-	atomnm = *(mol[i].top.atoms.atomname[j]);
-	fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].top.atoms.atom[j].q);
+      for(j=0; (j<mol[i].mtop.natoms); j++) {
+	resnm  = *(mol[i].ltop->atoms.resname[mol[i].ltop->atoms.atom[j].resnr]);
+	atomnm = *(mol[i].ltop->atoms.atomname[j]);
+	fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].ltop->atoms.atom[j].q);
       }
       fprintf(logf,"\n");
       n++;
@@ -231,14 +232,14 @@ static void check_data_suffiency(FILE *logf,
   snew(remove,109);
   for(i=0; (i<*nmol); i++) {
     mol[i].bSupport = TRUE;
-    for(j=0; (mol[i].bSupport && (j<mol[i].top.atoms.nr)); j++) {
-      if ((mol[i].top.atoms.atom[j].atomnumber > 0) || !bPol)
-	if (eem_get_index(eem,mol[i].top.atoms.atom[j].atomnumber,eemtype) == -1)
+    for(j=0; (mol[i].bSupport && (j<mol[i].mtop.natoms)); j++) {
+      if ((mol[i].ltop->atoms.atom[j].atomnumber > 0) || !bPol)
+	if (eem_get_index(eem,mol[i].ltop->atoms.atom[j].atomnumber,eemtype) == -1)
 	  mol[i].bSupport = FALSE;
     }
     if (mol[i].bSupport) {
-      for(j=0; (j<mol[i].top.atoms.nr); j++) {
-	elemcnt[mol[i].top.atoms.atom[j].atomnumber]++;
+      for(j=0; (j<mol[i].ltop->atoms.nr); j++) {
+	elemcnt[mol[i].ltop->atoms.atom[j].atomnumber]++;
       }
     }
     else
@@ -256,12 +257,12 @@ static void check_data_suffiency(FILE *logf,
     if (nremove > 0) {
       for(i=0; (i<*nmol); i++) {
 	if (mol[i].bSupport) {
-	  for(j=0; (j<mol[i].top.atoms.nr); j++) {
-	    if (remove[mol[i].top.atoms.atom[j].atomnumber]) 
+	  for(j=0; (j<mol[i].mtop.natoms); j++) {
+	    if (remove[mol[i].ltop->atoms.atom[j].atomnumber]) 
 	      break;
 	  }
-	  if (j<mol[i].top.atoms.nr) {
-	    elemcnt[mol[i].top.atoms.atom[j].atomnumber]--;
+	  if (j<mol[i].mtop.natoms) {
+	    elemcnt[mol[i].ltop->atoms.atom[j].atomnumber]--;
 	  }
 	  mol[i].bSupport = FALSE;
 	  nsupported--;
@@ -367,8 +368,8 @@ static real mymol_calc_dip(t_mymol *mol)
   rvec mu,mm;
   
   clear_rvec(mu);
-  for(i=0; (i<mol->top.atoms.nr); i++) {
-    svmul(mol->top.atoms.atom[i].q,mol->x[i],mm);
+  for(i=0; (i<mol->mtop.natoms); i++) {
+    svmul(mol->ltop->atoms.atom[i].q,mol->x[i],mm);
     rvec_inc(mu,mm);
   }
   return norm(mu)*ENM2DEBYE;
@@ -433,7 +434,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
     mymol = &(md->mymol[i]);
     if (!mymol->bSupport)
       continue;
-    eQ = generate_charges_sm(debug,eem,&(mymol->top.atoms),
+    eQ = generate_charges_sm(debug,eem,&(mymol->ltop->atoms),
 			     mymol->x,1e-4,100,md->atomprop,
 			     mymol->qtotal,eemtp,md->hfac,
 			     md->slater_max,&(mymol->chieq));
@@ -442,24 +443,24 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
       
     /* Now optimize the shell positions */
     if (mymol->shell) {
-      split_shell_charges(&(mymol->top.atoms),&(mymol->top.idef));
-      atoms2md(&(mymol->top.atoms),&(mymol->ir),0,0,NULL,0,
-	       mymol->top.atoms.nr,mymol->md);
+      split_shell_charges(&(mymol->ltop->atoms),&(mymol->ltop->idef));
+      atoms2md(&mymol->mtop,&(mymol->ir),0,NULL,0,mymol->mtop.natoms,mymol->md);
       count = relax_shell_flexcon(debug,md->cr,FALSE,0,
 				  &(mymol->ir),TRUE,FALSE,
-				  &(mymol->top),NULL,ener,
+				  mymol->ltop,NULL,ener,
 				  NULL,&(mymol->state),
 				  mymol->f,mymol->buf,
 				  force_vir,mymol->md,
 				  &my_nrnb,wcycle,NULL,
+				  &(mymol->mtop.groups),
 				  &(mymol->grps),mymol->shell,
 				  mymol->fr,t,mu_tot,
-				  mymol->top.atoms.nr,&bConverged,NULL,NULL);
+				  mymol->mtop.natoms,&bConverged,NULL,NULL);
     }
     mymol->dip_calc = mymol_calc_dip(&(md->mymol[i]));
-    for(j=0; (j<mymol->top.atoms.nr); j++) {
-      qq = mymol->top.atoms.atom[j].q;
-      atomnr = mymol->top.atoms.atom[j].atomnumber;
+    for(j=0; (j<mymol->mtop.natoms); j++) {
+      qq = mymol->ltop->atoms.atom[j].q;
+      atomnr = mymol->ltop->atoms.atom[j].atomnumber;
       if (((qq < 0) && (atomnr == 1)) || 
 	  ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) || 
 			(atomnr == 16) || (atomnr == 17) ||

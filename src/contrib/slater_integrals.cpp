@@ -230,7 +230,7 @@ t_slater_NS_func (*DSlater_NS[SLATER_MAX]) = {
 static char *my_ftoa(double d)
 {
   static char buf[256];
-  sprintf(buf,"%g",d);
+  sprintf(buf,"%f",d);
   if (strchr(buf,'.') == NULL) strcat(buf,".0");
   strcat(buf,"_80");
   return buf;
