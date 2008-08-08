@@ -371,7 +371,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
       }
       if (constr->ed && delta_step > 0) {
         /* apply the essential dynamcs constraints here */
-        do_edsam(top,ir,step,md,cr,xprime,box,constr->ed);
+        do_edsam(top,ir,step,md,cr,xprime,v,box,constr->ed);
       }
   }
   
@@ -874,7 +874,6 @@ gmx_constr_t init_constraints(FILE *fplog,
    * Put the pointer to the ED struct in constr */
   constr->ed = ed;
   if (ed != NULL) {
-    gmx_fatal(FARGS,"init_edsam needs to be updated");
     init_edsam(mtop,ir,cr,ed,state->x,state->box);
   }
 
