@@ -101,7 +101,8 @@ extern void get_ir(char *mdparin,char *mdparout,
  * Add errors no nerror.
  */
  
-extern void do_index(char *ndx,
+extern void do_index(char* mdparin, 
+		     char *ndx,
 		     gmx_mtop_t *mtop,
 		     bool bVerbose,
 		     t_inputrec *ir,

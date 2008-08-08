@@ -221,6 +221,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   if (ir->epc != epcNO) {
     sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
     CHECK(ir->tau_p <= 0);
+
+    if (ir->tau_p <5) {
+	warning_note("tau_p is smaller than 5ps. This is in most cases not recommended!");
+    }	
        
     sprintf(err_buf,"compressibility must be > 0 when using pressure" 
 	    " coupling %s\n",EPCOUPLTYPE(ir->epc));
@@ -1354,7 +1358,7 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
   return bSet;
 }
 
-void do_index(char *ndx,
+void do_index(char* mdparin, char *ndx,
 	      gmx_mtop_t *mtop,
 	      bool bVerbose,
 	      t_inputrec *ir,rvec *v)
@@ -1410,6 +1414,13 @@ void do_index(char *ndx,
   if ((ntau_t != ntcg) || (nref_t != ntcg)) 
     gmx_fatal(FARGS,"Invalid T coupling input: %d groups, %d ref_t values and "
 		"%d tau_t values",ntcg,nref_t,ntau_t);  
+  if (!(ntcg==2 && ((strcasecmp(ptr3[0],"Protein")==0 && strcasecmp(ptr3[1],"Non-Protein")==0) || 
+		    (strcasecmp(ptr3[1],"Protein")==0 && strcasecmp(ptr3[0],"Non-Protein")==0)))) {
+      set_warning_line(mdparin,-1);
+      sprintf(warn_buf,"In  most cases you want to set tc-grps to \"Protein Non-Protein\" instead of \"%s\". Make sure "
+	      "to read http://wiki.gromacs.org/index.php/Thermostats.", tcgrps);
+      warning(NULL);
+  }
 
   if (ir->eI != eiMD)
     ir->etc = etcNO;
@@ -1432,6 +1443,9 @@ void do_index(char *ndx,
       ir->opts.tau_t[i]=atof(ptr1[i]);
       if (ir->opts.tau_t[i] < 0)
 	gmx_fatal(FARGS,"tau_t for group %d negative",i);
+      if (ir->opts.tau_t[i] < 0.1) {
+	  warning_note("tau_t is below 0.1ps. This is in most cases not recommended!");
+      }
     }
     for(i=0; (i<nr); i++) {
       ir->opts.ref_t[i]=atof(ptr2[i]);
@@ -1589,6 +1603,12 @@ void do_index(char *ndx,
   add_wall_energrps(groups,ir->nwall,symtab);
   ir->opts.ngener = groups->grps[egcENER].nr;
   nvcm=str_nelem(vcm,MAXPTR,ptr1);
+  if (!(nvcm==0 || (nvcm==1 && strcasecmp(ptr1[0],"System")==0))) {
+      sprintf(warn_buf,"It is unphysical to use %s for comm-grps. "
+	      "Please leave empty or use System!", vcm);
+      warning(NULL);
+  }
+
   do_numbering(natoms,groups,nvcm,ptr1,grps,gnames,egcVCM,
 	       restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
 

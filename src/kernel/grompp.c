@@ -941,7 +941,7 @@ int main (int argc, char *argv[])
 
   if (bVerbose) 
     fprintf(stderr,"initialising group options...\n");
-  do_index(ftp2fn_null(efNDX,NFILE,fnm),
+  do_index(mdparin,ftp2fn_null(efNDX,NFILE,fnm),
 	   sys,bVerbose,ir,
 	   bGenVel ? state.v : NULL);
 
