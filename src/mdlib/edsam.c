@@ -61,15 +61,10 @@
 
 /* Defines used for flooding */
 #define FIT 1
-#define BLOWUP 2
 #define DOFIT
-#define NODEBUG BLOWUP
-#ifdef DEBUG
-#define DUMP_FORCES 
-#define DEBUG_PRINT(X) fprintf(stderr,"%s\n",(X))
-#else
-#define DEBUG_PRINT(X) {}
-#endif
+
+//#define DEBUG_PRINT(X) fprintf(stderr,"%s\n",(X))
+#define DEBUG_PRINT(X) 
 
 #ifdef DUMP_FORCES
 static FILE* logfile = NULL;
@@ -299,7 +294,7 @@ static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec, t_commrec *cr)
         rad += pow((vec->refproj[i]-vec->xproj[i]),2);
     }
     vec->radius=sqrt(rad);
-
+    
     /* add average positions */
     for (i = 0; i < edi->sav.nr; i++) 
         rvec_inc(x[i], edi->sav.x[i]);
@@ -431,7 +426,27 @@ static real calc_radius(t_eigvec *vec)
 }
 
 
-/* Debug helper */
+/* Debug helpers */
+static void dump_xcoll(t_edpar *edi, rvec *xcoll, t_commrec *cr, int step)
+{
+    int i;
+    static FILE *fp = NULL;
+    
+    
+    if (!MASTER(cr))
+        return;
+    
+    if (!fp)
+      fp = ffopen("xcolldump.txt", "w");
+    
+    fprintf(fp, "Step %d\n", step);
+    for (i=0; i<edi->sav.nr; i++)
+        fprintf(fp, "%12.5e %12.5e %12.5e\n", xcoll[i][XX], xcoll[i][YY], xcoll[i][ZZ]);
+
+    fflush(fp);
+}
+
+
 static void dump_edi_positions(FILE *out, struct gmx_edx *s, char name[])
 {
     int i;
@@ -511,7 +526,7 @@ static void dump_edi(t_edpar *edpars, t_commrec *cr, int nr_edi)
     dump_edi_eigenvecs(out, &edpars->vecs.radcon, "RADCON"   , edpars->sav.nr);
 
     /* Dump flooding eigenvectors */
-    dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING", edpars->sav.nr);
+    dump_edi_eigenvecs(out, &edpars->flood.vecs, "FLOODING"  , edpars->sav.nr);
 
     /* Dump ed local buffer */
     fprintf(out, "buf->fitit            =%p\n", edpars->buf->fitit            );
@@ -1107,40 +1122,30 @@ static void do_single_flood(FILE *log,FILE *edo,rvec x_orig[],rvec force[], t_ed
 }
 
 
-extern void do_flood(FILE *log, t_commrec *cr, rvec x_orig[],rvec force[], gmx_edsam_t ed, int step)
+/* Main flooding routine, called from do_force */
+extern void do_flood(FILE       *log,     /* Log file for writing output */
+                    t_commrec   *cr,      /* Communication record */
+                    rvec        x_orig[], /* positions */
+                    rvec        force[],  /* forcefield forces, to these the flooding forces are added */
+                    gmx_edsam_t ed,       /* ed data structure contains all ED and flooding datasets */
+                    int         step)     /* The time step */
 {
-    /* this is the hook, 
-     do_flood is called by mdrun via the force() (force.c) routine.
-     the parameters are
-     logfile, commrec (to no if we are on the master node), x_orig (positions), 
-     force ( forcefield forces , we add the flooding force to them), edi - all the parameters)
-     */
-    int i,j,ned,iupdate=500;
-    int nr;
-    matrix rotmat;
-    real mas,rad;
+    int     nr=0;
     t_edpar *edi;
-    t_edpar *actual_edi;
 
-    if (!ed) 
-        return;
+
     if (ed->eEDtype != eEDflood)
         return;
-
-    edi = ed->edpar;
-    if (!edi->flood.vecs.neig) return;
-    ned=edi->ned;
-    nr=0;
-    
-    if(!MASTER(cr))
+    if (!ed->edpar->flood.vecs.neig) 
         return;
     
-    actual_edi=edi;
-    while (actual_edi)
+    edi = ed->edpar;
+    fprintf(stderr, "edi = %p\n", edi);
+    while (edi)
     {
         DEBUG_PRINT("call flooding for one matrix");
-        do_single_flood(log,ed->edo,x_orig,force,actual_edi,step,nr++,cr);
-        actual_edi=actual_edi->next_edi;
+        do_single_flood(log,ed->edo,x_orig,force,edi,step,nr++,cr);
+        edi = edi->next_edi;
     }
 }
 
@@ -1159,8 +1164,6 @@ static void init_flood(t_edpar *edi, FILE *fp_edo, real dt, t_commrec *cr)
 
     if (edi->flood.vecs.neig)
     {
-        gmx_fatal(FARGS, "Sorry - Flooding is not yet implemented in this version.");
-
 #ifdef DUMP_FORCES
         logfile=ffopen("dump_force2.log","w");
         fprintf(logfile,"Vfl Efl\nForce in Subspace\nForces in cartesian space\n");
@@ -1168,24 +1171,27 @@ static void init_flood(t_edpar *edi, FILE *fp_edo, real dt, t_commrec *cr)
         fprintf(fp_edo,"FL_HEADER: Flooding of matrix %d is switched on! The flooding output will have the following format:\n",
                 edi->flood.flood_id);
         if (edi->flood.flood_id<1)
-            fprintf(fp_edo,"FL_HEADER: Step Efl Vfl deltaF \n");
-        /* get memory only once, that should speed up computations */
+            fprintf(fp_edo,"FL_HEADER: Step Efl Vfl deltaF\n");
+        
+        /* Get memory */
+        snew(edi->flood.loc.x               ,edi->sav.nr);
+        snew(edi->flood.loc.forces_cartesian,edi->sav.nr);
 
-        snew(edi->flood.loc.x,edi->ned);
-        snew(edi->flood.loc.transvec,edi->ned);
-        snew(edi->flood.loc.forces_cartesian,edi->ned);
-
-        /* set center of flooding potential */
-        if (edi->sori.nr > 0) {
+        /* set center of flooding potential ... */
+        if (edi->sori.nr > 0)
+        {
+            gmx_fatal(FARGS, "Setting of center of flooding potential with -ori needs to be implemented.");
             /* ... to the structure given with -ori */
             fitit(edi->ned, edi->sori.x, edi,edi->flood.loc.transvec, rotmat, cr);
             rad_project(edi, edi->sori.x, &edi->flood.vecs, cr);
-        } else
+        }
+        else
         {
             /* ... to the center of the covariance matrix, i.e. the average structure, i.e. zero in the projected system */
-            for (i=0;i<edi->flood.vecs.neig;i++)
+            for (i=0; i<edi->flood.vecs.neig; i++)
                 edi->flood.vecs.refproj[i]=0.0;
         }
+        gmx_fatal(FARGS, "Flooding not yet implemented in this version - use 3.3 instead");
     }
 }
 
@@ -1444,7 +1450,7 @@ static void init_edi(gmx_mtop_t *mtop,t_inputrec *ir,
     snew(edi->sav.m    , edi->sav.nr );
     for (i = 0; i < edi->sav.nr; i++)
     {
-        gmx_mtop_atomnr_to_atom(mtop,edi->sref.anrs[i],&atom);
+        gmx_mtop_atomnr_to_atom(mtop,edi->sav.anrs[i],&atom);
         edi->sav.m[i] = atom->m;
         if (edi->pcamas)
         {
@@ -1607,12 +1613,12 @@ static void read_edx(FILE *file,int number,int *anrs,rvec *x)
     double d[3];
 
     
-    for(i=0; (i < number); i++)
+    for(i=0; i<number; i++)
     {
         fgets2 (line,STRLEN,file);
         sscanf (line,"%d%lf%lf%lf",&anrs[i],&d[0],&d[1],&d[2]);
         anrs[i]--; /* we are reading FORTRAN indices */
-        for(j=0; (j < 3); j++)
+        for(j=0; j<3; j++)
             x[i][j]=d[j]; /* always read as double and convert to single */
     }
 }
@@ -1707,10 +1713,8 @@ static bool check_if_same(struct gmx_edx sref, struct gmx_edx sav)
 
 static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int edi_nr)
 {
-    int i,j,idum,readmagic;
+    int readmagic;
     static const int magic=669;
-    int ignore;
-    rvec *xdum;
     bool bEOF;
 
     
@@ -1782,23 +1786,9 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     if (edi->star.nr > 0)
     {
         snew(edi->star.anrs,edi->star.nr);
-        snew(xdum          ,edi->star.nr);
+        snew(edi->star.x   ,edi->star.nr);
         edi->star.sqrtm    =NULL;
-        read_edx(in,edi->star.nr,edi->star.anrs,xdum);
-        snew(edi->star.x,edi->ned);
-
-        for(j=0; (j < edi->star.nr); j++) 
-            if (edi->star.anrs[j] < 0 || edi->star.anrs[j] > edi->ned)
-                gmx_fatal(FARGS,"ED sampling target index out of bounds: %d\n",edi->star.anrs[j]);
-        for(i=0; (i < edi->ned); i++) 
-        {
-            for(j=0; (j < edi->star.nr); j++) 
-            {
-                if (edi->star.anrs[j] == i)
-                    copy_rvec(xdum[j],edi->star.x[i]);
-            }
-        }
-        sfree(xdum);
+        read_edx(in,edi->star.nr,edi->star.anrs,edi->star.x);
     }
 
     /* positions defining origin of expansion circle */
@@ -1806,24 +1796,11 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
     if (edi->sori.nr > 0)
     {
         snew(edi->sori.anrs,edi->sori.nr);
-        snew(xdum          ,edi->sori.nr);
+        snew(edi->sori.x   ,edi->sori.nr);
         edi->sori.sqrtm    =NULL;
-        read_edx(in,edi->sori.nr,edi->sori.anrs,xdum);
-        snew(edi->sori.x,edi->ned);
-
-        for(j=0; (j < edi->sori.nr); j++) 
-            if (edi->sori.anrs[j] < 0 || edi->sori.anrs[j] > edi->ned)
-                gmx_fatal(FARGS,"ED sampling origin index out of bounds: %d\n",edi->sori.anrs[j]);
-        for(i=0; (i < edi->ned); i++)
-        {
-            for(j=0; (j < edi->sori.nr); j++)
-            {
-                if (edi->sori.anrs[j] == i)
-                    copy_rvec(xdum[j],edi->sori.x[i]);
-            }
-        }
-        sfree(xdum);
+        read_edx(in,edi->sori.nr,edi->sori.anrs,edi->sori.x);
     }
+    
     /* all done */
     return 1;
 }
@@ -2416,7 +2393,8 @@ static void do_radacc(rvec *xcoll, t_edpar *edi, t_commrec *cr)
         /* apply the correction */
         proj[i] /= edi->sav.sqrtm[i];
         proj[i] *= ratio;
-        for (j=0; j<edi->sav.nr; j++) {
+        for (j=0; j<edi->sav.nr; j++)
+        {
             svmul(proj[i], edi->vecs.radacc.vec[i][j], vec_dum);
             rvec_inc(xcoll[j], vec_dum);
         }
@@ -2468,23 +2446,24 @@ static void do_radcon(rvec *xcoll, t_edpar *edi, t_commrec *cr)
     if (rad > edi->vecs.radcon.radius)
     {
         ratio = edi->vecs.radcon.radius/rad - 1.0;
-    } 
-    else
-        edi->vecs.radcon.radius = rad;
 
-    /* loop over radcon vectors */
-    for (i=0; i<edi->vecs.radcon.neig; i++)
-    {
-        /* apply the correction */
-        loc->proj[i] -= edi->vecs.radcon.refproj[i];
-        loc->proj[i] /= edi->sav.sqrtm[i];
-        loc->proj[i] *= ratio;
-        for (j=0; j<edi->sav.nr; j++)
+        /* loop over radcon vectors */
+        for (i=0; i<edi->vecs.radcon.neig; i++)
         {
-            svmul(loc->proj[i], edi->vecs.radcon.vec[i][j], vec_dum);
-            rvec_inc(xcoll[i], vec_dum);
+            /* apply the correction */
+            loc->proj[i] -= edi->vecs.radcon.refproj[i];
+            loc->proj[i] /= edi->sav.sqrtm[i];
+            loc->proj[i] *= ratio;
+            
+            for (j=0; j<edi->sav.nr; j++)
+            {
+                svmul(loc->proj[i], edi->vecs.radcon.vec[i][j], vec_dum);
+                rvec_inc(xcoll[j], vec_dum);
+            }
         }
     }
+    else
+        edi->vecs.radcon.radius = rad;
 
     if (rad != edi->vecs.radcon.radius)
     {
@@ -2681,76 +2660,79 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
         /* Loop over all ED data sets (usually only one, though) */
         for (nr_edi = 1; nr_edi <= numedis; nr_edi++)
         {
-            /* We use srenew to allocate memory since the size of the buffers 
-             * is likely to change with every ED dataset */
-            srenew(xfit  , edi->sref.nr );
-            srenew(xstart, edi->sav.nr  );
-            
-            /* Extract the coordinates of the atoms to which will be fitted */
-            for (i=0; i < edi->sref.nr; i++) {
-                copy_rvec(x_pbc[edi->sref.anrs[i]], xfit[i]);
-            }
-            /* Extract the coordinates of the atoms subject to ED sampling */
-            for (i=0; i < edi->sav.nr; i++)
-                copy_rvec(x_pbc[edi->sav.anrs[i]], xstart[i]);
-
-            /* Make the fit to the REFERENCE structure, get translation and rotation */
-            fit_to_reference(xfit, fit_transvec, fit_rotmat, edi, cr);
-
-            /* Output how well we fit to the reference at the start */
-            translate_and_rotate(xfit, edi->sref.nr, fit_transvec, fit_rotmat);        
-            fprintf(stderr, "ED: Initial RMSD from reference after fit = %f nm (dataset #%d)\n",
-                    rmsd_from_structure(xfit, &edi->sref), nr_edi);
-
-            /* Now apply the translation and rotation to the atoms on which ED sampling will be performed */
-            translate_and_rotate(xstart, edi->sav.nr, fit_transvec, fit_rotmat);
-
-            /* calculate initial projections */
-            project_p(xstart, edi, "x", cr);
-
-            /* process target structure, if required */
-            if (edi->star.nr > 0)
+            if (edi->bNeedDoEdsam)
             {
-                /* get translation & rotation for fit of target structure to reference structure */
-                fit_to_reference(edi->star.x, fit_transvec, fit_rotmat, edi, cr);
-                /* do the fit */
-                translate_and_rotate(edi->star.x, edi->sav.nr, fit_transvec, fit_rotmat);
-                rad_project(edi, edi->star.x, &edi->vecs.radcon, cr);
-            } else
-                rad_project(edi, xstart, &edi->vecs.radcon, cr);
+                /* We use srenew to allocate memory since the size of the buffers 
+                 * is likely to change with every ED dataset */
+                srenew(xfit  , edi->sref.nr );
+                srenew(xstart, edi->sav.nr  );
 
-            /* process structure that will serve as origin of expansion circle */
-            if (edi->sori.nr > 0)
-            {
-                /* fit this structure to reference structure */
-                fit_to_reference(edi->sori.x, fit_transvec, fit_rotmat, edi, cr);
-                /* do the fit */
-                translate_and_rotate(edi->sori.x, edi->sav.nr, fit_transvec, fit_rotmat);
-                rad_project(edi, edi->sori.x, &edi->vecs.radacc, cr);
-                rad_project(edi, edi->sori.x, &edi->vecs.radfix, cr);
-            }
-            else
-            {
-                rad_project(edi, xstart, &edi->vecs.radacc, cr);
-                rad_project(edi, xstart, &edi->vecs.radfix, cr);
-            }
+                /* Extract the coordinates of the atoms to which will be fitted */
+                for (i=0; i < edi->sref.nr; i++)
+                    copy_rvec(x_pbc[edi->sref.anrs[i]], xfit[i]);
 
-            /* set starting projections for linsam */
-            rad_project(edi, xstart, &edi->vecs.linacc, cr);
-            rad_project(edi, xstart, &edi->vecs.linfix, cr);
+                /* Extract the coordinates of the atoms subject to ED sampling */
+                for (i=0; i < edi->sav.nr; i++)
+                    copy_rvec(x_pbc[edi->sav.anrs[i]], xstart[i]);
 
-            /* Define a reference atom of the ED structure */
-            edi->sav.c_pbcatom  = ed_set_pbcatom(&(edi->sav ));
-            edi->sref.c_pbcatom = ed_set_pbcatom(&(edi->sref));
+                /* Make the fit to the REFERENCE structure, get translation and rotation */
+                fit_to_reference(xfit, fit_transvec, fit_rotmat, edi, cr);
 
-            /* Output to file */
-            if (ed->edo)
-            {
-                fprintf(ed->edo, "ED dataset #%d: pbc atom of average structure: %d. pbc atom of reference structure: %d\n", 
-                        nr_edi,edi->sav.c_pbcatom, edi->sref.c_pbcatom);
-                /* Set the step to -1 so that write_edo knows it was called from init_edsam */
-                write_edo(nr_edi, edi, ed, -1, 0);
-            }
+                /* Output how well we fit to the reference at the start */
+                translate_and_rotate(xfit, edi->sref.nr, fit_transvec, fit_rotmat);        
+                fprintf(stderr, "ED: Initial RMSD from reference after fit = %f nm (dataset #%d)\n",
+                        rmsd_from_structure(xfit, &edi->sref), nr_edi);
+
+                /* Now apply the translation and rotation to the atoms on which ED sampling will be performed */
+                translate_and_rotate(xstart, edi->sav.nr, fit_transvec, fit_rotmat);
+
+                /* calculate initial projections */
+                project_p(xstart, edi, "x", cr);
+
+                /* process target structure, if required */
+                if (edi->star.nr > 0)
+                {
+                    /* get translation & rotation for fit of target structure to reference structure */
+                    fit_to_reference(edi->star.x, fit_transvec, fit_rotmat, edi, cr);
+                    /* do the fit */
+                    translate_and_rotate(edi->star.x, edi->sav.nr, fit_transvec, fit_rotmat);
+                    rad_project(edi, edi->star.x, &edi->vecs.radcon, cr);
+                } else
+                    rad_project(edi, xstart, &edi->vecs.radcon, cr);
+
+                /* process structure that will serve as origin of expansion circle */
+                if (edi->sori.nr > 0)
+                {
+                    /* fit this structure to reference structure */
+                    fit_to_reference(edi->sori.x, fit_transvec, fit_rotmat, edi, cr);
+                    /* do the fit */
+                    translate_and_rotate(edi->sori.x, edi->sav.nr, fit_transvec, fit_rotmat);
+                    rad_project(edi, edi->sori.x, &edi->vecs.radacc, cr);
+                    rad_project(edi, edi->sori.x, &edi->vecs.radfix, cr);
+                }
+                else
+                {
+                    rad_project(edi, xstart, &edi->vecs.radacc, cr);
+                    rad_project(edi, xstart, &edi->vecs.radfix, cr);
+                }
+
+                /* set starting projections for linsam */
+                rad_project(edi, xstart, &edi->vecs.linacc, cr);
+                rad_project(edi, xstart, &edi->vecs.linfix, cr);
+
+                /* Define a reference atom of the ED structure */
+                edi->sav.c_pbcatom  = ed_set_pbcatom(&(edi->sav ));
+                edi->sref.c_pbcatom = ed_set_pbcatom(&(edi->sref));
+
+                /* Output to file */
+                if (ed->edo)
+                {
+                    fprintf(ed->edo, "ED dataset #%d: pbc atom of average structure: %d. pbc atom of reference structure: %d\n", 
+                            nr_edi,edi->sav.c_pbcatom, edi->sref.c_pbcatom);
+                    /* Set the step to -1 so that write_edo knows it was called from init_edsam */
+                    write_edo(nr_edi, edi, ed, -1, 0);
+                }
+            } /* END of (if edi->bNeedDoEdsam) */
             /* Prepare for the next edi data set: */
             edi=edi->next_edi;            
         }
@@ -2851,20 +2833,21 @@ void do_edsam(t_topology  *top,   /* Local topology  */
               t_mdatoms   *md,
               t_commrec   *cr,
               rvec        xs[],   /* The local current coordinates on this processor */
+              rvec        v[],    /* The velocities */
               matrix      box,
               gmx_edsam_t ed)
 {
     int     i,j,edinr,iupdate=500;
     matrix  rotmat;         /* rotation matrix */
     rvec    transvec;       /* translation vector */
-    rvec    dx, null={.0, .0, .0}; /* distance */
+    rvec    dv,dx;          /* tmp vectors for velocity and distance */
+    real    dt_1;           /* 1/dt */
     static bool  bFirst=TRUE;
-    real    dt,dt_1,dt_2;
     struct t_do_edsam *buf;
     t_edpar *edi;
-    real    rmsdev=-1;        /* RMSD from reference structure prior to applying the constraints */
+    real    rmsdev=-1;      /* RMSD from reference structure prior to applying the constraints */
 
-    
+
 #ifdef DEBUGPRINT
     static FILE *fdebug;
     char fname[255];
@@ -2879,14 +2862,11 @@ void do_edsam(t_topology  *top,   /* Local topology  */
     /* Check if ED sampling has to be performed */
     if ( ed->eEDtype==eEDnone )
         return;
-    
-    /* Initialise some variables */
-    edi  = ed->edpar;  
-    dt   = ir->delta_t;
-    dt_1 = 1.0/dt;
-    dt_2 = 1.0/(dt*dt);
+
+    dt_1 = 1.0/ir->delta_t;
     
     /* Loop over all ED datasets (usually one) */
+    edi  = ed->edpar;  
     edinr = 0;
     while (edi != NULL)
     {
@@ -2905,9 +2885,10 @@ void do_edsam(t_topology  *top,   /* Local topology  */
 
             /* Broadcast the ED coordinates such that every node has all of them
              * Every node contributes its local coordinates xs and stores it in
-             * the collective buf->xcoll array. */  
+             * the collective buf->xcoll array. Note that for edinr > 1
+             * xs could already have been modified by an earlier ED */  
             get_coordinates(cr, buf->xcoll, buf->shifts_xcoll, xs, &edi->sav,  box, "XC_AVERAGE");  
-
+            
             /* Only assembly reference coordinates if their indices differ from the average ones */
             if (!edi->bRefEqAv)
                 get_coordinates(cr, buf->xc_ref, buf->shifts_xc_ref, xs, &edi->sref, box, "XC_REFERENCE");
@@ -2939,20 +2920,6 @@ void do_edsam(t_topology  *top,   /* Local topology  */
                     translate_and_rotate(buf->xc_ref, edi->sref.nr, transvec, rotmat);
                     rmsdev = rmsd_from_structure(buf->xc_ref,&edi->sref);
                 }
-            }
-
-            copy_rvec(transvec, buf->transvec_compact);
-
-            /* this is to remove virtual jumps in translational velocity due to periodic boundaries */
-            remove_pbc_effect(ed->ePBC,buf->transvec_compact,box,ed);
-
-            if (bFirst)
-            {
-                copy_mat(rotmat, buf->old_rotmat);
-                copy_rvec(buf->transvec_compact, buf->old_transvec  );
-                copy_rvec(buf->old_transvec    , buf->older_transvec);
-                dt_1 = 0; 
-                dt_2 = 0;
             }
 
             /* update radsam references, when required */
@@ -2989,6 +2956,7 @@ void do_edsam(t_topology  *top,   /* Local topology  */
                     write_edo(edinr, edi, ed, step, rmsdev);
             }
             
+            /* Copy back the coordinates unless monitoring only */
             if (ed_constraints(ed->eEDtype, edi))
             {
                 /* remove fitting */
@@ -3000,10 +2968,19 @@ void do_edsam(t_topology  *top,   /* Local topology  */
                 /* Copy the ED corrected coordinates into the coordinate array */
                 /* Each node copies his local part. In the serial case, nat_loc is the 
                  * total number of ED atoms */
-
-                /* Copy back the coordinates unless monitoring only */
                 for (i=0; i<edi->sav.nr_loc; i++)
+                {
+                    /* dx is the ED correction to the coordinates: */
+                    rvec_sub(buf->xcoll[edi->sav.c_ind[i]], xs[edi->sav.anrs_loc[i]], dx);
+                    /* dv is the ED correction to the velocity: */
+                    svmul(dt_1, dx, dv);
+                    /* apply the velocity correction: */
+                    rvec_inc(v[edi->sav.anrs_loc[i]], dv);
+                    
+                    /* Finally apply the position correction due to ED: */
                     copy_rvec(buf->xcoll[edi->sav.c_ind[i]], xs[edi->sav.anrs_loc[i]]);
+                    
+                }
             }
         } /* END of if (edi->bNeedDoEdsam) */
         
