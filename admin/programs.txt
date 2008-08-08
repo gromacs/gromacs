@@ -115,6 +115,7 @@ genion|generates mono atomic ions on energetically favorable positions
 g_potential|calculates the electrostatic potential across the box
 g_dipoles|computes the total dipole plus fluctuations
 g_dielectric|calculates frequency dependent dielectric constants
+g_current|calculates dielectric constants for charged systems
 END
 
 HEAD|Protein specific analysis

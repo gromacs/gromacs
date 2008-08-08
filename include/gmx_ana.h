@@ -29,6 +29,9 @@ int
 gmx_covar(int argc,char *argv[]);
 
 int 
+gmx_current(int argc,char *argv[]);
+
+int 
 gmx_density(int argc,char *argv[]);
 
 int 
