@@ -1097,6 +1097,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
   int    i,j;
   t_nrnb *nrnb_all=NULL,ntot;
   real   runtime;
+  double nbfs,mflop;
   double cycles[ewcNR];
 #ifdef GMX_MPI
   int    sender;
@@ -1124,8 +1125,36 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
     for(i=0; (i<cr->nnodes); i++)
       for(j=0; (j<eNRNB); j++)
 	ntot.n[j] += nrnb_all[i].n[j];
+
+    print_flop(fplog,&ntot,&nbfs,&mflop);
+    if (nrnb_all) {
+      sfree(nrnb_all);
+    }
   }
+
+  if ((cr->duty & DUTY_PP) && DOMAINDECOMP(cr)) {
+    print_dd_statistics(cr,inputrec,fplog);
+  }
+
   if (SIMMASTER(cr)) {
+    if (PARTDECOMP(cr)) {
+      pr_load(fplog,cr,nrnb_all);
+    }
+
+    wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
+
+    runtime=inputrec->nsteps*inputrec->delta_t;
+    
+    if (fplog) {
+      print_perf(fplog,nodetime,realtime,runtime,cr->nnodes-cr->npmenodes,
+		 nbfs,mflop);
+    }
+    if (bWriteStat) {
+      print_perf(stderr,nodetime,realtime,runtime,cr->nnodes-cr->npmenodes,
+		 nbfs,mflop);
+    }
+
+    /*
     runtime=inputrec->nsteps*inputrec->delta_t;
     if (bWriteStat) {
       if (cr->nnodes == 1)
@@ -1140,6 +1169,7 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
       pr_load(fplog,cr,nrnb_all);
     if (cr->nnodes > 1)
       sfree(nrnb_all);
+    */
   }
 }
 

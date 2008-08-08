@@ -1376,11 +1376,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	    tcount/step_rel);
   }
 
-  if (repl_ex_nst > 0 && MASTER(cr))
+  if (repl_ex_nst > 0 && MASTER(cr)) {
     print_replica_exchange_statistics(fplog,repl_ex);
-
-  if (DOMAINDECOMP(cr))
-    print_dd_statistics(cr,ir,fplog);
+  }
     
   return start_t;
 }

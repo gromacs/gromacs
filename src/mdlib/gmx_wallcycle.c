@@ -146,8 +146,10 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     /* Remove the PME mesh part from the force count */
     cycles[ewcFORCE] -= cycles[ewcPMEMESH];
 
-    /* Remove the constraint part from the update count */
-    cycles[ewcUPDATE] -= cycles[ewcCONSTR];
+    if (wc[ewcUPDATE].n > 0) {
+      /* Remove the constraint part from the update count */
+      cycles[ewcUPDATE] -= cycles[ewcCONSTR];
+    }
 
 #ifdef GMX_MPI    
     if (cr->nnodes > 1) {
@@ -203,7 +205,7 @@ void wallcycle_print(FILE *fplog, int nnodes, int npme, double realtime,
     else
       c2t = 0;
 
-    fprintf(fplog,"     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
+    fprintf(fplog,"\n     R E A L   C Y C L E   A N D   T I M E   A C C O U N T I N G\n\n");
 
     fprintf(fplog," Computing:         Nodes     Number     G-Cycles    Seconds     %c\n",'%');
     fprintf(fplog,"%s\n",myline);

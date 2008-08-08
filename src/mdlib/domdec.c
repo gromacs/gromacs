@@ -4112,7 +4112,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
     float imbal,pme_f_ratio,lossf,lossp=0;
     bool  bLim;
     gmx_domdec_comm_t *comm;
-    
+
     comm = dd->comm;
     if (DDMASTER(dd) && comm->nload > 0)
     {
@@ -4121,17 +4121,17 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         nnodes = npp + npme;
         imbal = comm->load_max*npp/comm->load_sum - 1;
         lossf = (comm->load_max*npp - comm->load_sum)/(comm->load_step*nnodes);
-        sprintf(buf,"Average load imbalance: %.1f %%\n",imbal*100);
+        sprintf(buf," Average load imbalance: %.1f %%\n",imbal*100);
         fprintf(fplog,buf);
         fprintf(stderr,"\n");
         fprintf(stderr,buf);
-        sprintf(buf,"Part of the total run time spent waiting due to load imbalance: %.1f %%\n",lossf*100);
+        sprintf(buf," Part of the total run time spent waiting due to load imbalance: %.1f %%\n",lossf*100);
         fprintf(fplog,buf);
         fprintf(stderr,buf);
         bLim = FALSE;
         if (dd->bDynLoadBal)
         {
-            sprintf(buf,"Steps where the load balancing was limited by -rdd, -rcon and/or -dds:");
+            sprintf(buf," Steps where the load balancing was limited by -rdd, -rcon and/or -dds:");
             for(d=0; d<dd->ndim; d++)
             {
                 limp = (200*comm->load_lim[d]+1)/(2*comm->nload);
@@ -4157,10 +4157,10 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
             {
                 lossp *= (float)npp/(float)nnodes;
             }
-            sprintf(buf,"Average PME mesh/force load: %5.3f\n",pme_f_ratio);
+            sprintf(buf," Average PME mesh/force load: %5.3f\n",pme_f_ratio);
             fprintf(fplog,"%s",buf);
             fprintf(stderr,"%s",buf);
-            sprintf(buf,"Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n",fabs(lossp)*100);
+            sprintf(buf," Part of the total run time spent waiting due to PP/PME imbalance: %.1f %%\n",fabs(lossp)*100);
             fprintf(fplog,"%s",buf);
             fprintf(stderr,"%s",buf);
         }
@@ -5106,6 +5106,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
+    int  recload;
     int  d,i,j;
     char *warn="WARNING: Cycle counting is not supported on this architecture, will not use dynamic load balancing";
     
@@ -5125,6 +5126,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     
     dd->bSendRecv2   = dd_nst_env(fplog,"GMX_DD_SENDRECV2",0);
     comm->eFlop      = dd_nst_env(fplog,"GMX_DLB_FLOP",0);
+    recload          = dd_nst_env(fplog,"GMX_DD_LOAD",1);
     comm->nstSortCG  = dd_nst_env(fplog,"GMX_DD_SORT",1);
     nstDDDump        = dd_nst_env(fplog,"GMX_DD_DUMP",0);
     nstDDDumpGrid    = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
@@ -5146,7 +5148,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     }
     else
     {
-        comm->bRecordLoad = wallcycle_have_counter();
+        comm->bRecordLoad = (wallcycle_have_counter() && recload > 0);
+                             
     }
     
     dd->bDynLoadBal = FALSE;
@@ -6483,7 +6486,7 @@ void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)
     gmx_domdec_comm_t *comm;
     int ddnat;
     double av;
-    
+   
     comm = cr->dd->comm;
     
     gmx_sumd(ddnatNR-ddnatZONE,comm->sum_nat,cr);
@@ -6493,6 +6496,8 @@ void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)
         return;
     }
     
+    fprintf(fplog,"\n    D O M A I N   D E C O M P O S I T I O N   S T A T I S T I C S\n\n");
+            
     for(ddnat=ddnatZONE; ddnat<ddnatNR; ddnat++)
     {
         av = comm->sum_nat[ddnat-ddnatZONE]/comm->ndecomp;
@@ -6500,14 +6505,14 @@ void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)
         {
         case ddnatZONE:
             fprintf(fplog,
-                    "DD av. #atoms communicated per step for force:  %d x %.1f\n",
+                    " av. #atoms communicated per step for force:  %d x %.1f\n",
                     2,av);
             break;
         case ddnatVSITE:
             if (cr->dd->vsite_comm)
             {
                 fprintf(fplog,
-                        "DD av. #atoms communicated per step for vsites: %d x %.1f\n",
+                        " av. #atoms communicated per step for vsites: %d x %.1f\n",
                         (EEL_PME(ir->coulombtype) || ir->coulombtype==eelEWALD) ? 3 : 2,
                         av);
             }
@@ -6516,17 +6521,17 @@ void print_dd_statistics(t_commrec *cr,t_inputrec *ir,FILE *fplog)
             if (cr->dd->constraint_comm)
             {
                 fprintf(fplog,
-                        "DD av. #atoms communicated per step for LINCS:  %d x %.1f\n",
+                        " av. #atoms communicated per step for LINCS:  %d x %.1f\n",
                         1 + ir->nLincsIter,av);
             }
             break;
         default:
-            gmx_incons("Unknown type for DD statistics");
+            gmx_incons(" Unknown type for DD statistics");
         }
     }
     fprintf(fplog,"\n");
     
-    if (comm->bRecordLoad)
+    if (comm->bRecordLoad && EI_DYNAMICS(ir->eI))
     {
         print_dd_load_av(fplog,cr->dd);
     }

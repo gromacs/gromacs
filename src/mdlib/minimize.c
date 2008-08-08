@@ -384,7 +384,8 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state)
 
 static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
 		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
-		       gmx_constr_t constr,t_topology *top,t_nrnb *nrnb,
+		       gmx_constr_t constr,t_topology *top,
+		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		       int count)
 
 {
@@ -451,11 +452,13 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
   }
 
   if (constr) {
+    wallcycle_start(wcycle,ewcCONSTR);
     dvdlambda = 0;
     constrain(NULL,TRUE,TRUE,constr,top,	
 	      ir,cr,count,0,md,
 	      s1->x,s2->x,NULL,s2->box,s2->lambda,
 	      &dvdlambda,NULL,NULL,nrnb,econqCoord);
+    wallcycle_stop(wcycle,ewcCONSTR);
   }
 }
 
@@ -594,9 +597,14 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 		pres,force_vir,ener);
 
   /* Communicate stuff when parallel */
-  if (PAR(cr)) 
+  if (PAR(cr)) {
+    wallcycle_start(wcycle,ewcMoveE);
+
     global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
 		inputrec,grps,FALSE,NULL,NULL,NULL,NULL,&terminate);
+
+    wallcycle_stop(wcycle,ewcMoveE);
+  }
     
   ener[F_ETOT] = ener[F_EPOT]; /* No kinetic energy */
 
@@ -604,6 +612,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
   
   if (constr) {
     /* Project out the constraint components of the force */
+    wallcycle_start(wcycle,ewcCONSTR);
     dvdl = 0;
     constrain(NULL,FALSE,FALSE,constr,top,
 	      inputrec,cr,count,0,mdatoms,
@@ -612,6 +621,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
     ener[F_DVDL] += dvdl;
+    wallcycle_stop(wcycle,ewcCONSTR);
   }
 
   get_state_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
@@ -942,7 +952,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     
     /* Take a trial step (new coords in s_c) */
     do_em_step(cr,inputrec,mdatoms,s_min,c,s_min->s.cg_p,s_c,
-	       constr,top,nrnb,-1);
+	       constr,top,nrnb,wcycle,-1);
     
     neval++;
     /* Calculate energy for the trial step */
@@ -1028,7 +1038,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 
 	/* Take a trial step to this new point - new coords in s_b */
 	do_em_step(cr,inputrec,mdatoms,s_min,b,s_min->s.cg_p,s_b,
-		   constr,top,nrnb,-1);
+		   constr,top,nrnb,wcycle,-1);
 	
 	neval++;
 	/* Calculate energy for the trial step */
@@ -1970,7 +1980,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     /* set new coordinates, except for first step */
     if (count > 0) {
       do_em_step(cr,inputrec,mdatoms,s_min,stepsize,s_min->f,s_try,
-		 constr,top,nrnb,count);
+		 constr,top,nrnb,wcycle,count);
     }
     
     evaluate_energy(fplog,bVerbose,cr,

@@ -293,24 +293,20 @@ void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line)
 #endif
 }
 
-void print_perf(FILE *out,double nodetime,double realtime,real runtime,
-		t_nrnb *nrnb,int nprocs,bool bFlop)
+void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
 {
   int    i;
-  double nbfs,mni,frac,tfrac,mflop,tflop;
+  double mni,frac,tfrac,tflop;
   char   *myline = "-----------------------------------------------------------------------";
-  if (nodetime == 0.0) {
-    fprintf(out,"nodetime = 0! Infinite Giga flopses!\n");
-  }
   
-  nbfs=0.0;
+  *nbfs = 0.0;
   for(i=0; (i<eNR_NBKERNEL_NR); i++) {
     if (strstr(nbdata[i].name,"(WW)") != NULL)
-      nbfs += 9e-6*nrnb->n[i];
+      *nbfs += 9e-6*nrnb->n[i];
     else if (strstr(nbdata[i].name,"(W)") != NULL)
-      nbfs += 3e-6*nrnb->n[i];
+      *nbfs += 3e-6*nrnb->n[i];
     else
-      nbfs += 1e-6*nrnb->n[i];
+      *nbfs += 1e-6*nrnb->n[i];
   }
   tflop=0;
   for(i=0; (i<eNRNB); i++) 
@@ -320,15 +316,11 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
     fprintf(out,"No MEGA Flopsen this time\n");
     return;
   }
-  if (bFlop)
+  if (out) {
     fprintf(out,"\n\tM E G A - F L O P S   A C C O U N T I N G\n\n");
-  if (nprocs > 1) 
-  {
-      nodetime = realtime;
-      fprintf(out,"\tParallel run - timing based on wallclock.\n");
   }
 
-  if (bFlop) {
+  if (out) {
     fprintf(out,"   RF=Reaction-Field  FE=Free Energy  SCFE=Soft-Core/Free Energy\n");
     fprintf(out,"   T=Tabulated        W3=SPC/TIP3p    W4=TIP4p (single or pairs)\n");
     fprintf(out,"   NF=No Forces\n\n");
@@ -337,24 +329,40 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
 	    "Computing:","M-Number","M-Flops","% Flops");
     fprintf(out,"%s\n",myline);
   }
-  mflop=0.0;
+  *mflop=0.0;
   tfrac=0.0;
   for(i=0; (i<eNRNB); i++) {
-    mni    = 1e-6*nrnb->n[i];
-    mflop += mni*nbdata[i].flop;
-    frac   = 100.0*mni*nbdata[i].flop/tflop;
-    tfrac += frac;
-    if (bFlop && mni != 0)
+    mni     = 1e-6*nrnb->n[i];
+    *mflop += mni*nbdata[i].flop;
+    frac    = 100.0*mni*nbdata[i].flop/tflop;
+    tfrac  += frac;
+    if (out && mni != 0)
       fprintf(out," %-26s %16.6f %15.3f  %6.1f\n",
 	      nbdata[i].name,mni,mni*nbdata[i].flop,frac);
   }
-  if (bFlop) {
+  if (out) {
     fprintf(out,"%s\n",myline);
     fprintf(out," %-26s %16s %15.3f  %6.1f\n",
-	    "Total","",mflop,tfrac);
+	    "Total","",*mflop,tfrac);
     fprintf(out,"%s\n\n",myline);
   }
-  
+}
+
+void print_perf(FILE *out,double nodetime,double realtime,real runtime,
+		int nprocs,double nbfs,double mflop)
+{
+  fprintf(out,"\n");
+
+  if (nodetime == 0.0) {
+    fprintf(out,"nodetime = 0! Infinite Giga flopses!\n");
+  }
+
+  if (nprocs > 1) 
+  {
+      nodetime = realtime;
+      fprintf(out,"\tParallel run - timing based on wallclock.\n\n");
+  }
+
   if ((nodetime > 0) && (realtime > 0)) {
     fprintf(out,"%12s %10s %10s %8s\n","","NODE (s)","Real (s)","(%)");
     fprintf(out,"%12s %10.3f %10.3f %8.1f\n","Time:",

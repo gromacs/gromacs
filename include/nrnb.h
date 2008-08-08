@@ -60,8 +60,14 @@ extern void _inc_nrnb(t_nrnb *nrnb,int enr,int inc,char *file,int line);
 #endif
 
  
+extern void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop);
+/* Calculates the non-bonded forces and flop count.
+ * When out!=NULL also prints the full count table.
+ */
+
 extern void print_perf(FILE *out,double nodetime,double realtime,real runtime,
-		       t_nrnb *nrnb,int nprocs,bool bFlop);
+		       int nprocs,double nbfs,double mflop);
+/* Prints the performance, nbfs and mflop come from print_flop */
 
 extern void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[]);
 /* Print detailed load balancing info */
