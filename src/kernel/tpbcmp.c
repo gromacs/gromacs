@@ -187,17 +187,24 @@ void cmp_iparm(FILE *fp,char *s,t_functype ft,
 
 void cmp_iparm_AB(FILE *fp,char *s,t_functype ft,t_iparams ip1,real ftol) 
 {
-  int nrfpA,nrfpB,i;
+  int nrfpA,nrfpB,p0,i;
   bool bDiff;
   
+  /* Normally the first parameter is perturbable */
+  p0 = 0;
   nrfpA = interaction_function[ft].nrfpA;
-  if (ft == F_PDIHS)
+  nrfpB = interaction_function[ft].nrfpB;
+  if (ft == F_PDIHS) {
     nrfpB = 2;
-  else
-    nrfpB = interaction_function[ft].nrfpB;
+  } else if (interaction_function[ft].flags & IF_TABULATED) {
+    /* For tabulated interactions only the second parameter is perturbable */
+    p0 = 1;
+    nrfpB = 1;
+  }
   bDiff=FALSE;
-  for(i=0; i<nrfpB && !bDiff; i++)
-    bDiff = !equal_real(ip1.generic.buf[i],ip1.generic.buf[nrfpA+i],ftol);
+  for(i=0; i<nrfpB && !bDiff; i++) {
+    bDiff = !equal_real(ip1.generic.buf[p0+i],ip1.generic.buf[nrfpA+i],ftol);
+  }
   if (bDiff) {
     fprintf(fp,"%s: ",s);
     pr_iparams(fp,ft,&ip1);

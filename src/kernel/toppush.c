@@ -163,18 +163,10 @@ static void copy_B_from_A(int ftype,double *c)
 
   nrfpA = NRFPA(ftype);
   nrfpB = NRFPB(ftype);
-
-  /* Copy the B-state from the A-state */
-  if (interaction_function[ftype].flags & IF_TABULATED) {
-    /* The only case where the first B parameter does not correspond
-     * to the first A parameter.
-     */
-    c[2] = c[1];
-  } else {
-    /* Copy the B parameters from the first nrfpB A parameters */
-    for(i=0; (i<nrfpB); i++) {
-      c[nrfpA+i] = c[i];
-    }
+  
+  /* Copy the B parameters from the first nrfpB A parameters */
+  for(i=0; (i<nrfpB); i++) {
+    c[nrfpA+i] = c[i];
   }
 }
 
