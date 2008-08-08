@@ -55,8 +55,8 @@ libgmx@LIBSUFFIX@_la_SOURCES = \
 	trnio.c		trxio.c		txtdump.c	typedefs.c	\
 	viewit.c	wgms.c		wman.c		writeps.c	\
 	xdrd.c		xtcio.c		xvgr.c   	replace.h	\
-	libxdrf.c	xmlio.h		gmx_arpack.c			\
-	dihres.c	xmlio.c		gmx_random_gausstable.h		\
+	libxdrf.c	gmx_arpack.c			\
+	dihres.c	gmx_random_gausstable.h		\
 	tcontrol.c	splitter.c	gmx_cyclecounter.c		
 
 EXTRA_libgmx@LIBSUFFIX@_la_SOURCES = \
