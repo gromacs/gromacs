@@ -82,7 +82,7 @@ typedef struct {
   real *d2_replica;
 } t_remd_data;
 
-char *itoa(int i)
+static char *itoa(int i)
 {
   static char ptr[12];
   
@@ -90,7 +90,7 @@ char *itoa(int i)
   return ptr;
 }
 
-char *epnm(int nparams,int index)
+static char *epnm(int nparams,int index)
 {
   static char buf[32],from[8],to[8];
   int    nn,ni,ii;
@@ -106,12 +106,12 @@ char *epnm(int nparams,int index)
   return NULL;
 }
 
-bool bBack(t_remd_data *d) 
+static bool bBack(t_remd_data *d) 
 {
   return (d->nparams > 2);
 }
 
-real is_folded(t_remd_data *d,int irep,int jframe)
+static real is_folded(t_remd_data *d,int irep,int jframe)
 {
   if (d->state[irep][jframe] == 0)
     return 1.0;
@@ -119,7 +119,7 @@ real is_folded(t_remd_data *d,int irep,int jframe)
     return 0.0;
 }
 
-real is_unfolded(t_remd_data *d,int irep,int jframe)
+static real is_unfolded(t_remd_data *d,int irep,int jframe)
 {
   if (d->state[irep][jframe] == d->nstate-1)
     return 1.0;
@@ -127,7 +127,7 @@ real is_unfolded(t_remd_data *d,int irep,int jframe)
     return 0.0;
 }
 
-real is_intermediate(t_remd_data *d,int irep,int jframe)
+static real is_intermediate(t_remd_data *d,int irep,int jframe)
 {
   if ((d->state[irep][jframe] == 1) && (d->nstate > 2))
     return 1.0;
@@ -135,7 +135,7 @@ real is_intermediate(t_remd_data *d,int irep,int jframe)
     return 0.0;
 }
 
-void integrate_dfdt(t_remd_data *d)
+static void integrate_dfdt(t_remd_data *d)
 {
   int    i,j;
   double beta,ddf,ddi,df,db,fac,sumf,sumi,area;
@@ -217,7 +217,7 @@ void integrate_dfdt(t_remd_data *d)
   }
 }
 
-void sum_ft(t_remd_data *d)
+static void sum_ft(t_remd_data *d)
 {
   int i,j;
   double fac;
@@ -242,7 +242,7 @@ void sum_ft(t_remd_data *d)
   }
 }
 
-double calc_d2(t_remd_data *d)
+static double calc_d2(t_remd_data *d)
 {
   int    i,j;
   double dd2,d2=0,dr2,tmp;
@@ -283,7 +283,7 @@ double calc_d2(t_remd_data *d)
   return dd2;
 }
 
-double my_f(const gsl_vector *v,void *params)
+static double my_f(const gsl_vector *v,void *params)
 {
   t_remd_data *d = (t_remd_data *) params;
   double penalty=0;
@@ -471,12 +471,12 @@ static void preprocess_remd(FILE *fp,t_remd_data *d,real cutoff,real tref,
   }
 }
 
-real tau(real A,real E,real T)
+static real tau(real A,real E,real T)
 {
   return exp(E/(BOLTZ*T))/A;
 }
 
-real folded_fraction(t_remd_data *d,real tref)
+static real folded_fraction(t_remd_data *d,real tref)
 {
   real tauf,taub;
   
@@ -486,7 +486,7 @@ real folded_fraction(t_remd_data *d,real tref)
   return (taub/(tauf+taub));
 }
 
-void print_tau(FILE *gp,t_remd_data *d,real tref)
+static void print_tau(FILE *gp,t_remd_data *d,real tref)
 {
   real tauf,taub,ddd,fff,DG,DH,TDS,Tm,Tb,Te,Fb,Fe,Fm;
   int  i,np=d->nparams;
@@ -551,7 +551,7 @@ void print_tau(FILE *gp,t_remd_data *d,real tref)
   }
 }
 
-void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char *rfn,
+static void dump_remd_parameters(FILE *gp,t_remd_data *d,char *fn,char *fn2,char *rfn,
 			  char *efn,char *mfn,int skip,real tref)
 {
   FILE *fp,*hp;
