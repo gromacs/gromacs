@@ -1507,7 +1507,31 @@ real dd_cutoff(gmx_domdec_t *dd)
 
 real dd_cutoff_mbody(gmx_domdec_t *dd)
 {
-    return dd->comm->cutoff_mbody;
+    gmx_domdec_comm_t *comm;
+    int  di;
+    real r;
+
+    comm = dd->comm;
+
+    r = -1;
+    if (comm->bInterCGBondeds)
+    {
+        if (comm->cutoff_mbody > 0)
+        {
+            r = comm->cutoff_mbody;
+        }
+        else
+        {
+            /* cutoff_mbody=0 means we do not have DLB */
+            r = comm->cellsize_min[dd->dim[0]];
+            for(di=1; di<dd->ndim; di++)
+            {
+                r = min(r,comm->cellsize_min[dd->dim[di]]);
+            }
+        }
+    }
+
+    return r;
 }
 
 static void dd_cart_coord2pmecoord(gmx_domdec_t *dd,ivec coord,ivec coord_pme)
