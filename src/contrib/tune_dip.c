@@ -77,7 +77,6 @@ typedef struct {
   bool          bSupport;
   real          dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
   gmx_mtop_t    mtop;
-  t_topology    *ltop;
   t_inputrec    ir;
   gmx_shellfc_t shell;
   t_mdatoms     *md;
@@ -119,7 +118,6 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
   init_mtop(&mymol->mtop);
   read_tpx(fn,&step,&t,&lambda,&(mymol->ir),mymol->box,&natoms,
 	   mymol->x,NULL,NULL,&mymol->mtop);
-  mymol->ltop = gmx_mtop_generate_local_top(&mymol->mtop,&(mymol->ir));
 
   mymol->molname = strdup(fn);
   mymol->bSupport = TRUE;
@@ -162,6 +160,10 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   char   *resnm,*atomnm;
   t_lsq  lsq;
   
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom atom;     
+  int    at_global,resnr;
+   
   xvgf  = xvgropen(xvgfn,"Correlation between dipoles",
 		   "Experimental","Predicted");
   fprintf(xvgf,"@ s0 linestyle 0\n");
@@ -175,11 +177,12 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
       add_lsq(&lsq,mol[i].dip_exp,mol[i].dip_calc);
       d2 += sqr(mol[i].dip_exp-mol[i].dip_calc);
       fprintf(logf,"Res  Atom  q\n");
-      for(j=0; (j<mol[i].mtop.natoms); j++) {
-	resnm  = *(mol[i].ltop->atoms.resname[mol[i].ltop->atoms.atom[j].resnr]);
-	atomnm = *(mol[i].ltop->atoms.atomname[j]);
-	fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,mol[i].ltop->atoms.atom[j].q);
+      aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
+      while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
+	gmx_mtop_atomloop_all_names(aloop,&atomnm,&resnr,&resnm);
+	fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,atom.q);
       }
+
       fprintf(logf,"\n");
       n++;
     }
