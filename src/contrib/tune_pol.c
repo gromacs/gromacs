@@ -53,9 +53,9 @@ static int tolerb = 50; /* Tolerance in % */
 static int my_order[eelemNR] = { 
   eelemC, 
   eelemH,  eelemHe, 
-  eelemLi, eelemBe, eelemB,  eelemN, eelemO, eelemF,  eelemNe,
+  eelemLi, eelemBe, eelemB,  eelemN,  eelemO, eelemF,  eelemNe,
   eelemNa, eelemMg, eelemAl, eelemSi, eelemP, eelemS, eelemCl, eelemAr,
-  eelemK,  eelemCa, eelemBr, eelemKr, eelemRb,
+  eelemK,  eelemCa, eelemGe, eelemSe, eelemBr, eelemKr, eelemRb,
   eelemI,  eelemXe, eelemCs
 };
 

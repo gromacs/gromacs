@@ -55,14 +55,9 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-//#include "toppush.h"
-//#include "pdb2top.h"
 #include "pdbio.h"
-//#include "gen_ad.h"
-//#include "topexcl.h"
 #include "vec.h"
 #include "gmx_random.h"
-//#include "gmx_elements.h"
 #include "grompp.h"
 #include "gpp_atomtype.h"
 #include "gentop_eemprops.h"
@@ -72,7 +67,6 @@
 #include "gentop_qgen.h"
 #include "atomprop.h"
 #include "grompp.h"
-//#include "add_par.h"
 
 enum { edihNo, edihOne, edihAll, edihNR };
 

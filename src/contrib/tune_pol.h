@@ -41,7 +41,7 @@ enum {
   eelemH,  eelemHe, 
   eelemLi, eelemBe, eelemB,  eelemC,  eelemN, eelemO, eelemF,  eelemNe,
   eelemNa, eelemMg, eelemAl, eelemSi, eelemP, eelemS, eelemCl, eelemAr,
-  eelemK,  eelemCa, eelemBr, eelemKr,
+  eelemK,  eelemCa, eelemGe, eelemSe, eelemBr, eelemKr,
   eelemRb, eelemI,  eelemXe, eelemCs,
   eelemNR 
 };

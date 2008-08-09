@@ -77,6 +77,7 @@ typedef struct {
   bool          bSupport;
   real          dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
   gmx_mtop_t    mtop;
+  t_topology    *ltop;
   t_inputrec    ir;
   gmx_shellfc_t shell;
   t_mdatoms     *md;
@@ -118,11 +119,14 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
   init_mtop(&mymol->mtop);
   read_tpx(fn,&step,&t,&lambda,&(mymol->ir),mymol->box,&natoms,
 	   mymol->x,NULL,NULL,&mymol->mtop);
-
-  mymol->molname = strdup(fn);
+  mymol->ltop     = gmx_mtop_generate_local_top(&(mymol->mtop),
+						&(mymol->ir));
+						
+  mymol->ltop->atoms = gmx_mtop_global_atoms(&(mymol->mtop));
+  mymol->molname  = strdup(fn);
   mymol->bSupport = TRUE;
-  mymol->dip_exp = dip;
-  mymol->dip_err = dip_err;
+  mymol->dip_exp  = dip;
+  mymol->dip_err  = dip_err;
   if (dip_err > 0) {
     mymol->dip_weight = sqr(1.0/dip_err);
   }
@@ -161,7 +165,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
   t_lsq  lsq;
   
   gmx_mtop_atomloop_all_t aloop;
-  t_atom atom;     
+  t_atom *atom;     
   int    at_global,resnr;
    
   xvgf  = xvgropen(xvgfn,"Correlation between dipoles",
@@ -180,7 +184,7 @@ static void print_mols(FILE *logf,char *xvgfn,int nmol,t_mymol mol[],
       aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
       while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
 	gmx_mtop_atomloop_all_names(aloop,&atomnm,&resnr,&resnm);
-	fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,atom.q);
+	fprintf(logf,"%-5s%-5s  %8.4f\n",resnm,atomnm,atom->q);
       }
 
       fprintf(logf,"\n");
@@ -230,20 +234,25 @@ static void check_data_suffiency(FILE *logf,
   int *elemcnt,i,j;
   int *remove,nremove;
   int nelem,nsupported = *nmol;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom;     
+  int    at_global,resnr;
   
   snew(elemcnt,109);
   snew(remove,109);
   for(i=0; (i<*nmol); i++) {
     mol[i].bSupport = TRUE;
-    for(j=0; (mol[i].bSupport && (j<mol[i].mtop.natoms)); j++) {
-      if ((mol[i].ltop->atoms.atom[j].atomnumber > 0) || !bPol)
-	if (eem_get_index(eem,mol[i].ltop->atoms.atom[j].atomnumber,eemtype) == -1)
+    aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
+    while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom) &&
+	   mol[i].bSupport) {
+      if ((atom->atomnumber > 0) || !bPol)
+	if (eem_get_index(eem,atom->atomnumber,eemtype) == -1)
 	  mol[i].bSupport = FALSE;
     }
     if (mol[i].bSupport) {
-      for(j=0; (j<mol[i].ltop->atoms.nr); j++) {
-	elemcnt[mol[i].ltop->atoms.atom[j].atomnumber]++;
-      }
+      aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
+      while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom))
+	elemcnt[atom->atomnumber]++;
     }
     else
       nsupported--;
@@ -260,15 +269,20 @@ static void check_data_suffiency(FILE *logf,
     if (nremove > 0) {
       for(i=0; (i<*nmol); i++) {
 	if (mol[i].bSupport) {
-	  for(j=0; (j<mol[i].mtop.natoms); j++) {
-	    if (remove[mol[i].ltop->atoms.atom[j].atomnumber]) 
+	  j = 0;
+	  aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
+	  while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
+	    if (remove[atom->atomnumber]) 
 	      break;
+	    j++;
 	  }
-	  if (j<mol[i].mtop.natoms) {
-	    elemcnt[mol[i].ltop->atoms.atom[j].atomnumber]--;
+	  if (j < mol[i].mtop.natoms) {
+	    aloop = gmx_mtop_atomloop_all_init(&mol[i].mtop);
+	    while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom))
+	      elemcnt[atom->atomnumber]--;
+	    mol[i].bSupport = FALSE;
+	    nsupported--;
 	  }
-	  mol[i].bSupport = FALSE;
-	  nsupported--;
 	}
       }
     }
@@ -365,55 +379,70 @@ t_moldip *read_moldip(FILE *logf,char *fn,char *eem_fn,
   return md;
 }
 
-static real mymol_calc_dip(t_mymol *mol)
+static void mymol_calc_dipole(t_mymol *mol)
 {
   int i;
   rvec mu,mm;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom;     
+  int    at_global,resnr;
   
   clear_rvec(mu);
-  for(i=0; (i<mol->mtop.natoms); i++) {
-    svmul(mol->ltop->atoms.atom[i].q,mol->x[i],mm);
+  aloop = gmx_mtop_atomloop_all_init(&mol->mtop);
+  i = 0;
+  while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
+    svmul(atom->q,mol->x[i],mm);
     rvec_inc(mu,mm);
+    i++;
   }
-  return norm(mu)*ENM2DEBYE;
+  mol->dip_calc = norm(mu)*ENM2DEBYE;
 }
 
-static void split_shell_charges(t_atoms *atoms,t_idef *idef)
+static void split_shell_charges(gmx_mtop_t *mtop,t_idef *idef)
 {
   int i,k,tp,ai,aj;
   real q,Z;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom,*atom_i,*atom_j;     
+  int    at_global,resnr;
   
   for(k=0; (k<idef->il[F_POLARIZATION].nr); ) {
     tp = idef->il[F_POLARIZATION].iatoms[k++];
     ai = idef->il[F_POLARIZATION].iatoms[k++];
     aj = idef->il[F_POLARIZATION].iatoms[k++];
-    if ((atoms->atom[ai].ptype == eptAtom) &&
-	(atoms->atom[aj].ptype == eptShell)) {
-      q = atoms->atom[ai].q;
-      Z = atoms->atom[ai].atomnumber;
-      atoms->atom[ai].q = Z;
-      atoms->atom[aj].q = q-Z;
+    
+    gmx_mtop_atomnr_to_atom(mtop,ai,&atom_i);
+    gmx_mtop_atomnr_to_atom(mtop,aj,&atom_j);
+    
+    if ((atom_i->ptype == eptAtom) &&
+	(atom_j->ptype == eptShell)) {
+      q = atom_i->q;
+      Z = atom_i->atomnumber;
+      atom_i->q = Z;
+      atom_j->q = q-Z;
     }
-    else if ((atoms->atom[ai].ptype == eptAtom) &&
-	(atoms->atom[aj].ptype == eptShell)) {
-      q = atoms->atom[aj].q;
-      Z = atoms->atom[aj].atomnumber;
-      atoms->atom[aj].q = Z;
-      atoms->atom[ai].q = q-Z;
+    else if ((atom_i->ptype == eptAtom) &&
+	(atom_j->ptype == eptShell)) {
+      q = atom_j->q;
+      Z = atom_j->atomnumber;
+      atom_j->q = Z;
+      atom_i->q = q-Z;
     }
     else
       gmx_incons("Polarization entry does not have one atom and one shell");
   }
   q = 0;
-  for(i=0; (i<atoms->nr); i++) 
-    q += atoms->atom[i].q;
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) 
+    q += atom->q;
   Z = gmx_nint(q);
   if (fabs(q-Z) > 1e-3) {
     gmx_fatal(FARGS,"Total charge in molecule is not zero, but %f",q-Z);
   }
 }
 
-static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
+static real calc_moldip_deviation(t_moldip *md,void *eem,
+				  real *rms_noweight)
 {
   int    i,j,count,atomnr,eemtp;
   double qq,rr,rms=0,rms_nw=0,rmsq;
@@ -426,6 +455,9 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
   bool     bConverged;
   t_mymol *mymol;
   int     eQ;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom; 
+  int    at_global,resnr;
   
   eemtp = md->eemtype;
     
@@ -446,7 +478,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
       
     /* Now optimize the shell positions */
     if (mymol->shell) {
-      split_shell_charges(&(mymol->ltop->atoms),&(mymol->ltop->idef));
+      split_shell_charges(&mymol->mtop,&mymol->ltop->idef);
       atoms2md(&mymol->mtop,&(mymol->ir),0,NULL,0,mymol->mtop.natoms,mymol->md);
       count = relax_shell_flexcon(debug,md->cr,FALSE,0,
 				  &(mymol->ir),TRUE,FALSE,
@@ -460,10 +492,13 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,real *rms_noweight)
 				  mymol->fr,t,mu_tot,
 				  mymol->mtop.natoms,&bConverged,NULL,NULL);
     }
-    mymol->dip_calc = mymol_calc_dip(&(md->mymol[i]));
-    for(j=0; (j<mymol->mtop.natoms); j++) {
-      qq = mymol->ltop->atoms.atom[j].q;
-      atomnr = mymol->ltop->atoms.atom[j].atomnumber;
+    /* Compute the molecular dipole */
+    mymol_calc_dipole(mymol);
+    
+    aloop = gmx_mtop_atomloop_all_init(&mymol->mtop);
+    while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
+      qq     = atom->q;
+      atomnr = atom->atomnumber;
       if (((qq < 0) && (atomnr == 1)) || 
 	  ((qq > 0) && ((atomnr == 8)  || (atomnr == 9) || 
 			(atomnr == 16) || (atomnr == 17) ||
