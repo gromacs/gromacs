@@ -454,10 +454,10 @@ int main(int argc,char *argv[])
 {
 
   static char *desc[] = {
-      "[TT]make_edi[tt] generates an ED-sampling input file to be used with mdrun",
+      "[TT]make_edi[tt] generates an essential dynamics (ED) sampling input file to be used with mdrun",
       "based on eigenvectors of a covariance matrix ([TT]g_covar[tt]) or from a", 
       "Normal Modes anaysis ([TT]g_nmeig[tt]).",
-      "ED-sampling can be used to manipulate the position along collective coordinates",
+      "ED sampling can be used to manipulate the position along collective coordinates",
       "(eigenvectors) of (biological) macromolecules during a simulation. Particularly,",
       "it may be used to enhance the sampling efficiency of MD simulations by stimulating",
       "the system to explore new regions along these collective coordinates. A number",
@@ -465,7 +465,7 @@ int main(int argc,char *argv[])
       "([TT]-linfix[tt], [TT]-linacc[tt], [TT]-radfix[tt], [TT]-radacc[tt], [TT]-radcon[tt]),",
       "to keep the position along a certain (set of) coordinate(s) fixed ([TT]-linfix[tt]),",
       "or to only monitor the projections of the positions, velocities and forces onto",
-      "these coordinates([TT]-mon[tt]).[PAR]"
+      "these coordinates ([TT]-mon[tt]).[PAR]"
       "References:[BR]",
       "A. Amadei, A.B.M. Linssen, B.L. de Groot, D.M.F. van Aalten and ",
       "H.J.C. Berendsen; An efficient method for sampling the essential subspace ",
@@ -480,7 +480,7 @@ int main(int argc,char *argv[])
       "[PAR]You will be prompted for one or more index groups that correspond to the eigenvectors,",
       "reference structure, target positions, etc.[PAR]",
       
-      "[TT]-mon[tt]: monitor projections of x, v and f onto selected eigenvectors.[PAR]",
+      "[TT]-mon[tt]: monitor projections of the coordinates onto selected eigenvectors.[PAR]",
       "[TT]-linfix[tt]: perform fixed-step linear expansion along selected eigenvectors.[PAR]",
       "[TT]-linacc[tt]: perform acceptance linear expansion along selected eigenvectors.",
       "(steps in the desired directions will be accepted, others will be rejected).[PAR]",
@@ -491,44 +491,27 @@ int main(int argc,char *argv[])
       "expansion cycle for radius expansion. If [TT]-ori[tt] is specified, you will be able",
       "to read in a structure file that defines an external origin.[PAR]"
       "[TT]-radcon[tt]: perform acceptance radius contraction along selected eigenvectors",
-      "towards a target structure specified with [TT]-tar[tt]."
+      "towards a target structure specified with [TT]-tar[tt].[PAR]"
       "NOTE: each eigenvector can be selected only once. [PAR]"
-      "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc.[PAR]",
+      "[TT]-outfrq[tt]: frequency (in steps) of writing out projections etc. to .edo file[PAR]",
       "[TT]-slope[tt]: minimal slope in acceptance radius expansion. A new expansion",
       "cycle will be started if the spontaneous increase of the radius (in nm/step)",
       "is less than the value specified.[PAR]" 
       "[TT]-maxedsteps[tt]: maximum number of steps per cycle in radius expansion",
       "before a new cycle is started.[PAR]"
       "Note on the parallel implementation: since ED sampling is a 'global' thing",
-      "(collective coordinates etc), at least on the 'protein' side, ED sampling",
-      "is not very parallel-friendly from an implentation point of view (it would",
-      "require much extra communication to fully parallelize the algorithms).",
-      "Fortunately, however, a typical parallel protein simulation in gromacs has",
-      "most or all protein coordinates on one processor (the master) and has only",
-      "other atoms (solvent, lipid, ions etc) on the other processors. With such a",
-      "setup, ED sampling will still work. If the atoms over which ED sampling should ",
-      "be performed are spread over multiple processors, a fatal error will result.[PAR]"
-      "All output of mdrun (specify with -eo) is written to a .edo file (some extra",
-      "information is written to the log file of mdrun too, actually). The .edo format",
-      "is a simple ASCII file that should be easy to parse with standard unix tools",
-      "like awk. A script (parse_edo) can be downloaded from contribution section at",
-      " www.gromacs.org to extract information from the",
-      ".edo files for your convinience. In short, the header defines which information",
-      "can be expected in the rest of the .edo file. After the header, per step the",
-      "following information is present: [PAR]",
+      "(collective coordinates etc.), at least on the 'protein' side, ED sampling",
+      "is not very parallel-friendly from an implentation point of view. Because",
+      "parallel ED requires much extra communication, expect the performance to be",
+      "lower as in a free MD simulation, especially on a large number of nodes. [PAR]",
+      "All output of mdrun (specify with -eo) is written to a .edo file. In the output",
+      "file, per OUTFRQ step the following information is present: [PAR]",
       "* the step number[BR]",
-      "* RMSD (for atoms in fitting prior to calculating ED constr.)[BR]",
+      "* the number of the ED dataset. (Note that you can impose multiple ED constraints in",
+      "a single simulation - on different molecules e.g. - if several .edi files were concatenated.",
+      "first. The constraints are applied in the order they appear in the .edi file.) [BR]",
+      "* RMSD (for atoms involved in fitting prior to calculating the ED constraints)[BR]",
       "* projections of the positions onto selected eigenvectors[BR]",
-      "* projections of the velocities onto selected eigenvectors[BR]",
-      "* projections of the forces onto selected eigenvectors",
-      "[PAR]",
-      "All projections are in the same order as in the header, so if you have e.g.",
-      "2 groups (say one group over which acceptance radius expansion is performed,",
-      "and another for which the projections are merely monitored) then you first",
-      "get the position projections for each of the 2 groups, then the velocities",
-      "and then the forces. Radii are not explicitly written to the .edo file, as",
-      "they can be readily projected back from the positions. Alternatively, radii",
-      "may be 'grepped from the log file. ",
       "[PAR][PAR]",
       "FLOODING:[PAR]",
       "with -flood you can specify which eigenvectors are used to compute a flooding potential,",
