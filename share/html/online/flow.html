@@ -149,18 +149,16 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD ALIGN=CENTER><IMG SRC=../images/flow_vline.gif></TD>
-<TD ROWSPAN=3 ALIGN=CENTER><IMG SRC=../images/flow_right+left.gif></TD>
-<TD COLSPAN=3 ALIGN=CENTER VALIGN=BOTTOM>Continuation</TD>
+<TD ROWSPAN=3 ALIGN=RIGHT>
+<IMG SRC=../images/flow_rightleftdown.gif></TD>
+<TD ALIGN=CENTER VALIGN=BOTTOM>Continuation</TD>
 </TR>
 
 <TR>
 <TD COLSPAN=2 ALIGN=LEFT></TD>
 <TD></TD>
 <TD COLSPAN=3 ALIGN=CENTER> <A HREF=tpr.html onMouseOver="window.status='Portable GROMACS binary run input file (contains all information to start MD run)'; return true">topol.tpr</A></TD>
-<TD><IMG SRC=../images/flow_vrule.gif></TD>
-<TD ALIGN=CENTER BGCOLOR=#777777>&nbsp;&nbsp;<A HREF=tpbconv.html onMouseOver="window.status='Rewrite binary topology with new coordinates and number of steps for continuation'; return true"><B>tpbconv</B></A>&nbsp;&nbsp;</TD>
-<TD>&nbsp;<IMG SRC=../images/flow_left.gif>&nbsp;</TD>
-<TD ALIGN=CENTER><A HREF=trr.html onMouseOver="window.status='Full precision portable trajectory'; return true">traj.trr</A></TD>
+<TD ALIGN=CENTER >&nbsp;&nbsp;<A HREF=cpt.html onMouseOver="window.status='Checkpoint file'; return true">state.cpt</A>&nbsp;&nbsp;</TD>
 </TR>
 
 <TR>
@@ -169,18 +167,16 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD ALIGN=CENTER><IMG SRC=../images/flow_down.gif></TD>
-<TD></TD>
-<TD></TD>
-<TD></TD>
-<TD ROWSPAN=2><IMG SRC=../images/flow_vline.gif><BR><IMG SRC=../images/flow_leftup.gif></TD>
+<TD ROWSPAN=2 ALIGN=CENTER>
+<IMG SRC=../images/flow_vline.gif><BR>
+<IMG SRC=../images/flow_leftup.gif></TD>
 </TR>
 
 <TR>
 <TD COLSPAN=2>Run the simulation (EM or MD)</TD>
 <TD></TD>
 <TD  COLSPAN=3 ALIGN=CENTER BGCOLOR=#777777>&nbsp;<A HREF=mdrun.html onMouseOver="window.status='The moment you have all been waiting for! START YOUR MD RUN'; return true"><B>mdrun</B></A>&nbsp;</TD>
-<TD><IMG SRC=../images/flow_vrule.gif></TD>
-<TD COLSPAN=2 ALIGN=CENTER><IMG SRC=../images/flow_hline.gif><IMG SRC=../images/flow_right.gif></TD>
+<TD></TD>
 </TR>
 
 <TR>
@@ -196,7 +192,8 @@ these consist of cycles: grompp -> mdrun.
 <TD></TD>
 <TD></TD>
 <TD></TD>
-<TD ALIGN=CENTER> <A HREF=xtc.html onMouseOver="window.status='Portable compressed trajectory'; return true">traj.xtc</A> </TD>
+<TD ALIGN=CENTER> <A HREF=xtc.html onMouseOver="window.status='Portable compressed trajectory'; return true">traj.xtc</A> /
+<A HREF=trr.html onMouseOver="window.status='Full precision portable trajectory'; return true">traj.trr</A> </TD>
 <TD></TD>
 <TD ALIGN=CENTER> <A HREF=edr.html onMouseOver="window.status='Portable energy file'; return true">ener.edr</A> </TD>
 </TR>

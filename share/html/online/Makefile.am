@@ -5,6 +5,7 @@
 onlinedir = ${pkgdatadir}/html/online
 
 online_DATA = \
+  cpt.html	\
   dat.html           g_disre.html      g_sorient.html        ndx.html        \
   dlg.html           g_dist.html       g_tcaf.html           ngmx.html       \
   do_dssp.html       g_dyndom.html     g_traj.html           \
