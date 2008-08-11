@@ -529,12 +529,13 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    t_fcdata *fcd,
 			    t_graph *graph,t_mdatoms *mdatoms,
 			    t_forcerec *fr, rvec mu_tot,
-			    gmx_enerdata_t *enerd,int count,bool bFirst)
+			    gmx_enerdata_t *enerd,tensor vir,tensor pres,
+			    int count,bool bFirst)
 {
   real t;
   bool bNS;
   int  nabnsb;
-  tensor force_vir,shake_vir,pres,ekin;
+  tensor force_vir,shake_vir,ekin;
   real dvdl;
   real terminate=0;
   t_state *state;
@@ -611,17 +612,19 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     constrain(NULL,FALSE,FALSE,constr,top,
 	      inputrec,cr,count,0,mdatoms,
 	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
-	      NULL,NULL,nrnb,econqForce);
+	      NULL,&shake_vir,nrnb,econqForce);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
     enerd->term[F_DVDL] += dvdl;
-    m_add(force_vir,shake_vir,force_vir);
+    m_add(force_vir,shake_vir,vir);
     wallcycle_stop(wcycle,ewcCONSTR);
+  } else {
+    copy_mat(force_vir,vir);
   }
 
   clear_mat(ekin);
   enerd->term[F_PRES] =
-    calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,force_vir,pres,
+    calc_pres(fr->ePBC,inputrec->nwall,ems->s.box,ekin,vir,pres,
 	      (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
 
   get_state_f_norm_max(cr,&(inputrec->opts),mdatoms,ems);
@@ -770,7 +773,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   rvec   mu_tot;
   time_t start_t;
   bool   do_log=FALSE,do_ene=FALSE,do_x,do_f;
-  tensor force_vir,shake_vir,vir,pres;
+  tensor vir,pres;
   int    number_steps,neval=0,nstcg=inputrec->nstcgsteep;
   int    fp_trn,fp_ene;
   int    i,m,gf,step,nminstep;
@@ -794,11 +797,6 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 			      "Started Polak-Ribiere Conjugate Gradients");
   wallcycle_start(wcycle,ewcRUN);
   
-  /* Clear some matrix variables */
-  clear_mat(shake_vir);
-  clear_mat(vir);
-  clear_mat(pres);
-  
   /* Max number of steps */
   number_steps=inputrec->nsteps;
 
@@ -814,14 +812,15 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   evaluate_energy(fplog,bVerbose,cr,
 		  state_global,top_global,s_min,&buf,top,
 		  inputrec,nrnb,wcycle,
-		  vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,-1,TRUE);
+		  vsite,constr,fcd,graph,mdatoms,fr,
+		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
 
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-	       enerd,&s_min->s,s_min->s.box,shake_vir,
-	       force_vir,vir,pres,NULL,mu_tot,constr);
+	       enerd,&s_min->s,s_min->s.box,
+	       NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,s_min->s.lambda);
     print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
@@ -960,7 +959,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_c,&buf,top,
 		    inputrec,nrnb,wcycle,
-		    vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,-1,FALSE);
+		    vsite,constr,fcd,graph,mdatoms,fr,
+		    mu_tot,enerd,vir,pres,-1,FALSE);
     
     /* Calc derivative along line */
     p  = s_c->s.cg_p;
@@ -1046,8 +1046,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	evaluate_energy(fplog,bVerbose,cr,
 			state_global,top_global,s_b,&buf,top,
 			inputrec,nrnb,wcycle,
-			vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,
-			-1,FALSE);
+			vsite,constr,fcd,graph,mdatoms,fr,
+			mu_tot,enerd,vir,pres,-1,FALSE);
 	
 	/* p does not change within a step, but since the domain decomposition
 	 * might change, we have to use cg_p of s_b here.
@@ -1165,8 +1165,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 		s_min->fmax,s_min->a_fmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-		 enerd,&s_min->s,s_min->s.box,shake_vir,
-		 force_vir,vir,pres,NULL,mu_tot,constr);
+		 enerd,&s_min->s,s_min->s.box,
+		 NULL,NULL,vir,pres,NULL,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
@@ -1292,7 +1292,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   real   fnorm,fmax;
   time_t start_t;
   bool   do_log,do_ene,do_x,do_f,foundlower,*frozen;
-  tensor force_vir,shake_vir,vir,pres;
+  tensor vir,pres;
   int    fp_trn,fp_ene,start,end,number_steps;
   int    i,k,m,n,nfmax,gf,step;
   /* not used */
@@ -1362,12 +1362,6 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   
   do_log = do_ene = do_x = do_f = TRUE;
   
-  /* Clear some matrix variables */
-  clear_mat(force_vir);
-  clear_mat(shake_vir);
-  clear_mat(vir);
-  clear_mat(pres);
-  
   /* Max number of steps */
   number_steps=inputrec->nsteps;
 
@@ -1399,14 +1393,15 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   evaluate_energy(fplog,bVerbose,cr,
 		  state,top_global,&ems,&buf,top,
 		  inputrec,nrnb,wcycle,
-		  vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,-1,TRUE);
+		  vsite,constr,fcd,graph,mdatoms,fr,
+		  mu_tot,enerd,vir,pres,-1,TRUE);
   where();
 	
   if (MASTER(cr)) {
     /* Copy stuff to the energy bin for easy printing etc. */
     upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-	       enerd,state,state->box,shake_vir,
-	       force_vir,vir,pres,NULL,mu_tot,constr);
+	       enerd,state,state->box,
+	       NULL,NULL,vir,pres,NULL,mu_tot,constr);
     
     print_ebin_header(fplog,step,step,state->lambda);
     print_ebin(fp_ene,TRUE,FALSE,FALSE,fplog,step,step,step,eprNORMAL,
@@ -1552,7 +1547,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state,top_global,&ems,&buf,top,
 		    inputrec,nrnb,wcycle,
-		    vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,step,FALSE);
+		    vsite,constr,fcd,graph,mdatoms,fr,
+		    mu_tot,enerd,vir,pres,step,FALSE);
     EpotC = ems.epot;
     
     /* Calc derivative along line */
@@ -1629,8 +1625,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	evaluate_energy(fplog,bVerbose,cr,
 			state,top_global,&ems,&buf,top,
 			inputrec,nrnb,wcycle,
-			vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,
-			step,FALSE);
+			vsite,constr,fcd,graph,mdatoms,fr,
+			mu_tot,enerd,vir,pres,step,FALSE);
 	EpotB = ems.epot;
 	
 	fnorm = ems.fnorm;
@@ -1817,8 +1813,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		step,Epot,fnorm/sqrt(state->natoms),fmax,nfmax+1);
       /* Store the new (lower) energies */
       upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,step,(real)step,
-		 enerd,state,state->box,shake_vir,
-		 force_vir,vir,pres,NULL,mu_tot,constr);
+		 enerd,state,state->box,
+		 NULL,NULL,vir,pres,NULL,mu_tot,constr);
       do_log = do_per_step(step,inputrec->nstlog);
       do_ene = do_per_step(step,inputrec->nstenergy);
       if(do_log)
@@ -1925,7 +1921,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   t_mdebin   *mdebin; 
   bool   bDone,bAbort,do_x,do_f; 
   time_t start_t; 
-  tensor force_vir,shake_vir,pres,vir; 
+  tensor vir,pres; 
   rvec   mu_tot;
   int    nsteps;
   int    count=0; 
@@ -1945,11 +1941,6 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   /* Print to log file  */
   start_t=print_date_and_time(fplog,cr->nodeid,"Started Steepest Descents");
   wallcycle_start(wcycle,ewcRUN);
-
-  /* Clear some matrix variables  */
-  clear_mat(shake_vir); 
-  clear_mat(vir); 
-  clear_mat(pres); 
     
   /* Set variables for stepsize (in nm). This is the largest  
    * step that we are going to make in any direction. 
@@ -1987,8 +1978,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
     evaluate_energy(fplog,bVerbose,cr,
 		    state_global,top_global,s_try,&buf,top,
 		    inputrec,nrnb,wcycle,
-		    vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,
-		    count,count==0);
+		    vsite,constr,fcd,graph,mdatoms,fr,
+		    mu_tot,enerd,vir,pres,count,count==0);
     
     if (MASTER(cr))
       print_ebin_header(fplog,count,count,s_try->s.lambda);
@@ -2007,8 +1998,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
       if (s_try->epot < s_min->epot) {
 	/* Store the new (lower) energies  */
 	upd_mdebin(mdebin,NULL,TRUE,mdatoms->tmass,count,(real)count,
-		   enerd,&s_try->s,s_try->s.box,shake_vir, 
-		   force_vir,vir,pres,NULL,mu_tot,constr);
+		   enerd,&s_try->s,s_try->s.box,
+		   NULL,NULL,vir,pres,NULL,mu_tot,constr);
 	print_ebin(fp_ene,TRUE,
 		   do_per_step(steps_accepted,inputrec->nstdisreout),
 		   do_per_step(steps_accepted,inputrec->nstorireout),
@@ -2137,7 +2128,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     t_graph    *graph;
     real       t,lambda,t0,lam0;
     bool       bNS;
-    tensor     force_vir;
+    tensor     vir,pres;
     int        nfmax,count;
     rvec       mu_tot;
     rvec       *fneg,*fpos;
@@ -2228,13 +2219,14 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
                 top_global->natoms);
     }
     
-	count = 0;
-	evaluate_energy(fplog,bVerbose,cr,
-			state_global,top_global,state_work,&buf,top,
-			inputrec,nrnb,wcycle,
-			vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,
-			count,count==0);
-	count++;
+    count = 0;
+    evaluate_energy(fplog,bVerbose,cr,
+		    state_global,top_global,state_work,&buf,top,
+		    inputrec,nrnb,wcycle,
+		    vsite,constr,fcd,graph,mdatoms,fr,
+		    mu_tot,enerd,vir,pres,count,count==0);
+    count++;
+
     /* if forces are not small, warn user */
     get_state_f_norm_max(cr,&(inputrec->opts),mdatoms,state_work);
 
@@ -2272,30 +2264,30 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	  evaluate_energy(fplog,bVerbose,cr,
 			  state_global,top_global,state_work,&buf,top,
 			  inputrec,nrnb,wcycle,
-			  vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,
-			  count,count==0);
+			  vsite,constr,fcd,graph,mdatoms,fr,
+			  mu_tot,enerd,vir,pres,count,count==0);
 	  count++;
 			
-			for ( i=0 ; i < top_global->natoms ; i++ )
-			{
-				copy_rvec ( state_work->f[i] , fneg[i] );
-			}
-			
-			state_work->s.x[step][idum] += 2*der_range;
-            
-			evaluate_energy(fplog,bVerbose,cr,
-					state_global,top_global,state_work,&buf,top,
-					inputrec,nrnb,wcycle,
-					vsite,constr,fcd,graph,mdatoms,fr,mu_tot,enerd,
-					count,count==0);
-			count++;
-
-			for ( i=0 ; i < top_global->natoms ; i++ )
-			{
-				copy_rvec ( state_work->f[i] , fpos[i] );
-			}
-						
-            for (jdum=0; (jdum<top_global->natoms); jdum++) 
+	  for ( i=0 ; i < top_global->natoms ; i++ )
+	    {
+	      copy_rvec ( state_work->f[i] , fneg[i] );
+	    }
+	  
+	  state_work->s.x[step][idum] += 2*der_range;
+          
+	  evaluate_energy(fplog,bVerbose,cr,
+			  state_global,top_global,state_work,&buf,top,
+			  inputrec,nrnb,wcycle,
+			  vsite,constr,fcd,graph,mdatoms,fr,
+			  mu_tot,enerd,vir,pres,count,count==0);
+	  count++;
+	  
+	  for ( i=0 ; i < top_global->natoms ; i++ )
+	    {
+	      copy_rvec ( state_work->f[i] , fpos[i] );
+	    }
+	  
+	  for (jdum=0; (jdum<top_global->natoms); jdum++) 
             {
                 for (kdum=0; (kdum<DIM); kdum++) 
                 {

@@ -40,7 +40,10 @@
 #include "typedefs.h"
 
 enum { econqCoord,         /* Constrain coordinates (mass weighted)     */ 
-       econqDeriv,         /* Constrain vel. or acc. (mass weighted)    */
+       econqVeloc,         /* Constrain velocities (mass weighted)      */
+       econqDeriv,         /* Constrain a derivative (mass weighted),   *
+			    * for instance velocity or acceleration,    *
+			    * constraint virial can not be calculated.  */
        econqDeriv_FlexCon, /* As econqDeriv, but only output flex. con. */
        econqForce          /* Constrain forces (non mass-weighted)      */
 };
@@ -95,7 +98,8 @@ extern void csettle(FILE *log,
 
 extern void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
 			real dOH,real dHH,real invmO,real invmH,
-			rvec *der,rvec *derp);
+			rvec *der,rvec *derp,
+			bool bCalcVir,tensor rmdder);
 /* Analytical algorithm to subtract the components of derivatives
  * of coordinates working on settle type constraint.
  */

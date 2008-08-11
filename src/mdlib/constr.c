@@ -317,12 +317,13 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	if (constr->warncount_settle > constr->maxwarn)
 	  too_many_constraint_warnings(-1,constr->warncount_settle);
 	break;
+      case econqVeloc:
       case econqDeriv:
       case econqForce:
 	settle_proj(fplog,nsettle,settle->iatoms,x,dOH,dHH,
 		    md->invmass[settle->iatoms[1]],
 		    md->invmass[settle->iatoms[1]+1],
-		    xprime,min_proj);
+		    xprime,min_proj,vir!=NULL,rmdr);
 
 	/* This is an overestimate */
 	inc_nrnb(nrnb,eNR_SETTLE,nsettle);
@@ -341,14 +342,15 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     case econqCoord:
       vir_fac = 0.5/(ir->delta_t*ir->delta_t);
       break;
-    case econqDeriv:
+    case econqVeloc:
       /* Assume that these are velocities */
       vir_fac = 0.5/ir->delta_t;
       break;
     case econqForce:
-      vir_fac = -0.5;
+      vir_fac = 0.5;
       break;
     default:
+      vir_fac = 0;
       gmx_incons("Unsupported constraint quantity for virial");
     }
     for(i=0; i<DIM; i++)

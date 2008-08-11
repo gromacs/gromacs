@@ -62,7 +62,8 @@ static void check_cons(FILE *fp,char *title,real x[],int OW1,int HW2,int HW3)
 
 void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
 		 real dOH,real dHH,real invmO,real invmH,
-		 rvec *der,rvec *derp)
+		 rvec *der,rvec *derp,
+		 bool bCalcVir,tensor rmdder)
 {
   /* Settle for projection out constraint components
    * of derivatives of the coordinates.
@@ -75,7 +76,7 @@ void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
   static matrix invmat;
 
   matrix mat;
-  int i,m,ow1,hw2,hw3;
+  int i,m,m2,ow1,hw2,hw3;
   rvec roh2,roh3,rhh,dc,fc;
 
   if (bFirst) {
@@ -120,6 +121,7 @@ void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
       rhh [m] = (x[hw2][m] - x[hw3][m])*invdHH;
     /* 18 flops */
 
+    /* Determine the projections of der on the bonds */
     clear_rvec(dc);
     for(m=0; m<DIM; m++)
       dc[0] += (der[ow1][m] - der[hw2][m])*roh2[m];
@@ -129,7 +131,7 @@ void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
       dc[2] += (der[hw2][m] - der[hw3][m])*rhh [m];
     /* 27 flops */
 
-    /* Determine the correction forces */
+    /* Determine the correction for the three bonds */
     mvmul(invmat,dc,fc);
     /* 15 flops */
 
@@ -140,6 +142,20 @@ void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
       derp[hw3][m] -= imH*(-fc[1]*roh3[m] - fc[2]*rhh [m]);
     }
     /* 45 flops */
+
+    if (bCalcVir) {
+      /* Determining r x m der is easy,
+       * since fc contains the mass weighted corrections for der.
+       */
+      for(m=0; m<DIM; m++) {
+	for(m2=0; m2<DIM; m2++) {
+	  rmdder[m][m2] +=
+	    dOH*roh2[m]*roh2[m2]*fc[0] +
+	    dOH*roh3[m]*roh3[m2]*fc[1] +
+	    dHH*rhh [m]*rhh [m2]*fc[2];
+	}
+      }
+    }
   }
 }
 
