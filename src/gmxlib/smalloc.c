@@ -48,6 +48,7 @@
 #include "smalloc.h"
 #include "main.h"
 
+
 #ifdef DEBUG
 static void log_action(int bMal,char *what,char *file,int line,
                        int nelem,int size,void *ptr)
@@ -64,14 +65,33 @@ static void log_action(int bMal,char *what,char *file,int line,
   pthread_mutex_lock(&gmx_logfile_mtx);
 #endif
 
+  /* This total memory count is not correct, since with realloc
+   * it adds the whole size again, not just the increment.
+   */
   /* This static variable is protected by the mutex too... */
   btot+=bytes;
     
   bytes/=1024;
-  if (debug && (bytes != 0))
-    fprintf(debug,"%s:%d kb (%7d kb) [%s, line %d, nelem %d, size %d]\n",
+  if (debug && (bytes != 0)) {
+    fprintf(debug,"%s:%d kB (%7d kB) [%s, line %d, nelem %d, size %d]\n",
 	    what ? what : NN,bytes,btot/1024,
 	    file ? file : NN,line,nelem,size);
+  }
+  /* Print to stderr for things larger than 1 MB */
+  if (bytes >= 1024 || bytes <= -1024) {
+    char *fname=NULL;
+    if (file) {
+      fname = strrchr(file,'/');
+      if (fname) {
+	fname++;
+      } else {
+	fname = file;
+      }
+    }
+    printf("%s: %.1f MB [%s, line %d, nelem %d, size %d]\n",
+	   what ? what  : NN,bytes/1024.0,
+	   file ? fname : NN,line,nelem,size);
+  }
 #ifdef GMX_THREAD_PTHREAD
   pthread_mutex_unlock(&gmx_logfile_mtx);
 #endif
@@ -109,6 +129,12 @@ void *save_calloc(char *name,char *file,int line,
     p=NULL;
   else
     {
+#ifdef PRINT_ALLOC_KB
+      if (nelem*elsize >= PRINT_ALLOC_KB*1024) {
+	printf("Allocating %.1f MB for %s\n",
+	       nelem*elsize/(PRINT_ALLOC_KB*1024.0),name);
+      }
+#endif
 #ifdef GMX_BROKEN_CALLOC
       /* emulate calloc(3) with malloc/memset on machines with 
          a broken calloc, e.g. in -lgmalloc on cray xt3. */
@@ -139,6 +165,12 @@ void *save_realloc(char *name,char *file,int line,void *ptr,
     p=NULL;
   else
     {
+#ifdef PRINT_ALLOC_KB
+      if (size >= PRINT_ALLOC_KB*1024) {
+	printf("Reallocating %.1f MB for %s\n",
+	       size/(PRINT_ALLOC_KB*1024.0),name);
+      }
+#endif
       if (ptr==NULL) 
 	p=malloc((size_t)size); 
       else 
