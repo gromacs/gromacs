@@ -57,6 +57,7 @@ t_mdatoms *init_mdatoms(FILE *fp,gmx_mtop_t *mtop,bool bFreeEnergy)
 
   snew(md,1);
 
+  md->nenergrp = mtop->groups.grps[egcENER].nr;
   md->bVCMgrps = FALSE;
   tmA = 0.0;
   tmB = 0.0;
