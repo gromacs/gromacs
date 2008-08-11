@@ -435,11 +435,12 @@ static void low_warning(const char *wtype,int n,const char *s)
   temp[indent] = '\0';
   strcat(temp,s);
   temp2 = wrap_lines(temp,78-indent,indent,FALSE);
-  if (strlen(filenm) > 0)
-    fprintf(stderr,"%s %d [file %s, line %s]:\n%s\n",
+  if (strlen(filenm) > 0) {
+    fprintf(stderr,"\n%s %d [file %s, line %s]:\n%s\n\n",
 	    wtype,n,filenm,linenobuf,temp2);
-  else
-    fprintf(stderr,"%s %d:\n%s\n",wtype,n,temp2);
+  } else {
+    fprintf(stderr,"\n%s %d:\n%s\n\n",wtype,n,temp2);
+  }
   sfree(temp);
   sfree(temp2);
 }
