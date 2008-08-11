@@ -205,7 +205,7 @@ static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
   
   snew(mm,len);
   nmin = 0;
-  fp = fopen(logfile,"w");
+  fp = ffopen(logfile,"w");
   for(i=0; (i<ibox[0]); i++) {
     for(j=0; (j<ibox[1]); j++) {
       if (ndim == 3) {
@@ -262,23 +262,26 @@ static void pick_minima(char *logfile,int *ibox,int ndim,int len,real W[])
   sfree(mm);
 }
 
-static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
+static void do_sham(char *fn,char *ndx,
+		    char *xpmP,char *xpm,char *xpm2,
 		    char *xpm3,char *xpm4,char *pdb,char *logf,
 		    int n,int neig,real **eig,
 		    bool bGE,int nenerT,real **enerT,
 		    int nmap,real *mapindex,real **map,
 		    real Tref,
-		    real gmax,real *emin,real *emax,int nlevels,real pmin,
+		    real pmax,real gmax,
+		    real *emin,real *emax,int nlevels,real pmin,
 		    char *mname,bool bSham,int *idim,int *ibox,
 		    bool bXmin,real *xmin,bool bXmax,real *xmax)
 {
   FILE    *fp;
   real    *min_eig,*max_eig;
   real    *axis_x,*axis_y,*axis_z,*axis=NULL;
-  real    *W,*E,**WW,**EE,*S,**SS,*M,**MM,*bE;
+  double  *P;
+  real    **PP,*W,*E,**WW,**EE,*S,**SS,*M,**MM,*bE;
   rvec    xxx;
   char    *buf;
-  double  *P,*bfac,efac,bref,Wmin,Wmax,Winf,Emin,Emax,Einf,Smin,Smax,Sinf,Mmin,Mmax,Minf;
+  double  *bfac,efac,bref,Pmax,Wmin,Wmax,Winf,Emin,Emax,Einf,Smin,Smax,Sinf,Mmin,Mmax,Minf;
   real    *delta;
   int     i,j,k,imin,len,index,d,*nbin,*bindex,bi;
   int     *nxyz,maxbox;
@@ -394,6 +397,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   }
   /* Normalize probability */
   normalize_p_e(len,P,nbin,E,pmin);
+  Pmax = 0;
   /* Compute boundaries for the Free energy */
   Wmin = 1e8;
   imin = -1;
@@ -401,8 +405,9 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   /* Recompute Emin: it may have changed due to averaging */
   Emin = 1e8;
   Emax = -1e8;
-  for(i=0; (i<len); i++)
+  for(i=0; (i<len); i++) {
     if (P[i] != 0) {
+      Pmax = max(P[i],Pmax);
       W[i] = -BOLTZ*Tref*log(P[i]);
       if (W[i] < Wmin) {
 	Wmin = W[i];
@@ -412,10 +417,15 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
       Emax = max(E[i],Emax);
       Wmax = max(W[i],Wmax);
     }
-  if (gmax > 0)
+  }
+  if (pmax > 0) {
+    Pmax = pmax;
+  }
+  if (gmax > 0) {
     Wmax = gmax;
-  else
+  } else {
     Wmax -= Wmin;
+  }
   Winf = Wmax+1;
   Einf = Emax+1;
   Smin = Emin-Wmax;
@@ -472,6 +482,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   snew(axis_y,ibox[1]+1);
   snew(axis_z,ibox[2]+1);
   maxbox = max(ibox[0],max(ibox[1],ibox[2]));
+  snew(PP,maxbox*maxbox);
   snew(WW,maxbox*maxbox);
   snew(EE,maxbox*maxbox);
   snew(SS,maxbox*maxbox);
@@ -518,26 +529,35 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   flags = MAT_SPATIAL_X | MAT_SPATIAL_Y;
   if (neig == 2) {
     /* Dump to XPM file */
+    snew(PP,ibox[0]);
     for(i=0; (i<ibox[0]); i++) {
+      snew(PP[i],ibox[1]);
+      for(j=0; j<ibox[1]; j++) {
+	PP[i][j] = P[i*ibox[1]+j];
+      }
       WW[i] = &(W[i*ibox[1]]);
       EE[i] = &(E[i*ibox[1]]);
       SS[i] = &(S[i*ibox[1]]);
     }
-    fp = fopen(xpm,"w");
+    fp = ffopen(xpmP,"w");
+    write_xpm(fp,flags,"Probability Distribution","","PC1","PC2",
+	      ibox[0],ibox[1],axis_x,axis_y,PP,0,Pmax,rlo,rhi,&nlevels);
+    fclose(fp);
+    fp = ffopen(xpm,"w");
     write_xpm(fp,flags,"Gibbs Energy Landscape","G (kJ/mol)","PC1","PC2",
 	      ibox[0],ibox[1],axis_x,axis_y,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
-    fp = fopen(xpm2,"w");
+    fp = ffopen(xpm2,"w");
     write_xpm(fp,flags,"Enthalpy Landscape","H (kJ/mol)","PC1","PC2",
 	      ibox[0],ibox[1],axis_x,axis_y,EE,
 	      emin ? *emin : Emin,emax ? *emax : Einf,rlo,rhi,&nlevels);
     fclose(fp);
-    fp = fopen(xpm3,"w");
+    fp = ffopen(xpm3,"w");
     write_xpm(fp,flags,"Entropy Landscape","TDS (kJ/mol)","PC1","PC2",
 	      ibox[0],ibox[1],axis_x,axis_y,SS,0,Sinf,rlo,rhi,&nlevels);
     fclose(fp);
     if (map) {
-      fp = fopen(xpm4,"w");
+      fp = ffopen(xpm4,"w");
       write_xpm(fp,flags,"Custom Landscape",mname,"PC1","PC2",
 		ibox[0],ibox[1],axis_x,axis_y,MM,0,Minf,rlo,rhi,&nlevels);
       fclose(fp);
@@ -545,7 +565,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
   }
   else if (neig == 3) {
     /* Dump to PDB file */
-    fp = fopen(pdb,"w");
+    fp = ffopen(pdb,"w");
     for(i=0; (i<ibox[0]); i++) {
       xxx[XX] = 3*(i+0.5-ibox[0]/2);
       for(j=0; (j<ibox[1]); j++) {
@@ -575,7 +595,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
     snew(buf,strlen(xpm)+4);
     sprintf(buf,"%s",xpm);
     sprintf(&buf[strlen(xpm)-4],"12.xpm");
-    fp = fopen(buf,"w");
+    fp = ffopen(buf,"w");
     write_xpm(fp,flags,"Gibbs Energy Landscape","W (kJ/mol)","PC1","PC2",
 	      ibox[0],ibox[1],axis_x,axis_y,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
@@ -584,7 +604,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
 	WW[i][j] = W[index3(ibox,i,nxyz[YY],j)];
     }
     sprintf(&buf[strlen(xpm)-4],"13.xpm");
-    fp = fopen(buf,"w");
+    fp = ffopen(buf,"w");
     write_xpm(fp,flags,"SHAM Energy Landscape","kJ/mol","PC1","PC3",
 	      ibox[0],ibox[2],axis_x,axis_z,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
@@ -593,7 +613,7 @@ static void do_sham(char *fn,char *ndx,char *xpm,char *xpm2,
 	WW[i][j] = W[index3(ibox,nxyz[XX],i,j)];
     }
     sprintf(&buf[strlen(xpm)-4],"23.xpm");
-    fp = fopen(buf,"w");
+    fp = ffopen(buf,"w");
     write_xpm(fp,flags,"SHAM Energy Landscape","kJ/mol","PC2","PC3",
 	      ibox[1],ibox[2],axis_y,axis_z,WW,0,gmax,rlo,rhi,&nlevels);
     fclose(fp);
@@ -660,7 +680,9 @@ int gmx_sham(int argc,char *argv[])
     "g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.",
     "g_sham reads one or more xvg files and analyzes data sets.",
     "g_sham basic purpose is plotting Gibbs free energy landscapes",
-    "by Bolzmann inverting multi-dimensional histograms, but it can also",
+    "(option [TT]-ls[tt])",
+    "by Bolzmann inverting multi-dimensional histograms (option [TT]-lp[tt])",
+    "but it can also",
     "make enthalpy (option [TT]-lsh[tt]) and entropy (option [TT]-lss[tt])",
     "plots. The histograms can be made for any quantities the user supplies.",
     "A line in the input file may start with a time",
@@ -686,7 +708,7 @@ int gmx_sham(int argc,char *argv[])
     "When a distance is 2- or 3-dimensional, the circumference or surface",
     "sampled by two particles increases with increasing distance.",
     "Depending on what one would like to show, one can choose to correct",
-    "the free-energy for this volume effect.",
+    "the histogram and free-energy for this volume effect.",
     "The probability is normalized by r and r^2 for a dimension of 2 and 3",
     "respectively.",
     "A value of -1 is used to indicate an angle in degrees between two",
@@ -699,7 +721,7 @@ int gmx_sham(int argc,char *argv[])
   static bool bHaveT=TRUE,bDer=FALSE,bSubAv=TRUE,bAverCorr=FALSE,bXYdy=FALSE;
   static bool bEESEF=FALSE,bEENLC=FALSE,bEeFitAc=FALSE,bPower=FALSE;
   static bool bShamEner=TRUE,bSham=TRUE; 
-  static real Tref=298.15,pmin=0,ttol=0,gmax=0,emin=0,emax=0;
+  static real Tref=298.15,pmin=0,ttol=0,pmax=0,gmax=0,emin=0,emax=0;
   static rvec nrdim = {1,1,1};
   static rvec nrbox = {32,32,32};
   static rvec xmin  = {0,0,0}, xmax={1,1,1};
@@ -734,6 +756,8 @@ int gmx_sham(int argc,char *argv[])
       "Minimum for the axes in energy landscape (see above for > 3 dimensions)" },
     { "-xmax",    FALSE, etRVEC, {xmax},
       "Maximum for the axes in energy landscape (see above for > 3 dimensions)" },
+    { "-pmax",    FALSE, etREAL, {&pmax},
+      "Maximum probability in output, default is calculate" },
     { "-gmax",    FALSE, etREAL, {&gmax},
       "Maximum free energy in output, default is calculate" },
     { "-emin",    FALSE, etREAL, {&emin},
@@ -761,6 +785,7 @@ int gmx_sham(int argc,char *argv[])
     { efXVG, "-dist", "ener",     ffOPTWR  },
     { efXVG, "-histo","edist",    ffOPTWR  },
     { efNDX, "-bin",  "bindex",   ffOPTWR  },
+    { efXPM, "-lp",   "prob",     ffOPTWR  },
     { efXPM, "-ls",   "gibbs",    ffOPTWR  },
     { efXPM, "-lsh",  "enthalpy", ffOPTWR  },
     { efXPM, "-lss",  "entropy",  ffOPTWR  },
@@ -843,11 +868,12 @@ int gmx_sham(int argc,char *argv[])
   }
 
   do_sham(opt2fn("-dist",NFILE,fnm),opt2fn("-bin",NFILE,fnm),
+	  opt2fn("-lp",NFILE,fnm),
 	  opt2fn("-ls",NFILE,fnm),opt2fn("-lsh",NFILE,fnm),
 	  opt2fn("-lss",NFILE,fnm),opt2fn("-map",NFILE,fnm),
 	  opt2fn("-ls3",NFILE,fnm),opt2fn("-g",NFILE,fnm),
 	  n,nset,val,fn_ge!=NULL,e_nset,et_val,d_n,d_t,dt_val,Tref,
-	  gmax,
+	  pmax,gmax,
 	  opt2parg_bSet("-emin",NPA,pa) ? &emin : NULL,
 	  opt2parg_bSet("-emax",NPA,pa) ? &emax : NULL,
 	  nlevels,pmin,
