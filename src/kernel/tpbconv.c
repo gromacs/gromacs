@@ -290,21 +290,23 @@ static void zeroq(int n,atom_id index[],gmx_mtop_t *mtop)
 int main (int argc, char *argv[])
 {
   static char *desc[] = {
-    "tpbconv can edit run input files in three ways.[PAR]"
-    "[BB]1st.[bb] by creating a run input file",
+    "tpbconv can edit run input files in four ways.[PAR]"
+    "[BB]1st.[bb] by modifying the number of steps in a run input file",
+    "with option [TT]-nsteps[tt] or option [TT]-runtime[tt].[PAR]",
+    "[BB]2st.[bb] (OBSOLETE) by creating a run input file",
     "for a continuation run when your simulation has crashed due to e.g.",
     "a full disk, or by making a continuation run input file.",
-    "Note that a frame with coordinates and velocities is needed,",
-    "which means that when you never write velocities, you can not use",
-    "tpbconv and you have to start the run again from the beginning.",
+    "This option is obsolete, since mdrun now writes and reads",
+    "checkpoint files.",
+    "Note that a frame with coordinates and velocities is needed.",
     "When pressure and/or Nose-Hoover temperature coupling is used",
     "an energy file can be supplied to get an exact continuation",
     "of the original run.[PAR]",
-    "[BB]2nd.[bb] by creating a tpx file for a subset of your original",
+    "[BB]3nd.[bb] by creating a tpx file for a subset of your original",
     "tpx file, which is useful when you want to remove the solvent from",
     "your tpx file, or when you want to make e.g. a pure Ca tpx file.",
     "[BB]WARNING: this tpx file is not fully functional[bb].",
-    "[BB]3rd.[bb] by setting the charges of a specified group",
+    "[BB]4rd.[bb] by setting the charges of a specified group",
     "to zero. This is useful when doing free energy estimates",
     "using the LIE (Linear Interaction Energy) method."
   };
@@ -314,7 +316,8 @@ int main (int argc, char *argv[])
   t_trnheader head;
   int          i,frame,run_step,nsteps_org;
   real         run_t,state_t;
-  bool         bOK,bTraj,bFrame,bUse,bTime,bSel,bNeedEner,bReadEner,bScanEner;
+  bool         bOK,bNsteps,bTime,bTraj;
+  bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
   gmx_mtop_t   mtop;
   t_atoms      atoms;
   t_inputrec   *ir,*irnew=NULL;
@@ -338,9 +341,15 @@ int main (int argc, char *argv[])
 #define NFILE asize(fnm)
 
   /* Command line options */
+  static int  nsteps_req = -1;
+  static real runtime_req = -1;
   static real start_t = -1.0, extend_t = 0.0, until_t = 0.0;
   static bool bContinuation = TRUE,bZeroQ = FALSE;
   static t_pargs pa[] = {
+    { "-nsteps",        FALSE, etINT,  {&nsteps_req},
+      "Change the number of steps" },
+    { "-runtime",       FALSE, etREAL, {&runtime_req},
+      "Set the run time (ps)" },
     { "-time",          FALSE, etREAL, {&start_t}, 
       "Continue from frame at this time (ps) instead of the last frame" },
     { "-extend",        FALSE, etREAL, {&extend_t}, 
@@ -360,12 +369,17 @@ int main (int argc, char *argv[])
   parse_common_args(&argc,argv,0,NFILE,fnm,asize(pa),pa,
 		    asize(desc),desc,0,NULL);
 
-  bTime = opt2parg_bSet("-time",asize(pa),pa);
-  bTraj = (bTime ||
-	   opt2parg_bSet("-extend",asize(pa),pa) ||
-	   opt2parg_bSet("-until",asize(pa),pa) ||
-	   ftp2bSet(efTRN,NFILE,fnm));
+  bNsteps = (nsteps_req >= 0 || runtime_req >= 0);
+  bTime   = opt2parg_bSet("-time",asize(pa),pa);
+  bTraj   = (bTime ||
+	     opt2parg_bSet("-extend",asize(pa),pa) ||
+	     opt2parg_bSet("-until",asize(pa),pa) ||
+	     ftp2bSet(efTRN,NFILE,fnm));
   
+  if (bNsteps && bTraj) {
+    gmx_fatal(FARGS,"You have selected both TPX modification and trajectory reading options");
+  }
+
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
@@ -480,37 +494,45 @@ int main (int argc, char *argv[])
 		EPCOUPLTYPE(epcPARRINELLORAHMAN));
       }
     }
-  } 
-  else {
-    frame_fn = ftp2fn(efTPX,NFILE,fnm);
-    fprintf(stderr,"\nUSING COORDS, VELS AND BOX FROM TPX FILE %s...\n\n",
-	    ftp2fn(efTPX,NFILE,fnm));
   }
 
-  /* Determine total number of steps remaining */
-  if (extend_t) {
-    ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int)(extend_t/ir->delta_t + 0.5);
-    printf("Extending remaining runtime of by %g ps (now %d steps)\n",
-	   extend_t,ir->nsteps);
-  }
-  else if (until_t) {
-    printf("nsteps = %d, run_step = %d, current_t = %g, until = %g\n",
-	   ir->nsteps,run_step,run_t,until_t);
-    ir->nsteps = (int)((until_t - run_t)/ir->delta_t + 0.5);
-    printf("Extending remaining runtime until %g ps (now %d steps)\n",
-	   until_t,ir->nsteps);
-  }
-  else {
-    ir->nsteps -= run_step - ir->init_step; 
-    /* Print message */
-    printf("%d steps (%g ps) remaining from first run.\n",
+  if (bNsteps) {
+    if (nsteps_req < 0) {
+      if (!EI_DYNAMICS(ir->eI)) {
+	gmx_fatal(FARGS,"Can not set the run time with integrator '%s'",
+		  EI(ir->eI));
+      }
+      nsteps_req = (int)(runtime_req/ir->delta_t + 0.5);
+    }
+    fprintf(stderr,"Setting nsteps to %d\n",nsteps_req);
+    ir->nsteps = nsteps_req;
+  } else {
+    /* Determine total number of steps remaining */
+    if (extend_t) {
+      ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int)(extend_t/ir->delta_t + 0.5);
+      printf("Extending remaining runtime of by %g ps (now %d steps)\n",
+	     extend_t,ir->nsteps);
+    }
+    else if (until_t) {
+      printf("nsteps = %d, run_step = %d, current_t = %g, until = %g\n",
+	     ir->nsteps,run_step,run_t,until_t);
+      ir->nsteps = (int)((until_t - run_t)/ir->delta_t + 0.5);
+      printf("Extending remaining runtime until %g ps (now %d steps)\n",
+	     until_t,ir->nsteps);
+    }
+    else {
+      ir->nsteps -= run_step - ir->init_step; 
+      /* Print message */
+      printf("%d steps (%g ps) remaining from first run.\n",
 	   ir->nsteps,ir->nsteps*ir->delta_t);
 	  
+    }
   }
-  if (bZeroQ || (ir->nsteps > 0)) {
+
+  if (bNsteps || bZeroQ || (ir->nsteps > 0)) {
     ir->init_step = run_step;
     
-    if (ftp2bSet(efNDX,NFILE,fnm) || !bTraj) {
+    if (ftp2bSet(efNDX,NFILE,fnm) || !(bNsteps || bTraj)) {
       atoms = gmx_mtop_global_atoms(&mtop);
       get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 		&gnx,&index,&grpname);
