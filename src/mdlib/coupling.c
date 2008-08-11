@@ -378,31 +378,32 @@ void berendsen_pscale(t_inputrec *ir,matrix mu,
   inc_nrnb(nrnb,eNR_PCOUPL,nr_atoms);
 }
 
-void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt)
+void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt)
 {
   int    i;
   
   real   T,reft=0,lll; 
 
   for(i=0; (i<opts->ngtc); i++) {
-    T = grps->tcstat[i].Th;
+    T = ekind->tcstat[i].Th;
     
     if ((opts->tau_t[i] > 0) && (T > 0.0)) {
  
       reft = max(0.0,opts->ref_t[i]);
       lll  = sqrt(1.0 + (dt/opts->tau_t[i])*(reft/T-1.0));
-      grps->tcstat[i].lambda = max(min(lll,1.25),0.8);
+      ekind->tcstat[i].lambda = max(min(lll,1.25),0.8);
     }
-    else
-       grps->tcstat[i].lambda = 1.0;
+    else {
+       ekind->tcstat[i].lambda = 1.0;
+    }
 
     if (debug)
       fprintf(debug,"TC: group %d: T: %g, Lambda: %g\n",
-	      i,T, grps->tcstat[i].lambda);
+	      i,T,ekind->tcstat[i].lambda);
   }
 }
 
-void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 		       real xi[],double ixi[])
 {
   real  Qinv;
@@ -416,12 +417,13 @@ void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
       Qinv=0.0;
     reft = max(0.0,opts->ref_t[i]);
     oldxi = xi[i];
-    xi[i]  += dt*Qinv*(grps->tcstat[i].Th - reft);
+    xi[i]  += dt*Qinv*(ekind->tcstat[i].Th - reft);
     ixi[i] += dt*(oldxi + xi[i])*0.5;
   }
 }
 
-real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi,double *ixi)
+real nosehoover_energy(t_grpopts *opts,gmx_ekindata_t *ekind,
+		       real *xi,double *ixi)
 {
   int  i,nd;
   real ener_nh;
@@ -437,7 +439,7 @@ real nosehoover_energy(t_grpopts *opts,t_groups *grps,real *xi,double *ixi)
   return ener_nh;
 }
 
-void vrescale_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 		     double therm_integral[],
 		     gmx_rng_t rng)
 {
@@ -445,7 +447,7 @@ void vrescale_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
   real   Ek,Ek_ref1,Ek_ref,dEk_Beren,dEk_stoch,dEk; 
 
   for(i=0; (i<opts->ngtc); i++) {
-    Ek = trace(grps->tcstat[i].ekinh);
+    Ek = trace(ekind->tcstat[i].ekinh);
     
     if ((opts->tau_t[i] > 0) && (Ek > 0.0)) {
       Ek_ref1   = 0.5*opts->ref_t[i]*BOLTZ;
@@ -454,18 +456,18 @@ void vrescale_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
       dEk_stoch = 2*sqrt(Ek*Ek_ref1*dt/opts->tau_t[i])*gmx_rng_gaussian_table(rng);
       dEk       = dEk_Beren + dEk_stoch;
       if (Ek + dEk <= 0) {
-	grps->tcstat[i].lambda = 0.0;
+	ekind->tcstat[i].lambda = 0.0;
       } else {
-	grps->tcstat[i].lambda = sqrt((Ek + dEk)/Ek);
+	ekind->tcstat[i].lambda = sqrt((Ek + dEk)/Ek);
       }
       therm_integral[i] -= dEk;
 
       if (debug) {
 	fprintf(debug,"TC: group %d: Ekr %g, Ek %g, dEk %g + %g, Lambda: %g\n",
-		i,Ek_ref,Ek,dEk_Beren,dEk_stoch,grps->tcstat[i].lambda);
+		i,Ek_ref,Ek,dEk_Beren,dEk_stoch,ekind->tcstat[i].lambda);
       }
     } else {
-       grps->tcstat[i].lambda = 1.0;
+       ekind->tcstat[i].lambda = 1.0;
     }
   }
 }

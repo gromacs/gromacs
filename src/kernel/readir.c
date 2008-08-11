@@ -211,6 +211,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
 	&& (ir->ns_type == ensSIMPLE));
   
+  if (ir->eI != eiMD) {
+    ir->etc = etcNO;
+  }
+
   /* TEMPERATURE COUPLING */
   if(ir->etc == etcYES) {
     ir->etc = etcBERENDSEN;
@@ -1428,8 +1432,6 @@ void do_index(char* mdparin, char *ndx,
 		"%d tau_t values",ntcg,nref_t,ntau_t);
   }
 
-  if (ir->eI != eiMD)
-    ir->etc = etcNO;
   bSetTCpar = ir->etc ||
     EI_SD(ir->eI) || ir->eI==eiBD || ir->eI==eiTPI || ir->eI==eiTPIC;
   do_numbering(natoms,groups,ntcg,ptr3,grps,gnames,egcTC,

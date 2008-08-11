@@ -1570,7 +1570,8 @@ static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
                          atom_id lr[],t_excl bexcl[],int shift,
                          rvec x[],rvec box_size,t_nrnb *nrnb,
                          real lambda,real *dvdlambda,
-                         t_groups *grps,bool bDoVdW,bool bDoCoul,
+                         gmx_grppairener_t *grppener,
+                         bool bDoVdW,bool bDoCoul,
                          bool bEvaluateNow,bool bHaveVdW[],bool bDoForces)
 {
     int n,i;
@@ -1586,8 +1587,8 @@ static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
                 close_neighbor_list(fr,TRUE,n,i);
                 /* Evaluate the energies and forces */
                 do_nonbonded(cr,fr,x,fr->f_twin,md,
-                             grps->estat.ee[fr->bBHAM ? egBHAMLR : egLJLR],
-                             grps->estat.ee[egCOULLR],box_size,
+                             grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
+                             grppener->ener[egCOULLR],box_size,
                              nrnb,lambda,dvdlambda,TRUE,n,i,bDoForces);
                 
                 reset_neighbor_list(fr,TRUE,n,i);
@@ -1606,11 +1607,12 @@ static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
 
 static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        matrix box,rvec box_size,int ngid,
-                       t_topology *top,t_groups *grps,
+                       t_topology *top,
                        t_grid *grid,rvec x[],
                        t_excl bexcl[],bool *bExcludeAlleg,
                        t_nrnb *nrnb,t_mdatoms *md,
                        real lambda,real *dvdlambda,
+                       gmx_grppairener_t *grppener,
                        bool bHaveVdW[],bool bDoForces,
                        bool bMakeQMMMnblist)
 {
@@ -2026,7 +2028,8 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              nlr_ljc[jgid],
                                                                              nl_lr_ljc[jgid],bexcl,shift,x,
                                                                              box_size,nrnb,
-                                                                             lambda,dvdlambda,grps,
+                                                                             lambda,dvdlambda,
+                                                                             grppener,
                                                                              TRUE,TRUE,FALSE,
                                                                              bHaveVdW,bDoForces);
                                                                 nlr_ljc[jgid]=0;
@@ -2040,7 +2043,8 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              nlr_one[jgid],
                                                                              nl_lr_one[jgid],bexcl,shift,x,
                                                                              box_size,nrnb,
-                                                                             lambda,dvdlambda,grps,
+                                                                             lambda,dvdlambda,
+                                                                             grppener,
                                                                              rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
                                                                              bHaveVdW,bDoForces);
                                                                 nlr_one[jgid]=0;
@@ -2071,7 +2075,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                         {
                             do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
                                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-                                         lambda,dvdlambda,grps,TRUE,TRUE,FALSE,
+                                         lambda,dvdlambda,grppener,TRUE,TRUE,FALSE,
                                          bHaveVdW,bDoForces);
                         }
                         
@@ -2079,7 +2083,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                         {
                             do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_one[nn],
                                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
-                                         lambda,dvdlambda,grps,
+                                         lambda,dvdlambda,grppener,
                                          rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
                                          bHaveVdW,bDoForces);
                         }
@@ -2097,12 +2101,14 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
         {
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
-                         lambda,dvdlambda,grps,TRUE,TRUE,TRUE,bHaveVdW,bDoForces);
+                         lambda,dvdlambda,grppener,
+                         TRUE,TRUE,TRUE,bHaveVdW,bDoForces);
         }
         if (rl2 > rm2) {
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_one[nn],
                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
-                         lambda,dvdlambda,grps,rvdw_lt_rcoul,rcoul_lt_rvdw,
+                         lambda,dvdlambda,grppener,
+                         rvdw_lt_rcoul,rcoul_lt_rvdw,
                          TRUE,bHaveVdW,bDoForces);
         }
     }
@@ -2225,10 +2231,11 @@ void init_ns(FILE *fplog,const t_commrec *cr,
 int search_neighbours(FILE *log,t_forcerec *fr,
                       rvec x[],matrix box,
                       t_topology *top,
-                      gmx_groups_t *groups,t_groups *grps,
+                      gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb,t_mdatoms *md,
                       real lambda,real *dvdlambda,
+                      gmx_grppairener_t *grppener,
                       bool bFillGrid,bool bDoForces)
 {
     t_block  *cgs=&(top->cgs);
@@ -2339,9 +2346,9 @@ int search_neighbours(FILE *log,t_forcerec *fr,
     if (bGrid)
     {
         grid = ns->grid;
-        nsearch = nsgrid_core(log,cr,fr,box,box_size,ngid,top,grps,
+        nsearch = nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                               grid,x,ns->bexcl,ns->bExcludeAlleg,
-                              nrnb,md,lambda,dvdlambda,
+                              nrnb,md,lambda,dvdlambda,grppener,
                               ns->bHaveVdW,bDoForces,FALSE);
         
         /* neighbour searching withouth QMMM! QM atoms have zero charge in
@@ -2355,9 +2362,9 @@ int search_neighbours(FILE *log,t_forcerec *fr,
          */
         if (fr->bQMMM && fr->qr->QMMMscheme!=eQMMMschemeoniom)
         {
-            nsearch += nsgrid_core(log,cr,fr,box,box_size,ngid,top,grps,
+            nsearch += nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                                    grid,x,ns->bexcl,ns->bExcludeAlleg,
-                                   nrnb,md,lambda,dvdlambda,
+                                   nrnb,md,lambda,dvdlambda,grppener,
                                    ns->bHaveVdW,bDoForces,TRUE);
         }
     }

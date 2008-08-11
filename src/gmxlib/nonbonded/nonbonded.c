@@ -520,7 +520,7 @@ do_listed_vdw_q(int ftype,int nbonds,
 		const t_pbc *pbc,const t_graph *g,
 		real lambda,real *dvdlambda,
 		const t_mdatoms *md,
-		const t_forcerec *fr,int ngrp,t_grp_ener *gener,
+		const t_forcerec *fr,gmx_grppairener_t *grppener,
 		int *global_atom_index)
 {
     static    bool bWarn=FALSE;
@@ -562,14 +562,14 @@ do_listed_vdw_q(int ftype,int nbonds,
     case F_LJC14_Q:
       eps = fr->epsfac*fr->fudgeQQ;
       ntype  = 1;
-      egnb   = gener->ee[egLJ14];
-      egcoul = gener->ee[egCOUL14];
+      egnb   = grppener->ener[egLJ14];
+      egcoul = grppener->ener[egCOUL14];
       break;
     case F_LJC_PAIRS_NB:
       eps = fr->epsfac;
       ntype  = 1;
-      egnb   = gener->ee[egLJSR];
-      egcoul = gener->ee[egCOULSR];
+      egnb   = grppener->ener[egLJSR];
+      egcoul = grppener->ener[egCOULSR];
       break;
     default:
       gmx_fatal(FARGS,"Unknown function type %d in do_nonbonded14",
@@ -623,7 +623,7 @@ do_listed_vdw_q(int ftype,int nbonds,
         itype = iatoms[i++];
         ai    = iatoms[i++];
         aj    = iatoms[i++];
-	gid   = GID(md->cENER[ai],md->cENER[aj],ngrp);
+	gid   = GID(md->cENER[ai],md->cENER[aj],md->nenergrp);
 	
 	switch (ftype) {
 	case F_LJ14:
@@ -693,7 +693,7 @@ do_listed_vdw_q(int ftype,int nbonds,
             clear_rvec(f14[1]);
 #ifdef DEBUG
             fprintf(debug,"LJ14: grp-i=%2d, grp-j=%2d, ngrp=%2d, GID=%d\n",
-                    md->cENER[ai],md->cENER[aj],ngrp,gid);
+                    md->cENER[ai],md->cENER[aj],md->nenergrp,gid);
 #endif
             
 	    outeriter = inneriter = count = 0;

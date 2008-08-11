@@ -124,10 +124,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   matrix     box;
   rvec       *buf=NULL,*f=NULL;
   real       tmpr1,tmpr2;
-  real       *ener=NULL;
   t_nrnb     *nrnb;
   gmx_mtop_t *mtop=NULL;
-  t_groups   *grps=NULL;
   t_mdatoms  *mdatoms=NULL;
   t_forcerec *fr=NULL;
   t_fcdata   *fcd=NULL;
@@ -250,10 +248,6 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   snew(nrnb,1);
   if (cr->duty & DUTY_PP) {
-    /* Initiate everything (snew sets to zero!) */
-    snew(ener,F_NRE);
-    snew(grps,1);
-
     /* For domain decomposition we allocate dynamically
      * in dd_partition_system.
      */
@@ -270,11 +264,6 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       snew(buf,mtop->natoms);
       snew(f,mtop->natoms);
     }
-    
-    /* Group stuff (energies etc) */
-    init_t_groups(fplog,mtop,&(inputrec->opts),grps);
-    /* Copy the cos acceleration to the groups struct */
-    grps->cosacc.cos_accel = inputrec->cos_accel;
     
     /* Dihedral Restraints */
     if (gmx_mtop_ftype_count(mtop,F_DIHRES) > 0) {
@@ -407,8 +396,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     start_t = integrator[inputrec->eI].func(fplog,cr,nfile,fnm,
 					    bVerbose,bCompact,
 					    vsite,constr,
-					    nstepout,inputrec,grps,mtop,
-					    ener,fcd,state,f,buf,
+					    nstepout,inputrec,mtop,
+					    fcd,state,f,buf,
 					    mdatoms,nrnb,wcycle,ed,fr,
 					    repl_ex_nst,repl_ex_seed,
 					    cpt_period,max_hours,
@@ -446,9 +435,9 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     bool bVerbose,bool bCompact,
 	     gmx_vsite_t *vsite,gmx_constr_t constr,
-	     int stepout,t_inputrec *ir,t_groups *grps,
+	     int stepout,t_inputrec *ir,
 	     gmx_mtop_t *top_global,
-	     real ener[],t_fcdata *fcd,
+	     t_fcdata *fcd,
 	     t_state *state_global,rvec f[],
 	     rvec buf[],t_mdatoms *mdatoms,
 	     t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -484,11 +473,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   t_topology *top;
   t_state    *state=NULL;
   rvec       *f_global=NULL;
+  gmx_enerdata_t *enerd;
   gmx_stochd_t sd=NULL;
   t_graph    *graph=NULL;
 
   bool        bFFscan;
   gmx_groups_t *groups;
+  gmx_ekindata_t *ekind;
   gmx_shellfc_t shellfc;
   int         count,nconverged=0;
   real        timestep=0;
@@ -547,6 +538,15 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
 	  &fp_dgdl,&fp_field,&mdebin,
 	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
+
+  /* Energy terms and groups */
+  snew(enerd,1);
+  init_enerdata(fplog,top_global->groups.grps[egcENER].nr,enerd);
+  /* Kinetic energy data */
+  snew(ekind,1);
+  init_ekindata(fplog,top_global,&(ir->opts),ekind);
+  /* Copy the cos acceleration to the groups struct */
+  ekind->cosacc.cos_accel = ir->cos_accel;
 
   debug_gmx();
 
@@ -644,7 +644,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   if (bHaveConstr && !ir->bContinuation && !bRerunMD) {
     do_shakefirst(fplog,constr,ir,mdatoms,state,buf,f,
-		  graph,cr,nrnb,grps,fr,top);
+		  graph,cr,nrnb,fr,top);
 
     if (vsite) {
       construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
@@ -656,26 +656,27 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   debug_gmx();
 
   /* Compute initial EKin for all.. */
-  if (grps->cosacc.cos_accel == 0)
-    calc_ke_part(state->v,&(ir->opts),mdatoms,grps,nrnb,state->lambda);
-  else
+  if (ekind->cosacc.cos_accel == 0) {
+    calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
+  } else {
     calc_ke_part_visc(state->box,state->x,state->v,&(ir->opts),
-		      mdatoms,grps,nrnb,state->lambda);
+		      mdatoms,ekind,nrnb,state->lambda);
+  }
   debug_gmx();
 
   if (PAR(cr))
   {
     GMX_MPE_LOG(ev_global_stat_start);
        
-    global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		ir,grps,FALSE,constr,vcm,NULL,NULL,&terminate);
+    global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
+		ir,ekind,FALSE,constr,vcm,NULL,NULL,&terminate);
 
     GMX_MPE_LOG(ev_global_stat_finish);
   }
   debug_gmx();
   
   /* Calculate the initial half step temperature */
-  temp0 = sum_ekin(TRUE,&(ir->opts),grps,ekin,NULL);
+  temp0 = sum_ekin(TRUE,&(ir->opts),ekind,ekin,NULL);
 
   debug_gmx();
    
@@ -921,9 +922,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (shellfc) {
       /* Now is the time to relax the shells */
       count=relax_shell_flexcon(fplog,cr,bVerbose,bFFscan ? step+1 : step,
-				ir,bNS,bStopCM,top,constr,ener,fcd,
+				ir,bNS,bStopCM,top,constr,enerd,fcd,
 				state,f,buf,force_vir,mdatoms,
-				nrnb,wcycle,graph,groups,grps,
+				nrnb,wcycle,graph,groups,
 				shellfc,fr,t,mu_tot,
 				state->natoms,&bConverged,vsite,
 				fp_field);
@@ -937,9 +938,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * This is parallellized as well, and does communication too. 
        * Check comments in sim_util.c
        */
-      do_force(fplog,cr,ir,step,nrnb,wcycle,top,groups,grps,
+      do_force(fplog,cr,ir,step,nrnb,wcycle,top,groups,
 	       state->box,state->x,&state->hist,
-	       f,buf,force_vir,mdatoms,ener,fcd,
+	       f,buf,force_vir,mdatoms,enerd,fcd,
 	       state->lambda,graph,
 	       fr,vsite,mu_tot,t,fp_field,ed,
 	       GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
@@ -953,7 +954,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 			     mu_tot,top,mdatoms,gnx,grpindex);
     if (bGlas)
       do_glas(fplog,mdatoms->start,mdatoms->homenr,state->x,f,
-	      fr,mdatoms,top->idef.atnr,ir,ener);
+	      fr,mdatoms,top->idef.atnr,ir,enerd->term);
     
     if (bTCR && bFirstStep) {
       tcr=init_coupling(fplog,nfile,fnm,cr,fr,mdatoms,&(top->idef));
@@ -1029,13 +1030,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * we should only do it at step % nstlist = 1 with bGStat=FALSE.
        */
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
-	     top,grps,shake_vir,scale_tot,
+	     top,ekind,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,bHaveConstr,
 	     bNEMD,bFirstStep && bStateFromTPX);
       if (fr->bSepDVDL && fplog && do_log) {
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
       }
-      ener[F_DGDL_CON] += dvdl;
+      enerd->term[F_DGDL_CON] += dvdl;
       wallcycle_stop(wcycle,ewcUPDATE);
     } else if (graph) {
       /* Need to unshift here */
@@ -1066,14 +1067,15 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
      * when there really is NEMD.
      */
     if (PAR(cr) && bNEMD) 
-      accumulate_u(cr,&(ir->opts),grps);
+      accumulate_u(cr,&(ir->opts),ekind);
       
     debug_gmx();
-    if (grps->cosacc.cos_accel == 0)
-      calc_ke_part(state->v,&(ir->opts),mdatoms,grps,nrnb,state->lambda);
-    else
+    if (ekind->cosacc.cos_accel == 0) {
+      calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
+    } else {
       calc_ke_part_visc(state->box,state->x,state->v,&(ir->opts),
-			mdatoms,grps,nrnb,state->lambda);
+			mdatoms,ekind,nrnb,state->lambda);
+    }
 
     /* since we use the new coordinates in calc_ke_part_visc, we should use
      * the new box too. Still, won't this be offset by one timestep in the
@@ -1137,8 +1139,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	/* Globally (over all NODEs) sum energy, virial etc. 
 	 * This includes communication 
 	 */
-	global_stat(fplog,cr,ener,force_vir,shake_vir,mu_tot,
-		    ir,grps,bSumEkinhOld,constr,vcm,
+	global_stat(fplog,cr,enerd,force_vir,shake_vir,mu_tot,
+		    ir,ekind,bSumEkinhOld,constr,vcm,
 		    ir->nstlist==-1 ? &nabnsb : NULL,&chkpt,&terminate);
 	if (terminate != 0) {
 	  terminate_now = terminate;
@@ -1178,18 +1180,19 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       m_add(force_vir,shake_vir,total_vir);
       
       /* Calculate the amplitude of the cosine velocity profile */
-      grps->cosacc.vcos = grps->cosacc.mvcos/mdatoms->tmass;
+      ekind->cosacc.vcos = ekind->cosacc.mvcos/mdatoms->tmass;
       
       /* Sum the kinetic energies of the groups & calc temp */
-      ener[F_TEMP] = sum_ekin(bRerunMD,&(ir->opts),grps,ekin,
-			      &(ener[F_DKDL]));
-      ener[F_EKIN] = trace(ekin);
+      enerd->term[F_TEMP] = sum_ekin(bRerunMD,&(ir->opts),ekind,ekin,
+				     &(enerd->term[F_DKDL]));
+      enerd->term[F_EKIN] = trace(ekin);
       
       /* Calculate pressure and apply LR correction if PPPM is used.
        * Use the box from last timestep since we already called update().
        */
-      ener[F_PRES] = calc_pres(fr->ePBC,ir->nwall,lastbox,ekin,total_vir,pres,
-			       (fr->eeltype==eelPPPM)?ener[F_COUL_RECIP]:0.0);
+      enerd->term[F_PRES] =
+	calc_pres(fr->ePBC,ir->nwall,lastbox,ekin,total_vir,pres,
+		  (fr->eeltype==eelPPPM)?enerd->term[F_COUL_RECIP]:0.0);
       
       /* Calculate long range corrections to pressure and energy */
       if (bTCR || bFFscan) {
@@ -1199,23 +1202,24 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Calculate long range corrections to pressure and energy */
       calc_dispcorr(fplog,ir,fr,step,top_global->natoms,
 		    lastbox,state->lambda,
-		    pres,total_vir,ener);
+		    pres,total_vir,enerd->term);
       
-      ener[F_ETOT] = ener[F_EPOT] + ener[F_EKIN];
+      enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
       
       switch (ir->etc) {
       case etcNO:
       case etcBERENDSEN:
 	break;
       case etcNOSEHOOVER:
-	ener[F_ECONSERVED] =
-	  ener[F_ETOT] + nosehoover_energy(&(ir->opts),grps,
-					   state->nosehoover_xi,
-					   state->therm_integral);
+	enerd->term[F_ECONSERVED] =
+	  enerd->term[F_ETOT] + nosehoover_energy(&(ir->opts),ekind,
+						  state->nosehoover_xi,
+						  state->therm_integral);
 	break;
       case etcVRESCALE:
-	ener[F_ECONSERVED] =
-	  ener[F_ETOT] + vrescale_energy(&(ir->opts),state->therm_integral);
+	enerd->term[F_ECONSERVED] =
+	  enerd->term[F_ETOT] + vrescale_energy(&(ir->opts),
+						state->therm_integral);
 	break;
       }
       
@@ -1234,8 +1238,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 #else
 	real etot_max = 1e30;
 #endif
-	if (fabs(ener[F_ETOT]) > etot_max) {
-	  fprintf(stderr,"Energy too large (%g), giving up\n",ener[F_ETOT]);
+	if (fabs(enerd->term[F_ETOT]) > etot_max) {
+	  fprintf(stderr,"Energy too large (%g), giving up\n",
+		  enerd->term[F_ETOT]);
 	  break;
 	}
       }
@@ -1243,7 +1248,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (shellfc==NULL || bConverged)) {
-      if (print_forcefield(fplog,ener,mdatoms->homenr,f,buf,xcopy,
+      if (print_forcefield(fplog,enerd->term,mdatoms->homenr,f,buf,xcopy,
 			   &(top->mols),mdatoms->massT,pres)) {
 	if (gmx_parallel_env)
 	  gmx_finalize(cr);
@@ -1262,7 +1267,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Since this is called with the new coordinates state->x, I assume
        * we want the new box state->box too. / EL 20040121
        */
-      do_coupling(fplog,nfile,fnm,tcr,t,step,ener,fr,
+      do_coupling(fplog,nfile,fnm,tcr,t,step,enerd->term,fr,
 		  ir,MASTER(cr),
 		  mdatoms,&(top->idef),mu_aver,
 		  top->mols.nr,cr,
@@ -1280,8 +1285,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       bool do_ene,do_dr,do_or;
       
       upd_mdebin(mdebin,fp_dgdl,bGStat,
-		 mdatoms->tmass,step_rel,t,ener,state,lastbox,
-		 shake_vir,force_vir,total_vir,pres,grps,mu_tot,constr);
+		 mdatoms->tmass,step_rel,t,enerd,state,lastbox,
+		 shake_vir,force_vir,total_vir,pres,
+		 ekind,mu_tot,constr);
       do_ene = do_per_step(step,ir->nstenergy) || bCPT || bFirstStep || bLastStep;
       do_dr  = do_per_step(step,ir->nstdisreout);
       do_or  = do_per_step(step,ir->nstorireout);
@@ -1306,7 +1312,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bExchanged = FALSE;
     if ((repl_ex_nst > 0) && (step > 0) && !bLastStep &&
 	do_per_step(step,repl_ex_nst))
-      bExchanged = replica_exchange(fplog,cr,repl_ex,state_global,ener,
+      bExchanged = replica_exchange(fplog,cr,repl_ex,state_global,enerd->term,
 				    state,step,t);
     if (bExchanged && PAR(cr)) {
       if (DOMAINDECOMP(cr)) {

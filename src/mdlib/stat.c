@@ -68,17 +68,17 @@
 #include "mdrun.h"
 
 void global_stat(FILE *fplog,
-		 t_commrec *cr,real ener[],
+		 t_commrec *cr,gmx_enerdata_t *enerd,
 		 tensor fvir,tensor svir,rvec mu_tot,
 		 t_inputrec *inputrec,
-		 t_groups *grps,bool bSumEkinhOld,
+		 gmx_ekindata_t *ekind,bool bSumEkinhOld,
 		 gmx_constr_t constr,
 		 t_vcm *vcm,int *nabnsb,
 		 real *chkpt,real *terminate)
 {
   static t_bin *rb=NULL; 
   static int   *itc0,*itc1;
-  int    ie,ifv,isv,irmsd=0,imu=0,idedl,icm=0,imass=0,ica,inb=0;
+  int    ie,ifv,isv,irmsd=0,imu=0,idedl=0,icm=0,imass=0,ica=0,inb=0;
   int    ibnsb=-1,ichkpt=-1,iterminate;
   int    icj=-1,ici=-1,icx=-1;
   int    inn[egNR];
@@ -98,7 +98,7 @@ void global_stat(FILE *fplog,
    * using the t_bin struct. 
    */
   where();
-  ie  = add_binr(rb,F_NRE,ener);
+  ie  = add_binr(rb,F_NRE,enerd->term);
   where();
   ifv = add_binr(rb,DIM*DIM,fvir[0]);
   where();
@@ -115,16 +115,21 @@ void global_stat(FILE *fplog,
     imu = add_binr(rb,DIM,mu_tot);
     where();
   }
-  for(j=0; (j<inputrec->opts.ngtc); j++) {
-    if (bSumEkinhOld)
-      itc0[j]=add_binr(rb,DIM*DIM,grps->tcstat[j].ekinh_old[0]);
-    itc1[j]=add_binr(rb,DIM*DIM,grps->tcstat[j].ekinh[0]);
+  if (ekind) {
+    for(j=0; (j<inputrec->opts.ngtc); j++) {
+      if (bSumEkinhOld) {
+	itc0[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+      }
+      itc1[j]=add_binr(rb,DIM*DIM,ekind->tcstat[j].ekinh[0]);
+    }
+    where();
+    idedl = add_binr(rb,1,&(ekind->dekindl));
+    where();
+    ica   = add_binr(rb,1,&(ekind->cosacc.mvcos));
+    where();
   }
-  where();
-  idedl = add_binr(rb,1,&(grps->dekindl));
-  where();
   for(j=0; (j<egNR); j++)
-    inn[j]=add_binr(rb,grps->estat.nn,grps->estat.ee[j]);
+    inn[j]=add_binr(rb,enerd->grpp.nener,enerd->grpp.ener[j]);
   where();
   if (vcm) {
     icm   = add_binr(rb,DIM*vcm->nr,vcm->group_p[0]);
@@ -140,8 +145,6 @@ void global_stat(FILE *fplog,
       where();
     }
   }
-  ica   = add_binr(rb,1,&(grps->cosacc.mvcos));
-  where();
   if (DOMAINDECOMP(cr)) {
     nb = cr->dd->nbonded_local;
     inb = add_bind(rb,1,&nb);
@@ -162,21 +165,25 @@ void global_stat(FILE *fplog,
   where();
   
   /* Extract all the data locally */
-  extract_binr(rb,ie  ,F_NRE,ener);
+  extract_binr(rb,ie  ,F_NRE,enerd->term);
   extract_binr(rb,ifv ,DIM*DIM,fvir[0]);
   extract_binr(rb,isv ,DIM*DIM,svir[0]);
   if (rmsd_data)
     extract_binr(rb,irmsd,inputrec->eI==eiSD2 ? 3 : 2,rmsd_data);
   if (!NEED_MUTOT(*inputrec))
     extract_binr(rb,imu,DIM,mu_tot);
-  for(j=0; (j<inputrec->opts.ngtc); j++) {
-    if (bSumEkinhOld)
-      extract_binr(rb,itc0[j],DIM*DIM,grps->tcstat[j].ekinh_old[0]);
-    extract_binr(rb,itc1[j],DIM*DIM,grps->tcstat[j].ekinh[0]);
+  if (ekind) {
+    for(j=0; (j<inputrec->opts.ngtc); j++) {
+      if (bSumEkinhOld)
+	extract_binr(rb,itc0[j],DIM*DIM,ekind->tcstat[j].ekinh_old[0]);
+      extract_binr(rb,itc1[j],DIM*DIM,ekind->tcstat[j].ekinh[0]);
+    }
+    extract_binr(rb,idedl,1,&(ekind->dekindl));
+    extract_binr(rb,ica,1,&(ekind->cosacc.mvcos));
+    where();
   }
-  extract_binr(rb,idedl,1,&(grps->dekindl));
   for(j=0; (j<egNR); j++)
-    extract_binr(rb,inn[j],grps->estat.nn,grps->estat.ee[j]);
+    extract_binr(rb,inn[j],enerd->grpp.nener,enerd->grpp.ener[j]);
   if (vcm) {
     extract_binr(rb,icm,DIM*vcm->nr,vcm->group_p[0]);
     where();
@@ -191,8 +198,6 @@ void global_stat(FILE *fplog,
       where();
     }
   }
-  extract_binr(rb,ica,1,&(grps->cosacc.mvcos));
-  where();
   if (DOMAINDECOMP(cr)) {
     extract_bind(rb,inb,1,&nb);
     if ((int)(nb + 0.5) != cr->dd->nbonded_global)
@@ -210,7 +215,7 @@ void global_stat(FILE *fplog,
   where();
 
   /* Small hack for temp only */
-  ener[F_TEMP] /= (cr->nnodes - cr->npmenodes);
+  enerd->term[F_TEMP] /= (cr->nnodes - cr->npmenodes);
 }
 
 int do_per_step(int step,int nstep)

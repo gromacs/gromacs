@@ -198,7 +198,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   static t_inputrec *ir;
   static t_nrnb     nrnb;
   static t_commrec  *cr;
-  static t_groups   *grps;
   static int        *cg_index;
 
   gmx_moltype_t *molt;
@@ -227,6 +226,8 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     molt->atoms = *atoms;
     stupid_fill_block(&molt->cgs,mtop->natoms,FALSE);
     stupid_fill_blocka(&molt->excls,natoms);
+
+    ffp = &mtop->ffparams;
   
     ffp->ntypes = 1;
     ffp->atnr   = 1;
@@ -271,9 +272,6 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     
     /* Prepare for neighboursearching */
     init_nrnb(&nrnb);
-
-    /* Group stuff */
-    snew(grps,1);
     
     bFirst = FALSE;
   }
@@ -294,7 +292,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
   /* Do the actual neighboursearching */
   init_neighbor_list(fp,fr,md->homenr);
   search_neighbours(fp,fr,x,box,top,
-		    &mtop->groups,grps,cr,&nrnb,md,lambda,&dvdlambda,
+		    &mtop->groups,cr,&nrnb,md,lambda,&dvdlambda,NULL,
 		    TRUE,FALSE);
 
   if (debug)

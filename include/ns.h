@@ -83,9 +83,11 @@ extern void init_ns(FILE *fplog,const t_commrec *cr,
 extern int search_neighbours(FILE *log,t_forcerec *fr,
 			     rvec x[],matrix box,
 			     t_topology *top,
-			     gmx_groups_t *groups,t_groups *grps,
-			     t_commrec *cr,t_nrnb *nrnb,
-			     t_mdatoms *md,real lambda,real *dvdlambda,
+			     gmx_groups_t *groups,
+			     t_commrec *cr,
+			     t_nrnb *nrnb,t_mdatoms *md,
+			     real lambda,real *dvdlambda,
+			     gmx_grppairener_t *grppener,
 			     bool bFillGrid,bool bDoForces);
  
 

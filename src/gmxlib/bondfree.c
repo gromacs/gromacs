@@ -1978,14 +1978,14 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 		rvec x[],history_t *hist,
 		rvec f[],t_forcerec *fr,
 		const t_pbc *pbc,const t_graph *g,
-		real epot[],t_nrnb *nrnb,
+		gmx_enerdata_t *enerd,t_nrnb *nrnb,
 		real lambda,
-		const t_mdatoms *md,int ngrp,t_grp_ener *gener,
+		const t_mdatoms *md,
 		t_fcdata *fcd,int *global_atom_index,
 		bool bPrintSepPot,int step)
 {
   int    ftype,nbonds,ind,nat;
-  real   v,dvdl;
+  real   *epot,v,dvdl;
   const  t_pbc *pbc_null;
 
   if (fr->bMolPBC)
@@ -2001,6 +2001,8 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
     p_graph(debug,"Bondage is fun",g);
 #endif
   
+  epot = enerd->term;
+
   /* Do pre force calculation stuff which might require communication */
   if (idef->il[F_ORIRES].nr) {
     epot[F_ORIRESDEV] = calc_orires_dev(ms,idef->il[F_ORIRES].nr,
@@ -2041,7 +2043,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 			      (const rvec*)x,f,fr->fshift,
 			      pbc_null,g,
 			      lambda,&dvdl,
-			      md,fr,ngrp,gener,global_atom_index);
+			      md,fr,&enerd->grpp,global_atom_index);
 	  if (bPrintSepPot) {
 	    fprintf(fplog,"  %-5s + %-15s #%4d                  dVdl %12.5e\n",
 		    interaction_function[ftype].longname,

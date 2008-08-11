@@ -77,7 +77,7 @@ extern void update(FILE         *fplog,
 		   rvec         xprime[],   /* buffer for x for update  */
 		   t_fcdata     *fcd,
 		   t_topology   *top,
-		   t_groups     *grps,
+		   gmx_ekindata_t *ekind,
 		   tensor       vir_part,
 		   matrix       *scale_tot,
 		   t_commrec    *cr,
@@ -91,7 +91,7 @@ extern void update(FILE         *fplog,
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
 extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
-			 t_groups *grps,t_nrnb *nrnb,
+			 gmx_ekindata_t *ekind,t_nrnb *nrnb,
 			 real lambda);
 /*
  * Compute the partial kinetic energy for home particles;
@@ -111,7 +111,7 @@ extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
 
 extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 			      t_grpopts *opts,t_mdatoms *md,
-			      t_groups *grps,t_nrnb *nrnb,
+			      gmx_ekindata_t *ekind,t_nrnb *nrnb,
 			      real lambda);
 /* The same as calc_ke_part, but for viscosity calculations.
  * The cosine velocity profile is excluded from the kinetic energy.
@@ -121,17 +121,17 @@ extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
 
 extern real run_aver(real old,real cur,int step,int nmem);
 
-extern void berendsen_tcoupl(t_grpopts *opts,t_groups *grps,real dt);
+extern void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt);
 
-extern void nosehoover_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+extern void nosehoover_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			      real xi[],double ixi[]);
 /* Compute temperature scaling. For Nose-Hoover it is done in update. */
 
-extern real nosehoover_energy(t_grpopts *opts,t_groups *grps,
+extern real nosehoover_energy(t_grpopts *opts,gmx_ekindata_t *ekind,
 			      real *xi,double *ixi);
 /* Returns the Nose-Hoover contribution to the conserved energy */
 
-extern void vrescale_tcoupl(t_grpopts *opts,t_groups *grps,real dt,
+extern void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 			    double therm_integral[],
 			    gmx_rng_t rng);
 /* Compute temperature scaling. For V-rescale it is done in update. */

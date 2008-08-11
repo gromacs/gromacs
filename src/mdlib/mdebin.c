@@ -178,9 +178,10 @@ t_mdebin *init_mdebin(int fp_ene,
     else if ((interaction_function[i].flags & IF_VSITE) ||
 	     (i == F_CONSTR) || (i == F_SETTLE))
       bEner[i] = FALSE;
-    else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_ETOT) ||
-	     (i == F_EKIN) || (i == F_TEMP) || (i == F_PRES)  || (i==F_EQM))
+    else if ((i == F_COUL_SR) || (i == F_EPOT) || (i == F_PRES)  || (i==F_EQM))
       bEner[i] = TRUE;
+    else if ((i == F_ETOT) || (i == F_EKIN) || (i == F_TEMP))
+      bEner[i] = EI_DYNAMICS(ir->eI);
     else if (i == F_DISPCORR)
       bEner[i] = (ir->eDispCorr != edispcNO);
     else if (i == F_DISRESVIOL)
@@ -354,14 +355,14 @@ static void copy_energy(real e[],real ecpy[])
 void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		bool bSum,
 		real tmass,int step,real time,
-		real ener[],
+		gmx_enerdata_t *enerd,
 		t_state *state,
 		matrix  box,
 		tensor svir,
 		tensor fvir,
 		tensor vir,
 		tensor pres,
-		t_groups *grps,
+		gmx_ekindata_t *ekind,
 		rvec mu_tot,
 		gmx_constr_t constr)
 {
@@ -378,7 +379,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
    * as an argument. This is because we sometimes need to write the box from
    * the last timestep to match the trajectory frames.
    */
-  copy_energy(ener,ecopy);
+  copy_energy(enerd->term,ecopy);
   add_ebin(md->ebin,md->ie,f_nre,ecopy,bSum,step);
   if (nCrmsd) {
     crmsd[0] = constr_rmsd(constr,FALSE);
@@ -386,7 +387,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       crmsd[1] = constr_rmsd(constr,TRUE);
     add_ebin(md->ebin,md->iconrmsd,nCrmsd,crmsd,FALSE,0);
   }
-  if (bDynBox || grps->cosacc.cos_accel != 0) {
+  if (bDynBox || ekind->cosacc.cos_accel != 0) {
     if(bTricl) {
       tricl_bs[0]=box[XX][XX];
       tricl_bs[1]=box[YY][XX];
@@ -410,10 +411,10 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
   if (bDynBox) {
     /* This is pV (in kJ/mol) */  
     if(bTricl) {
-      tricl_bs[8] = tricl_bs[6]*ener[F_PRES]/PRESFAC;
+      tricl_bs[8] = tricl_bs[6]*enerd->term[F_PRES]/PRESFAC;
       add_ebin(md->ebin,md->ib,NTRICLBOXS,tricl_bs,bSum,step);
     } else {
-      bs[5] = bs[3]*ener[F_PRES]/PRESFAC;
+      bs[5] = bs[3]*enerd->term[F_PRES]/PRESFAC;
       add_ebin(md->ebin,md->ib,NBOXS,bs,bSum,step);
     }
   }  
@@ -435,15 +436,14 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     add_ebin(md->ebin,md->ipc,bTricl ? 6 : 3,tmp6,bSum,step);
   }
   add_ebin(md->ebin,md->imu,3,mu_tot,bSum,step);
-
-  if (grps->cosacc.cos_accel != 0) {
-    add_ebin(md->ebin,md->ivcos,1,&(grps->cosacc.vcos),bSum,step);
+if (ekind && ekind->cosacc.cos_accel != 0) {
+    add_ebin(md->ebin,md->ivcos,1,&(ekind->cosacc.vcos),bSum,step);
     /* 1/viscosity, unit 1/(kg m^-1 s^-1) */
     if(bTricl) 
-      tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
+      tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
 	       *tricl_bs[7]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
     else 
-      tmp = 1/(grps->cosacc.cos_accel/(grps->cosacc.vcos*PICO)
+      tmp = 1/(ekind->cosacc.cos_accel/(ekind->cosacc.vcos*PICO)
 	       *bs[4]*sqr(box[ZZ][ZZ]*NANO/(2*M_PI)));
     add_ebin(md->ebin,md->ivisc,1,&tmp,bSum,step);    
   }
@@ -452,40 +452,46 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
     for(i=0; (i<md->nEg); i++) {
       for(j=i; (j<md->nEg); j++) {
 	gid=GID(i,j,md->nEg);
-	for(k=kk=0; (k<egNR); k++) 
-	  if (bEInd[k])
-	    eee[kk++]=grps->estat.ee[k][gid];
+	for(k=kk=0; (k<egNR); k++) {
+	  if (bEInd[k]) {
+	    eee[kk++] = enerd->grpp.ener[k][gid];
+	  }
+	}
 	add_ebin(md->ebin,md->igrp[n],md->nEc,eee,bSum,step);
 	n++;
       }
     }
   }
   
-  if(ttt == NULL) 
-    snew(ttt,md->nTC);
-  for(i=0; (i<md->nTC); i++)
-    ttt[i]   = grps->tcstat[i].T;
-  add_ebin(md->ebin,md->itemp,md->nTC,ttt,bSum,step);
-  if (etc == etcNOSEHOOVER) {
-    for(i=0; (i<md->nTC); i++)
-      ttt[i] = state->nosehoover_xi[i];
-    add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
-  } else if (etc == etcBERENDSEN || etc == etcYES) {
-    for(i=0; (i<md->nTC); i++)
-      ttt[i] = grps->tcstat[i].lambda;
-    add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
+  if (ekind) {
+    if(ttt == NULL) 
+      snew(ttt,md->nTC);
+    for(i=0; (i<md->nTC); i++) {
+      ttt[i] = ekind->tcstat[i].T;
+    }
+    add_ebin(md->ebin,md->itemp,md->nTC,ttt,bSum,step);
+    if (etc == etcNOSEHOOVER) {
+      for(i=0; (i<md->nTC); i++)
+	ttt[i] = state->nosehoover_xi[i];
+      add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
+    } else if (etc == etcBERENDSEN || etc == etcYES) {
+      for(i=0; (i<md->nTC); i++)
+	ttt[i] = ekind->tcstat[i].lambda;
+      add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
+    }
   }
   
-  if (md->nU > 1) {
+  if (ekind && md->nU > 1) {
     if (uuu == NULL)
       snew(uuu,md->nU);
     for(i=0; (i<md->nU); i++)
-      copy_rvec(grps->grpstat[i].u,uuu[i]);
+      copy_rvec(ekind->grpstat[i].u,uuu[i]);
     add_ebin(md->ebin,md->iu,3*md->nU,uuu[0],bSum,step);
   }
   if (fp_dgdl)
     fprintf(fp_dgdl,"%.4f %g\n",
-	    time,ener[F_DVDL]+ener[F_DKDL]+ener[F_DGDL_CON]);
+	    time,
+	    enerd->term[F_DVDL]+enerd->term[F_DKDL]+enerd->term[F_DGDL_CON]);
 }
 
 static void npr(FILE *log,int n,char c)

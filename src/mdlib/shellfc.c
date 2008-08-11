@@ -710,13 +710,13 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,
 			bool bDoNS,bool bStopCM,
 			t_topology *top,gmx_constr_t constr,
-			real ener[],t_fcdata *fcd,
+			gmx_enerdata_t *enerd,t_fcdata *fcd,
 			t_state *state,rvec f[],
 			rvec buf[],tensor force_vir,
 			t_mdatoms *md,
 			t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			t_graph *graph,
-			gmx_groups_t *groups,t_groups *grps,
+			gmx_groups_t *groups,
 			struct gmx_shellfc *shfc,
 			t_forcerec *fr,
 			real t,rvec mu_tot,
@@ -823,9 +823,9 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   if (gmx_debug_at) {
     pr_rvecs(debug,0,"x b4 do_force",state->x + start,homenr);
   }
-  do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,groups,grps,
+  do_force(fplog,cr,inputrec,mdstep,nrnb,wcycle,top,groups,
 	   state->box,state->x,&state->hist,
-	   force[Min],buf,force_vir,md,ener,fcd,
+	   force[Min],buf,force_vir,md,enerd,fcd,
 	   state->lambda,graph,
 	   fr,vsite,mu_tot,t,fp_field,NULL,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
@@ -841,7 +841,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
       sf_dir += md->massT[i]*norm2(shfc->acc_dir[i-start]);
   }
 
-  Epot[Min]=ener[F_EPOT];
+  Epot[Min] = enerd->term[F_EPOT];
 
   df[Min]=rms_force(cr,shfc->f[Min],nshell,shell,nflexcon,&sf_dir,&Epot[Min]);
   df[Try]=0;
@@ -867,11 +867,11 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 
   if (debug) {
     fprintf(debug,"%17s: %14.10e\n",
-	    interaction_function[F_EKIN].longname, ener[F_EKIN]);
+	    interaction_function[F_EKIN].longname,enerd->term[F_EKIN]);
     fprintf(debug,"%17s: %14.10e\n",
-	    interaction_function[F_EPOT].longname, ener[F_EPOT]);
+	    interaction_function[F_EPOT].longname,enerd->term[F_EPOT]);
     fprintf(debug,"%17s: %14.10e\n",
-	    interaction_function[F_ETOT].longname, ener[F_ETOT]);
+	    interaction_function[F_ETOT].longname,enerd->term[F_ETOT]);
     fprintf(debug,"SHELLSTEP %d\n",mdstep);
   }
   
@@ -908,9 +908,9 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     /* Try the new positions */
     do_force(fplog,cr,inputrec,1,nrnb,wcycle,
-	     top,groups,grps,state->box,pos[Try],&state->hist,
+	     top,groups,state->box,pos[Try],&state->hist,
 	     force[Try],buf,force_vir,
-	     md,ener,fcd,state->lambda,graph,
+	     md,enerd,fcd,state->lambda,graph,
 	     fr,vsite,mu_tot,t,fp_field,NULL,
 	     GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES);
     
@@ -928,7 +928,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 	sf_dir += md->massT[i]*norm2(acc_dir[i-start]);
     }
 
-    Epot[Try]=ener[F_EPOT]; 
+    Epot[Try] = enerd->term[F_EPOT]; 
     
     df[Try]=rms_force(cr,force[Try],nshell,shell,nflexcon,&sf_dir,&Epot[Try]);
 

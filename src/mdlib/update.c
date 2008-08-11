@@ -535,26 +535,27 @@ static void dump_it_all(FILE *fp,char *title,
 #endif
 }
 
-void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,t_groups *grps,
+void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
+		  gmx_ekindata_t *ekind,
                   t_nrnb *nrnb,real lambda)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,ga=0,gt=0;
   rvec         v_corrt;
   real         hm;
-  t_grp_tcstat *tcstat=grps->tcstat;
-  t_grp_acc    *grpstat=grps->grpstat;
+  t_grp_tcstat *tcstat=ekind->tcstat;
+  t_grp_acc    *grpstat=ekind->grpstat;
   real         dekindl;
 
-  /* group velocities are calculated in update_grps and
+  /* group velocities are calculated in update_ekindata and
    * accumulated in acumulate_groups.
    * Now the partial global and groups ekin.
    */
   for(g=0; (g<opts->ngtc); g++) {
-    copy_mat(grps->tcstat[g].ekinh,grps->tcstat[g].ekinh_old);
-    clear_mat(grps->tcstat[g].ekinh);
+    copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
+    clear_mat(ekind->tcstat[g].ekinh);
   }
-  grps->dekindl_old = grps->dekindl;
+  ekind->dekindl_old = ekind->dekindl;
 
   dekindl = 0;
   for(n=start; (n<start+homenr); n++) {
@@ -575,30 +576,31 @@ void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,t_groups *grps,
     if (md->nMassPerturbed && md->bPerturbed[n])
       dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
   }
-  grps->dekindl = dekindl;
+  ekind->dekindl = dekindl;
 
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
 void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
-                       t_grpopts *opts,t_mdatoms *md,t_groups *grps,
+                       t_grpopts *opts,t_mdatoms *md,
+		       gmx_ekindata_t *ekind,
                        t_nrnb *nrnb,real lambda)
 {
   int          start=md->start,homenr=md->homenr;
   int          g,d,n,gt=0;
   rvec         v_corrt;
   real         hm;
-  t_grp_tcstat *tcstat=grps->tcstat;
-  t_cos_acc    *cosacc=&(grps->cosacc);
+  t_grp_tcstat *tcstat=ekind->tcstat;
+  t_cos_acc    *cosacc=&(ekind->cosacc);
   real         dekindl;
   real         fac,cosz;
   double       mvcos;
 
   for(g=0; g<opts->ngtc; g++) {
-    copy_mat(grps->tcstat[g].ekinh,grps->tcstat[g].ekinh_old);
-    clear_mat(grps->tcstat[g].ekinh);
+    copy_mat(ekind->tcstat[g].ekinh,ekind->tcstat[g].ekinh_old);
+    clear_mat(ekind->tcstat[g].ekinh);
   }
-  grps->dekindl_old = grps->dekindl;
+  ekind->dekindl_old = ekind->dekindl;
 
   fac = 2*M_PI/box[ZZ][ZZ];
   mvcos = 0;
@@ -624,7 +626,7 @@ void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
     if(md->nPerturbed && md->bPerturbed[n])
       dekindl -= 0.5*(md->massB[n] - md->massA[n])*iprod(v_corrt,v_corrt);
   }
-  grps->dekindl = dekindl;
+  ekind->dekindl = dekindl;
   cosacc->mvcos = mvcos;
 
   inc_nrnb(nrnb,eNR_EKIN,homenr);
@@ -698,7 +700,7 @@ void update(FILE         *fplog,
 	    rvec         xprime[],       /* buffer for x for update  */
 	    t_fcdata     *fcd,
             t_topology   *top,
-            t_groups     *grps,
+	    gmx_ekindata_t *ekind,
             tensor       vir_part,
 	    matrix       *scale_tot,
             t_commrec    *cr,
@@ -742,21 +744,21 @@ void update(FILE         *fplog,
   clear_mat(M);
 
   /* We can always tcoupl, even if we did not sum the energies
-   * the previous step, since grps->tcstat[i].Th is only updated
+   * the previous step, since ekind->tcstat[i].Th is only updated
    * when the energies have been summed.
    */
   switch (inputrec->etc) {
   case etcNO:
     break;
   case etcBERENDSEN:
-    berendsen_tcoupl(&(inputrec->opts),grps,inputrec->delta_t);
+    berendsen_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t);
     break;
   case etcNOSEHOOVER:
-    nosehoover_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
+    nosehoover_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
 		      state->nosehoover_xi,state->therm_integral);
     break;
   case etcVRESCALE:
-    vrescale_tcoupl(&(inputrec->opts),grps,inputrec->delta_t,
+    vrescale_tcoupl(&(inputrec->opts),ekind,inputrec->delta_t,
 		    state->therm_integral,sd->gaussrand);
     break;
   }
@@ -779,19 +781,19 @@ void update(FILE         *fplog,
   dump_it_all(fplog,"Before update",
 	      state->natoms,state->x,xprime,state->v,force);
   if (inputrec->eI == eiMD) {
-    if (grps->cosacc.cos_accel == 0) {
+    if (ekind->cosacc.cos_accel == 0) {
       /* use normal version of update */
       do_update_md(start,homenr,dt,
-		   grps->tcstat,grps->grpstat,state->nosehoover_xi,
+		   ekind->tcstat,ekind->grpstat,state->nosehoover_xi,
 		   inputrec->opts.acc,inputrec->opts.nFreeze,md->invmass,md->ptype,
 		   md->cFREEZE,md->cACC,md->cTC,
 		   state->x,xprime,state->v,force,M,
 		   bExtended);
     } else {
       do_update_visc(start,homenr,dt,
-		     grps->tcstat,md->invmass,state->nosehoover_xi,
+		     ekind->tcstat,md->invmass,state->nosehoover_xi,
 		     md->ptype,md->cTC,state->x,xprime,state->v,force,M,
-		     state->box,grps->cosacc.cos_accel,grps->cosacc.vcos,bExtended);
+		     state->box,ekind->cosacc.cos_accel,ekind->cosacc.vcos,bExtended);
     }
   } else if (inputrec->eI == eiSD1) {
     do_update_sd1(sd,start,homenr,dt,
@@ -918,8 +920,8 @@ void update(FILE         *fplog,
 	      state->natoms,state->x,xprime,state->v,force);
   where();
 
-  update_grps(start,homenr,grps,&(inputrec->opts),state->v,md,state->lambda,
-	      bNEMD);
+  update_ekindata(start,homenr,ekind,&(inputrec->opts),state->v,md,
+		  state->lambda,bNEMD);
 
   if (inputrec->epc == epcBERENDSEN) {
     berendsen_pscale(inputrec,pcoupl_mu,state->box,state->box_rel,

@@ -85,49 +85,25 @@ static void init_grpstat(FILE *log,
   }
 }
 
-static void init_grpener(FILE *log,int ngener,t_grp_ener *estat)
-{
-  int i,n2;
-  
-  n2=ngener*ngener;
-#ifdef DEBUG
-  fprintf(log,"Creating %d sized group matrix for energies\n",n2);
-#endif
-  estat->nn=n2;
-  for(i=0; (i<egNR); i++) {
-    snew(estat->ee[i],n2);
-  }
-}
-
-void init_t_groups(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,t_groups *grps)
+void init_ekindata(FILE *log,gmx_mtop_t *mtop,t_grpopts *opts,
+		   gmx_ekindata_t *ekind)
 {
   int i;
 #ifdef DEBUG
   fprintf(log,"ngtc: %d, ngacc: %d, ngener: %d\n",opts->ngtc,opts->ngacc,
 	  opts->ngener);
 #endif
-  snew(grps->tcstat,opts->ngtc);
-  init_grptcstat(opts->ngtc,grps->tcstat);
+  snew(ekind->tcstat,opts->ngtc);
+  init_grptcstat(opts->ngtc,ekind->tcstat);
    /* Set Berendsen tcoupl lambda's to 1, 
    * so runs without Berendsen coupling are not affected.
    */
   for(i=0; i<opts->ngtc; i++) {
-    grps->tcstat[i].lambda = 1.0;
+    ekind->tcstat[i].lambda = 1.0;
   }
   
-  snew(grps->grpstat,opts->ngacc);
-  init_grpstat(log,mtop,opts->ngacc,grps->grpstat);
- 
-  init_grpener(log,opts->ngener,&grps->estat);
-}
-
-void dump_estat(FILE *log,t_grp_ener *estat)
-{
-  int i;
-  
-  for(i=0; (i<estat->nn); i++) {
-    fprintf(log,"%12.5e\n",estat->ee[egLJSR][i]);
-  }
+  snew(ekind->grpstat,opts->ngacc);
+  init_grpstat(log,mtop,opts->ngacc,ekind->grpstat);
 }
 
 real rms_ener(t_energy *e,int nsteps)
@@ -141,7 +117,7 @@ real rms_ener(t_energy *e,int nsteps)
     return sqrt(erms2)/nsteps;
 }
 
-void accumulate_u(t_commrec *cr,t_grpopts *opts,t_groups *grps)
+void accumulate_u(t_commrec *cr,t_grpopts *opts,gmx_ekindata_t *ekind)
 {
   /* This routine will only be called when it's necessary */
   static t_bin *rb=NULL;
@@ -154,38 +130,39 @@ void accumulate_u(t_commrec *cr,t_grpopts *opts,t_groups *grps)
     reset_bin(rb);
 
   for(g=0; (g<opts->ngacc); g++) 
-    add_binr(rb,DIM,grps->grpstat[g].u);
+    add_binr(rb,DIM,ekind->grpstat[g].u);
     
   sum_bin(rb,cr);
   
   for(g=0; (g<opts->ngacc); g++) 
-    extract_binr(rb,DIM*g,DIM,grps->grpstat[g].u);
+    extract_binr(rb,DIM*g,DIM,ekind->grpstat[g].u);
 }       
 
-static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,t_groups *grps)
+static void accumulate_ekin(t_commrec *cr,t_grpopts *opts,
+			    gmx_ekindata_t *ekind)
 {
   int g;
 
   if(PAR(cr))
     for(g=0; (g<opts->ngtc); g++) 
-      gmx_sum(DIM*DIM,grps->tcstat[g].ekin[0],cr);
+      gmx_sum(DIM*DIM,ekind->tcstat[g].ekin[0],cr);
 }       
 
-void update_grps(int start,int homenr,t_groups *grps,
-		 t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
-		 bool bNEMD)
+void update_ekindata(int start,int homenr,gmx_ekindata_t *ekind,
+		     t_grpopts *opts,rvec v[],t_mdatoms *md,real lambda,
+		     bool bNEMD)
 {
   int  d,g,n;
   real mv;
 
   /* calculate mean velocities at whole timestep */ 
   for(g=0; (g<opts->ngtc); g++) {
-    grps->tcstat[g].T = 0;
+    ekind->tcstat[g].T = 0;
   }
 
   if (bNEMD) {
     for (g=0; (g<opts->ngacc); g++)
-      clear_rvec(grps->grpstat[g].u);
+      clear_rvec(ekind->grpstat[g].u);
     
     g = 0;
     for(n=start; (n<start+homenr); n++) {
@@ -193,21 +170,21 @@ void update_grps(int start,int homenr,t_groups *grps,
 	g = md->cACC[n];
       for(d=0; (d<DIM);d++) {
 	mv = md->massT[n]*v[n][d];
-	grps->grpstat[g].u[d] += mv;
+	ekind->grpstat[g].u[d] += mv;
       }
     }
 
     for (g=0; (g < opts->ngacc); g++) {
       for(d=0; (d<DIM);d++) {
-	grps->grpstat[g].u[d] /=
-	  (1-lambda)*grps->grpstat[g].mA + lambda*grps->grpstat[g].mB;
+	ekind->grpstat[g].u[d] /=
+	  (1-lambda)*ekind->grpstat[g].mA + lambda*ekind->grpstat[g].mB;
       }
     }
   }
 }
 
 real sum_ekin(bool bFirstStep,
-	      t_grpopts *opts,t_groups *grps,
+	      t_grpopts *opts,gmx_ekindata_t *ekind,
 	      tensor ekin,real *dekindlambda)
 {
   int          i,j,m,ngtc;
@@ -224,7 +201,7 @@ real sum_ekin(bool bFirstStep,
   nrdf = 0;
 
   for(i=0; (i<ngtc); i++) {
-    tcstat = &grps->tcstat[i];
+    tcstat = &ekind->tcstat[i];
     nd = ndf[i];
     /* Sometimes a group does not have degrees of freedom, e.g.
      * when it consists of shells and virtual sites, then we just
@@ -266,7 +243,7 @@ real sum_ekin(bool bFirstStep,
     T/=nrdf;
 
   if (dekindlambda)
-    *dekindlambda = 0.5*(grps->dekindl + grps->dekindl_old);
+    *dekindlambda = 0.5*(ekind->dekindl + ekind->dekindl_old);
 
   return T;
 }

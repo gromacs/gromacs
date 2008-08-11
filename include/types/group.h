@@ -37,8 +37,6 @@
 #include <config.h>
 #endif
 
-enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
-       egCOUL14, egLJ14, egNR };
 	
 typedef struct {
   real    Th;		/* Temperature at half step        */
@@ -48,12 +46,6 @@ typedef struct {
   tensor  ekin; 	/* Kinetic energy at full step     */
   real    lambda;       /* Berendsen coupling lambda       */
 } t_grp_tcstat;
-
-typedef struct {
-  int           nn;             /* Number of terms 			*/
-  real 		*ee[egNR];	/* Arrays of energy terms for THIS 	*/
-  				/* group with ALL other groups		*/
-} t_grp_ener;
 
 typedef struct {
   int     nat;		/* Number of atoms in this group		*/
@@ -69,13 +61,12 @@ typedef struct {
 } t_cos_acc;
 
 typedef struct {
-  t_grp_ener   estat;		/* Energy logging stuff			*/
   t_grp_tcstat *tcstat;         /* T-coupling data 			*/
   t_grp_acc    *grpstat;	/* Acceleration data			*/
   real         dekindl;         /* dEkin/dlambda at half step           */
   real         dekindl_old;     /* dEkin/dlambda at old half step       */
   t_cos_acc    cosacc;          /* Cosine acceleration data             */
-} t_groups;
+} gmx_ekindata_t;
 
 #define GID(igid,jgid,gnr) ((igid < jgid) ? (igid*gnr+jgid) : (jgid*gnr+igid))
 

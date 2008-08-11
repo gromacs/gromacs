@@ -80,8 +80,8 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				bool bVerbose,bool bCompact,
 				gmx_vsite_t *vsite,gmx_constr_t constr,
 				int stepout,
-				t_inputrec *inputrec,t_groups *grps,
-				gmx_mtop_t *mtop,real ener[],t_fcdata *fcd,
+				t_inputrec *inputrec,
+				gmx_mtop_t *mtop,t_fcdata *fcd,
 				t_state *state,rvec f[],
 				rvec buf[],t_mdatoms *mdatoms,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
@@ -125,10 +125,10 @@ extern void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
 		     
 /* ROUTINES from stat.c */		
 extern void global_stat(FILE *log,
-			t_commrec *cr,real ener[],
+			t_commrec *cr,gmx_enerdata_t *enerd,
 			tensor fvir,tensor svir,rvec mu_tot,
 			t_inputrec *inputrec,
-			t_groups *grps,bool bSumEkinhOld,
+			gmx_ekindata_t *ekind,bool bSumEkinhOld,
 			gmx_constr_t constr,t_vcm *vcm,
 			int *nabnsb,real *chkpt,real *terminate);
 /* Communicate statistics over cr->mpi_comm_mysim */
@@ -229,7 +229,7 @@ extern void do_shakefirst(FILE *log,gmx_constr_t constr,
 			  t_inputrec *inputrec,t_mdatoms *md,
 			  t_state *state,rvec buf[],rvec f[],
 			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			  t_groups *grps,t_forcerec *fr,t_topology *top);
+			  t_forcerec *fr,t_topology *top);
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,

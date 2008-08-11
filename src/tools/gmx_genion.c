@@ -341,7 +341,7 @@ int gmx_genion(int argc, char *argv[])
   t_inputrec  inputrec;
   t_commrec   *cr;
   t_mdatoms   *mdatoms;
-  t_groups    grps;
+  gmx_enerdata_t enerd;
   t_graph     *graph;
   t_forcerec  *fr;
   rvec        *x,*v;
@@ -382,7 +382,7 @@ int gmx_genion(int argc, char *argv[])
   snew(top,1);
   fplog = init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 		       opt2fn("-table",NFILE,fnm),mtop,top,&inputrec,&cr,
-		       &graph,&mdatoms,&grps,&fr,&pot,box,&x);
+		       &graph,&mdatoms,&fr,&enerd,&pot,box,&x);
   qtot = 0;
   for(i=0; (i<top->atoms.nr); i++)
     qtot += top->atoms.atom[i].q;
@@ -457,7 +457,7 @@ int gmx_genion(int argc, char *argv[])
   /* Now loop over the ions that have to be placed */
   do {
     if (!bRandom) {
-      calc_pot(fplog,cr,mtop,&grps,&inputrec,top,x,fr,mdatoms,pot,box,graph);
+      calc_pot(fplog,cr,mtop,&inputrec,top,x,fr,&enerd,mdatoms,pot,box,graph);
       if (bPDB || debug) {
 	char buf[STRLEN];
 	

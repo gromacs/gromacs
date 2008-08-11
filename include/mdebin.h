@@ -63,14 +63,14 @@ extern t_mdebin
 extern void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
 		       bool bSum,
 		       real tmass,int step,real time,
-		       real ener[],
+		       gmx_enerdata_t *enerd,
 		       t_state *state,
 		       matrix  lastbox,
 		       tensor svir,
 		       tensor fvir,
 		       tensor vir,
 		       tensor pres,
-		       t_groups *grps,
+		       gmx_ekindata_t *ekind,
 		       rvec mu_tot,
 		       gmx_constr_t constr);
      

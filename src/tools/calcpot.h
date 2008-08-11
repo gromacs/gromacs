@@ -38,13 +38,15 @@ extern FILE *init_calcpot(char *log,char *tpx,char *table,
 			  gmx_mtop_t *mtop,
 			  t_topology *top,t_inputrec *inputrec,t_commrec **cr,
 			  t_graph **graph,t_mdatoms **mdatoms,
-			  t_groups *grps,
-			  t_forcerec **fr,real **coulomb,
+			  t_forcerec **fr,
+			  gmx_enerdata_t *enerdata,
+			  real **coulomb,
 			  matrix box,rvec **x);
 
 extern void calc_pot(FILE *logf,t_commrec *cr,
-		     gmx_mtop_t *mtop,t_groups *grps,
-		     t_inputrec *inputrec,t_topology *top,rvec x[],t_forcerec *fr,
+		     gmx_mtop_t *mtop,
+		     t_inputrec *inputrec,t_topology *top,rvec x[],
+		     t_forcerec *fr,gmx_enerdata_t *enerd,
 		     t_mdatoms *mdatoms,real coulomb[],matrix box,t_graph *graph);
 
 extern void write_pdb_coul();

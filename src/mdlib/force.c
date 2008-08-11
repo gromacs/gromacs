@@ -1450,7 +1450,6 @@ void ns(FILE *fp,
         rvec       f[],
         matrix     box,
         gmx_groups_t *groups,
-        t_groups   *grps,
         t_grpopts  *opts,
         t_topology *top,
         t_mdatoms  *md,
@@ -1459,6 +1458,7 @@ void ns(FILE *fp,
         int        step,
         real       lambda,
         real       *dvdlambda,
+        gmx_grppairener_t *grppener,
         bool       bFillGrid,
         bool       bDoForces)
 {
@@ -1487,8 +1487,9 @@ void ns(FILE *fp,
   if (fr->bTwinRange) 
     fr->nlr=0;
 
-  nsearch = search_neighbours(fp,fr,x,box,top,groups,grps,cr,nrnb,md,
-                              lambda,dvdlambda,bFillGrid,bDoForces);
+  nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
+                              lambda,dvdlambda,grppener,
+                              bFillGrid,bDoForces);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -1504,19 +1505,20 @@ void ns(FILE *fp,
 }
 
 void do_force_lowlevel(FILE       *fplog,   int        step,
-		       t_forcerec *fr,      t_inputrec *ir,
-		       t_idef     *idef,    t_commrec  *cr,
-		       t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
-		       t_groups   *grps,    t_mdatoms  *md,
-		       int        ngener,   t_grpopts  *opts,
-		       rvec       x[],      history_t  *hist,
-		       rvec       f[],
-		       real       epot[],   t_fcdata   *fcd,
-		       matrix     box,
-		       real       lambda,   t_graph    *graph,
-		       t_blocka   *excl,    
-		       rvec       mu_tot[],
-		       int        flags)
+                       t_forcerec *fr,      t_inputrec *ir,
+                       t_idef     *idef,    t_commrec  *cr,
+                       t_nrnb     *nrnb,    gmx_wallcycle_t wcycle,
+                       t_mdatoms  *md,
+                       t_grpopts  *opts,
+                       rvec       x[],      history_t  *hist,
+                       rvec       f[],
+                       gmx_enerdata_t *enerd,
+                       t_fcdata   *fcd,
+                       matrix     box,
+                       real       lambda,   t_graph    *graph,
+                       t_blocka   *excl,    
+                       rvec       mu_tot[],
+                       int        flags)
 {
   int     i,nit,status;
   bool    bDoEpot,bSepDVDL,bSB;
@@ -1543,7 +1545,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
 
   /* do QMMM first if requested */
   if(fr->bQMMM){
-    epot[F_EQM] = calculate_QMMM(cr,x,f,fr,md);
+    enerd->term[F_EQM] = calculate_QMMM(cr,x,f,fr,md);
   }
 
   if (bSepDVDL)
@@ -1559,24 +1561,26 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
   /*#define TAKETIME ((cr->npmenodes) && (timesteps < 12))*/
 #define TAKETIME FALSE
   if (TAKETIME)
-  {
-    MPI_Barrier(cr->mpi_comm_mygroup);
+  {    MPI_Barrier(cr->mpi_comm_mygroup);
     t0=MPI_Wtime();
   }
 #endif
 
   if (ir->nwall) {
-    dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,grps->estat.ee[egLJSR],nrnb);
+    dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,
+                         enerd->grpp.ener[egLJSR],nrnb);
     PRINT_SEPDVDL("Walls",0.0,dvdlambda);
-    epot[F_DVDL] += dvdlambda;
+    enerd->term[F_DVDL] += dvdlambda;
   }
 
   where();
   do_nonbonded(cr,fr,x,f,md,
-	       fr->bBHAM ? grps->estat.ee[egBHAMSR] : grps->estat.ee[egLJSR],
-	       grps->estat.ee[egCOULSR],box_size,nrnb,
-	       lambda,&dvdlambda,FALSE,-1,-1,
-	       flags & GMX_FORCE_FORCES);
+               fr->bBHAM ?
+               enerd->grpp.ener[egBHAMSR] :
+               enerd->grpp.ener[egLJSR],
+               enerd->grpp.ener[egCOULSR],box_size,nrnb,
+               lambda,&dvdlambda,FALSE,-1,-1,
+               flags & GMX_FORCE_FORCES);
   where();
 
 #ifdef GMX_MPI
@@ -1587,13 +1591,19 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
   }
 #endif
 
-  epot[F_DVDL] += dvdlambda;
+  enerd->term[F_DVDL] += dvdlambda;
   Vsr = 0;
   if (bSepDVDL)
-    for(i=0; i<grps->estat.nn; i++)
-      Vsr +=
-	(fr->bBHAM ? grps->estat.ee[egBHAMSR][i] : grps->estat.ee[egLJSR][i])
-	+ grps->estat.ee[egCOULSR][i];
+  {
+      for(i=0; i<enerd->grpp.nener; i++)
+      {
+          Vsr +=
+              (fr->bBHAM ?
+               enerd->grpp.ener[egBHAMSR][i] :
+               enerd->grpp.ener[egLJSR][i])
+              + enerd->grpp.ener[egCOULSR][i];
+      }
+  }
   PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
   debug_gmx();
 
@@ -1686,7 +1696,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
       gmx_fatal(FARGS,"Error %d in long range electrostatics routine %s",
 		status,EELTYPE(fr->eeltype));
 		
-    epot[F_DVDL] += dvdlambda;
+    enerd->term[F_DVDL] += dvdlambda;
     if(fr->bEwald) {
       dvdlambda = 0;
       Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,cr,fr,
@@ -1696,16 +1706,16 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
 				 ir->ewald_geometry,ir->epsilon_surface,
 				 lambda,&dvdlambda,&vdip,&vcharge);
       PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
-      epot[F_DVDL] += dvdlambda;
+      enerd->term[F_DVDL] += dvdlambda;
     } else {
       Vcorr = shift_LRcorrection(fplog,md->start,md->homenr,cr,fr,
 				 md->chargeA,excl,x,TRUE,box,
 				 fr->vir_el_recip);
     }
-    epot[F_COUL_RECIP] = Vlr + Vcorr;
+    enerd->term[F_COUL_RECIP] = Vlr + Vcorr;
     if (debug)
       fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
-	      Vlr,Vcorr,epot[F_COUL_RECIP]);
+	      Vlr,Vcorr,enerd->term[F_COUL_RECIP]);
     if (debug) {
       pr_rvecs(debug,0,"vir_el_recip after corr",fr->vir_el_recip,DIM);
       pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
@@ -1714,11 +1724,11 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
     dvdlambda = 0;
 
     if (fr->eeltype != eelRF_NEC)
-      epot[F_RF_EXCL] = RF_excl_correction(fplog,fr,graph,md,excl,x,f,
+      enerd->term[F_RF_EXCL] = RF_excl_correction(fplog,fr,graph,md,excl,x,f,
 					   fr->fshift,&pbc,lambda,&dvdlambda);
 
-    epot[F_DVDL] += dvdlambda;
-    PRINT_SEPDVDL("RF exclusion correction",epot[F_RF_EXCL],dvdlambda);
+    enerd->term[F_DVDL] += dvdlambda;
+    PRINT_SEPDVDL("RF exclusion correction",enerd->term[F_RF_EXCL],dvdlambda);
   }
   where();
   debug_gmx();
@@ -1730,11 +1740,9 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
   if (flags & GMX_FORCE_BONDED) {
     GMX_MPE_LOG(ev_calc_bonds_start);
     calc_bonds(fplog,cr->ms,
-	       idef,x,hist,f,fr,&pbc,graph,epot,nrnb,lambda,md,
-	       opts->ngener,&grps->estat,
-	       fcd,
-	       DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
-	       fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
+               idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
+               DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+               fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
     debug_gmx();
     GMX_MPE_LOG(ev_calc_bonds_finish);
   }
@@ -1760,3 +1768,22 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
 
   GMX_MPE_LOG(ev_force_finish);
 }
+
+void init_enerdata(FILE *log,int ngener,gmx_enerdata_t *enerd)
+{
+  int i,n2;
+
+  for(i=0; i<F_NRE; i++) {
+      enerd->term[i] = 0;
+  }
+  
+  n2=ngener*ngener;
+#ifdef DEBUG
+  fprintf(log,"Creating %d sized group matrix for energies\n",n2);
+#endif
+  enerd->grpp.nener = n2;
+  for(i=0; (i<egNR); i++) {
+    snew(enerd->grpp.ener[i],n2);
+  }
+}
+

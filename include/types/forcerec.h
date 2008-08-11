@@ -75,6 +75,19 @@ typedef struct {
 #define SET_CGINFO_SOLOPT(cgi,opt)   (cgi) = (((cgi)  & ~(15<<18)) | ((opt)<<18))
 #define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   15)
 
+enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
+       egCOUL14, egLJ14, egNR };
+
+typedef struct {
+  int  nener;        /* The number of energy group pairs     */
+  real *ener[egNR];  /* Energy terms for each pair of groups */
+} gmx_grppairener_t;
+
+typedef struct {
+  real term[F_NRE];    /* The energies for all different interaction types */
+  gmx_grppairener_t grpp;
+} gmx_enerdata_t;
+
 typedef struct {
   /* Domain Decomposition */
   bool bDomDec;

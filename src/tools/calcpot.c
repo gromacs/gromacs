@@ -164,8 +164,9 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
 }
 
 void calc_pot(FILE *logf,t_commrec *cr,
-	      gmx_mtop_t *mtop,t_groups *grps,
-	      t_inputrec *inputrec,t_topology *top,rvec x[],t_forcerec *fr,
+	      gmx_mtop_t *mtop,
+	      t_inputrec *inputrec,t_topology *top,rvec x[],
+	      t_forcerec *fr,gmx_enerdata_t *enerd,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
   static bool        bFirst=TRUE;
@@ -198,8 +199,8 @@ void calc_pot(FILE *logf,t_commrec *cr,
    * also do the calculation of long range forces and energies.
    */
   
-  ns(logf,fr,x,f,box,&mtop->groups,grps,&(inputrec->opts),top,mdatoms,cr,
-     &nrnb,0,lam,&dum,TRUE,FALSE);
+  ns(logf,fr,x,f,box,&mtop->groups,&(inputrec->opts),top,mdatoms,cr,
+     &nrnb,0,lam,&dum,&enerd->grpp,TRUE,FALSE);
   for(m=0; (m<DIM); m++)
     box_size[m] = box[m][m];
   for(i=0; (i<mdatoms->nr); i++)
@@ -220,8 +221,9 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
 		   gmx_mtop_t *mtop,t_topology *top,
 		   t_inputrec *inputrec,t_commrec **cr,
 		   t_graph **graph,t_mdatoms **mdatoms,
-		   t_groups *grps,
-		   t_forcerec **fr,real **pot,
+		   t_forcerec **fr,
+		   gmx_enerdata_t *enerd,
+		   real **pot,
 		   matrix box,rvec **x)
 {
   t_topology *ltop;
@@ -255,7 +257,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
 	  &mdebin,force_vir,
 	  shake_vir,mutot,&bNEMD,&bSA,NULL);
 
-  init_groups(fplog,&mtop->groups,&(inputrec->opts),grps);  
+  init_enerdata(fplog,mtop->groups.grps[egcENER].nr,enerd);  
 
   ltop = gmx_mtop_generate_local_top(mtop,inputrec);
   *top = *ltop;

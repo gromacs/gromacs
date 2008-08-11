@@ -152,8 +152,9 @@ static void sum_forces(int start,int end,rvec f[],rvec flr[])
     rvec_inc(f[i],flr[i]);
 }
 
-static void reset_energies(t_grpopts *opts,t_groups *grp,
-			   t_forcerec *fr,bool bNS,real epot[],
+static void reset_energies(t_grpopts *opts,
+			   t_forcerec *fr,bool bNS,
+			   gmx_enerdata_t *enerd,
 			   bool bMaster)
 {
   bool bKeepLR;
@@ -166,17 +167,18 @@ static void reset_energies(t_grpopts *opts,t_groups *grp,
   bKeepLR = (fr->bTwinRange && !bNS && bMaster);
   for(i=0; (i<egNR); i++) {
     if (!(bKeepLR && (i == egCOULLR || i == egLJLR))) {
-      for(j=0; (j<grp->estat.nn); j++)
-	grp->estat.ee[i][j] = 0.0;
+      for(j=0; (j<enerd->grpp.nener); j++)
+	enerd->grpp.ener[i][j] = 0.0;
     }
   }
   
   /* Normal potential energy components */
-  for(i=0; (i<=F_EPOT); i++)
-    epot[i] = 0.0;
-  epot[F_DVDL]     = 0.0;
-  epot[F_DKDL]     = 0.0;
-  epot[F_DGDL_CON] = 0.0;
+  for(i=0; (i<=F_EPOT); i++) {
+    enerd->term[i] = 0.0;
+  }
+  enerd->term[F_DVDL]     = 0.0;
+  enerd->term[F_DKDL]     = 0.0;
+  enerd->term[F_DGDL_CON] = 0.0;
 }
 
 /* 
@@ -277,22 +279,27 @@ static real sum_v(int n,real v[])
   return t;
 }
 
-static void sum_epot(t_grpopts *opts,t_groups *grps,real epot[])
+static void sum_epot(t_grpopts *opts,gmx_enerdata_t *enerd)
 {
+  gmx_grppairener_t *grpp;
+  real *epot;
   int i;
+  
+  grpp = &enerd->grpp;
+  epot = enerd->term;
 
   /* Accumulate energies */
-  epot[F_COUL_SR]  = sum_v(grps->estat.nn,grps->estat.ee[egCOULSR]);
-  epot[F_LJ]       = sum_v(grps->estat.nn,grps->estat.ee[egLJSR]);
-  epot[F_LJ14]     = sum_v(grps->estat.nn,grps->estat.ee[egLJ14]);
-  epot[F_COUL14]   = sum_v(grps->estat.nn,grps->estat.ee[egCOUL14]);
-  epot[F_COUL_LR]  = sum_v(grps->estat.nn,grps->estat.ee[egCOULLR]);
-  epot[F_LJ_LR]    = sum_v(grps->estat.nn,grps->estat.ee[egLJLR]);
+  epot[F_COUL_SR]  = sum_v(grpp->nener,grpp->ener[egCOULSR]);
+  epot[F_LJ]       = sum_v(grpp->nener,grpp->ener[egLJSR]);
+  epot[F_LJ14]     = sum_v(grpp->nener,grpp->ener[egLJ14]);
+  epot[F_COUL14]   = sum_v(grpp->nener,grpp->ener[egCOUL14]);
+  epot[F_COUL_LR]  = sum_v(grpp->nener,grpp->ener[egCOULLR]);
+  epot[F_LJ_LR]    = sum_v(grpp->nener,grpp->ener[egLJLR]);
 /* lattice part of LR doesnt belong to any group
  * and has been added earlier
  */
-  epot[F_BHAM]     = sum_v(grps->estat.nn,grps->estat.ee[egBHAMSR]);
-  epot[F_BHAM_LR]  = sum_v(grps->estat.nn,grps->estat.ee[egBHAMLR]);
+  epot[F_BHAM]     = sum_v(grpp->nener,grpp->ener[egBHAMSR]);
+  epot[F_BHAM_LR]  = sum_v(grpp->nener,grpp->ener[egBHAMLR]);
 
   epot[F_EPOT] = 0;
   for(i=0; (i<F_EPOT); i++)
@@ -320,11 +327,12 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 	      t_topology *top,
-	      gmx_groups_t *groups,t_groups *grps,
+	      gmx_groups_t *groups,
 	      matrix box,rvec x[],history_t *hist,
 	      rvec f[],rvec buf[],
 	      tensor vir_force,
-	      t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
+	      t_mdatoms *mdatoms,
+	      gmx_enerdata_t *enerd,t_fcdata *fcd,
 	      real lambda,t_graph *graph,
 	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 	      real t,FILE *field,gmx_edsam_t ed,
@@ -454,7 +462,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       mu_tot[j] = (1.0 - lambda)*mu_tot_AB[0][j] + lambda*mu_tot_AB[1][j];
 
   /* Reset energies */
-  reset_energies(&(inputrec->opts),grps,fr,bNS,ener,MASTER(cr));    
+  reset_energies(&(inputrec->opts),fr,bNS,enerd,MASTER(cr));    
   if (bNS) {
     wallcycle_start(wcycle,ewcNS);
     
@@ -471,11 +479,11 @@ void do_force(FILE *fplog,t_commrec *cr,
      * also do the calculation of long range forces and energies.
      */
     dvdl = 0; 
-    ns(fplog,fr,x,f,box,groups,grps,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,step,lambda,&dvdl,bFillGrid,bDoForces);
+    ns(fplog,fr,x,f,box,groups,&(inputrec->opts),top,mdatoms,
+       cr,nrnb,step,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
-    ener[F_DVDL] += dvdl;
+    enerd->term[F_DVDL] += dvdl;
 
     wallcycle_stop(wcycle,ewcNS);
   }
@@ -535,15 +543,14 @@ void do_force(FILE *fplog,t_commrec *cr,
       fprintf(fplog,sepdvdlformat,
 	      interaction_function[F_POSRES].longname,v,dvdl);
     }
-    ener[F_POSRES] += v;
-    ener[F_DVDL]   += dvdl;
+    enerd->term[F_POSRES] += v;
+    enerd->term[F_DVDL]   += dvdl;
     inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
   }
   /* Compute the bonded and non-bonded forces */    
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
-		    cr,nrnb,wcycle,grps,mdatoms,
-		    groups->grps[egcENER].nr,&(inputrec->opts),
-		    x,hist,f,ener,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
+		    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
+		    x,hist,f,enerd,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
 		    flags);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
@@ -604,12 +611,12 @@ void do_force(FILE *fplog,t_commrec *cr,
      */
     set_pbc(&pbc,inputrec->ePBC,box);
     dvdl = 0; 
-    ener[F_COM_PULL] =
+    enerd->term[F_COM_PULL] =
       pull_potential(inputrec->ePull,inputrec->pull,mdatoms,&pbc,
 		     cr,t,lambda,x,f,vir_force,&dvdl);
     if (bSepDVDL)
-      fprintf(fplog,sepdvdlformat,"Com pull",ener[F_COM_PULL],dvdl);
-    ener[F_DVDL] += dvdl;
+      fprintf(fplog,sepdvdlformat,"Com pull",enerd->term[F_COM_PULL],dvdl);
+    enerd->term[F_DVDL] += dvdl;
   }
 
   if (!(cr->duty & DUTY_PME)) {
@@ -628,8 +635,8 @@ void do_force(FILE *fplog,t_commrec *cr,
 		      &cycles_pme);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"PME mesh",e,dvdl);
-    ener[F_COUL_RECIP] += e;
-    ener[F_DVDL] += dvdl;
+    enerd->term[F_COUL_RECIP] += e;
+    enerd->term[F_DVDL] += dvdl;
     if (wcycle)
       dd_cycles_add(cr->dd,cycles_pme,ddCyclPME);
     wallcycle_stop(wcycle,ewcPP_PMEWAITRECVF);
@@ -662,7 +669,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
 
   /* Sum the potential energy terms from group contributions */
-  sum_epot(&(inputrec->opts),grps,ener);
+  sum_epot(&(inputrec->opts),enerd);
 
   if (fr->print_force >= 0 && bDoForces)
     print_large_forces(stderr,mdatoms,cr,step,fr->print_force,x,f);
@@ -716,7 +723,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 		   t_inputrec *inputrec,t_mdatoms *md,
 		   t_state *state,rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-		   t_groups *grps,t_forcerec *fr,t_topology *top)
+		   t_forcerec *fr,t_topology *top)
 {
   int    i,m,start,end,step;
   double mass,tmass,vcm[4];

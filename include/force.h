@@ -126,7 +126,10 @@ extern void init_forcerec(FILE       *fplog,
  * bMolEpot: Use the free energy stuff per molecule
  * print_force >= 0: print forces for atoms with force >= print_force
  */
- 
+
+extern void init_enerdata(FILE *log,int ngener,gmx_enerdata_t *enerd);
+/* Intializes the energy storage struct */
+
 extern void update_forcerec(FILE *fplog,t_forcerec *fr,matrix box);
 /* Updates parameters in the forcerec that are time dependent */
 
@@ -151,11 +154,12 @@ extern void do_force(FILE *log,t_commrec *cr,
 		     t_inputrec *inputrec,
 		     int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		     t_topology *top,
-		     gmx_groups_t *groups,t_groups *grps,
+		     gmx_groups_t *groups,
 		     matrix box,rvec x[],history_t *hist,
 		     rvec f[],rvec buf[],
 		     tensor vir_force,
-		     t_mdatoms *mdatoms,real ener[],t_fcdata *fcd,
+		     t_mdatoms *mdatoms,
+		     gmx_enerdata_t *enerd,t_fcdata *fcd,
 		     real lambda,t_graph *graph,
 		     t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 		     real t,FILE *field,gmx_edsam_t ed,
@@ -176,7 +180,6 @@ extern void ns(FILE       *fplog,
 	       rvec       f[],
 	       matrix     box,
 	       gmx_groups_t *groups,
-	       t_groups   *grps,
 	       t_grpopts  *opts,
 	       t_topology *top,
 	       t_mdatoms  *md,
@@ -185,6 +188,7 @@ extern void ns(FILE       *fplog,
 	       int        step,
 	       real       lambda,
 	       real       *dvdlambda,
+	       gmx_grppairener_t *grppener,
 	       bool       bFillGrid,
 	       bool       bDoForces);
 /* Call the neighborsearcher */
@@ -197,14 +201,12 @@ extern void do_force_lowlevel(FILE         *fplog,
 			      t_commrec    *cr,
 			      t_nrnb       *nrnb,
 			      gmx_wallcycle_t wcycle,
-			      t_groups     *grps,
 			      t_mdatoms    *md,
-			      int          ngener,
 			      t_grpopts    *opts,
 			      rvec         x[],
 			      history_t    *hist,
 			      rvec         f[],    
-			      real         epot[], 
+			      gmx_enerdata_t *enerd,
 			      t_fcdata     *fcd,
 			      matrix       box,
 			      real         lambda,
