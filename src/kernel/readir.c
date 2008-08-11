@@ -211,6 +211,26 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   CHECK(((ir->rcoulomb > ir->rlist) || (ir->rvdw > ir->rlist)) 
 	&& (ir->ns_type == ensSIMPLE));
   
+  /* TEMPERATURE COUPLING */
+  if(ir->etc == etcYES) {
+    ir->etc = etcBERENDSEN;
+    warning_note("Old option for temperature coupling given: "
+		 "changing \"yes\" to \"Berendsen\"\n");
+  }
+
+  if (ir->etc == etcBERENDSEN) {
+    sprintf(warn_buf,"The %s thermostat does not generate the correct kinetic energy distribution. You might want to consider using the %s thermostat.",
+	    ETCOUPLTYPE(ir->etc),ETCOUPLTYPE(etcVRESCALE));
+    warning_note(NULL);
+  }
+  
+  if((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL ) 
+     && ir->epc==epcBERENDSEN) {
+    sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
+	    "true ensemble for the thermostat");
+    warning(NULL);
+  }
+
   /* PRESSURE COUPLING */
   if (ir->epc == epcISOTROPIC) {
     ir->epc = epcBERENDSEN;
@@ -222,8 +242,10 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
     CHECK(ir->tau_p <= 0);
 
-    if (ir->tau_p <5) {
-	warning_note("tau_p is smaller than 5ps. This is in most cases not recommended!");
+    if (ir->tau_p < 220*ir->delta_t) {
+      sprintf(warn_buf,"For proper barostat integration tau_p (%g) should be more than two orders of magnitude larger than delta_t (%g)",
+	      ir->tau_p,ir->delta_t);
+      warning(NULL);
     }	
        
     sprintf(err_buf,"compressibility must be > 0 when using pressure" 
@@ -241,20 +263,6 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     warning(NULL);
   }
   
-  /* TEMPERATURE COUPLING */
-  if(ir->etc == etcYES) {
-    ir->etc = etcBERENDSEN;
-    warning_note("Old option for temperature coupling given: "
-		 "changing \"yes\" to \"Berendsen\"\n");
-  }
-  
-  if((ir->etc==etcNOSEHOOVER || ir->etc==etcANDERSEN || ir->etc==etcANDERSENINTERVAL ) 
-     && ir->epc==epcBERENDSEN) {
-    sprintf(warn_buf,"Using Berendsen pressure coupling invalidates the "
-	    "true ensemble for the thermostat");
-    warning(NULL);
-  }
-
   /* ELECTROSTATICS */
   /* More checks are in triple check (grompp.c) */
   if (EEL_RF(ir->coulombtype) && ir->epsilon_rf==1 && ir->epsilon_r!=1) {
@@ -898,8 +906,10 @@ void get_ir(char *mdparin,char *mdparout,
       opts->couple_moltype = strdup(couple_moltype);
       if (opts->couple_lam0 == opts->couple_lam1)
 	warning("The lambda=0 and lambda=1 states for coupling are identical");
-      if (ir->eI == eiMD)
-	warning("For proper sampling with coupling, stochastic dynamics should be used");
+      if (ir->eI == eiMD && (opts->couple_lam0 == ecouplamNONE ||
+			     opts->couple_lam1 == ecouplamNONE)) {
+	warning("For proper sampling of the (nearly) decoupled state, stochastic dynamics should be used");
+      }
     } else {
       warning("Can not couple a molecule with free_energy = no");
     }
@@ -974,7 +984,7 @@ int search_string(char *s,int ng,char *gn[])
   return -1;
 }
 
-static void do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
+static bool do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
 			 t_blocka *block,char *gnames[],
 			 int gtype,int restnm,
 			 int grptp,bool bVerbose)
@@ -1034,7 +1044,7 @@ static void do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
       gmx_fatal(FARGS,"%d atoms are not part of any of the %s groups",
 		natoms-ntot,title);
     } else if (grptp == egrptpPART) {
-      sprintf(warn_buf,"%d atoms are not part of any of the %s groups\n",
+      sprintf(warn_buf,"%d atoms are not part of any of the %s groups",
 	      natoms-ntot,title);
       warning_note(NULL);
     }
@@ -1074,6 +1084,8 @@ static void do_numbering(int natoms,gmx_groups_t *groups,int ng,char *ptrs[],
   }
   
   sfree(cbuf);
+
+  return (bRest && grptp == egrptpPART);
 }
 
 static void calc_nrdf(gmx_mtop_t *mtop,t_inputrec *ir,char **gnames)
@@ -1374,7 +1386,7 @@ void do_index(char* mdparin, char *ndx,
   char    *ptr1[MAXPTR],*ptr2[MAXPTR],*ptr3[MAXPTR];
   int     i,j,k,restnm;
   real    SAtime;
-  bool    bExcl,bTable,bSetTCpar,bAnneal;
+  bool    bExcl,bTable,bSetTCpar,bAnneal,bRest;
   int     nQMmethod,nQMbasis,nQMcharge,nQMmult,nbSH,nCASorb,nCASelec,
     nSAon,nSAoff,nSAsteps,nQMg,nbOPT,nbTS;
 
@@ -1411,15 +1423,9 @@ void do_index(char* mdparin, char *ndx,
   ntau_t = str_nelem(tau_t,MAXPTR,ptr1);
   nref_t = str_nelem(ref_t,MAXPTR,ptr2);
   ntcg   = str_nelem(tcgrps,MAXPTR,ptr3);
-  if ((ntau_t != ntcg) || (nref_t != ntcg)) 
+  if ((ntau_t != ntcg) || (nref_t != ntcg)) {
     gmx_fatal(FARGS,"Invalid T coupling input: %d groups, %d ref_t values and "
-		"%d tau_t values",ntcg,nref_t,ntau_t);  
-  if (!(ntcg==2 && ((strcasecmp(ptr3[0],"Protein")==0 && strcasecmp(ptr3[1],"Non-Protein")==0) || 
-		    (strcasecmp(ptr3[1],"Protein")==0 && strcasecmp(ptr3[0],"Non-Protein")==0)))) {
-      set_warning_line(mdparin,-1);
-      sprintf(warn_buf,"In  most cases you want to set tc-grps to \"Protein Non-Protein\" instead of \"%s\". Make sure "
-	      "to read http://wiki.gromacs.org/index.php/Thermostats.", tcgrps);
-      warning(NULL);
+		"%d tau_t values",ntcg,nref_t,ntau_t);
   }
 
   if (ir->eI != eiMD)
@@ -1441,10 +1447,13 @@ void do_index(char* mdparin, char *ndx,
       gmx_fatal(FARGS,"Not enough ref_t and tau_t values!");
     for(i=0; (i<nr); i++) {
       ir->opts.tau_t[i]=atof(ptr1[i]);
-      if (ir->opts.tau_t[i] < 0)
+      if (ir->opts.tau_t[i] < 0) {
 	gmx_fatal(FARGS,"tau_t for group %d negative",i);
-      if (ir->opts.tau_t[i] < 0.1) {
-	  warning_note("tau_t is below 0.1ps. This is in most cases not recommended!");
+      }
+      if (ir->etc && ir->opts.tau_t[i] < 22*ir->delta_t) {
+	sprintf(warn_buf,"For proper thermostat integration tau_t (%g) should be more than an order of magnitude larger than delta_t (%g)",
+		ir->opts.tau_t[i],ir->delta_t);
+	warning(NULL);
       }
     }
     for(i=0; (i<nr); i++) {
@@ -1453,6 +1462,7 @@ void do_index(char* mdparin, char *ndx,
 	gmx_fatal(FARGS,"ref_t for group %d negative",i);
     }
   }
+
   /* Simulated annealing for each group. There are nr groups */
   nSA = str_nelem(anneal,MAXPTR,ptr1);
   if (nSA == 1 && (ptr1[0][0]=='n' || ptr1[0][0]=='N'))
@@ -1603,14 +1613,14 @@ void do_index(char* mdparin, char *ndx,
   add_wall_energrps(groups,ir->nwall,symtab);
   ir->opts.ngener = groups->grps[egcENER].nr;
   nvcm=str_nelem(vcm,MAXPTR,ptr1);
-  if (!(nvcm==0 || (nvcm==1 && strcasecmp(ptr1[0],"System")==0))) {
-      sprintf(warn_buf,"It is unphysical to use %s for comm-grps. "
-	      "Please leave empty or use System!", vcm);
-      warning(NULL);
+  bRest =
+    do_numbering(natoms,groups,nvcm,ptr1,grps,gnames,egcVCM,
+		 restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
+  if (bRest) {
+    warning("Some atoms are not part of any center of mass motion removal group.\n"
+	    "This may lead to artifacts.\n"
+	    "In most cases one should use one group for the whole system.");
   }
-
-  do_numbering(natoms,groups,nvcm,ptr1,grps,gnames,egcVCM,
-	       restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(mtop,ir,gnames);
