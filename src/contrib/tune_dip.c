@@ -73,20 +73,20 @@
 #include "mtop_util.h"
 
 typedef struct {
-  char          *molname;
-  bool          bSupport;
-  real          dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
-  gmx_mtop_t    mtop;
-  t_topology    *ltop;
-  t_inputrec    ir;
-  gmx_shellfc_t shell;
-  t_mdatoms     *md;
-  t_forcerec    *fr;
-  gmx_vsite_t   *vs;
-  rvec          *x,*f,*buf;
-  t_state       state;
-  t_groups      grps;
-  matrix        box;
+  char           *molname;
+  bool           bSupport;
+  real           dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
+  gmx_mtop_t     mtop;
+  t_topology     *ltop;
+  t_inputrec     ir;
+  gmx_shellfc_t  shell;
+  t_mdatoms      *md;
+  t_forcerec     *fr;
+  gmx_vsite_t    *vs;
+  rvec           *x,*f,*buf;
+  t_state        state;
+  //  gmx_groups_t  grps;
+  matrix         box;
 } t_mymol; 
 
 typedef struct {
@@ -150,7 +150,7 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
     mymol->shell = NULL;
   
   init_state(&mymol->state,natoms,1);
-  init_t_groups(NULL,&mymol->mtop,&(mymol->ir.opts),&mymol->grps);
+  //init_t_groups(NULL,&mymol->mtop,&(mymol->ir.opts),&mymol->grps);
   mymol->md = init_mdatoms(debug,&mymol->mtop,FALSE);
 }
 
@@ -257,8 +257,8 @@ static void check_data_suffiency(FILE *logf,
     else
       nsupported--;
   }
-  nremove = 0;
   do {
+    nremove = 0;
     for(i=0; (i<109); i++) {
       if ((elemcnt[i] > 0) && (elemcnt[i] < minimum_data)) {
 	fprintf(logf,"Not enough support in data set for optimizing element %d\n",i);
@@ -448,7 +448,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,
   double qq,rr,rms=0,rms_nw=0,rmsq;
   real   t = 0;
   rvec   mu_tot = {0,0,0};
-  real   ener[F_NRE];
+  gmx_enerdata_t *ener;
   tensor force_vir={{0,0,0},{0,0,0},{0,0,0}};
   t_nrnb   my_nrnb;
   gmx_wallcycle_t wcycle;
@@ -462,6 +462,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,
   eemtp = md->eemtype;
     
   init_nrnb(&my_nrnb);
+  snew(ener,1);
   
   wcycle  = wallcycle_init(stdout,md->cr);
   
@@ -475,6 +476,14 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,
 			     md->slater_max,&(mymol->chieq));
     if (eQ != eQGEN_OK)
       qgen_message(stderr,eQ);
+    else {
+      aloop = gmx_mtop_atomloop_all_init(&mymol->mtop);
+      j = 0;
+      while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
+	atom->q = mymol->ltop->atoms.atom[j].q;
+	j++;
+      }
+    }
       
     /* Now optimize the shell positions */
     if (mymol->shell) {
@@ -488,7 +497,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,
 				  force_vir,mymol->md,
 				  &my_nrnb,wcycle,NULL,
 				  &(mymol->mtop.groups),
-				  &(mymol->grps),mymol->shell,
+				  mymol->shell,
 				  mymol->fr,t,mu_tot,
 				  mymol->mtop.natoms,&bConverged,NULL,NULL);
     }
@@ -513,6 +522,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,
     rms_nw += rr;
   }
   *rms_noweight = rms_nw;
+  sfree(ener);
   
   return rms;
 }
@@ -666,8 +676,6 @@ static void optimize_moldip(FILE *fp,FILE *logf,
 	eem_set_props(md->eem,index,J00,zeta,chi0);
       }
       gsl_multimin_fminimizer_set (s, &my_func, x, dx);
-      if (0)
-	write_eemprops(logf,md->eem);
     }
   
     iter++;
@@ -680,6 +688,8 @@ static void optimize_moldip(FILE *fp,FILE *logf,
     d2     = gsl_multimin_fminimizer_minimum(s);
     size   = gsl_multimin_fminimizer_size(s);
     
+    if (0)
+      write_eemprops(logf,md->eem);
     if (d2 < d2_min) 
       eem_min = copy_eem(eem_min,md->eem);
     
