@@ -1831,9 +1831,11 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
   }
 
   bAcc = FALSE;
-  for(m=0; (m<DIM); m++) {
-    if (fabs(acc[m]) > 1e-6) {
-      bAcc = TRUE;
+  for(i=0; (i<sys->groups.grps[egcACC].nr); i++) {
+    for(m=0; (m<DIM); m++) {
+      if (fabs(ir->opts.acc[i][m]) > 1e-6) {
+	bAcc = TRUE;
+      }
     }
   }
   if (bAcc) {
@@ -1855,8 +1857,8 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 	fprintf(stderr,
 		"Net Acceleration in %s direction, will %s be corrected\n",
 		dim[m],ir->nstcomm != 0 ? "" : "not");
-	if (ir->nstcomm != 0) {
-	  acc[m]/=mt;
+	if (ir->nstcomm != 0 && m < ndof_com(ir)) {
+	  acc[m] /= mt;
 	  for (i=0; (i<sys->groups.grps[egcACC].nr); i++)
 	    ir->opts.acc[i][m] -= acc[m];
 	}
