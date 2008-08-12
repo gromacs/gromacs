@@ -178,19 +178,16 @@ static void check_cg_sizes(char *topfn,t_block *cgs)
 
 static void check_vel(gmx_mtop_t *mtop,rvec v[])
 {
-  int mb,m,i;
-  t_atoms *atoms;
+  gmx_mtop_atomloop_all_t aloop;
+  t_atom *atom;
+  int a;
 
-  i = 0;
-  for(mb=0; mb<mtop->nmoltype; mb++) {
-    atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
-    for(m=0; m<mtop->molblock[mb].nmol; m++) {
-      if ((atoms->atom[i].ptype == eptShell) ||
-	  (atoms->atom[i].ptype == eptBond)  ||
-	  (atoms->atom[i].ptype == eptVSite)) {
-	clear_rvec(v[i]);
-      }
-      i++;
+  aloop = gmx_mtop_atomloop_all_init(mtop);
+  while (gmx_mtop_atomloop_all_next(aloop,&a,&atom)) {
+    if (atom->ptype == eptShell ||
+	atom->ptype == eptBond  ||
+	atom->ptype == eptVSite) {
+      clear_rvec(v[a]);
     }
   }
 }
@@ -924,11 +921,13 @@ int main (int argc, char *argv[])
   for(mt=0; mt<sys->nmoltype; mt++) {
     set_vsites_ptype(FALSE,&sys->moltype[mt]);
   }
-  if (debug)
+  if (debug) {
     pr_symtab(debug,0,"After virtual sites",&sys->symtab);
+  }
   /* Check velocity for virtual sites and shells */
-  if (bGenVel) 
+  if (bGenVel) {
     check_vel(sys,state.v);
+  }
     
   /* check masses */
   check_mol(sys);
