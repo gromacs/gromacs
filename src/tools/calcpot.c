@@ -165,7 +165,7 @@ static void low_calc_pot(FILE *log,int nl_type,t_forcerec *fr,
 
 void calc_pot(FILE *logf,t_commrec *cr,
 	      gmx_mtop_t *mtop,
-	      t_inputrec *inputrec,t_topology *top,rvec x[],
+	      t_inputrec *inputrec,gmx_localtop_t *top,rvec x[],
 	      t_forcerec *fr,gmx_enerdata_t *enerd,
 	      t_mdatoms *mdatoms,real pot[],matrix box,t_graph *graph)
 {
@@ -180,13 +180,13 @@ void calc_pot(FILE *logf,t_commrec *cr,
   fprintf(stderr,"Doing single force calculation...\n");
 
   if (bFirst) {
-    snew(f,top->atoms.nr);
+    snew(f,mtop->natoms);
     
     bFirst = FALSE;
   }
   /* Reset long range forces if necessary */
   if (fr->bTwinRange) {
-    clear_rvecs(top->atoms.nr,fr->f_twin);
+    clear_rvecs(mtop->natoms,fr->f_twin);
     clear_rvecs(SHIFTS,fr->fshift_twin);
   }
   if (inputrec->ePBC != epbcNONE)
@@ -218,7 +218,7 @@ void calc_pot(FILE *logf,t_commrec *cr,
 }
 
 FILE *init_calcpot(char *log,char *tpx,char *table,
-		   gmx_mtop_t *mtop,t_topology *top,
+		   gmx_mtop_t *mtop,gmx_localtop_t *top,
 		   t_inputrec *inputrec,t_commrec **cr,
 		   t_graph **graph,t_mdatoms **mdatoms,
 		   t_forcerec **fr,
@@ -226,7 +226,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
 		   real **pot,
 		   matrix box,rvec **x)
 {
-  t_topology *ltop;
+  gmx_localtop_t *ltop;
   real     t,t0,lam,lam0;
   bool     bNEMD,bSA;
   int      traj=0,xtc_traj=0;
@@ -264,11 +264,11 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   sfree(ltop);
 
   *mdatoms = init_mdatoms(fplog,mtop,FALSE);
-  atoms2md(mtop,inputrec,0,NULL,0,top->atoms.nr,*mdatoms);
+  atoms2md(mtop,inputrec,0,NULL,0,mtop->natoms,*mdatoms);
 
   if (inputrec->ePBC == epbcXYZ) {
     /* Calculate intramolecular shift vectors to make molecules whole again */
-    *graph = mk_graph(fplog,&(top->idef),0,top->atoms.nr,FALSE,FALSE);
+    *graph = mk_graph(fplog,&(top->idef),0,mtop->natoms,FALSE,FALSE);
     mk_mshift(fplog,*graph,inputrec->ePBC,state->box,state->x);
   } else {
     *graph = NULL;
@@ -303,7 +303,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   done_state(state);
   sfree(state);
 
-  snew(*pot,top->atoms.nr);
+  snew(*pot,mtop->natoms);
 
   return fplog;
 }

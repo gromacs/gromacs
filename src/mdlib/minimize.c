@@ -224,7 +224,7 @@ static void get_state_f_norm_max(t_commrec *cr,
 void init_em(FILE *fplog,const char *title,
 	     t_commrec *cr,t_inputrec *ir,
 	     t_state *state_global,gmx_mtop_t *top_global,
-	     em_state_t *ems,t_topology **top,
+	     em_state_t *ems,gmx_localtop_t **top,
 	     rvec *f,rvec **buf,rvec **f_global,
 	     t_nrnb *nrnb,rvec mu_tot,
 	     t_forcerec *fr,gmx_enerdata_t **enerd,
@@ -292,7 +292,7 @@ void init_em(FILE *fplog,const char *title,
     *f_global = f;
 
     if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
-      *graph = mk_graph(fplog,&((*top)->idef),0,(*top)->atoms.nr,FALSE,FALSE);
+      *graph = mk_graph(fplog,&((*top)->idef),0,top_global->natoms,FALSE,FALSE);
     } else {
       *graph = NULL;
     }
@@ -306,7 +306,7 @@ void init_em(FILE *fplog,const char *title,
     homenr -= start;
   } else {
     start  = 0;
-    homenr = (*top)->atoms.nr;
+    homenr = top_global->natoms;
   }
   atoms2md(top_global,ir,0,NULL,start,homenr,mdatoms);
   update_mdatoms(mdatoms,state_global->lambda);
@@ -327,7 +327,7 @@ void init_em(FILE *fplog,const char *title,
 
     /* Constrain the starting coordinates */
     dvdlambda=0;
-    constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,*top,
+    constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
 	      ir,cr,-1,0,mdatoms,
 	      ems->s.x,ems->s.x,NULL,ems->s.box,ems->s.lambda,&dvdlambda,
 	      NULL,NULL,nrnb,econqCoord);
@@ -380,7 +380,7 @@ static void copy_em_coords_back(em_state_t *ems,t_state *state)
 
 static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
 		       em_state_t *ems1,real a,rvec *f,em_state_t *ems2,
-		       gmx_constr_t constr,t_topology *top,
+		       gmx_constr_t constr,gmx_localtop_t *top,
 		       t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 		       int count)
 
@@ -450,7 +450,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
   if (constr) {
     wallcycle_start(wcycle,ewcCONSTR);
     dvdlambda = 0;
-    constrain(NULL,TRUE,TRUE,constr,top,	
+    constrain(NULL,TRUE,TRUE,constr,&top->idef,	
 	      ir,cr,count,0,md,
 	      s1->x,s2->x,NULL,s2->box,s2->lambda,
 	      &dvdlambda,NULL,NULL,nrnb,econqCoord);
@@ -504,7 +504,7 @@ static void do_x_sub(t_commrec *cr,int n,rvec *x1,rvec *x2,real a,rvec *f)
 
 static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
 				   gmx_mtop_t *top_global,t_inputrec *ir,
-				   em_state_t *ems,rvec **buf,t_topology *top,
+				   em_state_t *ems,rvec **buf,gmx_localtop_t *top,
 				   t_mdatoms *mdatoms,t_forcerec *fr,
 				   gmx_vsite_t *vsite,gmx_constr_t constr,
 				   t_nrnb *nrnb,gmx_wallcycle_t wcycle)
@@ -522,7 +522,7 @@ static void em_dd_partition_system(FILE *fplog,int step,t_commrec *cr,
     
 static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 			    t_state *state_global,gmx_mtop_t *top_global,
-			    em_state_t *ems,rvec **buf,t_topology *top,
+			    em_state_t *ems,rvec **buf,gmx_localtop_t *top,
 			    t_inputrec *inputrec,
 			    t_nrnb *nrnb,gmx_wallcycle_t wcycle,
 			    gmx_vsite_t *vsite,gmx_constr_t constr,
@@ -609,7 +609,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     /* Project out the constraint components of the force */
     wallcycle_start(wcycle,ewcCONSTR);
     dvdl = 0;
-    constrain(NULL,FALSE,FALSE,constr,top,
+    constrain(NULL,FALSE,FALSE,constr,&top->idef,
 	      inputrec,cr,count,0,mdatoms,
 	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
 	      NULL,&shake_vir,nrnb,econqForce);
@@ -758,7 +758,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   const char *CG="Polak-Ribiere Conjugate Gradients";
 
   em_state_t *s_min,*s_a,*s_b,*s_c;
-  t_topology *top;
+  gmx_localtop_t *top;
   gmx_enerdata_t *enerd;
   t_graph    *graph;
   rvec   *f_global,*p,*sf,*sfm;
@@ -1276,7 +1276,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 {
   static char *LBFGS="Low-Memory BFGS Minimizer";
   em_state_t ems;
-  t_topology *top;
+  gmx_localtop_t *top;
   gmx_enerdata_t *enerd;
   t_graph    *graph;
   int    ncorr,nmaxcorr,point,cp,neval,nminstep;
@@ -1870,9 +1870,9 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 	     top_global,inputrec->eI,step,(real)step,state,state,f,f);
   
   if (MASTER(cr)) {
-    write_sto_conf(ftp2fn(efSTO,nfile,fnm),
-		   *top->name,&(top->atoms),state->x,NULL,
-		   inputrec->ePBC,state->box);
+    write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
+			*top_global->name,top_global,
+			state->x,NULL,inputrec->ePBC,state->box);
   }
   
   if (MASTER(cr)) {
@@ -1912,7 +1912,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   const char *SD="Steepest Descents";
   em_state_t *s_min,*s_try;
   rvec       *f_global;
-  t_topology *top;
+  gmx_localtop_t *top;
   gmx_enerdata_t *enerd;
   t_graph    *graph;
   real   stepsize,constepsize;
@@ -2123,7 +2123,7 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
     int        fp_ene,step,i;
     time_t     start_t;
     rvec       *f_global;
-    t_topology *top;
+    gmx_localtop_t *top;
     gmx_enerdata_t *enerd;
     t_graph    *graph;
     real       t,lambda,t0,lam0;
@@ -2381,7 +2381,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      unsigned long Flags)
 {
   const char *TPI="Test Particle Insertion"; 
-  t_topology *top;
+  gmx_localtop_t *top;
   gmx_groups_t *groups;
   gmx_enerdata_t *enerd;
   real   lambda,t,temp,beta,drmax,epot;
@@ -2484,7 +2484,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   if (dump_pdb)
     sscanf(dump_pdb,"%lf",&dump_ener);
 
-  atoms2md(top_global,inputrec,0,NULL,0,top->atoms.nr,mdatoms);
+  atoms2md(top_global,inputrec,0,NULL,0,top_global->natoms,mdatoms);
   update_mdatoms(mdatoms,inputrec->init_lambda);
 
   snew(enerd,1);
@@ -2513,7 +2513,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
     /* Copy the coordinates of the molecule to be insterted */
     copy_rvec(state->x[i],x_mol[i-a_tp0]);
     /* Check if we need to print electrostatic energies */
-    bCharge |= (top->atoms.atom[i].q!=0 || top->atoms.atom[i].qB!=0);
+    bCharge |= (mdatoms->chargeA[i] != 0 ||
+		(mdatoms->chargeB && mdatoms->chargeB[i] != 0));
   }
   bRFExcl = (bCharge && EEL_RF(fr->eeltype) && fr->eeltype!=eelRF_NEC);
 

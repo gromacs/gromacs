@@ -640,7 +640,7 @@ static void dump_shells(FILE *fp,rvec x[],rvec f[],real ftol,int ns,t_shell s[])
 }
 
 static void init_adir(FILE *log,
-		      gmx_constr_t constr,t_topology *top,t_inputrec *ir,
+		      gmx_constr_t constr,t_idef *idef,t_inputrec *ir,
 		      t_commrec *cr,int dd_ac1,
 		      int step,t_mdatoms *md,int start,int end,
 		      rvec *x_old,rvec *x_init,rvec *x,
@@ -684,10 +684,10 @@ static void init_adir(FILE *log,
       }
     }
   }
-  constrain(log,FALSE,FALSE,constr,top,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
 	    x,xnold-start,NULL,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord);
-  constrain(log,FALSE,FALSE,constr,top,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
 	    x,xnew-start,NULL,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqCoord);
 
@@ -701,7 +701,7 @@ static void init_adir(FILE *log,
   }
 
   /* Project the acceleration on the old bond directions */
-  constrain(log,FALSE,FALSE,constr,top,ir,cr,step,0,md,
+  constrain(log,FALSE,FALSE,constr,idef,ir,cr,step,0,md,
 	    x_old,xnew-start,acc_dir,box,
 	    lambda,dvdlambda,NULL,NULL,nrnb,econqDeriv_FlexCon); 
 }
@@ -709,7 +709,7 @@ static void init_adir(FILE *log,
 int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 			int mdstep,t_inputrec *inputrec,
 			bool bDoNS,bool bStopCM,
-			t_topology *top,gmx_constr_t constr,
+			gmx_localtop_t *top,gmx_constr_t constr,
 			gmx_enerdata_t *enerd,t_fcdata *fcd,
 			t_state *state,rvec f[],
 			rvec buf[],tensor force_vir,
@@ -726,6 +726,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 {
   int    nshell;
   t_shell *shell;
+  t_idef *idef;
   rvec   *pos[2],*force[2],*acc_dir=NULL,*x_old=NULL;
   real   Epot[2],df[2];
   rvec   dx;
@@ -745,6 +746,8 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   nshell       = shfc->nshell;
   shell        = shfc->shell;
   nflexcon     = shfc->nflexcon;
+
+  idef = &top->idef;
 
   if (DOMAINDECOMP(cr)) {
     nat = dd_natoms_vsite(cr->dd);
@@ -833,7 +836,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
 
   sf_dir = 0;
   if (nflexcon) {
-    init_adir(fplog,constr,top,inputrec,cr,dd_ac1,mdstep,md,start,end,
+    init_adir(fplog,constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 	      shfc->x_old-start,state->x,state->x,force[Min],
 	      shfc->acc_dir-start,state->box,state->lambda,&dum,nrnb);
 
@@ -883,11 +886,11 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
   for(count=1; (!(*bConverged) && (count < number_steps)); count++) {
     if (vsite)
       construct_vsites(fplog,vsite,pos[Min],nrnb,inputrec->delta_t,state->v,
-		       top->idef.iparams,top->idef.il,
+		       idef->iparams,idef->il,
 		       fr->ePBC,fr->bMolPBC,graph,cr,state->box);
      
     if (nflexcon) {
-      init_adir(fplog,constr,top,inputrec,cr,dd_ac1,mdstep,md,start,end,
+      init_adir(fplog,constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Min],force[Min],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
       
@@ -920,7 +923,7 @@ int relax_shell_flexcon(FILE *fplog,t_commrec *cr,bool bVerbose,
     }
     sf_dir = 0;
     if (nflexcon) {
-      init_adir(fplog,constr,top,inputrec,cr,dd_ac1,mdstep,md,start,end,
+      init_adir(fplog,constr,idef,inputrec,cr,dd_ac1,mdstep,md,start,end,
 		x_old-start,state->x,pos[Try],force[Try],acc_dir-start,
 		state->box,state->lambda,&dum,nrnb);
 

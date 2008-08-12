@@ -581,15 +581,14 @@ static void set_posres_params(t_idef *idef,gmx_molblock_t *molb,
     }
 }
 
-static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,t_topology *top)
+static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,
+                          gmx_localtop_t *top)
 {
-    int mb,srcnr,destnr,ftype,mt,nposre_old;
+    int mb,srcnr,destnr,ftype,mt,natoms,nposre_old;
     gmx_molblock_t *molb;
     gmx_moltype_t *molt;
     gmx_ffparams_t *ffp;
     t_idef *idef;
-
-    top->name = mtop->name;
 
     top->atomtypes = mtop->atomtypes;
     
@@ -614,14 +613,14 @@ static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,t_topology *top)
         idef->il[ftype].iatoms = NULL;
     }
 
-    top->atoms.nr = 0;
+    natoms = 0;
     for(mb=0; mb<mtop->nmolblock; mb++)
     {
         molb = &mtop->molblock[mb];
         molt = &mtop->moltype[molb->type];
         
         srcnr  = molt->atoms.nr;
-        destnr = top->atoms.nr;
+        destnr = natoms;
         
         blockcat(&top->cgs,&molt->cgs,molb->nmol,destnr,srcnr);
 
@@ -635,10 +634,10 @@ static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,t_topology *top)
         }
         if (idef->il[F_POSRES].nr > nposre_old)
         {
-            set_posres_params(idef,molb,nposre_old/2,top->atoms.nr);
+            set_posres_params(idef,molb,nposre_old/2,natoms);
         }
 
-        top->atoms.nr += molb->nmol*srcnr;
+        natoms += molb->nmol*srcnr;
     }
 
     if (ir == NULL)
@@ -656,23 +655,15 @@ static void gen_local_top(gmx_mtop_t *mtop,t_inputrec *ir,t_topology *top)
             top->idef.ilsort = ilsortNO_FE;
         }
     }
-
-    top->mols = mtop->mols;
 }
 
-t_topology *gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir)
+gmx_localtop_t *gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir)
 {
-    t_topology *top;
+    gmx_localtop_t *top;
 
     snew(top,1);
 
     gen_local_top(mtop,ir,top);
-
-    /* We do not fill the t_atoms struct,
-     * since this requires more memory than the rest of t_topology.
-     */
-    init_atom(&top->atoms);
-    top->atoms.nr = mtop->natoms;
 
     return top;
 }
@@ -680,11 +671,18 @@ t_topology *gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir)
 t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
 {
     int mt,mb;
+    gmx_localtop_t ltop;
     t_topology top;
 
-    gen_local_top(mtop,NULL,&top);
+    gen_local_top(mtop,NULL,&ltop);
 
-    top.atoms = gmx_mtop_global_atoms(mtop);
+    top.name      = mtop->name;
+    top.idef      = ltop.idef;
+    top.atomtypes = ltop.atomtypes;
+    top.cgs       = ltop.cgs;
+    top.excls     = ltop.excls;
+    top.atoms     = gmx_mtop_global_atoms(mtop);
+    top.mols      = mtop->mols;
 
     /* We only need to free the moltype and molblock data,
      * all other pointers have been copied to top.

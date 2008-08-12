@@ -52,6 +52,7 @@
 #include "names.h"
 #include "futil.h"
 #include "network.h"
+#include "mtop_util.h"
 
 typedef struct {
   real photo,coh,incoh,incoh_abs;
@@ -255,13 +256,13 @@ void dump_ca(FILE *fp,t_cross_atom *ca,int i,char *file,int line)
 }
 
 t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
-			    char **atomname[],int Eindex)
+			    gmx_mtop_t *mtop,int Eindex)
 {
   int elem_index[] = { 0, 0, 0, 5, 0, 6, 1, 2, 3, 0, 0, 7, 8, 9, 0, 0, 4, 0, 0, 0, 10, 11 };
   t_cross_atom *ca;
   int  *elemcnt;
-  char *cc;
-  int  i,j;
+  char *cc,*resname;
+  int  i,j,resnr;
   
   fprintf(log,PREFIX"Filling data structure for ionization\n");
   fprintf(log,PREFIX"Warning: all fj values set to 0.95 for now\n");
@@ -270,15 +271,16 @@ t_cross_atom *mk_cross_atom(FILE *log,t_mdatoms *md,
   for(i=0; (i<md->nr); i++) {
     ca[i].n = 0;
     ca[i].k = 0;
-    cc = *(atomname[i]);
+    /* This code does not work for domain decomposition */
+    gmx_mtop_atominfo_global(mtop,i,&cc,&resnr,&resname);
     for(j=0; (j<NELEM); j++)
       if (strncmp(cc,element[j].name,strlen(element[j].name)) == 0) {
 	ca[i].z = element[j].nel;
 	break;
       }
     if (j == NELEM) 
-      gmx_fatal(FARGS,PREFIX"Don't know number of electrons for %s",
-		  *atomname[i]);
+      gmx_fatal(FARGS,PREFIX"Don't know number of electrons for %s",cc);
+
     elemcnt[j]++;
 
     ca[i].sigPh = element[elem_index[ca[i].z]].cross[Eindex].photo;
@@ -553,7 +555,7 @@ bool khole_decay(FILE *fp,t_cross_atom *ca,rvec x[],rvec v[],int ion,
     return FALSE;
 }
 
-void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
+void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
 	    rvec x[],rvec v[],int start,int end,matrix box,t_commrec *cr)
 {
   static FILE  *xvg,*ion;
@@ -619,7 +621,7 @@ void ionize(FILE *fp,t_mdatoms *md,char **atomname[],real t,t_inputrec *ir,
       gmx_fatal(FARGS,PREFIX"Energy level of %d keV not supported",ephot);
     
     /* Initiate cross section data etc. */
-    ca      = mk_cross_atom(fp,md,atomname,Eindex);
+    ca      = mk_cross_atom(fp,md,mtop,Eindex);
     
     dq_tot  = 0;
     nkd_tot = 0;

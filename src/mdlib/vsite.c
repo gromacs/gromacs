@@ -1563,7 +1563,7 @@ gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr)
   return vsite;
 }
 
-void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_mdatoms *md,
+void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 		   t_commrec *cr)
 {
   int *a2cg;

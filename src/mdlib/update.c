@@ -699,7 +699,7 @@ void update(FILE         *fplog,
             rvec         force[],        /* forces on home particles */
 	    rvec         xprime[],       /* buffer for x for update  */
 	    t_fcdata     *fcd,
-            t_topology   *top,
+	    t_idef       *idef,
 	    gmx_ekindata_t *ekind,
             tensor       vir_part,
 	    matrix       *scale_tot,
@@ -847,7 +847,7 @@ void update(FILE         *fplog,
     if (constr) {
       /* Constrain the coordinates xprime */
       wallcycle_start(wcycle,ewcCONSTR);
-      constrain(NULL,bLog,bEner,constr,top,
+      constrain(NULL,bLog,bEner,constr,idef,
 		inputrec,cr,step,1,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,
@@ -890,7 +890,7 @@ void update(FILE         *fplog,
     if (constr) {
       /* Constrain the coordinates xprime */
       wallcycle_start(wcycle,ewcCONSTR);
-      constrain(NULL,bLog,bEner,constr,top,
+      constrain(NULL,bLog,bEner,constr,idef,
 		inputrec,cr,step,1,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,

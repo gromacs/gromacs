@@ -60,7 +60,7 @@
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
-double mypow(double x,double y)
+static double mypow(double x,double y)
 {
   if (x > 0)
     return pow(x,y);
@@ -267,7 +267,7 @@ static void get_orires_parms(char *topnm,
 			     int *nor,int *nex,int **label,real **obs)
 {
   gmx_mtop_t mtop;
-  t_topology *top;
+  gmx_localtop_t *top;
   t_inputrec ir;
   t_iparams  *ip;
   int        natoms,i;
@@ -301,11 +301,11 @@ static void get_orires_parms(char *topnm,
 	  *nor,*nex);
 }
 
-int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
-	       t_topology *top,t_inputrec *ir)
+static int get_bounds(char *topnm,
+		      real **bounds,int **index,int **dr_pair,int *npairs,
+		      gmx_mtop_t *mtop,gmx_localtop_t *top,t_inputrec *ir)
 {
-  gmx_mtop_t mtop;
-  t_topology *ltop;
+  gmx_localtop_t *ltop;
   t_functype *functype;
   t_iparams  *ip;
   int        natoms,i,j,k,type,ftype,natom;
@@ -316,8 +316,8 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   int        nb,label1;
   matrix     box;
 
-  read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,&mtop);
-  ltop = gmx_mtop_generate_local_top(&mtop,ir);
+  read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,mtop);
+  ltop = gmx_mtop_generate_local_top(mtop,ir);
   *top = *ltop;
   sfree(ltop);
 
@@ -375,8 +375,8 @@ int get_bounds(char *topnm,real **bounds,int **index,int **dr_pair,int *npairs,
   return nb;
 }
 
-void calc_violations(real rt[],real rav3[],int nb,int index[],
-		     real bounds[],real *viol,double *st,double *sa)
+static void calc_violations(real rt[],real rav3[],int nb,int index[],
+			    real bounds[],real *viol,double *st,double *sa)
 {
   const   real sixth=1.0/6.0;
   int     i,j;
@@ -911,7 +911,8 @@ int gmx_energy(int argc,char *argv[])
   FILE       **drout;
   int        fp;
   int        timecheck=0;
-  t_topology top;
+  gmx_mtop_t mtop;
+  gmx_localtop_t top;
   t_inputrec ir;
   t_energy   *oldee,**ee;
   t_enxframe *frame,*fr=NULL;
@@ -932,6 +933,8 @@ int gmx_energy(int argc,char *argv[])
   int        *set=NULL,i,j,k,nset,sss,nenergy;
   char       **enm=NULL,**enm2=NULL,**leg=NULL,**pairleg,**odtleg,**otenleg;
   char       **nms;
+  char       *anm_j,*anm_k,*resnm_j,*resnm_k;
+  int        resnr_j,resnr_k;
   char       *orinst_sub = "@ subtitle \"instantaneous\"\n";
   char       buf[256];
   t_filenm   fnm[] = {
@@ -1116,7 +1119,7 @@ int gmx_energy(int argc,char *argv[])
   }
   else {
     nbounds=get_bounds(ftp2fn(efTPX,NFILE,fnm),&bounds,&index,&pair,&npairs,
-		       &top,&ir);
+		       &mtop,&top,&ir);
     snew(violaver,npairs);
     out=xvgropen(opt2fn("-o",NFILE,fnm),"Sum of Violations",
 		 "Time (ps)","nm");
@@ -1210,9 +1213,10 @@ int gmx_energy(int argc,char *argv[])
 	  snew(pairleg[i],30);
 	  j=fa[3*i+1];
 	  k=fa[3*i+2];
+	  gmx_mtop_atominfo_global(&mtop,j,&anm_j,&resnr_j,&resnm_j);
+	  gmx_mtop_atominfo_global(&mtop,k,&anm_k,&resnr_k,&resnm_k);
 	  sprintf(pairleg[i],"%d %s %d %s (%d)",
-		  top.atoms.atom[j].resnr+1,*top.atoms.atomname[j],
-		  top.atoms.atom[k].resnr+1,*top.atoms.atomname[k],
+		  resnr_j+1,anm_j,resnr_k+1,anm_k,
 		  ip[fa[3*i]].disres.label);
 	}
 	set=select_it(fr->ndisre,pairleg,&nset);

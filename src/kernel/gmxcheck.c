@@ -148,7 +148,7 @@ static void tpx2methods(char *tpx,char *tex)
   fclose(fp);
 }
 
-void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol)
+static void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol)
 {
   int i,j;
   int nNul=0;
@@ -170,7 +170,7 @@ void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol)
 	   frame,nNul);
 }
 
-void chk_vels(int frame,int natoms,rvec *v)
+static void chk_vels(int frame,int natoms,rvec *v)
 {
   int i,j;
   
@@ -183,7 +183,7 @@ void chk_vels(int frame,int natoms,rvec *v)
   }
 }
 
-void chk_forces(int frame,int natoms,rvec *f)
+static void chk_forces(int frame,int natoms,rvec *f)
 {
   int i,j;
   
@@ -196,7 +196,7 @@ void chk_forces(int frame,int natoms,rvec *f)
   }
 }
 
-void chk_bonds(t_topology *top,int ePBC,rvec *x,matrix box,real tol)
+static void chk_bonds(t_idef *idef,int ePBC,rvec *x,matrix box,real tol)
 {
   int  ftype,i,k,ai,aj,type;
   real b0,blen,deviation,devtot;
@@ -207,24 +207,24 @@ void chk_bonds(t_topology *top,int ePBC,rvec *x,matrix box,real tol)
   set_pbc(&pbc,ePBC,box);  
   for(ftype=0; (ftype<F_NRE); ftype++) 
     if ((interaction_function[ftype].flags & IF_CHEMBOND) == IF_CHEMBOND) {
-      for(k=0; (k<top->idef.il[ftype].nr); ) {
-	type = top->idef.il[ftype].iatoms[k++];
-	ai   = top->idef.il[ftype].iatoms[k++];
-	aj   = top->idef.il[ftype].iatoms[k++]; 
+      for(k=0; (k<idef->il[ftype].nr); ) {
+	type = idef->il[ftype].iatoms[k++];
+	ai   = idef->il[ftype].iatoms[k++];
+	aj   = idef->il[ftype].iatoms[k++]; 
 	b0   = 0;    
 	switch (ftype) {
 	case F_BONDS:
 	case F_G96BONDS:
-	  b0 = sqrt(top->idef.iparams[type].harmonic.rA);
+	  b0 = sqrt(idef->iparams[type].harmonic.rA);
 	  break;
 	case F_MORSE:
-	  b0 = top->idef.iparams[type].morse.b0;
+	  b0 = idef->iparams[type].morse.b0;
 	  break;
 	case F_CUBICBONDS:
-	  b0 = top->idef.iparams[type].cubic.b0;
+	  b0 = idef->iparams[type].cubic.b0;
 	  break;
 	case F_CONSTR:
-	  b0 = top->idef.iparams[type].constr.dA;
+	  b0 = idef->iparams[type].constr.dA;
 	  break;
 	default:
 	  break;
@@ -252,7 +252,7 @@ void chk_trj(char *fn,char *tpr,real tol)
   bool         bShowTimestep=TRUE,bOK,newline=FALSE;
   int          status,step;
   gmx_mtop_t   mtop;
-  t_topology   *top;
+  gmx_localtop_t *top;
   t_state      state;
   t_inputrec   ir;
   
@@ -320,7 +320,7 @@ void chk_trj(char *fn,char *tpr,real tol)
     natoms=new_natoms;
     if (tpr) {
       top = gmx_mtop_generate_local_top(&mtop,&ir);
-      chk_bonds(top,ir.ePBC,fr.x,fr.box,tol);
+      chk_bonds(&top->idef,ir.ePBC,fr.x,fr.box,tol);
     }
     if (fr.bX)
       chk_coords(j,natoms,fr.x,fr.box,1e5,tol);

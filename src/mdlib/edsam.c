@@ -2828,8 +2828,7 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
 }
 
 
-void do_edsam(t_topology  *top,   /* Local topology  */
-              t_inputrec  *ir,
+void do_edsam(t_inputrec  *ir,
               int         step,
               t_mdatoms   *md,
               t_commrec   *cr,

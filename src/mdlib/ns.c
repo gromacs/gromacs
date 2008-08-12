@@ -1321,7 +1321,7 @@ static void ns_inner_rect(rvec x[],int icg,bool *i_egp_flags,
 /* ns_simple_core needs to be adapted for QMMM still 2005 */
 
 static int ns_simple_core(t_forcerec *fr,
-                          t_topology *top,
+                          gmx_localtop_t *top,
                           t_mdatoms *md,
                           matrix box,rvec box_size,
                           t_excl bexcl[],atom_id *aaj,
@@ -1564,7 +1564,7 @@ static inline void get_dx_dd(int Nx,real gridx,real rc2,int xgi,real x,
  *
  ****************************************************/
 
-static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
+static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                          int ngid,t_mdatoms *md,int icg,
                          int jgid,int nlr,
                          atom_id lr[],t_excl bexcl[],int shift,
@@ -1607,7 +1607,7 @@ static void do_longrange(t_commrec *cr,t_topology *top,t_forcerec *fr,
 
 static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        matrix box,rvec box_size,int ngid,
-                       t_topology *top,
+                       gmx_localtop_t *top,
                        t_grid *grid,rvec x[],
                        t_excl bexcl[],bool *bExcludeAlleg,
                        t_nrnb *nrnb,t_mdatoms *md,
@@ -2230,7 +2230,7 @@ void init_ns(FILE *fplog,const t_commrec *cr,
 
 int search_neighbours(FILE *log,t_forcerec *fr,
                       rvec x[],matrix box,
-                      t_topology *top,
+                      gmx_localtop_t *top,
                       gmx_groups_t *groups,
                       t_commrec *cr,
                       t_nrnb *nrnb,t_mdatoms *md,

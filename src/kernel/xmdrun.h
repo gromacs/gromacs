@@ -139,11 +139,6 @@ extern void do_coupling(FILE *log,int nfile,t_filenm fnm[],
 			tensor pres,rvec mu_tot,
 			rvec x[],rvec f[],bool bDoIt);
 
-/* IONIZATION STUFF. */
-extern void ionize(FILE *log,t_mdatoms *md,char **atomname[],
-		   real t,t_inputrec *ir,rvec x[],rvec v[],
-		   int start,int end,matrix box,t_commrec *cr);
-
 /* CODE TO ADD SPECIAL 2-DIMENSIONAL LENNARD-JONES CORRECTION TO FORCES AND ENERGY */
 extern void do_glas(FILE *log,int start,int homenr,rvec x[],rvec f[],
 		    t_forcerec *fr,t_mdatoms *md,int atnr,t_inputrec *ir,
@@ -153,7 +148,7 @@ extern real mol_dipole(int k0,int k1,rvec x[],real q[]);
 /* Calculate total dipole for group of atoms */
 
 extern real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,
-			 t_topology *top,t_mdatoms *md,int gnx,atom_id grpindex[]);
+			 t_block *mols,t_mdatoms *md,int gnx,atom_id grpindex[]);
 /* Compute average dipole */
 
 /********************************************************************/

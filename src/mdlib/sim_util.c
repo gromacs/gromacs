@@ -326,7 +326,7 @@ static void print_large_forces(FILE *fp,t_mdatoms *md,t_commrec *cr,
 void do_force(FILE *fplog,t_commrec *cr,
 	      t_inputrec *inputrec,
 	      int step,t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-	      t_topology *top,
+	      gmx_localtop_t *top,
 	      gmx_groups_t *groups,
 	      matrix box,rvec x[],history_t *hist,
 	      rvec f[],rvec buf[],
@@ -518,7 +518,7 @@ void do_force(FILE *fplog,t_commrec *cr,
       if (DOMAINDECOMP(cr))
 	clear_rvecs(cr->dd->nat_tot,f);
       else
-	clear_rvecs(top->atoms.nr,f);
+	clear_rvecs(mdatoms->nr,f);
       clear_rvecs(SHIFTS,fr->fshift);
     }
     clear_rvec(fr->vir_diag_posres);
@@ -723,7 +723,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 		   t_inputrec *inputrec,t_mdatoms *md,
 		   t_state *state,rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-		   t_forcerec *fr,t_topology *top)
+		   t_forcerec *fr,t_idef *idef)
 {
   int    i,m,start,end,step;
   double mass,tmass,vcm[4];
@@ -740,7 +740,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
   if (fplog)
     fprintf(fplog,"\nConstraining the starting coordinates (step %d)\n",step);
   dvdlambda = 0;
-  constrain(NULL,TRUE,FALSE,constr,top,
+  constrain(NULL,TRUE,FALSE,constr,idef,
 	    inputrec,cr,step,0,md,
 	    state->x,state->x,NULL,
 	    state->box,state->lambda,&dvdlambda,
@@ -763,7 +763,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
       fprintf(fplog,"\nConstraining the coordinates at t0-dt (step %d)\n",
 	      step);
     dvdlambda = 0;
-    constrain(NULL,TRUE,FALSE,constr,top,
+    constrain(NULL,TRUE,FALSE,constr,idef,
 	      inputrec,cr,step,-1,md,
 	      state->x,buf,NULL,
 	      state->box,state->lambda,&dvdlambda,

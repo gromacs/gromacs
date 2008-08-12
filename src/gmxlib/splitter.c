@@ -742,10 +742,10 @@ static t_blocka block2blocka(t_block *block)
   return blocka;
 }
 
-void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
-	       int *multinr_cgs,int **multinr_nre)
+void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
+	       real *capacity,int *multinr_cgs,int **multinr_nre)
 {
-  int     i,j,k,mj,atom,maxatom,sstart,send,bstart,nodeid;
+  int     natoms,i,j,k,mj,atom,maxatom,sstart,send,bstart,nodeid;
   int     *multinr_shk;
   t_blocka sblock,shakeblock;
   int     *homeind;
@@ -757,6 +757,8 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
   if (nnodes <= 1)
     return;
   
+  natoms = mols->index[mols->nr];
+
   if (fp)
     fprintf(fp,"splitting topology...\n");
   
@@ -764,9 +766,9 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
 #ifndef MOL_BORDER
   /* Make a special shake block that includes settles */
   init_block(&sblock);
-  gen_sblocks(fp,0,top->atoms.nr,&top->idef,&sblock,TRUE);
+  gen_sblocks(fp,0,natoms,&top->idef,&sblock,TRUE);
 #else
-  sblock = block2blocka(&top->mols);
+  sblock = block2blocka(mols);
 #endif  
 
   snew(multinr_shk,nnodes);
@@ -774,8 +776,8 @@ void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
   
   /* Now transform atom numbers to real inverted shake blocks */
   init_blocka(&shakeblock);
-  gen_sblocks(fp,0,top->atoms.nr,&top->idef,&shakeblock,TRUE);
-  sblinv = make_invblocka(&shakeblock,top->atoms.nr+1);
+  gen_sblocks(fp,0,natoms,&top->idef,&shakeblock,TRUE);
+  sblinv = make_invblocka(&shakeblock,natoms+1);
   done_blocka(&shakeblock);
   for(j=0; (j<nnodes); j++) {
     atom = multinr_shk[j];

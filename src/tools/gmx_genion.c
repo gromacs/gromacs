@@ -58,6 +58,7 @@
 #include "main.h"
 #include "random.h"
 #include "index.h"
+#include "mtop_util.h"
 
 static void insert_ion(int nsa,int *nwater,
 		       bool bSet[],int repl[],atom_id index[],
@@ -337,7 +338,7 @@ int gmx_genion(int argc, char *argv[])
       "This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated." }
   };
   gmx_mtop_t  *mtop;
-  t_topology  *top;
+  gmx_localtop_t *top;
   t_inputrec  inputrec;
   t_commrec   *cr;
   t_mdatoms   *mdatoms;
@@ -347,6 +348,7 @@ int gmx_genion(int argc, char *argv[])
   rvec        *x,*v;
   real        *pot,vol,qtot;
   matrix      box;
+  t_atoms     atoms;
   t_pbc       pbc;
   int         *repl;
   atom_id     *index;
@@ -383,9 +385,12 @@ int gmx_genion(int argc, char *argv[])
   fplog = init_calcpot(ftp2fn(efLOG,NFILE,fnm),ftp2fn(efTPX,NFILE,fnm),
 		       opt2fn("-table",NFILE,fnm),mtop,top,&inputrec,&cr,
 		       &graph,&mdatoms,&fr,&enerd,&pot,box,&x);
+
+  atoms = gmx_mtop_global_atoms(mtop);
+
   qtot = 0;
-  for(i=0; (i<top->atoms.nr); i++)
-    qtot += top->atoms.atom[i].q;
+  for(i=0; (i<atoms.nr); i++)
+    qtot += atoms.atom[i].q;
   iqtot = gmx_nint(qtot);
     
   if ((conc > 0) || bNeutral) {
@@ -423,7 +428,7 @@ int gmx_genion(int argc, char *argv[])
     printf("Will try to add %d %s ions and %d %s ions.\n",
 	   p_num,p_name,n_num,n_name);
     printf("Select a continuous group of solvent molecules\n");
-    get_index(&top->atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
+    get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,&nwa,&index,&grpname);
     for(i=1; i<nwa; i++)
       if (index[i] != index[i-1]+1)
 	gmx_fatal(FARGS,"The solvent group %s is not continuous: "
@@ -431,8 +436,8 @@ int gmx_genion(int argc, char *argv[])
 		  grpname,i,index[i-1]+1,i+1,index[i]+1);
     nsa = 1;
     while ((nsa<nwa) &&
-	   (top->atoms.atom[index[nsa]].resnr ==
-	    top->atoms.atom[index[nsa-1]].resnr))
+	   (atoms.atom[index[nsa]].resnr ==
+	    atoms.atom[index[nsa-1]].resnr))
       nsa++;
     if (nwa % nsa)
       gmx_fatal(FARGS,"Your solvent group size (%d) is not a multiple of %d",
@@ -449,8 +454,8 @@ int gmx_genion(int argc, char *argv[])
   snew(bSet,nw);
   snew(repl,nw);
   
-  snew(v,top->atoms.nr);
-  snew(top->atoms.pdbinfo,top->atoms.nr);
+  snew(v,atoms.nr);
+  snew(atoms.pdbinfo,atoms.nr);
 
   set_pbc(&pbc,inputrec.ePBC,box);
 
@@ -465,10 +470,10 @@ int gmx_genion(int argc, char *argv[])
 	  sprintf(buf,"%d_%s",p_num+n_num,ftp2fn(efPDB,NFILE,fnm));
 	else
 	  strcpy(buf,ftp2fn(efPDB,NFILE,fnm));
-	for(i=0; (i<top->atoms.nr); i++)
-	    top->atoms.pdbinfo[i].bfac = pot[i]*scale;
+	for(i=0; (i<atoms.nr); i++)
+	    atoms.pdbinfo[i].bfac = pot[i]*scale;
 	write_sto_conf(buf,"Potential calculated by genion",
-		       &top->atoms,x,v,inputrec.ePBC,box);
+		       &atoms,x,v,inputrec.ePBC,box);
 	bPDB = FALSE;
       }
     }
@@ -486,11 +491,11 @@ int gmx_genion(int argc, char *argv[])
   fprintf(stderr,"\n");
 
   if (nw)
-    sort_ions(nsa,nw,repl,index,&top->atoms,x,p_name,n_name);
+    sort_ions(nsa,nw,repl,index,&atoms,x,p_name,n_name);
   
-  sfree(top->atoms.pdbinfo);
-  top->atoms.pdbinfo = NULL;
-  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*top->name,&top->atoms,x,NULL,
+  sfree(atoms.pdbinfo);
+  atoms.pdbinfo = NULL;
+  write_sto_conf(ftp2fn(efSTO,NFILE,fnm),*mtop->name,&atoms,x,NULL,
 		 inputrec.ePBC,box);
   
   thanx(stderr);

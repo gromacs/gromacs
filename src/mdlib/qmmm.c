@@ -694,7 +694,7 @@ void update_QMMMrec(t_commrec *cr,
 		    rvec x[],
 		    t_mdatoms *md,
 		    matrix box,
-		    t_topology *top)
+		    gmx_localtop_t *top)
 {
   /* updates the coordinates of both QM atoms and MM atoms and stores
    * them in the QMMMrec.  

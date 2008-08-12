@@ -192,7 +192,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
 {
   static bool bFirst = TRUE;
   static gmx_mtop_t *mtop;
-  static t_topology *top;
+  static gmx_localtop_t *top;
   static t_mdatoms  *md;
   static t_block    *cgs;
   static t_inputrec *ir;
@@ -253,7 +253,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     snew(nFreeze,2);
     snew(md,1);
     md = init_mdatoms(fp,mtop,FALSE);
-    atoms2md(mtop,ir,0,NULL,0,top->atoms.nr,md);
+    atoms2md(mtop,ir,0,NULL,0,mtop->natoms,md);
     sfree(nFreeze);
 
     /* forcerec structure */

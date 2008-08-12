@@ -439,11 +439,14 @@ static void init_dr_res(t_dr_result *dr,int ndr)
 }
 
 static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
-			      int nsteps,t_topology *top,
+			      int nsteps,t_idef *idef,gmx_mtop_t *mtop,
 			      real max_dr,int nlevels,bool bThird)
 {
   FILE     *fp;
-  int      iii,i,j,nra,nratoms,tp,ri,rj,n_res,index,nlabel,label;
+  int      *resnr;
+  int      n_res,a_offset,mb,mol,a;
+  t_atoms  *atoms;
+  int      iii,i,j,nra,nratoms,tp,ri,rj,index,nlabel,label;
   atom_id  ai,aj,*ptr;
   real     **matrix,*t_res,hi,*w_dr,rav,rviol;
   t_rgb    rlo = { 1, 1, 1 };
@@ -451,7 +454,20 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
   if (fn == NULL)
     return;
 
-  n_res = top->atoms.nres;
+  snew(resnr,mtop->natoms);
+  n_res = 0;
+  a_offset = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    atoms = &mtop->moltype[mtop->molblock[mb].type].atoms;
+    for(mol=0; mol<mtop->molblock[mb].nmol; mol++) {
+      for(a=0; a<atoms->nr; a++) {
+	resnr[a_offset+a] = n_res + atoms->atom[a].resnr;
+      }
+      n_res    += atoms->nres;
+      a_offset += atoms->nr;
+    }
+  }
+
   snew(t_res,n_res);
   for(i=0; (i<n_res); i++)
     t_res[i] = i+1;
@@ -459,15 +475,15 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
   for(i=0; (i<n_res); i++) 
     snew(matrix[i],n_res);
   nratoms = interaction_function[F_DISRES].nratoms;
-  nra = (top->idef.il[F_DISRES].nr/(nratoms+1));
+  nra = (idef->il[F_DISRES].nr/(nratoms+1));
   snew(ptr,nra+1);
   index   = 0;
   nlabel  = 0;
   ptr[0]  = 0;
   snew(w_dr,ndr);
-  for(i=0; (i<top->idef.il[F_DISRES].nr); i+=nratoms+1) {
-    tp       = top->idef.il[F_DISRES].iatoms[i];
-    label    = top->idef.iparams[tp].disres.label;
+  for(i=0; (i<idef->il[F_DISRES].nr); i+=nratoms+1) {
+    tp       = idef->il[F_DISRES].iatoms[i];
+    label    = idef->iparams[tp].disres.label;
     
     if (label != index) {
       /* Set index pointer */
@@ -489,25 +505,27 @@ static void dump_disre_matrix(char *fn,t_dr_result *dr,int ndr,
   hi = 0;
   for(i=0; (i<ndr); i++) {
     for(j=ptr[i]; (j<ptr[i+1]); j+=nratoms+1) {
-      tp  = top->idef.il[F_DISRES].iatoms[j];
-      ai  = top->idef.il[F_DISRES].iatoms[j+1];
-      aj  = top->idef.il[F_DISRES].iatoms[j+2];
+      tp  = idef->il[F_DISRES].iatoms[j];
+      ai  = idef->il[F_DISRES].iatoms[j+1];
+      aj  = idef->il[F_DISRES].iatoms[j+2];
     
-      ri = top->atoms.atom[ai].resnr;
-      rj = top->atoms.atom[aj].resnr;
+      ri = resnr[ai];
+      rj = resnr[aj];
       if (bThird)
 	rav = pow(dr->aver_3[i]/nsteps,-1.0/3.0);
       else
 	rav = dr->aver1[i]/nsteps;
       if (debug)
 	fprintf(debug,"DR %d, atoms %d, %d, distance %g\n",i,ai,aj,rav);
-      rviol = max(0,rav-top->idef.iparams[tp].disres.up1);
+      rviol = max(0,rav-idef->iparams[tp].disres.up1);
       matrix[ri][rj] += w_dr[i]*rviol;
       matrix[rj][ri] += w_dr[i]*rviol;
       hi = max(hi,matrix[ri][rj]);
       hi = max(hi,matrix[rj][ri]);
     }
   }
+
+  sfree(resnr);
 
   if (max_dr > 0) {
     if (hi > max_dr)
@@ -562,7 +580,7 @@ int gmx_disre(int argc,char *argv[])
   t_inputrec  ir;
   gmx_mtop_t  mtop;
   rvec        *xtop;
-  t_topology  *top;
+  gmx_localtop_t *top;
   t_atoms     *atoms=NULL;
   t_forcerec  *fr;
   t_fcdata    fcd;
@@ -642,7 +660,7 @@ int gmx_disre(int argc,char *argv[])
     if (ir.bPeriodicMols)
       pbc_null = &pbc;
     else
-      g = mk_graph(fplog,&top->idef,0,top->atoms.nr,FALSE,FALSE);
+      g = mk_graph(fplog,&top->idef,0,mtop.natoms,FALSE,FALSE);
   }
   
   if (ftp2bSet(efNDX,NFILE,fnm)) {
@@ -755,7 +773,7 @@ int gmx_disre(int argc,char *argv[])
 		     atoms,xav,NULL,ir.ePBC,box);
     }
     dump_disre_matrix(opt2fn_null("-x",NFILE,fnm),&dr,fcd.disres.nres,
-		      j,top,max_dr,nlevels,bThird);
+		      j,&top->idef,&mtop,max_dr,nlevels,bThird);
     fclose(out);
     fclose(aver);
     fclose(numv);

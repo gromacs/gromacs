@@ -470,7 +470,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Booleans (disguised as a reals) to checkpoint and terminate mdrun */  
   real       chkpt=0,terminate=0,terminate_now=0;
 
-  t_topology *top;
+  gmx_localtop_t *top;
   t_state    *state=NULL;
   rvec       *f_global=NULL;
   gmx_enerdata_t *enerd;
@@ -488,7 +488,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
   real        temp0,mu_aver=0,dvdl;
   int         a0,a1,gnx,ii;
-  atom_id     *grpindex;
+  atom_id     *grpindex=NULL;
   char        *grpname;
   t_coupl_rec *tcr=NULL;
   rvec        *xcopy=NULL,*vcopy=NULL;
@@ -598,7 +598,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     if (ir->ePBC != epbcNONE && !ir->bPeriodicMols) {
-      graph = mk_graph(fplog,&(top->idef),0,top->atoms.nr,FALSE,FALSE);
+      graph = mk_graph(fplog,&(top->idef),0,top_global->natoms,FALSE,FALSE);
     }
 
     if (shellfc) {
@@ -628,15 +628,19 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bHaveConstr = TRUE;
   }
 
-  gnx = top->mols.nr;
-  snew(grpindex,gnx);
-  for(i=0; (i<gnx); i++)
-    grpindex[i] = i;
-
   /* Check whether we have to GCT stuff */
   bTCR = ftp2bSet(efGCT,nfile,fnm);
-  if (MASTER(cr) && bTCR)
-    fprintf(stderr,"Will do General Coupling Theory!\n");
+  if (bTCR) {
+    if (MASTER(cr)) {
+      fprintf(stderr,"Will do General Coupling Theory!\n");
+    }
+    gnx = top_global->mols.nr;
+    snew(grpindex,gnx);
+    for(i=0; (i<gnx); i++) {
+      grpindex[i] = i;
+    }
+  }
+  
 
   if (repl_ex_nst > 0 && MASTER(cr))
     repl_ex = init_replica_exchange(fplog,cr->ms,state_global,ir,
@@ -644,7 +648,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   if (bHaveConstr && !ir->bContinuation && !bRerunMD) {
     do_shakefirst(fplog,constr,ir,mdatoms,state,buf,f,
-		  graph,cr,nrnb,fr,top);
+		  graph,cr,nrnb,fr,&top->idef);
 
     if (vsite) {
       construct_vsites(fplog,vsite,state->x,nrnb,ir->delta_t,NULL,
@@ -700,14 +704,14 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bRerunMD) {
       fprintf(stderr,"starting md rerun '%s', reading coordinates from"
 	      " input trajectory '%s'\n\n",
-	      *(top->name),opt2fn("-rerun",nfile,fnm));
+	      *(top_global->name),opt2fn("-rerun",nfile,fnm));
       if (bVerbose)
 	fprintf(stderr,"Calculated time to finish depends on nsteps from "
 		"run input file,\nwhich may not correspond to the time "
 		"needed to process input trajectory.\n\n");
     } else {
       fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n",
-	      *(top->name),ir->nsteps,ir->nsteps*ir->delta_t);
+	      *(top_global->name),ir->nsteps,ir->nsteps*ir->delta_t);
     }
     fprintf(fplog,"\n");
   }
@@ -903,9 +907,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     clear_mat(force_vir);
     
     /* Ionize the atoms if necessary */
-    if (bIonize)
-      ionize(fplog,mdatoms,top->atoms.atomname,t,ir,state->x,state->v,
+    if (bIonize) {
+      ionize(fplog,mdatoms,top_global,t,ir,state->x,state->v,
 	     mdatoms->start,mdatoms->start+mdatoms->homenr,state->box,cr);
+    }
       
     /* Update force field in ffscan program */
     if (bFFscan) {
@@ -951,7 +956,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     if (bTCR)
       mu_aver = calc_mu_aver(cr,state->x,mdatoms->chargeA,
-			     mu_tot,top,mdatoms,gnx,grpindex);
+			     mu_tot,&top_global->mols,mdatoms,gnx,grpindex);
     if (bGlas)
       do_glas(fplog,mdatoms->start,mdatoms->homenr,state->x,f,
 	      fr,mdatoms,top->idef.atnr,ir,enerd->term);
@@ -1030,7 +1035,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * we should only do it at step % nstlist = 1 with bGStat=FALSE.
        */
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
-	     top,ekind,shake_vir,scale_tot,
+	     &top->idef,ekind,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,bHaveConstr,
 	     bNEMD,bFirstStep && bStateFromTPX);
       if (fr->bSepDVDL && fplog && do_log) {
@@ -1249,7 +1254,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* The coordinates (x) were unshifted in update */
     if (bFFscan && (shellfc==NULL || bConverged)) {
       if (print_forcefield(fplog,enerd->term,mdatoms->homenr,f,buf,xcopy,
-			   &(top->mols),mdatoms->massT,pres)) {
+			   &(top_global->mols),mdatoms->massT,pres)) {
 	if (gmx_parallel_env)
 	  gmx_finalize(cr);
 	fprintf(stderr,"\n");
@@ -1270,7 +1275,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       do_coupling(fplog,nfile,fnm,tcr,t,step,enerd->term,fr,
 		  ir,MASTER(cr),
 		  mdatoms,&(top->idef),mu_aver,
-		  top->mols.nr,cr,
+		  top_global->mols.nr,cr,
 		  state->box,total_vir,pres,
 		  mu_tot,state->x,f,bConverged);
       debug_gmx();

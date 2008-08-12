@@ -38,8 +38,8 @@ typedef struct gmx_reverse_top {
 } gmx_reverse_top_t;
 
 /* Static pointers only used for an error message */
-static gmx_mtop_t *err_top_global;
-static t_topology *err_top_local;
+static gmx_mtop_t     *err_top_global;
+static gmx_localtop_t *err_top_local;
 
 static int nral_rt(int ftype)
 {
@@ -1089,7 +1089,7 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 		       matrix box,real rc,rvec cellsize_min,ivec npulse,
 		       t_forcerec *fr,gmx_vsite_t *vsite,
-		       gmx_mtop_t *mtop,t_topology *ltop)
+		       gmx_mtop_t *mtop,gmx_localtop_t *ltop)
 {
   bool bUniqueExcl,bRCheckMB,bRCheck2B,bRCheckExcl;
   ivec rcheck;
@@ -1100,7 +1100,6 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
     fprintf(debug,"Making local topology, rc = %g\n",rc);
   }
 
-  ltop->name  = mtop->name;
   dd_make_local_cgs(dd,&ltop->cgs);
 
   bRCheckMB   = FALSE;
@@ -1174,18 +1173,16 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
   if (EEL_EXCL_FORCES(fr->eeltype))
     dd->nbonded_local += nexcl;
   
-  ltop->atoms.atom = NULL;
   ltop->atomtypes  = mtop->atomtypes;
-  ltop->symtab     = mtop->symtab;
 
   /* For an error message only */
   err_top_global = mtop;
   err_top_local  = ltop;
 }
 
-t_topology *dd_init_local_top(gmx_mtop_t *top_global)
+gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global)
 {
-  t_topology *top;
+  gmx_localtop_t *top;
   int i;
   
   snew(top,1);
@@ -1201,9 +1198,6 @@ t_topology *dd_init_local_top(gmx_mtop_t *top_global)
     top->idef.il[i].nalloc = 0;
   }
   top->idef.ilsort   = ilsortUNKNOWN;
-  
-  top->atoms.nr   = top_global->natoms;
-  top->atoms.atom = 0;
 
   return top;
 }

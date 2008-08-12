@@ -400,16 +400,16 @@ static void select_my_idef(FILE *log,t_idef *idef,int **multinr,t_commrec *cr)
     select_my_ilist(log,&idef->il[i],multinr[i],cr);
 }
 
-t_topology *split_system(FILE *log,
-			 gmx_mtop_t *mtop,t_inputrec *inputrec,
-			 t_commrec *cr)
+gmx_localtop_t *split_system(FILE *log,
+			     gmx_mtop_t *mtop,t_inputrec *inputrec,
+			     t_commrec *cr)
 {
   int    i,npp,n,nn;
   real   *capacity;
   double tcap = 0,cap;
   int    *multinr_cgs,**multinr_nre;
   char   *cap_env;
-  t_topology *top;
+  gmx_localtop_t *top;
 
   /* Time to setup the division of charge groups over processors */
   npp = cr->nnodes-cr->npmenodes;
@@ -447,7 +447,7 @@ t_topology *split_system(FILE *log,
     snew(multinr_nre[i],npp);
   
   /* This computes which entities can be placed on processors */
-  split_top(log,npp,top,capacity,multinr_cgs,multinr_nre);
+  split_top(log,npp,top,&mtop->mols,capacity,multinr_cgs,multinr_nre);
   sfree(capacity);
   init_partdec(log,cr,&(top->cgs),multinr_cgs,&(top->idef));
 

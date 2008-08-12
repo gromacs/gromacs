@@ -217,7 +217,7 @@ static void pr_sortblock(FILE *fp,char *title,int nsb,t_sortblock sb[])
 
 bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       struct gmx_constr *constr,
-	       t_topology *top,t_inputrec *ir,
+	       t_idef *idef,t_inputrec *ir,
 	       t_commrec *cr,
 	       int step,int delta_step,
 	       t_mdatoms *md,
@@ -276,7 +276,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
       gmx_fatal(FARGS,"Internal error, SHAKE called for constraining something else than coordinates");
 
     bOK = bshakef(fplog,homenr,md->invmass,constr->nblocks,constr->sblock,
-		  &top->idef,ir,box,x,xprime,nrnb,
+		  idef,ir,box,x,xprime,nrnb,
 		  constr->lagr,lambda,dvdlambda,
 		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
     if (!bOK && constr->maxwarn >= 0 && fplog)
@@ -284,13 +284,13 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	      econstr_names[econtSHAKE],step);
   }
   
-  settle  = &top->idef.il[F_SETTLE];
+  settle  = &idef->il[F_SETTLE];
   if (settle->nr > 0) {
     nsettle = settle->nr/2;
     mO   = md->massT[settle->iatoms[1]];
     mH   = md->massT[settle->iatoms[1]+1];
-    dOH  = top->idef.iparams[settle->iatoms[0]].settle.doh;
-    dHH  = top->idef.iparams[settle->iatoms[0]].settle.dhh;
+    dOH  = idef->iparams[settle->iatoms[0]].settle.doh;
+    dHH  = idef->iparams[settle->iatoms[0]].settle.dhh;
 
     switch (econq) {
     case econqCoord:
@@ -373,7 +373,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
       }
       if (constr->ed && delta_step > 0) {
         /* apply the essential dynamcs constraints here */
-        do_edsam(top,ir,step,md,cr,xprime,v,box,constr->ed);
+        do_edsam(ir,step,md,cr,xprime,v,box,constr->ed);
       }
   }
   
@@ -575,13 +575,16 @@ static t_blocka make_at2con(int start,int natoms,
 }
 
 void set_constraints(struct gmx_constr *constr,
-		     t_topology *top,t_inputrec *ir,
+		     gmx_localtop_t *top,t_inputrec *ir,
 		     t_mdatoms *md,gmx_domdec_t *dd)
 {
+  t_idef *idef;
   int  ncons,nflexcon,a0,a1;
   t_blocka at2con;
 
-  ncons = top->idef.il[F_CONSTR].nr/3;
+  idef = &top->idef;
+
+  ncons = idef->il[F_CONSTR].nr/3;
 
   /* With DD we might also need to call LINCS with ncons=0 for communicating
    * coordinates to other nodes that do have constraints.
@@ -599,10 +602,10 @@ void set_constraints(struct gmx_constr *constr,
 	a0 = md->start;
 	a1 = md->start + md->homenr;
       }
-      at2con = make_at2con(a0,a1,&top->idef.il[F_CONSTR],top->idef.iparams,
+      at2con = make_at2con(a0,a1,&idef->il[F_CONSTR],idef->iparams,
 			   EI_DYNAMICS(ir->eI),&nflexcon);
 
-      set_lincs(&top->idef,md->start,md->homenr,&at2con,
+      set_lincs(idef,md->start,md->homenr,&at2con,
 		EI_DYNAMICS(ir->eI),dd,constr->lincsd);
 
       /* The local atom to constraints list is no longer needed */
@@ -612,9 +615,9 @@ void set_constraints(struct gmx_constr *constr,
     } 
     if (ir->eConstrAlg == econtSHAKE) {
       if (dd) {
-	make_shake_sblock_dd(constr,&top->idef.il[F_CONSTR],&top->cgs,dd);
+	make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
       } else {
-	make_shake_sblock_pd(constr,&top->idef,md);
+	make_shake_sblock_pd(constr,idef,md);
       }
       if (ncons > constr->lagr_nalloc) {
 	constr->lagr_nalloc = over_alloc_dd(ncons);
