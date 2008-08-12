@@ -127,10 +127,12 @@ static void chomp(char *buf)
 static int *select_by_name(int nre,char *nm[],int *nset)
 {
   bool *bE;
-  int  n,k,kk,j,i,nsame,nind,nlen,nss;
+  int  n,k,kk,j,i,nmatch,nind,nss;
   int  *set;
-  bool bEOF,bVerbose = TRUE;
+  bool bEOF,bVerbose = TRUE,bLong=FALSE;
   char *ptr,buf[STRLEN];
+  char *fm4="%3d  %-14s";
+  char *fm2="%3d  %-34s";
   char **newnm=NULL;
   
   if ((getenv("VERBOSE")) != NULL)
@@ -138,31 +140,50 @@ static int *select_by_name(int nre,char *nm[],int *nset)
   
   fprintf(stderr,"\n");
   fprintf(stderr,"Select the terms you want from the following list by\n");
-  fprintf(stderr,"selecting either the name or the number or a combination.\n");
+  fprintf(stderr,"selecting either (part of) the name or the number or a combination.\n");
   fprintf(stderr,"End your selection with an empty line or a zero.\n");
-  fprintf(stderr,"---------------------------------------------------------\n");
+  fprintf(stderr,"-------------------------------------------------------------------\n");
   
-  nlen = 0;
   snew(newnm,nre);
-  for(i=0; (i<nre); i++) {
-    newnm[i] = strdup(nm[i]);
-    nlen = max(nlen,strlen(newnm[i]));
-  }
-  kk = max(1,80/(nlen+4));
-  sprintf(buf,"%%-3d %%-%ds ",nlen);
-  for(k=0; (k<nre); ) {
-    for(j=0; (j<kk) && (k<nre); j++,k++) {
-      /* Insert dashes in all the names */
-      while ((ptr = strchr(newnm[k],' ')) != NULL)
-	*ptr='-';
-      if ( bVerbose ) 
-	fprintf(stderr,buf,k+1,newnm[k]);
+  j = 0;
+  for(k=0; k<nre; k++) {
+    newnm[k] = strdup(nm[k]);
+    /* Insert dashes in all the names */
+    while ((ptr = strchr(newnm[k],' ')) != NULL) {
+      *ptr = '-';
     }
-    if ( bVerbose ) 
-      fprintf(stderr,"\n");
+    if ( bVerbose ) {
+      if (j == 0) {
+	if (k > 0) {
+	  fprintf(stderr,"\n");
+	}
+	bLong = FALSE;
+	for(kk=k; kk<k+4; kk++) {
+	  if (kk < nre && strlen(nm[kk]) > 14) {
+	    bLong = TRUE;
+	  }
+	}
+      } else {
+	fprintf(stderr," ");
+      }
+      if (!bLong) {
+	fprintf(stderr,fm4,k+1,newnm[k]);
+	j++;
+	if (j == 4) {
+	  j = 0;
+	}
+      } else {
+	fprintf(stderr,fm2,k+1,newnm[k]);
+	j++;
+	if (j == 2) {
+	  j = 0;
+	}
+      }
+    }
   }
-  if ( bVerbose ) 
-    fprintf(stderr,"\n");
+  if ( bVerbose ) {
+    fprintf(stderr,"\n\n");
+  }
   
   snew(bE,nre);
   
@@ -184,32 +205,43 @@ static int *select_by_name(int nre,char *nm[],int *nset)
 	  nss   = sscanf(ptr,"%d",&nind);
 	  if (nss == 1) {
 	    /* Zero means end of input */
-	    if (nind == 0)
+	    if (nind == 0) {
 	      bEOF = TRUE;
-	    else if ((1<=nind) && (nind<=nre))
+	    } else if ((1<=nind) && (nind<=nre)) {
 	      bE[nind-1] = TRUE;
+	    } else {
+	      fprintf(stderr,"number %d is out of range\n",nind);
+	    }
 	  }
 	  else {
 	    /* Now try to read a string */
-	    nind  = -1;
-	    nsame = 0;
-	    
-	    for(n=0; (n<nre); n++) {
-	      k = strcount(newnm[n],ptr);
-	      if (k > nsame) {
-		nind  = n;
-		nsame = k;
+	    i = strlen(ptr);
+	    nmatch = 0;
+	    for(nind=0; nind<nre; nind++) {
+	      if (strcasecmp(newnm[nind],ptr) == 0) {
+		bE[nind] = TRUE;
+		nmatch++;
 	      }
 	    }
-	    if (nsame > 0)
-	      bE[nind] = TRUE;
-	    else
-	      fprintf(stderr,"I don't understand %s\n",ptr);
+	    if (nmatch == 0) {
+	      i = strlen(ptr);
+	      nmatch = 0;
+	      for(nind=0; nind<nre; nind++) {
+		if (strncasecmp(newnm[nind],ptr,i) == 0) {
+		  bE[nind] = TRUE;
+		  nmatch++;
+		}
+	      }
+	      if (nmatch == 0) {
+		fprintf(stderr,"String '%s' does not match anything\n",ptr);
+	      }
+	    }
 	  }
 	}
 	/* Look for the first space, and remove spaces from there */
-	if ((ptr = strchr(ptr,' ')) != NULL)
+	if ((ptr = strchr(ptr,' ')) != NULL) {
 	  trim(ptr);
+	}
       } while (!bEOF && (ptr && (strlen(ptr) > 0)));
     }
   }
