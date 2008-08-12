@@ -111,7 +111,7 @@ extern void cshake(atom_id iatom[],int ncon,int *nnit,int maxnit,
 
 extern bool constrain(FILE *log,bool bLog,bool bEner,
 		      gmx_constr_t constr,
-		      t_topology *top,
+		      t_idef *idef,
 		      t_inputrec *ir,
 		      t_commrec *cr,
 		      int step,int delta_step,
@@ -153,7 +153,7 @@ extern gmx_constr_t init_constraints(FILE *log,
 /* Initialize constraints stuff */
 
 extern void set_constraints(gmx_constr_t constr,
-			    t_topology *top,
+			    gmx_localtop_t *top,
 			    t_inputrec *ir,
 			    t_mdatoms *md,
 			    gmx_domdec_t *dd);

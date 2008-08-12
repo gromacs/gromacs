@@ -96,7 +96,7 @@ extern gmx_vsite_t *init_vsite(gmx_mtop_t *mtop,t_commrec *cr);
  * returns NULL when there are no virtual sites.
  */
 
-extern void set_vsite_top(gmx_vsite_t *vsite,t_topology *top,t_mdatoms *md,
+extern void set_vsite_top(gmx_vsite_t *vsite,gmx_localtop_t *top,t_mdatoms *md,
 			  t_commrec *cr);
 /* Set some vsite data for runs without domain decomposition.
  * Should be called once after init_vsite, before calling other routines.

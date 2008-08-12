@@ -114,7 +114,7 @@ extern void dd_partition_system(FILE            *fplog,
 				rvec            **f,
 				rvec            **buf,
 				t_mdatoms       *mdatoms,
-				t_topology      *top_local,
+				gmx_localtop_t  *top_local,
 				t_forcerec      *fr,
 				gmx_vsite_t     *vsite,
 				gmx_shellfc_t   shellfc,
@@ -177,9 +177,9 @@ extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 			      matrix box,real rc,rvec cellsize_min,ivec npulse,
 			      t_forcerec *fr,gmx_vsite_t *vsite,
-			      gmx_mtop_t *top,t_topology *ltop);
+			      gmx_mtop_t *top,gmx_localtop_t *ltop);
 
-extern t_topology *dd_init_local_top(gmx_mtop_t *top_global);
+extern gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global);
 
 extern void dd_init_local_state(gmx_domdec_t *dd,
 				t_state *state_global,t_state *local_state);

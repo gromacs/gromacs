@@ -34,7 +34,7 @@ extern void update_QMMMrec(t_commrec *cr,
 			   rvec x[],
 			   t_mdatoms *md,
 			   matrix box,
-			   t_topology *top);
+			   gmx_localtop_t *top);
 
 /* update_QMMMrec fills the MM stuff in QMMMrec. The MM atoms are
  * taken froom the neighbourlists of the QM atoms. In a QMMM run this

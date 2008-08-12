@@ -179,7 +179,7 @@ gmx_mtop_global_atoms(gmx_mtop_t *mtop);
 /* Generate a 'local' topology for the whole system.
  * When ir!=NULL the free energy interactions will be sorted to the end.
  */
-extern t_topology *
+extern gmx_localtop_t *
 gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir);
 
 /* Converts a gmx_mtop_t struct to t_topology.

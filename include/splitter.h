@@ -37,8 +37,8 @@
 #ifndef _splitter_h
 #define _splitter_h
 
-extern void split_top(FILE *fp,int nnodes,t_topology *top,real *capacity,
-		      int *mulitnr_cgs,int **multinr_nre);
+extern void split_top(FILE *fp,int nnodes,gmx_localtop_t *top,t_block *mols,
+		      real *capacity,int *mulitnr_cgs,int **multinr_nre);
 /* Split the topology (blocks and forces, based on charge groups 
  * and shake blocks.
  * The capacity is releated to the capacity of each node. If all numbers are 
@@ -53,8 +53,5 @@ extern void gen_sblocks(FILE *fp,int at_start,int at_end,
 /* Generate shake blocks from the constraint list. Set bSettle to yes for shake
  * blocks including settles. You normally do not want this.
  */
- 
-extern void reset_multinr(t_topology *top);
-/* Set the multinr to the correct value */
 
 #endif
