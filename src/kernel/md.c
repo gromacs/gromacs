@@ -62,6 +62,7 @@
 #include "physics.h"
 #include "names.h"
 #include "xmdrun.h"
+#include "ionize.h"
 #include "disre.h"
 #include "orires.h"
 #include "dihre.h"
@@ -461,7 +462,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int        i,m,status;
   rvec       mu_tot;
   t_vcm      *vcm;
-  int        nabnsb,ns_step=0,nns=0;
+  int        nabnsb=0,ns_step=0,nns=0;
   double     ns_s1=0,ns_s2=0,ns_ab=0;
   matrix     *scale_tot;
   t_trxframe rerun_fr;
@@ -487,7 +488,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bool        bHaveConstr=FALSE,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
   real        temp0,mu_aver=0,dvdl;
-  int         a0,a1,gnx,ii;
+  int         a0,a1,gnx=0,ii;
   atom_id     *grpindex=NULL;
   char        *grpname;
   t_coupl_rec *tcr=NULL;
@@ -716,10 +717,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(fplog,"\n");
   }
 
-  if (ir->nstlist == -1)
+  if (ir->nstlist == -1) {
     snew(scale_tot,1);
-  else
+  } else {
     scale_tot = NULL;
+  }
 
   /* Write start time */
   start_t=print_date_and_time(fplog,cr->nodeid,"Started mdrun");
@@ -761,7 +763,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bLastStep = FALSE;
   bSumEkinhOld = FALSE,
   bExchanged = FALSE;
-  nabnsb = 1;
+
   step = ir->init_step;
   step_rel = 0;
 
@@ -847,21 +849,25 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bNS = bFirstStep;
     if (bRerunMD) {
       /* for rerun MD always do Neighbour Searching */
-      if (ir->nstlist != 0)
+      if (ir->nstlist != 0) {
 	bNS = TRUE;
+      }
     } else {
       /* Determine whether or not to do Neighbour Searching */
-      if (bExchanged || (ir->nstlist>0 && (step % ir->nstlist==0))) {
+      if (bExchanged || (ir->nstlist > 0 && (step % ir->nstlist == 0))) {
 	bNS = TRUE;
       } else if (ir->nstlist == -1) {
-	bNS = (nabnsb > 0);
+	bNS = (bFirstStep || nabnsb > 0);
 	if (bNS) {
-	  if (debug)
-	    fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %d steps\n",nabnsb,step-ns_step);
-	  nns++;
-	  ns_s1 += step - ns_step;
-	  ns_s2 += sqr(step - ns_step);
-	  ns_ab += nabnsb;
+	  if (!bFirstStep) {
+	    if (debug) {
+	      fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %d steps\n",nabnsb,step-ns_step);
+	    }
+	    nns++;
+	    ns_s1 += step - ns_step;
+	    ns_s2 += sqr(step - ns_step);
+	    ns_ab += nabnsb;
+	  }
 	  ns_step = step;
 	  /* Initialize the cumulative coordinate scaling matrix */
 	  clear_mat(*scale_tot);
