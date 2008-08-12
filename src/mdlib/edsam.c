@@ -1865,6 +1865,7 @@ static void read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms)
 
     /* Now read a sequence of ED input parameter sets from the edi file */
     curr_edi=edi;
+    last_edi=edi;
     while( read_edi(in, ed, curr_edi, nr_mdatoms, edi_nr) )
     {
         edi_nr++;
