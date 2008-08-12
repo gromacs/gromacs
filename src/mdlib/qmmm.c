@@ -448,6 +448,8 @@ void init_QMMMrec(t_commrec *cr,
   real      c12au,c6au;
   gmx_mtop_atomloop_all_t aloop;
   t_atom    *atom;
+  int       a_offset,mb,mol;
+  gmx_molblock_t *molb;
   gmx_moltype_t *moltype;
 
   c6au  = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,6)); 
@@ -519,28 +521,34 @@ void init_QMMMrec(t_commrec *cr,
        * are part of the current QM layer it needs to be removed from
        * qm_arr[].  */
    
-      gmx_mtop_atomloop_all_moltype(aloop,&moltype,&i_mol);
-      nrvsite2 = moltype->ilist[F_VSITE2].nr;
-      iatoms   = moltype->ilist[F_VSITE2].iatoms;
+      a_offset = 0;
+      for(mb=0; mb<mtop->nmolblock; mb++) {
+	molb = &mtop->molblock[mb];
+	moltype = &mtop->moltype[molb->type];
+	nrvsite2 = moltype->ilist[F_VSITE2].nr;
+	iatoms   = moltype->ilist[F_VSITE2].iatoms;
 
-      for(k=0;k<nrvsite2;k+=4){
-	vsite=iatoms[k+1]; /* the dummy */
-	ai=iatoms[k+2]; /* the atoms that construct */
-	aj=iatoms[k+3]; /* the dummy */
-	if (ggrpnr(groups,egcQMMM,vsite) < groups->grps[egcQMMM].nr-1) {
-	  /* this dummy link atom needs to be removed from the qm_arr
-	   * before making the QMrec of this layer!  
-	   */
-	  for(i=0;i<qm_nr;i++){
-	    if(qm_arr[i]==vsite){
-	      /* drop the element */
-	      for(l=i;l<qm_nr;l++){
-		qm_arr[l]=qm_arr[l+1];
+	for(mol=0; mol<molb->nmol; mol++) {
+	  for(k=0; k<nrvsite2; k+=4) {
+	    vsite = a_offset + iatoms[k+1]; /* the vsite         */
+	    ai    = a_offset + iatoms[k+2]; /* constructing atom */
+	    aj    = a_offset + iatoms[k+3]; /* constructing atom */
+	    if (ggrpnr(groups,egcQMMM,vsite) < groups->grps[egcQMMM].nr-1) {
+	      /* this dummy link atom needs to be removed from the qm_arr
+	       * before making the QMrec of this layer!  
+	       */
+	      for(i=0;i<qm_nr;i++){
+		if(qm_arr[i]==vsite){
+		  /* drop the element */
+		  for(l=i;l<qm_nr;l++){
+		    qm_arr[l]=qm_arr[l+1];
+		  }
+		  qm_nr--;
+		}
 	      }
-	      qm_nr--;
-			
 	    }
 	  }
+	  a_offset += moltype->atoms.nr;
 	}
       }
 
@@ -560,29 +568,40 @@ void init_QMMMrec(t_commrec *cr,
 	}
       }
       /* now we check for frontier QM atoms. These occur in pairs that
-       * construct the dummy
+       * construct the vsite
        */
-      for(k=0;k<nrvsite2;k+=4){
-	vsite=iatoms[k+1]; /* the dummy */
-	ai=iatoms[k+2]; /* the atoms that construct */
-	aj=iatoms[k+3]; /* the dummy */
-	if(ggrpnr(groups,egcQMMM,ai) < (groups->grps[egcQMMM].nr-1) &&
-	   (ggrpnr(groups,egcQMMM,aj) >= (groups->grps[egcQMMM].nr-1))){
-	  /* mark ai as frontier atom */
-	  for(i=0;i<qm_nr;i++){
-	    if( (qm_arr[i]==ai) || (qm_arr[i]==vsite) ){
-	      qr->qm[j]->frontatoms[i]=TRUE;
+      a_offset = 0;
+      for(mb=0; mb<mtop->nmolblock; mb++) {
+	molb = &mtop->molblock[mb];
+	moltype = &mtop->moltype[molb->type];
+	nrvsite2 = moltype->ilist[F_VSITE2].nr;
+	iatoms   = moltype->ilist[F_VSITE2].iatoms;
+
+	for(mol=0; mol<molb->nmol; mol++) {
+	  for(k=0; k<nrvsite2; k+=4){
+	    vsite = a_offset + iatoms[k+1]; /* the vsite         */
+	    ai    = a_offset + iatoms[k+2]; /* constructing atom */
+	    aj    = a_offset + iatoms[k+3]; /* constructing atom */
+	    if(ggrpnr(groups,egcQMMM,ai) < (groups->grps[egcQMMM].nr-1) &&
+	       (ggrpnr(groups,egcQMMM,aj) >= (groups->grps[egcQMMM].nr-1))){
+	      /* mark ai as frontier atom */
+	      for(i=0;i<qm_nr;i++){
+		if( (qm_arr[i]==ai) || (qm_arr[i]==vsite) ){
+		  qr->qm[j]->frontatoms[i]=TRUE;
+		}
+	      }
+	    }
+	    else if(ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
+		    (ggrpnr(groups,egcQMMM,ai) >= (groups->grps[egcQMMM].nr-1))){
+	      /* mark aj as frontier atom */
+	      for(i=0;i<qm_nr;i++){
+		if( (qm_arr[i]==aj) || (qm_arr[i]==vsite)){
+		  qr->qm[j]->frontatoms[i]=TRUE;
+		}
+	      }
 	    }
 	  }
-	}
-	else if(ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
-		(ggrpnr(groups,egcQMMM,ai) >= (groups->grps[egcQMMM].nr-1))){
-	  /* mark aj as frontier atom */
-	  for(i=0;i<qm_nr;i++){
-	    if( (qm_arr[i]==aj) || (qm_arr[i]==vsite)){
-	      qr->qm[j]->frontatoms[i]=TRUE;
-	    }
-	  }
+	  a_offset += moltype->atoms.nr;
 	}
       }
     }
