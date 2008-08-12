@@ -39,9 +39,11 @@
 
 #include "typedefs.h"
 
+
 /* Returns the total number of charge groups in mtop */
 extern int
 ncg_mtop(const gmx_mtop_t *mtop);
+
 
 /* Returns a pointer to the t_atom struct belonging to atnr_global.
  * This can be an expensive operation, so if possible use
@@ -51,21 +53,24 @@ extern void
 gmx_mtop_atomnr_to_atom(const gmx_mtop_t *mtop,int atnr_global,
 			t_atom **atom);
 
-/* Returns a pointer to the molecule type struct
+
+/* Returns a pointer to the molecule interaction array ilist_mol[F_NRE]
  * and the local atom number in the molecule belonging to atnr_global.
  */
 extern void
-gmx_mtop_atomnr_to_moltype(const gmx_mtop_t *mtop,int atnr_global,
-			   gmx_moltype_t **moltype,int *atnr_mol);
+gmx_mtop_atomnr_to_ilist(const gmx_mtop_t *mtop,int atnr_global,
+			 t_ilist **ilist_mol,int *atnr_offset);
+
 
 /* Returns the molecule block index
  * and the molecule number in the block
- * and the local atom number in the molecule
+ * and the atom number offset for the atom indices in moltype
  * belonging to atnr_global.
  */
 extern void
 gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_t *mtop,int atnr_global,
 				int *molb,int *molnr,int *atnr_mol);
+
 
 /* Returns atom name, global resnr and residue name  of atom atnr_global */
 extern void
@@ -146,41 +151,65 @@ gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
 /* Abstract type for ilist loop over all ilists */
 typedef struct gmx_mtop_ilistloop *gmx_mtop_ilistloop_t;
 
-/* Initialize an ilist loop over all molecule types in the system.
- * Only use this when you really need to loop over all atoms,
- * i.e. when you use groups which might differ per molecule,
- * otherwise use gmx_mtop_atomloop_block.
- */
+/* Initialize an ilist loop over all molecule types in the system. */
 extern gmx_mtop_ilistloop_t
 gmx_mtop_ilistloop_init(const gmx_mtop_t *mtop);
 
+
 /* Loop to the next molecule,
  * When not at the end:
- *   returns TRUE and a pointer to the next array ilist[F_NRE],
+ *   returns TRUE and a pointer to the next array ilist_mol[F_NRE],
  *   writes the number of molecules for this ilist in *nmol.
  * When at the end, destroys iloop and returns FALSE.
  */
 extern bool
 gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-			t_ilist **ilist,int *nmol);
+			t_ilist **ilist_mol,int *nmol);
+
+
+/* Abstract type for ilist loop over all ilists of all molecules */
+typedef struct gmx_mtop_ilistloop_all *gmx_mtop_ilistloop_all_t;
+
+/* Initialize an ilist loop over all molecule types in the system.
+ * Only use this when you really need to loop over all molecules,
+ * i.e. when you use groups which might differ per molecule,
+ * otherwise use gmx_mtop_ilistloop.
+ */
+extern gmx_mtop_ilistloop_all_t
+gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop);
+
+/* Loop to the next molecule,
+ * When not at the end:
+ *   returns TRUE and a pointer to the next array ilist_mol[F_NRE],
+ *   writes the atom offset which should be added to iatoms in atnr_offset.
+ * When at the end, destroys iloop and returns FALSE.
+ */
+extern bool
+gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
+			    t_ilist **ilist_mol,int *atnr_offset);
+
 
 /* Returns the total number of interactions in the system of type ftype */
 extern int
 gmx_mtop_ftype_count(const gmx_mtop_t *mtop,int ftype);
 
+
 /* Returns a charge group index for the whole system */
 extern t_block
 gmx_mtop_global_cgs(gmx_mtop_t *mtop);
 
+
 /* Returns a single t_atoms struct for the whole system */ 
 extern t_atoms
 gmx_mtop_global_atoms(gmx_mtop_t *mtop);
+
 
 /* Generate a 'local' topology for the whole system.
  * When ir!=NULL the free energy interactions will be sorted to the end.
  */
 extern gmx_localtop_t *
 gmx_mtop_generate_local_top(gmx_mtop_t *mtop,t_inputrec *ir);
+
 
 /* Converts a gmx_mtop_t struct to t_topology.
  * All memory relating only to mtop will be freed.

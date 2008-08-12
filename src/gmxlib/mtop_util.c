@@ -53,10 +53,10 @@ void gmx_mtop_atomnr_to_atom(const gmx_mtop_t *mtop,int atnr_global,
     *atom = &mtop->moltype[mtop->molblock[mb].type].atoms.atom[atnr_mol];
 }
 
-void gmx_mtop_atomnr_to_moltype(const gmx_mtop_t *mtop,int atnr_global,
-                                gmx_moltype_t **moltype,int *atnr_mol)
+void gmx_mtop_atomnr_to_ilist(const gmx_mtop_t *mtop,int atnr_global,
+                              t_ilist **ilist_mol,int *atnr_offset)
 {
-    int mb,a_start,a_end;
+    int mb,a_start,a_end,atnr_local;
 
     if (atnr_global < 0 || atnr_global >= mtop->natoms)
     {
@@ -74,9 +74,11 @@ void gmx_mtop_atomnr_to_moltype(const gmx_mtop_t *mtop,int atnr_global,
     }
     while (atnr_global >= a_end);
 
-    *moltype = &mtop->moltype[mtop->molblock[mb].type];
+    *ilist_mol = &mtop->moltype[mtop->molblock[mb].type].ilist;
     
-    *atnr_mol = (atnr_global - a_start) % mtop->molblock[mb].natoms_mol;
+    atnr_local = (atnr_global - a_start) % mtop->molblock[mb].natoms_mol;
+
+    *atnr_offset = atnr_global - atnr_local;
 }
 
 void gmx_mtop_atomnr_to_molblock_ind(const gmx_mtop_t *mtop,int atnr_global,
@@ -309,7 +311,7 @@ static void gmx_mtop_ilistloop_destroy(gmx_mtop_ilistloop_t iloop)
 }
 
 bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
-                             t_ilist **ilist,int *nmol)
+                             t_ilist **ilist_mol,int *nmol)
 {
     if (iloop == NULL)
     {
@@ -323,10 +325,72 @@ bool gmx_mtop_ilistloop_next(gmx_mtop_ilistloop_t iloop,
         return FALSE;
     }
 
-    *ilist =
+    *ilist_mol =
         iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
 
     *nmol = iloop->mtop->molblock[iloop->mblock].nmol;
+
+    return TRUE;
+}
+typedef struct gmx_mtop_ilistloop_all
+{
+    const gmx_mtop_t *mtop;
+    int           mblock;
+    int           mol;
+    int           a_offset;
+} t_gmx_mtop_ilist_all;
+
+gmx_mtop_ilistloop_all_t
+gmx_mtop_ilistloop_all_init(const gmx_mtop_t *mtop)
+{
+    struct gmx_mtop_ilistloop_all *iloop;
+
+    snew(iloop,1);
+
+    iloop->mtop      = mtop;
+    iloop->mblock    = 0;
+    iloop->mol       = -1;
+    iloop->a_offset  = 0;
+
+    return iloop;
+}
+
+static void gmx_mtop_ilistloop_all_destroy(gmx_mtop_ilistloop_all_t iloop)
+{
+    sfree(iloop);
+}
+
+bool gmx_mtop_ilistloop_all_next(gmx_mtop_ilistloop_all_t iloop,
+                                 t_ilist **ilist_mol,int *atnr_offset)
+{
+    gmx_molblock_t *molb;
+
+    if (iloop == NULL)
+    {
+        gmx_incons("gmx_mtop_ilistloop_all_next called without calling gmx_mtop_ilistloop_all_init");
+    }
+    
+    if (iloop->mol >= 0)
+    {
+        iloop->a_offset += iloop->mtop->molblock[iloop->mblock].natoms_mol;
+    }
+
+    iloop->mol++;
+
+    if (iloop->mol >= iloop->mtop->molblock[iloop->mblock].nmol) {
+        iloop->mblock++;
+        iloop->mol = 0;
+        if (iloop->mblock == iloop->mtop->nmolblock)
+        {
+            gmx_mtop_ilistloop_all_destroy(iloop);
+            return FALSE;
+        }
+    }
+    
+    *ilist_mol =
+        iloop->mtop->moltype[iloop->mtop->molblock[iloop->mblock].type].ilist;
+
+    *atnr_offset = iloop->a_offset;
 
     return TRUE;
 }

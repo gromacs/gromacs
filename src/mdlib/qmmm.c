@@ -441,16 +441,16 @@ void init_QMMMrec(t_commrec *cr,
 
   gmx_groups_t *groups;
   atom_id   *qm_arr=NULL,vsite,ai,aj;
-  int       qm_max=0,qm_nr=0,i,j,jmax,k,l,i_mol,nrvsite2=0;
+  int       qm_max=0,qm_nr=0,i,j,jmax,k,l,nrvsite2=0;
   t_QMMMrec *qr;
   t_MMrec   *mm;
   t_iatom   *iatoms;
   real      c12au,c6au;
   gmx_mtop_atomloop_all_t aloop;
   t_atom    *atom;
-  int       a_offset,mb,mol;
-  gmx_molblock_t *molb;
-  gmx_moltype_t *moltype;
+  gmx_mtop_ilistloop_all_t iloop;
+  int       a_offset;
+  t_ilist   *ilist_mol;
 
   c6au  = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,6)); 
   c12au = (HARTREE2KJ*AVOGADRO*pow(BORH2NM,12)); 
@@ -521,34 +521,29 @@ void init_QMMMrec(t_commrec *cr,
        * are part of the current QM layer it needs to be removed from
        * qm_arr[].  */
    
-      a_offset = 0;
-      for(mb=0; mb<mtop->nmolblock; mb++) {
-	molb = &mtop->molblock[mb];
-	moltype = &mtop->moltype[molb->type];
-	nrvsite2 = moltype->ilist[F_VSITE2].nr;
-	iatoms   = moltype->ilist[F_VSITE2].iatoms;
-
-	for(mol=0; mol<molb->nmol; mol++) {
-	  for(k=0; k<nrvsite2; k+=4) {
-	    vsite = a_offset + iatoms[k+1]; /* the vsite         */
-	    ai    = a_offset + iatoms[k+2]; /* constructing atom */
-	    aj    = a_offset + iatoms[k+3]; /* constructing atom */
-	    if (ggrpnr(groups,egcQMMM,vsite) < groups->grps[egcQMMM].nr-1) {
-	      /* this dummy link atom needs to be removed from the qm_arr
-	       * before making the QMrec of this layer!  
-	       */
-	      for(i=0;i<qm_nr;i++){
-		if(qm_arr[i]==vsite){
-		  /* drop the element */
-		  for(l=i;l<qm_nr;l++){
-		    qm_arr[l]=qm_arr[l+1];
-		  }
-		  qm_nr--;
+      iloop = gmx_mtop_ilistloop_all_init(mtop);
+      while (gmx_mtop_ilistloop_all_next(iloop,&ilist_mol,&a_offset)) {
+	nrvsite2 = ilist_mol[F_VSITE2].nr;
+	iatoms   = ilist_mol[F_VSITE2].iatoms;
+	
+	for(k=0; k<nrvsite2; k+=4) {
+	  vsite = a_offset + iatoms[k+1]; /* the vsite         */
+	  ai    = a_offset + iatoms[k+2]; /* constructing atom */
+	  aj    = a_offset + iatoms[k+3]; /* constructing atom */
+	  if (ggrpnr(groups,egcQMMM,vsite) < groups->grps[egcQMMM].nr-1) {
+	    /* this dummy link atom needs to be removed from the qm_arr
+	     * before making the QMrec of this layer!  
+	     */
+	    for(i=0;i<qm_nr;i++){
+	      if(qm_arr[i]==vsite){
+		/* drop the element */
+		for(l=i;l<qm_nr;l++){
+		  qm_arr[l]=qm_arr[l+1];
 		}
+		qm_nr--;
 	      }
 	    }
 	  }
-	  a_offset += moltype->atoms.nr;
 	}
       }
 
@@ -570,38 +565,33 @@ void init_QMMMrec(t_commrec *cr,
       /* now we check for frontier QM atoms. These occur in pairs that
        * construct the vsite
        */
-      a_offset = 0;
-      for(mb=0; mb<mtop->nmolblock; mb++) {
-	molb = &mtop->molblock[mb];
-	moltype = &mtop->moltype[molb->type];
-	nrvsite2 = moltype->ilist[F_VSITE2].nr;
-	iatoms   = moltype->ilist[F_VSITE2].iatoms;
+      iloop = gmx_mtop_ilistloop_all_init(mtop);
+      while (gmx_mtop_ilistloop_all_next(iloop,&ilist_mol,&a_offset)) {
+	nrvsite2 = ilist_mol[F_VSITE2].nr;
+	iatoms   = ilist_mol[F_VSITE2].iatoms;
 
-	for(mol=0; mol<molb->nmol; mol++) {
-	  for(k=0; k<nrvsite2; k+=4){
-	    vsite = a_offset + iatoms[k+1]; /* the vsite         */
-	    ai    = a_offset + iatoms[k+2]; /* constructing atom */
-	    aj    = a_offset + iatoms[k+3]; /* constructing atom */
-	    if(ggrpnr(groups,egcQMMM,ai) < (groups->grps[egcQMMM].nr-1) &&
-	       (ggrpnr(groups,egcQMMM,aj) >= (groups->grps[egcQMMM].nr-1))){
+	for(k=0; k<nrvsite2; k+=4){
+	  vsite = a_offset + iatoms[k+1]; /* the vsite         */
+	  ai    = a_offset + iatoms[k+2]; /* constructing atom */
+	  aj    = a_offset + iatoms[k+3]; /* constructing atom */
+	  if(ggrpnr(groups,egcQMMM,ai) < (groups->grps[egcQMMM].nr-1) &&
+	     (ggrpnr(groups,egcQMMM,aj) >= (groups->grps[egcQMMM].nr-1))){
 	      /* mark ai as frontier atom */
-	      for(i=0;i<qm_nr;i++){
-		if( (qm_arr[i]==ai) || (qm_arr[i]==vsite) ){
-		  qr->qm[j]->frontatoms[i]=TRUE;
-		}
-	      }
-	    }
-	    else if(ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
-		    (ggrpnr(groups,egcQMMM,ai) >= (groups->grps[egcQMMM].nr-1))){
-	      /* mark aj as frontier atom */
-	      for(i=0;i<qm_nr;i++){
-		if( (qm_arr[i]==aj) || (qm_arr[i]==vsite)){
-		  qr->qm[j]->frontatoms[i]=TRUE;
-		}
+	    for(i=0;i<qm_nr;i++){
+	      if( (qm_arr[i]==ai) || (qm_arr[i]==vsite) ){
+		qr->qm[j]->frontatoms[i]=TRUE;
 	      }
 	    }
 	  }
-	  a_offset += moltype->atoms.nr;
+	  else if(ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
+		  (ggrpnr(groups,egcQMMM,ai) >= (groups->grps[egcQMMM].nr-1))){
+	    /* mark aj as frontier atom */
+	    for(i=0;i<qm_nr;i++){
+	      if( (qm_arr[i]==aj) || (qm_arr[i]==vsite)){
+		qr->qm[j]->frontatoms[i]=TRUE;
+	      }
+	    }
+	  }
 	}
       }
     }
@@ -638,14 +628,14 @@ void init_QMMMrec(t_commrec *cr,
     /* find frontier atoms and mark them true in the frontieratoms array.
      */
     for(i=0;i<qm_nr;i++) {
-      gmx_mtop_atomnr_to_moltype(mtop,qm_arr[i],&moltype,&i_mol);
-      nrvsite2 = moltype->ilist[F_VSITE2].nr;
-      iatoms   = moltype->ilist[F_VSITE2].iatoms;
+      gmx_mtop_atomnr_to_ilist(mtop,qm_arr[i],&ilist_mol,&a_offset);
+      nrvsite2 = ilist_mol[F_VSITE2].nr;
+      iatoms   = ilist_mol[F_VSITE2].iatoms;
       
       for(k=0;k<nrvsite2;k+=4){
-	vsite=iatoms[k+1]; /* the dummy */
-	ai=iatoms[k+2];    /* the atoms that construct */
-	aj=iatoms[k+3];    /* the dummy */
+	vsite = a_offset + iatoms[k+1]; /* the vsite         */
+	ai    = a_offset + iatoms[k+2]; /* constructing atom */
+	aj    = a_offset + iatoms[k+3]; /* constructing atom */
 	if(ggrpnr(groups,egcQMMM,ai) < (groups->grps[egcQMMM].nr-1) &&
 	   (ggrpnr(groups,egcQMMM,aj) >= (groups->grps[egcQMMM].nr-1))){
 	/* mark ai as frontier atom */
@@ -653,14 +643,13 @@ void init_QMMMrec(t_commrec *cr,
 	    qr->qm[0]->frontatoms[i]=TRUE;
 	  }
 	}
-	else if(ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
-		(ggrpnr(groups,egcQMMM,ai) >=(groups->grps[egcQMMM].nr-1)))
-	  {
-	    /* mark aj as frontier atom */
-	    if ( (qm_arr[i]==aj) || (qm_arr[i]==vsite) ){
-	      qr->qm[0]->frontatoms[i]=TRUE;
-	    }
+	else if (ggrpnr(groups,egcQMMM,aj) < (groups->grps[egcQMMM].nr-1) &&
+		 (ggrpnr(groups,egcQMMM,ai) >=(groups->grps[egcQMMM].nr-1))) {
+	  /* mark aj as frontier atom */
+	  if ( (qm_arr[i]==aj) || (qm_arr[i]==vsite) ){
+	    qr->qm[0]->frontatoms[i]=TRUE;
 	  }
+	}
       }
     }
       
