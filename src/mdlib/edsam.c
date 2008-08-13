@@ -60,12 +60,6 @@
 #include "mpelogging.h"
 
 
-#define DUMP_FORCES
-#ifdef DUMP_FORCES
-static FILE* logfile = NULL;
-#endif
-
-
 /* We use the same defines as in mvdata.c here */
 #define  block_bc(cr,   d) gmx_bcast(     sizeof(d),     &(d),(cr))
 #define nblock_bc(cr,nr,d) gmx_bcast((nr)*sizeof((d)[0]), (d),(cr))
@@ -744,20 +738,6 @@ static real flood_energy(t_edpar *edi)
     for (i=0; i<edi->flood.vecs.neig; i++)
         summe += edi->flood.vecs.stpsz[i]*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i])*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i]);
     
-#ifdef DUMP_FORCES
-    fprintf(logfile, "REFPROJ: ");
-    for (i=0;i<edi->flood.vecs.neig; i++)
-        fprintf(logfile, "%f ",edi->flood.vecs.refproj[i]);
-    fprintf(logfile, "\n");
-
-    fprintf(logfile, "XPROJ: ");
-    for (i=0;i<edi->flood.vecs.neig; i++)
-        fprintf(logfile, "%f ",edi->flood.vecs.xproj[i]);
-    fprintf(logfile, "\n");
-
-    fprintf(logfile, "SUMME: %f kT : %f alpha2 : %f Efl %f\n ", summe, edi->flood.kT, edi->flood.alpha2, edi->flood.Efl);
-#endif
-
     /* Compute the Gauss function*/
     if (edi->flood.bHarmonic)
         Vfl = -0.5*edi->flood.Efl*summe;  /* minus sign because Efl is negativ, if restrain is on. */
@@ -776,31 +756,19 @@ static void flood_forces(t_edpar *edi)
     
     int i;
     real energy=edi->flood.Vfl;
-    
-    
-#ifdef DUMP_FORCES
-    fprintf(logfile, "Vfl= %f, Efl= %f, xproj= %f, refproj= %f\n",energy, edi->flood.Efl,edi->flood.vecs.xproj[0],edi->flood.vecs.refproj[0]);
-#endif
+
+
     if (edi->flood.bHarmonic)
         for (i=0; i<edi->flood.vecs.neig; i++)
         {
             edi->flood.vecs.fproj[i] = edi->flood.Efl* edi->flood.vecs.stpsz[i]*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i]);
-#ifdef DUMP_FORCES
-            fprintf(logfile, "%f ",edi->flood.vecs.fproj[i]);
-#endif
         }
     else
         for (i=0; i<edi->flood.vecs.neig; i++)
         {
             /* if Efl is zero the forces are zero if not use the formula */
             edi->flood.vecs.fproj[i] = edi->flood.Efl!=0 ? edi->flood.kT/edi->flood.Efl/edi->flood.alpha2*energy*edi->flood.vecs.stpsz[i]*(edi->flood.vecs.xproj[i]-edi->flood.vecs.refproj[i]) : 0;
-#ifdef DUMP_FORCES
-            fprintf(logfile, "force %f ",edi->flood.vecs.fproj[i]);
-#endif
         }
-#ifdef DUMP_FORCES
-    fprintf(logfile,"\n");
-#endif
 }
 
 
@@ -840,20 +808,10 @@ static void flood_blowup(t_edpar *edi, rvec *forces_cart)
             /* Force vector is force * eigenvector compute only atom j */
             svmul(forces_sub[eig],edi->flood.vecs.vec[eig][j],dum);
             /* Add this vector to the cartesian forces */
-            //rvec_inc(forces_cart[edi->sav.anrs_loc[j]],dum);
             rvec_inc(forces_cart[j],dum);
                     
         }
-#ifdef DUMP_FORCES
-        fprintf(logfile,"%d %f %f %f\n",
-                edi->sav.anrs_loc[j], 
-                forces_cart[j][XX],
-                forces_cart[j][YY],
-                forces_cart[j][ZZ]); 
     }
-    fprintf(logfile,"\n--------------------------------\n");
-    fflush(logfile);
-#endif
 }
 
 
@@ -913,8 +871,6 @@ static void do_single_flood(FILE *edo,
     rvec    transvec;       /* translation vector */
     struct t_do_edsam *buf;
 
-
-    fprintf(stderr, "In do_single_flood!\n");
     
     buf=edi->buf->do_edsam;
     
@@ -945,18 +901,9 @@ static void do_single_flood(FILE *edo,
 
     /* Project fitted structure onto supbspace -> store in edi->flood.vecs.xproj */
     project_to_eigvectors(buf->xcoll,&edi->flood.vecs,edi); 
-    
-    fprintf(stderr, "transvec = %f %f %f\n", transvec[XX], transvec[YY], transvec[ZZ]);
-    dump_rotmat(stderr, rotmat);
-    fflush(edo);
-    
-    for (i=0; i<edi->flood.vecs.neig; i++)
-      fprintf(stderr, "Projection %d: %f\n", i, edi->flood.vecs.xproj[i]);
-    
+            
     /* Compute Vfl(x) from flood.xproj */
     edi->flood.Vfl = flood_energy(edi);
-    
-    fprintf(stderr, "Vfl = %e\n", edi->flood.Vfl);
     
     update_adaption(edi);
 
@@ -994,14 +941,13 @@ extern void do_flood(FILE       *log,     /* md.log file */
     
     if (ed->eEDtype != eEDflood)
         return;
-    //if (!ed->edpar->flood.vecs.neig) 
-     //   return;
     
     edi = ed->edpar;
     while (edi)
     {
         /* Call flooding for one matrix */
-        do_single_flood(ed->edo,x,force,edi,step,box,cr);
+        if (edi->flood.vecs.neig)
+            do_single_flood(ed->edo,x,force,edi,step,box,cr);
         edi = edi->next_edi;
     }
 }
@@ -1023,34 +969,11 @@ static void init_flood(t_edpar *edi, gmx_edsam_t ed, real dt, t_commrec *cr)
         /* If in any of the datasets we find a flooding vector, flooding is turned on */
         ed->eEDtype = eEDflood;
         
-#ifdef DUMP_FORCES
-        logfile=ffopen("floodingforces.log","w");
-        fprintf(logfile,"Vfl Efl\nForce in Subspace\nForces in cartesian space\n");
-#endif
         fprintf(ed->edo,"FL_HEADER: Flooding of matrix %d is switched on! The flooding output will have the following format:\n",
                 edi->flood.flood_id);
         fprintf(stderr,"ED: Flooding of matrix %d is switched on.\n", edi->flood.flood_id);
         if (edi->flood.flood_id<1)
             fprintf(ed->edo,"FL_HEADER: Step Efl Vfl deltaF\n");
-        
-//        /* Set center of flooding potential ... */
-//        if (edi->sori.nr > 0)
-//        {
-//            gmx_fatal(FARGS, "Setting of center of flooding potential with -ori needs to be tested!");
-//            /* Fit the structure given by -sori to the reference structure, get translation & rotation */
-//            //fit_to_reference(edi->sori.x, fit_transvec, fit_rotmat, edi);
-//            /* Apply the fit */
-//            //translate_and_rotate(edi->sori.x, edi->sav.nr, fit_transvec, fit_rotmat);
-//            
-//            //rad_project(edi, edi->sori.x, &edi->flood.vecs, cr);
-//        }
-//        else
-//        {
-//            /* ... to the center of the covariance matrix, i.e. the average structure, 
-//             * i.e. zero in the projected system */
-//            for (i=0; i<edi->flood.vecs.neig; i++)
-//                edi->flood.vecs.refproj[i]=0.0;
-//        }
     }
 }
 
@@ -1202,14 +1125,12 @@ static void bc_ed_vecs(t_commrec *cr, t_eigvec *ev, int length)
     snew_bc(cr, ev->ieig   , ev->neig);  /* index numbers of eigenvector  */
     snew_bc(cr, ev->stpsz  , ev->neig);  /* stepsizes per eigenvector     */
     snew_bc(cr, ev->xproj  , ev->neig);  /* instantaneous x projection    */
-    //snew_bc(cr, ev->vproj  , ev->neig);  /* instantaneous v projection    */
     snew_bc(cr, ev->fproj  , ev->neig);  /* instantaneous f projection    */
     snew_bc(cr, ev->refproj, ev->neig);  /* starting or target projection */
 
     nblock_bc(cr, ev->neig, ev->ieig   );
     nblock_bc(cr, ev->neig, ev->stpsz  );
     nblock_bc(cr, ev->neig, ev->xproj  );
-    //nblock_bc(cr, ev->neig, ev->vproj  );
     nblock_bc(cr, ev->neig, ev->fproj  );
     nblock_bc(cr, ev->neig, ev->refproj);
 
@@ -1499,7 +1420,6 @@ static void read_edvec(FILE *in,int nr,t_eigvec *tvec)
         snew(tvec->stpsz,tvec->neig);
         snew(tvec->vec,tvec->neig);
         snew(tvec->xproj,tvec->neig);
-        //snew(tvec->vproj,tvec->neig);
         snew(tvec->fproj,tvec->neig);
         snew(tvec->refproj,tvec->neig);
         for(i=0; (i < tvec->neig); i++)
@@ -1615,10 +1535,6 @@ static int read_edi(FILE* in, gmx_edsam_t ed,t_edpar *edi,int nr_mdatoms, int ed
 
     /* Check if the same atom indices are used for reference and average positions */
     edi->bRefEqAv = check_if_same(edi->sref, edi->sav);
-
-//    edi->ned=edi->sref.anrs[edi->sref.nr-1]+1;
-//    if (edi->sav.anrs[edi->sav.nr-1] > edi->ned)
-//        edi->ned=edi->sav.anrs[edi->sav.nr-1]+1;
 
     /* eigenvectors */
     read_edvecs(in,edi->sav.nr,&edi->vecs);
