@@ -74,7 +74,7 @@ void gmx_mtop_atomnr_to_ilist(const gmx_mtop_t *mtop,int atnr_global,
     }
     while (atnr_global >= a_end);
 
-    *ilist_mol = &mtop->moltype[mtop->molblock[mb].type].ilist;
+    *ilist_mol = mtop->moltype[mtop->molblock[mb].type].ilist;
     
     atnr_local = (atnr_global - a_start) % mtop->molblock[mb].natoms_mol;
 
