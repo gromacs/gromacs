@@ -555,7 +555,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
   if (ed) {
-    do_flood(fplog,cr,x,f,ed,step);
+    do_flood(fplog,cr,x,f,ed,box,step);
   }
 	
   cycles_force = wallcycle_stop(wcycle,ewcFORCE);
