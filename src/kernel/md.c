@@ -530,27 +530,19 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		"If you want less energy communication, set nstlist > 3.\n\n");
       }
     }
-    if (ir->comm_mode != ecmNO) {
+    if (ir->comm_mode != ecmNO && ir->nstcomm == 1) {
+      if (fplog) {
+	fprintf(fplog,"WARNING:\nWe should not remove the COM motion every step with option -nosum,\n");
+      }
       if (ir->nstlist > 0) {
-	/* Energies are always communicated at neighbor search steps,
-	 * so we can set nstcomm equal to nstlist.
-	 */
-	if (ir->nstcomm % ir->nstlist != 0) {
-	  if (fplog) {
-	    fprintf(fplog,"WARNING:\nBecause of the -nosum option setting nstcomm (was %d) to nstlist (%d)\n\n",ir->nstcomm,ir->nstlist);
-	  }
-	  ir->nstcomm = ir->nstlist;
+	ir->nstcomm = ir->nstlist;
+	if (fplog) {
+	  fprintf(fplog,"setting nstcomm to nstlist (%d)\n\n",ir->nstcomm);
 	}
       } else {
-	/* nstlist = -1 or 0, we can set nstcomm equal to nstenergy */
-	if (ir->nstenergy == 0) {
-	  gmx_fatal(FARGS,"With option -nosum and COM motion removal we want to set nstcomm to nstlist or nstenergy, but both are <= 0. Set nstenergy > 1.");
-	}
-	if (ir->nstcomm % ir->nstenergy != 0) {
-	  if (fplog) {
-	    fprintf(fplog,"WARNING:\nBecause of the -nosum option setting nstcomm (was %d) to nstenergy (%d)\n\n",ir->nstcomm,ir->nstenergy);
-	  }
-	  ir->nstcomm = ir->nstenergy;
+	ir->nstcomm = 100;
+	if (fplog) {
+	  fprintf(fplog,"setting nstcomm to %d\n\n",ir->nstcomm);
 	}
       }
     }
@@ -863,7 +855,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     /* Stop Center of Mass motion */
-    bStopCM = do_per_step(step,abs(ir->nstcomm));
+    bStopCM = (ir->comm_mode != ecmNO && do_per_step(step,ir->nstcomm));
 
     /* Copy back starting coordinates in case we're doing a forcefield scan */
     if (bFFscan) {
@@ -1193,7 +1185,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr, "\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
     }
     
-    bGStat = bGStatEveryStep;
+    bGStat = (bGStatEveryStep || bStopCM);
 
     if (ir->nstlist == -1 && !bRerunMD) {
       /* When bGStatEveryStep=FALSE, global_stat is only called
