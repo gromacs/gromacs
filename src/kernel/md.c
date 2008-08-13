@@ -453,17 +453,18 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
   real       t,t0,lam0;
-  bool       bGStat,bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+  bool       bGStatEveryStep,bGStat;
+  bool       bNS,bCheckNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep;
-  bool       bNEMD,do_log,do_verbose,bRerunWarnNoV=TRUE,
+  bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
   bool       bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
   rvec       mu_tot;
   t_vcm      *vcm;
-  int        nabnsb=0,ns_step=0,nns=0;
-  double     ns_s1=0,ns_s2=0,ns_ab=0;
+  int        step_ns=0,step_nscheck=0,nns=0,nabnsb=0,ns_lt;
+  double     ns_s1=0,ns_s2=0,ns_ab=0,ns_lt_runav=0,ns_lt_runav2=0;
   matrix     *scale_tot;
   t_trxframe rerun_fr;
   gmx_repl_ex_t repl_ex=NULL;
@@ -501,30 +502,57 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bIonize  = (Flags & MD_IONIZE);
   bGlas    = (Flags & MD_GLAS);
   bFFscan  = (Flags & MD_FFSCAN);
-  bGStat   = !(Flags & MD_NOGSTAT);
+  bGStatEveryStep = !(Flags & MD_NOGSTAT);
 
-  if (!bGStat) {
-    if (EI_DYNAMICS(ir->eI)) {
-      if (fplog) {
-	fprintf(fplog,"\nWill not sum the energies at every step,\n"
-		"therefore the energy file does not contain exact averages and fluctuations.\n\n");
-      }
+  if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
+    char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
+    fprintf(stderr,"%s\n",warn);
+    if (fplog)
+      fprintf(fplog,"%s\n",warn);
+    bGStatEveryStep = TRUE;
+  }
+  if (!bGStatEveryStep) {
+    if (fplog) {
+      fprintf(fplog,"\nWill not sum the energies at every step,\n"
+	      "therefore the energy file does not contain exact averages and fluctuations.\n\n");
       if (ir->etc != etcNO || ir->epc != epcNO) {
-	if (fplog) {
-	  fprintf(fplog,"WARNING:\nThe temperature and/or pressure for scaling will only be updated every nstlist (%d) steps\n\n",ir->nstlist);
+	fprintf(fplog,"WARNING:\nThe temperature and/or pressure for scaling will only be updated every nstlist (%d) steps\n\n",ir->nstlist);
+      }
+      if (ir->nstlist == -1) {
+	fprintf(fplog,
+		"To reduce the energy communication with nstlist = -1\n"
+		"the neighbor list validity should not be checked at every step,\n"
+		"this means that exact integration is not guaranteed.\n"
+		"The neighbor list validity is checked after:\n"
+		"  <n.list life time> - 2*std.dev.(n.list life time)  steps.\n"
+		"In most cases this will result in exact integration.\n"
+		"This reduces the energy communication by a factor of 2 to 3.\n"
+		"If you want less energy communication, set nstlist > 3.\n\n");
+      }
+    }
+    if (ir->comm_mode != ecmNO) {
+      if (ir->nstlist > 0) {
+	/* Energies are always communicated at neighbor search steps,
+	 * so we can set nstcomm equal to nstlist.
+	 */
+	if (ir->nstcomm % ir->nstlist != 0) {
+	  if (fplog) {
+	    fprintf(fplog,"WARNING:\nBecause of the -nosum option setting nstcomm (was %d) to nstlist (%d)\n\n",ir->nstcomm,ir->nstlist);
+	  }
+	  ir->nstcomm = ir->nstlist;
+	}
+      } else {
+	/* nstlist = -1 or 0, we can set nstcomm equal to nstenergy */
+	if (ir->nstenergy == 0) {
+	  gmx_fatal(FARGS,"With option -nosum and COM motion removal we want to set nstcomm to nstlist or nstenergy, but both are <= 0. Set nstenergy > 1.");
+	}
+	if (ir->nstcomm % ir->nstenergy != 0) {
+	  if (fplog) {
+	    fprintf(fplog,"WARNING:\nBecause of the -nosum option setting nstcomm (was %d) to nstenergy (%d)\n\n",ir->nstcomm,ir->nstenergy);
+	  }
+	  ir->nstcomm = ir->nstenergy;
 	}
       }
-      if (ir->comm_mode != ecmNO && ir->nstcomm != ir->nstlist) {
-	if (fplog) {
-	  fprintf(fplog,"WARNING:\nBecause of the no energy summing option setting nstcomm (was %d) to nstlist (%d)\n\n",ir->nstcomm,ir->nstlist);
-	}
-      }
-    } else {
-      char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
-      fprintf(stderr,"%s\n",warn);
-      if (fplog)
-	fprintf(fplog,"%s\n",warn);
-      bGStat = TRUE;
     }
   }
 
@@ -859,16 +887,49 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       } else if (ir->nstlist == -1) {
 	bNS = (bFirstStep || nabnsb > 0);
 	if (bNS) {
-	  if (!bFirstStep) {
+	  if (bFirstStep) {
+	    ns_lt_runav = 0;
+	    step_nscheck = step;
+	  } else {
+	    /* Determine the neighbor list life time */
+	    ns_lt = step - step_ns;
 	    if (debug) {
-	      fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %d steps\n",nabnsb,step-ns_step);
+	      fprintf(debug,"%d atoms beyond ns buffer, updating neighbor list after %d steps\n",nabnsb,ns_lt);
 	    }
 	    nns++;
-	    ns_s1 += step - ns_step;
-	    ns_s2 += sqr(step - ns_step);
+	    ns_s1 += ns_lt;
+	    ns_s2 += ns_lt*ns_lt;
 	    ns_ab += nabnsb;
+	    if (ns_lt_runav == 0) {
+	      ns_lt_runav  = ns_lt;
+	      /* Initialize the fluctuation average such that at startup
+	       * we check after 0 steps.
+	       */
+	      ns_lt_runav2 = sqr(ns_lt/2.0);
+	    }
+	    /* Running average with 0.9 gives an exp. history of 9.5 */
+	    ns_lt_runav2 = 0.9*ns_lt_runav2 + 0.1*sqr(ns_lt_runav - ns_lt);
+	    ns_lt_runav  = 0.9*ns_lt_runav  + 0.1*ns_lt;
+	    if (bGStatEveryStep) {
+	      /* Always check the nlist validity */
+	      step_nscheck = step;
+	    } else {
+	      /* We check after:  <life time> - 2*sigma
+	       * The factor 2 is quite conservative,
+	       * but we assume that with nstlist=-1 the user prefers
+	       * exact integration over performance.
+	       */
+	      step_nscheck = step
+		+ (int)(ns_lt_runav - 2.0*sqrt(ns_lt_runav2)) - 1;
+	    }
+	    if (debug) {
+	      fprintf(debug,"nlist life time %d run av. %4.1f sig %3.1f check %d check with -nosum %d\n",
+		      ns_lt,ns_lt_runav,sqrt(ns_lt_runav2),
+		      step_nscheck-step+1,
+		      (int)(ns_lt_runav - 2.0*sqrt(ns_lt_runav2)));
+	    }
 	  }
-	  ns_step = step;
+	  step_ns = step;
 	  /* Initialize the cumulative coordinate scaling matrix */
 	  clear_mat(*scale_tot);
 	  for(ii=0; ii<DIM; ii++)
@@ -877,8 +938,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
     } 
 
-    if (terminate_now > 0 || (terminate_now < 0 && bNS))
+    if (terminate_now > 0 || (terminate_now < 0 && bNS)) {
       bLastStep = TRUE;
+    }
 
     do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
     do_verbose = bVerbose && (step % stepout == 0 || bFirstStep || bLastStep);
@@ -1038,7 +1100,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       dvdl = 0;
       /* We can only do Berendsen coupling after we have summed the kinetic
        * energy or virial. Since the happens in global_state after update,
-       * we should only do it at step % nstlist = 1 with bGStat=FALSE.
+       * we should only do it at step % nstlist = 1 with bGStatEveryStep=FALSE.
        */
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
 	     &top->idef,ekind,shake_vir,scale_tot,
@@ -1131,8 +1193,28 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       fprintf(stderr, "\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
     }
     
+    bGStat = bGStatEveryStep;
+
     if (ir->nstlist == -1 && !bRerunMD) {
-      nabnsb = natoms_beyond_ns_buffer(ir,fr,&top->cgs,*scale_tot,state->x);
+      /* When bGStatEveryStep=FALSE, global_stat is only called
+       * when we check the atom displacements, not at NS steps.
+       * This means that also the bonded interaction count check is not
+       * performed immediately after NS. Therefore a few MD steps could
+       * be performed with missing interactions. But wrong energies are never
+       * written to file, since energies are only written after global_stat
+       * has been called.
+       */
+      if (step >= step_nscheck) {
+	nabnsb = natoms_beyond_ns_buffer(ir,fr,&top->cgs,*scale_tot,state->x);
+	bGStat = TRUE;
+      } else {
+	/* This is not necessarily true,
+	 * but step_nscheck is determined quite conservatively.
+	 */
+	nabnsb = 0;
+      }
+    } else {
+      bCheckNS = bNS;
     }
 
     if (MASTER(cr) && (cpt_period >= 0 &&
@@ -1144,7 +1226,21 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       chkpt = 1;
     }
 
-    if (bGStat || bNS || do_per_step(step,ir->nstenergy) || bCPT || do_log) {
+    /* With exact energy averages (bGStatEveryStep=TRUE)
+     * we should also write energy at first, last and continuation steps
+     * such that we can get exact averages over a series of runs.
+     */
+    do_ene = (do_per_step(step,ir->nstenergy) ||
+	      (bGStatEveryStep && (bFirstStep || bLastStep || bCPT)));
+
+    if (do_ene || do_log) {
+      bGStat = TRUE;
+    }
+
+    if (!bGStat) {
+      /* We will not sum ekinh_old, so signal that we still have to do it */
+      bSumEkinhOld = TRUE;
+    } else {
       if (PAR(cr)) {
 	wallcycle_start(wcycle,ewcMoveE);
 	/* Globally (over all NODEs) sum energy, virial etc. 
@@ -1160,8 +1256,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	
 	wallcycle_stop(wcycle,ewcMoveE);
 	bSumEkinhOld = FALSE;
-      } else {
-	bSumEkinhOld = TRUE;
       }
 
       /* This is just for testing. Nothing is actually done to Ekin
@@ -1234,8 +1328,15 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	break;
       }
       
+      /* Complicated conditional when bGStatEveryStep=FALSE.
+       * We can not just use bGStat, since then the simulation results
+       * would depend on nstenergy and nstlog or step_nscheck.
+       */
       if ((state->flags & (1<<estPRES_PREV)) &&
-	  (bGStat || ir->nstlist<=1 || step%ir->nstlist==0)) {
+	  (bGStatEveryStep ||
+	   (ir->nstlist > 0 && step % ir->nstlist == 0) ||
+	   (ir->nstlist < 0 && nabnsb > 0) ||
+	   (ir->nstlist == 0 && bGStat))) {
 	/* Store the pressure in t_state for pressure coupling
 	 * at the next MD step.
 	 */
@@ -1293,13 +1394,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     /* Output stuff */
     if (MASTER(cr)) {
-      bool do_ene,do_dr,do_or;
+      bool do_dr,do_or;
       
-      upd_mdebin(mdebin,fp_dgdl,bGStat,
+      upd_mdebin(mdebin,fp_dgdl,bGStatEveryStep,
 		 mdatoms->tmass,step_rel,t,enerd,state,lastbox,
 		 shake_vir,force_vir,total_vir,pres,
 		 ekind,mu_tot,constr);
-      do_ene = do_per_step(step,ir->nstenergy) || bCPT || bFirstStep || bLastStep;
       do_dr  = do_per_step(step,ir->nstdisreout);
       do_or  = do_per_step(step,ir->nstorireout);
       print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,
@@ -1364,7 +1464,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
 	  
   if (MASTER(cr)) {
-    if (bGStat) {
+    if (bGStatEveryStep) {
       print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
 		 eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
       print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
