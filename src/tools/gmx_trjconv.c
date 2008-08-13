@@ -683,7 +683,7 @@ int gmx_trjconv(int argc,char *argv[])
   int          status,ftp,ftpin=0,file_nr;
   t_trxframe   fr,frout;
   int          flags;
-  rvec         *xmem=NULL,*vmem=NULL;
+  rvec         *xmem=NULL,*vmem=NULL,*fmem=NULL;
   rvec         *xp=NULL,x_shift,hbox,box_center,dx;
   real         xtcpr, lambda,*w_rls=NULL;
   int          m,i,d,frame,outframe,natoms,nout,ncent,nre,newstep=0,model_nr;
@@ -1022,7 +1022,7 @@ int gmx_trjconv(int argc,char *argv[])
 	break;
       }
       
-      bCopy=FALSE;
+      bCopy = FALSE;
       if (bIndex)
 	/* check if index is meaningful */
 	for(i=0; i<nout; i++) {
@@ -1032,7 +1032,12 @@ int gmx_trjconv(int argc,char *argv[])
 	}
       if (bCopy) {
 	snew(xmem,nout);
-	snew(vmem,nout);
+	if (bVels) {
+	  snew(vmem,nout);
+	}
+	if (bForce) {
+	  snew(fmem,nout);
+	}
       }
       
       if (ftp == efG87)
@@ -1243,10 +1248,20 @@ int gmx_trjconv(int argc,char *argv[])
 	    }
 	    if (bCopy) {
 	      frout.x = xmem;
-	      frout.v = vmem;
+	      if (bVels) {
+		frout.v = vmem;
+	      }
+	      if (bForce) {
+		frout.f = fmem;
+	      }
 	      for(i=0; i<nout; i++) {
 		copy_rvec(fr.x[index[i]],frout.x[i]);
-		if (bVels && fr.bV) copy_rvec(fr.v[index[i]],frout.v[i]);
+		if (bVels && fr.bV) {
+		  copy_rvec(fr.v[index[i]],frout.v[i]);
+		}
+		if (bForce && fr.bF) {
+		  copy_rvec(fr.f[index[i]],frout.f[i]);
+		}
 	      }
 	    }
 	  
