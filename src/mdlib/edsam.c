@@ -176,8 +176,6 @@ typedef struct gmx_edsam
     char          *edonam;        /*                     output           */
     FILE          *edo;           /* output file pointer                  */
     t_edpar       *edpar;
-    int           ePBC;           /* PBC type from inputrec               */
-    t_pbc         *pbc;           /* PBC information                      */
 } t_gmx_edsam;
 
 
@@ -241,7 +239,7 @@ static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec, t_commrec *cr)
     int i;
     real rad=0.0;
 
-    /* subtract average positions */
+    /* Subtract average positions */
     for (i = 0; i < edi->sav.nr; i++)
         rvec_dec(x[i], edi->sav.x[i]);
 
@@ -252,7 +250,7 @@ static void rad_project(t_edpar *edi, rvec *x, t_eigvec *vec, t_commrec *cr)
     }
     vec->radius=sqrt(rad);
     
-    /* add average positions */
+    /* Add average positions */
     for (i = 0; i < edi->sav.nr; i++) 
         rvec_inc(x[i], edi->sav.x[i]);
 }
@@ -270,14 +268,14 @@ static void project_to_eigvectors(rvec       *x,    /* The coordinates to projec
 
     if (!vec->neig) return;
 
-    /* subtract average positions */
+    /* Subtract average positions */
     for (i=0; i<edi->sav.nr; i++) 
         rvec_dec(x[i], edi->sav.x[i]);
 
     for (i=0; i<vec->neig; i++)
         vec->xproj[i] = projectx(edi, x, vec->vec[i]);
 
-    /* add average positions */
+    /* Add average positions */
     for (i=0; i<edi->sav.nr; i++) 
         rvec_inc(x[i], edi->sav.x[i]);
 }
@@ -326,7 +324,7 @@ static void dump_xcoll(t_edpar *edi, rvec *xcoll, t_commrec *cr, int step)
     
     fprintf(fp, "Step %d\n", step);
     for (i=0; i<edi->sav.nr; i++)
-        fprintf(fp, "%12.5e %12.5e %12.5e\n", xcoll[i][XX], xcoll[i][YY], xcoll[i][ZZ]);
+        fprintf(fp, "%14.7e %14.7e %14.7e\n", xcoll[i][XX], xcoll[i][YY], xcoll[i][ZZ]);
 
     fflush(fp);
 }
@@ -658,8 +656,7 @@ do_md clls right in the beginning the function init_edsam, which reads the edi f
 the edi structure and calls init_flood, to initialise some extra fields in the edi->flood structure.
 
 since the flooding acts on forces do_flood is called from the function force() (force.c), while the other 
-edsam functionality is hooked into md via the update() (update.c) function acting as constraint on positions. 
-flooding works correctly even if do_edsam() is not called.
+edsam functionality is hooked into md via the update() (update.c) function acting as constraint on positions.
 
 do_flood makes a copy of the positions,
 fits them, projects them computes flooding_energy, and flooding forces. The forces are computed in the 
@@ -678,15 +675,14 @@ Vfl is inverted. Vfl = Efl * exp (- .../Efl/alpha2*x^2...) With tau>0 the negati
 so that the restraint is switched off slowly. When Efl==0 and inverted flooding is ON is reached no
  further adaption is applied, Efl will stay constant at zero. 
 
-to use restraints with harmonic potentials switch -restrain and -harmonic. Then the eigenvalues are 
+To use restraints with harmonic potentials switch -restrain and -harmonic. Then the eigenvalues are 
 used as spring constants for the harmonic potential. 
 Note that eq3 in the flooding paper (J. Comp. Chem. 2006, 27, 1693-1702) defines the parameter lambda \
-as the inverse of the spring constant,
-whereas the implementation uses lambda as the spring constant.
+as the inverse of the spring constant, whereas the implementation uses lambda as the spring constant.
 
-to use more than one flooding matrix just concatenate severale .edi files (cat flood1.edi flood2.edi > flood_all.edi )
+To use more than one flooding matrix just concatenate several .edi files (cat flood1.edi flood2.edi > flood_all.edi)
 the routine read_edi_file reads all of theses flooding files.
-The structure t_edi is now organized as a list of t_edis  and the function do_flood cycles through the list 
+The structure t_edi is now organized as a list of t_edis and the function do_flood cycles through the list 
 calling the do_single_flood() routine for every single entry. Since every state variables have been kept in one 
 edi there is no interdependence whatsoever. The forces are added together. 
 
@@ -794,8 +790,10 @@ static void flood_blowup(t_edpar *edi, rvec *forces_cart)
     
     forces_sub = edi->flood.vecs.fproj;
     
-    /* Clear forces first, only clear the array up to nr_loc, the 
-     * rest we do not need */
+    
+    /* Calculate the cartesian forces for the local atoms */
+    
+    /* Clear forces first */
     for (j=0; j<edi->sav.nr_loc; j++) 
         clear_rvec(forces_cart[j]);
         
@@ -805,11 +803,10 @@ static void flood_blowup(t_edpar *edi, rvec *forces_cart)
         /* Compute forces_cart[edi->sav.anrs[j]] */
         for (eig=0; eig<edi->flood.vecs.neig; eig++)
         {
-            /* Force vector is force * eigenvector compute only atom j */
-            svmul(forces_sub[eig],edi->flood.vecs.vec[eig][j],dum);
+            /* Force vector is force * eigenvector (compute only atom j) */
+            svmul(forces_sub[eig],edi->flood.vecs.vec[eig][edi->sav.c_ind[j]],dum);
             /* Add this vector to the cartesian forces */
             rvec_inc(forces_cart[j],dum);
-                    
         }
     }
 }
@@ -910,7 +907,7 @@ static void do_single_flood(FILE *edo,
     /* Compute the flooding forces */
     flood_forces(edi);
 
-    /* translate them into cartesian coordinates */
+    /* Translate them into cartesian coordinates */
     flood_blowup(edi, edi->flood.forces_cartesian);
 
     /* Rotate forces back so that they correspond to the given structure and not to the fitted one */
@@ -1151,10 +1148,12 @@ static void broadcast_ed_data(t_commrec *cr, gmx_edsam_t ed, int numedis)
     t_edpar *edi;
     
 
+    /* Master lets the other nodes know if its ED only or also flooding */
+    gmx_bcast(sizeof(ed->eEDtype), &(ed->eEDtype), cr);
+    
     snew_bc(cr, ed->edpar,1);
-    edi = ed->edpar;
-
     /* Now transfer the ED data set(s) */
+    edi = ed->edpar;
     for (nr=0; nr<numedis; nr++)
     {      
         /* Broadcast a single ED data set */
@@ -2233,7 +2232,7 @@ static void write_edo(int nr_edi, t_edpar *edi, gmx_edsam_t ed, int step,real rm
     }
     else
     {
-        fprintf(ed->edo, "  NOTE: none of the options mon/linfix/linacc/radfix/radacc/radcon were chosen for dataset #%d!\n", nr_edi);
+        fprintf(ed->edo, "  NOTE: none of the ED options mon/linfix/linacc/radfix/radacc/radcon were chosen for dataset #%d!\n", nr_edi);
     }
 }
 
@@ -2275,8 +2274,6 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
     if (MASTER(cr))
         fprintf(stderr, "ED: Initialzing essential dynamics constraints.\n");
 
-    ed->ePBC = ir->ePBC;
-
     /* The input file is read by the master and the edi structures are
      * initialized here. Input is stored in ed->edpar. Then the edi
      * structures are transferred to the other nodes */
@@ -2286,9 +2283,8 @@ void init_edsam(gmx_mtop_t  *mtop,   /* global topology                    */
         /* Read the whole edi file at once: */
         read_edi_file(ed,ed->edpar,mtop->natoms);
 
-        /* Initialization for every ED/flooding dataset */
-        /* Flooding uses one edi dataset per flooding vector,
-         * Essential dynamics can be applied to more than one structure
+        /* Initialization for every ED/flooding dataset. Flooding uses one edi dataset per 
+         * flooding vector, Essential dynamics can be applied to more than one structure
          * as well, but will be done in the order given in the edi file, so 
          * expect different results for different order of edi file concatenation! */
         edi=ed->edpar;
