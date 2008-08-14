@@ -154,7 +154,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
       else
 	fprintf(out,"%-24s = %s\n",inp[i].name,inp[i].value ? inp[i].value : "");
     } else if (!inp[i].bObsolete) {
-      sprintf(warn_buf,"Unknown left-hand '%s' in parameter file\n",
+      sprintf(warn_buf,"Unknown or double left-hand '%s' in parameter file\n",
 	      inp[i].name);
       if (bHaltOnUnknown) {
 	warning_error(NULL);
