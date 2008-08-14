@@ -57,7 +57,6 @@
 #include "pbc.h"
 #include "pull.h"
 
-#define MAX_PULL_GROUPS 21
 
 static char pulldim[STRLEN];
 
@@ -105,10 +104,7 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
   char *tmp,**grpbuf;
   char dummy[STRLEN],buf[STRLEN],init[STRLEN];
   char *init_def1="0.0",*init_def3="0.0 0.0 0.0";
-  char wbuf[MAX_PULL_GROUPS][STRLEN],
-    bf[MAX_PULL_GROUPS][STRLEN],
-    pos[MAX_PULL_GROUPS][STRLEN];
-  char VecTemp[MAX_PULL_GROUPS][STRLEN], InitTemp[MAX_PULL_GROUPS][STRLEN];
+  char wbuf[STRLEN],VecTemp[STRLEN];
   dvec vec;
 
   t_pullgrp *pgrp;
@@ -138,9 +134,9 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
     nerror++;
   }
 
-  if (pull->ngrp < 1 || pull->ngrp > MAX_PULL_GROUPS-1)
-    gmx_fatal(FARGS,"pull_ngroups should be between 1 and %d",
-	      MAX_PULL_GROUPS-1);
+  if (pull->ngrp < 1) {
+    gmx_fatal(FARGS,"pull_ngroups should be >= 1");
+  }
   
   snew(pull->grp,pull->ngrp+1);
 
@@ -160,12 +156,12 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
     sprintf(buf,"pull_group%d",i);
     STYPE(buf,              grpbuf[i], "");
     sprintf(buf,"pull_weights%d",i);
-    STYPE(buf,              wbuf[i], "");
+    STYPE(buf,              wbuf, "");
     sprintf(buf,"pull_pbcatom%d",i);
     ITYPE(buf,              pgrp->pbcatom, 0);
     if (i > 0) {
       sprintf(buf,"pull_vec%d",i);
-      STYPE(buf,              VecTemp[i], "0.0 0.0 0.0");
+      STYPE(buf,              VecTemp, "0.0 0.0 0.0");
       sprintf(buf,"pull_init%d",i);
       STYPE(buf,              init, ndim==1 ? init_def1 : init_def3);
       nscan = sscanf(init,"%lf %lf %lf",&vec[0],&vec[1],&vec[2]);
@@ -183,11 +179,9 @@ char **read_pullparams(int *ninp_p,t_inpfile **inp_p,
       sprintf(buf,"pull_kB%d",i);
       RTYPE(buf,              pgrp->kB, pgrp->k);
     }
-  }
-  
-  /* Initialize the pull groups */
-  for(i=0; i<pull->ngrp+1; i++) {
-    init_pullgrp(&pull->grp[i],wbuf[i],i==0,pull->eGeom,VecTemp[i]);
+
+    /* Initialize the pull group */
+    init_pullgrp(pgrp,wbuf,i==0,pull->eGeom,VecTemp);
   }
   
   *ninp_p   = ninp;
