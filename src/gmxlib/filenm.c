@@ -73,6 +73,13 @@ static const int trxs[]={
   efTRJ, efGRO, efG96, efPDB, efG87 };
 #define NTRXS asize(trxs)
 
+static const int tros[]={
+#ifdef USE_XDR 
+  efXTC, efTRR,
+#endif
+  efTRJ, efGRO, efG96, efPDB, efG87 };
+#define NTROS asize(trxs)
+
 static const int trns[]={ 
 #ifdef USE_XDR
   efTRR, efCPT,
@@ -81,9 +88,6 @@ static const int trns[]={
 #define NTRNS asize(trns)
 
 static const int stos[]={ efGRO, efG96, efPDB, efBRK, 
-#ifdef HAVE_LIBXML2
-  efXML, 
-#endif
   efENT, efESP};
 #define NSTOS asize(stos)
 
@@ -91,11 +95,7 @@ static const int stxs[]={ efGRO, efG96, efPDB, efBRK, efENT, efESP,
 #ifdef USE_XDR 
 		       efTPR, 
 #endif 
-		       efTPB, efTPA
-#ifdef HAVE_LIBXML2
-		       , efXML
-#endif
-		        };
+		       efTPB, efTPA };
 #define NSTXS asize(stxs)
 
 static const int enxs[]={ 
@@ -109,22 +109,14 @@ static const int tpxs[]={
 #ifdef USE_XDR
   efTPR, 
 #endif
-  efTPB, efTPA
-#ifdef HAVE_LIBXML2
-  , efXML 
-#endif
-  };
+  efTPB, efTPA };
 #define NTPXS asize(tpxs)
 
 static const int tpss[]={ 
 #ifdef USE_XDR
   efTPR, 
 #endif
-  efTPB, efTPA, 
-#ifdef HAVE_LIBXML2
-  efXML, 
-#endif
-  efGRO, efG96, efPDB, efBRK, efENT };
+  efTPB, efTPA, efGRO, efG96, efPDB, efBRK, efENT };
 #define NTPSS asize(tpss)
 
 typedef struct {
@@ -142,17 +134,18 @@ typedef struct {
 static t_deffile deffile[efNR] = {
   { eftASC, ".mdp", "grompp", "-f", "grompp input file with MD parameters"   },
   { eftASC, ".gct", "gct",    "-f", "General coupling stuff"                 },
-  { eftGEN, ".???", "traj",   "-f", "Generic trajectory: xtc trr trj gro g96 pdb", NTRXS, trxs },
+  { eftGEN, ".???", "traj",   "-f", "Trajectory: xtc trr trj gro g96 pdb cpt", NTRXS, trxs },
+  { eftGEN, ".???", "trajout","-f", "Trajectory: xtc trr trj gro g96 pdb", NTROS, tros },
   { eftGEN, ".???", "traj",   NULL, "Full precision trajectory: trr trj cpt",      NTRNS, trns },
   { eftXDR, ".trr", "traj",   NULL, "Trajectory in portable xdr format"      },
   { eftBIN, ".trj", "traj",   NULL, "Trajectory file (architecture specific)"         },
   { eftXDR, ".xtc", "traj",   NULL, "Compressed trajectory (portable xdr format)"},
   { eftASC, ".g87", "gtraj",  NULL, "Gromos-87 ASCII trajectory format"      },
-  { eftGEN, ".???", "ener",   NULL, "Generic energy: edr ene",                     NENXS, enxs },
+  { eftGEN, ".???", "ener",   NULL, "Energy file: edr ene",                     NENXS, enxs },
   { eftXDR, ".edr", "ener",   NULL, "Energy file in portable xdr format"     },
-  { eftBIN, ".ene", "ener",   NULL, "Energy file"                            },
-  { eftGEN, ".???", "conf",   "-c", "Generic structure: gro g96 pdb tpr tpb tpa xml",  NSTXS, stxs },
-  { eftGEN, ".???", "out",    "-o", "Generic structure: gro g96 pdb xml",              NSTOS, stos },
+  { eftBIN, ".ene", "ener",   NULL, "Energy file: ene"                       },
+  { eftGEN, ".???", "conf",   "-c", "Structure file: gro g96 pdb tpr tpb tpa",  NSTXS, stxs },
+  { eftGEN, ".???", "out",    "-o", "Structure file: gro g96 pdb",              NSTOS, stos },
   { eftASC, ".gro", "conf",   "-c", "Coordinate file in Gromos-87 format"    },
   { eftASC, ".g96", "conf",   "-c", "Coordinate file in Gromos-96 format"    },
   { eftASC, ".pdb", "eiwit",  "-f", "Protein data bank file"                 },
@@ -167,14 +160,11 @@ static t_deffile deffile[efNR] = {
   { eftASC, ".ndx", "index",  "-n", "Index file",                            },
   { eftASC, ".top", "topol",  "-p", "Topology file"                          },
   { eftASC, ".itp", "topinc", NULL, "Include file for topology"              },
-  { eftGEN, ".???", "topol",  "-s", "Generic run input: tpr tpb tpa xml",              NTPXS, tpxs },
-  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb xml", NTPSS, tpss },
+  { eftGEN, ".???", "topol",  "-s", "Run input file: tpr tpb tpa",              NTPXS, tpxs },
+  { eftGEN, ".???", "topol",  "-s", "Structure+mass(db): tpr tpb tpa gro g96 pdb", NTPSS, tpss },
   { eftXDR, ".tpr", "topol",  "-s", "Portable xdr run input file"            },
   { eftASC, ".tpa", "topol",  "-s", "Ascii run input file"                   },
   { eftBIN, ".tpb", "topol",  "-s", "Binary run input file"                  },
-#ifdef HAVE_LIBXML2
-  { eftASC, ".xml", "gmx",    "-x", "Portable status file"                   },
-#endif
   { eftASC, ".tex", "doc",    "-o", "LaTeX file"                             },
   { eftASC, ".rtp", "residue",NULL, "Residue Type file used by pdb2gmx"      },
   { eftASC, ".atp", "atomtp", NULL, "Atomtype file used by pdb2gmx"          },
