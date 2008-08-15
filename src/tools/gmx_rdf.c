@@ -495,7 +495,7 @@ static void do_rdf(char *fnNDX,char *fnTPS,char *fnTRX,
 	if (bNormalize)
 	  rdf[g][i] = j*inv_segvol[i]*normfac;
 	else
-	  rdf[g][i] = j/(isize0*nframes);
+	  rdf[g][i] = j/(double)(isize0*nframes);
       }
     }
     for( ; (i<nrdf); i++)
