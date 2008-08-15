@@ -390,7 +390,7 @@ int gmx_trjcat(int argc,char *argv[])
   int         n,nset;
   t_filenm fnm[] = {
       { efTRX, "-f",     NULL,      ffRDMULT },
-      { efTRX, "-o",     "trajout", ffWRMULT },
+      { efTRO, "-o",     NULL,      ffWRMULT },
       { efNDX, "-n",     "index",   ffOPTRD  },
       { efXVG, "-demux", "remd",    ffOPTRD  }
   };

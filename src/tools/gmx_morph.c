@@ -83,7 +83,7 @@ int gmx_morph(int argc,char *argv[])
   t_filenm fnm[] = {
     { efSTX, "-f1", "conf1",  ffREAD },
     { efSTX, "-f2", "conf2",  ffREAD },
-    { efTRX, "-o",  "interm", ffWRITE },
+    { efTRO, "-o",  "interm", ffWRITE },
     { efXVG, "-or", "rms-interm", ffOPTWR },
     { efNDX, "-n",  "index",  ffOPTRD }
   };

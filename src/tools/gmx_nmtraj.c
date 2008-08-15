@@ -133,7 +133,7 @@ int gmx_nmtraj(int argc,char *argv[])
   { 
       { efTPS, NULL,    NULL,          ffREAD },
       { efTRN, "-v",    "eigenvec",    ffREAD  },
-      { efTRX, "-o",    "nmtraj",      ffWRITE }
+      { efTRO, "-o",    "nmtraj",      ffWRITE }
   }; 
   
 #define NFILE asize(fnm) 

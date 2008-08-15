@@ -112,8 +112,8 @@ int gmx_filter(int argc,char *argv[])
     { efTRX, "-f", NULL, ffREAD  }, 
     { efTPS, NULL, NULL, ffOPTRD },
     { efNDX, NULL, NULL, ffOPTRD },
-    { efTRX, "-ol", "lowpass",  ffOPTWR }, 
-    { efTRX, "-oh", "highpass", ffOPTWR } 
+    { efTRO, "-ol", "lowpass",  ffOPTWR }, 
+    { efTRO, "-oh", "highpass", ffOPTWR } 
   }; 
 #define NFILE asize(fnm) 
 

@@ -723,7 +723,7 @@ int gmx_trjconv(int argc,char *argv[])
 
   t_filenm fnm[] = {
     { efTRX, "-f",   NULL,      ffREAD  },
-    { efTRX, "-o",   "trajout", ffWRITE },
+    { efTRO, "-o",   NULL,      ffWRITE },
     { efTPS, NULL,   NULL,      ffOPTRD },
     { efNDX, NULL,   NULL,      ffOPTRD },
     { efNDX, "-fr",  "frames",  ffOPTRD },

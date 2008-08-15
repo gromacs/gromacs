@@ -479,7 +479,7 @@ int gmx_mindist(int argc,char *argv[])
     { efXVG, "-od","mindist",  ffWRITE },
     { efXVG, "-on","numcont",  ffOPTWR },
     { efOUT, "-o", "atm-pair", ffOPTWR },
-    { efTRX, "-ox","mindist",  ffOPTWR },
+    { efTRO, "-ox","mindist",  ffOPTWR },
     { efXVG, "-or","mindistres", ffOPTWR }
   };
 #define NFILE asize(fnm)

@@ -176,7 +176,7 @@ int gmx_dyndom(int argc,char *argv[])
   
   t_filenm fnm[] = {
     { efPDB, "-f", "dyndom",  ffREAD },
-    { efTRX, "-o", "rotated", ffWRITE },
+    { efTRO, "-o", "rotated", ffWRITE },
     { efNDX, "-n", "domains", ffREAD }
   };
 #define NFILE asize(fnm)

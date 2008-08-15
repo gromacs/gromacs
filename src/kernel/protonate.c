@@ -87,7 +87,7 @@ int main (int argc,char *argv[])
     { efTPS, NULL, NULL,         ffREAD  },
     { efTRX, "-f", NULL,         ffOPTRD },
     { efNDX, NULL, NULL,         ffOPTRD },
-    { efTRX, "-o", "protonated", ffWRITE }
+    { efTRO, "-o", "protonated", ffWRITE }
   };
 #define NFILE asize(fnm)
   

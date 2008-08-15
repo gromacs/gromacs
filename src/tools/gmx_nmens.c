@@ -114,7 +114,7 @@ int gmx_nmens(int argc,char *argv[])
     { efXVG, "-e",    "eigenval",    ffREAD  },
     { efTPS, NULL,    NULL,          ffREAD },
     { efNDX, NULL,    NULL,          ffOPTRD },
-    { efTRX, "-o",    "ensemble",    ffWRITE }
+    { efTRO, "-o",    "ensemble",    ffWRITE }
   }; 
 #define NFILE asize(fnm) 
 

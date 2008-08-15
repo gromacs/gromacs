@@ -132,7 +132,7 @@ int gmx_trjorder(int argc,char *argv[])
     { efTRX, "-f", NULL, ffREAD  }, 
     { efTPS, NULL, NULL, ffREAD  }, 
     { efNDX, NULL, NULL, ffOPTRD },
-    { efTRX, "-o", "ordered", ffOPTWR },
+    { efTRO, "-o", "ordered", ffOPTWR },
     { efXVG, "-nshell", "nshell", ffOPTWR } 
   }; 
 #define NFILE asize(fnm) 
