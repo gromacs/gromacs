@@ -1798,12 +1798,28 @@ static void check_disre(gmx_mtop_t *mtop)
 void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 {
   char err_buf[256];
-  int  i,m,npct;
-  bool bAcc;
+  int  i,m,nmol,npct;
+  bool bCharge,bAcc;
   real gdt_max,*mgrp,mt;
   rvec acc;
+  gmx_mtop_atomloop_block_t aloopb;
   gmx_mtop_atomloop_all_t aloop;
   t_atom *atom;
+
+  if (ir->coulombtype == eelCUT) {
+    bCharge = FALSE;
+    aloopb = gmx_mtop_atomloop_block_init(sys);
+    while (gmx_mtop_atomloop_block_next(aloopb,&atom,&nmol)) {
+      if (atom->q != 0 || atom->qB != 0) {
+	bCharge = TRUE;
+      }
+    }
+    if (bCharge) {
+      set_warning_line(mdparin,-1);
+      warning_note("You are using a plain Coulomb cut-off, this will often produce artefacts.\n"
+		   "You might want to consider using PME or reaction-field electrostatics.\n");
+    }
+  }
 
   /* Generalized reaction field */  
   if (ir->opts.ngtc == 0) {
