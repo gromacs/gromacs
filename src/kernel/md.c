@@ -203,8 +203,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       gmx_bcast(DIM*sizeof(ddxyz[0]),ddxyz,cr);
     }
     inputrec->bContinuation = TRUE;
-    inputrec->init_step += i;
-    inputrec->nsteps    -= i;
+    inputrec->nsteps    += inputrec->init_step - i;
+    inputrec->init_step  = i;
     if (bReadRNG) {
       Flags |= MD_READ_RNG;
     }
