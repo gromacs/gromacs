@@ -246,7 +246,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
     sprintf(err_buf,"tau_p must be > 0 instead of %g\n",ir->tau_p);
     CHECK(ir->tau_p <= 0);
 
-    if (ir->tau_p < 220*ir->delta_t) {
+    if (ir->tau_p < 100*ir->delta_t) {
       sprintf(warn_buf,"For proper barostat integration tau_p (%g) should be more than two orders of magnitude larger than delta_t (%g)",
 	      ir->tau_p,ir->delta_t);
       warning(NULL);
