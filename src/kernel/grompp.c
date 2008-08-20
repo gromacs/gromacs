@@ -109,12 +109,13 @@ static int check_atom_names(char *fn1, char *fn2,
     for(m=0; m<mtop->molblock[mb].nmol; m++) {
       for(j=0; j < tat->nr; j++) {
 	if (strcmp( *(tat->atomname[j]) , *(at->atomname[i]) ) != 0) {
-	  if (nmismatch < MAXMISMATCH)
+	  if (nmismatch < MAXMISMATCH) {
 	    fprintf(stderr,
-		    "Warning: atom names in %s and %s don't match (%s - %s)\n",
-		    fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
-	  else if (nmismatch == MAXMISMATCH)
+		    "Warning: atom name %d in %s and %s does not match (%s - %s)\n",
+		    i+1, fn1, fn2, *(tat->atomname[j]), *(at->atomname[i]));
+	  } else if (nmismatch == MAXMISMATCH) {
 	    fprintf(stderr,"(more than %d non-matching atom names)\n",MAXMISMATCH);
+	  }
 	  nmismatch++;
 	}
 	i++;
@@ -220,16 +221,17 @@ static void renumber_moltypes(gmx_mtop_t *sys,
   norder = 0;
   for(mb=0; mb<sys->nmolblock; mb++) {
     for(i=0; i<norder; i++) {
-      if (order[i] == sys->molblock[mb].type)
+      if (order[i] == sys->molblock[mb].type) {
 	break;
+      }
     }
     if (i == norder) {
       /* This type did not occur yet, add it */
       order[norder] = sys->molblock[mb].type;
       /* Renumber the moltype in the topology */
-      sys->molblock[mb].type = norder;
       norder++;
     }
+    sys->molblock[mb].type = i;
   }
   
   /* We still need to reorder the molinfo structs */
