@@ -303,9 +303,9 @@ static void get_orires_parms(char *topnm,
 
 static int get_bounds(char *topnm,
 		      real **bounds,int **index,int **dr_pair,int *npairs,
-		      gmx_mtop_t *mtop,gmx_localtop_t *top,t_inputrec *ir)
+		      gmx_mtop_t *mtop,gmx_localtop_t **ltop,t_inputrec *ir)
 {
-  gmx_localtop_t *ltop;
+  gmx_localtop_t *top;
   t_functype *functype;
   t_iparams  *ip;
   int        natoms,i,j,k,type,ftype,natom;
@@ -317,9 +317,9 @@ static int get_bounds(char *topnm,
   matrix     box;
 
   read_tpx(topnm,&i,&t,&t,ir,box,&natoms,NULL,NULL,NULL,mtop);
-  ltop = gmx_mtop_generate_local_top(mtop,ir);
-  *top = *ltop;
-  sfree(ltop);
+  snew(*ltop,1);
+  top = gmx_mtop_generate_local_top(mtop,ir);
+  *ltop = top;
 
   functype = top->idef.functype;
   ip       = top->idef.iparams;
@@ -912,7 +912,7 @@ int gmx_energy(int argc,char *argv[])
   int        fp;
   int        timecheck=0;
   gmx_mtop_t mtop;
-  gmx_localtop_t top;
+  gmx_localtop_t *top=NULL;
   t_inputrec ir;
   t_energy   *oldee,**ee;
   t_enxframe *frame,*fr=NULL;
@@ -923,8 +923,8 @@ int gmx_energy(int argc,char *argv[])
   bool       bSkipUni;
   int        nor=0,nex=0,norfr=0,enx_i=0;
   real       oldt;
-  real       *bounds,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
-  int        *index,*pair,norsel=0,*orsel=NULL,*or_label=NULL;
+  real       *bounds=NULL,*violaver=NULL,*oobs=NULL,*orient=NULL,*odrms=NULL;
+  int        *index=NULL,*pair=NULL,norsel=0,*orsel=NULL,*or_label=NULL;
   int        nbounds=0,npairs;
   bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN;
   bool       bFoundFirst,bFoundOld,bCont,bEDR,bVisco;
@@ -1201,12 +1201,12 @@ int gmx_energy(int argc,char *argv[])
 	t_iatom   *fa;
 	t_iparams *ip;
 	
-	fa = top.idef.il[F_DISRES].iatoms; 
-	ip = top.idef.iparams;
+	fa = top->idef.il[F_DISRES].iatoms; 
+	ip = top->idef.iparams;
 
-	if (fr->ndisre != top.idef.il[F_DISRES].nr/3)
+	if (fr->ndisre != top->idef.il[F_DISRES].nr/3)
 	  gmx_fatal(FARGS,"Number of disre pairs in the energy file (%d) does not match the number in the run input file (%d)\n",
-		      fr->ndisre,top.idef.il[F_DISRES].nr/3);
+		      fr->ndisre,top->idef.il[F_DISRES].nr/3);
 	
 	snew(pairleg,fr->ndisre);
 	for(i=0; i<fr->ndisre; i++) {
