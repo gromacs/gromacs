@@ -28,12 +28,13 @@ typedef struct {
 } gmx_molblock_ind_t;
 
 typedef struct gmx_reverse_top {
-  bool bConstr; /* Are there constraint in this revserse top?   */
-  bool bBCheck; /* All bonded interactions have to be assigned? */
-  bool bMultiCGmols; /* Are the multi charge-group molecules?   */
-  gmx_reverse_ilist_t *ril_mt; /* Reverse ilist for all moltypes */
+  bool bExclRequired; /* Do we require all exclusions to be assigned? */
+  bool bConstr;       /* Are there constraints in this revserse top?  */
+  bool bBCheck;       /* All bonded interactions have to be assigned? */
+  bool bMultiCGmols;  /* Are the multi charge-group molecules?        */
+  gmx_reverse_ilist_t *ril_mt; /* Reverse ilist for all moltypes      */
   int  ril_mt_tot_size;
-  int  ilsort;  /* The sorting state of bondeds for free energy */
+  int  ilsort;        /* The sorting state of bondeds for free energy */
   gmx_molblock_ind_t *mbi;
 } gmx_reverse_top_t;
 
@@ -59,7 +60,8 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
 					  gmx_reverse_top_t *rt,
 					  char *moltypename,
 					  gmx_reverse_ilist_t *ril,
-					  int a_offset,int nat_mol,int nmol,
+					  int a_start,int a_end,
+					  int nat_mol,int nmol,
 					  t_idef *idef)
 {
   int nril_mol,*assigned,*gatindex;
@@ -68,8 +70,6 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
   t_ilist *il;
   t_iatom *ia;
   bool bFound;
-  
-  rt = cr->dd->reverse_top;
 
   nril_mol = ril->index[nat_mol];
   snew(assigned,nmol*nril_mol);
@@ -85,34 +85,38 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
       ia = il->iatoms;
       for(i=0; i<il->nr; i+=1+nral) {
 	a0     = gatindex[ia[1]];
-	mol    = (a0 - a_offset)/nat_mol;
-	a0_mol = (a0 - a_offset) - mol*nat_mol;
-	j_mol  = ril->index[a0_mol];
-	bFound = FALSE;
-	while (j_mol < ril->index[a0_mol+1] && !bFound) {
-	  j = mol*nril_mol + j_mol;
-	  ftype_j = ril->il[j_mol];
-	  /* Here we need to check if this interaction has not already
-	   * been assigned, since we could have multiply defined interactions.
-	   */
-	  if (ftype == ftype_j && ia[0] == ril->il[j_mol+1] &&
-	      assigned[j] == 0) {
-	    /* Check the atoms */
-	    bFound = TRUE;
-	    for(a=0; a<nral; a++) {
-	      if (gatindex[ia[1+a]] !=
-		  a_offset + mol*nat_mol + ril->il[j_mol+2+a]) {
-		bFound = FALSE;
+	/* Check if this interaction is in the currently checked molblock */
+	if (a0 >= a_start && a0 < a_end) {
+	  mol    = (a0 - a_start)/nat_mol;
+	  a0_mol = (a0 - a_start) - mol*nat_mol;
+	  j_mol  = ril->index[a0_mol];
+	  bFound = FALSE;
+	  while (j_mol < ril->index[a0_mol+1] && !bFound) {
+	    j = mol*nril_mol + j_mol;
+	    ftype_j = ril->il[j_mol];
+	    /* Here we need to check if this interaction has not already
+	     * been assigned, since we could have multiply defined interactions.
+	     */
+	    if (ftype == ftype_j && ia[0] == ril->il[j_mol+1] &&
+		assigned[j] == 0) {
+	      /* Check the atoms */
+	      bFound = TRUE;
+	      for(a=0; a<nral; a++) {
+		if (gatindex[ia[1+a]] !=
+		    a_start + mol*nat_mol + ril->il[j_mol+2+a]) {
+		  bFound = FALSE;
+		}
+	      }
+	      if (bFound) {
+		assigned[j] = 1;
 	      }
 	    }
-	    if (bFound) {
-	      assigned[j] = 1;
-	    }
+	    j_mol += 2 + nral_rt(ftype_j);
 	  }
-	  j_mol += 2 + nral_rt(ftype_j);
+	  if (!bFound) {
+	    gmx_incons("Some interactions seem to be assigned multiple times");
+	  }
 	}
-	if (!bFound)
-	  gmx_incons("Some interactions seem to be assigned multiple times\n");
 	ia += 1 + nral;
       }
     }
@@ -155,8 +159,8 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
 	  fprintf(fplog, " global");
 	  fprintf(stderr," global");
 	  for(a=0; a<nral; a++) {
-	    fprintf(fplog, "%6d",a_offset+mol*nat_mol+ril->il[j_mol+2+a]+1);
-	    fprintf(stderr,"%6d",a_offset+mol*nat_mol+ril->il[j_mol+2+a]+1);
+	    fprintf(fplog, "%6d",a_start+mol*nat_mol+ril->il[j_mol+2+a]+1);
+	    fprintf(stderr,"%6d",a_start+mol*nat_mol+ril->il[j_mol+2+a]+1);
 	  }
 	  fprintf(fplog, "\n");
 	  fprintf(stderr,"\n");
@@ -175,21 +179,24 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
 static void print_missing_interactions_atoms(FILE *fplog,t_commrec *cr,
 					     gmx_mtop_t *mtop,t_idef *idef)
 {
-  int mb,a_offset;
+  int mb,a_start,a_end;
   gmx_molblock_t *molb;
   gmx_reverse_top_t *rt;
 
   rt = cr->dd->reverse_top;
 
-  a_offset = 0;
+  /* Print the atoms in the missing interactions per molblock */
+  a_end = 0;
   for(mb=0; mb<mtop->nmolblock; mb++) {
     molb = &mtop->molblock[mb];
+    a_start = a_end;
+    a_end   = a_start + molb->nmol*molb->natoms_mol;
+
     print_missing_interactions_mb(fplog,cr,rt,
 				  *(mtop->moltype[molb->type].name),
 				  &rt->ril_mt[molb->type],
-				  a_offset,molb->natoms_mol,molb->nmol,
+				  a_start,a_end,molb->natoms_mol,molb->nmol,
 				  idef);
-    a_offset += molb->nmol*molb->natoms_mol;
   }
 }
 
@@ -478,6 +485,8 @@ void dd_make_reverse_top(FILE *fplog,
     }
   }
 
+  dd->reverse_top->bExclRequired = EEL_EXCL_FORCES(ir->coulombtype);
+
   nexcl = 0;
   dd->n_intercg_excl = 0;
   for(mb=0; mb<mtop->nmolblock; mb++) {
@@ -486,7 +495,7 @@ void dd_make_reverse_top(FILE *fplog,
     nexcl += molb->nmol*count_excls(&molt->cgs,&molt->excls,&nexcl_icg);
     dd->n_intercg_excl += molb->nmol*nexcl_icg;
   }
-  if (EEL_EXCL_FORCES(ir->coulombtype)) {
+  if (dd->reverse_top->bExclRequired) {
     dd->nbonded_global += nexcl;
     if (dd->n_intercg_excl && fplog)
       fprintf(fplog,"There are %d inter charge-group exclusions,\n"
@@ -1130,12 +1139,14 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 	 * instead of up to the smallest cell dimension.
 	 */
 	bRCheck2B = TRUE;
-	if (debug)
-	  fprintf(debug,"bonded rcheck[%d] = %d, bRCheck2B = %d\n",
-		  d,rcheck[d],bRCheck2B);
+      }
+      if (debug) {
+	fprintf(debug,
+		"dim %d cellmin %f bonded rcheck[%d] = %d, bRCheck2B = %d\n",
+		d,cellsize_min[d],d,rcheck[d],bRCheck2B);
       }
     }
-    if (EEL_EXCL_FORCES(fr->eeltype)) {
+    if (dd->reverse_top->bExclRequired) {
       bRCheckExcl = bRCheck2B;
     } else {
       /* If we don't have forces on exclusions,
@@ -1170,8 +1181,9 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 				rc,dd->la2lc,pbc_null,fr->cg_cm,
 				fr,&ltop->excls);
 
-  if (EEL_EXCL_FORCES(fr->eeltype))
+  if (dd->reverse_top->bExclRequired) {
     dd->nbonded_local += nexcl;
+  }
   
   ltop->atomtypes  = mtop->atomtypes;
 
