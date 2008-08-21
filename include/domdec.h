@@ -38,9 +38,9 @@ extern int dd_natoms_vsite(gmx_domdec_t *dd);
 extern void dd_get_constraint_range(gmx_domdec_t *dd,
 				    int *at_start,int *at_end);
 
-extern real dd_cutoff(gmx_domdec_t *dd);
-
 extern real dd_cutoff_mbody(gmx_domdec_t *dd);
+
+extern real dd_cutoff_twobody(gmx_domdec_t *dd);
 
 extern bool gmx_pmeonlynode(t_commrec *cr,int nodeid);
 /* Return if nodeid in cr->mpi_comm_mysim is a PME-only node */
@@ -68,9 +68,18 @@ extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       gmx_mtop_t *mtop,matrix box,
 					       t_inputrec *ir);
 
+extern void dd_init_bondeds(FILE *fplog,
+			    gmx_domdec_t *dd,gmx_mtop_t *mtop,
+			    gmx_vsite_t *vsite,gmx_constr_t constr,
+			    t_inputrec *ir,bool bBCheck,int *cginfo);
+/* Initialize data structures for bonded interactions */
+
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 			      t_inputrec *ir,t_forcerec *fr,
 			      matrix box);
+/* Set DD grid dimensions and limits,
+ * should be called after calling dd_init_bondeds.
+ */
 
 extern void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
@@ -175,7 +184,7 @@ extern void dd_make_reverse_top(FILE *fplog,
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
-			      matrix box,real rc,rvec cellsize_min,ivec npulse,
+			      matrix box,rvec cellsize_min,ivec npulse,
 			      t_forcerec *fr,gmx_vsite_t *vsite,
 			      gmx_mtop_t *top,gmx_localtop_t *ltop);
 
@@ -184,16 +193,21 @@ extern gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global);
 extern void dd_init_local_state(gmx_domdec_t *dd,
 				t_state *state_global,t_state *local_state);
 
-/* In domdec_setup.h */
+extern t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
+					 int *cginfo);
 
-extern void dd_check_pme_grid(FILE *fplog,bool bStdErr,int npme,
-			      t_inputrec *ir);
 
-extern void dd_choose_grid(FILE *fplog,
+/* In domdec_setup.c */
+
+extern real dd_choose_grid(FILE *fplog,
 			   t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
 			   gmx_mtop_t *mtop,matrix box,real dlb_scale,
-			   real cellsize_limit,real cutoff_mbody,
+			   real cellsize_limit,real cutoff_dd,
 			   bool bInterCGBondeds,bool bInterCGMultiBody);
+/* Determines the optimal DD cell setup dd->nc and possibly npmenodes
+ * for the system.
+ * On the master node returns the actual cellsize limit used.
+ */
 
 #endif	/* _domdec_h */
 

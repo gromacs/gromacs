@@ -74,6 +74,9 @@ typedef struct {
 #define GET_CGINFO_EXCL_INTER(cgi) ( (cgi)            &  (1<<17))
 #define SET_CGINFO_SOLOPT(cgi,opt)   (cgi) = (((cgi)  & ~(15<<18)) | ((opt)<<18))
 #define GET_CGINFO_SOLOPT(cgi)     (((cgi)>>18)       &   15)
+/* This bit is only used with bBondComm in the domain decomposition */
+#define SET_CGINFO_BOND_INTER(cgi)   (cgi) =  ((cgi)  |  (1<<22))
+#define GET_CGINFO_BOND_INTER(cgi) ( (cgi)            &  (1<<22))
 
 enum { egCOULSR, egLJSR, egBHAMSR, egCOULLR, egLJLR, egBHAMLR,
        egCOUL14, egLJ14, egNR };

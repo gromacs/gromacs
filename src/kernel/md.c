@@ -385,8 +385,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
 
     if (DOMAINDECOMP(cr)) {
-      dd_make_reverse_top(fplog,cr->dd,mtop,vsite,constr,inputrec,
-			  Flags & MD_DDBONDCHECK);
+      dd_init_bondeds(fplog,cr->dd,mtop,vsite,constr,inputrec,
+		      Flags & MD_DDBONDCHECK,fr->cginfo_global);
 
       set_dd_parameters(fplog,cr->dd,dlb_scale,inputrec,fr,box);
      

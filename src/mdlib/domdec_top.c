@@ -56,6 +56,18 @@ static int nral_rt(int ftype)
   return nral;
 }
 
+static void print_error_header(FILE *fplog,char *moltypename,int nprint)
+{
+  fprintf(fplog, "\nMolecule type '%s'\n",moltypename);
+  fprintf(stderr,"\nMolecule type '%s'\n",moltypename);
+  fprintf(fplog,
+	  "the first %d missing interactions, except for exclusions:\n",
+	  nprint);
+  fprintf(stderr,
+	  "the first %d missing interactions, except for exclusions:\n",
+	  nprint);
+}
+
 static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
 					  gmx_reverse_top_t *rt,
 					  char *moltypename,
@@ -125,16 +137,6 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
   gmx_sumi(nmol*nril_mol,assigned,cr);
   
   nprint = 10;
-  if (DDMASTER(cr->dd)) {
-    fprintf(fplog, "\nMolecule type '%s'\n",moltypename);
-    fprintf(stderr,"\nMolecule type '%s'\n",moltypename);
-    fprintf(fplog,
-	    "the first %d missing interactions, except for exclusions:\n",
-	    nprint);
-    fprintf(stderr,
-	    "the first %d missing interactions, except for exclusions:\n",
-	    nprint);
-  }
   i = 0;
   for(mol=0; mol<nmol; mol++) {
     j_mol = 0;
@@ -145,6 +147,9 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
       if (assigned[j] == 0 &&
 	  !(interaction_function[ftype].flags & IF_VSITE)) {
 	if (DDMASTER(cr->dd)) {
+	  if (i == 0) {
+	    print_error_header(fplog,moltypename,nprint);
+	  }
 	  fprintf(fplog, "%20s atoms",interaction_function[ftype].longname);
 	  fprintf(stderr,"%20s atoms",interaction_function[ftype].longname);
 	  for(a=0; a<nral; a++) {
@@ -263,7 +268,7 @@ void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,int local_count)
     if (ndiff_tot > 0) {
       gmx_incons("One or more interactions were multiple assigned in the domain decompostion");
     } else {
-      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) (option -rdd) or the non-bonded cut-off distance (%g nm), for pairs and tabulated bonds see also option -ddbc",-ndiff_tot,cr->dd->nbonded_global,dd_cutoff_mbody(cr->dd),dd_cutoff(cr->dd));
+      gmx_fatal(FARGS,"%d of the %d bonded interactions could not be calculated because some atoms involved moved further apart than the multi-body cut-off distance (%g nm) or the two-body cut-off distance (%g nm), see option -rdd, for pairs and tabulated bonds also see option -ddcheck",-ndiff_tot,cr->dd->nbonded_global,dd_cutoff_mbody(cr->dd),dd_cutoff_twobody(cr->dd));
     }
   }
 }
@@ -1096,17 +1101,18 @@ void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs)
 }
 
 void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
-		       matrix box,real rc,rvec cellsize_min,ivec npulse,
+		       matrix box,rvec cellsize_min,ivec npulse,
 		       t_forcerec *fr,gmx_vsite_t *vsite,
 		       gmx_mtop_t *mtop,gmx_localtop_t *ltop)
 {
   bool bUniqueExcl,bRCheckMB,bRCheck2B,bRCheckExcl;
+  real rc;
   ivec rcheck;
   int  d,nexcl;
   t_pbc pbc,*pbc_null=NULL;
 
   if (debug) {
-    fprintf(debug,"Making local topology, rc = %g\n",rc);
+    fprintf(debug,"Making local topology\n",rc);
   }
 
   dd_make_local_cgs(dd,&ltop->cgs);
@@ -1122,7 +1128,11 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 						   &ltop->idef,vsite);
   } else {
     /* We need to check to which cell bondeds should be assigned */
-    
+    rc = dd_cutoff_twobody(dd);
+    if (debug) {
+      fprintf(debug,"Two-body bonded cut-off distance is %g\n",rc);
+    }
+
     /* Should we check cg_cm distances when assigning bonded interactions? */
     for(d=0; d<DIM; d++) {
       rcheck[d] = FALSE;
@@ -1245,4 +1255,139 @@ void dd_init_local_state(gmx_domdec_t *dd,
     }
     snew(state_local->ld_rngi,1);
   }
+}
+
+static void check_link(t_blocka *link,int cg_gl,int cg_gl_j)
+{
+  int  k,aj;
+  bool bFound;
+
+  bFound = FALSE;
+  for(k=link->index[cg_gl]; k<link->index[cg_gl+1]; k++) {
+    if (link->a[k] == cg_gl_j) {
+      bFound = TRUE;
+    }
+  }
+  if (!bFound) {
+    /* Add this charge group link */
+    if (link->index[cg_gl+1]+1 > link->nalloc_a) {
+      link->nalloc_a = over_alloc_large(link->index[cg_gl+1]+1);
+      srenew(link->a,link->nalloc_a);
+    }
+    link->a[link->index[cg_gl+1]] = cg_gl_j;
+    link->index[cg_gl+1]++;
+  }
+}
+
+t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
+				  int *cginfo)
+{
+  gmx_reverse_top_t *rt;
+  int  mb,cg_offset,cg,cg_gl,a,aj,i,j,ftype,nral,nlink_mol,mol,ncgi;
+  gmx_molblock_t *molb;
+  gmx_moltype_t *molt;
+  t_block *cgs;
+  t_blocka *excls;
+  int *a2c;
+  gmx_reverse_ilist_t *ril;
+  t_blocka *link;
+
+  /* For each charge group make a list of other charge groups
+   * in the system that a linked to it via bonded interactions
+   * which are listed in reverse_top.
+   */
+
+  rt = dd->reverse_top;
+  
+  snew(link,1);
+  snew(link->index,ncg_mtop(mtop)+1);
+  link->nalloc_a = 0;
+  link->a = NULL;
+
+  link->index[0] = 0;
+  cg_offset = 0;
+  ncgi = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    if (molb->nmol == 0) {
+      continue;
+    }
+    molt = &mtop->moltype[molb->type];
+    cgs   = &molt->cgs;
+    excls = &molt->excls;
+    snew(a2c,molt->atoms.nr);
+    for(cg=0; cg<cgs->nr; cg++) {
+      for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++) {
+	a2c[a] = cg;
+      }
+    }
+    ril = &rt->ril_mt[molb->type];
+    for(cg=0; cg<cgs->nr; cg++) {
+      cg_gl = cg_offset + cg;
+      link->index[cg_gl+1] = link->index[cg_gl];
+      for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++) {
+	i = ril->index[a];
+	while (i < ril->index[a+1]) {
+	  ftype = ril->il[i++];
+	  nral = NRAL(ftype);
+	  /* Skip the ifunc index */
+	  i++;
+	  for(j=0; j<nral; j++) {
+	    aj = ril->il[i+j];
+	    if (a2c[aj] != cg) {
+	      check_link(link,cg_gl,cg_offset+a2c[aj]);
+	    }
+	  }
+	  i += nral_rt(ftype);
+	}
+	if (rt->bExclRequired) {
+	  for(j=excls->index[a]; j<excls->index[a+1]; j++) {
+	    aj = excls->a[j];
+	    if (a2c[aj] != cg) {
+	      check_link(link,cg_gl,cg_offset+a2c[aj]);
+	    }
+	  }
+	}
+      }
+      if (link->index[cg_gl+1] - link->index[cg_gl] > 0) {
+	SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
+	ncgi++;
+      }
+    }
+    nlink_mol = link->index[cg_offset+cgs->nr] - link->index[cg_offset];
+
+    cg_offset += cgs->nr;
+
+    sfree(a2c);
+
+    if (debug) {
+      fprintf(debug,"molecule type '%s' %d cgs has %d cg links through bonded interac.\n",*molt->name,cgs->nr,nlink_mol);
+    }
+
+    if (molb->nmol > 1) {
+      /* Copy the information for the rest of the molecules in this block */
+      link->nalloc_a += (molb->nmol - 1)*nlink_mol;
+      srenew(link->a,link->nalloc_a);
+      for(mol=1; mol<molb->nmol; mol++) {
+	for(cg=0; cg<cgs->nr; cg++) {
+	  cg_gl = cg_offset + cg;
+	  link->index[cg_gl+1] = link->index[cg_gl+1-cgs->nr] + nlink_mol;
+	  for(j=link->index[cg_gl]; j<link->index[cg_gl+1]; j++) {
+	    link->a[j] = link->a[j-nlink_mol] + cgs->nr;
+	  }
+	  if (link->index[cg_gl+1] - link->index[cg_gl] > 0) {
+	    SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
+	    ncgi++;
+	  }
+	}
+	cg_offset += cgs->nr;
+      }
+    }
+  }
+
+  if (debug) {
+    fprintf(debug,"Of the %d charge groups %d are linked via bonded interactions\n",ncg_mtop(mtop),ncgi);
+  }
+
+  return link;
 }

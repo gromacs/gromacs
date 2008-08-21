@@ -272,23 +272,21 @@ static void assign_factors(gmx_domdec_t *dd,
   }
 }
 
-static void optimize_ncells(FILE *fplog,
+static real optimize_ncells(FILE *fplog,
 			    int nnodes_tot,int npme_only,real dlb_scale,
 			    gmx_mtop_t *mtop,matrix box,t_inputrec *ir,
 			    gmx_domdec_t *dd,
-			    real cellsize_limit,real cutoff_mbody,
+			    real cellsize_limit,real cutoff,
 			    bool bInterCGBondeds,bool bInterCGMultiBody,
 			    ivec nc)
 {
   int npp,npme,ndiv,*div,*mdiv,d;
-  bool bExcl_pbcdx,bC;
+  bool bExcl_pbcdx;
   float pbcdxr;
-  real limit,cutoff;
+  real limit;
   ivec try;
-  char buf[STRLEN];
   
-  limit  = cutoff_mbody;
-  cutoff = max(max(ir->rlist,max(ir->rcoulomb,ir->rvdw)),cutoff_mbody);
+  limit  = cellsize_limit;
 
   dd->nc[XX] = 1;
   dd->nc[YY] = 1;
@@ -316,8 +314,6 @@ static void optimize_ncells(FILE *fplog,
       /* Set lower limit for the cell size to half the cut-off */
       limit = cutoff/2;
     }
-    /* Take the maximum of the bonded and constraint distance limit */
-    limit = max(limit,cellsize_limit);
   } else {
     /* Every molecule is a single charge group: no pbc required */
     pbcdxr = 0;
@@ -363,26 +359,17 @@ static void optimize_ncells(FILE *fplog,
   sfree(div);
   sfree(mdiv);
 
-  if (nc[XX] == 0) {
-    bC = (dd->bInterCGcons && cutoff_mbody < cellsize_limit);
-    sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
-	    !bC ? "-rdd" : "-rcon",
-	    dd->bDynLoadBal ? " or -dds" : "",
-	    bC ? " or your LINCS settings" : "");
-    gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
-	      "%s\n"
-	      "Look in the log file for details on the domain decomposition",
-	      npp,limit,buf);
-  }
+  return limit;
 }
 
-void dd_choose_grid(FILE *fplog,
+real dd_choose_grid(FILE *fplog,
 		    t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
 		    gmx_mtop_t *mtop,matrix box,real dlb_scale,
-		    real cellsize_limit,real cutoff_mbody,
+		    real cellsize_limit,real cutoff_dd,
 		    bool bInterCGBondeds,bool bInterCGMultiBody)
 {
-  int npme,nkx,nky;
+  int  npme,nkx,nky;
+  real limit;
 
   if (MASTER(cr)) {
     if (EEL_PME(ir->coulombtype)) {
@@ -398,16 +385,21 @@ void dd_choose_grid(FILE *fplog,
 	  cr->npmenodes = guess_npme(fplog,mtop,ir,box,cr->nnodes);
 	}
       }
+      if (fplog) {
+	fprintf(fplog,"Using %d separate PME nodes\n",cr->npmenodes);
+      }
     } else {
       if (cr->npmenodes < 0)
 	cr->npmenodes = 0;
     }
     
-    optimize_ncells(fplog,cr->nnodes,cr->npmenodes,dlb_scale,
-		    mtop,box,ir,dd,
-		    cellsize_limit,cutoff_mbody,
-		    bInterCGBondeds,bInterCGMultiBody,
-		    dd->nc);
+    limit = optimize_ncells(fplog,cr->nnodes,cr->npmenodes,dlb_scale,
+			    mtop,box,ir,dd,
+			    cellsize_limit,cutoff_dd,
+			    bInterCGBondeds,bInterCGMultiBody,
+			    dd->nc);
+  } else {
+    limit = 0;
   }
   /* Communicate the information set by the master to all nodes */
   gmx_bcast(sizeof(dd->nc),dd->nc,cr);
@@ -418,4 +410,6 @@ void dd_choose_grid(FILE *fplog,
   } else {
     cr->npmenodes = 0;
   }
+
+  return limit;
 }

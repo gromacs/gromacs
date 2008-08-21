@@ -163,7 +163,12 @@ typedef struct gmx_domdec_comm {
     /* Are there bonded and multi-body interactions between charge groups? */
     bool bInterCGBondeds;
     bool bInterCGMultiBody;
-    
+
+    /* Data for the optional bonded interaction atom communication range */
+    bool bBondComm;
+    t_blocka *cglink;
+    char *bLocalCG;
+
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
     /* Cell sizes for determining the PME communication with SLB */
@@ -290,7 +295,7 @@ static const ivec dd_cp2[dd_cp2n] = {{0,0,4},{1,3,4}};
 #define dd_cp1n 1
 static const ivec dd_cp1[dd_cp1n] = {{0,0,2}};
 
-static int nstDDDump,nstDDDumpGrid;
+static int nstDDDump,nstDDDumpGrid,DD_debug;
 
 /* Factors used to avoid problems due to rounding issues */
 #define DD_CELL_MARGIN       1.0001
@@ -1500,11 +1505,6 @@ static void write_dd_pdb(char *fn,int step,char *title,
     fclose(out);
 }
 
-real dd_cutoff(gmx_domdec_t *dd)
-{
-    return dd->comm->cutoff;
-}
-
 real dd_cutoff_mbody(gmx_domdec_t *dd)
 {
     gmx_domdec_comm_t *comm;
@@ -1533,6 +1533,16 @@ real dd_cutoff_mbody(gmx_domdec_t *dd)
 
     return r;
 }
+
+real dd_cutoff_twobody(gmx_domdec_t *dd)
+{
+    real r_mb;
+
+    r_mb = dd_cutoff_mbody(dd);
+
+    return max(dd->comm->cutoff,r_mb);
+}
+
 
 static void dd_cart_coord2pmecoord(gmx_domdec_t *dd,ivec coord,ivec coord_pme)
 {
@@ -1859,14 +1869,38 @@ static void rebuild_cgindex(gmx_domdec_t *dd,int *gcgs_index,t_state *state)
     set_ncg_cell_home(dd);
 }
 
-static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
-                            t_forcerec *fr)
+static void dd_set_cginfo(t_forcerec *fr,int *index_gl,int cg0,int cg1,
+                          char *bLocalCG)
+{
+    int *cginfo_global,*cginfo;
+    int cg;
+
+    cginfo_global = fr->cginfo_global;
+    cginfo        = fr->cginfo;
+
+    for(cg=cg0; cg<cg1; cg++)
+    {
+        cginfo[cg] = cginfo_global[index_gl[cg]];
+    }
+
+    if (bLocalCG)
+    {
+        for(cg=cg0; cg<cg1; cg++)
+        {
+            bLocalCG[index_gl[cg]] = TRUE;
+        }
+    }
+}
+
+static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start)
 {
     int cell,cell1,cg0,cg,cg_gl,a,a_gl;
     int *cell2cg,*cell_ncg1,*index_gl,*gatindex;
     gmx_ga2la_t *ga2la;
-    int *cginfo_global,*cginfo;
-    
+    char *bLocalCG;
+
+    bLocalCG = dd->comm->bLocalCG;
+
     if (dd->nat_tot > dd->gatindex_nalloc)
     {
         dd->gatindex_nalloc = over_alloc_dd(dd->nat_tot);
@@ -1882,9 +1916,6 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
     {
         gmx_incons("dd->ncg_cell is not up to date");
     }
-  
-    cginfo_global = fr->cginfo_global;
-    cginfo        = fr->cginfo;
     
     /* Make the local to global and global to local atom index */
     a = dd->cgindex[cg_start];
@@ -1914,22 +1945,58 @@ static void make_dd_indices(gmx_domdec_t *dd,int *gcgs_index,int cg_start,
                 ga2la->cell = cell1;
                 ga2la->a    = a++;
             }
-            cginfo[cg] = cginfo_global[cg_gl];
         }
     }
 }
 
-static void check_ga2la_consistency(gmx_domdec_t *dd,int natoms_tot,
+static int check_bLocalCG(gmx_domdec_t *dd,int ncg_sys,char *bLocalCG,
+                           char *where)
+{
+    int ncg,i,ngl,nerr;
+
+    nerr = 0;
+    if (bLocalCG == NULL)
+    {
+        return nerr;
+    }
+    for(i=0; i<dd->ncg_tot; i++)
+    {
+        if (!bLocalCG[dd->index_gl[i]])
+        {
+            fprintf(stderr,
+                    "DD node %d, %s: cg %d, global cg %d is not marked in bLocalCG (ncg_home %d)\n",dd->rank,where,i+1,dd->index_gl[i]+1,dd->ncg_home);
+            nerr++;
+        }
+    }
+    ngl = 0;
+    for(i=0; i<ncg_sys; i++)
+    {
+        if (bLocalCG[i])
+        {
+            ngl++;
+        }
+    }
+    if (ngl != dd->ncg_tot)
+    {
+        fprintf(stderr,"DD node %d, %s: In bLocalCG %d cgs are marked as local, whereas there are %d\n",dd->rank,where,ngl,dd->ncg_tot);
+        nerr++;
+    }
+
+    return nerr;
+}
+
+static void check_index_consistency(gmx_domdec_t *dd,
+                                    int natoms_sys,int ncg_sys,
                                     char *where)
 {
-    int nerr,ngl,i,a;
-    int *have;
+    int  nerr,ngl,i,a;
+    int  *have;
 
     nerr = 0;
 
-    if (TRUE)
+    if (DD_debug > 1)
     {
-        snew(have,natoms_tot);
+        snew(have,natoms_sys);
         for(a=0; a<dd->nat_tot; a++)
         {
             if (have[dd->gatindex[a]] > 0)
@@ -1947,7 +2014,7 @@ static void check_ga2la_consistency(gmx_domdec_t *dd,int natoms_tot,
     snew(have,dd->nat_tot);
 
     ngl  = 0;
-    for(i=0; i<natoms_tot; i++)
+    for(i=0; i<natoms_sys; i++)
     {
         if (dd->ga2la[i].cell >= 0)
         {
@@ -1986,22 +2053,34 @@ static void check_ga2la_consistency(gmx_domdec_t *dd,int natoms_tot,
     }
     sfree(have);
 
+    nerr += check_bLocalCG(dd,ncg_sys,dd->comm->bLocalCG,where);
+
     if (nerr > 0) {
-        gmx_fatal(FARGS,"DD node %d, %s: %d atom index inconsistencies",
+        gmx_fatal(FARGS,"DD node %d, %s: %d atom/cg index inconsistencies",
                   dd->rank,where,nerr);
     }
 }
 
-static void clear_dd_indices(gmx_domdec_t *dd,int a_start)
+static void clear_dd_indices(gmx_domdec_t *dd,int cg_start,int a_start)
 {
-    int i;
-    
+    int  i;
+    char *bLocalCG;
+
     /* Clear the indices without looping over all the atoms in the system */
     for(i=a_start; i<dd->nat_tot; i++)
     {
         dd->ga2la[dd->gatindex[i]].cell = -1;
     }
-    
+
+    bLocalCG = dd->comm->bLocalCG;
+    if (bLocalCG)
+    {
+        for(i=cg_start; i<dd->ncg_tot; i++)
+        {
+            bLocalCG[dd->index_gl[i]] = FALSE;
+        }
+    }
+
     dd_clear_local_vsite_indices(dd);
     
     if (dd->constraints)
@@ -2018,7 +2097,7 @@ static real grid_jump_limit(gmx_domdec_comm_t *comm,int dim_ind)
      * half their size, such that cg's only shift by one cell
      * at redecomposition.
      */
-    return max(comm->cutoff_mbody,comm->cutoff/comm->cd[dim_ind].np);
+    return max(comm->cellsize_limit,comm->cutoff/comm->cd[dim_ind].np);
 }
 
 static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
@@ -3036,8 +3115,6 @@ static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
     int i,cg_gl;
     int *ibuf,buf2[2] = { 0, 0 };
     
-    clear_dd_indices(dd,0);
-    
     if (DDMASTER(dd))
     {
         ma = dd->ma;
@@ -3058,6 +3135,8 @@ static void get_cg_distribution(FILE *fplog,int step,gmx_domdec_t *dd,
     
     dd->ncg_home = buf2[0];
     dd->nat_home = buf2[1];
+    dd->ncg_tot  = dd->ncg_home;
+    dd->nat_tot  = dd->nat_home;
     if (dd->ncg_home > dd->cg_nalloc || dd->cg_nalloc == 0)
     {
         dd->cg_nalloc = over_alloc_dd(dd->ncg_home);
@@ -3203,12 +3282,13 @@ static int compact_and_copy_vec_cg(int ncg,int *move,
 
 static int compact_ind(int ncg,int *move,
                        int *index_gl,int *cgindex,
-                       int *gatindex,gmx_ga2la_t *ga2la,
+                       int *gatindex,
+                       gmx_ga2la_t *ga2la,char *bLocalCG,
                        int *cginfo)
 {
     int cg,nat,a0,a1,a,a_gl;
     int home_pos;
-    
+
     home_pos = 0;
     nat = 0;
     for(cg=0; cg<ncg; cg++)
@@ -3231,6 +3311,7 @@ static int compact_ind(int ncg,int *move,
             }
             index_gl[home_pos] = index_gl[cg];
             cginfo[home_pos]   = cginfo[cg];
+            /* The charge group remains local, so bLocalCG does not change */
             home_pos++;
         }
         else
@@ -3241,6 +3322,10 @@ static int compact_ind(int ncg,int *move,
                 a_gl = gatindex[a];
                 ga2la[a_gl].cell = -1;
             }
+            if (bLocalCG)
+            {
+                bLocalCG[index_gl[cg]] = FALSE;
+            }
         }
     }
     cgindex[home_pos] = nat;
@@ -3249,8 +3334,8 @@ static int compact_ind(int ncg,int *move,
 }
 
 static void clear_and_mark_ind(int ncg,int *move,
-                               int *cgindex,int *gatindex,
-                               gmx_ga2la_t *ga2la,
+                               int *index_gl,int *cgindex,int *gatindex,
+                               gmx_ga2la_t *ga2la,char *bLocalCG,
                                int *cell_index)
 {
     int cg,a0,a1,a,a_gl;
@@ -3266,6 +3351,10 @@ static void clear_and_mark_ind(int ncg,int *move,
             {
                 a_gl = gatindex[a];
                 ga2la[a_gl].cell = -1;
+            }
+            if (bLocalCG)
+            {
+                bLocalCG[index_gl[cg]] = FALSE;
             }
             /* Signal that this cg has moved using the ns cell index.
              * Here we set it to -1.
@@ -3673,15 +3762,16 @@ static int dd_redistribute_cg(FILE *fplog,int step,
     if (bCompact)
     {
         compact_ind(dd->ncg_home,move,
-                    dd->index_gl,dd->cgindex,
-                    dd->gatindex,dd->ga2la,
+                    dd->index_gl,dd->cgindex,dd->gatindex,
+                    dd->ga2la,comm->bLocalCG,
                     fr->cginfo);
     }
     else
     {
         clear_and_mark_ind(dd->ncg_home,move,
-                           dd->cgindex,dd->gatindex,
-                           dd->ga2la,fr->ns.grid->cell_index);
+                           dd->index_gl,dd->cgindex,dd->gatindex,
+                           dd->ga2la,comm->bLocalCG,
+                           fr->ns.grid->cell_index);
     }
     
     ncg_stay_home = home_pos_cg;
@@ -3823,6 +3913,14 @@ static int dd_redistribute_cg(FILE *fplog,int step,
                     cg_cm = fr->cg_cm;
                 }
                 copy_rvec(comm->buf_vr[buf_pos++],cg_cm[home_pos_cg]);
+                /* Set the cginfo */
+                fr->cginfo[home_pos_cg] =
+                    fr->cginfo_global[dd->index_gl[home_pos_cg]];
+                if (comm->bLocalCG)
+                {
+                    comm->bLocalCG[dd->index_gl[home_pos_cg]] = TRUE;
+                }
+
                 if (home_pos_at+nrcg > state->nalloc)
                 {
                     dd_realloc_state(state,f,buf,home_pos_at+nrcg);
@@ -3887,14 +3985,13 @@ static int dd_redistribute_cg(FILE *fplog,int step,
         }
     }
     
-    /* Clear the local indices, except for the home cell.
-     * The home cell indices were updated and cleaned in compact_ind.
+    /* With sorting (!bCompact) the indices are now only partially up to date
+     * and ncg_home and nat_home are not the real count, since there are
+     * "holes" in the arrays for the charge groups that moved to neighbors.
      */
-    clear_dd_indices(dd,dd->nat_home);
-    
     dd->ncg_home = home_pos_cg;
     dd->nat_home = home_pos_at;
-    
+
     if (debug)
     {
         fprintf(debug,"Finished repartitioning\n");
@@ -5121,6 +5218,35 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
     return ma;
 }
 
+static real average_cellsize_min(gmx_domdec_t *dd,matrix box)
+{
+    int  di,d;
+    real r,csa,fac;
+
+    dd_set_tric_dir(dd,box);
+    r = box[0][0];
+    for(di=0; di<DIM; di++)
+    {
+        d = dd->dim[di];
+        /* Check using the initial average cell size */
+        r = min(r,box[d][d]*dd->skew_fac[d]/dd->nc[d]);
+    }
+
+    return r;
+}
+
+static void dd_warning(t_commrec *cr,FILE *fplog,char *warn_string)
+{
+    if (MASTER(cr))
+    {
+        fprintf(stderr,"\n%s\n",warn_string);
+    }
+    if (fplog)
+    {
+        fprintf(fplog,"\n%s\n",warn_string);
+    }
+}
+
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
                                         real comm_distance_min,real rconstr,
                                         bool bDynLoadBal,real dlb_scale,
@@ -5132,7 +5258,9 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     gmx_domdec_comm_t *comm;
     int  recload;
     int  d,i,j;
-    char *warn="WARNING: Cycle counting is not supported on this architecture, will not use dynamic load balancing";
+    real bcsc,limit;
+    bool bC;
+    char buf[STRLEN];
     
     if (fplog)
     {
@@ -5154,6 +5282,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     comm->nstSortCG  = dd_nst_env(fplog,"GMX_DD_SORT",1);
     nstDDDump        = dd_nst_env(fplog,"GMX_DD_DUMP",0);
     nstDDDumpGrid    = dd_nst_env(fplog,"GMX_DD_DUMP_GRID",0);
+    DD_debug         = dd_nst_env(fplog,"GMX_DD_DEBUG",0);
+
     if (dd->bSendRecv2 && fplog)
     {
         fprintf(fplog,"Will use two sequential MPI_Sendrecv calls instead of two simultaneous non-blocking MPI_Irecv and MPI_Isend pairs for constraint and vsite communication\n");
@@ -5185,11 +5315,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
         }
         else
         {
-            if (fplog)
-            {
-                fprintf(fplog,"\n%s\n\n",warn);
-            }
-            fprintf(stderr,"\n%s\n\n",warn);
+            dd_warning(cr,fplog,"WARNING: Cycle counting is not supported on this architecture, will not use dynamic load balancing\n");
         }
     }
     if (fplog)
@@ -5234,37 +5360,77 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     }
     
     dd->bInterCGcons = inter_charge_group_constraints(mtop);
-    
-    comm->cutoff_mbody = comm_distance_min;
-    comm->cellsize_limit = comm->cutoff_mbody;
-    if (dd->bInterCGcons)
+
+    comm->cutoff       = max(ir->rlist,max(ir->rvdw,ir->rcoulomb));
+    comm->cutoff_mbody = 0;
+
+    if (!comm->bInterCGBondeds)
     {
-        /* There is a cell size limit due to the constraints (LINCS) */
-        if (rconstr <= 0)
+        comm->bBondComm = FALSE;
+        comm->cellsize_limit = 0;
+    }
+    else
+    {
+        /* Initial minimum setting, can be increased later */
+        comm->cellsize_limit = comm_distance_min;
+
+        comm->bBondComm = (comm_distance_min < 0 ||
+                           comm_distance_min > comm->cutoff);
+        if (comm->bBondComm)
         {
-            rconstr = constr_r_max(fplog,mtop,ir);
-            if (fplog)
+            if (comm_distance_min < 0)
             {
-                fprintf(fplog,
-                        "Estimated maximum distance required for LINCS: %.3f nm\n",
-                        rconstr);
-                if (rconstr > comm->cutoff_mbody)
+                /* Later we set cutoff_mbody to a fraction of the cell size.
+                 * Without DLB this might be increased dynamically.
+                 * With DLB this might be increased further down.
+                 */
+                bcsc = min(0.5,dlb_scale);
+                comm->cellsize_limit = comm->cutoff/bcsc;
+                comm->cutoff_mbody   = 0;
+                if (fplog)
                 {
-                    fprintf(fplog,"This distance will limit the DD cell size, you can override this with -rcon\n");
+                    fprintf(fplog,"The option -rdd=%g set the minimum cell size to %g*r_c=%g\n",comm_distance_min,1/bcsc,comm->cellsize_limit);
                 }
+            }
+            else
+            {
+                /* comm_distance_min > non-bonded cut-off */
+                comm->cellsize_limit = comm_distance_min;
+                comm->cutoff_mbody   = comm_distance_min;
             }
         }
         else
         {
-            if (fplog)
+            comm->cutoff_mbody = comm_distance_min;
+        }
+    }
+
+    if (dd->bInterCGcons && rconstr <= 0)
+    {
+        /* There is a cell size limit due to the constraints (P-LINCS) */
+        rconstr = constr_r_max(fplog,mtop,ir);
+        if (fplog)
+        {
+            fprintf(fplog,
+                    "Estimated maximum distance required for P-LINCS: %.3f nm\n",
+                    rconstr);
+            if (rconstr > comm_distance_min)
             {
-                fprintf(fplog,
-                        "User supplied maximum distance required for LINCS: %.3f nm\n",
-                        rconstr);
+                fprintf(fplog,"This distance will limit the DD cell size, you can override this with -rcon\n");
             }
         }
-        comm->cellsize_limit = max(comm->cellsize_limit,rconstr);
     }
+    else if (rconstr > 0 && fplog)
+    {
+        /* Here we do not check for dd->bInterCGcons,
+         * because one can also set a cell size limit for virtual sites only
+         * and at this point we don't know yet if there are intercg v-sites.
+         */
+        fprintf(fplog,
+                "User supplied maximum distance required for P-LINCS: %.3f nm\n",
+                rconstr);
+    }
+    comm->cellsize_limit = max(comm->cellsize_limit,rconstr);
     
     if (nc[XX] > 0)
     {
@@ -5277,9 +5443,22 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     else
     {
         /* We need to choose the optimal DD grid and possibly PME nodes */
-        dd_choose_grid(fplog,cr,dd,ir,mtop,box,dlb_scale,
-                       comm->cellsize_limit,comm->cutoff_mbody,
-                       comm->bInterCGBondeds,comm->bInterCGMultiBody);
+        limit = dd_choose_grid(fplog,cr,dd,ir,mtop,box,dlb_scale,
+                               comm->cellsize_limit,comm->cutoff,
+                               comm->bInterCGBondeds,comm->bInterCGMultiBody);
+        
+        if (dd->nc[XX] == 0 && MASTER(cr))
+        {
+            bC = (dd->bInterCGcons && rconstr > comm_distance_min);
+            sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
+                    !bC ? "-rdd" : "-rcon",
+                    dd->bDynLoadBal ? " or -dds" : "",
+                    bC ? " or your LINCS settings" : "");
+            gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
+                      "%s\n"
+                      "Look in the log file for details on the domain decomposition",
+                      cr->nnodes-cr->npmenodes,limit,buf);
+        }
     }
     
     if (fplog)
@@ -5324,6 +5503,22 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
         comm->slb_frac[YY] = get_slb_frac(fplog,"y",dd->nc[YY],sizey);
         comm->slb_frac[ZZ] = get_slb_frac(fplog,"z",dd->nc[ZZ],sizez);
     }
+
+    if (comm->bInterCGBondeds)
+    {
+        if (comm->bBondComm && comm->cutoff_mbody == 0)
+        {
+            comm->cutoff_mbody   = bcsc*average_cellsize_min(dd,box);
+            comm->cellsize_limit = comm->cutoff_mbody;
+        }
+    }
+
+    if (debug)
+    {
+        fprintf(debug,"Bonded atom communication beyond the cut-off: %d\n"
+                "cellsize limit %f\n",
+                comm->bBondComm,comm->cellsize_limit);
+    }
     
     if (comm->bRecordLoad)
     {
@@ -5359,6 +5554,51 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     comm->cgs_gl = gmx_mtop_global_cgs(mtop);
 
     return dd;
+}
+
+static char *init_bLocalCG(gmx_mtop_t *mtop)
+{
+    int  ncg,cg;
+    char *bLocalCG;
+    
+    ncg = ncg_mtop(mtop);
+    snew(bLocalCG,ncg);
+    for(cg=0; cg<ncg; cg++)
+    {
+        bLocalCG[cg] = FALSE;
+    }
+
+    return bLocalCG;
+}
+
+void dd_init_bondeds(FILE *fplog,
+                     gmx_domdec_t *dd,gmx_mtop_t *mtop,
+                     gmx_vsite_t *vsite,gmx_constr_t constr,
+                     t_inputrec *ir,bool bBCheck,int *cginfo)
+{
+    gmx_domdec_comm_t *comm;
+    bool bBondComm;
+    int  d;
+
+    dd_make_reverse_top(fplog,dd,mtop,vsite,constr,ir,bBCheck);
+
+    comm = dd->comm;
+
+    if (comm->bBondComm)
+    {
+        /* Communicate atoms beyond the cut-off for bonded interactions */
+        comm = dd->comm;
+
+        comm->cglink = make_charge_group_links(mtop,dd,cginfo);
+
+        comm->bLocalCG = init_bLocalCG(mtop);
+    }
+    else
+    {
+        /* Only communicate atoms based on cut-off */
+        comm->cglink   = NULL;
+        comm->bLocalCG = NULL;
+    }
 }
 
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
@@ -5428,7 +5668,6 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         }
     }
     
-    comm->cutoff = max(fr->rlistlong,comm->cutoff_mbody);
     if (debug)
     {
         fprintf(debug,"The DD cut-off is %f\n",comm->cutoff);
@@ -5509,7 +5748,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         }
         if (comm->cutoff_mbody <= 0)
         {
-            comm->cutoff_mbody = comm->cellsize_limit;
+            comm->cutoff_mbody = min(comm->cutoff,comm->cellsize_limit);
         }
         if (DDMASTER(dd) && fplog)
         {
@@ -5581,10 +5820,11 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         if (comm->bInterCGBondeds)
         {
             fprintf(fplog,"%40s  %-7s %6.3f nm\n",
-                    "two-body bonded interactions","(-rdd)",comm->cutoff);
+                    "two-body bonded interactions","(-rdd)",
+                    max(comm->cutoff,comm->cutoff_mbody));
             fprintf(fplog,"%40s  %-7s %6.3f nm\n",
                     "multi-body bonded interactions","(-rdd)",
-                    dd->bGridJump ? comm->cutoff_mbody : min(comm->cutoff,limit));
+                    (comm->bBondComm || dd->bGridJump) ? comm->cutoff_mbody : min(comm->cutoff,limit));
         }
         if (dd->vsite_comm)
         {
@@ -5706,6 +5946,23 @@ static void make_cell2at_index(gmx_domdec_comm_dim_t *cd,
     }
 }
 
+static bool missing_link(t_blocka *link,int cg_gl,char *bLocalCG)
+{
+    int  i;
+    bool bMiss;
+
+    bMiss = FALSE;
+    for(i=link->index[cg_gl]; i<link->index[cg_gl+1]; i++)
+    {
+        if (!bLocalCG[link->a[i]])
+        {
+            bMiss = TRUE;
+        }
+    }
+
+    return bMiss;
+}
+
 static void setup_dd_communication(FILE *fplog,int step,
                                    gmx_domdec_t *dd,int *gcgs_index,
                                    matrix box,t_forcerec *fr)
@@ -5716,8 +5973,8 @@ static void setup_dd_communication(FILE *fplog,int step,
     gmx_domdec_comm_t *comm;
     gmx_domdec_comm_dim_t *cd;
     gmx_domdec_ind_t *ind;
-    bool bTwoCut,bScrew;
-    real r_comm2,r_scomm2,r_bcomm2,r,r2,rb2,inv_ncg,tric_sh;
+    bool bBondComm,bTwoCut,bTwoDist,bScrew;
+    real r_mb,r_comm2,r_scomm2,r_bcomm2,r,r2,rb2,inv_ncg,tric_sh;
     real corner[DIM][4],corner_round_0=0,corner_round_1[4];
     real bcorner[DIM][4],bcorner_round_1[4];
     ivec tric_dist;
@@ -5732,7 +5989,7 @@ static void setup_dd_communication(FILE *fplog,int step,
     
     comm  = dd->comm;
     cg_cm = fr->cg_cm;
-    
+
     for(dim_ind=0; dim_ind<dd->ndim; dim_ind++)
     {
         dim = dd->dim[dim_ind];
@@ -5747,14 +6004,27 @@ static void setup_dd_communication(FILE *fplog,int step,
             }
         }
     }
-    
-    bTwoCut = (dd->bGridJump && comm->bInterCGMultiBody && dd->ndim > 1 &&
+
+    bBondComm = comm->bBondComm;
+
+    bTwoCut = (!bBondComm &&
+               dd->bGridJump && comm->bInterCGMultiBody && dd->ndim > 1 &&
                dd->comm->cutoff_mbody < dd->comm->cutoff);
+
+    bTwoDist = (bTwoCut ||
+                (bBondComm && dd->bGridJump && dd->ndim > 1));
+    
+    r_comm2  = sqr(comm->cutoff);
+    r_bcomm2 = sqr(comm->cutoff_mbody);
+
+    if (debug) {
+        fprintf(debug,"bBondComm %d, r_bc %f\n",bBondComm,sqrt(r_bcomm2));
+    }
     
     dim0 = dd->dim[0];
     /* The first dimension is equal for all cells */
     corner[0][0] = dd->cell_x0[dim0];
-    if (bTwoCut)
+    if (bTwoDist)
     {
         bcorner[0][0] = corner[0][0];
     }
@@ -5771,7 +6041,7 @@ static void setup_dd_communication(FILE *fplog,int step,
             if (comm->bInterCGMultiBody)
             {
                 /* For the bonded distance we need the maximum */
-                if (bTwoCut)
+                if (bTwoDist)
                 {
                     bcorner[1][0] = corner[1][1];
                     bcorner[1][1] = corner[1][1];
@@ -5811,7 +6081,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                     /* For the bonded distance we need the maximum */
                     for(j=0; j<4; j++)
                     {
-                        if (bTwoCut)
+                        if (bTwoDist)
                         {
                             bcorner[2][j] = corner[2][1];
                         }
@@ -5835,7 +6105,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                 if (comm->bInterCGMultiBody)
                 {
                     /* For the bonded distance we need the maximum */
-                    if (bTwoCut)
+                    if (bTwoDist)
                     {
                         bcorner_round_1[0] = corner_round_1[0];
                         bcorner_round_1[3] = corner_round_1[0];
@@ -5848,9 +6118,6 @@ static void setup_dd_communication(FILE *fplog,int step,
             }
         }
     }
-    
-    r_comm2  = sqr(comm->cutoff);
-    r_bcomm2 = sqr(comm->cutoff_mbody);
     
     /* Triclinic stuff */
     if (dd->ndim >= 2)
@@ -5884,7 +6151,7 @@ static void setup_dd_communication(FILE *fplog,int step,
         
         v_d = comm->v[dim];
         skew_fac2_d = sqr(dd->skew_fac[dim]);
-        
+
         cd->bInPlace = TRUE;
         for(p=0; p<cd->np; p++)
         {
@@ -5922,7 +6189,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                         {
                             r2 += r*r;
                         }
-                        if (bTwoCut)
+                        if (bTwoDist)
                         {
                             r = cg_cm[cg][dim] - bcorner[dim_ind][cell];
                             if (r > 0)
@@ -5938,7 +6205,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             r = cg_cm[cg][dim0] - corner_round_0;
                             /* This is the first dimension, so always r >= 0 */
                             r2 += r*r;
-                            if (bTwoCut)
+                            if (bTwoDist)
                             {
                                 rb2 += r*r;
                             }
@@ -5950,7 +6217,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             {
                                 r2 += r*r;
                             }
-                            if (bTwoCut)
+                            if (bTwoDist)
                             {
                                 r = cg_cm[cg][dim1] - bcorner_round_1[cell];
                                 if (r > 0)
@@ -5974,7 +6241,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                         {
                             r2 += r*r*skew_fac2_d;
                         }
-                        if (bTwoCut)
+                        if (bTwoDist)
                         {
                             r = cg_cm[cg][dim] - bcorner[dim_ind][cell] + tric_sh;
                             if (r > 0)
@@ -5993,7 +6260,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                                 r -= cg_cm[cg][i]*v_0[i][dim0];
                             }
                             r2 += r*r*skew_fac2_0;
-                            if (bTwoCut)
+                            if (bTwoDist)
                             {
                                 rb2 += r*r*skew_fac2_0;
                             }
@@ -6011,7 +6278,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             {
                                 r2 += r*r*skew_fac2_1;
                             }
-                            if (bTwoCut)
+                            if (bTwoDist)
                             {
                                 r = cg_cm[cg][dim1] - bcorner_round_1[cell] + tric_sh;
                                 if (r > 0)
@@ -6021,7 +6288,14 @@ static void setup_dd_communication(FILE *fplog,int step,
                             }
                         }
                     }
-                    if (r2 < r_comm2 || (bTwoCut && rb2 < r_bcomm2))
+                    if (r2 < r_comm2 ||
+                        (bTwoCut && rb2 < r_bcomm2) ||
+                        (bBondComm && 
+                         ((!bTwoDist && r2  < r_bcomm2) ||
+                          ( bTwoDist && rb2 < r_bcomm2)) &&
+                         GET_CGINFO_BOND_INTER(fr->cginfo[cg]) &&
+                         missing_link(comm->cglink,index_gl[cg],
+                                      comm->bLocalCG)))
                     {
                         /* Make an index to the local charge groups */
                         if (nsend+1 > ind->nalloc)
@@ -6117,7 +6391,7 @@ static void setup_dd_communication(FILE *fplog,int step,
             dd_sendrecv_int(dd, dim_ind, dddirBackward,
                             comm->buf_int, nsend,
                             recv_i,        ind->nrecv[ncell]);
-            
+
             /* Make space for cg_cm */
             if (pos_cg + ind->nrecv[ncell] > fr->cg_nalloc)
             {
@@ -6148,6 +6422,14 @@ static void setup_dd_communication(FILE *fplog,int step,
                         cg_gl = index_gl[pos_cg];
                         nrcg = gcgs_index[cg_gl+1] - gcgs_index[cg_gl];
                         cgindex[pos_cg+1] = cgindex[pos_cg] + nrcg;
+                        if (bBondComm)
+                        {
+                            /* Update the CG info and presence,
+                             * so we can use it in the next pass of the loop.
+                             */
+                            fr->cginfo[pos_cg] = fr->cginfo_global[cg_gl];
+                            comm->bLocalCG[cg_gl] = TRUE;
+                        }
                         pos_cg++;
                     }
                     if (p == 0)
@@ -6160,6 +6442,9 @@ static void setup_dd_communication(FILE *fplog,int step,
             }
             else
             {
+                /* This part of the code is never executed with bBondComm,
+                 * therefore we do not need to set cginfo here.
+                 */
                 merge_cg_buffers(ncell,cd,p,ncg_cell,
                                  index_gl,recv_i,cg_cm,recv_vr,
                                  gcgs_index,cgindex);
@@ -6183,6 +6468,11 @@ static void setup_dd_communication(FILE *fplog,int step,
     for(i=ddnatZONE; i<ddnatNR; i++)
     {
         comm->nat[i] = dd->nat_tot;
+    }
+
+    if (!bBondComm)
+    {
+        dd_set_cginfo(fr,dd->index_gl,dd->ncg_home,dd->ncg_tot,comm->bLocalCG);
     }
 
     if (debug)
@@ -6469,6 +6759,8 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
     ibuf = sort->ibuf;
     /* Reorder the global cg index */
     order_int_cg(dd->ncg_home,cgsort,dd->index_gl,ibuf);
+    /* Reorder the cginfo */
+    order_int_cg(dd->ncg_home,cgsort,fr->cginfo,ibuf);
     /* Rebuild the local cg index */
     ibuf[0] = 0;
     for(i=0; i<dd->ncg_home; i++)
@@ -6619,6 +6911,9 @@ void dd_partition_system(FILE            *fplog,
     bRedist = FALSE;
     if (bMasterState)
     {
+        /* Clear the old state */
+        clear_dd_indices(dd,0,0);
+
         get_cg_distribution(fplog,step,dd,cgs_gl,
                             state_global->box,state_global->x);
         
@@ -6636,6 +6931,8 @@ void dd_partition_system(FILE            *fplog,
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
         
+        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,dd->comm->bLocalCG);
+
         cg0 = 0;
     }
     else if (state_local->ddp_count != dd->ddp_count)
@@ -6651,23 +6948,29 @@ void dd_partition_system(FILE            *fplog,
         }
         
         /* Clear the old state */
-        clear_dd_indices(dd,0);
+        clear_dd_indices(dd,0,0);
         
         /* Build the new indices */
         rebuild_cgindex(dd,cgs_gl->index,state_local);
-        make_dd_indices(dd,cgs_gl->index,0,fr);
+        make_dd_indices(dd,cgs_gl->index,0);
         
         /* Redetermine the cg COMs */
         calc_cgcm(fplog,0,dd->ncg_home,
                   &top_local->cgs,state_local->x,fr->cg_cm);
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
+
+        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,dd->comm->bLocalCG);
         
         bRedist = dd->bDynLoadBal;
     }
     else
     {
         /* We have the full state, only redistribute the cgs */
+
+        /* Clear the non-home indices */
+        clear_dd_indices(dd,dd->ncg_home,dd->nat_home);
+
         bRedist = TRUE;
     }
     
@@ -6735,7 +7038,8 @@ void dd_partition_system(FILE            *fplog,
          * so we can sort with the indices.
          */
         set_ncg_cell_home(dd);
-        fill_grid(fplog,dd,fr->ns.grid,state_local->box,0,dd->ncg_home,fr->cg_cm);
+        fill_grid(fplog,dd,
+                  fr->ns.grid,state_local->box,0,dd->ncg_home,fr->cg_cm);
         
         if (debug)
         {
@@ -6752,8 +7056,8 @@ void dd_partition_system(FILE            *fplog,
                            state_local->box,fr);
     
     /* Set the indices */
-    make_dd_indices(dd,cgs_gl->index,cg0,fr);
-    
+    make_dd_indices(dd,cgs_gl->index,cg0);
+
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(dd);
     
@@ -6781,7 +7085,7 @@ void dd_partition_system(FILE            *fplog,
         np[dd->dim[i]] = dd->comm->cd[i].np;
     }
     dd_make_local_top(fplog,dd,state_local->box,
-                      dd->comm->cutoff,dd->comm->cellsize_min,np,
+                      dd->comm->cellsize_min,np,
                       fr,vsite,top_global,top_local);
     
     /* Set up the special atom communication */
@@ -6900,6 +7204,10 @@ void dd_partition_system(FILE            *fplog,
         dd->comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
     }
 
-    /* If you suspect corrupted indices, uncomment the next line */
-    /* check_ga2la_consistency(dd,top_global->natoms,"after partitioning"); */
+    if (DD_debug)
+    {
+        /* Set the env var GMX_DD_DEBUG if you suspect corrupted indices */
+        check_index_consistency(dd,top_global->natoms,ncg_mtop(top_global),
+                                "after partitioning");
+    }
 }
