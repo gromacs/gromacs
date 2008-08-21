@@ -494,6 +494,11 @@ void do_force(FILE *fplog,t_commrec *cr,
       dd_force_flop_start(cr->dd,nrnb);
     }
   }
+  /* Start the force cycle counter.
+   * This counter is stopped in do_forcelow_level.
+   * No parallel communication should occur while this counter is running,
+   * since that will interfere with the dynamic load balancing.
+   */
   wallcycle_start(wcycle,ewcFORCE);
 
   if (bDoForces) {
@@ -551,14 +556,13 @@ void do_force(FILE *fplog,t_commrec *cr,
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
 		    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
 		    x,hist,f,enerd,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
-		    flags);
+		    flags,&cycles_force);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
   if (ed) {
     do_flood(fplog,cr,x,f,ed,box,step);
   }
 	
-  cycles_force = wallcycle_stop(wcycle,ewcFORCE);
   if (DOMAINDECOMP(cr)) {
     dd_force_flop_stop(cr->dd,nrnb);
     if (wcycle)

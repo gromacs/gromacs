@@ -1518,272 +1518,323 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                        real       lambda,   t_graph    *graph,
                        t_blocka   *excl,    
                        rvec       mu_tot[],
-                       int        flags)
+                       int        flags,
+                       float      *cycles_force)
 {
-  int     i,nit,status;
-  bool    bDoEpot,bSepDVDL,bSB;
-  matrix  boxs;
-  rvec    box_size;
-  real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
-  t_pbc   pbc;
+    int     i,nit,status;
+    bool    bDoEpot,bSepDVDL,bSB;
+    matrix  boxs;
+    rvec    box_size;
+    real    dvdlambda,Vsr,Vlr,Vcorr=0,vdip,vcharge;
+    t_pbc   pbc;
 #ifdef GMX_MPI
-  double  t0=0.0, t1, t2, t3; /* time measurement for coarse load balancing */
+    double  t0=0.0,t1,t2,t3; /* time measurement for coarse load balancing */
 #endif
-  static double  t_fnbf=0.0, t_wait=0.0;
-  static int     timesteps=0;
-  
+    static double  t_fnbf=0.0, t_wait=0.0;
+    static int     timesteps=0;
+    
 #define PRINT_SEPDVDL(s,v,dvdl) if (bSepDVDL) fprintf(fplog,sepdvdlformat,s,v,dvdl);
-  
-  GMX_MPE_LOG(ev_force_start);
-
-  /* Reset box */
-  for(i=0; (i<DIM); i++)
-    box_size[i]=box[i][i];
-
-  bSepDVDL=(fr->bSepDVDL && do_per_step(step,ir->nstlog));
-  debug_gmx();
-
-  /* do QMMM first if requested */
-  if(fr->bQMMM){
-    enerd->term[F_EQM] = calculate_QMMM(cr,x,f,fr,md);
-  }
-
-  if (bSepDVDL)
-    fprintf(fplog,"Step %d: non-bonded V and dVdl for node %d:\n",
-	    step,cr->nodeid);
-  
-  /* Call the short range functions all in one go. */
-  GMX_MPE_LOG(ev_do_fnbf_start);
-
-  dvdlambda = 0;
-
-#ifdef GMX_MPI
-  /*#define TAKETIME ((cr->npmenodes) && (timesteps < 12))*/
-#define TAKETIME FALSE
-  if (TAKETIME)
-  {    MPI_Barrier(cr->mpi_comm_mygroup);
-    t0=MPI_Wtime();
-  }
-#endif
-
-  if (ir->nwall) {
-    dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,
-                         enerd->grpp.ener[egLJSR],nrnb);
-    PRINT_SEPDVDL("Walls",0.0,dvdlambda);
-    enerd->term[F_DVDL] += dvdlambda;
-  }
-
-  where();
-  do_nonbonded(cr,fr,x,f,md,
-               fr->bBHAM ?
-               enerd->grpp.ener[egBHAMSR] :
-               enerd->grpp.ener[egLJSR],
-               enerd->grpp.ener[egCOULSR],box_size,nrnb,
-               lambda,&dvdlambda,FALSE,-1,-1,
-               flags & GMX_FORCE_FORCES);
-  where();
-
-#ifdef GMX_MPI
-  if (TAKETIME)
-  {
-    t1=MPI_Wtime();
-    t_fnbf += t1-t0;
-  }
-#endif
-
-  enerd->term[F_DVDL] += dvdlambda;
-  Vsr = 0;
-  if (bSepDVDL)
-  {
-      for(i=0; i<enerd->grpp.nener; i++)
-      {
-          Vsr +=
-              (fr->bBHAM ?
-               enerd->grpp.ener[egBHAMSR][i] :
-               enerd->grpp.ener[egLJSR][i])
-              + enerd->grpp.ener[egCOULSR][i];
-      }
-  }
-  PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
-  debug_gmx();
-
-  GMX_MPE_LOG(ev_do_fnbf_finish);
-  
-  if (debug) 
-    pr_rvecs(debug,0,"fshift after SR",fr->fshift,SHIFTS);
-  
-  /* Shift the coordinates. Must be done before bonded forces and PPPM, 
-   * but is also necessary for SHAKE and update, therefore it can NOT 
-   * go when no bonded forces have to be evaluated.
-   */
-  
-  /* Here sometimes we would not need to shift with NBFonly,
-   * but we do so anyhow for consistency of the returned coordinates.
-   */
-  if (graph) {
-    shift_self(graph,box,x);
-    if (TRICLINIC(box))
-      inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
-    else
-      inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
-  }
-  /* Check whether we need to do bondeds or correct for exclusions */
-  if (fr->bMolPBC &&
-      ((flags & GMX_FORCE_BONDED)
-       || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype))) {
-    /* Since all atoms are in the rectangular or triclinic unit-cell,
-     * only single box vector shifts (2 in x) are required.
-     */
-    set_pbc_dd(&pbc,fr->ePBC,cr->dd,TRUE,box);
-  }
-  debug_gmx();
-
-  where();
-  if (EEL_FULL(fr->eeltype)) {
-    bSB = (ir->nwall == 2);
-    if (bSB) {
-      copy_mat(box,boxs);
-      svmul(ir->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
-      box_size[ZZ] *= ir->wall_ewald_zfac;
-    }
-
-    dvdlambda = 0;
-    status = 0;
-    switch (fr->eeltype) {
-    case eelPPPM:
-      status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_novirsum,
-			   md->chargeA,
-			   box_size,fr->phi,cr,md->start,md->homenr,
-			   nrnb,ir->pme_order,&Vlr);
-      break;
-    case eelPME:
-    case eelPMESWITCH:
-    case eelPMEUSER:
-      if (cr->duty & DUTY_PME) {
-	wallcycle_start(wcycle,ewcPMEMESH);
-        status = gmx_pme_do(fr->pmedata,
-			    md->start,md->homenr,
-			    x,fr->f_novirsum,
-			    md->chargeA,md->chargeB,
-			    bSB ? boxs : box,cr,
-			    DOMAINDECOMP(cr) ? dd_pme_maxshift(cr->dd) : 0,
-			    nrnb,
-			    fr->vir_el_recip,fr->ewaldcoeff,
-			    &Vlr,lambda,&dvdlambda,FALSE);
-        PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
-	wallcycle_stop(wcycle,ewcPMEMESH);
-      } 
-      else {
-        /* Energies and virial are obtained later from the PME nodes */
-	/* but values have to be zeroed out here */
-        Vlr=0.0;
-	clear_mat(fr->vir_el_recip);	
-      }
-      break;
-    case eelEWALD:
-      Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_novirsum,md->chargeA,md->chargeB,
-		     box_size,cr,md->homenr,
-		     fr->vir_el_recip,fr->ewaldcoeff,
-		     lambda,&dvdlambda);
-      PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
-      break;
-    default:
-      Vlr = 0;
-      gmx_fatal(FARGS,"No such electrostatics method implemented %s",
-		eel_names[fr->eeltype]);
-    }
-    if (status != 0)
-      gmx_fatal(FARGS,"Error %d in long range electrostatics routine %s",
-		status,EELTYPE(fr->eeltype));
-		
-    enerd->term[F_DVDL] += dvdlambda;
-    if(fr->bEwald) {
-      dvdlambda = 0;
-      Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,cr,fr,
-				 md->chargeA,
-				 md->nChargePerturbed ? md->chargeB : NULL,
-				 excl,x,bSB ? boxs : box,mu_tot,
-				 ir->ewald_geometry,ir->epsilon_surface,
-				 lambda,&dvdlambda,&vdip,&vcharge);
-      PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
-      enerd->term[F_DVDL] += dvdlambda;
-    } else {
-      Vcorr = shift_LRcorrection(fplog,md->start,md->homenr,cr,fr,
-				 md->chargeA,excl,x,TRUE,box,
-				 fr->vir_el_recip);
-    }
-    enerd->term[F_COUL_RECIP] = Vlr + Vcorr;
-    if (debug)
-      fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
-	      Vlr,Vcorr,enerd->term[F_COUL_RECIP]);
-    if (debug) {
-      pr_rvecs(debug,0,"vir_el_recip after corr",fr->vir_el_recip,DIM);
-      pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
-    }
-  } else if (EEL_RF(fr->eeltype)) {
-    dvdlambda = 0;
-
-    if (fr->eeltype != eelRF_NEC)
-      enerd->term[F_RF_EXCL] = RF_excl_correction(fplog,fr,graph,md,excl,x,f,
-					   fr->fshift,&pbc,lambda,&dvdlambda);
-
-    enerd->term[F_DVDL] += dvdlambda;
-    PRINT_SEPDVDL("RF exclusion correction",enerd->term[F_RF_EXCL],dvdlambda);
-  }
-  where();
-  debug_gmx();
-  
-  if (debug)    
-    print_nrnb(debug,nrnb); 
-  debug_gmx();
-  
-  if (flags & GMX_FORCE_BONDED) {
-    GMX_MPE_LOG(ev_calc_bonds_start);
-    calc_bonds(fplog,cr->ms,
-               idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
-               DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
-               fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
-    debug_gmx();
-    GMX_MPE_LOG(ev_calc_bonds_finish);
-  }
-
-#ifdef GMX_MPI
-  if (TAKETIME)
-  {
-    t2=MPI_Wtime();
-    MPI_Barrier(cr->mpi_comm_mygroup);
-    t3=MPI_Wtime();
-    t_wait += t3-t2;
-    if (timesteps == 11)
+    
+    GMX_MPE_LOG(ev_force_start);
+    
+    /* Reset box */
+    for(i=0; (i<DIM); i++)
     {
-      fprintf(stderr,"* PP load balancing info: node %d, step %d, rel wait time=%3.0f%% , load string value: %7.2f\n", 
-            cr->nodeid, timesteps, 100*t_wait/(t_wait+t_fnbf), (t_fnbf+t_wait)/t_fnbf);
-    }	  
-    timesteps++;
-  }
+        box_size[i]=box[i][i];
+    }
+    
+    bSepDVDL=(fr->bSepDVDL && do_per_step(step,ir->nstlog));
+    debug_gmx();
+    
+    /* do QMMM first if requested */
+    if(fr->bQMMM)
+    {
+        enerd->term[F_EQM] = calculate_QMMM(cr,x,f,fr,md);
+    }
+    
+    if (bSepDVDL)
+    {
+        fprintf(fplog,"Step %d: non-bonded V and dVdl for node %d:\n",
+                step,cr->nodeid);
+    }
+    
+    /* Call the short range functions all in one go. */
+    GMX_MPE_LOG(ev_do_fnbf_start);
+    
+    dvdlambda = 0;
+    
+#ifdef GMX_MPI
+    /*#define TAKETIME ((cr->npmenodes) && (timesteps < 12))*/
+#define TAKETIME FALSE
+    if (TAKETIME)
+    {
+        MPI_Barrier(cr->mpi_comm_mygroup);
+        t0=MPI_Wtime();
+    }
 #endif
-
-  if (debug) 
-    pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
-
-  GMX_MPE_LOG(ev_force_finish);
+    
+    if (ir->nwall)
+    {
+        dvdlambda = do_walls(ir,fr,box,md,x,f,lambda,
+                             enerd->grpp.ener[egLJSR],nrnb);
+        PRINT_SEPDVDL("Walls",0.0,dvdlambda);
+        enerd->term[F_DVDL] += dvdlambda;
+    }
+    
+    where();
+    do_nonbonded(cr,fr,x,f,md,
+                 fr->bBHAM ?
+                 enerd->grpp.ener[egBHAMSR] :
+                 enerd->grpp.ener[egLJSR],
+                 enerd->grpp.ener[egCOULSR],box_size,nrnb,
+                 lambda,&dvdlambda,FALSE,-1,-1,
+                 flags & GMX_FORCE_FORCES);
+    where();
+    
+#ifdef GMX_MPI
+    if (TAKETIME)
+    {
+        t1=MPI_Wtime();
+        t_fnbf += t1-t0;
+    }
+#endif
+    
+    enerd->term[F_DVDL] += dvdlambda;
+    Vsr = 0;
+    if (bSepDVDL)
+    {
+        for(i=0; i<enerd->grpp.nener; i++)
+        {
+            Vsr +=
+                (fr->bBHAM ?
+                 enerd->grpp.ener[egBHAMSR][i] :
+                 enerd->grpp.ener[egLJSR][i])
+                + enerd->grpp.ener[egCOULSR][i];
+        }
+    }
+    PRINT_SEPDVDL("VdW and Coulomb SR particle-p.",Vsr,dvdlambda);
+    debug_gmx();
+    
+    GMX_MPE_LOG(ev_do_fnbf_finish);
+    
+    if (debug)
+    {
+        pr_rvecs(debug,0,"fshift after SR",fr->fshift,SHIFTS);
+    }
+    
+    /* Shift the coordinates. Must be done before bonded forces and PPPM, 
+     * but is also necessary for SHAKE and update, therefore it can NOT 
+     * go when no bonded forces have to be evaluated.
+     */
+    
+    /* Here sometimes we would not need to shift with NBFonly,
+     * but we do so anyhow for consistency of the returned coordinates.
+     */
+    if (graph)
+    {
+        shift_self(graph,box,x);
+        if (TRICLINIC(box))
+        {
+            inc_nrnb(nrnb,eNR_SHIFTX,2*graph->nnodes);
+        }
+        else
+        {
+            inc_nrnb(nrnb,eNR_SHIFTX,graph->nnodes);
+        }
+    }
+    /* Check whether we need to do bondeds or correct for exclusions */
+    if (fr->bMolPBC &&
+        ((flags & GMX_FORCE_BONDED)
+         || EEL_RF(fr->eeltype) || EEL_FULL(fr->eeltype)))
+    {
+        /* Since all atoms are in the rectangular or triclinic unit-cell,
+         * only single box vector shifts (2 in x) are required.
+         */
+        set_pbc_dd(&pbc,fr->ePBC,cr->dd,TRUE,box);
+    }
+    debug_gmx();
+    
+    if (flags & GMX_FORCE_BONDED)
+    {
+        GMX_MPE_LOG(ev_calc_bonds_start);
+        calc_bonds(fplog,cr->ms,
+                   idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
+                   DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
+                   fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
+        debug_gmx();
+        GMX_MPE_LOG(ev_calc_bonds_finish);
+    }
+    
+    where();
+    if (EEL_FULL(fr->eeltype))
+    {
+        bSB = (ir->nwall == 2);
+        if (bSB)
+        {
+            copy_mat(box,boxs);
+            svmul(ir->wall_ewald_zfac,boxs[ZZ],boxs[ZZ]);
+            box_size[ZZ] *= ir->wall_ewald_zfac;
+        }
+        
+        clear_mat(fr->vir_el_recip);	
+        
+        if(fr->bEwald)
+        {
+            dvdlambda = 0;
+            Vcorr = ewald_LRcorrection(fplog,md->start,md->start+md->homenr,
+                                       cr,fr,
+                                       md->chargeA,
+                                       md->nChargePerturbed ? md->chargeB : NULL,
+                                       excl,x,bSB ? boxs : box,mu_tot,
+                                       ir->ewald_geometry,ir->epsilon_surface,
+                                       lambda,&dvdlambda,&vdip,&vcharge);
+            PRINT_SEPDVDL("Ewald excl./charge/dip. corr.",Vcorr,dvdlambda);
+            enerd->term[F_DVDL] += dvdlambda;
+        }
+        else
+        {
+            Vcorr = shift_LRcorrection(fplog,md->start,md->homenr,cr,fr,
+                                       md->chargeA,excl,x,TRUE,box,
+                                       fr->vir_el_recip);
+        }
+        
+        *cycles_force = wallcycle_stop(wcycle,ewcFORCE);
+        /* Now we can do communication again */
+        
+        dvdlambda = 0;
+        status = 0;
+        switch (fr->eeltype)
+        {
+        case eelPPPM:
+            status = gmx_pppm_do(fplog,fr->pmedata,FALSE,x,fr->f_novirsum,
+                                 md->chargeA,
+                                 box_size,fr->phi,cr,md->start,md->homenr,
+                                 nrnb,ir->pme_order,&Vlr);
+            break;
+        case eelPME:
+        case eelPMESWITCH:
+        case eelPMEUSER:
+            if (cr->duty & DUTY_PME)
+            {
+                wallcycle_start(wcycle,ewcPMEMESH);
+                status = gmx_pme_do(fr->pmedata,
+                                    md->start,md->homenr,
+                                    x,fr->f_novirsum,
+                                    md->chargeA,md->chargeB,
+                                    bSB ? boxs : box,cr,
+                                    DOMAINDECOMP(cr) ? dd_pme_maxshift(cr->dd) : 0,
+                                    nrnb,
+                                    fr->vir_el_recip,fr->ewaldcoeff,
+                                    &Vlr,lambda,&dvdlambda,FALSE);
+                PRINT_SEPDVDL("PME mesh",Vlr,dvdlambda);
+                wallcycle_stop(wcycle,ewcPMEMESH);
+            } 
+            else
+            {
+                /* Energies and virial are obtained later from the PME nodes */
+                /* but values have to be zeroed out here */
+                Vlr=0.0;
+            }
+            break;
+        case eelEWALD:
+            Vlr = do_ewald(fplog,FALSE,ir,x,fr->f_novirsum,
+                           md->chargeA,md->chargeB,
+                           box_size,cr,md->homenr,
+                           fr->vir_el_recip,fr->ewaldcoeff,
+                           lambda,&dvdlambda);
+            PRINT_SEPDVDL("Ewald long-range",Vlr,dvdlambda);
+            break;
+        default:
+            Vlr = 0;
+            gmx_fatal(FARGS,"No such electrostatics method implemented %s",
+                      eel_names[fr->eeltype]);
+        }
+        if (status != 0)
+        {
+            gmx_fatal(FARGS,"Error %d in long range electrostatics routine %s",
+                      status,EELTYPE(fr->eeltype));
+		}
+        enerd->term[F_DVDL] += dvdlambda;
+        enerd->term[F_COUL_RECIP] = Vlr + Vcorr;
+        if (debug)
+        {
+            fprintf(debug,"Vlr = %g, Vcorr = %g, Vlr_corr = %g\n",
+                    Vlr,Vcorr,enerd->term[F_COUL_RECIP]);
+            pr_rvecs(debug,0,"vir_el_recip after corr",fr->vir_el_recip,DIM);
+            pr_rvecs(debug,0,"fshift after LR Corrections",fr->fshift,SHIFTS);
+        }
+    }
+    else
+    {
+        if (EEL_RF(fr->eeltype))
+        {
+            dvdlambda = 0;
+            
+            if (fr->eeltype != eelRF_NEC)
+            {
+                enerd->term[F_RF_EXCL] =
+                    RF_excl_correction(fplog,fr,graph,md,excl,x,f,
+                                       fr->fshift,&pbc,lambda,&dvdlambda);
+            }
+            
+            enerd->term[F_DVDL] += dvdlambda;
+            PRINT_SEPDVDL("RF exclusion correction",
+                          enerd->term[F_RF_EXCL],dvdlambda);
+        }
+        
+        *cycles_force = wallcycle_stop(wcycle,ewcFORCE);
+        /* Now we can do communication again */
+    }
+    where();
+    debug_gmx();
+    
+    if (debug)
+    {
+        print_nrnb(debug,nrnb); 
+    }
+    debug_gmx();
+    
+#ifdef GMX_MPI
+    if (TAKETIME)
+    {
+        t2=MPI_Wtime();
+        MPI_Barrier(cr->mpi_comm_mygroup);
+        t3=MPI_Wtime();
+        t_wait += t3-t2;
+        if (timesteps == 11)
+        {
+            fprintf(stderr,"* PP load balancing info: node %d, step %d, rel wait time=%3.0f%% , load string value: %7.2f\n", 
+                    cr->nodeid, timesteps, 100*t_wait/(t_wait+t_fnbf), (t_fnbf+t_wait)/t_fnbf);
+        }	  
+        timesteps++;
+    }
+#endif
+    
+    if (debug)
+    {
+        pr_rvecs(debug,0,"fshift after bondeds",fr->fshift,SHIFTS);
+    }
+    
+    GMX_MPE_LOG(ev_force_finish);
 }
 
 void init_enerdata(FILE *log,int ngener,gmx_enerdata_t *enerd)
 {
-  int i,n2;
-
-  for(i=0; i<F_NRE; i++) {
-      enerd->term[i] = 0;
-  }
-  
-  n2=ngener*ngener;
+    int i,n2;
+    
+    for(i=0; i<F_NRE; i++)
+    {
+        enerd->term[i] = 0;
+    }
+    
+    n2=ngener*ngener;
 #ifdef DEBUG
-  fprintf(log,"Creating %d sized group matrix for energies\n",n2);
+    fprintf(log,"Creating %d sized group matrix for energies\n",n2);
 #endif
-  enerd->grpp.nener = n2;
-  for(i=0; (i<egNR); i++) {
-    snew(enerd->grpp.ener[i],n2);
-  }
+    enerd->grpp.nener = n2;
+    for(i=0; (i<egNR); i++)
+    {
+        snew(enerd->grpp.ener[i],n2);
+    }
 }
 

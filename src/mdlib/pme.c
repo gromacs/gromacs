@@ -1609,6 +1609,7 @@ int gmx_pmeonly(gmx_pme_t pme,
         wallcycle_start(wcycle,ewcPMEMESH_SEP);
         
         dvdlambda = 0;
+        clear_mat(vir);
         gmx_pme_do(pme,0,natoms,x_pp,f_pp,chargeA,chargeB,box,
                    cr,maxshift,nrnb,vir,ewaldcoeff,
                    &energy,lambda,&dvdlambda,
@@ -1821,13 +1822,13 @@ int gmx_pme_do(gmx_pme_t pme,
     
     if (!pme->bFEP) {
         *energy = energy_AB[0];
-        copy_mat(vir_AB[0],vir);
+        m_add(vir,vir_AB[0],vir);
     } else {
         *energy = (1.0-lambda)*energy_AB[0] + lambda*energy_AB[1];
         *dvdlambda += energy_AB[1] - energy_AB[0];
         for(i=0; i<DIM; i++)
             for(j=0; j<DIM; j++)
-                vir[i][j] = (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
+                vir[i][j] += (1.0-lambda)*vir_AB[0][i][j] + lambda*vir_AB[1][i][j];
     }
     if (debug)
         fprintf(debug,"PME mesh energy: %g\n",*energy);

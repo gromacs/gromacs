@@ -140,11 +140,9 @@ void wallcycle_sum(t_commrec *cr, gmx_wallcycle_t wc,double cycles[])
     }
 
     /* Store the cycles in a double buffer for summing */
-    for(i=0; i<ewcNR; i++)
+    for(i=0; i<ewcNR; i++) {
       cycles[i] = (double)wc[i].c;
-
-    /* Remove the PME mesh part from the force count */
-    cycles[ewcFORCE] -= cycles[ewcPMEMESH];
+    }
 
     if (wc[ewcUPDATE].n > 0) {
       /* Remove the constraint part from the update count */
