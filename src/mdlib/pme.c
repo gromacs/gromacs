@@ -1424,10 +1424,15 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
         MPI_Comm_rank(pme->mpi_comm,&pme->nodeid);
         MPI_Comm_size(pme->mpi_comm,&pme->nnodes);
 #endif
+        if (pme->nnodes == 1) {
+            pme->ndecompdim = 0;
+        } else {
+            pme->ndecompdim = 1;
+        }
         pme->bPPnode = (cr->duty & DUTY_PP);
     } else {
-        pme->ndecompdim = 0;
         pme->nnodes = 1;
+        pme->ndecompdim = 0;
         pme->bPPnode = TRUE;
     }
     
@@ -1795,11 +1800,11 @@ int gmx_pme_do(gmx_pme_t pme,
         GMX_MPE_LOG(ev_gather_f_bsplines_start);
         
         where();
-        /* If are running without parallelization,
+        /* If we are running without parallelization,
          * atc->f is the actual force array, not a buffer,
          * therefore we should not clear it.
          */
-        bClearF = (q == 0 && pme->ndecompdim > 0);
+        bClearF = (q == 0 && PAR(cr));
         gather_f_bsplines(pme,grid,bClearF,&pme->atc[0],
                           pme->bFEP ? (q==0 ? 1.0-lambda : lambda) : 1.0);
         where();
