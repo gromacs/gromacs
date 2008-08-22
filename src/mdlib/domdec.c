@@ -5221,7 +5221,7 @@ static gmx_domdec_master_t *init_gmx_domdec_master_t(gmx_domdec_t *dd,
 static real average_cellsize_min(gmx_domdec_t *dd,matrix box)
 {
     int  di,d;
-    real r,csa,fac;
+    real r;
 
     dd_set_tric_dir(dd,box);
     r = box[0][0];
@@ -5251,14 +5251,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
                                         real comm_distance_min,real rconstr,
                                         bool bDynLoadBal,real dlb_scale,
                                         char *sizex,char *sizey,char *sizez,
-                                        gmx_mtop_t *mtop,matrix box,
-                                        t_inputrec *ir)
+                                        gmx_mtop_t *mtop,t_inputrec *ir,
+                                        bool bBCheck,matrix box,rvec *x)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
     int  recload;
     int  d,i,j;
-    real bcsc,limit;
+    real r_2b,r_mb,r_bonded=-1,r_bonded_limit=-1,limit,acs;
     bool bC;
     char buf[STRLEN];
     
@@ -5363,46 +5363,58 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 
     comm->cutoff       = max(ir->rlist,max(ir->rvdw,ir->rcoulomb));
     comm->cutoff_mbody = 0;
+    
+    comm->cellsize_limit = 0;
+    comm->bBondComm = FALSE;
 
-    if (!comm->bInterCGBondeds)
+    if (comm->bInterCGBondeds)
     {
-        comm->bBondComm = FALSE;
-        comm->cellsize_limit = 0;
-    }
-    else
-    {
-        /* Initial minimum setting, can be increased later */
-        comm->cellsize_limit = comm_distance_min;
-
-        comm->bBondComm = (comm_distance_min < 0 ||
-                           comm_distance_min > comm->cutoff);
-        if (comm->bBondComm)
+        if (comm_distance_min > 0)
         {
-            if (comm_distance_min < 0)
-            {
-                /* Later we set cutoff_mbody to a fraction of the cell size.
-                 * Without DLB this might be increased dynamically.
-                 * With DLB this might be increased further down.
-                 */
-                bcsc = min(0.5,dlb_scale);
-                comm->cellsize_limit = comm->cutoff/bcsc;
-                comm->cutoff_mbody   = 0;
-                if (fplog)
-                {
-                    fprintf(fplog,"The option -rdd=%g set the minimum cell size to %g*r_c=%g\n",comm_distance_min,1/bcsc,comm->cellsize_limit);
-                }
-            }
-            else
-            {
-                /* comm_distance_min > non-bonded cut-off */
-                comm->cellsize_limit = comm_distance_min;
-                comm->cutoff_mbody   = comm_distance_min;
-            }
+            comm->cutoff_mbody = comm_distance_min;
+            comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
+        }
+        else if (ir->bPeriodicMols)
+        {
+            /* Can not easily determine the required cut-off */
+            dd_warning(cr,fplog,"NOTE: Periodic molecules: can not easily determine the required minimum bonded cut-off, using half the non-bonded cut-off\n");
+            comm->cutoff_mbody = comm->cutoff/2;
         }
         else
         {
-            comm->cutoff_mbody = comm_distance_min;
+            if (MASTER(cr))
+            {
+                dd_bonded_cg_distance(dd,mtop,ir,x,box,bBCheck,&r_2b,&r_mb);
+            }
+            gmx_bcast(sizeof(r_2b),&r_2b,cr);
+            gmx_bcast(sizeof(r_mb),&r_mb,cr);
+            if (fplog)
+            {
+                fprintf(fplog,"Initial maximum inter charge-group distances:\n");
+                fprintf(fplog,"    two-body bonded interactions: %5.3f nm\n",
+                        r_2b);
+                fprintf(fplog,"  multi-body bonded interactions: %5.3f nm\n",
+                        r_mb);
+            }
+
+            /* We use an initial margin of 10% for the minimum cell size,
+             * except when we are just below the non-bonded cut-off.
+             */
+            if (max(r_2b,r_mb) > comm->cutoff)
+            {
+                r_bonded       = max(r_2b,r_mb);
+                r_bonded_limit = 1.1*r_bonded;
+                comm->bBondComm = TRUE;
+            }
+            else
+            {
+                r_bonded       = r_mb;
+                r_bonded_limit = min(1.1*r_bonded,comm->cutoff);
+            }
+            comm->cellsize_limit = r_bonded_limit;
+            /* We determine cutoff_mbody later */
         }
+        comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
     }
 
     if (dd->bInterCGcons && rconstr <= 0)
@@ -5414,7 +5426,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
             fprintf(fplog,
                     "Estimated maximum distance required for P-LINCS: %.3f nm\n",
                     rconstr);
-            if (rconstr > comm_distance_min)
+            if (rconstr > comm->cellsize_limit)
             {
                 fprintf(fplog,"This distance will limit the DD cell size, you can override this with -rcon\n");
             }
@@ -5438,6 +5450,15 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
         if (cr->npmenodes == -1)
         {
             cr->npmenodes = 0;
+        }
+        acs = average_cellsize_min(dd,box);
+        if (acs < comm->cellsize_limit && MASTER(cr))
+        {
+            if (fplog)
+            {
+                fprintf(fplog,"ERROR: The initial cell size (%f) is smaller than the cell size limit (%f)\n",acs,comm->cellsize_limit);
+            }
+            gmx_fatal(FARGS,"The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",acs,comm->cellsize_limit);
         }
     }
     else
@@ -5504,13 +5525,44 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
         comm->slb_frac[ZZ] = get_slb_frac(fplog,"z",dd->nc[ZZ],sizez);
     }
 
-    if (comm->bInterCGBondeds)
+    if (comm->bInterCGBondeds && comm->cutoff_mbody == 0)
     {
-        if (comm->bBondComm && comm->cutoff_mbody == 0)
+        if (comm->bBondComm || dd->bDynLoadBal)
         {
-            comm->cutoff_mbody   = bcsc*average_cellsize_min(dd,box);
-            comm->cellsize_limit = comm->cutoff_mbody;
+            /* Set the bonded communication distance to halfway
+             * the minimum and the maximum,
+             * since the extra communication cost is nearly zero.
+             */
+            acs = average_cellsize_min(dd,box);
+            comm->cutoff_mbody = 0.5*(r_bonded + acs);
+            if (dd->bDynLoadBal)
+            {
+                /* Check if this does not limit the scaling */
+                comm->cutoff_mbody = min(comm->cutoff_mbody,dlb_scale*acs);
+            }
+            if (!comm->bBondComm)
+            {
+                /* Without bBondComm do not go beyond the n.b. cut-off */
+                comm->cutoff_mbody = min(comm->cutoff_mbody,comm->cutoff);
+                if (comm->cellsize_limit >= comm->cutoff)
+                {
+                    /* We don't loose a lot of efficieny
+                     * when increasing it to the n.b. cut-off.
+                     * It can even be slightly faster, because we need
+                     * less checks for the communication setup.
+                     */
+                    comm->cutoff_mbody = comm->cutoff;
+                }
+            }
+            /* Check if we did not end up below our original limit */
+            comm->cutoff_mbody = max(comm->cutoff_mbody,r_bonded_limit);
+
+            if (comm->cutoff_mbody > comm->cellsize_limit)
+            {
+                comm->cellsize_limit = comm->cutoff_mbody;
+            }
         }
+        /* Without DLB and cutoff_mbody<cutoff, cutoff_mbody is dynamic */
     }
 
     if (debug)
@@ -5601,15 +5653,122 @@ void dd_init_bondeds(FILE *fplog,
     }
 }
 
+static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
+                              t_inputrec *ir,real dlb_scale,
+                              matrix box)
+{
+    gmx_domdec_comm_t *comm;
+    int  d;
+    ivec np;
+    real limit;
+    char buf[64];
+
+    if (fplog == NULL)
+    {
+        return;
+    }
+
+    comm = dd->comm;
+
+    if (dd->bDynLoadBal)
+    {
+        fprintf(fplog,"The maximum number of communication pulses is:");
+        for(d=0; d<dd->ndim; d++)
+        {
+            fprintf(fplog," %c %d",dim2char(dd->dim[d]),comm->cd[d].np);
+        }
+        fprintf(fplog,"\n");
+        fprintf(fplog,"The minimum size for domain decomposition cells is %.3f nm\n",comm->cellsize_limit);
+        fprintf(fplog,"The requested allowed shrink of DD cells (option -dds) is: %.2f\n",dlb_scale);
+        fprintf(fplog,"The allowed shrink of domain decomposition cells is:");
+        for(d=0; d<DIM; d++)
+        {
+            if (dd->nc[d] > 1)
+            {
+                fprintf(fplog," %c %.2f",
+                        dim2char(d),
+                        comm->cellsize_min[d]/(box[d][d]*dd->skew_fac[d]/dd->nc[d]));
+            }
+        }
+        fprintf(fplog,"\n\n");
+    }
+    else
+    {
+        dd_set_tric_dir(dd,box);
+        set_dd_cell_sizes_slb(dd,box,FALSE,np);
+        fprintf(fplog,"The initial number of communication pulses is:");
+        for(d=0; d<dd->ndim; d++)
+        {
+            fprintf(fplog," %c %d",dim2char(dd->dim[d]),np[dd->dim[d]]);
+        }
+        fprintf(fplog,"\n");
+        fprintf(fplog,"The initial domain decomposition cell size is:");
+        for(d=0; d<DIM; d++) {
+            if (dd->nc[d] > 1)
+            {
+                fprintf(fplog," %c %.2f nm",
+                        dim2char(d),dd->comm->cellsize_min[d]);
+            }
+        }
+        fprintf(fplog,"\n\n");
+    }
+    
+    if (comm->bInterCGBondeds || dd->vsite_comm || dd->constraint_comm)
+    {
+        fprintf(fplog,"The maximum allowed distance for charge groups involved in interactions is:\n");
+        fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+                "non-bonded interactions","",comm->cutoff);
+
+        if (dd->bDynLoadBal)
+        {
+            limit = dd->comm->cellsize_limit;
+        }
+        else
+        {
+            if (DYNAMIC_BOX(*ir))
+            {
+                fprintf(fplog,"(the following are initial values, they could change due to box deformation)\n");
+            }
+            limit = dd->comm->cellsize_min[XX];
+            for(d=1; d<DIM; d++)
+            {
+                limit = min(limit,dd->comm->cellsize_min[d]);
+            }
+        }
+
+        if (comm->bInterCGBondeds)
+        {
+            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+                    "two-body bonded interactions","(-rdd)",
+                    max(comm->cutoff,comm->cutoff_mbody));
+            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+                    "multi-body bonded interactions","(-rdd)",
+                    (comm->bBondComm || dd->bGridJump) ? comm->cutoff_mbody : min(comm->cutoff,limit));
+        }
+        if (dd->vsite_comm)
+        {
+            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+                    "virtual site constructions","(-rcon)",limit);
+        }
+        if (dd->constraint_comm)
+        {
+            sprintf(buf,"atoms separated by up to %d constraints",
+                    1+ir->nProjOrder);
+            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
+                    buf,"(-rcon)",limit);
+        }
+        fprintf(fplog,"\n");
+    }
+    
+    fflush(fplog);
+}
+
 void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
                        t_inputrec *ir,t_forcerec *fr,
                        matrix box)
 {
     gmx_domdec_comm_t *comm;
     int  d,dim,npulse,npulse_d_max,npulse_d;
-    ivec np;
-    real limit;
-    char buf[64];
     
     comm = dd->comm;
     
@@ -5750,101 +5909,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         {
             comm->cutoff_mbody = min(comm->cutoff,comm->cellsize_limit);
         }
-        if (DDMASTER(dd) && fplog)
-        {
-            fprintf(fplog,"The maximum number of communication pulses is:");
-            for(d=0; d<dd->ndim; d++)
-            {
-                fprintf(fplog," %c %d",dim2char(dd->dim[d]),comm->cd[d].np);
-            }
-            fprintf(fplog,"\n");
-            fprintf(fplog,"The minimum size for domain decomposition cells is %.3f nm\n",comm->cellsize_limit);
-            fprintf(fplog,"The requested allowed shrink of DD cells (option -dds) is: %.2f\n",dlb_scale);
-            fprintf(fplog,"The allowed shrink of domain decomposition cells is:");
-            for(d=0; d<DIM; d++)
-            {
-                if (dd->nc[d] > 1)
-                {
-                    fprintf(fplog," %c %.2f",
-                            dim2char(d),
-                            comm->cellsize_min[d]/(box[d][d]*dd->skew_fac[d]/dd->nc[d]));
-                }
-            }
-            fprintf(fplog,"\n\n");
-        }
     }
-    else
-    {
-        if (DDMASTER(dd) && fplog)
-        {
-            dd_set_tric_dir(dd,box);
-            set_dd_cell_sizes_slb(dd,box,FALSE,np);
-            fprintf(fplog,"The initial number of communication pulses is:");
-            for(d=0; d<dd->ndim; d++)
-            {
-                fprintf(fplog," %c %d",dim2char(dd->dim[d]),np[dd->dim[d]]);
-            }
-            fprintf(fplog,"\n");
-            fprintf(fplog,"The initial domain decomposition cell size is:");
-            for(d=0; d<DIM; d++) {
-                if (dd->nc[d] > 1)
-                {
-                    fprintf(fplog," %c %.2f nm",
-                            dim2char(d),dd->comm->cellsize_min[d]);
-                }
-            }
-            fprintf(fplog,"\n\n");
-        }
-    }
-    
-    if ((comm->bInterCGBondeds || dd->vsite_comm || dd->constraint_comm) &&
-        DDMASTER(dd) && fplog)
-    {
-        fprintf(fplog,"The maximum allowed distance for atoms involved in interactions is:\n");
-        if (dd->bDynLoadBal)
-        {
-            limit = dd->comm->cellsize_limit;
-        }
-        else
-        {
-            if (DYNAMIC_BOX(*ir))
-            {
-                fprintf(fplog,"(these are initial values, they could change due to box deformation)\n");
-            }
-            limit = dd->comm->cellsize_min[XX];
-            for(d=1; d<DIM; d++)
-            {
-                limit = min(limit,dd->comm->cellsize_min[d]);
-            }
-        }
-        if (comm->bInterCGBondeds)
-        {
-            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
-                    "two-body bonded interactions","(-rdd)",
-                    max(comm->cutoff,comm->cutoff_mbody));
-            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
-                    "multi-body bonded interactions","(-rdd)",
-                    (comm->bBondComm || dd->bGridJump) ? comm->cutoff_mbody : min(comm->cutoff,limit));
-        }
-        if (dd->vsite_comm)
-        {
-            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
-                    "virtual site constructions","(-rcon)",limit);
-        }
-        if (dd->constraint_comm)
-        {
-            sprintf(buf,"atoms separated by up to %d constraints",
-                    1+ir->nProjOrder);
-            fprintf(fplog,"%40s  %-7s %6.3f nm\n",
-                    buf,"(-rcon)",limit);
-        }
-        fprintf(fplog,"\n");
-    }
-    
-    if (fplog)
-    {
-        fflush(fplog);
-    }
+
+    print_dd_settings(fplog,dd,ir,dlb_scale,box);
 }
 
 static void merge_cg_buffers(int ncell,

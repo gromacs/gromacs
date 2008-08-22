@@ -65,8 +65,10 @@ extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
 					       char *sizex,
 					       char *sizey,
 					       char *sizez,
-					       gmx_mtop_t *mtop,matrix box,
-					       t_inputrec *ir);
+					       gmx_mtop_t *mtop,
+					       t_inputrec *ir,
+					       bool bBCheck,
+					       matrix box,rvec *x);
 
 extern void dd_init_bondeds(FILE *fplog,
 			    gmx_domdec_t *dd,gmx_mtop_t *mtop,
@@ -195,6 +197,11 @@ extern void dd_init_local_state(gmx_domdec_t *dd,
 
 extern t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 					 int *cginfo);
+
+extern void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
+				  t_inputrec *ir,rvec *x,matrix box,
+				  bool bBCheck,
+				  real *r_2b,real *r_mb);
 
 
 /* In domdec_setup.c */

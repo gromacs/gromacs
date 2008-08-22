@@ -305,15 +305,6 @@ static real optimize_ncells(FILE *fplog,
     bExcl_pbcdx =
       (EEL_EXCL_FORCES(ir->coulombtype) && !EEL_FULL(ir->coulombtype));
     pbcdxr = (double)n_bonded_dx(mtop,bExcl_pbcdx)/(double)mtop->natoms;
-    
-    if (bInterCGMultiBody && limit <= 0) {
-      /* Here we should determine the minimum cell size from
-       * the largest cg COG distance between atoms involved
-       * in bonded interactions.
-       */
-      /* Set lower limit for the cell size to half the cut-off */
-      limit = cutoff/2;
-    }
   } else {
     /* Every molecule is a single charge group: no pbc required */
     pbcdxr = 0;

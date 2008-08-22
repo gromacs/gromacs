@@ -224,7 +224,9 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     cr->dd = init_domain_decomposition(fplog,cr,ddxyz,rdd,rconstr,
 				       Flags & MD_DLB,dlb_scale,
 				       ddcsx,ddcsy,ddcsz,
-				       mtop,box,inputrec);
+				       mtop,inputrec,
+				       Flags & MD_DDBONDCHECK,
+				       box,state->x);
     
     make_dd_communicators(fplog,cr,dd_node_order);
 

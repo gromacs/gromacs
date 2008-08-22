@@ -14,6 +14,8 @@
 #include "gmx_random.h"
 #include "topsort.h"
 #include "mtop_util.h"
+#include "mshift.h"
+#include "vsite.h"
 
 typedef struct {
   int  *index;  /* Index for each atom into il                  */ 
@@ -56,6 +58,15 @@ static int nral_rt(int ftype)
   return nral;
 }
 
+static bool dd_check_ftype(int ftype,bool bBCheck,bool bConstr)
+{
+  return (((interaction_function[ftype].flags & IF_BOND) &&
+	   !(interaction_function[ftype].flags & IF_VSITE) &&
+	   (bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO))) ||
+	  ftype == F_SETTLE ||
+	  (bConstr && ftype == F_CONSTR));
+}
+
 static void print_error_header(FILE *fplog,char *moltypename,int nprint)
 {
   fprintf(fplog, "\nMolecule type '%s'\n",moltypename);
@@ -88,10 +99,7 @@ static void print_missing_interactions_mb(FILE *fplog,t_commrec *cr,
   
   gatindex = cr->dd->gatindex;
   for(ftype=0; ftype<F_NRE; ftype++) {
-    if (((interaction_function[ftype].flags & IF_BOND) &&
-	 !(interaction_function[ftype].flags & IF_VSITE) &&
-	 (rt->bBCheck || !(interaction_function[ftype].flags & IF_LIMZERO)))
-	|| ftype == F_SETTLE || (rt->bConstr && ftype == F_CONSTR)) {
+    if (dd_check_ftype(ftype,rt->bBCheck,rt->bConstr)) {
       nral = NRAL(ftype);
       il = &idef->il[ftype];
       ia = il->iatoms;
@@ -1106,13 +1114,13 @@ void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
 		       gmx_mtop_t *mtop,gmx_localtop_t *ltop)
 {
   bool bUniqueExcl,bRCheckMB,bRCheck2B,bRCheckExcl;
-  real rc;
+  real rc=-1;
   ivec rcheck;
   int  d,nexcl;
   t_pbc pbc,*pbc_null=NULL;
 
   if (debug) {
-    fprintf(debug,"Making local topology\n",rc);
+    fprintf(debug,"Making local topology\n");
   }
 
   dd_make_local_cgs(dd,&ltop->cgs);
@@ -1279,6 +1287,20 @@ static void check_link(t_blocka *link,int cg_gl,int cg_gl_j)
   }
 }
 
+static int *make_at2cg(t_block *cgs)
+{
+  int *at2cg,cg,a;
+
+  snew(at2cg,cgs->index[cgs->nr]);
+  for(cg=0; cg<cgs->nr; cg++) {
+    for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++) {
+      at2cg[a] = cg;
+    }
+  }
+
+  return at2cg;
+}
+
 t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 				  int *cginfo)
 {
@@ -1315,12 +1337,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
     molt = &mtop->moltype[molb->type];
     cgs   = &molt->cgs;
     excls = &molt->excls;
-    snew(a2c,molt->atoms.nr);
-    for(cg=0; cg<cgs->nr; cg++) {
-      for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++) {
-	a2c[a] = cg;
-      }
-    }
+    a2c = make_at2cg(cgs);
     ril = &rt->ril_mt[molb->type];
     for(cg=0; cg<cgs->nr; cg++) {
       cg_gl = cg_offset + cg;
@@ -1390,4 +1407,137 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
   }
 
   return link;
+}
+
+static void bonded_cg_distance_mol(gmx_moltype_t *molt,int *at2cg,
+				   bool bBCheck,rvec *cg_cm,
+				   real *r_2b,real *r_mb)
+{
+  int ftype,nral,i,ai,aj,cgi,cgj;
+  t_ilist *il;
+  real r2_2b,r2_mb,rij2;
+
+  r2_2b = 0;
+  r2_mb = 0;
+  for(ftype=0; ftype<F_NRE; ftype++) {
+    if (dd_check_ftype(ftype,bBCheck,FALSE)) {
+      il = &molt->ilist[ftype];
+      nral = NRAL(ftype);
+      if (nral > 1) {
+	for(i=0; i<il->nr; i+=1+nral) {
+	  for(ai=0; ai<nral; ai++) {
+	    cgi = at2cg[il->iatoms[1+ai]];
+	    for(aj=0; aj<nral; aj++) {
+	      cgj = at2cg[il->iatoms[1+aj]];
+	      if (cgi != cgj) {
+		rij2 = distance2(cg_cm[cgi],cg_cm[cgj]);
+		if (nral == 2 && rij2 > r2_2b) {
+		  r2_2b = rij2;
+		}
+		if (nral >  2 && rij2 > r2_mb) {
+		  r2_mb = rij2;
+		}
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
+
+  *r_2b = sqrt(r2_2b);
+  *r_mb = sqrt(r2_mb);
+}
+
+static void get_cgcm_mol(gmx_moltype_t *molt,gmx_ffparams_t *ffparams,
+			 int ePBC,t_graph *graph,matrix box,
+			 gmx_vsite_t *vsite,
+			 rvec *x,rvec *xs,rvec *cg_cm)
+{
+  mk_mshift(NULL,graph,ePBC,box,x);
+  
+  shift_x(graph,box,x,xs);
+  /* By doing an extra mk_mshift the molecules that are broken
+   * because they were e.g. imported from another software
+   * will be made whole again. Such are the healing powers
+   * of GROMACS.
+   */  
+  mk_mshift(NULL,graph,ePBC,box,xs);
+  
+  if (vsite) {
+    construct_vsites(NULL,vsite,xs,NULL,0.0,NULL,
+		     ffparams->iparams,molt->ilist,
+		     epbcNONE,TRUE,NULL,NULL,NULL);
+  }
+
+  calc_cgcm(NULL,0,molt->cgs.nr,&molt->cgs,xs,cg_cm);
+}
+
+static int have_vsite_molt(gmx_moltype_t *molt)
+{
+  int  i;
+  bool bVSite;
+
+  bVSite = FALSE;
+  for(i=0; i<F_NRE; i++) {
+    if ((interaction_function[i].flags & IF_VSITE) && molt->ilist[i].nr > 0) {
+      bVSite = TRUE;
+    }
+  }
+  
+  return bVSite;
+}
+
+void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
+			   t_inputrec *ir,rvec *x,matrix box,
+			   bool bBCheck,
+			   real *r_2b,real *r_mb)
+{
+  int mb,cg_offset,at_offset,*at2cg,mol;
+  t_graph graph;
+  gmx_vsite_t *vsite;
+  gmx_molblock_t *molb;
+  gmx_moltype_t *molt;
+  rvec *xs,*cg_cm;
+  real rmol_2b,rmol_mb;
+
+  /* For gmx_vsite_t everything 0 should work (without pbc) */
+  snew(vsite,1);
+
+  *r_2b = 0;
+  *r_mb = 0;
+  cg_offset = 0;
+  at_offset = 0;
+  for(mb=0; mb<mtop->nmolblock; mb++) {
+    molb = &mtop->molblock[mb];
+    molt = &mtop->moltype[molb->type];
+    if (molt->cgs.nr == 1 || molb->nmol == 0) {
+      cg_offset += molb->nmol*molt->cgs.nr;
+      at_offset += molb->nmol*molt->atoms.nr;
+    } else {
+      mk_graph_ilist(NULL,molt->ilist,0,molt->atoms.nr,FALSE,FALSE,&graph);
+
+      at2cg = make_at2cg(&molt->cgs);
+      snew(xs,molt->atoms.nr);
+      snew(cg_cm,molt->cgs.nr);
+      for(mol=0; mol<molb->nmol; mol++) {
+	get_cgcm_mol(molt,&mtop->ffparams,ir->ePBC,&graph,box,
+		     have_vsite_molt(molt) ? vsite : NULL,
+		     x+at_offset,xs,cg_cm);
+
+	bonded_cg_distance_mol(molt,at2cg,bBCheck,cg_cm,&rmol_2b,&rmol_mb);
+	*r_2b = max(*r_2b,rmol_2b);
+	*r_mb = max(*r_mb,rmol_mb);
+
+	cg_offset += molt->cgs.nr;
+	at_offset += molt->atoms.nr;
+      }
+      sfree(cg_cm);
+      sfree(xs);
+      sfree(at2cg);
+      done_graph(&graph);
+    }
+  }
+
+  sfree(vsite);
 }
