@@ -1410,11 +1410,12 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 }
 
 static void bonded_cg_distance_mol(gmx_moltype_t *molt,int *at2cg,
-				   bool bBCheck,rvec *cg_cm,
+				   bool bBCheck,bool bExcl,rvec *cg_cm,
 				   real *r_2b,real *r_mb)
 {
-  int ftype,nral,i,ai,aj,cgi,cgj;
+  int ftype,nral,i,j,ai,aj,cgi,cgj;
   t_ilist *il;
+  t_blocka *excls;
   real r2_2b,r2_mb,rij2;
 
   r2_2b = 0;
@@ -1439,6 +1440,21 @@ static void bonded_cg_distance_mol(gmx_moltype_t *molt,int *at2cg,
 		}
 	      }
 	    }
+	  }
+	}
+      }
+    }
+  }
+  if (bExcl) {
+    excls = &molt->excls;
+    for(ai=0; ai<excls->nr; ai++) {
+      cgi = at2cg[ai];
+      for(j=excls->index[ai]; j<excls->index[ai+1]; j++) {
+	cgj = at2cg[excls->a[j]];
+	if (cgi != cgj) {
+	  rij2 = distance2(cg_cm[cgi],cg_cm[cgj]);
+	  if (rij2 > r2_2b) {
+	    r2_2b = rij2;
 	  }
 	}
       }
@@ -1493,13 +1509,16 @@ void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
 			   bool bBCheck,
 			   real *r_2b,real *r_mb)
 {
-  int mb,cg_offset,at_offset,*at2cg,mol;
+  bool bExclRequired;
+  int  mb,cg_offset,at_offset,*at2cg,mol;
   t_graph graph;
   gmx_vsite_t *vsite;
   gmx_molblock_t *molb;
   gmx_moltype_t *molt;
   rvec *xs,*cg_cm;
   real rmol_2b,rmol_mb;
+
+  bExclRequired = EEL_EXCL_FORCES(ir->coulombtype);
 
   /* For gmx_vsite_t everything 0 should work (without pbc) */
   snew(vsite,1);
@@ -1525,7 +1544,8 @@ void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
 		     have_vsite_molt(molt) ? vsite : NULL,
 		     x+at_offset,xs,cg_cm);
 
-	bonded_cg_distance_mol(molt,at2cg,bBCheck,cg_cm,&rmol_2b,&rmol_mb);
+	bonded_cg_distance_mol(molt,at2cg,bBCheck,bExclRequired,cg_cm,
+			       &rmol_2b,&rmol_mb);
 	*r_2b = max(*r_2b,rmol_2b);
 	*r_mb = max(*r_mb,rmol_mb);
 
