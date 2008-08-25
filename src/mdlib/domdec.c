@@ -66,6 +66,7 @@ typedef struct {
 
 typedef struct {
     int  np;                   /* Number of grid pulses in this dimension */
+    int  np_dlb;               /* For dlb, for use with edlbAUTO          */
     gmx_domdec_ind_t *ind;     /* The indices to communicate, size np     */
     int  np_nalloc;
     bool bInPlace;             /* Can we communicate in place?            */
@@ -123,6 +124,9 @@ typedef struct {
  */
 enum { ddnatHOME, ddnatZONE, ddnatVSITE, ddnatCON, ddnatNR };
 
+enum { edlbAUTO, edlbNO, edlbYES, edlbNR };
+char *edlb_names[edlbNR] = { "auto", "no", "yes" };
+
 typedef struct
 {
     int dim;      /* The dimension                                          */
@@ -169,6 +173,11 @@ typedef struct gmx_domdec_comm {
     t_blocka *cglink;
     char *bLocalCG;
 
+    /* The DLB option */
+    int  eDLB;
+    /* Are we actually using DLB? */
+    bool bDynLoadBal;
+
     /* Cell sizes for static load balancing, first index cartesian */
     real **slb_frac;
     /* Cell sizes for determining the PME communication with SLB */
@@ -179,6 +188,8 @@ typedef struct gmx_domdec_comm {
     real cutoff;
     /* The minimum cell size (including triclinic correction) */
     rvec cellsize_min;
+    /* For dlb, for use with edlbAUTO */
+    rvec cellsize_min_dlb;
     /* The lower limit for the DD cell size with DLB */
     real cellsize_limit;
     
@@ -246,10 +257,10 @@ typedef struct gmx_domdec_comm {
     int eFlop;
     double flop;
     int    flop_n;
-    /* Have we measured the load? */
-    bool bHaveLoad;
-    /* Have we printed the load at least once? */
-    bool bFirstPrinted;
+    /* Have often have did we have load measurements */
+    int    n_load_have;
+    /* Have often have we collected the load measurements */
+    int    n_load_collect;
     
     /* Statistics */
     double sum_nat[ddnatNR-ddnatZONE];
@@ -302,6 +313,9 @@ static int nstDDDump,nstDDDumpGrid,DD_debug;
 #define DD_CELL_MARGIN2      1.00005
 /* Factor to account for pressure scaling during nstlist steps */
 #define DD_PRES_SCALE_MARGIN 1.02
+
+/* Allowed performance loss before we DLB or warn */
+#define DD_PERF_LOSS 0.05
 
 #define DD_CELL_F_SIZE(dd,di) ((dd)->nc[(dd)->dim[(di)]]+1+(di)*2+1+(di))
 
@@ -1516,17 +1530,24 @@ real dd_cutoff_mbody(gmx_domdec_t *dd)
     r = -1;
     if (comm->bInterCGBondeds)
     {
-        if (comm->cutoff_mbody > 0)
+        if (comm->bDynLoadBal)
         {
             r = comm->cutoff_mbody;
         }
         else
         {
-            /* cutoff_mbody=0 means we do not have DLB */
             r = comm->cellsize_min[dd->dim[0]];
             for(di=1; di<dd->ndim; di++)
             {
                 r = min(r,comm->cellsize_min[dd->dim[di]]);
+            }
+            if (comm->bBondComm)
+            {
+                r = max(r,comm->cutoff_mbody);
+            }
+            else
+            {
+                r = min(r,comm->cutoff);
             }
         }
     }
@@ -2451,7 +2472,7 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
         }
     }
     
-    if (!dd->bDynLoadBal)
+    if (!comm->bDynLoadBal)
     {
         copy_rvec(cellsize_min,comm->cellsize_min);
     }
@@ -2854,7 +2875,7 @@ static void set_dd_cell_sizes(gmx_domdec_t *dd,matrix box,bool bDynamicBox,
     
     dd_set_tric_dir(dd,box);
     
-    if (dd->bDynLoadBal)
+    if (dd->comm->bDynLoadBal)
     {
         if (DDMASTER(dd))
         {
@@ -2886,7 +2907,7 @@ static void set_dd_ns_cell_sizes(gmx_domdec_t *dd,matrix box,int step)
     {
         dim = dd->dim[dim_ind];
         
-        if (dd->bDynLoadBal &&
+        if (dd->comm->bDynLoadBal &&
             (dd->cell_x1[dim] - dd->cell_x0[dim])*dd->skew_fac[dim] <
             dd->comm->cellsize_min[dim])
         {
@@ -4137,7 +4158,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
             if (dd->ci[dim] == dd->master_ci[dim])
             {
                 /* We are the root, process this row */
-                if (dd->bDynLoadBal)
+                if (comm->bDynLoadBal)
                 {
                     root = comm->root[d];
                 }
@@ -4188,7 +4209,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
                         pos++;
                     }
                 }
-                if (dd->bDynLoadBal && root->bLimited)
+                if (comm->bDynLoadBal && root->bLimited)
                 {
                     load->sum_m *= dd->nc[dim];
                     load->flags |= (1<<d);
@@ -4203,7 +4224,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
         comm->load_step  += comm->cycl[ddCyclStep];
         comm->load_sum   += comm->load[0].sum;
         comm->load_max   += comm->load[0].max;
-        if (dd->bDynLoadBal)
+        if (comm->bDynLoadBal)
         {
             for(d=0; d<dd->ndim; d++)
             {
@@ -4226,6 +4247,23 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
     }
 }
 
+static float dd_imbalance_performance_loss(gmx_domdec_t *dd)
+{
+    /* Return the relative performance loss on the total run time
+     * due to the force calculation load imbalance.
+     */
+    if (dd->comm->nload > 0)
+    {
+        return
+            (dd->comm->load_max*dd->nnodes - dd->comm->load_sum)/
+            (dd->comm->load_step*dd->nnodes);
+    }
+    else
+    {
+        return 0;
+    }
+}
+
 static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
 {
     char  buf[STRLEN];
@@ -4241,7 +4279,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         npme   = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
         nnodes = npp + npme;
         imbal = comm->load_max*npp/comm->load_sum - 1;
-        lossf = (comm->load_max*npp - comm->load_sum)/(comm->load_step*nnodes);
+        lossf = dd_imbalance_performance_loss(dd);
         sprintf(buf," Average load imbalance: %.1f %%\n",imbal*100);
         fprintf(fplog,buf);
         fprintf(stderr,"\n");
@@ -4250,7 +4288,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         fprintf(fplog,buf);
         fprintf(stderr,buf);
         bLim = FALSE;
-        if (dd->bDynLoadBal)
+        if (comm->bDynLoadBal)
         {
             sprintf(buf," Steps where the load balancing was limited by -rdd, -rcon and/or -dds:");
             for(d=0; d<dd->ndim; d++)
@@ -4288,12 +4326,12 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         fprintf(fplog,"\n");
         fprintf(stderr,"\n");
         
-        if (lossf >= 0.05)
+        if (lossf >= DD_PERF_LOSS)
         {
             sprintf(buf,
                     "NOTE: %.1f %% performance was lost due to load imbalance\n"
                     "      in the domain decomposition.\n",lossf*100);
-            if (!dd->bDynLoadBal)
+            if (!comm->bDynLoadBal)
             {
                 sprintf(buf+strlen(buf),"      You might want to use dynamic load balancing (option -dlb.)\n");
             }
@@ -4304,7 +4342,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
             fprintf(fplog,"%s\n",buf);
             fprintf(stderr,"%s\n",buf);
         }
-        if (npme > 0 && fabs(lossp) >= 0.05)
+        if (npme > 0 && fabs(lossp) >= DD_PERF_LOSS)
         {
             sprintf(buf,
                     "NOTE: %.1f %% performance was lost because the PME nodes\n"
@@ -4360,7 +4398,7 @@ static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,int step)
         fprintf(fplog,"\n");
     }
     fprintf(fplog,"DD  step %d",step);
-    if (dd->bDynLoadBal)
+    if (dd->comm->bDynLoadBal)
     {
         fprintf(fplog,"  vol min/aver %5.3f%c",
                 dd_vol_min(dd),flags ? '!' : ' ');
@@ -4375,7 +4413,7 @@ static void dd_print_load(FILE *fplog,gmx_domdec_t *dd,int step)
 
 static void dd_print_load_verbose(gmx_domdec_t *dd)
 {
-    if (dd->bDynLoadBal)
+    if (dd->comm->bDynLoadBal)
     {
         fprintf(stderr,"vol %4.2f%c ",
                 dd_vol_min(dd),dd_load_flags(dd) ? '!' : ' ');
@@ -4417,7 +4455,7 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
     {
         /* This process is part of the group */
         dd->comm->mpi_comm_load[dim_ind] = c_row;
-        if (dd->bGridJump)
+        if (dd->comm->eDLB != edlbNO)
         {
             if (dd->ci[dim] == dd->master_ci[dim])
             {
@@ -4441,7 +4479,7 @@ static void make_load_communicator(gmx_domdec_t *dd,MPI_Group g_all,
                 /* This is not a root process, we only need to receive cell_f */
                 snew(dd->comm->cell_f_row,DD_CELL_F_SIZE(dd,dim_ind));
             }
-    }
+        }
         if (dd->ci[dim] == dd->master_ci[dim])
         {
             snew(dd->comm->load[dim_ind].load,dd->nc[dim]*DD_NLOAD_MAX);
@@ -4643,7 +4681,7 @@ void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd)
         }
     }
     
-    if (dd->bGridJump)
+    if (dd->comm->eDLB != edlbNO)
     {
         snew(dd->comm->root,dd->ndim);
     }
@@ -5247,12 +5285,72 @@ static void dd_warning(t_commrec *cr,FILE *fplog,char *warn_string)
     }
 }
 
-gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
+static int check_dlb_support(FILE *fplog,t_commrec *cr,
+                             char *dlb_opt,bool bRecordLoad,
+                             unsigned long Flags,t_inputrec *ir)
+{
+    gmx_domdec_t *dd;
+    int  eDLB=-1;
+    char buf[STRLEN];
+
+    switch (dlb_opt[0])
+    {
+    case 'a': eDLB = edlbAUTO; break;
+    case 'n': eDLB = edlbNO;   break;
+    case 'y': eDLB = edlbYES;  break;
+    default: gmx_incons("Unknow dlb_opt");
+    }
+
+    if (Flags & MD_RERUN)
+    {
+        return edlbNO;
+    }
+
+    if (!EI_DYNAMICS(ir->eI))
+    {
+        if (eDLB == edlbYES)
+        {
+            sprintf(buf,"NOTE: dynamic load balancing is only supported with dynamics, not with integrator '%s'\n",EI(ir->eI));
+            dd_warning(cr,fplog,buf);
+        }
+            
+        return edlbNO;
+    }
+
+    if (!bRecordLoad)
+    {
+        dd_warning(cr,fplog,"NOTE: Cycle counting is not supported on this architecture, will not use dynamic load balancing\n");
+
+        return edlbNO;
+    }
+
+    if (Flags & MD_REPRODUCIBLE)
+    {
+        switch (eDLB)
+        {
+        edlbNO: 
+            break;
+        edlbAUTO:
+             dd_warning(cr,fplog,"NOTE: reproducability requested, will not use dynamic load balancing\n");
+             eDLB = edlbNO;
+             break;
+        edlbYES:
+             dd_warning(cr,fplog,"WARNING: reproducability requested with dynamic load balancing, the simulation will NOT be binary reproducable\n");
+             break;
+        }
+    }
+
+    return eDLB;
+}
+
+gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
+                                        unsigned long Flags,
+                                        ivec nc,
                                         real comm_distance_min,real rconstr,
-                                        bool bDynLoadBal,real dlb_scale,
+                                        char *dlb_opt,real dlb_scale,
                                         char *sizex,char *sizey,char *sizez,
                                         gmx_mtop_t *mtop,t_inputrec *ir,
-                                        bool bBCheck,matrix box,rvec *x)
+                                        matrix box,rvec *x)
 {
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
@@ -5306,24 +5404,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
                              
     }
     
-    dd->bDynLoadBal = FALSE;
-    if (bDynLoadBal)
-    {
-        if (comm->bRecordLoad)
-        {
-            dd->bDynLoadBal = TRUE;
-        }
-        else
-        {
-            dd_warning(cr,fplog,"WARNING: Cycle counting is not supported on this architecture, will not use dynamic load balancing\n");
-        }
-    }
+    comm->eDLB = check_dlb_support(fplog,cr,dlb_opt,comm->bRecordLoad,Flags,ir);
+    
+    comm->bDynLoadBal = (comm->eDLB == edlbYES);
     if (fplog)
     {
-        fprintf(fplog,"Will%s use dynamic load balancing\n",
-                dd->bDynLoadBal ? "" : " not");
+        fprintf(fplog,"Dynamic load balancing: %s\n",edlb_names[comm->eDLB]);
     }
-    dd->bGridJump = dd->bDynLoadBal;
+    dd->bGridJump = comm->bDynLoadBal;
     
     if (comm->nstSortCG)
     {
@@ -5384,7 +5472,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
         {
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(dd,mtop,ir,x,box,bBCheck,&r_2b,&r_mb);
+                dd_bonded_cg_distance(dd,mtop,ir,x,box,
+                                      Flags & MD_DDBONDCHECK,&r_2b,&r_mb);
             }
             gmx_bcast(sizeof(r_2b),&r_2b,cr);
             gmx_bcast(sizeof(r_mb),&r_mb,cr);
@@ -5464,7 +5553,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     else
     {
         /* We need to choose the optimal DD grid and possibly PME nodes */
-        limit = dd_choose_grid(fplog,cr,dd,ir,mtop,box,dlb_scale,
+        limit = dd_choose_grid(fplog,cr,dd,ir,mtop,box,
+                               comm->eDLB!=edlbNO,dlb_scale,
                                comm->cellsize_limit,comm->cutoff,
                                comm->bInterCGBondeds,comm->bInterCGMultiBody);
         
@@ -5473,7 +5563,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
             bC = (dd->bInterCGcons && rconstr > comm_distance_min);
             sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
-                    dd->bDynLoadBal ? " or -dds" : "",
+                    comm->eDLB!=edlbNO ? " or -dds" : "",
                     bC ? " or your LINCS settings" : "");
             gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
                       "%s\n"
@@ -5518,7 +5608,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     }
 
     snew(comm->slb_frac,DIM);
-    if (!dd->bDynLoadBal)
+    if (comm->eDLB == edlbNO)
     {
         comm->slb_frac[XX] = get_slb_frac(fplog,"x",dd->nc[XX],sizex);
         comm->slb_frac[YY] = get_slb_frac(fplog,"y",dd->nc[YY],sizey);
@@ -5527,7 +5617,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
 
     if (comm->bInterCGBondeds && comm->cutoff_mbody == 0)
     {
-        if (comm->bBondComm || dd->bDynLoadBal)
+        if (comm->bBondComm || comm->eDLB != edlbNO)
         {
             /* Set the bonded communication distance to halfway
              * the minimum and the maximum,
@@ -5535,7 +5625,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
              */
             acs = average_cellsize_min(dd,box);
             comm->cutoff_mbody = 0.5*(r_bonded + acs);
-            if (dd->bDynLoadBal)
+            if (comm->eDLB != edlbNO)
             {
                 /* Check if this does not limit the scaling */
                 comm->cutoff_mbody = min(comm->cutoff_mbody,dlb_scale*acs);
@@ -5608,6 +5698,81 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,ivec nc,
     return dd;
 }
 
+static void set_dlb_limits(gmx_domdec_t *dd)
+
+{
+    int d;
+
+    for(d=0; d<dd->ndim; d++)
+    {
+        dd->comm->cd[d].np = dd->comm->cd[d].np_dlb;
+        dd->comm->cellsize_min[dd->dim[d]] =
+            dd->comm->cellsize_min_dlb[dd->dim[d]];
+    }
+}
+
+
+static void turn_on_dlb(FILE *fplog,t_commrec *cr,int step)
+{
+    gmx_domdec_t *dd;
+    gmx_domdec_comm_t *comm;
+    real cellsize_min;
+    int  d,nc,i;
+    char buf[STRLEN];
+    
+    dd = cr->dd;
+    comm = dd->comm;
+    
+    if (fplog)
+    {
+        fprintf(fplog,"At step %d the performance loss due to force load imbalance is %.1f %%\n",step,dd_imbalance_performance_loss(dd)*100);
+    }
+
+    cellsize_min = comm->cellsize_min[dd->dim[0]];
+    for(d=1; d<dd->ndim; d++)
+    {
+        cellsize_min = min(cellsize_min,comm->cellsize_min[dd->dim[d]]);
+    }
+
+    if (cellsize_min < comm->cellsize_limit*1.05)
+    {
+        dd_warning(cr,fplog,"NOTE: the minimum cell size is smaller than 1.05 times the cell size limit, will not turn on dynamic load balancing\n");
+
+        return;
+    }
+
+    dd_warning(cr,fplog,"NOTE: Turning on dynamic load balancing\n");
+    comm->bDynLoadBal = TRUE;
+    dd->bGridJump = TRUE;
+    
+    set_dlb_limits(dd);
+
+    /* We can set the required cell size info here,
+     * so we do not need to communicate this.
+     * The grid is completely uniform.
+     */
+    for(d=0; d<dd->ndim; d++)
+    {
+        if (comm->root[d])
+        {
+            comm->load[d].sum_m = comm->load[d].sum;
+
+            nc = dd->nc[dd->dim[d]];
+            for(i=0; i<nc; i++)
+            {
+                comm->root[d]->cell_size[i] = 1/(real)nc;
+                comm->root[d]->cell_f[i]    = i/(real)nc;
+                if (d > 0)
+                {
+                    comm->root[d]->cell_f_max0[i] =  i   /(real)nc;
+                    comm->root[d]->cell_f_min1[i] = (i+1)/(real)nc;
+                }
+            }
+            comm->root[d]->cell_f[nc] = 1.0;
+        }
+    }
+}
+
 static char *init_bLocalCG(gmx_mtop_t *mtop)
 {
     int  ncg,cg;
@@ -5654,7 +5819,8 @@ void dd_init_bondeds(FILE *fplog,
 }
 
 static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
-                              t_inputrec *ir,real dlb_scale,
+                              t_inputrec *ir,
+                              bool bDynLoadBal,real dlb_scale,
                               matrix box)
 {
     gmx_domdec_comm_t *comm;
@@ -5670,12 +5836,12 @@ static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
 
     comm = dd->comm;
 
-    if (dd->bDynLoadBal)
+    if (bDynLoadBal)
     {
         fprintf(fplog,"The maximum number of communication pulses is:");
         for(d=0; d<dd->ndim; d++)
         {
-            fprintf(fplog," %c %d",dim2char(dd->dim[d]),comm->cd[d].np);
+            fprintf(fplog," %c %d",dim2char(dd->dim[d]),comm->cd[d].np_dlb);
         }
         fprintf(fplog,"\n");
         fprintf(fplog,"The minimum size for domain decomposition cells is %.3f nm\n",comm->cellsize_limit);
@@ -5687,10 +5853,10 @@ static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
             {
                 fprintf(fplog," %c %.2f",
                         dim2char(d),
-                        comm->cellsize_min[d]/(box[d][d]*dd->skew_fac[d]/dd->nc[d]));
+                        comm->cellsize_min_dlb[d]/(box[d][d]*dd->skew_fac[d]/dd->nc[d]));
             }
         }
-        fprintf(fplog,"\n\n");
+        fprintf(fplog,"\n");
     }
     else
     {
@@ -5719,7 +5885,7 @@ static void print_dd_settings(FILE *fplog,gmx_domdec_t *dd,
         fprintf(fplog,"%40s  %-7s %6.3f nm\n",
                 "non-bonded interactions","",comm->cutoff);
 
-        if (dd->bDynLoadBal)
+        if (bDynLoadBal)
         {
             limit = dd->comm->cellsize_limit;
         }
@@ -5831,7 +5997,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     {
         fprintf(debug,"The DD cut-off is %f\n",comm->cutoff);
     }
-    if (dd->bDynLoadBal)
+    if (comm->eDLB != edlbNO)
     {
         /* Determine the maximum number of comm. pulses in one dimension */
         
@@ -5884,9 +6050,10 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         comm->maxpulse = 1;
         for(d=0; d<dd->ndim; d++)
         {
-            comm->cd[d].np = min(npulse,dd->nc[dd->dim[d]]-1);
-            snew(comm->cd[d].ind,comm->cd[d].np);
-            comm->maxpulse = max(comm->maxpulse,comm->cd[d].np);
+            comm->cd[d].np_dlb = min(npulse,dd->nc[dd->dim[d]]-1);
+            comm->cd[d].np_nalloc = comm->cd[d].np_dlb;
+            snew(comm->cd[d].ind,comm->cd[d].np_nalloc);
+            comm->maxpulse = max(comm->maxpulse,comm->cd[d].np_dlb);
         }
         
         /* cellsize_limit is set for LINCS in init_domain_decomposition */
@@ -5898,20 +6065,33 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         {
             if (comm->cd[d].np*comm->cellsize_limit >= comm->cutoff)
             {
-                comm->cellsize_min[dd->dim[d]] = comm->cellsize_limit;
+                comm->cellsize_min_dlb[dd->dim[d]] = comm->cellsize_limit;
             }
             else
             {
-                comm->cellsize_min[dd->dim[d]] = comm->cutoff/comm->cd[d].np;
+                comm->cellsize_min_dlb[dd->dim[d]] =
+                    comm->cutoff/comm->cd[d].np_dlb;
             }
         }
         if (comm->cutoff_mbody <= 0)
         {
             comm->cutoff_mbody = min(comm->cutoff,comm->cellsize_limit);
         }
+        if (comm->bDynLoadBal)
+        {
+            set_dlb_limits(dd);
+        }
     }
 
-    print_dd_settings(fplog,dd,ir,dlb_scale,box);
+    print_dd_settings(fplog,dd,ir,comm->bDynLoadBal,dlb_scale,box);
+    if (comm->eDLB == edlbAUTO)
+    {
+        if (fplog)
+        {
+            fprintf(fplog,"When dynamic load balancing gets turned on, these settings will change to:\n");
+        }
+        print_dd_settings(fplog,dd,ir,TRUE,dlb_scale,box);
+    }
 }
 
 static void merge_cg_buffers(int ncell,
@@ -6941,23 +7121,33 @@ void dd_partition_system(FILE            *fplog,
                          bool            bVerbose)
 {
     gmx_domdec_t *dd;
+    gmx_domdec_comm_t *comm;
     t_block *cgs_gl;
     int  i,j,n,cg0=0,ncg_home_old=-1;
-    bool bLogLoad,bRedist,bSortCG;
+    bool bCheckDLB,bTurnOnDLB,bLogLoad,bRedist,bSortCG;
     ivec ncells_old,np;
     
     dd = cr->dd;
-    
-    cgs_gl = &dd->comm->cgs_gl;
+    comm = dd->comm;
+
+    cgs_gl = &comm->cgs_gl;
 
     /* Check if we have recorded loads on the nodes */
-    if (dd->comm->bRecordLoad && dd_load_count(dd->comm))
+    if (comm->bRecordLoad && dd_load_count(comm))
     {
+        /* Check if we should use DLB at the second partitioning
+         * and every 100 partitionings,
+         * so the extra communication cost is negligible.
+         */
+        bCheckDLB = (comm->eDLB == edlbAUTO && !comm->bDynLoadBal &&
+                     (comm->n_load_collect == 0 ||
+                      comm->n_load_have % 100 == 99));
+
         /* Print load every nstlog, first and last step to the log file */
         bLogLoad = ((ir->nstlog > 0 && step % ir->nstlog == 0) ||
-                    !dd->comm->bFirstPrinted ||
+                    comm->n_load_collect == 0 ||
                     (step + ir->nstlist > ir->init_step + ir->nsteps));
-        if (dd->bDynLoadBal || bLogLoad || bVerbose)
+        if (comm->bDynLoadBal || bLogLoad || bVerbose || bCheckDLB)
         {
             get_load_distribution(dd,wcycle);
             if (DDMASTER(dd))
@@ -6971,8 +7161,28 @@ void dd_partition_system(FILE            *fplog,
                     dd_print_load_verbose(dd);
                 }
             }
-            dd->comm->bFirstPrinted = TRUE;
+            comm->n_load_collect++;
+
+            if (bCheckDLB) {
+                /* Since the timings are node dependent, the master decides */
+                if (DDMASTER(dd))
+                {
+                    bTurnOnDLB =
+                        (dd_imbalance_performance_loss(dd) >= DD_PERF_LOSS);
+                    if (debug)
+                    {
+                        fprintf(debug,"step %d, imb loss %f\n",
+                                step,dd_imbalance_performance_loss(dd));
+                    }
+                }
+                dd_bcast(dd,sizeof(bTurnOnDLB),&bTurnOnDLB);
+                if (bTurnOnDLB)
+                {
+                    turn_on_dlb(fplog,cr,step);
+                }
+            }
         }
+        comm->n_load_have++;
     }
     
     bRedist = FALSE;
@@ -6998,7 +7208,7 @@ void dd_partition_system(FILE            *fplog,
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
         
-        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,dd->comm->bLocalCG);
+        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,comm->bLocalCG);
 
         cg0 = 0;
     }
@@ -7027,9 +7237,9 @@ void dd_partition_system(FILE            *fplog,
         
         inc_nrnb(nrnb,eNR_CGCM,dd->nat_home);
 
-        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,dd->comm->bLocalCG);
+        dd_set_cginfo(fr,dd->index_gl,0,dd->ncg_home,comm->bLocalCG);
         
-        bRedist = dd->bDynLoadBal;
+        bRedist = comm->bDynLoadBal;
     }
     else
     {
@@ -7050,17 +7260,17 @@ void dd_partition_system(FILE            *fplog,
     
     set_dd_ns_cell_sizes(dd,state_local->box,step);
     
-    if (dd->comm->nstSortCG > 0)
+    if (comm->nstSortCG > 0)
     {
         bSortCG = (bMasterState ||
-                   (bRedist && (step % dd->comm->nstSortCG == 0)));
+                   (bRedist && (step % comm->nstSortCG == 0)));
     }
     else
     {
         bSortCG = FALSE;
     }
-    dd->comm->bFilled_nsgrid_home = bSortCG;
-    if (dd->comm->bFilled_nsgrid_home)
+    comm->bFilled_nsgrid_home = bSortCG;
+    if (comm->bFilled_nsgrid_home)
     {
         /* Initialize the ns grid */
         copy_ivec(fr->ns.grid->n,ncells_old);
@@ -7149,14 +7359,14 @@ void dd_partition_system(FILE            *fplog,
     /* Extract a local topology from the global topology */
     for(i=0; i<dd->ndim; i++)
     {
-        np[dd->dim[i]] = dd->comm->cd[i].np;
+        np[dd->dim[i]] = comm->cd[i].np;
     }
     dd_make_local_top(fplog,dd,state_local->box,
-                      dd->comm->cellsize_min,np,
+                      comm->cellsize_min,np,
                       fr,vsite,top_global,top_local);
     
     /* Set up the special atom communication */
-    n = dd->comm->nat[ddnatZONE];
+    n = comm->nat[ddnatZONE];
     for(i=ddnatZONE+1; i<ddnatNR; i++)
     {
         switch(i)
@@ -7179,13 +7389,13 @@ void dd_partition_system(FILE            *fplog,
         default:
             gmx_incons("Unknown special atom type setup");
         }
-        dd->comm->nat[i] = n;
+        comm->nat[i] = n;
     }
     
     /* Make space for the extra coordinates for virtual site
      * or constraint communication.
      */
-    state_local->natoms = dd->comm->nat[ddnatNR-1];
+    state_local->natoms = comm->nat[ddnatNR-1];
     if (state_local->natoms > state_local->nalloc)
     {
         dd_realloc_state(state_local,f,buf,state_local->natoms);
@@ -7194,7 +7404,7 @@ void dd_partition_system(FILE            *fplog,
     {
         if (vsite && vsite->n_intercg_vsite)
         {
-            fr->f_novirsum_n = dd->comm->nat[ddnatVSITE];
+            fr->f_novirsum_n = comm->nat[ddnatVSITE];
         }
         else
         {
@@ -7213,7 +7423,7 @@ void dd_partition_system(FILE            *fplog,
      */
     /* This call also sets the new number of home particles to dd->nat_home */
     atoms2md(top_global,ir,
-             dd->comm->nat[ddnatCON],dd->gatindex,0,dd->nat_home,mdatoms);
+             comm->nat[ddnatCON],dd->gatindex,0,dd->nat_home,mdatoms);
     
     if (shellfc)
     {
@@ -7226,7 +7436,7 @@ void dd_partition_system(FILE            *fplog,
         /* Send the charges to our PME only node */
         gmx_pme_send_q(cr,mdatoms->nChargePerturbed,
                        mdatoms->chargeA,mdatoms->chargeB,
-                       dd->comm->ddpme[0].maxshift);
+                       comm->ddpme[0].maxshift);
     }
     
     if (constr)
@@ -7255,7 +7465,7 @@ void dd_partition_system(FILE            *fplog,
     {
         dd_move_x(dd,state_local->box,state_local->x,*buf);
         write_dd_pdb("dd_dump",step,"dump",top_global,cr,
-                     dd->comm->nat[ddnatVSITE],
+                     comm->nat[ddnatVSITE],
                      state_local->x,state_local->box);
     }
 
@@ -7268,7 +7478,7 @@ void dd_partition_system(FILE            *fplog,
         /* The DD master node knows the complete cg distribution,
          * store the count so we can possibly skip the cg info communication.
          */
-        dd->comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
+        comm->master_cg_ddp_count = (bSortCG ? 0 : dd->ddp_count);
     }
 
     if (DD_debug)

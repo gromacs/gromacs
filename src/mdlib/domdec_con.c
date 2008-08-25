@@ -525,7 +525,7 @@ static int setup_specat_communication(gmx_domdec_t *dd,
 	      dd->ci[XX],dd->ci[YY],dd->ci[ZZ],
 	      nrecv_local,spac->nind_req,specat_type,
 	      specat_type,add_err,
-	      dd->bDynLoadBal ? " or use the -rcon option of mdrun" : "");
+	      dd->bGridJump ? " or use the -rcon option of mdrun" : "");
   }
 
   spac->at_start = at_start;

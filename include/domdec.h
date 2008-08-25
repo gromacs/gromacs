@@ -57,18 +57,16 @@ extern int dd_pme_maxshift(gmx_domdec_t *dd);
 
 extern void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
 
-extern gmx_domdec_t *init_domain_decomposition(FILE *fplog,
-					       t_commrec *cr,ivec nc,
-					       real comm_distance_min,
-					       real rconstr,
-					       bool bDynLoadBal,real dlb_scale,
-					       char *sizex,
-					       char *sizey,
-					       char *sizez,
-					       gmx_mtop_t *mtop,
-					       t_inputrec *ir,
-					       bool bBCheck,
-					       matrix box,rvec *x);
+extern gmx_domdec_t *
+init_domain_decomposition(FILE *fplog,
+			  t_commrec *cr,
+			  unsigned long Flags,
+			  ivec nc,
+			  real comm_distance_min,real rconstr,
+			  char *dlb_opt,real dlb_scale,
+			  char *sizex,char *sizey,char *sizez,
+			  gmx_mtop_t *mtop,t_inputrec *ir,
+			  matrix box,rvec *x);
 
 extern void dd_init_bondeds(FILE *fplog,
 			    gmx_domdec_t *dd,gmx_mtop_t *mtop,
@@ -208,7 +206,8 @@ extern void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
 
 extern real dd_choose_grid(FILE *fplog,
 			   t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
-			   gmx_mtop_t *mtop,matrix box,real dlb_scale,
+			   gmx_mtop_t *mtop,matrix box,
+			   bool bDynLoadBal,real dlb_scale,
 			   real cellsize_limit,real cutoff_dd,
 			   bool bInterCGBondeds,bool bInterCGMultiBody);
 /* Determines the optimal DD cell setup dd->nc and possibly npmenodes

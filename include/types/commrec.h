@@ -103,7 +103,6 @@ typedef struct {
   ivec nc;
   int  ndim;
   ivec dim;  /* indexed by 0 to ndim */
-  bool bDynLoadBal;
   bool bGridJump;
   /* The bonded and non-bonded communication setup, cartesian index */
   int  ncell;

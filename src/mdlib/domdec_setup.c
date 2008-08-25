@@ -273,7 +273,8 @@ static void assign_factors(gmx_domdec_t *dd,
 }
 
 static real optimize_ncells(FILE *fplog,
-			    int nnodes_tot,int npme_only,real dlb_scale,
+			    int nnodes_tot,int npme_only,
+			    bool bDynLoadBal,real dlb_scale,
 			    gmx_mtop_t *mtop,matrix box,t_inputrec *ir,
 			    gmx_domdec_t *dd,
 			    real cellsize_limit,real cutoff,
@@ -310,7 +311,7 @@ static real optimize_ncells(FILE *fplog,
     pbcdxr = 0;
   }
   /* Add a margin for DLB and/or pressure scaling */
-  if (dd->bDynLoadBal) {
+  if (bDynLoadBal) {
     if (dlb_scale >= 1.0)
       gmx_fatal(FARGS,"The value for option -dds should be smaller than 1");
     if (fplog)
@@ -355,7 +356,8 @@ static real optimize_ncells(FILE *fplog,
 
 real dd_choose_grid(FILE *fplog,
 		    t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
-		    gmx_mtop_t *mtop,matrix box,real dlb_scale,
+		    gmx_mtop_t *mtop,matrix box,
+		    bool bDynLoadBal,real dlb_scale,
 		    real cellsize_limit,real cutoff_dd,
 		    bool bInterCGBondeds,bool bInterCGMultiBody)
 {
@@ -384,7 +386,8 @@ real dd_choose_grid(FILE *fplog,
 	cr->npmenodes = 0;
     }
     
-    limit = optimize_ncells(fplog,cr->nnodes,cr->npmenodes,dlb_scale,
+    limit = optimize_ncells(fplog,cr->nnodes,cr->npmenodes,
+			    bDynLoadBal,dlb_scale,
 			    mtop,box,ir,dd,
 			    cellsize_limit,cutoff_dd,
 			    bInterCGBondeds,bInterCGMultiBody,

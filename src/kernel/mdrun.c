@@ -84,16 +84,17 @@ int main(int argc,char *argv[])
     "With domain decomposition, the spatial decomposition can be set",
     "with option [TT]-dd[tt]. By default mdrun selects a good decomposition.",
     "The user only needs to change this when the system is very inhomogeneous.",
-    "Dynamic load balancing can be turned on with the option [TT]-dlb[tt],",
+    "Dynamic load balancing is set with the option [TT]-dlb[tt],",
     "which can give a significant performance improvement,",
     "especially for inhomogeneous systems. The only disadvantage of",
     "dynamic load balancing is that runs are no longer binary reproducible,",
     "but in most cases this is not important.",
+    "By default the dynamic load balancing is automatically turned on",
+    "when the measured performance loss due to load imbalance is 5% or more.",
     "At low parallelization these are the only important options",
     "for domain decomposition.",
     "At high parallelization the options in the next two sections",
-    "could be important for increasing the performace,",
-    "especially [TT]-dlb[tt] and [TT]-nosum[tt].",
+    "could be important for increasing the performace.",
     "[PAR]",
     "When PME is used with domain decomposition, separate nodes can",
     "be assigned to do only the PME mesh calculation;",
@@ -285,6 +286,8 @@ int main(int argc,char *argv[])
   static rvec realddxyz={0,0,0};
   static char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
+  static char *dddlb_opt[] =
+    { NULL, "auto", "no", "yes", NULL };
   static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   static real cpt_period=15.0,max_hours=-1;
@@ -306,8 +309,8 @@ int main(int argc,char *argv[])
       "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
     { "-rcon",    FALSE, etREAL, {&rconstr},
       "Maximum distance for P-LINCS (nm), 0 is estimate" },
-    { "-dlb",     FALSE, etBOOL, {&bDLB},
-      "Use dynamic load balancing (only with DD)" },
+    { "-dlb",     FALSE, etENUM, {dddlb_opt},
+      "Dynamic load balancing (with DD)" },
     { "-dds",     FALSE, etREAL, {&dlb_scale},
       "Minimum allowed dlb scaling of the DD cell size" },
     { "-ddcsx",   FALSE, etSTR, {&ddcsx},
@@ -408,7 +411,6 @@ int main(int argc,char *argv[])
   Flags = Flags | (bGlas         ? MD_GLAS         : 0);
   Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
   Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
-  Flags = Flags | (bDLB          ? MD_DLB          : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
@@ -418,7 +420,8 @@ int main(int argc,char *argv[])
   ddxyz[ZZ] = (int)(realddxyz[ZZ] + 0.5);
   
   mdrunner(fplog,cr,NFILE,fnm,bVerbose,bCompact,
-	   ddxyz,dd_node_order,rdd,rconstr,dlb_scale,ddcsx,ddcsy,ddcsz,
+	   ddxyz,dd_node_order,rdd,rconstr,
+	   dddlb_opt[0],dlb_scale,ddcsx,ddcsy,ddcsz,
 	   nstepout,ed,repl_ex_nst,repl_ex_seed,pforce,
 	   cpt_period,max_hours,Flags);
   

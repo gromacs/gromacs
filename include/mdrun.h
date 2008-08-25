@@ -64,11 +64,10 @@
 #define MD_SEPPOT       (1<<7)
 #define MD_PARTDEC      (1<<9)
 #define MD_DDBONDCHECK  (1<<10)
-#define MD_DLB          (1<<11)
-#define MD_CONFOUT      (1<<12)
-#define MD_NOGSTAT      (1<<13)
-#define MD_REPRODUCIBLE (1<<14)
-#define MD_READ_RNG     (1<<15)
+#define MD_CONFOUT      (1<<11)
+#define MD_NOGSTAT      (1<<12)
+#define MD_REPRODUCIBLE (1<<13)
+#define MD_READ_RNG     (1<<14)
 
 
 enum {
@@ -241,7 +240,8 @@ extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 extern void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		     bool bVerbose,bool bCompact,
 		     ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-		     real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
+		     char *dddlb_opt,real dlb_scale,
+		     char *ddcsx,char *ddcsy,char *ddcsz,
 		     int nstepout,
 		     gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
 		     real pforce,real cpt_period,real max_hours,

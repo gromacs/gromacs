@@ -114,7 +114,8 @@ const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do
 void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
 	      ivec ddxyz,int dd_node_order,real rdd,real rconstr,
-	      real dlb_scale,char *ddcsx,char *ddcsy,char *ddcsz,
+	      char *dddlb_opt,real dlb_scale,
+	      char *ddcsx,char *ddcsy,char *ddcsz,
 	      int nstepout,gmx_edsam_t ed,int repl_ex_nst,int repl_ex_seed,
 	      real pforce,real cpt_period,real max_hours,
 	      unsigned long Flags)
@@ -221,11 +222,10 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     fprintf(stderr,"Loaded with Money\n\n");
 
   if (PAR(cr) && !((Flags & MD_PARTDEC) || EI_TPI(inputrec->eI))) {
-    cr->dd = init_domain_decomposition(fplog,cr,ddxyz,rdd,rconstr,
-				       Flags & MD_DLB,dlb_scale,
+    cr->dd = init_domain_decomposition(fplog,cr,Flags,ddxyz,rdd,rconstr,
+				       dddlb_opt,dlb_scale,
 				       ddcsx,ddcsy,ddcsz,
 				       mtop,inputrec,
-				       Flags & MD_DDBONDCHECK,
 				       box,state->x);
     
     make_dd_communicators(fplog,cr,dd_node_order);
