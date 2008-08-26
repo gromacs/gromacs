@@ -64,10 +64,11 @@
 #define MD_SEPPOT       (1<<7)
 #define MD_PARTDEC      (1<<9)
 #define MD_DDBONDCHECK  (1<<10)
-#define MD_CONFOUT      (1<<11)
-#define MD_NOGSTAT      (1<<12)
-#define MD_REPRODUCIBLE (1<<13)
-#define MD_READ_RNG     (1<<14)
+#define MD_DDBONDCOMM   (1<<11)
+#define MD_CONFOUT      (1<<12)
+#define MD_NOGSTAT      (1<<13)
+#define MD_REPRODUCIBLE (1<<14)
+#define MD_READ_RNG     (1<<15)
 
 
 enum {

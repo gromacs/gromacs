@@ -4247,7 +4247,7 @@ static void get_load_distribution(gmx_domdec_t *dd,gmx_wallcycle_t wcycle)
     }
 }
 
-static float dd_imbalance_performance_loss(gmx_domdec_t *dd)
+static float dd_force_imb_perf_loss(gmx_domdec_t *dd)
 {
     /* Return the relative performance loss on the total run time
      * due to the force calculation load imbalance.
@@ -4279,7 +4279,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         npme   = (dd->pme_nodeid >= 0) ? comm->npmenodes : 0;
         nnodes = npp + npme;
         imbal = comm->load_max*npp/comm->load_sum - 1;
-        lossf = dd_imbalance_performance_loss(dd);
+        lossf = dd_force_imb_perf_loss(dd);
         sprintf(buf," Average load imbalance: %.1f %%\n",imbal*100);
         fprintf(fplog,buf);
         fprintf(stderr,"\n");
@@ -5298,7 +5298,7 @@ static int check_dlb_support(FILE *fplog,t_commrec *cr,
     case 'a': eDLB = edlbAUTO; break;
     case 'n': eDLB = edlbNO;   break;
     case 'y': eDLB = edlbYES;  break;
-    default: gmx_incons("Unknow dlb_opt");
+    default: gmx_incons("Unknown dlb_opt");
     }
 
     if (Flags & MD_RERUN)
@@ -5460,7 +5460,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         if (comm_distance_min > 0)
         {
             comm->cutoff_mbody = comm_distance_min;
-            comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
+            if (Flags & MD_DDBONDCOMM)
+            {
+                comm->bBondComm = (comm->cutoff_mbody > comm->cutoff);
+            }
+            else
+            {
+                comm->cutoff = max(comm->cutoff,comm->cutoff_mbody);
+            }
         }
         else if (ir->bPeriodicMols)
         {
@@ -5489,21 +5496,40 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             /* We use an initial margin of 10% for the minimum cell size,
              * except when we are just below the non-bonded cut-off.
              */
-            if (max(r_2b,r_mb) > comm->cutoff)
+            if (Flags & MD_DDBONDCOMM)
             {
-                r_bonded       = max(r_2b,r_mb);
-                r_bonded_limit = 1.1*r_bonded;
-                comm->bBondComm = TRUE;
+                if (max(r_2b,r_mb) > comm->cutoff)
+                {
+                    r_bonded       = max(r_2b,r_mb);
+                    r_bonded_limit = 1.1*r_bonded;
+                    comm->bBondComm = TRUE;
+                }
+                else
+                {
+                    r_bonded       = r_mb;
+                    r_bonded_limit = min(1.1*r_bonded,comm->cutoff);
+                }
+                /* We determine cutoff_mbody later */
+                comm->cellsize_limit = r_bonded_limit;
             }
             else
             {
-                r_bonded       = r_mb;
-                r_bonded_limit = min(1.1*r_bonded,comm->cutoff);
+                /* No special bonded communication,
+                 * simply increase the DD cut-off.
+                 */
+                r_bonded_limit     = 1.1*max(r_2b,r_mb);
+                comm->cutoff_mbody = r_bonded_limit;
+                comm->cutoff       = max(comm->cutoff,comm->cutoff_mbody);
             }
             comm->cellsize_limit = r_bonded_limit;
-            /* We determine cutoff_mbody later */
         }
         comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
+        if (fplog)
+        {
+            fprintf(fplog,
+                    "Minimum cell size due to bonded interactions: %.3f nm\n",
+                    comm->cellsize_limit);
+        }
     }
 
     if (dd->bInterCGcons && rconstr <= 0)
@@ -5725,7 +5751,7 @@ static void turn_on_dlb(FILE *fplog,t_commrec *cr,int step)
     
     if (fplog)
     {
-        fprintf(fplog,"At step %d the performance loss due to force load imbalance is %.1f %%\n",step,dd_imbalance_performance_loss(dd)*100);
+        fprintf(fplog,"At step %d the performance loss due to force load imbalance is %.1f %%\n",step,dd_force_imb_perf_loss(dd)*100);
     }
 
     cellsize_min = comm->cellsize_min[dd->dim[0]];
@@ -7168,11 +7194,11 @@ void dd_partition_system(FILE            *fplog,
                 if (DDMASTER(dd))
                 {
                     bTurnOnDLB =
-                        (dd_imbalance_performance_loss(dd) >= DD_PERF_LOSS);
+                        (dd_force_imb_perf_loss(dd) >= DD_PERF_LOSS);
                     if (debug)
                     {
                         fprintf(debug,"step %d, imb loss %f\n",
-                                step,dd_imbalance_performance_loss(dd));
+                                step,dd_force_imb_perf_loss(dd));
                     }
                 }
                 dd_bcast(dd,sizeof(bTurnOnDLB),&bTurnOnDLB);

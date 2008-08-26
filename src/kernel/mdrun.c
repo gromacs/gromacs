@@ -266,7 +266,7 @@ int main(int argc,char *argv[])
   static bool bPPPME       = FALSE;
   static bool bPartDec     = FALSE;
   static bool bDDBondCheck = TRUE;
-  static bool bDLB         = FALSE;
+  static bool bDDBondComm  = TRUE;
   static bool bSumEner     = TRUE;
   static bool bVerbose     = FALSE;
   static bool bCompact     = TRUE;
@@ -305,6 +305,8 @@ int main(int argc,char *argv[])
       "DD node order" },
     { "-ddcheck", FALSE, etBOOL, {&bDDBondCheck},
       "Check for all bonded interactions with DD" },
+    { "-ddbondcomm", FALSE, etBOOL, {&bDDBondComm},
+      "HIDDENUse special bonded atom communication when -rdd > cut-off" },
     { "-rdd",     FALSE, etREAL, {&rdd},
       "The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates" },
     { "-rcon",    FALSE, etREAL, {&rconstr},
@@ -411,6 +413,7 @@ int main(int argc,char *argv[])
   Flags = Flags | (bGlas         ? MD_GLAS         : 0);
   Flags = Flags | (bPartDec      ? MD_PARTDEC      : 0);
   Flags = Flags | (bDDBondCheck  ? MD_DDBONDCHECK  : 0);
+  Flags = Flags | (bDDBondComm   ? MD_DDBONDCOMM   : 0);
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
