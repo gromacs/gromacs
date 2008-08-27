@@ -32,7 +32,7 @@
 
 \section{Potential of mean force}
 
-A potential of mean force (pmf) is a potential which is obtained
+A potential of mean force (PMF) is a potential which is obtained
 by integrating the mean force from an ensemble of configurations.
 In {\gromacs} there are several different methods to calculate the mean force.
 Each method has its limitations, which are listed below.
@@ -40,17 +40,18 @@ Each method has its limitations, which are listed below.
 \item{\bf pull code:} between the centers of mass of molecules or groups of molecules.
 \item{\bf free-energy code with harmonic bonds or constraints:} between single atoms. 
 \item{\bf free-energy code with position restraints:} changing the conformation of a relatively immobile group of atoms.
-\item{\bf not possible currently:} between groups of atoms that are
+\item{\bf pull code in limited cases:} between groups of atoms that are
 part of a larger molecule for which the bonds are constrained with
-SHAKE or LINCS.
+SHAKE or LINCS. If the pull group if relatively large,
+the pull code can be used.
 \end{itemize}
 The pull and free-energy code a desribed in more detail
 in the following two sections.
 
-\subsection{Entropic effects}
+\subsubsection{Entropic effects}
 When a distance between two atoms or the centers of mass of two groups
 is constrained or restrained, there will be a purely entropic contribution
-to the pmf due to the rotation of the two groups.
+to the PMF due to the rotation of the two groups.
 For a system of two non-interacting masses the potential of mean force is:
 \beq
 V_{pmf}(r) = -(n_c - 1) k_B T \log(r)
@@ -59,133 +60,115 @@ where $n_c$ is the number of dimensions in which the constraint works
 (i.e. $n_c=3$ for a normal constraint and $n_c=1$ when only
 the $z$-direction is constrained).
 Whether one needs to correct for this contribution depends on what
-the pmf should represent. When one wants to pull a substrate
+the PMF should represent. When one wants to pull a substrate
 into a protein, this entropic term indeed contributes to the work to
-get the substrate into the protein. But when calculating a pmf
+get the substrate into the protein. But when calculating a PMF
 between two solutes in a solvent, for the purpose of simulating
 without solvent, the entropic contribution should be removed.
 Note that this term can be significant; when at 300K the distance is halved
 the contribution is 3.5 kJ~mol$^{-1}$.
 
-\section{Calculating the PMF using the pull code}
-\label{sec:pull}
-There are a number of options to calculate \swapindex{potentials
-of}{mean force}\index{force, potential of mean|see{potentials of mean force}}
-and related topics. In the current version of {\gromacs} this is
-implemented through some extra files for {\tt mdrun}. 
+\section{Non-equilibrium pulling}
+When the distance between two groups is changed continuously,
+work is applied to the system, which means that the system is no longer
+in equilibrium. Although in the limit of very slow pulling
+the system is again in equilibrium, for many systems this limit
+is not reachable within reasonable computational time.
+However, one can use the Jarzynski relation\cite{Jarzynski1997a}
+to obtain the equilibrium free-energy difference $\Delta G$
+between two distances from many non-equilibrium simulations:
+\begin{equation}
+   \Delta G_{AB} = -k_BT \log \left\langle e^{-\beta W_{AB}} \right\rangle_A
+   \label{eq:Jarz}
+\end{equation}
+where $W_{AB}$ is the work performed to force the system along one path
+from state A to B, the angular bracket denotes averaging over
+a canonical ensemble of the initial state A and $\beta=1/k_B T$.
 
-\subsection{Overview}
-Three different types of calculation are supported:
 
-\begin{enumerate}
-\item{\textbf{\swapindex{AFM}{pulling}}} A spring is connected to an atom and
-slowly retracted. This has the effect of pulling an atom or group of
-atoms away from its initial location. The rate constant and spring
-constant for the spring can be varied to study e.g. the unbinding of a
-protein and a ligand (see figure~\ref{fi:pull}). 
+\section{The pull code}
+\index{center-of-mass pulling}
+The pull code applies forces or constraints between the centers
+of mass of one or more pairs of groups of atoms.
+There is one reference group and one more other pull groups.
+Instead of a refernce group one can also use absolute reference
+point in space.
+The most common situation consists of a reference group
+and one pull group. In this case the two groups are treated
+equivalently.
+The distance between a pair of groups can be determined
+in 1, 2 or 3 dimension, or can be along a user-defined vector.
+The reference distance can be constant or can change linearly with time.
+Normally all atoms are weighted by there mass, but an additional
+weight factor can also be used.
 \begin{figure}
 \centerline{\includegraphics[width=6cm,angle=270]{plots/pull}}
 \caption{Schematic picture of pulling a lipid out of a lipid bilayer
-with AFM pulling. $V_{rup}$ is the velocity at which the spring is
+with umbrella pulling. $V_{rup}$ is the velocity at which the spring is
 retracted, $Z_{link}$ is the atom to which the spring is attached and
 $Z_{spring}$ is the location of the spring.}
 \label{fi:pull} 
 \end{figure}
-\item{\textbf{Constraint forces}} The distance between the centers of
-mass of two groups of atoms can be constrained and the 
-\swapindex{constraint}{force} monitored.
-The distance can be in 1, 2, or 3 dimensions. This method
-uses the SHAKE algorithm but only needs 1 iteration to be
+
+Three different types of calculation are supported,
+in all cases the reference distance can be constant
+or linearly changing with time.
+\begin{enumerate}
+\item{\textbf{\swapindex{Umbrella}{pulling}}}
+A harmonic potential is applied between
+the centers of mass of two groups.
+Thus the force is proportional to the displacement.
+\item{\textbf{\swapindex{Constraint}{pulling}}}
+The distance between the centers of mass of two groups is constrained.
+The constraint force can be written to a file.
+This method uses the SHAKE algorithm but only needs 1 iteration to be
 exact if only two groups are constrained. 
-\item{\textbf{Umbrella sampling}} A simple
-\swapindex{umbrella}{sampling} with an
-harmonic umbrella potential that acts on the center of mass of a group
-of atoms.
+\item{\textbf{Constant force pulling}}
+A constant force is applied between the centers of mass of two groups.
+Thus the potential is linear.
+In this case there is no reference distance of pull rate.
 \end{enumerate}
 
-In the calculations, there has to be 1 reference group and 1 to 20
-other groups of atoms. For constrained runs, the distance between the
-reference group and the other groups is kept constant at the distance
-they have in the input coordinate file ({\tt .tpr}) file.
+\subsubsection{Definition of the center of mass}
 
-\subsection{Usage}
+In {\gromacs} there are two ways to define the center of mass of a group.
+The standard way is a ``plain'' center of mass, possibly with additional
+weighting factors. With periodic boundary conditions it is no longer
+possible to uniquely define the center of mass of a group of atoms.
+Therefore a reference atom is used. For determining the center of mass,
+for all other atoms in the group the periodic image is used which is
+closed to the reference atom. This uniquely defines the center of mass.
+By default the middle (determined by the order in the topology) atom
+is used as a reference atom, but the user can also select any other atom,
+if this would be closer to center of the group.
 
-\subsubsection{Input files}
-
-The {\tt mdrun} programs needs 4 additional files: 2 input files and 2
-output files. 
-\begin{description}
-\item[\tt -pi pull.ppa]\mbox{}\\ If this file is specified the pull code will
-be used. It contains the parameters that control what type of
-calculation is done. A full explanation of all the options is given below.
-\item[\tt -pn index.ndx]\mbox{}\\ This file defines the different groups for
-use in all pull calculations. The groups are referred to by name, so
-the index file can contain other groups that are not used as well. 
-\item[\tt -po pullout.ppa]\mbox{}\\ A formatted copy of the input parameter
-file with the parameters that were actually used in the run.
-\item[\tt -pdo pull.pdo]\mbox{}\\ The data file with the calculated forces
-(AFM pulling, constraint force) or positions (umbrella sampling).
-\end{description}
-
-\subsubsection{Definition of groups}
-
-The way the reference groups and different reference types work is
-summarized in figure~\ref{fi:pullref}. There are four different
-possibilities for the reference group. 
+For a layered system, for instance a lipid bilayer, it may be of interest
+to calculate the PMF of a lipid as function of its distance
+from the whole bilayer. The whole bilayer can be taken as reference
+group in that case, but it might also be of interest to define the
+reaction coordinate for the PMF more locally. The {\tt mdp} option
+{\tt pull\_geometry = cylinder} does not
+use all the atoms of the reference group, but instead dynamically only those
+within a cylinder with radius {\tt r\_1} around the pull vector going
+through the pull group. This only
+works for distances defined in one dimension, and the cylinder is
+oriented with its long axis along this one dimension. A second cylinder
+can be defined with {\tt r\_0}, with a linear switch function that weighs
+the contribution of atoms between {\tt r\_0} and {\tt r\_1} with
+distance. This smoothes the effects of atoms moving in and out of the
+cylinder (which causes jumps in the pull forces).
 
 \begin{figure}
 \centerline{\includegraphics[width=6cm]{plots/pullref}}
 \caption{Overview of the different reference group possibilities,
 applied to interface systems. C is the reference group. The circles
-represent the center of mass of 2 groups plus the reference group, and
+represent the center of mass of two groups plus the reference group,
 $d_c$ is the reference distance.}
 \label{fi:pullref} 
 \end{figure}   
 
-\begin{description}
-\item[\tt com]\mbox{}\\ The center of mass of the group given under {\tt
-reference\_group}, calculated each step from the current coordinates. 
-\item[\tt com\_t0]\mbox{}\\ The center of mass of the group given under {\tt
-reference\_group}, calculated each step from the current coordinates,
-but corrected for atoms that have crossed the box. If the reference
-group consists of all the water molecules in the system, and a single
-water molecule moves across the box and enters from the other side,
-the c.o.m. will show a slight jump. This is simply due to the periodic
-boundary conditions, and shows that the center of mass in a simulation
-in periodic boundary conditions is ill defined if the group
-used to calculate it is \emph{e.g.} a slab of liquid. If the 'real'
-positions are used instead of the coordinates that have been reset to
-be inside the box, the center of mass of the \textbf{whole} system is 
-conserved. 
-\item[\tt dynamic]\mbox{}\\ In a phospholipid bilayer system it may be of
-interest to calculate the pmf of a lipid as function of its distance
-from the whole bilayer. The whole bilayer can be taken as reference
-group in that case, but it might also be of interest to define the
-reaction coordinate for the pmf more locally. {\tt dynamic} does not
-use all the atoms of the {\tt reference\_group}, but instead only those
-within a cylinder with radius {\tt r} below the main group. This only
-works for distances defined in 1 dimension, and the cylinder is
-oriented with its long axis along this 1 dimension. A second cylinder
-can be defined with {\tt rc}, with a linear switch function that weighs
-the contribution of atoms between {\tt r} and {\tt rc} with
-distance. This smoothes the effects of atoms moving in and out of the
-cylinder (which causes jumps in the constraint forces). 
-\item[\tt dynamic\_t0]\mbox{}\\
-The same as {\tt dynamic}, but the coordinates are corrected for
-boxcrossings like in {\tt com\_t0}. Note that strictly speaking this is
-not correct if the reference group is not the whole system, including
-the groups defined with {\tt group\_1}, \ldots.
-\end{description}
-
-To further smooth rapidly fluctuating distances between the reference
-group and the other groups, the average distance can be constrained
-instead of the instanteneous distance. This is defined by setting {\tt
-reflag} to the number of steps to average over. However, using this
-option is not strictly correct for calculating potentials of mean
-force from the average constraint force. 
-
 When relative weights $w_i$ are used during the calculations, either
-due to a dynamic reference group or by supplying weights in the input,
+by supplying weights in the input or due to cylinder geometry,
 the weights need to be scaled to conserve momentum:
 \beq
 w'_i = w_i
@@ -200,7 +183,7 @@ The definition of the weighted center of mass is:
 \beq
 \ve{r}_{com} = \left. \sum_{i=1}^N w'_i \, m_i \, \ve{r}_i \right/ M
 \eeq
->From the centers of mass the AFM, constraint or umbrella force $\ve{F}_{\!com}$
+From the centers of mass the AFM, constraint or umbrella force $\ve{F}_{\!com}$
 on each group can be calculated.
 The force on the center of mass of a group is redistributed to the atoms
 as follows:
@@ -208,281 +191,26 @@ as follows:
 \ve{F}_{\!i} = \frac{w'_i \, m_i}{M} \, \ve{F}_{\!com}
 \eeq
 
-\subsection{The parameter file}
-
-\subsubsection{General}
-
-\begin{description}
-
-\item[\tt verbose                  = no]\mbox{}\\
-If this is set to {\tt yes}, a large amount of detailed information
-is sent to {\tt stderr}, which is only useful for diagnostic
-purposes. The {\tt .pdo} file also becomes more detailed, which is not
-necessary for normal use.
-
-\item[\tt runtype                  = constraint]\mbox{}\\
-Options are {\tt afm, constraint, umbrella}. This selects
-the type of calculation: AFM pulling, constraint force calculation
-or umbrella sampling.
-
-\item[\tt ngroups                   = 2]
-\item[\tt group\_1                  = MB21\_1]
-\item[\tt group\_2                  = MB21\_2]\mbox{}\\
-The groups with the atoms to act on. {\tt ngroups} should be between
-1 and 20.
-
-\item[\tt reference\_group          = OCTA]\mbox{}\\
-The reference group. Distances are calculated betweeen {\tt group\_1}
-(and {\tt group\_2} if specified) and this group. If \emph{e.g.} the
-constraint force between two ions is needed, you would specifiy {\tt
-group\_1} as a group with 1 ion, and {\tt reference\_group} as the other
-ion. If the reference group is left blank, then AFM and umbrella sampling
-can be performed in absolute coordinates.
-
-\item[\tt weights\_1                  = ]
-\item[\tt weights\_2                  = ]
-\item[\tt reference\_weights          = ]\mbox{}\\
-The relative weights for all atoms in each group.
-The center of mass and the force calculation are peformed using
-the masses of the atoms multiplied by the weights.
-The weights are scaled before use, thus only the ratios in the input matter.
-When no weights are given all weights are set to one.
-Weights can not be used with dynamic reference groups.
-
-\item[\tt reftype                  = com]\mbox{}\\
-The type of reference group. Options are {\tt com, com\_t0, dynamic,
-dynamic\_t0} as explained above. 
-
-\item[\tt reflag                   = 1]\mbox{}\\
-The position of the reference group can be taken as average over a
-number of steps, specified by {\tt reflag} (see above).
-
-\item[\tt pulldim                  = N N Y]\mbox{}\\
-Selects the dimensions used for the pulling.
-In this example the distance is calculated using only the z-component
-and pulling is performed only in the z-direction.
-If nothing is given all three dimensions are used.
-
-\end{description}
-
-\subsubsection{Dynamic reference group options}
-
-\begin{description}
-
-\item[\tt r                        = 0]\mbox{}\\
-If dynamic reference groups are selected ({\tt dynamic, dynamic\_t0}),
-{\tt r} is the radius of the cylinder used to define which atoms are
-part of the reference group (see above).
-
-\item[\tt rc                       = 0]\mbox{}\\
-With dynamic reference groups, the cylinder can be smoothly switched
-so that atoms that fall between {\tt r} and {\tt rc} are weighted
-linearly from 1 to 0 going from {\tt r} to {\tt rc}. As reasonable
-initial values we suggest {\tt r = 1.0} and {\tt rc = 1.5}, but this
-will depend strongly on the exact system of interest.
-
-\item[\tt update                   = 1]\mbox{}\\
-The frequency with which the dynamic reference groups are
-recalculated. Usually there is no reason to use anything other than 1.
-
-\end{description}
-
-\subsubsection{Constraint run options}
-
-\begin{description}
-\item[\tt constraint\_direction     = ]\mbox{}\\
-The direction for constraining.
-The default is 0.0 0.0 0.0, which means no direction and
-thus the distance between groups is constrained.
-The direction is normalized before use.
-
-\item[\tt constraint\_distance1     = ]
-\item[\tt constraint\_distance2     = ]\mbox{}\\
-The initial constraint distance in nm,
-is 0 by default, which means that the distance is determined
-by the starting coordinates.
-
-\item[\tt constraint\_rate1         = ]
-\item[\tt constraint\_rate2         = ]\mbox{}\\
-The rate of the change of the constraint distance in nm/ps,
-is 0 by default.
-
-\item[\tt constraint\_tolerance     = ]\mbox{}\\
-The tolerance for the constraint distance, 1E-6 nm is the default.
-
-\end{description}
-
-
-\subsubsection{AFM options}
-
-AFM pulling attaches a spring to the center of mass of
-the pulled group. This spring moves in relation to the
-center of mass of the reference group. It the reference 
-group moves, then the spring does as well. If the
-{\tt reference\_group} is left blank, then pulling will be
-in absolute coordinates, with the reference group position
-taken to be [0 0 0].
-
-\begin{description}
-
-\item[\tt afm\_rate1                  = ]
-\item[\tt afm\_rate2                  = ]\mbox{}\\
-The rate at which the spring moves in nm/ps for each group.
-
-\item[\tt afm\_k1                  = ]
-\item[\tt afm\_k2                  = ]\mbox{}\\
-The force constant of the spring for each pulled group in
-kJ~mol$^{-1}$~nm$^{-2}$.
-
-\item[\tt afm\_dir1                  = ]
-\item[\tt afm\_dir2                  = ]\mbox{}\\
-Unit vector describing the direction of pulling.
-
-\item[\tt afm\_init1                  = ]
-\item[\tt afm\_init2                  = ]\mbox{}\\
-Vector describing the initial position of the spring
-relative to the reference group. To start a simulation with zero 
-initial force on the pulled group, the initial position should be set
-to the position of the pulled group relative to the reference
-group.
-
-\end{description}
-
-\subsubsection{Umbrella Sampling options}
-
-Umbrella sampling applies a simple harmonic force maintain the position
-of the pulled group relative to the reference group. If the reference group 
-moves, then the pulled group will move as well. If the
-{\tt reference\_group} is left blank, then pulling will be
-in absolute coordinates, with the reference group position
-taken to be [0 0 0].
-
-\begin{description}
-
-\item[\tt k1                          = ]
-\item[\tt k2                          = ]\mbox{}\\
-This option specifies the force constant for each pulled group in 
-kJ~mol$^{-1}$~nm$^{-2}$.
-
-
-\item[\tt pos1                        = ]
-\item[\tt pos2                        = ]\mbox{}\\
-This option specifies the position that the pulled group will be restrained to, relative
-to the reference group.
-\end{description}
-
-\subsection{Output}
-\subsubsection{Header}
-The pull code begins with a header file. All lines in the header file are
-prepended with a {\tt \#} symbol.
-
-\begin{description}
-\item[\tt \# CONSTRAINT     3.0]
-\item[\tt \# AFM            3.0]
-\item[\tt \# UMBRELLA       3.0]\mbox{}\\
-The first line indicates the type of run and the version of the output file. Future
-versions of gromacs may change the output format and the version number will
-be updated to reflect this.
-
-\item[\tt \# Component selection: 0.0 0.0 1.0 ]\mbox{}\\
-The second line shows the value of {\tt pull\_dim} used
-in the simulation.
-
-\item[\tt \# Skip 1]\mbox{}\\
-The third line shows the output frequency.
-
-\item[\tt \# Ref. Group 'ref']\mbox{}\\
-The forth line shows the name of the reference group
-
-\item[\tt \# Nr. of pull groups 2]\mbox{}\\
-The fifth line shows the number of pulled groups.
-
-\item[\tt \# Group 1 grp\_1 0.0 0.0 1.0 0.01 500] \mbox{}\\
-For AFM, the sixth and further lines show the number of each pulled 
-group, its name, the x, y, and z components the direction vector, the pull rate, and
-the force constant.
-
-\item[\tt \# Group 1 grp\_1 1.2 500]\mbox{}\\
-For umbrella sampling, the sixth and further lines show the number of
-each pulled group, its name, the position relative the pulled group, and
-the force constant. Note that only the dimensions for which {\tt pulldim}
-is {\tt Y} are output.
-
-\item[\tt \# Group 1 grp\_1 1.0]\mbox{}\\
-For constraint runs, the sixth and further lines show the number of
-each pulled group, its name, and the initial position of the pulled
-group. Note that only the dimensions for which {\tt pulldim}
-is {\tt Y} are output.
-\end{description}
-
-\subsubsection{Constraint}
-\begin{description}
-\item[\tt 10.5     -81.2]\mbox{}\\
-The output file consists of the time and the force the constraint
-experiences for each group. A negative number means that the
-reference group and the pulled group attract each other.
-\end{description}
-
-\subsubsection{AFM}
-\begin{description}
-\item[\tt 10.5     3.5     3.63     3.6]\mbox{}\\
-The output file consists of the time, the position of the reference
-group, and the position of the pulled group, and the position
-of the spring. The position of the pulled group and spring are in
-absolute coordinates. Subtract the reference coordinate to get the
-position relative to the pulled group. Note that only the 
-dimensions for which {\tt pulldim} is {\tt Y} are output.
-\end{description}
-
-\subsubsection{Umbrella Sampling}
-\begin{description}
-\item[\tt 10.5     0.002]\mbox{}\\
-The output file consists of the time, and the deviation of each pulled
-group from its restrained position. Note that only the dimensions for which {\tt pulldim}
-is {\tt Y} are output.
-\end{description}
-
-\subsection{Limitations}
-Apart from obvious limitations that are simply not implemented (\emph{e.g.} a
-better umbrella sampling and analysis scheme), there is one important
-limitation: constraint forces can \textbf{only} be calculated between
+\subsubsection{Limitations}
+There is one important limitation:
+strictly speaking, constraint forces can only be calculated between
 groups that are not connected by constraints to the rest of the system.
 If a group contains part of a molecule of which the bondlengths
-are constrained, SHAKE or LINCS and the constraint force calculation
-here will interfere with each other, making the results unreliable.
+are constrained, the pull constraint and LINCS or SHAKE bond constraint
+algorithms should be iterated simultaneously. This is not done in {\gromacs}.
 This means that for simulations with {\tt constraints = all-bonds}
-in the {\tt .mdp} file
-pulling is limited to whole molecules or groups of molecules.
+in the {\tt .mdp} file pulling is, strictly speaking,
+limited to whole molecules or groups of molecules.
 In some cases this limitation can be avoided by using the free energy code,
 see \secref{fepmf}.
+In practice the errors caused by not iterating the two constraint
+algorithms can be negligble when the pull group consists of a large
+amount of atoms and/or the the pull force is small.
+In such cases the constraint correction displacement of the pull group
+is small compared to the bond lengths.
 
-Another limitation is connected with pressure scaling.
-When pressure scaling is used, the shortest distance between the pull
-groups and the reference group should be within in the central unit-cell,
-not to periodic images of the pull groups.
-Otherwise the pressure scaling will affect the reference distances
-and thus also the forces.
-The exception is constraint pulling with {\tt constraint\_distance?} $> 0$,
-this will work correctly with pressure scaling under all conditions.
 
-\subsection{Implementation}
-
-The code for the options described above can be found in the files
-{\tt pull.c, pullinit.c, pullio.c, pullutil.c} and the headerfiles
-{\tt pull.h} and {\tt pulls.h}. This last file defines a few
-datatypes, {\tt pull.h} explains the main functions. 
-
-\subsection{Future development}
-There are several additional features that would be useful, including
-more advanced umbrella sampling, an analysis tool to analyse the
-output of the pull code, incorporation of the input parameters and
-index file into the {\tt grompp} program input files, extension to more
-groups, more flexible definition of a reaction coordinate, extension
-to groups that are parts of molecules that use SHAKE or LINCS, and a
-combination of the starting structure calculation with constraints for
-faster convergence of starting structures.
-
-\section{Calculating the PMF using the free-energy code}
+\section{Calculating a PMF using the free-energy code}
 \label{sec:fepmf}
 \index{potentials of mean force}
 \index{free energy calculations}
