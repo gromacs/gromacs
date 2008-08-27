@@ -349,7 +349,7 @@ static void read_tables(FILE *fp,const char *fn,
 {
   const char *libfn;
   char buf[STRLEN];
-  double **yy=NULL,start,end,ssd,v0,v1,f0,f1,numf,avf;
+  double **yy=NULL,start,end,ssd,vm,vp,f,numf;
   int  k,i,nx,nx0=0,ny,nny,ns;
   bool bAllZero,bZeroV,bZeroF;
   double tabscale;
@@ -395,12 +395,22 @@ static void read_tables(FILE *fp,const char *fn,
 	  bAllZero = FALSE;
 	  nx0 = i;
 	}
+	if (yy[1+k*2][i] >  0.01*GMX_REAL_MAX ||
+	    yy[1+k*2][i] < -0.01*GMX_REAL_MAX) {
+	  gmx_fatal(FARGS,"Out of range potential value %g in file '%s'",
+		    yy[1+k*2][i],fn);
+	}
       }
       if (yy[1+k*2+1][i] != 0) {
 	bZeroF = FALSE;
 	if (bAllZero) {
 	  bAllZero = FALSE;
 	  nx0 = i;
+	}
+	if (yy[1+k*2+1][i] >  0.01*GMX_REAL_MAX ||
+	    yy[1+k*2+1][i] < -0.01*GMX_REAL_MAX) {
+	  gmx_fatal(FARGS,"Out of range force value %g in file '%s'",
+		    yy[1+k*2+1][i],fn);
 	}
       }
     }
@@ -413,21 +423,20 @@ static void read_tables(FILE *fp,const char *fn,
        */
       ssd = 0;
       ns = 0;
-      for(i=0; (i < nx-1); i++) {
-	v0 = yy[1+2*k][i];
-	v1 = yy[1+2*k][i+1];
-	f0 = yy[1+2*k+1][i];
-	f1 = yy[1+2*k+1][i+1];
-	if (v0 != 0 && v1 != 0 && f0 != 0 && f1 != 0) {
-	  numf = -(v1 - v0)*tabscale;
-	  avf  = 0.5*(f1 + f0);
-	  ssd += fabs(2*(numf - avf)/(numf + avf));
+      for(i=1; (i < nx-1); i++) {
+	vm = yy[1+2*k][i-1];
+	vp = yy[1+2*k][i+1];
+	f  = yy[1+2*k+1][i];
+	if (vm != 0 && vp != 0 && f != 0) {
+	  /* Take the centered difference */
+	  numf = -(vp - vm)*0.5*tabscale;
+	  ssd += fabs(2*(f - numf)/(f + numf));
 	  ns++;
 	}
       }
       if (ns > 0) {
 	ssd /= ns;
-	sprintf(buf,"For the %d non-zero entries for table %d in %s the forces deviate on average %d%% from the minus the numerical derivative of the potential\n",ns,k,libfn,(int)(100*ssd+0.5));
+	sprintf(buf,"For the %d non-zero entries for table %d in %s the forces deviate on average %d%% from minus the numerical derivative of the potential\n",ns,k,libfn,(int)(100*ssd+0.5));
 	if (debug)
 	  fprintf(debug,"%s",buf);
 	if (ssd > 0.2) {
