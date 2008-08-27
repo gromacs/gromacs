@@ -5468,12 +5468,14 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             {
                 comm->cutoff = max(comm->cutoff,comm->cutoff_mbody);
             }
+            r_bonded_limit = comm->cutoff_mbody;
         }
         else if (ir->bPeriodicMols)
         {
             /* Can not easily determine the required cut-off */
             dd_warning(cr,fplog,"NOTE: Periodic molecules: can not easily determine the required minimum bonded cut-off, using half the non-bonded cut-off\n");
             comm->cutoff_mbody = comm->cutoff/2;
+            r_bonded_limit = comm->cutoff_mbody;
         }
         else
         {
@@ -5510,7 +5512,6 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                     r_bonded_limit = min(1.1*r_bonded,comm->cutoff);
                 }
                 /* We determine cutoff_mbody later */
-                comm->cellsize_limit = r_bonded_limit;
             }
             else
             {
@@ -5521,9 +5522,8 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                 comm->cutoff_mbody = r_bonded_limit;
                 comm->cutoff       = max(comm->cutoff,comm->cutoff_mbody);
             }
-            comm->cellsize_limit = r_bonded_limit;
         }
-        comm->cellsize_limit = max(comm->cellsize_limit,comm->cutoff_mbody);
+        comm->cellsize_limit = max(comm->cellsize_limit,r_bonded_limit);
         if (fplog)
         {
             fprintf(fplog,
@@ -5586,7 +5586,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         
         if (dd->nc[XX] == 0 && MASTER(cr))
         {
-            bC = (dd->bInterCGcons && rconstr > comm_distance_min);
+            bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
             sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
                     !bC ? "-rdd" : "-rcon",
                     comm->eDLB!=edlbNO ? " or -dds" : "",
