@@ -60,6 +60,12 @@
 
 static real       minthird=-1.0/3.0,minsixth=-1.0/6.0;
 
+typedef struct {
+  int    nframes;
+  double *sum;
+  double *sum2;
+} enersum_t;
+
 static double mypow(double x,double y)
 {
   if (x > 0)
@@ -503,7 +509,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
 			 bool bVisco,char *visfn,int  nmol,int ndf,
 			 int firststep,int  oldstep,real oldt,int step,real t,
 			 real time[], real reftemp,
-			 t_energy oldee[],t_energy ee[],
+			 t_energy oldee[],t_energy ee[],enersum_t *enersum,
 			 int nset,int set[],int nenergy,real **eneset,
 			 real **enesum,
 			 char *leg[],real Vaver,real ezero)
@@ -514,7 +520,7 @@ static void analyse_ener(bool bCorr,char *corrfn,
   real xxx,integral,intBulk;
   real sfrac,oldfrac,diffsum,diffav,fstep,pr_aver,pr_stddev,fluct2;
   double beta=0,expE,expEtot,*fee=NULL;
-  int  nsteps,iset;
+  int  nsteps,nexact,nnotexact,iset;
   real x1m,x1mk,Temp=-1,Pres=-1,VarV=-1,VarT=-1;
   int  i,j,m,k,kkk;
   bool bIsEner;
@@ -532,9 +538,36 @@ static void analyse_ener(bool bCorr,char *corrfn,
     /* Calculate the time difference */
     delta_t = t - oldt;
     
-    fprintf(stdout,"\nStatistics over %d steps [ %.4f thru %.4f ps ], %d data sets\n\n",
+    fprintf(stdout,"\nStatistics over %d steps [ %.4f thru %.4f ps ], %d data sets\n",
 	    nsteps,oldt,t,nset);
+
+    nexact    = 0;
+    nnotexact = 0;
+    for(i=0; (i<nset); i++) {
+      if (ee[set[i]].esum != 0) {
+	nexact++;
+      } else {
+	nnotexact++;
+      }
+    }
     
+    if (nnotexact == 0) {
+      fprintf(stdout,"All averages are exact over %d steps\n",nsteps);
+    } else if (nexact == 0) {
+      fprintf(stdout,"All averages are over %d frames\n",enersum->nframes);
+    } else {
+      fprintf(stdout,"The term%s",nnotexact==1 ? "" : "s");
+      for(i=0; (i<nset); i++) {
+	if (ee[set[i]].esum == 0) {
+	  fprintf(stdout," '%s'",leg[i]);
+	}
+      }
+      fprintf(stdout," %s averaged over %d frames\n",
+	      nnotexact==1 ? "is" : "are",enersum->nframes);
+      fprintf(stdout,"All other averages are exact over %d steps\n",nsteps);
+    }
+    fprintf(stdout,"\n");
+
     fprintf(stdout,"%-24s %10s %10s %10s %10s %10s",
 	    "Energy","Average","RMSD","Fluct.","Drift","Tot-Drift");
     if (bFee)
@@ -558,16 +591,23 @@ static void analyse_ener(bool bCorr,char *corrfn,
       fprintf(stdout,"sum: %g, oldsum: %g, k: %d\n",
 	      ee[iset].esum,oldee[iset].esum,k);
 #endif
-      aver   = (ee[iset].esum  - oldee[iset].esum)/k;
-      fstep  = ((real) m) * ((real) (m+k))/((real) k);
-      x1m    = (m > 0) ? oldee[iset].esum/m : 0.0;
-      x1mk   = ee[iset].esum/(m+k); 
-      xxx    = sqr(x1m - x1mk);
-      sigma  = ee[iset].eav - oldee[iset].eav - xxx * fstep;
-      if((sigma/k)<GMX_REAL_EPS)
-	sigma=0;
-      stddev = sqrt(sigma/k);
-      
+      if (ee[iset].esum != 0) {
+	/* We have exact sums over all the MD steps */
+	aver   = (ee[iset].esum  - oldee[iset].esum)/k;
+	fstep  = ((real) m) * ((real) (m+k))/((real) k);
+	x1m    = (m > 0) ? oldee[iset].esum/m : 0.0;
+	x1mk   = ee[iset].esum/(m+k); 
+	xxx    = sqr(x1m - x1mk);
+	sigma  = ee[iset].eav - oldee[iset].eav - xxx * fstep;
+	if((sigma/k)<GMX_REAL_EPS)
+	  sigma=0;
+	stddev = sqrt(sigma/k);
+      } else {
+	/* We only have data at energy file frame steps */
+	aver   = enersum->sum[i]/enersum->nframes;
+	stddev = sqrt(enersum->sum2[i]/enersum->nframes - aver*aver);
+      }
+
       if (bSum) 
 	avertot+=aver;
       if (bFee) {
@@ -915,6 +955,7 @@ int gmx_energy(int argc,char *argv[])
   gmx_localtop_t *top=NULL;
   t_inputrec ir;
   t_energy   *oldee,**ee;
+  enersum_t  enersum;
   t_enxframe *frame,*fr=NULL;
   int        cur=0;
 #define NEXT (1-cur)
@@ -928,7 +969,7 @@ int gmx_energy(int argc,char *argv[])
   int        nbounds=0,npairs;
   bool       bDisRe,bDRAll,bORA,bORT,bODA,bODR,bODT,bORIRE,bOTEN;
   bool       bFoundFirst,bFoundOld,bCont,bEDR,bVisco;
-  double     sum,sumaver,sumt,dbl;
+  double     sum,sumaver,sumt,ener,dbl;
   real       **eneset=NULL, **enesum=NULL,*time=NULL,Vaver;
   int        *set=NULL,i,j,k,nset,sss,nenergy;
   char       **enm=NULL,**enm2=NULL,**leg=NULL,**pairleg,**odtleg,**otenleg;
@@ -982,6 +1023,9 @@ int gmx_energy(int argc,char *argv[])
 
   /* Initiate energies and set them to zero */
   snew(oldee,nre);
+  enersum.nframes = 0;
+  snew(enersum.sum,nre);
+  snew(enersum.sum2,nre);
   nenergy = 0;
   Vaver = -1;
   
@@ -1177,13 +1221,14 @@ int gmx_energy(int argc,char *argv[])
 	   * If we did not start at the first step, oldstep will be > firststep
 	   * and we must initiate the data in the array. Otherwise it remains 0
 	   */
-	  if (oldstep > firststep)
+	  if (oldstep > firststep) {
 	    for(i=0; i<fr->nre; i++) {
 	      oldee[i].esum = fr->ener[i].esum - fr->ener[i].e;
 	      oldee[i].eav  = fr->ener[i].eav  - 
 		(sqr(oldee[i].esum - (oldstep-firststep)*fr->ener[i].e)/
 		 ((oldstep-firststep)*(fr->step+1-firststep)));
 	    }
+	  }
 	} else {
 	  if (bUni && ninterval < ninterval_min) {
 	    if (frame[cur].step - frame[NEXT].step != interval)
@@ -1229,11 +1274,15 @@ int gmx_energy(int argc,char *argv[])
 	}
 	xvgr_legend(fp_pairs,2*nset,leg);    
       }
+
+      /* Check if this a non-uniformly spaced frame */
+      bSkipUni = (bUni && ninterval >= ninterval_min && 
+		  (fr->step - firststep) % interval != 0);
       
       /* 
        * Store energies for analysis afterwards... 
        */
-      if (!bDisRe && (fr->nre > 0)) {
+      if (!bDisRe && (fr->nre > 0) && !bSkipUni) {
 	if ((nenergy % 1000) == 0) {
 	  srenew(time,nenergy+1000);
 	  for(i=0; (i<=nset); i++) {
@@ -1244,21 +1293,28 @@ int gmx_energy(int argc,char *argv[])
 	}
 	time[nenergy] = fr->t;
 	sum=0;
-	  for(i=0; (i<nset); i++) {
-	    eneset[i][nenergy] = fr->ener[set[i]].e;
-	    sum += fr->ener[set[i]].e;
-	    if (bVisco)
-	      enesum[i][nenergy] = fr->ener[set[i]].esum;
+	for(i=0; (i<nset); i++) {
+	  ener = fr->ener[set[i]].e;
+	  eneset[i][nenergy] = ener;
+	  sum += ener;
+	  if (bVisco) {
+	    enesum[i][nenergy] = fr->ener[set[i]].esum;
 	  }
-	if (bSum) 
+	  /* Sum the actual frame energies,
+	   * for in case we do not have exact sums in the energy file.
+	   */
+	  enersum.sum[i]  += ener;
+	  enersum.sum2[i] += ener*ener;
+	}
+	if (bSum) {
 	  eneset[nset][nenergy] = sum;
+	}
 	nenergy++;
+	enersum.nframes++;
       }
       /* 
        * Printing time, only when we do not want to skip frames
        */
-      bSkipUni = (bUni && ninterval >= ninterval_min && 
-		  (fr->step - firststep) % interval != 0);
       if (!bSkipUni && (!skip || teller % skip == 0)) {
 	if (bDisRe) {
 	  /*******************************************
@@ -1390,18 +1446,20 @@ int gmx_energy(int argc,char *argv[])
   if (bOTEN)
     ffclose(foten);
 
-  if (bDisRe) 
+  if (bDisRe) {
     analyse_disre(opt2fn("-viol",NFILE,fnm),
 		  teller_disre,violaver,bounds,index,pair,nbounds);
-  else 
+  } else {
     analyse_ener(opt2bSet("-corr",NFILE,fnm),opt2fn("-corr",NFILE,fnm),
 		 bFee,bSum,bFluct,bVisco,opt2fn("-vis",NFILE,fnm),
 		 nmol,ndf,firststep,oldstep,oldt,frame[cur].step,frame[cur].t,
-		 time,reftemp,oldee,frame[cur].ener,
+		 time,reftemp,oldee,frame[cur].ener,&enersum,
 		 nset,set,nenergy,eneset,enesum,leg,Vaver,ezero);
-  if (opt2bSet("-f2",NFILE,fnm))
+  }
+  if (opt2bSet("-f2",NFILE,fnm)) {
     fec(opt2fn("-f2",NFILE,fnm), opt2fn("-ravg",NFILE,fnm), 
 	reftemp, nset, set, leg, nenergy, eneset, time );
+  }
   
   {
     char *nxy = "-nxy";
