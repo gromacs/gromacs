@@ -500,10 +500,9 @@ void init_QMMMrec(t_commrec *cr,
 	qm_max += 1000;
 	srenew(qm_arr,qm_max);
       }
-      if((ggrpnr(groups,egcQMMM,i)==j &&
-	  mtop->atomtypes.atomnumber[atom->type])){ 
+      if (ggrpnr(groups,egcQMMM ,i) == j) {
 	/* hack for tip4p */
-	qm_arr[qm_nr++]=i;
+	qm_arr[qm_nr++] = i;
       }
     }
     if(qr->QMMMscheme==eQMMMschemeoniom){
@@ -530,7 +529,9 @@ void init_QMMMrec(t_commrec *cr,
 	  vsite = a_offset + iatoms[k+1]; /* the vsite         */
 	  ai    = a_offset + iatoms[k+2]; /* constructing atom */
 	  aj    = a_offset + iatoms[k+3]; /* constructing atom */
-	  if (ggrpnr(groups,egcQMMM,vsite) < groups->grps[egcQMMM].nr-1) {
+	  if (ggrpnr(groups, egcQMMM, vsite) == ggrpnr(groups, egcQMMM, ai)
+	      &&
+	      ggrpnr(groups, egcQMMM, vsite) == ggrpnr(groups, egcQMMM, aj)) {
 	    /* this dummy link atom needs to be removed from the qm_arr
 	     * before making the QMrec of this layer!  
 	     */
@@ -843,8 +844,8 @@ void update_QMMMrec(t_commrec *cr,
 	for(i=0;i<mm_nr;i++){
 	  if((i==0 || mm_j_particles[i].j!=mm_j_particles[i-1].j)
 	     && !md->bQM[mm_j_particles[i].j] 
-	     && (md->chargeA[mm_j_particles[i].j] || 
-		 md->chargeB[mm_j_particles[i].j])){
+	     && (md->chargeA[mm_j_particles[i].j]
+		 || (md->chargeB && md->chargeB[mm_j_particles[i].j]))) {
 	    mm_j_particles[mm_nr_new++] = mm_j_particles[i];
 	  }
 	}
