@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: n; c-basic-offset: 4 -*- 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"-*- 
  *
  * $Id$
  * 
@@ -1325,303 +1325,349 @@ void dd_init_local_state(gmx_domdec_t *dd,
 
 static void check_link(t_blocka *link,int cg_gl,int cg_gl_j)
 {
-  int  k,aj;
-  bool bFound;
-
-  bFound = FALSE;
-  for(k=link->index[cg_gl]; k<link->index[cg_gl+1]; k++) {
-    if (link->a[k] == cg_gl_j) {
-      bFound = TRUE;
+    int  k,aj;
+    bool bFound;
+    
+    bFound = FALSE;
+    for(k=link->index[cg_gl]; k<link->index[cg_gl+1]; k++)
+    {
+        if (link->a[k] == cg_gl_j)
+        {
+            bFound = TRUE;
+        }
     }
-  }
-  if (!bFound) {
-    /* Add this charge group link */
-    if (link->index[cg_gl+1]+1 > link->nalloc_a) {
-      link->nalloc_a = over_alloc_large(link->index[cg_gl+1]+1);
-      srenew(link->a,link->nalloc_a);
+    if (!bFound)
+    {
+        /* Add this charge group link */
+        if (link->index[cg_gl+1]+1 > link->nalloc_a)
+        {
+            link->nalloc_a = over_alloc_large(link->index[cg_gl+1]+1);
+            srenew(link->a,link->nalloc_a);
+        }
+        link->a[link->index[cg_gl+1]] = cg_gl_j;
+        link->index[cg_gl+1]++;
     }
-    link->a[link->index[cg_gl+1]] = cg_gl_j;
-    link->index[cg_gl+1]++;
-  }
 }
 
 static int *make_at2cg(t_block *cgs)
 {
-  int *at2cg,cg,a;
-
-  snew(at2cg,cgs->index[cgs->nr]);
-  for(cg=0; cg<cgs->nr; cg++) {
-    for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++) {
-      at2cg[a] = cg;
+    int *at2cg,cg,a;
+    
+    snew(at2cg,cgs->index[cgs->nr]);
+    for(cg=0; cg<cgs->nr; cg++)
+    {
+        for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++)
+        {
+            at2cg[a] = cg;
+        }
     }
-  }
-
-  return at2cg;
+    
+    return at2cg;
 }
 
 t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
-				  int *cginfo)
+                                  int *cginfo)
 {
-  gmx_reverse_top_t *rt;
-  int  mb,cg_offset,cg,cg_gl,a,aj,i,j,ftype,nral,nlink_mol,mol,ncgi;
-  gmx_molblock_t *molb;
-  gmx_moltype_t *molt;
-  t_block *cgs;
-  t_blocka *excls;
-  int *a2c;
-  gmx_reverse_ilist_t ril;
-  t_blocka *link;
-
-  /* For each charge group make a list of other charge groups
-   * in the system that a linked to it via bonded interactions
-   * which are listed in reverse_top.
-   */
-
-  rt = dd->reverse_top;
-  
-  snew(link,1);
-  snew(link->index,ncg_mtop(mtop)+1);
-  link->nalloc_a = 0;
-  link->a = NULL;
-
-  link->index[0] = 0;
-  cg_offset = 0;
-  ncgi = 0;
-  for(mb=0; mb<mtop->nmolblock; mb++) {
-    molb = &mtop->molblock[mb];
-    if (molb->nmol == 0) {
-      continue;
-    }
-    molt = &mtop->moltype[molb->type];
-    cgs   = &molt->cgs;
-    excls = &molt->excls;
-    a2c = make_at2cg(cgs);
-    /* Make a reverse ilist in which the interactions are linked to all atoms.
-     * The constraints are discarded here.
+    gmx_reverse_top_t *rt;
+    int  mb,cg_offset,cg,cg_gl,a,aj,i,j,ftype,nral,nlink_mol,mol,ncgi;
+    gmx_molblock_t *molb;
+    gmx_moltype_t *molt;
+    t_block *cgs;
+    t_blocka *excls;
+    int *a2c;
+    gmx_reverse_ilist_t ril;
+    t_blocka *link;
+    
+    /* For each charge group make a list of other charge groups
+     * in the system that a linked to it via bonded interactions
+     * which are listed in reverse_top.
      */
-    make_reverse_ilist(molt,NULL,FALSE,FALSE,TRUE,&ril);
-
-    for(cg=0; cg<cgs->nr; cg++) {
-      cg_gl = cg_offset + cg;
-      link->index[cg_gl+1] = link->index[cg_gl];
-      for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++) {
-	i = ril.index[a];
-	while (i < ril.index[a+1]) {
-	  ftype = ril.il[i++];
-	  nral = NRAL(ftype);
-	  /* Skip the ifunc index */
-	  i++;
-	  for(j=0; j<nral; j++) {
-	    aj = ril.il[i+j];
-	    if (a2c[aj] != cg) {
-	      check_link(link,cg_gl,cg_offset+a2c[aj]);
-	    }
-	  }
-	  i += nral_rt(ftype);
-	}
-	if (rt->bExclRequired) {
-	  /* Exclusions always go both ways */
-	  for(j=excls->index[a]; j<excls->index[a+1]; j++) {
-	    aj = excls->a[j];
-	    if (a2c[aj] != cg) {
-	      check_link(link,cg_gl,cg_offset+a2c[aj]);
-	    }
-	  }
-	}
-      }
-      if (link->index[cg_gl+1] - link->index[cg_gl] > 0) {
-	SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
-	ncgi++;
-      }
+    
+    rt = dd->reverse_top;
+    
+    snew(link,1);
+    snew(link->index,ncg_mtop(mtop)+1);
+    link->nalloc_a = 0;
+    link->a = NULL;
+    
+    link->index[0] = 0;
+    cg_offset = 0;
+    ncgi = 0;
+    for(mb=0; mb<mtop->nmolblock; mb++)
+    {
+        molb = &mtop->molblock[mb];
+        if (molb->nmol == 0)
+        {
+            continue;
+        }
+        molt = &mtop->moltype[molb->type];
+        cgs   = &molt->cgs;
+        excls = &molt->excls;
+        a2c = make_at2cg(cgs);
+        /* Make a reverse ilist in which the interactions are linked
+         * to all atoms. The constraints are discarded here.
+         */
+        make_reverse_ilist(molt,NULL,FALSE,FALSE,TRUE,&ril);
+        
+        for(cg=0; cg<cgs->nr; cg++)
+        {
+            cg_gl = cg_offset + cg;
+            link->index[cg_gl+1] = link->index[cg_gl];
+            for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++)
+            {
+                i = ril.index[a];
+                while (i < ril.index[a+1])
+                {
+                    ftype = ril.il[i++];
+                    nral = NRAL(ftype);
+                    /* Skip the ifunc index */
+                    i++;
+                    for(j=0; j<nral; j++)
+                    {
+                        aj = ril.il[i+j];
+                        if (a2c[aj] != cg)
+                        {
+                            check_link(link,cg_gl,cg_offset+a2c[aj]);
+                        }
+                    }
+                    i += nral_rt(ftype);
+                }
+                if (rt->bExclRequired)
+                {
+                    /* Exclusions always go both ways */
+                    for(j=excls->index[a]; j<excls->index[a+1]; j++)
+                    {
+                        aj = excls->a[j];
+                        if (a2c[aj] != cg)
+                        {
+                            check_link(link,cg_gl,cg_offset+a2c[aj]);
+                        }
+                    }
+                }
+            }
+            if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
+            {
+                SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
+                ncgi++;
+            }
+        }
+        nlink_mol = link->index[cg_offset+cgs->nr] - link->index[cg_offset];
+        
+        cg_offset += cgs->nr;
+        
+        destroy_reverse_ilist(&ril);
+        sfree(a2c);
+        
+        if (debug)
+        {
+            fprintf(debug,"molecule type '%s' %d cgs has %d cg links through bonded interac.\n",*molt->name,cgs->nr,nlink_mol);
+        }
+        
+        if (molb->nmol > 1)
+        {
+            /* Copy the data for the rest of the molecules in this block */
+            link->nalloc_a += (molb->nmol - 1)*nlink_mol;
+            srenew(link->a,link->nalloc_a);
+            for(mol=1; mol<molb->nmol; mol++)
+            {
+                for(cg=0; cg<cgs->nr; cg++)
+                {
+                    cg_gl = cg_offset + cg;
+                    link->index[cg_gl+1] =
+                        link->index[cg_gl+1-cgs->nr] + nlink_mol;
+                    for(j=link->index[cg_gl]; j<link->index[cg_gl+1]; j++)
+                    {
+                        link->a[j] = link->a[j-nlink_mol] + cgs->nr;
+                    }
+                    if (link->index[cg_gl+1] - link->index[cg_gl] > 0)
+                    {
+                        SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
+                        ncgi++;
+                    }
+                }
+                cg_offset += cgs->nr;
+            }
+        }
     }
-    nlink_mol = link->index[cg_offset+cgs->nr] - link->index[cg_offset];
-
-    cg_offset += cgs->nr;
-
-    destroy_reverse_ilist(&ril);
-    sfree(a2c);
-
-    if (debug) {
-      fprintf(debug,"molecule type '%s' %d cgs has %d cg links through bonded interac.\n",*molt->name,cgs->nr,nlink_mol);
+    
+    if (debug)
+    {
+        fprintf(debug,"Of the %d charge groups %d are linked via bonded interactions\n",ncg_mtop(mtop),ncgi);
     }
-
-    if (molb->nmol > 1) {
-      /* Copy the information for the rest of the molecules in this block */
-      link->nalloc_a += (molb->nmol - 1)*nlink_mol;
-      srenew(link->a,link->nalloc_a);
-      for(mol=1; mol<molb->nmol; mol++) {
-	for(cg=0; cg<cgs->nr; cg++) {
-	  cg_gl = cg_offset + cg;
-	  link->index[cg_gl+1] = link->index[cg_gl+1-cgs->nr] + nlink_mol;
-	  for(j=link->index[cg_gl]; j<link->index[cg_gl+1]; j++) {
-	    link->a[j] = link->a[j-nlink_mol] + cgs->nr;
-	  }
-	  if (link->index[cg_gl+1] - link->index[cg_gl] > 0) {
-	    SET_CGINFO_BOND_INTER(cginfo[cg_gl]);
-	    ncgi++;
-	  }
-	}
-	cg_offset += cgs->nr;
-      }
-    }
-  }
-
-  if (debug) {
-    fprintf(debug,"Of the %d charge groups %d are linked via bonded interactions\n",ncg_mtop(mtop),ncgi);
-  }
-
-  return link;
+    
+    return link;
 }
 
 static void bonded_cg_distance_mol(gmx_moltype_t *molt,int *at2cg,
-				   bool bBCheck,bool bExcl,rvec *cg_cm,
-				   real *r_2b,real *r_mb)
+								   bool bBCheck,bool bExcl,rvec *cg_cm,
+								   real *r_2b,real *r_mb)
 {
-  int ftype,nral,i,j,ai,aj,cgi,cgj;
-  t_ilist *il;
-  t_blocka *excls;
-  real r2_2b,r2_mb,rij2;
-
-  r2_2b = 0;
-  r2_mb = 0;
-  for(ftype=0; ftype<F_NRE; ftype++) {
-    if (dd_check_ftype(ftype,bBCheck,FALSE)) {
-      il = &molt->ilist[ftype];
-      nral = NRAL(ftype);
-      if (nral > 1) {
-	for(i=0; i<il->nr; i+=1+nral) {
-	  for(ai=0; ai<nral; ai++) {
-	    cgi = at2cg[il->iatoms[1+ai]];
-	    for(aj=0; aj<nral; aj++) {
-	      cgj = at2cg[il->iatoms[1+aj]];
-	      if (cgi != cgj) {
-		rij2 = distance2(cg_cm[cgi],cg_cm[cgj]);
-		if (nral == 2 && rij2 > r2_2b) {
-		  r2_2b = rij2;
+	int ftype,nral,i,j,ai,aj,cgi,cgj;
+	t_ilist *il;
+	t_blocka *excls;
+	real r2_2b,r2_mb,rij2;
+	
+	r2_2b = 0;
+	r2_mb = 0;
+	for(ftype=0; ftype<F_NRE; ftype++)
+    {
+        if (dd_check_ftype(ftype,bBCheck,FALSE))
+        {
+			il = &molt->ilist[ftype];
+			nral = NRAL(ftype);
+			if (nral > 1)
+            {
+                for(i=0; i<il->nr; i+=1+nral)
+                {
+                    for(ai=0; ai<nral; ai++)
+                    {
+                        cgi = at2cg[il->iatoms[i+1+ai]];
+						for(aj=0; aj<nral; aj++) {
+							cgj = at2cg[il->iatoms[i+1+aj]];
+							if (cgi != cgj)
+                            {
+								rij2 = distance2(cg_cm[cgi],cg_cm[cgj]);
+								if (nral == 2 && rij2 > r2_2b)
+                                {
+									r2_2b = rij2;
+								}
+								if (nral >  2 && rij2 > r2_mb)
+                                {
+									r2_mb = rij2;
+								}
+							}
+						}
+					}
+				}
+			}
 		}
-		if (nral >  2 && rij2 > r2_mb) {
-		  r2_mb = rij2;
+	}
+	if (bExcl)
+    {
+		excls = &molt->excls;
+		for(ai=0; ai<excls->nr; ai++)
+        {
+			cgi = at2cg[ai];
+			for(j=excls->index[ai]; j<excls->index[ai+1]; j++) {
+				cgj = at2cg[excls->a[j]];
+				if (cgi != cgj)
+                {
+					rij2 = distance2(cg_cm[cgi],cg_cm[cgj]);
+					if (rij2 > r2_2b)
+                    {
+						r2_2b = rij2;
+					}
+				}
+			}
 		}
-	      }
-	    }
-	  }
 	}
-      }
-    }
-  }
-  if (bExcl) {
-    excls = &molt->excls;
-    for(ai=0; ai<excls->nr; ai++) {
-      cgi = at2cg[ai];
-      for(j=excls->index[ai]; j<excls->index[ai+1]; j++) {
-	cgj = at2cg[excls->a[j]];
-	if (cgi != cgj) {
-	  rij2 = distance2(cg_cm[cgi],cg_cm[cgj]);
-	  if (rij2 > r2_2b) {
-	    r2_2b = rij2;
-	  }
-	}
-      }
-    }
-  }
-
-  *r_2b = sqrt(r2_2b);
-  *r_mb = sqrt(r2_mb);
+	
+	*r_2b = sqrt(r2_2b);
+	*r_mb = sqrt(r2_mb);
 }
 
 static void get_cgcm_mol(gmx_moltype_t *molt,gmx_ffparams_t *ffparams,
-			 int ePBC,t_graph *graph,matrix box,
-			 gmx_vsite_t *vsite,
-			 rvec *x,rvec *xs,rvec *cg_cm)
+                         int ePBC,t_graph *graph,matrix box,
+                         gmx_vsite_t *vsite,
+                         rvec *x,rvec *xs,rvec *cg_cm)
 {
-  mk_mshift(NULL,graph,ePBC,box,x);
-  
-  shift_x(graph,box,x,xs);
-  /* By doing an extra mk_mshift the molecules that are broken
-   * because they were e.g. imported from another software
-   * will be made whole again. Such are the healing powers
-   * of GROMACS.
-   */  
-  mk_mshift(NULL,graph,ePBC,box,xs);
-  
-  if (vsite) {
-    construct_vsites(NULL,vsite,xs,NULL,0.0,NULL,
-		     ffparams->iparams,molt->ilist,
-		     epbcNONE,TRUE,NULL,NULL,NULL);
-  }
-
-  calc_cgcm(NULL,0,molt->cgs.nr,&molt->cgs,xs,cg_cm);
+    mk_mshift(NULL,graph,ePBC,box,x);
+    
+    shift_x(graph,box,x,xs);
+    /* By doing an extra mk_mshift the molecules that are broken
+     * because they were e.g. imported from another software
+     * will be made whole again. Such are the healing powers
+     * of GROMACS.
+     */  
+    mk_mshift(NULL,graph,ePBC,box,xs);
+    
+    if (vsite)
+    {
+        construct_vsites(NULL,vsite,xs,NULL,0.0,NULL,
+                         ffparams->iparams,molt->ilist,
+                         epbcNONE,TRUE,NULL,NULL,NULL);
+    }
+    
+    calc_cgcm(NULL,0,molt->cgs.nr,&molt->cgs,xs,cg_cm);
 }
 
 static int have_vsite_molt(gmx_moltype_t *molt)
 {
-  int  i;
-  bool bVSite;
-
-  bVSite = FALSE;
-  for(i=0; i<F_NRE; i++) {
-    if ((interaction_function[i].flags & IF_VSITE) && molt->ilist[i].nr > 0) {
-      bVSite = TRUE;
+    int  i;
+    bool bVSite;
+    
+    bVSite = FALSE;
+    for(i=0; i<F_NRE; i++)
+    {
+        if ((interaction_function[i].flags & IF_VSITE) &&
+            molt->ilist[i].nr > 0) {
+            bVSite = TRUE;
+        }
     }
-  }
-  
-  return bVSite;
+    
+    return bVSite;
 }
 
 void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
-			   t_inputrec *ir,rvec *x,matrix box,
-			   bool bBCheck,
-			   real *r_2b,real *r_mb)
+                           t_inputrec *ir,rvec *x,matrix box,
+                           bool bBCheck,
+                           real *r_2b,real *r_mb)
 {
-  bool bExclRequired;
-  int  mb,cg_offset,at_offset,*at2cg,mol;
-  t_graph graph;
-  gmx_vsite_t *vsite;
-  gmx_molblock_t *molb;
-  gmx_moltype_t *molt;
-  rvec *xs,*cg_cm;
-  real rmol_2b,rmol_mb;
-
-  bExclRequired = EEL_EXCL_FORCES(ir->coulombtype);
-
-  /* For gmx_vsite_t everything 0 should work (without pbc) */
-  snew(vsite,1);
-
-  *r_2b = 0;
-  *r_mb = 0;
-  cg_offset = 0;
-  at_offset = 0;
-  for(mb=0; mb<mtop->nmolblock; mb++) {
-    molb = &mtop->molblock[mb];
-    molt = &mtop->moltype[molb->type];
-    if (molt->cgs.nr == 1 || molb->nmol == 0) {
-      cg_offset += molb->nmol*molt->cgs.nr;
-      at_offset += molb->nmol*molt->atoms.nr;
-    } else {
-      mk_graph_ilist(NULL,molt->ilist,0,molt->atoms.nr,FALSE,FALSE,&graph);
-
-      at2cg = make_at2cg(&molt->cgs);
-      snew(xs,molt->atoms.nr);
-      snew(cg_cm,molt->cgs.nr);
-      for(mol=0; mol<molb->nmol; mol++) {
-	get_cgcm_mol(molt,&mtop->ffparams,ir->ePBC,&graph,box,
-		     have_vsite_molt(molt) ? vsite : NULL,
-		     x+at_offset,xs,cg_cm);
-
-	bonded_cg_distance_mol(molt,at2cg,bBCheck,bExclRequired,cg_cm,
-			       &rmol_2b,&rmol_mb);
-	*r_2b = max(*r_2b,rmol_2b);
-	*r_mb = max(*r_mb,rmol_mb);
-
-	cg_offset += molt->cgs.nr;
-	at_offset += molt->atoms.nr;
-      }
-      sfree(cg_cm);
-      sfree(xs);
-      sfree(at2cg);
-      done_graph(&graph);
+    bool bExclRequired;
+    int  mb,cg_offset,at_offset,*at2cg,mol;
+    t_graph graph;
+    gmx_vsite_t *vsite;
+    gmx_molblock_t *molb;
+    gmx_moltype_t *molt;
+    rvec *xs,*cg_cm;
+    real rmol_2b,rmol_mb;
+    
+    bExclRequired = EEL_EXCL_FORCES(ir->coulombtype);
+    
+    /* For gmx_vsite_t everything 0 should work (without pbc) */
+    snew(vsite,1);
+    
+    *r_2b = 0;
+    *r_mb = 0;
+    cg_offset = 0;
+    at_offset = 0;
+    for(mb=0; mb<mtop->nmolblock; mb++)
+    {
+        molb = &mtop->molblock[mb];
+        molt = &mtop->moltype[molb->type];
+        if (molt->cgs.nr == 1 || molb->nmol == 0)
+        {
+            cg_offset += molb->nmol*molt->cgs.nr;
+            at_offset += molb->nmol*molt->atoms.nr;
+        }
+        else
+        {
+            mk_graph_ilist(NULL,molt->ilist,0,molt->atoms.nr,FALSE,FALSE,
+                           &graph);
+            
+            at2cg = make_at2cg(&molt->cgs);
+            snew(xs,molt->atoms.nr);
+            snew(cg_cm,molt->cgs.nr);
+            for(mol=0; mol<molb->nmol; mol++)
+            {
+                get_cgcm_mol(molt,&mtop->ffparams,ir->ePBC,&graph,box,
+                             have_vsite_molt(molt) ? vsite : NULL,
+                             x+at_offset,xs,cg_cm);
+                
+                bonded_cg_distance_mol(molt,at2cg,bBCheck,bExclRequired,cg_cm,
+                                       &rmol_2b,&rmol_mb);
+                *r_2b = max(*r_2b,rmol_2b);
+                *r_mb = max(*r_mb,rmol_mb);
+                
+                cg_offset += molt->cgs.nr;
+                at_offset += molt->atoms.nr;
+            }
+            sfree(cg_cm);
+            sfree(xs);
+            sfree(at2cg);
+            done_graph(&graph);
+        }
     }
-  }
-
-  sfree(vsite);
+    
+    sfree(vsite);
 }
