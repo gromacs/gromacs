@@ -41,6 +41,7 @@
 #include <string.h>
 #include "gmx_fatal.h"
 #include "macros.h"
+#include "grompp.h"
 #include "tune_pol.h"
 #ifdef HAVE_LIBXML2
 #include <libxml/parser.h>
@@ -635,6 +636,31 @@ void write_molprops(char *fn,int npd,t_molprop pd[])
     fatal_error("Saving file",fn);
   xmlFreeDoc(doc);
 }
+
+void write_atoms_molprops(char *fn,char *name,char *formula,t_atoms*atoms,t_params *bonds)
+{
+  t_molprop *mp;
+  int i,tp;
+  
+  snew(mp,1);
+  mp->nr = atoms->nr;
+  mp->formula = formula;
+  mp->molname = name;
+  mp->weight = 0;
+  mp->nexperiment = 0;
+  mp->experiment = NULL;
+  mp->error = 0;
+  mp->pname = NULL;
+  mp->reference = NULL;
+  for(i=0; (i<atoms->nr); i++) {
+    tp = atoms->atom[i].type;
+    range_check(tp,0,eatNR);
+    mp->frag_comp[tp]++;
+  }
+  write_molprop(fn,1,mp);  
+  sfree(mp);
+}
+
 #else
 
 int read_molprops(char *fn,t_molprop **pd,int update_bm)
@@ -643,6 +669,11 @@ int read_molprops(char *fn,t_molprop **pd,int update_bm)
 }
 
 void write_molprops(char *fn,int npd,t_molprop pd[])
+{
+  gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
+}
+
+void write_atoms_molprops(char *fn,t_atoms*atoms,t_params *bonds)
 {
   gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
 }

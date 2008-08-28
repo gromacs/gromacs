@@ -113,6 +113,8 @@ extern char     *ec_name[ecNR];
 
 extern void write_molprops(char *fn,int npd,t_molprop pd[]);
 
+extern void write_atoms_molprops(char *fn,char *name,char *formula,t_atoms*atoms,t_params *bonds);
+
 extern int read_molprops(char *fn,t_molprop **pd,int update_bm);
 /* Return number of molprops. If update_bm != 0 then the Bosque and Miller
    compositions will be updated based on the Spoel composition */

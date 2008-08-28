@@ -55,6 +55,7 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
+#include "filenm.h"
 #include "pdbio.h"
 #include "vec.h"
 #include "gmx_random.h"
@@ -143,7 +144,7 @@ int main(int argc, char *argv[])
   t_symtab   symtab;
   int        nqa=0;
   real       cutoff,qtot,mtot;
-  char       *fn,rtp[STRLEN];
+  char       *fn,rtp[STRLEN],*xmlf;
   gmx_conect gc;
 
   t_filenm fnm[] = {
@@ -151,6 +152,7 @@ int main(int argc, char *argv[])
     { efTOP, "-o", "out",  ffWRITE },
     { efSTO, "-c", "out",  ffWRITE },
     { efRTP, "-r", "out",  ffOPTWR },
+    { efDAT, "-x", "mol",  ffOPTWR },
     { efDAT, "-d", "qpol", ffOPTRD }
   };
 #define NFILE asize(fnm)
@@ -299,6 +301,8 @@ int main(int argc, char *argv[])
   open_symtab(&symtab);
   atype = set_atom_type(&symtab,atoms,&(plist[F_BONDS]),
 			nbonds,nm2t,aps);
+  if ((xmlf = opt2fn_null("-x",NFILE,fnm)) != NULL)
+    write_atoms_molprops(xmlf,molnm,molnm,atoms,&(plist[F_BONDS]));
   if (debug) 
     dump_hybridization(debug,atoms,nbonds);
   sfree(nbonds);
