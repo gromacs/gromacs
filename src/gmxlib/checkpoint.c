@@ -17,9 +17,10 @@
 #include "vec.h"
 #include "checkpoint.h"
 
-#define CPT_MAGIC 171817
+#define CPT_MAGIC1 171817
+#define CPT_MAGIC2 171819
 
-static const int cpt_version = 1;
+static const int cpt_version = 2;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -35,6 +36,18 @@ const char *est_names[estNR]=
     "orire_initf", "orire_Dtav"
 };
 
+static void cp_error(const char *desc)
+{
+    gmx_fatal(FARGS,
+              "The checkpoint file is truncated or corrupt at block '%s'",
+              desc);
+}
+
+static void cp_error_e(int ecpt)
+{
+    cp_error(est_names[ecpt]);
+}
+
 static void do_cpt_string(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
 {
 #define CPTSTRLEN 1024
@@ -46,6 +59,10 @@ static void do_cpt_string(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
         snew(*s,CPTSTRLEN);
     }
     res = xdr_string(xd,s,CPTSTRLEN);
+    if (res == 0)
+    {
+        cp_error(desc);
+    }
     if (list)
     {
         fprintf(list,"%s = %s\n",desc,*s);
@@ -58,6 +75,10 @@ static void do_cpt_int(XDR *xd,char *desc,int *i,FILE *list)
     bool_t res=0;
     
     res = xdr_int(xd,i);
+    if (res == 0)
+    {
+        cp_error(desc);
+    }
     if (list)
     {
         fprintf(list,"%s = %d\n",desc,*i);
@@ -69,6 +90,10 @@ static void do_cpt_double(XDR *xd,char *desc,double *f,FILE *list)
     bool_t res=0;
     
     res = xdr_double(xd,f);
+    if (res == 0)
+    {
+        cp_error(desc);
+    }
     if (list)
     {
         fprintf(list,"%s = %f\n",desc,*f);
@@ -93,12 +118,20 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
     
     nf = n;
     res = xdr_int(xd,&nf);
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (list == NULL && nf != n)
     {
         gmx_fatal(FARGS,"Count mismatch for state entry %s, code count is %d, file count is %d\n",est_names[ecpt],n,nf);
     }
     dt = dtc;
     res = xdr_int(xd,&dt);
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (dt != dtc)
     {
         fprintf(stderr,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",est_names[ecpt],
@@ -130,6 +163,10 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
         }
         res = xdr_vector(xd,(char *)vf,nf,
                          (unsigned int)sizeof(float),(xdrproc_t)xdr_float);
+        if (res == 0)
+        {
+            cp_error_e(ecpt);
+        }
         if (dtc != ecpdtFLOAT)
         {
             for(i=0; i<nf; i++)
@@ -151,6 +188,10 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
         }
         res = xdr_vector(xd,(char *)vd,nf,
                          (unsigned int)sizeof(double),(xdrproc_t)xdr_double);
+        if (res == 0)
+        {
+            cp_error_e(ecpt);
+        }
         if (dtc != ecpdtDOUBLE)
         {
             for(i=0; i<nf; i++)
@@ -201,12 +242,20 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
     
     nf = n;
     res = xdr_int(xd,&nf);
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (list == NULL && v != NULL && nf != n)
     {
         gmx_fatal(FARGS,"Count mismatch for state entry %s, code count is %d, file count is %d\n",est_names[ecpt],n,nf);
     }
     dt = dtc;
     res = xdr_int(xd,&dt);
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Type mismatch for state entry %s, code type is %s, file type is %s\n",est_names[ecpt],ecpdt_names[dtc],ecpdt_names[dt]);
@@ -226,7 +275,10 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
     }
     res = xdr_vector(xd,(char *)vp,nf,
                      (unsigned int)sizeof(int),(xdrproc_t)xdr_int);
-    
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (list)
     {
         pr_ivec(list,0,est_names[ecpt],vp,nf,TRUE);
@@ -252,12 +304,20 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
     
     nf = n;
     res = xdr_int(xd,&nf);
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (list == NULL && nf != n)
     {
         gmx_fatal(FARGS,"Count mismatch for state entry %s, code count is %d, file count is %d\n",est_names[ecpt],n,nf);
     }
     dt = dtc;
     res = xdr_int(xd,&dt);
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (dt != dtc)
     {
         gmx_fatal(FARGS,"Precision mismatch for state entry %s, code precision is %s, file precision is %s\n",est_names[ecpt],
@@ -279,7 +339,10 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
     }
     res = xdr_vector(xd,(char *)vp,nf,
                      (unsigned int)sizeof(double),(xdrproc_t)xdr_double);
-    
+    if (res == 0)
+    {
+        cp_error_e(ecpt);
+    }
     if (list)
     {
         pr_doubles(list,0,est_names[ecpt],vp,nf);
@@ -310,7 +373,7 @@ static void do_cpte_matrix(XDR *xd,int ecpt,int sflags,matrix v,FILE *list)
     }
 }
 
-static int do_cpt_header(XDR *xd,bool bRead,
+static int do_cpt_header(XDR *xd,bool bRead,int *file_version,
                          char **version,char **btime,char **buser,char **bmach,
                          char **fprog,char **ftime,
                          int *eIntegrator,int *step,double *t,
@@ -318,17 +381,22 @@ static int do_cpt_header(XDR *xd,bool bRead,
                          int *natoms,int *ngtc,int *flags,
                          FILE *list)
 {
-    int  magic,file_version;
+    bool_t res=0;
+    int  magic;
     int  idum;
     int  i;
     
-    magic = CPT_MAGIC;
-    xdr_int(xd,&magic);
-    if (magic != CPT_MAGIC)
+    magic = CPT_MAGIC1;
+    res = xdr_int(xd,&magic);
+    if (res == 0)
+    {
+        cp_error("start of file");
+    }
+    if (magic != CPT_MAGIC1)
     {
         fprintf(stderr,
-                "Magic number mismatch, checkpoint file has %d, should be %d\n",
-                magic,CPT_MAGIC);
+                "Start magic number mismatch, checkpoint file has %d, should be %d\n",
+                magic,CPT_MAGIC1);
         return -1;
     }
     do_cpt_string(xd,bRead,"GROMACS version"           ,version,list);
@@ -337,11 +405,11 @@ static int do_cpt_header(XDR *xd,bool bRead,
     do_cpt_string(xd,bRead,"GROMACS build machine"     ,bmach,list);
     do_cpt_string(xd,bRead,"generating program"        ,fprog,list);
     do_cpt_string(xd,bRead,"generation time"           ,ftime,list);
-    file_version = cpt_version;
-    do_cpt_int(xd,"checkpoint file version",&file_version,list);
-    if (file_version > cpt_version)
+    *file_version = cpt_version;
+    do_cpt_int(xd,"checkpoint file version",file_version,list);
+    if (*file_version > cpt_version)
     {
-        gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",file_version,cpt_version);
+        gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",*file_version,cpt_version);
     }
     do_cpt_int(xd,"#atoms"            ,natoms     ,list);
     do_cpt_int(xd,"#T-coupling groups",ngtc       ,list);
@@ -356,6 +424,31 @@ static int do_cpt_header(XDR *xd,bool bRead,
     do_cpt_int(xd,"#PME-only nodes",npme,list);
     do_cpt_int(xd,"state flags",flags,list);
     
+    return 0;
+}
+
+static int do_cpt_footer(XDR *xd,bool bRead,int file_version)
+{
+    bool_t res=0;
+    int  magic;
+    
+    if (file_version >= 2)
+    {
+        magic = CPT_MAGIC2;
+        res = xdr_int(xd,&magic);
+        if (res == 0)
+        {
+            cp_error("end of file");
+        }
+        if (magic != CPT_MAGIC2)
+        {
+            fprintf(stderr,
+                    "End magic number mismatch, checkpoint file has %d, should be %d\n",
+                    magic,CPT_MAGIC2);
+            return -1;
+        }
+    }
+
     return 0;
 }
 
@@ -414,7 +507,8 @@ static int do_cpt_state(XDR *xd,bool bRead,
 void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
                       int eIntegrator,int step,double t,t_state *state)
 {
-    int fp;
+    int  fp;
+    int  file_version;
     char *version=VERSION;
     char *btime=BUILD_TIME;
     char *buser=BUILD_USER;
@@ -466,12 +560,15 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     }
     
     fp = gmx_fio_open(fn,"w");
-    do_cpt_header(gmx_fio_getxdr(fp),FALSE,
+    do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
                   &state->natoms,&state->ngtc,&state->flags,NULL);
     do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL);
+    do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
+    
+
     gmx_fio_close(fp);
     
     sfree(ftime);
@@ -576,6 +673,7 @@ void read_checkpoint(char *fn,FILE *fplog,
                      t_state *state,bool *bReadRNG)
 {
     int  fp;
+    int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
@@ -585,8 +683,8 @@ void read_checkpoint(char *fn,FILE *fplog,
         "WARNING: The checkpoint file was generator with integrator %s,\n"
         "         while the simulation uses integrator %s\n\n";
     char *sd_note=
-        "NOTE: The checkpoint file was for %d nodes doing SD,\n"
-        "      while the simulation uses %d SD nodes,\n"
+        "NOTE: The checkpoint file was for %d nodes doing SD or BD,\n"
+        "      while the simulation uses %d SD or BD nodes,\n"
         "      continuation will be exact, except for the random state\n\n";
     
     if (PARTDECOMP(cr))
@@ -596,7 +694,7 @@ void read_checkpoint(char *fn,FILE *fplog,
     }
     
     fp = gmx_fio_open(fn,"r");
-    do_cpt_header(gmx_fio_getxdr(fp),TRUE,
+    do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator_f,step,t,&nppnodes_f,dd_nc_f,&npmenodes_f,
                   &natoms,&ngtc,&fflags,NULL);
@@ -640,7 +738,10 @@ void read_checkpoint(char *fn,FILE *fplog,
         }
     }
 
-    if (bPartDecomp)
+    if (!PAR(cr))
+    {
+        nppnodes = 1;
+    } else if (bPartDecomp)
     {
         nppnodes = cr->nnodes;
     }
@@ -681,7 +782,8 @@ void read_checkpoint(char *fn,FILE *fplog,
     }
     else
     {
-        if (eIntegrator == eiSD2 && nppnodes != nppnodes_f)
+        if ((EI_SD(eIntegrator) || eIntegrator == eiBD) &&
+            nppnodes != nppnodes_f)
         {
             *bReadRNG = FALSE;
             if (MASTER(cr))
@@ -700,6 +802,7 @@ void read_checkpoint(char *fn,FILE *fplog,
         }
     }
     do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,state,*bReadRNG,NULL);
+    do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
     gmx_fio_close(fp);
     
     sfree(fprog);
@@ -713,17 +816,19 @@ static void low_read_checkpoint_state(int fp,
                                       int *step,double *t,t_state *state,
                                       bool bReadRNG)
 {
+    int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
     int  eIntegrator;
     int  nppnodes,npme;
     ivec dd_nc;
     
-    do_cpt_header(gmx_fio_getxdr(fp),TRUE,
+    do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,step,t,&nppnodes,dd_nc,&npme,
                   &state->natoms,&state->ngtc,&state->flags,NULL);
     do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
-    
+    do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
+
     sfree(fprog);
     sfree(ftime);
     sfree(btime);
@@ -784,6 +889,7 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
 void list_checkpoint(char *fn,FILE *out)
 {
     int  fp;
+    int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
     int  eIntegrator,step,nppnodes,npme;
     double t;
@@ -796,11 +902,12 @@ void list_checkpoint(char *fn,FILE *out)
     init_state(&state,-1,-1);
 
     fp = gmx_fio_open(fn,"r");
-    do_cpt_header(gmx_fio_getxdr(fp),TRUE,
+    do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&step,&t,&nppnodes,dd_nc,&npme,
                   &state.natoms,&state.ngtc,&state.flags,out);
     do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
+    do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
     gmx_fio_close(fp);
     
     done_state(&state);
