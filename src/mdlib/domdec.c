@@ -1546,12 +1546,13 @@ real dd_cutoff_mbody(gmx_domdec_t *dd)
     r = -1;
     if (comm->bInterCGBondeds)
     {
-        if (comm->bDynLoadBal)
+        if (comm->cutoff_mbody > 0)
         {
             r = comm->cutoff_mbody;
         }
         else
         {
+            /* cutoff_mbody=0 means we do not have DLB */
             r = comm->cellsize_min[dd->dim[0]];
             for(di=1; di<dd->ndim; di++)
             {
@@ -6262,7 +6263,7 @@ static void setup_dd_communication(FILE *fplog,int step,
     gmx_domdec_comm_t *comm;
     gmx_domdec_comm_dim_t *cd;
     gmx_domdec_ind_t *ind;
-    bool bBondComm,bTwoCut,bTwoDist,bScrew;
+    bool bBondComm,bDist2B,bDistMB,bDistMB_pulse,bDistBonded,bScrew;
     real r_mb,r_comm2,r_scomm2,r_bcomm2,r,r2,rb2,inv_ncg,tric_sh;
     real corner[DIM][4],corner_round_0=0,corner_round_1[4];
     real bcorner[DIM][4],bcorner_round_1[4];
@@ -6296,13 +6297,12 @@ static void setup_dd_communication(FILE *fplog,int step,
 
     bBondComm = comm->bBondComm;
 
-    bTwoCut = (!bBondComm &&
-               dd->bGridJump && comm->bInterCGMultiBody && dd->ndim > 1 &&
-               dd->comm->cutoff_mbody < dd->comm->cutoff);
-
-    bTwoDist = (bTwoCut ||
-                (bBondComm && dd->bGridJump && dd->ndim > 1));
+    /* Do we need to determine extra distances for multi-body bondeds? */
+    bDistMB = (comm->bInterCGMultiBody && dd->bGridJump && dd->ndim > 1);
     
+    /* Do we need to determine extra distances for only two-body bondeds? */
+    bDist2B = (bBondComm && !bDistMB);
+
     r_comm2  = sqr(comm->cutoff);
     r_bcomm2 = sqr(comm->cutoff_mbody);
 
@@ -6313,7 +6313,7 @@ static void setup_dd_communication(FILE *fplog,int step,
     dim0 = dd->dim[0];
     /* The first dimension is equal for all cells */
     corner[0][0] = dd->cell_x0[dim0];
-    if (bTwoDist)
+    if (bDistMB)
     {
         bcorner[0][0] = corner[0][0];
     }
@@ -6327,18 +6327,11 @@ static void setup_dd_communication(FILE *fplog,int step,
         if (dd->bGridJump)
         {
             corner[1][1] = max(dd->cell_x0[dim1],comm->cell_d1[1][0]);
-            if (comm->bInterCGMultiBody)
+            if (bDistMB)
             {
-                /* For the bonded distance we need the maximum */
-                if (bTwoDist)
-                {
-                    bcorner[1][0] = corner[1][1];
-                    bcorner[1][1] = corner[1][1];
-                }
-                else
-                {
-                    corner[1][0]  = corner[1][1];
-                }
+                /* For the multi-body distance we need the maximum */
+                bcorner[1][0] = corner[1][1];
+                bcorner[1][1] = corner[1][1];
             }
         }
         /* Set the upper-right corner for rounding */
@@ -6365,19 +6358,12 @@ static void setup_dd_communication(FILE *fplog,int step,
                         }
                     }
                 }
-                if (comm->bInterCGMultiBody)
+                if (bDistMB)
                 {
-                    /* For the bonded distance we need the maximum */
+                    /* For the multi-body distance we need the maximum */
                     for(j=0; j<4; j++)
                     {
-                        if (bTwoDist)
-                        {
-                            bcorner[2][j] = corner[2][1];
-                        }
-                        else
-                        {
-                            corner[2][j]  = corner[2][1];
-                        }
+                        bcorner[2][j] = corner[2][1];
                     }
                 }
             }
@@ -6391,18 +6377,11 @@ static void setup_dd_communication(FILE *fplog,int step,
             if (dd->bGridJump)
             {
                 corner_round_1[0] = max(dd->cell_x1[dim1],comm->cell_d1[1][1]);
-                if (comm->bInterCGMultiBody)
+                if (bDistMB)
                 {
-                    /* For the bonded distance we need the maximum */
-                    if (bTwoDist)
-                    {
-                        bcorner_round_1[0] = corner_round_1[0];
-                        bcorner_round_1[3] = corner_round_1[0];
-                    }
-                    else
-                    {
-                        corner_round_1[3]  = corner_round_1[0];
-                    }
+                    /* For the multi-body distance we need the maximum */
+                    bcorner_round_1[0] = corner_round_1[0];
+                    bcorner_round_1[3] = corner_round_1[0];
                 }
             }
         }
@@ -6444,6 +6423,12 @@ static void setup_dd_communication(FILE *fplog,int step,
         cd->bInPlace = TRUE;
         for(p=0; p<cd->np; p++)
         {
+            /* Only atoms communicated in the first pulse are used
+             * for multi-body bonded interactions or for bBondComm.
+             */
+            bDistBonded   = ((bDistMB || bDist2B) && p == 0);
+            bDistMB_pulse = (bDistMB && bDistBonded);
+
             ind = &cd->ind[p];
             nsend = 0;
             nat = 0;
@@ -6478,7 +6463,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                         {
                             r2 += r*r;
                         }
-                        if (bTwoDist)
+                        if (bDistMB_pulse)
                         {
                             r = cg_cm[cg][dim] - bcorner[dim_ind][cell];
                             if (r > 0)
@@ -6494,7 +6479,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             r = cg_cm[cg][dim0] - corner_round_0;
                             /* This is the first dimension, so always r >= 0 */
                             r2 += r*r;
-                            if (bTwoDist)
+                            if (bDistMB_pulse)
                             {
                                 rb2 += r*r;
                             }
@@ -6506,7 +6491,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             {
                                 r2 += r*r;
                             }
-                            if (bTwoDist)
+                            if (bDistMB_pulse)
                             {
                                 r = cg_cm[cg][dim1] - bcorner_round_1[cell];
                                 if (r > 0)
@@ -6530,7 +6515,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                         {
                             r2 += r*r*skew_fac2_d;
                         }
-                        if (bTwoDist)
+                        if (bDistMB_pulse)
                         {
                             r = cg_cm[cg][dim] - bcorner[dim_ind][cell] + tric_sh;
                             if (r > 0)
@@ -6549,7 +6534,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                                 r -= cg_cm[cg][i]*v_0[i][dim0];
                             }
                             r2 += r*r*skew_fac2_0;
-                            if (bTwoDist)
+                            if (bDistMB_pulse)
                             {
                                 rb2 += r*r*skew_fac2_0;
                             }
@@ -6567,7 +6552,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             {
                                 r2 += r*r*skew_fac2_1;
                             }
-                            if (bTwoDist)
+                            if (bDistMB_pulse)
                             {
                                 r = cg_cm[cg][dim1] - bcorner_round_1[cell] + tric_sh;
                                 if (r > 0)
@@ -6578,13 +6563,13 @@ static void setup_dd_communication(FILE *fplog,int step,
                         }
                     }
                     if (r2 < r_comm2 ||
-                        (bTwoCut && rb2 < r_bcomm2) ||
-                        (bBondComm && 
-                         ((!bTwoDist && r2  < r_bcomm2) ||
-                          ( bTwoDist && rb2 < r_bcomm2)) &&
-                         GET_CGINFO_BOND_INTER(fr->cginfo[cg]) &&
-                         missing_link(comm->cglink,index_gl[cg],
-                                      comm->bLocalCG)))
+                        (bDistBonded &&
+                         ((bDistMB && rb2 < r_bcomm2) ||
+                          (bDist2B && r2  < r_bcomm2)) &&
+                         (!bBondComm ||
+                          (GET_CGINFO_BOND_INTER(fr->cginfo[cg]) &&
+                           missing_link(comm->cglink,index_gl[cg],
+                                        comm->bLocalCG)))))
                     {
                         /* Make an index to the local charge groups */
                         if (nsend+1 > ind->nalloc)

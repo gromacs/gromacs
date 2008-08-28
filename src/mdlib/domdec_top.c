@@ -340,63 +340,78 @@ static int count_excls(t_block *cgs,t_blocka *excls,int *n_intercg_excl)
   return n;
 }
 
-static int make_reverse_moltype(t_ilist *il_mt,t_atom *atom,
-				int **vsite_pbc,
-				int *count,
-				gmx_reverse_top_t *rt,
-				int *r_index,int *r_il,
-				bool bAssign)
+static int low_make_reverse_ilist(t_ilist *il_mt,t_atom *atom,
+				  int **vsite_pbc,
+				  int *count,
+				  bool bConstr,bool bBCheck,
+				  int *r_index,int *r_il,
+				  bool bLinkToAllAtoms,
+				  bool bAssign)
 {
-  int  ftype,nral,i,j;
+  int  ftype,nral,i,j,nlink,link;
   t_ilist *il;
   t_iatom *ia;
   atom_id a;
   int  nint;
+  bool bVSite;
 
   nint = 0;
   for(ftype=0; ftype<F_NRE; ftype++) {
     if ((interaction_function[ftype].flags & (IF_BOND | IF_VSITE))
-	|| ftype == F_SETTLE || (rt->bConstr && ftype == F_CONSTR)) {
+	|| ftype == F_SETTLE || (bConstr && ftype == F_CONSTR)) {
+      bVSite = (interaction_function[ftype].flags & IF_VSITE);
       nral = NRAL(ftype);
       il = &il_mt[ftype];
       ia  = il->iatoms;
       for(i=0; i<il->nr; i+=1+nral) {
 	ia = il->iatoms + i;
-	/* Couple to the first atom in the interaction */
-	a = ia[1];
-	if (bAssign) {
-	  r_il[r_index[a]+count[a]] = ftype;
-	  r_il[r_index[a]+count[a]+1] = ia[0];
-	  for(j=1; j<1+nral; j++) {
-	    /* Store the molecular atom number */
-	    r_il[r_index[a]+count[a]+1+j] = ia[j];
-	  }
-	}
-	if (interaction_function[ftype].flags & IF_VSITE) {
-	  if (bAssign) {
-	    /* Add an entry to iatoms for storing 
-	     * which of the constructing atoms are vsites again.
-	     */
-	    r_il[r_index[a]+count[a]+2+nral] = 0;
-	    for(j=2; j<1+nral; j++) {
-	      if (atom[ia[j]].ptype == eptVSite) {
-		r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
-	      }
-	    }
-	    /* Store the vsite pbc atom in a second extra entry */
-	    r_il[r_index[a]+count[a]+2+nral+1] =
-	      (vsite_pbc ? vsite_pbc[ftype-F_VSITE2][i/(1+nral)] : -2);
+	if (bLinkToAllAtoms) {
+	  if (bVSite) {
+	    /* We don't need the virtual sites for the cg-links */
+	    nlink = 0;
+	  } else {
+	    nlink = nral;
 	  }
 	} else {
-	  /* We do not count vsites since they are always uniquely assigned
-	   * and can be assigned to multiple nodes with recursive vsites.
-	   */
-	  if (rt->bBCheck ||
-	      !(interaction_function[ftype].flags & IF_LIMZERO)) {
-	    nint++;
-	  }
+	  /* Couple to the first atom in the interaction */
+	  nlink = 1;
 	}
-	count[a] += 2 + nral_rt(ftype);
+	for(link=0; link<nlink; link++) {
+	  a = ia[1+link];
+	  if (bAssign) {
+	    r_il[r_index[a]+count[a]] = ftype;
+	    r_il[r_index[a]+count[a]+1] = ia[0];
+	    for(j=1; j<1+nral; j++) {
+	      /* Store the molecular atom number */
+	      r_il[r_index[a]+count[a]+1+j] = ia[j];
+	    }
+	  }
+	  if (interaction_function[ftype].flags & IF_VSITE) {
+	    if (bAssign) {
+	      /* Add an entry to iatoms for storing 
+	       * which of the constructing atoms are vsites again.
+	       */
+	      r_il[r_index[a]+count[a]+2+nral] = 0;
+	      for(j=2; j<1+nral; j++) {
+		if (atom[ia[j]].ptype == eptVSite) {
+		  r_il[r_index[a]+count[a]+2+nral] |= (2<<j);
+	      }
+	      }
+	      /* Store the vsite pbc atom in a second extra entry */
+	      r_il[r_index[a]+count[a]+2+nral+1] =
+		(vsite_pbc ? vsite_pbc[ftype-F_VSITE2][i/(1+nral)] : -2);
+	    }
+	  } else {
+	    /* We do not count vsites since they are always uniquely assigned
+	     * and can be assigned to multiple nodes with recursive vsites.
+	     */
+	    if (bBCheck ||
+		!(interaction_function[ftype].flags & IF_LIMZERO)) {
+	      nint++;
+	    }
+	  }
+	  count[a] += 2 + nral_rt(ftype);
+	}
       }
     }
   }
@@ -404,16 +419,58 @@ static int make_reverse_moltype(t_ilist *il_mt,t_atom *atom,
   return nint;
 }
 
+static int make_reverse_ilist(gmx_moltype_t *molt,
+			      int **vsite_pbc,
+			      bool bConstr,bool bBCheck,
+			      bool bLinkToAllAtoms,
+			      gmx_reverse_ilist_t *ril_mt)
+{
+  int nat_mt,*count,i,nint_mt;
+
+  /* Count the interactions */
+  nat_mt = molt->atoms.nr;
+  snew(count,nat_mt);
+  low_make_reverse_ilist(molt->ilist,molt->atoms.atom,vsite_pbc,
+			 count,
+			 bConstr,bBCheck,NULL,NULL,
+			 bLinkToAllAtoms,FALSE);
+  
+  snew(ril_mt->index,nat_mt+1);
+  ril_mt->index[0] = 0;
+  for(i=0; i<nat_mt; i++) {
+    ril_mt->index[i+1] = ril_mt->index[i] + count[i];
+    count[i] = 0;
+  }
+  snew(ril_mt->il,ril_mt->index[nat_mt]);
+  
+  /* Store the interactions */
+  nint_mt =
+    low_make_reverse_ilist(molt->ilist,molt->atoms.atom,vsite_pbc,
+			   count,
+			   bConstr,bBCheck,
+			   ril_mt->index,ril_mt->il,
+			   bLinkToAllAtoms,TRUE);
+  
+  sfree(count);
+
+  return nint_mt;
+}
+
+static void destroy_reverse_ilist(gmx_reverse_ilist_t *ril)
+{
+  sfree(ril->index);
+  sfree(ril->il);
+}
+
 static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,bool bFE,
 					   int ***vsite_pbc_molt,
 					   bool bConstr,
 					   bool bBCheck,int *nint)
 {
-  int mt,nat_mt,*count,i,mb;
+  int mt,i,mb;
   gmx_reverse_top_t *rt;
   int *nint_mt;
   gmx_moltype_t *molt;
-  gmx_reverse_ilist_t *ril_mt;
 
   snew(rt,1);
 
@@ -427,35 +484,17 @@ static gmx_reverse_top_t *make_reverse_top(gmx_mtop_t *mtop,bool bFE,
   rt->ril_mt_tot_size = 0;
   for(mt=0; mt<mtop->nmoltype; mt++) {
     molt = &mtop->moltype[mt];
-    nat_mt = molt->atoms.nr;
     if (molt->cgs.nr > 1) {
       rt->bMultiCGmols = TRUE;
     }
-    /* Count the interactions */
-    snew(count,nat_mt);
-    make_reverse_moltype(molt->ilist,molt->atoms.atom,
-			 vsite_pbc_molt ? vsite_pbc_molt[mt] : NULL,
-			 count,
-			 rt,NULL,NULL,FALSE);
-
-    ril_mt = &rt->ril_mt[mt];
-    snew(ril_mt->index,nat_mt+1);
-    ril_mt->index[0] = 0;
-    for(i=0; i<nat_mt; i++) {
-      ril_mt->index[i+1] = ril_mt->index[i] + count[i];
-      count[i] = 0;
-    }
-    snew(ril_mt->il,ril_mt->index[nat_mt]);
     
-    /* Store the interactions */
-    nint_mt[mt] = make_reverse_moltype(molt->ilist,molt->atoms.atom,
-				       vsite_pbc_molt ? vsite_pbc_molt[mt] : NULL,
-				       count,
-				       rt,ril_mt->index,ril_mt->il,TRUE);
-    
-    sfree(count);
+    /* Make the atom to interaction list for this molecule type */
+    nint_mt[mt] =
+      make_reverse_ilist(molt,vsite_pbc_molt ? vsite_pbc_molt[mt] : NULL,
+			 rt->bConstr,rt->bBCheck,FALSE,
+			 &rt->ril_mt[mt]);
 
-    rt->ril_mt_tot_size += ril_mt->index[nat_mt];
+    rt->ril_mt_tot_size += rt->ril_mt[mt].index[molt->atoms.nr];
   }
   if (debug) {
     fprintf(debug,"The total size of the atom to interaction index is %d integers\n",rt->ril_mt_tot_size);
@@ -1330,7 +1369,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
   t_block *cgs;
   t_blocka *excls;
   int *a2c;
-  gmx_reverse_ilist_t *ril;
+  gmx_reverse_ilist_t ril;
   t_blocka *link;
 
   /* For each charge group make a list of other charge groups
@@ -1357,19 +1396,23 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
     cgs   = &molt->cgs;
     excls = &molt->excls;
     a2c = make_at2cg(cgs);
-    ril = &rt->ril_mt[molb->type];
+    /* Make a reverse ilist in which the interactions are linked to all atoms.
+     * The constraints are discarded here.
+     */
+    make_reverse_ilist(molt,NULL,FALSE,FALSE,TRUE,&ril);
+
     for(cg=0; cg<cgs->nr; cg++) {
       cg_gl = cg_offset + cg;
       link->index[cg_gl+1] = link->index[cg_gl];
       for(a=cgs->index[cg]; a<cgs->index[cg+1]; a++) {
-	i = ril->index[a];
-	while (i < ril->index[a+1]) {
-	  ftype = ril->il[i++];
+	i = ril.index[a];
+	while (i < ril.index[a+1]) {
+	  ftype = ril.il[i++];
 	  nral = NRAL(ftype);
 	  /* Skip the ifunc index */
 	  i++;
 	  for(j=0; j<nral; j++) {
-	    aj = ril->il[i+j];
+	    aj = ril.il[i+j];
 	    if (a2c[aj] != cg) {
 	      check_link(link,cg_gl,cg_offset+a2c[aj]);
 	    }
@@ -1377,6 +1420,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 	  i += nral_rt(ftype);
 	}
 	if (rt->bExclRequired) {
+	  /* Exclusions always go both ways */
 	  for(j=excls->index[a]; j<excls->index[a+1]; j++) {
 	    aj = excls->a[j];
 	    if (a2c[aj] != cg) {
@@ -1394,6 +1438,7 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 
     cg_offset += cgs->nr;
 
+    destroy_reverse_ilist(&ril);
     sfree(a2c);
 
     if (debug) {
