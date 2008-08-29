@@ -387,7 +387,7 @@ void upd_mdebin(t_mdebin *md,FILE *fp_dgdl,
       crmsd[1] = constr_rmsd(constr,TRUE);
     add_ebin(md->ebin,md->iconrmsd,nCrmsd,crmsd,FALSE,0);
   }
-  if (bDynBox || ekind->cosacc.cos_accel != 0) {
+  if (bDynBox || ((ekind != NULL) && (ekind->cosacc.cos_accel != 0))) {
     if(bTricl) {
       tricl_bs[0]=box[XX][XX];
       tricl_bs[1]=box[YY][XX];
