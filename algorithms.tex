@@ -2027,6 +2027,18 @@ the effective network bandwidth for PME is quadrupled,
 since only a quarter of the cores will be using the network connection
 on each machine during the PME calculations.
 
+\begin{figure}
+\centerline{\includegraphics[width=12cm]{plots/mpmd_pme}}
+\caption{
+Example of 8 nodes without (left) and with (right) MPMD.
+The PME communiation (red arrows) is much higher on the left
+than on the right. For MPMD additional PP - PME coordinate
+and force communication (blue arrows) is required,
+but the total communication complexity is lower.
+\label{fig:mpmd_pme}
+}
+\end{figure}
+
 {\tt mdrun} will by default interleave the PP and PME nodes.
 If the processors are not number consecutively inside the machines,
 one might want to use {\tt mdrun -ddorder pp\_pme}.
@@ -2050,3 +2062,22 @@ direction should ideally be the same or a multiple of the number
 of PME nodes. By default {\tt mdrun} takes care of this issue.
 In the future we will support better parallelizable electrostatics
 implementations.
+
+\subsubsection{Domain decomposition flow chart}
+In \figref{dd_flow} a flow chart is shown for domain decomposition
+will all possible communication for different algorithms.
+For simpler simulations the same flow chart applies,
+but simply without the algorithms and communiction for
+the algorithms which are not used.
+
+\begin{figure}
+\centerline{\includegraphics[width=12cm]{plots/flowchart}}
+\caption{
+Example of 8 nodes without (left) and with (right) MPMD.
+The PME communiation (red arrows) is much higher on the left
+than on the right. For MPMD additional PP - PME coordinate
+and force communication (blue arrows) is required,
+but the total communication complexity is lower.
+\label{fig:dd_flow}
+}
+\end{figure}
