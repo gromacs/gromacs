@@ -271,7 +271,8 @@ void init_multisystem(t_commrec *cr,int nsim,
       /* Because of possible multiple extensions per type we must look 
        * at the actual file name 
        */
-      if (is_output(&fnm[i]) || fnm[i].ftp == efTPX ||
+      if (is_output(&fnm[i]) ||
+	  fnm[i].ftp == efTPX || fnm[i].ftp == efCPT ||
 	  strcmp(fnm[i].opt,"-rerun") == 0) {
 	ftp = fn2ftp(fnm[i].fns[0]);
 	par_fn(fnm[i].fns[0],ftp,cr,FALSE,buf,255);
