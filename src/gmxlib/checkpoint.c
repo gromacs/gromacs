@@ -1,4 +1,21 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-  */
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
+ * $Id$
+ * 
+ * This file is part of Gromacs        Copyright (c) 1991-2008
+ * David van der Spoel, Erik Lindahl, Berk Hess, University of Groningen.
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * To help us fund GROMACS development, we humbly ask that you cite
+ * the research papers on the package. Check out http://www.gromacs.org
+ * 
+ * And Hey:
+ * Gnomes, ROck Monsters And Chili Sauce
+ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
@@ -20,6 +37,12 @@
 #define CPT_MAGIC1 171817
 #define CPT_MAGIC2 171819
 
+/* cpt_version should normally only be changed
+ * when the header of footer format changes.
+ * The state data format itself is backward and forward compatible.
+ * But old code can not read a new entry that is present in the file
+ * (but can read a new format when new entries are not present).
+ */
 static const int cpt_version = 2;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
@@ -36,19 +59,17 @@ const char *est_names[estNR]=
     "orire_initf", "orire_Dtav"
 };
 
-static void cp_error(const char *desc)
+static void cp_warning(FILE *fp)
 {
-    gmx_fatal(FARGS,
-              "The checkpoint file is truncated or corrupt at block '%s'",
-              desc);
+    fprintf(fp,"\nWARNING: Checkpoint file is corrupted or truncated\n\n");
 }
 
-static void cp_error_e(int ecpt)
+static void cp_error()
 {
-    cp_error(est_names[ecpt]);
+    gmx_fatal(FARGS,"Checkpoint file is corrupted or truncated");
 }
 
-static void do_cpt_string(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
+static void do_cpt_string_err(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
 {
 #define CPTSTRLEN 1024
     bool_t res=0;
@@ -61,7 +82,7 @@ static void do_cpt_string(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
     res = xdr_string(xd,s,CPTSTRLEN);
     if (res == 0)
     {
-        cp_error(desc);
+        cp_error();
     }
     if (list)
     {
@@ -70,29 +91,39 @@ static void do_cpt_string(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
     }
 }
 
-static void do_cpt_int(XDR *xd,char *desc,int *i,FILE *list)
+static int do_cpt_int(XDR *xd,char *desc,int *i,FILE *list)
 {
     bool_t res=0;
     
     res = xdr_int(xd,i);
     if (res == 0)
     {
-        cp_error(desc);
+        return -1;
     }
     if (list)
     {
         fprintf(list,"%s = %d\n",desc,*i);
     }
+
+    return 0;
 }
 
-static void do_cpt_double(XDR *xd,char *desc,double *f,FILE *list)
+static void do_cpt_int_err(XDR *xd,char *desc,int *i,FILE *list)
+{
+    if (do_cpt_int(xd,desc,i,list))
+    {
+        cp_error();
+    }
+}
+
+static void do_cpt_double_err(XDR *xd,char *desc,double *f,FILE *list)
 {
     bool_t res=0;
     
     res = xdr_double(xd,f);
     if (res == 0)
     {
-        cp_error(desc);
+        cp_error();
     }
     if (list)
     {
@@ -102,8 +133,8 @@ static void do_cpt_double(XDR *xd,char *desc,double *f,FILE *list)
 
 enum { ecprREAL, ecprRVEC, ecprMATRIX };
 
-static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
-                              FILE *list,int erealtype)
+static int do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
+                             FILE *list,int erealtype)
 {
     bool_t res=0;
 #ifndef GMX_DOUBLE
@@ -120,7 +151,7 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
     res = xdr_int(xd,&nf);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (list == NULL && nf != n)
     {
@@ -130,7 +161,7 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
     res = xdr_int(xd,&dt);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (dt != dtc)
     {
@@ -165,7 +196,7 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
                          (unsigned int)sizeof(float),(xdrproc_t)xdr_float);
         if (res == 0)
         {
-            cp_error_e(ecpt);
+            return -1;
         }
         if (dtc != ecpdtFLOAT)
         {
@@ -190,7 +221,7 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
                          (unsigned int)sizeof(double),(xdrproc_t)xdr_double);
         if (res == 0)
         {
-            cp_error_e(ecpt);
+            return -1;
         }
         if (dtc != ecpdtDOUBLE)
         {
@@ -220,20 +251,22 @@ static void do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
     {
         sfree(va);
     }
+
+    return 0;
 }
 
-static void do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
-                          FILE *list)
+static int do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
+                         FILE *list)
 {
-    do_cpte_reals_low(xd,ecpt,sflags,n,v,list,ecprREAL);
+    return do_cpte_reals_low(xd,ecpt,sflags,n,v,list,ecprREAL);
 }
 
-static void do_cpte_real(XDR *xd,int ecpt,int sflags,real *r,FILE *list)
+static int do_cpte_real(XDR *xd,int ecpt,int sflags,real *r,FILE *list)
 {
-    do_cpte_reals_low(xd,ecpt,sflags,1,&r,list,ecprREAL);
+    return do_cpte_reals_low(xd,ecpt,sflags,1,&r,list,ecprREAL);
 }
 
-static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
+static int do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
 {
     bool_t res=0;
     int  dtc=ecpdtINT;
@@ -244,7 +277,7 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
     res = xdr_int(xd,&nf);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (list == NULL && v != NULL && nf != n)
     {
@@ -254,7 +287,7 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
     res = xdr_int(xd,&dt);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (dt != dtc)
     {
@@ -277,7 +310,7 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
                      (unsigned int)sizeof(int),(xdrproc_t)xdr_int);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (list)
     {
@@ -287,15 +320,17 @@ static void do_cpte_ints(XDR *xd,int ecpt,int sflags,int n,int **v,FILE *list)
     {
         sfree(va);
     }
+
+    return 0;
 }
 
-static void do_cpte_int(XDR *xd,int ecpt,int sflags,int *i,FILE *list)
+static int do_cpte_int(XDR *xd,int ecpt,int sflags,int *i,FILE *list)
 {
-    do_cpte_ints(xd,ecpt,sflags,1,&i,list);
+    return do_cpte_ints(xd,ecpt,sflags,1,&i,list);
 }
 
-static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
-                            FILE *list)
+static int do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
+                           FILE *list)
 {
     bool_t res=0;
     int  dtc=ecpdtDOUBLE;
@@ -306,7 +341,7 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
     res = xdr_int(xd,&nf);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (list == NULL && nf != n)
     {
@@ -316,7 +351,7 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
     res = xdr_int(xd,&dt);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (dt != dtc)
     {
@@ -341,7 +376,7 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
                      (unsigned int)sizeof(double),(xdrproc_t)xdr_double);
     if (res == 0)
     {
-        cp_error_e(ecpt);
+        return -1;
     }
     if (list)
     {
@@ -351,80 +386,88 @@ static void do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
     {
         sfree(va);
     }
+
+    return 0;
 }
 
-static void do_cpte_rvecs(XDR *xd,int ecpt,int sflags,int n,rvec **v,
-                          FILE *list)
+static int do_cpte_rvecs(XDR *xd,int ecpt,int sflags,int n,rvec **v,
+                         FILE *list)
 {
-    do_cpte_reals_low(xd,ecpt,sflags,n*DIM,(real **)v,list,ecprRVEC);
+   return do_cpte_reals_low(xd,ecpt,sflags,n*DIM,(real **)v,list,ecprRVEC);
 }
 
-static void do_cpte_matrix(XDR *xd,int ecpt,int sflags,matrix v,FILE *list)
+static int do_cpte_matrix(XDR *xd,int ecpt,int sflags,matrix v,FILE *list)
 {
     real *vr;
+    real ret;
 
     vr = (real *)&(v[0][0]);
-    do_cpte_reals_low(xd,ecpt,sflags,DIM*DIM,&vr,NULL,ecprMATRIX);
+    ret = do_cpte_reals_low(xd,ecpt,sflags,DIM*DIM,&vr,NULL,ecprMATRIX);
     
-
-    if (list)
+    if (list && ret == 0)
     {
         pr_rvecs(list,0,est_names[ecpt],v,DIM);
     }
+    
+    return ret;
 }
 
-static int do_cpt_header(XDR *xd,bool bRead,int *file_version,
-                         char **version,char **btime,char **buser,char **bmach,
-                         char **fprog,char **ftime,
-                         int *eIntegrator,int *step,double *t,
-                         int *nnodes,int *dd_nc,int *npme,
-                         int *natoms,int *ngtc,int *flags,
-                         FILE *list)
+static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
+                          char **version,char **btime,char **buser,char **bmach,
+                          char **fprog,char **ftime,
+                          int *eIntegrator,int *step,double *t,
+                          int *nnodes,int *dd_nc,int *npme,
+                          int *natoms,int *ngtc,int *flags,
+                          FILE *list)
 {
     bool_t res=0;
     int  magic;
     int  idum;
     int  i;
     
-    magic = CPT_MAGIC1;
+    if (bRead)
+    {
+        magic = -1;
+    }
+    else
+    {
+        magic = CPT_MAGIC1;
+    }
     res = xdr_int(xd,&magic);
     if (res == 0)
     {
-        cp_error("start of file");
+        gmx_fatal(FARGS,"The checkpoint file is empty, corrupted or not a checkpoint file");
     }
     if (magic != CPT_MAGIC1)
     {
-        fprintf(stderr,
-                "Start magic number mismatch, checkpoint file has %d, should be %d\n",
-                magic,CPT_MAGIC1);
-        return -1;
+        gmx_fatal(FARGS,"Start of file magic number mismatch, checkpoint file has %d, should be %d\n"
+                  "The checkpoint file is corrupted or not a checkpoint file",
+                  magic,CPT_MAGIC1);
     }
-    do_cpt_string(xd,bRead,"GROMACS version"           ,version,list);
-    do_cpt_string(xd,bRead,"GROMACS build time"        ,btime,list);
-    do_cpt_string(xd,bRead,"GROMACS build user"        ,buser,list);
-    do_cpt_string(xd,bRead,"GROMACS build machine"     ,bmach,list);
-    do_cpt_string(xd,bRead,"generating program"        ,fprog,list);
-    do_cpt_string(xd,bRead,"generation time"           ,ftime,list);
+    do_cpt_string_err(xd,bRead,"GROMACS version"           ,version,list);
+    do_cpt_string_err(xd,bRead,"GROMACS build time"        ,btime,list);
+    do_cpt_string_err(xd,bRead,"GROMACS build user"        ,buser,list);
+    do_cpt_string_err(xd,bRead,"GROMACS build machine"     ,bmach,list);
+    do_cpt_string_err(xd,bRead,"generating program"        ,fprog,list);
+    do_cpt_string_err(xd,bRead,"generation time"           ,ftime,list);
     *file_version = cpt_version;
-    do_cpt_int(xd,"checkpoint file version",file_version,list);
+    do_cpt_int_err(xd,"checkpoint file version",file_version,list);
     if (*file_version > cpt_version)
     {
         gmx_fatal(FARGS,"Attempting to read a checkpoint file of version %d with code of version %d\n",*file_version,cpt_version);
     }
-    do_cpt_int(xd,"#atoms"            ,natoms     ,list);
-    do_cpt_int(xd,"#T-coupling groups",ngtc       ,list);
-    do_cpt_int(xd,"integrator"        ,eIntegrator,list);
-    do_cpt_int(xd,"step"              ,step       ,list);
-    do_cpt_double(xd,"t"              ,t          ,list);
-    do_cpt_int(xd,"#PP-nodes"         ,nnodes     ,list);
+    do_cpt_int_err(xd,"#atoms"            ,natoms     ,list);
+    do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
+    do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
+    do_cpt_int_err(xd,"step"              ,step       ,list);
+    do_cpt_double_err(xd,"t"              ,t          ,list);
+    do_cpt_int_err(xd,"#PP-nodes"         ,nnodes     ,list);
     idum = 1;
-    do_cpt_int(xd,"dd_nc[x]",dd_nc ? &(dd_nc[0]) : &idum,list);
-    do_cpt_int(xd,"dd_nc[y]",dd_nc ? &(dd_nc[1]) : &idum,list);
-    do_cpt_int(xd,"dd_nc[z]",dd_nc ? &(dd_nc[2]) : &idum,list);
-    do_cpt_int(xd,"#PME-only nodes",npme,list);
-    do_cpt_int(xd,"state flags",flags,list);
-    
-    return 0;
+    do_cpt_int_err(xd,"dd_nc[x]",dd_nc ? &(dd_nc[0]) : &idum,list);
+    do_cpt_int_err(xd,"dd_nc[y]",dd_nc ? &(dd_nc[1]) : &idum,list);
+    do_cpt_int_err(xd,"dd_nc[z]",dd_nc ? &(dd_nc[2]) : &idum,list);
+    do_cpt_int_err(xd,"#PME-only nodes",npme,list);
+    do_cpt_int_err(xd,"state flags",flags,list);
 }
 
 static int do_cpt_footer(XDR *xd,bool bRead,int file_version)
@@ -438,13 +481,10 @@ static int do_cpt_footer(XDR *xd,bool bRead,int file_version)
         res = xdr_int(xd,&magic);
         if (res == 0)
         {
-            cp_error("end of file");
+            cp_error();
         }
         if (magic != CPT_MAGIC2)
         {
-            fprintf(stderr,
-                    "End magic number mismatch, checkpoint file has %d, should be %d\n",
-                    magic,CPT_MAGIC2);
             return -1;
         }
     }
@@ -459,7 +499,10 @@ static int do_cpt_state(XDR *xd,bool bRead,
     int  sflags;
     int  **rng_p,**rngi_p;
     int  i;
+    int  ret;
     
+    ret = 0;
+
     if (bReadRNG)
     {
         rng_p  = (int **)&state->ld_rng;
@@ -473,35 +516,36 @@ static int do_cpt_state(XDR *xd,bool bRead,
     }
 
     sflags = state->flags;
-    for(i=0; i<estNR; i++)
+    for(i=0; (i<estNR && ret == 0); i++)
     {
         if (fflags & (1<<i))
         {
             switch (i)
             {
-            case estLAMBDA: do_cpte_real  (xd,i,sflags,&state->lambda,list); break;
-            case estBOX:    do_cpte_matrix(xd,i,sflags,state->box,list); break;
-            case estBOX_REL:do_cpte_matrix(xd,i,sflags,state->box_rel,list); break;
-            case estBOXV:   do_cpte_matrix(xd,i,sflags,state->boxv,list); break;
-            case estPRES_PREV: do_cpte_matrix(xd,i,sflags,state->pres_prev,list); break;
-            case estNH_XI:  do_cpte_reals (xd,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
-            case estTC_INT: do_cpte_doubles(xd,i,sflags,state->ngtc,&state->therm_integral,list); break;
-            case estX:      do_cpte_rvecs (xd,i,sflags,state->natoms,&state->x,list); break;
-            case estV:      do_cpte_rvecs (xd,i,sflags,state->natoms,&state->v,list); break;
-            case estSDX:    do_cpte_rvecs (xd,i,sflags,state->natoms,&state->sd_X,list); break;
-            case estLD_RNG: do_cpte_ints  (xd,i,sflags,state->nrng,rng_p,list); break;
-            case estLD_RNGI: do_cpte_ints (xd,i,sflags,state->nrngi,rngi_p,list); break;
-            case estDISRE_INITF:  do_cpte_real (xd,i,sflags,&state->hist.disre_initf,list); break;
-            case estDISRE_RM3TAV: do_cpte_reals(xd,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
-            case estORIRE_INITF:  do_cpte_real (xd,i,sflags,&state->hist.orire_initf,list); break;
-            case estORIRE_DTAV:   do_cpte_reals(xd,i,sflags,state->hist.norire_Dtav,&state->hist.orire_Dtav,list); break;
+            case estLAMBDA:  ret = do_cpte_real  (xd,i,sflags,&state->lambda,list); break;
+            case estBOX:     ret = do_cpte_matrix(xd,i,sflags,state->box,list); break;
+            case estBOX_REL: ret = do_cpte_matrix(xd,i,sflags,state->box_rel,list); break;
+            case estBOXV:    ret = do_cpte_matrix(xd,i,sflags,state->boxv,list); break;
+            case estPRES_PREV: ret = do_cpte_matrix(xd,i,sflags,state->pres_prev,list); break;
+            case estNH_XI:   ret = do_cpte_reals (xd,i,sflags,state->ngtc,&state->nosehoover_xi,list); break;
+            case estTC_INT:  ret = do_cpte_doubles(xd,i,sflags,state->ngtc,&state->therm_integral,list); break;
+            case estX:       ret = do_cpte_rvecs (xd,i,sflags,state->natoms,&state->x,list); break;
+            case estV:       ret = do_cpte_rvecs (xd,i,sflags,state->natoms,&state->v,list); break;
+            case estSDX:     ret = do_cpte_rvecs (xd,i,sflags,state->natoms,&state->sd_X,list); break;
+            case estLD_RNG:  ret = do_cpte_ints  (xd,i,sflags,state->nrng,rng_p,list); break;
+            case estLD_RNGI: ret = do_cpte_ints (xd,i,sflags,state->nrngi,rngi_p,list); break;
+            case estDISRE_INITF:  ret = do_cpte_real (xd,i,sflags,&state->hist.disre_initf,list); break;
+            case estDISRE_RM3TAV: ret = do_cpte_reals(xd,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
+            case estORIRE_INITF:  ret = do_cpte_real (xd,i,sflags,&state->hist.orire_initf,list); break;
+            case estORIRE_DTAV:   ret = do_cpte_reals(xd,i,sflags,state->hist.norire_Dtav,&state->hist.orire_Dtav,list); break;
             default:
-                gmx_fatal(FARGS,"Unknown state entry %d",i);
+                gmx_fatal(FARGS,"Unknown state entry %d\n"
+                          "You are probably reading a new checkpoint file with old code",i);
             }
         }
     }
     
-    return 0;
+    return ret;
 }
 
 void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
@@ -679,6 +723,7 @@ void read_checkpoint(char *fn,FILE *fplog,
     ivec dd_nc_f;
     int  natoms,ngtc,fflags;
     int  d;
+    int  ret;
     char *int_warn=
         "WARNING: The checkpoint file was generator with integrator %s,\n"
         "         while the simulation uses integrator %s\n\n";
@@ -801,8 +846,16 @@ void read_checkpoint(char *fn,FILE *fplog,
                         cr,bPartDecomp,nppnodes_f,npmenodes_f,dd_nc,dd_nc_f);
         }
     }
-    do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,state,*bReadRNG,NULL);
-    do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
+    ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,fflags,state,*bReadRNG,NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+    ret = do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
+    if (ret)
+    {
+        cp_error();
+    }
     gmx_fio_close(fp);
     
     sfree(fprog);
@@ -821,13 +874,23 @@ static void low_read_checkpoint_state(int fp,
     int  eIntegrator;
     int  nppnodes,npme;
     ivec dd_nc;
+    int  ret;
     
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,step,t,&nppnodes,dd_nc,&npme,
                   &state->natoms,&state->ngtc,&state->flags,NULL);
-    do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
-    do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
+    ret =
+        do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
+    if (ret)
+    {
+        cp_error();
+    }
+    ret = do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
+    if (ret)
+    {
+        cp_error();
+    }
 
     sfree(fprog);
     sfree(ftime);
@@ -895,9 +958,9 @@ void list_checkpoint(char *fn,FILE *out)
     double t;
     ivec dd_nc;
     t_state state;
-    
     int  indent;
     int  i;
+    int  ret;
     
     init_state(&state,-1,-1);
 
@@ -906,8 +969,15 @@ void list_checkpoint(char *fn,FILE *out)
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
                   &eIntegrator,&step,&t,&nppnodes,dd_nc,&npme,
                   &state.natoms,&state.ngtc,&state.flags,out);
-    do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
-    do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
+    ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
+    if (ret == 0)
+    {
+        ret = do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
+    }
+    if (ret)
+    {
+        cp_warning(out);
+    }
     gmx_fio_close(fp);
     
     done_state(&state);
