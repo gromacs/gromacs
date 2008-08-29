@@ -692,7 +692,7 @@ static void check_match(FILE *fplog,
         dd_nc[YY] = 1;
         dd_nc[ZZ] = 1;
     }
-    if (npp == npp_f)
+    if (npp == npp_f && npp > 1)
     {
         check_int (fplog,"#PME-nodes"  ,cr->npmenodes,npme_f     ,&mm);
         check_int (fplog,"#DD-cells[x]",dd_nc[XX]    ,dd_nc_f[XX],&mm);
