@@ -1239,7 +1239,7 @@ static void add_simple(t_ns_buf *nsbuf,int nrj,atom_id cg_j,
                        int icg,int jgid,t_block *cgs,t_excl bexcl[],
                        int shift,t_forcerec *fr)
 {
-    if (nsbuf->nj >= MAX_CG)
+    if (nsbuf->nj + nrj > MAX_CG)
     {
         put_in_list(bHaveVdW,ngid,md,icg,jgid,nsbuf->ncg,nsbuf->jcg,
                     cgs->index,bexcl,shift,fr,FALSE,TRUE,TRUE,FALSE);
