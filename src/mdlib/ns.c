@@ -389,16 +389,6 @@ static inline void new_i_nblist(t_nblist *nlist,
 {
     int    i,k,nri,nshift;
     
-    if (nlist->maxnrj < nlist->nrj + MAX_CG)
-    {
-        nlist->maxnrj = over_alloc_small(nlist->nrj + MAX_CG);
-        if (gmx_debug_at)
-            fprintf(debug,"Increasing %s nblist %s j size to %d\n",
-                    bLR ? "LR" : "SR",nrnb_str(nlist->il_code),nlist->maxnrj);
-
-        srenew(nlist->jjnr,nlist->maxnrj);
-    }
-
     nri = nlist->nri;
     
     /* Check whether we have to increase the i counter */
@@ -495,10 +485,20 @@ static inline void close_neighbor_list(t_forcerec *fr,bool bLR,int nls,int eNL,
     }
 }
 
-static void add_j_to_nblist(t_nblist *nlist,atom_id j_atom)
+static void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,bool bLR)
 {
     int nrj=nlist->nrj;
     
+    if (nlist->maxnrj < nlist->nrj + MAX_CG)
+    {
+        nlist->maxnrj = over_alloc_small(nlist->nrj + MAX_CG);
+        if (gmx_debug_at)
+            fprintf(debug,"Increasing %s nblist %s j size to %d\n",
+                    bLR ? "LR" : "SR",nrnb_str(nlist->il_code),nlist->maxnrj);
+        
+        srenew(nlist->jjnr,nlist->maxnrj);
+    }
+
     nlist->jjnr[nrj] = j_atom;
     nlist->nrj ++;
 }
@@ -672,7 +672,7 @@ put_in_list(bool              bHaveVdW[],
                     if (!bDoCoul)
                     {
                         /* VdW only - only first atoms in each water interact */
-                        add_j_to_nblist(vdw,jj0);
+                        add_j_to_nblist(vdw,jj0,bLR);
                     }
                     else 
                     {
@@ -680,23 +680,23 @@ put_in_list(bool              bHaveVdW[],
                         /* Add entries for the three atoms - only do VdW if we need to */
                         if (!bDoVdW)
                         {
-                            add_j_to_nblist(coul,jj0);
+                            add_j_to_nblist(coul,jj0,bLR);
                         }
                         else
                         {
-                            add_j_to_nblist(vdwc,jj0);
+                            add_j_to_nblist(vdwc,jj0,bLR);
                         }
-                        add_j_to_nblist(coul,jj0+1);
-                        add_j_to_nblist(coul,jj0+2);	    
+                        add_j_to_nblist(coul,jj0+1,bLR);
+                        add_j_to_nblist(coul,jj0+2,bLR);	    
 #else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
-                            add_j_to_nblist(coul_ww,jj0);
+                            add_j_to_nblist(coul_ww,jj0,bLR);
                         }
                         else
                         {
-                            add_j_to_nblist(vdwc_ww,jj0);
+                            add_j_to_nblist(vdwc_ww,jj0,bLR);
                         }
 #endif
                     }  
@@ -707,7 +707,7 @@ put_in_list(bool              bHaveVdW[],
                     if (!bDoCoul)
                     {
                         /* VdW only - only first atoms in each water interact */
-                        add_j_to_nblist(vdw,jj0);
+                        add_j_to_nblist(vdw,jj0,bLR);
                     }
                     else 
                     {
@@ -715,20 +715,20 @@ put_in_list(bool              bHaveVdW[],
                         /* Add entries for the four atoms - only do VdW if we need to */
                         if (bDoVdW)
                         {
-                            add_j_to_nblist(vdw,jj0);
+                            add_j_to_nblist(vdw,jj0,bLR);
                         }
-                        add_j_to_nblist(coul,jj0+1);
-                        add_j_to_nblist(coul,jj0+2);	    
-                        add_j_to_nblist(coul,jj0+3);	    
+                        add_j_to_nblist(coul,jj0+1,bLR);
+                        add_j_to_nblist(coul,jj0+2,bLR);	    
+                        add_j_to_nblist(coul,jj0+3,bLR);	    
 #else
                         /* One entry for the entire water-water interaction */
                         if (!bDoVdW)
                         {
-                            add_j_to_nblist(coul_ww,jj0);
+                            add_j_to_nblist(coul_ww,jj0,bLR);
                         }
                         else
                         {
-                            add_j_to_nblist(vdwc_ww,jj0);
+                            add_j_to_nblist(vdwc_ww,jj0,bLR);
                         }
 #endif
                     }  					
@@ -749,7 +749,7 @@ put_in_list(bool              bHaveVdW[],
                         {
                             if (charge[jj] != 0)
                             {
-                                add_j_to_nblist(coul,jj);
+                                add_j_to_nblist(coul,jj,bLR);
                             }
                         }
                     }
@@ -759,7 +759,7 @@ put_in_list(bool              bHaveVdW[],
                         {
                             if (bHaveVdW[type[jj]])
                             {
-                                add_j_to_nblist(vdw,jj);
+                                add_j_to_nblist(vdw,jj,bLR);
                             }
                         }
                     }
@@ -773,16 +773,16 @@ put_in_list(bool              bHaveVdW[],
                             {
                                 if (charge[jj] != 0)
                                 {
-                                    add_j_to_nblist(vdwc,jj);
+                                    add_j_to_nblist(vdwc,jj,bLR);
                                 }
                                 else
                                 {
-                                    add_j_to_nblist(vdw,jj);
+                                    add_j_to_nblist(vdw,jj,bLR);
                                 }
                             }
                             else if (charge[jj] != 0)
                             {
-                                add_j_to_nblist(coul,jj);
+                                add_j_to_nblist(coul,jj,bLR);
                             }
                         }
                     }
@@ -824,7 +824,7 @@ put_in_list(bool              bHaveVdW[],
                             {
                                 bNotEx = NOTEXCL(bExcl,i,jj);
                                 if(bNotEx)
-                                    add_j_to_nblist(coul,jj);
+                                    add_j_to_nblist(coul,jj,bLR);
                             }
                         }
                     }
@@ -887,14 +887,14 @@ put_in_list(bool              bHaveVdW[],
                                 { 
                                     if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul,jj);
+                                        add_j_to_nblist(coul,jj,bLR);
                                     }
                                 }
                                 else if (!bDoCoul_i) 
                                 {
                                     if (bHaveVdW[type[jj]])
                                     {
-                                        add_j_to_nblist(vdw,jj);
+                                        add_j_to_nblist(vdw,jj,bLR);
                                     }
                                 }
                                 else 
@@ -903,16 +903,16 @@ put_in_list(bool              bHaveVdW[],
                                     {
                                         if (charge[jj] != 0)
                                         {
-                                            add_j_to_nblist(vdwc,jj);
+                                            add_j_to_nblist(vdwc,jj,bLR);
                                         }
                                         else
                                         {
-                                            add_j_to_nblist(vdw,jj);
+                                            add_j_to_nblist(vdw,jj,bLR);
                                         }
                                     } 
                                     else if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul,jj);
+                                        add_j_to_nblist(coul,jj,bLR);
                                     }
                                 }
                             }
@@ -993,14 +993,14 @@ put_in_list(bool              bHaveVdW[],
                                     {
                                         if (charge[jj]!=0 || chargeB[jj]!=0)
                                         {
-                                            add_j_to_nblist(coul_free,jj);
+                                            add_j_to_nblist(coul_free,jj,bLR);
                                         }
                                     }
                                     else if (!bDoCoul_i) 
                                     {
                                         if (bHaveVdW[type[jj]] || bHaveVdW[typeB[jj]])
                                         {
-                                            add_j_to_nblist(vdw_free,jj);
+                                            add_j_to_nblist(vdw_free,jj,bLR);
                                         }
                                     }
                                     else 
@@ -1009,15 +1009,15 @@ put_in_list(bool              bHaveVdW[],
                                         {
                                             if (charge[jj]!=0 || chargeB[jj]!=0)
                                             {
-                                                add_j_to_nblist(vdwc_free,jj);
+                                                add_j_to_nblist(vdwc_free,jj,bLR);
                                             }
                                             else
                                             {
-                                                add_j_to_nblist(vdw_free,jj);
+                                                add_j_to_nblist(vdw_free,jj,bLR);
                                             }
                                         }
                                         else if (charge[jj]!=0 || chargeB[jj]!=0)
-                                            add_j_to_nblist(coul_free,jj);
+                                            add_j_to_nblist(coul_free,jj,bLR);
                                     }
                                 }
                                 else if (!bDoVdW_i) 
@@ -1025,14 +1025,14 @@ put_in_list(bool              bHaveVdW[],
                                     /* This is done whether or not bWater is set */
                                     if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul,jj);
+                                        add_j_to_nblist(coul,jj,bLR);
                                     }
                                 }
                                 else if (!bDoCoul_i) 
                                 { 
                                     if (bHaveVdW[type[jj]])
                                     {
-                                        add_j_to_nblist(vdw,jj);
+                                        add_j_to_nblist(vdw,jj,bLR);
                                     }
                                 }
                                 else 
@@ -1041,16 +1041,16 @@ put_in_list(bool              bHaveVdW[],
                                     {
                                         if (charge[jj] != 0)
                                         {
-                                            add_j_to_nblist(vdwc,jj);
+                                            add_j_to_nblist(vdwc,jj,bLR);
                                         }
                                         else
                                         {
-                                            add_j_to_nblist(vdw,jj);
+                                            add_j_to_nblist(vdw,jj,bLR);
                                         }
                                     } 
                                     else if (charge[jj] != 0)
                                     {
-                                        add_j_to_nblist(coul,jj);
+                                        add_j_to_nblist(coul,jj,bLR);
                                     }
                                 }
                             }
