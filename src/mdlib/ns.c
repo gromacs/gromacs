@@ -489,9 +489,9 @@ static void add_j_to_nblist(t_nblist *nlist,atom_id j_atom,bool bLR)
 {
     int nrj=nlist->nrj;
     
-    if (nlist->maxnrj < nlist->nrj + MAX_CG)
+    if (nlist->nrj >= nlist->maxnrj)
     {
-        nlist->maxnrj = over_alloc_small(nlist->nrj + MAX_CG);
+        nlist->maxnrj = over_alloc_small(nlist->nrj + 1);
         if (gmx_debug_at)
             fprintf(debug,"Increasing %s nblist %s j size to %d\n",
                     bLR ? "LR" : "SR",nrnb_str(nlist->il_code),nlist->maxnrj);
