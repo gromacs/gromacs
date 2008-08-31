@@ -37,6 +37,8 @@
 #ifndef _tune_pol_h
 #define _tune_pol_h
 
+#include "grompp.h"
+
 enum { 
   eelemH,  eelemHe, 
   eelemLi, eelemBe, eelemB,  eelemC,  eelemN, eelemO, eelemF,  eelemNe,

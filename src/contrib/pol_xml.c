@@ -657,7 +657,7 @@ void write_atoms_molprops(char *fn,char *name,char *formula,t_atoms*atoms,t_para
     range_check(tp,0,eatNR);
     mp->frag_comp[tp]++;
   }
-  write_molprop(fn,1,mp);  
+  write_molprops(fn,1,mp);  
   sfree(mp);
 }
 
