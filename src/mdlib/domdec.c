@@ -4297,11 +4297,12 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         nnodes = npp + npme;
         imbal = comm->load_max*npp/comm->load_sum - 1;
         lossf = dd_force_imb_perf_loss(dd);
-        sprintf(buf," Average load imbalance: %.1f %%\n",imbal*100);
+        /* buf will be sent to another printf command, so we need two percent-signs in it */
+        sprintf(buf," Average load imbalance: %.1f %%%%\n",imbal*100);
         fprintf(fplog,buf);
         fprintf(stderr,"\n");
         fprintf(stderr,buf);
-        sprintf(buf," Part of the total run time spent waiting due to load imbalance: %.1f %%\n",lossf*100);
+        sprintf(buf," Part of the total run time spent waiting due to load imbalance: %.1f %%%%\n",lossf*100);
         fprintf(fplog,buf);
         fprintf(stderr,buf);
         bLim = FALSE;
@@ -4311,7 +4312,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
             for(d=0; d<dd->ndim; d++)
             {
                 limp = (200*comm->load_lim[d]+1)/(2*comm->nload);
-                sprintf(buf+strlen(buf)," %c %d %%",dim2char(dd->dim[d]),limp);
+                sprintf(buf+strlen(buf)," %c %d %%%%",dim2char(dd->dim[d]),limp);
                 if (limp >= 50)
                 {
                     bLim = TRUE;
@@ -4346,7 +4347,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         if (lossf >= DD_PERF_LOSS)
         {
             sprintf(buf,
-                    "NOTE: %.1f %% performance was lost due to load imbalance\n"
+                    "NOTE: %.1f %%%% performance was lost due to load imbalance\n"
                     "      in the domain decomposition.\n",lossf*100);
             if (!comm->bDynLoadBal)
             {
