@@ -55,17 +55,12 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-//#include "toppush.h"
-//#include "pdb2top.h"
 #include "symtab.h"
-//#include "gen_ad.h"
-//#include "topexcl.h"
 #include "vec.h"
 #include "gentop_nm2type.h"
 #include "gentop_core.h"
 #include "atomprop.h"
 #include "grompp.h"
-//#include "add_par.h"
 #include "pdbio.h"
 #include "gmx_random.h"
 #include "gpp_atomtype.h"
@@ -916,3 +911,51 @@ void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
   sfree(inv_renum);
   sfree(ccgg);
 }
+
+void write_atoms_molprops(char *fn,char *name,char *formula,t_atoms*atoms,t_params *bonds)
+{
+  t_molprop *mp;
+  int ai,aj,i,j,*nh;
+  char buf[32],*ptr;
+  
+  snew(mp,1);
+  mp->nr = atoms->nr;
+  mp->formula = formula;
+  mp->molname = name;
+  mp->weight = 0;
+  mp->nexperiment = 0;
+  mp->experiment = NULL;
+  mp->error = 0;
+  mp->pname = NULL;
+  mp->reference = NULL;
+  
+  snew(nh,atoms->nr);
+  for(i=0; (i<bonds->nr); i++) {
+    ai = bonds->param[i].AI;
+    aj = bonds->param[i].AJ;
+    if ((*atoms->atomtype[ai])[0] == 'H') {
+      nh[aj]++;
+    }
+    else if ((*atoms->atomtype[aj])[0] == 'H') {
+      nh[ai]++;
+    }
+  }
+  for(i=0; (i<atoms->nr); i++) {
+    ptr = *(atoms->atomtype[i]);
+    if (ptr[0] != 'H') {
+      sprintf(buf,"%s%d",ptr,nh[i]);
+      for(j=0; (j<eatNR); j++) {
+	if (strcasecmp(buf,spoel[j].name) == 0)
+	  break;
+      }
+      if (debug)
+	fprintf(debug,"Tested name '%s'\n",buf);
+      range_check(j,0,eatNR);
+      mp->frag_comp[j]++;
+    }
+  }
+  sfree(nh);
+  write_molprops(fn,1,mp);  
+  sfree(mp);
+}
+

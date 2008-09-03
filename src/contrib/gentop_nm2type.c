@@ -55,9 +55,6 @@
 #include "txtdump.h"
 #include "readinp.h"
 #include "names.h"
-//#include "toppush.h"
-//#include "pdb2top.h"
-//#include "topexcl.h"
 #include "atomprop.h"
 #include "gentop_nm2type.h"
 

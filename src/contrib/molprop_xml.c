@@ -50,55 +50,6 @@
 
 extern int xmlDoValidityCheckingDefaultValue;
 	
-typedef struct {
-  char *miller;
-  char *spoel;
-} t_miller2spoel;
-
-#define NM2S 4
-
-static t_miller2spoel miller2spoel[NM2S] = {
-  { "CBR",  "C20" },
-  { "OPI2", "O20" },
-  { "SPI2", "S20" },
-  { "NPI2", "N20" }
-};
-
-typedef struct {
-  char   *pname;
-  double pvalue,perror;
-  char   *psource;
-  char   *preference;
-} t_property;
-
-typedef struct {
-  char *cname;
-  int  cnumber;
-} t_catom;
-
-typedef struct {
-  char    *compname;
-  int     ncatom;
-  t_catom *catom;
-} t_composition;
-
-typedef struct {
-  char          *formula,*molname,*reference;
-  double        weight;
-  int           nproperty;
-  t_property    *property;
-  int           ncomposition;
-  t_composition *composition;
-  int           ncategory;
-  char          **category;
-} t_molprop2;
-
-typedef struct {
-  int        npd;
-  t_molprop  **pd;
-  t_molprop2 **pd2;
-} t_xmlrec;
-	
 static const char *xmltypes[] = { 
   NULL, 
   "XML_ELEMENT_NODE",
@@ -129,7 +80,7 @@ enum {
   exmlMOLECULE, exmlFORMULA, exmlMOLNAME, exmlWEIGHT,
   exmlCATEGORY, exmlCATNAME,
   exmlPROPERTY, exmlPNAME,   exmlPVALUE, exmlPERROR, 
-  exmlPSOURCE, exmlPREFERENCE,
+  exmlPMETHOD, exmlPREFERENCE,
   exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
   exmlNR 
 };
@@ -138,7 +89,7 @@ static const char *exml_names[exmlNR] = {
   "molecules",
   "molecule", "formula", "molname", "weight", 
   "category", "catname",
-  "property", "pname", "pvalue", "perror", "psource", "preference",
+  "property", "pname", "pvalue", "perror", "pmethod", "preference",
   "composition", "compname", "catom", "cname", "cnumber"
 };
 
@@ -290,15 +241,11 @@ static void copy_molprop(t_molprop *dst,t_molprop2 *src,int update_bm)
 }
 
 static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
-			 int indent,t_xmlrec *xml)
-  {
+			 int indent,gmx_molprop_t mpt)
+{
   char *attrname,*attrval;
   char buf[100];
-  t_molprop2 *xptr=NULL;
-  t_catom *ca;
-  
-  if (xml->npd > 0)
-    xptr = xml->pd2[xml->npd-1];
+  char *pname=NULL,*preference=NULL,*pmethod=NULL,*pvalue=NULL,*perr=NULL;
   
   while (attr != NULL) {
     attrname = (char *)attr->name;
@@ -308,18 +255,18 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     switch (elem) {
     case exmlMOLECULE: 
       if (atest("formula")) 
-	xptr->formula = strdup(attrval);
+	gmx_molprop_set_formula(mpt,attrval);
       else if (atest("molname")) 
-	xptr->molname = strdup(attrval);
+	gmx_molprop_set_molname(mpt,attrval);
       else if (atest("weight")) 
-	xptr->weight = atof(attrval);
+	gmx_molprop_set_weight(mpt,atof(attrval));
       else
 	fatal_error("Unknown attribute for molecule",attrname);
       break;
       
     case exmlCATEGORY:
       if (atest("catname")) 
-	xptr->category[xptr->ncategory-1] = strdup(attrval);
+	gmx_molprop_add_category(mpt,attrval);
       else
 	fatal_error("Unknown attribute for category",attrname);
       break;
@@ -327,15 +274,15 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     case exmlPROPERTY: {
       t_property *xp = &(xptr->property[xptr->nproperty-1]);
       if (atest("pname")) 
-	xp->pname = strdup(attrval);
-      else if (atest("psource")) 
-	xp->psource = strdup(attrval);
+	pname = strdup(attrval);
+      else if (atest("pmethod")) 
+	pmethod = strdup(attrval);
       else if (atest("preference")) 
-	xp->preference = strdup(attrval);
+	preference = strdup(attrval);
       else if (atest("pvalue")) 
-	xp->pvalue = atof(attrval);
+	pvalue = strdup(attrval);
       else if (atest("perror")) 
-	xp->perror = atof(attrval);
+	perror = strdup(attrval);
       else
 	fatal_error("Unknown attribute for property",attrname);
       break;
@@ -345,7 +292,7 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
 	fatal_error("Composition error","");
       t_composition *co = &(xptr->composition[xptr->ncomposition-1]);
       if (atest("compname")) 
-	co->compname = strdup(attrval);
+	gmx_molprop_add_composition(mpt,attrval);
       else
 	fatal_error("Unknown attribute for catom",attrname);
       break;

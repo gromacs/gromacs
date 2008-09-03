@@ -136,10 +136,10 @@ static real calc_j1(rvec xi,rvec xj,real wi,real wj,
 	real r;
 	real eNN=0,eNS=0,eSN=0,eSS=0;
 
-	rowi--;
-	rowj--;
-	range_check(rowi,0,SLATER_MAX);
-	range_check(rowj,0,SLATER_MAX);
+	rowi;
+	rowj;
+	range_check(rowi,1,SLATER_MAX+1);
+	range_check(rowj,1,SLATER_MAX+1);
 	rvec_sub(xi,xj,dx);
 	r = norm(dx);
 	if (r == 0)

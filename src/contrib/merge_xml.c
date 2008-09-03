@@ -41,6 +41,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "smalloc.h"
 #include "tune_pol.h"
 
 static int comp_mp(const void *a,const void *b)

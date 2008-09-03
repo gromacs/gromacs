@@ -67,13 +67,10 @@ enum {
 extern char *lbasis[eqmNR];
       
 #define ecNR  20
-#define eatNR 29
-#define eatExtra 20
+#define eatNR 30
+#define eatExtra 19
 
 #define nullify(x) memset(&(x),0,sizeof(x))
-#define snew(x,n)   { (x) = calloc((n),sizeof(*x));    }
-#define srenew(x,n) { if ((x)) { (x) = realloc((x),(n)*sizeof(*x)); } else { snew((x),(n)); } }
-#define sfree(x)    { if ((x!=NULL)) { free(x); x = NULL; } }
 
 typedef struct {
   int    nr;
@@ -114,8 +111,6 @@ extern t_bosque bosque[eelemNR+1];
 extern char     *ec_name[ecNR];
 
 extern void write_molprops(char *fn,int npd,t_molprop pd[]);
-
-extern void write_atoms_molprops(char *fn,char *name,char *formula,t_atoms*atoms,t_params *bonds);
 
 extern int read_molprops(char *fn,t_molprop **pd,int update_bm);
 /* Return number of molprops. If update_bm != 0 then the Bosque and Miller

@@ -43,6 +43,7 @@
 #include <string.h>
 #include "maths.h"
 #include "futil.h"
+#include "smalloc.h"
 #include "tune_pol.h"
 #include "vec.h"
 #include "gentop_matrix.h"
