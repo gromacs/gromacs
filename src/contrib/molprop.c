@@ -102,8 +102,7 @@ char *gmx_molprop_get_reference(gmx_molprop_t mpt)
   return mp->reference;
 }
 
-int gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
-				     char *atomname,int natom)
+int gmx_molprop_add_composition(gmx_molprop_t mpt,char *compname)
 {
   gmx_molprop *mp = mpt;
   int i,j;
@@ -118,19 +117,42 @@ int gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
     mp->composition[i].ncatom = 0;
     mp->composition[i].catom = NULL;
   }
-  for(j=0; (j<mp->composition[i].ncatom); j++) {
-    if (strdup(mp->composition[i].catom[j].cname,atomname) == 0) {
-      mp->composition[i].catom[j].cnumber += natom;
-      break;
+}
+
+int gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
+				     char *atomname,int natom)
+{
+  gmx_molprop *mp = mpt;
+  int i,j;
+  
+  if (compname) {
+    for(i=0; (i<mp->ncomposition); i++)
+      if(strcmp(compname,mp->composition[i].compname) == 0)
+	break;
+    if (i == mp->ncomposition) {
+      mp->ncomposition++;
+      srenew(mp->composition,mp->ncomposition);
+      mp->composition[i].compname = strdup(compname);
+      mp->composition[i].ncatom = 0;
+      mp->composition[i].catom = NULL;
     }
   }
-  if (j == mp->composition[i].ncatom) {
-    mp->composition[i].ncatom++;
-    srenew(mp->composition[i].catom,mp->composition[i].ncatom);
-    mp->composition[i].catom[j].cnumber = 0;
-    mp->composition[i].catom[j].cname = strdup(atomname);
+  else if (mp->ncomposition > 0) {
+    i = mp->ncomposition-1;
+    for(j=0; (j<mp->composition[i].ncatom); j++) {
+      if (strdup(mp->composition[i].catom[j].cname,atomname) == 0) {
+	mp->composition[i].catom[j].cnumber += natom;
+	break;
+      }
+    }
+    if (j == mp->composition[i].ncatom) {
+      mp->composition[i].ncatom++;
+      srenew(mp->composition[i].catom,mp->composition[i].ncatom);
+      mp->composition[i].catom[j].cnumber = 0;
+      mp->composition[i].catom[j].cname = strdup(atomname);
+    }
+    mp->composition[i].catom[j].cnumber += natom;
   }
-  mp->composition[i].catom[j].cnumber += natom;
 }
 
 void gmx_molprop_add_property(gmx_molprop_t mpt,int eMP,
@@ -151,6 +173,29 @@ void gmx_molprop_add_property(gmx_molprop_t mpt,int eMP,
   pp->reference = strdup(prop_reference);
 }
 
+int gmx_molprop_get_property(gmx_molprop_t mpt,int *eMP,
+			     char **prop_name,double *value,double *error,
+			     char **prop_method,char **prop_reference)
+{
+  gmx_molprop *mp = mpt;
+  t_property  *pp;
+  
+  if (mp->nprop_c < mp->nproperty) {
+    mp->nprop_c++;
+    pp = &(mp->property[mp->nprop_c-1]);
+    *eMP       = pp->eMP;       
+    *prop_name = strdup(pp->name);
+    *value     = pp->value;
+    *error     = pp->error;
+    *prop_method = strdup(pp->method);
+    *prop_reference = strdup(pp->reference);
+
+    return 1;
+  }
+  mp->nprop_c = 0;
+  return 0;
+}
+
 void gmx_molprop_add_category(gmx_molprop_t,char *category)
 {
   gmx_molprop *mp = mpt;
@@ -165,7 +210,7 @@ void gmx_molprop_add_category(gmx_molprop_t,char *category)
   }
 } 
 
-char *gmx_molprop_get_category(gmx_molprop_t)
+char *gmx_molprop_get_category(gmx_molprop_t mpt)
 {
   gmx_molprop *mp = mpt;
   int i;
@@ -174,6 +219,8 @@ char *gmx_molprop_get_category(gmx_molprop_t)
     mp->ncat_c++;
     return mp->category[mp->ncat_c-1];
   }
+  gmx_molprop_reset_category(mpt);
+  
   return NULL;
 }
 

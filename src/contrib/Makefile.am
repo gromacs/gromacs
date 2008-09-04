@@ -81,6 +81,7 @@ nodist_gentop_SOURCES		= gentop.c	gentop_qgen.c	\
 			gentop_qalpha.h	gentop_qalpha.c	\
 			gentop_eemprops.c gentop_eemprops.h\
 			pol_xml.c tune_pol.h poldata.c \
+			molprop.c molprop.h molprop_xml.c \
 			slater_integrals.cpp slater_integrals.h \
 			slater_low.h \
 			DSlater_1S_1S.cpp DSlater_1S_2S.cpp DSlater_1S_3S.cpp \

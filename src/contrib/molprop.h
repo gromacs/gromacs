@@ -20,6 +20,8 @@ extern void gmx_molprop_set_reference(gmx_molprop_t mpt,char *reference);
 
 extern char *gmx_molprop_get_reference(gmx_molprop_t mpt);
 
+extern int gmx_molprop_add_composition(gmx_molprop_t mpt,char *compname);
+
 extern void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
 					     char *atomname,int natom);
 
@@ -27,6 +29,10 @@ extern void gmx_molprop_add_property(gmx_molprop_t mpt,int eMP,
 				     char *prop_name,double value,double error,
 				     char *prop_method,char *prop_reference);
 
+extern int gmx_molprop_get_property(gmx_molprop_t mpt,int *eMP,
+				    char **prop_name,double *value,double *error,
+				    char **prop_method,char **prop_reference);
+				    
 extern void gmx_molprop_add_category(gmx_molprop_t mpt,char *category);
 
 /* Returns one category at a time. If NULL */

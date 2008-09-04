@@ -93,6 +93,11 @@ static const char *exml_names[exmlNR] = {
   "composition", "compname", "catom", "cname", "cnumber"
 };
 
+typedef struct {
+  int nmolprop;
+  gmx_molprop_t *mpt;
+} t_xmlrec;
+
 static int find_elem(char *name,int nr,const char *names[])
 {
   int i;
@@ -120,132 +125,13 @@ static char *sp(int n, char buf[], int maxindent)
   return buf;
 }
 
-static void set_miller(t_molprop *mp,char *milnm,int number,int nh)
-{
-  int i;
-  
-  mp->emil_comp[emlH] += nh*number;
-  for(i=0; (i<emlNR); i++) {
-    if (strcmp(miller[i].name,milnm) == 0) {
-      mp->emil_comp[i] += number;
-      return;
-    }
-  }
-  if (i == emlNR) 
-    fatal_error("No such Miller type",milnm);
-}
-
-static void set_bosque(t_molprop *mp,char *bosnm,int number,int nh)
-{
-  int i;
-
-  mp->elem_comp[eelemH] += nh*number;
-  for(i=0; (i<eelemNR); i++) {
-    if (strcmp(bosque[i].name,bosnm) == 0) {
-      mp->elem_comp[i] += number;
-      return;
-    }
-  } 
-  if (i == eelemNR) 
-    fatal_error("No such Bosque type",bosnm);
-}
-
-static void copy_molprop(t_molprop *dst,t_molprop2 *src,int update_bm)
-{
-  int i,j,k,n,nh,imiller;
-  char *ptr;
-    
-  if (src->formula) 
-    dst->formula    = strdup(src->formula);
-  if (src->molname)
-    dst->molname    = strdup(src->molname);
-  dst->weight     = src->weight;
-  
-  for(i=0; (i<src->ncategory); i++) {
-    for(j=0; (j<ecNR); j++) {
-      if (strcasecmp(src->category[i],ec_name[j]) == 0) {
-	dst->category[j] = 1;
-      }
-    }
-  }
-
-  for(i=0;(i<src->nproperty);i++){
-    if (strcasecmp(src->property[i].psource,"experiment") == 0) {
-      dst->nexperiment++;
-      srenew(dst->experiment,dst->nexperiment);
-      srenew(dst->reference,dst->nexperiment);
-      srenew(dst->pname,dst->nexperiment);
-      dst->experiment[dst->nexperiment-1] = src->property[i].pvalue;
-      dst->reference[dst->nexperiment-1]  = strdup(src->property[i].preference);
-      dst->pname[dst->nexperiment-1] = strdup(src->property[i].pname);
-    }
-    else {
-      for(j=0; (j<eqmNR); j++) 
-	if (strcasecmp(lbasis[j],src->property[i].psource) == 0)
-	  break;
-      if (j == eqmNR)
-	fatal_error("No such method known",src->property[i].psource);
-      dst->qm[j] = src->property[i].pvalue;
-    }
-  }
-  
-  for(i=0; (i<src->ncomposition); i++) {
-    if (strcasecmp(src->composition[i].compname,"spoel") == 0) {
-      for(k=0; (k<src->composition[i].ncatom); k++) {
-	ptr = src->composition[i].catom[k].cname;	
-	n   = src->composition[i].catom[k].cnumber;
-	
-	for(imiller=0; (imiller<NM2S); imiller++) {
-	  if (strcasecmp(miller2spoel[imiller].miller,ptr) == 0) {
-	    ptr = miller2spoel[imiller].spoel;
-	    if (update_bm)
-	      set_miller(dst,miller2spoel[imiller].miller,n,0);
-	    printf("Converting %s to %s\n",miller2spoel[imiller].miller,
-		   miller2spoel[imiller].spoel);
-	    break;
-	  }
-	}
-	
-	for(j=0; (j<eatNR+eatExtra); j++)
-	  if (strcasecmp(spoel[j].name,ptr) == 0) {
-	    dst->frag_comp[j] += n;
-	    if (update_bm) {
-	      nh = spoel[j].nh;
-	      if (imiller == NM2S)
-		set_miller(dst,spoel[j].miller,n,nh);
-	      set_bosque(dst,spoel[j].bosque,n,nh);
-	    }
-	    break;
-	  }
-      }
-    }
-    else if ((strcasecmp(src->composition[i].compname,"bosque") == 0) && !update_bm) {
-      for(k=0; (k<src->composition[i].ncatom); k++) {
-	for(j=0; (j<eelemNR); j++)
-	  if (strcasecmp(bosque[j].name,src->composition[i].catom[k].cname) == 0) {
-	    dst->elem_comp[j] += src->composition[i].catom[k].cnumber;
-	    break;
-	  }
-      }
-    }
-    else if ((strcasecmp(src->composition[i].compname,"miller") == 0) && !update_bm) {
-      for(k=0; (k<src->composition[i].ncatom); k++) {
-	for(j=0; (j<emlNR); j++)
-	  if (strcasecmp(miller[j].name,src->composition[i].catom[k].cname) == 0) {
-	    dst->emil_comp[j] += src->composition[i].catom[k].cnumber;
-	    break;
-	  }
-      }
-    }
-  }    
-}
-
-static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
-			 int indent,gmx_molprop_t mpt)
+static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
+			  int indent,gmx_molprop_t mpt)
 {
   char *attrname,*attrval;
   char buf[100];
   char *pname=NULL,*preference=NULL,*pmethod=NULL,*pvalue=NULL,*perr=NULL;
+  char *cname=NULL,*cnumber=NULL;
   
   while (attr != NULL) {
     attrname = (char *)attr->name;
@@ -272,7 +158,6 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
       break;
       
     case exmlPROPERTY: {
-      t_property *xp = &(xptr->property[xptr->nproperty-1]);
       if (atest("pname")) 
 	pname = strdup(attrval);
       else if (atest("pmethod")) 
@@ -288,9 +173,6 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
       break;
     }
     case exmlCOMPOSITION: {
-      if (xptr->ncomposition <= 0)
-	fatal_error("Composition error","");
-      t_composition *co = &(xptr->composition[xptr->ncomposition-1]);
       if (atest("compname")) 
 	gmx_molprop_add_composition(mpt,attrval);
       else
@@ -298,13 +180,10 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
       break;
     }
     case exmlCATOM:
-      if (xptr->ncomposition <= 0)
-	fatal_error("Composition error","");
-      ca = &(xptr->composition[xptr->ncomposition-1].catom[xptr->composition[xptr->ncomposition-1].ncatom-1]);
       if (atest("cname")) 
-	ca->cname = strdup(attrval);
+	cname = strdup(attrval);
       else if (atest("cnumber")) 
-	ca->cnumber = atoi(attrval);
+	cnumber = strdup(attrval);
       else
 	fatal_error("Unknown attribute for catom",attrname);
       break;
@@ -318,13 +197,20 @@ static void process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     attr = attr->next;
 #undef atest
   }
+  /* Done processing attributes for this element. Let's see if we still need
+     to interpret them.
+  */
+  if (pname && preference && pmethod && pvalue && perr)
+    gmx_molprop_add_property(mpt,0,pname,atof(pvalue),atof(perr),
+			     pmethod,preference);
+  if (cname && cnumber)
+    gmx_molprop_add_composition_atom(mpt,NULL,cname,atoi(cnumber));
 }
 
 static void process_element(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
 {
   int elem;
   char buf[100];
-  t_molprop2 *xptr=NULL;
   
   if (xml->npd > 0)
     xptr = xml->pd2[xml->npd-1];
@@ -337,42 +223,28 @@ static void process_element(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
   case exmlMOLECULES:
     break;
   case exmlMOLECULE:
-    xml->npd++;
-    srenew(xml->pd2,xml->npd);
-    snew((xml->pd2[xml->npd-1]),1);
+    xml->nmolprop++;
+    srenew(xml->mpt,xml->nmolprop);
+    xml->mpt[xml->nmolprop-1] = gmx_molprop_init();
     break;
+    /* The items below are handled when treating attributes */
   case exmlCATEGORY:
-    xptr->ncategory++;
-    srenew(xptr->category,xptr->ncategory);
-    nullify(xptr->category[xptr->ncategory-1]);
     break;
   case exmlPROPERTY: 
-    xptr->nproperty++;
-    srenew(xptr->property,xptr->nproperty);
-    nullify(xptr->property[xptr->nproperty-1]);
     break;
   case exmlCOMPOSITION:
-    xptr->ncomposition++;
-    srenew(xptr->composition,xptr->ncomposition);
-    nullify(xptr->composition[xptr->ncomposition-1]);
     break;
-  case exmlCATOM: {
-    t_composition *co = &(xptr->composition[xptr->ncomposition-1]);
-    
-    co->ncatom++;
-    srenew(co->catom,co->ncatom);
-    nullify(co->catom[co->ncatom-1]);
+  case exmlCATOM: 
     break;
-  }
   default:
     break;
   }
-  process_attr(fp,tree->properties,elem,indent+2,xml);
+  process_attr(fp,tree->properties,elem,indent+2,&(xml->mpt[xml->nmolprop-1]));
 }
  
 static void process_tree(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
 {
-  char buf[100];
+  char          buf[100];
   
   while (tree != NULL) {
     if (fp) {
@@ -397,29 +269,13 @@ static void process_tree(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
   }
 }
 
-static t_xmlrec *init_xml()
+gmx_molprop_t *read_molprops(char *fn,int *nmolprop)
 {
-  t_xmlrec *xml;
-  
-  snew(xml,1);
-  
-  return xml;
-}
-
-static void done_xml(t_xmlrec **xml)
-{
-  free((*xml)->pd);
-  free((*xml)->pd2);
-  free(*xml);
-  *xml = NULL;
-}
-	
-int read_molprops(char *fn,t_molprop **pd,int update_bm)
-{
-  xmlDocPtr  doc;
-  t_xmlrec   *xml;
-  int        i,npd;
-  
+  xmlDocPtr     doc;
+  int           i,npd;
+  t_xmlrec      xml;
+  gmx_molprop_t *mpt;
+    
   xmlDoValidityCheckingDefaultValue = 0;
   if ((doc = xmlParseFile(fn)) == NULL) {
     fprintf(stderr,"Reading XML file %s. Run a syntax checker such as nsgmls.",
@@ -427,19 +283,15 @@ int read_molprops(char *fn,t_molprop **pd,int update_bm)
     exit(1);
   }
 
-  xml = init_xml();
-  process_tree(NULL,doc->children,0,xml);
+  xml.nmolprop = 0;
+  xml.mpt = NULL;
+  process_tree(NULL,doc->children,0,&xml);
 
-  /* Copy xml to pd */
-  npd = xml->npd;
-  snew(*pd,npd);
-  for(i=0; (i<npd); i++)
-    copy_molprop(&((*pd)[i]),xml->pd2[i],update_bm);
-      
   xmlFreeDoc(doc);
-  done_xml(&xml);
   
-  return npd;
+  *nmolprop = xml.nmolprop;
+  
+  return xml.mpt;
 }
 
 static void add_xml_int(xmlNodePtr ptr,xmlChar *name,int val)
@@ -493,38 +345,40 @@ static xmlNodePtr add_xml_comment(xmlDocPtr doc,
   return comm;
 }
 
-static void add_xml_molprop(xmlNodePtr parent,t_molprop *mp)
+static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
 {
   xmlNodePtr ptr,child,comp;
-  int i;
+  int    i,eMP;
+  char   *ptr,*prop_name,*prop_method,*prop_reference;
+  double value,error;
+  
   
   ptr = add_xml_child(parent,exmlMOLECULE);
-  add_xml_char(ptr,(xmlChar *)exml_names[exmlMOLNAME],mp->molname);
-  add_xml_char(ptr,(xmlChar *)exml_names[exmlFORMULA],mp->formula);
-  add_xml_double(ptr,(xmlChar *)exml_names[exmlWEIGHT],mp->weight);
+  add_xml_char(ptr,(xmlChar *)exml_names[exmlMOLNAME],
+	       (xmlChar *)gmx_molprop_get_molname(mpt));
+  add_xml_char(ptr,(xmlChar *)exml_names[exmlFORMULA],
+	       (xmlChar *)gmx_molprop_get_formula(mpt));
+  add_xml_double(ptr,(xmlChar *)exml_names[exmlWEIGHT],
+		 (xmlChar *)gmx_molprop_get_weight(mpt));
   
-  for(i=0; (i<ecNR); i++)
-    if (mp->category[i] > 0) {
-      child = add_xml_child(ptr,exmlCATEGORY);
-      add_xml_char(child,(xmlChar *)exml_names[exmlCATNAME],ec_name[i]);
-    }
+  while ((ptr = gmx_molprop_get_category(mpt)) != NULL) {
+    child = add_xml_child(ptr,exmlCATEGORY);
+    add_xml_char(child,(xmlChar *)exml_names[exmlCATNAME],(xmlChar *)ptr);
+  }
 	
-  for(i=0; (i<mp->nexperiment); i++) {
+  while (gmx_molprop_get_property(mpt,&eMP,&prop_name,&value,&error,
+				  &prop_method,&prop_reference) == 1) {
     child = add_xml_child(ptr,exmlPROPERTY);
-    add_xml_char(child,(xmlChar *)exml_names[exmlPNAME],mp->pname[i]);
-    add_xml_double(child,(xmlChar *)exml_names[exmlPVALUE],mp->experiment[i]);
-    add_xml_char(child,(xmlChar *)exml_names[exmlPSOURCE],"Experiment");
-    add_xml_char(child,(xmlChar *)exml_names[exmlPREFERENCE],mp->reference[i]);
+    add_xml_char(child,(xmlChar *)exml_names[exmlPNAME],(xmlChar *)prop_name);
+    add_xml_double(child,(xmlChar *)exml_names[exmlPVALUE],value);
+    add_xml_double(child,(xmlChar *)exml_names[exmlPERROR],error);
+    add_xml_char(child,(xmlChar *)exml_names[exmlPSOURCE],(xmlChar *)prop_method);
+    add_xml_char(child,(xmlChar *)exml_names[exmlPREFERENCE],(xmlChar *)prop_reference);
+    sfree(prop_name);
+    sfree(prop_method);
+    sfree(prop_reference);
   }
-  for(i=0; (i<eqmNR); i++) {
-    if (mp->qm[i] > 0) {
-      child = add_xml_child(ptr,exmlPROPERTY);
-      add_xml_char(child,(xmlChar *)exml_names[exmlPNAME],"Polarizability");
-      add_xml_double(child,(xmlChar *)exml_names[exmlPVALUE],mp->qm[i]);
-      add_xml_char(child,(xmlChar *)exml_names[exmlPSOURCE],lbasis[i]);
-      add_xml_char(child,(xmlChar *)exml_names[exmlPREFERENCE],"Spoel2007a");
-    }
-  }
+  
   child = add_xml_child(ptr,exmlCOMPOSITION);
   add_xml_char(child,(xmlChar *)exml_names[exmlCOMPNAME],"Miller");
   for(i=0; (i<emlNR); i++) 
@@ -593,11 +447,6 @@ int read_molprops(char *fn,t_molprop **pd,int update_bm)
 }
 
 void write_molprops(char *fn,int npd,t_molprop pd[])
-{
-  gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
-}
-
-void write_atoms_molprops(char *fn,t_atoms*atoms,t_params *bonds)
 {
   gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
 }
