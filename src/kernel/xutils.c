@@ -440,7 +440,7 @@ static void print_grid(FILE *fp,real ener[],int natoms,rvec f[],rvec fshake[],
   }
   if ((ff.tol == 0) || (fabs(ener[F_EPOT]/ff.nmol-ff.epot) < ff.tol)) {
     msf1 = msf(natoms,f,fshake);
-    if ((ff.fmax == 0) || (msf1 < sqr(ff.fmax))) 
+    if ((ff.f_max == 0) || (msf1 < sqr(ff.f_max))) 
       print_range(fp,pres,msf1,ener[F_EPOT]/ff.nmol);
   }
 }

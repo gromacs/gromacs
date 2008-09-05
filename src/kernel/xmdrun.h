@@ -154,7 +154,7 @@ extern real calc_mu_aver(t_commrec *cr,rvec x[],real q[],rvec mu,
 /********************************************************************/
 /* Force field scanning stuff */
 typedef struct {
-  real tol,fmax,npow,epot,fac_epot,fac_pres,fac_msf,pres;
+  real tol,f_max,npow,epot,fac_epot,fac_pres,fac_msf,pres;
   int  molsize,nmol;
   bool bComb,bVerbose,bLogEps;
 } t_ffscan;

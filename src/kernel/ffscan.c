@@ -84,7 +84,7 @@ int main(int argc,char *argv[])
   /* Command line options !                         */
   static t_ffscan ff = {
     /* tol      */   0.1,
-    /* fmax     */ 100.0,
+    /* f_max    */ 100.0,
     /* npow     */  12.0,
     /* epot     */   0.0,
     /* fac_epot */   1.0,
@@ -100,7 +100,7 @@ int main(int argc,char *argv[])
   static char *loadx=NULL,*loady=NULL,*loadz=NULL;
   static t_pargs pa[] = {
     { "-tol",   FALSE, etREAL, {&ff.tol},   "Energy tolerance (kJ/mol) (zero means everything is printed)" },
-    { "-fmax",  FALSE, etREAL, {&ff.fmax},  "Force tolerance (zero means everything is printed)" },
+    { "-fmax",  FALSE, etREAL, {&ff.f_max},  "Force tolerance (zero means everything is printed)" },
     { "-comb",  FALSE, etBOOL, {&ff.bComb},    "Use combination rules" },
     { "-npow",  FALSE, etREAL, {&ff.npow},     "Power for LJ in case of table use" },
     { "-logeps",FALSE, etBOOL, {&ff.bLogEps},  "Use a logarithmic scale for epsilon" },
