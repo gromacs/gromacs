@@ -46,6 +46,8 @@
 #include "smalloc.h"
 #include "tune_pol.h"
 #include "vec.h"
+#include "molprop.h"
+#include "molprop_util.h"
 #include "gentop_matrix.h"
 
 static int tabnum = 0;
@@ -68,29 +70,6 @@ static char *sbasis[eqmNR] = {
   "6-31G","aug-DZ","aug-TZ","aug-TZ","d-aug-TZ", "Ahc", "Ahp", "BS", "FP" 
 };
 
-static void check_formula(int np,t_molprop pd[])
-{
-  int  i,j,jj;
-  char formula[1280],number[32];
-  
-  for(i=0; (i<np); i++) {
-    formula[0] = '\0';
-    for(j=0; (j<eelemNR); j++) {
-      jj = my_order[j];
-      if (pd[i].elem_comp[jj] > 0) {
-	strcat(formula,bosque[jj].name);
-	if (pd[i].elem_comp[jj] > 1) {
-	  sprintf(number,"%d",pd[i].elem_comp[jj]);
-	  strcat(formula,number);
-	}
-      }
-    }
-    if (0 && (strcasecmp(pd[i].formula,formula) != 0) )
-      fprintf(stderr,"Formula '%s' does match '%s' based on composition for %s.\n",
-	      pd[i].formula,formula,pd[i].molname);
-  }
-}
-  
 static void table_number(FILE *fp)
 {
   fprintf(fp,"\\setcounter{table}{%d}\n",tabnum);
@@ -249,9 +228,9 @@ static void dump_table2(FILE *fp,int bVerbose,int bTrain,int bQM,
       for(k=0; (k<mp_num_polar(&(pd[i]))); k++,iline++) {
 	if (k > 0)
 	  fprintf(fp," &");
-	val = mp_get_prop(&(pd[i]),"Polarizability",k);
-	ref = mp_get_ref_prop(&(pd[i]),"Polarizability",k);
-	if (val > 0) {
+	  
+	if (gmx_molprop_search_property(pd[i],eMOLPROP_Exp,"Polarizability",
+					&val,&error,NULL,&ref) == 1) {
 	  fprintf(fp," %8.3f",val);
 	  if (strcmp(ref,"Spoel2007a") == 0)
 	    fprintf(fp," (*)");
@@ -723,17 +702,6 @@ static void dump_n2t(char *fn)
   fclose(fp);
 }
 
-static int read_dipoles(char *fn) 
-{
-  FILE *fp;
-  
-  fp = fopen(fn,"r");
-  
-  fclose(fp);
-  
-  return 0;
-}
-
 int main(int argc,char *argv[])
 {
   FILE  *fp,*gp;
@@ -741,13 +709,15 @@ int main(int argc,char *argv[])
   double fit1[eqmNR],test1[eqmNR];
   double fit2[eqmNR],test2[eqmNR];
   double *w;
-  t_molprop *mp=NULL;
+  gmx_molprop_t *mp=NULL;
+  gmx_atomprop_t ap;
   
   if (argc < 2) 
-    fatal_error("Please give names of database files!","");
+    gmx_fatal(FARGS,"Please give names of database files!","");
   mp = merge_xml(argc,argv,NULL,NULL,"double_dip.dat",&np);
+  ap = gmx_atomprop_init();
     
-  check_formula(np,mp);
+  generate_formula(np,mp,ap);
   snew(w,np);
   qsort(mp,np,sizeof(mp[0]),comp_pd_elem2);
   

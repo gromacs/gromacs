@@ -43,134 +43,58 @@
 #include <string.h>
 #include "smalloc.h"
 #include "tune_pol.h"
+#include "molprop.h"
+#include "molprop_xml.h"
 
 static int comp_mp(const void *a,const void *b)
 {
-  t_molprop *ma = (t_molprop *)a;
-  t_molprop *mb = (t_molprop *)b;
+  gmx_molprop_t ma = (gmx_molprop_t)a;
+  gmx_molprop_t mb = (gmx_molprop_t)b;
   
-  return strcasecmp(ma->molname,mb->molname);
+  return strcasecmp(gmx_molprop_get_molname(ma),
+		    gmx_molprop_get_molname(mb));
 }
 
 static int comp_mp_formula(const void *a,const void *b)
 {
   int r;
+  gmx_molprop_t ma = (gmx_molprop_t)a;
+  gmx_molprop_t mb = (gmx_molprop_t)b;
   
-  t_molprop *ma = (t_molprop *)a;
-  t_molprop *mb = (t_molprop *)b;
+  r = strcasecmp(gmx_molprop_get_formula(ma),
+		 gmx_molprop_get_formula(mb));
   
-  r = strcasecmp(ma->formula,mb->formula);
   if (r == 0) 
-    return strcasecmp(ma->molname,mb->molname);
+    return comp_mp(a,b);
   else 
     return r;
 }
 
-static void copy_molprop(t_molprop *dst,t_molprop *src)
-{
-  int  i;
-  char *ptr;
-  
-  memcpy(dst,src,sizeof(*src));
-  dst->molname = strdup(src->molname);
-  while ((ptr = strchr(dst->molname,' ')) != NULL)
-    *ptr = '-';
-  dst->formula = strdup(src->formula);
-  snew(dst->experiment,dst->nexperiment);
-  snew(dst->reference,dst->nexperiment);
-  snew(dst->pname,dst->nexperiment);
-  for(i=0; (i<dst->nexperiment); i++) {
-    dst->experiment[i] = src->experiment[i];
-    dst->reference[i] = strdup(src->reference[i]);
-    dst->pname[i] = strdup(src->pname[i]);
-  }
-}
-
-static void merge_molprop(t_molprop *dst,t_molprop *src)
-{
-  int i,nd,ns;
-  
-  srenew(dst->experiment,dst->nexperiment+src->nexperiment);
-  srenew(dst->reference,dst->nexperiment+src->nexperiment);
-  srenew(dst->pname,dst->nexperiment+src->nexperiment);
-  for(i=dst->nexperiment; (i<dst->nexperiment+src->nexperiment); i++) {
-    dst->experiment[i] = src->experiment[i-dst->nexperiment];
-    dst->reference[i] = strdup(src->reference[i-dst->nexperiment]);
-    dst->pname[i] = strdup(src->pname[i-dst->nexperiment]);
-  }
-  dst->nexperiment+=src->nexperiment;
-  /* Compare src and dst for composition etc. */
-  nd = ns = 0;
-  for(i=0; (i<eatNR+eatExtra); i++) {
-    if (src->frag_comp[i] > 0)
-      ns++;
-    if (dst->frag_comp[i] > 0)
-      nd++;
-  }
-  for(i=0; (i<eelemNR); i++) {
-    if (src->elem_comp[i] > 0)
-      ns++;
-    if (dst->elem_comp[i] > 0)
-      nd++;
-  }
-  for(i=0; (i<emlNR); i++) {
-    if (src->emil_comp[i] > 0)
-      ns++;
-    if (dst->emil_comp[i] > 0)
-      nd++;
-  }
-  if (ns > 0) {
-    if (nd == 0) {
-      for(i=0; (i<eatNR+eatExtra); i++) 
-	dst->frag_comp[i] = src->frag_comp[i];
-      for(i=0; (i<eelemNR); i++) 
-	dst->elem_comp[i] = src->elem_comp[i];
-      for(i=0; (i<emlNR); i++) 
-	dst->emil_comp[i] = src->emil_comp[i];
-    }
-    else
-      printf("Both src and dst for %s contain composition entries. Not changing anything\n",dst->molname);
-  }
-}
-
-static void clear_molprop(t_molprop *dst)
-{
-  int i;
-  
-  for(i=0; (i<dst->nexperiment); i++) {
-    sfree(dst->reference[i]);
-    sfree(dst->pname[i]);
-  }
-  if (dst->nexperiment > 0) {
-    sfree(dst->experiment);
-    sfree(dst->reference);
-    sfree(dst->pname);
-  }
-  dst->nexperiment = 0;
-}
-
-static void merge_doubles(int *np,t_molprop mp[],char *doubles)
+static void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles)
 {
   int i,j,ndouble=0;
   FILE *fp;
   
   fp = fopen(doubles,"w");
   for(i=1; (i<*np); i++) {
-    if (strcasecmp(mp[i].molname,mp[i-1].molname) == 0) {
-      if (strcasecmp(mp[i].formula,mp[i-1].formula) == 0) {
-	fprintf(fp,"%5d  %s\n",ndouble+1,mp[i-1].molname);
-	merge_molprop(&(mp[i-1]),&(mp[i]));
+    if (strcasecmp(gmx_molprop_get_molname(mp[i]),
+		   gmx_molprop_get_molname(mp[i-1])) == 0) {
+      if (strcasecmp(gmx_molprop_get_formula(mp[i]),
+		     gmx_molprop_get_formula(mp[i-1])) == 0) {
+	fprintf(fp,"%5d  %s\n",ndouble+1,
+		gmx_molprop_get_molname(mp[i-1]));
+	gmx_molprop_merge(mp[i-1],mp[i]);
 	for(j=i+1; (j<*np); j++) {
-	  clear_molprop(&(mp[j-1]));
-	  copy_molprop(&(mp[j-1]),&(mp[j]));
+	  gmx_molprop_delete(mp[j-1]);
+	  mp[j-1] = gmx_molprop_copy(mp[j]);
 	}
 	ndouble++;
 	(*np)--;
       }
       else {
 	printf("Molecules %s, %s have formulae %s resp. %s\n",
-	       mp[i].molname,mp[i-1].molname,
-	       mp[i].formula,mp[i-1].formula);
+	       gmx_molprop_get_molname(mp[i]),
+	       gmx_molprop_get_formula(mp[i]));
       }
       
     }
@@ -179,7 +103,7 @@ static void merge_doubles(int *np,t_molprop mp[],char *doubles)
   printf("There were %d double entries\n",ndouble);
 }
 
-static void dump_mp(int np,t_molprop mp[])
+static void dump_mp(int np,gmx_molprop_t mp[])
 {
   FILE *fp;
   int  i,j,k;
@@ -187,11 +111,14 @@ static void dump_mp(int np,t_molprop mp[])
   fp = fopen("dump_mp.dat","w");
   
   for(i=0; (i<np); ) {
-    for(j=i; (j<np-1) && (strcasecmp(mp[i].formula,mp[j+1].formula) == 0); j++)
+    for(j=i; (j<np-1) && (strcasecmp(gmx_molprop_get_formula(mp[i]),
+				     gmx_molprop_get_formula(mp[j+1])) == 0); j++)
       ;
     if (j > i) {
       for(k=i; (k<=j); k++)
-	fprintf(fp,"%-20s  %s\n",mp[k].formula,mp[k].molname);
+	fprintf(fp,"%-20s  %s\n",
+		gmx_molprop_get_formula(mp[k]),
+		gmx_molprop_get_molname(mp[k]));
       fprintf(fp,"\n");
     }
     i=j+1;
@@ -200,18 +127,18 @@ static void dump_mp(int np,t_molprop mp[])
   fclose(fp);
 }
 
-t_molprop *merge_xml(int argc,char *argv[],char *outf,
-		     char *sorted,char *doubles,int *nmolprop)
+gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
+			 char *sorted,char *doubles,int *nmolprop)
 {
-  t_molprop *mp=NULL,*mpout=NULL;
+  gmx_molprop_t *mp=NULL,*mpout=NULL;
   int       i,j,np,npout=0;
   char      buf[100];
   
   for(i=1; (i<argc); i++) {
-    np = read_molprops(argv[i],&mp,1);
+    mp = read_molprops(argv[i],&np);
     srenew(mpout,npout+np);
     for(j=0; (j<np); j++)
-      copy_molprop(&(mpout[npout+j]),&(mp[j]));
+      mpout[npout+j] = gmx_molprop_copy(mp[j]);
     npout += np;
   }
   

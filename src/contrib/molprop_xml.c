@@ -39,14 +39,14 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
 #include "gmx_fatal.h"
 #include "macros.h"
 #include "grompp.h"
 #include "smalloc.h"
-#include "tune_pol.h"
-#ifdef HAVE_LIBXML2
-#include <libxml/parser.h>
-#include <libxml/tree.h>
+#include "molprop.h"
+#include "xml_util.h"
 
 extern int xmlDoValidityCheckingDefaultValue;
 	
@@ -98,19 +98,6 @@ typedef struct {
   gmx_molprop_t *mpt;
 } t_xmlrec;
 
-static int find_elem(char *name,int nr,const char *names[])
-{
-  int i;
-  
-  for(i=0; (i<nr); i++)
-    if (strcmp(name,names[i]) == 0) 
-      break;
-  if (i == nr)
-    fatal_error("Unknown element name %s",name);
-    
-  return i;
-}
-	
 static char *sp(int n, char buf[], int maxindent)
 {
   int i;
@@ -147,14 +134,14 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
       else if (atest("weight")) 
 	gmx_molprop_set_weight(mpt,atof(attrval));
       else
-	fatal_error("Unknown attribute for molecule",attrname);
+	gmx_fatal(FARGS,"Unknown attribute %s for molecule",attrname);
       break;
       
     case exmlCATEGORY:
       if (atest("catname")) 
 	gmx_molprop_add_category(mpt,attrval);
       else
-	fatal_error("Unknown attribute for category",attrname);
+	gmx_fatal(FARGS,"Unknown attribute %s for category",attrname);
       break;
       
     case exmlPROPERTY: {
@@ -167,16 +154,16 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
       else if (atest("pvalue")) 
 	pvalue = strdup(attrval);
       else if (atest("perror")) 
-	perror = strdup(attrval);
+	perr = strdup(attrval);
       else
-	fatal_error("Unknown attribute for property",attrname);
+	gmx_fatal(FARGS,"Unknown attribute %s for property",attrname);
       break;
     }
     case exmlCOMPOSITION: {
       if (atest("compname")) 
 	gmx_molprop_add_composition(mpt,attrval);
       else
-	fatal_error("Unknown attribute for catom",attrname);
+	gmx_fatal(FARGS,"Unknown attribute %s for catom",attrname);
       break;
     }
     case exmlCATOM:
@@ -185,7 +172,7 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
       else if (atest("cnumber")) 
 	cnumber = strdup(attrval);
       else
-	fatal_error("Unknown attribute for catom",attrname);
+	gmx_fatal(FARGS,"Unknown attribute %s for catom",attrname);
       break;
       
     default:
@@ -200,8 +187,8 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
   /* Done processing attributes for this element. Let's see if we still need
      to interpret them.
   */
-  if (pname && preference && pmethod && pvalue && perr)
-    gmx_molprop_add_property(mpt,0,pname,atof(pvalue),atof(perr),
+  if (pname && preference && pmethod && pvalue)
+    gmx_molprop_add_property(mpt,0,pname,atof(pvalue),perr ? atof(perr) : 0.0,
 			     pmethod,preference);
   if (cname && cnumber)
     gmx_molprop_add_composition_atom(mpt,NULL,cname,atoi(cnumber));
@@ -211,9 +198,6 @@ static void process_element(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
 {
   int elem;
   char buf[100];
-  
-  if (xml->npd > 0)
-    xptr = xml->pd2[xml->npd-1];
   
   elem = find_elem((char *)tree->name,exmlNR,exml_names);
   if (fp)
@@ -239,7 +223,8 @@ static void process_element(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
   default:
     break;
   }
-  process_attr(fp,tree->properties,elem,indent+2,&(xml->mpt[xml->nmolprop-1]));
+  if (elem != exmlMOLECULES)
+    process_attr(fp,tree->properties,elem,indent+2,xml->mpt[xml->nmolprop-1]);
 }
  
 static void process_tree(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
@@ -269,12 +254,11 @@ static void process_tree(FILE *fp,xmlNodePtr tree,int indent,t_xmlrec *xml)
   }
 }
 
-gmx_molprop_t *read_molprops(char *fn,int *nmolprop)
+gmx_molprop_t *gmx_molprops_read(char *fn,int *nmolprop)
 {
   xmlDocPtr     doc;
   int           i,npd;
   t_xmlrec      xml;
-  gmx_molprop_t *mpt;
     
   xmlDoValidityCheckingDefaultValue = 0;
   if ((doc = xmlParseFile(fn)) == NULL) {
@@ -294,118 +278,51 @@ gmx_molprop_t *read_molprops(char *fn,int *nmolprop)
   return xml.mpt;
 }
 
-static void add_xml_int(xmlNodePtr ptr,xmlChar *name,int val)
-{
-  xmlChar buf[32];
-  
-  sprintf((char *)buf,"%d",val);
-  if (xmlSetProp(ptr,name,buf) == 0)
-    fatal_error("Setting",(char *)name);
-}
-
-static void add_xml_double(xmlNodePtr ptr,xmlChar *name,double val)
-{
-  xmlChar buf[32];
-  
-  sprintf((char *)buf,"%g",val);
-  if (xmlSetProp(ptr,name,buf) == 0)
-    fatal_error("Setting",(char *)name);
-}
-
-static void add_xml_char(xmlNodePtr ptr,xmlChar *name,char *val)
-{
-  if (xmlSetProp(ptr,name,(xmlChar *)val) == 0)
-    fatal_error("Setting",(char *)name);
-}
-
-static xmlNodePtr add_xml_child(xmlNodePtr parent,int type)
-{
-  xmlNodePtr child;
-  
-  if ((child = xmlNewChild(parent,NULL,(xmlChar *)exml_names[type],NULL)) == NULL)
-    fatal_error("Creating element",(char *)exml_names[type]);
-  
-  return child;
-}
-
-static xmlNodePtr add_xml_comment(xmlDocPtr doc,
-				  xmlNodePtr prev,xmlChar *comment)
-{
-  xmlNodePtr comm,ptr;
-  
-  if ((comm = xmlNewComment(comment)) == NULL)
-    fatal_error("Creating doc comment element","");
-  ptr = prev;
-  while (ptr->next != NULL)
-    ptr=ptr->next;
-  ptr->next    = comm;
-  comm->prev   = ptr;
-  comm->doc    = doc;
-  
-  return comm;
-}
-
 static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
 {
-  xmlNodePtr ptr,child,comp;
-  int    i,eMP;
-  char   *ptr,*prop_name,*prop_method,*prop_reference;
+  xmlNodePtr ptr,child,grandchild,comp;
+  int    i,eMP,cnumber;
+  char   *tmp,*prop_name,*prop_method,*prop_reference;
+  char   *catom;
   double value,error;
   
   
-  ptr = add_xml_child(parent,exmlMOLECULE);
-  add_xml_char(ptr,(xmlChar *)exml_names[exmlMOLNAME],
-	       (xmlChar *)gmx_molprop_get_molname(mpt));
-  add_xml_char(ptr,(xmlChar *)exml_names[exmlFORMULA],
-	       (xmlChar *)gmx_molprop_get_formula(mpt));
-  add_xml_double(ptr,(xmlChar *)exml_names[exmlWEIGHT],
-		 (xmlChar *)gmx_molprop_get_weight(mpt));
+  ptr = add_xml_child(parent,exml_names[exmlMOLECULE]);
+  add_xml_char(ptr,exml_names[exmlMOLNAME],gmx_molprop_get_molname(mpt));
+  add_xml_char(ptr,exml_names[exmlFORMULA],gmx_molprop_get_formula(mpt));
+  add_xml_double(ptr,exml_names[exmlWEIGHT],gmx_molprop_get_weight(mpt));
   
-  while ((ptr = gmx_molprop_get_category(mpt)) != NULL) {
-    child = add_xml_child(ptr,exmlCATEGORY);
-    add_xml_char(child,(xmlChar *)exml_names[exmlCATNAME],(xmlChar *)ptr);
+  while ((tmp = gmx_molprop_get_category(mpt)) != NULL) {
+    child = add_xml_child(ptr,exml_names[exmlCATEGORY]);
+    add_xml_char(child,exml_names[exmlCATNAME],tmp);
   }
 	
   while (gmx_molprop_get_property(mpt,&eMP,&prop_name,&value,&error,
 				  &prop_method,&prop_reference) == 1) {
-    child = add_xml_child(ptr,exmlPROPERTY);
-    add_xml_char(child,(xmlChar *)exml_names[exmlPNAME],(xmlChar *)prop_name);
-    add_xml_double(child,(xmlChar *)exml_names[exmlPVALUE],value);
-    add_xml_double(child,(xmlChar *)exml_names[exmlPERROR],error);
-    add_xml_char(child,(xmlChar *)exml_names[exmlPSOURCE],(xmlChar *)prop_method);
-    add_xml_char(child,(xmlChar *)exml_names[exmlPREFERENCE],(xmlChar *)prop_reference);
+    child = add_xml_child(ptr,exml_names[exmlPROPERTY]);
+    add_xml_char(child,exml_names[exmlPNAME],prop_name);
+    add_xml_double(child,exml_names[exmlPVALUE],value);
+    add_xml_double(child,exml_names[exmlPERROR],error);
+    add_xml_char(child,exml_names[exmlPMETHOD],prop_method);
+    add_xml_char(child,exml_names[exmlPREFERENCE],prop_reference);
     sfree(prop_name);
     sfree(prop_method);
     sfree(prop_reference);
   }
   
-  child = add_xml_child(ptr,exmlCOMPOSITION);
-  add_xml_char(child,(xmlChar *)exml_names[exmlCOMPNAME],"Miller");
-  for(i=0; (i<emlNR); i++) 
-    if (mp->emil_comp[i] > 0) {
-      comp = add_xml_child(child,exmlCATOM);
-      add_xml_char(comp,(xmlChar *)exml_names[exmlC_NAME],miller[i].name);
-      add_xml_int(comp,(xmlChar *)exml_names[exmlC_NUMBER],mp->emil_comp[i]);
+  while ((tmp = gmx_molprop_get_composition(mpt)) != NULL) {
+    child = add_xml_child(ptr,exml_names[exmlCOMPOSITION]);
+    add_xml_char(child,exml_names[exmlCOMPNAME],tmp);
+    while ((gmx_molprop_get_composition_atom(mpt,&catom,&cnumber)) == 1) {
+      grandchild = add_xml_child(child,exml_names[exmlCATOM]);
+      add_xml_char(grandchild,exml_names[exmlC_NAME],catom);
+      add_xml_int(grandchild,exml_names[exmlC_NUMBER],cnumber);
+      sfree(catom);
     }
-  child = add_xml_child(ptr,exmlCOMPOSITION);
-  add_xml_char(child,(xmlChar *)exml_names[exmlCOMPNAME],"Bosque");
-  for(i=0; (i<eelemNR); i++) 
-    if (mp->elem_comp[i] > 0) {
-      comp = add_xml_child(child,exmlCATOM);
-      add_xml_char(comp,(xmlChar *)exml_names[exmlC_NAME],bosque[i].name);
-      add_xml_int(comp,(xmlChar *)exml_names[exmlC_NUMBER],mp->elem_comp[i]);
-    }
-  child = add_xml_child(ptr,exmlCOMPOSITION);
-  add_xml_char(child,(xmlChar *)exml_names[exmlCOMPNAME],"Spoel");
-  for(i=0; (i<eatNR+eatExtra); i++) 
-    if (mp->frag_comp[i] > 0) {
-      comp = add_xml_child(child,exmlCATOM);
-      add_xml_char(comp,(xmlChar *)exml_names[exmlC_NAME],spoel[i].name);
-      add_xml_int(comp,(xmlChar *)exml_names[exmlC_NUMBER],mp->frag_comp[i]);
-    }
+  }
 }
 
-void write_molprops(char *fn,int npd,t_molprop pd[])
+void gmx_molprops_write(char *fn,int nmolprop,gmx_molprop_t mpt[])
 {
   xmlDocPtr  doc;
   xmlDtdPtr  dtd;
@@ -418,44 +335,26 @@ void write_molprops(char *fn,int npd,t_molprop pd[])
   libdtdname = dtdname;
   
   if ((doc = xmlNewDoc((xmlChar *)"1.0")) == NULL)
-    fatal_error("Creating XML document","");
+    gmx_fatal(FARGS,"Creating XML document","");
     
   if ((dtd = xmlCreateIntSubset(doc,dtdname,libdtdname,dtdname)) == NULL)
-    fatal_error("Creating XML DTD","");
+    gmx_fatal(FARGS,"Creating XML DTD","");
     
   if ((myroot = xmlNewDocNode(doc,NULL,gmx,NULL)) == NULL)
-    fatal_error("Creating root element","");
+    gmx_fatal(FARGS,"Creating root element","");
   dtd->next = myroot;
   myroot->prev = (xmlNodePtr) dtd;
     
   /* Add molecule definitions */
-  for(i=0; (i<npd); i++)
-    add_xml_molprop(myroot,&(pd[i]));
+  for(i=0; (i<nmolprop); i++)
+    add_xml_molprop(myroot,mpt[i]);
 
   xmlSetDocCompressMode(doc,0);
   xmlIndentTreeOutput = 1;
   if (xmlSaveFormatFileEnc(fn,doc,"ISO-8859-1",2) == 0)
-    fatal_error("Saving file",fn);
+    gmx_fatal(FARGS,"Saving file",fn);
   xmlFreeDoc(doc);
 }
 
-#else
 
-int read_molprops(char *fn,t_molprop **pd,int update_bm)
-{
-  gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
-}
-
-void write_molprops(char *fn,int npd,t_molprop pd[])
-{
-  gmx_fatal(FARGS,"You must compile this program with the libxml2 library");
-}
-
-#endif
-
-void fatal_error(char *str,char *val)
-{
-  fprintf(stderr,"Fatal: %s - %s\n",str,val);
-  exit(1);
-}
 

@@ -40,6 +40,8 @@
 #include <stdio.h>
 #include "atomprop.h"
 #include "grompp.h"
+
+typedef struct gmx_eemprops *gmx_eemprops_t;
 	
 enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
        eqgSMp, eqgSMpp, eqgSMs, eqgSMps, eqgSMg, eqgSMpg, eqgNR };
@@ -48,9 +50,9 @@ enum { eqgNone, eqgYang, eqgBultinck, eqgRappe,
  * is opened from the library. If eemtype != -1 eemprops with eemtype
  * equal to eemtype will be read.
  */
-extern void *read_eemprops(char *fn,int eemtype,gmx_atomprop_t aps);
+extern gmx_eemprops_t read_eemprops(char *fn,int eemtype,gmx_atomprop_t aps);
 
-extern void write_eemprops(FILE *fp,void *eem);
+extern void write_eemprops(FILE *fp,gmx_eemprops_t eem);
 
 extern int name2eemtype(char *name);
 
@@ -58,27 +60,27 @@ extern char *get_eemtype_name(int eem);
 
 extern char *get_eemtype_reference(int eem);
 
-extern int eem_get_numprops(void *eem,int eemtype);
+extern int eem_get_numprops(gmx_eemprops_t eem,int eemtype);
 
-extern int eem_get_index(void *eem,int atomicnumber,int eemtype);
+extern int eem_get_index(gmx_eemprops_t eem,int atomicnumber,int eemtype);
 
-extern int eem_get_elem_index(void *eem,int atomicnumber,int eemtype);
+extern int eem_get_elem_index(gmx_eemprops_t eem,int atomicnumber,int eemtype);
 
-extern int eem_get_row(void *eem,int index);
+extern int eem_get_row(gmx_eemprops_t eem,int index);
 
-extern real eem_get_j00(void *eem,int index);
+extern real eem_get_j00(gmx_eemprops_t eem,int index);
 
-extern real eem_get_zeta(void *eem,int index);
+extern real eem_get_zeta(gmx_eemprops_t eem,int index);
 
-extern int eem_get_elem(void *eem,int index);
+extern int eem_get_elem(gmx_eemprops_t eem,int index);
 
-extern real eem_get_chi0(void *eem,int index);
+extern real eem_get_chi0(gmx_eemprops_t eem,int index);
 
-extern char *eem_get_opts(void *eem,int index);
+extern char *eem_get_opts(gmx_eemprops_t eem,int index);
 
-extern void eem_set_props(void *eem,int index,real J0,real zeta,real chi0);
+extern void eem_set_props(gmx_eemprops_t eem,int index,real J0,real zeta,real chi0);
 
-extern void *copy_eem(void *eem_dst,void *eem_src);
+extern gmx_eemprops_t copy_eem(gmx_eemprops_t eem_dst,gmx_eemprops_t eem_src);
 /* Copies src to dst. If dst is NULL space is allocated. A pointer
  * to dst is returned.
  */

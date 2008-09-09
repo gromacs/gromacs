@@ -84,7 +84,7 @@ typedef struct {
   int    frag_comp[eatNR+eatExtra];
   int    elem_comp[eelemNR];
   int    emil_comp[emlNR];
-} t_molprop;
+} t_molpropXXX;
 
 typedef struct {
   char   *name,*atom,*miller,*bosque;
@@ -110,13 +110,13 @@ extern t_spoel  spoel[eatNR+eatExtra];
 extern t_bosque bosque[eelemNR+1];
 extern char     *ec_name[ecNR];
 
-extern void write_molprops(char *fn,int npd,t_molprop pd[]);
+/*extern void write_molprops(char *fn,int npd,t_molprop pd[]);
 
-extern int read_molprops(char *fn,t_molprop **pd,int update_bm);
+  extern int read_molprops(char *fn,t_molprop **pd,int update_bm);*/
 /* Return number of molprops. If update_bm != 0 then the Bosque and Miller
    compositions will be updated based on the Spoel composition */
 
-extern void gaussj(double **a,int n,double **b,int m);
+/*extern void gaussj(double **a,int n,double **b,int m);
 
 extern void fatal_error(char *str,char *val);
 
@@ -135,5 +135,5 @@ extern char *mp_get_ref_prop(t_molprop *mp,char *prop,int index);
 
 extern t_molprop *merge_xml(int argc,char *argv[],char *outf,
 			    char *sorted,char *doubles,int *nmolprop);
-
+*/
 #endif

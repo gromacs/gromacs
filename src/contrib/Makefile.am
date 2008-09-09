@@ -18,7 +18,8 @@ EXTRA_PROGRAMS 	=  	copyrgt 	mkyaw 		\
 			options 	hrefify 	\
 			addquote 	tune_dip	\
 			ehole 		gen_table	\
-			tune_pol	gentop
+			tune_pol	gentop		\
+			mptest		pdtest
 
 # Note: you don't have to list sources for "prog" if it is the single file prog.c
 
@@ -28,9 +29,12 @@ nodist_ehole_SOURCES		= ehole.c ehdata.c ehanal.c
 
 #pmetest_SOURCES   	= pmetest.c
 
-nodist_tune_pol_SOURCES	= tune_pol.c tune_pol.h pol_xml.c \
+nodist_tune_pol_SOURCES	= tune_pol.c 	tune_pol.h \
 			gentop_matrix.c	gentop_matrix.h	\
-			poldata.c merge_xml.c
+			poldata.c 	merge_xml.c\
+			molprop.c 	molprop.h \
+			molprop_xml.c	molprop_xml.h \
+			molprop_util.c	molprop_util.h
 
 nodist_tune_dip_SOURCES 	= tune_dip.c 	\
 			gentop_matrix.c		gentop_matrix.h	\
@@ -74,14 +78,18 @@ nodist_gen_table_SOURCES       = gen_table.c slater_integrals.cpp \
 			Slater_4S_4S.cpp Slater_4S_5S.cpp Slater_4S_6S.cpp \
 			Slater_5S_5S.cpp Slater_5S_6S.cpp Slater_6S_6S.cpp 
 
-nodist_gentop_SOURCES		= gentop.c	gentop_qgen.c	\
+nodist_gentop_SOURCES	= gentop.c	gentop_qgen.c	\
 			gentop_matrix.c	gentop_matrix.h	\
 			gentop_core.c	gentop_core.h	\
 			gentop_nm2type.c gentop_nm2type.h	\
 			gentop_qalpha.h	gentop_qalpha.c	\
 			gentop_eemprops.c gentop_eemprops.h\
-			pol_xml.c tune_pol.h poldata.c \
-			molprop.c molprop.h molprop_xml.c \
+			xml_util.c	xml_util.h	\
+			poldata.c 	poldata.h \
+			poldata_xml.c	poldata_xml.h \
+			molprop.c 	molprop.h \
+			molprop_xml.c 	molprop_xml.h \
+			molprop_util.c 	molprop_util.h \
 			slater_integrals.cpp slater_integrals.h \
 			slater_low.h \
 			DSlater_1S_1S.cpp DSlater_1S_2S.cpp DSlater_1S_3S.cpp \
@@ -98,6 +106,12 @@ nodist_gentop_SOURCES		= gentop.c	gentop_qgen.c	\
 			Slater_3S_4S.cpp Slater_3S_5S.cpp Slater_3S_6S.cpp \
 			Slater_4S_4S.cpp Slater_4S_5S.cpp Slater_4S_6S.cpp \
 			Slater_5S_5S.cpp Slater_5S_6S.cpp Slater_6S_6S.cpp 
+
+nodist_mptest_SOURCES	= mptest.c molprop.c molprop.h molprop_xml.c molprop_xml.h \
+			xml_util.c xml_util.h
+
+nodist_pdtest_SOURCES	= pdtest.c poldata.c poldata.h poldata_xml.c poldata_xml.h \
+			 xml_util.c xml_util.h
 
 CLEANFILES   = 	*~ \\\#*
 

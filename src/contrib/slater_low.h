@@ -1,3 +1,6 @@
+#ifndef _slater_low_h
+#define _slater_low_h
+	
 /* slater_integrals.cpp (c) 2008 Paul J. van Maaren and David van der Spoel */
 #include <cln/cln.h>
 #include "slater_integrals.h"
@@ -187,3 +190,4 @@ extern cl_R DNuclear_5S(cl_R r,cl_R xi);
 
 extern cl_R DNuclear_6S(cl_R r,cl_R xi);
 
+#endif

@@ -74,7 +74,7 @@ typedef struct {
 typedef struct {
   int        nep;
   t_eemprops *eep;
-} t_eemrecord;
+} gmx_eemprops;
 
 typedef struct {
   char *name,*ref;
@@ -125,9 +125,9 @@ char *get_eemtype_reference(int eem)
   return NULL;
 }
 
-void *read_eemprops(char *fn,int eemtype,gmx_atomprop_t aps)
+gmx_eemprops_t read_eemprops(char *fn,int eemtype,gmx_atomprop_t aps)
 {
-  t_eemrecord *eem=NULL;
+  gmx_eemprops *eem=NULL;
   char   buf[STRLEN],**strings,*ptr;
   int    i,n,narg,nn=0;
   char   nmbuf[32],algbuf[32],optbuf[32];
@@ -223,7 +223,7 @@ void *read_eemprops(char *fn,int eemtype,gmx_atomprop_t aps)
     eem->nep = nn;
   }
     
-  return eem;
+  return (gmx_eemprops_t) eem;
 }
 
 static void write_eemprops_header(FILE *fp,int eemtype)
@@ -265,9 +265,9 @@ static void write_eemprops_header(FILE *fp,int eemtype)
   }
 }
 
-void write_eemprops(FILE *fp,void *eem)
+void write_eemprops(FILE *fp,gmx_eemprops_t eem)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   double w;
   int i;
 
@@ -299,9 +299,9 @@ void write_eemprops(FILE *fp,void *eem)
   }
 }
 
-int eem_get_numprops(void *eem,int eemtype)
+int eem_get_numprops(gmx_eemprops_t eem,int eemtype)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   int i,n=0;
   
   for(i=0; (i<er->nep); i++) {
@@ -311,9 +311,9 @@ int eem_get_numprops(void *eem,int eemtype)
   return n;
 }
 
-int eem_get_index(void *eem,int atomicnumber,int eemtype)
+int eem_get_index(gmx_eemprops_t eem,int atomicnumber,int eemtype)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   int i;
   
   for(i=0; (i<er->nep); i++) 
@@ -323,9 +323,9 @@ int eem_get_index(void *eem,int atomicnumber,int eemtype)
   return -1;
 }
 
-int eem_get_elem_index(void *eem,int atomicnumber,int eemtype)
+int eem_get_elem_index(gmx_eemprops_t eem,int atomicnumber,int eemtype)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   int i;
   
   for(i=0; (i<er->nep); i++) 
@@ -335,63 +335,63 @@ int eem_get_elem_index(void *eem,int atomicnumber,int eemtype)
   return -1;
 }
 
-int eem_get_row(void *eem,int index)
+int eem_get_row(gmx_eemprops_t eem,int index)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
 
   range_check(index,0,er->nep);
   
   return er->eep[index].row;
 }
 
-real eem_get_j00(void *eem,int index)
+real eem_get_j00(gmx_eemprops_t eem,int index)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
 
   range_check(index,0,er->nep);
   
   return er->eep[index].J0;
 }
 
-real eem_get_zeta(void *eem,int index)
+real eem_get_zeta(gmx_eemprops_t eem,int index)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
 
   range_check(index,0,er->nep);
   
   return er->eep[index].zeta;
 }
 
-char *eem_get_opts(void *eem,int index)
+char *eem_get_opts(gmx_eemprops_t eem,int index)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   
   range_check(index,0,er->nep);
   
   return er->eep[index].opts;
 }
 
-real eem_get_chi0(void *eem,int index)
+real eem_get_chi0(gmx_eemprops_t eem,int index)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   
   range_check(index,0,er->nep);
   
   return er->eep[index].chi0;
 }
 
-int eem_get_elem(void *eem,int index)
+int eem_get_elem(gmx_eemprops_t eem,int index)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   
   range_check(index,0,er->nep);
   
   return er->eep[index].elem;
 }
 
-void eem_set_props(void *eem,int index,real J0,real zeta,real chi0)
+void eem_set_props(gmx_eemprops_t eem,int index,real J0,real zeta,real chi0)
 {
-  t_eemrecord *er = (t_eemrecord *) eem;
+  gmx_eemprops *er = (gmx_eemprops *) eem;
   
   range_check(index,0,er->nep);
   
@@ -400,10 +400,10 @@ void eem_set_props(void *eem,int index,real J0,real zeta,real chi0)
   er->eep[index].chi0 = chi0;
 }
 
-void *copy_eem(void *eem_dst,void *eem_src)
+gmx_eemprops_t copy_eem(gmx_eemprops_t eem_dst,gmx_eemprops_t eem_src)
 {
-  t_eemrecord *dst = (t_eemrecord *) eem_dst;
-  t_eemrecord *src = (t_eemrecord *) eem_src;
+  gmx_eemprops *dst = (gmx_eemprops *) eem_dst;
+  gmx_eemprops *src = (gmx_eemprops *) eem_src;
   int i;
   
   if (dst == NULL) {
@@ -430,5 +430,5 @@ void *copy_eem(void *eem_dst,void *eem_src)
     dst->eep[i].chi0    = src->eep[i].chi0;
     dst->eep[i].row     = src->eep[i].row;
   }
-  return dst;
+  return (gmx_eemprops_t) dst;
 }

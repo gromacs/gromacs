@@ -88,8 +88,5 @@ extern int *generate_charge_groups(int cgtp,t_atoms *atoms,t_atomtype atype,
 extern void sort_on_charge_groups(int *cgnr,t_atoms *atoms,t_params plist[],
 				  t_atomtype type,rvec x[]);
 
-extern void write_atoms_molprops(char *fn,char *name,char *formula,
-				 t_atoms*atoms,t_params *bonds);
-
 
 #endif

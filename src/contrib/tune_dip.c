@@ -77,7 +77,8 @@ typedef struct {
   bool           bSupport;
   real           dip_exp,dip_err,dip_weight,qtotal,dip_calc,chieq;
   gmx_mtop_t     mtop;
-  t_topology     *ltop;
+  gmx_localtop_t *ltop;
+  t_atoms        atoms;
   t_inputrec     ir;
   gmx_shellfc_t  shell;
   t_mdatoms      *md;
@@ -122,7 +123,7 @@ static void init_mymol(t_mymol *mymol,char *fn,real dip,real dip_err,
   mymol->ltop     = gmx_mtop_generate_local_top(&(mymol->mtop),
 						&(mymol->ir));
 						
-  mymol->ltop->atoms = gmx_mtop_global_atoms(&(mymol->mtop));
+  mymol->atoms    = gmx_mtop_global_atoms(&(mymol->mtop));
   mymol->molname  = strdup(fn);
   mymol->bSupport = TRUE;
   mymol->dip_exp  = dip;
@@ -470,7 +471,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,
     mymol = &(md->mymol[i]);
     if (!mymol->bSupport)
       continue;
-    eQ = generate_charges_sm(debug,eem,&(mymol->ltop->atoms),
+    eQ = generate_charges_sm(debug,eem,&(mymol->atoms),
 			     mymol->x,1e-4,100,md->atomprop,
 			     mymol->qtotal,eemtp,md->hfac,
 			     md->slater_max,&(mymol->chieq));
@@ -480,7 +481,7 @@ static real calc_moldip_deviation(t_moldip *md,void *eem,
       aloop = gmx_mtop_atomloop_all_init(&mymol->mtop);
       j = 0;
       while (gmx_mtop_atomloop_all_next(aloop,&at_global,&atom)) {
-	atom->q = mymol->ltop->atoms.atom[j].q;
+	atom->q = mymol->atoms.atom[j].q;
 	j++;
       }
     }

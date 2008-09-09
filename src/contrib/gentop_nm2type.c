@@ -61,7 +61,7 @@
 typedef struct {
   char   *elem,*type;
   double alpha;
-  int    nbonds,atomnumber;
+  int    nbonds,atomnumber,planar;
   char   **bond;
   int    *atomnr;
   double *blen;

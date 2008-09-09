@@ -67,6 +67,9 @@
 #include "gentop_core.h"
 #include "gentop_qgen.h"
 #include "atomprop.h"
+#include "molprop_util.h"
+#include "molprop_xml.h"
+#include "poldata.h"
 #include "grompp.h"
 
 enum { edihNo, edihOne, edihAll, edihNR };
@@ -130,6 +133,7 @@ int main(int argc, char *argv[])
   gentop_qat  qa;
   t_mols     mymol;
   gmx_atomprop_t aps;
+  gmx_poldata_t  pd;
   char       title[STRLEN],forcefield[32];
   rvec       *x;        /* coordinates? */
   int        *nbonds,*cgnr;
@@ -247,6 +251,10 @@ int main(int argc, char *argv[])
   /* Read standard atom properties */
   aps = gmx_atomprop_init();
     
+  /* Read polarization stuff */
+  pd = gmx_poldata_read("gentop.xml");
+  gmx_poldata_write("test.xml",pd);
+  
   /* Force field selection */
   if (!strncmp(ff,"select",6)) {
     /* Interactive forcefield selection */
@@ -414,8 +422,12 @@ int main(int argc, char *argv[])
 		atoms,plist,cgnr,asize(bts),bts);
     }
     /* Write coordinates */ 
-    if ((xmlf = opt2fn_null("-x",NFILE,fnm)) != NULL)
-      write_atoms_molprops(xmlf,molnm,molnm,atoms,&(plist[F_BONDS]));
+    if ((xmlf = opt2fn_null("-x",NFILE,fnm)) != NULL) {
+      gmx_molprop_t mp;
+      mp = atoms_2_molprop(molnm,atoms,&(plist[F_BONDS]),aps,pd);
+      write_molprops(xmlf,1,&mp);
+      gmx_molprop_delete(mp);
+    }
     sprintf(title,"%s processed by %s",molnm,ShortProgram());
     write_sto_conf(opt2fn("-c",NFILE,fnm),title,atoms,x,NULL,ePBC,box);
     
