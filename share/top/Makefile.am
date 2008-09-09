@@ -48,8 +48,7 @@ topol_DATA = \
 	export.dlg	bonds.dlg	ss.map		ps.m2p		\
 	table6-10.xvg  	table6-11.xvg  	table6-12.xvg  	table6-8.xvg  	\
 	table6-9.xvg 	atom_nom.tbl	gromacs.dtd	tip5p.gro	\
-	tip5p.itp	sw.itp		eemprops.dat	elements.dat	\
-	symmetric-charges.dat
+	tip5p.itp	sw.itp		elements.dat
 
 EXTRA_DIST = ${topol_DATA}
 
