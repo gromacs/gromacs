@@ -831,30 +831,6 @@ static void update_adaption(t_edpar *edi)
 }
 
 
-static void check_coordinates(rvec *x, int nat)
-{
-    int i;
-    bool bFatal = FALSE;
-    
-    
-    for (i=0; i<nat; i++)
-    {
-        if ( (!finite(x[i][XX]) || !finite(x[i][YY]) || !finite(x[i][ZZ])) )
-        {
-            bFatal = TRUE;
-            break;
-        }
-    }
-    
-    if (bFatal)
-    {
-        fprintf(stderr,"Found invalid coordinate (atom %d):\n", i);
-        dump_rvec(stderr,nat,x);
-        gmx_fatal(FARGS,"Something is wrong with the coordinates: a LINCS error? Too much flooding strength? Wrong flooding vectors?");
-    }
-}
-
-
 static void do_single_flood(FILE *edo,
                             rvec x[],
                             rvec force[],
@@ -879,10 +855,6 @@ static void do_single_flood(FILE *edo,
     /* Only assembly reference coordinates if their indices differ from the average ones */
     if (!edi->bRefEqAv)
         get_coordinates(cr, buf->xc_ref, buf->shifts_xc_ref, x, &edi->sref, box, "XC_REFERENCE (FLOODING)");
-
-    /* Check if assembled coordinates are finite */
-    if (MASTER(cr))
-        check_coordinates(buf->xcoll, edi->sav.nr);        
 
     /* Now all nodes have all of the ED/flooding coordinates in edi->sav->xcoll,
      * as well as the indices in edi->sav.anrs */
@@ -1350,19 +1322,6 @@ static real read_checked_edreal(FILE *file,char *label)
     
     fgets2 (line,STRLEN,file);
     check(line,label);
-    fgets2 (line,STRLEN,file);
-    sscanf (line,"%lf",&rdum);
-    return (real) rdum; /* always read as double and convert to single */
-}
-
-
-static real read_edreal(FILE *file)
-{
-    char line[STRLEN+1];
-    double rdum;
-
-    
-    fgets2 (line,STRLEN,file);
     fgets2 (line,STRLEN,file);
     sscanf (line,"%lf",&rdum);
     return (real) rdum; /* always read as double and convert to single */
