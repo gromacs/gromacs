@@ -9,7 +9,10 @@ extern char *gmx_poldata_add_spoel(gmx_poldata_t pd,char *elem,
 				   char *miller_equiv,int nhydrogen,
 				   int charge,int hybridization,
 				   double polarizability,double blength);
-			
+				   
+extern void gmx_poldata_set_spoel(gmx_poldata_t pd,char *name,
+				  double polarizability);
+		
 extern void gmx_poldata_set_spoel_units(gmx_poldata_t pd,char *polar_unit,char *blength_unit);
 
 /* Returns name or NULL if last or not found */

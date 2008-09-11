@@ -7,7 +7,7 @@
 
 void genenerate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd)
 {
-  int i,j,cnumber,nh,hybrid;
+  int i,j,cnumber,nh,hybrid,charge;
   char *compname,*catom,*miller_equiv,*elem;
   double pol,blength;
   
@@ -21,7 +21,7 @@ void genenerate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd)
       if (strcasecmp(compname,"spoel") == 0) {
 	while (gmx_molprop_get_composition_atom(mp[j],&catom,&cnumber) == 1) {
 	  if (gmx_poldata_get_spoel(pd,catom,&elem,&miller_equiv,
-				    &nh,&hybrid,&pol,&blength) != NULL) {
+				    &nh,&charge,&hybrid,&pol,&blength) != NULL) {
 	    gmx_molprop_add_composition_atom(mp[j],"miller",miller_equiv,cnumber);
 	    gmx_molprop_add_composition_atom(mp[j],"bosque",elem,cnumber);
 	    if (nh > 0)
@@ -122,4 +122,118 @@ gmx_molprop_t atoms_2_molprop(char *molname,t_atoms*atoms,t_params *bonds,
   generate_formula(1,&mp,ap);
   
   return mp;  
+}
+
+static int comp_mp(const void *a,const void *b)
+{
+  gmx_molprop_t ma = (gmx_molprop_t)a;
+  gmx_molprop_t mb = (gmx_molprop_t)b;
+  
+  return strcasecmp(gmx_molprop_get_molname(ma),
+		    gmx_molprop_get_molname(mb));
+}
+
+static int comp_mp_formula(const void *a,const void *b)
+{
+  int r;
+  gmx_molprop_t ma = (gmx_molprop_t)a;
+  gmx_molprop_t mb = (gmx_molprop_t)b;
+  
+  r = strcasecmp(gmx_molprop_get_formula(ma),
+		 gmx_molprop_get_formula(mb));
+  
+  if (r == 0) 
+    return comp_mp(a,b);
+  else 
+    return r;
+}
+
+static void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles)
+{
+  int i,j,ndouble=0;
+  FILE *fp;
+  
+  fp = fopen(doubles,"w");
+  for(i=1; (i<*np); i++) {
+    if (strcasecmp(gmx_molprop_get_molname(mp[i]),
+		   gmx_molprop_get_molname(mp[i-1])) == 0) {
+      if (strcasecmp(gmx_molprop_get_formula(mp[i]),
+		     gmx_molprop_get_formula(mp[i-1])) == 0) {
+	fprintf(fp,"%5d  %s\n",ndouble+1,
+		gmx_molprop_get_molname(mp[i-1]));
+	gmx_molprop_merge(mp[i-1],mp[i]);
+	for(j=i+1; (j<*np); j++) {
+	  gmx_molprop_delete(mp[j-1]);
+	  mp[j-1] = gmx_molprop_copy(mp[j]);
+	}
+	ndouble++;
+	(*np)--;
+      }
+      else {
+	printf("Molecules %s, %s have formulae %s resp. %s\n",
+	       gmx_molprop_get_molname(mp[i]),
+	       gmx_molprop_get_formula(mp[i]));
+      }
+      
+    }
+  }
+  fclose(fp);
+  printf("There were %d double entries\n",ndouble);
+}
+
+static void dump_mp(int np,gmx_molprop_t mp[])
+{
+  FILE *fp;
+  int  i,j,k;
+  
+  fp = fopen("dump_mp.dat","w");
+  
+  for(i=0; (i<np); ) {
+    for(j=i; (j<np-1) && (strcasecmp(gmx_molprop_get_formula(mp[i]),
+				     gmx_molprop_get_formula(mp[j+1])) == 0); j++)
+      ;
+    if (j > i) {
+      for(k=i; (k<=j); k++)
+	fprintf(fp,"%-20s  %s\n",
+		gmx_molprop_get_formula(mp[k]),
+		gmx_molprop_get_molname(mp[k]));
+      fprintf(fp,"\n");
+    }
+    i=j+1;
+  }
+  
+  fclose(fp);
+}
+
+gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
+			 char *sorted,char *doubles,int *nmolprop)
+{
+  gmx_molprop_t *mp=NULL,*mpout=NULL;
+  int       i,j,np,npout=0;
+  char      buf[100];
+  
+  for(i=1; (i<argc); i++) {
+    mp = read_molprops(argv[i],&np);
+    srenew(mpout,npout+np);
+    for(j=0; (j<np); j++)
+      mpout[npout+j] = gmx_molprop_copy(mp[j]);
+    npout += np;
+  }
+  
+  qsort(mpout,npout,sizeof(mp[0]),comp_mp);
+  merge_doubles(&npout,mpout,doubles);
+      
+  if (outf) {
+    printf("There are %d entries to store in output file %s\n",npout,outf);
+    write_molprops(outf,npout,mpout);
+  }
+  if (sorted) {
+    qsort(mpout,npout,sizeof(mp[0]),comp_mp_formula);
+    write_molprops(sorted,npout,mpout);
+    dump_mp(npout,mpout);
+  }
+  
+  *nmolprop = npout; 
+  
+  return mpout;
 }

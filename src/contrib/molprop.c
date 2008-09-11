@@ -157,6 +157,23 @@ char *gmx_molprop_get_composition(gmx_molprop_t mpt)
   return NULL;
 }
 
+int gmx_molprop_count_composition_atoms(gmx_molprop_t mpt,
+					char *compname,char *atom)
+{
+  gmx_molprop *mp = (gmx_molprop *) mpt;
+  int i,j;
+  
+  for(i=0; (i<mp->ncomposition); i++)
+    if(strcasecmp(compname,mp->composition[i].compname) == 0)
+      break;
+  if (i < mp->ncomposition) {
+    for(j=0; (j<mp->composition[i].ncatom); j++)
+      if (strcasecmp(mp->composition[i].catom[j].cname,atom) == 0)
+	return mp->composition[i].ncatom;
+  }  
+  return 0;
+}
+					       
 void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
 				      char *atomname,int natom)
 {
@@ -320,11 +337,24 @@ char *gmx_molprop_get_category(gmx_molprop_t mpt)
   return NULL;
 }
 
+int gmx_molprop_search_category(gmx_molprop_t mpt,char *catname)
+{
+  gmx_molprop *mp = (gmx_molprop *) mpt;
+  int i;
+  
+  for(i=0; (i<mp->ncategory); i++)
+    if (strcasecmp(mp->category[i],catname) == 0)
+      return 1;
+  
+  return 0;
+}
+
 void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
 {
   int i,nd,ns,eMP;
   gmx_molprop *ddd = (gmx_molprop *)dst;
-  char *tmp,*prop_name,*prop_method,*prop_reference,*catom,*cnumber;
+  char *tmp,*prop_name,*prop_method,*prop_reference,*catom;
+  int cnumber;
   double value,error;
   
   while ((tmp = gmx_molprop_get_category(src)) != NULL) {
@@ -356,20 +386,16 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
 
 gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mpt)
 {
-  int  eMP,cnumber;
-  char *tmp,*prop_name,*prop_method,*prop_reference,*catom;
-  double value,error;
-  gmx_molprop *src = (gmx_molprop *) mpt;
-  gmx_molprop *dst = gmx_molprop_init();
+  gmx_molprop_t dst = gmx_molprop_init();
   
-  gmx_molprop_set_molname(dst,gmx_molprop_get_molname(src));
-  gmx_molprop_set_formula(dst,gmx_molprop_get_formula(src));
-  gmx_molprop_set_weight(dst,gmx_molprop_get_weight(src));
-  gmx_molprop_set_reference(dst,gmx_molprop_get_reference(src));
+  gmx_molprop_set_molname(dst,gmx_molprop_get_molname(mpt));
+  gmx_molprop_set_formula(dst,gmx_molprop_get_formula(mpt));
+  gmx_molprop_set_weight(dst,gmx_molprop_get_weight(mpt));
+  gmx_molprop_set_reference(dst,gmx_molprop_get_reference(mpt));
 
-  gmx_molprop_merge(dst,src);
+  gmx_molprop_merge(dst,mpt);
   
-  return (gmx_molprop_t) dst;
+  return dst;
 }
 
 

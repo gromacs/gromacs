@@ -31,7 +31,8 @@ nodist_ehole_SOURCES		= ehole.c ehdata.c ehanal.c
 
 nodist_tune_pol_SOURCES	= tune_pol.c 	tune_pol.h \
 			gentop_matrix.c	gentop_matrix.h	\
-			poldata.c 	merge_xml.c\
+			poldata.c 	poldata.h \
+			poldata_xml.c	poldata_xml.h \
 			molprop.c 	molprop.h \
 			molprop_xml.c	molprop_xml.h \
 			molprop_util.c	molprop_util.h

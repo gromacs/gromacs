@@ -44,7 +44,6 @@
 #include "maths.h"
 #include "futil.h"
 #include "smalloc.h"
-#include "tune_pol.h"
 #include "vec.h"
 #include "molprop.h"
 #include "molprop_util.h"
@@ -53,23 +52,46 @@
 static int tabnum = 0;
 static int toler  = 5;  /* Tolerance in % */
 static int tolerb = 50; /* Tolerance in % */
-static int my_order[eelemNR] = { 
-  eelemC, 
-  eelemH,  eelemHe, 
-  eelemLi, eelemBe, eelemB,  eelemN,  eelemO, eelemF,  eelemNe,
-  eelemNa, eelemMg, eelemAl, eelemSi, eelemP, eelemS, eelemCl, eelemAr,
-  eelemK,  eelemCa, eelemGe, eelemSe, eelemBr, eelemKr, eelemRb,
-  eelemI,  eelemXe, eelemCs
-};
 
 /*static char *sbasis[eqmNR] = {
   "6-31G","pVDZ","pVTZ","pVTZ","d-pVTZ", "Ahc", "Ahp", "BS", "FP" 
   };*/
 
-static char *sbasis[eqmNR] = {
+static char *sbasis[] = {
   "6-31G","aug-DZ","aug-TZ","aug-TZ","d-aug-TZ", "Ahc", "Ahp", "BS", "FP" 
 };
+#define eqmNR asize(sbasis)
+#define NQUANT 5
 
+double mp_get_polar(gmx_molprop_t mp)
+{
+  double val,err;
+  char   *ref;
+  
+  if (gmx_molprop_search_property(mp,eMOLPROP_Exp,"Polarizability",
+				  &val,&err,NULL,&ref) == 1) {
+    sfree(ref);
+    return val;
+  }
+  return 0;
+}
+
+int mp_num_polar(gmx_molprop_t mp) 
+{
+  int npol=0,eMP;
+  double val,err;
+  char *prop_name,*prop_method,*prop_ref;
+  
+  while (gmx_molprop_get_property(mp,&eMP,&prop_name,&val,&err,
+				  &prop_method,&prop_ref) == 1) {
+    if (strcasecmp(prop_name,"Polarizability") == 0)
+      npol++;
+    sfree(prop_name);
+    sfree(prop_method);
+    sfree(prop_ref);
+  }
+  return npol;
+}
 static void table_number(FILE *fp)
 {
   fprintf(fp,"\\setcounter{table}{%d}\n",tabnum);
@@ -95,65 +117,58 @@ static void table1_end(FILE *fp)
   fprintf(fp,"\\end{tabular}\n\\end{table}\n\n");
 }
 
-static int miller_index(char *mil)
+static void dump_table1(FILE *fp,gmx_poldata_t pd,
+			int np,gmx_molprop_t mp[])
 {
-  int imil;
-  
-  for(imil=0; (imil<emlNR); imil++)
-    if (strcmp(mil,miller[imil].name) == 0)
-      break;
-  if (imil == emlNR) {
-    fprintf(stderr,"No such Miller atom %s\n",mil);
-    exit(1);
-  }
-  return imil;
-}
-
-static int bosque_index(char *bos)
-{
-  int ielem;
-  
-  for(ielem=0; (ielem<eelemNR); ielem++)
-    if (strcmp(bos,bosque[ielem].name) == 0)
-      break;
-  if (ielem == eelemNR) {
-    fprintf(stderr,"No such element %s",bos);
-    exit(1);
-  }
-  return ielem;
-}
-
-static void dump_table1(FILE *fp,int np,t_molprop pd[])
-{
-  int    i,j,nfit,nh,ielem,imil;
-  char   hybrid[8];
-  double ahc,bos,ahp;
+  int    i,j,nfit,nh,ielem,imil,atomnumber;
+  int    nhydrogen,charge,hybridization;
+  double ahc,ahp,ahc_H,ahp_H,mil_pol,bos_pol,bos_H,spoel_pol,blength,pol_tmp,pol_error;
+  char   *name,*elem,*miller_equiv,*prop_reference,group[32];
   
   table1_header(fp,1);
-  strcpy(hybrid,"SP ");
   
-  for(i=0; (i<eatNR); i++) {
-    int len = strlen(spoel[i].name);
-    if (len < 3) {
-      fprintf(stderr,"No such fragment %s",spoel[i].name);
+  if (gmx_poldata_get_bosque(pd,"H",&bos_H) == NULL) 
+    gmx_fatal(FARGS,"Can not find Bosque polarizability for H");
+  
+  if (gmx_poldata_get_miller(pd,"H",&atomnumber,&ahc_H,&ahp_H) != NULL) 
+    gmx_fatal(FARGS,"Can not find Miller polarizability for H");
+  
+  while(name = gmx_poldata_get_spoel(pd,NULL,&elem,
+				     &miller_equiv,&nhydrogen,
+				     &charge,&hybridization,
+				     &spoel_pol,&blength)) {
+    
+    /* Determine Miller and Bosque polarizabilities for this Spoel element */
+    ahc = ahp = 0;
+    if (gmx_poldata_get_miller(pd,miller_equiv,&atomnumber,&ahc,&ahp) != NULL) {
+      ahc = (4.0/(nhydrogen+atomnumber))*sqr(ahc + nhydrogen*ahc_H);
+      ahp = (nhydrogen*ahp_H + ahp);
     }
-    hybrid[2] = spoel[i].name[len-2];
-    nh        = spoel[i].nh;
-    ielem = bosque_index(spoel[i].bosque);
-    imil  = miller_index(spoel[i].miller);
-    bos   = bosque[ielem].value + nh*bosque[eelemH].value;
+    bos_pol = 0;
+    if (gmx_poldata_get_bosque(pd,elem,&bos_pol) != NULL)
+      bos_pol += nhydrogen*bos_H;
+    
+    /* Compute how many molecules contributed to the optimization 
+     * of this polarizability.
+     */
     nfit  = 0;
     for(j=0; (j<np); j++) {
-      if ((mp_num_polar(&(pd[j])) > 0) && (mp_get_polar(&(pd[j])) > 0))
-	nfit += pd[j].frag_comp[i];
+      if (gmx_molprop_search_property(mp[j],eMOLPROP_Exp,"Polarizability",
+				      &pol_tmp,&pol_error,
+				      NULL,&prop_reference) == 1)
+	nfit += gmx_molprop_count_composition_atoms(mp[j],"spoel",name);
     }
-    ahc = (4.0/(nh+miller[imil].nelec))*sqr(miller[imil].tau_ahc + 
-					    nh*miller[emlH].tau_ahc);
-    ahp = (nh*miller[emlH].alpha_ahp + miller[imil].alpha_ahp);
-    fprintf(fp,"%s & %s & %s & %d & %8.2f & %8.2f & %8.2f & %8.2f \\\\\n",
-	    spoel[i].atom,spoel[i].name,hybrid,nfit,
-	    ahc,ahp,bos,spoel[i].all);
-    if ((((i+1) % 16) == 0) && (i != eatNR-1)) {
+    /* Construct group name from element composition */
+    if (nhydrogen > 1)
+      sprintf(group,"%sH%d",elem,nhydrogen);
+    else if (nhydrogen == 1)
+      sprintf(group,"%sH",elem);
+    else
+      strcpy(group,elem);
+      
+    fprintf(fp,"%s & %s & SP%d & %d & %8.2f & %8.2f & %8.2f & %8.2f \\\\\n",
+	    group,name,hybridization,nfit,ahc,ahp,bos_pol,spoel_pol);
+    if ((((i+1) % 16) == 0)) {
       table1_end(fp);
       table1_header(fp,0);
     }
@@ -190,7 +205,7 @@ static void table2_header(FILE *fp,int caption,int bTrain,int bQM)
   else {
     fprintf(fp,"\\begin{tabular}{lccccc}\n\\hline\n");
     fprintf(fp,"Molecule & Experiment ");
-    for(i=NQUANT; (i<eqmNR); i++)
+    for(i=0; (i<eqmNR); i++)
       fprintf(fp,"& %s ",sbasis[i]);
     fprintf(fp,"\\\\\n\\hline\n");
   }
@@ -203,51 +218,61 @@ static void table2_end(FILE *fp,int bQM)
 }
 
 static void dump_table2(FILE *fp,int bVerbose,int bTrain,int bQM,
-			int np,t_molprop pd[],int bDS)
+			int np,gmx_molprop_t mp[],int bDS)
 {
-  int i,j,j0,k,header,iline,iqm,caption=1,maxline;
-  char buf[32],buf2[32],*ref;
-  double val;
-    
+  int i,j,j0,k,header,iline,iqm,caption=1,maxline,result;
+  char buf[32],buf2[32],*exp_ref,*calc_ref,*prop_name;
+  double val,exp_val,exp_error,weight;
+  double val_calc[eqmNR],err_calc[eqmNR];
+  int    eMP,found_calc[eqmNR];
+  
   table2_header(fp,caption,bTrain,bQM);  
   header  = 1;
   iline   = 0;
-  j0 = bQM ? 0 : NQUANT;
   for(i=0; (i<np); i++) {
     iqm = 0;
-    for(k=0; (k<NQUANT); k++)
-      if (pd[i].qm[k] > 0)
-	iqm++;
-    if (((bTrain && (pd[i].weight > 0)) ||
-	 (!bTrain && (pd[i].weight == 0))) &&
-	(mp_num_polar(&(pd[i])) > 0) &&
-	((bQM && (iqm > 0)) || !bQM)) {
-      fprintf(fp,"%3d. %-15s",pd[i].nr,pd[i].molname);
-      header = 0;
-      fprintf(fp," &");
-      for(k=0; (k<mp_num_polar(&(pd[i]))); k++,iline++) {
-	if (k > 0)
-	  fprintf(fp," &");
+    
+    if (gmx_molprop_search_property(mp[i],eMOLPROP_Exp,"Polarizability",
+				    &exp_val,&exp_error,NULL,&exp_ref) == 1) {
+      sfree(exp_ref);
+      for(j=0; (j<eqmNR); j++) {
+	found_calc[j] = 
+	  gmx_molprop_search_property(mp[i],eMOLPROP_Calc,"Polarizability",
+				      &(val_calc[j]),&(err_calc[j]),
+				      sbasis[j],&calc_ref);
+	sfree(calc_ref);
+	if (found_calc[j])
+	  iqm++;
+      }
+    
+      weight = gmx_molprop_get_weight(mp[i]);
+      if (((bTrain && (weight > 0)) || (!bTrain && (weight == 0))) &&
+	  ((bQM && (iqm > 0)) || !bQM)) {
+	fprintf(fp,"%-15s",get_molprop_molname(mp[i]));
+	header = 0;
+	fprintf(fp," &");
+	for(k=0; (k<mp_num_polar(mp[i])); k++,iline++) {
+	  if (k > 0)
+	    fprintf(fp," &");
 	  
-	if (gmx_molprop_search_property(pd[i],eMOLPROP_Exp,"Polarizability",
-					&val,&error,NULL,&ref) == 1) {
-	  fprintf(fp," %8.3f",val);
-	  if (strcmp(ref,"Spoel2007a") == 0)
+	  fprintf(fp," %8.3f",exp_val);
+	  if (strcmp(exp_ref,"Spoel2007a") == 0)
 	    fprintf(fp," (*)");
 	  else
-	    fprintf(fp,"~\\cite{%s} ",ref ? ref : "XXX");
+	    fprintf(fp,"~\\cite{%s} ",exp_ref ? exp_ref : "XXX");
+	  sfree(exp_ref);
 	}
 	if (k == 0) {
-	  for(j=j0; (j<eqmNR); j++) 
-	    if (pd[i].qm[j] > 0) {
-	      if ((fabs(pd[i].qm[j] - val) > (val*toler*0.01))) {
-		if (fabs(pd[i].qm[j] - val) > (val*tolerb*0.01))
-		  fprintf(fp,"& {\\LARGE\\bf %8.2f} ",pd[i].qm[j]);
+	  for(j=0; (j<eqmNR); j++) 
+	    if (val_calc[j] > 0) {
+	      if ((fabs(val_calc[j] - exp_val) > (exp_val*toler*0.01))) {
+		if (fabs(val_calc[j] - exp_val) > (exp_val*tolerb*0.01))
+		  fprintf(fp,"& {\\LARGE\\bf %8.2f} ",val_calc[j]);
 		else
-		  fprintf(fp,"& {\\bf %8.2f} ",pd[i].qm[j]);
+		  fprintf(fp,"& {\\bf %8.2f} ",val_calc[j]);
 	      }
 	      else
-		fprintf(fp,"& %8.2f ",pd[i].qm[j]);
+		fprintf(fp,"& %8.2f ",val_calc[j]);
 	    }
 	    else
 	      fprintf(fp,"& $\\dagger$");
@@ -277,15 +302,42 @@ static void dump_table2(FILE *fp,int bVerbose,int bTrain,int bQM,
       }
     }
   }
-    table2_end(fp,bQM);
+  table2_end(fp,bQM);
 }
 
-static void dump_table3(FILE *fp,int np,t_molprop pd[],int ntot)
+typedef struct {
+  int ncat;
+  char **cat;
+  int  *count;
+  real *rms;
+} t_cats;
+
+static void add_cat(t_cats *cats,char *catname)
+{
+  int i;
+  
+  for(i=0; (i<cats->ncat); i++) 
+    if (strcasecmp(catname,cats->cat[i]) == 0) {
+      cats->count[i]++;
+      break;
+    }
+  if (i == cats->ncat) {
+    cats->ncat++;
+    srenew(cats->cat,cats->ncat);
+    srenew(cats->count,cats->ncat);
+    cats->cat[cats->ncat-1] = strdup(catname);
+    cats->count[cats->ncat-1]++;
+  }
+}
+
+static void dump_table3(FILE *fp,int np,gmx_molprop_t pd[],int ntot)
 {
   int    i,j,k,ns,n,nn[eqmNR];
   double aa[eqmNR],bb[eqmNR],R[eqmNR],rms,diff,ssx,ssy,ssxy,ssxx,ssyy;
   double ra[eqmNR],pp[eqmNR],ratio[eqmNR];
-  double val;
+  double exp_val,qm_val,qm_err;
+  char   *cname,*qm_ref;
+  t_cats *cats;
   
   table_number(fp);
   fprintf(fp,"\\begin{table}[H]\n\\centering\n");
@@ -297,33 +349,35 @@ static void dump_table3(FILE *fp,int np,t_molprop pd[],int ntot)
     fprintf(fp,"& %s ",sbasis[i]);
   fprintf(fp,"\\\\\n\\hline\n");
   
-  for(i=0; (i<ecNR); i++) {
-    n = 0;
-    for(j=0; (j<np); j++) 
-      if (pd[j].category[i] > 0)
-	n++;
-    fprintf(fp," %s (%d) ",ec_name[i],n);
+  snew(cats,1);
+  
+  for(j=0; (j<np); j++) 
+    while ((cname = gmx_molprop_get_category(pd[j])) != NULL)
+      add_cat(cats,cname);
+
+  for(i=0; (i<cats->ncat); i++) {      
+    fprintf(fp," %s (%d) ",cats->cat[i],cats->count[i]);
     for(k=0; (k<eqmNR); k++) {
       rms = 0;
       n   = 0;
       for(j=0; (j<np); j++) {
-	if (mp_num_polar(&(pd[j])) > 0) {
-	  val = mp_get_polar(&(pd[j]));
-	  if ((val > 0) && (pd[j].qm[k] > 0) && (pd[j].category[i] > 0)) {
-	    rms += sqr(val - pd[j].qm[k]);
-	    n++;
-	  }
+	if ((gmx_molprop_search_category(pd[j],cats->cat[i]) == 1) &&
+	    ((exp_val = mp_get_polar(pd[j])) > 0) &&
+	    (gmx_molprop_search_property(pd[j],eMOLPROP_Calc,"Polarizability",
+					 &qm_val,&qm_err,sbasis[k],&qm_ref) == 1)) {
+	  rms += sqr(exp_val - qm_val);
+	  n++;
 	}
       }
-      if (n > 0) {
-	if (k >= NQUANT)
-	  fprintf(fp,"& %8.2f",sqrt(rms/n));
-	else
-	  fprintf(fp,"& %8.2f(%d)",sqrt(rms/n),n);
-      }
-      else
-	fprintf(fp,"& -");
     }
+    if (n > 0) {
+      if (k >= NQUANT)
+	fprintf(fp,"& %8.2f",sqrt(rms/n));
+      else
+	fprintf(fp,"& %8.2f(%d)",sqrt(rms/n),n);
+    }
+    else
+      fprintf(fp,"& -");
     fprintf(fp,"\\\\\n");
   }
   for(k=0; (k<eqmNR); k++) {
@@ -332,15 +386,14 @@ static void dump_table3(FILE *fp,int np,t_molprop pd[],int ntot)
     nn[k] = 0;
     ratio[k] = 0;
     for(j=0; (j<np); j++) {
-      if (mp_num_polar(&(pd[j])) > 0) {
-	val = mp_get_polar(&(pd[j]));
-	if ((val > 0) && (pd[j].qm[k] > 0)) {
-	  diff   = val - pd[j].qm[k];
-	  ra[k] += sqr(diff);
-	  pp[k] += 100*diff/val;
-	  ratio[k] += pd[j].qm[k]/val;
-	  nn[k]++;
-	}
+      if (((exp_val = mp_get_polar(pd[j])) > 0) &&
+	  (gmx_molprop_search_property(pd[j],eMOLPROP_Calc,"Polarizability",
+				       &qm_val,&qm_err,sbasis[k],&qm_ref) == 1)) {
+	diff   = exp_val - qm_val;
+	ra[k] += sqr(diff);
+	pp[k] += 100*diff/exp_val;
+	ratio[k] += qm_val/exp_val;
+	nn[k]++;
       }
     }
   }
@@ -365,16 +418,15 @@ static void dump_table3(FILE *fp,int np,t_molprop pd[],int ntot)
     ssx = ssy = ssxx = ssxy = ssyy = 0;
     ns = 0;
     for(j=0; (j<np); j++) {
-      if (mp_num_polar(&(pd[j])) > 0) {
-	val = mp_get_polar(&(pd[j]));
-	if ((val > 0) && (pd[j].qm[k] > 0)) {
-	  ssx  += val;
-	  ssy  += pd[j].qm[k];
-	  ssxx += sqr(val);
-	  ssyy += sqr(pd[j].qm[k]);
-	  ssxy += val*pd[j].qm[k];
-	  ns++;
-	}
+      if (((exp_val = mp_get_polar(pd[j])) > 0) &&
+	  (gmx_molprop_search_property(pd[j],eMOLPROP_Calc,"Polarizability",
+				       &qm_val,&qm_err,sbasis[k],&qm_ref) == 1)) {
+	ssx  += exp_val;
+	ssy  += qm_val;
+	ssxx += sqr(exp_val);
+	ssyy += sqr(qm_val);
+	ssxy += exp_val*qm_val;
+	ns++;
       }
     }
     ssx /= ns;
@@ -417,73 +469,120 @@ static void table4_header(FILE *fp,int caption)
   fprintf(fp,"\\hline\n");
 }
 
-static void dump_table4(FILE *fp,int np,t_molprop pd[])
+static void dump_table4(FILE *fp,int np,gmx_molprop_t pd[])
 {
-  int i,j,k,iline;
+  int i,j,k,iline,natom;
   char buf[32],buf2[32];
+  char *atomname,*comp;
   
   table4_header(fp,1);  
   iline = 0;
   for(i=0; (i<np); i++) {
-    if ((i == 0) || 
-	((i > 0) && strcmp(pd[i].molname,pd[i-1].molname) != 0)) {
-      fprintf(fp,"%3d. %s & %s &",++iline,pd[i].molname,pd[i].formula);
-      for(j=0; (j<eatNR); j++)
-	if (pd[i].frag_comp[j] > 0)
-	  fprintf(fp,"%s$_{%d}$ ",spoel[j].name,pd[i].frag_comp[j]);
-      fprintf(fp," &");
-      for(j=0; (j<emlNR); j++)
-	if (pd[i].emil_comp[j] > 0)
-	  fprintf(fp,"%s$_{%d}$ ",miller[j].name,pd[i].emil_comp[j]);
-      fprintf(fp," \\\\\n");
-      if (((iline % 28) == 0) && (i+1<np)) {
-	fprintf(fp,"\\hline\n\\end{tabular}\n\\end{sidewaystable}\n");
-	table4_header(fp,0);
+    fprintf(fp,"%3d. %s & %s &",++iline,
+	    gmx_molprop_get_molname(pd[i]),
+	    gmx_molprop_get_formula(pd[i]));
+    while((comp = gmx_molprop_get_composition(pd[i])) != NULL) {
+      if (strcasecmp(comp,"spoel") == 0) {
+	while(gmx_molprop_get_composition_atom(pd[i],&atomname,&natom) == 1) {
+	  fprintf(fp,"%s$_{%d}$ ",atomname,natom);
+	}
+	fprintf(fp," &");
       }
+      else if (strcasecmp(comp,"miller") == 0) {
+	while(gmx_molprop_get_composition_atom(pd[i],&atomname,&natom) == 1) {
+	  fprintf(fp,"%s$_{%d}$ ",atomname,natom);
+	}
+	fprintf(fp," \\\\\n");
+      }
+    }
+    if (((iline % 28) == 0) && (i+1<np)) {
+      fprintf(fp,"\\hline\n\\end{tabular}\n\\end{sidewaystable}\n");
+      table4_header(fp,0);
     }
   }
   fprintf(fp,"\\hline\n\\end{tabular}\n\\end{sidewaystable}\n");
 }
 
-static void calc_frag_miller(int bTrain,int np,t_molprop pd[])
+static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
+			     int np,gmx_molprop_t mp[])
 {
-  int    j,k,Nelec;
-  double ahc,ahp,bos,spol;
+  int    j,k,Nelec,natom,charge,hybridization,nhydrogen,atomnumber;
+  double ahc,ahp,bos,spoel,bos0,polar,blength;
+  double tau_ahc,alpha_ahp;
+  char   *comp,*atomname,*elem,*miller_equiv,*ref;
+  int    spoel_support,miller_support,bosque_support;
+  
+  if (gmx_poldata_get_bosque(pd,"0",&bos0) == NULL)
+    gmx_fatal(FARGS,"Can not find Bosque polarizability for 0");
   
   for(j=0; (j<np); j++) {
-    spol = 0;
-    for(k=0; (k<eatNR); k++)
-      spol += pd[j].frag_comp[k] * (bTrain ? spoel[k].train : spoel[k].all);
-    pd[j].qm[eqmSpoel] = spol;
-    bos = bosque[eelemNR].value;
-    for(k=0; (k<eelemNR); k++)
-      bos += bosque[k].value*pd[j].elem_comp[k];
-    if ((pd[j].qm[eqmBosque] != 0) &&
-	(fabs(pd[j].qm[eqmBosque] - bos) >= 0.01*toler*bos)) {
-      fprintf(stderr,"Possible error in Bosque composition for %s. Computed %g iso %g\n",pd[j].molname,bos,pd[j].qm[eqmBosque]);
-    }
-    pd[j].qm[eqmBosque] = bos;
-    ahc   = 0;
+    ahc = ahp = spoel = 0;
+    bos = bos0;
     Nelec = 0;
-    ahp   = 0;
-    for(k=0; (k<emlNR); k++) {
-      ahc   += miller[k].tau_ahc*pd[j].emil_comp[k];
-      ahp   += miller[k].alpha_ahp*pd[j].emil_comp[k];
-      Nelec += miller[k].nelec*pd[j].emil_comp[k];
+    spoel_support = 1;
+    miller_support = 1;
+    bosque_support = 1;
+      
+    while ((comp = gmx_molprop_get_composition(mp[j])) != NULL) {
+      while (gmx_molprop_get_composition_atom(mp[j],&atomname,&natom) == 1) {
+	if (strcasecmp(comp,"spoel") == 0) {
+	  if (gmx_poldata_get_spoel(pd,atomname,&elem,
+				    &miller_equiv,&nhydrogen,
+				    &charge,&hybridization,
+				    &polar,&blength) != NULL) {
+	    spoel += polar*natom;
+	  }
+	  else 
+	    spoel_support = 0;
+	}
+	else if (strcasecmp(comp,"miller") == 0) {
+	  if (gmx_poldata_get_miller(pd,atomname,&atomnumber,
+				     &tau_ahc,&alpha_ahp) != NULL) {
+	    ahc   += tau_ahc*natom; 
+	    ahp   += alpha_ahp*natom;
+	    Nelec += atomnumber*Nelec;
+	  }
+	  else
+	    miller_support = 0;
+	}
+	else if (strcasecmp(comp,"bosque") == 0) {
+	  if (gmx_poldata_get_bosque(pd,atomname,&polar) != NULL) {
+	    bos += polar*natom;
+	  }
+	  else
+	    bosque_support = 0;
+	}
+	else
+	  gmx_fatal(FARGS,"Unknown composition %s\n",comp);
+      }
     }
-    pd[j].qm[eqmMiller] = 4*sqr(ahc)/Nelec;
-    pd[j].qm[eqmKang]   = ahp;
+
+    if (spoel_support == 1) 
+      gmx_molprop_add_property(mp[j],eMOLPROP_Calc,"Polarizability",
+			       spoel,0,"spoel","Spoel2009a");
+    if (bosque_support == 1)
+      gmx_molprop_add_property(mp[j],eMOLPROP_Calc,"Polarizability",
+			       bos,0,"bosque","Bosque2002a");
+
+    if (miller_support == 1) {
+      ahc = 4*sqr(ahc)/Nelec;
+      gmx_molprop_add_property(mp[j],eMOLPROP_Calc,"Polarizability",
+			       ahc,0,"ahc","Miller");
+      gmx_molprop_add_property(mp[j],eMOLPROP_Calc,"Polarizability",
+			       ahp,0,"ahp","Khan");
+    }
   }
 }
   
-static void calc_rmsd(int bTrain,double fit[],double test[],int np,
-		      t_molprop pd[])
+static void calc_rmsd(int bTrain,double fit[],double test[],
+		      gmx_poldata_t pd,int np,gmx_molprop_t mp[])
 {
   int i,j,k,nfit[eqmNR],ntest[eqmNR],Nelec;
-  double eval,qval;
+  double eval,qval,qerr;
   double fpol,apol;
+  char   *ref;
   
-  calc_frag_miller(bTrain,np,pd);
+  calc_frag_miller(bTrain,pd,np,mp);
   
   for(i=0; (i<eqmNR); i++) {
     nfit[i]  = 0;
@@ -491,13 +590,13 @@ static void calc_rmsd(int bTrain,double fit[],double test[],int np,
     fit[i]   = 0;
     test[i]  = 0;
     for(j=0; (j<np); j++) {
-      if (mp_num_polar(&(pd[j])) > 0) {
-	eval = mp_get_polar(&(pd[j]));
-	if (eval > 0) {
-	  qval = pd[j].qm[i];
-	  
+      if ((eval = mp_get_polar(mp[j])) > 0) {
+	if (gmx_molprop_search_property(mp[j],eMOLPROP_Calc,
+					"Polarizability",&qval,&qerr,
+					sbasis[i],&ref) == 1) {
+	
 	  if (qval > 0) {
-	    if (pd[j].weight > 0) {
+	    if (gmx_molprop_get_weight(mp[j]) > 0) {
 	      nfit[i]++;
 	      fit[i] += sqr(qval-eval);
 	    }
@@ -516,41 +615,46 @@ static void calc_rmsd(int bTrain,double fit[],double test[],int np,
   }
 }
 
-static void decompose_frag(FILE *fp,int bTrain,int np,t_molprop pd[])
+static void decompose_frag(FILE *fp,int bTrain,
+			   gmx_poldata_t pd,int np,gmx_molprop_t mp[])
 {
   double *x,*atx;
   double **a,**at,**ata,fpp;
-  int i,j,n,m=eatNR,nn;
-  int test[eatNR];
+  double pol,blength;
+  char *elem,*miller_equiv,*name,**atype=NULL;
+  int i,j,n,nn,nhydrogen,charge,hybridization;
+  int *test=NULL,ntest=0;
 
-  for(i=0; (i<eatNR); i++) {
-    test[i] = 0;
+  while ((name = gmx_poldata_get_spoel(pd,NULL,&elem,&miller_equiv,
+				       &nhydrogen,&charge,
+				       &hybridization,&pol,&blength)) != NULL) {
+    srenew(test,++ntest);
+    srenew(atype,ntest);
+    test[ntest-1] = 0;
+    atype[ntest-1] = strdup(name);
     for(j=0; (j<np); j++) 
-      if (pd[j].weight > 0) 
-	test[i] += pd[j].frag_comp[i];
-    if (test[i] == 0) {
-      fprintf(stderr,"You have no molecules with group %s\n",
-	      spoel[i].name);
-      exit(1);
-    }
+      if (gmx_molprop_get_weight(mp[j]) > 0) 
+	test[ntest-1] += gmx_molprop_count_composition_atom(mp[j],"spoel",name);
+    
+    if (test[ntest-1] == 0) 
+      gmx_fatal(FARGS,"You have no molecules with group %s\n",name);
   }
   snew(x,np);
   for(i=n=0; (i<np); i++) {
-    if ((pd[i].weight > 0) && 
-	(mp_num_polar(&(pd[i])) > 0)) {
-      x[n] = mp_get_polar(&(pd[i]));
+    if ((gmx_molprop_get_eight(mp[i]) > 0) && 
+	((pol = mp_get_polar(mp[i])) > 0)) {
+      x[n] = pol;
       n++;
     }
   }
-  a      = alloc_matrix(n,m);
-  at     = alloc_matrix(m,n);
-  ata    = alloc_matrix(m,m);
+  a      = alloc_matrix(n,ntest);
+  at     = alloc_matrix(ntest,n);
+  ata    = alloc_matrix(ntest,ntest);
   for(i=nn=0; (i<np); i++) {
-    if ((pd[i].weight > 0) && 
-	(mp_num_polar(&(pd[i])) > 0)){
-      for(j=0; (j<m); j++) {
-	a[nn][j]  = pd[i].frag_comp[j];
-	at[j][nn] = pd[i].frag_comp[j];
+    if ((gmx_molprop_get_eight(mp[i]) > 0) && 
+	(mp_num_polar(mp[i]) > 0)) {
+      for(j=0; (j<ntest); j++) {
+	a[nn][j] = at[j][nn] = gmx_molprop_count_composition_atom(mp[j],"spoel",atype[j]);
       }
       nn++;
     }
@@ -559,148 +663,87 @@ static void decompose_frag(FILE *fp,int bTrain,int np,t_molprop pd[])
     fprintf(stderr,"Consistency error %s, line %d\n",__FILE__,__LINE__);
     exit(1);
   }
-  matrix_multiply(fp,n,m,a,at,ata);
-  matrix_invert(fp,m,ata);
-  snew(atx,m);
-  for(i=0; (i<m); i++) 
+  matrix_multiply(fp,n,ntest,a,at,ata);
+  matrix_invert(fp,ntest,ata);
+  snew(atx,ntest);
+  for(i=0; (i<ntest); i++) 
     for(j=0; (j<n); j++)
       atx[i] += at[i][j]*x[j];
   
-  for(i=0; (i<m); i++) {
+  for(i=0; (i<ntest); i++) {
     fpp = 0;
-    for(j=0; (j<m); j++)
+    for(j=0; (j<ntest); j++)
       fpp += ata[i][j]*atx[j];
-    if (bTrain)
+    /*if (bTrain)
       spoel[i].train = fpp;
-    else
-      spoel[i].all = fpp;
+      else*/
+    gmx_poldata_set_spoel(pd,atype[j],fpp);
   }
 }
 
-static void write_xvg(int np,t_molprop pd[])
+static void write_xvg(int np,gmx_molprop_t pd[])
 {
   char *fn[2] = { "qm.xvg", "empir.xvg" };
   FILE *fp;
   int i,j,n,i0,i1;
-  double val; 
+  double exp_val,qm_val,qm_err,pol_max; 
   
   for(n=0; (n<2); n++) {
     fp = fopen(fn[n],"w");
     if (n == 0) {
       i0  = 0;
       i1  = NQUANT;
-      val = 19.5;
+      pol_max = 19.5;
     }
     else {
       i0  = NQUANT;
       i1  = eqmNR;
-      val = 51.5;
+      pol_max = 51.5;
     }
     for(i=i0; (i<i1); i++) {
       fprintf(fp,"@type xy\n");
       for(j=0; (j<np); j++) {
-	if ((mp_num_polar(&(pd[j])) > 0) &&
-	    (mp_get_polar(&(pd[j])) > 0) && 
-	    (pd[j].qm[i] > 0))
-	  fprintf(fp,"%8.3f  %8.3f\n",mp_get_polar(&(pd[j])),pd[j].qm[i]);
+	if ((exp_val = (mp_get_polar(pd[j])) > 0) &&
+	    (gmx_molprop_search_property(pd[j],eMOLPROP_Calc,"Polarizability",
+					 &qm_val,&qm_err,sbasis[i],NULL) == 1)) {
+	  fprintf(fp,"%8.3f  %8.3f\n",exp_val,qm_val);
+	}
+	fprintf(fp,"&\n");
       }
-      fprintf(fp,"&\n");
     }
     fprintf(fp,"@type xy\n");
-    fprintf(fp,"1.5 1.5\n%6.1f %6.1f\n",val,val);
+    fprintf(fp,"1.5 1.5\n%6.1f %6.1f\n",pol_max,pol_max);
     fprintf(fp,"&\n");
     fclose(fp);
   }
 }
 
-static void write_csv(int np,t_molprop pd[])
+gmx_atomprop_t my_apt;
+
+static int comp_mp_elem2(const void *a,const void *b)
 {
-  FILE *fp,*gp;
-  int i,j;
+  int i,r;
+  char *elem;
+  gmx_molprop_t ma = (gmx_molprop_t)a;
+  gmx_molprop_t mb = (gmx_molprop_t)b;
   
-  fp = fopen("matrix.csv","w");
-  gp = fopen("vector.csv","w");
-  for(i=0; (i<np); i++) {
-    if ((pd[i].weight > 0) && 
-	(mp_num_polar(&(pd[i])) > 0) &&
-	(mp_get_polar(&(pd[i])) > 0)) {
-      fprintf(gp,"%10.3f\n",mp_get_polar(&(pd[i])));
-      for(j=0; (j<eatNR-1); j++)
-	fprintf(fp,"  %5d,",pd[i].frag_comp[j]);
-      fprintf(fp,"  %5d\n",pd[i].frag_comp[eatNR-1]);
+  r = gmx_molprop_count_composition_atoms(ma,"bosque","C")-
+    gmx_molprop_count_composition_atoms(mb,"bosque","C");
+  if (r != 0)
+    return r;
+  
+  for(i=1; (i<=109); i++) {
+    if (i != 6) {
+      elem = gmx_atomprop_element(my_apt,i);
+      r = gmx_molprop_count_composition_atoms(ma,"bosque",elem)-
+	gmx_molprop_count_composition_atoms(mb,"bosque",elem);
+      if (r != 0)
+	return r;
     }
   }
-  fclose(fp);
-  fclose(gp);
+  return strcasecmp(gmx_molprop_get_molname(ma),gmx_molprop_get_molname(mb));
 }
 
-static int comp_pd_name(const void *a,const void *b)
-{
-  t_molprop *pa,*pb;
-  pa = (t_molprop *)a;
-  pb = (t_molprop *)b;
-  
-  return strcasecmp(pa->molname,pb->molname);
-}
-
-static int comp_pd_elem(const void *a,const void *b)
-{
-  t_molprop *pa,*pb;
-  pa = (t_molprop *)a;
-  pb = (t_molprop *)b;
-  
-  return strcmp(pa->formula,pb->formula);
-}
-
-static int comp_pd_elem2(const void *a,const void *b)
-{
-  int i,oo=0,nn=0;
-  t_molprop *pa,*pb;
-  pa = (t_molprop *)a;
-  pb = (t_molprop *)b;
-  
-  for(i=2; ((i<eelemNR) && (nn == 0)); i++)
-    if ((pa->elem_comp[i] == 0) && (pb->elem_comp[i] > 0)) {
-      nn = -1;
-      break;
-    }
-    else if ((pb->elem_comp[i] == 0) && (pa->elem_comp[i] > 0)) {
-      nn = 1;
-      break;
-    }
-      
-  if (nn != 0)
-    return nn;
-    
-  for(i=0; (i<eelemNR); i++) 
-    if ((oo = (pa->elem_comp[my_order[i]] - pb->elem_comp[my_order[i]])) != 0)
-      return oo;
- 
-  return strcasecmp(pa->molname,pb->molname);
-}
-
-static void dump_n2t(char *fn)
-{
-  FILE   *fp;
-  int    i,j,ielem;
-  double q = 0, m = 0;
-  
-  fp = fopen(fn,"w");
-  for(i=0; (i<eatNR+eatExtra); i++) {
-    ielem  = bosque_index(spoel[i].bosque);
-    fprintf(fp,"%3s  %4s  %9g  %9g  %1d",
-	    spoel[i].bosque,spoel[i].name,
-	    spoel[i].all,bosque[ielem].mass,
-	    spoel[i].maxbond);
-    for(j=0; (j<spoel[i].nh); j++)
-      fprintf(fp," H %.3f",spoel[eatNR].blen);
-    for( ; (j<spoel[i].maxbond); j++)
-      fprintf(fp," * %.3f",spoel[i].blen);
-    fprintf(fp,"\n");
-  }
-  
-  fclose(fp);
-}
 
 int main(int argc,char *argv[])
 {
@@ -711,32 +754,36 @@ int main(int argc,char *argv[])
   double *w;
   gmx_molprop_t *mp=NULL;
   gmx_atomprop_t ap;
+  gmx_poldata_t  pd;
   
   if (argc < 2) 
     gmx_fatal(FARGS,"Please give names of database files!","");
   mp = merge_xml(argc,argv,NULL,NULL,"double_dip.dat",&np);
   ap = gmx_atomprop_init();
+  pd = gmx_poldata_init();
     
+  genenerate_composition(np,mp,pd);
   generate_formula(np,mp,ap);
+
+  my_apt = ap; 
   snew(w,np);
-  qsort(mp,np,sizeof(mp[0]),comp_pd_elem2);
+  qsort(mp,np,sizeof(mp[0]),comp_mp_elem2);
   
   for(i=0; (i<np); i++) {
-    mp[i].nr = 1+i;
-    w[i] = mp[i].weight;
-    if ((mp[i].weight > 0) && 
-	(mp_num_polar(&(mp[i])) > 0) &&
-	(mp_get_polar(&(mp[i])) == 0)) {
+    w[i] = gmx_molprop_get_weight(mp[i]);
+    if ((w[i] > 0) && 
+	(mp_num_polar(mp[i]) > 0) &&
+	(mp_get_polar(mp[i]) == 0)) {
       fprintf(stderr,"Inconsistency for %s: weight = %g, experiment = 0\n",
-	      mp[i].molname,mp[i].weight);
+	      gmx_molprop_get_molname(mp[i]),w[i]);
       exit(1);
     }
   }
   
   nbosque = nspoel = nqm = ntot = 0;
   for(i=0; (i<np); i++) {
-    if ((mp_num_polar(&(mp[i])) > 0) && (mp_get_polar(&(mp[i])) > 0)) {
-      char *ref = mp_get_ref_polar(&(mp[i]));
+    if ((mp_num_polar(mp[i]) > 0) && (mp_get_polar(mp[i]) > 0)) {
+      char *ref = mp_get_ref_polar(mp[i]);
       mp[i].weight = 1;
       if (strcasecmp(ref,"Spoel2007a") == 0)
 	nspoel++;
@@ -775,7 +822,7 @@ int main(int argc,char *argv[])
   if ((fp=fopen("molecules.tex","w")) == NULL)
     exit(1);
   
-  dump_table1(fp,np,mp);
+  dump_table1(fp,pd,np,mp);
   tabnum++;
   dump_table2(fp,0,1,1,np,mp,1);
   tabnum++;

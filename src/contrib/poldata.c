@@ -78,6 +78,22 @@ char *gmx_poldata_add_spoel(gmx_poldata_t pd,char *elem,
   return sp->name;
 }
 
+void gmx_poldata_set_spoel(gmx_poldata_t pd,char *name,
+			   double polarizability)
+{
+  gmx_poldata *gpd = (gmx_poldata *) pd;
+  int i;
+  
+  for(i=0; (i<gpd->nspoel); i++) 
+    if (strcmp(name,gpd->spoel[i].name) == 0) 
+      break;
+  
+  if (i<gpd->nspoel) 
+    gpd->spoel[i].polarizability = polarizability;
+  else
+    gmx_fatal(FARGS,"Could not find atom %s in poldata series",name);
+}		
+
 void gmx_poldata_set_spoel_units(gmx_poldata_t pd,char *polar_unit,char *blength_unit)
 {
   gmx_poldata *gpd = (gmx_poldata *) pd;

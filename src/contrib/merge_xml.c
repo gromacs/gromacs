@@ -42,7 +42,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include "smalloc.h"
-#include "tune_pol.h"
 #include "molprop.h"
 #include "molprop_xml.h"
 

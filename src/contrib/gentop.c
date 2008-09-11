@@ -70,6 +70,7 @@
 #include "molprop_util.h"
 #include "molprop_xml.h"
 #include "poldata.h"
+#include "poldata_xml.h"
 #include "grompp.h"
 
 enum { edihNo, edihOne, edihAll, edihNR };
@@ -425,7 +426,7 @@ int main(int argc, char *argv[])
     if ((xmlf = opt2fn_null("-x",NFILE,fnm)) != NULL) {
       gmx_molprop_t mp;
       mp = atoms_2_molprop(molnm,atoms,&(plist[F_BONDS]),aps,pd);
-      write_molprops(xmlf,1,&mp);
+      gmx_molprops_write(xmlf,1,&mp);
       gmx_molprop_delete(mp);
     }
     sprintf(title,"%s processed by %s",molnm,ShortProgram());

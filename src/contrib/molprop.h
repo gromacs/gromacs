@@ -37,6 +37,9 @@ extern void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
 extern int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,
 					    char **atomname,int *natom);
 
+extern int gmx_molprop_count_composition_atoms(gmx_molprop_t mpt,
+					       char *compname,char *atom);
+					       
 extern void gmx_molprop_add_property(gmx_molprop_t mpt,int eMP,
 				     char *prop_name,double value,double error,
 				     char *prop_method,char *prop_reference);
@@ -53,6 +56,8 @@ extern void gmx_molprop_add_category(gmx_molprop_t mpt,char *category);
 
 /* Returns one category at a time. If NULL, you got them all. */
 extern char *gmx_molprop_get_category(gmx_molprop_t mpt);
+
+extern int gmx_molprop_search_category(gmx_molprop_t mpt,char *catname);
 
 extern gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mpt);
 
