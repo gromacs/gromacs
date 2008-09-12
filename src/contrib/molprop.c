@@ -35,6 +35,9 @@ typedef struct {
   char          **category;
 } gmx_molprop;
 
+#define assign_str(dst,src)  if (dst) *dst = strdup(src)
+#define assign_scal(dst,src) if (dst) *dst = src
+
 gmx_molprop_t gmx_molprop_init()
 {
   gmx_molprop *mp;
@@ -67,9 +70,11 @@ void gmx_molprop_set_formula(gmx_molprop_t mpt,char *formula)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
   
-  if (mp->formula != NULL)
-    sfree(mp->formula);
-  mp->formula = strdup(formula);
+  if (formula) {
+    if (mp->formula != NULL)
+      sfree(mp->formula);
+    mp->formula = strdup(formula);
+  }
 }
 
 char *gmx_molprop_get_formula(gmx_molprop_t mpt)
@@ -83,25 +88,33 @@ void gmx_molprop_set_molname(gmx_molprop_t mpt,char *molname)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
   
-  if (mp->molname != NULL)
-    sfree(mp->molname);
-  mp->molname = strdup(molname);
+  if (molname) {
+    if (mp->molname != NULL)
+      sfree(mp->molname);
+    mp->molname = strdup(molname);
+  }
+  else 
+    gmx_incons("Trying to set molname without actually supplying a valid argument");
 }
-
 char *gmx_molprop_get_molname(gmx_molprop_t mpt)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
   
-  return mp->molname;
+  if (mp->molname)
+    return mp->molname;
+  else
+    gmx_fatal(FARGS,"Molecule without molname encountered");
 }
 
 void gmx_molprop_set_reference(gmx_molprop_t mpt,char *reference)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
   
-  if (mp->reference != NULL)
-    sfree(mp->reference);
-  mp->reference = strdup(reference);
+  if (reference) {
+    if (mp->reference != NULL)
+      sfree(mp->reference);
+    mp->reference = strdup(reference);
+  }
 }
 
 char *gmx_molprop_get_reference(gmx_molprop_t mpt)
@@ -225,8 +238,8 @@ int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,
     cc = &(mp->composition[mp->ncomp_c]);
     nc = cc->ncatom_c;
     if (nc < cc->ncatom) {
-      *atomname = strdup(cc->catom[nc].cname);
-      *natom = cc->catom[nc].cnumber;
+      assign_str(atomname,cc->catom[nc].cname);
+      assign_scal(natom,cc->catom[nc].cnumber);
       cc->ncatom_c++;
       return 1;
     }
@@ -265,12 +278,12 @@ int gmx_molprop_get_property(gmx_molprop_t mpt,int *eMP,
   if (mp->nprop_c < mp->nproperty) {
     mp->nprop_c++;
     pp = &(mp->property[mp->nprop_c-1]);
-    *eMP       = pp->eMP;       
-    *prop_name = strdup(pp->pname);
-    *value     = pp->pvalue;
-    *error     = pp->perror;
-    *prop_method = strdup(pp->pmethod);
-    *prop_reference = strdup(pp->preference);
+    assign_scal(eMP,pp->eMP);  
+    assign_str(prop_name,pp->pname);
+    assign_scal(value,pp->pvalue);
+    assign_scal(error,pp->perror);
+    assign_str(prop_method,pp->pmethod);
+    assign_str(prop_reference,pp->preference);
 
     return 1;
   }
@@ -398,4 +411,39 @@ gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mpt)
   return dst;
 }
 
+static int comp_mp(const void *a,const void *b)
+{
+  gmx_molprop *ma = (gmx_molprop *)a;
+  gmx_molprop *mb = (gmx_molprop *)b;
+  char *mma = ma->molname;
+  char *mmb = mb->molname;
+  
+  if (mma && mmb)
+    return strcasecmp(mma,mmb);
+  else
+    return 0;
+}
+
+static int comp_mp_formula(const void *a,const void *b)
+{
+  int r;
+  gmx_molprop_t ma = (gmx_molprop_t)a;
+  gmx_molprop_t mb = (gmx_molprop_t)b;
+  char *fma = gmx_molprop_get_formula(ma);
+  char *fmb = gmx_molprop_get_formula(mb);
+  
+  r = strcasecmp(fma,fmb);
+  
+  if (r == 0) 
+    return comp_mp(a,b);
+  else 
+    return r;
+}
+
+void gmx_molprop_sort(int np,gmx_molprop_t mp[])
+{
+  gmx_molprop **mps = (gmx_molprop **)mp;
+  
+  qsort(mps,np,sizeof(mps[0]),comp_mp);
+}
 

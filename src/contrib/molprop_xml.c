@@ -118,7 +118,7 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
   char *attrname,*attrval;
   char buf[100];
   char *pname=NULL,*preference=NULL,*pmethod=NULL,*pvalue=NULL,*perr=NULL;
-  char *cname=NULL,*cnumber=NULL;
+  char *cname=NULL,*cnumber=NULL,*psource=NULL;
   
   while (attr != NULL) {
     attrname = (char *)attr->name;
@@ -155,6 +155,8 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
 	pvalue = strdup(attrval);
       else if (atest("perror")) 
 	perr = strdup(attrval);
+      else if (atest("psource")) 
+	psource = strdup(attrval);
       else
 	gmx_fatal(FARGS,"Unknown attribute %s for property",attrname);
       break;
@@ -187,9 +189,19 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
   /* Done processing attributes for this element. Let's see if we still need
      to interpret them.
   */
-  if (pname && preference && pmethod && pvalue)
-    gmx_molprop_add_property(mpt,0,pname,atof(pvalue),perr ? atof(perr) : 0.0,
-			     pmethod,preference);
+  if (pname && preference && (pmethod || psource) && pvalue) {
+    if (pmethod)
+      gmx_molprop_add_property(mpt,0,pname,atof(pvalue),perr ? atof(perr) : 0.0,
+			       pmethod,preference);
+    else if (psource) {
+      if (strcasecmp(psource,"Experiment") == 0)
+	gmx_molprop_add_property(mpt,eMOLPROP_Exp,pname,atof(pvalue),perr ? atof(perr) : 0.0,
+				 psource,preference);
+      else 
+	gmx_molprop_add_property(mpt,eMOLPROP_Calc,pname,atof(pvalue),perr ? atof(perr) : 0.0,
+				 psource,preference);
+    }
+  }
   if (cname && cnumber)
     gmx_molprop_add_composition_atom(mpt,NULL,cname,atoi(cnumber));
 }
@@ -258,7 +270,7 @@ gmx_molprop_t *gmx_molprops_read(char *fn,int *nmolprop)
 {
   xmlDocPtr     doc;
   int           i,npd;
-  t_xmlrec      xml;
+  t_xmlrec      *xml;
     
   xmlDoValidityCheckingDefaultValue = 0;
   if ((doc = xmlParseFile(fn)) == NULL) {
@@ -267,15 +279,14 @@ gmx_molprop_t *gmx_molprops_read(char *fn,int *nmolprop)
     exit(1);
   }
 
-  xml.nmolprop = 0;
-  xml.mpt = NULL;
-  process_tree(NULL,doc->children,0,&xml);
+  snew(xml,1);
+  process_tree(NULL,doc->children,0,xml);
 
   xmlFreeDoc(doc);
   
-  *nmolprop = xml.nmolprop;
+  *nmolprop = xml->nmolprop;
   
-  return xml.mpt;
+  return xml->mpt;
 }
 
 static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)

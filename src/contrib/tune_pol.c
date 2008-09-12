@@ -45,6 +45,7 @@
 #include "futil.h"
 #include "smalloc.h"
 #include "vec.h"
+#include "gmx_fatal.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "gentop_matrix.h"
@@ -168,7 +169,7 @@ static void dump_table1(FILE *fp,gmx_poldata_t pd,
       
     fprintf(fp,"%s & %s & SP%d & %d & %8.2f & %8.2f & %8.2f & %8.2f \\\\\n",
 	    group,name,hybridization,nfit,ahc,ahp,bos_pol,spoel_pol);
-    if ((((i+1) % 16) == 0)) {
+    if ((((j+1) % 16) == 0)) {
       table1_end(fp);
       table1_header(fp,0);
     }
@@ -248,7 +249,7 @@ static void dump_table2(FILE *fp,int bVerbose,int bTrain,int bQM,
       weight = gmx_molprop_get_weight(mp[i]);
       if (((bTrain && (weight > 0)) || (!bTrain && (weight == 0))) &&
 	  ((bQM && (iqm > 0)) || !bQM)) {
-	fprintf(fp,"%-15s",get_molprop_molname(mp[i]));
+	fprintf(fp,"%-15s",gmx_molprop_get_molname(mp[i]));
 	header = 0;
 	fprintf(fp," &");
 	for(k=0; (k<mp_num_polar(mp[i])); k++,iline++) {
@@ -615,8 +616,8 @@ static void calc_rmsd(int bTrain,double fit[],double test[],
   }
 }
 
-static void decompose_frag(FILE *fp,int bTrain,
-			   gmx_poldata_t pd,int np,gmx_molprop_t mp[])
+static int decompose_frag(FILE *fp,int bTrain,
+			  gmx_poldata_t pd,int np,gmx_molprop_t mp[])
 {
   double *x,*atx;
   double **a,**at,**ata,fpp;
@@ -634,14 +635,14 @@ static void decompose_frag(FILE *fp,int bTrain,
     atype[ntest-1] = strdup(name);
     for(j=0; (j<np); j++) 
       if (gmx_molprop_get_weight(mp[j]) > 0) 
-	test[ntest-1] += gmx_molprop_count_composition_atom(mp[j],"spoel",name);
+	test[ntest-1] += gmx_molprop_count_composition_atoms(mp[j],"spoel",name);
     
     if (test[ntest-1] == 0) 
       gmx_fatal(FARGS,"You have no molecules with group %s\n",name);
   }
   snew(x,np);
   for(i=n=0; (i<np); i++) {
-    if ((gmx_molprop_get_eight(mp[i]) > 0) && 
+    if ((gmx_molprop_get_weight(mp[i]) > 0) && 
 	((pol = mp_get_polar(mp[i])) > 0)) {
       x[n] = pol;
       n++;
@@ -651,10 +652,10 @@ static void decompose_frag(FILE *fp,int bTrain,
   at     = alloc_matrix(ntest,n);
   ata    = alloc_matrix(ntest,ntest);
   for(i=nn=0; (i<np); i++) {
-    if ((gmx_molprop_get_eight(mp[i]) > 0) && 
+    if ((gmx_molprop_get_weight(mp[i]) > 0) && 
 	(mp_num_polar(mp[i]) > 0)) {
       for(j=0; (j<ntest); j++) {
-	a[nn][j] = at[j][nn] = gmx_molprop_count_composition_atom(mp[j],"spoel",atype[j]);
+	a[nn][j] = at[j][nn] = gmx_molprop_count_composition_atoms(mp[j],"spoel",atype[j]);
       }
       nn++;
     }
@@ -679,6 +680,7 @@ static void decompose_frag(FILE *fp,int bTrain,
       else*/
     gmx_poldata_set_spoel(pd,atype[j],fpp);
   }
+  return ntest;
 }
 
 static void write_xvg(int np,gmx_molprop_t pd[])
@@ -748,10 +750,13 @@ static int comp_mp_elem2(const void *a,const void *b)
 int main(int argc,char *argv[])
 {
   FILE  *fp,*gp;
-  int    i,j,np,nspoel,nbosque,ntot,nqm,nqqm,nqmtot=0;
+  int    i,j,np,nspoel,nbosque,ntot,nqm,nqqm,nqmtot=0,nspoel_atypes;
   double fit1[eqmNR],test1[eqmNR];
   double fit2[eqmNR],test2[eqmNR];
   double *w;
+  char   *ref,*molname[2];
+  int    cur = 0;
+#define prev (1-cur)
   gmx_molprop_t *mp=NULL;
   gmx_atomprop_t ap;
   gmx_poldata_t  pd;
@@ -771,28 +776,33 @@ int main(int argc,char *argv[])
   
   for(i=0; (i<np); i++) {
     w[i] = gmx_molprop_get_weight(mp[i]);
+    molname[cur] = gmx_molprop_get_molname(mp[i]);
     if ((w[i] > 0) && 
 	(mp_num_polar(mp[i]) > 0) &&
 	(mp_get_polar(mp[i]) == 0)) {
       fprintf(stderr,"Inconsistency for %s: weight = %g, experiment = 0\n",
-	      gmx_molprop_get_molname(mp[i]),w[i]);
+	      molname[cur],w[i]);
       exit(1);
     }
   }
   
   nbosque = nspoel = nqm = ntot = 0;
   for(i=0; (i<np); i++) {
-    if ((mp_num_polar(mp[i]) > 0) && (mp_get_polar(mp[i]) > 0)) {
-      char *ref = mp_get_ref_polar(mp[i]);
-      mp[i].weight = 1;
+    if (gmx_molprop_search_property(mp[i],eMOLPROP_Exp,
+				    "Polarizability",NULL,NULL,
+				    NULL,&ref) == 1) {
+      gmx_molprop_set_weight(mp[i],1);
       if (strcasecmp(ref,"Spoel2007a") == 0)
 	nspoel++;
       else if (strcasecmp(ref,"Bosque2002a") == 0)
 	nbosque++;
+	
       nqqm = 0;
-      for(j=0; (j<NQUANT); j++) 
-	if (mp[i].qm[j] > 0)
-	  nqqm++;
+      while (gmx_molprop_search_property(mp[i],eMOLPROP_Calc,
+					 "Polarizability",NULL,NULL,
+					 NULL,NULL) == 1) 
+	nqqm++;
+	
       if (nqqm)
 	nqm++;
       nqmtot += nqqm;
@@ -801,9 +811,16 @@ int main(int argc,char *argv[])
     else {
       /*fprintf(stderr,"No experimental data for %s\n",mp[i].molname);*/
     }
-    if ((i > 0) && (strcasecmp(mp[i].molname,mp[i-1].molname) == 0))
-      fprintf(stderr,"Double entry %s\n",mp[i].molname);
+    if ((i > 0) && (strcasecmp(molname[cur],molname[prev]) == 0))
+      fprintf(stderr,"Double entry %s\n",molname[cur]);
+    cur=prev;
   }
+  
+  gp = ffopen("tune_pol.log","w");
+  nspoel_atypes = decompose_frag(gp,0,pd,np,mp);
+  fclose(gp);
+  calc_rmsd(0,fit2,test2,pd,np,mp);
+
   printf("--------------------------------------------------\n");
   printf("              Some Statistics\n");
   printf("There are %d entries with experimental data\n",ntot);
@@ -811,16 +828,10 @@ int main(int argc,char *argv[])
   printf("There are %d experiments with Bosque2002a as reference\n",nbosque);
   printf("There are %d entries with quantum chemistry results, %d missing\n",
 	 nqm,nqm*5-nqmtot);
-  printf("There are %d Spoel atom types\n",eatNR);
+  printf("There are %d Spoel atom types\n",nspoel_atypes);
   printf("--------------------------------------------------\n");
   
-  gp = ffopen("tune_pol.log","w");
-  decompose_frag(gp,0,np,mp);
-  fclose(gp);
-  calc_rmsd(0,fit2,test2,np,mp);
-
-  if ((fp=fopen("molecules.tex","w")) == NULL)
-    exit(1);
+  fp = ffopen("molecules.tex","w");
   
   dump_table1(fp,pd,np,mp);
   tabnum++;
@@ -836,7 +847,7 @@ int main(int argc,char *argv[])
   tabnum++;
   dump_table4(fp,np,mp);
   fclose(fp);
-  dump_n2t("ffsm.n2t");    
+  gmx_poldata_write("tunepol.xml",pd);
   write_xvg(np,mp);
     
   return 0;

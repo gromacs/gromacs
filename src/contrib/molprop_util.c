@@ -4,6 +4,7 @@
 #include "smalloc.h"
 #include "molprop.h"
 #include "molprop_util.h"
+#include "molprop_xml.h"
 
 void genenerate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd)
 {
@@ -128,9 +129,13 @@ static int comp_mp(const void *a,const void *b)
 {
   gmx_molprop_t ma = (gmx_molprop_t)a;
   gmx_molprop_t mb = (gmx_molprop_t)b;
+  char *mma = gmx_molprop_get_molname(ma);
+  char *mmb = gmx_molprop_get_molname(mb);
   
-  return strcasecmp(gmx_molprop_get_molname(ma),
-		    gmx_molprop_get_molname(mb));
+  if (mma && mmb)
+    return strcasecmp(mma,mmb);
+  else
+    return 0;
 }
 
 static int comp_mp_formula(const void *a,const void *b)
@@ -138,9 +143,10 @@ static int comp_mp_formula(const void *a,const void *b)
   int r;
   gmx_molprop_t ma = (gmx_molprop_t)a;
   gmx_molprop_t mb = (gmx_molprop_t)b;
+  char *fma = gmx_molprop_get_formula(ma);
+  char *fmb = gmx_molprop_get_formula(mb);
   
-  r = strcasecmp(gmx_molprop_get_formula(ma),
-		 gmx_molprop_get_formula(mb));
+  r = strcasecmp(fma,fmb);
   
   if (r == 0) 
     return comp_mp(a,b);
@@ -213,23 +219,28 @@ gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
   char      buf[100];
   
   for(i=1; (i<argc); i++) {
-    mp = read_molprops(argv[i],&np);
+    mp = gmx_molprops_read(argv[i],&np);
+    sprintf(buf,"%s-test",argv[i]);
+    gmx_molprops_write(buf,np,mp);
     srenew(mpout,npout+np);
     for(j=0; (j<np); j++)
       mpout[npout+j] = gmx_molprop_copy(mp[j]);
     npout += np;
   }
+  gmx_molprops_write("allmols.xml",npout,mpout);
   
-  qsort(mpout,npout,sizeof(mp[0]),comp_mp);
+  gmx_molprop_sort(npout,mpout);
+  
+  //qsort(mpout,npout,sizeof(mpout[0]),comp_mp);
   merge_doubles(&npout,mpout,doubles);
       
   if (outf) {
     printf("There are %d entries to store in output file %s\n",npout,outf);
-    write_molprops(outf,npout,mpout);
+    gmx_molprops_write(outf,npout,mpout);
   }
   if (sorted) {
     qsort(mpout,npout,sizeof(mp[0]),comp_mp_formula);
-    write_molprops(sorted,npout,mpout);
+    gmx_molprops_write(sorted,npout,mpout);
     dump_mp(npout,mpout);
   }
   

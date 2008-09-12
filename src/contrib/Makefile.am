@@ -35,7 +35,8 @@ nodist_tune_pol_SOURCES	= tune_pol.c 	tune_pol.h \
 			poldata_xml.c	poldata_xml.h \
 			molprop.c 	molprop.h \
 			molprop_xml.c	molprop_xml.h \
-			molprop_util.c	molprop_util.h
+			molprop_util.c	molprop_util.h \
+			xml_util.c	xml_util.h
 
 nodist_tune_dip_SOURCES 	= tune_dip.c 	\
 			gentop_matrix.c		gentop_matrix.h	\

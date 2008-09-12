@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "smalloc.h"
+#include "gmx_fatal.h"
 #include "poldata.h"
 
 typedef struct {
