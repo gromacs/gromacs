@@ -111,8 +111,8 @@ extern void gmx_finalize(const t_commrec *cr);
 #endif
 
 #ifdef DEBUG_GMX
-#define debug_gmx() do { FILE *fp=debug ? debug : (stdlog ? stdlog : stderr);\
-if (bDebugMode()) fprintf(fp,"NODEID=%d, %s  %d\n",gmx_mpi_initialized() ? gmx_node_id() : -1,__FILE__,__LINE__); fflush(fp); } while (0)
+#define debug_gmx() do { FILE *fp=debug ? debug : stderr;\
+if (bDebugMode()) fprintf(fp,"NODEID=%d, %s  %d\n",gmx_mpi_initialized() ? gmx_node_rank() : -1,__FILE__,__LINE__); fflush(fp); } while (0)
 #else
 #define debug_gmx()
 #endif
