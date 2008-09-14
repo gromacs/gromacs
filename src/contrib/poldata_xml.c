@@ -274,8 +274,6 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     add_xml_int(grandchild,exml_names[exmlHYBRIDIZATION],hybridization);
     add_xml_double(grandchild,exml_names[exmlPOLARIZABILITY],polarizability);
     add_xml_double(grandchild,exml_names[exmlBLENGTH],blength);
-    sfree(elem);
-    sfree(miller_equiv);
   }
 
   child = add_xml_child(parent,exml_names[exmlBSATOMS]);

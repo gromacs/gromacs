@@ -139,7 +139,8 @@ char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *name,char **elem,
     assign_scal(blength,sp->blength);
     assign_str(elem,sp->elem);
     assign_str(miller_equiv,sp->miller_equiv);
-    gpd->nspoel_c++;
+    if (!name)
+      gpd->nspoel_c++;
     
     return sp->name;
   }
@@ -166,6 +167,8 @@ void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
   mil->alpha_ahp  = alpha_ahp;
   if (spoel_equiv)
     mil->spoel_equiv = strdup(spoel_equiv);
+  else
+    mil->spoel_equiv = NULL;
 }
 				  
 void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,char *ahp_unit)
@@ -198,7 +201,8 @@ char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
     assign_scal(tau_ahc,mil->tau_ahc);
     assign_scal(alpha_ahp,mil->alpha_ahp);
     assign_str(spoel_equiv,mil->spoel_equiv);
-    gpd->nmiller_c++;
+    if (!name)
+      gpd->nmiller_c++;
     
     return mil->name;
   }
@@ -237,7 +241,8 @@ char *gmx_poldata_get_bosque(gmx_poldata_t pd,char *elem,
     
   if (i < gpd->nbosque) {
     assign_scal(polarizability,gpd->bosque[i].polarizability);
-    gpd->nbosque_c++;
+    if (!elem)
+      gpd->nbosque_c++;
     
     return gpd->bosque[i].elem;
   }

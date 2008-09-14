@@ -80,7 +80,7 @@ enum {
   exmlMOLECULE, exmlFORMULA, exmlMOLNAME, exmlWEIGHT,
   exmlCATEGORY, exmlCATNAME,
   exmlPROPERTY, exmlPNAME,   exmlPVALUE, exmlPERROR, 
-  exmlPMETHOD, exmlPREFERENCE,
+  exmlPMETHOD, exmlPREFERENCE, exmlPTYPE,
   exmlCOMPOSITION, exmlCOMPNAME, exmlCATOM, exmlC_NAME, exmlC_NUMBER,
   exmlNR 
 };
@@ -89,7 +89,7 @@ static const char *exml_names[exmlNR] = {
   "molecules",
   "molecule", "formula", "molname", "weight", 
   "category", "catname",
-  "property", "pname", "pvalue", "perror", "pmethod", "preference",
+  "property", "pname", "pvalue", "perror", "pmethod", "preference", "ptype",
   "composition", "compname", "catom", "cname", "cnumber"
 };
 
@@ -117,7 +117,7 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
 {
   char *attrname,*attrval;
   char buf[100];
-  char *pname=NULL,*preference=NULL,*pmethod=NULL,*pvalue=NULL,*perr=NULL;
+  char *pname=NULL,*preference=NULL,*pmethod=NULL,*pvalue=NULL,*perr=NULL,*ptype=NULL;
   char *cname=NULL,*cnumber=NULL,*psource=NULL;
   
   while (attr != NULL) {
@@ -157,6 +157,8 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
 	perr = strdup(attrval);
       else if (atest("psource")) 
 	psource = strdup(attrval);
+      else if (atest("ptype")) 
+	ptype = strdup(attrval);
       else
 	gmx_fatal(FARGS,"Unknown attribute %s for property",attrname);
       break;
@@ -316,9 +318,6 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
     add_xml_double(child,exml_names[exmlPERROR],error);
     add_xml_char(child,exml_names[exmlPMETHOD],prop_method);
     add_xml_char(child,exml_names[exmlPREFERENCE],prop_reference);
-    sfree(prop_name);
-    sfree(prop_method);
-    sfree(prop_reference);
   }
   
   while ((tmp = gmx_molprop_get_composition(mpt)) != NULL) {
@@ -328,7 +327,6 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
       grandchild = add_xml_child(child,exml_names[exmlCATOM]);
       add_xml_char(grandchild,exml_names[exmlC_NAME],catom);
       add_xml_int(grandchild,exml_names[exmlC_NUMBER],cnumber);
-      sfree(catom);
     }
   }
 }

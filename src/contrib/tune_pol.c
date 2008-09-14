@@ -45,10 +45,12 @@
 #include "futil.h"
 #include "smalloc.h"
 #include "vec.h"
+#include "statutil.h"
 #include "gmx_fatal.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "gentop_matrix.h"
+#include "poldata.h"
 #include "poldata_xml.h"
 
 static int tabnum = 0;
@@ -67,12 +69,10 @@ static char *sbasis[] = {
 
 double mp_get_polar(gmx_molprop_t mp)
 {
-  double val,err;
-  char   *ref;
+  double val;
   
   if (gmx_molprop_search_property(mp,eMOLPROP_Exp,"Polarizability",
-				  &val,&err,NULL,&ref) == 1) {
-    sfree(ref);
+				  &val,NULL,NULL,NULL) == 1) {
     return val;
   }
   return 0;
@@ -81,16 +81,13 @@ double mp_get_polar(gmx_molprop_t mp)
 int mp_num_polar(gmx_molprop_t mp) 
 {
   int npol=0,eMP;
-  double val,err;
-  char *prop_name,*prop_method,*prop_ref;
+  char *prop_name;
   
-  while (gmx_molprop_get_property(mp,&eMP,&prop_name,&val,&err,
-				  &prop_method,&prop_ref) == 1) {
-    if (strcasecmp(prop_name,"Polarizability") == 0)
+  while (gmx_molprop_get_property(mp,&eMP,&prop_name,NULL,NULL,
+				  NULL,NULL) == 1) {
+    if ((strcasecmp(prop_name,"Polarizability") == 0) &&
+	(eMP == eMOLPROP_Exp))
       npol++;
-    sfree(prop_name);
-    sfree(prop_method);
-    sfree(prop_ref);
   }
   return npol;
 }
@@ -132,7 +129,7 @@ static void dump_table1(FILE *fp,gmx_poldata_t pd,
   if (gmx_poldata_get_bosque(pd,"H",&bos_H) == NULL) 
     gmx_fatal(FARGS,"Can not find Bosque polarizability for H");
   
-  if (gmx_poldata_get_miller(pd,"H",&atomnumber,&ahc_H,&ahp_H,NULL) != NULL) 
+  if (gmx_poldata_get_miller(pd,"H",&atomnumber,&ahc_H,&ahp_H,NULL) == NULL) 
     gmx_fatal(FARGS,"Can not find Miller polarizability for H");
   
   while(name = gmx_poldata_get_spoel(pd,NULL,&elem,
@@ -236,13 +233,11 @@ static void dump_table2(FILE *fp,int bVerbose,int bTrain,int bQM,
     
     if (gmx_molprop_search_property(mp[i],eMOLPROP_Exp,"Polarizability",
 				    &exp_val,&exp_error,NULL,&exp_ref) == 1) {
-      sfree(exp_ref);
       for(j=0; (j<eqmNR); j++) {
 	found_calc[j] = 
 	  gmx_molprop_search_property(mp[i],eMOLPROP_Calc,"Polarizability",
 				      &(val_calc[j]),&(err_calc[j]),
-				      sbasis[j],&calc_ref);
-	sfree(calc_ref);
+				      sbasis[j],NULL);
 	if (found_calc[j])
 	  iqm++;
       }
@@ -262,7 +257,6 @@ static void dump_table2(FILE *fp,int bVerbose,int bTrain,int bQM,
 	    fprintf(fp," (*)");
 	  else
 	    fprintf(fp,"~\\cite{%s} ",exp_ref ? exp_ref : "XXX");
-	  sfree(exp_ref);
 	}
 	if (k == 0) {
 	  for(j=0; (j<eqmNR); j++) 
@@ -628,17 +622,18 @@ static int decompose_frag(FILE *fp,int bTrain,
   while ((name = gmx_poldata_get_spoel(pd,NULL,&elem,&miller_equiv,
 				       &nhydrogen,&charge,
 				       &hybridization,&pol,&blength)) != NULL) {
-    srenew(test,++ntest);
-    srenew(atype,ntest);
-    test[ntest-1] = 0;
-    atype[ntest-1] = strdup(name);
+    srenew(test,ntest+1);
+    srenew(atype,ntest+1);
+    test[ntest] = 0;
+    atype[ntest] = strdup(name);
     for(j=0; (j<np); j++) 
       if (gmx_molprop_get_weight(mp[j]) > 0) 
-	test[ntest-1] += gmx_molprop_count_composition_atoms(mp[j],"spoel",name);
+	test[ntest] += gmx_molprop_count_composition_atoms(mp[j],"spoel",name);
     
-    if (test[ntest-1] == 0) 
-      gmx_fatal(FARGS,"You have no molecules with group %s\n",name);
+    if (test[ntest] > 0)  
+      ntest++;
   }
+  printf("There are %d different atomtypes to optimize the polarizabilities\n",ntest);
   snew(x,np);
   for(i=n=0; (i<np); i++) {
     if ((gmx_molprop_get_weight(mp[i]) > 0) && 
@@ -652,9 +647,9 @@ static int decompose_frag(FILE *fp,int bTrain,
   ata    = alloc_matrix(ntest,ntest);
   for(i=nn=0; (i<np); i++) {
     if ((gmx_molprop_get_weight(mp[i]) > 0) && 
-	(mp_num_polar(mp[i]) > 0)) {
+	((pol = mp_get_polar(mp[i])) > 0)) {
       for(j=0; (j<ntest); j++) {
-	a[nn][j] = at[j][nn] = gmx_molprop_count_composition_atoms(mp[j],"spoel",atype[j]);
+	a[nn][j] = at[j][nn] = gmx_molprop_count_composition_atoms(mp[i],"spoel",atype[j]);
       }
       nn++;
     }
@@ -721,18 +716,25 @@ static void write_xvg(int np,gmx_molprop_t pd[])
 
 int main(int argc,char *argv[])
 {
+  static char *desc[] = {
+    "tune_pol optimes group polarizabilities that together build",
+    "an additive model for polarization."
+  };
+
   FILE  *fp,*gp;
-  int    i,j,np,nspoel,nbosque,ntot,nqm,nqqm,nqmtot=0,nspoel_atypes;
+  int    i,j,np,nspoel,nbosque,ntot,nqm,nqqm,nqmtot=0,nspoel_atypes,eMP;
   double fit1[eqmNR],test1[eqmNR];
   double fit2[eqmNR],test2[eqmNR];
   double *w;
-  char   *ref,*molname[2];
+  char   *ref,*molname[2],*prop_name;
   int    cur = 0;
 #define prev (1-cur)
   gmx_molprop_t *mp=NULL;
   gmx_atomprop_t ap;
   gmx_poldata_t  pd;
   
+  parse_common_args(&argc,argv,PCA_NOEXIT_ON_ARGS,0,NULL,0,NULL,
+		    asize(desc),desc,0,NULL);
   if (argc < 2) 
     gmx_fatal(FARGS,"Please give names of database files!","");
   mp = merge_xml(argc,argv,NULL,NULL,"double_dip.dat",&np);
@@ -748,6 +750,7 @@ int main(int argc,char *argv[])
   for(i=0; (i<np); i++) {
     w[i] = gmx_molprop_get_weight(mp[i]);
     molname[cur] = gmx_molprop_get_molname(mp[i]);
+    fprintf(stderr,"Checking %s\n",molname[cur]);
     if ((w[i] > 0) && 
 	(mp_num_polar(mp[i]) > 0) &&
 	(mp_get_polar(mp[i]) == 0)) {
@@ -769,9 +772,10 @@ int main(int argc,char *argv[])
 	nbosque++;
 	
       nqqm = 0;
-      while (gmx_molprop_search_property(mp[i],eMOLPROP_Calc,
-					 "Polarizability",NULL,NULL,
-					 NULL,NULL) == 1) 
+      while (gmx_molprop_get_property(mp[i],&eMP,&prop_name,NULL,NULL,
+				      NULL,NULL) == 1) 
+	if ((eMP == eMOLPROP_Calc) && 
+	    (strcasecmp(prop_name,"Polarizability") == 0))
 	nqqm++;
 	
       if (nqqm)

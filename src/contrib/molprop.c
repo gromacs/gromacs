@@ -203,7 +203,7 @@ int gmx_molprop_count_composition_atoms(gmx_molprop_t mpt,
   if (i < mp->ncomposition) {
     for(j=0; (j<mp->composition[i].ncatom); j++)
       if (strcasecmp(mp->composition[i].catom[j].cname,atom) == 0)
-	return mp->composition[i].ncatom;
+	return mp->composition[i].catom[j].cnumber;
   }  
   return 0;
 }
@@ -316,17 +316,19 @@ int gmx_molprop_search_property(gmx_molprop_t mpt,int eMP,
   gmx_molprop *mp = (gmx_molprop *) mpt;
   t_property  *pp;
   int i;
-  
-  for(i=0; (i< mp->nproperty); i++) {
-    pp = &(mp->property[i]);
-    if (((eMP == eMOLPROP_Any) || (eMP == pp->eMP)) && 
-	(strcasecmp(prop_name,pp->pname) == 0) &&
-	((prop_method != NULL) && (strcasecmp(prop_method,pp->pmethod) == 0))) {
-      *value     = pp->pvalue;
-      *error     = pp->perror;
-      *prop_reference = strdup(pp->preference);
 
-      return 1;
+  if ((prop_name != NULL) || (prop_method != NULL)) {
+    for(i=0; (i< mp->nproperty); i++) {
+      pp = &(mp->property[i]);
+      if (((eMP == eMOLPROP_Any) || (eMP == pp->eMP)) && 
+	  ((prop_name == NULL) || (strcasecmp(prop_name,pp->pname) == 0)) &&
+	  ((prop_method == NULL) || (strcasecmp(prop_method,pp->pmethod) == 0))) {
+	assign_scal(value,pp->pvalue);
+	assign_scal(error,pp->perror);
+	assign_str(prop_reference,strdup(pp->preference));
+	
+	return 1;
+      }
     }
   }
   return 0;
@@ -430,12 +432,12 @@ gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mpt)
   return dst;
 }
 
-static int comp_mp(const void *a,const void *b)
+static int comp_mp_molname(const void *a,const void *b)
 {
-  gmx_molprop_t ma = (gmx_molprop_t) a;
-  gmx_molprop_t mb = (gmx_molprop_t) b;
-  char *mma = gmx_molprop_get_molname(ma);
-  char *mmb = gmx_molprop_get_molname(mb);
+  gmx_molprop_t *ma = (gmx_molprop_t *) a;
+  gmx_molprop_t *mb = (gmx_molprop_t *) b;
+  char *mma = gmx_molprop_get_molname(*ma);
+  char *mmb = gmx_molprop_get_molname(*mb);
   
   if (mma && mmb)
     return strcasecmp(mma,mmb);
@@ -446,15 +448,15 @@ static int comp_mp(const void *a,const void *b)
 static int comp_mp_formula(const void *a,const void *b)
 {
   int r;
-  gmx_molprop_t ma = (gmx_molprop_t)a;
-  gmx_molprop_t mb = (gmx_molprop_t)b;
-  char *fma = gmx_molprop_get_formula(ma);
-  char *fmb = gmx_molprop_get_formula(mb);
+  gmx_molprop_t *ma = (gmx_molprop_t *)a;
+  gmx_molprop_t *mb = (gmx_molprop_t *)b;
+  char *fma = gmx_molprop_get_formula(*ma);
+  char *fmb = gmx_molprop_get_formula(*mb);
   
   r = strcasecmp(fma,fmb);
   
   if (r == 0) 
-    return comp_mp(a,b);
+    return comp_mp_molname(a,b);
   else 
     return r;
 }
@@ -465,24 +467,24 @@ static int comp_mp_elem(const void *a,const void *b)
 {
   int i,r;
   char *elem;
-  gmx_molprop_t ma = (gmx_molprop_t)a;
-  gmx_molprop_t mb = (gmx_molprop_t)b;
+  gmx_molprop_t *ma = (gmx_molprop_t *)a;
+  gmx_molprop_t *mb = (gmx_molprop_t *)b;
   
-  r = gmx_molprop_count_composition_atoms(ma,"bosque","C")-
-    gmx_molprop_count_composition_atoms(mb,"bosque","C");
+  r = gmx_molprop_count_composition_atoms(*ma,"bosque","C")-
+    gmx_molprop_count_composition_atoms(*mb,"bosque","C");
   if (r != 0)
     return r;
   
   for(i=1; (i<=109); i++) {
     if (i != 6) {
       elem = gmx_atomprop_element(my_aps,i);
-      r = gmx_molprop_count_composition_atoms(ma,"bosque",elem)-
-	gmx_molprop_count_composition_atoms(mb,"bosque",elem);
+      r = gmx_molprop_count_composition_atoms(*ma,"bosque",elem)-
+	gmx_molprop_count_composition_atoms(*mb,"bosque",elem);
       if (r != 0)
 	return r;
     }
   }
-  return strcasecmp(gmx_molprop_get_molname(ma),gmx_molprop_get_molname(mb));
+  return comp_mp_molname(a,b);
 }
 
 void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,gmx_atomprop_t apt)
@@ -492,14 +494,14 @@ void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,gmx_atomprop_t apt)
   gmx_molprops_write("debug.xml",np,mp);
   switch(alg) {
   case 0:
-    qsort((void *)mp,np,size,comp_mp);
+    qsort(mp,np,size,comp_mp_molname);
     break;
   case 1:
-    qsort((void *)mp,np,size,comp_mp_formula);
+    qsort(mp,np,size,comp_mp_formula);
     break;
   case 2:
     my_aps = apt;
-    qsort((void *)mp,np,size,comp_mp_elem);
+    qsort(mp,np,size,comp_mp_elem);
     my_aps = NULL;
     break;
   default:

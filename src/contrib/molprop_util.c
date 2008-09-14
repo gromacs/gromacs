@@ -60,7 +60,6 @@ void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap)
 	if (an > 0)
 	  ncomp[an]++;
       }
-      sfree(catom);
     }
     for(jj=0; (jj<2); jj++) {
       for(j=1; (j<110); j++) {
@@ -81,7 +80,6 @@ void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap)
 		mform,formula,gmx_molprop_get_molname(mp[i]));
     }
     gmx_molprop_set_formula(mp[i],formula);
-    sfree(compname);
     sfree(ncomp);
   }
 }
