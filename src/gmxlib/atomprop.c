@@ -63,7 +63,7 @@ typedef struct {
 typedef struct gmx_atomprop {
   aprop_t    prop[epropNR];
   t_aa_names *aan;
-} t_gmx_atomprop;
+} gmx_atomprop;
 
 
 
@@ -178,15 +178,16 @@ static void add_prop(aprop_t *ap,t_aa_names *aan,
   }
 }
 
-static void read_prop(struct gmx_atomprop *aps,int eprop,double factor)
+static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
 {
+  gmx_atomprop *ap2 = (gmx_atomprop*) aps;
   FILE   *fp;
   char   line[STRLEN],resnm[32],atomnm[32];
   double pp;
   int    line_no;
   aprop_t *ap;
 
-  ap = &aps->prop[eprop];
+  ap = &ap2->prop[eprop];
 
   fp      = libopen(ap->db);
   line_no = 0;
@@ -214,7 +215,7 @@ static void atomprop_name_warning(char *type)
 
 gmx_atomprop_t gmx_atomprop_init(void)
 {
-  struct gmx_atomprop *aps;
+  gmx_atomprop *aps;
   int p;
 
   snew(aps,1);
@@ -225,11 +226,12 @@ gmx_atomprop_t gmx_atomprop_init(void)
     aps->prop[p].bSet = FALSE;
   }
 
-  return aps;
+  return (gmx_atomprop_t)aps;
 }
 
-static void set_prop(struct gmx_atomprop *aps,int eprop) 
+static void set_prop(gmx_atomprop_t aps,int eprop) 
 {
+  gmx_atomprop *ap2 = (gmx_atomprop*) aps;
   char *fns[epropNR]  = { "atommass.dat", "vdwradii.dat", "dgsolv.dat", "electroneg.dat", "elements.dat" };
   double fac[epropNR] = { 1.0,    1.0,  418.4, 1.0, 1.0 };
   double def[epropNR] = { 12.011, 0.14, 0.0, 2.2, -1 };
@@ -243,7 +245,7 @@ static void set_prop(struct gmx_atomprop *aps,int eprop)
   }
   
 
-  ap = &aps->prop[eprop];
+  ap = &ap2->prop[eprop];
   ap->db  = strdup(fns[eprop]);
   ap->def = def[eprop];
   read_prop(aps,eprop,fac[eprop]);
@@ -265,8 +267,9 @@ static void destroy_prop(aprop_t *ap)
   sfree(ap->value);
 }
 
-void gmx_atomprop_destroy(struct gmx_atomprop *aps)
+void gmx_atomprop_destroy(gmx_atomprop_t aps)
 {
+  gmx_atomprop *ap = (gmx_atomprop*) aps;
   int p;
 
   if (aps == NULL) {
@@ -275,25 +278,26 @@ void gmx_atomprop_destroy(struct gmx_atomprop *aps)
   }
 
   for(p=0; p<epropNR; p++) {
-    destroy_prop(&aps->prop[p]);
+    destroy_prop(&ap->prop[p]);
   }
 
-  done_aa_names(&aps->aan);
+  done_aa_names(&ap->aan);
 
-  sfree(aps);
+  sfree(ap);
 }
 
-bool gmx_atomprop_query(struct gmx_atomprop *aps,
+bool gmx_atomprop_query(gmx_atomprop_t aps,
 			int eprop,char *resnm,char *atomnm,
 			real *value)
 {
+  gmx_atomprop *ap = (gmx_atomprop*) aps;
   int  i,j;
 #define MAXQ 32
   char atomname[MAXQ],resname[MAXQ];
   bool bExact;
 
-  if (!aps->prop[eprop].bSet) {
-    set_prop(aps,eprop);
+  if (!ap->prop[eprop].bSet) {
+    set_prop(ap,eprop);
   }
 
   if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1)) {
@@ -315,16 +319,28 @@ bool gmx_atomprop_query(struct gmx_atomprop *aps,
   strncpy(resname,resnm,MAXQ-1);
   upstring(resname);
   
-  j = get_prop_index(&(aps->prop[eprop]),aps->aan,resname,
+  j = get_prop_index(&(ap->prop[eprop]),ap->aan,resname,
 		     atomname,&bExact);
   
   if (j >= 0) {
-    *value = aps->prop[eprop].value[j];
+    *value = ap->prop[eprop].value[j];
     return TRUE;
   }
   else {
-    *value = aps->prop[eprop].def;
+    *value = ap->prop[eprop].def;
     return FALSE;
   }
 }
 
+char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber)
+{
+  gmx_atomprop *ap = (gmx_atomprop*) aps;
+  int i;
+  
+  for(i=0; (i<ap->prop[epropElement].nprop); i++) {
+    if (gmx_nint(ap->prop[epropElement].value[i]) == atomnumber) {
+      return ap->prop[epropElement].atomnm[i];
+    }
+  }
+  return NULL;
+}

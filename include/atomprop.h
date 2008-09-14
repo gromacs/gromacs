@@ -56,6 +56,8 @@ extern gmx_atomprop_t gmx_atomprop_init(void);
 extern void gmx_atomprop_destroy(gmx_atomprop_t aps);
 /* Get rid of memory after use */
 
+extern char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber);
+
 extern bool gmx_atomprop_query(gmx_atomprop_t aps,
 			       int eprop,char *resnm,char *atomnm,
 			       real *value);
