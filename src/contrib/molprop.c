@@ -459,11 +459,12 @@ static int comp_mp_formula(const void *a,const void *b)
     return r;
 }
 
-static int comp_mp_elem(void *apt,const void *a,const void *b)
+gmx_atomprop_t my_aps;
+
+static int comp_mp_elem(const void *a,const void *b)
 {
   int i,r;
   char *elem;
-  gmx_atomprop_t my_apt = (gmx_atomprop_t) apt;
   gmx_molprop_t ma = (gmx_molprop_t)a;
   gmx_molprop_t mb = (gmx_molprop_t)b;
   
@@ -474,7 +475,7 @@ static int comp_mp_elem(void *apt,const void *a,const void *b)
   
   for(i=1; (i<=109); i++) {
     if (i != 6) {
-      elem = gmx_atomprop_element(my_apt,i);
+      elem = gmx_atomprop_element(my_aps,i);
       r = gmx_molprop_count_composition_atoms(ma,"bosque",elem)-
 	gmx_molprop_count_composition_atoms(mb,"bosque",elem);
       if (r != 0)
@@ -491,13 +492,15 @@ void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,gmx_atomprop_t apt)
   gmx_molprops_write("debug.xml",np,mp);
   switch(alg) {
   case 0:
-    heapsort((void *)mp,np,size,comp_mp);
+    qsort((void *)mp,np,size,comp_mp);
     break;
   case 1:
-    heapsort((void *)mp,np,size,comp_mp_formula);
+    qsort((void *)mp,np,size,comp_mp_formula);
     break;
   case 2:
-    qsort_r((void *)mp,np,size,apt,comp_mp_elem);
+    my_aps = apt;
+    qsort((void *)mp,np,size,comp_mp_elem);
+    my_aps = NULL;
     break;
   default:
     gmx_incons("Invalid algorithm for sorting molprops");
