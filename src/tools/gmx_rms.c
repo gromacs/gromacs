@@ -205,7 +205,6 @@ int gmx_rms (int argc,char *argv[])
   rvec       *x,*xp,*xm=NULL,**mat_x=NULL,**mat_x2,*mat_x2_j=NULL,vec1,vec2;
   int        status;
   char       buf[256],buf2[256];
-  void       *atomprop = NULL;
   int        ncons=0;
   FILE       *fp;
   real       rlstot=0,**rls,**rlsm=NULL,*time,*time2,*rlsnorm=NULL,**rmsd_mat=NULL,
