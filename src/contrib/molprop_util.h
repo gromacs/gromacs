@@ -6,7 +6,8 @@
 #include "molprop.h"
 #include "poldata.h"
 
-extern void gen_composition(gmx_molprop_t mp,gmx_poldata_t pd);
+extern void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
+				 gmx_atomprop_t ap);
 
 extern void check_formula(int np,gmx_molprop_t pd[],gmx_atomprop_t ap);
 

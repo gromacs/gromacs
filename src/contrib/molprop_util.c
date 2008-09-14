@@ -2,41 +2,42 @@
 #include <stdio.h>
 #include <string.h>
 #include "smalloc.h"
+#include "atomprop.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
 
-void genenerate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd)
+void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
+			  gmx_atomprop_t ap)
 {
-  int i,j,cnumber,nh,hybrid,charge;
-  char *compname,*catom,*miller_equiv,*elem;
-  double pol,blength;
+  int j,cnumber,nh,atomnumber;
+  char *compname,*catom,*miller_equiv,*elem,*spoel_equiv;
   
   for(j=0; (j<nmol); j++) {
-    gmx_molprop_delete_composition(mp[j],"miller");
+    gmx_molprop_reset_composition(mp[j],"miller");
+    gmx_molprop_reset_composition(mp[j],"bosque");
     gmx_molprop_add_composition(mp[j],"miller");
-    gmx_molprop_delete_composition(mp[j],"bosque");
     gmx_molprop_add_composition(mp[j],"bosque");
     
-    while ((compname = gmx_molprop_get_composition(mp[j])) != NULL) {
-      if (strcasecmp(compname,"spoel") == 0) {
-	while (gmx_molprop_get_composition_atom(mp[j],&catom,&cnumber) == 1) {
-	  if (gmx_poldata_get_spoel(pd,catom,&elem,&miller_equiv,
-				    &nh,&charge,&hybrid,&pol,&blength) != NULL) {
-	    gmx_molprop_add_composition_atom(mp[j],"miller",miller_equiv,cnumber);
-	    gmx_molprop_add_composition_atom(mp[j],"bosque",elem,cnumber);
-	    if (nh > 0)
-	      gmx_molprop_add_composition_atom(mp[j],"bosque","H",nh*cnumber);
-	    sfree(miller_equiv);
-	    sfree(elem);
-	  }
-	  else {
-	    fprintf(stderr,"Atom %s not found in poldata\n",catom);
-	  }
-	  sfree(catom);
+    while (gmx_molprop_get_composition_atom(mp[j],"spoel",&catom,&cnumber) == 1) {
+      if (gmx_poldata_get_spoel(pd,catom,&elem,&miller_equiv,
+				&nh,NULL,NULL,NULL,NULL) != NULL) {
+	gmx_molprop_add_composition_atom(mp[j],"miller",miller_equiv,cnumber);
+	gmx_molprop_add_composition_atom(mp[j],"bosque",elem,cnumber);
+	if (nh > 0)
+	  gmx_molprop_add_composition_atom(mp[j],"bosque","H",nh*cnumber);
+      }
+      else if (gmx_poldata_get_miller(pd,catom,&atomnumber,
+				      NULL,NULL,&spoel_equiv) != NULL) {
+	if (spoel_equiv) {
+	  gmx_molprop_add_composition_atom(mp[j],"miller",catom,cnumber);
+	  elem = gmx_atomprop_element(ap,atomnumber);
+	  gmx_molprop_add_composition_atom(mp[j],"bosque",elem,cnumber);
 	}
       }
-      sfree(compname);
+      else {
+	fprintf(stderr,"Atom %s not found in poldata\n",catom);
+      }
     }
   }
 }
@@ -52,17 +53,14 @@ void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap)
   for(i=0; (i<nmol); i++) {
     snew(ncomp,110);  
     formula[0] = '\0';
-    while ((compname = gmx_molprop_get_composition(mp[i])) != NULL) {
-      if (strcasecmp(compname,"bosque") == 0) {
-	while (gmx_molprop_get_composition_atom(mp[i],&catom,&cnumber) == 1) {
-	  if (gmx_atomprop_query(ap,epropElement,"???",catom,&value)) {
-	    an = gmx_nint(value);
-	    range_check(an,1,110);
-	    ncomp[an]++;
-	  }
-	  sfree(catom);
-	}
+    while (gmx_molprop_get_composition_atom(mp[i],"bosque",&catom,&cnumber) == 1) {
+      if (gmx_atomprop_query(ap,epropElement,"???",catom,&value)) {
+	an = gmx_nint(value);
+	range_check(an,0,110);
+	if (an > 0)
+	  ncomp[an]++;
       }
+      sfree(catom);
     }
     for(jj=0; (jj<2); jj++) {
       for(j=1; (j<110); j++) {
@@ -119,7 +117,7 @@ gmx_molprop_t atoms_2_molprop(char *molname,t_atoms*atoms,t_params *bonds,
   }
   sfree(nh);
   
-  genenerate_composition(1,&mp,pd);
+  generate_composition(1,&mp,pd,ap);
   generate_formula(1,&mp,ap);
   
   return mp;  
@@ -229,7 +227,7 @@ gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
   }
   gmx_molprops_write("allmols.xml",npout,mpout);
   
-  gmx_molprop_sort(npout,mpout);
+  gmx_molprop_sort(npout,mpout,0,NULL);
   
   //qsort(mpout,npout,sizeof(mpout[0]),comp_mp);
   merge_doubles(&npout,mpout,doubles);
@@ -239,7 +237,7 @@ gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
     gmx_molprops_write(outf,npout,mpout);
   }
   if (sorted) {
-    qsort(mpout,npout,sizeof(mp[0]),comp_mp_formula);
+    gmx_molprop_sort(npout,mpout,1,NULL);
     gmx_molprops_write(sorted,npout,mpout);
     dump_mp(npout,mpout);
   }

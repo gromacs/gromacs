@@ -79,14 +79,16 @@ enum {
   exmlGENTOP,
   exmlSMATOMS, exmlPOLAR_UNIT, exmlBLENGTH_UNIT,
   exmlSMATOM, exmlELEM, 
-  exmlSMNAME, exmlMILLER, exmlNHYDROGEN, exmlCHARGE,
+  exmlSMNAME, exmlMILLER_EQUIV, exmlNHYDROGEN, exmlCHARGE,
   exmlHYBRIDIZATION, exmlPOLARIZABILITY, exmlBLENGTH, 
   exmlSMBONDS, exmlSMBOND,
   exmlATOM1, exmlATOM2, 
   exmlBSATOMS, exmlBSATOM,
   exmlMILATOMS, exmlTAU_UNIT, exmlAHP_UNIT,
-  exmlMILATOM, exmlMILNAME,
+  exmlMILATOM, exmlMILNAME, exmlSPOEL_EQUIV,
   exmlATOMNUMBER, exmlTAU_AHC, exmlALPHA_AHP,
+  exmlSYMMETRIC_CHARGES, exmlSYM_CHARGE,
+  exmlBASE, exmlATOM3,
   exmlNR 
 };
   
@@ -94,14 +96,16 @@ static const char *exml_names[exmlNR] = {
   "gentop",
   "smatoms", "polarizability_unit", "blength_unit",
   "smatom", "elem", 
-  "smname", "miller", "nhydrogen", "charge",
+  "smname", "miller_equiv", "nhydrogen", "charge",
   "hybridization", "polarizability", "blength", 
   "smbonds", "smbond",
   "atom1", "atom2", 
   "bsatoms", "bsatom",
   "milatoms", "tau_ahc_unit", "alpha_ahp_unit",
-  "milatom", "milname",
-  "atomnumber", "tau_ahc", "alpha_ahp"
+  "milatom", "milname", "spoel_equiv",
+  "atomnumber", "tau_ahc", "alpha_ahp",
+  "symmetric_charges", "sym_charge",
+  "base", "atom3"
 };
 
 static char *sp(int n, char buf[], int maxindent)
@@ -152,10 +156,10 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
     gmx_poldata_set_bosque_units(pd,xbuf[exmlPOLAR_UNIT]);
   else if (xbuf[exmlTAU_UNIT] && xbuf[exmlAHP_UNIT]) 
     gmx_poldata_set_miller_units(pd,xbuf[exmlTAU_UNIT],xbuf[exmlAHP_UNIT]);
-  else if (xbuf[exmlELEM] && xbuf[exmlMILLER] && xbuf[exmlNHYDROGEN] &&
+  else if (xbuf[exmlELEM] && xbuf[exmlMILLER_EQUIV] && xbuf[exmlNHYDROGEN] &&
 	   xbuf[exmlCHARGE] && xbuf[exmlHYBRIDIZATION] && 
 	   xbuf[exmlPOLARIZABILITY] && xbuf[exmlBLENGTH])
-    gmx_poldata_add_spoel(pd,xbuf[exmlELEM],xbuf[exmlMILLER],
+    gmx_poldata_add_spoel(pd,xbuf[exmlELEM],xbuf[exmlMILLER_EQUIV],
 			  atoi(xbuf[exmlNHYDROGEN]),
 			  atoi(xbuf[exmlCHARGE]),
 			  atoi(xbuf[exmlHYBRIDIZATION]),
@@ -164,7 +168,7 @@ static char *process_attr(FILE *fp,xmlAttrPtr attr,int elem,
   else if (xbuf[exmlMILNAME] && xbuf[exmlATOMNUMBER] && xbuf[exmlTAU_AHC] &&
 	   xbuf[exmlALPHA_AHP]) 
     gmx_poldata_add_miller(pd,xbuf[exmlMILNAME],atoi(xbuf[exmlATOMNUMBER]),
-			   atof(xbuf[exmlTAU_AHC]),atof(xbuf[exmlALPHA_AHP]));
+			   atof(xbuf[exmlTAU_AHC]),atof(xbuf[exmlALPHA_AHP]),xbuf[exmlSPOEL_EQUIV]);
   else if (xbuf[exmlELEM] && xbuf[exmlPOLARIZABILITY]) 
     gmx_poldata_add_bosque(pd,xbuf[exmlELEM],atof(xbuf[exmlPOLARIZABILITY]));
   else if (debug) {
@@ -251,7 +255,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
 {
   xmlNodePtr child,grandchild,comp;
   int    i,nhydrogen,charge,hybridization,atomnumber;
-  char *elem,*miller_equiv,*name;
+  char *elem,*miller_equiv,*name,*spoel_equiv;
   double polarizability,blength,tau_ahc,alpha_ahp;
   
   child = add_xml_child(parent,exml_names[exmlSMATOMS]);
@@ -264,7 +268,7 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
     grandchild = add_xml_child(child,exml_names[exmlSMATOM]);
     add_xml_char(grandchild,exml_names[exmlELEM],elem);
     add_xml_char(grandchild,exml_names[exmlSMNAME],name);
-    add_xml_char(grandchild,exml_names[exmlMILLER],miller_equiv);
+    add_xml_char(grandchild,exml_names[exmlMILLER_EQUIV],miller_equiv);
     add_xml_int(grandchild,exml_names[exmlNHYDROGEN],nhydrogen);
     add_xml_int(grandchild,exml_names[exmlCHARGE],charge);
     add_xml_int(grandchild,exml_names[exmlHYBRIDIZATION],hybridization);
@@ -286,12 +290,14 @@ static void add_xml_poldata(xmlNodePtr parent,gmx_poldata_t pd)
   add_xml_char(child,exml_names[exmlTAU_UNIT],"A3/2");
   add_xml_char(child,exml_names[exmlAHP_UNIT],"A3");
   
-  while ((name = gmx_poldata_get_miller(pd,NULL,&atomnumber,&tau_ahc,&alpha_ahp)) != NULL) {
+  while ((name = gmx_poldata_get_miller(pd,NULL,&atomnumber,&tau_ahc,&alpha_ahp,&spoel_equiv)) != NULL) {
     grandchild = add_xml_child(child,exml_names[exmlMILATOM]);
     add_xml_char(grandchild,exml_names[exmlMILNAME],name);
     add_xml_int(grandchild,exml_names[exmlATOMNUMBER],atomnumber);
     add_xml_double(grandchild,exml_names[exmlTAU_AHC],tau_ahc);
     add_xml_double(grandchild,exml_names[exmlALPHA_AHP],alpha_ahp);
+    if (spoel_equiv)
+      add_xml_char(grandchild,exml_names[exmlSPOEL_EQUIV],spoel_equiv);
   }
   
 }

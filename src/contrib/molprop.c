@@ -49,7 +49,25 @@ gmx_molprop_t gmx_molprop_init()
 
 void gmx_molprop_delete(gmx_molprop_t mpt)
 {
-  fprintf(stderr,"gmx_molprop_delete not implemented yet\n");
+  gmx_molprop *mp = (gmx_molprop *) mpt;
+  int i;
+  
+  for(i=0; (i<mp->ncomposition); i++)
+    gmx_molprop_reset_composition(mpt,mp->composition[i].compname);
+  sfree(mp->composition);
+  for(i=0; (i<mp->ncategory); i++)
+    sfree(mp->category[i]);
+  sfree(mp->category);
+  for(i=0; (i<mp->nproperty); i++) 
+    ;
+  sfree(mp->property);
+  sfree(mp->molname);
+  sfree(mp->formula);
+  sfree(mp->reference);
+  memset(mp,0,sizeof(*mp));
+  
+  if (0)
+    fprintf(stderr,"gmx_molprop_delete not completely implemented yet\n");
 }
 
 void gmx_molprop_set_weight(gmx_molprop_t mpt,double weight)
@@ -96,6 +114,7 @@ void gmx_molprop_set_molname(gmx_molprop_t mpt,char *molname)
   else 
     gmx_incons("Trying to set molname without actually supplying a valid argument");
 }
+
 char *gmx_molprop_get_molname(gmx_molprop_t mpt)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
@@ -124,37 +143,39 @@ char *gmx_molprop_get_reference(gmx_molprop_t mpt)
   return mp->reference;
 }
 
-int gmx_molprop_add_composition(gmx_molprop_t mpt,char *compname)
+void gmx_molprop_add_composition(gmx_molprop_t mpt,char *compname)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
   int i,j;
   
-  for(i=0; (i<mp->ncomposition); i++)
+  for(i=0; (i<mp->ncomposition); i++) {
     if(strcasecmp(compname,mp->composition[i].compname) == 0)
-      break;
-  if (i == mp->ncomposition) {
-    mp->ncomposition++;
-    srenew(mp->composition,mp->ncomposition);
-    mp->composition[i].compname = strdup(compname);
-    mp->composition[i].ncatom = 0;
-    mp->composition[i].ncatom_c = 0;
-    mp->composition[i].catom = NULL;
+      return;
   }
+  mp->ncomposition++;
+  srenew(mp->composition,mp->ncomposition);
+  mp->composition[i].compname = strdup(compname);
+  mp->composition[i].ncatom = 0;
+  mp->composition[i].ncatom_c = 0;
+  mp->composition[i].catom = NULL;
 }
 
 
-void gmx_molprop_delete_composition(gmx_molprop_t mpt,char *compname)
+void gmx_molprop_reset_composition(gmx_molprop_t mpt,char *compname)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
   int i,j;
   
   for(i=0; (i<mp->ncomposition); i++)
-    if(strcasecmp(compname,mp->composition[i].compname) == 0)
+    if (strcasecmp(compname,mp->composition[i].compname) == 0)
       break;
   if (i < mp->ncomposition) {
-    for(j=0; (j<mp->composition[i].ncatom); j++)
+    for(j=0; (j<mp->composition[i].ncatom); j++) {
       sfree(mp->composition[i].catom[j].cname);
+      mp->composition[i].catom[j].cname = NULL;
+    }
     sfree(mp->composition[i].catom);
+    mp->composition[i].catom = NULL;
     mp->composition[i].ncatom = 0;
   }  
 }
@@ -164,7 +185,7 @@ char *gmx_molprop_get_composition(gmx_molprop_t mpt)
   gmx_molprop *mp = (gmx_molprop *) mpt;
 
   if (mp->ncomp_c < mp->ncomposition) {
-    return mp->composition[mp->ncomp_c].compname;
+    return mp->composition[mp->ncomp_c++].compname;
   }
   mp->ncomp_c = 0;
   return NULL;
@@ -197,13 +218,8 @@ void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
     for(i=0; (i<mp->ncomposition); i++)
       if(strcasecmp(compname,mp->composition[i].compname) == 0)
 	break;
-    if (i == mp->ncomposition) {
-      mp->ncomposition++;
-      srenew(mp->composition,mp->ncomposition);
-      mp->composition[i].compname = strdup(compname);
-      mp->composition[i].ncatom = 0;
-      mp->composition[i].catom = NULL;
-    }
+    if (i == mp->ncomposition) 
+      gmx_molprop_add_composition(mpt,compname);
   }
   else if (mp->ncomposition > 0) 
     i = mp->ncomposition-1;
@@ -227,15 +243,18 @@ void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
     gmx_incons("gmx_molprop_add_composition_atom called with invalid arguments");
 }
 
-int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,
+int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,char *compname,
 				     char **atomname,int *natom)
 {
   gmx_molprop *mp = (gmx_molprop *) mpt;
   t_composition *cc;
-  int nc;
+  int i,nc;
   
-  if (mp->ncomp_c < mp->ncomposition) {
-    cc = &(mp->composition[mp->ncomp_c]);
+  for(i=0; (i<mp->ncomposition); i++)
+    if (strcasecmp(mp->composition[i].compname,compname) == 0)
+      break;
+  if (i < mp->ncomposition) {
+    cc = &(mp->composition[i]);
     nc = cc->ncatom_c;
     if (nc < cc->ncatom) {
       assign_str(atomname,cc->catom[nc].cname);
@@ -244,9 +263,8 @@ int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,
       return 1;
     }
     cc->ncatom_c = 0;
-    mp->ncomp_c++;
   }
- 
+  
   return 0;
 }
 
@@ -366,6 +384,7 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
 {
   int i,nd,ns,eMP;
   gmx_molprop *ddd = (gmx_molprop *)dst;
+  gmx_molprop *sss = (gmx_molprop *)src;
   char *tmp,*prop_name,*prop_method,*prop_reference,*catom;
   int cnumber;
   double value,error;
@@ -386,14 +405,14 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
   if (ddd->ncomposition == 0) {
     while ((tmp = gmx_molprop_get_composition(src)) != NULL) {
       gmx_molprop_add_composition(dst,tmp);
-      while ((gmx_molprop_get_composition_atom(src,&catom,&cnumber)) == 1) {
+      while ((gmx_molprop_get_composition_atom(src,tmp,&catom,&cnumber)) == 1) {
 	gmx_molprop_add_composition_atom(dst,tmp,catom,cnumber);
 	sfree(catom);
       }
     }
   }
   else {
-    printf("Both src and dst for %s contain composition entries. Not changing anything\n",ddd->molname);
+    printf("Both src and dst for %s (%s) contain composition entries. Not changing anything\n",sss->molname,ddd->formula);
   }
 }
 
@@ -413,10 +432,10 @@ gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mpt)
 
 static int comp_mp(const void *a,const void *b)
 {
-  gmx_molprop *ma = (gmx_molprop *)a;
-  gmx_molprop *mb = (gmx_molprop *)b;
-  char *mma = ma->molname;
-  char *mmb = mb->molname;
+  gmx_molprop_t ma = (gmx_molprop_t) a;
+  gmx_molprop_t mb = (gmx_molprop_t) b;
+  char *mma = gmx_molprop_get_molname(ma);
+  char *mmb = gmx_molprop_get_molname(mb);
   
   if (mma && mmb)
     return strcasecmp(mma,mmb);
@@ -440,10 +459,48 @@ static int comp_mp_formula(const void *a,const void *b)
     return r;
 }
 
-void gmx_molprop_sort(int np,gmx_molprop_t mp[])
+static int comp_mp_elem(void *apt,const void *a,const void *b)
 {
-  gmx_molprop **mps = (gmx_molprop **)mp;
+  int i,r;
+  char *elem;
+  gmx_atomprop_t my_apt = (gmx_atomprop_t) apt;
+  gmx_molprop_t ma = (gmx_molprop_t)a;
+  gmx_molprop_t mb = (gmx_molprop_t)b;
   
-  qsort(mps,np,sizeof(mps[0]),comp_mp);
+  r = gmx_molprop_count_composition_atoms(ma,"bosque","C")-
+    gmx_molprop_count_composition_atoms(mb,"bosque","C");
+  if (r != 0)
+    return r;
+  
+  for(i=1; (i<=109); i++) {
+    if (i != 6) {
+      elem = gmx_atomprop_element(my_apt,i);
+      r = gmx_molprop_count_composition_atoms(ma,"bosque",elem)-
+	gmx_molprop_count_composition_atoms(mb,"bosque",elem);
+      if (r != 0)
+	return r;
+    }
+  }
+  return strcasecmp(gmx_molprop_get_molname(ma),gmx_molprop_get_molname(mb));
+}
+
+void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,gmx_atomprop_t apt)
+{
+  int size = sizeof(mp[0]);
+  
+  gmx_molprops_write("debug.xml",np,mp);
+  switch(alg) {
+  case 0:
+    heapsort((void *)mp,np,size,comp_mp);
+    break;
+  case 1:
+    heapsort((void *)mp,np,size,comp_mp_formula);
+    break;
+  case 2:
+    qsort_r((void *)mp,np,size,apt,comp_mp_elem);
+    break;
+  default:
+    gmx_incons("Invalid algorithm for sorting molprops");
+  }
 }
 

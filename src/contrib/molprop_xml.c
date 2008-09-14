@@ -324,7 +324,7 @@ static void add_xml_molprop(xmlNodePtr parent,gmx_molprop_t mpt)
   while ((tmp = gmx_molprop_get_composition(mpt)) != NULL) {
     child = add_xml_child(ptr,exml_names[exmlCOMPOSITION]);
     add_xml_char(child,exml_names[exmlCOMPNAME],tmp);
-    while ((gmx_molprop_get_composition_atom(mpt,&catom,&cnumber)) == 1) {
+    while ((gmx_molprop_get_composition_atom(mpt,tmp,&catom,&cnumber)) == 1) {
       grandchild = add_xml_child(child,exml_names[exmlCATOM]);
       add_xml_char(grandchild,exml_names[exmlC_NAME],catom);
       add_xml_int(grandchild,exml_names[exmlC_NUMBER],cnumber);

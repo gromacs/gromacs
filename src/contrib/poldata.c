@@ -17,10 +17,15 @@ typedef struct {
 } t_bosque;
 
 typedef struct {
-  char   *name;
+  char   *name,*spoel_equiv;
   int    atomnumber;
   double tau_ahc,alpha_ahp;
 } t_miller;
+
+typedef struct {
+  char *base;
+  char *atom1,*atom2,*atom3;
+} t_symcharges;
 
 typedef struct {
   int nspoel,nspoel_c;
@@ -32,7 +37,12 @@ typedef struct {
   int nbosque,nbosque_c;
   t_bosque *bosque;
   char *bosque_polar_unit;
+  int nsymcharges,nsymcharges_c;
+  t_symcharges *symcharges;
 } gmx_poldata;
+
+#define assign_str(dst,src)  if (dst) { if (src) *dst = strdup(src); else *dst = NULL; }
+#define assign_scal(dst,src) if (dst) *dst = src
 
 gmx_poldata_t gmx_poldata_init()
 {
@@ -122,13 +132,13 @@ char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *name,char **elem,
       
   if (i<gpd->nspoel) {
     sp = &(gpd->spoel[i]);
-    *nhydrogen      = sp->nhydrogen;
-    *charge         = sp->charge;
-    *hybridization  = sp->hybridization;
-    *polarizability = sp->polarizability;
-    *blength        = sp->blength;
-    *elem           = strdup(sp->elem);
-    *miller_equiv   = strdup(sp->miller_equiv);
+    assign_scal(nhydrogen,sp->nhydrogen);
+    assign_scal(charge,sp->charge);
+    assign_scal(hybridization,sp->hybridization);
+    assign_scal(polarizability,sp->polarizability);
+    assign_scal(blength,sp->blength);
+    assign_str(elem,sp->elem);
+    assign_str(miller_equiv,sp->miller_equiv);
     gpd->nspoel_c++;
     
     return sp->name;
@@ -141,7 +151,8 @@ char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *name,char **elem,
 				  
 void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
 			    int atomnumber,
-			    double tau_ahc,double alpha_ahp)
+			    double tau_ahc,double alpha_ahp,
+			    char *spoel_equiv)
 {
   gmx_poldata *gpd = (gmx_poldata *) pd;
   t_miller *mil;
@@ -153,6 +164,8 @@ void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
   mil->atomnumber = atomnumber;
   mil->tau_ahc    = tau_ahc;
   mil->alpha_ahp  = alpha_ahp;
+  if (spoel_equiv)
+    mil->spoel_equiv = strdup(spoel_equiv);
 }
 				  
 void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,char *ahp_unit)
@@ -164,7 +177,8 @@ void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,char *ahp_unit
 }
 
 char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
-			     int *atomnumber,double *tau_ahc,double *alpha_ahp)
+			     int *atomnumber,double *tau_ahc,
+			     double *alpha_ahp,char **spoel_equiv)
 {
   gmx_poldata *gpd = (gmx_poldata *) pd;
   t_miller *mil;
@@ -180,9 +194,10 @@ char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
     
   if (i < gpd->nmiller) {
     mil = &(gpd->miller[i]);
-    *atomnumber  = mil->atomnumber;
-    *tau_ahc     = mil->tau_ahc;
-    *alpha_ahp   = mil->alpha_ahp;
+    assign_scal(atomnumber,mil->atomnumber);
+    assign_scal(tau_ahc,mil->tau_ahc);
+    assign_scal(alpha_ahp,mil->alpha_ahp);
+    assign_str(spoel_equiv,mil->spoel_equiv);
     gpd->nmiller_c++;
     
     return mil->name;
@@ -205,7 +220,7 @@ void gmx_poldata_add_bosque(gmx_poldata_t pd,char *elem,
   bs->elem           = strdup(elem);
   bs->polarizability = polarizability;
 }
-				  				  
+
 char *gmx_poldata_get_bosque(gmx_poldata_t pd,char *elem,
 			     double *polarizability)
 {
@@ -221,7 +236,7 @@ char *gmx_poldata_get_bosque(gmx_poldata_t pd,char *elem,
     i = gpd->nbosque_c;
     
   if (i < gpd->nbosque) {
-    *polarizability = gpd->bosque[i].polarizability;
+    assign_scal(polarizability,gpd->bosque[i].polarizability);
     gpd->nbosque_c++;
     
     return gpd->bosque[i].elem;

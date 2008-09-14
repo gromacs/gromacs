@@ -49,6 +49,7 @@
 #include "molprop.h"
 #include "molprop_util.h"
 #include "gentop_matrix.h"
+#include "poldata_xml.h"
 
 static int tabnum = 0;
 static int toler  = 5;  /* Tolerance in % */
@@ -131,7 +132,7 @@ static void dump_table1(FILE *fp,gmx_poldata_t pd,
   if (gmx_poldata_get_bosque(pd,"H",&bos_H) == NULL) 
     gmx_fatal(FARGS,"Can not find Bosque polarizability for H");
   
-  if (gmx_poldata_get_miller(pd,"H",&atomnumber,&ahc_H,&ahp_H) != NULL) 
+  if (gmx_poldata_get_miller(pd,"H",&atomnumber,&ahc_H,&ahp_H,NULL) != NULL) 
     gmx_fatal(FARGS,"Can not find Miller polarizability for H");
   
   while(name = gmx_poldata_get_spoel(pd,NULL,&elem,
@@ -141,7 +142,7 @@ static void dump_table1(FILE *fp,gmx_poldata_t pd,
     
     /* Determine Miller and Bosque polarizabilities for this Spoel element */
     ahc = ahp = 0;
-    if (gmx_poldata_get_miller(pd,miller_equiv,&atomnumber,&ahc,&ahp) != NULL) {
+    if (gmx_poldata_get_miller(pd,miller_equiv,&atomnumber,&ahc,&ahp,NULL) != NULL) {
       ahc = (4.0/(nhydrogen+atomnumber))*sqr(ahc + nhydrogen*ahc_H);
       ahp = (nhydrogen*ahp_H + ahp);
     }
@@ -484,13 +485,13 @@ static void dump_table4(FILE *fp,int np,gmx_molprop_t pd[])
 	    gmx_molprop_get_formula(pd[i]));
     while((comp = gmx_molprop_get_composition(pd[i])) != NULL) {
       if (strcasecmp(comp,"spoel") == 0) {
-	while(gmx_molprop_get_composition_atom(pd[i],&atomname,&natom) == 1) {
+	while(gmx_molprop_get_composition_atom(pd[i],comp,&atomname,&natom) == 1) {
 	  fprintf(fp,"%s$_{%d}$ ",atomname,natom);
 	}
 	fprintf(fp," &");
       }
       else if (strcasecmp(comp,"miller") == 0) {
-	while(gmx_molprop_get_composition_atom(pd[i],&atomname,&natom) == 1) {
+	while(gmx_molprop_get_composition_atom(pd[i],comp,&atomname,&natom) == 1) {
 	  fprintf(fp,"%s$_{%d}$ ",atomname,natom);
 	}
 	fprintf(fp," \\\\\n");
@@ -525,12 +526,10 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
     bosque_support = 1;
       
     while ((comp = gmx_molprop_get_composition(mp[j])) != NULL) {
-      while (gmx_molprop_get_composition_atom(mp[j],&atomname,&natom) == 1) {
+      while (gmx_molprop_get_composition_atom(mp[j],comp,&atomname,&natom) == 1) {
 	if (strcasecmp(comp,"spoel") == 0) {
-	  if (gmx_poldata_get_spoel(pd,atomname,&elem,
-				    &miller_equiv,&nhydrogen,
-				    &charge,&hybridization,
-				    &polar,&blength) != NULL) {
+	  if (gmx_poldata_get_spoel(pd,atomname,NULL,NULL,NULL,NULL,NULL,
+				    &polar,NULL) != NULL) {
 	    spoel += polar*natom;
 	  }
 	  else 
@@ -538,7 +537,7 @@ static void calc_frag_miller(int bTrain,gmx_poldata_t pd,
 	}
 	else if (strcasecmp(comp,"miller") == 0) {
 	  if (gmx_poldata_get_miller(pd,atomname,&atomnumber,
-				     &tau_ahc,&alpha_ahp) != NULL) {
+				     &tau_ahc,&alpha_ahp,NULL) != NULL) {
 	    ahc   += tau_ahc*natom; 
 	    ahp   += alpha_ahp*natom;
 	    Nelec += atomnumber*Nelec;
@@ -720,33 +719,6 @@ static void write_xvg(int np,gmx_molprop_t pd[])
   }
 }
 
-gmx_atomprop_t my_apt;
-
-static int comp_mp_elem2(const void *a,const void *b)
-{
-  int i,r;
-  char *elem;
-  gmx_molprop_t ma = (gmx_molprop_t)a;
-  gmx_molprop_t mb = (gmx_molprop_t)b;
-  
-  r = gmx_molprop_count_composition_atoms(ma,"bosque","C")-
-    gmx_molprop_count_composition_atoms(mb,"bosque","C");
-  if (r != 0)
-    return r;
-  
-  for(i=1; (i<=109); i++) {
-    if (i != 6) {
-      elem = gmx_atomprop_element(my_apt,i);
-      r = gmx_molprop_count_composition_atoms(ma,"bosque",elem)-
-	gmx_molprop_count_composition_atoms(mb,"bosque",elem);
-      if (r != 0)
-	return r;
-    }
-  }
-  return strcasecmp(gmx_molprop_get_molname(ma),gmx_molprop_get_molname(mb));
-}
-
-
 int main(int argc,char *argv[])
 {
   FILE  *fp,*gp;
@@ -765,14 +737,13 @@ int main(int argc,char *argv[])
     gmx_fatal(FARGS,"Please give names of database files!","");
   mp = merge_xml(argc,argv,NULL,NULL,"double_dip.dat",&np);
   ap = gmx_atomprop_init();
-  pd = gmx_poldata_init();
+  pd = gmx_poldata_read("gentop.xml");
     
-  genenerate_composition(np,mp,pd);
+  generate_composition(np,mp,pd,ap);
   generate_formula(np,mp,ap);
 
-  my_apt = ap; 
   snew(w,np);
-  qsort(mp,np,sizeof(mp[0]),comp_mp_elem2);
+  gmx_molprop_sort(np,mp,2,ap);
   
   for(i=0; (i<np); i++) {
     w[i] = gmx_molprop_get_weight(mp[i]);

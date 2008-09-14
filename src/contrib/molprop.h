@@ -1,5 +1,7 @@
 #ifndef _molprop_h
 #define _molprop_h
+
+#include "atomprop.h"
 	
 typedef struct gmx_molprop *gmx_molprop_t;
 
@@ -25,16 +27,16 @@ extern void gmx_molprop_set_reference(gmx_molprop_t mpt,char *reference);
 
 extern char *gmx_molprop_get_reference(gmx_molprop_t mpt);
 
-extern int gmx_molprop_add_composition(gmx_molprop_t mpt,char *compname);
+extern void gmx_molprop_add_composition(gmx_molprop_t mpt,char *compname);
 
-extern void gmx_molprop_delete_composition(gmx_molprop_t mpt,char *compname);
+extern void gmx_molprop_reset_composition(gmx_molprop_t mpt,char *compname);
 
 extern char *gmx_molprop_get_composition(gmx_molprop_t mpt);
 
 extern void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
 					     char *atomname,int natom);
 					     
-extern int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,
+extern int gmx_molprop_get_composition_atom(gmx_molprop_t mpt,char *compname,
 					    char **atomname,int *natom);
 
 extern int gmx_molprop_count_composition_atoms(gmx_molprop_t mpt,
@@ -63,6 +65,12 @@ extern gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mpt);
 
 extern void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src);
 
-extern void gmx_molprop_sort(int np,gmx_molprop_t mp[]);
+/* Choose algorithm for sorting:
+ * 0 = molname
+ * 1 = formula
+ * 2 = composition
+ */
+extern void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,
+			     gmx_atomprop_t ap);
 
 #endif

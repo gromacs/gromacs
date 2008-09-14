@@ -23,14 +23,16 @@ extern char *gmx_poldata_get_spoel(gmx_poldata_t pd,char *name,char **elem,
 				  
 extern void gmx_poldata_add_miller(gmx_poldata_t pd,char *name,
 				   int atomnumber,
-				   double tau_ahc,double alpha_ahp);
+				   double tau_ahc,double alpha_ahp,
+				   char *spoel_equiv);
 
 extern void gmx_poldata_set_miller_units(gmx_poldata_t pd,char *tau_unit,char *ahp_unit);
 
 /* Returns name or NULL if last or not found */
 extern char *gmx_poldata_get_miller(gmx_poldata_t pd,char *name,
 				    int *atomnumber,
-				    double *tau_ahc,double *alpha_ahp);
+				    double *tau_ahc,double *alpha_ahp,
+				    char **spoel_equiv);
 
 extern void gmx_poldata_add_bosque(gmx_poldata_t pd,char *elem,
 				   double polarizability);
