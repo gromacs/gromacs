@@ -2507,7 +2507,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
                                        bool bUniform,int step)
 {
     gmx_domdec_comm_t *comm;
-    int  d1,i,j,pos,nmin,nmin_old;
+    int  ncd,d1,i,j,pos,nmin,nmin_old;
     bool bLimLo,bLimHi;
     real load_aver,load_i,imbalance,change;
     real cellsize_limit_f,dist_min_f,fac,space,halfway;
@@ -2516,21 +2516,23 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
 
     comm = dd->comm;
 
+    ncd = dd->nc[dim];
+
     /* Store the original boundaries */
-    for(i=0; i<dd->nc[dim]+1; i++)
+    for(i=0; i<ncd+1; i++)
     {
         root->old_cell_f[i] = root->cell_f[i];
     }
     if (bUniform) {
-        for(i=0; i<dd->nc[dim]; i++)
+        for(i=0; i<ncd; i++)
         {
-            root->cell_size[i] = 1.0/dd->nc[dim];
+            root->cell_size[i] = 1.0/ncd;
         }
     }
     else if (dd_load_count(comm))
     {
-        load_aver = comm->load[d].sum_m/dd->nc[dim];
-        for(i=0; i<dd->nc[dim]; i++)
+        load_aver = comm->load[d].sum_m/ncd;
+        for(i=0; i<ncd; i++)
         {
             /* Determine the relative imbalance of cell i */
             load_i = comm->load[d].load[i*comm->load[d].nload+2];
@@ -2565,7 +2567,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     }
     if (d > 0 && !bUniform) {
         /* Make sure that the grid is not shifted too much */
-        for(i=1; i<dd->nc[dim]; i++) {
+        for(i=1; i<ncd; i++) {
             root->bound_min[i] = root->cell_f_max0[i-1] + dist_min_f;
             space = root->cell_f[i] - (root->cell_f_max0[i-1] + dist_min_f);
             if (space > 0) {
@@ -2587,7 +2589,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         }
     }
     
-    for(i=0; i<dd->nc[dim]; i++)
+    for(i=0; i<ncd; i++)
     {
         root->bCellMin[i] = FALSE;
     }
@@ -2597,7 +2599,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         nmin_old = nmin;
         /* We need the total for normalization */
         fac = 0;
-        for(i=0; i<dd->nc[dim]; i++)
+        for(i=0; i<ncd; i++)
         {
             if (root->bCellMin[i] == FALSE)
             {
@@ -2607,7 +2609,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         fac = (1 - nmin*dist_min_f)/fac;
         /* Determine the cell boundaries */
         root->cell_f[0] = 0;
-        for(i=0; i<dd->nc[dim]; i++)
+        for(i=0; i<ncd; i++)
         {
             if (root->bCellMin[i] == FALSE)
             {
@@ -2625,7 +2627,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     while (nmin > nmin_old);
     
     /* Set the last boundary to exactly 1 */
-    i = dd->nc[dim] - 1;
+    i = ncd - 1;
     root->cell_f[i+1] = 1;
     root->cell_size[i] = root->cell_f[i+1] - root->cell_f[i];
     /* For this check we should not use DD_CELL_MARGIN,
@@ -2636,7 +2638,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     {
         gmx_fatal(FARGS,"Step %d: the dynamic load balancing could not balance dimension %c: box size %f, triclinic skew factor %f, #cells %d, minimum cell size %f\n",
                   step,dim2char(dim),box[dim][dim],dd->skew_fac[dim],
-                  dd->nc[dim],comm->cellsize_min[dim]);
+                  ncd,comm->cellsize_min[dim]);
     }
     
     root->bLimited = (nmin > 0);
@@ -2651,14 +2653,14 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
          * might be affected by a change and if the old state was ok,
          * the cells will at most be shrunk back to their old size.
          */
-        for(i=1; i<dd->nc[dim]; i++)
+        for(i=1; i<ncd; i++)
         {
             halfway = 0.5*(root->old_cell_f[i] + root->old_cell_f[i-1]);
             if (root->cell_f[i] < halfway)
             {
                 root->cell_f[i] = halfway;
                 /* Check if the change also causes shifts of the next boundaries */
-                for(j=i+1; j<dd->nc[dim]; j++)
+                for(j=i+1; j<ncd; j++)
                 {
                     if (root->cell_f[j] < root->cell_f[j-1] + cellsize_limit_f)
                         root->cell_f[j] =  root->cell_f[j-1] + cellsize_limit_f;
@@ -2683,7 +2685,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         /* Take care of the staggering of the cell boundaries */
         if (bUniform)
         {
-            for(i=0; i<dd->nc[dim]; i++)
+            for(i=0; i<ncd; i++)
             {
                 root->cell_f_max0[i] = root->cell_f[i];
                 root->cell_f_min1[i] = root->cell_f[i+1];
@@ -2691,7 +2693,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         }
         else
         {
-            for(i=1; i<dd->nc[dim]; i++)
+            for(i=1; i<ncd; i++)
             {
                 bLimLo = (root->cell_f[i] < root->bound_min[i]);
                 bLimHi = (root->cell_f[i] > root->bound_max[i]);
@@ -2718,7 +2720,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
     /* After the checks above, the cells should obey the cut-off
      * restrictions, but it does not hurt to check.
      */
-    for(i=0; i<dd->nc[dim]; i++)
+    for(i=0; i<ncd; i++)
     {
         if (root->cell_f[i+1] - root->cell_f[i] <
             cellsize_limit_f/DD_CELL_MARGIN)
@@ -2731,7 +2733,7 @@ static void set_dd_cell_sizes_dlb_root(gmx_domdec_t *dd,
         }
     }
     
-    pos = dd->nc[dim] + 1;
+    pos = ncd + 1;
     /* Store the cell boundaries of the lower dimensions at the end */
     for(d1=0; d1<d; d1++)
     {
@@ -3435,7 +3437,9 @@ static void cg_move_error(FILE *fplog,
         print_cg_move(fplog, dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
     }
     print_cg_move(stderr,dd,step,cg,dim,dir,limitd,cm_old,cm_new,pos_d);
-    gmx_fatal(FARGS,"A charge group move too far between two domain decomposition steps");
+    gmx_fatal(FARGS,
+              "A charge group moved too far between two domain decomposition steps\n"
+              "This usually means that your system is not well equilibrated");
 }
 
 static void rotate_state_atom(t_state *state,int a)
@@ -4297,14 +4301,13 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         nnodes = npp + npme;
         imbal = comm->load_max*npp/comm->load_sum - 1;
         lossf = dd_force_imb_perf_loss(dd);
-        /* buf will be sent to another printf command, so we need two percent-signs in it */
-        sprintf(buf," Average load imbalance: %.1f %%%%\n",imbal*100);
-        fprintf(fplog,buf);
+        sprintf(buf," Average load imbalance: %.1f %%\n",imbal*100);
+        fprintf(fplog,"%s",buf);
         fprintf(stderr,"\n");
-        fprintf(stderr,buf);
-        sprintf(buf," Part of the total run time spent waiting due to load imbalance: %.1f %%%%\n",lossf*100);
-        fprintf(fplog,buf);
-        fprintf(stderr,buf);
+        fprintf(stderr,"%s",buf);
+        sprintf(buf," Part of the total run time spent waiting due to load imbalance: %.1f %%\n",lossf*100);
+        fprintf(fplog,"%s",buf);
+        fprintf(stderr,"%s",buf);
         bLim = FALSE;
         if (comm->bDynLoadBal)
         {
@@ -4312,15 +4315,15 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
             for(d=0; d<dd->ndim; d++)
             {
                 limp = (200*comm->load_lim[d]+1)/(2*comm->nload);
-                sprintf(buf+strlen(buf)," %c %d %%%%",dim2char(dd->dim[d]),limp);
+                sprintf(buf+strlen(buf)," %c %d %%",dim2char(dd->dim[d]),limp);
                 if (limp >= 50)
                 {
                     bLim = TRUE;
                 }
             }
             sprintf(buf+strlen(buf),"\n");
-            fprintf(fplog,buf);
-            fprintf(stderr,buf);
+            fprintf(fplog,"%s",buf);
+            fprintf(stderr,"%s",buf);
         }
         if (npme > 0)
         {
@@ -4347,7 +4350,7 @@ static void print_dd_load_av(FILE *fplog,gmx_domdec_t *dd)
         if (lossf >= DD_PERF_LOSS)
         {
             sprintf(buf,
-                    "NOTE: %.1f %%%% performance was lost due to load imbalance\n"
+                    "NOTE: %.1f %% performance was lost due to load imbalance\n"
                     "      in the domain decomposition.\n",lossf*100);
             if (!comm->bDynLoadBal)
             {
@@ -5281,7 +5284,7 @@ static real average_cellsize_min(gmx_domdec_t *dd,matrix box)
 
     dd_set_tric_dir(dd,box);
     r = box[0][0];
-    for(di=0; di<DIM; di++)
+    for(di=0; di<dd->ndim; di++)
     {
         d = dd->dim[di];
         /* Check using the initial average cell size */
@@ -5359,6 +5362,39 @@ static int check_dlb_support(FILE *fplog,t_commrec *cr,
     }
 
     return eDLB;
+}
+
+static void set_dd_dim(FILE *fplog,gmx_domdec_t *dd)
+{
+    int dim;
+
+    dd->ndim = 0;
+    if (getenv("GMX_DD_ORDER_ZYX"))
+    {
+        /* Decomposition order z,y,x */
+        if (fplog)
+        {
+            fprintf(fplog,"Using domain decomposition order z, y, x\n");
+        }
+        for(dim=DIM-1; dim>=0; dim--)
+        {
+            if (dd->nc[dim] > 1)
+            {
+                dd->dim[dd->ndim++] = dim;
+            }
+        }
+    }
+    else
+    {
+        /* Decomposition order x,y,z */
+        for(dim=0; dim<DIM; dim++)
+        {
+            if (dd->nc[dim] > 1)
+            {
+                dd->dim[dd->ndim++] = dim;
+            }
+        }
+    }
 }
 
 gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
@@ -5580,6 +5616,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
     if (nc[XX] > 0)
     {
         copy_ivec(nc,dd->nc);
+        set_dd_dim(fplog,dd);
         if (cr->npmenodes == -1)
         {
             cr->npmenodes = 0;
@@ -5614,6 +5651,7 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                       "Look in the log file for details on the domain decomposition",
                       cr->nnodes-cr->npmenodes,limit,buf);
         }
+        set_dd_dim(fplog,dd);
     }
     
     if (fplog)
@@ -5642,15 +5680,6 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         comm->npmenodes = dd->nnodes;
     }
     
-    dd->ndim = 0;
-    for(d=0; d<DIM; d++)
-    {
-        if (dd->nc[d] > 1)
-        {
-            dd->ndim++;
-        }
-    }
-
     snew(comm->slb_frac,DIM);
     if (comm->eDLB == edlbNO)
     {
@@ -6008,35 +6037,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     {
         fr->bMolPBC = TRUE;
     }
-    
-    dd->ndim = 0;
-    if (getenv("GMX_DD_ORDER_ZYX"))
-    {
-        /* Decomposition order z,y,x */
-        if (fplog)
-        {
-            fprintf(fplog,"Using domain decomposition order z, y, x\n");
-        }
-        for(dim=DIM-1; dim>=0; dim--)
-        {
-            if (dd->nc[dim] > 1)
-            {
-                dd->dim[dd->ndim++] = dim;
-            }
-        }
-    }
-    else
-    {
-        /* Decomposition order x,y,z */
-        for(dim=0; dim<DIM; dim++)
-        {
-            if (dd->nc[dim] > 1)
-            {
-                dd->dim[dd->ndim++] = dim;
-            }
-        }
-    }
-    
+        
     if (debug)
     {
         fprintf(debug,"The DD cut-off is %f\n",comm->cutoff);
@@ -6107,7 +6108,7 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
         /* Set the minimum cell size for each DD dimension */
         for(d=0; d<dd->ndim; d++)
         {
-            if (comm->cd[d].np*comm->cellsize_limit >= comm->cutoff)
+            if (comm->cd[d].np_dlb*comm->cellsize_limit >= comm->cutoff)
             {
                 comm->cellsize_min_dlb[dd->dim[d]] = comm->cellsize_limit;
             }
@@ -6307,7 +6308,8 @@ static void setup_dd_communication(FILE *fplog,int step,
     r_comm2  = sqr(comm->cutoff);
     r_bcomm2 = sqr(comm->cutoff_mbody);
 
-    if (debug) {
+    if (debug)
+    {
         fprintf(debug,"bBondComm %d, r_bc %f\n",bBondComm,sqrt(r_bcomm2));
     }
     
