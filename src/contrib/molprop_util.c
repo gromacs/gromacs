@@ -24,8 +24,10 @@ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
 				&nh,NULL,NULL,NULL,NULL) != NULL) {
 	gmx_molprop_add_composition_atom(mp[j],"miller",miller_equiv,cnumber);
 	gmx_molprop_add_composition_atom(mp[j],"bosque",elem,cnumber);
-	if (nh > 0)
+	if (nh > 0) {
 	  gmx_molprop_add_composition_atom(mp[j],"bosque","H",nh*cnumber);
+	  gmx_molprop_add_composition_atom(mp[j],"miller","H",nh*cnumber);
+	}
       }
       else if (gmx_poldata_get_miller(pd,catom,&atomnumber,
 				      NULL,NULL,&spoel_equiv) != NULL) {
@@ -121,35 +123,6 @@ gmx_molprop_t atoms_2_molprop(char *molname,t_atoms*atoms,t_params *bonds,
   return mp;  
 }
 
-static int comp_mp(const void *a,const void *b)
-{
-  gmx_molprop_t ma = (gmx_molprop_t)a;
-  gmx_molprop_t mb = (gmx_molprop_t)b;
-  char *mma = gmx_molprop_get_molname(ma);
-  char *mmb = gmx_molprop_get_molname(mb);
-  
-  if (mma && mmb)
-    return strcasecmp(mma,mmb);
-  else
-    return 0;
-}
-
-static int comp_mp_formula(const void *a,const void *b)
-{
-  int r;
-  gmx_molprop_t ma = (gmx_molprop_t)a;
-  gmx_molprop_t mb = (gmx_molprop_t)b;
-  char *fma = gmx_molprop_get_formula(ma);
-  char *fmb = gmx_molprop_get_formula(mb);
-  
-  r = strcasecmp(fma,fmb);
-  
-  if (r == 0) 
-    return comp_mp(a,b);
-  else 
-    return r;
-}
-
 static void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles)
 {
   int i,j,ndouble=0;
@@ -223,19 +196,20 @@ gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
       mpout[npout+j] = gmx_molprop_copy(mp[j]);
     npout += np;
   }
+  printf("There are %d total molecules\n",npout);
   gmx_molprops_write("allmols.xml",npout,mpout);
-  
-  gmx_molprop_sort(npout,mpout,0,NULL);
-  
-  //qsort(mpout,npout,sizeof(mpout[0]),comp_mp);
+  gmx_molprop_sort(npout,mpout,empSORT_Molname,NULL);
+  gmx_molprops_write("sorted.xml",npout,mpout);
   merge_doubles(&npout,mpout,doubles);
+  printf("There are %d total molecules after merging\n",npout);
+  gmx_molprops_write("merged.xml",npout,mpout);
       
   if (outf) {
     printf("There are %d entries to store in output file %s\n",npout,outf);
     gmx_molprops_write(outf,npout,mpout);
   }
   if (sorted) {
-    gmx_molprop_sort(npout,mpout,1,NULL);
+    gmx_molprop_sort(npout,mpout,empSORT_Formula,NULL);
     gmx_molprops_write(sorted,npout,mpout);
     dump_mp(npout,mpout);
   }
@@ -244,3 +218,81 @@ gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
   
   return mpout;
 }
+
+static int comp_mp_molname(const void *a,const void *b)
+{
+  gmx_molprop_t *ma = (gmx_molprop_t *) a;
+  gmx_molprop_t *mb = (gmx_molprop_t *) b;
+  char *mma = gmx_molprop_get_molname(*ma);
+  char *mmb = gmx_molprop_get_molname(*mb);
+  
+  if (mma && mmb)
+    return strcasecmp(mma,mmb);
+  else
+    return 0;
+}
+
+static int comp_mp_formula(const void *a,const void *b)
+{
+  int r;
+  gmx_molprop_t *ma = (gmx_molprop_t *)a;
+  gmx_molprop_t *mb = (gmx_molprop_t *)b;
+  char *fma = gmx_molprop_get_formula(*ma);
+  char *fmb = gmx_molprop_get_formula(*mb);
+  
+  r = strcasecmp(fma,fmb);
+  
+  if (r == 0) 
+    return comp_mp_molname(a,b);
+  else 
+    return r;
+}
+
+gmx_atomprop_t my_aps;
+
+static int comp_mp_elem(const void *a,const void *b)
+{
+  int i,r;
+  char *elem;
+  gmx_molprop_t *ma = (gmx_molprop_t *)a;
+  gmx_molprop_t *mb = (gmx_molprop_t *)b;
+  
+  r = gmx_molprop_count_composition_atoms(*ma,"bosque","C")-
+    gmx_molprop_count_composition_atoms(*mb,"bosque","C");
+  if (r != 0)
+    return r;
+  
+  for(i=1; (i<=109); i++) {
+    if (i != 6) {
+      elem = gmx_atomprop_element(my_aps,i);
+      r = gmx_molprop_count_composition_atoms(*ma,"bosque",elem)-
+	gmx_molprop_count_composition_atoms(*mb,"bosque",elem);
+      if (r != 0)
+	return r;
+    }
+  }
+  return comp_mp_molname(a,b);
+}
+
+void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,gmx_atomprop_t apt)
+{
+  int size = sizeof(mp[0]);
+  
+  gmx_molprops_write("debug.xml",np,mp);
+  switch(alg) {
+  case empSORT_Molname:
+    qsort(mp,np,size,comp_mp_molname);
+    break;
+  case empSORT_Formula:
+    qsort(mp,np,size,comp_mp_formula);
+    break;
+  case empSORT_Composition:
+    my_aps = apt;
+    qsort(mp,np,size,comp_mp_elem);
+    my_aps = NULL;
+    break;
+  default:
+    gmx_incons("Invalid algorithm for gmx_molprop_sort");
+  }
+}
+

@@ -17,4 +17,10 @@ extern gmx_molprop_t atoms_2_molprop(char *molname,t_atoms*atoms,t_params *bonds
 extern gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
 				char *sorted,char *doubles,int *nmolprop);
 
+enum { empSORT_Molname, empSORT_Formula, empSORT_Composition, empSORT_NR };
+	       
+extern void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,
+			     gmx_atomprop_t ap);
+
+
 #endif

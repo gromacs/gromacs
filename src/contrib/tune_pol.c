@@ -210,7 +210,7 @@ static void table2_header(FILE *fp,int caption,int bTrain,int bQM)
   else {
     fprintf(fp,"\\begin{tabular}{lccccc}\n\\hline\n");
     fprintf(fp,"Molecule & Experiment ");
-    for(i=0; (i<eqmNR); i++)
+    for(i=NQUANT; (i<eqmNR); i++)
       fprintf(fp,"& %s ",sbasis[i]);
     fprintf(fp,"\\\\\n\\hline\n");
   }
@@ -271,7 +271,7 @@ static void dump_table2(FILE *fp,int bVerbose,int bTrain,int bQM,
 	      fprintf(fp,"~\\cite{%s} ",exp_ref ? exp_ref : "XXX");
 	    
 	    if (k == 0) {
-	      for(j=0; (j<eqmNR); j++) { 
+	      for(j=bQM ? 0 : NQUANT; (j<eqmNR); j++) { 
 		if (found_calc[j] > 0) {
 		  if ((fabs(val_calc[j] - exp_val) > (exp_val*toler*0.01))) {
 		    if (fabs(val_calc[j] - exp_val) > (exp_val*tolerb*0.01))
@@ -488,6 +488,7 @@ static void dump_table4(FILE *fp,int np,gmx_molprop_t pd[])
   int i,j,k,iline,natom;
   char buf[32],buf2[32];
   char *atomname,*comp;
+  char *comps[2] = { "spoel", "miller" };
   
   table4_header(fp,1);  
   iline = 0;
@@ -495,19 +496,18 @@ static void dump_table4(FILE *fp,int np,gmx_molprop_t pd[])
     fprintf(fp,"%3d. %s & %s &",++iline,
 	    gmx_molprop_get_molname(pd[i]),
 	    gmx_molprop_get_formula(pd[i]));
-    while((comp = gmx_molprop_get_composition(pd[i])) != NULL) {
-      if (strcasecmp(comp,"spoel") == 0) {
-	while(gmx_molprop_get_composition_atom(pd[i],comp,&atomname,&natom) == 1) {
-	  fprintf(fp,"%s$_{%d}$ ",atomname,natom);
+    for(k=0; (k<2); k++) {
+      while((comp = gmx_molprop_get_composition(pd[i])) != NULL) {
+	if (strcasecmp(comp,comps[k]) == 0) {
+	  while(gmx_molprop_get_composition_atom(pd[i],comp,&atomname,&natom) == 1) {
+	    fprintf(fp,"%s$_{%d}$ ",atomname,natom);
+	  }
 	}
+      }
+      if (k == 0) 
 	fprintf(fp," &");
-      }
-      else if (strcasecmp(comp,"miller") == 0) {
-	while(gmx_molprop_get_composition_atom(pd[i],comp,&atomname,&natom) == 1) {
-	  fprintf(fp,"%s$_{%d}$ ",atomname,natom);
-	}
+      else
 	fprintf(fp," \\\\\n");
-      }
     }
     if (((iline % 28) == 0) && (i+1<np)) {
       fprintf(fp,"\\hline\n\\end{tabular}\n\\end{sidewaystable}\n");
@@ -767,7 +767,7 @@ int main(int argc,char *argv[])
   for(i=0; (i<np); i++) {
     w[i] = gmx_molprop_get_weight(mp[i]);
     molname[cur] = gmx_molprop_get_molname(mp[i]);
-    fprintf(stderr,"Checking %s\n",molname[cur]);
+    //fprintf(stderr,"Checking %s\n",molname[cur]);
     if ((w[i] > 0) && 
 	(mp_num_polar(mp[i]) > 0) &&
 	(mp_get_polar(mp[i]) == 0)) {

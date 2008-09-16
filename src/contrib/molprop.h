@@ -65,12 +65,4 @@ extern gmx_molprop_t gmx_molprop_copy(gmx_molprop_t mpt);
 
 extern void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src);
 
-/* Choose algorithm for sorting:
- * 0 = molname
- * 1 = formula
- * 2 = composition
- */
-extern void gmx_molprop_sort(int np,gmx_molprop_t mp[],int alg,
-			     gmx_atomprop_t ap);
-
 #endif
