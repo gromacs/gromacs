@@ -272,10 +272,11 @@ void mk_graph_ilist(FILE *fplog,
   nbtot = calc_start_end(fplog,g,ilist,at_start,at_end,nbond);
   
   if (g->start >= g->end) {
-    g->nnodes=0;
+    g->nnodes = 0;
+    g->nbound = 0;
   }
   else {
-    g->nnodes=g->end-g->start+1;
+    g->nnodes = g->end - g->start + 1;
     snew(g->ishift,g->nnodes);
     snew(g->nedge,g->nnodes);
   
@@ -287,7 +288,7 @@ void mk_graph_ilist(FILE *fplog,
     snew(g->edge[0],nbtot);
 
     for(i=1; (i<g->nnodes); i++)
-      g->edge[i]=g->edge[i-1]+nbond[g->start+i-1];
+      g->edge[i] = g->edge[i-1] + nbond[g->start+i-1];
 
     if (!bShakeOnly) {
       /* First add all the real bonds: they should determine the molecular 
@@ -314,7 +315,7 @@ void mk_graph_ilist(FILE *fplog,
       if (bSettle)
 	mk_igraph(g,F_SETTLE,&(ilist[F_SETTLE]),at_start,at_end);
     }
-    g->nbound=0;
+    g->nbound = 0;
     for(i=0; (i<g->nnodes); i++)
       if (g->nedge[i] > 0)
         g->nbound++;
