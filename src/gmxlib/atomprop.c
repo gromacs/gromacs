@@ -42,6 +42,7 @@
 #include "smalloc.h"
 #include "string2.h"
 #include "futil.h"
+#include "maths.h"
 #include "gmx_fatal.h"
 #include "atomprop.h"
 #include "macros.h"
