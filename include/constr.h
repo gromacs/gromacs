@@ -159,6 +159,11 @@ extern void set_constraints(gmx_constr_t constr,
 			    gmx_domdec_t *dd);
 /* Set up all the local constraints for the node */
 
+extern t_blocka make_at2con(int start,int natoms,
+			    t_ilist *ilist,t_iparams *iparams,
+			    bool bDynamics,int *nflexiblecons);
+/* Returns a block struct to go from atoms to constraints */
+
 extern t_blocka *atom2constraints_moltype(gmx_constr_t constr);
 /* Returns the an arry of atom to constraints lists for the moltypes */
 
@@ -184,8 +189,7 @@ gmx_lincsdata_t init_lincs(FILE *fplog,gmx_mtop_t *mtop,
 			   bool bPLINCS,int nIter,int nProjOrder);
 /* Initializes and returns the lincs data struct */
 
-extern void set_lincs(t_idef *idef,int start,int homenr,
-		      t_blocka *at2con,
+extern void set_lincs(t_idef *idef,t_mdatoms *md,
 		      bool bDynamics,gmx_domdec_t *dd,
 		      gmx_lincsdata_t li);
 /* Initialize lincs stuff */

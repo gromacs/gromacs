@@ -516,9 +516,9 @@ static void make_shake_sblock_dd(struct gmx_constr *constr,
   constr->sblock[constr->nblocks] = 3*ncons;
 }
 
-static t_blocka make_at2con(int start,int natoms,
-			    t_ilist *ilist,t_iparams *iparams,
-			    bool bDynamics,int *nflexiblecons)
+t_blocka make_at2con(int start,int natoms,
+		     t_ilist *ilist,t_iparams *iparams,
+		     bool bDynamics,int *nflexiblecons)
 {
   int *count,ncon,con,nflexcon,i,a;
   t_iatom  *ia;
@@ -579,8 +579,7 @@ void set_constraints(struct gmx_constr *constr,
 		     t_mdatoms *md,gmx_domdec_t *dd)
 {
   t_idef *idef;
-  int  ncons,nflexcon,a0,a1;
-  t_blocka at2con;
+  int    ncons;
 
   idef = &top->idef;
 
@@ -589,46 +588,25 @@ void set_constraints(struct gmx_constr *constr,
   /* With DD we might also need to call LINCS with ncons=0 for communicating
    * coordinates to other nodes that do have constraints.
    */
-  if (ncons > 0 || (dd && dd->constraints)) {
-    if (ir->eConstrAlg == econtLINCS) {
-      if (dd) {
-	if (dd->constraints) {
-	  dd_get_constraint_range(dd,&a0,&a1);
-	} else {
-	  a1 = dd->nat_home;
-	}
-	a0 = 0;
-      } else {
-	a0 = md->start;
-	a1 = md->start + md->homenr;
-      }
-      at2con = make_at2con(a0,a1,&idef->il[F_CONSTR],idef->iparams,
-			   EI_DYNAMICS(ir->eI),&nflexcon);
-
-      set_lincs(idef,md->start,md->homenr,&at2con,
-		EI_DYNAMICS(ir->eI),dd,constr->lincsd);
-
-      /* The local atom to constraints list is no longer needed */
-      done_blocka(&at2con);
-
-      set_lincs_matrix(constr->lincsd,md->invmass,md->lambda);
-    } 
-    if (ir->eConstrAlg == econtSHAKE) {
-      if (dd) {
-	make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
-      } else {
-	make_shake_sblock_pd(constr,idef,md);
-      }
-      if (ncons > constr->lagr_nalloc) {
-	constr->lagr_nalloc = over_alloc_dd(ncons);
-	srenew(constr->lagr,constr->lagr_nalloc);
-      }
+  if (ir->eConstrAlg == econtLINCS) {
+    set_lincs(idef,md,EI_DYNAMICS(ir->eI),dd,constr->lincsd);
+  }
+  if (ir->eConstrAlg == econtSHAKE) {
+    if (dd) {
+      make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
+    } else {
+      make_shake_sblock_pd(constr,idef,md);
+    }
+    if (ncons > constr->lagr_nalloc) {
+      constr->lagr_nalloc = over_alloc_dd(ncons);
+      srenew(constr->lagr,constr->lagr_nalloc);
     }
   }
   
   /* Make a selection of the local atoms for essential dynamics */
-  if (constr->ed && dd)
+  if (constr->ed && dd) {
     dd_make_local_ed_indices(dd,constr->ed,md);
+  }
 }
 
 static void constr_recur(t_blocka *at2con,
