@@ -698,7 +698,12 @@ energy group pairs.
 For ordinary Ewald the spacing times the box dimensions determines the
 highest magnitude to use in each direction. In all cases
 each direction can be overridden by entering a non-zero value for
-<b>fourier_n*</b>. </dd>
+<b>fourier_n*</b>.
+For optimizing the relative load of the particle-particle interactions
+and the mesh part of PME it is useful to know that
+the accuracy of the electrostatics remains nearly constant
+when the Coulomb cut-off and the PME grid spacing are scaled
+by the same factor.</dd>
 
 <dt><h4>fourier_nx (0) ; fourier_ny (0) ; fourier_nz: (0)</h4></dt>
 <dd>Highest magnitude of wave vectors in reciprocal space when using Ewald.</dd>
