@@ -78,7 +78,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 {
     gmx_specatsend_t *spas;
     rvec *vbuf;
-    int  n,n0,n1,d,dir,i;
+    int  n,n0,n1,d,dim,dir,i;
     ivec vis;
     int  is;
     bool bPBC,bScrew;
@@ -86,7 +86,8 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     n = spac->at_end;
     for(d=dd->ndim-1; d>=0; d--)
     {
-        if (dd->nc[dd->dim[d]] > 2)
+        dim = dd->dim[d];
+        if (dd->nc[dim] > 2)
         {
             /* Pulse the grid forward and backward */
             spas = spac->spas[d];
@@ -100,9 +101,9 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                               f+n   ,n1,vbuf+spas[0].nsend,spas[1].nsend);
             for(dir=0; dir<2; dir++)
             {
-                bPBC   = ((dir == 0 && dd->ci[dd->dim[d]] == 0) || 
-                          (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1));
-                bScrew = (bPBC && dd->bScrewPBC && dd->dim[d] == XX);
+                bPBC   = ((dir == 0 && dd->ci[dim] == 0) || 
+                          (dir == 1 && dd->ci[dim] == dd->nc[dim]-1));
+                bScrew = (bPBC && dd->bScrewPBC && dim == XX);
                 
                 spas = &spac->spas[d][dir];
                 /* Sum the buffer into the required forces */
@@ -117,7 +118,7 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
                 else
                 {
                     clear_ivec(vis);
-                    vis[dd->dim[d]] = (dir==0 ? 1 : -1);
+                    vis[dim] = (dir==0 ? 1 : -1);
                     is = IVEC2IS(vis);
                     if (!bScrew)
                     {
@@ -156,9 +157,9 @@ static void dd_move_f_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
             dd_sendrecv_rvec(dd,d,dddirForward,
                              f+n,spas->nrecv,spac->vbuf,spas->nsend);
             /* Sum the buffer into the required forces */
-            if (dd->bScrewPBC && dd->dim[d] == XX &&
-                (dd->ci[dd->dim[d]] == 0 || 
-                 dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1))
+            if (dd->bScrewPBC && dim == XX &&
+                (dd->ci[dim] == 0 ||
+                 dd->ci[dim] == dd->nc[dim]-1))
             {
                 for(i=0; i<spas->nsend; i++)
                 {
@@ -205,7 +206,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
 {
     gmx_specatsend_t *spas;
     rvec *x,*vbuf,*rbuf;
-    int  nvec,v,n,nn,ns0,ns1,nr0,nr1,nr,d,dir,i;
+    int  nvec,v,n,nn,ns0,ns1,nr0,nr1,nr,d,dim,dir,i;
     bool bPBC,bScrew=FALSE;
     rvec shift;
     
@@ -218,25 +219,26 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
     n = spac->at_start;
     for(d=0; d<dd->ndim; d++)
     {
-        if (dd->nc[dd->dim[d]] > 2)
+        dim = dd->dim[d];
+        if (dd->nc[dim] > 2)
         {
             /* Pulse the grid forward and backward */
             vbuf = spac->vbuf;
             for(dir=0; dir<2; dir++)
             {
-                if (dir == 0 && dd->ci[dd->dim[d]] == 0)
+                if (dir == 0 && dd->ci[dim] == 0)
                 {
                     bPBC   = TRUE;
-                    bScrew = (dd->bScrewPBC && dd->dim[d] == XX);
-                    copy_rvec(box[dd->dim[d]],shift);
+                    bScrew = (dd->bScrewPBC && dim == XX);
+                    copy_rvec(box[dim],shift);
                 }
-                else if (dir == 1 && dd->ci[dd->dim[d]] == dd->nc[dd->dim[d]]-1)
+                else if (dir == 1 && dd->ci[dim] == dd->nc[dim]-1)
                 {
                     bPBC = TRUE;
-                    bScrew = (dd->bScrewPBC && dd->dim[d] == XX);
+                    bScrew = (dd->bScrewPBC && dim == XX);
                     for(i=0; i<DIM; i++)
                     {
-                        shift[i] = -box[dd->dim[d]][i];
+                        shift[i] = -box[dim][i];
                     }
                 }
                 else
@@ -326,7 +328,7 @@ static void dd_move_x_specat(gmx_domdec_t *dd,gmx_domdec_specat_comm_t *spac,
             for(v=0; v<nvec; v++)
             {
                 x = (v == 0 ? x0 : x1);
-                if (dd->bScrewPBC && dd->dim[d] == XX &&
+                if (dd->bScrewPBC && dim == XX &&
                     (dd->ci[XX] == 0 || dd->ci[XX] == dd->nc[XX]-1))
                 {
                     /* Here we only perform the rotation, the rest of the pbc
@@ -522,7 +524,9 @@ static int setup_specat_communication(gmx_domdec_t *dd,
                 spac->bSendAtom_nalloc = over_alloc_dd(nat_tot_specat);
                 srenew(spac->bSendAtom,spac->bSendAtom_nalloc);
                 for(i=nalloc_old; i<spac->bSendAtom_nalloc; i++)
+                {
                     spac->bSendAtom[i] = FALSE;
+                }
             }
             spas = &spac->spas[d][dir];
             n0 = spac->nreq[d][dir][0];
