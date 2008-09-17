@@ -199,9 +199,10 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		      inputrec->eI,&i,&t,state,&bReadRNG);
     }
     if (PAR(cr)) {
+      gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
+      gmx_bcast(DIM*sizeof(ddxyz[0]),ddxyz,cr);
       gmx_bcast(sizeof(i),&i,cr);
       gmx_bcast(sizeof(bReadRNG),&bReadRNG,cr);
-      gmx_bcast(DIM*sizeof(ddxyz[0]),ddxyz,cr);
     }
     inputrec->bContinuation = TRUE;
     inputrec->nsteps    += inputrec->init_step - i;
