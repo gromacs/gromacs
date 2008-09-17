@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -86,98 +87,105 @@ t_fftgrid *mk_fftgrid(int          nx,
                       int          ny,
                       int          nz,
                       int          *node2slab,
-		      int          *slab2grid_x,
+                      int          *slab2grid_x,
                       t_commrec *  cr,
                       bool         bReproducible)
 {
 /* parallel runs with non-parallel ffts haven't been tested yet */
-  int           nnodes;
-  int           localsize;
-  t_fftgrid *   grid;
-  int           flags;
+    int           nnodes;
+    int           x1,y1,maxlocalsize;
+    t_fftgrid *   grid;
+    int           flags;
     
-  nnodes = 1;
+    nnodes = 1;
 #ifdef GMX_MPI
-  if (cr && cr->nnodes > 1) {
-    MPI_Comm_size(cr->mpi_comm_mygroup,&nnodes);
-  }
+    if (cr && cr->nnodes > 1) {
+        MPI_Comm_size(cr->mpi_comm_mygroup,&nnodes);
+    }
 #endif
- 
-  snew(grid,1);
-  grid->nx   = nx;
-  grid->ny   = ny;
-  grid->nz   = nz;
-  grid->nxyz = nx*ny*nz;
-  grid->bParallel = (nnodes > 1);
-  
-  if (grid->bParallel)
-  {
-      grid->la2r = (nz/2+1)*2;
-  }
-  else
-  {
-      grid->la2r = nz;  
-  }
-  
-  grid->la2c = (nz/2+1);    
-
-  grid->la12r = ny*grid->la2r;
-  
-  if (grid->bParallel)
-  {
-      grid->la12c = nx*grid->la2c;
-  }
-  else
-  {
-    grid->la12c = ny*grid->la2c;
-  }
-  
-  grid->nptr = nx*ny*grid->la2c*2;
-
-  if (grid->bParallel) 
-  {
+    
+    snew(grid,1);
+    grid->nx   = nx;
+    grid->ny   = ny;
+    grid->nz   = nz;
+    grid->nxyz = nx*ny*nz;
+    grid->bParallel = (nnodes > 1);
+    
+    if (grid->bParallel)
+    {
+        grid->la2r = (nz/2+1)*2;
+    }
+    else
+    {
+        grid->la2r = nz;  
+    }
+    
+    grid->la2c = (nz/2+1);    
+    
+    grid->la12r = ny*grid->la2r;
+    
+    if (grid->bParallel)
+    {
+        grid->la12c = nx*grid->la2c;
+    }
+    else
+    {
+        grid->la12c = ny*grid->la2c;
+    }
+    
+    /* This code assumes that the when the grid is not divisble by nnodes,
+     * the maximum difference in local grid sizes is 1.
+     */
+    x1 = (nx % nnodes == 0 ? 0 : 1);
+    y1 = (ny % nnodes == 0 ? 0 : 1);
+    
+    grid->nptr = (nx + x1)*(ny + y1)*grid->la2c*2;
+    
+    if (grid->bParallel) 
+    {
 #ifdef GMX_MPI
-      gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
-			      node2slab,slab2grid_x,cr->mpi_comm_mygroup,
-			      bReproducible);
-          
-      gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
-                                &(grid->pfft.local_x_start),                                
-                                &(grid->pfft.local_nx),
-                                &(grid->pfft.local_y_start_after_transpose),
-                                &(grid->pfft.local_ny_after_transpose));
+        gmx_parallel_3dfft_init(&grid->mpi_fft_setup,nx,ny,nz,
+                                node2slab,slab2grid_x,cr->mpi_comm_mygroup,
+                                bReproducible);
+        
+        gmx_parallel_3dfft_limits(grid->mpi_fft_setup,
+                                  &(grid->pfft.local_x_start),
+                                  &(grid->pfft.local_nx),
+                                  &(grid->pfft.local_y_start_after_transpose),
+                                  &(grid->pfft.local_ny_after_transpose));
 #else
-    gmx_fatal(FARGS,"Parallel FFT supported with MPI only!");
+        gmx_fatal(FARGS,"Parallel FFT supported with MPI only!");
 #endif
-  }
-  else 
-  {
-      flags = bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : 0;
-      gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz,flags);
-  }
-  grid->ptr = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
-  
+    }
+    else 
+    {
+        flags = bReproducible ? GMX_FFT_FLAG_CONSERVATIVE : 0;
+        gmx_fft_init_3d_real(&grid->fft_setup,nx,ny,nz,flags);
+    }
+    grid->ptr = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->ptr)));
+    
 #ifdef GMX_MPI
-  if (grid->bParallel && debug) 
-  {
-    print_parfft(debug,"Plan", &grid->pfft);
-  }
-  if (grid->bParallel)
-  {
-      int maxlocalsize;
-      maxlocalsize = max(grid->la2c *2*grid->pfft.local_nx*ny,
-			 grid->la12c*2*grid->pfft.local_ny_after_transpose);
-      grid->workspace = gmx_alloc_aligned(maxlocalsize*sizeof(*(grid->workspace)));
-  }
-  else
-  {
-      grid->workspace = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
-  }
+    if (grid->bParallel && debug) 
+    {
+        print_parfft(debug,"Plan", &grid->pfft);
+    }
+    if (grid->bParallel)
+    {
+        maxlocalsize = max((nx/nnodes + x1)*ny*grid->la2c*2,
+                           (ny/nnodes + y1)*nx*grid->la2c*2);
+        grid->workspace =
+            gmx_alloc_aligned(maxlocalsize*sizeof(*(grid->workspace)));
+    }
+    else
+    {
+        grid->workspace =
+            gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
+    }
 #else /* no MPI */
-  grid->workspace = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
+    grid->workspace = gmx_alloc_aligned(grid->nptr*sizeof(*(grid->workspace)));
 #endif
 
-  return grid;
+    return grid;
 }
 
 void 
@@ -270,8 +278,8 @@ void clear_fftgrid(t_fftgrid *grid)
 }
 
 void unpack_fftgrid(t_fftgrid *grid,int *nx,int *ny,int *nz,
-		    int *nx2,int *ny2,int *nz2,
-		    int *la2,int *la12,bool bReal,real **ptr)
+                    int *nx2,int *ny2,int *nz2,
+                    int *la2,int *la12,bool bReal,real **ptr)
 {
   *nx  = grid->nx;
   *ny  = grid->ny;
@@ -430,7 +438,7 @@ void free_cgrid(t_complex ***grid,int nx,int ny)
 }
 
 t_complex print_cgrid(FILE *fp,char *title,int nx,int ny,int nz,
-		      t_complex ***grid)
+                      t_complex ***grid)
 {
   int     ix,iy,iz;
   t_complex g,gtot;
