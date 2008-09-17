@@ -120,7 +120,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      real pforce,real cpt_period,real max_hours,
 	      unsigned long Flags)
 {
-  double     nodetime=0,realtime,t;
+  double     nodetime=0,realtime;
   t_inputrec *inputrec;
   t_state    *state=NULL;
   matrix     box;
@@ -192,21 +192,10 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
 
   if (opt2bSet("-cpi",nfile,fnm)) {
-    if (SIMMASTER(cr)) {
-      /* Read the state from the checkpoint file */
-      read_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
-		      cr,Flags & MD_PARTDEC,ddxyz,
-		      inputrec->eI,&i,&t,state,&bReadRNG);
-    }
-    if (PAR(cr)) {
-      gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
-      gmx_bcast(DIM*sizeof(ddxyz[0]),ddxyz,cr);
-      gmx_bcast(sizeof(i),&i,cr);
-      gmx_bcast(sizeof(bReadRNG),&bReadRNG,cr);
-    }
-    inputrec->bContinuation = TRUE;
-    inputrec->nsteps    += inputrec->init_step - i;
-    inputrec->init_step  = i;
+    /* Read the state from the checkpoint file */
+    load_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
+		    cr,Flags & MD_PARTDEC,ddxyz,
+		    inputrec,state,&bReadRNG);
     if (bReadRNG) {
       Flags |= MD_READ_RNG;
     }

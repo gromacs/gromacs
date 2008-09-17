@@ -48,13 +48,15 @@ extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 			     int eIntegrator,int step,double t,
 			     t_state *state);
 
-/* Read a checkpoint from fn for run contiunation.
- * Generates a fatal error on size mismatch.
+/* Loads a checkpoint from fn for run continuation.
+ * Generates a fatal error on system size mismatch.
+ * The master node reads the file
+ * and communicates all the modified number of steps and the parallel setup,
+ * but not the state itself.
  */
-extern void read_checkpoint(char *fn,FILE *fplog,
-			    t_commrec *cr,bool bPartDec,ivec dd_nc,
-			    int eIntegrator,int *step,double *t,
-			    t_state *state,bool *bReadRNG);
+extern void load_checkpoint(char *fn,FILE *fplog,
+			    t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+			    t_inputrec *ir,t_state *state,bool *bReadRNG);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.

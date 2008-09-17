@@ -32,6 +32,7 @@
 #include "statutil.h"
 #include "txtdump.h"
 #include "vec.h"
+#include "network.h"
 #include "checkpoint.h"
 
 #define CPT_MAGIC1 171817
@@ -711,10 +712,10 @@ static void check_match(FILE *fplog,
     }
 }
 
-void read_checkpoint(char *fn,FILE *fplog,
-                     t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-                     int eIntegrator,int *step,double *t,
-                     t_state *state,bool *bReadRNG)
+static void read_checkpoint(char *fn,FILE *fplog,
+                            t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+                            int eIntegrator,int *step,double *t,
+                            t_state *state,bool *bReadRNG)
 {
     int  fp;
     int  file_version;
@@ -786,7 +787,8 @@ void read_checkpoint(char *fn,FILE *fplog,
     if (!PAR(cr))
     {
         nppnodes = 1;
-    } else if (bPartDecomp)
+    }
+    else if (bPartDecomp)
     {
         nppnodes = cr->nnodes;
     }
@@ -863,6 +865,30 @@ void read_checkpoint(char *fn,FILE *fplog,
     sfree(btime);
     sfree(buser);
     sfree(bmach);
+}
+
+void load_checkpoint(char *fn,FILE *fplog,
+                     t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+                     t_inputrec *ir,t_state *state,bool *bReadRNG)
+{
+    int    step;
+    double t;
+
+    if (SIMMASTER(cr)) {
+      /* Read the state from the checkpoint file */
+      read_checkpoint(fn,fplog,
+                      cr,bPartDecomp,dd_nc,
+                      ir->eI,&step,&t,state,bReadRNG);
+    }
+    if (PAR(cr)) {
+      gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
+      gmx_bcast(DIM*sizeof(dd_nc[0]),dd_nc,cr);
+      gmx_bcast(sizeof(step),&step,cr);
+      gmx_bcast(sizeof(&bReadRNG),bReadRNG,cr);
+    }
+    ir->bContinuation = TRUE;
+    ir->nsteps       += ir->init_step - step;
+    ir->init_step     = step;
 }
 
 static void low_read_checkpoint_state(int fp,
