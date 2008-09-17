@@ -56,6 +56,7 @@
 #include "mtop_util.h"
 
 typedef struct gmx_constr {
+  int             ncon_tot;     /* The total number of constraints    */
   int             nflexcon;     /* The number of flexible constraints */
   int             n_at2con_mt;  /* The size of at2con = #moltypes     */
   t_blocka        *at2con_mt;   /* A list of atoms to constraints     */
@@ -581,28 +582,30 @@ void set_constraints(struct gmx_constr *constr,
   t_idef *idef;
   int    ncons;
 
-  idef = &top->idef;
-
-  ncons = idef->il[F_CONSTR].nr/3;
-
-  /* With DD we might also need to call LINCS with ncons=0 for communicating
-   * coordinates to other nodes that do have constraints.
-   */
-  if (ir->eConstrAlg == econtLINCS) {
-    set_lincs(idef,md,EI_DYNAMICS(ir->eI),dd,constr->lincsd);
-  }
-  if (ir->eConstrAlg == econtSHAKE) {
-    if (dd) {
-      make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
-    } else {
-      make_shake_sblock_pd(constr,idef,md);
+  if (constr->ncon_tot > 0) {
+    idef = &top->idef;
+    
+    ncons = idef->il[F_CONSTR].nr/3;
+    
+    /* With DD we might also need to call LINCS with ncons=0 for communicating
+     * coordinates to other nodes that do have constraints.
+     */
+    if (ir->eConstrAlg == econtLINCS) {
+      set_lincs(idef,md,EI_DYNAMICS(ir->eI),dd,constr->lincsd);
     }
-    if (ncons > constr->lagr_nalloc) {
-      constr->lagr_nalloc = over_alloc_dd(ncons);
-      srenew(constr->lagr,constr->lagr_nalloc);
+    if (ir->eConstrAlg == econtSHAKE) {
+      if (dd) {
+	make_shake_sblock_dd(constr,&idef->il[F_CONSTR],&top->cgs,dd);
+      } else {
+	make_shake_sblock_pd(constr,idef,md);
+      }
+      if (ncons > constr->lagr_nalloc) {
+	constr->lagr_nalloc = over_alloc_dd(ncons);
+	srenew(constr->lagr,constr->lagr_nalloc);
+      }
     }
   }
-  
+
   /* Make a selection of the local atoms for essential dynamics */
   if (constr->ed && dd) {
     dd_make_local_ed_indices(dd,constr->ed,md);
@@ -761,6 +764,7 @@ gmx_constr_t init_constraints(FILE *fplog,
 
   snew(constr,1);
   
+  constr->ncon_tot = ncon;
   constr->nflexcon = 0;
   if (ncon > 0) {
     constr->n_at2con_mt = mtop->nmoltype;
