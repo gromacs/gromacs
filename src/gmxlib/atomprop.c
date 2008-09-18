@@ -45,6 +45,7 @@
 #include "maths.h"
 #include "gmx_fatal.h"
 #include "atomprop.h"
+#include "maths.h"
 #include "macros.h"
 #include "index.h"
 #include "strdb.h"
@@ -214,22 +215,6 @@ static void atomprop_name_warning(char *type)
 	 type);
 }
 
-gmx_atomprop_t gmx_atomprop_init(void)
-{
-  gmx_atomprop *aps;
-  int p;
-
-  snew(aps,1);
-
-  aps->aan = get_aa_names();
-
-  for(p=0; p<epropNR; p++) {
-    aps->prop[p].bSet = FALSE;
-  }
-
-  return (gmx_atomprop_t)aps;
-}
-
 static void set_prop(gmx_atomprop_t aps,int eprop) 
 {
   gmx_atomprop *ap2 = (gmx_atomprop*) aps;
@@ -252,6 +237,21 @@ static void set_prop(gmx_atomprop_t aps,int eprop)
   read_prop(aps,eprop,fac[eprop]);
 
   printf("Entries in %s: %d\n",ap->db,ap->nprop);
+}
+
+gmx_atomprop_t gmx_atomprop_init(void)
+{
+  gmx_atomprop *aps;
+  int p;
+
+  snew(aps,1);
+
+  aps->aan = get_aa_names();
+
+  for(p=0; p<epropNR; p++) 
+    set_prop(aps,p);
+
+  return (gmx_atomprop_t)aps;
 }
 
 static void destroy_prop(aprop_t *ap)
@@ -296,10 +296,6 @@ bool gmx_atomprop_query(gmx_atomprop_t aps,
 #define MAXQ 32
   char atomname[MAXQ],resname[MAXQ];
   bool bExact;
-
-  if (!ap->prop[eprop].bSet) {
-    set_prop(ap,eprop);
-  }
 
   if ((strlen(atomnm) > MAXQ-1) || (strlen(resnm) > MAXQ-1)) {
     if (debug)
