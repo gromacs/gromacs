@@ -42,9 +42,8 @@
 #include "vec.h"
 #include "statutil.h"
 #include "coulomb.h"
-#include "slater_integrals.h"
 
-enum { mGuillot2001a, mAB1, mLjc, mMaaren, mSlater, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
+enum { mGuillot2001a, mAB1, mLjc, mMaaren, mGuillot_Maple, mHard_Wall, mGG, mGG_qd_q, mGG_qd_qd, mGG_q_q, mNR };
 
 static double erf2(double x)
 {
@@ -540,49 +539,6 @@ static void do_guillot2001a(const char *file,int eel,int pts_nm,double rc,double
   }
 }
 
-static void do_Slater(const char *file,int eel,int pts_nm,
-		      double rc,double rtol,int nrow1,int nrow2,
-		      double w1,double w2)
-{
-  FILE *fp=NULL;
-  static char buf[256];
-  int    i,j,k,l,kl,m,i0,imax;
-  double r,vc,fc,vd,fd,vr,fr;
-  
-  sprintf(buf,"table_%d-%g_%d-%g.xvg",nrow1,w1,nrow2,w2);
-  printf("Writing %s\n",buf);
-  fp = ffopen(buf,"w");
-
-  vd = fd = vr = fr = 0;	  
-  imax = 3*pts_nm;
-  for(i=0; (i<=imax); i++) {
-    r  = i*(1.0/pts_nm);
-    vc = fc = 0;    
-    if ((w1 == 0) && (w2 == 0)) {
-      if (r > 0) {
-	vc = 1/r;
-	fc = 1/sqr(r);
-      }
-    }
-    else if ((w1 == 0) && (w2 != 0)) {
-      vc = Nuclear_SS(r,nrow2,w2);
-      fc = DNuclear_SS(r,nrow2,w2);
-    }
-    else if ((w2 == 0) && (w1 != 0)) {
-      vc = Nuclear_SS(r,nrow1,w1);
-      fc = DNuclear_SS(r,nrow1,w1);
-    }
-    else {
-      vc = Coulomb_SS(r,nrow1,nrow2,w1,w2);
-      fc = DCoulomb_SS(r,nrow1,nrow2,w1,w2);
-    }
-    
-    fprintf(fp,"%15.10e   %15.10e %15.10e   %15.10e %15.10e   %15.10e %15.10e\n",
-	    r,vc,fc,vd,fd,vr,fr);
-  }
-  fclose(fp);
-}
-
 static void do_ljc(FILE *fp,int eel,int pts_nm,real rc,real rtol)
 { 
   int    i,i0,imax;
@@ -758,16 +714,11 @@ int main(int argc,char *argv[])
     "using new tables with an older GROMACS version. This is because in the",
     "old version the second derevative of the potential was specified",
     "whereas in the new version the first derivative of the potential",
-    "is used instead.[PAR]",
-    "For Slater interactions four parameters must be passed: the 1/Width",
-    "and the row number of the element. The interactions are computed analytically",
-    "which may be slow due to the fact that arbitraray precision arithmetic is",
-    "needed. If the width of one of the Slater is zero a Nucleus-Slater interaction",
-    "will be generated." 
+    "is used instead.[PAR]"
   };
   static char *opt[]     = { NULL, "cut", "rf", "pme", NULL };
   /*  static char *model[]   = { NULL, "guillot", "AB1", "ljc", "maaren", "guillot_maple", "hard_wall", "gg_q_q", "gg_qd_q", "gg_qd_qd", NULL }; */
-  static char *model[]   = { NULL, "ljc", "gg", "guillot2001a", "slater", 
+  static char *model[]   = { NULL, "ljc", "gg", "guillot2001a",  
 			     NULL };
   static real delta=0,efac=500,rc=0.9,rtol=1e-05,xi=0.15,xir=0.0615;
   static real w1=20,w2=20;
@@ -786,14 +737,6 @@ int main(int argc,char *argv[])
       "Width of the Gaussian diffuse charge of the G&G model" },
     { "-xir",   FALSE, etREAL, {&xir},
       "Width of erfc(z)/z repulsion of the G&G model (z=0.5 rOO/xir)" },
-    { "-z1",   FALSE, etREAL, {&w1},
-      "1/Width of the first Slater charge (unit 1/nm)" },
-    { "-z2",   FALSE, etREAL, {&w2},
-      "1/Width of the second Slater charge (unit 1/nm)" },
-    { "-nrow1",   FALSE, etINT, {&nrow1},
-      "Row number for the first Slater charge" },
-    { "-nrow2",   FALSE, etINT, {&nrow2},
-      "Row number for the first Slater charge" },
     { "-m",      FALSE, etENUM, {model},
       "Model for the tables" },
     { "-resol",  FALSE, etINT,  {&pts_nm},
@@ -838,8 +781,6 @@ int main(int argc,char *argv[])
     m = mGuillot2001a;
   else if (strcmp(model[0],"guillot_maple") == 0) 
     m = mGuillot_Maple;
-  else if (strcmp(model[0],"slater") == 0) 
-    m = mSlater;
   else if (strcmp(model[0],"hard_wall") == 0) 
     m = mHard_Wall;
   else if (strcmp(model[0],"gg") == 0) 
@@ -854,14 +795,11 @@ int main(int argc,char *argv[])
     gmx_fatal(FARGS,"Invalid argument %s for option -m",opt[0]);
     
   fn = opt2fn("-o",NFILE,fnm);
-  if ((m != mGuillot2001a) && (m != mSlater)) 
+  if ((m != mGuillot2001a)) 
     fp = ffopen(fn,"w");
   switch (m) {
   case mGuillot2001a:
     do_guillot2001a(fn,eel,pts_nm,rc,rtol,xi,xir);
-    break;
-  case mSlater:
-    do_Slater(fn,eel,pts_nm,rc,rtol,nrow1,nrow2,w1,w2);
     break;
   case mGuillot_Maple:
     fprintf(fp, "#\n# Table Guillot_Maple: rc=%g, rtol=%g, xi=%g, xir=%g\n#\n",rc,rtol,xi,xir);
@@ -902,7 +840,7 @@ int main(int argc,char *argv[])
   default:
     gmx_fatal(FARGS,"Model %s not supported yet",model[0]);
   }  
-  if ((m != mGuillot2001a) && (m != mSlater)) 
+  if ((m != mGuillot2001a)) 
     fclose(fp);
   
   thanx(stdout);
