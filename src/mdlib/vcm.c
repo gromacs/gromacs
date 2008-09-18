@@ -298,7 +298,7 @@ void check_cm_grp(FILE *fp,t_vcm *vcm,real Temp_Max)
   }
   for(g=0; (g<vcm->nr); g++) {
     ekcm    = 0;
-    if (vcm->group_mass[g] != 0) {
+    if (vcm->group_mass[g] != 0 && vcm->group_ndf[g] > 0) {
       for(m=0; m<vcm->ndim; m++) 
 	ekcm += sqr(vcm->group_v[g][m]);
       ekcm *= 0.5*vcm->group_mass[g];
