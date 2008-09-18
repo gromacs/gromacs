@@ -228,7 +228,6 @@ void gmx_molprop_add_composition_atom(gmx_molprop_t mpt,char *compname,
   if (i >= 0) {
     for(j=0; (j<mp->composition[i].ncatom); j++) {
       if (strcasecmp(mp->composition[i].catom[j].cname,atomname) == 0) {
-	mp->composition[i].catom[j].cnumber += natom;
 	break;
       }
     }
@@ -415,9 +414,9 @@ void gmx_molprop_merge(gmx_molprop_t dst,gmx_molprop_t src)
     }
   }
   else {
-    printf("Both src and dst for %s (%s) contain composition entries (%d vs. %d).\n"
-	   "Not changing composition elements\n",
-	   sss->molname,ddd->formula,sss->ncomposition,ddd->ncomposition);
+    printf("Dst for %s (%s) already contains %d composition entries (source has %d).\n"
+	   "Not adding source composition elements\n",
+	   sss->molname,ddd->formula,ddd->ncomposition,sss->ncomposition);
   }
 }
 

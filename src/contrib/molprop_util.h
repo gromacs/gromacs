@@ -9,7 +9,7 @@
 extern void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
 				 gmx_atomprop_t ap);
 
-extern void check_formula(int np,gmx_molprop_t pd[],gmx_atomprop_t ap);
+extern void generate_formula(int nmol,gmx_molprop_t mp[],gmx_atomprop_t ap);
 
 extern gmx_molprop_t atoms_2_molprop(char *molname,t_atoms*atoms,t_params *bonds,
 				     gmx_atomprop_t ap,gmx_poldata_t pd);

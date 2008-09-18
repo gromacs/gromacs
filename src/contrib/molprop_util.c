@@ -2,7 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include "smalloc.h"
+#include "maths.h"
 #include "atomprop.h"
+#include "poldata.h"
 #include "molprop.h"
 #include "molprop_util.h"
 #include "molprop_xml.h"
@@ -21,7 +23,7 @@ void generate_composition(int nmol,gmx_molprop_t mp[],gmx_poldata_t pd,
     
     while (gmx_molprop_get_composition_atom(mp[j],"spoel",&catom,&cnumber) == 1) {
       if (gmx_poldata_get_spoel(pd,catom,&elem,&miller_equiv,
-				&nh,NULL,NULL,NULL,NULL) != NULL) {
+				&nh,NULL,NULL,NULL,NULL,NULL) != NULL) {
 	gmx_molprop_add_composition_atom(mp[j],"miller",miller_equiv,cnumber);
 	gmx_molprop_add_composition_atom(mp[j],"bosque",elem,cnumber);
 	if (nh > 0) {
@@ -146,8 +148,8 @@ static void merge_doubles(int *np,gmx_molprop_t mp[],char *doubles)
       }
       else {
 	printf("Molecules %s, %s have formulae %s resp. %s\n",
-	       gmx_molprop_get_molname(mp[i]),
-	       gmx_molprop_get_formula(mp[i]));
+	       gmx_molprop_get_molname(mp[i-1]),gmx_molprop_get_molname(mp[i]),
+	       gmx_molprop_get_formula(mp[i-1]),gmx_molprop_get_formula(mp[i]));
       }
       
     }
@@ -192,8 +194,11 @@ gmx_molprop_t *merge_xml(int argc,char *argv[],char *outf,
     sprintf(buf,"%s-test",argv[i]);
     gmx_molprops_write(buf,np,mp);
     srenew(mpout,npout+np);
-    for(j=0; (j<np); j++)
+    for(j=0; (j<np); j++) {
       mpout[npout+j] = gmx_molprop_copy(mp[j]);
+      gmx_molprop_delete(mp[j]);
+    }
+    sfree(mp);
     npout += np;
   }
   printf("There are %d total molecules\n",npout);
