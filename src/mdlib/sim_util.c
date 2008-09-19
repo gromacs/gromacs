@@ -47,6 +47,7 @@
 #include <math.h>
 #include "typedefs.h"
 #include "string2.h"
+#include "gmxfio.h"
 #include "smalloc.h"
 #include "names.h"
 #include "confio.h"
@@ -99,7 +100,7 @@ void print_time(FILE *out,time_t start,int step,t_inputrec *ir)
 
   if (!gmx_parallel_env)
     fprintf(out,"\r");
-  fprintf(out,"step %d",step - ir->init_step);
+  fprintf(out,"step %d",step);
   if ((step >= ir->nstlist)) {
     if ((ir->nstlist == 0) || ((step % ir->nstlist) == 0)) {
       /* We have done a full cycle let's update time_per_step */
@@ -1183,20 +1184,23 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 }
 
 void init_md(FILE *fplog,
-	     t_commrec *cr,t_inputrec *ir,real *t,real *t0,
-	     real *lambda,real *lam0,
-	     t_nrnb *nrnb,gmx_mtop_t *mtop,
-	     gmx_stochd_t *sd,
-	     int nfile,t_filenm fnm[],
-	     int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
-	     FILE **fp_dgdl,FILE **fp_field,
-	     t_mdebin **mdebin,
-	     tensor force_vir,tensor shake_vir,rvec mu_tot,
-	     bool *bNEMD,bool *bSimAnn,t_vcm **vcm)
+			 t_commrec *cr,t_inputrec *ir,real *t,real *t0,
+			 real *lambda,real *lam0,
+			 t_nrnb *nrnb,gmx_mtop_t *mtop,
+			 gmx_stochd_t *sd,
+			 int nfile,t_filenm fnm[],
+			 int *fp_trn,int *fp_xtc,int *fp_ene,char **fn_cpt,
+			 FILE **fp_dgdl,FILE **fp_field,
+			 t_mdebin **mdebin,
+			 tensor force_vir,tensor shake_vir,rvec mu_tot,
+			 bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags)
 {
   int  i,j,n;
   real tmpt,mod;
+  char filemode[2];
 
+  sprintf(filemode, (Flags & MD_APPENDFILES) ? "a" : "w");
+	
   /* Initial values */
   *t = *t0       = ir->init_t;
   if (ir->efep != efepNO) {
@@ -1227,7 +1231,7 @@ void init_md(FILE *fplog,
     *vcm = init_vcm(fplog,&mtop->groups,ir);
   }
    
-  if (EI_DYNAMICS(ir->eI)) {
+  if (EI_DYNAMICS(ir->eI) && !(Flags & MD_APPENDFILES)) {
     if (ir->etc == etcBERENDSEN) {
       please_cite(fplog,"Berendsen84a");
     }
@@ -1237,30 +1241,54 @@ void init_md(FILE *fplog,
   }
  
   init_nrnb(nrnb);
-  
-  if (nfile != -1) {
-    if (MASTER(cr)) {
-      *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm),"w");
-      if (ir->nstxtcout > 0)
-	*fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm),"w");
-      *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm),"w");
-      *fn_cpt = opt2fn("-cpo",nfile,fnm);
-      if ((fp_dgdl != NULL) && ir->efep!=efepNO)
-	*fp_dgdl =
-	  xvgropen(opt2fn("-dgdl",nfile,fnm),
-		   "dG/d\\8l\\4","Time (ps)",
-		   "dG/d\\8l\\4 (kJ mol\\S-1\\N [\\8l\\4]\\S-1\\N)");
-      if ((fp_field != NULL) && (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
-	*fp_field = xvgropen(opt2fn("-field",nfile,fnm),
-			     "Applied electric field","Time (ps)",
-			     "E (V/nm)");
-    } else {
-      *fp_ene = -1;
-    }
 
-    *mdebin = init_mdebin(*fp_ene,mtop,ir);
+  if (nfile != -1)
+  {
+	  *fp_trn = -1;
+	  *fp_ene = -1;
+	  *fp_xtc = -1;
+	  
+	  if (MASTER(cr)) 
+	  {
+		  *fp_trn = open_trn(ftp2fn(efTRN,nfile,fnm), filemode);
+		  if (ir->nstxtcout > 0)
+		  {
+			  *fp_xtc = open_xtc(ftp2fn(efXTC,nfile,fnm), filemode);
+		  }
+		  *fp_ene = open_enx(ftp2fn(efENX,nfile,fnm), filemode);
+		  *fn_cpt = opt2fn("-cpo",nfile,fnm);
+		  
+		  if ((fp_dgdl != NULL) && ir->efep!=efepNO)
+		  {
+			  if(Flags & MD_APPENDFILES)
+			  {
+				  *fp_dgdl= gmx_fio_fopen(opt2fn("-dgdl",nfile,fnm),filemode);
+			  }
+			  else
+			  {
+				  *fp_dgdl = xvgropen(opt2fn("-dgdl",nfile,fnm),
+									  "dG/d\\8l\\4","Time (ps)",
+									  "dG/d\\8l\\4 (kJ mol\\S-1\\N [\\8l\\4]\\S-1\\N)");
+			  }
+		  }
+		  
+		  if ((fp_field != NULL) && (ir->ex[XX].n || ir->ex[YY].n ||ir->ex[ZZ].n))
+		  {
+			  if(Flags & MD_APPENDFILES)
+			  {
+				  *fp_dgdl=gmx_fio_fopen(opt2fn("-field",nfile,fnm),filemode);
+			  }
+			  else
+			  {				  
+				  *fp_field = xvgropen(opt2fn("-field",nfile,fnm),
+									   "Applied electric field","Time (ps)",
+									   "E (V/nm)");
+			  }
+		  }
+	  }
+	  *mdebin = init_mdebin( (Flags & MD_APPENDFILES) ? -1 : *fp_ene,mtop,ir);
   }
-  
+
   /* Initiate variables */  
   clear_mat(force_vir);
   clear_mat(shake_vir);

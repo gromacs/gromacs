@@ -54,6 +54,7 @@
 #include "partdec.h"
 #include "splitter.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 typedef struct gmx_constr {
   int             ncon_tot;     /* The total number of constraints    */
@@ -166,7 +167,7 @@ static void write_constr_pdb(char *fn,char *title,gmx_mtop_t *mtop,
   }
   sprintf(format,"%s\n",pdbformat);
 
-  out = ffopen(fname,"w");
+  out = gmx_fio_fopen(fname,"w");
 
   fprintf(out,"TITLE     %s\n",title);
   gmx_write_pdb_box(out,-1,box);
@@ -185,7 +186,7 @@ static void write_constr_pdb(char *fn,char *title,gmx_mtop_t *mtop,
   }
   fprintf(out,"TER\n");
 
-  fclose(out);
+  gmx_fio_fclose(out);
 }
 			     
 static void dump_confs(FILE *fplog,int step,gmx_mtop_t *mtop,

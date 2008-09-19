@@ -237,13 +237,13 @@ static void moveit(t_commrec *cr,
 }
 
 void write_traj(FILE *fplog,t_commrec *cr,
-		int fp_trn,bool bX,bool bV,bool bF,
-		int fp_xtc,bool bXTC,int xtc_prec,
-		char *fn_cpt,bool bCPT,
-		gmx_mtop_t *top_global,
-		int eIntegrator,int step,double t,
-		t_state *state_local,t_state *state_global,
-		rvec *f_local,rvec *f_global)
+				int fp_trn,bool bX,bool bV,bool bF,
+				int fp_xtc,bool bXTC,int xtc_prec,
+				char *fn_cpt,bool bCPT,
+				gmx_mtop_t *top_global,
+				int eIntegrator,int simulation_part,int step,double t,
+				t_state *state_local,t_state *state_global,
+				rvec *f_local,rvec *f_global)
 {
   static int  nxtc=-1;
   static rvec *xxtc=NULL;
@@ -301,7 +301,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 
   if (MASTER(cr)) {
     if (bCPT) {
-      write_checkpoint(fn_cpt,fplog,cr,eIntegrator,step,t,state_global);
+      write_checkpoint(fn_cpt,fplog,cr,eIntegrator,simulation_part,step,t,state_global);
     }
 
     if (bX || bV || bF) {
@@ -319,19 +319,20 @@ void write_traj(FILE *fplog,t_commrec *cr,
 	for(i=0; (i<top_global->natoms); i++)
 	  if (ggrpnr(groups,egcXTC,i) == 0)
 	    nxtc++;
-	if (nxtc != top_global->natoms)
-	  snew(xxtc,nxtc);
+		  if (nxtc != top_global->natoms)
+			  snew(xxtc,nxtc);
       }
-      if (nxtc == top_global->natoms) {
-	xxtc = state_global->x;
-      } else {
-	j = 0;
-	for(i=0; (i<top_global->natoms); i++)
-	  if (ggrpnr(groups,egcXTC,i) == 0)
-	    copy_rvec(state_global->x[i],xxtc[j++]);
-      }
-      if (write_xtc(fp_xtc,nxtc,step,t,state_local->box,xxtc,xtc_prec) == 0)
+		if (nxtc == top_global->natoms) {
+			xxtc = state_global->x;
+		} else {
+			j = 0;
+			for(i=0; (i<top_global->natoms); i++)
+				if (ggrpnr(groups,egcXTC,i) == 0)
+					copy_rvec(state_global->x[i],xxtc[j++]);
+		}
+		if (write_xtc(fp_xtc,nxtc,step,t,state_local->box,xxtc,xtc_prec) == 0)
 	gmx_fatal(FARGS,"XTC error");
     }
   }
 }
+

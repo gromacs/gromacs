@@ -213,7 +213,7 @@ int main(int argc,char *argv[])
     n3 = 2*niter[i]*nnn[i]*nnn[i]*nnn[i];
     fprintf(fp,"%10d  %10g  %10g\n",nnn[i],rt[i]/n3,ct[i]/n3);
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
   
   return 0;
 }

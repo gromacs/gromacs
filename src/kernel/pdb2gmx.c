@@ -41,6 +41,7 @@
 #include <ctype.h>
 #include "sysstuff.h"
 #include "typedefs.h"
+#include "gmxfio.h"
 #include "smalloc.h"
 #include "copyrite.h"
 #include "string2.h"
@@ -244,7 +245,7 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
   FILE *fp;
   int  i;
   
-  fp=ffopen(fn,"w");
+  fp=gmx_fio_fopen(fn,"w");
   fprintf(fp,
 	  "; In this topology include file, you will find position restraint\n"
 	  "; entries for all the heavy atoms in your original pdb file.\n"
@@ -258,7 +259,7 @@ void write_posres(char *fn,t_atoms *pdba,real fc)
     if (!is_hydrogen(*pdba->atomname[i]) && !is_dummymass(*pdba->atomname[i]))
       fprintf(fp,"%6d%6d  %g  %g  %g\n",i+1,1,fc,fc,fc);
   }
-  ffclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 static int read_pdball(char *inf, char *outf,char *title,
@@ -782,7 +783,7 @@ int main(int argc, char *argv[])
   sprintf(rtp,"%s.rtp",forcefield);
   if (debug) 
     fprintf(debug,"Looking whether force field file %s exists\n",rtp);
-  fclose(libopen(rtp));
+  gmx_fio_fclose(libopen(rtp));
   
   if (bInter) {
     /* if anything changes here, also change description of -inter */
@@ -1005,9 +1006,9 @@ int main(int argc, char *argv[])
   nrtp=read_resall(forcefield,bts,&restp,atype,&symtab,
 		   &bAlldih,&nrexcl,&HH14,&bRemoveDih);
   if (bNewRTP) {
-    fp=ffopen("new.rtp","w");
+    fp=gmx_fio_fopen("new.rtp","w");
     print_resall(fp,bts,nrtp,restp,atype,bAlldih,nrexcl,HH14,bRemoveDih);
-    fclose(fp);
+    gmx_fio_fclose(fp);
   }
     
   /* read hydrogen database */
@@ -1018,7 +1019,7 @@ int main(int argc, char *argv[])
   nCtdb=read_ter_db(forcefield,'c',&ctdb,atype);
   
   top_fn=ftp2fn(efTOP,NFILE,fnm);
-  top_file=ffopen(top_fn,"w");
+  top_file=gmx_fio_fopen(top_fn,"w");
   print_top_header(top_file,top_fn,title,FALSE,forcefield,mHmult);
 
   nincl=0;
@@ -1173,7 +1174,7 @@ int main(int argc, char *argv[])
       nincl++;
       srenew(incls,nincl);
       incls[nincl-1]=strdup(itp_fn);
-      itp_file=ffopen(itp_fn,"w");
+      itp_file=gmx_fio_fopen(itp_fn,"w");
     } else
       bITP=FALSE;
 
@@ -1208,7 +1209,7 @@ int main(int argc, char *argv[])
       write_posres(posre_fn,pdba,posre_fc);
 
     if (bITP)
-      fclose(itp_file);
+      gmx_fio_fclose(itp_file);
 
     /* pdba and natom have been reassigned somewhere so: */
     cc->pdba = pdba;
@@ -1225,7 +1226,7 @@ int main(int argc, char *argv[])
   }
   
   print_top_mols(top_file,title,watstr[0],nincl,incls,nmol,mols);
-  fclose(top_file);
+  gmx_fio_fclose(top_file);
 
   done_aa_names(&aan);
     

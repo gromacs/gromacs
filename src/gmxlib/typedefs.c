@@ -365,6 +365,7 @@ void init_gtc_state(t_state *state,int ngtc)
   }
 }
 
+
 void init_state(t_state *state,int natoms,int ngtc)
 {
   int i;
@@ -393,6 +394,7 @@ void init_state(t_state *state,int natoms,int ngtc)
   state->ddp_count_cg_gl = 0;
   state->cg_gl = NULL;
   state->cg_gl_nalloc = 0;
+	
 }
 
 void done_state(t_state *state)

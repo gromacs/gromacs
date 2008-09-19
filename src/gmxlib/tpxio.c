@@ -62,7 +62,7 @@
 #include "mtop_util.h"
 
 /* This number should be increased whenever the file format changes! */
-static const int tpx_version = 57;
+static const int tpx_version = 58;
 
 /* This number should only be increased when you edit the TOPOLOGY section
  * of the tpx format. This way we can maintain forward compatibility too
@@ -264,6 +264,11 @@ static void do_inputrec(t_inputrec *ir,bool bRead, int file_version,
     else
       ir->init_step=0;
 
+	if(file_version >= 58)
+	  do_int(ir->simulation_part);
+	else
+	  ir->simulation_part=1;
+	  
     if (file_version < 53) {
       /* The pbc info has been moved out of do_inputrec,
        * since we always want it, also without reading the inputrec.

@@ -48,6 +48,7 @@
 #include "typedefs.h"
 #include "smalloc.h"
 #include "macros.h"
+#include "gmxfio.h"
 #include "txtdump.h"
 #include "physics.h"
 #include "macros.h"
@@ -331,7 +332,7 @@ static char **read_topol(char *infile,char *outfile,
   if (status != 0) 
     gmx_fatal(FARGS,cpp_error(&handle,status));
   if (outfile)
-    out = fopen(outfile,"w");
+    out = gmx_fio_fopen(outfile,"w");
   else
     out = NULL;
   /* some local variables */
@@ -623,7 +624,7 @@ static char **read_topol(char *infile,char *outfile,
   if (status != eCPP_OK) 
     gmx_fatal(FARGS,cpp_error(&handle,status));
   if (out)
-    fclose(out);
+    gmx_fio_fclose(out);
 
   if (opts->couple_moltype) {
     if (nmol_couple == 0) {

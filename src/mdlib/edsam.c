@@ -58,6 +58,7 @@
 #include "mtop_util.h"
 #include "edsam.h"
 #include "mpelogging.h"
+#include "gmxfio.h"
 
 
 /* We use the same defines as in mvdata.c here */
@@ -320,7 +321,7 @@ static void dump_xcoll(t_edpar *edi, rvec *xcoll, t_commrec *cr, int step)
         return;
     
     if (!fp)
-      fp = ffopen("xcolldump.txt", "w");
+      fp = gmx_fio_fopen("xcolldump.txt", "w");
     
     fprintf(fp, "Step %d\n", step);
     for (i=0; i<edi->sav.nr; i++)
@@ -1045,7 +1046,7 @@ gmx_edsam_t ed_open(int nfile,t_filenm fnm[],t_commrec *cr)
         /* The master opens the .edo output file */
         fprintf(stderr,"ED sampling will be performed!\n");        
         ed->edonam = ftp2fn(efEDO,nfile,fnm);
-        ed->edo    = ffopen(ed->edonam,"w");
+        ed->edo    = gmx_fio_fopen(ed->edonam,"w");
     }
     return ed;
 }
@@ -1538,7 +1539,7 @@ static void read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms)
     /* This routine is executed on the master only */
 
     /* Open the .edi parameter input file */
-    in = ffopen(ed->edinam,"r");  
+    in = gmx_fio_fopen(ed->edinam,"r");  
     fprintf(stderr, "ED: Reading edi file %s\n", ed->edinam);
 
     /* Now read a sequence of ED input parameter sets from the edi file */
@@ -1570,7 +1571,7 @@ static void read_edi_file(gmx_edsam_t ed, t_edpar *edi, int nr_mdatoms)
     fprintf(stderr, "ED: Found %d ED dataset%s.\n", edi_nr, edi_nr>1? "s" : "");
     
     /* Close the .edi file again */
-    ffclose(in);
+    gmx_fio_fclose(in);
 }
 
 

@@ -48,6 +48,7 @@
 #include "xvgr.h"
 #include "viewit.h"
 #include "vec.h"
+#include "gmxfio.h"
 
 bool use_xmgr()
 {
@@ -65,7 +66,7 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *ya
   char pukestr[100];
   time_t t;
   
-  xvgr=(FILE *)ffopen(fn,"w");
+  xvgr=gmx_fio_fopen(fn,"w");
   if (bPrintXvgrCodes()) {
     time(&t);
     fprintf(xvgr,"# This file was created %s",ctime(&t));
@@ -82,6 +83,12 @@ FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *ya
       fprintf(xvgr,"@TYPE xy\n");
   }
   return xvgr;
+}
+
+void
+xvgrclose(FILE *fp)
+{
+	gmx_fio_fclose(fp);
 }
 
 void xvgr_subtitle(FILE *out,char *subtitle)
@@ -309,7 +316,7 @@ int read_xvg(const char *fn,double ***y,int *ny)
   nny  = 0;
   nx   = 0;
   maxx = 0;
-  fp   = ffopen(fn,"r");
+  fp   = gmx_fio_fopen(fn,"r");
 
   snew(tmpbuf,len);
 
@@ -358,7 +365,7 @@ int read_xvg(const char *fn,double ***y,int *ny)
       nx++;
     }
   }
-  ffclose(fp);
+  gmx_fio_fclose(fp);
   
   *y = yy;
   sfree(tmpbuf);
@@ -380,7 +387,7 @@ void write_xvg(char *fn,char *title,int nx,int ny,real **y,char **leg)
     }
     fprintf(fp,"\n");
   }
-  fclose(fp);
+  xvgrclose(fp);
 }
 
 real **read_xvg_time(char *fn,
@@ -402,7 +409,7 @@ real **read_xvg_time(char *fn,
   val_nalloc = NULL;
   *nset = 0;
   *dt = 0;
-  fp  = ffopen(fn,"r");
+  fp  = gmx_fio_fopen(fn,"r");
   for(sin=0; sin<nsets_in; sin++) {
     if (nsets_in == 1)
       narg = 0;
@@ -520,7 +527,7 @@ real **read_xvg_time(char *fn,
       }
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 
   sfree(val_nalloc);
   

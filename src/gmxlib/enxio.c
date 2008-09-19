@@ -185,10 +185,10 @@ static bool empty_file(char *fn)
   char dum;
   bool bEmpty;
   
-  fp = ffopen(fn,"r");
+  fp = gmx_fio_fopen(fn,"r");
   fread(&dum,sizeof(dum),1,fp);
   bEmpty = feof(fp);
-  fclose(fp);
+  gmx_fio_fclose(fp);
 
   return bEmpty;
 }
@@ -432,3 +432,4 @@ void get_enx_state(char *fn, real t, gmx_groups_t *groups, t_inputrec *ir,
   free_enxframe(fr);
   sfree(fr);
 }
+

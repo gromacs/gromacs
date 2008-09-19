@@ -44,7 +44,7 @@
  * But old code can not read a new entry that is present in the file
  * (but can read a new format when new entries are not present).
  */
-static const int cpt_version = 2;
+static const int cpt_version = 3;
 
 enum { ecpdtINT, ecpdtFLOAT, ecpdtDOUBLE, ecpdtNR };
 
@@ -57,7 +57,8 @@ const char *est_names[estNR]=
     "nosehoover-xi", "thermostat-integral",
     "x", "v", "SDx", "CGp", "LD-rng", "LD-rng-i",
     "disre_initf", "disre_rm3tav",
-    "orire_initf", "orire_Dtav"
+    "orire_initf", "orire_Dtav",
+	"energy_n","energy_aver", "energy_sum"
 };
 
 static void cp_warning(FILE *fp)
@@ -74,7 +75,6 @@ static void do_cpt_string_err(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
 {
 #define CPTSTRLEN 1024
     bool_t res=0;
-    int dt=ecpdtINT;
     
     if (bRead)
     {
@@ -108,6 +108,7 @@ static int do_cpt_int(XDR *xd,char *desc,int *i,FILE *list)
 
     return 0;
 }
+
 
 static void do_cpt_int_err(XDR *xd,char *desc,int *i,FILE *list)
 {
@@ -256,6 +257,8 @@ static int do_cpte_reals_low(XDR *xd,int ecpt,int sflags,int n,real **v,
     return 0;
 }
 
+
+
 static int do_cpte_reals(XDR *xd,int ecpt,int sflags,int n,real **v,
                          FILE *list)
 {
@@ -391,6 +394,7 @@ static int do_cpte_doubles(XDR *xd,int ecpt,int sflags,int n,double **v,
     return 0;
 }
 
+
 static int do_cpte_rvecs(XDR *xd,int ecpt,int sflags,int n,rvec **v,
                          FILE *list)
 {
@@ -416,7 +420,7 @@ static int do_cpte_matrix(XDR *xd,int ecpt,int sflags,matrix v,FILE *list)
 static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
                           char **version,char **btime,char **buser,char **bmach,
                           char **fprog,char **ftime,
-                          int *eIntegrator,int *step,double *t,
+                          int *eIntegrator,int *simulation_part,int *step,double *t,
                           int *nnodes,int *dd_nc,int *npme,
                           int *natoms,int *ngtc,int *flags,
                           FILE *list)
@@ -460,6 +464,14 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     do_cpt_int_err(xd,"#atoms"            ,natoms     ,list);
     do_cpt_int_err(xd,"#T-coupling groups",ngtc       ,list);
     do_cpt_int_err(xd,"integrator"        ,eIntegrator,list);
+	if (*file_version >= 3)
+	{
+		do_cpt_int_err(xd,"simulation part #", simulation_part,list);
+	}
+	else
+	{
+		*simulation_part = 1;
+	}
     do_cpt_int_err(xd,"step"              ,step       ,list);
     do_cpt_double_err(xd,"t"              ,t          ,list);
     do_cpt_int_err(xd,"#PP-nodes"         ,nnodes     ,list);
@@ -469,6 +481,7 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     do_cpt_int_err(xd,"dd_nc[z]",dd_nc ? &(dd_nc[2]) : &idum,list);
     do_cpt_int_err(xd,"#PME-only nodes",npme,list);
     do_cpt_int_err(xd,"state flags",flags,list);
+	
 }
 
 static int do_cpt_footer(XDR *xd,bool bRead,int file_version)
@@ -539,6 +552,9 @@ static int do_cpt_state(XDR *xd,bool bRead,
             case estDISRE_RM3TAV: ret = do_cpte_reals(xd,i,sflags,state->hist.ndisrepairs,&state->hist.disre_rm3tav,list); break;
             case estORIRE_INITF:  ret = do_cpte_real (xd,i,sflags,&state->hist.orire_initf,list); break;
             case estORIRE_DTAV:   ret = do_cpte_reals(xd,i,sflags,state->hist.norire_Dtav,&state->hist.orire_Dtav,list); break;
+			case estENERGY_N:     ret = do_cpte_int(xd,i,sflags,&state->enerhist.nener,list); break;
+			case estENERGY_AVER:  ret = do_cpte_doubles(xd,i,sflags,state->enerhist.nener,&state->enerhist.ener_ave,list); break;
+ 			case estENERGY_SUM:   ret = do_cpte_doubles(xd,i,sflags,state->enerhist.nener,&state->enerhist.ener_sum,list); break;				
             default:
                 gmx_fatal(FARGS,"Unknown state entry %d\n"
                           "You are probably reading a new checkpoint file with old code",i);
@@ -549,8 +565,84 @@ static int do_cpt_state(XDR *xd,bool bRead,
     return ret;
 }
 
+
+static int
+do_cpt_files(XDR *xd, bool bRead, gmx_file_position_t **p_outputfiles, int *nfiles, FILE *list)
+{
+	int    i;
+	off_t  offset;
+	off_t  mask = 0xFFFFFFFFL;
+	int    offset_high,offset_low;
+	char   *buf;
+	gmx_file_position_t *outputfiles;
+	
+    if (do_cpt_int(xd,"number of output files",nfiles,list) != 0)
+	{
+		return -1;
+	}
+
+	if(bRead)
+	{
+		snew(*p_outputfiles,*nfiles);
+	}
+	
+	outputfiles = *p_outputfiles;
+	
+	for(i=0;i<*nfiles;i++)
+	{
+		/* 64-bit XDR numbers are not portable, so it is stored as separate high/low fractions */
+		if(bRead)
+		{
+			do_cpt_string_err(xd,bRead,"output filename",&buf,list);
+			strncpy(outputfiles[i].filename,buf,CPTSTRLEN-1);
+			if(list==NULL)
+			{
+				sfree(buf);			
+			}
+			
+			if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
+			{
+				return -1;
+			}
+			if (do_cpt_int(xd,"file_offset_low",&offset_low,list) != 0)
+			{
+				return -1;
+			}
+#if (SIZEOF_OFF_T > SIZEOF_INT)
+			outputfiles[i].offset = ( ((off_t) offset_high) << 32 ) | ( (off_t) offset_low );
+#else
+			outputfiles[i].offset = offset_low;
+#endif
+		}
+		else
+		{
+			buf = outputfiles[i].filename;
+			do_cpt_string_err(xd,bRead,"output filename",&buf,list);
+			/* writing */
+			offset      = outputfiles[i].offset;
+#if (SIZEOF_OFF_T > SIZEOF_INT)
+			offset_low  = (int) (offset & mask);
+			offset_high = (int) ((offset >> 32) & mask);
+#else
+			offset_low  = offset;
+			offset_high = 0;
+#endif
+			if (do_cpt_int(xd,"file_offset_high",&offset_high,list) != 0)
+			{
+				return -1;
+			}
+			if (do_cpt_int(xd,"file_offset_low",&offset_low,list) != 0)
+			{
+				return -1;
+			}
+		}
+	}
+	return 0;
+}
+
+
 void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
-                      int eIntegrator,int step,double t,t_state *state)
+                      int eIntegrator,int simulation_part,int step,double t,t_state *state)
 {
     int  fp;
     int  file_version;
@@ -561,9 +653,12 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     char *fprog;
     char *ftime;
     time_t now;
-    int  nppnodes,npmenodes;
+    int  nppnodes,npmenodes,flag_64bit;
     char buf[1024];
-    
+	gmx_file_position_t *outputfiles;
+	int  noutputfiles;
+    int i;
+		
     if (PAR(cr))
     {
         if (DOMAINDECOMP(cr))
@@ -597,26 +692,34 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
     now = time(NULL);
     ftime = strdup(ctime(&now));
     ftime[strlen(ftime)-1] = '\0';
-    
-    fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime);
+
+    /* Get offsets for open files */
+	gmx_fio_get_output_file_positions(&outputfiles, &noutputfiles);
+
+	/* No need to pollute stderr every time we write a checkpoint file */
+    /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
     {
         fprintf(fplog,"Writing checkpoint, step %d at %s\n\n",step,ftime);
     }
     
     fp = gmx_fio_open(fn,"w");
+	
     do_cpt_header(gmx_fio_getxdr(fp),FALSE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
-                  &eIntegrator,&step,&t,&nppnodes,
+                  &eIntegrator,&simulation_part,&step,&t,&nppnodes,
                   DOMAINDECOMP(cr) ? cr->dd->nc : NULL,&npmenodes,
                   &state->natoms,&state->ngtc,&state->flags,NULL);
     do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL);
+
+	do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL);
+	
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
-    
 
     gmx_fio_close(fp);
     
     sfree(ftime);
+	sfree(outputfiles);
 }
 
 static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)
@@ -640,30 +743,28 @@ static void print_flag_mismatch(FILE *fplog,int sflags,int fflags)
 
 static void check_int(FILE *fplog,char *type,int p,int f,bool *mm)
 {
+	FILE *fp = fplog ? fplog : stderr;
+
     if (p != f)
     {
-        if (fplog)
-        {
-            fprintf(fplog,"  %s mismatch,\n",type);
-            fprintf(fplog,"    current program: %d\n",p);
-            fprintf(fplog,"    checkpoint file: %d\n",f);
-            fprintf(fplog,"\n");
-        }
+		fprintf(fp,"  %s mismatch,\n",type);
+		fprintf(fp,"    current program: %d\n",p);
+		fprintf(fp,"    checkpoint file: %d\n",f);
+		fprintf(fp,"\n");
         *mm = TRUE;
     }
 }
 
 static void check_string(FILE *fplog,char *type,char *p,char *f,bool *mm)
 {
+	FILE *fp = fplog ? fplog : stderr;
+	
     if (strcmp(p,f) != 0)
     {
-        if (fplog)
-        {
-            fprintf(fplog,"  %s mismatch,\n",type);
-            fprintf(fplog,"    current program: %s\n",p);
-            fprintf(fplog,"    checkpoint file: %s\n",f);
-            fprintf(fplog,"\n");
-        }
+		fprintf(fp,"  %s mismatch,\n",type);
+		fprintf(fp,"    current program: %s\n",p);
+		fprintf(fp,"    checkpoint file: %s\n",f);
+		fprintf(fp,"\n");
         *mm = TRUE;
     }
 }
@@ -703,28 +804,38 @@ static void check_match(FILE *fplog,
     
     if (mm)
     {
+		fprintf(stderr,
+				"Gromacs binary or parallel settings not identical to previous run.\n"
+				"Continuation still works, but is not guaranteed to be binary identical%s.\n\n",
+				fplog ? ",\n see the log file for details" : "");
+		
         if (fplog)
         {
-            fprintf(fplog,"Continuation is exact, but is not guaranteed to be binary identical\n\n");
-            fprintf(stderr,"Continuation is exact, but is not guaranteed to be binary identical,\n"
-                    "see the log file for details\n\n");
-        }
+			fprintf(stderr,
+					"Gromacs binary or parallel settings not identical to previous run.\n"
+					"Continuation still works, but is not guaranteed to be binary identical.\n\n");
+		}
     }
 }
 
-static void read_checkpoint(char *fn,FILE *fplog,
-                            t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-                            int eIntegrator,int *step,double *t,
-                            t_state *state,bool *bReadRNG)
+static void 
+read_checkpoint(char *fn,FILE *fplog,
+				t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+				int eIntegrator,int *step,double *t,
+				t_state *state,bool *bReadRNG,int *simulation_part,bool bAppendOutputFiles)
 {
-    int  fp;
+    int  fp,i,j;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
+	char filename[STRLEN];
     int  nppnodes,eIntegrator_f,nppnodes_f,npmenodes_f;
     ivec dd_nc_f;
     int  natoms,ngtc,fflags;
     int  d;
     int  ret;
+	gmx_file_position_t *outputfiles;
+	int  nfiles;
+	
     char *int_warn=
         "WARNING: The checkpoint file was generator with integrator %s,\n"
         "         while the simulation uses integrator %s\n\n";
@@ -736,13 +847,13 @@ static void read_checkpoint(char *fn,FILE *fplog,
     if (PARTDECOMP(cr))
     {
         gmx_fatal(FARGS,
-                  "read_checkpoint not supported with particle decomposition");
+                  "read_checkpoint not (yet) supported with particle decomposition");
     }
     
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
-                  &eIntegrator_f,step,t,&nppnodes_f,dd_nc_f,&npmenodes_f,
+                  &eIntegrator_f,simulation_part,step,t,&nppnodes_f,dd_nc_f,&npmenodes_f,
                   &natoms,&ngtc,&fflags,NULL);
     
     if (cr == NULL || MASTER(cr))
@@ -750,6 +861,8 @@ static void read_checkpoint(char *fn,FILE *fplog,
         fprintf(stderr,"\nReading checkpoint file %s generated: %s\n\n",
                 fn,ftime);
     }
+	
+	/* This will not be written if we do appending, since fplog is still NULL then */
     if (fplog)
     {
         fprintf(fplog,"\n");
@@ -759,8 +872,9 @@ static void read_checkpoint(char *fn,FILE *fplog,
         fprintf(fplog,"  GROMACS build time:    %s\n",btime);  
         fprintf(fplog,"  GROMACS build user:    %s\n",buser);  
         fprintf(fplog,"  GROMACS build machine: %s\n",bmach);  
-        fprintf(fplog,"  step %d\n",*step);  
-        fprintf(fplog,"  time %f\n",*t);  
+		fprintf(fplog,"  simulation part #:     %d\n",*simulation_part);
+        fprintf(fplog,"  step:                  %d\n",*step);  
+        fprintf(fplog,"  time:                  %f\n",*t);  
         fprintf(fplog,"\n");
     }
     
@@ -778,6 +892,13 @@ static void read_checkpoint(char *fn,FILE *fplog,
         {
             fprintf(stderr,int_warn,EI(eIntegrator_f),EI(eIntegrator));
         }
+		if(bAppendOutputFiles)
+		{
+			gmx_fatal(FARGS,
+					  "Output file appending requested, but input/checkpoint integrators do not match.\n"
+					  "Stopping the run to prevent you from ruining all your data...\n"
+					  "If you _really_ know what you are doing, try without the -append option.\n");
+		}
         if (fplog)
         {
             fprintf(fplog,int_warn,EI(eIntegrator_f),EI(eIntegrator));
@@ -819,13 +940,26 @@ static void read_checkpoint(char *fn,FILE *fplog,
     *bReadRNG = TRUE;
     if (fflags != state->flags)
     {
+		
         if (MASTER(cr))
         {
+			if(bAppendOutputFiles)
+			{
+				gmx_fatal(FARGS,
+						  "Output file appending requested, but input and checkpoint states are not identical.\n"
+						  "Stopping the run to prevent you from ruining all your data...\n"
+						  "You can try without the -append option, and get more info in the log file.\n");
+			}
+			
             fprintf(stderr,
                     "WARNING: The checkpoint state entries do not match the simulation,\n"
                     "         see the log file for details\n\n");
         }
-        print_flag_mismatch(fplog,state->flags,fflags);
+		
+		if(fplog)
+		{
+			print_flag_mismatch(fplog,state->flags,fflags);
+		}
     }
     else
     {
@@ -853,6 +987,12 @@ static void read_checkpoint(char *fn,FILE *fplog,
     {
         cp_error();
     }
+	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL);
+	if (ret)
+	{
+		cp_error();
+	}
+					   
     ret = do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
     if (ret)
     {
@@ -865,11 +1005,29 @@ static void read_checkpoint(char *fn,FILE *fplog,
     sfree(btime);
     sfree(buser);
     sfree(bmach);
+	
+	/* If the user wants to append to output files (danger), we use the file pointer
+	 * positions of the output files stored in the checkpoint file and truncate the
+	 * files such that any frames written after the checkpoint time are removed.
+	 *
+	 * You will get REALLY fun problems if you use the -append option by provide
+	 * mdrun with other input files (in-frame truncation in the wrong places). Suit yourself!
+	 */
+	if(bAppendOutputFiles)
+	{
+		for(i=0;i<nfiles;i++)
+		{
+			truncate(outputfiles[i].filename,outputfiles[i].offset);
+		}
+	}
+	
+	sfree(outputfiles);
 }
+
 
 void load_checkpoint(char *fn,FILE *fplog,
                      t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-                     t_inputrec *ir,t_state *state,bool *bReadRNG)
+                     t_inputrec *ir,t_state *state,bool *bReadRNG,bool bAppend)
 {
     int    step;
     double t;
@@ -878,7 +1036,7 @@ void load_checkpoint(char *fn,FILE *fplog,
       /* Read the state from the checkpoint file */
       read_checkpoint(fn,fplog,
                       cr,bPartDecomp,dd_nc,
-                      ir->eI,&step,&t,state,bReadRNG);
+                      ir->eI,&step,&t,state,bReadRNG,&ir->simulation_part,bAppend);
     }
     if (PAR(cr)) {
       gmx_bcast(sizeof(cr->npmenodes),&cr->npmenodes,cr);
@@ -886,12 +1044,13 @@ void load_checkpoint(char *fn,FILE *fplog,
       gmx_bcast(sizeof(step),&step,cr);
       gmx_bcast(sizeof(&bReadRNG),bReadRNG,cr);
     }
-    ir->bContinuation = TRUE;
-    ir->nsteps       += ir->init_step - step;
-    ir->init_step     = step;
+    ir->bContinuation    = TRUE;
+    ir->nsteps          += ir->init_step - step;
+    ir->init_step        = step;
+	ir->simulation_part += 1;
 }
 
-static void low_read_checkpoint_state(int fp,
+static void low_read_checkpoint_state(int fp,int *simulation_part,
                                       int *step,double *t,t_state *state,
                                       bool bReadRNG)
 {
@@ -901,10 +1060,12 @@ static void low_read_checkpoint_state(int fp,
     int  nppnodes,npme;
     ivec dd_nc;
     int  ret;
-    
+    gmx_file_position_t *outputfiles;
+	int  nfiles;
+	
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
-                  &eIntegrator,step,t,&nppnodes,dd_nc,&npme,
+                  &eIntegrator,simulation_part,step,t,&nppnodes,dd_nc,&npme,
                   &state->natoms,&state->ngtc,&state->flags,NULL);
     ret =
         do_cpt_state(gmx_fio_getxdr(fp),TRUE,state->flags,state,bReadRNG,NULL);
@@ -912,6 +1073,15 @@ static void low_read_checkpoint_state(int fp,
     {
         cp_error();
     }
+	
+	ret = do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,NULL);
+	sfree(outputfiles);
+	
+    if (ret)
+    {
+        cp_error();
+    }
+	
     ret = do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
     if (ret)
     {
@@ -925,24 +1095,25 @@ static void low_read_checkpoint_state(int fp,
     sfree(bmach);
 }
 
-void read_checkpoint_state(char *fn,int *step,double *t,t_state *state)
+void 
+read_checkpoint_state(char *fn,int *simulation_part,int *step,double *t,t_state *state)
 {
     int  fp;
     
     fp = gmx_fio_open(fn,"r");
-    low_read_checkpoint_state(fp,step,t,state,TRUE);
+    low_read_checkpoint_state(fp,simulation_part,step,t,state,TRUE);
     gmx_fio_close(fp);
 }
 
 void read_checkpoint_trxframe(int fp,t_trxframe *fr)
 {
     t_state state;
-    int step;
+    int simulation_part,step;
     double t;
     
     init_state(&state,0,0);
     
-    low_read_checkpoint_state(fp,&step,&t,&state,FALSE);
+    low_read_checkpoint_state(fp,&simulation_part,&step,&t,&state,FALSE);
     
     fr->natoms  = state.natoms;
     fr->bTitle  = FALSE;
@@ -971,7 +1142,6 @@ void read_checkpoint_trxframe(int fp,t_trxframe *fr)
     {
         copy_mat(state.box,fr->box);
     }
-    
     done_state(&state);
 }
 
@@ -980,26 +1150,35 @@ void list_checkpoint(char *fn,FILE *out)
     int  fp;
     int  file_version;
     char *version,*btime,*buser,*bmach,*fprog,*ftime;
-    int  eIntegrator,step,nppnodes,npme;
+    int  eIntegrator,simulation_part,step,nppnodes,npme;
     double t;
     ivec dd_nc;
     t_state state;
     int  indent;
-    int  i;
+    int  i,j;
     int  ret;
-    
+    gmx_file_position_t *outputfiles;
+	int  nfiles;
+	
     init_state(&state,-1,-1);
 
     fp = gmx_fio_open(fn,"r");
     do_cpt_header(gmx_fio_getxdr(fp),TRUE,&file_version,
                   &version,&btime,&buser,&bmach,&fprog,&ftime,
-                  &eIntegrator,&step,&t,&nppnodes,dd_nc,&npme,
+                  &eIntegrator,&simulation_part,&step,&t,&nppnodes,dd_nc,&npme,
                   &state.natoms,&state.ngtc,&state.flags,out);
     ret = do_cpt_state(gmx_fio_getxdr(fp),TRUE,state.flags,&state,TRUE,out);
+
+    if (ret == 0)
+    {
+		do_cpt_files(gmx_fio_getxdr(fp),TRUE,&outputfiles,&nfiles,out);
+	}
+	
     if (ret == 0)
     {
         ret = do_cpt_footer(gmx_fio_getxdr(fp),TRUE,file_version);
     }
+	
     if (ret)
     {
         cp_warning(out);
@@ -1008,3 +1187,39 @@ void list_checkpoint(char *fn,FILE *out)
     
     done_state(&state);
 }
+
+
+/* This routine cannot print tons of data, since it is called before the log file is opened. */
+int
+read_checkpoint_simulation_part(char *filename)
+{
+    int  fp;
+	int  file_version;
+    char *version,*btime,*buser,*bmach,*fprog,*ftime;
+    int  eIntegrator_f,nppnodes_f,npmenodes_f;
+    ivec dd_nc_f;
+	double t;
+    int  natoms,ngtc,fflags,simulation_part,step;
+		
+	if(!fexist(filename) || ( (fp = gmx_fio_open(filename,"r")) < 0 ))
+	{
+		return 0;
+	}
+	
+    do_cpt_header(gmx_fio_getxdr(fp),
+				  TRUE,&file_version,
+                  &version,&btime,&buser,&bmach,&fprog,&ftime,
+                  &eIntegrator_f,&simulation_part,&step,&t,&nppnodes_f,dd_nc_f,&npmenodes_f,
+                  &natoms,&ngtc,&fflags,NULL);
+    gmx_fio_close(fp);
+	
+	sfree(version);
+	sfree(btime);
+	sfree(buser);
+	sfree(bmach);
+	sfree(fprog);
+	sfree(ftime);
+	
+	return simulation_part;
+}
+

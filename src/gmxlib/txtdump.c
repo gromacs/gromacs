@@ -191,11 +191,27 @@ void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool bShowN
       indent=pr_title_n(fp,indent,title,n);
       for (i=0; i<n; i++)
         {
-          (void) pr_indent(fp,indent);
-          (void) fprintf(fp,"%s[%d]=%12.5e\n",title,bShowNumbers?i:-1,vec[i]);
+          pr_indent(fp,indent);
+          fprintf(fp,"%s[%d]=%12.5e\n",title,bShowNumbers?i:-1,vec[i]);
         }
     }
 }
+
+void pr_dvec(FILE *fp,int indent,const char *title,double vec[],int n, bool bShowNumbers)
+{
+	int i;
+	
+	if (available(fp,vec,indent,title))
+    {  
+		indent=pr_title_n(fp,indent,title,n);
+		for (i=0; i<n; i++)
+        {
+			pr_indent(fp,indent);
+			fprintf(fp,"%s[%d]=%12.5e\n",title,bShowNumbers?i:-1,vec[i]);
+        }
+    }
+}
+
 
 /*
 void pr_mat(FILE *fp,int indent,char *title,matrix m)
@@ -258,6 +274,7 @@ void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n)
     }
   }
 }
+
 
 void pr_reals(FILE *fp,int indent,const char *title,real *vec,int n)
 {

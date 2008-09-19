@@ -55,6 +55,7 @@
 #include "macros.h"
 #include "index.h"
 #include "txtdump.h"
+#include "gmxfio.h"
 
 typedef enum { etOther, etProt, etDNA, erestNR } eRestp;
 static const char *ResTP[erestNR] = { "OTHER", "PROTEIN", "DNA" };
@@ -92,7 +93,7 @@ void write_index(char *outf, t_blocka *b,char **gnames)
   FILE *out;
   int  i,j,k;
 
-  out=ffopen(outf,"w");
+  out=gmx_fio_fopen(outf,"w");
   /* fprintf(out,"%5d  %5d\n",b->nr,b->nra); */
   for(i=0; (i<b->nr); i++) {
     fprintf(out,"[ %s ]\n",gnames[i]);
@@ -103,7 +104,7 @@ void write_index(char *outf, t_blocka *b,char **gnames)
     }
     fprintf(out,"\n");
   }
-  fclose(out);
+  gmx_fio_fclose(out);
 }
 
 void add_grp(t_blocka *b,char ***gnames,int nra,atom_id a[],const char *name)
@@ -531,7 +532,7 @@ t_blocka *init_index(char *gfile, char ***grpname)
   int      i,j,ng;
   char     line[STRLEN],*pt,str[STRLEN];
 
-  in=ffopen(gfile,"r");
+  in=gmx_fio_fopen(gfile,"r");
   snew(b,1);
   get_a_line(in,line,STRLEN);
   if ( line[0]=='[' ) {
@@ -586,7 +587,7 @@ t_blocka *init_index(char *gfile, char ***grpname)
       }
     }
   }
-  ffclose(in);
+  gmx_fio_fclose(in);
 
   for(i=0; (i<b->nr); i++) {
     for(j=b->index[i]; (j<b->index[i+1]); j++) {

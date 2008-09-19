@@ -86,6 +86,10 @@ extern bool use_xmgr(void);
 extern FILE *xvgropen(const char *fn,const char *title,const char *xaxis,const char *yaxis);
 /* Open a file, and write a title, and axis-labels in Xvgr format */
 
+/* Close xvgr file, and clean up internal file buffers correctly */
+void
+xvgrclose(FILE *fp);
+
 extern void xvgr_subtitle(FILE *out,char *subtitle);
 /* Set the subtitle in xvgr */
 

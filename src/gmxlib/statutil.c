@@ -54,6 +54,7 @@
 #include "network.h"
 #include "vec.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 /* used for npri */
 #ifdef __sgi
@@ -402,7 +403,7 @@ static FILE *man_file(char *program,char *mantp)
     sprintf(buf,"%s.%s",pr,mantp);
   else
     sprintf(buf,"%s.txt",pr);
-  fp = ffopen(buf,"w");
+  fp = gmx_fio_fopen(buf,"w");
   
   return fp;
 }
@@ -686,17 +687,17 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
       /* one file each for csh, bash and zsh if we do completions */
       fp=man_file(program,"completion-zsh");
       write_man(fp,"completion-zsh",program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
-      fclose(fp);
+      gmx_fio_fclose(fp);
       fp=man_file(program,"completion-bash");
       write_man(fp,"completion-bash",program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
-      fclose(fp);
+      gmx_fio_fclose(fp);
       fp=man_file(program,"completion-csh");
       write_man(fp,"completion-csh",program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
-      fclose(fp);
+      gmx_fio_fclose(fp);
     } else {
       fp=man_file(program,manstr[0]);
       write_man(fp,manstr[0],program,ndesc,desc,nfile,fnm,npall,all_pa,nbugs,bugs,bHidden);
-      fclose(fp);
+      gmx_fio_fclose(fp);
     }
   }
   

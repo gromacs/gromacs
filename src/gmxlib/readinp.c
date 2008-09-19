@@ -46,6 +46,7 @@
 #include "readinp.h"
 #include "macros.h"
 #include "statutil.h"
+#include "gmxfio.h"
 
 static int inp_count = 1;
 
@@ -60,7 +61,7 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
   if (debug)
     fprintf(debug,"Reading MDP file %s\n",fn);
   inp_count = 1;
-  in        = ffopen(fn,"r");
+  in        = gmx_fio_fopen(fn,"r");
   nin = lc  = 0;
   do {
     ptr=fgets2(buf,STRLEN-1,in);
@@ -111,7 +112,7 @@ t_inpfile *read_inpfile(char *fn,int *ninp)
       }
     }
   } while (ptr);
-  fclose(in);
+  gmx_fio_fclose(in);
 
   if (debug)
     fprintf(debug,"Done reading MDP file, there were %d entries in there\n",
@@ -145,7 +146,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
   int  i;
 
   sort_inp(ninp,inp);  
-  out=ffopen(fn,"w");
+  out=gmx_fio_fopen(fn,"w");
   nice_header(out,fn);
   for(i=0; (i<ninp); i++) {
     if (inp[i].bSet) {
@@ -163,7 +164,7 @@ void write_inpfile(char *fn,int ninp,t_inpfile inp[],bool bHaltOnUnknown)
       }
     }
   }
-  fclose(out);
+  gmx_fio_fclose(out);
 
   check_warning_error(FARGS);
 }

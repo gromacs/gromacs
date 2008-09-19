@@ -45,6 +45,7 @@
 #include "futil.h"
 #include "symtab.h"
 #include "h_db.h"
+#include "gmxfio.h"
 
 /* There are 11 types of adding hydrogens, numbered from
  * 1 thru 11. Each of these has a specific number of
@@ -112,7 +113,7 @@ void dump_h_db(char *fn,int nah,t_hackblock *ah)
   int  i,j,k;
   
   sprintf(buf,"%s_new.hdb",fn);
-  fp = ffopen(buf,"w");
+  fp = gmx_fio_fopen(buf,"w");
   for(i=0; (i<nah); i++) {
     fprintf(fp,"%-8s%-8d\n",ah[i].name,ah[i].nhack);
     for(k=0; (k<ah[i].nhack); k++) {
@@ -121,7 +122,7 @@ void dump_h_db(char *fn,int nah,t_hackblock *ah)
       print_ab(fp,&ah[i].hack[k],nname);
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 int read_h_db(char *fn,t_hackblock **ah)

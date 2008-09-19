@@ -51,7 +51,7 @@
 #include "macros.h"
 #include "string2.h"
 #include "smalloc.h"
-
+#include "gmxfio.h"
 
 static bool bDebug = FALSE;
 static char *fatal_tmp_file = NULL;
@@ -525,10 +525,10 @@ bool gmx_debug_at=FALSE;
 void init_debug (const int dbglevel,const char *dbgfile)
 {
   no_buffers();
-  debug=ffopen(dbgfile,"w");
+  debug=gmx_fio_fopen(dbgfile,"w");
   bDebug = TRUE;
   if (dbglevel >= 2)
-    gmx_debug_at = TRUE;
+	  gmx_debug_at = TRUE;
 }
 
 #if (defined __sgi && defined USE_SGI_FPE)

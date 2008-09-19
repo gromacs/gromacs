@@ -177,7 +177,7 @@ int main(int argc,char *argv[])
     for(i=0; (i<m); i++)
       fprintf(stdlog,"v[%d] = (%e,%e,%e)\n",i,v[i][XX],v[i][YY],v[i][ZZ]);
   }
-  fclose(stdlog);
+  fflush(stdlog);
   
   return 0;
 }

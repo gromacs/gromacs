@@ -74,6 +74,7 @@
 #include "txtdump.h"
 #include "vec.h"
 #include "main.h"
+#include "gmxfio.h"
 
 static char  *strat[] = {
   "DE/best/1/exp",          "DE/rand/1/exp",
@@ -132,13 +133,13 @@ t_genalg *init_ga(FILE *fplog,char *infile,int D,t_range range[])
   /*------Initializations----------------------------*/
   snew(ga,1);
   /*-----Read input data------------------------------------------------*/
-  fpin_ptr   = ffopen(infile,"r");
+  fpin_ptr   = gmx_fio_fopen(infile,"r");
   fscanf(fpin_ptr,"%d",&ga->NP);             /*---choice of strategy---*/
   fscanf(fpin_ptr,"%d",&ga->strategy);       /*---choice of strategy---*/
   fscanf(fpin_ptr,"%lf",&ff);            /*---weight factor------------*/
   fscanf(fpin_ptr,"%lf",&cr);            /*---crossing over factor-----*/
   fscanf(fpin_ptr,"%d",&ga->seed);           /*---random seed----------*/
-  fclose(fpin_ptr);
+  gmx_fio_fclose(fpin_ptr);
   
   ga->FF   = ff;
   ga->CR   = cr;

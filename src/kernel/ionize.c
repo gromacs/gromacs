@@ -53,6 +53,7 @@
 #include "futil.h"
 #include "network.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 typedef struct {
   real photo,coh,incoh,incoh_abs;
@@ -628,7 +629,7 @@ void ionize(FILE *fp,t_mdatoms *md,gmx_mtop_t *mtop,real t,t_inputrec *ir,
 
     xvg   = xvgropen("ionize.xvg","Ionization Events","Time (ps)","()");
     xvgr_legend(xvg,asize(leg),leg);
-    ion   = ffopen("ionize.log","w");
+    ion   = gmx_fio_fopen("ionize.log","w");
 
     fprintf(fp,PREFIX"Parameters for ionization events:\n");
     fprintf(fp,PREFIX"Imax = %g, t0 = %g, width = %g, seed = %d\n"

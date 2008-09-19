@@ -49,6 +49,7 @@
 #include "readinp.h"
 #include "filenm.h"
 #include "names.h"
+#include "gmxfio.h"
 
 char *eoNames[eoNR] = { 
   "Pres", "Epot", "Vir", "Dist", "Mu", "Force", "Fx", "Fy", "Fz",
@@ -194,7 +195,7 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
   FILE *fp;
   int  i,ftype;
   
-  fp=ffopen(fn,"w");
+  fp=gmx_fio_fopen(fn,"w");
   nice_header(fp,fn);
   fprintf(fp,"%-15s = %12g  ; Reference pressure for coupling\n",
 	  eoNames[eoPres],tcr->ref_value[eoPres]);
@@ -272,7 +273,7 @@ void write_gct(char *fn,t_coupl_rec *tcr,t_idef *idef)
 	      interaction_function[ftype].longname);
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 static bool add_lj(int *nLJ,t_coupl_LJ **tcLJ,char *s,bool bObsUsed[])

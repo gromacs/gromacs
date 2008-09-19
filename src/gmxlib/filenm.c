@@ -438,10 +438,11 @@ static void check_opts(int nf,t_filenm fnm[])
   }
 }
 
-int fn2ftp(char *fn)
+int fn2ftp(const char *fn)
 {
-  int  i,len;
-  char *feptr,*eptr;
+	int  i,len;
+	const char *feptr;
+	const char *eptr;
   
   if (!fn)
     return efNR;
@@ -625,6 +626,7 @@ void parse_file_args(int *argc,char *argv[],int nf,t_filenm fnm[],
   }
   
   set_filenms(nf,fnm);
+	
 }
 
 char *opt2fn(char *opt,int nfile,t_filenm fnm[])
@@ -801,4 +803,31 @@ bool is_set(t_filenm *fnm)
   return ((fnm->flag & ffSET) == ffSET);
 }  
 
+ 
+
+int
+add_suffix_to_output_names(t_filenm *fnm, int nfile, char *suffix)
+{
+	int   i,j,pos;
+	char  buf[STRLEN],newname[STRLEN];
+	char  *extpos;
+	
+	for( i=0 ; i<nfile ; i++)
+	{
+		if( is_output(&fnm[i]) && fnm[i].ftp != efCPT )
+		{
+			/* We never use multiple _outputs_, but we might as well check for it, just in case... */
+			for( j=0 ; j<fnm[i].nfiles ; j++)
+			{
+				strncpy(buf,fnm[i].fns[j],STRLEN-1);
+				extpos = strrchr(buf,'.');
+				*extpos = '\0';
+				sprintf(newname,"%s.%s.%s",buf,suffix,extpos+1);
+				free(fnm[i].fns[j]);
+				fnm[i].fns[j]=strdup(newname);
+			}
+		}
+	}
+	return 0;
+}
 

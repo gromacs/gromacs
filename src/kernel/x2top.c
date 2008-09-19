@@ -41,6 +41,7 @@
 #include "macros.h"
 #include "copyrite.h"
 #include "bondf.h"
+#include "gmxfio.h"
 #include "string2.h"
 #include "smalloc.h"
 #include "strdb.h"
@@ -336,7 +337,7 @@ static void print_rtp(char *filenm,char *title,t_atoms *atoms,
   FILE *fp;
   int i;
   
-  fp = ffopen(filenm,"w");
+  fp = gmx_fio_fopen(filenm,"w");
   fprintf(fp,"; %s\n",title);
   fprintf(fp,"\n");
   fprintf(fp,"[ %s ]\n",*atoms->resname[0]);
@@ -352,7 +353,7 @@ static void print_rtp(char *filenm,char *title,t_atoms *atoms,
   print_pl(fp,plist,F_PDIHS,"dihedrals",atoms->atomname);
   print_pl(fp,plist,F_IDIHS,"impropers",atoms->atomname);
   
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 int main(int argc, char *argv[])

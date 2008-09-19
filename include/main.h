@@ -50,7 +50,7 @@ extern int  gmx_parallel_env; /* 1 when running in a parallel environment,
 			       * with: mpirun -np 1 
 			       */
 
-extern FILE *gmx_log_open(char *fn,const t_commrec *cr,bool bMasterOnly);
+extern FILE *gmx_log_open(char *fn,const t_commrec *cr,bool bMasterOnly, unsigned long Flags);
 /* Open the log file, if necessary (nprocs > 1) the logfile name is
  * communicated around the ring.
  */

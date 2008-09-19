@@ -38,12 +38,13 @@
 #endif
 
 
+#include <math.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include "futil.h"
 #include "rdgroup.h"
 #include "statutil.h"
-#include "math.h"
-#include "stdio.h"
-#include "stdlib.h"
+#include "gmxfio.h"
 #include "vec.h" 
 #include "typedefs.h"
 #include "network.h"
@@ -56,6 +57,7 @@
 #include "partdec.h"
 #include "pbc.h"
 #include "mtop_util.h"
+#include "mdrun.h"
 
 static void pull_print_x(FILE *out,t_pull *pull, real t) 
 {
@@ -102,40 +104,47 @@ void pull_print_output(t_pull *pull, int step, real time)
     pull_print_f(pull->out_f,pull,time);
 }
 
-static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord)
+static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flags)
 {
   FILE *fp;
   int  nsets,g,m;
   char **setname,buf[10];
   
-  if (bCoord)
-    fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)");
-  else
-    fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol)");
-  
-  snew(setname,(1+pull->ngrp)*DIM);
-  nsets = 0;
-  for(g=0; g<1+pull->ngrp; g++) {
-    if (pull->grp[g].nat > 0 && (g > 0 || bCoord)) {
-      if (bCoord || pull->eGeom == epullgPOS) {
-	for(m=0; m<DIM; m++) {
-	  sprintf(buf,"%d %c",g,'X'+m);
-	  setname[nsets] = strdup(buf);
-	  nsets++;
-	}
-      } else {
-	sprintf(buf,"%d",g);
-	setname[nsets] = strdup(buf);
-	nsets++;
-      }
-    }
+  if(Flags & MD_APPENDFILES)
+  {
+	  fp = gmx_fio_fopen(fn,"a");
   }
-  if (bCoord || nsets > 1)
-    xvgr_legend(fp,nsets,setname);
-  for(g=0; g<nsets; g++)
-    sfree(setname[g]);
-  sfree(setname);
-
+  else
+  {
+	  if (bCoord)
+		  fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)");
+	  else
+		  fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol)");
+	
+	  snew(setname,(1+pull->ngrp)*DIM);
+	  nsets = 0;
+	  for(g=0; g<1+pull->ngrp; g++) {
+		  if (pull->grp[g].nat > 0 && (g > 0 || bCoord)) {
+			  if (bCoord || pull->eGeom == epullgPOS) {
+				  for(m=0; m<DIM; m++) {
+					  sprintf(buf,"%d %c",g,'X'+m);
+					  setname[nsets] = strdup(buf);
+					  nsets++;
+				  }
+			  } else {
+				  sprintf(buf,"%d",g);
+				  setname[nsets] = strdup(buf);
+				  nsets++;
+			  }
+		  }
+	  }
+	  if (bCoord || nsets > 1)
+		  xvgr_legend(fp,nsets,setname);
+	  for(g=0; g<nsets; g++)
+		  sfree(setname[g]);
+	  sfree(setname);
+  }
+	
   return fp;
 }
 
@@ -872,7 +881,7 @@ static void init_pull_group_index(FILE *fplog,t_commrec *cr,
 }
 
 void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
-	       gmx_mtop_t *mtop,t_commrec *cr,bool bOutFile)
+	       gmx_mtop_t *mtop,t_commrec *cr,bool bOutFile, unsigned long Flags)
 {
   t_pull    *pull;
   t_pullgrp *pgrp;
@@ -957,10 +966,10 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
   pull->out_f = NULL;
   if (bOutFile) {
     if (pull->nstxout > 0) {
-      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE);
+      pull->out_x = open_pull_out(opt2fn("-px",nfile,fnm),pull,TRUE,Flags);
     }
     if (pull->nstfout > 0) {
-      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,FALSE);
+      pull->out_f = open_pull_out(opt2fn("-pf",nfile,fnm),pull,FALSE,Flags);
     }
   }
 }
@@ -968,7 +977,7 @@ void init_pull(FILE *fplog,t_inputrec *ir,int nfile,t_filenm fnm[],
 void finish_pull(FILE *fplog,t_pull *pull)
 {
   if (pull->out_x)
-    fclose(pull->out_x);
+    gmx_fio_fclose(pull->out_x);
   if (pull->out_f)
-    fclose(pull->out_f);
+    gmx_fio_fclose(pull->out_f);
 }

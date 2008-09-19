@@ -110,54 +110,54 @@ extern int over_alloc_dd(int n);
 /* Functions to initiate and delete structures *
  * These functions are defined in gmxlib/typedefs.c 
  */
-extern void init_block(t_block *block);
-extern void init_blocka(t_blocka *block);
-extern void init_atom (t_atoms *at);
-extern void init_mtop(gmx_mtop_t *mtop);
-extern void init_top (t_topology *top);
-extern void init_inputrec(t_inputrec *ir);
-extern void init_gtc_state(t_state *state,int ngtc);
-extern void init_state(t_state *state,int natoms,int ngtc);
+void init_block(t_block *block);
+void init_blocka(t_blocka *block);
+void init_atom (t_atoms *at);
+void init_mtop(gmx_mtop_t *mtop);
+void init_top (t_topology *top);
+void init_inputrec(t_inputrec *ir);
+void init_gtc_state(t_state *state,int ngtc);
+void init_state(t_state *state,int natoms,int ngtc);
 
-extern void copy_blocka(const t_blocka *src,t_blocka *dest);
+void copy_blocka(const t_blocka *src,t_blocka *dest);
 
-extern void done_block(t_block *block);
-extern void done_blocka(t_blocka *block);
-extern void done_atom (t_atoms *at);
-extern void done_moltype(gmx_moltype_t *molt);
-extern void done_molblock(gmx_molblock_t *molb);
-  extern void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab);
-extern void done_top(t_topology *top);
-extern void done_inputrec(t_inputrec *ir);
-extern void done_state(t_state *state);
+void done_block(t_block *block);
+void done_blocka(t_blocka *block);
+void done_atom (t_atoms *at);
+void done_moltype(gmx_moltype_t *molt);
+void done_molblock(gmx_molblock_t *molb);
+void done_mtop(gmx_mtop_t *mtop,bool bDoneSymtab);
+void done_top(t_topology *top);
+void done_inputrec(t_inputrec *ir);
+void done_state(t_state *state);
 
-extern void set_box_rel(t_inputrec *ir,t_state *state);
+void set_box_rel(t_inputrec *ir,t_state *state);
 /* Set state->box_rel used in mdrun to preserve the box shape */
 
-extern void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b);
+void preserve_box_shape(t_inputrec *ir,matrix box_rel,matrix b);
 /* Preserve the box shape, b can be box or boxv */
 
-extern void stupid_fill_block(t_block *grp, int natom,bool bOneIndexGroup);
+void stupid_fill_block(t_block *grp, int natom,bool bOneIndexGroup);
 /* Fill a block structure with numbers identical to the index
  * (0, 1, 2, .. natom-1)
  * If bOneIndexGroup, then all atoms are  lumped in one index group,
  * otherwise there is one atom per index entry
  */
 
-extern void stupid_fill_blocka(t_blocka *grp, int natom);
+void stupid_fill_blocka(t_blocka *grp, int natom);
 /* Fill a block structure with numbers identical to the index
  * (0, 1, 2, .. natom-1)
  * There is one atom per index entry
  */
 
-extern void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
+void init_t_atoms(t_atoms *atoms, int natoms, bool bPdbinfo);
 /* allocate memory for the arrays, set nr to natoms and nres to 0
  * set pdbinfo to NULL or allocate memory for it */  
 
-extern void free_t_atoms(t_atoms *atoms,bool bFreeNames);
+void free_t_atoms(t_atoms *atoms,bool bFreeNames);
 /* free all the arrays and set the nr and nres to 0 */
 
-extern t_atoms *mtop2atoms(gmx_mtop_t *mtop);
+t_atoms *mtop2atoms(gmx_mtop_t *mtop);
 /* generate a t_atoms struct for the system from gmx_mtop_t */ 
 
 #ifdef CPLUSPLUS

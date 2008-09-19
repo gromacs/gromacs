@@ -50,6 +50,7 @@
 #include "writeps.h"
 #include "macros.h"
 #include "xvgr.h"
+#include "gmxfio.h"
 
 #define p2(x) ((x)*(x))
 #define p3(x) ((x)*(x)*(x)) 
@@ -419,7 +420,7 @@ real analyse_diff(FILE *log,char *label,
 	fprintf(fp,"%10.3f  %10.3f\n",ffour[i][m],fpppm[i][m]);
       }
     }
-    ffclose(fp);
+    gmx_fio_fclose(fp);
     do_view(fcorr,NULL);
   }
   if (pcorr)  
@@ -433,11 +434,11 @@ real analyse_diff(FILE *log,char *label,
       fprintf(gp,"%10.3f  %10.3f\n",phi_f[i]+phi_sr[i],phi_p[i]+phi_sr[i]);
   }
   if (pcorr) {
-    ffclose(fp);
+    gmx_fio_fclose(fp);
     do_view(pcorr,NULL);
   }
   if (ptotcorr) {
-    ffclose(gp);
+    gmx_fio_fclose(gp);
     do_view(ptotcorr,NULL);
   }
 

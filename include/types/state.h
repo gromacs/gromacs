@@ -33,6 +33,9 @@
  * And Hey:
  * GRoups of Organic Molecules in ACtion for Science
  */
+#ifndef _state_h_
+#define _state_h_
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -52,6 +55,7 @@ enum { estLAMBDA,
        estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
        estORIRE_INITF, estORIRE_DTAV,
+       estENERGY_N, estENERGY_AVER, estENERGY_SUM,
        estNR };
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
@@ -69,15 +73,23 @@ typedef struct
 
 typedef struct
 {
+  double *   ener_ave;  /* Energy term history sum to get fluctuations      */
+  double *   ener_sum;  /* Energy term history sum to get fluctuations      */
+  int        nener;     /* Number of energy terms in two previous arrays    */
+}
+energyhistory_t;
+
+typedef struct
+{
   int           natoms;
   int           ngtc;
   int           nrng;
   int           nrngi;
   int           flags;  /* Flags telling which entries are present      */
   real          lambda; /* the free energy switching parameter          */
-  matrix 	box;    /* box vector coordinates                      	*/
-  matrix 	box_rel; /* Relitaive box vectors to preserve shape    	*/
-  matrix 	boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
+  matrix 	    box;    /* box vector coordinates                      	*/
+  matrix     	box_rel; /* Relitaive box vectors to preserve shape    	*/
+  matrix 	    boxv;   /* box velocitites for Parrinello-Rahman pcoupl */
   matrix        pres_prev; /* Pressure of the previous step for pcoupl  */
   real          *nosehoover_xi;  /* for Nose-Hoover tcoupl (ngtc)       */
   double        *therm_integral; /* for N-H/V-rescale tcoupl (ngtc)     */
@@ -91,10 +103,13 @@ typedef struct
   int           *ld_rngi; /* RNG index                                  */
 
   history_t     hist;   /* Time history for restraints                  */
-
+  energyhistory_t  enerhist; /* Energy history for statistics           */
+	
   int           ddp_count; /* The DD partitioning count for this state  */
   int           ddp_count_cg_gl; /* The DD part. count for index_gl     */
   int           ncg_gl; /* The number of local charge groups            */
   int           *cg_gl; /* The global cg number of the local cgs        */
   int           cg_gl_nalloc; /* Allocation size of cg_gl;              */
 } t_state;
+
+#endif /* _state_h_ */

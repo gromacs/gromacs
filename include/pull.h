@@ -78,10 +78,10 @@ extern void init_pull(FILE *fplog,
                       t_inputrec *ir, /* the inputrec */
                       int nfile,       
                       t_filenm fnm[], /* standard filename struct */
-		      gmx_mtop_t *mtop, /* the topology of the whole system */
+					  gmx_mtop_t *mtop, /* the topology of the whole system */
                       t_commrec * cr, /* struct for communication info */
-                      bool bOutFile   /* open output files */
-		      );
+                      bool bOutFile,   /* open output files */
+					  unsigned long Flags);
 
 /* Close the pull output files */
 extern void finish_pull(FILE *fplog,t_pull *pull);

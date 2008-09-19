@@ -45,6 +45,7 @@
 #include "sysstuff.h"
 #include "ebin.h"
 #include "enxio.h"
+#include "types/state.h"
 
 typedef struct {
   t_ebin *ebin;
@@ -81,6 +82,17 @@ extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 		       int mode,bool bCompact,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);
+
+void 
+init_state_energyhistory(t_state *      state);
+
+void
+update_state_energyhistory(t_state *    state,
+						   t_mdebin *   mdebin);
+
+void
+restore_energyhistory_from_state(t_mdebin *  mdebin,
+								 t_state *   state);
 
 #endif	/* _mdebin_h */
 

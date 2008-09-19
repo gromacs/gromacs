@@ -46,6 +46,7 @@
 #include "gmx_fatal.h"
 #include "matio.h"
 #include "statutil.h"
+#include "gmxfio.h"
 
 #define round(a) (int)(a+0.5)
 
@@ -144,7 +145,7 @@ int readcmap(char *fn,t_mapping **map)
   
   in=libopen(fn);
   n=getcmap(in,fn,map);
-  fclose(in);
+  gmx_fio_fclose(in);
   
   return n;
 }
@@ -165,9 +166,9 @@ void writecmap(char *fn,int n,t_mapping map[])
 {
   FILE *out;
   
-  out=ffopen(fn,"w");
+  out=gmx_fio_fopen(fn,"w");
   printcmap(out,n,map);
-  fclose(out);
+  gmx_fio_fclose(out);
 }
 
 void do_wmap(FILE *out,int i0,int imax,
@@ -430,7 +431,7 @@ int read_xpm_matrix(char *fnm,t_matrix **matrix)
   char *line;
   int nmat;
 
-  in=ffopen(fnm,"r");
+  in=gmx_fio_fopen(fnm,"r");
   
   nmat=0;
   while (fgetline(&line,STRLEN,in)) {
@@ -440,7 +441,7 @@ int read_xpm_matrix(char *fnm,t_matrix **matrix)
       nmat++;
     }
   }
-  fclose(in);
+  gmx_fio_fclose(in);
 
   if (nmat==0)
     gmx_file("Invalid XPixMap");

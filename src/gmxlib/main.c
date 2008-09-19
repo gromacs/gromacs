@@ -49,6 +49,8 @@
 #include "macros.h"
 #include "futil.h"
 #include "filenm.h"
+#include "mdrun.h"
+#include "gmxfio.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -117,13 +119,15 @@ void check_multi_int(FILE *log,const gmx_multisim_t *ms,int val,char *name)
   sfree(ibuf);
 }
 
-FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly)
+FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly, unsigned long Flags)
 {
   int  len,testlen,pid;
   char buf[256],host[256];
   time_t t;
   FILE *fp;
 
+  bool bAppend = Flags & MD_APPENDFILES;	
+  
   debug_gmx();
   
   /* Communicate the filename for logfile */
@@ -141,9 +145,9 @@ FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly)
   if (PAR(cr) && !bMasterOnly) {
     /* Since log always ends with '.log' let's use this info */
     par_fn(lognm,efLOG,cr,cr->ms!=NULL,buf,255);
-    fp = ffopen(buf,"w");
+	  fp = gmx_fio_fopen(buf, bAppend ? "a" : "w" );
   } else {
-    fp = ffopen(lognm,"w");
+	  fp = gmx_fio_fopen(lognm, bAppend ? "a" : "w" );
   }
 
   gmx_fatal_set_log_file(fp);
@@ -164,6 +168,15 @@ FILE *gmx_log_open(char *lognm,const t_commrec *cr,bool bMasterOnly)
   pid = 0;
 #endif
 
+  if(bAppend)
+  {
+	  fprintf(fp,
+			  "\n\n"
+			  "-----------------------------------------------------------\n"
+			  "Restarting from checkpoint, appending to previous log file.\n\n"
+			  );
+  }
+	
   fprintf(fp,
 	  "Log file opened on %s"
 	  "Host: %s  pid: %d  nodeid: %d  nnodes:  %d\n",
@@ -185,7 +198,7 @@ void gmx_log_close(FILE *fp)
 {
   if (fp) {
     gmx_fatal_set_log_file(NULL);
-    fclose(fp);
+    gmx_fio_fclose(fp);
   }
 }
 

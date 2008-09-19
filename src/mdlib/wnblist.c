@@ -50,6 +50,7 @@
 #include "futil.h"
 #include "names.h"
 #include "domdec.h"
+#include "gmxfio.h"
 
 #define header "Neighborlist:"
 
@@ -212,7 +213,7 @@ void dump_nblist(FILE *out,t_commrec *cr,t_forcerec *fr,int nDNL)
     } else {
       sprintf(buf,"nlist.txt");
     }
-    fp = ffopen(buf,"w");
+    fp = gmx_fio_fopen(buf,"w");
   }
   fprintf(fp,"%s\n",header);
 

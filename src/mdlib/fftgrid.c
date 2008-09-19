@@ -51,6 +51,7 @@
 #include "fftgrid.h"
 #include "gmx_fft.h"
 #include "gmx_parallel_3dfft.h"
+#include "gmxfio.h"
 
 
 #ifdef GMX_MPI
@@ -366,7 +367,7 @@ void print_rgrid_pdb(char *fn,int nx,int ny,int nz,real ***grid)
   real x,y,z,g;
 
   n=1;
-  fp=ffopen(fn,"w");  
+  fp=gmx_fio_fopen(fn,"w");  
   for(ix=0; (ix<nx); ix++) {
     for(iy=0; (iy<ny); iy++) {
       for(iz=0; (iz<nz); iz++) {
@@ -382,7 +383,7 @@ void print_rgrid_pdb(char *fn,int nx,int ny,int nz,real ***grid)
       }
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 void clear_rgrid(int nx,int ny,int nz,real ***grid)
@@ -465,7 +466,7 @@ void print_cgrid_pdb(char *fn,int nx,int ny,int nz,t_complex ***grid)
   real x,y,z,g;
 
   n=1;
-  fp=ffopen(fn,"w");  
+  fp=gmx_fio_fopen(fn,"w");  
   for(ix=0; (ix<nx); ix++) {
     for(iy=0; (iy<ny); iy++) {
       for(iz=0; (iz<nz); iz++) {
@@ -480,7 +481,7 @@ void print_cgrid_pdb(char *fn,int nx,int ny,int nz,t_complex ***grid)
       }
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 

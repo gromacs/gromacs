@@ -42,10 +42,11 @@
 #endif
 
 #include "typedefs.h"
+#include "gmxfio.h"
 
 /* Write a checkpoint to fn */
 extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
-			     int eIntegrator,int step,double t,
+			     int eIntegrator,int simulation_part,int step,double t,
 			     t_state *state);
 
 /* Loads a checkpoint from fn for run continuation.
@@ -55,20 +56,28 @@ extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
  * but not the state itself.
  */
 extern void load_checkpoint(char *fn,FILE *fplog,
-			    t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-			    t_inputrec *ir,t_state *state,bool *bReadRNG);
+							t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+							t_inputrec *ir,t_state *state,bool *bReadRNG, 
+							bool bTruncateOutputFiles);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.
  * If bReadRNG=TRUE a RNG state compatible with the current
  * number of nodes was read.
  */
-extern void read_checkpoint_state(char *fn,int *step,double *t,t_state *state);
+extern void read_checkpoint_state(char *fn,int *simulation_part,int *step,double *t,t_state *state);
 
 /* Read everything that can be stored in t_trxframe from a checkpoint file */
 extern void read_checkpoint_trxframe(int fp,t_trxframe *fr);
 
 /* Print the complete contents of checkpoint file fn to out */
 extern void list_checkpoint(char *fn,FILE *out);
+
+/* Read just the simulation 'generation'. This is necessary already at the beginning of mdrun,
+ * to be able to rename the logfile correctly.
+ */
+int
+read_checkpoint_simulation_part(char *filename);
+
 
 #endif

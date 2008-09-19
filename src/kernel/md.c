@@ -140,21 +140,30 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *gro;
   gmx_wallcycle_t wcycle;
   bool       bReadRNG;
-
+  int      list;
+	
   snew(inputrec,1);
   snew(mtop,1);
-  
+  	
   if (bVerbose && SIMMASTER(cr)) 
     fprintf(stderr,"Getting Loaded...\n");
   
+  if (Flags & MD_APPENDFILES) 
+  {
+	  fplog = NULL;
+  }
+	
   if (PAR(cr)) {
     /* The master thread on the master node reads from disk, 
      * then distributes everything to the other processors.
      */
+	
+    list = (SIMMASTER(cr) && !(Flags & MD_APPENDFILES)) ?  (LIST_SCALARS | LIST_INPUTREC) : 0;
+		  
     snew(state,1);
     init_parallel(fplog,ftp2fn(efTPX,nfile,fnm),cr,
-		  inputrec,mtop,state,
-		  SIMMASTER(cr) ? LIST_SCALARS | LIST_INPUTREC : 0);
+		  inputrec,mtop,state,list);
+	  
   } else {
     /* Read a file for a single processor */
     snew(state,1);
@@ -176,6 +185,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* This needs to be called before read_checkpoint to extend the state */
   init_disres(fplog,mtop,inputrec,cr,Flags & MD_PARTDEC,fcd,state);
 
+  init_state_energyhistory(state);
+					  
   if (gmx_mtop_ftype_count(mtop,F_ORIRES) > 0) {
     if (PAR(cr) && !(Flags & MD_PARTDEC)) {
       gmx_fatal(FARGS,"Orientation restraints do not work (yet) with domain decomposition, use particle decomposition (mdrun option -pd)");
@@ -191,23 +202,40 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     set_deform_reference_box(inputrec->init_step,state->box);
   }
 
-  if (opt2bSet("-cpi",nfile,fnm)) {
-    /* Read the state from the checkpoint file */
-    load_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
-		    cr,Flags & MD_PARTDEC,ddxyz,
-		    inputrec,state,&bReadRNG);
-    if (bReadRNG) {
-      Flags |= MD_READ_RNG;
-    }
+  if (opt2bSet("-cpi",nfile,fnm)) 
+  {
+	  /* Check if checkpoint file exists before doing continuation.
+	   * This way we can use identical input options for the first and subsequent runs...
+	   */
+	  if( fexist(opt2fn("-cpi",nfile,fnm)) )
+	  {
+		  load_checkpoint(opt2fn("-cpi",nfile,fnm),fplog,
+						  cr,Flags & MD_PARTDEC,ddxyz,
+						  inputrec,state,&bReadRNG,(Flags & MD_APPENDFILES));
+		  
+		  if (bReadRNG)
+		  {
+			  Flags |= MD_READ_RNG;
+		  }
+		  
+	  }
   }
-
-  if (SIMMASTER(cr)) {
-    copy_mat(state->box,box);
-  }
-  if (PAR(cr)) {
-    gmx_bcast(sizeof(box),box,cr);
-  }
-    
+	
+	if (MASTER(cr) && (Flags & MD_APPENDFILES))
+	{
+		fplog = gmx_log_open(ftp2fn(efLOG,nfile,fnm),cr, !(Flags & MD_SEPPOT) ,Flags);
+	}
+	
+	if (SIMMASTER(cr)) 
+	{
+		copy_mat(state->box,box);
+	}
+	
+	if (PAR(cr)) 
+	{
+		gmx_bcast(sizeof(box),box,cr);
+	}
+	
   if (bVerbose && SIMMASTER(cr))
     fprintf(stderr,"Loaded with Money\n\n");
 
@@ -236,7 +264,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
      */
     gmx_setup_nodecomm(fplog,cr);
   }
-
+	
   wcycle = wallcycle_init(fplog,cr);
 
   snew(nrnb,1);
@@ -302,7 +330,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	construct_vsites_mtop(fplog,vsite,mtop,state->x);
       }
     }
-
+	  
     /* Initiate PPPM if necessary */
     if (fr->eeltype == eelPPPM) {
       if (mdatoms->nChargePerturbed)
@@ -371,7 +399,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (inputrec->ePull != epullNO) {
       /* Initialize pull code */
       init_pull(fplog,inputrec,nfile,fnm,mtop,cr,
-		EI_DYNAMICS(inputrec->eI) && MASTER(cr));
+		EI_DYNAMICS(inputrec->eI) && MASTER(cr),Flags);
     }
 
     constr = init_constraints(fplog,mtop,inputrec,ed,state,cr);
@@ -423,6 +451,12 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   
   /* Does what it says */  
   print_date_and_time(fplog,cr->nodeid,"Finished mdrun");
+
+	/* Close logfile already here if we were appending to it */
+	if (MASTER(cr) && (Flags & MD_APPENDFILES))
+	{
+		gmx_log_close(fplog);
+	}	
 }
 
 time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
@@ -439,7 +473,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     real cpt_period,real max_hours,
 	     unsigned long Flags)
 {
-  t_mdebin   *mdebin;
   int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel;
   char       *fn_cpt;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
@@ -464,7 +497,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* Booleans (disguised as a reals) to checkpoint and terminate mdrun */  
   real       chkpt=0,terminate=0,terminate_now=0;
 
-  gmx_localtop_t *top;
+  gmx_localtop_t *top;	
+  t_mdebin *mdebin=NULL;
   t_state    *state=NULL;
   rvec       *f_global=NULL;
   gmx_enerdata_t *enerd;
@@ -550,7 +584,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  nrnb,top_global,&sd,
 	  nfile,fnm,&fp_trn,&fp_xtc,&fp_ene,&fn_cpt,
 	  &fp_dgdl,&fp_field,&mdebin,
-	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm);
+	  force_vir,shake_vir,mu_tot,&bNEMD,&bSimAnn,&vcm,Flags);
 
   /* Energy terms and groups */
   snew(enerd,1);
@@ -577,7 +611,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      "\nWARNING: This run will generate roughly %.0f Mb of data\n\n",
 	      io);
   }
-  
+ 
   if (DOMAINDECOMP(cr)) {
     top = dd_init_local_top(top_global);
 
@@ -629,6 +663,18 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   update_mdatoms(mdatoms,state->lambda);
 
+	if (MASTER(cr))
+	{
+		/* Update mdebin with energy history if appending to output files */
+		if( Flags & MD_APPENDFILES )
+		{
+			restore_energyhistory_from_state(mdebin,state);
+		}
+		/* Set the initial energy history in state to zero by updating once */
+		update_state_energyhistory(state_global,mdebin);
+	}	
+	
+	
   if (sd && (Flags & MD_READ_RNG)) {
     /* Set the random state if we read a checkpoint file */
     set_stochd_state(sd,state);
@@ -723,8 +769,17 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		"run input file,\nwhich may not correspond to the time "
 		"needed to process input trajectory.\n\n");
     } else {
-      fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n",
-	      *(top_global->name),ir->nsteps,ir->nsteps*ir->delta_t);
+		if(ir->init_step>0)
+		{
+			fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps (continuing from step %d, %8.1f ps).\n",
+					*(top_global->name),ir->nsteps+ir->init_step,(ir->nsteps+ir->init_step)*ir->delta_t,
+					ir->init_step,ir->init_step*ir->delta_t);
+		}
+		else
+		{
+			fprintf(stderr,"starting mdrun '%s'\n%d steps, %8.1f ps.\n",
+					*(top_global->name),ir->nsteps,ir->nsteps*ir->delta_t);
+		}
     }
     fprintf(fplog,"\n");
   }
@@ -1044,7 +1099,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	get_stochd_state(sd,state);
       }
       write_traj(fplog,cr,fp_trn,bX,bV,bF,fp_xtc,bXTC,ir->xtcprec,fn_cpt,bCPT,
-		 top_global,ir->eI,step,t,state,state_global,f,f_global);
+				 top_global,ir->eI,ir->simulation_part,step,t,state,state_global,f,f_global);
       debug_gmx();
 
       if (bLastStep && step_rel == ir->nsteps &&
@@ -1377,24 +1432,35 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       update_time();
 
     /* Output stuff */
-    if (MASTER(cr)) {
-      bool do_dr,do_or;
+    if (MASTER(cr)) 
+	{
+		bool do_dr,do_or;
       
-      upd_mdebin(mdebin,fp_dgdl,bGStatEveryStep,
-		 mdatoms->tmass,step_rel,t,enerd,state,lastbox,
-		 shake_vir,force_vir,total_vir,pres,
-		 ekind,mu_tot,constr);
-      do_dr  = do_per_step(step,ir->nstdisreout);
-      do_or  = do_per_step(step,ir->nstorireout);
-      print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,
-		 step,step_rel,t,
-		 eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
-      if (ir->ePull != epullNO)
-	pull_print_output(ir->pull,step,t);
-
-      if (bVerbose)
-	fflush(fplog);
-    }
+		upd_mdebin(mdebin,fp_dgdl,bGStatEveryStep,
+				   mdatoms->tmass,step_rel,t,enerd,state,lastbox,
+				   shake_vir,force_vir,total_vir,pres,
+				   ekind,mu_tot,constr);
+		
+		/* Update energy statistics in state, needed for checkpointing */
+		update_state_energyhistory(state_global,mdebin);
+		
+		do_dr  = do_per_step(step,ir->nstdisreout);
+		do_or  = do_per_step(step,ir->nstorireout);
+		
+		print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,step_rel,t,
+				   eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
+		
+		if (ir->ePull != epullNO)
+		{
+			pull_print_output(ir->pull,step,t);
+		}
+		
+		if (bVerbose)
+		{
+			fflush(fplog);
+		}
+	}
+	  
     
     /* Remaining runtime */
     if (MULTIMASTER(cr) && do_verbose) {
@@ -1459,9 +1525,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       close_xtc(fp_xtc);
     close_trn(fp_trn);
     if (fp_dgdl)
-      fclose(fp_dgdl);
+      gmx_fio_fclose(fp_dgdl);
     if (fp_field)
-      fclose(fp_field);
+      gmx_fio_fclose(fp_field);
   }
   debug_gmx();
   

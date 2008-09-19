@@ -52,7 +52,8 @@
 #include "atomprop.h"
 #include "physics.h"
 #include "pbc.h"
-	
+#include "gmxfio.h"
+
 typedef struct {
   int ai,aj;
 } gmx_conection_t;
@@ -732,7 +733,7 @@ void read_pdb_conf(char *infile,char *title,
 {
   FILE *in;
   
-  in = ffopen(infile,"r");
+  in = gmx_fio_fopen(infile,"r");
   read_pdbfile(in,title,NULL,atoms,x,ePBC,box,bChange,conect);
-  ffclose(in);
+  gmx_fio_fclose(in);
 }

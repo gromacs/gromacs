@@ -203,6 +203,8 @@ static void read_prop(gmx_atomprop_t aps,int eprop,double factor)
       fprintf(stderr,"WARNING: Error in file %s at line %d ignored\n",
 	      ap->db,line_no);
   }
+	
+  /* for libraries we can use the low-level close routines */
   fclose(fp);
 
   ap->bSet = TRUE;

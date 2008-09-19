@@ -51,6 +51,7 @@
 #include "nrnb.h"
 #include "domdec.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 typedef struct gmx_lincsdata {
     int  ncg;         /* the global number of constraints */
@@ -1041,7 +1042,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
     dd_get_constraint_range(dd,&ac0,&ac1);
     
     sprintf(str,"%s_%d_%d_%d.pdb",name,dd->ci[XX],dd->ci[YY],dd->ci[ZZ]);
-    fp = ffopen(str,"w");
+    fp = gmx_fio_fopen(str,"w");
     fprintf(fp,"CRYST1%9.3f%9.3f%9.3f%7.2f%7.2f%7.2f P 1           1\n",
             10*norm(box[XX]),10*norm(box[YY]),10*norm(box[ZZ]),
             90.0,90.0,90.0);
@@ -1064,7 +1065,7 @@ static void dump_conf(gmx_domdec_t *dd,struct gmx_lincsdata *li,
                     ddglatnr(dd,li->bla[2*i+1]));
         }
     }
-    fclose(fp);
+    gmx_fio_fclose(fp);
 }
 
 bool constrain_lincs(FILE *fplog,bool bLog,bool bEner,

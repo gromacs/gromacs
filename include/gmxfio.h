@@ -46,6 +46,9 @@
 #include "typedefs.h"
 #include "xdrf.h"
 
+/* Highest number of open input/output files. This is usually limited to 1024 by the OS, anyway. */
+#define GMX_MAXFILES    1024
+
 /* Enumerated for different items in files */
 enum { eitemHEADER, eitemIR, eitemBOX, 
        eitemTOP, eitemX, eitemV, eitemF, eitemNR };
@@ -68,7 +71,8 @@ extern char *comment_str[eitemNR];
  * Open and Close 
  ********************************************************/
 
-extern int gmx_fio_open(char *fn,char *mode);
+int 
+gmx_fio_open(const char *fn,char *mode);
 /* Open a new file for reading or writing.
  * The file type will be deduced from the file name.
  * If fn is NULL, stdin / stdout will be used for Ascii I/O (TPA type)
@@ -78,12 +82,14 @@ extern int gmx_fio_open(char *fn,char *mode);
  * unix, but is important on windows.
  */
  
-extern void gmx_fio_close(int fp);
+void 
+gmx_fio_close(int fp);
 /* Close the file corresponding to fp (if not stdio)
  * The routine will exit when an invalid fio is handled.
  */
 
-extern void gmx_fio_select(int fp);
+void 
+gmx_fio_select(int fp);
 /* This routine sets the global variables do_read and do_write
  * to point to the correct routines for fp.
  */
@@ -135,6 +141,43 @@ extern FILE *gmx_fio_getfp(int fio);
 extern XDR *gmx_fio_getxdr(int fio);
 /* Return the file pointer itself */
 
+/* Open a file, return a stream, record the entry in internal FIO object */
+FILE *
+gmx_fio_fopen(const char *fn,char *mode);
+
+/* Close a file previously opened with gmx_fio_fopen. 
+ * Do not mix these calls with standard fopen/fclose ones!
+ */
+int
+gmx_fio_fclose(FILE *fp);
+
+/* Element with information about position in a currently open file.
+ * off_t should be defined by autoconf if your system does not have it.
+ * If you do not have it on some other platform you do not have largefile support
+ * at all, and you can define it to int (or better, find out how to enable large files).
+ */
+typedef struct
+{
+	char      filename[STRLEN];
+	off_t     offset;    
+} 
+gmx_file_position_t;
+
+
+
+/*
+ * Return the name and file pointer positions for all currently open
+ * output files. This is used for saving in the checkpoint files, so we
+ * can truncate output files upon restart-with-appending.
+ *
+ * For the first argument you should use a pointer, which will be set to
+ * point to a list of open files.
+ */
+int
+gmx_fio_get_output_file_positions (gmx_file_position_t ** outputfiles,
+ 								   int *                  nfiles );
+
+	
 extern void set_comment(char *comment);
 /* Add this to the comment string for debugging */
 

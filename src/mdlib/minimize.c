@@ -79,6 +79,7 @@
 #include "ns.h"
 #include "gmx_wallcycle.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 typedef struct {
   t_state s;
@@ -926,7 +927,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     do_f = do_per_step(step,inputrec->nstfout);
     
     write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-	       top_global,inputrec->eI,step,(double)step,
+	       top_global,inputrec->eI,inputrec->simulation_part,step,(double)step,
 	       &s_min->s,state_global,s_min->f,f_global);
     
     /* Take a step downhill.
@@ -1230,7 +1231,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   
   write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,
 	     0,FALSE,0,NULL,FALSE,
-	     top_global,inputrec->eI,step,(real)step,
+	     top_global,inputrec->eI,inputrec->simulation_part,step,(real)step,
 	     &s_min->s,state_global,s_min->f,f_global);
   if (MASTER(cr)) {
     write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
@@ -1459,7 +1460,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
     do_f = do_per_step(step,inputrec->nstfout);
     
     write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-	       top_global,inputrec->eI,step,(real)step,state,state,f,f);
+	       top_global,inputrec->eI,inputrec->simulation_part,step,(real)step,state,state,f,f);
 
     /* Do the linesearching in the direction dx[point][0..(n-1)] */
     
@@ -1867,7 +1868,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   do_x = !do_per_step(step,inputrec->nstxout);
   do_f = !do_per_step(step,inputrec->nstfout);
   write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-	     top_global,inputrec->eI,step,(real)step,state,state,f,f);
+	     top_global,inputrec->eI,inputrec->simulation_part,step,(real)step,state,state,f,f);
   
   if (MASTER(cr)) {
     write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
@@ -2031,7 +2032,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
       do_x = do_per_step(steps_accepted,inputrec->nstxout);
       do_f = do_per_step(steps_accepted,inputrec->nstfout);
       write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,0,FALSE,0,NULL,FALSE,
-		 top_global,inputrec->eI,count,(real)count,
+		 top_global,inputrec->eI,inputrec->simulation_part,count,(real)count,
 		 &s_min->s,state_global,s_min->f,f_global);
     } 
     else {
@@ -2077,7 +2078,7 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   if (MASTER(cr)) 
     fprintf(stderr,"\nwriting lowest energy coordinates.\n"); 
   write_traj(fplog,cr,fp_trn,TRUE,FALSE,inputrec->nstfout,0,FALSE,0,NULL,FALSE,
-	     top_global,inputrec->eI,count,(real)count,
+	     top_global,inputrec->eI,inputrec->simulation_part,count,(real)count,
 	     &s_min->s,state_global,s_min->f,f_global);
 
   fnormn = s_min->fnorm/sqrt(state_global->natoms);
@@ -2868,7 +2869,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
   close_trj(status);
 
   if (fp_tpi)
-    fclose(fp_tpi);
+    gmx_fio_fclose(fp_tpi);
 
   if (fplog) {
     fprintf(fplog,"\n");
@@ -2897,7 +2898,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	    (int)(bin[i]+0.5),
 	    bin[i]*exp(-bUlogV)*V_all/VembU_all);
   }
-  fclose(fp_tpi);
+  gmx_fio_fclose(fp_tpi);
   sfree(bin);
 
   sfree(sum_UgembU);

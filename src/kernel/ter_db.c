@@ -49,6 +49,8 @@
 #include "gmx_fatal.h"
 #include "ter_db.h"
 #include "toputil.h"
+#include "gmxfio.h"
+
 
 /* use bonded types definitions in hackblock.h */
 #define ekwRepl ebtsNR+1
@@ -103,7 +105,7 @@ static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype atyp
   char buf[STRLEN],nname[STRLEN];
   
   sprintf(buf,"%s-%c_new.tdb",ff,C);
-  out = ffopen(buf,"w");
+  out = gmx_fio_fopen(buf,"w");
   
   for(i=0; (i<nb); i++) {
     fprintf(out,"[ %s ]\n",tb[i].name);
@@ -156,7 +158,7 @@ static void print_ter_db(char *ff,char C,int nb,t_hackblock tb[],t_atomtype atyp
       }
     fprintf(out,"\n");
   }
-  fclose(out);
+  gmx_fio_fclose(out);
 }
 
 int read_ter_db(char *FF,char ter,t_hackblock **tbptr,t_atomtype atype)

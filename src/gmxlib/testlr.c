@@ -154,7 +154,7 @@ void write_pqr(char *fn,t_atoms *atoms,rvec x[],real phi[],real dx)
   FILE *fp;
   int  i,rnr;
   
-  fp=ffopen(fn,"w");
+  fp=gmx_fio_fopen(fn,"w");
   for(i=0; (i<atoms->nr); i++) {
     rnr=atoms->atom[i].resnr;
     fprintf(fp,"%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
@@ -162,7 +162,7 @@ void write_pqr(char *fn,t_atoms *atoms,rvec x[],real phi[],real dx)
 	    (rnr+1) % 10000,
 	    10*(dx+x[i][XX]),10*x[i][YY],10*(x[i][ZZ]),0.0,phi[i]);
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 void write_grid_pqr(char *fn,int nx,int ny,int nz,real ***phi)
@@ -171,14 +171,14 @@ void write_grid_pqr(char *fn,int nx,int ny,int nz,real ***phi)
   int  i,j,k,rnr=0;
   real fac=4.0;
   
-  fp=ffopen(fn,"w");
+  fp=gmx_fio_fopen(fn,"w");
   for(i=0; (i<nx); i++)
     for(j=0; (j<ny); j++)
       for(k=0; (k<nz); k++,rnr++)
 	fprintf(fp,"%-6s%5d  %-4.4s%3.3s %c%4d    %8.3f%8.3f%8.3f%6.2f%6.2f\n",
 		"ATOM",(i+1),"C","C",' ',
 		1+((rnr+1) % 10000),fac*i,fac*j,fac*k,0.0,phi[i][j][k]);
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 void plot_phi(char *fn,rvec box,int natoms,rvec x[],real phi[])
 {
@@ -262,10 +262,10 @@ void print_phi(char *fn,int natoms,rvec x[],real phi[])
   FILE *fp;
   int  i;
   
-  fp=ffopen(fn,"w");
+  fp=gmx_fio_fopen(fn,"w");
   for(i=0; (i<natoms); i++)
     fprintf(fp,"%10d  %12.5e\n",i,phi[i]);
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 void pr_f(char *fn,int natoms,rvec f[])
@@ -273,10 +273,10 @@ void pr_f(char *fn,int natoms,rvec f[])
   FILE *fp;
   int  i;
   
-  fp=ffopen(fn,"w");
+  fp=gmx_fio_fopen(fn,"w");
   for(i=0; (i<natoms); i++)
     fprintf(fp,"  %12.5e\n  %12.5e\n  %12.5e\n",f[i][XX],f[i][YY],f[i][ZZ]);
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 void test_pppm(FILE *log,       bool bVerbose,
@@ -571,7 +571,7 @@ int main(int argc,char *argv[])
 		 opt2fn("-ftotcorr",NFILE,fnm),
 		 opt2fn("-ptotcorr",NFILE,fnm));
   
-  fclose(log);
+  gmx_fio_fclose(log);
   
   thanx(stderr);
   

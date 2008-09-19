@@ -816,13 +816,13 @@ void main(int argc,char *argv[])
   fprintf(stderr,"Making Graph Structure...\n");
   g=mk_graph(&(top.idef),top.atoms.nr,FALSE,FALSE);
 
-  out=ffopen(targ.outfile,"w");
+  out=gmx_fio_fopen(targ.outfile,"w");
 
   fprintf(stderr,"Making Shift...\n");
   mk_mshift(out,g,box,x,mshift);
 
   p_graph(out,"In Den Haag daar woont een graaf...",g);
-  fclose(out);
+  gmx_fio_fclose(out);
 }
 #endif
 

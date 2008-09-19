@@ -45,6 +45,7 @@
 #include "nsgrid.h"
 #include "shellfc.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -1437,7 +1438,7 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
         }
         sprintf(fname,"%s_%d.pdb",fn,step);
         sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
-        out = ffopen(fname,"w");
+        out = gmx_fio_fopen(fname,"w");
         gmx_write_pdb_box(out,dd->bScrewPBC ? epbcSCREW : epbcXYZ,box);
         a = 1;
         for(i=0; i<dd->nnodes; i++)
@@ -1476,7 +1477,7 @@ static void write_dd_grid_pdb(char *fn,int step,gmx_domdec_t *dd,matrix box)
                 }
             }
         }
-        fclose(out);
+        gmx_fio_fclose(out);
         sfree(grid_r);
     }
 }
@@ -1500,7 +1501,7 @@ static void write_dd_pdb(char *fn,int step,char *title,
     sprintf(format,"%s%s\n",pdbformat,"%6.2f%6.2f");
     sprintf(format4,"%s%s\n",pdbformat4,"%6.2f%6.2f");
     
-    out = ffopen(fname,"w");
+    out = gmx_fio_fopen(fname,"w");
     
     fprintf(out,"TITLE     %s\n",title);
     gmx_write_pdb_box(out,dd->bScrewPBC ? epbcSCREW : epbcXYZ,box);
@@ -1532,7 +1533,7 @@ static void write_dd_pdb(char *fn,int step,char *title,
     }
     fprintf(out,"TER\n");
     
-    fclose(out);
+    gmx_fio_fclose(out);
 }
 
 real dd_cutoff_mbody(gmx_domdec_t *dd)

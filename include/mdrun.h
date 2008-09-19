@@ -69,6 +69,7 @@
 #define MD_NOGSTAT      (1<<13)
 #define MD_REPRODUCIBLE (1<<14)
 #define MD_READ_RNG     (1<<15)
+#define MD_APPENDFILES  (1<<16)
 
 
 enum {
@@ -85,7 +86,7 @@ typedef time_t gmx_integrator_t(FILE *log,t_commrec *cr,
 				t_state *state,rvec f[],
 				rvec buf[],t_mdatoms *mdatoms,
 				t_nrnb *nrnb,gmx_wallcycle_t wcycle,
-				gmx_edsam_t ed,
+				gmx_edsam_t ed, 
 				t_forcerec *fr,
 				int repl_ex_nst,int repl_ex_seed,
 				real cpt_period,real max_hours,
@@ -138,7 +139,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		int fp_xtc,bool bXTC,int xtc_prec,
 		char *fn_cpt,bool bCPT,
 		gmx_mtop_t *top_global,
-		int eIntegrator,int step,double t,
+		int eIntegrator,int simulation_part,int step,double t,
 		t_state *state_local,t_state *state_global,
 		rvec *f_local,rvec *f_global);
 /* Routine that writes frames to trn, xtc and/or checkpoint.
@@ -260,7 +261,7 @@ extern void init_md(FILE *fplog,
 		    t_mdebin **mdebin,
 		    tensor force_vir,tensor shake_vir,
 		    rvec mu_tot,
-		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm);
+		    bool *bNEMD,bool *bSimAnn,t_vcm **vcm, unsigned long Flags);
 /* Routine in sim_util.c */
      
 #endif	/* _mdrun_h */

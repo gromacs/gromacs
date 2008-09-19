@@ -124,6 +124,7 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
       state->flags |= (1<<estTC_INT);
     }
   }
+  state->flags |= (1<<estENERGY_N) | (1<<estENERGY_AVER) | (1<<estENERGY_SUM); 
 }
 
 void init_single(FILE *fplog,t_inputrec *inputrec,
@@ -165,22 +166,23 @@ void init_parallel(FILE *log,char *tpxfile,t_commrec *cr,
   }
   
   /* Printing */
-  if (list) {
-    if (list&LIST_INPUTREC)
-      pr_inputrec(log,0,"parameters of the run",inputrec,FALSE);
-    if (list&LIST_X)
-      pr_rvecs(log,0,"box",state->box,DIM);
-    if (list&LIST_X)
-      pr_rvecs(log,0,"box_rel",state->box_rel,DIM);
-    if (list&LIST_V)
-      pr_rvecs(log,0,"boxv",state->boxv,DIM);
-    if (list&LIST_X)
-      pr_rvecs(log,0,int_title("x",0,buf,255),state->x,state->natoms);
-    if (list&LIST_V)
-      pr_rvecs(log,0,int_title("v",0,buf,255),state->v,state->natoms);
-    if (list&LIST_TOP)
-      pr_mtop(log,0,int_title("topology",cr->nodeid,buf,255),mtop,TRUE);
-    fflush(log);
+  if (list!=0 && log!=NULL) 
+  {
+	  if (list&LIST_INPUTREC)
+		  pr_inputrec(log,0,"parameters of the run",inputrec,FALSE);
+	  if (list&LIST_X)
+		  pr_rvecs(log,0,"box",state->box,DIM);
+	  if (list&LIST_X)
+		  pr_rvecs(log,0,"box_rel",state->box_rel,DIM);
+	  if (list&LIST_V)
+		  pr_rvecs(log,0,"boxv",state->boxv,DIM);
+	  if (list&LIST_X)
+		  pr_rvecs(log,0,int_title("x",0,buf,255),state->x,state->natoms);
+	  if (list&LIST_V)
+		  pr_rvecs(log,0,int_title("v",0,buf,255),state->v,state->natoms);
+	  if (list&LIST_TOP)
+		  pr_mtop(log,0,int_title("topology",cr->nodeid,buf,255),mtop,TRUE);
+	  fflush(log);
   }
 }
 

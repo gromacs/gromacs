@@ -41,6 +41,7 @@
 #include <config.h>
 #endif
 
+#include <stdio.h>
 #include "typedefs.h"
 
 #ifdef __PGI    /*Portland group compiler*/
@@ -60,6 +61,9 @@ xdropen(XDR *xdrs, const char *filename, const char *type);
 
 int 
 xdrclose(XDR *xdrs);
+
+FILE *
+xdr_get_fp(int xdrid);
 
 
 /* Read or write reduced precision *float* coordinates */

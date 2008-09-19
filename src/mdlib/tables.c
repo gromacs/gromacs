@@ -49,6 +49,7 @@
 #include "network.h"
 #include "physics.h"
 #include "force.h"
+#include "gmxfio.h"
 
 /* All the possible (implemented) table functions */
 enum { 
@@ -709,7 +710,7 @@ static void fill_table(t_tabledata *td,int tp,const t_forcerec *fr)
   }
 
 #ifdef DEBUG_SWITCH
-  fclose(fp);
+  gmx_fio_fclose(fp);
 #endif
 }
 
@@ -934,7 +935,7 @@ t_forcetable make_tables(FILE *out,const t_forcerec *fr,
 	evaluate_table(table.tab,4*k,12,table.scale,x0,&y0,&yp);
 	fprintf(fp,"%15.10e  %15.10e  %15.10e\n",x0,y0,yp);
       }
-      ffclose(fp);
+      gmx_fio_fclose(fp);
     }
     done_tabledata(&(td[k]));
   }

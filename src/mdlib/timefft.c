@@ -90,7 +90,7 @@ int main(int argc,char *argv[])
   parse_common_args(&argc,argv,
 		    PCA_CAN_SET_DEFFNM | (MASTER(cr) ? 0 : PCA_QUIET),
 		    NFILE,fnm,asize(pa),pa,0,NULL,0,NULL);
-  gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,1);
+  gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,1,0);
 
   snew(niter,NNN);
   snew(ct,NNN);
@@ -140,7 +140,7 @@ int main(int argc,char *argv[])
       n3 = 2*niter[i]*nnn[i]*nnn[i]*nnn[i];
       fprintf(fp,"%10d  %10g\n",nnn[i],rt[i]/(2*niter[i]));
     }
-    fclose(fp);
+    gmx_fio_fclose(fp);
   }
   return 0;
 }

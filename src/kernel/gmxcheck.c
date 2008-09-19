@@ -141,11 +141,11 @@ static void tpx2methods(char *tpx,char *tex)
   real        t;
 
   read_tpx_state(tpx,&step,&t,&ir,&state,NULL,&mtop);
-  fp=fopen(tex,"w");
+  fp=gmx_fio_fopen(tex,"w");
   fprintf(fp,"\\section{Methods}\n");
   tpx2system(fp,&mtop);
   tpx2params(fp,&ir);
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 static void chk_coords(int frame,int natoms,rvec *x,matrix box,real fac,real tol)

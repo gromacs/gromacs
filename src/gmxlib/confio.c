@@ -59,6 +59,7 @@
 #include "statutil.h"
 #include "pbc.h"
 #include "mtop_util.h"
+#include "gmxfio.h"
 
 #define CHAR_SHIFT 24
 
@@ -456,7 +457,7 @@ static void read_espresso_conf(char *infile,
 
   clear_mat(box);
   
-  fp = ffopen(infile,"r");
+  fp = gmx_fio_fopen(infile,"r");
   
   bFoundParticles = FALSE;
   bFoundVariable = FALSE;
@@ -588,7 +589,7 @@ static void read_espresso_conf(char *infile,
 	    infile);
   }
   
-  ffclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 static int get_espresso_coordnum(char *infile)
@@ -600,7 +601,7 @@ static int get_espresso_coordnum(char *infile)
 
   natoms = 0;
   
-  fp = ffopen(infile,"r");
+  fp = gmx_fio_fopen(infile,"r");
   
   bFoundParticles = FALSE;
   level = 0;
@@ -628,7 +629,7 @@ static int get_espresso_coordnum(char *infile)
 	    infile);
   }
   
-  ffclose(fp);
+  gmx_fio_fclose(fp);
   
   return natoms;
 }
@@ -674,9 +675,9 @@ static void get_coordnum (char *infile,int *natoms)
   FILE *in;
   char title[STRLEN];
   
-  in=ffopen(infile,"r");
+  in=gmx_fio_fopen(infile,"r");
   get_coordnum_fp(in,title,natoms);
-  ffclose (in);
+  gmx_fio_fclose (in);
 }
 
 static bool get_w_conf(FILE *in, char *infile, char *title,
@@ -844,11 +845,11 @@ static void read_whole_conf(char *infile, char *title,
   int    ndec;
   
   /* open file */
-  in=ffopen(infile,"r");
+  in=gmx_fio_fopen(infile,"r");
 
   get_w_conf(in, infile, title, atoms, &ndec, x, v, box);
   
-  fclose(in);
+  gmx_fio_fclose(in);
 }
 
 static void get_conf(FILE *in, char *title, int *natoms, 
@@ -1079,10 +1080,10 @@ void write_conf_p(char *outfile, char *title, t_atoms *atoms, int pr,
 {
   FILE *out;
 
-  out=ffopen(outfile,"w");
+  out=gmx_fio_fopen(outfile,"w");
   write_hconf_p(out,title,atoms,pr,x,v,box);
 
-  ffclose (out);
+  gmx_fio_fclose (out);
 }
 
 static void write_conf(char *outfile, char *title, t_atoms *atoms,
@@ -1102,9 +1103,9 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
   ftp=fn2ftp(outfile);
   switch (ftp) {
   case efGRO:
-    out=ffopen(outfile,"w");
+    out=gmx_fio_fopen(outfile,"w");
     write_hconf_indexed_p(out, title, atoms, nindex, index, 3, x, v, box);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   case efG96:
     clear_trxframe(&fr,TRUE);
@@ -1121,22 +1122,22 @@ void write_sto_conf_indexed(char *outfile,char *title,t_atoms *atoms,
     }
     fr.bBox = TRUE;
     copy_mat(box,fr.box);
-    out=ffopen(outfile,"w");
+    out=gmx_fio_fopen(outfile,"w");
     write_g96_conf(out, &fr, nindex, index);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   case efPDB:
   case efBRK:
   case efENT:
   case efPQR:
-    out=ffopen(outfile,"w");
+    out=gmx_fio_fopen(outfile,"w");
     write_pdbfile_indexed(out,title,atoms,x,ePBC,box,0,-1,nindex,index);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   case efESP:
-    out=ffopen(outfile,"w"); 
+    out=gmx_fio_fopen(outfile,"w"); 
     write_espresso_conf_indexed(out, title, atoms, nindex, index, x, v, box);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   case efTPR:
   case efTPB:
@@ -1175,21 +1176,21 @@ void write_sto_conf(char *outfile, char *title,t_atoms *atoms,
     }
     fr.bBox = TRUE;
     copy_mat(box,fr.box);
-    out=ffopen(outfile,"w");
+    out=gmx_fio_fopen(outfile,"w");
     write_g96_conf(out, &fr, -1, NULL);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   case efPDB:
   case efBRK:
   case efENT:
-    out=ffopen(outfile,"w");
+    out=gmx_fio_fopen(outfile,"w");
     write_pdbfile(out, title, atoms, x, ePBC, box, 0, -1);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   case efESP:
-    out=ffopen(outfile,"w");
+    out=gmx_fio_fopen(outfile,"w");
     write_espresso_conf_indexed(out, title, atoms, atoms->nr, NULL, x, v, box);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   case efTPR:
   case efTPB:
@@ -1211,9 +1212,9 @@ void write_sto_conf_mtop(char *outfile, char *title,gmx_mtop_t *mtop,
   ftp=fn2ftp(outfile);
   switch (ftp) {
   case efGRO:
-    out = ffopen(outfile,"w");
+    out = gmx_fio_fopen(outfile,"w");
     write_hconf_mtop(out,title,mtop,3,x,v,box);
-    fclose(out);
+    gmx_fio_fclose(out);
     break;
   default:
     /* This is a brute force approach which requires a lot of memory.
@@ -1241,7 +1242,7 @@ void get_stx_coordnum(char *infile,int *natoms)
     get_coordnum(infile, natoms);
     break;
   case efG96:
-    in=ffopen(infile,"r");
+    in=gmx_fio_fopen(infile,"r");
     fr.title = NULL;
     fr.natoms = -1;
     fr.atoms = NULL;
@@ -1249,14 +1250,14 @@ void get_stx_coordnum(char *infile,int *natoms)
     fr.v = NULL;
     fr.f = NULL;
     *natoms=read_g96_conf(in,infile,&fr);
-    fclose(in);
+    gmx_fio_fclose(in);
     break;
   case efPDB:
   case efBRK:
   case efENT:
-    in=ffopen(infile,"r");
+    in=gmx_fio_fopen(infile,"r");
     get_pdb_coordnum(in, natoms);
-    fclose(in);
+    gmx_fio_fclose(in);
     break;
   case efESP:
     *natoms = get_espresso_coordnum(infile);
@@ -1306,9 +1307,9 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     fr.x = x;
     fr.v = v;
     fr.f = NULL;
-    in = ffopen(infile,"r");
+    in = gmx_fio_fopen(infile,"r");
     read_g96_conf(in, infile, &fr);
-    fclose(in);
+    gmx_fio_fclose(in);
     copy_mat(fr.box,box);
     break;
   case efPDB:

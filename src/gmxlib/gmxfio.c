@@ -61,6 +61,7 @@ typedef struct {
   XDR  *xdr;
 } t_fileio;
 
+
 /* These simple lists define the I/O type for these files */
 static const int ftpXDR[] = { efTPR, efTRR, efEDR, efXTC, efMTX, efCPT };
 static const int ftpASC[] = { efTPA, efGRO, efPDB };
@@ -126,6 +127,7 @@ static int  nFIO = 0;
 static char *eioNames[eioNR] = { "REAL", "INT", "NUCHAR", "USHORT", 
 				 "RVEC", "NRVEC", "IVEC", "STRING" };
 static char *add_comment = NULL;
+
 
 static char *dbgstr(char *desc)
 {
@@ -635,98 +637,133 @@ static bool do_xdr(void *item,int nitem,int eio,
  *                     EXPORTED SECTION
  *
  *****************************************************************/
-int gmx_fio_open(char *fn,char *mode)
+int gmx_fio_open(const char *fn,char *mode)
 {
-  t_fileio *fio=NULL;
-  int      i,nfio=0;
-  char     *bf,newmode[5];
-  bool     bRead;
-
-  
-  if (fn2ftp(fn)==efTPA)
-    strcpy(newmode,mode);
-  else {
-    if (mode[0]=='r')
-      strcpy(newmode,"r");
-    else if (mode[0]=='w')
-      strcpy(newmode,"w");
-    else if (mode[0]=='a')
-      strcpy(newmode,"a");
-    else
-      gmx_fatal(FARGS,"DEATH HORROR in gmx_fio_open, mode is '%s'",mode);
-  }
-
-  /* Check if it should be opened as a binary file */
-  if (strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5)) {
-    /* Not ascii, add b to file mode */
-    if ((strchr(newmode,'b')==NULL) && (strchr(newmode,'B')==NULL))
-      strcat(newmode,"b");
-  }
-
-  /* Determine whether we have to make a new one */
-  for(i=0; (i<nFIO); i++)
-    if (!FIO[i].bOpen) {
-      fio  = &(FIO[i]);
-      nfio = i;
-      break;
-    }
-  if (i == nFIO) {
-    nFIO++;
-    srenew(FIO,nFIO);
-    fio  = &(FIO[nFIO-1]);
-    nfio = nFIO-1;
-  }
-
-  bRead = (newmode[0]=='r');
-  fio->fp  = NULL;
-  fio->xdr = NULL;
-  if (fn) {
-    fio->iFTP   = fn2ftp(fn);
-    fio->fn     = strdup(fn);
-    fio->bStdio = FALSE;
-    
-    /* If this file type is in the list of XDR files, open it like that */
-    if (in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR)) {
-      /* First check whether we have to make a backup,
-       * only for writing, not for read or append.
-       */
-      if (newmode[0]=='w') {
-	if (fexist(fn)) {
-	  bf=(char *)backup_fn(fn);
-	  if (rename(fn,bf) == 0) {
-	    fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",fn,bf);
-	  }
-	  else
-	    fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",fn,bf);
+	t_fileio *fio=NULL;
+	int      i,nfio=0;
+	char     *bf,newmode[5];
+	bool     bRead;
+	int      xdrid;
+	
+	if (fn2ftp(fn)==efTPA)
+	{
+		strcpy(newmode,mode);
 	}
-      }
-      else {
-	/* Check whether file exists */
-	if (!fexist(fn))
-	  gmx_open(fn);
-      }
-      snew(fio->xdr,1);
-      if (!xdropen(fio->xdr,fn,newmode))
-	gmx_open(fn);
-    }
-    else {
-      /* If it is not, open it as a regular file */
-      fio->fp = ffopen(fn,newmode);
-    }
-  }
-  else {
-    /* Use stdin/stdout for I/O */
-    fio->iFTP   = efTPA;
-    fio->fp     = bRead ? stdin : stdout;
-    fio->fn     = strdup("STDIO");
-    fio->bStdio = TRUE;
-  }
-  fio->bRead  = bRead;
-  fio->bDouble= (sizeof(real) == sizeof(double));
-  fio->bDebug = FALSE;
-  fio->bOpen  = TRUE;
+	else 
+	{
+		if (mode[0]=='r')
+		{
+			strcpy(newmode,"r");
+		}
+		else if (mode[0]=='w')
+		{
+			strcpy(newmode,"w");
+		}
+		else if (mode[0]=='a')
+		{
+			strcpy(newmode,"a");
+		}
+		else
+		{
+			gmx_fatal(FARGS,"DEATH HORROR in gmx_fio_open, mode is '%s'",mode);
+		}
+	}
 
-  return nfio;
+	/* Check if it should be opened as a binary file */
+	if (strncmp(ftp2ftype(fn2ftp(fn)),"ASCII",5)) 
+	{
+		/* Not ascii, add b to file mode */
+		if ((strchr(newmode,'b')==NULL) && (strchr(newmode,'B')==NULL))
+		{
+			strcat(newmode,"b");
+		}
+	}
+	
+	/* Determine whether we have to make a new one */
+	for(i=0; (i<nFIO); i++)
+	{
+		if (!FIO[i].bOpen) 
+		{
+			fio  = &(FIO[i]);
+			nfio = i;
+			break;
+		}
+	}
+	
+	if (i == nFIO) 
+	{
+		nFIO++;
+		srenew(FIO,nFIO);
+		fio  = &(FIO[nFIO-1]);
+		nfio = nFIO-1;
+	}
+
+	bRead = (newmode[0]=='r');
+	fio->fp  = NULL;
+	fio->xdr = NULL;
+	if (fn) 
+	{
+		fio->iFTP   = fn2ftp(fn);
+		fio->fn     = strdup(fn);
+		fio->bStdio = FALSE;
+		
+		/* If this file type is in the list of XDR files, open it like that */
+		if (in_ftpset(fio->iFTP,asize(ftpXDR),ftpXDR)) 
+		{
+			/* First check whether we have to make a backup,
+			 * only for writing, not for read or append.
+			 */
+			if (newmode[0]=='w') 
+			{
+				if (fexist(fn)) 
+				{
+					bf=(char *)backup_fn(fn);
+					if (rename(fn,bf) == 0) 
+					{
+						fprintf(stderr,"\nBack Off! I just backed up %s to %s\n",fn,bf);
+					}
+					else
+					{
+						fprintf(stderr,"Sorry, I couldn't backup %s to %s\n",fn,bf);
+					}
+				}
+			}
+			else 
+			{
+				/* Check whether file exists */
+				if (!fexist(fn))
+				{
+					gmx_open(fn);
+				}
+			}
+			snew(fio->xdr,1);
+			xdrid = xdropen(fio->xdr,fn,newmode); 
+			if (xdrid == 0)
+			{
+				gmx_open(fn);
+			}
+			fio->fp = xdr_get_fp(xdrid);
+		}
+		else
+		{
+			/* If it is not, open it as a regular file */
+			fio->fp = ffopen(fn,newmode);
+		}
+	}
+	else
+	{
+		/* Use stdin/stdout for I/O */
+		fio->iFTP   = efTPA;
+		fio->fp     = bRead ? stdin : stdout;
+		fio->fn     = strdup("STDIO");
+		fio->bStdio = TRUE;
+	}
+	fio->bRead  = bRead;
+	fio->bDouble= (sizeof(real) == sizeof(double));
+	fio->bDebug = FALSE;
+	fio->bOpen  = TRUE;
+	
+	return nfio;
 }
 
 
@@ -749,6 +786,85 @@ void gmx_fio_close(int fio)
   do_read  = do_dummy;
   do_write = do_dummy;
 }
+
+FILE *
+gmx_fio_fopen(const char *fn,char *mode)
+{
+	FILE *fp;
+	int   fd;
+	
+	fd = gmx_fio_open(fn,mode);
+	
+	return FIO[fd].fp;
+}
+
+
+int
+gmx_fio_fclose(FILE *fp)
+{
+	int i,rc,found;
+	
+	found = 0;
+	for(i=0;i<nFIO && !found;i++)
+	{
+		if(fp == FIO[i].fp)
+		{
+			gmx_fio_close(i);
+			found=1;
+		}
+	}
+	
+	rc = found ? 0 : -1;
+
+	return rc;
+}
+
+
+int
+gmx_fio_get_output_file_positions(gmx_file_position_t **p_outputfiles, int *p_nfiles)
+{
+	int                      i,nfiles,rc,nalloc;
+	int                      pos_hi,pos_lo;
+	long                     pos;	
+	gmx_file_position_t *    outputfiles;
+	
+	nfiles = 0;
+	
+	nalloc = 100;
+	snew(outputfiles,nalloc);
+		
+	for(i=0;i<nFIO;i++)
+	{
+		/* Skip the checkpoint files themselves, since they could be open when we call this routine... */
+		if(FIO[i].bOpen && !FIO[i].bRead && !FIO[i].bStdio && FIO[i].iFTP!=efCPT)
+		{
+			/* This is an output file currently open for writing, add it */
+			if(nfiles == nalloc)
+			{
+				nalloc += 100;
+				srenew(outputfiles,nalloc);
+			}
+			
+			strncpy(outputfiles[nfiles].filename,FIO[i].fn,STRLEN-1);
+			/* We cannot count on XDR being able to write 64-bit integers, so separate into high/low 32-bit values.
+			 * In case the filesystem has 128-bit offsets we only care about the first 64 bits - we'll have to fix
+			 * this when exabyte-size output files are common...
+			 */
+#ifdef HAVE_FSEEKO
+			outputfiles[nfiles].offset = ftello(FIO[i].fp);
+#else
+			outputfiles[nfiles].offset = ftell(FIO[i].fp);
+#endif
+			nfiles++;
+		}
+	}	
+	*p_nfiles = nfiles;
+	*p_outputfiles = outputfiles;
+	
+	return 0;
+}
+
+
 
 void gmx_fio_select(int fio)
 {

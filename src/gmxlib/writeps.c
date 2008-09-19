@@ -43,6 +43,7 @@
 #include "copyrite.h"
 #include "writeps.h"
 #include "smalloc.h"
+#include "gmxfio.h"
 
 const char *fontnm[efontNR] = { 
   "Times-Roman","Times-Italic",     "Times-Bold",    "Times-BoldItalic",
@@ -70,7 +71,7 @@ t_psdata ps_open(char *fn,real x1,real y1,real x2,real y2)
   
   snew(ps,1);
   
-  ps->fp=ffopen(fn,"w");
+  ps->fp=gmx_fio_fopen(fn,"w");
   fprintf(ps->fp,"%%!PS-Adobe-2.0 EPSF-1.2\n");
   fprintf(ps->fp,"%%%%Creator: GROMACS\n");
   fprintf(ps->fp,"%%%%Title: %s\n",fn);
@@ -346,7 +347,7 @@ void ps_close(t_psdata ps)
 {
   fprintf(ps->fp,"%%showpage\n");
   fprintf(ps->fp,"%%%%EOF\n");
-  fclose(ps->fp);
+  gmx_fio_fclose(ps->fp);
   sfree(ps->rgb);
   sfree(ps);
 }

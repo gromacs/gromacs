@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
   nNtdb=read_ter_db(ff,'n',&ntdb,atype);
   nCtdb=read_ter_db(ff,'c',&ctdb,atype);
   
-  fp=fopen("residues.xml","w");
+  fp=gmx_fio_fopen("residues.xml","w");
   /* fprintf(fp,"<?xml version=\"1.0\"?>\n");
      fprintf(fp,"<!DOCTYPE residues SYSTEM \"residues.dtd\">\n"); */
   fprintf(fp,"\n<residues>\n");
@@ -286,7 +286,7 @@ int main(int argc, char *argv[])
   dump_mods(fp,2,nNtdb,ntdb,atype);
   dump_mods(fp,2,nCtdb,ctdb,atype);
   fprintf(fp,"</residues>\n");
-  fclose(fp);  
+  gmx_fio_fclose(fp);  
 
   thanx(stderr);
   

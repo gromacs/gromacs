@@ -1042,7 +1042,7 @@ void init_forcerec(FILE *fp,
     fr->bDomDec = DOMAINDECOMP(cr);
 
     natoms = mtop->natoms;
-    
+
     if (check_box(ir->ePBC,box))
     {
         gmx_fatal(FARGS,check_box(ir->ePBC,box));

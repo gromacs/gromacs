@@ -94,7 +94,7 @@ extern int opt2fns(char **fns[], char *opt,int nfile,t_filenm fnm[]);
 #define opt2FILE(opt,nfile,fnm,mode) ffopen(opt2fn(opt,nfile,fnm),mode)
 /* Return a file pointer from the filename (see above) */
 
-extern int fn2ftp(char *fn);
+extern int fn2ftp(const char *fn);
 /* Return the filetype corrsponding to filename */
 
 extern char *ftp2fn(int ftp,int nfile,t_filenm fnm[]);
@@ -136,6 +136,12 @@ extern bool is_output(t_filenm *fnm);
 extern bool is_set(t_filenm *fnm);
 /* Return whether or not this filenm is set */
 
+/* When we do checkpointing, this routine is called to check for previous
+ * output files and append a 'partNNNN' suffix before the (output) file extensions.
+ */
+int
+add_suffix_to_output_names(t_filenm *fnm, int nfile, char *suffix);
+	
 #ifdef CPLUSPLUS
 }
 #endif

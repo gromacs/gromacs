@@ -48,6 +48,8 @@
 #include "edsam.h"
 #include "mdrun.h"
 #include "xmdrun.h"
+#include "checkpoint.h"
+
 /* afm stuf */
 #include "pull.h"
 
@@ -282,7 +284,7 @@ int main(int argc,char *argv[])
   static int  repl_ex_seed=-1;
   static int  nstepout=100;
   static int  nthreads=1;
-
+  
   static rvec realddxyz={0,0,0};
   static char *ddno_opt[ddnoNR+1] =
     { NULL, "interleave", "pp_pme", "cartesian", NULL };
@@ -291,7 +293,8 @@ int main(int argc,char *argv[])
   static real rdd=0.0,rconstr=0.0,dlb_scale=0.8,pforce=-1;
   static char *ddcsx=NULL,*ddcsy=NULL,*ddcsz=NULL;
   static real cpt_period=15.0,max_hours=-1;
-
+  static bool bAppendFiles=FALSE;
+	
   static t_pargs pa[] = {
     { "-pd",      FALSE, etBOOL,{&bPartDec},
       "Use particle decompostion" },
@@ -335,6 +338,8 @@ int main(int argc,char *argv[])
       "Try to avoid optimizations that affect binary reproducibility" },
     { "-cpt",     FALSE, etREAL, {&cpt_period},
       "Checkpoint interval (minutes)" },
+    { "-append",  FALSE, etBOOL, {&bAppendFiles},
+	  "Append to previous output files when restarting from checkpoint" },
     { "-maxh",   FALSE, etREAL, {&max_hours},
       "Terminate after 0.99 times this time (hours)" },
     { "-multi",   FALSE, etINT,{&nmultisim}, 
@@ -356,8 +361,11 @@ int main(int argc,char *argv[])
   unsigned long Flags, PCA_Flags;
   ivec     ddxyz;
   int      dd_node_order;
-  FILE     *fplog;
-
+  bool     HaveCheckpoint;
+  FILE     *fplog,*fptest;
+  int      sim_part;
+  char     suffix[STRLEN];
+	
   cr = init_par(&argc,&argv);
 
   if (MASTER(cr))
@@ -386,27 +394,40 @@ int main(int argc,char *argv[])
   if (nmultisim > 1 && PAR(cr))
     init_multisystem(cr,nmultisim,NFILE,fnm,TRUE);
 
-  if (MASTER(cr) || bSepPot) {
-    fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot);
-  } else {
-    fplog = NULL;
+  /* Check if there is ANY checkpoint file available */	
+  sim_part = 1;
+  if(opt2bSet("-cpi",NFILE,fnm))
+  {
+	  sim_part = read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm)) + 1;
+	  /* sim_part will now be 1 if no checkpoint file was found */
+	  if(sim_part==1)
+	  {
+		  fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
+	  }
+  } 
+	
+  if (sim_part<=1)
+  { 
+	  bAppendFiles = FALSE;
   }
+  	
+  if(!bAppendFiles && sim_part > 1)
+  {
+	  /* This is a continuation run, rename trajectory output files (except checkpoint files) */
+	  /* create new part name first (zero-filled) */
+	  if(sim_part<10)
+		  sprintf(suffix,"part000%d",sim_part);
+	  else if(sim_part<100)
+		  sprintf(suffix,"part00%d",sim_part);
+	  else if(sim_part<1000)
+		  sprintf(suffix,"part0%d",sim_part);
+	  else
+		  sprintf(suffix,"part%d",sim_part);
+	  
+	  add_suffix_to_output_names(fnm,NFILE,suffix);
+	  fprintf(stdout,"Checkpoint file is from part %d, new output files will be suffixed %s.\n",sim_part-1,suffix);
+  }	
 
-  if (MASTER(cr)) {
-    CopyRight(fplog,argv[0]);
-    please_cite(fplog,"Hess2008b");
-    please_cite(fplog,"Spoel2005a");
-    please_cite(fplog,"Lindahl2001a");
-    please_cite(fplog,"Berendsen95a");
-  }
-  
-  /* Essential dynamics */
-  if (opt2bSet("-ei",NFILE,fnm)) {
-    /* Open input and output files, allocate space for ED data structure */
-    ed = ed_open(NFILE,fnm,cr);
-  } else
-    ed=NULL;
-    
   Flags = opt2bSet("-rerun",NFILE,fnm) ? MD_RERUN : 0;
   Flags = Flags | (bSepPot       ? MD_SEPPOT       : 0);
   Flags = Flags | (bIonize       ? MD_IONIZE       : 0);
@@ -417,6 +438,32 @@ int main(int argc,char *argv[])
   Flags = Flags | (bConfout      ? MD_CONFOUT      : 0);
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
+  Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
+    
+  
+  /* We postpone opening the log file if we are appending, so we can first truncate
+   * the old log file and append to the correct position there instead.
+   */
+  if (MASTER(cr) && !bAppendFiles) 
+  {
+    fplog = gmx_log_open(ftp2fn(efLOG,NFILE,fnm),cr,!bSepPot,Flags);
+    CopyRight(fplog,argv[0]);
+    please_cite(fplog,"Hess2008b");
+    please_cite(fplog,"Spoel2005a");
+    please_cite(fplog,"Lindahl2001a");
+    please_cite(fplog,"Berendsen95a");
+  }
+  else
+  {
+  	fplog = NULL;
+  }
+  
+  /* Essential dynamics */
+  if (opt2bSet("-ei",NFILE,fnm)) {
+    /* Open input and output files, allocate space for ED data structure */
+    ed = ed_open(NFILE,fnm,cr);
+  } else
+    ed=NULL;
     
   ddxyz[XX] = (int)(realddxyz[XX] + 0.5);
   ddxyz[YY] = (int)(realddxyz[YY] + 0.5);
@@ -434,9 +481,13 @@ int main(int argc,char *argv[])
   if (MULTIMASTER(cr)) {
     thanx(stderr);
   }
-  
-  gmx_log_close(fplog);
-  
+
+	/* Log file has to be closed in mdrunner if we are appending to it (fplog not set here) */
+	if (MASTER(cr) && !bAppendFiles) 
+	{
+		gmx_log_close(fplog);
+	}
+	
   return 0;
 }
 

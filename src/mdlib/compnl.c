@@ -99,10 +99,10 @@ int main(int argc,char *argv[])
   fn[1] = opt2fn("-f2",NFILE,fnm);
   
   snew(mat,2);  
-  out = ffopen(ftp2fn(efOUT,NFILE,fnm),"w");
+  out = gmx_fio_fopen(ftp2fn(efOUT,NFILE,fnm),"w");
   mb  = sizeof(int)*sqr(natoms/1024.0);
   for(i=0; (i<2); i++) {
-    in = ffopen(fn[i],"r");
+    in = gmx_fio_fopen(fn[i],"r");
     fprintf(stderr,"Reading %s\n",fn[i]);
     fprintf(out,   "Reading %s\n",fn[i]);
     fprintf(stderr,"Going to allocate %.0f Mb of memory\n",mb);
@@ -111,7 +111,7 @@ int main(int argc,char *argv[])
     for(j=0; (j<natoms); j++) 
       snew(mat[i][j],natoms);
     nnb = read_nblist(in,out,mat[i],natoms,bSymm);
-    fclose(in);
+    gmx_fio_fclose(in);
     fprintf(stderr,"Interaction matrix %d has %d entries\n",i,nnb);
     fprintf(out,   "Interaction matrix %d has %d entries\n",i,nnb);
   }
@@ -135,7 +135,7 @@ int main(int argc,char *argv[])
   }
   fprintf(out,"There were %d mismatches\n",nmiss);
   fprintf(out,"Done.\n");
-  fclose(out);
+  gmx_fio_fclose(out);
   fprintf(stderr,"There were %d mismatches\n",nmiss);
   fprintf(stderr,"Finished\n");
   

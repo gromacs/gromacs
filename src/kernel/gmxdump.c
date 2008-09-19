@@ -109,9 +109,9 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
 		 tpx.bTop ? &mtop: NULL);
   
   if (mdpfn && tpx.bIr) {
-    gp = ffopen(mdpfn,"w");
+    gp = gmx_fio_fopen(mdpfn,"w");
     pr_inputrec(gp,0,NULL,&(ir),TRUE);
-    fclose(gp);
+    gmx_fio_fclose(gp);
   }
 
   if (!mdpfn) {  

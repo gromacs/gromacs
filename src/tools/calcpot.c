@@ -241,7 +241,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   
   /* Initiate */
   *cr = init_cr_nopar();
-  fplog = gmx_log_open(log,*cr,FALSE);
+  fplog = gmx_log_open(log,*cr,FALSE,0);
 
   if (inputrec->efep) {
     fprintf(stderr,"WARNING: turning of free energy, will use lambda=0\n");
@@ -255,7 +255,7 @@ FILE *init_calcpot(char *log,char *tpx,char *table,
   init_md(fplog,*cr,inputrec,&t,&t0,&lam,&lam0,
 	  &nrnb,mtop,NULL,-1,NULL,&traj,&xtc_traj,&fp_ene,NULL,NULL,NULL,
 	  &mdebin,force_vir,
-	  shake_vir,mutot,&bNEMD,&bSA,NULL);
+	  shake_vir,mutot,&bNEMD,&bSA,NULL,0);
 
   init_enerdata(fplog,mtop->groups.grps[egcENER].nr,enerd);  
 

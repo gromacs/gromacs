@@ -55,46 +55,47 @@ extern char *atomname(t_atoms *a,int i);
 /* Return pointer to a buffer which holds the atomname in the
  * form resname resnr atomname. Pointer can be freed afterwards.
  */
-extern int pr_indent(FILE *fp,int n);
-extern int available(FILE *fp,void *p,int indent,const char *title);
-extern int pr_title(FILE *fp,int indent,const char *title);
-extern int pr_title_n(FILE *fp,int indent,const char *title,int n);
-extern int pr_title_nxn(FILE *fp,int indent,const char *title,int n1,int n2);
-extern void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNumbers);
-extern void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, bool bShowNumbers);
-extern void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool bShowNumbers);
-extern void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n);
-extern void pr_rvecs_len(FILE *fp,int indent,const char *title,rvec vec[],int n);
-extern void pr_reals(FILE *fp,int indent,const char *title,real vec[],int n);
-extern void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n);
-extern void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNumbers);
-extern void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowNumbers);
-extern void pr_ilist(FILE *fp,int indent,const char *title,
-		     t_functype *functype,t_ilist *ilist, bool bShowNumbers);
-extern void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
-extern void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers);
-extern void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
-			bool bMDPformat);
-extern void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms, 
-		     bool bShownumbers);
-extern void pr_atomtypes(FILE *fp,int indent,const char *title,
-			 t_atomtypes *atomtypes,bool bShowNumbers);
-extern void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
-		    bool bShowNumbers);
-extern void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers);
+int pr_indent(FILE *fp,int n);
+int available(FILE *fp,void *p,int indent,const char *title);
+int pr_title(FILE *fp,int indent,const char *title);
+int pr_title_n(FILE *fp,int indent,const char *title,int n);
+int pr_title_nxn(FILE *fp,int indent,const char *title,int n1,int n2);
+void pr_ivec(FILE *fp,int indent,const char *title,int vec[],int n, bool bShowNumbers);
+void pr_ivecs(FILE *fp,int indent,const char *title,ivec vec[],int n, bool bShowNumbers);
+void pr_rvec(FILE *fp,int indent,const char *title,real vec[],int n, bool bShowNumbers);
+void pr_dvec(FILE *fp,int indent,const char *title,double vec[],int n, bool bShowNumbers);
+void pr_rvecs(FILE *fp,int indent,const char *title,rvec vec[],int n);
+void pr_rvecs_len(FILE *fp,int indent,const char *title,rvec vec[],int n);
+void pr_reals(FILE *fp,int indent,const char *title,real vec[],int n);
+void pr_doubles(FILE *fp,int indent,const char *title,double *vec,int n);
+void pr_block(FILE *fp,int indent,const char *title,t_block *block,bool bShowNumbers);
+void pr_blocka(FILE *fp,int indent,const char *title,t_blocka *block,bool bShowNumbers);
+void pr_ilist(FILE *fp,int indent,const char *title,
+	       t_functype *functype,t_ilist *ilist, bool bShowNumbers);
+void pr_iparams(FILE *fp,t_functype ftype,t_iparams *iparams);
+void pr_idef(FILE *fp,int indent,const char *title,t_idef *idef, bool bShowNumbers);
+void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
+		 bool bMDPformat);
+void pr_atoms(FILE *fp,int indent,const char *title,t_atoms *atoms, 
+	      bool bShownumbers);
+void pr_atomtypes(FILE *fp,int indent,const char *title,
+		  t_atomtypes *atomtypes,bool bShowNumbers);
+void pr_mtop(FILE *fp,int indent,const char *title,gmx_mtop_t *mtop,
+	     bool bShowNumbers);
+void pr_top(FILE *fp,int indent,const char *title,t_topology *top, bool bShowNumbers);
 /*
  * This routine prints out a (human) readable representation of 
  * the topology to the file fp. Ident specifies the number of 
  * spaces the text should be indented. Title is used to print a 
  * header text.
  */
-extern void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh);
-      /*
-      * This routine prints out a (human) readable representation of
-      * a header to the file fp. Ident specifies the number of spaces
-      * the text should be indented. Title is used to print a header text.
-      */
+void pr_header(FILE *fp,int indent,const char *title,t_tpxheader *sh);
+/*
+ * This routine prints out a (human) readable representation of
+ * a header to the file fp. Ident specifies the number of spaces
+ * the text should be indented. Title is used to print a header text.
+ */
 
-extern void pr_commrec(FILE *fp,int indent,t_commrec *cr);
+void pr_commrec(FILE *fp,int indent,t_commrec *cr);
 
 #endif	/* _txtdump_h */

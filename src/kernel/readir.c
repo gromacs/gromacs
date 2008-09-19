@@ -525,6 +525,8 @@ void get_ir(char *mdparin,char *mdparout,
   RTYPE ("dt",		ir->delta_t,	0.001);
   ITYPE ("nsteps",      ir->nsteps,     0);
   CTYPE ("For exact run continuation or redoing part of a run");
+  CTYPE ("Part index is updated automatically on checkpointing (keeps files separate)");
+  ITYPE ("simulation_part", ir->simulation_part, 1);
   ITYPE ("init_step",   ir->init_step,  0);
   CTYPE ("mode for center of mass motion removal");
   EETYPE("comm-mode",   ir->comm_mode,  ecm_names, nerror, TRUE);

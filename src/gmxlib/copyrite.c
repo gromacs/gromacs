@@ -150,6 +150,7 @@ static void pukeit(char *db,char *defstring, char *retstring,
  
   if (be_cool() && ((fp = low_libopen(db,FALSE)) != NULL)) {
     nhlp=fget_lines(fp,&help);
+    /* for libraries we can use the low-level close routines */
     fclose(fp);
     seed=time(NULL);
     *cqnum=nhlp*rando(&seed);

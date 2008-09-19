@@ -47,6 +47,7 @@
 #include "pppm.h"
 #include "xvgr.h"
 #include "fftgrid.h"
+#include "gmxfio.h"
 
 static void calc_k(rvec lll,int ix,int iy,int iz,int nx,int ny,int nz,rvec k)
 {
@@ -145,7 +146,7 @@ void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,real h2,real h3,
   real rx,ry,rz;
   int  ii,jj,kk,nn;
   
-  fp = ffopen(fn,"w");
+  fp = gmx_fio_fopen(fn,"w");
   fprintf(fp,"%8d  %8d  %8d  %15.10e  %15.10e %15.10e\n",
 	  n1max,n2max,n3max,h1,h2,h3);
   fprintf(fp,"%8d  %8d  %8d  %8d  %15.10e  %15.10e  %15.10e\n",
@@ -177,7 +178,7 @@ void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,real h2,real h3,
 	fprintf(fp,"\n");
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
   
   fp=xvgropen("ghat.xvg","G-Hat","k","gk");
   for(ii=0; (ii<N1MAX); ii++) {
@@ -190,7 +191,7 @@ void wr_ghat(char *fn,int n1max,int n2max,int n3max,real h1,real h2,real h3,
       }
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat)
@@ -212,7 +213,7 @@ void pr_scalar_gk(char *fn,int nx,int ny,int nz,rvec box,real ***ghat)
       }
     }
   }
-  fclose(fp);
+  gmx_fio_fclose(fp);
 }
 
 real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
@@ -225,7 +226,7 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
   int    nalias,niter,bSym;
   int    ix,iy,iz,ixmax,iymax,izmax;
   
-  in=ffopen(fn,"r");
+  in=gmx_fio_fopen(fn,"r");
   fscanf(in,"%d%d%d%lf%lf%lf",&ix,&iy,&iz,&gx,&gy,&gz);
   igrid[XX]=ix, igrid[YY]=iy, igrid[ZZ]=iz;
   gridspace[XX]=gx,  gridspace[YY]=gy,  gridspace[ZZ]=gz;
@@ -266,7 +267,7 @@ real ***rd_ghat(FILE *log,char *fn,ivec igrid,rvec gridspace,
 	fscanf(in,"%lf",&ddd);
 	gh[ix][iy][iz] = ddd;
       }
-  ffclose(in);
+  gmx_fio_fclose(in);
 
   wr_ghat("output.hat",igrid[XX],igrid[YY],igrid[ZZ],gx,gy,gz,gh,
 	  nalias,*porder,niter,bSym,beta,
