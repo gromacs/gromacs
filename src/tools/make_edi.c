@@ -354,7 +354,7 @@ void read_eigenvalues(int vecs[],char *eigfile, real values[], bool bHesse, real
   for(i=bHesse ? 6 : 0 ; i<neig; i++) { 
     if (eigval[1][i] < -0.001 && bHesse)
       fprintf(stderr,
-	      "WARNING: The Hesse Matrix has negativ eigenvalue %f, we set it to zero (no flooding in this direction)\n\n",eigval[1][i]);
+	      "WARNING: The Hessian Matrix has negative eigenvalue %f, we set it to zero (no flooding in this direction)\n\n",eigval[1][i]);
       
     if (eigval[1][i] < 0)
       eigval[1][i] = 0;
@@ -530,9 +530,8 @@ int main(int argc,char *argv[])
       "-alpha is a fudge parameter to control the width of the flooding potential. A value of 2 has been found",
       "to give good results for most standard cases in flooding of proteins",
       "alpha basically accounts for incomplete sampling, if you sampled further the width of the ensemble would",
-      "increase, this is mimicked by alpha>1"
-      "for restraining alpha<1 can give you smaller width in the restraining potential"
-      
+      "increase, this is mimicked by alpha>1",
+      "for restraining alpha<1 can give you smaller width in the restraining potential",
       "RESTART and FLOODING: ",
       "If you want to restart a crashed flooding simulation please find the values deltaF and Efl in",
       "the output file and write them with your texteditor into the .edi file under DELTA_F0 and EFL_NULL"
@@ -581,25 +580,25 @@ int main(int argc,char *argv[])
     { "-radcon", FALSE, etSTR, {&evSelections[5]},
         "Indices of eigenvectors for acceptance radius contraction" },
     { "-outfrq", FALSE, etINT, {&edi_params.outfrq},
-        "freqency (in steps) of writing output in .edo file" },
+        "Freqency (in steps) of writing output in .edo file" },
     { "-slope", FALSE, etREAL, { &edi_params.slope},
-        "minimal slope in acceptance radius expamsion"},
+        "Minimal slope in acceptance radius expamsion"},
     { "-maxedsteps", FALSE, etINT, {&edi_params.maxedsteps},
-        "max nr of steps per cycle" },
+        "Max nr of steps per cycle" },
     { "-deltaF0", FALSE,etREAL, {&deltaF0},
-        "target destabilization energy  - used for flooding"},
+        "Target destabilization energy  - used for flooding"},
     { "-deltaF", FALSE, etREAL, {&deltaF},
-        "start deltaF with this parameter - default 0, i.g. nonzero values only needed for restart"},
+        "Start deltaF with this parameter - default 0, i.g. nonzero values only needed for restart"},
     { "-tau", FALSE, etREAL, {&tau}, 
         " coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength"},
     { "-eqsteps", FALSE, etINT, {&eqSteps},
-        " number of steps to run without any perturbations "},
+        "Number of steps to run without any perturbations "},
     { "-Eflnull", FALSE, etREAL, {&constEfl},
-        " this is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use -tau 0. "},
+        "This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use -tau 0. "},
     { "-T", FALSE, etREAL, {&T},
-        " T is temperature, the value is needed if you want to do flooding "},
+        "T is temperature, the value is needed if you want to do flooding "},
     { "-alpha",FALSE,etREAL,{&alpha},
-        " scale width of gaussian flooding potential with alpha^2 "},
+        "Scale width of gaussian flooding potential with alpha^2 "},
     { "-linstep", FALSE, etSTR, {&evParams[0]},
       "Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! \"1.0 2.3 5.1 -3.1\")"},
     { "-accdir", FALSE, etSTR, {&evParams[1]},
@@ -607,11 +606,11 @@ int main(int argc,char *argv[])
     { "-radstep", FALSE, etREAL, {&radfix},
         "Stepsize (nm/step) for fixed increment radius expansion"},
     { "-restrain",FALSE, etBOOL, {&bRestrain},
-        "use the flooding potential with inverted sign -> effects as quasiharmonic restraining potential"},
-    { "-hesse",FALSE, etBOOL, {&bHesse},
-        "the eigenvectors and eigenvalues are from a Hesse matrix"},
+        "Use the flooding potential with inverted sign -> effects as quasiharmonic restraining potential"},
+    { "-hessian",FALSE, etBOOL, {&bHesse},
+        "The eigenvectors and eigenvalues are from a Hessian matrix"},
     { "-harmonic",FALSE, etBOOL, {&bHarmonic}, 
-        "the eigenvalues are interpreted as spring constant"},
+        "The eigenvalues are interpreted as spring constant"},
     };
 #define NPA asize(pa)
     
