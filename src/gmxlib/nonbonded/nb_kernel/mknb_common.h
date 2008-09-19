@@ -58,6 +58,7 @@ struct mknb_options
 {
 	int     threads;          /*!< Create kernels with thread support  */
 	int     software_invsqrt; /*!< Use software optimization of 1/sqrt */
+	int     ppc_invsqrt;      /*!< Use IBM PowerPC intrinsics of 1/sqrt */
 	int     prefetch_forces;  /*!< Prefetch forces in innermost loop   */
 };
 

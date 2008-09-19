@@ -312,15 +312,29 @@
 
 */
 
+
+#ifdef XLC_IS_OK
+
+#define convert2ints(x,xi,conv,i1,i2)                      \
+    xi      = __fpctiwz(x);                                \
+    __stfpd(conv,xi);                                      \
+    i1     = ((int *)conv)[1];                             \
+    i2     = ((int *)conv)[3]
+
+#else
+
+#define convert2ints(x,xi,conv,i1,i2)                     \
+    i1     = (int)__creal(x);                             \
+    i2     = (int)__cimag(x)
+
+#endif
+
 #if COULOMB == COULOMB_TAB
 
   #define calc_coulomb_pot(qq,rinv,rsq,conv,jnr1,jnr2)       \
                                                              \
     rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));        \
-    rti      = __fpctiwz(rt);                                \
-    __stfpd(conv,rti);                                       \
-    nnn1     = ((int *)conv)[1];                             \
-    nnn2     = ((int *)conv)[3];                             \
+    convert2ints(rt,rti,conv,nnn1,nnn2);                     \
     n0       = __cmplx((double)nnn1,(double)nnn2);           \
     eps      = __fpsub(rt,n0);                               \
     nnn1    *= TAB_MULT;                                     \
@@ -350,10 +364,7 @@
     iqq      = __fpmul(isaprod,qq);                                  \
     gbscale  = __fxpmul(isaprod,_gbtabscale);                        \
     rt       = __fpmul(r,gbscale);                                   \
-    rti      = __fpctiwz(rt);                                        \
-    __stfpd(conv,rti);                                               \
-    nnn1     = ((int *)conv)[1];                                     \
-    nnn2     = ((int *)conv)[3];                                     \
+    convert2ints(rt,rti,conv,nnn1,nnn2);                             \
     n0       = __cmplx((double)nnn1,(double)nnn2);                   \
     eps      = __fpsub(rt,n0);                                       \
     nnn1    *= 4;                                                    \
@@ -481,10 +492,7 @@
   #define calc_vdw_pot(rinv,rsq,conv,jnr1,jnr2)              \
                                                              \
     rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));        \
-    rti      = __fpctiwz(rt);                                \
-    __stfpd(conv,rti);                                       \
-    nnn1     = ((int *)conv)[1];                             \
-    nnn2     = ((int *)conv)[3];                             \
+    convert2ints(rt,rti,conv,nnn1,nnn2);                     \
     n0       = __cmplx((double)nnn1,(double)nnn2);           \
     eps      = __fpsub(rt,n0);                               \
     nnn1     = nnn1*TAB_MULT + LJTAB_OFS;                    \
@@ -517,10 +525,7 @@
     c6       = __cmplx(vdwparam[tj1],vdwparam[tj2]);         \
     c12      = __cmplx(vdwparam[tj1+1],vdwparam[tj2+1]);     \
     rt       = __fpmul(rsq,__fxpmul(rinv,_tabscale));        \
-    rti      = __fpctiwz(rt);                                \
-    __stfpd(conv,rti);                                       \
-    nnn1     = ((int *)conv)[1];                             \
-    nnn2     = ((int *)conv)[3];                             \
+    convert2ints(rt,rti,conv,nnn1,nnn2);                     \
     n0       = __cmplx((double)nnn1,(double)nnn2);           \
     eps      = __fpsub(rt,n0);                               \
     nnn1     = nnn1*TAB_MULT + LJTAB_OFS;                    \

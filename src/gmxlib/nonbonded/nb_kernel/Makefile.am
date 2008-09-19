@@ -179,10 +179,6 @@ if GMX_DOUBLE
   DOUBLEFLAG = -double
 endif
 
-if GMX_THREAD
-  THREADFLAG = -threads
-endif
-
 if GMX_SOFTWARE_SQRT
   SQRTFLAG   = -software_invsqrt
 endif
@@ -195,7 +191,15 @@ if GMX_FORTRAN
   FORTRANFLAG = -fortran
 endif
 
-MKNB_FLAGS = $(DOUBLEFLAG) $(THREADFLAG) $(SQRTFLAG) \
+if GMX_POWERPC_SQRT
+  PPCSQRTFLAG = -ppc_invsqrt
+endif
+
+if GMX_POWERPC_SQRT_SINGLE_ITERATION
+    PPC_SQRT_NITER = =1
+endif
+
+MKNB_FLAGS = $(DOUBLEFLAG) $(SQRTFLAG) $(PPCSQRTFLAG)$(PPC_SQRT_NITER) \
              $(PREFETCHFLAG) $(FORTRANFLAG)
 
 #

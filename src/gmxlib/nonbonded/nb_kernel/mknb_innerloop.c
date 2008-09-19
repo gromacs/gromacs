@@ -21,42 +21,84 @@
  * the nonbonded functions during the build process, so it will never be
  * executed by multiple threads.
  */
-
 #include <mknb_common.h>
 #include <mknb_interactions.h>
 #include <mknb_metacode.h>
 
 int
-software_invsqrt(char *rsq, char *rinv)
+ppc_invsqrt(char *rsq, char *rinv)
 {
-	int nflops = 0;
+	int nflops = 1;
 
-	mknb_comment("Gromacs software 1/sqrt");
-	/* table lookup step */
-	mknb_assign ( (mknb_fortran) ? "fval" : "bitpattern.fval", rsq);
+	mknb_comment("PowerPC intrinsics 1/sqrt lookup table");
 
-	if(mknb_fortran) {
-		mknb_assign("iexp","rshift(and(bval,expmask),expshift)");
-		mknb_assign("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
-		mknb_assign("result","or(invsqrtexptab(iexp+1),invsqrtfracttab(addr+1))");
-	} else  {
-		mknb_assign("iexp","(((bitpattern.bval)&expmask)>>expshift)");
-		mknb_assign("addr","(((bitpattern.bval)&(fractmask|explsb))>>fractshift)");
+	/* fsqrte step */
 
-		mknb_assign("result.bval",
-					"gmx_invsqrt_exptab[iexp] | gmx_invsqrt_fracttab[addr]");
-		mknb_assign("lu", "result.fval");
+	if (mknb_double) {
+		if (mknb_fortran) {
+			mknb_assign (rinv,"frsqrte(%s)",rsq);
+		} else {
+			mknb_assign (rinv,"__frsqrte(%s)",rsq);
+		}
+	} else {
+		if (mknb_fortran) {
+			mknb_assign (rinv,"frsqrte(dble(%s))",rsq);
+		} else {
+			mknb_assign (rinv,"__frsqrte(dble(%s))",rsq);
+		}
 	}
 
 	/* Newton-Rhapson iteration step */    
-	mknb_assign(rinv,"(0.5*lu*(3.0-((%s*lu)*lu)))",rsq);
+	mknb_assign(rinv,"(0.5*%s*(3.0-((%s*%s)*%s)))",rinv,rsq,rinv,rinv);
 	nflops += 5; /* 4 mult and one sub on the last line */
+	
+	if(mknb_options.ppc_invsqrt=2)
+	{
+		/* Older powerpc architectures need two iterations for single, 3 for double */
+		mknb_assign(rinv,"(0.5*%s*(3.0-((%s*%s)*%s)))",rinv,rsq,rinv,rinv);
+		nflops += 5;
+	}
+	
 	if(mknb_double) {
 		mknb_assign(rinv,"(0.5*%s*(3.0-((%s*%s)*%s)))",rinv,rsq,rinv,rinv);
 		nflops += 5; /* 4 mult and one sub on the last line */
 	}    
 	return nflops;
 }
+
+
+int
+software_invsqrt(char *rsq, char *rinv)
+{
+    int nflops = 0;
+
+    mknb_comment("Gromacs software 1/sqrt");
+    /* table lookup step */
+    mknb_assign ( (mknb_fortran) ? "fval" : "bitpattern.fval", rsq);
+
+    if(mknb_fortran) {
+        mknb_assign("iexp","rshift(and(bval,expmask),expshift)");
+        mknb_assign("addr","rshift(and(bval,or(fractmask,explsb)),fractshift)");
+        mknb_assign("result","or(invsqrtexptab(iexp+1),invsqrtfracttab(addr+1))");
+    } else {
+        mknb_assign("iexp","(((bitpattern.bval)&expmask)>>expshift)");
+        mknb_assign("addr","(((bitpattern.bval)&(fractmask|explsb))>>fractshift)");
+
+        mknb_assign("result.bval",
+                    "gmx_invsqrt_exptab[iexp] | gmx_invsqrt_fracttab[addr]");
+        mknb_assign("lu", "result.fval");
+    }
+
+    /* Newton-Rhapson iteration step */
+    mknb_assign(rinv,"(0.5*lu*(3.0-((%s*lu)*lu)))",rsq);
+    nflops += 5; /* 4 mult and one sub on the last line */
+    if(mknb_double) {
+        mknb_assign(rinv,"(0.5*%s*(3.0-((%s*%s)*%s)))",rinv,rsq,rinv,rinv);
+        nflops += 5; /* 4 mult and one sub on the last line */
+    }
+    return nflops;
+}
+
 
 int
 mknb_load_inner_coordinates()
@@ -276,6 +318,10 @@ mknb_calc_square_root()
 					sprintf(tmp,"rsq%d%d",i,j);
 					sprintf(tmp2,"rinv%d%d",i,j);
 					nflops += software_invsqrt(tmp,tmp2);
+				} else if (mknb_options.ppc_invsqrt) {
+					sprintf(tmp,"rsq%d%d",i,j);
+					sprintf(tmp2,"rinv%d%d",i,j);
+					nflops += ppc_invsqrt(tmp,tmp2);
 				} else {
 					mknb_assign("rinv%d%d","1.0/sqrt(rsq%d%d)",i,j,i,j);
 					/* Estimate 1/sqrt(x) to 5 flops in single, 10 in double */

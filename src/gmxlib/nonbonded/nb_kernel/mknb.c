@@ -29,6 +29,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* This program generates nonbonded interaction source code for the GROMACS
  * Molecular Dynamics package. The functions are nearly optimal, i.e.
@@ -182,11 +183,13 @@ mknb_write_file_header(void)
 				" * Precision:        %s\n"
 				" * Threads:          %s\n"
 				" * Software invsqrt: %s\n"
+				" * PowerPC invsqrt:  %s\n"
 				" * Prefetch forces:  %s\n"
 				" * Comments:         %s\n */\n",
 				mknb_double ? "double" : "single",
 				mknb_options.threads ? "yes" : "no",
 				mknb_options.software_invsqrt ? "yes" : "no",
+				mknb_options.ppc_invsqrt ? "yes" : "no",
 				mknb_options.prefetch_forces ? "yes" : "no",
 				mknb_keep_comments ? "yes" : "no");
 	  
@@ -213,11 +216,13 @@ mknb_write_file_header(void)
 				"C Precision:        %s\n"
 				"C Threads:          %s\n"
 				"C Software invsqrt: %s\n"
+				"C PowerPC invsqrt:  %s\n"
 				"C Prefetch forces:  %s\n"
 				"C Comments:         %s\n\n",
 				mknb_double ? "double" : "single",
 				mknb_options.threads ? "yes" : "no",
 				mknb_options.software_invsqrt ? "yes" : "no",
+				mknb_options.ppc_invsqrt ? "yes" : "no",
 				mknb_options.prefetch_forces ? "yes" : "no",
 				mknb_keep_comments ? "yes" : "no");
 	}
@@ -227,9 +232,10 @@ mknb_write_file_header(void)
 int
 main(int argc,char *argv[])
 {
-	char filename[255];
+    char filename[255];
 	int  i,nfiles;
 	FILE *fp;
+	char *ch;
 
 	/* First set options to default values */
 	mknb_fortran                  = 0; /* global variable in mknb_metacode.c */
@@ -237,6 +243,7 @@ main(int argc,char *argv[])
 	mknb_keep_comments            = 0; /* global variable in mknb_metacode.c */
 	mknb_options.threads          = 0; /* global variable in mknb.c */
 	mknb_options.software_invsqrt = 0; /* global variable in mknb.c */
+	mknb_options.ppc_invsqrt      = 0; /* global variable in mknb.c */
 	mknb_options.prefetch_forces  = 0; /* global variable in mknb.c */
 
 	fprintf(stderr,">>> Gromacs nonbonded kernel generator (-h for help)\n");
@@ -253,7 +260,19 @@ main(int argc,char *argv[])
 			mknb_options.threads          = 1;
 		else if(argv[i][1]=='s') /* s as in software_invsqrt */
 			mknb_options.software_invsqrt = 1;
-		else if(argv[i][1]=='p') /* p as in prefetch_forces */
+		else if(argv[i][1]=='p' && argv[i][2]=='p') /* pp as in ppc_invsqrt */
+	        {
+			/* Check if it says -ppc_invsqrt=1 , otherwise assume 2 */
+			if( (ch=strchr(argv[i],'=')) != NULL && *(++ch)=='1')
+			{
+			    mknb_options.ppc_invsqrt = 1;
+			}
+			else
+			{
+			    mknb_options.ppc_invsqrt = 2;
+			}
+		}
+		else if(argv[i][1]=='p') /* p as in prefetch_forces (but not pp) */
 			mknb_options.prefetch_forces  = 1;
 		else if(argv[i][1]=='c') /* c as in comments */
 			mknb_keep_comments            = 1;
@@ -264,7 +283,9 @@ main(int argc,char *argv[])
 					" -double            Use double precision iso. single\n"
 					" -threads           Write kernels with thread support\n"
 					" -software_invsqrt  Use Gromacs software for 1/sqrt(x)\n"
-					" -prefetch_forces   Prefetch force memory in loops\n\n"
+					" -ppc_invsqrt       Use PowerPC intrinsics for 1/sqrt(x)\n"
+					"                    (even better: -ppc_invsqrt=1 for pwr4/ppc440/450)\n"
+					" -prefetch_forces   Prefetch force memory in loops\n"
 					" -comments          Write comments in output files\n\n");
 			exit(0);
 		}
@@ -277,6 +298,12 @@ main(int argc,char *argv[])
 			(mknb_fortran) ? "Fortran77" : "C");
 	if(mknb_options.software_invsqrt)
 		fprintf(stderr,">>> Using Gromacs software version of 1/sqrt(x).\n");
+
+	if(mknb_options.ppc_invsqrt>0)
+	  fprintf(stderr,">>> Using PowerPC intrinsics for 1/sqrt(x) table (%d iterations for %s precision).\n",
+		  mknb_double ? mknb_options.ppc_invsqrt+1 : mknb_options.ppc_invsqrt,
+		  mknb_double ? "double" : "single");
+
 	if(mknb_options.prefetch_forces)
 		fprintf(stderr,">>> Prefetching forces in loops.\n");
 

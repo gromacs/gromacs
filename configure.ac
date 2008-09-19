@@ -27,10 +27,12 @@ AC_DISABLE_SHARED
 
 ### Single/Double
 AC_ARG_ENABLE(float,
- [  --disable-float               use double instead of single precision],, enable_float=yes)
+	     [AC_HELP_STRING([--disable-float],
+	                     [Use double instead of single precision])],, enable_float=yes)
 
 AC_ARG_ENABLE(double,
- [  --enable-double               same effect as --disable-float],, enable_double=no)
+	     [AC_HELP_STRING([--enable-double],
+	                     [Same effect as --disable-float])],, enable_double=no)
 if test "$enable_double" = "yes"; then
    enable_float=no;
 fi
@@ -43,31 +45,29 @@ AM_CONDITIONAL([GMX_DOUBLE],[test "$enable_float" = "no"])
 
 ### Fortran or not
 AC_ARG_ENABLE(fortran,
- [  --Enable-fortran              use fortran (default on sgi,ibm,sun,axp)],, 
+             [AC_HELP_STRING([--enable-fortran],
+	                     [Use Fortran kernels (default on sgi,ibm,sun,axp)])],, 
 [case "${host_cpu}-${host_os}" in
   sparc*-solaris* | alpha*-* | rs6000*-aix* | powerpc*-aix* | mips*-irix*) enable_fortran=yes ;;
   *) enable_fortran=no ;;
  esac])
 AM_CONDITIONAL([GMX_FORTRAN],[test "$enable_fortran" = "yes"])
 if test "$enable_fortran" = "yes"; then
-  AC_DEFINE(GMX_FORTRAN,,[Use Fortran innerloops])
+  AC_DEFINE(GMX_FORTRAN,,[Use Fortran kernels])
 fi
 # always use CC for linking:
 AC_SUBST(F77LINK,"\$(LINK)")
 
 ### MPI or not
 AC_ARG_ENABLE(mpi,
- [  --enable-mpi                  compile for parallel runs using MPI],,enable_mpi=no)
-
-### Threads
-AC_ARG_ENABLE(threads,
- [  --disable-threads             don't try to use multithreading],,enable_threads=no)
-AM_CONDITIONAL([GMX_THREAD],[test "$enable_threads" = "yes"])
+              [AC_HELP_STRING([--enable-mpi],
+	                      [Compile for parallel runs using MPI])],,enable_mpi=no)
 
 
 ### MPI environment
 AC_ARG_ENABLE(mpi-environment,
- [  --enable-mpi-environment=VAR  only start parallel runs when VAR is set],,
+	      [AC_HELP_STRING([--enable-mpi-environment=VAR],
+	                      [Only start parallel runs when VAR is set])],,
 [case "${host_cpu}" in
   mips*-irix*) enable_mpi_environment="MPI_ENVIRONMENT" ;;
   *) enable_mpi_environment=no ;;
@@ -78,7 +78,8 @@ fi
 
 ### IA32 assembly code
 AC_ARG_ENABLE(ia32_3dnow,    
- [  --disable-ia32-3dnow          don't build 3DNow! assembly loops on ia32],,enable_ia32_3dnow=yes)
+              [AC_HELP_STRING([--disable-ia32-3dnow],
+                              [Don't build 3DNow! assembly loops on ia32])],,enable_ia32_3dnow=yes)
 case "${host_cpu}" in
    i?86) ;;     
    *) enable_ia32_3dnow=no ;;
@@ -87,7 +88,8 @@ esac
 
 ### IA32 assembly code
 AC_ARG_ENABLE(ia32_sse,    
- [  --disable-ia32-sse            don't build SSE/SSE2 assembly loops on ia32],,enable_ia32_sse=yes)
+              [AC_HELP_STRING([--disable-ia32-sse],
+                              [Don't build SSE/SSE2 assembly loops on ia32])],,enable_ia32_sse=yes)
 case "${host_cpu}" in
    i?86) ;;     
    *) enable_ia32_sse=no ;;
@@ -95,7 +97,8 @@ esac
 
 ### AMD64 assembly code
 AC_ARG_ENABLE(x86_64_sse,
- [  --disable-x86-64-sse           don't build SSE assembly loops on X86_64],,enable_x86_64_sse=yes)
+              [AC_HELP_STRING([--disable-x86-64-sse],
+                              [Don't build SSE assembly loops on X86_64])],,enable_x86_64_sse=yes)
 case "${host_cpu}" in
    x86_64 | amd64) ;;
    *) enable_x86_64_sse=no ;;
@@ -104,7 +107,8 @@ esac
 
 ### Altivec on powerpc (motorola)
 AC_ARG_ENABLE(ppc_altivec,
- [  --disable-ppc-altivec         don't build Altivec loops on PowerPC],,enable_ppc_altivec=undef)
+              [AC_HELP_STRING([--disable-ppc-altivec],
+                              [Don't build Altivec loops on PowerPC])],,enable_ppc_altivec=undef)
 # Power3/4/5 running AIX does not support altivec. We identify this with vendor=IBM.
 # IBM powerpc 970 boxes run linux, and have vendor=unknown.
 if test "$enable_ppc_altivec" = "undef"; then
@@ -118,7 +122,8 @@ fi
 
 ### ia64 assembly code
 AC_ARG_ENABLE(ia64_asm,
- [  --disable-ia64-asm            don't build assembly loops on ia64],,enable_ia64_asm=yes)
+	      [AC_HELP_STRING([--disable-ia64-asm],
+	                      [Don't build assembly loops on ia64])],,enable_ia64_asm=yes)
 case "${host_cpu}" in
    ia64) ;;
    *) enable_ia64_asm=no ;;
@@ -131,28 +136,57 @@ fi
 
 
 AC_ARG_ENABLE(bluegene,
- [  --enable-bluegene         build assembly intrinsics kernels on bluegene],,enable_bluegene=no)
+              [AC_HELP_STRING([--enable-bluegene],
+                              [Build assembly intrinsics kernels on bluegene])],,enable_bluegene=no)
 if test "$enable_bluegene" = "yes"; then
   AC_DEFINE(GMX_BLUEGENE,,[Use assembly intrinsics kernels for BlueGene])
 fi
 
 ### Optimize for host cpu version
 AC_ARG_ENABLE(cpu-optimization,     
- [  --disable-cpu-optimization    no detection or tuning flags for cpu version],, enable_cpu_optimization=yes)
+              [AC_HELP_STRING([--disable-cpu-optimization],
+	                      [No detection or tuning flags for cpu version])],, enable_cpu_optimization=yes)
 
 
-
-### Do software 1/sqrt(x)
-AC_ARG_ENABLE(software-sqrt,     
- [  --disable-software-sqrt       no software 1/sqrt (disabled on sgi,ibm,ia64)],,
+### Do software 1/sqrt(x)                                                                                                            
+AC_ARG_ENABLE(software-sqrt,
+              [AC_HELP_STRING([--disable-software-sqrt],
+                              [No software 1/sqrt (disabled on sgi,ibm,ia64)])],,
 [case "${host_cpu}-${host_os}" in
   mips*-irix* | rs6000*-aix* | powerpc*-aix | ia64*-*) enable_software_sqrt=no ;;
   *) enable_software_sqrt=yes ;;
 esac])
+# We might turn off software sqrt on PowerPC, so the
+# define and makefile conditional is set below that check.
+
+### Do PowerPC 1/sqrt(x)
+AC_ARG_ENABLE(ppc-sqrt,     
+             [AC_HELP_STRING([--enable-ppc-sqrt],
+                             [PowerPC 1/sqrt table lookup. By default we]
+                             [use 2 iterations, but if you only run on]
+			     [Power6,PPC440,PPC450 or later CPUs you can]
+			     [set --enable-ppc-sqrt=1 for better speed.])],,
+			     enable_ppc_sqrt=no)
+if test "$enable_ppc_sqrt" != "no"; then
+   if test "$enable_ppc_sqrt" == "1"; then
+     ppc_sqrt_niter=1;
+   else 
+     ppc_sqrt_niter=2;
+   fi
+AC_DEFINE_UNQUOTED(GMX_POWERPC_SQRT,$ppc_sqrt_niter,[Use PowerPC 1/sqrt(x) table lookup (number of iterations)])
+# Turn off generic software sqrt
+   enable_software_sqrt="no";
+fi
+AM_CONDITIONAL([GMX_POWERPC_SQRT],[test "$enable_ppc_sqrt" != "no"])
+AM_CONDITIONAL([GMX_POWERPC_SQRT_SINGLE_ITERATION],[test "$ppc_sqrt_niter" == "1"])
+
+
 if test "$enable_software_sqrt" = "yes"; then
   AC_DEFINE(GMX_SOFTWARE_SQRT,,[Use the GROMACS software 1/sqrt(x)])
 fi
 AM_CONDITIONAL([GMX_SOFTWARE_SQRT],[test "$enable_software_sqrt" = "yes"])
+
+
 
 
 # The four options below used to improve code scheduling, but the newest CPUs can usually rearrange
@@ -160,7 +194,8 @@ AM_CONDITIONAL([GMX_SOFTWARE_SQRT],[test "$enable_software_sqrt" = "yes"])
 
 ### Force prefetching
 AC_ARG_ENABLE(prefetch,     
- [  --enable-prefetch-forces      prefetch forces in innerloops],, enable_prefetch=no)
+              [AC_HELP_STRING([--enable-prefetch-forces],
+                              [Prefetch forces in innerloops])],, enable_prefetch=no)
 # processing of prefetch choices is done just before the final output stage!
 AM_CONDITIONAL([GMX_PREFETCH_FORCES],[test "$enable_prefetch" = "yes"])
 
@@ -168,7 +203,8 @@ AM_CONDITIONAL([GMX_PREFETCH_FORCES],[test "$enable_prefetch" = "yes"])
 
 
 AC_ARG_ENABLE(all-static,
- [  --enable-all-static           make completely static binaries],, enable_all_static=no)
+              [AC_HELP_STRING([--enable-all-static],
+                              [Make completely static binaries])],, enable_all_static=no)
 # Dont add the -all-static flag until after the compiler test.
 
 
@@ -220,25 +256,28 @@ AM_CONDITIONAL([GMX_EXTERNAL_LAPACK], [test "$with_external_lapack" = "yes"])
 
 
 AC_ARG_WITH(qmmm_gaussian,
- [  --without-qmmm-gaussian  Interface to mod. Gaussian0x for QM-MM (see website)],,with_qmmm_gaussian=yes)
+              [AC_HELP_STRING([--without-qmmm-gaussian],
+                              [Use modified Gaussian0x for QM-MM (see website)])],,with_qmmm_gaussian=yes)
 if test "$with_qmmm_gaussian" = "yes"; then
-  AC_DEFINE(GMX_QMMM_GAUSSIAN,,[Use (hacked) Gaussian0x for QM-MM calculations])
+  AC_DEFINE(GMX_QMMM_GAUSSIAN,,[Use (modified) Gaussian0x for QM-MM calculations])
   MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gaussian.lo"
 fi
 
 
 AC_ARG_WITH(qmmm_gamess,
- [  --with-qmmm-gamess      use modified Gamess-UK for QM-MM (see website)],,with_qmmm_gamess=no)
+              [AC_HELP_STRING([--without-qmmm-gamess],
+                              [Use modified Gamess-UK for QM-MM (see website)])],,with_qmmm_gamess=no)
 if test "$with_qmmm_gamess" = "yes"; then
-  AC_DEFINE(GMX_QMMM_GAMESS,,[Use (hacked) Gamess-UK for QM-MM calculations])
+  AC_DEFINE(GMX_QMMM_GAMESS,,[Use (modified) Gamess-UK for QM-MM calculations])
   MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_gamess.lo"
 fi
 
 
 AC_ARG_WITH(qmmm_mopac,
- [  --with-qmmm-mopac       use modified Mopac 7 for QM-MM (see website)],,with_qmmm_mopac=no)
+              [AC_HELP_STRING([--without-qmmm-mopac],
+                              [Use modified Mopac 7 for QM-MM (see website)])],,with_qmmm_mopac=no)
 if test "$with_qmmm_mopac" = "yes"; then
-  AC_DEFINE(GMX_QMMM_MOPAC,,[Use (hacked) Mopac 7 for QM-MM calculations])
+  AC_DEFINE(GMX_QMMM_MOPAC,,[Use (modified) Mopac 7 for QM-MM calculations])
   MDLIB_LIBOBJS="$MDLIB_LIBOBJS qm_mopac.lo"
 fi
    
@@ -552,6 +591,7 @@ AC_CHECK_FUNCS(strcasecmp)
 AC_CHECK_FUNCS(strdup)
 # check for bool (must come late, since CFLAGS/includes might affect it)
 AC_CHECK_TYPES([bool])
+
 
 #####
 # Look for X
