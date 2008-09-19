@@ -49,19 +49,13 @@
 
 
 #ifdef HAVE_FSEEKO
-#define gmx_fseek(A,B,C) fseeko(A,B,C)
-#define gmx_ftell(A) ftello(A)
-#define gmx_off_t off_t
-#ifndef _LARGEFILE_SOURCE
-#warning Declaring fseeko and ftello explicitly so as to bypass an autoconf 2.61 bug
-#warning If you have an incompatible declaration error please comment out the fseeko and ftello declarations just after this warning
-int fseeko(FILE *stream, off_t offset, int whence);
-off_t ftello(FILE *stream);
-#endif
+#  define gmx_fseek(A,B,C) fseeko(A,B,C)
+#  define gmx_ftell(A) ftello(A)
+#  define gmx_off_t off_t
 #else
-#define gmx_fseek(A,B,C) fseek(A,B,C)
-#define gmx_ftell(A) ftell(A)
-#define gmx_off_t int
+#  define gmx_fseek(A,B,C) fseek(A,B,C)
+#  define gmx_ftell(A) ftell(A)
+#  define gmx_off_t int
 #endif
 
 
@@ -328,7 +322,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
     enum xdr_op lmode;
     int xdrid;
     char newtype[5];
-
+	
     if (init_done == 0) {
 	for (xdrid = 1; xdrid < MAXID; xdrid++) {
 	    xdridptr[xdrid] = NULL;
@@ -353,6 +347,7 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
 	    lmode = XDR_DECODE;
     }
     xdrfiles[xdrid] = fopen(filename, newtype);
+	
     if (xdrfiles[xdrid] == NULL) {
 	xdrs = NULL;
 	return 0;
@@ -405,6 +400,13 @@ int xdrclose(XDR *xdrs) {
     /* to make some compilers happy: */
     return 0;    
 }
+
+FILE *
+xdr_get_fp(int xdrid)
+{
+	return xdrfiles[xdrid];
+}
+
 
 /*____________________________________________________________________________
  |

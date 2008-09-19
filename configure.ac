@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0_beta1, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0_rc1, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -374,7 +374,7 @@ AC_MSG_ERROR([Cannot determine endian in compiled output])])
 AC_CHECK_SIZEOF(int)
 AC_CHECK_SIZEOF(long int)
 AC_CHECK_SIZEOF(long long int)
-
+AC_CHECK_SIZEOF(off_t)
 
 #############
 # Make sure size_t can hold pointers.
@@ -401,7 +401,10 @@ AC_PROG_MAKE_SET
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 AC_SYS_LARGEFILE
-AC_FUNC_FSEEKO
+#
+# Use our own version of AC_FUNC_FSEEKO from autoconf 2.63 instead
+# of the broken one we might get from autoconf 2.61.
+ACX_FUNC_FSEEKO_FIXED
 
 
 
@@ -542,6 +545,7 @@ esac
 #AC_FUNC_MALLOC
 AC_FUNC_MEMCMP
 AC_TYPE_SIGNAL
+AC_TYPE_OFF_T
 AC_FUNC_VPRINTF
 AM_WITH_DMALLOC
 AC_CHECK_FUNCS(strcasecmp)
