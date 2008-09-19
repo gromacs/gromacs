@@ -473,7 +473,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     real cpt_period,real max_hours,
 	     unsigned long Flags)
 {
-  int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel;
+  int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel,step_ene;
   char       *fn_cpt;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
   time_t     start_t;
@@ -833,6 +833,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
   step = ir->init_step;
   step_rel = 0;
+  step_ene = 0;
 
   bLastStep = (bRerunMD || step_rel > ir->nsteps);
   while (!bLastStep || (bRerunMD && bNotLastFrame)) {
@@ -855,7 +856,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
       t = t0 + step*ir->delta_t;
     }
-    
+    if (Flags & MD_APPENDFILES) {
+      step_ene = step;
+    } else {
+      step_ene = step_rel;
+    }
+
     if (ir->efep != efepNO) {
       if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
 	state->lambda = rerun_fr.lambda;
@@ -1437,7 +1443,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		bool do_dr,do_or;
       
 		upd_mdebin(mdebin,fp_dgdl,bGStatEveryStep,
-				   mdatoms->tmass,step_rel,t,enerd,state,lastbox,
+				   mdatoms->tmass,step_ene,t,enerd,state,lastbox,
 				   shake_vir,force_vir,total_vir,pres,
 				   ekind,mu_tot,constr);
 		
@@ -1447,7 +1453,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 		do_dr  = do_per_step(step,ir->nstdisreout);
 		do_or  = do_per_step(step,ir->nstorireout);
 		
-		print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,step_rel,t,
+		print_ebin(fp_ene,do_ene,do_dr,do_or,do_log?fplog:NULL,step,step_ene,t,
 				   eprNORMAL,bCompact,mdebin,fcd,groups,&(ir->opts));
 		
 		if (ir->ePull != epullNO)
@@ -1515,9 +1521,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  
   if (MASTER(cr)) {
     if (bGStatEveryStep) {
-      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
+      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_ene,t,
 		 eprAVER,FALSE,mdebin,fcd,groups,&(ir->opts));
-      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_rel,t,
+      print_ebin(fp_ene,FALSE,FALSE,FALSE,fplog,step,step_ene,t,
 		 eprRMS,FALSE,mdebin,fcd,groups,&(ir->opts));
     }
     close_enx(fp_ene);
