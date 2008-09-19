@@ -261,6 +261,9 @@ int gmx_pme_recv_q_x(struct gmx_pme_pp *pme_pp,
   real *charge_pp;
 
   messages = 0;
+
+  /* avoid compiler warning about unused variable without MPI support */
+  cnb.flags = 0;	
 #ifdef GMX_MPI
   do {
     /* Receive the send count and box from the peer PP node */
