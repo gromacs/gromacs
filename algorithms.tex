@@ -1179,6 +1179,7 @@ algorithm~\cite{Miyamoto92} (\secref{constraints}).
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsection{\normindex{LINCS}}
+\label{subsec:lincs}
 
 \subsubsection{The LINCS algorithm}
 LINCS is an algorithm that resets bonds to their correct lengths
@@ -1190,6 +1191,8 @@ but it can only be used with bond constraints and
 isolated angle constraints, such as the proton angle in OH. 
 Because of its stability LINCS is especially useful for Brownian dynamics. 
 LINCS has two parameters, which are explained in the subsection parameters.
+The parallel version of LINCS, P-LINCS, is described
+in subsection \ssecref{plincs}.
  
 \subsubsection{The LINCS formulas}
 We consider a system of $N$ particles, with positions given by a
@@ -1306,6 +1309,32 @@ By constraining angles with additional distance constraints
 multiple small ring structures are introduced.
 This gives a high connectivity, leading to large eigenvalues.
 Therefore LINCS should NOT be used with coupled angle-constraints.
+
+For molecules with all bonds constrained the eigenvalues of $A$
+are around 0.4. This means that with each additional order
+in the expansion \eqnref{m3} the deviations decrease by a factor 0.4.
+But for relatively isolated triangles of constraints the largest
+eigenvalue is around 0.7.
+Such triangles can occur when removing hydrogen angle vibrations
+with an additional angle constraint in alcohol groups
+or when constraining water molecules with LINCS, for instance
+with flexible constraints.
+The constraints in such triangles converge twice as slow as
+the other constraints. Therefore, starting with {\gromacs} 4,
+additional terms are added to the expansion for such triangles:
+\fs{m3_ang}
+(\ve{I}-\ve{A}_n)^{-1} \approx
+        \ve{I} + \ve{A}_n + \ldots + \ve{A}_n^{N_i} +
+        \left(\ve{A}^*_n + \ldots + {\ve{A}_n^*}^{N_i} \right) \ve{A}_n^{N_i}
+\fe
+where $N_i$ is the normal order of the expansion and
+$\ve{A}^*$ only contains the elements of $\ve{A}$ that couple
+constraints within rigid triangles, all other elements are zero.
+In this manner the accuracy of angle constraints comes close
+to that of the other constraints, while the series of matrix vector
+multiplications required for determining the expansion
+only needs to be extended for a few constraint couplings.
+This procedure is described in the P-LINCS paper\cite{Hess2008a}.
 
 \subsubsection{The LINCS Parameters}
 The accuracy of LINCS depends on the number of matrices used
@@ -1804,19 +1833,19 @@ of the WHAT IF \cite{Whatif} manual.
 %} % Brace matches ifthenelse test for gmxlite
 
 \section{\normindex{Parallelization}}
-The CPU time for a simulation can be reduced by running the simulation
+The CPU time required for a simulation can be reduced by running the simulation
 in parallel over more than one processor or processor core.
 Ideally one would want to have linear scaling: running on $N$ processors/cores
-make the simulation $N$ times faster. In practice this can only be
+makes the simulation $N$ times faster. In practice this can only be
 achieved for a small number of processors. The scaling will depend
-a lot on the algorithms used. Also different algorithm can have different
-restrictions on the interaction range between atoms.
+a lot on the algorithms used. Also different algorithms can have different
+restrictions on the interaction ranges between atoms.
 In {\gromacs} we have two types of parallelization: particle decomposition
 and domain decomposition. Particle decomposition is only useful for
 a few special cases. Domain decomposition, which is the default algorithm,
-will always be faster and scales better.
+will always be faster and scale better.
 
-\subsection{\swapindex{Particle}{decomposition}}
+\section{\swapindex{Particle}{decomposition}}
 Particle decomposition, also called \swapindex{force}{decomposition},
 is the simplest type of decomposition. Here at the start of the simulation
 particles are assigned to processors. Then forces between particles
@@ -1825,33 +1854,32 @@ This decomposition requires that each processor knows the coordinates
 of at least half of the particles in the system.
 Thus for a high number of processors $N$, about $N \times N/2$ coordinates
 need to be communicated. Because of this quadratic relation
-particle decompostion does not scale well.
+particle decomposition does not scale well.
 
 Particle decomposition was the only method available before version 4
-of {\gromacs}. Now it is only useful in cases where domain decompisition
+of {\gromacs}. Now it is only useful in cases where domain decomposition
 does not work. This is for systems with long-range bonded interactions,
 especially NMR distance or orientation restraints.
-Starting with {\gromacs} 4 only whole molecules can be assigned
-to a processor.
+With particle decomposition only whole molecules can be assigned to a processor.
 
-\subsection{\swapindex{Domain}{decompostion}}
+\section{\swapindex{Domain}{decomposition}}
 Since most interactions in molecular simulations are local,
 domain decomposition is a natural way to decompose the system.
 In domain decomposition a spatial domain is assigned to each processor.
 Each processor will integrate the equations of motion for the particles
 that currently reside in its local domain. With domain decomposition
-there are two choices that have to be be: the division of the unit cell
+there are two choices that have to be made: the division of the unit cell
 in domains and the assignment of the forces to processors.
 Most molecular simulation packages use the half-shell method for assigning
-the forces. But there are two method which always require less communication:
+the forces. But there are two methods which always require less communication:
 the eighth shell\cite{Liem1991} and the midpoint\cite{Shaw2006} method.
 {\gromacs} currently uses the eighth shell method, but for certain systems
 or hardware architectures it might be advantageous to use the midpoint
 method. Therefore we might implement the midpoint method in the future.
-Most of the details of the domain decomposition
-in the {\gromacs} 4 paper\cite{Hess2008a}.
+Most of the details of the domain decomposition can be found
+in the {\gromacs} 4 paper\cite{Hess2008b}.
 
-\subsubsection{Coordinate and force communication}
+\subsection{Coordinate and force communication}
 In the most general case of a triclinic unit cell,
 the space in divided with a 1, 2 or 3-D grid in parallelepipeds
 which we call domain decomposition cells.
@@ -1884,17 +1912,17 @@ The coordinates are communicated by moving data along the ``negative''
 direction in $x$, $y$ or $z$ to the next neighbor. This can be done in one
 or multiple pulses. In \figref{ddcells} two pulses in $x$ are required,
 then one in $y$ and then one in $z$. The forces are communicated by
-reversing this procudure. See the {\gromacs} 4 paper for details on
-determining which non-bonded and bonded forces should be calculated on
-which node.
+reversing this procedure. See the {\gromacs} 4 paper\cite{Hess2008b}
+for details on determining which non-bonded and bonded forces
+should be calculated on which node.
 
-\subsubsection{Dynamic load balancing}
-When different processor have a different computational load
+\subsection{Dynamic load balancing}
+When different processors have a different computational load
 (load imbalance), all processors will have to wait for the one
-take takes the most time. One would like to avoid such a situation.
+that takes the most time. One would like to avoid such a situation.
 Load imbalance can occur due to three reasons:
 \begin{itemize}
-\item imhomogeneous particle distribution
+\item inhomogeneous particle distribution
 \item inhomogeneous interaction cost distribution (charged/uncharged,
   water/non-water due to {\gromacs} water innerloops)
 \item statistical fluctuation (only with small particle numbers)
@@ -1904,8 +1932,8 @@ where the volume of each domain decomposition cell
 can be adjusted {\em independently}.
 To achieve this the 2 or 3-D domain decomposition grids need to be
 staggered. \figref{ddtric} shows the most general case in 2-D.
-Due to the staggering one might required two distance checks
-for deciding if a charge groups needs to be communicated:
+Due to the staggering one might require two distance checks
+for deciding if a charge group needs to be communicated:
 a non-bonded distance and a bonded distance check.
 
 \begin{figure}
@@ -1919,19 +1947,40 @@ of a distance between following, staggered boundaries of cells.
 }
 \end{figure}
 
-\subsubsection{Constraints in parallel}
-With domain decomposition and molecules with bond constraints,
-constraints can cross cell boundaries. Therefore a parallel
-constraint algorithm is required. {\gromacs} uses the \normindex{P-LINCS}
-algorithm\cite{Hess2007a}, which is the parallel version
-of the \normindex{LINCS} algorithm\cite{Hess97}.
+By default {\tt mdrun} automatically turns on the dynamic load
+balancing during a simulation when the total performance loss
+due to the force calculation imbalance is 5\% or more.
+Note that the reported force load imbalance numbers might be higher,
+since the force calculation is only part of work that needs to be done
+during an integration step.
+The load imbalance is reported in the log file at log output steps
+and when the {\tt -v} option is used also on screen.
+The average load imbalance and the total performance loss
+due to load imbalance are reported at the end of the log file.
+
+There is one important parameter for the dynamic load balancing
+which is the minimum allowed scaling. By default each dimension
+of the domain decomposition cell can scale down by at least
+a factor of 0.8. For 3-D domain decomposition this allows cells
+to change their volume by about a factor of 0.5, which should allow
+for compensation of a load imbalance of 100\%.
+The required scaling can be changed with the {\tt -dds} option of {\tt mdrun}.
+
+\subsection{Constraints in parallel}
+\label{subsec:plincs}
+Since with domain decomposition parts of molecules can reside
+on different processors, bond constraints can cross cell boundaries.
+Therefore a parallel constraint algorithm is required.
+{\gromacs} uses the \normindex{P-LINCS} algorithm\cite{Hess2008a},
+which is the parallel version of the \normindex{LINCS} algorithm\cite{Hess97}
+(see \ssecref{lincs}).
 The P-LINCS procedure is illustrated in \figref{plincs}.
 When molecules cross the cell boundaries, atoms in such molecules
 up to LINCS order plus one bonds away are communicated over the cell boundaries.
 Then the normal LINCS algorithm can be applied to the local bonds
 plus the communicated ones. After this procedure the local bonds
 are correctly constrained, even though the extra communicated ones are not.
-One coordinate communication step is required the initial LINCS step
+One coordinate communication step is required for the initial LINCS step
 and one for each iteration. Forces do not need to be communicated.
 
 \begin{figure}
@@ -1947,7 +1996,7 @@ and the non-local constraints (dashed) for each of the three cells.
 }
 \end{figure}
 
-\subsubsection{Interaction ranges}
+\subsection{Interaction ranges}
 Domain decomposition takes advantage of the locality of interactions.
 This means that there will be limitations on the range of interactions.
 By default {\tt mdrun} tries to find the optimal balance between
@@ -1971,7 +2020,7 @@ virtual sites     & $r_{con}$ & {\tt mdrun -rcon} & 0 \\
 \dline
 \end{tabular}
 }
-\caption{The iteraction ranges with domain decomposition.}
+\caption{The interaction ranges with domain decomposition.}
 \label{tab:dd_ranges}
 \end{table}
 
@@ -1981,7 +2030,7 @@ The range for the bonded interactions is determined from the distance
 between bonded charge-groups in the starting configuration, 10\% is added
 for headroom. For the constraints the $r_{con}$ is determined by
 taking the maximum distance that LINCS order plus one bonds can cover
-when they all conect at angles of 120 degrees.
+when they all connect at angles of 120 degrees.
 The actual constraint communication is not limited by $r_{con}$,
 but by the minimum cell size $L_C$, which has the following lower limit:
 \beq
@@ -1991,36 +2040,37 @@ Without domain decomposition the system is actually allowed to scale
 beyond this limit when pressure scaling is used.
 Note that for triclinic boxes $L_C$ is not simply the box diagonal
 component divided by the number of cells in that direction,
-but it is the shortest distance between the trilinic cells borders.
+but it is the shortest distance between the triclinic cells borders.
 For rhombic dodecahedra this is a factor of $1/\sqrt{2}$ shorter
 along $x$ and $y$.
 
 When $r_{mb} > r_c$, {\tt mdrun} employs a smart algorithm to reduce
 the communication. Simply communicating all charge groups within
-$r_{MB}$ can increase the amount of communication enormously.
+$r_{mb}$ would increase the amount of communication enormously.
 Therefore only charge-groups that are connected by bonded interactions
 to charge groups which are not locally present are communicated.
-This leads to little extra communication, but also to a slighlty
+This leads to little extra communication, but also to a slightly
 increased cost for the domain decomposition setup.
 In some cases, e.g. coarse-grained simulations with a very short cut-off,
 one might want to set $r_{mb}$ by hand to reduce this cost.
 
-\subsubsection{Multiple-Program, Multiple-Data PME parallelization}
-Electostatics interactions are long range, therefore special
+\subsection{Multiple-Program, Multiple-Data PME parallelization}
+\label{subsec:mpmd_pme}
+Electrostatics interactions are long range, therefore special
 algorithms are used to avoid summation over many atom pairs.
 In {\gromacs} this is usually PME (\secref{pme}).
-Since with PME all particles see each other, global communication
+Since with PME all particles interact with each other, global communication
 is required. This will usually be the limiting factor on
 the scaling with domain decomposition.
-To reduce this problem, we have come up with
-a Multiple-Program, Multiple-Data approach\cite{Hess2008a}.
+To reduce the effect of this problem, we have come up with
+a Multiple-Program, Multiple-Data approach\cite{Hess2008b}.
 Here some processors are selected to do only the PME mesh calculation,
 while the other processors, called particle-particle (PP) nodes,
 do all the rest of the work.
 For rectangular boxes the optimal PP to PME node ratio is usually 3:1,
-for rombic dodecahedra usually 2:1.
+for rhombic dodecahedra usually 2:1.
 When the number of PME nodes is reduced by a factor of 4, the number
-of communication calls is reduced by a about factor 16.
+of communication calls is reduced by about a factor of 16.
 Or put differently, we can now scale to 4 times more nodes.
 In addition, for modern 4 or 8 core machines in a network
 the effective network bandwidth for PME is quadrupled,
@@ -2031,7 +2081,7 @@ on each machine during the PME calculations.
 \centerline{\includegraphics[width=12cm]{plots/mpmd_pme}}
 \caption{
 Example of 8 nodes without (left) and with (right) MPMD.
-The PME communiation (red arrows) is much higher on the left
+The PME communication (red arrows) is much higher on the left
 than on the right. For MPMD additional PP - PME coordinate
 and force communication (blue arrows) is required,
 but the total communication complexity is lower.
@@ -2042,18 +2092,25 @@ but the total communication complexity is lower.
 {\tt mdrun} will by default interleave the PP and PME nodes.
 If the processors are not number consecutively inside the machines,
 one might want to use {\tt mdrun -ddorder pp\_pme}.
-For machines with real a 3-D torus and a the proper setup software
-that assign the processors accordingly one should use
+For machines with a real 3-D torus and proper communication software
+that assigns the processors accordingly one should use
 {\tt mdrun -ddorder cartesian}.
 
 To optimize the performance one should usually set up the cut-off's
 and the PME grid such that the PME load is 25 to 33\% of the total
 calculation load. {\tt grompp} will print an estimate for this load
 at the end and also {\tt mdrun} calculates the same estimate
-to determine the optimal number of pme nodes to use.
+to determine the optimal number of PME nodes to use.
 For high parallelization it might be worth to optimize
 the PME load with the {\tt mdp} settings and/or the number
 of PME nodes with the {\tt -npme} option of {\tt mdrun}.
+For changing the electrostatics settings it is useful to know
+the accuracy of the electrostatics remains nearly constant
+when the Coulomb cut-off and the PME grid spacing are scaled
+by the same factor.
+Note that it is usually better to overestimate than to underestimate
+the number of PME nodes, since the number of PME nodes is smaller
+than the number of PP nodes, which leads to less total waiting time.
 
 Currently the PME domain decomposition is 1-D along the $x$ axis.
 To avoid superfluous communication of coordinates and forces
@@ -2063,21 +2120,19 @@ of PME nodes. By default {\tt mdrun} takes care of this issue.
 In the future we will support better parallelizable electrostatics
 implementations.
 
-\subsubsection{Domain decomposition flow chart}
+\subsection{Domain decomposition flow chart}
 In \figref{dd_flow} a flow chart is shown for domain decomposition
-will all possible communication for different algorithms.
+with all possible communication for different algorithms.
 For simpler simulations the same flow chart applies,
-but simply without the algorithms and communiction for
+but simply without the algorithms and communication for
 the algorithms which are not used.
 
 \begin{figure}
 \centerline{\includegraphics[width=12cm]{plots/flowchart}}
 \caption{
-Example of 8 nodes without (left) and with (right) MPMD.
-The PME communiation (red arrows) is much higher on the left
-than on the right. For MPMD additional PP - PME coordinate
-and force communication (blue arrows) is required,
-but the total communication complexity is lower.
+Flow chart showing the algorithms and communication (arrows)
+for a standard MD simulation with virtual sites, constraints
+and separate PME-mesh nodes.
 \label{fig:dd_flow}
 }
 \end{figure}

@@ -2290,6 +2290,7 @@ The PME algorithm scales as $N \log(N)$, and is substantially faster
 than ordinary Ewald summation on medium to large systems. On very
 small systems it might still be better to use Ewald to avoid the
 overhead in setting up grids and transforms.
+For the parallelization of PME see the section on MPMD PME (\ssecref{mpmd_pme}).
 
 \subsubsection{Using PME}
 To use Particle-mesh Ewald summation in {\gromacs}, specify the
