@@ -176,6 +176,14 @@ typedef struct gmx_pme {
     rvec *bufv;             /* Communication buffer */
     real *bufr;             /* Communication buffer */
     int  buf_nalloc;        /* The communication buffer size */
+	
+	/* work data for solve_pme */
+	int      maxkz;
+	real *   work_mhz;
+	real *   work_m2;
+	real *   work_denom;
+	real *   work_tmp1;
+	real *   work_m2inv;
 } t_gmx_pme;
 
 /* The following stuff is needed for signal handling on the PME nodes. 
@@ -796,6 +804,28 @@ void gmx_sum_qgrid(gmx_pme_t gmx,t_commrec *cr,t_fftgrid *grid,int direction)
 #endif
 }
 
+/* This has to be a macro to enable full compiler optimization with xlC (and probably others too) */
+#define DO_BSPLINE(order)                            \
+for(ithx=0; (ithx<order); ithx++)                    \
+{                                                    \
+    index_x = la12*i0[ithx];                         \
+    valx    = qn*thx[ithx];                          \
+                                                     \
+    for(ithy=0; (ithy<order); ithy++)                \
+    {                                                \
+        valxy    = valx*thy[ithy];                   \
+        index_xy = index_x+la2*j0[ithy];             \
+                                                     \
+        for(ithz=0; (ithz<order); ithz++)            \
+        {                                            \
+            index_xyz       = index_xy+k0[ithz];     \
+            ptr[index_xyz] += valxy*thz[ithz];       \
+        }                                            \
+    }                                                \
+}
+
+
+
 static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc, 
                               t_fftgrid *grid)
 {
@@ -846,38 +876,66 @@ static void spread_q_bsplines(gmx_pme_t pme, pme_atomcomm_t *atc,
     jj0   = pme->nny + ny2 + 1 - order/2;
     kk0   = pme->nnz + nz2 + 1 - order/2;
     
-    for(nn=0; (nn<atc->n); nn++) {
-        n = nn;
-        qn     = atc->q[n];
-        idxptr = atc->idx[n];
-        
-        if (qn != 0) {
-            norder  = n*pme->pme_order;
-            
-            /* Pointer arithmetic alert, next six statements */
-            i0  = ii0 + idxptr[XX]; 
-            j0  = jj0 + idxptr[YY];
-            k0  = kk0 + idxptr[ZZ];
-            thx = atc->theta[XX] + norder;
-            thy = atc->theta[YY] + norder;
-            thz = atc->theta[ZZ] + norder;
-            
-            for(ithx=0; (ithx<order); ithx++) {
-                index_x = la12*i0[ithx];
-                valx    = qn*thx[ithx];
-                
-                for(ithy=0; (ithy<order); ithy++) {
-                    valxy    = valx*thy[ithy];
-                    index_xy = index_x+la2*j0[ithy];
-                    
-                    for(ithz=0; (ithz<order); ithz++) {
-                        index_xyz       = index_xy+k0[ithz];
-                        ptr[index_xyz] += valxy*thz[ithz];
-                    }
-                }
-            }
-        }
+    switch (order) 
+	{
+		case 4:
+			for(nn=0; (nn<atc->n);nn++) 
+			{
+				n      = nn;
+				qn     = atc->q[n];
+				idxptr = atc->idx[n];
+
+				if(qn != 0) 
+				{
+					norder = n*4;
+					
+					/* Pointer arithmetic alert, next six statements */
+					i0  = ii0 + idxptr[XX]; 
+					j0  = jj0 + idxptr[YY];
+					k0  = kk0 + idxptr[ZZ];
+					thx = atc->theta[XX] + norder;
+					thy = atc->theta[YY] + norder;
+					thz = atc->theta[ZZ] + norder;
+					
+#if (defined __IBMC__ || defined __IBMCPP__) 
+					/* Magic optimization pragma proposed by Mathias Puetz */
+#pragma ibm independent_loop
+#endif
+					DO_BSPLINE(4);
+				}
+			}
+			break;
+			
+		default:
+			for(nn=0; (nn<atc->n); nn++) 
+			{
+				n = nn;
+				qn     = atc->q[n];
+				idxptr = atc->idx[n];
+				
+				if (qn != 0) 
+				{
+					norder  = n*order;
+					
+					/* Pointer arithmetic alert, next six statements */
+					i0  = ii0 + idxptr[XX]; 
+					j0  = jj0 + idxptr[YY];
+					k0  = kk0 + idxptr[ZZ];
+					thx = atc->theta[XX] + norder;
+					thy = atc->theta[YY] + norder;
+					thz = atc->theta[ZZ] + norder;
+			
+#if (defined __IBMC__ || defined __IBMCPP__) 
+					/* Magic optimization pragma proposed by Mathias Puetz */
+#pragma ibm independent_loop
+#endif
+					DO_BSPLINE(order);
+				}
+			}
+			break;
+			
     }
+	
 }
 
 real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
@@ -886,17 +944,22 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
     /* do recip sum over local cells in grid */
     t_complex *ptr,*p0;
     int     nx,ny,nz,nx2,ny2,nz2,la2,la12;
-    int     kx,ky,kz,maxkx,maxky,maxkz,kystart=0,kyend=0;
-    real    m2,mx,my,mz;
+    int     kx,ky,kz,maxkx,maxky,maxkz,kystart=0,kyend=0,kzstart;
+    real    mx,my,mz;
     real    factor=M_PI*M_PI/(ewaldcoeff*ewaldcoeff);
     real    ets2,struct2,vfactor,ets2vf;
     real    eterm,d1,d2,energy=0;
-    real    denom;
     real    bx,by;
-    real    mhx,mhy,mhz;
+    real    mhx,mhy;
     real    virxx=0,virxy=0,virxz=0,viryy=0,viryz=0,virzz=0;
     real    rxx,ryx,ryy,rzx,rzy,rzz;
-    
+	real    *mhz,*m2,*denom,*tmp1,*m2inv;
+
+#if (defined __IBMC__ || defined __IBMCPP__) 
+	/* xlc optimization proposed by Mathias Puetz */
+#pragma disjoint(*mhz,*m2,*denom,*tmp1,*m2inv,*p0)
+#endif
+	
     unpack_fftgrid(grid,&nx,&ny,&nz,
                    &nx2,&ny2,&nz2,&la2,&la12,FALSE,(real **)&ptr);
     
@@ -910,7 +973,24 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
     maxkx = (nx+1)/2;
     maxky = (ny+1)/2;
     maxkz = nz/2+1;
-    
+
+	if(maxkz > pme->maxkz)
+	{
+		/* At the moment the dimensions are actually fixed, but this is for the future... */
+		srenew(pme->work_mhz,maxkz);
+		srenew(pme->work_m2,maxkz);
+		srenew(pme->work_denom,maxkz);
+		srenew(pme->work_tmp1,maxkz);
+		srenew(pme->work_m2inv,maxkz);
+		pme->maxkz=maxkz;
+	}
+	
+	mhz   = pme->work_mhz;
+	m2    = pme->work_m2;
+	denom = pme->work_denom;
+	tmp1  = pme->work_tmp1;
+	m2inv = pme->work_m2inv;	
+	
     if (pme->ndecompdim > 0) { 
         /* transpose X & Y and only sum local cells */
 #ifdef GMX_MPI
@@ -954,37 +1034,57 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
                 p0 = ptr + INDEX(kx,ky,0); /* Pointer Arithmetic */
             }
             
-            for(kz=0; (kz<maxkz); kz++,p0++)  {
-                if ((kx==0) && (ky==0) && (kz==0)) {
-                    continue;
-                }
+            if ((kx>0) || (ky>0)) {
+                kzstart = 0;
+            } else {
+                kzstart = 1;
+            }
+			
+            for(kz=kzstart,mz=kzstart; (kz<maxkz); kz++,mz+=1.0)  {
+                mhz[kz]   = mx * rzx + my * rzy + mz * rzz;
+                m2[kz]    = mhx*mhx+mhy*mhy+mhz[kz]*mhz[kz];
+                denom[kz] = m2[kz]*bx*by*pme->bsp_mod[ZZ][kz];
+                tmp1[kz]  = -factor*m2[kz];
+            }
+			
+            for(kz=kzstart; (kz<maxkz); kz++) m2inv[kz] = 1.0/m2[kz];
+            for(kz=kzstart; (kz<maxkz); kz++) denom[kz] = 1.0/denom[kz];
+            for(kz=kzstart; (kz<maxkz); kz++) tmp1[kz]  = exp(tmp1[kz]);
+			
+            for(kz=kzstart; (kz<maxkz); kz++,p0++)  {
                 d1      = p0->re;
                 d2      = p0->im;
-                mz      = kz;
-                
-                mhz = mx * rzx + my * rzy + mz * rzz;
-                
-                m2      = mhx*mhx+mhy*mhy+mhz*mhz;
-                denom   = m2*bx*by*pme->bsp_mod[ZZ][kz];
-                eterm   = ONE_4PI_EPS0*exp(-factor*m2)/(pme->epsilon_r*denom);
+				
+                eterm    = ONE_4PI_EPS0/pme->epsilon_r*tmp1[kz]*denom[kz];
+				
                 p0->re  = d1*eterm;
                 p0->im  = d2*eterm;
-                
-                struct2 = d1*d1+d2*d2;
-                if ((kz > 0) && (kz < (nz+1)/2)) {
-                    struct2 *= 2;
-                }
-                ets2     = eterm*struct2;
-                vfactor  = (factor*m2+1)*2.0/m2;
+				
+                struct2 = 2.0*(d1*d1+d2*d2);
+				
+                tmp1[kz] = eterm*struct2;
+            }
+			
+            /* 0.5 correction for corner points */
+			
+            if (kzstart == 0)
+                tmp1[0] *= 0.5;
+			
+            if (((nz+1)/2) < maxkz)
+                tmp1[((nz+1)/2)] *= 0.5;
+			
+            for(kz=kzstart; (kz<maxkz); kz++)  {
+                ets2     = tmp1[kz];
+                vfactor  = (factor*m2[kz]+1.0)*2.0*m2inv[kz];
                 energy  += ets2;
-                
+				
                 ets2vf   = ets2*vfactor;
                 virxx   += ets2vf*mhx*mhx-ets2;
-                virxy   += ets2vf*mhx*mhy;   
-                virxz   += ets2vf*mhx*mhz;  
+                virxy   += ets2vf*mhx*mhy;
+                virxz   += ets2vf*mhx*mhz[kz];
                 viryy   += ets2vf*mhy*mhy-ets2;
-                viryz   += ets2vf*mhy*mhz;
-                virzz   += ets2vf*mhz*mhz-ets2;
+                viryz   += ets2vf*mhy*mhz[kz];
+                virzz   += ets2vf*mhz[kz]*mhz[kz]-ets2;
             }
         }
     }
@@ -1000,10 +1100,45 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
     vir[XX][YY] = vir[YY][XX] = 0.25*virxy;
     vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
     vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
+	
+    /* free temporary helper arrays */
+	
+    free(mhz);
+    free(m2);
+    free(m2inv);
+    free(denom);
+    free(tmp1);
     
     /* This energy should be corrected for a charged system */
     return(0.5*energy);
 }
+
+#define DO_FSPLINE(order)                      \
+for(ithx=0; (ithx<order); ithx++)              \
+{           								   \
+    index_x = la12*i0[ithx];                   \
+    tx      = thx[ithx];                       \
+    dx      = dthx[ithx];                      \
+											   \
+    for(ithy=0; (ithy<order); ithy++)          \
+	{										   \
+        index_xy = index_x+la2*j0[ithy];       \
+        ty       = thy[ithy];                  \
+        dy       = dthy[ithy];                 \
+        fxy1     = fz1 = 0;                    \
+                                               \
+        for(ithz=0; (ithz<order); ithz++)      \
+		{     								   \
+		gval  = ptr[index_xy+k0[ithz]];        \
+		fxy1 += thz[ithz]*gval;                \
+		fz1  += dthz[ithz]*gval;               \
+		}                                      \
+		fx += dx*ty*fxy1;                      \
+		fy += tx*dy*fxy1;                      \
+		fz += tx*ty*fz1;                       \
+	}                                          \
+}
+
 
 void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
                        bool bClearF,pme_atomcomm_t *atc,real scale)
@@ -1066,27 +1201,16 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
             dthy = atc->dtheta[YY] + norder;
             dthz = atc->dtheta[ZZ] + norder;
             
-            for(ithx=0; (ithx<order); ithx++) {
-                index_x = la12*i0[ithx];
-                tx      = thx[ithx];
-                dx      = dthx[ithx];
-                
-                for(ithy=0; (ithy<order); ithy++) {
-                    index_xy = index_x+la2*j0[ithy];
-                    ty       = thy[ithy];
-                    dy       = dthy[ithy];
-                    fxy1     = fz1 = 0;
-                    
-                    for(ithz=0; (ithz<order); ithz++) {
-                        gval  = ptr[index_xy+k0[ithz]];
-                        fxy1 += thz[ithz]*gval;
-                        fz1  += dthz[ithz]*gval;
-                    }
-                    fx += dx*ty*fxy1;
-                    fy += tx*dy*fxy1;
-                    fz += tx*ty*fz1; 
-                } 
+            switch(order)
+			{
+				case 4 :
+					DO_FSPLINE(4);
+					break;
+				default:
+					DO_FSPLINE(order);
+					break;
             }
+			
             atc->f[n][XX] += -qn*( fx*nx*rxx );
             atc->f[n][YY] += -qn*( fx*nx*ryx + fy*ny*ryy );
             atc->f[n][ZZ] += -qn*( fx*nx*rzx + fy*ny*rzy + fz*nz*rzz );
@@ -1102,8 +1226,6 @@ void gather_f_bsplines(gmx_pme_t pme,t_fftgrid *grid,
      * in parallel. Don't know how important it is?  EL 990726
      */
 }
-
-
 void make_bsplines(splinevec theta,splinevec dtheta,int order,int nx,int ny,
 		   int nz,rvec fractx[],int nr,real charge[],
 		   bool bFreeEnergy)
@@ -1255,10 +1377,17 @@ int gmx_pme_destroy(FILE *log,gmx_pme_t *pmedata)
   sfree((*pmedata)->nnx);
   sfree((*pmedata)->nny);
   sfree((*pmedata)->nnz);
+	
   done_fftgrid((*pmedata)->gridA);
   if((*pmedata)->gridB)
     done_fftgrid((*pmedata)->gridB);
-    
+
+  sfree((*pmedata)->work_mhz);
+  sfree((*pmedata)->work_m2);
+  sfree((*pmedata)->work_denom);
+  sfree((*pmedata)->work_tmp1);
+  sfree((*pmedata)->work_m2inv);
+	
   sfree(*pmedata);
   *pmedata = NULL;
   
@@ -1535,6 +1664,13 @@ int gmx_pme_init(gmx_pme_t *pmedata,t_commrec *cr,
         pme_realloc_atomcomm_things(&pme->atc[0]);
     }
     
+	pme->maxkz = pme->nkz/2+1;
+	snew(pme->work_mhz,pme->maxkz);
+	snew(pme->work_m2,pme->maxkz);
+	snew(pme->work_denom,pme->maxkz);
+	snew(pme->work_tmp1,pme->maxkz);
+	snew(pme->work_m2inv,pme->maxkz);
+
     *pmedata = pme;
     
     return 0;
