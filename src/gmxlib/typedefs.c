@@ -179,7 +179,7 @@ void stupid_fill_blocka(t_blocka *grp,int natom)
     grp->a[i]=i;
   grp->nra=natom;
   
-  grp->nalloc_index = natom;
+  grp->nalloc_index = natom + 1;
   snew(grp->index,grp->nalloc_index);
   for(i=0; (i<=natom); i++)
     grp->index[i]=i;
