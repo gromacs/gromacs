@@ -1823,8 +1823,20 @@ sampling efficiency with respect to usual MD
 to sample its available configuration space more systematically than
 in a diffusion-like path that proteins usually take.
 
-All available constraint types are described in the appropriate chapter
-of the WHAT IF \cite{Whatif} manual.
+Another possiblity to enhance sampling is \normindex{flooding}.
+Here a flooding potential is added to certain
+(collective) degrees of freedom to expell the system out
+of a region of phase space.
+
+The procedure for essential dynamics sampling or flooding is as follows.
+First the eigenvectors and eigenvalues need to be determined
+using covariance analysis ({\tt g\_covar})
+or normal modes analysis ({\tt g\_nmeig}).
+This information is fed into {\tt make\_edi}
+which has many options for selecting vectors and setting parameters,
+see \appref{progman} for the manual page of {\tt make\_edi}.
+The generated {\tt edi} input file is then passed to {\tt mdrun}.
+
 } % Brace matches ifthenelse test for gmxlite
 
 % This stuff is quite outdated now.
