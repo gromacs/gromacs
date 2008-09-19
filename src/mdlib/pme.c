@@ -1101,14 +1101,6 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
     vir[XX][ZZ] = vir[ZZ][XX] = 0.25*virxz;
     vir[YY][ZZ] = vir[ZZ][YY] = 0.25*viryz;
 	
-    /* free temporary helper arrays */
-	
-    free(mhz);
-    free(m2);
-    free(m2inv);
-    free(denom);
-    free(tmp1);
-    
     /* This energy should be corrected for a charged system */
     return(0.5*energy);
 }
