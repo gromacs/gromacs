@@ -219,6 +219,7 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     snew(mtop,1);
     init_mtop(mtop);
     mtop->natoms = natoms;
+    /* Make one moltype that contains the whol system */
     mtop->nmoltype = 1;
     snew(mtop->moltype,mtop->nmoltype);
     molt = &mtop->moltype[0];
@@ -226,6 +227,16 @@ void do_nsgrid(FILE *fp,bool bVerbose,
     molt->atoms = *atoms;
     stupid_fill_block(&molt->cgs,mtop->natoms,FALSE);
     stupid_fill_blocka(&molt->excls,natoms);
+    /* Make one molblock for the whole system */
+    mtop->nmolblock = 1;
+    snew(mtop->molblock,mtop->nmolblock);
+    mtop->molblock[0].type = 0;
+    mtop->molblock[0].nmol = 1;
+    mtop->molblock[0].natoms_mol = natoms;
+    /* Initialize a single energy group */
+    mtop->groups.grps[egcENER].nr = 1;
+    mtop->groups.ngrpnr[egcENER]  = 0;
+    mtop->groups.grpnr[egcENER]   = NULL;
 
     ffp = &mtop->ffparams;
   
