@@ -700,7 +700,16 @@ equilibration purposes the coupling time can be taken quite short
 ({\eg} 0.01 ps), but for reliable equilibrium runs it can be taken much
 longer ({\eg} 0.5 ps) in which case it hardly influences the
 conservative dynamics. 
- 
+
+The Berendsen thermostat suppresses the fluctuations of the kinetic energy.
+This means that, strictly speaking, one does not generate
+a proper canonical ensemble.
+For very small systems the sampling will indeed be incorrect.
+But for larger systems most properties will not be affected significantly,
+except for the distribution of the kinetic energy itself.
+A similar thermostat which does produce a correct ensemble
+is the velocity rescaling thermostat described below.
+
 The heat flow into or out of the system is effected by scaling the
 velocities of each particle every step with a time-dependent factor
 $\lambda$, given by
@@ -727,15 +736,16 @@ the term 'temperature coupling time constant', we mean the parameter
 the range of 0.8 $<= \lambda <=$ 1.25, to avoid scaling by very large
 numbers which may crash the simulation. In normal use, 
 $\lambda$ will always be much closer to 1.0.
-  
-Strictly, for computing the scaling factor the temperature $T$ is
-needed at time $t$, but this is not available in the algorithm. In
-practice, the temperature at the previous time step is used (as
-indicated in \eqnref{lambda}), which is perfectly all right since the
-coupling time constant is much longer than one time step. The
-Berendsen algorithm is stable up to $\tau_T \approx \Dt$.  [A simple
-steepest-descent minimizer can be implemented by setting $T=0$ and
-$\tau_T \ll \delta t$.]
+
+\subsubsection{\normindex{Velocity rescaling thermostat}}
+The velocity rescaling thermostat\cite{Bussi2007a} is essentially a Berendsen
+thermostat (see above) with an additional stochastic term which ensures
+a correct kinetic energy distribution. There are no additional parameters.
+This thermostat produces a correct canonical ensemble and still has
+the advantage of the Berendsen thermostat: first order decay of
+temperature deviations and no oscillations.
+When an $NVT$ ensemble is used, the conserved energy quantity
+is written to the energy and log file.
 
 \ifthenelse{\equal{\gmxlite}{1}}{}{
 \subsubsection{\swapindex{Nos{\'e}-Hoover}{temperature coupling}}
