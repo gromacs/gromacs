@@ -130,7 +130,7 @@ static int guess_npme(FILE *fplog,gmx_mtop_t *mtop,t_inputrec *ir,matrix box,
     if (npme > nnodes/2)
     {
         gmx_fatal(FARGS,"Could not find an appropriate number of separate PME nodes. i.e. >= %5f*#nodes (%d) and <= #nodes/2 (%d) and reasonable performance wise (grid_x=%d, grid_y=%d).\n"
-                  "Use the -npme option of mdrun or change the number of processors or the PME grid dimensions.",
+                  "Use the -npme option of mdrun or change the number of processors or the PME grid dimensions, see the manual for details.",
                   ratio,(int)(0.95*ratio*nnodes+0.5),nnodes/2,ir->nkx,ir->nky);
         /* Keep the compiler happy */
         npme = 0;
