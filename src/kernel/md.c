@@ -478,7 +478,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel,step_ene;
   char       *fn_cpt;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
-  time_t     start_t;
+  time_t     start_t,run_t;
   real       t,t0,lam0;
   bool       bGStatEveryStep,bGStat;
   bool       bNS,bCheckNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
@@ -1104,7 +1104,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bF   = do_per_step(step,ir->nstfout);
     bXTC = do_per_step(step,ir->nstxtcout);
     if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD) {
-      bCPT = (chkpt > 0 || bLastStep);
+      bCPT = ((chkpt < 0 && do_per_step(step,ir->nstenergy)) || chkpt > 0 ||
+	       bLastStep);
       chkpt = 0;
     } else {
       bCPT = FALSE;
@@ -1279,13 +1280,22 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       bCheckNS = bNS;
     }
 
+    run_t = time(NULL) - start_t;
     if (MASTER(cr) && (cpt_period >= 0 &&
 		       (cpt_period == 0 || 
-			time(NULL) - start_t >= nchkpt*cpt_period*60.0))) {
+			run_t >= nchkpt*cpt_period*60.0))) {
       if (chkpt == 0) {
 	nchkpt++;
       }
-      chkpt = 1;
+      /* Write checkpoint at the next energy output step (if there is one),
+       * or after 0.2*cpt_period at any step.
+       */
+      if (cpt_period == 0 || ir->nstenergy == 0 ||
+	  run_t >= (nchkpt + 0.2)*cpt_period*60.0) {
+	chkpt = 1;
+      } else {
+	chkpt = -1;
+      }
     }
 
     /* With exact energy averages (bGStatEveryStep=TRUE)
@@ -1297,7 +1307,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	 * flag even for the first run, though.
      */
     do_ene = (do_per_step(step,ir->nstenergy) ||
-	      (bGStatEveryStep && !bAppend && (bFirstStep || bLastStep || bCPT)));
+	      (bGStatEveryStep && ((bFirstStep && !bAppend) ||
+				   bLastStep || bCPT)));
 
     if (do_ene || do_log) {
       bGStat = TRUE;
