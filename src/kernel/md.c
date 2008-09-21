@@ -1271,12 +1271,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       chkpt = 1;
     }
 
-    /* With exact energy averages (bGStatEveryStep=TRUE)
-     * we should also write energy at first, last and continuation steps
-     * such that we can get exact averages over a series of runs.
-     */
-    do_ene = (do_per_step(step,ir->nstenergy) ||
-	      (bGStatEveryStep && (bFirstStep || bLastStep || bCPT)));
+    /* The checkpoint files now contain the energies (and averages/sums) too,
+     * so we no longer need to write extra energy frames.
+	 */
+	  do_ene = do_per_step(step,ir->nstenergy);
 
     if (do_ene || do_log) {
       bGStat = TRUE;
