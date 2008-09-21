@@ -740,7 +740,12 @@ $\lambda$ will always be much closer to 1.0.
 \subsubsection{\normindex{Velocity rescaling thermostat}}
 The velocity rescaling thermostat\cite{Bussi2007a} is essentially a Berendsen
 thermostat (see above) with an additional stochastic term which ensures
-a correct kinetic energy distribution.
+a correct kinetic energy distribution:
+\beq
+\de K = (K_0 - K) \frac{\de t}{\tau_T} + 2 \sqrt{\frac{K K_0}{N_f}} \frac{\de W}{\sqrt{\tau_T}}
+\label{eqn:vrescale}
+\eeq
+where $K$ is the kinetic energy, $N_f$ the number of degrees of freedom and $\de W$ a Wiener process.
 There are no additional parameters, except for a random seed.
 This thermostat produces a correct canonical ensemble and still has
 the advantage of the Berendsen thermostat: first order decay of
