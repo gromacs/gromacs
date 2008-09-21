@@ -620,20 +620,6 @@ if test "$with_gsl" = "yes"; then
 #
 fi
 
-# Class Library For Numbers Module
-AC_ARG_WITH(cln,
- [  --with-cln                    Class Library For Numbers Module],,with_cln=no)
-
-######
-if test "$with_cln" = "yes"; then
-  AC_LANG_PUSH([C++])
-#  AC_REQUIRE([AC_PROG_CXX])
-#  AC_REQUIRE([_LT_AC_PROG_CXXCPP])
-  AC_CHECK_HEADERS([cln/cln.h],
-# header found, check for libraries 
-  AC_CHECK_LIB(cln,main))
-  AC_LANG_POP([C++])
-fi
 
 AC_ARG_WITH(xml,
  [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
