@@ -1301,10 +1301,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* With exact energy averages (bGStatEveryStep=TRUE)
      * we should also write energy at first, last and continuation steps
      * such that we can get exact averages over a series of runs.
-	 *
-	 * This is not necessary when we use the append-file-feature, so we avoid
-	 * the extra frame in that case. Note that you have to specify the -append
-	 * flag even for the first run, though.
+     * We therefore try to checkpoint at energy output frames.
+     *
+     * This is not necessary when we use the append-file-feature, so we avoid
+     * the extra first frame in that case.
      */
     do_ene = (do_per_step(step,ir->nstenergy) ||
 	      (bGStatEveryStep && ((bFirstStep && !bAppend) ||
