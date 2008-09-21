@@ -119,6 +119,16 @@ extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
  * node and stored in grps->cosacc.mvcos.
  */
 
+extern void
+init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir);
+
+extern void
+update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind);
+
+extern void
+restore_ekinstate_from_state(t_commrec *cr,
+			     gmx_ekindata_t *ekind,ekinstate_t *ekinstate);
+
 extern real run_aver(real old,real cur,int step,int nmem);
 
 extern void berendsen_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt);

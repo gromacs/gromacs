@@ -632,6 +632,53 @@ void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
   inc_nrnb(nrnb,eNR_EKIN,homenr);
 }
 
+void init_ekinstate(ekinstate_t *ekinstate,t_inputrec *ir)
+{
+  ekinstate->ekinh_n = ir->opts.ngtc;
+  snew(ekinstate->ekinh,ekinstate->ekinh_n);
+  ekinstate->dekindl = 0;
+  ekinstate->mvcos   = 0;
+}
+
+void
+update_ekinstate(ekinstate_t *ekinstate,gmx_ekindata_t *ekind)
+{
+  int i;
+  
+  for(i=0;i<ekinstate->ekinh_n;i++) {
+    copy_mat(ekind->tcstat[i].ekinh,ekinstate->ekinh[i]);
+  }
+  ekinstate->dekindl = ekind->dekindl;
+  ekinstate->mvcos = ekind->cosacc.mvcos;
+  
+}
+
+void
+restore_ekinstate_from_state(t_commrec *cr,
+			     gmx_ekindata_t *ekind,ekinstate_t *ekinstate)
+{
+  int i,n;
+
+  if (MASTER(cr)) {
+    for(i=0;i<ekinstate->ekinh_n;i++) {
+      copy_mat(ekinstate->ekinh[i],ekind->tcstat[i].ekinh);
+    }
+    ekind->dekindl = ekinstate->dekindl;
+    ekind->cosacc.mvcos = ekinstate->mvcos;
+    n = ekinstate->ekinh_n;
+  }
+ 
+  if (PAR(cr)) {
+    gmx_bcast(sizeof(n),&n,cr);
+    for(i=0;i<n;i++) {
+      gmx_bcast(DIM*DIM*sizeof(ekind->tcstat[i].ekinh[0][0]),
+		ekind->tcstat[i].ekinh[0],cr);
+    }
+    gmx_bcast(sizeof(ekind->dekindl),&ekind->dekindl,cr);
+    gmx_bcast(sizeof(ekind->cosacc.mvcos),&ekind->cosacc.mvcos,cr);
+  }
+}
+
 /* Static variables for the deform algorithm */
 static int    deformref_step;
 static matrix deformref_box;

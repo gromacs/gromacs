@@ -1,4 +1,5 @@
-/*
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
+ *
  * $Id$
  * 
  *                This source code is part of
@@ -656,53 +657,49 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 }
 
 void 
-init_state_energyhistory(t_state * state)
+init_energyhistory(energyhistory_t * enerhist)
 {
-	
-	state->enerhist.nener = 0;
-	
-	state->enerhist.ener_ave = NULL;
-	state->enerhist.ener_sum = NULL;		
+    enerhist->nener = 0;
+
+    enerhist->ener_ave = NULL;
+    enerhist->ener_sum = NULL;		
 }
 
 void
-update_state_energyhistory(t_state * state,t_mdebin * mdebin)
+update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin)
 {
-	int i;
-	
-	/* Check if we need to allocate first */
-	if(state->enerhist.nener < mdebin->ebin->nener)
-	{
-		state->enerhist.nener = mdebin->ebin->nener;
-		snew(state->enerhist.ener_ave,state->enerhist.nener);
-		snew(state->enerhist.ener_sum,state->enerhist.nener);
+    int i;
+    
+    /* Check if we need to allocate first */
+    if(enerhist->nener < mdebin->ebin->nener)
+    {
+		enerhist->nener = mdebin->ebin->nener;
+		snew(enerhist->ener_ave,enerhist->nener);
+		snew(enerhist->ener_sum,enerhist->nener);
 	}
 	
-	for(i=0;i<state->enerhist.nener;i++)
+	for(i=0;i<enerhist->nener;i++)
 	{
-		state->enerhist.ener_ave[i] = mdebin->ebin->e[i].eav;
-		state->enerhist.ener_sum[i] = mdebin->ebin->e[i].esum;
+		enerhist->ener_ave[i] = mdebin->ebin->e[i].eav;
+		enerhist->ener_sum[i] = mdebin->ebin->e[i].esum;
 	}
 }
 
-
-
 void
-restore_energyhistory_from_state(t_mdebin *  mdebin,
-								 t_state *   state)
+restore_energyhistory_from_state(t_mdebin * mdebin,energyhistory_t * enerhist)
 {
-	int i;
-	
-	if(mdebin->ebin->nener != state->enerhist.nener)
-	{
-		gmx_fatal(FARGS,"Mismatch between number of energies in run input (%d) and checkpoint file (%d).",
-				  mdebin->ebin->nener,state->enerhist.nener);
+    int i;
+
+    if (mdebin->ebin->nener != enerhist->nener)
+    {
+        gmx_fatal(FARGS,"Mismatch between number of energies in run input (%d) and checkpoint file (%d).",
+                  mdebin->ebin->nener,enerhist->nener);
 	}
-	
-	for(i=0;i<state->enerhist.nener;i++)
+    
+	for(i=0;i<enerhist->nener;i++)
 	{
-		mdebin->ebin->e[i].eav  = state->enerhist.ener_ave[i];
-		mdebin->ebin->e[i].esum = state->enerhist.ener_sum[i];
+		mdebin->ebin->e[i].eav  = enerhist->ener_ave[i];
+		mdebin->ebin->e[i].esum = enerhist->ener_sum[i];
 	}
 }
 

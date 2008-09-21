@@ -55,7 +55,6 @@ enum { estLAMBDA,
        estX,   estV,       estSDX,  estCGP,       estLD_RNG, estLD_RNGI,
        estDISRE_INITF, estDISRE_RM3TAV,
        estORIRE_INITF, estORIRE_DTAV,
-       estENERGY_N, estENERGY_AVER, estENERGY_SUM,
        estNR };
 
 /* The names of the state entries, defined in src/gmxib/checkpoint.c */
@@ -70,6 +69,20 @@ typedef struct
   int  norire_Dtav;    /* The number of matrix element in dtav (npair*5)   */
   real *orire_Dtav;    /* The time averaged orientation tensors            */
 } history_t;
+
+/* Struct used for checkpointing only.
+ * This struct would not be required with unlimited precision.
+ * But because of limited precision, the COM motion removal implementation
+ * can cause the kinetic energy in the MD loop to differ by a few bits from
+ * the kinetic energy one would determine from state.v.
+ */
+typedef struct
+{
+  int      ekinh_n;
+  tensor * ekinh;
+  real     dekindl;
+  real     mvcos;
+} ekinstate_t;
 
 typedef struct
 {
@@ -103,6 +116,9 @@ typedef struct
   int           *ld_rngi; /* RNG index                                  */
 
   history_t     hist;   /* Time history for restraints                  */
+
+  ekinstate_t   ekinstate; /* The state of the kinetic energy data      */
+
   energyhistory_t  enerhist; /* Energy history for statistics           */
 	
   int           ddp_count; /* The DD partitioning count for this state  */

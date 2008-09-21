@@ -53,6 +53,8 @@
 #include "names.h"
 #include "calcgrid.h"
 #include "gmx_random.h"
+#include "update.h"
+#include "mdebin.h"
 
 #define BUFSIZE	256
 
@@ -124,7 +126,10 @@ static void set_state_entries(t_state *state,t_inputrec *ir,int nnodes)
       state->flags |= (1<<estTC_INT);
     }
   }
-  state->flags |= (1<<estENERGY_N) | (1<<estENERGY_AVER) | (1<<estENERGY_SUM); 
+
+  init_ekinstate(&state->ekinstate,ir);
+
+  init_energyhistory(&state->enerhist);
 }
 
 void init_single(FILE *fplog,t_inputrec *inputrec,
