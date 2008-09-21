@@ -484,7 +484,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bool       bNS,bCheckNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep;
   bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
-	     bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
+	         bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
   bool       bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
   int        i,m,status;
@@ -516,6 +516,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   double      tcount=0;
   bool        bHaveConstr=FALSE,bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
+  bool        bAppend;
   real        temp0,mu_aver=0,dvdl;
   int         a0,a1,gnx=0,ii;
   atom_id     *grpindex=NULL;
@@ -531,7 +532,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bGlas    = (Flags & MD_GLAS);
   bFFscan  = (Flags & MD_FFSCAN);
   bGStatEveryStep = !(Flags & MD_NOGSTAT);
-
+  bAppend  = (Flags & MD_APPENDFILES);
+	
   if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
     char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
     fprintf(stderr,"%s\n",warn);
@@ -1289,9 +1291,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     /* With exact energy averages (bGStatEveryStep=TRUE)
      * we should also write energy at first, last and continuation steps
      * such that we can get exact averages over a series of runs.
+	 *
+	 * This is not necessary when we use the append-file-feature, so we avoid
+	 * the extra frame in that case. Note that you have to specify the -append
+	 * flag even for the first run, though.
      */
     do_ene = (do_per_step(step,ir->nstenergy) ||
-	      (bGStatEveryStep && (bFirstStep || bLastStep || bCPT)));
+	      (bGStatEveryStep && !bAppend && (bFirstStep || bLastStep || bCPT)));
 
     if (do_ene || do_log) {
       bGStat = TRUE;

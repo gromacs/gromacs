@@ -410,7 +410,7 @@ int main(int argc,char *argv[])
   { 
 	  bAppendFiles = FALSE;
   }
-  	
+	
   if(!bAppendFiles && sim_part > 1)
   {
 	  /* This is a continuation run, rename trajectory output files (except checkpoint files) */
@@ -439,7 +439,8 @@ int main(int argc,char *argv[])
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
-    
+  Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
+
   
   /* We postpone opening the log file if we are appending, so we can first truncate
    * the old log file and append to the correct position there instead.
