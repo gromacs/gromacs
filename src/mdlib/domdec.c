@@ -1124,10 +1124,6 @@ void dd_collect_state(gmx_domdec_t *dd,
             case estDISRE_RM3TAV:
             case estORIRE_INITF:
             case estORIRE_DTAV:
-            case estENERGY_N:
-            case estENERGY_AVER:
-            case estENERGY_SUM:
-                /* Not implemented yet */
                 break;
             default:
                 gmx_incons("Unknown state entry encountered in dd_collect_state");
@@ -1181,9 +1177,6 @@ static void dd_realloc_state(t_state *state,rvec **f,rvec **buf,int nalloc)
             case estDISRE_RM3TAV:
             case estORIRE_INITF:
             case estORIRE_DTAV:
-            case estENERGY_N:
-            case estENERGY_AVER:
-            case estENERGY_SUM:
                 /* No reallocation required */
                 break;
             default:
@@ -1377,11 +1370,6 @@ static void dd_distribute_state(gmx_domdec_t *dd,t_block *cgs,
             case estORIRE_INITF:
             case estORIRE_DTAV:
                 /* Not implemented yet */
-                break;
-            case estENERGY_N:
-            case estENERGY_AVER:
-            case estENERGY_SUM:
-                /* Only the master nodes needs to know the energy history */
                 break;
             default:
                 gmx_incons("Unknown state entry encountered in dd_distribute_state");
@@ -3483,9 +3471,6 @@ static void rotate_state_atom(t_state *state,int a)
             case estDISRE_RM3TAV:
             case estORIRE_INITF:
             case estORIRE_DTAV:
-            case estENERGY_N:
-            case estENERGY_AVER:
-            case estENERGY_SUM:
                 /* These are distances, so not affected by rotation */
                 break;
             default:
@@ -3540,9 +3525,6 @@ static int dd_redistribute_cg(FILE *fplog,int step,
         case estDISRE_RM3TAV:
         case estORIRE_INITF:
         case estORIRE_DTAV:
-        case estENERGY_N:
-        case estENERGY_AVER:
-        case estENERGY_SUM:
             /* No processing required */
             break;
         default:
@@ -7037,9 +7019,6 @@ static void dd_sort_state(gmx_domdec_t *dd,int ePBC,
             case estDISRE_RM3TAV:
             case estORIRE_INITF:
             case estORIRE_DTAV:
-            case estENERGY_N:
-            case estENERGY_AVER:
-            case estENERGY_SUM:
                 /* No ordering required */
                 break;
             default:

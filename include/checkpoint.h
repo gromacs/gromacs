@@ -56,9 +56,10 @@ extern void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
  * but not the state itself.
  */
 extern void load_checkpoint(char *fn,FILE *fplog,
-							t_commrec *cr,bool bPartDecomp,ivec dd_nc,
-							t_inputrec *ir,t_state *state,bool *bReadRNG, 
-							bool bTruncateOutputFiles);
+			    t_commrec *cr,bool bPartDecomp,ivec dd_nc,
+			    t_inputrec *ir,t_state *state,bool *bReadRNG, 
+			    bool *bReadEkin,
+			    bool bTruncateOutputFiles);
 
 /* Read the state from checkpoint file.
  * Arrays in state that are NULL are allocated.

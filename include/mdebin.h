@@ -83,16 +83,14 @@ extern void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
 		       t_mdebin *md,t_fcdata *fcd,
 		       gmx_groups_t *groups,t_grpopts *opts);
 
-void 
-init_state_energyhistory(t_state *      state);
+extern void 
+init_energyhistory(energyhistory_t * enerhist);
 
-void
-update_state_energyhistory(t_state *    state,
-						   t_mdebin *   mdebin);
+extern void
+update_energyhistory(energyhistory_t * enerhist,t_mdebin * mdebin);
 
-void
-restore_energyhistory_from_state(t_mdebin *  mdebin,
-								 t_state *   state);
+extern void
+restore_energyhistory_from_state(t_mdebin * mdebin,energyhistory_t * enerhist);
 
 #endif	/* _mdebin_h */
 

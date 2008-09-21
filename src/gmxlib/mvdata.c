@@ -231,11 +231,6 @@ void bcast_state(const t_commrec *cr,t_state *state,bool bAlloc)
 	block_bc(cr,state->hist.norire_Dtav);
 	nblock_abc(cr,state->hist.norire_Dtav,state->hist.orire_Dtav);
 	break;
-      case estENERGY_N:
-      case estENERGY_AVER:
-      case estENERGY_SUM:
-	/* Only the master nodes needs to know the energy history */
-	break;
       default:
 	gmx_fatal(FARGS,
 		  "Communication is not implemented for %s in bcast_state",
