@@ -1290,7 +1290,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Write checkpoint at the next energy output step (if there is one),
        * or after 0.2*cpt_period at any step.
        */
-      if (cpt_period == 0 || ir->nstenergy == 0 ||
+      if (!bGStatEveryStep || ir->nstenergy == 0 || cpt_period == 0 ||
 	  run_t >= (nchkpt + 0.2)*cpt_period*60.0) {
 	chkpt = 1;
       } else {
