@@ -44,7 +44,7 @@ ppc_invsqrt(char *rsq, char *rinv)
 		if (mknb_fortran) {
 			mknb_assign (rinv,"frsqrte(dble(%s))",rsq);
 		} else {
-			mknb_assign (rinv,"__frsqrte(dble(%s))",rsq);
+			mknb_assign (rinv,"__frsqrte(double(%s))",rsq);
 		}
 	}
 
@@ -52,7 +52,7 @@ ppc_invsqrt(char *rsq, char *rinv)
 	mknb_assign(rinv,"(0.5*%s*(3.0-((%s*%s)*%s)))",rinv,rsq,rinv,rinv);
 	nflops += 5; /* 4 mult and one sub on the last line */
 	
-	if(mknb_options.ppc_invsqrt=2)
+	if(mknb_options.ppc_invsqrt==2)
 	{
 		/* Older powerpc architectures need two iterations for single, 3 for double */
 		mknb_assign(rinv,"(0.5*%s*(3.0-((%s*%s)*%s)))",rinv,rsq,rinv,rinv);
