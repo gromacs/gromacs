@@ -7,50 +7,54 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>tpbconv</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
-tpbconv can edit run input files in three ways.<p><b>1st.</b> by creating a run input file
+tpbconv can edit run input files in four ways.<p><b>1st.</b> by modifying the number of steps in a run input file
+with option <tt>-nsteps</tt> or option <tt>-runtime</tt>.<p>
+<b>2st.</b> (OBSOLETE) by creating a run input file
 for a continuation run when your simulation has crashed due to e.g.
 a full disk, or by making a continuation run input file.
-Note that a frame with coordinates and velocities is needed,
-which means that when you never write velocities, you can not use
-tpbconv and you have to start the run again from the beginning.
+This option is obsolete, since <a href="mdrun.html">mdrun</a> now writes and reads
+checkpoint files.
+Note that a frame with coordinates and velocities is needed.
 When pressure and/or Nose-Hoover temperature coupling is used
 an energy file can be supplied to get an exact continuation
 of the original run.<p>
-<b>2nd.</b> by creating a tpx file for a subset of your original
+<b>3nd.</b> by creating a tpx file for a subset of your original
 tpx file, which is useful when you want to remove the solvent from
 your tpx file, or when you want to make e.g. a pure Ca tpx file.
 <b>WARNING: this tpx file is not fully functional</b>.
-<b>3rd.</b> by setting the charges of a specified group
+<b>4rd.</b> by setting the charges of a specified group
 to zero. This is useful when doing free energy estimates
-using the LIE (Linear Interactio Energy) method.
+using the LIE (Linear Interaction Energy) method.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Input, Opt. </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic energy: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Input, Opt. </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Input, Opt. </TD><TD> Energy file: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  tpxout.tpr</a></tt> </TD><TD> Output </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">  tpxout.tpr</a></tt> </TD><TD> Output </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-time</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Continue from frame at this time (ps) instead of the last frame </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-extend</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Extend runtime by this amount (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-until</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Extend runtime until this ending time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]zeroq</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Set the charges of a group (from the index) to zero </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]unconstrained</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> For a continuous trajectory, the constraints should not be solved before the first step (default) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-nsteps</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Change the number of steps </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-runtime</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Set the run time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-time</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Continue from frame at this time (ps) instead of the last frame </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-extend</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Extend runtime by this amount (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-until</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Extend runtime until this ending time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]zeroq</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set the charges of a group (from the index) to zero </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cont</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> For exact continuation, the constraints should not be solved before the first step </TD></TD>
 </TABLE>
 <P>
 <hr>
