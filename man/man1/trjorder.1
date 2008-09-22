@@ -1,7 +1,7 @@
-.TH trjorder 1 "Mon 29 Aug 2005"
+.TH trjorder 1 "Mon 22 Sep 2008"
 .SH NAME
 trjorder
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3trjorder\fP
 .BI "-f" " traj.xtc "
@@ -39,46 +39,56 @@ of the first n waters is made, the ordered trajectory can be used
 with any Gromacs program to analyze the n closest waters.
 
 
+
 If the output file is a pdb file, the distance to the reference target
 will be stored in the B-factor field in order to color with e.g. rasmol.
+
+
+
+With option 
+.B -nshell
+the number of molecules within a shell
+of radius 
+.B -r
+around the refernce group are printed.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
 .BI "-o" " ordered.xtc" 
-.B Output
- Generic trajectory: xtc trr trj gro g96 pdb 
+.B Output, Opt.
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-nshell" " nshell.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-na"  " int" " 3" 
@@ -87,9 +97,9 @@ will be stored in the B-factor field in order to color with e.g. rasmol.
 .BI "-da"  " int" " 1" 
  Atom used for the distance calculation
 
-.BI "-[no]com"  "    no"
+.BI "-[no]com"  "no    "
  Use the distance to the center of mass of the reference group
 
-.BI "-r"  " real" "      0" 
+.BI "-r"  " real" " 0     " 
  Cutoff used for the distance calculation when computing the number of molecules in a shell around e.g. a protein
 

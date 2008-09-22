@@ -1,7 +1,7 @@
-.TH g_sham 1 "Mon 29 Aug 2005"
+.TH g_sham 1 "Mon 22 Sep 2008"
 .SH NAME
 g_sham
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_sham\fP
 .BI "-f" " graph.xvg "
@@ -10,6 +10,7 @@ g_sham
 .BI "-dist" " ener.xvg "
 .BI "-histo" " edist.xvg "
 .BI "-bin" " bindex.ndx "
+.BI "-lp" " prob.xpm "
 .BI "-ls" " gibbs.xpm "
 .BI "-lsh" " enthalpy.xpm "
 .BI "-lss" " entropy.xpm "
@@ -35,11 +36,29 @@ g_sham
 .BI "-ngrid" " vector "
 .BI "-xmin" " vector "
 .BI "-xmax" " vector "
+.BI "-pmax" " real "
 .BI "-gmax" " real "
+.BI "-emin" " real "
+.BI "-emax" " real "
 .BI "-nlevels" " int "
 .BI "-mname" " string "
 .SH DESCRIPTION
-g_sham reads a number of xvg files and analyzes data sets.
+g_sham makes multi-dimensional free-energy, enthalpy and entropy plots.
+g_sham reads one or more xvg files and analyzes data sets.
+g_sham basic purpose is plotting Gibbs free energy landscapes
+(option 
+.B -ls
+)
+by Bolzmann inverting multi-dimensional histograms (option 
+.B -lp
+)
+but it can also
+make enthalpy (option 
+.B -lsh
+) and entropy (option 
+.B -lss
+)
+plots. The histograms can be made for any quantities the user supplies.
 A line in the input file may start with a time
 (see option 
 .B -time
@@ -56,8 +75,22 @@ All lines starting with  and @ are skipped.
 Option 
 .B -ge
 can be used to supply a file with free energies
-when the ensemble is not a Boltzmann ensemble, but has been biased
-by this free energy.
+when the ensemble is not a Boltzmann ensemble, but needs to be biased
+by this free energy. One free energy value is required for each
+(multi-dimensional) data point in the 
+.B -f
+input.
+
+
+
+Option 
+.B -ene
+can be used to supply a file with energies.
+These energies are used as a weighting function in the single
+histogram analysis method due to Kumar et. al. When also temperatures
+are supplied (as a second column in the file) an experimental
+weighting scheme is applied. In addition the vales
+are used for making enthalpy and entropy plots.
 
 
 
@@ -67,9 +100,11 @@ dimensions can be gives for distances.
 When a distance is 2- or 3-dimensional, the circumference or surface
 sampled by two particles increases with increasing distance.
 Depending on what one would like to show, one can choose to correct
-the free-energy for this volume effect.
+the histogram and free-energy for this volume effect.
 The probability is normalized by r and r2 for a dimension of 2 and 3
 respectively.
+A value of -1 is used to indicate an angle in degrees between two
+vectors: a sin(angle) normalization will be applied.
 Note that for angles between vectors the inner-product or cosine
 is the natural quantity to use, as it will produce bins of the same
 volume.
@@ -97,6 +132,10 @@ volume.
 .BI "-bin" " bindex.ndx" 
 .B Output, Opt.
  Index file 
+
+.BI "-lp" " prob.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
 
 .BI "-ls" " gibbs.xpm" 
 .B Output, Opt.
@@ -127,46 +166,46 @@ volume.
  Log file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-[no]time"  "   yes"
+.BI "-[no]time"  "yes   "
  Expect a time in the input
 
-.BI "-b"  " real" "     -1" 
+.BI "-b"  " real" " -1    " 
  First time to read from set
 
-.BI "-e"  " real" "     -1" 
+.BI "-e"  " real" " -1    " 
  Last time to read from set
 
-.BI "-ttol"  " real" "      0" 
+.BI "-ttol"  " real" " 0     " 
  Tolerance on time in appropriate units (usually ps)
 
 .BI "-n"  " int" " 1" 
  Read  sets seperated by &
 
-.BI "-[no]d"  "    no"
+.BI "-[no]d"  "no    "
  Use the derivative
 
-.BI "-bw"  " real" "    0.1" 
+.BI "-bw"  " real" " 0.1   " 
  Binwidth for the distribution
 
-.BI "-[no]sham"  "   yes"
+.BI "-[no]sham"  "yes   "
  Turn off energy weighting even if energies are given
 
 .BI "-tsham"  " real" " 298.15" 
  Temperature for single histogram analysis
 
-.BI "-pmin"  " real" "      0" 
+.BI "-pmin"  " real" " 0     " 
  Minimum probability. Anything lower than this will be set to zero
 
 .BI "-dim"  " vector" " 1 1 1" 
@@ -181,11 +220,20 @@ volume.
 .BI "-xmax"  " vector" " 1 1 1" 
  Maximum for the axes in energy landscape (see above for  3 dimensions)
 
-.BI "-gmax"  " real" "      0" 
- Maximum level in output, 0 is calculate
+.BI "-pmax"  " real" " 0     " 
+ Maximum probability in output, default is calculate
+
+.BI "-gmax"  " real" " 0     " 
+ Maximum free energy in output, default is calculate
+
+.BI "-emin"  " real" " 0     " 
+ Minimum enthalpy in output, default is calculate
+
+.BI "-emax"  " real" " 0     " 
+ Maximum enthalpy in output, default is calculate
 
 .BI "-nlevels"  " int" " 25" 
- Number of levels for energy landscape from single histogram analysis
+ Number of levels for energy landscape
 
 .BI "-mname"  " string" " " 
  Legend label for the custom landscape

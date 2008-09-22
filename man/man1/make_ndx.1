@@ -1,7 +1,7 @@
-.TH make_ndx 1 "Mon 29 Aug 2005"
+.TH make_ndx 1 "Mon 22 Sep 2008"
 .SH NAME
 make_ndx
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3make_ndx\fP
 .BI "-f" " conf.gro "
@@ -31,7 +31,7 @@ The atom numbering in the editor and the index file starts at 1.
 .SH FILES
 .BI "-f" " conf.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt., Mult.
@@ -42,7 +42,7 @@ The atom numbering in the editor and the index file starts at 1.
  Index file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 

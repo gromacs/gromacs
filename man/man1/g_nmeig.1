@@ -1,7 +1,7 @@
-.TH g_nmeig 1 "Mon 29 Aug 2005"
+.TH g_nmeig 1 "Mon 22 Sep 2008"
 .SH NAME
 g_nmeig
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_nmeig\fP
 .BI "-f" " hessian.mtx "
@@ -42,7 +42,7 @@ standard cartesian norm (But in the mass weighted norm they would be).
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-of" " eigenfreq.xvg" 
 .B Output
@@ -54,19 +54,19 @@ standard cartesian norm (But in the mass weighted norm they would be).
 
 .BI "-v" " eigenvec.trr" 
 .B Output
- Full precision trajectory: trr trj 
+ Full precision trajectory: trr trj cpt 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-[no]m"  "   yes"
+.BI "-[no]m"  "yes   "
  Divide elements of Hessian by product of sqrt(mass) of involved atoms prior to diagonalization. This should be used for 'Normal Modes' analysis
 
 .BI "-first"  " int" " 1" 

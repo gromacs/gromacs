@@ -1,7 +1,7 @@
-.TH gmxcheck 1 "Mon 29 Aug 2005"
+.TH gmxcheck 1 "Mon 22 Sep 2008"
 .SH NAME
 gmxcheck
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3gmxcheck\fP
 .BI "-f" " traj.xtc "
@@ -12,12 +12,14 @@ gmxcheck
 .BI "-e" " ener.edr "
 .BI "-e2" " ener2.edr "
 .BI "-n" " index.ndx "
+.BI "-m" " doc.tex "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-vdwfac" " real "
 .BI "-bonlo" " real "
 .BI "-bonhi" " real "
 .BI "-tol" " real "
+.BI "-[no]ab" ""
 .BI "-lastener" " string "
 .SH DESCRIPTION
 gmxcheck reads a trajectory (
@@ -27,10 +29,13 @@ gmxcheck reads a trajectory (
 or 
 
 .B .xtc
-) or an energy file (
+), an energy file (
 .B .ene
 or 
 .B .edr
+)
+or an index file (
+.B .ndx
 )
 and prints out useful information about them.
 
@@ -82,57 +87,78 @@ Similarly a pair of trajectory files can be compared (using the
 option), or a pair of energy files (using the 
 .B -e2
 option).
+
+
+For free energy simulations the A and B state topology from one
+run input file can be compared with options 
+.B -s1
+and 
+.B -ab
+.
+
+
+In case the 
+.B -m
+flag is given a LaTeX file will be written
+consisting a rough outline for a methods section for a paper.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input, Opt.
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-f2" " traj.xtc" 
 .B Input, Opt.
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-s1" " top1.tpr" 
 .B Input, Opt.
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-s2" " top2.tpr" 
 .B Input, Opt.
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-c" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-e" " ener.edr" 
 .B Input, Opt.
- Generic energy: edr ene 
+ Energy file: edr ene 
 
 .BI "-e2" " ener2.edr" 
 .B Input, Opt.
- Generic energy: edr ene 
+ Energy file: edr ene 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
+.BI "-m" " doc.tex" 
+.B Output, Opt.
+ LaTeX file 
+
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-vdwfac"  " real" "    0.8" 
+.BI "-vdwfac"  " real" " 0.8   " 
  Fraction of sum of VdW radii used as warning cutoff
 
-.BI "-bonlo"  " real" "    0.4" 
+.BI "-bonlo"  " real" " 0.4   " 
  Min. fract. of sum of VdW radii for bonded atoms
 
-.BI "-bonhi"  " real" "    0.7" 
+.BI "-bonhi"  " real" " 0.7   " 
  Max. fract. of sum of VdW radii for bonded atoms
 
-.BI "-tol"  " real" "  0.001" 
+.BI "-tol"  " real" " 0.001 " 
  Relative tolerance for comparing real values defined as 2*(a-b)/(|a|+|b|)
+
+.BI "-[no]ab"  "no    "
+ Compare the A and B topology from one file
 
 .BI "-lastener"  " string" " " 
  Last energy term to compare (if not given all are tested). It makes sense to go up until the Pressure.

@@ -1,7 +1,7 @@
-.TH g_nmtraj 1 "Tue 6 Sep 2005"
+.TH g_nmtraj 1 "Mon 22 Sep 2008"
 .SH NAME
 g_nmtraj
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_nmtraj\fP
 .BI "-s" " topol.tpr "
@@ -9,7 +9,8 @@ g_nmtraj
 .BI "-o" " nmtraj.xtc "
 .BI "-[no]h" ""
 .BI "-nice" " int "
-.BI "-eignr" " int "
+.BI "-eignr" " string "
+.BI "-phases" " string "
 .BI "-temp" " real "
 .BI "-amplitude" " real "
 .BI "-nframes" " int "
@@ -33,30 +34,33 @@ of the cartesian normal mode model. By default the selected eigenvector is set t
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-v" " eigenvec.trr" 
 .B Input
- Full precision trajectory: trr trj 
+ Full precision trajectory: trr trj cpt 
 
 .BI "-o" " nmtraj.xtc" 
 .B Output
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-eignr"  " int" " 7" 
- Eigenvector to use (first is 1)
+.BI "-eignr"  " string" " 7" 
+ String of eigenvectors to use (first is 1)
 
-.BI "-temp"  " real" "    300" 
+.BI "-phases"  " string" " 0.0" 
+ String of phases (default is 0.0)
+
+.BI "-temp"  " real" " 300   " 
  Temperature in Kelvin
 
-.BI "-amplitude"  " real" "   0.25" 
+.BI "-amplitude"  " real" " 0.25  " 
  Amplitude for modes with eigenvalue=0
 
 .BI "-nframes"  " int" " 30" 

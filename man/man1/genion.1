@@ -1,7 +1,7 @@
-.TH genion 1 "Mon 29 Aug 2005"
+.TH genion 1 "Mon 22 Sep 2008"
 .SH NAME
 genion
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3genion\fP
 .BI "-s" " topol.tpr "
@@ -10,19 +10,22 @@ genion
 .BI "-o" " out.gro "
 .BI "-g" " genion.log "
 .BI "-pot" " pot.pdb "
+.BI "-p" " topol.top "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-[no]xvgr" ""
 .BI "-np" " int "
 .BI "-pname" " string "
-.BI "-pq" " real "
+.BI "-pq" " int "
 .BI "-nn" " int "
 .BI "-nname" " string "
-.BI "-nq" " real "
+.BI "-nq" " int "
 .BI "-rmin" " real "
 .BI "-[no]random" ""
 .BI "-seed" " int "
 .BI "-scale" " real "
+.BI "-conc" " real "
+.BI "-[no]neutral" ""
 .SH DESCRIPTION
 genion replaces solvent molecules by monoatomic ions at
 the position of the first atoms with the most favorable electrostatic
@@ -58,7 +61,7 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-table" " table.xvg" 
 .B Input, Opt.
@@ -70,7 +73,7 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 
 .BI "-o" " out.gro" 
 .B Output
- Generic structure: gro g96 pdb xml 
+ Structure file: gro g96 pdb 
 
 .BI "-g" " genion.log" 
 .B Output
@@ -80,14 +83,18 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 .B Output, Opt.
  Protein data bank file 
 
+.BI "-p" " topol.top" 
+.B In/Out, Opt.
+ Topology file 
+
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-np"  " int" " 0" 
@@ -96,7 +103,7 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 .BI "-pname"  " string" " Na" 
  Name of the positive ion
 
-.BI "-pq"  " real" "      1" 
+.BI "-pq"  " int" " 1" 
  Charge of the positive ion
 
 .BI "-nn"  " int" " 0" 
@@ -105,18 +112,31 @@ For larger ions, e.g. sulfate we recommended to use genbox.
 .BI "-nname"  " string" " Cl" 
  Name of the negative ion
 
-.BI "-nq"  " real" "     -1" 
+.BI "-nq"  " int" " -1" 
  Charge of the negative ion
 
-.BI "-rmin"  " real" "    0.6" 
+.BI "-rmin"  " real" " 0.6   " 
  Minimum distance between ions
 
-.BI "-[no]random"  "    no"
+.BI "-[no]random"  "yes   "
  Use random placement of ions instead of based on potential. The rmin option should still work
 
 .BI "-seed"  " int" " 1993" 
  Seed for random number generator
 
-.BI "-scale"  " real" "  0.001" 
+.BI "-scale"  " real" " 0.001 " 
  Scaling factor for the potential for -pot
+
+.BI "-conc"  " real" " 0     " 
+ Specify salt concentration (mol/liter). This will add sufficient ions to reach up to the specified concentration as computed from the volume of the cell in the input tpr file. Overrides the -np and  nn options.
+
+.BI "-[no]neutral"  "no    "
+ This option will add enough ions to neutralize the system. In combination with the concentration option a neutral system at a given salt concentration will be generated.
+
+.SH KNOWN PROBLEMS
+\- Calculation of the potential is not reliable, therefore the 
+.B -random
+option is now turned on by default.
+
+\- If you specify a salt concentration existing ions are not taken into account. In effect you therefore specify the amount of salt to be added.
 

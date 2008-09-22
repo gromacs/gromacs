@@ -1,7 +1,7 @@
-.TH g_dyndom 1 "Mon 29 Aug 2005"
+.TH g_dyndom 1 "Mon 22 Sep 2008"
 .SH NAME
 g_dyndom
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_dyndom\fP
 .BI "-f" " dyndom.pdb "
@@ -18,7 +18,7 @@ g_dyndom
 .BI "-tail" " vector "
 .SH DESCRIPTION
 g_dyndom reads a pdb file output from DynDom
-http://md.chem.rug.nl/~steve/DynDom/dyndom.home.html
+http://www.cmp.uea.ac.uk/dyndom/
 It reads the coordinates, and the coordinates of the rotation axis
 furthermore it reads an index file containing the domains.
 Furthermore it takes the first and last atom of the arrow file
@@ -46,32 +46,32 @@ validate the structure.
 
 .BI "-o" " rotated.xtc" 
 .B Output
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-n" " domains.ndx" 
 .B Input
  Index file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-firstangle"  " real" "      0" 
+.BI "-firstangle"  " real" " 0     " 
  Angle of rotation about rotation vector
 
-.BI "-lastangle"  " real" "      0" 
+.BI "-lastangle"  " real" " 0     " 
  Angle of rotation about rotation vector
 
 .BI "-nframe"  " int" " 11" 
  Number of steps on the pathway
 
-.BI "-maxangle"  " real" "      0" 
+.BI "-maxangle"  " real" " 0     " 
  DymDom dtermined angle of rotation about rotation vector
 
-.BI "-trans"  " real" "      0" 
+.BI "-trans"  " real" " 0     " 
  Translation (Aangstroem) along rotation vector (see DynDom info file)
 
 .BI "-head"  " vector" " 0 0 0" 

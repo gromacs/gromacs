@@ -1,7 +1,7 @@
-.TH mk_angndx 1 "Mon 29 Aug 2005"
+.TH mk_angndx 1 "Mon 22 Sep 2008"
 .SH NAME
 mk_angndx
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3mk_angndx\fP
 .BI "-s" " topol.tpr "
@@ -9,6 +9,7 @@ mk_angndx
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-type" " enum "
+.BI "-[no]hyd" ""
 .SH DESCRIPTION
 mk_angndx makes an index file for calculation of
 angle distributions etc. It uses a run input file (
@@ -18,14 +19,14 @@ definitions of the angles, dihedrals etc.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-n" " angle.ndx" 
 .B Output
  Index file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
@@ -35,14 +36,13 @@ definitions of the angles, dihedrals etc.
  Type of angle: 
 .B angle
 , 
-.B g96-angle
-, 
 .B dihedral
 , 
 .B improper
-, 
-.B ryckaert-bellemans
 or 
-.B phi-psi
+.B ryckaert-bellemans
 
+
+.BI "-[no]hyd"  "yes   "
+ Include angles with atoms with mass  1.5
 

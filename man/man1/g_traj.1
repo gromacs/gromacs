@@ -1,13 +1,14 @@
-.TH g_traj 1 "Mon 29 Aug 2005"
+.TH g_traj 1 "Mon 22 Sep 2008"
 .SH NAME
 g_traj
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_traj\fP
 .BI "-f" " traj.xtc "
 .BI "-s" " topol.tpr "
 .BI "-n" " index.ndx "
 .BI "-ox" " coord.xvg "
+.BI "-oxt" " coord.xtc "
 .BI "-ov" " veloc.xvg "
 .BI "-of" " force.xvg "
 .BI "-ob" " box.xvg "
@@ -17,6 +18,8 @@ g_traj
 .BI "-vd" " veldist.xvg "
 .BI "-cv" " veloc.pdb "
 .BI "-cf" " force.pdb "
+.BI "-av" " all_veloc.xvg "
+.BI "-af" " all_force.xvg "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-b" " time "
@@ -92,6 +95,13 @@ desired frame. When averaging over frames you might need to use
 the 
 .B -nojump
 option to obtain the correct average coordinates.
+If you select either of these option the average force and velocity
+for each atom are written to an xvg file as well
+(specified with 
+.B -av
+or 
+.B -af
+).
 
 
 Option 
@@ -102,11 +112,11 @@ the kinetic energy distribution is given.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -115,6 +125,10 @@ the kinetic energy distribution is given.
 .BI "-ox" " coord.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
+
+.BI "-oxt" " coord.xtc" 
+.B Output, Opt.
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-ov" " veloc.xvg" 
 .B Output, Opt.
@@ -152,20 +166,28 @@ the kinetic energy distribution is given.
 .B Output, Opt.
  Protein data bank file 
 
+.BI "-av" " all_veloc.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-af" " all_force.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
 .BI "-tu"  " enum" " ps" 
@@ -179,47 +201,43 @@ the kinetic energy distribution is given.
 .B us
 , 
 .B ms
-, 
-.B s
-, 
-.B m
 or 
-.B h
+.B s
 
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-[no]com"  "    no"
+.BI "-[no]com"  "no    "
  Plot data for the com of each group
 
-.BI "-[no]mol"  "    no"
+.BI "-[no]mol"  "no    "
  Index contains molecule numbers iso atom numbers
 
-.BI "-[no]nojump"  "    no"
+.BI "-[no]nojump"  "no    "
  Remove jumps of atoms across the box
 
-.BI "-[no]x"  "   yes"
+.BI "-[no]x"  "yes   "
  Plot X-component
 
-.BI "-[no]y"  "   yes"
+.BI "-[no]y"  "yes   "
  Plot Y-component
 
-.BI "-[no]z"  "   yes"
+.BI "-[no]z"  "yes   "
  Plot Z-component
 
 .BI "-ng"  " int" " 1" 
  Number of groups to consider
 
-.BI "-[no]len"  "    no"
+.BI "-[no]len"  "no    "
  Plot vector length
 
-.BI "-bin"  " real" "      1" 
+.BI "-bin"  " real" " 1     " 
  Binwidth for velocity histogram (nm/ps)
 
-.BI "-scale"  " real" "      0" 
+.BI "-scale"  " real" " 0     " 
  Scale factor for pdb output, 0 is autoscale
 

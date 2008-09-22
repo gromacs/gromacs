@@ -1,7 +1,7 @@
-.TH g_filter 1 "Mon 29 Aug 2005"
+.TH g_filter 1 "Mon 22 Sep 2008"
 .SH NAME
 g_filter
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_filter\fP
 .BI "-f" " traj.xtc "
@@ -58,11 +58,11 @@ the coordinates in the structure file.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -70,40 +70,40 @@ the coordinates in the structure file.
 
 .BI "-ol" " lowpass.xtc" 
 .B Output, Opt.
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-oh" " highpass.xtc" 
 .B Output, Opt.
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
 .BI "-nf"  " int" " 10" 
  Sets the filter length as well as the output interval for low-pass filtering
 
-.BI "-[no]all"  "    no"
+.BI "-[no]all"  "no    "
  Write all low-pass filtered frames
 
-.BI "-[no]nojump"  "   yes"
+.BI "-[no]nojump"  "yes   "
  Remove jumps of atoms across the box
 
-.BI "-[no]fit"  "    no"
+.BI "-[no]fit"  "no    "
  Fit all frames to a reference structure
 
