@@ -12,7 +12,7 @@ set PROGFILE	= $2
 
 set dir = $cwd
 
-set VER		= 3.3
+set VER		= 4.0
 set MANDIR	= online
 set HTML	= $cwd/html
 set HTMLOL	= $HTML/$MANDIR

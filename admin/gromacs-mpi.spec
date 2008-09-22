@@ -7,7 +7,7 @@
 #
 Summary: Molecular dynamics package (parallel)
 Name: gromacs-mpi
-Version: 3.3
+Version: 4.0
 Release: 1
 Copyright: GPL
 Group: Applications/Science
