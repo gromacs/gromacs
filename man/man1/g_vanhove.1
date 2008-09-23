@@ -1,0 +1,170 @@
+.TH g_vanhove 1 "Mon 22 Sep 2008"
+.SH NAME
+g_vanhove
+.B VERSION 4.0_rc1
+.SH SYNOPSIS
+\f3g_vanhove\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-om" " vanhove.xpm "
+.BI "-or" " vanhove_r.xvg "
+.BI "-ot" " vanhove_t.xvg "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-[no]xvgr" ""
+.BI "-sqrt" " real "
+.BI "-fm" " int "
+.BI "-rmax" " real "
+.BI "-rbin" " real "
+.BI "-mmax" " real "
+.BI "-nlevels" " int "
+.BI "-nr" " int "
+.BI "-fr" " int "
+.BI "-rt" " real "
+.BI "-ft" " int "
+.SH DESCRIPTION
+g_vanhove computes the Van Hove correlation function.
+The Van Hove G(r,t) is the probability that a particle that is at r0
+at time zero can be found at position r0+r at time t.
+g_vanhove determines G not for a vector r, but for the length of r.
+Thus it gives the probability that a particle moves a distance of r
+in time t.
+Jumps across the periodic boundaries are removed.
+Corrections are made for scaling due to isotropic
+or anisotropic pressure coupling.
+
+
+
+With option 
+.B -om
+the whole matrix can be written as a function
+of t and r or as a function of sqrt(t) and r (option 
+.B -sqrt
+).
+
+
+
+With option 
+.B -or
+the Van Hove function is plotted for one
+or more values of t. Option 
+.B -nr
+sets the number of times,
+option 
+.B -fr
+the number spacing between the times.
+The binwidth is set with option 
+.B -rbin
+. The number of bins
+is determined automatically.
+
+
+
+With option 
+.B -ot
+the integral up to a certain distance
+(option 
+.B -rt
+) is plotted as a function of time.
+
+
+
+For all frames that are read the coordinates of the selected particles
+are stored in memory. Therefore the program may use a lot of memory.
+For options 
+.B -om
+and 
+.B -ot
+the program may be slow.
+This is because the calculation scales as the number of frames times
+
+.B -fm
+or 
+.B -ft
+.
+Note that with the 
+.B -dt
+option the memory usage and calculation
+time can be reduced.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Trajectory: xtc trr trj gro g96 pdb cpt 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-om" " vanhove.xpm" 
+.B Output, Opt.
+ X PixMap compatible matrix file 
+
+.BI "-or" " vanhove_r.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.BI "-ot" " vanhove_t.xvg" 
+.B Output, Opt.
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "no    "
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" " 0     " 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" " 0     " 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" " 0     " 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "no    "
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "yes   "
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
+.BI "-sqrt"  " real" " 0     " 
+ Use sqrt(t) on the matrix axis which binspacing  in sqrt(ps)
+
+.BI "-fm"  " int" " 0" 
+ Number of frames in the matrix, 0 is plot all
+
+.BI "-rmax"  " real" " 2     " 
+ Maximum r in the matrix (nm)
+
+.BI "-rbin"  " real" " 0.01  " 
+ Binwidth in the matrix and for -or (nm)
+
+.BI "-mmax"  " real" " 0     " 
+ Maximum density in the matrix, 0 is calculate (1/nm)
+
+.BI "-nlevels"  " int" " 81" 
+ Number of levels in the matrix
+
+.BI "-nr"  " int" " 1" 
+ Number of curves for the -or output
+
+.BI "-fr"  " int" " 0" 
+ Frame spacing for the -or output
+
+.BI "-rt"  " real" " 0     " 
+ Integration limit for the -ot output (nm)
+
+.BI "-ft"  " int" " 0" 
+ Number of frames in the -ot output, 0 is plot all
+
