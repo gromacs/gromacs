@@ -306,7 +306,7 @@ t_mdebin *init_mdebin(int fp_ene,
       grpnms[i]=strdup(buf);
     }
     md->itc=get_ebin_space(md->ebin,md->nTC,grpnms);
-  } else  if (etc == etcBERENDSEN || etc == etcYES) {
+  } else  if (etc == etcBERENDSEN || etc == etcYES || etc == etcVRESCALE) {
     for(i=0; (i<md->nTC); i++) {
       ni=groups->grps[egcTC].nm_ind[i];
       sprintf(buf,"Lamb-%s",*(groups->grpname[ni]));
@@ -475,9 +475,9 @@ if (ekind && ekind->cosacc.cos_accel != 0) {
       for(i=0; (i<md->nTC); i++)
 	ttt[i] = state->nosehoover_xi[i];
       add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
-    } else if (etc == etcBERENDSEN || etc == etcYES) {
+    } else if (etc == etcBERENDSEN || etc == etcYES || etc == etcVRESCALE) {
       for(i=0; (i<md->nTC); i++)
-	ttt[i] = ekind->tcstat[i].lambda;
+          ttt[i] = ekind->tcstat[i].lambda;
       add_ebin(md->ebin,md->itc,md->nTC,ttt,bSum,step);
     }
   }
