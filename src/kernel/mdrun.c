@@ -130,7 +130,7 @@ int main(int argc,char *argv[])
     "the bonded cut-off distance, mdrun terminates with an error message.",
     "For pair interactions and tabulated bonds",
     "that do not generate exclusions, this check can be turned off",
-    "with the option [TT]-noddcheck[TT].",
+    "with the option [TT]-noddcheck[tt].",
     "[BR]",
     "When constraints are present, option [TT]-rcon[tt] influences",
     "the cell size limit as well.",
@@ -217,7 +217,19 @@ int main(int argc,char *argv[])
     "at regular intervals (option [TT]-cpt[tt]) to the file [TT]-cpo[tt],",
     "unless option [TT]-cpt[tt] is set to -1.",
     "A simulation can be continued by reading the full state from file",
-    "with option [TT]-cpi[tt].",
+    "with option [TT]-cpi[tt]. This option is intelligent in the way that",
+    "if no checkpoint file is found, Gromacs just assumes a normal run and",
+	"starts from the first step of the tpr file.",
+	"[PAR]",
+	"With checkpointing you can also use the option [TT]-append[tt] to",
+	"just continue writing to the previous output files. This is not",
+	"enabled by default since it is potentially dangerous if you move files,",
+	"but if you just leave all your files in place and restart mdrun with",
+	"exactly the same command (with options [TT]-cpi[tt] and [TT]-append[tt])",
+	"the result will be the same as from a single run. The contents will",
+	"be binary identical (unless you use dynamic load balancing),",
+	"but for technical reasons there might be some extra energy frames when",
+	"using checkpointing (necessary for restarts without appending).",
     "[PAR]",
     "With option [TT]-maxh[tt] a simulation is terminated and a checkpoint",
     "file is written at the first neighbor search step where the run time",
@@ -229,7 +241,12 @@ int main(int argc,char *argv[])
     "In both cases all the usual output will be written to file.",
     "When running with MPI, a signal to one of the mdrun processes",
     "is sufficient, this signal should not be sent to mpirun or",
-    "the mdrun process that is the parent of the others."
+    "the mdrun process that is the parent of the others.",
+    "[PAR]",
+    "When compiled with MPI, mdrun does not run niced by default.",
+    "When the MPI environment switch was set during the configuration",
+    "of GROMACS, mdrun will still run niced by default",
+    "when not started with MPI (thus not parallel)."
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {
@@ -410,7 +427,7 @@ int main(int argc,char *argv[])
   { 
 	  bAppendFiles = FALSE;
   }
-  	
+	
   if(!bAppendFiles && sim_part > 1)
   {
 	  /* This is a continuation run, rename trajectory output files (except checkpoint files) */
@@ -439,7 +456,8 @@ int main(int argc,char *argv[])
   Flags = Flags | (!bSumEner     ? MD_NOGSTAT      : 0);
   Flags = Flags | (bReproducible ? MD_REPRODUCIBLE : 0);
   Flags = Flags | (bAppendFiles  ? MD_APPENDFILES  : 0); 
-    
+  Flags = Flags | (sim_part>1    ? MD_STARTFROMCPT : 0); 
+
   
   /* We postpone opening the log file if we are appending, so we can first truncate
    * the old log file and append to the correct position there instead.
