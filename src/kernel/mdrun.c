@@ -130,7 +130,7 @@ int main(int argc,char *argv[])
     "the bonded cut-off distance, mdrun terminates with an error message.",
     "For pair interactions and tabulated bonds",
     "that do not generate exclusions, this check can be turned off",
-    "with the option [TT]-noddcheck[TT].",
+    "with the option [TT]-noddcheck[tt].",
     "[BR]",
     "When constraints are present, option [TT]-rcon[tt] influences",
     "the cell size limit as well.",
@@ -241,7 +241,12 @@ int main(int argc,char *argv[])
     "In both cases all the usual output will be written to file.",
     "When running with MPI, a signal to one of the mdrun processes",
     "is sufficient, this signal should not be sent to mpirun or",
-    "the mdrun process that is the parent of the others."
+    "the mdrun process that is the parent of the others.",
+    "[PAR]",
+    "When compiled with MPI, mdrun does not run niced by default.",
+    "When the MPI environment switch was set during the configuration",
+    "of GROMACS, mdrun will still run niced by default",
+    "when not started with MPI (thus not parallel)."
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {
