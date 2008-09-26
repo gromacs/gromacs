@@ -459,6 +459,7 @@ void vrescale_tcoupl(t_grpopts *opts,gmx_ekindata_t *ekind,real dt,
 	ekind->tcstat[i].lambda = 0.0;
       } else {
 	ekind->tcstat[i].lambda = sqrt((Ek + dEk)/Ek);
+	ekind->tcstat[i].lambda = max(min(1.25,ekind->tcstat[i].lambda),0.8);
       }
       therm_integral[i] -= dEk;
 
