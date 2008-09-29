@@ -177,6 +177,13 @@ int
 gmx_fio_get_output_file_positions (gmx_file_position_t ** outputfiles,
  								   int *                  nfiles );
 
+
+extern int
+xtc_seek_frame(int frame, int fio, int natoms);
+
+extern int 
+xtc_seek_time(real time, int fio, int natoms);
+
 	
 extern void set_comment(char *comment);
 /* Add this to the comment string for debugging */
