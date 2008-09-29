@@ -82,19 +82,19 @@ xdr3drcoord(XDR *xdrs,real *fp,int *size,real *precision);
 
 
 int 
-xtc_seek_time(real time, int fp, int natoms);
+xdr_xtc_seek_time(real time, FILE *fp, XDR *xdrs, int natoms);
 
 
 int 
-xtc_seek_frame(int frame, int fp, int natoms);
+xdr_xtc_seek_frame(int frame, FILE *fp, XDR *xdrs, int natoms);
 
 
 float 
-xtc_get_last_frame_time(int fp, int natoms, bool * bOK);
+xdr_xtc_get_last_frame_time(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
 
 
 int 
-xtc_get_last_frame_number(int fp, int natoms, bool * bOK);
+xdr_xtc_get_last_frame_number(FILE *fp, XDR *xdrs, int natoms, bool * bOK);
 
 #endif
 

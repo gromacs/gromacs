@@ -1006,3 +1006,15 @@ bool gmx_fio_getread(int fio)
   
   return FIO[fio].bRead;
 }
+
+int 
+xtc_seek_frame(int frame, int fio, int natoms)
+{
+  return xdr_xtc_seek_frame(frame,FIO[fio].fp,FIO[fio].xdr,natoms);
+}
+
+int 
+xtc_seek_time(real time, int fio, int natoms)
+{
+  return xdr_xtc_seek_time(time,FIO[fio].fp,FIO[fio].xdr,natoms);
+}
