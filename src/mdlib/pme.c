@@ -1038,6 +1038,7 @@ real solve_pme(gmx_pme_t pme,t_fftgrid *grid,
                 kzstart = 0;
             } else {
                 kzstart = 1;
+                p0++;
             }
 			
             for(kz=kzstart,mz=kzstart; (kz<maxkz); kz++,mz+=1.0)  {
