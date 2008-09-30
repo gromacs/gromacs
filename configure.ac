@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0_rc2, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0_rc3, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
