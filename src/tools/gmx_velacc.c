@@ -58,13 +58,62 @@
 #include "strdb.h"
 #include "xvgr.h"
 
+static void index_atom2mol(int *n,atom_id *index,t_block *mols)
+{
+  int nat,i,nmol,mol,j;
+
+  nat = *n;
+  i = 0;
+  nmol = 0;
+  mol = 0;
+  while (i < nat) {
+    while (index[i] > mols->index[mol]) {
+      mol++;
+      if (mol >= mols->nr)
+	gmx_fatal(FARGS,"Atom index out of range: %d",index[i]+1);
+    }
+    for(j=mols->index[mol]; j<mols->index[mol+1]; j++) {
+      if (i >= nat || index[i] != j)
+      	gmx_fatal(FARGS,"The index group does not consist of whole molecules");
+      i++;
+    }
+    index[nmol++] = mol;
+  }
+
+  fprintf(stderr,"\nSplit group of %d atoms into %d molecules\n",nat,nmol);
+
+  *n = nmol;
+}
+
+static void precalc(t_topology top,real normm[]){
+
+  real mtot;
+  int i,j,k,l;
+
+  for(i=0;i<top.mols.nr;i++){
+    k=top.mols.index[i];
+    l=top.mols.index[i+1];
+    mtot=0.0;
+
+    for(j=k;j<l;j++)
+      mtot+=top.atoms.atom[j].m;
+
+    for(j=k;j<l;j++)
+      normm[j]=top.atoms.atom[j].m/mtot;
+
+  }
+
+}
+
+
+
 int gmx_velacc(int argc,char *argv[])
 {
   static char *desc[] = {
     "g_velacc computes the velocity autocorrelation function.",
     "When the [TT]-m[tt] option is used, the momentum autocorrelation",
     "function is calculated.[PAR]",
-    "With option [TT]-mol[tt] the momentum autocorrelation function of",
+    "With option [TT]-mol[tt] the velocity autocorrelation function of",
     "molecules is calculated. In this case the index group should consist",
     "of molecule numbers instead of atom numbers."
   };
@@ -74,22 +123,23 @@ int gmx_velacc(int argc,char *argv[])
     { "-m", FALSE, etBOOL, {&bM},
       "Calculate the momentum autocorrelation function" },
     { "-mol", FALSE, etBOOL, {&bMol},
-      "Calculate the momentum acf of molecules" }
+      "Calculate the velocity acf of molecules" }
   };
 
   t_topology top;
   int        ePBC=-1;
   t_trxframe fr;
   matrix     box;
-  bool       bTPS,bTop=FALSE;
+  bool       bTPS=FALSE,bTop=FALSE;
   int        gnx;
-  atom_id    *index,*atndx=NULL,at;
+  atom_id    *index;
   char       *grpname;
   char       title[256];
   real       t0,t1,m;
-  int        status,teller,n_alloc,i,j,tel3;
+  int        status,teller,n_alloc,i,j,tel3,k,l;
   rvec       mv_mol;
   real       **c1;
+  real	     *normm=NULL;
   
 #define NHISTO 360
     
@@ -110,8 +160,7 @@ int gmx_velacc(int argc,char *argv[])
 		    NFILE,fnm,npargs,ppa,asize(desc),desc,0,NULL);
 
   if (bMol)
-    bM = TRUE;
-  bTPS = bM || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
+    bTPS = bM || ftp2bSet(efTPS,NFILE,fnm) || !ftp2bSet(efNDX,NFILE,fnm);
 
   if (bTPS) {
     bTop=read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,NULL,NULL,box,
@@ -123,7 +172,9 @@ int gmx_velacc(int argc,char *argv[])
   if (bMol) {
     if (!bTop)
       gmx_fatal(FARGS,"Need a topology to determine the molecules");
-    atndx = top.mols.index;
+    snew(normm,top.atoms.nr);
+    precalc(top,normm);
+    index_atom2mol(&gnx,index,&top.mols);
   }
   
   /* Correlation stuff */
@@ -146,23 +197,27 @@ int gmx_velacc(int argc,char *argv[])
     if (bMol)
       for(i=0; i<gnx; i++) {
 	clear_rvec(mv_mol);
-	for(j=0; j<atndx[index[i]+1] - atndx[index[i]]; j++) {
-	  at = atndx[index[i]] + j;
-	  m  = top.atoms.atom[at].m;
-	  mv_mol[XX] += m*fr.v[at][XX];
-	  mv_mol[YY] += m*fr.v[at][YY];
-	  mv_mol[ZZ] += m*fr.v[at][ZZ];
+	k=top.mols.index[index[i]];
+	l=top.mols.index[index[i]+1];
+	for(j=k; j<l; j++) {
+   	  if (bM)
+	    m = top.atoms.atom[j].m;
+	  else
+	    m = normm[j];
+	  mv_mol[XX] += m*fr.v[j][XX];
+	  mv_mol[YY] += m*fr.v[j][YY];
+	  mv_mol[ZZ] += m*fr.v[j][ZZ];
 	}
 	c1[i][tel3+XX]=mv_mol[XX];
 	c1[i][tel3+YY]=mv_mol[YY];
 	c1[i][tel3+ZZ]=mv_mol[ZZ];
       }
-    else
+     else
       for(i=0; i<gnx; i++) {
-	if (bM)
+        if (bM)
 	  m = top.atoms.atom[index[i]].m;
 	else
-	  m = 1;
+	 m = 1;
 	c1[i][tel3+XX]=m*fr.v[index[i]][XX];
 	c1[i][tel3+YY]=m*fr.v[index[i]][YY];
 	c1[i][tel3+ZZ]=m*fr.v[index[i]][ZZ];
@@ -172,7 +227,8 @@ int gmx_velacc(int argc,char *argv[])
 
     teller ++;
   } while (read_next_frame(status,&fr));
-  close_trj(status);
+  
+	close_trj(status);
 
   do_autocorr(ftp2fn(efXVG,NFILE,fnm),
 	      bM ? 
