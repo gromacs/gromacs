@@ -1339,14 +1339,19 @@ static void decode_cos(char *s,t_cosines *cosine,bool bTime)
 static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 			char *option,char *val,int flag)
 {
+  /* The maximum number of energy group pairs would be MAXPTR*(MAXPTR+1)/2.
+   * But since this is much larger than STRLEN, such a line can not be parsed.
+   * The real maximum is the number of names that fit in a string: STRLEN/2.
+   */
+#define EGP_MAX (STRLEN/2)
   int  nelem,i,j,k,nr;
-  char *names[MAXPTR*2];
+  char *names[EGP_MAX];
   char ***gnames;
   bool bSet;
 
   gnames = groups->grpname;
 
-  nelem = str_nelem(val,MAXPTR*2,names);
+  nelem = str_nelem(val,EGP_MAX,names);
   if (nelem % 2 != 0)
     gmx_fatal(FARGS,"The number of groups for %s is odd",option);
   nr = groups->grps[egcENER].nr;
