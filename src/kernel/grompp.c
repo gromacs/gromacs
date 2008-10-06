@@ -199,8 +199,7 @@ static bool nint_ftype(gmx_mtop_t *mtop,t_molinfo *mi,int ftype)
 
   nint = 0;
   for(mb=0; mb<mtop->nmolblock; mb++) {
-    nint += mtop->molblock[mb].nmol*
-      mi[mtop->molblock[mb].type].plist[ftype].nr/(1+NRAL(ftype));
+    nint += mtop->molblock[mb].nmol*mi[mtop->molblock[mb].type].plist[ftype].nr;
   }
 
   return nint;

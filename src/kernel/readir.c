@@ -1340,13 +1340,13 @@ static bool do_egp_flag(t_inputrec *ir,gmx_groups_t *groups,
 			char *option,char *val,int flag)
 {
   int  nelem,i,j,k,nr;
-  char *names[MAXPTR];
+  char *names[MAXPTR*2];
   char ***gnames;
   bool bSet;
 
   gnames = groups->grpname;
 
-  nelem = str_nelem(val,MAXPTR,names);
+  nelem = str_nelem(val,MAXPTR*2,names);
   if (nelem % 2 != 0)
     gmx_fatal(FARGS,"The number of groups for %s is odd",option);
   nr = groups->grps[egcENER].nr;
