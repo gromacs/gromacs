@@ -13,9 +13,9 @@ LDFLAGS = -L@libdir@ @LDFLAGS@
 LIBS = -lmd@LIBSUFFIX@ -lgmx@LIBSUFFIX@ @LIBS@ 
 CC = @CC@
 if GMX_DOUBLE
-MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -DGMX_DOUBLE
+MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -I@includedir@/gromacs -DGMX_DOUBLE
 else
-MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@
+MYCFLAGS = @CFLAGS@ @INCLUDES@ -I@includedir@ -I@includedir@/gromacs
 endif
 
 if GMX_DOUBLE
