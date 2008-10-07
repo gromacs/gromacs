@@ -1107,7 +1107,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD) {
       bCPT = ((chkpt < 0 && do_per_step(step,ir->nstenergy)) || chkpt > 0 ||
 	       bLastStep);
-      chkpt = 0;
+      if (bCPT) {
+	chkpt = 0;
+      }
     } else {
       bCPT = FALSE;
     }
