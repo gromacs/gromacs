@@ -478,7 +478,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel,step_ene;
   char       *fn_cpt;
   FILE       *fp_dgdl=NULL,*fp_field=NULL;
-  time_t     start_t,run_t;
+  time_t     start_t;
+  double     run_time;
   real       t,t0,lam0;
   bool       bGStatEveryStep,bGStat;
   bool       bNS,bCheckNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
@@ -1106,7 +1107,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD) {
       bCPT = ((chkpt < 0 && do_per_step(step,ir->nstenergy)) || chkpt > 0 ||
 	       bLastStep);
-      chkpt = 0;
+      if (bCPT) {
+	chkpt = 0;
+      }
     } else {
       bCPT = FALSE;
     }
@@ -1224,6 +1227,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       calc_vcm_grp(fplog,mdatoms->start,mdatoms->homenr,mdatoms,
 		   state->x,state->v,vcm);
     
+    /* Determine the wallclock run time up till now */
+    run_time = (double)time(NULL) - (double)start_t;
+
     /* Check whether everything is still allright */    
     if (bGotTermSignal || bGotUsr1Signal) {
       if (bGotTermSignal || ir->nstlist == 0)
@@ -1245,7 +1251,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       bGotTermSignal = FALSE;
       bGotUsr1Signal = FALSE;
     } else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-	       (max_hours > 0 && (time(NULL) - start_t) > max_hours*24*60.0*0.99) &&
+	       (max_hours > 0 && run_time > max_hours*24*60.0*0.99) &&
 	       terminate == 0) {
       /* Signal to terminate the run */
       terminate = (ir->nstlist == 0 ? 1 : -1);
@@ -1280,10 +1286,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       bCheckNS = bNS;
     }
 
-    run_t = time(NULL) - start_t;
     if (MASTER(cr) && (cpt_period >= 0 &&
 		       (cpt_period == 0 || 
-			run_t >= nchkpt*cpt_period*60.0))) {
+			run_time >= nchkpt*cpt_period*60.0))) {
       if (chkpt == 0) {
 	nchkpt++;
       }
@@ -1291,7 +1296,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * or after 0.2*cpt_period at any step.
        */
       if (!bGStatEveryStep || ir->nstenergy == 0 || cpt_period == 0 ||
-	  run_t >= (nchkpt + 0.2)*cpt_period*60.0) {
+	  run_time >= (nchkpt + 0.2)*cpt_period*60.0) {
 	chkpt = 1;
       } else {
 	chkpt = -1;
