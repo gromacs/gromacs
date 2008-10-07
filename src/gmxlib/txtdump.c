@@ -522,7 +522,6 @@ void pr_inputrec(FILE *fp,int indent,const char *title,t_inputrec *ir,
     PI("ndelta",ir->ndelta);
     PI("nstcomm",ir->nstcomm);
     PS("comm_mode",ECOM(ir->comm_mode));
-    PI("nstcheckpoint",ir->nstcheckpoint);
     PI("nstlog",ir->nstlog);
     PI("nstxout",ir->nstxout);
     PI("nstvout",ir->nstvout);

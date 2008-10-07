@@ -510,6 +510,7 @@ void get_ir(char *mdparin,char *mdparout,
   REPL_TYPE("unconstrained-start","continuation");
   REM_TYPE("dihre-tau");
   REM_TYPE("nstdihreout");
+  REM_TYPE("nstcheckpoint");
 
   CCTYPE ("VARIOUS PREPROCESSING OPTIONS");
   CTYPE ("Preprocessor information: use cpp syntax.");
@@ -562,8 +563,7 @@ void get_ir(char *mdparin,char *mdparout,
   ITYPE ("nstxout",	ir->nstxout,	100);
   ITYPE ("nstvout",	ir->nstvout,	100);
   ITYPE ("nstfout",	ir->nstfout,	0);
-  CTYPE ("Checkpointing helps you continue after crashes");
-  ITYPE ("nstcheckpoint",  ir->nstcheckpoint,	1000);
+  ir->nstcheckpoint = 1000;
   CTYPE ("Output frequency for energies to log file and energy file");
   ITYPE ("nstlog",	ir->nstlog,	100);
   ITYPE ("nstenergy",   ir->nstenergy,  100);
