@@ -137,6 +137,9 @@ extern bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
  * else if bMass=TRUE, read the masses into top.atoms from the mass database.
  */
 
+void
+tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols);
+	
 #ifdef CPLUSPLUS
 }
 #endif
