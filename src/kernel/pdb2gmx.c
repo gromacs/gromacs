@@ -1070,9 +1070,11 @@ int main(int argc, char *argv[])
     
     /* Check for disulphides and other special bonds */
     rename_pdbres(pdba,"CYSH","CYS",TRUE,&symtab);
+    rename_pdbres(pdba,"CYN","CYM",TRUE,&symtab); /* amber */
     nssbonds=mk_specbonds(pdba,x,bCysMan,&ssbonds);
     rename_pdbres(pdba,"CYS","CYSH",TRUE,&symtab);
-		  
+    rename_pdbres(pdba,"CYM","CYN",TRUE,&symtab); /* amber */
+
     if (debug) {
       if ( cc->chain == '\0' || cc->chain == ' ')
 	sprintf(fn,"chain.pdb");
