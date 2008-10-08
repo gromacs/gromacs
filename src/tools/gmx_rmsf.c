@@ -356,7 +356,6 @@ int gmx_rmsf(int argc,char *argv[])
       pdbatoms->pdbinfo[aid].uij[U13] = 1e6*U[i][XX*DIM + ZZ];
       pdbatoms->pdbinfo[aid].uij[U23] = 1e6*U[i][YY*DIM + ZZ];
     }
-    sfree(U);
   }
   if (bRes) {
     average_residues(rmsf,isize,index,w_rls,&top.atoms);
@@ -374,7 +373,11 @@ int gmx_rmsf(int argc,char *argv[])
     print_dir(fp,Uaver);
     fclose(fp);
   }
-  
+
+  for(i=0; i<isize; i++)
+    sfree(U[i]);
+  sfree(U);
+
   /* Write RMSF output */
   if (bReadPDB) {
     bfac = 8.0*M_PI*M_PI/3.0*100;
