@@ -93,7 +93,7 @@ real ellipticity(int nres,t_bb bb[])
       pp2=sqr(phi-ppw[j].phi)+sqr(psi-ppw[j].psi);
       if (pp2 < 64) {
 	bb[i].nhx++;
-	ell+=Xi;
+	ell+=ppw[j].w;
 	break;
       }
     }
