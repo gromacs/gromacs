@@ -92,6 +92,7 @@ static void assign_param(t_functype ftype,t_iparams *new,
 			 real old[MAXFORCEPARAM],int comb,real reppow)
 {
   int  i,j;
+  real tmp;
 
   /* Set to zero */
   for(j=0; (j<MAXFORCEPARAM); j++)
@@ -215,7 +216,11 @@ static void assign_param(t_functype ftype,t_iparams *new,
   case F_ANGRESZ:
     new->pdihs.phiA = old[0];
     new->pdihs.cpA  = old[1];
-    new->pdihs.mult = round_check(old[2],1,ftype,"multiplicity");
+		  
+    /* Dont do any checks if all parameters are zero (such interactions will be removed) */
+    tmp=fabs(old[0])+fabs(old[1])+fabs(old[2])+fabs(old[3])+fabs(old[4]);
+    new->pdihs.mult = (tmp < GMX_REAL_MIN) ? 0 : round_check(old[2],1,ftype,"multiplicity");
+		  
     new->pdihs.phiB = old[3];
     new->pdihs.cpB  = old[4];
     break;
