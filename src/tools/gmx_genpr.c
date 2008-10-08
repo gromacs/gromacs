@@ -74,12 +74,13 @@ int gmx_genpr(int argc,char *argv[])
     "a specific position (as with position restraints)."
   };
   static rvec    fc={1000.0,1000.0,1000.0};
-  static real    freeze_level;
+  static real    freeze_level = 0.0;
   static real    disre_dist = 0.1;
   static real    disre_frac = 0.0;
   static real    disre_up2  = 1.0;
   static bool    bDisre=FALSE;
   static bool    bConstr=FALSE;
+	
   t_pargs pa[] = {
     { "-fc", FALSE, etRVEC, {fc}, 
       "force constants (kJ mol-1 nm-2)" },
@@ -123,7 +124,7 @@ int gmx_genpr(int argc,char *argv[])
 		    asize(desc),desc,0,NULL);
   
   bFreeze = opt2bSet("-of",NFILE,fnm) || opt2parg_bSet("-freeze",asize(pa),pa);
-  bDisre  = bDisre || opt2parg_bSet("disre_dist",npargs,pa);
+  bDisre  = bDisre || opt2parg_bSet("-disre_dist",npargs,pa);
   xfn     = opt2fn_null("-f",NFILE,fnm);
   nfn     = opt2fn_null("-n",NFILE,fnm);
   
