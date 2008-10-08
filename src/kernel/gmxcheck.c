@@ -331,8 +331,8 @@ void chk_trj(char *fn,char *tpr,real tol)
       
     old_t2=old_t1;
     old_t1=fr.time;
-    if (fpos && (j<10 || j%10==0))
-      fprintf(stderr," byte: %10lu",(unsigned long)fpos);
+    /*if (fpos && ((j<10 || j%10==0)))
+      fprintf(stderr," byte: %10lu",(unsigned long)fpos);*/
     j++;
     t=fr.time;
     new_natoms=fr.natoms;
