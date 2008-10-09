@@ -108,7 +108,7 @@ real calc_temp(real ekin,real nrdf)
 void parrinellorahman_pcoupl(FILE *fplog,int step,
 			     t_inputrec *ir,tensor pres,
 			     tensor box,tensor box_rel,tensor boxv,
-			     tensor M,matrix *scale_tot,bool bFirstStep)
+			     tensor M,matrix mu,bool bFirstStep)
 {
   /* This doesn't do any coordinate updating. It just
    * integrates the box vector equations from the calculated
@@ -240,18 +240,13 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
   mmul(invbox,t1,t2);
   mtmul(t2,invbox,M);
 
-  if (scale_tot) {
-    matrix mu;
-    int i;
-    /* The transposes of the scaling matrices are stored,
-     * therefore the matrix multiplication orders are inversed.
-     */
-    mmul_ur0(invbox,boxv,mu);
-    for(n=0;n<DIM;n++)
-      for(d=0; d<=n; d++)
-	mu[n][d] = (d==n ? 1 : 0) + mu[n][d]/ir->delta_t;
-    mmul_ur0(*scale_tot,mu,*scale_tot);
-  }
+  /* Determine the scaling matrix mu for the coordinates */
+  for(d=0;d<DIM;d++)
+    for(n=0;n<=d;n++)
+      t1[d][n] = box[d][n] + ir->delta_t*boxv[d][n];
+  preserve_box_shape(ir,box_rel,t1);
+  /* t1 is the box at t+dt, determine mu as the relative change */
+  mmul_ur0(invbox,t1,mu);
 }
 
 void berendsen_pcoupl(FILE *fplog,int step,

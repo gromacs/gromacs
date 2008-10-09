@@ -820,7 +820,7 @@ void update(FILE         *fplog,
   if (inputrec->epc == epcPARRINELLORAHMAN) {
     parrinellorahman_pcoupl(fplog,step,inputrec,state->pres_prev,
 			    state->box,state->box_rel,state->boxv,
-			    M,scale_tot,bInitStep);
+			    M,pcoupl_mu,bInitStep);
   }
   
   /* Now do the actual update of velocities and positions */
@@ -970,25 +970,32 @@ void update(FILE         *fplog,
   update_ekindata(start,homenr,ekind,&(inputrec->opts),state->v,md,
 		  state->lambda,bNEMD);
 
-  if (inputrec->epc == epcBERENDSEN) {
-    berendsen_pscale(inputrec,pcoupl_mu,state->box,state->box_rel,
-		     start,homenr,state->x,md->cFREEZE,nrnb);
+  if (inputrec->epc != epcNO) {
+    if (inputrec->epc == epcBERENDSEN) {
+      berendsen_pscale(inputrec,pcoupl_mu,state->box,state->box_rel,
+		       start,homenr,state->x,md->cFREEZE,nrnb);
+    } else if (inputrec->epc == epcPARRINELLORAHMAN) {
+      /* The box velocities were updated in do_pr_pcoupl in the update
+       * iteration, but we dont change the box vectors until we get here
+       * since we need to be able to shift/unshift above.
+       */
+      for(i=0;i<DIM;i++)
+	for(m=0;m<=i;m++)
+	  state->box[i][m] += dt*state->boxv[i][m];
+      
+      preserve_box_shape(inputrec,state->box_rel,state->box);
+
+      /* Scale the coordinates */
+      for(n=start; (n<start+homenr); n++) {
+	tmvmul_ur0(pcoupl_mu,state->x[n],state->x[n]);
+      }
+    }
     if (scale_tot) {
       /* The transposes of the scaling matrices are stored,
        * therefore we need to reverse the order in the multiplication.
        */
       mmul_ur0(*scale_tot,pcoupl_mu,*scale_tot);
     }
-  } else if (inputrec->epc == epcPARRINELLORAHMAN) {
-    /* The box velocities were updated in do_pr_pcoupl in the update
-     * iteration, but we dont change the box vectors until we get here
-     * since we need to be able to shift/unshift above.
-     */
-    for(i=0;i<DIM;i++)
-      for(m=0;m<=i;m++)
-	state->box[i][m] += dt*state->boxv[i][m];
-
-    preserve_box_shape(inputrec,state->box_rel,state->box);
   }
   if (DEFORM(*inputrec)) {
     deform(start,homenr,state->x,state->box,scale_tot,inputrec,step);

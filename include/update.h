@@ -165,7 +165,7 @@ extern real calc_pres(int ePBC,int nwall,matrix box,
 extern void parrinellorahman_pcoupl(FILE *fplog,int step,
 				    t_inputrec *ir,tensor pres,
 				    tensor box,tensor box_rel,tensor boxv,
-				    tensor M,matrix *scale_tot,
+				    tensor M,matrix mu,
 				    bool bFirstStep);
   
 extern void berendsen_pcoupl(FILE *fplog,int step,
