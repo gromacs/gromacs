@@ -787,11 +787,12 @@ int gmx_trjconv(int argc,char *argv[])
       nfitdim = (fit_enum==efFitXY) ? 2 : 3;
     bRmPBC = bFit || bPBCWhole || bPBCcomRes || bPBCcomMol;
     if (bSetUR) {
-      if ( bNoJump || bCluster || bPBCWhole ) {
-	fprintf(stderr,"Note: Option for unitcell representation (-ur %s) has "
-		"no effect in\n"
-		"      combination with -pbc %s; ingoring unitcell "
-		"representation.\n\n", unitcell_opt[0], pbc_opt[0]);
+      if (!(bPBCcomRes || bPBCcomMol ||  bPBCcomAtom)) {
+	fprintf(stderr,
+		"WARNING: Option for unitcell representation (-ur %s)\n"
+		"         only has effect in combination with -pbc %s, %s or %s.\n"
+		"         Ingoring unitcell representation.\n\n",
+		unitcell_opt[0],pbc_opt[2],pbc_opt[3],pbc_opt[4]);
 	bSetUR = FALSE;
       }
     }
