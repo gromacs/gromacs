@@ -138,7 +138,6 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
   int    d,n;
   tensor winv;
   real   vol=box[XX][XX]*box[YY][YY]*box[ZZ][ZZ];
-  real   fac=vol/PRESFAC;
   real   atot,arel,change,maxchange,xy_pressure;
   tensor invbox,pdiff,t1,t2;
 
@@ -147,6 +146,10 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
   m_inv_ur0(box,invbox);
 
   if (!bFirstStep) {
+    /* Note that PRESFAC does not occur here.
+     * The pressure and compressibility always occur as a product,
+     * therefore the pressure unit drops out.
+     */
     maxl=max(box[XX][XX],box[YY][YY]);
     maxl=max(maxl,box[ZZ][ZZ]);
     for(d=0;d<DIM;d++)
@@ -167,12 +170,21 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
     }
     
     tmmul(invbox,pdiff,t1);
+    /* Move the off-diagonal elements of the 'force' to one side to ensure
+     * that we obey the box constraints.
+     */
+    for(d=0;d<DIM;d++) {
+      for(n=0;n<d;n++) {
+	t1[d][n] += t1[n][d];
+	t1[n][d] = 0;
+      }
+    }
     
     switch (ir->epct) {
     case epctANISOTROPIC:
       for(d=0;d<DIM;d++) 
 	for(n=0;n<=d;n++)
-	  t1[d][n]*=winv[d][n]*fac;
+	  t1[d][n] *= winv[d][n]*vol;
       break;
     case epctISOTROPIC:
       /* calculate total volume acceleration */
@@ -184,7 +196,7 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
        * change speed */
       for(d=0;d<DIM;d++)
 	for(n=0;n<=d;n++)
-	  t1[d][n]=winv[0][0]*fac*arel*box[d][n];    
+	  t1[d][n] = winv[0][0]*vol*arel*box[d][n];    
       break;
     case epctSEMIISOTROPIC:
     case epctSURFACETENSION:
@@ -197,9 +209,9 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
        * change speed. Dont change the third box vector accelerations */
       for(d=0;d<ZZ;d++)
 	for(n=0;n<=d;n++)
-	  t1[d][n]=winv[d][n]*fac*arel*box[d][n];
+	  t1[d][n] = winv[d][n]*vol*arel*box[d][n];
       for(n=0;n<DIM;n++)
-	t1[ZZ][n]*=winv[d][n]*fac;
+	t1[ZZ][n] *= winv[d][n]*vol;
       break;
     default:
       gmx_fatal(FARGS,"Parrinello-Rahman pressure coupling type %s "
@@ -234,9 +246,6 @@ void parrinellorahman_pcoupl(FILE *fplog,int step,
   preserve_box_shape(ir,box_rel,boxv);
 
   mtmul(boxv,box,t1);       /* t1=boxv * b' */
-  for(d=0;d<DIM;d++)
-    for(n=0;n<DIM;n++)
-      t1[d][n] += t1[n][d]; /* t1=t1+t1' */
   mmul(invbox,t1,t2);
   mtmul(t2,invbox,M);
 
