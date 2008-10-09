@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0_rc4, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -14,19 +14,11 @@ AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="4:0:0"
+SHARED_VERSION_INFO="5:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
-case "${host_vendor}-${host_os}" in
- # MPI builds on aix break with shared libs, so they are disabled by default,
- # except platforms where we have good experience from it working.
- apple*-darwin*)
-    AC_ENABLE_SHARED
- ;;
- *)
-    AC_DISABLE_SHARED
- ;;
-esac
+AC_DISABLE_SHARED
+
 
 #######################################################################
 # Simple options and makefile variables
@@ -1051,11 +1043,17 @@ fi
 
 if test "$host_vendor" = "apple" -a "$enable_apple_64bit" = "no"; then
   echo ""
-  echo "Did you know that you can compile a 64-bit version of Gromacs to improve"
-  echo "performance on recent Intel Macs? You need to install a 64-bit version"
-  echo "of FFTW first (add -m64 to CFLAGS, or download it from the Gromacs site)"
-  echo "after which you can simply specify --enable-apple-64bit to this script." 
+  echo "* Did you know that you can compile a 64-bit version of Gromacs to improve"
+  echo "  performance on recent Intel Macs? You need to install a 64-bit version"
+  echo "  of FFTW first (add -m64 to CFLAGS, or download it from the Gromacs site)"
+  echo "  after which you can simply specify --enable-apple-64bit to this script." 
 fi
+
+if test "$enable_shared" = "no"; then
+  echo ""
+  echo "* On most platforms you can save 10X space with dynamic libraries, although"
+  echo "  the binaries might be less portable. Why not try --enable-shared ?"
+fi  
 
 echo ""
 
