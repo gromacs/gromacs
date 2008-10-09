@@ -58,13 +58,11 @@
 #define UNSP_ICO_DOD      9
 #define UNSP_ICO_ARC     10
 
-typedef real * point_real;
-typedef int    * point_int;
-point_real xpunsp=NULL;
-real       del_cube;
-point_int    ico_wk=NULL, ico_pt=NULL;
-int          n_dot, ico_cube, last_n_dot=0, last_densit=0, last_unsp=0;
-int          last_cubus=0;
+real   *xpunsp=NULL;
+real   del_cube;
+int    *ico_wk=NULL, *ico_pt=NULL;
+int    n_dot, ico_cube, last_n_dot=0, last_densit=0, last_unsp=0;
+int    last_cubus=0;
 
 #define FOURPI (4.*M_PI)
 #define TORAD(A)     ((A)*0.017453293)
@@ -189,7 +187,7 @@ int ico_dot_arc(int densit) { /* densit...required dots per unit sphere */
   real a, d, x, y, z, x2, y2, z2, x3, y3, z3;
   real xij, yij, zij, xji, yji, zji, xik, yik, zik, xki, yki, zki,
     xjk, yjk, zjk, xkj, ykj, zkj;
-  point_real xus=NULL;
+  real *xus=NULL;
 
   /* calculate tessalation level */
   a = sqrt((((real) densit)-2.)/10.);
@@ -294,7 +292,7 @@ int ico_dot_dod(int densit) { /* densit...required dots per unit sphere */
   real a, d, x, y, z, x2, y2, z2, x3, y3, z3, ai_d, adod;
   real xij, yij, zij, xji, yji, zji, xik, yik, zik, xki, yki, zki,
     xjk, yjk, zjk, xkj, ykj, zkj;
-  point_real xus=NULL;
+  real *xus=NULL;
   /* calculate tesselation level */
   a = sqrt((((real) densit)-2.)/30.);
   tess = max((int) ceil(a), 1);
@@ -441,8 +439,8 @@ int unsp_type(int densit) {
 
 int make_unsp(int densit, int mode, int * num_dot, int cubus) {
   int ndot, ico_cube_cb, i, j, k, l, ijk, tn, tl, tl2;
-  point_real xus;
-  point_int    work;
+  real *xus;
+  int  *work;
   real x, y, z;
 
   if (xpunsp) free(xpunsp); if (ico_wk) free(ico_wk);
@@ -538,13 +536,13 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   int distribution;
   int l;
   int maxnei, nnei, last, maxdots=0;
-  point_int wkdot=NULL, wkbox=NULL, wkat1=NULL, wkatm=NULL;
+  int *wkdot=NULL, *wkbox=NULL, *wkat1=NULL, *wkatm=NULL;
   Neighb  *wknb, *ctnb;
   int iii1, iii2, iiat, lfnr=0, i_at, j_at;
   real dx, dy, dz, dd, ai, aisq, ajsq, aj, as, a;
   real xi, yi, zi, xs=0., ys=0., zs=0.;
   real dotarea, area, vol=0.;
-  point_real xus, dots=NULL, atom_area=NULL;
+  real *xus, *dots=NULL, *atom_area=NULL;
   int  nxbox, nybox, nzbox, nxy, nxyz;
   real xmin, ymin, zmin, xmax, ymax, zmax, ra2max, d, *pco;
   /* Added DvdS 2006-07-19 */
@@ -555,7 +553,8 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   distribution = unsp_type(densit);
   if (distribution != -last_unsp || last_cubus != 4 ||
       (densit != last_densit && densit != last_n_dot)) {
-    if (make_unsp(densit, (-distribution), &n_dot, 4)) return 1;
+    if (make_unsp(densit, (-distribution), &n_dot, 4)) 
+      return 1;
   }
   xus = xpunsp;
 
@@ -574,7 +573,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   if (mode & FLAG_VOLUME) 
     vol=0.;
   if (mode & FLAG_DOTS) {
-    maxdots = 3*n_dot*nat/10;
+    maxdots = (3*n_dot*nat)/10;
     snew(dots,maxdots);
     lfnr=0;
   }
@@ -622,10 +621,10 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   nxyz = nxy*nzbox;
 
   /* box number of atoms */
-  snew(wkatm,3*nat);
-  wkat1 = wkatm+nat;
-  snew(wkdot,n_dot+nxyz+1);
-  wkbox = wkdot+n_dot;
+  snew(wkatm,nat);
+  snew(wkat1,nat);
+  snew(wkdot,n_dot);
+  snew(wkbox,nxyz+1);
 
   /* Put the atoms in their boxes */
   for (iat_xx=0; (iat_xx<nat); iat_xx++) {
@@ -658,6 +657,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
     if (debug) 
       fprintf(debug,"atom %5d on place %5d\n", iat, wkbox[wkat1[iat_xx]]);
   }
+  
   if (debug) {
     fprintf(debug,"nsc_dclm: n_dot=%5d ra2max=%9.3f %9.3f\n", 
 	    n_dot, ra2max, dotarea);
@@ -675,30 +675,49 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   /* calculate surface for all atoms, step cube-wise */
   for (iz=0; iz<nzbox; iz++) {
     iii = iz*nxy;
-    izs = max(iz-1,0); 
-    ize = min(iz+2, nzbox);
+    if (box) {
+      izs = iz-1;
+      ize = min(iz+2,izs+nzbox);
+    }
+    else {
+      izs = max(iz-1,0); 
+      ize = min(iz+2, nzbox);
+    }
     for (iy=0; iy<nybox; iy++) {
       ii = iy*nxbox+iii;
-      iys = max(iy-1,0); 
-      iye = min(iy+2, nybox);
+      if (box) {
+	iys = iy-1;
+	iye = min(iy+2,iys+nybox);
+      }
+      else {
+	iys = max(iy-1,0); 
+	iye = min(iy+2, nybox);
+      }
       for (ix=0; ix<nxbox; ix++) {
 	i = ii+ix;
 	iii1=wkbox[i]; 
 	iii2=wkbox[i+1];
 	if (iii1 >= iii2) 
 	  continue;
-	ixs = max(ix-1,0); 
-	ixe = min(ix+2, nxbox);
-
+	if (box) {
+	  ixs = ix-1; 
+	  ixe = min(ix+2,ixs+nxbox);
+	}
+	else {
+	  ixs = max(ix-1,0); 
+	  ixe = min(ix+2, nxbox);
+	}
 	iiat = 0;
 	/* make intermediate atom list */
 	for (jz=izs; jz<ize; jz++) {
-	  jjj = jz*nxy;
+	  jjj = ((jz+nzbox) % nzbox)*nxy;
 	  for (jy=iys; jy<iye; jy++) {
-	    jj = jy*nxbox+jjj;
+	    jj = ((jy+nybox) % nybox)*nxbox+jjj;
 	    for (jx=ixs; jx<ixe; jx++) {
-	      j = jj+jx;
+	      j = jj+((jx+nxbox) % nxbox);
 	      for (jat=wkbox[j]; jat<wkbox[j+1]; jat++) {
+		range_check(wkatm[jat],0,nat);
+		range_check(iiat,0,nat);
 		wkat1[iiat] = wkatm[jat]; 
 		iiat++;
 	      }     /* end of cycle "jat" */
@@ -786,6 +805,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 	  a = aisq*dotarea* (real) i_ac;
 	  area = area + a;
 	  if (mode & FLAG_ATOM_AREA) {
+	    range_check(wkatm[iat],0,nat);
 	    atom_area[wkatm[iat]] = a;
 	  }
 	  if (mode & FLAG_DOTS) {
@@ -794,7 +814,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
 		lfnr++;
 		if (maxdots <= 3*lfnr+1) {
 		  maxdots = maxdots+n_dot*3;
-		  dots = (real *) REALLOC(dots, maxdots*sizeof(real));
+		  srenew(dots,maxdots);
 		}
 		dots[3*lfnr-3] = ai*xus[3*l]+xi;
 		dots[3*lfnr-2] = ai*xus[1+3*l]+yi;
@@ -819,7 +839,11 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
     }           /* end of cycle "iy" */
   }           /* end of cycle "iz" */
 
-  sfree(wkatm); sfree(wkdot); sfree(wknb);
+  sfree(wkatm); 
+  sfree(wkat1); 
+  sfree(wkdot); 
+  sfree(wkbox); 
+  sfree(wknb);
 
   if (mode & FLAG_VOLUME) {
     vol = vol*FOURPI/(3.* (real) n_dot);
