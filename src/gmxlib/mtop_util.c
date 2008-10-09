@@ -756,6 +756,8 @@ t_topology gmx_mtop_t_to_t_topology(gmx_mtop_t *mtop)
 
     gen_local_top(mtop,NULL,&ltop);
 
+    open_symtab(&top.symtab);
+
     top.name      = mtop->name;
     top.idef      = ltop.idef;
     top.atomtypes = ltop.atomtypes;
