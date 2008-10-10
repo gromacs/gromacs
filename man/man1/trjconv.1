@@ -1,7 +1,7 @@
-.TH trjconv 1 "Mon 29 Aug 2005"
+.TH trjconv 1 "Mon 22 Sep 2008"
 .SH NAME
 trjconv
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3trjconv\fP
 .BI "-f" " traj.xtc "
@@ -25,8 +25,10 @@ trjconv
 .BI "-timestep" " time "
 .BI "-pbc" " enum "
 .BI "-ur" " enum "
-.BI "-center" " enum "
+.BI "-[no]center" ""
+.BI "-boxcenter" " enum "
 .BI "-box" " vector "
+.BI "-trans" " vector "
 .BI "-shift" " vector "
 .BI "-fit" " enum "
 .BI "-ndec" " int "
@@ -37,6 +39,7 @@ trjconv
 .BI "-[no]app" ""
 .BI "-split" " time "
 .BI "-[no]sep" ""
+.BI "-nzero" " int "
 .BI "-[no]ter" ""
 .BI "-dropunder" " real "
 .BI "-dropover" " real "
@@ -52,7 +55,7 @@ from one format to another
 select a subset of atoms
 
 .B 3.
-remove periodicity from molecules
+change the periodicity representation
 
 
 .B 4.
@@ -209,21 +212,15 @@ sets the type of periodic boundary condition
 treatment:
 
 * 
-.B whole
-puts the atoms in the box and then makes
-broken molecules whole (a run input file is required).
-Atom number 1 of each molecule will be inside the box.
+.B mol
+puts the center of mass of molecules in the box.
 
 * 
-.B com
-puts the center of mass of all 
-.I residues
-
-in the box. Not that this can break molecules that consist of
-more than one residue (e.g. proteins).
+.B res
+puts the center of mass of residues in the box.
 
 * 
-.B inbox
+.B atom
 puts all the atoms in the box.
 
 * 
@@ -242,25 +239,23 @@ clusters all the atoms in the selected index
 such that they are all closest to the center of mass of the cluster
 which is iteratively updated. Note that this will only give meaningful
 results if you in fact have a cluster. Luckily that can be checked
-afterwards using a trajectory viewer.
+afterwards using a trajectory viewer. Note also that if your molecules
+are broken this will not work either.
 
-
-.B -pbc
-is ignored when 
-.B -fit
-or 
-.B -pfit
-is set,
-in that case molecules will be made whole.
+* 
+.B whole
+only makes broken molecules whole.
 
 
 Option 
 .B -ur
 sets the unit cell representation for options
 
-.B whole
+.B mol
+, 
+.B res
 and 
-.B inbox
+.B atom
 of 
 .B -pbc
 .
@@ -284,7 +279,7 @@ and
 is 
 .B tric
 (see below), unless the option 
-.B -center
+.B -boxcenter
 
 is set differently.
 
@@ -293,7 +288,14 @@ Option
 .B -center
 centers the system in the box. The user can
 select the group which is used to determine the geometrical center.
-The center options are:
+Option 
+.B -boxcenter
+sets the location of the center of the box
+for options 
+.B -pbc
+and 
+.B -center
+. The center options are:
 
 .B tric
 : half of the sum of the box vectors,
@@ -304,7 +306,7 @@ The center options are:
 .B zero
 : zero.
 Use option 
-.B -pbc whole
+.B -pbc mol
 in addition to 
 .B -center
 when you
@@ -362,15 +364,15 @@ will not be written.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-o" " trajout.xtc" 
 .B Output
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -389,16 +391,16 @@ will not be written.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
 .BI "-tu"  " enum" " ps" 
@@ -412,48 +414,46 @@ will not be written.
 .B us
 , 
 .B ms
-, 
-.B s
-, 
-.B m
 or 
-.B h
+.B s
 
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-skip"  " int" " 1" 
  Only write every nr-th frame
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only write frame when t MOD dt = first time (ps)
 
-.BI "-dump"  " time" "     -1" 
+.BI "-dump"  " time" " -1    " 
  Dump frame nearest specified time (ps)
 
-.BI "-t0"  " time" "      0" 
+.BI "-t0"  " time" " 0     " 
  Starting time (ps) (default: don't change)
 
-.BI "-timestep"  " time" "      0" 
+.BI "-timestep"  " time" " 0     " 
  Change time step between input frames (ps)
 
 .BI "-pbc"  " enum" " none" 
  PBC treatment (see help text for full description): 
 .B none
 , 
-.B whole
+.B mol
 , 
-.B inbox
+.B res
+, 
+.B atom
 , 
 .B nojump
 , 
 .B cluster
 or 
-.B com
+.B whole
 
 
 .BI "-ur"  " enum" " rect" 
@@ -465,10 +465,11 @@ or
 .B compact
 
 
-.BI "-center"  " enum" " no" 
- Center atoms in box: 
-.B no
-, 
+.BI "-[no]center"  "no    "
+ Center atoms in box
+
+.BI "-boxcenter"  " enum" " tric" 
+ Center for -pbc and -center: 
 .B tric
 , 
 .B rect
@@ -479,6 +480,9 @@ or
 .BI "-box"  " vector" " 0 0 0" 
  Size for new cubic box (default: read from input)
 
+.BI "-trans"  " vector" " 0 0 0" 
+ All coordinates will be translated by trans. This can advantageously be combined with -pbc mol -ur compact.
+
 .BI "-shift"  " vector" " 0 0 0" 
  All coordinates will be shifted by framenr*shift
 
@@ -488,6 +492,8 @@ or
 , 
 .B rot+trans
 , 
+.B rotxy+transxy
+, 
 .B translation
 or 
 .B progressive
@@ -496,33 +502,36 @@ or
 .BI "-ndec"  " int" " 3" 
  Precision for .xtc and .gro writing in number of decimal places
 
-.BI "-[no]vel"  "   yes"
+.BI "-[no]vel"  "yes   "
  Read and write velocities if possible
 
-.BI "-[no]force"  "    no"
+.BI "-[no]force"  "no    "
  Read and write forces if possible
 
-.BI "-trunc"  " time" "     -1" 
+.BI "-trunc"  " time" " -1    " 
  Truncate input trj file after this time (ps)
 
 .BI "-exec"  " string" " " 
  Execute command for every output frame with the frame number as argument
 
-.BI "-[no]app"  "    no"
+.BI "-[no]app"  "no    "
  Append output
 
-.BI "-split"  " time" "      0" 
+.BI "-split"  " time" " 0     " 
  Start writing new file when t MOD split = first time (ps)
 
-.BI "-[no]sep"  "    no"
+.BI "-[no]sep"  "no    "
  Write each frame to a separate .gro, .g96 or .pdb file
 
-.BI "-[no]ter"  "    no"
+.BI "-nzero"  " int" " 0" 
+ Prepend file number in case you use the -sep flag with this number of zeroes
+
+.BI "-[no]ter"  "no    "
  Use 'TER' in pdb file as end of frame in stead of default 'ENDMDL'
 
-.BI "-dropunder"  " real" "      0" 
+.BI "-dropunder"  " real" " 0     " 
  Drop all frames below this value
 
-.BI "-dropover"  " real" "      0" 
+.BI "-dropover"  " real" " 0     " 
  Drop all frames above this value
 

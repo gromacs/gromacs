@@ -1,7 +1,7 @@
-.TH pdb2gmx 1 "Mon 29 Aug 2005"
+.TH pdb2gmx 1 "Mon 22 Sep 2008"
 .SH NAME
 pdb2gmx
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3pdb2gmx\fP
 .BI "-f" " eiwit.pdb "
@@ -19,8 +19,10 @@ pdb2gmx
 .BI "-[no]ss" ""
 .BI "-[no]ter" ""
 .BI "-[no]lys" ""
+.BI "-[no]arg" ""
 .BI "-[no]asp" ""
 .BI "-[no]glu" ""
+.BI "-[no]gln" ""
 .BI "-[no]his" ""
 .BI "-angle" " real "
 .BI "-dist" " real "
@@ -162,11 +164,11 @@ The increase in mass of the hydrogens is subtracted from the bonded
 .SH FILES
 .BI "-f" " eiwit.pdb" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-o" " conf.gro" 
 .B Output
- Generic structure: gro g96 pdb xml 
+ Structure file: gro g96 pdb 
 
 .BI "-p" " topol.top" 
 .B Output
@@ -182,16 +184,16 @@ The increase in mass of the hydrogens is subtracted from the bonded
 
 .BI "-q" " clean.pdb" 
 .B Output, Opt.
- Generic structure: gro g96 pdb xml 
+ Structure file: gro g96 pdb 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-[no]merge"  "    no"
+.BI "-[no]merge"  "no    "
  Merge chains into one molecule definition
 
 .BI "-ff"  " string" " select" 
@@ -212,46 +214,52 @@ or
 .B f3c
 
 
-.BI "-[no]inter"  "    no"
- Set the next 6 options to interactive
+.BI "-[no]inter"  "no    "
+ Set the next 8 options to interactive
 
-.BI "-[no]ss"  "    no"
+.BI "-[no]ss"  "no    "
  Interactive SS bridge selection
 
-.BI "-[no]ter"  "    no"
+.BI "-[no]ter"  "no    "
  Interactive termini selection, iso charged
 
-.BI "-[no]lys"  "    no"
+.BI "-[no]lys"  "no    "
  Interactive Lysine selection, iso charged
 
-.BI "-[no]asp"  "    no"
+.BI "-[no]arg"  "no    "
+ Interactive Arganine selection, iso charged
+
+.BI "-[no]asp"  "no    "
  Interactive Aspartic Acid selection, iso charged
 
-.BI "-[no]glu"  "    no"
+.BI "-[no]glu"  "no    "
  Interactive Glutamic Acid selection, iso charged
 
-.BI "-[no]his"  "    no"
+.BI "-[no]gln"  "no    "
+ Interactive Glutamine selection, iso neutral
+
+.BI "-[no]his"  "no    "
  Interactive Histidine selection, iso checking H-bonds
 
-.BI "-angle"  " real" "    135" 
+.BI "-angle"  " real" " 135   " 
  Minimum hydrogen-donor-acceptor angle for a H-bond (degrees)
 
-.BI "-dist"  " real" "    0.3" 
+.BI "-dist"  " real" " 0.3   " 
  Maximum donor-acceptor distance for a H-bond (nm)
 
-.BI "-[no]una"  "    no"
+.BI "-[no]una"  "no    "
  Select aromatic rings with united CH atoms on Phenylalanine, Tryptophane and Tyrosine
 
-.BI "-[no]ignh"  "    no"
+.BI "-[no]ignh"  "no    "
  Ignore hydrogen atoms that are in the pdb file
 
-.BI "-[no]missing"  "    no"
+.BI "-[no]missing"  "no    "
  Continue when atoms are missing, dangerous
 
-.BI "-[no]v"  "    no"
+.BI "-[no]v"  "no    "
  Be slightly more verbose in messages
 
-.BI "-posrefc"  " real" "   1000" 
+.BI "-posrefc"  " real" " 1000  " 
  Force constant for position restraints
 
 .BI "-vsite"  " enum" " none" 
@@ -263,9 +271,9 @@ or
 .B aromatics
 
 
-.BI "-[no]heavyh"  "    no"
+.BI "-[no]heavyh"  "no    "
  Make hydrogen atoms heavy
 
-.BI "-[no]deuterate"  "    no"
+.BI "-[no]deuterate"  "no    "
  Change the mass of hydrogens to 2 amu
 

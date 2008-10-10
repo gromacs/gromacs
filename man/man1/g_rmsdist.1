@@ -1,7 +1,7 @@
-.TH g_rmsdist 1 "Mon 29 Aug 2005"
+.TH g_rmsdist 1 "Mon 22 Sep 2008"
 .SH NAME
 g_rmsdist
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_rmsdist\fP
 .BI "-f" " traj.xtc "
@@ -61,11 +61,11 @@ file, including case. Specifying non-sequential atoms is undefined.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -104,33 +104,33 @@ file, including case. Specifying non-sequential atoms is undefined.
  Generic data file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-nlevels"  " int" " 40" 
  Discretize rms in  levels
 
-.BI "-max"  " real" "     -1" 
+.BI "-max"  " real" " -1    " 
  Maximum level in matrices
 
-.BI "-[no]sumh"  "   yes"
+.BI "-[no]sumh"  "yes   "
  average distance over equivalent hydrogens
 

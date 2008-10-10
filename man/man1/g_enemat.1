@@ -1,7 +1,7 @@
-.TH g_enemat 1 "Mon 29 Aug 2005"
+.TH g_enemat 1 "Mon 22 Sep 2008"
 .SH NAME
 g_enemat
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_enemat\fP
 .BI "-f" " ener.edr "
@@ -104,7 +104,7 @@ in the comparison.
 .SH FILES
 .BI "-f" " ener.edr" 
 .B Input, Opt.
- Generic energy: edr ene 
+ Energy file: edr ene 
 
 .BI "-groups" " groups.dat" 
 .B Input
@@ -123,72 +123,72 @@ in the comparison.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-[no]sum"  "    no"
+.BI "-[no]sum"  "no    "
  Sum the energy terms selected rather than display them all
 
 .BI "-skip"  " int" " 0" 
  Skip number of frames between data points
 
-.BI "-[no]mean"  "   yes"
+.BI "-[no]mean"  "yes   "
  with -groups extracts matrix of mean energies in stead of matrix for each timestep
 
 .BI "-nlevels"  " int" " 20" 
  number of levels for matrix colors
 
-.BI "-max"  " real" "  1e+20" 
+.BI "-max"  " real" " 1e+20 " 
  max value for energies
 
 .BI "-min"  " real" " -1e+20" 
  min value for energies
 
-.BI "-[no]coul"  "   yes"
+.BI "-[no]coul"  "yes   "
  extract Coulomb SR energies
 
-.BI "-[no]coulr"  "    no"
+.BI "-[no]coulr"  "no    "
  extract Coulomb LR energies
 
-.BI "-[no]coul14"  "    no"
+.BI "-[no]coul14"  "no    "
  extract Coulomb 1-4 energies
 
-.BI "-[no]lj"  "   yes"
+.BI "-[no]lj"  "yes   "
  extract Lennard-Jones SR energies
 
-.BI "-[no]lj"  "    no"
+.BI "-[no]lj"  "no    "
  extract Lennard-Jones LR energies
 
-.BI "-[no]lj14"  "    no"
+.BI "-[no]lj14"  "no    "
  extract Lennard-Jones 1-4 energies
 
-.BI "-[no]bhamsr"  "    no"
+.BI "-[no]bhamsr"  "no    "
  extract Buckingham SR energies
 
-.BI "-[no]bhamlr"  "    no"
+.BI "-[no]bhamlr"  "no    "
  extract Buckingham LR energies
 
-.BI "-[no]free"  "   yes"
+.BI "-[no]free"  "yes   "
  calculate free energy
 
-.BI "-temp"  " real" "    300" 
+.BI "-temp"  " real" " 300   " 
  reference temperature for free energy calculation
 

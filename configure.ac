@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0_rc1, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -14,11 +14,11 @@ AC_PREFIX_DEFAULT(/usr/local/gromacs)
 AM_CONFIG_HEADER(src/config.h)
 dnl This is the version info according to the libtool versioning system.
 dnl It does *not* correspond to the release number.
-SHARED_VERSION_INFO="4:0:0"
+SHARED_VERSION_INFO="5:0:0"
 AC_SUBST(SHARED_VERSION_INFO)
 
-# MPI builds on aix break with shared libs, so they are disabled by default.
 AC_DISABLE_SHARED
+
 
 #######################################################################
 # Simple options and makefile variables
@@ -76,12 +76,21 @@ if test "$enable_mpi_environment" != "no"; then
   AC_DEFINE_UNQUOTED(GMX_CHECK_MPI_ENV,"$enable_mpi_environment",[If defined, only start MPI runs when this variable is set])
 fi
 
+AC_ARG_ENABLE(apple_64bit,
+              [AC_HELP_STRING([--enable-apple-64bit],
+                              [Build 64bit binaries for newer Macs])],,enable_apple_64bit=no)
+
+
 ### IA32 assembly code
 AC_ARG_ENABLE(ia32_3dnow,    
               [AC_HELP_STRING([--disable-ia32-3dnow],
                               [Don't build 3DNow! assembly loops on ia32])],,enable_ia32_3dnow=yes)
 case "${host_cpu}" in
-   i?86) ;;     
+   i?86) 
+     if test "$enable_apple_64bit" = "yes"; then
+       enable_ia32_3dnow=no;
+     fi
+   ;;
    *) enable_ia32_3dnow=no ;;
 esac
 
@@ -90,8 +99,13 @@ esac
 AC_ARG_ENABLE(ia32_sse,    
               [AC_HELP_STRING([--disable-ia32-sse],
                               [Don't build SSE/SSE2 assembly loops on ia32])],,enable_ia32_sse=yes)
-case "${host_cpu}" in
-   i?86) ;;     
+case "${host_cpu}-${host_vendor}" in
+   i?86-apple) 
+      if test "$enable_apple_64bit" = "yes"; then
+        enable_ia32_sse=no;
+      fi
+   ;;
+   i?86-*) ;;     
    *) enable_ia32_sse=no ;;
 esac
 
@@ -99,8 +113,13 @@ esac
 AC_ARG_ENABLE(x86_64_sse,
               [AC_HELP_STRING([--disable-x86-64-sse],
                               [Don't build SSE assembly loops on X86_64])],,enable_x86_64_sse=yes)
-case "${host_cpu}" in
-   x86_64 | amd64) ;;
+case "${host_cpu}-${host_vendor}" in
+   x86_64-* | amd64-*) ;;
+   i?86-apple) 
+      if test "$enable_apple_64bit" != "yes"; then
+        enable_x86_64_sse=no;
+      fi
+   ;;
    *) enable_x86_64_sse=no ;;
 esac
 
@@ -118,6 +137,7 @@ if test "$enable_ppc_altivec" = "undef"; then
     *) enable_ppc_altivec=no ;;
   esac
 fi
+
 
 
 ### ia64 assembly code
@@ -620,20 +640,6 @@ if test "$with_gsl" = "yes"; then
 #
 fi
 
-# Class Library For Numbers Module
-AC_ARG_WITH(cln,
- [  --with-cln                    Class Library For Numbers Module],,with_cln=no)
-
-######
-if test "$with_cln" = "yes"; then
-  AC_LANG_PUSH([C++])
-#  AC_REQUIRE([AC_PROG_CXX])
-#  AC_REQUIRE([_LT_AC_PROG_CXXCPP])
-  AC_CHECK_HEADERS([cln/cln.h],
-# header found, check for libraries 
-  AC_CHECK_LIB(cln,main))
-  AC_LANG_POP([C++])
-fi
 
 AC_ARG_WITH(xml,
  [  --without-xml                 do not link to the xml2 library, disallows the use of certain file formats],,with_xml=yes)
@@ -711,7 +717,7 @@ checkasm:
         ret
 EOF
 fi
-  if AC_TRY_COMMAND($CC -c conftestasm.s); then
+  if AC_TRY_COMMAND($CC $CFLAGS -c conftestasm.s); then
     if test -f conftestasm.o; then
       AC_MSG_RESULT([yes])
     else
@@ -737,7 +743,7 @@ checkasm:
         emms
         ret
 EOF
-      if AC_TRY_COMMAND($CC -c conftest.s); then
+      if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
         AC_MSG_RESULT([no]) 
@@ -755,7 +761,7 @@ checkasm:
         emms
         ret
 EOF
-      if AC_TRY_COMMAND($CC -c conftest.s); then
+      if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
         AC_MSG_RESULT([no]) 
@@ -774,7 +780,7 @@ checkasm:
         emms
         ret
 EOF
-      if AC_TRY_COMMAND($CC -c conftest.s); then
+      if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
         AC_MSG_RESULT([no]) 
@@ -792,7 +798,7 @@ checkasm:
         emms
         ret
 EOF
-      if AC_TRY_COMMAND($CC -c conftest.s); then
+      if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
         AC_MSG_RESULT([no]) 
@@ -809,7 +815,7 @@ checkasm:
         emms
         ret
 EOF
-      if AC_TRY_COMMAND($CC -c conftest.s); then
+      if AC_TRY_COMMAND($CC $CFLAGS -c conftest.s); then
         AC_MSG_RESULT([yes])
       else
         AC_MSG_RESULT([no]) 
@@ -1034,6 +1040,20 @@ if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
   echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
   echo "  installed you can issue make mdrun; make install-mdrun."
 fi
+
+if test "$host_vendor" = "apple" -a "$enable_apple_64bit" = "no"; then
+  echo ""
+  echo "* Did you know that you can compile a 64-bit version of Gromacs to improve"
+  echo "  performance on recent Intel Macs? You need to install a 64-bit version"
+  echo "  of FFTW first (add -m64 to CFLAGS, or download it from the Gromacs site)"
+  echo "  after which you can simply specify --enable-apple-64bit to this script." 
+fi
+
+if test "$enable_shared" = "no"; then
+  echo ""
+  echo "* On most platforms you can save 10X space with dynamic libraries, although"
+  echo "  the binaries might be less portable. Why not try --enable-shared ?"
+fi  
 
 echo ""
 

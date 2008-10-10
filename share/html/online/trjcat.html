@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>trjcat</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -40,8 +40,8 @@ tries to be smart. Beware.
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Mult. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> trajout.xtc</a></tt> </TD><TD> Output, Mult. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Mult. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> trajout.xtc</a></tt> </TD><TD> Output, Mult. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-demux</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    remd.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 </TABLE>
@@ -49,19 +49,19 @@ tries to be smart. Beware.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt>, <tt>s</tt>, <tt>m</tt> or <tt>h</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> First time to use (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Last time to use (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only write frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> First time to use (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Last time to use (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only write frame when t MOD dt = first time (ps) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-prec</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Precision for .<a href="xtc.html">xtc</a> and .<a href="gro.html">gro</a> writing in number of decimal places </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Read and write velocities if possible </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]settime</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Change starting time interactively </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sort</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Sort trajectory files (not frames) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]keeplast</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> keep overlapping frames at end of trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]cat</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> do not discard double time frames </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vel</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Read and write velocities if possible </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]settime</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change starting time interactively </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sort</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Sort trajectory files (not frames) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]keeplast</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> keep overlapping frames at end of trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]cat</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> do not discard double time frames </TD></TD>
 </TABLE>
 <P>
 <hr>

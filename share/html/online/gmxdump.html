@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>gmxdump</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -19,21 +19,26 @@ a trajectory (<tt>.<a href="trj.html">trj</a></tt>/<tt>.<a href="trr.html">trr</
 file (<tt>.<a href="ene.html">ene</a></tt>/<tt>.<a href="edr.html">edr</a></tt>) and prints that to standard
 output in a readable format. This program is essential for
 checking your run input file in case of problems.<p>
+When requesting to dump a topology file the program will dump
+the processed topology, since not all original information is maintained
+in <a href="tpr.html">tpr</a> files.
 <P>
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic energy: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Input, Opt. </TD><TD> Energy file: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cp</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   state.cpt</a></tt> </TD><TD> Input, Opt. </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-om</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mdp.html">  grompp.mdp</a></tt> </TD><TD> Output, Opt. </TD><TD> <a href="grompp.html">grompp</a> input file with MD parameters </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]nr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]nr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology) </TD></TD>
 </TABLE>
 <P>
 <hr>

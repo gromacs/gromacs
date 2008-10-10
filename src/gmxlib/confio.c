@@ -1283,6 +1283,7 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
   FILE       *in;
   char       buf[256];
   gmx_mtop_t *mtop;
+  t_topology top;
   t_trxframe fr;
   int        i,ftp,natoms,i1;
   real       d,r1,r2;
@@ -1329,15 +1330,18 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
       *ePBC = i;
     
     strcpy(title,*(mtop->name));
-
+    
     /* Free possibly allocated memory */
     done_atom(atoms);
     
     *atoms = gmx_mtop_global_atoms(mtop);
-    
+    top = gmx_mtop_t_to_t_topology(mtop);
+    tpx_make_chain_identifiers(atoms,&top.mols);
+		
     done_mtop(mtop,FALSE);
     sfree(mtop);
-    
+    done_top(&top);
+		  
     break;
   default:
     gmx_incons("Not supported in read_stx_conf");

@@ -1,7 +1,7 @@
-.TH trjcat 1 "Mon 29 Aug 2005"
+.TH trjcat 1 "Mon 22 Sep 2008"
 .SH NAME
 trjcat
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3trjcat\fP
 .BI "-f" " traj.xtc "
@@ -63,11 +63,11 @@ tries to be smart. Beware.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input, Mult.
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-o" " trajout.xtc" 
 .B Output, Mult.
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -78,7 +78,7 @@ tries to be smart. Beware.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
@@ -95,41 +95,37 @@ tries to be smart. Beware.
 .B us
 , 
 .B ms
-, 
-.B s
-, 
-.B m
 or 
-.B h
+.B s
 
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-b"  " time" "     -1" 
+.BI "-b"  " time" " -1    " 
  First time to use (ps)
 
-.BI "-e"  " time" "     -1" 
+.BI "-e"  " time" " -1    " 
  Last time to use (ps)
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only write frame when t MOD dt = first time (ps)
 
 .BI "-prec"  " int" " 3" 
  Precision for .xtc and .gro writing in number of decimal places
 
-.BI "-[no]vel"  "   yes"
+.BI "-[no]vel"  "yes   "
  Read and write velocities if possible
 
-.BI "-[no]settime"  "    no"
+.BI "-[no]settime"  "no    "
  Change starting time interactively
 
-.BI "-[no]sort"  "   yes"
+.BI "-[no]sort"  "yes   "
  Sort trajectory files (not frames)
 
-.BI "-[no]keeplast"  "    no"
+.BI "-[no]keeplast"  "no    "
  keep overlapping frames at end of trajectory
 
-.BI "-[no]cat"  "    no"
+.BI "-[no]cat"  "no    "
  do not discard double time frames
 

@@ -1,7 +1,7 @@
-.TH genbox 1 "Mon 29 Aug 2005"
+.TH genbox 1 "Mon 22 Sep 2008"
 .SH NAME
 genbox
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3genbox\fP
 .BI "-cp" " protein.gro "
@@ -17,6 +17,8 @@ genbox
 .BI "-seed" " int "
 .BI "-vdwd" " real "
 .BI "-shell" " real "
+.BI "-maxsol" " int "
+.BI "-[no]vel" ""
 .SH DESCRIPTION
 Genbox can do one of 3 things:
 
@@ -36,11 +38,12 @@ The box specified in the solute coordinate file (
 ) is used,
 unless 
 .B -box
-is set, which also centers the solute.
-The program 
+is set.
+If you want the solute to be centered in the box,
+the program 
 .B editconf
-has more sophisticated options to change
-the box and center the solute.
+has sophisticated options
+to change the box dimensions and center the solute.
 Solvent molecules are removed from the box where the 
 distance between any atom of the solute molecule(s) and any atom of 
 the solvent molecule is less than the sum of the VanderWaals radii of 
@@ -111,26 +114,26 @@ line with the total number of solvent molecules in your coordinate file.
 .SH FILES
 .BI "-cp" " protein.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-cs" " spc216.gro" 
 .B Input, Opt., Lib.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-ci" " insert.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-o" " out.gro" 
 .B Output
- Generic structure: gro g96 pdb xml 
+ Structure file: gro g96 pdb 
 
 .BI "-p" " topol.top" 
 .B In/Out, Opt.
  Topology file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
@@ -148,13 +151,18 @@ line with the total number of solvent molecules in your coordinate file.
 .BI "-seed"  " int" " 1997" 
  random generator seed
 
-.BI "-vdwd"  " real" "  0.105" 
+.BI "-vdwd"  " real" " 0.105 " 
  default vdwaals distance
 
-.BI "-shell"  " real" "      0" 
+.BI "-shell"  " real" " 0     " 
  thickness of optional water layer around solute
 
-\- Molecules must be whole in the initial configurations.
+.BI "-maxsol"  " int" " 0" 
+ maximum number of solvent molecules to add if they fit in the box. If zero (default) this is ignored
 
-\- At the moment -ci only works when inserting one molecule.
+.BI "-[no]vel"  "no    "
+ keep velocities from input solute and solvent
+
+.SH KNOWN PROBLEMS
+\- Molecules must be whole in the initial configurations.
 

@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>editconf</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -21,9 +21,9 @@ The box can be modified with options <tt>-box</tt>, <tt>-d</tt> and
 <tt>-angles</tt>. Both <tt>-box</tt> and <tt>-d</tt>
 will center the system in the box.
 <p>
-Option <tt>-bt</tt> determines the box type: <tt>tric</tt> is a
-triclinic box, <tt>cubic</tt> is a cubic box, <tt>dodecahedron</tt> is
-a rhombic dodecahedron and <tt>octahedron</tt> is a truncated octahedron.
+Option <tt>-bt</tt> determines the box type: <tt>triclinic</tt> is a
+triclinic box, <tt>cubic</tt> is a rectangular box with all sides equal
+<tt>dodecahedron</tt> represents a rhombic dodecahedron and <tt>octahedron</tt> is a truncated octahedron.
 The last two are special cases of a triclinic box.
 The length of the three box vectors of the truncated octahedron is the
 shortest distance between two opposite hexagons.
@@ -32,10 +32,12 @@ is 0.77 of that of a cubic box with the same periodic image distance.
 <p>
 Option <tt>-box</tt> requires only
 one value for a cubic box, dodecahedron and a truncated octahedron.
-With <tt>-d</tt> and <tt>tric</tt> the size of the system in the x, y
+<p>
+With <tt>-d</tt> and a <tt>triclinic</tt> box the size of the system in the x, y
 and z directions is used. With <tt>-d</tt> and <tt>cubic</tt>,
-<tt>dodecahedron</tt> or <tt>octahedron</tt> the diameter of the system
-is used, which is the largest distance between two atoms.
+<tt>dodecahedron</tt> or <tt>octahedron</tt> boxes, the dimensions are set
+to the diameter of the system (largest distance between atoms) plus twice
+the specified distance.
 <p>
 Option <tt>-angles</tt> is only meaningful with option <tt>-box</tt> and
 a triclinic box and can not be used with option <tt>-d</tt>.
@@ -91,9 +93,9 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">     out.gro</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">     out.gro</a></tt> </TD><TD> Output, Opt. </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-mead</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pqr.html">    mead.pqr</a></tt> </TD><TD> Output, Opt. </TD><TD> Coordinate file for MEAD </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-bf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="dat.html">   bfact.dat</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic data file </TD></TR>
 </TABLE>
@@ -101,32 +103,33 @@ where <tt>veclen</tt> is the size of the cubic box times sqrt(3)/2.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ndef</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Choose output from default index groups </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-bt</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>tric</tt> </TD><TD> Box type for -box and -d: <tt>tric</tt>, <tt>cubic</tt>, <tt>dodecahedron</tt> or <tt>octahedron</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ndef</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Choose output from default index groups </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bt</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>triclinic</tt> </TD><TD> Box type for -box and -d: <tt>triclinic</tt>, <tt>cubic</tt>, <tt>dodecahedron</tt> or <tt>octahedron</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-box</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Box vector lengths (a,b,c) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-angles</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>90 90 90</tt> </TD><TD> Angles between the box vectors (bc,ac,ab) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Distance between the solute and the box </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]c</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Center molecule in box (implied by -box and -d) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Distance between the solute and the box </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]c</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Center molecule in box (implied by -box and -d) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-center</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Coordinates of geometrical center </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-translate</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Translation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-rotate</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Rotation around the X, Y and Z axes in degrees </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]princ</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Orient molecule(s) along their principal axes </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]princ</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Orient molecule(s) along their principal axes </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>1 1 1</tt> </TD><TD> Scaling factor </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-density</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  1000</tt> </TD><TD> Density (g/l) of the output box achieved by scaling </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]vol</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Compute and print volume of the box </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Remove the periodicity (make molecule whole again) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]grasp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-rvdw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.12</tt> </TD><TD> Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-sig56</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Use rmin/2 (minimum in the Van der Waals potential) rather than sigma/2  </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]vdwread</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Read the Van der Waals radii from the file vdwradii.<a href="dat.html">dat</a> rather than computing the radii based on the force field </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]atom</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Force B-factor attachment per atom </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]legend</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Make B-factor legend </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-density</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1000  </tt> </TD><TD> Density (g/l) of the output box achieved by scaling </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vol</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Compute and print volume of the box </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Remove the periodicity (make molecule whole again) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]grasp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Store the charge of the atom in the B-factor field and the radius of the atom in the occupancy field </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rvdw</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.12  </tt> </TD><TD> Default Van der Waals radius (in nm) if one can not be found in the database or if no parameters are present in the topology file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-sig56</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Use rmin/2 (minimum in the Van der Waals potential) rather than sigma/2  </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]vdwread</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Read the Van der Waals radii from the file vdwradii.<a href="dat.html">dat</a> rather than computing the radii based on the force field </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]atom</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Force B-factor attachment per atom </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]legend</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Make B-factor legend </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-label</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>A</tt> </TD><TD> Add chain label for all residues </TD></TD>
 </TABLE>
 <P>
+<H3>Known problems</H3>
 <UL>
 <LI>For complex molecules, the periodicity removal routine may break down, in that case you can use <a href="trjconv.html">trjconv</a>
 </UL>

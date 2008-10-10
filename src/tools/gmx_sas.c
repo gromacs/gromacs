@@ -219,7 +219,7 @@ real calc_radius(char *atom)
 }
 
 void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
-	      real qcut,bool bSave,real minarea,
+	      real qcut,bool bSave,real minarea,bool bPBC,
 	      real dgs_default,bool bFindex)
 {
   FILE         *fp,*fp2,*fp3=NULL,*vp;
@@ -268,6 +268,12 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   if ((natoms=read_first_x(&status,ftp2fn(efTRX,nfile,fnm),
 			   &t,&x,box))==0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
+
+  if ((ePBC != epbcXYZ) || (TRICLINIC(box))) {
+    fprintf(stderr,"\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
+	    "Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
+	    "will certainly crash the analysis.\n\n");
+  }
 
   snew(nx,2);
   snew(index,2);
@@ -381,7 +387,8 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
   nfr=0;
   do {
-    rm_pbc(&top->idef,ePBC,natoms,box,x,x);
+    if (bPBC)
+      rm_pbc(&top->idef,ePBC,natoms,box,x,x);
     
     bConnelly = (nfr==0 && opt2bSet("-q",nfile,fnm));
     if (bConnelly)
@@ -396,7 +403,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 
     retval = nsc_dclm_pbc(x,radius,nx[0],ndots,flag,&totarea,
 			  &area,&totvolume,&surfacedots,&nsurfacedots,
-			  index[0],ePBC,box);
+			  index[0],ePBC,bPBC ? box : NULL);
     if (retval)
       gmx_fatal(FARGS,"Something wrong in nsc_dclm2");
     
@@ -523,7 +530,7 @@ int gmx_sas(int argc,char *argv[])
     "generated (option [TT]-i[tt])",
     "which can be used to restrain surface atoms.[PAR]",
     "By default, periodic boundary conditions are taken into account,",
-    "this can be turned off using the [TT]-pbc[tt] option.[PAR]",
+    "this can be turned off using the [TT]-nopbc[tt] option.[PAR]",
     "With the [TT]-tv[tt] option the total volume and density of the molecule can be",
     "computed.",
     "Please consider whether the normal probe radius is appropriate",
@@ -538,7 +545,7 @@ int gmx_sas(int argc,char *argv[])
   static int  ndots   = 24;
   static real qcut    = 0.2;
   static real minarea = 0.5, dgs_default=0;
-  static bool bSave   = TRUE,bFindex=FALSE;
+  static bool bSave   = TRUE,bPBC=TRUE,bFindex=FALSE;
   t_pargs pa[] = {
     { "-probe", FALSE, etREAL, {&solsize},
       "Radius of the solvent probe (nm)" },
@@ -550,6 +557,8 @@ int gmx_sas(int argc,char *argv[])
       "Determine from a group in the index file what are the hydrophobic atoms rather than from the charge" },
     { "-minarea", FALSE, etREAL, {&minarea},
       "The minimum area (nm^2) to count an atom as a surface atom when writing a position restraint file  (see help)" },
+    { "-pbc",     FALSE, etBOOL, {&bPBC},
+      "Take periodicity into account" },
     { "-prot",    FALSE, etBOOL, {&bSave},
       "Output the protein to the connelly pdb file too" },
     { "-dgs",     FALSE, etREAL, {&dgs_default},
@@ -582,7 +591,7 @@ int gmx_sas(int argc,char *argv[])
 
   please_cite(stderr,"Eisenhaber95");
     
-  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,dgs_default,bFindex);
+  sas_plot(NFILE,fnm,solsize,ndots,qcut,bSave,minarea,bPBC,dgs_default,bFindex);
   
   do_view(opt2fn("-o",NFILE,fnm),"-nxy");
   do_view(opt2fn_null("-or",NFILE,fnm),"-nxy");

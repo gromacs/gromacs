@@ -1,7 +1,7 @@
-.TH g_lie 1 "Mon 29 Aug 2005"
+.TH g_lie 1 "Mon 22 Sep 2008"
 .SH NAME
 g_lie
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_lie\fP
 .BI "-f" " ener.edr "
@@ -25,44 +25,44 @@ Coul (A-B) LJ-SR (A-B) etc.
 .SH FILES
 .BI "-f" " ener.edr" 
 .B Input
- Generic energy: edr ene 
+ Energy file: edr ene 
 
 .BI "-o" " lie.xvg" 
 .B Output
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-Elj"  " real" "      0" 
+.BI "-Elj"  " real" " 0     " 
  Lennard-Jones interaction between ligand and solvent
 
-.BI "-Eqq"  " real" "      0" 
+.BI "-Eqq"  " real" " 0     " 
  Coulomb interaction between ligand and solvent
 
-.BI "-Clj"  " real" "  0.181" 
+.BI "-Clj"  " real" " 0.181 " 
  Factor in the LIE equation for Lennard-Jones component of energy
 
-.BI "-Cqq"  " real" "    0.5" 
+.BI "-Cqq"  " real" " 0.5   " 
  Factor in the LIE equation for Coulomb component of energy
 
 .BI "-ligand"  " string" " none" 

@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dielectric</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -40,7 +40,7 @@ plot should be one half of a circle
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    Mtot.xvg</a></tt> </TD><TD> Input </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> dipcorr.xvg</a></tt> </TD><TD> Input </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-d</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   deriv.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    epsw.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    cole.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
@@ -49,24 +49,24 @@ plot should be one half of a circle
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fft</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> use fast fourier transform for correlation function </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]x1</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> use first column as X axis rather than first data set </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-eint</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     5</tt> </TD><TD> Time were to end the integration of the data and start to use the fit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-bfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     5</tt> </TD><TD> Begin time of fit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-efit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   500</tt> </TD><TD> End time of fit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tail</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   500</tt> </TD><TD> Length of function including data and tail from fit </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-A</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.5</tt> </TD><TD> Start value for fit parameter A </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tau1</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    10</tt> </TD><TD> Start value for fit parameter tau1 </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tau2</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     1</tt> </TD><TD> Start value for fit parameter tau2 </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-eps0</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    80</tt> </TD><TD> Epsilon 0 of your liquid </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-epsRF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  78.5</tt> </TD><TD> Epsilon of the reaction field used in your simulation. A value of 0 means infinity. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fft</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> use fast fourier transform for correlation function </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]x1</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> use first column as X axis rather than first data set </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-eint</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>5     </tt> </TD><TD> Time were to end the integration of the data and start to use the fit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-bfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>5     </tt> </TD><TD> Begin time of fit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-efit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>500   </tt> </TD><TD> End time of fit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tail</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>500   </tt> </TD><TD> Length of function including data and tail from fit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-A</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.5   </tt> </TD><TD> Start value for fit parameter A </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tau1</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>10    </tt> </TD><TD> Start value for fit parameter tau1 </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tau2</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Start value for fit parameter tau2 </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-eps0</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>80    </tt> </TD><TD> Epsilon 0 of your liquid </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-epsRF</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>78.5  </tt> </TD><TD> Epsilon of the reaction field used in your simulation. A value of 0 means infinity. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fix</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Fix parameters at their start values, A (2), tau1 (1), or tau2 (4) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ffn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nsmooth</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of points for smoothing </TD></TD>

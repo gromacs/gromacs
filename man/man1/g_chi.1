@@ -1,7 +1,7 @@
-.TH g_chi 1 "Mon 29 Aug 2005"
+.TH g_chi 1 "Mon 22 Sep 2008"
 .SH NAME
 g_chi
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_chi\fP
 .BI "-s" " conf.gro "
@@ -29,6 +29,7 @@ g_chi
 .BI "-[no]omega" ""
 .BI "-[no]rama" ""
 .BI "-[no]viol" ""
+.BI "-[no]periodic" ""
 .BI "-[no]all" ""
 .BI "-[no]rad" ""
 .BI "-[no]shift" ""
@@ -146,11 +147,11 @@ the average omega angle is plotted using color coding.
 .SH FILES
 .BI "-s" " conf.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-o" " order.xvg" 
 .B Output
@@ -193,58 +194,61 @@ the average omega angle is plotted using color coding.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-r0"  " int" " 1" 
  starting residue
 
-.BI "-[no]phi"  "    no"
+.BI "-[no]phi"  "no    "
  Output for Phi dihedral angles
 
-.BI "-[no]psi"  "    no"
+.BI "-[no]psi"  "no    "
  Output for Psi dihedral angles
 
-.BI "-[no]omega"  "    no"
+.BI "-[no]omega"  "no    "
  Output for Omega dihedrals (peptide bonds)
 
-.BI "-[no]rama"  "    no"
+.BI "-[no]rama"  "no    "
  Generate Phi/Psi and Chi1/Chi2 ramachandran plots
 
-.BI "-[no]viol"  "    no"
+.BI "-[no]viol"  "no    "
  Write a file that gives 0 or 1 for violated Ramachandran angles
 
-.BI "-[no]all"  "    no"
+.BI "-[no]periodic"  "yes   "
+ Print dihedral angles modulo 360 degrees
+
+.BI "-[no]all"  "no    "
  Output separate files for every dihedral.
 
-.BI "-[no]rad"  "    no"
+.BI "-[no]rad"  "no    "
  in angle vs time files, use radians rather than degrees.
 
-.BI "-[no]shift"  "    no"
+.BI "-[no]shift"  "no    "
  Compute chemical shifts from Phi/Psi angles
 
 .BI "-binwidth"  " int" " 1" 
  bin width for histograms (degrees)
 
-.BI "-core_rotamer"  " real" "    0.5" 
+.BI "-core_rotamer"  " real" " 0.5   " 
  only the central -core_rotamer*(360/multiplicity) belongs to each rotamer (the rest is assigned to rotamer 0)
 
 .BI "-maxchi"  " enum" " 0" 
@@ -264,28 +268,28 @@ or
 .B 6
 
 
-.BI "-[no]normhisto"  "   yes"
+.BI "-[no]normhisto"  "yes   "
  Normalize histograms
 
-.BI "-[no]ramomega"  "    no"
+.BI "-[no]ramomega"  "no    "
  compute average omega as a function of phi/psi and plot it in an xpm plot
 
-.BI "-bfact"  " real" "     -1" 
+.BI "-bfact"  " real" " -1    " 
  B-factor value for pdb file for atoms with no calculated dihedral order parameter
 
-.BI "-[no]chi_prod"  "    no"
+.BI "-[no]chi_prod"  "no    "
  compute a single cumulative rotamer for each residue
 
-.BI "-[no]HChi"  "    no"
+.BI "-[no]HChi"  "no    "
  Include dihedrals to sidechain hydrogens
 
-.BI "-bmax"  " real" "      0" 
+.BI "-bmax"  " real" " 0     " 
  Maximum B-factor on any of the atoms that make up a dihedral, for the dihedral angle to be considere in the statistics. Applies to database work where a number of X-Ray structures is analyzed. -bmax = 0 means no limit.
 
 .BI "-acflen"  " int" " -1" 
  Length of the ACF, default is half the number of frames
 
-.BI "-[no]normalize"  "   yes"
+.BI "-[no]normalize"  "yes   "
  Normalize ACF
 
 .BI "-P"  " enum" " 0" 
@@ -321,12 +325,13 @@ or
 .BI "-ncskip"  " int" " 0" 
  Skip N points in the output file of correlation functions
 
-.BI "-beginfit"  " real" "      0" 
+.BI "-beginfit"  " real" " 0     " 
  Time where to begin the exponential fit of the correlation function
 
-.BI "-endfit"  " real" "     -1" 
+.BI "-endfit"  " real" " -1    " 
  Time where to end the exponential fit of the correlation function, -1 is till the end
 
+.SH KNOWN PROBLEMS
 \- Produces MANY output files (up to about 4 times the number of residues in the protein, twice that if autocorrelation functions are calculated). Typically several hundred files are output.
 
 \- Phi and psi dihedrals are calculated in a non-standard way, using H-N-CA-C for phi instead of C(-)-N-CA-C, and N-CA-C-O for psi instead of N-CA-C-N(+). This causes (usually small) discrepancies with the output of other tools like g_rama.

@@ -17,4 +17,6 @@ libblas_la_SOURCES =	\
 	snrm2.c         sscal.c         ssymv.c         ssyr2k.c        \
 	strmv.c         isamax.c                                        
 
+EXTRA_DIST = blas_copyright
+
 CLEANFILES     = *.la *~ \\\#* 

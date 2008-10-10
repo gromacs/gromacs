@@ -84,19 +84,34 @@ void pdb_use_ter(bool bSet)
   bTER=bSet;
 }
 
-static void gromacs_name(char *name)
+static void xlate_atomname_pdb2gmx(char *name)
 {
   int i,length;
   char temp;
 
   length=strlen(name);
-  if (isdigit(name[0])) {
+  if (length>3 && isdigit(name[0])) {
     temp=name[0]; 
     for(i=1; i<length; i++)
       name[i-1]=name[i];
     name[length-1]=temp;
   }
 }
+
+static void xlate_atomname_gmx2pdb(char *name)
+{
+	int i,length;
+	char temp;
+	
+	length=strlen(name);
+	if (length>3 && isdigit(name[length-1])) {
+		temp=name[length-1]; 
+		for(i=length-1; i>0; --i)
+			name[i]=name[i-1];
+		name[0]=temp;
+	}
+}
+
 
 void gmx_write_pdb_box(FILE *out,int ePBC,matrix box)
 {
@@ -242,6 +257,8 @@ void write_pdbfile_indexed(FILE *out,char *title,
     resnr=atoms->atom[i].resnr;
     strcpy(resnm,*atoms->resname[resnr]);
     strcpy(nm,*atoms->atomname[i]);
+	/* rename HG12 to 2HG1, etc. */
+    xlate_atomname_gmx2pdb(nm);
     resnr++;
     if (resnr>=10000)
       resnr = resnr % 10000;
@@ -488,7 +505,7 @@ static int read_atom(t_symtab *symtab,
     else
       newres=atoms->atom[natom-1].resnr;
     if (bChange)
-      gromacs_name(anm); 
+      xlate_atomname_pdb2gmx(anm); 
     atoms->atomname[natom]=put_symtab(symtab,anm);
     atomn->chain=chain[0];
     atomn->resnr=newres;

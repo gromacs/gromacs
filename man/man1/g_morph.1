@@ -1,7 +1,7 @@
-.TH g_morph 1 "Mon 29 Aug 2005"
+.TH g_morph 1 "Mon 22 Sep 2008"
 .SH NAME
 g_morph
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_morph\fP
 .BI "-f1" " conf1.gro "
@@ -39,15 +39,15 @@ read to select what group RMS is computed from.
 .SH FILES
 .BI "-f1" " conf1.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-f2" " conf2.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-o" " interm.xtc" 
 .B Output
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .BI "-or" " rms-interm.xvg" 
 .B Output, Opt.
@@ -58,27 +58,27 @@ read to select what group RMS is computed from.
  Index file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-ninterm"  " int" " 11" 
  Number of intermediates
 
-.BI "-first"  " real" "      0" 
+.BI "-first"  " real" " 0     " 
  Corresponds to first generated structure (0 is input x0, see above)
 
-.BI "-last"  " real" "      1" 
+.BI "-last"  " real" " 1     " 
  Corresponds to last generated structure (1 is input x1, see above)
 
-.BI "-[no]fit"  "   yes"
+.BI "-[no]fit"  "yes   "
  Do a least squares fit of the second to the first structure before interpolating
 

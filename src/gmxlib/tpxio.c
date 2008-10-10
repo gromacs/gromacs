@@ -1363,7 +1363,8 @@ static void do_symtab(t_symtab *symtab,bool bRead)
   }
 }
 
-static void make_chain_identifiers(t_atoms *atoms,t_block *mols)
+void 
+tpx_make_chain_identifiers(t_atoms *atoms,t_block *mols)
 {
   int m,a,a0,a1;
   char c,chain;
@@ -2026,7 +2027,7 @@ bool read_tps_conf(char *infile,char *title,t_topology *top,int *ePBC,
     *top = gmx_mtop_t_to_t_topology(mtop);
     sfree(mtop);
     strcpy(title,*top->name);
-    make_chain_identifiers(&top->atoms,&top->mols);
+    tpx_make_chain_identifiers(&top->atoms,&top->mols);
   }
   else {
     get_stx_coordnum(infile,&natoms);

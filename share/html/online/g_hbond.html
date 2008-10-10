@@ -7,15 +7,15 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_hbond</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 g_hbond computes and analyzes hydrogen bonds. Hydrogen bonds are
-determined based on cutoffs for the angle Donor - Hydrogen - Acceptor
+determined based on cutoffs for the angle Acceptor - Donor - Hydrogen
 (zero is extended) and the distance Hydrogen - Acceptor.
 OH and NH groups are regarded as donors, O is an acceptor always,
 N is an acceptor by default, but this can be switched using
@@ -27,10 +27,7 @@ groups are analyzed.<p>
 If you set -shell, you will be asked for an additional index group
 which should contain exactly one atom. In this case, only hydrogen
 bonds between atoms within the shell distance from the one atom are
-considered.<p>It is also possible to analyse specific hydrogen bonds with
-<tt>-sel</tt>. This index file must contain a group of atom triplets
-Donor Hydrogen Acceptor, in the following way:<p>
-<tt>
+considered.<p><tt>
 [ selected ]<br>
      20    21    24<br>
      25    26    29<br>
@@ -60,7 +57,9 @@ frames, this also contains information on solvent insertion
 into hydrogen bonds. Ordering is identical to that in <tt>-hbn</tt>
 index file.<br>
 <tt>-dan</tt>: write out the number of donors and acceptors analyzed for
-each timeframe. This is especially usefull when using <tt>-shell</tt>.
+each timeframe. This is especially usefull when using <tt>-shell</tt>.<br>
+<tt>-nhbdist</tt>: compute the number of HBonds per hydrogen in order to
+compare results to Raman Spectroscopy.
 <p>
 Note: options <tt>-ac</tt>, <tt>-life</tt>, <tt>-hbn</tt> and <tt>-hbm</tt>
 require an amount of memory proportional to the total numbers of donors
@@ -69,12 +68,11 @@ times the total number of acceptors in the selected group(s).
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">   hbond.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-sel</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  select.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-num</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   hbnum.xvg</a></tt> </TD><TD> Output </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">   hbond.log</a></tt> </TD><TD> Output, Opt. </TD><TD> Log file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ac</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    hbac.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  hbdist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ang</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   hbang.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
@@ -84,39 +82,47 @@ times the total number of acceptors in the selected group(s).
 <TR><TD ALIGN=RIGHT> <b><tt>-don</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   donor.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dan</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   danum.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-life</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  hblife.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-nhbdist</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> nhbdist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ins</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Analyze solvent insertion </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-a</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    30</tt> </TD><TD> Cutoff angle (degrees, Donor - Hydrogen - Acceptor) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  0.35</tt> </TD><TD> Cutoff radius (nm, X - Acceptor, see next option) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]da</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-abin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     1</tt> </TD><TD> Binwidth angle distribution (degrees) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-rbin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt> 0.005</tt> </TD><TD> Binwidth distance distribution (nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]nitacc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Regard nitrogen atoms as acceptors </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]contact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do not look for hydrogen bonds, but merely for contacts within the cut-off distance </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> when &gt; 0, only calculate hydrogen bonds within # nm shell around one particle </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-fitstart</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     1</tt> </TD><TD> Time from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ins</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Analyze solvent insertion </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-a</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>30    </tt> </TD><TD> Cutoff angle (degrees, Acceptor - Donor - Hydrogen) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.35  </tt> </TD><TD> Cutoff radius (nm, X - Acceptor, see next option) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]da</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use distance Donor-Acceptor (if TRUE) or Hydrogen-Acceptor (FALSE) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-r2</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Second cutoff radius. Mainly useful with -contact and -ac </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-abin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Binwidth angle distribution (degrees) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rbin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.005 </tt> </TD><TD> Binwidth distance distribution (nm) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]nitacc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Regard nitrogen atoms as acceptors </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]contact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do not look for hydrogen bonds, but merely for contacts within the cut-off distance </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-shell</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> when &gt; 0, only calculate hydrogen bonds within # nm shell around one particle </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-fitstart</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1     </tt> </TD><TD> Time (ps) from which to start fitting the correlation functions in order to obtain the forward and backward rate constants for HB breaking and formation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-temp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>298.15</tt> </TD><TD> Temperature (K) for computing the Gibbs energy corresponding to HB breaking and reforming </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-smooth</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> If &gt;= 0, the tail of the ACF will be smoothed by fitting it to an exponential function: y = A exp(-x/tau) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-dump</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Dump the first N hydrogen bond ACFs in a single <a href="xvg.html">xvg</a> file for debugging </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-max_hb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-max_hb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Theoretical maximum number of hydrogen bonds used for normalizing HB autocorrelation function. Can be useful in case the program estimates it wrongly </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> H-bonds between the same donor and acceptor, but with different hydrogen are treated as a single H-bond. Mainly important for the ACF. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-acflen</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Length of the ACF, default is half the number of frames </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Normalize ACF </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]normalize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Normalize ACF </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Order of Legendre polynomial for ACF (0 indicates none): <tt>0</tt>, <tt>1</tt>, <tt>2</tt> or <tt>3</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-fitfn</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Fit function: <tt>none</tt>, <tt>exp</tt>, <tt>aexp</tt>, <tt>exp_exp</tt>, <tt>vac</tt>, <tt>exp5</tt>, <tt>exp7</tt> or <tt>exp9</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ncskip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Skip N points in the output file of correlation functions </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is till the end </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-beginfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Time where to begin the exponential fit of the correlation function </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-endfit</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Time where to end the exponential fit of the correlation function, -1 is till the end </TD></TD>
 </TABLE>
+<P>
+<H3>Known problems</H3>
+<UL>
+<LI>The option <tt>-sel</tt> that used to work on selected hbonds is out of order, and therefore not available for the time being.
+</UL>
 <P>
 <hr>
 <div ALIGN=RIGHT>

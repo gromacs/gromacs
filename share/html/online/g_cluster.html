@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_cluster</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -66,8 +66,8 @@ for a selected set of clusters (with option <tt>-wcl</tt>, depends on
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input, Opt. </TD><TD> Structure+mass(db): <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   index.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dm</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">    rmsd.xpm</a></tt> </TD><TD> Input, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">rmsd-clust.xpm</a></tt> </TD><TD> Output </TD><TD> X PixMap compatible matrix file </TD></TR>
@@ -78,38 +78,38 @@ for a selected set of clusters (with option <tt>-wcl</tt>, depends on
 <TR><TD ALIGN=RIGHT> <b><tt>-tr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xpm.html">clust-trans.xpm</a></tt> </TD><TD> Output, Opt. </TD><TD> X PixMap compatible matrix file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ntr</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">clust-trans.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-clid</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">clust-id.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-cl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">clusters.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">clusters.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt>, <tt>s</tt>, <tt>m</tt> or <tt>h</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]dista</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Use RMSD of distances instead of RMS deviation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-b</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> First frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Last frame (ps) to read from trajectory </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dt</tt></b> </TD><TD ALIGN=RIGHT> time </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Only use frame when t MOD dt = first time (ps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-tu</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>ps</tt> </TD><TD> Time unit: <tt>ps</tt>, <tt>fs</tt>, <tt>ns</tt>, <tt>us</tt>, <tt>ms</tt> or <tt>s</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]w</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> View output <a href="xvg.html">xvg</a>, <a href="xpm.html">xpm</a>, <a href="eps.html">eps</a> and <a href="pdb.html">pdb</a> files </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]dista</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use RMSD of distances instead of RMS deviation </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nlevels</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>40</tt> </TD><TD> Discretize RMSD matrix in # levels </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-cutoff</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.1</tt> </TD><TD> RMSD cut-off (nm) for two structures to be neighbor </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use least squares fitting before RMSD calculation </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>    -1</tt> </TD><TD> Maximum level in RMSD matrix </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-cutoff</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.1   </tt> </TD><TD> RMSD cut-off (nm) for two structures to be neighbor </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]fit</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use least squares fitting before RMSD calculation </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-max</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Maximum level in RMSD matrix </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-skip</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only analyze every nr-th frame </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]av</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Write average iso middle structure for each cluster </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]av</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write average iso middle structure for each cluster </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-wcl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Write all structures for first # clusters to numbered files </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nst</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Only write all structures if more than # per cluster </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-rmsmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> minimum rms difference with rest of cluster for writing structures </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rmsmin</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> minimum rms difference with rest of cluster for writing structures </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-method</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>linkage</tt> </TD><TD> Method for cluster determination: <tt>linkage</tt>, <tt>jarvis-patrick</tt>, <tt>monte-carlo</tt>, <tt>diagonalization</tt> or <tt>gromos</tt> </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-minstruct</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Minimum number of structures in cluster for coloring in the <a href="xpm.html">xpm</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]binary</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by -cutoff </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]binary</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Treat the RMSD matrix as consisting of 0 and 1, where the cut-off is given by -cutoff </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-M</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10</tt> </TD><TD> Number of nearest neighbors considered for Jarvis-Patrick algorithm, 0 is use cutoff </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-P</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of identical nearest neighbors required to form a cluster </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-seed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1993</tt> </TD><TD> Random number seed for Monte Carlo clustering algorithm </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-niter</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>10000</tt> </TD><TD> Number of iterations for MC </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-kT</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt> 0.001</tt> </TD><TD> Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-kT</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.001 </tt> </TD><TD> Boltzmann weighting factor for Monte Carlo optimization (zero turns off uphill steps) </TD></TD>
 </TABLE>
 <P>
 <hr>

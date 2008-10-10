@@ -1,7 +1,7 @@
-.TH grompp 1 "Mon 29 Aug 2005"
+.TH grompp 1 "Mon 22 Sep 2008"
 .SH NAME
 grompp
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3grompp\fP
 .BI "-f" " grompp.mdp "
@@ -10,7 +10,6 @@ grompp
 .BI "-r" " conf.gro "
 .BI "-rb" " conf.gro "
 .BI "-n" " index.ndx "
-.BI "-deshuf" " deshuf.ndx "
 .BI "-p" " topol.top "
 .BI "-pp" " processed.top "
 .BI "-o" " topol.tpr "
@@ -20,13 +19,9 @@ grompp
 .BI "-nice" " int "
 .BI "-[no]v" ""
 .BI "-time" " real "
-.BI "-np" " int "
-.BI "-[no]shuffle" ""
-.BI "-[no]sort" ""
 .BI "-[no]rmvsbds" ""
-.BI "-load" " string "
 .BI "-maxwarn" " int "
-.BI "-[no]check14" ""
+.BI "-[no]zero" ""
 .BI "-[no]renum" ""
 .SH DESCRIPTION
 The gromacs preprocessor
@@ -57,11 +52,10 @@ Note that the atom names are irrelevant for the simulation as
 only the atom types are used for generating interaction parameters.
 
 
-grompp calls the c-preprocessor to resolve includes, macros 
-etcetera. To specify a macro-preprocessor other than /lib/cpp 
-(such as m4)
+grompp calls a preprocessor to resolve includes, macros 
+etcetera. By default we use the cpp in your path. To specify a different macro-preprocessor (e.g. m4) or alternative location
 you can put a line in your parameter file specifying the path
-to that cpp. Specifying 
+to that program. Specifying 
 .B -pp
 will get the pre-processed
 topology file written out.
@@ -114,36 +108,6 @@ easier to use
 .
 
 
-When preparing an input file for parallel 
-.B mdrun
-it may
-be advantageous to partition the simulation system over the
-nodes in a way in which each node has a similar amount of
-work. The -shuffle option does just that. For a single protein
-in water this does not make a difference, however for a system where
-you have many copies of different molecules  (e.g. liquid mixture
-or membrane/water system) the option is definitely a must.
-The output trajectories will also be shuffled. 
-.B grompp
-writes
-an index file (option 
-.B -deshuf
-) which can be used with
-
-.B trjconv
-to deshuffle the trajectories.
-
-
-A further optimization for parallel systems is the 
-.B -sort
-
-option which sorts molecules according to coordinates. This must
-always be used in conjunction with 
-.B -shuffle
-, however
-sorting also works when you have only one molecule type.
-
-
 Using the 
 .B -morse
 option grompp can convert the harmonic bonds
@@ -191,22 +155,18 @@ program.
 
 .BI "-c" " conf.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-r" " conf.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-rb" " conf.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
- Index file 
-
-.BI "-deshuf" " deshuf.ndx" 
-.B Output, Opt.
  Index file 
 
 .BI "-p" " topol.top" 
@@ -219,50 +179,38 @@ program.
 
 .BI "-o" " topol.tpr" 
 .B Output
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-t" " traj.trr" 
 .B Input, Opt.
- Full precision trajectory: trr trj 
+ Full precision trajectory: trr trj cpt 
 
 .BI "-e" " ener.edr" 
 .B Input, Opt.
- Generic energy: edr ene 
+ Energy file: edr ene 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-[no]v"  "   yes"
+.BI "-[no]v"  "yes   "
  Be loud and noisy
 
-.BI "-time"  " real" "     -1" 
+.BI "-time"  " real" " -1    " 
  Take frame at or first after this time.
 
-.BI "-np"  " int" " 1" 
- Generate statusfile for  nodes
-
-.BI "-[no]shuffle"  "    no"
- Shuffle molecules over nodes
-
-.BI "-[no]sort"  "    no"
- Sort molecules according to X coordinate
-
-.BI "-[no]rmvsbds"  "   yes"
+.BI "-[no]rmvsbds"  "yes   "
  Remove constant bonded interactions with virtual sites
 
-.BI "-load"  " string" " " 
- Releative load capacity of each node on a parallel machine. Be sure to use quotes around the string, which should contain a number for each node
+.BI "-maxwarn"  " int" " 0" 
+ Number of allowed warnings during input processing
 
-.BI "-maxwarn"  " int" " 10" 
- Number of warnings after which input processing stops
+.BI "-[no]zero"  "no    "
+ Set parameters for bonded interactions without defaults to zero instead of generating an error
 
-.BI "-[no]check14"  "    no"
- Remove 1-4 interactions without Van der Waals
-
-.BI "-[no]renum"  "   yes"
+.BI "-[no]renum"  "yes   "
  Renumber atomtypes and minimize number of atomtypes
 

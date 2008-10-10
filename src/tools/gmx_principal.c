@@ -76,11 +76,13 @@ calc_principal_axes(t_topology *   top,
 int gmx_principal(int argc,char *argv[])
 {
   static char *desc[] = {
-    "g_principal calculates the three principal axes of inertion for a group",
+    "g_principal calculates the three principal axes of inertia for a group",
     "of atoms.",
   };
+  static bool foo = FALSE;
 
   t_pargs pa[] = {
+	  { "-foo",      FALSE, etBOOL, {&foo}, "Dummy option to avoid empty array" }
   };
   int        status;
   t_topology top;

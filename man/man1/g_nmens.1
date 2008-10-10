@@ -1,7 +1,7 @@
-.TH g_nmens 1 "Mon 29 Aug 2005"
+.TH g_nmens 1 "Mon 22 Sep 2008"
 .SH NAME
 g_nmens
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_nmens\fP
 .BI "-v" " eigenvec.trr "
@@ -32,7 +32,7 @@ normal modes are the translational and rotational degrees of freedom.
 .SH FILES
 .BI "-v" " eigenvec.trr" 
 .B Input
- Full precision trajectory: trr trj 
+ Full precision trajectory: trr trj cpt 
 
 .BI "-e" " eigenval.xvg" 
 .B Input
@@ -40,7 +40,7 @@ normal modes are the translational and rotational degrees of freedom.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -48,19 +48,19 @@ normal modes are the translational and rotational degrees of freedom.
 
 .BI "-o" " ensemble.xtc" 
 .B Output
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-temp"  " real" "    300" 
+.BI "-temp"  " real" " 300   " 
  Temperature in Kelvin
 
 .BI "-seed"  " int" " -1" 

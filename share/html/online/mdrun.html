@@ -7,46 +7,116 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>mdrun</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 The mdrun program is the main computational chemistry engine
 within GROMACS. Obviously, it performs Molecular Dynamics simulations,
-but it can also perform Brownian Dynamics and Langevin Dynamics
-as well as Conjugate Gradient or Steepest Descents energy minimization.
+but it can also perform Stochastic Dynamics, Energy Minimization,
+test particle insertion or (re)calculation of energies.
 Normal mode analysis is another option. In this case mdrun
 builds a Hessian matrix from single conformation.
 For usual Normal Modes-like calculations, make sure that
-the structure provided is properly energy-minimised.
-The generated matrix can be diagonalized by <a href="g_nmeig.html">g_nmeig</a>.<p>The mdrun program reads the run input file (<tt>-s</tt>) and distributes the
-topology over nodes if needed. The coordinates are passed
-around, so that computations can begin.
-First a neighborlist is made, then the forces are computed.
-The forces are globally summed, and the velocities and
-positions are updated. If necessary shake is performed to constrain
-bond lengths and/or bond angles.
-Temperature and Pressure can be controlled using weak coupling to a
-bath.<p>
-mdrun produces at least three output file, plus one log file
-(<tt>-g</tt>) per node.
+the structure provided is properly energy-minimized.
+The generated matrix can be diagonalized by <a href="g_nmeig.html">g_nmeig</a>.<p>
+The mdrun program reads the run input file (<tt>-s</tt>)
+and distributes the topology over nodes if needed.
+mdrun produces at least four output files.
+A single <a href="log.html">log</a> file (<tt>-g</tt>) is written, unless the option
+<tt>-seppot</tt> is used, in which case each node writes a <a href="log.html">log</a> file.
 The trajectory file (<tt>-o</tt>), contains coordinates, velocities and
 optionally forces.
 The structure file (<tt>-c</tt>) contains the coordinates and
 velocities of the last step.
 The energy file (<tt>-e</tt>) contains energies, the temperature,
-pressure, etc, a lot of these things are also printed in the log file
-of node 0.
+pressure, etc, a lot of these things are also printed in the <a href="log.html">log</a> file.
 Optionally coordinates can be written to a compressed trajectory file
 (<tt>-x</tt>).<p>
-When running in parallel with PVM or an old version of MPI the
-<tt>-np</tt> option must be given to indicate the number of
-nodes.<p>
 The option <tt>-dgdl</tt> is only used when free energy perturbation is
 turned on.<p>
+When mdrun is started using MPI with more than 1 node, parallelization
+is used. By default domain decomposition is used, unless the <tt>-pd</tt>
+option is set, which selects particle decomposition.<p>
+With domain decomposition, the spatial decomposition can be set
+with option <tt>-dd</tt>. By default mdrun selects a good decomposition.
+The user only needs to change this when the system is very inhomogeneous.
+Dynamic load balancing is set with the option <tt>-dlb</tt>,
+which can give a significant performance improvement,
+especially for inhomogeneous systems. The only disadvantage of
+dynamic load balancing is that runs are no longer binary reproducible,
+but in most cases this is not important.
+By default the dynamic load balancing is automatically turned on
+when the measured performance loss due to load imbalance is 5% or more.
+At low parallelization these are the only important options
+for domain decomposition.
+At high parallelization the options in the next two sections
+could be important for increasing the performace.
+<p>
+When PME is used with domain decomposition, separate nodes can
+be assigned to do only the PME mesh calculation;
+this is computationally more efficient starting at about 12 nodes.
+The number of PME nodes is set with option <tt>-npme</tt>,
+this can not be more than half of the nodes.
+By default mdrun makes a guess for the number of PME
+nodes when the number of nodes is larger than 11 or performance wise
+not compatible with the PME grid x dimension.
+But the user should optimize npme. Performance statistics on this issue
+are written at the end of the <a href="log.html">log</a> file.
+For good load balancing at high parallelization,
+npme should be divisible by the number of PME nodes
+<p>
+This section lists all options that affect the domain decomposition.
+<br>
+Option <tt>-rdd</tt> can be used to set the required maximum distance
+for inter charge-group bonded interactions.
+Communication for two-body bonded interactions below the non-bonded
+cut-off distance always comes for free with the non-bonded communication.
+Atoms beyond the non-bonded cut-off are only communicated when they have
+missing bonded interactions; this means that the extra cost is minor
+and nearly indepedent of the value of <tt>-rdd</tt>.
+With dynamic load balancing option <tt>-rdd</tt> also sets
+the lower limit for the domain decomposition cell sizes.
+By default <tt>-rdd</tt> is determined by mdrun based on
+the initial coordinates. The chosen value will be a balance
+between interaction range and communication cost.
+<br>
+When inter charge-group bonded interactions are beyond
+the bonded cut-off distance, mdrun terminates with an error message.
+For pair interactions and tabulated bonds
+that do not generate exclusions, this check can be turned off
+with the option <tt>-noddcheck<tt>.
+<br>
+When constraints are present, option <tt>-rcon</tt> influences
+the cell size limit as well.
+Atoms connected by NC constraints, where NC is the LINCS order plus 1,
+should not be beyond the smallest cell size. A error message is
+generated when this happens and the user should change the decomposition
+or decrease the LINCS order and increase the number of LINCS iterations.
+By default mdrun estimates the minimum cell size required for P-LINCS
+in a conservative fashion. For high parallelization it can be useful
+to set the distance required for P-LINCS with the option <tt>-rcon</tt>.
+<br>
+The <tt>-dds</tt> option sets the minimum allowed x, y and/or z scaling
+of the cells with dynamic load balancing. mdrun will ensure that
+the cells can scale down by at least this factor. This option is used
+for the automated spatial decomposition (when not using <tt>-dd</tt>)
+as well as for determining the number of grid pulses, which in turn
+sets the minimum allowed cell size. Under certain circumstances
+the value of <tt>-dds</tt> might need to be adjusted to account for
+high or low spatial inhomogeneity of the system.
+<p>
+The option <tt>-nosum</tt> can be used to only sum the energies
+at every neighbor search step and energy output step.
+This can improve performance for highly parallel simulations
+where this global communication step becomes the bottleneck.
+For a global thermostat and/or barostat the temperature
+and/or pressure will also only be updated every nstlist steps.
+With this option the energy file will not contain averages and
+fluctuations over all integration steps.<p>
 With <tt>-rerun</tt> an input trajectory can be given for which 
 forces and energies will be (re)calculated. Neighbor searching will be
 performed for every frame, unless <tt>nstlist</tt> is zero
@@ -61,34 +131,71 @@ When user-defined potential functions have been selected in the
 <tt>.<a href="mdp.html">mdp</a></tt> file the <tt>-table</tt> option is used to pass mdrun
 a formatted table with potential functions. The file is read from
 either the current directory or from the GMXLIB directory.
-A number of preformatted tables are presented in the GMXLIB dir,
+A number of pre-formatted tables are presented in the GMXLIB dir,
 for 6-8, 6-9, 6-10, 6-11, 6-12 Lennard Jones potentials with
 normal Coulomb.
-When pair interactions are present a seperate table for pair interaction
+When pair interactions are present a separate table for pair interaction
 functions is read using the <tt>-tablep</tt> option.<p>
+When tabulated bonded functions are present in the topology,
+interaction functions are read using the <tt>-tableb</tt> option.
+For each different tabulated interaction type the table file name is
+modified in a different way: before the file extension an underscore is
+appended, then a b for bonds, an a for angles or a d for dihedrals
+and finally the table number of the interaction type.<p>
 The options <tt>-pi</tt>, <tt>-po</tt>, <tt>-pd</tt>, <tt>-pn</tt> are used
 for potential of mean force calculations and umbrella sampling.
 See manual.<p>
 With <tt>-multi</tt> multiple systems are simulated in parallel.
-As many (single node) input files are required as the number of nodes.
-The node number is appended to the run input and each output filename,
+As many input files are required as the number of systems.
+The system number is appended to the run input and each output filename,
 for instance topol.<a href="tpr.html">tpr</a> becomes topol0.<a href="tpr.html">tpr</a>, topol1.<a href="tpr.html">tpr</a> etc.
-The main use of this option is for NMR refinement: when distance
+The number of nodes per system is the total number of nodes
+divided by the number of systems.
+One use of this option is for NMR refinement: when distance
 or orientation restraints are present these can be ensemble averaged
 over all the systems.<p>
 With <tt>-replex</tt> replica exchange is attempted every given number
-of steps. This option implies <tt>-multi</tt>, see above.
+of steps. The number of replicas is set with the <tt>-multi</tt> option,
+see above.
 All run input files should use a different coupling temperature,
 the order of the files is not important. The random seed is set with
 <tt>-reseed</tt>. The velocities are scaled and neighbor searching
 is performed after every exchange.<p>
 Finally some experimental algorithms can be tested when the
 appropriate options have been given. Currently under
-investigation are: polarizibility, glass simulations
-and X-Ray bombardments.<p>
+investigation are: polarizability, glass simulations
+and X-Ray bombardments.
+<p>
+The option <tt>-pforce</tt> is useful when you suspect a simulation
+crashes due to too large forces. With this option coordinates and
+forces of atoms with a force larger than a certain value will
+be printed to stderr.
+<p>
+Checkpoints containing the complete state of the system are written
+at regular intervals (option <tt>-cpt</tt>) to the file <tt>-cpo</tt>,
+unless option <tt>-cpt</tt> is set to -1.
+A simulation can be continued by reading the full state from file
+with option <tt>-cpi</tt>. This option is intelligent in the way that
+if no checkpoint file is found, Gromacs just assumes a normal run and
+starts from the first step of the <a href="tpr.html">tpr</a> file.
+<p>
+With checkpointing you can also use the option <tt>-append</tt> to
+just continue writing to the previous output files. This is not
+enabled by default since it is potentially dangerous if you move files,
+but if you just leave all your files in place and restart mdrun with
+exactly the same command (with options <tt>-cpi</tt> and <tt>-append</tt>)
+the result will be the same as from a single run. The contents will
+be binary identical (unless you use dynamic load balancing),
+but for technical reasons there might be some extra energy frames when
+using checkpointing (necessary for restarts without appending).
+<p>
+With option <tt>-maxh</tt> a simulation is terminated and a checkpoint
+file is written at the first neighbor search step where the run time
+exceeds <tt>-maxh</tt>*0.99 hours.
+<p>
 When mdrun receives a TERM signal, it will set nsteps to the current
-step plus one. When mdrun receives a USR1 signal, it will set nsteps
-to the next multiple of nstxout after the current step.
+step plus one. When mdrun receives a USR1 signal, it will stop after
+the next neighbor search step (with nstlist=0 at the next step).
 In both cases all the usual output will be written to file.
 When running with MPI, a signal to one of the mdrun processes
 is sufficient, this signal should not be sent to mpirun or
@@ -97,18 +204,22 @@ the mdrun process that is the parent of the others.
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Generic run input: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-s</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   topol.tpr</a></tt> </TD><TD> Input </TD><TD> Run input file: <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    traj.trr</a></tt> </TD><TD> Output </TD><TD> Full precision trajectory: <a href="trr.html">trr</a> <a href="trj.html">trj</a> cpt </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-x</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xtc.html">    traj.xtc</a></tt> </TD><TD> Output, Opt. </TD><TD> Compressed trajectory (portable xdr format) </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> confout.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Output </TD><TD> Generic energy: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   state.cpt</a></tt> </TD><TD> Input, Opt. </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="cpt.html">   state.cpt</a></tt> </TD><TD> Output, Opt. </TD><TD> Checkpoint file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-c</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> confout.gro</a></tt> </TD><TD> Output </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-e</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    ener.edr</a></tt> </TD><TD> Output </TD><TD> Energy file: <a href="edr.html">edr</a> <a href="ene.html">ene</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-g</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="log.html">      md.log</a></tt> </TD><TD> Output </TD><TD> Log file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dgdl</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">    dgdl.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-field</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   field.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-table</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-tablep</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">  tablep.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tableb</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   table.xvg</a></tt> </TD><TD> Input, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-rerun</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   rerun.xtc</a></tt> </TD><TD> Input, Opt. </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> cpt </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-tpi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     tpi.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-tpid</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> tpidist.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-ei</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edi.html">     sam.edi</a></tt> </TD><TD> Input, Opt. </TD><TD> ED sampling input </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-eo</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="edo.html">     sam.edo</a></tt> </TD><TD> Output, Opt. </TD><TD> ED sampling output </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-j</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="gct.html">    wham.gct</a></tt> </TD><TD> Input, Opt. </TD><TD> General coupling stuff </TD></TR>
@@ -116,10 +227,8 @@ the mdrun process that is the parent of the others.
 <TR><TD ALIGN=RIGHT> <b><tt>-ffout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">     gct.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-devout</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">deviatie.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-runav</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html"> runaver.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-pi</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ppa.html">    pull.ppa</a></tt> </TD><TD> Input, Opt. </TD><TD> Pull parameters </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-po</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ppa.html"> pullout.ppa</a></tt> </TD><TD> Output, Opt. </TD><TD> Pull parameters </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-pd</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdo.html">    pull.pdo</a></tt> </TD><TD> Output, Opt. </TD><TD> Pull data output </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-pn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">    pull.ndx</a></tt> </TD><TD> Input, Opt. </TD><TD> Index file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-px</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullx.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-pf</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="xvg.html">   pullf.xvg</a></tt> </TD><TD> Output, Opt. </TD><TD> xvgr/xmgr file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-mtx</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="mtx.html">      nm.mtx</a></tt> </TD><TD> Output, Opt. </TD><TD> Hessian matrix </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-dn</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">  dipole.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
 </TABLE>
@@ -127,20 +236,33 @@ the mdrun process that is the parent of the others.
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>19</tt> </TD><TD> Set the nicelevel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-deffnm</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt></tt> </TD><TD> Set the default filename for all file options </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-np</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of nodes, must be the same as used for <a href="grompp.html">grompp</a> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-nt</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>1</tt> </TD><TD> Number of threads to start on each node </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Be loud and noisy </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Write a compact log file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]sepdvdl</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Write separate V and dVdl terms for each interaction type and node to the log file(s) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]multi</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do multiple simulations in parallel (only with -np &gt; 1) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]xvgr</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Add specific codes (legends etc.) in the output <a href="xvg.html">xvg</a> files for the xmgrace program </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pd</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use particle decompostion </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dd</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Domain decomposition grid, 0 is optimize </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-npme</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Number of separate nodes to be used for PME, -1 is guess </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ddorder</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>interleave</tt> </TD><TD> DD node order: <tt>interleave</tt>, <tt>pp_pme</tt> or <tt>cartesian</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ddcheck</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Check for all bonded interactions with DD </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rdd</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> The maximum distance for bonded interactions with DD (nm), 0 is determine from initial coordinates </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-rcon</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Maximum distance for P-LINCS (nm), 0 is estimate </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dlb</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>auto</tt> </TD><TD> Dynamic load balancing (with DD): <tt>auto</tt>, <tt>no</tt> or <tt>yes</tt> </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dds</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.8   </tt> </TD><TD> Minimum allowed dlb scaling of the DD cell size </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]sum</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Sum the energies at every step </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be loud and noisy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]compact</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Write a compact <a href="log.html">log</a> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]seppot</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Write separate V and dVdl terms for each interaction type and node to the <a href="log.html">log</a> file(s) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-pforce</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Print all forces larger than this (kJ/mol nm) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]reprod</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Try to avoid optimizations that affect binary reproducibility </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-cpt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>15    </tt> </TD><TD> Checkpoint interval (minutes) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]append</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Append to previous output files when restarting from checkpoint </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxh</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>-1    </tt> </TD><TD> Terminate after 0.99 times this time (hours) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-multi</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Do multiple simulations in parallel </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-replex</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Attempt replica exchange every # steps </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-reseed</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>-1</tt> </TD><TD> Seed for replica exchange, -1 is generate a seed </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]glas</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do glass simulation with special long range corrections </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]glas</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do glass simulation with special long range corrections </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ionize</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Do a simulation including the effect of an X-Ray bombardment on your system </TD></TD>
 </TABLE>
 <P>
 <hr>

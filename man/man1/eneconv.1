@@ -1,7 +1,7 @@
-.TH eneconv 1 "Mon 29 Aug 2005"
+.TH eneconv 1 "Mon 22 Sep 2008"
 .SH NAME
 eneconv
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3eneconv\fP
 .BI "-f" " ener.edr "
@@ -71,42 +71,43 @@ to select which frames to write.
 .SH FILES
 .BI "-f" " ener.edr" 
 .B Input, Mult.
- Generic energy: edr ene 
+ Energy file: edr ene 
 
 .BI "-o" " fixed.edr" 
 .B Output
- Generic energy: edr ene 
+ Energy file: edr ene 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " real" "     -1" 
+.BI "-b"  " real" " -1    " 
  First time to use
 
-.BI "-e"  " real" "     -1" 
+.BI "-e"  " real" " -1    " 
  Last time to use
 
-.BI "-dt"  " real" "      0" 
+.BI "-dt"  " real" " 0     " 
  Only write out frame when t MOD dt = offset
 
-.BI "-offset"  " real" "      0" 
+.BI "-offset"  " real" " 0     " 
  Time offset for -dt option
 
-.BI "-[no]settime"  "    no"
+.BI "-[no]settime"  "no    "
  Change starting time interactively
 
-.BI "-[no]sort"  "   yes"
+.BI "-[no]sort"  "yes   "
  Sort energy files (not frames)
 
-.BI "-scalefac"  " real" "      1" 
+.BI "-scalefac"  " real" " 1     " 
  Multiply energy component by this factor
 
-.BI "-[no]error"  "   yes"
+.BI "-[no]error"  "yes   "
  Stop on errors in the file
 
+.SH KNOWN PROBLEMS
 \- When combining trajectories the sigma and E2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way.
 

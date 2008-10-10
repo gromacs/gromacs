@@ -1,7 +1,7 @@
-.TH g_densmap 1 "Mon 29 Aug 2005"
+.TH g_densmap 1 "Mon 22 Sep 2008"
 .SH NAME
 g_densmap
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_densmap\fP
 .BI "-f" " traj.xtc "
@@ -15,11 +15,16 @@ g_densmap
 .BI "-dt" " time "
 .BI "-[no]w" ""
 .BI "-bin" " real "
-.BI "-nx" " int "
-.BI "-nz" " int "
+.BI "-aver" " enum "
+.BI "-xmin" " real "
+.BI "-xmax" " real "
+.BI "-n1" " int "
+.BI "-n2" " int "
 .BI "-amax" " real "
 .BI "-rmax" " real "
 .BI "-[no]mirror" ""
+.BI "-unit" " enum "
+.BI "-dmin" " real "
 .BI "-dmax" " real "
 .SH DESCRIPTION
 g_densmap computes 2D number-density maps.
@@ -32,16 +37,26 @@ and can be converted to postscript with xpm2ps.
 
 
 The default analysis is a 2-D number-density map for a selected
-group of atoms in the x-z plane. The grid spacing is set with the option
-
+group of atoms in the x-y plane.
+The averaging direction can be changed with the option 
+.B -aver
+.
+When 
+.B -xmin
+and/or 
+.B -xmax
+are set only atoms that are
+within the limit(s) in the averaging direction are taken into account.
+The grid spacing is set with the option 
 .B -bin
-. When 
-.B -nx
+.
+When 
+.B -n1
 or 
-.B -nz
+.B -n2
 is non-zero, the grid
-size is set by this option. Box size fluctuations are properly taken
-into account.
+size is set by this option.
+Box size fluctuations are properly taken into account.
 
 
 
@@ -62,6 +77,16 @@ option has been set.
 
 
 
+The normalization of the output is set with the 
+.B -unit
+option.
+The default produces a true number density. Unit 
+.B nm-2
+leaves out
+the normalization for the averaging or the angular direction.
+Option 
+.B count
+produces the count for each grid cell.
 When you do not want the scale in the output to go
 from zero to the maximum density, you can set the maximum
 with the option 
@@ -70,11 +95,11 @@ with the option
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -85,42 +110,69 @@ with the option
  X PixMap compatible matrix file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-bin"  " real" "   0.02" 
- Grid size
+.BI "-bin"  " real" " 0.02  " 
+ Grid size (nm)
 
-.BI "-nx"  " int" " 0" 
- Number of grid cells in x direction
+.BI "-aver"  " enum" " z" 
+ The direction to average over: 
+.B z
+, 
+.B y
+or 
+.B x
 
-.BI "-nz"  " int" " 0" 
- Number of grid cells in z direction
 
-.BI "-amax"  " real" "      0" 
+.BI "-xmin"  " real" " -1    " 
+ Minimum coordinate for averaging
+
+.BI "-xmax"  " real" " -1    " 
+ Maximum coordinate for averaging
+
+.BI "-n1"  " int" " 0" 
+ Number of grid cells in the first direction
+
+.BI "-n2"  " int" " 0" 
+ Number of grid cells in the second direction
+
+.BI "-amax"  " real" " 0     " 
  Maximum axial distance from the center
 
-.BI "-rmax"  " real" "      0" 
+.BI "-rmax"  " real" " 0     " 
  Maximum radial distance
 
-.BI "-[no]mirror"  "    no"
+.BI "-[no]mirror"  "no    "
  Add the mirror image below the axial axis
 
-.BI "-dmax"  " real" "      0" 
- Maximum density (0 means calculate it)
+.BI "-unit"  " enum" " nm-3" 
+ Unit for the output: 
+.B nm-3
+, 
+.B nm-2
+or 
+.B count
+
+
+.BI "-dmin"  " real" " 0     " 
+ Minimum density in output
+
+.BI "-dmax"  " real" " 0     " 
+ Maximum density in output (0 means calculate it)
 

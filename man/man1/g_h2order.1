@@ -1,7 +1,7 @@
-.TH g_h2order 1 "Mon 29 Aug 2005"
+.TH g_h2order 1 "Mon 22 Sep 2008"
 .SH NAME
 g_h2order
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_h2order\fP
 .BI "-f" " traj.xtc "
@@ -30,7 +30,7 @@ instead of the angle between the dipole and a box axis.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-n" " index.ndx" 
 .B Input
@@ -42,32 +42,32 @@ instead of the angle between the dipole and a box axis.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-o" " order.xvg" 
 .B Output
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-d"  " string" " Z" 
@@ -76,5 +76,6 @@ instead of the angle between the dipole and a box axis.
 .BI "-sl"  " int" " 0" 
  Calculate order parameter as function of boxlength, dividing the box in nr slices.
 
+.SH KNOWN PROBLEMS
 \- The program assigns whole water molecules to a slice, based on the firstatom of three in the index file group. It assumes an order O,H,H.Name is not important, but the order is. If this demand is not met,assigning molecules to slices is different.
 

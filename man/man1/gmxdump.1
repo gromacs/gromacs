@@ -1,12 +1,14 @@
-.TH gmxdump 1 "Mon 29 Aug 2005"
+.TH gmxdump 1 "Mon 22 Sep 2008"
 .SH NAME
 gmxdump
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3gmxdump\fP
 .BI "-s" " topol.tpr "
 .BI "-f" " traj.xtc "
 .BI "-e" " ener.edr "
+.BI "-cp" " state.cpt "
+.BI "-om" " grompp.mdp "
 .BI "-[no]h" ""
 .BI "-nice" " int "
 .BI "-[no]nr" ""
@@ -34,26 +36,37 @@ output in a readable format. This program is essential for
 checking your run input file in case of problems.
 
 
+When requesting to dump a topology file the program will dump
+the processed topology, since not all original information is maintained
+in tpr files.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input, Opt.
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-f" " traj.xtc" 
 .B Input, Opt.
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-e" " ener.edr" 
 .B Input, Opt.
- Generic energy: edr ene 
+ Energy file: edr ene 
+
+.BI "-cp" " state.cpt" 
+.B Input, Opt.
+ Checkpoint file 
+
+.BI "-om" " grompp.mdp" 
+.B Output, Opt.
+ grompp input file with MD parameters 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-[no]nr"  "   yes"
+.BI "-[no]nr"  "yes   "
  Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)
 

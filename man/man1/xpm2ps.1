@@ -1,7 +1,7 @@
-.TH xpm2ps 1 "Mon 29 Aug 2005"
+.TH xpm2ps 1 "Mon 22 Sep 2008"
 .SH NAME
 xpm2ps
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3xpm2ps\fP
 .BI "-f" " root.xpm "
@@ -18,7 +18,6 @@ xpm2ps
 .BI "-[no]yonce" ""
 .BI "-legend" " enum "
 .BI "-diag" " enum "
-.BI "-combine" " enum "
 .BI "-size" " real "
 .BI "-bx" " real "
 .BI "-by" " real "
@@ -27,6 +26,9 @@ xpm2ps
 .BI "-skip" " int "
 .BI "-[no]zeroline" ""
 .BI "-legoffset" " int "
+.BI "-combine" " enum "
+.BI "-cmin" " real "
+.BI "-cmax" " real "
 .SH DESCRIPTION
 xpm2ps makes a beautiful color plot of an XPixelMap file.
 Labels and axis can be displayed, when they are supplied
@@ -83,17 +85,22 @@ setting
 .B -diag
 to 
 .B none
-. With 
-
-.B -combine
-an alternative operation can be selected to combine
-the matrices. In this case, a new color map will be generated with
+.
+In this case, a new color map will be generated with
 a red gradient for negative numbers and a blue for positive.
-
-
 If the color coding and legend labels of both matrices are identical,
 only one legend will be displayed, else two separate legends are
 displayed.
+With 
+.B -combine
+an alternative operation can be selected
+to combine the matrices. The output range is automatically set
+to the actual range of the combined matrix. This can be overridden
+with 
+.B -cmin
+and 
+.B -cmax
+.
 
 
 
@@ -143,16 +150,16 @@ option.
  X PixMap compatible matrix file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]frame"  "   yes"
+.BI "-[no]frame"  "yes   "
  Display frame, ticks, labels, title and legend
 
 .BI "-title"  " enum" " top" 
@@ -166,7 +173,7 @@ or
 .B none
 
 
-.BI "-[no]yonce"  "    no"
+.BI "-[no]yonce"  "no    "
  Show y-label only once
 
 .BI "-legend"  " enum" " both" 
@@ -189,26 +196,13 @@ or
 .B none
 
 
-.BI "-combine"  " enum" " halves" 
- Combine two matrices: 
-.B halves
-, 
-.B add
-, 
-.B sub
-, 
-.B mult
-or 
-.B div
-
-
-.BI "-size"  " real" "    400" 
+.BI "-size"  " real" " 400   " 
  Horizontal size of the matrix in ps units
 
-.BI "-bx"  " real" "      0" 
+.BI "-bx"  " real" " 0     " 
  Element x-size, overrides -size (also y-size when -by is not set)
 
-.BI "-by"  " real" "      0" 
+.BI "-by"  " real" " 0     " 
  Element y-size
 
 .BI "-rainbow"  " enum" " no" 
@@ -226,9 +220,28 @@ or
 .BI "-skip"  " int" " 1" 
  only write out every nr-th row and column
 
-.BI "-[no]zeroline"  "    no"
+.BI "-[no]zeroline"  "no    "
  insert line in xpm matrix where axis label is zero
 
 .BI "-legoffset"  " int" " 0" 
  Skip first N colors from xpm file for the legend
+
+.BI "-combine"  " enum" " halves" 
+ Combine two matrices: 
+.B halves
+, 
+.B add
+, 
+.B sub
+, 
+.B mult
+or 
+.B div
+
+
+.BI "-cmin"  " real" " 0     " 
+ Minimum for combination output
+
+.BI "-cmax"  " real" " 0     " 
+ Maximum for combination output
 

@@ -1,7 +1,7 @@
-.TH make_edi 1 "Mon 29 Aug 2005"
+.TH make_edi 1 "Mon 22 Sep 2008"
 .SH NAME
 make_edi
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3make_edi\fP
 .BI "-f" " eigenvec.trr "
@@ -17,10 +17,10 @@ make_edi
 .BI "-mon" " string "
 .BI "-linfix" " string "
 .BI "-linacc" " string "
+.BI "-flood" " string "
 .BI "-radfix" " string "
 .BI "-radacc" " string "
 .BI "-radcon" " string "
-.BI "-flood" " string "
 .BI "-outfrq" " int "
 .BI "-slope" " real "
 .BI "-maxedsteps" " int "
@@ -35,19 +35,19 @@ make_edi
 .BI "-accdir" " string "
 .BI "-radstep" " real "
 .BI "-[no]restrain" ""
-.BI "-[no]hesse" ""
+.BI "-[no]hessian" ""
 .BI "-[no]harmonic" ""
 .SH DESCRIPTION
 
 .B make_edi
-generates an ED-sampling input file to be used with mdrun
+generates an essential dynamics (ED) sampling input file to be used with mdrun
 based on eigenvectors of a covariance matrix (
 .B g_covar
 ) or from a
-Normal Modes anaysis (
+normal modes anaysis (
 .B g_nmeig
 ).
-ED-sampling can be used to manipulate the position along collective coordinates
+ED sampling can be used to manipulate the position along collective coordinates
 (eigenvectors) of (biological) macromolecules during a simulation. Particularly,
 it may be used to enhance the sampling efficiency of MD simulations by stimulating
 the system to explore new regions along these collective coordinates. A number
@@ -66,8 +66,8 @@ of different algorithms are implemented to drive the system along the eigenvecto
 to keep the position along a certain (set of) coordinate(s) fixed (
 .B -linfix
 ),
-or to only monitor the projections of the positions, velocities and forces onto
-these coordinates(
+or to only monitor the projections of the positions onto
+these coordinates (
 .B -mon
 ).
 
@@ -92,7 +92,7 @@ reference structure, target positions, etc.
 
 
 .B -mon
-: monitor projections of x, v and f onto selected eigenvectors.
+: monitor projections of the coordinates onto selected eigenvectors.
 
 
 
@@ -126,11 +126,14 @@ to read in a structure file that defines an external origin.
 : perform acceptance radius contraction along selected eigenvectors
 towards a target structure specified with 
 .B -tar
-.NOTE: each eigenvector can be selected only once. 
+.
+
+NOTE: each eigenvector can be selected only once. 
 
 
 .B -outfrq
-: frequency (in steps) of writing out projections etc.
+: frequency (in steps) of writing out projections etc. to .edo file
+
 
 
 .B -slope
@@ -144,44 +147,26 @@ is less than the value specified.
 before a new cycle is started.
 
 Note on the parallel implementation: since ED sampling is a 'global' thing
-(collective coordinates etc), at least on the 'protein' side, ED sampling
-is not very parallel-friendly from an implentation point of view (it would
-require much extra communication to fully parallelize the algorithms).
-Fortunately, however, a typical parallel protein simulation in gromacs has
-most or all protein coordinates on one processor (the master) and has only
-other atoms (solvent, lipid, ions etc) on the other processors. With such a
-setup, ED sampling will still work. If the atoms over which ED sampling should 
-be performed are spread over multiple processors, a fatal error will result.
+(collective coordinates etc.), at least on the 'protein' side, ED sampling
+is not very parallel-friendly from an implentation point of view. Because
+parallel ED requires much extra communication, expect the performance to be
+lower as in a free MD simulation, especially on a large number of nodes. 
 
-All output of mdrun (specify with -eo) is written to a .edo file (some extra
-information is written to the log file of mdrun too, actually). The .edo format
-is a simple ASCII file that should be easy to parse with standard unix tools
-like awk. A script (parse_edo) can be downloaded from contribution section at
- www.gromacs.org to extract information from the
-.edo files for your convinience. In short, the header defines which information
-can be expected in the rest of the .edo file. After the header, per step the
-following information is present: 
+
+All output of mdrun (specify with -eo) is written to a .edo file. In the output
+file, per OUTFRQ step the following information is present: 
 
 
 * the step number
 
-* RMSD (for atoms in fitting prior to calculating ED constr.)
+* the number of the ED dataset. (Note that you can impose multiple ED constraints in
+a single simulation - on different molecules e.g. - if several .edi files were concatenated
+first. The constraints are applied in the order they appear in the .edi file.) 
+
+* RMSD (for atoms involved in fitting prior to calculating the ED constraints)
 
 * projections of the positions onto selected eigenvectors
 
-* projections of the velocities onto selected eigenvectors
-
-* projections of the forces onto selected eigenvectors
-
-
-
-All projections are in the same order as in the header, so if you have e.g.
-2 groups (say one group over which acceptance radius expansion is performed,
-and another for which the projections are merely monitored) then you first
-get the position projections for each of the 2 groups, then the velocities
-and then the forces. Radii are not explicitly written to the .edo file, as
-they can be readily projected back from the positions. Alternatively, radii
-may be 'grepped from the log file. 
 
 
 
@@ -192,31 +177,36 @@ FLOODING:
 
 with -flood you can specify which eigenvectors are used to compute a flooding potential,
 which will lead to extra forces expelling the structure out of the region described
-by the covariance matrix. if you switch -restrain the potential is inverted and the structure
-is kept in that region
+by the covariance matrix. If you switch -restrain the potential is inverted and the structure
+is kept in that region.
 
 
 
-the origin is normally the average structure stored in the eigvec.trr file
-it can be changed with -ori to an arbitrary position in configurational space
-with -tau , -deltaF0 and -Eflnull you control the flooding strength
-Efl is the flooding strength, it is updated according to the rule of adaptive flooding
-tau is the time constant of adaptive flooding, high tau means slow adaption (i.e. growth) 
-deltaF0 is the flooding strength you want to reach after tau ps of simulation
-to use constant Efl set -tau to zero
+The origin is normally the average structure stored in the eigvec.trr file.
+It can be changed with -ori to an arbitrary position in configurational space.
+With -tau, -deltaF0 and -Eflnull you control the flooding behaviour.
+Efl is the flooding strength, it is updated according to the rule of adaptive flooding.
+Tau is the time constant of adaptive flooding, high tau means slow adaption (i.e. growth). 
+DeltaF0 is the flooding strength you want to reach after tau ps of simulation.
+To use constant Efl set -tau to zero.
 
 
 
 -alpha is a fudge parameter to control the width of the flooding potential. A value of 2 has been found
-to give good results for most standard cases in flooding of proteins
-alpha basically accounts for incomplete sampling, if you sampled further the width of the ensemble would
-increase, this is mimicked by alpha1for restraining alpha1 can give you smaller width in the restraining potentialRESTART and FLOODING: 
+to give good results for most standard cases in flooding of proteins.
+Alpha basically accounts for incomplete sampling, if you sampled further the width of the ensemble would
+increase, this is mimicked by alpha1.
+For restraining alpha1 can give you smaller width in the restraining potential.
+
+
+
+RESTART and FLOODING:
 If you want to restart a crashed flooding simulation please find the values deltaF and Efl in
-the output file and write them with your texteditor into the .edi file under DELTA_F0 and EFL_NULL
+the output file and manually put them into the .edi file under DELTA_F0 and EFL_NULL.
 .SH FILES
 .BI "-f" " eigenvec.trr" 
 .B Input
- Full precision trajectory: trr trj 
+ Full precision trajectory: trr trj cpt 
 
 .BI "-eig" " eigenval.xvg" 
 .B Input, Opt.
@@ -224,7 +214,7 @@ the output file and write them with your texteditor into the .edi file under DEL
 
 .BI "-s" " topol.tpr" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -232,34 +222,37 @@ the output file and write them with your texteditor into the .edi file under DEL
 
 .BI "-tar" " target.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-ori" " origin.gro" 
 .B Input, Opt.
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-o" " sam.edi" 
 .B Output
  ED sampling input 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-mon"  " string" " " 
- Indices of eigenvectors  for projections of x, v and f (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91 
+ Indices of eigenvectors for projections of x (e.g. 1,2-5,9) or 1-100:10 means 1 11 21 31 ... 91
 
 .BI "-linfix"  " string" " " 
  Indices of eigenvectors for fixed increment linear sampling
 
 .BI "-linacc"  " string" " " 
  Indices of eigenvectors for acceptance linear sampling
+
+.BI "-flood"  " string" " " 
+ Indices of eigenvectors for flooding
 
 .BI "-radfix"  " string" " " 
  Indices of eigenvectors for fixed increment radius expansion
@@ -270,38 +263,35 @@ the output file and write them with your texteditor into the .edi file under DEL
 .BI "-radcon"  " string" " " 
  Indices of eigenvectors for acceptance radius contraction
 
-.BI "-flood"  " string" " " 
- Indices of eigenvectors for flooding
-
 .BI "-outfrq"  " int" " 100" 
- freqency (in steps) of writing output in .edo file
+ Freqency (in steps) of writing output in .edo file
 
-.BI "-slope"  " real" "      0" 
- minimal slope in acceptance radius expamsion
+.BI "-slope"  " real" " 0     " 
+ Minimal slope in acceptance radius expansion
 
 .BI "-maxedsteps"  " int" " 0" 
- max nr of steps per cycle
+ Max nr of steps per cycle
 
-.BI "-deltaF0"  " real" "    150" 
- target destabilization energy  - used for flooding
+.BI "-deltaF0"  " real" " 150   " 
+ Target destabilization energy  - used for flooding
 
-.BI "-deltaF"  " real" "      0" 
- start deltaF with this parameter - default 0, i.g. nonzero values only needed for restart
+.BI "-deltaF"  " real" " 0     " 
+ Start deltaF with this parameter - default 0, i.e. nonzero values only needed for restart
 
-.BI "-tau"  " real" "    0.1" 
-  coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength
+.BI "-tau"  " real" " 0.1   " 
+ Coupling constant for adaption of flooding strength according to deltaF0, 0 = infinity i.e. constant flooding strength
 
 .BI "-eqsteps"  " int" " 0" 
-  number of steps to run without any perturbations 
+ Number of steps to run without any perturbations 
 
-.BI "-Eflnull"  " real" "      0" 
-  this is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use -tau 0. 
+.BI "-Eflnull"  " real" " 0     " 
+ This is the starting value of the flooding strength. The flooding strength is updated according to the adaptive flooding scheme. To use a constant flooding strength use -tau 0. 
 
-.BI "-T"  " real" "    300" 
-  T is temperature, the value is needed if you want to do flooding 
+.BI "-T"  " real" " 300   " 
+ T is temperature, the value is needed if you want to do flooding 
 
-.BI "-alpha"  " real" "      1" 
-  scale width of gaussian flooding potential with alpha2 
+.BI "-alpha"  " real" " 1     " 
+ Scale width of gaussian flooding potential with alpha2 
 
 .BI "-linstep"  " string" " " 
  Stepsizes (nm/step) for fixed increment linear sampling (put in quotes! "1.0 2.3 5.1 -3.1")
@@ -309,15 +299,15 @@ the output file and write them with your texteditor into the .edi file under DEL
 .BI "-accdir"  " string" " " 
  Directions for acceptance linear sampling - only sign counts! (put in quotes! "-1 +1 -1.1")
 
-.BI "-radstep"  " real" "      0" 
+.BI "-radstep"  " real" " 0     " 
  Stepsize (nm/step) for fixed increment radius expansion
 
-.BI "-[no]restrain"  "    no"
- use the flooding potential with inverted sign - effects as quasiharmonic restraining potential
+.BI "-[no]restrain"  "no    "
+ Use the flooding potential with inverted sign - effects as quasiharmonic restraining potential
 
-.BI "-[no]hesse"  "    no"
- the eigenvectors and eigenvalues are from a Hesse matrix
+.BI "-[no]hessian"  "no    "
+ The eigenvectors and eigenvalues are from a Hessian matrix
 
-.BI "-[no]harmonic"  "    no"
- the eigenvalues are interpreted as spring constant
+.BI "-[no]harmonic"  "no    "
+ The eigenvalues are interpreted as spring constant
 

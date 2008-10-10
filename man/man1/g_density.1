@@ -1,7 +1,7 @@
-.TH g_density 1 "Mon 29 Aug 2005"
+.TH g_density 1 "Mon 22 Sep 2008"
 .SH NAME
 g_density
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_density\fP
 .BI "-f" " traj.xtc "
@@ -18,9 +18,7 @@ g_density
 .BI "-[no]xvgr" ""
 .BI "-d" " string "
 .BI "-sl" " int "
-.BI "-[no]number" ""
-.BI "-[no]ed" ""
-.BI "-[no]count" ""
+.BI "-dens" " enum "
 .BI "-ng" " int "
 .BI "-[no]symm" ""
 .BI "-[no]center" ""
@@ -46,7 +44,7 @@ partial charge.
 .SH FILES
 .BI "-f" " traj.xtc" 
 .B Input
- Generic trajectory: xtc trr trj gro g96 pdb 
+ Trajectory: xtc trr trj gro g96 pdb cpt 
 
 .BI "-n" " index.ndx" 
 .B Input, Opt.
@@ -54,7 +52,7 @@ partial charge.
 
 .BI "-s" " topol.tpr" 
 .B Input
- Generic run input: tpr tpb tpa xml 
+ Run input file: tpr tpb tpa 
 
 .BI "-ei" " electrons.dat" 
 .B Input, Opt.
@@ -65,52 +63,53 @@ partial charge.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" "      0" 
+.BI "-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" "      0" 
+.BI "-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" "      0" 
+.BI "-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "   yes"
+.BI "-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
 .BI "-d"  " string" " Z" 
  Take the normal on the membrane in direction X, Y or Z.
 
-.BI "-sl"  " int" " 10" 
+.BI "-sl"  " int" " 50" 
  Divide the box in nr slices.
 
-.BI "-[no]number"  "    no"
- Calculate number density instead of mass density. Hydrogens are not counted!
+.BI "-dens"  " enum" " mass" 
+ Density: 
+.B mass
+, 
+.B number
+, 
+.B charge
+or 
+.B electron
 
-.BI "-[no]ed"  "    no"
- Calculate electron density instead of mass density
 
-.BI "-[no]count"  "    no"
- Only count atoms in slices, no densities. Hydrogens are not counted
-
-.BI "-ng"  " int" " 0" 
+.BI "-ng"  " int" " 1" 
  Number of groups to compute densities of
 
-.BI "-[no]symm"  "    no"
+.BI "-[no]symm"  "no    "
  Symmetrize the density along the axis, with respect to the center. Useful for bilayers.
 
-.BI "-[no]center"  "    no"
+.BI "-[no]center"  "no    "
  Shift the center of mass along the axis to zero. This means if your axis is Z and your box is bX, bY, bZ, the center of mass will be at bX/2, bY/2, 0.
 
+.SH KNOWN PROBLEMS
 \- When calculating electron densities, atomnames are used instead of types. This is bad.
-
-\- When calculating number densities, atoms with names that start with H are not counted. This may be surprising if you use hydrogens with names like OP3.
 

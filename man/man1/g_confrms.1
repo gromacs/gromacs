@@ -1,7 +1,7 @@
-.TH g_confrms 1 "Mon 29 Aug 2005"
+.TH g_confrms 1 "Mon 22 Sep 2008"
 .SH NAME
 g_confrms
-.B VERSION 3.3_beta_20050823
+.B VERSION 4.0_rc1
 .SH SYNOPSIS
 \f3g_confrms\fP
 .BI "-f1" " conf1.gro "
@@ -18,6 +18,7 @@ g_confrms
 .BI "-[no]pbc" ""
 .BI "-[no]fit" ""
 .BI "-[no]name" ""
+.BI "-[no]label" ""
 .BI "-[no]bfac" ""
 .SH DESCRIPTION
 g_confrms computes the root mean square deviation (RMSD) of two
@@ -46,15 +47,15 @@ calculated from the atomic MSD values can be written with
 .SH FILES
 .BI "-f1" " conf1.gro" 
 .B Input
- Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+ Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
 .BI "-f2" " conf2.gro" 
 .B Input
- Generic structure: gro g96 pdb tpr tpb tpa xml 
+ Structure file: gro g96 pdb tpr tpb tpa 
 
 .BI "-o" " fit.pdb" 
 .B Output
- Generic structure: gro g96 pdb xml 
+ Structure file: gro g96 pdb 
 
 .BI "-n1" " fit1.ndx" 
 .B Input, Opt.
@@ -69,30 +70,33 @@ calculated from the atomic MSD values can be written with
  Index file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "    no"
+.BI "-[no]h"  "no    "
  Print help info and quit
 
 .BI "-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-[no]w"  "    no"
+.BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]one"  "    no"
+.BI "-[no]one"  "no    "
  Only write the fitted structure to file
 
-.BI "-[no]mw"  "   yes"
+.BI "-[no]mw"  "yes   "
  Mass-weighted fitting and RMSD
 
-.BI "-[no]pbc"  "    no"
+.BI "-[no]pbc"  "no    "
  Try to make molecules whole again
 
-.BI "-[no]fit"  "   yes"
+.BI "-[no]fit"  "yes   "
  Do least squares superposition of the target structure to the reference
 
-.BI "-[no]name"  "    no"
+.BI "-[no]name"  "no    "
  Only compare matching atom names
 
-.BI "-[no]bfac"  "    no"
+.BI "-[no]label"  "no    "
+ Added chain labels A for first and B for second structure
+
+.BI "-[no]bfac"  "no    "
  Output B-factors from atomic MSD values
 

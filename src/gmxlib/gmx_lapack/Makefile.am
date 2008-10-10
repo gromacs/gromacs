@@ -38,5 +38,6 @@ liblapack_la_SOURCES =	\
 	 slarrvx.c \
 	ilasrt2.c lapack_limits.h
 
+EXTRA_DIST = lapack_copyright
 
 CLEANFILES     = *.la *~ \\\#* 

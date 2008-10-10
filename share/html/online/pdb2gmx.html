@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>pdb2gmx</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -91,39 +91,41 @@ The increase in mass of the hydrogens is subtracted from the bonded
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   eiwit.pdb</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Output </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   eiwit.pdb</a></tt> </TD><TD> Input </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Output </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-p</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">   topol.top</a></tt> </TD><TD> Output </TD><TD> Topology file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-i</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="itp.html">   posre.itp</a></tt> </TD><TD> Output </TD><TD> Include file for topology </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html">   clean.ndx</a></tt> </TD><TD> Output, Opt. </TD><TD> Index file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-q</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   clean.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-q</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">   clean.pdb</a></tt> </TD><TD> Output, Opt. </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Merge chains into one molecule definition </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]merge</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Merge chains into one molecule definition </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>select</tt> </TD><TD> Force field, interactive by default. Use -h for information. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-water</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>spc</tt> </TD><TD> Water model to use: with GROMOS we recommend SPC, with OPLS, TIP4P: <tt>spc</tt>, <tt>spce</tt>, <tt>tip3p</tt>, <tt>tip4p</tt>, <tt>tip5p</tt> or <tt>f3c</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]inter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Set the next 6 options to interactive </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ss</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive SS bridge selection </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive termini selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]lys</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive Lysine selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]asp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive Aspartic Acid selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]glu</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive Glutamic Acid selection, iso charged </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]his</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Interactive Histidine selection, iso checking H-bonds </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-angle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   135</tt> </TD><TD> Minimum hydrogen-donor-acceptor angle for a H-bond (degrees) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   0.3</tt> </TD><TD> Maximum donor-acceptor distance for a H-bond (nm) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]una</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Select aromatic rings with united CH atoms on Phenylalanine, Tryptophane and Tyrosine </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]ignh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Ignore hydrogen atoms that are in the <a href="pdb.html">pdb</a> file </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]missing</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Continue when atoms are missing, dangerous </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Be slightly more verbose in messages </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-posrefc</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>  1000</tt> </TD><TD> Force constant for position restraints </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]inter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Set the next 8 options to interactive </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ss</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive SS bridge selection </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ter</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive termini selection, iso charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]lys</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Lysine selection, iso charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]arg</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Arganine selection, iso charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]asp</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Aspartic Acid selection, iso charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]glu</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Glutamic Acid selection, iso charged </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]gln</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Glutamine selection, iso neutral </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]his</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Interactive Histidine selection, iso checking H-bonds </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-angle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>135   </tt> </TD><TD> Minimum hydrogen-donor-acceptor angle for a H-bond (degrees) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-dist</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0.3   </tt> </TD><TD> Maximum donor-acceptor distance for a H-bond (nm) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]una</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Select aromatic rings with united CH atoms on Phenylalanine, Tryptophane and Tyrosine </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]ignh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Ignore hydrogen atoms that are in the <a href="pdb.html">pdb</a> file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]missing</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Continue when atoms are missing, dangerous </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Be slightly more verbose in messages </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-posrefc</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>1000  </tt> </TD><TD> Force constant for position restraints </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-vsite</tt></b> </TD><TD ALIGN=RIGHT> enum </TD><TD ALIGN=RIGHT> <tt>none</tt> </TD><TD> Convert atoms to virtual sites: <tt>none</tt>, <tt>hydrogens</tt> or <tt>aromatics</tt> </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]heavyh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Make hydrogen atoms heavy </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]deuterate</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Change the mass of hydrogens to 2 amu </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]heavyh</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Make hydrogen atoms heavy </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]deuterate</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Change the mass of hydrogens to 2 amu </TD></TD>
 </TABLE>
 <P>
 <hr>

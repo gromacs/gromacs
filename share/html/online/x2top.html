@@ -7,10 +7,10 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>x2top</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
@@ -39,7 +39,7 @@ case <a href="pdb2gmx.html">pdb2gmx</a> just looks for the corresponding file.<p
 <H3>Files</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Generic structure: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> xml </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html">    conf.gro</a></tt> </TD><TD> Input </TD><TD> Structure file: <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> <a href="tpr.html">tpr</a> <a href="tpb.html">tpb</a> <a href="tpa.html">tpa</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="top.html">     out.top</a></tt> </TD><TD> Output, Opt. </TD><TD> Topology file </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-r</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="rtp.html">     out.rtp</a></tt> </TD><TD> Output, Opt. </TD><TD> Residue Type file used by <a href="pdb2gmx.html">pdb2gmx</a> </TD></TR>
 </TABLE>
@@ -47,24 +47,26 @@ case <a href="pdb2gmx.html">pdb2gmx</a> just looks for the corresponding file.<p
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-scale</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   1.1</tt> </TD><TD> Scaling factor for bonds with unknown atom types relative to atom type O </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>select</tt> </TD><TD> Select the force field for your simulation. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-ff</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>oplsaa</tt> </TD><TD> Force field for your simulation. Type "select" for interactive selcection. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]v</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Generate verbose output in the <a href="top.html">top</a> file. </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nexcl</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>3</tt> </TD><TD> Number of exclusions </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]H14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use 3rd neighbour interactions for hydrogen atoms </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]alldih</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Generate all proper dihedrals </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]remdih</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Remove dihedrals on the same bond as an improper </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pairs</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Output 1-4 interactions (pairs) in topology file </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]H14</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use 3rd neighbour interactions for hydrogen atoms </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]alldih</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Generate all proper dihedrals </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]remdih</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Remove dihedrals on the same bond as an improper </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pairs</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Output 1-4 interactions (pairs) in topology file </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-name</tt></b> </TD><TD ALIGN=RIGHT> string </TD><TD ALIGN=RIGHT> <tt>ICE</tt> </TD><TD> Name of your molecule </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Use periodic boundary conditions. </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]param</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print parameters in the output </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]round</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>   yes</tt> </TD><TD> Round off measured values </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pbc</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Use periodic boundary conditions. </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]pdbq</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Use the B-factor supplied in a <a href="pdb.html">pdb</a> file for the atomic charges </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]param</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Print parameters in the output </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]round</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>yes   </tt> </TD><TD> Round off measured values </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-kb</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>400000</tt> </TD><TD> Bonded force constant (kJ/mol/nm^2) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-kt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>   400</tt> </TD><TD> Angle force constant (kJ/mol/rad^2) </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-kp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     5</tt> </TD><TD> Dihedral angle force constant (kJ/mol/rad^2) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-kt</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>400   </tt> </TD><TD> Angle force constant (kJ/mol/rad^2) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-kp</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>5     </tt> </TD><TD> Dihedral angle force constant (kJ/mol/rad^2) </TD></TD>
 </TABLE>
 <P>
+<H3>Known problems</H3>
 <UL>
 <LI>The atom type selection is primitive. Virtually no chemical knowledge is used
 <LI>Periodic boundary conditions screw up the bonding

@@ -25,8 +25,15 @@
 
 #include <mkl_dfti.h>
 
+
 #include "gmx_fft.h"
 #include "gmx_fatal.h"
+
+
+/* For MKL version (<10.0), we should define MKL_LONG. */
+#ifndef MKL_LONG
+#define MKL_LONG long int
+#endif
 
 
 #ifdef GMX_DOUBLE
@@ -82,6 +89,7 @@ struct gmx_fft
 };
 
 
+
 int
 gmx_fft_init_1d(gmx_fft_t *        pfft,
                 int                nx,
@@ -111,7 +119,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     fft->ooplace[3] = NULL;
 
     
-    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,nx);
+    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)nx);
 
     if( status == 0 )
         status = DftiSetValue(fft->inplace[0],DFTI_PLACEMENT,DFTI_INPLACE);
@@ -121,7 +129,7 @@ gmx_fft_init_1d(gmx_fft_t *        pfft,
     
     
     if( status == 0 )    
-        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,nx);
+        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)nx);
     
     if( status == 0)
         DftiSetValue(fft->ooplace[0],DFTI_PLACEMENT,DFTI_NOT_INPLACE);
@@ -176,7 +184,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     }
     fft->ooplace[3] = NULL;
     
-    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_REAL,1,nx);
+    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)nx);
 
     if( status == 0 )
         status = DftiSetValue(fft->inplace[0],DFTI_PLACEMENT,DFTI_INPLACE);
@@ -186,7 +194,7 @@ gmx_fft_init_1d_real(gmx_fft_t *        pfft,
     
 
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_REAL,1,nx);
+        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)nx);
     
     if( status == 0 )
         status = DftiSetValue(fft->ooplace[0],DFTI_PLACEMENT,DFTI_NOT_INPLACE);
@@ -231,7 +239,7 @@ gmx_fft_init_2d(gmx_fft_t *        pfft,
     gmx_fft_t      fft;
     int            d;
     int            status;
-    int            length[2];
+    MKL_LONG       length[2];
     
     if(pfft==NULL)
     {
@@ -302,8 +310,8 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
     gmx_fft_t      fft;
     int            d;
     int            status;
-    int            stride[2];
-    int            nyc;
+    MKL_LONG       stride[2];
+    MKL_LONG       nyc;
     
     if(pfft==NULL)
     {
@@ -332,7 +340,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
      */
     
     /* In-place X FFT */
-    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,nx);
+    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)nx);
     
     if ( status == 0 )
     {
@@ -353,7 +361,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
 
     /* Out-of-place X FFT */
     if( status == 0 )
-        status = DftiCreateDescriptor(&(fft->ooplace[0]),GMX_DFTI_PREC,DFTI_COMPLEX,1,nx);
+        status = DftiCreateDescriptor(&(fft->ooplace[0]),GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)nx);
 
     if( status == 0 )
     {
@@ -375,7 +383,7 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
    
     /* In-place Y FFT  */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->inplace[1],GMX_DFTI_PREC,DFTI_REAL,1,ny);
+        status = DftiCreateDescriptor(&fft->inplace[1],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)ny);
     
     if( status == 0 )
     {
@@ -383,19 +391,19 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
         stride[1] = 1;
                
         status = 
-            (DftiSetValue(fft->inplace[1],DFTI_PLACEMENT,DFTI_INPLACE)     ||
-             DftiSetValue(fft->inplace[1],DFTI_NUMBER_OF_TRANSFORMS,nx)    ||
-             DftiSetValue(fft->inplace[1],DFTI_INPUT_DISTANCE,2*nyc)       ||
-             DftiSetValue(fft->inplace[1],DFTI_INPUT_STRIDES,stride)       ||
-             DftiSetValue(fft->inplace[1],DFTI_OUTPUT_DISTANCE,2*nyc)      ||
-             DftiSetValue(fft->inplace[1],DFTI_OUTPUT_STRIDES,stride)     ||
+            (DftiSetValue(fft->inplace[1],DFTI_PLACEMENT,DFTI_INPLACE)             ||
+             DftiSetValue(fft->inplace[1],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nx)  ||
+             DftiSetValue(fft->inplace[1],DFTI_INPUT_DISTANCE,2*nyc)               ||
+             DftiSetValue(fft->inplace[1],DFTI_INPUT_STRIDES,stride)               ||
+             DftiSetValue(fft->inplace[1],DFTI_OUTPUT_DISTANCE,2*nyc)              ||
+             DftiSetValue(fft->inplace[1],DFTI_OUTPUT_STRIDES,stride)              ||
              DftiCommitDescriptor(fft->inplace[1]));
     }
 
 
     /* Out-of-place real-to-complex (affects output distance) Y FFT */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[1],GMX_DFTI_PREC,DFTI_REAL,1,ny);
+        status = DftiCreateDescriptor(&fft->ooplace[1],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)ny);
     
     if( status == 0 )
     {
@@ -403,19 +411,19 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
         stride[1] = 1;
          
         status =
-            (DftiSetValue(fft->ooplace[1],DFTI_PLACEMENT,DFTI_NOT_INPLACE) ||
-             DftiSetValue(fft->ooplace[1],DFTI_NUMBER_OF_TRANSFORMS,nx)    ||
-             DftiSetValue(fft->ooplace[1],DFTI_INPUT_DISTANCE,ny)          ||
-             DftiSetValue(fft->ooplace[1],DFTI_INPUT_STRIDES,stride)       ||
-             DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_DISTANCE,2*nyc)      ||
-             DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_STRIDES,stride)      ||
+            (DftiSetValue(fft->ooplace[1],DFTI_PLACEMENT,DFTI_NOT_INPLACE)           ||
+             DftiSetValue(fft->ooplace[1],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nx)    ||
+             DftiSetValue(fft->ooplace[1],DFTI_INPUT_DISTANCE,(MKL_LONG)ny)          ||
+             DftiSetValue(fft->ooplace[1],DFTI_INPUT_STRIDES,stride)                 ||
+             DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_DISTANCE,2*nyc)                ||
+             DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_STRIDES,stride)                ||
              DftiCommitDescriptor(fft->ooplace[1]));
     }
 
 
     /* Out-of-place complex-to-real (affects output distance) Y FFT */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[2],GMX_DFTI_PREC,DFTI_REAL,1,ny);
+        status = DftiCreateDescriptor(&fft->ooplace[2],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)ny);
     
     if( status == 0 )
     {
@@ -423,12 +431,12 @@ gmx_fft_init_2d_real(gmx_fft_t *        pfft,
         stride[1] = 1;
                
         status =
-            (DftiSetValue(fft->ooplace[2],DFTI_PLACEMENT,DFTI_NOT_INPLACE) ||
-             DftiSetValue(fft->ooplace[2],DFTI_NUMBER_OF_TRANSFORMS,nx)    ||
-             DftiSetValue(fft->ooplace[2],DFTI_INPUT_DISTANCE,2*nyc)       ||
-             DftiSetValue(fft->ooplace[2],DFTI_INPUT_STRIDES,stride)       ||
-             DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_DISTANCE,ny)         ||
-             DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_STRIDES,stride)      ||
+            (DftiSetValue(fft->ooplace[2],DFTI_PLACEMENT,DFTI_NOT_INPLACE)           ||
+             DftiSetValue(fft->ooplace[2],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nx)    ||
+             DftiSetValue(fft->ooplace[2],DFTI_INPUT_DISTANCE,2*nyc)                 ||
+             DftiSetValue(fft->ooplace[2],DFTI_INPUT_STRIDES,stride)                 ||
+             DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_DISTANCE,(MKL_LONG)ny)         ||
+             DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_STRIDES,stride)                ||
              DftiCommitDescriptor(fft->ooplace[2]));
     }
     
@@ -468,7 +476,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
 {
     gmx_fft_t      fft;
     int            d;
-    int            length[3];
+    MKL_LONG       length[3];
     int            status;
     
     if(pfft==NULL)
@@ -494,7 +502,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
     length[1] = ny;
     length[2] = nz;
     
-    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,3,length);
+    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,(MKL_LONG)3,length);
     
     if( status == 0 )
         status = DftiSetValue(fft->inplace[0],DFTI_PLACEMENT,DFTI_INPLACE);
@@ -504,7 +512,7 @@ gmx_fft_init_3d(gmx_fft_t *        pfft,
 
     
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,3,length);
+        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,(MKL_LONG)3,length);
     
     if( status == 0 )
         status = DftiSetValue(fft->ooplace[0],DFTI_PLACEMENT,DFTI_NOT_INPLACE);
@@ -545,7 +553,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
     gmx_fft_t      fft;
     int            d;
     int            status;
-    int            stride[2];
+    MKL_LONG       stride[2];
     int            nzc;
     
     if(pfft==NULL)
@@ -579,7 +587,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * transform distance: 1
      * element strides: ny*nzc
      */
-    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,nx);
+    status = DftiCreateDescriptor(&fft->inplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)nx);
     
     if ( status == 0)
     {
@@ -587,12 +595,12 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
         stride[1] = ny*nzc;
         
         status = 
-        (DftiSetValue(fft->inplace[0],DFTI_PLACEMENT,DFTI_INPLACE)      ||
-         DftiSetValue(fft->inplace[0],DFTI_NUMBER_OF_TRANSFORMS,ny*nzc) ||
-         DftiSetValue(fft->inplace[0],DFTI_INPUT_DISTANCE,1)            ||
-         DftiSetValue(fft->inplace[0],DFTI_INPUT_STRIDES,stride)        ||
-         DftiSetValue(fft->inplace[0],DFTI_OUTPUT_DISTANCE,1)           ||
-         DftiSetValue(fft->inplace[0],DFTI_OUTPUT_STRIDES,stride)       ||
+        (DftiSetValue(fft->inplace[0],DFTI_PLACEMENT,DFTI_INPLACE)                ||
+         DftiSetValue(fft->inplace[0],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)ny*nzc) ||
+         DftiSetValue(fft->inplace[0],DFTI_INPUT_DISTANCE,1)                      ||
+         DftiSetValue(fft->inplace[0],DFTI_INPUT_STRIDES,stride)                  ||
+         DftiSetValue(fft->inplace[0],DFTI_OUTPUT_DISTANCE,1)                     ||
+         DftiSetValue(fft->inplace[0],DFTI_OUTPUT_STRIDES,stride)                 ||
          DftiCommitDescriptor(fft->inplace[0]));
     }
     
@@ -602,7 +610,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element strides: ny*nzc
      */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,nx);
+        status = DftiCreateDescriptor(&fft->ooplace[0],GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)nx);
     
     if( status == 0 )
     {
@@ -610,12 +618,12 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
         stride[1] = ny*nzc;
         
         status =
-        (DftiSetValue(fft->ooplace[0],DFTI_PLACEMENT,DFTI_NOT_INPLACE)    ||
-         DftiSetValue(fft->ooplace[0],DFTI_NUMBER_OF_TRANSFORMS,ny*nzc)   ||
-         DftiSetValue(fft->ooplace[0],DFTI_INPUT_DISTANCE,1)              ||
-         DftiSetValue(fft->ooplace[0],DFTI_INPUT_STRIDES,stride)          ||
-         DftiSetValue(fft->ooplace[0],DFTI_OUTPUT_DISTANCE,1)             ||
-         DftiSetValue(fft->ooplace[0],DFTI_OUTPUT_STRIDES,stride)         ||
+        (DftiSetValue(fft->ooplace[0],DFTI_PLACEMENT,DFTI_NOT_INPLACE)              ||
+         DftiSetValue(fft->ooplace[0],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)ny*nzc)   ||
+         DftiSetValue(fft->ooplace[0],DFTI_INPUT_DISTANCE,1)                        ||
+         DftiSetValue(fft->ooplace[0],DFTI_INPUT_STRIDES,stride)                    ||
+         DftiSetValue(fft->ooplace[0],DFTI_OUTPUT_DISTANCE,1)                       ||
+         DftiSetValue(fft->ooplace[0],DFTI_OUTPUT_STRIDES,stride)                   ||
          DftiCommitDescriptor(fft->ooplace[0]));
     }
     
@@ -628,7 +636,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element strides: nzc
      */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->inplace[1],GMX_DFTI_PREC,DFTI_COMPLEX,1,ny);
+        status = DftiCreateDescriptor(&fft->inplace[1],GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)ny);
     
     if( status == 0 )
     {
@@ -636,12 +644,12 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
         stride[1] = nzc;
         
         status = 
-        (DftiSetValue(fft->inplace[1],DFTI_PLACEMENT,DFTI_INPLACE)      ||
-         DftiSetValue(fft->inplace[1],DFTI_NUMBER_OF_TRANSFORMS,nzc)    ||
-         DftiSetValue(fft->inplace[1],DFTI_INPUT_DISTANCE,1)            ||
-         DftiSetValue(fft->inplace[1],DFTI_INPUT_STRIDES,stride)        ||
-         DftiSetValue(fft->inplace[1],DFTI_OUTPUT_DISTANCE,1)           ||
-         DftiSetValue(fft->inplace[1],DFTI_OUTPUT_STRIDES,stride)       ||
+        (DftiSetValue(fft->inplace[1],DFTI_PLACEMENT,DFTI_INPLACE)                ||
+         DftiSetValue(fft->inplace[1],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nzc)    ||
+         DftiSetValue(fft->inplace[1],DFTI_INPUT_DISTANCE,1)                      ||
+         DftiSetValue(fft->inplace[1],DFTI_INPUT_STRIDES,stride)                  ||
+         DftiSetValue(fft->inplace[1],DFTI_OUTPUT_DISTANCE,1)                     ||
+         DftiSetValue(fft->inplace[1],DFTI_OUTPUT_STRIDES,stride)                 ||
          DftiCommitDescriptor(fft->inplace[1]));
     }
     
@@ -654,7 +662,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element strides: nzc
      */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[1],GMX_DFTI_PREC,DFTI_COMPLEX,1,ny);
+        status = DftiCreateDescriptor(&fft->ooplace[1],GMX_DFTI_PREC,DFTI_COMPLEX,1,(MKL_LONG)ny);
     
     if( status == 0 )
     {
@@ -662,12 +670,12 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
         stride[1] = nzc;
         
         status =
-        (DftiSetValue(fft->ooplace[1],DFTI_PLACEMENT,DFTI_NOT_INPLACE)  ||
-         DftiSetValue(fft->ooplace[1],DFTI_NUMBER_OF_TRANSFORMS,nzc)    ||
-         DftiSetValue(fft->ooplace[1],DFTI_INPUT_DISTANCE,1)            ||
-         DftiSetValue(fft->ooplace[1],DFTI_INPUT_STRIDES,stride)        ||
-         DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_DISTANCE,1)           ||
-         DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_STRIDES,stride)       ||
+        (DftiSetValue(fft->ooplace[1],DFTI_PLACEMENT,DFTI_NOT_INPLACE)            ||
+         DftiSetValue(fft->ooplace[1],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nzc)    ||
+         DftiSetValue(fft->ooplace[1],DFTI_INPUT_DISTANCE,1)                      ||
+         DftiSetValue(fft->ooplace[1],DFTI_INPUT_STRIDES,stride)                  ||
+         DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_DISTANCE,1)                     ||
+         DftiSetValue(fft->ooplace[1],DFTI_OUTPUT_STRIDES,stride)                 ||
          DftiCommitDescriptor(fft->ooplace[1]));
     }
     
@@ -677,7 +685,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element strides: 1
      */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->inplace[2],GMX_DFTI_PREC,DFTI_REAL,1,nz);
+        status = DftiCreateDescriptor(&fft->inplace[2],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)nz);
     
     if( status == 0 )
     {
@@ -685,12 +693,12 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
         stride[1] = 1;
         
         status = 
-        (DftiSetValue(fft->inplace[2],DFTI_PLACEMENT,DFTI_INPLACE)     ||
-         DftiSetValue(fft->inplace[2],DFTI_NUMBER_OF_TRANSFORMS,nx*ny) ||
-         DftiSetValue(fft->inplace[2],DFTI_INPUT_DISTANCE,nzc*2)       ||
-         DftiSetValue(fft->inplace[2],DFTI_INPUT_STRIDES,stride)       ||
-         DftiSetValue(fft->inplace[2],DFTI_OUTPUT_DISTANCE,nzc*2)      ||
-         DftiSetValue(fft->inplace[2],DFTI_OUTPUT_STRIDES,stride)      ||
+        (DftiSetValue(fft->inplace[2],DFTI_PLACEMENT,DFTI_INPLACE)               ||
+         DftiSetValue(fft->inplace[2],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nx*ny) ||
+         DftiSetValue(fft->inplace[2],DFTI_INPUT_DISTANCE,(MKL_LONG)nzc*2)       ||
+         DftiSetValue(fft->inplace[2],DFTI_INPUT_STRIDES,stride)                 ||
+         DftiSetValue(fft->inplace[2],DFTI_OUTPUT_DISTANCE,(MKL_LONG)nzc*2)      ||
+         DftiSetValue(fft->inplace[2],DFTI_OUTPUT_STRIDES,stride)                ||
          DftiCommitDescriptor(fft->inplace[2]));
     }
     
@@ -701,7 +709,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element STRIDES: 1
      */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[2],GMX_DFTI_PREC,DFTI_REAL,1,nz);
+        status = DftiCreateDescriptor(&fft->ooplace[2],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)nz);
     
     if( status == 0 )
     {
@@ -709,12 +717,12 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
         stride[1] = 1;
         
         status =
-        (DftiSetValue(fft->ooplace[2],DFTI_PLACEMENT,DFTI_NOT_INPLACE) ||
-         DftiSetValue(fft->ooplace[2],DFTI_NUMBER_OF_TRANSFORMS,nx*ny) ||
-         DftiSetValue(fft->ooplace[2],DFTI_INPUT_DISTANCE,nz)          ||
-         DftiSetValue(fft->ooplace[2],DFTI_INPUT_STRIDES,stride)       ||
-         DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_DISTANCE,nzc*2)      ||
-         DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_STRIDES,stride)      ||
+        (DftiSetValue(fft->ooplace[2],DFTI_PLACEMENT,DFTI_NOT_INPLACE)           ||
+         DftiSetValue(fft->ooplace[2],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nx*ny) ||
+         DftiSetValue(fft->ooplace[2],DFTI_INPUT_DISTANCE,(MKL_LONG)nz)          ||
+         DftiSetValue(fft->ooplace[2],DFTI_INPUT_STRIDES,stride)                 ||
+         DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_DISTANCE,(MKL_LONG)nzc*2)      ||
+         DftiSetValue(fft->ooplace[2],DFTI_OUTPUT_STRIDES,stride)                ||
          DftiCommitDescriptor(fft->ooplace[2]));
     }
 
@@ -725,7 +733,7 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
      * element STRIDES: 1
      */
     if( status == 0 )
-        status = DftiCreateDescriptor(&fft->ooplace[3],GMX_DFTI_PREC,DFTI_REAL,1,nz);
+        status = DftiCreateDescriptor(&fft->ooplace[3],GMX_DFTI_PREC,DFTI_REAL,1,(MKL_LONG)nz);
     
     if( status == 0 )
     {
@@ -733,12 +741,12 @@ gmx_fft_init_3d_real(gmx_fft_t *        pfft,
         stride[1] = 1;
         
         status =
-            (DftiSetValue(fft->ooplace[3],DFTI_PLACEMENT,DFTI_NOT_INPLACE) ||
-             DftiSetValue(fft->ooplace[3],DFTI_NUMBER_OF_TRANSFORMS,nx*ny) ||
-             DftiSetValue(fft->ooplace[3],DFTI_INPUT_DISTANCE,nzc*2)       ||
-             DftiSetValue(fft->ooplace[3],DFTI_INPUT_STRIDES,stride)       ||
-             DftiSetValue(fft->ooplace[3],DFTI_OUTPUT_DISTANCE,nz)         ||
-             DftiSetValue(fft->ooplace[3],DFTI_OUTPUT_STRIDES,stride)      ||
+            (DftiSetValue(fft->ooplace[3],DFTI_PLACEMENT,DFTI_NOT_INPLACE)           ||
+             DftiSetValue(fft->ooplace[3],DFTI_NUMBER_OF_TRANSFORMS,(MKL_LONG)nx*ny) ||
+             DftiSetValue(fft->ooplace[3],DFTI_INPUT_DISTANCE,(MKL_LONG)nzc*2)       ||
+             DftiSetValue(fft->ooplace[3],DFTI_INPUT_STRIDES,stride)                 ||
+             DftiSetValue(fft->ooplace[3],DFTI_OUTPUT_DISTANCE,(MKL_LONG)nz)         ||
+             DftiSetValue(fft->ooplace[3],DFTI_OUTPUT_STRIDES,stride)                ||
              DftiCommitDescriptor(fft->ooplace[3]));
     }
     
@@ -950,10 +958,10 @@ gmx_fft_2d_real(gmx_fft_t                  fft,
         }
         else
         {
-            /* real-to-complex in Y dimension, in_data in out_data */
+            /* real-to-complex in Y dimension, in_data to out_data */
             status = DftiComputeForward(fft->ooplace[1],in_data,out_data);
             
-            /* complex-to-complex in X dimension, in-place in out_data */
+            /* complex-to-complex in X dimension, in-place to out_data */
             if ( status == 0 )
                 status = DftiComputeForward(fft->inplace[0],out_data);
         }

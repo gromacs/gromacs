@@ -7,15 +7,15 @@
 <TR><TD WIDTH=400>
 <TABLE WIDTH=400 NOBORDER>
 <TD WIDTH=116>
-<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.jpg"BORDER=0 height=133 width=116></a></td>
+<a href="http://www.gromacs.org/"><img SRC="../images/gmxlogo_small.png"BORDER=0 </a></td>
 <td ALIGN=LEFT VALIGN=TOP WIDTH=280><br><h2>g_dyndom</h2><font size=-1><A HREF="../online.html">Main Table of Contents</A></font><br><br></td>
-</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 3.3_beta_20050823<br>
-Mon 29 Aug 2005</B></td></tr></TABLE>
+</TABLE></TD><TD WIDTH="*" ALIGN=RIGHT VALIGN=BOTTOM><p><B>VERSION 4.0_rc1<br>
+Mon 22 Sep 2008</B></td></tr></TABLE>
 <HR>
 <H3>Description</H3>
 <p>
 g_dyndom reads a <a href="pdb.html">pdb</a> file output from DynDom
-http://md.chem.rug.nl/~steve/DynDom/dyndom.home.html
+http://www.cmp.uea.ac.uk/dyndom/
 It reads the coordinates, and the coordinates of the rotation axis
 furthermore it reads an index file containing the domains.
 Furthermore it takes the first and last atom of the arrow file
@@ -37,20 +37,20 @@ validate the structure.
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>filename</TH><TH>type</TH><TH>description</TH></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-f</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="pdb.html">  dyndom.pdb</a></tt> </TD><TD> Input </TD><TD> Protein data bank file </TD></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> rotated.xtc</a></tt> </TD><TD> Output </TD><TD> Generic trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
+<TR><TD ALIGN=RIGHT> <b><tt>-o</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="files.html"> rotated.xtc</a></tt> </TD><TD> Output </TD><TD> Trajectory: <a href="xtc.html">xtc</a> <a href="trr.html">trr</a> <a href="trj.html">trj</a> <a href="gro.html">gro</a> <a href="g96.html">g96</a> <a href="pdb.html">pdb</a> </TD></TR>
 <TR><TD ALIGN=RIGHT> <b><tt>-n</tt></b> </TD><TD ALIGN=RIGHT> <tt><a href="ndx.html"> domains.ndx</a></tt> </TD><TD> Input </TD><TD> Index file </TD></TR>
 </TABLE>
 <P>
 <H3>Other options</H3>
 <TABLE BORDER=1 CELLSPACING=0 CELLPADDING=2>
 <TR><TH>option</TH><TH>type</TH><TH>default</TH><TH>description</TH></TR>
-<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>    no</tt> </TD><TD> Print help info and quit </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-[no]h</tt></b> </TD><TD ALIGN=RIGHT> bool </TD><TD ALIGN=RIGHT> <tt>no    </tt> </TD><TD> Print help info and quit </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nice</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>0</tt> </TD><TD> Set the nicelevel </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-firstangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Angle of rotation about rotation vector </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-lastangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Angle of rotation about rotation vector </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-firstangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Angle of rotation about rotation vector </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-lastangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Angle of rotation about rotation vector </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-nframe</tt></b> </TD><TD ALIGN=RIGHT> int </TD><TD ALIGN=RIGHT> <tt>11</tt> </TD><TD> Number of steps on the pathway </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-maxangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> DymDom dtermined angle of rotation about rotation vector </TD></TD>
-<TR><TD ALIGN=RIGHT> <b><tt>-trans</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>     0</tt> </TD><TD> Translation (Aangstroem) along rotation vector (see DynDom info file) </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-maxangle</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> DymDom dtermined angle of rotation about rotation vector </TD></TD>
+<TR><TD ALIGN=RIGHT> <b><tt>-trans</tt></b> </TD><TD ALIGN=RIGHT> real </TD><TD ALIGN=RIGHT> <tt>0     </tt> </TD><TD> Translation (Aangstroem) along rotation vector (see DynDom info file) </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-head</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> First atom of the arrow vector </TD></TD>
 <TR><TD ALIGN=RIGHT> <b><tt>-tail</tt></b> </TD><TD ALIGN=RIGHT> vector </TD><TD ALIGN=RIGHT> <tt>0 0 0</tt> </TD><TD> Last atom of the arrow vector </TD></TD>
 </TABLE>

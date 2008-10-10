@@ -940,8 +940,6 @@ if test $ac_cv_prog_gcc = yes; then
     *)
       ;;
   esac
-  # -malign-double for x86 systems
-  ACX_CHECK_CC_FLAGS(-malign-double,align_double,xCFLAGS="$xCFLAGS -malign-double")
 fi
   
 if test $enable_fortran = yes; then
@@ -950,6 +948,10 @@ if test $enable_fortran = yes; then
     # -malign-double for f77 on x86 systems - haven't checked that this works yet.
     #ACX_CHECK_F77_FLAGS(-malign-double,align_double,xFFLAGS="$xFFLAGS -malign-double")
   fi
+fi
+
+if test $enable_apple_64bit = yes; then
+  ACX_CHECK_CC_FLAGS(-m64,m64,xCFLAGS="$xCFLAGS -m64")
 fi
 
 CPU_FLAGS=""

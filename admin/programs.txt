@@ -90,6 +90,7 @@ g_hbond|computes and analyzes hydrogen bonds
 g_saltbr|computes salt bridges
 g_sas|computes solvent accessible surface area
 g_order|computes the order parameter per atom for carbon tails
+g_principal|calculates axes of inertia for a group of atoms
 g_rdf|calculates radial distribution functions
 g_sdf|calculates solvent distribution functions
 g_sgangle|computes the angle and distance between two groups
