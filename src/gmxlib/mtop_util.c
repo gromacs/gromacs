@@ -26,6 +26,7 @@
 #include "typedefs.h"
 #include "mtop_util.h"
 #include "topsort.h"
+#include "symtab.h"
 
 int ncg_mtop(const gmx_mtop_t *mtop)
 {
