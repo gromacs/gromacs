@@ -1826,8 +1826,8 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
     }
     if (bCharge) {
       set_warning_line(mdparin,-1);
-      warning_note("You are using a plain Coulomb cut-off, this will often produce artefacts.\n"
-		   "You might want to consider using PME or reaction-field electrostatics.\n");
+      warning_note("You are using a plain Coulomb cut-off, this will often produce artifacts.\n"
+		   "You might want to consider using PME electrostatics.\n");
     }
   }
 
