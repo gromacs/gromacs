@@ -241,17 +241,12 @@ static void compact_graph(FILE *fplog,t_graph *g)
   int i,j,n,max_nedge;
   atom_id *e;
 
-  n = 0;
-  e = g->edge[0];
   max_nedge = 0;
+  n = 0;
   for(i=0; i<g->nnodes; i++) {
-    for(j=0; j<g->nedge[i]; j++)
-      e[n++] = g->edge[i][j];
+    srenew(g->edge[i],g->nedge[i]);
     max_nedge = max(max_nedge,g->nedge[i]);
-  }
-  srenew(g->edge[0],n);
-  for(i=1; i<g->nnodes; i++) {
-    g->edge[i] = g->edge[i-1] + g->nedge[i-1];
+    n+=g->nedge[i];
   }
   if (fplog) {
     fprintf(fplog,"Max number of graph edges per atom is %d\n",
@@ -279,16 +274,9 @@ void mk_graph_ilist(FILE *fplog,
     g->nnodes = g->end - g->start + 1;
     snew(g->ishift,g->nnodes);
     snew(g->nedge,g->nnodes);
-  
-    /* To prevent malloc problems with many small arrays, using realloc,
-     * we allocate some more memory, and divide it ourselves.
-     * We calculate pointers... (Yuck Yuck)
-     */
     snew(g->edge,g->nnodes);
-    snew(g->edge[0],nbtot);
-
-    for(i=1; (i<g->nnodes); i++)
-      g->edge[i] = g->edge[i-1] + nbond[g->start+i-1];
+    for(i=0; (i<g->nnodes); i++)
+      snew(g->edge[i],nbond[g->start+i]);
 
     if (!bShakeOnly) {
       /* First add all the real bonds: they should determine the molecular 
@@ -344,12 +332,14 @@ t_graph *mk_graph(FILE *fplog,
 
 void done_graph(t_graph *g)
 {
+  int i;
+  
   GCHECK(g);
   if (g->nnodes > 0) {
     sfree(g->ishift);
     sfree(g->nedge);
-    /* This is malloced in a NASTY way, see above */
-    sfree(g->edge[0]);
+    for(i=0; (i<g->nnodes); i++)
+      sfree(g->edge[i]);
     sfree(g->edge);
     sfree(g->egc);
   }
