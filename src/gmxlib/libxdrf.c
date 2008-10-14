@@ -65,6 +65,8 @@ static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
 
+/* This is just for clarity - it can never be anything but 4! */
+#define XDR_INT_SIZE 4
 
 #ifdef GMX_FORTRAN
 
@@ -1152,9 +1154,6 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 
 static const int header_size = 16;
 
-/* This is just for clarity - it can never be anything but 4! */
-#define XDR_INT_SIZE 4
-
 /* Check if we are at the header start.
    At the same time it will also read 1 int */
 static int xtc_at_header_start(FILE *fp, XDR *xdrs,
@@ -1354,7 +1353,12 @@ xtc_get_current_frame_number(FILE *fp,XDR *xdrs,int natoms, bool * bOK)
 }
 
 
+<<<<<<< libxdrf.c
 static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
+=======
+
+static gmx_off_t xtc_get_next_frame_start(FILE *fp, XDR *xdrs, int natoms)
+>>>>>>> 1.32.2.3
 {
     int inp;
     gmx_off_t res;
