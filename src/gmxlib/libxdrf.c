@@ -65,6 +65,8 @@ static XDR *xdridptr[MAXID];
 static char xdrmodes[MAXID];
 static unsigned int cnt;
 
+/* This is just for clarity - it can never be anything but 4! */
+#define XDR_INT_SIZE 4
 
 #ifdef GMX_FORTRAN
 
@@ -1151,9 +1153,6 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 #endif
 
 static const int header_size = 16;
-
-/* This is just for clarity - it can never be anything but 4! */
-#define XDR_INT_SIZE 4
 
 /* Check if we are at the header start.
    At the same time it will also read 1 int */
