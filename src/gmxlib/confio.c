@@ -1338,7 +1338,6 @@ void read_stx_conf(char *infile, char *title,t_atoms *atoms,
     top = gmx_mtop_t_to_t_topology(mtop);
     tpx_make_chain_identifiers(atoms,&top.mols);
 		
-    done_mtop(mtop,FALSE);
     sfree(mtop);
     done_top(&top);
 		  
