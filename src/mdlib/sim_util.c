@@ -1057,22 +1057,24 @@ void do_pbc_first(FILE *fplog,matrix box,t_forcerec *fr,
     fprintf(fplog,"Done rmpbc\n");
 }
 
-void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
-		       gmx_mtop_t *mtop,rvec x[])
+static void low_do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
+			    gmx_mtop_t *mtop,rvec x[],
+			    bool bFirst)
 {
   t_graph *graph;
   int mb,as,mol;
   gmx_molblock_t *molb;
 
-  if (fplog)
+  if (bFirst && fplog)
     fprintf(fplog,"Removing pbc first time\n");
 
   snew(graph,1);
   as = 0;
   for(mb=0; mb<mtop->nmolblock; mb++) {
     molb = &mtop->molblock[mb];
-    if (molb->natoms_mol == 1) {
-      /* Just one atom in the molecule, no PBC required */
+    if (molb->natoms_mol == 1 || 
+	(!bFirst && mtop->moltype[molb->type].cgs.nr == 1)) {
+      /* Just one atom or charge group in the molecule, no PBC required */
       as += molb->nmol*molb->natoms_mol;
     } else {
       /* Pass NULL iso fplog to avoid graph prints for each molecule type */
@@ -1083,12 +1085,10 @@ void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
 	mk_mshift(fplog,graph,ePBC,box,x+as);
 	
 	shift_self(graph,box,x+as);
-	/* By doing an extra mk_mshift the molecules that are broken
-	 * because they were e.g. imported from another software
-	 * will be made whole again. Such are the healing powers
-	 * of GROMACS.
+	/* The molecule is whole now.
+	 * We don't need the second mk_mshift call as in do_pbc_first,
+	 * since we no longer need this graph.
 	 */
-	mk_mshift(fplog,graph,ePBC,box,x+as);
 	
 	as += molb->natoms_mol;
       }
@@ -1096,6 +1096,18 @@ void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
     }
   }
   sfree(graph);
+}
+
+void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
+		       gmx_mtop_t *mtop,rvec x[])
+{
+  low_do_pbc_mtop(fplog,ePBC,box,mtop,x,TRUE);
+}
+
+void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
+		 gmx_mtop_t *mtop,rvec x[])
+{
+  low_do_pbc_mtop(fplog,ePBC,box,mtop,x,FALSE);
 }
 
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,

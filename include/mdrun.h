@@ -116,14 +116,15 @@ extern gmx_integrator_t do_tpi;
 /* Do test particle insertion */
 
 
-/* ROUTINES from runner.c */
-extern bool optRerunMDset (int nfile, t_filenm fnm[]);
-
+/* ROUTINES from sim_util.c */
 extern void do_pbc_first(FILE *log,matrix box,t_forcerec *fr,
 			 t_graph *graph,rvec x[]);
 
 extern void do_pbc_first_mtop(FILE *fplog,int ePBC,matrix box,
 			      gmx_mtop_t *mtop,rvec x[]);
+
+extern void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
+			gmx_mtop_t *mtop,rvec x[]);
 
 		     
 /* ROUTINES from stat.c */		
