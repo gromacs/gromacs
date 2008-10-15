@@ -1147,6 +1147,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  !bRerunMD && !bFFscan) {
 	/* x and v have been collected in write_traj */
 	fprintf(stderr,"\nWriting final coordinates.\n");
+	if (ir->ePBC != epbcNONE && !ir->bPeriodicMols && DOMAINDECOMP(cr)) {
+	  /* Make molecules whole only for confout writing */
+	  do_pbc_mtop(fplog,ir->ePBC,state->box,top_global,state_global->x);
+	}
 	write_sto_conf_mtop(ftp2fn(efSTO,nfile,fnm),
 			    *top_global->name,top_global,
 			    state_global->x,state_global->v,
