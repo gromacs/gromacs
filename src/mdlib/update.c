@@ -138,8 +138,10 @@ static void do_update_md(int start,int homenr,double dt,
           vn             = gstat[ga].u[d] + accel[ga][d]*dt + vnrel; 
           v[n][d]        = vn;
           xprime[n][d]   = x[n][d]+vn*dt;
-        } else
+        } else {
+	  v[n][d]        = 0.0;
           xprime[n][d]   = x[n][d];
+	}
       }
     }
 
