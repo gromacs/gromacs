@@ -272,7 +272,7 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
   if ((ePBC != epbcXYZ) || (TRICLINIC(box))) {
     fprintf(stderr,"\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
 	    "Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
-	    "will certainly crash the analysis.\n\n");
+	    "will certainly crash the analysis. Try -nopbc.\n\n");
   }
 
   snew(nx,2);
