@@ -168,13 +168,17 @@ static void read_cryst1(char *line,int *ePBC,matrix box)
     symb  = 0;
     symc  = 0;
     sscanf(sg,"%c %d %d %d",&ident,&syma,&symb,&symc);
-    if (ident == 'P' && syma ==  1 && symb <= 1 && symc <= 1)
-      ePBC_file = (sc > 0 ? epbcXYZ : epbcXY);
-    if (ident == 'P' && syma == 21 && symb == 1 && symc == 1)
+    if (ident == 'P' && syma ==  1 && symb <= 1 && symc <= 1) {
+      fc = atof(sc)*0.1;
+      ePBC_file = (fc > 0 ? epbcXYZ : epbcXY);
+    }
+    if (ident == 'P' && syma == 21 && symb == 1 && symc == 1) {
       ePBC_file = epbcSCREW;
+    }
   }
-  if (ePBC)
+  if (ePBC) {
     *ePBC = ePBC_file;
+  }
 
   if (box) {
     fa = atof(sa)*0.1;
