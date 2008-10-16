@@ -1,0 +1,157 @@
+.TH g_sorient_d 1 "Thu 16 Oct 2008"
+.SH NAME
+g_sorient_d
+.B VERSION 3.3.99_development_20071104
+.SH SYNOPSIS
+\f3g_sorient_d\fP
+.BI "-f" " traj.xtc "
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-o" " sori.xvg "
+.BI "-no" " snor.xvg "
+.BI "-ro" " sord.xvg "
+.BI "-co" " scum.xvg "
+.BI "-rc" " scount.xvg "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-[no]xvgr" ""
+.BI "-[no]com" ""
+.BI "-[no]v23" ""
+.BI "-rmin" " real "
+.BI "-rmax" " real "
+.BI "-cbin" " real "
+.BI "-rbin" " real "
+.BI "-[no]pbc" ""
+.SH DESCRIPTION
+g_sorient analyzes solvent orientation around solutes.
+It calculates two angles between the vector from one or more
+reference positions to the first atom of each solvent molecule:
+theta1: the angle with the vector from the first atom of the solvent
+molecule to the midpoint between atoms 2 and 3.
+
+theta2: the angle with the normal of the solvent plane, defined by the
+same three atoms, or when the option 
+.B -v23
+is set
+the angle with the vector between atoms 2 and 3.
+
+The reference can be a set of atoms or
+the center of mass of a set of atoms. The group of solvent atoms should
+consist of 3 atoms per solvent molecule.
+Only solvent molecules between 
+.B -rmin
+and 
+.B -rmax
+are
+considered for 
+.B -o
+and 
+.B -no
+each frame.
+
+
+
+.B -o
+: distribtion of cos(theta1) for rmin=r=rmax.
+
+
+
+.B -no
+: distribution of cos(theta2) for rmin=r=rmax.
+
+
+
+.B -ro
+: cos(theta1) and 3cos2(theta2)-1 as a function of the
+distance.
+
+
+
+.B -co
+: the sum over all solvent molecules within distance r
+of cos(theta1) and 3cos2(theta2)-1 as a function of r.
+
+
+
+.B -rc
+: the distribution of the solvent molecules as a function of r
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-s" " topol.tpr" 
+.B Input
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+
+.BI "-n" " index.ndx" 
+.B Input, Opt.
+ Index file 
+
+.BI "-o" " sori.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-no" " snor.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-ro" " sord.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-co" " scum.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.BI "-rc" " scount.xvg" 
+.B Output
+ xvgr/xmgr file 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "no    "
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" " 0     " 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" " 0     " 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" " 0     " 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "no    "
+ View output xvg, xpm, eps and pdb files
+
+.BI "-[no]xvgr"  "yes   "
+ Add specific codes (legends etc.) in the output xvg files for the xmgrace program
+
+.BI "-[no]com"  "no    "
+ Use the center of mass as the reference postion
+
+.BI "-[no]v23"  "no    "
+ Use the vector between atoms 2 and 3
+
+.BI "-rmin"  " real" " 0     " 
+ Minimum distance (nm)
+
+.BI "-rmax"  " real" " 0.5   " 
+ Maximum distance (nm)
+
+.BI "-cbin"  " real" " 0.02  " 
+ Binwidth for the cosine
+
+.BI "-rbin"  " real" " 0.02  " 
+ Binwidth for r (nm)
+
+.BI "-[no]pbc"  "no    "
+ Check PBC for the center of mass calculation. Only necessary when your reference group consists of several molecules.
+

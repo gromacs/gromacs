@@ -1,265 +1,210 @@
-.TH g_rms 1 "Mon 22 Sep 2008"
+.TH g_rms 1 "Thu 16 Oct 2008" "" "GROMACS suite, VERSION 4.0.1"
 .SH NAME
-g_rms
-.B VERSION 4.0_rc1
+g_rms - calculates rmsd's with a reference structure and rmsd matrices
+
+.B VERSION 4.0.1
 .SH SYNOPSIS
 \f3g_rms\fP
-.BI "-s" " topol.tpr "
-.BI "-f" " traj.xtc "
-.BI "-f2" " traj.xtc "
-.BI "-n" " index.ndx "
-.BI "-o" " rmsd.xvg "
-.BI "-mir" " rmsdmir.xvg "
-.BI "-a" " avgrp.xvg "
-.BI "-dist" " rmsd-dist.xvg "
-.BI "-m" " rmsd.xpm "
-.BI "-bin" " rmsd.dat "
-.BI "-bm" " bond.xpm "
-.BI "-[no]h" ""
-.BI "-nice" " int "
-.BI "-b" " time "
-.BI "-e" " time "
-.BI "-dt" " time "
-.BI "-tu" " enum "
-.BI "-[no]w" ""
-.BI "-[no]xvgr" ""
-.BI "-what" " enum "
-.BI "-[no]pbc" ""
-.BI "-fit" " enum "
-.BI "-prev" " int "
-.BI "-[no]split" ""
-.BI "-skip" " int "
-.BI "-skip2" " int "
-.BI "-max" " real "
-.BI "-min" " real "
-.BI "-bmax" " real "
-.BI "-bmin" " real "
-.BI "-[no]mw" ""
-.BI "-nlevels" " int "
-.BI "-ng" " int "
+.BI "\-s" " topol.tpr "
+.BI "\-f" " traj.xtc "
+.BI "\-f2" " traj.xtc "
+.BI "\-n" " index.ndx "
+.BI "\-o" " rmsd.xvg "
+.BI "\-mir" " rmsdmir.xvg "
+.BI "\-a" " avgrp.xvg "
+.BI "\-dist" " rmsd\-dist.xvg "
+.BI "\-m" " rmsd.xpm "
+.BI "\-bin" " rmsd.dat "
+.BI "\-bm" " bond.xpm "
+.BI "\-[no]h" ""
+.BI "\-nice" " int "
+.BI "\-b" " time "
+.BI "\-e" " time "
+.BI "\-dt" " time "
+.BI "\-tu" " enum "
+.BI "\-[no]w" ""
+.BI "\-[no]xvgr" ""
+.BI "\-what" " enum "
+.BI "\-[no]pbc" ""
+.BI "\-fit" " enum "
+.BI "\-prev" " int "
+.BI "\-[no]split" ""
+.BI "\-skip" " int "
+.BI "\-skip2" " int "
+.BI "\-max" " real "
+.BI "\-min" " real "
+.BI "\-bmax" " real "
+.BI "\-bmin" " real "
+.BI "\-[no]mw" ""
+.BI "\-nlevels" " int "
+.BI "\-ng" " int "
 .SH DESCRIPTION
-g_rms compares two structures by computing the root mean square
-deviation (RMSD), the size-independent 'rho' similarity parameter
-(rho) or the scaled rho (rhosc), 
-see Maiorov & Crippen, PROTEINS 
-.B 22
-, 273 (1995).
-This is selected by 
-.B -what
-.
+\&g_rms compares two structures by computing the root mean square
+\&deviation (RMSD), the size\-independent 'rho' similarity parameter
+\&(rho) or the scaled rho (rhosc), 
+\&see Maiorov & Crippen, PROTEINS \fB 22\fR, 273 (1995).
+\&This is selected by \fB \-what\fR.
 
-Each structure from a trajectory (
-.B -f
-) is compared to a
-reference structure. The reference structure
-is taken from the structure file (
-.B -s
-).
+Each structure from a trajectory (\fB \-f\fR) is compared to a
+\&reference structure. The reference structure
+\&is taken from the structure file (\fB \-s\fR).
 
 
-With option 
-.B -mir
-also a comparison with the mirror image of
-the reference structure is calculated.
-This is useful as a reference for 'significant' values, see
-Maiorov & Crippen, PROTEINS 
-.B 22
-, 273 (1995).
+\&With option \fB \-mir\fR also a comparison with the mirror image of
+\&the reference structure is calculated.
+\&This is useful as a reference for 'significant' values, see
+\&Maiorov & Crippen, PROTEINS \fB 22\fR, 273 (1995).
 
 
-Option 
-.B -prev
-produces the comparison with a previous frame
-the specified number of frames ago.
+\&Option \fB \-prev\fR produces the comparison with a previous frame
+\&the specified number of frames ago.
 
 
-Option 
-.B -m
-produces a matrix in 
-.B .xpm
-format of
-comparison values of each structure in the trajectory with respect to
-each other structure. This file can be visualized with for instance
-
-.B xv
-and can be converted to postscript with 
-.B xpm2ps
-.
+\&Option \fB \-m\fR produces a matrix in \fB .xpm\fR format of
+\&comparison values of each structure in the trajectory with respect to
+\&each other structure. This file can be visualized with for instance
+\&\fB xv\fR and can be converted to postscript with \fB xpm2ps\fR.
 
 
-Option 
-.B -fit
-controls the least-squares fitting of
-the structures on top of each other: complete fit (rotation and
-translation), translation only, or no fitting at all.
+\&Option \fB \-fit\fR controls the least\-squares fitting of
+\&the structures on top of each other: complete fit (rotation and
+\&translation), translation only, or no fitting at all.
 
 
-Option 
-.B -mw
-controls whether mass weighting is done or not.
-If you select the option (default) and 
-supply a valid tpr file masses will be taken from there, 
-otherwise the masses will be deduced from the atommass.dat file in
-the GROMACS library directory. This is fine for proteins but not
-necessarily for other molecules. A default mass of 12.011 amu (Carbon)
-is assigned to unknown atoms. You can check whether this happend by
-turning on the 
-.B -debug
-flag and inspecting the log file.
+\&Option \fB \-mw\fR controls whether mass weighting is done or not.
+\&If you select the option (default) and 
+\&supply a valid tpr file masses will be taken from there, 
+\&otherwise the masses will be deduced from the atommass.dat file in
+\&the GROMACS library directory. This is fine for proteins but not
+\&necessarily for other molecules. A default mass of 12.011 amu (Carbon)
+\&is assigned to unknown atoms. You can check whether this happend by
+\&turning on the \fB \-debug\fR flag and inspecting the log file.
 
 
-With 
-.B -f2
-, the 'other structures' are taken from a second
-trajectory, this generates a comparison matrix of one trajectory
-versus the other.
+\&With \fB \-f2\fR, the 'other structures' are taken from a second
+\&trajectory, this generates a comparison matrix of one trajectory
+\&versus the other.
 
 
-Option 
-.B -bin
-does a binary dump of the comparison matrix.
+\&Option \fB \-bin\fR does a binary dump of the comparison matrix.
 
 
-Option 
-.B -bm
-produces a matrix of average bond angle deviations
-analogously to the 
-.B -m
-option. Only bonds between atoms in the
-comparison group are considered.
+\&Option \fB \-bm\fR produces a matrix of average bond angle deviations
+\&analogously to the \fB \-m\fR option. Only bonds between atoms in the
+\&comparison group are considered.
 .SH FILES
-.BI "-s" " topol.tpr" 
+.BI "\-s" " topol.tpr" 
 .B Input
  Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
-.BI "-f" " traj.xtc" 
+.BI "\-f" " traj.xtc" 
 .B Input
  Trajectory: xtc trr trj gro g96 pdb cpt 
 
-.BI "-f2" " traj.xtc" 
+.BI "\-f2" " traj.xtc" 
 .B Input, Opt.
  Trajectory: xtc trr trj gro g96 pdb cpt 
 
-.BI "-n" " index.ndx" 
+.BI "\-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
-.BI "-o" " rmsd.xvg" 
+.BI "\-o" " rmsd.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-mir" " rmsdmir.xvg" 
+.BI "\-mir" " rmsdmir.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-a" " avgrp.xvg" 
+.BI "\-a" " avgrp.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-dist" " rmsd-dist.xvg" 
+.BI "\-dist" " rmsd\-dist.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-m" " rmsd.xpm" 
+.BI "\-m" " rmsd.xpm" 
 .B Output, Opt.
  X PixMap compatible matrix file 
 
-.BI "-bin" " rmsd.dat" 
+.BI "\-bin" " rmsd.dat" 
 .B Output, Opt.
  Generic data file 
 
-.BI "-bm" " bond.xpm" 
+.BI "\-bm" " bond.xpm" 
 .B Output, Opt.
  X PixMap compatible matrix file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "no    "
+.BI "\-[no]h"  "no    "
  Print help info and quit
 
-.BI "-nice"  " int" " 19" 
+.BI "\-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" " 0     " 
+.BI "\-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" " 0     " 
+.BI "\-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" " 0     " 
+.BI "\-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-tu"  " enum" " ps" 
- Time unit: 
-.B ps
-, 
-.B fs
-, 
-.B ns
-, 
-.B us
-, 
-.B ms
-or 
-.B s
+.BI "\-tu"  " enum" " ps" 
+ Time unit: \fB ps\fR, \fB fs\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
-
-.BI "-[no]w"  "no    "
+.BI "\-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "yes   "
+.BI "\-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-what"  " enum" " rmsd" 
- Structural difference measure: 
-.B rmsd
-, 
-.B rho
-or 
-.B rhosc
+.BI "\-what"  " enum" " rmsd" 
+ Structural difference measure: \fB rmsd\fR, \fB rho\fR or \fB rhosc\fR
 
-
-.BI "-[no]pbc"  "yes   "
+.BI "\-[no]pbc"  "yes   "
  PBC check
 
-.BI "-fit"  " enum" " rot+trans" 
- Fit to reference structure: 
-.B rot+trans
-, 
-.B translation
-or 
-.B none
+.BI "\-fit"  " enum" " rot+trans" 
+ Fit to reference structure: \fB rot+trans\fR, \fB translation\fR or \fB none\fR
 
-
-.BI "-prev"  " int" " 0" 
+.BI "\-prev"  " int" " 0" 
  Compare with previous frame
 
-.BI "-[no]split"  "no    "
+.BI "\-[no]split"  "no    "
  Split graph where time is zero
 
-.BI "-skip"  " int" " 1" 
- Only write every nr-th frame to matrix
+.BI "\-skip"  " int" " 1" 
+ Only write every nr\-th frame to matrix
 
-.BI "-skip2"  " int" " 1" 
- Only write every nr-th frame to matrix
+.BI "\-skip2"  " int" " 1" 
+ Only write every nr\-th frame to matrix
 
-.BI "-max"  " real" " -1    " 
+.BI "\-max"  " real" " \-1    " 
  Maximum level in comparison matrix
 
-.BI "-min"  " real" " -1    " 
+.BI "\-min"  " real" " \-1    " 
  Minimum level in comparison matrix
 
-.BI "-bmax"  " real" " -1    " 
+.BI "\-bmax"  " real" " \-1    " 
  Maximum level in bond angle matrix
 
-.BI "-bmin"  " real" " -1    " 
+.BI "\-bmin"  " real" " \-1    " 
  Minimum level in bond angle matrix
 
-.BI "-[no]mw"  "yes   "
+.BI "\-[no]mw"  "yes   "
  Use mass weighting for superposition
 
-.BI "-nlevels"  " int" " 80" 
+.BI "\-nlevels"  " int" " 80" 
  Number of levels in the matrices
 
-.BI "-ng"  " int" " 1" 
+.BI "\-ng"  " int" " 1" 
  Number of groups to compute RMS between
 
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

@@ -1,167 +1,140 @@
-.TH g_bundle 1 "Mon 22 Sep 2008"
+.TH g_bundle 1 "Thu 16 Oct 2008" "" "GROMACS suite, VERSION 4.0.1"
 .SH NAME
-g_bundle
-.B VERSION 4.0_rc1
+g_bundle - analyzes bundles of axes, e.g. helices
+
+.B VERSION 4.0.1
 .SH SYNOPSIS
 \f3g_bundle\fP
-.BI "-f" " traj.xtc "
-.BI "-s" " topol.tpr "
-.BI "-n" " index.ndx "
-.BI "-ol" " bun_len.xvg "
-.BI "-od" " bun_dist.xvg "
-.BI "-oz" " bun_z.xvg "
-.BI "-ot" " bun_tilt.xvg "
-.BI "-otr" " bun_tiltr.xvg "
-.BI "-otl" " bun_tiltl.xvg "
-.BI "-ok" " bun_kink.xvg "
-.BI "-okr" " bun_kinkr.xvg "
-.BI "-okl" " bun_kinkl.xvg "
-.BI "-oa" " axes.pdb "
-.BI "-[no]h" ""
-.BI "-nice" " int "
-.BI "-b" " time "
-.BI "-e" " time "
-.BI "-dt" " time "
-.BI "-tu" " enum "
-.BI "-[no]xvgr" ""
-.BI "-na" " int "
-.BI "-[no]z" ""
+.BI "\-f" " traj.xtc "
+.BI "\-s" " topol.tpr "
+.BI "\-n" " index.ndx "
+.BI "\-ol" " bun_len.xvg "
+.BI "\-od" " bun_dist.xvg "
+.BI "\-oz" " bun_z.xvg "
+.BI "\-ot" " bun_tilt.xvg "
+.BI "\-otr" " bun_tiltr.xvg "
+.BI "\-otl" " bun_tiltl.xvg "
+.BI "\-ok" " bun_kink.xvg "
+.BI "\-okr" " bun_kinkr.xvg "
+.BI "\-okl" " bun_kinkl.xvg "
+.BI "\-oa" " axes.pdb "
+.BI "\-[no]h" ""
+.BI "\-nice" " int "
+.BI "\-b" " time "
+.BI "\-e" " time "
+.BI "\-dt" " time "
+.BI "\-tu" " enum "
+.BI "\-[no]xvgr" ""
+.BI "\-na" " int "
+.BI "\-[no]z" ""
 .SH DESCRIPTION
-g_bundle analyzes bundles of axes. The axes can be for instance
-helix axes. The program reads two index groups and divides both
-of them in 
-.B -na
-parts. The centers of mass of these parts
-define the tops and bottoms of the axes.
-Several quantities are written to file:
-the axis length, the distance and the z-shift of the axis mid-points
-with respect to the average center of all axes, the total tilt,
-the radial tilt and the lateral tilt with respect to the average axis.
+\&g_bundle analyzes bundles of axes. The axes can be for instance
+\&helix axes. The program reads two index groups and divides both
+\&of them in \fB \-na\fR parts. The centers of mass of these parts
+\&define the tops and bottoms of the axes.
+\&Several quantities are written to file:
+\&the axis length, the distance and the z\-shift of the axis mid\-points
+\&with respect to the average center of all axes, the total tilt,
+\&the radial tilt and the lateral tilt with respect to the average axis.
+\&
 
 
-
-With options 
-.B -ok
-, 
-.B -okr
-and 
-.B -okl
-the total,
-radial and lateral kinks of the axes are plotted. An extra index
-group of kink atoms is required, which is also divided into 
-.B -na
-
-parts. The kink angle is defined as the angle between the kink-top and
-the bottom-kink vectors.
+\&With options \fB \-ok\fR, \fB \-okr\fR and \fB \-okl\fR the total,
+\&radial and lateral kinks of the axes are plotted. An extra index
+\&group of kink atoms is required, which is also divided into \fB \-na\fR
+\&parts. The kink angle is defined as the angle between the kink\-top and
+\&the bottom\-kink vectors.
+\&
 
 
-
-With option 
-.B -oa
-the top, mid (or kink when 
-.B -ok
-is set)
-and bottom points of each axis
-are written to a pdb file each frame. The residue numbers correspond
-to the axis numbers. When viewing this file with 
-.B rasmol
-, use the
-command line option 
-.B -nmrpdb
-, and type 
-.B set axis true
-to
-display the reference axis.
+\&With option \fB \-oa\fR the top, mid (or kink when \fB \-ok\fR is set)
+\&and bottom points of each axis
+\&are written to a pdb file each frame. The residue numbers correspond
+\&to the axis numbers. When viewing this file with \fB rasmol\fR, use the
+\&command line option \fB \-nmrpdb\fR, and type \fB set axis true\fR to
+\&display the reference axis.
 .SH FILES
-.BI "-f" " traj.xtc" 
+.BI "\-f" " traj.xtc" 
 .B Input
  Trajectory: xtc trr trj gro g96 pdb cpt 
 
-.BI "-s" " topol.tpr" 
+.BI "\-s" " topol.tpr" 
 .B Input
  Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
-.BI "-n" " index.ndx" 
+.BI "\-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
-.BI "-ol" " bun_len.xvg" 
+.BI "\-ol" " bun_len.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-od" " bun_dist.xvg" 
+.BI "\-od" " bun_dist.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-oz" " bun_z.xvg" 
+.BI "\-oz" " bun_z.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-ot" " bun_tilt.xvg" 
+.BI "\-ot" " bun_tilt.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-otr" " bun_tiltr.xvg" 
+.BI "\-otr" " bun_tiltr.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-otl" " bun_tiltl.xvg" 
+.BI "\-otl" " bun_tiltl.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-ok" " bun_kink.xvg" 
+.BI "\-ok" " bun_kink.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-okr" " bun_kinkr.xvg" 
+.BI "\-okr" " bun_kinkr.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-okl" " bun_kinkl.xvg" 
+.BI "\-okl" " bun_kinkl.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-oa" " axes.pdb" 
+.BI "\-oa" " axes.pdb" 
 .B Output, Opt.
  Protein data bank file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "no    "
+.BI "\-[no]h"  "no    "
  Print help info and quit
 
-.BI "-nice"  " int" " 19" 
+.BI "\-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" " 0     " 
+.BI "\-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" " 0     " 
+.BI "\-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" " 0     " 
+.BI "\-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-tu"  " enum" " ps" 
- Time unit: 
-.B ps
-, 
-.B fs
-, 
-.B ns
-, 
-.B us
-, 
-.B ms
-or 
-.B s
+.BI "\-tu"  " enum" " ps" 
+ Time unit: \fB ps\fR, \fB fs\fR, \fB ns\fR, \fB us\fR, \fB ms\fR or \fB s\fR
 
-
-.BI "-[no]xvgr"  "yes   "
+.BI "\-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-na"  " int" " 0" 
+.BI "\-na"  " int" " 0" 
  Number of axes
 
-.BI "-[no]z"  "no    "
- Use the Z-axis as reference iso the average axis
+.BI "\-[no]z"  "no    "
+ Use the Z\-axis as reference iso the average axis
 
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

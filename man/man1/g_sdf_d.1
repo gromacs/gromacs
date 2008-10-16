@@ -1,0 +1,130 @@
+.TH g_sdf_d 1 "Thu 16 Oct 2008"
+.SH NAME
+g_sdf_d
+.B VERSION 3.3.99_development_20071104
+.SH SYNOPSIS
+\f3g_sdf_d\fP
+.BI "-f" " traj.xtc "
+.BI "-n" " index.ndx "
+.BI "-s" " topol.tpr "
+.BI "-o" " gom_plt.dat "
+.BI "-r" " refmol.gro "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-mode" " int "
+.BI "-triangle" " vector "
+.BI "-dtri" " vector "
+.BI "-bin" " real "
+.BI "-grid" " vector "
+.SH DESCRIPTION
+g_sdf calculates the spatial distribution function (SDF) of a set of atoms
+within a coordinate system defined by three atoms. There is single body, 
+two body and three body SDF implemented (select with option -mode). 
+In the single body case the local coordinate system is defined by using
+a triple of atoms from one single molecule, for the two and three body case
+the configurations are dynamically searched complexes of two or three
+molecules (or residues) meeting certain distance consitions (see below).
+
+
+The program needs a trajectory, a GROMACS run input file and an index 
+file to work. 
+You have to setup 4 groups in the index file before using g_sdf: 
+
+
+The first three groups are used to define the SDF coordinate system.
+The programm will dynamically generate the atom tripels according to 
+the selected -mode: 
+In -mode 1 the triples will be just the 1st, 2nd, 3rd, ... atoms from 
+groups 1, 2 and 3. Hence the nth entries in groups 1, 2 and 3 must be from the
+same residue. In -mode 2 the triples will be 1st, 2nd, 3rd, ... atoms from
+groups 1 and 2 (with the nth entries in groups 1 and 2 having the same res-id).
+For each pair from groups 1 and 2  group 3 is searched for an atom meeting the
+distance conditions set with -triangle and -dtri relative to atoms 1 and 2. In
+-mode 3 for each atom in group 1 group 2 is searched for an atom meeting the
+distance condition and if a pair is found group 3 is searched for an atom
+meeting the further conditions. The triple will only be used if all three atoms
+have different res-id's.
+
+
+The local coordinate system is always defined using the following scheme:
+Atom 1 will be used as the point of origin for the SDF. Atom 1 and 2 will define the principle axis (Z) of the coordinate system.
+The other two axis will be defined inplane (Y) and normal (X) to the plane through
+Atoms 1, 2 and 3. The fourth group
+contains the atoms for which the SDF will be evaluated.
+
+
+For -mode 2 and 3 you have to define the distance conditions for the 
+2 resp. 3 molecule complexes to be searched for using -triangle and -dtri.
+
+
+The SDF will be sampled in cartesian coordinates.
+Use '-grid x y z' to define the size of the SDF grid around the 
+reference molecule. 
+The Volume of the SDF grid will be V=x*y*z (nm3). Use -bin to set the binwidth for grid.
+
+
+The output will be a binary 3D-grid file (gom_plt.dat) in the .plt format that can be be
+read directly by gOpenMol. 
+The option -r will generate a .gro file with the reference molecule(s) transfered to
+the SDF coordinate system. Load this file into gOpenMol and display the
+SDF as a contour plot (see http://www.csc.fi/gopenmol/index.phtml for 
+further documentation). 
+
+
+For further information about SDF's have a look at: A. Vishnyakov, JPC A, 105,
+2001, 1702 and the references cited within.
+.SH FILES
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-n" " index.ndx" 
+.B Input
+ Index file 
+
+.BI "-s" " topol.tpr" 
+.B Input, Opt.
+ Structure+mass(db): tpr tpb tpa gro g96 pdb xml 
+
+.BI "-o" " gom_plt.dat" 
+.B Output
+ Generic data file 
+
+.BI "-r" " refmol.gro" 
+.B Output, Opt.
+ Generic structure: gro g96 pdb xml 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "no    "
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" " 0     " 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" " 0     " 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" " 0     " 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-mode"  " int" " 1" 
+ SDF in [1,2,3] particle mode
+
+.BI "-triangle"  " vector" " 0 0 0" 
+ r(1,3), r(2,3), r(1,2)
+
+.BI "-dtri"  " vector" " 0.03 0.03 0.03" 
+ dr(1,3), dr(2,3), dr(1,2)
+
+.BI "-bin"  " real" " 0.05  " 
+ Binwidth for the 3D-grid (nm)
+
+.BI "-grid"  " vector" " 1 1 1" 
+ Size of the 3D-grid (nm,nm,nm)
+

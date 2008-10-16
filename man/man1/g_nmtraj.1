@@ -1,68 +1,71 @@
-.TH g_nmtraj 1 "Mon 22 Sep 2008"
+.TH g_nmtraj 1 "Thu 16 Oct 2008" "" "GROMACS suite, VERSION 4.0.1"
 .SH NAME
-g_nmtraj
-.B VERSION 4.0_rc1
+g_nmtraj - generate oscillating trajectory of an eigenmode
+
+.B VERSION 4.0.1
 .SH SYNOPSIS
 \f3g_nmtraj\fP
-.BI "-s" " topol.tpr "
-.BI "-v" " eigenvec.trr "
-.BI "-o" " nmtraj.xtc "
-.BI "-[no]h" ""
-.BI "-nice" " int "
-.BI "-eignr" " string "
-.BI "-phases" " string "
-.BI "-temp" " real "
-.BI "-amplitude" " real "
-.BI "-nframes" " int "
+.BI "\-s" " topol.tpr "
+.BI "\-v" " eigenvec.trr "
+.BI "\-o" " nmtraj.xtc "
+.BI "\-[no]h" ""
+.BI "\-nice" " int "
+.BI "\-eignr" " string "
+.BI "\-phases" " string "
+.BI "\-temp" " real "
+.BI "\-amplitude" " real "
+.BI "\-nframes" " int "
 .SH DESCRIPTION
-
-.B g_nmtraj
-generates an virtual trajectory from an eigenvector, 
-corresponding to a harmonic cartesian oscillation around the average 
-structure. The eigenvectors should normally be mass-weighted, but you can 
-use non-weighted eigenvectors to generate orthogonal motions. 
-The output frames are written as a trajectory file covering an entire period, and 
-the first frame is the average structure. If you write the trajectory in (or convert to) 
-PDB format you can view it directly in PyMol and also render a photorealistic movie. 
-Motion amplitudes are calculated from the eigenvalues and a preset temperature, 
-assuming equipartition of the energy over all modes. To make the motion clearly visible 
-in PyMol you might want to amplify it by setting an unrealistic high temperature. 
-However, be aware that both the linear cartesian displacements and mass weighting will 
-lead to serious structure deformation for high amplitudes - this is is simply a limitation 
-of the cartesian normal mode model. By default the selected eigenvector is set to 7, since 
- the first six normal modes are the translational and rotational degrees of freedom.
+\&\fB g_nmtraj\fR generates an virtual trajectory from an eigenvector, 
+\&corresponding to a harmonic cartesian oscillation around the average 
+\&structure. The eigenvectors should normally be mass\-weighted, but you can 
+\&use non\-weighted eigenvectors to generate orthogonal motions. 
+\&The output frames are written as a trajectory file covering an entire period, and 
+\&the first frame is the average structure. If you write the trajectory in (or convert to) 
+\&PDB format you can view it directly in PyMol and also render a photorealistic movie. 
+\&Motion amplitudes are calculated from the eigenvalues and a preset temperature, 
+\&assuming equipartition of the energy over all modes. To make the motion clearly visible 
+\&in PyMol you might want to amplify it by setting an unrealistic high temperature. 
+\&However, be aware that both the linear cartesian displacements and mass weighting will 
+\&lead to serious structure deformation for high amplitudes \- this is is simply a limitation 
+\&of the cartesian normal mode model. By default the selected eigenvector is set to 7, since 
+\& the first six normal modes are the translational and rotational degrees of freedom.
 .SH FILES
-.BI "-s" " topol.tpr" 
+.BI "\-s" " topol.tpr" 
 .B Input
  Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
-.BI "-v" " eigenvec.trr" 
+.BI "\-v" " eigenvec.trr" 
 .B Input
  Full precision trajectory: trr trj cpt 
 
-.BI "-o" " nmtraj.xtc" 
+.BI "\-o" " nmtraj.xtc" 
 .B Output
  Trajectory: xtc trr trj gro g96 pdb 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "no    "
+.BI "\-[no]h"  "no    "
  Print help info and quit
 
-.BI "-nice"  " int" " 19" 
+.BI "\-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-eignr"  " string" " 7" 
+.BI "\-eignr"  " string" " 7" 
  String of eigenvectors to use (first is 1)
 
-.BI "-phases"  " string" " 0.0" 
+.BI "\-phases"  " string" " 0.0" 
  String of phases (default is 0.0)
 
-.BI "-temp"  " real" " 300   " 
+.BI "\-temp"  " real" " 300   " 
  Temperature in Kelvin
 
-.BI "-amplitude"  " real" " 0.25  " 
+.BI "\-amplitude"  " real" " 0.25  " 
  Amplitude for modes with eigenvalue=0
 
-.BI "-nframes"  " int" " 30" 
+.BI "\-nframes"  " int" " 30" 
  Number of frames to generate
 
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

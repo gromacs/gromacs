@@ -1,0 +1,99 @@
+.TH genconf_d 1 "Thu 16 Oct 2008"
+.SH NAME
+genconf_d
+.B VERSION 3.3.99_development_20071104
+.SH SYNOPSIS
+\f3genconf_d\fP
+.BI "-f" " conf.gro "
+.BI "-o" " out.gro "
+.BI "-trj" " traj.xtc "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-nbox" " vector "
+.BI "-dist" " vector "
+.BI "-seed" " int "
+.BI "-[no]rot" ""
+.BI "-[no]shuffle" ""
+.BI "-[no]sort" ""
+.BI "-block" " int "
+.BI "-nmolat" " int "
+.BI "-maxrot" " vector "
+.BI "-[no]renumber" ""
+.SH DESCRIPTION
+genconf multiplies a given coordinate file by simply stacking them
+on top of each other, like a small child playing with wooden blocks.
+The program makes a grid of 
+.I user defined
+
+proportions (
+.B -nbox
+), 
+and interspaces the grid point with an extra space 
+.B -dist
+.
+
+
+When option 
+.B -rot
+is used the program does not check for overlap
+between molecules on grid points. It is recommended to make the box in
+the input file at least as big as the coordinates + 
+Van der Waals radius.
+
+
+If the optional trajectory file is given, conformations are not
+generated, but read from this file and translated appropriately to
+build the grid.
+.SH FILES
+.BI "-f" " conf.gro" 
+.B Input
+ Generic structure: gro g96 pdb tpr tpb tpa xml 
+
+.BI "-o" " out.gro" 
+.B Output
+ Generic structure: gro g96 pdb xml 
+
+.BI "-trj" " traj.xtc" 
+.B Input, Opt.
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "no    "
+ Print help info and quit
+
+.BI "-nice"  " int" " 0" 
+ Set the nicelevel
+
+.BI "-nbox"  " vector" " 1 1 1" 
+ Number of boxes
+
+.BI "-dist"  " vector" " 0 0 0" 
+ Distance between boxes
+
+.BI "-seed"  " int" " 0" 
+ Random generator seed, if 0 generated from the time
+
+.BI "-[no]rot"  "no    "
+ Randomly rotate conformations
+
+.BI "-[no]shuffle"  "no    "
+ Random shuffling of molecules
+
+.BI "-[no]sort"  "no    "
+ Sort molecules on X coord
+
+.BI "-block"  " int" " 1" 
+ Divide the box in blocks on this number of cpus
+
+.BI "-nmolat"  " int" " 3" 
+ Number of atoms per molecule, assumed to start from 0. If you set this wrong, it will screw up your system!
+
+.BI "-maxrot"  " vector" " 90 90 90" 
+ Maximum random rotation
+
+.BI "-[no]renumber"  "yes   "
+ Renumber residues
+
+.SH KNOWN PROBLEMS
+\- The program should allow for random displacement off lattice points.
+

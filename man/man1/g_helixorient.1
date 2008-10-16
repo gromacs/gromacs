@@ -1,118 +1,123 @@
-.TH g_helixorient 1 "Mon 22 Sep 2008"
+.TH g_helixorient 1 "Thu 16 Oct 2008" "" "GROMACS suite, VERSION 4.0.1"
 .SH NAME
-g_helixorient
-.B VERSION 4.0_rc1
+g_helixorient - calculates local pitch/bending/rotation/orientation inside helices
+
+.B VERSION 4.0.1
 .SH SYNOPSIS
 \f3g_helixorient\fP
-.BI "-s" " topol.tpr "
-.BI "-f" " traj.xtc "
-.BI "-n" " index.ndx "
-.BI "-oaxis" " helixaxis.dat "
-.BI "-ocenter" " center.dat "
-.BI "-orise" " rise.xvg "
-.BI "-oradius" " radius.xvg "
-.BI "-otwist" " twist.xvg "
-.BI "-obending" " bending.xvg "
-.BI "-otilt" " tilt.xvg "
-.BI "-orot" " rotation.xvg "
-.BI "-[no]h" ""
-.BI "-nice" " int "
-.BI "-b" " time "
-.BI "-e" " time "
-.BI "-dt" " time "
-.BI "-[no]xvgr" ""
-.BI "-[no]sidechain" ""
-.BI "-[no]incremental" ""
+.BI "\-s" " topol.tpr "
+.BI "\-f" " traj.xtc "
+.BI "\-n" " index.ndx "
+.BI "\-oaxis" " helixaxis.dat "
+.BI "\-ocenter" " center.dat "
+.BI "\-orise" " rise.xvg "
+.BI "\-oradius" " radius.xvg "
+.BI "\-otwist" " twist.xvg "
+.BI "\-obending" " bending.xvg "
+.BI "\-otilt" " tilt.xvg "
+.BI "\-orot" " rotation.xvg "
+.BI "\-[no]h" ""
+.BI "\-nice" " int "
+.BI "\-b" " time "
+.BI "\-e" " time "
+.BI "\-dt" " time "
+.BI "\-[no]xvgr" ""
+.BI "\-[no]sidechain" ""
+.BI "\-[no]incremental" ""
 .SH DESCRIPTION
-g_helixorient calculates coordinates and direction of the average
-axis inside an alpha helix, and the direction/vectors of both the
-alpha carbon and (optionally) a sidechain atom relative to the axis.
+\&g_helixorient calculates coordinates and direction of the average
+\&axis inside an alpha helix, and the direction/vectors of both the
+\&alpha carbon and (optionally) a sidechain atom relative to the axis.
 
 
-As input, you need to specify an index group with alpha carbon atoms
-corresponding to an alpha helix of continuous residues. Sidechain
-directions require a second index group of the same size, containing
-the heavy atom in each residue that should represent the sidechain.
+\&As input, you need to specify an index group with alpha carbon atoms
+\&corresponding to an alpha helix of continuous residues. Sidechain
+\&directions require a second index group of the same size, containing
+\&the heavy atom in each residue that should represent the sidechain.
 
 Note that this program does not do any fitting of structures.
 
 
-We need four Calpha coordinates to define the local direction of the helix
-axis.
+\&We need four Calpha coordinates to define the local direction of the helix
+\&axis.
 
 The tilt/rotation is calculated from Euler rotations, where we define
-the helix axis as the local X axis, the residues/CA-vector as Y, and the
-Z axis from their cross product. We use the Euler Y-Z-X rotation, meaning
-we first tilt the helix axis (1) around and (2) orthogonal to the residues
-vector, and finally apply the (3) rotation around it. For debugging or other
-purposes, we also write out the actual Euler rotation angles as theta1-3.xvg
+\&the helix axis as the local X axis, the residues/CA\-vector as Y, and the
+\&Z axis from their cross product. We use the Euler Y\-Z\-X rotation, meaning
+\&we first tilt the helix axis (1) around and (2) orthogonal to the residues
+\&vector, and finally apply the (3) rotation around it. For debugging or other
+\&purposes, we also write out the actual Euler rotation angles as theta1\-3.xvg
 .SH FILES
-.BI "-s" " topol.tpr" 
+.BI "\-s" " topol.tpr" 
 .B Input
  Run input file: tpr tpb tpa 
 
-.BI "-f" " traj.xtc" 
+.BI "\-f" " traj.xtc" 
 .B Input
  Trajectory: xtc trr trj gro g96 pdb cpt 
 
-.BI "-n" " index.ndx" 
+.BI "\-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
-.BI "-oaxis" " helixaxis.dat" 
+.BI "\-oaxis" " helixaxis.dat" 
 .B Output
  Generic data file 
 
-.BI "-ocenter" " center.dat" 
+.BI "\-ocenter" " center.dat" 
 .B Output
  Generic data file 
 
-.BI "-orise" " rise.xvg" 
+.BI "\-orise" " rise.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-oradius" " radius.xvg" 
+.BI "\-oradius" " radius.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-otwist" " twist.xvg" 
+.BI "\-otwist" " twist.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-obending" " bending.xvg" 
+.BI "\-obending" " bending.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-otilt" " tilt.xvg" 
+.BI "\-otilt" " tilt.xvg" 
 .B Output
  xvgr/xmgr file 
 
-.BI "-orot" " rotation.xvg" 
+.BI "\-orot" " rotation.xvg" 
 .B Output
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "no    "
+.BI "\-[no]h"  "no    "
  Print help info and quit
 
-.BI "-nice"  " int" " 19" 
+.BI "\-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" " 0     " 
+.BI "\-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" " 0     " 
+.BI "\-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" " 0     " 
+.BI "\-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]xvgr"  "yes   "
+.BI "\-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-[no]sidechain"  "no    "
+.BI "\-[no]sidechain"  "no    "
  Calculate sidechain directions relative to helix axis too.
 
-.BI "-[no]incremental"  "no    "
+.BI "\-[no]incremental"  "no    "
  Calculate incremental rather than total rotation/tilt.
 
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

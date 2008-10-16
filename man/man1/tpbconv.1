@@ -1,108 +1,99 @@
-.TH tpbconv 1 "Mon 22 Sep 2008"
+.TH tpbconv 1 "Thu 16 Oct 2008" "" "GROMACS suite, VERSION 4.0.1"
 .SH NAME
-tpbconv
-.B VERSION 4.0_rc1
+tpbconv - makes a run input file for restarting a crashed run
+
+.B VERSION 4.0.1
 .SH SYNOPSIS
 \f3tpbconv\fP
-.BI "-s" " topol.tpr "
-.BI "-f" " traj.trr "
-.BI "-e" " ener.edr "
-.BI "-n" " index.ndx "
-.BI "-o" " tpxout.tpr "
-.BI "-[no]h" ""
-.BI "-nice" " int "
-.BI "-nsteps" " int "
-.BI "-runtime" " real "
-.BI "-time" " real "
-.BI "-extend" " real "
-.BI "-until" " real "
-.BI "-[no]zeroq" ""
-.BI "-[no]cont" ""
+.BI "\-s" " topol.tpr "
+.BI "\-f" " traj.trr "
+.BI "\-e" " ener.edr "
+.BI "\-n" " index.ndx "
+.BI "\-o" " tpxout.tpr "
+.BI "\-[no]h" ""
+.BI "\-nice" " int "
+.BI "\-nsteps" " int "
+.BI "\-runtime" " real "
+.BI "\-time" " real "
+.BI "\-extend" " real "
+.BI "\-until" " real "
+.BI "\-[no]zeroq" ""
+.BI "\-[no]cont" ""
 .SH DESCRIPTION
-tpbconv can edit run input files in four ways.
+\&tpbconv can edit run input files in four ways.
+
+\fB 1st.\fR by modifying the number of steps in a run input file
+\&with option \fB \-nsteps\fR or option \fB \-runtime\fR.
 
 
-.B 1st.
-by modifying the number of steps in a run input file
-with option 
-.B -nsteps
-or option 
-.B -runtime
-.
+\&\fB 2st.\fR (OBSOLETE) by creating a run input file
+\&for a continuation run when your simulation has crashed due to e.g.
+\&a full disk, or by making a continuation run input file.
+\&This option is obsolete, since mdrun now writes and reads
+\&checkpoint files.
+\&Note that a frame with coordinates and velocities is needed.
+\&When pressure and/or Nose\-Hoover temperature coupling is used
+\&an energy file can be supplied to get an exact continuation
+\&of the original run.
 
 
-
-.B 2st.
-(OBSOLETE) by creating a run input file
-for a continuation run when your simulation has crashed due to e.g.
-a full disk, or by making a continuation run input file.
-This option is obsolete, since mdrun now writes and reads
-checkpoint files.
-Note that a frame with coordinates and velocities is needed.
-When pressure and/or Nose-Hoover temperature coupling is used
-an energy file can be supplied to get an exact continuation
-of the original run.
-
-
-
-.B 3nd.
-by creating a tpx file for a subset of your original
-tpx file, which is useful when you want to remove the solvent from
-your tpx file, or when you want to make e.g. a pure Ca tpx file.
-
-.B WARNING: this tpx file is not fully functional
-.
-
-.B 4rd.
-by setting the charges of a specified group
-to zero. This is useful when doing free energy estimates
-using the LIE (Linear Interaction Energy) method.
+\&\fB 3nd.\fR by creating a tpx file for a subset of your original
+\&tpx file, which is useful when you want to remove the solvent from
+\&your tpx file, or when you want to make e.g. a pure Ca tpx file.
+\&\fB WARNING: this tpx file is not fully functional\fR.
+\&\fB 4rd.\fR by setting the charges of a specified group
+\&to zero. This is useful when doing free energy estimates
+\&using the LIE (Linear Interaction Energy) method.
 .SH FILES
-.BI "-s" " topol.tpr" 
+.BI "\-s" " topol.tpr" 
 .B Input
  Run input file: tpr tpb tpa 
 
-.BI "-f" " traj.trr" 
+.BI "\-f" " traj.trr" 
 .B Input, Opt.
  Full precision trajectory: trr trj cpt 
 
-.BI "-e" " ener.edr" 
+.BI "\-e" " ener.edr" 
 .B Input, Opt.
  Energy file: edr ene 
 
-.BI "-n" " index.ndx" 
+.BI "\-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
-.BI "-o" " tpxout.tpr" 
+.BI "\-o" " tpxout.tpr" 
 .B Output
  Run input file: tpr tpb tpa 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "no    "
+.BI "\-[no]h"  "no    "
  Print help info and quit
 
-.BI "-nice"  " int" " 0" 
+.BI "\-nice"  " int" " 0" 
  Set the nicelevel
 
-.BI "-nsteps"  " int" " -1" 
+.BI "\-nsteps"  " int" " \-1" 
  Change the number of steps
 
-.BI "-runtime"  " real" " -1    " 
+.BI "\-runtime"  " real" " \-1    " 
  Set the run time (ps)
 
-.BI "-time"  " real" " -1    " 
+.BI "\-time"  " real" " \-1    " 
  Continue from frame at this time (ps) instead of the last frame
 
-.BI "-extend"  " real" " 0     " 
+.BI "\-extend"  " real" " 0     " 
  Extend runtime by this amount (ps)
 
-.BI "-until"  " real" " 0     " 
+.BI "\-until"  " real" " 0     " 
  Extend runtime until this ending time (ps)
 
-.BI "-[no]zeroq"  "no    "
+.BI "\-[no]zeroq"  "no    "
  Set the charges of a group (from the index) to zero
 
-.BI "-[no]cont"  "yes   "
+.BI "\-[no]cont"  "yes   "
  For exact continuation, the constraints should not be solved before the first step
 
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

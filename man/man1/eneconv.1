@@ -1,113 +1,88 @@
-.TH eneconv 1 "Mon 22 Sep 2008"
+.TH eneconv 1 "Thu 16 Oct 2008" "" "GROMACS suite, VERSION 4.0.1"
 .SH NAME
-eneconv
-.B VERSION 4.0_rc1
+eneconv - converts energy files
+
+.B VERSION 4.0.1
 .SH SYNOPSIS
 \f3eneconv\fP
-.BI "-f" " ener.edr "
-.BI "-o" " fixed.edr "
-.BI "-[no]h" ""
-.BI "-nice" " int "
-.BI "-b" " real "
-.BI "-e" " real "
-.BI "-dt" " real "
-.BI "-offset" " real "
-.BI "-[no]settime" ""
-.BI "-[no]sort" ""
-.BI "-scalefac" " real "
-.BI "-[no]error" ""
+.BI "\-f" " ener.edr "
+.BI "\-o" " fixed.edr "
+.BI "\-[no]h" ""
+.BI "\-nice" " int "
+.BI "\-b" " real "
+.BI "\-e" " real "
+.BI "\-dt" " real "
+.BI "\-offset" " real "
+.BI "\-[no]settime" ""
+.BI "\-[no]sort" ""
+.BI "\-scalefac" " real "
+.BI "\-[no]error" ""
 .SH DESCRIPTION
-With 
-.I multiple files
-specified for the 
-.B -f
-option:
+\&With \fI multiple files\fR specified for the \fB \-f\fR option:
 
-Concatenates several energy files in sorted order.
-In case of double time frames the one
-in the later file is used. By specifying 
-.B -settime
-you will be
-asked for the start time of each file. The input files are taken
-from the command line,
-such that the command 
-.B eneconv -o fixed.edr *.edr
-should do
-the trick. 
+\&Concatenates several energy files in sorted order.
+\&In case of double time frames the one
+\&in the later file is used. By specifying \fB \-settime\fR you will be
+\&asked for the start time of each file. The input files are taken
+\&from the command line,
+\&such that the command \fB eneconv \-o fixed.edr *.edr\fR should do
+\&the trick. 
 
 
-With 
-.I one file
-specified for 
-.B -f
-:
+\&With \fI one file\fR specified for \fB \-f\fR:
 
-Reads one energy file and writes another, applying the 
-.B -dt
-,
-
-.B -offset
-, 
-.B -t0
-and 
-.B -settime
-options and
-converting to a different format if necessary (indicated by file
-extentions).
+\&Reads one energy file and writes another, applying the \fB \-dt\fR,
+\&\fB \-offset\fR, \fB \-t0\fR and \fB \-settime\fR options and
+\&converting to a different format if necessary (indicated by file
+\&extentions).
 
 
-
-.B -settime
-is applied first, then 
-.B -dt
-/
-.B -offset
-
-followed by 
-.B -b
-and 
-.B -e
-to select which frames to write.
+\&\fB \-settime\fR is applied first, then \fB \-dt\fR/\fB \-offset\fR
+\&followed by \fB \-b\fR and \fB \-e\fR to select which frames to write.
 .SH FILES
-.BI "-f" " ener.edr" 
+.BI "\-f" " ener.edr" 
 .B Input, Mult.
  Energy file: edr ene 
 
-.BI "-o" " fixed.edr" 
+.BI "\-o" " fixed.edr" 
 .B Output
  Energy file: edr ene 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "no    "
+.BI "\-[no]h"  "no    "
  Print help info and quit
 
-.BI "-nice"  " int" " 19" 
+.BI "\-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " real" " -1    " 
+.BI "\-b"  " real" " \-1    " 
  First time to use
 
-.BI "-e"  " real" " -1    " 
+.BI "\-e"  " real" " \-1    " 
  Last time to use
 
-.BI "-dt"  " real" " 0     " 
+.BI "\-dt"  " real" " 0     " 
  Only write out frame when t MOD dt = offset
 
-.BI "-offset"  " real" " 0     " 
- Time offset for -dt option
+.BI "\-offset"  " real" " 0     " 
+ Time offset for \-dt option
 
-.BI "-[no]settime"  "no    "
+.BI "\-[no]settime"  "no    "
  Change starting time interactively
 
-.BI "-[no]sort"  "yes   "
+.BI "\-[no]sort"  "yes   "
  Sort energy files (not frames)
 
-.BI "-scalefac"  " real" " 1     " 
+.BI "\-scalefac"  " real" " 1     " 
  Multiply energy component by this factor
 
-.BI "-[no]error"  "yes   "
+.BI "\-[no]error"  "yes   "
  Stop on errors in the file
 
 .SH KNOWN PROBLEMS
 \- When combining trajectories the sigma and E2 (necessary for statistics) are not updated correctly. Only the actual energy is correct. One thus has to compute statistics in another way.
 
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

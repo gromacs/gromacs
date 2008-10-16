@@ -1,197 +1,170 @@
-.TH g_rdf 1 "Mon 22 Sep 2008"
+.TH g_rdf 1 "Thu 16 Oct 2008" "" "GROMACS suite, VERSION 4.0.1"
 .SH NAME
-g_rdf
-.B VERSION 4.0_rc1
+g_rdf - calculates radial distribution functions
+
+.B VERSION 4.0.1
 .SH SYNOPSIS
 \f3g_rdf\fP
-.BI "-f" " traj.xtc "
-.BI "-s" " topol.tpr "
-.BI "-n" " index.ndx "
-.BI "-o" " rdf.xvg "
-.BI "-sq" " sq.xvg "
-.BI "-cn" " rdf_cn.xvg "
-.BI "-hq" " hq.xvg "
-.BI "-[no]h" ""
-.BI "-nice" " int "
-.BI "-b" " time "
-.BI "-e" " time "
-.BI "-dt" " time "
-.BI "-[no]w" ""
-.BI "-[no]xvgr" ""
-.BI "-bin" " real "
-.BI "-[no]com" ""
-.BI "-rdf" " enum "
-.BI "-[no]pbc" ""
-.BI "-[no]norm" ""
-.BI "-[no]xy" ""
-.BI "-cut" " real "
-.BI "-ng" " int "
-.BI "-fade" " real "
-.BI "-nlevel" " int "
-.BI "-startq" " real "
-.BI "-endq" " real "
-.BI "-energy" " real "
+.BI "\-f" " traj.xtc "
+.BI "\-s" " topol.tpr "
+.BI "\-n" " index.ndx "
+.BI "\-o" " rdf.xvg "
+.BI "\-sq" " sq.xvg "
+.BI "\-cn" " rdf_cn.xvg "
+.BI "\-hq" " hq.xvg "
+.BI "\-[no]h" ""
+.BI "\-nice" " int "
+.BI "\-b" " time "
+.BI "\-e" " time "
+.BI "\-dt" " time "
+.BI "\-[no]w" ""
+.BI "\-[no]xvgr" ""
+.BI "\-bin" " real "
+.BI "\-[no]com" ""
+.BI "\-rdf" " enum "
+.BI "\-[no]pbc" ""
+.BI "\-[no]norm" ""
+.BI "\-[no]xy" ""
+.BI "\-cut" " real "
+.BI "\-ng" " int "
+.BI "\-fade" " real "
+.BI "\-nlevel" " int "
+.BI "\-startq" " real "
+.BI "\-endq" " real "
+.BI "\-energy" " real "
 .SH DESCRIPTION
-The structure of liquids can be studied by either neutron or X-ray
-scattering. The most common way to describe liquid structure is by a
-radial distribution function. However, this is not easy to obtain from
-a scattering experiment.
+\&The structure of liquids can be studied by either neutron or X\-ray
+\&scattering. The most common way to describe liquid structure is by a
+\&radial distribution function. However, this is not easy to obtain from
+\&a scattering experiment.
 
 
-g_rdf calculates radial distribution functions in different ways.
-The normal method is around a (set of) particle(s), the other method
-is around the center of mass of a set of particles.
-With both methods rdf's can also be calculated around axes parallel
-to the z-axis with option 
-.B -xy
-.
+\&g_rdf calculates radial distribution functions in different ways.
+\&The normal method is around a (set of) particle(s), the other method
+\&is around the center of mass of a set of particles.
+\&With both methods rdf's can also be calculated around axes parallel
+\&to the z\-axis with option \fB \-xy\fR.
 
 
-The option 
-.B -rdf
-sets the type of rdf to be computed.
-Default is for atoms or particles, but one can also select center
-of mass or geometry of molecules or residues. In all cases only
-the atoms in the index groups are taken into account.
-For molecules and/or the center of mass option a run input file
-is required.
-Other weighting than COM or COG can currently only be achieved
-by providing a run input file with different masses.
-Option 
-.B -com
-also works in conjunction with 
-.B -rdf
-.
+\&The option \fB \-rdf\fR sets the type of rdf to be computed.
+\&Default is for atoms or particles, but one can also select center
+\&of mass or geometry of molecules or residues. In all cases only
+\&the atoms in the index groups are taken into account.
+\&For molecules and/or the center of mass option a run input file
+\&is required.
+\&Other weighting than COM or COG can currently only be achieved
+\&by providing a run input file with different masses.
+\&Option \fB \-com\fR also works in conjunction with \fB \-rdf\fR.
 
-If a run input file is supplied (
-.B -s
-) and 
-.B -rdf
-is set
-to 
-.B atom
-, exclusions defined
-in that file are taken into account when calculating the rdf.
-The option 
-.B -cut
-is meant as an alternative way to avoid
-intramolecular peaks in the rdf plot.
-It is however better to supply a run input file with a higher number of
-exclusions. For eg. benzene a topology with nrexcl set to 5
-would eliminate all intramolecular contributions to the rdf.
-Note that all atoms in the selected groups are used, also the ones
-that don't have Lennard-Jones interactions.
+If a run input file is supplied (\fB \-s\fR) and \fB \-rdf\fR is set
+\&to \fB atom\fR, exclusions defined
+\&in that file are taken into account when calculating the rdf.
+\&The option \fB \-cut\fR is meant as an alternative way to avoid
+\&intramolecular peaks in the rdf plot.
+\&It is however better to supply a run input file with a higher number of
+\&exclusions. For eg. benzene a topology with nrexcl set to 5
+\&would eliminate all intramolecular contributions to the rdf.
+\&Note that all atoms in the selected groups are used, also the ones
+\&that don't have Lennard\-Jones interactions.
 
 
-Option 
-.B -cn
-produces the cumulative number rdf,
-i.e. the average number of particles within a distance r.
+\&Option \fB \-cn\fR produces the cumulative number rdf,
+\&i.e. the average number of particles within a distance r.
 
 
-To bridge the gap between theory and experiment structure factors can
-be computed (option 
-.B -sq
-). The algorithm uses FFT, the gridspacing of which is determined by option 
-.B -grid
-.
+\&To bridge the gap between theory and experiment structure factors can
+\&be computed (option \fB \-sq\fR). The algorithm uses FFT, the gridspacing of which is determined by option \fB \-grid\fR.
 .SH FILES
-.BI "-f" " traj.xtc" 
+.BI "\-f" " traj.xtc" 
 .B Input
  Trajectory: xtc trr trj gro g96 pdb cpt 
 
-.BI "-s" " topol.tpr" 
+.BI "\-s" " topol.tpr" 
 .B Input, Opt.
  Structure+mass(db): tpr tpb tpa gro g96 pdb 
 
-.BI "-n" " index.ndx" 
+.BI "\-n" " index.ndx" 
 .B Input, Opt.
  Index file 
 
-.BI "-o" " rdf.xvg" 
+.BI "\-o" " rdf.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-sq" " sq.xvg" 
+.BI "\-sq" " sq.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-cn" " rdf_cn.xvg" 
+.BI "\-cn" " rdf_cn.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
-.BI "-hq" " hq.xvg" 
+.BI "\-hq" " hq.xvg" 
 .B Output, Opt.
  xvgr/xmgr file 
 
 .SH OTHER OPTIONS
-.BI "-[no]h"  "no    "
+.BI "\-[no]h"  "no    "
  Print help info and quit
 
-.BI "-nice"  " int" " 19" 
+.BI "\-nice"  " int" " 19" 
  Set the nicelevel
 
-.BI "-b"  " time" " 0     " 
+.BI "\-b"  " time" " 0     " 
  First frame (ps) to read from trajectory
 
-.BI "-e"  " time" " 0     " 
+.BI "\-e"  " time" " 0     " 
  Last frame (ps) to read from trajectory
 
-.BI "-dt"  " time" " 0     " 
+.BI "\-dt"  " time" " 0     " 
  Only use frame when t MOD dt = first time (ps)
 
-.BI "-[no]w"  "no    "
+.BI "\-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
 
-.BI "-[no]xvgr"  "yes   "
+.BI "\-[no]xvgr"  "yes   "
  Add specific codes (legends etc.) in the output xvg files for the xmgrace program
 
-.BI "-bin"  " real" " 0.002 " 
+.BI "\-bin"  " real" " 0.002 " 
  Binwidth (nm)
 
-.BI "-[no]com"  "no    "
+.BI "\-[no]com"  "no    "
  RDF with respect to the center of mass of first group
 
-.BI "-rdf"  " enum" " atom" 
- RDF type: 
-.B atom
-, 
-.B mol_com
-, 
-.B mol_cog
-, 
-.B res_com
-or 
-.B res_cog
+.BI "\-rdf"  " enum" " atom" 
+ RDF type: \fB atom\fR, \fB mol_com\fR, \fB mol_cog\fR, \fB res_com\fR or \fB res_cog\fR
 
-
-.BI "-[no]pbc"  "yes   "
+.BI "\-[no]pbc"  "yes   "
  Use periodic boundary conditions for computing distances. Without PBC the maximum range will be three times the larges box edge.
 
-.BI "-[no]norm"  "yes   "
+.BI "\-[no]norm"  "yes   "
  Normalize for volume and density
 
-.BI "-[no]xy"  "no    "
+.BI "\-[no]xy"  "no    "
  Use only the x and y components of the distance
 
-.BI "-cut"  " real" " 0     " 
+.BI "\-cut"  " real" " 0     " 
  Shortest distance (nm) to be considered
 
-.BI "-ng"  " int" " 1" 
+.BI "\-ng"  " int" " 1" 
  Number of secondary groups to compute RDFs around a central group
 
-.BI "-fade"  " real" " 0     " 
- From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)-1] exp(-(r/fade-1)2 to make it go to 1 smoothly. If fade is 0.0 nothing is done.
+.BI "\-fade"  " real" " 0     " 
+ From this distance onwards the RDF is tranformed by g'(r) = 1 + [g(r)\-1] exp(\-(r/fade\-1)2 to make it go to 1 smoothly. If fade is 0.0 nothing is done.
 
-.BI "-nlevel"  " int" " 20" 
+.BI "\-nlevel"  " int" " 20" 
  Number of different colors in the diffraction image
 
-.BI "-startq"  " real" " 0     " 
+.BI "\-startq"  " real" " 0     " 
  Starting q (1/nm) 
 
-.BI "-endq"  " real" " 60    " 
+.BI "\-endq"  " real" " 60    " 
  Ending q (1/nm)
 
-.BI "-energy"  " real" " 12    " 
- Energy of the incoming X-ray (keV) 
+.BI "\-energy"  " real" " 12    " 
+ Energy of the incoming X\-ray (keV) 
 
+.SH SEE ALSO
+.BR gromacs(7)
+
+More information about \fBGROMACS\fR is available at <\fIhttp://www.gromacs.org/\fR>.

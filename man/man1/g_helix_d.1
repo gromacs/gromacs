@@ -1,0 +1,190 @@
+.TH g_helix_d 1 "Thu 16 Oct 2008"
+.SH NAME
+g_helix_d
+.B VERSION 3.3.99_development_20071104
+.SH SYNOPSIS
+\f3g_helix_d\fP
+.BI "-s" " topol.tpr "
+.BI "-n" " index.ndx "
+.BI "-f" " traj.xtc "
+.BI "-to" " gtraj.g87 "
+.BI "-cz" " zconf.gro "
+.BI "-co" " waver.gro "
+.BI "-[no]h" ""
+.BI "-nice" " int "
+.BI "-b" " time "
+.BI "-e" " time "
+.BI "-dt" " time "
+.BI "-[no]w" ""
+.BI "-r0" " int "
+.BI "-[no]q" ""
+.BI "-[no]F" ""
+.BI "-[no]db" ""
+.BI "-prop" " enum "
+.BI "-[no]ev" ""
+.BI "-ahxstart" " int "
+.BI "-ahxend" " int "
+.SH DESCRIPTION
+g_helix computes all kind of helix properties. First, the peptide
+is checked to find the longest helical part. This is determined by
+Hydrogen bonds and Phi/Psi angles.
+That bit is fitted
+to an ideal helix around the Z-axis and centered around the origin.
+Then the following properties are computed:
+
+
+
+.B 1.
+Helix radius (file radius.xvg). This is merely the
+RMS deviation in two dimensions for all Calpha atoms.
+it is calced as sqrt((SUM i(x2(i)+y2(i)))/N), where N is the number
+of backbone atoms. For an ideal helix the radius is 0.23 nm
+
+
+.B 2.
+Twist (file twist.xvg). The average helical angle per
+residue is calculated. For alpha helix it is 100 degrees,
+for 3-10 helices it will be smaller,
+for 5-helices it will be larger.
+
+
+.B 3.
+Rise per residue (file rise.xvg). The helical rise per
+residue is plotted as the difference in Z-coordinate between Ca
+atoms. For an ideal helix this is 0.15 nm
+
+
+.B 4.
+Total helix length (file len-ahx.xvg). The total length
+of the
+helix in nm. This is simply the average rise (see above) times the
+number of helical residues (see below).
+
+
+.B 5.
+Number of helical residues (file n-ahx.xvg). The title says
+it all.
+
+
+.B 6.
+Helix Dipole, backbone only (file dip-ahx.xvg).
+
+
+.B 7.
+RMS deviation from ideal helix, calculated for the Calpha
+atoms only (file rms-ahx.xvg).
+
+
+.B 8.
+Average Calpha-Calpha dihedral angle (file phi-ahx.xvg).
+
+
+.B 9.
+Average Phi and Psi angles (file phipsi.xvg).
+
+
+.B 10.
+Ellipticity at 222 nm according to 
+.I Hirst and Brooks
+
+
+
+
+.SH FILES
+.BI "-s" " topol.tpr" 
+.B Input
+ Generic run input: tpr tpb tpa xml 
+
+.BI "-n" " index.ndx" 
+.B Input
+ Index file 
+
+.BI "-f" " traj.xtc" 
+.B Input
+ Generic trajectory: xtc trr trj gro g96 pdb 
+
+.BI "-to" " gtraj.g87" 
+.B Output, Opt.
+ Gromos-87 ASCII trajectory format 
+
+.BI "-cz" " zconf.gro" 
+.B Output
+ Generic structure: gro g96 pdb xml 
+
+.BI "-co" " waver.gro" 
+.B Output
+ Generic structure: gro g96 pdb xml 
+
+.SH OTHER OPTIONS
+.BI "-[no]h"  "no    "
+ Print help info and quit
+
+.BI "-nice"  " int" " 19" 
+ Set the nicelevel
+
+.BI "-b"  " time" " 0     " 
+ First frame (ps) to read from trajectory
+
+.BI "-e"  " time" " 0     " 
+ Last frame (ps) to read from trajectory
+
+.BI "-dt"  " time" " 0     " 
+ Only use frame when t MOD dt = first time (ps)
+
+.BI "-[no]w"  "no    "
+ View output xvg, xpm, eps and pdb files
+
+.BI "-r0"  " int" " 1" 
+ The first residue number in the sequence
+
+.BI "-[no]q"  "no    "
+ Check at every step which part of the sequence is helical
+
+.BI "-[no]F"  "yes   "
+ Toggle fit to a perfect helix
+
+.BI "-[no]db"  "no    "
+ Print debug info
+
+.BI "-prop"  " enum" " RAD" 
+ Select property to weight eigenvectors with. WARNING experimental stuff: 
+.B RAD
+, 
+.B TWIST
+, 
+.B RISE
+, 
+.B LEN
+, 
+.B NHX
+, 
+.B DIP
+, 
+.B RMS
+, 
+.B CPHI
+, 
+.B RMSA
+, 
+.B PHI
+, 
+.B PSI
+, 
+.B HB3
+, 
+.B HB4
+, 
+.B HB5
+or 
+.B CD222
+
+
+.BI "-[no]ev"  "no    "
+ Write a new 'trajectory' file for ED
+
+.BI "-ahxstart"  " int" " 0" 
+ First residue in helix
+
+.BI "-ahxend"  " int" " 0" 
+ Last residue in helix
+
