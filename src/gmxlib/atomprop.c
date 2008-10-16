@@ -343,3 +343,16 @@ char *gmx_atomprop_element(gmx_atomprop_t aps,int atomnumber)
   }
   return NULL;
 }
+
+int gmx_atomprop_atomnumber(gmx_atomprop_t aps,char *elem)
+{
+  gmx_atomprop *ap = (gmx_atomprop*) aps;
+  int i;
+  
+  for(i=0; (i<ap->prop[epropElement].nprop); i++) {
+    if (strcasecmp(ap->prop[epropElement].atomnm[i],elem) == 0) {
+      return gmx_nint(ap->prop[epropElement].value[i]);
+    }
+  }
+  return NOTSET;
+}
