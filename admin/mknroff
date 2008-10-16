@@ -25,9 +25,24 @@ set PROGRAMS = [a-z]*
 cd $dir
 
 foreach program ( $PROGRAMS )
-if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
+if ( ( -x $GMXBINDIR/$program ) && ( $program != "my_dssp" ) && ( $program != "copyrgt" ) && ( $program != "addquote" ) && ( $program != "GMXRC" ) && ( $program != "completion.csh" ) && ( $program != "completion.zsh" ) && ( $program != "average" ) && ( $program != "completion.bash" ) && ( $program != "luck" ) ) then
 echo -n " $program"
 $GMXBINDIR/$program -man nroff >& /dev/null
 if ( -f $program.nroff ) mv $program.nroff $program.1
 endif
 end
+echo .
+
+# Providing the location of $(SRCDIR)/admin/programs.txt as the _second_
+# argument allows one-liner descriptions of each command to be added,
+# suitable for apropos(1) and the like.
+if ( ( $#argv >= 2 ) && ( -r $2 ) ) then
+foreach program ( $PROGRAMS )
+	if ( -r $program.1 ) then      # check for existing man page
+	grep -q '^$program' $2 && \	# see if there is a one-liner to be had
+	set DESCRIPTION = `grep "^$program" $2 | head -n 1 | cut -d'|' -f2 | sed -e 's/\//\\\//g'` && \
+	sed -i -e "3s/^$program/$program \\- $DESCRIPTION/" $program.1
+	endif
+end
+endif
+

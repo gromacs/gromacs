@@ -12,12 +12,12 @@ END
 HEAD|Running a simulation
 grompp|makes a run input file
 tpbconv|makes a run input file for restarting a crashed run
-mdrun|performs a simulation
+mdrun|performs a simulation, do a normal mode analysis or an energy minimization
 END
 
 HEAD|Viewing trajectories
 ngmx|displays a trajectory
-trjconv|converts trajectories to e.g. pdb which can be viewed with e.g. rasmol
+highway|X-windows gadget for highway simulations
 END
 
 HEAD|Processing energies
@@ -32,6 +32,7 @@ trjconv|converts and manipulates trajectory files
 trjcat|concatenates trajectory files
 eneconv|converts energy files
 xmp2ps|converts XPM matrices to encapsulated postscript (or XPM)
+sigeps|convert c6/12 or c6/cn combinations to and from sigma/epsilon
 END
 
 HEAD|Tools
@@ -39,6 +40,7 @@ make_ndx|makes index files
 mk_angndx|generates index files for g_angle
 gmxcheck|checks and compares files
 gmxdump|makes binary files human readable
+gen_table|generate tables for use by mdrun
 g_traj|plots x, v and f of selected atoms/groups (and more) from a trajectory
 g_analyze|analyzes data sets
 trjorder|orders molecules according to their distance to a group
@@ -49,6 +51,9 @@ g_morph|linear interpolation of conformations
 g_wham|weighted histogram analysis after umbrella sampling
 ffscan|scan and modify force field data for a single point energy calculation
 xpm2ps|convert XPM (XPixelMap) file to postscript
+g_sham|read/write xmgr and xvgr data sets
+g_spatial|calculates the spatial distribution function (more control than g_sdf)
+g_sdf|calculates the spatial distribution function (faster than g_spatial)
 END
 
 HEAD|Distances between structures
@@ -56,8 +61,6 @@ g_rms|calculates rmsd's with a reference structure and rmsd matrices
 g_confrms|fits two structures and calculates the rmsd 
 g_cluster|clusters structures
 g_rmsf|calculates atomic fluctuations
-disco|distance geometry calculation with the CONCOORD algorithm
-cdist|create input for disco
 END
 
 HEAD|Distances in structures over time
@@ -99,8 +102,6 @@ g_spol|analyzes solvent dipole orientation and polarization around solutes
 g_bundle|analyzes bundles of axes, e.g. helices
 g_disre|analyzes distance restraints
 g_clustsize|calculate size distributions of atomic clusters
-disco|distance geometry calculation with the CONCOORD algorithm
-cdist|create input for disco
 anadock|cluster structures from Autodock runs
 END
 
