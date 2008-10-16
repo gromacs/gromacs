@@ -1,7 +1,8 @@
-.TH g_velacc 1 "Mon 22 Sep 2008"
+.TH g_velacc 1 "Thu 16 Oct 2008"
 .SH NAME
-g_velacc
-.B VERSION 4.0_rc1
+g_velacc - calculates velocity autocorrelation functions
+
+.B VERSION 4.0
 .SH SYNOPSIS
 \f3g_velacc\fP
 .BI "-f" " traj.trr "
@@ -34,7 +35,7 @@ function is calculated.
 
 With option 
 .B -mol
-the momentum autocorrelation function of
+the velocity autocorrelation function of
 molecules is calculated. In this case the index group should consist
 of molecule numbers instead of atom numbers.
 .SH FILES
@@ -80,7 +81,7 @@ of molecule numbers instead of atom numbers.
  Calculate the momentum autocorrelation function
 
 .BI "-[no]mol"  "no    "
- Calculate the momentum acf of molecules
+ Calculate the velocity acf of molecules
 
 .BI "-acflen"  " int" " -1" 
  Length of the ACF, default is half the number of frames

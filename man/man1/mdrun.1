@@ -1,7 +1,8 @@
-.TH mdrun 1 "Mon 22 Sep 2008"
+.TH mdrun 1 "Thu 16 Oct 2008"
 .SH NAME
-mdrun
-.B VERSION 4.0_rc1
+mdrun - performs a simulation, do a normal mode analysis or an energy minimization
+
+.B VERSION 4.0
 .SH SYNOPSIS
 \f3mdrun\fP
 .BI "-s" " topol.tpr "
@@ -145,8 +146,9 @@ nodes when the number of nodes is larger than 11 or performance wise
 not compatible with the PME grid x dimension.
 But the user should optimize npme. Performance statistics on this issue
 are written at the end of the log file.
-For good load balancing at high parallelization,
-npme should be divisible by the number of PME nodes
+For good load balancing at high parallelization, the PME grid x and y
+dimensions should be divisible by the number of PME nodes
+(the simulation will run correctly also when this is not the case).
 
 
 
@@ -181,7 +183,7 @@ For pair interactions and tabulated bonds
 that do not generate exclusions, this check can be turned off
 with the option 
 .B -noddcheck
-.B .
+.
 
 
 When constraints are present, option 
@@ -393,6 +395,10 @@ In both cases all the usual output will be written to file.
 When running with MPI, a signal to one of the mdrun processes
 is sufficient, this signal should not be sent to mpirun or
 the mdrun process that is the parent of the others.
+
+
+
+When mdrun is started with MPI, it does not run niced by default.
 .SH FILES
 .BI "-s" " topol.tpr" 
 .B Input

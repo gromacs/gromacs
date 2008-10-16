@@ -1,7 +1,8 @@
-.TH g_sas 1 "Mon 22 Sep 2008"
+.TH g_sas 1 "Thu 16 Oct 2008"
 .SH NAME
-g_sas
-.B VERSION 4.0_rc1
+g_sas - computes solvent accessible surface area
+
+.B VERSION 4.0
 .SH SYNOPSIS
 \f3g_sas\fP
 .BI "-f" " traj.xtc "
@@ -25,6 +26,7 @@ g_sas
 .BI "-qmax" " real "
 .BI "-[no]f_index" ""
 .BI "-minarea" " real "
+.BI "-[no]pbc" ""
 .BI "-[no]prot" ""
 .BI "-dgs" " real "
 .SH DESCRIPTION
@@ -53,7 +55,7 @@ which can be used to restrain surface atoms.
 
 By default, periodic boundary conditions are taken into account,
 this can be turned off using the 
-.B -pbc
+.B -nopbc
 option.
 
 
@@ -140,6 +142,9 @@ high density.
 
 .BI "-minarea"  " real" " 0.5   " 
  The minimum area (nm2) to count an atom as a surface atom when writing a position restraint file  (see help)
+
+.BI "-[no]pbc"  "yes   "
+ Take periodicity into account
 
 .BI "-[no]prot"  "yes   "
  Output the protein to the connelly pdb file too

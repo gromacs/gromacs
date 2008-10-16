@@ -1,7 +1,8 @@
-.TH editconf 1 "Mon 22 Sep 2008"
+.TH editconf 1 "Thu 16 Oct 2008"
 .SH NAME
-editconf
-.B VERSION 4.0_rc1
+editconf - edits the box and writes subgroups 
+
+.B VERSION 4.0
 .SH SYNOPSIS
 \f3editconf\fP
 .BI "-f" " conf.gro "
@@ -24,7 +25,6 @@ editconf
 .BI "-[no]princ" ""
 .BI "-scale" " vector "
 .BI "-density" " real "
-.BI "-[no]vol" ""
 .BI "-[no]pbc" ""
 .BI "-[no]grasp" ""
 .BI "-rvdw" " real "
@@ -145,10 +145,11 @@ but beware that molecules can rotate significantly in a nanosecond.
 
 
 Scaling is applied before any of the other operations are
-performed. Boxes can be scaled to give a certain density (option
+performed. Boxes and coordinates can be scaled to give a certain density (option
 
 .B -density
-). A special feature of the scaling option, when the
+). Note that this may be inaccurate in case a gro
+file is given as input. A special feature of the scaling option, when the
 factor -1 is given in one dimension, one obtains a mirror image,
 mirrored in one of the plains, when one uses -1 in three dimensions
 a point-mirror image is obtained.
@@ -287,9 +288,6 @@ or
 
 .BI "-density"  " real" " 1000  " 
  Density (g/l) of the output box achieved by scaling
-
-.BI "-[no]vol"  "yes   "
- Compute and print volume of the box
 
 .BI "-[no]pbc"  "no    "
  Remove the periodicity (make molecule whole again)

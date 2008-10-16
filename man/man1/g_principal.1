@@ -1,7 +1,8 @@
-.TH g_principal 1 "Mon 22 Sep 2008"
+.TH g_principal 1 "Thu 16 Oct 2008"
 .SH NAME
-g_principal
-.B VERSION 4.0_rc1
+g_principal - calculates axes of inertia for a group of atoms
+
+.B VERSION 4.0
 .SH SYNOPSIS
 \f3g_principal\fP
 .BI "-f" " traj.xtc "
@@ -18,8 +19,9 @@ g_principal
 .BI "-dt" " time "
 .BI "-tu" " enum "
 .BI "-[no]w" ""
+.BI "-[no]foo" ""
 .SH DESCRIPTION
-g_principal calculates the three principal axes of inertion for a group
+g_principal calculates the three principal axes of inertia for a group
 of atoms.
 .SH FILES
 .BI "-f" " traj.xtc" 
@@ -83,4 +85,7 @@ or
 
 .BI "-[no]w"  "no    "
  View output xvg, xpm, eps and pdb files
+
+.BI "-[no]foo"  "no    "
+ Dummy option to avoid empty array
 
