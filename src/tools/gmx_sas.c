@@ -269,10 +269,10 @@ void sas_plot(int nfile,t_filenm fnm[],real solsize,int ndots,
 			   &t,&x,box))==0)
     gmx_fatal(FARGS,"Could not read coordinates from statusfile\n");
 
-  if ((ePBC != epbcXYZ) || (TRICLINIC(box))) {
-    fprintf(stderr,"\n\nWARNING: non-rectangular boxes may give erroneous results or crashes.\n"
-	    "Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
-	    "will certainly crash the analysis. Try -nopbc.\n\n");
+  if ((ePBC != epbcXYZ) || bPBC) {
+    fprintf(stderr,"\n\nWARNING: Analysis based on vacuum simulations (with the possibility of evaporation)\n" 
+	    "will certainly crash the analysis. Turning off pbc.\n\n");
+    bPBC = FALSE;
   }
 
   snew(nx,2);

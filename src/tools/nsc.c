@@ -544,7 +544,7 @@ int nsc_dclm_pbc(rvec *coords, real *radius, int nat,
   real dotarea, area, vol=0.;
   real *xus, *dots=NULL, *atom_area=NULL;
   int  nxbox, nybox, nzbox, nxy, nxyz;
-  real xmin, ymin, zmin, xmax, ymax, zmax, ra2max, d, *pco;
+  real xmin=0, ymin=0, zmin=0, xmax, ymax, zmax, ra2max, d, *pco;
   /* Added DvdS 2006-07-19 */
   t_pbc pbc;
   rvec  ddx,*x=NULL;
