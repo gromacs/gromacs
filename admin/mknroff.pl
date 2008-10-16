@@ -87,6 +87,7 @@ foreach $program ( @PROGRAMS ) {
 	}
 	close PN;
 	close P1;
+	unlink $pn;
 	printf(MAM "  \\\n\t$p1");
       }
     }
