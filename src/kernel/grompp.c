@@ -304,6 +304,7 @@ new_status(char *topfile,char *topppfile,char *confin,
 	molblock[mb].type == sys->molblock[sys->nmolblock-1].type) {
       /* Merge consecutive blocks with the same molecule type */
       sys->molblock[sys->nmolblock-1].nmol += molblock[mb].nmol;
+      sys->natoms += molblock[mb].nmol*sys->molblock[sys->nmolblock-1].natoms_mol;
     } else {
       /* Add a new molblock to the topology */
       molbs = &sys->molblock[sys->nmolblock];
