@@ -153,6 +153,16 @@ typedef struct
     int maxshift; /* The maximum shift for coordinate redistribution in PME */
 } gmx_ddpme_t;
 
+typedef struct
+{
+    real min0;    /* The minimum bottom of this zone                        */
+    real max1;    /* The maximum top of this zone                           */
+    real mch0;    /* The maximum bottom communicaton height for this zone   */
+    real mch1;    /* The maximum top communicaton height for this zone      */
+    real p1_0;    /* The bottom value of the first cell in this zone        */
+    real p1_1;    /* The top value of the first cell in this zone           */
+} gmx_ddzone_t;
+
 typedef struct gmx_domdec_comm {
     /* All arrays are indexed with 0 to dd->ndim (not Cartesian indexing),
      * unless stated otherwise.
@@ -212,14 +222,18 @@ typedef struct gmx_domdec_comm {
     
     /* Orthogonal vectors for triclinic cells, Cartesian index */
     rvec v[DIM][DIM];
-    
+    /* Normal vectors for the cells walls */
+    rvec normal[DIM];
+
     /* The old location of the cell boundaries, to check cg displacements */
     rvec old_cell_x0;
     rvec old_cell_x1;
     
-    /* The cell boundaries of neighboring cells for dynamic load balancing */
-    real **cell_d1;
-    real ***cell_d2;
+    /* The zone limits for DD dimensions 1 and 2 (not 0), determined from
+     * cell boundaries of neighboring cells for dynamic load balancing.
+     */
+    gmx_ddzone_t zone_d1[2];
+    gmx_ddzone_t zone_d2[2][2];
     
     /* The coordinate/force communication setup and indices */
     gmx_domdec_comm_dim_t cd[DIM];
@@ -304,7 +318,11 @@ typedef struct gmx_domdec_comm {
  */
 static const int cell_perm[3][4] = { {0,0,0,0},{1,0,0,0},{3,0,1,2} };
 
-/* The DD cell order */
+/* dd_co and dd_cp3/dd_cp2 are set up such that i zones with non-zero
+ * components see only j zones with that component 0.
+ */
+
+/* The DD zone order */
 static const ivec dd_co[DD_MAXCELL] =
   {{0,0,0},{1,0,0},{1,1,0},{0,1,0},{0,1,1},{0,0,1},{1,0,1},{1,1,1}};
 
@@ -720,46 +738,116 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
     }
 }
 
+static void print_ddzone(FILE *fp,int d,int i,int j,gmx_ddzone_t *zone)
+{
+    fprintf(fp,"zone d0 %d d1 %d d2 %d  min0 %6.3f max1 %6.3f mch0 %6.3f mch1 %6.3f p1_0 %6.3f p1_1 %6.3f\n",
+            d,i,j,
+            zone->min0,zone->max1,
+            zone->mch0,zone->mch0,
+            zone->p1_0,zone->p1_1);
+}
+
+static void dd_sendrecv_ddzone(const gmx_domdec_t *dd,
+                               int ddimind,int direction,
+                               gmx_ddzone_t *buf_s,int n_s,
+                               gmx_ddzone_t *buf_r,int n_r)
+{
+    rvec vbuf_s[5*2],vbuf_r[5*2];
+    int i;
+
+    for(i=0; i<n_s; i++)
+    {
+        vbuf_s[i*2  ][0] = buf_s[i].min0;
+        vbuf_s[i*2  ][1] = buf_s[i].max1;
+        vbuf_s[i*2  ][2] = buf_s[i].mch0;
+        vbuf_s[i*2+1][0] = buf_s[i].mch1;
+        vbuf_s[i*2+1][1] = buf_s[i].p1_0;
+        vbuf_s[i*2+1][2] = buf_s[i].p1_1;
+    }
+
+    dd_sendrecv_rvec(dd, ddimind, direction,
+                     vbuf_s, n_s*2,
+                     vbuf_r, n_r*2);
+
+    for(i=0; i<n_r; i++)
+    {
+        buf_r[i].min0 = vbuf_r[i*2  ][0];
+        buf_r[i].max1 = vbuf_r[i*2  ][1];
+        buf_r[i].mch0 = vbuf_r[i*2  ][2];
+        buf_r[i].mch1 = vbuf_r[i*2+1][0];
+        buf_r[i].p1_0 = vbuf_r[i*2+1][1];
+        buf_r[i].p1_1 = vbuf_r[i*2+1][2];
+    }
+}
+
 static void dd_move_cellx(gmx_domdec_t *dd,matrix box)
 {
-    int  d,d1,dim,pos,i,j,k;
-    rvec buf[8],extr_s[2],extr_r[2];
-    real len;
+    int  d,d1,dim,dim1,pos,buf_size,i,j,k,p,npulse;
+    gmx_ddzone_t *zp,buf_s[5],buf_r[5],buf_e[5];
+    rvec extr_s[2],extr_r[2];
+    rvec dh;
+    real dist_d,c=0,det;
     gmx_domdec_comm_t *comm;
-    
+
     comm = dd->comm;
-    
-    comm->cell_d1[0][0] = comm->cell_f0[1];
-    comm->cell_d1[0][1] = comm->cell_f1[1];
-    if (dd->ndim >= 3)
+
+    for(d=1; d<dd->ndim; d++)
     {
-        comm->cell_d2[0][0][0] = comm->cell_f0[2];
-        comm->cell_d2[0][0][1] = comm->cell_f1[2];
+        dim = dd->dim[d];
+        zp = (d == 1) ? &comm->zone_d1[0] : &comm->zone_d2[0][0];
+        zp->min0 = dd->cell_x0[dim];
+        zp->max1 = dd->cell_x1[dim];
+        zp->mch0 = dd->cell_x0[dim];
+        zp->mch1 = dd->cell_x1[dim];
+        zp->p1_0 = dd->cell_x0[dim];
+        zp->p1_1 = dd->cell_x1[dim];
     }
     
-    pos = 0;
     for(d=dd->ndim-2; d>=0; d--)
     {
-        dim  = dd->dim[d];
-        /* To use less code we use an rvec to store two reals */
-        buf[pos][0] = comm->cell_f0[d+1];
-        buf[pos][1] = comm->cell_f1[d+1];
-        pos++;
+        dim   = dd->dim[d];
+
+        /* Use an rvec to store two reals */
         extr_s[d][0] = comm->cell_f0[d+1];
         extr_s[d][1] = comm->cell_f1[d+1];
-        
-        if (d == 0 && dd->ndim >= 3)
+        extr_s[d][2] = 0;
+
+        pos = 0;
+        /* Store the extremes in the backward sending buffer,
+         * so the get updated separately from the forward communication.
+         */
+        for(d1=d; d1<dd->ndim-1; d1++)
         {
-            buf[pos][0] = extr_s[1][0];
-            buf[pos][1] = extr_s[1][1];
+            /* We invert the order to be able to use the same loop for buf_e */
+            buf_s[pos].min0 = extr_s[d1][1];
+            buf_s[pos].max1 = extr_s[d1][0];
+            buf_s[pos].mch0 = 0;
+            buf_s[pos].mch1 = 0;
+            /* Store the cell corner of the dimension we communicate along */
+            buf_s[pos].p1_0 = dd->cell_x0[dim];
+            buf_s[pos].p1_1 = 0;
             pos++;
         }
-        
-        if (dd->nc[dim] > 2)
+
+        buf_s[pos] = (dd->ndim == 2) ? comm->zone_d1[0] : comm->zone_d2[0][0];
+        pos++;
+
+        if (dd->ndim == 3 && d == 0)
         {
-            /* We only need to communicate the extremes
-             * in the forward direction
-             */
+            buf_s[pos] = comm->zone_d2[0][1];
+            pos++;
+            buf_s[pos] = comm->zone_d1[0];
+            pos++;
+        }
+
+        /* We only need to communicate the extremes
+         * in the forward direction
+         */
+        npulse = comm->cd[d].np;
+        /* Take the minimum to avoid double communication */
+        for(p=0; p<min(npulse,dd->nc[dim]-1-npulse); p++)
+        {
+            /* Communicate the extremes forward */
             dd_sendrecv_rvec(dd, d, dddirForward,
                              extr_s+d, dd->ndim-d-1,
                              extr_r+d, dd->ndim-d-1);
@@ -769,64 +857,140 @@ static void dd_move_cellx(gmx_domdec_t *dd,matrix box)
                 extr_s[d1][1] = min(extr_s[d1][1],extr_r[d1][1]);
             }
         }
-        
-        dd_sendrecv_rvec(dd, d, dddirBackward, buf, pos, buf+pos, pos);
-        
-        if (d == 1 || (d == 0 && dd->ndim == 3))
+
+        buf_size = pos;
+        for(p=0; p<npulse; p++)
         {
-            for(i=d; i<2; i++)
+            /* Communicate all the zone information backward */
+            dd_sendrecv_ddzone(dd, d, dddirBackward,
+                               buf_s, buf_size,
+                               buf_r, buf_size);
+
+            clear_rvec(dh);
+            if (p > 0)
             {
-                comm->cell_d2[1-d][i][0] = buf[pos][0];
-                comm->cell_d2[1-d][i][1] = buf[pos][1];
-                pos++;
-                extr_s[1][0] = max(extr_s[1][0],comm->cell_d2[1-d][i][0]);
-                extr_s[1][1] = min(extr_s[1][1],comm->cell_d2[1-d][i][1]);
+                for(d1=d+1; d1<dd->ndim; d1++)
+                {
+                    /* Determine the decrease of maximum required
+                     * communication height along d1 due to the distance along d,
+                     * this avoids a lot of useless atom communication.
+                     */
+                    dist_d = dd->cell_x1[dim] - buf_r[0].p1_0;
+
+                    if (dd->tric_dir[dim])
+                    {
+                        /* c is the off-diagonal coupling between the cell planes
+                         * along directions d and d1.
+                         */
+                        c = comm->v[dim][dd->dim[d1]][dim];
+                    }
+                    else
+                    {
+                        c = 0;
+                    }
+                    det = (1 + c*c)*comm->cutoff*comm->cutoff - dist_d*dist_d;
+                    if (det > 0)
+                    {
+                        dh[d1] = comm->cutoff - (c*dist_d + sqrt(det))/(1 + c*c);
+                    }
+                    else
+                    {
+                        /* A negative value signals out of range */
+                        dh[d1] = -1;
+                    }
+                }
             }
-        }
-        if (d == 0)
-        {
-            comm->cell_d1[1][0] = buf[pos][0];
-            comm->cell_d1[1][1] = buf[pos][1];
-            pos++;
-            extr_s[0][0] = max(extr_s[0][0],comm->cell_d1[1][0]);
-            extr_s[0][1] = min(extr_s[0][1],comm->cell_d1[1][1]);
-        }
-        if (d == 0 && dd->ndim >= 3)
-        {
-            extr_s[1][0] = max(extr_s[1][0],buf[pos][0]);
-            extr_s[1][1] = min(extr_s[1][1],buf[pos][1]);
-            pos++;
+
+            /* Accumulate the extremes over all pulses */
+            for(i=0; i<buf_size; i++)
+            {
+                if (p == 0)
+                {
+                    buf_e[i] = buf_r[i];
+                }
+                else
+                {
+                    buf_e[i].min0 = min(buf_e[i].min0,buf_r[i].min0);
+                    buf_e[i].max1 = max(buf_e[i].max1,buf_r[i].max1);
+
+                    if (dd->ndim == 3 && d == 0 && i == buf_size - 1)
+                    {
+                        d1 = 1;
+                    }
+                    else
+                    {
+                        d1 = d + 1;
+                    }
+                    if (dh[d1] >= 0)
+                    {
+                        buf_e[i].mch0 = max(buf_e[i].mch0,buf_r[i].mch0-dh[d1]);
+                        buf_e[i].mch1 = max(buf_e[i].mch1,buf_r[i].mch1-dh[d1]);
+                    }
+                }
+                /* Copy the received buffer to the send buffer,
+                 * to pass the data through with the next pulse.
+                 */
+                buf_s[i] = buf_r[i];
+            }
+            if (p == npulse - 1)
+            {
+                /* Store the extremes */ 
+                pos = 0;
+
+                for(d1=d; d1<dd->ndim-1; d1++)
+                {
+                    extr_s[d1][1] = min(extr_s[d1][1],buf_e[pos].min0);
+                    extr_s[d1][0] = max(extr_s[d1][0],buf_e[pos].max1);
+                    pos++;
+                }
+
+                if (d == 1 || (d == 0 && dd->ndim == 3))
+                {
+                    for(i=d; i<2; i++)
+                    {
+                        comm->zone_d2[1-d][i] = buf_e[pos];
+                        pos++;
+                    }
+                }
+                if (d == 0)
+                {
+                    comm->zone_d1[1] = buf_e[pos];
+                    pos++;
+                }
+            }
         }
     }
     
     if (dd->ndim >= 2)
     {
         dim = dd->dim[1];
-        len = box[dim][dim];
         for(i=0; i<2; i++)
         {
-            for(k=0; k<2; k++)
+            if (debug)
             {
-                comm->cell_d1[i][k] *= len;
+                print_ddzone(debug,1,i,0,&comm->zone_d1[i]);
             }
-            dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],comm->cell_d1[i][0]);
-            dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],comm->cell_d1[i][1]);
+            dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],
+                                      comm->zone_d1[i].min0);
+            dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],
+                                      comm->zone_d1[i].max1);
         }
     }
     if (dd->ndim >= 3)
     {
         dim = dd->dim[2];
-        len = box[dim][dim];
         for(i=0; i<2; i++)
         {
             for(j=0; j<2; j++)
             {
-                for(k=0; k<2; k++)
+                if (debug)
                 {
-                    comm->cell_d2[i][j][k] *= len;
+                    print_ddzone(debug,2,i,j,&comm->zone_d2[i][j]);
                 }
-                dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],comm->cell_d2[i][j][0]);
-                dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],comm->cell_d2[i][j][1]);
+                dd->cell_ns_x0[dim] = min(dd->cell_ns_x0[dim],
+                                          comm->zone_d2[i][j].min0);
+                dd->cell_ns_x1[dim] = max(dd->cell_ns_x1[dim],
+                                          comm->zone_d2[i][j].max1);
             }
         }
     }
@@ -834,6 +998,11 @@ static void dd_move_cellx(gmx_domdec_t *dd,matrix box)
     {
         comm->cell_f_max0[d] = extr_s[d-1][0];
         comm->cell_f_min1[d] = extr_s[d-1][1];
+        if (debug)
+        {
+            fprintf(debug,"Cell fraction d %d, max0 %f, min1 %f\n",
+                    d,comm->cell_f_max0[d],comm->cell_f_min1[d]);
+        }
     }
 }
 
@@ -2167,9 +2336,10 @@ static void check_grid_jump(int step,gmx_domdec_t *dd,matrix box)
 void dd_set_tric_dir(gmx_domdec_t *dd,matrix box)
 {
     int  d,i,j;
-    rvec *v;
-    real dep,skew_fac2;
+    rvec *v,*normal;
+    real dep,inv_skew_fac2;
     
+    normal = dd->comm->normal;
     for(d=0; d<DIM; d++)
     {
         dd->tric_dir[d] = 0;
@@ -2195,7 +2365,7 @@ void dd_set_tric_dir(gmx_domdec_t *dd,matrix box)
          */
         if (dd->tric_dir[d])
         {
-            skew_fac2 = 1;
+            inv_skew_fac2 = 1;
             v = dd->comm->v[d];
             if (d == XX || d == YY)
             {
@@ -2205,7 +2375,7 @@ void dd_set_tric_dir(gmx_domdec_t *dd,matrix box)
                 {
                     v[d+1][i] = 0;
                 }
-                skew_fac2 -= sqr(v[d+1][d]);
+                inv_skew_fac2 += sqr(v[d+1][d]);
                 if (d == XX)
                 {
                     /* Normalize such that the "diagonal" is 1 */
@@ -2222,25 +2392,46 @@ void dd_set_tric_dir(gmx_domdec_t *dd,matrix box)
                     {
                         v[d+2][i] -= dep*v[d+1][i];
                     }
-                    skew_fac2 -= sqr(v[d+2][d]);
+                    inv_skew_fac2 += sqr(v[d+2][d]);
+                    
+                    cprod(v[d+1],v[d+2],normal[d]);
+                }
+                else
+                {
+                    /* cross product with (1,0,0) */
+                    normal[d][XX] =  0;
+                    normal[d][YY] =  v[d+1][ZZ];
+                    normal[d][ZZ] = -v[d+1][YY];
                 }
                 if (debug)
                 {
-                    fprintf(debug,"box[%d]  %.3f %.3f %.3f",
+                    fprintf(debug,"box[%d]  %.3f %.3f %.3f\n",
                             d,box[d][XX],box[d][YY],box[d][ZZ]);
                     for(i=d+1; i<DIM; i++)
                     {
-                        fprintf(debug,"  v[%d] %.3f %.3f %.3f",
+                        fprintf(debug,"  v[%d]  %.3f %.3f %.3f\n",
                                 i,v[i][XX],v[i][YY],v[i][ZZ]);
                     }
-                    fprintf(debug,"\n");
                 }
             }
-            dd->skew_fac[d] = sqrt(skew_fac2);
+            dd->skew_fac[d] = 1.0/sqrt(inv_skew_fac2);
+            /* Set the normal vector length to skew_fac */
+            dep = dd->skew_fac[d]/norm(normal[d]);
+            svmul(dep,normal[d],normal[d]);
+
+            if (debug)
+            {
+                fprintf(debug,"skew_fac[%d] = %f\n",d,dd->skew_fac[d]);
+                fprintf(debug,"normal[%d]  %.3f %.3f %.3f\n",
+                        d,normal[d][XX],normal[d][YY],normal[d][ZZ]);
+            }
         }
         else
         {
             dd->skew_fac[d] = 1;
+            
+            clear_rvec(normal[d]);
+            normal[d][d] = 1;
         }
     }
 }
@@ -5737,30 +5928,6 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                 comm->bBondComm,comm->cellsize_limit);
     }
     
-    if (comm->bRecordLoad)
-    {
-        if (dd->ndim > 1)
-        {
-            snew(comm->cell_d1,2);
-            for(i=0; i<2; i++)
-            {
-                snew(comm->cell_d1[i],2);
-            }
-        }
-        if (dd->ndim > 2)
-        {
-            snew(comm->cell_d2,2);
-            for(i=0; i<2; i++)
-            {
-                snew(comm->cell_d2[i],2);
-                for(j=0; j<2; j++)
-                {
-                    snew(comm->cell_d2[i][j],2);
-                }
-            }
-        }
-    }
-    
     if (DDMASTER(dd))
     {
         check_dd_restrictions(dd,ir);
@@ -6261,19 +6428,20 @@ static void setup_dd_communication(FILE *fplog,int step,
                                    gmx_domdec_t *dd,int *gcgs_index,
                                    matrix box,t_forcerec *fr)
 {
-    int dim_ind,dim,dim0,dim1=-1,p,nat_tot,ncell,cell,celli,cg0,cg1;
+    int dim_ind,dim,dim0,dim1=-1,dim2=-1,dimd,p,nat_tot,ncell,cell,celli,cg0,cg1;
     int c,i,j,cg,cg_gl,nrcg;
     int *ncg_cell,pos_cg,*index_gl,*cgindex,*recv_i;
     gmx_domdec_comm_t *comm;
     gmx_domdec_comm_dim_t *cd;
     gmx_domdec_ind_t *ind;
     bool bBondComm,bDist2B,bDistMB,bDistMB_pulse,bDistBonded,bScrew;
-    real r_mb,r_comm2,r_scomm2,r_bcomm2,r,r2,rb2,inv_ncg,tric_sh;
+    real r_mb,r_comm2,r_scomm2,r_bcomm2,r,r_0,r_1,r2,rb2,r2inc,inv_ncg,tric_sh;
+    rvec rb,rn;
     real corner[DIM][4],corner_round_0=0,corner_round_1[4];
-    real bcorner[DIM][4],bcorner_round_1[4];
+    real bcorner[DIM],bcorner_round_1=0;
     ivec tric_dist;
-    rvec *cg_cm,*v_d,*v_0=NULL,*v_1=NULL,*recv_vr;
-    real skew_fac2_d,skew_fac2_0=0,skew_fac2_1=0;
+    rvec *cg_cm,*normal,*v_d,*v_0=NULL,*v_1=NULL,*recv_vr;
+    real skew_fac2_d,skew_fac2_0=0,skew_fac2_1=0,skew_fac_01;
     int  nsend,nat;
     
     if (debug)
@@ -6320,7 +6488,7 @@ static void setup_dd_communication(FILE *fplog,int step,
     corner[0][0] = dd->cell_x0[dim0];
     if (bDistMB)
     {
-        bcorner[0][0] = corner[0][0];
+        bcorner[0] = corner[0][0];
     }
     if (dd->ndim >= 2)
     {
@@ -6331,12 +6499,11 @@ static void setup_dd_communication(FILE *fplog,int step,
         corner[1][1] = dd->cell_x0[dim1];
         if (dd->bGridJump)
         {
-            corner[1][1] = max(dd->cell_x0[dim1],comm->cell_d1[1][0]);
+            corner[1][1] = max(dd->cell_x0[dim1],comm->zone_d1[1].mch0);
             if (bDistMB)
             {
                 /* For the multi-body distance we need the maximum */
-                bcorner[1][0] = corner[1][1];
-                bcorner[1][1] = corner[1][1];
+                bcorner[1] = max(dd->cell_x0[dim1],comm->zone_d1[1].p1_0);
             }
         }
         /* Set the upper-right corner for rounding */
@@ -6344,9 +6511,10 @@ static void setup_dd_communication(FILE *fplog,int step,
         
         if (dd->ndim >= 3)
         {
+            dim2 = dd->dim[2];
             for(j=0; j<4; j++)
             {
-                corner[2][j] = dd->cell_x0[dd->dim[2]];
+                corner[2][j] = dd->cell_x0[dim2];
             }
             if (dd->bGridJump)
             {
@@ -6359,16 +6527,21 @@ static void setup_dd_communication(FILE *fplog,int step,
                         {
                             corner[2][j-4] =
                                 max(corner[2][j-4],
-                                    comm->cell_d2[dd->shift[i][dim0]][dd->shift[i][dim1]][0]);
+                                    comm->zone_d2[dd->shift[i][dim0]][dd->shift[i][dim1]].mch0);
                         }
                     }
                 }
                 if (bDistMB)
                 {
                     /* For the multi-body distance we need the maximum */
-                    for(j=0; j<4; j++)
+                    bcorner[2] = dd->cell_x0[dim2];
+                    for(i=0; i<2; i++)
                     {
-                        bcorner[2][j] = corner[2][1];
+                        for(j=0; j<2; j++)
+                        {
+                            bcorner[2] = max(bcorner[2],
+                                             comm->zone_d2[i][j].p1_0);
+                        }
                     }
                 }
             }
@@ -6381,22 +6554,37 @@ static void setup_dd_communication(FILE *fplog,int step,
             corner_round_1[3] = dd->cell_x1[dim1];
             if (dd->bGridJump)
             {
-                corner_round_1[0] = max(dd->cell_x1[dim1],comm->cell_d1[1][1]);
+                corner_round_1[0] = max(dd->cell_x1[dim1],
+                                        comm->zone_d1[1].mch1);
                 if (bDistMB)
                 {
                     /* For the multi-body distance we need the maximum */
-                    bcorner_round_1[0] = corner_round_1[0];
-                    bcorner_round_1[3] = corner_round_1[0];
+                    bcorner_round_1 = max(dd->cell_x1[dim1],
+                                          comm->zone_d1[1].p1_1);
                 }
             }
         }
     }
     
     /* Triclinic stuff */
+    normal = comm->normal;
+    skew_fac_01 = 0;
     if (dd->ndim >= 2)
     {
         v_0 = comm->v[dim0];
         skew_fac2_0 = sqr(dd->skew_fac[dim0]);
+        if (dd->tric_dir[dim0] && dd->tric_dir[dim1])
+        {
+            /* Determine the coupling coefficient for the distances
+             * to the cell planes along dim0 and dim1 through dim2.
+             * This is required for correct rounding.
+             */
+            skew_fac_01 = comm->v[dim0][dim1+1][dim0]*comm->v[dim1][dim1+1][dim1];
+            if (debug)
+            {
+                fprintf(debug,"\nskew_fac_01 %f\n",skew_fac_01);
+            }
+        }
     }
     if (dd->ndim >= 3)
     {
@@ -6470,7 +6658,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                         }
                         if (bDistMB_pulse)
                         {
-                            r = cg_cm[cg][dim] - bcorner[dim_ind][cell];
+                            r = cg_cm[cg][dim] - bcorner[dim_ind];
                             if (r > 0)
                             {
                                 rb2 += r*r;
@@ -6498,7 +6686,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             }
                             if (bDistMB_pulse)
                             {
-                                r = cg_cm[cg][dim1] - bcorner_round_1[cell];
+                                r = cg_cm[cg][dim1] - bcorner_round_1;
                                 if (r > 0)
                                 {
                                     rb2 += r*r;
@@ -6509,64 +6697,122 @@ static void setup_dd_communication(FILE *fplog,int step,
                     else
                     {
                         /* Triclinic direction, more complicated */
-                        r = cg_cm[cg][dim] - corner[dim_ind][cell];
-                        tric_sh = 0;
-                        for(i=dim+1; i<DIM; i++)
-                        {
-                            tric_sh -= cg_cm[cg][i]*v_d[i][dim];
-                        }
-                        r += tric_sh;
-                        if (r > 0)
-                        {
-                            r2 += r*r*skew_fac2_d;
-                        }
-                        if (bDistMB_pulse)
-                        {
-                            r = cg_cm[cg][dim] - bcorner[dim_ind][cell] + tric_sh;
-                            if (r > 0)
-                            {
-                                rb2 += r*r*skew_fac2_d;
-                            }
-                        }
+                        clear_rvec(rn);
+                        clear_rvec(rb);
                         /* Rounding, conservative as the skew_fac multiplication
                          * will slightly underestimate the distance.
                          */
                         if (dim_ind >= 1 && (celli == 1 || celli == 2))
                         {
-                            r = cg_cm[cg][dim0] - corner_round_0;
+                            rn[dim0] = cg_cm[cg][dim0] - corner_round_0;
                             for(i=dim0+1; i<DIM; i++)
                             {
-                                r -= cg_cm[cg][i]*v_0[i][dim0];
+                                rn[dim0] -= cg_cm[cg][i]*v_0[i][dim0];
                             }
-                            r2 += r*r*skew_fac2_0;
+                            r2 = rn[dim0]*rn[dim0]*skew_fac2_0;
                             if (bDistMB_pulse)
                             {
-                                rb2 += r*r*skew_fac2_0;
+                                rb[dim0] = rn[dim0];
+                                rb2 = r2;
+                            }
+                            /* Take care that the cell planes along dim0 might not
+                             * be orthogonal to those along dim1 and dim2.
+                             */
+                            for(i=1; i<=dim_ind; i++)
+                            {
+                                dimd = dd->dim[i];
+                                if (normal[dim0][dimd] > 0)
+                                {
+                                    rn[dimd] -= rn[dim0]*normal[dim0][dimd];
+                                    if (bDistMB_pulse)
+                                    {
+                                        rb[dimd] -= rb[dim0]*normal[dim0][dimd];
+                                    }
+                                }
                             }
                         }
                         if (dim_ind == 2 && (celli == 2 || celli == 3))
                         {
-                            r = cg_cm[cg][dim1] - corner_round_1[cell];
+                            rn[dim1] += cg_cm[cg][dim1] - corner_round_1[cell];
                             tric_sh = 0;
                             for(i=dim1+1; i<DIM; i++)
                             {
                                 tric_sh -= cg_cm[cg][i]*v_1[i][dim1];
                             }
-                            r += tric_sh;
-                            if (r > 0)
+                            rn[dim1] += tric_sh;
+                            if (rn[dim1] > 0)
                             {
-                                r2 += r*r*skew_fac2_1;
+                                r2 += rn[dim1]*rn[dim1]*skew_fac2_1;
+                                /* Take care of coupling of the distances
+                                 * to the planes along dim0 and dim1 through dim2.
+                                 */
+                                r2 -= rn[dim0]*rn[dim1]*skew_fac_01;
+                                /* Take care that the cell planes along dim1
+                                 * might not be orthogonal to that along dim2.
+                                 */
+                                if (normal[dim1][dim2] > 0)
+                                {
+                                    rn[dim2] -= rn[dim1]*normal[dim1][dim2];
+                                }
                             }
                             if (bDistMB_pulse)
                             {
-                                r = cg_cm[cg][dim1] - bcorner_round_1[cell] + tric_sh;
-                                if (r > 0)
+                                rb[dim1] +=
+                                    cg_cm[cg][dim1] - bcorner_round_1 + tric_sh;
+                                if (rb[dim1] > 0)
                                 {
-                                    rb2 += r*r*skew_fac2_1;
+                                    rb2 += rb[dim1]*rb[dim1]*skew_fac2_1;
+                                    /* Take care of coupling of the distances
+                                     * to the planes along dim0 and dim1 through dim2.
+                                     */
+                                    rb2 -= rb[dim0]*rb[dim1]*skew_fac_01;
+                                    /* Take care that the cell planes along dim1
+                                     * might not be orthogonal to that along dim2.
+                                     */
+                                    if (normal[dim1][dim2] > 0)
+                                    {
+                                        rb[dim2] -= rb[dim1]*normal[dim1][dim2];
+                                    }
+                                }
+                            }
+                        }
+                        /* The distance along the communication direction */
+                        rn[dim] += cg_cm[cg][dim] - corner[dim_ind][cell];
+                        tric_sh = 0;
+                        for(i=dim+1; i<DIM; i++)
+                        {
+                            tric_sh -= cg_cm[cg][i]*v_d[i][dim];
+                        }
+                        rn[dim] += tric_sh;
+                        if (rn[dim] > 0)
+                        {
+                            r2 += rn[dim]*rn[dim]*skew_fac2_d;
+                            /* Take care of coupling of the distances
+                             * to the planes along dim0 and dim1 through dim2.
+                             */
+                            if (dim_ind == 1 && celli == 1)
+                            {
+                                r2 -= rn[dim0]*rn[dim]*skew_fac_01;
+                            }
+                        }
+                        if (bDistMB_pulse)
+                        {
+                            clear_rvec(rb);
+                            rb[dim] += cg_cm[cg][dim] - bcorner[dim_ind] + tric_sh;
+                            if (rb[dim] > 0)
+                            {
+                                rb2 += rb[dim]*rb[dim]*skew_fac2_d;
+                                /* Take care of coupling of the distances
+                                 * to the planes along dim0 and dim1 through dim2.
+                                 */
+                                if (dim_ind == 1 && celli == 1)
+                                {
+                                    rb2 -= rb[dim0]*rb[dim]*skew_fac_01;
                                 }
                             }
                         }
                     }
+                    
                     if (r2 < r_comm2 ||
                         (bDistBonded &&
                          ((bDistMB && rb2 < r_bcomm2) ||
