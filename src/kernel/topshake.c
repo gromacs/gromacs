@@ -56,8 +56,20 @@ static void copy_bond (t_params *pr, int to, int from)
  * does no allocing or freeing of memory
  */
 {
-  memcpy((char*) &(pr->param[to]),(char*) &(pr->param[from]),
-	 (size_t)sizeof(pr->param[from]));
+  /*memcpy((char*) &(pr->param[to]),(char*) &(pr->param[from]),
+    (size_t)sizeof(pr->param[from]));*/
+  int i;
+  
+  if (to != from) {
+    range_check(to,0,pr->nr);
+    range_check(from,0,pr->nr);
+    for(i=0; (i<MAXATOMLIST); i++)
+      pr->param[to].a[i] = pr->param[from].a[i];
+    for(i=0; (i<MAXFORCEPARAM); i++)
+      pr->param[to].c[i] = pr->param[from].c[i];
+    for(i=0; (i<MAXSLEN); i++)
+      pr->param[to].s[i] = pr->param[from].s[i];
+  }
 }
 
 static int count_hydrogens (char ***atomname, int nra, atom_id a[])
