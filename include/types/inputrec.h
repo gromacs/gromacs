@@ -108,6 +108,7 @@ typedef struct {
   real       invtm;    /* inverse total mass of the group: 1/wscale sum w m */
   dvec       x;        /* center of mass before update */
   dvec       xp;       /* center of mass after update before constraining */
+  dvec       dr;       /* The distance from the reference group */
   double     f_scal;   /* Scalar force for directional pulling */
   dvec       f;        /* force due to the pulling/constraining */
 } t_pullgrp; 
