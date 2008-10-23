@@ -69,7 +69,7 @@ static void pull_print_x(FILE *out,t_pull *pull, real t)
     if (pull->grp[g].nat > 0) {
       for(m=0; m<DIM; m++) {
 	if (pull->dim[m]) {
-	  fprintf(out,"\t%f",pull->grp[g].x[m]);
+	  fprintf(out,"\t%f",g == 0 ? pull->grp[g].x[m] : pull->grp[g].dr[m]);
 	}
       }
     }
@@ -110,41 +110,40 @@ static FILE *open_pull_out(char *fn,t_pull *pull,bool bCoord, unsigned long Flag
   int  nsets,g,m;
   char **setname,buf[10];
   
-  if(Flags & MD_APPENDFILES)
-  {
-	  fp = gmx_fio_fopen(fn,"a");
-  }
-  else
-  {
-	  if (bCoord)
-		  fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)");
-	  else
-		  fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol)");
-	
-	  snew(setname,(1+pull->ngrp)*DIM);
-	  nsets = 0;
-	  for(g=0; g<1+pull->ngrp; g++) {
-		  if (pull->grp[g].nat > 0 && (g > 0 || bCoord)) {
-			  if (bCoord || pull->eGeom == epullgPOS) {
-				  for(m=0; m<DIM; m++) {
-					  sprintf(buf,"%d %c",g,'X'+m);
-					  setname[nsets] = strdup(buf);
-					  nsets++;
-				  }
-			  } else {
-				  sprintf(buf,"%d",g);
-				  setname[nsets] = strdup(buf);
-				  nsets++;
-			  }
-		  }
+  if(Flags & MD_APPENDFILES) {
+    fp = gmx_fio_fopen(fn,"a");
+  } else {
+    if (bCoord)
+      fp = xvgropen(fn,"Pull COM",  "Time (ps)","Position (nm)");
+    else
+      fp = xvgropen(fn,"Pull force","Time (ps)","Force (kJ/mol/nm)");
+    
+    snew(setname,(1+pull->ngrp)*DIM);
+    nsets = 0;
+    for(g=0; g<1+pull->ngrp; g++) {
+      if (pull->grp[g].nat > 0 && (g > 0 || bCoord)) {
+	if (bCoord || pull->eGeom == epullgPOS) {
+	  for(m=0; m<DIM; m++) {
+	    if (pull->dim[m]) {
+	      sprintf(buf,"%d %s%c",g,(bCoord && g > 0)?"d":"",'X'+m);
+	      setname[nsets] = strdup(buf);
+	      nsets++;
+	    }
 	  }
-	  if (bCoord || nsets > 1)
-		  xvgr_legend(fp,nsets,setname);
-	  for(g=0; g<nsets; g++)
-		  sfree(setname[g]);
-	  sfree(setname);
+	} else {
+	  sprintf(buf,"%d",g);
+	  setname[nsets] = strdup(buf);
+	  nsets++;
+	}
+      }
+    }
+    if (bCoord || nsets > 1)
+      xvgr_legend(fp,nsets,setname);
+    for(g=0; g<nsets; g++)
+      sfree(setname[g]);
+    sfree(setname);
   }
-	
+  
   return fp;
 }
 
@@ -197,7 +196,7 @@ void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
 {
   static bool bWarned=FALSE;
   t_pullgrp *pref,*pgrp;
-  int       ndim,m;
+  int       m;
   dvec      ref;
   double    drs,inpr;
   
@@ -213,11 +212,9 @@ void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
     dr[m] *= pull->dim[m];
   
   if (pull->eGeom == epullgPOS) {
-    ndim = 3;
-    for(m=0; m<ndim; m++)
+    for(m=0; m<DIM; m++)
       ref[m] = pgrp->init[m] + pgrp->rate*t*pgrp->vec[m];
   } else {
-    ndim = 1;
     ref[0] = pgrp->init[0] + pgrp->rate*t;
   }
   
@@ -461,28 +458,28 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     for(g=1; g<1+pull->ngrp; g++) {
       pgrp = &pull->grp[g];
 
-      pbc_dx_d(pbc, rinew[g], rjnew[PULL_CYL(pull) ? g : 0], unc_ij);
+      pbc_dx_d(pbc, rinew[g], rjnew[PULL_CYL(pull) ? g : 0], pgrp->dr);
       for(m=0; m<DIM; m++)
-        unc_ij[m] *= pull->dim[m];
+        pgrp->dr[m] *= pull->dim[m];
 
       switch (pull->eGeom) {
       case epullgDIST:
-	bConverged = fabs(dnorm(unc_ij) - ref[0]) < pull->constr_tol;
+	bConverged = fabs(dnorm(pgrp->dr) - ref[0]) < pull->constr_tol;
 	break;
       case epullgDIR:
       case epullgCYL:
 	for(m=0; m<DIM; m++)
 	  vec[m] = pgrp->vec[m];
-	inpr = diprod(unc_ij,vec);
-	dsvmul(inpr,vec,unc_ij);
+	inpr = diprod(pgrp->dr,vec);
+	dsvmul(inpr,vec,pgrp->dr);
 	bConverged =
-	  fabs(diprod(unc_ij,vec) - ref[0]) < pull->constr_tol;
+	  fabs(diprod(pgrp->dr,vec) - ref[0]) < pull->constr_tol;
 	break;
       case epullgPOS:
 	bConverged = TRUE;
 	for(m=0; m<DIM; m++) {
 	  if (pull->dim[m] && 
-	      fabs(unc_ij[m] - pgrp->vec[m]) >= pull->constr_tol)
+	      fabs(pgrp->dr[m] - pgrp->vec[m]) >= pull->constr_tol)
 	    bConverged = FALSE;
 	}
 	break;
@@ -493,10 +490,10 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 	if (!bConverged)
 	  fprintf(debug,"NOT CONVERGED YET: Group %d:"
 		  "d_ref = %f %f %f, current d = %f\n",
-		  g,ref[0],ref[1],ref[2],dnorm(unc_ij));
+		  g,ref[0],ref[1],ref[2],dnorm(pgrp->dr));
       } /* END DEBUG */
     }
-
+     
     niter++;
     /* if after all constraints are dealt with and bConverged is still TRUE
        we're finished, if not we do another iteration */
@@ -609,7 +606,7 @@ static void do_pull_pot(int ePull,
 			real *V, tensor vir, real *dVdl)
 {
   int       g,j,m;
-  dvec      dr,dev;
+  dvec      dev;
   double    ndr,invdr;
   real      k,dkdl;
   t_pullgrp *pgrp;
@@ -619,14 +616,14 @@ static void do_pull_pot(int ePull,
   *dVdl = 0;
   for(g=1; g<1+pull->ngrp; g++) {
     pgrp = &pull->grp[g];
-    get_pullgrp_distance(pull,pbc,g,t,dr,dev);
+    get_pullgrp_distance(pull,pbc,g,t,pgrp->dr,dev);
     
     k    = (1.0 - lambda)*pgrp->k + lambda*pgrp->kB;
     dkdl = pgrp->kB - pgrp->k;
 
     switch (pull->eGeom) {
     case epullgDIST:
-      ndr   = dnorm(dr);
+      ndr   = dnorm(pgrp->dr);
       invdr = 1/ndr;
       if (ePull == epullUMBRELLA) {
 	pgrp->f_scal  =       -k*dev[0];
@@ -638,7 +635,7 @@ static void do_pull_pot(int ePull,
 	*dVdl        += dkdl*ndr;
       }
       for(m=0; m<DIM; m++)
-	pgrp->f[m]    = pgrp->f_scal*dr[m]*invdr;
+	pgrp->f[m]    = pgrp->f_scal*pgrp->dr[m]*invdr;
       break;
     case epullgDIR:
     case epullgCYL:
@@ -649,7 +646,7 @@ static void do_pull_pot(int ePull,
       } else {
 	ndr = 0;
 	for(m=0; m<DIM; m++) {
-	  ndr += pgrp->vec[m]*dr[m];
+	  ndr += pgrp->vec[m]*pgrp->dr[m];
 	}
 	pgrp->f_scal  =   -k;
 	*V           +=    k*ndr;
@@ -666,8 +663,8 @@ static void do_pull_pot(int ePull,
 	  *dVdl      += 0.5*dkdl*sqr(dev[m]);
 	} else {
       	  pgrp->f[m]  =   -k*pull->dim[m];
-	  *V         +=    k*dr[m]*pull->dim[m];
-	  *dVdl      += dkdl*dr[m]*pull->dim[m];
+	  *V         +=    k*pgrp->dr[m]*pull->dim[m];
+	  *dVdl      += dkdl*pgrp->dr[m]*pull->dim[m];
 	}
       }
       break;
@@ -677,7 +674,7 @@ static void do_pull_pot(int ePull,
       /* Add the pull contribution to the virial */
       for(j=0; j<DIM; j++)
 	for(m=0;m<DIM;m++)
-	  vir[j][m] += 0.5*pgrp->f[j]*dr[m];
+	  vir[j][m] += 0.5*pgrp->f[j]*pgrp->dr[m];
     }
   }
 }
@@ -745,7 +742,7 @@ void dd_make_local_pull_groups(gmx_domdec_t *dd,t_pull *pull,t_mdatoms *md)
 {
   int g;
 
-  if (pull->eGeom != epullgPOS)
+  if (pull->grp[0].nat > 0)
     dd_make_local_pull_group(dd,&pull->grp[0],md);
   for(g=1; g<1+pull->ngrp; g++)
     dd_make_local_pull_group(dd,&pull->grp[g],md);
