@@ -197,32 +197,26 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
   char *ptr,pulldim1[STRLEN];
   t_pullgrp *pgrp;
 
-  if (pull->eGeom == epullgDIST || pull->eGeom == epullgCYL) {
-    pull->dim[0] = 1;
-    pull->dim[1] = 1;
-    pull->dim[2] = 1;
-  } else {
-    ptr = pulldim;
-    i = 0;
-    for(d=0; d<DIM; d++) {
-      if (sscanf(ptr,"%s%n",pulldim1,&nchar) != 1)
-	gmx_fatal(FARGS,"Less than 3 pull dimensions given in pull_dim: '%s'",
-		  pulldim);
-      
-      if (strncasecmp(pulldim1,"N",1) == 0) {
-	pull->dim[d] = 0;
-      } else if (strncasecmp(pulldim1,"Y",1) == 0) {
-	pull->dim[d] = 1;
-	i++;
-      } else {
-	gmx_fatal(FARGS,"Please use Y(ES) or N(O) for pull_dim only (not %s)",
-		  pulldim1);
-      }
-      ptr += nchar;
+  ptr = pulldim;
+  i = 0;
+  for(d=0; d<DIM; d++) {
+    if (sscanf(ptr,"%s%n",pulldim1,&nchar) != 1)
+      gmx_fatal(FARGS,"Less than 3 pull dimensions given in pull_dim: '%s'",
+		pulldim);
+    
+    if (strncasecmp(pulldim1,"N",1) == 0) {
+      pull->dim[d] = 0;
+    } else if (strncasecmp(pulldim1,"Y",1) == 0) {
+      pull->dim[d] = 1;
+      i++;
+    } else {
+      gmx_fatal(FARGS,"Please use Y(ES) or N(O) for pull_dim only (not %s)",
+		pulldim1);
     }
-    if (i == 0)
-      gmx_fatal(FARGS,"All entries in pull_dim are N");
+    ptr += nchar;
   }
+  if (i == 0)
+    gmx_fatal(FARGS,"All entries in pull_dim are N");
 
   for(g=0; g<pull->ngrp+1; g++) {
     pgrp = &pull->grp[g];
@@ -256,6 +250,14 @@ void make_pull_groups(t_pull *pull,char **pgnames,t_blocka *grps,char **gnames)
 	} else {
 	  /* Use cosine weighting */
 	  pgrp->pbcatom = -1;
+	}
+      }
+
+      if (g > 0 && pull->eGeom != epullgDIST) {
+	for(d=0; d<DIM; d++) {
+	  if (pgrp->vec[d] != 0 && pull->dim[d] == 0) {
+	    gmx_fatal(FARGS,"ERROR: pull_vec%d has non-zero %c-component while pull_dim in N\n",g,'x'+d);
+	  }
 	}
       }
 
