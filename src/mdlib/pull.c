@@ -245,10 +245,9 @@ void get_pullgrp_distance(t_pull *pull,t_pbc *pbc,int g,double t,
     dev[0] = inpr - ref[0];
     break;
   case epullgPOS:
-    /* Restrain to the location vec */
-    pbc_dx_d(pbc, pgrp->x, ref, dev);
+    /* Determine the difference of dr and ref along each dimension */
     for(m=0; m<DIM; m++)
-      dev[m] *= pull->dim[m];
+      dev[m] = (dr[m] - ref[m])*pull->dim[m];
     break;
   }
 }
