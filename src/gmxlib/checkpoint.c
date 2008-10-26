@@ -964,11 +964,11 @@ static void check_match(FILE *fplog,
     
     mm = FALSE;
     
-    check_string(fplog,"Version"     ,VERSION      ,version,&mm);
-    check_string(fplog,"Build time"  ,BUILD_TIME   ,btime  ,&mm);
-    check_string(fplog,"Build user"  ,BUILD_USER   ,buser  ,&mm);
-    check_string(fplog,"Build time"  ,BUILD_MACHINE,bmach  ,&mm);
-    check_string(fplog,"Program name",Program()    ,fprog  ,&mm);
+    check_string(fplog,"Version"      ,VERSION      ,version,&mm);
+    check_string(fplog,"Build time"   ,BUILD_TIME   ,btime  ,&mm);
+    check_string(fplog,"Build user"   ,BUILD_USER   ,buser  ,&mm);
+    check_string(fplog,"Build machine",BUILD_MACHINE,bmach  ,&mm);
+    check_string(fplog,"Program name" ,Program()    ,fprog  ,&mm);
     
     npp = cr->nnodes - cr->npmenodes;
     check_int   (fplog,"#PP-nodes"   ,npp          ,npp_f      ,&mm);
