@@ -318,6 +318,9 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     if (PULL_CYL(pull))
       pref = &pull->dyna[g];
     pbc_dx_d(pbc,pull->grp[g].x,pref->x,r_ij[g]);
+    /* Store the difference vector at time t for printing */
+    copy_dvec(r_ij[g],pull->grp[g].dr);
+
     if (pull->eGeom == epullgDIR) {
       /* Select the component along vec */
       a = 0;
@@ -457,28 +460,28 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
     for(g=1; g<1+pull->ngrp; g++) {
       pgrp = &pull->grp[g];
 
-      pbc_dx_d(pbc, rinew[g], rjnew[PULL_CYL(pull) ? g : 0], pgrp->dr);
+      pbc_dx_d(pbc, rinew[g], rjnew[PULL_CYL(pull) ? g : 0], unc_ij);
       for(m=0; m<DIM; m++)
-        pgrp->dr[m] *= pull->dim[m];
+        unc_ij[m] *= pull->dim[m];
 
       switch (pull->eGeom) {
       case epullgDIST:
-	bConverged = fabs(dnorm(pgrp->dr) - ref[0]) < pull->constr_tol;
+	bConverged = fabs(dnorm(unc_ij) - ref[0]) < pull->constr_tol;
 	break;
       case epullgDIR:
       case epullgCYL:
 	for(m=0; m<DIM; m++)
 	  vec[m] = pgrp->vec[m];
-	inpr = diprod(pgrp->dr,vec);
-	dsvmul(inpr,vec,pgrp->dr);
+	inpr = diprod(unc_ij,vec);
+	dsvmul(inpr,vec,unc_ij);
 	bConverged =
-	  fabs(diprod(pgrp->dr,vec) - ref[0]) < pull->constr_tol;
+	  fabs(diprod(unc_ij,vec) - ref[0]) < pull->constr_tol;
 	break;
       case epullgPOS:
 	bConverged = TRUE;
 	for(m=0; m<DIM; m++) {
 	  if (pull->dim[m] && 
-	      fabs(pgrp->dr[m] - pgrp->vec[m]) >= pull->constr_tol)
+	      fabs(unc_ij[m] - pgrp->vec[m]) >= pull->constr_tol)
 	    bConverged = FALSE;
 	}
 	break;
@@ -489,7 +492,7 @@ static void do_constraint(t_pull *pull, t_mdatoms *md, t_pbc *pbc,
 	if (!bConverged)
 	  fprintf(debug,"NOT CONVERGED YET: Group %d:"
 		  "d_ref = %f %f %f, current d = %f\n",
-		  g,ref[0],ref[1],ref[2],dnorm(pgrp->dr));
+		  g,ref[0],ref[1],ref[2],dnorm(unc_ij));
       } /* END DEBUG */
     }
      
