@@ -4,9 +4,9 @@
 
 AM_CPPFLAGS = -I$(top_srcdir)/include -DGMXLIBDIR=\"$(datadir)/top\"
 
-noinst_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la
+lib_LTLIBRARIES  = libgmxpreprocess@LIBSUFFIX@.la
 
-LDADD = $(noinst_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
+LDADD = $(lib_LTLIBRARIES) ../mdlib/libmd@LIBSUFFIX@.la ../gmxlib/libgmx@LIBSUFFIX@.la 
 
 libgmxpreprocess@LIBSUFFIX@_la_LIBADD       =
 libgmxpreprocess@LIBSUFFIX@_la_DEPENDENCIES =
