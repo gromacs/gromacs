@@ -6441,7 +6441,8 @@ static void setup_dd_communication(FILE *fplog,int step,
     real bcorner[DIM],bcorner_round_1=0;
     ivec tric_dist;
     rvec *cg_cm,*normal,*v_d,*v_0=NULL,*v_1=NULL,*recv_vr;
-    real skew_fac2_d,skew_fac2_0=0,skew_fac2_1=0,skew_fac_01;
+    real skew_fac2_d,skew_fac_01;
+    rvec sf2_round;
     int  nsend,nat;
     
     if (debug)
@@ -6572,7 +6573,6 @@ static void setup_dd_communication(FILE *fplog,int step,
     if (dd->ndim >= 2)
     {
         v_0 = comm->v[dim0];
-        skew_fac2_0 = sqr(dd->skew_fac[dim0]);
         if (dd->tric_dir[dim0] && dd->tric_dir[dim1])
         {
             /* Determine the coupling coefficient for the distances
@@ -6589,7 +6589,6 @@ static void setup_dd_communication(FILE *fplog,int step,
     if (dd->ndim >= 3)
     {
         v_1 = comm->v[dim1];
-        skew_fac2_1 = sqr(dd->skew_fac[dim1]);
     }
     
     ncg_cell = dd->ncg_cell;
@@ -6627,6 +6626,36 @@ static void setup_dd_communication(FILE *fplog,int step,
             nat = 0;
             for(cell=0; cell<ncell; cell++)
             {
+                if (tric_dist[dim_ind] && dim_ind > 0)
+                {
+                    /* Determine slightly more optimized skew_fac's
+                     * for rounding.
+                     * This reduces the number of communicated atoms
+                     * by about 10% for 3D DD of rhombic dodecahedra.
+                     */
+                    for(dimd=0; dimd<dim; dimd++)
+                    {
+                        sf2_round[dimd] = 1;
+                        if (dd->tric_dir[dimd])
+                        {
+                            for(i=dd->dim[dimd]+1; i<DIM; i++)
+                            {
+                                /* If we are shifted in dimension i
+                                 * and the cell plane is tilted forward
+                                 * in dimension i, skip this coupling.
+                                 */
+                                if (!(dd->shift[ncell+cell][i] &&
+                                      comm->v[dimd][i][dimd] >= 0))
+                                {
+                                    sf2_round[dimd] +=
+                                        sqr(comm->v[dimd][i][dimd]);
+                                }
+                            }
+                            sf2_round[dimd] = 1/sf2_round[dimd];
+                        }
+                    }
+                }
+
                 celli = cell_perm[dim_ind][cell];
                 if (p == 0)
                 {
@@ -6709,7 +6738,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             {
                                 rn[dim0] -= cg_cm[cg][i]*v_0[i][dim0];
                             }
-                            r2 = rn[dim0]*rn[dim0]*skew_fac2_0;
+                            r2 = rn[dim0]*rn[dim0]*sf2_round[dim0];
                             if (bDistMB_pulse)
                             {
                                 rb[dim0] = rn[dim0];
@@ -6742,7 +6771,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                             rn[dim1] += tric_sh;
                             if (rn[dim1] > 0)
                             {
-                                r2 += rn[dim1]*rn[dim1]*skew_fac2_1;
+                                r2 += rn[dim1]*rn[dim1]*sf2_round[dim1];
                                 /* Take care of coupling of the distances
                                  * to the planes along dim0 and dim1 through dim2.
                                  */
@@ -6761,7 +6790,7 @@ static void setup_dd_communication(FILE *fplog,int step,
                                     cg_cm[cg][dim1] - bcorner_round_1 + tric_sh;
                                 if (rb[dim1] > 0)
                                 {
-                                    rb2 += rb[dim1]*rb[dim1]*skew_fac2_1;
+                                    rb2 += rb[dim1]*rb[dim1]*sf2_round[dim1];
                                     /* Take care of coupling of the distances
                                      * to the planes along dim0 and dim1 through dim2.
                                      */
