@@ -1897,7 +1897,7 @@ In domain decomposition a spatial domain is assigned to each processor.
 Each processor will integrate the equations of motion for the particles
 that currently reside in its local domain. With domain decomposition
 there are two choices that have to be made: the division of the unit cell
-in domains and the assignment of the forces to processors.
+into domains and the assignment of the forces to processors.
 Most molecular simulation packages use the half-shell method for assigning
 the forces. But there are two methods which always require less communication:
 the eighth shell\cite{Liem1991} and the midpoint\cite{Shaw2006} method.
@@ -2069,7 +2069,7 @@ beyond this limit when pressure scaling is used.
 Note that for triclinic boxes $L_C$ is not simply the box diagonal
 component divided by the number of cells in that direction,
 but it is the shortest distance between the triclinic cells borders.
-For rhombic dodecahedra this is a factor of $1/\sqrt{2}$ shorter
+For rhombic dodecahedra this is a factor of $\sqrt{3/2}$ shorter
 along $x$ and $y$.
 
 When $r_{mb} > r_c$, {\tt mdrun} employs a smart algorithm to reduce
