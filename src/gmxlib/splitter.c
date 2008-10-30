@@ -571,7 +571,7 @@ static int merge_sid(int i0,int at_start,int at_end,int nsid,t_sid sid[],
   for(i=at_start; (i<at_end); i++) {
     isid = sid[i].sid;
     range_check(isid,-1,nsid);
-    if (nsid >= 0) {
+    if (isid >= 0) {
       ms[isid].first = min(ms[isid].first,sid[i].atom);
       ms[isid].last  = max(ms[isid].last,sid[i].atom);
     }
