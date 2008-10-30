@@ -609,9 +609,9 @@ int gmx_trjconv(int argc,char *argv[])
   
   int fit_enum;
   enum 
-    { efSel, efNone , efFit,      efFitXY,      efReset,       efPFit,      efNR };
+    { efSel, efNone, efFit,       efFitXY,         efReset,       efResetXY, efPFit,       efNR };
   static char *fit[efNR+1] = 
-    { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "progressive", NULL };
+    { NULL, "none", "rot+trans", "rotxy+transxy", "translation", "transxy", "progressive", NULL };
 
   static bool  bAppend=FALSE,bSeparate=FALSE,bVels=TRUE,bForce=FALSE;
   static bool  bCenter=FALSE,bTer=FALSE;
@@ -767,7 +767,7 @@ int gmx_trjconv(int argc,char *argv[])
     fit_enum   = nenum(fit);
     bFit       = (fit_enum==efFit || fit_enum==efFitXY);
     bFitXY     = fit_enum==efFitXY;
-    bReset     = fit_enum==efReset;
+    bReset     = (fit_enum==efReset || fit_enum==efResetXY);
     bPFit      = fit_enum==efPFit;
     pbc_enum   = nenum(pbc_opt);
     bPBCWhole  = pbc_enum==epWhole;
@@ -784,7 +784,7 @@ int gmx_trjconv(int argc,char *argv[])
     if (bFit) bReset = TRUE; /* for fit, reset *must* be set */
     nfitdim = 0;
     if (bFit || bReset)
-      nfitdim = (fit_enum==efFitXY) ? 2 : 3;
+      nfitdim = (fit_enum==efFitXY || fit_enum==efResetXY) ? 2 : 3;
     bRmPBC = bFit || bPBCWhole || bPBCcomRes || bPBCcomMol;
     if (bSetUR) {
       if (!(bPBCcomRes || bPBCcomMol ||  bPBCcomAtom)) {
