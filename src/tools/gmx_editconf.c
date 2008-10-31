@@ -375,7 +375,7 @@ int gmx_editconf(int argc, char *argv[])
     "[PAR]",
     "The box can be modified with options [TT]-box[tt], [TT]-d[tt] and",
     "[TT]-angles[tt]. Both [TT]-box[tt] and [TT]-d[tt]",
-    "will center the system in the box.",
+    "will center the system in the box, unless [TT]-noc[tt] is used.",
     "[PAR]",
     "Option [TT]-bt[tt] determines the box type: [TT]triclinic[tt] is a",
     "triclinic box, [TT]cubic[tt] is a rectangular box with all sides equal", 
@@ -536,7 +536,10 @@ int gmx_editconf(int argc, char *argv[])
   bSetAng   = opt2parg_bSet("-angles" ,NPA,pa);
   bSetCenter= opt2parg_bSet("-center" ,NPA,pa);
   bDist     = opt2parg_bSet("-d" ,NPA,pa);
-  bCenter   = bCenter || bDist || bSetCenter || bSetSize;
+  /* Only automatically turn on centering without -noc */
+  if ((bDist || bSetSize || bSetCenter) && !opt2parg_bSet("-c",NPA,pa)) {
+    bCenter = TRUE;
+  }
   bScale    = opt2parg_bSet("-scale" ,NPA,pa);
   bRho      = opt2parg_bSet("-density",NPA,pa);
   bTranslate= opt2parg_bSet("-translate",NPA,pa);
