@@ -528,6 +528,7 @@ static void read_espresso_conf(char *infile,
 		r = get_espresso_word(fp,word);
 		/* not used */
 	      }
+	      break;
 	    case espMOLECULE:
 	      r = get_espresso_word(fp,word);
 	      atoms->atom[i].resnr = atoi(word);
