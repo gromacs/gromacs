@@ -112,7 +112,7 @@ void check_ir(t_inputrec *ir, t_gromppopts *opts,int *nerror)
   int  ns_type=0;
 
   /* TPI STUFF */
-  if (ir->eI == eiTPI || ir->eI == eiTPIC) {
+  if (EI_TPI(ir->eI)) {
     sprintf(err_buf,"TPI only works with pbc = %s",epbc_names[epbcXYZ]);
     CHECK(ir->ePBC != epbcXYZ);
     sprintf(err_buf,"TPI only works with ns = %s",ens_names[ensGRID]);
@@ -1439,8 +1439,7 @@ void do_index(char* mdparin, char *ndx,
 		"%d tau_t values",ntcg,nref_t,ntau_t);
   }
 
-  bSetTCpar = ir->etc ||
-    EI_SD(ir->eI) || ir->eI==eiBD || ir->eI==eiTPI || ir->eI==eiTPIC;
+  bSetTCpar = (ir->etc || EI_SD(ir->eI) || ir->eI==eiBD || EI_TPI(ir->eI));
   do_numbering(natoms,groups,ntcg,ptr3,grps,gnames,egcTC,
 	       restnm,bSetTCpar ? egrptpALL : egrptpALL_GENREST,bVerbose);
   nr = groups->grps[egcTC].nr;
@@ -1826,8 +1825,11 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
     }
     if (bCharge) {
       set_warning_line(mdparin,-1);
-      warning_note("You are using a plain Coulomb cut-off, this will often produce artifacts.\n"
-		   "You might want to consider using PME electrostatics.\n");
+      sprintf(err_buf,
+	      "You are using a plain Coulomb cut-off, this will often produce artifacts.\n"
+	      "You might want to consider using %s electrostatics.\n",
+	      EI_TPI(ir->eI) ? EELTYPE(eelRF) : EELTYPE(eelPME));
+      warning_note(err_buf);
     }
   }
 
