@@ -295,6 +295,7 @@ bool gmx_mtop_atomloop_block_next(gmx_mtop_atomloop_block_t aloop,
             return FALSE;
         }
         aloop->atoms = &aloop->mtop->moltype[aloop->mtop->molblock[aloop->mblock].type].atoms;
+        aloop->at_local = 0;
     }
     
     *atom = &aloop->atoms->atom[aloop->at_local];
