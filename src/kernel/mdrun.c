@@ -415,7 +415,7 @@ int main(int argc,char *argv[])
   {
 	  sim_part = read_checkpoint_simulation_part(opt2fn("-cpi",NFILE,fnm)) + 1;
 	  /* sim_part will now be 1 if no checkpoint file was found */
-	  if(sim_part==1)
+	  if (sim_part==1 && MASTER(cr))
 	  {
 		  fprintf(stdout,"No previous checkpoint file present, assuming this is a new run.\n");
 	  }
