@@ -1268,7 +1268,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       bGotTermSignal = FALSE;
       bGotUsr1Signal = FALSE;
     } else if (MASTER(cr) && (bNS || ir->nstlist <= 0) &&
-	       (max_hours > 0 && run_time > max_hours*24*60.0*0.99) &&
+	       (max_hours > 0 && run_time > max_hours*60.0*60.0*0.99) &&
 	       terminate == 0) {
       /* Signal to terminate the run */
       terminate = (ir->nstlist == 0 ? 1 : -1);
