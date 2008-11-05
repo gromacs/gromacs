@@ -356,6 +356,11 @@ void init_em(FILE *fplog,const char *title,
 static void finish_em(FILE *fplog,t_commrec *cr,
 		      int fp_traj,int fp_ene)
 {
+  if (!(cr->duty & DUTY_PME)) {
+    /* Tell the PME only node to finish */
+    gmx_pme_finish(cr);
+  }
+
   if (MASTER(cr)) {
     close_trn(fp_traj);
     close_enx(fp_ene);
