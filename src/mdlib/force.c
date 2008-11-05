@@ -543,12 +543,13 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
                     excl_nalloc = a1 - a0;
                     srenew(bExcl,excl_nalloc);
                 }
-                for(ai=a0; ai<a1; ai++) {
-                    bExcl[ai-a0] = FALSE;
-                }
                 bExclIntra = TRUE;
                 bExclInter = FALSE;
                 for(ai=a0; ai<a1; ai++) {
+                    /* Clear the exclusion list for atom ai */
+                    for(ai=a0; ai<a1; ai++) {
+                        bExcl[ai-a0] = FALSE;
+                    }
                     /* Loop over all the exclusions of atom ai */
                     for(j=excl->index[ai]; j<excl->index[ai+1]; j++)
                     {
