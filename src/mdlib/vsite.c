@@ -1296,7 +1296,7 @@ void spread_vsite_f(FILE *log,gmx_vsite_t *vsite,
       }
      
       for(i=0; (i<nr); ) {
-	/* Check what kind of pbc we need to use */
+	/* Check if we need to apply pbc for this vsite */
 	if (vsite_pbc) {
 	  if (vsite_pbc[i/(1+nra)] > -2)
 	    pbc_null2 = pbc_null;
@@ -1442,6 +1442,17 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
   t_ilist *il;
   t_iatom *ia;
   int  **vsite_pbc,*vsite_pbc_f;
+  char *pbc_set;
+
+  /* Make an array that tells if the pbc of an atom is set */
+  snew(pbc_set,cgs->index[cgs->nr]);
+  /* PBC is set for all non vsites */
+  for(a=0; a<cgs->index[cgs->nr]; a++) {
+    if ((atom && atom[a].ptype != eptVSite) ||
+	(md   && md->ptype[a]  != eptVSite)) {
+      pbc_set[a] = 1;
+    }
+  }
 
   snew(vsite_pbc,F_VSITEN-F_VSITE2+1);
   
@@ -1479,15 +1490,16 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 	}
 	if (vsite_pbc_f[vsi] == -1) {
 	  if (cg_v != a2cg[ia[1+i+1]] &&
-	      cgs->index[cg_v+1] > cgs->index[cg_v]+1) {
+	      cgs->index[cg_v]+1 < cgs->index[cg_v+1]) {
 	    /* This vsite has a different charge group index
 	     * than it's first constructing atom
 	     * and the charge group has more than one atom,
-	     * store the first non-vsite atom of the vsite cg
+	     * search for the first normal particle
+	     * or vsite that already had its pbc defined.
+	     * If nothing is found, use full pbc for this vsite.
 	     */
 	    for(a=cgs->index[cg_v]; a<cgs->index[cg_v+1]; a++) {
-	      if ((atom && atom[a].ptype != eptVSite) ||
-		  (md   && md->ptype[a]  != eptVSite)) {
+	      if (a != vsite && pbc_set[a]) {
 		vsite_pbc_f[vsi] = a;
 		if (gmx_debug_at)
 		  fprintf(debug,"vsite %d match pbc with atom %d\n",
@@ -1499,9 +1511,6 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 	      fprintf(debug,"vsite atom %d  cg %d - %d pbc atom %d\n",
 		      vsite+1,cgs->index[cg_v]+1,cgs->index[cg_v+1],
 		      vsite_pbc_f[vsi]+1);
-	    
-	    if (vsite_pbc_f[vsi] == -1)
-	      gmx_fatal(FARGS,"Virtual site atom %d is part of a charge group of only virtual sites, but its first constructing atom (%d) is part of a different charge group, this combination is not allowed",ia[1+i]+1,ia[1+i+1]+1);
 	  }
 	}
 	if (ftype == F_VSITEN) {
@@ -1510,10 +1519,15 @@ static int **get_vsite_pbc(t_iparams *iparams,t_ilist *ilist,
 	} else {
 	  i += 1+nral;
 	}
+	
+	/* This vsite now has its pbc defined */
+	pbc_set[vsite] = 1;
       }
     }
   }
-  
+
+  sfree(pbc_set);
+
   return vsite_pbc;
 }
 
