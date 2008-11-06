@@ -880,8 +880,8 @@ static int gen_vsites_trp(t_atomtype atype, rvec *newx[],
   srenew(*newatomname,at->nr+*nadd);
   srenew(*newvsite_type,at->nr+*nadd);
   srenew(*newcgnr,at->nr+*nadd);
-  for(j=0; j<*nadd; j++)
-    (*newatomname)[at->nr+j]=NULL;
+  for(j=0; j<NMASS; j++)
+    (*newatomname)[at->nr+*nadd-1-j]=NULL;
   
   /* Dummy masses will be placed at the center-of-mass in each ring. */
 
@@ -1068,8 +1068,7 @@ static int gen_vsites_tyr(t_atomtype atype, rvec *newx[],
   srenew(*newatomname,at->nr+*nadd);
   srenew(*newvsite_type,at->nr+*nadd);
   srenew(*newcgnr,at->nr+*nadd);
-  for(j=0; (j<*nadd); j++)
-    (*newatomname)[at->nr+j]=NULL; 
+  (*newatomname)[at->nr+*nadd-1]=NULL; 
   
   /* Calc the dummy mass initial position */
   rvec_sub(x[ats[atHH]],x[ats[atOH]],r1);
