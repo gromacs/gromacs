@@ -80,6 +80,7 @@
 #include "gmx_wallcycle.h"
 #include "mtop_util.h"
 #include "gmxfio.h"
+#include "pme.h"
 
 typedef struct {
   t_state s;
