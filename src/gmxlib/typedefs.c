@@ -347,6 +347,21 @@ void done_inputrec(t_inputrec *ir)
   }
 }
 
+static void init_ekinstate(ekinstate_t *eks)
+{
+  eks->ekinh_n = 0;
+  eks->ekinh   = NULL;
+  eks->dekindl = 0;
+  eks->mvcos   = 0;
+}
+
+static void init_energyhistory(energyhistory_t *enh)
+{
+  enh->ener_ave = NULL;
+  enh->ener_sum = NULL;
+  enh->nener    = 0;
+}
+
 void init_gtc_state(t_state *state,int ngtc)
 {
   int i;
@@ -390,11 +405,14 @@ void init_state(t_state *state,int natoms,int ngtc)
   state->sd_X = NULL;
   state->cg_p = NULL;
 
+  init_ekinstate(&state->ekinstate);
+
+  init_energyhistory(&state->enerhist);
+
   state->ddp_count = 0;
   state->ddp_count_cg_gl = 0;
   state->cg_gl = NULL;
   state->cg_gl_nalloc = 0;
-	
 }
 
 void done_state(t_state *state)
