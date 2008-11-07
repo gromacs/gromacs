@@ -31,7 +31,6 @@ man_MANS =   \
 	g_hbond.1  \
 	g_helix.1  \
 	g_helixorient.1  \
-	g_kinetics.1  \
 	g_lie.1  \
 	g_mdmat.1  \
 	g_mindist.1  \
