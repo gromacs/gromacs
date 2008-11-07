@@ -41,10 +41,11 @@ ppc_invsqrt(char *rsq, char *rinv)
 			mknb_assign (rinv,"__frsqrte(%s)",rsq);
 		}
 	} else {
+		/* note that frsqrtes is only supported on Power5 and higher! */
 		if (mknb_fortran) {
-			mknb_assign (rinv,"frsqrte(dble(%s))",rsq);
+			mknb_assign (rinv,"frsqrtes(dble(%s))",rsq);
 		} else {
-			mknb_assign (rinv,"__frsqrte(double(%s))",rsq);
+			mknb_assign (rinv,"__frsqrtes(%s)",rsq);
 		}
 	}
 

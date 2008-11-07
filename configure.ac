@@ -3,7 +3,7 @@
 #######################################################################
  
 AC_PREREQ(2.50)
-AC_INIT(gromacs, 4.0.1, [gmx-users@gromacs.org])
+AC_INIT(gromacs, 4.0.1_pre, [gmx-users@gromacs.org])
 AC_CONFIG_SRCDIR(src/gmxlib/3dview.c)
 AC_CONFIG_AUX_DIR(config)
 AC_CANONICAL_HOST
@@ -182,7 +182,8 @@ esac])
 ### Do PowerPC 1/sqrt(x)
 AC_ARG_ENABLE(ppc-sqrt,     
              [AC_HELP_STRING([--enable-ppc-sqrt],
-                             [PowerPC 1/sqrt table lookup. By default we]
+                             [PowerPC 1/sqrt table lookup. Single precision]
+                             [requires Power5 or later. By default we]
                              [use 2 iterations, but if you only run on]
 			     [Power6,PPC440,PPC450 or later CPUs you can]
 			     [set --enable-ppc-sqrt=1 for better speed.])],,
@@ -1009,7 +1010,6 @@ AC_CONFIG_FILES([ share/top/Makefile ])
 AC_CONFIG_FILES([ share/html/Makefile ])
 AC_CONFIG_FILES([ share/html/images/Makefile ])
 AC_CONFIG_FILES([ share/html/online/Makefile ])
-AC_CONFIG_FILES([ man/Makefile man/man1/Makefile man/man7/Makefile ])
 
 AC_OUTPUT
 
