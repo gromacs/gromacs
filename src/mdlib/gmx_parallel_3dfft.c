@@ -51,8 +51,8 @@ struct gmx_parallel_3dfft
     int             nnodes;
     gmx_fft_t       fft_yz;
     gmx_fft_t       fft_x;
-	void            work_rawptr;
-	void            work2_rawptr;
+	void *          work_rawptr;
+	void *          work2_rawptr;
     t_complex *     work;
     t_complex *     work2;
     int             *node2slab;
