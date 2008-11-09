@@ -335,10 +335,6 @@ t_mdebin *init_mdebin(int fp_ene,
   if (fp_ene != -1)
     do_enxnms(fp_ene,&md->ebin->nener,&md->ebin->enm);
     
-#ifdef DEBUG
-  for(i=0; (i<md->ebin->nener); i++)
-    fprintf(stdlog,"%5d  %20s\n",i,md->ebin->enm[i]);
-#endif
   return md;
 }
 
