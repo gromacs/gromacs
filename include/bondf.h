@@ -50,6 +50,7 @@ extern "C" {
 #include "typedefs.h"
 #include "nrnb.h"
 #include "pbc.h"
+#include "localpressure.h"
 
 extern int glatnr(int *global_atom_index,int i);
 /* Returns the global topology atom number belonging to local atom index i.
@@ -66,7 +67,7 @@ extern void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
                        gmx_enerdata_t *enerd,t_nrnb *nrnb,real lambda,
 		       const t_mdatoms *md,
 		       t_fcdata *fcd,int *ddgatindex,
-		       bool bPrintSepPot,int step);
+		       bool bPrintSepPot,int step, gmx_localp_grid_t *localp_grid);
 /* 
  * The function calc_bonds() calculates all bonded force interactions.
  * The "bonds" are specified as follows:
@@ -118,7 +119,7 @@ extern void do_dih_fup(int i,int j,int k,int l,real ddphi,
 		       rvec r_ij,rvec r_kj,rvec r_kl,
 		       rvec m,rvec n,rvec f[],rvec fshift[],
 		       const t_pbc *pbc,const t_graph *g,
-		       const rvec *x,int t1,int t2,int t3);
+		       const rvec *x,int t1,int t2,int t3,gmx_localp_grid_t *localp_grid);
 /* Do an update of the forces for dihedral potentials */
 
 /*************************************************************************

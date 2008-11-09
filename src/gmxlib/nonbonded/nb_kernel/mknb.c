@@ -201,6 +201,8 @@ mknb_write_file_header(void)
 
 		fprintf(mknb_output,"#include<math.h>\n");
 
+		fprintf(mknb_output,"#include \"localpressure.h\"\n");
+
 		if(mknb_options.software_invsqrt)
 			fprintf(mknb_output,"#include<vec.h>\n");
 

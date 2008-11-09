@@ -135,6 +135,7 @@ mknb_function_header(char *funcname)
 
 	}
 	fprintf(mknb_output,"\n");
+    mknb_code("  gmx_localp_grid_t * localp_grid = (gmx_localp_grid_t *)work;");
 }
 
 

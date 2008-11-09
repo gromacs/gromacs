@@ -72,7 +72,8 @@ extern bool bshakef(FILE *log,		/* Log file			*/
 		    rvec *v,            /* Also constrain v if v!=NULL  */
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
-		    bool bDumpOnError); /* Dump debugging stuff on error*/
+		    bool bDumpOnError,  /* Dump debugging stuff on error*/
+		    gmx_localp_grid_t *localp_grid);
 /* Shake all the atoms blockwise. It is assumed that all the constraints
  * in the idef->shakes field are sorted, to ascending block nr. The
  * sblock array points into the idef->shakes.iatoms field, with block 0 
@@ -94,7 +95,8 @@ extern void csettle(FILE *log,
 		    real *v,            /* Also constrain v if v!=NULL  */
 		    bool bCalcVir,      /* Calculate r x m delta_r      */
 		    tensor rmdr,        /* sum r x m delta_r            */
-		    int *xerror);
+		    int *xerror,
+		    gmx_localp_grid_t *localp_grid);
 
 extern void settle_proj(FILE *fp,int nsettle, t_iatom iatoms[],rvec x[],
 			real dOH,real dHH,real invmO,real invmH,
@@ -119,7 +121,7 @@ extern bool constrain(FILE *log,bool bLog,bool bEner,
 		      rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 		      real lambda,real *dvdlambda,
 		      rvec *v,tensor *vir,
-		      t_nrnb *nrnb,int econq);
+		      t_nrnb *nrnb,int econq,gmx_localp_grid_t *localp_grid);
 /*
  * When econq=econqCoord constrains coordinates xprime using th
  * directions in x, min_proj is not used.
@@ -212,5 +214,5 @@ extern bool constrain_lincs(FILE *log,bool bLog,bool bEner,
 			    bool bCalcVir,tensor rmdr,
 			    int econ,
 			    t_nrnb *nrnb,
-			    int maxwarn,int *warncount);
+			    int maxwarn,int *warncount,gmx_localp_grid_t *localp_grid);
 /* Returns if the constraining succeeded */

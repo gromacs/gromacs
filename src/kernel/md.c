@@ -82,6 +82,7 @@
 #include "mvdata.h"
 #include "checkpoint.h"
 #include "mtop_util.h"
+#include "localpressure.h"
 
 #ifdef GMX_MPI
 #include <mpi.h>
@@ -110,6 +111,26 @@ typedef struct {
 
 /* The array should match the eI array in include/types/enums.h */
 const gmx_intp_t integrator[eiNR] = { {do_md}, {do_steep}, {do_cg}, {do_md}, {do_md}, {do_nm}, {do_lbfgs}, {do_tpi}, {do_tpi}, {do_md} };
+
+
+static void calc_recipbox(matrix box,matrix recipbox)
+{
+    /* Save some time by assuming upper right part is zero */
+    
+    real tmp=1.0/(box[XX][XX]*box[YY][YY]*box[ZZ][ZZ]);
+    
+    recipbox[XX][XX]=box[YY][YY]*box[ZZ][ZZ]*tmp;
+    recipbox[XX][YY]=0;
+    recipbox[XX][ZZ]=0;
+    recipbox[YY][XX]=-box[YY][XX]*box[ZZ][ZZ]*tmp;
+    recipbox[YY][YY]=box[XX][XX]*box[ZZ][ZZ]*tmp;
+    recipbox[YY][ZZ]=0;
+    recipbox[ZZ][XX]=(box[YY][XX]*box[ZZ][YY]-box[YY][YY]*box[ZZ][XX])*tmp;
+    recipbox[ZZ][YY]=-box[ZZ][YY]*box[XX][XX]*tmp;
+    recipbox[ZZ][ZZ]=box[XX][XX]*box[YY][YY]*tmp;
+}
+
+
 
 void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	      bool bVerbose,bool bCompact,
@@ -488,7 +509,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	         bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
   bool       bMasterState;
   tensor     force_vir,shake_vir,total_vir,pres,ekin;
-  int        i,m,status;
+  int        i,j,k,m,status,ngrid;
   rvec       mu_tot;
   t_vcm      *vcm;
   int        step_ns=0,step_nscheck=0,nns=0,nabnsb=0,ns_lt;
@@ -526,6 +547,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   rvec        *xcopy=NULL,*vcopy=NULL;
   matrix      boxcopy,lastbox;
   double      cycles;
+
+  FILE *fplocal;
+  gmx_localp_grid_t *localp_grid = NULL;
+  real ccc;
+  rvec box_size;
+  rvec *v_old;
 
   /* Check for special mdrun options */
   bRerunMD = (Flags & MD_RERUN);
@@ -692,6 +719,102 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bHaveConstr = TRUE;
   }
 
+	snew(v_old,state->natoms);
+	
+	for(i=0; (i<DIM); i++)
+	{
+		box_size[i]=state->box[i][i];
+	}
+	
+  if(localp_grid==NULL)
+  {
+      printf("\n\n-------------------------------------------\n");
+      printf("LOCAL PRESSURE VERSION OF GROMACS 4.0\n\n");
+	  printf("Peter Kasson & Erik Lindahl, 2008\n\n");
+      printf("This Gromacs version will do 3D local pressure calculation on a grid\n");
+      printf("with spacing set by userreal1 in your mdp file, and write the result\n");
+      printf("in binary formation to the file local_pressure.dat\n\n");
+      printf("Be warned that it is 1-2 orders of magnitude slower than normal Gromacs,\n");
+      printf("since the virial has to be spread for every single interaction.\n");
+      printf("The most efficient way to use the code is typically to first run a standard\n");
+      printf("simulation (without localP) and save coordinates+velocities, say every 1000\n");
+      printf("steps. Then use the -rerun option with this localpressure version to calculate\n");
+      printf("the average local pressure from the saved frames. This is much faster, and\n");
+      printf("saves you from calculating local pressure in adjacent highly correlated\n");
+      printf("conformations. We have refrained from introducing options to only calculate the\n");
+      printf("localpressure every N steps to keep this patch to the main Gromacs source as\n");
+      printf("clean as possible.\n\n");
+
+      printf("You will also need to think about the grid density to avoid exhausting memory;\n");
+      printf("each grid cell has to store a 9-element tensor in double precision, i.e.\n");
+      printf("it takes 72 bytes. With a box of 20x20x20nm and a grid spacing of e.g 0.1 nm,\n");
+      printf("the grid would use take half a gigabite...\n\n");
+
+      printf("Note that this version is seriously hacked. If you have any questions\n");
+      printf("specifically about local pressure stuff you can send them to lindahl@cbr.su.se,\n");
+      printf("but we don't support this version like the normal code - use at your own risk.\n\n");
+      printf("and... have fun! /Peter & Erik\n\n\n");
+
+	  if (PAR(cr))
+	  {
+		  printf("Localpressure does not support parallel simulations!\n");
+		  printf("Instead, write your trajectory every 100-1000 steps without localpressure\n"
+				 "and then use the -rerun option to mdrun to get localP for these frames!\n");
+		  exit(1);
+	  }
+		
+	  if(EEL_PME(ir->coulombtype)) 
+	  {
+		  printf("WARNING - WARNING - WARNING - WARNING !!!!\n");
+		  printf("You are attempting a local pressure calculation with PME - this is not\n"
+				 "supported, might be buggy, and you will certainly miss the long-range\n"
+				 "contribution to pressure. Unless you know what you are doing, abort and\n"
+				 "use cut-offs or reaction-field for electrostatics!\n\n");
+		  printf("You have been warned...\n\n");
+	  }
+	  
+      if(fr->userreal1<=0)
+	  {
+		  gmx_fatal(FARGS,"Cannot do local pressure with spacing (fr->userreal1) = 0.0\n");
+	  }
+	  
+      snew(localp_grid,1);
+      localp_grid->nx = box_size[XX]/fr->userreal1;
+      localp_grid->ny = box_size[YY]/fr->userreal1;
+      localp_grid->nz = box_size[ZZ]/fr->userreal1;
+	  
+      if(localp_grid->nx==0)
+		  localp_grid->nx=1;
+      if(localp_grid->ny==0)
+		  localp_grid->ny=1;
+      if(localp_grid->nz==0)
+		  localp_grid->nz=1;
+      
+      ngrid = localp_grid->nx*localp_grid->ny*localp_grid->nz;
+      printf("Spacing requested: %g    Using nx=%d ny=%d nz=%d, grid size %d...\n",
+			 fr->userreal1,localp_grid->nx,localp_grid->ny,localp_grid->nz,ngrid);
+      
+      snew(localp_grid->current_grid,ngrid);
+      
+      snew(localp_grid->sum_grid,ngrid);
+      
+      for(i=0;i<ngrid;i++)
+	  {
+		  for(j=0;j<DIM;j++)
+			  for(k=0;k<DIM;k++)
+				  localp_grid->sum_grid[i][j][k] =0;
+	  }
+      
+      if(fr->bTwinRange)
+		  snew(localp_grid->longrange_grid,ngrid);
+      
+      localp_grid->nframes = 0;
+      localp_grid->spacing = fr->userreal1;
+      copy_mat(state->box,localp_grid->box);
+      calc_recipbox(state->box,localp_grid->invbox);
+  }
+
+
   /* Check whether we have to GCT stuff */
   bTCR = ftp2bSet(efGCT,nfile,fnm);
   if (bTCR) {
@@ -724,7 +847,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     if (bHaveConstr) {
       /* Constrain the initial coordinates and velocities */
       do_shakefirst(fplog,constr,ir,mdatoms,state,buf,f,
-		    graph,cr,nrnb,fr,&top->idef);
+		    graph,cr,nrnb,fr,&top->idef,localp_grid);
     }
     if (vsite) {
       /* Construct the virtual sites for the initial configuration */
@@ -744,10 +867,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   {
       /* Compute initial EKin for all.. */
       if (ekind->cosacc.cos_accel == 0) {
-          calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
+          calc_ke_part(state->x,v_old,state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda,localp_grid);
       } else {
-	  calc_ke_part_visc(state->box,state->x,state->v,&(ir->opts),
-			    mdatoms,ekind,nrnb,state->lambda);
+	  calc_ke_part_visc(state->box,state->x,v_old,state->v,&(ir->opts),
+			    mdatoms,ekind,nrnb,state->lambda,localp_grid);
       }
       debug_gmx();
 
@@ -1015,6 +1138,13 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     do_log = do_per_step(step,ir->nstlog) || bFirstStep || bLastStep;
     do_verbose = bVerbose && (step % stepout == 0 || bFirstStep || bLastStep);
 
+      for(i=0;i<ngrid;i++)
+      {
+          for(j=0;j<DIM;j++)
+              for(k=0;k<DIM;k++)
+                  localp_grid->current_grid[i][j][k] =0;
+      }	  
+	  
     if (bNS && !(bFirstStep && ir->bContinuation)) {
       bMasterState = FALSE;
       /* Correct the new box if it is too skewed */
@@ -1062,6 +1192,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
     GMX_MPE_LOG(ev_timestep2);
 
+	  /* Update data in the local pressure grid structure */
+      copy_mat(state->box,localp_grid->box);
+      calc_recipbox(state->box,localp_grid->invbox);
+	  
     if (shellfc) {
       /* Now is the time to relax the shells */
       count=relax_shell_flexcon(fplog,cr,bVerbose,bFFscan ? step+1 : step,
@@ -1070,7 +1204,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 				nrnb,wcycle,graph,groups,
 				shellfc,fr,t,mu_tot,
 				state->natoms,&bConverged,vsite,
-				fp_field);
+				fp_field,localp_grid);
       tcount+=count;
       
       if (bConverged)
@@ -1087,7 +1221,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	       state->lambda,graph,
 	       fr,vsite,mu_tot,t,fp_field,ed,
 	       GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
-	       GMX_FORCE_ALLFORCES);
+	       GMX_FORCE_ALLFORCES,localp_grid);
     }
 
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -1188,7 +1322,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
 	     &top->idef,ekind,shake_vir,scale_tot,
 	     cr,nrnb,wcycle,sd,constr,bHaveConstr,
-	     bNEMD,bFirstStep && bStateFromTPX);
+	     bNEMD,bFirstStep && bStateFromTPX,localp_grid);
       if (fr->bSepDVDL && fplog && do_log) {
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
       }
@@ -1227,10 +1361,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       
     debug_gmx();
     if (ekind->cosacc.cos_accel == 0) {
-      calc_ke_part(state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda);
+      calc_ke_part(state->x,v_old,state->v,&(ir->opts),mdatoms,ekind,nrnb,state->lambda,localp_grid);
     } else {
-      calc_ke_part_visc(state->box,state->x,state->v,&(ir->opts),
-			mdatoms,ekind,nrnb,state->lambda);
+      calc_ke_part_visc(state->box,state->x,v_old,state->v,&(ir->opts),
+			mdatoms,ekind,nrnb,state->lambda,localp_grid);
     }
 
     /* since we use the new coordinates in calc_ke_part_visc, we should use
@@ -1406,7 +1540,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       /* Calculate long range corrections to pressure and energy */
       calc_dispcorr(fplog,ir,fr,step,top_global->natoms,
 		    lastbox,state->lambda,
-		    pres,total_vir,enerd->term);
+		    pres,total_vir,enerd->term,localp_grid);
       
       enerd->term[F_ETOT] = enerd->term[F_EPOT] + enerd->term[F_EKIN];
       
@@ -1554,6 +1688,20 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       step_rel++;
     }
 
+	  if(localp_grid)
+	  {
+		  /* Sum grid virial data */
+		  ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+		  for(i=0;i<ngrid;i++)
+		  {
+			  for(j=0;j<DIM;j++)
+				  for(k=0;k<DIM;k++)
+					  localp_grid->sum_grid[i][j][k] += localp_grid->current_grid[i][j][k];
+		  }
+		  localp_grid->nframes++;
+		  
+	  }
+	  
     cycles = wallcycle_stop(wcycle,ewcSTEP);
     if (DOMAINDECOMP(cr) && wcycle)
       dd_cycles_add(cr->dd,cycles,ddCyclStep);
@@ -1561,6 +1709,35 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   /* End of main MD loop */
   debug_gmx();
 
+	printf("\n\nDumping local pressure based on %d frames to local_pressure.dat...\n",localp_grid->nframes);
+	fplocal=fopen("local_pressure.dat","w");
+	i=(sizeof(real)==sizeof(double)) ? 1 : 0;
+	fwrite(&i,sizeof(int),1,fplocal); /* 1 if double, 0 if single precision */
+	fwrite(&localp_grid->box,sizeof(real),9,fplocal);
+	fwrite(&localp_grid->nx,sizeof(int),1,fplocal);
+	fwrite(&localp_grid->ny,sizeof(int),1,fplocal);
+	fwrite(&localp_grid->nz,sizeof(int),1,fplocal);
+	ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+	ccc = ngrid*PRESFAC*2.0/det(state->box)/localp_grid->nframes;
+	
+    for(i=0;i<ngrid;i++)
+	{
+		for(j=0;j<DIM;j++)
+			for(k=0;k<DIM;k++)
+				localp_grid->sum_grid[i][j][k]*=ccc;
+	}
+	
+	fwrite(localp_grid->sum_grid,sizeof(matrix),ngrid,fplocal);
+	fclose(fplocal);
+	/* release it */
+	sfree(localp_grid->sum_grid);
+	sfree(localp_grid->current_grid);
+	if(fr->bTwinRange)
+		sfree(localp_grid->longrange_grid);
+	sfree(localp_grid);
+	sfree(v_old);
+	
+	
   if (bRerunMD)
     close_trj(status);
 

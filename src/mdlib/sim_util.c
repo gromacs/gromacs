@@ -337,10 +337,10 @@ void do_force(FILE *fplog,t_commrec *cr,
 	      real lambda,t_graph *graph,
 	      t_forcerec *fr,gmx_vsite_t *vsite,rvec mu_tot,
 	      real t,FILE *field,gmx_edsam_t ed,
-	      int flags)
+	      int flags,gmx_localp_grid_t *localp_grid)
 {
   static rvec box_size;
-  int    cg0,cg1,i,j;
+  int    cg0,cg1,i,j,ngrid;
   int    start,homenr;
   static double mu[2*DIM]; 
   rvec   mu_tot_AB[2];
@@ -475,13 +475,20 @@ void do_force(FILE *fplog,t_commrec *cr,
     if (fr->bTwinRange) {
       clear_rvecs(fr->f_twin_n,fr->f_twin);
       clear_rvecs(SHIFTS,fr->fshift_twin);
+		if(localp_grid)
+		{
+			/* reset long-range virial grid */
+			ngrid = localp_grid->nx*localp_grid->ny*localp_grid->nz;
+			for(i=0;i<ngrid;i++)
+				clear_mat(localp_grid->longrange_grid[i]);
+		}
     }
     /* Do the actual neighbour searching and if twin range electrostatics
      * also do the calculation of long range forces and energies.
      */
     dvdl = 0; 
     ns(fplog,fr,x,f,box,groups,&(inputrec->opts),top,mdatoms,
-       cr,nrnb,step,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces);
+       cr,nrnb,step,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces,localp_grid);
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
     enerd->term[F_DVDL] += dvdl;
@@ -519,6 +526,12 @@ void do_force(FILE *fplog,t_commrec *cr,
 	copy_rvec(fr->f_twin[i],f[i]);
       for(i=0; i<SHIFTS; i++)
 	copy_rvec(fr->fshift_twin[i],fr->fshift[i]);
+        if(localp_grid)
+        {
+            ngrid = localp_grid->nx*localp_grid->ny*localp_grid->nz;
+            for(i=0;i<ngrid;i++)
+                m_add(localp_grid->current_grid[i],localp_grid->longrange_grid[i],localp_grid->current_grid[i]);
+        }
     } 
     else {
       if (DOMAINDECOMP(cr))
@@ -557,7 +570,7 @@ void do_force(FILE *fplog,t_commrec *cr,
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
 		    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
 		    x,hist,f,enerd,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
-		    flags,&cycles_force);
+		    flags,&cycles_force,localp_grid);
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
   if (ed) {
@@ -728,7 +741,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 		   t_inputrec *inputrec,t_mdatoms *md,
 		   t_state *state,rvec buf[],rvec f[],
 		   t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-		   t_forcerec *fr,t_idef *idef)
+		   t_forcerec *fr,t_idef *idef,gmx_localp_grid_t *localp_grid)
 {
   int    i,m,start,end,step;
   double mass,tmass,vcm[4];
@@ -749,7 +762,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 	    inputrec,cr,step,0,md,
 	    state->x,state->x,NULL,
 	    state->box,state->lambda,&dvdlambda,
-	    NULL,NULL,nrnb,econqCoord);
+	    NULL,NULL,nrnb,econqCoord,localp_grid);
 
   if (EI_STATE_VELOCITY(inputrec->eI)) {
     for(i=start; (i<end); i++) {
@@ -772,7 +785,7 @@ void do_shakefirst(FILE *fplog,gmx_constr_t constr,
 	      inputrec,cr,step,-1,md,
 	      state->x,buf,NULL,
 	      state->box,state->lambda,&dvdlambda,
-	      state->v,NULL,nrnb,econqCoord);
+	      state->v,NULL,nrnb,econqCoord,localp_grid);
     
     for(m=0; (m<4); m++)
       vcm[m] = 0;
@@ -942,12 +955,13 @@ static void calc_enervirdiff(FILE *fplog,int eDispCorr,t_forcerec *fr)
 
 void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
 		   int natoms,matrix box,real lambda,
-		   tensor pres,tensor virial,real ener[])
+		   tensor pres,tensor virial,real ener[],gmx_localp_grid_t *localp_grid)
 {
   static bool bFirst=TRUE;
   bool bCorrAll,bCorrPres;
   real dvdlambda,invvol,dens,ninter,avcsix,avctwelve,enerdiff,svir=0,spres=0;
   int  m;
+	int i,j,k,ngrid;
 
   ener[F_DISPCORR] = 0.0;
 
@@ -1005,7 +1019,15 @@ void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
       }
       ener[F_PRES] += spres;
     }
-    
+ 
+	  ngrid=localp_grid->nx*localp_grid->ny*localp_grid->nz;
+	  
+      for(i=0;i<ngrid;i++)
+      {
+          for(m=0; m<DIM; m++) 
+			  localp_grid->current_grid[i][m][m] -= svir/ngrid;
+      }
+      	  
     if (bFirst && fplog) {
       if (bCorrAll)
 	fprintf(fplog,"Long Range LJ corr.: <C6> %10.4e, <C12> %10.4e\n",

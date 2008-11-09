@@ -67,4 +67,4 @@ extern int relax_shell_flexcon(FILE *log,t_commrec *cr,bool bVerbose,
 			       real t,rvec mu_tot,
 			       int natoms,bool *bConverged,
 			       gmx_vsite_t *vsite,
-			       FILE *fp_field);
+			       FILE *fp_field,gmx_localp_grid_t *localp_grid);

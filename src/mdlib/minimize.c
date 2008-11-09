@@ -332,7 +332,7 @@ void init_em(FILE *fplog,const char *title,
     constrain(PAR(cr) ? NULL : fplog,TRUE,TRUE,constr,&(*top)->idef,
 	      ir,cr,-1,0,mdatoms,
 	      ems->s.x,ems->s.x,NULL,ems->s.box,ems->s.lambda,&dvdlambda,
-	      NULL,NULL,nrnb,econqCoord);
+	      NULL,NULL,nrnb,econqCoord,NULL);
   }
 
   if (MASTER(cr)) {
@@ -460,7 +460,7 @@ static void do_em_step(t_commrec *cr,t_inputrec *ir,t_mdatoms *md,
     constrain(NULL,TRUE,TRUE,constr,&top->idef,	
 	      ir,cr,count,0,md,
 	      s1->x,s2->x,NULL,s2->box,s2->lambda,
-	      &dvdlambda,NULL,NULL,nrnb,econqCoord);
+	      &dvdlambda,NULL,NULL,nrnb,econqCoord,NULL);
     wallcycle_stop(wcycle,ewcCONSTR);
   }
 }
@@ -590,7 +590,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 	   ems->f,*buf,force_vir,mdatoms,enerd,fcd,
 	   ems->s.lambda,graph,fr,vsite,mu_tot,t,NULL,NULL,
 	   GMX_FORCE_STATECHANGED | GMX_FORCE_ALLFORCES |
-	   (bNS ? GMX_FORCE_NS : 0));
+	   (bNS ? GMX_FORCE_NS : 0),NULL);
 
   /* Clear the unused shake virial and pressure */
   clear_mat(shake_vir);
@@ -598,7 +598,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
 
   /* Calculate long range corrections to pressure and energy */
   calc_dispcorr(fplog,inputrec,fr,count,mdatoms->nr,ems->s.box,ems->s.lambda,
-		pres,force_vir,enerd->term);
+		pres,force_vir,enerd->term,NULL);
 
   /* Communicate stuff when parallel */
   if (PAR(cr)) {
@@ -619,7 +619,7 @@ static void evaluate_energy(FILE *fplog,bool bVerbose,t_commrec *cr,
     constrain(NULL,FALSE,FALSE,constr,&top->idef,
 	      inputrec,cr,count,0,mdatoms,
 	      ems->s.x,ems->f,ems->f,ems->s.box,ems->s.lambda,&dvdl,
-	      NULL,&shake_vir,nrnb,econqForce);
+	      NULL,&shake_vir,nrnb,econqForce,NULL);
     if (fr->bSepDVDL && fplog)
       fprintf(fplog,sepdvdlformat,"Constraints",t,dvdl);
     enerd->term[F_DVDL] += dvdl;
@@ -2768,14 +2768,14 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 		 lambda,NULL,fr,NULL,mu_tot,t,NULL,NULL,
 		 GMX_FORCE_NONBONDED |
 		 (bNS ? GMX_FORCE_NS : 0) |
-		 (bStateChanged ? GMX_FORCE_STATECHANGED : 0)); 
+		 (bStateChanged ? GMX_FORCE_STATECHANGED : 0),NULL); 
 	cr->nnodes = nnodes;
 	bStateChanged = FALSE;
 	bNS = FALSE;
 
 	/* Calculate long range corrections to pressure and energy */
 	calc_dispcorr(fplog,inputrec,fr,step,mdatoms->nr,rerun_fr.box,lambda,
-		      pres,vir,enerd->term);
+		      pres,vir,enerd->term,NULL);
 	
 	/* If the compiler doesn't optimize this check away
 	 * we catch the NAN energies.

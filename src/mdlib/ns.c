@@ -1585,7 +1585,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                          real lambda,real *dvdlambda,
                          gmx_grppairener_t *grppener,
                          bool bDoVdW,bool bDoCoul,
-                         bool bEvaluateNow,bool bHaveVdW[],bool bDoForces)
+                         bool bEvaluateNow,bool bHaveVdW[],bool bDoForces,gmx_localp_grid_t *localp_grid)
 {
     int n,i;
     t_nblist *nl;
@@ -1602,7 +1602,7 @@ static void do_longrange(t_commrec *cr,gmx_localtop_t *top,t_forcerec *fr,
                 do_nonbonded(cr,fr,x,fr->f_twin,md,
                              grppener->ener[fr->bBHAM ? egBHAMLR : egLJLR],
                              grppener->ener[egCOULLR],box_size,
-                             nrnb,lambda,dvdlambda,TRUE,n,i,bDoForces);
+                             nrnb,lambda,dvdlambda,TRUE,n,i,bDoForces,localp_grid);
                 
                 reset_neighbor_list(fr,TRUE,n,i);
             }
@@ -1627,7 +1627,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                        real lambda,real *dvdlambda,
                        gmx_grppairener_t *grppener,
                        bool bHaveVdW[],bool bDoForces,
-                       bool bMakeQMMMnblist)
+                       bool bMakeQMMMnblist,gmx_localp_grid_t *localp_grid)
 {
     gmx_ns_t *ns;
     atom_id **nl_lr_ljc,**nl_lr_one,**nl_sr;
@@ -2044,7 +2044,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              lambda,dvdlambda,
                                                                              grppener,
                                                                              TRUE,TRUE,FALSE,
-                                                                             bHaveVdW,bDoForces);
+                                                                             bHaveVdW,bDoForces,localp_grid);
                                                                 nlr_ljc[jgid]=0;
                                                             }
                                                             nl_lr_ljc[jgid][nlr_ljc[jgid]++]=jjcg;
@@ -2059,7 +2059,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                                                              lambda,dvdlambda,
                                                                              grppener,
                                                                              rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
-                                                                             bHaveVdW,bDoForces);
+                                                                             bHaveVdW,bDoForces,localp_grid);
                                                                 nlr_one[jgid]=0;
                                                             }
                                                             nl_lr_one[jgid][nlr_one[jgid]++]=jjcg;
@@ -2089,7 +2089,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                             do_longrange(cr,top,fr,ngid,md,icg,nn,nlr_ljc[nn],
                                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
                                          lambda,dvdlambda,grppener,TRUE,TRUE,FALSE,
-                                         bHaveVdW,bDoForces);
+                                         bHaveVdW,bDoForces,localp_grid);
                         }
                         
                         if (nlr_one[nn] > 0)
@@ -2098,7 +2098,7 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
                                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
                                          lambda,dvdlambda,grppener,
                                          rvdw_lt_rcoul,rcoul_lt_rvdw,FALSE,
-                                         bHaveVdW,bDoForces);
+                                         bHaveVdW,bDoForces,localp_grid);
                         }
                     }
                 }
@@ -2115,14 +2115,14 @@ static int nsgrid_core(FILE *log,t_commrec *cr,t_forcerec *fr,
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_ljc[nn],
                          nl_lr_ljc[nn],bexcl,shift,x,box_size,nrnb,
                          lambda,dvdlambda,grppener,
-                         TRUE,TRUE,TRUE,bHaveVdW,bDoForces);
+                         TRUE,TRUE,TRUE,bHaveVdW,bDoForces,localp_grid);
         }
         if (rl2 > rm2) {
             do_longrange(cr,top,fr,0,md,icg,nn,nlr_one[nn],
                          nl_lr_one[nn],bexcl,shift,x,box_size,nrnb,
                          lambda,dvdlambda,grppener,
                          rvdw_lt_rcoul,rcoul_lt_rvdw,
-                         TRUE,bHaveVdW,bDoForces);
+                         TRUE,bHaveVdW,bDoForces,localp_grid);
         }
     }
     debug_gmx();
@@ -2248,7 +2248,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
                       t_nrnb *nrnb,t_mdatoms *md,
                       real lambda,real *dvdlambda,
                       gmx_grppairener_t *grppener,
-                      bool bFillGrid,bool bDoForces)
+                      bool bFillGrid,bool bDoForces,gmx_localp_grid_t *localp_grid)
 {
     t_block  *cgs=&(top->cgs);
     rvec     box_size;
@@ -2361,7 +2361,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
         nsearch = nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                               grid,x,ns->bexcl,ns->bExcludeAlleg,
                               nrnb,md,lambda,dvdlambda,grppener,
-                              ns->bHaveVdW,bDoForces,FALSE);
+                              ns->bHaveVdW,bDoForces,FALSE,localp_grid);
         
         /* neighbour searching withouth QMMM! QM atoms have zero charge in
          * the classical calculation. The charge-charge interaction
@@ -2377,7 +2377,7 @@ int search_neighbours(FILE *log,t_forcerec *fr,
             nsearch += nsgrid_core(log,cr,fr,box,box_size,ngid,top,
                                    grid,x,ns->bexcl,ns->bExcludeAlleg,
                                    nrnb,md,lambda,dvdlambda,grppener,
-                                   ns->bHaveVdW,bDoForces,TRUE);
+                                   ns->bHaveVdW,bDoForces,TRUE,localp_grid);
         }
     }
     else 

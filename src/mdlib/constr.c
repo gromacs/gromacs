@@ -226,7 +226,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 	       rvec *x,rvec *xprime,rvec *min_proj,matrix box,
 	       real lambda,real *dvdlambda,
 	       rvec *v,tensor *vir,
-	       t_nrnb *nrnb,int econq)
+	       t_nrnb *nrnb,int econq,gmx_localp_grid_t *localp_grid)
 {
   bool    bOK;
   int     start,homenr;
@@ -267,7 +267,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
 			  x,xprime,min_proj,box,lambda,dvdlambda,
 			  invdt,v,vir!=NULL,rmdr,
 			  econq,nrnb,
-			  constr->maxwarn,&constr->warncount_lincs);
+			  constr->maxwarn,&constr->warncount_lincs,localp_grid);
     if (!bOK && constr->maxwarn >= 0 && fplog)
       fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
 	      econstr_names[econtLINCS],step);
@@ -280,7 +280,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     bOK = bshakef(fplog,homenr,md->invmass,constr->nblocks,constr->sblock,
 		  idef,ir,box,x,xprime,nrnb,
 		  constr->lagr,lambda,dvdlambda,
-		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0);
+		  invdt,v,vir!=NULL,rmdr,constr->maxwarn>=0,localp_grid);
     if (!bOK && constr->maxwarn >= 0 && fplog)
       fprintf(fplog,"Constraint error in algorithm %s at step %d\n",
 	      econstr_names[econtSHAKE],step);
@@ -297,7 +297,7 @@ bool constrain(FILE *fplog,bool bLog,bool bEner,
     switch (econq) {
     case econqCoord:
       csettle(fplog,nsettle,settle->iatoms,x[0],xprime[0],dOH,dHH,mO,mH,
-	      invdt,v[0],vir!=NULL,rmdr,&error);
+	      invdt,v[0],vir!=NULL,rmdr,&error,localp_grid);
       inc_nrnb(nrnb,eNR_SETTLE,nsettle);
       if (v != NULL)
 	inc_nrnb(nrnb,eNR_CONSTR_V,nsettle*3);

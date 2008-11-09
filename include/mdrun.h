@@ -55,6 +55,7 @@
 #include "vsite.h"
 #include "pull.h"
 #include "update.h"
+#include "localpressure.h"
 
 #define MD_GLAS         (1<<1)
 #define MD_POLARISE     (1<<2)
@@ -171,7 +172,7 @@ extern void finish_run(FILE *log,t_commrec *cr,char *confout,
 
 extern void calc_dispcorr(FILE *fplog,t_inputrec *ir,t_forcerec *fr,int step,
 			  int natoms,matrix box,real lambda,
-			  tensor pres,tensor virial,real ener[]);
+			  tensor pres,tensor virial,real ener[],gmx_localp_grid_t *localp_grid);
      
 
 typedef enum
@@ -233,7 +234,7 @@ extern void do_shakefirst(FILE *log,gmx_constr_t constr,
 			  t_inputrec *inputrec,t_mdatoms *md,
 			  t_state *state,rvec buf[],rvec f[],
 			  t_graph *graph,t_commrec *cr,t_nrnb *nrnb,
-			  t_forcerec *fr,t_idef *idef);
+			  t_forcerec *fr,t_idef *idef,gmx_localp_grid_t *localp_grid);
 			  
 extern void dynamic_load_balancing(bool bVerbose,t_commrec *cr,real capacity[],
 				   int dimension,t_mdatoms *md,t_topology *top,

@@ -46,6 +46,7 @@
 #include "vec.h"
 #include "nrnb.h"
 #include "constr.h"
+#include "localpressure.h"
 
 
 static void pv(FILE *log,char *s,rvec x)
@@ -143,7 +144,7 @@ int vec_shakef(FILE *fplog,
 	       real tol,rvec x[],rvec xp[],real omega,
 	       bool bFEP,real lambda,real lagr[],
 	       real invdt,rvec *v,
-	       bool bCalcVir,tensor rmdr)
+	       bool bCalcVir,tensor rmdr, gmx_localp_grid_t *localp_grid)
 {
   static  rvec *rij=NULL;
   static  real *M2=NULL,*tt=NULL,*dist2=NULL;
@@ -152,7 +153,7 @@ int vec_shakef(FILE *fplog,
   int     nit,ll,i,j,type;
   t_iatom *ia;
   real    L1,tol2,toler;
-  real    mm,tmp;
+	real    mm,tmp,fx,fy,fz,ccc;
   int     error;
     
   if (ncon > maxcon) {
@@ -220,16 +221,25 @@ int vec_shakef(FILE *fplog,
       /* 16 flops */
     }
 
-    if (bCalcVir) {
-      mm = lagr[ll];
-      for(i=0; i<DIM; i++) {
-	tmp = mm*rij[ll][i];
-	for(j=0; j<DIM; j++)
-	  rmdr[i][j] -= tmp*rij[ll][j];
+      if (bCalcVir) {
+          mm = lagr[ll];
+          for(i=0; i<DIM; i++) {
+              tmp = mm*rij[ll][i];
+              for(j=0; j<DIM; j++)
+                  rmdr[i][j] -= tmp*rij[ll][j];
+          }
+          /* 21 flops */
+		  
+		  ccc = invdt*invdt*lagr[ll];
+		  fx = rij[ll][0]*ccc;
+		  fy = rij[ll][1]*ccc;
+		  fz = rij[ll][2]*ccc;
+		  gmx_spread_local_virial_on_grid(localp_grid,
+										  x[ia[1]][0],x[ia[1]][1],x[ia[1]][2],
+										  x[ia[2]][0],x[ia[2]][1],x[ia[2]][2],
+										  fx,fy,fz);
       }
-      /* 21 flops */
-    }
-
+	  
     type  = ia[0];
     if (bFEP) 
       toler = L1*ip[type].constr.dA + lambda*ip[type].constr.dB;
@@ -270,7 +280,7 @@ static void check_cons(FILE *log,int nc,rvec x[],rvec xp[],
 bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
 	     t_idef *idef,t_inputrec *ir,matrix box,rvec x_s[],rvec xp[],
 	     t_nrnb *nrnb,real *lagr,real lambda,real *dvdlambda,
-	     real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError)
+	     real invdt,rvec *v,bool bCalcVir,tensor rmdr,bool bDumpOnError,gmx_localp_grid_t *localp_grid)
 {
   /* Stuff for successive overrelaxation */
   static  real delta=0.1;
@@ -298,7 +308,7 @@ bool bshakef(FILE *log,int natoms,real invmass[],int nblocks,int sblock[],
     blen /= 3;
     n0 = vec_shakef(log,natoms,invmass,blen,idef->iparams,
 		    iatoms,ir->shake_tol,x_s,xp,omega,
-		    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr);
+		    ir->efep!=efepNO,lambda,lam,invdt,v,bCalcVir,rmdr,localp_grid);
 #ifdef DEBUGSHAKE
     check_cons(log,blen,x_s,xp,idef->iparams,iatoms,invmass);
 #endif

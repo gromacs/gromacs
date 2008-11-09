@@ -127,4 +127,6 @@ wman.h \
 writeps.h \
 xdrf.h \
 xtcio.h \
-xvgr.h
+xvgr.h \
+localpressure.h
+

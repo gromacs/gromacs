@@ -48,6 +48,7 @@
 #include "force.h"
 #include "pull.h"
 #include "gmx_random.h"
+#include "localpressure.h"
 
 /* Abstract type for stochastic dynamics */
 typedef struct gmx_stochd *gmx_stochd_t;
@@ -87,12 +88,13 @@ extern void update(FILE         *fplog,
 		   gmx_constr_t constr,
 		   bool         bHaveConstr,
 		   bool         bNEMD,
-		   bool         bInitStep);
+		   bool         bInitStep,
+		   gmx_localp_grid_t *localp_grid);
 /* Return TRUE if OK, FALSE in case of Shake Error */
      
-extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
+extern void calc_ke_part(rvec x[], rvec v_old[], rvec v[],t_grpopts *opts,t_mdatoms *md,
 			 gmx_ekindata_t *ekind,t_nrnb *nrnb,
-			 real lambda);
+			 real lambda,gmx_localp_grid_t *localp_grid);
 /*
  * Compute the partial kinetic energy for home particles;
  * will be accumulated in the calling routine.
@@ -109,10 +111,10 @@ extern void calc_ke_part(rvec v[],t_grpopts *opts,t_mdatoms *md,
  *
  */
 
-extern void calc_ke_part_visc(matrix box,rvec x[],rvec v[],
+extern void calc_ke_part_visc(matrix box,rvec x[],rvec v_old[], rvec v[],
 			      t_grpopts *opts,t_mdatoms *md,
 			      gmx_ekindata_t *ekind,t_nrnb *nrnb,
-			      real lambda);
+			      real lambda,gmx_localp_grid_t *localp_grid);
 /* The same as calc_ke_part, but for viscosity calculations.
  * The cosine velocity profile is excluded from the kinetic energy.
  * The new amplitude of the velocity profile is calculated for this

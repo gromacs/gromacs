@@ -36,7 +36,7 @@ libgmx@LIBSUFFIX@_la_DEPENDENCIES = @GMXLIB_LIBOBJS@                  \
 libgmx@LIBSUFFIX@_la_LDFLAGS = -version-info @SHARED_VERSION_INFO@
 
 libgmx@LIBSUFFIX@_la_SOURCES = \
-	3dview.c	atomprop.c	bondfree.c	\
+	3dview.c	atomprop.c	bondfree.c	localpressure.c  \
 	calcgrid.c	calch.c		checkpoint.c	\
 	confio.c	copyrite.c	disre.c		do_fit.c	\
 	enxio.c		ewald_util.c	gmx_fatal.c	ffscanf.c	\

@@ -415,6 +415,11 @@ void mknb_innerloop()
 				mknb_assign("tx","fscal*dx%d%d",i,j);
 				mknb_assign("ty","fscal*dy%d%d",i,j);
 				mknb_assign("tz","fscal*dz%d%d",i,j);
+				
+				/* Call local virial update */
+                mknb_code("gmx_spread_local_virial_on_grid(localp_grid,\n");
+                mknb_code("ix%d,iy%d,iz%d,jx%d,jy%d,jz%d,tx,ty,tz);\n",i,i,i,j,j,j);
+				
 				nflops += 3;
 				/* increment i force */
 				mknb_comment("Increment i atom force");

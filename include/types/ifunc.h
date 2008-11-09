@@ -40,6 +40,7 @@
 #ifndef _ifunc_h
 #define _ifunc_h
 
+#include "localpressure.h"
 
 typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 		     const t_iparams iparams[],
@@ -47,7 +48,7 @@ typedef real t_ifunc(int nbonds,const t_iatom iatoms[],
 		     const t_pbc *pbc,const t_graph *g,
 		     real lambda,real *dvdlambda,
 		     const t_mdatoms *md,t_fcdata *fcd,
-		     int *ddgatindex);
+		     int *ddgatindex,gmx_localp_grid_t *localp_grid);
 
 /*
  * The function type t_ifunc() calculates one interaction, using iatoms[] 

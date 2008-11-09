@@ -68,6 +68,7 @@
 #include "mpelogging.h"
 #include "copyrite.h"
 #include "mtop_util.h"
+#include "localpressure.h"
 
 t_forcerec *mk_forcerec(void)
 {
@@ -1461,7 +1462,8 @@ void ns(FILE *fp,
         real       *dvdlambda,
         gmx_grppairener_t *grppener,
         bool       bFillGrid,
-        bool       bDoForces)
+        bool       bDoForces,
+        gmx_localp_grid_t *localp_grid)
 {
   static bool bFirst=TRUE;
   static int  nDNL;
@@ -1490,7 +1492,7 @@ void ns(FILE *fp,
 
   nsearch = search_neighbours(fp,fr,x,box,top,groups,cr,nrnb,md,
                               lambda,dvdlambda,grppener,
-                              bFillGrid,bDoForces);
+                              bFillGrid,bDoForces,localp_grid);
   if (debug)
     fprintf(debug,"nsearch = %d\n",nsearch);
     
@@ -1520,7 +1522,8 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                        t_blocka   *excl,    
                        rvec       mu_tot[],
                        int        flags,
-                       float      *cycles_force)
+                       float      *cycles_force,
+                       gmx_localp_grid_t *localp_grid)
 {
     int     i,nit,status;
     bool    bDoEpot,bSepDVDL,bSB;
@@ -1589,7 +1592,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                  enerd->grpp.ener[egLJSR],
                  enerd->grpp.ener[egCOULSR],box_size,nrnb,
                  lambda,&dvdlambda,FALSE,-1,-1,
-                 flags & GMX_FORCE_FORCES);
+                 flags & GMX_FORCE_FORCES,localp_grid);
     where();
     
 #ifdef GMX_MPI
@@ -1661,7 +1664,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
-                   fr->bSepDVDL && do_per_step(step,ir->nstlog),step);
+                   fr->bSepDVDL && do_per_step(step,ir->nstlog),step,localp_grid);
         debug_gmx();
         GMX_MPE_LOG(ev_calc_bonds_finish);
     }
@@ -1775,7 +1778,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
             {
                 enerd->term[F_RF_EXCL] =
                     RF_excl_correction(fplog,fr,graph,md,excl,x,f,
-                                       fr->fshift,&pbc,lambda,&dvdlambda);
+                                       fr->fshift,&pbc,lambda,&dvdlambda,localp_grid);
             }
             
             enerd->term[F_DVDL] += dvdlambda;
