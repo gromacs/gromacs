@@ -487,8 +487,10 @@ void do_force(FILE *fplog,t_commrec *cr,
      * also do the calculation of long range forces and energies.
      */
     dvdl = 0; 
+	  printf("call ns\n");
     ns(fplog,fr,x,f,box,groups,&(inputrec->opts),top,mdatoms,
        cr,nrnb,step,lambda,&dvdl,&enerd->grpp,bFillGrid,bDoForces,localp_grid);
+	  printf("ret ns\n");
     if (bSepDVDL)
       fprintf(fplog,sepdvdlformat,"LR non-bonded",0,dvdl);
     enerd->term[F_DVDL] += dvdl;
@@ -567,10 +569,14 @@ void do_force(FILE *fplog,t_commrec *cr,
     inc_nrnb(nrnb,eNR_POSRES,top->idef.il[F_POSRES].nr/2);
   }
   /* Compute the bonded and non-bonded forces */    
+	printf("call do_force_lowlevel\n");
+
   do_force_lowlevel(fplog,step,fr,inputrec,&(top->idef),
 		    cr,nrnb,wcycle,mdatoms,&(inputrec->opts),
 		    x,hist,f,enerd,fcd,box,lambda,graph,&(top->excls),mu_tot_AB,
 		    flags,&cycles_force,localp_grid);
+	printf("ret do_force_lowlevel\n");
+
   GMX_BARRIER(cr->mpi_comm_mygroup);
 
   if (ed) {

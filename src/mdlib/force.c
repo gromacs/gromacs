@@ -544,13 +544,14 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
                     excl_nalloc = a1 - a0;
                     srenew(bExcl,excl_nalloc);
                 }
+                /* Clear the exclusion list for atom ai */
+                for(ai=a0; ai<a1; ai++) {
+                    bExcl[ai-a0] = FALSE;
+                }
+
                 bExclIntra = TRUE;
                 bExclInter = FALSE;
                 for(ai=a0; ai<a1; ai++) {
-                    /* Clear the exclusion list for atom ai */
-                    for(ai=a0; ai<a1; ai++) {
-                        bExcl[ai-a0] = FALSE;
-                    }
                     /* Loop over all the exclusions of atom ai */
                     for(j=excl->index[ai]; j<excl->index[ai+1]; j++)
                     {
@@ -1586,6 +1587,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
     }
     
     where();
+	printf("call nonbonded\n");
     do_nonbonded(cr,fr,x,f,md,
                  fr->bBHAM ?
                  enerd->grpp.ener[egBHAMSR] :
@@ -1593,6 +1595,7 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
                  enerd->grpp.ener[egCOULSR],box_size,nrnb,
                  lambda,&dvdlambda,FALSE,-1,-1,
                  flags & GMX_FORCE_FORCES,localp_grid);
+	printf("ret nonbonded\n");
     where();
     
 #ifdef GMX_MPI
@@ -1661,10 +1664,12 @@ void do_force_lowlevel(FILE       *fplog,   int        step,
     if (flags & GMX_FORCE_BONDED)
     {
         GMX_MPE_LOG(ev_calc_bonds_start);
+		printf("call calc_bonds\n");
         calc_bonds(fplog,cr->ms,
                    idef,x,hist,f,fr,&pbc,graph,enerd,nrnb,lambda,md,fcd,
                    DOMAINDECOMP(cr) ? cr->dd->gatindex : NULL,
                    fr->bSepDVDL && do_per_step(step,ir->nstlog),step,localp_grid);
+		printf("ret calc_bonds\n");
         debug_gmx();
         GMX_MPE_LOG(ev_calc_bonds_finish);
     }
