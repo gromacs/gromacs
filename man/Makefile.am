@@ -3,6 +3,6 @@
 # Don't edit - this file is generated automatically from Makefile.am
 #
 
-SUBDIRS = man1 man7
+SUBDIRS = man1
 
 CLEANFILES = *~ \\\#*
