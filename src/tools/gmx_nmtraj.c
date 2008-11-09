@@ -144,9 +144,9 @@ int gmx_nmtraj(int argc,char *argv[])
 
   read_eigenvectors(opt2fn("-v",NFILE,fnm),&natoms,&bFit,
 		    &xref,&bDMR,&xav,&bDMA,&nvec,&eignr,&eigvec,&eigval);
-  
-  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,bDMA);
 
+  read_tps_conf(ftp2fn(efTPS,NFILE,fnm),title,&top,&ePBC,&xtop,NULL,box,bDMA);
+	
   /* Find vectors and phases */
   
   /* first find number of args in string */
@@ -163,9 +163,10 @@ int gmx_nmtraj(int argc,char *argv[])
   p=eignrvec;
   for(i=0;i<nmodes;i++)
   {
-      imodes[i]=strtol(p,&pe,10);
+	  /* C indices start on 0 */
+      imodes[i]=strtol(p,&p,10)-1;
   }
-    
+ 
   /* Now read phases */
   nphases=0;
   p=phasevec;
@@ -241,19 +242,18 @@ int gmx_nmtraj(int argc,char *argv[])
 
   snew(xout,natoms);
   snew(amplitude,nmodes);
-
+	
   for(i=0;i<nmodes;i++)
   {
       kmode = out_eigidx[i];
       this_eigvec=eigvec[kmode];
-                         
-      if( (kmode >= 7) && (eigval[kmode] > 0))
-      {
+   
+      if( (kmode >= 6) && (eigval[kmode] > 0))
+      {		  		  
           /* Derive amplitude from temperature and eigenvalue if we can */
           
           /* Convert eigenvalue to angular frequency, in units s^(-1) */
           omega = sqrt(eigval[kmode]*1.0E21/(AVOGADRO*AMU));
-          
           /* Harmonic motion will be x=x0 + A*sin(omega*t)*eigenvec.
            * The velocity is thus:
            * 
@@ -265,31 +265,37 @@ int gmx_nmtraj(int argc,char *argv[])
            * (1/4)*mass*A*omega*eigenvec
            *
            * For t =2*pi*n, all energy will be kinetic, and v=A*omega*eigenvec.
-           * The kinetic energy will be sum(0.5*mass*v*v) if we temporarily set A to 1.
+           * The kinetic energy will be sum(0.5*mass*v*v) if we temporarily set A to 1,
+		   * and the average over a period half of this.
            */
           
           Ekin = 0;
-          for(i=0;i<natoms;i++)
+          for(k=0;k<natoms;k++)
           {
-              m = atoms->atom[i].m;
+              m = atoms->atom[k].m;
               for(d=0;d<DIM;d++)
               {
-                  vel   = omega*this_eigvec[i][d];
-                  Ekin += 0.25*m*vel*vel;
+                  vel   = omega*this_eigvec[k][d];
+                  Ekin += 0.5*0.5*m*vel*vel;
               }
           }
-          /* Convert Ekin from amu*(nm/s)^2 to J.
+		  
+          /* Convert Ekin from amu*(nm/s)^2 to J, i.e., kg*(m/s)^2
            * This will also be proportional to A^2 
            */   
           Ekin *= AMU*1E-18;
           
           /* Set the amplitude so the energy is kT/2 */
-          amplitude[i] = sqrt(0.5*BOLTZMANN*temp/Ekin);
-      }
+          amplitude[i] = sqrt(0.5*BOLTZMANN*temp/Ekin);		  
+	  }
+	  else
+	  {
+		  amplitude[i] = refamplitude;
+	  }
   }
-    
-  out=open_trx(ftp2fn(efTRX,NFILE,fnm),"w");
-    
+    	
+  out=open_trx(ftp2fn(efTRO,NFILE,fnm),"w");
+	
     /* Write a sine oscillation around the average structure, 
      * modulated by the eigenvector with selected amplitude.
      */
@@ -306,7 +312,7 @@ int gmx_nmtraj(int argc,char *argv[])
             {
                 for(d=0;d<DIM;d++)
                 {
-		  xout[j][d] = xav[j][d] + amplitude[k]*sin(2*M_PI*(fraction+phases[k]/360.0))*this_eigvec[j][d];
+					xout[j][d] = xav[j][d] + amplitude[k]*sin(2*M_PI*(fraction+phases[k]/360.0))*this_eigvec[j][d];
                 }
             }
         }
