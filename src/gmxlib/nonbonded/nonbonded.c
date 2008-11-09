@@ -216,52 +216,7 @@ gmx_setup_kernels(FILE *fplog)
 	
     nb_kernel_setup(fplog,nb_kernel_list);
 
-    if(getenv("NOASSEMBLYLOOPS") != NULL)
-    {
-        if(fplog)
-            fprintf(fplog,
-                    "Found environment variable NOASSEMBLYLOOPS.\n"
-                    "Disabling all SSE/SSE2/3DNow/Altivec/ia64 asm support.\n\n");
-        return;
-    }
-    
-#ifdef GMX_DOUBLE
-
-    /* Double precision */    
-
-#ifdef GMX_IA32_SSE2    
-    nb_kernel_setup_ia32_sse2(fplog,nb_kernel_list);
-#elif defined GMX_X86_64_SSE2 
-    nb_kernel_setup_x86_64_sse2(fplog,nb_kernel_list);
-#elif defined GMX_IA64_ASM
-    nb_kernel_setup_ia64_double(fplog,nb_kernel_list);
-#endif
-    
-#else
-    /* Single */
-
-    /* Older Athlons only support 3DNow, so check that first, and 
-     * then newer AthlonXP/Opteron CPUs with SSE support will override
-     * it in the SSE check.
-     */   
-#ifdef GMX_IA32_3DNOW
-    nb_kernel_setup_ia32_3dnow(fplog,nb_kernel_list);
-#endif
-#ifdef GMX_IA32_SSE    
-    nb_kernel_setup_ia32_sse(fplog,nb_kernel_list);
-#elif defined GMX_X86_64_SSE   
-    nb_kernel_setup_x86_64_sse(fplog,nb_kernel_list);
-#elif defined GMX_PPC_ALTIVEC
-    nb_kernel_setup_ppc_altivec(fplog,nb_kernel_list);
-#elif defined GMX_IA64_ASM
-    nb_kernel_setup_ia64_single(fplog,nb_kernel_list);
-#endif
-    
-#endif /* precision */
-
-#ifdef GMX_BLUEGENE
-    nb_kernel_setup_bluegene(fplog,nb_kernel_list);
-#endif
+    /* No assembly kernels used with localpressure */
 
 	if(fplog)
 	    fprintf(fplog,"\n\n");

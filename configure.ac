@@ -24,15 +24,16 @@ AC_DISABLE_SHARED
 # Simple options and makefile variables
 #######################################################################
 
+### NB: The local pressure version is double by default!
 
 ### Single/Double
 AC_ARG_ENABLE(float,
 	     [AC_HELP_STRING([--disable-float],
-	                     [Use double instead of single precision])],, enable_float=yes)
+	                     [Use double instead of single precision])],, enable_float=no)
 
 AC_ARG_ENABLE(double,
 	     [AC_HELP_STRING([--enable-double],
-	                     [Same effect as --disable-float])],, enable_double=no)
+	                     [Same effect as --disable-float])],, enable_double=yes)
 if test "$enable_double" = "yes"; then
    enable_float=no;
 fi
