@@ -512,7 +512,7 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
     const gmx_molblock_t *molb;
     int  *cginfo;
     int  mb,m,ncg_tot,cg_offset,cg,a_offset,a0,a1,gid,ai,j,aj,excl_nalloc;
-    bool *bExcl,bExclIntra,bExclInter;
+    bool *bExcl,bExclIntraAll,bExclInter;
 
     ncg_tot = ncg_mtop(mtop);
     snew(cginfo,ncg_tot);
@@ -543,12 +543,15 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
                     excl_nalloc = a1 - a0;
                     srenew(bExcl,excl_nalloc);
                 }
-                bExclIntra = TRUE;
-                bExclInter = FALSE;
+                /* bExclIntraAll: all intra cg interactions excluded
+                 * bExclInter:    any inter cg interactions excluded
+                 */
+                bExclIntraAll = TRUE;
+                bExclInter    = FALSE;
                 for(ai=a0; ai<a1; ai++) {
                     /* Clear the exclusion list for atom ai */
-                    for(ai=a0; ai<a1; ai++) {
-                        bExcl[ai-a0] = FALSE;
+                    for(aj=a0; aj<a1; aj++) {
+                        bExcl[aj-a0] = FALSE;
                     }
                     /* Loop over all the exclusions of atom ai */
                     for(j=excl->index[ai]; j<excl->index[ai+1]; j++)
@@ -568,14 +571,18 @@ static int *init_cginfo(FILE *fplog,const gmx_mtop_t *mtop,
                     {
                         if (!bExcl[aj-a0])
                         {
-                            bExclIntra = FALSE;
+                            bExclIntraAll = FALSE;
                         }
                     }
                 }
-                if (bExclIntra)
+                if (bExclIntraAll)
+                {
                     SET_CGINFO_EXCL_INTRA(cginfo[cg_offset+cg]);
+                }
                 if (bExclInter)
+                {
                     SET_CGINFO_EXCL_INTER(cginfo[cg_offset+cg]);
+                }
             }
             cg_offset += cgs->nr;
             a_offset  += cgs->index[cgs->nr];
