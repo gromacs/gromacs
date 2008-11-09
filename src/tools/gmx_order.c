@@ -168,8 +168,8 @@ static void find_nearest_neighbours(t_topology top, int ePBC,
 	cost = iprod(urk,urj) + onethird;
 	cost2 = cost * cost;
 
-	/* sgmol[i] += 3*cost2/32; 
-	   sgmol[i] += cost2; */
+	/* sgmol[i] += 3*cost2/32;  */
+	   sgmol[i] += cost2; 
 
 	/* determine distribution */
 	ibin = nsgbin * cost2;
