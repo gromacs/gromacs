@@ -34,32 +34,32 @@ void NB_KERNEL (
                     int *    jindex,
                     int *    jjnr,
                     int *    shift,
-                    float *  shiftvec,
-                    float *  fshift,
+                    real *   shiftvec,
+                    real *   fshift,
                     int *    gid,
-                    float *  pos,
-                    float *  faction,
-                    float *  charge,
-                    float *  p_facel,
-                    float *  p_krf,
-                    float *  p_crf,
-                    float *  Vc,
+                    real *   pos,
+                    real *   faction,
+                    real *   charge,
+                    real *   p_facel,
+                    real *   p_krf,
+                    real *   p_crf,
+                    real *   Vc,
                     int *    type,
                     int *    p_ntype,
-                    float *  vdwparam,
-                    float *  Vvdw,
-                    float *  p_tabscale,
-                    float *  VFtab,
-                    float *  invsqrta,
-                    float *  dvda,
-                    float *  p_gbtabscale,
-                    float *  GBtab,
+                    real *   vdwparam,
+                    real *   Vvdw,
+                    real *   p_tabscale,
+                    real *   VFtab,
+                    real *   invsqrta,
+                    real *   dvda,
+                    real *   p_gbtabscale,
+                    real *   GBtab,
                     int *    p_nthreads,
                     int *    count,
                     void *   mtx,
                     int *    outeriter,
                     int *    inneriter,
-                    float *  work)
+                    real *   work)
 {
     double _Complex qM,qH;
     double _Complex zero  = __cmplx(0.0,0.0);
@@ -67,7 +67,7 @@ void NB_KERNEL (
     double _Complex three = __cmplx(3.0,3.0);
     double conv1[2],conv2[2],conv3[2],conv4[2];
 
-    float           _qM,_qH,_facel,_tabscale,_gbtabscale,_krf,_crf;
+    real            _qM,_qH,_facel,_tabscale,_gbtabscale,_krf,_crf;
 
     int             nri,ntype,nthreads,n,ii,nj0,nj1,nti;
 
@@ -124,9 +124,9 @@ void NB_KERNEL (
 	
 	// shiftvec is the center of a water group
 
-        float _shX  = shiftvec[is3+0];  
-        float _shY  = shiftvec[is3+1];
-        float _shZ  = shiftvec[is3+2];
+        real  _shX  = shiftvec[is3+0];  
+        real  _shY  = shiftvec[is3+1];
+        real  _shZ  = shiftvec[is3+2];
 
         int ii  = iinr[n];        
         int ii3 = 3*ii;
@@ -134,18 +134,18 @@ void NB_KERNEL (
 
 	// add the shift vector to all water atoms
 
-        float _ix1 = _shX + pos[ii3+0];
-        float _iy1 = _shY + pos[ii3+1];
-        float _iz1 = _shZ + pos[ii3+2];
-        float _ix2 = _shX + pos[ii3+3];
-        float _iy2 = _shY + pos[ii3+4];
-        float _iz2 = _shZ + pos[ii3+5];
-        float _ix3 = _shX + pos[ii3+6];
-        float _iy3 = _shY + pos[ii3+7];
-        float _iz3 = _shZ + pos[ii3+8];
-        float _ix4 = _shX + pos[ii3+9];
-        float _iy4 = _shY + pos[ii3+10];
-        float _iz4 = _shZ + pos[ii3+11];
+        real  _ix1 = _shX + pos[ii3+0];
+        real  _iy1 = _shY + pos[ii3+1];
+        real  _iz1 = _shZ + pos[ii3+2];
+        real  _ix2 = _shX + pos[ii3+3];
+        real  _iy2 = _shY + pos[ii3+4];
+        real  _iz2 = _shZ + pos[ii3+5];
+        real  _ix3 = _shX + pos[ii3+6];
+        real  _iy3 = _shY + pos[ii3+7];
+        real  _iz3 = _shZ + pos[ii3+8];
+        real  _ix4 = _shX + pos[ii3+9];
+        real  _iy4 = _shY + pos[ii3+10];
+        real  _iz4 = _shZ + pos[ii3+11];
 
 	// clone all positions in complex variables
 	
