@@ -1025,37 +1025,7 @@ AC_OUTPUT
 # Echo some important info, to avoid stupid mistakes
 #
 
-if test "$enable_float" = "no" -a "$name_transform_provided" = "no"; then
-  echo ""
-  echo "* You are compiling a double precision version of Gromacs -"
-  echo "  program names will be suffixed with _d to avoid overwriting single"
-  echo "  precision files. You can override it with --program-suffix"
-fi
-
-if test "$name_transform_provided" = "no" -a "$enable_mpi" = "yes"; then
-  echo ""
-  echo "* Seems you are compiling with MPI support. You can install the MPI-"
-  echo "  enabled programs with suffixed names to have both MPI and non-MPI"
-  echo "  versions. This is useful e.g. on supercomputers where you usually"
-  echo "  cannot run MPI-linked programs on the login node."
-  echo "  Set a suffix with e.g. --program-suffix=_mpi (or _mpi_d for double)."
-  echo "  You only need MPI for mdrun, so if you already have non-MPI stuff"
-  echo "  installed you can issue make mdrun; make install-mdrun."
-fi
-
-if test "$host_vendor" = "apple" -a "$enable_apple_64bit" = "no"; then
-  echo ""
-  echo "* Did you know that you can compile a 64-bit version of Gromacs to improve"
-  echo "  performance on recent Intel Macs? You need to install a 64-bit version"
-  echo "  of FFTW first (add -m64 to CFLAGS, or download it from the Gromacs site)"
-  echo "  after which you can simply specify --enable-apple-64bit to this script." 
-fi
-
-if test "$enable_shared" = "no"; then
-  echo ""
-  echo "* On most platforms you can save 10X space with dynamic libraries, although"
-  echo "  the binaries might be less portable. Why not try --enable-shared ?"
-fi  
+echo "NB: The localpressure version is compiled in double by default."
 
 echo ""
 
