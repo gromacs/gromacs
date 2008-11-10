@@ -534,6 +534,16 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN);
   bGStatEveryStep = !(Flags & MD_NOGSTAT);
   bAppend  = (Flags & MD_APPENDFILES);
+
+  /* If we do reruns, the step numbers in the output energy frames cannot be
+   * used for averages (since energies are only calculated for trajectory frames).
+   * By turning of bGStatEveryStep we force g_energy to use the actual energy frame 
+   * contents for the averages instead.
+   */
+  if(bRerunMD)
+  {
+      bGStatEveryStep = FALSE;
+  }
 	
   if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
     char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
