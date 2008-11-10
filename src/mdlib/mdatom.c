@@ -181,7 +181,7 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     }
 
     if (md->cFREEZE) {
-      md->cFREEZE[i]	= groups->grpnr[egcFREEZE][ag];
+      md->cFREEZE[i] = ggrpnr(groups,egcFREEZE,ag);
     }
     if (EI_ENERGY_MINIMIZATION(ir->eI)) {
       mA = 1.0;
