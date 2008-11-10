@@ -415,7 +415,6 @@ void do_nonbonded(t_commrec *cr,t_forcerec *fr,
 											  &outeriter,
 											  &inneriter);
 					}
-					
 					/* Call the appropriate nonbonded kernel function */
 					(*kernelptr)( &(nlist->nri),
 								 nlist->iinr,
@@ -617,14 +616,14 @@ do_listed_vdw_q(int ftype,int nbonds,
         {
             /* This is a bonded interaction, atoms are in the same box */
             shift_f = CENTRAL;
-            r2 = distance2(x[ai],x[aj]);
+			rvec_sub(x[ai],x[aj],dx);
         }
         else 
         {
             /* Apply full periodic boundary conditions */
             shift_f = pbc_dx_aiuc(pbc,x[ai],x[aj],dx);
-            r2 = norm2(dx);
         }
+		r2 = norm2(dx);
 
         if (r2 >= rtab2) 
         {

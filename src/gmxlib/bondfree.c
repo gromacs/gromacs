@@ -999,11 +999,12 @@ void do_dih_fup(int i,int j,int k,int l,real ddphi,
       t1=IVEC2IS(dt_ij);
       t2=IVEC2IS(dt_kj);
       t3=IVEC2IS(dt_lj);
-    } else if (pbc) {
-      t3 = pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
+		/* Needed for local pressure */
+	  pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
     } else {
-      t3 = CENTRAL;
-    }
+		/* For local pressure we always need dx_jl, even when we dont have PBC! */
+      t3 = pbc_rvec_sub(pbc,x[l],x[j],dx_jl);
+    } 
     
     rvec_inc(fshift[t1],f_i);
     rvec_dec(fshift[CENTRAL],f_j);
@@ -2152,7 +2153,7 @@ void calc_bonds(FILE *fplog,const gmx_multisim_t *ms,
 	nat = interaction_function[ftype].nratoms+1;
 	dvdl = 0;
 		  
-    if(posres_warning == FALSE)
+    if(ftype==F_POSRES && posres_warning==FALSE)
 	{
 		fprintf(stderr,"WARNING! Position restraint forces do NOT contribute to local pressure.\n"
 				"It is probably a good idea to turn them off...\n");
