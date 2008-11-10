@@ -561,6 +561,16 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN);
   bGStatEveryStep = !(Flags & MD_NOGSTAT);
   bAppend  = (Flags & MD_APPENDFILES);
+
+  /* If we do reruns, the step numbers in the output energy frames cannot be
+   * used for averages (since energies are only calculated for trajectory frames).
+   * By turning of bGStatEveryStep we force g_energy to use the actual energy frame 
+   * contents for the averages instead.
+   */
+  if(bRerunMD)
+  {
+      bGStatEveryStep = FALSE;
+  }
 	
   if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
     char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
@@ -748,7 +758,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       printf("You will also need to think about the grid density to avoid exhausting memory;\n");
       printf("each grid cell has to store a 9-element tensor in double precision, i.e.\n");
       printf("it takes 72 bytes. With a box of 20x20x20nm and a grid spacing of e.g 0.1 nm,\n");
-      printf("the grid would use take half a gigabite...\n\n");
+      printf("the grid would need half a gigabite, and we need another copy to sum it...\n\n");
 
       printf("Note that this version is seriously hacked. If you have any questions\n");
       printf("specifically about local pressure stuff you can send them to lindahl@cbr.su.se,\n");
@@ -858,7 +868,10 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   }
 
   debug_gmx();
-
+	
+  for(i=0;i<state->natoms;i++)
+     copy_rvec(state->v[i],v_old[i]);
+		
   if (Flags & MD_READ_EKIN)
   {
       restore_ekinstate_from_state(cr,ekind,&state_global->ekinstate);
@@ -1004,11 +1017,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
       t = t0 + step*ir->delta_t;
     }
-    if (Flags & MD_APPENDFILES) {
-      step_ene = step;
-    } else {
-      step_ene = step_rel;
-    }
+	  
+	  if (Flags & MD_APPENDFILES) {
+		  step_ene = step;
+	  } else {
+		  step_ene = step_rel;
+	  }
 
     if (ir->efep != efepNO) {
       if (bRerunMD && rerun_fr.bLambda && (ir->delta_lambda!=0))
@@ -1366,6 +1380,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       calc_ke_part_visc(state->box,state->x,v_old,state->v,&(ir->opts),
 			mdatoms,ekind,nrnb,state->lambda,localp_grid);
     }
+
+    for(i=0;i<state->natoms;i++)
+          copy_rvec(state->v[i],v_old[i]);
 
     /* since we use the new coordinates in calc_ke_part_visc, we should use
      * the new box too. Still, won't this be offset by one timestep in the

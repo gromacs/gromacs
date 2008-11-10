@@ -1628,15 +1628,11 @@ void do_index(char* mdparin, char *ndx,
     do_numbering(natoms,groups,nvcm,ptr1,grps,gnames,egcVCM,
 		 restnm,nvcm==0 ? egrptpALL_GENREST : egrptpPART,bVerbose);
 
-  /*
-    Local pressure does not work with PME, so we disable this warning! 
-
   if (bRest) {
     warning("Some atoms are not part of any center of mass motion removal group.\n"
 	    "This may lead to artifacts.\n"
 	    "In most cases one should use one group for the whole system.");
   }
-  */
 
   /* Now we have filled the freeze struct, so we can calculate NRDF */ 
   calc_nrdf(mtop,ir,gnames);
@@ -1828,6 +1824,8 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 	bCharge = TRUE;
       }
     }
+
+    /* Warning disabled for localpressure, where PME does not work.
     if (bCharge) {
       set_warning_line(mdparin,-1);
       sprintf(err_buf,
@@ -1836,6 +1834,8 @@ void triple_check(char *mdparin,t_inputrec *ir,gmx_mtop_t *sys,int *nerror)
 	      EI_TPI(ir->eI) ? EELTYPE(eelRF) : EELTYPE(eelPME));
       warning_note(err_buf);
     }
+    */
+
   }
 
   /* Generalized reaction field */  
