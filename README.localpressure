@@ -1,0 +1,24 @@
+The local pressure version of mdrun dumps the average local pressure matrix 
+directly in binary format. It is now as fancy as the rest of Gromacs with 
+binary independent formats, etc., but pretty straightforward to decipher.
+
+By default, the local pressure file is called localpressure.dat
+
+For an example, see the file simple_localpres_analysis.c that reads the local 
+pressure grid and prints the pressure tensor (9 terms) averaged over each 
+slice in the z dimension.
+
+The format of the file is:
+
+1. A 4-byte integer (bDouble). If this is 1, the file is in double precision, 
+   and if it is 0 the file is in single precision.
+2. Three 4-byte integers (nx,ny,nz) specifying the grid dimensions.
+3. The actual data. First, each element in the matrix is a 9-byte matrix or
+   specifying the pressure tensor elements in double/single precision.
+   There are a total of nx*ny*nz such elements, stored so that the X 
+   dimension varies slowest, and Z the fastest (natural C order).
+   (See the simple analysis file for reading examples.)
+
+
+
+   
