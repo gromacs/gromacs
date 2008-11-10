@@ -244,7 +244,9 @@ int main(int argc,char *argv[])
     "is sufficient, this signal should not be sent to mpirun or",
     "the mdrun process that is the parent of the others.",
     "[PAR]",
-    "When mdrun is started with MPI, it does not run niced by default."
+    "When mdrun is started with MPI, it does not run niced by default.",
+	"[PAR]",
+	"Local pressure is written to localpressure.dat by default, change with -olp."
   };
   t_commrec    *cr;
   static t_filenm fnm[] = {
@@ -274,7 +276,8 @@ int main(int argc,char *argv[])
     { efXVG, "-px",     "pullx",    ffOPTWR },
     { efXVG, "-pf",     "pullf",    ffOPTWR },
     { efMTX, "-mtx",    "nm",       ffOPTWR },
-    { efNDX, "-dn",     "dipole",   ffOPTWR }
+    { efNDX, "-dn",     "dipole",   ffOPTWR },
+    { efDAT, "-olp",    "localpressure", ffWRITE }
   };
 #define NFILE asize(fnm)
 
