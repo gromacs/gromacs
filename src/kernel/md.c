@@ -1728,7 +1728,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 
 	printf("\n\nDumping local pressure based on %d frames to %s...\n",
 		   localp_grid->nframes,opt2fn("-olp",nfile,fnm));
-	fplocal=fopen(opt2fn("-olp",nfile,fnm)); /* localpressure.dat by default */
+	fplocal=fopen(opt2fn("-olp",nfile,fnm),"w"); /* localpressure.dat by default */
 	i=(sizeof(real)==sizeof(double)) ? 1 : 0;
 	fwrite(&i,sizeof(int),1,fplocal); /* 1 if double, 0 if single precision */
 	fwrite(&localp_grid->box,sizeof(real),9,fplocal);
