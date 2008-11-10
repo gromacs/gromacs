@@ -746,7 +746,7 @@ static void generate_qmexcl_moltype(gmx_moltype_t *molt,unsigned char *grpnr,
 	qm_max += 100;
 	srenew(qm_arr,qm_max);
       }
-      if(grpnr[i] == j){
+      if ((grpnr ? grpnr[i] : 0) == j){
 	qm_arr[qm_nr++] = i;
       }
     }
@@ -951,9 +951,6 @@ void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir)
   bool bQMMM;
 
   grpnr = sys->groups.grpnr[egcQMMM];
-  if (grpnr == NULL) {
-    gmx_fatal(FARGS,"Can not handle a QMMM system which is fully QM");
-  }
 
   for(mb=0; mb<sys->nmolblock; mb++) {
     molb = &sys->molblock[mb];
@@ -961,7 +958,7 @@ void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir)
     for(mol=0; mol<molb->nmol; mol++) {
       bQMMM = FALSE;
       for(i=0; i<nat_mol; i++) {
-	if (grpnr[i] < ir->opts.ngQM) {
+	if ((grpnr ? grpnr[i] : 0) < ir->opts.ngQM) {
 	  bQMMM = TRUE;
 	}
       }
@@ -1007,7 +1004,9 @@ void generate_qmexcl(gmx_mtop_t *sys,t_inputrec *ir)
 	
 	generate_qmexcl_moltype(&sys->moltype[molb->type],grpnr,ir);
       }
-      grpnr += nat_mol;
+      if (grpnr) {
+	grpnr += nat_mol;
+      }
     }
   }
 }
