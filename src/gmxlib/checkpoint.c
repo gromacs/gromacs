@@ -870,7 +870,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
 	/* No need to pollute stderr every time we write a checkpoint file */
     /* fprintf(stderr,"\nWriting checkpoint, step %d at %s\n",step,ftime); */
     if (fplog)
-    {
+    { 
         fprintf(fplog,"Writing checkpoint, step %d at %s\n\n",step,ftime);
     }
     

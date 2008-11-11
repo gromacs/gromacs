@@ -125,35 +125,46 @@ void pr_ebin(FILE *fp,t_ebin *eb,int index,int nener,int nperline,
 {
   int  i,j,i0;
   real ee=0;
-    
+  int  rc;
+	
+  rc = 0;
+	
   if (index < 0)
     gmx_fatal(FARGS,"Invalid index in pr_ebin: %d",index);
   if (nener == -1)
     nener=eb->nener;
   else
     nener=index+nener;
-  for(i=index; (i<nener); ) {
-    if (bPrHead) {
-      i0=i;
-      for(j=0; (j<nperline) && (i<nener); j++,i++)
-	fprintf(fp,"%15s",eb->enm[i]);
-      fprintf(fp,"\n");
-      i=i0;
-    }
-    for(j=0; (j<nperline) && (i<nener); j++,i++) {
-      if (prmode == eprNORMAL)
-	ee=eb->e[i].e;
-      else if (prmode == eprRMS)
-	ee=rms_ener(&(eb->e[i]),tsteps);
-      else if (prmode == eprAVER)
-	ee=eb->e[i].esum/tsteps;
-      else
-	gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",prmode);
-      
-      fprintf(fp,"   %12.5e",ee);
-    }
-    fprintf(fp,"\n");
-  }
+	for(i=index; (i<nener) && rc>=0; ) {
+		if (bPrHead) {
+			i0=i;
+			for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++)
+				rc = fprintf(fp,"%15s",eb->enm[i]);
+			
+			if(rc>=0)
+				rc = fprintf(fp,"\n");
+
+			i=i0;
+		}
+		for(j=0; (j<nperline) && (i<nener) && rc>=0; j++,i++) {
+			if (prmode == eprNORMAL)
+				ee=eb->e[i].e;
+			else if (prmode == eprRMS)
+				ee=rms_ener(&(eb->e[i]),tsteps);
+			else if (prmode == eprAVER)
+				ee=eb->e[i].esum/tsteps;
+			else
+				gmx_fatal(FARGS,"Invalid print mode %d in pr_ebin",prmode);
+			
+			rc = fprintf(fp,"   %12.5e",ee);
+		}
+		if(rc>=0)
+			rc = fprintf(fp,"\n");
+	}
+	if(rc<0)
+	{ 
+		gmx_fatal(FARGS,"Cannot write to logfile; maybe you are out of quota?");
+	}
 }
 
 #ifdef DEBUGEBIN

@@ -530,7 +530,7 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
   int         nr[enxNR];
   real        *block[enxNR];
   t_enxframe  fr;
-  
+	
   switch (mode) {
   case eprNORMAL:
     fr.t            = time;
@@ -574,12 +574,12 @@ void print_ebin(int fp_ene,bool bEne,bool bDR,bool bOR,
   
   if (log) {
     for(i=0;i<opts->ngtc;i++)
-      if(opts->annealing[i]!=eannNO)
-	fprintf(log,"Current ref_t for group %s: %8.1f\n",
+		if(opts->annealing[i]!=eannNO)
+			fprintf(log,"Current ref_t for group %s: %8.1f\n",
 		*(groups->grpname[groups->grps[egcTC].nm_ind[i]]),opts->ref_t[i]);
   
-    if (mode==eprNORMAL && fcd->orires.nr>0)
-      print_orires_log(log,&(fcd->orires));
+	  if (mode==eprNORMAL && fcd->orires.nr>0)
+		  print_orires_log(log,&(fcd->orires));
 
     fprintf(log,"   Energies %s\n",kjm);
     pr_ebin(log,md->ebin,md->ie,f_nre+nCrmsd,5,mode,nsteps,TRUE);  
