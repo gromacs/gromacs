@@ -82,10 +82,11 @@ gmx_fio_open(const char *fn,char *mode);
  * unix, but is important on windows.
  */
  
-void 
+int
 gmx_fio_close(int fp);
 /* Close the file corresponding to fp (if not stdio)
  * The routine will exit when an invalid fio is handled.
+ * Returns 0 on success.
  */
 
 void 
@@ -126,8 +127,9 @@ extern bool gmx_fio_getread(int fio);
 extern void gmx_fio_rewind(int fio);
 /* Rewind the tpa file in fio */
 
-extern void gmx_fio_flush(int fio);
-/* Flush the fio */
+int
+gmx_fio_flush(int fio);
+/* Flush the fio, returns 0 on success */
 
 extern off_t gmx_fio_ftell(int fio);
 /* Return file position if possible */
@@ -147,6 +149,7 @@ gmx_fio_fopen(const char *fn,char *mode);
 
 /* Close a file previously opened with gmx_fio_fopen. 
  * Do not mix these calls with standard fopen/fclose ones!
+ * Returns 0 on success.
  */
 int
 gmx_fio_fclose(FILE *fp);

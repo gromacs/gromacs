@@ -382,18 +382,19 @@ int xdropen(XDR *xdrs, const char *filename, const char *type) {
  
 int xdrclose(XDR *xdrs) {
     int xdrid;
-    
+    int rc = 0;
+
     if (xdrs == NULL) {
 	fprintf(stderr, "xdrclose: passed a NULL pointer\n");
 	exit(1);
     }
-    for (xdrid = 1; xdrid < MAXID; xdrid++) {
+    for (xdrid = 1; xdrid < MAXID && rc==0; xdrid++) {
 	if (xdridptr[xdrid] == xdrs) {
 	    
 	    xdr_destroy(xdrs);
-	    fclose(xdrfiles[xdrid]);
+	    rc = fclose(xdrfiles[xdrid]);
 	    xdridptr[xdrid] = NULL;
-	    return 1;
+	    return !rc; /* xdr routines return 0 when ok */
 	}
     } 
     fprintf(stderr, "xdrclose: no such open xdr file\n");
@@ -686,7 +687,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     static int *ip = NULL;
     static int oldsize;
     static int *buf;
-
+ 
     int minint[3], maxint[3], mindiff, *lip, diff;
     int lint1, lint2, lint3, oldlint1, oldlint2, oldlint3, smallidx;
     int minidx, maxidx;
@@ -701,7 +702,8 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
     unsigned int bitsize;
     float inv_precision;
     int errval = 1;
-
+    int rc;
+	
     bitsizeint[0] = bitsizeint[1] = bitsizeint[2] = 0;
     prevcoord[0]  = prevcoord[1]  = prevcoord[2]  = 0;
     
@@ -729,7 +731,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
                     (unsigned int)sizeof(*fp), (xdrproc_t)xdr_float));
 	}
 	
-	xdr_float(xdrs, precision);
+	if(xdr_float(xdrs, precision) == 0)
+		return 0;
+		
 	if (ip == NULL) {
 	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
 	    if (ip == NULL) {
@@ -814,13 +818,15 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    oldlint2 = lint2;
 	    oldlint3 = lint3;
 	}
-	xdr_int(xdrs, &(minint[0]));
-	xdr_int(xdrs, &(minint[1]));
-	xdr_int(xdrs, &(minint[2]));
-	
-	xdr_int(xdrs, &(maxint[0]));
-	xdr_int(xdrs, &(maxint[1]));
-	xdr_int(xdrs, &(maxint[2]));
+	if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
+		 (xdr_int(xdrs, &(minint[1])) == 0) ||
+		 (xdr_int(xdrs, &(minint[2])) == 0) ||
+	     (xdr_int(xdrs, &(maxint[0])) == 0) ||
+		 (xdr_int(xdrs, &(maxint[1])) == 0) ||
+		 (xdr_int(xdrs, &(maxint[2])) == 0))
+	{
+		return 0;
+	}
 	
 	if ((float)maxint[0] - (float)minint[0] >= MAXABS ||
 		(float)maxint[1] - (float)minint[1] >= MAXABS ||
@@ -849,7 +855,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	while (smallidx < LASTIDX && magicints[smallidx] < mindiff) {
 	    smallidx++;
 	}
-	xdr_int(xdrs, &smallidx);
+	if(xdr_int(xdrs, &smallidx) == 0)
+		return 0;
+		
 	maxidx = MIN(LASTIDX, smallidx + 8) ;
 	minidx = maxidx - 8; /* often this equal smallidx */
 	smaller = magicints[MAX(FIRSTIDX, smallidx-1)] / 2;
@@ -955,7 +963,10 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	    }
 	}
 	if (buf[1] != 0) buf[0]++;
-	xdr_int(xdrs, &(buf[0])); /* buf[0] holds the length in bytes */
+		/* buf[0] holds the length in bytes */
+	if(xdr_int(xdrs, &(buf[0])) == 0)
+		return 0;
+		
         return errval * (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]));
     } else {
 	
@@ -974,7 +985,9 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
             return (xdr_vector(xdrs, (char *) fp, (unsigned int)size3, 
                     (unsigned int)sizeof(*fp), (xdrproc_t)xdr_float));
 	}
-	xdr_float(xdrs, precision);
+	if(xdr_float(xdrs, precision) == 0)
+		return 0;
+		
 	if (ip == NULL) {
 	    ip = (int *)malloc((size_t)(size3 * sizeof(*ip)));
 	    if (ip == NULL) {
@@ -1004,14 +1017,16 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 	}
 	buf[0] = buf[1] = buf[2] = 0;
 	
-	xdr_int(xdrs, &(minint[0]));
-	xdr_int(xdrs, &(minint[1]));
-	xdr_int(xdrs, &(minint[2]));
-
-	xdr_int(xdrs, &(maxint[0]));
-	xdr_int(xdrs, &(maxint[1]));
-	xdr_int(xdrs, &(maxint[2]));
-		
+	if ( (xdr_int(xdrs, &(minint[0])) == 0) ||
+		 (xdr_int(xdrs, &(minint[1])) == 0) ||
+		 (xdr_int(xdrs, &(minint[2])) == 0) ||
+		 (xdr_int(xdrs, &(maxint[0])) == 0) ||
+		 (xdr_int(xdrs, &(maxint[1])) == 0) ||
+		 (xdr_int(xdrs, &(maxint[2])) == 0))
+	{
+		return 0;
+	}
+			
 	sizeint[0] = maxint[0] - minint[0]+1;
 	sizeint[1] = maxint[1] - minint[1]+1;
 	sizeint[2] = maxint[2] - minint[2]+1;
@@ -1039,7 +1054,7 @@ int xdr3dfcoord(XDR *xdrs, float *fp, int *size, float *precision) {
 
 	if (xdr_int(xdrs, &(buf[0])) == 0)
 	    return 0;
-        if (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]) == 0)
+	if (xdr_opaque(xdrs, (char *)&(buf[3]), (unsigned int)buf[0]) == 0)
 	    return 0;
 	buf[0] = buf[1] = buf[2] = 0;
 	

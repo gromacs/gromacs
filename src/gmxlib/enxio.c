@@ -64,11 +64,18 @@ void free_enxframe(t_enxframe *fr)
 
 static void wr_ener_nms(FILE *out,int nre,char *nms[])
 {
-  int i;
-  
-  fprintf(out,"%d\n",nre);
-  for(i=0; (i<nre); i++)
-    fprintf(out,"%s\n",nms[i]);
+	int i,rc;
+
+	rc = 0;
+	
+	rc = fprintf(out,"%d\n",nre);
+	for(i=0; (i<nre) && rc>=0; i++)
+		rc=fprintf(out,"%s\n",nms[i]);
+	
+	if(rc<0)
+	{
+		gmx_file("Cannot write energy names to file; maybe your quota is full?");
+	}
 }
 
 static void rd_ener_nms(FILE *in,int *nre,char ***nm)
@@ -101,6 +108,8 @@ static void edr_nms(int fp,int *nre,char ***nms)
   NM=*nms;
   
   if (!xdr_int(xdr,nre)) {
+	  if(!bRead)
+		  gmx_file("Cannot write energy names to file; maybe your quota is full?");
     *nre=0;
     return;
   }
@@ -112,7 +121,8 @@ static void edr_nms(int fp,int *nre,char ***nms)
       sfree(NM[i]);
       NM[i] = NULL;
     }
-    xdr_string(xdr,&(NM[i]),STRLEN);
+	  if(!xdr_string(xdr,&(NM[i]),STRLEN))
+		  gmx_file("Cannot write energy names to file; maybe your quota is full?");
   }
   *nms=NM;
 }
@@ -124,17 +134,24 @@ static bool do_eheader(int fp,t_enxframe *fr,bool *bOK)
   int  tempfix_nr=0;
 
   *bOK=TRUE;
-  if (!do_real(fr->t))       return FALSE;
-  if (!do_int (fr->step))    *bOK = FALSE;
-  if (!do_int (fr->nre))     *bOK = FALSE;
-  if (!do_int (fr->ndisre))  *bOK = FALSE;
-  if (!do_int (fr->nblock))  *bOK = FALSE;
-  if (bRead && fr->nblock>70) {
+  if (!do_real(fr->t)       ||
+      !do_int (fr->step)    ||
+	  !do_int (fr->nre)     ||
+      !do_int (fr->ndisre)  || 
+      !do_int (fr->nblock))
+  {
+	  *bOK = FALSE;
+  }
+
+  if (*bOK && bRead && fr->nblock>70) 
+  {
     /* Temporary fix for intermediate file version, only used by B. Hess */
     tempfix_nr = fr->nblock;
     fr->nblock = 1;
   }
-  if (bRead && fr->nblock>fr->nr_alloc) {
+	
+  if (*bOK && bRead && fr->nblock>fr->nr_alloc)
+  {
     srenew(fr->nr,fr->nblock);
     srenew(fr->b_alloc,fr->nblock);
     srenew(fr->block,fr->nblock);
@@ -146,16 +163,23 @@ static bool do_eheader(int fp,t_enxframe *fr,bool *bOK)
   }
   if (tempfix_nr)
     fr->nr[0] = tempfix_nr;
-  else {
-    for(block=0; block<fr->nblock; block++)
-      if (!do_int (fr->nr[block])) 
-	*bOK = FALSE;
+  else 
+  {
+    for(block=0; block<fr->nblock && *bOK; block++)
+		if (!do_int (fr->nr[block])) 
+			*bOK = FALSE;
   }
-  if (!do_int (fr->e_size))  *bOK = FALSE;
-  if (!do_int (fr->d_size))  *bOK = FALSE;
-  /* Do a dummy int to keep the format compatible with the old code */
-  if (!do_int (dum))         *bOK = FALSE;
-  
+	
+  if(*bOK)
+  {
+	  if (!do_int (fr->e_size)   ||
+		  !do_int (fr->d_size)   ||
+		  !do_int (dum))
+	  {
+		  *bOK = FALSE;
+	  }
+  }
+	
   return *bOK;
 }
 
@@ -176,7 +200,10 @@ void do_enxnms(int fp,int *nre,char ***nms)
 
 void close_enx(int fp)
 {
-  gmx_fio_close(fp);
+  if(gmx_fio_close(fp) != 0)
+  {
+	  gmx_file("Cannot close energy file; it might be corrupt, or are you out of quota?");  
+  }
 }
 
 static bool empty_file(char *fn)
@@ -210,7 +237,11 @@ int open_enx(char *fn,char *mode)
     do_enxnms(fp,&nre,&nm);
     snew(fr,1);
     do_eheader(fp,fr,&bDum);
-    
+	if(!bDum)
+	{
+		gmx_file("Cannot read energy file header. Corrupt file?");
+	}
+	  
     /* Now check whether this file is in single precision */
     if (((fr->e_size && (fr->nre == nre) && 
 	  (nre*4*sizeof(float) == fr->e_size)) ||
@@ -227,6 +258,11 @@ int open_enx(char *fn,char *mode)
       gmx_fio_setprecision(fp,TRUE);
       do_enxnms(fp,&nre,&nm);
       do_eheader(fp,fr,&bDum);
+  	  if(!bDum)
+	  {
+		  gmx_file("Cannot write energy file header; maybe your quota is full?");
+	  }
+		
       if (((fr->e_size && (fr->nre == nre) && 
 	    (nre*4*sizeof(double) == fr->e_size)) ||
 	   (fr->d_size && 
@@ -280,7 +316,11 @@ bool do_enx(int fp,t_enxframe *fr)
 		"\nWARNING: Incomplete energy frame: nr %d time %8.3f\n",
 		framenr,fr->t);
     }
-    return FALSE;
+    else
+	{
+		gmx_file("Cannot write energy file header; maybe your quota is full?");
+	}
+	  return FALSE;
   }
   if (bRead) {
     if ((framenr <   20 || framenr %   10 == 0) &&
@@ -314,7 +354,8 @@ bool do_enx(int fp,t_enxframe *fr)
     bOK = bOK && do_real(fr->ener[i].e);
     
     tmp1 = fr->ener[i].eav;
-    bOK = bOK && do_real(tmp1);
+
+	bOK = bOK && do_real(tmp1);
     if (bRead)
       fr->ener[i].eav = tmp1;
     
@@ -347,7 +388,12 @@ bool do_enx(int fp,t_enxframe *fr)
   }
 
   if(!bRead)
-    gmx_fio_flush(fp);
+  {
+	  if( gmx_fio_flush(fp) != 0)
+	  {
+		  gmx_file("Cannot write energy file; you might be out of quota?");
+	  }
+  }
 
   if (!bOK) {
     if (bRead) {

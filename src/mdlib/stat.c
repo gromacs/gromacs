@@ -310,7 +310,10 @@ void write_traj(FILE *fplog,t_commrec *cr,
 		 bX ? state_global->x : NULL,
 		 bV ? state_global->v : NULL,
 		 bF ? f_global : NULL);
-      gmx_fio_flush(fp_trn);
+		if(gmx_fio_flush(fp_trn) != 0)
+		{
+			gmx_file("Cannot write trajectory; maybe you are out of quota?");
+		}
     }      
     if (bXTC) {
       groups = &top_global->groups;
@@ -331,7 +334,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 					copy_rvec(state_global->x[i],xxtc[j++]);
 		}
 		if (write_xtc(fp_xtc,nxtc,step,t,state_local->box,xxtc,xtc_prec) == 0)
-	gmx_fatal(FARGS,"XTC error");
+			gmx_fatal(FARGS,"XTC error");
     }
   }
 }

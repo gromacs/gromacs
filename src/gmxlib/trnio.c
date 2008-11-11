@@ -247,7 +247,10 @@ void read_trn(char *fn,int *step,real *t,real *lambda,
 void fwrite_trn(int fp,int step,real t,real lambda,
 		rvec *box,int natoms,rvec *x,rvec *v,rvec *f)
 {
-  (void) do_trn(fp,FALSE,&step,&t,&lambda,box,&natoms,x,v,f);
+  if( do_trn(fp,FALSE,&step,&t,&lambda,box,&natoms,x,v,f) == FALSE)
+  {
+	  gmx_file("Cannot write trajectory frame; maybe you are out of quota?");
+  }
 }
 
 

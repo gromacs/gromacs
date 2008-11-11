@@ -90,7 +90,6 @@ extern FILE *ffopen(const char *file,char *mode);
 extern void ffclose(FILE *fp);
 /* Close files or pipes */
 
-#define fclose ffclose
 
 extern void frewind(FILE *fp);
 /* Does not rewind pipes, but does so for normal files */

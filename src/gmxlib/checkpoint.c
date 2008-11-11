@@ -93,7 +93,7 @@ static void cp_warning(FILE *fp)
 
 static void cp_error()
 {
-    gmx_fatal(FARGS,"Checkpoint file is corrupted or truncated");
+    gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or your quota is full.");
 }
 
 static void do_cpt_string_err(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
@@ -130,14 +130,13 @@ static int do_cpt_int(XDR *xd,char *desc,int *i,FILE *list)
     {
         fprintf(list,"%s = %d\n",desc,*i);
     }
-
     return 0;
 }
 
 
 static void do_cpt_int_err(XDR *xd,char *desc,int *i,FILE *list)
 {
-    if (do_cpt_int(xd,desc,i,list))
+    if (do_cpt_int(xd,desc,i,list) < 0)
     {
         cp_error();
     }
@@ -544,7 +543,7 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     res = xdr_int(xd,&magic);
     if (res == 0)
     {
-        gmx_fatal(FARGS,"The checkpoint file is empty, corrupted or not a checkpoint file");
+        gmx_fatal(FARGS,"The checkpoint file is empty/corrupted, or you might be out of quota.");
     }
     if (magic != CPT_MAGIC1)
     {
@@ -854,7 +853,10 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
         buf[strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1] = '\0';
         strcat(buf,"_prev");
         strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
-        rename(fn,buf);
+        if(!rename(fn,buf))
+		{
+			gmx_file("Cannot rename checkpoint file; maybe your quota is full?");
+		}
     }
     
     fprog = Program();
@@ -887,20 +889,20 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
                   &state->natoms,&state->ngtc,
                   &state->flags,&flags_eks,&flags_enh,NULL);
 
-    do_cpt_state(gmx_fio_getxdr(fp),FALSE,
-                 state->flags,state,TRUE,NULL);
-
-    do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,
-                     flags_eks,&state->ekinstate,NULL);
-
-    do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,
-                    flags_enh,&state->enerhist,NULL);
-
-    do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL);
+    if( (do_cpt_state(gmx_fio_getxdr(fp),FALSE,state->flags,state,TRUE,NULL) < 0)          ||
+		(do_cpt_ekinstate(gmx_fio_getxdr(fp),FALSE,flags_eks,&state->ekinstate,NULL) < 0)  ||
+		(do_cpt_enerhist(gmx_fio_getxdr(fp),FALSE,flags_enh,&state->enerhist,NULL) < 0)    ||
+	    (do_cpt_files(gmx_fio_getxdr(fp),FALSE,&outputfiles,&noutputfiles,NULL) < 0))
+	{
+		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+	}
 	
     do_cpt_footer(gmx_fio_getxdr(fp),FALSE,file_version);
 
-    gmx_fio_close(fp);
+    if( gmx_fio_close(fp) != 0)
+	{
+		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+	}
     
     sfree(ftime);
 	sfree(outputfiles);
@@ -1199,7 +1201,10 @@ read_checkpoint(char *fn,FILE *fplog,
     {
         cp_error();
     }
-    gmx_fio_close(fp);
+    if( gmx_fio_close(fp) != 0)
+	{
+		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+	}
     
     sfree(fprog);
     sfree(ftime);
@@ -1320,7 +1325,10 @@ read_checkpoint_state(char *fn,int *simulation_part,int *step,double *t,t_state 
     
     fp = gmx_fio_open(fn,"r");
     low_read_checkpoint_state(fp,simulation_part,step,t,state,TRUE);
-    gmx_fio_close(fp);
+    if( gmx_fio_close(fp) != 0)
+	{
+		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+	}
 }
 
 void read_checkpoint_trxframe(int fp,t_trxframe *fr)
@@ -1415,7 +1423,10 @@ void list_checkpoint(char *fn,FILE *out)
     {
         cp_warning(out);
     }
-    gmx_fio_close(fp);
+    if( gmx_fio_close(fp) != 0)
+	{
+		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+	}
     
     done_state(&state);
 }
@@ -1444,7 +1455,10 @@ read_checkpoint_simulation_part(char *filename)
                   &eIntegrator_f,&simulation_part,&step,&t,&nppnodes_f,dd_nc_f,&npmenodes_f,
                   &natoms,&ngtc,
                   &fflags,&flags_eks,&flags_enh,NULL);
-    gmx_fio_close(fp);
+    if( gmx_fio_close(fp) != 0)
+	{
+		gmx_file("Cannot read/write checkpoint; corrupt file, or maybe you are out of quota?");
+	}
 	
 	sfree(version);
 	sfree(btime);
