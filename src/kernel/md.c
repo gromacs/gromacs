@@ -1521,9 +1521,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  pull_print_output(ir->pull,step,t);
 	}
       
-      if (bVerbose)
+      if (do_per_step(step,ir->nstlog))
 	{
-	  fflush(fplog);
+		if(fflush(fplog) != 0)
+		{
+			gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+		}
 	}
     }
     
