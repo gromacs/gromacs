@@ -334,7 +334,7 @@ void write_traj(FILE *fplog,t_commrec *cr,
 					copy_rvec(state_global->x[i],xxtc[j++]);
 		}
 		if (write_xtc(fp_xtc,nxtc,step,t,state_local->box,xxtc,xtc_prec) == 0)
-			gmx_fatal(FARGS,"XTC error");
+			gmx_fatal(FARGS,"XTC error - maybe you are out of quota?");
     }
   }
 }

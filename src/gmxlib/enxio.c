@@ -74,7 +74,7 @@ static void wr_ener_nms(FILE *out,int nre,char *nms[])
 	
 	if(rc<0)
 	{
-		gmx_file("Cannot write energy names to file; maybe your quota is full?");
+		gmx_file("Cannot write energy names to file; maybe you are out of quota?");
 	}
 }
 
@@ -109,7 +109,7 @@ static void edr_nms(int fp,int *nre,char ***nms)
   
   if (!xdr_int(xdr,nre)) {
 	  if(!bRead)
-		  gmx_file("Cannot write energy names to file; maybe your quota is full?");
+		  gmx_file("Cannot write energy names to file; maybe you are out of quota?");
     *nre=0;
     return;
   }
@@ -122,7 +122,7 @@ static void edr_nms(int fp,int *nre,char ***nms)
       NM[i] = NULL;
     }
 	  if(!xdr_string(xdr,&(NM[i]),STRLEN))
-		  gmx_file("Cannot write energy names to file; maybe your quota is full?");
+		  gmx_file("Cannot write energy names to file; maybe you are out of quota?");
   }
   *nms=NM;
 }
@@ -202,7 +202,7 @@ void close_enx(int fp)
 {
   if(gmx_fio_close(fp) != 0)
   {
-	  gmx_file("Cannot close energy file; it might be corrupt, or are you out of quota?");  
+	  gmx_file("Cannot close energy file; it might be corrupt, or maybe you are out of quota?");  
   }
 }
 
@@ -260,7 +260,7 @@ int open_enx(char *fn,char *mode)
       do_eheader(fp,fr,&bDum);
   	  if(!bDum)
 	  {
-		  gmx_file("Cannot write energy file header; maybe your quota is full?");
+		  gmx_file("Cannot write energy file header; maybe you are out of quota?");
 	  }
 		
       if (((fr->e_size && (fr->nre == nre) && 
@@ -318,7 +318,7 @@ bool do_enx(int fp,t_enxframe *fr)
     }
     else
 	{
-		gmx_file("Cannot write energy file header; maybe your quota is full?");
+		gmx_file("Cannot write energy file header; maybe you are out of quota?");
 	}
 	  return FALSE;
   }
@@ -391,7 +391,7 @@ bool do_enx(int fp,t_enxframe *fr)
   {
 	  if( gmx_fio_flush(fp) != 0)
 	  {
-		  gmx_file("Cannot write energy file; you might be out of quota?");
+		  gmx_file("Cannot write energy file; maybe you are out of quota?");
 	  }
   }
 

@@ -93,7 +93,7 @@ static void cp_warning(FILE *fp)
 
 static void cp_error()
 {
-    gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or your quota is full.");
+    gmx_fatal(FARGS,"Checkpoint file corrupted/truncated, or maybe you are out of quota?");
 }
 
 static void do_cpt_string_err(XDR *xd,bool bRead,char *desc,char **s,FILE *list)
@@ -543,7 +543,7 @@ static void do_cpt_header(XDR *xd,bool bRead,int *file_version,
     res = xdr_int(xd,&magic);
     if (res == 0)
     {
-        gmx_fatal(FARGS,"The checkpoint file is empty/corrupted, or you might be out of quota.");
+        gmx_fatal(FARGS,"The checkpoint file is empty/corrupted, or maybe you are out of quota?");
     }
     if (magic != CPT_MAGIC1)
     {
@@ -855,7 +855,7 @@ void write_checkpoint(char *fn,FILE *fplog,t_commrec *cr,
         strcat(buf,fn+strlen(fn) - strlen(ftp2ext(fn2ftp(fn))) - 1);
         if(!rename(fn,buf))
 		{
-			gmx_file("Cannot rename checkpoint file; maybe your quota is full?");
+			gmx_file("Cannot rename checkpoint file; maybe you are out of quota?");
 		}
     }
     
