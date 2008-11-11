@@ -475,7 +475,9 @@ void make_local_shells(t_commrec *cr,t_mdatoms *md,
       } else {
 	shell[nshell] = shfc->shell_gl[ind[i]];
       }
-      shell[nshell].shell = i;
+      /* With inter-cg shells we can no do shell prediction,
+       * so we do not need the nuclei numbers.
+       */
       if (!shfc->bInterCG) {
 	shell[nshell].nucl1   = i + shell[nshell].nucl1 - shell[nshell].shell;
 	if (shell[nshell].nnucl > 1)
@@ -483,6 +485,7 @@ void make_local_shells(t_commrec *cr,t_mdatoms *md,
 	if (shell[nshell].nnucl > 2)
 	  shell[nshell].nucl3 = i + shell[nshell].nucl3 - shell[nshell].shell;
       }
+      shell[nshell].shell = i;
       nshell++;
     }
   }
