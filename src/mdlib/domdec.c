@@ -7774,7 +7774,7 @@ void dd_partition_system(FILE            *fplog,
     
     /* Update the rest of the forcerec */
     fr->cg0 = 0;
-    fr->hcg = dd->ncg_tot;
+    fr->hcg = dd->ncg_home;
     if (fr->bTwinRange)
     {
         fr->f_twin_n = dd->nat_tot;
