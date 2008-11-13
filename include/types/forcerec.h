@@ -188,11 +188,14 @@ typedef struct {
    */
   /* bool *bMask; */
 
-  /* Twin Range stuff. */
+  /* The number of atoms participating in do_force_lowlevel */
+  int natoms_force;
+  /* The allocation size of vectors of size natoms_force */
+  int nalloc_force;
+
+  /* Twin Range stuff, f_twin has size natoms_force */
   bool bTwinRange;
   int  nlr;
-  int  f_twin_n;
-  int  f_twin_nalloc;
   rvec *f_twin;
   rvec *fshift_twin;
 

@@ -1025,6 +1025,39 @@ static bondedtable_t *make_bonded_tables(FILE *fplog,
     return tab;
 }
 
+void forcerec_set_ranges(t_forcerec *fr,
+                         int ncg_home,int natoms_force,int natoms_f_novirsum)
+{
+    fr->cg0 = 0;
+    fr->hcg = ncg_home;
+
+    fr->natoms_force = natoms_force;
+
+    if (fr->natoms_force > fr->nalloc_force)
+    {
+        fr->nalloc_force = over_alloc_dd(fr->natoms_force);
+
+        if (fr->bTwinRange)
+        {
+            srenew(fr->f_twin,fr->nalloc_force);
+        }
+    }
+
+    if (fr->bF_NoVirSum)
+    {
+        fr->f_novirsum_n = natoms_f_novirsum;
+        if (fr->f_novirsum_n > fr->f_novirsum_nalloc)
+        {
+            fr->f_novirsum_nalloc = over_alloc_dd(fr->f_novirsum_n);
+            srenew(fr->f_novirsum,fr->f_novirsum_nalloc);
+        }
+    }
+    else
+    {
+        fr->f_novirsum_n = 0;
+    }
+}
+    
 void init_forcerec(FILE *fp,
                    t_forcerec *fr,
                    t_fcdata   *fcd,
@@ -1184,24 +1217,11 @@ void init_forcerec(FILE *fp,
     
     /* Initiate arrays */
     if (fr->bTwinRange) {
-        if (!DOMAINDECOMP(cr)) {
-            fr->f_twin_n = natoms;
-            fr->f_twin_nalloc = fr->f_twin_n;
-            snew(fr->f_twin,fr->f_twin_nalloc);
-        }
         snew(fr->fshift_twin,SHIFTS);
     }
 
     fr->bF_NoVirSum = (EEL_FULL(fr->eeltype) ||
                        gmx_mtop_ftype_count(mtop,F_POSRES) > 0);
-
-    if (fr->bF_NoVirSum) {
-        if (!DOMAINDECOMP(cr)) {
-            fr->f_novirsum_n = natoms;
-            fr->f_novirsum_nalloc = fr->f_novirsum_n;
-            snew(fr->f_novirsum,fr->f_novirsum_nalloc);
-        }
-    }
     
     /* Mask that says whether or not this NBF list should be computed */
     /*  if (fr->bMask == NULL) {
@@ -1416,9 +1436,11 @@ void init_forcerec(FILE *fp,
         fr->cginfo = fr->cginfo_global;
     }
     
-    /* This is corrected later for domain and particle decomposition */
-    fr->cg0 = 0;
-    fr->hcg = ncg_mtop(mtop);
+    if (!DOMAINDECOMP(cr))
+    {
+        /* This is corrected later for particle decomposition */
+        forcerec_set_ranges(fr,ncg_mtop(mtop),mtop->natoms,mtop->natoms);
+    }
     
     fr->print_force = print_force;
     

@@ -38,6 +38,7 @@
 #include "names.h"
 #include "pdbio.h"
 #include "futil.h"
+#include "force.h"
 #include "pme.h"
 #include "pull.h"
 #include "gmx_wallcycle.h"
@@ -7557,7 +7558,7 @@ void dd_partition_system(FILE            *fplog,
     gmx_domdec_t *dd;
     gmx_domdec_comm_t *comm;
     t_block *cgs_gl;
-    int  i,j,n,cg0=0,ncg_home_old=-1;
+    int  i,j,n,cg0=0,ncg_home_old=-1,nat_f_novirsum;
     bool bCheckDLB,bTurnOnDLB,bLogLoad,bRedist,bSortCG;
     ivec ncells_old,np;
     
@@ -7772,19 +7773,6 @@ void dd_partition_system(FILE            *fplog,
     /* Set the charge group boundaries for neighbor searching */
     set_cg_boundaries(dd);
     
-    /* Update the rest of the forcerec */
-    fr->cg0 = 0;
-    fr->hcg = dd->ncg_home;
-    if (fr->bTwinRange)
-    {
-        fr->f_twin_n = dd->nat_tot;
-        if (fr->f_twin_n > fr->f_twin_nalloc)
-        {
-            fr->f_twin_nalloc = over_alloc_dd(fr->f_twin_n);
-            srenew(fr->f_twin,fr->f_twin_nalloc);
-        }
-    }
-    
     /*
       write_dd_pdb("dd_home",step,"dump",&top_global->atoms,cr,dd->nat_home,
                    state_local->x,state_local->box);
@@ -7834,23 +7822,26 @@ void dd_partition_system(FILE            *fplog,
     {
         dd_realloc_state(state_local,f,buf,state_local->natoms);
     }
+
     if (fr->bF_NoVirSum)
     {
         if (vsite && vsite->n_intercg_vsite)
         {
-            fr->f_novirsum_n = comm->nat[ddnatVSITE];
+            nat_f_novirsum = comm->nat[ddnatVSITE];
         }
         else
         {
-            fr->f_novirsum_n = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
-        }
-        if (fr->f_novirsum_n > fr->f_novirsum_nalloc)
-        {
-            fr->f_novirsum_nalloc = over_alloc_dd(fr->f_novirsum_n);
-            srenew(fr->f_novirsum,fr->f_novirsum_nalloc);
+            nat_f_novirsum = (dd->n_intercg_excl ? dd->nat_tot : dd->nat_home);
         }
     }
-    
+    else
+    {
+        nat_f_novirsum = 0;
+    }
+
+    /* Set the number of atoms required for the force calculation */
+    forcerec_set_ranges(fr,dd->ncg_home,dd->nat_tot,nat_f_novirsum);
+
     /* We make the all mdatoms up to nat_tot_con.
      * We could save some work by only setting invmass
      * between nat_tot and nat_tot_con.
