@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: n; c-basic-offset: 4 -*- 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * $Id$
  * 
@@ -31,7 +31,7 @@
 #endif
 
 enum {
-  dddirForward,dddirBackward
+    dddirForward,dddirBackward
 };
 
 /* Move integers in the comm. region one cell along the domain decomposition
@@ -40,9 +40,19 @@ enum {
  */
 extern void
 dd_sendrecv_int(const gmx_domdec_t *dd,
-		int ddimind,int direction,
-		int *buf_s,int n_s,
-		int *buf_r,int n_r);
+                int ddimind,int direction,
+                int *buf_s,int n_s,
+                int *buf_r,int n_r);
+
+/* Move reals in the comm. region one cell along the domain decomposition
+ * in the dimension indexed by ddimind
+ * forward (direction=dddirFoward) or backward (direction=dddirBackward).
+ */
+extern void
+dd_sendrecv_real(const gmx_domdec_t *dd,
+                 int ddimind,int direction,
+                 real *buf_s,int n_s,
+                 real *buf_r,int n_r);
 
 /* Move revc's in the comm. region one cell along the domain decomposition
  * in dimension indexed by ddimind
@@ -50,9 +60,9 @@ dd_sendrecv_int(const gmx_domdec_t *dd,
  */
 extern void
 dd_sendrecv_rvec(const gmx_domdec_t *dd,
-		 int ddimind,int direction,
-		 rvec *buf_s,int n_s,
-		 rvec *buf_r,int n_r);
+                 int ddimind,int direction,
+                 rvec *buf_s,int n_s,
+                 rvec *buf_r,int n_r);
 
 
 /* Move revc's in the comm. region one cell along the domain decomposition

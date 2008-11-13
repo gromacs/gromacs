@@ -738,6 +738,133 @@ void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift)
     }
 }
 
+void dd_atom_spread_real(gmx_domdec_t *dd,real v[],real buf[])
+{
+    int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
+    int  *index,*cgindex;
+    gmx_domdec_comm_t *comm;
+    gmx_domdec_comm_dim_t *cd;
+    gmx_domdec_ind_t *ind;
+    real *rbuf;
+    
+    comm = dd->comm;
+    
+    cgindex = dd->cgindex;
+    
+    ncell = 1;
+    nat_tot = dd->nat_home;
+    for(d=0; d<dd->ndim; d++)
+    {
+        cd = &comm->cd[d];
+        for(p=0; p<cd->np; p++)
+        {
+            ind = &cd->ind[p];
+            index = ind->index;
+            n = 0;
+            for(i=0; i<ind->nsend[ncell]; i++)
+            {
+                at0 = cgindex[index[i]];
+                at1 = cgindex[index[i]+1];
+                for(j=at0; j<at1; j++)
+                {
+                    buf[n] = v[j];
+                    n++;
+                }
+            }
+            
+            if (cd->bInPlace)
+            {
+                rbuf = v + nat_tot;
+            }
+            else
+            {
+                rbuf = &comm->buf_vr2[0][0];
+            }
+            /* Send and receive the coordinates */
+            dd_sendrecv_real(dd, d, dddirBackward,
+                             buf,  ind->nsend[ncell+1],
+                             rbuf, ind->nrecv[ncell+1]);
+            if (!cd->bInPlace)
+            {
+                j = 0;
+                for(cell=0; cell<ncell; cell++)
+                {
+                    for(i=ind->cell2at0[cell]; i<ind->cell2at1[cell]; i++)
+                    {
+                        v[i] = rbuf[j];
+                        j++;
+                    }
+                }
+            }
+            nat_tot += ind->nrecv[ncell+1];
+        }
+        ncell += ncell;
+    }
+}
+
+void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[])
+{
+    int  ncell,nat_tot,n,d,p,i,j,at0,at1,cell;
+    int  *index,*cgindex;
+    gmx_domdec_comm_t *comm;
+    gmx_domdec_comm_dim_t *cd;
+    gmx_domdec_ind_t *ind;
+    real *sbuf;
+    
+    comm = dd->comm;
+    
+    cgindex = dd->cgindex;
+
+    ncell = 1;
+    nat_tot = dd->nat_home;
+    n = 0;
+    ncell = dd->ncell/2;
+    nat_tot = dd->nat_tot;
+    for(d=dd->ndim-1; d>=0; d--)
+    {
+        cd = &comm->cd[d];
+        for(p=cd->np-1; p>=0; p--) {
+            ind = &cd->ind[p];
+            nat_tot -= ind->nrecv[ncell+1];
+            if (cd->bInPlace)
+            {
+                sbuf = v + nat_tot;
+            }
+            else
+            {
+                sbuf = &comm->buf_vr2[0][0];
+                j = 0;
+                for(cell=0; cell<ncell; cell++)
+                {
+                    for(i=ind->cell2at0[cell]; i<ind->cell2at1[cell]; i++)
+                    {
+                        sbuf[j] = v[i];
+                        j++;
+                    }
+                }
+            }
+            /* Communicate the forces */
+            dd_sendrecv_real(dd, d, dddirForward,
+                             sbuf, ind->nrecv[ncell+1],
+                             buf,  ind->nsend[ncell+1]);
+            index = ind->index;
+            /* Add the received forces */
+            n = 0;
+            for(i=0; i<ind->nsend[ncell]; i++)
+            {
+                at0 = cgindex[index[i]];
+                at1 = cgindex[index[i]+1];
+                for(j=at0; j<at1; j++)
+                {
+                    v[j] += buf[n];
+                    n++;
+                }
+            } 
+        }
+        ncell /= 2;
+    }
+}
+
 static void print_ddzone(FILE *fp,int d,int i,int j,gmx_ddzone_t *zone)
 {
     fprintf(fp,"zone d0 %d d1 %d d2 %d  min0 %6.3f max1 %6.3f mch0 %6.3f mch1 %6.3f p1_0 %6.3f p1_1 %6.3f\n",

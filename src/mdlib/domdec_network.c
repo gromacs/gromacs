@@ -64,6 +64,38 @@ void dd_sendrecv_int(const gmx_domdec_t *dd,
 #endif
 }
 
+void dd_sendrecv_real(const gmx_domdec_t *dd,
+                      int ddimind,int direction,
+                      real *buf_s,int n_s,
+                      real *buf_r,int n_r)
+{
+#ifdef GMX_MPI
+    int rank_s,rank_r;
+    MPI_Status stat;
+    
+    rank_s = dd->neighbor[ddimind][direction==dddirForward ? 0 : 1];
+    rank_r = dd->neighbor[ddimind][direction==dddirForward ? 1 : 0];
+    
+    if (n_s && n_r)
+    {
+        MPI_Sendrecv(buf_s,n_s*sizeof(real),MPI_BYTE,rank_s,0,
+                     buf_r,n_r*sizeof(real),MPI_BYTE,rank_r,0,
+                     dd->mpi_comm_all,&stat);
+    }
+    else if (n_s)
+    {
+        MPI_Send(    buf_s,n_s*sizeof(real),MPI_BYTE,rank_s,0,
+                     dd->mpi_comm_all);
+    }
+    else if (n_r)
+    {
+        MPI_Recv(    buf_r,n_r*sizeof(real),MPI_BYTE,rank_r,0,
+                     dd->mpi_comm_all,&stat);
+    }
+    
+#endif
+}
+
 void dd_sendrecv_rvec(const gmx_domdec_t *dd,
                       int ddimind,int direction,
                       rvec *buf_s,int n_s,

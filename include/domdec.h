@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: n; c-basic-offset: 4 -*- 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * $Id$
  * 
@@ -50,7 +50,7 @@ extern void dd_store_state(gmx_domdec_t *dd,t_state *state);
  */
 
 extern void dd_get_ns_ranges(gmx_domdec_t *dd,int icg,
-			     int *jcg0,int *jcg1,ivec shift0,ivec shift1);
+                             int *jcg0,int *jcg1,ivec shift0,ivec shift1);
 
 extern int dd_natoms_vsite(gmx_domdec_t *dd);
 
@@ -78,24 +78,24 @@ extern void make_dd_communicators(FILE *fplog,t_commrec *cr,int dd_node_order);
 
 extern gmx_domdec_t *
 init_domain_decomposition(FILE *fplog,
-			  t_commrec *cr,
-			  unsigned long Flags,
-			  ivec nc,
-			  real comm_distance_min,real rconstr,
-			  char *dlb_opt,real dlb_scale,
-			  char *sizex,char *sizey,char *sizez,
-			  gmx_mtop_t *mtop,t_inputrec *ir,
-			  matrix box,rvec *x);
+                          t_commrec *cr,
+                          unsigned long Flags,
+                          ivec nc,
+                          real comm_distance_min,real rconstr,
+                          char *dlb_opt,real dlb_scale,
+                          char *sizex,char *sizey,char *sizez,
+                          gmx_mtop_t *mtop,t_inputrec *ir,
+                          matrix box,rvec *x);
 
 extern void dd_init_bondeds(FILE *fplog,
-			    gmx_domdec_t *dd,gmx_mtop_t *mtop,
-			    gmx_vsite_t *vsite,gmx_constr_t constr,
-			    t_inputrec *ir,bool bBCheck,int *cginfo);
+                            gmx_domdec_t *dd,gmx_mtop_t *mtop,
+                            gmx_vsite_t *vsite,gmx_constr_t constr,
+                            t_inputrec *ir,bool bBCheck,int *cginfo);
 /* Initialize data structures for bonded interactions */
 
 extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
-			      t_inputrec *ir,t_forcerec *fr,
-			      matrix box);
+                              t_inputrec *ir,t_forcerec *fr,
+                              matrix box);
 /* Set DD grid dimensions and limits,
  * should be called after calling dd_init_bondeds.
  */
@@ -103,10 +103,10 @@ extern void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
 extern void setup_dd_grid(FILE *fplog,gmx_domdec_t *dd);
 
 extern void dd_collect_vec(gmx_domdec_t *dd,
-			   t_state *state_local,rvec *lv,rvec *v);
+                           t_state *state_local,rvec *lv,rvec *v);
 
 extern void dd_collect_state(gmx_domdec_t *dd,
-			     t_state *state_local,t_state *state);
+                             t_state *state_local,t_state *state);
 
 enum { ddCyclStep, ddCyclPPduringPME, ddCyclF, ddCyclPME, ddCyclNr };
 
@@ -120,36 +120,46 @@ extern void dd_force_flop_stop(gmx_domdec_t *dd,t_nrnb *nrnb);
 /* Stop the force flop count */
 
 extern void dd_move_x(gmx_domdec_t *dd,matrix box,rvec x[],rvec buf[]);
-/* buf should should have size natoms (of the whole system)
- * although in most cases far less will be used.
+/* Communicate the coordinates to the neighboring cells and do pbc.
+ * buf should should have at least size dd->nat_tot.
  */
 
 extern void dd_move_f(gmx_domdec_t *dd,rvec f[],rvec buf[],rvec *fshift);
-/* buf should should have size natoms (of the whole system)
- * although in most cases far less will be used.
+/* Sum the forces over the neighboring cells.
+ * buf should should have at least size dd->nat_tot.
  * When fshift!=NULL the shift forces are updated to obtain
  * the correct virial from the single sum including f.
  */
 
+extern void dd_atom_spread_real(gmx_domdec_t *dd,real v[],real buf[]);
+/* Communicate a real for each atom to the neighboring cells.
+ * buf should should have at least size dd->nat_tot.
+ */
+
+extern void dd_atom_sum_real(gmx_domdec_t *dd,real v[],real buf[]);
+/* Sum the contributions to a real for each atom over the neighboring cells.
+ * buf should should have at least size dd->nat_tot.
+ */
+
 extern void dd_partition_system(FILE            *fplog,
-				int             step,
-				t_commrec       *cr,
+                                int             step,
+                                t_commrec       *cr,
                                 bool            bMasterState,
-				t_state         *state_global,
-				gmx_mtop_t      *top_global,
-				t_inputrec      *ir,
-				t_state         *state_local,
-				rvec            **f,
-				rvec            **buf,
-				t_mdatoms       *mdatoms,
-				gmx_localtop_t  *top_local,
-				t_forcerec      *fr,
-				gmx_vsite_t     *vsite,
-				gmx_shellfc_t   shellfc,
-				gmx_constr_t    constr,
-				t_nrnb          *nrnb,
-				gmx_wallcycle_t wcycle,
-				bool            bVerbose);
+                                t_state         *state_global,
+                                gmx_mtop_t      *top_global,
+                                t_inputrec      *ir,
+                                t_state         *state_local,
+                                rvec            **f,
+                                rvec            **buf,
+                                t_mdatoms       *mdatoms,
+                                gmx_localtop_t  *top_local,
+                                t_forcerec      *fr,
+                                gmx_vsite_t     *vsite,
+                                gmx_shellfc_t   shellfc,
+                                gmx_constr_t    constr,
+                                t_nrnb          *nrnb,
+                                gmx_wallcycle_t wcycle,
+                                bool            bVerbose);
 /* Partition the system over the nodes.
  * step is only used for printing error messages.
  * If bMasterState==TRUE then state_global from the master node is used,
@@ -179,13 +189,13 @@ extern void dd_clear_local_vsite_indices(gmx_domdec_t *dd);
 extern int dd_make_local_vsites(gmx_domdec_t *dd,int at_start,t_ilist *lil);
 
 extern int dd_make_local_constraints(gmx_domdec_t *dd,int at_start,
-				     gmx_mtop_t *mtop,
-				     gmx_constr_t constr,int nrec,
-				     t_ilist *il_local);
+                                     gmx_mtop_t *mtop,
+                                     gmx_constr_t constr,int nrec,
+                                     t_ilist *il_local);
 
 extern void init_domdec_constraints(gmx_domdec_t *dd,
-				    int natoms,gmx_mtop_t *mtop,
-				    gmx_constr_t constr);
+                                    int natoms,gmx_mtop_t *mtop,
+                                    gmx_constr_t constr);
 
 extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 
@@ -193,42 +203,42 @@ extern void init_domdec_vsites(gmx_domdec_t *dd,int natoms);
 /* In domdec_top.c */
 
 extern void dd_print_missing_interactions(FILE *fplog,t_commrec *cr,
-					  int local_count);
+                                          int local_count);
 
 extern void dd_make_reverse_top(FILE *fplog,
-				gmx_domdec_t *dd,gmx_mtop_t *mtop,
-				gmx_vsite_t *vsite,gmx_constr_t constr,
-				t_inputrec *ir,bool bBCheck);
+                                gmx_domdec_t *dd,gmx_mtop_t *mtop,
+                                gmx_vsite_t *vsite,gmx_constr_t constr,
+                                t_inputrec *ir,bool bBCheck);
 
 extern void dd_make_local_cgs(gmx_domdec_t *dd,t_block *lcgs);
 
 extern void dd_make_local_top(FILE *fplog,gmx_domdec_t *dd,
-			      matrix box,rvec cellsize_min,ivec npulse,
-			      t_forcerec *fr,gmx_vsite_t *vsite,
-			      gmx_mtop_t *top,gmx_localtop_t *ltop);
+                              matrix box,rvec cellsize_min,ivec npulse,
+                              t_forcerec *fr,gmx_vsite_t *vsite,
+                              gmx_mtop_t *top,gmx_localtop_t *ltop);
 
 extern gmx_localtop_t *dd_init_local_top(gmx_mtop_t *top_global);
 
 extern void dd_init_local_state(gmx_domdec_t *dd,
-				t_state *state_global,t_state *local_state);
+                                t_state *state_global,t_state *local_state);
 
 extern t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
-					 int *cginfo);
+                                         int *cginfo);
 
 extern void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
-				  t_inputrec *ir,rvec *x,matrix box,
-				  bool bBCheck,
-				  real *r_2b,real *r_mb);
+                                  t_inputrec *ir,rvec *x,matrix box,
+                                  bool bBCheck,
+                                  real *r_2b,real *r_mb);
 
 
 /* In domdec_setup.c */
 
 extern real dd_choose_grid(FILE *fplog,
-			   t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
-			   gmx_mtop_t *mtop,matrix box,
-			   bool bDynLoadBal,real dlb_scale,
-			   real cellsize_limit,real cutoff_dd,
-			   bool bInterCGBondeds,bool bInterCGMultiBody);
+                           t_commrec *cr,gmx_domdec_t *dd,t_inputrec *ir,
+                           gmx_mtop_t *mtop,matrix box,
+                           bool bDynLoadBal,real dlb_scale,
+                           real cellsize_limit,real cutoff_dd,
+                           bool bInterCGBondeds,bool bInterCGMultiBody);
 /* Determines the optimal DD cell setup dd->nc and possibly npmenodes
  * for the system.
  * On the master node returns the actual cellsize limit used.
