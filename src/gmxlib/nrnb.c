@@ -46,7 +46,6 @@
 #include "main.h"
 #include "smalloc.h"
 #include "copyrite.h"
-#include "domdec.h"
 
 typedef struct {
   char *name;
@@ -417,12 +416,10 @@ static double pr_av(FILE *log,t_commrec *cr,
     fav /= cr->nnodes - cr->npmenodes;
     fprintf(log,"\n %-26s",title);
     for(i=0; (i<cr->nnodes); i++) {
-      if (!gmx_pmeonlynode(cr,i)) {
 	dperc=(100.0*ftot[i])/fav;
 	unb=max(unb,dperc);
 	perc=dperc;
 	fprintf(log,"%3d ",perc);
-      }
     }
     if (unb > 0) {
       perc=10000.0/unb;
@@ -447,7 +444,6 @@ void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
   snew(stot,cr->nnodes);
   init_nrnb(av);
   for(i=0; (i<cr->nnodes); i++) {
-    if (!gmx_pmeonlynode(cr,i)) {
       add_nrnb(av,av,&(nrnb[i]));
       /* Cost due to forces */
       for(j=0; (j<eNR_NBKERNEL_NR); j++)
@@ -458,7 +454,6 @@ void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
       for(j=0; (j<NCONSTR_INDEX); j++) {
 	stot[i]+=nrnb[i].n[constr_index[j]]*cost_nrnb(constr_index[j]);
       }
-    } 
   }   
   for(j=0; (j<eNRNB); j++)
     av->n[j]=av->n[j]/(double)(cr->nnodes - cr->npmenodes);
@@ -467,12 +462,10 @@ void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
   
   fprintf(log," Type                 NODE:");
   for(i=0; (i<cr->nnodes); i++)
-    if (!gmx_pmeonlynode(cr,i))
       fprintf(log,"%3d ",i);
   fprintf(log,"Scaling\n");
   fprintf(log,"---------------------------");
   for(i=0; (i<cr->nnodes); i++)
-    if (!gmx_pmeonlynode(cr,i))
       fprintf(log,"----");
   fprintf(log,"-------\n");
   
@@ -481,12 +474,10 @@ void pr_load(FILE *log,t_commrec *cr,t_nrnb nrnb[])
     if (av->n[j] > 0) {
       fprintf(log," %-26s",nrnb_str(j));
       for(i=0; (i<cr->nnodes); i++) {
-	if (!gmx_pmeonlynode(cr,i)) {
 	  dperc=(100.0*nrnb[i].n[j])/av->n[j];
 	  unb=max(unb,dperc);
 	  perc=dperc;
 	  fprintf(log,"%3d ",perc);
-	}
       }
       if (unb > 0) {
 	perc=10000.0/unb;
