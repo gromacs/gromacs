@@ -26,13 +26,13 @@ do_fit.h \
 ebin.h \
 edsam.h \
 enxio.h \
-gmx_fatal.h \
 ffscanf.h \
 fftgrid.h \
 filenm.h \
 force.h \
 futil.h \
 gbutil.h \
+gmx_fatal.h \
 gmx_ana.h \
 gmx_arpack.h \
 gmx_blas.h \
@@ -111,6 +111,7 @@ tags.h \
 tgroup.h \
 tgroup.h \
 topsort.h \
+toputil.h \
 tpxio.h \
 transfer.h \
 trnio.h \
