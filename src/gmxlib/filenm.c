@@ -78,7 +78,7 @@ static const int tros[]={
   efXTC, efTRR,
 #endif
   efTRJ, efGRO, efG96, efPDB, efG87 };
-#define NTROS asize(trxs)
+#define NTROS asize(tros)
 
 static const int trns[]={ 
 #ifdef USE_XDR
