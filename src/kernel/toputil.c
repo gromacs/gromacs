@@ -100,6 +100,38 @@ void init_plist(t_params plist[])
   }
 }
 
+void cp_param(t_param *dest,t_param *src)
+{
+  int j;
+  
+  for(j=0; (j<MAXATOMLIST); j++)
+    dest->a[j] = src->a[j];
+  for(j=0; (j<MAXFORCEPARAM); j++)
+    dest->c[j] = src->c[j];
+  strcpy(dest->s,src->s);
+}
+
+void add_param_to_list(t_params *list, t_param *b)
+{
+  int j;
+  
+  if (debug) {
+    fprintf(debug,"add_param_to)list: nr = %d\n",list->nr);
+    fflush(debug);
+  }
+  /* allocate one position extra */
+  pr_alloc (1,list);
+
+  /* fill the arrays */
+  for (j=0; (j < MAXFORCEPARAM); j++) 
+    list->param[list->nr].c[j]   = b->c[j];
+  for (j=0; (j < MAXATOMLIST); j++) 
+    list->param[list->nr].a[j]   = b->a[j];
+  
+  list->nr++;
+}
+
+
 void init_molinfo(t_molinfo *mol)
 {
   mol->nrexcl = 0;

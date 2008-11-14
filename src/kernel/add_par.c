@@ -224,14 +224,3 @@ int search_jtype(t_restp *rtp,char *name,bool bNterm)
   return jmax;
 }
 
-void cp_param(t_param *dest,t_param *src)
-{
-  int j;
-  
-  for(j=0; (j<MAXATOMLIST); j++)
-    dest->a[j] = src->a[j];
-  for(j=0; (j<MAXFORCEPARAM); j++)
-    dest->c[j] = src->c[j];
-  strcpy(dest->s,src->s);
-}
-

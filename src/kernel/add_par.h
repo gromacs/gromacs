@@ -63,6 +63,4 @@ extern void add_vsite4_atoms(t_params *ps, int ai, int aj, int ak, int al,
 
 extern int search_jtype(t_restp *rp,char *name,bool bFirstRes);
 
-extern void cp_param(t_param *dest,t_param *src);
-
 #endif	/* _add_par_h */
