@@ -51,19 +51,6 @@ typedef struct {
   char *a1,*a2;
 } t_ssbond;
 
-void
-choose_ff(char *ff,int maxlen);
-/* Strange place for this function... */
-
-extern void print_top_comment(FILE *out,char *filename,char *title,bool bITP);
-
-extern void print_top_header(FILE *out,char *filename,char *title,bool bITP, 
-			     char *ff,real mHmult);
-
-extern void print_top_mols(FILE *out, char *title, char *water,
-			   int nincl, char **incls,
-			   int nmol, t_mols *mols);
-
 extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    t_atoms *atoms,rvec **x,
 		    t_atomtype atype,t_symtab *tab,
@@ -77,14 +64,8 @@ extern void pdb2top(FILE *top_file, char *posre_fn, char *molname,
 		    real long_bond_dist, real short_bond_dist,
 		    bool bDeuterate);
 /* Create a topology ! */
-extern bool is_int(double x);
-/* Returns TRUE when x is integer */
 
 extern void print_sums(t_atoms *atoms, bool bSystem);
 
-extern void write_top(FILE *out, char *pr,char *molname,
-		      t_atoms *at,int bts[],t_params plist[],t_excls excls[],
-		      t_atomtype atype,int *cgnr, int nrexcl);
-/* NOTE: nrexcl is not the size of *excl! */
 
 #endif	/* _pdb2top_h */

@@ -1110,26 +1110,6 @@ static bool default_params(int ftype,t_params bt[],
 
 
 
-void push_bondnow(t_params *bond, t_param *b)
-{
-  int j;
-  
-  if (debug) {
-    fprintf(debug,"push_bondnow: nr = %d\n",bond->nr);
-    fflush(debug);
-  }
-  /* allocate one position extra */
-  pr_alloc (1,bond);
-
-  /* fill the arrays */
-  for (j=0; (j < MAXFORCEPARAM); j++) 
-    bond->param[bond->nr].c[j]   = b->c[j];
-  for (j=0; (j < MAXATOMLIST); j++) 
-    bond->param[bond->nr].a[j]   = b->a[j];
-  
-  bond->nr++;
-}
-
 void push_bond(directive d,t_params bondtype[],t_params bond[],
 	       t_atoms *at,t_atomtype atype,char *line,
 	       bool bBonded,bool bGenPairs,real fudgeQQ,
@@ -1393,7 +1373,7 @@ void push_bond(directive d,t_params bondtype[],t_params bond[],
   }
 
   /* Put the values in the appropriate arrays */
-  push_bondnow (&bond[ftype],&param);
+  add_param_to_list (&bond[ftype],&param);
 }
 
 void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
@@ -1481,7 +1461,7 @@ void push_vsitesn(directive d,t_params bondtype[],t_params bond[],
     param.c[0] = nj;
     param.c[1] = weight[j]/weight_tot;
     /* Put the values in the appropriate arrays */
-    push_bondnow (&bond[ftype],&param);
+    add_param_to_list (&bond[ftype],&param);
   }
 
   sfree(atc);
@@ -1731,7 +1711,7 @@ static void generate_LJCpairsNB(t_molinfo *mol,int nb_funct,t_params *nbp)
 	param.c[1] = atom[j].q;
 	param.c[2] = nbp->param[ntype*atom[i].type+atom[j].type].c[0];
 	param.c[3] = nbp->param[ntype*atom[i].type+atom[j].type].c[1];
-	push_bondnow(&mol->plist[F_LJC_PAIRS_NB],&param);
+	add_param_to_list(&mol->plist[F_LJC_PAIRS_NB],&param);
       }
     }
   }
