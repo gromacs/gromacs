@@ -82,18 +82,15 @@ simulation. Edit it to suit your specific needs and desires. </P>
 <dt><h4>include:</h4></dt>
 <dd>directories to include in your topology. Format: 
 <PRE>-I/home/john/my_lib -I../more_lib</PRE></dd>
-<dt><h4>define: ()</h4></dt>
+<dt><h4>define:</h4></dt>
 <dd>defines to pass to the preprocessor, default is no defines. You can use
 any defines to control options in your customized topology files. Options
 that are already available by default are:
 <dd><dl compact>
-<dt><b>-DFLEXIBLE</b>
+<dt>-DFLEXIBLE</dt>
 <dd>Will tell grompp to include flexible water in stead of rigid water into your
-topology, this is necessary to make 
-<b><A HREF="#run">conjugate gradients</A></b> or
-<b><A HREF="#run">l-bfgs</A></b> minimization work and will allow 
-<b><A HREF="#run">steepest descent</A></b> to minimize further.</dd>
-<dt><b>-DPOSRES</b></dt>
+topology, this can be useful for normal mode analysis.</dd>
+<dt>-DPOSRES</dt>
 <dd>Will tell grompp to include posre.itp into your topology, used for
 <!--Idx-->position restraints<!--EIdx-->.</dd>
 </dl>
