@@ -12,47 +12,13 @@ case "$p" in
 esac }
 complete -F _anadock_compl anadock
 shopt -s extglob
-_cdist_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -g -q -d -o -n -dom -h -nice -noengh -bm -am -pm -rr -ar -er -vm -lm -il -dm -im -nm -hm -hb -nobon -nonb -measure -maxdist -add -vir -sm' -- $c)); return 0; fi
-case "$p" in
--sm) COMPREPLY=( $(compgen -W ' none tri tetra ' -- $c ));;
--s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--q) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--d) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--dom) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _cdist_compl cdist
-shopt -s extglob
-_disco_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -g -f -d -do -c -center -n -o -keep -viol -h -nice -nf -nit -nov -nochiral -nopep -lower -weighted -dump -cubic -explicit -fit -nbcheck -nstprint -ranlist -noranlistfirst -lowdev -seed -box -grow' -- $c)); return 0; fi
-case "$p" in
--g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--d) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--do) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--c) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--center) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--keep) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--viol) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _disco_compl disco
-shopt -s extglob
 _do_dssp_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -ssdump -map -o -sc -a -ta -aa -h -nice -b -e -dt -tu -w -noxvgr -sss' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ssdump) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -68,9 +34,9 @@ shopt -s extglob
 _editconf_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -o -mead -bf -h -nice -w -ndef -bt -box -angles -d -c -center -translate -rotate -princ -scale -density -novol -pbc -grasp -rvdw -sig56 -vdwread -atom -legend -label' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -o -mead -bf -h -nice -w -ndef -bt -box -angles -d -c -center -translate -rotate -princ -scale -density -pbc -grasp -rvdw -sig56 -vdwread -atom -legend -label' -- $c)); return 0; fi
 case "$p" in
--bt) COMPREPLY=( $(compgen -W ' tric cubic dodecahedron octahedron ' -- $c ));;
+-bt) COMPREPLY=( $(compgen -W ' triclinic cubic dodecahedron octahedron ' -- $c ));;
 -f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -89,31 +55,15 @@ case "$p" in
 esac }
 complete -F _eneconv_compl eneconv
 shopt -s extglob
-_ffscan_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -g -table -parm -ga -c -e -o -h -nice -noxvgr -tol -fmax -nocomb -npow -logeps -v -epot -fepot -pres -fpres -fmsf -molsize -nmol' -- $c)); return 0; fi
-case "$p" in
--s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--table) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--parm) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--ga) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--c) COMPREPLY=( $(compgen -X '!*.gro*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _ffscan_compl ffscan
-shopt -s extglob
 _g_anaeig_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -v -v2 -f -s -n -eig -eig2 -comp -rmsf -proj -2d -3d -filt -extr -over -inpr -h -nice -b -e -dt -tu -w -noxvgr -first -last -skip -max -nframes -split' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -v -v2 -f -s -n -eig -eig2 -comp -rmsf -proj -2d -3d -filt -extr -over -inpr -h -nice -b -e -dt -tu -w -noxvgr -first -last -skip -max -nframes -split -entropy -temp -nevskip' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--v) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--v2) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-v) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-v2) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -eig) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -123,8 +73,8 @@ case "$p" in
 -proj) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -2d) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -3d) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--filt) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--extr) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-filt) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-extr) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -over) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -inpr) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
@@ -133,7 +83,7 @@ shopt -s extglob
 _g_analyze_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -ac -msd -cc -dist -av -ee -g -h -nice -w -noxvgr -notime -b -e -n -d -bw -errbar -integrate -aver_start -xydy -filter -power -nosubav -oneacf -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -ac -msd -cc -dist -av -ee -g -h -nice -w -noxvgr -notime -b -e -n -d -bw -errbar -integrate -aver_start -xydy -regression -luzar -temp -fitstart -smooth -filter -power -nosubav -oneacf -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -errbar) COMPREPLY=( $(compgen -W ' none stddev error 90 ' -- $c ));;
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
@@ -152,13 +102,12 @@ shopt -s extglob
 _g_angle_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -od -ov -of -ot -oh -oc -or -h -nice -b -e -dt -w -noxvgr -type -all -binwidth -chandler -avercorr -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -od -ov -of -ot -oh -oc -or -h -nice -b -e -dt -w -noxvgr -type -all -binwidth -noperiodic -chandler -avercorr -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -type) COMPREPLY=( $(compgen -W ' angle dihedral improper ryckaert-bellemans ' -- $c ));;
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -od) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ov) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -175,7 +124,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -o -l -d -h -nice -b -e -dt -w -noxvgr -blen -tol -noaver -noaverdist' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -189,8 +138,8 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -ol -od -oz -ot -otr -otl -ok -okr -okl -oa -h -nice -b -e -dt -tu -noxvgr -na -z' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ol) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -209,13 +158,13 @@ shopt -s extglob
 _g_chi_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -o -p -ss -jc -corr -g -ot -oh -rt -cp -h -nice -b -e -dt -w -noxvgr -r0 -phi -psi -omega -rama -viol -all -rad -shift -binwidth -core_rotamer -maxchi -nonormhisto -ramomega -bfact -chi_prod -HChi -bmax -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -o -p -ss -jc -corr -g -ot -oh -rt -cp -h -nice -b -e -dt -w -noxvgr -r0 -phi -psi -omega -rama -viol -noperiodic -all -rad -shift -binwidth -core_rotamer -maxchi -nonormhisto -ramomega -bfact -chi_prod -HChi -bmax -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -maxchi) COMPREPLY=( $(compgen -W ' 0 1 2 3 4 5 6 ' -- $c ));;
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -p) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ss) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -234,9 +183,9 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -dm -o -g -dist -ev -sz -tr -ntr -clid -cl -h -nice -b -e -dt -tu -w -noxvgr -dista -nlevels -cutoff -nofit -max -skip -av -wcl -nst -rmsmin -method -minstruct -binary -M -P -seed -niter -kT' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
 -method) COMPREPLY=( $(compgen -W ' linkage jarvis-patrick monte-carlo diagonalization gromos ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dm) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -248,7 +197,7 @@ case "$p" in
 -tr) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ntr) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -clid) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--cl) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cl) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_cluster_compl g_cluster
 shopt -s extglob
@@ -257,8 +206,8 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -ow -nc -mc -ac -hc -temp -mcn -h -nice -b -e -dt -tu -w -noxvgr -cut -mol -nopbc -nskip -nlevels -ndf -rgblo -rgbhi' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.tpr*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -275,7 +224,7 @@ shopt -s extglob
 _g_confrms_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f1 -f2 -o -n1 -n2 -no -h -nice -w -one -nomw -pbc -nofit -name -bfac' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f1 -f2 -o -n1 -n2 -no -h -nice -w -one -nomw -pbc -nofit -name -label -bfac' -- $c)); return 0; fi
 case "$p" in
 -f1) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -f2) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -291,12 +240,12 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -v -av -l -ascii -xpm -xpma -h -nice -b -e -dt -tu -noxvgr -nofit -ref -mwa -last -nopbc' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--v) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-v) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -av) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -l) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ascii) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -305,12 +254,30 @@ case "$p" in
 esac }
 complete -F _g_covar_compl g_covar
 shopt -s extglob
+_g_current_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -n -f -o -caf -dsp -md -mj -mc -h -nice -b -e -dt -w -noxvgr -sh -nonojump -eps -bfit -efit -bvit -evit -tr -temp' -- $c)); return 0; fi
+case "$p" in
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-caf) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-dsp) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-md) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-mj) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-mc) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_current_compl g_current
+shopt -s extglob
 _g_density_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -ei -o -h -nice -b -e -dt -w -noxvgr -d -sl -number -ed -count -ng -symm -center' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -ei -o -h -nice -b -e -dt -w -noxvgr -d -sl -dens -ng -symm -center' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-dens) COMPREPLY=( $(compgen -W ' mass number charge electron ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ei) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -321,9 +288,11 @@ shopt -s extglob
 _g_densmap_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -h -nice -b -e -dt -w -bin -nx -nz -amax -rmax -mirror -dmax' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -h -nice -b -e -dt -w -bin -aver -xmin -xmax -n1 -n2 -amax -rmax -mirror -unit -dmin -dmax' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-aver) COMPREPLY=( $(compgen -W ' z y x ' -- $c ));;
+-unit) COMPREPLY=( $(compgen -W ' nm-3 nm-2 count ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -348,7 +317,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -o -h -nice -b -e -dt -w -sa -mult' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.out*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
@@ -357,12 +326,13 @@ shopt -s extglob
 _g_dipoles_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -enx -f -s -n -o -eps -a -d -c -g -adip -dip3d -cos -q -slab -h -nice -b -e -dt -w -noxvgr -mu -mumax -epsilonRF -skip -temp -avercorr -nopairs -axis -sl -gkratom -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -enx -f -s -n -o -eps -a -d -c -g -adip -dip3d -cos -cmap -q -slab -h -nice -b -e -dt -w -noxvgr -mu -mumax -epsilonRF -skip -temp -corr -nopairs -ncos -axis -sl -gkratom -gkratom2 -rcmax -phi -nlevels -ndegrees -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
+-corr) COMPREPLY=( $(compgen -W ' none mol molsep total ' -- $c ));;
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
 -enx) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -374,6 +344,7 @@ case "$p" in
 -adip) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dip3d) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -cos) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cmap) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -q) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -slab) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
@@ -382,10 +353,10 @@ shopt -s extglob
 _g_disre_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -ds -da -dn -dm -dr -l -n -q -c -h -nice -b -e -dt -w -noxvgr -ntop' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -ds -da -dn -dm -dr -l -n -q -c -x -h -nice -b -e -dt -w -noxvgr -ntop -maxdr -nlevels -nothird' -- $c)); return 0; fi
 case "$p" in
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ds) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -da) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dn) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -395,18 +366,20 @@ case "$p" in
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -q) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -c) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-x) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_disre_compl g_disre
 shopt -s extglob
 _g_dist_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -h -nice -b -e -dt -noxvgr -dist' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -lt -h -nice -b -e -dt -noxvgr -dist' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-lt) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_dist_compl g_dist
 shopt -s extglob
@@ -420,6 +393,30 @@ case "$p" in
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_dyndom_compl g_dyndom
+shopt -s extglob
+_genbox_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -cp -cs -ci -o -p -h -nice -box -nmol -try -seed -vdwd -shell -maxsol -vel' -- $c)); return 0; fi
+case "$p" in
+-cp) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cs) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ci) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-p) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _genbox_compl genbox
+shopt -s extglob
+_genconf_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -trj -h -nice -nbox -dist -seed -rot -shuffle -sort -block -nmolat -maxrot -norenumber' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-trj) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _genconf_compl genconf
 shopt -s extglob
 _g_enemat_compl() {
 local p c
@@ -437,7 +434,7 @@ shopt -s extglob
 _g_energy_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -f2 -s -o -viol -pairs -ora -ort -oda -odr -odt -oten -corr -vis -ravg -h -nice -b -e -w -noxvgr -fee -fetemp -zero -sum -dp -mutot -skip -aver -nmol -ndf -fluc -orinst -ovec -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -f2 -s -o -viol -pairs -ora -ort -oda -odr -odt -oten -corr -vis -ravg -h -nice -b -e -w -noxvgr -fee -fetemp -zero -sum -dp -mutot -nouni -skip -aver -nmol -ndf -fluc -orinst -ovec -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
@@ -459,12 +456,39 @@ case "$p" in
 esac }
 complete -F _g_energy_compl g_energy
 shopt -s extglob
+_genion_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -table -n -o -g -pot -p -h -nice -noxvgr -np -pname -pq -nn -nname -nq -rmin -norandom -seed -scale -conc -neutral' -- $c)); return 0; fi
+case "$p" in
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-table) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-pot) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-p) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _genion_compl genion
+shopt -s extglob
+_genrestr_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -o -of -h -nice -fc -freeze -disre -disre_dist -disre_frac -disre_up2 -constr' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.itp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-of) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _genrestr_compl genrestr
+shopt -s extglob
 _g_filter_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -ol -oh -h -nice -b -e -dt -w -nf -all -nonojump -fit' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ol) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -475,11 +499,11 @@ shopt -s extglob
 _g_gyrate_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -acf -h -nice -b -e -dt -w -noxvgr -nmol -q -p -moi -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -acf -h -nice -b -e -dt -w -noxvgr -nmol -q -p -moi -nz -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -492,7 +516,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -nm -s -o -h -nice -b -e -dt -w -noxvgr -d -sl' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -nm) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -503,16 +527,15 @@ shopt -s extglob
 _g_hbond_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -g -sel -num -ac -dist -ang -hx -hbn -hbm -don -dan -life -h -nice -b -e -dt -noxvgr -ins -a -r -noda -abin -rbin -nonitacc -contact -shell -fitstart -temp -dump -max_hb -nomerge -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -num -g -ac -dist -ang -hx -hbn -hbm -don -dan -life -nhbdist -h -nice -b -e -dt -noxvgr -ins -a -r -noda -r2 -abin -rbin -nonitacc -contact -shell -fitstart -temp -smooth -dump -max_hb -nomerge -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--sel) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -num) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ac) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dist) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ang) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -522,6 +545,7 @@ case "$p" in
 -don) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dan) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -life) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-nhbdist) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_hbond_compl g_hbond
 shopt -s extglob
@@ -533,12 +557,31 @@ case "$p" in
 -prop) COMPREPLY=( $(compgen -W ' RAD TWIST RISE LEN NHX DIP RMS CPHI RMSA PHI PSI HB3 HB4 HB5 CD222 ' -- $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -to) COMPREPLY=( $(compgen -X '!*.g87*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -cz) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -co) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_helix_compl g_helix
+shopt -s extglob
+_g_helixorient_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -n -oaxis -ocenter -orise -oradius -otwist -obending -otilt -orot -h -nice -b -e -dt -noxvgr -sidechain -incremental' -- $c)); return 0; fi
+case "$p" in
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-oaxis) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ocenter) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-orise) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-oradius) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-otwist) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-obending) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-otilt) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-orot) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_helixorient_compl g_helixorient
 shopt -s extglob
 _g_lie_compl() {
 local p c
@@ -555,7 +598,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -mean -frames -no -h -nice -b -e -dt -noxvgr -t -nlevels' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mean) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -567,10 +610,10 @@ shopt -s extglob
 _g_mindist_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -od -on -o -ox -or -h -nice -b -e -dt -tu -w -noxvgr -matrix -max -d -pi -split -ng' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -od -on -o -ox -or -h -nice -b -e -dt -tu -w -noxvgr -matrix -max -d -pi -split -ng -nopbc' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -od) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -597,18 +640,49 @@ shopt -s extglob
 _g_msd_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -mol -h -nice -b -e -dt -tu -w -noxvgr -type -lateral -ngroup -nomw -trestart -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -mol -pdb -h -nice -b -e -dt -tu -w -noxvgr -type -lateral -ten -ngroup -nomw -rmcomm -tpdb -trestart -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
 -type) COMPREPLY=( $(compgen -W ' no x y z ' -- $c ));;
 -lateral) COMPREPLY=( $(compgen -W ' no x y z ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mol) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-pdb) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_msd_compl g_msd
+shopt -s extglob
+_gmxcheck_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -f2 -s1 -s2 -c -e -e2 -n -m -h -nice -vdwfac -bonlo -bonhi -tol -ab -lastener' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f2) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-s1) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-s2) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-c) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-e2) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-m) COMPREPLY=( $(compgen -X '!*.tex*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _gmxcheck_compl gmxcheck
+shopt -s extglob
+_gmxdump_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -e -cp -om -h -nice -nonr' -- $c)); return 0; fi
+case "$p" in
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cp) COMPREPLY=( $(compgen -X '!*.cpt*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-om) COMPREPLY=( $(compgen -X '!*.mdp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _gmxdump_compl gmxdump
 shopt -s extglob
 _g_nmeig_compl() {
 local p c
@@ -619,7 +693,7 @@ case "$p" in
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -of) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ol) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--v) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-v) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_nmeig_compl g_nmeig
 shopt -s extglob
@@ -628,7 +702,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -v -e -s -n -o -h -nice -noxvgr -temp -seed -num -first -last' -- $c)); return 0; fi
 case "$p" in
--v) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-v) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -e) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -639,10 +713,10 @@ shopt -s extglob
 _g_nmtraj_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -v -o -h -nice -eignr -temp -amplitude -nframes' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -v -o -h -nice -eignr -phases -temp -amplitude -nframes' -- $c)); return 0; fi
 case "$p" in
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--v) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-v) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_nmtraj_compl g_nmtraj
@@ -650,24 +724,41 @@ shopt -s extglob
 _g_order_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -o -od -os -h -nice -b -e -dt -w -noxvgr -d -sl -szonly -unsat' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -o -od -os -Sg -Sk -h -nice -b -e -dt -w -noxvgr -d -sl -szonly -unsat' -- $c)); return 0; fi
 case "$p" in
 -d) COMPREPLY=( $(compgen -W ' z x y ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -od) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -os) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-Sg) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-Sk) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_order_compl g_order
+shopt -s extglob
+_g_polystat_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -n -o -v -p -h -nice -b -e -dt -tu -w -noxvgr -nomw -pc' -- $c)); return 0; fi
+case "$p" in
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-v) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-p) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_polystat_compl g_polystat
 shopt -s extglob
 _g_potential_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -o -oc -of -h -nice -b -e -dt -w -noxvgr -d -sl -cb -ce -tz -spherical -ng' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -o -oc -of -h -nice -b -e -dt -w -noxvgr -d -sl -cb -ce -tz -spherical -ng -correct' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -676,12 +767,28 @@ case "$p" in
 esac }
 complete -F _g_potential_compl g_potential
 shopt -s extglob
+_g_principal_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -a1 -a2 -a3 -om -h -nice -b -e -dt -tu -w -foo' -- $c)); return 0; fi
+case "$p" in
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-a1) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-a2) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-a3) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-om) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_principal_compl g_principal
+shopt -s extglob
 _g_rama_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -o -h -nice -b -e -dt -w -noxvgr' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
@@ -690,9 +797,10 @@ shopt -s extglob
 _g_rdf_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -sq -cn -hq -h -nice -b -e -dt -w -noxvgr -bin -com -nopbc -xy -cut -ng -fade -nlevel -startq -endq -energy' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -sq -cn -hq -h -nice -b -e -dt -w -noxvgr -bin -com -rdf -nopbc -nonorm -xy -cut -ng -fade -nlevel -startq -endq -energy' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-rdf) COMPREPLY=( $(compgen -W ' atom mol_com mol_cog res_com res_cog ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -705,14 +813,14 @@ shopt -s extglob
 _g_rms_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -f2 -n -o -mir -a -dist -m -bin -bm -h -nice -b -e -dt -tu -w -noxvgr -what -nopbc -fit -prev -split -skip -skip2 -max -min -bmax -bmin -nlevels -ng' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -f2 -n -o -mir -a -dist -m -bin -bm -h -nice -b -e -dt -tu -w -noxvgr -what -nopbc -fit -prev -split -skip -skip2 -max -min -bmax -bmin -nomw -nlevels -ng' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
 -what) COMPREPLY=( $(compgen -W ' rmsd rho rhosc ' -- $c ));;
 -fit) COMPREPLY=( $(compgen -W ' rot+trans translation none ' -- $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f2) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f2) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mir) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -729,7 +837,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -equiv -o -rms -scl -mean -nmr3 -nmr6 -noe -h -nice -b -e -dt -w -noxvgr -nlevels -max -nosumh' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -equiv) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -746,9 +854,9 @@ shopt -s extglob
 _g_rmsf_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -q -oq -ox -o -od -oc -dir -h -nice -b -e -dt -w -noxvgr -res -aniso' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -q -oq -ox -o -od -oc -dir -h -nice -b -e -dt -w -noxvgr -res -aniso -nofit' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -q) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -761,6 +869,25 @@ case "$p" in
 esac }
 complete -F _g_rmsf_compl g_rmsf
 shopt -s extglob
+_grompp_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -po -c -r -rb -n -p -pp -o -t -e -h -nice -nov -time -normvsbds -maxwarn -zero -norenum' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.mdp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-po) COMPREPLY=( $(compgen -X '!*.mdp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-c) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-r) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-rb) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-p) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-pp) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-t) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _grompp_compl grompp
+shopt -s extglob
 _g_rotacf_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
@@ -768,7 +895,7 @@ if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f
 case "$p" in
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -780,7 +907,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -h -nice -b -e -dt -t -sep' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_saltbr_compl g_saltbr
@@ -788,25 +915,39 @@ shopt -s extglob
 _g_sas_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -o -or -oa -q -n -i -h -nice -b -e -dt -w -noxvgr -solsize -ndots -qmax -f_index -minarea -nopbc -noprot -dgs' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -o -or -oa -tv -q -n -i -h -nice -b -e -dt -w -noxvgr -probe -ndots -qmax -f_index -minarea -nopbc -noprot -dgs' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -or) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -oa) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tv) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -q) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -i) COMPREPLY=( $(compgen -X '!*.itp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_sas_compl g_sas
 shopt -s extglob
+_g_sdf_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -o -r -h -nice -b -e -dt -mode -triangle -dtri -bin -grid' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.dat*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-r) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_sdf_compl g_sdf
+shopt -s extglob
 _g_sgangle_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -oa -od -od1 -od2 -h -nice -b -e -dt -w -noxvgr -pbc -one -z' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -s -oa -od -od1 -od2 -h -nice -b -e -dt -w -noxvgr -one -z' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -oa) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -819,7 +960,7 @@ shopt -s extglob
 _g_sham_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -ge -ene -dist -histo -bin -ls -lsh -lss -map -ls3 -mdata -g -h -nice -w -noxvgr -notime -b -e -ttol -n -d -bw -nosham -tsham -pmin -dim -ngrid -xmin -xmax -gmax -nlevels -mname' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -ge -ene -dist -histo -bin -lp -ls -lsh -lss -map -ls3 -mdata -g -h -nice -w -noxvgr -notime -b -e -ttol -n -d -bw -nosham -tsham -pmin -dim -ngrid -xmin -xmax -pmax -gmax -emin -emax -nlevels -mname' -- $c)); return 0; fi
 case "$p" in
 -f) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ge) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -827,6 +968,7 @@ case "$p" in
 -dist) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -histo) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -bin) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-lp) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ls) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -lsh) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -lss) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -840,17 +982,53 @@ shopt -s extglob
 _g_sorient_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -no -ro -co -h -nice -b -e -dt -w -noxvgr -com -rmin -rmax -bin -pbc' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -no -ro -co -rc -h -nice -b -e -dt -w -noxvgr -com -v23 -rmin -rmax -cbin -rbin -pbc' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -no) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ro) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -co) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-rc) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_sorient_compl g_sorient
+shopt -s extglob
+_g_spatial_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -dm -o -g -dist -ev -sz -tr -ntr -clid -cl -h -nice -b -e -dt -tu -w -noxvgr -dista -nlevels -cutoff -nofit -max -skip -av -wcl -nst -rmsmin -method -minstruct -binary -M -P -seed -niter -kT' -- $c)); return 0; fi
+case "$p" in
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-method) COMPREPLY=( $(compgen -W ' linkage jarvis-patrick monte-carlo diagonalization gromos ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-dm) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-dist) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ev) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-sz) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tr) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ntr) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-clid) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cl) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_spatial_compl g_spatial
+shopt -s extglob
+_g_spol_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -h -nice -b -e -dt -w -noxvgr -com -refat -rmin -rmax -dip -bw' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_spol_compl g_spol
 shopt -s extglob
 _g_tcaf_compl() {
 local p c
@@ -859,7 +1037,7 @@ if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f
 case "$p" in
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ot) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -874,13 +1052,14 @@ shopt -s extglob
 _g_traj_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -ox -ov -of -ob -ot -ekt -ekr -vd -cv -cf -h -nice -b -e -dt -tu -w -noxvgr -com -mol -nojump -nox -noy -noz -ng -len -bin -scale' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -ox -oxt -ov -of -ob -ot -ekt -ekr -vd -cv -cf -av -af -h -nice -b -e -dt -tu -w -noxvgr -com -mol -nojump -nox -noy -noz -ng -len -bin -scale' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ox) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-oxt) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ov) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -of) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ob) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -890,17 +1069,33 @@ case "$p" in
 -vd) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -cv) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -cf) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-av) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-af) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _g_traj_compl g_traj
+shopt -s extglob
+_g_vanhove_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -om -or -ot -h -nice -b -e -dt -w -noxvgr -sqrt -fm -rmax -rbin -mmax -nlevels -nr -fr -rt -ft' -- $c)); return 0; fi
+case "$p" in
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-om) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-or) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-ot) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _g_vanhove_compl g_vanhove
 shopt -s extglob
 _g_velacc_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -h -nice -b -e -dt -w -noxvgr -mol -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -h -nice -b -e -dt -w -noxvgr -m -mol -acflen -nonormalize -P -fitfn -ncskip -beginfit -endfit' -- $c)); return 0; fi
 case "$p" in
 -P) COMPREPLY=( $(compgen -W ' 0 1 2 3 ' -- $c ));;
 -fitfn) COMPREPLY=( $(compgen -W ' none exp aexp exp_exp vac exp5 exp7 exp9 ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -917,103 +1112,6 @@ case "$p" in
 esac }
 complete -F _g_wham_compl g_wham
 shopt -s extglob
-_genbox_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -cp -cs -ci -o -p -h -nice -box -nmol -try -seed -vdwd -shell' -- $c)); return 0; fi
-case "$p" in
--cp) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--cs) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--ci) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--p) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _genbox_compl genbox
-shopt -s extglob
-_genconf_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -trj -h -nice -nbox -dist -seed -rot -shuffle -sort -block -nmolat -maxrot -norenumber' -- $c)); return 0; fi
-case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--trj) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _genconf_compl genconf
-shopt -s extglob
-_genion_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -table -n -o -g -pot -h -nice -noxvgr -np -pname -pq -nn -nname -nq -rmin -random -seed -scale' -- $c)); return 0; fi
-case "$p" in
--s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--table) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--pot) COMPREPLY=( $(compgen -X '!*.pdb*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _genion_compl genion
-shopt -s extglob
-_genpr_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -n -o -of -h -nice -fc -freeze' -- $c)); return 0; fi
-case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.itp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--of) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _genpr_compl genpr
-shopt -s extglob
-_gmxcheck_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -f2 -s1 -s2 -c -e -e2 -n -h -nice -vdwfac -bonlo -bonhi -tol -lastener' -- $c)); return 0; fi
-case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f2) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--s1) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--s2) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--c) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--e2) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _gmxcheck_compl gmxcheck
-shopt -s extglob
-_gmxdump_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -e -h -nice -nonr' -- $c)); return 0; fi
-case "$p" in
--s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _gmxdump_compl gmxdump
-shopt -s extglob
-_grompp_compl() {
-local p c
-COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -po -c -r -rb -n -deshuf -p -pp -o -t -e -h -nice -nov -time -np -shuffle -sort -normvsbds -load -maxwarn -check14 -norenum' -- $c)); return 0; fi
-case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.mdp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--po) COMPREPLY=( $(compgen -X '!*.mdp*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--c) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--r) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--rb) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--deshuf) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--p) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--pp) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--t) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
-esac }
-complete -F _grompp_compl grompp
-shopt -s extglob
 _highway_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
@@ -1026,9 +1124,9 @@ shopt -s extglob
 _make_edi_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -eig -s -n -tar -ori -o -h -nice -noxvgr -mon -linfix -linacc -radfix -radacc -radcon -flood -outfrq -logfrq -slope -maxedsteps -deltaF0 -deltaF -tau -eqsteps -Eflnull -T -alpha -linstep -accdir -radstep -restrain -hesse -harmonic' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -eig -s -n -tar -ori -o -h -nice -noxvgr -mon -linfix -linacc -flood -radfix -radacc -radcon -outfrq -slope -maxedsteps -deltaF0 -deltaF -tau -eqsteps -Eflnull -T -alpha -linstep -accdir -radstep -restrain -hessian -harmonic' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -eig) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1052,11 +1150,15 @@ shopt -s extglob
 _mdrun_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -o -x -c -e -g -dgdl -field -table -tablep -rerun -tpi -ei -eo -j -jo -ffout -devout -runav -pi -po -pd -pn -mtx -dn -h -nice -deffnm -noxvgr -np -nt -v -nocompact -sepdvdl -multi -replex -reseed -glas -ionize' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -o -x -cpi -cpo -c -e -g -dgdl -field -table -tablep -tableb -rerun -tpi -tpid -ei -eo -j -jo -ffout -devout -runav -px -pf -mtx -dn -h -nice -deffnm -noxvgr -pd -dd -npme -ddorder -noddcheck -rdd -rcon -dlb -dds -nosum -v -nocompact -seppot -pforce -reprod -cpt -append -maxh -multi -replex -reseed -glas -ionize' -- $c)); return 0; fi
 case "$p" in
+-ddorder) COMPREPLY=( $(compgen -W ' interleave pp_pme cartesian ' -- $c ));;
+-dlb) COMPREPLY=( $(compgen -W ' auto no yes ' -- $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--o) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-o) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -x) COMPREPLY=( $(compgen -X '!*.xtc*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cpi) COMPREPLY=( $(compgen -X '!*.cpt*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-cpo) COMPREPLY=( $(compgen -X '!*.cpt*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -c) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -g) COMPREPLY=( $(compgen -X '!*.log*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1064,8 +1166,10 @@ case "$p" in
 -field) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -table) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -tablep) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--rerun) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tableb) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-rerun) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -tpi) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tpid) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -ei) COMPREPLY=( $(compgen -X '!*.edi*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -eo) COMPREPLY=( $(compgen -X '!*.edo*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -j) COMPREPLY=( $(compgen -X '!*.gct*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1073,10 +1177,8 @@ case "$p" in
 -ffout) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -devout) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -runav) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--pi) COMPREPLY=( $(compgen -X '!*.ppa*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--po) COMPREPLY=( $(compgen -X '!*.ppa*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--pd) COMPREPLY=( $(compgen -X '!*.pdo*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--pn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-px) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-pf) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -mtx) COMPREPLY=( $(compgen -X '!*.mtx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -dn) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
@@ -1085,9 +1187,9 @@ shopt -s extglob
 _mk_angndx_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -n -h -nice -type' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -n -h -nice -type -nohyd' -- $c)); return 0; fi
 case "$p" in
--type) COMPREPLY=( $(compgen -W ' angle g96-angle dihedral improper ryckaert-bellemans phi-psi ' -- $c ));;
+-type) COMPREPLY=( $(compgen -W ' angle dihedral improper ryckaert-bellemans ' -- $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
@@ -1098,7 +1200,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -h -nice -b -e -dt' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
@@ -1107,7 +1209,7 @@ shopt -s extglob
 _pdb2gmx_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -p -i -n -q -h -nice -merge -ff -water -inter -ss -ter -lys -asp -glu -his -angle -dist -una -ignh -missing -v -posrefc -vsite -heavyh -deuterate' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -p -i -n -q -h -nice -merge -ff -water -inter -ss -ter -lys -arg -asp -glu -gln -his -angle -dist -una -ignh -missing -v -posrefc -vsite -heavyh -deuterate' -- $c)); return 0; fi
 case "$p" in
 -water) COMPREPLY=( $(compgen -W ' spc spce tip3p tip4p tip5p f3c ' -- $c ));;
 -vsite) COMPREPLY=( $(compgen -W ' none hydrogens aromatics ' -- $c ));;
@@ -1126,19 +1228,28 @@ COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -n -o -h -nice -b -e -dt' -- $c)); return 0; fi
 case "$p" in
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _protonate_compl protonate
 shopt -s extglob
+_sigeps_compl() {
+local p c
+COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -o -h -nice -w -noxvgr -c6 -cn -pow -sig -eps -A -B -C -qi -qj -sigfac' -- $c)); return 0; fi
+case "$p" in
+-o) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+esac }
+complete -F _sigeps_compl sigeps
+shopt -s extglob
 _tpbconv_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -e -n -o -h -nice -time -extend -until -zeroq -nounconstrained' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -s -f -e -n -o -h -nice -nsteps -runtime -time -extend -until -zeroq -nocont' -- $c)); return 0; fi
 case "$p" in
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(trr|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(trr|cpt|trj)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -e) COMPREPLY=( $(compgen -X '!*.+(edr|ene)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1150,8 +1261,8 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -n -demux -h -nice -tu -noxvgr -b -e -dt -prec -novel -settime -nosort -keeplast -cat' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -demux) COMPREPLY=( $(compgen -X '!*.xvg*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1161,14 +1272,14 @@ shopt -s extglob
 _trjconv_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -s -n -fr -sub -drop -h -nice -b -e -tu -w -noxvgr -skip -dt -dump -t0 -timestep -pbc -ur -center -box -shift -fit -ndec -novel -force -trunc -exec -app -split -sep -ter -dropunder -dropover' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -s -n -fr -sub -drop -h -nice -b -e -tu -w -noxvgr -skip -dt -dump -t0 -timestep -pbc -ur -center -boxcenter -box -trans -shift -fit -ndec -novel -force -trunc -exec -app -split -sep -nzero -ter -dropunder -dropover' -- $c)); return 0; fi
 case "$p" in
--tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s m h ' -- $c ));;
--pbc) COMPREPLY=( $(compgen -W ' none whole inbox nojump cluster com ' -- $c ));;
+-tu) COMPREPLY=( $(compgen -W ' ps fs ns us ms s ' -- $c ));;
+-pbc) COMPREPLY=( $(compgen -W ' none mol res atom nojump cluster whole ' -- $c ));;
 -ur) COMPREPLY=( $(compgen -W ' rect tric compact ' -- $c ));;
--center) COMPREPLY=( $(compgen -W ' no tric rect zero ' -- $c ));;
--fit) COMPREPLY=( $(compgen -W ' none rot+trans translation progressive ' -- $c ));;
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-boxcenter) COMPREPLY=( $(compgen -W ' tric rect zero ' -- $c ));;
+-fit) COMPREPLY=( $(compgen -W ' none rot+trans rotxy+transxy translation transxy progressive ' -- $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1183,7 +1294,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -n -o -nshell -h -nice -b -e -dt -noxvgr -na -da -com -r' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa|gro|g96|pdb|brk|ent)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -n) COMPREPLY=( $(compgen -X '!*.ndx*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1204,7 +1315,7 @@ shopt -s extglob
 _x2top_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -r -h -nice -scale -ff -nexcl -noH14 -alldih -remdih -nopairs -name -nopbc -param -noround -kb -kt -kp' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -o -r -h -nice -ff -v -nexcl -noH14 -alldih -remdih -nopairs -name -nopbc -pdbq -noparam -noround -kb -kt -kp' -- $c)); return 0; fi
 case "$p" in
 -f) COMPREPLY=( $(compgen -X '!*.+(gro|g96|pdb|brk|ent|esp|tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -o) COMPREPLY=( $(compgen -X '!*.top*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1215,13 +1326,13 @@ shopt -s extglob
 _xpm2ps_compl() {
 local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
-if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -f2 -di -do -o -xpm -h -nice -w -noframe -title -yonce -legend -diag -combine -size -bx -by -rainbow -gradient -skip -zeroline -legoffset' -- $c)); return 0; fi
+if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -f2 -di -do -o -xpm -h -nice -w -noframe -title -yonce -legend -diag -size -bx -by -rainbow -gradient -skip -zeroline -legoffset -combine -cmin -cmax' -- $c)); return 0; fi
 case "$p" in
 -title) COMPREPLY=( $(compgen -W ' top once ylabel none ' -- $c ));;
 -legend) COMPREPLY=( $(compgen -W ' both first second none ' -- $c ));;
 -diag) COMPREPLY=( $(compgen -W ' first second none ' -- $c ));;
--combine) COMPREPLY=( $(compgen -W ' halves add sub mult div ' -- $c ));;
 -rainbow) COMPREPLY=( $(compgen -W ' no blue red ' -- $c ));;
+-combine) COMPREPLY=( $(compgen -W ' halves add sub mult div ' -- $c ));;
 -f) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -f2) COMPREPLY=( $(compgen -X '!*.xpm*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -di) COMPREPLY=( $(compgen -X '!*.m2p*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
@@ -1236,7 +1347,7 @@ local p c
 COMPREPLY=() c=${COMP_WORDS[COMP_CWORD]} p=${COMP_WORDS[COMP_CWORD-1]}
 if (( $COMP_CWORD <= 1 )) || [[ $c == -* ]]; then COMPREPLY=( $(compgen  -W ' -f -s -h -nice -b -e -dt' -- $c)); return 0; fi
 case "$p" in
--f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
+-f) COMPREPLY=( $(compgen -X '!*.+(xtc|trr|cpt|trj|gro|g96|pdb|g87)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 -s) COMPREPLY=( $(compgen -X '!*.+(tpr|tpb|tpa)*(.gz|.Z)' -f $c ; compgen -S '/' -X '.*' -d $c ));;
 esac }
 complete -F _xrama_compl xrama
