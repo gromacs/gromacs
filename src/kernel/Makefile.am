@@ -15,7 +15,7 @@ libgmxpreprocess@LIBSUFFIX@_la_SOURCES = \
 add_par.c	add_par.h	\
 compute_io.c	compute_io.h	\
 convparm.c 	convparm.h	\
-gen_ad.c 	gen_ad.h	\
+gen_ad.c 	\
 gen_vsite.c	gen_vsite.h	\
 genhydro.c	genhydro.h	\
 gmxcpp.c	gmxcpp.h	\
@@ -38,7 +38,7 @@ topexcl.c	topexcl.h	\
 topio.c 	topio.h		\
 toppush.c 	toppush.h	\
 topshake.c 	topshake.h	\
-toputil.c	toputil.h	\
+toputil.c	\
 tpbcmp.c	tpbcmp.h	\
 vsite_parm.c	vsite_parm.h	\
 xlate.c		xlate.h	

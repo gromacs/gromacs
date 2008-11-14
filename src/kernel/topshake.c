@@ -167,7 +167,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype at,int nshake)
 #ifdef DEBUG
 		    printf("p: %d, q: %d, dist: %12.5e\n",p.AI,p.AJ,p.C0);
 #endif
-		    push_bondnow (&(plist[F_CONSTR]),&p);
+		    add_param_to_list (&(plist[F_CONSTR]),&p);
 		    /* move the last bond to this position */
 		    copy_bond (pr,i,pr->nr-1);
 		    /* should free memory here!! */
@@ -197,7 +197,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype at,int nshake)
 	    p.AJ = pr->param[i].AJ;
 	    p.C0 = pr->param[i].C0;
 	    p.C1 = pr->param[i].C2;
-	    push_bondnow (&(plist[F_CONSTR]),&p);
+	    add_param_to_list (&(plist[F_CONSTR]),&p);
 	    
 	    /* move the last bond to this position */
 	    copy_bond (pr,i,pr->nr-1);
@@ -215,7 +215,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype at,int nshake)
   /* Add all non-connecting shakes to the shake list and throw away
      the shakenc list */
   for (i=0; i<plist[F_CONSTRNC].nr; i++)
-    push_bondnow(&(plist[F_CONSTR]), &(plist[F_CONSTRNC].param[i]));
+    add_param_to_list(&(plist[F_CONSTR]), &(plist[F_CONSTRNC].param[i]));
   plist[F_CONSTRNC].nr=0;
   sfree(plist[F_CONSTRNC].param);
   plist[F_CONSTRNC].param=NULL;

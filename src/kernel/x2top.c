@@ -159,7 +159,7 @@ void mk_bonds(int nnm,t_nm2type nmt[],
 	b.AI = i;
 	b.AJ = j;
 	b.C0 = sqrt(dx2);
-	push_bondnow (bond,&b);
+	add_param_to_list (bond,&b);
 	nbond[i]++;
 	nbond[j]++;
 	if (debug) 
