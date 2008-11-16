@@ -308,13 +308,14 @@ void mk_graph_ilist(FILE *fplog,
       if (g->nedge[i] > 0)
         g->nbound++;
   }
-  if (gmx_debug_at)
-    p_graph(debug,"graph",g);
 
   g->negc = 0;
   g->egc = NULL;
 
   sfree(nbond);
+
+  if (gmx_debug_at)
+    p_graph(debug,"graph",g);
 }
 
 t_graph *mk_graph(FILE *fplog,
