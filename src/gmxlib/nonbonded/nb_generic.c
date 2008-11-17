@@ -42,6 +42,7 @@
 #include "types/simple.h"
 #include "vec.h"
 #include "typedefs.h"
+#include "nb_generic.h"
 
 void
 gmx_nb_generic_kernel(t_nblist *           nlist,
@@ -158,14 +159,14 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 					case 1:
 						/* Vanilla cutoff coulomb */
 						vcoul            = qq*rinv;      
-						fscal           += vcoul*rinvsq; 
+						fscal            = vcoul*rinvsq; 
 						break;
 
 					case 2:
 						/* Reaction-field */
 						krsq             = fr->k_rf*rsq;      
 						vcoul            = qq*(rinv+krsq-fr->c_rf);
-						fscal           += qq*(rinv-2.0*krsq)*rinvsq;
+						fscal            = qq*(rinv-2.0*krsq)*rinvsq;
 						break;
 
 					case 3:
@@ -210,7 +211,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 						rinvsix          = rinvsq*rinvsq*rinvsq;
 						Vvdw_disp        = c6*rinvsix;     
 						Vvdw_rep         = c12*rinvsix*rinvsix;
-						fscal            = (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
+						fscal           += (12.0*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
 						Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
 						break;
 						
@@ -224,7 +225,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 						Vvdw_disp        = c6*rinvsix;     
 						br               = cexp2*rsq*rinv;
 						Vvdw_rep         = cexp1*exp(-br); 
-						fscal            = (br*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
+						fscal           += (br*Vvdw_rep-6.0*Vvdw_disp)*rinvsq;
 						Vvdwtot          = Vvdwtot+Vvdw_rep-Vvdw_disp;
 						break;
 						
@@ -252,7 +253,7 @@ gmx_nb_generic_kernel(t_nblist *           nlist,
 						FF               = Fp+Geps+2.0*Heps2;
 						Vvdw_rep         = c12*VV;         
 						fijR             = c12*FF;         
-						fscal            = -(fijD+fijR)*tabscale*rinv;
+						fscal           += -(fijD+fijR)*tabscale*rinv;
 						Vvdwtot          = Vvdwtot + Vvdw_disp + Vvdw_rep;						
 						break;
 												
