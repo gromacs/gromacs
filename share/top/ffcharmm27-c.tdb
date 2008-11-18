@@ -1,0 +1,13 @@
+[ None ]
+
+[ COO- ]
+[ replace ]
+C		CC 	12.011	0.34
+[ add ]
+2	8	OT	C	CA	N
+	OC	15.9994	-0.67
+[ delete ]
+O
+[ impropers ]
+C	CA	OT2	OT1      
+
