@@ -114,6 +114,8 @@ int ifunc_index(directive d,int type)
       return F_FOURDIHS;
     case 8:
       return F_TABDIHS;
+    case 9:
+	  return F_PDIHS;  /* proper dihedrals where we allow multiple terms over single bond */
     default:
       gmx_fatal(FARGS,"Invalid dihedral type %d",type);
     }

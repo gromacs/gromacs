@@ -173,7 +173,7 @@ static void check_cg_sizes(char *topfn,t_block *cgs)
 	    "For efficiency and accuracy, charge group should consist of a few atoms.\n"
 	    "For all-atom force fields use: CH3, CH2, CH, NH2, NH, OH, CO2, CO, etc.\n",
 	    maxsize);
-    warning(NULL);
+    warning_note(warn_buf);
   }
 }
 
