@@ -17,14 +17,14 @@
 {\bf mk\_angndx} \= \kill
 {\bf grompp} \> makes a run input file \\
 {\bf tpbconv} \> makes a run input file for restarting a crashed run \\
-{\bf mdrun} \> performs a simulation \\
+{\bf mdrun} \> performs a simulation, do a normal mode analysis or an energy minimization \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Viewing trajectories}
 \vspace{-2ex}\begin{tabbing}
 {\bf mk\_angndx} \= \kill
 {\bf ngmx} \> displays a trajectory \\
-{\bf trjconv} \> converts trajectories to {\eg} pdb which can be viewed with {\eg} rasmol \\
+{\bf highway} \> X-windows gadget for highway simulations \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Processing energies}
@@ -43,6 +43,7 @@
 {\bf trjcat} \> concatenates trajectory files \\
 {\bf eneconv} \> converts energy files \\
 {\bf xmp2ps} \> converts XPM matrices to encapsulated postscript (or XPM) \\
+{\bf sigeps} \> convert c6/12 or c6/cn combinations to and from sigma/epsilon \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Tools}
@@ -52,6 +53,7 @@
 {\bf mk\_angndx} \> generates index files for g\_angle \\
 {\bf gmxcheck} \> checks and compares files \\
 {\bf gmxdump} \> makes binary files human readable \\
+{\bf gen\_table} \> generate tables for use by mdrun \\
 {\bf g\_traj} \> plots x, v and f of selected atoms/groups (and more) from a trajectory \\
 {\bf g\_analyze} \> analyzes data sets \\
 {\bf trjorder} \> orders molecules according to their distance to a group \\
@@ -62,6 +64,9 @@
 {\bf g\_wham} \> weighted histogram analysis after umbrella sampling \\
 {\bf ffscan} \> scan and modify force field data for a single point energy calculation \\
 {\bf xpm2ps} \> convert XPM (XPixelMap) file to postscript \\
+{\bf g\_sham} \> read/write xmgr and xvgr data sets \\
+{\bf g\_spatial} \> calculates the spatial distribution function (more control than g\_sdf) \\
+{\bf g\_sdf} \> calculates the spatial distribution function (faster than g\_spatial) \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Distances between structures}
@@ -71,8 +76,6 @@
 {\bf g\_confrms} \> fits two structures and calculates the rmsd  \\
 {\bf g\_cluster} \> clusters structures \\
 {\bf g\_rmsf} \> calculates atomic fluctuations \\
-{\bf disco} \> distance geometry calculation with the CONCOORD algorithm \\
-{\bf cdist} \> create input for disco \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Distances in structures over time}
@@ -82,6 +85,7 @@
 {\bf g\_dist} \> calculates the distances between the centers of mass of two groups \\
 {\bf g\_bond} \> calculates distances between atoms \\
 {\bf g\_mdmat} \> calculates residue contact maps \\
+{\bf g\_polystat} \> calculates static properties of polymers \\
 {\bf g\_rmsdist} \> calculates atom pair distances averaged with power 2, -3 or -6 \\
 \end{tabbing}\vspace{-2ex}
 
@@ -91,6 +95,7 @@
 {\bf g\_traj} \> plots x, v, f, box, temperature and rotational energy \\
 {\bf g\_gyrate} \> calculates the radius of gyration \\
 {\bf g\_msd} \> calculates mean square displacements \\
+{\bf g\_polystat} \> calculates static properties of polymers \\
 {\bf g\_rotacf} \> calculates the rotational correlation function for molecules \\
 {\bf g\_vanhove} \> calculates Van Hove displacement functions \\
 \end{tabbing}\vspace{-2ex}
@@ -111,6 +116,7 @@
 {\bf g\_saltbr} \> computes salt bridges \\
 {\bf g\_sas} \> computes solvent accessible surface area \\
 {\bf g\_order} \> computes the order parameter per atom for carbon tails \\
+{\bf g\_principal} \> calculates axes of inertia for a group of atoms \\
 {\bf g\_rdf} \> calculates radial distribution functions \\
 {\bf g\_sdf} \> calculates solvent distribution functions \\
 {\bf g\_sgangle} \> computes the angle and distance between two groups \\
@@ -119,8 +125,6 @@
 {\bf g\_bundle} \> analyzes bundles of axes, {\eg} helices \\
 {\bf g\_disre} \> analyzes distance restraints \\
 {\bf g\_clustsize} \> calculate size distributions of atomic clusters \\
-{\bf disco} \> distance geometry calculation with the CONCOORD algorithm \\
-{\bf cdist} \> create input for disco \\
 {\bf anadock} \> cluster structures from Autodock runs \\
 \end{tabbing}\vspace{-2ex}
 
@@ -140,6 +144,7 @@
 {\bf g\_potential} \> calculates the electrostatic potential across the box \\
 {\bf g\_dipoles} \> computes the total dipole plus fluctuations \\
 {\bf g\_dielectric} \> calculates frequency dependent dielectric constants \\
+{\bf g\_current} \> calculates dielectric constants for charged systems \\
 \end{tabbing}\vspace{-2ex}
 
 \item {\large\bf Protein specific analysis}
@@ -147,7 +152,8 @@
 {\bf mk\_angndx} \= \kill
 {\bf do\_dssp} \> assigns secondary structure and calculates solvent accessible surface area \\
 {\bf g\_chi} \> calculates everything you want to know about chi and other dihedrals \\
-{\bf g\_helix} \> calculates everything you want to know about helices \\
+{\bf g\_helix} \> calculates basic properties of alpha helices \\
+{\bf g\_helixorient} \> calculates local pitch/bending/rotation/orientation inside helices \\
 {\bf g\_rama} \> computes Ramachandran plots \\
 {\bf xrama} \> shows animated Ramachandran plots \\
 {\bf wheel} \> plots helical wheels \\
