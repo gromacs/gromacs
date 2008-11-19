@@ -2671,12 +2671,17 @@ static void set_dd_cell_sizes_slb(gmx_domdec_t *dd,matrix box,bool bMaster,
          * some of its own home charge groups back over the periodic boundary.
          * Double charge groups cause trouble with the global indices.
          */
-        if (dd->nc[d] > 1 && npulse[d] >= dd->nc[d] && DDMASTER(dd))
+        if (dd->nc[d] > 1 && npulse[d] >= dd->nc[d])
         {
-            gmx_fatal(FARGS,"The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
-                      dim2char(d),box[d][d],dd->skew_fac[d],comm->cutoff,
-                      dd->nc[d],dd->nc[d],
-                      dd->nnodes > dd->nc[d] ? "cells" : "processors");
+            if (DDMASTER(dd))
+            {
+                gmx_fatal(FARGS,"The box size in direction %c (%f) times the triclinic skew factor (%f) is too small for a cut-off of %f with %d domain decomposition cells, use 1 or more than %d %s or increase the box size in this direction",
+                          dim2char(d),box[d][d],dd->skew_fac[d],comm->cutoff,
+                          dd->nc[d],dd->nc[d],
+                          dd->nnodes > dd->nc[d] ? "cells" : "processors");
+            }
+
+            exit(0);
         }
     }
     
@@ -5815,13 +5820,18 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
             cr->npmenodes = 0;
         }
         acs = average_cellsize_min(dd,box);
-        if (acs < comm->cellsize_limit && MASTER(cr))
+        if (acs < comm->cellsize_limit)
         {
             if (fplog)
             {
                 fprintf(fplog,"ERROR: The initial cell size (%f) is smaller than the cell size limit (%f)\n",acs,comm->cellsize_limit);
             }
-            gmx_fatal(FARGS,"The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",acs,comm->cellsize_limit);
+            if (MASTER(cr))
+            {
+                gmx_fatal(FARGS,"The initial cell size (%f) is smaller than the cell size limit (%f), change options -dd, -rdd or -rcon, see the log file for details",acs,comm->cellsize_limit);
+            }
+            
+            exit(0);
         }
     }
     else
@@ -5832,17 +5842,22 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
                                comm->cellsize_limit,comm->cutoff,
                                comm->bInterCGBondeds,comm->bInterCGMultiBody);
         
-        if (dd->nc[XX] == 0 && MASTER(cr))
+        if (dd->nc[XX] == 0)
         {
-            bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
-            sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
-                    !bC ? "-rdd" : "-rcon",
-                    comm->eDLB!=edlbNO ? " or -dds" : "",
-                    bC ? " or your LINCS settings" : "");
-            gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
-                      "%s\n"
-                      "Look in the log file for details on the domain decomposition",
-                      cr->nnodes-cr->npmenodes,limit,buf);
+            if (MASTER(cr))
+            {
+                bC = (dd->bInterCGcons && rconstr > r_bonded_limit);
+                sprintf(buf,"Change the number of nodes or mdrun option %s%s%s",
+                        !bC ? "-rdd" : "-rcon",
+                        comm->eDLB!=edlbNO ? " or -dds" : "",
+                        bC ? " or your LINCS settings" : "");
+                gmx_fatal(FARGS,"There is no domain decomposition for %d nodes that is compatible with the given box and a minimum cell size of %g nm\n"
+                          "%s\n"
+                          "Look in the log file for details on the domain decomposition",
+                          cr->nnodes-cr->npmenodes,limit,buf);
+            }
+            
+            exit(0);
         }
         set_dd_dim(fplog,dd);
     }
@@ -6190,7 +6205,9 @@ void set_dd_parameters(FILE *fplog,gmx_domdec_t *dd,real dlb_scale,
     {
         comm->npmenodes = 0;
         if (dd->pme_nodeid >= 0)
+        {
             gmx_fatal(FARGS,"Can not have separate PME nodes without PME electrostatics");
+        }
     }
     
     /* If each molecule is a single charge group
