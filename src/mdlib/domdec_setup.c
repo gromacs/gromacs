@@ -196,7 +196,8 @@ static float comm_cost_est(gmx_domdec_t *dd,real limit,real cutoff,
     {
         for(j=i+1; j<DIM; j++)
         {
-            if (box[j][i] != 0)
+            if (box[j][i] != 0 || ir->deform[j][i] != 0 ||
+                (ir->epc != epcNO && ir->compress[j][i] != 0))
             {
                 if (nc[j] > 1 && nc[i] == 1)
                 {
