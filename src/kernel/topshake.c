@@ -124,7 +124,7 @@ void make_shake (t_params plist[],t_atoms *atoms,t_atomtype at,int nshake)
 	if (interaction_function[ftype].flags & IF_BTYPE) {
 	  bonds=&(plist[ftype]);
 
-	  for(ftype_a = 0; (ftype_a < F_NRE); ftype_a++) {
+	  for(ftype_a = 0; (bonds->nr > 0 && ftype_a < F_NRE); ftype_a++) {
 	    if (interaction_function[ftype_a].flags & IF_ATYPE) {
 	      pr = &(plist[ftype_a]);
 	      
