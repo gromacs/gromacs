@@ -316,7 +316,7 @@ int main (int argc, char *argv[])
   t_trnheader head;
   int          i,frame,run_step,nsteps_org;
   real         run_t,state_t;
-  bool         bOK,bNsteps,bTime,bTraj;
+  bool         bOK,bNsteps,bExtend,bUntil,bTime,bTraj;
   bool         bFrame,bUse,bSel,bNeedEner,bReadEner,bScanEner;
   gmx_mtop_t   mtop;
   t_atoms      atoms;
@@ -370,30 +370,24 @@ int main (int argc, char *argv[])
 		    asize(desc),desc,0,NULL);
 
   bNsteps = (nsteps_req >= 0 || runtime_req >= 0);
+  bExtend = opt2parg_bSet("-extend",asize(pa),pa);
+  bUntil  = opt2parg_bSet("-until",asize(pa),pa);
   bTime   = opt2parg_bSet("-time",asize(pa),pa);
-  bTraj   = (bTime ||
-	     opt2parg_bSet("-extend",asize(pa),pa) ||
-	     opt2parg_bSet("-until",asize(pa),pa) ||
-	     ftp2bSet(efTRN,NFILE,fnm));
-  
-  if (bNsteps && bTraj) {
-    gmx_fatal(FARGS,"You have selected both TPX modification and trajectory reading options");
-  }
+  bTraj   = (opt2bSet("-f",NFILE,fnm) || bTime);
 
   top_fn = ftp2fn(efTPX,NFILE,fnm);
   fprintf(stderr,"Reading toplogy and shit from %s\n",top_fn);
   
   snew(ir,1);
   read_tpx_state(top_fn,&run_step,&run_t,ir,&state,NULL,&mtop);
-  
-  if (ir->bContinuation != bContinuation)
-    fprintf(stderr,"Modifying ir->bContinuation to %s\n",
-	    bool_names[bContinuation]);
-  ir->bContinuation = bContinuation;
-  
-  run_step   = 0;
 
   if (bTraj) {
+    if (ir->bContinuation != bContinuation)
+      fprintf(stderr,"Modifying ir->bContinuation to %s\n",
+	      bool_names[bContinuation]);
+    ir->bContinuation = bContinuation;
+    
+
     bNeedEner = (ir->epc == epcPARRINELLORAHMAN || ir->etc == etcNOSEHOOVER);
     bReadEner = (bNeedEner && ftp2bSet(efENX,NFILE,fnm));
     bScanEner = (bReadEner && !bTime);
@@ -508,12 +502,12 @@ int main (int argc, char *argv[])
     ir->nsteps = nsteps_req;
   } else {
     /* Determine total number of steps remaining */
-    if (extend_t) {
+    if (bExtend) {
       ir->nsteps = ir->nsteps - (run_step - ir->init_step) + (int)(extend_t/ir->delta_t + 0.5);
       printf("Extending remaining runtime of by %g ps (now %d steps)\n",
 	     extend_t,ir->nsteps);
     }
-    else if (until_t) {
+    else if (bUntil) {
       printf("nsteps = %d, run_step = %d, current_t = %g, until = %g\n",
 	     ir->nsteps,run_step,run_t,until_t);
       ir->nsteps = (int)((until_t - run_t)/ir->delta_t + 0.5);
@@ -532,7 +526,8 @@ int main (int argc, char *argv[])
   if (bNsteps || bZeroQ || (ir->nsteps > 0)) {
     ir->init_step = run_step;
     
-    if (ftp2bSet(efNDX,NFILE,fnm) || !(bNsteps || bTraj)) {
+    if (ftp2bSet(efNDX,NFILE,fnm) || 
+	!(bNsteps || bExtend || bUntil || bTraj)) {
       atoms = gmx_mtop_global_atoms(&mtop);
       get_index(&atoms,ftp2fn_null(efNDX,NFILE,fnm),1,
 		&gnx,&index,&grpname);
