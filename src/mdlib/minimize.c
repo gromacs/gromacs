@@ -957,6 +957,12 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
     a = 0.0;
     c = a + stepsize; /* reference position along line is zero */
     
+    if (DOMAINDECOMP(cr) && s_min->s.ddp_count < cr->dd->ddp_count) {
+      em_dd_partition_system(fplog,step,cr,top_global,inputrec,
+			     s_min,&buf,top,mdatoms,fr,vsite,constr,
+			     nrnb,wcycle);
+    }
+
     /* Take a trial step (new coords in s_c) */
     do_em_step(cr,inputrec,mdatoms,s_min,c,s_min->s.cg_p,s_c,
 	       constr,top,nrnb,wcycle,-1);
@@ -1233,7 +1239,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
    * above (which we did if do_x or do_f was true).
    */  
   do_x = !do_per_step(step,inputrec->nstxout);
-  do_f = !do_per_step(step,inputrec->nstfout);
+  do_f = (inputrec->nstfout > 0 && !do_per_step(step,inputrec->nstfout));
   
   write_traj(fplog,cr,fp_trn,do_x,FALSE,do_f,
 	     0,FALSE,0,NULL,FALSE,
