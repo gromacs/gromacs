@@ -225,7 +225,8 @@ extern void dd_init_local_state(gmx_domdec_t *dd,
 extern t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
                                          int *cginfo);
 
-extern void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
+extern void dd_bonded_cg_distance(FILE *fplog,
+                                  gmx_domdec_t *dd,gmx_mtop_t *mtop,
                                   t_inputrec *ir,rvec *x,matrix box,
                                   bool bBCheck,
                                   real *r_2b,real *r_mb);

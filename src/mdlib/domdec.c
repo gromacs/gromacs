@@ -5861,19 +5861,11 @@ gmx_domdec_t *init_domain_decomposition(FILE *fplog,t_commrec *cr,
         {
             if (MASTER(cr))
             {
-                dd_bonded_cg_distance(dd,mtop,ir,x,box,
+                dd_bonded_cg_distance(fplog,dd,mtop,ir,x,box,
                                       Flags & MD_DDBONDCHECK,&r_2b,&r_mb);
             }
             gmx_bcast(sizeof(r_2b),&r_2b,cr);
             gmx_bcast(sizeof(r_mb),&r_mb,cr);
-            if (fplog)
-            {
-                fprintf(fplog,"Initial maximum inter charge-group distances:\n");
-                fprintf(fplog,"    two-body bonded interactions: %5.3f nm\n",
-                        r_2b);
-                fprintf(fplog,"  multi-body bonded interactions: %5.3f nm\n",
-                        r_mb);
-            }
 
             /* We use an initial margin of 10% for the minimum cell size,
              * except when we are just below the non-bonded cut-off.
