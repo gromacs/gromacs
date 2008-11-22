@@ -1,4 +1,4 @@
-/* -*- mode: c; tab-width: 4; indent-tabs-mode: n; c-basic-offset: 4 -*- 
+/* -*- mode: c; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4; c-file-style: "stroustrup"; -*-
  *
  * $Id$
  * 
@@ -215,10 +215,11 @@ extern void dd_init_local_state(gmx_domdec_t *dd,
 extern t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 					 int *cginfo);
 
-extern void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
-				  t_inputrec *ir,rvec *x,matrix box,
-				  bool bBCheck,
-				  real *r_2b,real *r_mb);
+extern void dd_bonded_cg_distance(FILE *fplog,
+                                  gmx_domdec_t *dd,gmx_mtop_t *mtop,
+                                  t_inputrec *ir,rvec *x,matrix box,
+                                  bool bBCheck,
+                                  real *r_2b,real *r_mb);
 
 
 /* In domdec_setup.c */

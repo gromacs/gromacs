@@ -1762,7 +1762,8 @@ t_blocka *make_charge_group_links(gmx_mtop_t *mtop,gmx_domdec_t *dd,
 
 static void bonded_cg_distance_mol(gmx_moltype_t *molt,int *at2cg,
                                    bool bBCheck,bool bExcl,rvec *cg_cm,
-                                   real *r_2b,real *r_mb)
+                                   real *r_2b,int *ft2b,int *a2_1,int *a2_2,
+                                   real *r_mb,int *ftmb,int *am_1,int *am_2)
 {
     int ftype,nral,i,j,ai,aj,cgi,cgj;
     t_ilist *il;
@@ -1792,10 +1793,16 @@ static void bonded_cg_distance_mol(gmx_moltype_t *molt,int *at2cg,
 								if (nral == 2 && rij2 > r2_2b)
                                 {
 									r2_2b = rij2;
+                                    *ft2b = ftype;
+                                    *a2_1 = il->iatoms[i+1+ai];
+                                    *a2_2 = il->iatoms[i+1+aj];
 								}
 								if (nral >  2 && rij2 > r2_mb)
                                 {
 									r2_mb = rij2;
+                                    *ftmb = ftype;
+                                    *am_1 = il->iatoms[i+1+ai];
+                                    *am_2 = il->iatoms[i+1+aj];
 								}
 							}
 						}
@@ -1870,7 +1877,8 @@ static int have_vsite_molt(gmx_moltype_t *molt)
     return bVSite;
 }
 
-void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
+void dd_bonded_cg_distance(FILE *fplog,
+                           gmx_domdec_t *dd,gmx_mtop_t *mtop,
                            t_inputrec *ir,rvec *x,matrix box,
                            bool bBCheck,
                            real *r_2b,real *r_mb)
@@ -1883,6 +1891,8 @@ void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
     gmx_moltype_t *molt;
     rvec *xs,*cg_cm;
     real rmol_2b,rmol_mb;
+    int ft2b=-1,a_2b_1=-1,a_2b_2=-1,ftmb=-1,a_mb_1=-1,a_mb_2=-1;
+    int ftm2b,amol_2b_1,amol_2b_2,ftmmb,amol_mb_1,amol_mb_2;
     
     bExclRequired = EEL_EXCL_FORCES(ir->coulombtype);
     
@@ -1917,9 +1927,22 @@ void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
                              x+at_offset,xs,cg_cm);
                 
                 bonded_cg_distance_mol(molt,at2cg,bBCheck,bExclRequired,cg_cm,
-                                       &rmol_2b,&rmol_mb);
-                *r_2b = max(*r_2b,rmol_2b);
-                *r_mb = max(*r_mb,rmol_mb);
+                                       &rmol_2b,&ftm2b,&amol_2b_1,&amol_2b_2,
+                                       &rmol_mb,&ftmmb,&amol_mb_1,&amol_mb_2);
+                if (rmol_2b > *r_2b)
+                {
+                    *r_2b  = rmol_2b;
+                    ft2b   = ftm2b;
+                    a_2b_1 = at_offset + amol_2b_1;
+                    a_2b_2 = at_offset + amol_2b_2;
+                }
+                if (rmol_mb > *r_mb)
+                {
+                    *r_mb  = rmol_mb;
+                    ftmb   = ftmmb;
+                    a_mb_1 = at_offset + amol_mb_1;
+                    a_mb_2 = at_offset + amol_mb_2;
+                }
                 
                 cg_offset += molt->cgs.nr;
                 at_offset += molt->atoms.nr;
@@ -1932,4 +1955,16 @@ void dd_bonded_cg_distance(gmx_domdec_t *dd,gmx_mtop_t *mtop,
     }
     
     sfree(vsite);
+
+    if (fplog)
+    {
+        fprintf(fplog,
+                "Initial maximum inter charge-group distances:\n");
+        fprintf(fplog,
+                "    two-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
+                *r_2b,interaction_function[ft2b].longname,a_2b_1+1,a_2b_2+1);
+        fprintf(fplog,
+                "  multi-body bonded interactions: %5.3f nm, %s, atoms %d %d\n",
+                *r_mb,interaction_function[ftmb].longname,a_mb_1+1,a_mb_2+1);
+    }
 }
