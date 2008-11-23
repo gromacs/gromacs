@@ -482,7 +482,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   double     run_time;
   real       t,t0,lam0;
   bool       bGStatEveryStep,bGStat;
-  bool       bNS,bCheckNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+  bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep;
   bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	         bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
@@ -534,6 +534,16 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   bFFscan  = (Flags & MD_FFSCAN);
   bGStatEveryStep = !(Flags & MD_NOGSTAT);
   bAppend  = (Flags & MD_APPENDFILES);
+
+  /* If we do reruns, the step numbers in the output energy frames cannot be
+   * used for averages (since energies are only calculated for trajectory frames).
+   * By turning of bGStatEveryStep we force g_energy to use the actual energy frame 
+   * contents for the averages instead.
+   */
+  if(bRerunMD)
+  {
+      bGStatEveryStep = FALSE;
+  }
 	
   if (!bGStatEveryStep && !EI_DYNAMICS(ir->eI)) {
     char *warn="\nWARNING:\nNo energy summing can only be used with dynamics, ignoring this option\n";
@@ -1300,7 +1310,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	nabnsb = 0;
       }
     } else {
-      bCheckNS = bNS;
+      if (bNS) {
+	bGStat = TRUE;
+      }
     }
 
     if (MASTER(cr) && (cpt_period >= 0 &&
@@ -1511,9 +1523,12 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	  pull_print_output(ir->pull,step,t);
 	}
       
-      if (bVerbose)
+      if (do_per_step(step,ir->nstlog))
 	{
-	  fflush(fplog);
+		if(fflush(fplog) != 0)
+		{
+			gmx_fatal(FARGS,"Cannot flush logfile - maybe you are out of quota?");
+		}
 	}
     }
     
