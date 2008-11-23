@@ -481,7 +481,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   time_t     start_t;
   double     run_time;
   real       t,t0,lam0;
-  bool       bGStatEveryStep,bGStat;
+  bool       bGStatEveryStep,bGStat,bCalcPres;
   bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep;
   bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
@@ -515,7 +515,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   int         count,nconverged=0;
   real        timestep=0;
   double      tcount=0;
-  bool        bHaveConstr=FALSE,bIonize=FALSE,bGlas=FALSE;
+  bool        bIonize=FALSE,bGlas=FALSE;
   bool        bTCR=FALSE,bConverged=TRUE,bOK,bSumEkinhOld,bExchanged;
   bool        bAppend;
   real        temp0,mu_aver=0,dvdl;
@@ -699,7 +699,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (constr) {
     if (!DOMAINDECOMP(cr))
       set_constraints(constr,top,ir,mdatoms,NULL);
-    bHaveConstr = TRUE;
   }
 
   /* Check whether we have to GCT stuff */
@@ -731,7 +730,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	}
       }
     }
-    if (bHaveConstr) {
+    if (constr) {
       /* Constrain the initial coordinates and velocities */
       do_shakefirst(fplog,constr,ir,mdatoms,state,buf,f,
 		    graph,cr,nrnb,fr,&top->idef);
@@ -1071,6 +1070,44 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     }
 
     GMX_MPE_LOG(ev_timestep2);
+    
+    if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD) {
+      bCPT = ((chkpt < 0 && do_per_step(step,ir->nstenergy)) || chkpt > 0 ||
+	       bLastStep);
+      if (bCPT) {
+	chkpt = 0;
+      }
+    } else {
+      bCPT = FALSE;
+    }
+
+    /* Determine the pressure:
+     * always when we want exact averages in the energy file,
+     * at ns steps when we have pressure coupling,
+     * otherwise only at energy output steps (set below).
+     */
+    bCalcPres = (bGStatEveryStep || (ir->epc != epcNO && bNS));
+
+    /* Do we need global communication ? */
+    bGStat = (bGStatEveryStep || bStopCM || bNS ||
+	      (ir->nstlist == -1 && !bRerunMD && step >= step_nscheck));
+
+    /* With exact energy averages (bGStatEveryStep=TRUE)
+     * we should also write energy at first, last and continuation steps
+     * such that we can get exact averages over a series of runs.
+     * We therefore try to checkpoint at energy output frames.
+     *
+     * This is not necessary when we use the append-file-feature, so we avoid
+     * the extra first frame in that case.
+     */
+    do_ene = (do_per_step(step,ir->nstenergy) ||
+	      (bGStatEveryStep && ((bFirstStep && !bAppend) ||
+				   bLastStep || bCPT)));
+
+    if (do_ene || do_log) {
+      bCalcPres = TRUE;
+      bGStat    = TRUE;
+    }
 
     if (shellfc) {
       /* Now is the time to relax the shells */
@@ -1097,7 +1134,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	       state->lambda,graph,
 	       fr,vsite,mu_tot,t,fp_field,ed,
 	       GMX_FORCE_STATECHANGED | (bNS ? GMX_FORCE_NS : 0) |
-	       GMX_FORCE_ALLFORCES);
+	       GMX_FORCE_ALLFORCES | (bCalcPres ? GMX_FORCE_VIRIAL : 0));
     }
 
     GMX_BARRIER(cr->mpi_comm_mygroup);
@@ -1127,15 +1164,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
     bV   = do_per_step(step,ir->nstvout);
     bF   = do_per_step(step,ir->nstfout);
     bXTC = do_per_step(step,ir->nstxtcout);
-    if ((bNS || bLastStep) && (step > ir->init_step) && !bRerunMD) {
-      bCPT = ((chkpt < 0 && do_per_step(step,ir->nstenergy)) || chkpt > 0 ||
-	       bLastStep);
-      if (bCPT) {
-	chkpt = 0;
-      }
-    } else {
-      bCPT = FALSE;
-    }
 
     if (bX || bV || bF || bXTC || bCPT) {
       wallcycle_start(wcycle,ewcTRAJ);
@@ -1196,8 +1224,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        * we should only do it at step % nstlist = 1 with bGStatEveryStep=FALSE.
        */
       update(fplog,step,&dvdl,ir,mdatoms,state,graph,f,buf,fcd,
-	     &top->idef,ekind,shake_vir,scale_tot,
-	     cr,nrnb,wcycle,sd,constr,bHaveConstr,
+	     &top->idef,ekind,scale_tot,
+	     cr,nrnb,wcycle,sd,constr,bCalcPres,shake_vir,
 	     bNEMD,bFirstStep && bStateFromTPX);
       if (fr->bSepDVDL && fplog && do_log) {
 	fprintf(fplog,sepdvdlformat,"Constraint",0.0,dvdl);
@@ -1288,8 +1316,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	fprintf(fplog,"\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
       fprintf(stderr, "\nStep %d: Run time exceeded %.3f hours, will terminate the run\n",step,max_hours*0.99);
     }
-    
-    bGStat = (bGStatEveryStep || bStopCM);
 
     if (ir->nstlist == -1 && !bRerunMD) {
       /* When bGStatEveryStep=FALSE, global_stat is only called
@@ -1302,16 +1328,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
        */
       if (step >= step_nscheck) {
 	nabnsb = natoms_beyond_ns_buffer(ir,fr,&top->cgs,*scale_tot,state->x);
-	bGStat = TRUE;
       } else {
 	/* This is not necessarily true,
 	 * but step_nscheck is determined quite conservatively.
 	 */
 	nabnsb = 0;
-      }
-    } else {
-      if (bNS) {
-	bGStat = TRUE;
       }
     }
 
@@ -1330,22 +1351,6 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       } else {
 	chkpt = -1;
       }
-    }
-
-    /* With exact energy averages (bGStatEveryStep=TRUE)
-     * we should also write energy at first, last and continuation steps
-     * such that we can get exact averages over a series of runs.
-     * We therefore try to checkpoint at energy output frames.
-     *
-     * This is not necessary when we use the append-file-feature, so we avoid
-     * the extra first frame in that case.
-     */
-    do_ene = (do_per_step(step,ir->nstenergy) ||
-	      (bGStatEveryStep && ((bFirstStep && !bAppend) ||
-				   bLastStep || bCPT)));
-
-    if (do_ene || do_log) {
-      bGStat = TRUE;
     }
 
     if (!bGStat) {
@@ -1440,14 +1445,11 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
       }
       
       /* Complicated conditional when bGStatEveryStep=FALSE.
-       * We can not just use bGStat, since then the simulation results
+       * We can not just use bCalcPres, since then the simulation results
        * would depend on nstenergy and nstlog or step_nscheck.
        */
       if ((state->flags & (1<<estPRES_PREV)) &&
-	  (bGStatEveryStep ||
-	   (ir->nstlist > 0 && step % ir->nstlist == 0) ||
-	   (ir->nstlist < 0 && nabnsb > 0) ||
-	   (ir->nstlist == 0 && bGStat))) {
+	  (bGStatEveryStep || bNS || (ir->nstlist == 0 && bCalcPres))) {
 	/* Store the pressure in t_state for pressure coupling
 	 * at the next MD step.
 	 */

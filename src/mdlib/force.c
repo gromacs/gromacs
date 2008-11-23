@@ -1049,7 +1049,7 @@ void forcerec_set_ranges(t_forcerec *fr,
         if (fr->f_novirsum_n > fr->f_novirsum_nalloc)
         {
             fr->f_novirsum_nalloc = over_alloc_dd(fr->f_novirsum_n);
-            srenew(fr->f_novirsum,fr->f_novirsum_nalloc);
+            srenew(fr->f_novirsum_alloc,fr->f_novirsum_nalloc);
         }
     }
     else

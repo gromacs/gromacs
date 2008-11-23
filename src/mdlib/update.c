@@ -750,14 +750,14 @@ void update(FILE         *fplog,
 	    t_fcdata     *fcd,
 	    t_idef       *idef,
 	    gmx_ekindata_t *ekind,
-            tensor       vir_part,
 	    matrix       *scale_tot,
             t_commrec    *cr,
             t_nrnb       *nrnb,
 	    gmx_wallcycle_t wcycle,
 	    gmx_stochd_t sd,
 	    gmx_constr_t constr,
-	    bool         bHaveConstr,
+	    bool         bCalcVir,
+            tensor       vir_part,
             bool         bNEMD,
 	    bool         bInitStep)
 {
@@ -889,7 +889,7 @@ void update(FILE         *fplog,
    * it is enough to do this once though, since the relative velocities 
    * after this will be normal to the bond vector
    */
-  if (bHaveConstr) {
+  if (constr) {
     bLastStep = (step == inputrec->init_step+inputrec->nsteps);
     bLog  = (do_per_step(step,inputrec->nstlog) || bLastStep || (step < 0));
     bEner = (do_per_step(step,inputrec->nstenergy) || bLastStep);
@@ -900,7 +900,7 @@ void update(FILE         *fplog,
 		inputrec,cr,step,1,md,
 		state->x,xprime,NULL,
 		state->box,state->lambda,dvdlambda,
-		state->v,&vir_con,nrnb,econqCoord);
+		state->v,bCalcVir ? &vir_con : NULL,nrnb,econqCoord);
       wallcycle_stop(wcycle,ewcCONSTR);
     }
     where();
@@ -908,19 +908,21 @@ void update(FILE         *fplog,
     dump_it_all(fplog,"After Shake",
 		state->natoms,state->x,xprime,state->v,force);
 
-    if (inputrec->eI == eiSD2) {
-      /* A correction factor eph is needed for the SD constraint force */
-      /* Here we can, unfortunately, not have proper corrections
-       * for different friction constants, so we use the first one.
-       */
-      for(i=0; i<DIM; i++)
-	for(m=0; m<DIM; m++)
-	  vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
-    } else {
-      m_add(vir_part,vir_con,vir_part);
+    if (bCalcVir) {
+      if (inputrec->eI == eiSD2) {
+	/* A correction factor eph is needed for the SD constraint force */
+	/* Here we can, unfortunately, not have proper corrections
+	 * for different friction constants, so we use the first one.
+	 */
+	for(i=0; i<DIM; i++)
+	  for(m=0; m<DIM; m++)
+	    vir_part[i][m] += sd->sdc[0].eph*vir_con[i][m];
+      } else {
+	m_add(vir_part,vir_con,vir_part);
+      }
+      if (debug)
+	pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     }
-    if (debug)
-      pr_rvecs(debug,0,"constraint virial",vir_part,DIM);
     where();
   }
   

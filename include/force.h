@@ -152,6 +152,8 @@ extern void set_avcsixtwelve(FILE *fplog,t_forcerec *fr,
 #define GMX_FORCE_NONBONDED    (1<<3)
 /* Calculate forces (not only energies) */
 #define GMX_FORCE_FORCES       (1<<4)
+/* Calculate the virial */
+#define GMX_FORCE_VIRIAL       (1<<5)
 /* Normally one want all energy terms and forces */
 #define GMX_FORCE_ALLFORCES    (GMX_FORCE_BONDED | GMX_FORCE_NONBONDED | GMX_FORCE_FORCES)
 

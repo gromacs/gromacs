@@ -506,12 +506,20 @@ void do_force(FILE *fplog,t_commrec *cr,
       /* Reset PME/Ewald forces if necessary */
     if (fr->bF_NoVirSum) 
     {
-      GMX_BARRIER(cr->mpi_comm_mygroup);
-      if (fr->bDomDec)
-	clear_rvecs(fr->f_novirsum_n,fr->f_novirsum);
-      else
-	clear_rvecs(homenr,fr->f_novirsum+start);
-      GMX_BARRIER(cr->mpi_comm_mygroup);
+      if (flags & GMX_FORCE_VIRIAL) {
+	fr->f_novirsum = fr->f_novirsum_alloc;
+	GMX_BARRIER(cr->mpi_comm_mygroup);
+	if (fr->bDomDec)
+	  clear_rvecs(fr->f_novirsum_n,fr->f_novirsum);
+	else
+	  clear_rvecs(homenr,fr->f_novirsum+start);
+	GMX_BARRIER(cr->mpi_comm_mygroup);
+      } else {
+	/* We are not calculating the pressure so we do not need
+	 * a separate array for forces that do not contribute to the pressure.
+	 */
+	fr->f_novirsum = f;
+      }
     }
     /* Copy long range forces into normal buffers */
     if (fr->bTwinRange) {
@@ -585,9 +593,13 @@ void do_force(FILE *fplog,t_commrec *cr,
       wallcycle_start(wcycle,ewcMOVEF);
       if (DOMAINDECOMP(cr)) {
 	dd_move_f(cr->dd,f,buf,fr->fshift);
-	/* Position restraint do not introduce inter-cg forces */
-	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl)
+	/* Position restraint do not introduce inter-cg forces.
+	 * When we do not calculate the virial, fr->f_novirsum = f.
+	 */
+	if (EEL_FULL(fr->eeltype) && cr->dd->n_intercg_excl &&
+	    (flags & GMX_FORCE_VIRIAL)) {
 	  dd_move_f(cr->dd,fr->f_novirsum,buf,NULL);
+	}
       } else {
 	move_f(fplog,cr,GMX_LEFT,GMX_RIGHT,f,buf,nrnb);
       }
@@ -596,16 +608,21 @@ void do_force(FILE *fplog,t_commrec *cr,
   }
 
   if (bDoForces) {
-    if (vsite) {
+    /* If we have NoVirSum forces, but we do not calculate the virial,
+     * we sum fr->f_novirum=f later.
+     */
+    if (vsite && !(fr->bF_NoVirSum && !(flags & GMX_FORCE_VIRIAL))) {
       wallcycle_start(wcycle,ewcVSITESPREAD);
       spread_vsite_f(fplog,vsite,x,f,fr->fshift,nrnb,
 		     &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
       wallcycle_stop(wcycle,ewcVSITESPREAD);
     }
-    
-    /* Calculation of the virial must be done after vsites! */
-    calc_virial(fplog,mdatoms->start,mdatoms->homenr,x,f,
-		vir_force,graph,box,nrnb,fr,inputrec->ePBC);
+
+    if (flags & GMX_FORCE_VIRIAL) {
+      /* Calculation of the virial must be done after vsites! */
+      calc_virial(fplog,mdatoms->start,mdatoms->homenr,x,f,
+		  vir_force,graph,box,nrnb,fr,inputrec->ePBC);
+    }
   }
 
   if (inputrec->ePull == epullUMBRELLA || inputrec->ePull == epullCONST_F) {
@@ -659,18 +676,20 @@ void do_force(FILE *fplog,t_commrec *cr,
 		     &top->idef,fr->ePBC,fr->bMolPBC,graph,box,cr);
       wallcycle_stop(wcycle,ewcVSITESPREAD);
     }
-    /* Now add the forces, this is local */
-    if (fr->bDomDec) {
-      sum_forces(0,fr->f_novirsum_n,f,fr->f_novirsum);
-    } else {
-      sum_forces(start,start+homenr,f,fr->f_novirsum);
+    if (flags & GMX_FORCE_VIRIAL) {
+      /* Now add the forces, this is local */
+      if (fr->bDomDec) {
+	sum_forces(0,fr->f_novirsum_n,f,fr->f_novirsum);
+      } else {
+	sum_forces(start,start+homenr,f,fr->f_novirsum);
+      }
+      if (EEL_FULL(fr->eeltype)) {
+	/* Add the mesh contribution to the virial */
+	m_add(vir_force,fr->vir_el_recip,vir_force);
+      }
+      if (debug)
+	pr_rvecs(debug,0,"vir_force",vir_force,DIM);
     }
-    if (EEL_FULL(fr->eeltype)) {
-      /* Add the mesh contribution to the virial */
-      m_add(vir_force,fr->vir_el_recip,vir_force);
-    }
-    if (debug)
-      pr_rvecs(debug,0,"vir_force",vir_force,DIM);
   }
 
   /* Sum the potential energy terms from group contributions */

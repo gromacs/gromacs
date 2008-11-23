@@ -205,6 +205,10 @@ typedef struct {
   bool bF_NoVirSum;
   int  f_novirsum_n;
   int  f_novirsum_nalloc;
+  rvec *f_novirsum_alloc;
+  /* Pointer that points to f_novirsum_alloc when pressure is calcaluted,
+   * points to the normal force vectors wen pressure is not requested.
+   */
   rvec *f_novirsum;
 
   /* Long-range forces and virial for PPPM/PME/Ewald */

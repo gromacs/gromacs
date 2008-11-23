@@ -69,7 +69,7 @@ extern void set_deform_reference_box(int step,matrix box);
 extern void update(FILE         *fplog,
 		   int          step,
 		   real         *dvdlambda, /* FEP stuff */
-		   t_inputrec   *inputrec,  /* input record and box stuff	*/
+		   t_inputrec   *inputrec,  /* input record and box stuff */
 		   t_mdatoms    *md,
 		   t_state      *state,
 		   t_graph      *graph,	
@@ -78,14 +78,14 @@ extern void update(FILE         *fplog,
 		   t_fcdata     *fcd,
 		   t_idef       *idef,
 		   gmx_ekindata_t *ekind,
-		   tensor       vir_part,
 		   matrix       *scale_tot,
 		   t_commrec    *cr,
 		   t_nrnb       *nrnb,
 		   gmx_wallcycle_t wcycle,
 		   gmx_stochd_t sd,
 		   gmx_constr_t constr,
-		   bool         bHaveConstr,
+		   bool         bCalcVir,
+		   tensor       vir_part,
 		   bool         bNEMD,
 		   bool         bInitStep);
 /* Return TRUE if OK, FALSE in case of Shake Error */
