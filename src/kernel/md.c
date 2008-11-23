@@ -482,7 +482,7 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   double     run_time;
   real       t,t0,lam0;
   bool       bGStatEveryStep,bGStat;
-  bool       bNS,bCheckNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
+  bool       bNS,bSimAnn,bStopCM,bRerunMD,bNotLastFrame=FALSE,
              bFirstStep,bStateFromTPX,bLastStep;
   bool       bNEMD,do_ene,do_log,do_verbose,bRerunWarnNoV=TRUE,
 	         bForceUpdate=FALSE,bX,bV,bF,bXTC,bCPT;
@@ -1310,7 +1310,9 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	nabnsb = 0;
       }
     } else {
-      bCheckNS = bNS;
+      if (bNS) {
+	bGStat = TRUE;
+      }
     }
 
     if (MASTER(cr) && (cpt_period >= 0 &&
