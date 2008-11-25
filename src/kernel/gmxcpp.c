@@ -118,8 +118,8 @@ static void add_define(char *define)
   int  i;
   char *ptr,name[256];
   
-  sscanf(define,"%s",name);
-  ptr = define + strlen(name);
+  sscanf(define,"%s%n",name,&i);
+  ptr = define + i;
   
   while ((*ptr != '\0') && isspace(*ptr))
     ptr++;
