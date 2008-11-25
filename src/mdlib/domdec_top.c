@@ -1578,7 +1578,8 @@ void dd_init_local_state(gmx_domdec_t *dd,
     {
         if (DDMASTER(dd) && state_global->nrngi > 1)
         {
-            srenew(state_global->ld_rngi,dd->nnodes);
+            state_global->nrngi = dd->nnodes;
+            srenew(state_global->ld_rngi,state_global->nrngi);
         }
         snew(state_local->ld_rngi,1);
     }
