@@ -740,7 +740,10 @@ int gmx_fio_open(const char *fn,char *mode)
 			xdrid = xdropen(fio->xdr,fn,newmode); 
 			if (xdrid == 0)
 			{
-				gmx_open(fn);
+				if(newmode[0]=='r') 
+					gmx_fatal(FARGS,"Cannot open file %s for reading - check permissions if it exists."); 
+				else
+					gmx_fatal(FARGS,"Cannot open file %s for writing - check your quota and permissions.");
 			}
 			fio->fp = xdr_get_fp(xdrid);
 		}
@@ -767,24 +770,29 @@ int gmx_fio_open(const char *fn,char *mode)
 }
 
 
-void gmx_fio_close(int fio)
+int 
+gmx_fio_close(int fio)
 {
+  int rc = 0;
+	
   gmx_fio_check(fio);
   
   if (in_ftpset(FIO[fio].iFTP,asize(ftpXDR),ftpXDR)) {
-    xdrclose(FIO[fio].xdr);
+    rc = !xdrclose(FIO[fio].xdr); /* xdrclose returns 1 if happy, negate it */
     sfree(FIO[fio].xdr);
   }
   else {
     /* Don't close stdin and stdout! */
     if (!FIO[fio].bStdio)
-      fclose(FIO[fio].fp);
+		rc = fclose(FIO[fio].fp); /* fclose returns 0 if happy */
   }
 
   sfree(FIO[fio].fn);
   FIO[fio].bOpen = FALSE;
   do_read  = do_dummy;
   do_write = do_dummy;
+	
+  return rc;
 }
 
 FILE *
@@ -805,17 +813,16 @@ gmx_fio_fclose(FILE *fp)
 	int i,rc,found;
 	
 	found = 0;
+	rc = -1;
+	
 	for(i=0;i<nFIO && !found;i++)
 	{
 		if(fp == FIO[i].fp)
 		{
-			gmx_fio_close(i);
+			rc = gmx_fio_close(i);
 			found=1;
 		}
 	}
-	
-	rc = found ? 0 : -1;
-
 	return rc;
 }
 
@@ -951,13 +958,18 @@ void gmx_fio_rewind(int fio)
     frewind(FIO[fio].fp);
 }
 
-void gmx_fio_flush(int fio)
+int
+gmx_fio_flush(int fio)
 {
+	int rc=0;
+	
   gmx_fio_check(fio);
   if (FIO[fio].fp)
-    fflush(FIO[fio].fp);
- if (FIO[fio].xdr)
-      (void) fflush ((FILE *) FIO[fio].xdr->x_private);
+    rc = fflush(FIO[fio].fp);
+  else if (FIO[fio].xdr)
+    rc = fflush ((FILE *) FIO[fio].xdr->x_private);
+	
+	return rc;
 }
   
 off_t gmx_fio_ftell(int fio)
