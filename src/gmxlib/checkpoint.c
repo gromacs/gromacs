@@ -33,6 +33,7 @@
 #include "txtdump.h"
 #include "vec.h"
 #include "network.h"
+#include "gmx_random.h"
 #include "checkpoint.h"
 
 #define CPT_MAGIC1 171817
@@ -1123,6 +1124,15 @@ read_checkpoint(char *fn,FILE *fplog,
     {
         /* The number of PP nodes has not been set yet */
         nppnodes = -1;
+    }
+
+    if ((EI_SD(eIntegrator) || eIntegrator == eiBD) && nppnodes > 0)
+    {
+        /* Correct the RNG state size for the number of PP nodes.
+         * Such assignments should all be moved to one central function.
+         */
+        state->nrng  = nppnodes*gmx_rng_n();
+        state->nrngi = nppnodes;
     }
     
     *bReadRNG = TRUE;
