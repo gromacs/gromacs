@@ -58,6 +58,7 @@
 #include "txtdump.h"
 #include "gmxcpp.h"
 #include "checkpoint.h"
+#include "mtop_util.h"
 
 static void dump_top(FILE *fp,t_topology *top,char *tpr)
 {
@@ -90,7 +91,7 @@ static void dump_top(FILE *fp,t_topology *top,char *tpr)
   sfree(types);
 }
 
-static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
+static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn,bool bSysTop)
 {
   FILE *gp;
   int         step,fp,indent,i,j,**gcount,atot;
@@ -101,6 +102,8 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
   t_tpxheader tpx;
   gmx_mtop_t  mtop;
   gmx_groups_t *groups;
+  t_topology  top;
+
   read_tpxheader(fn,&tpx,TRUE,NULL,NULL);
 
   read_tpx_state(fn,&step,&t,
@@ -115,6 +118,9 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
   }
 
   if (!mdpfn) {  
+    if (bSysTop)
+      top = gmx_mtop_t_to_t_topology(&mtop);
+
     if (available(stdout,&tpx,0,fn)) {
       indent=0;
       indent=pr_title(stdout,indent,fn);
@@ -123,7 +129,10 @@ static void list_tpx(char *fn, bool bShowNumbers,char *mdpfn)
       indent = 0;
       pr_header(stdout,indent,"header",&(tpx));
       
-      pr_mtop(stdout,indent,"topology",&(mtop),bShowNumbers);
+      if (!bSysTop)
+	pr_mtop(stdout,indent,"topology",&(mtop),bShowNumbers);
+      else
+	pr_top(stdout,indent,"topology",&(top),bShowNumbers);
 
       pr_rvecs(stdout,indent,"box",tpx.bBox ? state.box : NULL,DIM);
       pr_rvecs(stdout,indent,"box_rel",tpx.bBox ? state.box_rel : NULL,DIM);
@@ -377,9 +386,11 @@ int main(int argc,char *argv[])
   /* Command line options */
   static bool bXVG=FALSE;
   static bool bShowNumbers=TRUE;
+  static bool bSysTop=FALSE;
   t_pargs pa[] = {
     { "-xvg", FALSE, etBOOL, {&bXVG}, "HIDDENXVG layout for xtc" },
-    { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" }
+    { "-nr",FALSE, etBOOL, {&bShowNumbers},"Show index numbers in output (leaving them out makes comparison easier, but creates a useless topology)" },
+    { "-sys", FALSE, etBOOL, {&bSysTop}, "List the atoms and bonded interactions for the whole system instead of for each molecule type" }
   };
   
   CopyRight(stderr,argv[0]);
@@ -389,7 +400,7 @@ int main(int argc,char *argv[])
 
   if (ftp2bSet(efTPX,NFILE,fnm))
     list_tpx(ftp2fn(efTPX,NFILE,fnm),bShowNumbers,
-	     ftp2fn_null(efMDP,NFILE,fnm));
+	     ftp2fn_null(efMDP,NFILE,fnm),bSysTop);
   else if (ftp2bSet(efTRX,NFILE,fnm)) 
     list_trx(ftp2fn(efTRX,NFILE,fnm),bXVG);
   else if (ftp2bSet(efENX,NFILE,fnm))
