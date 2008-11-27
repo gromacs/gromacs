@@ -153,10 +153,14 @@ void atoms2md(gmx_mtop_t *mtop,t_inputrec *ir,
     if (md->nPerturbed)
       srenew(md->bPerturbed,md->nalloc);
     
-    /* The user should fix this */
-    if (FALSE)
+    /* Note that these user t_mdatoms array pointers are NULL
+     * when there is only one group present.
+     * Therefore, when adding code, the user should use something like:
+     * gprnrU1 = (md->cU1==NULL ? 0 : md->cU1[localatindex])
+     */
+    if (mtop->groups.grpnr[egcUser1] != NULL)
       srenew(md->cU1,md->nalloc);
-    if (FALSE)
+    if (mtop->groups.grpnr[egcUser2] != NULL)
       srenew(md->cU2,md->nalloc);
     
     if (ir->bQMMM)
