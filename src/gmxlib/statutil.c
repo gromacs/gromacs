@@ -633,9 +633,9 @@ void parse_common_args(int *argc,char *argv[],unsigned long Flags,
     char buf[256];
 
     if (gmx_mpi_initialized())
-      sprintf(buf,"%s%d.log",ShortProgram(),gmx_node_rank());
+      sprintf(buf,"%s%d.debug",ShortProgram(),gmx_node_rank());
     else
-      sprintf(buf,"%s.log",ShortProgram());
+      sprintf(buf,"%s.debug",ShortProgram());
       
     init_debug(debug_level,buf);
     fprintf(stderr,"Opening debug file %s (src code file %s, line %d)\n",
