@@ -78,22 +78,23 @@ typedef struct gmx_cpp {
 
 static bool is_blank_end(char c)
 {
-  return (c == ' ' || c == '\t' || c == '\0' || c == '\n');
+  return ((c == ' ') || (c == '\t') || (c == '\0') || (c == '\n'));
 }
 
-static char* strstrw(const char *buf,const char *word)
+static char *strstrw(const char *buf,const char *word)
 {
   char *ptr;
 
-  ptr = strstr(buf,word);
-  if (ptr) {
+  while ((ptr = strstr(buf,word)) != NULL) {
     /* Check if we did not find part of a longer word */
-    if ((ptr > buf && !is_blank_end(ptr[-1])) ||
-	!is_blank_end(ptr[strlen(word)]))
-      ptr = NULL;
+    if (ptr && 
+	is_blank_end(ptr[strlen(word)]) &&
+	(((ptr > buf) && is_blank_end(ptr[-1])) || (ptr == buf)))
+      return ptr;
+      
+    buf = ptr + strlen(word);
   }
-
-  return ptr;
+  return NULL;
 }
 
 static void add_include(char *include)
