@@ -140,7 +140,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   char       *gro;
   gmx_wallcycle_t wcycle;
   bool       bReadRNG,bReadEkin;
-  int      list;
+  int        list;
+  int        nsteps_done;
 	
   snew(inputrec,1);
   snew(mtop,1);
@@ -424,7 +425,8 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 					    mdatoms,nrnb,wcycle,ed,fr,
 					    repl_ex_nst,repl_ex_seed,
 					    cpt_period,max_hours,
-					    Flags);
+					    Flags,
+					    &nsteps_done);
 
     if (inputrec->ePull != epullNO)
       finish_pull(fplog,inputrec->pull);
@@ -448,7 +450,7 @@ void mdrunner(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
    * if rerunMD, don't write last frame again 
    */
   finish_run(fplog,cr,ftp2fn(efSTO,nfile,fnm),
-	     inputrec,nrnb,wcycle,nodetime,realtime,inputrec->nsteps,
+	     inputrec,nrnb,wcycle,nodetime,realtime,nsteps_done,
 	     EI_DYNAMICS(inputrec->eI) && !MULTISIM(cr));
   
   /* Does what it says */  
@@ -473,7 +475,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
 	     gmx_edsam_t ed,t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
-	     unsigned long Flags)
+	     unsigned long Flags,
+	     int *nsteps_done)
 {
   int        fp_ene=0,fp_trn=0,fp_xtc=0,step,step_rel,step_ene;
   char       *fn_cpt;
@@ -1619,6 +1622,8 @@ time_t do_md(FILE *fplog,t_commrec *cr,int nfile,t_filenm fnm[],
   if (repl_ex_nst > 0 && MASTER(cr)) {
     print_replica_exchange_statistics(fplog,repl_ex);
   }
+
+  *nsteps_done = step_rel;
     
   return start_t;
 }

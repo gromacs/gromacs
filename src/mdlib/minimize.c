@@ -760,7 +760,8 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
 	     t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
-	     unsigned long Flags)
+	     unsigned long Flags,
+	     int *nsteps_done)
 {
   const char *CG="Polak-Ribiere Conjugate Gradients";
 
@@ -1265,7 +1266,7 @@ time_t do_cg(FILE *fplog,t_commrec *cr,
   finish_em(fplog,cr,fp_trn,fp_ene);
   
   /* To print the actual number of steps we needed somewhere */
-  inputrec->nsteps=step;
+  *nsteps_done = step;
 
   return start_t;
 } /* That's all folks */
@@ -1285,7 +1286,8 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
 		t_forcerec *fr,
 		int repl_ex_nst,int repl_ex_seed,
 		real cpt_period,real max_hours,
-		unsigned long Flags)
+		unsigned long Flags,
+		int *nsteps_done)
 {
   static char *LBFGS="Low-Memory BFGS Minimizer";
   em_state_t ems;
@@ -1900,7 +1902,7 @@ time_t do_lbfgs(FILE *fplog,t_commrec *cr,
   finish_em(fplog,cr,fp_trn,fp_ene);
 
   /* To print the actual number of steps we needed somewhere */
-  inputrec->nsteps=step;
+  *nsteps_done = step;
 
   return start_t;
 } /* That's all folks */
@@ -1920,7 +1922,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
 		t_forcerec *fr,
 		int repl_ex_nst,int repl_ex_seed,
 		real cpt_period,real max_hours,
-		unsigned long Flags)
+		unsigned long Flags,
+		int *nsteps_done)
 { 
   const char *SD="Steepest Descents";
   em_state_t *s_min,*s_try;
@@ -2110,6 +2113,8 @@ time_t do_steep(FILE *fplog,t_commrec *cr,
   
   /* To print the actual number of steps we needed somewhere */
   inputrec->nsteps=count;
+
+  *nsteps_done = count;
   
   return start_t;
 } /* That's all folks */
@@ -2129,7 +2134,8 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
 	     t_forcerec *fr,
 	     int repl_ex_nst,int repl_ex_seed,
 	     real cpt_period,real max_hours,
-	     unsigned long Flags)
+	     unsigned long Flags,
+	     int *nsteps_done)
 {
     t_mdebin   *mdebin;
 	const char *NM = "Normal Mode Analysis";
@@ -2346,7 +2352,8 @@ time_t do_nm(FILE *fplog,t_commrec *cr,
       
     fprintf(stderr,"\n\nWriting Hessian...\n");
     gmx_mtxio_write(ftp2fn(efMTX,nfile,fnm),sz,sz,full_matrix,sparse_matrix);
-    
+
+    *nsteps_done = step;
     
     return start_t;
 }
@@ -2391,7 +2398,8 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 	      t_forcerec *fr,
 	      int repl_ex_nst,int repl_ex_seed,
 	      real cpt_period,real max_hours,
-	      unsigned long Flags)
+	      unsigned long Flags,
+	      int *nsteps_done)
 {
   const char *TPI="Test Particle Insertion"; 
   gmx_localtop_t *top;
@@ -2915,5 +2923,7 @@ time_t do_tpi(FILE *fplog,t_commrec *cr,
 
   sfree(sum_UgembU);
 
+  *nsteps_done = frame*inputrec->nsteps;
+  
   return start_t;
 }

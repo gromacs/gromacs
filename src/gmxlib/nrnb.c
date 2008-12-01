@@ -347,9 +347,12 @@ void print_flop(FILE *out,t_nrnb *nrnb,double *nbfs,double *mflop)
   }
 }
 
-void print_perf(FILE *out,double nodetime,double realtime,real runtime,
-		int nprocs,double nbfs,double mflop)
+void print_perf(FILE *out,double nodetime,double realtime,int nprocs,
+		int nsteps,real delta_t,
+		double nbfs,double mflop)
 {
+  real runtime;
+
   fprintf(out,"\n");
 
   if (nodetime == 0.0) {
@@ -370,14 +373,22 @@ void print_perf(FILE *out,double nodetime,double realtime,real runtime,
       fprintf(out,"%12s %10s","","");
       pr_difftime(out,nodetime);
     }
-    if (runtime>0) { /* runtime=0 means calc energies only */
+    if (delta_t > 0) {
       mflop = mflop/nodetime;
+      runtime = nsteps*delta_t;
       fprintf(out,"%12s %10s %10s %10s %10s\n",
 	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
 	      "(ns/day)","(hour/ns)");
       fprintf(out,"%12s %10.3f %10.3f %10.3f %10.3f\n","Performance:",
 	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
 	      runtime*24*3.6/nodetime,1000*nodetime/(3600*runtime));
+    } else {
+      fprintf(out,"%12s %10s %10s %14s\n",
+	      "","(Mnbf/s)",(mflop > 1000) ? "(GFlops)" : "(MFlops)",
+	      "(steps/hour)");
+      fprintf(out,"%12s %10.3f %10.3f %14.1f\n","Performance:",
+	      nbfs/nodetime,(mflop > 1000) ? (mflop/1000) : mflop,
+	      nsteps*3600.0/nodetime);
     }
   }
 }

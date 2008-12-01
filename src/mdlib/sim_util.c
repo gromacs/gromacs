@@ -1132,12 +1132,12 @@ void do_pbc_mtop(FILE *fplog,int ePBC,matrix box,
 void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 		t_inputrec *inputrec,
 		t_nrnb nrnb[],gmx_wallcycle_t wcycle,
-		double nodetime,double realtime,int step,
+		double nodetime,double realtime,int nsteps_done,
 		bool bWriteStat)
 {
   int    i,j;
   t_nrnb *nrnb_all=NULL,ntot;
-  real   runtime;
+  real   delta_t;
   double nbfs,mflop;
   double cycles[ewcNR];
 #ifdef GMX_MPI
@@ -1184,15 +1184,19 @@ void finish_run(FILE *fplog,t_commrec *cr,char *confout,
 
     wallcycle_print(fplog,cr->nnodes,cr->npmenodes,realtime,wcycle,cycles);
 
-    runtime=inputrec->nsteps*inputrec->delta_t;
+    if (EI_DYNAMICS(inputrec->eI)) {
+      delta_t = inputrec->delta_t;
+    } else {
+      delta_t = 0;
+    }
     
     if (fplog) {
-      print_perf(fplog,nodetime,realtime,runtime,cr->nnodes-cr->npmenodes,
-		 nbfs,mflop);
+      print_perf(fplog,nodetime,realtime,cr->nnodes-cr->npmenodes,
+		 nsteps_done,delta_t,nbfs,mflop);
     }
     if (bWriteStat) {
-      print_perf(stderr,nodetime,realtime,runtime,cr->nnodes-cr->npmenodes,
-		 nbfs,mflop);
+      print_perf(stderr,nodetime,realtime,cr->nnodes-cr->npmenodes,
+		 nsteps_done,delta_t,nbfs,mflop);
     }
 
     /*
